@@ -1,0 +1,14 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 问题求助 / Q&A
+    url: https://github.com/<your-org>/AreaMatrix/discussions/categories/q-a
+    about: 使用问题、用法咨询请到 GitHub Discussions / Usage questions belong in Discussions.
+  - name: 架构讨论 / Architecture Discussion
+    url: https://github.com/<your-org>/AreaMatrix/discussions/categories/ideas
+    about: 架构思路、产品方向讨论 / High-level architecture and product direction.
+  - name: 安全漏洞 / Security Vulnerability
+    url: https://github.com/<your-org>/AreaMatrix/security/advisories/new
+    about: 私下报告安全漏洞 / Report a vulnerability privately. 请勿在公开 issue 中报告 / Do NOT report in public issues.
+  - name: 商业授权 / Commercial Licensing
+    url: https://github.com/<your-org>/AreaMatrix/blob/main/COMMERCIAL_LICENSE.md
+    about: 申请商业使用授权 / Request a commercial license.

@@ -1,0 +1,85 @@
+name: macOS App CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/macos/**'
+      - 'core/**'
+      - 'scripts/**'
+      - '.github/workflows/macos-ci.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'apps/macos/**'
+      - 'core/**'
+      - 'scripts/**'
+      - '.github/workflows/macos-ci.yml'
+
+env:
+  XCODE_VERSION: "15.4"
+
+jobs:
+  build:
+    name: Xcode build & test
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_${{ env.XCODE_VERSION }}.app
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: core
+
+      - name: Build core (Rust → universal staticlib + Swift bindings)
+        run: ./scripts/build-core.sh
+
+      - name: Resolve Swift package dependencies
+        run: |
+          xcodebuild -resolvePackageDependencies \
+            -project apps/macos/AreaMatrix.xcodeproj \
+            -scheme AreaMatrix
+
+      - name: Build & test
+        run: |
+          xcodebuild test \
+            -project apps/macos/AreaMatrix.xcodeproj \
+            -scheme AreaMatrix \
+            -destination 'platform=macOS,arch=arm64' \
+            -resultBundlePath TestResults.xcresult \
+            CODE_SIGNING_ALLOWED=NO \
+            | xcbeautify --quiet
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: xcresult
+          path: TestResults.xcresult
+
+  swiftlint:
+    name: SwiftLint
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install SwiftLint
+        run: brew install swiftlint
+      - name: Run SwiftLint
+        run: swiftlint --strict
+        working-directory: apps/macos
+
+  swiftformat:
+    name: SwiftFormat lint
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install SwiftFormat
+        run: brew install swiftformat
+      - name: Run SwiftFormat (check)
+        run: swiftformat --lint .
+        working-directory: apps/macos
