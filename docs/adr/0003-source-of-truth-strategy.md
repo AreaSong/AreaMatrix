@@ -11,8 +11,8 @@
 
 AreaMatrix 同时维护：
 
-- **SQLite DB**（`~/AreaMatrix/.areamatrix/index.db`）：files 表、change_log、tags 等
-- **真实文件系统**（`~/AreaMatrix/<category>/<filename>`）：用户实际文件
+- **SQLite DB**（`<repo>/.areamatrix/index.db`）：files 表、change_log、tags 等
+- **真实文件系统**（`<repo>/...`）：用户实际文件，可来自新建目录或接管已有目录
 
 二者可能不一致，例如：
 

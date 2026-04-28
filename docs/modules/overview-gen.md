@@ -1,6 +1,6 @@
-# 模块：README 生成（readme）
+# 模块：资料库概览生成（overview）
 
-> 每个分类目录自动维护一份 README.md，资料库根目录有一份总 README.md。本模块负责重新生成、保留用户手动添加的内容，并支持 locale 切换。
+> AreaMatrix 默认在 `.areamatrix/generated/` 内生成资料库概览，并可选维护根目录 `AREAMATRIX.md`。本模块不写入、不覆盖、不插入用户已有的 `README.md`。
 >
 > 阅读时长：约 10 分钟。
 
@@ -8,10 +8,11 @@
 
 ## 设计目标
 
-1. 用户在 Finder / GitHub / VSCode 看每个分类目录就能一眼了解内容（不依赖应用）
-2. 推到 GitHub 时 README 是导览
-3. 用户手动加的备注在自动重生成时**不丢**
-4. 性能：单分类 README 重生成 < 50ms（< 1000 文件）
+1. 用户在 Finder / VSCode 中能查看 AreaMatrix 专属概览（不依赖应用）
+2. 接管已有 GitHub 项目时不污染或覆盖项目自己的 `README.md`
+3. 可选根目录 `AREAMATRIX.md` 用作显式的外部导览入口
+4. 用户在 `AREAMATRIX.md` 标记块外手动添加的备注在重生成时**不丢**
+5. 性能：单分类概览重生成 < 50ms（< 1000 文件）
 
 ---
 
@@ -19,19 +20,30 @@
 
 | 触发 | 重生成范围 |
 |---|---|
-| import_file | 该分类 + 根 |
-| rename_file | 该分类 + 根 |
-| move_to_category | 旧分类 + 新分类 + 根 |
-| delete_file | 该分类 + 根 |
+| import_file | 该分类概览 + 根概览 |
+| rename_file | 该分类概览 + 根概览 |
+| move_to_category | 旧分类概览 + 新分类概览 + 根概览 |
+| delete_file | 该分类概览 + 根概览 |
 | 笔记编辑 | 不重生成（不影响文件清单） |
-| sync external 检测到变化 | 受影响分类 + 根 |
+| sync external 检测到变化 | 受影响分类概览 + 根概览 |
 | 用户手动触发 | 全部 |
+
+---
+
+## 输出位置
+
+| 输出 | 默认 | 路径 | 说明 |
+|---|---|---|---|
+| 根概览 | 是 | `.areamatrix/generated/root.md` | 应用内部与外部工具都可读 |
+| 分类/目录概览 | 是 | `.areamatrix/generated/categories/<slug>.md` | 不写入用户分类目录 |
+| 根目录入口 | 否 | `AREAMATRIX.md` | 用户在设置中显式启用后维护 |
+| 用户 README | 否 | `README.md` / `*/README.md` | 永不作为自动输出目标 |
 
 ---
 
 ## 标记块协议
 
-托管区域用配对标记包裹：
+`.areamatrix/generated/*.md` 是全文件托管，不需要保留用户内容。`AREAMATRIX.md` 是可选文件，若存在用户内容，托管区域用配对标记包裹：
 
 ```text
 <!-- AREAMATRIX:BEGIN auto-generated content; do NOT edit between markers -->
@@ -48,7 +60,7 @@
 
 ```mermaid
 flowchart TB
-    Read[读取现有 README]
+    Read[读取现有 AREAMATRIX.md]
     HasMarker{有 BEGIN/END?}
     Replace[替换标记块内容]
     Append[末尾追加托管段 + 警告]
@@ -68,7 +80,7 @@ flowchart TB
 
 ---
 
-## 分类 README 结构
+## 分类概览结构
 
 ```markdown
 # 文档 (docs)
@@ -94,14 +106,11 @@ flowchart TB
 
 <!-- AREAMATRIX:END -->
 
-## 用户备注（手动添加）
-
-这个区域不会被自动生成覆盖。
 ```
 
 ---
 
-## 根 README 结构
+## 根概览结构
 
 ```markdown
 # AreaMatrix 资料库
@@ -130,9 +139,9 @@ flowchart TB
 ## 文件布局
 
 ```text
-core/src/readme/
+core/src/overview/
 ├── mod.rs        // regenerate_for_category / regenerate_root
-├── markers.rs    // 标记块解析与替换
+├── markers.rs    // AREAMATRIX.md 标记块解析与替换
 ├── template.rs   // 文案模板（locale-aware）
 ├── format.rs     // 字节、日期、url 编码
 └── i18n.rs       // 文案翻译表
@@ -143,7 +152,7 @@ core/src/readme/
 ## 入口
 
 ```rust
-// core/src/readme/mod.rs
+// core/src/overview/mod.rs
 mod format;
 mod i18n;
 mod markers;
@@ -155,36 +164,34 @@ use crate::error::CoreResult;
 use crate::repo::RepoLayout;
 
 pub fn regenerate_for_category(repo: &Path, category: &str) -> CoreResult<()> {
-    let category_dir = repo.join(category);
-    if !category_dir.exists() {
-        return Ok(());
-    }
-    let readme_path = category_dir.join("README.md");
-
+    let out_path = RepoLayout::for_repo(repo)
+        .generated_dir()
+        .join("categories")
+        .join(format!("{}.md", category));
     let locale = current_locale(repo)?;
-    let new_managed = template::build_category_managed(repo, category, &locale)?;
+    let content = template::build_category_overview(repo, category, &locale)?;
 
-    let final_content = match std::fs::read_to_string(&readme_path) {
-        Ok(existing) => markers::merge(&existing, &new_managed),
-        Err(_) => template::default_category_template(category, &locale, &new_managed),
-    };
-
-    write_atomic(&readme_path, &final_content)?;
+    write_atomic(&out_path, &content)?;
     regenerate_root(repo)?;
     Ok(())
 }
 
 pub fn regenerate_root(repo: &Path) -> CoreResult<()> {
-    let readme_path = repo.join("README.md");
+    let layout = RepoLayout::for_repo(repo);
+    let generated_path = layout.generated_dir().join("root.md");
     let locale = current_locale(repo)?;
-    let new_managed = template::build_root_managed(repo, &locale)?;
+    let content = template::build_root_overview(repo, &locale)?;
 
-    let final_content = match std::fs::read_to_string(&readme_path) {
-        Ok(existing) => markers::merge(&existing, &new_managed),
-        Err(_) => template::default_root_template(&locale, &new_managed),
-    };
+    write_atomic(&generated_path, &content)?;
 
-    write_atomic(&readme_path, &final_content)?;
+    if db::get_repo_config(repo)?.overview_output == OverviewOutput::RootAreaMatrixFile {
+        let root_entry = repo.join("AREAMATRIX.md");
+        let final_content = match std::fs::read_to_string(&root_entry) {
+            Ok(existing) => markers::merge(&existing, &content),
+            Err(_) => content,
+        };
+        write_atomic(&root_entry, &final_content)?;
+    }
     Ok(())
 }
 
@@ -206,7 +213,7 @@ fn write_atomic(path: &Path, content: &str) -> CoreResult<()> {
 ## markers 模块（标记块解析器）
 
 ```rust
-// core/src/readme/markers.rs
+// core/src/overview/markers.rs
 const BEGIN_PREFIX: &str = "<!-- AREAMATRIX:BEGIN";
 const END_FULL: &str = "<!-- AREAMATRIX:END -->";
 
@@ -291,7 +298,7 @@ mod tests {
 ## template + i18n 模块
 
 ```rust
-// core/src/readme/i18n.rs
+// core/src/overview/i18n.rs
 pub fn t(key: &str, locale: &str) -> &'static str {
     match (locale, key) {
         ("zh-Hans", "stats") => "统计",
@@ -339,16 +346,16 @@ fn capitalize(s: &str) -> String {
 ```
 
 ```rust
-// core/src/readme/template.rs
+// core/src/overview/template.rs
 use std::path::Path;
 use crate::db;
 use crate::error::CoreResult;
-use crate::readme::{format, i18n};
+use crate::overview::{format, i18n};
 
 const BEGIN_TAG: &str = "<!-- AREAMATRIX:BEGIN auto-generated content; do NOT edit between markers -->";
 const END_TAG: &str = "<!-- AREAMATRIX:END -->";
 
-pub fn build_category_managed(repo: &Path, category: &str, locale: &str) -> CoreResult<String> {
+pub fn build_category_overview(repo: &Path, category: &str, locale: &str) -> CoreResult<String> {
     let files = db::list_active_in_category(repo, category)?;
     let recent = db::recent_changes_for_category(repo, category, 30)?;
 
@@ -394,15 +401,7 @@ pub fn build_category_managed(repo: &Path, category: &str, locale: &str) -> Core
     Ok(out)
 }
 
-pub fn default_category_template(category: &str, locale: &str, managed: &str) -> String {
-    let display = i18n::category_display(category, locale);
-    format!(
-        "# {} ({})\n\n{}\n\n## {}\n",
-        display, category, managed, i18n::t("user_section", locale)
-    )
-}
-
-pub fn build_root_managed(repo: &Path, locale: &str) -> CoreResult<String> {
+pub fn build_root_overview(repo: &Path, locale: &str) -> CoreResult<String> {
     let summary = db::list_categories_summary(repo)?;
     let recent = db::recent_changes(repo, 7)?;
 
@@ -450,7 +449,7 @@ pub fn build_root_managed(repo: &Path, locale: &str) -> CoreResult<String> {
     Ok(out)
 }
 
-pub fn default_root_template(locale: &str, managed: &str) -> String {
+pub fn default_root_entry_template(locale: &str, managed: &str) -> String {
     let title = match locale {
         "zh-Hans" => "AreaMatrix 资料库",
         _ => "AreaMatrix Repository",
@@ -477,7 +476,7 @@ fn describe_action(action: &str) -> &'static str {
 ## format 工具
 
 ```rust
-// core/src/readme/format.rs
+// core/src/overview/format.rs
 pub fn bytes(n: i64) -> String {
     const KB: f64 = 1024.0;
     const MB: f64 = KB * 1024.0;
@@ -520,7 +519,7 @@ pub fn url_encode(s: &str) -> String {
 
 ---
 
-## 用户内容保护测试
+## 用户内容与输出位置测试
 
 ```rust
 #[cfg(test)]
@@ -531,35 +530,33 @@ mod tests_protection {
     fn fixture_repo() -> (tempfile::TempDir, PathBuf) {
         let d = tempfile::tempdir().unwrap();
         let p = d.path().to_path_buf();
-        crate::api::init_repo(p.to_string_lossy().into()).unwrap();
+        crate::api::init_repo(
+            p.to_string_lossy().into(),
+            RepoInitOptions::adopt_existing_generated_only(),
+        ).unwrap();
         std::fs::create_dir_all(p.join("docs")).unwrap();
         (d, p)
     }
 
     #[test]
-    fn preserves_user_section_after_regenerate() {
+    fn does_not_touch_existing_readme() {
         let (_d, p) = fixture_repo();
-        regenerate_for_category(&p, "docs").unwrap();
-
         let readme = p.join("docs/README.md");
-        let mut content = std::fs::read_to_string(&readme).unwrap();
-        content.push_str("\n\n## My Notes\n\n手写内容 1\n");
-        std::fs::write(&readme, content).unwrap();
+        std::fs::write(&readme, "# Project\n\n用户自己的 README\n").unwrap();
 
         regenerate_for_category(&p, "docs").unwrap();
         let new_content = std::fs::read_to_string(&readme).unwrap();
-        assert!(new_content.contains("手写内容 1"));
+        assert_eq!(new_content, "# Project\n\n用户自己的 README\n");
     }
 
     #[test]
-    fn rebuilds_block_when_markers_deleted() {
+    fn category_overview_goes_to_generated_dir() {
         let (_d, p) = fixture_repo();
-        let readme = p.join("docs/README.md");
-        std::fs::write(&readme, "# Custom\n\n用户全权改写\n").unwrap();
 
         regenerate_for_category(&p, "docs").unwrap();
-        let content = std::fs::read_to_string(&readme).unwrap();
-        assert!(content.contains("用户全权改写"));
+        let content = std::fs::read_to_string(
+            p.join(".areamatrix/generated/categories/docs.md")
+        ).unwrap();
         assert!(content.contains("AREAMATRIX:BEGIN"));
         assert!(content.contains("AREAMATRIX:END"));
     }
@@ -569,27 +566,34 @@ mod tests_protection {
         let (_d, p) = fixture_repo();
         crate::api::set_locale(p.to_string_lossy().into(), "en".into()).unwrap();
         regenerate_for_category(&p, "docs").unwrap();
-        let readme = p.join("docs/README.md");
-        let content = std::fs::read_to_string(&readme).unwrap();
+        let content = std::fs::read_to_string(
+            p.join(".areamatrix/generated/categories/docs.md")
+        ).unwrap();
         assert!(content.contains("Statistics"));
         assert!(!content.contains("统计"));
     }
 
     #[test]
-    fn handles_crlf_files() {
+    fn root_areamatrix_file_preserves_user_content() {
         let (_d, p) = fixture_repo();
-        let readme = p.join("docs/README.md");
-        std::fs::write(&readme, "# Title\r\n\r\nuser\r\n").unwrap();
-        regenerate_for_category(&p, "docs").unwrap();
-        let content = std::fs::read_to_string(&readme).unwrap();
+        crate::api::set_overview_output(
+            p.to_string_lossy().into(),
+            OverviewOutput::RootAreaMatrixFile,
+        ).unwrap();
+        std::fs::write(p.join("AREAMATRIX.md"), "# My overview\n\nuser\n").unwrap();
+
+        regenerate_root(&p).unwrap();
+        let content = std::fs::read_to_string(p.join("AREAMATRIX.md")).unwrap();
+        assert!(content.contains("# My overview"));
         assert!(content.contains("user"));
+        assert!(content.contains("AREAMATRIX:BEGIN"));
     }
 
     #[test]
-    fn root_readme_summary_correct() {
+    fn generated_root_summary_correct() {
         let (_d, p) = fixture_repo();
         regenerate_root(&p).unwrap();
-        let content = std::fs::read_to_string(p.join("README.md")).unwrap();
+        let content = std::fs::read_to_string(p.join(".areamatrix/generated/root.md")).unwrap();
         assert!(content.contains("AREAMATRIX:BEGIN"));
         assert!(content.contains("AREAMATRIX:END"));
     }
@@ -605,12 +609,12 @@ mod tests_protection {
 批量导入场景（一次性 50 个文件）下，重生成可能被触发 50 次。MVP 接受这个开销；Stage 2 加 debounce：
 
 ```rust
-pub struct ReadmeRegenScheduler {
+pub struct OverviewRegenScheduler {
     pending: Arc<Mutex<HashSet<String>>>,
     flush_interval: Duration,
 }
 
-impl ReadmeRegenScheduler {
+impl OverviewRegenScheduler {
     pub fn schedule(&self, category: &str) {
         self.pending.lock().unwrap().insert(category.into());
     }
@@ -635,14 +639,15 @@ impl ReadmeRegenScheduler {
 
 | 情况 | 行为 |
 |---|---|
-| 分类目录被用户删除 | regenerate 检测目录不存在 → 跳过 |
-| README 被改成无标记 | 在末尾追加托管段 + 标记 |
-| 用户修改了标记块内 | 下次重生成被覆盖（已有警告） |
-| 用户重命名 README.md → README.txt | 应用按需重建新的 README.md |
+| 分类目录被用户删除 | regenerate 检测目录不存在 → 生成空/缺失提示或跳过 |
+| `.areamatrix/generated/*.md` 被改 | 下次重生成整文件覆盖 |
+| `AREAMATRIX.md` 被改成无标记 | 在末尾追加托管段 + 标记 |
+| 用户修改 `AREAMATRIX.md` 标记块内 | 下次重生成被覆盖（已有警告） |
+| 用户修改/重命名 `README.md` | 视为普通用户文件，应用不重建、不覆盖 |
 | 文件名含 emoji / unicode | url_encode 后写入链接，浏览器/IDE 正常显示 |
 | 文件清单超 1000 行 | 按 imported_at DESC 截断前 200 + 提示「另有 N 项」 |
 | 有循环符号链接 | walkdir 的 follow_links=false 已规避 |
-| README.md 文件本身被记入 files 表 | reindex 已用 `is_managed_file` 过滤 |
+| `AREAMATRIX.md` / generated 文件本身被记入 files 表 | reindex 用 `is_managed_file` 过滤 |
 
 ---
 
@@ -655,13 +660,14 @@ impl ReadmeRegenScheduler {
 3. 在 `format::date` / `format::file_count` 视情况调整
 4. 在 `apps/macos/Localizations/` 添加对应的 SwiftUI strings
 
-不需要改 README 模板结构。
+不需要改概览模板结构。
 
 ---
 
 ## Related
 
 - [../architecture/overview.md](../architecture/overview.md)
+- [../adr/0010-adopt-existing-folders-and-overviews.md](../adr/0010-adopt-existing-folders-and-overviews.md)
 - [../adr/0007-readme-granularity.md](../adr/0007-readme-granularity.md)
 - [../adr/0008-naming-and-i18n.md](../adr/0008-naming-and-i18n.md)
 - [storage.md](storage.md)

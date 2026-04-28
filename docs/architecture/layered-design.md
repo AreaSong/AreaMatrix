@@ -31,7 +31,7 @@ flowchart TB
         Domain[domain]
         Storage[storage]
         Classify[classify]
-        Readme[readme]
+        Overview[overview]
         Tree[tree]
         Sync[sync]
         DB[db]
@@ -63,7 +63,7 @@ flowchart TB
 | `config` | 加载 / 持久化 `~/Library/Application Support/AreaMatrix/config.json` |
 | `classify` | 规则引擎，输出 `(category, suggested_name)` |
 | `storage` | 事务式导入、move/copy/index、SHA256、冲突重命名 |
-| `readme` | 分类目录 + 根目录 README 生成 |
+| `overview` | 资料库概览生成；默认写入 `.areamatrix/generated/`，可选根目录 `AREAMATRIX.md` |
 | `tree` | 资料库目录扫描，生成 tree JSON |
 | `sync` | 处理外部变化事件（外部重命名 / 删除 / 新增） |
 | `db` | SQLite CRUD + migrations + schema 初始化 |

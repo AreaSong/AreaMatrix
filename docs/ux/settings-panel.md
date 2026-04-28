@@ -29,7 +29,7 @@
 
 | TabId | 名称 | 目标用户 | 主要内容 |
 |---|---|---|---|
-| general | 通用 | 所有人 | 默认存储模式、语言、外观、快捷键提示 |
+| general | 通用 | 所有人 | 默认存储模式、概览输出、语言、外观、快捷键提示 |
 | repository | 资料库 | 所有人 | repoPath、更换/迁移、打开 Finder、容量信息 |
 | classifier | 分类规则 | 高级用户 | 规则开关、YAML 编辑、校验、示例、导入导出 |
 | integrations | 集成 | 少数 | iCloud 相关提示、Spotlight 排除建议（提示而非执行） |
@@ -80,11 +80,35 @@
 
 ### 2) 语言（Locale）
 
+### 2) 概览输出（Overview output）
+
+| Setting | 默认值 | 说明 |
+|---|---|---|
+| overviewOutput | GeneratedOnly | 默认只写 `.areamatrix/generated/`；可选维护根目录 `AREAMATRIX.md` |
+
+#### UI（ASCII）
+
+```
+资料库概览：
+ (●) 仅保存在 .areamatrix/generated/
+ ( ) 同时在根目录生成 AREAMATRIX.md
+
+说明：AreaMatrix 永远不会覆盖已有 README.md。
+```
+
+选择 `AREAMATRIX.md` 时若文件已存在：
+
+- 如果包含 AreaMatrix 标记块：只维护标记块
+- 如果不包含标记块：弹确认，说明会在文件末尾追加 AreaMatrix 托管段
+- 永不把 `README.md` 作为自动输出目标
+
+### 3) 语言（Locale）
+
 | Setting | 默认值 | 说明 |
 |---|---|---|
 | uiLocale | system | 跟随系统，支持 zh-CN / en |
 
-### 3) 外观（Appearance）
+### 4) 外观（Appearance）
 
 | Setting | 默认值 |
 |---|---|

@@ -46,7 +46,7 @@ Thanks for the PR! Please fill out the template below.
 
 ## 检查清单 / Checklist
 
-- [ ] 我的代码遵循项目编码规范（[coding-standards.md](../../docs/development/coding-standards.md)）
+- [ ] 我的代码遵循项目编码规范（[coding-standards.md](../docs/development/coding-standards.md)）
 - [ ] 我已运行本地测试并通过
 - [ ] 我已运行 `cargo fmt && cargo clippy -- -D warnings`（Rust 部分）
 - [ ] 我已运行 SwiftFormat / SwiftLint（Swift 部分）

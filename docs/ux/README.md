@@ -44,7 +44,7 @@ docs/ux/first-launch.md
 
 UX 文档只定义“用户看见什么、点什么、如何恢复”。工程实现细节请回到：
 
-- `docs/modules/`：storage/classify/readme-gen/tree-scan/change-log\n
+- `docs/modules/`：storage/classify/overview-gen/tree-scan/change-log\n
 - `docs/api/`：core-api/error-codes/classifier-yaml/uniffi-recipes\n
 - `docs/architecture/`：transactional-import/source-of-truth/fs-watcher/concurrency/migration\n
 - `docs/development/`：observability/troubleshooting/performance\n

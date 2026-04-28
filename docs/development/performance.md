@@ -605,23 +605,23 @@ for entry in entries {
 let map = db::changes_count_by_file(repo, &ids)?;
 ```
 
-### 4. 频繁 readme 重生成
+### 4. 频繁概览重生成
 
 ```rust
 // ❌
 for file in batch {
     import_file(...)?;
-    readme::regenerate_for_category(...)?;  // 50 次
+    overview::regenerate_for_category(...)?;  // 50 次
 }
 
 // ✅ 批量后一次
 for file in batch {
-    import_file_skip_readme(...)?;
+    import_file_skip_overview(...)?;
 }
-readme::regenerate_for_category(...)?;
+overview::regenerate_for_category(...)?;
 ```
 
-详见 [../modules/readme-gen.md](../modules/readme-gen.md) 的 debounce 章节。
+详见 [../modules/overview-gen.md](../modules/overview-gen.md) 的 debounce 章节。
 
 ### 5. mmap_size 配过大
 

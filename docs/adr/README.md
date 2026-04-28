@@ -29,11 +29,12 @@
 | 0004 | Accepted | 事务式存储 | [0004-transactional-storage.md](0004-transactional-storage.md) |
 | 0005 | Accepted | 文件系统监听用 FSEventStream | [0005-fsevents-listener.md](0005-fsevents-listener.md) |
 | 0006 | Accepted | 完整支持 iCloud Drive | [0006-icloud-support.md](0006-icloud-support.md) |
-| 0007 | Accepted | README 生成粒度 | [0007-readme-granularity.md](0007-readme-granularity.md) |
+| 0007 | Superseded by 0010 | README 生成粒度 | [0007-readme-granularity.md](0007-readme-granularity.md) |
 | 0008 | Accepted | 命名与国际化策略 | [0008-naming-and-i18n.md](0008-naming-and-i18n.md) |
 | 0009 | Accepted | 最低 macOS 版本 14 Sonoma | [0009-min-macos-version.md](0009-min-macos-version.md) |
+| 0010 | Accepted | 接管已有目录与专属概览文件 | [0010-adopt-existing-folders-and-overviews.md](0010-adopt-existing-folders-and-overviews.md) |
 
-未来新增的 ADR 编号顺延（0010、0011…）。
+未来新增的 ADR 编号顺延（0011、0012…）。
 
 ---
 

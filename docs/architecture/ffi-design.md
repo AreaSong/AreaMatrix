@@ -258,7 +258,7 @@ mod error;
 mod config;
 mod classify;
 mod storage;
-mod readme;
+mod overview;
 mod tree;
 mod sync;
 mod db;

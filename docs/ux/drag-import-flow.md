@@ -1,6 +1,6 @@
 # 拖拽导入流程（Drag & Drop Import Flow）
 
-> 定义 AreaMatrix 的拖拽导入 UX：从“用户把文件拖进来”到“文件落位、分类、命名、README 更新、列表可见”的全链路交互。包含触发入口矩阵、hover/drop 视觉态、ImportSheet（Move/Copy/Index）、多文件/文件夹/跨应用拖入分支、失败恢复与撤销。
+> 定义 AreaMatrix 的拖拽导入 UX：从“用户把文件拖进来”到“文件落位、分类、命名、概览更新、列表可见”的全链路交互。包含触发入口矩阵、hover/drop 视觉态、ImportSheet（Move/Copy/Index）、多文件/文件夹/跨应用拖入分支、失败恢复与撤销。
 >
 > 阅读时长：约 18 分钟。
 
@@ -76,7 +76,7 @@ sequenceDiagram
     User->>UI: Confirm import
     UI->>Core: importBatch(items, options, progressCb)
     Core->>Repo: staging -> hash -> dedup -> finalize
-    Core->>Core: update DB + change_log + README gen
+    Core->>Core: update DB + change_log + overview gen
     Core-->>UI: results (success/skip/fail)
     UI-->>User: List updates + toast summary
 ```
@@ -500,7 +500,7 @@ flowchart TD
 - [../product/prd.md](../product/prd.md)
 - [../modules/storage.md](../modules/storage.md)
 - [../modules/classify.md](../modules/classify.md)
-- [../modules/readme-gen.md](../modules/readme-gen.md)
+- [../modules/overview-gen.md](../modules/overview-gen.md)
 - [../modules/change-log.md](../modules/change-log.md)
 - [../architecture/transactional-import.md](../architecture/transactional-import.md)
 - [../architecture/fs-watcher.md](../architecture/fs-watcher.md)

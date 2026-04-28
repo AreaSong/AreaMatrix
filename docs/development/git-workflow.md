@@ -104,7 +104,7 @@ main
 
 ### scope 推荐值
 
-`classify` / `storage` / `readme` / `tree` / `sync` / `db` / `ffi` / `ui` / `bridge` / `watcher` / `ci` / `deps` / `release`。
+`classify` / `storage` / `overview` / `tree` / `sync` / `db` / `ffi` / `ui` / `bridge` / `watcher` / `ci` / `deps` / `release`。
 
 scope 可以省略：`docs: 修正 README 拼写`。
 

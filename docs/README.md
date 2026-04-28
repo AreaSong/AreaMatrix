@@ -35,7 +35,7 @@ docs/architecture/data-model.md
    → docs/architecture/migration.md
    → docs/modules/storage.md
    → docs/modules/classify.md
-   → docs/modules/readme-gen.md
+   → docs/modules/overview-gen.md
    → docs/modules/tree-scan.md
    → docs/modules/change-log.md
    → docs/api/core-api.md
@@ -79,7 +79,7 @@ docs/development/troubleshooting.md
 
 ```
 docs/adr/README.md  (索引)
-   → docs/adr/0001..0009-*.md  (具体决策)
+   → docs/adr/0001..0010-*.md  (具体决策)
 ```
 
 ---
@@ -121,7 +121,7 @@ docs/adr/README.md  (索引)
 |---|---|
 | [modules/classify.md](modules/classify.md) | 分类引擎 |
 | [modules/storage.md](modules/storage.md) | 文件存储操作 |
-| [modules/readme-gen.md](modules/readme-gen.md) | README.md 生成器 |
+| [modules/overview-gen.md](modules/overview-gen.md) | 资料库概览生成器 |
 | [modules/tree-scan.md](modules/tree-scan.md) | 目录扫描与树构建 |
 | [modules/change-log.md](modules/change-log.md) | 改动日志 |
 
@@ -159,9 +159,10 @@ docs/adr/README.md  (索引)
 | [adr/0004-transactional-storage.md](adr/0004-transactional-storage.md) | 事务式存储 |
 | [adr/0005-fsevents-listener.md](adr/0005-fsevents-listener.md) | 文件系统监听方案 |
 | [adr/0006-icloud-support.md](adr/0006-icloud-support.md) | iCloud 兼容程度 |
-| [adr/0007-readme-granularity.md](adr/0007-readme-granularity.md) | README 生成粒度 |
+| [adr/0007-readme-granularity.md](adr/0007-readme-granularity.md) | 概览生成粒度 |
 | [adr/0008-naming-and-i18n.md](adr/0008-naming-and-i18n.md) | 命名与国际化 |
 | [adr/0009-min-macos-version.md](adr/0009-min-macos-version.md) | 最低 macOS 版本 |
+| [adr/0010-adopt-existing-folders-and-overviews.md](adr/0010-adopt-existing-folders-and-overviews.md) | 接管已有目录与专属概览文件 |
 
 ### 路线图 / Roadmap
 

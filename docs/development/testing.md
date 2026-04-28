@@ -32,7 +32,7 @@ flowchart TB
 | `core/classify` | ≥ 90% | cargo-llvm-cov |
 | `core/db` | ≥ 80% | cargo-llvm-cov |
 | `core/sync` | ≥ 80% | cargo-llvm-cov |
-| `core/readme` | ≥ 75% | cargo-llvm-cov |
+| `core/overview` | ≥ 75% | cargo-llvm-cov |
 | 全 core 加权 | ≥ 70% | CI 强制 |
 | Swift Watcher | ≥ 60% | Xcode coverage |
 | Swift Bridge | ≥ 50%（其余靠集成测试） | - |
@@ -152,11 +152,12 @@ pub fn setup_with_source(name: &str) -> (TempDir, NamedTempFile) {
 - 外键约束生效
 - 备份创建
 
-### Readme 生成
+### 概览生成
 
-- 用户区域保留
+- `.areamatrix/generated/` 输出正确
+- 可选 `AREAMATRIX.md` 用户区域保留
 - 标记缺失时追加
-- 文件不存在时新建
+- 已有 `README.md` 不被改写
 - 中英 locale 切换
 
 ---

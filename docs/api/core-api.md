@@ -29,7 +29,7 @@ namespace area_matrix {
     void init_logging(string level);
 
     [Throws=CoreError]
-    void init_repo(string repo_path);
+    void init_repo(string repo_path, RepoInitOptions options);
 
     [Throws=CoreError]
     RepoConfig load_config(string repo_path);
@@ -94,9 +94,16 @@ namespace area_matrix {
 dictionary RepoConfig {
     string repo_path;
     StorageMode default_mode;
+    OverviewOutput overview_output;
     boolean ai_enabled;
     string locale;
     boolean icloud_warn;
+};
+
+dictionary RepoInitOptions {
+    RepoInitMode mode;
+    boolean create_default_categories;
+    OverviewOutput overview_output;
 };
 
 dictionary ImportOptions {
@@ -184,6 +191,8 @@ dictionary SyncResult {
 };
 
 enum StorageMode { "Moved", "Copied", "Indexed" };
+enum RepoInitMode { "CreateEmpty", "AdoptExisting" };
+enum OverviewOutput { "GeneratedOnly", "RootAreaMatrixFile" };
 enum DuplicateStrategy { "Skip", "Overwrite", "KeepBoth", "Ask" };
 enum ClassifyReason { "Keyword", "Extension", "AiPredicted", "Default" };
 enum ExternalEventKind { "Created", "Removed", "Modified", "Renamed" };
@@ -223,7 +232,7 @@ enum CoreError {
 |---|---|---|---|
 | `get_version()` | meta | × | — |
 | `init_logging(level)` | meta | √ | Config |
-| `init_repo(path)` | repo | √ | Io / Config |
+| `init_repo(path, options)` | repo | √ | Io / Config / PermissionDenied |
 | `load_config(repo)` | repo | √ | Io / Config |
 | `update_config(repo, cfg)` | repo | √ | Io |
 | `recover_on_startup(repo)` | repo | √ | Db |
@@ -275,16 +284,19 @@ do {
 
 ## repo API
 
-### `init_repo(repoPath: String) throws`
+### `init_repo(repoPath: String, options: RepoInitOptions) throws`
 
 ```swift
-let url = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-    .appendingPathComponent("AreaMatrix")
+let options = RepoInitOptions(
+    mode: .adoptExisting,
+    createDefaultCategories: false,
+    overviewOutput: .generatedOnly
+)
 do {
-    try AreaMatrix.initRepo(repoPath: url.path)
+    try AreaMatrix.initRepo(repoPath: selectedURL.path, options: options)
 } catch CoreError.Config(let reason) {
-    if reason.contains("non-empty") {
-        await showAlert("目录已存在内容，请选择空目录")
+    if reason.contains("already managed") {
+        await showAlert("这个目录已经是 AreaMatrix 资料库")
     }
 } catch {
     throw error
@@ -293,13 +305,20 @@ do {
 
 执行：
 
-- 创建分类目录（按 `classifier.yaml`）
-- 创建 `.areamatrix/{staging, archives}/`
+- `CreateEmpty`：目录必须为空或仅包含系统隐藏文件；可按 `classifier.yaml` 创建分类目录
+- `AdoptExisting`：目录可以非空；不移动、不重命名、不删除、不覆盖已有内容
+- 创建 `.areamatrix/{staging, archives, generated}/`
 - 复制默认 `classifier.yaml`
 - 创建 SQLite + 应用 schema v1
-- 写入根 README.md
+- `AdoptExisting` 模式下调用首次 `reindex_from_filesystem`
+- 默认生成 `.areamatrix/generated/root.md`
+- 仅当 `overview_output = RootAreaMatrixFile` 时写入/维护根目录 `AREAMATRIX.md`
 
-如目录已存在但非空 → `CoreError.Config(reason: "non-empty directory")`。
+约束：
+
+- 永不写入或覆盖已有 `README.md`
+- 选中 `.areamatrix/` 子目录 → `CoreError.InvalidPath`
+- 目录不可写 → `CoreError.PermissionDenied`
 
 ### `load_config(repoPath: String) throws -> RepoConfig`
 
@@ -316,6 +335,7 @@ print("locale: \(cfg.locale)")
 ```swift
 var cfg = try AreaMatrix.loadConfig(repoPath: repoPath)
 cfg.defaultMode = .copied
+cfg.overviewOutput = .generatedOnly
 cfg.locale = "zh-Hans"
 try AreaMatrix.updateConfig(repoPath: repoPath, newConfig: cfg)
 ```
@@ -351,7 +371,7 @@ let report = try await Task.detached(priority: .background) {
 print("inserted: \(report.inserted), updated: \(report.updated), skipped: \(report.skipped)")
 ```
 
-耗时与文件数成正比（1 万文件 ≈ 30s）。建议显示进度条。
+耗时与文件数成正比（1 万文件 ≈ 30s）。建议显示进度条。该 API 会跳过 `.areamatrix/`、系统临时文件、可配置忽略目录，以及 AreaMatrix 自身生成的概览文件。
 
 ---
 

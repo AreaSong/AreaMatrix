@@ -71,7 +71,7 @@ flowchart LR
     I --> J[UPDATE active]
     J --> K[INSERT change_log]
     K --> L[COMMIT]
-    L --> M[7 regen README]
+    L --> M[7 regen overview]
 ```
 
 ### 完整实现
@@ -211,7 +211,7 @@ pub fn import_file(
         Ok(())
     })?;
 
-    crate::readme::regenerate_for_category(repo, &category)?;
+    crate::overview::regenerate_for_category(repo, &category)?;
     db::get_file_by_id(repo, new_id)
 }
 
@@ -432,7 +432,7 @@ pub fn delete_file(repo: &Path, file_id: i64, hard: bool) -> CoreResult<()> {
         Ok(())
     })?;
 
-    crate::readme::regenerate_for_category(repo, &entry.category)?;
+    crate::overview::regenerate_for_category(repo, &entry.category)?;
     Ok(())
 }
 ```
@@ -478,7 +478,7 @@ pub fn rename_file(repo: &Path, file_id: i64, new_name: &str) -> CoreResult<File
         Ok(())
     })?;
 
-    crate::readme::regenerate_for_category(repo, &entry.category)?;
+    crate::overview::regenerate_for_category(repo, &entry.category)?;
     db::get_file_by_id(repo, file_id)
 }
 ```
@@ -529,8 +529,8 @@ pub fn move_to_category(
         Ok(())
     })?;
 
-    crate::readme::regenerate_for_category(repo, &entry.category)?;
-    crate::readme::regenerate_for_category(repo, new_category)?;
+    crate::overview::regenerate_for_category(repo, &entry.category)?;
+    crate::overview::regenerate_for_category(repo, new_category)?;
     db::get_file_by_id(repo, file_id)
 }
 ```
@@ -586,6 +586,13 @@ pub fn recover_on_startup(repo: &Path) -> CoreResult<RecoveryReport> {
 ---
 
 ## reindex_from_filesystem
+
+`reindex_from_filesystem` 同时服务两个场景：
+
+- 接管已有目录：首次扫描现有文件，以 `StorageMode::Indexed` 写入 DB，不移动文件
+- DB 丢失/损坏后的重建索引：从文件系统重新推导 files 表
+
+它必须跳过 `.areamatrix/`、可选根目录 `AREAMATRIX.md` 以及其他配置化忽略项，但**不跳过用户自己的 `README.md`**。
 
 ```rust
 // core/src/storage/reindex.rs
@@ -653,7 +660,7 @@ pub fn reindex_from_filesystem(repo: &Path) -> CoreResult<ReindexReport> {
                         size_bytes: size,
                         hash_sha256: hash_str.clone(),
                         storage_mode: StorageMode::Indexed,
-                        source_path: String::new(),
+                        source_path: abs.to_string_lossy().to_string(),
                         imported_at: chrono::Utc::now().timestamp(),
                     })?;
                     tx.commit()?;
@@ -672,8 +679,7 @@ fn is_areamatrix_internal(e: &DirEntry) -> bool {
 
 fn is_managed_file(path: &str) -> bool {
     path.starts_with(".areamatrix/")
-        || path == "README.md"
-        || path.ends_with("/README.md")
+        || path == "AREAMATRIX.md"
 }
 
 fn top_level_dir(path: &str) -> Option<String> {
@@ -951,7 +957,7 @@ mod tests_recovery {
 | `core/tests/conflict_test.rs` | 同名连续 _1.._N |
 | `core/tests/recovery_test.rs` | panic 注入 + 子进程 SIGKILL |
 | `core/tests/reindex_test.rs` | 仓库目录手动改后重建 |
-| `core/tests/move_test.rs` | 跨分类移动同步 README |
+| `core/tests/move_test.rs` | 跨分类移动同步 AreaMatrix 概览 |
 
 ---
 
@@ -978,4 +984,4 @@ mod tests_recovery {
 - [../development/troubleshooting.md](../development/troubleshooting.md)
 - [../development/observability.md](../development/observability.md)
 - [classify.md](classify.md)
-- [readme-gen.md](readme-gen.md)
+- [overview-gen.md](overview-gen.md)

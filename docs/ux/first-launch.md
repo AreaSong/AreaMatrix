@@ -1,6 +1,6 @@
 # 首次启动向导（First Launch Wizard）
 
-> 定义 AreaMatrix 第一次启动时的完整交互流程：选择资料库位置、初始化结构、处理 iCloud / 权限 / 磁盘空间异常，并确保用户在任意步骤都能安全退出与恢复。
+> 定义 AreaMatrix 第一次启动时的完整交互流程：选择资料库位置、新建空库或接管已有目录、处理 iCloud / 权限 / 磁盘空间异常，并确保用户在任意步骤都能安全退出与恢复。
 >
 > 阅读时长：约 15 分钟。
 
@@ -10,8 +10,8 @@
 
 ### 目标
 
-1. **3 分钟内完成初始化**：用户从安装到“可以拖入第一个文件”路径尽量短。
-2. **不做隐式破坏**：不在用户不理解的情况下移动/删除任何文件。
+1. **3 分钟内完成初始化或接管**：用户从安装到“可以浏览/拖入第一个文件”路径尽量短。
+2. **不做隐式破坏**：接管已有目录时不移动、重命名、删除或覆盖任何已有文件。
 3. **失败可恢复**：任意失败都能回到向导继续，或退出后下次继续。
 4. **路径透明**：用户明确知道资料库在哪、里面有什么、卸载后是否仍可用（与 PRD 原则一致）。
 5. **iCloud 友好**：对 iCloud 路径给出清晰提示与风险说明（但不禁止）。
@@ -23,6 +23,7 @@
 - **S3**：选择 iCloud 路径时弹“iCloud 风险提示”，用户必须明确确认（一次性）。
 - **S4**：初始化过程被强制终止（kill app）后，下次启动能自动恢复到“继续初始化/清理残留”。
 - **S5**：向导所有页面支持键盘（Tab/Enter/Esc）完成主流程。
+- **S6**：选择非空目录时进入“接管已有目录”流程，完成后已有 `README.md` 和项目文件保持不变。
 
 ---
 
@@ -36,7 +37,8 @@
 
 ## 关键概念（首次出现术语）
 
-- Repository / Repo（资料库）：用户在文件系统中的 AreaMatrix 根目录（默认 `~/AreaMatrix/`）。
+- Repository / Repo（资料库）：用户选择的 AreaMatrix 根目录，默认建议 `~/AreaMatrix/`，也可以是任意已有目录。
+- Adopt existing folder（接管已有目录）：把非空目录作为资料库根，AreaMatrix 只创建 `.areamatrix/` 内部数据并建立索引。
 - Staging area（Staging 区）：`.areamatrix/staging/`，用于事务式导入的临时区。
 - Schema version（模式版本）：SQLite schema 的整数版本号，参见 `docs/architecture/migration.md`。
 - Placeholder file（占位符）：iCloud 未下载文件的本地占位（`.icloud`），参见 `docs/adr/0006-icloud-support.md`。
@@ -61,10 +63,11 @@ sequenceDiagram
     alt 校验失败
         App-->>User: 显示错误与建议（更换路径/重试）
     else 校验通过
-        App-->>User: 显示 Summary（将创建哪些目录/文件）
-        User->>App: 确认创建
-        App->>Core: openOrInitRepo(repoPath)
-        Core->>FS: 创建分类目录 + .areamatrix/ + index.db
+        App-->>User: 显示 Summary（新建空库 / 接管已有目录）
+        User->>App: 确认
+        App->>Core: initRepo(repoPath, options)
+        Core->>FS: 创建 .areamatrix/ + index.db，必要时创建默认分类
+        Core->>Core: 非空目录首次 reindex
         Core-->>App: 成功 / CoreError
         alt 成功
             App-->>User: 完成页（可立即拖入）
@@ -85,8 +88,8 @@ sequenceDiagram
 | welcome | 欢迎页 | 解释产品承诺与本地优先 | `Continue` |
 | choosePath | 选择资料库路径 | 选择或确认默认路径 | `UseDefault` / `Choose…` |
 | validatePath | 校验与风险提示 | iCloud/权限/空间等检查与确认 | `Back` / `Continue` |
-| confirmInit | 初始化确认 | 展示将创建的结构 | `Back` / `CreateRepository` |
-| initializing | 初始化中 | 显示进度 + 可取消 | `Cancel`（可选） |
+| confirmInit | 初始化确认 | 展示新建/接管影响范围 | `Back` / `CreateRepository` |
+| initializing | 初始化/接管中 | 显示进度 + 可取消 | `Cancel`（可选） |
 | initFailed | 初始化失败 | 提供重试与诊断导出 | `Retry` / `CollectDiagnostics` |
 | done | 完成 | 给“下一步操作” | `OpenRepository` |
 
@@ -122,12 +125,13 @@ stateDiagram-v2
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │ AreaMatrix                                                                    │
 │                                                                              │
-│  把文件拖进来，AreaMatrix 替你分类、命名、记账。                                │
+│  选择一个文件夹，AreaMatrix 替你索引、分类、命名、记账。                        │
 │                                                                              │
 │  我们的承诺：                                                                  │
 │  • 真相在文件系统：你的资料库就是普通文件夹，Finder 也能直接打开。              │
 │  • 本地优先：默认不上传任何数据。                                              │
 │  • 可逆：删除走回收站，记录有时间线。                                          │
+│  • 不覆盖 README：已有项目文档保持原样。                                       │
 │                                                                              │
 │  [ Learn more… ]                                                             │
 │                                                                              │
@@ -145,10 +149,11 @@ stateDiagram-v2
 | Key | 中文 | English |
 |---|---|---|
 | welcome.title | AreaMatrix | AreaMatrix |
-| welcome.subtitle | 把文件拖进来，AreaMatrix 替你分类、命名、记账。 | Drop files in. AreaMatrix classifies, names, and tracks changes. |
+| welcome.subtitle | 选择一个文件夹，AreaMatrix 替你索引、分类、命名、记账。 | Choose a folder. AreaMatrix indexes, classifies, names, and tracks changes. |
 | welcome.promise1 | 真相在文件系统：资料库是普通文件夹。 | Filesystem is the source of truth: your repo is a normal folder. |
 | welcome.promise2 | 本地优先：默认不上传任何数据。 | Local-first: nothing is uploaded by default. |
 | welcome.promise3 | 可逆：删除走回收站，改动可追溯。 | Reversible: deletions go to Trash, changes are traceable. |
+| welcome.promise4 | 不覆盖 README：已有项目文档保持原样。 | No README overwrite: existing project docs stay untouched. |
 | welcome.cta | 继续 | Continue |
 
 ---
@@ -158,7 +163,7 @@ stateDiagram-v2
 #### 默认路径规则
 
 - 默认建议：`~/AreaMatrix/`
-- 若该路径已存在但不是 AreaMatrix repo：提示“已存在同名文件夹”，建议改名或选择新路径。
+- 若该路径已存在但不是 AreaMatrix repo：进入“接管已有目录”确认流程。
 - 若用户上次未完成初始化（存在 `repoPath` 配置但 repo 不完整）：直接跳到 `validatePath` 并提示“继续初始化”。
 
 #### UI 布局
@@ -172,13 +177,13 @@ stateDiagram-v2
 │  推荐位置：                                                                    │
 │    ~/AreaMatrix/                                                              │
 │                                                                              │
-│  你也可以选择其他位置：                                                        │
+│  你也可以选择其他位置，甚至是已经有内容的文件夹：                              │
 │    • 外置硬盘（更大容量）                                                      │
 │    • iCloud Drive（跨设备同步，但有延迟与冲突风险）                             │
 │                                                                              │
 │  路径： [ ~/AreaMatrix/ ________________________________________ ] [ Choose… ]│
 │                                                                              │
-│  提示：不建议放在 Downloads（容易误删/清理）。                                  │
+│  提示：接管已有目录不会移动、改名、删除或覆盖原有内容。                        │
 │                                                                              │
 │  [ Use default ]                                             [ Continue → ] │
 └──────────────────────────────────────────────────────────────────────────────┘
@@ -215,6 +220,7 @@ stateDiagram-v2
 | 是否 iCloud | path 前缀/资源属性（见 iCloud ADR） | 进入 iCloud 提示卡片（需确认） |
 | 是否外置卷 | `volumeIsRemovable` / `volumeIsEjectable` | 显示“外置卷注意事项”提示 |
 | 是否已存在 repo | 检测 `.areamatrix/index.db` + schema | 存在 repo → 进入“打开/继续”分支 |
+| 是否非空目录 | 统计非隐藏文件/目录数量 | 非空 → 进入“接管已有目录”分支 |
 
 #### UI 布局（正常通过）
 
@@ -229,9 +235,10 @@ stateDiagram-v2
 │  ✓ 非 iCloud 路径                                                               │
 │  ✓ 非外置卷                                                                     │
 │                                                                              │
-│  接下来将创建：                                                                │
+│  接下来将新建：                                                                │
 │  • docs/  code/  design/  finance/  media/  inbox/                             │
 │  • .areamatrix/index.db（本地索引）                                            │
+│  • .areamatrix/generated/root.md（AreaMatrix 概览）                            │
 │                                                                              │
 │  [ Back ]                                                    [ Continue → ]  │
 └──────────────────────────────────────────────────────────────────────────────┘
@@ -306,6 +313,28 @@ stateDiagram-v2
 
 ---
 
+#### UI 布局（非空目录，接管已有内容）
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ 接管已有目录                                                                   │
+│                                                                              │
+│  路径： /1/1/1/                                                               │
+│                                                                              │
+│  检测到这个文件夹已有内容。AreaMatrix 将：                                    │
+│  ✓ 创建 .areamatrix/index.db（本地索引）                                      │
+│  ✓ 扫描现有文件并建立索引                                                     │
+│  ✓ 生成 .areamatrix/generated/root.md                                         │
+│                                                                              │
+│  AreaMatrix 不会：                                                            │
+│  • 移动、重命名或删除已有文件                                                  │
+│  • 覆盖 README.md 或项目文档                                                   │
+│  • 改写 .git/ 等项目内部目录                                                   │
+│                                                                              │
+│  [ Back ]                                      [ Adopt existing folder → ]   │
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
 ### 4) confirmInit（初始化确认）
 
 #### 目的
@@ -324,10 +353,9 @@ stateDiagram-v2
 │                                                                              │
 │  AreaMatrix/                                                                  │
 │    docs/  code/  design/  finance/  media/  inbox/                            │
-│    README.md                                                                  │
 │    .areamatrix/                                                               │
 │      index.db                                                                 │
-│      logs/                                                                    │
+│      generated/root.md                                                        │
 │      staging/                                                                 │
 │                                                                              │
 │  说明：卸载应用不会删除你的资料库文件夹。                                      │
@@ -347,22 +375,24 @@ stateDiagram-v2
 
 #### 进度模型（产品侧）
 
-初始化可分 4 步，每步完成前 UI 不要跳动，建议做“步骤列表 + 当前步骤 spinner”：
+初始化可分 5 步，每步完成前 UI 不要跳动，建议做“步骤列表 + 当前步骤 spinner”：
 
-1. 创建目录结构（分类目录 + `.areamatrix/`）
+1. 创建内部结构（`.areamatrix/`，空库可创建默认分类目录）
 2. 初始化 SQLite（PRAGMA + schema + migration）
-3. 写入初始 README（根 README + 分类 README）
-4. 写入配置（repo_config / 本地设置）
+3. 非空目录扫描并建立索引（AdoptExisting 模式）
+4. 生成 AreaMatrix 概览（`.areamatrix/generated/root.md`，可选 `AREAMATRIX.md`）
+5. 写入配置（repo_config / 本地设置）
 
 #### UI 布局
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────┐
-│ 正在创建资料库…                                                               │
+│ 正在准备资料库…                                                               │
 │                                                                              │
-│  • 创建目录结构                           ✓                                   │
+│  • 创建内部结构                           ✓                                   │
 │  • 初始化数据库                           ⏳                                   │
-│  • 生成 README                            ○                                   │
+│  • 扫描现有文件                           ○                                   │
+│  • 生成 AreaMatrix 概览                   ○                                   │
 │  • 保存配置                               ○                                   │
 │                                                                              │
 │  这通常需要几秒钟。                                                           │
@@ -374,7 +404,7 @@ stateDiagram-v2
 #### Cancel 规则
 
 - **推荐**：允许取消，但取消必须做到“无半初始化 repo”。\n
-  取消会触发 Core 执行清理：如果已创建 `.areamatrix/index.db` 但 schema 不完整，则删除 `.areamatrix/` 并保留用户选择的空目录本身（避免误删用户目录）。\n
+  取消会触发 Core 执行清理：如果已创建 `.areamatrix/index.db` 但 schema 不完整，则删除 `.areamatrix/` 并保留用户选择目录及其原有内容（避免误删用户目录）。\n
 - 如果取消实现成本过高：可先不提供 Cancel（Stage 1），但要确保初始化极快。
 
 ---
@@ -427,7 +457,7 @@ stateDiagram-v2
 | 空间不足 | Io: ENOSPC | 释放空间或换盘 | Change folder |
 | DB 锁 | Db: busy/locked | 关闭重复实例，重试 | Retry |
 | iCloud 未登录 | ICloudPlaceholder / Permission | 登录 iCloud 或换本地路径 | Change folder |
-| 目录非空冲突 | AlreadyExists | 选新目录或允许“接管现有 repo” | Change folder |
+| 接管扫描失败 | Io / Permission / Db | 已有文件保持原样，可重试或换路径 | Retry |
 
 ---
 
@@ -439,11 +469,11 @@ stateDiagram-v2
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │ 准备好了                                                                       │
 │                                                                              │
-│  资料库已创建： ~/AreaMatrix/                                                  │
+│  资料库已准备好： ~/AreaMatrix/                                                │
 │                                                                              │
 │  下一步：                                                                      │
-│  1) 把文件拖到窗口里                                                           │
-│  2) AreaMatrix 会自动分类、命名，并生成 README                                 │
+│  1) 浏览现有文件或把新文件拖到窗口里                                           │
+│  2) AreaMatrix 会自动分类、命名，并更新专属概览                                │
 │                                                                              │
 │  [ Open in Finder ]                                        [ Start using → ] │
 └──────────────────────────────────────────────────────────────────────────────┘
@@ -499,7 +529,8 @@ stateDiagram-v2
 
 - [ ] 新安装首次启动，使用默认路径创建成功
 - [ ] 选择一个空目录创建成功
-- [ ] 选择非空目录（含用户文件）→ 明确提示“不会删除该目录内容”，并阻止/或要求选择子目录
+- [ ] 选择非空目录（含用户文件）→ 明确提示“不会移动/重命名/删除/覆盖已有内容”，确认后接管成功
+- [ ] 接管含 `README.md` / `.git/` 的目录 → 原文件保持不变，概览写入 `.areamatrix/generated/`
 
 ### 权限
 
@@ -532,4 +563,3 @@ stateDiagram-v2
 - [../architecture/fs-watcher.md](../architecture/fs-watcher.md)
 - [../architecture/transactional-import.md](../architecture/transactional-import.md)
 - [../adr/0006-icloud-support.md](../adr/0006-icloud-support.md)
-

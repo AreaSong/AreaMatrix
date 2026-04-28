@@ -63,7 +63,7 @@ core/src/tree/
 ├── walker.rs    // walkdir 扫描
 ├── aggregate.rs // 从 DB 聚合（Stage 2）
 ├── cache.rs     // 增量更新缓存
-└── i18n.rs      // 复用 readme::i18n
+└── i18n.rs      // 复用 overview::i18n
 ```
 
 ---
@@ -81,7 +81,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::classify;
 use crate::error::CoreResult;
-use crate::readme::i18n;
+use crate::overview::i18n;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum NodeKind { Category, Subdir }
@@ -252,7 +252,7 @@ fn is_hidden_or_internal(name: &str) -> bool {
 }
 
 fn is_managed_md(rel: &str) -> bool {
-    rel == "README.md" || rel.ends_with("/README.md")
+    rel == "AREAMATRIX.md" || rel.starts_with(".areamatrix/generated/")
 }
 ```
 
@@ -449,9 +449,20 @@ mod tests {
     }
 
     #[test]
-    fn skips_readme_md() {
+    fn does_not_skip_user_readme_md() {
         let (_d, p) = setup();
         write_file(&p, "docs/README.md", 10);
+        write_file(&p, "docs/x.pdf", 100);
+        let tree = build_tree(&p, "en").unwrap();
+        let docs = tree.children.iter().find(|n| n.slug == "docs").unwrap();
+        assert_eq!(docs.file_count, 2);
+    }
+
+    #[test]
+    fn skips_areamatrix_overview() {
+        let (_d, p) = setup();
+        write_file(&p, "AREAMATRIX.md", 10);
+        write_file(&p, ".areamatrix/generated/root.md", 10);
         write_file(&p, "docs/x.pdf", 100);
         let tree = build_tree(&p, "en").unwrap();
         let docs = tree.children.iter().find(|n| n.slug == "docs").unwrap();
@@ -529,4 +540,4 @@ mod tests {
 - [../architecture/data-model.md](../architecture/data-model.md)
 - [../api/core-api.md](../api/core-api.md)
 - [classify.md](classify.md)
-- [readme-gen.md](readme-gen.md)
+- [overview-gen.md](overview-gen.md)

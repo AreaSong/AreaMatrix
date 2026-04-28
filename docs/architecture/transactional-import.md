@@ -509,7 +509,7 @@ pub fn import_file(
         Ok(())
     })?;
 
-    crate::readme::regenerate_for_category(repo, &category)?;
+    crate::overview::regenerate_for_category(repo, &category)?;
     db::get_file_by_id(repo, new_id)
 }
 ```
@@ -573,7 +573,7 @@ pub fn recover_on_startup(repo: &Path) -> CoreResult<RecoveryReport> {
 | C: INSERT 后 rename 前 panic | 有 staging 行 | staging 文件存在 | 启动删行 + 删文件 |
 | D: rename 中跨卷失败 | 有 staging 行 | staging 文件存在 | 启动删行 + 删文件（用户重导） |
 | E: rename 成功后 commit 失败 | 无 active 行 | 文件在 final 位置 | reindex 把孤儿文件登记 |
-| F: commit 后 readme 重生成失败 | 数据已 active | 文件已落位 | 不影响数据；用户下次操作触发 readme 重写 |
+| F: commit 后概览重生成失败 | 数据已 active | 文件已落位 | 不影响数据；用户下次操作触发概览重写 |
 | G: 24h 未完成的 staging | 有/无 staging 行 | staging 文件存在 | GC 清理 |
 | H: SIGKILL 在任何阶段 | 由 SQLite WAL 自动 ROLLBACK | 启动恢复保底 | 同上 |
 
@@ -587,7 +587,7 @@ pub fn recover_on_startup(repo: &Path) -> CoreResult<RecoveryReport> {
 
 - 计算 hash（耗时 100ms - 数秒）
 - 文件物理 IO（rename、remove_file）
-- README 重生成
+- AreaMatrix 概览重生成
 
 事务只包住：
 
@@ -634,10 +634,10 @@ pub fn recover_on_startup(repo: &Path) -> CoreResult<RecoveryReport> {
 
 - 50 × hash 串行 ≈ 1-2 s
 - 50 × DB tx 总开销 ≈ 250 ms
-- 50 × README 重生成（如果不去抖）≈ 1.5 s
+- 50 × 概览重生成（如果不去抖）≈ 1.5 s
 - 总耗时 ≈ 3-5 s
 
-UI 体验：先所有文件 staging（快），后台慢慢算 hash 落位，UI 显示进度条；README 重生成去抖到批量结束后一次性。
+UI 体验：先所有文件 staging（快），后台慢慢算 hash 落位，UI 显示进度条；概览重生成去抖到批量结束后一次性。
 
 ---
 

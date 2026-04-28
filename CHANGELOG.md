@@ -12,10 +12,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - 项目文档体系完整产出（README 双语 / docs / .github 模板 / CI 工作流配置）
 - PolyForm Noncommercial 1.0.0 许可证 + COMMERCIAL_LICENSE.md 商业授权窗口
-- 9 篇 ADR 固化关键架构决策
+- 10 篇 ADR 固化关键架构决策
+- ADR-0010：接管已有目录与专属概览文件决策
 
 ### Changed
 - 顶层 README.md 由占位说明改为正式项目门面（中英双语）
+- Stage 1 产品口径调整为支持非空目录接管；自动概览默认写入 `.areamatrix/generated/`，不覆盖 `README.md`
 
 ### Deprecated
 - N/A

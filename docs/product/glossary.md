@@ -10,7 +10,8 @@
 
 | 中文 | English | 定义 |
 |---|---|---|
-| 资料库 | Repository / Repo | 用户在文件系统中的 AreaMatrix 根目录，默认 `~/AreaMatrix/` |
+| 资料库 | Repository / Repo | 用户选择的 AreaMatrix 根目录；默认建议 `~/AreaMatrix/`，也可以是任意已有文件夹 |
+| 接管已有目录 | Adopt existing folder | 将一个非空目录设为资料库根，AreaMatrix 只建立索引与 `.areamatrix/` 内部数据，不移动/重命名/覆盖已有内容 |
 | 分类 / 分类目录 | Category / Category folder | 资料库下的一级目录（docs / code / ...），每个对应一种文件类型 |
 | 内部 slug | Internal slug | 分类的英文标识符，用于代码/数据库（如 `docs`） |
 | 显示名 | Display name | 分类在 UI 上的本地化名称（如「文档」） |
@@ -21,6 +22,7 @@
 | 复制 | Copy | 复制原文件入库（原位置保留） |
 | 仅索引 | Index | 不复制，只在 DB 记录元数据，原文件原位 |
 | 伴生笔记 | Companion note | 每个文件可以有一份 `<filename>.md` 笔记，用户手动维护 |
+| 资料库概览 | Repository overview | AreaMatrix 自动生成的目录概要，默认位于 `.areamatrix/generated/`，可选生成根目录 `AREAMATRIX.md` |
 | 改动日志 | Change log | 记录文件在资料库中所有事件的时间线 |
 | 树状视图 | Tree view | 侧边栏的资料库目录树展示 |
 | 详情面板 | Detail pane | 主窗口底部展示选中文件元数据/改动/笔记的区域 |

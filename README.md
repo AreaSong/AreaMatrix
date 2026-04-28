@@ -12,14 +12,15 @@
 
 AreaMatrix is a **source-available** desktop application that turns the chaos of personal files into a navigable, self-organizing knowledge repository.
 
-Drop a file in. AreaMatrix figures out what it is, where it belongs, and how to name it. Every change is logged, every category gets a living `README.md`, and the entire tree is browsable in a single window.
+Choose any folder as a repository, even one that already contains years of files. AreaMatrix indexes it without moving, renaming, or overwriting existing content. After that, drop a file in and AreaMatrix figures out what it is, where it belongs, and how to name it. Every change is logged, dedicated overview files stay up to date, and the entire tree is browsable in a single window.
 
 ## Highlights
 
 - **Drag-to-archive** — drop files onto any window region; smart categorization happens locally.
+- **Adopt existing folders** — any non-empty folder can become the repository root; first open scans and indexes it.
 - **Hybrid classification** — extension + keyword rules first, optional AI fallback (Stage 3).
 - **Three storage modes** — *Move*, *Copy*, or *Index-only* (decide per drop).
-- **Living README.md** — each category folder maintains an auto-generated overview with recent changes.
+- **Dedicated repository overviews** — generated under `.areamatrix/generated/` by default, with optional `AREAMATRIX.md`; existing `README.md` files are never overwritten.
 - **Tree-view navigation** — full repository structure in a sidebar, virtualized for large libraries.
 - **Two-way sync** — external Finder/Terminal modifications are picked up via FSEvents.
 - **Crash-safe** — transactional staging area; no half-moved files after a hard kill.
@@ -34,7 +35,7 @@ flowchart LR
     FFI[UniFFI Bridge]
     Core[Rust Core Library]
     DB[(SQLite)]
-    Repo[(~/AreaMatrix/)]
+    Repo[(Any repository folder)]
 
     UI --> FFI --> Core
     Core --> DB

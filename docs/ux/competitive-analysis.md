@@ -77,7 +77,7 @@
 - `drag-import-flow.md`：拖拽导入 → 自动分类/命名\n
 - `ui-states.md`：树/列表/详情 + 多选 + 批量\n
 - `modules/change-log.md`：时间线\n
-- `modules/readme-gen.md`：分类 README\n
+- `modules/overview-gen.md`：AreaMatrix 专属概览\n
 
 #### 我们不做的
 
@@ -168,7 +168,7 @@
 #### 可借鉴点
 
 - local-first\n
-- 文档化与可链接的知识组织（README/Note）\n
+- 文档化与可链接的知识组织（AreaMatrix 概览 / Note）\n
 
 ---
 
@@ -176,7 +176,7 @@
 
 1. **Repo 就是普通文件夹**：弃用也能用 Finder 继续管理。\n
 2. **拖拽即归档**：导入时自动分类/命名，不需要用户思考。\n
-3. **每个动作都有账**：change_log + 分类 README。\n
+3. **每个动作都有账**：change_log + AreaMatrix 概览。\n
 4. **纠错会沉淀**：分类不对？两次点击纠正，并可选择沉淀为规则。\n
 5. **本地优先，智能可选**：AI/OCR 不是强制依赖。\n
 

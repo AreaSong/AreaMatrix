@@ -1,6 +1,6 @@
 # 数据模型
 
-> AreaMatrix 的元数据全部存储在 SQLite 单文件 `~/AreaMatrix/.areamatrix/index.db` 中。本文给出完整 schema、CRUD SQL、关键索引的 EXPLAIN 输出、容量预估方法论。
+> AreaMatrix 的元数据全部存储在资料库内的 SQLite 单文件 `<repo>/.areamatrix/index.db` 中。本文给出完整 schema、CRUD SQL、关键索引的 EXPLAIN 输出、容量预估方法论。
 >
 > 阅读时长：约 14 分钟。
 
@@ -10,13 +10,14 @@
 
 | 数据 | 位置 | 形式 |
 |---|---|---|
-| 用户文件 | `~/AreaMatrix/<category>/...` | 标准文件 |
-| 元数据 / 改动日志 | `~/AreaMatrix/.areamatrix/index.db` | SQLite |
+| 用户文件 | `<repo>/...` | 标准文件，可来自新建目录或已有目录 |
+| 元数据 / 改动日志 | `<repo>/.areamatrix/index.db` | SQLite |
 | 用户配置 | `~/Library/Application Support/AreaMatrix/config.json` | JSON |
-| 分类规则 | `~/AreaMatrix/.areamatrix/classifier.yaml` | YAML |
-| 临时事务区 | `~/AreaMatrix/.areamatrix/staging/` | 标准文件 |
+| 分类规则 | `<repo>/.areamatrix/classifier.yaml` | YAML |
+| 自动概览 | `<repo>/.areamatrix/generated/*.md`，可选 `<repo>/AREAMATRIX.md` | Markdown |
+| 临时事务区 | `<repo>/.areamatrix/staging/` | 标准文件 |
 | 应用日志 | `~/Library/Logs/AreaMatrix/*.log` | 文本 |
-| change_log 归档 | `~/AreaMatrix/.areamatrix/archives/changes-YYYY-MM.jsonl` | 文本 |
+| change_log 归档 | `<repo>/.areamatrix/archives/changes-YYYY-MM.jsonl` | 文本 |
 
 DB 放在资料库内（而不是 `~/Library/Application Support/`）的理由：
 
@@ -656,14 +657,14 @@ fn run_migrations(conn: &mut rusqlite::Connection) -> CoreResult<()> {
 ### 手动恢复
 
 ```bash
-cp ~/AreaMatrix/.areamatrix/index.db.bak.<timestamp> ~/AreaMatrix/.areamatrix/index.db
+cp <repo>/.areamatrix/index.db.bak.<timestamp> <repo>/.areamatrix/index.db
 ```
 
 ### 完全重建
 
 应用提供「从文件系统重新索引」按钮：
 
-- 扫描 `~/AreaMatrix/`，对每个文件计算 hash 并 INSERT 到 files
+- 扫描 `<repo>/`，跳过 `.areamatrix/` 与可忽略目录，对每个用户文件计算 hash 并 INSERT 到 files
 - change_log 全部丢失
 
 > 完全重建会丢失改动历史，但用户的文件本身永远不会丢。这是产品级的"真相在文件系统"承诺的体现。

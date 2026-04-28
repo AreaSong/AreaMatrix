@@ -50,7 +50,8 @@ flowchart LR
 | 元数据：标签 | DB | FS 不存标签 |
 | 改动历史 | DB | FS 不存历史 |
 | Hash | 实时计算 | 不存（缓存除外） |
-| README.md | DB-managed 标记块 + 用户区域 | 见 [../modules/readme-gen.md](../modules/readme-gen.md) |
+| 用户 `README.md` | FS | 视为普通用户/项目文件，应用不覆盖、不插入标记块 |
+| AreaMatrix 概览 | DB-derived | 派生自 DB，默认写入 `.areamatrix/generated/`，可选 `AREAMATRIX.md` |
 
 核心规则：
 
@@ -72,7 +73,7 @@ flowchart TB
     S4[4 modify content]
     S5[5 create new file]
     S6[6 delete category dir]
-    S7[7 edit README.md]
+    S7[7 edit overview / README]
     S8[8 edit companion .md]
     S9[9 DB lost / .areamatrix gone]
 
@@ -410,17 +411,17 @@ fn detect_category_drop(events: &[FsEvent]) -> Option<String> {
 
 ---
 
-## 场景 7：edit README.md
+## 场景 7：edit overview / README
 
-详见 [../modules/readme-gen.md](../modules/readme-gen.md)。
+详见 [../modules/overview-gen.md](../modules/overview-gen.md)。
 
 简短：
 
-- 标记块外的内容保留
-- 标记块内被下次重生成覆盖
-- 用户故意去掉标记 → 整段托管段被追加到末尾 + 标记重建
+- 用户编辑已有 `README.md`：视为普通文件修改，不触发概览重生成，也不被应用覆盖
+- 用户编辑 `.areamatrix/generated/*.md`：视为派生文件，下次重生成会覆盖
+- 用户启用并编辑根目录 `AREAMATRIX.md`：应用只维护标记块，标记块外内容保留
 
-不写 change_log（README 是派生数据）。
+派生概览不写 change_log；用户 `README.md` 若在索引范围内，则按普通文件内容变更处理。
 
 ---
 
@@ -513,7 +514,7 @@ flowchart TB
 | 4 modify content | 内容变化 | UPDATE hash, size | external_modified, kind=content | external |
 | 5 external create | 新文件出现 | INSERT files | imported, source=external | external |
 | 6 category drop | 整个分类被删 | 多条 UPDATE status='deleted' | 多条 deleted | external |
-| 7 README edit | 用户改 README | 不动 DB | — | — |
+| 7 overview / README edit | 改派生概览或用户 README | 概览不动 DB；用户 README 按普通文件处理 | — / external_modified | — / external |
 | 8 note edit | 改 .md 文件 | UPDATE notes | edited_note, by=external | external |
 | 9 DB lost | 删 `.areamatrix/` | reindex 重建 | imported * N | startup_reconcile |
 

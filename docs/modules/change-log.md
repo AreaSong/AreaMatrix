@@ -1,6 +1,6 @@
 # 模块：改动日志（change_log）
 
-> 所有文件级动作都被记录到 SQLite `change_log` 表。详情面板的「改动」Tab、根 README 的「近期改动」段都从这里来。
+> 所有文件级动作都被记录到 SQLite `change_log` 表。详情面板的「改动」Tab、AreaMatrix 概览的「近期改动」段都从这里来。
 >
 > 阅读时长：约 10 分钟。
 
@@ -698,4 +698,4 @@ mod tests {
 - [../api/core-api.md](../api/core-api.md)
 - [../development/observability.md](../development/observability.md)
 - [storage.md](storage.md)
-- [readme-gen.md](readme-gen.md)
+- [overview-gen.md](overview-gen.md)

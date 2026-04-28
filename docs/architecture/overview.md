@@ -45,7 +45,7 @@ flowchart TB
         Domain[domain 类型]
         Storage[storage 文件操作]
         Classify[classify 分类引擎]
-        Readme[readme 生成]
+        Overview[overview 概览生成]
         Tree[tree 扫描]
         Sync[sync 外部变化协调]
         DB[db SQLite 访问]
@@ -53,7 +53,7 @@ flowchart TB
         Errors[error 错误体系]
     end
 
-    Repo[("资料库 ~/AreaMatrix/")]
+    Repo[("资料库 任意用户选择目录")]
     SQLite[(.areamatrix/index.db)]
 
     UILayer --> PlatformLayer
@@ -62,7 +62,7 @@ flowchart TB
     API --> Domain
     API --> Storage
     API --> Classify
-    API --> Readme
+    API --> Overview
     API --> Tree
     API --> Sync
     Storage --> DB
@@ -89,7 +89,7 @@ flowchart TB
 | Core | domain | 跨边界类型（FileEntry / Category / ...） |
 | Core | storage | 事务式文件操作（move / copy / index / hash / dedup） |
 | Core | classify | 规则引擎（扩展名 + 关键词），未来加 AI |
-| Core | readme | 分类目录 + 根目录 README 生成 |
+| Core | overview | 资料库概览生成，默认写入 `.areamatrix/generated/`，可选根目录 `AREAMATRIX.md` |
 | Core | tree | 资料库扫描，输出 tree JSON |
 | Core | sync | 处理外部变化事件（重命名 / 新增 / 删除） |
 | Core | db | SQLite CRUD + migrations |
@@ -125,7 +125,7 @@ sequenceDiagram
     Core->>FS: 5. rename staging → docs/contract.pdf
     Core->>DB: UPDATE files SET path=...
     Core->>DB: COMMIT
-    Core->>Core: 6. 更新 README
+    Core->>Core: 6. 更新 AreaMatrix 概览
     Core-->>Bridge: FileEntry
     Bridge->>Tracker: unmark
     Bridge-->>UI: FileEntry
@@ -159,7 +159,7 @@ sequenceDiagram
     Core->>DB: 找到 hash 匹配的 a.pdf 行
     Core->>DB: UPDATE path = docs/b.pdf
     Core->>DB: INSERT change_log (external_modified, rename)
-    Core->>Core: 更新 README
+    Core->>Core: 更新 AreaMatrix 概览
     Core-->>Bridge: SyncResult
     Bridge->>UI: emit RepoChanged event
     UI->>UI: 刷新列表与树
@@ -181,7 +181,7 @@ AreaMatrix/                            # Git 仓库
 │   │   ├── config.rs                  # 配置
 │   │   ├── classify/{mod,rules,naming}.rs
 │   │   ├── storage/{mod,ops,hash,conflict}.rs
-│   │   ├── readme/{mod,category,root}.rs
+│   │   ├── overview/{mod,category,root}.rs
 │   │   ├── tree/mod.rs
 │   │   ├── sync/mod.rs
 │   │   └── db/{mod,schema.sql,migrations,repo}.rs
@@ -215,9 +215,9 @@ AreaMatrix/                            # Git 仓库
 ## 资料库目录结构（用户实际看到的）
 
 ```
-~/AreaMatrix/                          # 默认资料库根
-├── docs/                              # UI 显示「文档」
-│   ├── README.md                      # 自动生成
+<repo>/                                # 用户选择的资料库根，可为空目录，也可已有大量内容
+├── docs/                              # 可由 AreaMatrix 创建；也可能是用户已有目录
+│   ├── README.md                      # 用户原有文件，应用不覆盖
 │   ├── contract.pdf
 │   └── contract.pdf.md                # 用户手动伴生笔记（可选）
 ├── code/                              # UI 显示「代码」
@@ -225,11 +225,14 @@ AreaMatrix/                            # Git 仓库
 ├── media/                             # UI 显示「媒体」
 ├── finance/                           # UI 显示「财务」
 ├── inbox/                             # UI 显示「未分类」（兜底）
-├── README.md                          # 整库总览
+├── AREAMATRIX.md                      # 可选根目录概览，默认不创建
 └── .areamatrix/
     ├── index.db                       # SQLite
     ├── config.json                    # 用户配置
     ├── classifier.yaml                # 分类规则
+    ├── generated/                     # 自动概览产物
+    │   ├── root.md
+    │   └── categories/
     └── staging/                       # 事务中转区
 ```
 
@@ -246,6 +249,8 @@ AreaMatrix/                            # Git 仓库
 | INV-5 | 同一 hash 的文件在 DB 中最多只有一行 active 记录 |
 | INV-6 | 应用自身的写操作不触发外部变化处理 |
 | INV-7 | 删除 `.areamatrix/` 不会丢失任何用户文件本身 |
+| INV-8 | 接管非空目录时不移动、不重命名、不删除、不覆盖任何已有用户文件 |
+| INV-9 | 自动概览产物只能写入 `.areamatrix/generated/` 或用户显式启用的 `AREAMATRIX.md` |
 
 不变量违反 = bug。所有重要的代码路径在测试中都要验证至少一个不变量。
 

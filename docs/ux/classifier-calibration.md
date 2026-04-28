@@ -213,7 +213,7 @@ Apply 后：\n
 - 如果用户开启“自动维护规则”（默认关）：系统可追加一个 `areamatrix_auto_rules:` 区块\n
 - 如果关闭：系统只给出建议并让用户复制粘贴（更尊重高级用户）\n
 
-（具体实现与 marker 类似，可借鉴 readme-gen 的 BEGIN/END 协议，但是否采用由工程决定。）\n
+（具体实现与 marker 类似，可借鉴 overview-gen 的 BEGIN/END 协议，但是否采用由工程决定。）\n
 
 ---
 

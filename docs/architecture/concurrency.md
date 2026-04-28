@@ -63,7 +63,7 @@ Swift 端用 `Task.detached` 把同步调用包装成 async。
 
 ### Tokio runtime（仅内部用）
 
-Watcher 与后台任务（README 重生成 debounce、staging GC 调度）需要异步：
+Watcher 与后台任务（概览重生成 debounce、staging GC 调度）需要异步：
 
 ```rust
 // core/src/runtime.rs

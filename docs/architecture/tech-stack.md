@@ -25,7 +25,7 @@
 
 ### 决策
 
-业务逻辑（文件操作、分类、SQLite 访问、README 生成）全部用 Rust 实现，编译为平台静态库（`staticlib` + `cdylib`）。
+业务逻辑（文件操作、分类、SQLite 访问、资料库概览生成）全部用 Rust 实现，编译为平台静态库（`staticlib` + `cdylib`）。
 
 ### 理由
 

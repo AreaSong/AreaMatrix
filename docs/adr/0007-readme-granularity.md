@@ -2,10 +2,12 @@
 
 > 应用自动维护"分类目录级"和"仓库根级"两层 README；单文件级别用用户可选的伴生 `<name>.md` 备注。
 >
-> 状态：Accepted
+> 状态：Superseded by [ADR-0010](0010-adopt-existing-folders-and-overviews.md)
 > 日期：2026-04-26
 > 影响范围：core/readme / core/note
-> 关联 ADR：—
+> 关联 ADR：[ADR-0010](0010-adopt-existing-folders-and-overviews.md)
+
+> 说明：本 ADR 保留为历史记录。当前有效决策是：AreaMatrix 不自动写入或覆盖 `README.md`，默认生成 `.areamatrix/generated/` 概览，可选维护根目录 `AREAMATRIX.md`。
 
 ## 上下文
 
@@ -135,5 +137,5 @@
 
 ## Related
 
-- [../modules/readme-gen.md](../modules/readme-gen.md)
+- [../modules/overview-gen.md](../modules/overview-gen.md)
 - [../modules/change-log.md](../modules/change-log.md)

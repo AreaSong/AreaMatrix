@@ -10,7 +10,7 @@
 
 ### 一句话定义
 
-**用户能在 macOS 上把文件拖入 AreaMatrix，看到它被自动归类、树状展示、内容可预览、改动可追踪——全程无配置、无云依赖、关机重启数据完整。**
+**用户能在 macOS 上选择任意文件夹作为资料库；即使目录非空，也能先建立索引，再把新文件拖入 AreaMatrix，看到它被自动归类、树状展示、内容可预览、改动可追踪——全程无云依赖、关机重启数据完整。**
 
 ### 必做（Must Have）
 
@@ -73,10 +73,11 @@ flowchart LR
 #### Rust core 基础（2 周）
 
 - [ ] 设置 `core/Cargo.toml`，添加依赖 rusqlite / serde / uniffi / blake3 / sha2 / walkdir / thiserror
-- [ ] 模块骨架：`api / db / classify / storage / sync / readme / change_log`
+- [ ] 模块骨架：`api / db / classify / storage / sync / overview / change_log`
 - [ ] 错误类型 `CoreError`（[error-codes.md](../api/error-codes.md)）
 - [ ] DB schema v1 + migration 框架（[data-model.md](../architecture/data-model.md)）
-- [ ] init_repo + open_repo 实现 + 单测
+- [ ] init_repo + open_repo + adopt_existing_repo 实现 + 单测
+- [ ] 非空目录接管：扫描现有文件并以 `indexed` 写入 DB
 
 #### 分类引擎（1 周）
 
@@ -115,7 +116,7 @@ flowchart LR
 
 ### Demo 验收
 
-打开 SwiftUI 临时 Demo App → 点击按钮 → 调用 `import_file("~/Desktop/test.pdf")` → DB 中出现记录、`~/AreaMatrix/docs/test.pdf` 出现 → 控制台打印 FileEntry。
+打开 SwiftUI 临时 Demo App → 选择一个临时目录作为 repo → 点击按钮 → 调用 `import_file("~/Desktop/test.pdf")` → DB 中出现记录、`<repo>/docs/test.pdf` 出现 → 控制台打印 FileEntry。
 
 ---
 
@@ -131,7 +132,7 @@ flowchart LR
 
 - [ ] `NavigationSplitView` 三栏：侧栏（树）/ 列表 / 详情
 - [ ] 状态管理：`AppState` ObservableObject
-- [ ] 启动检查：用户是否首次使用 → 引导选目录
+- [ ] 启动检查：用户是否首次使用 → 引导选目录 / 接管已有目录
 
 #### 拖拽导入（1.5 周）
 
@@ -176,22 +177,24 @@ flowchart LR
 - [ ] 占位符触发下载（按需）
 - [ ] iCloud 错误友好提示
 
-#### README 自动维护（0.5 周）
+#### AreaMatrix 概览自动维护（0.5 周）
 
-- [ ] 导入 / 删除 / 改名后异步触发 regenerate_for_category
-- [ ] 仓库根 README 维护
-- [ ] 标记块机制 + 用户内容保护
+- [ ] 导入 / 删除 / 改名后异步触发 regenerate_overview
+- [ ] `.areamatrix/generated/root.md` 与分类/目录概览维护
+- [ ] 可选根目录 `AREAMATRIX.md`
+- [ ] 保护已有 `README.md`：默认不读取改写、不插入标记块、不覆盖
 
 ### 交付物
 
 - [ ] macOS app 完整跑通端到端
 - [ ] 拖入 → 分类 → 导航 → 编辑 备注 → 改动 历史 全部可用
+- [ ] 非空目录接管验证通过，已有文件与 README 保持原样
 - [ ] iCloud 仓库验证通过
 - [ ] 至少 5 个 Swift 单元测试 + 手工冒烟全过
 
 ### Demo 验收
 
-新 Mac 上首次启动 → 引导选目录 → 拖 10 个不同类型文件 → 看到自动分类 → 在 Finder 改名某文件 → UI 自动更新 → 关闭应用 → 在 Finder 添加文件 → 重启应用 → 新文件出现。
+新 Mac 上首次启动 → 选择一个已有内容的目录 → 确认接管并完成扫描 → 拖 10 个不同类型文件 → 看到自动分类 → 在 Finder 改名某文件 → UI 自动更新 → 关闭应用 → 在 Finder 添加文件 → 重启应用 → 新文件出现。
 
 ---
 
@@ -233,7 +236,7 @@ flowchart LR
 #### 文档与发布（1 周）
 
 - [ ] 更新 CHANGELOG
-- [ ] 用户手册（首次 README + Tips & Tricks）
+- [ ] 用户手册（首次接管目录 + Tips & Tricks）
 - [ ] 内测分发说明（如何获取 / 如何反馈）
 - [ ] Release 流程演练（[release.md](../development/release.md)）
 - [ ] 签名 + 公证测试
@@ -255,6 +258,8 @@ flowchart LR
 
 - [ ] 拖入单文件 → 自动归类 → 出现在列表 + 树
 - [ ] 拖入文件夹 → 递归导入
+- [ ] 可选择非空目录作为资料库根，并完成首次索引
+- [ ] 接管已有目录不移动、不重命名、不删除、不覆盖任何用户文件
 - [ ] Move / Copy / Index 三模式可选
 - [ ] 重复文件给提示（Skip / Overwrite / KeepBoth）
 - [ ] 改名 / 删除 / 跨分类移动可用
@@ -263,7 +268,8 @@ flowchart LR
 - [ ] 用户备注可编辑
 - [ ] FSEvents 自动同步外部变化
 - [ ] iCloud 仓库可用
-- [ ] README 自动生成 + 用户区域保留
+- [ ] `.areamatrix/generated/` 概览自动生成
+- [ ] 已有 `README.md` 不被覆盖或改写
 
 ### 稳定性
 
