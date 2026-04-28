@@ -1,0 +1,54 @@
+# AreaMatrix Prompt 任务库
+
+> 目标：以 `docs/` 为 SSOT，把 AreaMatrix 从文档态推进到可执行实现态。
+
+共享规则：[./_shared/audit-rules.md](./_shared/audit-rules.md)  
+依赖图：[./_shared/dependency-graph.md](./_shared/dependency-graph.md)  
+Manifest：[./_shared/manifests/](./_shared/manifests/)
+
+## 执行基线
+
+1. 任务文件定义目标、范围、核对清单和完成标准。
+2. Manifest 定义精确文档、现有代码、预期新增路径、禁止触碰路径、风险等级和验证命令。
+3. AreaMatrix 当前是 greenfield build：`Expected New Paths` 可以是尚不存在但允许创建的路径。
+4. 执行任务前先运行 `doctor`，再用 `render --mode copy` 生成可复制执行 prompt。
+5. 任务完成后用 `render --mode verify` 或 `verify` 生成只读验收 prompt。
+6. Runner 只负责人工串行执行辅助，不会调用 `codex exec`。
+
+## Runner
+
+```bash
+python3 tasks/prompts/_shared/prompt_pipeline.py doctor
+python3 tasks/prompts/_shared/prompt_pipeline.py plan --phase phase-0
+python3 tasks/prompts/_shared/prompt_pipeline.py plan --all
+python3 tasks/prompts/_shared/prompt_pipeline.py render --task 0-1/task-01
+python3 tasks/prompts/_shared/prompt_pipeline.py render --task 0-1/task-01 --mode verify
+python3 tasks/prompts/_shared/prompt_pipeline.py verify --task 0-1/task-01
+python3 tasks/prompts/_shared/prompt_pipeline.py status
+```
+
+## Prompt 模式
+
+| 模式 | 命令 | 用途 |
+|---|---|---|
+| copy-ready | `render --task <label>` | 开始执行任务，可以修改文件 |
+| verify-ready | `render --task <label> --mode verify` | 验收任务是否完成，禁止修改文件 |
+| verify-ready | `verify --task <label>` | 上一条的简写 |
+
+## Phase 概览
+
+| Phase | 目标 |
+|---|---|
+| Phase 0 | 治理、prompt runner、工程骨架、CI、Rust crate、UDL、Xcode 空壳 |
+| Phase 1 | Stage 1 MVP 的 Rust core、DB、storage、classify、FFI |
+| Phase 2 | Stage 1 MVP 的 macOS UI、Watcher、iCloud、overview |
+| Phase 3 | Stage 1 稳定、测试、发布准备 |
+| Phase 4 | Stage 2-4 的体验完善、AI、多端扩展占位任务 |
+
+## 推荐执行顺序
+
+1. 先执行 Phase 0，确保工程骨架和验证脚本存在。
+2. 再执行 Phase 1，跑通 Rust core 与 UniFFI。
+3. 再执行 Phase 2，完成 macOS 端到端闭环。
+4. 再执行 Phase 3，做稳定性和发布准备。
+5. Phase 4 在对应阶段启动前细化。
