@@ -23,6 +23,8 @@
 | 仅索引 | Index | 不复制，只在 DB 记录元数据，原文件原位 |
 | 伴生笔记 | Companion note | 每个文件可以有一份 `<filename>.md` 笔记，用户手动维护 |
 | 资料库概览 | Repository overview | AreaMatrix 自动生成的目录概要，默认位于 `.areamatrix/generated/`，可选生成根目录 `AREAMATRIX.md` |
+| 顶层节点 | Top-level node | 资料库根下的一级归属，可是系统分类，也可以是用户已有文件夹 |
+| 文件来源 | File origin | 文件进入索引的来源：用户导入、接管已有目录、外部新增 |
 | 改动日志 | Change log | 记录文件在资料库中所有事件的时间线 |
 | 树状视图 | Tree view | 侧边栏的资料库目录树展示 |
 | 详情面板 | Detail pane | 主窗口底部展示选中文件元数据/改动/笔记的区域 |
@@ -75,6 +77,7 @@
 | 中文 | English | 定义 |
 |---|---|---|
 | 文件条目 | File entry | SQLite `files` 表的一行 |
+| 扫描会话 | Scan session | 接管或重建索引的一次可恢复扫描记录，存于 `scan_sessions` |
 | 改动条目 | Change entry | SQLite `change_log` 表的一行 |
 | 软删除 | Soft delete | 标记 `deleted_at` 而不物理删除 DB 行 |
 | 哈希去重 | Hash-based dedup | 通过 SHA256 比对文件内容判断是否重复 |

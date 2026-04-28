@@ -24,6 +24,7 @@
 #[serde(rename_all = "snake_case")]
 pub enum ChangeAction {
     Imported,
+    Adopted,
     Renamed,
     Moved,
     EditedNote,
@@ -36,6 +37,7 @@ impl ChangeAction {
     pub fn as_str(&self) -> &'static str {
         match self {
             ChangeAction::Imported => "imported",
+            ChangeAction::Adopted => "adopted",
             ChangeAction::Renamed => "renamed",
             ChangeAction::Moved => "moved",
             ChangeAction::EditedNote => "edited_note",
@@ -48,6 +50,7 @@ impl ChangeAction {
     pub fn from_str(s: &str) -> Option<Self> {
         Some(match s {
             "imported" => Self::Imported,
+            "adopted" => Self::Adopted,
             "renamed" => Self::Renamed,
             "moved" => Self::Moved,
             "edited_note" => Self::EditedNote,
@@ -85,6 +88,18 @@ impl ChangeAction {
 | category | string | yes | 落入的分类 slug |
 | renamed_from_original | bool | yes | 是否因冲突或用户改名而与 source 不同名 |
 | by | string | yes | 固定 "user" |
+
+### Adopted
+
+```json
+{
+  "path": "project-a/spec.pdf",
+  "scan_session_id": 12,
+  "by": "adopt"
+}
+```
+
+接管已有目录首次扫描时写入。它表示“AreaMatrix 认识了一个已有文件”，不表示用户导入或复制了文件。
 
 ### Renamed
 
@@ -405,13 +420,13 @@ struct ChangeRowView: View {
 | INV-CL3 | 文件物理删除时 `file_id` 置 NULL（FK `ON DELETE SET NULL`） |
 | INV-CL4 | 同一事务内的多次 INSERT 共享同一 `occurred_at`（性能）— 通过 `clock` 抽象支持测试 |
 | INV-CL5 | `detail_json` 必须是合法 JSON 对象（不允许 array / scalar） |
-| INV-CL6 | `action` 字段值必须在 7 种枚举内（DB CHECK 约束） |
+| INV-CL6 | `action` 字段值必须在 8 种枚举内（DB CHECK 约束） |
 
 DB 端 CHECK 约束：
 
 ```sql
 CONSTRAINT action_valid CHECK (action IN (
-    'imported','renamed','moved','edited_note',
+    'imported','adopted','renamed','moved','edited_note',
     'deleted','restored','external_modified'
 ))
 ```
@@ -557,7 +572,10 @@ mod tests {
     fn setup() -> (TempDir, std::path::PathBuf) {
         let d = tempfile::tempdir().unwrap();
         let p = d.path().to_path_buf();
-        crate::api::init_repo(p.to_string_lossy().into()).unwrap();
+        crate::api::init_repo(
+            p.to_string_lossy().into(),
+            RepoInitOptions::create_empty_generated_only(),
+        ).unwrap();
         (d, p)
     }
 

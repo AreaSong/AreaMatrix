@@ -22,6 +22,7 @@ docs/product/prd.md
 docs/architecture/overview.md
    → docs/architecture/tech-stack.md
    → docs/architecture/layered-design.md
+   → docs/architecture/adopt-existing-folders.md
    → docs/architecture/source-of-truth.md
    → docs/adr/  (按需翻阅决策记录)
 ```
@@ -30,6 +31,7 @@ docs/architecture/overview.md
 
 ```
 docs/architecture/data-model.md
+   → docs/architecture/adopt-existing-folders.md
    → docs/architecture/transactional-import.md
    → docs/architecture/concurrency.md
    → docs/architecture/migration.md
@@ -107,6 +109,7 @@ docs/adr/README.md  (索引)
 | [architecture/overview.md](architecture/overview.md) | 架构总览 |
 | [architecture/tech-stack.md](architecture/tech-stack.md) | 技术栈与选型理由 |
 | [architecture/layered-design.md](architecture/layered-design.md) | 分层设计（Core / FFI / Platform / UI） |
+| [architecture/adopt-existing-folders.md](architecture/adopt-existing-folders.md) | 接管已有目录规则 |
 | [architecture/data-model.md](architecture/data-model.md) | SQLite schema 详解 |
 | [architecture/ffi-design.md](architecture/ffi-design.md) | Rust ↔ Swift UniFFI 桥接设计 |
 | [architecture/fs-watcher.md](architecture/fs-watcher.md) | 文件系统监听与 iCloud 集成 |

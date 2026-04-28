@@ -323,6 +323,7 @@ stateDiagram-v2
 │                                                                              │
 │  检测到这个文件夹已有内容。AreaMatrix 将：                                    │
 │  ✓ 创建 .areamatrix/index.db（本地索引）                                      │
+│  ✓ 创建 .areamatrix/ignore.yaml（扫描忽略规则）                               │
 │  ✓ 扫描现有文件并建立索引                                                     │
 │  ✓ 生成 .areamatrix/generated/root.md                                         │
 │                                                                              │
@@ -382,6 +383,13 @@ stateDiagram-v2
 3. 非空目录扫描并建立索引（AdoptExisting 模式）
 4. 生成 AreaMatrix 概览（`.areamatrix/generated/root.md`，可选 `AREAMATRIX.md`）
 5. 写入配置（repo_config / 本地设置）
+
+非空目录扫描必须绑定 `scan_sessions(kind=Adopt)`：
+
+- 每批文件更新 `last_path`、inserted / updated / skipped 与 errors。
+- 用户取消时标记 `Paused`，下次进入向导提供继续扫描。
+- App 被 kill 后，下次启动把遗留 `Running` 标记为 `Interrupted`，默认提供 `Resume`。
+- 扫描重复执行必须幂等，已索引文件按 path + hash 跳过或更新。
 
 #### UI 布局
 
@@ -559,6 +567,7 @@ stateDiagram-v2
 - [../product/prd.md](../product/prd.md)
 - [../development/setup.md](../development/setup.md)
 - [../development/observability.md](../development/observability.md)
+- [../architecture/adopt-existing-folders.md](../architecture/adopt-existing-folders.md)
 - [../architecture/source-of-truth.md](../architecture/source-of-truth.md)
 - [../architecture/fs-watcher.md](../architecture/fs-watcher.md)
 - [../architecture/transactional-import.md](../architecture/transactional-import.md)

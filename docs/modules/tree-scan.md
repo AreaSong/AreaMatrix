@@ -30,7 +30,7 @@ pub struct TreeNode {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
-pub enum NodeKind { Category, Subdir }
+pub enum NodeKind { RepositoryRoot, SystemCategory, UserFolder, Subdir }
 ```
 
 序列化为 JSON 给 Swift。Swift 解码为 `TreeNode`（Codable）。
@@ -84,7 +84,7 @@ use crate::error::CoreResult;
 use crate::overview::i18n;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub enum NodeKind { Category, Subdir }
+pub enum NodeKind { RepositoryRoot, SystemCategory, UserFolder, Subdir }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TreeNode {
@@ -108,7 +108,7 @@ pub fn build_tree(repo: &Path, locale: &str) -> CoreResult<TreeNode> {
             "en" => "Repository".into(),
             _ => "资料库".into(),
         },
-        kind: NodeKind::Category,
+        kind: NodeKind::RepositoryRoot,
         relative_path: String::new(),
         file_count: 0,
         size_bytes: 0,
@@ -118,8 +118,8 @@ pub fn build_tree(repo: &Path, locale: &str) -> CoreResult<TreeNode> {
 
     for cat in &cfg.categories {
         if let Some(node) = raw.children.get(&cat.slug) {
-            let mut tn = to_tree_node(node, &cat.slug, locale, 1, true);
-            tn.display_name = i18n::category_display(&cat.slug, locale);
+            let mut tn = to_tree_node(node, &cat.slug, locale, 1, NodeKind::SystemCategory);
+            tn.display_name = i18n::node_display(&cat.slug, locale);
             root.file_count += tn.file_count;
             root.size_bytes += tn.size_bytes;
             root.children.push(tn);
@@ -130,7 +130,7 @@ pub fn build_tree(repo: &Path, locale: &str) -> CoreResult<TreeNode> {
         if cfg.has_category(slug) || slug.starts_with('.') {
             continue;
         }
-        let mut tn = to_tree_node(node, slug, locale, 1, false);
+        let mut tn = to_tree_node(node, slug, locale, 1, NodeKind::UserFolder);
         tn.display_name = slug.clone();
         root.file_count += tn.file_count;
         root.size_bytes += tn.size_bytes;
@@ -145,13 +145,13 @@ fn to_tree_node(
     slug: &str,
     locale: &str,
     depth: i32,
-    is_category: bool,
+    kind: NodeKind,
 ) -> TreeNode {
     let mut children: Vec<TreeNode> = raw
         .children
         .iter()
         .map(|(name, child)| {
-            let mut tn = to_tree_node(child, name, locale, depth + 1, false);
+            let mut tn = to_tree_node(child, name, locale, depth + 1, NodeKind::Subdir);
             tn.display_name = name.clone();
             tn
         })
@@ -161,7 +161,7 @@ fn to_tree_node(
     TreeNode {
         slug: slug.into(),
         display_name: slug.into(),
-        kind: if is_category { NodeKind::Category } else { NodeKind::Subdir },
+        kind,
         relative_path: raw.rel_path.clone(),
         file_count: raw.file_count,
         size_bytes: raw.size_bytes,
@@ -188,6 +188,7 @@ use std::path::Path;
 use walkdir::WalkDir;
 
 use crate::error::CoreResult;
+use crate::ignore;
 
 #[derive(Debug, Default)]
 pub struct RawNode {
@@ -199,11 +200,12 @@ pub struct RawNode {
 
 pub fn walk(repo: &Path) -> CoreResult<RawNode> {
     let mut root = RawNode::default();
+    let matcher = ignore::load_matcher(repo)?;
 
     for entry in WalkDir::new(repo)
         .follow_links(false)
         .into_iter()
-        .filter_entry(|e| !is_hidden_or_internal(e.file_name().to_string_lossy().as_ref()))
+        .filter_entry(|e| !matcher.is_ignored(e.path()))
     {
         let entry = entry?;
         if !entry.file_type().is_file() { continue; }
@@ -245,10 +247,6 @@ fn insert_into_tree(root: &mut RawNode, rel_path: &str, size: i64) {
         next.size_bytes += size;
         node = next;
     }
-}
-
-fn is_hidden_or_internal(name: &str) -> bool {
-    name.starts_with('.')
 }
 
 fn is_managed_md(rel: &str) -> bool {
@@ -372,7 +370,7 @@ impl TreeCache {
 |---|---|---|
 | `WalkDir::new().same_file_system(true)` | MVP | 防止跟随挂载点 |
 | `metadata` 用 `DirEntry::metadata` 而非 `std::fs::metadata` | MVP | 减少 1 次 stat |
-| 跳过 `.` 开头隐藏目录 | MVP | 跳过 `.git` `.areamatrix` 等大目录 |
+| 共用 `ignore.yaml` matcher | MVP | 跳过 `.git`、`.areamatrix`、构建产物等大目录，同时不误跳过用户 `README.md` |
 | 增量更新（dirty_paths） | Stage 2 | UI 拉树 < 10ms |
 | DB 聚合替代 walkdir | Stage 2 | 10 万文件 < 50ms |
 | Rayon 并行 walkdir | Stage 3 | CPU 核心利用 |
@@ -388,7 +386,7 @@ flowchart LR
     Slug[category slug<br/>e.g. docs]
     Subdir[subdir name<br/>e.g. 2026Q1]
 
-    Slug --> CatLookup[i18n::category_display]
+    Slug --> CatLookup[i18n::node_display]
     CatLookup -->|"locale=zh-Hans"| ZhCat[文档]
     CatLookup -->|"locale=en"| EnCat[Documents]
 
@@ -411,7 +409,10 @@ mod tests {
     fn setup() -> (TempDir, PathBuf) {
         let dir = tempfile::tempdir().unwrap();
         let p = dir.path().to_path_buf();
-        crate::api::init_repo(p.to_string_lossy().into()).unwrap();
+        crate::api::init_repo(
+            p.to_string_lossy().into(),
+            RepoInitOptions::create_empty_generated_only(),
+        ).unwrap();
         (dir, p)
     }
 
@@ -487,7 +488,7 @@ mod tests {
         write_file(&p, "weird/x.pdf", 1);
         let tree = build_tree(&p, "en").unwrap();
         let weird = tree.children.iter().find(|n| n.slug == "weird").unwrap();
-        assert_eq!(weird.kind, NodeKind::Subdir);
+        assert_eq!(weird.kind, NodeKind::UserFolder);
     }
 
     #[test]
@@ -537,6 +538,7 @@ mod tests {
 ## Related
 
 - [../architecture/overview.md](../architecture/overview.md)
+- [../architecture/adopt-existing-folders.md](../architecture/adopt-existing-folders.md)
 - [../architecture/data-model.md](../architecture/data-model.md)
 - [../api/core-api.md](../api/core-api.md)
 - [classify.md](classify.md)

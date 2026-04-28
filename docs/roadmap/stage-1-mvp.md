@@ -77,7 +77,9 @@ flowchart LR
 - [ ] 错误类型 `CoreError`（[error-codes.md](../api/error-codes.md)）
 - [ ] DB schema v1 + migration 框架（[data-model.md](../architecture/data-model.md)）
 - [ ] init_repo + open_repo + adopt_existing_repo 实现 + 单测
-- [ ] 非空目录接管：扫描现有文件并以 `indexed` 写入 DB
+- [ ] 非空目录接管：扫描现有文件并以 `indexed` + `origin=adopted` 写入 DB
+- [ ] `scan_sessions`：接管 / reindex 支持中断后继续或重跑
+- [ ] `ignore.yaml`：首次扫描、reindex、tree-scan、FSEvents 共用忽略规则
 
 #### 分类引擎（1 周）
 
@@ -138,6 +140,7 @@ flowchart LR
 
 - [ ] 接收 NSItemProvider 拖入
 - [ ] ImportSheet：显示文件名、检测到的分类、Move/Copy/Index 选择
+- [ ] 拖入目标规则：侧边栏/列表节点优先落入该目录，空白区域才自动分类
 - [ ] 调用 `core.importFile`，进度反馈
 - [ ] 错误处理 UI（重复 / 冲突 / 权限）
 
@@ -180,7 +183,7 @@ flowchart LR
 #### AreaMatrix 概览自动维护（0.5 周）
 
 - [ ] 导入 / 删除 / 改名后异步触发 regenerate_overview
-- [ ] `.areamatrix/generated/root.md` 与分类/目录概览维护
+- [ ] `.areamatrix/generated/root.md` 与顶层节点概览维护
 - [ ] 可选根目录 `AREAMATRIX.md`
 - [ ] 保护已有 `README.md`：默认不读取改写、不插入标记块、不覆盖
 
@@ -260,6 +263,9 @@ flowchart LR
 - [ ] 拖入文件夹 → 递归导入
 - [ ] 可选择非空目录作为资料库根，并完成首次索引
 - [ ] 接管已有目录不移动、不重命名、不删除、不覆盖任何用户文件
+- [ ] 接管扫描可中断恢复，`origin=adopted` 可在详情中识别
+- [ ] 默认 `ignore.yaml` 生效，且不默认忽略用户 `README.md`
+- [ ] 拖入目标语义正确：显式节点导入不自动重分类，空白导入才自动分类
 - [ ] Move / Copy / Index 三模式可选
 - [ ] 重复文件给提示（Skip / Overwrite / KeepBoth）
 - [ ] 改名 / 删除 / 跨分类移动可用

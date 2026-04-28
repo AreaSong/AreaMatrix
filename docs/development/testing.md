@@ -54,7 +54,10 @@ mod tests {
 
     fn setup_repo() -> tempfile::TempDir {
         let tmp = tempfile::tempdir().unwrap();
-        crate::api::init_repo(tmp.path().to_string_lossy().to_string()).unwrap();
+        crate::api::init_repo(
+            tmp.path().to_string_lossy().to_string(),
+            RepoInitOptions::create_empty_generated_only(),
+        ).unwrap();
         tmp
     }
 

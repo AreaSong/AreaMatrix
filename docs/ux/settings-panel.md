@@ -78,8 +78,6 @@
 - 选择 Index-only：弹确认\n
   - “Index-only 不复制文件，源文件移动/删除会导致条目缺失。”\n
 
-### 2) 语言（Locale）
-
 ### 2) 概览输出（Overview output）
 
 | Setting | 默认值 | 说明 |
@@ -102,13 +100,21 @@
 - 如果不包含标记块：弹确认，说明会在文件末尾追加 AreaMatrix 托管段
 - 永不把 `README.md` 作为自动输出目标
 
-### 3) 语言（Locale）
+### 3) 忽略规则（Ignore rules）
+
+| Setting | 默认值 | 说明 |
+|---|---|---|
+| ignoreRules | `.areamatrix/ignore.yaml` | 首次扫描、reindex、tree-scan 与 FSEvents 共用 |
+
+UI 提供 `Open ignore.yaml`，用系统默认编辑器打开。`README.md` 不在默认忽略列表；`AREAMATRIX.md` 与 `.areamatrix/generated/` 始终由 Core 过滤。
+
+### 4) 语言（Locale）
 
 | Setting | 默认值 | 说明 |
 |---|---|---|
 | uiLocale | system | 跟随系统，支持 zh-CN / en |
 
-### 4) 外观（Appearance）
+### 5) 外观（Appearance）
 
 | Setting | 默认值 |
 |---|---|

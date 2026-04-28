@@ -90,7 +90,7 @@ flowchart TB
 | Core | storage | 事务式文件操作（move / copy / index / hash / dedup） |
 | Core | classify | 规则引擎（扩展名 + 关键词），未来加 AI |
 | Core | overview | 资料库概览生成，默认写入 `.areamatrix/generated/`，可选根目录 `AREAMATRIX.md` |
-| Core | tree | 资料库扫描，输出 tree JSON |
+| Core | tree | 资料库扫描，按接管规则区分系统分类、用户文件夹与根目录，输出 tree JSON |
 | Core | sync | 处理外部变化事件（重命名 / 新增 / 删除） |
 | Core | db | SQLite CRUD + migrations |
 | Core | config | 配置加载与持久化 |
@@ -216,6 +216,8 @@ AreaMatrix/                            # Git 仓库
 
 ```
 <repo>/                                # 用户选择的资料库根，可为空目录，也可已有大量内容
+├── README.md                          # 用户原有文件，应用不覆盖
+├── project-a/                         # 用户已有目录，UI 作为“文件夹”显示
 ├── docs/                              # 可由 AreaMatrix 创建；也可能是用户已有目录
 │   ├── README.md                      # 用户原有文件，应用不覆盖
 │   ├── contract.pdf
@@ -230,9 +232,10 @@ AreaMatrix/                            # Git 仓库
     ├── index.db                       # SQLite
     ├── config.json                    # 用户配置
     ├── classifier.yaml                # 分类规则
+    ├── ignore.yaml                    # 首次扫描 / reindex / watcher 共用忽略规则
     ├── generated/                     # 自动概览产物
     │   ├── root.md
-    │   └── categories/
+    │   └── nodes/
     └── staging/                       # 事务中转区
 ```
 
@@ -298,6 +301,7 @@ AreaMatrix/                            # Git 仓库
 
 - [tech-stack.md](tech-stack.md)
 - [layered-design.md](layered-design.md)
+- [adopt-existing-folders.md](adopt-existing-folders.md)
 - [data-model.md](data-model.md)
 - [ffi-design.md](ffi-design.md)
 - [fs-watcher.md](fs-watcher.md)

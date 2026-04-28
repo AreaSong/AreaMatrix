@@ -48,10 +48,11 @@ gantt
 | macOS UI | 主窗口三栏（侧栏 / 列表 / 详情）+ ImportSheet + 设置面板 |
 | 文件操作 | 拖入、Move/Copy/Index 三模式、改名、跨分类移动、软删除 |
 | 分类 | classifier.yaml 内置 10 类 + 关键词匹配 + 兜底 inbox |
-| 接管已有目录 | 非空目录首次扫描、建立索引，不移动/重命名/覆盖已有文件 |
+| 接管已有目录 | 非空目录首次扫描、建立索引，支持中断恢复；不移动/重命名/覆盖已有文件 |
 | 监听 | FSEventStream + 200ms debounce + InFlight 过滤 + 启动 recovery |
 | iCloud | 仓库可放 iCloud Drive，占位符按需下载 |
 | 概览 | `.areamatrix/generated/` 自动概览，可选根目录 `AREAMATRIX.md` |
+| 忽略规则 | `ignore.yaml` 统一首次扫描、reindex、tree-scan 与 FSEvents |
 | 单元测试 | core 加权覆盖率 ≥ 70% |
 | 文档 | 本份完整文档随仓库交付 |
 

@@ -545,7 +545,14 @@ final class CoreBridgeTests: XCTestCase {
         let src = createTestFile()
         let entry = try await CoreBridge.shared.importFile(
             src: src,
-            options: ImportOptions(mode: .copy, preferredCategory: nil)
+            options: ImportOptions(
+                mode: .copy,
+                destination: .autoClassify,
+                targetDirectory: nil,
+                overrideCategory: nil,
+                overrideFilename: nil,
+                duplicateStrategy: .skip
+            )
         )
         XCTAssertEqual(entry.category, "inbox")
         XCTAssertGreaterThan(entry.sizeBytes, 0)

@@ -44,6 +44,12 @@ namespace area_matrix {
     ReindexReport reindex_from_filesystem(string repo_path);
 
     [Throws=CoreError]
+    ScanSession? get_latest_scan_session(string repo_path);
+
+    [Throws=CoreError]
+    ReindexReport resume_scan_session(string repo_path, i64 scan_session_id);
+
+    [Throws=CoreError]
     ClassifyResult predict_category(string repo_path, string filename);
 
     [Throws=CoreError]
@@ -108,6 +114,8 @@ dictionary RepoInitOptions {
 
 dictionary ImportOptions {
     StorageMode mode;
+    ImportDestination destination;
+    string? target_directory;
     string? override_category;
     string? override_filename;
     DuplicateStrategy duplicate_strategy;
@@ -141,6 +149,7 @@ dictionary FileEntry {
     i64 size_bytes;
     string hash_sha256;
     StorageMode storage_mode;
+    FileOrigin origin;
     string? source_path;
     i64 imported_at;
     i64 updated_at;
@@ -170,9 +179,24 @@ dictionary RecoveryReport {
 };
 
 dictionary ReindexReport {
+    i64? scan_session_id;
     i64 inserted;
     i64 updated;
     i64 skipped;
+    sequence<string> errors;
+};
+
+dictionary ScanSession {
+    i64 id;
+    ScanSessionKind kind;
+    ScanSessionStatus status;
+    string? last_path;
+    i64 inserted;
+    i64 updated;
+    i64 skipped;
+    i64 started_at;
+    i64 updated_at;
+    i64? finished_at;
     sequence<string> errors;
 };
 
@@ -191,8 +215,12 @@ dictionary SyncResult {
 };
 
 enum StorageMode { "Moved", "Copied", "Indexed" };
+enum FileOrigin { "Imported", "Adopted", "External" };
 enum RepoInitMode { "CreateEmpty", "AdoptExisting" };
 enum OverviewOutput { "GeneratedOnly", "RootAreaMatrixFile" };
+enum ImportDestination { "AutoClassify", "SelectedDirectory", "Category" };
+enum ScanSessionKind { "Adopt", "Reindex" };
+enum ScanSessionStatus { "Running", "Completed", "Paused", "Failed", "Interrupted" };
 enum DuplicateStrategy { "Skip", "Overwrite", "KeepBoth", "Ask" };
 enum ClassifyReason { "Keyword", "Extension", "AiPredicted", "Default" };
 enum ExternalEventKind { "Created", "Removed", "Modified", "Renamed" };
@@ -237,6 +265,8 @@ enum CoreError {
 | `update_config(repo, cfg)` | repo | √ | Io |
 | `recover_on_startup(repo)` | repo | √ | Db |
 | `reindex_from_filesystem(repo)` | repo | √ | Io / Db |
+| `get_latest_scan_session(repo)` | repo | √ | Db |
+| `resume_scan_session(repo, id)` | repo | √ | Io / Db |
 | `predict_category(repo, name)` | classify | √ | Config |
 | `import_file(repo, src, options)` | storage | √ | Io / Db / DuplicateFile / InvalidPath |
 | `delete_file(repo, file_id, hard)` | storage | √ | Io / Db / FileNotFound |
@@ -309,8 +339,9 @@ do {
 - `AdoptExisting`：目录可以非空；不移动、不重命名、不删除、不覆盖已有内容
 - 创建 `.areamatrix/{staging, archives, generated}/`
 - 复制默认 `classifier.yaml`
+- 创建默认 `ignore.yaml`
 - 创建 SQLite + 应用 schema v1
-- `AdoptExisting` 模式下调用首次 `reindex_from_filesystem`
+- `AdoptExisting` 模式下启动 `scan_sessions(kind=Adopt)` 并执行内部接管扫描
 - 默认生成 `.areamatrix/generated/root.md`
 - 仅当 `overview_output = RootAreaMatrixFile` 时写入/维护根目录 `AREAMATRIX.md`
 
@@ -373,6 +404,21 @@ print("inserted: \(report.inserted), updated: \(report.updated), skipped: \(repo
 
 耗时与文件数成正比（1 万文件 ≈ 30s）。建议显示进度条。该 API 会跳过 `.areamatrix/`、系统临时文件、可配置忽略目录，以及 AreaMatrix 自身生成的概览文件。
 
+实现要求：
+
+- 创建或复用 `scan_sessions(kind=Reindex)` 行，并在 `ReindexReport.scan_session_id` 返回。
+- 启动后的全量重建或外部补扫写入 `FileEntry.origin = .external`。
+- 首次接管扫描由 `init_repo(mode=.adoptExisting)` 的内部流程触发，写入 `FileEntry.origin = .adopted`。
+- `README.md` 作为普通用户文件索引；`AREAMATRIX.md` 与 `.areamatrix/generated/` 始终跳过。
+
+### `get_latest_scan_session(repoPath: String) throws -> ScanSession?`
+
+返回最近一次未完成或刚完成的接管 / 重建扫描，用于首次启动向导恢复状态。
+
+### `resume_scan_session(repoPath: String, scanSessionId: Int64) throws -> ReindexReport`
+
+继续 `Paused` / `Interrupted` / `Failed` 的扫描。Core 需要按 `last_path` 与幂等 upsert 规则续扫；若 session 已 `Completed`，返回空 report。
+
 ---
 
 ## classify API
@@ -404,6 +450,8 @@ importSheet.confidence = result.confidence
 func importDroppedFile(_ url: URL) async {
     let options = ImportOptions(
         mode: appState.config.defaultMode,
+        destination: .autoClassify,
+        targetDirectory: nil,
         overrideCategory: nil,
         overrideFilename: nil,
         duplicateStrategy: .skip
@@ -438,6 +486,14 @@ func importDroppedFile(_ url: URL) async {
 ```
 
 可能抛：`Io` / `Db` / `DuplicateFile` / `Conflict` / `InvalidPath` / `ICloudPlaceholder` / `Internal`。
+
+`ImportOptions.destination` 语义：
+
+| destination | 使用字段 | 目标规则 |
+|---|---|---|
+| `AutoClassify` | `override_category` 可选 | 根据 classifier 推断；低置信或无命中进 `inbox/` |
+| `SelectedDirectory` | `target_directory` 必填 | 放入用户显式 drop 的目录，不再自动分类 |
+| `Category` | `override_category` 必填 | 放入指定系统分类目录，必要时创建 `<slug>/` |
 
 ### `delete_file(repoPath, fileId, hard) throws`
 
@@ -713,6 +769,7 @@ public actor CoreBridge {
 
 - `import_file`（hash 大文件）
 - `reindex_from_filesystem`（全扫）
+- `resume_scan_session`（可能继续全扫）
 - `recover_on_startup`（启动时）
 - `list_tree_json`（大库）
 - `sync_external_changes`（批量事件）
@@ -722,6 +779,7 @@ public actor CoreBridge {
 - `get_version`
 - `predict_category`
 - `load_config`
+- `get_latest_scan_session`
 - `get_file`
 - 单条 `list_files`（limit ≤ 50）
 
@@ -790,6 +848,7 @@ UniFFI 0.x 不支持 Rust 端 cooperative cancellation。Swift 端 `Task.cancel(
 - [error-codes.md](error-codes.md)
 - [classifier-yaml.md](classifier-yaml.md)
 - [uniffi-recipes.md](uniffi-recipes.md)
+- [../architecture/adopt-existing-folders.md](../architecture/adopt-existing-folders.md)
 - [../architecture/ffi-design.md](../architecture/ffi-design.md)
 - [../modules/storage.md](../modules/storage.md)
 - [../modules/classify.md](../modules/classify.md)

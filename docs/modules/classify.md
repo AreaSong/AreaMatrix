@@ -561,7 +561,10 @@ mod tests {
 
     fn setup_repo() -> (TempDir, PathBuf) {
         let dir = tempfile::tempdir().unwrap();
-        crate::api::init_repo(dir.path().to_string_lossy().into()).unwrap();
+        crate::api::init_repo(
+            dir.path().to_string_lossy().into(),
+            RepoInitOptions::create_empty_generated_only(),
+        ).unwrap();
         let p = dir.path().to_path_buf();
         (dir, p)
     }

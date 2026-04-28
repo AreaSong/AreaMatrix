@@ -91,6 +91,7 @@
 **验收标准**：
 - [ ] 三 Tab：元数据 / 改动 / 笔记
 - [ ] 元数据：路径、大小、SHA256（带复制按钮）、导入时间、存储模式、原始路径（index 模式）
+- [ ] 元数据显示来源：导入 / 接管 / 外部新增（`origin`）
 - [ ] 改动 Tab：按时间倒序显示所有 change_log 条目
 - [ ] 笔记 Tab：可读写 Markdown 笔记，保存时同步写文件 + DB
 
@@ -114,7 +115,7 @@
 **以便于**追溯历史、回答"这个文件什么时候来的"
 
 **验收标准**：
-- [ ] 所有写操作（imported / renamed / moved / edited_note / deleted / external_modified）都写入 change_log
+- [ ] 所有写操作（imported / adopted / renamed / moved / edited_note / deleted / external_modified）都写入 change_log
 - [ ] 详情面板可显示按文件过滤的时间线
 - [ ] DB 损坏时不影响文件系统数据
 
@@ -194,9 +195,12 @@
 - [ ] 用户可以选择任意可写目录作为资料库根，包括非空目录
 - [ ] 接管流程只创建 `.areamatrix/` 内部文件，不修改已有用户文件
 - [ ] 首次扫描把已有文件写入 SQLite，`storage_mode` 记为 `indexed`
+- [ ] 首次扫描把已有文件的 `origin` 记为 `adopted`
+- [ ] 首次扫描、reindex、tree-scan、FSEvents 使用同一套 `ignore.yaml`
 - [ ] 已有 `README.md`、`.git/`、项目文件保持不变
 - [ ] 接管完成后，树状图按现有目录结构展示
-- [ ] 扫描失败时给出可恢复错误，已写入索引可重跑/补扫
+- [ ] 扫描失败或中断时保留 `scan_sessions`，支持继续扫描或重跑/补扫
+- [ ] 拖到侧边栏/列表节点时导入到该目录，拖到空白区域时才自动分类
 
 ### US-1.14 iCloud 兼容
 

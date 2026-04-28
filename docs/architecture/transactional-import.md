@@ -462,12 +462,12 @@ pub fn import_file(
     let original_name = src.file_name().and_then(|s| s.to_str())
         .ok_or(CoreError::InvalidPath { path: src.display().to_string() })?
         .to_string();
-    let category = options.override_category.clone()
-        .unwrap_or_else(|| classify::classify(repo, &original_name).category);
+    let target = storage::resolve_import_target(repo, &original_name, &options)?;
+    let category = target.category.clone();
     let target_filename = options.override_filename.clone().unwrap_or_else(|| original_name.clone());
     crate::storage::validate::filename(&target_filename)?;
 
-    let category_dir = repo.join(&category);
+    let category_dir = repo.join(&target.relative_dir);
     std::fs::create_dir_all(&category_dir)?;
     let final_abs = conflict::resolve_target(&category_dir, &target_filename)?;
     let final_rel = final_abs.strip_prefix(repo)
@@ -486,6 +486,7 @@ pub fn import_file(
             size_bytes: size,
             hash_sha256: hash.clone(),
             storage_mode: options.mode,
+            origin: FileOrigin::Imported,
             source_path: src.to_string_lossy().to_string(),
             imported_at: chrono::Utc::now().timestamp(),
         })?;
@@ -503,13 +504,14 @@ pub fn import_file(
             "mode": options.mode,
             "source": src.display().to_string(),
             "category": category,
+            "destination": options.destination,
             "renamed_from_original": original_name != final_name,
         }))?;
         tx.commit()?;
         Ok(())
     })?;
 
-    crate::overview::regenerate_for_category(repo, &category)?;
+    crate::overview::regenerate_for_node(repo, &category)?;
     db::get_file_by_id(repo, new_id)
 }
 ```
@@ -654,6 +656,8 @@ interface ImportProgressCallback {
 
 dictionary ImportOptions {
     StorageMode mode;
+    ImportDestination destination;
+    string? target_directory;
     string? override_category;
     string? override_filename;
     DuplicateStrategy duplicate_strategy;

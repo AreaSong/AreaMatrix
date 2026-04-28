@@ -89,7 +89,10 @@ fn bench_import_sizes(c: &mut Criterion) {
                     || {
                         let dir = tempfile::tempdir().unwrap();
                         let p = dir.path().to_path_buf();
-                        area_matrix::api::init_repo(p.to_string_lossy().into()).unwrap();
+                        area_matrix::api::init_repo(
+                            p.to_string_lossy().into(),
+                            RepoInitOptions::create_empty_generated_only(),
+                        ).unwrap();
                         let src = p.join("__src.bin");
                         std::fs::write(&src, vec![0u8; size]).unwrap();
                         (dir, p, src)
@@ -112,7 +115,10 @@ fn bench_import_sizes(c: &mut Criterion) {
 fn bench_classify(c: &mut Criterion) {
     let dir = tempfile::tempdir().unwrap();
     let repo = dir.path().to_path_buf();
-    area_matrix::api::init_repo(repo.to_string_lossy().into()).unwrap();
+    area_matrix::api::init_repo(
+        repo.to_string_lossy().into(),
+        RepoInitOptions::create_empty_generated_only(),
+    ).unwrap();
 
     c.bench_function("classify_short_name", |b| {
         b.iter(|| {
@@ -125,7 +131,10 @@ fn bench_classify(c: &mut Criterion) {
 fn bench_list_files(c: &mut Criterion) {
     let dir = tempfile::tempdir().unwrap();
     let repo = dir.path().to_path_buf();
-    area_matrix::api::init_repo(repo.to_string_lossy().into()).unwrap();
+    area_matrix::api::init_repo(
+        repo.to_string_lossy().into(),
+        RepoInitOptions::create_empty_generated_only(),
+    ).unwrap();
     for i in 0..1000 {
         let src = repo.join(format!("__s{}.txt", i));
         std::fs::write(&src, format!("content-{}", i)).unwrap();
@@ -611,14 +620,14 @@ let map = db::changes_count_by_file(repo, &ids)?;
 // ❌
 for file in batch {
     import_file(...)?;
-    overview::regenerate_for_category(...)?;  // 50 次
+    overview::regenerate_for_node(...)?;  // 50 次
 }
 
 // ✅ 批量后一次
 for file in batch {
     import_file_skip_overview(...)?;
 }
-overview::regenerate_for_category(...)?;
+overview::regenerate_for_node(...)?;
 ```
 
 详见 [../modules/overview-gen.md](../modules/overview-gen.md) 的 debounce 章节。

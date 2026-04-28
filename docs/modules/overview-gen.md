@@ -12,7 +12,7 @@
 2. 接管已有 GitHub 项目时不污染或覆盖项目自己的 `README.md`
 3. 可选根目录 `AREAMATRIX.md` 用作显式的外部导览入口
 4. 用户在 `AREAMATRIX.md` 标记块外手动添加的备注在重生成时**不丢**
-5. 性能：单分类概览重生成 < 50ms（< 1000 文件）
+5. 性能：单顶层节点概览重生成 < 50ms（< 1000 文件）
 
 ---
 
@@ -20,12 +20,12 @@
 
 | 触发 | 重生成范围 |
 |---|---|
-| import_file | 该分类概览 + 根概览 |
-| rename_file | 该分类概览 + 根概览 |
-| move_to_category | 旧分类概览 + 新分类概览 + 根概览 |
-| delete_file | 该分类概览 + 根概览 |
+| import_file | 目标顶层节点概览 + 根概览 |
+| rename_file | 所在顶层节点概览 + 根概览 |
+| move_to_category | 旧顶层节点概览 + 新顶层节点概览 + 根概览 |
+| delete_file | 所在顶层节点概览 + 根概览 |
 | 笔记编辑 | 不重生成（不影响文件清单） |
-| sync external 检测到变化 | 受影响分类概览 + 根概览 |
+| sync external 检测到变化 | 受影响顶层节点概览 + 根概览 |
 | 用户手动触发 | 全部 |
 
 ---
@@ -35,7 +35,7 @@
 | 输出 | 默认 | 路径 | 说明 |
 |---|---|---|---|
 | 根概览 | 是 | `.areamatrix/generated/root.md` | 应用内部与外部工具都可读 |
-| 分类/目录概览 | 是 | `.areamatrix/generated/categories/<slug>.md` | 不写入用户分类目录 |
+| 顶层节点概览 | 是 | `.areamatrix/generated/nodes/<slug>.md` | 系统分类或用户一级目录；不写入用户目录 |
 | 根目录入口 | 否 | `AREAMATRIX.md` | 用户在设置中显式启用后维护 |
 | 用户 README | 否 | `README.md` / `*/README.md` | 永不作为自动输出目标 |
 
@@ -80,7 +80,7 @@ flowchart TB
 
 ---
 
-## 分类概览结构
+## 顶层节点概览结构
 
 ```markdown
 # 文档 (docs)
@@ -140,7 +140,7 @@ flowchart TB
 
 ```text
 core/src/overview/
-├── mod.rs        // regenerate_for_category / regenerate_root
+├── mod.rs        // regenerate_for_node / regenerate_root
 ├── markers.rs    // AREAMATRIX.md 标记块解析与替换
 ├── template.rs   // 文案模板（locale-aware）
 ├── format.rs     // 字节、日期、url 编码
@@ -163,13 +163,13 @@ use crate::db;
 use crate::error::CoreResult;
 use crate::repo::RepoLayout;
 
-pub fn regenerate_for_category(repo: &Path, category: &str) -> CoreResult<()> {
+pub fn regenerate_for_node(repo: &Path, node_slug: &str) -> CoreResult<()> {
     let out_path = RepoLayout::for_repo(repo)
         .generated_dir()
-        .join("categories")
-        .join(format!("{}.md", category));
+        .join("nodes")
+        .join(format!("{}.md", node_slug));
     let locale = current_locale(repo)?;
-    let content = template::build_category_overview(repo, category, &locale)?;
+    let content = template::build_node_overview(repo, node_slug, &locale)?;
 
     write_atomic(&out_path, &content)?;
     regenerate_root(repo)?;
@@ -308,7 +308,7 @@ pub fn t(key: &str, locale: &str) -> &'static str {
         ("zh-Hans", "imported") => "导入时间",
         ("zh-Hans", "user_section") => "用户备注（手动添加）",
         ("zh-Hans", "summary") => "总览",
-        ("zh-Hans", "category") => "分类",
+        ("zh-Hans", "category") => "节点",
         ("zh-Hans", "category_count") => "文件数",
         ("zh-Hans", "do_not_edit") => "请勿编辑标记之间内容，会被自动覆盖",
 
@@ -319,7 +319,7 @@ pub fn t(key: &str, locale: &str) -> &'static str {
         ("en", "imported") => "Imported",
         ("en", "user_section") => "User Notes (manual)",
         ("en", "summary") => "Overview",
-        ("en", "category") => "Category",
+        ("en", "category") => "Node",
         ("en", "category_count") => "Files",
         ("en", "do_not_edit") => "Do not edit between markers; will be overwritten",
 
@@ -327,15 +327,15 @@ pub fn t(key: &str, locale: &str) -> &'static str {
     }
 }
 
-pub fn category_display(category: &str, locale: &str) -> String {
-    match (locale, category) {
+pub fn node_display(node_slug: &str, locale: &str) -> String {
+    match (locale, node_slug) {
         ("zh-Hans", "docs") => "文档".into(),
         ("zh-Hans", "code") => "代码".into(),
         ("zh-Hans", "media") => "媒体".into(),
         ("zh-Hans", "finance") => "财务".into(),
         ("zh-Hans", "inbox") => "收件箱".into(),
-        ("en", _) => capitalize(category),
-        _ => category.to_string(),
+        ("en", _) => capitalize(node_slug),
+        _ => node_slug.to_string(),
     }
 }
 
@@ -355,9 +355,9 @@ use crate::overview::{format, i18n};
 const BEGIN_TAG: &str = "<!-- AREAMATRIX:BEGIN auto-generated content; do NOT edit between markers -->";
 const END_TAG: &str = "<!-- AREAMATRIX:END -->";
 
-pub fn build_category_overview(repo: &Path, category: &str, locale: &str) -> CoreResult<String> {
-    let files = db::list_active_in_category(repo, category)?;
-    let recent = db::recent_changes_for_category(repo, category, 30)?;
+pub fn build_node_overview(repo: &Path, node_slug: &str, locale: &str) -> CoreResult<String> {
+    let files = db::list_active_in_node(repo, node_slug)?;
+    let recent = db::recent_changes_for_node(repo, node_slug, 30)?;
 
     let total: i64 = files.iter().map(|f| f.size_bytes).sum();
     let latest = files.iter().map(|f| f.imported_at).max().unwrap_or(0);
@@ -402,7 +402,7 @@ pub fn build_category_overview(repo: &Path, category: &str, locale: &str) -> Cor
 }
 
 pub fn build_root_overview(repo: &Path, locale: &str) -> CoreResult<String> {
-    let summary = db::list_categories_summary(repo)?;
+    let summary = db::list_nodes_summary(repo)?;
     let recent = db::recent_changes(repo, 7)?;
 
     let total_files: i64 = summary.iter().map(|s| s.file_count).sum();
@@ -428,7 +428,7 @@ pub fn build_root_overview(repo: &Path, locale: &str) -> CoreResult<String> {
         i18n::t("imported", locale),
     ));
     for s in &summary {
-        let display = i18n::category_display(&s.slug, locale);
+        let display = i18n::node_display(&s.slug, locale);
         out.push_str(&format!(
             "| [{} ({})]({}/) | {} | {} | {} |\n",
             display, s.slug, s.slug, s.file_count, format::bytes(s.total_bytes),
@@ -544,18 +544,18 @@ mod tests_protection {
         let readme = p.join("docs/README.md");
         std::fs::write(&readme, "# Project\n\n用户自己的 README\n").unwrap();
 
-        regenerate_for_category(&p, "docs").unwrap();
+        regenerate_for_node(&p, "docs").unwrap();
         let new_content = std::fs::read_to_string(&readme).unwrap();
         assert_eq!(new_content, "# Project\n\n用户自己的 README\n");
     }
 
     #[test]
-    fn category_overview_goes_to_generated_dir() {
+    fn node_overview_goes_to_generated_dir() {
         let (_d, p) = fixture_repo();
 
-        regenerate_for_category(&p, "docs").unwrap();
+        regenerate_for_node(&p, "docs").unwrap();
         let content = std::fs::read_to_string(
-            p.join(".areamatrix/generated/categories/docs.md")
+            p.join(".areamatrix/generated/nodes/docs.md")
         ).unwrap();
         assert!(content.contains("AREAMATRIX:BEGIN"));
         assert!(content.contains("AREAMATRIX:END"));
@@ -565,9 +565,9 @@ mod tests_protection {
     fn locale_switch_updates_text() {
         let (_d, p) = fixture_repo();
         crate::api::set_locale(p.to_string_lossy().into(), "en".into()).unwrap();
-        regenerate_for_category(&p, "docs").unwrap();
+        regenerate_for_node(&p, "docs").unwrap();
         let content = std::fs::read_to_string(
-            p.join(".areamatrix/generated/categories/docs.md")
+            p.join(".areamatrix/generated/nodes/docs.md")
         ).unwrap();
         assert!(content.contains("Statistics"));
         assert!(!content.contains("统计"));
@@ -615,8 +615,8 @@ pub struct OverviewRegenScheduler {
 }
 
 impl OverviewRegenScheduler {
-    pub fn schedule(&self, category: &str) {
-        self.pending.lock().unwrap().insert(category.into());
+    pub fn schedule(&self, node_slug: &str) {
+        self.pending.lock().unwrap().insert(node_slug.into());
     }
     pub async fn flush_loop(&self, repo: PathBuf) {
         loop {
@@ -625,8 +625,8 @@ impl OverviewRegenScheduler {
                 let mut p = self.pending.lock().unwrap();
                 p.drain().collect()
             };
-            for cat in snapshot {
-                let _ = regenerate_for_category(&repo, &cat);
+            for node in snapshot {
+                let _ = regenerate_for_node(&repo, &node);
             }
         }
     }
@@ -656,7 +656,7 @@ impl OverviewRegenScheduler {
 新增 locale（如 `ja`）：
 
 1. 在 `i18n::t` 加一组分支
-2. 在 `category_display` 加该 locale 的翻译
+2. 在 `node_display` 加该 locale 的翻译
 3. 在 `format::date` / `format::file_count` 视情况调整
 4. 在 `apps/macos/Localizations/` 添加对应的 SwiftUI strings
 
@@ -667,6 +667,7 @@ impl OverviewRegenScheduler {
 ## Related
 
 - [../architecture/overview.md](../architecture/overview.md)
+- [../architecture/adopt-existing-folders.md](../architecture/adopt-existing-folders.md)
 - [../adr/0010-adopt-existing-folders-and-overviews.md](../adr/0010-adopt-existing-folders-and-overviews.md)
 - [../adr/0007-readme-granularity.md](../adr/0007-readme-granularity.md)
 - [../adr/0008-naming-and-i18n.md](../adr/0008-naming-and-i18n.md)

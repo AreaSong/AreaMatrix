@@ -43,7 +43,7 @@ namespace area_matrix {
 
   // 仓库初始化
   [Throws=CoreError]
-  void init_repo(string repo_path);
+  void init_repo(string repo_path, RepoInitOptions options);
 
   [Throws=CoreError]
   RepoConfig load_config(string repo_path);
@@ -89,6 +89,12 @@ namespace area_matrix {
   // 重新索引
   [Throws=CoreError]
   ReindexReport reindex_from_filesystem(string repo_path);
+
+  [Throws=CoreError]
+  ScanSession? get_latest_scan_session(string repo_path);
+
+  [Throws=CoreError]
+  ReindexReport resume_scan_session(string repo_path, i64 scan_session_id);
 };
 
 // ============== 类型 ==============
@@ -102,19 +108,34 @@ dictionary FileEntry {
   i64 size_bytes;
   string hash_sha256;
   StorageMode storage_mode;
+  FileOrigin origin;
   string? source_path;
   i64 imported_at;
   i64 updated_at;
 };
 
 enum StorageMode { "Moved", "Copied", "Indexed" };
+enum FileOrigin { "Imported", "Adopted", "External" };
+
+dictionary RepoInitOptions {
+  RepoInitMode mode;
+  boolean create_default_categories;
+  OverviewOutput overview_output;
+};
+
+enum RepoInitMode { "CreateEmpty", "AdoptExisting" };
+enum OverviewOutput { "GeneratedOnly", "RootAreaMatrixFile" };
 
 dictionary ImportOptions {
   StorageMode mode;
+  ImportDestination destination;
+  string? target_directory;        // SelectedDirectory 时使用，相对 repo 根
   string? override_category;       // 用户在 ImportSheet 修改的分类
   string? override_filename;       // 用户修改的目标文件名
   DuplicateStrategy duplicate_strategy;
 };
+
+enum ImportDestination { "AutoClassify", "SelectedDirectory", "Category" };
 
 enum DuplicateStrategy {
   "Skip",
@@ -197,11 +218,29 @@ dictionary RecoveryReport {
 };
 
 dictionary ReindexReport {
+  i64? scan_session_id;
   i64 inserted;
   i64 updated;
   i64 skipped;
   sequence<string> errors;
 };
+
+dictionary ScanSession {
+  i64 id;
+  ScanSessionKind kind;
+  ScanSessionStatus status;
+  string? last_path;
+  i64 inserted;
+  i64 updated;
+  i64 skipped;
+  i64 started_at;
+  i64 updated_at;
+  i64? finished_at;
+  sequence<string> errors;
+};
+
+enum ScanSessionKind { "Adopt", "Reindex" };
+enum ScanSessionStatus { "Running", "Completed", "Paused", "Failed", "Interrupted" };
 
 // ============== 错误 ==============
 
@@ -340,6 +379,12 @@ public enum StorageMode: Equatable, Hashable {
     case indexed
 }
 
+public enum FileOrigin: Equatable, Hashable {
+    case imported
+    case adopted
+    case external
+}
+
 public struct FileEntry {
     public let id: Int64
     public let path: String
@@ -349,6 +394,7 @@ public struct FileEntry {
     public let sizeBytes: Int64
     public let hashSha256: String
     public let storageMode: StorageMode
+    public let origin: FileOrigin
     public let sourcePath: String?
     public let importedAt: Int64
     public let updatedAt: Int64

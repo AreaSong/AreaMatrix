@@ -84,7 +84,7 @@ use rusqlite::params;
 use serde_json::json;
 
 use crate::api::types::{
-    DuplicateStrategy, FileEntry, ImportOptions, StorageMode,
+    DuplicateStrategy, FileEntry, FileOrigin, ImportDestination, ImportOptions, StorageMode,
 };
 use crate::change_log::ChangeAction;
 use crate::classify;
@@ -134,12 +134,8 @@ pub fn import_file(
         }
     }
 
-    let category = options
-        .override_category
-        .clone()
-        .unwrap_or_else(|| {
-            classify::classify(repo, &original_name).category
-        });
+    let target = resolve_import_target(repo, &original_name, &options)?;
+    let category = target.category.clone();
     let target_filename = options
         .override_filename
         .clone()
@@ -147,7 +143,7 @@ pub fn import_file(
 
     validate::filename(&target_filename)?;
 
-    let category_dir = repo.join(&category);
+    let category_dir = repo.join(&target.relative_dir);
     std::fs::create_dir_all(&category_dir)?;
     let final_abs = conflict::resolve_target(&category_dir, &target_filename)?;
     let final_rel = final_abs
@@ -182,6 +178,7 @@ pub fn import_file(
                 size_bytes: size,
                 hash_sha256: hash.clone(),
                 storage_mode: options.mode,
+                origin: FileOrigin::Imported,
                 source_path: src.to_string_lossy().to_string(),
                 imported_at,
             },
@@ -204,6 +201,7 @@ pub fn import_file(
                 "mode": options.mode,
                 "source": src.display().to_string(),
                 "category": category,
+                "destination": options.destination,
                 "renamed_from_original": original_name != final_name,
             }),
         )?;
@@ -211,8 +209,50 @@ pub fn import_file(
         Ok(())
     })?;
 
-    crate::overview::regenerate_for_category(repo, &category)?;
+    crate::overview::regenerate_for_node(repo, &category)?;
     db::get_file_by_id(repo, new_id)
+}
+
+struct ImportTarget {
+    relative_dir: String,
+    category: String,
+}
+
+fn resolve_import_target(
+    repo: &Path,
+    original_name: &str,
+    options: &ImportOptions,
+) -> CoreResult<ImportTarget> {
+    match options.destination {
+        ImportDestination::SelectedDirectory => {
+            let dir = options.target_directory.clone().unwrap_or_default();
+            validate::relative_dir(&dir)?;
+            Ok(ImportTarget {
+                category: top_level_dir(&dir).unwrap_or_else(|| "__root__".into()),
+                relative_dir: dir,
+            })
+        }
+        ImportDestination::Category => {
+            let category = options
+                .override_category
+                .clone()
+                .ok_or_else(|| CoreError::InvalidPath { path: "missing category".into() })?;
+            validate::filename(&category)?;
+            Ok(ImportTarget { relative_dir: category.clone(), category })
+        }
+        ImportDestination::AutoClassify => {
+            let category = options
+                .override_category
+                .clone()
+                .unwrap_or_else(|| classify::classify(repo, original_name).category);
+            validate::filename(&category)?;
+            Ok(ImportTarget { relative_dir: category.clone(), category })
+        }
+    }
+}
+
+fn top_level_dir(path: &str) -> Option<String> {
+    path.split('/').next().filter(|s| !s.is_empty()).map(|s| s.to_string())
 }
 
 const MAX_IMPORT_SIZE: u64 = 50 * 1024 * 1024 * 1024;
@@ -432,7 +472,7 @@ pub fn delete_file(repo: &Path, file_id: i64, hard: bool) -> CoreResult<()> {
         Ok(())
     })?;
 
-    crate::overview::regenerate_for_category(repo, &entry.category)?;
+    crate::overview::regenerate_for_node(repo, &entry.category)?;
     Ok(())
 }
 ```
@@ -478,7 +518,7 @@ pub fn rename_file(repo: &Path, file_id: i64, new_name: &str) -> CoreResult<File
         Ok(())
     })?;
 
-    crate::overview::regenerate_for_category(repo, &entry.category)?;
+    crate::overview::regenerate_for_node(repo, &entry.category)?;
     db::get_file_by_id(repo, file_id)
 }
 ```
@@ -529,8 +569,8 @@ pub fn move_to_category(
         Ok(())
     })?;
 
-    crate::overview::regenerate_for_category(repo, &entry.category)?;
-    crate::overview::regenerate_for_category(repo, new_category)?;
+    crate::overview::regenerate_for_node(repo, &entry.category)?;
+    crate::overview::regenerate_for_node(repo, new_category)?;
     db::get_file_by_id(repo, file_id)
 }
 ```
@@ -587,30 +627,48 @@ pub fn recover_on_startup(repo: &Path) -> CoreResult<RecoveryReport> {
 
 ## reindex_from_filesystem
 
-`reindex_from_filesystem` 同时服务两个场景：
+扫描索引能力服务两个场景：
 
-- 接管已有目录：首次扫描现有文件，以 `StorageMode::Indexed` 写入 DB，不移动文件
-- DB 丢失/损坏后的重建索引：从文件系统重新推导 files 表
+- `adopt_existing_files`：首次接管现有文件，以 `StorageMode::Indexed` + `FileOrigin::Adopted` 写入 DB，不移动文件
+- `reindex_from_filesystem`：DB 丢失/损坏后的重建索引，从文件系统重新推导 files 表，来源记为 `FileOrigin::External`
 
-它必须跳过 `.areamatrix/`、可选根目录 `AREAMATRIX.md` 以及其他配置化忽略项，但**不跳过用户自己的 `README.md`**。
+它必须跳过 `.areamatrix/`、可选根目录 `AREAMATRIX.md` 以及 `ignore.yaml` 里的配置化忽略项，但**不跳过用户自己的 `README.md`**。
 
 ```rust
 // core/src/storage/reindex.rs
 use std::path::Path;
-use walkdir::{DirEntry, WalkDir};
+use walkdir::WalkDir;
 
-use crate::api::types::{ReindexReport, StorageMode};
+use crate::api::types::{FileOrigin, ReindexReport, StorageMode};
+use crate::change_log::ChangeAction;
 use crate::db::{self, NewFileRow};
 use crate::error::CoreResult;
+use crate::ignore;
 use crate::storage::hash;
+use serde_json::json;
 
 pub fn reindex_from_filesystem(repo: &Path) -> CoreResult<ReindexReport> {
+    reindex_with_origin(repo, "reindex", FileOrigin::External)
+}
+
+pub(crate) fn adopt_existing_files(repo: &Path) -> CoreResult<ReindexReport> {
+    reindex_with_origin(repo, "adopt", FileOrigin::Adopted)
+}
+
+fn reindex_with_origin(
+    repo: &Path,
+    session_kind: &str,
+    origin: FileOrigin,
+) -> CoreResult<ReindexReport> {
     let mut report = ReindexReport::default();
+    let matcher = ignore::load_matcher(repo)?;
+    let session_id = db::start_scan_session(repo, session_kind)?;
+    report.scan_session_id = Some(session_id);
 
     let walker = WalkDir::new(repo)
         .follow_links(false)
         .into_iter()
-        .filter_entry(|e| !is_areamatrix_internal(e));
+        .filter_entry(|e| !matcher.is_ignored(e.path()));
 
     for entry in walker {
         let entry = match entry {
@@ -644,7 +702,7 @@ pub fn reindex_from_filesystem(repo: &Path) -> CoreResult<ReindexReport> {
             }
             None => {
                 let category = top_level_dir(&path_str)
-                    .unwrap_or_else(|| "inbox".to_string());
+                    .unwrap_or_else(|| "__root__".to_string());
                 let original_name = abs
                     .file_name()
                     .and_then(|s| s.to_str())
@@ -652,7 +710,7 @@ pub fn reindex_from_filesystem(repo: &Path) -> CoreResult<ReindexReport> {
                     .to_string();
                 db::with_repo(repo, |conn| -> CoreResult<()> {
                     let tx = conn.transaction()?;
-                    db::insert_active(&tx, NewFileRow {
+                    let id = db::insert_active(&tx, NewFileRow {
                         path: path_str.clone(),
                         original_name: original_name.clone(),
                         current_name: original_name,
@@ -660,21 +718,30 @@ pub fn reindex_from_filesystem(repo: &Path) -> CoreResult<ReindexReport> {
                         size_bytes: size,
                         hash_sha256: hash_str.clone(),
                         storage_mode: StorageMode::Indexed,
-                        source_path: abs.to_string_lossy().to_string(),
+                        origin,
+                        source_path: None,
                         imported_at: chrono::Utc::now().timestamp(),
                     })?;
+                    let action = if origin == FileOrigin::Adopted {
+                        ChangeAction::Adopted
+                    } else {
+                        ChangeAction::Imported
+                    };
+                    db::insert_change(&tx, id, action, json!({
+                        "path": path_str,
+                        "scan_session_id": session_id,
+                        "by": session_kind,
+                    }))?;
                     tx.commit()?;
                     Ok(())
                 })?;
                 report.inserted += 1;
             }
         }
+        db::update_scan_progress(repo, session_id, &path_str, &report)?;
     }
+    db::finish_scan_session(repo, session_id, "completed", &report)?;
     Ok(report)
-}
-
-fn is_areamatrix_internal(e: &DirEntry) -> bool {
-    e.file_name().to_str().map(|s| s == ".areamatrix").unwrap_or(false)
 }
 
 fn is_managed_file(path: &str) -> bool {
@@ -683,7 +750,7 @@ fn is_managed_file(path: &str) -> bool {
 }
 
 fn top_level_dir(path: &str) -> Option<String> {
-    path.split('/').next().map(|s| s.to_string())
+    path.split('/').next().filter(|s| !s.is_empty()).map(|s| s.to_string())
 }
 ```
 
@@ -730,6 +797,13 @@ pub fn source_size(p: &Path, max: u64) -> CoreResult<()> {
     }
     Ok(())
 }
+
+pub fn relative_dir(dir: &str) -> CoreResult<()> {
+    if dir.starts_with('/') || dir.contains("..") {
+        return Err(CoreError::InvalidPath { path: dir.into() });
+    }
+    Ok(())
+}
 ```
 
 ---
@@ -748,7 +822,10 @@ pub struct TestRepo { pub dir: TempDir }
 impl TestRepo {
     pub fn new() -> Self {
         let dir = tempfile::tempdir().unwrap();
-        crate::api::init_repo(dir.path().to_string_lossy().into()).unwrap();
+        crate::api::init_repo(
+            dir.path().to_string_lossy().into(),
+            RepoInitOptions::create_empty_generated_only(),
+        ).unwrap();
         Self { dir }
     }
     pub fn path(&self) -> PathBuf { self.dir.path().to_path_buf() }
@@ -772,6 +849,8 @@ mod tests {
     fn opts(mode: StorageMode) -> ImportOptions {
         ImportOptions {
             mode,
+            destination: ImportDestination::AutoClassify,
+            target_directory: None,
             override_category: None,
             override_filename: None,
             duplicate_strategy: DuplicateStrategy::Skip,

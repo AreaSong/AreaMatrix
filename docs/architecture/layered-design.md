@@ -58,13 +58,13 @@ flowchart TB
 | 模块 | 职责 |
 |---|---|
 | `api` | FFI 边界。所有暴露给 Swift 的函数集中在这里 |
-| `domain` | 跨边界类型（FileEntry / Category / StorageMode / ChangeAction） |
+| `domain` | 跨边界类型（FileEntry / Category / StorageMode / FileOrigin / ChangeAction） |
 | `error` | 统一错误类型 `CoreError` 和 `CoreResult<T>` |
 | `config` | 加载 / 持久化 `~/Library/Application Support/AreaMatrix/config.json` |
 | `classify` | 规则引擎，输出 `(category, suggested_name)` |
-| `storage` | 事务式导入、move/copy/index、SHA256、冲突重命名 |
+| `storage` | 事务式导入、move/copy/index、SHA256、冲突重命名、接管扫描 |
 | `overview` | 资料库概览生成；默认写入 `.areamatrix/generated/`，可选根目录 `AREAMATRIX.md` |
-| `tree` | 资料库目录扫描，生成 tree JSON |
+| `tree` | 资料库目录扫描，按系统分类 / 用户文件夹生成 tree JSON |
 | `sync` | 处理外部变化事件（外部重命名 / 删除 / 新增） |
 | `db` | SQLite CRUD + migrations + schema 初始化 |
 

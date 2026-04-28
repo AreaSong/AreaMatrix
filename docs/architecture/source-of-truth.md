@@ -174,7 +174,7 @@ fn handle_move_cross_category(
 ) -> CoreResult<()> {
     let new_rel = new_path.strip_prefix(repo)?.to_string_lossy().to_string();
     let new_category = top_level_dir(&new_rel)
-        .unwrap_or_else(|| "inbox".into());
+        .unwrap_or_else(|| "__root__".into());
 
     db::with_repo(repo, |conn| {
         let tx = conn.transaction()?;
@@ -319,7 +319,7 @@ sequenceDiagram
     Watcher->>Sync: events
     Sync->>FS: hash new.pdf
     Sync->>DB: find by hash → 无
-    Sync->>DB: INSERT files (storage_mode=indexed, source_path=NULL)
+    Sync->>DB: INSERT files (storage_mode=indexed, origin=external, source_path=NULL)
     Sync->>DB: INSERT change_log(imported, by=external)
 ```
 
@@ -331,7 +331,7 @@ fn handle_external_create(
     size: i64,
 ) -> CoreResult<()> {
     let rel = path.strip_prefix(repo)?.to_string_lossy().to_string();
-    let category = top_level_dir(&rel).unwrap_or_else(|| "inbox".into());
+    let category = top_level_dir(&rel).unwrap_or_else(|| "__root__".into());
     let original_name = path.file_name().and_then(|s| s.to_str()).unwrap_or("unnamed").to_string();
 
     db::with_repo(repo, |conn| {
@@ -344,7 +344,8 @@ fn handle_external_create(
             size_bytes: size,
             hash_sha256: hash.into(),
             storage_mode: StorageMode::Indexed,
-            source_path: String::new(),
+            origin: FileOrigin::External,
+            source_path: None,
             imported_at: chrono::Utc::now().timestamp(),
         })?;
         db::insert_change(&tx, id, ChangeAction::Imported, json!({
@@ -512,11 +513,11 @@ flowchart TB
 | 2 move | 跨分类移动 | UPDATE path, category | external_modified, kind=move | external |
 | 3 delete | 移废纸篓 / 删除 | UPDATE status='deleted' | deleted, by=external | external |
 | 4 modify content | 内容变化 | UPDATE hash, size | external_modified, kind=content | external |
-| 5 external create | 新文件出现 | INSERT files | imported, source=external | external |
+| 5 external create | 新文件出现 | INSERT files(origin=external) | imported, source=external | external |
 | 6 category drop | 整个分类被删 | 多条 UPDATE status='deleted' | 多条 deleted | external |
 | 7 overview / README edit | 改派生概览或用户 README | 概览不动 DB；用户 README 按普通文件处理 | — / external_modified | — / external |
 | 8 note edit | 改 .md 文件 | UPDATE notes | edited_note, by=external | external |
-| 9 DB lost | 删 `.areamatrix/` | reindex 重建 | imported * N | startup_reconcile |
+| 9 DB lost | 删 `.areamatrix/` | reindex 重建(origin=external) | imported * N | startup_reconcile |
 
 ---
 
@@ -656,6 +657,7 @@ CI 集成测试覆盖：
 ## Related
 
 - [overview.md](overview.md)
+- [adopt-existing-folders.md](adopt-existing-folders.md)
 - [data-model.md](data-model.md)
 - [fs-watcher.md](fs-watcher.md)
 - [transactional-import.md](transactional-import.md)

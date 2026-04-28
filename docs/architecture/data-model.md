@@ -14,6 +14,7 @@
 | 元数据 / 改动日志 | `<repo>/.areamatrix/index.db` | SQLite |
 | 用户配置 | `~/Library/Application Support/AreaMatrix/config.json` | JSON |
 | 分类规则 | `<repo>/.areamatrix/classifier.yaml` | YAML |
+| 忽略规则 | `<repo>/.areamatrix/ignore.yaml` | YAML |
 | 自动概览 | `<repo>/.areamatrix/generated/*.md`，可选 `<repo>/AREAMATRIX.md` | Markdown |
 | 临时事务区 | `<repo>/.areamatrix/staging/` | 标准文件 |
 | 应用日志 | `~/Library/Logs/AreaMatrix/*.log` | 文本 |
@@ -74,6 +75,8 @@ CREATE TABLE IF NOT EXISTS files (
   size_bytes INTEGER NOT NULL,
   hash_sha256 TEXT NOT NULL,
   storage_mode TEXT NOT NULL CHECK (storage_mode IN ('moved', 'copied', 'indexed')),
+  origin TEXT NOT NULL DEFAULT 'imported'
+    CHECK (origin IN ('imported', 'adopted', 'external')),
   source_path TEXT,
   imported_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL,
@@ -95,7 +98,7 @@ CREATE TABLE IF NOT EXISTS change_log (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   file_id INTEGER,
   action TEXT NOT NULL CHECK (action IN (
-    'imported','renamed','moved','edited_note',
+    'imported','adopted','renamed','moved','edited_note',
     'deleted','restored','external_modified'
   )),
   detail_json TEXT NOT NULL,
@@ -130,6 +133,25 @@ CREATE TABLE IF NOT EXISTS fs_event_cursor (
   updated_at INTEGER NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS scan_sessions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  kind TEXT NOT NULL CHECK (kind IN ('adopt', 'reindex')),
+  status TEXT NOT NULL CHECK (status IN (
+    'running','completed','paused','failed','interrupted'
+  )),
+  started_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL,
+  finished_at INTEGER,
+  last_path TEXT,
+  inserted INTEGER NOT NULL DEFAULT 0,
+  updated INTEGER NOT NULL DEFAULT 0,
+  skipped INTEGER NOT NULL DEFAULT 0,
+  errors_json TEXT NOT NULL DEFAULT '[]'
+);
+
+CREATE INDEX IF NOT EXISTS idx_scan_sessions_status
+  ON scan_sessions(status, updated_at DESC);
+
 CREATE TABLE IF NOT EXISTS repo_config (
   key TEXT PRIMARY KEY,
   value TEXT NOT NULL,
@@ -158,6 +180,7 @@ erDiagram
         int size_bytes
         string hash_sha256
         string storage_mode
+        string origin
         string source_path
         int imported_at
         int updated_at
@@ -186,6 +209,19 @@ erDiagram
         int last_event_id
         int updated_at
     }
+    scan_sessions {
+        int id PK
+        string kind
+        string status
+        int started_at
+        int updated_at
+        int finished_at
+        string last_path
+        int inserted
+        int updated
+        int skipped
+        string errors_json
+    }
     repo_config {
         string key PK
         string value
@@ -206,9 +242,9 @@ erDiagram
 ```sql
 INSERT INTO files (
   path, original_name, current_name, category,
-  size_bytes, hash_sha256, storage_mode, source_path,
+  size_bytes, hash_sha256, storage_mode, origin, source_path,
   imported_at, updated_at, status
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'staging');
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'staging');
 ```
 
 ### files: 提升为 active
@@ -223,7 +259,7 @@ UPDATE files
 
 ```sql
 SELECT id, path, original_name, current_name, category,
-       size_bytes, hash_sha256, storage_mode, source_path,
+       size_bytes, hash_sha256, storage_mode, origin, source_path,
        imported_at, updated_at, deleted_at, status
   FROM files
  WHERE path = ? AND status != 'staging'
@@ -242,7 +278,7 @@ SELECT id, path, current_name, category, size_bytes
 ### files: list active in category
 
 ```sql
-SELECT id, path, current_name, size_bytes, hash_sha256, imported_at
+SELECT id, path, current_name, size_bytes, hash_sha256, origin, imported_at
   FROM files
  WHERE category = ? AND status = 'active'
  ORDER BY imported_at DESC
@@ -308,6 +344,36 @@ SELECT id, path, category, imported_at
 ```sql
 INSERT INTO change_log (file_id, action, detail_json, occurred_at)
 VALUES (?, ?, ?, ?);
+```
+
+### scan_sessions: START
+
+```sql
+INSERT INTO scan_sessions (
+  kind, status, started_at, updated_at,
+  inserted, updated, skipped, errors_json
+) VALUES (?, 'running', ?, ?, 0, 0, 0, '[]');
+```
+
+### scan_sessions: PROGRESS
+
+```sql
+UPDATE scan_sessions
+   SET updated_at = ?,
+       last_path = ?,
+       inserted = ?,
+       updated = ?,
+       skipped = ?,
+       errors_json = ?
+ WHERE id = ? AND status = 'running';
+```
+
+### scan_sessions: FINISH
+
+```sql
+UPDATE scan_sessions
+   SET status = ?, finished_at = ?, updated_at = ?
+ WHERE id = ?;
 ```
 
 ### change_log: SELECT 单文件历史
@@ -525,6 +591,7 @@ CREATE VIRTUAL TABLE files_fts USING fts5(
 |---|---|---|
 | `files` | 320 字节 | 见下表 |
 | `change_log` | 280 字节 | id+file_id+action+detail_json(200)+timestamp |
+| `scan_sessions` | 512 字节 | 一次接管 / 重建扫描一行，errors_json 通常为空 |
 | `notes` | 1024 字节 | 平均 1KB markdown |
 | `tags` | 64 字节 | id+tag(16)+timestamp |
 
@@ -540,6 +607,7 @@ CREATE VIRTUAL TABLE files_fts USING fts5(
 | size_bytes | 8 |
 | hash_sha256 | 64 (hex 字符串) |
 | storage_mode | 8 |
+| origin | 8 |
 | source_path | 60 (NULL or 含路径) |
 | imported_at + updated_at + deleted_at | 24 |
 | status | 8 |
@@ -587,7 +655,9 @@ VACUUM;        -- 删 deleted 行 > 30% 时手动跑（重整页）
 | INV-D4 schema 版本可追溯 | schema_version 单调 | migration |
 | INV-D5 change_log action 在枚举内 | CHECK 约束 | INSERT |
 | INV-D6 storage_mode 在枚举内 | CHECK 约束 | INSERT |
-| INV-D7 status 在枚举内 | CHECK 约束 | INSERT/UPDATE |
+| INV-D7 origin 在枚举内 | CHECK 约束 | INSERT |
+| INV-D8 status 在枚举内 | CHECK 约束 | INSERT/UPDATE |
+| INV-D9 scan session 状态可恢复 | `scan_sessions.status` CHECK | 扫描启动/恢复 |
 
 `fsck` 命令（Stage 2）跑：
 
@@ -665,7 +735,9 @@ cp <repo>/.areamatrix/index.db.bak.<timestamp> <repo>/.areamatrix/index.db
 应用提供「从文件系统重新索引」按钮：
 
 - 扫描 `<repo>/`，跳过 `.areamatrix/` 与可忽略目录，对每个用户文件计算 hash 并 INSERT 到 files
-- change_log 全部丢失
+- 通过 `scan_sessions(kind='reindex')` 记录进度，允许中断后恢复或重跑
+- 重建得到的行使用 `storage_mode='indexed'`，`origin='external'`；首次接管扫描使用 `origin='adopted'`
+- 旧 change_log 历史全部丢失；重建过程可重新写入 `imported` / `startup_reconcile` 类事件作为新的起点
 
 > 完全重建会丢失改动历史，但用户的文件本身永远不会丢。这是产品级的"真相在文件系统"承诺的体现。
 
@@ -685,6 +757,7 @@ cp <repo>/.areamatrix/index.db.bak.<timestamp> <repo>/.areamatrix/index.db
 ## Related
 
 - [overview.md](overview.md)
+- [adopt-existing-folders.md](adopt-existing-folders.md)
 - [transactional-import.md](transactional-import.md)
 - [source-of-truth.md](source-of-truth.md)
 - [migration.md](migration.md)
