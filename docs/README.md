@@ -94,6 +94,12 @@ docs/adr/README.md  (索引)
 | [product/user-stories.md](product/user-stories.md) | 核心用户故事 |
 | [product/glossary.md](product/glossary.md) | 中英术语表 |
 
+### UX / 交互规格
+
+| 文档 | 说明 |
+|---|---|
+| [ux/README.md](ux/README.md) | UX 文档索引（Wireframe Specs） |
+
 ### 架构 / Architecture
 
 | 文档 | 说明 |
