@@ -323,4 +323,6 @@ sudo mdutil -d ~/AreaMatrix-dev/.areamatrix/index.db
 
 - [setup.md](setup.md)
 - [release.md](release.md)
+- [troubleshooting.md](troubleshooting.md)
 - [../architecture/ffi-design.md](../architecture/ffi-design.md)
+- [../api/uniffi-recipes.md](../api/uniffi-recipes.md)

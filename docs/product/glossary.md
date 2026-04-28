@@ -44,6 +44,17 @@
 | 去抖 | Debounce | 在 200ms 窗口内合并同 path 的 FSEvents |
 | 占位符 | Placeholder file | iCloud 未下载文件的本地占位（`.icloud` 后缀） |
 | 协调读取 | Coordinated read | 通过 NSFileCoordinator 触发 iCloud 占位符下载 |
+| CoreBridge | CoreBridge | Swift 端串行化对 Core 写操作的 actor，参见 concurrency.md |
+| 跨 Actor 边界 | Cross-actor boundary | Swift 端不同 Actor / Task 间传值时的数据所有权切换点 |
+| Send / Sync | Send / Sync | Rust 中表达类型可跨线程移动 / 共享的 marker trait |
+| Sendable | Sendable | Swift 中表达类型可跨并发上下文安全传递的 protocol |
+| 模式版本 | Schema version | DB 结构的整数版本号，独立于应用 SemVer，参见 migration.md |
+| 应用版本 | App version | 应用的 SemVer 版本号（MAJOR.MINOR.PATCH） |
+| 迁移脚本 | Migration script | `m_NNN_xxx.sql` 文件，单次 schema 升级的原子单元 |
+| Tracing span | Tracing span | tracing crate 表达"嵌套耗时段"的概念，参见 observability.md |
+| 诊断包 | Diagnostic bundle | 用户/QA 提报问题时一键导出的日志 + DB 快照压缩包 |
+| 反向 callback | Reverse callback | 由 Rust Core 主动调用 Swift 端的 callback interface |
+| 取消令牌 | Cancellation token | 用于跨 FFI 协作式取消的小对象（参见 uniffi-recipes.md Recipe 6）|
 
 ---
 
@@ -99,6 +110,10 @@
 | SoT | Source of Truth | 真相源 |
 | UDL | UniFFI Definition Language | UniFFI 接口描述语言 |
 | WAL | Write-Ahead Logging | SQLite 的预写日志模式 |
+| OSLog | Apple Unified Logging System | macOS / iOS 系统日志框架，参见 observability.md |
+| GC | Garbage Collection | 此处特指 staging / change_log 的过期清理（不是语言级 GC） |
+| RAII | Resource Acquisition Is Initialization | Rust / C++ 中通过 Drop 释放资源的模式 |
+| PRAGMA | SQLite PRAGMA | SQLite 的连接级配置指令（如 journal_mode、busy_timeout） |
 
 ---
 
@@ -107,3 +122,7 @@
 - [prd.md](prd.md)
 - [user-stories.md](user-stories.md)
 - [../architecture/overview.md](../architecture/overview.md)
+- [../architecture/concurrency.md](../architecture/concurrency.md)
+- [../architecture/migration.md](../architecture/migration.md)
+- [../development/observability.md](../development/observability.md)
+- [../api/uniffi-recipes.md](../api/uniffi-recipes.md)

@@ -298,4 +298,6 @@ AreaMatrix/                            # Git 仓库
 - [fs-watcher.md](fs-watcher.md)
 - [transactional-import.md](transactional-import.md)
 - [source-of-truth.md](source-of-truth.md)
+- [concurrency.md](concurrency.md)
+- [migration.md](migration.md)
 - [../adr/0001-tech-stack.md](../adr/0001-tech-stack.md)

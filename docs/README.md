@@ -31,6 +31,8 @@ docs/architecture/overview.md
 ```
 docs/architecture/data-model.md
    → docs/architecture/transactional-import.md
+   → docs/architecture/concurrency.md
+   → docs/architecture/migration.md
    → docs/modules/storage.md
    → docs/modules/classify.md
    → docs/modules/readme-gen.md
@@ -38,6 +40,7 @@ docs/architecture/data-model.md
    → docs/modules/change-log.md
    → docs/api/core-api.md
    → docs/api/error-codes.md
+   → docs/development/observability.md
 ```
 
 ### 你是 macOS App 实现者 / 写 SwiftUI 部分
@@ -46,9 +49,19 @@ docs/architecture/data-model.md
 docs/architecture/overview.md
    → docs/architecture/ffi-design.md
    → docs/architecture/fs-watcher.md
+   → docs/architecture/concurrency.md
+   → docs/api/uniffi-recipes.md
    → docs/development/setup.md
    → docs/development/build.md
    → docs/api/core-api.md
+```
+
+### 你在调试问题 / 性能 / 可观测性
+
+```
+docs/development/troubleshooting.md
+   → docs/development/observability.md
+   → docs/development/performance.md
 ```
 
 ### 你是新加入的贡献者
@@ -93,6 +106,8 @@ docs/adr/README.md  (索引)
 | [architecture/fs-watcher.md](architecture/fs-watcher.md) | 文件系统监听与 iCloud 集成 |
 | [architecture/transactional-import.md](architecture/transactional-import.md) | 事务式导入流程 |
 | [architecture/source-of-truth.md](architecture/source-of-truth.md) | 真相源策略 |
+| [architecture/concurrency.md](architecture/concurrency.md) | 并发模型（Tokio / Actor / FFI） |
+| [architecture/migration.md](architecture/migration.md) | DB schema 升级与回滚 |
 
 ### 模块详细设计 / Modules
 
@@ -111,6 +126,7 @@ docs/adr/README.md  (索引)
 | [api/core-api.md](api/core-api.md) | Core 对外 API（UDL 接口） |
 | [api/error-codes.md](api/error-codes.md) | 错误码列表 |
 | [api/classifier-yaml.md](api/classifier-yaml.md) | classifier.yaml 配置规范 |
+| [api/uniffi-recipes.md](api/uniffi-recipes.md) | Swift 端封装套路集 |
 
 ### 开发指南 / Development
 
@@ -122,6 +138,9 @@ docs/adr/README.md  (索引)
 | [development/git-workflow.md](development/git-workflow.md) | Git 分支与 commit 规范 |
 | [development/testing.md](development/testing.md) | 测试策略 |
 | [development/release.md](development/release.md) | 发布流程 |
+| [development/troubleshooting.md](development/troubleshooting.md) | 常见错误诊断手册 |
+| [development/performance.md](development/performance.md) | 性能工程指南 |
+| [development/observability.md](development/observability.md) | 日志与可观测性 |
 
 ### 决策记录 / ADR
 

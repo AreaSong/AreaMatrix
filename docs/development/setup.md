@@ -328,4 +328,7 @@ serde = { version = "1", features = ["derive"] }
 - [build.md](build.md)
 - [coding-standards.md](coding-standards.md)
 - [testing.md](testing.md)
+- [troubleshooting.md](troubleshooting.md)
+- [observability.md](observability.md)
+- [performance.md](performance.md)
 - [../architecture/tech-stack.md](../architecture/tech-stack.md)

@@ -400,4 +400,8 @@ fn sigkill_during_import_safe() {
 - [coding-standards.md](coding-standards.md)
 - [build.md](build.md)
 - [release.md](release.md)
+- [performance.md](performance.md)
+- [observability.md](observability.md)
+- [troubleshooting.md](troubleshooting.md)
+- [../api/uniffi-recipes.md](../api/uniffi-recipes.md)
 - [../roadmap/stage-1-mvp.md](../roadmap/stage-1-mvp.md)

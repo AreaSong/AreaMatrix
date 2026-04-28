@@ -515,6 +515,8 @@ Rust 实现把 tracing 输出到 OSLog 或 stdout（开发期）。
 
 - [overview.md](overview.md)
 - [layered-design.md](layered-design.md)
+- [concurrency.md](concurrency.md)
 - [../api/core-api.md](../api/core-api.md)
+- [../api/uniffi-recipes.md](../api/uniffi-recipes.md)
 - [../adr/0002-uniffi-vs-others.md](../adr/0002-uniffi-vs-others.md)
 - [../development/build.md](../development/build.md)
