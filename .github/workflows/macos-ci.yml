@@ -16,9 +16,6 @@ on:
       - 'scripts/**'
       - '.github/workflows/macos-ci.yml'
 
-env:
-  XCODE_VERSION: "15.4"
-
 jobs:
   build:
     name: Xcode build & test
@@ -26,27 +23,51 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Select Xcode
-        run: sudo xcode-select -s /Applications/Xcode_${{ env.XCODE_VERSION }}.app
+      - name: Check macOS project
+        id: macos_project
+        run: |
+          if [[ -d apps/macos/AreaMatrix.xcodeproj ]]; then
+            echo "present=true" >> "${GITHUB_OUTPUT}"
+          else
+            echo "present=false" >> "${GITHUB_OUTPUT}"
+            echo "macOS app project is not present yet; skipping app build steps."
+          fi
+
+      - name: Show Xcode version
+        if: steps.macos_project.outputs.present == 'true'
+        run: xcodebuild -version
 
       - uses: dtolnay/rust-toolchain@stable
+        if: steps.macos_project.outputs.present == 'true'
         with:
           targets: aarch64-apple-darwin,x86_64-apple-darwin
 
       - uses: Swatinem/rust-cache@v2
+        if: steps.macos_project.outputs.present == 'true'
         with:
           workspaces: core
 
+      - name: Install UniFFI bindgen
+        if: steps.macos_project.outputs.present == 'true'
+        run: cargo install uniffi-bindgen --locked --version 0.28.3
+
+      - name: Install xcbeautify
+        if: steps.macos_project.outputs.present == 'true'
+        run: brew install xcbeautify
+
       - name: Build core (Rust → universal staticlib + Swift bindings)
+        if: steps.macos_project.outputs.present == 'true'
         run: ./scripts/build-core.sh
 
       - name: Resolve Swift package dependencies
+        if: steps.macos_project.outputs.present == 'true'
         run: |
           xcodebuild -resolvePackageDependencies \
             -project apps/macos/AreaMatrix.xcodeproj \
             -scheme AreaMatrix
 
       - name: Build & test
+        if: steps.macos_project.outputs.present == 'true'
         run: |
           xcodebuild test \
             -project apps/macos/AreaMatrix.xcodeproj \
@@ -57,7 +78,7 @@ jobs:
             | xcbeautify --quiet
 
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: always() && steps.macos_project.outputs.present == 'true'
         with:
           name: xcresult
           path: TestResults.xcresult
@@ -67,9 +88,20 @@ jobs:
     runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
+      - name: Check macOS sources
+        id: macos_sources
+        run: |
+          if [[ -d apps/macos ]]; then
+            echo "present=true" >> "${GITHUB_OUTPUT}"
+          else
+            echo "present=false" >> "${GITHUB_OUTPUT}"
+            echo "macOS app sources are not present yet; skipping SwiftLint."
+          fi
       - name: Install SwiftLint
+        if: steps.macos_sources.outputs.present == 'true'
         run: brew install swiftlint
       - name: Run SwiftLint
+        if: steps.macos_sources.outputs.present == 'true'
         run: swiftlint --strict
         working-directory: apps/macos
 
@@ -78,8 +110,19 @@ jobs:
     runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
+      - name: Check macOS sources
+        id: macos_sources
+        run: |
+          if [[ -d apps/macos ]]; then
+            echo "present=true" >> "${GITHUB_OUTPUT}"
+          else
+            echo "present=false" >> "${GITHUB_OUTPUT}"
+            echo "macOS app sources are not present yet; skipping SwiftFormat."
+          fi
       - name: Install SwiftFormat
+        if: steps.macos_sources.outputs.present == 'true'
         run: brew install swiftformat
       - name: Run SwiftFormat (check)
+        if: steps.macos_sources.outputs.present == 'true'
         run: swiftformat --lint .
         working-directory: apps/macos

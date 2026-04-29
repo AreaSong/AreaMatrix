@@ -285,6 +285,32 @@ enum CoreError {
 
 ---
 
+## Stage 1 API 缺口
+
+> 本节记录 UX 页面已经需要、但当前 UDL 尚未完全表达的接口意图。实现前必须先更新本文档，再落到 `core/area_matrix.udl`。
+
+| 缺口 | 消费页面 | 对应能力 | 意图 | 当前替代 |
+|---|---|---|---|---|
+| `validate_repo_path(repo_path) -> RepoPathValidation` | S1-02, S1-03, S1-11, S1-32 | C1-01 | 在 init 前返回结构化路径状态、风险和推荐模式，不制造副作用 | UI 只能试探 `load_config` 或直接调用 `init_repo`，不足以展示风险 |
+| `preview_import(repo_path, source_path, options) -> ImportPreview` | S1-16, S1-17, S1-18, S1-19, S1-22, S1-23 | C1-05, C1-09, C1-10 | 在导入前返回分类建议、目标路径、重复 hash、同名冲突和 iCloud 状态 | `predict_category` 只能给分类，`import_file` 会直接产生副作用 |
+| 导入进度 / 队列语义 | S1-18, S1-19, S1-20, S1-21 | C1-06, C1-07, C1-08 | 支撑多文件/文件夹导入的逐项状态、取消和结果摘要 | Stage 1 可先由 Swift 队列包装多次 `import_file`，Core 暂不提供流式回调 |
+| 详情聚合 DTO | S1-12, S1-13, S1-14 | C1-12, C1-13, C1-14 | 一次拿到文件元数据、日志和笔记，降低 UI 调用编排 | Stage 1 先用 `get_file` + `list_changes` + `read_note` 组合 |
+| 错误映射元数据 | S1-03, S1-06, S1-11, S1-25, S1-32 | C1-21 | 每个错误返回 severity、suggested_action、recoverability，避免 UI 解析字符串 | Stage 1 先在 Swift `AppError` 包装层集中映射 |
+
+这些缺口不得被 UI 静态 mock 掩盖。若某个 UI 任务进入真实闭环验收，而所需缺口尚未实现或没有明确替代路径，验收应判定不通过。
+
+### Stage 2-4 API 规划入口
+
+Stage 2-4 的后续接口先以 capability specs 作为合同来源，不直接落 UDL：
+
+- Stage 2：搜索、标签、Smart List、Undo/Redo、批量操作、导入冲突批量决策、非 AI 标签建议、分类规则编辑，见 [../core/capability-specs/stage-2-experience.md](../core/capability-specs/stage-2-experience.md)。
+- Stage 3：AI 配置、本地模型、远程 provider、AI 建议、AI 日志、语义搜索、隐私规则，见 [../core/capability-specs/stage-3-ai.md](../core/capability-specs/stage-3-ai.md)。
+- Stage 4：iOS/Windows/Linux repo 连接、平台能力、watcher、跨平台导入、同步冲突、缺失恢复、手动重扫，见 [../core/capability-specs/stage-4-multiplatform.md](../core/capability-specs/stage-4-multiplatform.md)。
+
+进入对应阶段前，应从能力规格中提升确定 API 到本文和 `core/area_matrix.udl`；未提升前不得让 UI 依赖临时 mock 通过最终验收。
+
+---
+
 ## meta API
 
 ### `get_version() -> String`

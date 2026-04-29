@@ -5,11 +5,13 @@ on:
     branches: [main]
     paths:
       - 'core/**'
+      - 'scripts/**'
       - '.github/workflows/core-ci.yml'
   pull_request:
     branches: [main]
     paths:
       - 'core/**'
+      - 'scripts/**'
       - '.github/workflows/core-ci.yml'
 
 env:
@@ -55,7 +57,7 @@ jobs:
         working-directory: core
 
   build-universal:
-    name: build universal binary
+    name: build universal binary and bindings
     runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
@@ -65,10 +67,10 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: core
-      - run: |
-          cargo build --release --target aarch64-apple-darwin
-          cargo build --release --target x86_64-apple-darwin
-        working-directory: core
+      - name: Install UniFFI bindgen
+        run: cargo install uniffi-bindgen --locked --version 0.28.3
+      - name: Build core
+        run: ./scripts/build-core.sh
 
   coverage:
     name: coverage gate

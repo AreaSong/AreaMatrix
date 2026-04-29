@@ -3,6 +3,7 @@
 > 目标：以 `docs/` 为 SSOT，把 AreaMatrix 从文档态推进到可执行实现态。
 
 共享规则：[./_shared/audit-rules.md](./_shared/audit-rules.md)  
+任务切片规则：[./_shared/task-slicing-rules.md](./_shared/task-slicing-rules.md)  
 依赖图：[./_shared/dependency-graph.md](./_shared/dependency-graph.md)  
 Manifest：[./_shared/manifests/](./_shared/manifests/)
 执行模式说明：[./_shared/copy-ready/README.md](./_shared/copy-ready/README.md)  
@@ -12,10 +13,11 @@ Manifest：[./_shared/manifests/](./_shared/manifests/)
 
 1. 任务文件定义目标、范围、核对清单和完成标准。
 2. Manifest 定义精确文档、现有代码、预期新增路径、禁止触碰路径、风险等级和验证命令。
-3. AreaMatrix 当前是 greenfield build：`Expected New Paths` 可以是尚不存在但允许创建的路径。
-4. 执行任务前先运行 `doctor`，再用 `render --mode copy` 生成可复制执行 prompt。
-5. 任务完成后用 `render --mode verify` 或 `verify` 生成只读验收 prompt。
-6. Runner 只负责人工串行执行辅助，不会调用 `codex exec`。
+3. 已存在 capability specs 的 task 必须绑定 UX 页面或 Core 能力，并交叉读取 capability specs 与对应 control map。
+4. AreaMatrix 当前是 greenfield build：`Expected New Paths` 可以是尚不存在但允许创建的路径。
+5. 执行任务前先运行 `doctor`，再用 `render --mode copy` 生成可复制执行 prompt。
+6. 任务完成后用 `render --mode verify` 或 `verify` 生成只读验收 prompt。
+7. Runner 只负责人工串行执行辅助，不会调用 `codex exec`。
 
 ## Runner
 
@@ -57,10 +59,10 @@ python3 tasks/prompts/_shared/prompt_pipeline.py mark --task 0-1/task-01 --statu
 | Phase | 目标 |
 |---|---|
 | Phase 0 | 治理、prompt runner、工程骨架、CI、Rust crate、UDL、Xcode 空壳 |
-| Phase 1 | Stage 1 MVP 的 Rust core、DB、storage、classify、FFI |
-| Phase 2 | Stage 1 MVP 的 macOS UI、Watcher、iCloud、overview |
+| Phase 1 | Stage 1 MVP 的 Core 能力小闭环：repo/config、classify/import、query/detail、recovery/sync/overview |
+| Phase 2 | Stage 1 MVP 的 macOS 纵向闭环：首次启动、主窗口、导入、冲突、详情、设置、watcher、overview |
 | Phase 3 | Stage 1 稳定、测试、发布准备 |
-| Phase 4 | Stage 2-4 的体验完善、AI、多端扩展占位任务 |
+| Phase 4 | Stage 2-4 的体验完善、AI、多端扩展任务；C2/C3/C4 已拆成逐能力、逐页面绑定的小任务 |
 
 ## 推荐执行顺序
 
@@ -68,4 +70,4 @@ python3 tasks/prompts/_shared/prompt_pipeline.py mark --task 0-1/task-01 --statu
 2. 再执行 Phase 1，跑通 Rust core 与 UniFFI。
 3. 再执行 Phase 2，完成 macOS 端到端闭环。
 4. 再执行 Phase 3，做稳定性和发布准备。
-5. Phase 4 在对应阶段启动前细化。
+5. Phase 4 按 `4-1/task-01..19`、`4-2/task-01..10`、`4-3/task-01..21` 串行推进，每个任务都绑定具体 UX 页面和 Core 能力。

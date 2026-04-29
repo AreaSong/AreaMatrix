@@ -267,7 +267,7 @@ flowchart LR
 - [ ] 默认 `ignore.yaml` 生效，且不默认忽略用户 `README.md`
 - [ ] 拖入目标语义正确：显式节点导入不自动重分类，空白导入才自动分类
 - [ ] Move / Copy / Index 三模式可选
-- [ ] 重复文件给提示（Skip / Overwrite / KeepBoth）
+- [ ] 重复文件给提示（Skip / Replace / KeepBoth）
 - [ ] 改名 / 删除 / 跨分类移动可用
 - [ ] 软删除 + 30 天保留
 - [ ] 改动历史完整记录

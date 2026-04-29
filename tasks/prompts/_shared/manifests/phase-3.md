@@ -3,7 +3,7 @@
 ## 3-1/task-01
 
 > source task: `tasks/prompts/phase-3/3-1-stability-release/task-01-error-handling-recovery.md`  
-> depends: `2-1/task-03`, `2-2/task-01`, `2-2/task-02`
+> depends: `2-2/task-03`, `2-3/task-02`, `2-3/task-03`, `2-4/task-01`, `2-4/task-02`, `2-4/task-03`
 
 ### Exact Docs
 - `docs/api/error-codes.md`
@@ -95,4 +95,3 @@
 
 ### Validation
 - `./scripts/check-all.sh`
-
