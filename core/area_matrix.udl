@@ -1,0 +1,209 @@
+namespace area_matrix {
+    string get_version();
+
+    [Throws=CoreError]
+    void init_logging(string level);
+
+    [Throws=CoreError]
+    void init_repo(string repo_path, RepoInitOptions options);
+
+    [Throws=CoreError]
+    RepoConfig load_config(string repo_path);
+
+    [Throws=CoreError]
+    void update_config(string repo_path, RepoConfig new_config);
+
+    [Throws=CoreError]
+    RecoveryReport recover_on_startup(string repo_path);
+
+    [Throws=CoreError]
+    ReindexReport reindex_from_filesystem(string repo_path);
+
+    [Throws=CoreError]
+    ScanSession? get_latest_scan_session(string repo_path);
+
+    [Throws=CoreError]
+    ReindexReport resume_scan_session(string repo_path, i64 scan_session_id);
+
+    [Throws=CoreError]
+    ClassifyResult predict_category(string repo_path, string filename);
+
+    [Throws=CoreError]
+    FileEntry import_file(
+        string repo_path, string source_path, ImportOptions options
+    );
+
+    [Throws=CoreError]
+    void delete_file(string repo_path, i64 file_id, boolean hard);
+
+    [Throws=CoreError]
+    FileEntry rename_file(string repo_path, i64 file_id, string new_name);
+
+    [Throws=CoreError]
+    FileEntry move_to_category(string repo_path, i64 file_id, string new_category);
+
+    [Throws=CoreError]
+    FileEntry restore_file(string repo_path, i64 file_id);
+
+    [Throws=CoreError]
+    sequence<FileEntry> list_files(string repo_path, FileFilter filter);
+
+    [Throws=CoreError]
+    FileEntry get_file(string repo_path, i64 file_id);
+
+    [Throws=CoreError]
+    sequence<ChangeLogEntry> list_changes(string repo_path, ChangeFilter filter);
+
+    [Throws=CoreError]
+    string list_tree_json(string repo_path, string locale);
+
+    [Throws=CoreError]
+    string? read_note(string repo_path, i64 file_id);
+
+    [Throws=CoreError]
+    void write_note(string repo_path, i64 file_id, string content_md);
+
+    [Throws=CoreError]
+    SyncResult sync_external_changes(string repo_path, sequence<ExternalEvent> events);
+
+    [Throws=CoreError]
+    i64? get_fs_event_cursor(string repo_path);
+
+    [Throws=CoreError]
+    void set_fs_event_cursor(string repo_path, i64 last_event_id);
+};
+
+dictionary RepoConfig {
+    string repo_path;
+    StorageMode default_mode;
+    OverviewOutput overview_output;
+    boolean ai_enabled;
+    string locale;
+    boolean icloud_warn;
+};
+
+dictionary RepoInitOptions {
+    RepoInitMode mode;
+    boolean create_default_categories;
+    OverviewOutput overview_output;
+};
+
+dictionary ImportOptions {
+    StorageMode mode;
+    ImportDestination destination;
+    string? target_directory;
+    string? override_category;
+    string? override_filename;
+    DuplicateStrategy duplicate_strategy;
+};
+
+dictionary FileFilter {
+    string? category;
+    boolean? include_deleted;
+    i64? imported_after;
+    i64? imported_before;
+    i64 limit;
+    i64 offset;
+};
+
+dictionary ChangeFilter {
+    i64? file_id;
+    string? category;
+    string? action;
+    i64? since;
+    i64? until;
+    i64 limit;
+    i64 offset;
+};
+
+dictionary FileEntry {
+    i64 id;
+    string path;
+    string original_name;
+    string current_name;
+    string category;
+    i64 size_bytes;
+    string hash_sha256;
+    StorageMode storage_mode;
+    FileOrigin origin;
+    string? source_path;
+    i64 imported_at;
+    i64 updated_at;
+};
+
+dictionary ChangeLogEntry {
+    i64 id;
+    i64? file_id;
+    string filename;
+    string category;
+    string action;
+    string detail_json;
+    i64 occurred_at;
+};
+
+dictionary ClassifyResult {
+    string category;
+    string suggested_name;
+    ClassifyReason reason;
+    f32 confidence;
+};
+
+dictionary RecoveryReport {
+    i64 cleaned_staging_files;
+    i64 reverted_staging_db_rows;
+    sequence<string> warnings;
+};
+
+dictionary ReindexReport {
+    i64? scan_session_id;
+    i64 inserted;
+    i64 updated;
+    i64 skipped;
+    sequence<string> errors;
+};
+
+dictionary ScanSession {
+    i64 id;
+    ScanSessionKind kind;
+    ScanSessionStatus status;
+    string? last_path;
+    i64 inserted;
+    i64 updated;
+    i64 skipped;
+    i64 started_at;
+    i64 updated_at;
+    i64? finished_at;
+    sequence<string> errors;
+};
+
+dictionary ExternalEvent {
+    string path;
+    ExternalEventKind kind;
+    i64 fs_event_id;
+};
+
+dictionary SyncResult {
+    i64 detected_creates;
+    i64 detected_renames;
+    i64 detected_deletes;
+    i64 detected_modifies;
+    sequence<string> errors;
+};
+
+enum StorageMode { "Moved", "Copied", "Indexed" };
+enum FileOrigin { "Imported", "Adopted", "External" };
+enum RepoInitMode { "CreateEmpty", "AdoptExisting" };
+enum OverviewOutput { "GeneratedOnly", "RootAreaMatrixFile" };
+enum ImportDestination { "AutoClassify", "SelectedDirectory", "Category" };
+enum ScanSessionKind { "Adopt", "Reindex" };
+enum ScanSessionStatus { "Running", "Completed", "Paused", "Failed", "Interrupted" };
+enum DuplicateStrategy { "Skip", "Overwrite", "KeepBoth", "Ask" };
+enum ClassifyReason { "Keyword", "Extension", "AiPredicted", "Default" };
+enum ExternalEventKind { "Created", "Removed", "Modified", "Renamed" };
+
+[Error]
+enum CoreError {
+    "Io", "Db", "Config", "Classify", "Conflict",
+    "DuplicateFile", "FileNotFound", "RepoNotInitialized",
+    "InvalidPath", "ICloudPlaceholder", "PermissionDenied", "Internal"
+};

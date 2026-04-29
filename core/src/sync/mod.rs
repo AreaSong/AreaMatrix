@@ -1,0 +1,1 @@
+//! External synchronization module skeleton.

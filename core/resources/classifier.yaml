@@ -1,0 +1,28 @@
+version: 1
+default: inbox
+categories:
+  - slug: docs
+    display_name: { zh-Hans: 文档, en: Documents }
+    extensions: [pdf, docx, txt, md, rtf]
+    keywords: [report, manual, doc, 报告, 手册]
+
+  - slug: code
+    display_name: { zh-Hans: 代码, en: Code }
+    extensions: [rs, swift, py, js, ts, go, java, cpp, h, hpp, c]
+
+  - slug: design
+    display_name: { zh-Hans: 设计, en: Design }
+    extensions: [psd, ai, sketch, fig, xd]
+    keywords: [design, mockup, wireframe, 设计稿, 原型]
+
+  - slug: media
+    display_name: { zh-Hans: 媒体, en: Media }
+    extensions: [png, jpg, jpeg, gif, mp4, mov, mp3, wav]
+
+  - slug: finance
+    display_name: { zh-Hans: 财务, en: Finance }
+    keywords: [invoice, receipt, tax, contract, 发票, 收据, 税务, 合同, 报销]
+    priority: 10
+
+  - slug: inbox
+    display_name: { zh-Hans: 未分类, en: Inbox }

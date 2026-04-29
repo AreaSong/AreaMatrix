@@ -2,6 +2,43 @@
 __pycache__/
 *.py[cod]
 
+# Rust
+target/
+**/*.rs.bk
+
+# SwiftPM / Xcode
+.build/
+.swiftpm/
+build/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+*.xccheckout
+*.xcresult
+*.xcarchive/
+*.dSYM/
+
+# UniFFI generated bindings
+apps/macos/AreaMatrix/Bridge/Generated/
+
+# Test and coverage output
+coverage/
+lcov.info
+*.profraw
+*.profdata
+
+# Local app/test state
+AreaMatrix-dev/
+
+# Secrets and local environment
+.env
+.env.*
+!.env.example
+
+# macOS / IDE
+.DS_Store
+.idea/
+.vscode/
+
 # AreaMatrix prompt runner local state
 tasks/prompts/_shared/progress.json
-
