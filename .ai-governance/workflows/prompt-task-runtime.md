@@ -16,7 +16,9 @@
 2. 运行 `plan` 查看阶段顺序和依赖。
 3. 运行 `render --task <label>` 生成可复制执行的 prompt。
 4. 按 prompt 阅读文档、实现代码、运行验证。
-5. 汇报任务完成状态和后续风险。
+5. 运行 `verify --task <label>` 生成只读验收 prompt。
+6. 验收通过后，用 `mark --task <label> --status completed` 记录本地进度。
+7. 阶段结束时运行 `verify --phase <phase>` 做阶段验收。
 
 ## 任务边界
 
@@ -27,3 +29,10 @@
 - `Risk Level`：Low / Medium / High / Mission-Critical。
 - `Validation`：任务完成后必须尝试的检查。
 
+## 验收规则
+
+- 执行 prompt 可以改文件，验收 prompt 禁止改文件。
+- 单任务验收必须逐项检查 task 核对清单和完成标准。
+- 阶段验收中任一 task 不通过，则阶段不通过。
+- 无法证明通过的项目默认不通过。
+- `mark` 只记录人工进度，不能替代验收结论。

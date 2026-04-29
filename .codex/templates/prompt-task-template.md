@@ -29,3 +29,11 @@
 ...
 ```
 
+## 验收提醒
+
+任务完成后运行：
+
+```bash
+python3 tasks/prompts/_shared/prompt_pipeline.py verify --task <task-label>
+```
+

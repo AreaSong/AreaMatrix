@@ -12,10 +12,10 @@
 
 - `references/index.md`：Codex 需要快速定位的规则入口。
 - `templates/prompt-task-template.md`：新建 prompt 任务的模板。
+- `templates/prompt-verify-template.md`：验收 prompt 的格式参考；实际优先由 runner 生成。
 
 ## 约束
 
 - 不在本目录放个人模型、权限、token 或密钥。
 - 项目语义变化先更新 `.ai-governance/`，再同步这里。
 - Prompt 任务本体放在 `tasks/prompts/`。
-

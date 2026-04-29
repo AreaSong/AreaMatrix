@@ -49,8 +49,16 @@
 ## 验收模式
 
 - 验收 prompt 由 `python3 tasks/prompts/_shared/prompt_pipeline.py verify --task <label>` 生成。
+- 阶段验收 prompt 由 `python3 tasks/prompts/_shared/prompt_pipeline.py verify --phase <phase>` 生成。
 - 验收模式只读，不允许修改文件，不允许边验边修。
 - 验收时必须回到 task、manifest、实际文件三者交叉检查。
 - 无法用文件、测试、日志或命令输出证明通过的项目，一律判定不通过。
 - UI 占位、接口空壳、未打通链路、缺失验证都不能视为完成。
 - 验收输出必须包含结论、范围、完成度摘要、逐项结果、阻塞项、验证情况和最终判定。
+- 阶段验收中任一 task 不通过，则该阶段不通过。
+
+## 进度记录
+
+- `mark` 命令只记录人工判断，不代表自动验收通过。
+- 只有完成 copy-ready 执行并通过 verify-ready 验收后，才建议标记 `completed`。
+- 进度文件是本地运行状态，不能替代 task 文件、manifest 或验收证据。

@@ -1,0 +1,7 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# AreaMatrix prompt runner local state
+tasks/prompts/_shared/progress.json
+

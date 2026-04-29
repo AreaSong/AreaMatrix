@@ -5,6 +5,8 @@
 共享规则：[./_shared/audit-rules.md](./_shared/audit-rules.md)  
 依赖图：[./_shared/dependency-graph.md](./_shared/dependency-graph.md)  
 Manifest：[./_shared/manifests/](./_shared/manifests/)
+执行模式说明：[./_shared/copy-ready/README.md](./_shared/copy-ready/README.md)  
+验收模式说明：[./_shared/verify-ready/README.md](./_shared/verify-ready/README.md)
 
 ## 执行基线
 
@@ -21,9 +23,12 @@ Manifest：[./_shared/manifests/](./_shared/manifests/)
 python3 tasks/prompts/_shared/prompt_pipeline.py doctor
 python3 tasks/prompts/_shared/prompt_pipeline.py plan --phase phase-0
 python3 tasks/prompts/_shared/prompt_pipeline.py plan --all
+python3 tasks/prompts/_shared/prompt_pipeline.py next
 python3 tasks/prompts/_shared/prompt_pipeline.py render --task 0-1/task-01
 python3 tasks/prompts/_shared/prompt_pipeline.py render --task 0-1/task-01 --mode verify
 python3 tasks/prompts/_shared/prompt_pipeline.py verify --task 0-1/task-01
+python3 tasks/prompts/_shared/prompt_pipeline.py verify --phase phase-0
+python3 tasks/prompts/_shared/prompt_pipeline.py mark --task 0-1/task-01 --status completed
 python3 tasks/prompts/_shared/prompt_pipeline.py status
 ```
 
@@ -34,6 +39,18 @@ python3 tasks/prompts/_shared/prompt_pipeline.py status
 | copy-ready | `render --task <label>` | 开始执行任务，可以修改文件 |
 | verify-ready | `render --task <label> --mode verify` | 验收任务是否完成，禁止修改文件 |
 | verify-ready | `verify --task <label>` | 上一条的简写 |
+| phase-verify | `verify --phase <phase>` | 阶段验收，任一 task 不通过则阶段不通过 |
+
+## 进度记录
+
+Runner 默认不自动执行任务，也不会自动判断完成。需要人工记录进度时使用：
+
+```bash
+python3 tasks/prompts/_shared/prompt_pipeline.py mark --task 0-1/task-01 --status in_progress
+python3 tasks/prompts/_shared/prompt_pipeline.py mark --task 0-1/task-01 --status completed
+```
+
+进度写入本地文件 `tasks/prompts/_shared/progress.json`，默认不提交。`next` 和 `status` 会读取这个文件来判断下一个可执行任务。
 
 ## Phase 概览
 
