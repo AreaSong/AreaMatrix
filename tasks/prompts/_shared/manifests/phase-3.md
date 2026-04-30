@@ -3,7 +3,7 @@
 ## 3-1/task-01
 
 > source task: `tasks/prompts/phase-3/3-1-stability-release/task-01-error-recovery-matrix.md`  
-> depends: `2-4/task-04`
+> depends: `2-4/task-08`
 
 ### Exact Docs
 - `docs/api/error-codes.md`
@@ -23,13 +23,15 @@
 - `docs/development/**`
 
 ### Forbidden Touches
-- `None`
+- None
 
 ### Risk Level
 - Mission-Critical
 
 ### Validation
 - `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`
+- `cargo test --workspace recovery`
+- `cargo test --workspace error_mapping`
 
 ## 3-1/task-02
 
@@ -37,6 +39,7 @@
 > depends: `3-1/task-01`
 
 ### Exact Docs
+- `docs/api/error-codes.md`
 - `docs/development/testing.md`
 - `docs/development/troubleshooting.md`
 - `docs/architecture/transactional-import.md`
@@ -53,13 +56,16 @@
 - `docs/development/**`
 
 ### Forbidden Touches
-- `None`
+- None
 
 ### Risk Level
 - Mission-Critical
 
 ### Validation
 - `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`
+- `cargo test --workspace recovery`
+- `cargo test --workspace transactional_import`
+- `xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
 
 ## 3-1/task-03
 
@@ -84,13 +90,15 @@
 - `docs/development/**`
 
 ### Forbidden Touches
-- `None`
+- None
 
 ### Risk Level
 - High
 
 ### Validation
 - `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`
+- `cargo bench --workspace --no-run`
+- `xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' -only-testing:AreaMatrixTests/AreaMatrixPerfTests CODE_SIGNING_ALLOWED=NO`
 
 ## 3-1/task-04
 
@@ -115,13 +123,16 @@
 - `docs/development/**`
 
 ### Forbidden Touches
-- `None`
+- None
 
 ### Risk Level
 - High
 
 ### Validation
 - `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`
+- `./scripts/check-all.sh`
+- `cargo update --dry-run`
+- `git diff --check`
 
 ## 3-1/task-05
 
@@ -133,6 +144,8 @@
 - `docs/development/release.md`
 - `docs/development/testing.md`
 - `docs/architecture/mvp-control-map.md`
+- `docs/core/capability-specs/stage-1-mvp.md`
+- `docs/ux/page-specs/stage-1-mvp.md`
 
 ### Existing Code
 - `core/**`
@@ -146,10 +159,15 @@
 - `docs/development/**`
 
 ### Forbidden Touches
-- `None`
+- `core/src/**`
+- `core/area_matrix.udl`
+- `apps/macos/AreaMatrix/**`
+- `apps/macos/AreaMatrix.xcodeproj/**`
 
 ### Risk Level
 - Mission-Critical
 
 ### Validation
+- `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`
 - `./scripts/check-all.sh`
+- `git diff --check`

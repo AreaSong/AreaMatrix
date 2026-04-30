@@ -1977,8 +1977,40 @@
 
 ## 1-3/task-15
 
-> source task: `tasks/prompts/phase-1/1-3-query-detail/task-15-c1-14-validation.md`  
+> source task: `tasks/prompts/phase-1/1-3-query-detail/task-15-c1-14-failure-recovery.md`  
 > depends: `1-3/task-14`
+
+### Exact Docs
+- `docs/core/capability-specs/stage-1-mvp/C1-14-read-write-note.md`
+- `docs/architecture/mvp-control-map.md`
+- `docs/api/core-api.md`
+- `docs/api/error-codes.md`
+- `docs/modules/change-log.md`
+
+### Existing Code
+- `core/src/**`
+- `core/area_matrix.udl`
+
+### Expected New Paths
+- `core/src/**`
+- `core/area_matrix.udl`
+- `core/tests/**`
+
+### Forbidden Touches
+- `apps/**`
+
+### Risk Level
+- High
+
+### Validation
+- `cd core && cargo fmt --all -- --check`
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`
+- `cd core && cargo test --workspace read_write_note`
+
+## 1-3/task-16
+
+> source task: `tasks/prompts/phase-1/1-3-query-detail/task-16-c1-14-validation.md`  
+> depends: `1-3/task-15`
 
 ### Exact Docs
 - `docs/core/capability-specs/stage-1-mvp/C1-14-read-write-note.md`
@@ -2006,10 +2038,10 @@
 - `cd core && cargo clippy --all-targets --all-features -- -D warnings`
 - `cd core && cargo test --workspace read_write_note`
 
-## 1-3/task-16
+## 1-3/task-17
 
-> source task: `tasks/prompts/phase-1/1-3-query-detail/task-16-c1-14-integration-verify.md`  
-> depends: `1-3/task-15`
+> source task: `tasks/prompts/phase-1/1-3-query-detail/task-17-c1-14-integration-verify.md`  
+> depends: `1-3/task-16`
 
 ### Exact Docs
 - `docs/core/capability-specs/stage-1-mvp/C1-14-read-write-note.md`
@@ -2037,10 +2069,10 @@
 - `cd core && cargo clippy --all-targets --all-features -- -D warnings`
 - `cd core && cargo test --workspace read_write_note`
 
-## 1-3/task-17
+## 1-3/task-18
 
-> source task: `tasks/prompts/phase-1/1-3-query-detail/task-17-c1-15-contract-api.md`  
-> depends: `1-3/task-16`
+> source task: `tasks/prompts/phase-1/1-3-query-detail/task-18-c1-15-contract-api.md`  
+> depends: `1-3/task-17`
 
 ### Exact Docs
 - `docs/core/capability-specs/stage-1-mvp/C1-15-build-tree.md`
@@ -2068,10 +2100,10 @@
 - `cd core && cargo clippy --all-targets --all-features -- -D warnings`
 - `cd core && cargo test --workspace build_tree`
 
-## 1-3/task-18
+## 1-3/task-19
 
-> source task: `tasks/prompts/phase-1/1-3-query-detail/task-18-c1-15-implementation.md`  
-> depends: `1-3/task-17`
+> source task: `tasks/prompts/phase-1/1-3-query-detail/task-19-c1-15-implementation.md`  
+> depends: `1-3/task-18`
 
 ### Exact Docs
 - `docs/core/capability-specs/stage-1-mvp/C1-15-build-tree.md`
@@ -2099,10 +2131,10 @@
 - `cd core && cargo clippy --all-targets --all-features -- -D warnings`
 - `cd core && cargo test --workspace build_tree`
 
-## 1-3/task-19
+## 1-3/task-20
 
-> source task: `tasks/prompts/phase-1/1-3-query-detail/task-19-c1-15-validation.md`  
-> depends: `1-3/task-18`
+> source task: `tasks/prompts/phase-1/1-3-query-detail/task-20-c1-15-validation.md`  
+> depends: `1-3/task-19`
 
 ### Exact Docs
 - `docs/core/capability-specs/stage-1-mvp/C1-15-build-tree.md`
@@ -2130,10 +2162,10 @@
 - `cd core && cargo clippy --all-targets --all-features -- -D warnings`
 - `cd core && cargo test --workspace build_tree`
 
-## 1-3/task-20
+## 1-3/task-21
 
-> source task: `tasks/prompts/phase-1/1-3-query-detail/task-20-c1-15-integration-verify.md`  
-> depends: `1-3/task-19`
+> source task: `tasks/prompts/phase-1/1-3-query-detail/task-21-c1-15-integration-verify.md`  
+> depends: `1-3/task-20`
 
 ### Exact Docs
 - `docs/core/capability-specs/stage-1-mvp/C1-15-build-tree.md`
@@ -2166,7 +2198,7 @@
 ## 1-4/task-01
 
 > source task: `tasks/prompts/phase-1/1-4-recovery-sync-overview/task-01-c1-16-contract-api.md`  
-> depends: `1-3/task-20`
+> depends: `1-3/task-21`
 
 ### Exact Docs
 - `docs/core/capability-specs/stage-1-mvp/C1-16-recover-on-startup.md`

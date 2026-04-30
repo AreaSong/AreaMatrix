@@ -1,4 +1,4 @@
-# 1-3/task-17: C1-15 build-tree contract-api
+# 1-3/task-20: C1-15 build-tree validation
 
 > 共享规则：`tasks/prompts/_shared/audit-rules.md`  
 > 任务切片规则：`tasks/prompts/_shared/task-slicing-rules.md`
@@ -9,7 +9,7 @@ atomic
 
 ## 范围
 
-围绕 C1-15 build-tree 完成 contract-api。
+围绕 C1-15 build-tree 完成 validation。
 
 ## 绑定
 
@@ -17,15 +17,15 @@ atomic
 
 ## 核对清单
 
-1. 只处理 C1-15 的 contract-api 范围。
+1. 只处理 C1-15 的 validation 范围。
 2. 读取 manifest 中的 Exact Docs 并以文档为 SSOT。
 3. 不实现相邻 C1 能力或 UI 页面。
-4. 更新或校准 Core API / UDL 合同意图。
-5. 明确输入、输出、错误码和副作用边界。
+4. 补齐针对该能力的 Rust 测试。
+5. 验证成功路径和关键错误路径。
 
 ## 完成标准
 
-- C1-15 的 contract-api 目标可用证据证明。
+- C1-15 的 validation 目标可用证据证明。
 - 没有扩展到未绑定能力。
 
 ## 验证

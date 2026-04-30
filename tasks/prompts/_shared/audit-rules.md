@@ -58,6 +58,8 @@
 - UI 占位、接口空壳、未打通链路、缺失验证都不能视为完成。
 - 如果 UX 页面引用的 Core 能力未实现或只接 mock，真实闭环验收必须不通过。
 - 如果 Core 能力没有任何 UX 消费，也未在 control map 中标记为内部能力，对应 task 默认越界。
+- Core integration verify 可以读取 UX 页面作为消费上下文；这些页面不等于当前 Core task 的页面绑定范围。
+- Core integration verify 只阻断当前 `C*` 能力自身的 API、UDL、Rust 实现、测试或 UX 消费一致性问题，不因消费页面中的其他 Core 能力尚未在本 task 覆盖而阻断。
 - 验收输出必须包含结论、范围、完成度摘要、逐项结果、阻塞项、验证情况和最终判定。
 - 阶段验收中任一 task 不通过，则该阶段不通过。
 

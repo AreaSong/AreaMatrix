@@ -88,7 +88,7 @@
 - `docs/development/coding-standards.md`
 
 ### Existing Code
-- `None`
+- None
 
 ### Expected New Paths
 - `core/Cargo.toml`
@@ -295,7 +295,7 @@
 - `docs/architecture/ffi-design.md`
 
 ### Existing Code
-- `None`
+- None
 
 ### Expected New Paths
 - `apps/macos/AreaMatrix.xcodeproj/**`
@@ -404,12 +404,17 @@
 - `scripts/**`
 
 ### Expected New Paths
-- `core/**`
-- `apps/macos/**`
+- `core/tests/**`
+- `apps/macos/AreaMatrixTests/**`
 - `scripts/**`
+- `docs/development/**`
 
 ### Forbidden Touches
-- `None`
+- `core/src/**`
+- `core/Cargo.toml`
+- `core/area_matrix.udl`
+- `apps/macos/AreaMatrix/**`
+- `apps/macos/AreaMatrix.xcodeproj/**`
 
 ### Risk Level
 - High

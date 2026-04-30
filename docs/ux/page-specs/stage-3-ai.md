@@ -86,7 +86,7 @@
 
 ## 任务来源说明
 
-当前 Stage 3 prompt task 已拆为 Core contract `4-2/task-01` 到 `4-2/task-10`、页面 atomic `4-2/task-11` 到 `4-2/task-20`，以及 `4-2/task-21` 集成验收。页面开发和验收以对应 `S3-*` 单页规格、Stage 3 control map 和页面 atomic task 为准。
+当前 Stage 3 prompt task 已拆为 C3 Core 能力任务 `4-2/task-01` 到 `4-2/task-50`、S3 page-feature / page integration verify 任务 `4-2/task-51` 到 `4-2/task-78`，以及 `4-2/task-79` 阶段集成验收。页面开发和验收以对应 `S3-*` 单页规格、Stage 3 control map、phase-4 manifest 和真实 prompt task 为准。
 
 ---
 
@@ -97,13 +97,11 @@
 - [../search.md](../search.md)
 - [../error-messages.md](../error-messages.md)
 - [../../product/prd.md](../../product/prd.md)
-- [../../../tasks/prompts/phase-4/4-2-stage3-ai/task-11-s3-01-ai-settings.md](../../../tasks/prompts/phase-4/4-2-stage3-ai/task-11-s3-01-ai-settings.md)
-- [../../../tasks/prompts/phase-4/4-2-stage3-ai/task-12-s3-02-local-model-status.md](../../../tasks/prompts/phase-4/4-2-stage3-ai/task-12-s3-02-local-model-status.md)
-- [../../../tasks/prompts/phase-4/4-2-stage3-ai/task-13-s3-03-remote-model-enable.md](../../../tasks/prompts/phase-4/4-2-stage3-ai/task-13-s3-03-remote-model-enable.md)
-- [../../../tasks/prompts/phase-4/4-2-stage3-ai/task-14-s3-04-ai-classification-suggestion.md](../../../tasks/prompts/phase-4/4-2-stage3-ai/task-14-s3-04-ai-classification-suggestion.md)
-- [../../../tasks/prompts/phase-4/4-2-stage3-ai/task-15-s3-05-ai-call-log.md](../../../tasks/prompts/phase-4/4-2-stage3-ai/task-15-s3-05-ai-call-log.md)
-- [../../../tasks/prompts/phase-4/4-2-stage3-ai/task-16-s3-06-ai-summary-editor.md](../../../tasks/prompts/phase-4/4-2-stage3-ai/task-16-s3-06-ai-summary-editor.md)
-- [../../../tasks/prompts/phase-4/4-2-stage3-ai/task-17-s3-07-ai-tags-suggestion.md](../../../tasks/prompts/phase-4/4-2-stage3-ai/task-17-s3-07-ai-tags-suggestion.md)
-- [../../../tasks/prompts/phase-4/4-2-stage3-ai/task-18-s3-08-semantic-search-results.md](../../../tasks/prompts/phase-4/4-2-stage3-ai/task-18-s3-08-semantic-search-results.md)
-- [../../../tasks/prompts/phase-4/4-2-stage3-ai/task-19-s3-09-ai-privacy-rules.md](../../../tasks/prompts/phase-4/4-2-stage3-ai/task-19-s3-09-ai-privacy-rules.md)
-- [../../../tasks/prompts/phase-4/4-2-stage3-ai/task-20-s3-10-ai-fallback.md](../../../tasks/prompts/phase-4/4-2-stage3-ai/task-20-s3-10-ai-fallback.md)
+- [../../architecture/stage-3-control-map.md](../../architecture/stage-3-control-map.md)
+- [../../core/capability-specs/stage-3-ai.md](../../core/capability-specs/stage-3-ai.md)
+- [../../../tasks/prompts/_shared/manifests/phase-4.md](../../../tasks/prompts/_shared/manifests/phase-4.md)
+- [../../../tasks/prompts/phase-4/4-2-stage3-ai/task-51-s3-01-c3-01-ai-settings-config.md](../../../tasks/prompts/phase-4/4-2-stage3-ai/task-51-s3-01-c3-01-ai-settings-config.md)
+- [../../../tasks/prompts/phase-4/4-2-stage3-ai/task-56-s3-04-c3-04-ai-classification-suggestion.md](../../../tasks/prompts/phase-4/4-2-stage3-ai/task-56-s3-04-c3-04-ai-classification-suggestion.md)
+- [../../../tasks/prompts/phase-4/4-2-stage3-ai/task-67-s3-08-c3-08-semantic-search.md](../../../tasks/prompts/phase-4/4-2-stage3-ai/task-67-s3-08-c3-08-semantic-search.md)
+- [../../../tasks/prompts/phase-4/4-2-stage3-ai/task-78-s3-10-page-integration-verify.md](../../../tasks/prompts/phase-4/4-2-stage3-ai/task-78-s3-10-page-integration-verify.md)
+- [../../../tasks/prompts/phase-4/4-2-stage3-ai/task-79-stage-3-ai-integration-verify.md](../../../tasks/prompts/phase-4/4-2-stage3-ai/task-79-stage-3-ai-integration-verify.md)

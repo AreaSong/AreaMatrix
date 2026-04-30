@@ -19,8 +19,8 @@
 | C1-11 | [list-files](stage-1-mvp/C1-11-list-files.md) | Query | S1-08, S1-09, S1-10, S1-15 | `1-3/task-01`..`1-3/task-04` |
 | C1-12 | [get-file-detail](stage-1-mvp/C1-12-get-file-detail.md) | Query | S1-12, S1-15 | `1-3/task-05`..`1-3/task-08` |
 | C1-13 | [list-change-log](stage-1-mvp/C1-13-list-change-log.md) | Query | S1-13, S1-21, S1-32 | `1-3/task-09`..`1-3/task-12` |
-| C1-14 | [read-write-note](stage-1-mvp/C1-14-read-write-note.md) | Note | S1-14 | `1-3/task-13`..`1-3/task-16` |
-| C1-15 | [build-tree](stage-1-mvp/C1-15-build-tree.md) | Query | S1-08, S1-09, S1-10 | `1-3/task-17`..`1-3/task-20` |
+| C1-14 | [read-write-note](stage-1-mvp/C1-14-read-write-note.md) | Note | S1-14 | `1-3/task-13`..`1-3/task-17` |
+| C1-15 | [build-tree](stage-1-mvp/C1-15-build-tree.md) | Query | S1-08, S1-09, S1-10 | `1-3/task-18`..`1-3/task-21` |
 | C1-16 | [recover-on-startup](stage-1-mvp/C1-16-recover-on-startup.md) | Recovery | S1-05, S1-10, S1-32 | `1-4/task-01`..`1-4/task-05` |
 | C1-17 | [sync-external-created](stage-1-mvp/C1-17-sync-external-created.md) | Sync | S1-09, S1-10, S1-13 | `1-4/task-06`..`1-4/task-10` |
 | C1-18 | [sync-external-renamed](stage-1-mvp/C1-18-sync-external-renamed.md) | Sync | S1-09, S1-13 | `1-4/task-11`..`1-4/task-15` |

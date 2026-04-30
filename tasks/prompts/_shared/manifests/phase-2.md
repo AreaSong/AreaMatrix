@@ -552,7 +552,7 @@
 ## 2-1/task-20
 
 > source task: `tasks/prompts/phase-2/2-1-first-launch-main/task-20-s1-08-c1-15-build-tree.md`
-> depends: `2-1/task-19`, `1-3/task-20`
+> depends: `2-1/task-19`, `1-3/task-21`
 
 ### Exact Docs
 - `docs/ux/page-specs/stage-1-mvp/S1-08-main-empty.md`
@@ -665,7 +665,7 @@
 ## 2-1/task-24
 
 > source task: `tasks/prompts/phase-2/2-1-first-launch-main/task-24-s1-09-c1-15-build-tree.md`
-> depends: `2-1/task-23`, `1-3/task-20`
+> depends: `2-1/task-23`, `1-3/task-21`
 
 ### Exact Docs
 - `docs/ux/page-specs/stage-1-mvp/S1-09-main-list.md`
@@ -751,7 +751,7 @@
 ## 2-1/task-27
 
 > source task: `tasks/prompts/phase-2/2-1-first-launch-main/task-27-s1-10-c1-15-build-tree.md`
-> depends: `2-1/task-26`, `1-3/task-20`
+> depends: `2-1/task-26`, `1-3/task-21`
 
 ### Exact Docs
 - `docs/ux/page-specs/stage-1-mvp/S1-10-main-loading.md`
@@ -1941,7 +1941,7 @@
 ## 2-3/task-07
 
 > source task: `tasks/prompts/phase-2/2-3-detail-settings/task-07-s1-14-c1-14-read-write-note.md`
-> depends: `2-3/task-06`, `1-3/task-16`
+> depends: `2-3/task-06`, `1-3/task-17`
 
 ### Exact Docs
 - `docs/ux/page-specs/stage-1-mvp/S1-14-detail-note.md`

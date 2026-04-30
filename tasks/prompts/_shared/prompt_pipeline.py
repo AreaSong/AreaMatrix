@@ -70,6 +70,13 @@ UX_DOC_RE = re.compile(r"/(S(?:[1-3]-\d+|4-[A-Z]+-\d+)-[^/]+)\.md$")
 CAPABILITY_DOC_RE = re.compile(r"/(C[1-4]-\d+)-[^/]+\.md$")
 PAGE_ID_RE = re.compile(r"^S(?:[1-3]-\d+|4-[A-Z]+-\d+)$")
 CAPABILITY_ID_RE = re.compile(r"C[1-4]-\d+")
+CORE_VERIFY_RE = re.compile(r"\bC[1-4]-\d+\b.*\bintegration-verify\b", re.IGNORECASE)
+PAGE_VERIFY_RE = re.compile(
+    r"\bS(?:[1-3]-\d+|4-[A-Z]+-\d+)\b.*\bpage[- ]integration[- ]verify\b",
+    re.IGNORECASE,
+)
+MARKDOWN_LINK_RE = re.compile(r"(?<!!)\[[^\]]+\]\(([^)]+)\)")
+EXTERNAL_LINK_RE = re.compile(r"^[a-zA-Z][a-zA-Z0-9+.-]*:")
 
 
 @dataclass(frozen=True)
@@ -136,10 +143,10 @@ def strip_bullet(line: str) -> str | None:
     if not stripped.startswith("- "):
         return None
     value = stripped[2:].strip()
+    if value.startswith("`") and value.endswith("`"):
+        value = value[1:-1].strip()
     if value == "None":
         return None
-    if value.startswith("`") and value.endswith("`"):
-        return value[1:-1]
     return value
 
 
@@ -316,15 +323,29 @@ def task_kind(task: TaskFile, entry: ManifestEntry) -> str:
     return "atomic"
 
 
+def task_identity_text(task: TaskFile, entry: ManifestEntry) -> str:
+    return f"{task.title} {entry.source_task}".lower()
+
+
+def is_core_integration_verify(task: TaskFile, entry: ManifestEntry) -> bool:
+    return task_kind(task, entry) == "integration" and bool(CORE_VERIFY_RE.search(task_identity_text(task, entry)))
+
+
+def is_page_integration_verify(task: TaskFile, entry: ManifestEntry) -> bool:
+    return task_kind(task, entry) == "integration" and bool(PAGE_VERIFY_RE.search(task_identity_text(task, entry)))
+
+
 def task_detail_kind(task: TaskFile, entry: ManifestEntry) -> str:
     pages = entry_page_ids(entry)
     capabilities = entry_capability_ids(entry)
-    source = f"{task.title} {entry.source_task}".lower()
+    source = task_identity_text(task, entry)
     if task_kind(task, entry) == "integration":
-        if pages:
-            return "page-integration"
-        if len(capabilities) == 1:
+        if is_core_integration_verify(task, entry):
             return "core-integration-verify"
+        if is_page_integration_verify(task, entry):
+            return "page-integration"
+        if "foundation" in source:
+            return "foundation-verify"
         return "stage-verify"
     if pages:
         return "page-feature"
@@ -379,7 +400,7 @@ def validate_granularity(task: TaskFile, entry: ManifestEntry) -> list[str]:
     return errors
 
 
-def page_contract_summary(entry: ManifestEntry) -> tuple[str, str, str, str]:
+def page_contract_summary(task: TaskFile, entry: ManifestEntry) -> tuple[str, str, str, str]:
     page_contracts = load_page_contracts()
     pages = entry_page_ids(entry)
     covered = set(entry_capability_ids(entry))
@@ -394,7 +415,10 @@ def page_contract_summary(entry: ManifestEntry) -> tuple[str, str, str, str]:
         page_parts.append(
             f"{page_id}: {', '.join(contract.capabilities) if contract.capabilities else 'None'}"
         )
-    missing = sorted(expected - covered)
+    if task_detail_kind(task, entry) == "core-integration-verify":
+        missing: list[str] = []
+    else:
+        missing = sorted(expected - covered)
     extra = sorted(covered - expected) if pages else []
     return (
         "; ".join(page_parts) if page_parts else "None",
@@ -405,11 +429,40 @@ def page_contract_summary(entry: ManifestEntry) -> tuple[str, str, str, str]:
 
 
 def secondary_capability_note(task: TaskFile, entry: ManifestEntry, missing_caps: str) -> str:
-    if missing_caps == "None":
+    detail_kind = task_detail_kind(task, entry)
+    if detail_kind in {"stage-verify", "foundation-verify"}:
         return "None"
-    if task_detail_kind(task, entry) == "page-feature":
+    if missing_caps == "None":
+        if detail_kind == "core-integration-verify" and entry_page_ids(entry):
+            return "消费页面中的其他能力不属于当前 Core task 验收范围；仅检查当前能力是否满足这些页面对该能力的需求"
+        return "None"
+    if detail_kind == "page-feature":
         return f"{missing_caps}（page-feature task：同页其他能力由其他 task 与 page integration verify 覆盖）"
+    if detail_kind == "core-integration-verify":
+        return f"{missing_caps}（消费页面中的其他能力不属于当前 Core task 验收范围；不作为当前 Core verify 的阻断项）"
     return f"{missing_caps}（当前 task 缺少 secondary capability docs，验收时必须阻断）"
+
+
+def copy_permission_note(detail_kind: str) -> str:
+    if detail_kind == "page-integration":
+        return "是，仅限 Expected New Paths；只允许整页集成 wiring、验收补齐或测试证据，不得新增 control map 之外功能"
+    if detail_kind in {"core-integration-verify", "stage-verify", "foundation-verify"}:
+        return "原则上不修改产品实现；如需补充证据，仅限 Expected New Paths 中的测试、脚本或开发文档，建议优先使用 verify --task 做只读验收"
+    if detail_kind == "integration":
+        return "是，仅限 Expected New Paths；只允许既有闭环的集成 wiring、验收补齐或测试证据，不得新增未绑定功能"
+    return "是，仅限 Expected New Paths"
+
+
+def integration_execution_requirement(detail_kind: str) -> str:
+    if detail_kind == "page-integration":
+        return "- Page integration task 只能做整页 wiring、验收补齐或测试证据；不得新增 control map 之外功能。"
+    if detail_kind == "core-integration-verify":
+        return "- Core integration verify 以验收当前 Core 能力为主；不得补产品实现，消费页面中的其他能力不属于当前 task 范围。"
+    if detail_kind in {"stage-verify", "foundation-verify"}:
+        return "- Stage/foundation verify 以阶段验收为主；不得补产品实现，若需证据只补测试、脚本或开发文档。"
+    if detail_kind == "integration":
+        return "- Integration task 只能做既有闭环的集成 wiring、验收补齐或测试证据；不得新增未绑定功能。"
+    return "- Integration task 只能做集成 wiring、验收补齐或阶段证据整理；不得新增未绑定功能。"
 
 
 def page_feature_audit(
@@ -442,6 +495,119 @@ def page_feature_audit(
             feature_caps.update(caps)
     extra = feature_caps - expected
     return feature_labels, verify_labels, feature_caps, extra, verify_errors
+
+
+def capability_specs() -> dict[str, Path]:
+    specs: dict[str, Path] = {}
+    for path in sorted((ROOT / "docs" / "core" / "capability-specs").glob("**/C*.md")):
+        match = re.search(r"(C[1-4]-\d+)", path.name)
+        if match:
+            specs[match.group(1)] = path
+    return specs
+
+
+def capability_task_labels(
+    tasks: dict[str, TaskFile], manifests: dict[str, ManifestEntry]
+) -> dict[str, list[str]]:
+    labels: dict[str, list[str]] = {}
+    for label, entry in manifests.items():
+        if label not in tasks:
+            continue
+        for capability in entry_capability_ids(entry):
+            labels.setdefault(capability, []).append(label)
+    for capability in labels:
+        labels[capability].sort(key=label_sort_key)
+    return labels
+
+
+def required_core_task_tokens(capability: str) -> list[str]:
+    if capability.startswith("C1-"):
+        return ["contract-api", "implementation", "validation", "integration-verify"]
+    return ["contract-api", "implementation", "failure-edge", "validation", "integration-verify"]
+
+
+def missing_core_task_tokens(
+    capability: str, tasks: dict[str, TaskFile], labels: list[str]
+) -> list[str]:
+    titles = "\n".join(tasks[label].title.lower() for label in labels if label in tasks)
+    return [token for token in required_core_task_tokens(capability) if token not in titles]
+
+
+def core_coverage_stats(
+    tasks: dict[str, TaskFile], manifests: dict[str, ManifestEntry]
+) -> dict[str, int]:
+    specs = capability_specs()
+    labels_by_capability = capability_task_labels(tasks, manifests)
+    missing_capability_tasks = [capability for capability in specs if capability not in labels_by_capability]
+    bad_c1 = [
+        capability
+        for capability, labels in labels_by_capability.items()
+        if capability.startswith("C1-") and missing_core_task_tokens(capability, tasks, labels)
+    ]
+    bad_c234 = [
+        capability
+        for capability, labels in labels_by_capability.items()
+        if not capability.startswith("C1-") and missing_core_task_tokens(capability, tasks, labels)
+    ]
+    core_verify_labels = [
+        label
+        for label, task in tasks.items()
+        if label in manifests and is_core_integration_verify(task, manifests[label])
+    ]
+    misclassified = [
+        label
+        for label in core_verify_labels
+        if task_detail_kind(tasks[label], manifests[label]) != "core-integration-verify"
+    ]
+    secondary_blocking = [
+        label
+        for label in core_verify_labels
+        if "阻断" in secondary_capability_note(
+            tasks[label],
+            manifests[label],
+            page_contract_summary(tasks[label], manifests[label])[2],
+        )
+    ]
+    return {
+        "capabilities": len(specs),
+        "capability_without_task": len(missing_capability_tasks),
+        "bad_c1_groups": len(bad_c1),
+        "bad_c234_groups": len(bad_c234),
+        "core_integration_verify": len(core_verify_labels),
+        "core_verify_misclassified": len(misclassified),
+        "core_verify_secondary_blocking": len(secondary_blocking),
+    }
+
+
+def validate_core_task_coverage(
+    tasks: dict[str, TaskFile], manifests: dict[str, ManifestEntry]
+) -> list[str]:
+    errors: list[str] = []
+    specs = capability_specs()
+    labels_by_capability = capability_task_labels(tasks, manifests)
+    for capability in sorted(specs):
+        labels = labels_by_capability.get(capability, [])
+        if not labels:
+            errors.append(f"{rel(specs[capability])}: capability has no prompt task")
+            continue
+        missing = missing_core_task_tokens(capability, tasks, labels)
+        if missing:
+            errors.append(f"{capability}: missing Core task types: {', '.join(missing)}")
+    for label, task in sorted(tasks.items(), key=lambda item: label_sort_key(item[0])):
+        entry = manifests.get(label)
+        if not entry or not is_core_integration_verify(task, entry):
+            continue
+        capabilities = entry_capability_ids(entry)
+        if len(capabilities) != 1:
+            errors.append(
+                f"{label}: Core integration verify must bind exactly one Core capability, got {', '.join(capabilities) or 'None'}"
+            )
+        if task_detail_kind(task, entry) != "core-integration-verify":
+            errors.append(f"{label}: Core integration verify misclassified as {task_detail_kind(task, entry)}")
+        missing_caps = page_contract_summary(task, entry)[2]
+        if "阻断" in secondary_capability_note(task, entry, missing_caps):
+            errors.append(f"{label}: Core integration verify has blocking secondary capability note")
+    return errors
 
 
 def validate_page_contract_coverage(
@@ -517,6 +683,69 @@ def validate_graph(tasks: dict[str, TaskFile], manifests: dict[str, ManifestEntr
     return errors
 
 
+def markdown_link_audit_paths() -> list[Path]:
+    paths: list[Path] = [
+        PROMPTS_ROOT / "README.md",
+        SHARED_ROOT / "README.md",
+        AUDIT_RULES,
+        TASK_SLICING_RULES,
+        DEPENDENCY_GRAPH,
+        MANIFEST_ROOT / "README.md",
+    ]
+    paths.extend(sorted(MANIFEST_ROOT.glob("phase-*.md")))
+    paths.extend(sorted((ROOT / "docs" / "ux" / "page-specs").glob("*.md")))
+    paths.extend(sorted((ROOT / "docs" / "core" / "capability-specs").glob("*.md")))
+    paths.extend(sorted((ROOT / "docs" / "architecture").glob("*control-map.md")))
+
+    result: list[Path] = []
+    seen: set[Path] = set()
+    for path in paths:
+        if path not in seen:
+            result.append(path)
+            seen.add(path)
+    return result
+
+
+def markdown_link_target(raw_target: str) -> str | None:
+    target = raw_target.strip()
+    if target.startswith("<") and target.endswith(">"):
+        target = target[1:-1].strip()
+    if not target or target.startswith("#") or EXTERNAL_LINK_RE.match(target):
+        return None
+    if " " in target:
+        target = target.split()[0].strip()
+    target = target.split("#", 1)[0].strip()
+    return target or None
+
+
+def validate_markdown_links() -> list[str]:
+    errors: list[str] = []
+    for path in markdown_link_audit_paths():
+        if not path.exists():
+            errors.append(f"missing markdown audit path: {rel(path)}")
+            continue
+        in_fence = False
+        for line_no, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+            if line.strip().startswith("```"):
+                in_fence = not in_fence
+                continue
+            if in_fence:
+                continue
+            for raw_target in MARKDOWN_LINK_RE.findall(line):
+                target = markdown_link_target(raw_target)
+                if not target:
+                    continue
+                resolved = (path.parent / target).resolve()
+                try:
+                    resolved.relative_to(ROOT)
+                except ValueError:
+                    errors.append(f"{rel(path)}:{line_no} markdown link escapes repo: {raw_target}")
+                    continue
+                if not resolved.exists():
+                    errors.append(f"{rel(path)}:{line_no} broken markdown link: {raw_target}")
+    return errors
+
+
 def collect_doctor_findings() -> tuple[list[str], list[str], dict[str, TaskFile], dict[str, ManifestEntry]]:
     errors: list[str] = []
     warnings: list[str] = []
@@ -570,6 +799,8 @@ def collect_doctor_findings() -> tuple[list[str], list[str], dict[str, TaskFile]
 
     errors.extend(validate_graph(tasks, manifests))
     errors.extend(validate_page_contract_coverage(tasks, manifests))
+    errors.extend(validate_core_task_coverage(tasks, manifests))
+    errors.extend(validate_markdown_links())
     return errors, warnings, tasks, manifests
 
 
@@ -647,7 +878,7 @@ def print_copy_prompt(task: TaskFile, entry: ManifestEntry) -> None:
     validation = markdown_section(task_text, "验证")
     deps = ", ".join(entry.depends) if entry.depends else "None"
     ux_binding, capability_binding = binding_summary(entry)
-    expected_caps, covered_caps, missing_caps, extra_caps = page_contract_summary(entry)
+    expected_caps, covered_caps, missing_caps, extra_caps = page_contract_summary(task, entry)
     secondary_note = secondary_capability_note(task, entry, missing_caps)
     kind = task_kind(task, entry)
     detail_kind = task_detail_kind(task, entry)
@@ -681,7 +912,7 @@ def print_copy_prompt(task: TaskFile, entry: ManifestEntry) -> None:
     print(f"- 当前 task 覆盖 Core 能力：`{covered_caps}`")
     print(f"- Secondary capability 状态：`{secondary_note}`")
     print(f"- Control map 之外能力：`{extra_caps}`")
-    print("- 是否允许修改文件：`是，仅限 Expected New Paths；integration task 只做集成 wiring 或验收材料`")
+    print(f"- 是否允许修改文件：`{copy_permission_note(detail_kind)}`")
     print(
         "- Manifest 计数："
         f"文档 `{len(entry.exact_docs)}` 个，"
@@ -742,7 +973,7 @@ def print_copy_prompt(task: TaskFile, entry: ManifestEntry) -> None:
     print("- 先逐个读取 `Exact Docs`。")
     print("- Atomic task 只能实现本任务绑定的单页或单能力；不得顺手完成相邻页面或能力。")
     print("- 页面功能 task 只能处理一个 `S* + C*` 功能点；页面 integration task 才检查整页多能力闭环。")
-    print("- Integration task 只能做集成 wiring、验收补齐或阶段证据整理；不得新增未绑定功能。")
+    print(integration_execution_requirement(detail_kind))
     print("- 对已存在 capability specs 的任务，必须交叉检查 UX 页面、Core 能力规格和对应 control map。")
     print("- 再读取存在的 `Existing Code`。")
     print("- 只在 `Expected New Paths` 内新增或修改。")
@@ -789,7 +1020,7 @@ def print_verify_prompt(task: TaskFile, entry: ManifestEntry) -> None:
     validation = markdown_section(task_text, "验证")
     deps = ", ".join(entry.depends) if entry.depends else "None"
     ux_binding, capability_binding = binding_summary(entry)
-    expected_caps, covered_caps, missing_caps, extra_caps = page_contract_summary(entry)
+    expected_caps, covered_caps, missing_caps, extra_caps = page_contract_summary(task, entry)
     secondary_note = secondary_capability_note(task, entry, missing_caps)
     kind = task_kind(task, entry)
     detail_kind = task_detail_kind(task, entry)
@@ -1282,6 +1513,18 @@ def command_audit(args: argparse.Namespace) -> int:
                 )
                 + " |"
             )
+        print()
+    stats = core_coverage_stats(tasks, manifests)
+    print("Core Prompt Coverage Audit")
+    print("| Metric | Count |")
+    print("|---|---:|")
+    print(f"| capabilities | {stats['capabilities']} |")
+    print(f"| capability_without_task | {stats['capability_without_task']} |")
+    print(f"| bad_c1_groups | {stats['bad_c1_groups']} |")
+    print(f"| bad_c2_c3_c4_groups | {stats['bad_c234_groups']} |")
+    print(f"| core_integration_verify | {stats['core_integration_verify']} |")
+    print(f"| core_verify_misclassified | {stats['core_verify_misclassified']} |")
+    print(f"| core_verify_secondary_blocking | {stats['core_verify_secondary_blocking']} |")
     if warnings:
         print("\nWarnings:")
         for warning in warnings:

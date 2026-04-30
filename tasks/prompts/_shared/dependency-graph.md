@@ -27,7 +27,7 @@
 
 ## Layer 4: 稳定与发布
 
-- `3-1` error recovery、recovery scenarios、performance、release、stage1 integration verify ← 依赖 `2-4`
+- `3-1` error recovery、recovery scenarios、performance、release、stage1 integration verify ← 依赖 `2-4/task-08`
 
 ## Layer 5: 后续路线图细粒度闭环
 

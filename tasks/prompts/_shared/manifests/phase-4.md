@@ -4154,12 +4154,19 @@
 
 ### Expected New Paths
 - `core/tests/**`
-- `apps/**`
+- `apps/macos/AreaMatrixTests/**`
+- `apps/ios/**Tests/**`
+- `apps/windows/**Tests/**`
+- `apps/linux/**Tests/**`
 - `scripts/**`
 - `docs/development/**`
 
 ### Forbidden Touches
-- None
+- `core/src/**`
+- `core/area_matrix.udl`
+- `apps/macos/AreaMatrix/**`
+- `apps/**/Sources/**`
+- `apps/**/src/**`
 
 ### Risk Level
 - `Mission-Critical`
@@ -6463,12 +6470,19 @@
 
 ### Expected New Paths
 - `core/tests/**`
-- `apps/**`
+- `apps/macos/AreaMatrixTests/**`
+- `apps/ios/**Tests/**`
+- `apps/windows/**Tests/**`
+- `apps/linux/**Tests/**`
 - `scripts/**`
 - `docs/development/**`
 
 ### Forbidden Touches
-- None
+- `core/src/**`
+- `core/area_matrix.udl`
+- `apps/macos/AreaMatrix/**`
+- `apps/**/Sources/**`
+- `apps/**/src/**`
 
 ### Risk Level
 - `Mission-Critical`
@@ -11217,12 +11231,19 @@
 
 ### Expected New Paths
 - `core/tests/**`
-- `apps/**`
+- `apps/macos/AreaMatrixTests/**`
+- `apps/ios/**Tests/**`
+- `apps/windows/**Tests/**`
+- `apps/linux/**Tests/**`
 - `scripts/**`
 - `docs/development/**`
 
 ### Forbidden Touches
-- None
+- `core/src/**`
+- `core/area_matrix.udl`
+- `apps/macos/AreaMatrix/**`
+- `apps/**/Sources/**`
+- `apps/**/src/**`
 
 ### Risk Level
 - `Mission-Critical`

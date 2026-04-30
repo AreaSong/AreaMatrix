@@ -1,3 +1,6 @@
+# Phase 0 placeholder: this file only proves the bundled resource exists and
+# remains parseable. It is not evidence that the real classifier capability is
+# implemented or ready for product acceptance.
 version: 1
 default: inbox
 categories:

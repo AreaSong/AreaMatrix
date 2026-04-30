@@ -57,7 +57,7 @@
 |---|---|---|
 | C1-01..C1-04 | `1-1/task-01` 到 `1-1/task-19` | Repo path、init/adopt、config |
 | C1-05..C1-10 | `1-2/task-01` 到 `1-2/task-29` | classify、copy/move/index import、重复与同名冲突 |
-| C1-11..C1-15 | `1-3/task-01` 到 `1-3/task-20` | list/detail/change log/note/tree |
+| C1-11..C1-15 | `1-3/task-01` 到 `1-3/task-21` | list/detail/change log/note/tree |
 | C1-16..C1-21 | `1-4/task-01` 到 `1-4/task-30` | recovery、sync、overview、error mapping |
 | C1-22..C1-26 | `1-5/task-01` 到 `1-5/task-25` | rename、delete/remove index、change category、iCloud conflict list、metadata repair |
 | S1-01..S1-11 | `2-1/task-01` 到 `2-1/task-34` | 首次启动与主窗口真实 Core 闭环 |

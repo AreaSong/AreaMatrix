@@ -10,6 +10,8 @@
 - UI `atomic` 必须是 page-feature task：最多绑定 1 个页面 + 1 个 Core 能力；不得把同页多个 Core 能力塞进同一个执行任务。
 - Stage 1-4 页面全部按 page-feature task 拆分：多能力页面按 `S* + C*` 拆分，整页闭环只放在 page integration verify 中。
 - `integration` / `verify` 任务可以读取多个页面和能力，但只能做集成 wiring、验收补齐或证据整理，不能新增未绑定功能。
+- Core integration verify 可以读取 UX 页面规格作为消费上下文；这些页面不是该 Core task 的页面绑定范围。
+- Core integration verify 只验收当前 `C*` 能力的 API / UDL / Rust / 测试 / UX 消费一致性，不得要求它补齐消费页面中的其他 Core 能力。
 - 禁止把多个用户闭环塞进一个任务，例如“首次启动 + 导入 + 详情 + 设置”不能同 task 完成。
 - 禁止为了让 UI 先跑起来而把真实 Core 合同藏成 mock。
 - 如果任务只允许 mock/preview，完成标准必须明确写“不能作为最终闭环通过”。
@@ -37,6 +39,7 @@
 - UI task 验收：检查页面规格、能力规格、control map、Swift 实现和 CoreBridge 调用一致。
 - page-feature task 验收：只验一个 `S* + C*` 功能点，且不得读取或实现同页其他 Core 能力。
 - page integration verify 验收：必须确认该页面所有 page-feature task 覆盖 control map 中声明的全部 `C*` 能力；缺任何 feature task 或 secondary capability docs 都不得通过。
+- core integration verify 验收：可以检查消费页面是否正确声明并消费当前 Core 能力，但同一页面的其他 Core 能力由各自任务和 page integration verify 覆盖，不作为当前 Core verify 的阻断项。
 - 真实闭环 task 中，如果 UI 仍使用 mock、fixture、硬编码状态或静态示例数据，验收必须判定不通过。
 - 如果 Core 能力无页面消费且 control map 未声明为内部能力，验收必须判定该任务越界。
 
