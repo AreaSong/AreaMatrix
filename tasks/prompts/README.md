@@ -17,7 +17,8 @@ Manifest：[./_shared/manifests/](./_shared/manifests/)
 4. AreaMatrix 当前是 greenfield build：`Expected New Paths` 可以是尚不存在但允许创建的路径。
 5. 执行任务前先运行 `doctor`，再用 `render --mode copy` 生成可复制执行 prompt。
 6. 任务完成后用 `render --mode verify` 或 `verify` 生成只读验收 prompt。
-7. Runner 只负责人工串行执行辅助，不会调用 `codex exec`。
+7. 需要批量复制时，用 `export --phase` 或 `export --all` 把 copy-ready / verify-ready prompt 导出为静态文件。
+8. Runner 只负责人工串行执行辅助，不会调用 `codex exec`。
 
 ## Runner
 
@@ -31,6 +32,8 @@ python3 tasks/prompts/_shared/prompt_pipeline.py render --task 0-1/task-01
 python3 tasks/prompts/_shared/prompt_pipeline.py render --task 0-1/task-01 --mode verify
 python3 tasks/prompts/_shared/prompt_pipeline.py verify --task 0-1/task-01
 python3 tasks/prompts/_shared/prompt_pipeline.py verify --phase phase-0
+python3 tasks/prompts/_shared/prompt_pipeline.py export --phase phase-0
+python3 tasks/prompts/_shared/prompt_pipeline.py export --all
 python3 tasks/prompts/_shared/prompt_pipeline.py mark --task 0-1/task-01 --status completed
 python3 tasks/prompts/_shared/prompt_pipeline.py status
 ```
@@ -42,8 +45,34 @@ python3 tasks/prompts/_shared/prompt_pipeline.py status
 | copy-ready | `render --task <label>` | 开始执行任务，可以修改文件 |
 | verify-ready | `render --task <label> --mode verify` | 验收任务是否完成，禁止修改文件 |
 | verify-ready | `verify --task <label>` | 上一条的简写 |
+| export | `export --phase <phase>` | 导出某个 phase 的 copy-ready / verify-ready 静态文件 |
+| export | `export --all` | 导出 Phase 0-4 全套静态 prompt 文件 |
 | phase-verify | `verify --phase <phase>` | 阶段验收，任一 task 不通过则阶段不通过 |
 | page-audit | `audit --pages` | 审计每个页面的 control map 期望能力与 prompt 覆盖能力是否一致 |
+
+## 静态 Prompt 文件
+
+`render` / `verify` 会把 prompt 输出到终端；`export` 会把同一份内容写入文件，方便直接复制给 Codex。
+
+```bash
+python3 tasks/prompts/_shared/prompt_pipeline.py export --all
+```
+
+导出位置：
+
+```text
+tasks/prompts/_shared/copy-ready/phase-0..phase-4/*.md
+tasks/prompts/_shared/verify-ready/phase-0..phase-4/*.md
+```
+
+文件命名规则：
+
+```text
+1-1/task-01 -> 1-1-task-01.md
+4-3/task-165 -> 4-3-task-165.md
+```
+
+后续 task、manifest 或共享规则变化后，重新运行 `export --all` 刷新静态 prompt 文件。
 
 ## 进度记录
 

@@ -2,8 +2,10 @@
 from __future__ import annotations
 
 import argparse
+from contextlib import redirect_stdout
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+import io
 import json
 from pathlib import Path
 import re
@@ -18,6 +20,8 @@ AUDIT_RULES = SHARED_ROOT / "audit-rules.md"
 TASK_SLICING_RULES = SHARED_ROOT / "task-slicing-rules.md"
 DEPENDENCY_GRAPH = SHARED_ROOT / "dependency-graph.md"
 PROGRESS_PATH = SHARED_ROOT / "progress.json"
+COPY_READY_ROOT = SHARED_ROOT / "copy-ready"
+VERIFY_READY_ROOT = SHARED_ROOT / "verify-ready"
 
 ALLOWED_NEW_ROOTS = (
     "AGENTS.md",
@@ -1182,6 +1186,31 @@ def print_verify_prompt(task: TaskFile, entry: ManifestEntry) -> None:
     print("- 禁止给模糊结论。")
 
 
+def capture_task_prompt(task: TaskFile, entry: ManifestEntry, mode: str) -> str:
+    buffer = io.StringIO()
+    with redirect_stdout(buffer):
+        if mode == "copy":
+            print_copy_prompt(task, entry)
+        elif mode == "verify":
+            print_verify_prompt(task, entry)
+        else:
+            raise ValueError(f"unknown prompt mode: {mode}")
+    text = buffer.getvalue()
+    return text if text.endswith("\n") else text + "\n"
+
+
+def prompt_export_filename(label: str) -> str:
+    return label.replace("/", "-") + ".md"
+
+
+def clear_phase_export_dir(root: Path, phase: str) -> Path:
+    phase_dir = root / phase
+    phase_dir.mkdir(parents=True, exist_ok=True)
+    for prompt_path in phase_dir.glob("*.md"):
+        prompt_path.unlink()
+    return phase_dir
+
+
 def print_phase_verify_prompt(phase: str, tasks: dict[str, TaskFile], manifests: dict[str, ManifestEntry]) -> int:
     normalized = phase if phase.startswith("phase-") else f"phase-{phase}"
     labels = filter_labels(ordered_labels(tasks, manifests), tasks, normalized)
@@ -1305,6 +1334,58 @@ def print_phase_verify_prompt(phase: str, tasks: dict[str, TaskFile], manifests:
     print("- 本阶段已达到验收标准。")
     print("  或")
     print("- 本阶段尚未达到验收标准，不能视为完成。")
+    return 0
+
+
+def command_export(args: argparse.Namespace) -> int:
+    errors, warnings, tasks, manifests = collect_doctor_findings()
+    if errors:
+        print("export: doctor failed")
+        for error in errors:
+            print(f"- ERROR: {error}")
+        for warning in warnings:
+            print(f"- WARN: {warning}")
+        return 1
+
+    labels = ordered_labels(tasks, manifests)
+    if not args.all:
+        labels = filter_labels(labels, tasks, args.phase)
+    if not labels:
+        target = "all phases" if args.all else args.phase
+        print(f"export: no tasks found for {target}", file=sys.stderr)
+        return 1
+
+    phases = sorted({tasks[label].phase for label in labels})
+    phase_dirs: dict[tuple[str, str], Path] = {}
+    for phase in phases:
+        phase_dirs[("copy", phase)] = clear_phase_export_dir(COPY_READY_ROOT, phase)
+        phase_dirs[("verify", phase)] = clear_phase_export_dir(VERIFY_READY_ROOT, phase)
+
+    copy_count = 0
+    verify_count = 0
+    for label in labels:
+        task = tasks[label]
+        entry = manifests[label]
+        filename = prompt_export_filename(label)
+
+        copy_path = phase_dirs[("copy", task.phase)] / filename
+        copy_path.write_text(capture_task_prompt(task, entry, "copy"), encoding="utf-8")
+        copy_count += 1
+
+        verify_path = phase_dirs[("verify", task.phase)] / filename
+        verify_path.write_text(capture_task_prompt(task, entry, "verify"), encoding="utf-8")
+        verify_count += 1
+
+    print("export: OK")
+    print(f"- phases: {', '.join(phases)}")
+    print(f"- copy-ready: {copy_count}")
+    print(f"- verify-ready: {verify_count}")
+    print(f"- copy root: {rel(COPY_READY_ROOT)}")
+    print(f"- verify root: {rel(VERIFY_READY_ROOT)}")
+    if warnings:
+        print("- warnings:")
+        for warning in warnings:
+            print(f"  - {warning}")
     return 0
 
 
@@ -1557,6 +1638,11 @@ def build_parser() -> argparse.ArgumentParser:
     verify_target.add_argument("--task", help="Task label, for example 0-1/task-01.")
     verify_target.add_argument("--phase", help="Phase label, for example phase-0 or 0.")
 
+    export_parser = subparsers.add_parser("export", help="Export copy-ready and verify-ready prompts to files.")
+    export_target = export_parser.add_mutually_exclusive_group(required=True)
+    export_target.add_argument("--all", action="store_true", help="Export prompts for all phases.")
+    export_target.add_argument("--phase", help="Export prompts for one phase, for example phase-0 or 0.")
+
     mark_parser = subparsers.add_parser("mark", help="Record manual task progress.")
     mark_parser.add_argument("--task", required=True, help="Task label, for example 0-1/task-01.")
     mark_parser.add_argument(
@@ -1588,6 +1674,8 @@ def main() -> int:
         return command_render(args)
     if args.command == "verify":
         return command_verify(args)
+    if args.command == "export":
+        return command_export(args)
     if args.command == "mark":
         return command_mark(args)
     if args.command == "status":
