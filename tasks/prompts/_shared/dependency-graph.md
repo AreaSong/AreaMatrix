@@ -20,10 +20,10 @@
 
 ## Layer 3: macOS App
 
-- `2-1` S1-01..S1-11 single-page tasks + first launch / main integration verify ← 依赖对应 C1 integration verify
-- `2-2` S1-16..S1-24 single-page tasks + import/conflict integration verify ← 依赖 `2-1` 与对应 C1 integration verify
-- `2-3` S1-12..S1-15、S1-26..S1-35 single-page tasks + detail/settings/actions integration verify ← 依赖 `2-1` 与对应 C1 integration verify
-- `2-4` S1-25、S1-36、S1-37 single-page tasks + sync/repair integration verify ← 依赖 `2-2`、`2-3` 与对应 C1 integration verify
+- `2-1` S1-01..S1-11 page-feature tasks + page / first launch / main integration verify ← 依赖对应 C1 integration verify
+- `2-2` S1-16..S1-24 page-feature tasks + page / import-conflict integration verify ← 依赖 `2-1` 与对应 C1 integration verify
+- `2-3` S1-12..S1-15、S1-26..S1-35 page-feature tasks + page / detail/settings/actions integration verify ← 依赖 `2-1` 与对应 C1 integration verify
+- `2-4` S1-25、S1-36、S1-37 page-feature tasks + page / sync/repair integration verify ← 依赖 `2-2`、`2-3` 与对应 C1 integration verify
 
 ## Layer 4: 稳定与发布
 
@@ -31,6 +31,6 @@
 
 ## Layer 5: 后续路线图细粒度闭环
 
-- `4-1` Stage 2：C2-01..C2-19 Core atomic tasks + S2-01..S2-23 page atomic tasks + integration verify ← 依赖 `3-1`
-- `4-2` Stage 3：C3-01..C3-10 Core atomic tasks + S3-01..S3-10 page atomic tasks + integration verify ← 依赖 `4-1`
-- `4-3` Stage 4：C4-01..C4-21 Core atomic tasks + S4-* page atomic tasks + integration verify ← 依赖 `4-2`
+- `4-1` Stage 2：C2-01..C2-19 每个拆为 contract / implementation / failure-edge / validation / integration verify，随后 S2-01..S2-23 page-feature + page integration verify，最后 stage verify ← 依赖 `3-1`
+- `4-2` Stage 3：C3-01..C3-10 每个拆为 contract / implementation / failure-edge / validation / integration verify，随后 S3-01..S3-10 page-feature + page integration verify，最后 stage verify ← 依赖 `4-1`
+- `4-3` Stage 4：C4-01..C4-21 每个拆为 contract / implementation / failure-edge / validation / integration verify，随后 S4-* page-feature + page integration verify，最后 stage verify ← 依赖 `4-2`

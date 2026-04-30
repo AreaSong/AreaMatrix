@@ -64,9 +64,12 @@ TASK_RE = re.compile(r"^task-(\d+)-")
 BATCH_RE = re.compile(r"^(\d+-\d+)-")
 PHASE_RE = re.compile(r"^phase-(\d+)$")
 LABEL_RE = re.compile(r"^(\d+-\d+)/task-(\d+)$")
+LABEL_IN_TEXT_RE = re.compile(r"(\d+-\d+)/task-(\d+)")
 MANIFEST_HEADING_RE = re.compile(r"^##\s+(.+)$", re.M)
 UX_DOC_RE = re.compile(r"/(S(?:[1-3]-\d+|4-[A-Z]+-\d+)-[^/]+)\.md$")
 CAPABILITY_DOC_RE = re.compile(r"/(C[1-4]-\d+)-[^/]+\.md$")
+PAGE_ID_RE = re.compile(r"^S(?:[1-3]-\d+|4-[A-Z]+-\d+)$")
+CAPABILITY_ID_RE = re.compile(r"C[1-4]-\d+")
 
 
 @dataclass(frozen=True)
@@ -112,6 +115,16 @@ class ManifestEntry:
     @property
     def forbidden_touches(self) -> list[str]:
         return self.sections.get("Forbidden Touches", [])
+
+
+@dataclass(frozen=True)
+class PageContract:
+    page_id: str
+    page_name: str
+    capabilities: tuple[str, ...]
+    prompt_labels: tuple[str, ...]
+    control_map_path: Path
+    line_no: int
 
 
 def rel(path: Path) -> str:
@@ -242,16 +255,93 @@ def unique_doc_ids(values: list[str], pattern: re.Pattern[str]) -> list[str]:
     return result
 
 
+def page_id_from_doc_id(doc_id: str) -> str:
+    parts = doc_id.split("-")
+    if doc_id.startswith("S4-"):
+        return "-".join(parts[:3])
+    return "-".join(parts[:2])
+
+
+def entry_page_ids(entry: ManifestEntry) -> list[str]:
+    result: list[str] = []
+    for doc_id in unique_doc_ids(entry.exact_docs, UX_DOC_RE):
+        page_id = page_id_from_doc_id(doc_id)
+        if page_id not in result:
+            result.append(page_id)
+    return result
+
+
+def entry_capability_ids(entry: ManifestEntry) -> list[str]:
+    return unique_doc_ids(entry.exact_docs, CAPABILITY_DOC_RE)
+
+
+def extract_labels(value: str) -> list[str]:
+    result: list[str] = []
+    for batch, number in LABEL_IN_TEXT_RE.findall(value):
+        label = f"{batch}/task-{number}"
+        if label not in result:
+            result.append(label)
+    return result
+
+
+def load_page_contracts() -> dict[str, PageContract]:
+    contracts: dict[str, PageContract] = {}
+    for path in sorted((ROOT / "docs" / "architecture").glob("*control-map.md")):
+        for line_no, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+            if not line.startswith("| S"):
+                continue
+            cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+            if len(cells) < 6 or not PAGE_ID_RE.match(cells[0]):
+                continue
+            capabilities: list[str] = []
+            for capability in CAPABILITY_ID_RE.findall(cells[2]):
+                if capability not in capabilities:
+                    capabilities.append(capability)
+            prompt_cell = cells[7] if len(cells) > 8 else cells[-1]
+            contracts[cells[0]] = PageContract(
+                page_id=cells[0],
+                page_name=cells[1],
+                capabilities=tuple(capabilities),
+                prompt_labels=tuple(extract_labels(prompt_cell)),
+                control_map_path=path,
+                line_no=line_no,
+            )
+    return contracts
+
+
 def task_kind(task: TaskFile, entry: ManifestEntry) -> str:
     haystack = f"{task.title} {entry.source_task} {entry.raw}".lower()
-    if any(token in haystack for token in ["integration", "verify", "集成", "验收"]):
+    if any(token in haystack for token in ["integration-verify", "integration verify", "集成验收", "验收"]):
         return "integration"
+    return "atomic"
+
+
+def task_detail_kind(task: TaskFile, entry: ManifestEntry) -> str:
+    pages = entry_page_ids(entry)
+    capabilities = entry_capability_ids(entry)
+    source = f"{task.title} {entry.source_task}".lower()
+    if task_kind(task, entry) == "integration":
+        if pages:
+            return "page-integration"
+        if len(capabilities) == 1:
+            return "core-integration-verify"
+        return "stage-verify"
+    if pages:
+        return "page-feature"
+    if "contract-api" in source:
+        return "core-contract"
+    if "failure" in source or "edge" in source:
+        return "core-failure-edge"
+    if "validation" in source:
+        return "core-validation"
+    if capabilities:
+        return "core-implementation"
     return "atomic"
 
 
 def binding_summary(entry: ManifestEntry) -> tuple[str, str]:
     ux_ids = unique_doc_ids(entry.exact_docs, UX_DOC_RE)
-    capability_ids = unique_doc_ids(entry.exact_docs, CAPABILITY_DOC_RE)
+    capability_ids = entry_capability_ids(entry)
     return (
         ", ".join(ux_ids) if ux_ids else "None",
         ", ".join(capability_ids) if capability_ids else "None",
@@ -261,17 +351,143 @@ def binding_summary(entry: ManifestEntry) -> tuple[str, str]:
 def validate_granularity(task: TaskFile, entry: ManifestEntry) -> list[str]:
     if task_kind(task, entry) == "integration":
         return []
-    ux_ids = unique_doc_ids(entry.exact_docs, UX_DOC_RE)
-    capability_ids = unique_doc_ids(entry.exact_docs, CAPABILITY_DOC_RE)
+    page_ids = entry_page_ids(entry)
+    capability_ids = entry_capability_ids(entry)
+    page_contracts = load_page_contracts()
     errors: list[str] = []
-    if len(ux_ids) > 1:
-        errors.append(f"{task.label}: atomic task binds multiple UX pages: {', '.join(ux_ids)}")
-    if len(capability_ids) > 1:
+    if len(page_ids) > 1:
+        errors.append(f"{task.label}: atomic task binds multiple UX pages: {', '.join(page_ids)}")
+    if page_ids:
+        expected = set(page_contracts.get(page_ids[0], PageContract(page_ids[0], "", (), (), ROOT, 0)).capabilities)
+        extra = sorted(set(capability_ids) - expected)
+        if extra:
+            errors.append(
+                f"{task.label}: UI task references Core capabilities not declared for {page_ids[0]}: {', '.join(extra)}"
+            )
+        if len(capability_ids) > 1:
+            errors.append(
+                f"{task.label}: page-feature atomic task binds multiple Core capabilities: {', '.join(capability_ids)}"
+            )
+        if expected and not capability_ids:
+            errors.append(f"{task.label}: page-feature atomic task does not bind a Core capability for {page_ids[0]}")
+    elif len(capability_ids) > 1:
         errors.append(
             f"{task.label}: atomic task binds multiple Core capabilities: {', '.join(capability_ids)}"
         )
-    if task.phase in {"phase-1", "phase-2", "phase-4"} and not ux_ids and not capability_ids:
+    if task.phase in {"phase-1", "phase-2", "phase-4"} and not page_ids and not capability_ids:
         errors.append(f"{task.label}: atomic product task must bind one UX page or one Core capability")
+    return errors
+
+
+def page_contract_summary(entry: ManifestEntry) -> tuple[str, str, str, str]:
+    page_contracts = load_page_contracts()
+    pages = entry_page_ids(entry)
+    covered = set(entry_capability_ids(entry))
+    expected: set[str] = set()
+    page_parts: list[str] = []
+    for page_id in pages:
+        contract = page_contracts.get(page_id)
+        if not contract:
+            page_parts.append(f"{page_id}: not in control map")
+            continue
+        expected.update(contract.capabilities)
+        page_parts.append(
+            f"{page_id}: {', '.join(contract.capabilities) if contract.capabilities else 'None'}"
+        )
+    missing = sorted(expected - covered)
+    extra = sorted(covered - expected) if pages else []
+    return (
+        "; ".join(page_parts) if page_parts else "None",
+        ", ".join(sorted(covered)) if covered else "None",
+        ", ".join(missing) if missing else "None",
+        ", ".join(extra) if extra else "None",
+    )
+
+
+def secondary_capability_note(task: TaskFile, entry: ManifestEntry, missing_caps: str) -> str:
+    if missing_caps == "None":
+        return "None"
+    if task_detail_kind(task, entry) == "page-feature":
+        return f"{missing_caps}（page-feature task：同页其他能力由其他 task 与 page integration verify 覆盖）"
+    return f"{missing_caps}（当前 task 缺少 secondary capability docs，验收时必须阻断）"
+
+
+def page_feature_audit(
+    contract: PageContract, tasks: dict[str, TaskFile], manifests: dict[str, ManifestEntry]
+) -> tuple[list[str], list[str], set[str], set[str], list[str]]:
+    feature_labels: list[str] = []
+    verify_labels: list[str] = []
+    feature_caps: set[str] = set()
+    verify_errors: list[str] = []
+    expected = set(contract.capabilities)
+    for label in contract.prompt_labels:
+        task = tasks.get(label)
+        entry = manifests.get(label)
+        if not task or not entry:
+            continue
+        pages = entry_page_ids(entry)
+        caps = set(entry_capability_ids(entry))
+        if contract.page_id not in pages:
+            continue
+        if task_kind(task, entry) == "integration":
+            verify_labels.append(label)
+            if expected and caps != expected:
+                verify_errors.append(
+                    f"{label} should cover {', '.join(sorted(expected))}, got {', '.join(sorted(caps)) or 'None'}"
+                )
+            if not expected and caps:
+                verify_errors.append(f"{label} should be UI-only, got {', '.join(sorted(caps))}")
+        else:
+            feature_labels.append(label)
+            feature_caps.update(caps)
+    extra = feature_caps - expected
+    return feature_labels, verify_labels, feature_caps, extra, verify_errors
+
+
+def validate_page_contract_coverage(
+    tasks: dict[str, TaskFile], manifests: dict[str, ManifestEntry]
+) -> list[str]:
+    errors: list[str] = []
+    for contract in load_page_contracts().values():
+        if not contract.prompt_labels:
+            errors.append(
+                f"{rel(contract.control_map_path)}:{contract.line_no} {contract.page_id}: missing prompt labels"
+            )
+            continue
+        for label in contract.prompt_labels:
+            if label not in tasks:
+                errors.append(
+                    f"{rel(contract.control_map_path)}:{contract.line_no} {contract.page_id}: unknown prompt label {label}"
+                )
+                continue
+            entry = manifests.get(label)
+            if not entry:
+                errors.append(
+                    f"{rel(contract.control_map_path)}:{contract.line_no} {contract.page_id}: missing manifest for {label}"
+                )
+                continue
+        feature_labels, verify_labels, covered, extra, verify_errors = page_feature_audit(contract, tasks, manifests)
+        expected = set(contract.capabilities)
+        missing = sorted(expected - covered)
+        extra_values = sorted(extra)
+        if missing:
+            errors.append(
+                f"{rel(contract.control_map_path)}:{contract.line_no} {contract.page_id}: prompt coverage missing Core capabilities: {', '.join(missing)}"
+            )
+        if extra_values:
+            errors.append(
+                f"{rel(contract.control_map_path)}:{contract.line_no} {contract.page_id}: prompt coverage has extra Core capabilities: {', '.join(extra_values)}"
+            )
+        if len(expected) > 1 and not verify_labels:
+            errors.append(
+                f"{rel(contract.control_map_path)}:{contract.line_no} {contract.page_id}: multi-capability page is missing page integration verify"
+            )
+        if not feature_labels:
+            errors.append(
+                f"{rel(contract.control_map_path)}:{contract.line_no} {contract.page_id}: missing page-feature task"
+            )
+        for verify_error in verify_errors:
+            errors.append(f"{rel(contract.control_map_path)}:{contract.line_no} {contract.page_id}: {verify_error}")
     return errors
 
 
@@ -353,6 +569,7 @@ def collect_doctor_findings() -> tuple[list[str], list[str], dict[str, TaskFile]
         warnings.append(f"{label}: manifest entry has no task file")
 
     errors.extend(validate_graph(tasks, manifests))
+    errors.extend(validate_page_contract_coverage(tasks, manifests))
     return errors, warnings, tasks, manifests
 
 
@@ -430,7 +647,10 @@ def print_copy_prompt(task: TaskFile, entry: ManifestEntry) -> None:
     validation = markdown_section(task_text, "验证")
     deps = ", ".join(entry.depends) if entry.depends else "None"
     ux_binding, capability_binding = binding_summary(entry)
+    expected_caps, covered_caps, missing_caps, extra_caps = page_contract_summary(entry)
+    secondary_note = secondary_capability_note(task, entry, missing_caps)
     kind = task_kind(task, entry)
+    detail_kind = task_detail_kind(task, entry)
 
     print(f"# Copy-ready Prompt: {task.label}")
     print()
@@ -444,6 +664,7 @@ def print_copy_prompt(task: TaskFile, entry: ManifestEntry) -> None:
     print()
     print("- 类型：单任务执行")
     print(f"- 任务类型：`{kind}`")
+    print(f"- 任务细分：`{detail_kind}`")
     print(f"- Phase：`{task.phase}`")
     print(f"- Task 标识：`{task.label}`")
     print(f"- Task 文件：`{task.path}`")
@@ -456,6 +677,10 @@ def print_copy_prompt(task: TaskFile, entry: ManifestEntry) -> None:
     print(f"- 风险等级：`{entry.risk}`")
     print(f"- 绑定 UX 页面：`{ux_binding}`")
     print(f"- 绑定 Core 能力：`{capability_binding}`")
+    print(f"- Control map 期望 Core 能力：`{expected_caps}`")
+    print(f"- 当前 task 覆盖 Core 能力：`{covered_caps}`")
+    print(f"- Secondary capability 状态：`{secondary_note}`")
+    print(f"- Control map 之外能力：`{extra_caps}`")
     print("- 是否允许修改文件：`是，仅限 Expected New Paths；integration task 只做集成 wiring 或验收材料`")
     print(
         "- Manifest 计数："
@@ -516,6 +741,7 @@ def print_copy_prompt(task: TaskFile, entry: ManifestEntry) -> None:
     print()
     print("- 先逐个读取 `Exact Docs`。")
     print("- Atomic task 只能实现本任务绑定的单页或单能力；不得顺手完成相邻页面或能力。")
+    print("- 页面功能 task 只能处理一个 `S* + C*` 功能点；页面 integration task 才检查整页多能力闭环。")
     print("- Integration task 只能做集成 wiring、验收补齐或阶段证据整理；不得新增未绑定功能。")
     print("- 对已存在 capability specs 的任务，必须交叉检查 UX 页面、Core 能力规格和对应 control map。")
     print("- 再读取存在的 `Existing Code`。")
@@ -563,7 +789,10 @@ def print_verify_prompt(task: TaskFile, entry: ManifestEntry) -> None:
     validation = markdown_section(task_text, "验证")
     deps = ", ".join(entry.depends) if entry.depends else "None"
     ux_binding, capability_binding = binding_summary(entry)
+    expected_caps, covered_caps, missing_caps, extra_caps = page_contract_summary(entry)
+    secondary_note = secondary_capability_note(task, entry, missing_caps)
     kind = task_kind(task, entry)
+    detail_kind = task_detail_kind(task, entry)
 
     print(f"# Verify-ready Prompt: {task.label}")
     print()
@@ -577,6 +806,7 @@ def print_verify_prompt(task: TaskFile, entry: ManifestEntry) -> None:
     print()
     print("- 类型：单任务验收")
     print(f"- 任务类型：`{kind}`")
+    print(f"- 任务细分：`{detail_kind}`")
     print(f"- Phase：`{task.phase}`")
     print(f"- Task 标识：`{task.label}`")
     print(f"- Task 文件：`{task.path}`")
@@ -589,6 +819,10 @@ def print_verify_prompt(task: TaskFile, entry: ManifestEntry) -> None:
     print(f"- 风险等级：`{entry.risk}`")
     print(f"- 绑定 UX 页面：`{ux_binding}`")
     print(f"- 绑定 Core 能力：`{capability_binding}`")
+    print(f"- Control map 期望 Core 能力：`{expected_caps}`")
+    print(f"- 当前 task 覆盖 Core 能力：`{covered_caps}`")
+    print(f"- Secondary capability 状态：`{secondary_note}`")
+    print(f"- Control map 之外能力：`{extra_caps}`")
     print("- 是否允许修改文件：`否，本模式只读验收`")
     print(
         "- Manifest 计数："
@@ -649,6 +883,8 @@ def print_verify_prompt(task: TaskFile, entry: ManifestEntry) -> None:
     print("- 不接受 UI 占位、接口空壳、链路未打通的伪完成。")
     print("- `Existing Code` 为 None 不等于无需验收；应检查 `Expected New Paths` 是否已被真实实现。")
     print("- 已存在 capability specs 的任务必须交叉验收 UX 页面、Core 能力规格和对应 control map；真实闭环仍用 mock 时判定不通过。")
+    print("- page-feature task 只验收一个 `S* + C*` 功能点；page integration task 必须覆盖 control map 中该页面声明的全部 Core 能力。")
+    print("- 多能力页面缺少 page integration verify 或缺任何 page-feature task 时，默认不通过。")
     print("- 任何高风险边界缺少测试或证据时，默认不通过。")
     print("- 可以运行只读验证或测试命令；不得运行会重写 repo-tracked 文件的 formatter、codegen 或修复命令。")
     print()
@@ -1008,6 +1244,51 @@ def command_status(_: argparse.Namespace) -> int:
     return 0
 
 
+def command_audit(args: argparse.Namespace) -> int:
+    errors, warnings, tasks, manifests = collect_doctor_findings()
+    if errors:
+        print("audit: doctor failed")
+        for error in errors:
+            print(f"- ERROR: {error}")
+        return 1
+    if not args.pages:
+        args.pages = True
+    if args.pages:
+        print("Page Prompt Coverage Audit")
+        print("| Page | Feature Tasks | Page Verify | Expected Core | Feature Covered | Missing | Extra | Status |")
+        print("|---|---|---|---|---|---|---|---|")
+        for contract in load_page_contracts().values():
+            feature_labels, verify_labels, covered, extra, verify_errors = page_feature_audit(
+                contract, tasks, manifests
+            )
+            expected = set(contract.capabilities)
+            missing = sorted(expected - covered)
+            extra_values = sorted(extra)
+            needs_verify = len(expected) > 1
+            status = "OK" if not missing and not extra_values and not verify_errors and (not needs_verify or verify_labels) else "FAILED"
+            print(
+                "| "
+                + " | ".join(
+                    [
+                        contract.page_id,
+                        ", ".join(f"`{label}`" for label in feature_labels) or "None",
+                        ", ".join(f"`{label}`" for label in verify_labels) or ("Not required" if not needs_verify else "Missing"),
+                        ", ".join(contract.capabilities) or "None",
+                        ", ".join(sorted(covered)) or "None",
+                        ", ".join(missing) or "None",
+                        ", ".join(extra_values) or "None",
+                        status,
+                    ]
+                )
+                + " |"
+            )
+    if warnings:
+        print("\nWarnings:")
+        for warning in warnings:
+            print(f"- {warning}")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Manual prompt runner for AreaMatrix.")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -1044,6 +1325,9 @@ def build_parser() -> argparse.ArgumentParser:
     mark_parser.add_argument("--note", default="", help="Optional progress note.")
     mark_parser.add_argument("--force", action="store_true", help="Allow completion before dependencies are completed.")
 
+    audit_parser = subparsers.add_parser("audit", help="Print prompt coverage audit reports.")
+    audit_parser.add_argument("--pages", action="store_true", help="Audit page to Core capability coverage.")
+
     subparsers.add_parser("status", help="Print prompt library summary.")
     return parser
 
@@ -1065,6 +1349,8 @@ def main() -> int:
         return command_mark(args)
     if args.command == "status":
         return command_status(args)
+    if args.command == "audit":
+        return command_audit(args)
     parser.error(f"unknown command: {args.command}")
     return 2
 

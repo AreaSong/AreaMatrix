@@ -6,7 +6,9 @@
 
 - 一个任务最多覆盖 1 个主用户动作，或 1 个 Core 能力闭环。
 - 每个任务必须绑定至少一个 UX 页面或一个 Core 能力。
-- `atomic` 执行任务只能绑定 1 个 `S*` 页面或 1 个 `C*` 能力；如果同时需要多个页面/能力，必须拆分。
+- `atomic` 执行任务只能绑定 1 个 `S*` 页面或 1 个主 `C*` 能力；如果同时需要多个页面，必须拆分。
+- UI `atomic` 必须是 page-feature task：最多绑定 1 个页面 + 1 个 Core 能力；不得把同页多个 Core 能力塞进同一个执行任务。
+- Stage 1-4 页面全部按 page-feature task 拆分：多能力页面按 `S* + C*` 拆分，整页闭环只放在 page integration verify 中。
 - `integration` / `verify` 任务可以读取多个页面和能力，但只能做集成 wiring、验收补齐或证据整理，不能新增未绑定功能。
 - 禁止把多个用户闭环塞进一个任务，例如“首次启动 + 导入 + 详情 + 设置”不能同 task 完成。
 - 禁止为了让 UI 先跑起来而把真实 Core 合同藏成 mock。
@@ -16,8 +18,8 @@
 
 | 类型 | 用途 | 粒度 |
 |---|---|---|
-| atomic | 实际执行入口 | 1 个页面、1 个 Core 能力合同、或 1 个工程骨架动作 |
-| integration | 集成 wiring / 阶段验收入口 | 可读取多个页面/能力，但不得扩大功能范围 |
+| atomic | 实际执行入口 | 1 个页面功能、1 个 Core 能力合同、或 1 个工程骨架动作 |
+| integration | 集成 wiring / 阶段验收入口 | 可读取多个页面/能力或整页多功能，但不得扩大功能范围 |
 | verify | 只读验收入口 | 禁止修改文件，按 task + manifest + 实际文件交叉验收 |
 
 ## 文档读取顺序
@@ -33,6 +35,8 @@
 
 - Core task 验收：检查能力规格、API 文档、实际 Rust/UDL/test 三者一致。
 - UI task 验收：检查页面规格、能力规格、control map、Swift 实现和 CoreBridge 调用一致。
+- page-feature task 验收：只验一个 `S* + C*` 功能点，且不得读取或实现同页其他 Core 能力。
+- page integration verify 验收：必须确认该页面所有 page-feature task 覆盖 control map 中声明的全部 `C*` 能力；缺任何 feature task 或 secondary capability docs 都不得通过。
 - 真实闭环 task 中，如果 UI 仍使用 mock、fixture、硬编码状态或静态示例数据，验收必须判定不通过。
 - 如果 Core 能力无页面消费且 control map 未声明为内部能力，验收必须判定该任务越界。
 
