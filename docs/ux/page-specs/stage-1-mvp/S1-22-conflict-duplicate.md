@@ -70,7 +70,7 @@ Replace 不可用说明：
 - Keep both 显示新文件名，如 `合同_2026Q1_客户A (2).pdf`。
 - `replaceOptionVisibility=hidden` 时不渲染 Replace 选项。
 - `replaceOptionVisibility=enabled` 时显示 Replace warning，并进入 `S1-24 replace-confirm`。
-- hash 仍在计算时显示 `Checking duplicate...`，radio group 暂不出现，ImportSheet 底部 `Import` 禁用。
+- 加载态：hash 仍在计算时显示 `Checking duplicate...`，radio group 暂不出现，ImportSheet 底部 `Import` 禁用。
 - Keep both 自动编号失败时显示 `无法生成可用文件名`，禁用 `Import`，建议用户改名或 Skip。
 - 已有文件无法定位时禁用 `Show existing file`，但仍允许 Skip；Keep both 需重新预检后才能继续；Replace 若可见，也需重新预检后才能继续。
 - Trash 不可用时禁用 Replace 选项，并显示 `Replace requires system Trash`。
@@ -84,6 +84,12 @@ Replace 不可用说明：
 - Replace 不得直接执行。
 - Cancel 关闭整个 ImportSheet，不写文件、不写 DB。
 - Replace 选中后底部主按钮文案改为 `Continue`，点击只打开 `S1-24 replace-confirm`。
+
+## 可访问性
+
+- 重复原因、已有文件路径和每个 radio 选项说明都需要可读。
+- 默认 Skip 不能只靠选中圆点表达；需要文本说明“recommended”。
+- `Show existing file`、Cancel、Continue 必须支持键盘访问。
 
 ## 数据与依赖
 

@@ -73,6 +73,10 @@
 - `Cancel Setup` 退出向导，下次启动可继续。
 - 点击主按钮前不得创建、移动、重命名、删除或覆盖任何文件。
 - 如果 repoPath 已变为完整 AreaMatrix repo，返回 `S1-03 validate-path` 的已存在 repo 分支，不继续初始化。
+- 空态不适用：本页必须展示上一步 repoPath 和 init/adopt 决策；缺失按错误态处理。
+- 加载态不适用：本页不执行长任务；若需要重新校验，返回 `S1-03 validate-path` 或显示禁用主按钮。
+- 错误态：validation result 缺失、过期、repo fingerprint 变化或 options 不完整时，显示 inline error，禁用主按钮，只允许 Back / Cancel。
+- 执行中：点击主按钮后立即切到 `S1-05 initializing`，本页不保留半执行状态。
 
 ## 交互
 
@@ -82,11 +86,17 @@
 - `Cancel Setup` 弹确认：`退出设置？AreaMatrix 不会写入资料库，下次启动可重新选择。`
 - 确认 Cancel 后退出向导，不写 repo 配置；下次启动从 `S1-01 welcome` 或最近未完成的安全 step 恢复。
 
+## 可访问性
+
+- “将创建 / 将执行 / 不会执行”三组列表必须有可读标题。
+- 非空目录接管的不变量不能只放在黄色提示中，VoiceOver 必须能逐条读出。
+- Back、Create Repository / Adopt Folder、Cancel Setup 需要稳定焦点顺序；危险或安全承诺文案不能只靠颜色表达。
+
 ## 数据与依赖
 
 - 上一步 path validation result。
 - init options，包括 repoPath、overview policy、是否 adopt。
-- Core `init_repo` / `adopt_existing_repo`。
+- Core `init_repo(repoPath, RepoInitOptions { mode: CreateEmpty | AdoptExisting })`。
 - validation timestamp / repo fingerprint，用于判断确认页是否过期。
 
 ## 验收清单

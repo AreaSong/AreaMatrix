@@ -26,6 +26,7 @@
 - 搜索导航目标：Settings、Smart Lists、Needs Review。
 - 根据当前选择显示上下文命令：Rename、Add tags、Change category。
 - 显示 Redo、标签建议、导入冲突继续处理等上下文命令入口。
+- 显示分类规则入口：`Open classifier rules...`、`Preview classifier rule impact...`、`Apply classifier rule...`。
 - 显示快捷键提示。
 - 支持最近使用命令。
 - 对危险命令显示确认流程入口，不直接执行。
@@ -54,6 +55,11 @@
 - 危险命令标记：`Requires confirmation`。
 - Redo 命令标记：`Redo available` 或 disabled reason。
 
+分类规则命令：
+- `Open classifier rules...`：打开 `S2-19 classifier-rule-editor`。
+- `Preview classifier rule impact...`：打开 `S2-18 classifier-impact-preview`，需要已有规则草稿或选中的规则。
+- `Apply classifier rule...`：只打开 `S2-18 classifier-impact-preview` 并要求用户预览后确认；不得在命令面板中直接 apply。
+
 空态：
 - `No commands found for “...”`
 - 建议：`Try “import”, “tag”, or “settings”.`
@@ -76,6 +82,8 @@
 - 没有选中文件时隐藏或禁用 selection commands。
 - 批量操作命令显示影响数量，例如 `Add tags to 12 files...`。
 - 删除、Replace、批量移动等命令只能打开对应确认 sheet。
+- `Apply classifier rule...` 必须打开 `S2-18 classifier-impact-preview`；没有可预览规则时禁用并提示 `Open classifier rules first.`。
+- `Open classifier rules...` 打开 `S2-19 classifier-rule-editor`，不直接写 classifier.yaml。
 - 超出 Stage 2 范围的智能化或多端命令不在 Stage 2 面板注册。
 - 命令搜索不搜索文件内容；文件搜索仍使用搜索页。
 - 命令面板只能导航、聚焦、打开 sheet 或触发低风险即时动作；不得绕过 S2-12、S2-13、S2-14、S2-18 的确认/预览。
@@ -92,8 +100,18 @@
 4. Cmd+K 再次按下关闭面板。
 5. 执行导航命令关闭面板并跳转。
 6. 执行需要确认的命令关闭面板并打开对应 sheet。
-7. 面板关闭后焦点回到打开前的控件。
-8. 执行失败时显示错误 toast 或 inline error，并可重新打开命令面板。
+7. 执行 `Apply classifier rule...` 关闭面板并打开 S2-18；用户在 S2-18 看到影响、冲突和 Undo 说明后才能保存或应用。
+8. 执行 `Open classifier rules...` 关闭面板并打开 S2-19，不修改规则文件。
+9. 面板关闭后焦点回到打开前的控件。
+10. 执行失败时显示错误 toast 或 inline error，并可重新打开命令面板。
+
+## 可访问性
+
+- 键盘：`Cmd+K` 打开/关闭，输入框自动聚焦，方向键移动结果，回车执行，`Esc` 关闭。
+- 焦点：关闭或执行命令后焦点回到打开前控件；打开 sheet 的命令应把来源焦点传给目标 sheet。
+- VoiceOver：读出分组名、结果标题、副标题、快捷键、选中状态、禁用原因和 Requires confirmation。
+- 错误关联：命令注册失败、命令执行失败和上下文不可用必须显示在命令行或面板错误区。
+- 状态表达：危险标记、Redo 可用、禁用和最近命令不能只靠颜色或图标。
 
 ## 数据与依赖
 
@@ -103,6 +121,7 @@
 - Feature flags/stage capability flags。
 - Keyboard shortcut manager。
 - Recent commands storage。
+- Classifier rule selection or draft context。
 
 ## 验收清单
 
@@ -114,6 +133,8 @@
 - VoiceOver 能读出结果分组、选中状态和快捷键。
 - 超出 Stage 2 范围的命令不会出现在 Stage 2 面板中。
 - Delete、batch move、rename、apply rule 只能打开对应确认或预览页。
+- `Apply classifier rule...` 只打开 S2-18，不直接保存规则或重分类现有文件。
+- `Open classifier rules...` 只打开 S2-19，不绕过 Validate / Save。
 - Redo、导入冲突、标签建议命令只作为对应页面入口，不绕过 S2-21/S2-22/S2-23 的确认或采纳流程。
 
 ## 来源
@@ -133,6 +154,8 @@
 - [S2-12 batch-change-category](S2-12-batch-change-category.md)
 - [S2-13 batch-delete-confirm](S2-13-batch-delete-confirm.md)
 - [S2-14 batch-rename](S2-14-batch-rename.md)
+- [S2-18 classifier-impact-preview](S2-18-classifier-impact-preview.md)
+- [S2-19 classifier-rule-editor](S2-19-classifier-rule-editor.md)
 - [S2-21 import-conflict-batch](S2-21-import-conflict-batch.md)
 - [S2-22 redo](S2-22-redo.md)
 - [S2-23 tag-suggestions](S2-23-tag-suggestions.md)

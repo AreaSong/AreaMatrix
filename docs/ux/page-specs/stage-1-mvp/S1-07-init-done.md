@@ -60,11 +60,20 @@ AreaMatrix 已完成初始化。你现在可以浏览资料库，或把文件拖
 - 默认状态：`Open Repository` 为主按钮，焦点默认在该按钮。
 - 如果打开 Finder 失败，显示非阻断错误。
 - 打开 Finder 执行中禁用重复点击；失败不禁用 `Open Repository`。
+- 空态不适用：完成页始终显示 repoPath、下一步说明和主按钮。
+- 加载态不适用：打开 repo 时立即进入 `S1-10 main-loading`；本页只处理完成确认。
+- 错误态：`Open Repository` 跳转失败时显示 inline error，并允许 Retry；不得清空已完成的 repo 配置。
 
 ## 交互
 
 - `Open Repository` 关闭向导并进入 `S1-10 main-loading`；repo 打开成功后根据文件数量进入 `S1-08 main-empty` 或 `S1-09 main-list`。
 - `Open in Finder` 打开 repo 根目录。
+
+## 可访问性
+
+- 完成状态需要文本说明，不只使用成功图标。
+- `Open Repository` 是默认按钮；`Open in Finder` 是次按钮，键盘顺序保持一致。
+- Finder 打开失败 toast 需要可被 VoiceOver 宣告。
 
 ## 数据与依赖
 

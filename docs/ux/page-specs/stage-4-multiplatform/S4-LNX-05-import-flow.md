@@ -145,7 +145,7 @@ Move 确认区，仅在选择 `Move into repository` 时显示：
 - 来源类型：组合来源。
 - 直接来源：`docs/ux/drag-import-flow.md`。
 - 直接来源：`docs/ux/dedup-conflict.md`。
-- 组合来源：`docs/architecture/transactional-import.md`、`tasks/prompts/phase-4/4-3-stage4-multiplatform/task-13-desktop-import-flow.md`。
+- 组合来源：`docs/architecture/transactional-import.md`、`tasks/prompts/phase-4/4-3-stage4-multiplatform/task-33-s4-lnx-05-import-flow.md`。
 - 推导说明：Linux 导入沿用事务式导入和冲突策略，Trash、POSIX 权限、网络挂载风险按 Linux 平台能力补齐。
 
 ---

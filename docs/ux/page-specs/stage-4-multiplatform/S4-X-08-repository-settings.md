@@ -94,7 +94,7 @@
 
 - 来源类型：组合来源。
 - 直接来源：`docs/ux/settings-panel.md` 的资料库设置语义。
-- 直接来源：`tasks/prompts/phase-4/4-3-stage4-multiplatform/task-20-repository-settings-cross-platform.md`。
+- 直接来源：`tasks/prompts/phase-4/4-3-stage4-multiplatform/task-46-s4-x-08-repository-settings.md`。
 - 组合来源：`S4-X-02 platform-differences`、Stage 4 多端状态页、`AGENTS.md` 安全边界。
 - 推导说明：为承接多端能力页和错误恢复页的设置入口新增最小资料库设置规格。
 

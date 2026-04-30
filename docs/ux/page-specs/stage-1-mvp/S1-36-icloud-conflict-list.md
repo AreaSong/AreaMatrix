@@ -73,6 +73,12 @@ iCloud created conflict copies for these files. AreaMatrix will not delete any v
 4. 点击 `Reveal` 在 Finder 中定位对应文件。
 5. `Close` 返回来源页面，不改任何文件。
 
+## 可访问性
+
+- 冲突列表每行必须读出原始版本、冲突版本、状态和可用动作。
+- `Needs review`、加载中、检测失败不能只靠颜色或图标表达。
+- Refresh、Resolve、Reveal、Close、Diagnostics 均可通过键盘访问。
+
 ## 数据与依赖
 
 - iCloud conflicted copy 文件名识别。

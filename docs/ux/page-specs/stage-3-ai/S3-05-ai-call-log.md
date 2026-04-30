@@ -39,7 +39,7 @@
 标题：`AI Call Log`
 
 过滤器栏：
-- `Feature`: All / Classification / Summary / Tags / Semantic Search。
+- `Feature`: All / Classification / Summary / Tags / Semantic Search / Provider Test。
 - `Provider`: All / Local / Remote。
 - `Status`: Success / Failed / Skipped。
 - `Date range`。
@@ -56,16 +56,25 @@
 - `Result`
 
 详情区：
-- `File or batch`: 文件名或批次 ID。
+- `File or batch`: 文件名、批次 ID；Provider Test 记录固定显示 `None`。
 - `Provider`: Local model / Remote provider。
 - `Model`: 模型名。
-- `Sent fields`: filename, repo-relative path, extension, extracted text excerpt, AI summary, note summary, tag/category context。
+- `Sent fields`: filename, repo-relative path, extension, extracted text excerpt, AI summary, note summary, tag/category context；Provider Test 记录固定显示 `none`。
 - `note summary` 是用户 Note 的派生摘要，只记录字段类型，不显示完整 Note 原文。
 - `Privacy rules checked`: yes/no，命中时显示规则名。
 - `Privacy match`: rule id/name、pattern、applies to、matched field type。
-- `Result summary`: 分类、摘要、标签或搜索索引结果。
+- `Result summary`: 分类、摘要、标签、搜索索引结果或 provider verification 结果。
 - `Error`: 错误码和可读说明。
 - `Raw prompt`: 默认隐藏；如提供查看必须脱敏并二次确认。
+
+Provider Test 详情语义：
+- `Feature`: `Provider Test`
+- `Scope`: `Provider verification`
+- `File or batch`: `None`
+- `Sent fields`: `none`
+- `Privacy rules checked`: `no user content`
+- `Result summary`: `Connection verified`、`Connection failed` 或 provider 可用性检查的脱敏摘要。
+- 不显示 `Raw prompt` 入口；连接测试不是文件级 AI 调用，不存在可查看 prompt。
 
 操作按钮：
 - `Export redacted log...`
@@ -108,6 +117,9 @@ Delete selected 确认：
 - 远程记录必须有明显 `Remote` 标记。
 - 隐私规则跳过必须记录为 `Skipped`，用于解释为什么没有结果。
 - 隐私跳过记录字段固定为：rule id/name、feature、file/batch、provider gate、status `Skipped`、sent fields `none`、result `No AI call was made`。
+- Provider Test 记录用于 S3-03 的 `Test connection`；它不是文件级 AI 调用，必须固定为 feature `Provider Test`、scope `Provider verification`、file/batch `None`、sent fields `none`。
+- Provider Test 记录不得包含 API key、key 片段、Keychain 引用值、用户文件名、repo-relative path、摘要、提取文本、标签、Note、prompt、完整 provider 请求体或原始响应体。
+- Provider Test 失败只能记录脱敏错误码和可读说明，例如 key rejected、network failed 或 endpoint unavailable；不得回显 provider 返回的敏感 header/body。
 - Clear log 需要确认，并说明不删除文件、AI 结果、标签、摘要、Note、AI 设置或 API key。
 - Delete selected 需要确认，并说明只删除日志条目，不删除文件、AI 结果、标签、摘要、Note 或设置。
 - 没有选中记录时 `Delete selected` 禁用，禁用原因显示 `Select log entries to delete`。
@@ -133,7 +145,8 @@ Delete selected 确认：
 8. 点击 `Delete selected` 弹确认，确认后删除选中日志条目，当前过滤器保持不变。
 9. 从 AI 建议卡进入时，自动选中对应调用记录。
 10. 从隐私跳过状态进入时，自动过滤并选中对应 skipped 记录。
-11. 点击 `Reveal file` 仅定位文件；文件不存在时按钮禁用并显示 `File no longer exists`。
+11. 从 S3-03 连接测试进入或筛选 Provider Test 时，自动显示最近 provider verification 记录，且 `Reveal file` 不显示。
+12. 点击 `Reveal file` 仅定位文件；文件不存在时按钮禁用并显示 `File no longer exists`。
 
 ## 可访问性
 
@@ -156,12 +169,16 @@ Delete selected 确认：
 - Redacted export confirmation state。
 - Redacted export save/cancel/error state。
 - Clear/delete confirmation state。
+- Provider Test log schema。
+- Provider Test redaction rule。
 
 ## 验收清单
 
 - 用户能看到 AI 调用时间、功能、provider、状态和是否远程。
 - 远程调用和隐私跳过记录可区分。
 - 隐私跳过记录包含 rule id/name、feature、file/batch、provider gate，且 sent fields 为 none。
+- S3-03 `Test connection` 记录以 `Provider Test` feature 展示，scope 为 `Provider verification`，file/batch 为 `None`，sent fields 为 `none`。
+- Provider Test 记录和导出日志不包含 API key、key 片段、用户文件名、路径、摘要、提取文本、标签、Note、prompt 或 provider 原始响应体。
 - 详情只显示发送字段类型，不默认展示敏感全文。
 - note summary 只作为 Note 派生字段类型显示；命中隐私规则时远程调用 skipped 且 sent fields 为 none。
 - 导出日志不含 API key、完整文件内容和明文敏感 prompt。
@@ -175,7 +192,7 @@ Delete selected 确认：
 
 ## 来源
 
-- 组合来源：[AI 调用日志任务](../../../../tasks/prompts/phase-4/4-2-stage3-ai/task-05-ai-call-log.md)、[Stage 3 隐私与可控](../../../roadmap/milestones.md#隐私与可控)。
+- 组合来源：[AI 调用日志任务](../../../../tasks/prompts/phase-4/4-2-stage3-ai/task-15-s3-05-ai-call-log.md)、[Stage 3 隐私与可控](../../../roadmap/milestones.md#隐私与可控)。
 - 依据现有文档推导：日志脱敏、90 天默认本地保留、隐私跳过记录字段和导出确认规则，遵守项目隐私不变量。
 
 ---

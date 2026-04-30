@@ -83,6 +83,14 @@ Popover 标题：`Filter by tags`
 5. 点击 chip 上的 `×` 移除单个标签。
 6. 按 Escape 关闭 popover；普通搜索保留已应用条件，Smart List draft 由外层 Cancel 回滚。
 
+## 可访问性
+
+- 键盘：搜索框、Any/All、tag rows、chips、Clear all 和 Close 均可 Tab 到达；列表支持方向键选择。
+- 焦点：关闭后焦点回到 Tags filter 入口；Smart List draft 场景返回外层编辑 sheet。
+- VoiceOver：读出标签名、文件数量、选中状态、Any/All 当前模式和禁用原因。
+- 错误关联：标签加载失败和 count 获取失败必须关联到列表或对应标签行。
+- 状态表达：颜色点、checkmark 和 chip 不能作为唯一状态；必须提供文本或 accessibility label。
+
 ## 数据与依赖
 
 - Tag registry/list API。

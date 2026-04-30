@@ -109,7 +109,7 @@
 ## 来源
 
 - 来源类型：组合来源。
-- 直接来源：`tasks/prompts/phase-4/4-3-stage4-multiplatform/task-04-camera-import.md`。
+- 直接来源：`tasks/prompts/phase-4/4-3-stage4-multiplatform/task-24-s4-ios-03-camera-import.md`。
 - 组合来源：`docs/ux/drag-import-flow.md`、`docs/ux/dedup-conflict.md`。
 - 推导说明：系统权限、系统相机与系统预览作为前置 surface；AreaMatrix 单页规格只覆盖拍摄完成后的导入确认 sheet，导入冲突遵守默认保留两份。
 

@@ -110,7 +110,7 @@
 ## 来源
 
 - 来源类型：组合来源。
-- 直接来源：`tasks/prompts/phase-4/4-3-stage4-multiplatform/task-06-files-import.md` 的 iOS 最小导入与浏览目标。
+- 直接来源：`tasks/prompts/phase-4/4-3-stage4-multiplatform/task-28-s4-ios-07-files-import.md` 的 iOS 最小导入与浏览目标。
 - 组合来源：`docs/ux/drag-import-flow.md`、`docs/ux/dedup-conflict.md`、`docs/adr/0006-icloud-support.md`。
 - 推导说明：Files app 选择后的移动端确认 sheet 依据现有 iOS 平台能力推导，且遵守不移动、不删除、不覆盖用户文件的不变量。
 

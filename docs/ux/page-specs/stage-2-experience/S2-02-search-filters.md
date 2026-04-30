@@ -86,6 +86,14 @@ Popover 外部：
 6. 点击 `Save as Smart List` 关闭 popover，并打开 `S2-03 saved-search-sheet`，携带当前 query、filters、sort 和 scope。
 7. 按 Esc 关闭 popover，已应用的即时修改保留。
 
+## 可访问性
+
+- 键盘：打开 popover 后焦点落在第一个 filter 字段，`Tab` 按字段顺序移动，`Esc` 关闭 popover。
+- 焦点：关闭后焦点回到 `Filters` 按钮；打开 S2-03 或 S2-08 时应把来源控件传给目标页用于返回。
+- VoiceOver：每个 filter 读出字段名、当前值、active 状态和禁用原因。
+- 错误关联：日期范围错误、聚合加载失败和 tag count 失败必须关联到对应字段行。
+- 状态表达：active chip、warning、disabled 状态不能只靠颜色或图标；需要文字、计数或可读 label。
+
 ## 数据与依赖
 
 - Category list。

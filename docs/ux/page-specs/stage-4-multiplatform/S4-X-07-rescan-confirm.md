@@ -147,7 +147,7 @@ Dry-run 预览区：
 
 - 来源类型：组合来源。
 - 直接来源：`docs/adr/0005-fsevents-listener.md`、`docs/architecture/source-of-truth.md` 的 watcher/reindex 兜底语义。
-- 直接来源：`tasks/prompts/phase-4/4-3-stage4-multiplatform/task-19-manual-rescan.md`。
+- 直接来源：`tasks/prompts/phase-4/4-3-stage4-multiplatform/task-45-s4-x-07-rescan-confirm.md`。
 - 组合来源：`AGENTS.md` 高风险边界、Windows/Linux watcher 页面。
 - 推导说明：手动重扫从 watcher 页面拆出为独立高风险确认，防止直接触发回流。
 

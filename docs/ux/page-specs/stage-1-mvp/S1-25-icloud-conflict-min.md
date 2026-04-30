@@ -77,6 +77,12 @@ This is an iCloud conflicted copy. AreaMatrix will not delete any version automa
 - Cancel 不改任何文件。
 - Apply 失败时留在 sheet，显示 `Retry` / `Cancel` / `Collect Diagnostics...`；诊断不包含用户文件内容。
 
+## 可访问性
+
+- 两个冲突版本的路径、时间和大小必须有字段标签。
+- 单保留策略的 Trash 后果必须可读，不能只靠 destructive 样式。
+- 策略 radio、确认复选框、Cancel、Apply 均可通过键盘访问。
+
 ## 数据与依赖
 
 - iCloud conflicted copy 文件名识别。

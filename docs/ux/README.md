@@ -50,6 +50,8 @@ docs/ux/first-launch.md
 
 UX 文档只定义“用户看见什么、点什么、如何恢复”。工程实现细节请回到：
 
+Stage 1 UI 开发时，应优先使用 [page-specs/stage-1-mvp.md](page-specs/stage-1-mvp.md) 的页面跳转图和单页规格；功能域 UX 文档用于追溯来源与校验事实。
+
 - `docs/modules/`：storage/classify/overview-gen/tree-scan/change-log
 - `docs/api/`：core-api/error-codes/classifier-yaml/uniffi-recipes
 - `docs/architecture/`：adopt-existing-folders/transactional-import/source-of-truth/fs-watcher/concurrency/migration

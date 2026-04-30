@@ -63,7 +63,7 @@ iCloud 冲突 banner，仅存在冲突时显示：
 ## 状态与规则
 
 - 默认状态：单选文件后立即展示已缓存 metadata；缺失的 hash、conflict 或 classifier explanation 可显示 loading 占位，不阻塞基础字段。
-- 无选中：显示 `detailEmpty`，不显示 Meta 字段。
+- 空态：无选中时显示 `detailEmpty`，不显示 Meta 字段。
 - 加载失败：保留文件名和相对路径，显示 inline error `无法加载文件详情`，按钮 `Retry` / `Collect Diagnostics...`；诊断不包含用户文件内容。
 - 文件缺失：显示 banner `该文件已缺失`，按钮 `Locate...` / `Remove from index`。
 - 外部移动：显示 `该文件已移动到 <path> [Go to]`。
@@ -85,6 +85,12 @@ iCloud 冲突 banner，仅存在冲突时显示：
 - `Resolve conflict...` 打开 `S1-25 icloud-conflict-min`，成功后刷新本页 conflict 字段和 banner。
 - `Review all conflicts...` 打开 `S1-36 icloud-conflict-list`，关闭后回到当前文件详情并刷新状态。
 - `Go to` 外部移动目标时切换 Tree/List 到新位置并保持 fileId 选中；目标不存在时显示可恢复错误。
+
+## 可访问性
+
+- 所有字段必须有标签和值，缺失值读作 `Unknown` 或 `Not available`。
+- banner、冲突提示、missing 状态不能只靠颜色表达。
+- 文件操作菜单和 Resolve conflict 入口必须可通过键盘访问。
 
 ## 数据与依赖
 

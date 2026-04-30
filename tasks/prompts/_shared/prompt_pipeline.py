@@ -65,6 +65,8 @@ BATCH_RE = re.compile(r"^(\d+-\d+)-")
 PHASE_RE = re.compile(r"^phase-(\d+)$")
 LABEL_RE = re.compile(r"^(\d+-\d+)/task-(\d+)$")
 MANIFEST_HEADING_RE = re.compile(r"^##\s+(.+)$", re.M)
+UX_DOC_RE = re.compile(r"/(S(?:[1-3]-\d+|4-[A-Z]+-\d+)-[^/]+)\.md$")
+CAPABILITY_DOC_RE = re.compile(r"/(C[1-4]-\d+)-[^/]+\.md$")
 
 
 @dataclass(frozen=True)
@@ -231,6 +233,48 @@ def looks_high_risk(entry: ManifestEntry) -> bool:
     return any(pattern in haystack for pattern in HIGH_RISK_PATH_PATTERNS)
 
 
+def unique_doc_ids(values: list[str], pattern: re.Pattern[str]) -> list[str]:
+    result: list[str] = []
+    for value in values:
+        match = pattern.search(value)
+        if match and match.group(1) not in result:
+            result.append(match.group(1))
+    return result
+
+
+def task_kind(task: TaskFile, entry: ManifestEntry) -> str:
+    haystack = f"{task.title} {entry.source_task} {entry.raw}".lower()
+    if any(token in haystack for token in ["integration", "verify", "集成", "验收"]):
+        return "integration"
+    return "atomic"
+
+
+def binding_summary(entry: ManifestEntry) -> tuple[str, str]:
+    ux_ids = unique_doc_ids(entry.exact_docs, UX_DOC_RE)
+    capability_ids = unique_doc_ids(entry.exact_docs, CAPABILITY_DOC_RE)
+    return (
+        ", ".join(ux_ids) if ux_ids else "None",
+        ", ".join(capability_ids) if capability_ids else "None",
+    )
+
+
+def validate_granularity(task: TaskFile, entry: ManifestEntry) -> list[str]:
+    if task_kind(task, entry) == "integration":
+        return []
+    ux_ids = unique_doc_ids(entry.exact_docs, UX_DOC_RE)
+    capability_ids = unique_doc_ids(entry.exact_docs, CAPABILITY_DOC_RE)
+    errors: list[str] = []
+    if len(ux_ids) > 1:
+        errors.append(f"{task.label}: atomic task binds multiple UX pages: {', '.join(ux_ids)}")
+    if len(capability_ids) > 1:
+        errors.append(
+            f"{task.label}: atomic task binds multiple Core capabilities: {', '.join(capability_ids)}"
+        )
+    if task.phase in {"phase-1", "phase-2", "phase-4"} and not ux_ids and not capability_ids:
+        errors.append(f"{task.label}: atomic product task must bind one UX page or one Core capability")
+    return errors
+
+
 def validate_graph(tasks: dict[str, TaskFile], manifests: dict[str, ManifestEntry]) -> list[str]:
     errors: list[str] = []
     visiting: set[str] = set()
@@ -303,6 +347,7 @@ def collect_doctor_findings() -> tuple[list[str], list[str], dict[str, TaskFile]
         ]:
             if section not in entry.sections:
                 errors.append(f"{label}: missing manifest section {section}")
+        errors.extend(validate_granularity(task, entry))
 
     for label in sorted(set(manifests) - set(tasks), key=label_sort_key):
         warnings.append(f"{label}: manifest entry has no task file")
@@ -384,6 +429,8 @@ def print_copy_prompt(task: TaskFile, entry: ManifestEntry) -> None:
     completion = markdown_section(task_text, "完成标准")
     validation = markdown_section(task_text, "验证")
     deps = ", ".join(entry.depends) if entry.depends else "None"
+    ux_binding, capability_binding = binding_summary(entry)
+    kind = task_kind(task, entry)
 
     print(f"# Copy-ready Prompt: {task.label}")
     print()
@@ -396,6 +443,7 @@ def print_copy_prompt(task: TaskFile, entry: ManifestEntry) -> None:
     print("## 本次执行对象")
     print()
     print("- 类型：单任务执行")
+    print(f"- 任务类型：`{kind}`")
     print(f"- Phase：`{task.phase}`")
     print(f"- Task 标识：`{task.label}`")
     print(f"- Task 文件：`{task.path}`")
@@ -406,6 +454,9 @@ def print_copy_prompt(task: TaskFile, entry: ManifestEntry) -> None:
     print(f"- Manifest 章节：`## {entry.label}`")
     print(f"- 依赖任务：`{deps}`")
     print(f"- 风险等级：`{entry.risk}`")
+    print(f"- 绑定 UX 页面：`{ux_binding}`")
+    print(f"- 绑定 Core 能力：`{capability_binding}`")
+    print("- 是否允许修改文件：`是，仅限 Expected New Paths；integration task 只做集成 wiring 或验收材料`")
     print(
         "- Manifest 计数："
         f"文档 `{len(entry.exact_docs)}` 个，"
@@ -464,6 +515,8 @@ def print_copy_prompt(task: TaskFile, entry: ManifestEntry) -> None:
     print("## 执行要求")
     print()
     print("- 先逐个读取 `Exact Docs`。")
+    print("- Atomic task 只能实现本任务绑定的单页或单能力；不得顺手完成相邻页面或能力。")
+    print("- Integration task 只能做集成 wiring、验收补齐或阶段证据整理；不得新增未绑定功能。")
     print("- 对已存在 capability specs 的任务，必须交叉检查 UX 页面、Core 能力规格和对应 control map。")
     print("- 再读取存在的 `Existing Code`。")
     print("- 只在 `Expected New Paths` 内新增或修改。")
@@ -509,6 +562,8 @@ def print_verify_prompt(task: TaskFile, entry: ManifestEntry) -> None:
     completion = markdown_section(task_text, "完成标准")
     validation = markdown_section(task_text, "验证")
     deps = ", ".join(entry.depends) if entry.depends else "None"
+    ux_binding, capability_binding = binding_summary(entry)
+    kind = task_kind(task, entry)
 
     print(f"# Verify-ready Prompt: {task.label}")
     print()
@@ -521,6 +576,7 @@ def print_verify_prompt(task: TaskFile, entry: ManifestEntry) -> None:
     print("## 本次验收对象")
     print()
     print("- 类型：单任务验收")
+    print(f"- 任务类型：`{kind}`")
     print(f"- Phase：`{task.phase}`")
     print(f"- Task 标识：`{task.label}`")
     print(f"- Task 文件：`{task.path}`")
@@ -531,6 +587,9 @@ def print_verify_prompt(task: TaskFile, entry: ManifestEntry) -> None:
     print(f"- Manifest 章节：`## {entry.label}`")
     print(f"- 依赖任务：`{deps}`")
     print(f"- 风险等级：`{entry.risk}`")
+    print(f"- 绑定 UX 页面：`{ux_binding}`")
+    print(f"- 绑定 Core 能力：`{capability_binding}`")
+    print("- 是否允许修改文件：`否，本模式只读验收`")
     print(
         "- Manifest 计数："
         f"文档 `{len(entry.exact_docs)}` 个，"
@@ -701,9 +760,14 @@ def print_phase_verify_prompt(phase: str, tasks: dict[str, TaskFile], manifests:
         task = tasks[label]
         entry = manifests[label]
         deps = ", ".join(entry.depends) if entry.depends else "None"
-        print(f"- `{label}` | {task.title} | risk: `{entry.risk}` | depends: `{deps}`")
+        ux_binding, capability_binding = binding_summary(entry)
+        print(
+            f"- `{label}` | {task.title} | type: `{task_kind(task, entry)}` | "
+            f"risk: `{entry.risk}` | depends: `{deps}`"
+        )
         print(f"  - task: `{task.path}`")
         print(f"  - manifest: `{entry.manifest_path}` -> `## {entry.label}`")
+        print(f"  - UX: `{ux_binding}` | Core: `{capability_binding}`")
     print()
     print("## 单任务验收要求")
     print()

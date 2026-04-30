@@ -126,7 +126,7 @@ Replace plan：
 
 - 来源类型：直接来源 + 组合来源。
 - 直接来源：`docs/ux/dedup-conflict.md` 的 Replace 二次确认规范。
-- 直接来源：`tasks/prompts/phase-4/4-3-stage4-multiplatform/task-21-replace-confirm-cross-platform.md`。
+- 直接来源：`tasks/prompts/phase-4/4-3-stage4-multiplatform/task-47-s4-x-09-replace-confirm.md`。
 - 组合来源：`AGENTS.md` 高风险边界、Stage 4 Windows/Linux/iOS 导入与冲突页面。
 - 推导说明：跨平台回收站能力不同，因此将 Replace 确认抽为多端共用规格。
 

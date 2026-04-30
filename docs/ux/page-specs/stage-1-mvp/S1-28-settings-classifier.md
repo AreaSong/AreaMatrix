@@ -47,28 +47,35 @@ YAML 操作：
 校验失败：categories[2].slug 重复（line 47）
 ```
 
-按钮：`Fix in editor`、`Revert to last valid`。
+按钮：`Open classifier.yaml`、`Revert to last valid`。
 
 ## 状态与规则
 
 - 校验失败不能保存为有效配置。
 - YAML 不存在时可创建默认配置或显示恢复默认。
-- Stage 1 不提供完整内置编辑器。
+- Stage 1 不提供完整内置编辑器；所有修复都通过 `Open classifier.yaml` 使用 Finder 或系统默认编辑器完成。
 - Stage 1 不提供规则 Export / Import；用户需要共享规则时在 Finder 中复制 `classifier.yaml`。
 - 打开页面时显示当前配置路径和最近一次校验状态。
 - `Open classifier.yaml` 失败时显示 `无法打开分类规则文件`，提供 `Reveal in Finder` / `Create default`。
 - `Validate` 执行中禁用重复点击，显示 `Validating...`。
 - `Revert to last valid` 需要确认；没有 last valid backup 时禁用。
 - 开关保存失败时回滚到上一个已保存值，并显示 `Retry save`。
+- 空态不适用：本页始终显示 classifier.yaml 路径、规则引擎开关和校验状态；文件缺失按恢复状态处理。
 
 ## 交互
 
-- Open 使用 Finder 或默认编辑器打开。
+- `Open classifier.yaml` 使用 Finder 或系统默认编辑器打开，不进入应用内完整编辑器。
 - Validate 不自动写入。
 - Revert 恢复上次有效配置。
 - Create default 只写 `.areamatrix/classifier.yaml` 或约定配置路径，不扫描用户文件。
 - 校验失败时保留错误行号和错误字段；用户切换 tab 后错误摘要仍可见。
 - Revert 成功后重新 Validate，并显示恢复后的状态。
+
+## 可访问性
+
+- 校验错误必须包含行号、字段和错误文本，不能只高亮 YAML。
+- Open、Validate、Revert、Create default 都需要键盘可达。
+- 开关保存失败需要被 VoiceOver 宣告，并说明 UI 已回滚到上一个真实值。
 
 ## 数据与依赖
 

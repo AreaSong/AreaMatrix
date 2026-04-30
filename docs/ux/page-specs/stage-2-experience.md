@@ -40,7 +40,7 @@
 | S2-18 | classifier-impact-preview - 规则影响预览 | 自定义分类 | [S2-18-classifier-impact-preview.md](stage-2-experience/S2-18-classifier-impact-preview.md) |
 | S2-19 | classifier-rule-editor - 自定义分类规则编辑器 | 自定义分类 | [S2-19-classifier-rule-editor.md](stage-2-experience/S2-19-classifier-rule-editor.md) |
 | S2-20 | icloud-conflict-visual - iCloud 冲突可视化增强 | 冲突增强 | [S2-20-icloud-conflict-visual.md](stage-2-experience/S2-20-icloud-conflict-visual.md) |
-| S2-21 | import-conflict-batch - 同名导入冲突批量决策 | 冲突增强 | [S2-21-import-conflict-batch.md](stage-2-experience/S2-21-import-conflict-batch.md) |
+| S2-21 | import-conflict-batch - 导入冲突批量决策 | 冲突增强 | [S2-21-import-conflict-batch.md](stage-2-experience/S2-21-import-conflict-batch.md) |
 | S2-22 | redo - Redo feedback region / Redo 状态区域 | Undo / Redo 页面区域 | [S2-22-redo.md](stage-2-experience/S2-22-redo.md) |
 | S2-23 | tag-suggestions - 标签建议 | 标签 | [S2-23-tag-suggestions.md](stage-2-experience/S2-23-tag-suggestions.md) |
 
@@ -101,7 +101,7 @@ flowchart TD
   S203 -->|Edit filters| S202
   S203 -->|Save success| S206["S2-06 smart-lists"]
   S206 -->|Open Smart List| S201
-  S206 -->|Edit query| S202
+  S206 -->|Edit query sheet / Edit filters| S202
   S206 -->|Rename / Duplicate / Delete cancel| S206
   S206 -->|Management failed / Retry| S206
 
@@ -110,6 +110,10 @@ flowchart TD
   S207 -->|Suggestions...| S223
   S207 -->|Success| S210["S2-10 undo-toast"]
   S207 -->|Cancel / Error retry| Detail
+  S223 -->|Edit selected| S223Edit["S2-23 edit mode"]
+  S223Edit -->|Cancel edit| S223
+  S223Edit -->|Apply edited success| S210
+  S223Edit -->|Validation / Apply error| S223Edit
   S223 -->|Apply suggestions success| S210
   S223 -->|Ignore / Cancel / Error| Detail
   Multi["Detail multi / context menu"] --> S209["S2-09 batch-add-tags"]
@@ -119,6 +123,7 @@ flowchart TD
   S209 -->|Apply success| S210
   S209 -->|Cancel / Partial failure| Multi
   S212 -->|Apply success| S210
+  S212 -->|Create new category| S219["S2-19 classifier-rule-editor"]
   S212 -->|Cancel / Conflict / Error| Multi
   S213 -->|Move to Trash / Remove index success| S210
   S213 -->|Cancel / Blocked / Error| Multi
@@ -134,19 +139,31 @@ flowchart TD
   CmdK["Cmd+K"] --> S215["S2-15 command-palette"]
   S215 -->|Esc / Click outside| MainList
   S215 -->|Safe navigation| S201
+  S215 -->|Open classifier rules| S219
+  S215 -->|Apply classifier rule / preview impact| S218["S2-18 classifier-impact-preview"]
+  S215 -->|Review import conflicts| S221["S2-21 import-conflict-batch"]
+  S215 -->|Review tag suggestions| S223
   S215 -->|Dangerous command| S212
   S215 -->|Dangerous command| S213
   S215 -->|Dangerous command| S214
   ImportBatch["Batch Import Sheet"] --> S221["S2-21 import-conflict-batch"]
   S221 -->|Apply strategy success| S210
-  S221 -->|Cancel / Ask per item / Error| ImportBatch
+  S221 -->|Ask per item: hash duplicate| S122["S1-22 conflict-duplicate"]
+  S221 -->|Ask per item: same name| S123["S1-23 conflict-name"]
+  S122 -->|Replace path| S124["S1-24 replace-confirm"]
+  S123 -->|Replace path| S124
+  S122 -->|Resolve / Cancel queue| ImportBatch
+  S123 -->|Resolve / Cancel queue| ImportBatch
+  S124 -->|Confirm / Cancel| ImportBatch
+  S221 -->|Cancel / Error / Pending rows| ImportBatch
   ClassifierEntry["Detail / Import result"] --> S216["S2-16 classifier-correct"]
-  S216 -->|Remember rule| S217["S2-17 classifier-save-rule"]
+  S216 -->|Create new category| S219
+  S216 -->|Edit rule / Remember rule| S217["S2-17 classifier-save-rule"]
   S216 -->|Preview impact| S218["S2-18 classifier-impact-preview"]
   S216 -->|Apply correction success| S210
   S216 -->|Cancel / Error| ClassifierEntry
   S217 -->|Preview impact| S218["S2-18 classifier-impact-preview"]
-  S217 -->|Save rule only| ClassifierEntry
+  S217 -->|Save rule only from S2-16| S216
   S217 -->|Open existing rule| S219
   S217 -->|Cancel / Save failed| S216
   Settings["Settings > Classifier"] --> S219["S2-19 classifier-rule-editor"]
@@ -155,6 +172,8 @@ flowchart TD
   S218 -->|Back| S216
   S218 -->|Back| S217
   S218 -->|Back| S219
+  S218 -->|Save rule only| S216
+  S218 -->|Save classifier changes only| S219
   S218 -->|Save and apply success| S210
   S218 -->|Dry-run error / Needs review / Conflict| S218
 
@@ -171,14 +190,15 @@ flowchart TD
 
 | 子系统 | 入口 | 正常退出 | Cancel / Back | Error / Recovery |
 |---|---|---|---|---|
-| Search | Toolbar 搜索框、`Cmd+F`、Smart List | 打开结果详情、保存 Smart List、Clear 回普通列表 | Esc 或 Clear 保留当前资料库上下文；S2-03 Cancel 返回打开前搜索上下文 | 查询错误进 S2-05；0 结果进 S2-04；搜索 API 失败显示可重试错误态 |
+| Search | Toolbar 搜索框、`Cmd+F`、Smart List | 打开结果详情、保存 Smart List、Clear 回普通列表 | Esc 或 Clear 保留当前资料库上下文；S2-03 Cancel 返回打开前搜索上下文 | 查询错误进 S2-05；0 结果进 S2-04；搜索 API 失败显示可重试错误态；scope 默认值按入口推断 |
 | Filters / Tags | `Filters`、filter chip、Smart List 编辑 | 普通搜索即时刷新；Smart List 编辑更新 draft | 关闭 popover 不回滚已即时应用的普通搜索条件；draft 场景由外层 Cancel 回滚 | 日期非法、标签加载失败、count 失败都停留当前 popover 并说明 |
-| Smart Lists | 保存搜索成功、sidebar、命令面板 | 进入搜索模式并复现 query/filter/sort | Rename/Delete/Duplicate 取消不改记录 | 管理失败保留原记录；删除确认必须说明不删除文件 |
-| Batch | 多选 Detail、右键、命令面板 | 成功后回主窗口并显示 S2-10 | Cancel 不改变文件、DB 或标签 | 部分失败显示结果摘要；可撤销项进入 S2-10/S2-11；冲突必须先处理 |
-| Import conflict | 批量导入检测到 hash duplicate 或同名不同内容 | 应用批量策略后返回导入进度/结果并显示 S2-10 | Cancel 停止本次策略提交，不替换、不移动、不删除已有文件 | Replace 必须二次确认；失败保留 staged 文件和冲突状态，可重试或逐项处理 |
+| Smart Lists | 保存搜索成功、sidebar、命令面板 | 进入搜索模式并复现 query/filter/sort | Rename/Delete/Duplicate/Edit query 子 sheet 取消不改记录 | 管理失败保留原记录；删除确认必须说明不删除文件；所有管理子 sheet 归 S2-06 |
+| Batch | 多选 Detail、右键、命令面板 | 成功后回主窗口并显示 S2-10 | Cancel 不改变文件、DB 或标签；新建分类从 S2-19 返回后重新预览 | 部分失败显示结果摘要；可撤销项进入 S2-10/S2-11；冲突必须先处理 |
+| Command Palette | `Cmd+K`、菜单 | 导航或打开对应 sheet / panel 后关闭命令面板 | Esc 或点击外部恢复打开前焦点 | 危险命令只打开确认/预览页；Apply classifier rule 只进入 S2-18，不直接执行 |
+| Import conflict | 批量导入检测到 hash duplicate 或同名不同内容 | 应用当前作用域策略后返回导入进度/结果并显示 S2-10 | Cancel 停止本次策略提交，不替换、不移动、不删除已有文件；Ask per item 进入 S1-22/S1-23/S1-24 队列 | Replace 必须二次确认且文案显示作用域；失败保留 staged 文件、pending 行和冲突状态，可重试或逐项处理 |
 | Redo | `⇧⌘Z`、Undo History、Undo 后 toast 中的 S2-22 feedback region | Redo 成功后回打开前上下文并显示 S2-10 | Close 关闭宿主 toast/panel，不改变 undo/redo stack | 新写操作清空 redo stack；外部变更、过期、Trash restore 失败进入 S2-11 阻塞态 |
-| Tag suggestions | Detail Meta、导入结果、命令面板 | 采纳建议后刷新标签并显示 S2-10 | Ignore/Cancel 不写标签关系 | 建议生成失败不阻塞手动标签；非 AI、非内容读取 |
-| Classifier | Detail、Import result、Settings | 保存规则或应用纠错后回来源页面 | Back 保留草稿；Cancel 不写规则 | 过宽、重复、冲突、不可写必须阻止危险提交或进入影响预览 |
+| Tag suggestions | Detail Meta、导入结果、命令面板 | 采纳建议或 Apply edited 后刷新标签并显示 S2-10 | Ignore/Cancel edit 不写标签关系 | 建议生成失败不阻塞手动标签；edit mode 校验失败停留 S2-23；非 AI、非内容读取 |
+| Classifier | Detail、Import result、Settings、命令面板 | 当前文件纠错、保存规则或应用规则后回来源页面 | Back 保留草稿；Cancel 不写规则；Create new category 经 S2-19 返回 | 过宽、重复、冲突、不可写必须阻止危险提交或进入影响预览；Apply correction 不保存规则 |
 | Conflict | List badge、Detail banner、Needs Review | Keep both 标记 resolved/acknowledged；Keep left/right 成功后显示 S2-10 | Cancel 不改变文件 | Trash/preview/metadata 失败保持 unresolved，并提供重试或稍后处理 |
 
 ---

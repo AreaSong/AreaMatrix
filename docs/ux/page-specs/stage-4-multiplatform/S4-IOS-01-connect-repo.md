@@ -105,7 +105,7 @@
 
 - 来源类型：组合来源。
 - 直接来源：`docs/roadmap/milestones.md` 的 Stage 4 iOS 目标。
-- 直接来源：`tasks/prompts/phase-4/4-3-stage4-multiplatform/task-02-mobile-repo-connect.md`。
+- 直接来源：`tasks/prompts/phase-4/4-3-stage4-multiplatform/task-22-s4-ios-01-connect-repo.md`。
 - 组合来源：`docs/adr/0006-icloud-support.md`、`docs/ux/first-launch.md`。
 - 推导说明：目录初始化和接管跳转依据 Stage 1 首次启动安全流程推导为多端共用确认页。
 

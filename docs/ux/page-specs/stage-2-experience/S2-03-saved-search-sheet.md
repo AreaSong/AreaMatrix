@@ -52,6 +52,13 @@ Sheet 标题：`Save Search`
 - `Filters: type:PDF, modified:this year, tag:finance`
 - `Sort: Modified date, newest first`
 - `Current results: 24 files`
+- 次动作：`Edit filters`
+
+`Edit filters` 语义：
+- 关闭当前保存 sheet。
+- 打开 `S2-02 search-filters`，并带入当前 query、filters、sort 和 scope。
+- 不创建 Smart List，不修改现有 Smart List。
+- 未保存的 Name、Icon、Pin to sidebar 选择不保留；搜索条件本身保留。
 
 冲突/校验文案：
 - 名称为空：`Name is required.`
@@ -87,6 +94,14 @@ Sheet 标题：`Save Search`
 5. 保存成功后关闭 sheet，sidebar 中出现新 Smart List 并自动选中。
 6. 保存失败时在表单顶部显示错误，并恢复按钮。
 7. 点击 `Cancel` 关闭 sheet，按打开来源返回 S2-01、S2-04 或过滤器入口后的搜索上下文；不创建 Smart List，不修改现有 Smart List。
+
+## 可访问性
+
+- 键盘：sheet 打开后焦点落在 `Name` 字段，`Tab` 顺序经过图标、Pin、查询摘要、Cancel、Save。
+- 焦点：Cancel 或保存成功后焦点回到打开 sheet 的 Save 入口；`Edit filters` 跳转后返回时保留搜索上下文。
+- VoiceOver：读出名称字段校验、查询摘要、Pin 状态、Save 禁用原因和保存结果。
+- 错误关联：重名、空名称、查询无效和保存失败必须关联到字段或表单顶部错误区。
+- 状态表达：图标和 Pin 不能作为唯一含义；必须有文本 label 或 accessibility value。
 
 ## 数据与依赖
 

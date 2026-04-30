@@ -103,7 +103,7 @@ iCloud placeholder 摘要，仅预扫描发现占位符时显示：
 - 选择 DUP 行的 Skip 后，该文件不会进入导入队列；结果页必须报告 skipped。
 - 选择 NAME 行的 Keep both 后，Incoming resolution 显示最终自动编号名称。
 - 点击 `Rename incoming...` 就地显示文件名输入框；名称非法、为空或仍冲突时该行变为 BLOCKED。
-- 点击 `Confirm Replace...` 打开 `S1-24 replace-confirm`；Cancel 返回本 sheet 且该行保持原策略，确认成功后该行标记 `Replace confirmed`。
+- 点击 `Confirm Replace...` 打开 `S1-24 replace-confirm`；Cancel 返回本 sheet 且该行保持原策略，确认成功后回到本 sheet，并将该行标记为 `Replace confirmed`。
 - 高级选项默认折叠，可启用隐藏文件等。
 - `Download & retry scan` 触发 iCloud 下载后重新预扫描；重新预扫描不得清空用户已选择的存储模式。
 - `Switch to local repo...` 进入 `S1-02 choose-path` / `S1-03 validate-path`，新 repo 成功打开前不修改当前 repo。
@@ -111,16 +111,22 @@ iCloud placeholder 摘要，仅预扫描发现占位符时显示：
 - Cancel 关闭 sheet，回到来源主窗口，不写文件。
 - Retry scan 只重新遍历当前文件夹，不改变用户已选择的存储模式。
 
+## 可访问性
+
+- 预扫描摘要、文件数量、跳过数量和错误数量必须用文本表达。
+- 文件夹树或展开列表中的状态不能只靠颜色或图标表达。
+- `View files...`、`Review conflicts`、`Retry scan`、Cancel、Import Folder 必须可通过键盘访问。
+
 ## 数据与依赖
 
-- 目录遍历。
+- folder scan adapter：Swift 平台层遍历目录、处理权限、符号链接、隐藏文件和 iCloud placeholder，再把已就绪文件交给 Core 预检/导入。
 - ignore.yaml。
-- conflict preview。
+- conflict preview adapter：输出每行 `OK` / `DUP` / `NAME` / `ICLOUD` / `ERROR` / `BLOCKED`；若 Core API 尚无独立 preview，必须以 capability spec 定义的错误和导入 dry-run 等价结果为准，不得靠产品口头确认。
 - `allowReplaceDuringImport` settings value。
 - Trash availability for Replace。
 - per-row conflict resolution state。
-- iCloud placeholder detection、download progress 和 retry result。
-- import batch API。
+- iCloud placeholder detection、download progress 和 retry result，由 Swift 平台层提供；未下载项不得进入 Core 导入队列。
+- import batch executor：可由 UI 队列逐项调用 Core `import_file`，或由后续批量 API 承接；两种实现都必须产生同样的进度、取消和结果摘要。
 - source route，用于 Cancel 后返回。
 
 ## 验收清单
@@ -129,7 +135,7 @@ iCloud placeholder 摘要，仅预扫描发现占位符时显示：
 - 默认排除规则可见。
 - 确认前无文件系统写入。
 - 冲突表有明确列、默认策略、逐项动作和 BLOCKED 状态。
-- Replace 默认隐藏；开启设置且 Trash 可用后才可进入 `S1-24 replace-confirm`。
+- Replace 默认隐藏；开启设置且 Trash 可用后才可进入 `S1-24 replace-confirm`，确认后仍需用户点击本 sheet 的最终 `Import Folder`。
 - 未确认 Replace 或存在 BLOCKED 行时不能 Import Folder。
 - 预扫描失败、无可导入文件、Move/Index-only 风险提示都有明确 UI。
 - iCloud placeholder 文件必须可见、可下载重试或明确进入结果页，不静默处理。

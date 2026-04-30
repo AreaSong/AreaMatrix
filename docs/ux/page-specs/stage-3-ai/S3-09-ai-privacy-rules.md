@@ -221,7 +221,7 @@ Delete privacy rule 确认 sheet：
 
 ## 来源
 
-- 组合来源：[AI 隐私规则任务](../../../../tasks/prompts/phase-4/4-2-stage3-ai/task-09-ai-privacy-rules.md)、[Stage 3 隐私与可控](../../../roadmap/milestones.md#隐私与可控)。
+- 组合来源：[AI 隐私规则任务](../../../../tasks/prompts/phase-4/4-2-stage3-ai/task-19-s3-09-ai-privacy-rules.md)、[Stage 3 隐私与可控](../../../roadmap/milestones.md#隐私与可控)。
 - 依据现有文档推导：规则类型、推荐模板、repo-relative folder 校验、keyword 匹配范围、测试区、privacy gate 阻断文案和未保存离开确认规则。
 
 ---

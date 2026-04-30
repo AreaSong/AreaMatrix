@@ -86,7 +86,7 @@
 
 ## 任务来源说明
 
-当前 Stage 3 prompt task 已按页面拆分为 `task-01-ai-settings-config.md` 到 `task-10-ai-fallback.md`。旧审计名 `task-01-local-ai-classification.md` / `task-02-ai-summary-search-privacy.md` 不作为当前 Stage 3 页面规格的源文件；查证时以 Related 中列出的 10 个 task 文件为准。
+当前 Stage 3 prompt task 已拆为 Core contract `4-2/task-01` 到 `4-2/task-10`、页面 atomic `4-2/task-11` 到 `4-2/task-20`，以及 `4-2/task-21` 集成验收。页面开发和验收以对应 `S3-*` 单页规格、Stage 3 control map 和页面 atomic task 为准。
 
 ---
 
@@ -97,13 +97,13 @@
 - [../search.md](../search.md)
 - [../error-messages.md](../error-messages.md)
 - [../../product/prd.md](../../product/prd.md)
-- [../../../tasks/prompts/phase-4/4-2-stage3-ai/task-01-ai-settings-config.md](../../../tasks/prompts/phase-4/4-2-stage3-ai/task-01-ai-settings-config.md)
-- [../../../tasks/prompts/phase-4/4-2-stage3-ai/task-02-local-model-status.md](../../../tasks/prompts/phase-4/4-2-stage3-ai/task-02-local-model-status.md)
-- [../../../tasks/prompts/phase-4/4-2-stage3-ai/task-03-remote-provider-config.md](../../../tasks/prompts/phase-4/4-2-stage3-ai/task-03-remote-provider-config.md)
-- [../../../tasks/prompts/phase-4/4-2-stage3-ai/task-04-ai-classification-suggestion.md](../../../tasks/prompts/phase-4/4-2-stage3-ai/task-04-ai-classification-suggestion.md)
-- [../../../tasks/prompts/phase-4/4-2-stage3-ai/task-05-ai-call-log.md](../../../tasks/prompts/phase-4/4-2-stage3-ai/task-05-ai-call-log.md)
-- [../../../tasks/prompts/phase-4/4-2-stage3-ai/task-06-ai-summary.md](../../../tasks/prompts/phase-4/4-2-stage3-ai/task-06-ai-summary.md)
-- [../../../tasks/prompts/phase-4/4-2-stage3-ai/task-07-ai-tags-suggestion.md](../../../tasks/prompts/phase-4/4-2-stage3-ai/task-07-ai-tags-suggestion.md)
-- [../../../tasks/prompts/phase-4/4-2-stage3-ai/task-08-semantic-search.md](../../../tasks/prompts/phase-4/4-2-stage3-ai/task-08-semantic-search.md)
-- [../../../tasks/prompts/phase-4/4-2-stage3-ai/task-09-ai-privacy-rules.md](../../../tasks/prompts/phase-4/4-2-stage3-ai/task-09-ai-privacy-rules.md)
-- [../../../tasks/prompts/phase-4/4-2-stage3-ai/task-10-ai-fallback.md](../../../tasks/prompts/phase-4/4-2-stage3-ai/task-10-ai-fallback.md)
+- [../../../tasks/prompts/phase-4/4-2-stage3-ai/task-11-s3-01-ai-settings.md](../../../tasks/prompts/phase-4/4-2-stage3-ai/task-11-s3-01-ai-settings.md)
+- [../../../tasks/prompts/phase-4/4-2-stage3-ai/task-12-s3-02-local-model-status.md](../../../tasks/prompts/phase-4/4-2-stage3-ai/task-12-s3-02-local-model-status.md)
+- [../../../tasks/prompts/phase-4/4-2-stage3-ai/task-13-s3-03-remote-model-enable.md](../../../tasks/prompts/phase-4/4-2-stage3-ai/task-13-s3-03-remote-model-enable.md)
+- [../../../tasks/prompts/phase-4/4-2-stage3-ai/task-14-s3-04-ai-classification-suggestion.md](../../../tasks/prompts/phase-4/4-2-stage3-ai/task-14-s3-04-ai-classification-suggestion.md)
+- [../../../tasks/prompts/phase-4/4-2-stage3-ai/task-15-s3-05-ai-call-log.md](../../../tasks/prompts/phase-4/4-2-stage3-ai/task-15-s3-05-ai-call-log.md)
+- [../../../tasks/prompts/phase-4/4-2-stage3-ai/task-16-s3-06-ai-summary-editor.md](../../../tasks/prompts/phase-4/4-2-stage3-ai/task-16-s3-06-ai-summary-editor.md)
+- [../../../tasks/prompts/phase-4/4-2-stage3-ai/task-17-s3-07-ai-tags-suggestion.md](../../../tasks/prompts/phase-4/4-2-stage3-ai/task-17-s3-07-ai-tags-suggestion.md)
+- [../../../tasks/prompts/phase-4/4-2-stage3-ai/task-18-s3-08-semantic-search-results.md](../../../tasks/prompts/phase-4/4-2-stage3-ai/task-18-s3-08-semantic-search-results.md)
+- [../../../tasks/prompts/phase-4/4-2-stage3-ai/task-19-s3-09-ai-privacy-rules.md](../../../tasks/prompts/phase-4/4-2-stage3-ai/task-19-s3-09-ai-privacy-rules.md)
+- [../../../tasks/prompts/phase-4/4-2-stage3-ai/task-20-s3-10-ai-fallback.md](../../../tasks/prompts/phase-4/4-2-stage3-ai/task-20-s3-10-ai-fallback.md)

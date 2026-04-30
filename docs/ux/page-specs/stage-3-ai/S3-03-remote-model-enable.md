@@ -113,7 +113,7 @@ Disable remote AI 确认 sheet：
 
 1. 打开 sheet 时读取已配置 provider，但 API key 默认以掩码显示。
 2. 修改 provider 后清空模型选择或加载对应模型列表。
-3. 点击 `Test connection` 显示 `Testing...`，成功后显示绿色状态 `Connection verified`。
+3. 点击 `Test connection` 显示 `Testing...`，成功或失败都按 S3-05 的 `Provider Test` 记录类型写入脱敏连接测试日志；成功后显示绿色状态 `Connection verified`。
 4. 用户勾选确认并选择 scope 后才能点击 Enable。
 5. 点击 Enable 保存 key 到 Keychain，保存 provider settings、feature scope 和 `remote_provider_enabled`，并默认打开 S3-09 的 `privacy_gate_enabled`；成功后按入口返回 AI 设置、S3-09 或来源功能页。
 6. 点击 Disable remote AI 弹确认，确认后清除远程启用状态并关闭 `privacy_gate_enabled`；是否删除 key 由复选框 `Also remove stored API key` 控制。
@@ -135,7 +135,7 @@ Disable remote AI 确认 sheet：
 - Remote provider client。
 - Remote AI settings store。
 - Privacy rules gate。
-- AI call log，记录测试连接但不得记录 key。
+- AI call log，按 S3-05 `Provider Test` schema 记录测试连接，但不得记录 key、key 片段、用户文件内容或 provider 原始响应体。
 - Network error mapper。
 - Remote disable confirmation state。
 - Remote state fields：`provider_configured`、`provider_verified`、`remote_provider_enabled`、`feature_scope`、`privacy_gate_enabled`。
@@ -147,6 +147,7 @@ Disable remote AI 确认 sheet：
 - 用户必须输入 key、选择范围、测试连接成功、勾选数据流向后才能启用。
 - 启用远程后 5 个状态字段被明确更新；远程调用必须同时满足 provider、scope、privacy gate、字段规则和日志 gate。
 - 测试连接不发送用户文件内容。
+- 测试连接日志使用 S3-05 `Provider Test` 类型，sent fields 固定为 none，且不包含 API key、key 片段或 provider 原始响应体。
 - API key 不出现在日志、诊断包、UI 明文和错误文本中。
 - 禁用远程后后续远程调用被阻止。
 - Disable remote AI 有确认 sheet，且删除 Keychain key 只能由用户勾选后执行。
@@ -158,7 +159,7 @@ Disable remote AI 确认 sheet：
 
 ## 来源
 
-- 组合来源：[远程 provider 配置任务](../../../../tasks/prompts/phase-4/4-2-stage3-ai/task-03-remote-provider-config.md)、[Stage 3 隐私与可控](../../../roadmap/milestones.md#隐私与可控)。
+- 组合来源：[远程 provider 配置任务](../../../../tasks/prompts/phase-4/4-2-stage3-ai/task-13-s3-03-remote-model-enable.md)、[Stage 3 隐私与可控](../../../roadmap/milestones.md#隐私与可控)。
 - 依据现有文档推导：远程 AI 显式启用、Keychain 存储、测试连接成功后才能启用和禁用远程确认规则，遵守项目隐私不变量。
 
 ---

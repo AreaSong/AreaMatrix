@@ -61,6 +61,7 @@ Rescan 顶部进度：
 - list loading 期间禁用当前列表写操作（Rename/Delete/Change Category），但允许切换已加载 Tree 节点。
 - DB locked 属于局部查询失败时，优先显示 List inline error，Tree 不进入 locked。
 - repo path missing、permission denied、DB corrupted、schema incompatible 才进入 `S1-11 main-repo-error`。
+- 空态不适用：本页表示打开、扫描或刷新中的过渡状态；无数据结果完成后进入 `S1-08 main-empty`。
 
 ## 交互
 
@@ -69,6 +70,12 @@ Rescan 顶部进度：
 - 长任务失败进入 inline error 或 repo error。
 - 点击 `Cancel opening` 只取消 UI 打开流程，不删除 repo 配置、不修改用户文件。
 - 局部 Retry 只重试当前 Tree/List 请求；repo opening Retry 重新执行 open repo。
+
+## 可访问性
+
+- loading 文本必须说明当前阶段，例如 `Opening repository`、`Loading files`、`Scanning changes`。
+- 进度条必须有可访问值；未知进度使用 indeterminate 描述。
+- `Cancel opening` 的后果需要可读说明，不能只显示图标。
 
 ## 数据与依赖
 

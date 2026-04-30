@@ -71,7 +71,9 @@ Inline 错误：
 - 错误查询不能保存为 Smart List。
 - 字段名可纠正时显示 `Apply suggestion`。
 - 无法定位错误位置时显示通用错误，但仍保留原查询。
-- 普通关键词中出现冒号但未启用高级语法时，按搜索语法定义处理，不随意报错。
+- Stage 2 使用 token-aware query parser：`kind:`、`cat:`、`after:`、`before:`、`tag:`、`note:` 是高级查询字段。
+- 未知字段 token 必须报解析错误，例如 `kindd:pdf` 显示 unknown field，不得按普通关键词静默搜索。
+- 普通关键词如需包含冒号，必须使用引号或转义，例如 `"foo:bar"` 或 `foo\:bar`；帮助文档必须展示该写法。
 - 错误提示不能覆盖搜索输入，用户应能直接继续编辑。
 - 模糊匹配和拼音首字母匹配不用于修正高级查询字段；例如 `kindd:pdf` 必须显示未知字段错误，而不是模糊执行。
 
@@ -83,6 +85,14 @@ Inline 错误：
 4. 点击 `Clear query` 清空搜索框和错误状态。
 5. 点击 `Open query help` 打开 popover，展示支持字段示例；Esc 或点击外部关闭 help，不清空 query。
 6. 用户手动修正后错误自动消失并显示搜索结果。
+
+## 可访问性
+
+- 键盘：错误出现后焦点仍可回到搜索框，`Open query help` 可键盘打开和关闭。
+- 焦点：Fix query 不移动焦点；Clear query 后焦点回到普通列表或打开前上下文。
+- VoiceOver：读出错误字段、错误位置、建议修复和帮助 popover 内容。
+- 错误关联：解析错误必须通过 accessibility hint 关联到搜索输入框，不能只放在 banner。
+- 状态表达：错误 underline、位置标记和字段提示不能只依赖红色；需要文字说明。
 
 ## 数据与依赖
 

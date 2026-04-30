@@ -59,10 +59,10 @@ python3 tasks/prompts/_shared/prompt_pipeline.py mark --task 0-1/task-01 --statu
 | Phase | 目标 |
 |---|---|
 | Phase 0 | 治理、prompt runner、工程骨架、CI、Rust crate、UDL、Xcode 空壳 |
-| Phase 1 | Stage 1 MVP 的 Core 能力小闭环：repo/config、classify/import、query/detail、recovery/sync/overview |
-| Phase 2 | Stage 1 MVP 的 macOS 纵向闭环：首次启动、主窗口、导入、冲突、详情、设置、watcher、overview |
+| Phase 1 | Stage 1 MVP Core 原子任务：每个 C1 拆为 contract / implementation / failure / validation / integration verify |
+| Phase 2 | Stage 1 MVP macOS 单页任务：S1-01..S1-37 每页单独执行，并保留闭环 integration verify |
 | Phase 3 | Stage 1 稳定、测试、发布准备 |
-| Phase 4 | Stage 2-4 的体验完善、AI、多端扩展任务；C2/C3/C4 已拆成逐能力、逐页面绑定的小任务 |
+| Phase 4 | Stage 2-4 原子任务：先 C2/C3/C4 Core，再 S2/S3/S4 页面，最后阶段 integration verify |
 
 ## 推荐执行顺序
 
@@ -70,4 +70,4 @@ python3 tasks/prompts/_shared/prompt_pipeline.py mark --task 0-1/task-01 --statu
 2. 再执行 Phase 1，跑通 Rust core 与 UniFFI。
 3. 再执行 Phase 2，完成 macOS 端到端闭环。
 4. 再执行 Phase 3，做稳定性和发布准备。
-5. Phase 4 按 `4-1/task-01..19`、`4-2/task-01..10`、`4-3/task-01..21` 串行推进，每个任务都绑定具体 UX 页面和 Core 能力。
+5. Phase 4 按 `4-1`、`4-2`、`4-3` 串行推进：先完成 C2/C3/C4 Core contract，再执行 S2/S3/S4 单页 atomic task，最后跑阶段 integration verify。

@@ -102,7 +102,7 @@ AreaMatrix 的真相源策略要求外部文件系统变化能回流到 DB。Win
 ## 来源
 
 - 来源类型：组合来源。
-- 直接来源：`tasks/prompts/phase-4/4-3-stage4-multiplatform/task-12-platform-watcher-status.md`。
+- 直接来源：`tasks/prompts/phase-4/4-3-stage4-multiplatform/task-37-s4-win-04-watcher-status.md`。
 - 组合来源：`docs/adr/0005-fsevents-listener.md` 的跨平台 watcher 说明。
 - 组合来源：`docs/architecture/source-of-truth.md`。
 - 推导说明：Windows watcher 状态展示 ReadDirectoryChangesW 服务快照；手动 rescan 作为高风险回流动作拆到 `S4-X-07`。

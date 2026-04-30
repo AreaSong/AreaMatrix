@@ -54,6 +54,9 @@ Drop files to import
 - Drop 到 Sidebar 节点优先级高于当前选中分类。
 - 没有有效 file URL 或 file promise 时禁用 drop 接收，显示 `Cannot import this item`。
 - 全部拖入项都没有有效 file URL 或 file promise 时，drop 不进入 ImportSheet，不创建 import session。
+- 空态不适用：hover overlay 只在拖拽进入窗口时出现；无拖拽时回到来源主窗口。
+- 加载态不适用：解析拖拽 item 的短暂等待仍显示 hover overlay，不展示独立 loading 页面。
+- 错误态：全部 item 无效时显示 non-blocking warning 或 toast，overlay 消失，不写文件、不写 DB。
 
 ## 交互
 
@@ -63,7 +66,14 @@ Drop files to import
 - Drop 到窗口空白区域：目标为自动分类，`destination=autoClassify`。
 - File -> Import...：目标为自动分类，`destination=autoClassify`。
 - 松手后进入单文件、多文件或文件夹 ImportSheet。
+- 单个普通文件 drop 后进入 `S1-17 import-single-sheet`；多个文件进入 `S1-18 import-batch-sheet`；一个或多个文件夹进入 `S1-19 import-folder-sheet`。
 - 全部拖入项无效时，松手后显示非阻断 warning 或 toast：`Cannot import these items`，随后 overlay 消失并回到原主窗口。
+
+## 可访问性
+
+- overlay 文案必须读出目标分类和 drop 结果，不只依赖高亮边框。
+- Sidebar drop target 的目标变化要有文本 tooltip 或可访问说明。
+- 无效拖拽 warning 需要可被 VoiceOver 宣告。
 
 ## 数据与依赖
 

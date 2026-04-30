@@ -2,8 +2,8 @@
 
 ## 3-1/task-01
 
-> source task: `tasks/prompts/phase-3/3-1-stability-release/task-01-error-handling-recovery.md`  
-> depends: `2-2/task-03`, `2-3/task-02`, `2-3/task-03`, `2-4/task-01`, `2-4/task-02`, `2-4/task-03`
+> source task: `tasks/prompts/phase-3/3-1-stability-release/task-01-error-recovery-matrix.md`  
+> depends: `2-4/task-04`
 
 ### Exact Docs
 - `docs/api/error-codes.md`
@@ -12,30 +12,59 @@
 - `docs/architecture/transactional-import.md`
 
 ### Existing Code
-- `core/src/error.rs`
-- `core/src/storage/**`
-- `apps/macos/AreaMatrix/Bridge/**`
-- `apps/macos/AreaMatrix/Views/**`
+- `core/**`
+- `apps/macos/**`
+- `scripts/**`
 
 ### Expected New Paths
-- `core/tests/recovery_test.rs`
-- `apps/macos/AreaMatrix/Views/**`
-- `apps/macos/AreaMatrix/Logging/**`
+- `core/tests/**`
+- `apps/macos/AreaMatrixTests/**`
+- `scripts/**`
+- `docs/development/**`
 
 ### Forbidden Touches
-- `core/src/db/schema.sql`
+- `None`
 
 ### Risk Level
 - Mission-Critical
 
 ### Validation
-- `cd core && cargo test --workspace recovery`
-- `xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+- `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`
 
 ## 3-1/task-02
 
-> source task: `tasks/prompts/phase-3/3-1-stability-release/task-02-performance-testing.md`  
+> source task: `tasks/prompts/phase-3/3-1-stability-release/task-02-recovery-scenarios.md`  
 > depends: `3-1/task-01`
+
+### Exact Docs
+- `docs/development/testing.md`
+- `docs/development/troubleshooting.md`
+- `docs/architecture/transactional-import.md`
+
+### Existing Code
+- `core/**`
+- `apps/macos/**`
+- `scripts/**`
+
+### Expected New Paths
+- `core/tests/**`
+- `apps/macos/AreaMatrixTests/**`
+- `scripts/**`
+- `docs/development/**`
+
+### Forbidden Touches
+- `None`
+
+### Risk Level
+- Mission-Critical
+
+### Validation
+- `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`
+
+## 3-1/task-03
+
+> source task: `tasks/prompts/phase-3/3-1-stability-release/task-03-performance-benchmarks.md`  
+> depends: `3-1/task-02`
 
 ### Exact Docs
 - `docs/development/testing.md`
@@ -44,30 +73,29 @@
 - `docs/roadmap/stage-1-mvp.md`
 
 ### Existing Code
-- `core/tests/**`
-- `apps/macos/AreaMatrixTests/**`
+- `core/**`
+- `apps/macos/**`
 - `scripts/**`
 
 ### Expected New Paths
 - `core/tests/**`
 - `apps/macos/AreaMatrixTests/**`
-- `scripts/check-all.sh`
+- `scripts/**`
+- `docs/development/**`
 
 ### Forbidden Touches
-- `core/src/api.rs`
-- `core/area_matrix.udl`
+- `None`
 
 ### Risk Level
 - High
 
 ### Validation
-- `cd core && cargo test --workspace`
-- `cd core && cargo llvm-cov --workspace --fail-under-lines 70`
+- `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`
 
-## 3-1/task-03
+## 3-1/task-04
 
-> source task: `tasks/prompts/phase-3/3-1-stability-release/task-03-release-prep.md`  
-> depends: `3-1/task-02`
+> source task: `tasks/prompts/phase-3/3-1-stability-release/task-04-release-checklist.md`  
+> depends: `3-1/task-03`
 
 ### Exact Docs
 - `docs/development/release.md`
@@ -76,22 +104,52 @@
 - `CHANGELOG.md`
 
 ### Existing Code
-- `CHANGELOG.md`
-- `README.md`
-- `README.zh-CN.md`
+- `core/**`
+- `apps/macos/**`
 - `scripts/**`
 
 ### Expected New Paths
-- `CHANGELOG.md`
-- `docs/development/release.md`
-- `scripts/check-all.sh`
+- `core/tests/**`
+- `apps/macos/AreaMatrixTests/**`
+- `scripts/**`
+- `docs/development/**`
 
 ### Forbidden Touches
-- `core/src/storage/**`
-- `core/src/db/**`
+- `None`
 
 ### Risk Level
 - High
+
+### Validation
+- `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`
+
+## 3-1/task-05
+
+> source task: `tasks/prompts/phase-3/3-1-stability-release/task-05-stage1-integration-verify.md`  
+> depends: `3-1/task-04`
+
+### Exact Docs
+- `docs/roadmap/stage-1-mvp.md`
+- `docs/development/release.md`
+- `docs/development/testing.md`
+- `docs/architecture/mvp-control-map.md`
+
+### Existing Code
+- `core/**`
+- `apps/macos/**`
+- `scripts/**`
+
+### Expected New Paths
+- `core/tests/**`
+- `apps/macos/AreaMatrixTests/**`
+- `scripts/**`
+- `docs/development/**`
+
+### Forbidden Touches
+- `None`
+
+### Risk Level
+- Mission-Critical
 
 ### Validation
 - `./scripts/check-all.sh`

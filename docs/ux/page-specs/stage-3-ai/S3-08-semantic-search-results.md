@@ -225,7 +225,7 @@ Cancel index build 确认 sheet：
 
 ## 来源
 
-- 组合来源：[语义搜索任务](../../../../tasks/prompts/phase-4/4-2-stage3-ai/task-08-semantic-search.md)、[Stage 3 智能搜索](../../../roadmap/milestones.md#智能搜索)、[搜索 UX](../../search.md)。
+- 组合来源：[语义搜索任务](../../../../tasks/prompts/phase-4/4-2-stage3-ai/task-18-s3-08-semantic-search-results.md)、[Stage 3 智能搜索](../../../roadmap/milestones.md#智能搜索)、[搜索 UX](../../search.md)。
 - 依据现有文档推导：语义/普通搜索分组展示、dedupe policy、语义索引状态、Smart List semantic dependency 和隐私跳过追溯规则。
 
 ---

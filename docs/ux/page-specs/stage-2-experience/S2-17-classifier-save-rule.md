@@ -50,7 +50,14 @@ Sheet 标题：`Remember this classification rule?`
 - Priority 字段默认 `0`，范围 `-1000..1000`，越大越优先。
 
 规则预览：
-`When file name contains “合同” and extension is “pdf”, classify as finance/contracts with priority 0.`
+- `Append keyword “合同” to finance/contracts.keywords`
+- `Append extension “pdf” to finance/contracts.extensions`
+- `Use priority 0 for finance/contracts unless the user changes it`
+
+语义说明：
+- 多个关键词和扩展名是追加到目标分类的独立匹配值，不是 `keyword AND extension` 复合规则。
+- 保存后匹配结果必须遵守现有 classifier matcher：keyword 命中优先于 extension；多命中按 priority 和既有 tie-breaker 处理。
+- 如果用户同时选择关键词和扩展名，影响预览必须按真实 matcher 计算两类独立命中后的结果，而不是只预览同时满足两者的文件。
 
 风险提示：
 - 只选 `.pdf` 时：`This rule may affect many documents.`
@@ -80,7 +87,7 @@ Sheet 标题：`Remember this classification rule?`
 - Preview impact 返回后保留规则草稿和 warning 状态。
 - 本页不得引入 `path`、`source_folder` 或独立 rule `enabled` 字段；写入内容必须能映射到当前 `classifier.yaml` 的 `extensions`、`keywords`、`priority` 和目标 category。
 - UI 中扩展名包含点仅用于可读性；保存、校验和重复检测都按无点小写值处理。
-- 多个关键词保存为目标分类的 `keywords` 列表追加项；多个扩展名保存为目标分类的 `extensions` 列表追加项。
+- 多个关键词保存为目标分类的 `keywords` 列表追加项；多个扩展名保存为目标分类的 `extensions` 列表追加项；两者不组成新的 AND 条件。
 
 ## 交互
 
@@ -91,6 +98,14 @@ Sheet 标题：`Remember this classification rule?`
 5. 保存成功后显示 toast `Classification rule saved`。
 6. 如果保存失败，定位到失败字段或配置错误。
 7. 点击 Cancel 不写 classifier 配置，不影响当前文件分类。
+
+## 可访问性
+
+- 键盘：规则依据 checkbox、priority、Preview impact、Save rule 和 Cancel 均可 Tab 到达并可用空格/回车操作。
+- 焦点：Preview Back 后恢复到打开预览前的规则依据；保存失败时焦点移到第一个字段级错误。
+- VoiceOver：读出每个依据的来源、写入目标、warning、重复规则和 Save 禁用原因。
+- 错误关联：过宽、重复、schema 校验失败和写入失败必须关联到规则依据或表单错误区。
+- 状态表达：warning、重复规则、已预览状态和禁用状态不能只靠颜色或图标。
 
 ## 数据与依赖
 
@@ -107,6 +122,7 @@ Sheet 标题：`Remember this classification rule?`
 - 可以从纠错生成规则草稿。
 - 用户能看到规则依据和自然语言预览。
 - 规则依据只保存为 classifier.yaml 支持的 extensions、keywords、priority 和目标 category。
+- 同时选择 keyword 和 extension 时，保存结果仍是独立追加值，不生成复合 AND 规则。
 - UI 扩展名 `.pdf` 保存为 `pdf`，不会写入带点扩展名。
 - 来源目录和路径只作为关键词候选解释，不写入 path/source_folder 字段。
 - Priority 默认 0，范围 -1000..1000。

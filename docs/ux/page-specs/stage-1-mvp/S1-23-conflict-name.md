@@ -135,7 +135,7 @@ Replace 不可用说明：
 - `Import` 可改为 `Continue`，点击后进入 `S1-24 replace-confirm`。
 - 不允许在本区域直接执行替换。
 
-- 冲突检测仍在计算 hash 时：区域显示 `Checking conflict...`，radio group 暂不出现，ImportSheet 底部 `Import` 禁用。
+- 加载态：冲突检测仍在计算 hash 时，区域显示 `Checking conflict...`，radio group 暂不出现，ImportSheet 底部 `Import` 禁用。
 - 自动编号失败时：显示 `无法生成可用文件名`，提供 `重命名导入文件...`，不允许继续导入。
 - 已有文件无法定位时：`Show existing file` 禁用并显示 `已有文件不再位于目标位置，请重新扫描。`
 - 目标目录不可写时：所有已显示的处理选项都保留可读，但底部 `Import` 禁用，错误文本指向权限恢复流程。
@@ -172,12 +172,12 @@ Replace 不可用说明：
 - 命名校验：复用 ImportSheet 的文件名合法性、自动编号和冲突预告逻辑。
 - `allowReplaceDuringImport` settings value。
 - Trash availability for Replace。
-- Replace 流程：依赖 `S1-24 replace-confirm`，旧文件必须移到 Trash 并写入 change_log。
+- Replace 流程：先依赖 `S1-24 replace-confirm` 标记 `Replace confirmed`，最终 Import 执行时旧文件必须移到 Trash 并写入 change_log。
 - Finder 定位：`Show existing file` / `Reveal target folder` 依赖平台层能力。
 
 - ImportSheet 需要传入 `existingFile`、`incomingFile`、`targetDirectory`、`suggestedResolvedName` 和当前 `ConflictResolution`。
 - UI preview 至少准备三组数据：普通英文名、中文文件名、长文件名。
-- Core API 尚未实现时可用固定 mock，但 mock 必须覆盖 hash 不同、自动编号成功、自动编号失败三个分支。
+- UI preview contract 必须覆盖 hash 不同、自动编号成功、自动编号失败三个分支；若 Core 缺少独立 preview API，需由 Swift adapter 用 capability spec 定义的错误和导入 dry-run 等价结果生成，不得依赖产品口头确认。
 
 ## 验收清单
 

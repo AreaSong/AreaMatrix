@@ -12,7 +12,7 @@
 
 本文件只保留阶段级索引、通用约束和验收矩阵。逐页开发时，请打开下方单页文件；每个页面文件都可以独立交给 IDE / agent 实现。
 
-Stage 4 当前执行任务已拆分为 `tasks/prompts/phase-4/4-3-stage4-multiplatform/task-01-cross-platform-ffi-contract.md` 到 `task-21-replace-confirm-cross-platform.md`。旧的 `task-01-ios-plan.md` / `task-02-windows-linux-plan.md` 不是当前任务边界；实现和审计应以当前 task-01 到 task-21、阶段索引和单页规格为准。
+Stage 4 当前执行任务已拆分为 Core contract `4-3/task-01` 到 `4-3/task-21`、页面 atomic `4-3/task-22` 到 `4-3/task-47`，以及 `4-3/task-48` 集成验收。旧的 `task-01-ios-plan.md` / `task-02-windows-linux-plan.md` 不是当前任务边界；实现和审计应以 Stage 4 control map、单页规格和对应 atomic task 为准。
 
 ---
 
@@ -190,7 +190,7 @@ flowchart TD
 - [../ui-states.md](../ui-states.md)
 - [../drag-import-flow.md](../drag-import-flow.md)
 - [../dedup-conflict.md](../dedup-conflict.md)
-- [../../../tasks/prompts/phase-4/4-3-stage4-multiplatform/task-02-mobile-repo-connect.md](../../../tasks/prompts/phase-4/4-3-stage4-multiplatform/task-02-mobile-repo-connect.md)
-- [../../../tasks/prompts/phase-4/4-3-stage4-multiplatform/task-09-windows-repo-connect.md](../../../tasks/prompts/phase-4/4-3-stage4-multiplatform/task-09-windows-repo-connect.md)
-- [../../../tasks/prompts/phase-4/4-3-stage4-multiplatform/task-10-linux-repo-connect.md](../../../tasks/prompts/phase-4/4-3-stage4-multiplatform/task-10-linux-repo-connect.md)
-- [../../../tasks/prompts/phase-4/4-3-stage4-multiplatform/task-17-platform-capabilities.md](../../../tasks/prompts/phase-4/4-3-stage4-multiplatform/task-17-platform-capabilities.md)
+- [../../../tasks/prompts/phase-4/4-3-stage4-multiplatform/task-22-s4-ios-01-connect-repo.md](../../../tasks/prompts/phase-4/4-3-stage4-multiplatform/task-22-s4-ios-01-connect-repo.md)
+- [../../../tasks/prompts/phase-4/4-3-stage4-multiplatform/task-34-s4-win-01-choose-repo.md](../../../tasks/prompts/phase-4/4-3-stage4-multiplatform/task-34-s4-win-01-choose-repo.md)
+- [../../../tasks/prompts/phase-4/4-3-stage4-multiplatform/task-29-s4-lnx-01-choose-repo.md](../../../tasks/prompts/phase-4/4-3-stage4-multiplatform/task-29-s4-lnx-01-choose-repo.md)
+- [../../../tasks/prompts/phase-4/4-3-stage4-multiplatform/task-40-s4-x-02-platform-differences.md](../../../tasks/prompts/phase-4/4-3-stage4-multiplatform/task-40-s4-x-02-platform-differences.md)

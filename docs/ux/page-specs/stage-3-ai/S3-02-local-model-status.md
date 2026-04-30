@@ -169,7 +169,7 @@ Repair 确认 sheet：
 
 ## 来源
 
-- 组合来源：[本地模型状态任务](../../../../tasks/prompts/phase-4/4-2-stage3-ai/task-02-local-model-status.md)、[Stage 3 AI 分类](../../../roadmap/milestones.md#ai-分类l3)。
+- 组合来源：[本地模型状态任务](../../../../tasks/prompts/phase-4/4-2-stage3-ai/task-12-s3-02-local-model-status.md)、[Stage 3 AI 分类](../../../roadmap/milestones.md#ai-分类l3)。
 - 依据现有文档推导：本地模型状态检查、校验、健康检查和非 AI 回退状态，遵守本地优先与“不读取用户文件内容”的隐私边界。
 
 ---

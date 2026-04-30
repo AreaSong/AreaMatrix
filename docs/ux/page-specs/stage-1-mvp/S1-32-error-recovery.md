@@ -72,6 +72,7 @@ AreaMatrix 涉及文件系统、SQLite、iCloud、配置和 Core 调用。错误
 
 ## 状态与规则
 
+- 默认状态：由来源页传入 error、severity、retry action 和 source route；组件只渲染对应形态，不自行推断页面跳转。
 - DB locked 不应让整个 Tree 变灰，优先显示 List inline error。
 - DB corrupted 是 critical，主动作进入 `S1-37 db-repair-confirm`。
 - iCloud placeholder 可提供 Download & retry。
@@ -81,6 +82,7 @@ AreaMatrix 涉及文件系统、SQLite、iCloud、配置和 Core 调用。错误
 - Retry 执行中禁用重复点击，按钮文案变为 `Retrying...`。
 - `Change Path` 只出现在 repo 选择或 repo 打开相关错误中，不在单文件错误中显示。
 - `Remove from index`、`Open repair...` 等高风险动作只做跳转，不在共享组件内直接执行。
+- 空态不适用：共享错误组件只在已有错误对象时渲染；无错误时来源页不应挂载本组件。
 
 ## 交互
 
@@ -91,6 +93,12 @@ AreaMatrix 涉及文件系统、SQLite、iCloud、配置和 Core 调用。错误
 - 技术详情默认折叠。
 - Close/Cancel 只关闭当前错误组件，不清空用户输入、不删除队列、不修改 repo 配置。
 - Download & retry 先显示 iCloud 下载进度，失败仍留在来源页并保留 Retry。
+
+## 可访问性
+
+- 错误标题、恢复动作和技术详情 disclosure 都需要可读标签。
+- toast、banner、inline、alert、critical block 都不能只靠颜色表达严重程度。
+- Retry、Cancel/Close、Diagnostics、Open repair 等按钮必须支持键盘访问。
 
 ## 数据与依赖
 

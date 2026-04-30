@@ -71,7 +71,10 @@ iCloud 卡片标题：`iCloud Drive 路径`
 - iCloud：未勾选风险确认时禁用 Continue。
 - 外置卷：显示 warning，但不阻止继续。
 - 已存在完整 repo：显示“打开现有资料库”分支，不显示新建/接管说明，不允许进入 `S1-04 confirm-init`。
-- 已存在 repo 但 schema 不兼容或 metadata 不完整：显示错误恢复说明，主动作进入 `S1-11 main-repo-error` 或 `S1-37 db-repair-confirm`，不得静默重建。
+- 已存在 repo 但 schema 不兼容：进入 `S1-11 main-repo-error`，主动作是 `Choose another folder` 或 `Export diagnostics`；不得静默迁移或重建。
+- 已存在 repo 但 DB corrupted：进入 `S1-37 db-repair-confirm`，并说明修复只处理 `.areamatrix/` 元数据。
+- 已存在 repo 但 metadata 不完整 / repair-needed：进入 `S1-37 db-repair-confirm`，不得从校验页直接 reindex。
+- 权限不足、不可写、空间不足：留在本页错误态，提供 `Change Path` / `Retry`，不创建 `.areamatrix/`。
 - 空态不适用：本页必须展示路径和检查列表；检查结果缺失按加载态或错误态处理。
 
 ## 交互
@@ -84,6 +87,12 @@ iCloud 卡片标题：`iCloud Drive 路径`
 - 检查中显示 spinner 和当前检查项。
 - 关闭窗口或 Escape 显示 `Quit setup?`；确认后退出，不创建 `.areamatrix/`，不保存新 repo 配置。
 - 从 Settings 发起的换库流程中，Back / Cancel 返回 `S1-27 settings-repository`，新 repo 成功打开前不修改当前 repo。
+
+## 可访问性
+
+- 检查列表每一项需要有文本状态，例如 `Passed`、`Warning`、`Failed`，不能只靠颜色或图标。
+- iCloud 风险确认复选框要和说明文本关联，未勾选时 Continue 的禁用原因可被 VoiceOver 读出。
+- Back、Change Path、Retry、Continue / Open Repository 都必须支持键盘焦点顺序。
 
 ## 数据与依赖
 

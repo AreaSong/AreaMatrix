@@ -40,7 +40,7 @@ Sheet 标题：`Change category for 12 files`
 
 目标区：
 - `New category` picker，支持搜索。
-- `Create new category...`，如果 Stage 2 自定义分类启用。
+- `Create new category...` 打开 `S2-19 classifier-rule-editor` 的新建分类草稿；本页不做内联创建。
 
 选项：
 - checkbox `Move files into the category folder`。
@@ -71,6 +71,7 @@ Sheet 标题：`Change category for 12 files`
 - 错误态：dry-run 或分类树加载失败时显示错误和 `Retry`，不执行任何写入。
 - 恢复态：失败后保留用户目标分类和移动选项，允许重试或 Cancel。
 - 未选择目标分类时禁用 Apply。
+- `Create new category...` 只负责跳转到 S2-19；S2-19 Save 成功后返回本 sheet 并选中新分类，Cancel 或保存失败时保留原目标分类选择。
 - 所有文件已在目标分类且不移动时禁用 Apply。
 - 移动选项开启时必须检查目标目录可写和冲突。
 - Index-only 文件不能移动源文件，只更新记录。
@@ -84,11 +85,20 @@ Sheet 标题：`Change category for 12 files`
 
 1. 打开 sheet 时计算当前分类分布。
 2. 选择目标分类后刷新影响预览。
-3. 勾选移动文件后执行 dry-run，显示冲突和不可处理项。
-4. 点击 Preview 展开完整影响表。
-5. 点击 Apply 执行批量分类更新和可选移动。
-6. 部分失败时显示结果摘要和失败原因。
-7. 点击 Cancel 不改变分类、文件路径或 change_log。
+3. 点击 `Create new category...` 打开 S2-19 新建分类草稿；返回后如果新分类保存成功，则选中该分类并重新 dry-run。
+4. 勾选移动文件后执行 dry-run，显示冲突和不可处理项。
+5. 点击 Preview 展开完整影响表。
+6. 点击 Apply 执行批量分类更新和可选移动。
+7. 部分失败时显示结果摘要和失败原因。
+8. 点击 Cancel 不改变分类、文件路径或 change_log。
+
+## 可访问性
+
+- 键盘：category picker、移动 checkbox、Preview、Apply、Cancel 和完整影响表均可键盘操作。
+- 焦点：dry-run 失败时焦点移到错误摘要；Apply 成功后焦点回到多选上下文或 Undo toast。
+- VoiceOver：读出选中文件数量、目标分类、移动选项、影响摘要、Index-only 和 blocked 原因。
+- 错误关联：目标目录不可写、路径冲突、分类树加载失败和部分失败必须关联到对应字段或表格行。
+- 状态表达：会移动、仅更新记录、skipped、blocked 不能只靠颜色；每行必须有文字状态。
 
 ## 数据与依赖
 
@@ -97,12 +107,14 @@ Sheet 标题：`Change category for 12 files`
 - Batch category update API。
 - Batch move dry-run。
 - Conflict detection。
+- New category draft route to S2-19。
 - Undo stack。
 - Change log。
 
 ## 验收清单
 
 - 用户能区分只改分类和移动文件。
+- `Create new category...` 进入 S2-19，成功返回后选中新分类并重新预览。
 - Index-only 和缺失文件不会被误移动。
 - 目标目录不可写或冲突时阻止移动。
 - 应用前能看到影响数量。
@@ -125,3 +137,4 @@ Sheet 标题：`Change category for 12 files`
 - [逐页 UI 开发规格索引](../README.md)
 - [S2-10 undo-toast](S2-10-undo-toast.md)
 - [S2-11 undo-history](S2-11-undo-history.md)
+- [S2-19 classifier-rule-editor](S2-19-classifier-rule-editor.md)

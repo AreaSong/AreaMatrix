@@ -68,6 +68,9 @@ Detail 空态：
 - 当前列表过滤框可显示但结果为空；它只过滤当前已加载列表，不查询全库、不跨字段检索。
 - 默认选中 `inbox`；无文件时 Detail 写操作禁用。
 - Import sheet 打开时主窗口底层写操作禁用，但拖拽 hover 仍按 sheet 外层处理。
+- 加载态不适用：repo 打开或列表刷新期间使用 `S1-10 main-loading`，进入本页时 Tree/List 已 ready。
+- 错误态：repo 级错误进入 `S1-11 main-repo-error`；局部列表错误使用 `S1-32 error-recovery` inline 组件，不把空库误判为错误。
+- 空态是本页主状态；空态仍必须保留 Import、Settings、当前列表过滤框和 drop zone。
 
 ## 交互
 
@@ -75,10 +78,16 @@ Detail 空态：
 - 拖入文件进入 `S1-16 drag-hover`。
 - 切换 Sidebar 分类，List 仍显示对应分类空态。
 
+## 可访问性
+
+- 空态文案和 Import 按钮需要被 VoiceOver 连续读出。
+- List 空态 drop zone 不能只靠背景色表达可投放；必须有文本提示。
+- Toolbar、Sidebar、List 空态、Detail 空态的键盘焦点顺序保持稳定。
+
 ## 数据与依赖
 
 - `open_repo` 成功结果。
-- `buildTree` 默认分类。
+- Core `list_tree_json` 结果，或由 UI store 从默认分类配置派生的空树。
 - 当前分类文件查询返回空。
 
 ## 验收清单

@@ -52,6 +52,9 @@
 - 同目录已有同名文件：显示 `A file with this name already exists in docs/contracts`，禁用 `Rename`，提供 `Show existing file`。
 - Index-only 文件：只更新索引中的显示名和 change_log；不移动来源文件，文案必须说明这一点。
 - 只读 repo 或文件不可写：禁用 `Rename`，显示权限恢复入口。
+- 空态不适用：本 sheet 只在已有单文件 fileId 时打开；上下文缺失按错误态处理并关闭或返回来源页。
+- 加载态：冲突检查或权限检查执行中禁用 Rename，显示 `Checking name...`。
+- 错误态：rename 失败时保留输入、显示可复制错误和 Retry / Cancel；不得改动原文件或 DB。
 
 ## 交互
 
@@ -61,6 +64,12 @@
 4. `Rename` 调用单文件重命名动作，执行中按钮显示 `Renaming...` 并防重复点击。
 5. 成功后关闭 sheet，List 行就地更新，Detail Meta 和 Log 刷新。
 6. 失败时保留输入内容，显示可复制错误，用户可修改后重试或 Cancel。
+
+## 可访问性
+
+- `New name` 输入框、错误文本和 Rename 禁用原因需要关联。
+- 默认选中文件主体时必须保持扩展名可见。
+- Cancel、Rename、Show existing file 都必须支持键盘访问。
 
 ## 数据与依赖
 

@@ -118,6 +118,14 @@
 - Cancel 不重命名文件、不写 change_log。
 - 点击错误行显示具体原因：非法字符、目标已存在、缺失、外部变更、只读或 display-only。
 
+## 可访问性
+
+- 键盘：策略 segmented control、规则字段、预览表、Cancel、Preview 和 Apply 均可键盘操作。
+- 焦点：规则变化导致 preview 失效时焦点保持在当前字段；Apply 失败时焦点移到结果摘要。
+- VoiceOver：读出策略名、字段值、Original / New 名称、状态和 Apply 禁用原因。
+- 错误关联：非法名称、目标重名、日期格式错误和只读/缺失状态必须关联到字段或预览行。
+- 状态表达：OK、ERROR、NAME、MISSING、READONLY、DISPLAY_ONLY、UNCHANGED 不能只靠颜色；每行必须显示文字状态。
+
 ## 数据与依赖
 
 - Rename preview API。

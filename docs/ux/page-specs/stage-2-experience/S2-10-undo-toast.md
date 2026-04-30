@@ -79,6 +79,14 @@ Undo 后内容示例：
 6. 按 Cmd+Z 时，如果 toast 可见，执行同一个 undo action，并同步 toast 状态。
 7. Undo 成功后点击 `Redo` 进入 `S2-22 redo` 的同一 redo action；若 redo 已失效，显示原因并打开历史面板。
 
+## 可访问性
+
+- 键盘：toast 不抢走当前焦点，但 `Undo`、`Redo`、`View history` 和关闭按钮可通过系统焦点顺序访问。
+- 焦点：用户主动进入 toast 后，关闭或操作完成应回到进入 toast 前的控件。
+- VoiceOver：toast 出现时公告操作完成、影响数量、Undo/Redo 可用性和禁用原因。
+- 错误关联：Undo 失败必须读出失败原因，并提供进入 Undo History 的可读入口。
+- 状态表达：倒计时、成功、失败和过期状态不能只用颜色或进度条表达。
+
 ## 数据与依赖
 
 - Undo stack。

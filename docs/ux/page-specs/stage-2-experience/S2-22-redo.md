@@ -70,6 +70,14 @@ S2-11 Undo History 中的 Redo row：
 6. Redo 失败时历史行标记 `Blocked`，显示失败原因和恢复建议。
 7. 全流程不创建独立 Redo 页面；所有反馈都停留在 S2-10 或 S2-11 的宿主区域。
 
+## 可访问性
+
+- 键盘：Redo、View history 和 Close 可通过 toast 或 panel 焦点顺序访问，`⇧⌘Z` 触发同一 redo action。
+- 焦点：Redo 成功或失败后焦点回到打开前上下文；View history 打开后焦点落在对应 redo 行。
+- VoiceOver：读出 redo 可用性、影响数量、过期/blocked 原因和执行中状态。
+- 错误关联：外部变更、Trash restore 失败、redo stack 被清空必须关联到 redo feedback region。
+- 状态表达：可用、不可用、blocked、expired 和执行中不能只靠颜色或图标。
+
 ## 数据与依赖
 
 - Undo / redo stack。

@@ -89,6 +89,12 @@
 7. 关闭 `Allow replace during import` 时直接保存为 Off；已打开的 ImportSheet 不 retroactively 执行 Replace，下一次冲突预检按新设置隐藏 Replace。
 8. 点击 `Open recovery tools...` 进入 `S1-32 error-recovery` 对应入口。
 
+## 可访问性
+
+- Danger zone 默认折叠状态要可读，展开/折叠可通过键盘操作。
+- `Allow replace during import` 的后果和默认关闭状态必须和 toggle 关联。
+- 诊断导出隐私确认需要读出“不包含用户文件内容、不自动上传、路径和用户名会脱敏”。
+
 ## 数据与依赖
 
 - App/core/schema version provider。

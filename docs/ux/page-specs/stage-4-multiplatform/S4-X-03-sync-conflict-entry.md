@@ -81,7 +81,7 @@ Needs Review 列表：
 
 - 来源类型：组合来源。
 - 直接来源：`docs/ux/dedup-conflict.md` 的冲突可见原则。
-- 直接来源：`tasks/prompts/phase-4/4-3-stage4-multiplatform/task-15-sync-conflict-detect.md`。
+- 直接来源：`tasks/prompts/phase-4/4-3-stage4-multiplatform/task-41-s4-x-03-sync-conflict-entry.md`。
 - 组合来源：`docs/architecture/source-of-truth.md`、`docs/adr/0006-icloud-support.md`、Stage 4 多端页面规格。
 - 推导说明：入口层由原 `S4-X-01` 中的 banner/list 语义拆出，避免一个单页同时承载入口和 Review。
 

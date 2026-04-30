@@ -57,6 +57,9 @@
 - 默认状态：显示只读摘要和辅助操作，不显示 Meta/Log/Note tabs。
 - 本页不单独发起加载请求；统计信息来自当前 List selection 和已加载 metadata。若聚合数据仍在刷新，显示 `Updating selection...`，不阻塞 `Copy Paths`。
 - 聚合失败时显示 inline warning `部分选中项无法读取元数据`，保留可用统计和 `Copy Paths`；高风险写操作仍不出现。
+- 禁用条件：Stage 1 禁用 Rename / Change Category / Delete 等批量写操作；只保留 Copy Paths / Reveal selected when safe 等只读动作。
+- 空态不适用：选择数为 0 时不进入本页，回到 Detail empty。
+- 加载态：`Updating selection...` 只刷新聚合统计，不阻塞只读复制动作。
 - 包含缺失文件：显示 warning `选中的文件中有 1 个缺失条目`。
 - 包含 Index-only：提示某些条目的来源路径可能在资料库外。
 - 选择数为 0 时不进入本页。
@@ -67,6 +70,12 @@
 - Show in Finder 只在选中 1 个文件时可用；多选时禁用并显示说明 `Open one file at a time`。
 - Copy Paths 将所有选中路径写入剪贴板。
 - 用户需要修改或删除时，必须先切回单选，再进入 S1-33 / S1-34 / S1-35。
+
+## 可访问性
+
+- 选中数量、分类分布和 warning 需要文本表达。
+- Copy Paths 成功或部分失败需要可被 VoiceOver 宣告。
+- 不出现的批量危险动作不应留下不可聚焦的禁用按钮。
 
 ## 数据与依赖
 

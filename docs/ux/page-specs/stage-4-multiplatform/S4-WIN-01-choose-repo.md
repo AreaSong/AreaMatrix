@@ -104,7 +104,7 @@ Windows 用户需要选择一个 AreaMatrix 资料库目录，可能位于本地
 ## 来源
 
 - 来源类型：组合来源。
-- 直接来源：`tasks/prompts/phase-4/4-3-stage4-multiplatform/task-09-windows-repo-connect.md`。
+- 直接来源：`tasks/prompts/phase-4/4-3-stage4-multiplatform/task-34-s4-win-01-choose-repo.md`。
 - 直接来源：`docs/roadmap/milestones.md` Stage 4 Windows 端。
 - 组合来源：`docs/ux/first-launch.md` 的选择资料库和接管目录安全规则。
 - 推导说明：Windows 选择路径后的初始化/接管确认复用 Stage 4 多端共用确认页。

@@ -99,6 +99,14 @@ Undo 不可用确认区，仅在本次可处理项无法进入 Undo stack 时显
 7. Undo 不可用时，用户必须先勾选确认 checkbox，按钮才可提交。
 8. Cancel 不移动文件、不移除索引、不写 change_log。
 
+## 可访问性
+
+- 键盘：文件预览、确认 checkbox、Cancel、Remove from index 和 destructive 按钮均可 Tab 到达。
+- 焦点：打开 sheet 时焦点落在标题或影响摘要；Undo 不可用时焦点顺序必须经过确认 checkbox 后才能到提交按钮。
+- VoiceOver：读出删除影响、Trash / Index-only / blocked 分类、Undo 可用性和 destructive 按钮含义。
+- 错误关联：Trash 不可用、权限失败、外部变化和部分失败必须关联到影响摘要或文件行。
+- 状态表达：危险、blocked、Index-only、Missing 不能只靠颜色或图标；必须有文字状态和可读说明。
+
 ## 数据与依赖
 
 - Batch selection model。

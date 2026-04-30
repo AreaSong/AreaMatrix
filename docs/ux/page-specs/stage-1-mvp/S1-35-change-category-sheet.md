@@ -50,12 +50,15 @@
 
 ## 状态与规则
 
+- 默认状态：显示当前分类、目标分类下拉、目标路径预览和 Cancel / Change Category。
 - 目标分类等于当前分类时禁用 `Change Category`。
 - 目标路径不可写时禁用主按钮，显示权限恢复入口。
 - 目标同名且可安全自动编号时，必须预览最终名称。
 - 自动编号失败时禁用主按钮，并提供 `Rename first` 入口到 `S1-33 file-rename-sheet`。
 - Index-only 文件只更新分类元数据和 change_log，不移动源文件；页面必须显示说明。
 - 确认前不移动、不重命名、不删除任何文件。
+- 空态不适用：本 sheet 只在已有单文件 fileId 时打开；缺失上下文按错误态返回来源页。
+- 加载态：目标路径预检或同名冲突检查中显示 `Checking destination...`，禁用 Change Category。
 
 ## 交互
 
@@ -65,6 +68,12 @@
 4. `Change Category` 执行动作，执行中显示 `Moving...` 并防重复点击。
 5. 成功后 Tree 计数更新，List 跳转到目标分类并高亮该文件。
 6. 失败时显示错误、`Retry` 和 `Collect Diagnostics...`；诊断不包含用户文件内容。
+
+## 可访问性
+
+- 当前分类、目标分类、目标路径和冲突状态必须有字段标签。
+- 自动编号预览和 Index-only 说明需要文本读出。
+- Cancel、Rename first、Change Category、Retry 均可通过键盘访问。
 
 ## 数据与依赖
 

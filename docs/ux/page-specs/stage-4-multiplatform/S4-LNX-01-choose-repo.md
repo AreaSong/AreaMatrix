@@ -100,7 +100,7 @@ Linux 端目标是完成最小闭环：选择本地 repo、浏览、导入、文
 ## 来源
 
 - 来源类型：组合来源。
-- 直接来源：`tasks/prompts/phase-4/4-3-stage4-multiplatform/task-10-linux-repo-connect.md`。
+- 直接来源：`tasks/prompts/phase-4/4-3-stage4-multiplatform/task-29-s4-lnx-01-choose-repo.md`。
 - 直接来源：`docs/roadmap/milestones.md` Stage 4 Linux 端。
 - 组合来源：`docs/ux/first-launch.md` 的资料库选择安全规则。
 - 推导说明：Linux 本地目录选择后的初始化/接管确认复用 Stage 4 多端共用确认页。

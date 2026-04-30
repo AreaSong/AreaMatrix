@@ -116,6 +116,14 @@ Settings -> Classifier 中新增可视化编辑区。
 - 关闭设置页时如有 dirty，提示 Save / Discard / Cancel。
 - YAML 外部修改返回后选择 `Reload from YAML` 会丢弃当前草稿并重新读取；选择 `Keep current draft` 保留 UI 草稿，下一次 Save 仍必须 Validate。
 
+## 可访问性
+
+- 键盘：分类列表、字段、chip 删除、Validate、Save、Revert、Open YAML 和 Delete category 均可键盘操作。
+- 焦点：左侧分类切换后焦点进入右侧详情标题；保存失败或校验失败时焦点移到第一个错误字段。
+- VoiceOver：读出分类 dirty/error/default 状态、字段说明、chip 值、删除影响和 Save / Revert 禁用原因。
+- 错误关联：slug 重复、非法字符、YAML reload 冲突、Validate 失败和写入失败必须关联到字段或错误 banner。
+- 状态表达：dirty、has errors、default category、warning 和删除状态不能只靠颜色或图标。
+
 ## 数据与依赖
 
 - classifier.yaml parser/writer。
@@ -143,7 +151,7 @@ Settings -> Classifier 中新增可视化编辑区。
 
 ## 来源
 
-- `tasks/prompts/phase-4/4-1-stage2-experience/task-15-classifier-rule-editor.md`（组合来源）。
+- `tasks/prompts/phase-4/4-1-stage2-experience/task-38-s2-19-classifier-rule-editor.md`（组合来源）。
 - `docs/ux/settings-panel.md#tab分类规则classifier`（直接来源）。
 - 可视化编辑器字段、dirty state 和 last valid 恢复依据现有文档推导，不与 PRD、roadmap、AGENTS 高风险不变量冲突。
 

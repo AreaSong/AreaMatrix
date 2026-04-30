@@ -61,6 +61,7 @@
 - 无失败项时隐藏 `Retry Failed`。
 - Retry Failed 执行中禁用 Done 以外的二次重试按钮，避免重复提交同一失败项。
 - 所有路径展示默认脱敏，展开详情时仍不包含用户文件内容。
+- 空态不适用：本页只在存在结果摘要时出现；完全成功且无需详情时用 toast，不打开空结果页。
 
 ## 交互
 
@@ -68,6 +69,12 @@
 - Done 关闭结果页，返回来源主窗口；如果导入目标在当前列表中，列表滚动到最近成功项。
 - Retry Failed 进入 `S1-20 import-progress`，只用失败项重新组成队列；完成后刷新本结果页或显示新的结果页。
 - Export Details 导出本地排查信息，导出前显示隐私说明。
+
+## 可访问性
+
+- 成功、跳过、失败数量需要作为摘要文本读出。
+- 结果表格每行要读出状态、原因和可用动作。
+- Done、Retry Failed、Export Details、Show existing file 都必须支持键盘访问。
 
 ## 数据与依赖
 
@@ -86,7 +93,7 @@
 
 ## 来源
 
-- `docs/ux/drag-import-flow.md#导入完成后的反馈总结-下一步`（组合）。
+- [docs/ux/drag-import-flow.md](../../drag-import-flow.md) 的“导入完成后的反馈（总结 + 下一步）”章节（组合）。
 - `docs/ux/dedup-conflict.md#批量结果摘要`（组合）。
 
 ---

@@ -61,6 +61,9 @@
 - Core 返回 fatal error 时进入 `S1-06 init-failed`。
 - 用户点击 Cancel 后进入 paused/interrupted 语义：已完成的 metadata 步骤保留为可恢复状态，未完成的 staging 临时项由 Core 清理或标记为可恢复；不得删除用户原文件。
 - Cancel 后如果 Core 无法确认安全暂停，按钮显示处理中并等待当前安全点，不允许强制删除 `.areamatrix/`。
+- 空态不适用：本页进入即有初始化任务和进度模型；任务缺失属于错误态。
+- 错误态：fatal error、任务上下文丢失或 recovery 状态无法读取时进入 `S1-06 init-failed`，不得留在无进度页面。
+- 加载态即执行中状态：显示当前 step、已处理数量和安全取消说明。
 
 ## 交互
 
@@ -70,6 +73,12 @@
 - 初始化成功自动进入 `S1-07 init-done`。
 - fatal error 自动进入 `S1-06 init-failed`，保留错误码和恢复信息。
 - 强制退出后，下次启动应把 Running scan session 标记为 Interrupted，并提供 Resume / Clean up and retry。
+
+## 可访问性
+
+- 进度文本必须可读出当前步骤和已处理数量，不能只依赖进度条。
+- Cancel 确认弹窗打开后，焦点限制在弹窗内；Escape 关闭确认但不取消初始化。
+- warning / fatal 状态需要文本说明，不能只靠颜色。
 
 ## 数据与依赖
 

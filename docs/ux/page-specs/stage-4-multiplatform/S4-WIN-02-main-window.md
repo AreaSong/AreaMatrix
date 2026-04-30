@@ -118,7 +118,7 @@ Windows 用户需要完成资料库浏览、导入、详情查看和监听状态
 
 - 来源类型：组合来源。
 - 直接来源：Stage 1 主窗口与 Detail 页面规格。
-- 直接来源：`tasks/prompts/phase-4/4-3-stage4-multiplatform/task-11-desktop-main-query.md`。
+- 直接来源：`tasks/prompts/phase-4/4-3-stage4-multiplatform/task-35-s4-win-02-main-window.md`。
 - 直接来源：`docs/roadmap/milestones.md` Stage 4 Windows 端。
 - 推导说明：窗口布局复用桌面信息架构，但控件、菜单、状态栏和快捷键按 Windows 习惯实现。
 

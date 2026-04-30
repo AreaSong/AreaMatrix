@@ -71,6 +71,8 @@ This removes the AreaMatrix index entry. It does not delete the original file.
 - Stage 1 不提供永久删除按钮，不提供清空 Trash，不承诺自动从 Trash 还原；恢复能力以系统 Trash 和后续 Core 恢复能力为准。
 - Remove from index 只移除 AreaMatrix 索引条目或标记索引移除，不删除磁盘上的用户文件，不清空用户笔记内容。
 - 任何失败都不得删除索引以外的其他文件，不得清空用户笔记内容。
+- 空态不适用：本 sheet 只在已有单文件或 missing/index-only 条目时打开；上下文缺失按错误态关闭并返回来源页。
+- 加载态：Trash 可用性或 file status 检查中禁用危险按钮，显示 `Checking file status...`。
 
 ## 交互
 
@@ -81,6 +83,12 @@ This removes the AreaMatrix index entry. It does not delete the original file.
 5. 成功后关闭 sheet，List 移除该行，Detail 显示空态或下一选中项。
 6. 失败时保留 sheet，显示错误、`Retry` 和 `Collect Diagnostics...`；诊断不包含用户文件内容，不自动上传。
 7. Delete 成功后 toast 文案为 `Moved to Trash. Metadata retained for traceability.`；Remove from index 成功后 toast 文案为 `Removed from AreaMatrix index. Original file was not deleted.`
+
+## 可访问性
+
+- 操作后果、确认复选框和 destructive 按钮必须逐项可读。
+- Trash 不可用、Missing、Index-only 的差异不能只靠图标表达。
+- Cancel、确认复选框、Move to Trash / Remove from Index、Retry 均可通过键盘访问。
 
 ## 数据与依赖
 

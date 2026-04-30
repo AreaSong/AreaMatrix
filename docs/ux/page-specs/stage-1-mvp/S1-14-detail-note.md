@@ -61,6 +61,7 @@
 
 - 无笔记：显示空态和 Create Note。
 - 默认状态：首次进入本 tab 时读取 note；无 note 则显示空态。
+- 加载态：读取 note 时显示 `Loading note...`，保留文件摘要，不显示空编辑器。
 - 编辑中：显示 Unsaved 或 Saving。
 - 保存成功：显示 Saved。
 - 保存失败：显示 inline error `无法保存笔记`，按钮 `Retry`，保留输入内容。
@@ -76,6 +77,12 @@
 - 切文件前若保存失败，保留 draft 并提示。
 - 点击 `Create Note` 创建空草稿并聚焦编辑区；创建前不写入文件，首次自动保存成功后才生成 note。
 - 点击 `Open note file` 打开伴生笔记文件；如果 note 尚未保存，先提示用户等待保存或继续编辑。
+
+## 可访问性
+
+- 编辑器需要有 `Companion note` 标签，保存状态需要可被 VoiceOver 宣告。
+- 保存失败错误要和编辑器关联，不能只显示红色边框。
+- Create Note、Retry、tab 切换均可通过键盘访问；未保存失败草稿提示需要可读。
 
 ## 数据与依赖
 

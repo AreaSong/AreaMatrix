@@ -17,6 +17,9 @@
 
 初始化或接管未完成。用户需要知道原始文件是安全的，并能选择重试、换路径、导出诊断或退出。
 
+入口：`S1-05 initializing` fatal error；用户在 `S1-05` Cancel 后下次启动检测到 interrupted / staging recovery；App 启动时发现上次初始化未完成。
+退出：Retry 回到 `S1-05 initializing`；Change Path 回到 `S1-02 choose-path`；Collect Diagnostics 留在本页；Quit 退出并保留可恢复状态。
+
 ## 页面功能
 
 - 显示失败摘要和错误代码。
@@ -56,6 +59,9 @@ AreaMatrix 没能完成资料库初始化。你的原始文件没有被移动、
 - 有 staging 残留时显示：`检测到上次未完成的临时状态。AreaMatrix 可以在重试时自动清理或继续恢复。`
 - Retry / Change Path / Collect Diagnostics 执行中禁用重复点击，并显示进行中文案。
 - `Collect Diagnostics...` 不改变 repo 内容，不包含用户文件内容，不自动上传，路径和用户名会脱敏。
+- 空态不适用：本页必须有错误摘要或 interrupted recovery 摘要；缺失摘要时显示 `Unknown initialization error` 和诊断入口。
+- 加载态：读取 recovery 状态时显示 `Checking previous setup state...`，禁用 Retry / Change Path，保留 Quit。
+- 错误态：recovery 状态读取失败时仍显示本页，提供 Change Path、Collect Diagnostics 和 Quit，不自动删除 `.areamatrix/`。
 
 ## 交互
 
@@ -63,6 +69,12 @@ AreaMatrix 没能完成资料库初始化。你的原始文件没有被移动、
 - `Change Path` 回到 `S1-02 choose-path`。
 - `Collect Diagnostics...` 弹出隐私说明后导出本地诊断包。
 - `Quit` 退出，下次启动继续向导或恢复。
+
+## 可访问性
+
+- 错误摘要、错误代码和恢复建议需要分区标题。
+- `Show details` 默认折叠，但必须可通过键盘展开。
+- Retry / Change Path / Diagnostics / Quit 的焦点顺序必须稳定；错误严重程度不能只靠颜色表达。
 
 ## 数据与依赖
 

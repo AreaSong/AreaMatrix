@@ -109,7 +109,7 @@
 ## 来源
 
 - 来源类型：组合来源。
-- 直接来源：`tasks/prompts/phase-4/4-3-stage4-multiplatform/task-05-share-extension-import.md`。
+- 直接来源：`tasks/prompts/phase-4/4-3-stage4-multiplatform/task-25-s4-ios-04-share-extension-import.md`。
 - 组合来源：`docs/ux/drag-import-flow.md` 的导入安全规则。
 - 推导说明：Share Extension 生命周期、时间限制和主 App 接管行为依据 iOS 平台能力推导。
 

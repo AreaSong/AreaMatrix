@@ -17,8 +17,8 @@
 
 用户在重复或同名冲突中选择了 Replace。AreaMatrix 必须明确说明哪个文件被替换、用哪个文件替换、旧文件去哪里。
 
-入口：`S1-22 conflict-duplicate`、`S1-23 conflict-name`、`S1-18 import-batch-sheet` 或 `S1-19 import-folder-sheet` 中已显示且可选的 Replace。
-退出：Cancel 返回来源冲突区域；Replace 确认成功后统一进入 `S1-20 import-progress`，完成后再按 `S1-21 import-result` 或 toast 规则收口；失败留在本 sheet。
+入口：`S1-22 conflict-duplicate`、`S1-23 conflict-name`、`S1-17 import-single-sheet`、`S1-18 import-batch-sheet` 或 `S1-19 import-folder-sheet` 中已显示且可选的 Replace。
+退出：Cancel 返回来源冲突区域；Replace 确认成功后返回来源 ImportSheet，并把当前冲突项标记为 `Replace confirmed`；失败留在本 sheet。只有用户随后在来源 ImportSheet 点击最终 `Import` / `Import Folder`，才进入 `S1-20 import-progress`。
 
 ## 页面功能
 
@@ -64,7 +64,7 @@
 - 必选确认复选框：`我理解这是替换操作`；未勾选禁用 Replace。
 - 如果 `allowReplaceDuringImport=false`，本 sheet 不应被打开；若因状态过期打开，显示错误并返回来源冲突区域。
 - Trash 不可用时禁止 Replace。
-- Replace 失败显示错误，不得留下半成品。
+- 确认状态保存失败或上下文过期时显示错误，不得执行导入或移动文件。
 - 确认前不移动、不删除、不覆盖任何文件。
 - 空态不适用：本 sheet 只在已有明确 replace target 和 incoming file 时打开；上下文缺失时显示错误并返回来源冲突区域。
 - 加载态不适用：Trash 可用性和文件摘要应由来源冲突页准备；执行中属于按钮 loading。
@@ -72,16 +72,23 @@
 ## 交互
 
 - Cancel 返回上一冲突页。
-- Replace 确认后关闭本 sheet，把当前冲突项标记为 `Replace confirmed` 并进入 `S1-20 import-progress`；不得在确认 sheet 内直接跳过进度状态。
+- Replace 确认后关闭本 sheet，返回来源 ImportSheet，并把当前冲突项标记为 `Replace confirmed`；不得在确认 sheet 内直接启动导入、移动文件或写 DB。
+- 来源 ImportSheet 的底部 `Import` / `Import Folder` 仍是最终提交点；点击后进入 `S1-20 import-progress`。
 - `S1-20 import-progress` 完成后，如果存在失败、跳过、取消或用户点击 `View details`，进入 `S1-21 import-result`；单文件全成功可按 S1-20 规则显示 toast。
-- 成功后 Detail Log 追加 replace/delete 相关记录。
-- Replace 失败时留在本 sheet，显示 `Retry` / `Cancel` / `Collect Diagnostics...`；诊断不包含用户文件内容。
+- 最终导入成功后 Detail Log 追加 replace/delete 相关记录。
+- 确认状态保存失败时留在本 sheet，显示 `Retry` / `Cancel` / `Collect Diagnostics...`；诊断不包含用户文件内容。
+
+## 可访问性
+
+- 被替换文件、替换来源和影响说明必须逐项可读。
+- destructive `Replace` 的禁用原因需要读出确认复选框未勾选或 Trash 不可用。
+- Cancel、确认复选框、Replace、Diagnostics 均可通过键盘访问。
 
 ## 数据与依赖
 
 - Trash API。
 - `allowReplaceDuringImport` settings value。
-- storage replace。
+- final import uses Core `import_file(..., duplicate_strategy=Overwrite)` or equivalent replace-capable import command; confirmation sheet itself never calls it.
 - change_log。
 - staging transaction。
 
@@ -90,8 +97,9 @@
 - Replace 每次必须二次确认。
 - 确认复选框未勾选时不能 Replace。
 - 旧文件不得永久删除。
-- 确认成功后先进入 S1-20，不直接跳到结果或主窗口。
-- 失败可恢复。
+- 确认成功后返回来源 ImportSheet 并显示 `Replace confirmed`，不直接进入 S1-20、结果页或主窗口。
+- 用户从来源 ImportSheet 点击最终 Import 后才进入 S1-20。
+- 确认状态保存失败可恢复。
 
 ## 来源
 
@@ -103,6 +111,7 @@
 
 - [Stage 1 页面索引](../stage-1-mvp.md)
 - [逐页 UI 开发规格索引](../README.md)
+- [S1-17 import-single-sheet](S1-17-import-single-sheet.md)
 - [S1-18 import-batch-sheet](S1-18-import-batch-sheet.md)
 - [S1-19 import-folder-sheet](S1-19-import-folder-sheet.md)
 - [S1-22 conflict-duplicate](S1-22-conflict-duplicate.md)

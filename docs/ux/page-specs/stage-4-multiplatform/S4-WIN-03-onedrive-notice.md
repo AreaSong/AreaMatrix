@@ -119,7 +119,7 @@ Windows 用户可能把 AreaMatrix repo 放在 OneDrive 中，用于跨设备同
 ## 来源
 
 - 来源类型：组合来源。
-- 直接来源：`tasks/prompts/phase-4/4-3-stage4-multiplatform/task-14-onedrive-risk-state.md`。
+- 直接来源：`tasks/prompts/phase-4/4-3-stage4-multiplatform/task-36-s4-win-03-onedrive-notice.md`。
 - 组合来源：`docs/adr/0006-icloud-support.md` 的云盘风险模型类比。
 - 组合来源：`docs/ux/dedup-conflict.md` 的冲突不静默处理原则。
 - 推导说明：OneDrive 只提示风险和状态，不承诺控制同步，也不使用 OneDrive SDK 管理同步。

@@ -54,6 +54,7 @@ Banner 标题示例：
 - `Use normal search`
 - `Classify manually`
 - `Edit summary manually`
+- `Add tags manually`
 - `Open AI settings`
 - `Open local model status`
 - `Configure remote AI`
@@ -65,13 +66,21 @@ Reason 矩阵：
 
 | Reason | 标题 | 主操作 | 次操作 |
 |---|---|---|---|
-| `local_not_ready` | `Local model is not ready` | `Open local model status` | `Use non-AI fallback` |
-| `remote_not_configured` | `Remote AI is not configured` | `Configure remote AI` | `Use local or non-AI fallback` |
+| `local_not_ready` | `Local model is not ready` | `Open local model status` | 宿主级非 AI 回退 |
+| `remote_not_configured` | `Remote AI is not configured` | `Configure remote AI` | 宿主级非 AI 回退 |
 | `remote_failed` | `Remote AI could not be reached` | `Retry` | `Open AI settings` |
-| `privacy_skipped` | `Skipped by privacy rule` | `View privacy rule` | `Use non-AI fallback` |
+| `privacy_skipped` | `Skipped by privacy rule` | `View privacy rule` | 宿主级非 AI 回退 |
 | `semantic_index_not_ready` | `Semantic index is not ready` | `Build semantic index` | `Use normal search` |
-| `rate_limited` | `Provider rate limit reached` | `Retry later` | `Use non-AI fallback` |
+| `rate_limited` | `Provider rate limit reached` | `Retry later` | 宿主级非 AI 回退 |
 | `timeout` | `AI request timed out` | `Retry` | `View call log` |
+
+宿主级非 AI 回退映射：
+- AI 分类宿主：显示 `Classify manually`，进入分类纠错或手动分类流程。
+- AI 摘要宿主：显示 `Edit summary manually`，进入可编辑摘要区但不触发 AI。
+- AI 标签宿主：显示 `Add tags manually`，进入 Stage 2 标签添加 / 编辑流程。
+- 语义搜索宿主：显示 `Use normal search`，用当前 query、scope 和可兼容 filters 返回普通搜索。
+
+实现方必须按宿主功能渲染上表中的具体按钮文案，不得把 `宿主级非 AI 回退` 或 `Use non-AI fallback` 作为用户可见按钮。
 
 ## 状态与规则
 
@@ -84,7 +93,7 @@ Reason 矩阵：
 - 重试次数过多时建议打开设置或日志，不无限循环。
 - Retry 只重试同一 provider、同一 model、同一 feature scope 和同一输入快照；重试前必须再次检查隐私规则。
 - `Retry` 禁用条件：reason 仍在解析、隐私规则命中、rate limit 未到建议时间、缺少 provider/input snapshot 或当前功能已被 Pause all AI 阻止。
-- `remote_not_configured` 不能把 `Configure remote AI` 作为唯一出口，必须提供本地或非 AI 回退。
+- `remote_not_configured` 不能把 `Configure remote AI` 作为唯一出口，必须按宿主显示 `Classify manually`、`Edit summary manually`、`Add tags manually` 或 `Use normal search`。
 - `privacy_skipped` 必须写入 S3-05 skipped 记录，sent fields 为 none。
 - `Build semantic index` 只在 reason 为 `semantic_index_not_ready` 且 AI 总开关、Semantic search 功能开关、provider、usage scope、隐私规则和日志能力检查通过时启用；否则显示对应禁用原因和 `Use normal search`。
 - 点击 `Build semantic index` 必须进入 S3-08 的索引构建提示和 gate 检查结果；Cancel 后返回原语义搜索页并保持失败状态。
@@ -96,7 +105,7 @@ Reason 矩阵：
 1. AI 任务失败或跳过时生成标准 `AIFallbackReason`。
 2. 页面按 reason 显示对应标题、说明和动作。
 3. 点击 Retry 只重试同一 provider 和同一 scope，并再次检查隐私规则。
-4. 点击非 AI 回退进入对应手动流程。
+4. 点击非 AI 回退进入对应手动流程：分类进入手动分类，摘要进入手动编辑，标签进入手动添加标签，语义搜索进入普通搜索。
 5. 点击 `View call log` 打开对应调用记录。
 6. 用户关闭 banner 后当前页面保留非 AI 内容，不隐藏基础功能。
 7. 点击 `View privacy rule` 打开命中的 S3-09 隐私规则并定位规则行。
@@ -118,6 +127,7 @@ Reason 矩阵：
 - Privacy rules navigation。
 - AI call log id。
 - Manual fallback routes：normal search、classifier correction、summary editor、tag editor。
+- Host fallback label mapping：classification -> `Classify manually`、summary -> `Edit summary manually`、tags -> `Add tags manually`、semantic search -> `Use normal search`。
 - Semantic index build route。
 - Retry policy。
 - AIFallbackReason enum and reason-to-action matrix。
@@ -130,6 +140,7 @@ Reason 矩阵：
 - 本地模型未就绪、远程失败、隐私规则跳过、语义索引未就绪四类状态文案不同。
 - reason 解析中有明确加载状态，Retry 禁用条件可见。
 - local not ready、remote not configured、remote failed、privacy skipped、semantic index not ready、rate limit、timeout 都有 reason、主操作和次操作。
+- 宿主级非 AI 回退必须渲染为明确按钮：分类 `Classify manually`、摘要 `Edit summary manually`、标签 `Add tags manually`、语义搜索 `Use normal search`，不得显示抽象占位文案。
 - semantic index not ready 的 `Build semantic index` 动作、禁用条件、Cancel 返回和失败回退路径明确可测。
 - AI 失败不阻断普通文件管理。
 - Retry 前仍检查隐私规则。
@@ -141,7 +152,7 @@ Reason 矩阵：
 
 ## 来源
 
-- 组合来源：[AI 失败回退任务](../../../../tasks/prompts/phase-4/4-2-stage3-ai/task-10-ai-fallback.md)、[错误文案与恢复路径](../../error-messages.md)。
+- 组合来源：[AI 失败回退任务](../../../../tasks/prompts/phase-4/4-2-stage3-ai/task-20-s3-10-ai-fallback.md)、[错误文案与恢复路径](../../error-messages.md)。
 - 依据现有文档推导：`AIFallbackStatusRegion`、reason 矩阵、同 provider/scope 重试、隐私跳过追溯和非 AI 回退规则，遵守 AI 默认关闭与可回退原则。
 
 ---

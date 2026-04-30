@@ -68,6 +68,8 @@
 - 健康状态读取中禁用 `Retry status`，保留 Reveal / Copy path。
 - repo opening / switching 期间禁用 `Change repository...` 防止重复流程，显示 `Opening repository...`。
 - repo path 缺失时禁用 Reveal，保留 Copy last known path 和恢复入口。
+- 空态不适用：Repository tab 始终显示当前或 last known repo 信息；无 repo 时应回到 onboarding，不显示空 tab。
+- 加载态：读取健康状态时显示 `Checking repository...`，禁用重复 Retry，不阻断 Copy last known path。
 
 ## 交互
 
@@ -79,6 +81,12 @@
 6. 点击 `Open recovery tools...`：DB corrupted 进入 `S1-37 db-repair-confirm`；其他错误进入 `S1-32 error-recovery`。
 7. 点击 `Change repository...` 进入 `S1-02 choose-path`，并携带 `source=settingsRepository`；Cancel 或 Back 返回本页且不修改当前 repo。
 8. 新 repo 在 `S1-03` / `S1-10` 打开成功后，才更新当前 repo 选择和 Settings 显示；失败进入 `S1-11 main-repo-error`，并允许回到旧 repo。
+
+## 可访问性
+
+- repo path、健康状态、schema version 必须有可读标签。
+- 错误状态和恢复入口不能只靠颜色或图标表达。
+- Change repository、Open recovery tools、Export diagnostics 必须可通过键盘访问。
 
 ## 数据与依赖
 

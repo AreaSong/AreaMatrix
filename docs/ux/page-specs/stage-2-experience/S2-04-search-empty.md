@@ -18,7 +18,7 @@
 用户执行搜索后没有匹配文件。无结果不一定是错误，可能是关键词拼写、过滤条件过严、索引未完成或搜索范围太窄。页面要帮助用户快速调整，而不是只显示“没有结果”。
 
 入口：搜索结果页返回 0 条。
-退出：用户修改关键词/过滤器后返回结果列表；清空搜索后回到当前资料库列表；保存空搜索时进入 `S2-03 saved-search-sheet`。
+退出：用户继续在搜索框输入或修改过滤器后重新查询，命中后返回 `S2-01 search-results`；`Clear search` 清空 query 并回到当前资料库列表；`Clear filters` 保留 query 并重新查询；搜索框聚焦时按 `Esc` 等同于 `Clear search`，但打开子 popover 时只关闭 popover；Back 返回进入搜索前的列表、Smart List 或 sidebar 上下文；保存空搜索时进入 `S2-03 saved-search-sheet`。
 
 ## 页面功能
 
@@ -58,6 +58,7 @@
 - 首要动作根据原因切换：过滤器导致无结果时 `Clear filters` 为主按钮；仅关键词无结果时 `Clear search` 为主按钮。
 - `Remove ... filter` 和 `Search all file types` 是快捷次按钮，只修改对应过滤条件。
 - `Save empty Smart List` 是弱次按钮，不应使用强调样式。
+- `Esc` 是键盘退出动作；无子 popover 时执行 `Clear search`，不会清空 filters，除非用户显式点击 `Clear filters`。
 - 本页没有危险按钮，不删除、不移动、不修改任何文件或标签。
 
 底部辅助：
@@ -78,6 +79,7 @@
 - 当前资料库为空时跳转或内嵌 Stage 1 空库提示，不显示搜索建议。
 - 保存空搜索允许，但文案必须说明“未来匹配文件会出现在这里”。
 - 有 fuzzy 或 pinyin 建议时优先展示建议 chip；点击建议只替换普通关键词，不改变 filters、scope 或 sort。
+- Back / 返回上下文不保存空搜索、不修改 filters，也不删除 Smart List；仅恢复进入搜索前的导航焦点。
 
 ## 交互
 
@@ -88,6 +90,16 @@
 5. 点击 fuzzy 或 pinyin 建议替换 query 并立即重新搜索。
 6. 索引中状态每隔合理时间刷新一次，不闪烁重排。
 7. 点击 `Save empty Smart List` 打开保存搜索 sheet，并携带当前 query/filter。
+8. 继续在搜索框输入时本页就地更新条件；有结果后返回 S2-01，仍保留 scope、sort 和未清除的 filters。
+9. 按 `Esc` 时，如无打开的 popover，执行 `Clear search` 并回到进入搜索前上下文；如果 query 已为空，仅恢复焦点。
+
+## 可访问性
+
+- 键盘：建议动作按主次顺序可 Tab 到达，fuzzy / pinyin 建议 chip 可用方向键或 Tab 选择。
+- 焦点：Clear search、Esc 或 Back 后焦点回到进入搜索前位置；Clear filters 后焦点留在搜索框以便继续输入。
+- VoiceOver：读出无结果原因、query、filters 摘要、索引状态和每个建议动作的效果。
+- 错误关联：索引异常和 backend error 不应被读成普通空态，必须有关联到状态说明的可读错误。
+- 状态表达：空态、索引中、资料库空和错误态不能只靠图标或颜色区分。
 
 ## 数据与依赖
 
@@ -108,6 +120,7 @@
 - VoiceOver 能读出当前条件摘要和建议动作。
 - no result、indexing、empty repo、backend error 四类状态不会混淆。
 - fuzzy 和 pinyin 建议只修改 query，不改 filters、scope 或 sort。
+- Clear search、Clear filters、Esc、Back 和继续输入的返回路径可区分。
 
 ## 来源
 

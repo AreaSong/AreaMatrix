@@ -106,7 +106,7 @@
 ## 来源
 
 - 来源类型：组合来源。
-- 直接来源：`tasks/prompts/phase-4/4-3-stage4-multiplatform/task-03-mobile-library-query.md`。
+- 直接来源：`tasks/prompts/phase-4/4-3-stage4-multiplatform/task-23-s4-ios-02-mobile-library.md`。
 - 直接来源：`docs/roadmap/milestones.md` Stage 4 iOS 端。
 - 组合来源：Stage 1 主窗口、Detail、错误恢复页面规格。
 - 推导说明：移动端资料库首页依据现有桌面信息架构推导，但明确不照搬 macOS 三栏；下拉刷新限定为只读状态刷新。

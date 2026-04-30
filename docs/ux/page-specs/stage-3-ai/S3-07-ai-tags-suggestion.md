@@ -174,7 +174,7 @@ Batch apply 确认 sheet：
 
 ## 来源
 
-- 组合来源：[AI 标签建议任务](../../../../tasks/prompts/phase-4/4-2-stage3-ai/task-07-ai-tags-suggestion.md)、[Stage 3 自动标签](../../../roadmap/milestones.md#自动标签)、[Stage 2 标签规格](../stage-2-experience/S2-07-tags-add.md)。
+- 组合来源：[AI 标签建议任务](../../../../tasks/prompts/phase-4/4-2-stage3-ai/task-17-s3-07-ai-tags-suggestion.md)、[Stage 3 自动标签](../../../roadmap/milestones.md#自动标签)、[Stage 2 标签规格](../stage-2-experience/S2-07-tags-add.md)。
 - 依据现有文档推导：`AITagSuggestionReviewSheet` 的 single/batch mode、confidence threshold、批量影响汇总和隐私跳过追溯规则。
 
 ---

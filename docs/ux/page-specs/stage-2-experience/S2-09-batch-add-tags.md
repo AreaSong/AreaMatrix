@@ -99,6 +99,14 @@ Sheet 标题：`批量添加标签`
 - 结果摘要必须区分 `Added`、`Already had tag`、`Failed`；关闭摘要不丢 change_log。
 - 创建新标签失败时保留 pending chips 和输入，用户可修正或重试。
 
+## 可访问性
+
+- 键盘：tag 输入、候选列表、文件预览、Cancel 和 Apply 均可按逻辑顺序访问。
+- 焦点：Apply 成功后焦点回到多选摘要或 Undo toast；失败时焦点移到结果摘要错误区。
+- VoiceOver：读出选中数量、待添加标签、重复/已存在状态、Apply 影响数量和失败原因。
+- 错误关联：非法标签、Tag store 失败、部分失败必须关联到输入框、文件行或结果摘要。
+- 状态表达：成功、失败、skipped、already tagged 不能只用颜色；每行必须有文字状态。
+
 ## 数据与依赖
 
 - List multi selection。

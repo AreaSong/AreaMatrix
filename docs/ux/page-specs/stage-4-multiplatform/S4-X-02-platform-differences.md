@@ -122,7 +122,7 @@ AreaMatrix Stage 4 会复用同一个 Rust core，但平台层能力不同：文
 
 - 来源类型：组合来源。
 - 直接来源：`docs/roadmap/milestones.md` Stage 4 多端扩展。
-- 直接来源：`tasks/prompts/phase-4/4-3-stage4-multiplatform/task-17-platform-capabilities.md`。
+- 直接来源：`tasks/prompts/phase-4/4-3-stage4-multiplatform/task-40-s4-x-02-platform-differences.md`。
 - 组合来源：`docs/adr/0001-tech-stack.md`、`docs/adr/0005-fsevents-listener.md`、`docs/adr/0006-icloud-support.md`。
 - 推导说明：平台能力矩阵用于解释按钮可用性，不展示 Android、企业协作、插件市场、账号体系或未定义能力。
 

@@ -85,7 +85,7 @@ Linux 用户可能选择本地磁盘、外接盘、网络挂载、Dropbox/Nextcl
 ## 来源
 
 - 来源类型：组合来源。
-- 直接来源：`tasks/prompts/phase-4/4-3-stage4-multiplatform/task-10-linux-repo-connect.md`。
+- 直接来源：`tasks/prompts/phase-4/4-3-stage4-multiplatform/task-31-s4-lnx-03-local-folder-notice.md`。
 - 组合来源：`docs/adr/0005-fsevents-listener.md` 的跨平台 watcher 风险。
 - 推导说明：Linux 路径类型、挂载差异和第三方同步目录风险依据平台能力推导；不承诺管理 Dropbox/Nextcloud 同步。
 

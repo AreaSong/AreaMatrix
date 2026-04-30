@@ -137,8 +137,8 @@ Move 确认区，仅在选择 `Move into repository` 时显示：
 - 来源类型：组合来源。
 - 直接来源：`docs/ux/drag-import-flow.md`。
 - 直接来源：`docs/ux/dedup-conflict.md`。
-- 组合来源：`docs/architecture/transactional-import.md`、`tasks/prompts/phase-4/4-3-stage4-multiplatform/task-13-desktop-import-flow.md`。
-- 推导说明：Windows 导入沿用 Stage 1 事务式导入和冲突策略，Explorer 入口、Recycle Bin 和拖拽按 Windows 平台能力补齐；Stage 4 prompt 来源为 `tasks/prompts/phase-4/4-3-stage4-multiplatform/task-13-desktop-import-flow.md`。
+- 组合来源：`docs/architecture/transactional-import.md`、`tasks/prompts/phase-4/4-3-stage4-multiplatform/task-38-s4-win-05-import-flow.md`。
+- 推导说明：Windows 导入沿用 Stage 1 事务式导入和冲突策略，Explorer 入口、Recycle Bin 和拖拽按 Windows 平台能力补齐；Stage 4 prompt 来源为 `tasks/prompts/phase-4/4-3-stage4-multiplatform/task-38-s4-win-05-import-flow.md`。
 
 ---
 

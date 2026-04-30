@@ -58,6 +58,7 @@
 - 外部链接打开失败时显示非阻断 toast，保留链接文本可复制。
 - 打开日志失败时显示 `Open logs failed`，提供 `Copy logs path`。
 - Collect diagnostics 弹隐私确认；确认中禁用重复点击。
+- 空态不适用：About tab 始终显示 App/Core/schema 版本；读取失败显示 `Unknown`。
 
 ## 交互
 
@@ -66,6 +67,12 @@
 - Collect diagnostics 弹出隐私说明后输出脱敏诊断包；诊断不包含用户文件内容，不自动上传。
 - 诊断导出成功后显示保存位置和 `Reveal in Finder`。
 - 诊断导出失败时保留错误码，可重试，不自动上传。
+
+## 可访问性
+
+- 版本号、schema、链接和日志路径都必须可复制或可读。
+- 外链失败 toast 和诊断失败错误需要可被 VoiceOver 宣告。
+- Collect diagnostics 隐私确认和进度状态必须支持键盘操作。
 
 ## 数据与依赖
 

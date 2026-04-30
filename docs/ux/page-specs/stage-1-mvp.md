@@ -69,6 +69,50 @@
 - 所有自动生成内容默认只写 `.areamatrix/generated/`，不得暗示会覆盖 `README.md`。
 - 诊断导出默认不包含用户文件内容，不自动上传，路径和用户名按隐私规则脱敏。
 - 单页规格中若空态、加载态或错误态不适用，必须在该页 `状态与规则` 中写明“不适用”和原因；共享组件 `S1-32` 只定义可复用错误形态，不作为独立导航页面验收。
+- 每个单页必须写明默认状态、禁用条件、空态、加载态、错误态、入口退出、数据依赖、验收清单和可访问性要求。
+- `S1-24 replace-confirm` 只确认 Replace 策略并返回来源 ImportSheet 标记 `Replace confirmed`；真正文件替换只能在来源 ImportSheet 最终点击 Import 后，经 `S1-20 import-progress` 执行。
+
+---
+
+## 页面跳转图
+
+```text
+S1-01 welcome
+  -> S1-02 choose-path
+  -> S1-03 validate-path
+       -> existing repo: S1-10 main-loading -> S1-08 main-empty / S1-09 main-list
+       -> create/adopt: S1-04 confirm-init -> S1-05 initializing
+            -> success: S1-07 init-done -> S1-10 -> S1-08 / S1-09
+            -> fatal / interrupted: S1-06 init-failed -> S1-05 retry / S1-02 change path / quit
+       -> DB corrupted / repair-needed: S1-37 db-repair-confirm
+       -> schema / repo open critical error: S1-11 main-repo-error
+
+S1-08 main-empty / S1-09 main-list
+  -> S1-12 detail-meta -> S1-13 detail-log / S1-14 detail-note
+  -> multi-select: S1-15 detail-multi
+  -> drag hover: S1-16 drag-hover -> S1-17 / S1-18 / S1-19
+  -> file actions: S1-33 rename / S1-34 delete-confirm / S1-35 change-category
+
+S1-17 single / S1-18 batch / S1-19 folder
+  -> conflicts: S1-22 duplicate / S1-23 name
+  -> confirm replace strategy: S1-24 replace-confirm -> back to source ImportSheet
+  -> final import: S1-20 import-progress
+  -> S1-21 import-result or toast
+
+S1-12 detail-meta / S1-29 settings-integrations
+  -> S1-36 icloud-conflict-list
+  -> S1-25 icloud-conflict-min
+  -> back to source page
+
+S1-11 / S1-27 / S1-32
+  -> S1-37 db-repair-confirm
+  -> S1-10 main-loading
+  -> S1-09 main-list
+
+Settings tabs:
+  S1-26 general / S1-27 repository / S1-28 classifier /
+  S1-29 integrations / S1-30 advanced / S1-31 about
+```
 
 ---
 

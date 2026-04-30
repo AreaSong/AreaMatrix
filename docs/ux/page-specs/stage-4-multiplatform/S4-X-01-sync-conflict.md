@@ -138,8 +138,8 @@ Impact summary：
 
 - 来源类型：组合来源。
 - 直接来源：`docs/ux/dedup-conflict.md`。
-- 直接来源：`tasks/prompts/phase-4/4-3-stage4-multiplatform/task-15-sync-conflict-detect.md`。
-- 直接来源：`tasks/prompts/phase-4/4-3-stage4-multiplatform/task-16-sync-conflict-resolve.md`。
+- 直接来源：`tasks/prompts/phase-4/4-3-stage4-multiplatform/task-39-s4-x-01-sync-conflict.md`。
+- 直接来源：`tasks/prompts/phase-4/4-3-stage4-multiplatform/task-39-s4-x-01-sync-conflict.md`。
 - 组合来源：`docs/architecture/source-of-truth.md`、`docs/adr/0006-icloud-support.md`。
 - 推导说明：Stage 4 roadmap 引入多端同步目标，本页将原冲突提示文档收敛为具体 Review 页面；入口提示拆到 `S4-X-03`。
 

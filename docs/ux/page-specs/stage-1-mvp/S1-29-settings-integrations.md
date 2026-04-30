@@ -63,6 +63,7 @@
 - 不自动删除任何 iCloud 冲突副本。
 - 状态检测中禁用 `Retry status`，保留 `Open iCloud help`。
 - 无冲突时禁用或隐藏 `Review conflicts`。
+- 空态不适用：Integrations tab 至少显示 iCloud Drive 状态和帮助入口；非 iCloud repo 是 `Local folder` 默认状态。
 
 ## 交互
 
@@ -71,6 +72,12 @@
 3. 点击 `Reveal repository in Finder` 打开 repo 根目录。
 4. 检测失败时状态显示 Unknown，并提供 `Retry status`。
 5. 如果当前有 iCloud 冲突，显示入口 `Review conflicts`，跳转到 `S1-36 icloud-conflict-list`。
+
+## 可访问性
+
+- iCloud 状态、风险说明和冲突数量必须用文本读出。
+- Review conflicts 隐藏或禁用时需要明确原因。
+- Open iCloud help、Retry status、Review conflicts 必须可通过键盘访问。
 
 ## 数据与依赖
 

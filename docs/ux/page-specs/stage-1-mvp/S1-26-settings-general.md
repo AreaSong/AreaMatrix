@@ -76,6 +76,8 @@
 - settings store 保存失败时恢复到上一个已保存值，显示 inline error 和 `Retry save`。
 - 根目录概览策略保存失败时，UI 必须回滚到上一个已保存的 overviewOutput，并提示用户 `.areamatrix/generated/` 仍是默认安全输出位置。
 - `Open ignore.yaml` 失败时显示可恢复错误，不自动创建覆盖用户文件；若 ignore.yaml 缺失，提供 `Create default ignore.yaml` 并需说明只写 `.areamatrix/ignore.yaml`。
+- 空态不适用：General tab 始终显示默认存储、概览、忽略规则、语言和外观区块。
+- 加载态：读取 settings 时显示 `Loading settings...`，禁用写入控件但保留关闭 Settings。
 
 ## 交互
 
@@ -88,6 +90,12 @@
 - `Enable root overview` 只更新 settings store；实际文件写入由 overview 生成流程执行，且必须遵守本页确认结果。
 - `Retry save` 只重试最近一次设置写入，不重新应用用户已经取消的风险设置。
 - 切换 tab 时若有保存失败 banner，保留 banner 并允许用户稍后重试。
+
+## 可访问性
+
+- radio、toggle 和确认 sheet 必须有明确标签和当前值。
+- 保存失败和回滚提示需要和对应设置项关联。
+- 危险选项确认不能只靠黄色或红色表达，必须有文本说明后果。
 
 ## 数据与依赖
 

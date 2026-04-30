@@ -144,7 +144,7 @@ Provider 卡片：
 
 ## 来源
 
-- 组合来源：[Stage 3 智能化](../../../roadmap/milestones.md#stage-3智能化约-4-个月)、[AI 设置配置任务](../../../../tasks/prompts/phase-4/4-2-stage3-ai/task-01-ai-settings-config.md)。
+- 组合来源：[Stage 3 智能化](../../../roadmap/milestones.md#stage-3智能化约-4-个月)、[AI 设置配置任务](../../../../tasks/prompts/phase-4/4-2-stage3-ai/task-11-s3-01-ai-settings.md)。
 - 依据现有文档推导：AI 默认关闭、远程显式启用、Pause all AI、清除未采纳 AI 建议的确认规则，遵守 [逐页 UI 开发规格索引](../README.md#来源标注规则) 和项目隐私不变量。
 
 ---

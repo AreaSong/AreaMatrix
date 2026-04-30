@@ -111,7 +111,7 @@
 
 - 来源类型：组合来源。
 - 直接来源：`docs/ux/ui-states.md`、`docs/ux/error-messages.md` 的缺失与恢复语义。
-- 直接来源：`tasks/prompts/phase-4/4-3-stage4-multiplatform/task-18-missing-file-recovery.md`。
+- 直接来源：`tasks/prompts/phase-4/4-3-stage4-multiplatform/task-44-s4-x-06-missing-file-recovery.md`。
 - 组合来源：`docs/architecture/source-of-truth.md`、`docs/modules/change-log.md`。
 - 推导说明：移动端详情中的 `Remove record` 后续入口被拆成多端共用恢复规格。
 

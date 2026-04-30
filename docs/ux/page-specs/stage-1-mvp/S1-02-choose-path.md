@@ -53,6 +53,7 @@
 
 ## 状态与规则
 
+- 默认状态：路径输入框预填推荐路径，Continue 可用；焦点默认在路径输入框或 Continue，取决于路径是否有效。
 - 路径为空：输入框下方显示 `请输入资料库路径`，禁用 Continue。
 - 路径指向 `.areamatrix/` 内部：显示 `请选择资料库根目录，而不是 .areamatrix 内部目录`。
 - 路径字符串无法解析：显示轻量错误，不进入下一步。
@@ -68,6 +69,12 @@
 - `Back` 返回欢迎页。
 - 关闭窗口或 Escape 显示 `Quit setup?`；确认后退出，不创建文件、不保存新 repoPath。
 - 从 Settings 发起的换库流程中，Back / Cancel 返回 `S1-27 settings-repository`，不得清空当前已打开 repo。
+
+## 可访问性
+
+- 路径输入框需要有可访问标签 `Repository path`，错误文案要和输入框关联。
+- `Choose...`、`Use default`、`Back`、`Continue` 均可通过键盘访问。
+- 不只用红色表示路径错误；必须同时显示错误文本。
 
 ## 数据与依赖
 

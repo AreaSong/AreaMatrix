@@ -111,7 +111,7 @@ Note：
 
 - 来源类型：组合来源。
 - 直接来源：Stage 1 Detail 页面规格。
-- 直接来源：`tasks/prompts/phase-4/4-3-stage4-multiplatform/task-07-mobile-detail.md`。
+- 直接来源：`tasks/prompts/phase-4/4-3-stage4-multiplatform/task-26-s4-ios-05-mobile-file-detail.md`。
 - 组合来源：`docs/ux/ui-states.md`、`docs/ux/dedup-conflict.md`。
 - 推导说明：Meta/Log/Note 能力沿用桌面详情，按移动端单列重排；缺失与冲突恢复跳转到 Stage 4 共用页面。
 

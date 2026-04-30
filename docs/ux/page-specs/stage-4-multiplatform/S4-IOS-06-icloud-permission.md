@@ -96,7 +96,7 @@ iOS 端依赖 Files app 和 iCloud Drive 访问资料库。用户可能未登录
 
 - 来源类型：组合来源。
 - 直接来源：`docs/adr/0006-icloud-support.md`。
-- 组合来源：`docs/ux/error-messages.md`、`tasks/prompts/phase-4/4-3-stage4-multiplatform/task-08-cloud-permission-state.md`。
+- 组合来源：`docs/ux/error-messages.md`、`tasks/prompts/phase-4/4-3-stage4-multiplatform/task-27-s4-ios-06-icloud-permission.md`。
 - 推导说明：iOS Files app、iCloud Drive 与 security scoped access 的恢复动作依据平台能力推导。
 
 ---

@@ -65,6 +65,11 @@ List 标题：`docs`，旁边显示 `42 files`。
 - 删除或移动导致选中项消失时，Detail 显示 moved/missing 提示。
 - 无选中时禁用单文件 Rename / Change Category / Delete；多选时隐藏这些单文件右键入口，进入 `S1-15 detail-multi`。
 - repo 只读、List loading 或导入队列锁定当前文件时，禁用写操作，保留 Show in Finder / Copy Path。
+- 错误态：当前 List 查询失败时使用 inline error，保留 Tree 和 Toolbar；DB locked 显示 `Retry` / `Collect Diagnostics...`，不得进入整页 repo error。
+- FSEvents external created：当前分类新增行并保持现有选择；如果分类不匹配，只更新 Tree 计数。
+- FSEvents external renamed：依靠 fileId 保持选中并刷新行名；无法匹配时显示 moved/missing banner。
+- FSEvents external removed：行变为 missing 或从当前过滤结果移除，Detail 显示缺失恢复入口。
+- FSEvents sync error / partial failure：显示 non-blocking banner，提供 `Retry sync` / `Collect Diagnostics...`，不自动 reindex。
 
 ## 交互
 
@@ -77,9 +82,15 @@ List 标题：`docs`，旁边显示 `42 files`。
 - `Change Category...` 打开 `S1-35 change-category-sheet`。
 - `Delete...` 打开 `S1-34 file-delete-confirm`；不得直接删除。
 
+## 可访问性
+
+- 表格列标题必须可读，排序状态不能只用箭头图标表达。
+- 行状态 `OK` / `Missing` / `Index-only` / `iCloud` 需要文本标签。
+- 右键菜单中的危险动作必须标记为 destructive，并可通过键盘菜单访问。
+
 ## 数据与依赖
 
-- `buildTree`。
+- Core `list_tree_json`，由 UI store 转成 sidebar tree。
 - `list_files` / pagination。
 - FSEvents 回流通知。
 

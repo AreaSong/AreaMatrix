@@ -81,7 +81,7 @@ iCloud placeholder 摘要：
 ## 状态与规则
 
 - 全部项目错误时禁用 Import。
-- 预览/冲突预检未完成时禁用 Import，并显示 `Preparing preview...`。
+- 加载态：预览/冲突预检未完成时禁用 Import，并显示 `Preparing preview...`。
 - 重复默认跳过。
 - 同名不同内容默认保留两份。
 - `replaceOptionVisibility` 由 `allowReplaceDuringImport` 和 Trash 可用性共同决定：默认 `hidden`，开启设置后为 `enabled`，Trash 不可用时为 `disabled`。
@@ -107,23 +107,29 @@ iCloud placeholder 摘要：
 - 选择 DUP 行的 Skip 后，该项不会进入导入队列；结果页必须报告 skipped。
 - 选择 NAME 行的 Keep both 后，Incoming resolution 显示最终自动编号名称。
 - 点击 `Rename incoming...` 就地显示文件名输入框；名称非法、为空或仍冲突时该行变为 BLOCKED。
-- 点击 `Confirm Replace...` 打开 `S1-24 replace-confirm`；Cancel 返回本 sheet 且该行保持原策略，确认成功后该行标记 `Replace confirmed`。
+- 点击 `Confirm Replace...` 打开 `S1-24 replace-confirm`；Cancel 返回本 sheet 且该行保持原策略，确认成功后回到本 sheet，并将该行标记为 `Replace confirmed`。
 - `Download all & retry preview` 先触发 iCloud 下载，再重新做 batch preview；失败项仍保留并可逐项重试。
 - `Switch to local repo...` 进入 `S1-02 choose-path` / `S1-03 validate-path`，新 repo 成功打开前不修改当前 repo。
 - Import 后只把 `OK`、NAME 的 Keep both / rename、DUP 的 Keep both / Replace confirmed 和已就绪文件放入导入队列并进入导入进度；DUP Skip 与未下载 iCloud 项进入结果摘要，不进入导入队列。
 - Cancel 关闭 sheet，回到来源主窗口，不写文件。
 - 预览失败时显示 `Retry preview` / `Cancel`；Retry 只重新做 batch preview。
 
+## 可访问性
+
+- 批量表格每行必须读出文件名、状态、建议分类和处理策略。
+- `OK` / `DUP` / `NAME` / `ICLOUD` / `ERROR` / `BLOCKED` 不能只靠颜色表达。
+- `Confirm Replace...`、逐项 retry、Cancel、Import 都必须支持键盘访问。
+
 ## 数据与依赖
 
-- batch preview。
+- batch preview adapter：Swift 平台层把多个 source URL 预扫描为行状态，并组合 Core `predict_category`、duplicate/conflict precheck、ignore rules 与文件可读性结果。
 - classifier 批量预测。
-- conflict precheck。
+- conflict precheck adapter：输出每行 `OK` / `DUP` / `NAME` / `ICLOUD` / `ERROR` / `BLOCKED`；若 Core API 尚无独立 preview，必须以 capability spec 定义的错误和导入 dry-run 等价结果为准，不得靠产品口头确认。
 - ignore rules。
 - `allowReplaceDuringImport` settings value。
 - Trash availability for Replace。
 - per-row conflict resolution state。
-- iCloud placeholder detection、download progress 和 retry result。
+- iCloud placeholder detection、download progress 和 retry result，由 Swift 平台层提供；未下载项不得进入 Core 导入队列。
 - source route，用于 Cancel 后返回。
 
 ## 验收清单
@@ -132,7 +138,7 @@ iCloud placeholder 摘要：
 - 能看到重复和重名冲突数量。
 - 批量导入不会弹 20 次对话框。
 - 冲突表有明确列、默认策略、逐项动作和 BLOCKED 状态。
-- Replace 默认隐藏；开启设置且 Trash 可用后才可进入 `S1-24 replace-confirm`。
+- Replace 默认隐藏；开启设置且 Trash 可用后才可进入 `S1-24 replace-confirm`，确认后仍需用户点击本 sheet 的最终 `Import`。
 - 未确认 Replace 或存在 BLOCKED 行时不能 Import。
 - 预览中、全部错误、Move/Index-only 风险提示和 Cancel 路径都可验证。
 - iCloud placeholder 有批量和逐项下载路径；未下载项不会被静默吞掉。

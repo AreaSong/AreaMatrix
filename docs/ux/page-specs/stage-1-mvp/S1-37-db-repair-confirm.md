@@ -62,6 +62,7 @@ AreaMatrix cannot read the repository metadata database. Your files remain in th
 - 修复执行中锁定写操作，但允许显示只读进度。
 - 修复失败不得删除现有用户文件，也不得清空原诊断信息。
 - `Export diagnostics...` 必须说明不包含用户文件内容、不自动上传、路径和用户名会脱敏。
+- 空态不适用：本页只在已有 DB corrupted / repair-needed 错误上下文时打开；上下文缺失时返回来源错误页并提示重新检测。
 
 ## 交互
 
@@ -72,6 +73,12 @@ AreaMatrix cannot read the repository metadata database. Your files remain in th
 5. 成功后进入主窗口加载态，再回到正常列表。
 6. 失败时留在本页，显示错误、`Retry Full Rescan`、`Export diagnostics...`、`Open repository in Finder`。
 7. `Cancel` 返回来源错误页，不执行修复。
+
+## 可访问性
+
+- 修复会做什么、不会做什么和确认复选框必须逐项可读。
+- 进度态需要读出当前步骤，不只依赖 spinner。
+- Cancel、Export diagnostics、Run Full Rescan、Retry Full Rescan 均可通过键盘访问。
 
 ## 数据与依赖
 
