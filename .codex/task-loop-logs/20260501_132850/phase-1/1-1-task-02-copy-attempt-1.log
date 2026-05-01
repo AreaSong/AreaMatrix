@@ -1,0 +1,42 @@
+**一、执行结论**
+
+已完成 `1-1/task-02: C1-01 validate-repo-path implementation`。
+
+**二、执行范围**
+
+修改文件：
+
+- [core/src/api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:43)
+- [core/src/lib.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/lib.rs:15)
+- [core/src/repo_path.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/repo_path.rs:16)
+- [core/tests/validate_repo_path_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/validate_repo_path_implementation.rs:14)
+
+未触碰 `apps/**`。`core/area_matrix.udl` 已有 C1-01 contract，本次无需改动。
+
+**三、完成情况**
+
+核对清单均完成：只实现 C1-01；按 Exact Docs 对齐；未实现相邻 C1 能力或 UI；实现的是只读真实路径探测；保持在 core 分层内。
+
+实现内容包括：空路径 / `.areamatrix` 内部路径 / iCloud placeholder 错误处理，missing path、regular file、非空目录、已初始化目录、不可写目录、unfinished scan session 的结构化结果。非空目录只返回 `AdoptExisting` 推荐与风险 issue，不创建、不移动、不删除、不覆盖用户文件。
+
+**四、工程质量**
+
+代码结构拆到内部模块 `repo_path`，公共 UniFFI API 仍从 `api.rs` 暴露。新增 public API 沿用原有 rustdoc，内部实现显式处理 IO、权限、DB 读取错误；没有 `unwrap()` / `panic!()` 进入生产路径，没有 mock-only、硬编码通过态或一次性脚本化实现。没有新增依赖，使用现有 `rusqlite` 只读查询 scan session。
+
+**五、验证情况**
+
+已通过：
+
+- `cd core && cargo fmt --all -- --check`
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`
+- `cd core && cargo test --workspace validate_repo_path`：13 个相关测试通过
+- 额外加跑 `cd core && cargo test --workspace`
+- 额外加跑 `git diff --check -- core/src/api.rs core/src/lib.rs core/src/repo_path.rs core/tests/validate_repo_path_implementation.rs`
+
+无失败项，无无法运行项。
+
+**六、风险与后续**
+
+剩余风险：iCloud 路径识别保持平台无关启发式，不触发 macOS/iCloud 下载；更深的 iCloud 占位符协调仍应留给后续平台层任务。工作树里还有执行前已存在的 `.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json` 修改，我未处理它们。
+
+建议下一个任务：进入 `1-1/task-03`，补 C1-01 validation 侧更完整验收。  

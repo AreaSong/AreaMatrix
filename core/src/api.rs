@@ -1,9 +1,9 @@
 //! Public functions exposed through the UniFFI boundary.
 
 use crate::{
-    ChangeFilter, ChangeLogEntry, ClassifyResult, CoreError, CoreResult, ExternalEvent, FileEntry,
-    FileFilter, ImportOptions, RecoveryReport, ReindexReport, RepoConfig, RepoInitOptions,
-    RepoPathValidation, ScanSession, SyncResult,
+    repo_path, ChangeFilter, ChangeLogEntry, ClassifyResult, CoreError, CoreResult, ExternalEvent,
+    FileEntry, FileFilter, ImportOptions, RecoveryReport, ReindexReport, RepoConfig,
+    RepoInitOptions, RepoPathValidation, ScanSession, SyncResult,
 };
 
 fn not_implemented<T>() -> CoreResult<T> {
@@ -40,8 +40,8 @@ pub fn init_logging(level: String) -> CoreResult<()> {
 /// `CoreError::PermissionDenied` when metadata or directory checks are blocked,
 /// `CoreError::ICloudPlaceholder` for unavailable iCloud-managed paths, or
 /// `CoreError::RepoNotInitialized` when an initialized repository is required.
-pub fn validate_repo_path(_repo_path: String) -> CoreResult<RepoPathValidation> {
-    not_implemented()
+pub fn validate_repo_path(repo_path: String) -> CoreResult<RepoPathValidation> {
+    repo_path::validate_repo_path(repo_path)
 }
 
 /// Initializes a repository.

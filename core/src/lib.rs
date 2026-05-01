@@ -12,6 +12,7 @@ pub mod db;
 pub mod domain;
 pub mod error;
 pub mod overview;
+mod repo_path;
 pub mod storage;
 pub mod sync;
 pub mod tree;
