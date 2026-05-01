@@ -69,37 +69,38 @@ fn run_adopt_scan(
     scan_session_id: i64,
     resume_after: Option<&str>,
 ) -> CoreResult<()> {
-    let plan = collect_adopt_files(repo_path, resume_after)?;
-    let mut errors = Vec::new();
+    let plan = match collect_adopt_files(repo_path, resume_after) {
+        Ok(plan) => plan,
+        Err(error) => {
+            return finish_failed_scan(repo_path, scan_session_id, "scan setup", error);
+        }
+    };
     for _ in 0..plan.skipped {
         db::update_scan_session_progress(repo_path, scan_session_id, "", ScanFileChange::Skipped)?;
     }
 
     for file in plan.files {
-        match db::upsert_adopted_file(repo_path, &file.index_input) {
-            Ok(change) => {
-                db::update_scan_session_progress(
-                    repo_path,
-                    scan_session_id,
-                    &file.index_input.path,
-                    change,
-                )?;
+        let index_input = match index_input_for_file(&file.path, file.relative_path.clone()) {
+            Ok(index_input) => index_input,
+            Err(error) => {
+                return finish_failed_scan(repo_path, scan_session_id, &file.relative_path, error);
             }
-            Err(error) => errors.push(format!("{}: {error}", file.index_input.path)),
-        }
+        };
+        let change = match db::upsert_adopted_file(repo_path, &index_input) {
+            Ok(change) => change,
+            Err(error) => {
+                return finish_failed_scan(repo_path, scan_session_id, &index_input.path, error);
+            }
+        };
+        db::update_scan_session_progress(repo_path, scan_session_id, &index_input.path, change)?;
     }
 
-    let status = if errors.is_empty() {
-        ScanSessionStatus::Completed
-    } else {
-        ScanSessionStatus::Failed
-    };
-    db::finish_scan_session(repo_path, scan_session_id, status, &errors)?;
-    if errors.is_empty() {
-        Ok(())
-    } else {
-        Err(CoreError::Io)
-    }
+    db::finish_scan_session(
+        repo_path,
+        scan_session_id,
+        ScanSessionStatus::Completed,
+        &[],
+    )
 }
 
 fn collect_adopt_files(repo_path: &Path, resume_after: Option<&str>) -> CoreResult<ScanPlan> {
@@ -113,7 +114,7 @@ fn collect_adopt_files(repo_path: &Path, resume_after: Option<&str>) -> CoreResu
         .into_iter()
         .filter_entry(|entry| should_descend(repo_path, entry.path(), &matcher))
     {
-        let entry = entry.map_err(|_| CoreError::Io)?;
+        let entry = entry.map_err(map_walkdir_error)?;
         let path = entry.path();
         if path == repo_path || entry.file_type().is_dir() {
             continue;
@@ -137,12 +138,29 @@ fn collect_adopt_files(repo_path: &Path, resume_after: Option<&str>) -> CoreResu
         }
 
         files.push(AdoptFile {
-            index_input: index_input_for_file(path, relative_path)?,
+            path: path.to_path_buf(),
+            relative_path,
         });
     }
 
-    files.sort_by(|left, right| left.index_input.path.cmp(&right.index_input.path));
+    files.sort_by(|left, right| left.relative_path.cmp(&right.relative_path));
     Ok(ScanPlan { files, skipped })
+}
+
+fn finish_failed_scan(
+    repo_path: &Path,
+    scan_session_id: i64,
+    relative_path: &str,
+    error: CoreError,
+) -> CoreResult<()> {
+    let errors = vec![format!("{relative_path}: {error}")];
+    db::finish_scan_session(
+        repo_path,
+        scan_session_id,
+        ScanSessionStatus::Failed,
+        &errors,
+    )?;
+    Err(error)
 }
 
 fn should_process_after_resume(relative_path: &str, resume_after: Option<&str>) -> bool {
@@ -246,7 +264,18 @@ fn report_from_session(session: &ScanSession) -> ReindexReport {
 }
 
 fn map_io_error(error: io::Error) -> CoreError {
-    match error.kind() {
+    map_io_kind(error.kind())
+}
+
+fn map_walkdir_error(error: walkdir::Error) -> CoreError {
+    error
+        .io_error()
+        .map(|error| map_io_kind(error.kind()))
+        .unwrap_or(CoreError::Io)
+}
+
+fn map_io_kind(kind: io::ErrorKind) -> CoreError {
+    match kind {
         io::ErrorKind::PermissionDenied => CoreError::PermissionDenied,
         io::ErrorKind::InvalidInput => CoreError::InvalidPath,
         _ => CoreError::Io,
@@ -259,7 +288,8 @@ struct ScanPlan {
 }
 
 struct AdoptFile {
-    index_input: FileIndexInput,
+    path: PathBuf,
+    relative_path: String,
 }
 
 #[derive(Debug, Deserialize)]
