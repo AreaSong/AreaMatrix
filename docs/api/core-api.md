@@ -32,6 +32,9 @@ namespace area_matrix {
     RepoPathValidation validate_repo_path(string repo_path);
 
     [Throws=CoreError]
+    RepoPathValidation validate_initialized_repo_path(string repo_path);
+
+    [Throws=CoreError]
     void init_repo(string repo_path, RepoInitOptions options);
 
     [Throws=CoreError]
@@ -283,7 +286,8 @@ enum CoreError {
 |---|---|---|---|
 | `get_version()` | meta | × | — |
 | `init_logging(level)` | meta | √ | Config |
-| `validate_repo_path(repo)` | repo | √ | InvalidPath / PermissionDenied / ICloudPlaceholder / RepoNotInitialized |
+| `validate_repo_path(repo)` | repo | √ | InvalidPath / PermissionDenied / ICloudPlaceholder |
+| `validate_initialized_repo_path(repo)` | repo | √ | InvalidPath / PermissionDenied / ICloudPlaceholder / RepoNotInitialized |
 | `init_repo(path, options)` | repo | √ | Io / Config / PermissionDenied |
 | `load_config(repo)` | repo | √ | Io / Config |
 | `update_config(repo, cfg)` | repo | √ | Io |
@@ -398,7 +402,8 @@ case nil:
 - `InvalidPath`：路径为空、不是可接受的文件系统路径、或位于 `.areamatrix/` 内部。
 - `PermissionDenied`：无法读取目录 metadata、列出目录内容或确认写权限。
 - `ICloudPlaceholder`：候选路径或关键 metadata 仍是未下载的 iCloud 占位符。
-- `RepoNotInitialized`：调用方要求已初始化语义时，候选目录没有 `.areamatrix/` 元数据。
+- `RepoNotInitialized`：不由本入口返回；调用方要求已初始化语义时使用
+  `validate_initialized_repo_path`。
 
 副作用边界：
 
@@ -406,6 +411,25 @@ case nil:
 - 不创建、不删除、不移动、不重命名、不覆盖任何文件。
 - 不触发 iCloud 占位符下载。
 - 不执行 `init_repo`，非空目录只返回 `AdoptExisting` 推荐和结构化风险。
+
+### `validate_initialized_repo_path(repoPath: String) throws -> RepoPathValidation`
+
+```swift
+let validation = try AreaMatrix.validateInitializedRepoPath(repoPath: lastKnownRepoPath)
+if validation.isInitialized {
+    await reopenRepository()
+}
+```
+
+用于主窗口打开既有 repo、Retry、Reconnect folder 等调用方已经要求“这是一个已初始化资料库”的场景。
+它复用 `validate_repo_path` 的只读检查，不创建 `.areamatrix/`，也不接管非空目录。
+
+错误：
+
+- `RepoNotInitialized`：候选目录存在且可检查，但没有 `.areamatrix/` 元数据。
+- `InvalidPath`：路径为空、不是可接受的文件系统路径、或位于 `.areamatrix/` 内部。
+- `PermissionDenied`：无法读取目录 metadata、列出目录内容或确认写权限。
+- `ICloudPlaceholder`：候选路径或关键 metadata 仍是未下载的 iCloud 占位符。
 
 ### `init_repo(repoPath: String, options: RepoInitOptions) throws`
 

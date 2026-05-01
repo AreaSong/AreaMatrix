@@ -8,6 +8,9 @@ namespace area_matrix {
     RepoPathValidation validate_repo_path(string repo_path);
 
     [Throws=CoreError]
+    RepoPathValidation validate_initialized_repo_path(string repo_path);
+
+    [Throws=CoreError]
     void init_repo(string repo_path, RepoInitOptions options);
 
     [Throws=CoreError]

@@ -10,6 +10,7 @@
 ## Core API
 
 - 计划新增：`validate_repo_path(repo_path) -> RepoPathValidation`
+- 已初始化校验：`validate_initialized_repo_path(repo_path) -> RepoPathValidation`
 - 过渡相关：`load_config(repo_path)`、`get_latest_scan_session(repo_path)`
 
 ## 输入
@@ -36,7 +37,7 @@
 - `InvalidPath`
 - `PermissionDenied`
 - `ICloudPlaceholder`
-- `RepoNotInitialized`
+- `RepoNotInitialized`（仅调用方要求已初始化语义时）
 
 ## 验收标准
 

@@ -1,5 +1,6 @@
 use area_matrix_core::{
-    validate_repo_path, CoreError, CoreResult, RepoInitMode, RepoPathIssue, RepoPathValidation,
+    validate_initialized_repo_path, validate_repo_path, CoreError, CoreResult, RepoInitMode,
+    RepoPathIssue, RepoPathValidation,
 };
 use pretty_assertions::assert_eq;
 
@@ -8,6 +9,7 @@ fn validate_repo_path_contract_exports_callable_signature() {
     fn assert_signature(_: fn(String) -> CoreResult<RepoPathValidation>) {}
 
     assert_signature(validate_repo_path);
+    assert_signature(validate_initialized_repo_path);
 }
 
 #[test]

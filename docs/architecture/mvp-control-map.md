@@ -23,7 +23,7 @@
 | S1-08 | main-empty | C1-11, C1-15 | `list_files`, `list_tree_json` | `files` | repo tree read | RepoNotInitialized, Db | `2-1/task-19`, `2-1/task-20`, `2-1/task-21` | Real Core |
 | S1-09 | main-list | C1-11, C1-12, C1-15 | `list_files`, `get_file`, `list_tree_json` | `files` | file paths | Db, FileNotFound | `2-1/task-22`, `2-1/task-23`, `2-1/task-24`, `2-1/task-25` | Real Core |
 | S1-10 | main-loading | C1-03, C1-15, C1-16 | `get_latest_scan_session`, `resume_scan_session`, `list_tree_json` | `scan_sessions` | scan path | Db, Io | `2-1/task-26`, `2-1/task-27`, `2-1/task-28`, `2-1/task-29` | Real Core |
-| S1-11 | main-repo-error | C1-01, C1-19, C1-21 | `validate_repo_path`, `sync_external_changes` | `files` | missing path checks | RepoNotInitialized, Db, PermissionDenied | `2-1/task-30`, `2-1/task-31`, `2-1/task-32`, `2-1/task-33` | Real Core |
+| S1-11 | main-repo-error | C1-01, C1-19, C1-21 | `validate_initialized_repo_path`, `sync_external_changes` | `files` | missing path checks | RepoNotInitialized, Db, PermissionDenied | `2-1/task-30`, `2-1/task-31`, `2-1/task-32`, `2-1/task-33` | Real Core |
 | S1-12 | detail-meta | C1-12 | `get_file` | `files` | target file metadata | FileNotFound | `2-3/task-01` | Real Core |
 | S1-13 | detail-log | C1-13, C1-17, C1-18, C1-19 | `list_changes`, `sync_external_changes` | `change_log` | event paths | Db | `2-3/task-02`, `2-3/task-03`, `2-3/task-04`, `2-3/task-05`, `2-3/task-06` | Real Core |
 | S1-14 | detail-note | C1-14 | `read_note`, `write_note` | `notes`, `change_log` | sidecar `.md` | FileNotFound, Io | `2-3/task-07` | Real Core |

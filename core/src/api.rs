@@ -38,10 +38,25 @@ pub fn init_logging(level: String) -> CoreResult<()> {
 ///
 /// Returns `CoreError::InvalidPath` for empty or metadata-internal paths,
 /// `CoreError::PermissionDenied` when metadata or directory checks are blocked,
-/// `CoreError::ICloudPlaceholder` for unavailable iCloud-managed paths, or
-/// `CoreError::RepoNotInitialized` when an initialized repository is required.
+/// or `CoreError::ICloudPlaceholder` for unavailable iCloud-managed paths.
 pub fn validate_repo_path(repo_path: String) -> CoreResult<RepoPathValidation> {
     repo_path::validate_repo_path(repo_path)
+}
+
+/// Validates that a repository path already has AreaMatrix metadata.
+///
+/// This read-only variant is for main-window recovery and reopen flows that
+/// require an initialized repository. New-repository onboarding should keep
+/// using [`validate_repo_path`] so non-empty folders can still be offered as
+/// `AdoptExisting` candidates.
+///
+/// # Errors
+///
+/// Returns `CoreError::RepoNotInitialized` when the path is a readable
+/// directory but lacks `.areamatrix/` metadata. Other path, permission, iCloud,
+/// and metadata-read failures follow [`validate_repo_path`].
+pub fn validate_initialized_repo_path(repo_path: String) -> CoreResult<RepoPathValidation> {
+    repo_path::validate_initialized_repo_path(repo_path)
 }
 
 /// Initializes a repository.

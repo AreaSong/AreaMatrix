@@ -22,6 +22,29 @@ const INDEX_DB_FILE: &str = "index.db";
 /// blocked, `CoreError::ICloudPlaceholder` for placeholder markers, and
 /// `CoreError::Db` if existing scan-session metadata cannot be read.
 pub(crate) fn validate_repo_path(repo_path: String) -> CoreResult<RepoPathValidation> {
+    validate_repo_path_with_requirement(repo_path, InitializationRequirement::Optional)
+}
+
+/// Validates a path that must already be an AreaMatrix repository.
+///
+/// # Errors
+///
+/// Returns `CoreError::RepoNotInitialized` when the selected directory is
+/// inspectable but lacks `.areamatrix/` metadata.
+pub(crate) fn validate_initialized_repo_path(repo_path: String) -> CoreResult<RepoPathValidation> {
+    validate_repo_path_with_requirement(repo_path, InitializationRequirement::Required)
+}
+
+#[derive(Clone, Copy, Eq, PartialEq)]
+enum InitializationRequirement {
+    Optional,
+    Required,
+}
+
+fn validate_repo_path_with_requirement(
+    repo_path: String,
+    initialization_requirement: InitializationRequirement,
+) -> CoreResult<RepoPathValidation> {
     if repo_path.is_empty() {
         return Err(CoreError::InvalidPath);
     }
@@ -71,6 +94,12 @@ pub(crate) fn validate_repo_path(repo_path: String) -> CoreResult<RepoPathValida
     }
 
     let directory_state = inspect_directory(path)?;
+    if initialization_requirement == InitializationRequirement::Required
+        && !directory_state.is_initialized
+    {
+        return Err(CoreError::RepoNotInitialized);
+    }
+
     if !directory_state.is_empty {
         issues.push(RepoPathIssue::NonEmptyDirectory);
     }

@@ -3,7 +3,9 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use area_matrix_core::{validate_repo_path, CoreError, RepoInitMode, RepoPathIssue};
+use area_matrix_core::{
+    validate_initialized_repo_path, validate_repo_path, CoreError, RepoInitMode, RepoPathIssue,
+};
 use pretty_assertions::assert_eq;
 use tempfile::TempDir;
 
@@ -62,6 +64,32 @@ fn validate_repo_path_reports_initialized_repository_without_recommending_init()
     assert!(validation.is_initialized);
     assert_eq!(validation.recommended_mode, None);
     assert_eq!(validation.issues, vec![RepoPathIssue::AlreadyInitialized]);
+}
+
+#[test]
+fn validate_initialized_repo_path_accepts_initialized_repository() {
+    let repo = tempfile::tempdir().expect("create temporary repository directory");
+    fs::create_dir(repo.path().join(".areamatrix")).expect("create metadata directory");
+
+    let validation = validate_initialized_repo_path(path_string(repo.path()))
+        .expect("validate initialized repository");
+
+    assert!(validation.is_initialized);
+    assert_eq!(validation.recommended_mode, None);
+    assert_eq!(validation.issues, vec![RepoPathIssue::AlreadyInitialized]);
+}
+
+#[test]
+fn validate_initialized_repo_path_rejects_uninitialized_directory_without_touching_files() {
+    let repo = tempfile::tempdir().expect("create temporary repository directory");
+    let user_file = repo.path().join("README.md");
+    fs::write(&user_file, "owned by user").expect("write user file");
+
+    let result = validate_initialized_repo_path(path_string(repo.path()));
+
+    assert_eq!(result, Err(CoreError::RepoNotInitialized));
+    assert!(user_file.exists());
+    assert!(!repo.path().join(".areamatrix").exists());
 }
 
 #[test]
