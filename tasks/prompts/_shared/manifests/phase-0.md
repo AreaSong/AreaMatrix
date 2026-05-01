@@ -62,6 +62,7 @@
 - `tasks/prompts/_shared/manifests/phase-3.md`
 - `tasks/prompts/_shared/manifests/phase-4.md`
 - `tasks/prompts/_shared/prompt_pipeline.py`
+- `tasks/prompts/_shared/prompt_pipeline_lib/**`
 - `tasks/prompts/phase-*/**`
 
 ### Forbidden Touches

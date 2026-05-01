@@ -1,0 +1,42 @@
+一、执行结论
+
+- 已完成
+
+二、执行范围
+
+- 单任务：`0-1/task-02`
+- 修改范围：
+  - [prompt_pipeline.py](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/prompt_pipeline.py)
+  - [prompt_pipeline_lib](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/prompt_pipeline_lib)
+  - [phase-0.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-0.md)
+
+三、完成情况
+
+- `doctor`：通过，`doctor: OK`，`tasks: 637`，`manifests: 637`
+- `plan --all`：通过，依赖顺序从 `0-1/task-01`、`0-1/task-02` 开始，到 `4-3/task-165` 结束
+- `render --task 0-1/task-01`：通过，输出 copy-ready prompt，包含共享规则、任务正文、manifest、验证要求
+- `status`：通过，输出任务库概览，`first task: 0-1/task-02`
+- Runner 不写产品代码、不调用 `codex exec`：通过，runner 代码中未匹配 `subprocess` / `os.system` / `Popen` / `exec(` / `codex exec`
+- `Forbidden Touches`：未触碰，`git status --short -- core apps` 无输出
+
+四、工程质量
+
+- 已把 1836 行单文件拆为薄入口 + `prompt_pipeline_lib/` 内部模块；最大文件为 `rendering.py` 481 行，全部文件 ≤500 行。
+- AST 检查 `functions_over_50=0`，已消除上次验收指出的函数长度阻塞。
+- 无新增依赖；未引入产品 mock、硬编码通过态或一次性执行路径。
+- `phase-0.md` 已同步新增 `tasks/prompts/_shared/prompt_pipeline_lib/**`，让模块化 runner 仍落在当前 task 的 Expected New Paths 边界内。
+
+五、验证情况
+
+- `PYTHONPYCACHEPREFIX=/private/tmp/areamatrix-pyc python3 -m py_compile ...`：通过
+- `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`：通过
+- `python3 tasks/prompts/_shared/prompt_pipeline.py plan --all`：通过
+- `python3 tasks/prompts/_shared/prompt_pipeline.py render --task 0-1/task-01`：通过
+- `python3 tasks/prompts/_shared/prompt_pipeline.py status`：通过
+- 额外检查：`verify --task 0-1/task-02`、`audit --pages`、`git diff --check`、文件/函数长度检查均通过
+
+六、风险与后续
+
+- 剩余风险：未重新 `export --all` 刷新静态 copy-ready / verify-ready 文件，避免在本次 repair retry 中扩大生成文件改动面；当前 runner 的 live `render/verify` 输出已通过。
+- 工作区仍有既有 task-loop `summary.json`、`progress.json`、log 文件脏状态，不属于本次修复范围，我没有回退。
+

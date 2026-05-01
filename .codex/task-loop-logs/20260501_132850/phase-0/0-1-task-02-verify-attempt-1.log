@@ -1,0 +1,71 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`0-1/task-02`
+- 对应文件路径：[task-02-prompt-runner.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-0/0-1-执行体系/task-02-prompt-runner.md:1)
+- Manifest 章节：[phase-0.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-0.md:40)
+
+三、完成度摘要
+
+- 已覆盖项数：12
+- 未覆盖项数：0
+- 通过项数：11
+- 不通过项数：1
+- 阻塞项数：1
+
+四、逐项验收结果
+
+- `doctor` 校验：通过。证据：`doctor: OK`，`tasks: 637`，`manifests: 637`。
+  涉及文件：[prompt_pipeline.py](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/prompt_pipeline.py:1538)
+
+- `plan --all` 依赖排序：通过。证据：输出从 `0-1/task-01` → `0-1/task-02` → `0-2/task-01` 开始，并延续到 `4-3/task-165`。
+  涉及文件：[prompt_pipeline.py](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/prompt_pipeline.py:1559)
+
+- `render --task 0-1/task-01`：通过。证据：输出包含 `共享规则`、`任务正文`、`Manifest`、`任务要求的验证`、完成后输出格式。
+  涉及文件：[prompt_pipeline.py](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/prompt_pipeline.py:1603)
+
+- `status` 任务库概览：通过。证据：输出 `tasks: 637`，phase/risk/progress 汇总，`first task: 0-1/task-02`。
+  涉及文件：[prompt_pipeline.py](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/prompt_pipeline.py:1661)
+
+- Runner 不写产品代码、不调用 `codex exec`：通过。证据：`prompt_pipeline.py` 未出现 `subprocess` / `os.system` / `Popen` / `exec(`，`doctor/plan/render/status` 分支只读取并打印；写入路径只在 `mark` / `export` 分支。
+  涉及文件：[prompt_pipeline.py](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/prompt_pipeline.py:1486)
+
+- `Expected New Paths`：通过。证据：11 项均存在，包括 `tasks/prompts/README.md`、manifest phase 0-4、`prompt_pipeline.py`、`tasks/prompts/phase-*/**`。
+  涉及文件：[phase-0.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-0.md:54)
+
+- `Forbidden Touches`：通过。证据：`git status --short -- core apps` 无输出。
+  涉及文件：[phase-0.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-0.md:67)
+
+- 工程质量门禁：不通过。证据见阻塞项。
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过。`prompt_pipeline.py` 为 1836 行，超过编码规范单文件 ≤500 行；多个函数超过 50 行。
+- 注释 / rustdoc / 文档同步：通过。当前为 Python runner，无 Rust public API；README 与 shared docs 已说明 runner 模式。
+- 错误处理与边界处理：通过。CLI 对未知任务、doctor 失败、导出失败等返回非 0。
+- 测试与验证覆盖：通过。Manifest 要求的 4 条验证均已实际运行并通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。未发现 mock-only 产品闭环或硬编码通过态；本 task 不涉及产品功能实现。
+
+六、阻塞项
+
+- P1：`prompt_pipeline.py` 违反工程质量长度门禁。
+  说明：编码规范要求单文件 ≤500 行、单函数 ≤50 行；当前 [prompt_pipeline.py](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/prompt_pipeline.py:1) 为 1836 行，`print_copy_prompt` 164 行（[line 948](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/prompt_pipeline.py:948)）、`print_verify_prompt` 197 行（[line 1112](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/prompt_pipeline.py:1112)）、`print_phase_verify_prompt` 152 行（[line 1334](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/prompt_pipeline.py:1334)）。这触发 [coding-standards.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/coding-standards.md:13) 与工程质量验收门禁，不能判定完成。
+
+七、验证情况
+
+- 已运行：`python3 tasks/prompts/_shared/prompt_pipeline.py doctor`：通过。
+- 已运行：`python3 tasks/prompts/_shared/prompt_pipeline.py plan --all`：通过。
+- 已运行：`python3 tasks/prompts/_shared/prompt_pipeline.py render --task 0-1/task-01`：通过。
+- 已运行：`python3 tasks/prompts/_shared/prompt_pipeline.py status`：通过。
+- 缺失：无。
+- 额外只读检查：`git status --short -- core apps` 无 forbidden touch；当前全仓库另有 `.codex/task-loop-runs/.../summary.json`、`tasks/prompts/_shared/progress.json` 和 task-loop log 的未提交状态，不属于 `core/**` / `apps/**` forbidden touch。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。功能性 checklist 和验证命令均通过，但工程质量门禁存在 P1 阻塞，不能包装为“可后续优化”。
+
+
+VERIFY_RESULT: FAIL
