@@ -28,11 +28,18 @@ pub fn init_logging(level: String) -> CoreResult<()> {
 
 /// Validates a candidate repository path without mutating the filesystem.
 ///
+/// The C1-01 contract accepts a user-selected repository directory path and
+/// returns structured status flags, a recommended initialization mode, and
+/// display-ready issues for the Swift UI. This API is read-only: it must not
+/// create `.areamatrix/`, initialize a database, move user files, or trigger
+/// iCloud placeholder downloads.
+///
 /// # Errors
 ///
-/// Returns `CoreError::InvalidPath`, `CoreError::PermissionDenied`,
-/// `CoreError::ICloudPlaceholder`, or `CoreError::RepoNotInitialized` once the
-/// C1-01 implementation task wires the read-only filesystem checks.
+/// Returns `CoreError::InvalidPath` for empty or metadata-internal paths,
+/// `CoreError::PermissionDenied` when metadata or directory checks are blocked,
+/// `CoreError::ICloudPlaceholder` for unavailable iCloud-managed paths, or
+/// `CoreError::RepoNotInitialized` when an initialized repository is required.
 pub fn validate_repo_path(_repo_path: String) -> CoreResult<RepoPathValidation> {
     not_implemented()
 }
