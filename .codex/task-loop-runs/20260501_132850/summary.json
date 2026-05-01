@@ -125,6 +125,74 @@
     "0-1/task-02": {
       "attempts": 2,
       "copy_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260501_132850/phase-0/0-1-task-02-copy-attempt-2.log",
+      "git": {
+        "attempts": 2,
+        "branch": "codex/areamatrix-task-loop-20260501_132850",
+        "changed_files": [
+          ".codex/task-loop-logs/20260501_132850/phase-0/0-1-task-02-copy-attempt-1.log",
+          ".codex/task-loop-logs/20260501_132850/phase-0/0-1-task-02-copy-attempt-2.log",
+          ".codex/task-loop-logs/20260501_132850/phase-0/0-1-task-02-verify-attempt-1.log",
+          ".codex/task-loop-logs/20260501_132850/phase-0/0-1-task-02-verify-attempt-2.log",
+          ".codex/task-loop-runs/20260501_132850/summary.json",
+          ".codex/task-loop-runs/index.json",
+          "tasks/prompts/_shared/manifests/phase-0.md",
+          "tasks/prompts/_shared/progress.json",
+          "tasks/prompts/_shared/prompt_pipeline.py",
+          "tasks/prompts/_shared/prompt_pipeline_lib/"
+        ],
+        "commit": "edc44a7735bb8b73caffbee9b0f2ff0dde43627c",
+        "copy_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260501_132850/phase-0/0-1-task-02-copy-attempt-2.log",
+        "diff_name_status": [
+          "M\t.codex/task-loop-runs/20260501_132850/summary.json",
+          "M\t.codex/task-loop-runs/index.json",
+          "M\ttasks/prompts/_shared/manifests/phase-0.md",
+          "M\ttasks/prompts/_shared/progress.json",
+          "M\ttasks/prompts/_shared/prompt_pipeline.py"
+        ],
+        "label": "0-1/task-02",
+        "mode": "commit",
+        "phase": "phase-0",
+        "push_status": "not_requested",
+        "remote": "",
+        "run_id": "20260501_132850",
+        "staged_name_status": [
+          "A\t.codex/task-loop-logs/20260501_132850/phase-0/0-1-task-02-copy-attempt-1.log",
+          "A\t.codex/task-loop-logs/20260501_132850/phase-0/0-1-task-02-copy-attempt-2.log",
+          "A\t.codex/task-loop-logs/20260501_132850/phase-0/0-1-task-02-verify-attempt-1.log",
+          "A\t.codex/task-loop-logs/20260501_132850/phase-0/0-1-task-02-verify-attempt-2.log",
+          "M\t.codex/task-loop-runs/20260501_132850/summary.json",
+          "M\t.codex/task-loop-runs/index.json",
+          "M\ttasks/prompts/_shared/manifests/phase-0.md",
+          "M\ttasks/prompts/_shared/progress.json",
+          "M\ttasks/prompts/_shared/prompt_pipeline.py",
+          "A\ttasks/prompts/_shared/prompt_pipeline_lib/__init__.py",
+          "A\ttasks/prompts/_shared/prompt_pipeline_lib/commands.py",
+          "A\ttasks/prompts/_shared/prompt_pipeline_lib/contracts.py",
+          "A\ttasks/prompts/_shared/prompt_pipeline_lib/coverage.py",
+          "A\ttasks/prompts/_shared/prompt_pipeline_lib/doctor.py",
+          "A\ttasks/prompts/_shared/prompt_pipeline_lib/paths.py",
+          "A\ttasks/prompts/_shared/prompt_pipeline_lib/phase_rendering.py",
+          "A\ttasks/prompts/_shared/prompt_pipeline_lib/rendering.py",
+          "A\ttasks/prompts/_shared/prompt_pipeline_lib/repository.py"
+        ],
+        "status": "committed",
+        "status_short": [
+          " M .codex/task-loop-runs/20260501_132850/summary.json",
+          " M .codex/task-loop-runs/index.json",
+          " M tasks/prompts/_shared/manifests/phase-0.md",
+          " M tasks/prompts/_shared/progress.json",
+          " M tasks/prompts/_shared/prompt_pipeline.py",
+          "?? .codex/task-loop-logs/20260501_132850/phase-0/0-1-task-02-copy-attempt-1.log",
+          "?? .codex/task-loop-logs/20260501_132850/phase-0/0-1-task-02-copy-attempt-2.log",
+          "?? .codex/task-loop-logs/20260501_132850/phase-0/0-1-task-02-verify-attempt-1.log",
+          "?? .codex/task-loop-logs/20260501_132850/phase-0/0-1-task-02-verify-attempt-2.log",
+          "?? tasks/prompts/_shared/prompt_pipeline_lib/"
+        ],
+        "summary_file": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-runs/20260501_132850/summary.json",
+        "task_name": "0-1-task-02",
+        "updated_at": "2026-05-01T07:11:58.010241+00:00",
+        "verify_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260501_132850/phase-0/0-1-task-02-verify-attempt-2.log"
+      },
       "note": "自动执行验收通过",
       "phase": "phase-0",
       "risk": "Medium",
@@ -139,7 +207,7 @@
     "retries": 5,
     "task_count": 637
   },
-  "updated_at": "2026-05-01T07:11:57.789584+00:00",
+  "updated_at": "2026-05-01T07:11:58.010728+00:00",
   "verify_root": "/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/verify-ready",
   "version": 1
 }
