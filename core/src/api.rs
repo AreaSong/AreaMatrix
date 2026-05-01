@@ -1,9 +1,9 @@
 //! Public functions exposed through the UniFFI boundary.
 
 use crate::{
-    db, repo_init, repo_path, tree, ChangeFilter, ChangeLogEntry, ClassifyResult, CoreError,
-    CoreResult, ExternalEvent, FileEntry, FileFilter, ImportOptions, RecoveryReport, ReindexReport,
-    RepoConfig, RepoInitOptions, RepoPathValidation, ScanSession, SyncResult,
+    db, repo_init, repo_path, repo_scan, tree, ChangeFilter, ChangeLogEntry, ClassifyResult,
+    CoreError, CoreResult, ExternalEvent, FileEntry, FileFilter, ImportOptions, RecoveryReport,
+    ReindexReport, RepoConfig, RepoInitOptions, RepoPathValidation, ScanSession, SyncResult,
 };
 
 fn not_implemented<T>() -> CoreResult<T> {
@@ -134,8 +134,8 @@ pub fn reindex_from_filesystem(_repo_path: String) -> CoreResult<ReindexReport> 
 /// `CoreError::Io` when repository metadata cannot be inspected, and
 /// `CoreError::InvalidPath` or `CoreError::PermissionDenied` for invalid or
 /// inaccessible repository roots.
-pub fn get_latest_scan_session(_repo_path: String) -> CoreResult<Option<ScanSession>> {
-    not_implemented()
+pub fn get_latest_scan_session(repo_path: String) -> CoreResult<Option<ScanSession>> {
+    repo_scan::get_latest_scan_session(repo_path)
 }
 
 /// Resumes a paused, interrupted, or failed adopt/reindex scan session.
@@ -151,8 +151,8 @@ pub fn get_latest_scan_session(_repo_path: String) -> CoreResult<Option<ScanSess
 /// `CoreError::Io` for filesystem inspection failures, `CoreError::InvalidPath`
 /// for malformed repository paths, and `CoreError::PermissionDenied` when the
 /// repository cannot be inspected or metadata cannot be updated.
-pub fn resume_scan_session(_repo_path: String, _scan_session_id: i64) -> CoreResult<ReindexReport> {
-    not_implemented()
+pub fn resume_scan_session(repo_path: String, scan_session_id: i64) -> CoreResult<ReindexReport> {
+    repo_scan::resume_scan_session(repo_path, scan_session_id)
 }
 
 /// Predicts a category for a filename.

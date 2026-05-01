@@ -9,6 +9,9 @@ use crate::{
     StorageMode,
 };
 
+mod scan;
+pub(crate) use scan::*;
+
 const AREA_MATRIX_DIR: &str = ".areamatrix";
 const INDEX_DB_FILE: &str = "index.db";
 
@@ -195,7 +198,7 @@ pub(crate) fn ensure_initialized(repo_path: &Path) -> CoreResult<()> {
     }
 }
 
-fn open_repo_connection(repo_path: &Path) -> CoreResult<Connection> {
+pub(super) fn open_repo_connection(repo_path: &Path) -> CoreResult<Connection> {
     ensure_initialized(repo_path)?;
     let connection = Connection::open(db_path(repo_path)).map_err(|_| CoreError::Db)?;
     configure_connection(&connection)?;
@@ -297,7 +300,7 @@ fn storage_mode_to_db(mode: &StorageMode) -> &'static str {
     }
 }
 
-fn storage_mode_from_db(value: &str) -> CoreResult<StorageMode> {
+pub(super) fn storage_mode_from_db(value: &str) -> CoreResult<StorageMode> {
     match value {
         "moved" | "Moved" => Ok(StorageMode::Moved),
         "copied" | "Copied" => Ok(StorageMode::Copied),
@@ -306,7 +309,7 @@ fn storage_mode_from_db(value: &str) -> CoreResult<StorageMode> {
     }
 }
 
-fn origin_from_db(value: &str) -> CoreResult<FileOrigin> {
+pub(super) fn origin_from_db(value: &str) -> CoreResult<FileOrigin> {
     match value {
         "imported" | "Imported" => Ok(FileOrigin::Imported),
         "adopted" | "Adopted" => Ok(FileOrigin::Adopted),

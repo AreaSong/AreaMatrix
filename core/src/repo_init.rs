@@ -11,8 +11,8 @@ use serde_yaml::Value;
 use uuid::Uuid;
 
 use crate::{
-    config, db, overview, repo_entries, repo_path, CoreError, CoreResult, OverviewOutput,
-    RepoInitMode, RepoInitOptions,
+    config, db, overview, repo_entries, repo_path, repo_scan, CoreError, CoreResult,
+    OverviewOutput, RepoInitMode, RepoInitOptions,
 };
 
 const AREA_MATRIX_DIR: &str = ".areamatrix";
@@ -22,32 +22,98 @@ const DEFAULT_IGNORE_YAML: &str = r#"version: 1
 ignore:
   - ".DS_Store"
   - ".areamatrix/"
+  - ".git/"
+  - ".hg/"
+  - ".svn/"
+  - "node_modules/"
+  - ".venv/"
+  - "venv/"
+  - "target/"
+  - "build/"
+  - "dist/"
+  - ".next/"
+  - ".cache/"
+  - "*.tmp"
+  - "*.swp"
 "#;
 
 pub(crate) fn init_repo(repo_path: String, options: RepoInitOptions) -> CoreResult<()> {
-    if options.mode != RepoInitMode::CreateEmpty {
-        return Err(CoreError::Config);
+    match options.mode {
+        RepoInitMode::CreateEmpty => init_create_empty_repo(repo_path, options),
+        RepoInitMode::AdoptExisting => init_adopt_existing_repo(repo_path, options),
     }
+}
 
+fn init_create_empty_repo(repo_path: String, options: RepoInitOptions) -> CoreResult<()> {
     let repo = PathBuf::from(&repo_path);
     preflight_create_empty(&repo_path, &repo)?;
 
     let init_dir = repo.join(format!("{INIT_DIR_PREFIX}{}", Uuid::new_v4()));
     let mut rollback = InitRollback::new(repo.clone(), init_dir.clone());
-    let result = init_repo_inner(&repo_path, &repo, &init_dir, &options, &mut rollback);
+    let result = init_create_empty_inner(&repo_path, &repo, &init_dir, &options, &mut rollback);
     if result.is_err() {
         rollback.rollback();
     }
     result
 }
 
-fn init_repo_inner(
+fn init_adopt_existing_repo(repo_path: String, options: RepoInitOptions) -> CoreResult<()> {
+    preflight_adopt_existing_options(&options)?;
+
+    let repo = PathBuf::from(&repo_path);
+    preflight_adopt_existing(&repo_path, &repo)?;
+
+    let init_dir = repo.join(format!("{INIT_DIR_PREFIX}{}", Uuid::new_v4()));
+    let mut rollback = InitRollback::new(repo.clone(), init_dir.clone());
+    let result = init_adopt_existing_inner(&repo_path, &repo, &init_dir, &options, &mut rollback);
+    if result.is_err() {
+        rollback.rollback();
+    }
+    result
+}
+
+fn init_create_empty_inner(
     repo_path: &str,
     repo: &Path,
     init_dir: &Path,
     options: &RepoInitOptions,
     rollback: &mut InitRollback,
 ) -> CoreResult<()> {
+    let config = create_metadata_staging(repo_path, init_dir, options)?;
+    let init_dir_name = init_dir.file_name().ok_or(CoreError::Config)?;
+    ensure_no_user_content_entries(repo, Some(init_dir_name))?;
+    commit_metadata_staging(repo, init_dir, rollback)?;
+
+    if options.create_default_categories {
+        create_default_category_dirs(repo, rollback)?;
+    }
+    if config.overview_output == OverviewOutput::RootAreaMatrixFile {
+        overview::write_root_areamatrix_file(repo, &config.locale)?;
+        rollback.mark_root_entry_created();
+    }
+
+    rollback.mark_complete();
+    Ok(())
+}
+
+fn init_adopt_existing_inner(
+    repo_path: &str,
+    repo: &Path,
+    init_dir: &Path,
+    options: &RepoInitOptions,
+    rollback: &mut InitRollback,
+) -> CoreResult<()> {
+    create_metadata_staging(repo_path, init_dir, options)?;
+    commit_metadata_staging(repo, init_dir, rollback)?;
+    rollback.mark_complete();
+    repo_scan::start_adopt_scan(repo)
+}
+
+fn create_metadata_staging(
+    repo_path: &str,
+    init_dir: &Path,
+    options: &RepoInitOptions,
+) -> CoreResult<crate::RepoConfig> {
     fs::create_dir(init_dir).map_err(map_io_error)?;
     fs::create_dir(init_dir.join("staging")).map_err(map_io_error)?;
     fs::create_dir(init_dir.join("archives")).map_err(map_io_error)?;
@@ -59,21 +125,16 @@ fn init_repo_inner(
     let config = config::default_repo_config(repo_path.to_owned(), options.overview_output.clone());
     db::initialize_repository_db(&init_dir.join("index.db"), &config)?;
     overview::write_generated_root(&init_dir.join("generated"), &config.locale)?;
+    Ok(config)
+}
 
-    let init_dir_name = init_dir.file_name().ok_or(CoreError::Config)?;
-    ensure_no_user_content_entries(repo, Some(init_dir_name))?;
+fn commit_metadata_staging(
+    repo: &Path,
+    init_dir: &Path,
+    rollback: &mut InitRollback,
+) -> CoreResult<()> {
     fs::rename(init_dir, repo.join(AREA_MATRIX_DIR)).map_err(map_io_error)?;
     rollback.mark_metadata_committed();
-
-    if options.create_default_categories {
-        create_default_category_dirs(repo, rollback)?;
-    }
-    if config.overview_output == OverviewOutput::RootAreaMatrixFile {
-        overview::write_root_areamatrix_file(repo, &config.locale)?;
-        rollback.mark_root_entry_created();
-    }
-
-    rollback.mark_complete();
     Ok(())
 }
 
@@ -98,6 +159,38 @@ fn preflight_create_empty(repo_path: &str, repo: &Path) -> CoreResult<()> {
         return Err(CoreError::Config);
     }
     ensure_no_user_content_entries(repo, None)
+}
+
+fn preflight_adopt_existing_options(options: &RepoInitOptions) -> CoreResult<()> {
+    if options.create_default_categories
+        || options.overview_output == OverviewOutput::RootAreaMatrixFile
+    {
+        return Err(CoreError::Config);
+    }
+    Ok(())
+}
+
+fn preflight_adopt_existing(repo_path: &str, repo: &Path) -> CoreResult<()> {
+    let mut validation = repo_path::validate_repo_path(repo_path.to_owned())?;
+    if validation.exists
+        && validation.is_directory
+        && validation.is_writable
+        && !validation.is_initialized
+        && cleanup_recoverable_init_dirs(repo)?
+    {
+        validation = repo_path::validate_repo_path(repo_path.to_owned())?;
+    }
+
+    if !validation.exists || !validation.is_directory {
+        return Err(CoreError::InvalidPath);
+    }
+    if !validation.is_writable {
+        return Err(CoreError::PermissionDenied);
+    }
+    if validation.is_initialized || validation.has_unfinished_scan_session || validation.is_empty {
+        return Err(CoreError::Config);
+    }
+    Ok(())
 }
 
 fn cleanup_recoverable_init_dirs(repo: &Path) -> CoreResult<bool> {
