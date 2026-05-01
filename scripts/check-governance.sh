@@ -82,8 +82,8 @@ check_security_policy() {
 }
 
 check_codeowners() {
-  require_text ".github/CODEOWNERS" "@AreaSong/maintainers" "AreaSong maintainers owner placeholder"
-  require_text ".github/CODEOWNERS" "TODO: Replace @AreaSong/maintainers" "replacement note for placeholder owner"
+  require_text ".github/CODEOWNERS" "@AreaMatrix/maintainers" "AreaMatrix maintainers owner placeholder"
+  require_text ".github/CODEOWNERS" "TODO: Replace @AreaMatrix/maintainers" "replacement note for placeholder owner"
 }
 
 check_pr_template() {

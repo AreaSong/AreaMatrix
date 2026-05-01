@@ -1,0 +1,25 @@
+一、执行结论：已完成。  
+本轮没有修改文件，因为 8 个 `Expected New Paths` 已经存在，并且内容满足 `0-1/task-01` 的治理入口要求。
+
+二、执行范围：单任务 `0-1/task-01`  
+修改文件清单：无。已核对目标文件包括 `AGENTS.md`、`.ai-governance/**`、`.codex/README.md`、`.codex/references/index.md`、`.codex/templates/prompt-task-template.md`。
+
+三、完成情况：  
+- 根 `AGENTS.md`：通过，已说明入口顺序、SSOT、高风险边界和验证要求。  
+- `.ai-governance/`：通过，覆盖通用原则、项目规则、prompt runtime，并声明统一源事实。  
+- `.codex/`：通过，明确只承载 Codex 适配材料，不抢业务权威。  
+- `core/AGENTS.md` / `apps/macos/AGENTS.md`：本轮未创建、未修改。当前仓库已有这两个文件，属于既有状态。  
+- Forbidden Touches：未触碰；目标路径和 `core/**`、`apps/**`、`.cursor/**`、`.agent/**`、`.agents/**` 在本轮无 diff。
+
+四、工程质量：  
+文档结构清晰，没有新增代码、依赖、mock、硬编码或一次性脚本。治理层级与 `docs/`、`.ai-governance/`、`.codex/` 的权威边界一致；本轮无 rustdoc / 错误处理适用项。
+
+五、验证情况：  
+- `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`：通过，`doctor: OK`，`tasks: 637`，`manifests: 637`。  
+- `bash scripts/check-governance.sh`：通过，`governance health: OK`。  
+- `bash scripts/check-skills.sh`：通过，`skill health: OK (6 skill(s))`。  
+- 辅助状态：`next` 仍显示 `0-1/task-01` 为 `in_progress`，因为本轮没有运行 `mark`。
+
+六、风险与后续：  
+剩余风险很低。工作区已有 staged 文件 `.codex/task-loop-runs/20260501_132850/summary.json`，不是本轮改动。建议下一步先跑只读验收 `python3 tasks/prompts/_shared/prompt_pipeline.py verify --task 0-1/task-01`，验收通过后再进入 `0-1/task-02`。
+
