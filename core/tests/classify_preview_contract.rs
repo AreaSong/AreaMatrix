@@ -35,6 +35,10 @@ fn initialized_repo() -> tempfile::TempDir {
     repo
 }
 
+fn write_classifier(repo: &Path, content: &str) {
+    fs::write(repo.join(".areamatrix/classifier.yaml"), content).expect("write classifier fixture");
+}
+
 fn assert_contains(haystack: &str, needle: &str) {
     assert!(
         haystack.contains(needle),
@@ -190,15 +194,74 @@ fn classify_preview_contract_normalizes_case_cjk_and_full_width_keywords() {
 #[test]
 fn classify_preview_contract_invalid_classifier_yaml_returns_config_error() {
     let repo = initialized_repo();
-    fs::write(
-        repo.path().join(".areamatrix/classifier.yaml"),
+    write_classifier(
+        repo.path(),
         "version: 1\ndefault: missing\ncategories: []\n",
-    )
-    .expect("write invalid classifier yaml");
+    );
 
     let result = predict_category(path_string(repo.path()), "invoice.pdf".to_owned());
 
     assert_eq!(result, Err(CoreError::Config));
+}
+
+#[test]
+fn classify_preview_contract_rejects_invalid_classifier_schema_edges() {
+    let cases = [
+        (
+            "extension with dot",
+            "version: 1\ndefault: docs\ncategories:\n  - slug: docs\n    extensions: [.pdf]\n",
+        ),
+        (
+            "unknown field",
+            "version: 1\ndefault: docs\ncategories:\n  - slug: docs\n    extensoins: [pdf]\n",
+        ),
+        (
+            "duplicate keyword",
+            "version: 1\ndefault: docs\ncategories:\n  - slug: docs\n    keywords: [report, report]\n",
+        ),
+        (
+            "priority out of range",
+            "version: 1\ndefault: docs\ncategories:\n  - slug: docs\n    priority: 1001\n",
+        ),
+    ];
+
+    for (name, yaml) in cases {
+        let repo = initialized_repo();
+        write_classifier(repo.path(), yaml);
+
+        assert_eq!(
+            predict_category(path_string(repo.path()), "report.pdf".to_owned()),
+            Err(CoreError::Config),
+            "{name} should be rejected"
+        );
+    }
+}
+
+#[test]
+fn classify_preview_contract_renders_supported_naming_template_placeholders() {
+    let repo = initialized_repo();
+    write_classifier(
+        repo.path(),
+        r#"version: 1
+default: inbox
+categories:
+  - slug: invoices
+    keywords: [invoice]
+    priority: 20
+    naming_template: "{slug}_{stem}.{ext}_{original}_{unknown}"
+  - slug: inbox
+"#,
+    );
+
+    let result = predict_category(path_string(repo.path()), "invoice.pdf".to_owned())
+        .expect("predict templated category");
+
+    assert_eq!(result.category, "invoices");
+    assert_eq!(result.reason, ClassifyReason::Keyword);
+    assert_eq!(
+        result.suggested_name,
+        "invoices_invoice.pdf_invoice.pdf_{unknown}"
+    );
 }
 
 #[test]

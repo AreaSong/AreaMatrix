@@ -1,7 +1,7 @@
 //! Rule-based classification preview for import flows.
 
 use std::{
-    collections::HashSet,
+    collections::{HashMap, HashSet},
     fs,
     path::{Path, PathBuf},
 };
@@ -15,8 +15,16 @@ const DEFAULT_CLASSIFIER_YAML: &str = include_str!("../../resources/classifier.y
 const KEYWORD_CONFIDENCE: f32 = 0.9;
 const EXTENSION_CONFIDENCE: f32 = 0.7;
 const DEFAULT_CONFIDENCE: f32 = 0.0;
+const MAX_CATEGORIES: usize = 64;
+const MAX_SLUG_LEN: usize = 32;
+const MAX_EXTENSION_LEN: usize = 16;
+const MAX_KEYWORD_LEN: usize = 32;
+const MAX_DISPLAY_NAME_LEN: usize = 32;
+const MAX_DESCRIPTION_LEN: usize = 200;
+const MAX_NAMING_TEMPLATE_LEN: usize = 200;
 
 #[derive(Clone, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
 struct ClassifierConfig {
     version: u32,
     default: String,
@@ -24,8 +32,13 @@ struct ClassifierConfig {
 }
 
 #[derive(Clone, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
 struct CategoryConfig {
     slug: String,
+    #[serde(default)]
+    display_name: HashMap<String, String>,
+    #[serde(default)]
+    description: HashMap<String, String>,
     #[serde(default)]
     extensions: Vec<String>,
     #[serde(default)]
@@ -117,7 +130,10 @@ fn load_classifier_config(repo: &Path) -> CoreResult<ClassifierConfig> {
 }
 
 fn validate_classifier_config(config: ClassifierConfig) -> CoreResult<ClassifierConfig> {
-    if config.version != 1 || config.categories.is_empty() || config.categories.len() > 64 {
+    if config.version != 1
+        || config.categories.is_empty()
+        || config.categories.len() > MAX_CATEGORIES
+    {
         return Err(CoreError::Config);
     }
 
@@ -142,22 +158,79 @@ fn validate_category(category: &CategoryConfig, seen: &mut HashSet<String>) -> C
         return Err(CoreError::Config);
     }
 
+    validate_display_names(category)?;
+    validate_descriptions(category)?;
+    validate_extensions(category)?;
+    validate_keywords(category)?;
+    validate_priority(category.priority)?;
+    validate_naming_template(category)?;
+
+    Ok(())
+}
+
+fn validate_display_names(category: &CategoryConfig) -> CoreResult<()> {
     if category
-        .extensions
-        .iter()
-        .any(|extension| !is_valid_extension(extension))
+        .display_name
+        .values()
+        .any(|value| value.is_empty() || value.chars().count() > MAX_DISPLAY_NAME_LEN)
     {
         return Err(CoreError::Config);
     }
 
+    Ok(())
+}
+
+fn validate_descriptions(category: &CategoryConfig) -> CoreResult<()> {
     if category
-        .keywords
-        .iter()
-        .any(|keyword| keyword.trim().is_empty() || keyword.chars().count() > 32)
+        .description
+        .values()
+        .any(|value| value.chars().count() > MAX_DESCRIPTION_LEN)
     {
         return Err(CoreError::Config);
     }
 
+    Ok(())
+}
+
+fn validate_extensions(category: &CategoryConfig) -> CoreResult<()> {
+    let mut seen = HashSet::new();
+    for extension in &category.extensions {
+        if !is_valid_extension(extension) || !seen.insert(extension.as_str()) {
+            return Err(CoreError::Config);
+        }
+    }
+    Ok(())
+}
+
+fn validate_keywords(category: &CategoryConfig) -> CoreResult<()> {
+    let mut seen = HashSet::new();
+    for keyword in &category.keywords {
+        if keyword.trim().is_empty()
+            || keyword.chars().count() > MAX_KEYWORD_LEN
+            || !seen.insert(keyword.as_str())
+        {
+            return Err(CoreError::Config);
+        }
+    }
+    Ok(())
+}
+
+fn validate_priority(priority: i32) -> CoreResult<()> {
+    if (-1000..=1000).contains(&priority) {
+        Ok(())
+    } else {
+        Err(CoreError::Config)
+    }
+}
+
+fn validate_naming_template(category: &CategoryConfig) -> CoreResult<()> {
+    if category
+        .naming_template
+        .as_ref()
+        .is_some_and(|template| template.chars().count() > MAX_NAMING_TEMPLATE_LEN)
+    {
+        return Err(CoreError::Config);
+    }
     Ok(())
 }
 
@@ -168,15 +241,14 @@ fn is_valid_slug(slug: &str) -> bool {
         _ => return false,
     }
 
-    slug.chars().count() <= 32
+    slug.chars().count() <= MAX_SLUG_LEN
         && chars.all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '_' || c == '-')
 }
 
 fn is_valid_extension(extension: &str) -> bool {
-    let normalized = extension.trim_start_matches('.');
-    !normalized.is_empty()
-        && normalized.chars().count() <= 16
-        && normalized
+    !extension.is_empty()
+        && extension.chars().count() <= MAX_EXTENSION_LEN
+        && extension
             .chars()
             .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit())
 }
@@ -277,7 +349,6 @@ fn match_extension<'a>(
             category
                 .extensions
                 .iter()
-                .map(|candidate| candidate.trim_start_matches('.'))
                 .any(|candidate| candidate == extension)
         })
         .map(|(category_index, category)| ExtensionHit {
@@ -329,14 +400,16 @@ fn render_template(template: &str, original_name: &str, slug: &str) -> String {
     let extension = path
         .extension()
         .and_then(|value| value.to_str())
-        .map(|value| format!(".{value}"))
+        .map(str::to_owned)
         .unwrap_or_default();
-    let date = chrono::Local::now().format("%Y%m%d").to_string();
+    let date = chrono::Local::now().format("%Y-%m-%d").to_string();
+    let date_iso = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
 
     template
         .replace("{original}", original_name)
         .replace("{stem}", stem)
         .replace("{ext}", &extension)
         .replace("{date}", &date)
+        .replace("{date_iso}", &date_iso)
         .replace("{slug}", slug)
 }
