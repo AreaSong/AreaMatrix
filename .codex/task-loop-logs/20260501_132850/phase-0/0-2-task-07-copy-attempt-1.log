@@ -1,0 +1,36 @@
+一、执行结论
+
+- 已完成 `0-2/task-07`
+
+二、执行范围
+
+- 单任务：`0-2/task-07`
+- 修改文件：[`scripts/update-bindings.sh`](/Users/as/Ai-Project/project/AreaMatrix/scripts/update-bindings.sh)
+
+三、完成情况
+
+- 创建/修正更新绑定脚本：完成
+- 脚本明确输入 UDL 和输出目录：完成，必须传 `--udl <path>` 与 `--out-dir <directory>`
+- 本任务未提交生成的产品绑定：完成，仅改脚本；未生成或修改 `apps/macos/AreaMatrix/Bridge/Generated/**`
+- Forbidden Touches：未触碰 `core/src/**`、`apps/macos/AreaMatrix/**`
+
+四、工程质量
+
+- 脚本职责收敛：只做参数解析、路径校验、依赖检查、调用 `uniffi-bindgen generate`
+- 错误处理明确：缺参数、UDL 不存在、输出路径不是目录、缺少 `uniffi-bindgen` 都会带错误码退出
+- 未新增依赖；未加入 mock、硬编码通过态或一次性生成物
+- 注释/文档同步：无额外文档改动需求；脚本内 `--help` 说明了用法和生成物不自动提交的边界
+
+五、验证情况
+
+- 已运行：`bash -n scripts/update-bindings.sh`，通过
+- 已运行：`bash scripts/update-bindings.sh --help`，通过，确认无副作用入口可用
+- 已运行：`git diff --check -- scripts/update-bindings.sh`，通过
+- 已检查：`git diff --name-only -- core/src apps/macos/AreaMatrix`，无输出，确认 Forbidden Touches 未变更
+
+六、风险与后续
+
+- 剩余风险：未实际运行 `uniffi-bindgen generate`，因为本 task 完成标准只要求 `bash -n`，且实际生成会产生产品绑定文件，超出本次提交范围。
+- 工作树中已有的 `.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json` 修改不是我本次改动，我未触碰。
+- 建议后续：先进入 `0-2/task-07` verify-ready 验收；通过后继续 `0-2/task-08`。
+
