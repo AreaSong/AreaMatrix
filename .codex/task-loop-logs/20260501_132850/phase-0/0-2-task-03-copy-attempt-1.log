@@ -1,0 +1,40 @@
+一、执行结论
+
+已完成。`core/area_matrix.udl` 与 `core/build.rs` 已存在且已纳入 git，当前 UDL 与 `docs/api/core-api.md` 的完整 UDL 基线逐行一致，本轮无需改动文件。
+
+二、执行范围
+
+- 单任务：`0-2/task-03`
+- 修改文件清单：无本轮新增 diff
+- 核查目标路径：`core/area_matrix.udl`、`core/build.rs`
+- 未触碰 Forbidden Touches：`apps/**` 未改动
+
+三、完成情况
+
+- 创建 UniFFI 最小 UDL 与 `build.rs`：通过，目标文件已存在。
+- 只暴露版本/smoke 级 API 或文档已有基线：通过，当前 UDL 暴露的是 `docs/api/core-api.md` 已定义基线。
+- 不新增未规划业务接口：通过，UDL 与 core-api 无差异。
+- UDL 与 core-api 方向一致：通过，已用 diff 对照确认。
+- 后续 C1 API 有明确落点：通过，落点在 `docs/api/core-api.md` 的 Stage 1 API 和 `core/src/api.rs` 对应 Rust scaffold。
+
+四、工程质量
+
+结构清晰，无本轮新增占位、硬编码、mock-only 或一次性实现。现有业务 API stub 返回 `CoreError::Internal`，属于后续 C1 task 的实现落点；本任务只验 UDL/build 基线，不提前实现业务能力。`build.rs` 当前能生成 UniFFI scaffolding，`lib.rs` 已包含 `uniffi::include_scaffolding!("area_matrix")`。
+
+五、验证情况
+
+已运行并通过：
+
+- `cd core && cargo test --workspace`
+- `cd core && cargo fmt --all -- --check`
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`
+- `docs/api/core-api.md` UDL 代码块与 `core/area_matrix.udl` diff：无差异
+
+未运行：
+
+- macOS / Xcode 验证：本任务禁止触碰 `apps/**`，且 manifest 未要求。
+
+六、风险与后续
+
+剩余风险：当前仅证明 UDL/build 基线和 Rust scaffold 可编译，未证明 Swift 绑定生成脚本或 macOS bridge；这些属于后续 `0-2/task-07`、`0-2/task-11` 范围。建议下一个任务执行 `0-2/task-04`。
+
