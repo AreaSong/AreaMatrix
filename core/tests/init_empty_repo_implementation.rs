@@ -130,6 +130,29 @@ fn init_empty_repo_rejects_non_empty_directory_without_touching_user_files() {
 }
 
 #[test]
+fn init_empty_repo_rejects_adopt_existing_mode_without_creating_metadata() {
+    let repo = tempfile::tempdir().expect("create temporary repository directory");
+    let mut options = create_empty_options();
+    options.mode = RepoInitMode::AdoptExisting;
+
+    let result = init_repo(path_string(repo.path()), options);
+
+    assert_eq!(result, Err(CoreError::Config));
+    assert!(!repo.path().join(".areamatrix").exists());
+}
+
+#[test]
+fn init_empty_repo_rejects_area_matrix_internal_path_without_writing_metadata() {
+    let repo = tempfile::tempdir().expect("create temporary repository directory");
+    let internal_path = repo.path().join(".areamatrix").join("staging");
+
+    let result = init_repo(path_string(&internal_path), create_empty_options());
+
+    assert_eq!(result, Err(CoreError::InvalidPath));
+    assert!(!repo.path().join(".areamatrix").exists());
+}
+
+#[test]
 fn init_empty_repo_rejects_repeated_initialization_without_destroying_metadata() {
     let repo = tempfile::tempdir().expect("create temporary repository directory");
     init_repo(path_string(repo.path()), create_empty_options()).expect("initialize empty repo");
@@ -165,6 +188,25 @@ fn init_empty_repo_recovers_recoverable_stale_init_directory_before_retry() {
     assert!(!stale_init.exists());
     assert!(repo.path().join(".areamatrix/index.db").is_file());
     assert!(repo.path().join(".areamatrix/generated/root.md").is_file());
+}
+
+#[test]
+fn init_empty_repo_preserves_non_recoverable_stale_init_contents() {
+    let repo = tempfile::tempdir().expect("create temporary repository directory");
+    let stale_init = repo.path().join(".areamatrix.init-stale");
+    fs::create_dir(&stale_init).expect("create stale init directory");
+    fs::create_dir(stale_init.join("staging")).expect("create stale staging directory");
+    let user_file = stale_init.join("staging/user-note.txt");
+    fs::write(&user_file, "owned by user").expect("write user-owned stale content");
+
+    let result = init_repo(path_string(repo.path()), create_empty_options());
+
+    assert_eq!(result, Err(CoreError::Config));
+    assert_eq!(
+        fs::read_to_string(&user_file).expect("read preserved stale user content"),
+        "owned by user"
+    );
+    assert!(!repo.path().join(".areamatrix").exists());
 }
 
 #[test]
