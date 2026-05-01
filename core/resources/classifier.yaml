@@ -1,6 +1,5 @@
-# Phase 0 placeholder: this file only proves the bundled resource exists and
-# remains parseable. It is not evidence that the real classifier capability is
-# implemented or ready for product acceptance.
+# Phase 0 占位资源：本文件只证明 Core 资源路径已存在且 YAML 可读取。
+# 这不是分类能力验收通过证据，不得替代后续规则加载、校验、匹配和测试任务。
 version: 1
 default: inbox
 categories:
