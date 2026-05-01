@@ -1,0 +1,40 @@
+一、执行结论
+
+已完成 `1-1/task-17`。
+
+二、执行范围
+
+单任务：C1-04 `load_config` / `update_config` failure-recovery。  
+修改文件： [core/tests/load_update_config_contract.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/load_update_config_contract.rs:61)
+
+未触碰 `apps/**`。当前工作区另有既存脏文件 `.codex/task-loop-runs/20260501_132850/summary.json`、`tasks/prompts/_shared/progress.json`，我没有修改它们。
+
+三、完成情况
+
+核对清单全部满足：只处理 C1-04；已读取 task、共享规则、manifest、Exact Docs、Existing Code；未实现相邻 C1 能力或 UI；新增测试覆盖失败、回滚、重复执行、权限错误；未删除、覆盖或移动真实用户文件。
+
+补充了 4 个 failure-recovery 测试：SQLite trigger 模拟 `repo_config` 中途写失败并证明 rollback；重复 `update_config` 不产生重复配置行；已有 `README.md` / `AREAMATRIX.md` 保持原内容；`.areamatrix` metadata 目录不可写时返回 `PermissionDenied` 且旧配置仍可读。
+
+四、工程质量
+
+代码结构保持简单，只在现有 C1-04 contract 测试中补证据，没有改生产 API、UDL 或文档。测试使用 `tempfile` 临时仓库和真实 SQLite 路径，不是 mock-only 或硬编码通过态。未新增依赖，未引入占位逻辑。
+
+五、验证情况
+
+已通过：
+
+```bash
+cd core && cargo fmt --all -- --check
+cd core && cargo clippy --all-targets --all-features -- -D warnings
+cd core && cargo test --workspace load_update_config
+cd core && cargo test --workspace
+git diff --check
+```
+
+`load_update_config` 过滤测试为 14 个通过；全 workspace 测试通过。
+
+六、风险与后续
+
+剩余风险：未做 macOS UI 消费验证，因为本 task 绑定 Core 能力且禁止触碰 `apps/**`。权限测试为 `#[cfg(unix)]`，当前 macOS/Unix 环境已覆盖。  
+建议下一个任务按 manifest 继续 `1-1/task-18`。
+
