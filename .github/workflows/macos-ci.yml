@@ -7,9 +7,17 @@ on:
     branches: [main]
 
 jobs:
+  prompt-doctor:
+    name: prompt doctor
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 tasks/prompts/_shared/prompt_pipeline.py doctor
+
   build:
     name: Xcode build & test
     runs-on: macos-14
+    needs: prompt-doctor
     steps:
       - uses: actions/checkout@v4
 
@@ -76,6 +84,7 @@ jobs:
   swiftlint:
     name: SwiftLint
     runs-on: macos-14
+    needs: prompt-doctor
     steps:
       - uses: actions/checkout@v4
       - name: Check macOS sources
@@ -98,6 +107,7 @@ jobs:
   swiftformat:
     name: SwiftFormat lint
     runs-on: macos-14
+    needs: prompt-doctor
     steps:
       - uses: actions/checkout@v4
       - name: Check macOS sources

@@ -3,15 +3,21 @@ set -euo pipefail
 
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CORE_DIR="${PROJECT_ROOT}/core"
-MACOS_PROJECT="${PROJECT_ROOT}/apps/macos/AreaMatrix.xcodeproj"
 MACOS_DIR="${PROJECT_ROOT}/apps/macos"
+MACOS_PROJECT="${MACOS_DIR}/AreaMatrix.xcodeproj"
+PYTHONPYCACHEPREFIX="${PYTHONPYCACHEPREFIX:-${TMPDIR:-/tmp}/areamatrix-pycache}"
+export PYTHONPYCACHEPREFIX
+
+fail() {
+  echo "error: $*" >&2
+  exit 1
+}
 
 require_command() {
   local command_name="$1"
 
   if ! command -v "${command_name}" >/dev/null 2>&1; then
-    echo "error: missing required command '${command_name}'." >&2
-    exit 127
+    fail "missing required command '${command_name}'."
   fi
 }
 
@@ -21,57 +27,89 @@ run_step() {
   "$@"
 }
 
-require_command cargo
-require_command python3
+run_governance_checks() {
+  cd "${PROJECT_ROOT}"
 
-if [[ ! -d "${CORE_DIR}" ]]; then
-  echo "error: core crate not found at ${CORE_DIR}." >&2
-  exit 1
-fi
+  require_command bash
+  require_command git
+  require_command python3
 
-cd "${PROJECT_ROOT}"
-run_step python3 tasks/prompts/_shared/prompt_pipeline.py doctor
+  run_step bash scripts/check-governance.sh
+  run_step bash scripts/check-skills.sh
+  run_step bash scripts/check-task-loop.sh
+  run_step python3 tasks/prompts/_shared/prompt_pipeline.py doctor
+  run_step git diff --check
+}
 
-cd "${CORE_DIR}"
-run_step cargo fmt --all -- --check
-run_step cargo clippy --all-targets --all-features -- -D warnings
-run_step cargo test --workspace
+run_core_checks() {
+  require_command cargo
 
-if [[ ! -d "${MACOS_PROJECT}" ]]; then
+  if [[ ! -f "${CORE_DIR}/Cargo.toml" ]]; then
+    fail "core Cargo manifest not found at ${CORE_DIR}/Cargo.toml."
+  fi
+
+  cd "${CORE_DIR}"
+  run_step cargo fmt --all -- --check
+  run_step cargo clippy --all-targets --all-features -- -D warnings
+  run_step cargo test --workspace
+}
+
+run_xcode_tests() {
+  require_command xcodebuild
+
+  cd "${PROJECT_ROOT}"
+  run_step ./scripts/build-core.sh
+
   echo
-  echo "==> Skipping macOS app checks"
-  echo "    ${MACOS_PROJECT} does not exist yet."
-  exit 0
-fi
+  echo "==> xcodebuild test"
+  if command -v xcbeautify >/dev/null 2>&1; then
+    xcodebuild test \
+      -project apps/macos/AreaMatrix.xcodeproj \
+      -scheme AreaMatrix \
+      -destination 'platform=macOS,arch=arm64' \
+      CODE_SIGNING_ALLOWED=NO \
+      | xcbeautify --quiet
+  else
+    xcodebuild test \
+      -project apps/macos/AreaMatrix.xcodeproj \
+      -scheme AreaMatrix \
+      -destination 'platform=macOS,arch=arm64' \
+      CODE_SIGNING_ALLOWED=NO
+  fi
+}
 
-cd "${PROJECT_ROOT}"
-run_step ./scripts/build-core.sh
+run_swift_checks() {
+  require_command swiftformat
+  require_command swiftlint
 
-echo
-echo "==> xcodebuild test"
-if command -v xcbeautify >/dev/null 2>&1; then
-  xcodebuild test \
-    -project apps/macos/AreaMatrix.xcodeproj \
-    -scheme AreaMatrix \
-    -destination 'platform=macOS,arch=arm64' \
-    CODE_SIGNING_ALLOWED=NO \
-    | xcbeautify --quiet
-else
-  xcodebuild test \
-    -project apps/macos/AreaMatrix.xcodeproj \
-    -scheme AreaMatrix \
-    -destination 'platform=macOS,arch=arm64' \
-    CODE_SIGNING_ALLOWED=NO
-fi
+  cd "${MACOS_DIR}"
+  run_step swiftformat --lint .
+  run_step swiftlint --strict
+}
 
-if [[ ! -d "${MACOS_DIR}" ]]; then
-  echo "error: expected macOS source directory at ${MACOS_DIR}." >&2
-  exit 1
-fi
+run_macos_checks() {
+  if [[ ! -d "${MACOS_DIR}" ]]; then
+    echo
+    echo "==> Skipping macOS checks"
+    echo "    ${MACOS_DIR} does not exist yet."
+    return
+  fi
 
-require_command swiftformat
-require_command swiftlint
+  if [[ -d "${MACOS_PROJECT}" ]]; then
+    run_xcode_tests
+  else
+    echo
+    echo "==> Skipping Xcode build and test"
+    echo "    ${MACOS_PROJECT} does not exist yet."
+  fi
 
-cd "${MACOS_DIR}"
-run_step swiftformat --lint .
-run_step swiftlint --strict
+  run_swift_checks
+}
+
+main() {
+  run_governance_checks
+  run_core_checks
+  run_macos_checks
+}
+
+main "$@"

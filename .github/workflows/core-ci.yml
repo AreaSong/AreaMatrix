@@ -11,9 +11,17 @@ env:
   RUSTFLAGS: "-D warnings"
 
 jobs:
+  prompt-doctor:
+    name: prompt doctor
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 tasks/prompts/_shared/prompt_pipeline.py doctor
+
   fmt:
     name: cargo fmt
     runs-on: macos-14
+    needs: prompt-doctor
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -25,6 +33,7 @@ jobs:
   clippy:
     name: cargo clippy
     runs-on: macos-14
+    needs: prompt-doctor
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -39,6 +48,7 @@ jobs:
   test:
     name: cargo test
     runs-on: macos-14
+    needs: prompt-doctor
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -51,6 +61,7 @@ jobs:
   build-universal:
     name: build universal binary and bindings
     runs-on: macos-14
+    needs: prompt-doctor
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -67,6 +78,7 @@ jobs:
   coverage:
     name: coverage gate
     runs-on: macos-14
+    needs: prompt-doctor
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
