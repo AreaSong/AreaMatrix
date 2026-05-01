@@ -13,6 +13,7 @@
 		0A0000000000000000000005 /* CoreBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000017 /* CoreBridge.swift */; };
 		0A0000000000000000000006 /* AppShellModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000018 /* AppShellModel.swift */; };
 		0A0000000000000000000007 /* CoreBridgePlaceholderState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000019 /* CoreBridgePlaceholderState.swift */; };
+		0A0000000000000000000008 /* AreaMatrixShellTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000001A /* AreaMatrixShellTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -35,6 +36,7 @@
 		0A0000000000000000000017 /* CoreBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/CoreBridge.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000018 /* AppShellModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/AppShellModel.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000019 /* CoreBridgePlaceholderState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/CoreBridgePlaceholderState.swift; sourceTree = SOURCE_ROOT; };
+		0A000000000000000000001A /* AreaMatrixShellTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/AreaMatrixShellTests.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -60,6 +62,7 @@
 			children = (
 				0A0000000000000000000032 /* Shell */,
 				0A0000000000000000000033 /* Future SwiftUI Structure */,
+				0A000000000000000000003A /* Tests */,
 				0A0000000000000000000034 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -132,6 +135,14 @@
 			children = (
 			);
 			name = Resources;
+			sourceTree = "<group>";
+		};
+		0A000000000000000000003A /* Tests */ = {
+			isa = PBXGroup;
+			children = (
+				0A000000000000000000001A /* AreaMatrixShellTests.swift */,
+			);
+			name = Tests;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -244,6 +255,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				0A0000000000000000000004 /* AreaMatrixAppSmokeTests.swift in Sources */,
+				0A0000000000000000000008 /* AreaMatrixShellTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
