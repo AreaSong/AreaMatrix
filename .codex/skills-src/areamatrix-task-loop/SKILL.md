@@ -19,6 +19,7 @@ Use this skill when the work is about the automated prompt task runner rather th
 
 - [references/runbook.md](references/runbook.md): execution modes, start points, logs, and progress state.
 - [references/failure-recovery.md](references/failure-recovery.md): failed verify, blocked tasks, stale progress, and legacy state recovery.
+- [../areamatrix-git-checkpoint/SKILL.md](../areamatrix-git-checkpoint/SKILL.md): Git checkpoint policy for PASS tasks.
 
 ## Workflow
 
@@ -26,8 +27,9 @@ Use this skill when the work is about the automated prompt task runner rather th
 2. Check task-loop health with `bash scripts/check-task-loop.sh` when runner behavior changed.
 3. Check current queue state with `python3 tasks/prompts/_shared/prompt_pipeline.py status`.
 4. Check task-loop state with `bash scripts/run_area_matrix_task_pipeline.sh --status`.
-5. Load the runbook before recommending a live command.
-6. Load failure recovery before changing progress or restarting from a failed task.
+5. Load the Git checkpoint skill before changing commit or push behavior.
+6. Load the runbook before recommending a live command.
+7. Load failure recovery before changing progress or restarting from a failed task.
 
 ## Guardrails
 
@@ -36,3 +38,4 @@ Use this skill when the work is about the automated prompt task runner rather th
 - Do not treat a task as done when engineering-quality blockers remain.
 - Do not delete progress or logs unless the user explicitly wants a fresh run.
 - Do not present dry-run success as real task completion.
+- Do not continue after a Git checkpoint failure; fix or recover Git state first.

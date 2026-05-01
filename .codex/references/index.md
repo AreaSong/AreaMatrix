@@ -23,6 +23,7 @@ Codex 在 AreaMatrix 中处理任务时，按以下顺序定位上下文：
 ## Repo-local Skills
 
 - `areamatrix-task-loop`：静默任务流水线启动、监控与恢复。
+- `areamatrix-git-checkpoint`：PASS task 的 commit / push / Git 恢复策略。
 - `areamatrix-validation-driver`：按改动范围选择最小充分验证集。
 - `areamatrix-doc-sync`：检查 docs / API / UDL / prompt manifest 漂移。
 - `areamatrix-file-safety`：用户文件、`.areamatrix/` 元数据与恢复边界。
@@ -34,3 +35,4 @@ Codex 在 AreaMatrix 中处理任务时，按以下顺序定位上下文：
 - Task loop full check：`bash scripts/check-task-loop.sh`
 - Task loop：`bash scripts/run_area_matrix_task_pipeline.sh --status`
 - Task loop reset：`bash scripts/run_area_matrix_task_pipeline.sh --reset-progress`
+- Task loop Git：默认 `GIT_CHECKPOINT=commit`，上传时显式 `GIT_CHECKPOINT=push`

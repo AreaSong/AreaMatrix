@@ -344,6 +344,13 @@ def command_init_summary(args: argparse.Namespace) -> int:
         "log_root": args.log_root,
         "copy_root": args.copy_root,
         "verify_root": args.verify_root,
+        "git": {
+            "checkpoint": args.git_checkpoint,
+            "branch_policy": args.git_branch_policy,
+            "push_remote": args.git_push_remote,
+            "push_set_upstream": args.git_push_set_upstream,
+            "active_branch": args.git_active_branch,
+        },
         "phases": args.phases.split() if args.phases else [],
         "totals": {
             "task_count": args.total_tasks,
@@ -477,6 +484,11 @@ def build_parser() -> argparse.ArgumentParser:
     init_summary.add_argument("--verify-root", required=True)
     init_summary.add_argument("--phases", default="")
     init_summary.add_argument("--total-tasks", type=int, required=True)
+    init_summary.add_argument("--git-checkpoint", default="off")
+    init_summary.add_argument("--git-branch-policy", default="auto")
+    init_summary.add_argument("--git-push-remote", default="origin")
+    init_summary.add_argument("--git-push-set-upstream", default="1")
+    init_summary.add_argument("--git-active-branch", default="")
     init_summary.set_defaults(func=command_init_summary)
 
     record = subparsers.add_parser("record-summary")

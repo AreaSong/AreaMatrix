@@ -18,6 +18,7 @@ Check that:
 - `doctor` is `OK`.
 - `check-task-loop` is `OK`; it uses temporary state and must not change real progress.
 - `status` shows the expected first pending task.
+- live Git checkpoint mode has a clean worktree before execution.
 - copy-ready / verify-ready prompts have been regenerated after shared rule changes.
 - `progress_file` is `tasks/prompts/_shared/progress.json`.
 - `lock_alive` is not `yes` unless the operator intentionally has a runner active.
@@ -29,6 +30,8 @@ Check that:
 |---|---|---|
 | Cautious default | `MAX_RETRIES=0 bash scripts/run_area_matrix_task_pipeline.sh` | The run should pause at `Mission-Critical` tasks. |
 | Full silent | `RISK_POLICY=allow MAX_RETRIES=0 bash scripts/run_area_matrix_task_pipeline.sh` | The user explicitly authorized unattended execution through all risk levels. |
+| No Git checkpoint | `GIT_CHECKPOINT=off MAX_RETRIES=0 bash scripts/run_area_matrix_task_pipeline.sh` | Temporary infrastructure diagnostics only. |
+| Push checkpoints | `GIT_CHECKPOINT=push RISK_POLICY=allow MAX_RETRIES=0 bash scripts/run_area_matrix_task_pipeline.sh` | Commit and upload each PASS task after remote credentials are ready. |
 | One phase | `MAX_RETRIES=0 bash scripts/run_area_matrix_task_pipeline.sh --phase phase-1` | Validate a phase-sized slice. |
 | Small trial | `MAX_RETRIES=1 bash scripts/run_area_matrix_task_pipeline.sh --phase phase-1 --max-tasks 1` | Prove live behavior on one task. |
 | Dry run | `DRY_RUN=1 DRY_RUN_RESULT=PASS bash scripts/run_area_matrix_task_pipeline.sh --phase phase-1 --max-tasks 1` | Prove runner wiring without executing Codex. |
@@ -120,6 +123,16 @@ scripts/task_loop_state.py
 ```
 
 The shell runner delegates progress, stale, status fragments, summary, and index writes to this helper. Keep it standard-library only.
+
+Git helper:
+
+```text
+scripts/task_loop_git.py
+```
+
+Live runs default to `GIT_CHECKPOINT=commit`. A PASS task creates a task completion commit and a small evidence commit that records the completion commit hash in progress and summary. A successful run may also create a final run-summary commit so the worktree stays clean.
+
+If the current branch is `main`, `GIT_BRANCH_POLICY=auto` creates `codex/areamatrix-task-loop-<run_id>` before task output is written.
 
 Legacy state:
 

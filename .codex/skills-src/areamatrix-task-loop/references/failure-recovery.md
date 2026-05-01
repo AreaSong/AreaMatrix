@@ -81,6 +81,21 @@ This removes only stale `in_progress` entries and must not touch `completed`, `f
 
 If stale behavior itself looks wrong, run `bash scripts/check-task-loop.sh`; it validates stale detection and resume behavior against temporary progress files.
 
+## Git Checkpoint Failure
+
+Symptoms:
+
+- verify passed but the runner stops before the next task
+- progress or summary records `git_checkpoint_status=git_diff_check_failed` or `git_push_failed`
+- output references `scripts/task_loop_git.py`
+
+Action:
+
+1. Read `$areamatrix-git-checkpoint`.
+2. For `git_push_failed`, fix credentials or remote state and rerun with `GIT_CHECKPOINT=push`; preflight will push local ahead commits before continuing.
+3. For `git_diff_check_failed`, inspect `git diff --check`, fix the dirty worktree, and rerun from the same task or use `GIT_CHECKPOINT=off` only for diagnostics.
+4. Do not clear completed progress just to bypass Git evidence.
+
 ## Legacy State File
 
 If `.codex/task-loop-state.txt` exists:

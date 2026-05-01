@@ -1,0 +1,6 @@
+interface:
+  display_name: "AreaMatrix Git Checkpoint"
+  short_description: "Review task-loop commits and pushes"
+  default_prompt: "Use $areamatrix-git-checkpoint to review or recover the Git checkpoint state for this AreaMatrix task-loop run."
+policy:
+  allow_implicit_invocation: true

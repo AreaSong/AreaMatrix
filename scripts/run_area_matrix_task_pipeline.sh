@@ -15,6 +15,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="${ROOT_DIR:-"$(cd "$SCRIPT_DIR/.." && pwd)"}"
 PYTHON_BIN="${PYTHON_BIN:-python3}"
 STATE_TOOL="${STATE_TOOL:-$ROOT_DIR/scripts/task_loop_state.py}"
+GIT_TOOL="${GIT_TOOL:-$ROOT_DIR/scripts/task_loop_git.py}"
 
 MODEL="${MODEL:-gpt-5.5}"
 MODEL_REASONING_EFFORT="${MODEL_REASONING_EFFORT:-xhigh}"
@@ -31,6 +32,12 @@ LOG_ROOT="${LOG_ROOT:-$ROOT_DIR/.codex/task-loop-logs}"
 RUN_SUMMARY_ROOT="${RUN_SUMMARY_ROOT:-$ROOT_DIR/.codex/task-loop-runs}"
 PROGRESS_BACKUP_ROOT="${PROGRESS_BACKUP_ROOT:-$ROOT_DIR/.codex/task-loop-progress-backups}"
 LOCK_DIR="${LOCK_DIR:-$ROOT_DIR/.codex/task-loop-lock}"
+
+GIT_CHECKPOINT="${GIT_CHECKPOINT:-commit}"
+GIT_BRANCH_POLICY="${GIT_BRANCH_POLICY:-auto}"
+GIT_PUSH_REMOTE="${GIT_PUSH_REMOTE:-origin}"
+GIT_PUSH_SET_UPSTREAM="${GIT_PUSH_SET_UPSTREAM:-1}"
+GIT_ACTIVE_BRANCH=""
 
 # 0 表示无限重试.
 MAX_RETRIES="${MAX_RETRIES:-0}"
@@ -120,6 +127,11 @@ Env vars:
   FAILURE_CONTEXT_LINES:      提取 verify 反馈行数（默认 200）
   PYTHON_BIN:                Python 解释器，默认 python3
   STATE_TOOL:                task-loop state helper，默认 scripts/task_loop_state.py
+  GIT_TOOL:                  task-loop git helper，默认 scripts/task_loop_git.py
+  GIT_CHECKPOINT:            off/commit/push，默认 commit；dry-run 永不真实提交
+  GIT_BRANCH_POLICY:         auto/require-task-branch/current，默认 auto
+  GIT_PUSH_REMOTE:           push remote，默认 origin
+  GIT_PUSH_SET_UPSTREAM:     1/0，push 时是否 set-upstream，默认 1
   LOG_ROOT:                  日志根目录
   RUN_SUMMARY_ROOT:           运行摘要目录，默认 .codex/task-loop-runs
   PROGRESS_BACKUP_ROOT:       progress 备份目录，默认 .codex/task-loop-progress-backups
@@ -150,6 +162,10 @@ default_progress_file() {
 
 state_tool() {
   "$PYTHON_BIN" "$STATE_TOOL" "$@"
+}
+
+git_tool() {
+  "$PYTHON_BIN" "$GIT_TOOL" "$@"
 }
 
 should_write_progress() {
@@ -253,18 +269,18 @@ init_run_summary() {
     return 0
   fi
 
-  local dry_run_flag=()
-  if [ "$DRY_RUN" = "1" ]; then
-    dry_run_flag=(--dry-run)
-  fi
-
-  state_tool init-summary \
+  set -- init-summary \
     --summary-file "$RUN_SUMMARY_FILE" \
     --run-id "$RUN_ID" \
     --root-dir "$ROOT_DIR" \
     --model "$MODEL" \
-    --model-reasoning-effort "$MODEL_REASONING_EFFORT" \
-    "${dry_run_flag[@]}" \
+    --model-reasoning-effort "$MODEL_REASONING_EFFORT"
+
+  if [ "$DRY_RUN" = "1" ]; then
+    set -- "$@" --dry-run
+  fi
+
+  state_tool "$@" \
     --codex-bin "$CODEX_BIN_RESOLVED" \
     --risk-gate "$RISK_GATE" \
     --risk-policy "$RISK_POLICY" \
@@ -276,7 +292,12 @@ init_run_summary() {
     --copy-root "$COPY_ROOT" \
     --verify-root "$VERIFY_ROOT" \
     --phases "${target_phases[*]}" \
-    --total-tasks "$TOTAL_TASKS"
+    --total-tasks "$TOTAL_TASKS" \
+    --git-checkpoint "$GIT_CHECKPOINT" \
+    --git-branch-policy "$GIT_BRANCH_POLICY" \
+    --git-push-remote "$GIT_PUSH_REMOTE" \
+    --git-push-set-upstream "$GIT_PUSH_SET_UPSTREAM" \
+    --git-active-branch "$GIT_ACTIVE_BRANCH"
 }
 
 record_task_summary() {
@@ -328,16 +349,36 @@ finalize_run_summary() {
     --retries "$RETRY_TOTAL"
 }
 
+update_run_index() {
+  if [ -z "$RUN_SUMMARY_FILE" ] || [ ! -f "$RUN_SUMMARY_FILE" ]; then
+    return 0
+  fi
+
+  state_tool update-index \
+    --summary-file "$RUN_SUMMARY_FILE" \
+    --run-summary-root "$RUN_SUMMARY_ROOT"
+}
+
 cleanup() {
   local exit_code=$?
+  local final_exit="$exit_code"
+  set +e
   if [ -n "$RUN_SUMMARY_FILE" ] && [ -f "$RUN_SUMMARY_FILE" ]; then
     if [ "$exit_code" -eq 0 ]; then
       finalize_run_summary "completed" "$exit_code"
+      run_git_run_summary_checkpoint
+      local git_summary_rc=$?
+      if [ "$git_summary_rc" -ne 0 ]; then
+        final_exit="$git_summary_rc"
+      fi
     else
       finalize_run_summary "failed" "$exit_code"
     fi
   fi
   release_lock
+  if [ "$final_exit" -ne "$exit_code" ]; then
+    exit "$final_exit"
+  fi
 }
 
 trap cleanup EXIT
@@ -393,6 +434,33 @@ validate_runtime_options() {
       return 1
       ;;
   esac
+
+  case "$GIT_CHECKPOINT" in
+    off|commit|push)
+      ;;
+    *)
+      log_event ERROR "GIT_CHECKPOINT must be off, commit, or push"
+      return 1
+      ;;
+  esac
+
+  case "$GIT_BRANCH_POLICY" in
+    auto|require-task-branch|current)
+      ;;
+    *)
+      log_event ERROR "GIT_BRANCH_POLICY must be auto, require-task-branch, or current"
+      return 1
+      ;;
+  esac
+
+  case "$GIT_PUSH_SET_UPSTREAM" in
+    0|1)
+      ;;
+    *)
+      log_event ERROR "GIT_PUSH_SET_UPSTREAM must be 0 or 1"
+      return 1
+      ;;
+  esac
 }
 
 validate_state_tool() {
@@ -403,6 +471,136 @@ validate_state_tool() {
   if ! command -v "$PYTHON_BIN" >/dev/null 2>&1; then
     log_event ERROR "PYTHON_BIN not found: $PYTHON_BIN"
     return 1
+  fi
+}
+
+validate_git_tool() {
+  if [ "$GIT_CHECKPOINT" = "off" ] || [ "$DRY_RUN" = "1" ]; then
+    return 0
+  fi
+  if [ ! -f "$GIT_TOOL" ]; then
+    log_event ERROR "GIT_TOOL not found: $GIT_TOOL"
+    return 1
+  fi
+}
+
+run_git_preflight() {
+  if [ "$GIT_CHECKPOINT" = "off" ] || [ "$DRY_RUN" = "1" ]; then
+    GIT_ACTIVE_BRANCH="$(git -C "$ROOT_DIR" branch --show-current 2>/dev/null || true)"
+    return 0
+  fi
+
+  set -- preflight \
+    --root-dir "$ROOT_DIR" \
+    --mode "$GIT_CHECKPOINT" \
+    --branch-policy "$GIT_BRANCH_POLICY" \
+    --push-remote "$GIT_PUSH_REMOTE"
+  if [ "$GIT_PUSH_SET_UPSTREAM" = "1" ]; then
+    set -- "$@" --push-set-upstream
+  fi
+  set -- "$@" --run-id "$RUN_ID"
+
+  local output
+  if ! output="$(git_tool "$@")"; then
+    while IFS= read -r line; do
+      [ -n "$line" ] && log_event ERROR "$line"
+    done <<< "$output"
+    return 1
+  fi
+
+  while IFS= read -r line; do
+    [ -n "$line" ] && log_event GIT "$line"
+  done <<< "$output"
+  GIT_ACTIVE_BRANCH="$(git -C "$ROOT_DIR" branch --show-current 2>/dev/null || true)"
+}
+
+run_git_checkpoint() {
+  local label="$1"
+  local phase="$2"
+  local task_name="$3"
+  local attempt="$4"
+  local copy_log="$5"
+  local verify_log="$6"
+
+  if [ "$DRY_RUN" = "1" ]; then
+    log_event GIT "dry-run: skip Git checkpoint for $label"
+    return 0
+  fi
+
+  if [ "$GIT_CHECKPOINT" = "off" ]; then
+    log_event GIT "GIT_CHECKPOINT=off: skip Git checkpoint for $label"
+    return 0
+  fi
+
+  local output
+  local rc
+  set -- checkpoint \
+    --root-dir "$ROOT_DIR" \
+    --mode "$GIT_CHECKPOINT" \
+    --push-remote "$GIT_PUSH_REMOTE"
+  if [ "$GIT_PUSH_SET_UPSTREAM" = "1" ]; then
+    set -- "$@" --push-set-upstream
+  fi
+  set -- "$@" \
+    --label "$label" \
+    --phase "$phase" \
+    --task-name "$task_name" \
+    --attempts "$attempt" \
+    --run-id "$RUN_ID" \
+    --copy-log "$copy_log" \
+    --verify-log "$verify_log" \
+    --progress-file "$PROGRESS_FILE" \
+    --summary-file "$RUN_SUMMARY_FILE"
+
+  set +e
+  output="$(git_tool "$@")"
+  rc=$?
+  set -e
+
+  while IFS= read -r line; do
+    [ -n "$line" ] && log_event GIT "$line"
+  done <<< "$output"
+
+  if [ "$rc" -ne 0 ]; then
+    log_event ERROR "Git checkpoint failed for $label; fix Git state, then resume from this task."
+    return "$rc"
+  fi
+}
+
+run_git_run_summary_checkpoint() {
+  if [ "$DRY_RUN" = "1" ] || [ "$GIT_CHECKPOINT" = "off" ]; then
+    return 0
+  fi
+  if [ -z "$RUN_SUMMARY_FILE" ] || [ ! -f "$RUN_SUMMARY_FILE" ]; then
+    return 0
+  fi
+
+  local output
+  local rc
+  set -- commit-run-summary \
+    --root-dir "$ROOT_DIR" \
+    --mode "$GIT_CHECKPOINT" \
+    --push-remote "$GIT_PUSH_REMOTE"
+  if [ "$GIT_PUSH_SET_UPSTREAM" = "1" ]; then
+    set -- "$@" --push-set-upstream
+  fi
+  set -- "$@" \
+    --run-id "$RUN_ID" \
+    --summary-file "$RUN_SUMMARY_FILE" \
+    --run-summary-root "$RUN_SUMMARY_ROOT"
+
+  set +e
+  output="$(git_tool "$@")"
+  rc=$?
+  set -e
+
+  while IFS= read -r line; do
+    [ -n "$line" ] && log_event GIT "$line"
+  done <<< "$output"
+
+  if [ "$rc" -ne 0 ]; then
+    log_event ERROR "Git run-summary checkpoint failed for run_id=$RUN_ID"
+    return "$rc"
   fi
 }
 
@@ -631,6 +829,13 @@ print_launch_header() {
   log_event INFO "RUN_SUMMARY_FILE=$RUN_SUMMARY_FILE"
   log_event INFO "LOCK_DIR=$LOCK_DIR"
   log_event INFO "RISK_GATE=$RISK_GATE RISK_POLICY=$RISK_POLICY"
+  log_event INFO "GIT_CHECKPOINT=$GIT_CHECKPOINT GIT_BRANCH_POLICY=$GIT_BRANCH_POLICY"
+  if [ "$GIT_CHECKPOINT" = "push" ]; then
+    log_event INFO "GIT_PUSH_REMOTE=$GIT_PUSH_REMOTE GIT_PUSH_SET_UPSTREAM=$GIT_PUSH_SET_UPSTREAM"
+  fi
+  if [ -n "$GIT_ACTIVE_BRANCH" ]; then
+    log_event INFO "GIT_ACTIVE_BRANCH=$GIT_ACTIVE_BRANCH"
+  fi
   log_event INFO "PHASES=${target_phases[*]}"
   log_event INFO "TOTAL_TASKS=$TOTAL_TASKS"
   if [ -n "$START_FROM" ]; then
@@ -910,6 +1115,7 @@ main() {
 
   validate_runtime_options || return 1
   validate_state_tool || return 1
+  validate_git_tool || return 1
 
   if [ "$STATUS_ONLY" = "1" ]; then
     print_loop_status
@@ -936,6 +1142,7 @@ main() {
   if [ "$DRY_RUN" != "1" ]; then
     resolve_codex_bin || return 1
   fi
+  run_git_preflight || return 1
 
   if [ "$RESUME_FAILED" = "1" ]; then
     failed_label="$(first_failed_task)"
@@ -1072,6 +1279,8 @@ main() {
           mark_task_progress "$label" "completed" "自动执行验收通过：attempt=$attempt" "$copy_log" "$verify_log" "$attempt" "$risk"
           DONE_TASKS=$((DONE_TASKS + 1))
           record_task_summary "$label" "$phase" "$task_name" "completed" "$attempt" "$risk" "$copy_log" "$verify_log" "自动执行验收通过"
+          update_run_index
+          run_git_checkpoint "$label" "$phase" "$task_name" "$attempt" "$copy_log" "$verify_log"
           print_task_progress "PASS" "$label" "$attempt" "$copy_log" "$verify_log"
           break
         fi

@@ -16,6 +16,7 @@
 ## 当前 Skills
 
 - `areamatrix-task-loop`：任务循环、运行锁、stale progress、summary index、自检和恢复入口。
+- `areamatrix-git-checkpoint`：PASS task 的 Git checkpoint、commit/push、dirty worktree 和恢复策略。
 - `areamatrix-validation-driver`
 - `areamatrix-doc-sync`
 - `areamatrix-file-safety`
