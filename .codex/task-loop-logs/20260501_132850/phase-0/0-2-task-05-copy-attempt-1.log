@@ -1,0 +1,27 @@
+一、执行结论：已完成。
+
+二、执行范围：单任务 `0-2/task-05`。仅修改 [core/tests/smoke.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/smoke.rs:1)，把既有过宽 smoke test 收敛为最小 compile/link smoke test。
+
+三、完成情况：
+- 核对清单 1：已满足，`core/tests/smoke.rs` 保留最小 smoke test。
+- 核对清单 2：已满足，只验证 core crate 能被 integration test 编译和链接。
+- 核对清单 3：已满足，未构造 C1 类型，未调用 placeholder C1 API，未伪造业务能力通过。
+- 完成标准：`cd core && cargo test --workspace` 通过。
+- Forbidden Touches：未触碰 `apps/**`。
+
+四、工程质量：
+- 代码结构清晰，无新增抽象、mock-only、硬编码通过态或一次性脚本。
+- 未新增 public Rust API，因此无 rustdoc 同步需求。
+- 本任务无业务错误路径；风险控制点是避免 smoke test 证明未来能力，已收敛。
+- 现有 dirty 文件 `.codex/task-loop-runs/20260501_132850/summary.json` 和 `tasks/prompts/_shared/progress.json` 是本轮开始前已存在状态，未作为本任务改动处理。
+
+五、验证情况：
+- `cd core && cargo fmt --all -- --check`：通过。
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过。
+- `cd core && cargo test --workspace`：通过。
+- `git diff --check`：通过。
+
+六、风险与后续：
+- 剩余风险：`core/tests/validate_repo_path_contract.rs` 是仓库既有已跟踪测试，本轮未修改；它仍会随 `cargo test --workspace` 运行，但不属于本 task 新增 smoke test。
+- 建议下一个任务：`0-2/task-06`。
+
