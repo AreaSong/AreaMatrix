@@ -32,3 +32,4 @@ Codex 在 AreaMatrix 中处理任务时，按以下顺序定位上下文：
 - Skills：`bash scripts/check-skills.sh`
 - Prompt runner：`python3 tasks/prompts/_shared/prompt_pipeline.py doctor`
 - Task loop：`bash scripts/run_area_matrix_task_pipeline.sh --status`
+- Task loop reset：`bash scripts/run_area_matrix_task_pipeline.sh --reset-progress`

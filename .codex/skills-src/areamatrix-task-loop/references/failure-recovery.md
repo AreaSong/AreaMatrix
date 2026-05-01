@@ -57,15 +57,25 @@ Symptoms:
 
 - `prompt_pipeline.py status` and expected queue position disagree
 - a task is recorded `in_progress` after an interrupted process
+- `bash scripts/run_area_matrix_task_pipeline.sh --status` reports `stale_in_progress`
 
 Action:
 
 1. Run `bash scripts/run_area_matrix_task_pipeline.sh --status`.
-2. Inspect `progress.json` entry for the affected task.
-3. Use the latest copy and verify logs to decide whether the task is completed, failed, blocked, or pending.
-4. Prefer rerunning from the task label over manual JSON edits.
+2. Check whether `lock_alive` is `yes`; if so, do not start a second runner.
+3. Inspect `progress.json` entry and the latest copy/verify logs for the affected task.
+4. Prefer `bash scripts/run_area_matrix_task_pipeline.sh --resume-stale` over manual JSON edits.
+5. If the user wants a clean restart, use `bash scripts/run_area_matrix_task_pipeline.sh --reset-progress`; it backs up progress and preserves logs.
 
 Manual progress edits are allowed only when the user explicitly asks for state repair.
+
+If the stale entry is only an interrupted `in_progress` record and the user does not want to resume it, use:
+
+```bash
+bash scripts/run_area_matrix_task_pipeline.sh --clear-stale
+```
+
+This removes only stale `in_progress` entries and must not touch `completed`, `failed`, or `blocked`.
 
 ## Legacy State File
 

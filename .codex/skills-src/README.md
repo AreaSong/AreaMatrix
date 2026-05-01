@@ -15,7 +15,7 @@
 
 ## 当前 Skills
 
-- `areamatrix-task-loop`
+- `areamatrix-task-loop`：任务循环、运行锁、stale progress、summary 和恢复入口。
 - `areamatrix-validation-driver`
 - `areamatrix-doc-sync`
 - `areamatrix-file-safety`

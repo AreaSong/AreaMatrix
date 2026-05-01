@@ -14,6 +14,8 @@
 - 验收必须通过（日志里出现 `VERIFY_RESULT: PASS`）才会继续下一任务。
 - 失败则会把功能、验证和工程质量失败摘要注入下一次 copy 提示，继续重试修复。
 - 进度统一写入 `tasks/prompts/_shared/progress.json`，可直接被 `prompt_pipeline.py status/next` 读取。
+- 每次执行会持有 `.codex/task-loop-lock/` 运行锁，避免两个 runner 同时写 progress/logs。
+- 每次执行会写 `.codex/task-loop-runs/<run_id>/summary.json`，作为可上传、可续工的运行摘要。
 
 默认模型：
 - `MODEL=gpt-5.5`
@@ -117,16 +119,35 @@ tasks/prompts/_shared/progress.json
 bash scripts/run_area_matrix_task_pipeline.sh --status
 ```
 
+状态输出会同时显示：
+
+- 当前运行锁是否存在、锁里的 pid 是否仍存活；
+- 最新日志目录；
+- progress 里的 completed / failed / blocked / in_progress 计数；
+- 是否存在 stale in_progress，也就是没有活锁且 verify 未 PASS 的中断残留。
+
 从第一个失败任务恢复：
 
 ```bash
 bash scripts/run_area_matrix_task_pipeline.sh --resume-failed
 ```
 
-如果要从头开始，可以先把对应 task 进度改回 pending，或在确认不需要历史进度时清理进度文件：
+从第一个 stale in_progress 任务恢复：
 
 ```bash
-rm -f tasks/prompts/_shared/progress.json
+bash scripts/run_area_matrix_task_pipeline.sh --resume-stale
+```
+
+只清理 stale in_progress，不动 completed / failed / blocked：
+
+```bash
+bash scripts/run_area_matrix_task_pipeline.sh --clear-stale
+```
+
+如果要从头开始，使用内置重置命令。它会先备份当前 progress，再写入空进度；不会删除历史日志：
+
+```bash
+bash scripts/run_area_matrix_task_pipeline.sh --reset-progress
 ```
 
 ---

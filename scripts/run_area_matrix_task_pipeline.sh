@@ -26,6 +26,9 @@ PROGRESS_FILE="${PROGRESS_FILE:-$ROOT_DIR/tasks/prompts/_shared/progress.json}"
 # 兼容旧版本脚本的纯文本完成记录；新进度统一写入 PROGRESS_FILE。
 STATE_FILE="${STATE_FILE:-$ROOT_DIR/.codex/task-loop-state.txt}"
 LOG_ROOT="${LOG_ROOT:-$ROOT_DIR/.codex/task-loop-logs}"
+RUN_SUMMARY_ROOT="${RUN_SUMMARY_ROOT:-$ROOT_DIR/.codex/task-loop-runs}"
+PROGRESS_BACKUP_ROOT="${PROGRESS_BACKUP_ROOT:-$ROOT_DIR/.codex/task-loop-progress-backups}"
+LOCK_DIR="${LOCK_DIR:-$ROOT_DIR/.codex/task-loop-lock}"
 
 # 0 表示无限重试.
 MAX_RETRIES="${MAX_RETRIES:-0}"
@@ -58,9 +61,15 @@ DRY_RUN_MAX_ATTEMPTS="${DRY_RUN_MAX_ATTEMPTS:-10}"
 
 STATUS_ONLY=0
 RESUME_FAILED=0
+RESUME_STALE=0
+CLEAR_STALE=0
+RESET_PROGRESS=0
 
 RUN_ID=""
 SESSION_LOG_ROOT=""
+RUN_SUMMARY_FILE=""
+LOCK_ACQUIRED=0
+ORIGINAL_COMMAND=""
 
 timestamp() {
   date '+%F %T'
@@ -80,8 +89,11 @@ Usage:
 
 Options:
   --dry-run                 仅模拟执行，不调用 codex（默认 0）
+  --clear-stale             清理无活进程且未完成的 in_progress 记录
   --help, -h                输出帮助
   --resume-failed           从 progress.json 中第一个 failed task 恢复
+  --resume-stale            从 progress.json 中第一个 stale in_progress task 恢复
+  --reset-progress          备份并清空 progress.json，从 0 开始
   --risk-gate <level>       风险门禁范围：mission-critical/high/none
   --risk-policy <policy>    风险命中策略：pause/skip/allow
   --start-from <label>      从某个 task 开始，例如 phase-1/1-1-task-01
@@ -105,6 +117,9 @@ Env vars:
   DRY_RUN_VERIFY_PREVIEW_LINES: dry-run 时预览 verify prompt 行数
   FAILURE_CONTEXT_LINES:      提取 verify 反馈行数（默认 200）
   LOG_ROOT:                  日志根目录
+  RUN_SUMMARY_ROOT:           运行摘要目录，默认 .codex/task-loop-runs
+  PROGRESS_BACKUP_ROOT:       progress 备份目录，默认 .codex/task-loop-progress-backups
+  LOCK_DIR:                  运行锁目录，默认 .codex/task-loop-lock
   PROGRESS_FILE:             统一进度文件，默认 tasks/prompts/_shared/progress.json
   STATE_FILE:                旧版完成记录文件，仅兼容读取
 
@@ -114,13 +129,451 @@ When RISK_POLICY=allow:
 USAGE
 }
 
+ensure_run_id() {
+  if [ -z "$RUN_ID" ]; then
+    local base_run_id
+    base_run_id="$(date '+%Y%m%d_%H%M%S')"
+    RUN_ID="$base_run_id"
+    if [ -e "$LOG_ROOT/$RUN_ID" ] || [ -e "$RUN_SUMMARY_ROOT/$RUN_ID" ]; then
+      RUN_ID="${base_run_id}_$$"
+    fi
+  fi
+}
+
+default_progress_file() {
+  printf '%s\n' "$ROOT_DIR/tasks/prompts/_shared/progress.json"
+}
+
+should_write_progress() {
+  if [ "$DRY_RUN" != "1" ]; then
+    return 0
+  fi
+
+  # Dry-run must not mutate the real queue by accident. Tests can still pass a
+  # temporary PROGRESS_FILE to validate the progress writer end to end.
+  [ "$PROGRESS_FILE" != "$(default_progress_file)" ]
+}
+
 init_run_paths() {
+  ensure_run_id
   mkdir -p "$(dirname "$PROGRESS_FILE")"
   mkdir -p "$LOG_ROOT"
-  RUN_ID="$(date '+%Y%m%d_%H%M%S')"
+  mkdir -p "$RUN_SUMMARY_ROOT"
   SESSION_LOG_ROOT="$LOG_ROOT/$RUN_ID"
+  RUN_SUMMARY_FILE="$RUN_SUMMARY_ROOT/$RUN_ID/summary.json"
   mkdir -p "$SESSION_LOG_ROOT"
+  mkdir -p "$(dirname "$RUN_SUMMARY_FILE")"
 }
+
+is_pid_alive() {
+  local pid="$1"
+  [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null
+}
+
+lock_pid() {
+  if [ -f "$LOCK_DIR/pid" ]; then
+    tr -d '[:space:]' < "$LOCK_DIR/pid"
+  fi
+}
+
+print_lock_status() {
+  if [ ! -d "$LOCK_DIR" ]; then
+    echo "- lock: none"
+    return 0
+  fi
+
+  local pid run_id operation started_at command alive
+  pid="$(lock_pid)"
+  run_id="$(cat "$LOCK_DIR/run_id" 2>/dev/null || true)"
+  operation="$(cat "$LOCK_DIR/operation" 2>/dev/null || true)"
+  started_at="$(cat "$LOCK_DIR/started_at" 2>/dev/null || true)"
+  command="$(cat "$LOCK_DIR/command" 2>/dev/null || true)"
+  alive="no"
+  if is_pid_alive "$pid"; then
+    alive="yes"
+  fi
+
+  echo "- lock: present"
+  echo "- lock_alive: $alive"
+  echo "- lock_pid: ${pid:-unknown}"
+  echo "- lock_run_id: ${run_id:-unknown}"
+  echo "- lock_operation: ${operation:-unknown}"
+  echo "- lock_started_at: ${started_at:-unknown}"
+  if [ -n "$command" ]; then
+    echo "- lock_command: $command"
+  fi
+}
+
+acquire_lock() {
+  local operation="$1"
+  ensure_run_id
+  mkdir -p "$(dirname "$LOCK_DIR")"
+
+  if mkdir "$LOCK_DIR" 2>/dev/null; then
+    LOCK_ACQUIRED=1
+  else
+    local pid
+    pid="$(lock_pid)"
+    if is_pid_alive "$pid"; then
+      log_event ERROR "task loop lock is held by live pid=$pid"
+      log_event ERROR "lock_dir=$LOCK_DIR"
+      return 9
+    fi
+    log_event WARN "removing stale task loop lock: $LOCK_DIR"
+    rm -rf "$LOCK_DIR"
+    if ! mkdir "$LOCK_DIR" 2>/dev/null; then
+      log_event ERROR "failed to acquire task loop lock: $LOCK_DIR"
+      return 9
+    fi
+    LOCK_ACQUIRED=1
+  fi
+
+  printf '%s\n' "$$" > "$LOCK_DIR/pid"
+  printf '%s\n' "$RUN_ID" > "$LOCK_DIR/run_id"
+  printf '%s\n' "$operation" > "$LOCK_DIR/operation"
+  date -u '+%Y-%m-%dT%H:%M:%SZ' > "$LOCK_DIR/started_at"
+  printf '%s\n' "${ORIGINAL_COMMAND:-$0}" > "$LOCK_DIR/command"
+}
+
+release_lock() {
+  if [ "$LOCK_ACQUIRED" != "1" ]; then
+    return 0
+  fi
+
+  local pid
+  pid="$(lock_pid)"
+  if [ "$pid" = "$$" ]; then
+    rm -rf "$LOCK_DIR"
+  fi
+  LOCK_ACQUIRED=0
+}
+
+backup_progress() {
+  local reason="$1"
+  if [ ! -f "$PROGRESS_FILE" ]; then
+    log_event INFO "progress file does not exist; no backup needed"
+    return 0
+  fi
+
+  mkdir -p "$PROGRESS_BACKUP_ROOT"
+  local backup_file
+  backup_file="$PROGRESS_BACKUP_ROOT/progress-before-${reason}-$(date '+%Y%m%d-%H%M%S').json"
+  cp "$PROGRESS_FILE" "$backup_file"
+  log_event INFO "progress backup: $backup_file"
+}
+
+reset_progress() {
+  backup_progress "reset"
+  mkdir -p "$(dirname "$PROGRESS_FILE")"
+  python3 - "$PROGRESS_FILE" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+Path(sys.argv[1]).write_text(
+    json.dumps({"version": 1, "tasks": {}}, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+    encoding="utf-8",
+)
+PY
+  log_event INFO "progress reset: $PROGRESS_FILE"
+}
+
+progress_stale_tool() {
+  local mode="$1"
+  python3 - "$mode" "$PROGRESS_FILE" "$LOCK_DIR" <<'PY'
+import json
+import os
+import re
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+
+mode = sys.argv[1]
+progress_path = Path(sys.argv[2])
+lock_dir = Path(sys.argv[3])
+
+
+def task_key(label: str) -> tuple[int, int, int, str]:
+    try:
+        batch, task = label.split("/task-", 1)
+        major, minor = batch.split("-", 1)
+        return int(major), int(minor), int(task), label
+    except ValueError:
+        return 999, 999, 999, label
+
+
+def read_text(path: Path) -> str:
+    try:
+        return path.read_text(encoding="utf-8").strip()
+    except OSError:
+        return ""
+
+
+def lock_info() -> dict[str, object]:
+    pid_text = read_text(lock_dir / "pid")
+    run_id = read_text(lock_dir / "run_id")
+    alive = False
+    if pid_text.isdigit():
+        try:
+            os.kill(int(pid_text), 0)
+            alive = True
+        except OSError:
+            alive = False
+    return {"pid": pid_text, "run_id": run_id, "alive": alive}
+
+
+def verify_result(path_value: object) -> str:
+    if not isinstance(path_value, str) or not path_value:
+        return "missing"
+    path = Path(path_value)
+    if not path.exists():
+        return "missing"
+    try:
+        text = path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return "unreadable"
+    if re.search(r"(?m)^[ \t]*VERIFY_RESULT:[ \t]*PASS[ \t]*$", text):
+        return "pass"
+    if re.search(r"(?m)^[ \t]*VERIFY_RESULT:[ \t]*FAIL[ \t]*$", text):
+        return "fail"
+    return "unfinished"
+
+
+def is_stale(label: str, entry: dict[str, object], lock: dict[str, object]) -> tuple[bool, str]:
+    if entry.get("status") != "in_progress":
+        return False, ""
+    active = bool(lock["alive"]) and entry.get("run_id") == lock.get("run_id")
+    result = verify_result(entry.get("verify_log"))
+    copy_log = entry.get("copy_log")
+    copy_exists = isinstance(copy_log, str) and bool(copy_log) and Path(copy_log).exists()
+    if active:
+        return False, "active lock"
+    if result == "pass":
+        return False, "verify log has PASS; inspect before changing progress"
+    reason = f"no active matching lock; copy_log={'exists' if copy_exists else 'missing'}; verify={result}"
+    return True, reason
+
+
+if progress_path.exists():
+    data = json.loads(progress_path.read_text(encoding="utf-8"))
+else:
+    data = {"version": 1, "tasks": {}}
+
+tasks = data.get("tasks", {})
+if not isinstance(tasks, dict):
+    raise SystemExit("invalid progress file: tasks must be an object")
+
+lock = lock_info()
+stale: list[tuple[str, dict[str, object], str]] = []
+for label, value in tasks.items():
+    if not isinstance(value, dict):
+        continue
+    stale_flag, reason = is_stale(label, value, lock)
+    if stale_flag:
+        stale.append((label, value, reason))
+
+stale.sort(key=lambda item: task_key(item[0]))
+
+if mode == "first":
+    if stale:
+        print(stale[0][0])
+    raise SystemExit
+
+if mode == "clear":
+    for label, _, _ in stale:
+        tasks.pop(label, None)
+    data["tasks"] = tasks
+    data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    progress_path.write_text(json.dumps(data, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    print(len(stale))
+    raise SystemExit
+
+if mode == "status":
+    print(f"- stale_in_progress: {len(stale)}")
+    for label, entry, reason in stale[:5]:
+        note = entry.get("note", "")
+        suffix = f" - {note}" if note else ""
+        print(f"- recent_stale_in_progress: {label}{suffix} ({reason})")
+    if stale:
+        print("- stale_recovery: bash scripts/run_area_matrix_task_pipeline.sh --resume-stale")
+        print("- stale_clear: bash scripts/run_area_matrix_task_pipeline.sh --clear-stale")
+    raise SystemExit
+
+raise SystemExit(f"unknown stale mode: {mode}")
+PY
+}
+
+first_stale_task() {
+  progress_stale_tool first
+}
+
+clear_stale_tasks() {
+  backup_progress "clear-stale"
+  mkdir -p "$(dirname "$PROGRESS_FILE")"
+  local cleared
+  cleared="$(progress_stale_tool clear)"
+  log_event INFO "cleared stale in_progress records: $cleared"
+}
+
+init_run_summary() {
+  if [ -z "$RUN_SUMMARY_FILE" ]; then
+    return 0
+  fi
+
+  python3 - "$RUN_SUMMARY_FILE" "$RUN_ID" "$ROOT_DIR" "$MODEL" "$MODEL_REASONING_EFFORT" \
+    "$DRY_RUN" "$CODEX_BIN_RESOLVED" "$RISK_GATE" "$RISK_POLICY" "$MAX_RETRIES" "$MAX_TASKS" \
+    "$START_FROM" "$PROGRESS_FILE" "$SESSION_LOG_ROOT" "$COPY_ROOT" "$VERIFY_ROOT" "${target_phases[*]}" "$TOTAL_TASKS" <<'PY'
+import json
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+
+(
+    path,
+    run_id,
+    root_dir,
+    model,
+    reasoning,
+    dry_run,
+    codex_bin,
+    risk_gate,
+    risk_policy,
+    max_retries,
+    max_tasks,
+    start_from,
+    progress_file,
+    log_root,
+    copy_root,
+    verify_root,
+    phases,
+    total_tasks,
+) = sys.argv[1:]
+
+now = datetime.now(timezone.utc).isoformat()
+summary = {
+    "version": 1,
+    "run_id": run_id,
+    "status": "running",
+    "started_at": now,
+    "updated_at": now,
+    "root_dir": root_dir,
+    "model": model,
+    "model_reasoning_effort": reasoning,
+    "dry_run": dry_run == "1",
+    "codex_bin": codex_bin,
+    "risk_gate": risk_gate,
+    "risk_policy": risk_policy,
+    "max_retries": int(max_retries) if max_retries.isdigit() else max_retries,
+    "max_tasks": int(max_tasks) if max_tasks.isdigit() else max_tasks,
+    "start_from": start_from,
+    "progress_file": progress_file,
+    "log_root": log_root,
+    "copy_root": copy_root,
+    "verify_root": verify_root,
+    "phases": phases.split() if phases else [],
+    "totals": {
+        "task_count": int(total_tasks) if total_tasks.isdigit() else total_tasks,
+        "completed_in_run": 0,
+        "retries": 0,
+    },
+    "tasks": {},
+}
+Path(path).write_text(json.dumps(summary, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+PY
+}
+
+record_task_summary() {
+  local label="$1"
+  local phase="$2"
+  local task_name="$3"
+  local status="$4"
+  local attempt="$5"
+  local risk="$6"
+  local copy_log="$7"
+  local verify_log="$8"
+  local note="$9"
+
+  if [ -z "$RUN_SUMMARY_FILE" ]; then
+    return 0
+  fi
+
+  python3 - "$RUN_SUMMARY_FILE" "$label" "$phase" "$task_name" "$status" "$attempt" "$risk" "$copy_log" "$verify_log" "$note" "$DONE_TASKS" "$RETRY_TOTAL" <<'PY'
+import json
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+
+path = Path(sys.argv[1])
+label, phase, task_name, status, attempt, risk, copy_log, verify_log, note, done, retries = sys.argv[2:]
+if not path.exists():
+    raise SystemExit
+data = json.loads(path.read_text(encoding="utf-8"))
+now = datetime.now(timezone.utc).isoformat()
+tasks = data.setdefault("tasks", {})
+tasks[label] = {
+    "phase": phase,
+    "task_name": task_name,
+    "status": status,
+    "attempts": int(attempt) if attempt.isdigit() else attempt,
+    "risk": risk,
+    "copy_log": copy_log,
+    "verify_log": verify_log,
+    "note": note,
+    "updated_at": now,
+}
+data["updated_at"] = now
+totals = data.setdefault("totals", {})
+totals["completed_in_run"] = int(done) if done.isdigit() else done
+totals["retries"] = int(retries) if retries.isdigit() else retries
+path.write_text(json.dumps(data, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+PY
+}
+
+finalize_run_summary() {
+  local status="$1"
+  local exit_code="$2"
+  local note="${3:-}"
+
+  if [ -z "$RUN_SUMMARY_FILE" ] || [ ! -f "$RUN_SUMMARY_FILE" ]; then
+    return 0
+  fi
+
+  python3 - "$RUN_SUMMARY_FILE" "$status" "$exit_code" "$note" "$DONE_TASKS" "$RETRY_TOTAL" <<'PY'
+import json
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+
+path = Path(sys.argv[1])
+status, exit_code, note, done, retries = sys.argv[2:]
+data = json.loads(path.read_text(encoding="utf-8"))
+now = datetime.now(timezone.utc).isoformat()
+data["status"] = status
+data["exit_code"] = int(exit_code) if exit_code.lstrip("-").isdigit() else exit_code
+data["finished_at"] = now
+data["updated_at"] = now
+if note:
+    data["note"] = note
+totals = data.setdefault("totals", {})
+totals["completed_in_run"] = int(done) if done.isdigit() else done
+totals["retries"] = int(retries) if retries.isdigit() else retries
+path.write_text(json.dumps(data, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+PY
+}
+
+cleanup() {
+  local exit_code=$?
+  if [ -n "$RUN_SUMMARY_FILE" ] && [ -f "$RUN_SUMMARY_FILE" ]; then
+    if [ "$exit_code" -eq 0 ]; then
+      finalize_run_summary "completed" "$exit_code"
+    else
+      finalize_run_summary "failed" "$exit_code"
+    fi
+  fi
+  release_lock
+}
+
+trap cleanup EXIT
 
 task_name_to_label() {
   local task_name="$1"
@@ -257,7 +710,7 @@ mark_task_progress() {
   local attempts="${6:-0}"
   local risk="${7:-}"
 
-  if [ "$DRY_RUN" = "1" ]; then
+  if ! should_write_progress; then
     return 0
   fi
 
@@ -343,6 +796,8 @@ PY
 print_loop_status() {
   echo "Task loop status"
   echo "- progress_file: $PROGRESS_FILE"
+  echo "- lock_dir: $LOCK_DIR"
+  print_lock_status
   echo "- legacy_state_file: $STATE_FILE"
   if [ -f "$STATE_FILE" ]; then
     echo "- legacy_completed_count: $(wc -l < "$STATE_FILE" | tr -d '[:space:]')"
@@ -351,7 +806,10 @@ print_loop_status() {
   fi
 
   local latest_log
-  latest_log="$(find "$LOG_ROOT" -maxdepth 1 -type d -name '20*' 2>/dev/null | sort | tail -n 1)"
+  latest_log=""
+  if [ -d "$LOG_ROOT" ]; then
+    latest_log="$(find "$LOG_ROOT" -maxdepth 1 -type d -name '20*' 2>/dev/null | sort | tail -n 1)"
+  fi
   if [ -n "$latest_log" ]; then
     echo "- latest_log_dir: $latest_log"
   else
@@ -386,6 +844,7 @@ for _, label, status, note in sorted(recent, reverse=True)[:5]:
     suffix = f" - {note}" if note else ""
     print(f"- recent_{status}: {label}{suffix}")
 PY
+  progress_stale_tool status
 
   echo
   python3 "$ROOT_DIR/tasks/prompts/_shared/prompt_pipeline.py" status || true
@@ -524,6 +983,8 @@ print_launch_header() {
   log_event INFO "PROGRESS_FILE=$PROGRESS_FILE"
   log_event INFO "LEGACY_STATE_FILE=$STATE_FILE"
   log_event INFO "LOG_ROOT=$SESSION_LOG_ROOT"
+  log_event INFO "RUN_SUMMARY_FILE=$RUN_SUMMARY_FILE"
+  log_event INFO "LOCK_DIR=$LOCK_DIR"
   log_event INFO "RISK_GATE=$RISK_GATE RISK_POLICY=$RISK_POLICY"
   log_event INFO "PHASES=${target_phases[*]}"
   log_event INFO "TOTAL_TASKS=$TOTAL_TASKS"
@@ -625,7 +1086,7 @@ build_copy_retry_prompt() {
   feedback="$(extract_verify_feedback "$verify_log")"
 
   cat <<EOF
-你正在重试同一个任务（第 ${attempt} 次尝试）。任务标签：${label}（文件：${task_name}.md）。
+你正在对同一个任务进行 repair retry（修复重试，第 ${attempt} 次尝试）。任务标签：${label}（文件：${task_name}.md）。
 本次重试只允许修复上一次验收失败问题，不要改写任务目标外的范围。
 本次重试必须同时修复功能失败、验收证据失败和工程质量失败；重新读取工程质量规则与编码规范。
 以下是上一次验收日志里的失败摘要（请直接按这些问题“全部全面修复”）：
@@ -700,6 +1161,8 @@ build_phase_filter() {
 }
 
 main() {
+  ORIGINAL_COMMAND="$0 $*"
+
   if [ "${1:-}" = "--help" ] || [ "${1:-}" = "-h" ]; then
     usage
     return 0
@@ -711,8 +1174,20 @@ main() {
         DRY_RUN=1
         shift
         ;;
+      --clear-stale)
+        CLEAR_STALE=1
+        shift
+        ;;
       --resume-failed)
         RESUME_FAILED=1
+        shift
+        ;;
+      --resume-stale)
+        RESUME_STALE=1
+        shift
+        ;;
+      --reset-progress)
+        RESET_PROGRESS=1
         shift
         ;;
       --risk-gate)
@@ -795,6 +1270,23 @@ main() {
     return 0
   fi
 
+  if [ "$RESET_PROGRESS" = "1" ]; then
+    ensure_run_id
+    acquire_lock "reset-progress" || return 1
+    reset_progress
+    return 0
+  fi
+
+  if [ "$CLEAR_STALE" = "1" ]; then
+    ensure_run_id
+    acquire_lock "clear-stale" || return 1
+    clear_stale_tasks
+    return 0
+  fi
+
+  ensure_run_id
+  acquire_lock "run" || return 1
+
   if [ "$DRY_RUN" != "1" ]; then
     resolve_codex_bin || return 1
   fi
@@ -809,9 +1301,20 @@ main() {
     log_event INFO "resume failed task: $START_FROM"
   fi
 
+  if [ "$RESUME_STALE" = "1" ]; then
+    stale_label="$(first_stale_task)"
+    if [ -z "$stale_label" ]; then
+      log_event ERROR "no stale in_progress task found in $PROGRESS_FILE"
+      return 1
+    fi
+    START_FROM="$stale_label"
+    log_event INFO "resume stale task: $START_FROM"
+  fi
+
   init_run_paths
   build_phase_filter
   bootstrap_counts
+  init_run_summary
   print_launch_header
 
   if [ -n "$START_FROM" ]; then
@@ -880,8 +1383,10 @@ main() {
       else
         gate_result=$?
         if [ "$gate_result" -eq 2 ]; then
+          record_task_summary "$label" "$phase" "$task_name" "blocked" "0" "$risk" "" "" "风险门禁跳过"
           continue
         fi
+        record_task_summary "$label" "$phase" "$task_name" "blocked" "0" "$risk" "" "" "风险门禁暂停"
         exit 2
       fi
 
@@ -891,9 +1396,16 @@ main() {
         copy_log="$SESSION_LOG_ROOT/$phase/${task_name}-copy-attempt-${attempt}.log"
         verify_log="$SESSION_LOG_ROOT/$phase/${task_name}-verify-attempt-${attempt}.log"
 
-        log_event TASK "start $label"
+        if [ "$attempt" -gt 1 ]; then
+          log_event REPAIR "repair retry $label attempt=$attempt"
+          progress_note="修复重试中：attempt=$attempt risk=$risk"
+        else
+          log_event TASK "start $label"
+          progress_note="执行中：attempt=$attempt risk=$risk"
+        fi
         log_event TASK "copy prompt -> $copy_log"
-        mark_task_progress "$label" "in_progress" "执行中：attempt=$attempt risk=$risk" "$copy_log" "$verify_log" "$attempt" "$risk"
+        mark_task_progress "$label" "in_progress" "$progress_note" "$copy_log" "$verify_log" "$attempt" "$risk"
+        record_task_summary "$label" "$phase" "$task_name" "in_progress" "$attempt" "$risk" "$copy_log" "$verify_log" "$progress_note"
 
         previous_verify_log=""
         if [ "$attempt" -gt 1 ]; then
@@ -913,16 +1425,19 @@ main() {
         if is_verify_pass "$verify_log"; then
           mark_task_progress "$label" "completed" "自动执行验收通过：attempt=$attempt" "$copy_log" "$verify_log" "$attempt" "$risk"
           DONE_TASKS=$((DONE_TASKS + 1))
+          record_task_summary "$label" "$phase" "$task_name" "completed" "$attempt" "$risk" "$copy_log" "$verify_log" "自动执行验收通过"
           print_task_progress "PASS" "$label" "$attempt" "$copy_log" "$verify_log"
           break
         fi
 
         RETRY_TOTAL=$((RETRY_TOTAL + 1))
-        log_event RETRY "$label failed verify, retrying..."
+        log_event RETRY "$label failed verify, entering repair retry..."
+        record_task_summary "$label" "$phase" "$task_name" "retrying" "$attempt" "$risk" "$copy_log" "$verify_log" "验收失败，下一轮全部全面修复"
         print_task_progress "RETRY" "$label" "$attempt" "$copy_log" "$verify_log"
 
         if [ "$MAX_RETRIES" -gt 0 ] && [ "$attempt" -ge "$MAX_RETRIES" ]; then
           mark_task_progress "$label" "failed" "达到最大重试次数：MAX_RETRIES=$MAX_RETRIES" "$copy_log" "$verify_log" "$attempt" "$risk"
+          record_task_summary "$label" "$phase" "$task_name" "failed" "$attempt" "$risk" "$copy_log" "$verify_log" "达到最大重试次数：MAX_RETRIES=$MAX_RETRIES"
           log_event FAIL "$label reached max retries ($MAX_RETRIES)"
           log_event FAIL "Check logs: $copy_log and $verify_log"
           exit 1
@@ -930,6 +1445,7 @@ main() {
 
         if [ "$DRY_RUN" = "1" ] && [ "$DRY_RUN_RESULT" = "FAIL" ] && [ "$attempt" -ge "$DRY_RUN_MAX_ATTEMPTS" ]; then
           mark_task_progress "$label" "failed" "dry-run 达到最大重试次数：DRY_RUN_MAX_ATTEMPTS=$DRY_RUN_MAX_ATTEMPTS" "$copy_log" "$verify_log" "$attempt" "$risk"
+          record_task_summary "$label" "$phase" "$task_name" "failed" "$attempt" "$risk" "$copy_log" "$verify_log" "dry-run 达到最大重试次数：DRY_RUN_MAX_ATTEMPTS=$DRY_RUN_MAX_ATTEMPTS"
           log_event FAIL "DRY_RUN stop at max retry attempts: $DRY_RUN_MAX_ATTEMPTS"
           exit 1
         fi

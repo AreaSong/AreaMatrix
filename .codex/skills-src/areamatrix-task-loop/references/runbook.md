@@ -18,6 +18,7 @@ Check that:
 - `status` shows the expected first pending task.
 - copy-ready / verify-ready prompts have been regenerated after shared rule changes.
 - `progress_file` is `tasks/prompts/_shared/progress.json`.
+- `lock_alive` is not `yes` unless the operator intentionally has a runner active.
 - `latest_log_dir` is understood; `None` is fine before the first run.
 
 ## Execution Modes
@@ -73,6 +74,39 @@ Expected statuses:
 - `completed`: verify log contained `VERIFY_RESULT: PASS`.
 - `failed`: retry limit or dry-run fail limit was reached.
 - `blocked`: risk gate paused or skipped the task.
+- `stale_in_progress`: status output only; an `in_progress` record has no active matching lock and no PASS verify log.
+
+State operations:
+
+```bash
+bash scripts/run_area_matrix_task_pipeline.sh --reset-progress
+bash scripts/run_area_matrix_task_pipeline.sh --clear-stale
+bash scripts/run_area_matrix_task_pipeline.sh --resume-stale
+```
+
+`--reset-progress` backs up `progress.json` under `.codex/task-loop-progress-backups/` before writing an empty progress file. It does not delete task-loop logs.
+
+`--clear-stale` removes only stale `in_progress` records. It must not alter `completed`, `failed`, or `blocked`.
+
+`--resume-stale` starts from the first stale task label.
+
+## Lock And Run Summary
+
+Runner lock:
+
+```text
+.codex/task-loop-lock/
+```
+
+The lock records `pid`, `run_id`, operation, command, and start time. It is local coordination state and should stay ignored by git.
+
+Run summaries:
+
+```text
+.codex/task-loop-runs/<run_id>/summary.json
+```
+
+The summary records model, reasoning effort, phase filter, start/max settings, risk policy, progress file, log root, task attempts, copy/verify logs, final status, and exit code. Treat it as resumable workflow evidence.
 
 Legacy state:
 
