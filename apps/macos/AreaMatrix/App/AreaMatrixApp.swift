@@ -6,5 +6,6 @@ struct AreaMatrixApp: App {
         WindowGroup {
             MainWindow()
         }
+        .windowResizability(.contentMinSize)
     }
 }

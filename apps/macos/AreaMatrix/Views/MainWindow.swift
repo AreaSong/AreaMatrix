@@ -1,13 +1,11 @@
 import SwiftUI
 
 struct MainWindow: View {
-    @State private var model = AppShellModel()
-
     var body: some View {
         ContentUnavailableView {
-            Label("AreaMatrix", systemImage: "tray")
+            Label("AreaMatrix", systemImage: "rectangle.stack")
         } description: {
-            Text(model.statusText)
+            Text("App shell")
         }
         .frame(minWidth: 720, minHeight: 480)
     }
