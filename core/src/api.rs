@@ -1,7 +1,7 @@
 //! Public functions exposed through the UniFFI boundary.
 
 use crate::{
-    classify, db, repo_init, repo_path, repo_scan, tree, ChangeFilter, ChangeLogEntry,
+    classify, db, repo_init, repo_path, repo_scan, storage, tree, ChangeFilter, ChangeLogEntry,
     ClassifyResult, CoreError, CoreResult, ExternalEvent, FileEntry, FileFilter, ImportOptions,
     RecoveryReport, ReindexReport, RepoConfig, RepoInitOptions, RepoPathValidation, ScanSession,
     SyncResult,
@@ -215,11 +215,11 @@ pub fn predict_category(repo_path: String, filename: String) -> CoreResult<Class
 /// final destination half-products; staging residue is reserved for later
 /// recovery cleanup.
 pub fn import_file(
-    _repo_path: String,
-    _source_path: String,
-    _options: ImportOptions,
+    repo_path: String,
+    source_path: String,
+    options: ImportOptions,
 ) -> CoreResult<FileEntry> {
-    not_implemented()
+    storage::import_file(repo_path, source_path, options)
 }
 
 /// Deletes a file entry.

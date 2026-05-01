@@ -12,7 +12,12 @@ use crate::{
     StorageMode,
 };
 
+mod import;
 mod scan;
+pub(crate) use import::{
+    delete_file_row, find_active_file_by_hash, get_active_file_by_id, insert_import_staging,
+    promote_imported_file, NewImportRow,
+};
 pub(crate) use scan::*;
 
 const AREA_MATRIX_DIR: &str = ".areamatrix";
