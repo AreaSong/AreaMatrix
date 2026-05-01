@@ -1,0 +1,83 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`0-2/task-01`
+- 对应文件：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-0/0-2-engineering-foundation/task-01-core-crate-metadata.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/Cargo.toml`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/AGENTS.md`
+
+三、完成度摘要
+
+- 已覆盖项数：9
+- 未覆盖项数：0
+- 通过项数：7
+- 不通过项数：2
+- 阻塞项数：2
+
+四、逐项验收结果
+
+- 创建最小 Cargo package/workspace 元数据
+  - 结果：通过
+  - 证据：`core/Cargo.toml` 存在，含 `[package]`、`[workspace]`、`[lib]`，`cargo metadata --no-deps` 通过。
+  - 涉及文件：[core/Cargo.toml](/Users/as/Ai-Project/project/AreaMatrix/core/Cargo.toml:1)
+
+- 依赖版本与技术栈文档一致
+  - 结果：不通过
+  - 证据：`core/Cargo.toml` 包含 `unicode-normalization`、`regex`、`trash`、`uuid`；其中 `build.md` 模板包含这些依赖，但 `tech-stack.md` 的固定直接依赖列表不包含 `unicode-normalization`、`trash`、`uuid`，且把 `regex` 标为“不直接引入但保留余量”。
+  - 涉及文件：[core/Cargo.toml](/Users/as/Ai-Project/project/AreaMatrix/core/Cargo.toml:28)、[tech-stack.md](/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/tech-stack.md:157)、[build.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/build.md:102)
+
+- 不创建业务模块实现
+  - 结果：通过
+  - 证据：`core/src/lib.rs` 仅 3 行，无 `pub mod`、`pub use`、业务函数、UniFFI scaffolding 或 mock。
+  - 涉及文件：[lib.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/lib.rs:1)
+
+- Expected New Paths
+  - 结果：通过
+  - 证据：`core/Cargo.toml`、`core/AGENTS.md` 均存在。
+  - 涉及文件：[phase-0.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-0.md:94)
+
+- Forbidden Touches
+  - 结果：通过
+  - 证据：`git diff --name-status -- apps` 无输出，未发现 `apps/**` 当前修改。
+  - 涉及文件：[phase-0.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-0.md:98)
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过。当前 git diff 仍包含 18 个不在 `Expected New Paths` 内的 tracked 改动，包含 `core/src/lib.rs` 修改和多个后续 task 文件删除，不能证明本 task 严格收敛在 manifest 范围内。
+- 注释 / rustdoc / 文档同步：不通过。依赖清单在 `tech-stack.md` 与 `build.md` 之间存在 Exact Docs 漂移。
+- 错误处理与边界处理：通过。本 task 未实现业务路径，无 `unwrap()`、`panic!()`、静默吞错。
+- 测试与验证覆盖：通过。已运行 manifest 验证和 repo-local validation-driver 要求的 Rust core 检查。
+- 占位、硬编码、mock-only、一次性实现检查：通过。未发现产品逻辑、mock-only wiring 或硬编码通过态。
+
+六、阻塞项
+
+- P0：实际变更范围超出 manifest `Expected New Paths`
+  - 说明：manifest 只允许 `core/Cargo.toml`、`core/AGENTS.md`，但当前 diff 还包含 `.codex/task-loop-runs/.../summary.json`、`tasks/prompts/_shared/progress.json`、`core/src/lib.rs` 修改，以及 `core/area_matrix.udl`、`core/build.rs`、`core/resources/classifier.yaml`、多个 `core/src/**` 和 `core/tests/**` 删除。
+  - 绝对路径：[lib.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/lib.rs:1)
+  - 为什么导致不通过：验收规则要求 task + manifest + 实际文件交叉核验；当前无法证明 task 只完成 `0-2/task-01` 的两个预期路径。
+
+- P1：依赖文档源事实不一致，无法证明 checklist 2
+  - 说明：`Cargo.toml` 与 `build.md` 模板一致，但与 `tech-stack.md` 的“直接依赖”表不完全一致。
+  - 绝对路径：[Cargo.toml](/Users/as/Ai-Project/project/AreaMatrix/core/Cargo.toml:28)
+  - 为什么导致不通过：task checklist 明确要求依赖版本与技术栈文档一致；Exact Docs 之间存在漂移时不能判定通过。
+
+七、验证情况
+
+- 已运行并通过：
+  - `cd core && cargo metadata --no-deps`
+  - `cd core && cargo fmt --all -- --check`
+  - `cd core && cargo clippy --all-targets --all-features -- -D warnings`
+  - `cd core && cargo test --workspace`
+- 失败：无命令失败。
+- 缺失：无命令缺失；阻塞来自范围和文档一致性，不是命令执行失败。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+
+VERIFY_RESULT: FAIL
+

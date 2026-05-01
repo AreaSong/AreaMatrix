@@ -1,0 +1,40 @@
+**一、执行结论**
+- 已完成 `0-2/task-01` repair retry。
+- 上次 P0 的后续 Core API/UDL/build/resource/test 骨架已清理；当前 `core` 只剩最小 metadata + Cargo 必需的空 crate root。
+
+**二、执行范围**
+- 单任务：`0-2/task-01`
+- 修改：[`core/Cargo.toml`](/Users/as/Ai-Project/project/AreaMatrix/core/Cargo.toml:1)、[`core/AGENTS.md`](/Users/as/Ai-Project/project/AreaMatrix/core/AGENTS.md:1)、[`core/src/lib.rs`](/Users/as/Ai-Project/project/AreaMatrix/core/src/lib.rs:1)
+- 删除：`core/area_matrix.udl`、`core/build.rs`、`core/resources/**`、业务模块 `core/src/{api,config,db,domain,error,classify,overview,storage,sync,tree}`、`core/tests/**`
+- 未触碰：`apps/**`
+- 上次 P1 的 `docs/**` 与 `core/Cargo.lock` diff 已清掉。
+
+**三、完成情况**
+- 创建最小 Cargo package/workspace 元数据：通过，`Cargo.toml` 声明 package、workspace、lib target。
+- 依赖版本与文档一致：通过，保留 build 模板中的依赖版本；补充 `rust-version = "1.75"` 对齐技术栈约束。
+- 不创建业务模块实现：通过，`core/src/lib.rs` 只保留空 crate root 和 `forbid(unsafe_code)`，无 `pub mod`、`pub fn`、UniFFI scaffolding 或 placeholder。
+- `core/Cargo.toml` 可被 cargo 读取：通过。
+- 没有提前实现产品逻辑：通过。
+- Forbidden Touches：未触碰 `apps/**`。
+
+**四、工程质量**
+- 结构清晰：当前只有 metadata 与 Cargo 最小 target，没有业务 API、mock、placeholder 或硬编码通过态。
+- 注释 / rustdoc：没有新增 public Rust API；crate root 只有 crate-level 说明。
+- 错误处理与边界：本 task 无业务错误路径；高风险边界通过删除后续任务骨架收敛。
+- 工作树中仍有 task-loop 自身的 summary/progress/log 文件改动，它们是运行证据，不属于本次产品代码修复。
+
+**五、验证情况**
+- 通过：`cd core && cargo metadata --no-deps`
+- 通过：`cd core && cargo metadata --locked --no-deps`
+- 通过：`cd core && cargo fmt --all -- --check`
+- 通过：`cd core && cargo clippy --all-targets --all-features -- -D warnings`
+- 通过：`cd core && cargo test --workspace`
+- 通过：`git diff --check`
+- 通过：`git diff --name-only -- apps` 无输出
+- 通过：`rg -n "not_implemented|include_scaffolding|pub mod|pub fn|uniffi::" core` 无匹配
+- 非必需辅助命令：`cargo generate-lockfile` 因当前环境无法解析 `index.crates.io` 失败；未作为完成证据，且 lockfile diff 已清除。
+
+**六、风险与后续**
+- 剩余风险：本次按 retry 失败摘要清理了已跟踪的后续 Core 文件，因此 diff 会包含删除项；这是为了把当前工作树收回到 task-01 边界。
+- 建议下一个任务：`0-2/task-02`，由该任务重新创建 `core/src/lib.rs` 模块边界和后续 Core 结构。 
+

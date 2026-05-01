@@ -1,0 +1,79 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`0-2/task-01`
+- 对应文件路径：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-0/0-2-engineering-foundation/task-01-core-crate-metadata.md`
+- 实际检查：`core/Cargo.toml`、`core/AGENTS.md`、`core/**`、`apps/**`
+
+三、完成度摘要
+
+- 已覆盖项数：8
+- 未覆盖项数：0
+- 通过项数：6
+- 不通过项数：2
+- 阻塞项数：1
+
+四、逐项验收结果
+
+- 创建最小 Cargo package/workspace 元数据
+  - 结果：通过
+  - 证据：`core/Cargo.toml` 已声明 package、rust-version、workspace resolver、lib target：`/Users/as/Ai-Project/project/AreaMatrix/core/Cargo.toml:1`
+  - 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/Cargo.toml`
+
+- 依赖版本与技术栈文档一致
+  - 结果：通过
+  - 证据：`Cargo.toml` 依赖版本与 `docs/architecture/tech-stack.md:161`、`docs/development/build.md:106` 的模板一致。
+  - 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/Cargo.toml`
+
+- 不创建业务模块实现
+  - 结果：不通过
+  - 证据：manifest 明确 `Existing Code = None` 且 Expected New Paths 只有 `core/Cargo.toml`、`core/AGENTS.md`：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-0.md:91`。但当前 `core/src/lib.rs` 已声明 `api/classify/config/db/domain/error/overview/storage/sync/tree` 模块：`/Users/as/Ai-Project/project/AreaMatrix/core/src/lib.rs:8`。
+  - 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/lib.rs`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs`
+
+- `core/Cargo.toml` 可被 cargo 读取
+  - 结果：通过
+  - 证据：已运行 `cd core && cargo metadata --no-deps`，命令退出码 0。
+  - 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/Cargo.toml`
+
+- 没有提前实现产品逻辑
+  - 结果：不通过
+  - 证据：`core/src/api.rs` 已存在公开 API 面，并以 `not_implemented()` 返回 `CoreError::Internal`：`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:9`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:36`。测试还显式验收 placeholder 行为：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/smoke.rs:39`。
+  - 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/smoke.rs`
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过。当前仓库状态已越过本 task 的 crate metadata 边界。
+- 注释 / rustdoc / 文档同步：通过。`core/AGENTS.md` 明确写出 `0-2/task-01` 只维护 crate 元数据：`/Users/as/Ai-Project/project/AreaMatrix/core/AGENTS.md:12`。
+- 错误处理与边界处理：不通过。当前公开 API placeholder 统一返回 `CoreError::Internal`，不是本 task 应出现的业务 API 面。
+- 测试与验证覆盖：通过命令，不通过任务语义。`cargo metadata`、fmt、clippy、test 均通过，但测试中包含 placeholder API 通过态。
+- 占位、硬编码、mock-only、一次性实现检查：不通过。`placeholder_api_returns_internal_error` 证明当前 Core 已有占位 API 验收路径。
+
+六、阻塞项
+
+- P0：当前仓库状态超出 `0-2/task-01` 的 atomic 边界，不能判定为 Core crate 元数据任务完成。
+  - 说明：task 要求范围是 Core crate 元数据，核对清单要求不创建业务模块实现；manifest 的 Expected New Paths 只有两个文件。但当前 `core/src/**`、`core/build.rs`、`core/area_matrix.udl`、`core/resources/**`、`core/tests/**` 已存在，且 `cargo metadata` 输出已注册 lib、custom-build 和 tests target。这个通过证据依赖了本 task 范围外文件。
+  - 绝对路径与行号：
+    - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-0/0-2-engineering-foundation/task-01-core-crate-metadata.md:20`
+    - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-0.md:91`
+    - `/Users/as/Ai-Project/project/AreaMatrix/core/AGENTS.md:12`
+    - `/Users/as/Ai-Project/project/AreaMatrix/core/src/lib.rs:8`
+    - `/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:9`
+    - `/Users/as/Ai-Project/project/AreaMatrix/core/tests/smoke.rs:39`
+  - 为什么导致不通过：无法证明当前完成态只包含本 task 允许的 crate metadata；并且存在 placeholder API/测试，违反“没有提前实现产品逻辑”的完成标准。
+
+七、验证情况
+
+- 已运行：`cd core && cargo metadata --no-deps`：通过。
+- 已运行：`cd core && cargo fmt --all -- --check`：通过。
+- 已运行：`cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过。
+- 已运行：`cd core && cargo test --workspace`：通过，6 个测试通过。
+- 已检查：`git status --short -- apps`、`git diff --name-only -- apps`：无输出，未发现 `apps/**` 禁止触碰。
+- 缺失：无必需本地命令缺失；失败原因不是命令失败，而是 task scope 与当前实际文件状态不一致。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+VERIFY_RESULT: FAIL

@@ -1,0 +1,42 @@
+一、执行结论
+
+- 未完成。
+- 任务实现与验证已通过，但上次 P0 的范围门禁仍有一个阻塞：`.codex/task-loop-runs/20260501_132850/summary.json` 仍是 tracked diff；当前沙箱拒绝写入 `.codex`，无法恢复该文件。
+
+二、执行范围
+
+- 单任务：`0-2/task-01`
+- 修改文件：
+  - [core/Cargo.toml](/Users/as/Ai-Project/project/AreaMatrix/core/Cargo.toml:1)
+  - [core/AGENTS.md](/Users/as/Ai-Project/project/AreaMatrix/core/AGENTS.md:1)
+  - [docs/architecture/tech-stack.md](/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/tech-stack.md:159)
+  - [docs/development/build.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/build.md:88)
+
+三、完成情况
+
+- 创建最小 Cargo package/workspace 元数据：通过，`Cargo.toml` 有 package、workspace resolver、lib target。
+- 依赖版本与技术栈文档一致：通过，`tech-stack.md`、`build.md` 与 `Cargo.toml` 的直接依赖已对齐。
+- 不创建业务模块实现：通过，本轮没有留下 `core/src/**`、UDL、build.rs、resources、tests 的 diff。
+- Forbidden Touches：通过，`git diff --name-status -- apps` 无输出。
+
+四、工程质量
+
+- `rlib` 已恢复到 `crate-type`，否则既有 integration tests 无法 `use area_matrix_core`。
+- `core/AGENTS.md` 明确 task-01 只维护 crate metadata，不扩展业务实现。
+- 无新增业务逻辑、mock-only wiring 或硬编码通过态。
+- 中途一次 `cargo test --workspace` 失败，原因是缺少 `rlib`；修复后重跑通过。
+
+五、验证情况
+
+- 通过：`cd core && cargo metadata --no-deps`
+- 通过：`cd core && cargo fmt --all -- --check`
+- 通过：`cd core && cargo clippy --all-targets --all-features -- -D warnings`
+- 通过：`cd core && cargo test --workspace`
+- 通过：`cd core && cargo tree -e no-dev --depth 1`
+- 通过：`git diff --check`
+
+六、风险与后续
+
+- 剩余阻塞：`.codex/task-loop-runs/20260501_132850/summary.json` 仍在 diff 中；尝试 `git restore`、`apply_patch`、`perl -pi`、Python 直接写入都被系统拒绝，错误为 `Operation not permitted`。
+- 当前不建议进入下一个 task；需要先用具备 `.codex` 写权限的环境恢复该 runtime summary，再重新跑 verify-ready。  
+
