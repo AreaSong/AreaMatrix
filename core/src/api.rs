@@ -1,9 +1,9 @@
 //! Public functions exposed through the UniFFI boundary.
 
 use crate::{
-    repo_path, ChangeFilter, ChangeLogEntry, ClassifyResult, CoreError, CoreResult, ExternalEvent,
-    FileEntry, FileFilter, ImportOptions, RecoveryReport, ReindexReport, RepoConfig,
-    RepoInitOptions, RepoPathValidation, ScanSession, SyncResult,
+    db, repo_init, repo_path, tree, ChangeFilter, ChangeLogEntry, ClassifyResult, CoreError,
+    CoreResult, ExternalEvent, FileEntry, FileFilter, ImportOptions, RecoveryReport, ReindexReport,
+    RepoConfig, RepoInitOptions, RepoPathValidation, ScanSession, SyncResult,
 };
 
 fn not_implemented<T>() -> CoreResult<T> {
@@ -78,8 +78,8 @@ pub fn validate_initialized_repo_path(repo_path: String) -> CoreResult<RepoPathV
 /// `CoreError::PermissionDenied` for unwritable roots, `CoreError::Config` for
 /// invalid init options or repeated initialization, `CoreError::Io` for
 /// filesystem failures, and `CoreError::Db` for SQLite initialization failures.
-pub fn init_repo(_repo_path: String, _options: RepoInitOptions) -> CoreResult<()> {
-    not_implemented()
+pub fn init_repo(repo_path: String, options: RepoInitOptions) -> CoreResult<()> {
+    repo_init::init_repo(repo_path, options)
 }
 
 /// Loads repository configuration written during initialization.
@@ -91,8 +91,8 @@ pub fn init_repo(_repo_path: String, _options: RepoInitOptions) -> CoreResult<()
 ///
 /// Returns `CoreError::Io`, `CoreError::Config`, or `CoreError::Db` when the
 /// initialized metadata cannot be read or decoded.
-pub fn load_config(_repo_path: String) -> CoreResult<RepoConfig> {
-    not_implemented()
+pub fn load_config(repo_path: String) -> CoreResult<RepoConfig> {
+    db::load_config_or_default(repo_path)
 }
 
 /// Updates repository configuration.
@@ -158,9 +158,18 @@ pub fn restore_file(_repo_path: String, _file_id: i64) -> CoreResult<FileEntry> 
     not_implemented()
 }
 
-/// Lists file entries.
-pub fn list_files(_repo_path: String, _filter: FileFilter) -> CoreResult<Vec<FileEntry>> {
-    not_implemented()
+/// Lists file entries from repository metadata.
+///
+/// C1-02 uses this to prove an initialized empty repository is readable. Later
+/// query tasks can extend filtering semantics without changing the empty-repo
+/// contract.
+///
+/// # Errors
+///
+/// Returns `CoreError::RepoNotInitialized` when the repository metadata is
+/// missing and `CoreError::Db` when SQLite rows cannot be read.
+pub fn list_files(repo_path: String, filter: FileFilter) -> CoreResult<Vec<FileEntry>> {
+    db::list_files(repo_path, filter)
 }
 
 /// Gets a single file entry.
@@ -183,8 +192,8 @@ pub fn list_changes(_repo_path: String, _filter: ChangeFilter) -> CoreResult<Vec
 /// Returns `CoreError::RepoNotInitialized` when metadata is missing,
 /// `CoreError::Db` when the tree cannot be read from SQLite, and
 /// `CoreError::Io` when repository metadata cannot be inspected.
-pub fn list_tree_json(_repo_path: String, _locale: String) -> CoreResult<String> {
-    not_implemented()
+pub fn list_tree_json(repo_path: String, locale: String) -> CoreResult<String> {
+    tree::list_tree_json(repo_path, locale)
 }
 
 /// Reads a markdown note for a file.

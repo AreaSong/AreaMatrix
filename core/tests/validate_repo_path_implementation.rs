@@ -173,6 +173,30 @@ fn validate_repo_path_ignores_hidden_system_entries_for_empty_recommendation() {
 }
 
 #[test]
+fn validate_repo_path_treats_hidden_user_content_as_non_empty() {
+    for entry_name in [".env", ".git"] {
+        let repo = tempfile::tempdir().expect("create temporary repository directory");
+        let entry_path = repo.path().join(entry_name);
+        if entry_name == ".git" {
+            fs::create_dir(&entry_path).expect("create hidden user directory");
+        } else {
+            fs::write(&entry_path, "owned by user").expect("write hidden user file");
+        }
+
+        let validation =
+            validate_repo_path(path_string(repo.path())).expect("validate hidden user content");
+
+        assert!(entry_path.exists(), "{entry_name} should remain untouched");
+        assert!(!validation.is_empty);
+        assert_eq!(
+            validation.recommended_mode,
+            Some(RepoInitMode::AdoptExisting)
+        );
+        assert_eq!(validation.issues, vec![RepoPathIssue::NonEmptyDirectory]);
+    }
+}
+
+#[test]
 fn validate_repo_path_reports_unfinished_scan_session_from_existing_metadata() {
     let repo = tempfile::tempdir().expect("create temporary repository directory");
     let metadata_dir = repo.path().join(".areamatrix");

@@ -8,7 +8,7 @@ use std::{
 
 use rusqlite::{Connection, OpenFlags};
 
-use crate::{CoreError, CoreResult, RepoInitMode, RepoPathIssue, RepoPathValidation};
+use crate::{repo_entries, CoreError, CoreResult, RepoInitMode, RepoPathIssue, RepoPathValidation};
 
 const AREA_MATRIX_DIR: &str = ".areamatrix";
 const INDEX_DB_FILE: &str = "index.db";
@@ -170,12 +170,15 @@ fn validation_for_missing_or_blocked(
 }
 
 fn inspect_directory(path: &Path) -> CoreResult<DirectoryState> {
-    let mut has_user_visible_entries = false;
+    let mut has_user_content_entries = false;
     let entries = fs::read_dir(path).map_err(map_directory_read_error)?;
     for entry in entries {
         let entry = entry.map_err(map_directory_read_error)?;
-        if is_user_visible_entry(&entry.file_name().to_string_lossy()) {
-            has_user_visible_entries = true;
+        if is_area_matrix_metadata_dir(&entry)? {
+            continue;
+        }
+        if repo_entries::is_user_content_entry(&entry).map_err(map_directory_read_error)? {
+            has_user_content_entries = true;
         }
     }
 
@@ -187,7 +190,7 @@ fn inspect_directory(path: &Path) -> CoreResult<DirectoryState> {
     };
 
     Ok(DirectoryState {
-        is_empty: !has_user_visible_entries,
+        is_empty: !has_user_content_entries,
         is_initialized,
         has_unfinished_scan_session,
     })
@@ -271,8 +274,15 @@ fn recommend_mode(
     }
 }
 
-fn is_user_visible_entry(name: &str) -> bool {
-    !name.starts_with('.')
+fn is_area_matrix_metadata_dir(entry: &fs::DirEntry) -> CoreResult<bool> {
+    if entry.file_name() != AREA_MATRIX_DIR {
+        return Ok(false);
+    }
+
+    entry
+        .file_type()
+        .map(|file_type| file_type.is_dir())
+        .map_err(map_directory_read_error)
 }
 
 fn is_inside_area_matrix(path: &Path) -> bool {
