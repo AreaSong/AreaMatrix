@@ -221,11 +221,11 @@ fn import_copy_file_integration_verify_failure_keeps_source_and_final_state_safe
 }
 
 #[test]
-fn import_copy_file_integration_verify_rejects_adjacent_import_modes() {
+fn import_copy_file_integration_verify_rejects_unimplemented_indexed_mode() {
     let repo = initialized_repo();
-    let (_source_root, source) = source_file("move-later.pdf", b"source bytes");
+    let (_source_root, source) = source_file("index-later.pdf", b"source bytes");
     let mut options = copied_options();
-    options.mode = StorageMode::Moved;
+    options.mode = StorageMode::Indexed;
 
     let result = import_file(path_string(repo.path()), path_string(&source), options);
 

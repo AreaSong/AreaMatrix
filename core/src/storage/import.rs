@@ -4,17 +4,17 @@ use std::{
 };
 
 use serde_json::json;
-use uuid::Uuid;
 
 use crate::{
     classify, db, CoreError, CoreResult, DuplicateStrategy, FileEntry, FileOrigin,
     ImportDestination, ImportOptions, StorageMode,
 };
 
-use super::{hash, validate};
-
-const AREA_MATRIX_DIR: &str = ".areamatrix";
-const STAGING_DIR: &str = "staging";
+use super::{
+    hash,
+    safe_move::{move_source_to_staging, FinalFileGuard, StagingFileGuard},
+    validate,
+};
 
 pub(crate) fn import_file(
     repo_path: String,
@@ -22,7 +22,7 @@ pub(crate) fn import_file(
     options: ImportOptions,
 ) -> CoreResult<FileEntry> {
     let prepared = prepare_import(repo_path, source_path, options)?;
-    let staged = stage_source(&prepared)?;
+    let mut staged = stage_source(&prepared)?;
     ensure_no_duplicate(&prepared, &staged)?;
     let destination = PreparedDestination::prepare(&prepared)?;
     let file_id = insert_staging_row(&prepared, &staged)?;
@@ -30,7 +30,11 @@ pub(crate) fn import_file(
 
     commit_filesystem(&staged, &destination)?;
     staged.staging_guard.disarm();
-    let mut final_guard = FinalFileGuard::new(destination.final_path.clone());
+    let mut final_guard = FinalFileGuard::new(
+        &prepared.options.mode,
+        destination.final_path.clone(),
+        prepared.source.clone(),
+    );
 
     promote_import(&prepared, file_id, &destination)?;
     db_guard.disarm();
@@ -79,7 +83,7 @@ fn prepare_import(
     source_path: String,
     options: ImportOptions,
 ) -> CoreResult<PreparedImport> {
-    if options.mode != StorageMode::Copied {
+    if !matches!(options.mode, StorageMode::Copied | StorageMode::Moved) {
         return Err(CoreError::Internal);
     }
     PreparedImport::new(repo_path, source_path, options)
@@ -92,8 +96,21 @@ struct StagedImport {
 }
 
 fn stage_source(prepared: &PreparedImport) -> CoreResult<StagedImport> {
-    let staging_guard = StagingFileGuard::create(&prepared.repo)?;
-    let hashed_copy = hash::copy_and_hash(&prepared.source, staging_guard.path())?;
+    let staging_guard = match prepared.options.mode {
+        StorageMode::Copied => StagingFileGuard::create_for_copy(&prepared.repo)?,
+        StorageMode::Moved => {
+            StagingFileGuard::create_for_move(&prepared.repo, prepared.source.clone())?
+        }
+        StorageMode::Indexed => return Err(CoreError::Internal),
+    };
+    let hashed_copy = match prepared.options.mode {
+        StorageMode::Copied => hash::copy_and_hash(&prepared.source, staging_guard.path())?,
+        StorageMode::Moved => {
+            move_source_to_staging(&prepared.source, staging_guard.path())?;
+            hash::hash_file(staging_guard.path())?
+        }
+        StorageMode::Indexed => return Err(CoreError::Internal),
+    };
     Ok(StagedImport {
         staging_guard,
         hash_sha256: hashed_copy.hash_sha256,
@@ -146,7 +163,7 @@ fn insert_staging_row(prepared: &PreparedImport, staged: &StagedImport) -> CoreR
             category: prepared.target.category.clone(),
             size_bytes: staged.size_bytes,
             hash_sha256: staged.hash_sha256.clone(),
-            storage_mode: StorageMode::Copied,
+            storage_mode: prepared.options.mode.clone(),
             origin: FileOrigin::Imported,
             source_path: Some(prepared.source.to_string_lossy().into_owned()),
             imported_at,
@@ -170,7 +187,7 @@ fn promote_import(
         &prepared.target_filename,
         &json!({
             "source": prepared.source.to_string_lossy(),
-            "mode": "copied",
+            "mode": storage_mode_detail(&prepared.options.mode),
             "category": prepared.target.category,
             "destination": destination_detail(&prepared.options.destination),
             "renamed_from_original": prepared.original_name != prepared.target_filename,
@@ -257,6 +274,14 @@ fn duplicate_error(_strategy: &DuplicateStrategy) -> CoreResult<()> {
     Err(CoreError::DuplicateFile)
 }
 
+fn storage_mode_detail(mode: &StorageMode) -> &'static str {
+    match mode {
+        StorageMode::Moved => "moved",
+        StorageMode::Copied => "copied",
+        StorageMode::Indexed => "indexed",
+    }
+}
+
 fn destination_detail(destination: &ImportDestination) -> &'static str {
     match destination {
         ImportDestination::AutoClassify => "auto_classify",
@@ -270,8 +295,8 @@ fn persist_staging_to_final(staging: &Path, final_path: &Path) -> CoreResult<()>
         return Err(CoreError::Conflict);
     }
 
-    match fs::hard_link(staging, final_path) {
-        Ok(()) => remove_staging_after_persist(staging),
+    match fs::rename(staging, final_path) {
+        Ok(()) => Ok(()),
         Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => Err(CoreError::Conflict),
         Err(_) => copy_staging_to_final(staging, final_path),
     }
@@ -284,7 +309,13 @@ fn copy_staging_to_final(staging: &Path, final_path: &Path) -> CoreResult<()> {
         let _ = fs::remove_file(final_path);
         return Err(CoreError::Io);
     }
-    remove_staging_after_persist(staging)
+    match remove_staging_after_persist(staging) {
+        Ok(()) => Ok(()),
+        Err(error) => {
+            let _cleanup_result = fs::remove_file(final_path);
+            Err(error)
+        }
+    }
 }
 
 fn remove_staging_after_persist(staging: &Path) -> CoreResult<()> {
@@ -299,39 +330,6 @@ fn relative_repo_path(repo: &Path, path: &Path) -> CoreResult<String> {
 
 fn path_exists(path: &Path) -> CoreResult<bool> {
     path.try_exists().map_err(hash::map_io_error)
-}
-
-struct StagingFileGuard {
-    path: PathBuf,
-    armed: bool,
-}
-
-impl StagingFileGuard {
-    fn create(repo: &Path) -> CoreResult<Self> {
-        let staging_dir = repo.join(AREA_MATRIX_DIR).join(STAGING_DIR);
-        fs::create_dir_all(&staging_dir).map_err(hash::map_io_error)?;
-        Ok(Self {
-            path: staging_dir.join(format!("import-{}", Uuid::new_v4())),
-            armed: true,
-        })
-    }
-
-    fn path(&self) -> &Path {
-        &self.path
-    }
-
-    fn disarm(mut self) {
-        self.armed = false;
-    }
-}
-
-impl Drop for StagingFileGuard {
-    fn drop(&mut self) {
-        if self.armed {
-            // Best-effort cleanup for the internal staging file created by this import attempt.
-            let _cleanup_result = fs::remove_file(&self.path);
-        }
-    }
 }
 
 struct CreatedDirectoryGuard {
@@ -382,30 +380,6 @@ impl Drop for CreatedDirectoryGuard {
                 // Only empty directories created by this import are removed.
                 let _cleanup_result = fs::remove_dir(directory);
             }
-        }
-    }
-}
-
-struct FinalFileGuard {
-    path: PathBuf,
-    armed: bool,
-}
-
-impl FinalFileGuard {
-    fn new(path: PathBuf) -> Self {
-        Self { path, armed: true }
-    }
-
-    fn disarm(&mut self) {
-        self.armed = false;
-    }
-}
-
-impl Drop for FinalFileGuard {
-    fn drop(&mut self) {
-        if self.armed {
-            // This path is created from AreaMatrix staging during the current attempt.
-            let _cleanup_result = fs::remove_file(&self.path);
         }
     }
 }

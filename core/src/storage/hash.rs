@@ -48,6 +48,28 @@ pub(super) fn copy_and_hash(source: &Path, destination: &Path) -> CoreResult<Has
     })
 }
 
+pub(super) fn hash_file(path: &Path) -> CoreResult<HashedCopy> {
+    let source_file = File::open(path).map_err(map_io_error)?;
+    let mut reader = BufReader::with_capacity(COPY_BUFFER_BYTES, source_file);
+    let mut hasher = Sha256::new();
+    let mut size_bytes = 0_i64;
+    let mut buffer = [0_u8; COPY_BUFFER_BYTES];
+
+    loop {
+        let read = reader.read(&mut buffer).map_err(map_io_error)?;
+        if read == 0 {
+            break;
+        }
+        hasher.update(&buffer[..read]);
+        size_bytes += read as i64;
+    }
+
+    Ok(HashedCopy {
+        hash_sha256: format!("{:x}", hasher.finalize()),
+        size_bytes,
+    })
+}
+
 pub(super) fn copy_to_new_file(source: &Path, destination: &Path) -> CoreResult<u64> {
     let result = copy_to_new_file_inner(source, destination);
     if result.is_err() {

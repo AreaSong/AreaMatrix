@@ -1,0 +1,22 @@
+一、执行结论：已完成。
+
+二、执行范围：单任务 `1-2/task-11`，仅修改 `core/src/**` 与 `core/tests/**`。主要改动：
+- [core/src/storage/import.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/import.rs:19)：`import_file` 支持 `StorageMode::Moved`，写入 `files.storage_mode = moved`、原始 `source_path` 和 `imported` change log。
+- [core/src/storage/safe_move.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/safe_move.rs:13)：新增 move staging / final rollback guard，失败时恢复源文件，恢复失败则保留可恢复文件。
+- [core/src/storage/hash.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/hash.rs:51)：新增对已 staging 文件计算 hash 的内部函数。
+- [core/tests/import_move_file_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/import_move_file_implementation.rs:103)：新增 C1-07 成功、重复、同名冲突、DB promotion 失败测试。
+- 同步修正两个 C1-06 copy 测试，使其继续拒绝未实现的 `Indexed`，不再错误拒绝本任务已实现的 `Moved`。
+
+三、完成情况：核对清单全部满足；未实现 UI、多文件队列、Indexed 或相邻 C1 能力。`apps/**` 未触碰。`core/area_matrix.udl` 未改，因为现有 UDL 已包含 C1-07 所需接口和类型。
+
+四、工程质量：实现走真实 FS + DB 路径，没有 mock、硬编码通过态或一次性脚本。关键失败路径覆盖了 duplicate、name conflict、DB change_log 失败后的源文件恢复和 final 清理。新增代码均为内部模块，无新增 public Rust API，因此无 rustdoc 缺口。
+
+五、验证情况：
+- `cd core && cargo fmt --all -- --check`：通过
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过
+- `cd core && cargo test --workspace import_move_file`：通过，C1-07 contract 6 条 + implementation 4 条
+- 额外扩展：`cd core && cargo test --workspace`：通过
+- `git diff --check`：通过
+
+六、风险与后续：剩余风险主要是更深的 crash-injection、跨卷真实 EXDEV、权限恢复等 failure-recovery 场景，应由下一个任务 `1-2/task-12` 继续覆盖。当前工作区还显示 `.codex/task-loop-runs/.../summary.json` 与 `tasks/prompts/_shared/progress.json` 有修改，它们不在本任务改动范围内，我没有纳入本次实现结论。
+

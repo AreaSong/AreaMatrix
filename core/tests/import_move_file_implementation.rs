@@ -36,9 +36,9 @@ fn source_file(name: &str, content: &[u8]) -> (tempfile::TempDir, PathBuf) {
     (source_root, source_path)
 }
 
-fn copied_options() -> ImportOptions {
+fn moved_options() -> ImportOptions {
     ImportOptions {
-        mode: StorageMode::Copied,
+        mode: StorageMode::Moved,
         destination: ImportDestination::AutoClassify,
         target_directory: None,
         override_category: Some("finance".to_owned()),
@@ -62,14 +62,22 @@ fn open_db(repo: &Path) -> Connection {
     Connection::open(repo.join(".areamatrix/index.db")).expect("open repository database")
 }
 
-fn active_file_count(repo: &Path) -> i64 {
-    open_db(repo)
-        .query_row(
-            "SELECT COUNT(*) FROM files WHERE status = 'active'",
-            [],
-            |row| row.get(0),
-        )
-        .expect("count active files")
+fn count_rows(repo: &Path, table: &str, status: Option<&str>) -> i64 {
+    let connection = open_db(repo);
+    match status {
+        Some(status) => connection
+            .query_row(
+                &format!("SELECT COUNT(*) FROM {table} WHERE status = ?1"),
+                [status],
+                |row| row.get(0),
+            )
+            .expect("count rows by status"),
+        None => connection
+            .query_row(&format!("SELECT COUNT(*) FROM {table}"), [], |row| {
+                row.get(0)
+            })
+            .expect("count rows"),
+    }
 }
 
 fn staging_entries(repo: &Path) -> Vec<PathBuf> {
@@ -79,30 +87,41 @@ fn staging_entries(repo: &Path) -> Vec<PathBuf> {
         .collect()
 }
 
+fn install_import_change_log_failure(repo: &Path) {
+    open_db(repo)
+        .execute_batch(
+            "CREATE TRIGGER fail_import_change_log
+             BEFORE INSERT ON change_log
+             WHEN NEW.action = 'imported'
+             BEGIN
+               SELECT RAISE(ABORT, 'forced import change log failure');
+             END;",
+        )
+        .expect("install import change-log failure trigger");
+}
+
 #[test]
-fn import_copy_file_implementation_copies_source_to_active_file_and_logs_change() {
+fn import_move_file_implementation_moves_source_to_active_file_and_logs_change() {
     let repo = initialized_repo();
     let (_source_root, source) = source_file("invoice.pdf", b"invoice bytes");
+    let source_path = path_string(&source);
 
     let entry = import_file(
         path_string(repo.path()),
-        path_string(&source),
-        copied_options(),
+        source_path.clone(),
+        moved_options(),
     )
-    .expect("import copied file");
+    .expect("import moved file");
 
-    assert_eq!(fs::read(&source).expect("read source"), b"invoice bytes");
+    assert!(!source.exists(), "source path should be removed after move");
     assert_eq!(entry.path, "finance/invoice.pdf");
     assert_eq!(entry.original_name, "invoice.pdf");
     assert_eq!(entry.current_name, "invoice.pdf");
     assert_eq!(entry.category, "finance");
-    assert_eq!(entry.storage_mode, StorageMode::Copied);
+    assert_eq!(entry.storage_mode, StorageMode::Moved);
+    assert_eq!(entry.source_path.as_deref(), Some(source_path.as_str()));
     assert_eq!(
-        entry.source_path.as_deref(),
-        Some(path_string(&source).as_str())
-    );
-    assert_eq!(
-        fs::read(repo.path().join(&entry.path)).expect("read imported file"),
+        fs::read(repo.path().join(&entry.path)).expect("read moved final file"),
         b"invoice bytes"
     );
 
@@ -110,14 +129,16 @@ fn import_copy_file_implementation_copies_source_to_active_file_and_logs_change(
     assert_eq!(files, vec![entry.clone()]);
 
     let connection = open_db(repo.path());
-    let status: String = connection
+    let (status, storage_mode, source_path_db): (String, String, Option<String>) = connection
         .query_row(
-            "SELECT status FROM files WHERE id = ?1",
+            "SELECT status, storage_mode, source_path FROM files WHERE id = ?1",
             [entry.id],
-            |row| row.get(0),
+            |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
         )
-        .expect("read file status");
+        .expect("read imported file row");
     assert_eq!(status, "active");
+    assert_eq!(storage_mode, "moved");
+    assert_eq!(source_path_db.as_deref(), Some(source_path.as_str()));
 
     let (action, detail_json): (String, String) = connection
         .query_row(
@@ -128,8 +149,8 @@ fn import_copy_file_implementation_copies_source_to_active_file_and_logs_change(
         .expect("read import change log");
     assert_eq!(action, "imported");
     let detail: Value = serde_json::from_str(&detail_json).expect("parse detail json");
-    assert_eq!(detail["source"], path_string(&source));
-    assert_eq!(detail["mode"], "copied");
+    assert_eq!(detail["source"], source_path);
+    assert_eq!(detail["mode"], "moved");
     assert_eq!(detail["category"], "finance");
     assert_eq!(detail["destination"], "auto_classify");
     assert_eq!(detail["by"], "user");
@@ -137,7 +158,7 @@ fn import_copy_file_implementation_copies_source_to_active_file_and_logs_change(
 }
 
 #[test]
-fn import_copy_file_implementation_duplicate_hash_returns_error_without_new_rows() {
+fn import_move_file_implementation_duplicate_hash_restores_source_without_new_rows() {
     let repo = initialized_repo();
     let (_source_root_a, source_a) = source_file("first.pdf", b"same bytes");
     let (_source_root_b, source_b) = source_file("second.pdf", b"same bytes");
@@ -145,31 +166,33 @@ fn import_copy_file_implementation_duplicate_hash_returns_error_without_new_rows
     import_file(
         path_string(repo.path()),
         path_string(&source_a),
-        copied_options(),
+        moved_options(),
     )
-    .expect("import first file");
+    .expect("import first moved file");
 
     let result = import_file(
         path_string(repo.path()),
         path_string(&source_b),
-        copied_options(),
+        moved_options(),
     );
 
     assert_eq!(result, Err(CoreError::DuplicateFile));
     assert_eq!(
-        fs::read(&source_b).expect("read duplicate source"),
+        fs::read(&source_b).expect("read restored duplicate source"),
         b"same bytes"
     );
-    assert_eq!(active_file_count(repo.path()), 1);
+    assert_eq!(count_rows(repo.path(), "files", Some("active")), 1);
+    assert_eq!(count_rows(repo.path(), "files", Some("staging")), 0);
+    assert_eq!(count_rows(repo.path(), "change_log", None), 1);
     assert_eq!(staging_entries(repo.path()), Vec::<PathBuf>::new());
 }
 
 #[test]
-fn import_copy_file_implementation_name_conflict_does_not_overwrite_existing_file() {
+fn import_move_file_implementation_name_conflict_restores_source_and_existing_file() {
     let repo = initialized_repo();
     let (_source_root_a, source_a) = source_file("first.pdf", b"first content");
     let (_source_root_b, source_b) = source_file("second.pdf", b"second content");
-    let mut options = copied_options();
+    let mut options = moved_options();
     options.override_filename = Some("same.pdf".to_owned());
 
     let first = import_file(
@@ -177,7 +200,7 @@ fn import_copy_file_implementation_name_conflict_does_not_overwrite_existing_fil
         path_string(&source_a),
         options.clone(),
     )
-    .expect("import first file");
+    .expect("import first moved file");
     let result = import_file(path_string(repo.path()), path_string(&source_b), options);
 
     assert_eq!(result, Err(CoreError::Conflict));
@@ -186,39 +209,36 @@ fn import_copy_file_implementation_name_conflict_does_not_overwrite_existing_fil
         b"first content"
     );
     assert_eq!(
-        fs::read(&source_b).expect("read second source"),
+        fs::read(&source_b).expect("read restored conflicting source"),
         b"second content"
     );
-    assert_eq!(active_file_count(repo.path()), 1);
+    assert_eq!(count_rows(repo.path(), "files", Some("active")), 1);
+    assert_eq!(count_rows(repo.path(), "files", Some("staging")), 0);
+    assert_eq!(count_rows(repo.path(), "change_log", None), 1);
     assert_eq!(staging_entries(repo.path()), Vec::<PathBuf>::new());
 }
 
 #[test]
-fn import_copy_file_implementation_invalid_filename_leaves_no_file_or_db_side_effects() {
+fn import_move_file_implementation_db_failure_restores_source_and_cleans_final_state() {
     let repo = initialized_repo();
-    let (_source_root, source) = source_file("source.pdf", b"content");
-    let mut options = copied_options();
-    options.override_filename = Some("bad/name.pdf".to_owned());
+    let (_source_root, source) = source_file("invoice.pdf", b"invoice bytes");
+    install_import_change_log_failure(repo.path());
 
-    let result = import_file(path_string(repo.path()), path_string(&source), options);
+    let result = import_file(
+        path_string(repo.path()),
+        path_string(&source),
+        moved_options(),
+    );
 
-    assert_eq!(result, Err(CoreError::InvalidPath));
-    assert_eq!(fs::read(&source).expect("read source"), b"content");
+    assert_eq!(result, Err(CoreError::Db));
+    assert_eq!(
+        fs::read(&source).expect("read source restored after DB failure"),
+        b"invoice bytes"
+    );
+    assert!(!repo.path().join("finance/invoice.pdf").exists());
     assert!(!repo.path().join("finance").exists());
-    assert_eq!(active_file_count(repo.path()), 0);
+    assert_eq!(count_rows(repo.path(), "files", Some("active")), 0);
+    assert_eq!(count_rows(repo.path(), "files", Some("staging")), 0);
+    assert_eq!(count_rows(repo.path(), "change_log", None), 0);
     assert_eq!(staging_entries(repo.path()), Vec::<PathBuf>::new());
-}
-
-#[test]
-fn import_copy_file_implementation_rejects_unimplemented_indexed_mode() {
-    let repo = initialized_repo();
-    let (_source_root, source) = source_file("source.pdf", b"content");
-    let mut options = copied_options();
-    options.mode = StorageMode::Indexed;
-
-    let result = import_file(path_string(repo.path()), path_string(&source), options);
-
-    assert_eq!(result, Err(CoreError::Internal));
-    assert_eq!(fs::read(&source).expect("read source"), b"content");
-    assert_eq!(active_file_count(repo.path()), 0);
 }
