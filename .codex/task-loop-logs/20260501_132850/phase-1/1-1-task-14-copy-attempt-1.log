@@ -1,0 +1,45 @@
+一、执行结论
+
+已完成。1-1/task-14 是 C1-03 integration-verify，本轮未修改产品实现，现有 `core/**` 证据已能证明 C1-03 的 API / UDL / Rust / 测试 / UX 消费一致性。
+
+二、执行范围
+
+- 单任务：`1-1/task-14`
+- 修改文件清单：无本轮修改
+- 工作区原有脏文件：`.codex/task-loop-runs/20260501_132850/summary.json`、`tasks/prompts/_shared/progress.json`，未触碰
+- Forbidden Touches：`apps/**` 未触碰
+
+三、完成情况
+
+- 只处理 C1-03：通过，未扩展到 C1-01/C1-02/C1-15/C1-16/C1-21 或 UI 实现
+- Exact Docs 已逐项读取，并按文档 SSOT 核验
+- Control map 消费页已交叉检查：`S1-03`、`S1-04`、`S1-05`、`S1-10` 都声明消费 C1-03
+- 无 mock/空壳：通过，现有测试覆盖真实临时目录、真实 `.areamatrix/index.db`、真实文件快照、scan session、resume、外键检查
+
+四、工程质量
+
+- 未新增代码，无过度抽象或一次性脚本实现
+- 现有 C1-03 public API 有 rustdoc，错误路径显式返回 `CoreError`
+- 文件安全边界已由测试证明：接管非空目录不移动、不重命名、不删除、不覆盖用户文件；`README.md` 被索引，根 `AREAMATRIX.md` 被保留且跳过
+- 未新增依赖
+
+五、验证情况
+
+全部通过：
+
+```bash
+cd core && cargo fmt --all -- --check
+cd core && cargo clippy --all-targets --all-features -- -D warnings
+cd core && cargo test --workspace adopt_existing_repo
+cd core && cargo test --workspace
+git diff --check
+```
+
+`adopt_existing_repo` 过滤测试结果：合同 7 个、实现 6 个、validation 3 个，全部通过。
+
+六、风险与后续
+
+剩余风险：未验证 macOS UI 真实消费，因为本 task 禁止触碰 `apps/**`，页面实现属于后续 Phase 2 page-feature / page integration 任务。
+
+建议下一个任务：继续 `1-1/task-15`，进入 C1-04 相关边界。
+
