@@ -59,12 +59,38 @@ pub fn validate_initialized_repo_path(repo_path: String) -> CoreResult<RepoPathV
     repo_path::validate_initialized_repo_path(repo_path)
 }
 
-/// Initializes a repository.
+/// Initializes AreaMatrix metadata for a repository root.
+///
+/// The C1-02 contract uses `RepoInitOptions { mode: CreateEmpty, .. }` for an
+/// empty user-selected directory. A successful call creates only AreaMatrix
+/// metadata: `.areamatrix/index.db`, `.areamatrix/staging/`,
+/// `.areamatrix/archives/`, `.areamatrix/generated/`, default classifier and
+/// ignore config files, and the generated root overview under
+/// `.areamatrix/generated/root.md`.
+///
+/// The API returns `Ok(())` after the empty repository can be read through
+/// [`load_config`], `list_files`, and [`list_tree_json`]. It must never create,
+/// delete, move, rename, or overwrite user-authored files such as `README.md`.
+///
+/// # Errors
+///
+/// Returns `CoreError::InvalidPath` for empty paths or `.areamatrix` internals,
+/// `CoreError::PermissionDenied` for unwritable roots, `CoreError::Config` for
+/// invalid init options or repeated initialization, `CoreError::Io` for
+/// filesystem failures, and `CoreError::Db` for SQLite initialization failures.
 pub fn init_repo(_repo_path: String, _options: RepoInitOptions) -> CoreResult<()> {
     not_implemented()
 }
 
-/// Loads repository configuration.
+/// Loads repository configuration written during initialization.
+///
+/// C1-02 requires this API to read the `repo_config` state created by
+/// [`init_repo`] for an empty repository.
+///
+/// # Errors
+///
+/// Returns `CoreError::Io`, `CoreError::Config`, or `CoreError::Db` when the
+/// initialized metadata cannot be read or decoded.
 pub fn load_config(_repo_path: String) -> CoreResult<RepoConfig> {
     not_implemented()
 }
@@ -148,6 +174,15 @@ pub fn list_changes(_repo_path: String, _filter: ChangeFilter) -> CoreResult<Vec
 }
 
 /// Returns repository tree data as JSON.
+///
+/// After C1-02 empty initialization this returns the empty repository tree that
+/// the first main window can render without scanning user files.
+///
+/// # Errors
+///
+/// Returns `CoreError::RepoNotInitialized` when metadata is missing,
+/// `CoreError::Db` when the tree cannot be read from SQLite, and
+/// `CoreError::Io` when repository metadata cannot be inspected.
 pub fn list_tree_json(_repo_path: String, _locale: String) -> CoreResult<String> {
     not_implemented()
 }
