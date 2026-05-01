@@ -1,0 +1,75 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`1-2/task-07`
+- 对应文件路径：
+  - [task-07-c1-06-failure-recovery.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-1/1-2-import-classify/task-07-c1-06-failure-recovery.md:1)
+  - [phase-1.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-1.md:806)
+  - [import.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/import.rs:19)
+  - [import_copy_file_failure_recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/import_copy_file_failure_recovery.rs:1)
+  - [area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:38)
+
+三、完成度摘要
+
+- 已覆盖项数：5
+- 未覆盖项数：0
+- 通过项数：5
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 C1-06 failure-recovery 范围
+- 结果：通过
+- 证据：task 绑定 C1-06，manifest 绑定 C1-06；实现入口只接受 `StorageMode::Copied`，非 copy 模式返回错误，未扩展 C1-07/C1-08。
+- 涉及文件：[task](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-1/1-2-import-classify/task-07-c1-06-failure-recovery.md:12)、[storage/import.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/import.rs:82)
+
+- 项目：Exact Docs 作为 SSOT
+- 结果：通过
+- 证据：已读取 manifest 的 5 个 Exact Docs；C1-06 要求源文件不变、staging、DB active、change_log 一致，事务式导入要求失败不留下 DB 记录或最终半文件。
+- 涉及文件：[manifest](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-1.md:811)、[C1-06 spec](/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-06-import-copy-file.md:47)、[transactional-import](/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/transactional-import.md:11)
+
+- 项目：不实现相邻 C1 能力或 UI 页面
+- 结果：通过
+- 证据：`apps/**` 无改动；实现仍在 Core storage/import 路径，UDL 仅保留既有 `import_file` 合同。
+- 涉及文件：[area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:38)
+
+- 项目：覆盖失败、回滚、重复执行或权限错误路径
+- 结果：通过
+- 证据：新增测试覆盖 DB promotion 失败回滚最终文件、失败后重试、Duplicate Ask 无副作用、PermissionDenied 无副作用；实现用 staging guard、final file guard、DB staging row guard 做失败清理。
+- 涉及文件：[failure tests](/Users/as/Ai-Project/project/AreaMatrix/core/tests/import_copy_file_failure_recovery.rs:107)、[storage/import.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/import.rs:31)
+
+- 项目：不得删除、覆盖或移动未确认用户文件
+- 结果：通过
+- 证据：copy 路径从 source 复制到 staging，测试断言源文件内容保持；清理 guard 只清理由本次 import 创建的 staging/final 文件。
+- 涉及文件：[hash.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/hash.rs:18)、[storage/import.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/import.rs:404)
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。导入流程拆成 prepare、stage、duplicate check、destination、DB staging、filesystem commit、promote，控制流清晰。
+- 注释 / rustdoc / 文档同步：通过。public API 有 rustdoc 和 Errors 说明；UDL/API 与 C1-06 合同一致。
+- 错误处理与边界处理：通过。`PermissionDenied`、`DuplicateFile`、`Db` promotion 失败和重试路径均有测试证据。
+- 测试与验证覆盖：通过。manifest 三条命令通过，并额外补跑完整 `cargo test --workspace`。
+- 占位、硬编码、mock-only、一次性实现检查：通过。实现连接真实 FS、SQLite、hash、staging、change_log；未发现 mock-only 闭环。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`cd core && cargo fmt --all -- --check`：通过
+- 已运行：`cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过
+- 已运行：`cd core && cargo test --workspace import_copy_file`：通过，15 个匹配测试通过
+- 已运行：`cd core && cargo test --workspace`：通过，113 个测试通过
+- 缺失：未运行 macOS app 验证，原因是本 task 禁止触碰 `apps/**`，且 `git status --short apps` 无输出。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+- 备注：当前工作区中 `core/tests/import_copy_file_failure_recovery.rs` 是新增未跟踪文件，属于 `Expected New Paths`；后续进入 checkpoint/提交前需要纳入 Git 证据。
+
+VERIFY_RESULT: PASS

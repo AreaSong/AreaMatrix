@@ -1,0 +1,39 @@
+一、执行结论
+
+已完成 `1-2/task-07`。
+
+二、执行范围
+
+单任务：C1-06 `import-copy-file` failure-recovery。  
+修改文件：
+
+- 新增 [import_copy_file_failure_recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/import_copy_file_failure_recovery.rs:1)
+
+未触碰 `apps/**`。工作区原本已有 `.codex/task-loop-runs/20260501_132850/summary.json` 和 `tasks/prompts/_shared/progress.json` 修改，我未处理这些非本任务改动。
+
+三、完成情况
+
+核对清单全部满足：只覆盖 C1-06；已读取 Exact Docs；未实现相邻 C1 能力或 UI；新增测试覆盖 DB promote 失败回滚、失败后重复执行、duplicate Ask 无副作用、源文件权限失败；未删除、覆盖或移动用户文件。
+
+完成标准满足：C1-06 failure-recovery 现在有自动化测试证据证明，且无 scope 扩散。
+
+四、工程质量
+
+新增测试全部使用临时目录和临时 SQLite trigger 做故障注入，不引入生产 mock、硬编码通过态或新依赖。关键证据包括 final 文件回滚、staging 清空、DB staging row 清理、change_log 不残留、源文件内容保持不变，以及权限恢复清理。
+
+五、验证情况
+
+已运行并通过：
+
+- `cd core && cargo fmt --all -- --check`
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`
+- `cd core && cargo test --workspace import_copy_file`
+- `cd core && cargo test --workspace`
+- `git diff --check`
+
+无法运行项：无。
+
+六、风险与后续
+
+剩余风险：权限失败测试是 Unix 条件测试，当前环境覆盖 macOS/Linux 类权限语义；未做 macOS UI 验证，因为本任务无 UI 绑定。  
+建议下一个任务：继续 `1-2/task-08`，做 C1-06 validation 收口。  
