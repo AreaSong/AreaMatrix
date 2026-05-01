@@ -1,0 +1,39 @@
+一、执行结论
+
+已完成 `1-2/task-08`。
+
+二、执行范围
+
+单任务：C1-06 `import-copy-file` validation。  
+修改文件清单：新增 [core/tests/import_copy_file_validation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/import_copy_file_validation.rs:142)。
+
+工作区另有执行前已存在的脏文件：`.codex/task-loop-runs/20260501_132850/summary.json`、`tasks/prompts/_shared/progress.json`，本次未触碰。
+
+三、完成情况
+
+- 只处理 C1-06 validation：完成。
+- 已读取 Exact Docs，并按文档 SSOT 验证 Copy 模式源文件保留、FS/DB/change_log 一致性、失败无 active 半成品。
+- 未实现相邻 C1 能力或 UI 页面。
+- 补齐 Rust validation 测试：新增 4 个测试。
+- 成功路径和关键错误路径已覆盖：成功导入、metadata 内部源路径拒绝、metadata 目标目录拒绝、重复 hash 拒绝。
+- Forbidden Touches：未触碰 `apps/**`。
+
+四、工程质量
+
+新增测试使用真实 `init_repo`、`import_file`、SQLite DB 和临时文件系统，不是 mock-only 或硬编码通过态。测试拆分了 DB row / change_log 断言 helper，函数长度和结构满足当前编码规范。未新增依赖，未修改 public API、UDL 或生产代码。
+
+五、验证情况
+
+全部通过：
+
+- `cd core && cargo fmt --all -- --check`
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`
+- `cd core && cargo test --workspace import_copy_file`
+- 额外扩大验证：`cd core && cargo test --workspace`
+- 额外空白检查：`git diff --check`
+
+六、风险与后续
+
+剩余风险：本次只新增 validation 证据，不改变生产行为；测试全部在 `tempfile` 临时目录执行，不触碰真实用户文件。回滚方式是删除新增测试文件。  
+建议下一个任务：继续执行 phase manifest 中的 `1-2/task-09`。
+
