@@ -75,6 +75,13 @@ fn validate_repo_path_rejects_area_matrix_internal_paths() {
 }
 
 #[test]
+fn validate_repo_path_rejects_empty_path() {
+    let result = validate_repo_path(String::new());
+
+    assert_eq!(result, Err(CoreError::InvalidPath));
+}
+
+#[test]
 fn validate_repo_path_reports_missing_path_as_structured_issue() {
     let repo = tempfile::tempdir().expect("create temporary repository directory");
     let missing_path = repo.path().join("missing");
@@ -111,6 +118,33 @@ fn validate_repo_path_rejects_icloud_placeholder_marker() {
 }
 
 #[test]
+fn validate_repo_path_reports_icloud_directory_as_structured_risk() {
+    let repo = tempfile::tempdir().expect("create temporary repository directory");
+    let icloud_dir = repo.path().join("Mobile Documents");
+    fs::create_dir(&icloud_dir).expect("create iCloud-like directory");
+
+    let validation = validate_repo_path(path_string(&icloud_dir)).expect("validate iCloud path");
+
+    assert!(validation.is_icloud_path);
+    assert!(validation.is_empty);
+    assert_eq!(validation.recommended_mode, Some(RepoInitMode::CreateEmpty));
+    assert_eq!(validation.issues, vec![RepoPathIssue::ICloudPath]);
+}
+
+#[test]
+fn validate_repo_path_ignores_hidden_system_entries_for_empty_recommendation() {
+    let repo = tempfile::tempdir().expect("create temporary repository directory");
+    fs::write(repo.path().join(".DS_Store"), "finder metadata").expect("write hidden metadata");
+
+    let validation =
+        validate_repo_path(path_string(repo.path())).expect("validate hidden-only directory");
+
+    assert!(validation.is_empty);
+    assert_eq!(validation.recommended_mode, Some(RepoInitMode::CreateEmpty));
+    assert_eq!(validation.issues, Vec::<RepoPathIssue>::new());
+}
+
+#[test]
 fn validate_repo_path_reports_unfinished_scan_session_from_existing_metadata() {
     let repo = tempfile::tempdir().expect("create temporary repository directory");
     let metadata_dir = repo.path().join(".areamatrix");
@@ -131,6 +165,23 @@ fn validate_repo_path_reports_unfinished_scan_session_from_existing_metadata() {
             RepoPathIssue::UnfinishedScanSession,
         ]
     );
+}
+
+#[test]
+fn validate_repo_path_does_not_report_completed_scan_session_as_unfinished() {
+    let repo = tempfile::tempdir().expect("create temporary repository directory");
+    let metadata_dir = repo.path().join(".areamatrix");
+    fs::create_dir(&metadata_dir).expect("create metadata directory");
+    let db_path = metadata_dir.join("index.db");
+    create_scan_session_db(&db_path, "completed");
+
+    let validation =
+        validate_repo_path(path_string(repo.path())).expect("validate completed scan session");
+
+    assert!(validation.is_initialized);
+    assert!(!validation.has_unfinished_scan_session);
+    assert_eq!(validation.recommended_mode, None);
+    assert_eq!(validation.issues, vec![RepoPathIssue::AlreadyInitialized]);
 }
 
 #[cfg(unix)]
