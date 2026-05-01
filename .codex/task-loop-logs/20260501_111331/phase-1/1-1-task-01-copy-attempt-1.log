@@ -1,0 +1,20 @@
+已完成只读准备阶段，尚未修改文件。
+
+结论：`1-1/task-01` 是 High 风险任务，且涉及 `core/area_matrix.udl`、Core public API 和 Swift bridge 合同面。按仓库规则，我需要在动手前等你明确确认。
+
+我已确认的实现边界：
+
+- 只会触碰：`core/src/**`、`core/area_matrix.udl`、`core/tests/**`
+- 不会触碰：`apps/**`
+- 目标是补齐 C1-01 contract-api：`validate_repo_path(repo_path) -> RepoPathValidation`
+- 不做初始化、不接管目录、不创建 `.areamatrix/`、不扫描、不写 DB、不实现相邻 C1 能力
+
+风险与回滚：
+
+- 风险：UDL/API 新增类型和函数会影响 UniFFI 生成与后续 Swift bridge 消费。
+- 风险：路径校验必须保持只读，不能误写用户目录。
+- 验证：按 manifest 跑 `cargo fmt`、`cargo clippy`、`cargo test --workspace validate_repo_path`。
+- 回滚：若实现或 UDL 不符合预期，只需回退本次在 `core/src/**`、`core/area_matrix.udl`、`core/tests/**` 的改动；不涉及用户文件、DB migration 或 `apps/**`。
+
+请确认：可以开始按上述边界修改并完成验证吗？
+

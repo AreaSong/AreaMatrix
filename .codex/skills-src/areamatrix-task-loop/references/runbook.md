@@ -34,6 +34,17 @@ Dry-run proves only runner flow. It does not prove implementation, verification,
 
 `RISK_POLICY=allow` injects an explicit silent-approval context into copy-ready runs. The agent should still record risk, validation, and rollback notes, but should not pause for High / Mission-Critical confirmation unless the task would delete, move, overwrite, or otherwise destructively modify real user files.
 
+## Skill Paths
+
+Repo-local skills live in this repository:
+
+```text
+.codex/skills-src/<skill>/SKILL.md
+.agents/skills/<skill>/SKILL.md
+```
+
+Do not use `/Users/as/.codex/skills-src/<skill>/SKILL.md`; that is not the AreaMatrix repo-local source.
+
 ## Start Points
 
 Use no `START_FROM` for the first eligible task in phase order.

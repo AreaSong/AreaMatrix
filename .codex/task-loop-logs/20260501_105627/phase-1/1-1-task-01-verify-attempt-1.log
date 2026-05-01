@@ -1,0 +1,59 @@
+DRY RUN OUTPUT (command not executed)
+label: 1-1/task-01
+phase: phase-1
+sandbox: read-only
+model: gpt-5.5
+reasoning_effort: xhigh
+prompt_file: /Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/verify-ready/phase-1/1-1-task-01.md
+attempt: 1
+
+--- injected_retry_prompt ---
+自动任务循环输出要求：
+- 保留简明验收报告，尤其是不通过时的失败摘要、阻塞项、文件路径和验证缺口。
+- 工程质量不达标时必须写清楚质量阻塞点，供下一轮“全部全面修复”使用。
+- 最后一行必须单独输出 VERIFY_RESULT: PASS 或 VERIFY_RESULT: FAIL。
+- 不要在最后一行之后输出任何内容。
+
+--- prompt_head (40 lines) ---
+# Verify-ready Prompt: 1-1/task-01
+
+你现在进入 AreaMatrix 的单任务验收模式。
+
+## 工作目录
+
+`/Users/as/Ai-Project/project/AreaMatrix`
+
+## 本次验收对象
+
+- 类型：单任务验收
+- 任务类型：`atomic`
+- 任务细分：`core-contract`
+- Phase：`phase-1`
+- Task 标识：`1-1/task-01`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-1/1-1-repo-config/task-01-c1-01-contract-api.md`
+- 共享规则：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/audit-rules.md`
+- 任务切片规则：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/task-slicing-rules.md`
+- 工程质量规则：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/engineering-quality-rules.md`
+- 编码规范：`/Users/as/Ai-Project/project/AreaMatrix/docs/development/coding-standards.md`
+- 依赖关系：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/dependency-graph.md`
+- Phase Manifest：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-1.md`
+- Manifest 章节：`## 1-1/task-01`
+- 依赖任务：`0-2/task-13`
+- 风险等级：`High`
+- 绑定 UX 页面：`None`
+- 绑定 Core 能力：`C1-01`
+- Control map 期望 Core 能力：`None`
+- 当前 task 覆盖 Core 能力：`C1-01`
+- Secondary capability 状态：`None`
+- Control map 之外能力：`None`
+- 是否允许修改文件：`否，本模式只读验收`
+- Manifest 计数：文档 `4` 个，现有代码 `2` 项，预期新增路径 `3` 项，禁止触碰路径 `1` 项，验证命令 `3` 个
+
+你的任务不是继续实现，而是严格验收这个 task 当前是否已经真正达到完成标准。
+这次是验收，不是修复：禁止修改文件，禁止边验边改。
+
+## 开始前必须按顺序完成
+
+1. 读取 task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-1/1-1-repo-config/task-01-c1-01-contract-api.md`
+
+VERIFY_RESULT: PASS

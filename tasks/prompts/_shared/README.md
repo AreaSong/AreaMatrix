@@ -29,4 +29,5 @@ python3 tasks/prompts/_shared/prompt_pipeline.py status
 - `render` 是执行模式，可以改文件。
 - `verify` 是验收模式，禁止改文件。
 - copy-ready / verify-ready 都必须读取工程质量规则和 `docs/development/coding-standards.md`。
+- verify-ready / phase-verify 会内嵌 validation-driver 关键规则，并明确 repo-local skill 路径。
 - `mark` 只记录人工进度，不代表自动验收。

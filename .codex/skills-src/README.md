@@ -8,6 +8,7 @@
 
 - 项目级 skill 以本目录内容为准。
 - 仓库根 `.agents/skills/areamatrix-*` 仅作为 Codex 自动发现这些 skill 的入口。
+- `codex exec` 或 prompt 内需要手动读取 skill 时，必须读取仓库内 `.codex/skills-src/<skill>/SKILL.md` 或 `.agents/skills/<skill>/SKILL.md`，不要猜测 `/Users/as/.codex/skills-src/...`。
 - 暂不维护 `.agents/skills-portable/`；只有目标环境不支持 symlink 时再补。
 - 默认优先支持隐式触发；显式 `$areamatrix-*` 用于强制指定工作视角。
 - 若 skill 语义变化涉及项目规则，先更新 `.ai-governance/`，再同步 skill 文本。

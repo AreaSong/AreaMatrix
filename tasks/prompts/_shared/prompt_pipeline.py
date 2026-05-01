@@ -24,6 +24,21 @@ CODING_STANDARDS = ROOT / "docs" / "development" / "coding-standards.md"
 PROGRESS_PATH = SHARED_ROOT / "progress.json"
 COPY_READY_ROOT = SHARED_ROOT / "copy-ready"
 VERIFY_READY_ROOT = SHARED_ROOT / "verify-ready"
+SKILL_SOURCE_ROOT = ROOT / ".codex" / "skills-src"
+SKILL_DISCOVERY_ROOT = ROOT / ".agents" / "skills"
+REPO_LOCAL_SKILLS = (
+    "areamatrix-task-loop",
+    "areamatrix-validation-driver",
+    "areamatrix-doc-sync",
+    "areamatrix-file-safety",
+)
+VALIDATION_DRIVER_SKILL = SKILL_SOURCE_ROOT / "areamatrix-validation-driver" / "SKILL.md"
+VALIDATION_DRIVER_MATRIX = (
+    SKILL_SOURCE_ROOT / "areamatrix-validation-driver" / "references" / "validation-matrix.md"
+)
+VALIDATION_DRIVER_REPORT = (
+    SKILL_SOURCE_ROOT / "areamatrix-validation-driver" / "references" / "report-format.md"
+)
 
 ALLOWED_NEW_ROOTS = (
     "AGENTS.md",
@@ -778,6 +793,14 @@ def collect_doctor_findings() -> tuple[list[str], list[str], dict[str, TaskFile]
         errors.append(f"missing dependency graph: {rel(DEPENDENCY_GRAPH)}")
     if not CODING_STANDARDS.exists():
         errors.append(f"missing coding standards: {rel(CODING_STANDARDS)}")
+    for name in REPO_LOCAL_SKILLS:
+        if not skill_file(name).exists():
+            errors.append(f"missing repo-local skill: {rel(skill_file(name))}")
+        if not discovery_skill_file(name).exists():
+            errors.append(f"missing repo-local skill discovery entry: {rel(discovery_skill_file(name))}")
+    for path in [VALIDATION_DRIVER_MATRIX, VALIDATION_DRIVER_REPORT]:
+        if not path.exists():
+            errors.append(f"missing validation-driver reference: {rel(path)}")
 
     for label, task in sorted(tasks.items(), key=lambda item: label_sort_key(item[0])):
         entry = manifests.get(label)
@@ -883,6 +906,45 @@ def markdown_section(text: str, heading: str) -> str:
     return text[match.end() : end].strip() or "该章节为空。"
 
 
+def skill_file(name: str) -> Path:
+    return SKILL_SOURCE_ROOT / name / "SKILL.md"
+
+
+def discovery_skill_file(name: str) -> Path:
+    return SKILL_DISCOVERY_ROOT / name / "SKILL.md"
+
+
+def print_repo_local_skill_paths() -> None:
+    print("## Repo-local Skill 路径")
+    print()
+    print(f"- Skill 源事实目录：`{SKILL_SOURCE_ROOT}`")
+    print(f"- Skill 发现入口：`{SKILL_DISCOVERY_ROOT}`")
+    print("- 禁止猜测全局路径：不要读取 `/Users/as/.codex/skills-src/...`。")
+    print("- 若需要使用 AreaMatrix repo-local skill，只读取以下路径：")
+    for name in REPO_LOCAL_SKILLS:
+        print(f"  - `{name}`：`{skill_file(name)}`")
+    print()
+
+
+def print_validation_driver_reference() -> None:
+    print("## Validation Driver 规则")
+    print()
+    print("验收和验证选择必须使用 repo-local validation-driver；本节已内嵌关键规则，避免误读全局 skill 路径。")
+    print()
+    print("### Skill")
+    print()
+    print(VALIDATION_DRIVER_SKILL.read_text(encoding="utf-8").strip())
+    print()
+    print("### Validation Matrix")
+    print()
+    print(VALIDATION_DRIVER_MATRIX.read_text(encoding="utf-8").strip())
+    print()
+    print("### Report Format")
+    print()
+    print(VALIDATION_DRIVER_REPORT.read_text(encoding="utf-8").strip())
+    print()
+
+
 def print_copy_prompt(task: TaskFile, entry: ManifestEntry) -> None:
     task_text = task.path.read_text(encoding="utf-8")
     checklist = markdown_section(task_text, "核对清单")
@@ -915,6 +977,8 @@ def print_copy_prompt(task: TaskFile, entry: ManifestEntry) -> None:
     print(f"- 任务切片规则：`{TASK_SLICING_RULES}`")
     print(f"- 工程质量规则：`{ENGINEERING_QUALITY_RULES}`")
     print(f"- 编码规范：`{CODING_STANDARDS}`")
+    print(f"- Repo-local Skills：`{SKILL_SOURCE_ROOT}`")
+    print(f"- Validation Driver：`{VALIDATION_DRIVER_SKILL}`")
     print(f"- 依赖关系：`{DEPENDENCY_GRAPH}`")
     print(f"- Phase Manifest：`{entry.manifest_path}`")
     print(f"- Manifest 章节：`## {entry.label}`")
@@ -943,14 +1007,15 @@ def print_copy_prompt(task: TaskFile, entry: ManifestEntry) -> None:
     print(f"3. 读取任务切片规则：`{TASK_SLICING_RULES}`")
     print(f"4. 读取工程质量规则：`{ENGINEERING_QUALITY_RULES}`")
     print(f"5. 读取编码规范：`{CODING_STANDARDS}`")
-    print(f"6. 读取依赖关系：`{DEPENDENCY_GRAPH}`")
-    print(f"7. 读取 phase manifest：`{entry.manifest_path}`")
-    print(f"8. 在 manifest 中定位章节：`## {entry.label}`")
-    print("9. 逐个读取该章节下的 `Exact Docs`。")
-    print("10. 逐个读取当前存在的 `Existing Code`。")
-    print("11. 确认改动只会落在 `Expected New Paths`。")
-    print("12. 确认不会触碰 `Forbidden Touches`。")
-    print("13. 若风险等级为 High 或 Mission-Critical，先给出风险、验证和回滚思路；若自动执行器已注入静默授权，则记录后直接继续。")
+    print(f"6. 读取 repo-local skill 路径说明：`{SKILL_SOURCE_ROOT}`；不要读取 `/Users/as/.codex/skills-src/...`。")
+    print(f"7. 读取依赖关系：`{DEPENDENCY_GRAPH}`")
+    print(f"8. 读取 phase manifest：`{entry.manifest_path}`")
+    print(f"9. 在 manifest 中定位章节：`## {entry.label}`")
+    print("10. 逐个读取该章节下的 `Exact Docs`。")
+    print("11. 逐个读取当前存在的 `Existing Code`。")
+    print("12. 确认改动只会落在 `Expected New Paths`。")
+    print("13. 确认不会触碰 `Forbidden Touches`。")
+    print("14. 若风险等级为 High 或 Mission-Critical，先给出风险、验证和回滚思路；若自动执行器已注入静默授权，则记录后直接继续。")
     print()
     print("## 本次任务标题")
     print()
@@ -980,6 +1045,7 @@ def print_copy_prompt(task: TaskFile, entry: ManifestEntry) -> None:
     print()
     print(ENGINEERING_QUALITY_RULES.read_text(encoding="utf-8").strip())
     print()
+    print_repo_local_skill_paths()
     print("## 任务正文")
     print()
     print(task_text.strip())
@@ -1075,6 +1141,8 @@ def print_verify_prompt(task: TaskFile, entry: ManifestEntry) -> None:
     print(f"- 任务切片规则：`{TASK_SLICING_RULES}`")
     print(f"- 工程质量规则：`{ENGINEERING_QUALITY_RULES}`")
     print(f"- 编码规范：`{CODING_STANDARDS}`")
+    print(f"- Repo-local Skills：`{SKILL_SOURCE_ROOT}`")
+    print(f"- Validation Driver：`{VALIDATION_DRIVER_SKILL}`")
     print(f"- 依赖关系：`{DEPENDENCY_GRAPH}`")
     print(f"- Phase Manifest：`{entry.manifest_path}`")
     print(f"- Manifest 章节：`## {entry.label}`")
@@ -1106,14 +1174,15 @@ def print_verify_prompt(task: TaskFile, entry: ManifestEntry) -> None:
     print(f"3. 读取任务切片规则：`{TASK_SLICING_RULES}`")
     print(f"4. 读取工程质量规则：`{ENGINEERING_QUALITY_RULES}`")
     print(f"5. 读取编码规范：`{CODING_STANDARDS}`")
-    print(f"6. 读取依赖关系：`{DEPENDENCY_GRAPH}`")
-    print(f"7. 读取 phase manifest：`{entry.manifest_path}`")
-    print(f"8. 在 manifest 中定位章节：`## {entry.label}`")
-    print("9. 逐个读取该章节下的 `Exact Docs`。")
-    print("10. 逐个读取该章节下当前存在的 `Existing Code`。")
-    print("11. 检查 `Expected New Paths` 是否已按任务完成标准落地；缺失即记录证据。")
-    print("12. 检查 `Forbidden Touches` 是否被违规修改。")
-    print("13. 基于 task 文件中的核对清单、完成标准和工程质量规则逐项验收。")
+    print(f"6. 读取 validation-driver：`{VALIDATION_DRIVER_SKILL}`；不要读取 `/Users/as/.codex/skills-src/...`。")
+    print(f"7. 读取依赖关系：`{DEPENDENCY_GRAPH}`")
+    print(f"8. 读取 phase manifest：`{entry.manifest_path}`")
+    print(f"9. 在 manifest 中定位章节：`## {entry.label}`")
+    print("10. 逐个读取该章节下的 `Exact Docs`。")
+    print("11. 逐个读取该章节下当前存在的 `Existing Code`。")
+    print("12. 检查 `Expected New Paths` 是否已按任务完成标准落地；缺失即记录证据。")
+    print("13. 检查 `Forbidden Touches` 是否被违规修改。")
+    print("14. 基于 task 文件中的核对清单、完成标准、工程质量规则和 validation-driver 逐项验收。")
     print()
     print("## 本次任务标题")
     print()
@@ -1147,6 +1216,8 @@ def print_verify_prompt(task: TaskFile, entry: ManifestEntry) -> None:
     print()
     print(ENGINEERING_QUALITY_RULES.read_text(encoding="utf-8").strip())
     print()
+    print_repo_local_skill_paths()
+    print_validation_driver_reference()
     print("## 验收原则")
     print()
     print("- 无法证明通过，就判定不通过。")
@@ -1284,6 +1355,8 @@ def print_phase_verify_prompt(phase: str, tasks: dict[str, TaskFile], manifests:
     print(f"- 任务切片规则：`{TASK_SLICING_RULES}`")
     print(f"- 工程质量规则：`{ENGINEERING_QUALITY_RULES}`")
     print(f"- 编码规范：`{CODING_STANDARDS}`")
+    print(f"- Repo-local Skills：`{SKILL_SOURCE_ROOT}`")
+    print(f"- Validation Driver：`{VALIDATION_DRIVER_SKILL}`")
     print(f"- 依赖关系：`{DEPENDENCY_GRAPH}`")
     print(f"- Phase Manifest：`{MANIFEST_ROOT / (normalized + '.md')}`")
     print()
@@ -1296,12 +1369,13 @@ def print_phase_verify_prompt(phase: str, tasks: dict[str, TaskFile], manifests:
     print(f"2. 读取任务切片规则：`{TASK_SLICING_RULES}`")
     print(f"3. 读取工程质量规则：`{ENGINEERING_QUALITY_RULES}`")
     print(f"4. 读取编码规范：`{CODING_STANDARDS}`")
-    print(f"5. 读取依赖关系：`{DEPENDENCY_GRAPH}`")
-    print(f"6. 读取 phase manifest：`{MANIFEST_ROOT / (normalized + '.md')}`")
-    print("7. 按下方顺序逐个验收 task。")
-    print("8. 每个 task 都必须回到 task 文件、manifest 章节、实际文件三者交叉验收。")
-    print("9. 已存在 capability specs 的 task 必须额外交叉检查 UX 页面、Core 能力规格和对应 control map。")
-    print("10. 任一 task 不通过，则阶段不通过。")
+    print(f"5. 读取 validation-driver：`{VALIDATION_DRIVER_SKILL}`；不要读取 `/Users/as/.codex/skills-src/...`。")
+    print(f"6. 读取依赖关系：`{DEPENDENCY_GRAPH}`")
+    print(f"7. 读取 phase manifest：`{MANIFEST_ROOT / (normalized + '.md')}`")
+    print("8. 按下方顺序逐个验收 task。")
+    print("9. 每个 task 都必须回到 task 文件、manifest 章节、实际文件三者交叉验收。")
+    print("10. 已存在 capability specs 的 task 必须额外交叉检查 UX 页面、Core 能力规格和对应 control map。")
+    print("11. 任一 task 不通过，则阶段不通过。")
     print()
     print("## 阶段任务清单")
     print()
@@ -1326,6 +1400,8 @@ def print_phase_verify_prompt(phase: str, tasks: dict[str, TaskFile], manifests:
     print()
     print(ENGINEERING_QUALITY_RULES.read_text(encoding="utf-8").strip())
     print()
+    print_repo_local_skill_paths()
+    print_validation_driver_reference()
     print("## 单任务验收要求")
     print()
     print("对每个 task，必须检查：")

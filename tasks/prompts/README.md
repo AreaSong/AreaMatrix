@@ -110,6 +110,12 @@ Codex CLI 查找顺序：
 2. Codex.app 内置 CLI：`/Applications/Codex.app/Contents/Resources/codex`
 3. 显式环境变量：`CODEX_BIN=/path/to/codex`
 
+Repo-local skills：
+
+- 源事实目录：`.codex/skills-src/`
+- 发现入口：`.agents/skills/`
+- copy-ready / verify-ready prompt 会显式写出正确 skill 路径，并内嵌 validation-driver 的关键规则，避免 `codex exec` 误读 `/Users/as/.codex/skills-src/...`。
+
 默认风险门禁：
 
 ```bash

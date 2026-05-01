@@ -40,9 +40,4 @@ AreaMatrix-dev/
 .idea/
 .vscode/
 
-# AreaMatrix prompt runner local state
-tasks/prompts/_shared/progress.json
-
-# Local task-loop automation outputs
-.codex/task-loop-state.txt
-.codex/task-loop-logs/
+# AreaMatrix task-loop progress and logs are tracked as resumable workflow evidence.

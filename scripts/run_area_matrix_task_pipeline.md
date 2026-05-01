@@ -24,6 +24,10 @@ Codex CLI：
 - 如果普通终端没有 `codex`，会自动尝试 `/Applications/Codex.app/Contents/Resources/codex`。
 - 如果你安装在其他位置，可以显式设置 `CODEX_BIN=/path/to/codex`。
 
+Repo-local skills：
+- copy-ready / verify-ready prompt 会写明 `.codex/skills-src/` 与 `.agents/skills/` 的正确路径。
+- 验收 prompt 会内嵌 validation-driver 的关键规则，避免 `codex exec` 自己猜 `/Users/as/.codex/skills-src/...`。
+
 默认重试：
 - `MAX_RETRIES=0`（`0` 表示无限重试）
 

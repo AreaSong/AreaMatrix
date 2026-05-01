@@ -1,0 +1,44 @@
+一、执行结论
+
+- 已完成。
+- 本轮未修改文件：8 个 `Expected New Paths` 已全部存在且内容满足 `0-1/task-01`，无需为了任务状态做无意义改写。
+
+二、执行范围
+
+- 单任务：`0-1/task-01`
+- 修改文件清单：无
+- 已检查路径：
+  - `AGENTS.md`
+  - `.ai-governance/README.md`
+  - `.ai-governance/core/agent-principles.md`
+  - `.ai-governance/project/areamatrix-rules.md`
+  - `.ai-governance/workflows/prompt-task-runtime.md`
+  - `.codex/README.md`
+  - `.codex/references/index.md`
+  - `.codex/templates/prompt-task-template.md`
+
+三、完成情况
+
+- 根 `AGENTS.md`：已覆盖入口顺序、SSOT、高风险边界、关键不变量和验证要求。
+- `.ai-governance/`：已声明 AI 协作统一源事实，并覆盖通用原则、项目规则、prompt runtime。
+- `.codex/`：已明确只承载 Codex 适配材料，不抢 `.ai-governance/` 和 `docs/` 的权威。
+- `core/AGENTS.md` / `apps/macos/AGENTS.md`：当前仓库已有这些后续工程路径文件，但本任务未创建、未修改，也未触碰 `core/**` 或 `apps/**`。
+- Forbidden Touches：未触碰。`git status --short` 为空。
+
+四、工程质量
+
+- 本任务是治理文档任务，无产品代码变更。
+- 文档结构清晰，没有引入业务逻辑、mock-only、硬编码通过态或一次性脚本。
+- 与已读 `README.zh-CN.md`、`docs/README.md`、`docs/roadmap/stage-1-mvp.md`、`docs/development/coding-standards.md` 未发现明显冲突。
+
+五、验证情况
+
+- 已运行：`python3 tasks/prompts/_shared/prompt_pipeline.py doctor`
+- 结果：通过
+- 输出关键结果：`doctor: OK`，`tasks: 637`，`manifests: 637`
+- 无无法运行项。
+
+六、风险与后续
+
+- 剩余风险：无当前任务阻塞项。
+- 建议下一个任务：进入只读 `verify --task 0-1/task-01` 验收；验收通过后再推进 `0-1/task-02`。  
