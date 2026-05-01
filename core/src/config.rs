@@ -15,5 +15,9 @@ pub(crate) fn default_repo_config(
         ai_enabled: false,
         locale: DEFAULT_LOCALE.to_owned(),
         icloud_warn: true,
+        enable_extension_rules: true,
+        enable_keyword_rules: true,
+        fallback_to_inbox: true,
+        allow_replace_during_import: false,
     }
 }

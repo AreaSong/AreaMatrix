@@ -110,6 +110,10 @@ dictionary RepoConfig {
     boolean ai_enabled;
     string locale;
     boolean icloud_warn;
+    boolean enable_extension_rules;
+    boolean enable_keyword_rules;
+    boolean fallback_to_inbox;
+    boolean allow_replace_during_import;
 };
 
 dictionary RepoInitOptions {
@@ -492,9 +496,16 @@ try AreaMatrix.updateConfig(repoPath: repoPath, newConfig: cfg)
 
 通过 SQLite 事务更新 `repo_config` 中的
 `repo_path`、`default_mode`、`overview_output`、`ai_enabled`、`locale`、
-`icloud_warn`，并为每个键刷新 `updated_at`。该调用不写 tmp 文件、不
+`icloud_warn`、`enable_extension_rules`、`enable_keyword_rules`、
+`fallback_to_inbox`、`allow_replace_during_import`，并为每个键刷新
+`updated_at`。该调用不写 tmp 文件、不
 rename，也不创建或更新 `README.md`、`AREAMATRIX.md` 或
 `.areamatrix/classifier.yaml`。
+
+`enable_extension_rules`、`enable_keyword_rules` 与 `fallback_to_inbox`
+支撑 `S1-28` 分类规则开关；`allow_replace_during_import` 支撑 `S1-30`
+危险导入选项的默认关闭策略。它们只保存设置状态，不执行分类、导入或
+替换行为。
 
 `newConfig.repoPath` 必须等于 `repoPath`，`locale` 不能为空。任一校验、
 权限、IO 或 DB 持久化失败时，事务回滚，旧配置保持可读；主要错误码为

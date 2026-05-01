@@ -55,6 +55,10 @@ fn init_empty_repo_contract_exposes_documented_outputs() {
         ai_enabled: false,
         locale: "zh-Hans".to_owned(),
         icloud_warn: true,
+        enable_extension_rules: true,
+        enable_keyword_rules: true,
+        fallback_to_inbox: true,
+        allow_replace_during_import: false,
     };
     let empty_tree_json = r#"{"children":[]}"#.to_owned();
 

@@ -86,6 +86,10 @@ fn updated_config(repo: &Path) -> RepoConfig {
         ai_enabled: true,
         locale: "en".to_owned(),
         icloud_warn: false,
+        enable_extension_rules: false,
+        enable_keyword_rules: false,
+        fallback_to_inbox: false,
+        allow_replace_during_import: true,
     }
 }
 
@@ -101,6 +105,10 @@ fn load_update_config_validation_defaults_without_metadata_do_not_create_side_ef
     assert!(!config.ai_enabled);
     assert_eq!(config.locale, "zh-Hans");
     assert!(config.icloud_warn);
+    assert!(config.enable_extension_rules);
+    assert!(config.enable_keyword_rules);
+    assert!(config.fallback_to_inbox);
+    assert!(!config.allow_replace_during_import);
     assert!(!repo.path().join(".areamatrix").exists());
     assert!(!repo.path().join("README.md").exists());
     assert!(!repo.path().join("AREAMATRIX.md").exists());
@@ -124,7 +132,7 @@ fn load_update_config_validation_success_updates_db_only_and_preserves_files() {
         file_snapshot(&[&readme_path, &overview_path, &classifier_path]),
         file_before
     );
-    assert_eq!(config_rows(repo.path()).len(), 6);
+    assert_eq!(config_rows(repo.path()).len(), 10);
     assert_eq!(sqlite_integrity_check(repo.path()), "ok");
     assert!(foreign_key_violations(repo.path()).is_empty());
 }

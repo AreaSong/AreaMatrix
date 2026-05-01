@@ -85,6 +85,10 @@ fn load_update_config_contract_docs_udl_and_control_map_stay_aligned() {
         "boolean ai_enabled;",
         "string locale;",
         "boolean icloud_warn;",
+        "boolean enable_extension_rules;",
+        "boolean enable_keyword_rules;",
+        "boolean fallback_to_inbox;",
+        "boolean allow_replace_during_import;",
         "enum StorageMode { \"Moved\", \"Copied\", \"Indexed\" };",
         "enum OverviewOutput { \"GeneratedOnly\", \"RootAreaMatrixFile\" };",
     ] {
@@ -137,6 +141,10 @@ fn load_update_config_loads_defaults_when_metadata_is_missing() {
     assert!(!config.ai_enabled);
     assert_eq!(config.locale, "zh-Hans");
     assert!(config.icloud_warn);
+    assert!(config.enable_extension_rules);
+    assert!(config.enable_keyword_rules);
+    assert!(config.fallback_to_inbox);
+    assert!(!config.allow_replace_during_import);
 }
 
 #[test]
@@ -148,6 +156,10 @@ fn load_update_config_rejects_empty_repo_path_as_config_error() {
         ai_enabled: false,
         locale: "zh-Hans".to_owned(),
         icloud_warn: true,
+        enable_extension_rules: true,
+        enable_keyword_rules: true,
+        fallback_to_inbox: true,
+        allow_replace_during_import: false,
     };
 
     assert_eq!(load_config(String::new()), Err(CoreError::Config));
@@ -163,12 +175,16 @@ fn load_update_config_update_persists_all_repo_config_fields() {
     config.ai_enabled = true;
     config.locale = "en".to_owned();
     config.icloud_warn = false;
+    config.enable_extension_rules = false;
+    config.enable_keyword_rules = false;
+    config.fallback_to_inbox = false;
+    config.allow_replace_during_import = true;
 
     update_config(path_string(repo.path()), config.clone()).expect("persist config update");
 
     let reloaded = load_config(path_string(repo.path())).expect("reload updated config");
     assert_eq!(reloaded, config);
-    assert_eq!(config_rows(repo.path()).len(), 6);
+    assert_eq!(config_rows(repo.path()).len(), 10);
     assert!(!repo.path().join("README.md").exists());
     assert!(!repo.path().join("AREAMATRIX.md").exists());
 }
@@ -263,6 +279,10 @@ fn load_update_config_update_is_repeatable_without_duplicate_rows() {
     config.ai_enabled = true;
     config.locale = "en".to_owned();
     config.icloud_warn = false;
+    config.enable_extension_rules = false;
+    config.enable_keyword_rules = false;
+    config.fallback_to_inbox = false;
+    config.allow_replace_during_import = true;
 
     update_config(path_string(repo.path()), config.clone()).expect("first update");
     let first_key_values = config_key_values(repo.path());
@@ -270,7 +290,7 @@ fn load_update_config_update_is_repeatable_without_duplicate_rows() {
 
     assert_eq!(load_config(path_string(repo.path())), Ok(config));
     assert_eq!(config_key_values(repo.path()), first_key_values);
-    assert_eq!(config_rows(repo.path()).len(), 6);
+    assert_eq!(config_rows(repo.path()).len(), 10);
 }
 
 #[test]
@@ -306,6 +326,10 @@ fn load_update_config_update_requires_initialized_metadata_without_creating_it()
         ai_enabled: false,
         locale: "zh-Hans".to_owned(),
         icloud_warn: true,
+        enable_extension_rules: true,
+        enable_keyword_rules: true,
+        fallback_to_inbox: true,
+        allow_replace_during_import: false,
     };
 
     let result = update_config(path_string(repo.path()), config);

@@ -258,6 +258,22 @@ fn read_config(connection: &Connection, repo_path: String) -> CoreResult<RepoCon
             .map(|value| bool_from_db(&value))
             .transpose()?
             .unwrap_or(default.icloud_warn),
+        enable_extension_rules: config_value(connection, "enable_extension_rules")?
+            .map(|value| bool_from_db(&value))
+            .transpose()?
+            .unwrap_or(default.enable_extension_rules),
+        enable_keyword_rules: config_value(connection, "enable_keyword_rules")?
+            .map(|value| bool_from_db(&value))
+            .transpose()?
+            .unwrap_or(default.enable_keyword_rules),
+        fallback_to_inbox: config_value(connection, "fallback_to_inbox")?
+            .map(|value| bool_from_db(&value))
+            .transpose()?
+            .unwrap_or(default.fallback_to_inbox),
+        allow_replace_during_import: config_value(connection, "allow_replace_during_import")?
+            .map(|value| bool_from_db(&value))
+            .transpose()?
+            .unwrap_or(default.allow_replace_during_import),
     })
 }
 
@@ -272,6 +288,19 @@ fn upsert_config(tx: &Transaction<'_>, config: &RepoConfig) -> CoreResult<()> {
         ("ai_enabled", bool_to_db(config.ai_enabled)),
         ("locale", config.locale.as_str()),
         ("icloud_warn", bool_to_db(config.icloud_warn)),
+        (
+            "enable_extension_rules",
+            bool_to_db(config.enable_extension_rules),
+        ),
+        (
+            "enable_keyword_rules",
+            bool_to_db(config.enable_keyword_rules),
+        ),
+        ("fallback_to_inbox", bool_to_db(config.fallback_to_inbox)),
+        (
+            "allow_replace_during_import",
+            bool_to_db(config.allow_replace_during_import),
+        ),
     ];
 
     for (key, value) in values {

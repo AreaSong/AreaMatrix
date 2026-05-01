@@ -190,9 +190,14 @@ dictionary ChangeLogEntry {
 dictionary RepoConfig {
   string repo_path;
   StorageMode default_mode;
+  OverviewOutput overview_output;
   boolean ai_enabled;
-  string locale;  // "zh-CN" | "en"
+  string locale;  // "zh-Hans" | "en"
   boolean icloud_warn;
+  boolean enable_extension_rules;
+  boolean enable_keyword_rules;
+  boolean fallback_to_inbox;
+  boolean allow_replace_during_import;
 };
 
 dictionary ExternalEvent {

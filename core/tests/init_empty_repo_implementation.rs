@@ -59,6 +59,10 @@ fn init_empty_repo_creates_metadata_db_config_rules_and_generated_overview() {
     assert!(!config.ai_enabled);
     assert_eq!(config.locale, "zh-Hans");
     assert!(config.icloud_warn);
+    assert!(config.enable_extension_rules);
+    assert!(config.enable_keyword_rules);
+    assert!(config.fallback_to_inbox);
+    assert!(!config.allow_replace_during_import);
 
     let files = list_files(path_string(repo.path()), empty_filter()).expect("list empty files");
     assert!(files.is_empty());
@@ -78,7 +82,7 @@ fn init_empty_repo_creates_metadata_db_config_rules_and_generated_overview() {
         .query_row("SELECT COUNT(*) FROM repo_config", [], |row| row.get(0))
         .expect("count repo_config rows");
     assert_eq!(version, 1);
-    assert_eq!(config_rows, 6);
+    assert_eq!(config_rows, 10);
 }
 
 #[test]

@@ -45,7 +45,8 @@
 
 - 配置不存在时返回默认值，不抛错。
 - 更新失败不损坏旧配置。
-- 默认存储模式、overview 输出、locale、AI 开关与 UI 设置项可读写。
+- 默认存储模式、overview 输出、locale、AI 开关、iCloud 提醒、分类规则
+  开关、fallback inbox 与危险 Replace 开关可读写。
 
 ## 延后范围
 

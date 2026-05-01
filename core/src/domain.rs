@@ -154,6 +154,14 @@ pub struct RepoConfig {
     pub locale: String,
     /// Whether iCloud warnings are shown.
     pub icloud_warn: bool,
+    /// Whether extension-based classifier rules are enabled.
+    pub enable_extension_rules: bool,
+    /// Whether keyword-based classifier rules are enabled.
+    pub enable_keyword_rules: bool,
+    /// Whether files without a classifier match fall back to the inbox category.
+    pub fallback_to_inbox: bool,
+    /// Whether import flows may expose the dangerous replace option.
+    pub allow_replace_during_import: bool,
 }
 
 /// Options used when initializing a repository.
