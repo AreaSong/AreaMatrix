@@ -5,6 +5,7 @@
 ## 文件
 
 - `audit-rules.md`：所有任务共用的执行与验收规则。
+- `engineering-quality-rules.md`：所有任务共用的工程质量门禁。
 - `dependency-graph.md`：批次依赖图。
 - `manifests/`：每个 phase 的精确任务边界。
 - `prompt_pipeline.py`：手动串行 runner。
@@ -27,5 +28,5 @@ python3 tasks/prompts/_shared/prompt_pipeline.py status
 - Runner 不调用 `codex exec`。
 - `render` 是执行模式，可以改文件。
 - `verify` 是验收模式，禁止改文件。
+- copy-ready / verify-ready 都必须读取工程质量规则和 `docs/development/coding-standards.md`。
 - `mark` 只记录人工进度，不代表自动验收。
-

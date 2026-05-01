@@ -15,10 +15,23 @@
 1. 运行 `doctor` 确认任务库健康。
 2. 运行 `plan` 查看阶段顺序和依赖。
 3. 运行 `render --task <label>` 生成可复制执行的 prompt。
-4. 按 prompt 阅读文档、实现代码、运行验证。
+4. 按 prompt 阅读文档、工程质量规则、编码规范、实现代码、运行验证。
 5. 运行 `verify --task <label>` 生成只读验收 prompt。
-6. 验收通过后，用 `mark --task <label> --status completed` 记录本地进度。
-7. 阶段结束时运行 `verify --phase <phase>` 做阶段验收。
+6. 验收必须同时覆盖功能完成度、验证证据和工程质量；任一不达标都不能 mark completed。
+7. 验收通过后，用 `mark --task <label> --status completed` 记录本地进度。
+8. 阶段结束时运行 `verify --phase <phase>` 做阶段验收。
+
+## 自动任务循环
+
+任务量较大时，可以用 `scripts/run_area_matrix_task_pipeline.sh` 串联 copy-ready 与 verify-ready：
+
+- 执行阶段使用 `codex exec` + `workspace-write`。
+- 验收阶段使用 `codex exec` + `read-only`。
+- 验收失败时，脚本把失败摘要注入下一轮执行，继续修复同一个 task。
+- 失败摘要必须保留功能、验证和工程质量阻塞点；下一轮按“全部全面修复”处理。
+- 只有验收输出 `VERIFY_RESULT: PASS` 后才进入下一个 task。
+- 自动进度统一写入 `tasks/prompts/_shared/progress.json`。
+- 默认 `RISK_GATE=mission-critical` 且 `RISK_POLICY=pause`；确认要全静默时必须显式设置 `RISK_POLICY=allow`。
 
 ## 任务边界
 
@@ -28,6 +41,7 @@
 - `Forbidden Touches`：除非重新确认，否则不得触碰的路径。
 - `Risk Level`：Low / Medium / High / Mission-Critical。
 - `Validation`：任务完成后必须尝试的检查。
+- `Engineering Quality`：由 `tasks/prompts/_shared/engineering-quality-rules.md` 和 `docs/development/coding-standards.md` 共同定义的质量门禁。
 
 ## 验收规则
 
@@ -35,4 +49,5 @@
 - 单任务验收必须逐项检查 task 核对清单和完成标准。
 - 阶段验收中任一 task 不通过，则阶段不通过。
 - 无法证明通过的项目默认不通过。
+- 代码结构、错误处理、注释、测试或真实闭环不达标时，默认不通过。
 - `mark` 只记录人工进度，不能替代验收结论。

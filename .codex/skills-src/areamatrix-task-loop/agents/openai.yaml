@@ -1,0 +1,6 @@
+interface:
+  display_name: "AreaMatrix Task Loop"
+  short_description: "Run and recover the silent task loop"
+  default_prompt: "Use $areamatrix-task-loop to inspect the current task-loop state and recommend the next safe run command."
+policy:
+  allow_implicit_invocation: true

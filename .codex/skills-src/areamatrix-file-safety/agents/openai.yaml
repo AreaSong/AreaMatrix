@@ -1,0 +1,6 @@
+interface:
+  display_name: "AreaMatrix File Safety"
+  short_description: "Guard user-file and metadata safety"
+  default_prompt: "Use $areamatrix-file-safety to review this AreaMatrix filesystem or metadata change before implementation."
+policy:
+  allow_implicit_invocation: true

@@ -4,6 +4,7 @@
 
 共享规则：[./_shared/audit-rules.md](./_shared/audit-rules.md)  
 任务切片规则：[./_shared/task-slicing-rules.md](./_shared/task-slicing-rules.md)  
+工程质量规则：[./_shared/engineering-quality-rules.md](./_shared/engineering-quality-rules.md)
 依赖图：[./_shared/dependency-graph.md](./_shared/dependency-graph.md)  
 Manifest：[./_shared/manifests/](./_shared/manifests/)
 执行模式说明：[./_shared/copy-ready/README.md](./_shared/copy-ready/README.md)  
@@ -16,9 +17,10 @@ Manifest：[./_shared/manifests/](./_shared/manifests/)
 3. 已存在 capability specs 的 task 必须绑定 UX 页面或 Core 能力，并交叉读取 capability specs 与对应 control map。
 4. AreaMatrix 当前是 greenfield build：`Expected New Paths` 可以是尚不存在但允许创建的路径。
 5. 执行任务前先运行 `doctor`，再用 `render --mode copy` 生成可复制执行 prompt。
-6. 任务完成后用 `render --mode verify` 或 `verify` 生成只读验收 prompt。
-7. 需要批量复制时，用 `export --phase` 或 `export --all` 把 copy-ready / verify-ready prompt 导出为静态文件。
-8. Runner 只负责人工串行执行辅助，不会调用 `codex exec`。
+6. 执行与验收都必须应用 `engineering-quality-rules.md` 和 `docs/development/coding-standards.md`。
+7. 任务完成后用 `render --mode verify` 或 `verify` 生成只读验收 prompt。
+8. 需要批量复制时，用 `export --phase` 或 `export --all` 把 copy-ready / verify-ready prompt 导出为静态文件。
+9. Runner 只负责 prompt 生成、进度和状态管理；自动闭环由 `scripts/run_area_matrix_task_pipeline.sh` 调用 `codex exec`。
 
 ## Runner
 
@@ -84,6 +86,79 @@ python3 tasks/prompts/_shared/prompt_pipeline.py mark --task 0-1/task-01 --statu
 ```
 
 进度写入本地文件 `tasks/prompts/_shared/progress.json`，默认不提交。`next` 和 `status` 会读取这个文件来判断下一个可执行任务。
+
+## 自动化执行脚本（可选）
+
+仓库提供 `scripts/run_area_matrix_task_pipeline.sh`，可将 copy-ready + verify-ready 做成闭环执行：
+
+1. 读取 copy-ready 并调用 `codex exec` 执行。
+2. 再读取 verify-ready 进行只读验收。
+3. 验收失败时，自动把失败摘要注入到下一次 copy prompt，然后重试。
+4. 验收失败摘要会保留功能、验证和工程质量阻塞点，下一轮按“全部全面修复”处理。
+5. 只有验收通过才进入下一任务。
+
+默认模型与推理强度：
+
+```bash
+MODEL=gpt-5.5
+MODEL_REASONING_EFFORT=xhigh
+```
+
+Codex CLI 查找顺序：
+
+1. 当前 shell 的 `codex`
+2. Codex.app 内置 CLI：`/Applications/Codex.app/Contents/Resources/codex`
+3. 显式环境变量：`CODEX_BIN=/path/to/codex`
+
+默认风险门禁：
+
+```bash
+RISK_GATE=mission-critical
+RISK_POLICY=pause
+```
+
+默认只在 `Mission-Critical` task 前暂停；确认需要全静默执行时，显式设置 `RISK_POLICY=allow`。
+
+基本用法（全量执行）：
+
+```bash
+MAX_RETRIES=0 bash scripts/run_area_matrix_task_pipeline.sh
+```
+
+全静默执行：
+
+```bash
+RISK_POLICY=allow \
+  MAX_RETRIES=0 \
+  bash scripts/run_area_matrix_task_pipeline.sh
+```
+
+只执行某个起点和阶段，便于试跑：
+
+```bash
+MAX_RETRIES=0 \
+  START_FROM=phase-1/1-1-task-01 \
+  bash scripts/run_area_matrix_task_pipeline.sh --phase phase-1 --max-tasks 5
+```
+
+Dry-run（预演，不改文件）：
+
+```bash
+DRY_RUN=1 \
+  MAX_RETRIES=1 \
+  DRY_RUN_RESULT=PASS \
+  bash scripts/run_area_matrix_task_pipeline.sh --phase phase-1 --max-tasks 1
+```
+
+脚本会在 `.codex/task-loop-logs/<timestamp>/<phase>/` 写入每次执行和验收日志。
+进度统一写入 `tasks/prompts/_shared/progress.json`，因此 `next` 和 `status` 会直接反映自动执行结果。
+
+查看或恢复：
+
+```bash
+bash scripts/run_area_matrix_task_pipeline.sh --status
+bash scripts/run_area_matrix_task_pipeline.sh --resume-failed
+```
 
 ## Phase 概览
 

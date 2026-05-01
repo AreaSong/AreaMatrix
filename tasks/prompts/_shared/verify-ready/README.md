@@ -36,5 +36,7 @@ tasks/prompts/_shared/verify-ready/phase-1/1-1-task-01.md
 - 必须逐项验收 task 核对清单。
 - 必须逐项验收 task 完成标准。
 - 必须检查 manifest 边界是否被完整覆盖。
+- 必须按工程质量规则和 `docs/development/coding-standards.md` 验收代码是否可维护、可测试、可长期演进。
 - 无法证明通过则判定不通过。
+- 代码只满足单次运行、缺少错误处理或依赖占位 / 硬编码 / mock-only 闭环时，判定不通过。
 - 任一 task 不通过，则阶段验收不通过。

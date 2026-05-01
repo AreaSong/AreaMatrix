@@ -1,0 +1,6 @@
+interface:
+  display_name: "AreaMatrix Doc Sync"
+  short_description: "Keep docs, API, UDL, and prompts aligned"
+  default_prompt: "Use $areamatrix-doc-sync to check whether this AreaMatrix change needs docs, API, UDL, or prompt manifest updates."
+policy:
+  allow_implicit_invocation: true

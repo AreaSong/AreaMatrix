@@ -1,0 +1,6 @@
+interface:
+  display_name: "AreaMatrix Validation"
+  short_description: "Pick the smallest sufficient checks"
+  default_prompt: "Use $areamatrix-validation-driver to choose and report the validation set for my AreaMatrix changes."
+policy:
+  allow_implicit_invocation: true

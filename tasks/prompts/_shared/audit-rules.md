@@ -12,6 +12,7 @@
 - `Forbidden Touches` 是禁止触碰边界；确需修改时必须暂停并重新确认。
 - 高风险任务必须先说明影响、风险、验证与回滚，再等待确认。
 - 所有已存在 capability specs 的任务必须遵循 [task-slicing-rules.md](task-slicing-rules.md)，并把 UX 页面、Core 能力规格与对应 control map 交叉验收。
+- 所有执行和验收必须遵循 [engineering-quality-rules.md](engineering-quality-rules.md) 与 `docs/development/coding-standards.md`，不能只证明单次运行成功。
 
 ## 四种处理
 
@@ -46,7 +47,8 @@
 1. 改了什么。
 2. 为什么这样改。
 3. 跑了哪些验证。
-4. 哪些风险或未验证项仍存在。
+4. 工程质量是否满足长期维护标准。
+5. 哪些风险或未验证项仍存在。
 
 ## 验收模式
 
@@ -56,6 +58,7 @@
 - 验收时必须回到 task、manifest、实际文件三者交叉检查。
 - 无法用文件、测试、日志或命令输出证明通过的项目，一律判定不通过。
 - UI 占位、接口空壳、未打通链路、缺失验证都不能视为完成。
+- 一次性实现、硬编码通过态、mock-only 闭环、缺少错误处理或违反编码规范都不能视为完成。
 - 如果 UX 页面引用的 Core 能力未实现或只接 mock，真实闭环验收必须不通过。
 - 如果 Core 能力没有任何 UX 消费，也未在 control map 中标记为内部能力，对应 task 默认越界。
 - Core integration verify 可以读取 UX 页面作为消费上下文；这些页面不等于当前 Core task 的页面绑定范围。

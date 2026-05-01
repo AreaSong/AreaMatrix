@@ -42,3 +42,7 @@ AreaMatrix-dev/
 
 # AreaMatrix prompt runner local state
 tasks/prompts/_shared/progress.json
+
+# Local task-loop automation outputs
+.codex/task-loop-state.txt
+.codex/task-loop-logs/
