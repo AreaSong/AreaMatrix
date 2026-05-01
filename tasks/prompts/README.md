@@ -119,6 +119,8 @@ RISK_POLICY=pause
 
 默认只在 `Mission-Critical` task 前暂停；确认需要全静默执行时，显式设置 `RISK_POLICY=allow`。
 
+`RISK_POLICY=allow` 会向 copy prompt 注入静默授权：High / Mission-Critical task 仍需记录影响、风险、验证和回滚，但不再停下来等人工确认；若验收指出直接相关的 Exact Docs / Core API / UDL / manifest 漂移，也可以在不触碰 Forbidden Touches 的前提下同步修复。
+
 基本用法（全量执行）：
 
 ```bash

@@ -33,6 +33,8 @@ Codex CLI：
 
 也就是说，默认只在 `Mission-Critical` task 前暂停；确认要全静默时，显式使用 `RISK_POLICY=allow`。
 
+`RISK_POLICY=allow` 会向 copy prompt 注入用户已授权的静默执行上下文。High / Mission-Critical task 仍需在日志里说明影响、风险、验证和回滚，但不再停下来等人工确认；若验收指出直接相关的 Exact Docs / Core API / UDL / manifest 漂移，也可以在不触碰 Forbidden Touches 的前提下同步修复。
+
 ---
 
 ## 二、正式执行（推荐）

@@ -107,6 +107,10 @@ Env vars:
   LOG_ROOT:                  日志根目录
   PROGRESS_FILE:             统一进度文件，默认 tasks/prompts/_shared/progress.json
   STATE_FILE:                旧版完成记录文件，仅兼容读取
+
+When RISK_POLICY=allow:
+  - 脚本会向 copy prompt 注入用户已授权静默执行的上下文。
+  - High/Mission-Critical task 仍需记录风险、验证与回滚，但不再停下来等人工确认。
 USAGE
 }
 
@@ -632,6 +636,49 @@ ${feedback}
 EOF
 }
 
+build_silent_approval_prompt() {
+  local label="$1"
+  local risk="$2"
+
+  if [ "$RISK_POLICY" != "allow" ]; then
+    return 0
+  fi
+
+  cat <<EOF
+自动执行授权上下文：
+- 用户已明确授权 AreaMatrix task loop 静默执行当前任务，当前任务标签：${label}，风险等级：${risk}。
+- 对 High / Mission-Critical task，仍需在日志中说明影响、风险、验证和回滚，但不要停下来等待人工确认。
+- 允许在仓库内修改、创建和运行当前 task 完成所需的文件与验证命令。
+- 若验收失败指出 task 直接相关的 Exact Docs、Core API、UDL、manifest 或 README 存在源事实漂移，可在不实现相邻能力、不触碰 Forbidden Touches 的前提下同步修复，并在报告中列出。
+- 本授权不允许删除、移动、覆盖真实用户原文件；命中用户文件破坏性操作时仍必须停止并报告。
+EOF
+}
+
+build_copy_context_prompt() {
+  local label="$1"
+  local task_name="$2"
+  local attempt="$3"
+  local risk="$4"
+  local verify_log="${5:-}"
+  local approval_prompt
+  local retry_prompt
+
+  approval_prompt="$(build_silent_approval_prompt "$label" "$risk")"
+  if [ "$attempt" -gt 1 ] && [ -n "$verify_log" ]; then
+    retry_prompt="$(build_copy_retry_prompt "$label" "$task_name" "$attempt" "$verify_log")"
+  else
+    retry_prompt=""
+  fi
+
+  if [ -n "$approval_prompt" ] && [ -n "$retry_prompt" ]; then
+    printf '%s\n\n%s\n' "$approval_prompt" "$retry_prompt"
+  elif [ -n "$approval_prompt" ]; then
+    printf '%s\n' "$approval_prompt"
+  elif [ -n "$retry_prompt" ]; then
+    printf '%s\n' "$retry_prompt"
+  fi
+}
+
 build_phase_filter() {
   if [ "${#TARGET_PHASES[@]}" -eq 0 ]; then
     target_phases=("${PHASES[@]}")
@@ -848,13 +895,12 @@ main() {
         log_event TASK "copy prompt -> $copy_log"
         mark_task_progress "$label" "in_progress" "执行中：attempt=$attempt risk=$risk" "$copy_log" "$verify_log" "$attempt" "$risk"
 
+        previous_verify_log=""
         if [ "$attempt" -gt 1 ]; then
           previous_verify_log="$SESSION_LOG_ROOT/$phase/${task_name}-verify-attempt-$((attempt - 1)).log"
-          retry_prompt="$(build_copy_retry_prompt "$label" "$task_name" "$attempt" "$previous_verify_log")"
-          run_codex "$copy_file" "$copy_log" "workspace-write" "$retry_prompt"
-        else
-          run_codex "$copy_file" "$copy_log" "workspace-write" ""
         fi
+        copy_context_prompt="$(build_copy_context_prompt "$label" "$task_name" "$attempt" "$risk" "$previous_verify_log")"
+        run_codex "$copy_file" "$copy_log" "workspace-write" "$copy_context_prompt"
 
         log_event TASK "verify prompt -> $verify_log"
         verify_suffix="自动任务循环输出要求：

@@ -32,6 +32,7 @@
 - 只有验收输出 `VERIFY_RESULT: PASS` 后才进入下一个 task。
 - 自动进度统一写入 `tasks/prompts/_shared/progress.json`。
 - 默认 `RISK_GATE=mission-critical` 且 `RISK_POLICY=pause`；确认要全静默时必须显式设置 `RISK_POLICY=allow`。
+- `RISK_POLICY=allow` 会向 copy prompt 注入用户已授权静默执行的上下文；High / Mission-Critical task 仍需记录风险、验证和回滚，但不再停下来等人工确认。
 
 ## 任务边界
 

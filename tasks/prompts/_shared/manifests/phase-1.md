@@ -16,6 +16,7 @@
 - `core/area_matrix.udl`
 
 ### Expected New Paths
+- `docs/api/core-api.md`
 - `core/src/**`
 - `core/area_matrix.udl`
 - `core/tests/**`

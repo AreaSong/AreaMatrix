@@ -950,7 +950,7 @@ def print_copy_prompt(task: TaskFile, entry: ManifestEntry) -> None:
     print("10. 逐个读取当前存在的 `Existing Code`。")
     print("11. 确认改动只会落在 `Expected New Paths`。")
     print("12. 确认不会触碰 `Forbidden Touches`。")
-    print("13. 若风险等级为 High 或 Mission-Critical，先给出风险、验证和回滚思路，再继续。")
+    print("13. 若风险等级为 High 或 Mission-Critical，先给出风险、验证和回滚思路；若自动执行器已注入静默授权，则记录后直接继续。")
     print()
     print("## 本次任务标题")
     print()

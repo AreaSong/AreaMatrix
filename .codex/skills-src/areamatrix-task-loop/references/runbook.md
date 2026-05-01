@@ -32,6 +32,8 @@ Check that:
 
 Dry-run proves only runner flow. It does not prove implementation, verification, engineering quality, or task completion.
 
+`RISK_POLICY=allow` injects an explicit silent-approval context into copy-ready runs. The agent should still record risk, validation, and rollback notes, but should not pause for High / Mission-Critical confirmation unless the task would delete, move, overwrite, or otherwise destructively modify real user files.
+
 ## Start Points
 
 Use no `START_FROM` for the first eligible task in phase order.
