@@ -1,0 +1,55 @@
+**一、执行结论**
+
+已完成。上次 blocker 是 macOS XCTest 执行证据缺失；这次补了可复用验证脚本，并实际执行到 3 个 XCTest 全部通过。
+
+**二、执行范围**
+
+修改文件：
+- [scripts/check-macos-tests.sh](/Users/as/Ai-Project/project/AreaMatrix/scripts/check-macos-tests.sh:1) 新增 macOS 测试入口。
+- [scripts/check-all.sh](/Users/as/Ai-Project/project/AreaMatrix/scripts/check-all.sh:57) 改为调用该入口。
+- [testing.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/testing.md:213) 记录本地沙箱 XCTest 执行策略。
+- [ci-governance.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/ci-governance.md:43) 更新本地 Swift 验证入口。
+
+当前 `git status` 里还存在 task-loop 自动运行产生的 `.codex/task-loop-*` / `progress.json` 变更，不属于本次修复清单。
+
+**三、完成情况**
+
+核对清单：
+- core crate：通过，`fmt` / `clippy` / `cargo test --workspace` 通过，3 个集成测试通过。
+- scripts：通过，新增脚本语法检查通过，且真实运行通过。
+- CI：通过，workflow YAML 可解析，governance / skills / task-loop 检查通过。
+- macOS shell：通过，`xcodebuild build` 与 `build-for-testing` 通过；`scripts/check-macos-tests.sh` 在当前沙箱里复现 `xcodebuild test` 的 `testmanagerd` 限制后，用同一 XCTest bundle 跑通 3 个测试。
+- 未提前实现 C1/S1：通过，Core 仍为 `not_implemented()`，macOS 仍是 Phase 0 shell / placeholder。
+- Forbidden Touches：未触碰，`core/src/**`、`core/Cargo.toml`、`core/area_matrix.udl`、`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrix.xcodeproj/**` 无本次变更。
+
+**四、工程质量**
+
+脚本只对明确的 `testmanagerd` sandbox failure 启用 fallback；普通编译失败、断言失败、链接失败或非沙箱错误仍会失败退出。没有新增依赖，没有 mock-only 或硬编码通过态，也没有修改产品实现。
+
+**五、验证情况**
+
+通过：
+- `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`
+- `bash -n scripts/*.sh`
+- `PYTHONPYCACHEPREFIX=/private/tmp/areamatrix-pycache-task-13 python3 -m py_compile ...`
+- `bash scripts/check-governance.sh`
+- `bash scripts/check-skills.sh`
+- `PYTHONPYCACHEPREFIX=/private/tmp/areamatrix-pycache-task-13 bash scripts/check-task-loop.sh`
+- `cd core && cargo fmt --all -- --check`
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`
+- `cd core && cargo test --workspace`
+- `xcodebuild ... build`
+- `xcodebuild ... build-for-testing`
+- `DERIVED_DATA_PATH=/private/tmp/areamatrix-xcode-task-13-script bash scripts/check-macos-tests.sh`
+- `ruby YAML.load_file` 解析 `.github/workflows/*.yml`
+- `git diff --check`
+
+无法直接通过但已记录：
+- 原始 `xcodebuild test ...` 在当前 Codex 沙箱仍退出 65，原因是 `com.apple.testmanagerd.control` sandbox restriction；已由 `xcrun xctest` 对同一测试 bundle 提供真实执行证据。
+- `./scripts/build-core.sh` 当前缺 `uniffi-bindgen`，且本机缺 `x86_64-apple-darwin` Rust target。
+- `swiftlint` / `swiftformat` 当前环境未安装。
+
+**六、风险与后续**
+
+剩余风险是本地沙箱不能证明原始 `xcodebuild test` runner 通信链路；CI 或非沙箱 macOS 环境仍需补跑原始命令。底座已足以进入 Phase 1，建议下一步执行 `1-1/task-01` 前补齐本机 `uniffi-bindgen`、`x86_64-apple-darwin`、SwiftLint、SwiftFormat，或交给 CI 覆盖这些远端门禁。
+

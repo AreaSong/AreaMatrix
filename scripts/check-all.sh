@@ -55,27 +55,9 @@ run_core_checks() {
 }
 
 run_xcode_tests() {
-  require_command xcodebuild
-
   cd "${PROJECT_ROOT}"
   run_step ./scripts/build-core.sh
-
-  echo
-  echo "==> xcodebuild test"
-  if command -v xcbeautify >/dev/null 2>&1; then
-    xcodebuild test \
-      -project apps/macos/AreaMatrix.xcodeproj \
-      -scheme AreaMatrix \
-      -destination 'platform=macOS,arch=arm64' \
-      CODE_SIGNING_ALLOWED=NO \
-      | xcbeautify --quiet
-  else
-    xcodebuild test \
-      -project apps/macos/AreaMatrix.xcodeproj \
-      -scheme AreaMatrix \
-      -destination 'platform=macOS,arch=arm64' \
-      CODE_SIGNING_ALLOWED=NO
-  fi
+  run_step bash scripts/check-macos-tests.sh
 }
 
 run_swift_checks() {

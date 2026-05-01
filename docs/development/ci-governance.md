@@ -43,10 +43,14 @@ cd core && cargo test --workspace
 Swift 改动：
 
 ```bash
-xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO
+bash scripts/check-macos-tests.sh
 swiftlint --strict
 swiftformat --lint .
 ```
+
+`scripts/check-macos-tests.sh` 会优先执行标准 `xcodebuild test`。只有本地沙箱阻断
+`testmanagerd` 通信时，才改用 `xcrun xctest` 执行已构建的 XCTest bundle；CI
+仍以 `.github/workflows/macos-ci.yml` 中的 `xcodebuild test` 为远端门禁。
 
 ## 失败处理
 

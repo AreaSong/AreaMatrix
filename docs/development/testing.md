@@ -210,6 +210,30 @@ func testDebouncesWithin200ms() async throws {
 }
 ```
 
+### 本地沙箱 XCTest 执行
+
+macOS 单元测试的标准入口仍然是 `xcodebuild test`：
+
+```bash
+xcodebuild test \
+  -project apps/macos/AreaMatrix.xcodeproj \
+  -scheme AreaMatrix \
+  -destination 'platform=macOS,arch=arm64' \
+  CODE_SIGNING_ALLOWED=NO
+```
+
+部分受限本地执行器无法访问 `com.apple.testmanagerd.control`，会在测试 runner
+通信阶段失败。此时使用：
+
+```bash
+bash scripts/check-macos-tests.sh
+```
+
+该脚本先运行标准 `xcodebuild test`。只有失败日志明确指向
+`testmanagerd` sandbox restriction 时，才复用同一 DerivedData 中的
+`AreaMatrixTests.xctest`，通过 `xcrun xctest` 直接执行 hostless XCTest
+bundle。普通编译失败、断言失败、链接失败或非沙箱错误仍然按失败处理。
+
 ---
 
 ## 集成测试
@@ -380,7 +404,7 @@ fn sigkill_during_import_safe() {
 3. cargo test --workspace
 4. cargo llvm-cov --fail-under-lines 70
 5. ./scripts/build-core.sh
-6. xcodebuild test
+6. xcodebuild test（本地沙箱可用 `bash scripts/check-macos-tests.sh` 补执行证据）
 7. swiftformat --lint
 8. swiftlint --strict
 
