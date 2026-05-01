@@ -40,6 +40,26 @@ Thanks for the PR! Please fill out the template below.
 # 然后在 macOS app 中拖入 .pdf 文件，验证分类结果
 ```
 
+## 安全与风险 / Security and Risk
+
+- 安全影响 / Security impact:
+  - [ ] 无安全影响 / None
+  - [ ] 涉及用户文件、路径、DB、staging、iCloud、隐私、依赖或权限
+- 回滚方式 / Rollback:
+  <!-- 如何安全回滚？如果不可回滚，请说明原因。 -->
+- 依赖 / 许可证 / 供应链:
+  <!-- 新增依赖时填写名称、版本、许可证、来源和替代方案；无则写 N/A。 -->
+
+## Task-loop Evidence
+
+<!-- 如果此 PR 来自自动任务循环，填写 task label、run_id、verify log、summary file 和 commit evidence；否则写 N/A。 -->
+
+- Task:
+- Run:
+- Verify log:
+- Summary:
+- Git checkpoint:
+
 ## 截图 / 录屏 / Screenshots
 
 <!-- 如果有 UI 改动，附上前后对比 -->
@@ -54,6 +74,12 @@ Thanks for the PR! Please fill out the template below.
 - [ ] 我已更新相关文档（README / docs / API 注释）
 - [ ] 我已在 `CHANGELOG.md` 的 `[Unreleased]` 段落添加条目
 - [ ] Commit 信息符合 [Conventional Commits](https://www.conventionalcommits.org/)
+- [ ] 我已按 [CODE_REVIEW.md](../CODE_REVIEW.md) 自查评审阻断项
+- [ ] 我已说明安全、隐私、用户文件、DB、staging、iCloud 或权限影响
+- [ ] 新增依赖已按 [dependency-policy.md](../docs/development/dependency-policy.md) 说明许可证和供应链风险
+- [ ] CI / governance checks 已通过，或已在备注中说明阻塞原因
+- [ ] CODEOWNERS 覆盖的维护者已被请求评审
+- [ ] 如为破坏性变更，已说明 migration / rollback / compatibility
 - [ ] 这个 PR 不引入未授权的第三方资源 / 商业 logo
 - [ ] 这个 PR 不包含许可证不兼容的代码
 

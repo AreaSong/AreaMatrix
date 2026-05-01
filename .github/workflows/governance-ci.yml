@@ -1,0 +1,29 @@
+name: Governance CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  governance:
+    name: governance, prompts, skills, and task-loop
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Governance check
+        run: bash scripts/check-governance.sh
+
+      - name: Skill health
+        run: bash scripts/check-skills.sh
+
+      - name: Task-loop health
+        run: bash scripts/check-task-loop.sh
+
+      - name: Prompt doctor
+        run: python3 tasks/prompts/_shared/prompt_pipeline.py doctor
+
+      - name: Diff whitespace check
+        run: git diff --check

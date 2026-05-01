@@ -1,0 +1,6 @@
+interface:
+  display_name: "AreaMatrix Enterprise Governance"
+  short_description: "Review security, CI, dependencies, and ownership"
+  default_prompt: "Use $areamatrix-enterprise-governance to review this AreaMatrix governance, security, dependency, CI, or code-review change."
+policy:
+  allow_implicit_invocation: true

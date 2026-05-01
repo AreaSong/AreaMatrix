@@ -10,9 +10,11 @@ Use this skill when a task-loop run needs Git checkpoint policy, commit review, 
 ## Read first
 
 1. [AGENTS.md](../../../AGENTS.md)
-2. [scripts/run_area_matrix_task_pipeline.md](../../../scripts/run_area_matrix_task_pipeline.md)
-3. [areamatrix-task-loop](../areamatrix-task-loop/SKILL.md)
-4. [references/checkpoint-policy.md](references/checkpoint-policy.md)
+2. [CODE_REVIEW.md](../../../CODE_REVIEW.md)
+3. [docs/development/ci-governance.md](../../../docs/development/ci-governance.md)
+4. [scripts/run_area_matrix_task_pipeline.md](../../../scripts/run_area_matrix_task_pipeline.md)
+5. [areamatrix-task-loop](../areamatrix-task-loop/SKILL.md)
+6. [references/checkpoint-policy.md](references/checkpoint-policy.md)
 
 ## References
 
@@ -34,3 +36,4 @@ Use this skill when a task-loop run needs Git checkpoint policy, commit review, 
 - Do not push by default; push requires `GIT_CHECKPOINT=push`.
 - Do not continue to the next task after a Git checkpoint failure.
 - Do not treat dry-run Git output as a real commit or upload.
+- Do not treat a PASS checkpoint as merge-ready without CI and review evidence.

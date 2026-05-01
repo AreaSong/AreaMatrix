@@ -47,6 +47,8 @@ The final commit hash cannot be written into the same commit that defines it. Th
 
 At the end of a successful run, the runner may create `task-loop: finalize run <run_id>` for final summary/index state.
 
+Git checkpoint is not merge approval. The resulting branch still needs code review and CI according to `CODE_REVIEW.md` and `docs/development/ci-governance.md`.
+
 ## Push Recovery
 
 When `GIT_CHECKPOINT=push` fails:

@@ -3,18 +3,8 @@ name: macOS App CI
 on:
   push:
     branches: [main]
-    paths:
-      - 'apps/macos/**'
-      - 'core/**'
-      - 'scripts/**'
-      - '.github/workflows/macos-ci.yml'
   pull_request:
     branches: [main]
-    paths:
-      - 'apps/macos/**'
-      - 'core/**'
-      - 'scripts/**'
-      - '.github/workflows/macos-ci.yml'
 
 jobs:
   build:

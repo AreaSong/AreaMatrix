@@ -24,6 +24,14 @@ assignees: []
 
 <!-- 你尝试过 / 想过哪些其他方法 -->
 
+## 安全、隐私与本地优先 / Safety, Privacy, Local-first
+
+- [ ] 不需要访问用户文件内容或路径
+- [ ] 需要读取或修改用户选择的文件 / 文件夹
+- [ ] 涉及 `.areamatrix/` 元数据、DB、staging、reindex、FSEvents 或 iCloud
+- [ ] 涉及 AI 远程调用、网络上传、遥测、日志或隐私边界
+- [ ] 我不确定风险边界，需要维护者评估
+
 ## 是否愿意自己实现 / Willing to Implement
 
 - [ ] 我可以提交 PR 实现这个功能

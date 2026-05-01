@@ -16,6 +16,8 @@ Use this checklist when a PASS task reaches the Git checkpoint step or when a ch
 - Changed files are task-scoped or task-loop evidence files.
 - No unrelated manual edits are mixed into the checkpoint.
 - Progress, logs, run summary, and index are included as workflow evidence.
+- `CODE_REVIEW.md` blockers are not present.
+- Required CI or local equivalent checks are listed.
 
 ## Commit Evidence
 
@@ -46,3 +48,4 @@ Expected evidence fields:
 - `git_push_failed`: keep local commits, fix remote/credential state, rerun push mode.
 - unexpected dirty paths after checkpoint: stop and inspect because a task commit likely missed files.
 - dry-run: do not report a real commit or upload.
+- missing CI/review evidence: do not describe the checkpoint as merge-ready.

@@ -14,7 +14,8 @@
 
 1. 阅读 [项目文档导航](docs/README.md) 了解整体架构
 2. 浏览 [docs/adr/](docs/adr/) 了解关键决策的来龙去脉，避免重复讨论已定结论
-3. 在 [Issues](https://github.com/<your-org>/AreaMatrix/issues) 搜索是否有人已经提过相同需求/问题
+3. 在 [Issues](https://github.com/AreaSong/AreaMatrix/issues) 搜索是否有人已经提过相同需求/问题
+4. 涉及工程治理、CI、安全或依赖时，先读 [CODE_REVIEW.md](CODE_REVIEW.md) 和 `docs/development/`
 
 ## 贡献的几种方式
 
@@ -74,6 +75,17 @@ open apps/macos/AreaMatrix.xcodeproj
   - `fix(storage): 修复 staging 区残留清理时的 race condition`
   - `docs(adr): 增补 0010 关于全文搜索的决策`
 
+## 代码评审
+
+详见 [CODE_REVIEW.md](CODE_REVIEW.md)。
+
+简短版：
+
+- 所有 PR 都需要至少 1 位维护者 review。
+- High / Mission-Critical 改动必须说明影响、风险、验证和回滚。
+- 用户文件、DB、staging、FSEvents/iCloud、隐私、安全或 Core API 破坏性变化不能只靠口头确认。
+- task-loop 自动生成的 PASS commit 仍需 CI 和 review，不能直接视为可合并。
+
 ## 编码规范
 
 详见 [docs/development/coding-standards.md](docs/development/coding-standards.md)。
@@ -94,6 +106,27 @@ open apps/macos/AreaMatrix.xcodeproj
 
 详见 [docs/development/testing.md](docs/development/testing.md)。
 
+## 依赖、许可证与供应链
+
+详见 [docs/development/dependency-policy.md](docs/development/dependency-policy.md)。
+
+新增依赖必须说明用途、版本、许可证、替代方案、供应链风险和验证方式。许可证不兼容、来源不明或无法锁定的依赖不得合并。
+
+## CI 与治理门禁
+
+详见 [docs/development/ci-governance.md](docs/development/ci-governance.md)。
+
+所有 PR 都会运行 core、macOS、prompt、skill 和 governance 检查。CI 失败默认阻断合并；环境性失败必须在 PR 中记录命令、错误和补跑计划。
+
+## AI task-loop 贡献
+
+自动任务循环会按 `copy -> verify(read-only) -> repair retry -> PASS -> Git checkpoint -> next` 执行。相关贡献必须保留：
+
+- `tasks/prompts/_shared/progress.json`
+- `.codex/task-loop-logs/**`
+- `.codex/task-loop-runs/**`
+- PASS task 的 Git checkpoint 证据
+
 ## 文档要求
 
 - 添加新模块 → 在 `docs/modules/` 下加一篇说明文档
@@ -110,6 +143,9 @@ open apps/macos/AreaMatrix.xcodeproj
 - [ ] 已更新相关文档
 - [ ] 已在 `CHANGELOG.md` 的 `[Unreleased]` 段落添加条目
 - [ ] Commit message 符合 Conventional Commits
+- [ ] 已按 [CODE_REVIEW.md](CODE_REVIEW.md) 自查风险、验证和回滚
+- [ ] 新增依赖已按 dependency policy 说明许可证和供应链风险
+- [ ] CI / governance 检查通过或已说明阻塞原因
 - [ ] PR 标题清晰描述改动（不超过 72 字符）
 - [ ] PR 描述说明了 **why**、**what**、**how to test**
 - [ ] 不包含未授权的第三方资源 / 商业 logo / 与许可证不兼容的代码

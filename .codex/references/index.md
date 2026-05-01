@@ -16,6 +16,9 @@ Codex 在 AreaMatrix 中处理任务时，按以下顺序定位上下文：
 - 构建与运行：`docs/development/build.md`
 - 测试策略：`docs/development/testing.md`
 - 编码规范：`docs/development/coding-standards.md`
+- 代码评审：`CODE_REVIEW.md`
+- 依赖与供应链：`docs/development/dependency-policy.md`
+- CI 治理：`docs/development/ci-governance.md`
 - Prompt 工程质量门禁：`tasks/prompts/_shared/engineering-quality-rules.md`
 - Stage 1 MVP：`docs/roadmap/stage-1-mvp.md`
 - 总路线图：`docs/roadmap/milestones.md`
@@ -24,6 +27,7 @@ Codex 在 AreaMatrix 中处理任务时，按以下顺序定位上下文：
 
 - `areamatrix-task-loop`：静默任务流水线启动、监控与恢复。
 - `areamatrix-git-checkpoint`：PASS task 的 commit / push / Git 恢复策略。
+- `areamatrix-enterprise-governance`：企业级 review、安全、依赖、CI 与 CODEOWNERS 治理。
 - `areamatrix-validation-driver`：按改动范围选择最小充分验证集。
 - `areamatrix-doc-sync`：检查 docs / API / UDL / prompt manifest 漂移。
 - `areamatrix-file-safety`：用户文件、`.areamatrix/` 元数据与恢复边界。
@@ -31,6 +35,7 @@ Codex 在 AreaMatrix 中处理任务时，按以下顺序定位上下文：
 ## Health Checks
 
 - Skills：`bash scripts/check-skills.sh`
+- Governance：`bash scripts/check-governance.sh`
 - Prompt runner：`python3 tasks/prompts/_shared/prompt_pipeline.py doctor`
 - Task loop full check：`bash scripts/check-task-loop.sh`
 - Task loop：`bash scripts/run_area_matrix_task_pipeline.sh --status`

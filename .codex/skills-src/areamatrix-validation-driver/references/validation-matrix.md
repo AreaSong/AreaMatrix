@@ -6,6 +6,9 @@ Every validation decision must also apply:
 
 - `tasks/prompts/_shared/engineering-quality-rules.md`
 - `docs/development/coding-standards.md`
+- `CODE_REVIEW.md`
+- `docs/development/dependency-policy.md`
+- `docs/development/ci-governance.md`
 
 Validation is not complete when commands pass but the implementation is a placeholder, hardcoded success path, mock-only path, or one-off script.
 
@@ -18,6 +21,7 @@ Validation is not complete when commands pass but the implementation is a placeh
 | prompt coverage or control maps | add `python3 tasks/prompts/_shared/prompt_pipeline.py audit --pages` |
 | `scripts/run_area_matrix_task_pipeline.sh` | `bash -n scripts/run_area_matrix_task_pipeline.sh`; `bash scripts/run_area_matrix_task_pipeline.sh --status`; dry-run one task |
 | `.codex/skills-src/**` or `.agents/skills/**` | `bash scripts/check-skills.sh`; `python3 tasks/prompts/_shared/prompt_pipeline.py doctor` |
+| governance docs, PR/issue templates, CODEOWNERS, CI workflows | `bash scripts/check-governance.sh`; `bash scripts/check-skills.sh`; `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`; YAML parse workflows |
 
 Dry-run examples:
 
@@ -65,6 +69,7 @@ For mixed changes, combine relevant rows. Examples:
 - `core/**` + `docs/api/**`: run Rust core checks and doc-sync checks.
 - `tasks/prompts/**` + `scripts/**`: run prompt doctor and script syntax/status/dry-run checks.
 - file safety behavior + docs: run implementation tests plus file-safety acceptance evidence.
+- governance docs + skills + CI: run governance check, skill health, prompt doctor, and YAML parse.
 
 ## When To Widen
 
@@ -75,4 +80,5 @@ Widen validation when:
 - behavior touches user files, DB, staging, or external sync
 - manifest validation lists broader commands
 - engineering-quality review finds unclear flow, missing error handling, missing comments/rustdoc, or insufficient tests
+- code review, dependency, license, security, privacy, CI, or Git evidence has unresolved blockers
 - prior verify failed for missing evidence

@@ -71,10 +71,22 @@ docs/development/troubleshooting.md
 ```
 顶层 README.md
    → CONTRIBUTING.md
+   → CODE_REVIEW.md
    → docs/development/setup.md
    → docs/development/git-workflow.md
    → docs/development/coding-standards.md
    → docs/development/testing.md
+   → docs/development/ci-governance.md
+```
+
+### 你在做企业治理 / 评审 / CI
+
+```
+CODE_REVIEW.md
+   → SECURITY.md
+   → docs/development/dependency-policy.md
+   → docs/development/ci-governance.md
+   → .github/PULL_REQUEST_TEMPLATE.md
 ```
 
 ### 你想了解某个决策为什么是这样
@@ -146,6 +158,8 @@ docs/adr/README.md  (索引)
 | [development/coding-standards.md](development/coding-standards.md) | 编码规范 |
 | [development/git-workflow.md](development/git-workflow.md) | Git 分支与 commit 规范 |
 | [development/testing.md](development/testing.md) | 测试策略 |
+| [development/dependency-policy.md](development/dependency-policy.md) | 依赖、许可证与供应链规则 |
+| [development/ci-governance.md](development/ci-governance.md) | CI 与治理门禁 |
 | [development/release.md](development/release.md) | 发布流程 |
 | [development/troubleshooting.md](development/troubleshooting.md) | 常见错误诊断手册 |
 | [development/performance.md](development/performance.md) | 性能工程指南 |

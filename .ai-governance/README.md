@@ -14,6 +14,7 @@
 2. `.codex/` 只承载 Codex 运行材料，不作为业务规则权威来源。
 3. `tasks/prompts/` 是任务执行边界，不替代长期治理规则。
 4. 高风险边界必须显式记录，不能只靠临场判断。
+5. 企业治理规则先落到 `CODE_REVIEW.md`、`SECURITY.md` 和 `docs/development/`，再同步到 `.codex/` skills 或 prompt 门禁。
 
 ## 目录结构
 
@@ -26,4 +27,6 @@
 - 根规则：[../AGENTS.md](../AGENTS.md)
 - Codex 材料：[../.codex/README.md](../.codex/README.md)
 - Prompt 任务库：[../tasks/prompts/README.md](../tasks/prompts/README.md)
-
+- 代码评审：[../CODE_REVIEW.md](../CODE_REVIEW.md)
+- 安全政策：[../SECURITY.md](../SECURITY.md)
+- CI 治理：[../docs/development/ci-governance.md](../docs/development/ci-governance.md)

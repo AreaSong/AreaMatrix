@@ -25,6 +25,14 @@ assignees: []
 
 <!-- 实际发生了什么 -->
 
+## 数据安全影响 / Data Safety Impact
+
+- [ ] 没有发现用户文件、资料库、DB 或隐私影响
+- [ ] 可能导致用户文件丢失 / 覆盖 / 移动 / 重命名
+- [ ] 可能导致 `.areamatrix/` 元数据、DB、staging 或索引损坏
+- [ ] 可能泄漏本地路径、文件名、日志、隐私或敏感数据
+- [ ] 不确定，需要维护者判断
+
 ## 截图 / 录屏 / Screenshots
 
 <!-- 如果适用，附上截图或录屏 -->
@@ -54,4 +62,5 @@ assignees: []
 - [ ] 我已搜索过现有 issues 确认没有重复
 - [ ] 我已尝试重启应用 / 清除缓存
 - [ ] 我已升级到最新版本
+- [ ] 如果涉及安全漏洞，我没有在公开 issue 中披露利用细节，而是使用 GitHub Security Advisory
 - [ ] 我已阅读 [CONTRIBUTING.md](../../CONTRIBUTING.md)

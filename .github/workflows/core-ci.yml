@@ -3,16 +3,8 @@ name: Core CI
 on:
   push:
     branches: [main]
-    paths:
-      - 'core/**'
-      - 'scripts/**'
-      - '.github/workflows/core-ci.yml'
   pull_request:
     branches: [main]
-    paths:
-      - 'core/**'
-      - 'scripts/**'
-      - '.github/workflows/core-ci.yml'
 
 env:
   CARGO_TERM_COLOR: always

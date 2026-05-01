@@ -17,9 +17,8 @@
 
 **请不要通过公开 issue 报告安全漏洞。**
 
-请通过以下任一方式私下提交：
+请通过私密渠道提交：
 
-- Email: `security@<your-domain>` *（占位，请部署时替换为实际邮箱）*
 - GitHub Security Advisory：在主仓库点击 Security → Report a vulnerability
 
 ### 报告应包含
@@ -77,9 +76,8 @@
 
 **Please do not report security issues via public GitHub issues.**
 
-Use one of the private channels:
+Use the private reporting channel:
 
-- Email: `security@<your-domain>` *(placeholder; replace upon deployment)*
 - GitHub Security Advisory: Repository → Security → Report a vulnerability
 
 ### Your Report Should Include
