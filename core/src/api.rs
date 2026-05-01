@@ -190,7 +190,30 @@ pub fn predict_category(repo_path: String, filename: String) -> CoreResult<Class
     classify::predict_category(repo_path, filename)
 }
 
-/// Imports a file into a repository.
+/// Imports one source file into repository storage.
+///
+/// C1-06 defines the copied-file contract for `ImportOptions` values whose
+/// `mode` is `StorageMode::Copied`. The source path is read as immutable input,
+/// file bytes are copied through `.areamatrix/staging/`, the content hash is
+/// used for duplicate detection, and a successful call returns the active
+/// `FileEntry` persisted in `files` with a matching `change_log` import event.
+/// The original source file must remain unchanged.
+///
+/// This API is the shared entry point for adjacent import modes. C1-07 and
+/// C1-08 own move and index semantics, so this task only fixes the public
+/// contract for copied imports.
+///
+/// # Errors
+///
+/// Returns `CoreError::InvalidPath` for an empty, metadata-internal, or unsafe
+/// source or destination path, `CoreError::DuplicateFile` for duplicate hashes
+/// when the selected strategy requires user choice or skip behavior,
+/// `CoreError::ICloudPlaceholder` for unavailable iCloud placeholders,
+/// `CoreError::PermissionDenied` for unreadable sources or unwritable metadata,
+/// `CoreError::Io` for filesystem failures, and `CoreError::Db` for metadata
+/// persistence failures. Failed imports must not leave active file rows or
+/// final destination half-products; staging residue is reserved for later
+/// recovery cleanup.
 pub fn import_file(
     _repo_path: String,
     _source_path: String,
