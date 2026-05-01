@@ -1083,6 +1083,70 @@
     "0-2/task-13": {
       "attempts": 2,
       "copy_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260501_132850/phase-0/0-2-task-13-copy-attempt-2.log",
+      "git": {
+        "attempts": 2,
+        "branch": "codex/areamatrix-task-loop-20260501_132850",
+        "changed_files": [
+          ".codex/task-loop-logs/20260501_132850/phase-0/0-2-task-13-copy-attempt-1.log",
+          ".codex/task-loop-logs/20260501_132850/phase-0/0-2-task-13-copy-attempt-2.log",
+          ".codex/task-loop-logs/20260501_132850/phase-0/0-2-task-13-verify-attempt-1.log",
+          ".codex/task-loop-logs/20260501_132850/phase-0/0-2-task-13-verify-attempt-2.log",
+          ".codex/task-loop-runs/20260501_132850/summary.json",
+          ".codex/task-loop-runs/index.json",
+          "docs/development/ci-governance.md",
+          "docs/development/testing.md",
+          "scripts/check-all.sh",
+          "scripts/check-macos-tests.sh",
+          "tasks/prompts/_shared/progress.json"
+        ],
+        "commit": "65176e970823c55fea94eb945c81e6a10e9f905f",
+        "copy_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260501_132850/phase-0/0-2-task-13-copy-attempt-2.log",
+        "diff_name_status": [
+          "M\t.codex/task-loop-runs/20260501_132850/summary.json",
+          "M\t.codex/task-loop-runs/index.json",
+          "M\tdocs/development/ci-governance.md",
+          "M\tdocs/development/testing.md",
+          "M\tscripts/check-all.sh",
+          "M\ttasks/prompts/_shared/progress.json"
+        ],
+        "label": "0-2/task-13",
+        "mode": "commit",
+        "phase": "phase-0",
+        "push_status": "not_requested",
+        "remote": "",
+        "run_id": "20260501_132850",
+        "staged_name_status": [
+          "A\t.codex/task-loop-logs/20260501_132850/phase-0/0-2-task-13-copy-attempt-1.log",
+          "A\t.codex/task-loop-logs/20260501_132850/phase-0/0-2-task-13-copy-attempt-2.log",
+          "A\t.codex/task-loop-logs/20260501_132850/phase-0/0-2-task-13-verify-attempt-1.log",
+          "A\t.codex/task-loop-logs/20260501_132850/phase-0/0-2-task-13-verify-attempt-2.log",
+          "M\t.codex/task-loop-runs/20260501_132850/summary.json",
+          "M\t.codex/task-loop-runs/index.json",
+          "M\tdocs/development/ci-governance.md",
+          "M\tdocs/development/testing.md",
+          "M\tscripts/check-all.sh",
+          "A\tscripts/check-macos-tests.sh",
+          "M\ttasks/prompts/_shared/progress.json"
+        ],
+        "status": "committed",
+        "status_short": [
+          " M .codex/task-loop-runs/20260501_132850/summary.json",
+          " M .codex/task-loop-runs/index.json",
+          " M docs/development/ci-governance.md",
+          " M docs/development/testing.md",
+          " M scripts/check-all.sh",
+          " M tasks/prompts/_shared/progress.json",
+          "?? .codex/task-loop-logs/20260501_132850/phase-0/0-2-task-13-copy-attempt-1.log",
+          "?? .codex/task-loop-logs/20260501_132850/phase-0/0-2-task-13-copy-attempt-2.log",
+          "?? .codex/task-loop-logs/20260501_132850/phase-0/0-2-task-13-verify-attempt-1.log",
+          "?? .codex/task-loop-logs/20260501_132850/phase-0/0-2-task-13-verify-attempt-2.log",
+          "?? scripts/check-macos-tests.sh"
+        ],
+        "summary_file": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-runs/20260501_132850/summary.json",
+        "task_name": "0-2-task-13",
+        "updated_at": "2026-05-01T15:02:36.905967+00:00",
+        "verify_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260501_132850/phase-0/0-2-task-13-verify-attempt-2.log"
+      },
       "note": "自动执行验收通过",
       "phase": "phase-0",
       "risk": "High",
@@ -1097,7 +1161,7 @@
     "retries": 29,
     "task_count": 637
   },
-  "updated_at": "2026-05-01T15:02:36.680491+00:00",
+  "updated_at": "2026-05-01T15:02:36.906926+00:00",
   "verify_root": "/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/verify-ready",
   "version": 1
 }
