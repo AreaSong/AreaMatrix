@@ -7,6 +7,11 @@ OUT_DIR="${OUT_DIR:-${PROJECT_ROOT}/apps/macos/AreaMatrix/Bridge/Generated}"
 BUILD_PROFILE="${BUILD_PROFILE:-release}"
 MACOSX_DEPLOYMENT_TARGET="${MACOSX_DEPLOYMENT_TARGET:-14.0}"
 
+fail() {
+  echo "error: $*" >&2
+  exit 1
+}
+
 case "${BUILD_PROFILE}" in
   release)
     CARGO_PROFILE_ARGS=(--release)
@@ -17,8 +22,7 @@ case "${BUILD_PROFILE}" in
     TARGET_PROFILE="debug"
     ;;
   *)
-    echo "error: BUILD_PROFILE must be 'release' or 'debug'." >&2
-    exit 2
+    fail "BUILD_PROFILE must be 'release' or 'debug'."
     ;;
 esac
 
@@ -26,8 +30,27 @@ require_command() {
   local command_name="$1"
 
   if ! command -v "${command_name}" >/dev/null 2>&1; then
-    echo "error: missing required command '${command_name}'." >&2
-    exit 127
+    fail "missing required command '${command_name}'."
+  fi
+}
+
+require_file() {
+  local file_path="$1"
+  local description="$2"
+
+  if [[ ! -f "${file_path}" ]]; then
+    fail "${description} not found at ${file_path}."
+  fi
+}
+
+require_rust_target() {
+  local target_triple="$1"
+
+  if command -v rustup >/dev/null 2>&1 &&
+    ! rustup target list --installed | grep -Fxq "${target_triple}"; then
+    echo "error: missing Rust target '${target_triple}'." >&2
+    echo "       install it with: rustup target add ${target_triple}" >&2
+    exit 1
   fi
 }
 
@@ -37,9 +60,12 @@ require_command rustc
 require_command uniffi-bindgen
 
 if [[ ! -d "${CORE_DIR}" ]]; then
-  echo "error: core crate not found at ${CORE_DIR}." >&2
-  exit 1
+  fail "core crate not found at ${CORE_DIR}."
 fi
+
+require_file "${CORE_DIR}/Cargo.toml" "Core Cargo manifest"
+require_file "${CORE_DIR}/area_matrix.udl" "UniFFI definition"
+require_file "${CORE_DIR}/build.rs" "UniFFI scaffolding build script"
 
 HOST_TRIPLE="$(rustc -vV | sed -n 's/^host: //p')"
 case "${HOST_TRIPLE}" in
@@ -49,9 +75,12 @@ case "${HOST_TRIPLE}" in
   *)
     echo "error: build-core.sh must run on a macOS Rust host." >&2
     echo "       got host triple: ${HOST_TRIPLE}" >&2
-    exit 2
+    exit 1
     ;;
 esac
+
+require_rust_target aarch64-apple-darwin
+require_rust_target x86_64-apple-darwin
 
 export MACOSX_DEPLOYMENT_TARGET
 
@@ -67,6 +96,10 @@ STATICLIB_ARM="target/aarch64-apple-darwin/${TARGET_PROFILE}/libarea_matrix_core
 STATICLIB_X86="target/x86_64-apple-darwin/${TARGET_PROFILE}/libarea_matrix_core.a"
 UNIVERSAL_STATICLIB="${OUT_DIR}/libarea_matrix_core.a"
 BINDGEN_LIBRARY="target/${BINDGEN_TARGET}/${TARGET_PROFILE}/libarea_matrix_core.dylib"
+
+require_file "${STATICLIB_ARM}" "aarch64 static library"
+require_file "${STATICLIB_X86}" "x86_64 static library"
+require_file "${BINDGEN_LIBRARY}" "host dylib for UniFFI binding generation"
 
 echo "==> Creating universal static library"
 rm -f "${UNIVERSAL_STATICLIB}"
