@@ -1,0 +1,107 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`0-2/task-11`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-0/0-2-engineering-foundation/task-11-macos-bridge-placeholder.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/CoreBridgePlaceholderState.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：12
+- 未覆盖项数：0
+- 通过项数：9
+- 不通过项数：3
+- 阻塞项数：2
+
+四、逐项验收结果
+
+- 项目：创建 CoreBridge 占位层
+- 结果：通过
+- 证据：`apps/macos/AreaMatrix/Bridge/CoreBridge.swift:3` 定义 `actor CoreBridge`；`apps/macos/AreaMatrix/Models/CoreBridgePlaceholderState.swift:31` 定义占位状态模型。
+- 涉及文件：`CoreBridge.swift`、`CoreBridgePlaceholderState.swift`
+
+- 项目：Bridge 方法只声明后续接入边界
+- 结果：通过
+- 证据：`CoreBridge.swift:32` 统一通过 `requireGeneratedBindings` 抛出 `generatedBindingsUnavailable`；各 Core 边界方法返回 `Never`，未返回伪造业务数据。
+- 涉及文件：`CoreBridge.swift`
+
+- 项目：不得用 mock 通过后续真实闭环验收
+- 结果：通过
+- 证据：未发现 `mock`、`fixture`、直接 `import area_matrix`、`AreaMatrix.*` 或 `area_matrix.*` 调用；占位调用显式失败。
+- 涉及文件：`apps/macos/AreaMatrix/**`
+
+- 项目：Expected New Paths 落地
+- 结果：通过
+- 证据：存在 `apps/macos/AreaMatrix/Bridge/CoreBridge.swift`、`apps/macos/AreaMatrix/Models/AppShellModel.swift`、`apps/macos/AreaMatrix/Models/CoreBridgePlaceholderState.swift`。
+- 涉及文件：`Bridge/**`、`Models/**`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git diff --name-only -- core/src` 无输出，未触碰 `core/src/**`。
+- 涉及文件：`core/src/**`
+
+- 项目：Bridge 编译通过
+- 结果：通过
+- 证据：manifest 指定命令 `xcodebuild ... build CODE_SIGNING_ALLOWED=NO` 退出码 0，输出 `** BUILD SUCCEEDED **`。
+- 涉及文件：macOS Xcode project
+
+- 项目：validation-driver macOS test 门禁
+- 结果：不通过
+- 证据：`xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO` 退出码 65；错误为 `com.apple.testmanagerd.control` sandbox restriction。补充 `xcrun xctest ...AreaMatrixTests.xctest` 通过 1 个测试，但不能替代 required `xcodebuild test`。
+- 涉及文件：macOS test target / Xcode test runner
+
+- 项目：Manifest 范围控制
+- 结果：不通过
+- 证据：当前 diff 修改了 `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`，用于加入 `CoreBridge.swift`、`AppShellModel.swift`、`CoreBridgePlaceholderState.swift` 源文件引用；但 `0-2/task-11` manifest 的 `Expected New Paths` 只列 `Bridge/**` 和 `Models/**`，未授权 `AreaMatrix.xcodeproj/**`。
+- 涉及文件：`apps/macos/AreaMatrix.xcodeproj/project.pbxproj:13`
+
+- 项目：占位状态在任务汇报中可识别
+- 结果：通过
+- 证据：`CoreBridgePlaceholderState.phase0.statusLabel = "CoreBridge placeholder"`；task-loop copy log 也记录该状态可识别。
+- 涉及文件：`CoreBridgePlaceholderState.swift:41`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。Bridge、placeholder state、shell model 分离，文件长度均低于 500 行。
+- 注释 / rustdoc / 文档同步：通过。本 task 未新增 public Rust API；Swift 占位层没有复杂逻辑需要额外注释。
+- 错误处理与边界处理：通过。占位调用不静默成功，统一抛 `CoreBridgeError.generatedBindingsUnavailable`。
+- 测试与验证覆盖：不通过。manifest build 通过，但 validation-driver 要求的 `xcodebuild test` 未通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。当前是明确 placeholder，不伪造真实 Core 闭环。
+
+六、阻塞项
+
+- P0：required `xcodebuild test` 未通过
+  - 说明：validation-driver 对 `apps/macos/**` 要求 build + test；当前 `xcodebuild test` 被 sandbox restriction 阻断，不能判 PASS。
+  - 路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+  - 行号：`13`
+  - 为什么导致不通过：验收规则要求无法证明通过即不通过，补跑 `xcrun xctest` 只能证明 bundle 内测试可跑，不能替代 Xcode test runner 门禁。
+
+- P1：task 实际改动越出 manifest Expected New Paths
+  - 说明：`project.pbxproj` 被修改以纳入新 Swift 文件，但该路径不在 `0-2/task-11` 的 Expected New Paths / Existing Code 中。
+  - 路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+  - 行号：`13`
+  - 为什么导致不通过：共享规则要求按 manifest 边界执行；范围外修改不能在严格验收中忽略。
+
+七、验证情况
+
+- 已运行并通过：`xcodebuild -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' build CODE_SIGNING_ALLOWED=NO`
+- 已运行并失败：`xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+- 已运行并通过（辅助证据）：`xcrun xctest apps/macos/DerivedData/AreaMatrix/Build/Products/Debug/AreaMatrix.app/Contents/PlugIns/AreaMatrixTests.xctest`
+- 已运行并通过：`git diff --check`
+- 已运行并通过：`python3 tasks/prompts/_shared/prompt_pipeline.py doctor`
+- 未运行：`swiftlint --strict`，当前 PATH 未找到 `swiftlint`
+- 未运行：`swiftformat --lint .`，当前 PATH 未找到 `swiftformat`
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+
+
+VERIFY_RESULT: FAIL

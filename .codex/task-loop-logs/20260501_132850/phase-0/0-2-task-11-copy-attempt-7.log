@@ -1,0 +1,49 @@
+一、执行结论
+
+- 未完成。
+- 代码层面的 `CoreBridge` placeholder 已满足 task checklist，但 validation-driver 要求的 `xcodebuild test` 仍被当前沙箱阻断，不能判定 completed。
+
+二、执行范围
+
+本轮实际写入：
+- [progress.json](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/progress.json:323)：将 `0-2/task-11` 从 stale `in_progress` 收口为 `failed`，避免继续显示无活锁的进行中任务。
+
+当前 task 实现相关文件：
+- [CoreBridge.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift:3)
+- [CoreBridgePlaceholderState.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/CoreBridgePlaceholderState.swift:3)
+- [AppShellModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/AppShellModel.swift:1)
+
+三、完成情况
+
+- 创建 CoreBridge 占位层：通过。
+- Bridge 方法只声明后续接入边界：通过，方法统一抛 `generatedBindingsUnavailable`，无真实 UniFFI 返回值。
+- 不得用 mock 通过后续真实闭环验收：通过，`Bridge/Models` 未发现 `mock`、`fixture`、`import area_matrix`、`AreaMatrix.*`。
+- Bridge 编译通过：通过。
+- 占位状态可识别：通过，`statusLabel = "CoreBridge placeholder"`。
+- Forbidden Touches：未触碰，`git status --short -- core/src` 无输出。
+
+四、工程质量
+
+结构清晰，`Bridge` 与 `Models` 分离；Swift 文件分别为 127、61、3 行，低于文件长度阈值。错误路径显式抛错，没有静默成功、mock-only 成功路径、新依赖、`try!` 或强制解包。
+
+五、验证情况
+
+已通过：
+- `xcodebuild ... build CODE_SIGNING_ALLOWED=NO`
+- `xcodebuild build-for-testing ... CODE_SIGNING_ALLOWED=NO`
+- `xcrun xctest ...AreaMatrixTests.xctest`，执行 1 个测试通过
+- `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`
+- `PYTHONPYCACHEPREFIX=/private/tmp/areamatrix-pycache bash scripts/check-task-loop.sh`
+- `git diff --check`
+
+失败：
+- `xcodebuild test ... CODE_SIGNING_ALLOWED=NO`，exit 65，失败点是 `com.apple.testmanagerd.control` 被 sandbox restriction 拒绝。
+- `xcodebuild test-without-building ...` 同样被 testmanagerd 沙箱限制阻断。
+- `swiftformat` / `swiftlint` 未运行成功：当前环境无命令。
+
+六、风险与后续
+
+剩余阻断是环境验证阻断，不是 Swift 编译错误。`progress.json` 已不再 stale；但 [.codex/task-loop-runs/.../summary.json](/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-runs/20260501_132850/summary.json:880) 仍保留 `in_progress`，我尝试用 task-loop state helper 更新时被沙箱拒绝写入该 `.codex/task-loop-runs` 文件，无法在当前权限内同步 summary。
+
+建议下一个动作：在允许访问 `testmanagerd` 的本机终端或 CI 里补跑 `xcodebuild test`；若通过，再由 task-loop 正常写入 verify PASS 并标记 completed。
+

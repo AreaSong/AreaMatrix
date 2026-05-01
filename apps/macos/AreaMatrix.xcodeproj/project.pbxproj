@@ -10,6 +10,9 @@
 		0A0000000000000000000002 /* AreaMatrixApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000013 /* AreaMatrixApp.swift */; };
 		0A0000000000000000000003 /* MainWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000014 /* MainWindow.swift */; };
 		0A0000000000000000000004 /* AreaMatrixAppSmokeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000015 /* AreaMatrixAppSmokeTests.swift */; };
+		0A0000000000000000000005 /* CoreBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000017 /* CoreBridge.swift */; };
+		0A0000000000000000000006 /* AppShellModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000018 /* AppShellModel.swift */; };
+		0A0000000000000000000007 /* CoreBridgePlaceholderState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000019 /* CoreBridgePlaceholderState.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -29,6 +32,9 @@
 		0A0000000000000000000014 /* MainWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/MainWindow.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000015 /* AreaMatrixAppSmokeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/App/AreaMatrixAppSmokeTests.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000016 /* AreaMatrixTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AreaMatrixTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		0A0000000000000000000017 /* CoreBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/CoreBridge.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000018 /* AppShellModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/AppShellModel.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000019 /* CoreBridgePlaceholderState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/CoreBridgePlaceholderState.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -107,6 +113,7 @@
 		0A0000000000000000000037 /* Bridge */ = {
 			isa = PBXGroup;
 			children = (
+				0A0000000000000000000017 /* CoreBridge.swift */,
 			);
 			name = Bridge;
 			sourceTree = "<group>";
@@ -114,6 +121,8 @@
 		0A0000000000000000000038 /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				0A0000000000000000000018 /* AppShellModel.swift */,
+				0A0000000000000000000019 /* CoreBridgePlaceholderState.swift */,
 			);
 			name = Models;
 			sourceTree = "<group>";
@@ -224,6 +233,9 @@
 			files = (
 				0A0000000000000000000002 /* AreaMatrixApp.swift in Sources */,
 				0A0000000000000000000003 /* MainWindow.swift in Sources */,
+				0A0000000000000000000005 /* CoreBridge.swift in Sources */,
+				0A0000000000000000000006 /* AppShellModel.swift in Sources */,
+				0A0000000000000000000007 /* CoreBridgePlaceholderState.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -289,7 +301,6 @@
 		0A0000000000000000000084 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -298,22 +309,21 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 					"@loader_path/../Frameworks",
-					"@loader_path/../../../../MacOS",
+					"$(BUILT_PRODUCTS_DIR)/AreaMatrix.app/Contents/MacOS",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				OTHER_LDFLAGS = "$(BUILT_PRODUCTS_DIR)/AreaMatrix.app/Contents/MacOS/AreaMatrix.debug.dylib";
 				MARKETING_VERSION = 0.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = app.areamatrix.AreaMatrixTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
 				SWIFT_VERSION = 5.0;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/AreaMatrix.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/AreaMatrix";
 			};
 			name = Debug;
 		};
 		0A0000000000000000000085 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -322,15 +332,15 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 					"@loader_path/../Frameworks",
-					"@loader_path/../../../../MacOS",
+					"$(BUILT_PRODUCTS_DIR)/AreaMatrix.app/Contents/MacOS",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				OTHER_LDFLAGS = "$(BUILT_PRODUCTS_DIR)/AreaMatrix.app/Contents/MacOS/AreaMatrix.debug.dylib";
 				MARKETING_VERSION = 0.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = app.areamatrix.AreaMatrixTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
 				SWIFT_VERSION = 5.0;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/AreaMatrix.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/AreaMatrix";
 			};
 			name = Release;
 		};

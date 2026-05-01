@@ -1,6 +1,3 @@
-import Observation
-
-@Observable
-final class AppShellModel {
+struct AppShellModel: Equatable, Sendable {
     var statusText = "Phase 0 app shell"
 }

@@ -1,0 +1,44 @@
+一、执行结论
+
+- 未完成（BLOCKED）
+- 原因：`xcodebuild test ... CODE_SIGNING_ALLOWED=NO` 仍以 exit code 65 失败，错误为当前 Codex 沙盒无法访问 `com.apple.testmanagerd.control`。validation-driver 明确要求 macOS app 改动同时跑 build 和 test，见 [.codex/skills-src/areamatrix-validation-driver/references/validation-matrix.md](/Users/as/Ai-Project/project/AreaMatrix/.codex/skills-src/areamatrix-validation-driver/references/validation-matrix.md:47)。
+
+二、执行范围
+
+- 本轮未改 Swift 实现代码；复核了已有 `CoreBridge` 占位实现。
+- 本轮实际写入：把 [progress.json](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/progress.json:323) 中 `0-2/task-11` 从 stale `in_progress` 收口为 `blocked`，未标记 completed。
+- 已存在 task 改动包含 [CoreBridge.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift:3)、[CoreBridgePlaceholderState.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/CoreBridgePlaceholderState.swift:3)、[AppShellModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/AppShellModel.swift:1)。
+
+三、完成情况
+
+- 创建 CoreBridge 占位层：已满足，`CoreBridge` 为 actor。
+- Bridge 方法只声明后续接入边界：已满足，统一抛 `generatedBindingsUnavailable`，返回 `Never`。
+- 不得用 mock 通过后续真实闭环验收：已满足，`isPlaceholder == true`，`rg` 未发现 `mock/fixture/fake/import area_matrix/AreaMatrix.*` 直接调用。
+- Bridge 编译通过：已满足。
+- 占位状态可识别：已满足，`statusLabel = "CoreBridge placeholder"`。
+- Forbidden Touches：未触碰 `core/src/**`，`git status --short -- core/src` 和 `git diff --name-only -- core/src` 无输出。
+
+四、工程质量
+
+- 结构清晰：Bridge、placeholder state、shell model 分离；新增 Swift 文件均小于 500 行。
+- 错误处理：占位调用显式失败，不静默成功，不伪造真实 UniFFI 返回。
+- 无新增 Rust public API，无需 rustdoc。
+- 不存在新增依赖、mock-only 成功路径或一次性脚本化实现。
+- 证据缺口：`.codex/task-loop-runs/.../summary.json` 仍是旧的 `in_progress` 变更；我尝试用 state helper 更新 summary，但当前沙盒对 `.codex/**` 写入返回 `Operation not permitted`。
+
+五、验证情况
+
+- 通过：`python3 tasks/prompts/_shared/prompt_pipeline.py doctor`
+- 通过：`xcodebuild -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' build CODE_SIGNING_ALLOWED=NO`
+- 通过：`xcodebuild ... build-for-testing CODE_SIGNING_ALLOWED=NO`
+- 通过：`xcrun xctest apps/macos/DerivedData/AreaMatrix/Build/Products/Debug/AreaMatrix.app/Contents/PlugIns/AreaMatrixTests.xctest`，1 个测试通过
+- 通过：`git diff --check`
+- 失败：`xcodebuild test ... CODE_SIGNING_ALLOWED=NO`，`com.apple.testmanagerd.control` sandbox restriction
+- 未运行：`swiftlint --strict`、`swiftformat --lint .`，当前环境未安装对应命令
+
+六、风险与后续
+
+- 当前产品代码风险低：未触碰用户文件、DB、`core/src/**` 或真实 Core 写路径。
+- 当前 task 不能验收通过：必需的 `xcodebuild test` 没有通过，不能标记 completed。
+- 下一个动作应在非当前 Codex 沙盒、可访问 macOS XCTest testmanagerd 的环境里重跑 `xcodebuild test`；通过后再跑 verify-ready 并将 task-loop evidence 标记 completed。
+

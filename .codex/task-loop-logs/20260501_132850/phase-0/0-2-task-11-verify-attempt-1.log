@@ -1,0 +1,60 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`0-2/task-11`
+- 对应文件路径：`tasks/prompts/phase-0/0-2-engineering-foundation/task-11-macos-bridge-placeholder.md`
+- 核验范围：`docs/architecture/ffi-design.md`、`docs/api/core-api.md`、`core/area_matrix.udl`、`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+
+三、完成度摘要
+
+- 已覆盖项数：8
+- 未覆盖项数：0
+- 通过项数：7
+- 不通过项数：1
+- 阻塞项数：1
+
+四、逐项验收结果
+
+- Exact Docs：通过。两个文档均存在且已读取；`core/area_matrix.udl` 与 `docs/api/core-api.md` 的 UDL 函数边界一致。
+- Expected New Paths：通过。`apps/macos/AreaMatrix/Bridge/CoreBridge.swift`、`apps/macos/AreaMatrix/Models/AppShellModel.swift`、`apps/macos/AreaMatrix/Models/CoreBridgePlaceholderState.swift` 已存在。
+- Forbidden Touches：通过。`git diff --name-only -- core/src` 与 staged diff 均为空。
+- 创建 CoreBridge 占位层：通过。`CoreBridge` actor 存在，见 `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift:3`。
+- Bridge 方法只声明后续接入边界：通过。真实 API 方法均进入 `requireGeneratedBindings`，见 `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift:20`。
+- 不得用 mock 通过后续真实闭环验收：通过。未发现 mock 数据或静态成功态；占位调用显式抛 `generatedBindingsUnavailable`。
+- Bridge 编译通过：不通过。`xcodebuild build` 通过，但 Xcode target 没有编译 Bridge/Models 文件，不能证明 Bridge 编译通过。
+- 占位状态在任务汇报中可识别：通过。copy log 明确写出 placeholder 状态与残余风险，见 `/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260501_132850/phase-0/0-2-task-11-copy-attempt-1.log:13`。
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过。源码结构本身清晰，但未接入 Xcode Sources，项目构建不覆盖该占位层。
+- 注释 / rustdoc / 文档同步：通过。未新增 public Rust API；Swift 占位层与 FFI/Core API 边界名称对应。
+- 错误处理与边界处理：通过。占位调用显式失败，没有静默吞错。
+- 测试与验证覆盖：不通过。manifest build 命令通过但不覆盖 Bridge/Models；validation-driver 要求的 `xcodebuild test` 在当前沙箱因 `com.apple.testmanagerd.control` 通信受限失败。
+- 占位、硬编码、mock-only、一次性实现检查：通过。当前是显式 placeholder，不伪装真实闭环。
+
+六、阻塞项
+
+- P0：Bridge/Models 未纳入 Xcode Sources，manifest build 不能证明 Bridge 编译通过。
+  说明：`project.pbxproj` 的 Bridge/Models group 为空，Sources build phase 只包含 `AreaMatrixApp.swift` 和 `MainWindow.swift`；实际生成的 `AreaMatrix.SwiftFileList` 也只列这两个文件。
+  路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj:107`
+  路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj:221`
+  路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/DerivedData/AreaMatrix/Build/Intermediates.noindex/AreaMatrix.build/Debug/AreaMatrix.build/Objects-normal/arm64/AreaMatrix.SwiftFileList:1`
+  为什么导致不通过：任务完成标准要求“Bridge 编译通过”，但当前 `xcodebuild` 没有把 Bridge/Models 纳入编译输入，属于缺证据。
+
+七、验证情况
+
+- 已运行：`xcodebuild -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' build CODE_SIGNING_ALLOWED=NO`：通过，`BUILD SUCCEEDED`。
+- 已运行：`xcrun swiftc -typecheck ... CoreBridgePlaceholderState.swift CoreBridge.swift`：通过，无输出。
+- 已运行：`xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：失败，沙箱阻断 test runner 通信。
+- 已运行：`git diff --name-only -- core/src` / `git diff --cached --name-only -- core/src`：通过，无输出。
+- 缺失：没有 Xcode target 级别编译 Bridge/Models 的证据。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+
+
+VERIFY_RESULT: FAIL

@@ -354,6 +354,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/Bridge/**`
 - `apps/macos/AreaMatrix/Models/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
