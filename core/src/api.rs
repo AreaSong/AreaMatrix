@@ -68,6 +68,14 @@ pub fn validate_initialized_repo_path(repo_path: String) -> CoreResult<RepoPathV
 /// ignore config files, and the generated root overview under
 /// `.areamatrix/generated/root.md`.
 ///
+/// The C1-03 contract uses `RepoInitOptions { mode: AdoptExisting, .. }` for a
+/// non-empty user-selected directory. That mode has the same metadata-write
+/// boundary plus an adoption scan session: existing user files remain in place,
+/// are indexed with `FileOrigin::Adopted`, and can be resumed through
+/// [`get_latest_scan_session`] and [`resume_scan_session`]. Adopt mode must skip
+/// `.areamatrix/`, generated overviews, system temporary files, and root
+/// `AREAMATRIX.md` while treating `README.md` as normal user content.
+///
 /// The API returns `Ok(())` after the empty repository can be read through
 /// [`load_config`], `list_files`, and [`list_tree_json`]. It must never create,
 /// delete, move, rename, or overwrite user-authored files such as `README.md`.
@@ -113,12 +121,36 @@ pub fn reindex_from_filesystem(_repo_path: String) -> CoreResult<ReindexReport> 
     not_implemented()
 }
 
-/// Returns the latest scan session if one exists.
+/// Returns the latest adopt or reindex scan session if one exists.
+///
+/// C1-03 consumers use this read-only API to recover the state of an unfinished
+/// or recently completed adoption scan. It reports the persisted session kind,
+/// lifecycle status, last processed path, counters, timestamps, and recorded
+/// errors without touching user files or starting a new scan.
+///
+/// # Errors
+///
+/// Returns `CoreError::Db` when scan-session metadata cannot be read,
+/// `CoreError::Io` when repository metadata cannot be inspected, and
+/// `CoreError::InvalidPath` or `CoreError::PermissionDenied` for invalid or
+/// inaccessible repository roots.
 pub fn get_latest_scan_session(_repo_path: String) -> CoreResult<Option<ScanSession>> {
     not_implemented()
 }
 
-/// Resumes a scan session.
+/// Resumes a paused, interrupted, or failed adopt/reindex scan session.
+///
+/// For C1-03, this is the continuation path for `AdoptExisting` sessions. The
+/// contract is idempotent: already-indexed files are updated in place, new files
+/// are inserted with the original layout preserved, and a completed session
+/// returns an empty report instead of mutating user files.
+///
+/// # Errors
+///
+/// Returns `CoreError::Db` when the session or indexed rows cannot be persisted,
+/// `CoreError::Io` for filesystem inspection failures, `CoreError::InvalidPath`
+/// for malformed repository paths, and `CoreError::PermissionDenied` when the
+/// repository cannot be inspected or metadata cannot be updated.
 pub fn resume_scan_session(_repo_path: String, _scan_session_id: i64) -> CoreResult<ReindexReport> {
     not_implemented()
 }

@@ -1,0 +1,45 @@
+一、执行结论
+
+已完成 `1-1/task-10` 的 C1-03 contract-api 范围。
+
+二、执行范围
+
+单任务：`1-1/task-10`
+
+修改文件：
+- [core/src/api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:71)：补齐 C1-03 `AdoptExisting`、scan session 查询/恢复的 public API 合同说明、错误和副作用边界。
+- [core/tests/adopt_existing_repo_contract.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/adopt_existing_repo_contract.rs:1)：新增 C1-03 contract tests，覆盖 API 签名、输入/输出类型、错误码、UDL/Core API 对齐、side-effect 边界和 control map 消费声明。
+
+`core/area_matrix.udl` 已核对，无需改动；新增测试会断言它与 `docs/api/core-api.md` 的 C1-03 合同保持一致。未触碰 `apps/**`。
+
+三、完成情况
+
+核对清单全部完成：
+- 只处理 C1-03 contract-api。
+- 已读取 manifest 的 Exact Docs，并以 docs 为 SSOT。
+- 未实现相邻 C1 能力或 UI 页面。
+- 校准 Core API 合同意图；UDL 已对齐并由测试证明。
+- 输入、输出、错误码、副作用边界均有 rustdoc/test 证据。
+
+完成标准：
+- C1-03 contract-api 证据：`adopt_existing_repo_contract` 7 条测试通过。
+- 未扩展到未绑定能力：只改 `core/src/**` 与 `core/tests/**`，无 `apps/**` 触碰。
+
+四、工程质量
+
+代码结构清晰，没有新增依赖，没有 mock-only 产品路径，也没有实现 task-11 的真实接管扫描。新增测试是 contract 层验证，不声称完成真实 adopt implementation。错误处理与文件安全边界通过文档片段、UDL 片段和类型断言固定下来。
+
+五、验证情况
+
+已通过：
+- `cd core && cargo fmt --all -- --check`
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`
+- `cd core && cargo test --workspace adopt_existing_repo`：7 passed
+- 额外扩大验证：`cd core && cargo test --workspace`：51 passed
+- `git diff --check -- core/src/api.rs core/tests/adopt_existing_repo_contract.rs`
+
+六、风险与后续
+
+剩余风险：真实 `AdoptExisting` 扫描仍未实现，当前仍属于 contract-api 交付；后续由 `1-1/task-11` 承接 implementation。工作区中原本已有 `.codex/task-loop-runs/20260501_132850/summary.json` 和 `tasks/prompts/_shared/progress.json` 未提交改动，我未修改它们。
+
+建议下一个任务：`1-1/task-11: C1-03 implementation`。  
