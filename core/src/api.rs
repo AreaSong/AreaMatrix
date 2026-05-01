@@ -199,9 +199,20 @@ pub fn predict_category(repo_path: String, filename: String) -> CoreResult<Class
 /// `FileEntry` persisted in `files` with a matching `change_log` import event.
 /// The original source file must remain unchanged.
 ///
-/// This API is the shared entry point for adjacent import modes. C1-07 and
-/// C1-08 own move and index semantics, so this task only fixes the public
-/// contract for copied imports.
+/// C1-07 defines the moved-file contract for `ImportOptions` values whose
+/// `mode` is `StorageMode::Moved`. The source path is validated, staged under
+/// AreaMatrix-owned metadata, atomically renamed into the final repository
+/// destination, and recorded with `files.storage_mode = Moved`,
+/// `files.source_path` set to the original source, and `change_log.action =
+/// imported`. A successful moved import removes the original source path and
+/// leaves the final file, DB row, and change log consistent. A failed moved
+/// import must keep the original source readable or leave only recoverable
+/// internal staging state; it must not cross unconfirmed user directory
+/// boundaries.
+///
+/// C1-08 owns index-only semantics, so this entry point must keep copied,
+/// moved, and indexed contracts explicit instead of hiding adjacent behavior
+/// behind a generic import success path.
 ///
 /// # Errors
 ///

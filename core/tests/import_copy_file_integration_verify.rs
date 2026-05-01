@@ -236,8 +236,8 @@ fn import_copy_file_integration_verify_rejects_adjacent_import_modes() {
     );
     assert_eq!(count_rows(repo.path(), "files", Some("active")), 0);
     assert_eq!(staging_entries(repo.path()), Vec::<PathBuf>::new());
-    assert_contains(API_RS, "C1-07 and");
-    assert_contains(API_RS, "C1-08 own move and index semantics");
+    assert_contains(API_RS, "C1-07 defines the moved-file contract");
+    assert_contains(API_RS, "C1-08 owns index-only semantics");
 }
 
 fn assert_file_row_matches_import(repo: &Path, file_id: i64, entry_path: &str, source: &Path) {
