@@ -210,21 +210,28 @@ pub fn predict_category(repo_path: String, filename: String) -> CoreResult<Class
 /// internal staging state; it must not cross unconfirmed user directory
 /// boundaries.
 ///
-/// C1-08 owns index-only semantics, so this entry point must keep copied,
-/// moved, and indexed contracts explicit instead of hiding adjacent behavior
-/// behind a generic import success path.
+/// C1-08 owns index-only semantics. C1-08 defines the indexed-file contract
+/// for `ImportOptions` values whose `mode` is `StorageMode::Indexed`. The
+/// source path is validated and may be read for metadata and hashing, but Core
+/// must not copy, move, rename, or delete the source file, and must not create
+/// a final repository-owned file copy. A successful indexed import records
+/// `files.storage_mode = Indexed`, preserves `files.source_path`, and writes a
+/// `change_log.action = imported` event so list/detail/log consumers can
+/// surface the external reference. This entry point keeps copied, moved, and
+/// indexed contracts explicit instead of hiding adjacent behavior behind a
+/// generic import success path.
 ///
 /// # Errors
 ///
 /// Returns `CoreError::InvalidPath` for an empty, metadata-internal, or unsafe
-/// source or destination path, `CoreError::DuplicateFile` for duplicate hashes
-/// when the selected strategy requires user choice or skip behavior,
-/// `CoreError::ICloudPlaceholder` for unavailable iCloud placeholders,
-/// `CoreError::PermissionDenied` for unreadable sources or unwritable metadata,
-/// `CoreError::Io` for filesystem failures, and `CoreError::Db` for metadata
-/// persistence failures. Failed imports must not leave active file rows or
-/// final destination half-products; staging residue is reserved for later
-/// recovery cleanup.
+/// source or destination path, `CoreError::FileNotFound` when the source cannot
+/// be found, `CoreError::DuplicateFile` for duplicate hashes when the selected
+/// strategy requires user choice or skip behavior, `CoreError::ICloudPlaceholder`
+/// for unavailable iCloud placeholders, `CoreError::PermissionDenied` for
+/// unreadable sources or unwritable metadata, `CoreError::Io` for filesystem
+/// failures, and `CoreError::Db` for metadata persistence failures.
+/// Failed imports must not leave active file rows or final destination half-products;
+/// staging residue is reserved for later recovery cleanup.
 pub fn import_file(
     repo_path: String,
     source_path: String,
