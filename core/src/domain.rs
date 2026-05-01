@@ -33,6 +33,29 @@ pub enum RepoInitMode {
     AdoptExisting,
 }
 
+/// Structured issue discovered while validating a candidate repository path.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub enum RepoPathIssue {
+    /// The selected path does not exist.
+    MissingPath,
+    /// The selected path exists but is not a directory.
+    NotDirectory,
+    /// The selected directory cannot be read.
+    NotReadable,
+    /// The selected directory cannot be written.
+    NotWritable,
+    /// The directory contains user-visible entries.
+    NonEmptyDirectory,
+    /// The directory already contains AreaMatrix metadata.
+    AlreadyInitialized,
+    /// The selected path is the `.areamatrix` directory or one of its children.
+    InsideAreaMatrix,
+    /// The path appears to be managed by iCloud.
+    ICloudPath,
+    /// A previous adopt or reindex scan did not finish cleanly.
+    UnfinishedScanSession,
+}
+
 /// Where generated overview output is written.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum OverviewOutput {
@@ -142,6 +165,35 @@ pub struct RepoInitOptions {
     pub create_default_categories: bool,
     /// Overview output location.
     pub overview_output: OverviewOutput,
+}
+
+/// Read-only validation result for a candidate repository root.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct RepoPathValidation {
+    /// Original repository path supplied by the caller.
+    pub repo_path: String,
+    /// Whether the path exists on disk.
+    pub exists: bool,
+    /// Whether the path is a directory.
+    pub is_directory: bool,
+    /// Whether Core can inspect the directory contents.
+    pub is_readable: bool,
+    /// Whether Core can create repository metadata there in a later init task.
+    pub is_writable: bool,
+    /// Whether the directory has no user-visible entries.
+    pub is_empty: bool,
+    /// Whether `.areamatrix/` metadata already exists under the selected path.
+    pub is_initialized: bool,
+    /// Whether the selected path is inside an `.areamatrix/` metadata directory.
+    pub is_inside_area_matrix: bool,
+    /// Whether the path appears to be managed by iCloud.
+    pub is_icloud_path: bool,
+    /// Whether the latest scan session is still running, paused, failed, or interrupted.
+    pub has_unfinished_scan_session: bool,
+    /// Suggested initialization mode when the path is eligible.
+    pub recommended_mode: Option<RepoInitMode>,
+    /// Structured issues the UI can display without parsing error text.
+    pub issues: Vec<RepoPathIssue>,
 }
 
 /// Options used for a single file import.

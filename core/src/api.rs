@@ -3,7 +3,7 @@
 use crate::{
     ChangeFilter, ChangeLogEntry, ClassifyResult, CoreError, CoreResult, ExternalEvent, FileEntry,
     FileFilter, ImportOptions, RecoveryReport, ReindexReport, RepoConfig, RepoInitOptions,
-    ScanSession, SyncResult,
+    RepoPathValidation, ScanSession, SyncResult,
 };
 
 fn not_implemented<T>() -> CoreResult<T> {
@@ -24,6 +24,17 @@ pub fn init_logging(level: String) -> CoreResult<()> {
         "trace" | "debug" | "info" | "warn" | "error" => Ok(()),
         _ => Err(CoreError::Config),
     }
+}
+
+/// Validates a candidate repository path without mutating the filesystem.
+///
+/// # Errors
+///
+/// Returns `CoreError::InvalidPath`, `CoreError::PermissionDenied`,
+/// `CoreError::ICloudPlaceholder`, or `CoreError::RepoNotInitialized` once the
+/// C1-01 implementation task wires the read-only filesystem checks.
+pub fn validate_repo_path(_repo_path: String) -> CoreResult<RepoPathValidation> {
+    not_implemented()
 }
 
 /// Initializes a repository.

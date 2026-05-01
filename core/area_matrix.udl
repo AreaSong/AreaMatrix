@@ -5,6 +5,9 @@ namespace area_matrix {
     void init_logging(string level);
 
     [Throws=CoreError]
+    RepoPathValidation validate_repo_path(string repo_path);
+
+    [Throws=CoreError]
     void init_repo(string repo_path, RepoInitOptions options);
 
     [Throws=CoreError]
@@ -86,6 +89,21 @@ dictionary RepoInitOptions {
     RepoInitMode mode;
     boolean create_default_categories;
     OverviewOutput overview_output;
+};
+
+dictionary RepoPathValidation {
+    string repo_path;
+    boolean exists;
+    boolean is_directory;
+    boolean is_readable;
+    boolean is_writable;
+    boolean is_empty;
+    boolean is_initialized;
+    boolean is_inside_area_matrix;
+    boolean is_icloud_path;
+    boolean has_unfinished_scan_session;
+    RepoInitMode? recommended_mode;
+    sequence<RepoPathIssue> issues;
 };
 
 dictionary ImportOptions {
@@ -193,6 +211,11 @@ dictionary SyncResult {
 enum StorageMode { "Moved", "Copied", "Indexed" };
 enum FileOrigin { "Imported", "Adopted", "External" };
 enum RepoInitMode { "CreateEmpty", "AdoptExisting" };
+enum RepoPathIssue {
+    "MissingPath", "NotDirectory", "NotReadable", "NotWritable",
+    "NonEmptyDirectory", "AlreadyInitialized", "InsideAreaMatrix",
+    "ICloudPath", "UnfinishedScanSession"
+};
 enum OverviewOutput { "GeneratedOnly", "RootAreaMatrixFile" };
 enum ImportDestination { "AutoClassify", "SelectedDirectory", "Category" };
 enum ScanSessionKind { "Adopt", "Reindex" };

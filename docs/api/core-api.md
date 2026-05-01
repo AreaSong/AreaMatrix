@@ -29,6 +29,9 @@ namespace area_matrix {
     void init_logging(string level);
 
     [Throws=CoreError]
+    RepoPathValidation validate_repo_path(string repo_path);
+
+    [Throws=CoreError]
     void init_repo(string repo_path, RepoInitOptions options);
 
     [Throws=CoreError]
@@ -110,6 +113,21 @@ dictionary RepoInitOptions {
     RepoInitMode mode;
     boolean create_default_categories;
     OverviewOutput overview_output;
+};
+
+dictionary RepoPathValidation {
+    string repo_path;
+    boolean exists;
+    boolean is_directory;
+    boolean is_readable;
+    boolean is_writable;
+    boolean is_empty;
+    boolean is_initialized;
+    boolean is_inside_area_matrix;
+    boolean is_icloud_path;
+    boolean has_unfinished_scan_session;
+    RepoInitMode? recommended_mode;
+    sequence<RepoPathIssue> issues;
 };
 
 dictionary ImportOptions {
@@ -217,6 +235,11 @@ dictionary SyncResult {
 enum StorageMode { "Moved", "Copied", "Indexed" };
 enum FileOrigin { "Imported", "Adopted", "External" };
 enum RepoInitMode { "CreateEmpty", "AdoptExisting" };
+enum RepoPathIssue {
+    "MissingPath", "NotDirectory", "NotReadable", "NotWritable",
+    "NonEmptyDirectory", "AlreadyInitialized", "InsideAreaMatrix",
+    "ICloudPath", "UnfinishedScanSession"
+};
 enum OverviewOutput { "GeneratedOnly", "RootAreaMatrixFile" };
 enum ImportDestination { "AutoClassify", "SelectedDirectory", "Category" };
 enum ScanSessionKind { "Adopt", "Reindex" };
@@ -260,6 +283,7 @@ enum CoreError {
 |---|---|---|---|
 | `get_version()` | meta | × | — |
 | `init_logging(level)` | meta | √ | Config |
+| `validate_repo_path(repo)` | repo | √ | InvalidPath / PermissionDenied / ICloudPlaceholder / RepoNotInitialized |
 | `init_repo(path, options)` | repo | √ | Io / Config / PermissionDenied |
 | `load_config(repo)` | repo | √ | Io / Config |
 | `update_config(repo, cfg)` | repo | √ | Io |
@@ -291,7 +315,6 @@ enum CoreError {
 
 | 缺口 | 消费页面 | 对应能力 | 意图 | 当前替代 |
 |---|---|---|---|---|
-| `validate_repo_path(repo_path) -> RepoPathValidation` | S1-02, S1-03, S1-11, S1-32 | C1-01 | 在 init 前返回结构化路径状态、风险和推荐模式，不制造副作用 | UI 只能试探 `load_config` 或直接调用 `init_repo`，不足以展示风险 |
 | `preview_import(repo_path, source_path, options) -> ImportPreview` | S1-16, S1-17, S1-18, S1-19, S1-22, S1-23 | C1-05, C1-09, C1-10 | 在导入前返回分类建议、目标路径、重复 hash、同名冲突和 iCloud 状态 | `predict_category` 只能给分类，`import_file` 会直接产生副作用 |
 | 导入进度 / 队列语义 | S1-18, S1-19, S1-20, S1-21 | C1-06, C1-07, C1-08 | 支撑多文件/文件夹导入的逐项状态、取消和结果摘要 | Stage 1 可先由 Swift 队列包装多次 `import_file`，Core 暂不提供流式回调 |
 | 详情聚合 DTO | S1-12, S1-13, S1-14 | C1-12, C1-13, C1-14 | 一次拿到文件元数据、日志和笔记，降低 UI 调用编排 | Stage 1 先用 `get_file` + `list_changes` + `read_note` 组合 |
@@ -339,6 +362,50 @@ do {
 ---
 
 ## repo API
+
+### `validate_repo_path(repoPath: String) throws -> RepoPathValidation`
+
+```swift
+let validation = try AreaMatrix.validateRepoPath(repoPath: selectedURL.path)
+switch validation.recommendedMode {
+case .createEmpty:
+    await showCreateEmptyConfirm()
+case .adoptExisting:
+    await showAdoptExistingConfirm(issues: validation.issues)
+case nil:
+    await showPathIssues(validation.issues)
+}
+```
+
+输入：
+
+- `repoPath`：用户选择的候选资料库目录路径。
+
+输出：
+
+- `exists` / `isDirectory`：路径是否存在且是否为目录。
+- `isReadable` / `isWritable`：Core 是否可读取目录内容、是否具备后续初始化写入能力。
+- `isEmpty`：目录是否没有用户可见条目。
+- `isInitialized`：目录下是否已有 `.areamatrix/` 元数据。
+- `isInsideAreaMatrix`：选择位置是否为 `.areamatrix/` 或其子路径。
+- `isIcloudPath`：是否疑似 iCloud 管理路径。
+- `hasUnfinishedScanSession`：是否存在未完成的 adopt / reindex scan session。
+- `recommendedMode`：路径可用于初始化时推荐 `CreateEmpty` 或 `AdoptExisting`，不可用时为 `nil`。
+- `issues`：结构化问题列表，UI 不需要解析错误字符串即可展示风险。
+
+错误：
+
+- `InvalidPath`：路径为空、不是可接受的文件系统路径、或位于 `.areamatrix/` 内部。
+- `PermissionDenied`：无法读取目录 metadata、列出目录内容或确认写权限。
+- `ICloudPlaceholder`：候选路径或关键 metadata 仍是未下载的 iCloud 占位符。
+- `RepoNotInitialized`：调用方要求已初始化语义时，候选目录没有 `.areamatrix/` 元数据。
+
+副作用边界：
+
+- 只读检查：metadata、权限、子项数量、`.areamatrix/` 探测、scan session 状态读取。
+- 不创建、不删除、不移动、不重命名、不覆盖任何文件。
+- 不触发 iCloud 占位符下载。
+- 不执行 `init_repo`，非空目录只返回 `AdoptExisting` 推荐和结构化风险。
 
 ### `init_repo(repoPath: String, options: RepoInitOptions) throws`
 
