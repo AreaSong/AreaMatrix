@@ -23,10 +23,11 @@ Use this skill when the work is about the automated prompt task runner rather th
 ## Workflow
 
 1. Check health with `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`.
-2. Check current queue state with `python3 tasks/prompts/_shared/prompt_pipeline.py status`.
-3. Check task-loop state with `bash scripts/run_area_matrix_task_pipeline.sh --status`.
-4. Load the runbook before recommending a live command.
-5. Load failure recovery before changing progress or restarting from a failed task.
+2. Check task-loop health with `bash scripts/check-task-loop.sh` when runner behavior changed.
+3. Check current queue state with `python3 tasks/prompts/_shared/prompt_pipeline.py status`.
+4. Check task-loop state with `bash scripts/run_area_matrix_task_pipeline.sh --status`.
+5. Load the runbook before recommending a live command.
+6. Load failure recovery before changing progress or restarting from a failed task.
 
 ## Guardrails
 

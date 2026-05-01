@@ -16,6 +16,8 @@
 - 进度统一写入 `tasks/prompts/_shared/progress.json`，可直接被 `prompt_pipeline.py status/next` 读取。
 - 每次执行会持有 `.codex/task-loop-lock/` 运行锁，避免两个 runner 同时写 progress/logs。
 - 每次执行会写 `.codex/task-loop-runs/<run_id>/summary.json`，作为可上传、可续工的运行摘要。
+- 每次执行结束会更新 `.codex/task-loop-runs/index.json`，用于快速查看最近 run 的状态。
+- progress / stale / lock status / summary 逻辑集中在 `scripts/task_loop_state.py`；shell 脚本只负责任务调度和 `codex exec`。
 
 默认模型：
 - `MODEL=gpt-5.5`
@@ -81,6 +83,14 @@ MAX_RETRIES=0 bash scripts/run_area_matrix_task_pipeline.sh --phase phase-1 --ma
 
 ## 三、Dry Run（先预演）
 
+完整 runner 自检：
+
+```bash
+bash scripts/check-task-loop.sh
+```
+
+该命令使用临时 progress/log/summary/lock 目录验证 dry-run、stale、resume、lock 和 summary index，不会修改真实任务进度。
+
 ```bash
 DRY_RUN=1 \
 MAX_RETRIES=1 \
@@ -104,6 +114,15 @@ bash scripts/run_area_matrix_task_pipeline.sh --phase phase-1 --max-tasks 1
 - `*-verify-attempt-<n>.log`：第 n 次 verify 日志；最后一行必须是 `VERIFY_RESULT: PASS` 或 `VERIFY_RESULT: FAIL`
 
 verify 日志会保留简明验收报告。失败时脚本从日志尾部提取失败上下文，下一轮 copy 会按“全部全面修复”处理同一 task，不会进入下一个 task。
+
+运行摘要：
+
+```
+.codex/task-loop-runs/<run_id>/summary.json
+.codex/task-loop-runs/index.json
+```
+
+`summary.json` 记录单次运行的参数、任务 attempts、copy/verify log 和最终状态。`index.json` 记录最近运行列表，便于上传或恢复上下文。
 
 通过任务的进度会记录到：
 

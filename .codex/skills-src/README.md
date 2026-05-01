@@ -15,7 +15,7 @@
 
 ## 当前 Skills
 
-- `areamatrix-task-loop`：任务循环、运行锁、stale progress、summary 和恢复入口。
+- `areamatrix-task-loop`：任务循环、运行锁、stale progress、summary index、自检和恢复入口。
 - `areamatrix-validation-driver`
 - `areamatrix-doc-sync`
 - `areamatrix-file-safety`
@@ -30,4 +30,4 @@
 
 - 变更 skill 时，同时检查 `agents/openai.yaml` 是否仍与 `SKILL.md` 匹配。
 - 不在 skill 目录内添加 README、变更日志或低价值说明文件。
-- 验收时先运行 `bash scripts/check-skills.sh`，再运行 prompt runner 基线。
+- 验收时先运行 `bash scripts/check-skills.sh`；涉及 task-loop 时再运行 `bash scripts/check-task-loop.sh` 和 prompt runner 基线。

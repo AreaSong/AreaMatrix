@@ -7,6 +7,7 @@ Use this runbook when starting, monitoring, or explaining the automated copy-rea
 Run these before live execution:
 
 ```bash
+bash scripts/check-task-loop.sh
 python3 tasks/prompts/_shared/prompt_pipeline.py doctor
 python3 tasks/prompts/_shared/prompt_pipeline.py status
 bash scripts/run_area_matrix_task_pipeline.sh --status
@@ -15,6 +16,7 @@ bash scripts/run_area_matrix_task_pipeline.sh --status
 Check that:
 
 - `doctor` is `OK`.
+- `check-task-loop` is `OK`; it uses temporary state and must not change real progress.
 - `status` shows the expected first pending task.
 - copy-ready / verify-ready prompts have been regenerated after shared rule changes.
 - `progress_file` is `tasks/prompts/_shared/progress.json`.
@@ -104,9 +106,20 @@ Run summaries:
 
 ```text
 .codex/task-loop-runs/<run_id>/summary.json
+.codex/task-loop-runs/index.json
 ```
 
 The summary records model, reasoning effort, phase filter, start/max settings, risk policy, progress file, log root, task attempts, copy/verify logs, final status, and exit code. Treat it as resumable workflow evidence.
+
+`index.json` records the latest run summaries and should stay tracked with other task-loop evidence.
+
+State helper:
+
+```text
+scripts/task_loop_state.py
+```
+
+The shell runner delegates progress, stale, status fragments, summary, and index writes to this helper. Keep it standard-library only.
 
 Legacy state:
 

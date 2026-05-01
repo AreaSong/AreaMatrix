@@ -13,6 +13,8 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="${ROOT_DIR:-"$(cd "$SCRIPT_DIR/.." && pwd)"}"
+PYTHON_BIN="${PYTHON_BIN:-python3}"
+STATE_TOOL="${STATE_TOOL:-$ROOT_DIR/scripts/task_loop_state.py}"
 
 MODEL="${MODEL:-gpt-5.5}"
 MODEL_REASONING_EFFORT="${MODEL_REASONING_EFFORT:-xhigh}"
@@ -116,6 +118,8 @@ Env vars:
   DRY_RUN_COPY_PREVIEW_LINES: dry-run 时预览 copy prompt 行数
   DRY_RUN_VERIFY_PREVIEW_LINES: dry-run 时预览 verify prompt 行数
   FAILURE_CONTEXT_LINES:      提取 verify 反馈行数（默认 200）
+  PYTHON_BIN:                Python 解释器，默认 python3
+  STATE_TOOL:                task-loop state helper，默认 scripts/task_loop_state.py
   LOG_ROOT:                  日志根目录
   RUN_SUMMARY_ROOT:           运行摘要目录，默认 .codex/task-loop-runs
   PROGRESS_BACKUP_ROOT:       progress 备份目录，默认 .codex/task-loop-progress-backups
@@ -142,6 +146,10 @@ ensure_run_id() {
 
 default_progress_file() {
   printf '%s\n' "$ROOT_DIR/tasks/prompts/_shared/progress.json"
+}
+
+state_tool() {
+  "$PYTHON_BIN" "$STATE_TOOL" "$@"
 }
 
 should_write_progress() {
@@ -173,34 +181,6 @@ is_pid_alive() {
 lock_pid() {
   if [ -f "$LOCK_DIR/pid" ]; then
     tr -d '[:space:]' < "$LOCK_DIR/pid"
-  fi
-}
-
-print_lock_status() {
-  if [ ! -d "$LOCK_DIR" ]; then
-    echo "- lock: none"
-    return 0
-  fi
-
-  local pid run_id operation started_at command alive
-  pid="$(lock_pid)"
-  run_id="$(cat "$LOCK_DIR/run_id" 2>/dev/null || true)"
-  operation="$(cat "$LOCK_DIR/operation" 2>/dev/null || true)"
-  started_at="$(cat "$LOCK_DIR/started_at" 2>/dev/null || true)"
-  command="$(cat "$LOCK_DIR/command" 2>/dev/null || true)"
-  alive="no"
-  if is_pid_alive "$pid"; then
-    alive="yes"
-  fi
-
-  echo "- lock: present"
-  echo "- lock_alive: $alive"
-  echo "- lock_pid: ${pid:-unknown}"
-  echo "- lock_run_id: ${run_id:-unknown}"
-  echo "- lock_operation: ${operation:-unknown}"
-  echo "- lock_started_at: ${started_at:-unknown}"
-  if [ -n "$command" ]; then
-    echo "- lock_command: $command"
   fi
 }
 
@@ -248,171 +228,24 @@ release_lock() {
   LOCK_ACQUIRED=0
 }
 
-backup_progress() {
-  local reason="$1"
-  if [ ! -f "$PROGRESS_FILE" ]; then
-    log_event INFO "progress file does not exist; no backup needed"
-    return 0
-  fi
-
-  mkdir -p "$PROGRESS_BACKUP_ROOT"
-  local backup_file
-  backup_file="$PROGRESS_BACKUP_ROOT/progress-before-${reason}-$(date '+%Y%m%d-%H%M%S').json"
-  cp "$PROGRESS_FILE" "$backup_file"
-  log_event INFO "progress backup: $backup_file"
-}
-
 reset_progress() {
-  backup_progress "reset"
-  mkdir -p "$(dirname "$PROGRESS_FILE")"
-  python3 - "$PROGRESS_FILE" <<'PY'
-import json
-import sys
-from pathlib import Path
-
-Path(sys.argv[1]).write_text(
-    json.dumps({"version": 1, "tasks": {}}, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
-    encoding="utf-8",
-)
-PY
-  log_event INFO "progress reset: $PROGRESS_FILE"
-}
-
-progress_stale_tool() {
-  local mode="$1"
-  python3 - "$mode" "$PROGRESS_FILE" "$LOCK_DIR" <<'PY'
-import json
-import os
-import re
-import sys
-from datetime import datetime, timezone
-from pathlib import Path
-
-mode = sys.argv[1]
-progress_path = Path(sys.argv[2])
-lock_dir = Path(sys.argv[3])
-
-
-def task_key(label: str) -> tuple[int, int, int, str]:
-    try:
-        batch, task = label.split("/task-", 1)
-        major, minor = batch.split("-", 1)
-        return int(major), int(minor), int(task), label
-    except ValueError:
-        return 999, 999, 999, label
-
-
-def read_text(path: Path) -> str:
-    try:
-        return path.read_text(encoding="utf-8").strip()
-    except OSError:
-        return ""
-
-
-def lock_info() -> dict[str, object]:
-    pid_text = read_text(lock_dir / "pid")
-    run_id = read_text(lock_dir / "run_id")
-    alive = False
-    if pid_text.isdigit():
-        try:
-            os.kill(int(pid_text), 0)
-            alive = True
-        except OSError:
-            alive = False
-    return {"pid": pid_text, "run_id": run_id, "alive": alive}
-
-
-def verify_result(path_value: object) -> str:
-    if not isinstance(path_value, str) or not path_value:
-        return "missing"
-    path = Path(path_value)
-    if not path.exists():
-        return "missing"
-    try:
-        text = path.read_text(encoding="utf-8", errors="replace")
-    except OSError:
-        return "unreadable"
-    if re.search(r"(?m)^[ \t]*VERIFY_RESULT:[ \t]*PASS[ \t]*$", text):
-        return "pass"
-    if re.search(r"(?m)^[ \t]*VERIFY_RESULT:[ \t]*FAIL[ \t]*$", text):
-        return "fail"
-    return "unfinished"
-
-
-def is_stale(label: str, entry: dict[str, object], lock: dict[str, object]) -> tuple[bool, str]:
-    if entry.get("status") != "in_progress":
-        return False, ""
-    active = bool(lock["alive"]) and entry.get("run_id") == lock.get("run_id")
-    result = verify_result(entry.get("verify_log"))
-    copy_log = entry.get("copy_log")
-    copy_exists = isinstance(copy_log, str) and bool(copy_log) and Path(copy_log).exists()
-    if active:
-        return False, "active lock"
-    if result == "pass":
-        return False, "verify log has PASS; inspect before changing progress"
-    reason = f"no active matching lock; copy_log={'exists' if copy_exists else 'missing'}; verify={result}"
-    return True, reason
-
-
-if progress_path.exists():
-    data = json.loads(progress_path.read_text(encoding="utf-8"))
-else:
-    data = {"version": 1, "tasks": {}}
-
-tasks = data.get("tasks", {})
-if not isinstance(tasks, dict):
-    raise SystemExit("invalid progress file: tasks must be an object")
-
-lock = lock_info()
-stale: list[tuple[str, dict[str, object], str]] = []
-for label, value in tasks.items():
-    if not isinstance(value, dict):
-        continue
-    stale_flag, reason = is_stale(label, value, lock)
-    if stale_flag:
-        stale.append((label, value, reason))
-
-stale.sort(key=lambda item: task_key(item[0]))
-
-if mode == "first":
-    if stale:
-        print(stale[0][0])
-    raise SystemExit
-
-if mode == "clear":
-    for label, _, _ in stale:
-        tasks.pop(label, None)
-    data["tasks"] = tasks
-    data["updated_at"] = datetime.now(timezone.utc).isoformat()
-    progress_path.write_text(json.dumps(data, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    print(len(stale))
-    raise SystemExit
-
-if mode == "status":
-    print(f"- stale_in_progress: {len(stale)}")
-    for label, entry, reason in stale[:5]:
-        note = entry.get("note", "")
-        suffix = f" - {note}" if note else ""
-        print(f"- recent_stale_in_progress: {label}{suffix} ({reason})")
-    if stale:
-        print("- stale_recovery: bash scripts/run_area_matrix_task_pipeline.sh --resume-stale")
-        print("- stale_clear: bash scripts/run_area_matrix_task_pipeline.sh --clear-stale")
-    raise SystemExit
-
-raise SystemExit(f"unknown stale mode: {mode}")
-PY
+  local output
+  output="$(state_tool reset-progress --progress-file "$PROGRESS_FILE" --backup-root "$PROGRESS_BACKUP_ROOT")"
+  while IFS= read -r line; do
+    [ -n "$line" ] && log_event INFO "$line"
+  done <<< "$output"
 }
 
 first_stale_task() {
-  progress_stale_tool first
+  state_tool first-stale --progress-file "$PROGRESS_FILE" --lock-dir "$LOCK_DIR"
 }
 
 clear_stale_tasks() {
-  backup_progress "clear-stale"
-  mkdir -p "$(dirname "$PROGRESS_FILE")"
-  local cleared
-  cleared="$(progress_stale_tool clear)"
-  log_event INFO "cleared stale in_progress records: $cleared"
+  local output
+  output="$(state_tool clear-stale --progress-file "$PROGRESS_FILE" --lock-dir "$LOCK_DIR" --backup-root "$PROGRESS_BACKUP_ROOT")"
+  while IFS= read -r line; do
+    [ -n "$line" ] && log_event INFO "$line"
+  done <<< "$output"
 }
 
 init_run_summary() {
@@ -420,66 +253,30 @@ init_run_summary() {
     return 0
   fi
 
-  python3 - "$RUN_SUMMARY_FILE" "$RUN_ID" "$ROOT_DIR" "$MODEL" "$MODEL_REASONING_EFFORT" \
-    "$DRY_RUN" "$CODEX_BIN_RESOLVED" "$RISK_GATE" "$RISK_POLICY" "$MAX_RETRIES" "$MAX_TASKS" \
-    "$START_FROM" "$PROGRESS_FILE" "$SESSION_LOG_ROOT" "$COPY_ROOT" "$VERIFY_ROOT" "${target_phases[*]}" "$TOTAL_TASKS" <<'PY'
-import json
-import sys
-from datetime import datetime, timezone
-from pathlib import Path
+  local dry_run_flag=()
+  if [ "$DRY_RUN" = "1" ]; then
+    dry_run_flag=(--dry-run)
+  fi
 
-(
-    path,
-    run_id,
-    root_dir,
-    model,
-    reasoning,
-    dry_run,
-    codex_bin,
-    risk_gate,
-    risk_policy,
-    max_retries,
-    max_tasks,
-    start_from,
-    progress_file,
-    log_root,
-    copy_root,
-    verify_root,
-    phases,
-    total_tasks,
-) = sys.argv[1:]
-
-now = datetime.now(timezone.utc).isoformat()
-summary = {
-    "version": 1,
-    "run_id": run_id,
-    "status": "running",
-    "started_at": now,
-    "updated_at": now,
-    "root_dir": root_dir,
-    "model": model,
-    "model_reasoning_effort": reasoning,
-    "dry_run": dry_run == "1",
-    "codex_bin": codex_bin,
-    "risk_gate": risk_gate,
-    "risk_policy": risk_policy,
-    "max_retries": int(max_retries) if max_retries.isdigit() else max_retries,
-    "max_tasks": int(max_tasks) if max_tasks.isdigit() else max_tasks,
-    "start_from": start_from,
-    "progress_file": progress_file,
-    "log_root": log_root,
-    "copy_root": copy_root,
-    "verify_root": verify_root,
-    "phases": phases.split() if phases else [],
-    "totals": {
-        "task_count": int(total_tasks) if total_tasks.isdigit() else total_tasks,
-        "completed_in_run": 0,
-        "retries": 0,
-    },
-    "tasks": {},
-}
-Path(path).write_text(json.dumps(summary, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-PY
+  state_tool init-summary \
+    --summary-file "$RUN_SUMMARY_FILE" \
+    --run-id "$RUN_ID" \
+    --root-dir "$ROOT_DIR" \
+    --model "$MODEL" \
+    --model-reasoning-effort "$MODEL_REASONING_EFFORT" \
+    "${dry_run_flag[@]}" \
+    --codex-bin "$CODEX_BIN_RESOLVED" \
+    --risk-gate "$RISK_GATE" \
+    --risk-policy "$RISK_POLICY" \
+    --max-retries "$MAX_RETRIES" \
+    --max-tasks "$MAX_TASKS" \
+    --start-from "$START_FROM" \
+    --progress-file "$PROGRESS_FILE" \
+    --log-root "$SESSION_LOG_ROOT" \
+    --copy-root "$COPY_ROOT" \
+    --verify-root "$VERIFY_ROOT" \
+    --phases "${target_phases[*]}" \
+    --total-tasks "$TOTAL_TASKS"
 }
 
 record_task_summary() {
@@ -497,36 +294,19 @@ record_task_summary() {
     return 0
   fi
 
-  python3 - "$RUN_SUMMARY_FILE" "$label" "$phase" "$task_name" "$status" "$attempt" "$risk" "$copy_log" "$verify_log" "$note" "$DONE_TASKS" "$RETRY_TOTAL" <<'PY'
-import json
-import sys
-from datetime import datetime, timezone
-from pathlib import Path
-
-path = Path(sys.argv[1])
-label, phase, task_name, status, attempt, risk, copy_log, verify_log, note, done, retries = sys.argv[2:]
-if not path.exists():
-    raise SystemExit
-data = json.loads(path.read_text(encoding="utf-8"))
-now = datetime.now(timezone.utc).isoformat()
-tasks = data.setdefault("tasks", {})
-tasks[label] = {
-    "phase": phase,
-    "task_name": task_name,
-    "status": status,
-    "attempts": int(attempt) if attempt.isdigit() else attempt,
-    "risk": risk,
-    "copy_log": copy_log,
-    "verify_log": verify_log,
-    "note": note,
-    "updated_at": now,
-}
-data["updated_at"] = now
-totals = data.setdefault("totals", {})
-totals["completed_in_run"] = int(done) if done.isdigit() else done
-totals["retries"] = int(retries) if retries.isdigit() else retries
-path.write_text(json.dumps(data, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-PY
+  state_tool record-summary \
+    --summary-file "$RUN_SUMMARY_FILE" \
+    --label "$label" \
+    --phase "$phase" \
+    --task-name "$task_name" \
+    --status "$status" \
+    --attempts "$attempt" \
+    --risk "$risk" \
+    --copy-log "$copy_log" \
+    --verify-log "$verify_log" \
+    --note "$note" \
+    --completed "$DONE_TASKS" \
+    --retries "$RETRY_TOTAL"
 }
 
 finalize_run_summary() {
@@ -538,27 +318,14 @@ finalize_run_summary() {
     return 0
   fi
 
-  python3 - "$RUN_SUMMARY_FILE" "$status" "$exit_code" "$note" "$DONE_TASKS" "$RETRY_TOTAL" <<'PY'
-import json
-import sys
-from datetime import datetime, timezone
-from pathlib import Path
-
-path = Path(sys.argv[1])
-status, exit_code, note, done, retries = sys.argv[2:]
-data = json.loads(path.read_text(encoding="utf-8"))
-now = datetime.now(timezone.utc).isoformat()
-data["status"] = status
-data["exit_code"] = int(exit_code) if exit_code.lstrip("-").isdigit() else exit_code
-data["finished_at"] = now
-data["updated_at"] = now
-if note:
-    data["note"] = note
-totals = data.setdefault("totals", {})
-totals["completed_in_run"] = int(done) if done.isdigit() else done
-totals["retries"] = int(retries) if retries.isdigit() else retries
-path.write_text(json.dumps(data, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-PY
+  state_tool finalize-summary \
+    --summary-file "$RUN_SUMMARY_FILE" \
+    --run-summary-root "$RUN_SUMMARY_ROOT" \
+    --status "$status" \
+    --exit-code "$exit_code" \
+    --note "$note" \
+    --completed "$DONE_TASKS" \
+    --retries "$RETRY_TOTAL"
 }
 
 cleanup() {
@@ -628,6 +395,17 @@ validate_runtime_options() {
   esac
 }
 
+validate_state_tool() {
+  if [ ! -f "$STATE_TOOL" ]; then
+    log_event ERROR "STATE_TOOL not found: $STATE_TOOL"
+    return 1
+  fi
+  if ! command -v "$PYTHON_BIN" >/dev/null 2>&1; then
+    log_event ERROR "PYTHON_BIN not found: $PYTHON_BIN"
+    return 1
+  fi
+}
+
 resolve_codex_bin() {
   if [ -n "$CODEX_BIN" ]; then
     if [ -x "$CODEX_BIN" ]; then
@@ -680,25 +458,7 @@ risk_matches_gate() {
 
 progress_task_status() {
   local label="$1"
-  python3 - "$PROGRESS_FILE" "$label" <<'PY'
-import json
-import sys
-from pathlib import Path
-
-path = Path(sys.argv[1])
-label = sys.argv[2]
-if not path.exists():
-    print("pending")
-    raise SystemExit
-try:
-    data = json.loads(path.read_text(encoding="utf-8"))
-except json.JSONDecodeError:
-    print("pending")
-    raise SystemExit
-task = data.get("tasks", {}).get(label, {})
-status = task.get("status") if isinstance(task, dict) else None
-print(status if isinstance(status, str) else "pending")
-PY
+  state_tool task-status --progress-file "$PROGRESS_FILE" --label "$label"
 }
 
 mark_task_progress() {
@@ -714,90 +474,25 @@ mark_task_progress() {
     return 0
   fi
 
-  python3 - "$PROGRESS_FILE" "$label" "$status" "$note" "$copy_log" "$verify_log" "$attempts" "$risk" "$RUN_ID" <<'PY'
-import json
-import sys
-from datetime import datetime, timezone
-from pathlib import Path
-
-path = Path(sys.argv[1])
-label = sys.argv[2]
-status = sys.argv[3]
-note = sys.argv[4]
-copy_log = sys.argv[5]
-verify_log = sys.argv[6]
-attempts = int(sys.argv[7]) if sys.argv[7].isdigit() else 0
-risk = sys.argv[8]
-run_id = sys.argv[9]
-
-if path.exists():
-    data = json.loads(path.read_text(encoding="utf-8"))
-else:
-    data = {"version": 1, "tasks": {}}
-
-tasks = data.setdefault("tasks", {})
-if not isinstance(tasks, dict):
-    raise SystemExit("invalid progress file: tasks must be an object")
-
-entry = tasks.setdefault(label, {})
-if not isinstance(entry, dict):
-    entry = {}
-    tasks[label] = entry
-
-entry.update({
-    "status": status,
-    "note": note,
-    "updated_at": datetime.now(timezone.utc).isoformat(),
-})
-if copy_log:
-    entry["copy_log"] = copy_log
-if verify_log:
-    entry["verify_log"] = verify_log
-if attempts:
-    entry["attempts"] = attempts
-if risk:
-    entry["risk"] = risk
-if run_id:
-    entry["run_id"] = run_id
-
-path.write_text(json.dumps(data, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-PY
+  state_tool mark-progress \
+    --progress-file "$PROGRESS_FILE" \
+    --label "$label" \
+    --status "$status" \
+    --note "$note" \
+    --copy-log "$copy_log" \
+    --verify-log "$verify_log" \
+    --attempts "$attempts" \
+    --risk "$risk" \
+    --run-id "$RUN_ID"
 }
 
 first_failed_task() {
-  python3 - "$PROGRESS_FILE" <<'PY'
-import json
-import sys
-from pathlib import Path
-
-path = Path(sys.argv[1])
-if not path.exists():
-    raise SystemExit
-data = json.loads(path.read_text(encoding="utf-8"))
-
-def key(label: str):
-    try:
-        batch, task = label.split("/task-", 1)
-        first, second = batch.split("-", 1)
-        return int(first), int(second), int(task)
-    except ValueError:
-        return 999, 999, 999
-
-failed = [
-    label
-    for label, value in data.get("tasks", {}).items()
-    if isinstance(value, dict) and value.get("status") == "failed"
-]
-if failed:
-    print(sorted(failed, key=key)[0])
-PY
+  state_tool first-failed --progress-file "$PROGRESS_FILE"
 }
 
 print_loop_status() {
   echo "Task loop status"
   echo "- progress_file: $PROGRESS_FILE"
-  echo "- lock_dir: $LOCK_DIR"
-  print_lock_status
   echo "- legacy_state_file: $STATE_FILE"
   if [ -f "$STATE_FILE" ]; then
     echo "- legacy_completed_count: $(wc -l < "$STATE_FILE" | tr -d '[:space:]')"
@@ -805,49 +500,10 @@ print_loop_status() {
     echo "- legacy_completed_count: 0"
   fi
 
-  local latest_log
-  latest_log=""
-  if [ -d "$LOG_ROOT" ]; then
-    latest_log="$(find "$LOG_ROOT" -maxdepth 1 -type d -name '20*' 2>/dev/null | sort | tail -n 1)"
-  fi
-  if [ -n "$latest_log" ]; then
-    echo "- latest_log_dir: $latest_log"
-  else
-    echo "- latest_log_dir: None"
-  fi
-
-  python3 - "$PROGRESS_FILE" <<'PY'
-import json
-import sys
-from pathlib import Path
-
-path = Path(sys.argv[1])
-if not path.exists():
-    print("- progress_entries: 0")
-    raise SystemExit
-data = json.loads(path.read_text(encoding="utf-8"))
-tasks = data.get("tasks", {})
-counts = {}
-recent = []
-for label, value in tasks.items():
-    if not isinstance(value, dict):
-        continue
-    status = value.get("status", "pending")
-    counts[status] = counts.get(status, 0) + 1
-    if status in {"failed", "blocked", "in_progress"}:
-        recent.append((value.get("updated_at", ""), label, status, value.get("note", "")))
-print(f"- progress_entries: {sum(counts.values())}")
-for status in ["completed", "in_progress", "failed", "blocked", "pending"]:
-    if status in counts:
-        print(f"- {status}: {counts[status]}")
-for _, label, status, note in sorted(recent, reverse=True)[:5]:
-    suffix = f" - {note}" if note else ""
-    print(f"- recent_{status}: {label}{suffix}")
-PY
-  progress_stale_tool status
+  state_tool status-fragment --progress-file "$PROGRESS_FILE" --lock-dir "$LOCK_DIR" --log-root "$LOG_ROOT"
 
   echo
-  python3 "$ROOT_DIR/tasks/prompts/_shared/prompt_pipeline.py" status || true
+  "$PYTHON_BIN" "$ROOT_DIR/tasks/prompts/_shared/prompt_pipeline.py" status || true
 }
 
 handle_risk_gate() {
@@ -930,18 +586,7 @@ is_task_done() {
 }
 
 count_done_tasks() {
-  python3 - "$PROGRESS_FILE" <<'PY'
-import json
-import sys
-from pathlib import Path
-
-path = Path(sys.argv[1])
-if not path.exists():
-    print(0)
-    raise SystemExit
-data = json.loads(path.read_text(encoding="utf-8"))
-print(sum(1 for value in data.get("tasks", {}).values() if isinstance(value, dict) and value.get("status") == "completed"))
-PY
+  state_tool count-completed --progress-file "$PROGRESS_FILE"
 }
 
 bootstrap_counts() {
@@ -1264,6 +909,7 @@ main() {
   fi
 
   validate_runtime_options || return 1
+  validate_state_tool || return 1
 
   if [ "$STATUS_ONLY" = "1" ]; then
     print_loop_status

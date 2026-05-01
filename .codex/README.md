@@ -15,6 +15,7 @@
 - `templates/prompt-task-template.md`：新建 prompt 任务的模板。
 - `templates/prompt-verify-template.md`：验收 prompt 的格式参考；实际优先由 runner 生成。
 - `task-loop-logs/`、`task-loop-runs/`、`task-loop-progress-backups/`：自动任务循环的日志、运行摘要与进度备份，作为可回溯证据保留。
+- Task loop 的状态 helper 位于 `scripts/task_loop_state.py`，完整自检入口是 `bash scripts/check-task-loop.sh`。
 - Prompt 工程质量门禁位于 `tasks/prompts/_shared/engineering-quality-rules.md`；编码规范源事实仍在 `docs/development/coding-standards.md`。
 
 ## 约束

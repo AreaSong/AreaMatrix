@@ -36,6 +36,8 @@ bash scripts/run_area_matrix_task_pipeline.sh --resume-failed
 
 If the failure is conceptual rather than transient, inspect the task file, manifest section, copy log, and verify log before resuming.
 
+Use `bash scripts/check-task-loop.sh` if the failure looks like runner state corruption rather than task implementation failure.
+
 ## Risk Gate Blocked
 
 Symptoms:
@@ -76,6 +78,8 @@ bash scripts/run_area_matrix_task_pipeline.sh --clear-stale
 ```
 
 This removes only stale `in_progress` entries and must not touch `completed`, `failed`, or `blocked`.
+
+If stale behavior itself looks wrong, run `bash scripts/check-task-loop.sh`; it validates stale detection and resume behavior against temporary progress files.
 
 ## Legacy State File
 
