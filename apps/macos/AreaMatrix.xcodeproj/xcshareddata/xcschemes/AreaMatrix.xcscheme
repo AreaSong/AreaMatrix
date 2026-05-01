@@ -15,7 +15,7 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "100000000000000000000040"
+               BlueprintIdentifier = "0A0000000000000000000040"
                BuildableName = "AreaMatrix.app"
                BlueprintName = "AreaMatrix"
                ReferencedContainer = "container:AreaMatrix.xcodeproj">
@@ -27,30 +27,9 @@
       buildConfiguration = "Debug"
       selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
-      shouldUseLaunchSchemeArgsEnv = "YES"
-      shouldAutocreateTestPlan = "YES">
+      shouldUseLaunchSchemeArgsEnv = "YES">
       <Testables>
-         <TestableReference
-            skipped = "NO"
-            parallelizable = "YES">
-            <BuildableReference
-               BuildableIdentifier = "primary"
-               BlueprintIdentifier = "100000000000000000000041"
-               BuildableName = "AreaMatrixTests.xctest"
-               BlueprintName = "AreaMatrixTests"
-               ReferencedContainer = "container:AreaMatrix.xcodeproj">
-            </BuildableReference>
-         </TestableReference>
       </Testables>
-      <MacroExpansion>
-         <BuildableReference
-            BuildableIdentifier = "primary"
-            BlueprintIdentifier = "100000000000000000000040"
-            BuildableName = "AreaMatrix.app"
-            BlueprintName = "AreaMatrix"
-            ReferencedContainer = "container:AreaMatrix.xcodeproj">
-         </BuildableReference>
-      </MacroExpansion>
    </TestAction>
    <LaunchAction
       buildConfiguration = "Debug"
@@ -66,7 +45,7 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "100000000000000000000040"
+            BlueprintIdentifier = "0A0000000000000000000040"
             BuildableName = "AreaMatrix.app"
             BlueprintName = "AreaMatrix"
             ReferencedContainer = "container:AreaMatrix.xcodeproj">
@@ -83,7 +62,7 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "100000000000000000000040"
+            BlueprintIdentifier = "0A0000000000000000000040"
             BuildableName = "AreaMatrix.app"
             BlueprintName = "AreaMatrix"
             ReferencedContainer = "container:AreaMatrix.xcodeproj">
