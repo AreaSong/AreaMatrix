@@ -1,6 +1,9 @@
 //! SQLite helpers for repository metadata.
 
-use std::path::{Path, PathBuf};
+use std::{
+    fs::Metadata,
+    path::{Path, PathBuf},
+};
 
 use rusqlite::{params, Connection, OptionalExtension, Transaction};
 
@@ -132,7 +135,7 @@ pub(crate) fn initialize_repository_db(db_path: &Path, config: &RepoConfig) -> C
 
 pub(crate) fn load_config_or_default(repo_path: String) -> CoreResult<RepoConfig> {
     if repo_path.is_empty() {
-        return Err(CoreError::InvalidPath);
+        return Err(CoreError::Config);
     }
 
     let repo = PathBuf::from(&repo_path);
@@ -146,6 +149,21 @@ pub(crate) fn load_config_or_default(repo_path: String) -> CoreResult<RepoConfig
 
     let connection = open_repo_connection(&repo)?;
     read_config(&connection, repo_path)
+}
+
+pub(crate) fn update_config(repo_path: String, new_config: RepoConfig) -> CoreResult<()> {
+    if repo_path.is_empty() {
+        return Err(CoreError::Config);
+    }
+    validate_config_payload(&repo_path, &new_config)?;
+
+    let repo = PathBuf::from(&repo_path);
+    ensure_config_storage_writable(&repo)?;
+
+    let mut connection = open_repo_connection(&repo).map_err(map_update_open_error)?;
+    let tx = connection.transaction().map_err(|_| CoreError::Db)?;
+    upsert_config(&tx, &new_config)?;
+    tx.commit().map_err(|_| CoreError::Db)
 }
 
 pub(crate) fn list_files(repo_path: String, filter: FileFilter) -> CoreResult<Vec<FileEntry>> {
@@ -280,6 +298,43 @@ fn config_value(connection: &Connection, key: &str) -> CoreResult<Option<String>
         .map_err(|_| CoreError::Db)
 }
 
+fn validate_config_payload(repo_path: &str, config: &RepoConfig) -> CoreResult<()> {
+    if config.repo_path != repo_path || config.locale.trim().is_empty() {
+        return Err(CoreError::Config);
+    }
+    Ok(())
+}
+
+fn ensure_config_storage_writable(repo_path: &Path) -> CoreResult<()> {
+    ensure_writable_path(&repo_path.join(AREA_MATRIX_DIR))?;
+    ensure_writable_path(&db_path(repo_path))
+}
+
+fn ensure_writable_path(path: &Path) -> CoreResult<()> {
+    let metadata = path.metadata().map_err(map_config_metadata_error)?;
+    if metadata_allows_write(&metadata) {
+        Ok(())
+    } else {
+        Err(CoreError::PermissionDenied)
+    }
+}
+
+fn map_config_metadata_error(error: std::io::Error) -> CoreError {
+    match error.kind() {
+        std::io::ErrorKind::NotFound => CoreError::Config,
+        std::io::ErrorKind::PermissionDenied => CoreError::PermissionDenied,
+        std::io::ErrorKind::InvalidInput => CoreError::InvalidPath,
+        _ => CoreError::Io,
+    }
+}
+
+fn map_update_open_error(error: CoreError) -> CoreError {
+    match error {
+        CoreError::RepoNotInitialized => CoreError::Config,
+        other => other,
+    }
+}
+
 fn db_path(repo_path: &Path) -> PathBuf {
     repo_path.join(AREA_MATRIX_DIR).join(INDEX_DB_FILE)
 }
@@ -347,4 +402,16 @@ fn bool_from_db(value: &str) -> CoreResult<bool> {
         "false" => Ok(false),
         _ => Err(CoreError::Config),
     }
+}
+
+#[cfg(unix)]
+fn metadata_allows_write(metadata: &Metadata) -> bool {
+    use std::os::unix::fs::PermissionsExt;
+
+    metadata.permissions().mode() & 0o222 != 0
+}
+
+#[cfg(not(unix))]
+fn metadata_allows_write(metadata: &Metadata) -> bool {
+    !metadata.permissions().readonly()
 }

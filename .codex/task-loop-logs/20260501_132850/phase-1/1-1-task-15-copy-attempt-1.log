@@ -1,0 +1,42 @@
+一、执行结论
+
+已完成 `1-1/task-15`。
+
+二、执行范围
+
+单任务：C1-04 `load_config` / `update_config` contract-api。
+
+修改文件：
+- [api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:109)
+- [db/mod.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/db/mod.rs:154)
+- [load_update_config_contract.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/load_update_config_contract.rs:70)
+
+`core/area_matrix.udl` 已核对，现有签名和 `docs/api/core-api.md` 一致，未修改。未触碰 `apps/**`。
+
+三、完成情况
+
+- 核对清单：全部完成。
+- 完成标准：C1-04 可由实现和测试证明；未扩展到相邻 C1 能力或 UI。
+- `update_config` 已从占位改为真实 SQLite 事务写入，持久化 `RepoConfig` 全字段并刷新 `repo_config.updated_at`。
+- 输入、错误和副作用边界已收敛：空路径、payload 路径不一致、空 locale 返回 `Config`；权限不足返回 `PermissionDenied`；不创建 `AREAMATRIX.md`、不改 `README.md`、不碰 `classifier.yaml`。
+
+四、工程质量
+
+结构保持在现有 `api -> db` 分层内，没有新增依赖、mock-only、硬编码通过态或一次性脚本。新增 public API rustdoc 说明了输入、事务语义、错误码和副作用边界；测试覆盖默认读取、持久化、失败不破坏旧配置、未初始化不写入、权限错误、UDL/API/control-map 对齐。
+
+五、验证情况
+
+通过：
+- `cd core && cargo fmt --all -- --check`
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`
+- `cd core && cargo test --workspace load_update_config`：10 个 C1-04 测试通过
+- 额外补跑 `cd core && cargo test --workspace`
+- `git diff --check`
+
+失败：无。无法运行：无。
+
+六、风险与后续
+
+剩余风险：macOS Settings 消费端尚未实现，属于后续 UI task；根目录 `AREAMATRIX.md` 的实际生成/更新也没有在本任务中实现，当前只保存配置合同。
+
+建议下一个任务：`1-1/task-16`。工作区另有 `.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json` 处于修改状态，不属于本次 C1-04 代码改动清单。

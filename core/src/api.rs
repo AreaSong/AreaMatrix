@@ -106,9 +106,26 @@ pub fn load_config(repo_path: String) -> CoreResult<RepoConfig> {
     db::load_config_or_default(repo_path)
 }
 
-/// Updates repository configuration.
-pub fn update_config(_repo_path: String, _new_config: RepoConfig) -> CoreResult<()> {
-    not_implemented()
+/// Updates repository configuration through the `repo_config` table.
+///
+/// C1-04 uses this API for settings panes that mutate repository defaults:
+/// storage mode, overview output policy, AI feature flag, locale, and iCloud
+/// warning preference. The call is transactional: either all config keys are
+/// updated with a fresh `updated_at` value, or the previously persisted config
+/// remains readable through [`load_config`].
+///
+/// The API only persists the settings contract. It does not create
+/// `AREAMATRIX.md`, rewrite `classifier.yaml`, touch `README.md`, or perform
+/// any adjacent import, overview, or classifier behavior.
+///
+/// # Errors
+///
+/// Returns `CoreError::Config` for mismatched or invalid payloads and missing
+/// initialized metadata, `CoreError::PermissionDenied` for unwritable metadata,
+/// `CoreError::Io` for filesystem inspection failures, and `CoreError::Db` for
+/// SQLite persistence failures.
+pub fn update_config(repo_path: String, new_config: RepoConfig) -> CoreResult<()> {
+    db::update_config(repo_path, new_config)
 }
 
 /// Performs startup recovery.

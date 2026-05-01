@@ -289,8 +289,8 @@ enum CoreError {
 | `validate_repo_path(repo)` | repo | √ | InvalidPath / PermissionDenied / ICloudPlaceholder |
 | `validate_initialized_repo_path(repo)` | repo | √ | InvalidPath / PermissionDenied / ICloudPlaceholder / RepoNotInitialized |
 | `init_repo(path, options)` | repo | √ | Io / Config / PermissionDenied |
-| `load_config(repo)` | repo | √ | Io / Config |
-| `update_config(repo, cfg)` | repo | √ | Io |
+| `load_config(repo)` | repo | √ | Config / PermissionDenied / Io / Db |
+| `update_config(repo, cfg)` | repo | √ | Config / PermissionDenied / Io / Db |
 | `recover_on_startup(repo)` | repo | √ | Db |
 | `reindex_from_filesystem(repo)` | repo | √ | Io / Db |
 | `get_latest_scan_session(repo)` | repo | √ | Db |
@@ -476,7 +476,9 @@ print("default mode: \(cfg.defaultMode)")
 print("locale: \(cfg.locale)")
 ```
 
-文件不存在时返回默认值（不抛错）。
+`.areamatrix/index.db` 不存在时返回默认值（不抛错），且不创建 metadata、
+配置文件或生成文件。metadata 存在但无法读取、解码或打开时，按
+`Config`、`PermissionDenied`、`Io`、`Db` 传播。
 
 ### `update_config(repoPath: String, newConfig: RepoConfig) throws`
 
@@ -488,7 +490,15 @@ cfg.locale = "zh-Hans"
 try AreaMatrix.updateConfig(repoPath: repoPath, newConfig: cfg)
 ```
 
-原子写入（先写 tmp 再 rename）。
+通过 SQLite 事务更新 `repo_config` 中的
+`repo_path`、`default_mode`、`overview_output`、`ai_enabled`、`locale`、
+`icloud_warn`，并为每个键刷新 `updated_at`。该调用不写 tmp 文件、不
+rename，也不创建或更新 `README.md`、`AREAMATRIX.md` 或
+`.areamatrix/classifier.yaml`。
+
+`newConfig.repoPath` 必须等于 `repoPath`，`locale` 不能为空。任一校验、
+权限、IO 或 DB 持久化失败时，事务回滚，旧配置保持可读；主要错误码为
+`Config`、`PermissionDenied`、`Io`、`Db`。
 
 ### `recover_on_startup(repoPath: String) throws -> RecoveryReport`
 

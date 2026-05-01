@@ -1,0 +1,50 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`phase-1 / 1-1/task-15`
+- Task 文件：[task-15-c1-04-contract-api.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-1/1-1-repo-config/task-15-c1-04-contract-api.md:1)
+- 主要文件：[core/src/api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:105)、[core/src/db/mod.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/db/mod.rs:136)、[core/area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:16)、[load_update_config_contract.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/load_update_config_contract.rs:61)
+
+三、完成度摘要
+
+- 已覆盖项数：5
+- 未覆盖项数：0
+- 通过项数：5
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 只处理 C1-04 contract-api 范围：通过。证据：`load_config` / `update_config` 只落在 repo config 合同，未触碰 `apps/**`；`git status --short -- apps` 无输出。
+- Exact Docs 以 SSOT 对齐：通过。证据：C1-04 spec 定义 API、DB、错误码与副作用边界；Core API 明确 `load_config` / `update_config` 输入、输出、错误码和事务边界。
+- 不实现相邻 C1 或 UI 页面：通过。证据：当前差异集中在 `core/src/api.rs`、`core/src/db/mod.rs`、C1-04 exact docs 与 `core/tests/load_update_config_contract.rs`，无 UI 或相邻 C1 API 新增。
+- Core API / UDL 合同意图：通过。证据：UDL 暴露 `RepoConfig load_config`、`void update_config` 和 `RepoConfig` 字段；Rust API 签名与测试对齐。
+- 输入、输出、错误码、副作用边界：通过。证据：测试覆盖默认值、全字段持久化、`updated_at`、payload 校验、空 locale、未初始化 metadata、只写 SQLite 且不创建 `README.md` / `AREAMATRIX.md`。
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。`update_config` 走 `db::update_config`，校验、权限检查、事务写入职责清晰。
+- 注释 / rustdoc / 文档同步：通过。`update_config` 有 public rustdoc 与 `# Errors`；Core API、UDL、capability spec、control map 有一致性测试。
+- 错误处理与边界处理：通过。覆盖 `Config`、`PermissionDenied`、`Io`、`Db` 合同边界；事务失败前置校验不会污染旧配置。
+- 测试与验证覆盖：通过。`load_update_config` 过滤测试 10 个通过，全 workspace 70 个测试通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。未发现 mock-only 或硬编码通过态；实现连接真实 SQLite `repo_config` 路径。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- `cd core && cargo fmt --all -- --check`：通过。
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过。
+- `cd core && cargo test --workspace load_update_config`：通过，10 个 C1-04 测试通过。
+- `cd core && cargo test --workspace`：通过，70 个测试通过。
+- 未运行：macOS app build/test；本任务绑定 UX 为 None，且 `apps/**` 未触碰。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+VERIFY_RESULT: PASS

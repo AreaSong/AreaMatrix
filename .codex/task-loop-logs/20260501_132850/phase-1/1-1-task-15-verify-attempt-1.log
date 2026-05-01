@@ -1,0 +1,61 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`1-1/task-15`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-1/1-1-repo-config/task-15-c1-04-contract-api.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-04-load-update-config.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/api/error-codes.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/db/mod.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/tests/load_update_config_contract.rs`
+
+三、完成度摘要
+
+- 已覆盖项数：7
+- 未覆盖项数：2
+- 通过项数：5
+- 不通过项数：2
+- 阻塞项数：2
+
+四、逐项验收结果
+
+- 只处理 C1-04 contract-api 范围：通过。证据：改动集中在 `core/src/api.rs`、`core/src/db/mod.rs`、`core/tests/load_update_config_contract.rs`；`apps/**` 无 tracked / untracked 改动。
+- Exact Docs 读取并作为 SSOT：不通过。证据：C1-04 spec 要求 `Config`、`PermissionDenied`、`Io`、`Db`，但 `docs/api/core-api.md` 函数总览仍把 `update_config` 主要错误写成仅 `Io`。
+- 不实现相邻 C1 能力或 UI 页面：通过。证据：相邻 `api.rs` 中未实现函数仍为 `not_implemented()`，`apps/**` 未触碰。
+- Core API / UDL 合同意图：不通过。证据：UDL 有 `load_config` / `update_config` 与 `RepoConfig`，但 Core API 文档的错误码和副作用描述未与实现一致。
+- 输入、输出、错误码和副作用边界：不通过。证据：`api.rs` rustdoc 写清楚了 DB transaction 与错误码，但 `docs/api/core-api.md` 仍写 `update_config` “先写 tmp 再 rename”，实际实现是 SQLite transaction。
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。`update_config` 入口清晰委托到 DB 层，DB 层有 payload 校验、权限检查、事务 upsert。
+- 注释 / rustdoc / 文档同步：不通过。Rustdoc 满足，但 Exact Doc `docs/api/core-api.md` 与 C1-04 spec / 实现不一致。
+- 错误处理与边界处理：通过。实现覆盖空路径、payload mismatch、空 locale、未初始化 metadata、权限拒绝、DB 持久化错误。
+- 测试与验证覆盖：通过。新增 `load_update_config_contract` 覆盖签名、docs/UDL 片段、默认值、持久化、updated_at、失败不改旧配置、未初始化不创建 metadata、权限错误。
+- 占位、硬编码、mock-only、一次性实现检查：通过。C1-04 路径不是 mock-only，`update_config` 已连接真实 DB 路径。
+
+六、阻塞项
+
+- P1：Core API 错误码合同未校准。说明：C1-04 spec 明确错误码为 `Config`、`PermissionDenied`、`Io`、`Db`，实现 rustdoc 也声明这些错误，但 `docs/api/core-api.md` 函数总览仍把 `update_config` 写成主要错误仅 `Io`。绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:292`、`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:293`。这导致 Exact Docs 内部不一致，不能证明 contract-api 已完成。
+- P1：`update_config` 副作用边界文档与实现不一致。说明：`docs/api/core-api.md` 写明原子写入是 “tmp 再 rename”，但实际实现使用 SQLite transaction 更新 `repo_config`，没有 tmp/rename 文件路径。绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:491`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/db/mod.rs:154`。这导致副作用边界无法按文档 SSOT 证明通过。
+
+七、验证情况
+
+- 已运行并通过：`cd core && cargo fmt --all -- --check`
+- 已运行并通过：`cd core && cargo clippy --all-targets --all-features -- -D warnings`
+- 已运行并通过：`cd core && cargo test --workspace load_update_config`，结果 `10 passed`
+- 已运行并通过：`cd core && cargo test --workspace`，结果全部通过
+- 已运行并通过：`git diff --check -- core/src/api.rs core/src/db/mod.rs core/tests/load_update_config_contract.rs`
+- 缺失：没有缺失必需本地验证；失败原因不是命令失败，而是 Exact Docs 与实现 / 合同不一致。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+
+VERIFY_RESULT: FAIL

@@ -30,8 +30,9 @@
 
 ## 文件系统变化
 
-- 可同步写入 `.areamatrix/classifier.yaml` 或配置文件，具体以 `docs/architecture/data-model.md` 为准。
-- 更新必须采用 tmp + rename。
+- 当前 C1-04 contract-api 只持久化 SQLite `repo_config`，不创建或覆盖 `README.md`、
+  `AREAMATRIX.md` 或 `.areamatrix/classifier.yaml`。
+- 若后续任务引入文件型配置同步，文件写入必须采用 tmp + rename，并在对应能力中单独验证。
 
 ## 错误码
 
