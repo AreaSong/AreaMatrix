@@ -1,0 +1,42 @@
+一、执行结论
+
+- 已完成：`1-2/task-01` repair retry 的阻塞项已修复，`Classify` 错误码现在有真实可触发路径和测试证据。
+
+二、执行范围
+
+- 单任务：`phase-1 / 1-2/task-01`
+- 修改文件：
+  - [core/src/classify/mod.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/classify/mod.rs:106)：不可读取的 classifier 规则源返回 `CoreError::Classify`
+  - [core/src/api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:176)：补齐 `predict_category` rustdoc 的 `Config / Classify` 错误边界
+  - [core/tests/classify_preview_contract.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/classify_preview_contract.rs:205)：新增 `Classify` 错误路径测试
+  - [docs/api/core-api.md](/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:302)：同步 Exact Docs 中 `predict_category` 的错误码与副作用说明
+- 未触碰 `apps/**`。
+
+三、完成情况
+
+- 核对清单：5/5 完成。
+- 完成标准：C1-05 contract-api 可由代码、UDL、Exact Docs 和测试共同证明；未扩展到相邻能力。
+- UDL：已核对 `core/area_matrix.udl`，`predict_category`、`ClassifyResult`、`CoreError::Classify` 已存在，无需修改。
+
+四、工程质量
+
+- 代码结构保持在 `classify` 模块内，未新增抽象或 mock-only 路径。
+- `Config` 继续覆盖空输入、YAML 语法和 schema 错误；`Classify` 覆盖规则源无法作为文件读取的分类失败边界。
+- 测试不再只检查字符串存在，已断言 `CoreError::Classify` 的实际行为。
+- 无新增依赖，无用户文件破坏性操作。
+
+五、验证情况
+
+- `cd core && cargo fmt --all -- --check`：通过
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过
+- `cd core && cargo test --workspace classify_preview`：通过，10 个 C1-05 测试通过
+- `cd core && cargo test --workspace`：通过
+- `git diff --check`：通过
+- `git status --short -- apps`：空输出，未触碰 Forbidden Touches
+
+六、风险与后续
+
+- High 风险记录：本次涉及 Core API 错误合同和 Exact Docs 同步；回滚方式是 revert 上述 4 个文件的本次改动。
+- 剩余风险：未发现当前 task 阻塞项。
+- 建议下一个任务：继续进入 `1-2/task-02`。  
+

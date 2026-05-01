@@ -1,0 +1,73 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`phase-1 / 1-2/task-01`
+- Task 文件：[task-01-c1-05-contract-api.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-1/1-2-import-classify/task-01-c1-05-contract-api.md:1)
+- Manifest 章节：[phase-1.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-1.md:613)
+- 实际文件：`core/src/**`、`core/area_matrix.udl`、`core/tests/**`
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：0
+- 通过项数：10
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 C1-05 contract-api 范围
+- 结果：通过
+- 证据：任务绑定 C1-05；实际入口为 `predict_category`，无 `apps/**` diff。
+- 涉及文件：[api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:176)、[area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:34)
+
+- 项目：Exact Docs 作为 SSOT
+- 结果：通过
+- 证据：C1-05 文档定义输入、输出、错误码、副作用和验收标准；control map 将 C1-05 绑定到 S1-16/S1-17/S1-18/S1-19/S1-28。
+- 涉及文件：[C1-05-classify-preview.md](/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-05-classify-preview.md:11)、[mvp-control-map.md](/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:31)
+
+- 项目：不实现相邻 C1 能力或 UI 页面
+- 结果：通过
+- 证据：`git diff --name-only -- apps` 为空；当前实现未触碰 UI。C1-05 代码没有调用 `import_file` 或其他导入副作用入口。
+- 涉及文件：[classify/mod.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/classify/mod.rs:59)
+
+- 项目：Core API / UDL 合同意图
+- 结果：通过
+- 证据：Core API、UDL、Rust public API 均声明 `predict_category(repo_path, filename) -> ClassifyResult`。
+- 涉及文件：[core-api.md](/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:58)、[area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:35)、[api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:189)
+
+- 项目：输入、输出、错误码、副作用边界
+- 结果：通过
+- 证据：`ClassifyResult` 含 `category/suggested_name/reason/confidence`；错误为 `Config/Classify`；实现只读 classifier YAML，测试覆盖关键词优先、扩展名、fallback、错误和无 FS/DB 写副作用。
+- 涉及文件：[domain.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/domain.rs:308)、[classify_preview_contract.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/classify_preview_contract.rs:134)
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。`api.rs` 只暴露合同入口，分类逻辑集中在 `core/src/classify/mod.rs`，函数拆分清楚。
+- 注释 / rustdoc / 文档同步：通过。public API 有 rustdoc；测试用 `include_str!` 固化 docs/API/UDL/control map 对齐检查。
+- 错误处理与边界处理：通过。空输入、无效 YAML、不可读 classifier source、默认 fallback 均有测试证据。
+- 测试与验证覆盖：通过。manifest 三条验证全通过，并补跑完整 workspace test 与 prompt doctor。
+- 占位、硬编码、mock-only、一次性实现检查：通过。不是 mock-only；测试走真实 `init_repo` 与真实 classifier 文件路径。非阻塞注意：当前已包含 C1-05 规则匹配实现，后续 `1-2/task-02` 应避免重复实现并继续对齐 `docs/modules/classify.md` / `docs/api/classifier-yaml.md`。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`cd core && cargo fmt --all -- --check`：通过
+- 已运行：`cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过
+- 已运行：`cd core && cargo test --workspace classify_preview`：通过，10 passed
+- 已运行：`cd core && cargo test --workspace`：通过，92 passed
+- 已运行：`python3 tasks/prompts/_shared/prompt_pipeline.py doctor`：通过，`doctor: OK`
+- 失败：无
+- 缺失：无
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS

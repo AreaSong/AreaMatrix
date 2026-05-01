@@ -299,7 +299,7 @@ enum CoreError {
 | `reindex_from_filesystem(repo)` | repo | √ | Io / Db |
 | `get_latest_scan_session(repo)` | repo | √ | Db |
 | `resume_scan_session(repo, id)` | repo | √ | Io / Db |
-| `predict_category(repo, name)` | classify | √ | Config |
+| `predict_category(repo, name)` | classify | √ | Config / Classify |
 | `import_file(repo, src, options)` | storage | √ | Io / Db / DuplicateFile / InvalidPath |
 | `delete_file(repo, file_id, hard)` | storage | √ | Io / Db / FileNotFound |
 | `rename_file(repo, file_id, new_name)` | storage | √ | Io / InvalidPath |
@@ -576,7 +576,14 @@ importSheet.suggestedCategory = result.category
 importSheet.confidence = result.confidence
 ```
 
-无 IO 副作用，仅返回预测。UI 在拖入时调用以填充 ImportSheet。
+无写入副作用：只读取 `.areamatrix/classifier.yaml`，不创建、不移动、
+不删除文件，也不写 DB。UI 在拖入时调用以填充 ImportSheet。
+
+错误：
+
+- `Config`：`repoPath` / `filename` 为空，或 `classifier.yaml` 的 YAML 语法、
+  schema、default category、slug、extension、keyword 无效。
+- `Classify`：classifier 规则源无法作为文件读取，分类引擎无法产生可用预览。
 
 ---
 

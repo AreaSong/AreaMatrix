@@ -1,9 +1,10 @@
 //! Public functions exposed through the UniFFI boundary.
 
 use crate::{
-    db, repo_init, repo_path, repo_scan, tree, ChangeFilter, ChangeLogEntry, ClassifyResult,
-    CoreError, CoreResult, ExternalEvent, FileEntry, FileFilter, ImportOptions, RecoveryReport,
-    ReindexReport, RepoConfig, RepoInitOptions, RepoPathValidation, ScanSession, SyncResult,
+    classify, db, repo_init, repo_path, repo_scan, tree, ChangeFilter, ChangeLogEntry,
+    ClassifyResult, CoreError, CoreResult, ExternalEvent, FileEntry, FileFilter, ImportOptions,
+    RecoveryReport, ReindexReport, RepoConfig, RepoInitOptions, RepoPathValidation, ScanSession,
+    SyncResult,
 };
 
 fn not_implemented<T>() -> CoreResult<T> {
@@ -172,9 +173,21 @@ pub fn resume_scan_session(repo_path: String, scan_session_id: i64) -> CoreResul
     repo_scan::resume_scan_session(repo_path, scan_session_id)
 }
 
-/// Predicts a category for a filename.
-pub fn predict_category(_repo_path: String, _filename: String) -> CoreResult<ClassifyResult> {
-    not_implemented()
+/// Predicts a category for a filename without importing or mutating files.
+///
+/// C1-05 uses this API for import previews and classifier settings. It reads
+/// classifier rules from `.areamatrix/classifier.yaml`, falls back to the
+/// bundled default rules when the file is absent, and returns a suggested
+/// category/name pair. It must not create repository metadata, touch the
+/// database, import files, or move user content.
+///
+/// # Errors
+///
+/// Returns `CoreError::Config` when the repository path, filename, YAML syntax,
+/// or classifier schema is invalid. Returns `CoreError::Classify` when the
+/// classifier rule source cannot be read as a file.
+pub fn predict_category(repo_path: String, filename: String) -> CoreResult<ClassifyResult> {
+    classify::predict_category(repo_path, filename)
 }
 
 /// Imports a file into a repository.
