@@ -146,6 +146,68 @@ fn init_empty_repo_rejects_repeated_initialization_without_destroying_metadata()
 }
 
 #[test]
+fn init_empty_repo_recovers_recoverable_stale_init_directory_before_retry() {
+    let repo = tempfile::tempdir().expect("create temporary repository directory");
+    let stale_init = repo.path().join(".areamatrix.init-stale");
+    fs::create_dir(&stale_init).expect("create stale init directory");
+    fs::create_dir(stale_init.join("staging")).expect("create stale staging directory");
+    fs::create_dir(stale_init.join("archives")).expect("create stale archives directory");
+    fs::create_dir(stale_init.join("generated")).expect("create stale generated directory");
+    fs::write(stale_init.join("generated/root.md"), "partial overview")
+        .expect("write stale generated overview");
+    fs::write(stale_init.join("classifier.yaml"), "version: 1\n").expect("write stale classifier");
+    fs::write(stale_init.join("ignore.yaml"), "version: 1\n").expect("write stale ignore");
+    fs::write(stale_init.join("index.db"), "partial").expect("write stale database placeholder");
+
+    init_repo(path_string(repo.path()), create_empty_options())
+        .expect("retry init after stale internal state");
+
+    assert!(!stale_init.exists());
+    assert!(repo.path().join(".areamatrix/index.db").is_file());
+    assert!(repo.path().join(".areamatrix/generated/root.md").is_file());
+}
+
+#[test]
+fn init_empty_repo_preserves_unknown_prefixed_directory_and_refuses_cleanup() {
+    let repo = tempfile::tempdir().expect("create temporary repository directory");
+    let user_owned = repo.path().join(".areamatrix.init-user-data");
+    fs::create_dir(&user_owned).expect("create user-owned hidden directory");
+    let user_file = user_owned.join("notes.txt");
+    fs::write(&user_file, "owned by user").expect("write user-owned hidden file");
+
+    let result = init_repo(path_string(repo.path()), create_empty_options());
+
+    assert_eq!(result, Err(CoreError::Config));
+    assert_eq!(
+        fs::read_to_string(&user_file).expect("read preserved user-owned hidden file"),
+        "owned by user"
+    );
+    assert!(!repo.path().join(".areamatrix").exists());
+}
+
+#[cfg(unix)]
+#[test]
+fn init_empty_repo_permission_denied_does_not_create_metadata() {
+    use std::os::unix::fs::PermissionsExt;
+
+    let repo = tempfile::tempdir().expect("create temporary repository directory");
+    let original_permissions = fs::metadata(repo.path())
+        .expect("read temporary repository permissions")
+        .permissions();
+    let mut readonly_permissions = original_permissions.clone();
+    readonly_permissions.set_mode(0o555);
+    fs::set_permissions(repo.path(), readonly_permissions)
+        .expect("make temporary repository read-only");
+
+    let result = init_repo(path_string(repo.path()), create_empty_options());
+
+    fs::set_permissions(repo.path(), original_permissions)
+        .expect("restore temporary repository permissions");
+    assert_eq!(result, Err(CoreError::PermissionDenied));
+    assert!(!repo.path().join(".areamatrix").exists());
+}
+
+#[test]
 fn init_empty_repo_can_create_default_category_directories() {
     let repo = tempfile::tempdir().expect("create temporary repository directory");
     let mut options = create_empty_options();

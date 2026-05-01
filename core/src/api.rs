@@ -71,6 +71,9 @@ pub fn validate_initialized_repo_path(repo_path: String) -> CoreResult<RepoPathV
 /// The API returns `Ok(())` after the empty repository can be read through
 /// [`load_config`], `list_files`, and [`list_tree_json`]. It must never create,
 /// delete, move, rename, or overwrite user-authored files such as `README.md`.
+/// When a previous attempt left a recoverable `.areamatrix.init-*` metadata
+/// directory, retrying initialization may remove only that internal temporary
+/// state before creating the final `.areamatrix/` directory.
 ///
 /// # Errors
 ///

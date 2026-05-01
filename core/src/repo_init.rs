@@ -78,7 +78,16 @@ fn init_repo_inner(
 }
 
 fn preflight_create_empty(repo_path: &str, repo: &Path) -> CoreResult<()> {
-    let validation = repo_path::validate_repo_path(repo_path.to_owned())?;
+    let mut validation = repo_path::validate_repo_path(repo_path.to_owned())?;
+    if validation.exists
+        && validation.is_directory
+        && validation.is_writable
+        && !validation.is_initialized
+        && cleanup_recoverable_init_dirs(repo)?
+    {
+        validation = repo_path::validate_repo_path(repo_path.to_owned())?;
+    }
+
     if !validation.exists || !validation.is_directory {
         return Err(CoreError::InvalidPath);
     }
@@ -89,6 +98,85 @@ fn preflight_create_empty(repo_path: &str, repo: &Path) -> CoreResult<()> {
         return Err(CoreError::Config);
     }
     ensure_no_user_content_entries(repo, None)
+}
+
+fn cleanup_recoverable_init_dirs(repo: &Path) -> CoreResult<bool> {
+    let mut cleaned = false;
+    for entry in fs::read_dir(repo).map_err(map_io_error)? {
+        let entry = entry.map_err(map_io_error)?;
+        let entry_name = entry.file_name();
+        let Some(entry_name) = entry_name.to_str() else {
+            continue;
+        };
+        if !entry_name.starts_with(INIT_DIR_PREFIX) {
+            continue;
+        }
+
+        let path = entry.path();
+        if !is_recoverable_init_dir(&path)? {
+            return Err(CoreError::Config);
+        }
+
+        fs::remove_dir_all(path).map_err(map_io_error)?;
+        cleaned = true;
+    }
+    Ok(cleaned)
+}
+
+fn is_recoverable_init_dir(path: &Path) -> CoreResult<bool> {
+    let metadata = fs::symlink_metadata(path).map_err(map_io_error)?;
+    if metadata.file_type().is_symlink() || !metadata.is_dir() {
+        return Ok(false);
+    }
+
+    for entry in fs::read_dir(path).map_err(map_io_error)? {
+        let entry = entry.map_err(map_io_error)?;
+        let name = entry.file_name();
+        let Some(name) = name.to_str() else {
+            return Ok(false);
+        };
+        let file_type = entry.file_type().map_err(map_io_error)?;
+        if file_type.is_symlink() {
+            return Ok(false);
+        }
+
+        let path = entry.path();
+        let recoverable = match name {
+            "staging" | "archives" => file_type.is_dir() && is_empty_dir(&path)?,
+            "generated" => file_type.is_dir() && is_recoverable_generated_dir(&path)?,
+            "classifier.yaml" | "ignore.yaml" | "index.db" | "index.db-wal" | "index.db-shm" => {
+                file_type.is_file()
+            }
+            _ => false,
+        };
+        if !recoverable {
+            return Ok(false);
+        }
+    }
+    Ok(true)
+}
+
+fn is_empty_dir(path: &Path) -> CoreResult<bool> {
+    let mut entries = fs::read_dir(path).map_err(map_io_error)?;
+    match entries.next() {
+        None => Ok(true),
+        Some(Ok(_)) => Ok(false),
+        Some(Err(error)) => Err(map_io_error(error)),
+    }
+}
+
+fn is_recoverable_generated_dir(path: &Path) -> CoreResult<bool> {
+    for entry in fs::read_dir(path).map_err(map_io_error)? {
+        let entry = entry.map_err(map_io_error)?;
+        if entry.file_name() != "root.md" {
+            return Ok(false);
+        }
+        let file_type = entry.file_type().map_err(map_io_error)?;
+        if !file_type.is_file() {
+            return Ok(false);
+        }
+    }
+    Ok(true)
 }
 
 fn ensure_no_user_content_entries(

@@ -1,0 +1,43 @@
+一、执行结论
+
+- 已完成：`1-1/task-07` C1-02 init-empty-repo failure-recovery。
+
+二、执行范围
+
+- 单任务：仅 C1-02 failure-recovery。
+- 修改文件：
+  - [core/src/repo_init.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/repo_init.rs)
+  - [core/src/api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs)
+  - [core/tests/init_empty_repo_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/init_empty_repo_implementation.rs)
+- 未触碰 `apps/**`。
+- 工作区已有未由本任务产生的变更仍保留：`.codex/task-loop-runs/20260501_132850/summary.json`、`tasks/prompts/_shared/progress.json`。
+
+三、完成情况
+
+- 已按顺序读取 task、共享规则、切片规则、工程质量规则、编码规范、repo-local skills、依赖图、phase manifest、Exact Docs、Existing Code。
+- 新增 C1-02 初始化重试前的安全恢复：只清理可证明为 AreaMatrix 未完成初始化的 `.areamatrix.init-*` 内部临时目录。
+- 未知内容的 `.areamatrix.init-*` 会返回 `Config` 并保留原样，避免误删用户文件。
+- 覆盖重复执行、失败重试、权限错误、未知隐藏目录保留、README 不覆盖等路径。
+- `core/area_matrix.udl` 与 docs API 未发现本任务需要同步的漂移，因此未修改。
+
+四、工程质量
+
+- 代码没有引入新依赖、mock-only、硬编码通过态或一次性脚本逻辑。
+- 新增逻辑拆成小函数，清理判定使用固定 allowlist：空 `staging/archives`、最多含 `root.md` 的 `generated`、固定 init 元数据文件。
+- public API rustdoc 已补充 failure-recovery 行为说明。
+- 文件安全边界满足：不删除、移动、覆盖用户文件；只对可恢复内部临时元数据执行清理。
+
+五、验证情况
+
+- `cd core && cargo fmt --all -- --check`：通过。
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过。
+- `cd core && cargo test --workspace init_empty_repo`：通过，相关 16 个测试通过。
+- 额外补跑 `cd core && cargo test --workspace`：通过，37 个测试通过。
+- 额外补跑 `git diff --check -- core/src/api.rs core/src/repo_init.rs core/tests/init_empty_repo_implementation.rs`：通过。
+- 无失败项；无无法运行项。
+
+六、风险与后续
+
+- 剩余风险：C1-16 的完整 startup recovery 仍由后续任务负责；本任务只处理 C1-02 初始化自身可安全恢复的失败/重试边界。
+- 建议下一个任务：继续 `1-1/task-08`，按 manifest 进入 C1-02 后续验证或集成范围。
+
