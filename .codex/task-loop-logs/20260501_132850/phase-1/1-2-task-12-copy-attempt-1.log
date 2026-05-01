@@ -1,0 +1,50 @@
+一、执行结论
+
+已完成 `1-2/task-12`。
+
+二、执行范围
+
+单任务：C1-07 `import-move-file` failure-recovery。  
+修改文件清单：新增 [import_move_file_failure_recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/import_move_file_failure_recovery.rs:1)。  
+未修改 `core/src/**`、`core/area_matrix.udl`、`apps/**`。
+
+三、完成情况
+
+核对清单结果：
+
+- 只处理 C1-07 failure-recovery：通过，新增测试只覆盖 Move import 的失败恢复。
+- Exact Docs 已读取并按 SSOT 对齐：通过。
+- 未实现相邻 C1 能力或 UI 页面：通过。
+- 覆盖失败、回滚、重复执行、权限错误路径：通过，测试覆盖 DB staging insert 失败、失败后重试、目标目录权限拒绝。
+- 不删除、覆盖或移动未确认用户文件：通过，测试仅使用 `tempfile` 临时目录。
+
+完成标准：
+
+- C1-07 failure-recovery 目标已有测试证据：通过。
+- 未扩展到未绑定能力：通过。
+- Forbidden Touches：未触碰 `apps/**`。
+
+四、工程质量
+
+新增的是集成测试，不是 mock-only 或硬编码通过态；测试走真实 `init_repo -> import_file -> DB/FS 状态检查` 路径。  
+错误与边界验证包括源文件恢复、staging 清空、active/staging DB 行为、change_log 行为、最终目录半成品缺失。  
+未新增依赖，未改 public API，因此无需 rustdoc/UDL 同步。
+
+五、验证情况
+
+已运行并通过：
+
+- `cd core && cargo fmt --all -- --check`
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`
+- `cd core && cargo test --workspace import_move_file`
+- `cd core && cargo test --workspace`，按 Mission-Critical core 变更补跑完整测试
+
+说明：第一次 `cargo fmt --check` 发现新增测试格式差异，已运行 `cargo fmt --all` 修正后复跑通过。最终无失败验证项。
+
+六、风险与后续
+
+剩余风险：`recover_on_startup` 仍属于后续 C1-16 范围，本任务没有实现启动恢复 API，避免越界。  
+建议下一个任务：对 `1-2/task-12` 跑 verify-ready 验收；通过后进入 `1-2/task-13`。
+
+工作区说明：进入任务前已有 `.codex/task-loop-runs/20260501_132850/summary.json` 和 `tasks/prompts/_shared/progress.json` 脏状态，本次未触碰它们。
+
