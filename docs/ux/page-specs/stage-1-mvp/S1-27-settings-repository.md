@@ -25,6 +25,7 @@
 - 显示当前 repo 名称和路径。
 - 显示 `.areamatrix/` metadata 状态。
 - 显示数据库状态、文件数量、最近扫描时间。
+- 显示 generated overview 输出模式和实际输出位置。
 - 提供 `Reveal in Finder`。
 - 提供 `Change repository...`，只用于打开另一个资料库或选择新资料库位置。
 - 提供 `Export diagnostics`。
@@ -43,6 +44,13 @@
 - `Files indexed: 1,248`
 - `Last scan: Apr 29, 2026 11:30`
 - `Watcher: Running / Paused`
+
+概览输出卡：
+- `Generated overview: Generated only / Root AREAMATRIX.md enabled`
+- `Generated path: .areamatrix/generated/root.md`
+- `Root file: Off / AREAMATRIX.md`
+- `README.md: User file, never managed by AreaMatrix`
+- 按钮：`Reveal generated overview`
 
 安全动作区：
 - `Export diagnostics...`
@@ -70,21 +78,27 @@
 - repo path 缺失时禁用 Reveal，保留 Copy last known path 和恢复入口。
 - 空态不适用：Repository tab 始终显示当前或 last known repo 信息；无 repo 时应回到 onboarding，不显示空 tab。
 - 加载态：读取健康状态时显示 `Checking repository...`，禁用重复 Retry，不阻断 Copy last known path。
+- `overviewOutput=GeneratedOnly` 时只展示 `.areamatrix/generated/root.md` 作为 Core 管理输出。
+- `overviewOutput=RootAreaMatrixFile` 时额外展示根目录 `AREAMATRIX.md`，并说明只管理 AreaMatrix marker block。
+- 本页只展示当前 overview 输出策略和路径；切换策略进入 `S1-30 settings-advanced` 的确认流程。
+- 不把 `README.md` 显示为 AreaMatrix 输出目标，也不得暗示应用会覆盖用户已有 `README.md`。
 
 ## 交互
 
 1. 打开页面时读取 repo summary 和 health snapshot。
 2. 点击 `Reveal in Finder` 打开当前 repo 根目录。
 3. 点击 `Copy path` 将路径复制到剪贴板并显示 toast。
-4. 点击 `Retry status` 重新读取健康状态。
-5. 点击 `Export diagnostics...` 打开导出确认。
-6. 点击 `Open recovery tools...`：DB corrupted 进入 `S1-37 db-repair-confirm`；其他错误进入 `S1-32 error-recovery`。
-7. 点击 `Change repository...` 进入 `S1-02 choose-path`，并携带 `source=settingsRepository`；Cancel 或 Back 返回本页且不修改当前 repo。
-8. 新 repo 在 `S1-03` / `S1-10` 打开成功后，才更新当前 repo 选择和 Settings 显示；失败进入 `S1-11 main-repo-error`，并允许回到旧 repo。
+4. 点击 `Reveal generated overview` 打开 `.areamatrix/generated/`，失败时显示可恢复错误。
+5. 点击 `Retry status` 重新读取健康状态。
+6. 点击 `Export diagnostics...` 打开导出确认。
+7. 点击 `Open recovery tools...`：DB corrupted 进入 `S1-37 db-repair-confirm`；其他错误进入 `S1-32 error-recovery`。
+8. 点击 `Change repository...` 进入 `S1-02 choose-path`，并携带 `source=settingsRepository`；Cancel 或 Back 返回本页且不修改当前 repo。
+9. 新 repo 在 `S1-03` / `S1-10` 打开成功后，才更新当前 repo 选择和 Settings 显示；失败进入 `S1-11 main-repo-error`，并允许回到旧 repo。
 
 ## 可访问性
 
 - repo path、健康状态、schema version 必须有可读标签。
+- overview 输出模式、generated path、root file 状态必须有可读标签。
 - 错误状态和恢复入口不能只靠颜色或图标表达。
 - Change repository、Open recovery tools、Export diagnostics 必须可通过键盘访问。
 
@@ -94,6 +108,8 @@
 - Database health status。
 - File count/index stats。
 - Watcher status。
+- `overviewOutput` settings value。
+- generated overview output status。
 - Finder reveal/copy path。
 - Diagnostics export。
 - repository switch route state。
@@ -108,6 +124,9 @@
 - Change repository 入口可发现，且不迁移、不删除、不覆盖当前 repo。
 - 新 repo 未成功打开前，当前 repo 配置保持不变。
 - Change repository 取消或失败后能回到旧 repo。
+- 用户能看到 C1-20 generated overview 当前输出模式和 `.areamatrix/generated/root.md`。
+- `RootAreaMatrixFile` 开启时显示根 `AREAMATRIX.md` 是显式配置的可选输出。
+- 页面明确 `README.md` 是用户文件，不由 AreaMatrix 生成或覆盖。
 - 诊断导出前说明不包含用户文件内容。
 - VoiceOver 能读出每张卡的标题和值。
 
