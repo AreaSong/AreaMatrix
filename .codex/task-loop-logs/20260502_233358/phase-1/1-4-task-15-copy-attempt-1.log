@@ -1,0 +1,41 @@
+一、执行结论
+
+已完成。
+
+二、执行范围
+
+- 单任务：`1-4/task-15`
+- 本次新增文件：[sync_external_renamed_integration_verify.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/sync_external_renamed_integration_verify.rs:1)
+- 未修改产品实现、`core/area_matrix.udl` 或 `apps/**`
+- 工作区原有脏文件仍存在：`.codex/task-loop-runs/20260502_233358/summary.json`、`tasks/prompts/_shared/progress.json`，未回退、未纳入本任务改动
+
+三、完成情况
+
+- C1-18 范围：通过新增 integration verify 测试锁定 `sync_external_changes` 的 Renamed 分支。
+- Exact Docs / API / UDL / UX 消费：已在测试中交叉断言 `C1-18` spec、control map、Core API、UDL、S1-09、S1-13 与 Rust wiring。
+- 相邻能力：未实现 UI，未补 C1-17/C1-19 产品能力；仅用既有 created 能力构造真实测试 fixture。
+- mock / 空壳：没有引入 mock-only、硬编码通过态或一次性脚本。
+- Forbidden Touches：未触碰 `apps/**`。
+
+四、工程质量
+
+新增测试覆盖真实文件系统、真实 SQLite 元数据、公开 Core API、`list_files` / `get_file` / `list_changes` / `list_tree_json` 消费路径、absolute path 输入、缺失目标与 out-of-scope event cursor 边界。文件 379 行，低于 500 行；未新增 public API，因此无需 rustdoc；未新增依赖。
+
+五、验证情况
+
+已运行并通过：
+
+- `cd core && cargo fmt --all -- --check`
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`
+- `cd core && cargo test --workspace sync_external_renamed`：C1-18 相关 19 个测试通过
+- 加宽验证：`cd core && cargo test --workspace`
+- 补充检查：`git diff --check`
+
+过程中第一次 `fmt --check` 只因新增测试换行格式失败，已修正；最终失败项无，无法运行项无。
+
+六、风险与后续
+
+剩余风险：未执行 macOS UI 真机/Swift 层验证，因为当前 task 禁止触碰 `apps/**`，且 C1-18 本轮只做 Core integration verify。
+
+建议下一个任务：继续 `1-4/task-16`。
+
