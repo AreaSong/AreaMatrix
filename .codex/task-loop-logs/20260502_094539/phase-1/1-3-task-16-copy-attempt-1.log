@@ -1,0 +1,41 @@
+一、执行结论
+
+已完成 `1-3/task-16`。只补齐 C1-14 `read_note` / `write_note` 的 Rust validation 测试，没有改 API、UDL、生产实现或 UI。
+
+二、执行范围
+
+修改文件：
+- [read_write_note_validation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/read_write_note_validation.rs:1)
+
+未触碰 `apps/**`。工作区里仍有进入本任务前已存在的 `.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json` 修改，我没有处理它们。
+
+三、完成情况
+
+- 只处理 C1-14 validation 范围：通过。
+- 已读取 Exact Docs，并按 C1-14 spec、control map、Core API、testing 作为 SSOT。
+- 未实现相邻 C1 能力或 UI 页面。
+- 新增 5 个 validation 用例，覆盖成功路径和关键错误路径：
+  - 无笔记返回 `None`，写入后 DB、伴生 `.md`、`edited_note` change log 一致。
+  - 未知 active file 返回 `FileNotFound` 且无 DB/log 副作用。
+  - 未确认用户侧车文件不被覆盖。
+  - change log 插入失败时旧 note 与 sidecar 回滚保留。
+  - DB 与 sidecar 不一致时拒绝读写且不变更状态。
+- Forbidden Touches：未触碰。
+
+四、工程质量
+
+测试使用真实 `init_repo`、SQLite metadata、临时目录和真实 sidecar 文件写入，不是 mock-only 或硬编码通过态。没有新增依赖；公共 API 未变更，因此无需新增 rustdoc。测试中的 `expect` 都有明确上下文信息，关键错误和回滚路径有断言证据。
+
+五、验证情况
+
+已通过：
+- `cd core && cargo fmt --all -- --check`
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`
+- `cd core && cargo test --workspace read_write_note`
+- 额外加跑：`cd core && cargo test --workspace`
+
+无法运行：无。
+
+六、风险与后续
+
+剩余风险：未做 macOS UI 消费验证，这属于后续 S1-14 / `2-3/task-07` 页面任务范围，不阻塞当前 Core validation task。建议下一个任务进入 `1-3/task-17`，继续按 manifest 边界推进 C1-14 integration verify。  
