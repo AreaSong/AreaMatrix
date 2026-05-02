@@ -221,20 +221,22 @@ fn import_copy_file_integration_verify_failure_keeps_source_and_final_state_safe
 }
 
 #[test]
-fn import_copy_file_integration_verify_rejects_unimplemented_indexed_mode() {
+fn import_copy_file_integration_verify_indexed_mode_is_not_copied() {
     let repo = initialized_repo();
     let (_source_root, source) = source_file("index-later.pdf", b"source bytes");
+    let source_path = path_string(&source);
     let mut options = copied_options();
     options.mode = StorageMode::Indexed;
 
-    let result = import_file(path_string(repo.path()), path_string(&source), options);
+    let entry =
+        import_file(path_string(repo.path()), source_path.clone(), options).expect("index file");
 
-    assert_eq!(result, Err(CoreError::Internal));
-    assert_eq!(
-        fs::read(&source).expect("read source after rejected mode"),
-        b"source bytes"
-    );
-    assert_eq!(count_rows(repo.path(), "files", Some("active")), 0);
+    assert_eq!(fs::read(&source).expect("read source"), b"source bytes");
+    assert_eq!(entry.path, source_path);
+    assert_eq!(entry.storage_mode, StorageMode::Indexed);
+    assert_eq!(entry.source_path.as_deref(), Some(source_path.as_str()));
+    assert!(!repo.path().join("finance/2026Q1_invoice.pdf").exists());
+    assert_eq!(count_rows(repo.path(), "files", Some("active")), 1);
     assert_eq!(staging_entries(repo.path()), Vec::<PathBuf>::new());
     assert_contains(API_RS, "C1-07 defines the moved-file contract");
     assert_contains(API_RS, "C1-08 owns index-only semantics");

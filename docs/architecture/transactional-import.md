@@ -19,9 +19,15 @@
 
 ## 整体流程
 
+本流程描述 `StorageMode::Copied` 与 `StorageMode::Moved` 的资料库内落位。
+C1-08 的 `StorageMode::Indexed` 不进入 staging/final 文件落位流程：Core 只
+校验和读取外部源文件，计算 hash，写 `files.storage_mode = indexed`、
+保留 `files.source_path`，并写 `change_log.imported`。Indexed 成功后源文件
+仍在原路径，资料库内不得出现最终文件副本。
+
 ```mermaid
 flowchart LR
-    Source[源文件] -->|1 复制/移动| Staging[".areamatrix/staging/uuid"]
+    Source[源文件] -->|1 Copy/Move 复制或移动| Staging[".areamatrix/staging/uuid"]
     Staging -->|2 计算 hash| Hash[SHA256]
     Hash -->|3 检查重复| Dedup{重复?}
     Dedup -->|是| Strategy[按策略]
@@ -34,6 +40,7 @@ flowchart LR
 ```
 
 任何步骤失败：`ROLLBACK` + `StagingGuard` 自动删除 staging 文件，最终目录无变化。
+Indexed 失败只回滚本次 DB staging 行，不删除、不移动、不覆盖外部源文件。
 
 ---
 
@@ -421,6 +428,10 @@ pub fn import_file(
     crate::storage::validate::source_exists(src)?;
     crate::storage::validate::source_size(src, MAX_IMPORT_SIZE)?;
 
+    if matches!(options.mode, StorageMode::Indexed) {
+        return import_indexed_file(repo, src, options);
+    }
+
     let layout = RepoLayout::for_repo(repo);
     layout.ensure_dirs()?;
 
@@ -514,6 +525,60 @@ pub fn import_file(
     crate::overview::regenerate_for_node(repo, &category)?;
     db::get_file_by_id(repo, new_id)
 }
+
+fn import_indexed_file(
+    repo: &Path,
+    src: &Path,
+    options: ImportOptions,
+) -> CoreResult<FileEntry> {
+    let hash = hash::sha256_file(src)?;
+    let size = std::fs::metadata(src)?.len() as i64;
+    if let Some(existing) = db::find_by_hash(repo, &hash)? {
+        match options.duplicate_strategy {
+            DuplicateStrategy::Skip | DuplicateStrategy::Ask => {
+                return Err(CoreError::DuplicateFile {
+                    existing_path: existing.path.clone(),
+                });
+            }
+            DuplicateStrategy::Overwrite => db::soft_delete_by_id(repo, existing.id)?,
+            DuplicateStrategy::KeepBoth => {}
+        }
+    }
+
+    let source_path = src.to_string_lossy().to_string();
+    let original_name = src.file_name().and_then(|s| s.to_str())
+        .ok_or(CoreError::InvalidPath { path: source_path.clone() })?
+        .to_string();
+    let target = storage::resolve_import_target(repo, &original_name, &options)?;
+
+    let new_id = db::with_repo(repo, |conn| -> CoreResult<i64> {
+        let tx = conn.transaction()?;
+        let id = db::insert_staging(&tx, db::NewFileRow {
+            path: source_path.clone(),
+            original_name: original_name.clone(),
+            current_name: options.override_filename
+                .clone()
+                .unwrap_or_else(|| original_name.clone()),
+            category: target.category.clone(),
+            size_bytes: size,
+            hash_sha256: hash.clone(),
+            storage_mode: StorageMode::Indexed,
+            origin: FileOrigin::Imported,
+            source_path: Some(source_path.clone()),
+            imported_at: chrono::Utc::now().timestamp(),
+        })?;
+        db::promote_active(&tx, id, &source_path, &original_name)?;
+        db::insert_change(&tx, id, ChangeAction::Imported, json!({
+            "mode": StorageMode::Indexed,
+            "source": source_path,
+            "category": target.category,
+            "destination": options.destination,
+        }))?;
+        tx.commit()?;
+        Ok(id)
+    })?;
+    db::get_file_by_id(repo, new_id)
+}
 ```
 
 ---
@@ -578,6 +643,7 @@ pub fn recover_on_startup(repo: &Path) -> CoreResult<RecoveryReport> {
 | F: commit 后概览重生成失败 | 数据已 active | 文件已落位 | 不影响数据；用户下次操作触发概览重写 |
 | G: 24h 未完成的 staging | 有/无 staging 行 | staging 文件存在 | GC 清理 |
 | H: SIGKILL 在任何阶段 | 由 SQLite WAL 自动 ROLLBACK | 启动恢复保底 | 同上 |
+| I: Indexed DB 写入失败 | staging 行由 guard 回滚或 SQLite ROLLBACK | 外部源文件保持原路径 | 不生成最终文件副本；用户可重试 |
 
 ---
 
@@ -639,7 +705,9 @@ pub fn recover_on_startup(repo: &Path) -> CoreResult<RecoveryReport> {
 - 50 × 概览重生成（如果不去抖）≈ 1.5 s
 - 总耗时 ≈ 3-5 s
 
-UI 体验：先所有文件 staging（快），后台慢慢算 hash 落位，UI 显示进度条；概览重生成去抖到批量结束后一次性。
+UI 体验：Copy/Move 先所有文件 staging（快），后台慢慢算 hash 落位，UI
+显示进度条；Indexed 直接对外部源文件算 hash 并写入索引，不能把"已复制到
+资料库"作为进度状态。概览重生成去抖到批量结束后一次性。
 
 ---
 
@@ -673,7 +741,7 @@ dictionary ImportOptions {
 
 | 场景 | 测试方式 | 文件 |
 |---|---|---|
-| 正常导入 Move/Copy/Index | 单元测试 + tempdir | `import_modes_test.rs` |
+| 正常导入 Move/Copy/Index | 单元测试 + tempdir；Index 额外断言无 staging/final 副本 | `import_modes_test.rs` |
 | Staging 中崩溃 | 集成测试，hash 阶段强制 panic | `crash_during_staging_test.rs` |
 | Hash 重复 | 不同策略路径覆盖 | `dedup_test.rs` |
 | 冲突重命名 | 相同 target_filename 多次 | `conflict_test.rs` |

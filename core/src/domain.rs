@@ -262,7 +262,11 @@ pub struct ChangeFilter {
 pub struct FileEntry {
     /// Stable database identifier.
     pub id: i64,
-    /// Repository-relative path.
+    /// Path displayed for this entry.
+    ///
+    /// Repository-owned, adopted, and external reindex rows use a
+    /// repository-relative path. Imported indexed rows point at the external
+    /// source path and also preserve the same value in `source_path`.
     pub path: String,
     /// Original source filename.
     pub original_name: String,

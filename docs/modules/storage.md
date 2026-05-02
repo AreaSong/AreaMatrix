@@ -58,9 +58,15 @@ pub fn reindex_from_filesystem(repo: &Path) -> CoreResult<ReindexReport>;
 
 ## import_file 完整流程
 
+`StorageMode::Copied` 和 `StorageMode::Moved` 走资料库内文件落位流程：
+源文件先进入 AreaMatrix-owned staging，再提交到最终分类目录。
+`StorageMode::Indexed` 是 C1-08 的 index-only 语义：只读取源文件 metadata
+和 hash，写入 DB 与 change_log，不复制、不移动源文件，也不创建最终资料库
+文件副本。
+
 ```mermaid
 flowchart LR
-    A[1 stage] --> B[2 hash]
+    A[1 Copy/Move stage] --> B[2 hash]
     B --> C{3 dup?}
     C -->|yes| D[strategy]
     C -->|no| E[4 classify]
@@ -112,6 +118,10 @@ pub fn import_file(
             path: src.display().to_string(),
         })?
         .to_string();
+
+    if matches!(options.mode, StorageMode::Indexed) {
+        return import_indexed_file(repo, src, &original_name, options);
+    }
 
     let _guard = StagingGuard::new(&layout);
     let staging_path = _guard.staging_path();
@@ -268,12 +278,75 @@ fn materialize_to_staging(
             sync_file(staging)?;
         }
         StorageMode::Indexed => {
-            std::fs::hard_link(src, staging).or_else(|_| {
-                std::fs::copy(src, staging).map(|_| ())
-            })?;
+            return Err(CoreError::Internal {
+                message: "indexed imports do not materialize to staging".into(),
+            });
         }
     }
     Ok(())
+}
+
+fn import_indexed_file(
+    repo: &Path,
+    src: &Path,
+    original_name: &str,
+    options: ImportOptions,
+) -> CoreResult<FileEntry> {
+    let hash = hash::sha256_file(src)?;
+    let size = std::fs::metadata(src)?.len() as i64;
+    if let Some(existing) = db::find_by_hash(repo, &hash)? {
+        match options.duplicate_strategy {
+            DuplicateStrategy::Skip | DuplicateStrategy::Ask => {
+                return Err(CoreError::DuplicateFile {
+                    existing_path: existing.path.clone(),
+                });
+            }
+            DuplicateStrategy::Overwrite => {
+                db::soft_delete_by_id(repo, existing.id)?;
+            }
+            DuplicateStrategy::KeepBoth => {}
+        }
+    }
+
+    let source_path = src.to_string_lossy().to_string();
+    let category = resolve_import_target(repo, original_name, &options)?.category;
+    let imported_at = chrono::Utc::now().timestamp();
+    let new_id = db::with_repo(repo, |conn| -> CoreResult<i64> {
+        let tx = conn.transaction()?;
+        let id = db::insert_staging(
+            &tx,
+            db::NewFileRow {
+                path: source_path.clone(),
+                original_name: original_name.to_string(),
+                current_name: options
+                    .override_filename
+                    .clone()
+                    .unwrap_or_else(|| original_name.to_string()),
+                category: category.clone(),
+                size_bytes: size,
+                hash_sha256: hash.clone(),
+                storage_mode: StorageMode::Indexed,
+                origin: FileOrigin::Imported,
+                source_path: source_path.clone(),
+                imported_at,
+            },
+        )?;
+        db::promote_active(&tx, id, &source_path, original_name)?;
+        db::insert_change(
+            &tx,
+            id,
+            ChangeAction::Imported,
+            json!({
+                "mode": StorageMode::Indexed,
+                "source": source_path,
+                "category": category,
+                "destination": options.destination,
+            }),
+        )?;
+        tx.commit()?;
+        Ok(id)
+    })?;
+    db::get_file_by_id(repo, new_id)
 }
 
 fn rename_with_fsync(from: &Path, to: &Path) -> CoreResult<()> {
@@ -882,7 +955,9 @@ mod tests {
         let src = repo.write_source("ext.pdf", b"x");
         let entry = import_file(&repo.path(), &src, opts(StorageMode::Indexed)).unwrap();
         assert!(src.exists());
+        assert_eq!(entry.path, src.to_string_lossy());
         assert_eq!(entry.storage_mode, StorageMode::Indexed);
+        assert!(!repo.path().join("docs").exists());
     }
 
     #[test]

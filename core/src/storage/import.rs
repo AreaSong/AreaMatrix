@@ -22,8 +22,12 @@ pub(crate) fn import_file(
     options: ImportOptions,
 ) -> CoreResult<FileEntry> {
     let prepared = prepare_import(repo_path, source_path, options)?;
+    if matches!(prepared.options.mode, StorageMode::Indexed) {
+        return import_indexed_file(prepared);
+    }
+
     let mut staged = stage_source(&prepared)?;
-    ensure_no_duplicate(&prepared, &staged)?;
+    ensure_no_duplicate(&prepared, &staged.hash_sha256)?;
     let destination = PreparedDestination::prepare(&prepared)?;
     let file_id = insert_staging_row(&prepared, &staged)?;
     let mut db_guard = DbStagingRowGuard::new(prepared.repo.clone(), file_id);
@@ -83,9 +87,6 @@ fn prepare_import(
     source_path: String,
     options: ImportOptions,
 ) -> CoreResult<PreparedImport> {
-    if !matches!(options.mode, StorageMode::Copied | StorageMode::Moved) {
-        return Err(CoreError::Internal);
-    }
     PreparedImport::new(repo_path, source_path, options)
 }
 
@@ -118,11 +119,23 @@ fn stage_source(prepared: &PreparedImport) -> CoreResult<StagedImport> {
     })
 }
 
-fn ensure_no_duplicate(prepared: &PreparedImport, staged: &StagedImport) -> CoreResult<()> {
-    if db::find_active_file_by_hash(&prepared.repo, &staged.hash_sha256)?.is_some() {
+fn ensure_no_duplicate(prepared: &PreparedImport, hash_sha256: &str) -> CoreResult<()> {
+    if db::find_active_file_by_hash(&prepared.repo, hash_sha256)?.is_some() {
         return duplicate_error(&prepared.options.duplicate_strategy);
     }
     Ok(())
+}
+
+fn import_indexed_file(prepared: PreparedImport) -> CoreResult<FileEntry> {
+    let fingerprint = hash::hash_file(&prepared.source)?;
+    ensure_no_duplicate(&prepared, &fingerprint.hash_sha256)?;
+
+    let file_id = insert_indexed_row(&prepared, &fingerprint)?;
+    let mut db_guard = DbStagingRowGuard::new(prepared.repo.clone(), file_id);
+
+    promote_indexed_import(&prepared, file_id)?;
+    db_guard.disarm();
+    db::get_active_file_by_id(&prepared.repo, file_id)
 }
 
 struct PreparedDestination {
@@ -187,6 +200,47 @@ fn promote_import(
         &prepared.target_filename,
         &json!({
             "source": prepared.source.to_string_lossy(),
+            "mode": storage_mode_detail(&prepared.options.mode),
+            "category": prepared.target.category,
+            "destination": destination_detail(&prepared.options.destination),
+            "renamed_from_original": prepared.original_name != prepared.target_filename,
+            "by": "user",
+        }),
+    )
+}
+
+fn insert_indexed_row(
+    prepared: &PreparedImport,
+    fingerprint: &hash::HashedCopy,
+) -> CoreResult<i64> {
+    let imported_at = chrono::Utc::now().timestamp();
+    let source_path = prepared.source.to_string_lossy().into_owned();
+    db::insert_import_staging(
+        &prepared.repo,
+        db::NewImportRow {
+            path: source_path.clone(),
+            original_name: prepared.original_name.clone(),
+            current_name: prepared.target_filename.clone(),
+            category: prepared.target.category.clone(),
+            size_bytes: fingerprint.size_bytes,
+            hash_sha256: fingerprint.hash_sha256.clone(),
+            storage_mode: StorageMode::Indexed,
+            origin: FileOrigin::Imported,
+            source_path: Some(source_path),
+            imported_at,
+        },
+    )
+}
+
+fn promote_indexed_import(prepared: &PreparedImport, file_id: i64) -> CoreResult<()> {
+    let source_path = prepared.source.to_string_lossy().into_owned();
+    db::promote_imported_file(
+        &prepared.repo,
+        file_id,
+        &source_path,
+        &prepared.target_filename,
+        &json!({
+            "source": source_path.clone(),
             "mode": storage_mode_detail(&prepared.options.mode),
             "category": prepared.target.category,
             "destination": destination_detail(&prepared.options.destination),

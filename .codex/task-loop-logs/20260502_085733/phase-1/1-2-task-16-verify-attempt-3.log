@@ -1,0 +1,59 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`phase-1 / 1-2/task-16`
+- Task 文件：[task-16-c1-08-implementation.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-1/1-2-import-classify/task-16-c1-08-implementation.md)
+- Exact Docs：C1-08 capability、mvp-control-map、core-api、storage、transactional-import
+- 实际文件：`core/src/**`、`core/area_matrix.udl`、`core/tests/**`
+- Forbidden Touches：`apps/**`
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：0
+- 通过项数：10
+- 不通过项数：0
+- 阻塞项数：0
+- Missing Expected Paths：0
+
+四、逐项验收结果
+
+- C1-08 范围：通过。`StorageMode::Indexed` 在入口单独分支，不走 copy/move staging 落位：[core/src/storage/import.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/import.rs:24)、[core/src/storage/import.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/import.rs:129)
+- Exact Docs SSOT：通过。C1-08 要求保留 `source_path`、写 imported change log、不复制不移动源文件：[C1-08-import-index-file.md](/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-08-import-index-file.md:25)
+- 不扩展相邻能力/UI：通过。`apps/**` 无改动；`get_file` 仍未扩到 C1-12，C1-08 缺失源只落在 `list_files` 证据路径：[core/src/api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:292)
+- 最小真实路径：通过。Indexed import 读取 hash/metadata，写 `files` row、promote active、插入 `change_log`：[core/src/storage/import.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/import.rs:212)、[core/src/db/import.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/db/import.rs:90)
+- layered design：通过。Public API 委托 storage，storage 调 db/classify，无 app 反向依赖：[core/src/api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:237)、[core/src/storage/mod.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/mod.rs:1)
+- UDL/API 对齐：通过。`import_file`、`ImportOptions`、`FileEntry.source_path`、`StorageMode.Indexed` 均在 UDL 中存在：[core/area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:38)、[core/area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:116)、[core/area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:218)
+- Indexed 成功语义：通过。测试证明源文件保留、无 `finance/` 最终副本、DB active row 为 `indexed`、change_log 为 `imported`：[import_index_file_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/import_index_file_implementation.rs:109)
+- 失败/边界语义：通过。覆盖 duplicate、DB failure rollback、missing source、删除源后 `list_files` 返回 `FileNotFound`：[import_index_file_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/import_index_file_implementation.rs:166)、[import_index_file_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/import_index_file_implementation.rs:197)、[import_index_file_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/import_index_file_implementation.rs:232)
+- Expected New Paths：通过。`core/src/**`、`core/area_matrix.udl`、`core/tests/**` 均存在并有 C1-08 覆盖。
+- Forbidden Touches：通过。`git status --short -- core apps` 仅显示 core 相关变更，无 `apps/**` 条目。
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。Indexed 路径拆成 `import_indexed_file` / `insert_indexed_row` / `promote_indexed_import`，未把 copy/move 流程混入。
+- 注释 / rustdoc / 文档同步：通过。public API rustdoc 明确 C1-06/C1-07/C1-08 边界与错误：[core/src/api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:195)
+- 错误处理与边界处理：通过。生产路径未发现 `unwrap` / `expect` / `panic!`；缺失源、权限、DB、Io 均显式映射。
+- 测试与验证覆盖：通过。C1-08 合同 6 条、implementation 5 条、全 workspace 143 条均通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。C1-08 为真实文件系统 + SQLite 路径；现有 `not_implemented` 仅属未绑定未来 API，不阻断本 task。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- `cd core && cargo fmt --all -- --check`：通过
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过
+- `cd core && cargo test --workspace import_index_file`：通过，C1-08 相关 11 tests passed
+- `cd core && cargo test --workspace`：通过，143 tests passed
+- 未运行：远端 CI/Git checkpoint 不在本次只读单任务验收范围内；本地等价 Core 验证已完成。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。C1-08 indexed import implementation 有文档、UDL/API、Rust 实现、DB/change_log、文件系统边界和测试命令共同证明，且未触碰 `apps/**`，不能证明的缺口为 0。
+
+VERIFY_RESULT: PASS

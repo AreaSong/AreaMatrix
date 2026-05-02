@@ -210,15 +210,18 @@ fn import_copy_file_implementation_invalid_filename_leaves_no_file_or_db_side_ef
 }
 
 #[test]
-fn import_copy_file_implementation_rejects_unimplemented_indexed_mode() {
+fn import_copy_file_implementation_indexed_mode_does_not_create_copy() {
     let repo = initialized_repo();
     let (_source_root, source) = source_file("source.pdf", b"content");
     let mut options = copied_options();
     options.mode = StorageMode::Indexed;
 
-    let result = import_file(path_string(repo.path()), path_string(&source), options);
+    let entry = import_file(path_string(repo.path()), path_string(&source), options)
+        .expect("indexed mode is implemented by C1-08");
 
-    assert_eq!(result, Err(CoreError::Internal));
     assert_eq!(fs::read(&source).expect("read source"), b"content");
-    assert_eq!(active_file_count(repo.path()), 0);
+    assert_eq!(entry.path, path_string(&source));
+    assert_eq!(entry.storage_mode, StorageMode::Indexed);
+    assert!(!repo.path().join("finance/source.pdf").exists());
+    assert_eq!(active_file_count(repo.path()), 1);
 }

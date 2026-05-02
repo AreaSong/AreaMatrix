@@ -1,0 +1,45 @@
+一、执行结论
+
+已完成：`1-2/task-16` 的 C1-08 `import-index-file` implementation 已落地并通过验证。
+
+二、执行范围
+
+单任务，仅修改/新增 core 允许范围：
+
+- [core/src/storage/import.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/import.rs:19)
+- [core/tests/import_index_file_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/import_index_file_implementation.rs:1)
+- [core/tests/import_copy_file_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/import_copy_file_implementation.rs:213)
+- [core/tests/import_copy_file_integration_verify.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/import_copy_file_integration_verify.rs:225)
+- [core/tests/import_move_file_integration_verify.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/import_move_file_integration_verify.rs:228)
+
+未触碰 `apps/**`。工作区里已有的 `.codex/task-loop-runs/20260501_132850/summary.json` 和 `tasks/prompts/_shared/progress.json` 仍是脏状态，不是本次改动范围。
+
+三、完成情况
+
+- C1-08 implementation：通过 `StorageMode::Indexed` 分支实现真实路径，直接 hash 源文件并写入 DB/change_log。
+- 文件系统边界：Indexed 不复制、不移动、不删除源文件，也不创建最终仓库副本。
+- DB 语义：写入 active `files` 行，`storage_mode = Indexed`，`path` 与 `source_path` 保留源文件路径，`change_log.action = imported`。
+- 相邻能力：未实现 UI、批量队列、bookmark、跨重启授权、详情缺失恢复等后续范围。
+- Forbidden Touches：未触碰。
+
+四、工程质量
+
+代码结构保持在现有 import pipeline 内，没有新增依赖、mock-only、硬编码通过态或一次性脚本。错误路径覆盖了重复 hash、DB promotion 失败、源文件缺失；DB 失败会清理 staging metadata row，源文件保持不变。UDL/Core API 文档本次无需改动，现有合同已包含 Indexed。
+
+五、验证情况
+
+已运行并通过：
+
+```bash
+cd core && cargo fmt --all -- --check
+cd core && cargo clippy --all-targets --all-features -- -D warnings
+cd core && cargo test --workspace import_index_file
+cd core && cargo test --workspace
+git diff --check
+```
+
+六、风险与后续
+
+剩余风险：`get_file` 仍未实现，因此 C1-08 文档里“源文件删除后详情/列表通过 FileNotFound 显示可恢复错误”的详情侧闭环还要由后续 query/detail task 承接；当前 task 已保证 Indexed metadata 足够表达该状态。
+
+建议下一个任务：`1-2/task-17: C1-08 import-index-file failure-recovery`。  
