@@ -58,7 +58,10 @@ fn list_change_log_contract_api_exposes_documented_signature_filter_and_errors()
         .expect("contract fixture detail_json is parseable JSON");
     assert_eq!(entry.occurred_at, 150);
 
-    let documented_errors = [CoreError::RepoNotInitialized, CoreError::Db];
+    let documented_errors = [
+        CoreError::repo_not_initialized("repository not initialized"),
+        CoreError::db("database error"),
+    ];
     assert_eq!(documented_errors.len(), 2);
 }
 
@@ -126,7 +129,7 @@ fn list_change_log_contract_api_docs_control_map_and_udl_stay_aligned() {
 
 #[test]
 fn list_change_log_contract_api_documents_errors_side_effects_and_scope() {
-    for fragment in ["`RepoNotInitialized { path }`", "`Db(msg)`"] {
+    for fragment in ["`RepoNotInitialized { path }`", "`Db { message }`"] {
         assert_contains(ERROR_CODES, fragment);
     }
 
@@ -143,8 +146,8 @@ fn list_change_log_contract_api_documents_errors_side_effects_and_scope() {
         "create files, rename files, or probe user file contents",
         "Undo history",
         "belong to Stage 2",
-        "Returns `CoreError::RepoNotInitialized`",
-        "`CoreError::Db`",
+        "Returns `CoreError::RepoNotInitialized { path }`",
+        "`CoreError::Db { message }`",
     ] {
         assert_contains(API_RS, fragment);
     }

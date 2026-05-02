@@ -91,7 +91,12 @@ fn list_change_log_implementation_requires_initialized_repo() {
 
     let result = list_changes(path_string(repo.path()), default_filter());
 
-    assert_eq!(result, Err(CoreError::RepoNotInitialized));
+    assert_eq!(
+        result,
+        Err(CoreError::repo_not_initialized(
+            "repository not initialized"
+        ))
+    );
 }
 
 #[test]
@@ -229,7 +234,7 @@ fn list_change_log_implementation_rejects_unparseable_or_non_object_detail_json(
 
     let result = list_changes(path_string(repo.path()), default_filter());
 
-    assert_eq!(result, Err(CoreError::Db));
+    assert!(matches!(result, Err(CoreError::Db { .. })));
 
     let repo = initialized_repo();
     let file_id = insert_file(repo.path(), "finance/array.pdf", "finance", 10);
@@ -237,7 +242,7 @@ fn list_change_log_implementation_rejects_unparseable_or_non_object_detail_json(
 
     let result = list_changes(path_string(repo.path()), default_filter());
 
-    assert_eq!(result, Err(CoreError::Db));
+    assert!(matches!(result, Err(CoreError::Db { .. })));
 }
 
 fn actions(changes: &[area_matrix_core::ChangeLogEntry]) -> Vec<&str> {

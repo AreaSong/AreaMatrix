@@ -251,7 +251,6 @@ fn build_tree_integration_verify_real_tree_supports_empty_list_and_loading_consu
     let second_json = list_tree_json(path_string(repo.path()), "en".to_owned())
         .expect("list populated tree second time");
     assert_eq!(first_json, second_json);
-
     let tree = parse_tree(&first_json);
     assert_populated_main_tree(&tree);
 }
@@ -304,7 +303,9 @@ fn build_tree_integration_verify_error_scope_and_read_only_boundary_are_real() {
     let uninitialized = tempfile::tempdir().expect("create uninitialized repository");
     assert_eq!(
         list_tree_json(path_string(uninitialized.path()), "en".to_owned()),
-        Err(CoreError::RepoNotInitialized)
+        Err(CoreError::repo_not_initialized(
+            "repository not initialized"
+        ))
     );
 
     let repo = initialized_repo(false);
@@ -331,10 +332,10 @@ fn build_tree_integration_verify_error_scope_and_read_only_boundary_are_real() {
         .expect("corrupt repository metadata");
     remove_if_exists(repo.path().join(".areamatrix/index.db-wal"));
     remove_if_exists(repo.path().join(".areamatrix/index.db-shm"));
-    assert_eq!(
+    assert!(matches!(
         list_tree_json(path_string(repo.path()), "en".to_owned()),
-        Err(CoreError::Db)
-    );
+        Err(CoreError::Db { .. })
+    ));
 }
 
 fn remove_if_exists(path: PathBuf) {

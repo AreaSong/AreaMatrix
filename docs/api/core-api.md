@@ -101,6 +101,8 @@ namespace area_matrix {
 
     [Throws=CoreError]
     void set_fs_event_cursor(string repo_path, i64 last_event_id);
+
+    ErrorMapping map_core_error(ErrorMappingInput input);
 };
 
 dictionary RepoConfig {
@@ -239,6 +241,22 @@ dictionary SyncResult {
     sequence<string> errors;
 };
 
+dictionary ErrorMappingInput {
+    ErrorKind kind;
+    string? path;
+    string? reason;
+    string? message;
+};
+
+dictionary ErrorMapping {
+    ErrorKind kind;
+    string user_message;
+    ErrorSeverity severity;
+    string suggested_action;
+    ErrorRecoverability recoverability;
+    string raw_context;
+};
+
 enum StorageMode { "Moved", "Copied", "Indexed" };
 enum FileOrigin { "Imported", "Adopted", "External" };
 enum RepoInitMode { "CreateEmpty", "AdoptExisting" };
@@ -254,21 +272,30 @@ enum ScanSessionStatus { "Running", "Completed", "Paused", "Failed", "Interrupte
 enum DuplicateStrategy { "Skip", "Overwrite", "KeepBoth", "Ask" };
 enum ClassifyReason { "Keyword", "Extension", "AiPredicted", "Default" };
 enum ExternalEventKind { "Created", "Removed", "Modified", "Renamed" };
+enum ErrorKind {
+    "Io", "Db", "Config", "Classify", "Conflict", "DuplicateFile",
+    "FileNotFound", "RepoNotInitialized", "InvalidPath",
+    "ICloudPlaceholder", "PermissionDenied", "Internal"
+};
+enum ErrorSeverity { "Low", "Medium", "High", "Critical" };
+enum ErrorRecoverability {
+    "Retryable", "UserActionRequired", "RefreshRequired", "Fatal"
+};
 
 [Error]
 interface CoreError {
-    Io();
-    Db();
-    Config();
-    Classify();
-    Conflict();
+    Io(string message);
+    Db(string message);
+    Config(string reason);
+    Classify(string reason);
+    Conflict(string path);
     DuplicateFile(string existing_path);
-    FileNotFound();
-    RepoNotInitialized();
-    InvalidPath();
-    ICloudPlaceholder();
-    PermissionDenied();
-    Internal();
+    FileNotFound(string path);
+    RepoNotInitialized(string path);
+    InvalidPath(string path);
+    ICloudPlaceholder(string path);
+    PermissionDenied(string path);
+    Internal(string message);
 };
 ```
 
@@ -335,7 +362,7 @@ interface CoreError {
 | `preview_import(repo_path, source_path, options) -> ImportPreview` | S1-16, S1-17, S1-18, S1-19, S1-22, S1-23 | C1-05, C1-09, C1-10 | 在导入前返回分类建议、目标路径、重复 hash、同名冲突和 iCloud 状态 | `predict_category` 只能给分类，`import_file` 会直接产生副作用 |
 | 导入进度 / 队列语义 | S1-18, S1-19, S1-20, S1-21 | C1-06, C1-07, C1-08 | 支撑多文件/文件夹导入的逐项状态、取消和结果摘要 | Stage 1 可先由 Swift 队列包装多次 `import_file`，Core 暂不提供流式回调 |
 | 详情聚合 DTO | S1-12, S1-13, S1-14 | C1-12, C1-13, C1-14 | 一次拿到文件元数据、日志和笔记，降低 UI 调用编排 | Stage 1 先用 `get_file` + `list_changes` + `read_note` 组合 |
-| 错误映射元数据 | S1-03, S1-06, S1-11, S1-25, S1-32 | C1-21 | 每个错误返回 severity、suggested_action、recoverability，避免 UI 解析字符串 | Stage 1 先在 Swift `AppError` 包装层集中映射 |
+| 错误映射元数据 | S1-03, S1-06, S1-11, S1-25, S1-32 | C1-21 | 每个错误返回 severity、suggested_action、recoverability，避免 UI 解析字符串 | `map_core_error` 返回 Core 侧稳定映射元数据，Swift `AppError` 包装层只负责本地化与展示编排 |
 
 这些缺口不得被 UI 静态 mock 掩盖。若某个 UI 任务进入真实闭环验收，而所需缺口尚未实现或没有明确替代路径，验收应判定不通过。
 
@@ -972,6 +999,13 @@ public actor CoreBridge {
 - 单条 `list_files`（limit ≤ 50）
 
 ### 错误处理统一规约
+
+Core 对 C1-21 暴露 `map_core_error(input: ErrorMappingInput) -> ErrorMapping`。
+输入用 `ErrorKind` 加原始 `path` / `reason` / `message` 表示同一个
+`CoreError` payload；输出固定包含 `kind`、`user_message`、`severity`、
+`suggested_action`、`recoverability` 和 `raw_context`。该函数无文件系统、
+数据库、日志或状态副作用，Swift `AppError` 只能基于这些结构化字段编排
+本地化和展示，不得用字符串 contains 做主分支判断。
 
 ```swift
 extension CoreError {

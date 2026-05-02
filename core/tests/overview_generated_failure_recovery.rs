@@ -96,7 +96,9 @@ fn assert_overview_failure(result: Result<FileEntry, CoreError>) {
     assert!(
         matches!(
             result,
-            Err(CoreError::Io | CoreError::Config | CoreError::PermissionDenied)
+            Err(CoreError::Io { .. }
+                | CoreError::Config { .. }
+                | CoreError::PermissionDenied { .. })
         ),
         "expected generated overview failure, got {result:?}"
     );
@@ -239,7 +241,10 @@ fn overview_generated_failure_recovery_permission_denied_keeps_state_clean() {
     fs::set_permissions(&nodes_dir, original_permissions)
         .expect("restore generated nodes permissions");
 
-    assert_eq!(result, Err(CoreError::PermissionDenied));
+    assert_eq!(
+        result,
+        Err(CoreError::permission_denied("permission denied"))
+    );
     assert!(source.exists());
     assert!(!repo.path().join("docs/permission.pdf").exists());
     assert!(!repo.path().join("docs").exists());

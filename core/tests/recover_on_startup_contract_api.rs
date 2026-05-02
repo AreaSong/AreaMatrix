@@ -35,10 +35,10 @@ fn recover_on_startup_contract_api_exposes_documented_signature_output_and_error
     );
 
     let documented_errors = [
-        CoreError::RepoNotInitialized,
-        CoreError::Db,
-        CoreError::Io,
-        CoreError::PermissionDenied,
+        CoreError::repo_not_initialized("repository not initialized"),
+        CoreError::db("database error"),
+        CoreError::io("io error"),
+        CoreError::permission_denied("permission denied"),
     ];
     assert_eq!(documented_errors.len(), 4);
 }
@@ -97,8 +97,8 @@ fn recover_on_startup_contract_api_docs_control_map_and_udl_stay_aligned() {
 fn recover_on_startup_contract_api_documents_side_effects_errors_and_scope() {
     for fragment in [
         "`RepoNotInitialized { path }`",
-        "`Db(msg)`",
-        "`Io(msg)`",
+        "`Db { message }`",
+        "`Io { message }`",
         "`PermissionDenied { path }`",
     ] {
         assert_contains(ERROR_CODES, fragment);
@@ -119,10 +119,10 @@ fn recover_on_startup_contract_api_documents_side_effects_errors_and_scope() {
         "reindex the repository",
         "process FSEvents",
         "generate overviews",
-        "Returns `CoreError::RepoNotInitialized`",
-        "`CoreError::PermissionDenied`",
-        "`CoreError::Io`",
-        "`CoreError::Db`",
+        "Returns `CoreError::RepoNotInitialized { path }`",
+        "`CoreError::PermissionDenied { path }`",
+        "`CoreError::Io { message }`",
+        "`CoreError::Db { message }`",
     ] {
         assert_contains(API_RS, fragment);
     }

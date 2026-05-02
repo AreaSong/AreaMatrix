@@ -134,9 +134,9 @@ fn import_index_file_integration_verify_docs_api_udl_and_consumers_stay_aligned(
         "StorageMode storage_mode;",
         "string? source_path;",
         "enum StorageMode { \"Moved\", \"Copied\", \"Indexed\" };",
-        "FileNotFound();",
-        "ICloudPlaceholder();",
-        "PermissionDenied();",
+        "FileNotFound(string path);",
+        "ICloudPlaceholder(string path);",
+        "PermissionDenied(string path);",
     ] {
         assert_contains(CORE_API, fragment);
         assert_contains(UDL, fragment);
@@ -238,7 +238,8 @@ fn import_index_file_integration_verify_db_failure_does_not_touch_source_or_fina
         indexed_options(),
     );
 
-    assert_eq!(result, Err(CoreError::Db));
+    assert!(matches!(result, Err(CoreError::Db { .. })));
+
     assert_eq!(
         fs::read(&source).expect("read source after DB failure"),
         b"index rollback"

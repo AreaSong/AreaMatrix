@@ -152,9 +152,9 @@ fn get_file_detail_integration_verify_docs_api_udl_and_consumers_stay_aligned() 
         "string? source_path;",
         "i64 imported_at;",
         "i64 updated_at;",
-        "FileNotFound();",
-        "RepoNotInitialized();",
-        "Db();",
+        "FileNotFound(string path);",
+        "RepoNotInitialized(string path);",
+        "Db(string message);",
     ] {
         assert_contains(CORE_API, fragment);
         assert_contains(UDL, fragment);
@@ -233,25 +233,30 @@ fn get_file_detail_integration_verify_returns_structured_errors_for_non_visible_
     let uninitialized = tempfile::tempdir().expect("create uninitialized repository");
     assert_eq!(
         get_file(path_string(uninitialized.path()), 1),
-        Err(CoreError::RepoNotInitialized)
+        Err(CoreError::repo_not_initialized(
+            "repository not initialized"
+        ))
     );
 
     let repo = initialized_repo();
     let deleted_id = insert_file_with_status(repo.path(), "finance/deleted.pdf", "deleted", 10);
     let staging_id = insert_file_with_status(repo.path(), "finance/staging.pdf", "staging", 20);
 
-    assert_eq!(
+    assert!(matches!(
         get_file(path_string(repo.path()), 404),
-        Err(CoreError::FileNotFound)
-    );
-    assert_eq!(
+        Err(CoreError::FileNotFound { .. })
+    ));
+
+    assert!(matches!(
         get_file(path_string(repo.path()), deleted_id),
-        Err(CoreError::FileNotFound)
-    );
-    assert_eq!(
+        Err(CoreError::FileNotFound { .. })
+    ));
+
+    assert!(matches!(
         get_file(path_string(repo.path()), staging_id),
-        Err(CoreError::FileNotFound)
-    );
+        Err(CoreError::FileNotFound { .. })
+    ));
+
     assert_eq!(count_file_rows(repo.path(), "deleted"), 1);
     assert_eq!(count_file_rows(repo.path(), "staging"), 1);
     assert_eq!(change_log_count(repo.path()), 0);

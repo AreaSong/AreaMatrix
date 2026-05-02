@@ -141,7 +141,8 @@ fn sync_external_renamed_failure_recovery_replays_after_missing_target_without_p
         ],
     );
 
-    assert_eq!(failed, Err(CoreError::FileNotFound));
+    assert!(matches!(failed, Err(CoreError::FileNotFound { .. })));
+
     assert_eq!(fs_cursor(repo.path()), Some(2));
     assert_eq!(
         active_paths(repo.path()),
@@ -206,7 +207,8 @@ fn sync_external_renamed_failure_recovery_db_update_failure_rolls_back_row_log_a
         vec![renamed("docs/renamed.pdf", 11)],
     );
 
-    assert_eq!(result, Err(CoreError::Db));
+    assert!(matches!(result, Err(CoreError::Db { .. })));
+
     assert_eq!(fs_cursor(repo.path()), Some(10));
     let unchanged = get_file(path_string(repo.path()), file_id).expect("get unchanged file");
     assert_eq!(unchanged.path, "docs/original.pdf");
@@ -251,7 +253,10 @@ fn sync_external_renamed_failure_recovery_permission_denied_keeps_db_cursor_and_
 
     fs::set_permissions(&renamed_path, original_permissions).expect("restore readable permissions");
 
-    assert_eq!(result, Err(CoreError::PermissionDenied));
+    assert_eq!(
+        result,
+        Err(CoreError::permission_denied("permission denied"))
+    );
     assert_eq!(fs_cursor(repo.path()), Some(20));
     let unchanged = get_file(path_string(repo.path()), file_id).expect("get unchanged file");
     assert_eq!(unchanged.path, "docs/original.pdf");

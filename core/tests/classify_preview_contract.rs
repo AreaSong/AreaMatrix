@@ -201,7 +201,7 @@ fn classify_preview_contract_invalid_classifier_yaml_returns_config_error() {
 
     let result = predict_category(path_string(repo.path()), "invoice.pdf".to_owned());
 
-    assert_eq!(result, Err(CoreError::Config));
+    assert!(matches!(result, Err(CoreError::Config { .. })));
 }
 
 #[test]
@@ -229,9 +229,11 @@ fn classify_preview_contract_rejects_invalid_classifier_schema_edges() {
         let repo = initialized_repo();
         write_classifier(repo.path(), yaml);
 
-        assert_eq!(
-            predict_category(path_string(repo.path()), "report.pdf".to_owned()),
-            Err(CoreError::Config),
+        assert!(
+            matches!(
+                predict_category(path_string(repo.path()), "report.pdf".to_owned()),
+                Err(CoreError::Config { .. })
+            ),
             "{name} should be rejected"
         );
     }
@@ -273,21 +275,22 @@ fn classify_preview_contract_unreadable_classifier_source_returns_classify_error
 
     let result = predict_category(path_string(repo.path()), "invoice.pdf".to_owned());
 
-    assert_eq!(result, Err(CoreError::Classify));
+    assert!(matches!(result, Err(CoreError::Classify { .. })));
 }
 
 #[test]
 fn classify_preview_contract_empty_inputs_return_config_error() {
     let repo = initialized_repo();
 
-    assert_eq!(
+    assert!(matches!(
         predict_category(String::new(), "invoice.pdf".to_owned()),
-        Err(CoreError::Config)
-    );
-    assert_eq!(
+        Err(CoreError::Config { .. })
+    ));
+
+    assert!(matches!(
         predict_category(path_string(repo.path()), "   ".to_owned()),
-        Err(CoreError::Config)
-    );
+        Err(CoreError::Config { .. })
+    ));
 }
 
 #[test]

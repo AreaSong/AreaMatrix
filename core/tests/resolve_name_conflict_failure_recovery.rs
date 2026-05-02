@@ -146,7 +146,8 @@ fn resolve_name_conflict_failure_recovery_import_db_failure_removes_numbered_fin
         import_options(StorageMode::Copied, "same.pdf"),
     );
 
-    assert_eq!(result, Err(CoreError::Db));
+    assert!(matches!(result, Err(CoreError::Db { .. })));
+
     assert_eq!(
         fs::read(repo.path().join("finance/same.pdf")).expect("read existing target"),
         b"existing bytes"
@@ -182,7 +183,8 @@ fn resolve_name_conflict_failure_recovery_moved_exhaustion_restores_source_and_r
         import_options(StorageMode::Moved, "same.pdf"),
     );
 
-    assert_eq!(failed, Err(CoreError::Conflict));
+    assert!(matches!(failed, Err(CoreError::Conflict { .. })));
+
     assert_eq!(
         fs::read(&source).expect("read restored moved source after conflict exhaustion"),
         b"moved bytes"
@@ -232,7 +234,8 @@ fn resolve_name_conflict_failure_recovery_rename_db_failure_restores_original_na
 
     let result = rename_file(path_string(repo.path()), draft.id, "same.pdf".to_owned());
 
-    assert_eq!(result, Err(CoreError::Db));
+    assert!(matches!(result, Err(CoreError::Db { .. })));
+
     assert_eq!(
         fs::read(repo.path().join("finance/same.pdf")).expect("read existing target"),
         b"existing bytes"
@@ -293,7 +296,10 @@ fn resolve_name_conflict_failure_recovery_import_permission_denied_keeps_old_tar
 
     fs::set_permissions(&finance_dir, original_permissions).expect("restore target permissions");
 
-    assert_eq!(result, Err(CoreError::PermissionDenied));
+    assert_eq!(
+        result,
+        Err(CoreError::permission_denied("permission denied"))
+    );
     assert_eq!(
         fs::read(repo.path().join("finance/same.pdf")).expect("read existing target"),
         b"existing bytes"
@@ -348,7 +354,10 @@ fn resolve_name_conflict_failure_recovery_rename_permission_denied_keeps_both_fi
 
     fs::set_permissions(&finance_dir, original_permissions).expect("restore target permissions");
 
-    assert_eq!(result, Err(CoreError::PermissionDenied));
+    assert_eq!(
+        result,
+        Err(CoreError::permission_denied("permission denied"))
+    );
     assert_eq!(
         fs::read(repo.path().join("finance/same.pdf")).expect("read existing target"),
         b"existing bytes"

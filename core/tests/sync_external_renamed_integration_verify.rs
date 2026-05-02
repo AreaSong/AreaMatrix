@@ -279,8 +279,8 @@ fn assert_rust_entry_points_are_real_renamed_wiring() {
         "map_renamed_target_metadata_error",
         "find_external_rename_candidates_by_hash",
         "external_rename_detail",
-        "CoreError::Conflict",
-        "CoreError::FileNotFound",
+        "CoreError::Conflict { path }",
+        "CoreError::FileNotFound { path }",
     ] {
         assert_contains(SYNC_RS, fragment);
     }
@@ -353,7 +353,8 @@ fn sync_external_renamed_integration_verify_boundaries_stay_transactional() {
         vec![renamed("docs/missing.txt".to_owned(), 721)],
     );
 
-    assert_eq!(missing, Err(CoreError::FileNotFound));
+    assert!(matches!(missing, Err(CoreError::FileNotFound { .. })));
+
     assert_eq!(fs_cursor(repo.path()), Some(720));
     let unchanged = get_file(path_string(repo.path()), entry.id).expect("get unchanged file");
     assert_eq!(unchanged.path, "docs/original.txt");

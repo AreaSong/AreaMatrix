@@ -103,7 +103,7 @@ pub(crate) fn predict_category(repo_path: String, filename: String) -> CoreResul
 
 fn normalize_repo_path(repo_path: &str) -> CoreResult<PathBuf> {
     if repo_path.trim().is_empty() {
-        return Err(CoreError::Config);
+        return Err(CoreError::config("configuration error"));
     }
     Ok(PathBuf::from(repo_path))
 }
@@ -111,7 +111,7 @@ fn normalize_repo_path(repo_path: &str) -> CoreResult<PathBuf> {
 fn validate_filename(filename: &str) -> CoreResult<&str> {
     let trimmed = filename.trim();
     if trimmed.is_empty() {
-        return Err(CoreError::Config);
+        return Err(CoreError::config("configuration error"));
     }
     Ok(trimmed)
 }
@@ -122,10 +122,11 @@ fn load_classifier_config(repo: &Path) -> CoreResult<ClassifierConfig> {
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
             DEFAULT_CLASSIFIER_YAML.to_owned()
         }
-        Err(_) => return Err(CoreError::Classify),
+        Err(_) => return Err(CoreError::classify("classification error")),
     };
 
-    let config: ClassifierConfig = serde_yaml::from_str(&yaml).map_err(|_| CoreError::Config)?;
+    let config: ClassifierConfig =
+        serde_yaml::from_str(&yaml).map_err(|error| CoreError::config(error.to_string()))?;
     validate_classifier_config(config)
 }
 
@@ -134,7 +135,7 @@ fn validate_classifier_config(config: ClassifierConfig) -> CoreResult<Classifier
         || config.categories.is_empty()
         || config.categories.len() > MAX_CATEGORIES
     {
-        return Err(CoreError::Config);
+        return Err(CoreError::config("configuration error"));
     }
 
     let mut seen = HashSet::new();
@@ -147,7 +148,7 @@ fn validate_classifier_config(config: ClassifierConfig) -> CoreResult<Classifier
         .iter()
         .any(|category| category.slug == config.default)
     {
-        return Err(CoreError::Config);
+        return Err(CoreError::config("configuration error"));
     }
 
     Ok(config)
@@ -155,7 +156,7 @@ fn validate_classifier_config(config: ClassifierConfig) -> CoreResult<Classifier
 
 fn validate_category(category: &CategoryConfig, seen: &mut HashSet<String>) -> CoreResult<()> {
     if !is_valid_slug(&category.slug) || !seen.insert(category.slug.clone()) {
-        return Err(CoreError::Config);
+        return Err(CoreError::config("configuration error"));
     }
 
     validate_display_names(category)?;
@@ -174,7 +175,7 @@ fn validate_display_names(category: &CategoryConfig) -> CoreResult<()> {
         .values()
         .any(|value| value.is_empty() || value.chars().count() > MAX_DISPLAY_NAME_LEN)
     {
-        return Err(CoreError::Config);
+        return Err(CoreError::config("configuration error"));
     }
 
     Ok(())
@@ -186,7 +187,7 @@ fn validate_descriptions(category: &CategoryConfig) -> CoreResult<()> {
         .values()
         .any(|value| value.chars().count() > MAX_DESCRIPTION_LEN)
     {
-        return Err(CoreError::Config);
+        return Err(CoreError::config("configuration error"));
     }
 
     Ok(())
@@ -196,7 +197,7 @@ fn validate_extensions(category: &CategoryConfig) -> CoreResult<()> {
     let mut seen = HashSet::new();
     for extension in &category.extensions {
         if !is_valid_extension(extension) || !seen.insert(extension.as_str()) {
-            return Err(CoreError::Config);
+            return Err(CoreError::config("configuration error"));
         }
     }
     Ok(())
@@ -209,7 +210,7 @@ fn validate_keywords(category: &CategoryConfig) -> CoreResult<()> {
             || keyword.chars().count() > MAX_KEYWORD_LEN
             || !seen.insert(keyword.as_str())
         {
-            return Err(CoreError::Config);
+            return Err(CoreError::config("configuration error"));
         }
     }
     Ok(())
@@ -219,7 +220,7 @@ fn validate_priority(priority: i32) -> CoreResult<()> {
     if (-1000..=1000).contains(&priority) {
         Ok(())
     } else {
-        Err(CoreError::Config)
+        Err(CoreError::config("configuration error"))
     }
 }
 
@@ -229,7 +230,7 @@ fn validate_naming_template(category: &CategoryConfig) -> CoreResult<()> {
         .as_ref()
         .is_some_and(|template| template.chars().count() > MAX_NAMING_TEMPLATE_LEN)
     {
-        return Err(CoreError::Config);
+        return Err(CoreError::config("configuration error"));
     }
     Ok(())
 }

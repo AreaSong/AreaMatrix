@@ -23,7 +23,7 @@ pub(crate) fn read_note(repo_path: String, file_id: i64) -> CoreResult<Option<St
     if sidecar_content == content {
         Ok(Some(content))
     } else {
-        Err(CoreError::Db)
+        Err(CoreError::db("database error"))
     }
 }
 
@@ -57,7 +57,7 @@ pub(crate) fn write_note(repo_path: String, file_id: i64, content_md: String) ->
 
 fn validate_repo_path(repo_path: &str) -> CoreResult<PathBuf> {
     if repo_path.trim().is_empty() {
-        return Err(CoreError::InvalidPath);
+        return Err(CoreError::invalid_path("invalid path"));
     }
     Ok(PathBuf::from(repo_path))
 }
@@ -74,33 +74,37 @@ fn entry_file_path(repo: &Path, entry: &FileEntry) -> CoreResult<PathBuf> {
 
 fn sidecar_path(repo: &Path, entry: &FileEntry) -> CoreResult<PathBuf> {
     let target = entry_file_path(repo, entry)?;
-    let parent = target.parent().ok_or(CoreError::InvalidPath)?;
+    let parent = target
+        .parent()
+        .ok_or_else(|| CoreError::invalid_path("invalid path"))?;
     let file_name = target
         .file_name()
         .and_then(OsStr::to_str)
         .filter(|value| !value.is_empty())
-        .ok_or(CoreError::InvalidPath)?;
+        .ok_or_else(|| CoreError::invalid_path("invalid path"))?;
     Ok(parent.join(format!("{file_name}.md")))
 }
 
 fn validate_entry_path(path: &Path) -> CoreResult<()> {
     if path.as_os_str().is_empty() {
-        return Err(CoreError::InvalidPath);
+        return Err(CoreError::invalid_path("invalid path"));
     }
 
     for component in path.components() {
         match component {
             Component::Normal(part) => {
                 if part == OsStr::new(AREA_MATRIX_DIR) {
-                    return Err(CoreError::InvalidPath);
+                    return Err(CoreError::invalid_path("invalid path"));
                 }
             }
             Component::RootDir | Component::Prefix(_) => {
                 if !path.is_absolute() {
-                    return Err(CoreError::InvalidPath);
+                    return Err(CoreError::invalid_path("invalid path"));
                 }
             }
-            Component::CurDir | Component::ParentDir => return Err(CoreError::InvalidPath),
+            Component::CurDir | Component::ParentDir => {
+                return Err(CoreError::invalid_path("invalid path"))
+            }
         }
     }
     Ok(())
@@ -111,7 +115,7 @@ fn ensure_regular_file(path: &Path) -> CoreResult<()> {
     if metadata.is_file() {
         Ok(())
     } else {
-        Err(CoreError::FileNotFound)
+        Err(CoreError::file_not_found("missing file"))
     }
 }
 
@@ -121,10 +125,10 @@ fn validate_previous_sidecar(
 ) -> CoreResult<()> {
     match (previous_note, previous_sidecar) {
         (None, None) => Ok(()),
-        (None, Some(_)) => Err(CoreError::PermissionDenied),
-        (Some(_), None) => Err(CoreError::Io),
+        (None, Some(_)) => Err(CoreError::permission_denied("permission denied")),
+        (Some(_), None) => Err(CoreError::io("io error")),
         (Some(note), Some(sidecar)) if note == sidecar => Ok(()),
-        (Some(_), Some(_)) => Err(CoreError::Db),
+        (Some(_), Some(_)) => Err(CoreError::db("database error")),
     }
 }
 
@@ -160,7 +164,9 @@ fn write_sidecar_atomically(
     content: &str,
     policy: SidecarWritePolicy,
 ) -> CoreResult<()> {
-    let parent = path.parent().ok_or(CoreError::InvalidPath)?;
+    let parent = path
+        .parent()
+        .ok_or_else(|| CoreError::invalid_path("invalid path"))?;
     let temp_path = temporary_sidecar_path(path)?;
     let result =
         write_temp_file(&temp_path, content).and_then(|()| persist_temp(&temp_path, path, policy));
@@ -184,7 +190,7 @@ fn persist_temp_without_replace(temp_path: &Path, final_path: &Path) -> CoreResu
     match fs::hard_link(temp_path, final_path) {
         Ok(()) => remove_temp_after_persist(temp_path, final_path),
         Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {
-            Err(CoreError::PermissionDenied)
+            Err(CoreError::permission_denied("permission denied"))
         }
         Err(_) => copy_temp_without_replace(temp_path, final_path),
     }
@@ -214,7 +220,7 @@ fn copy_temp_to_new_file(
 ) -> CoreResult<()> {
     let copied_size = io::copy(source, destination).map_err(map_io_error)?;
     if copied_size != expected_size {
-        return Err(CoreError::Io);
+        return Err(CoreError::io("io error"));
     }
     destination.sync_all().map_err(map_io_error)
 }
@@ -234,7 +240,7 @@ fn temporary_sidecar_path(path: &Path) -> CoreResult<PathBuf> {
         .file_name()
         .and_then(OsStr::to_str)
         .filter(|value| !value.is_empty())
-        .ok_or(CoreError::InvalidPath)?;
+        .ok_or_else(|| CoreError::invalid_path("invalid path"))?;
     Ok(path.with_file_name(format!(".{file_name}.{}.tmp", Uuid::new_v4())))
 }
 
@@ -263,16 +269,16 @@ fn markdown_len(content: &str) -> i64 {
 
 fn map_io_error(error: std::io::Error) -> CoreError {
     match error.kind() {
-        std::io::ErrorKind::NotFound => CoreError::FileNotFound,
-        std::io::ErrorKind::PermissionDenied => CoreError::PermissionDenied,
-        std::io::ErrorKind::InvalidInput => CoreError::InvalidPath,
-        _ => CoreError::Io,
+        std::io::ErrorKind::NotFound => CoreError::file_not_found("missing file"),
+        std::io::ErrorKind::PermissionDenied => CoreError::permission_denied("permission denied"),
+        std::io::ErrorKind::InvalidInput => CoreError::invalid_path("invalid path"),
+        _ => CoreError::io("io error"),
     }
 }
 
 fn map_create_sidecar_error(error: std::io::Error) -> CoreError {
     match error.kind() {
-        std::io::ErrorKind::AlreadyExists => CoreError::PermissionDenied,
+        std::io::ErrorKind::AlreadyExists => CoreError::permission_denied("permission denied"),
         _ => map_io_error(error),
     }
 }
@@ -328,7 +334,10 @@ mod tests {
 
         let result = write_sidecar_atomically(&sidecar, "new note", SidecarWritePolicy::CreateNew);
 
-        assert_eq!(result, Err(CoreError::PermissionDenied));
+        assert_eq!(
+            result,
+            Err(CoreError::permission_denied("permission denied"))
+        );
         assert_eq!(
             fs::read_to_string(&sidecar).expect("read preserved external sidecar"),
             "external note"

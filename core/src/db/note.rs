@@ -16,7 +16,7 @@ pub(crate) fn read_note_content(repo_path: &Path, file_id: i64) -> CoreResult<Op
             |row| row.get(0),
         )
         .optional()
-        .map_err(|_| CoreError::Db)
+        .map_err(|error| CoreError::db(error.to_string()))
 }
 
 pub(crate) fn upsert_note_and_log(
@@ -27,7 +27,9 @@ pub(crate) fn upsert_note_and_log(
     length_after: i64,
 ) -> CoreResult<()> {
     let mut connection = open_repo_connection(repo_path)?;
-    let tx = connection.transaction().map_err(|_| CoreError::Db)?;
+    let tx = connection
+        .transaction()
+        .map_err(|error| CoreError::db(error.to_string()))?;
     ensure_active_file(&tx, file_id)?;
 
     let occurred_at = chrono::Utc::now().timestamp();
@@ -39,21 +41,22 @@ pub(crate) fn upsert_note_and_log(
            updated_at = excluded.updated_at",
         params![file_id, content_md, occurred_at],
     )
-    .map_err(|_| CoreError::Db)?;
+    .map_err(|error| CoreError::db(error.to_string()))?;
 
     let detail_json = serde_json::to_string(&json!({
         "length_before": length_before,
         "length_after": length_after,
         "by": "user",
     }))
-    .map_err(|_| CoreError::Internal)?;
+    .map_err(|error| CoreError::internal(error.to_string()))?;
     tx.execute(
         "INSERT INTO change_log (file_id, action, detail_json, occurred_at)
          VALUES (?1, 'edited_note', ?2, ?3)",
         params![file_id, detail_json, occurred_at],
     )
-    .map_err(|_| CoreError::Db)?;
-    tx.commit().map_err(|_| CoreError::Db)
+    .map_err(|error| CoreError::db(error.to_string()))?;
+    tx.commit()
+        .map_err(|error| CoreError::db(error.to_string()))
 }
 
 fn ensure_active_file(tx: &rusqlite::Transaction<'_>, file_id: i64) -> CoreResult<()> {
@@ -64,6 +67,6 @@ fn ensure_active_file(tx: &rusqlite::Transaction<'_>, file_id: i64) -> CoreResul
             |_| Ok(()),
         )
         .optional()
-        .map_err(|_| CoreError::Db)?;
-    exists.ok_or(CoreError::FileNotFound)
+        .map_err(|error| CoreError::db(error.to_string()))?;
+    exists.ok_or_else(|| CoreError::file_not_found("missing file"))
 }

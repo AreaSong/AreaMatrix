@@ -92,7 +92,8 @@ fn adopt_existing_repo_validation_rejects_root_overview_without_metadata_side_ef
 
     let result = init_repo(path_string(repo.path()), options);
 
-    assert_eq!(result, Err(CoreError::Config));
+    assert!(matches!(result, Err(CoreError::Config { .. })));
+
     assert_eq!(
         fs::read_to_string(&readme).expect("read preserved README"),
         "# User project\n"
@@ -111,7 +112,8 @@ fn adopt_existing_repo_validation_unknown_resume_session_does_not_mutate_user_fi
 
     let result = resume_scan_session(path_string(repo.path()), i64::MAX);
 
-    assert_eq!(result, Err(CoreError::Db));
+    assert!(matches!(result, Err(CoreError::Db { .. })));
+
     assert_eq!(
         fs::read_to_string(&readme).expect("read README after resume failure"),
         before

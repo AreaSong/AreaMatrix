@@ -160,7 +160,8 @@ fn sync_external_removed_failure_recovery_replays_after_batch_path_state_is_fixe
         vec![removed("docs/first.pdf", 3), removed("docs/second.pdf", 4)],
     );
 
-    assert_eq!(failed, Err(CoreError::Io));
+    assert!(matches!(failed, Err(CoreError::Io { .. })));
+
     assert_eq!(fs_cursor(repo.path()), Some(2));
     assert_eq!(file_status(repo.path(), first.id).0, "active");
     assert_eq!(file_status(repo.path(), second.id).0, "active");
@@ -204,7 +205,8 @@ fn sync_external_removed_failure_recovery_db_failure_rolls_back_status_log_and_c
         vec![removed("docs/rollback.pdf", 11)],
     );
 
-    assert_eq!(result, Err(CoreError::Db));
+    assert!(matches!(result, Err(CoreError::Db { .. })));
+
     assert_eq!(fs_cursor(repo.path()), Some(10));
     assert_eq!(
         file_status(repo.path(), entry.id),
@@ -280,7 +282,10 @@ fn sync_external_removed_failure_recovery_permission_denied_keeps_metadata_and_c
 
     fs::set_permissions(&blocked_dir, original_permissions).expect("restore directory permissions");
 
-    assert_eq!(result, Err(CoreError::PermissionDenied));
+    assert_eq!(
+        result,
+        Err(CoreError::permission_denied("permission denied"))
+    );
     assert_eq!(fs_cursor(repo.path()), Some(30));
     assert_eq!(file_status(repo.path(), entry.id).0, "active");
     assert_eq!(deleted_change_count(repo.path()), 0);

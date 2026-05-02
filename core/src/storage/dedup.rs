@@ -55,7 +55,7 @@ pub(super) fn resolve_final_path(
         DuplicateResolution::NoDuplicate | DuplicateResolution::KeepBoth => {
             resolve_numbered_path(directory, filename)
         }
-        DuplicateResolution::Overwrite { .. } => Err(CoreError::Internal),
+        DuplicateResolution::Overwrite { .. } => Err(CoreError::internal("internal error")),
     }
 }
 
@@ -76,7 +76,7 @@ pub(super) fn resolve_rename_path(
         }
     }
 
-    Err(CoreError::Conflict)
+    Err(CoreError::conflict("path conflict"))
 }
 
 pub(super) fn is_repo_owned(entry: &FileEntry) -> bool {
@@ -96,7 +96,7 @@ fn resolve_numbered_path(directory: &Path, filename: &str) -> CoreResult<PathBuf
         }
     }
 
-    Err(CoreError::Conflict)
+    Err(CoreError::conflict("path conflict"))
 }
 
 fn numbered_filename(filename: &str, index: usize) -> String {

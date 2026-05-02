@@ -331,11 +331,13 @@ fn list_change_log_integration_verify_filters_all_c1_13_actions_and_errors() {
     let uninitialized_repo = tempfile::tempdir().expect("create uninitialized repository");
     assert_eq!(
         list_changes(path_string(uninitialized_repo.path()), default_filter()),
-        Err(CoreError::RepoNotInitialized)
+        Err(CoreError::repo_not_initialized(
+            "repository not initialized"
+        ))
     );
     insert_change(repo.path(), file_id, "imported", "not-json", 60);
-    assert_eq!(
+    assert!(matches!(
         list_changes(path_string(repo.path()), default_filter()),
-        Err(CoreError::Db)
-    );
+        Err(CoreError::Db { .. })
+    ));
 }

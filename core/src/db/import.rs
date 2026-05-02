@@ -42,7 +42,7 @@ pub(crate) fn find_active_file_by_hash(
             file_entry_from_row,
         )
         .optional()
-        .map_err(|_| CoreError::Db)
+        .map_err(|error| CoreError::db(error.to_string()))
 }
 
 pub(crate) fn find_active_file_by_path(
@@ -61,7 +61,7 @@ pub(crate) fn find_active_file_by_path(
             file_entry_from_row,
         )
         .optional()
-        .map_err(|_| CoreError::Db)
+        .map_err(|error| CoreError::db(error.to_string()))
 }
 
 pub(crate) fn get_active_file_by_id(repo_path: &Path, file_id: i64) -> CoreResult<FileEntry> {
@@ -76,13 +76,15 @@ pub(crate) fn get_active_file_by_id(repo_path: &Path, file_id: i64) -> CoreResul
             file_entry_from_row,
         )
         .optional()
-        .map_err(|_| CoreError::Db)?
-        .ok_or(CoreError::FileNotFound)
+        .map_err(|error| CoreError::db(error.to_string()))?
+        .ok_or_else(|| CoreError::file_not_found("missing file"))
 }
 
 pub(crate) fn insert_import_staging(repo_path: &Path, row: NewImportRow) -> CoreResult<i64> {
     let mut connection = open_repo_connection(repo_path)?;
-    let tx = connection.transaction().map_err(|_| CoreError::Db)?;
+    let tx = connection
+        .transaction()
+        .map_err(|error| CoreError::db(error.to_string()))?;
     tx.execute(
         "INSERT INTO files (
             path, original_name, current_name, category, size_bytes,
@@ -105,9 +107,10 @@ pub(crate) fn insert_import_staging(repo_path: &Path, row: NewImportRow) -> Core
             row.imported_at,
         ],
     )
-    .map_err(|_| CoreError::Db)?;
+    .map_err(|error| CoreError::db(error.to_string()))?;
     let file_id = tx.last_insert_rowid();
-    tx.commit().map_err(|_| CoreError::Db)?;
+    tx.commit()
+        .map_err(|error| CoreError::db(error.to_string()))?;
     Ok(file_id)
 }
 
@@ -116,9 +119,12 @@ pub(crate) fn insert_active_indexed_import(
     row: NewImportRow,
     detail: &Value,
 ) -> CoreResult<i64> {
-    let detail_json = serde_json::to_string(detail).map_err(|_| CoreError::Internal)?;
+    let detail_json =
+        serde_json::to_string(detail).map_err(|error| CoreError::internal(error.to_string()))?;
     let mut connection = open_repo_connection(repo_path)?;
-    let tx = connection.transaction().map_err(|_| CoreError::Db)?;
+    let tx = connection
+        .transaction()
+        .map_err(|error| CoreError::db(error.to_string()))?;
     tx.execute(
         "INSERT INTO files (
             path, original_name, current_name, category, size_bytes,
@@ -141,7 +147,7 @@ pub(crate) fn insert_active_indexed_import(
             row.imported_at,
         ],
     )
-    .map_err(|_| CoreError::Db)?;
+    .map_err(|error| CoreError::db(error.to_string()))?;
     let file_id = tx.last_insert_rowid();
 
     tx.execute(
@@ -149,8 +155,9 @@ pub(crate) fn insert_active_indexed_import(
          VALUES (?1, 'imported', ?2, strftime('%s', 'now'))",
         params![file_id, detail_json],
     )
-    .map_err(|_| CoreError::Db)?;
-    tx.commit().map_err(|_| CoreError::Db)?;
+    .map_err(|error| CoreError::db(error.to_string()))?;
+    tx.commit()
+        .map_err(|error| CoreError::db(error.to_string()))?;
     Ok(file_id)
 }
 
@@ -161,17 +168,20 @@ pub(crate) fn insert_replacing_active_indexed_import(
     import_detail: &Value,
     deleted_detail: &Value,
 ) -> CoreResult<i64> {
-    let import_detail_json =
-        serde_json::to_string(import_detail).map_err(|_| CoreError::Internal)?;
-    let deleted_detail_json =
-        serde_json::to_string(deleted_detail).map_err(|_| CoreError::Internal)?;
+    let import_detail_json = serde_json::to_string(import_detail)
+        .map_err(|error| CoreError::internal(error.to_string()))?;
+    let deleted_detail_json = serde_json::to_string(deleted_detail)
+        .map_err(|error| CoreError::internal(error.to_string()))?;
     let mut connection = open_repo_connection(repo_path)?;
-    let tx = connection.transaction().map_err(|_| CoreError::Db)?;
+    let tx = connection
+        .transaction()
+        .map_err(|error| CoreError::db(error.to_string()))?;
     soft_delete_replaced_file(&tx, replacement, &deleted_detail_json)?;
     insert_active_indexed_file(&tx, row)?;
     let file_id = tx.last_insert_rowid();
     insert_import_change(&tx, file_id, &import_detail_json)?;
-    tx.commit().map_err(|_| CoreError::Db)?;
+    tx.commit()
+        .map_err(|error| CoreError::db(error.to_string()))?;
     Ok(file_id)
 }
 
@@ -182,9 +192,12 @@ pub(crate) fn promote_imported_file(
     final_name: &str,
     detail: &Value,
 ) -> CoreResult<()> {
-    let detail_json = serde_json::to_string(detail).map_err(|_| CoreError::Internal)?;
+    let detail_json =
+        serde_json::to_string(detail).map_err(|error| CoreError::internal(error.to_string()))?;
     let mut connection = open_repo_connection(repo_path)?;
-    let tx = connection.transaction().map_err(|_| CoreError::Db)?;
+    let tx = connection
+        .transaction()
+        .map_err(|error| CoreError::db(error.to_string()))?;
     let changed = tx
         .execute(
             "UPDATE files
@@ -195,9 +208,9 @@ pub(crate) fn promote_imported_file(
              WHERE id = ?1 AND status = 'staging'",
             params![file_id, final_path, final_name],
         )
-        .map_err(|_| CoreError::Db)?;
+        .map_err(|error| CoreError::db(error.to_string()))?;
     if changed != 1 {
-        return Err(CoreError::Db);
+        return Err(CoreError::db("database error"));
     }
 
     tx.execute(
@@ -205,8 +218,9 @@ pub(crate) fn promote_imported_file(
          VALUES (?1, 'imported', ?2, strftime('%s', 'now'))",
         params![file_id, detail_json],
     )
-    .map_err(|_| CoreError::Db)?;
-    tx.commit().map_err(|_| CoreError::Db)
+    .map_err(|error| CoreError::db(error.to_string()))?;
+    tx.commit()
+        .map_err(|error| CoreError::db(error.to_string()))
 }
 
 pub(crate) fn promote_replacing_imported_file(
@@ -218,16 +232,19 @@ pub(crate) fn promote_replacing_imported_file(
     import_detail: &Value,
     deleted_detail: &Value,
 ) -> CoreResult<()> {
-    let import_detail_json =
-        serde_json::to_string(import_detail).map_err(|_| CoreError::Internal)?;
-    let deleted_detail_json =
-        serde_json::to_string(deleted_detail).map_err(|_| CoreError::Internal)?;
+    let import_detail_json = serde_json::to_string(import_detail)
+        .map_err(|error| CoreError::internal(error.to_string()))?;
+    let deleted_detail_json = serde_json::to_string(deleted_detail)
+        .map_err(|error| CoreError::internal(error.to_string()))?;
     let mut connection = open_repo_connection(repo_path)?;
-    let tx = connection.transaction().map_err(|_| CoreError::Db)?;
+    let tx = connection
+        .transaction()
+        .map_err(|error| CoreError::db(error.to_string()))?;
     soft_delete_replaced_file(&tx, replacement, &deleted_detail_json)?;
     promote_staging_file(&tx, file_id, final_path, final_name)?;
     insert_import_change(&tx, file_id, &import_detail_json)?;
-    tx.commit().map_err(|_| CoreError::Db)
+    tx.commit()
+        .map_err(|error| CoreError::db(error.to_string()))
 }
 
 pub(crate) fn rename_active_file(
@@ -237,9 +254,12 @@ pub(crate) fn rename_active_file(
     final_name: &str,
     detail: &Value,
 ) -> CoreResult<()> {
-    let detail_json = serde_json::to_string(detail).map_err(|_| CoreError::Internal)?;
+    let detail_json =
+        serde_json::to_string(detail).map_err(|error| CoreError::internal(error.to_string()))?;
     let mut connection = open_repo_connection(repo_path)?;
-    let tx = connection.transaction().map_err(|_| CoreError::Db)?;
+    let tx = connection
+        .transaction()
+        .map_err(|error| CoreError::db(error.to_string()))?;
     let changed = tx
         .execute(
             "UPDATE files
@@ -249,30 +269,34 @@ pub(crate) fn rename_active_file(
              WHERE id = ?1 AND status = 'active'",
             params![file_id, final_path, final_name],
         )
-        .map_err(|_| CoreError::Db)?;
+        .map_err(|error| CoreError::db(error.to_string()))?;
     if changed != 1 {
-        return Err(CoreError::Db);
+        return Err(CoreError::db("database error"));
     }
     tx.execute(
         "INSERT INTO change_log (file_id, action, detail_json, occurred_at)
          VALUES (?1, 'renamed', ?2, strftime('%s', 'now'))",
         params![file_id, detail_json],
     )
-    .map_err(|_| CoreError::Db)?;
-    tx.commit().map_err(|_| CoreError::Db)
+    .map_err(|error| CoreError::db(error.to_string()))?;
+    tx.commit()
+        .map_err(|error| CoreError::db(error.to_string()))
 }
 
 pub(crate) fn delete_file_row(repo_path: &Path, file_id: i64) -> CoreResult<()> {
     let mut connection = open_repo_connection(repo_path)?;
-    let tx = connection.transaction().map_err(|_| CoreError::Db)?;
+    let tx = connection
+        .transaction()
+        .map_err(|error| CoreError::db(error.to_string()))?;
     tx.execute(
         "DELETE FROM change_log WHERE file_id = ?1",
         params![file_id],
     )
-    .map_err(|_| CoreError::Db)?;
+    .map_err(|error| CoreError::db(error.to_string()))?;
     tx.execute("DELETE FROM files WHERE id = ?1", params![file_id])
-        .map_err(|_| CoreError::Db)?;
-    tx.commit().map_err(|_| CoreError::Db)
+        .map_err(|error| CoreError::db(error.to_string()))?;
+    tx.commit()
+        .map_err(|error| CoreError::db(error.to_string()))
 }
 
 pub(crate) fn rollback_replacing_imported_file(
@@ -282,19 +306,21 @@ pub(crate) fn rollback_replacing_imported_file(
     new_file_id: i64,
     deleted_detail: &Value,
 ) -> CoreResult<()> {
-    let deleted_detail_json =
-        serde_json::to_string(deleted_detail).map_err(|_| CoreError::Internal)?;
+    let deleted_detail_json = serde_json::to_string(deleted_detail)
+        .map_err(|error| CoreError::internal(error.to_string()))?;
     let mut connection = open_repo_connection(repo_path)?;
-    let tx = connection.transaction().map_err(|_| CoreError::Db)?;
+    let tx = connection
+        .transaction()
+        .map_err(|error| CoreError::db(error.to_string()))?;
 
     tx.execute(
         "DELETE FROM change_log
          WHERE file_id = ?1 AND action = 'imported'",
         params![new_file_id],
     )
-    .map_err(|_| CoreError::Db)?;
+    .map_err(|error| CoreError::db(error.to_string()))?;
     tx.execute("DELETE FROM files WHERE id = ?1", params![new_file_id])
-        .map_err(|_| CoreError::Db)?;
+        .map_err(|error| CoreError::db(error.to_string()))?;
 
     let restored = tx
         .execute(
@@ -306,9 +332,9 @@ pub(crate) fn rollback_replacing_imported_file(
              WHERE id = ?1 AND status = 'deleted'",
             params![existing_id, original_path],
         )
-        .map_err(|_| CoreError::Db)?;
+        .map_err(|error| CoreError::db(error.to_string()))?;
     if restored != 1 {
-        return Err(CoreError::Db);
+        return Err(CoreError::db("database error"));
     }
 
     tx.execute(
@@ -316,8 +342,9 @@ pub(crate) fn rollback_replacing_imported_file(
          WHERE file_id = ?1 AND action = 'deleted' AND detail_json = ?2",
         params![existing_id, deleted_detail_json],
     )
-    .map_err(|_| CoreError::Db)?;
-    tx.commit().map_err(|_| CoreError::Db)
+    .map_err(|error| CoreError::db(error.to_string()))?;
+    tx.commit()
+        .map_err(|error| CoreError::db(error.to_string()))
 }
 
 fn insert_active_indexed_file(tx: &rusqlite::Transaction<'_>, row: NewImportRow) -> CoreResult<()> {
@@ -344,7 +371,7 @@ fn insert_active_indexed_file(tx: &rusqlite::Transaction<'_>, row: NewImportRow)
         ],
     )
     .map(|_| ())
-    .map_err(|_| CoreError::Db)
+    .map_err(|error| CoreError::db(error.to_string()))
 }
 
 fn promote_staging_file(
@@ -363,11 +390,11 @@ fn promote_staging_file(
              WHERE id = ?1 AND status = 'staging'",
             params![file_id, final_path, final_name],
         )
-        .map_err(|_| CoreError::Db)?;
+        .map_err(|error| CoreError::db(error.to_string()))?;
     if changed == 1 {
         Ok(())
     } else {
-        Err(CoreError::Db)
+        Err(CoreError::db("database error"))
     }
 }
 
@@ -386,9 +413,9 @@ fn soft_delete_replaced_file(
              WHERE id = ?1 AND status = 'active'",
             params![replacement.existing_id, replacement.archived_path],
         )
-        .map_err(|_| CoreError::Db)?;
+        .map_err(|error| CoreError::db(error.to_string()))?;
     if changed != 1 {
-        return Err(CoreError::Db);
+        return Err(CoreError::db("database error"));
     }
     tx.execute(
         "INSERT INTO change_log (file_id, action, detail_json, occurred_at)
@@ -396,7 +423,7 @@ fn soft_delete_replaced_file(
         params![replacement.existing_id, detail_json],
     )
     .map(|_| ())
-    .map_err(|_| CoreError::Db)
+    .map_err(|error| CoreError::db(error.to_string()))
 }
 
 fn insert_import_change(
@@ -410,7 +437,7 @@ fn insert_import_change(
         params![file_id, detail_json],
     )
     .map(|_| ())
-    .map_err(|_| CoreError::Db)
+    .map_err(|error| CoreError::db(error.to_string()))
 }
 
 fn origin_to_db(origin: &FileOrigin) -> &'static str {

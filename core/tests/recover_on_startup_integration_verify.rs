@@ -367,7 +367,9 @@ fn recover_on_startup_integration_verify_warning_and_error_scope_stays_c1_16_onl
     let uninitialized = tempfile::tempdir().expect("create uninitialized repository");
     assert_eq!(
         recover_on_startup(path_string(uninitialized.path())),
-        Err(CoreError::RepoNotInitialized)
+        Err(CoreError::repo_not_initialized(
+            "repository not initialized"
+        ))
     );
     assert!(!uninitialized.path().join(".areamatrix").exists());
 
@@ -394,8 +396,8 @@ fn recover_on_startup_integration_verify_warning_and_error_scope_stays_c1_16_onl
         .expect("corrupt repository database fixture");
     remove_if_exists(repo.path().join(".areamatrix/index.db-wal"));
     remove_if_exists(repo.path().join(".areamatrix/index.db-shm"));
-    assert_eq!(
+    assert!(matches!(
         recover_on_startup(path_string(repo.path())),
-        Err(CoreError::Db)
-    );
+        Err(CoreError::Db { .. })
+    ));
 }

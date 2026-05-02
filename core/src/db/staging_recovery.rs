@@ -22,7 +22,7 @@ pub(crate) fn list_staging_file_rows(
              WHERE status = 'staging'
              ORDER BY id ASC",
         )
-        .map_err(|_| CoreError::Db)?;
+        .map_err(|error| CoreError::db(error.to_string()))?;
     let rows = statement
         .query_map([], |row| {
             Ok(StagingFileRow {
@@ -33,11 +33,11 @@ pub(crate) fn list_staging_file_rows(
                 source_path: row.get(3)?,
             })
         })
-        .map_err(|_| CoreError::Db)?;
+        .map_err(|error| CoreError::db(error.to_string()))?;
 
     let mut staging_rows = Vec::new();
     for row in rows {
-        staging_rows.push(row.map_err(|_| CoreError::Db)?);
+        staging_rows.push(row.map_err(|error| CoreError::db(error.to_string()))?);
     }
     Ok(staging_rows)
 }
@@ -51,14 +51,14 @@ pub(crate) fn list_protected_staging_paths(repo_path: &std::path::Path) -> CoreR
              WHERE status != 'staging'
                AND path LIKE '.areamatrix/staging/%'",
         )
-        .map_err(|_| CoreError::Db)?;
+        .map_err(|error| CoreError::db(error.to_string()))?;
     let rows = statement
         .query_map([], |row| row.get::<_, String>(0))
-        .map_err(|_| CoreError::Db)?;
+        .map_err(|error| CoreError::db(error.to_string()))?;
 
     let mut paths = Vec::new();
     for row in rows {
-        paths.push(row.map_err(|_| CoreError::Db)?);
+        paths.push(row.map_err(|error| CoreError::db(error.to_string()))?);
     }
     Ok(paths)
 }
@@ -70,10 +70,10 @@ pub(crate) fn delete_staging_file_row(repo_path: &std::path::Path, file_id: i64)
             "DELETE FROM files WHERE id = ?1 AND status = 'staging'",
             params![file_id],
         )
-        .map_err(|_| CoreError::Db)?;
+        .map_err(|error| CoreError::db(error.to_string()))?;
     if changed == 1 {
         Ok(())
     } else {
-        Err(CoreError::Db)
+        Err(CoreError::db("database error"))
     }
 }

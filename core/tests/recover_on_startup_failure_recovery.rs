@@ -191,7 +191,8 @@ fn recover_on_startup_failure_recovery_retries_after_db_delete_failure() {
 
     let failed = recover_on_startup(path_string(repo.path()));
 
-    assert_eq!(failed, Err(CoreError::Db));
+    assert!(matches!(failed, Err(CoreError::Db { .. })));
+
     assert!(!staged.exists());
     assert_eq!(count_rows(repo.path(), "staging"), 1);
 
@@ -230,7 +231,10 @@ fn recover_on_startup_failure_recovery_permission_denied_keeps_retryable_state()
 
     fs::set_permissions(&staging_dir, original_permissions).expect("restore staging permissions");
 
-    assert_eq!(failed, Err(CoreError::PermissionDenied));
+    assert_eq!(
+        failed,
+        Err(CoreError::permission_denied("permission denied"))
+    );
     assert_eq!(
         fs::read(&staged).expect("staging file should remain retryable"),
         b"staged bytes"

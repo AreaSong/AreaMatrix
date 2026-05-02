@@ -18,11 +18,11 @@ pub(super) struct ReplacementFileGuard {
 impl ReplacementFileGuard {
     pub(super) fn archive(original_path: &Path, archived_path: &Path) -> CoreResult<Self> {
         if !path_exists(original_path)? {
-            return Err(CoreError::FileNotFound);
+            return Err(CoreError::file_not_found("missing file"));
         }
         let archive_dir = archived_path
             .parent()
-            .ok_or(CoreError::InvalidPath)?
+            .ok_or_else(|| CoreError::invalid_path("invalid path"))?
             .to_path_buf();
         fs::create_dir_all(&archive_dir).map_err(hash::map_io_error)?;
         move_recoverable_file(original_path, archived_path)?;
@@ -43,7 +43,7 @@ impl ReplacementFileGuard {
         let filename = self
             .archived_path
             .file_name()
-            .ok_or(CoreError::InvalidPath)?;
+            .ok_or_else(|| CoreError::invalid_path("invalid path"))?;
         let trash_copy_dir = self
             .archive_dir
             .join(format!("system-trash-copy-{}", uuid::Uuid::new_v4()));
@@ -57,7 +57,7 @@ impl ReplacementFileGuard {
             .len();
         if copied_size != expected_size {
             let _cleanup_result = fs::remove_file(&trash_copy_path);
-            return Err(CoreError::Io);
+            return Err(CoreError::io("io error"));
         }
 
         if let Err(error) = send_to_system_trash(&trash_copy_path) {
@@ -111,7 +111,7 @@ fn send_to_system_trash(path: &Path) -> CoreResult<()> {
 }
 
 fn move_to_user_trash(path: &Path) -> CoreResult<()> {
-    let home = std::env::var_os("HOME").ok_or(CoreError::Io)?;
+    let home = std::env::var_os("HOME").ok_or_else(|| CoreError::io("io error"))?;
     let trash_dir = PathBuf::from(home).join(".Trash");
     fs::create_dir_all(&trash_dir).map_err(hash::map_io_error)?;
     let filename = filename_from_path(path)?;
@@ -132,7 +132,7 @@ fn unique_trash_destination(trash_dir: &Path, filename: &str) -> CoreResult<Path
         }
     }
 
-    Err(CoreError::Conflict)
+    Err(CoreError::conflict("path conflict"))
 }
 
 fn numbered_filename(filename: &str, index: usize) -> String {
@@ -151,7 +151,7 @@ fn filename_from_path(path: &Path) -> CoreResult<String> {
         .and_then(|value| value.to_str())
         .filter(|value| !value.is_empty())
         .map(str::to_owned)
-        .ok_or(CoreError::InvalidPath)
+        .ok_or_else(|| CoreError::invalid_path("invalid path"))
 }
 
 fn path_exists(path: &Path) -> CoreResult<bool> {

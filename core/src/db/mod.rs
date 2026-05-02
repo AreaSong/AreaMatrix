@@ -146,20 +146,24 @@ VALUES (1, strftime('%s', 'now'), 'area_matrix_core');
 "#;
 
 pub(crate) fn initialize_repository_db(db_path: &Path, config: &RepoConfig) -> CoreResult<()> {
-    let mut connection = Connection::open(db_path).map_err(|_| CoreError::Db)?;
+    let mut connection =
+        Connection::open(db_path).map_err(|error| CoreError::db(error.to_string()))?;
     configure_connection(&connection)?;
     connection
         .execute_batch(INITIAL_SCHEMA)
-        .map_err(|_| CoreError::Db)?;
+        .map_err(|error| CoreError::db(error.to_string()))?;
 
-    let tx = connection.transaction().map_err(|_| CoreError::Db)?;
+    let tx = connection
+        .transaction()
+        .map_err(|error| CoreError::db(error.to_string()))?;
     upsert_config(&tx, config)?;
-    tx.commit().map_err(|_| CoreError::Db)
+    tx.commit()
+        .map_err(|error| CoreError::db(error.to_string()))
 }
 
 pub(crate) fn load_config_or_default(repo_path: String) -> CoreResult<RepoConfig> {
     if repo_path.is_empty() {
-        return Err(CoreError::Config);
+        return Err(CoreError::config("configuration error"));
     }
 
     let repo = PathBuf::from(&repo_path);
@@ -177,7 +181,7 @@ pub(crate) fn load_config_or_default(repo_path: String) -> CoreResult<RepoConfig
 
 pub(crate) fn update_config(repo_path: String, new_config: RepoConfig) -> CoreResult<()> {
     if repo_path.is_empty() {
-        return Err(CoreError::Config);
+        return Err(CoreError::config("configuration error"));
     }
     validate_config_payload(&repo_path, &new_config)?;
 
@@ -185,9 +189,12 @@ pub(crate) fn update_config(repo_path: String, new_config: RepoConfig) -> CoreRe
     ensure_config_storage_writable(&repo)?;
 
     let mut connection = open_repo_connection(&repo).map_err(map_update_open_error)?;
-    let tx = connection.transaction().map_err(|_| CoreError::Db)?;
+    let tx = connection
+        .transaction()
+        .map_err(|error| CoreError::db(error.to_string()))?;
     upsert_config(&tx, &new_config)?;
-    tx.commit().map_err(|_| CoreError::Db)
+    tx.commit()
+        .map_err(|error| CoreError::db(error.to_string()))
 }
 
 pub(crate) fn list_files(repo_path: String, filter: FileFilter) -> CoreResult<Vec<FileEntry>> {
@@ -206,7 +213,9 @@ pub(crate) fn list_files(repo_path: String, filter: FileFilter) -> CoreResult<Ve
            AND (?5 IS NULL OR imported_at < ?5) \
          ORDER BY imported_at DESC LIMIT ?1 OFFSET ?2"
     );
-    let mut statement = connection.prepare(&sql).map_err(|_| CoreError::Db)?;
+    let mut statement = connection
+        .prepare(&sql)
+        .map_err(|error| CoreError::db(error.to_string()))?;
     let mut rows = statement
         .query(params![
             limit,
@@ -215,7 +224,7 @@ pub(crate) fn list_files(repo_path: String, filter: FileFilter) -> CoreResult<Ve
             filter.imported_after,
             filter.imported_before,
         ])
-        .map_err(|_| CoreError::Db)?;
+        .map_err(|error| CoreError::db(error.to_string()))?;
     collect_file_entries(&mut rows)
 }
 
@@ -229,22 +238,49 @@ fn list_files_status_clause(include_deleted: Option<bool>) -> &'static str {
 
 fn collect_file_entries(rows: &mut Rows<'_>) -> CoreResult<Vec<FileEntry>> {
     let mut files = Vec::new();
-    while let Some(row) = rows.next().map_err(|_| CoreError::Db)? {
-        let storage_mode_value: String = row.get(7).map_err(|_| CoreError::Db)?;
-        let origin_value: String = row.get(8).map_err(|_| CoreError::Db)?;
+    while let Some(row) = rows
+        .next()
+        .map_err(|error| CoreError::db(error.to_string()))?
+    {
+        let storage_mode_value: String = row
+            .get(7)
+            .map_err(|error| CoreError::db(error.to_string()))?;
+        let origin_value: String = row
+            .get(8)
+            .map_err(|error| CoreError::db(error.to_string()))?;
         files.push(FileEntry {
-            id: row.get(0).map_err(|_| CoreError::Db)?,
-            path: row.get(1).map_err(|_| CoreError::Db)?,
-            original_name: row.get(2).map_err(|_| CoreError::Db)?,
-            current_name: row.get(3).map_err(|_| CoreError::Db)?,
-            category: row.get(4).map_err(|_| CoreError::Db)?,
-            size_bytes: row.get(5).map_err(|_| CoreError::Db)?,
-            hash_sha256: row.get(6).map_err(|_| CoreError::Db)?,
+            id: row
+                .get(0)
+                .map_err(|error| CoreError::db(error.to_string()))?,
+            path: row
+                .get(1)
+                .map_err(|error| CoreError::db(error.to_string()))?,
+            original_name: row
+                .get(2)
+                .map_err(|error| CoreError::db(error.to_string()))?,
+            current_name: row
+                .get(3)
+                .map_err(|error| CoreError::db(error.to_string()))?,
+            category: row
+                .get(4)
+                .map_err(|error| CoreError::db(error.to_string()))?,
+            size_bytes: row
+                .get(5)
+                .map_err(|error| CoreError::db(error.to_string()))?,
+            hash_sha256: row
+                .get(6)
+                .map_err(|error| CoreError::db(error.to_string()))?,
             storage_mode: storage_mode_from_db(&storage_mode_value)?,
             origin: origin_from_db(&origin_value)?,
-            source_path: row.get(9).map_err(|_| CoreError::Db)?,
-            imported_at: row.get(10).map_err(|_| CoreError::Db)?,
-            updated_at: row.get(11).map_err(|_| CoreError::Db)?,
+            source_path: row
+                .get(9)
+                .map_err(|error| CoreError::db(error.to_string()))?,
+            imported_at: row
+                .get(10)
+                .map_err(|error| CoreError::db(error.to_string()))?,
+            updated_at: row
+                .get(11)
+                .map_err(|error| CoreError::db(error.to_string()))?,
         });
     }
     Ok(files)
@@ -254,25 +290,30 @@ pub(crate) fn ensure_initialized(repo_path: &Path) -> CoreResult<()> {
     if path_exists(&db_path(repo_path))? {
         Ok(())
     } else {
-        Err(CoreError::RepoNotInitialized)
+        Err(CoreError::repo_not_initialized(
+            "repository not initialized",
+        ))
     }
 }
 
 pub(crate) fn ensure_initialized_readable(repo_path: &Path) -> CoreResult<()> {
     ensure_initialized(repo_path)?;
-    let mut file = File::open(db_path(repo_path)).map_err(|_| CoreError::Db)?;
+    let mut file =
+        File::open(db_path(repo_path)).map_err(|error| CoreError::db(error.to_string()))?;
     let mut header = [0_u8; 16];
-    file.read_exact(&mut header).map_err(|_| CoreError::Db)?;
+    file.read_exact(&mut header)
+        .map_err(|error| CoreError::db(error.to_string()))?;
     if &header == SQLITE_HEADER {
         Ok(())
     } else {
-        Err(CoreError::Db)
+        Err(CoreError::db("database error"))
     }
 }
 
 pub(super) fn open_repo_connection(repo_path: &Path) -> CoreResult<Connection> {
     ensure_initialized(repo_path)?;
-    let connection = Connection::open(db_path(repo_path)).map_err(|_| CoreError::Db)?;
+    let connection =
+        Connection::open(db_path(repo_path)).map_err(|error| CoreError::db(error.to_string()))?;
     configure_connection(&connection)?;
     Ok(connection)
 }
@@ -288,7 +329,7 @@ fn configure_connection(connection: &Connection) -> CoreResult<()> {
              PRAGMA cache_size = -65536;
              PRAGMA busy_timeout = 5000;",
         )
-        .map_err(|_| CoreError::Db)
+        .map_err(|error| CoreError::db(error.to_string()))
 }
 
 fn read_config(connection: &Connection, repo_path: String) -> CoreResult<RepoConfig> {
@@ -365,7 +406,7 @@ fn upsert_config(tx: &Transaction<'_>, config: &RepoConfig) -> CoreResult<()> {
              value = excluded.value, updated_at = excluded.updated_at",
             params![key, value],
         )
-        .map_err(|_| CoreError::Db)?;
+        .map_err(|error| CoreError::db(error.to_string()))?;
     }
     Ok(())
 }
@@ -378,12 +419,12 @@ fn config_value(connection: &Connection, key: &str) -> CoreResult<Option<String>
             |row| row.get(0),
         )
         .optional()
-        .map_err(|_| CoreError::Db)
+        .map_err(|error| CoreError::db(error.to_string()))
 }
 
 fn validate_config_payload(repo_path: &str, config: &RepoConfig) -> CoreResult<()> {
     if config.repo_path != repo_path || config.locale.trim().is_empty() {
-        return Err(CoreError::Config);
+        return Err(CoreError::config("configuration error"));
     }
     Ok(())
 }
@@ -398,22 +439,22 @@ fn ensure_writable_path(path: &Path) -> CoreResult<()> {
     if metadata_allows_write(&metadata) {
         Ok(())
     } else {
-        Err(CoreError::PermissionDenied)
+        Err(CoreError::permission_denied("permission denied"))
     }
 }
 
 fn map_config_metadata_error(error: std::io::Error) -> CoreError {
     match error.kind() {
-        std::io::ErrorKind::NotFound => CoreError::Config,
-        std::io::ErrorKind::PermissionDenied => CoreError::PermissionDenied,
-        std::io::ErrorKind::InvalidInput => CoreError::InvalidPath,
-        _ => CoreError::Io,
+        std::io::ErrorKind::NotFound => CoreError::config("configuration error"),
+        std::io::ErrorKind::PermissionDenied => CoreError::permission_denied("permission denied"),
+        std::io::ErrorKind::InvalidInput => CoreError::invalid_path("invalid path"),
+        _ => CoreError::io("io error"),
     }
 }
 
 fn map_update_open_error(error: CoreError) -> CoreError {
     match error {
-        CoreError::RepoNotInitialized => CoreError::Config,
+        CoreError::RepoNotInitialized { .. } => CoreError::config("configuration error"),
         other => other,
     }
 }
@@ -424,9 +465,9 @@ fn db_path(repo_path: &Path) -> PathBuf {
 
 fn path_exists(path: &Path) -> CoreResult<bool> {
     path.try_exists().map_err(|error| match error.kind() {
-        std::io::ErrorKind::PermissionDenied => CoreError::PermissionDenied,
-        std::io::ErrorKind::InvalidInput => CoreError::InvalidPath,
-        _ => CoreError::Io,
+        std::io::ErrorKind::PermissionDenied => CoreError::permission_denied("permission denied"),
+        std::io::ErrorKind::InvalidInput => CoreError::invalid_path("invalid path"),
+        _ => CoreError::io("io error"),
     })
 }
 
@@ -443,7 +484,7 @@ pub(super) fn storage_mode_from_db(value: &str) -> CoreResult<StorageMode> {
         "moved" | "Moved" => Ok(StorageMode::Moved),
         "copied" | "Copied" => Ok(StorageMode::Copied),
         "indexed" | "Indexed" => Ok(StorageMode::Indexed),
-        _ => Err(CoreError::Config),
+        _ => Err(CoreError::config("configuration error")),
     }
 }
 
@@ -452,7 +493,7 @@ pub(super) fn origin_from_db(value: &str) -> CoreResult<FileOrigin> {
         "imported" | "Imported" => Ok(FileOrigin::Imported),
         "adopted" | "Adopted" => Ok(FileOrigin::Adopted),
         "external" | "External" => Ok(FileOrigin::External),
-        _ => Err(CoreError::Db),
+        _ => Err(CoreError::db("database error")),
     }
 }
 
@@ -467,7 +508,7 @@ fn overview_output_from_db(value: &str) -> CoreResult<OverviewOutput> {
     match value {
         "generated_only" | "GeneratedOnly" => Ok(OverviewOutput::GeneratedOnly),
         "root_areamatrix_file" | "RootAreaMatrixFile" => Ok(OverviewOutput::RootAreaMatrixFile),
-        _ => Err(CoreError::Config),
+        _ => Err(CoreError::config("configuration error")),
     }
 }
 
@@ -483,7 +524,7 @@ fn bool_from_db(value: &str) -> CoreResult<bool> {
     match value {
         "true" => Ok(true),
         "false" => Ok(false),
-        _ => Err(CoreError::Config),
+        _ => Err(CoreError::config("configuration error")),
     }
 }
 

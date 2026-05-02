@@ -135,7 +135,6 @@ fn read_write_note_validation_proves_empty_read_successful_write_and_consistency
     let content = "# Note\n\n- café\n- 中文".to_owned();
 
     assert_eq!(read_note(path_string(repo.path()), file_id), Ok(None));
-
     write_note(path_string(repo.path()), file_id, content.clone()).expect("write note");
 
     assert_eq!(
@@ -163,18 +162,20 @@ fn read_write_note_validation_returns_file_not_found_for_unknown_active_file() {
     let repo = initialized_repo();
     let missing_file_id = 9_999;
 
-    assert_eq!(
+    assert!(matches!(
         read_note(path_string(repo.path()), missing_file_id),
-        Err(CoreError::FileNotFound)
-    );
-    assert_eq!(
+        Err(CoreError::FileNotFound { .. })
+    ));
+
+    assert!(matches!(
         write_note(
             path_string(repo.path()),
             missing_file_id,
             "new note".to_owned()
         ),
-        Err(CoreError::FileNotFound)
-    );
+        Err(CoreError::FileNotFound { .. })
+    ));
+
     assert_eq!(change_log_count(repo.path()), 0);
     assert_eq!(notes_row_count(repo.path(), missing_file_id), 0);
 }
@@ -189,7 +190,10 @@ fn read_write_note_validation_does_not_overwrite_unconfirmed_sidecar() {
 
     let result = write_note(path_string(repo.path()), file_id, "new note".to_owned());
 
-    assert_eq!(result, Err(CoreError::PermissionDenied));
+    assert_eq!(
+        result,
+        Err(CoreError::permission_denied("permission denied"))
+    );
     assert_eq!(
         fs::read_to_string(&sidecar).expect("read preserved sidecar"),
         "user-authored sidecar"
@@ -211,7 +215,8 @@ fn read_write_note_validation_restores_old_note_when_change_log_insert_fails() {
 
     let result = write_note(path_string(repo.path()), file_id, "new note".to_owned());
 
-    assert_eq!(result, Err(CoreError::Db));
+    assert!(matches!(result, Err(CoreError::Db { .. })));
+
     assert_eq!(
         read_note(path_string(repo.path()), file_id),
         Ok(Some(old_content.to_owned()))
@@ -237,14 +242,16 @@ fn read_write_note_validation_rejects_db_sidecar_mismatch_without_mutation() {
     fs::write(sidecar_path(repo.path(), relative_path), "sidecar note")
         .expect("write mismatched sidecar note");
 
-    assert_eq!(
+    assert!(matches!(
         read_note(path_string(repo.path()), file_id),
-        Err(CoreError::Db)
-    );
-    assert_eq!(
+        Err(CoreError::Db { .. })
+    ));
+
+    assert!(matches!(
         write_note(path_string(repo.path()), file_id, "new note".to_owned()),
-        Err(CoreError::Db)
-    );
+        Err(CoreError::Db { .. })
+    ));
+
     assert_eq!(
         note_content(repo.path(), file_id).as_deref(),
         Some("db note")

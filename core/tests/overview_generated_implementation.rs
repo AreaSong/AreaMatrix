@@ -224,7 +224,9 @@ fn overview_generated_implementation_import_rolls_back_copy_when_regeneration_fa
     assert!(
         matches!(
             result,
-            Err(CoreError::Io | CoreError::Config | CoreError::PermissionDenied)
+            Err(CoreError::Io { .. }
+                | CoreError::Config { .. }
+                | CoreError::PermissionDenied { .. })
         ),
         "expected overview regeneration error, got {result:?}"
     );
@@ -249,7 +251,9 @@ fn overview_generated_implementation_import_restores_moved_source_when_regenerat
     assert!(
         matches!(
             result,
-            Err(CoreError::Io | CoreError::Config | CoreError::PermissionDenied)
+            Err(CoreError::Io { .. }
+                | CoreError::Config { .. }
+                | CoreError::PermissionDenied { .. })
         ),
         "expected overview regeneration error, got {result:?}"
     );
@@ -276,7 +280,9 @@ fn overview_generated_implementation_import_removes_indexed_row_when_regeneratio
     assert!(
         matches!(
             result,
-            Err(CoreError::Io | CoreError::Config | CoreError::PermissionDenied)
+            Err(CoreError::Io { .. }
+                | CoreError::Config { .. }
+                | CoreError::PermissionDenied { .. })
         ),
         "expected overview regeneration error, got {result:?}"
     );
@@ -310,7 +316,9 @@ fn overview_generated_implementation_import_restores_replaced_file_when_regenera
     assert!(
         matches!(
             result,
-            Err(CoreError::Io | CoreError::Config | CoreError::PermissionDenied)
+            Err(CoreError::Io { .. }
+                | CoreError::Config { .. }
+                | CoreError::PermissionDenied { .. })
         ),
         "expected overview regeneration error, got {result:?}"
     );

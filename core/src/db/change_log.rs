@@ -29,7 +29,7 @@ pub(crate) fn list_changes(
              ORDER BY cl.occurred_at DESC, cl.id DESC
              LIMIT ?6 OFFSET ?7",
         )
-        .map_err(|_| CoreError::Db)?;
+        .map_err(|error| CoreError::db(error.to_string()))?;
     let mut rows = statement
         .query(params![
             filter.file_id,
@@ -40,23 +40,40 @@ pub(crate) fn list_changes(
             limit,
             offset,
         ])
-        .map_err(|_| CoreError::Db)?;
+        .map_err(|error| CoreError::db(error.to_string()))?;
     collect_change_entries(&mut rows)
 }
 
 fn collect_change_entries(rows: &mut Rows<'_>) -> CoreResult<Vec<ChangeLogEntry>> {
     let mut changes = Vec::new();
-    while let Some(row) = rows.next().map_err(|_| CoreError::Db)? {
-        let detail_json: String = row.get(5).map_err(|_| CoreError::Db)?;
+    while let Some(row) = rows
+        .next()
+        .map_err(|error| CoreError::db(error.to_string()))?
+    {
+        let detail_json: String = row
+            .get(5)
+            .map_err(|error| CoreError::db(error.to_string()))?;
         ensure_detail_json_object(&detail_json)?;
         changes.push(ChangeLogEntry {
-            id: row.get(0).map_err(|_| CoreError::Db)?,
-            file_id: row.get(1).map_err(|_| CoreError::Db)?,
-            filename: row.get(2).map_err(|_| CoreError::Db)?,
-            category: row.get(3).map_err(|_| CoreError::Db)?,
-            action: row.get(4).map_err(|_| CoreError::Db)?,
+            id: row
+                .get(0)
+                .map_err(|error| CoreError::db(error.to_string()))?,
+            file_id: row
+                .get(1)
+                .map_err(|error| CoreError::db(error.to_string()))?,
+            filename: row
+                .get(2)
+                .map_err(|error| CoreError::db(error.to_string()))?,
+            category: row
+                .get(3)
+                .map_err(|error| CoreError::db(error.to_string()))?,
+            action: row
+                .get(4)
+                .map_err(|error| CoreError::db(error.to_string()))?,
             detail_json,
-            occurred_at: row.get(6).map_err(|_| CoreError::Db)?,
+            occurred_at: row
+                .get(6)
+                .map_err(|error| CoreError::db(error.to_string()))?,
         });
     }
     Ok(changes)
@@ -65,7 +82,7 @@ fn collect_change_entries(rows: &mut Rows<'_>) -> CoreResult<Vec<ChangeLogEntry>
 fn ensure_detail_json_object(detail_json: &str) -> CoreResult<()> {
     match serde_json::from_str::<Value>(detail_json) {
         Ok(Value::Object(_)) => Ok(()),
-        Ok(_) | Err(_) => Err(CoreError::Db),
+        Ok(_) | Err(_) => Err(CoreError::db("database error")),
     }
 }
 

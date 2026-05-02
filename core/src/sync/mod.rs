@@ -43,12 +43,12 @@ struct ResolvedEventPath {
 ///
 /// # Errors
 ///
-/// Returns `CoreError::InvalidPath` for paths outside the initialized
-/// repository, `CoreError::ICloudPlaceholder` for placeholder paths,
-/// `CoreError::PermissionDenied` for unreadable files, `CoreError::FileNotFound`
-/// for missing renamed targets, `CoreError::Conflict` for ambiguous or
-/// cross-category rename pairing, `CoreError::Io` for metadata/hash failures,
-/// or `CoreError::Db` for transactional persistence failures.
+/// Returns `CoreError::InvalidPath { path }` for paths outside the initialized
+/// repository, `CoreError::ICloudPlaceholder { path }` for placeholder paths,
+/// `CoreError::PermissionDenied { path }` for unreadable files, `CoreError::FileNotFound { path }`
+/// for missing renamed targets, `CoreError::Conflict { path }` for ambiguous or
+/// cross-category rename pairing, `CoreError::Io { message }` for metadata/hash failures,
+/// or `CoreError::Db { message }` for transactional persistence failures.
 pub(crate) fn sync_external_changes(
     repo_path: String,
     events: Vec<ExternalEvent>,
@@ -111,7 +111,7 @@ pub(crate) fn sync_external_changes(
 ///
 /// # Errors
 ///
-/// Returns `CoreError::RepoNotInitialized` or `CoreError::Db` when repository
+/// Returns `CoreError::RepoNotInitialized { path }` or `CoreError::Db { message }` when repository
 /// metadata is absent or unreadable.
 pub(crate) fn get_fs_event_cursor(repo_path: String) -> CoreResult<Option<i64>> {
     let repo = initialized_repo_path(&repo_path)?;
@@ -122,8 +122,8 @@ pub(crate) fn get_fs_event_cursor(repo_path: String) -> CoreResult<Option<i64>> 
 ///
 /// # Errors
 ///
-/// Returns `CoreError::InvalidPath` for negative cursors,
-/// `CoreError::RepoNotInitialized` when metadata is absent, or `CoreError::Db`
+/// Returns `CoreError::InvalidPath { path }` for negative cursors,
+/// `CoreError::RepoNotInitialized { path }` when metadata is absent, or `CoreError::Db { message }`
 /// when SQLite persistence fails.
 pub(crate) fn set_fs_event_cursor(repo_path: String, last_event_id: i64) -> CoreResult<()> {
     validate_event_id(last_event_id)?;
@@ -136,7 +136,7 @@ fn plan_created_event(repo: &Path, event: &ExternalEvent) -> CoreResult<Option<C
         return Ok(None);
     };
     if has_icloud_placeholder_marker(Path::new(&resolved.relative_path)) {
-        return Err(CoreError::ICloudPlaceholder);
+        return Err(CoreError::icloud_placeholder("icloud placeholder"));
     }
 
     let metadata = fs::symlink_metadata(&resolved.absolute_path).map_err(map_io_error)?;
@@ -144,7 +144,7 @@ fn plan_created_event(repo: &Path, event: &ExternalEvent) -> CoreResult<Option<C
         return Ok(None);
     }
     if !metadata.is_file() {
-        return Err(CoreError::InvalidPath);
+        return Err(CoreError::invalid_path("invalid path"));
     }
 
     let hash_sha256 = sha256_file(&resolved.absolute_path)?;
@@ -175,7 +175,7 @@ fn plan_renamed_event(repo: &Path, event: &ExternalEvent) -> CoreResult<Option<R
         return Ok(None);
     };
     if has_icloud_placeholder_marker(Path::new(&resolved.relative_path)) {
-        return Err(CoreError::ICloudPlaceholder);
+        return Err(CoreError::icloud_placeholder("icloud placeholder"));
     }
 
     let metadata =
@@ -184,7 +184,7 @@ fn plan_renamed_event(repo: &Path, event: &ExternalEvent) -> CoreResult<Option<R
         return Ok(None);
     }
     if !metadata.is_file() {
-        return Err(CoreError::InvalidPath);
+        return Err(CoreError::invalid_path("invalid path"));
     }
 
     let hash_sha256 = sha256_file(&resolved.absolute_path)?;
@@ -195,17 +195,17 @@ fn plan_renamed_event(repo: &Path, event: &ExternalEvent) -> CoreResult<Option<R
         if active_at_target.hash_sha256 == hash_sha256 {
             return Ok(None);
         }
-        return Err(CoreError::Conflict);
+        return Err(CoreError::conflict("path conflict"));
     }
 
     let candidates =
         db::find_external_rename_candidates_by_hash(repo, &hash_sha256, &resolved.relative_path)?;
     let candidate = match candidates.as_slice() {
         [candidate] => candidate,
-        _ => return Err(CoreError::Conflict),
+        _ => return Err(CoreError::conflict("path conflict")),
     };
     if candidate.category != category {
-        return Err(CoreError::Conflict);
+        return Err(CoreError::conflict("path conflict"));
     }
 
     let detail_json = external_rename_detail(
@@ -231,7 +231,7 @@ fn plan_removed_event(repo: &Path, event: &ExternalEvent) -> CoreResult<Option<R
         return Ok(None);
     };
     if has_icloud_placeholder_marker(Path::new(&resolved.relative_path)) {
-        return Err(CoreError::ICloudPlaceholder);
+        return Err(CoreError::icloud_placeholder("icloud placeholder"));
     }
     ensure_path_absent(&resolved.absolute_path)?;
 
@@ -270,7 +270,7 @@ fn regenerate_affected_overviews(repo: &Path, nodes: &BTreeSet<String>) -> CoreR
 
 fn resolve_event_path(repo: &Path, raw_path: &str) -> CoreResult<Option<ResolvedEventPath>> {
     if raw_path.trim().is_empty() {
-        return Err(CoreError::InvalidPath);
+        return Err(CoreError::invalid_path("invalid path"));
     }
 
     let raw = Path::new(raw_path);
@@ -295,16 +295,16 @@ fn normalize_relative_path(path: &Path) -> CoreResult<String> {
         match component {
             Component::Normal(part) => {
                 let Some(part) = part.to_str() else {
-                    return Err(CoreError::InvalidPath);
+                    return Err(CoreError::invalid_path("invalid path"));
                 };
                 validate_relative_component(part)?;
                 parts.push(part.to_owned());
             }
-            _ => return Err(CoreError::InvalidPath),
+            _ => return Err(CoreError::invalid_path("invalid path")),
         }
     }
     if parts.is_empty() {
-        return Err(CoreError::InvalidPath);
+        return Err(CoreError::invalid_path("invalid path"));
     }
     Ok(parts.join("/"))
 }
@@ -312,19 +312,19 @@ fn normalize_relative_path(path: &Path) -> CoreResult<String> {
 fn relative_repo_path(repo: &Path, path: &Path) -> CoreResult<String> {
     let relative = path
         .strip_prefix(repo)
-        .map_err(|_| CoreError::InvalidPath)?;
+        .map_err(|error| CoreError::invalid_path(error.to_string()))?;
     normalize_relative_path(relative)
 }
 
 fn validate_relative_component(component: &str) -> CoreResult<()> {
     if component.is_empty() || component == "." || component == ".." {
-        return Err(CoreError::InvalidPath);
+        return Err(CoreError::invalid_path("invalid path"));
     }
     if component
         .chars()
         .any(|ch| ch.is_control() || FORBIDDEN_COMPONENT_CHARS.contains(&ch))
     {
-        return Err(CoreError::InvalidPath);
+        return Err(CoreError::invalid_path("invalid path"));
     }
     Ok(())
 }
@@ -359,7 +359,7 @@ fn file_name_from_relative(relative_path: &str) -> CoreResult<String> {
         .next()
         .filter(|name| !name.is_empty())
         .map(str::to_owned)
-        .ok_or(CoreError::InvalidPath)
+        .ok_or_else(|| CoreError::invalid_path("invalid path"))
 }
 
 fn external_create_detail(
@@ -376,7 +376,7 @@ fn external_create_detail(
         "size_bytes": size_bytes,
         "by": "external",
     }))
-    .map_err(|_| CoreError::Internal)
+    .map_err(|error| CoreError::internal(error.to_string()))
 }
 
 fn external_rename_detail(
@@ -392,7 +392,7 @@ fn external_rename_detail(
         "to_name": to_name,
         "by": "external",
     }))
-    .map_err(|_| CoreError::Internal)
+    .map_err(|error| CoreError::internal(error.to_string()))
 }
 
 fn external_removed_detail() -> CoreResult<String> {
@@ -400,7 +400,7 @@ fn external_removed_detail() -> CoreResult<String> {
         "hard": false,
         "by": "external",
     }))
-    .map_err(|_| CoreError::Internal)
+    .map_err(|error| CoreError::internal(error.to_string()))
 }
 
 fn initialized_repo_path(repo_path: &str) -> CoreResult<PathBuf> {
@@ -410,7 +410,7 @@ fn initialized_repo_path(repo_path: &str) -> CoreResult<PathBuf> {
 
 fn validate_event_id(event_id: i64) -> CoreResult<()> {
     if event_id < 0 {
-        Err(CoreError::InvalidPath)
+        Err(CoreError::invalid_path("invalid path"))
     } else {
         Ok(())
     }
@@ -445,29 +445,31 @@ fn sha256_file(path: &Path) -> CoreResult<String> {
 
 fn ensure_path_absent(path: &Path) -> CoreResult<()> {
     match fs::symlink_metadata(path) {
-        Ok(_) => Err(CoreError::Io),
+        Ok(_) => Err(CoreError::io("io error")),
         Err(error) => match error.kind() {
             io::ErrorKind::NotFound => Ok(()),
-            io::ErrorKind::InvalidInput => Err(CoreError::InvalidPath),
-            io::ErrorKind::PermissionDenied => Err(CoreError::PermissionDenied),
-            _ => Err(CoreError::Io),
+            io::ErrorKind::InvalidInput => Err(CoreError::invalid_path("invalid path")),
+            io::ErrorKind::PermissionDenied => {
+                Err(CoreError::permission_denied("permission denied"))
+            }
+            _ => Err(CoreError::io("io error")),
         },
     }
 }
 
 fn map_io_error(error: io::Error) -> CoreError {
     match error.kind() {
-        io::ErrorKind::InvalidInput => CoreError::InvalidPath,
-        io::ErrorKind::PermissionDenied => CoreError::PermissionDenied,
-        _ => CoreError::Io,
+        io::ErrorKind::InvalidInput => CoreError::invalid_path("invalid path"),
+        io::ErrorKind::PermissionDenied => CoreError::permission_denied("permission denied"),
+        _ => CoreError::io("io error"),
     }
 }
 
 fn map_renamed_target_metadata_error(error: io::Error) -> CoreError {
     match error.kind() {
-        io::ErrorKind::NotFound => CoreError::FileNotFound,
-        io::ErrorKind::InvalidInput => CoreError::InvalidPath,
-        io::ErrorKind::PermissionDenied => CoreError::PermissionDenied,
-        _ => CoreError::Io,
+        io::ErrorKind::NotFound => CoreError::file_not_found("missing file"),
+        io::ErrorKind::InvalidInput => CoreError::invalid_path("invalid path"),
+        io::ErrorKind::PermissionDenied => CoreError::permission_denied("permission denied"),
+        _ => CoreError::io("io error"),
     }
 }

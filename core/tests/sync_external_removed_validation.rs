@@ -176,12 +176,12 @@ fn sync_external_removed_validation_success_hides_detail_logs_and_preserves_file
     let deleted_files = listed_files(repo.path(), include_deleted_file_filter());
     assert_eq!(deleted_files.len(), 1);
     assert_eq!(deleted_files[0].id, entry.id);
-    assert_eq!(
+    assert!(matches!(
         get_file(path_string(repo.path()), entry.id),
-        Err(CoreError::FileNotFound)
-    );
-    assert_eq!(file_status(repo.path(), entry.id).0, "deleted");
+        Err(CoreError::FileNotFound { .. })
+    ));
 
+    assert_eq!(file_status(repo.path(), entry.id).0, "deleted");
     let deleted = deleted_changes(repo.path());
     assert_eq!(deleted.len(), 1);
     assert_eq!(deleted[0].file_id, Some(entry.id));
@@ -206,7 +206,8 @@ fn sync_external_removed_validation_existing_path_is_error_without_state_change(
         vec![removed("docs/present.pdf", 711)],
     );
 
-    assert_eq!(result, Err(CoreError::Io));
+    assert!(matches!(result, Err(CoreError::Io { .. })));
+
     assert_eq!(fs_cursor(repo.path()), Some(710));
     assert_eq!(
         get_file(path_string(repo.path()), entry.id)
@@ -237,7 +238,8 @@ fn sync_external_removed_validation_db_failure_rolls_back_status_log_and_cursor(
         vec![removed("docs/rollback.pdf", 721)],
     );
 
-    assert_eq!(result, Err(CoreError::Db));
+    assert!(matches!(result, Err(CoreError::Db { .. })));
+
     assert_eq!(fs_cursor(repo.path()), Some(720));
     assert_eq!(
         file_status(repo.path(), entry.id),
@@ -270,10 +272,11 @@ fn sync_external_removed_validation_does_not_claim_modified_event_scope() {
     assert_eq!(result.detected_deletes, 1);
     assert_eq!(result.detected_modifies, 0);
     assert_eq!(fs_cursor(repo.path()), Some(730));
-    assert_eq!(
+    assert!(matches!(
         get_file(path_string(repo.path()), entry.id),
-        Err(CoreError::FileNotFound)
-    );
+        Err(CoreError::FileNotFound { .. })
+    ));
+
     assert_eq!(deleted_changes(repo.path()).len(), 1);
 }
 
@@ -291,7 +294,8 @@ fn sync_external_removed_validation_rejects_bad_paths_without_state() {
         }],
     );
 
-    assert_eq!(escaping, Err(CoreError::InvalidPath));
+    assert!(matches!(escaping, Err(CoreError::InvalidPath { .. })));
+
     assert_eq!(fs_cursor(repo.path()), None);
 
     let placeholder = sync_external_changes(
@@ -299,7 +303,10 @@ fn sync_external_removed_validation_rejects_bad_paths_without_state() {
         vec![removed("docs/waiting.pdf.icloud", 741)],
     );
 
-    assert_eq!(placeholder, Err(CoreError::ICloudPlaceholder));
+    assert_eq!(
+        placeholder,
+        Err(CoreError::icloud_placeholder("icloud placeholder"))
+    );
     assert_eq!(fs_cursor(repo.path()), None);
     assert!(listed_files(repo.path(), include_deleted_file_filter()).is_empty());
     assert!(listed_changes(repo.path()).is_empty());

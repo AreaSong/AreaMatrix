@@ -1,0 +1,39 @@
+一、执行结论
+
+已完成 `1-4/task-26`。
+
+二、执行范围
+
+单任务：C1-21 `error-mapping` contract-api。
+
+修改文件：
+- [core/src/error.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/error.rs:8)：补充 `CoreError` 作为 Swift 侧结构化错误映射输入的合同说明。
+- [core/area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:234)：标明 UDL 中 `CoreError` 必须结构化匹配，不能靠字符串 contains。
+- [core/tests/error_mapping_contract_api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/error_mapping_contract_api.rs:19)：新增 C1-21 contract-api 测试，覆盖 Exact Docs、control map、Core API、error-codes、UDL 和无副作用边界。
+
+三、完成情况
+
+核对清单全部完成：只处理 C1-21 contract-api；读取并按 Exact Docs 校准；未实现相邻能力或 UI；校准 CoreError / UDL 合同意图；明确输入、输出、错误码和副作用边界。
+
+完成标准满足：C1-21 contract-api 已有测试证据；没有扩展到未绑定能力。未触碰 `apps/**`。
+
+四、工程质量
+
+结构清晰，没有新增依赖、mock-only、硬编码通过态或一次性脚本。新增 rustdoc/UDL 注释只解释 C1-21 的 WHY 和边界。错误映射合同保持无 DB、无文件系统、无日志写入副作用。
+
+五、验证情况
+
+通过：
+- `cd core && cargo fmt --all -- --check`
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`
+- `cd core && cargo test --workspace error_mapping`，其中 `error_mapping_contract_api` 3 个测试通过
+- 额外跑了 `git diff --check -- core/src/error.rs core/area_matrix.udl`
+
+最终无失败项。中间有一次测试断言因 rustdoc 跨行文本匹配失败，已修正断言并重跑通过。
+
+六、风险与后续
+
+剩余风险：工作区已有两个非本任务脏文件仍存在：`.codex/task-loop-runs/20260502_233358/summary.json`、`tasks/prompts/_shared/progress.json`，我没有修改它们。
+
+回滚方式：撤销上述 3 个 core 文件改动后重跑三条验证。建议下一个任务进入 `1-4/task-27`，实现 C1-21 的最小真实 error-mapping 路径。
+

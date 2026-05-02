@@ -444,7 +444,8 @@ fn detect_duplicate_integration_verify_indexed_overwrite_restores_archive_on_db_
             indexed_options(DuplicateStrategy::Overwrite),
         );
 
-        assert_eq!(result, Err(CoreError::Db));
+        assert!(matches!(result, Err(CoreError::Db { .. })));
+
         assert_eq!(
             fs::read(&original_repo_path).expect("read restored original repo-owned file"),
             b"same bytes"

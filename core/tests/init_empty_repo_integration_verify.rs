@@ -155,7 +155,8 @@ fn init_empty_repo_integration_verify_rejects_scope_creep_and_preserves_user_fil
 
     let result = init_repo(path_string(repo.path()), create_empty_options(true));
 
-    assert_eq!(result, Err(CoreError::Config));
+    assert!(matches!(result, Err(CoreError::Config { .. })));
+
     assert_eq!(
         fs::read_to_string(&readme).expect("read preserved README"),
         "# user content\n"

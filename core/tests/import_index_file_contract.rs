@@ -144,11 +144,11 @@ fn import_index_file_contract_docs_api_udl_and_control_map_stay_aligned() {
 #[test]
 fn import_index_file_contract_documents_error_codes_and_side_effects() {
     let errors = [
-        CoreError::InvalidPath,
-        CoreError::FileNotFound,
-        CoreError::PermissionDenied,
-        CoreError::ICloudPlaceholder,
-        CoreError::Db,
+        CoreError::invalid_path("invalid path"),
+        CoreError::file_not_found("missing file"),
+        CoreError::permission_denied("permission denied"),
+        CoreError::icloud_placeholder("icloud placeholder"),
+        CoreError::db("database error"),
     ];
 
     assert_eq!(errors.len(), 5);

@@ -122,7 +122,8 @@ fn import_move_file_failure_recovery_db_staging_insert_restores_source() {
         moved_options(),
     );
 
-    assert_eq!(result, Err(CoreError::Db));
+    assert!(matches!(result, Err(CoreError::Db { .. })));
+
     assert_eq!(
         fs::read(&source).expect("read restored moved source"),
         b"staging insert failure"
@@ -143,7 +144,8 @@ fn import_move_file_failure_recovery_failed_attempt_can_be_retried() {
         moved_options(),
     );
 
-    assert_eq!(failed, Err(CoreError::Db));
+    assert!(matches!(failed, Err(CoreError::Db { .. })));
+
     assert_eq!(
         fs::read(&source).expect("read source restored after failed attempt"),
         b"retry after recovery"
@@ -201,7 +203,10 @@ fn import_move_file_failure_recovery_permission_denied_restores_source() {
 
     fs::set_permissions(&finance_dir, original_permissions).expect("restore target permissions");
 
-    assert_eq!(result, Err(CoreError::PermissionDenied));
+    assert_eq!(
+        result,
+        Err(CoreError::permission_denied("permission denied"))
+    );
     assert_eq!(
         fs::read(&source).expect("read source restored after permission failure"),
         b"permission denied recovery"

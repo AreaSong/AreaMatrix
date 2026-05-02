@@ -62,9 +62,9 @@ fn overview_generated_contract_api_exposes_documented_signatures_inputs_and_erro
     assert_eq!(import_options.destination, ImportDestination::AutoClassify);
 
     let documented_errors = [
-        CoreError::PermissionDenied,
-        CoreError::Io,
-        CoreError::Config,
+        CoreError::permission_denied("permission denied"),
+        CoreError::io("io error"),
+        CoreError::config("configuration error"),
     ];
     assert_eq!(documented_errors.len(), 3);
 }
@@ -116,9 +116,9 @@ fn overview_generated_contract_api_core_api_and_udl_stay_aligned() {
         "OverviewOutput overview_output;",
         "dictionary RepoInitOptions",
         "enum OverviewOutput { \"GeneratedOnly\", \"RootAreaMatrixFile\" };",
-        "PermissionDenied();",
-        "Io();",
-        "Config();",
+        "PermissionDenied(string path);",
+        "Io(string message);",
+        "Config(string reason);",
     ] {
         assert_contains(CORE_API, fragment);
         assert_contains(UDL, fragment);
@@ -129,7 +129,7 @@ fn overview_generated_contract_api_core_api_and_udl_stay_aligned() {
 fn overview_generated_contract_api_documents_side_effects_errors_and_scope() {
     for fragment in [
         "`PermissionDenied { path }`",
-        "`Io(msg)`",
+        "`Io { message }`",
         "`Config { reason }`",
     ] {
         assert_contains(ERROR_CODES, fragment);

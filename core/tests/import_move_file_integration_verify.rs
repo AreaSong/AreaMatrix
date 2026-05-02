@@ -211,7 +211,8 @@ fn import_move_file_integration_verify_failure_restores_source_and_final_state()
         moved_options(),
     );
 
-    assert_eq!(result, Err(CoreError::Db));
+    assert!(matches!(result, Err(CoreError::Db { .. })));
+
     assert_eq!(
         fs::read(&source).expect("read source after failed move"),
         b"invoice bytes"

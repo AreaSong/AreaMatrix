@@ -143,14 +143,14 @@ fn import_copy_file_contract_docs_udl_and_control_map_stay_aligned() {
 #[test]
 fn import_copy_file_contract_documents_error_codes_and_side_effects() {
     let errors = [
-        CoreError::InvalidPath,
+        CoreError::invalid_path("invalid path"),
         CoreError::DuplicateFile {
             existing_path: "finance/existing.pdf".to_owned(),
         },
-        CoreError::ICloudPlaceholder,
-        CoreError::PermissionDenied,
-        CoreError::Io,
-        CoreError::Db,
+        CoreError::icloud_placeholder("icloud placeholder"),
+        CoreError::permission_denied("permission denied"),
+        CoreError::io("io error"),
+        CoreError::db("database error"),
     ];
 
     assert_eq!(errors.len(), 6);

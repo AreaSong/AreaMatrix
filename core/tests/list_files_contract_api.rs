@@ -37,10 +37,13 @@ fn list_files_contract_api_exposes_documented_signature_filter_and_errors() {
     assert_eq!(filter.limit, 50);
     assert_eq!(filter.offset, 5);
     assert!(matches!(
-        CoreError::RepoNotInitialized,
-        CoreError::RepoNotInitialized
+        CoreError::repo_not_initialized("repository not initialized"),
+        CoreError::RepoNotInitialized { .. }
     ));
-    assert!(matches!(CoreError::Db, CoreError::Db));
+    assert!(matches!(
+        CoreError::db("database error"),
+        CoreError::Db { .. }
+    ));
 }
 
 #[test]
@@ -90,7 +93,7 @@ fn list_files_contract_api_docs_api_udl_and_consumers_stay_aligned() {
         "按 `imported_at DESC` 排序。`limit > 1000` 自动 clamp。",
     );
 
-    for fragment in ["`Db(msg)`", "`RepoNotInitialized { path }`"] {
+    for fragment in ["`Db { message }`", "`RepoNotInitialized { path }`"] {
         assert_contains(ERROR_CODES, fragment);
     }
 
@@ -101,8 +104,8 @@ fn list_files_contract_api_docs_api_udl_and_consumers_stay_aligned() {
         "are ordered by `imported_at DESC`.",
         "must not write repository metadata or mutate user files",
         "tag filtering, smart lists",
-        "Returns `CoreError::RepoNotInitialized`",
-        "`CoreError::Db` when SQLite rows cannot be read",
+        "Returns `CoreError::RepoNotInitialized { path }`",
+        "`CoreError::Db { message }` when SQLite rows cannot be read",
     ] {
         assert_contains(API_RS, fragment);
     }

@@ -124,7 +124,6 @@ fn read_write_note_implementation_writes_db_sidecar_and_change_log_consistently(
     let content = "# Note\n\n- café".to_owned();
 
     assert_eq!(read_note(path_string(repo.path()), file_id), Ok(None));
-
     write_note(path_string(repo.path()), file_id, content.clone()).expect("write note");
 
     assert_eq!(
@@ -159,7 +158,8 @@ fn read_write_note_implementation_restores_old_sidecar_when_db_log_fails() {
 
     let result = write_note(path_string(repo.path()), file_id, new_content.to_owned());
 
-    assert_eq!(result, Err(CoreError::Db));
+    assert!(matches!(result, Err(CoreError::Db { .. })));
+
     assert_eq!(
         fs::read_to_string(sidecar_path(repo.path(), "finance/report.pdf"))
             .expect("read restored sidecar"),
@@ -186,10 +186,11 @@ fn read_write_note_implementation_allows_read_but_rejects_write_when_target_file
         read_note(path_string(repo.path()), file_id),
         Ok(Some(content.to_owned()))
     );
-    assert_eq!(
+    assert!(matches!(
         write_note(path_string(repo.path()), file_id, "new note".to_owned()),
-        Err(CoreError::FileNotFound)
-    );
+        Err(CoreError::FileNotFound { .. })
+    ));
+
     assert_eq!(note_content(repo.path(), file_id).as_deref(), Some(content));
 }
 
@@ -203,7 +204,10 @@ fn read_write_note_implementation_does_not_overwrite_untracked_sidecar_file() {
 
     let result = write_note(path_string(repo.path()), file_id, "new note".to_owned());
 
-    assert_eq!(result, Err(CoreError::PermissionDenied));
+    assert_eq!(
+        result,
+        Err(CoreError::permission_denied("permission denied"))
+    );
     assert_eq!(
         fs::read_to_string(&sidecar).expect("read preserved sidecar"),
         "user-authored sidecar"
@@ -221,14 +225,16 @@ fn read_write_note_implementation_rejects_inconsistent_db_and_sidecar_state() {
     fs::write(sidecar_path(repo.path(), relative_path), "sidecar note")
         .expect("write mismatched sidecar note");
 
-    assert_eq!(
+    assert!(matches!(
         read_note(path_string(repo.path()), file_id),
-        Err(CoreError::Db)
-    );
-    assert_eq!(
+        Err(CoreError::Db { .. })
+    ));
+
+    assert!(matches!(
         write_note(path_string(repo.path()), file_id, "new note".to_owned()),
-        Err(CoreError::Db)
-    );
+        Err(CoreError::Db { .. })
+    ));
+
     assert_eq!(
         note_content(repo.path(), file_id).as_deref(),
         Some("db note")

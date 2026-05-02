@@ -203,7 +203,8 @@ fn detect_duplicate_failure_recovery_overwrite_db_failure_can_be_retried() {
             import_options(StorageMode::Copied, DuplicateStrategy::Overwrite),
         );
 
-        assert_eq!(failed, Err(CoreError::Db));
+        assert!(matches!(failed, Err(CoreError::Db { .. })));
+
         assert_eq!(
             fs::read(repo.path().join(&first.path)).expect("read restored original final file"),
             b"same bytes"
@@ -280,7 +281,10 @@ fn detect_duplicate_failure_recovery_permission_denied_preserves_existing_entry(
     fs::set_permissions(&source_b, original_permissions)
         .expect("restore duplicate source permissions");
 
-    assert_eq!(result, Err(CoreError::PermissionDenied));
+    assert_eq!(
+        result,
+        Err(CoreError::permission_denied("permission denied"))
+    );
     assert_eq!(
         fs::read(repo.path().join(first.path)).expect("read existing final after permission error"),
         b"same bytes"

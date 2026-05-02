@@ -173,10 +173,11 @@ fn sync_external_removed_implementation_soft_deletes_file_log_and_cursor() {
     assert_eq!(deleted_files.len(), 1);
     assert_eq!(deleted_files[0].id, entry.id);
     assert_eq!(deleted_files[0].path, "docs/remove.pdf");
-    assert_eq!(
+    assert!(matches!(
         get_file(path_string(repo.path()), entry.id),
-        Err(CoreError::FileNotFound)
-    );
+        Err(CoreError::FileNotFound { .. })
+    ));
+
     assert_eq!(file_status(repo.path(), entry.id).0, "deleted");
     assert!(
         file_status(repo.path(), entry.id).1.is_some(),
@@ -230,7 +231,8 @@ fn sync_external_removed_implementation_rejects_existing_path_without_metadata_c
         vec![removed("docs/still-present.pdf", 31)],
     );
 
-    assert_eq!(result, Err(CoreError::Io));
+    assert!(matches!(result, Err(CoreError::Io { .. })));
+
     assert_eq!(fs_cursor(repo.path()), Some(30));
     assert_eq!(
         get_file(path_string(repo.path()), entry.id)
@@ -257,7 +259,8 @@ fn sync_external_removed_implementation_rolls_back_db_and_cursor_on_log_failure(
         vec![removed("docs/rollback.pdf", 41)],
     );
 
-    assert_eq!(result, Err(CoreError::Db));
+    assert!(matches!(result, Err(CoreError::Db { .. })));
+
     assert_eq!(fs_cursor(repo.path()), Some(40));
     assert_eq!(file_status(repo.path(), entry.id).0, "active");
     assert_eq!(count_changes_with_action(repo.path(), "deleted"), 0);
@@ -295,14 +298,18 @@ fn sync_external_removed_implementation_rejects_escaping_or_placeholder_paths_wi
             fs_event_id: 60,
         }],
     );
-    assert_eq!(escaping, Err(CoreError::InvalidPath));
+    assert!(matches!(escaping, Err(CoreError::InvalidPath { .. })));
+
     assert_eq!(fs_cursor(repo.path()), None);
 
     let placeholder = sync_external_changes(
         path_string(repo.path()),
         vec![removed("docs/waiting.pdf.icloud", 61)],
     );
-    assert_eq!(placeholder, Err(CoreError::ICloudPlaceholder));
+    assert_eq!(
+        placeholder,
+        Err(CoreError::icloud_placeholder("icloud placeholder"))
+    );
     assert_eq!(fs_cursor(repo.path()), None);
     assert!(listed_changes(repo.path()).is_empty());
 }

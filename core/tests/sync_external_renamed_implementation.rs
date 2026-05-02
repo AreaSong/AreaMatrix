@@ -223,7 +223,8 @@ fn sync_external_renamed_implementation_rejects_unpaired_target_without_state() 
         vec![renamed("docs/unpaired.pdf", 10)],
     );
 
-    assert_eq!(result, Err(CoreError::Conflict));
+    assert!(matches!(result, Err(CoreError::Conflict { .. })));
+
     assert_eq!(fs_cursor(repo.path()), None);
     assert!(listed_files(repo.path()).is_empty());
     assert!(listed_changes(repo.path()).is_empty());
@@ -249,7 +250,8 @@ fn sync_external_renamed_implementation_rejects_cross_category_move_scope() {
         vec![renamed("finance/original.pdf", 20)],
     );
 
-    assert_eq!(result, Err(CoreError::Conflict));
+    assert!(matches!(result, Err(CoreError::Conflict { .. })));
+
     assert_eq!(fs_cursor(repo.path()), Some(1));
     let unchanged = get_file(path_string(repo.path()), entry.id).expect("get original DB row");
     assert_eq!(unchanged.path, "docs/original.pdf");
@@ -277,7 +279,8 @@ fn sync_external_renamed_implementation_rolls_back_db_and_cursor_on_log_failure(
         vec![renamed("docs/renamed.pdf", 2)],
     );
 
-    assert_eq!(result, Err(CoreError::Db));
+    assert!(matches!(result, Err(CoreError::Db { .. })));
+
     assert_eq!(fs_cursor(repo.path()), Some(1));
     let unchanged = get_file(path_string(repo.path()), entry.id).expect("get unchanged DB row");
     assert_eq!(unchanged.path, "docs/original.pdf");

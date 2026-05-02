@@ -125,7 +125,7 @@ impl ImportDestinationPlan {
         let directory_guard = CreatedDirectoryGuard::ensure(repo, &relative_dir)?;
         let final_path = repo_relative_file_path(repo, &existing.path)?;
         if !path_exists(&final_path)? {
-            return Err(CoreError::FileNotFound);
+            return Err(CoreError::file_not_found("missing file"));
         }
         let final_name = filename_from_path(&final_path)?;
         let (archived_relative_path, archived_path) = replacement_archive_path(repo, &final_name);
@@ -196,7 +196,7 @@ impl ReplacementPlan {
 
         let original_path = repo_relative_file_path(repo, &existing.path)?;
         if !path_exists(&original_path)? {
-            return Err(CoreError::FileNotFound);
+            return Err(CoreError::file_not_found("missing file"));
         }
 
         let (archived_relative_path, archived_path) =
@@ -278,14 +278,14 @@ impl CreatedDirectoryGuard {
         let mut created = Vec::new();
         for component in Path::new(relative_dir).components() {
             let std::path::Component::Normal(part) = component else {
-                return Err(CoreError::InvalidPath);
+                return Err(CoreError::invalid_path("invalid path"));
             };
             current.push(part);
             if path_exists(&current)? {
                 if current.is_dir() {
                     continue;
                 }
-                return Err(CoreError::InvalidPath);
+                return Err(CoreError::invalid_path("invalid path"));
             }
             fs::create_dir(&current).map_err(hash::map_io_error)?;
             created.push(current.clone());
@@ -320,7 +320,7 @@ impl Drop for CreatedDirectoryGuard {
 
 fn relative_repo_path(repo: &Path, path: &Path) -> CoreResult<String> {
     path.strip_prefix(repo)
-        .map_err(|_| CoreError::InvalidPath)
+        .map_err(|error| CoreError::invalid_path(error.to_string()))
         .map(|relative| relative.to_string_lossy().into_owned())
 }
 
@@ -345,14 +345,14 @@ fn parent_relative_dir(relative_path: &str) -> CoreResult<String> {
 
 fn validate_repo_relative_path(path: &Path, allow_empty: bool) -> CoreResult<()> {
     if path.is_absolute() || (!allow_empty && path.as_os_str().is_empty()) {
-        return Err(CoreError::InvalidPath);
+        return Err(CoreError::invalid_path("invalid path"));
     }
     for component in path.components() {
         let std::path::Component::Normal(part) = component else {
-            return Err(CoreError::InvalidPath);
+            return Err(CoreError::invalid_path("invalid path"));
         };
         if part == std::ffi::OsStr::new(AREA_MATRIX_DIR) {
-            return Err(CoreError::InvalidPath);
+            return Err(CoreError::invalid_path("invalid path"));
         }
     }
     Ok(())
@@ -363,7 +363,7 @@ fn filename_from_path(path: &Path) -> CoreResult<String> {
         .and_then(|value| value.to_str())
         .filter(|value| !value.is_empty())
         .map(str::to_owned)
-        .ok_or(CoreError::InvalidPath)
+        .ok_or_else(|| CoreError::invalid_path("invalid path"))
 }
 
 fn replacement_archive_path(repo: &Path, filename: &str) -> (String, PathBuf) {

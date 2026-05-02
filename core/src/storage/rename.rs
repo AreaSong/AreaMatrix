@@ -19,12 +19,14 @@ pub(crate) fn rename_file(
 
     let entry = db::get_active_file_by_id(&repo, file_id)?;
     if !dedup::is_repo_owned(&entry) {
-        return Err(CoreError::InvalidPath);
+        return Err(CoreError::invalid_path("invalid path"));
     }
 
     let current_path = repo_relative_file_path(&repo, &entry.path)?;
     ensure_regular_file(&current_path)?;
-    let target_directory = current_path.parent().ok_or(CoreError::InvalidPath)?;
+    let target_directory = current_path
+        .parent()
+        .ok_or_else(|| CoreError::invalid_path("invalid path"))?;
     let final_path = dedup::resolve_rename_path(target_directory, &new_name, &current_path)?;
     if final_path == current_path {
         return Ok(entry);
@@ -67,7 +69,7 @@ fn rename_detail(
 
 fn validate_repo_path(repo_path: &str) -> CoreResult<PathBuf> {
     if repo_path.trim().is_empty() {
-        return Err(CoreError::InvalidPath);
+        return Err(CoreError::invalid_path("invalid path"));
     }
     Ok(PathBuf::from(repo_path))
 }
@@ -80,14 +82,14 @@ fn repo_relative_file_path(repo: &Path, relative_path: &str) -> CoreResult<PathB
 
 fn validate_repo_relative_path(path: &Path) -> CoreResult<()> {
     if path.is_absolute() || path.as_os_str().is_empty() {
-        return Err(CoreError::InvalidPath);
+        return Err(CoreError::invalid_path("invalid path"));
     }
     for component in path.components() {
         let std::path::Component::Normal(part) = component else {
-            return Err(CoreError::InvalidPath);
+            return Err(CoreError::invalid_path("invalid path"));
         };
         if part == std::ffi::OsStr::new(AREA_MATRIX_DIR) {
-            return Err(CoreError::InvalidPath);
+            return Err(CoreError::invalid_path("invalid path"));
         }
     }
     Ok(())
@@ -98,7 +100,7 @@ fn ensure_regular_file(path: &Path) -> CoreResult<()> {
     if metadata.is_file() {
         Ok(())
     } else {
-        Err(CoreError::FileNotFound)
+        Err(CoreError::file_not_found("missing file"))
     }
 }
 
@@ -107,12 +109,12 @@ fn filename_from_path(path: &Path) -> CoreResult<String> {
         .and_then(|value| value.to_str())
         .filter(|value| !value.is_empty())
         .map(str::to_owned)
-        .ok_or(CoreError::InvalidPath)
+        .ok_or_else(|| CoreError::invalid_path("invalid path"))
 }
 
 fn relative_repo_path(repo: &Path, path: &Path) -> CoreResult<String> {
     path.strip_prefix(repo)
-        .map_err(|_| CoreError::InvalidPath)
+        .map_err(|error| CoreError::invalid_path(error.to_string()))
         .map(|relative| relative.to_string_lossy().into_owned())
 }
 

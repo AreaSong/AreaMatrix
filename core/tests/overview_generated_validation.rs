@@ -235,7 +235,9 @@ fn overview_generated_validation_root_entry_failure_restores_previous_generated_
     assert!(
         matches!(
             result,
-            Err(CoreError::Io | CoreError::Config | CoreError::PermissionDenied)
+            Err(CoreError::Io { .. }
+                | CoreError::Config { .. }
+                | CoreError::PermissionDenied { .. })
         ),
         "expected root overview write failure, got {result:?}"
     );
@@ -283,7 +285,8 @@ fn overview_generated_validation_root_entry_symlink_is_rejected_without_replacem
         copied_options("docs"),
     );
 
-    assert_eq!(result, Err(CoreError::Config));
+    assert!(matches!(result, Err(CoreError::Config { .. })));
+
     assert!(fs::symlink_metadata(&root_entry)
         .expect("read root symlink metadata")
         .file_type()

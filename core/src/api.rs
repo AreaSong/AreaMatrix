@@ -10,7 +10,7 @@ use crate::{
 };
 
 fn not_implemented<T>() -> CoreResult<T> {
-    Err(CoreError::Internal)
+    Err(CoreError::internal("internal error"))
 }
 
 /// Returns the AreaMatrix core crate version.
@@ -25,7 +25,7 @@ pub fn get_version() -> String {
 pub fn init_logging(level: String) -> CoreResult<()> {
     match level.as_str() {
         "trace" | "debug" | "info" | "warn" | "error" => Ok(()),
-        _ => Err(CoreError::Config),
+        _ => Err(CoreError::config("configuration error")),
     }
 }
 
@@ -39,9 +39,9 @@ pub fn init_logging(level: String) -> CoreResult<()> {
 ///
 /// # Errors
 ///
-/// Returns `CoreError::InvalidPath` for empty or metadata-internal paths,
-/// `CoreError::PermissionDenied` when metadata or directory checks are blocked,
-/// or `CoreError::ICloudPlaceholder` for unavailable iCloud-managed paths.
+/// Returns `CoreError::InvalidPath { path }` for empty or metadata-internal paths,
+/// `CoreError::PermissionDenied { path }` when metadata or directory checks are blocked,
+/// or `CoreError::ICloudPlaceholder { path }` for unavailable iCloud-managed paths.
 pub fn validate_repo_path(repo_path: String) -> CoreResult<RepoPathValidation> {
     repo_path::validate_repo_path(repo_path)
 }
@@ -55,7 +55,7 @@ pub fn validate_repo_path(repo_path: String) -> CoreResult<RepoPathValidation> {
 ///
 /// # Errors
 ///
-/// Returns `CoreError::RepoNotInitialized` when the path is a readable
+/// Returns `CoreError::RepoNotInitialized { path }` when the path is a readable
 /// directory but lacks `.areamatrix/` metadata. Other path, permission, iCloud,
 /// and metadata-read failures follow [`validate_repo_path`].
 pub fn validate_initialized_repo_path(repo_path: String) -> CoreResult<RepoPathValidation> {
@@ -94,10 +94,10 @@ pub fn validate_initialized_repo_path(repo_path: String) -> CoreResult<RepoPathV
 ///
 /// # Errors
 ///
-/// Returns `CoreError::InvalidPath` for empty paths or `.areamatrix` internals,
-/// `CoreError::PermissionDenied` for unwritable roots, `CoreError::Config` for
-/// invalid init options or repeated initialization, `CoreError::Io` for
-/// filesystem failures, and `CoreError::Db` for SQLite initialization failures.
+/// Returns `CoreError::InvalidPath { path }` for empty paths or `.areamatrix` internals,
+/// `CoreError::PermissionDenied { path }` for unwritable roots, `CoreError::Config { reason }` for
+/// invalid init options or repeated initialization, `CoreError::Io { message }` for
+/// filesystem failures, and `CoreError::Db { message }` for SQLite initialization failures.
 pub fn init_repo(repo_path: String, options: RepoInitOptions) -> CoreResult<()> {
     repo_init::init_repo(repo_path, options)
 }
@@ -109,7 +109,7 @@ pub fn init_repo(repo_path: String, options: RepoInitOptions) -> CoreResult<()> 
 ///
 /// # Errors
 ///
-/// Returns `CoreError::Io`, `CoreError::Config`, or `CoreError::Db` when the
+/// Returns `CoreError::Io { message }`, `CoreError::Config { reason }`, or `CoreError::Db { message }` when the
 /// initialized metadata cannot be read or decoded.
 pub fn load_config(repo_path: String) -> CoreResult<RepoConfig> {
     db::load_config_or_default(repo_path)
@@ -133,9 +133,9 @@ pub fn load_config(repo_path: String) -> CoreResult<RepoConfig> {
 ///
 /// # Errors
 ///
-/// Returns `CoreError::Config` for mismatched or invalid payloads and missing
-/// initialized metadata, `CoreError::PermissionDenied` for unwritable metadata,
-/// `CoreError::Io` for filesystem inspection failures, and `CoreError::Db` for
+/// Returns `CoreError::Config { reason }` for mismatched or invalid payloads and missing
+/// initialized metadata, `CoreError::PermissionDenied { path }` for unwritable metadata,
+/// `CoreError::Io { message }` for filesystem inspection failures, and `CoreError::Db { message }` for
 /// SQLite persistence failures.
 pub fn update_config(repo_path: String, new_config: RepoConfig) -> CoreResult<()> {
     db::update_config(repo_path, new_config)
@@ -158,10 +158,10 @@ pub fn update_config(repo_path: String, new_config: RepoConfig) -> CoreResult<()
 ///
 /// # Errors
 ///
-/// Returns `CoreError::RepoNotInitialized` when repository metadata is absent,
-/// `CoreError::PermissionDenied` when metadata or staging cannot be inspected
-/// or updated, `CoreError::Io` for staging filesystem failures, and
-/// `CoreError::Db` for SQLite recovery failures.
+/// Returns `CoreError::RepoNotInitialized { path }` when repository metadata is absent,
+/// `CoreError::PermissionDenied { path }` when metadata or staging cannot be inspected
+/// or updated, `CoreError::Io { message }` for staging filesystem failures, and
+/// `CoreError::Db { message }` for SQLite recovery failures.
 pub fn recover_on_startup(repo_path: String) -> CoreResult<RecoveryReport> {
     recovery::recover_on_startup(repo_path)
 }
@@ -180,9 +180,9 @@ pub fn reindex_from_filesystem(_repo_path: String) -> CoreResult<ReindexReport> 
 ///
 /// # Errors
 ///
-/// Returns `CoreError::Db` when scan-session metadata cannot be read,
-/// `CoreError::Io` when repository metadata cannot be inspected, and
-/// `CoreError::InvalidPath` or `CoreError::PermissionDenied` for invalid or
+/// Returns `CoreError::Db { message }` when scan-session metadata cannot be read,
+/// `CoreError::Io { message }` when repository metadata cannot be inspected, and
+/// `CoreError::InvalidPath { path }` or `CoreError::PermissionDenied { path }` for invalid or
 /// inaccessible repository roots.
 pub fn get_latest_scan_session(repo_path: String) -> CoreResult<Option<ScanSession>> {
     repo_scan::get_latest_scan_session(repo_path)
@@ -197,9 +197,9 @@ pub fn get_latest_scan_session(repo_path: String) -> CoreResult<Option<ScanSessi
 ///
 /// # Errors
 ///
-/// Returns `CoreError::Db` when the session or indexed rows cannot be persisted,
-/// `CoreError::Io` for filesystem inspection failures, `CoreError::InvalidPath`
-/// for malformed repository paths, and `CoreError::PermissionDenied` when the
+/// Returns `CoreError::Db { message }` when the session or indexed rows cannot be persisted,
+/// `CoreError::Io { message }` for filesystem inspection failures, `CoreError::InvalidPath { path }`
+/// for malformed repository paths, and `CoreError::PermissionDenied { path }` when the
 /// repository cannot be inspected or metadata cannot be updated.
 pub fn resume_scan_session(repo_path: String, scan_session_id: i64) -> CoreResult<ReindexReport> {
     repo_scan::resume_scan_session(repo_path, scan_session_id)
@@ -215,8 +215,8 @@ pub fn resume_scan_session(repo_path: String, scan_session_id: i64) -> CoreResul
 ///
 /// # Errors
 ///
-/// Returns `CoreError::Config` when the repository path, filename, YAML syntax,
-/// or classifier schema is invalid. Returns `CoreError::Classify` when the
+/// Returns `CoreError::Config { reason }` when the repository path, filename, YAML syntax,
+/// or classifier schema is invalid. Returns `CoreError::Classify { reason }` when the
 /// classifier rule source cannot be read as a file.
 pub fn predict_category(repo_path: String, filename: String) -> CoreResult<ClassifyResult> {
     classify::predict_category(repo_path, filename)
@@ -271,7 +271,7 @@ pub fn predict_category(repo_path: String, filename: String) -> CoreResult<Class
 /// final conflict-free name that was actually written. Same-name imports with
 /// different content must not overwrite an existing user file by default:
 /// Core resolves a safe numbered name such as `name_1.ext`, while
-/// `CoreError::Conflict` is reserved for exhausted or raced resolution.
+/// `CoreError::Conflict { path }` is reserved for exhausted or raced resolution.
 /// Dangerous replacement remains explicit through `DuplicateStrategy::Overwrite`
 /// after S1-24 has confirmed the user decision.
 ///
@@ -284,13 +284,13 @@ pub fn predict_category(repo_path: String, filename: String) -> CoreResult<Class
 ///
 /// # Errors
 ///
-/// Returns `CoreError::InvalidPath` for an empty, metadata-internal, or unsafe
-/// source or destination path, `CoreError::FileNotFound` when the source cannot
+/// Returns `CoreError::InvalidPath { path }` for an empty, metadata-internal, or unsafe
+/// source or destination path, `CoreError::FileNotFound { path }` when the source cannot
 /// be found, `CoreError::DuplicateFile { existing_path }` for duplicate hashes
 /// when the selected strategy requires user choice or skip behavior,
-/// `CoreError::ICloudPlaceholder` for unavailable iCloud placeholders,
-/// `CoreError::PermissionDenied` for unreadable sources or unwritable metadata,
-/// `CoreError::Io` for filesystem failures, and `CoreError::Db` for metadata
+/// `CoreError::ICloudPlaceholder { path }` for unavailable iCloud placeholders,
+/// `CoreError::PermissionDenied { path }` for unreadable sources or unwritable metadata,
+/// `CoreError::Io { message }` for filesystem failures, and `CoreError::Db { message }` for metadata
 /// persistence failures.
 /// Failed imports must not leave active file rows or final destination half-products;
 /// staging residue is reserved for later recovery cleanup.
@@ -319,11 +319,11 @@ pub fn delete_file(_repo_path: String, _file_id: i64, _hard: bool) -> CoreResult
 ///
 /// # Errors
 ///
-/// Returns `CoreError::InvalidPath` for empty or unsafe names,
-/// `CoreError::FileNotFound` when the file row or repo-owned file is missing,
-/// `CoreError::Conflict` when a safe final name cannot be resolved,
-/// `CoreError::PermissionDenied` for blocked filesystem writes,
-/// `CoreError::Io` for filesystem failures, and `CoreError::Db` for metadata
+/// Returns `CoreError::InvalidPath { path }` for empty or unsafe names,
+/// `CoreError::FileNotFound { path }` when the file row or repo-owned file is missing,
+/// `CoreError::Conflict { path }` when a safe final name cannot be resolved,
+/// `CoreError::PermissionDenied { path }` for blocked filesystem writes,
+/// `CoreError::Io { message }` for filesystem failures, and `CoreError::Db { message }` for metadata
 /// persistence failures.
 pub fn rename_file(repo_path: String, file_id: i64, new_name: String) -> CoreResult<FileEntry> {
     storage::rename_file(repo_path, file_id, new_name)
@@ -357,8 +357,8 @@ pub fn restore_file(_repo_path: String, _file_id: i64) -> CoreResult<FileEntry> 
 ///
 /// # Errors
 ///
-/// Returns `CoreError::RepoNotInitialized` when the repository metadata is
-/// missing and `CoreError::Db` when SQLite rows cannot be read.
+/// Returns `CoreError::RepoNotInitialized { path }` when the repository metadata is
+/// missing and `CoreError::Db { message }` when SQLite rows cannot be read.
 pub fn list_files(repo_path: String, filter: FileFilter) -> CoreResult<Vec<FileEntry>> {
     db::list_files(repo_path, filter)
 }
@@ -378,9 +378,9 @@ pub fn list_files(repo_path: String, filter: FileFilter) -> CoreResult<Vec<FileE
 ///
 /// # Errors
 ///
-/// Returns `CoreError::RepoNotInitialized` when repository metadata is missing,
-/// `CoreError::FileNotFound` when the requested active file row is absent or
-/// not visible to detail consumers, and `CoreError::Db` when SQLite rows cannot
+/// Returns `CoreError::RepoNotInitialized { path }` when repository metadata is missing,
+/// `CoreError::FileNotFound { path }` when the requested active file row is absent or
+/// not visible to detail consumers, and `CoreError::Db { message }` when SQLite rows cannot
 /// be read.
 pub fn get_file(repo_path: String, file_id: i64) -> CoreResult<FileEntry> {
     let repo = PathBuf::from(repo_path);
@@ -403,8 +403,8 @@ pub fn get_file(repo_path: String, file_id: i64) -> CoreResult<FileEntry> {
 ///
 /// # Errors
 ///
-/// Returns `CoreError::RepoNotInitialized` when repository metadata is missing
-/// and `CoreError::Db` when SQLite rows or persisted change-log details cannot
+/// Returns `CoreError::RepoNotInitialized { path }` when repository metadata is missing
+/// and `CoreError::Db { message }` when SQLite rows or persisted change-log details cannot
 /// be read as the documented contract.
 pub fn list_changes(repo_path: String, filter: ChangeFilter) -> CoreResult<Vec<ChangeLogEntry>> {
     db::list_changes(repo_path, filter)
@@ -426,9 +426,9 @@ pub fn list_changes(repo_path: String, filter: ChangeFilter) -> CoreResult<Vec<C
 ///
 /// # Errors
 ///
-/// Returns `CoreError::RepoNotInitialized` when metadata is missing,
-/// `CoreError::Db` when the tree cannot be read from SQLite, and
-/// `CoreError::Io` when repository file paths, file metadata, or classifier
+/// Returns `CoreError::RepoNotInitialized { path }` when metadata is missing,
+/// `CoreError::Db { message }` when the tree cannot be read from SQLite, and
+/// `CoreError::Io { message }` when repository file paths, file metadata, or classifier
 /// config cannot be inspected.
 pub fn list_tree_json(repo_path: String, locale: String) -> CoreResult<String> {
     tree::list_tree_json(repo_path, locale)
@@ -444,10 +444,10 @@ pub fn list_tree_json(repo_path: String, locale: String) -> CoreResult<String> {
 ///
 /// # Errors
 ///
-/// Returns `CoreError::RepoNotInitialized` when repository metadata is missing,
-/// `CoreError::FileNotFound` when the active file row is absent,
-/// `CoreError::PermissionDenied` or `CoreError::Io` for blocked sidecar or
-/// metadata reads, and `CoreError::Db` when note metadata cannot be queried.
+/// Returns `CoreError::RepoNotInitialized { path }` when repository metadata is missing,
+/// `CoreError::FileNotFound { path }` when the active file row is absent,
+/// `CoreError::PermissionDenied { path }` or `CoreError::Io { message }` for blocked sidecar or
+/// metadata reads, and `CoreError::Db { message }` when note metadata cannot be queried.
 pub fn read_note(repo_path: String, file_id: i64) -> CoreResult<Option<String>> {
     note::read_note(repo_path, file_id)
 }
@@ -467,10 +467,10 @@ pub fn read_note(repo_path: String, file_id: i64) -> CoreResult<Option<String>> 
 ///
 /// # Errors
 ///
-/// Returns `CoreError::RepoNotInitialized` when repository metadata is missing,
-/// `CoreError::FileNotFound` when the active file row is absent,
-/// `CoreError::PermissionDenied` for blocked writes, `CoreError::Io` for
-/// filesystem failures, and `CoreError::Db` for transactional metadata failures.
+/// Returns `CoreError::RepoNotInitialized { path }` when repository metadata is missing,
+/// `CoreError::FileNotFound { path }` when the active file row is absent,
+/// `CoreError::PermissionDenied { path }` for blocked writes, `CoreError::Io { message }` for
+/// filesystem failures, and `CoreError::Db { message }` for transactional metadata failures.
 pub fn write_note(repo_path: String, file_id: i64, content_md: String) -> CoreResult<()> {
     note::write_note(repo_path, file_id, content_md)
 }
@@ -505,18 +505,18 @@ pub fn write_note(repo_path: String, file_id: i64, content_md: String) -> CoreRe
 /// and `updated_at`, writes `change_log.action = deleted` with external deletion detail,
 /// and increments `SyncResult::detected_deletes`. It must not
 /// remove, trash, move, rename, overwrite, copy, or download a user file.
-/// Deleted rows are not visible to default `list_files` and return `CoreError::FileNotFound`
+/// Deleted rows are not visible to default `list_files` and return `CoreError::FileNotFound { path }`
 /// through `get_file`.
 ///
 /// Cursor persistence is part of the batch success contract.
 ///
 /// # Errors
-/// Returns `CoreError::InvalidPath`, `CoreError::ICloudPlaceholder`,
-/// `CoreError::PermissionDenied`, `CoreError::Io`, or `CoreError::Db` for
+/// Returns `CoreError::InvalidPath { path }`, `CoreError::ICloudPlaceholder { path }`,
+/// `CoreError::PermissionDenied { path }`, `CoreError::Io { message }`, or `CoreError::Db { message }` for
 /// path, placeholder, metadata/hash, or transactional persistence failures.
-/// Returns `CoreError::FileNotFound` when a renamed target no longer exists and
+/// Returns `CoreError::FileNotFound { path }` when a renamed target no longer exists and
 /// when a deleted row is later opened through detail APIs. Returns
-/// `CoreError::Conflict` when a renamed target cannot be paired without
+/// `CoreError::Conflict { path }` when a renamed target cannot be paired without
 /// colliding with another active row.
 pub fn sync_external_changes(
     repo_path: String,
@@ -527,7 +527,7 @@ pub fn sync_external_changes(
 
 /// Returns the latest processed filesystem event cursor, or `None` before the first durable batch.
 /// # Errors
-/// Returns `CoreError::RepoNotInitialized` or `CoreError::Db`.
+/// Returns `CoreError::RepoNotInitialized { path }` or `CoreError::Db { message }`.
 pub fn get_fs_event_cursor(repo_path: String) -> CoreResult<Option<i64>> {
     sync::get_fs_event_cursor(repo_path)
 }
@@ -536,7 +536,7 @@ pub fn get_fs_event_cursor(repo_path: String) -> CoreResult<Option<i64>> {
 /// Prefer [`sync_external_changes`] for batch-success cursor advancement.
 /// This must not inspect, create, move, delete, rename, overwrite, copy, or download user files.
 /// # Errors
-/// Returns `CoreError::RepoNotInitialized`, `CoreError::InvalidPath`, or `CoreError::Db`.
+/// Returns `CoreError::RepoNotInitialized { path }`, `CoreError::InvalidPath { path }`, or `CoreError::Db { message }`.
 pub fn set_fs_event_cursor(repo_path: String, last_event_id: i64) -> CoreResult<()> {
     sync::set_fs_event_cursor(repo_path, last_event_id)
 }

@@ -179,7 +179,10 @@ fn read_write_note_failure_recovery_preserves_untracked_sidecar_on_permission_er
 
     let result = write_note(path_string(repo.path()), file_id, "new note".to_owned());
 
-    assert_eq!(result, Err(CoreError::PermissionDenied));
+    assert_eq!(
+        result,
+        Err(CoreError::permission_denied("permission denied"))
+    );
     assert_eq!(
         fs::read_to_string(&sidecar).expect("read preserved sidecar"),
         "user-authored sidecar"
@@ -197,10 +200,11 @@ fn read_write_note_failure_recovery_rejects_db_sidecar_mismatch_without_writes()
     fs::write(sidecar_path(repo.path(), relative_path), "sidecar note")
         .expect("write mismatched sidecar note");
 
-    assert_eq!(
+    assert!(matches!(
         write_note(path_string(repo.path()), file_id, "new note".to_owned()),
-        Err(CoreError::Db)
-    );
+        Err(CoreError::Db { .. })
+    ));
+
     assert_eq!(
         note_content(repo.path(), file_id).as_deref(),
         Some("db note")
@@ -224,7 +228,8 @@ fn read_write_note_failure_recovery_restores_old_sidecar_when_db_log_fails() {
 
     let result = write_note(path_string(repo.path()), file_id, "new note".to_owned());
 
-    assert_eq!(result, Err(CoreError::Db));
+    assert!(matches!(result, Err(CoreError::Db { .. })));
+
     assert_eq!(
         note_content(repo.path(), file_id).as_deref(),
         Some("old note")
@@ -255,7 +260,10 @@ fn read_write_note_failure_recovery_write_failure_preserves_old_note() {
     let result = write_note(path_string(repo.path()), file_id, "new note".to_owned());
     fs::set_permissions(&parent, original_mode).expect("restore parent permissions");
 
-    assert_eq!(result, Err(CoreError::PermissionDenied));
+    assert_eq!(
+        result,
+        Err(CoreError::permission_denied("permission denied"))
+    );
     assert_eq!(
         note_content(repo.path(), file_id).as_deref(),
         Some("old note")

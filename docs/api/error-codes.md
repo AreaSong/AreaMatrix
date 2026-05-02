@@ -35,10 +35,10 @@ pub type CoreResult<T> = Result<T, CoreError>;
 #[derive(Error, Debug)]
 pub enum CoreError {
     #[error("io error: {0}")]
-    Io(String),
+    Io { message: String },
 
     #[error("db error: {0}")]
-    Db(String),
+    Db { message: String },
 
     #[error("config error: {reason}")]
     Config { reason: String },
@@ -80,14 +80,14 @@ impl From<std::io::Error> for CoreError {
             std::io::ErrorKind::PermissionDenied => {
                 CoreError::PermissionDenied { path: e.to_string() }
             }
-            _ => CoreError::Io(e.to_string()),
+            _ => CoreError::Io { message: e.to_string() },
         }
     }
 }
 
 impl From<rusqlite::Error> for CoreError {
     fn from(e: rusqlite::Error) -> Self {
-        CoreError::Db(e.to_string())
+        CoreError::Db { message: e.to_string() }
     }
 }
 
@@ -99,7 +99,7 @@ impl From<serde_json::Error> for CoreError {
 
 impl From<walkdir::Error> for CoreError {
     fn from(e: walkdir::Error) -> Self {
-        CoreError::Io(e.to_string())
+        CoreError::Io { message: e.to_string() }
     }
 }
 ```
@@ -110,8 +110,8 @@ impl From<walkdir::Error> for CoreError {
 
 | Variant | 触发场景 | 自动重试 | UI 处理 | 严重程度 |
 |---|---|---|---|---|
-| `Io(msg)` | 文件读写失败、磁盘空间、损坏 | 视情况 | toast「文件操作失败：{}」 | medium |
-| `Db(msg)` | SQLite 执行失败、schema 损坏 | 否 | 弹窗：建议从备份恢复或重建索引 | high |
+| `Io { message }` | 文件读写失败、磁盘空间、损坏 | 视情况 | toast「文件操作失败：{}」 | medium |
+| `Db { message }` | SQLite 执行失败、schema 损坏 | 否 | 弹窗：建议从备份恢复或重建索引 | high |
 | `Config { reason }` | classifier.yaml 解析失败、必填字段缺失 | 否 | 弹窗：跳转到设置 → 显示具体字段错误 | medium |
 | `Classify { reason }` | 分类引擎内部错误 | 否 | toast「分类失败」+ 落到 inbox | low |
 | `Conflict { path }` | 路径冲突（应已被 conflict::resolve 解决） | 否 | toast「路径冲突」 | medium |
@@ -134,14 +134,14 @@ impl From<walkdir::Error> for CoreError {
 fn io_when_disk_full() {
     let mock = mock_disk_full_writer();
     let r = import_file(&repo, &src, opts);
-    assert!(matches!(r, Err(CoreError::Io(_))));
+    assert!(matches!(r, Err(CoreError::Io { .. })));
 }
 
 #[test]
 fn io_when_source_corrupt() {
     let bad_src = create_unreadable_file();
     let r = import_file(&repo, &bad_src, opts);
-    assert!(matches!(r, Err(CoreError::Io(_)) | Err(CoreError::FileNotFound { .. })));
+    assert!(matches!(r, Err(CoreError::Io { .. }) | Err(CoreError::FileNotFound { .. })));
 }
 ```
 
@@ -163,7 +163,7 @@ fn db_when_corrupted() {
     let db_path = repo.path().join(".areamatrix/index.db");
     std::fs::write(&db_path, b"not-a-sqlite-file").unwrap();
     let r = list_files(&repo.path(), FileFilter::default());
-    assert!(matches!(r, Err(CoreError::Db(_))));
+    assert!(matches!(r, Err(CoreError::Db { .. })));
 }
 ```
 
@@ -347,7 +347,7 @@ fn permission_denied_readonly_repo() {
     let repo = setup();
     set_readonly(repo.path()).unwrap();
     let r = import_file(&repo.path(), &src, opts);
-    assert!(matches!(r, Err(CoreError::PermissionDenied { .. }) | Err(CoreError::Io(_))));
+    assert!(matches!(r, Err(CoreError::PermissionDenied { .. }) | Err(CoreError::Io { .. })));
 }
 ```
 

@@ -44,7 +44,7 @@ fn selected_directory_target(options: &ImportOptions) -> CoreResult<ImportTarget
     let directory = options
         .target_directory
         .as_deref()
-        .ok_or(crate::CoreError::InvalidPath)?;
+        .ok_or_else(|| crate::CoreError::invalid_path("invalid path"))?;
     validate::relative_directory(directory)?;
     let category = validate::top_level_category(directory)?;
     Ok(ImportTarget {
@@ -57,12 +57,12 @@ fn category_target(repo: &Path, options: &ImportOptions) -> CoreResult<ImportTar
     let category = options
         .override_category
         .as_deref()
-        .ok_or(crate::CoreError::InvalidPath)?;
+        .ok_or_else(|| crate::CoreError::invalid_path("invalid path"))?;
     validate::category_slug(category)?;
     let relative_dir = repo
         .join(category)
         .strip_prefix(repo)
-        .map_err(|_| crate::CoreError::InvalidPath)?
+        .map_err(|error| crate::CoreError::invalid_path(error.to_string()))?
         .to_string_lossy()
         .into_owned();
     Ok(ImportTarget {

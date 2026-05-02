@@ -144,7 +144,7 @@ fn stage_source(prepared: &PreparedImport) -> CoreResult<StagedImport> {
         StorageMode::Moved => {
             StagingFileGuard::create_for_move(&prepared.repo, prepared.source.clone())?
         }
-        StorageMode::Indexed => return Err(CoreError::Internal),
+        StorageMode::Indexed => return Err(CoreError::internal("internal error")),
     };
     let hashed_copy = match prepared.options.mode {
         StorageMode::Copied => hash::copy_and_hash(&prepared.source, staging_guard.path())?,
@@ -152,7 +152,7 @@ fn stage_source(prepared: &PreparedImport) -> CoreResult<StagedImport> {
             move_source_to_staging(&prepared.source, staging_guard.path())?;
             hash::hash_file(staging_guard.path())?
         }
-        StorageMode::Indexed => return Err(CoreError::Internal),
+        StorageMode::Indexed => return Err(CoreError::internal("internal error")),
     };
     Ok(StagedImport {
         staging_guard,
@@ -411,7 +411,7 @@ fn import_change_detail(
 
 fn validate_repo_path(repo_path: &str) -> CoreResult<PathBuf> {
     if repo_path.trim().is_empty() {
-        return Err(CoreError::InvalidPath);
+        return Err(CoreError::invalid_path("invalid path"));
     }
     Ok(PathBuf::from(repo_path))
 }
@@ -422,7 +422,7 @@ fn source_filename(source: &Path) -> CoreResult<String> {
         .and_then(|value| value.to_str())
         .filter(|value| !value.is_empty())
         .map(str::to_owned)
-        .ok_or(CoreError::InvalidPath)
+        .ok_or_else(|| CoreError::invalid_path("invalid path"))
 }
 
 fn storage_mode_detail(mode: &StorageMode) -> &'static str {
@@ -447,7 +447,7 @@ fn persist_staging_to_final(staging: &Path, final_path: &Path) -> CoreResult<()>
 
 fn relative_repo_path(repo: &Path, path: &Path) -> CoreResult<String> {
     path.strip_prefix(repo)
-        .map_err(|_| CoreError::InvalidPath)
+        .map_err(|error| CoreError::invalid_path(error.to_string()))
         .map(|relative| relative.to_string_lossy().into_owned())
 }
 
@@ -475,7 +475,7 @@ mod tests {
 
         let result = persist_staging_to_final(&staging, &final_path);
 
-        assert_eq!(result, Err(CoreError::Conflict));
+        assert!(matches!(result, Err(CoreError::Conflict { .. })));
         assert_eq!(
             fs::read(&staging).expect("staging remains recoverable"),
             b"new content"

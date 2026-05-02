@@ -55,7 +55,7 @@ pub(crate) fn resume_scan_session(
         return Ok(empty_report(scan_session_id));
     }
     if session.kind != ScanSessionKind::Adopt {
-        return Err(CoreError::Config);
+        return Err(CoreError::config("configuration error"));
     }
 
     db::mark_scan_session_running_for_resume(&repo, scan_session_id)?;
@@ -198,7 +198,7 @@ fn index_input_for_file(path: &Path, relative_path: String) -> CoreResult<FileIn
 
 fn initialized_repo_path(repo_path: &str) -> CoreResult<PathBuf> {
     if repo_path.is_empty() {
-        return Err(CoreError::InvalidPath);
+        return Err(CoreError::invalid_path("invalid path"));
     }
     repo_path::validate_initialized_repo_path(repo_path.to_owned())?;
     Ok(PathBuf::from(repo_path))
@@ -207,7 +207,7 @@ fn initialized_repo_path(repo_path: &str) -> CoreResult<PathBuf> {
 fn relative_repo_path(repo_path: &Path, path: &Path) -> CoreResult<String> {
     let relative = path
         .strip_prefix(repo_path)
-        .map_err(|_| CoreError::InvalidPath)?;
+        .map_err(|error| CoreError::invalid_path(error.to_string()))?;
     Ok(relative
         .components()
         .map(|component| component.as_os_str().to_string_lossy())
@@ -226,7 +226,7 @@ fn file_name(path: &Path) -> CoreResult<String> {
     path.file_name()
         .map(|name| name.to_string_lossy().into_owned())
         .filter(|name| !name.is_empty())
-        .ok_or(CoreError::InvalidPath)
+        .ok_or_else(|| CoreError::invalid_path("invalid path"))
 }
 
 fn sha256_file(path: &Path) -> CoreResult<String> {
@@ -271,14 +271,14 @@ fn map_walkdir_error(error: walkdir::Error) -> CoreError {
     error
         .io_error()
         .map(|error| map_io_kind(error.kind()))
-        .unwrap_or(CoreError::Io)
+        .unwrap_or_else(|| CoreError::io("io error"))
 }
 
 fn map_io_kind(kind: io::ErrorKind) -> CoreError {
     match kind {
-        io::ErrorKind::PermissionDenied => CoreError::PermissionDenied,
-        io::ErrorKind::InvalidInput => CoreError::InvalidPath,
-        _ => CoreError::Io,
+        io::ErrorKind::PermissionDenied => CoreError::permission_denied("permission denied"),
+        io::ErrorKind::InvalidInput => CoreError::invalid_path("invalid path"),
+        _ => CoreError::io("io error"),
     }
 }
 

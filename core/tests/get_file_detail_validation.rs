@@ -135,14 +135,17 @@ fn get_file_detail_validation_requires_initialized_repo_and_existing_active_id()
     let uninitialized_repo = tempfile::tempdir().expect("create uninitialized repository");
     assert_eq!(
         get_file(path_string(uninitialized_repo.path()), 1),
-        Err(CoreError::RepoNotInitialized)
+        Err(CoreError::repo_not_initialized(
+            "repository not initialized"
+        ))
     );
 
     let repo = initialized_repo();
-    assert_eq!(
+    assert!(matches!(
         get_file(path_string(repo.path()), 404),
-        Err(CoreError::FileNotFound)
-    );
+        Err(CoreError::FileNotFound { .. })
+    ));
+
     assert_eq!(count_file_rows(repo.path(), "active"), 0);
     assert_eq!(change_log_count(repo.path()), 0);
 }
@@ -153,14 +156,16 @@ fn get_file_detail_validation_hides_deleted_and_staging_rows() {
     let deleted_id = insert_file_with_status(repo.path(), "finance/deleted.pdf", "deleted", 10);
     let staging_id = insert_file_with_status(repo.path(), "finance/staging.pdf", "staging", 20);
 
-    assert_eq!(
+    assert!(matches!(
         get_file(path_string(repo.path()), deleted_id),
-        Err(CoreError::FileNotFound)
-    );
-    assert_eq!(
+        Err(CoreError::FileNotFound { .. })
+    ));
+
+    assert!(matches!(
         get_file(path_string(repo.path()), staging_id),
-        Err(CoreError::FileNotFound)
-    );
+        Err(CoreError::FileNotFound { .. })
+    ));
+
     assert_eq!(count_file_rows(repo.path(), "deleted"), 1);
     assert_eq!(count_file_rows(repo.path(), "staging"), 1);
     assert_eq!(change_log_count(repo.path()), 0);
@@ -175,5 +180,5 @@ fn get_file_detail_validation_maps_metadata_query_failure_to_db_error() {
 
     let result = get_file(path_string(repo.path()), 1);
 
-    assert_eq!(result, Err(CoreError::Db));
+    assert!(matches!(result, Err(CoreError::Db { .. })));
 }

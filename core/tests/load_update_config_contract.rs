@@ -162,8 +162,15 @@ fn load_update_config_rejects_empty_repo_path_as_config_error() {
         allow_replace_during_import: false,
     };
 
-    assert_eq!(load_config(String::new()), Err(CoreError::Config));
-    assert_eq!(update_config(String::new(), config), Err(CoreError::Config));
+    assert!(matches!(
+        load_config(String::new()),
+        Err(CoreError::Config { .. })
+    ));
+
+    assert!(matches!(
+        update_config(String::new(), config),
+        Err(CoreError::Config { .. })
+    ));
 }
 
 #[test]
@@ -219,7 +226,8 @@ fn load_update_config_update_rejects_mismatched_payload_without_changing_previou
 
     let result = update_config(path_string(repo.path()), invalid);
 
-    assert_eq!(result, Err(CoreError::Config));
+    assert!(matches!(result, Err(CoreError::Config { .. })));
+
     let after = load_config(path_string(repo.path())).expect("reload config after failed update");
     assert_eq!(after, before);
 }
@@ -234,7 +242,8 @@ fn load_update_config_update_rejects_empty_locale_without_partial_write() {
 
     let result = update_config(path_string(repo.path()), invalid);
 
-    assert_eq!(result, Err(CoreError::Config));
+    assert!(matches!(result, Err(CoreError::Config { .. })));
+
     let after = load_config(path_string(repo.path())).expect("reload config after failed update");
     assert_eq!(after, before);
 }
@@ -264,7 +273,8 @@ fn load_update_config_update_rolls_back_when_late_repo_config_write_fails() {
     config.locale = "en".to_owned();
     let result = update_config(path_string(repo.path()), config);
 
-    assert_eq!(result, Err(CoreError::Db));
+    assert!(matches!(result, Err(CoreError::Db { .. })));
+
     let after_config = load_config(path_string(repo.path())).expect("reload config after rollback");
     assert_eq!(after_config, before_config);
     assert_eq!(config_rows(repo.path()), before_rows);
@@ -334,7 +344,8 @@ fn load_update_config_update_requires_initialized_metadata_without_creating_it()
 
     let result = update_config(path_string(repo.path()), config);
 
-    assert_eq!(result, Err(CoreError::Config));
+    assert!(matches!(result, Err(CoreError::Config { .. })));
+
     assert!(!repo.path().join(".areamatrix").exists());
 }
 
@@ -357,7 +368,10 @@ fn load_update_config_update_returns_permission_denied_for_unwritable_database()
     let result = update_config(path_string(repo.path()), config);
 
     fs::set_permissions(&db_path, original_permissions).expect("restore database permissions");
-    assert_eq!(result, Err(CoreError::PermissionDenied));
+    assert_eq!(
+        result,
+        Err(CoreError::permission_denied("permission denied"))
+    );
 }
 
 #[cfg(unix)]
@@ -381,7 +395,10 @@ fn load_update_config_update_returns_permission_denied_for_unwritable_metadata_d
     let result = update_config(path_string(repo.path()), config);
 
     fs::set_permissions(&metadata_dir, original_permissions).expect("restore metadata permissions");
-    assert_eq!(result, Err(CoreError::PermissionDenied));
+    assert_eq!(
+        result,
+        Err(CoreError::permission_denied("permission denied"))
+    );
     assert_eq!(
         load_config(path_string(repo.path())),
         Ok(before),

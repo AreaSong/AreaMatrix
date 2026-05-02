@@ -90,11 +90,11 @@ fn init_empty_repo_contract_exposes_documented_outputs() {
 #[test]
 fn init_empty_repo_contract_exposes_documented_error_codes() {
     let errors = [
-        CoreError::InvalidPath,
-        CoreError::PermissionDenied,
-        CoreError::Config,
-        CoreError::Io,
-        CoreError::Db,
+        CoreError::invalid_path("invalid path"),
+        CoreError::permission_denied("permission denied"),
+        CoreError::config("configuration error"),
+        CoreError::io("io error"),
+        CoreError::db("database error"),
     ];
 
     assert_eq!(errors.len(), 5);

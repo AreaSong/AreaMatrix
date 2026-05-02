@@ -136,10 +136,10 @@ fn read_write_note_integration_verify_docs_api_udl_and_s1_14_consumer_stay_align
     for fragment in [
         "string? read_note(string repo_path, i64 file_id);",
         "void write_note(string repo_path, i64 file_id, string content_md);",
-        "FileNotFound();",
-        "PermissionDenied();",
-        "Io();",
-        "Db();",
+        "FileNotFound(string path);",
+        "PermissionDenied(string path);",
+        "Io(string message);",
+        "Db(string message);",
     ] {
         assert_contains(CORE_API, fragment);
         assert_contains(UDL, fragment);
@@ -274,14 +274,15 @@ fn read_write_note_integration_verify_missing_file_allows_read_but_rejects_write
         read_note(path_string(repo.path()), imported.id),
         Ok(Some(content.clone()))
     );
-    assert_eq!(
+    assert!(matches!(
         write_note(
             path_string(repo.path()),
             imported.id,
             "new draft".to_owned()
         ),
-        Err(CoreError::FileNotFound)
-    );
+        Err(CoreError::FileNotFound { .. })
+    ));
+
     assert_eq!(
         read_note(path_string(repo.path()), imported.id),
         Ok(Some(content.clone()))
@@ -313,7 +314,10 @@ fn read_write_note_integration_verify_unconfirmed_sidecar_is_not_overwritten() {
 
     let result = write_note(path_string(repo.path()), imported.id, "new note".to_owned());
 
-    assert_eq!(result, Err(CoreError::PermissionDenied));
+    assert_eq!(
+        result,
+        Err(CoreError::permission_denied("permission denied"))
+    );
     assert_eq!(
         fs::read_to_string(&sidecar).expect("read preserved user sidecar"),
         "user-authored sidecar"

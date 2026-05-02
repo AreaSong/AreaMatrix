@@ -144,7 +144,12 @@ fn recover_on_startup_validation_requires_initialized_repo_without_metadata_side
 
     let result = recover_on_startup(path_string(repo.path()));
 
-    assert_eq!(result, Err(CoreError::RepoNotInitialized));
+    assert_eq!(
+        result,
+        Err(CoreError::repo_not_initialized(
+            "repository not initialized"
+        ))
+    );
     assert!(!repo.path().join(".areamatrix").exists());
 }
 
@@ -160,7 +165,8 @@ fn recover_on_startup_validation_db_error_keeps_staging_retryable() {
 
     let result = recover_on_startup(path_string(repo.path()));
 
-    assert_eq!(result, Err(CoreError::Db));
+    assert!(matches!(result, Err(CoreError::Db { .. })));
+
     assert_eq!(
         fs::read(&orphan).expect("staging file should remain retryable after DB error"),
         b"retryable staging bytes"

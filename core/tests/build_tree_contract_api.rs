@@ -180,7 +180,11 @@ fn build_tree_contract_api_exposes_documented_signature_input_output_and_errors(
     assert_eq!(tree["depth"], 0);
     assert!(children(&tree).is_empty());
 
-    let documented_errors = [CoreError::RepoNotInitialized, CoreError::Db, CoreError::Io];
+    let documented_errors = [
+        CoreError::repo_not_initialized("repository not initialized"),
+        CoreError::db("database error"),
+        CoreError::io("io error"),
+    ];
     assert_eq!(documented_errors.len(), 3);
 }
 
@@ -241,7 +245,11 @@ fn build_tree_contract_api_docs_control_map_and_udl_stay_aligned() {
 
 #[test]
 fn build_tree_contract_api_documents_and_enforces_error_side_effect_scope_boundaries() {
-    for fragment in ["`RepoNotInitialized { path }`", "`Db(msg)`", "`Io(msg)`"] {
+    for fragment in [
+        "`RepoNotInitialized { path }`",
+        "`Db { message }`",
+        "`Io { message }`",
+    ] {
         assert_contains(ERROR_CODES, fragment);
     }
 
@@ -261,16 +269,21 @@ fn build_tree_contract_api_documents_and_enforces_error_side_effect_scope_bounda
         "Virtual smart lists, search result trees",
         "Stage 2 tree projections remain",
         "outside this API boundary",
-        "Returns `CoreError::RepoNotInitialized`",
-        "`CoreError::Db`",
-        "`CoreError::Io`",
+        "Returns `CoreError::RepoNotInitialized { path }`",
+        "`CoreError::Db { message }`",
+        "`CoreError::Io { message }`",
     ] {
         assert_contains(API_RS, fragment);
     }
 
     let uninitialized = tempfile::tempdir().expect("create uninitialized repository directory");
     let result = list_tree_json(path_string(uninitialized.path()), "en".to_owned());
-    assert_eq!(result, Err(CoreError::RepoNotInitialized));
+    assert_eq!(
+        result,
+        Err(CoreError::repo_not_initialized(
+            "repository not initialized"
+        ))
+    );
 
     let repo = initialized_repo(false);
     fs::create_dir_all(repo.path().join("docs")).expect("create docs directory");

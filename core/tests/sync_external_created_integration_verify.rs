@@ -346,7 +346,8 @@ fn sync_external_created_integration_verify_skip_and_failure_boundaries_are_tran
             created("docs/missing.txt", 333),
         ],
     );
-    assert_eq!(failed, Err(CoreError::Io));
+    assert!(matches!(failed, Err(CoreError::Io { .. })));
+
     assert_eq!(fs_cursor(repo.path()), Some(331));
     assert!(list_files(path_string(repo.path()), default_file_filter())
         .expect("list files after failed batch")

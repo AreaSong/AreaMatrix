@@ -198,7 +198,11 @@ fn load_update_config_integration_verify_failures_preserve_config_and_files() {
 
     let result = update_config(path_string(repo.path()), invalid);
 
-    assert_eq!(result, Err(area_matrix_core::CoreError::Config));
+    assert!(matches!(
+        result,
+        Err(area_matrix_core::CoreError::Config { .. })
+    ));
+
     assert_eq!(load_config(path_string(repo.path())), Ok(config_before));
     assert_eq!(
         file_snapshot(&[&readme_path, &overview_path, &classifier_path]),

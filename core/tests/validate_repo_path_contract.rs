@@ -95,10 +95,10 @@ fn validate_repo_path_contract_exposes_all_documented_issues() {
 #[test]
 fn validate_repo_path_contract_exposes_documented_error_codes() {
     let errors = [
-        CoreError::InvalidPath,
-        CoreError::PermissionDenied,
-        CoreError::ICloudPlaceholder,
-        CoreError::RepoNotInitialized,
+        CoreError::invalid_path("invalid path"),
+        CoreError::permission_denied("permission denied"),
+        CoreError::icloud_placeholder("icloud placeholder"),
+        CoreError::repo_not_initialized("repository not initialized"),
     ];
 
     assert_eq!(errors.len(), 4);

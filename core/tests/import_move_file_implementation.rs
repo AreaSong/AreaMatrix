@@ -243,7 +243,8 @@ fn import_move_file_implementation_db_failure_restores_source_and_cleans_final_s
         moved_options(),
     );
 
-    assert_eq!(result, Err(CoreError::Db));
+    assert!(matches!(result, Err(CoreError::Db { .. })));
+
     assert_eq!(
         fs::read(&source).expect("read source restored after DB failure"),
         b"invoice bytes"

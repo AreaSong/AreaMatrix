@@ -41,12 +41,12 @@ pub(crate) fn list_overview_node_files(
              ORDER BY imported_at DESC, id DESC
              LIMIT ?2",
         )
-        .map_err(|_| CoreError::Db)?;
+        .map_err(|error| CoreError::db(error.to_string()))?;
     let rows = statement
         .query_map(params![node_slug, normalize_limit(limit)], file_row_from_db)
-        .map_err(|_| CoreError::Db)?;
+        .map_err(|error| CoreError::db(error.to_string()))?;
     rows.collect::<Result<Vec<_>, _>>()
-        .map_err(|_| CoreError::Db)
+        .map_err(|error| CoreError::db(error.to_string()))
 }
 
 pub(crate) fn list_overview_node_summaries(
@@ -62,12 +62,12 @@ pub(crate) fn list_overview_node_summaries(
              GROUP BY category
              ORDER BY category COLLATE NOCASE ASC",
         )
-        .map_err(|_| CoreError::Db)?;
+        .map_err(|error| CoreError::db(error.to_string()))?;
     let rows = statement
         .query_map([], summary_row_from_db)
-        .map_err(|_| CoreError::Db)?;
+        .map_err(|error| CoreError::db(error.to_string()))?;
     rows.collect::<Result<Vec<_>, _>>()
-        .map_err(|_| CoreError::Db)
+        .map_err(|error| CoreError::db(error.to_string()))
 }
 
 pub(crate) fn list_overview_recent_changes(
@@ -90,15 +90,15 @@ pub(crate) fn list_overview_recent_changes(
              ORDER BY cl.occurred_at DESC, cl.id DESC
              LIMIT ?3",
         )
-        .map_err(|_| CoreError::Db)?;
+        .map_err(|error| CoreError::db(error.to_string()))?;
     let rows = statement
         .query_map(
             params![node_slug, days.max(0), normalize_limit(limit)],
             change_row_from_db,
         )
-        .map_err(|_| CoreError::Db)?;
+        .map_err(|error| CoreError::db(error.to_string()))?;
     rows.collect::<Result<Vec<_>, _>>()
-        .map_err(|_| CoreError::Db)
+        .map_err(|error| CoreError::db(error.to_string()))
 }
 
 fn file_row_from_db(row: &Row<'_>) -> rusqlite::Result<OverviewFileRow> {

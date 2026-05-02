@@ -32,10 +32,10 @@ fn read_write_note_contract_api_exposes_documented_signatures_inputs_and_outputs
     assert_eq!(content_md.lines().count(), 3);
 
     let documented_errors = [
-        CoreError::FileNotFound,
-        CoreError::PermissionDenied,
-        CoreError::Io,
-        CoreError::Db,
+        CoreError::file_not_found("missing file"),
+        CoreError::permission_denied("permission denied"),
+        CoreError::io("io error"),
+        CoreError::db("database error"),
     ];
     assert_eq!(documented_errors.len(), 4);
 }
@@ -103,8 +103,8 @@ fn read_write_note_contract_api_documents_errors_side_effects_and_scope() {
     for fragment in [
         "`FileNotFound { path }`",
         "`PermissionDenied { path }`",
-        "`Io(msg)`",
-        "`Db(msg)`",
+        "`Io { message }`",
+        "`Db { message }`",
     ] {
         assert_contains(ERROR_CODES, fragment);
     }
@@ -118,11 +118,11 @@ fn read_write_note_contract_api_documents_errors_side_effects_and_scope() {
         "must not create note rows",
         "write sidecar files",
         "insert change-log",
-        "Returns `CoreError::RepoNotInitialized`",
-        "`CoreError::FileNotFound`",
-        "`CoreError::PermissionDenied`",
-        "`CoreError::Io`",
-        "`CoreError::Db`",
+        "Returns `CoreError::RepoNotInitialized { path }`",
+        "`CoreError::FileNotFound { path }`",
+        "`CoreError::PermissionDenied { path }`",
+        "`CoreError::Io { message }`",
+        "`CoreError::Db { message }`",
         "C1-14 writes exactly one note",
         "upserts",
         "`notes` row",

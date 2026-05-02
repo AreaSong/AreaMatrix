@@ -87,7 +87,12 @@ fn validate_initialized_repo_path_rejects_uninitialized_directory_without_touchi
 
     let result = validate_initialized_repo_path(path_string(repo.path()));
 
-    assert_eq!(result, Err(CoreError::RepoNotInitialized));
+    assert_eq!(
+        result,
+        Err(CoreError::repo_not_initialized(
+            "repository not initialized"
+        ))
+    );
     assert!(user_file.exists());
     assert!(!repo.path().join(".areamatrix").exists());
 }
@@ -99,14 +104,14 @@ fn validate_repo_path_rejects_area_matrix_internal_paths() {
 
     let result = validate_repo_path(path_string(&internal_path));
 
-    assert_eq!(result, Err(CoreError::InvalidPath));
+    assert!(matches!(result, Err(CoreError::InvalidPath { .. })));
 }
 
 #[test]
 fn validate_repo_path_rejects_empty_path() {
     let result = validate_repo_path(String::new());
 
-    assert_eq!(result, Err(CoreError::InvalidPath));
+    assert!(matches!(result, Err(CoreError::InvalidPath { .. })));
 }
 
 #[test]
@@ -142,7 +147,10 @@ fn validate_repo_path_rejects_icloud_placeholder_marker() {
 
     let result = validate_repo_path(path_string(&placeholder));
 
-    assert_eq!(result, Err(CoreError::ICloudPlaceholder));
+    assert_eq!(
+        result,
+        Err(CoreError::icloud_placeholder("icloud placeholder"))
+    );
 }
 
 #[test]

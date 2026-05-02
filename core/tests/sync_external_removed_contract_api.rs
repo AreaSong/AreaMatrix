@@ -46,7 +46,11 @@ fn sync_external_removed_contract_api_exposes_documented_signature_input_and_out
     assert_eq!(result.detected_modifies, 0);
     assert!(result.errors.is_empty());
 
-    let documented_errors = [CoreError::FileNotFound, CoreError::Db, CoreError::Io];
+    let documented_errors = [
+        CoreError::file_not_found("missing file"),
+        CoreError::db("database error"),
+        CoreError::io("io error"),
+    ];
     assert_eq!(documented_errors.len(), 3);
 }
 
@@ -97,9 +101,9 @@ fn sync_external_removed_contract_api_docs_control_map_and_udl_stay_aligned() {
         "i64 detected_deletes;",
         "sequence<string> errors;",
         "enum ExternalEventKind { \"Created\", \"Removed\", \"Modified\", \"Renamed\" };",
-        "FileNotFound();",
-        "Db();",
-        "Io();",
+        "FileNotFound(string path);",
+        "Db(string message);",
+        "Io(string message);",
     ] {
         assert_contains(CORE_API, fragment);
         assert_contains(UDL, fragment);
@@ -108,7 +112,11 @@ fn sync_external_removed_contract_api_docs_control_map_and_udl_stay_aligned() {
 
 #[test]
 fn sync_external_removed_contract_api_documents_errors_side_effects_and_scope() {
-    for fragment in ["`FileNotFound { path }`", "`Db(msg)`", "`Io(msg)`"] {
+    for fragment in [
+        "`FileNotFound { path }`",
+        "`Db { message }`",
+        "`Io { message }`",
+    ] {
         assert_contains(ERROR_CODES, fragment);
     }
 
@@ -128,11 +136,11 @@ fn sync_external_removed_contract_api_documents_errors_side_effects_and_scope() 
         "must not",
         "remove, trash, move, rename, overwrite, copy, or download",
         "not visible to default `list_files`",
-        "`CoreError::FileNotFound`",
+        "`CoreError::FileNotFound { path }`",
         "through `get_file`",
-        "Returns `CoreError::FileNotFound`",
-        "`CoreError::Db`",
-        "`CoreError::Io`",
+        "Returns `CoreError::FileNotFound { path }`",
+        "`CoreError::Db { message }`",
+        "`CoreError::Io { message }`",
     ] {
         assert_contains(API_RS, fragment);
     }

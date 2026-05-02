@@ -149,7 +149,8 @@ fn load_update_config_validation_rejects_corrupt_persisted_config_value() {
 
     let result = load_config(path_string(repo.path()));
 
-    assert_eq!(result, Err(CoreError::Config));
+    assert!(matches!(result, Err(CoreError::Config { .. })));
+
     assert_eq!(sqlite_integrity_check(repo.path()), "ok");
 }
 
@@ -171,7 +172,8 @@ fn load_update_config_validation_failed_update_keeps_previous_rows_readable() {
 
     let result = update_config(path_string(repo.path()), updated_config(repo.path()));
 
-    assert_eq!(result, Err(CoreError::Db));
+    assert!(matches!(result, Err(CoreError::Db { .. })));
+
     assert_eq!(load_config(path_string(repo.path())), Ok(before_config));
     assert_eq!(config_rows(repo.path()), before_rows);
     assert_eq!(sqlite_integrity_check(repo.path()), "ok");

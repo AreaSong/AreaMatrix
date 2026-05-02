@@ -170,7 +170,9 @@ fn build_tree_validation_returns_repo_not_initialized_and_db_errors() {
     let uninitialized = tempfile::tempdir().expect("create uninitialized repository");
     assert_eq!(
         list_tree_json(path_string(uninitialized.path()), "en".to_owned()),
-        Err(CoreError::RepoNotInitialized)
+        Err(CoreError::repo_not_initialized(
+            "repository not initialized"
+        ))
     );
 
     let repo = initialized_repo(false);
@@ -179,10 +181,10 @@ fn build_tree_validation_returns_repo_not_initialized_and_db_errors() {
     remove_if_exists(repo.path().join(".areamatrix/index.db-wal"));
     remove_if_exists(repo.path().join(".areamatrix/index.db-shm"));
 
-    assert_eq!(
+    assert!(matches!(
         list_tree_json(path_string(repo.path()), "en".to_owned()),
-        Err(CoreError::Db)
-    );
+        Err(CoreError::Db { .. })
+    ));
 }
 
 #[test]
@@ -192,10 +194,10 @@ fn build_tree_validation_maps_unreadable_classifier_to_io_error() {
     fs::remove_file(&classifier_path).expect("remove classifier file fixture");
     fs::create_dir(&classifier_path).expect("replace classifier file with unreadable directory");
 
-    assert_eq!(
+    assert!(matches!(
         list_tree_json(path_string(repo.path()), "en".to_owned()),
-        Err(CoreError::Io)
-    );
+        Err(CoreError::Io { .. })
+    ));
 }
 
 fn remove_if_exists(path: PathBuf) {

@@ -297,7 +297,8 @@ fn resolve_name_conflict_rename_db_failure_restores_filesystem_and_metadata() {
 
     let result = rename_file(path_string(repo.path()), entry.id, "final.pdf".to_owned());
 
-    assert_eq!(result, Err(CoreError::Db));
+    assert!(matches!(result, Err(CoreError::Db { .. })));
+
     assert!(repo.path().join("finance/draft.pdf").exists());
     assert!(!repo.path().join("finance/final.pdf").exists());
     assert_eq!(file_row(repo.path(), entry.id), {
@@ -337,7 +338,7 @@ fn resolve_name_conflict_contract_docs_api_udl_and_control_map_stay_aligned() {
         "string path;",
         "string current_name;",
         "enum DuplicateStrategy { \"Skip\", \"Overwrite\", \"KeepBoth\", \"Ask\" };",
-        "Conflict();",
+        "Conflict(string path);",
     ] {
         assert_contains(CORE_API, fragment);
         assert_contains(UDL, fragment);
@@ -362,11 +363,11 @@ fn resolve_name_conflict_contract_docs_api_udl_and_control_map_stay_aligned() {
 #[test]
 fn resolve_name_conflict_contract_documents_error_codes_and_side_effects() {
     let errors = [
-        CoreError::Conflict,
-        CoreError::InvalidPath,
-        CoreError::PermissionDenied,
-        CoreError::Io,
-        CoreError::Db,
+        CoreError::conflict("path conflict"),
+        CoreError::invalid_path("invalid path"),
+        CoreError::permission_denied("permission denied"),
+        CoreError::io("io error"),
+        CoreError::db("database error"),
     ];
 
     assert_eq!(errors.len(), 5);
@@ -392,7 +393,7 @@ fn resolve_name_conflict_contract_documents_error_codes_and_side_effects() {
         "C1-10 owns same-name conflict handling",
         "final conflict-free name",
         "must not overwrite an existing user file by default",
-        "CoreError::Conflict",
+        "CoreError::Conflict { path }",
         "Renames a file entry to a conflict-free filename",
         "remain guarded by S1-24",
     ] {

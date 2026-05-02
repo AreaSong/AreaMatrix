@@ -190,7 +190,8 @@ fn sync_external_created_implementation_rolls_back_batch_and_cursor_on_failure()
         ],
     );
 
-    assert_eq!(result, Err(CoreError::Io));
+    assert!(matches!(result, Err(CoreError::Io { .. })));
+
     assert_eq!(active_file_count(repo.path()), 0);
     assert_eq!(
         get_fs_event_cursor(path_string(repo.path())).expect("read missing cursor"),
@@ -207,7 +208,8 @@ fn sync_external_created_implementation_rejects_escaping_paths_without_writes() 
         vec![created("../outside.pdf", 30)],
     );
 
-    assert_eq!(result, Err(CoreError::InvalidPath));
+    assert!(matches!(result, Err(CoreError::InvalidPath { .. })));
+
     assert_eq!(active_file_count(repo.path()), 0);
     assert_eq!(
         get_fs_event_cursor(path_string(repo.path())).expect("read missing cursor"),
@@ -224,7 +226,10 @@ fn sync_external_created_implementation_rejects_icloud_placeholder_marker() {
         vec![created("docs/waiting.pdf.icloud", 40)],
     );
 
-    assert_eq!(result, Err(CoreError::ICloudPlaceholder));
+    assert_eq!(
+        result,
+        Err(CoreError::icloud_placeholder("icloud placeholder"))
+    );
     assert_eq!(active_file_count(repo.path()), 0);
 }
 

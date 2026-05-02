@@ -49,7 +49,9 @@ pub(crate) fn apply_external_sync_batch(
     cursor: Option<i64>,
 ) -> CoreResult<ExternalSyncApplyResult> {
     let mut connection = open_repo_connection(repo_path)?;
-    let tx = connection.transaction().map_err(|_| CoreError::Db)?;
+    let tx = connection
+        .transaction()
+        .map_err(|error| CoreError::db(error.to_string()))?;
     let mut detected_creates = 0_i64;
     let mut detected_renames = 0_i64;
     let mut detected_deletes = 0_i64;
@@ -71,7 +73,8 @@ pub(crate) fn apply_external_sync_batch(
         set_cursor(&tx, last_event_id)?;
     }
 
-    tx.commit().map_err(|_| CoreError::Db)?;
+    tx.commit()
+        .map_err(|error| CoreError::db(error.to_string()))?;
     Ok(ExternalSyncApplyResult {
         detected_creates,
         detected_renames,
@@ -95,7 +98,7 @@ pub(crate) fn find_external_rename_candidates_by_hash(
              ORDER BY imported_at ASC, id ASC
              LIMIT 2",
         )
-        .map_err(|_| CoreError::Db)?;
+        .map_err(|error| CoreError::db(error.to_string()))?;
     let rows = statement
         .query_map(params![hash_sha256, new_path], |row| {
             Ok(ExternalRenameCandidate {
@@ -105,9 +108,9 @@ pub(crate) fn find_external_rename_candidates_by_hash(
                 category: row.get(3)?,
             })
         })
-        .map_err(|_| CoreError::Db)?;
+        .map_err(|error| CoreError::db(error.to_string()))?;
     rows.collect::<Result<Vec<_>, _>>()
-        .map_err(|_| CoreError::Db)
+        .map_err(|error| CoreError::db(error.to_string()))
 }
 
 pub(crate) fn get_fs_event_cursor(repo_path: &Path) -> CoreResult<Option<i64>> {
@@ -119,14 +122,17 @@ pub(crate) fn get_fs_event_cursor(repo_path: &Path) -> CoreResult<Option<i64>> {
             |row| row.get(0),
         )
         .optional()
-        .map_err(|_| CoreError::Db)
+        .map_err(|error| CoreError::db(error.to_string()))
 }
 
 pub(crate) fn set_fs_event_cursor(repo_path: &Path, last_event_id: i64) -> CoreResult<()> {
     let mut connection = open_repo_connection(repo_path)?;
-    let tx = connection.transaction().map_err(|_| CoreError::Db)?;
+    let tx = connection
+        .transaction()
+        .map_err(|error| CoreError::db(error.to_string()))?;
     set_cursor(&tx, last_event_id)?;
-    tx.commit().map_err(|_| CoreError::Db)
+    tx.commit()
+        .map_err(|error| CoreError::db(error.to_string()))
 }
 
 fn insert_external_file(tx: &Transaction<'_>, row: ExternalCreatedRow) -> CoreResult<bool> {
@@ -151,7 +157,7 @@ fn insert_external_file(tx: &Transaction<'_>, row: ExternalCreatedRow) -> CoreRe
                 storage_mode_to_db(&crate::StorageMode::Indexed),
             ],
         )
-        .map_err(|_| CoreError::Db)?;
+        .map_err(|error| CoreError::db(error.to_string()))?;
     if changed == 0 {
         return Ok(false);
     }
@@ -162,7 +168,7 @@ fn insert_external_file(tx: &Transaction<'_>, row: ExternalCreatedRow) -> CoreRe
          VALUES (?1, 'external_modified', ?2, strftime('%s', 'now'))",
         params![file_id, row.detail_json],
     )
-    .map_err(|_| CoreError::Db)?;
+    .map_err(|error| CoreError::db(error.to_string()))?;
     Ok(true)
 }
 
@@ -176,9 +182,9 @@ fn update_external_renamed_file(tx: &Transaction<'_>, row: ExternalRenamedRow) -
              WHERE id = ?1 AND status = 'active'",
             params![row.file_id, row.path, row.current_name],
         )
-        .map_err(|_| CoreError::Db)?;
+        .map_err(|error| CoreError::db(error.to_string()))?;
     if changed != 1 {
-        return Err(CoreError::FileNotFound);
+        return Err(CoreError::file_not_found("missing file"));
     }
 
     tx.execute(
@@ -187,7 +193,7 @@ fn update_external_renamed_file(tx: &Transaction<'_>, row: ExternalRenamedRow) -
         params![row.file_id, row.detail_json],
     )
     .map(|_| ())
-    .map_err(|_| CoreError::Db)
+    .map_err(|error| CoreError::db(error.to_string()))
 }
 
 fn soft_delete_external_removed_file(
@@ -203,9 +209,9 @@ fn soft_delete_external_removed_file(
              WHERE id = ?1 AND status = 'active'",
             params![row.file_id],
         )
-        .map_err(|_| CoreError::Db)?;
+        .map_err(|error| CoreError::db(error.to_string()))?;
     if changed != 1 {
-        return Err(CoreError::FileNotFound);
+        return Err(CoreError::file_not_found("missing file"));
     }
 
     tx.execute(
@@ -214,7 +220,7 @@ fn soft_delete_external_removed_file(
         params![row.file_id, row.detail_json],
     )
     .map(|_| ())
-    .map_err(|_| CoreError::Db)
+    .map_err(|error| CoreError::db(error.to_string()))
 }
 
 fn set_cursor(tx: &Transaction<'_>, last_event_id: i64) -> CoreResult<()> {
@@ -227,5 +233,5 @@ fn set_cursor(tx: &Transaction<'_>, last_event_id: i64) -> CoreResult<()> {
         params![last_event_id],
     )
     .map(|_| ())
-    .map_err(|_| CoreError::Db)
+    .map_err(|error| CoreError::db(error.to_string()))
 }

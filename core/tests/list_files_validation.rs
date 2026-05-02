@@ -170,7 +170,12 @@ fn list_files_validation_requires_initialized_repo() {
 
     let result = list_files(path_string(repo.path()), list_filter());
 
-    assert_eq!(result, Err(CoreError::RepoNotInitialized));
+    assert_eq!(
+        result,
+        Err(CoreError::repo_not_initialized(
+            "repository not initialized"
+        ))
+    );
 }
 
 #[test]
@@ -182,5 +187,5 @@ fn list_files_validation_maps_unreadable_metadata_query_to_db_error() {
 
     let result = list_files(path_string(repo.path()), list_filter());
 
-    assert_eq!(result, Err(CoreError::Db));
+    assert!(matches!(result, Err(CoreError::Db { .. })));
 }

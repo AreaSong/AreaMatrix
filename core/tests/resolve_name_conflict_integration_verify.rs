@@ -203,8 +203,8 @@ fn resolve_name_conflict_integration_verify_docs_control_map_udl_and_consumers_s
         "string path;",
         "string current_name;",
         "enum DuplicateStrategy { \"Skip\", \"Overwrite\", \"KeepBoth\", \"Ask\" };",
-        "Conflict();",
-        "InvalidPath();",
+        "Conflict(string path);",
+        "InvalidPath(string path);",
     ] {
         assert_contains(CORE_API, fragment);
         assert_contains(UDL, fragment);

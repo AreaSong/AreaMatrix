@@ -89,11 +89,11 @@ fn adopt_existing_repo_contract_exposes_documented_outputs() {
 #[test]
 fn adopt_existing_repo_contract_exposes_documented_error_codes() {
     let errors = [
-        CoreError::PermissionDenied,
-        CoreError::InvalidPath,
-        CoreError::Io,
-        CoreError::Db,
-        CoreError::Config,
+        CoreError::permission_denied("permission denied"),
+        CoreError::invalid_path("invalid path"),
+        CoreError::io("io error"),
+        CoreError::db("database error"),
+        CoreError::config("configuration error"),
     ];
 
     assert_eq!(errors.len(), 5);

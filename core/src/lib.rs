@@ -24,4 +24,7 @@ pub mod tree;
 
 pub use api::*;
 pub use domain::*;
-pub use error::{CoreError, CoreResult};
+pub use error::{
+    map_core_error, CoreError, CoreResult, ErrorKind, ErrorMapping, ErrorMappingInput,
+    ErrorRecoverability, ErrorSeverity,
+};

@@ -248,25 +248,27 @@ fn list_change_log_validation_returns_documented_errors() {
     let uninitialized_repo = tempfile::tempdir().expect("create uninitialized repository");
     assert_eq!(
         list_changes(path_string(uninitialized_repo.path()), default_filter()),
-        Err(CoreError::RepoNotInitialized)
+        Err(CoreError::repo_not_initialized(
+            "repository not initialized"
+        ))
     );
 
     let repo = initialized_repo();
     let file_id = insert_file(repo.path(), "finance/bad.pdf", "finance", 10);
     insert_change(repo.path(), file_id, "imported", "not-json", 100);
 
-    assert_eq!(
+    assert!(matches!(
         list_changes(path_string(repo.path()), default_filter()),
-        Err(CoreError::Db)
-    );
+        Err(CoreError::Db { .. })
+    ));
 
     let repo = initialized_repo();
     open_db(repo.path())
         .execute_batch("DROP TABLE change_log;")
         .expect("drop change_log table to simulate metadata corruption");
 
-    assert_eq!(
+    assert!(matches!(
         list_changes(path_string(repo.path()), default_filter()),
-        Err(CoreError::Db)
-    );
+        Err(CoreError::Db { .. })
+    ));
 }

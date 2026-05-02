@@ -83,7 +83,7 @@ fn sync_external_created_failure_recovery_db_error_rolls_back_rows_and_cursor() 
         vec![created("docs/external.pdf", 100)],
     );
 
-    assert_eq!(result, Err(CoreError::Db));
+    assert!(matches!(result, Err(CoreError::Db { .. })));
     assert_eq!(active_file_count(repo.path()), 0);
     assert_eq!(fs_cursor(repo.path()), None);
     assert_eq!(
@@ -105,7 +105,8 @@ fn sync_external_created_failure_recovery_replays_after_missing_file_without_par
         ],
     );
 
-    assert_eq!(failed, Err(CoreError::Io));
+    assert!(matches!(failed, Err(CoreError::Io { .. })));
+
     assert_eq!(active_file_count(repo.path()), 0);
     assert_eq!(fs_cursor(repo.path()), None);
 
@@ -163,7 +164,10 @@ fn sync_external_created_failure_recovery_permission_denied_keeps_files_db_and_c
     fs::set_permissions(&blocked_path, original_permissions)
         .expect("restore blocked file permissions");
 
-    assert_eq!(result, Err(CoreError::PermissionDenied));
+    assert_eq!(
+        result,
+        Err(CoreError::permission_denied("permission denied"))
+    );
     assert_eq!(active_file_count(repo.path()), 0);
     assert_eq!(fs_cursor(repo.path()), None);
     assert_eq!(

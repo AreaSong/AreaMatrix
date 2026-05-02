@@ -43,9 +43,9 @@ fn get_file_detail_contract_api_exposes_callable_signature_input_and_output() {
     assert_eq!(entry.category, "finance");
 
     let documented_errors = [
-        CoreError::FileNotFound,
-        CoreError::RepoNotInitialized,
-        CoreError::Db,
+        CoreError::file_not_found("missing file"),
+        CoreError::repo_not_initialized("repository not initialized"),
+        CoreError::db("database error"),
     ];
     assert_eq!(documented_errors.len(), 3);
 }
@@ -115,7 +115,7 @@ fn get_file_detail_contract_api_documents_errors_side_effects_and_scope() {
     for fragment in [
         "`FileNotFound { path }`",
         "`RepoNotInitialized { path }`",
-        "`Db(msg)`",
+        "`Db { message }`",
     ] {
         assert_contains(ERROR_CODES, fragment);
     }
@@ -131,9 +131,9 @@ fn get_file_detail_contract_api_documents_errors_side_effects_and_scope() {
         "rename, or overwrite user files",
         "File preview, Quick Look, OCR metadata",
         "change-log aggregation, and note aggregation belong to adjacent capabilities",
-        "Returns `CoreError::RepoNotInitialized`",
-        "`CoreError::FileNotFound`",
-        "`CoreError::Db`",
+        "Returns `CoreError::RepoNotInitialized { path }`",
+        "`CoreError::FileNotFound { path }`",
+        "`CoreError::Db { message }`",
     ] {
         assert_contains(API_RS, fragment);
     }

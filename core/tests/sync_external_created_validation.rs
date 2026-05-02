@@ -172,7 +172,8 @@ fn sync_external_created_validation_rejects_absolute_paths_outside_repo_without_
         vec![created(&path_string(outside.path()), 220)],
     );
 
-    assert_eq!(result, Err(CoreError::InvalidPath));
+    assert!(matches!(result, Err(CoreError::InvalidPath { .. })));
+
     assert_eq!(fs_cursor(repo.path()), None);
     assert!(listed_files(repo.path()).is_empty());
     assert!(listed_changes(repo.path()).is_empty());
@@ -188,7 +189,8 @@ fn sync_external_created_validation_rejects_negative_created_event_id_without_st
         vec![created("docs/bad-event.txt", -1)],
     );
 
-    assert_eq!(result, Err(CoreError::InvalidPath));
+    assert!(matches!(result, Err(CoreError::InvalidPath { .. })));
+
     assert_eq!(fs_cursor(repo.path()), None);
     assert!(listed_files(repo.path()).is_empty());
     assert!(listed_changes(repo.path()).is_empty());

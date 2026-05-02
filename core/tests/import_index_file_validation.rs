@@ -209,7 +209,8 @@ fn import_index_file_validation_missing_source_is_file_not_found_without_side_ef
         indexed_auto_options(),
     );
 
-    assert_eq!(result, Err(CoreError::FileNotFound));
+    assert!(matches!(result, Err(CoreError::FileNotFound { .. })));
+
     assert_no_index_side_effects(repo.path());
 }
 
@@ -225,7 +226,7 @@ fn import_index_file_validation_rejects_metadata_internal_source_without_side_ef
         indexed_auto_options(),
     );
 
-    assert_eq!(result, Err(CoreError::InvalidPath));
+    assert!(matches!(result, Err(CoreError::InvalidPath { .. })));
     assert_eq!(
         fs::read(&source).expect("read internal file after rejected indexed import"),
         b"internal bytes"
@@ -244,7 +245,8 @@ fn import_index_file_validation_rejects_metadata_destination_without_copying() {
         indexed_selected_directory_options(".areamatrix/staging"),
     );
 
-    assert_eq!(result, Err(CoreError::InvalidPath));
+    assert!(matches!(result, Err(CoreError::InvalidPath { .. })));
+
     assert_eq!(
         fs::read(&source).expect("read source after rejected indexed destination"),
         b"source bytes"

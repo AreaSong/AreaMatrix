@@ -213,7 +213,8 @@ fn import_index_file_implementation_db_failure_rolls_back_metadata_only() {
         indexed_options(),
     );
 
-    assert_eq!(result, Err(CoreError::Db));
+    assert!(matches!(result, Err(CoreError::Db { .. })));
+
     assert_eq!(
         fs::read(&source).expect("read source after DB failure"),
         b"index rollback"
@@ -232,7 +233,8 @@ fn import_index_file_implementation_rejects_missing_source_without_side_effects(
         indexed_options(),
     );
 
-    assert_eq!(result, Err(CoreError::FileNotFound));
+    assert!(matches!(result, Err(CoreError::FileNotFound { .. })));
+
     assert_no_index_side_effects(repo.path());
 }
 

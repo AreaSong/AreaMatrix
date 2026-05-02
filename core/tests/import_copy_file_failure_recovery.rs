@@ -115,7 +115,7 @@ fn import_copy_file_failure_recovery_rolls_back_final_file_when_db_promotion_fai
         copied_options(),
     );
 
-    assert_eq!(result, Err(CoreError::Db));
+    assert!(matches!(result, Err(CoreError::Db { .. })));
     assert_eq!(fs::read(&source).expect("read source"), b"invoice bytes");
     assert!(!repo.path().join("finance/invoice.pdf").exists());
     assert!(!repo.path().join("finance").exists());
@@ -137,7 +137,8 @@ fn import_copy_file_failure_recovery_failed_attempt_can_be_retried() {
         copied_options(),
     );
 
-    assert_eq!(failed, Err(CoreError::Db));
+    assert!(matches!(failed, Err(CoreError::Db { .. })));
+
     remove_import_change_log_failure(repo.path());
 
     let entry = import_file(
@@ -219,7 +220,10 @@ fn import_copy_file_failure_recovery_permission_denied_leaves_no_side_effects() 
 
     fs::set_permissions(&source, original_permissions).expect("restore source permissions");
 
-    assert_eq!(result, Err(CoreError::PermissionDenied));
+    assert_eq!(
+        result,
+        Err(CoreError::permission_denied("permission denied"))
+    );
     assert!(!repo.path().join("finance").exists());
     assert_eq!(count_rows(repo.path(), "active"), 0);
     assert_eq!(count_rows(repo.path(), "staging"), 0);

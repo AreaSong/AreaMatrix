@@ -103,7 +103,12 @@ fn list_files_implementation_requires_initialized_repo() {
 
     let result = list_files(path_string(repo.path()), default_filter());
 
-    assert_eq!(result, Err(CoreError::RepoNotInitialized));
+    assert_eq!(
+        result,
+        Err(CoreError::repo_not_initialized(
+            "repository not initialized"
+        ))
+    );
 }
 
 #[test]

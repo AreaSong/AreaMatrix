@@ -207,7 +207,8 @@ fn import_copy_file_integration_verify_failure_keeps_source_and_final_state_safe
         copied_options(),
     );
 
-    assert_eq!(result, Err(CoreError::Db));
+    assert!(matches!(result, Err(CoreError::Db { .. })));
+
     assert_eq!(
         fs::read(&source).expect("read source after failed import"),
         b"invoice bytes"

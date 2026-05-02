@@ -77,7 +77,7 @@ fn root_entry_content(repo: &Path, locale: &str, managed: &str) -> CoreResult<St
     let path = repo.join("AREAMATRIX.md");
     match fs::symlink_metadata(&path) {
         Ok(metadata) if metadata.is_file() => {}
-        Ok(_) => return Err(CoreError::Config),
+        Ok(_) => return Err(CoreError::config("configuration error")),
         Err(error) if error.kind() == io::ErrorKind::NotFound => {
             return Ok(root_entry_template(locale, managed));
         }
@@ -281,13 +281,13 @@ fn load_config(repo: &Path) -> CoreResult<crate::RepoConfig> {
 
 fn validate_node_slug(node_slug: &str) -> CoreResult<()> {
     if node_slug.is_empty() || node_slug == "." || node_slug == ".." {
-        return Err(CoreError::Config);
+        return Err(CoreError::config("configuration error"));
     }
     if node_slug
         .chars()
         .any(|ch| ch.is_control() || matches!(ch, '/' | '\\' | ':'))
     {
-        return Err(CoreError::Config);
+        return Err(CoreError::config("configuration error"));
     }
     Ok(())
 }
@@ -450,9 +450,9 @@ fn encode_link(value: &str) -> String {
 
 fn map_io_error(error: io::Error) -> CoreError {
     match error.kind() {
-        io::ErrorKind::AlreadyExists => CoreError::Config,
-        io::ErrorKind::PermissionDenied => CoreError::PermissionDenied,
-        io::ErrorKind::InvalidInput => CoreError::InvalidPath,
-        _ => CoreError::Io,
+        io::ErrorKind::AlreadyExists => CoreError::config("configuration error"),
+        io::ErrorKind::PermissionDenied => CoreError::permission_denied("permission denied"),
+        io::ErrorKind::InvalidInput => CoreError::invalid_path("invalid path"),
+        _ => CoreError::io("io error"),
     }
 }

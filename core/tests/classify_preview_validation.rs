@@ -116,7 +116,8 @@ fn classify_preview_validation_invalid_schema_returns_config_without_writes() {
 
     let result = predict_category(path_string(repo.path()), "report.pdf".to_owned());
 
-    assert_eq!(result, Err(CoreError::Config));
+    assert!(matches!(result, Err(CoreError::Config { .. })));
+
     assert_eq!(snapshot_files(repo.path()), before);
 }
 
@@ -130,7 +131,8 @@ fn classify_preview_validation_unreadable_rule_source_returns_classify_without_w
 
     let result = predict_category(path_string(repo.path()), "invoice.pdf".to_owned());
 
-    assert_eq!(result, Err(CoreError::Classify));
+    assert!(matches!(result, Err(CoreError::Classify { .. })));
+
     assert!(classifier.is_dir());
     assert_eq!(snapshot_files(repo.path()), before);
 }

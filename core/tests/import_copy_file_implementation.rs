@@ -215,7 +215,8 @@ fn import_copy_file_implementation_invalid_filename_leaves_no_file_or_db_side_ef
 
     let result = import_file(path_string(repo.path()), path_string(&source), options);
 
-    assert_eq!(result, Err(CoreError::InvalidPath));
+    assert!(matches!(result, Err(CoreError::InvalidPath { .. })));
+
     assert_eq!(fs::read(&source).expect("read source"), b"content");
     assert!(!repo.path().join("finance").exists());
     assert_eq!(active_file_count(repo.path()), 0);

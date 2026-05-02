@@ -326,7 +326,8 @@ fn detect_duplicate_overwrite_rolls_back_when_deleted_change_log_fails() {
             copied_options(DuplicateStrategy::Overwrite),
         );
 
-        assert_eq!(result, Err(CoreError::Db));
+        assert!(matches!(result, Err(CoreError::Db { .. })));
+
         assert_eq!(
             fs::read(repo.path().join(first.path)).expect("read restored original final file"),
             b"same bytes"

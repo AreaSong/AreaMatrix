@@ -138,7 +138,7 @@ fn move_file_no_replace(current_path: &Path, destination: &Path) -> CoreResult<(
     match fs::hard_link(current_path, destination) {
         Ok(()) => {}
         Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {
-            return Err(CoreError::Conflict);
+            return Err(CoreError::conflict("path conflict"));
         }
         Err(_) => copy_to_new_destination(current_path, destination)?,
     }
@@ -157,7 +157,7 @@ fn copy_to_new_destination(current_path: &Path, destination: &Path) -> CoreResul
     let copied_size = hash::copy_to_new_file(current_path, destination)?;
     if copied_size != expected_size {
         let _cleanup_result = fs::remove_file(destination);
-        return Err(CoreError::Io);
+        return Err(CoreError::io("io error"));
     }
     Ok(())
 }
@@ -178,7 +178,7 @@ mod tests {
 
         let result = move_recoverable_file(&source, &destination);
 
-        assert_eq!(result, Err(CoreError::Conflict));
+        assert!(matches!(result, Err(CoreError::Conflict { .. })));
         assert_eq!(
             fs::read(&source).expect("source remains readable after refused move"),
             b"new content"

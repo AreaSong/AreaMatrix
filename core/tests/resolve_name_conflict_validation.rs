@@ -257,8 +257,9 @@ fn resolve_name_conflict_validation_invalid_filename_does_not_change_repo() {
         "bad/name.pdf".to_owned(),
     );
 
-    assert_eq!(import_result, Err(CoreError::InvalidPath));
-    assert_eq!(rename_result, Err(CoreError::InvalidPath));
+    assert!(matches!(import_result, Err(CoreError::InvalidPath { .. })));
+
+    assert!(matches!(rename_result, Err(CoreError::InvalidPath { .. })));
     assert_eq!(
         fs::read(repo.path().join("finance/same.pdf")).expect("read existing final file"),
         b"first bytes"
@@ -294,7 +295,8 @@ fn resolve_name_conflict_validation_exhausted_numbering_returns_conflict_without
         copied_options("same.pdf"),
     );
 
-    assert_eq!(result, Err(CoreError::Conflict));
+    assert!(matches!(result, Err(CoreError::Conflict { .. })));
+
     assert_eq!(
         fs::read(conflict_dir.join("same.pdf")).expect("read existing base conflict"),
         b"existing-base"

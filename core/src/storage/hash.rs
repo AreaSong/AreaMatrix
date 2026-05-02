@@ -94,10 +94,10 @@ fn copy_to_new_file_inner(source: &Path, destination: &Path) -> CoreResult<u64> 
 
 pub(super) fn map_io_error(error: std::io::Error) -> CoreError {
     match error.kind() {
-        std::io::ErrorKind::AlreadyExists => CoreError::Conflict,
-        std::io::ErrorKind::NotFound => CoreError::FileNotFound,
-        std::io::ErrorKind::PermissionDenied => CoreError::PermissionDenied,
-        std::io::ErrorKind::InvalidInput => CoreError::InvalidPath,
-        _ => CoreError::Io,
+        std::io::ErrorKind::AlreadyExists => CoreError::conflict("path conflict"),
+        std::io::ErrorKind::NotFound => CoreError::file_not_found("missing file"),
+        std::io::ErrorKind::PermissionDenied => CoreError::permission_denied("permission denied"),
+        std::io::ErrorKind::InvalidInput => CoreError::invalid_path("invalid path"),
+        _ => CoreError::io("io error"),
     }
 }

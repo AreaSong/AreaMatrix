@@ -100,7 +100,7 @@ pub(crate) fn list_tree_json(repo_path: String, locale: String) -> CoreResult<St
 
 fn build_tree_json(repo: &Path, locale: &str) -> CoreResult<String> {
     let tree = build_tree(repo, locale)?;
-    serde_json::to_string(&tree).map_err(|_| CoreError::Io)
+    serde_json::to_string(&tree).map_err(|error| CoreError::io(error.to_string()))
 }
 
 fn build_tree(repo: &Path, locale: &str) -> CoreResult<TreeNode> {
@@ -130,7 +130,7 @@ fn load_categories(repo: &Path) -> CoreResult<CategoryDisplay> {
 
     parse_categories(&yaml)
         .or_else(|| parse_categories(DEFAULT_CLASSIFIER_YAML))
-        .ok_or(CoreError::Io)
+        .ok_or_else(|| CoreError::io("io error"))
 }
 
 fn parse_categories(yaml: &str) -> Option<CategoryDisplay> {
@@ -349,13 +349,13 @@ fn display_name_for(
 
 fn metadata_len(entry: &DirEntry) -> CoreResult<i64> {
     let len = entry.metadata().map_err(map_walkdir_error)?.len();
-    i64::try_from(len).map_err(|_| CoreError::Io)
+    i64::try_from(len).map_err(|error| CoreError::io(error.to_string()))
 }
 
 fn relative_repo_path(repo: &Path, path: &Path) -> CoreResult<String> {
     let relative = path
         .strip_prefix(repo)
-        .map_err(|_| CoreError::InvalidPath)?;
+        .map_err(|error| CoreError::invalid_path(error.to_string()))?;
     Ok(relative
         .components()
         .map(|component| component.as_os_str().to_string_lossy())
@@ -393,20 +393,20 @@ fn map_walkdir_error(error: walkdir::Error) -> CoreError {
     error
         .io_error()
         .map(|error| map_io_kind(error.kind()))
-        .unwrap_or(CoreError::Io)
+        .unwrap_or_else(|| CoreError::io("io error"))
 }
 
 fn map_io_kind(kind: io::ErrorKind) -> CoreError {
     match kind {
-        io::ErrorKind::PermissionDenied => CoreError::PermissionDenied,
-        io::ErrorKind::InvalidInput => CoreError::InvalidPath,
-        _ => CoreError::Io,
+        io::ErrorKind::PermissionDenied => CoreError::permission_denied("permission denied"),
+        io::ErrorKind::InvalidInput => CoreError::invalid_path("invalid path"),
+        _ => CoreError::io("io error"),
     }
 }
 
 fn normalize_contract_error(error: CoreError) -> CoreError {
     match error {
-        CoreError::RepoNotInitialized | CoreError::Db => error,
-        _ => CoreError::Io,
+        CoreError::RepoNotInitialized { .. } | CoreError::Db { .. } => error,
+        _ => CoreError::io("io error"),
     }
 }

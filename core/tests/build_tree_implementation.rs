@@ -168,7 +168,9 @@ fn build_tree_implementation_requires_initialized_readable_metadata() {
     let uninitialized = tempfile::tempdir().expect("create uninitialized repository directory");
     assert_eq!(
         list_tree_json(path_string(uninitialized.path()), "en".to_owned()),
-        Err(CoreError::RepoNotInitialized)
+        Err(CoreError::repo_not_initialized(
+            "repository not initialized"
+        ))
     );
 
     let repo = initialized_repo(false);
@@ -177,10 +179,10 @@ fn build_tree_implementation_requires_initialized_readable_metadata() {
     remove_if_exists(metadata.join("index.db-wal"));
     remove_if_exists(metadata.join("index.db-shm"));
 
-    assert_eq!(
+    assert!(matches!(
         list_tree_json(path_string(repo.path()), "en".to_owned()),
-        Err(CoreError::Db)
-    );
+        Err(CoreError::Db { .. })
+    ));
 }
 
 fn remove_if_exists(path: PathBuf) {

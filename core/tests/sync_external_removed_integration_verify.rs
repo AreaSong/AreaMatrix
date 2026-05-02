@@ -274,7 +274,7 @@ fn assert_rust_entry_points_are_real_removed_wiring() {
         "must not",
         "remove, trash, move, rename, overwrite, copy, or download",
         "Deleted rows are not visible to default `list_files`",
-        "return `CoreError::FileNotFound`",
+        "return `CoreError::FileNotFound { path }`",
     ] {
         assert_contains(API_RS, fragment);
     }
@@ -327,10 +327,11 @@ fn sync_external_removed_integration_verify_real_flow_reaches_list_detail_log_tr
     assert_eq!(fs_cursor(repo.path()), Some(902));
 
     assert_only_keeper_is_visible(repo.path(), keeper_entry.id);
-    assert_eq!(
+    assert!(matches!(
         get_file(path_string(repo.path()), removed_entry.id),
-        Err(CoreError::FileNotFound)
-    );
+        Err(CoreError::FileNotFound { .. })
+    ));
+
     assert_eq!(file_status(repo.path(), removed_entry.id).0, "deleted");
     assert!(
         file_status(repo.path(), removed_entry.id).1.is_some(),
@@ -373,7 +374,8 @@ fn sync_external_removed_integration_verify_boundaries_stay_transactional_and_sc
         vec![removed("docs/present.pdf", 911)],
     );
 
-    assert_eq!(existing_path, Err(CoreError::Io));
+    assert!(matches!(existing_path, Err(CoreError::Io { .. })));
+
     assert_eq!(fs_cursor(repo.path()), Some(910));
     assert_eq!(
         get_file(path_string(repo.path()), entry.id)

@@ -34,7 +34,7 @@ pub(crate) fn create_scan_session(repo_path: &Path, kind: ScanSessionKind) -> Co
              ) VALUES (?1, 'running', strftime('%s', 'now'), strftime('%s', 'now'), 0, 0, 0, '[]')",
             params![kind_to_db(&kind)],
         )
-        .map_err(|_| CoreError::Db)?;
+        .map_err(|error| CoreError::db(error.to_string()))?;
     Ok(connection.last_insert_rowid())
 }
 
@@ -52,7 +52,7 @@ pub(crate) fn latest_scan_session(repo_path: &Path) -> CoreResult<Option<ScanSes
             scan_session_from_row,
         )
         .optional()
-        .map_err(|_| CoreError::Db)
+        .map_err(|error| CoreError::db(error.to_string()))
 }
 
 pub(crate) fn scan_session_by_id(
@@ -70,8 +70,8 @@ pub(crate) fn scan_session_by_id(
             scan_session_from_row,
         )
         .optional()
-        .map_err(|_| CoreError::Db)?
-        .ok_or(CoreError::Db)
+        .map_err(|error| CoreError::db(error.to_string()))?
+        .ok_or_else(|| CoreError::db("database error"))
 }
 
 pub(crate) fn mark_scan_session_running_for_resume(
@@ -90,9 +90,9 @@ pub(crate) fn mark_scan_session_running_for_resume(
                AND status IN ('paused', 'failed', 'interrupted', 'running')",
             params![scan_session_id],
         )
-        .map_err(|_| CoreError::Db)?;
+        .map_err(|error| CoreError::db(error.to_string()))?;
     if changed == 0 {
-        return Err(CoreError::Db);
+        return Err(CoreError::db("database error"));
     }
     Ok(())
 }
@@ -102,7 +102,9 @@ pub(crate) fn upsert_adopted_file(
     input: &FileIndexInput,
 ) -> CoreResult<ScanFileChange> {
     let mut connection = open_repo_connection(repo_path)?;
-    let tx = connection.transaction().map_err(|_| CoreError::Db)?;
+    let tx = connection
+        .transaction()
+        .map_err(|error| CoreError::db(error.to_string()))?;
     let existing = existing_file_for_path(&tx, &input.path)?;
     let change = match existing {
         Some(existing) if existing.matches(input) => ScanFileChange::Skipped,
@@ -129,7 +131,7 @@ pub(crate) fn upsert_adopted_file(
                     input.hash_sha256,
                 ],
             )
-            .map_err(|_| CoreError::Db)?;
+            .map_err(|error| CoreError::db(error.to_string()))?;
             ScanFileChange::Updated
         }
         None => {
@@ -151,18 +153,19 @@ pub(crate) fn upsert_adopted_file(
                     input.hash_sha256,
                 ],
             )
-            .map_err(|_| CoreError::Db)?;
+            .map_err(|error| CoreError::db(error.to_string()))?;
             let file_id = tx.last_insert_rowid();
             tx.execute(
                 "INSERT INTO change_log (file_id, action, detail_json, occurred_at)
                  VALUES (?1, 'adopted', ?2, strftime('%s', 'now'))",
                 params![file_id, r#"{"mode":"indexed","source":"adopt_existing"}"#],
             )
-            .map_err(|_| CoreError::Db)?;
+            .map_err(|error| CoreError::db(error.to_string()))?;
             ScanFileChange::Inserted
         }
     };
-    tx.commit().map_err(|_| CoreError::Db)?;
+    tx.commit()
+        .map_err(|error| CoreError::db(error.to_string()))?;
     Ok(change)
 }
 
@@ -205,7 +208,7 @@ pub(crate) fn update_scan_session_progress(
                 skipped_inc
             ],
         )
-        .map_err(|_| CoreError::Db)?;
+        .map_err(|error| CoreError::db(error.to_string()))?;
     Ok(())
 }
 
@@ -216,7 +219,8 @@ pub(crate) fn finish_scan_session(
     errors: &[String],
 ) -> CoreResult<()> {
     let connection = open_repo_connection(repo_path)?;
-    let errors_json = serde_json::to_string(errors).map_err(|_| CoreError::Db)?;
+    let errors_json =
+        serde_json::to_string(errors).map_err(|error| CoreError::db(error.to_string()))?;
     connection
         .execute(
             "UPDATE scan_sessions
@@ -227,7 +231,7 @@ pub(crate) fn finish_scan_session(
              WHERE id = ?1",
             params![scan_session_id, status_to_db(&status), errors_json],
         )
-        .map_err(|_| CoreError::Db)?;
+        .map_err(|error| CoreError::db(error.to_string()))?;
     Ok(())
 }
 
@@ -285,7 +289,7 @@ fn existing_file_for_path(
             },
         )
         .optional()
-        .map_err(|_| CoreError::Db)?
+        .map_err(|error| CoreError::db(error.to_string()))?
         .map(|row| {
             Ok(ExistingFile {
                 id: row.0,

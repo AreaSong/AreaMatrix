@@ -252,7 +252,8 @@ fn recover_on_startup_implementation_rejects_staging_directory_symlink_without_d
 
     let result = recover_on_startup(path_string(repo.path()));
 
-    assert_eq!(result, Err(CoreError::Io));
+    assert!(matches!(result, Err(CoreError::Io { .. })));
+
     assert_eq!(
         fs::read(&user_file).expect("external user file must remain readable"),
         b"user bytes"
@@ -361,6 +362,11 @@ fn recover_on_startup_implementation_uninitialized_repo_does_not_create_metadata
 
     let result = recover_on_startup(path_string(repo.path()));
 
-    assert_eq!(result, Err(CoreError::RepoNotInitialized));
+    assert_eq!(
+        result,
+        Err(CoreError::repo_not_initialized(
+            "repository not initialized"
+        ))
+    );
     assert!(!repo.path().join(".areamatrix").exists());
 }

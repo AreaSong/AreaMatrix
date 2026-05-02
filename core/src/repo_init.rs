@@ -80,7 +80,9 @@ fn init_create_empty_inner(
     rollback: &mut InitRollback,
 ) -> CoreResult<()> {
     let config = create_metadata_staging(repo_path, init_dir, options)?;
-    let init_dir_name = init_dir.file_name().ok_or(CoreError::Config)?;
+    let init_dir_name = init_dir
+        .file_name()
+        .ok_or_else(|| CoreError::config("configuration error"))?;
     ensure_no_user_content_entries(repo, Some(init_dir_name))?;
     commit_metadata_staging(repo, init_dir, rollback)?;
 
@@ -150,13 +152,13 @@ fn preflight_create_empty(repo_path: &str, repo: &Path) -> CoreResult<()> {
     }
 
     if !validation.exists || !validation.is_directory {
-        return Err(CoreError::InvalidPath);
+        return Err(CoreError::invalid_path("invalid path"));
     }
     if !validation.is_writable {
-        return Err(CoreError::PermissionDenied);
+        return Err(CoreError::permission_denied("permission denied"));
     }
     if validation.is_initialized || validation.has_unfinished_scan_session || !validation.is_empty {
-        return Err(CoreError::Config);
+        return Err(CoreError::config("configuration error"));
     }
     ensure_no_user_content_entries(repo, None)
 }
@@ -165,7 +167,7 @@ fn preflight_adopt_existing_options(options: &RepoInitOptions) -> CoreResult<()>
     if options.create_default_categories
         || options.overview_output == OverviewOutput::RootAreaMatrixFile
     {
-        return Err(CoreError::Config);
+        return Err(CoreError::config("configuration error"));
     }
     Ok(())
 }
@@ -182,13 +184,13 @@ fn preflight_adopt_existing(repo_path: &str, repo: &Path) -> CoreResult<()> {
     }
 
     if !validation.exists || !validation.is_directory {
-        return Err(CoreError::InvalidPath);
+        return Err(CoreError::invalid_path("invalid path"));
     }
     if !validation.is_writable {
-        return Err(CoreError::PermissionDenied);
+        return Err(CoreError::permission_denied("permission denied"));
     }
     if validation.is_initialized || validation.has_unfinished_scan_session || validation.is_empty {
-        return Err(CoreError::Config);
+        return Err(CoreError::config("configuration error"));
     }
     Ok(())
 }
@@ -207,7 +209,7 @@ fn cleanup_recoverable_init_dirs(repo: &Path) -> CoreResult<bool> {
 
         let path = entry.path();
         if !is_recoverable_init_dir(&path)? {
-            return Err(CoreError::Config);
+            return Err(CoreError::config("configuration error"));
         }
 
         fs::remove_dir_all(path).map_err(map_io_error)?;
@@ -283,7 +285,7 @@ fn ensure_no_user_content_entries(
             continue;
         }
         if repo_entries::is_user_content_entry(&entry).map_err(map_io_error)? {
-            return Err(CoreError::Config);
+            return Err(CoreError::config("configuration error"));
         }
     }
     Ok(())
@@ -299,21 +301,21 @@ fn create_default_category_dirs(repo: &Path, rollback: &mut InitRollback) -> Cor
 }
 
 fn default_category_slugs() -> CoreResult<Vec<String>> {
-    let value: Value =
-        serde_yaml::from_str(DEFAULT_CLASSIFIER_YAML).map_err(|_| CoreError::Config)?;
+    let value: Value = serde_yaml::from_str(DEFAULT_CLASSIFIER_YAML)
+        .map_err(|error| CoreError::config(error.to_string()))?;
     let categories = value
         .get("categories")
         .and_then(Value::as_sequence)
-        .ok_or(CoreError::Config)?;
+        .ok_or_else(|| CoreError::config("configuration error"))?;
 
     let mut slugs = Vec::with_capacity(categories.len());
     for category in categories {
         let slug = category
             .get("slug")
             .and_then(Value::as_str)
-            .ok_or(CoreError::Config)?;
+            .ok_or_else(|| CoreError::config("configuration error"))?;
         if !is_safe_category_slug(slug) {
-            return Err(CoreError::Config);
+            return Err(CoreError::config("configuration error"));
         }
         slugs.push(slug.to_owned());
     }
@@ -340,10 +342,10 @@ fn write_new_file(path: &Path, content: &str) -> CoreResult<()> {
 
 fn map_io_error(error: io::Error) -> CoreError {
     match error.kind() {
-        io::ErrorKind::AlreadyExists => CoreError::Config,
-        io::ErrorKind::PermissionDenied => CoreError::PermissionDenied,
-        io::ErrorKind::InvalidInput => CoreError::InvalidPath,
-        _ => CoreError::Io,
+        io::ErrorKind::AlreadyExists => CoreError::config("configuration error"),
+        io::ErrorKind::PermissionDenied => CoreError::permission_denied("permission denied"),
+        io::ErrorKind::InvalidInput => CoreError::invalid_path("invalid path"),
+        _ => CoreError::io("io error"),
     }
 }
 

@@ -108,7 +108,12 @@ fn get_file_detail_implementation_requires_initialized_repo() {
 
     let result = get_file(path_string(repo.path()), 1);
 
-    assert_eq!(result, Err(CoreError::RepoNotInitialized));
+    assert_eq!(
+        result,
+        Err(CoreError::repo_not_initialized(
+            "repository not initialized"
+        ))
+    );
 }
 
 #[test]
@@ -117,18 +122,20 @@ fn get_file_detail_implementation_returns_not_found_for_missing_deleted_or_stagi
     let deleted_id = insert_file(repo.path(), "finance/deleted.pdf", "deleted", 10);
     let staging_id = insert_file(repo.path(), "finance/staging.pdf", "staging", 20);
 
-    assert_eq!(
+    assert!(matches!(
         get_file(path_string(repo.path()), 999),
-        Err(CoreError::FileNotFound)
-    );
-    assert_eq!(
+        Err(CoreError::FileNotFound { .. })
+    ));
+
+    assert!(matches!(
         get_file(path_string(repo.path()), deleted_id),
-        Err(CoreError::FileNotFound)
-    );
-    assert_eq!(
+        Err(CoreError::FileNotFound { .. })
+    ));
+
+    assert!(matches!(
         get_file(path_string(repo.path()), staging_id),
-        Err(CoreError::FileNotFound)
-    );
+        Err(CoreError::FileNotFound { .. })
+    ));
 }
 
 #[test]

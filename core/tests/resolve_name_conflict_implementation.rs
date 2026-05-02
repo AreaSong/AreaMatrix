@@ -232,7 +232,8 @@ fn resolve_name_conflict_replace_same_name_db_failure_restores_original_target()
             copied_options_with_strategy("same.pdf", DuplicateStrategy::Overwrite),
         );
 
-        assert_eq!(result, Err(CoreError::Db));
+        assert!(matches!(result, Err(CoreError::Db { .. })));
+
         assert_eq!(
             fs::read(repo.path().join("finance/same.pdf")).expect("read restored existing file"),
             b"existing content"
@@ -270,7 +271,8 @@ fn resolve_name_conflict_import_exhaustion_returns_conflict_without_side_effects
         copied_options("same.pdf"),
     );
 
-    assert_eq!(result, Err(CoreError::Conflict));
+    assert!(matches!(result, Err(CoreError::Conflict { .. })));
+
     assert_eq!(
         fs::read(&source).expect("read copied source"),
         b"new content"
@@ -301,7 +303,8 @@ fn resolve_name_conflict_rename_exhaustion_returns_conflict_without_side_effects
 
     let result = rename_file(path_string(repo.path()), entry.id, "same.pdf".to_owned());
 
-    assert_eq!(result, Err(CoreError::Conflict));
+    assert!(matches!(result, Err(CoreError::Conflict { .. })));
+
     assert_eq!(
         fs::read(repo.path().join("finance/draft.pdf")).expect("read original file"),
         b"rename content"

@@ -47,10 +47,10 @@ fn sync_external_renamed_contract_api_exposes_documented_signature_input_and_out
     assert!(result.errors.is_empty());
 
     let documented_errors = [
-        CoreError::FileNotFound,
-        CoreError::Conflict,
-        CoreError::Db,
-        CoreError::Io,
+        CoreError::file_not_found("missing file"),
+        CoreError::conflict("path conflict"),
+        CoreError::db("database error"),
+        CoreError::io("io error"),
     ];
     assert_eq!(documented_errors.len(), 4);
 }
@@ -113,8 +113,8 @@ fn sync_external_renamed_contract_api_documents_errors_side_effects_and_scope() 
     for fragment in [
         "`FileNotFound { path }`",
         "`Conflict { path }`",
-        "`Db(msg)`",
-        "`Io(msg)`",
+        "`Db { message }`",
+        "`Io { message }`",
     ] {
         assert_contains(ERROR_CODES, fragment);
     }
@@ -137,8 +137,8 @@ fn sync_external_renamed_contract_api_documents_errors_side_effects_and_scope() 
         "rename, move, delete, overwrite, copy, or download",
         "cannot be paired",
         "removed + created",
-        "Returns `CoreError::FileNotFound`",
-        "`CoreError::Conflict`",
+        "Returns `CoreError::FileNotFound { path }`",
+        "`CoreError::Conflict { path }`",
     ] {
         assert_contains(API_RS, fragment);
     }

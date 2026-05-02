@@ -17,10 +17,10 @@ const INDEX_DB_FILE: &str = "index.db";
 ///
 /// # Errors
 ///
-/// Returns `CoreError::InvalidPath` for an empty path or a path inside
-/// `.areamatrix/`, `CoreError::PermissionDenied` when read-only inspection is
-/// blocked, `CoreError::ICloudPlaceholder` for placeholder markers, and
-/// `CoreError::Db` if existing scan-session metadata cannot be read.
+/// Returns `CoreError::InvalidPath { path }` for an empty path or a path inside
+/// `.areamatrix/`, `CoreError::PermissionDenied { path }` when read-only inspection is
+/// blocked, `CoreError::ICloudPlaceholder { path }` for placeholder markers, and
+/// `CoreError::Db { message }` if existing scan-session metadata cannot be read.
 pub(crate) fn validate_repo_path(repo_path: String) -> CoreResult<RepoPathValidation> {
     validate_repo_path_with_requirement(repo_path, InitializationRequirement::Optional)
 }
@@ -29,7 +29,7 @@ pub(crate) fn validate_repo_path(repo_path: String) -> CoreResult<RepoPathValida
 ///
 /// # Errors
 ///
-/// Returns `CoreError::RepoNotInitialized` when the selected directory is
+/// Returns `CoreError::RepoNotInitialized { path }` when the selected directory is
 /// inspectable but lacks `.areamatrix/` metadata.
 pub(crate) fn validate_initialized_repo_path(repo_path: String) -> CoreResult<RepoPathValidation> {
     validate_repo_path_with_requirement(repo_path, InitializationRequirement::Required)
@@ -46,15 +46,15 @@ fn validate_repo_path_with_requirement(
     initialization_requirement: InitializationRequirement,
 ) -> CoreResult<RepoPathValidation> {
     if repo_path.is_empty() {
-        return Err(CoreError::InvalidPath);
+        return Err(CoreError::invalid_path("invalid path"));
     }
 
     let path = Path::new(&repo_path);
     if is_inside_area_matrix(path) {
-        return Err(CoreError::InvalidPath);
+        return Err(CoreError::invalid_path("invalid path"));
     }
     if has_icloud_placeholder_marker(path) {
-        return Err(CoreError::ICloudPlaceholder);
+        return Err(CoreError::icloud_placeholder("icloud placeholder"));
     }
 
     let is_icloud_path = is_likely_icloud_path(path);
@@ -97,7 +97,9 @@ fn validate_repo_path_with_requirement(
     if initialization_requirement == InitializationRequirement::Required
         && !directory_state.is_initialized
     {
-        return Err(CoreError::RepoNotInitialized);
+        return Err(CoreError::repo_not_initialized(
+            "repository not initialized",
+        ));
     }
 
     if !directory_state.is_empty {
@@ -163,9 +165,9 @@ fn validation_for_missing_or_blocked(
                 issues,
             })
         }
-        io::ErrorKind::InvalidInput => Err(CoreError::InvalidPath),
-        io::ErrorKind::PermissionDenied => Err(CoreError::PermissionDenied),
-        _ => Err(CoreError::Io),
+        io::ErrorKind::InvalidInput => Err(CoreError::invalid_path("invalid path")),
+        io::ErrorKind::PermissionDenied => Err(CoreError::permission_denied("permission denied")),
+        _ => Err(CoreError::io("io error")),
     }
 }
 
@@ -198,9 +200,9 @@ fn inspect_directory(path: &Path) -> CoreResult<DirectoryState> {
 
 fn map_directory_read_error(error: io::Error) -> CoreError {
     match error.kind() {
-        io::ErrorKind::PermissionDenied => CoreError::PermissionDenied,
-        io::ErrorKind::InvalidInput => CoreError::InvalidPath,
-        _ => CoreError::Io,
+        io::ErrorKind::PermissionDenied => CoreError::permission_denied("permission denied"),
+        io::ErrorKind::InvalidInput => CoreError::invalid_path("invalid path"),
+        _ => CoreError::io("io error"),
     }
 }
 
@@ -209,10 +211,12 @@ fn metadata_dir_exists(path: &Path) -> CoreResult<bool> {
         Ok(metadata) => Ok(metadata.is_dir()),
         Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(false),
         Err(error) if error.kind() == io::ErrorKind::PermissionDenied => {
-            Err(CoreError::PermissionDenied)
+            Err(CoreError::permission_denied("permission denied"))
         }
-        Err(error) if error.kind() == io::ErrorKind::InvalidInput => Err(CoreError::InvalidPath),
-        Err(_) => Err(CoreError::Io),
+        Err(error) if error.kind() == io::ErrorKind::InvalidInput => {
+            Err(CoreError::invalid_path("invalid path"))
+        }
+        Err(_) => Err(CoreError::io("io error")),
     }
 }
 
@@ -222,23 +226,23 @@ fn has_unfinished_scan_session(repo_path: &Path) -> CoreResult<bool> {
         Ok(true) => {}
         Ok(false) => return Ok(false),
         Err(error) if error.kind() == io::ErrorKind::PermissionDenied => {
-            return Err(CoreError::PermissionDenied);
+            return Err(CoreError::permission_denied("permission denied"));
         }
         Err(error) if error.kind() == io::ErrorKind::InvalidInput => {
-            return Err(CoreError::InvalidPath);
+            return Err(CoreError::invalid_path("invalid path"));
         }
-        Err(_) => return Err(CoreError::Io),
+        Err(_) => return Err(CoreError::io("io error")),
     }
 
     let connection = Connection::open_with_flags(db_path, OpenFlags::SQLITE_OPEN_READ_ONLY)
-        .map_err(|_| CoreError::Db)?;
+        .map_err(|error| CoreError::db(error.to_string()))?;
     let table_exists: i64 = connection
         .query_row(
             "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'scan_sessions'",
             [],
             |row| row.get(0),
         )
-        .map_err(|_| CoreError::Db)?;
+        .map_err(|error| CoreError::db(error.to_string()))?;
 
     if table_exists == 0 {
         return Ok(false);
@@ -252,7 +256,7 @@ fn has_unfinished_scan_session(repo_path: &Path) -> CoreResult<bool> {
             [],
             |row| row.get(0),
         )
-        .map_err(|_| CoreError::Db)?;
+        .map_err(|error| CoreError::db(error.to_string()))?;
 
     Ok(unfinished_count > 0)
 }

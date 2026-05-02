@@ -182,7 +182,8 @@ fn classify_preview_integration_verify_errors_do_not_create_import_side_effects(
 
     let result = predict_category(path_string(repo.path()), "invoice.pdf".to_owned());
 
-    assert_eq!(result, Err(CoreError::Config));
+    assert!(matches!(result, Err(CoreError::Config { .. })));
+
     assert_eq!(snapshot_files(repo.path()), before);
     assert!(!repo.path().join("invoice.pdf").exists());
 }

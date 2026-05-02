@@ -182,7 +182,8 @@ fn sync_external_renamed_validation_missing_target_leaves_db_cursor_and_file_int
         vec![renamed("docs/missing.pdf", 511)],
     );
 
-    assert_eq!(result, Err(CoreError::FileNotFound));
+    assert!(matches!(result, Err(CoreError::FileNotFound { .. })));
+
     assert_eq!(fs_cursor(repo.path()), Some(510));
     let unchanged = get_file(path_string(repo.path()), entry.id).expect("get unchanged file");
     assert_eq!(unchanged.path, "docs/original.pdf");
@@ -208,7 +209,8 @@ fn sync_external_renamed_validation_ambiguous_hash_match_is_conflict_without_sta
         vec![renamed("docs/first-renamed.pdf", 522)],
     );
 
-    assert_eq!(result, Err(CoreError::Conflict));
+    assert!(matches!(result, Err(CoreError::Conflict { .. })));
+
     assert_eq!(fs_cursor(repo.path()), Some(521));
     assert_eq!(
         get_file(path_string(repo.path()), first.id)

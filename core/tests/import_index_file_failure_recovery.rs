@@ -123,7 +123,8 @@ fn import_index_file_failure_recovery_db_error_rolls_back_index_metadata_only() 
         indexed_options(),
     );
 
-    assert_eq!(result, Err(CoreError::Db));
+    assert!(matches!(result, Err(CoreError::Db { .. })));
+
     assert_eq!(
         fs::read(&source).expect("read source after indexed DB failure"),
         b"index rollback"
@@ -143,7 +144,8 @@ fn import_index_file_failure_recovery_failed_attempt_can_be_retried() {
         indexed_options(),
     );
 
-    assert_eq!(failed, Err(CoreError::Db));
+    assert!(matches!(failed, Err(CoreError::Db { .. })));
+
     assert_eq!(
         fs::read(&source).expect("read source after failed indexed attempt"),
         b"retry indexed import"
@@ -224,7 +226,10 @@ fn import_index_file_failure_recovery_rejects_icloud_marker_without_db_write() {
         indexed_options(),
     );
 
-    assert_eq!(result, Err(CoreError::ICloudPlaceholder));
+    assert_eq!(
+        result,
+        Err(CoreError::icloud_placeholder("icloud placeholder"))
+    );
     assert_eq!(
         fs::read(&source).expect("read iCloud marker source after rejection"),
         b"placeholder marker"
@@ -244,7 +249,8 @@ fn import_index_file_failure_recovery_rejects_metadata_internal_source() {
         indexed_options(),
     );
 
-    assert_eq!(result, Err(CoreError::InvalidPath));
+    assert!(matches!(result, Err(CoreError::InvalidPath { .. })));
+
     assert_eq!(
         fs::read(&source).expect("read internal source after rejected import"),
         b"internal bytes"
@@ -274,7 +280,10 @@ fn import_index_file_failure_recovery_permission_denied_leaves_source_and_db_unc
 
     fs::set_permissions(&source, original_permissions).expect("restore source permissions");
 
-    assert_eq!(result, Err(CoreError::PermissionDenied));
+    assert_eq!(
+        result,
+        Err(CoreError::permission_denied("permission denied"))
+    );
     assert_eq!(
         fs::read(&source).expect("read source after permission failure"),
         b"secret indexed bytes"

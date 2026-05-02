@@ -53,10 +53,10 @@ fn sync_external_created_contract_api_exposes_documented_signatures_inputs_and_o
     assert!(result.errors.is_empty());
 
     let documented_errors = [
-        CoreError::InvalidPath,
-        CoreError::ICloudPlaceholder,
-        CoreError::Db,
-        CoreError::Io,
+        CoreError::invalid_path("invalid path"),
+        CoreError::icloud_placeholder("icloud placeholder"),
+        CoreError::db("database error"),
+        CoreError::io("io error"),
     ];
     assert_eq!(documented_errors.len(), 4);
 }
@@ -125,8 +125,8 @@ fn sync_external_created_contract_api_documents_errors_side_effects_and_scope() 
     for fragment in [
         "`InvalidPath { path }`",
         "`ICloudPlaceholder { path }`",
-        "`Db(msg)`",
-        "`Io(msg)`",
+        "`Db { message }`",
+        "`Io { message }`",
     ] {
         assert_contains(ERROR_CODES, fragment);
     }
@@ -149,10 +149,10 @@ fn sync_external_created_contract_api_documents_errors_side_effects_and_scope() 
         "generated overview output",
         "delete, rename, overwrite, copy, or download",
         "Cursor persistence is part of the batch success contract",
-        "Returns `CoreError::InvalidPath`",
-        "`CoreError::ICloudPlaceholder`",
-        "`CoreError::Io`",
-        "`CoreError::Db`",
+        "Returns `CoreError::InvalidPath { path }`",
+        "`CoreError::ICloudPlaceholder { path }`",
+        "`CoreError::Io { message }`",
+        "`CoreError::Db { message }`",
     ] {
         assert_contains(API_RS, fragment);
     }

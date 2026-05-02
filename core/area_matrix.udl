@@ -77,6 +77,8 @@ namespace area_matrix {
 
     [Throws=CoreError]
     void set_fs_event_cursor(string repo_path, i64 last_event_id);
+
+    ErrorMapping map_core_error(ErrorMappingInput input);
 };
 
 dictionary RepoConfig {
@@ -215,6 +217,22 @@ dictionary SyncResult {
     sequence<string> errors;
 };
 
+dictionary ErrorMappingInput {
+    ErrorKind kind;
+    string? path;
+    string? reason;
+    string? message;
+};
+
+dictionary ErrorMapping {
+    ErrorKind kind;
+    string user_message;
+    ErrorSeverity severity;
+    string suggested_action;
+    ErrorRecoverability recoverability;
+    string raw_context;
+};
+
 enum StorageMode { "Moved", "Copied", "Indexed" };
 enum FileOrigin { "Imported", "Adopted", "External" };
 enum RepoInitMode { "CreateEmpty", "AdoptExisting" };
@@ -230,19 +248,30 @@ enum ScanSessionStatus { "Running", "Completed", "Paused", "Failed", "Interrupte
 enum DuplicateStrategy { "Skip", "Overwrite", "KeepBoth", "Ask" };
 enum ClassifyReason { "Keyword", "Extension", "AiPredicted", "Default" };
 enum ExternalEventKind { "Created", "Removed", "Modified", "Renamed" };
+enum ErrorKind {
+    "Io", "Db", "Config", "Classify", "Conflict", "DuplicateFile",
+    "FileNotFound", "RepoNotInitialized", "InvalidPath",
+    "ICloudPlaceholder", "PermissionDenied", "Internal"
+};
+enum ErrorSeverity { "Low", "Medium", "High", "Critical" };
+enum ErrorRecoverability {
+    "Retryable", "UserActionRequired", "RefreshRequired", "Fatal"
+};
 
 [Error]
+// C1-21 error-mapping contract: Swift maps these structured cases instead of
+// branching on localized strings or string-contains checks.
 interface CoreError {
-    Io();
-    Db();
-    Config();
-    Classify();
-    Conflict();
+    Io(string message);
+    Db(string message);
+    Config(string reason);
+    Classify(string reason);
+    Conflict(string path);
     DuplicateFile(string existing_path);
-    FileNotFound();
-    RepoNotInitialized();
-    InvalidPath();
-    ICloudPlaceholder();
-    PermissionDenied();
-    Internal();
+    FileNotFound(string path);
+    RepoNotInitialized(string path);
+    InvalidPath(string path);
+    ICloudPlaceholder(string path);
+    PermissionDenied(string path);
+    Internal(string message);
 };

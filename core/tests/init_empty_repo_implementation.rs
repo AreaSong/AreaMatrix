@@ -117,7 +117,8 @@ fn init_empty_repo_rejects_hidden_user_content_without_touching_it() {
 
         let result = init_repo(path_string(repo.path()), create_empty_options());
 
-        assert_eq!(result, Err(CoreError::Config));
+        assert!(matches!(result, Err(CoreError::Config { .. })));
+
         assert!(entry_path.exists(), "{entry_name} should remain untouched");
         assert!(!repo.path().join(".areamatrix").exists());
     }
@@ -131,7 +132,7 @@ fn init_empty_repo_rejects_non_empty_directory_without_touching_user_files() {
 
     let result = init_repo(path_string(repo.path()), create_empty_options());
 
-    assert_eq!(result, Err(CoreError::Config));
+    assert!(matches!(result, Err(CoreError::Config { .. })));
     assert_eq!(
         fs::read_to_string(&readme).expect("read user README"),
         "# User project\n"
@@ -147,7 +148,8 @@ fn init_empty_repo_rejects_adopt_existing_mode_without_creating_metadata() {
 
     let result = init_repo(path_string(repo.path()), options);
 
-    assert_eq!(result, Err(CoreError::Config));
+    assert!(matches!(result, Err(CoreError::Config { .. })));
+
     assert!(!repo.path().join(".areamatrix").exists());
 }
 
@@ -158,7 +160,7 @@ fn init_empty_repo_rejects_area_matrix_internal_path_without_writing_metadata() 
 
     let result = init_repo(path_string(&internal_path), create_empty_options());
 
-    assert_eq!(result, Err(CoreError::InvalidPath));
+    assert!(matches!(result, Err(CoreError::InvalidPath { .. })));
     assert!(!repo.path().join(".areamatrix").exists());
 }
 
@@ -171,7 +173,7 @@ fn init_empty_repo_rejects_repeated_initialization_without_destroying_metadata()
 
     let result = init_repo(path_string(repo.path()), create_empty_options());
 
-    assert_eq!(result, Err(CoreError::Config));
+    assert!(matches!(result, Err(CoreError::Config { .. })));
     let after = fs::read_to_string(&root_overview_path).expect("read overview after retry");
     assert_eq!(after, before);
     let config = load_config(path_string(repo.path())).expect("load config after retry");
@@ -211,7 +213,8 @@ fn init_empty_repo_preserves_non_recoverable_stale_init_contents() {
 
     let result = init_repo(path_string(repo.path()), create_empty_options());
 
-    assert_eq!(result, Err(CoreError::Config));
+    assert!(matches!(result, Err(CoreError::Config { .. })));
+
     assert_eq!(
         fs::read_to_string(&user_file).expect("read preserved stale user content"),
         "owned by user"
@@ -229,7 +232,8 @@ fn init_empty_repo_preserves_unknown_prefixed_directory_and_refuses_cleanup() {
 
     let result = init_repo(path_string(repo.path()), create_empty_options());
 
-    assert_eq!(result, Err(CoreError::Config));
+    assert!(matches!(result, Err(CoreError::Config { .. })));
+
     assert_eq!(
         fs::read_to_string(&user_file).expect("read preserved user-owned hidden file"),
         "owned by user"
@@ -255,7 +259,10 @@ fn init_empty_repo_permission_denied_does_not_create_metadata() {
 
     fs::set_permissions(repo.path(), original_permissions)
         .expect("restore temporary repository permissions");
-    assert_eq!(result, Err(CoreError::PermissionDenied));
+    assert_eq!(
+        result,
+        Err(CoreError::permission_denied("permission denied"))
+    );
     assert!(!repo.path().join(".areamatrix").exists());
 }
 

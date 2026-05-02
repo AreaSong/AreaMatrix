@@ -28,7 +28,9 @@ enum MovedFileRecovery {
 
 pub(crate) fn recover_on_startup(repo_path: String) -> CoreResult<RecoveryReport> {
     if repo_path.trim().is_empty() {
-        return Err(CoreError::RepoNotInitialized);
+        return Err(CoreError::repo_not_initialized(
+            "repository not initialized",
+        ));
     }
 
     let repo = PathBuf::from(repo_path);
@@ -197,7 +199,7 @@ fn inspect_staging_root(staging_dir: &Path) -> CoreResult<StagingRoot> {
         Ok(metadata) if metadata.file_type().is_dir() => {
             Ok(StagingRoot::Directory(staging_dir.to_path_buf()))
         }
-        Ok(_) => Err(CoreError::Io),
+        Ok(_) => Err(CoreError::io("io error")),
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(StagingRoot::Missing),
         Err(error) => Err(map_io_error(error)),
     }
@@ -206,7 +208,7 @@ fn inspect_staging_root(staging_dir: &Path) -> CoreResult<StagingRoot> {
 fn ensure_staging_root_is_directory(staging_dir: &Path) -> CoreResult<()> {
     match inspect_staging_root(staging_dir)? {
         StagingRoot::Directory(_) => Ok(()),
-        StagingRoot::Missing => Err(CoreError::Io),
+        StagingRoot::Missing => Err(CoreError::io("io error")),
     }
 }
 
@@ -318,7 +320,7 @@ fn restore_moved_staging_file(
 
     match move_file_no_replace(staging_path, &source_path) {
         Ok(()) => Ok(MovedFileRecovery::Restored),
-        Err(CoreError::Conflict) => Ok(MovedFileRecovery::Kept(format!(
+        Err(CoreError::Conflict { .. }) => Ok(MovedFileRecovery::Kept(format!(
             "original source path appeared during recovery at {}",
             source_path.display()
         ))),
@@ -338,7 +340,7 @@ fn move_file_no_replace(current_path: &Path, destination: &Path) -> CoreResult<(
     match fs::hard_link(current_path, destination) {
         Ok(()) => {}
         Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {
-            return Err(CoreError::Conflict);
+            return Err(CoreError::conflict("path conflict"));
         }
         Err(_) => copy_to_new_destination(current_path, destination)?,
     }
@@ -362,7 +364,7 @@ fn copy_to_new_destination(current_path: &Path, destination: &Path) -> CoreResul
     {
         Ok(file) => file,
         Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {
-            return Err(CoreError::Conflict);
+            return Err(CoreError::conflict("path conflict"));
         }
         Err(error) => return Err(map_io_error(error)),
     };
@@ -375,15 +377,15 @@ fn copy_to_new_destination(current_path: &Path, destination: &Path) -> CoreResul
     };
     if copied_size != expected_size {
         let _cleanup_result = fs::remove_file(destination);
-        return Err(CoreError::Io);
+        return Err(CoreError::io("io error"));
     }
     Ok(())
 }
 
 fn map_io_error(error: std::io::Error) -> CoreError {
     match error.kind() {
-        std::io::ErrorKind::PermissionDenied => CoreError::PermissionDenied,
-        std::io::ErrorKind::InvalidInput => CoreError::InvalidPath,
-        _ => CoreError::Io,
+        std::io::ErrorKind::PermissionDenied => CoreError::permission_denied("permission denied"),
+        std::io::ErrorKind::InvalidInput => CoreError::invalid_path("invalid path"),
+        _ => CoreError::io("io error"),
     }
 }

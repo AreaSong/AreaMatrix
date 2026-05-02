@@ -183,7 +183,8 @@ fn import_copy_file_validation_rejects_metadata_internal_source_without_side_eff
         copied_options(),
     );
 
-    assert_eq!(result, Err(CoreError::InvalidPath));
+    assert!(matches!(result, Err(CoreError::InvalidPath { .. })));
+
     assert_eq!(
         fs::read(&source).expect("read internal file after rejected import"),
         b"internal bytes"
@@ -202,7 +203,8 @@ fn import_copy_file_validation_rejects_metadata_destination_without_copying() {
         selected_directory_options(".areamatrix/staging"),
     );
 
-    assert_eq!(result, Err(CoreError::InvalidPath));
+    assert!(matches!(result, Err(CoreError::InvalidPath { .. })));
+
     assert_eq!(
         fs::read(&source).expect("read source after rejected destination"),
         b"source bytes"

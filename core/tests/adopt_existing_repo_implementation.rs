@@ -212,7 +212,10 @@ fn adopt_existing_repo_scan_permission_failure_records_resumable_session() {
     let result = init_repo(path_string(repo.path()), adopt_options());
 
     fs::set_permissions(&blocked, original_permissions).expect("restore blocked permissions");
-    assert_eq!(result, Err(CoreError::PermissionDenied));
+    assert_eq!(
+        result,
+        Err(CoreError::permission_denied("permission denied"))
+    );
     assert_eq!(
         fs::read_to_string(&readable).expect("read preserved readable file"),
         "safe content\n"
