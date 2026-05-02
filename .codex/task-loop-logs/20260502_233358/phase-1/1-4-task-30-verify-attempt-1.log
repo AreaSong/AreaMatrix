@@ -1,0 +1,69 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`1-4/task-30`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-1/1-4-recovery-sync-overview/task-30-c1-21-integration-verify.md`
+- 验收代码范围：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/**`
+
+三、完成度摘要
+
+- 已覆盖项数：14
+- 未覆盖项数：0
+- 通过项数：14
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 C1-21 integration-verify 范围
+- 结果：通过
+- 证据：`task-30` 范围限定为 C1-21；实际变更落在 `core/tests/error_mapping_integration_verify.rs`，未触碰 `apps/**`。
+- 涉及文件：`tasks/prompts/.../task-30-c1-21-integration-verify.md`、`core/tests/error_mapping_integration_verify.rs`
+
+- 项目：Exact Docs 读取并作为 SSOT
+- 结果：通过
+- 证据：Manifest `## 1-4/task-30` 的 8 个 Exact Docs 均存在并已核对；C1-21 文档要求每个 `CoreError` 映射为用户可理解消息，且不靠字符串 contains 主分支判断。
+- 涉及文件：`docs/core/capability-specs/stage-1-mvp/C1-21-error-mapping.md`、`docs/api/core-api.md`、5 个绑定 UX 页面、control map
+
+- 项目：API / UDL / Rust 实现一致性
+- 结果：通过
+- 证据：`core/area_matrix.udl` 暴露 `map_core_error(ErrorMappingInput) -> ErrorMapping`、`ErrorKind`、`ErrorSeverity`、`ErrorRecoverability`、12 个 `CoreError` variant；`core/src/error.rs` 用结构化 `ErrorKind` 映射模板，`map_core_error` 只调用 `input.into_core_error().to_error_mapping()`，无文件系统、DB、日志或状态副作用。
+- 涉及文件：`core/area_matrix.udl`、`core/src/error.rs`、`core/src/lib.rs`
+
+- 项目：UX 消费一致性
+- 结果：通过
+- 证据：control map 声明 S1-03、S1-06、S1-11、S1-25、S1-32 消费 C1-21；集成测试覆盖这些页面对错误映射、severity、恢复动作、不可 mock 边界的声明检查。
+- 涉及文件：`docs/architecture/mvp-control-map.md`、`core/tests/error_mapping_integration_verify.rs`
+
+- 项目：无 mock / 空壳伪完成
+- 结果：通过
+- 证据：测试直接调用真实 `CoreError::to_error_mapping()` 与 `map_core_error()`，覆盖全部 12 个 error kind、误导性 payload、high/critical 路由、无用户文件副作用；生产实现未发现 mock/stub/TODO/unimplemented。
+- 涉及文件：`core/src/error.rs`、`core/tests/error_mapping_*.rs`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。错误类型、mapping input/output、template、variant 到 mapping 的路径集中在 `core/src/error.rs`，逻辑清晰且没有扩展到相邻 C1 能力。
+- 注释 / rustdoc / 文档同步：通过。新增 public Rust API 和类型有 rustdoc；UDL 与 `docs/api/core-api.md` 对齐。
+- 错误处理与边界处理：通过。生产路径未使用 `unwrap()` / `expect()` / `panic!()` 处理业务错误；mapping 为确定性、无副作用纯映射。
+- 测试与验证覆盖：通过。`error_mapping` targeted tests 和完整 `cargo test --workspace` 均通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。未发现产品路径 mock-only、空壳或测试专用业务分支。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行并通过：`cd core && cargo fmt --all -- --check`
+- 已运行并通过：`cd core && cargo clippy --all-targets --all-features -- -D warnings`
+- 已运行并通过：`cd core && cargo test --workspace error_mapping`，其中 `error_mapping_*` 相关测试全部通过。
+- 已运行并通过：`cd core && cargo test --workspace`，完整 workspace 测试通过。
+- Forbidden Touches：`git status --short -- apps`、`git diff --name-only -- apps`、`git ls-files --others --exclude-standard apps` 均无输出，未发现 `apps/**` 被触碰。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+VERIFY_RESULT: PASS

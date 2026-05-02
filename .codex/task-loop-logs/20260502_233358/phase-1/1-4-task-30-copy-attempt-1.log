@@ -1,0 +1,37 @@
+一、执行结论
+
+已完成。
+
+二、执行范围
+
+单任务：`1-4/task-30`，只处理 C1-21 error-mapping integration-verify。
+
+修改文件清单：
+- 新增 [error_mapping_integration_verify.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/error_mapping_integration_verify.rs:1)
+
+未修改产品实现、未修改 `core/area_matrix.udl`、未触碰 `apps/**`。执行前已有的脏文件仍存在：`.codex/task-loop-runs/20260502_233358/summary.json`、`tasks/prompts/_shared/progress.json`，本轮未处理它们。
+
+三、完成情况
+
+核对清单：全部通过。新增集成验收测试交叉覆盖 C1-21 capability spec、control map、Core API、UDL、Rust `error.rs`/`lib.rs` wiring，以及 S1-03/S1-06/S1-11/S1-25/S1-32 的消费要求。
+
+完成标准：通过。C1-21 有可执行测试证明：全部 `CoreError` 可映射为结构化 UI metadata，高严重错误不会被吞掉，映射按 `ErrorKind` 分支而不是字符串 contains，且无用户文件或 repo 副作用。
+
+Forbidden Touches：未触碰 `apps/**`。
+
+四、工程质量
+
+代码结构保持在测试层补证，没有扩大到相邻 C1 能力或 UI 实现。测试覆盖文档/API/UDL/Rust/UX 消费一致性、kind-based routing、高严重度路由、iCloud/permission/repo error 场景和 side-effect-free 边界。无 mock-only、硬编码通过态或一次性脚本化实现；新增测试经 rustfmt 格式化。
+
+五、验证情况
+
+- `cd core && cargo fmt --all -- --check`：首次发现新增测试一处换行格式问题；运行 `cargo fmt --all` 后重跑通过。
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过。
+- `cd core && cargo test --workspace error_mapping`：通过，error_mapping 相关 22 个测试通过，其中新增 integration verify 4 个测试通过。
+- 额外 `git diff --check`：通过。
+
+六、风险与后续
+
+剩余风险：本 task 禁止触碰 `apps/**`，所以 Swift `AppError` 的真实 UI wiring 没在本轮验证；这属于后续 page-feature/page integration 范围，不阻断 C1-21 Core integration verify。
+
+建议下一个任务：按 manifest 依赖进入 `1-5/task-01`。
