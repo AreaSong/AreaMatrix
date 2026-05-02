@@ -13,6 +13,7 @@ pub mod domain;
 pub mod error;
 mod note;
 pub mod overview;
+mod recovery;
 mod repo_entries;
 mod repo_init;
 mod repo_path;

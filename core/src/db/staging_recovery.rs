@@ -1,0 +1,74 @@
+use rusqlite::params;
+
+use crate::{CoreError, CoreResult};
+
+use super::open_repo_connection;
+
+pub(crate) struct StagingFileRow {
+    pub(crate) id: i64,
+    pub(crate) path: String,
+}
+
+pub(crate) fn list_staging_file_rows(
+    repo_path: &std::path::Path,
+) -> CoreResult<Vec<StagingFileRow>> {
+    let connection = open_repo_connection(repo_path)?;
+    let mut statement = connection
+        .prepare(
+            "SELECT id, path
+             FROM files
+             WHERE status = 'staging'
+             ORDER BY id ASC",
+        )
+        .map_err(|_| CoreError::Db)?;
+    let rows = statement
+        .query_map([], |row| {
+            Ok(StagingFileRow {
+                id: row.get(0)?,
+                path: row.get(1)?,
+            })
+        })
+        .map_err(|_| CoreError::Db)?;
+
+    let mut staging_rows = Vec::new();
+    for row in rows {
+        staging_rows.push(row.map_err(|_| CoreError::Db)?);
+    }
+    Ok(staging_rows)
+}
+
+pub(crate) fn list_protected_staging_paths(repo_path: &std::path::Path) -> CoreResult<Vec<String>> {
+    let connection = open_repo_connection(repo_path)?;
+    let mut statement = connection
+        .prepare(
+            "SELECT path
+             FROM files
+             WHERE status != 'staging'
+               AND path LIKE '.areamatrix/staging/%'",
+        )
+        .map_err(|_| CoreError::Db)?;
+    let rows = statement
+        .query_map([], |row| row.get::<_, String>(0))
+        .map_err(|_| CoreError::Db)?;
+
+    let mut paths = Vec::new();
+    for row in rows {
+        paths.push(row.map_err(|_| CoreError::Db)?);
+    }
+    Ok(paths)
+}
+
+pub(crate) fn delete_staging_file_row(repo_path: &std::path::Path, file_id: i64) -> CoreResult<()> {
+    let connection = open_repo_connection(repo_path)?;
+    let changed = connection
+        .execute(
+            "DELETE FROM files WHERE id = ?1 AND status = 'staging'",
+            params![file_id],
+        )
+        .map_err(|_| CoreError::Db)?;
+    if changed == 1 {
+        Ok(())
+    } else {
+        Err(CoreError::Db)
+    }
+}

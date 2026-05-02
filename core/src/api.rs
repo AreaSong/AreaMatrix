@@ -3,7 +3,7 @@
 use std::path::PathBuf;
 
 use crate::{
-    classify, db, note, repo_init, repo_path, repo_scan, storage, tree, ChangeFilter,
+    classify, db, note, recovery, repo_init, repo_path, repo_scan, storage, tree, ChangeFilter,
     ChangeLogEntry, ClassifyResult, CoreError, CoreResult, ExternalEvent, FileEntry, FileFilter,
     ImportOptions, RecoveryReport, ReindexReport, RepoConfig, RepoInitOptions, RepoPathValidation,
     ScanSession, SyncResult,
@@ -152,8 +152,8 @@ pub fn update_config(repo_path: String, new_config: RepoConfig) -> CoreResult<()
 /// `CoreError::PermissionDenied` when metadata or staging cannot be inspected
 /// or updated, `CoreError::Io` for staging filesystem failures, and
 /// `CoreError::Db` for SQLite recovery failures.
-pub fn recover_on_startup(_repo_path: String) -> CoreResult<RecoveryReport> {
-    not_implemented()
+pub fn recover_on_startup(repo_path: String) -> CoreResult<RecoveryReport> {
+    recovery::recover_on_startup(repo_path)
 }
 
 /// Reindexes a repository from the filesystem.

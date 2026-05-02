@@ -1,0 +1,56 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`1-4/task-02`
+- 任务文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-1/1-4-recovery-sync-overview/task-02-c1-16-implementation.md`
+- 核验文件：`core/src/**`、`core/area_matrix.udl`、`core/tests/**`
+- Forbidden Touches：`apps/**`，未发现变更
+
+三、完成度摘要
+
+- 已覆盖项数：7
+- 未覆盖项数：0
+- 通过项数：6
+- 不通过项数：1
+- 阻塞项数：1
+- Missing Expected Paths：0
+
+四、逐项验收结果
+
+- 只处理 C1-16 implementation 范围：通过。代码集中在 `recover_on_startup`、staging DB helper、UDL/API/test；未触碰 `apps/**`。
+- 读取 Exact Docs 并以文档为 SSOT：通过。C1-16 要求清理 staging、回滚 staging DB rows、不得误删 active/user 文件，见 [C1-16-recover-on-startup.md](/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-16-recover-on-startup.md:28)。
+- 不实现相邻 C1 能力或 UI 页面：通过。`api.rs` 明确排除 reindex、FSEvents、overview 等相邻能力，见 [api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:142)。
+- 实现该能力的最小真实路径：不通过。主路径真实存在，但 staging 目录边界没有拒绝 symlink 目录，无法证明“只清理可判定安全的临时文件”。
+- 保持依赖方向符合 layered design：通过。Core 内部由 API 调 recovery，recovery 调 DB helper；未依赖 macOS / SwiftUI。
+- C1-16 implementation 目标可用证据证明：不通过。常规 staging row、orphan file、missing row、idempotent、active file preserve 测试通过，但缺少并存在 staging symlink 越界删除风险。
+- 没有扩展到未绑定能力：通过。未实现 UI、C1-17..C1-21 或 `apps/**`。
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过。结构清晰，但 `clean_orphan_staging_files` 对 staging 目录使用 `metadata/is_dir/read_dir`，会跟随目录 symlink，见 [recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/recovery.rs:70) 与 [recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/recovery.rs:143)。
+- 注释 / rustdoc / 文档同步：通过。Public API 有 C1-16 rustdoc，UDL `RecoveryReport` 与 docs 对齐，见 [api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:134) 和 [area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:23)。
+- 错误处理与边界处理：不通过。目录 symlink 未作为不安全 staging 边界处理，可能越过 `.areamatrix/staging/` 语义边界。
+- 测试与验证覆盖：不通过。现有 6 个 implementation 测试覆盖常规路径，见 [recover_on_startup_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/recover_on_startup_implementation.rs:100)，但没有覆盖 staging 目录 symlink / canonical boundary。
+- 占位、硬编码、mock-only、一次性实现检查：通过。未发现 mock-only 或硬编码通过态。
+
+六、阻塞项
+
+- P0：staging 目录 symlink 可导致删除非 staging 用户文件。
+  说明：C1-16 明确“不删除任何最终目录用户文件”，见 [C1-16-recover-on-startup.md](/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-16-recover-on-startup.md:30)。当前实现对 `repo/.areamatrix/staging` 使用跟随 symlink 的 `fs::metadata` / `Path::is_dir` 后 `read_dir`，再对 entry 执行 `remove_file`，见 [recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/recovery.rs:70) 和 [recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/recovery.rs:93)。如果 staging 目录本身被替换为指向用户目录的 symlink，cleanup 会删除 symlink target 内文件。文件安全清单要求证明用户文件未被移动、覆盖或删除，缺证据即不能接受，见 [acceptance-checklist.md](/Users/as/Ai-Project/project/AreaMatrix/.codex/skills-src/areamatrix-file-safety/references/acceptance-checklist.md:7)。
+
+七、验证情况
+
+- 已运行：`cd core && cargo fmt --all -- --check`：通过。
+- 已运行：`cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过。
+- 已运行：`cd core && cargo test --workspace recover_on_startup`：通过，C1-16 contract + implementation 共 9 个测试通过。
+- 已运行：`cd core && cargo test --workspace`：通过，完整 core workspace 测试通过。
+- 缺失：针对 staging 目录 symlink / canonical path boundary 的自动测试与防护证据。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。原因不是验证命令失败，而是 Mission-Critical 文件安全边界仍存在可导致用户文件误删的实现缺口；按“无法证明通过，就判定不通过”。
+
+VERIFY_RESULT: FAIL
