@@ -1,0 +1,50 @@
+一、执行结论
+
+已完成 `1-2/task-27`。
+
+二、执行范围
+
+单任务：C1-10 `resolve-name-conflict` failure-recovery。
+
+修改文件清单：
+
+- [resolve_name_conflict_failure_recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/resolve_name_conflict_failure_recovery.rs:1)
+
+未触碰 `apps/**`。工作区中原本已有的 `.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json` 脏改动未修改、未回滚。
+
+三、完成情况
+
+核对清单结果：
+
+- 只处理 C1-10 failure-recovery：通过。
+- 已读取 task、共享规则、manifest、Exact Docs、Existing Code：通过。
+- 未实现相邻 C1 能力或 UI 页面：通过，仅新增 C1-10 失败恢复测试。
+- 覆盖失败、回滚、重复执行、权限错误路径：通过。
+- 未删除、覆盖或移动未确认用户文件：通过，测试全在 `tempfile` 临时目录内。
+
+完成标准：
+
+- C1-10 failure-recovery 可用证据证明：通过，新增 5 个集成测试覆盖 DB 失败回滚、冲突耗尽重试、rename 回滚、import/rename 权限错误。
+- 没有扩展到未绑定能力：通过。
+
+四、工程质量
+
+新增测试文件 380 行，低于 500 行；测试命名明确，使用真实 Core API、真实 SQLite、真实临时文件系统路径，不是 mock-only 或硬编码通过态。没有新增依赖，没有修改 UDL/API/docs；现有实现已满足文档语义，所以本轮只补齐缺失的 failure-recovery 证据。
+
+五、验证情况
+
+已运行并通过：
+
+- `cd core && cargo fmt --all -- --check`
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`
+- `cd core && cargo test --workspace resolve_name_conflict`
+- 额外扩展：`cd core && cargo test --workspace`
+
+未运行：无必需项未运行。
+
+六、风险与后续
+
+剩余风险：无当前 task 阻断项。权限错误测试使用 Unix `chmod` 路径，在当前 macOS/Unix 环境已覆盖；跨平台 Windows 权限语义不在本任务验证范围。
+
+建议下一个任务：继续执行 `1-2/task-28`，即 C1-10 validation。
+

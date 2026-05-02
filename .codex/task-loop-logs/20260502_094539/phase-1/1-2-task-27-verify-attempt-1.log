@@ -1,0 +1,51 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`1-2/task-27`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-1/1-2-import-classify/task-27-c1-10-failure-recovery.md`
+- 核验代码：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/**`
+
+三、完成度摘要
+
+- 已覆盖项数：14
+- 未覆盖项数：0
+- 通过项数：14
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 只处理 C1-10 failure-recovery：通过。证据：实现集中在 `import_file` / `rename_file` 的同名冲突失败恢复路径，未见 `apps/**` 修改；`git status --short apps` 无输出。
+- Exact Docs 作为 SSOT：通过。证据：已核对 C1-10 规格、control map、Core API、error-codes、transactional-import。
+- 不实现相邻 C1 能力或 UI：通过。证据：当前新增候选路径为 `core/tests/resolve_name_conflict_failure_recovery.rs`，无 UI 文件变更。
+- 覆盖失败、回滚、重复执行、权限错误：通过。证据：`resolve_name_conflict_failure_recovery.rs` 覆盖 DB 失败回滚、Moved 冲突耗尽后重试、rename DB 失败恢复、import/rename 权限失败。
+- 不删除、覆盖或移动未确认用户文件：通过。证据：默认路径用安全编号；替换仅经 `DuplicateStrategy::Overwrite`，失败时由 staging/final/replacement rollback guard 恢复。
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。`StagingFileGuard`、`FinalFileGuard`、`DbStagingRowGuard`、`RenameRollbackGuard` 分别承担文件和 DB 回滚责任，错误流清晰。
+- 注释 / rustdoc / 文档同步：通过。public Core API 对 C1-10 import/rename 的错误和边界有 rustdoc；UDL 暴露 `import_file`、`rename_file`、`DuplicateStrategy`、`CoreError`。
+- 错误处理与边界处理：通过。`PermissionDenied`、`Conflict`、`Db`、`InvalidPath` 均有真实路径或测试证据。
+- 测试与验证覆盖：通过。manifest 三条命令全部通过，并额外通过 `cargo test --workspace`。
+- 占位、硬编码、mock-only、一次性实现检查：通过。未发现 mock-only 或静态通过态；测试走真实 tempdir、SQLite、文件系统路径。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- `cd core && cargo fmt --all -- --check`：通过
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过
+- `cd core && cargo test --workspace resolve_name_conflict`：通过，20 个匹配测试通过
+- `cd core && cargo test --workspace`：通过，全 workspace 测试通过
+- 缺失验证：无
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。当前工作区有 `core/tests/resolve_name_conflict_failure_recovery.rs` 未跟踪，以及 task-loop progress/log 运行痕迹；这不构成本 task 验收阻塞，但后续 checkpoint/提交时需要纳入正常 Git evidence。
+
+VERIFY_RESULT: PASS
