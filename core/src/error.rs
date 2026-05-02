@@ -90,6 +90,116 @@ pub struct ErrorMapping {
     pub raw_context: String,
 }
 
+struct ErrorMappingTemplate {
+    user_message: &'static str,
+    severity: ErrorSeverity,
+    suggested_action: &'static str,
+    recoverability: ErrorRecoverability,
+}
+
+static IO_MAPPING: ErrorMappingTemplate = ErrorMappingTemplate {
+    user_message: "文件操作失败",
+    severity: ErrorSeverity::Medium,
+    suggested_action: "请重试；如果仍失败，请检查磁盘空间或文件状态",
+    recoverability: ErrorRecoverability::Retryable,
+};
+
+static DB_MAPPING: ErrorMappingTemplate = ErrorMappingTemplate {
+    user_message: "数据库错误",
+    severity: ErrorSeverity::High,
+    suggested_action: "请重启应用；如果仍失败，请重建索引或从备份恢复",
+    recoverability: ErrorRecoverability::UserActionRequired,
+};
+
+static CONFIG_MAPPING: ErrorMappingTemplate = ErrorMappingTemplate {
+    user_message: "配置错误",
+    severity: ErrorSeverity::Medium,
+    suggested_action: "请打开设置检查配置，或恢复默认配置",
+    recoverability: ErrorRecoverability::UserActionRequired,
+};
+
+static CLASSIFY_MAPPING: ErrorMappingTemplate = ErrorMappingTemplate {
+    user_message: "分类失败",
+    severity: ErrorSeverity::Low,
+    suggested_action: "文件可先落入 inbox，稍后检查分类规则",
+    recoverability: ErrorRecoverability::RefreshRequired,
+};
+
+static CONFLICT_MAPPING: ErrorMappingTemplate = ErrorMappingTemplate {
+    user_message: "路径冲突",
+    severity: ErrorSeverity::Medium,
+    suggested_action: "请换一个名称或稍后重试",
+    recoverability: ErrorRecoverability::UserActionRequired,
+};
+
+static DUPLICATE_FILE_MAPPING: ErrorMappingTemplate = ErrorMappingTemplate {
+    user_message: "文件已存在",
+    severity: ErrorSeverity::Low,
+    suggested_action: "请选择跳过、覆盖现有文件或保留两份",
+    recoverability: ErrorRecoverability::UserActionRequired,
+};
+
+static FILE_NOT_FOUND_MAPPING: ErrorMappingTemplate = ErrorMappingTemplate {
+    user_message: "文件不存在",
+    severity: ErrorSeverity::Low,
+    suggested_action: "请刷新列表后重试",
+    recoverability: ErrorRecoverability::RefreshRequired,
+};
+
+static REPO_NOT_INITIALIZED_MAPPING: ErrorMappingTemplate = ErrorMappingTemplate {
+    user_message: "资料库未初始化",
+    severity: ErrorSeverity::High,
+    suggested_action: "请先完成资料库初始化",
+    recoverability: ErrorRecoverability::UserActionRequired,
+};
+
+static INVALID_PATH_MAPPING: ErrorMappingTemplate = ErrorMappingTemplate {
+    user_message: "路径不合法",
+    severity: ErrorSeverity::Low,
+    suggested_action: "请修改路径或文件名后重试",
+    recoverability: ErrorRecoverability::UserActionRequired,
+};
+
+static ICLOUD_PLACEHOLDER_MAPPING: ErrorMappingTemplate = ErrorMappingTemplate {
+    user_message: "iCloud 文件未下载",
+    severity: ErrorSeverity::Medium,
+    suggested_action: "请等待文件下载完成后自动重试",
+    recoverability: ErrorRecoverability::Retryable,
+};
+
+static PERMISSION_DENIED_MAPPING: ErrorMappingTemplate = ErrorMappingTemplate {
+    user_message: "无访问权限",
+    severity: ErrorSeverity::High,
+    suggested_action: "请在系统设置中授予权限，或选择其他资料库位置",
+    recoverability: ErrorRecoverability::UserActionRequired,
+};
+
+static INTERNAL_MAPPING: ErrorMappingTemplate = ErrorMappingTemplate {
+    user_message: "应用内部错误",
+    severity: ErrorSeverity::Critical,
+    suggested_action: "请记录错误信息并重启应用",
+    recoverability: ErrorRecoverability::Fatal,
+};
+
+impl ErrorKind {
+    fn mapping_template(&self) -> &'static ErrorMappingTemplate {
+        match self {
+            Self::Io => &IO_MAPPING,
+            Self::Db => &DB_MAPPING,
+            Self::Config => &CONFIG_MAPPING,
+            Self::Classify => &CLASSIFY_MAPPING,
+            Self::Conflict => &CONFLICT_MAPPING,
+            Self::DuplicateFile => &DUPLICATE_FILE_MAPPING,
+            Self::FileNotFound => &FILE_NOT_FOUND_MAPPING,
+            Self::RepoNotInitialized => &REPO_NOT_INITIALIZED_MAPPING,
+            Self::InvalidPath => &INVALID_PATH_MAPPING,
+            Self::ICloudPlaceholder => &ICLOUD_PLACEHOLDER_MAPPING,
+            Self::PermissionDenied => &PERMISSION_DENIED_MAPPING,
+            Self::Internal => &INTERNAL_MAPPING,
+        }
+    }
+}
+
 /// Error variants exposed through the UniFFI boundary.
 ///
 /// C1-21 treats each variant and payload as the structured input for Swift-side
@@ -239,87 +349,15 @@ impl CoreError {
 
     /// Maps a structured `CoreError` to UI metadata without side effects.
     pub fn to_error_mapping(&self) -> ErrorMapping {
-        let (user_message, severity, suggested_action, recoverability) = match self {
-            Self::Io { .. } => (
-                "文件操作失败",
-                ErrorSeverity::Medium,
-                "请重试；如果仍失败，请检查磁盘空间或文件状态",
-                ErrorRecoverability::Retryable,
-            ),
-            Self::Db { .. } => (
-                "数据库错误",
-                ErrorSeverity::High,
-                "请重启应用；如果仍失败，请重建索引或从备份恢复",
-                ErrorRecoverability::UserActionRequired,
-            ),
-            Self::Config { .. } => (
-                "配置错误",
-                ErrorSeverity::Medium,
-                "请打开设置检查配置，或恢复默认配置",
-                ErrorRecoverability::UserActionRequired,
-            ),
-            Self::Classify { .. } => (
-                "分类失败",
-                ErrorSeverity::Low,
-                "文件可先落入 inbox，稍后检查分类规则",
-                ErrorRecoverability::RefreshRequired,
-            ),
-            Self::Conflict { .. } => (
-                "路径冲突",
-                ErrorSeverity::Medium,
-                "请换一个名称或稍后重试",
-                ErrorRecoverability::UserActionRequired,
-            ),
-            Self::DuplicateFile { .. } => (
-                "文件已存在",
-                ErrorSeverity::Low,
-                "请选择跳过、覆盖现有文件或保留两份",
-                ErrorRecoverability::UserActionRequired,
-            ),
-            Self::FileNotFound { .. } => (
-                "文件不存在",
-                ErrorSeverity::Low,
-                "请刷新列表后重试",
-                ErrorRecoverability::RefreshRequired,
-            ),
-            Self::RepoNotInitialized { .. } => (
-                "资料库未初始化",
-                ErrorSeverity::High,
-                "请先完成资料库初始化",
-                ErrorRecoverability::UserActionRequired,
-            ),
-            Self::InvalidPath { .. } => (
-                "路径不合法",
-                ErrorSeverity::Low,
-                "请修改路径或文件名后重试",
-                ErrorRecoverability::UserActionRequired,
-            ),
-            Self::ICloudPlaceholder { .. } => (
-                "iCloud 文件未下载",
-                ErrorSeverity::Medium,
-                "请等待文件下载完成后自动重试",
-                ErrorRecoverability::Retryable,
-            ),
-            Self::PermissionDenied { .. } => (
-                "无访问权限",
-                ErrorSeverity::High,
-                "请在系统设置中授予权限，或选择其他资料库位置",
-                ErrorRecoverability::UserActionRequired,
-            ),
-            Self::Internal { .. } => (
-                "应用内部错误",
-                ErrorSeverity::Critical,
-                "请记录错误信息并重启应用",
-                ErrorRecoverability::Fatal,
-            ),
-        };
+        let kind = self.kind();
+        let template = kind.mapping_template();
 
         ErrorMapping {
-            kind: self.kind(),
-            user_message: user_message.to_owned(),
-            severity,
-            suggested_action: suggested_action.to_owned(),
-            recoverability,
+            kind,
+            user_message: template.user_message.to_owned(),
+            severity: template.severity.clone(),
+            suggested_action: template.suggested_action.to_owned(),
+            recoverability: template.recoverability.clone(),
             raw_context: self.raw_context().to_owned(),
         }
     }
