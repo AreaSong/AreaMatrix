@@ -458,7 +458,20 @@ pub fn write_note(repo_path: String, file_id: i64, content_md: String) -> CoreRe
     note::write_note(repo_path, file_id, content_md)
 }
 
-/// Synchronizes external filesystem changes.
+/// Synchronizes external filesystem changes after app-layer filtering.
+/// C1-17 owns the `ExternalEventKind::Created` contract.
+/// The platform layer is responsible for FSEvents startup, debounce,
+/// in-flight filtering, and iCloud placeholder download coordination.
+/// Created sync reads only metadata/hash, inserts an active `FileEntry` with
+/// `storage_mode = StorageMode::Indexed`, `origin = FileOrigin::External`, writes
+/// a queryable change-log entry, increments `SyncResult::detected_creates`, and
+/// must skip `.areamatrix/` plus generated overview output. It must not move,
+/// delete, rename, overwrite, copy, or download the external user file.
+/// Cursor persistence is part of the batch success contract.
+/// # Errors
+/// Returns `CoreError::InvalidPath`, `CoreError::ICloudPlaceholder`,
+/// `CoreError::Io`, or `CoreError::Db` for path, placeholder, metadata/hash, or
+/// transactional persistence failures.
 pub fn sync_external_changes(
     _repo_path: String,
     _events: Vec<ExternalEvent>,
@@ -466,12 +479,18 @@ pub fn sync_external_changes(
     not_implemented()
 }
 
-/// Gets the latest filesystem event cursor.
+/// Returns the latest processed filesystem event cursor, or `None` before the first durable batch.
+/// # Errors
+/// Returns `CoreError::RepoNotInitialized` or `CoreError::Db`.
 pub fn get_fs_event_cursor(_repo_path: String) -> CoreResult<Option<i64>> {
     not_implemented()
 }
 
-/// Sets the latest filesystem event cursor.
+/// Persists the latest processed filesystem event cursor in `.areamatrix/index.db`.
+/// Prefer [`sync_external_changes`] for batch-success cursor advancement.
+/// This must not inspect, create, move, delete, rename, overwrite, copy, or download user files.
+/// # Errors
+/// Returns `CoreError::RepoNotInitialized`, `CoreError::InvalidPath`, or `CoreError::Db`.
 pub fn set_fs_event_cursor(_repo_path: String, _last_event_id: i64) -> CoreResult<()> {
     not_implemented()
 }

@@ -1,0 +1,88 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`1-4/task-06`
+- 任务文件：[task-06-c1-17-contract-api.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-1/1-4-recovery-sync-overview/task-06-c1-17-contract-api.md:1)
+- Manifest 章节：[phase-1.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-1.md:2358)
+- 实际文件：`core/src/**`、[core/area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:73)、[sync_external_created_contract_api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/sync_external_created_contract_api.rs:1)
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：0
+- 通过项数：10
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 C1-17 的 contract-api 范围
+- 结果：通过
+- 证据：task 绑定 C1-17；下一任务才是 implementation；当前实际改动只校准 API rustdoc 和新增 contract test，未实现相邻 C1/UI。见 [task 文件](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-1/1-4-recovery-sync-overview/task-06-c1-17-contract-api.md:20)、[task-07 implementation](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-1.md:2389)
+- 涉及文件：`core/src/api.rs`、`core/tests/sync_external_created_contract_api.rs`
+
+- 项目：Exact Docs 以文档为 SSOT
+- 结果：通过
+- 证据：能力规格定义 C1-17 API、输入、输出、DB/FS 变化、错误码和验收标准；control map 将 C1-17 绑定 Real Core 消费页面。见 [C1-17 spec](/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-17-sync-external-created.md:9)、[mvp-control-map.md](/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:28)
+- 涉及文件：Exact Docs 4 个均存在并已核对
+
+- 项目：不实现相邻 C1 能力或 UI 页面
+- 结果：通过
+- 证据：`git status --short -- apps` 无输出；`core/src/sync/mod.rs` 仍为 skeleton；`sync_external_changes/get_fs_event_cursor/set_fs_event_cursor` 仍返回 `not_implemented()`，本 task 未进入实现阶段。见 [api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:475)、[sync/mod.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/sync/mod.rs:1)
+- 涉及文件：`core/src/api.rs`、`core/src/sync/mod.rs`
+
+- 项目：Core API / UDL 合同意图
+- 结果：通过
+- 证据：UDL 暴露 `sync_external_changes`、cursor getter/setter、`ExternalEvent`、`SyncResult`、`ExternalEventKind`；Rust domain 类型有对应 public 类型与 rustdoc。见 [area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:73)、[domain.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/domain.rs:378)
+- 涉及文件：`core/area_matrix.udl`、`core/src/domain.rs`
+
+- 项目：输入、输出、错误码、副作用边界
+- 结果：通过
+- 证据：API rustdoc 明确 Created sync 输入边界、输出 `detected_creates`、错误码、cursor 成功批次推进，以及不得移动/删除/覆盖/复制/下载用户文件。见 [api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:461)
+- 涉及文件：`core/src/api.rs`
+
+- 项目：Expected New Paths
+- 结果：通过
+- 证据：`core/src`、`core/area_matrix.udl`、`core/tests` 均存在，且新增 task 测试文件存在。见 [sync_external_created_contract_api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/sync_external_created_contract_api.rs:23)
+- 涉及文件：`core/src/**`、`core/area_matrix.udl`、`core/tests/**`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git diff --name-only -- apps` 和 `git status --short -- apps` 均无输出。
+- 涉及文件：`apps/**`
+
+- 项目：验证命令
+- 结果：通过
+- 证据：manifest 3 条验证全部通过；按 validation-driver 额外补跑完整 `cargo test --workspace`，通过。
+- 涉及文件：`core/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。当前是 contract-api task，未把实现逻辑塞进合同任务；相邻 implementation 留给 `1-4/task-07`。
+- 注释 / rustdoc / 文档同步：通过。新增/校准的 public API rustdoc 覆盖输入、输出、错误和副作用边界。
+- 错误处理与边界处理：通过。合同层明确 `InvalidPath`、`ICloudPlaceholder`、`Io`、`Db`；不宣称实现错误路径已打通。
+- 测试与验证覆盖：通过。contract test 覆盖签名、UDL、docs/control-map 对齐、错误码和副作用文本；完整 core 测试也通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。本任务为 contract-api，`not_implemented()` 不作为本 task blocker；真实实现由后续 `1-4/task-07` 覆盖，当前未用 mock 冒充实现闭环。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`cd core && cargo fmt --all -- --check`：通过
+- 已运行：`cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过
+- 已运行：`cd core && cargo test --workspace sync_external_created`：通过，`sync_external_created_contract_api.rs` 3 tests passed
+- 已运行：`cd core && cargo test --workspace`：通过
+- 失败：无
+- 缺失：无
+
+八、最终判定说明
+
+- 本次执行已达到 `1-4/task-06` 的 contract-api 验收标准。当前只判定 C1-17 合同/API/UDL 意图完成，不判定 C1-17 的真实 sync 实现完成。
+
+
+VERIFY_RESULT: PASS

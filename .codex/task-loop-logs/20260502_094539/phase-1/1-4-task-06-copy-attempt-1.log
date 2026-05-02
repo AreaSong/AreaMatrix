@@ -1,0 +1,28 @@
+一、执行结论：已完成 `1-4/task-06` 的 C1-17 contract-api 范围。
+
+二、执行范围：
+- 修改 [core/src/api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:461)：补齐 `sync_external_changes`、cursor API 的输入、输出、错误码、副作用边界 rustdoc。
+- 新增 [core/tests/sync_external_created_contract_api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/sync_external_created_contract_api.rs:1)：锁定 C1-17 spec、control map、Core API、UDL、错误码和 Rust public API 合同一致性。
+- 未触碰 `apps/**`。`core/area_matrix.udl` 已与文档合同一致，因此未改。
+
+三、完成情况：
+- 核对清单 1-5：通过。
+- 完成标准：C1-17 contract-api 有新增测试证据；未扩展到 C1-18/C1-19 或 UI。
+- 说明：真实 Created 同步实现仍保持后续 `1-4/task-07` 范围，本次没有提前实现。
+
+四、工程质量：
+- 无新增依赖、无 mock-only wiring、无用户文件读写实现。
+- `core/src/api.rs` 格式化后 496 行，保持在本仓库 500 行建议线内。
+- 错误边界覆盖 `InvalidPath` / `ICloudPlaceholder` / `Io` / `Db`，并明确 cursor 只在批次成功后推进的合同意图。
+
+五、验证情况：
+- `cd core && cargo fmt --all -- --check`：通过。
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过。
+- `cd core && cargo test --workspace sync_external_created`：通过，新增 3 个 C1-17 contract tests 全部通过。
+- 额外：`git diff --check -- core/src/api.rs`：通过。
+
+六、风险与后续：
+- 剩余风险：本任务只完成 contract-api，未验证真实 DB/FS 同步闭环。
+- 建议下一个任务：`1-4/task-07`，实现 C1-17 Created 事件的最小真实路径。
+- 工作区已有非本任务脏文件仍存在且未触碰：`.codex/task-loop-runs/20260502_094539/summary.json`、`tasks/prompts/_shared/progress.json`。
+
