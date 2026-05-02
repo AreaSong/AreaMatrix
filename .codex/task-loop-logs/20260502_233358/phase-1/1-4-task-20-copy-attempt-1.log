@@ -1,0 +1,39 @@
+一、执行结论
+
+已完成。
+
+二、执行范围
+
+单任务：`1-4/task-20`，只补了 C1-19 的 integration-verify 证据。
+
+修改文件：
+- [core/tests/sync_external_removed_integration_verify.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/sync_external_removed_integration_verify.rs:170)
+
+未触碰 `apps/**`。工作区里原本已有的 `.codex/task-loop-runs/20260502_233358/summary.json` 和 `tasks/prompts/_shared/progress.json` 仍是脏状态，我没有修改或回滚它们。
+
+三、完成情况
+
+核对清单全部满足：只处理 C1-19；已读取 task、manifest、Exact Docs、Existing Code；没有实现相邻能力或 UI 页面；新增测试交叉检查 C1-19 capability、Core API、UDL、control map、S1-09/S1-11/S1-13 消费页面和 Rust/DB 真实路径；无 mock、空壳或硬编码通过态。
+
+完成标准满足：C1-19 integration-verify 现在有专用测试证明外部删除后默认列表/Tree 不再显示删除项、`get_file` 返回 `FileNotFound`、`change_log.deleted` 可追溯、cursor 与事务边界正确，且未扩展到未绑定能力。
+
+四、工程质量
+
+新增测试文件 417 行，未超过仓库阈值；没有新增依赖；没有修改 public API、UDL 或产品实现。测试覆盖了成功路径、文档/UDL/consumer 对齐、事务失败边界、现存路径误报、out-of-scope `Modified` 不被当前 task 认领，以及不触碰无关用户文件的证据。
+
+五、验证情况
+
+已通过：
+- `cd core && cargo fmt --all -- --check`
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`
+- `cd core && cargo test --workspace sync_external_removed`，C1-19 相关 21 个测试通过
+- 加宽验证：`cd core && cargo test --workspace`
+- 额外范围检查：`git diff --check -- core/tests/sync_external_removed_integration_verify.rs`
+
+未运行：
+- macOS/Xcode 检查未运行，因为本 task 禁止触碰 `apps/**`，本次也没有 Swift/UI 代码改动。
+
+六、风险与后续
+
+剩余风险：未做 macOS UI 真实消费验证，属于后续 Phase 2 页面 task 范围，不阻断当前 Core integration-verify。建议下一个任务按依赖进入 `1-4/task-21`，或先用 verify-ready 对 `1-4/task-20` 做只读验收。
+
