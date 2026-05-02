@@ -309,13 +309,31 @@ pub fn delete_file(_repo_path: String, _file_id: i64, _hard: bool) -> CoreResult
 
 /// Renames a file entry to a conflict-free filename in its current category.
 ///
+/// C1-22 owns the user-visible rename contract for S1-33. The input name is a
+/// filename, not a path, and must use the same validation boundary as
+/// `ImportOptions::override_filename`. For repository-owned `Copied` and
+/// `Moved` rows, Core performs a safe in-directory rename, persists matching
+/// `files.path` and `files.current_name`, and records `change_log.action =
+/// renamed` without changing `file_id`, category, tags, notes, hash, storage
+/// mode, origin, or source path. It never overwrites an existing same-directory
+/// user file; C1-10 conflict-free numbering is reused to choose a safe final
+/// name.
+///
+/// Indexed rows are display-name only: Core updates `files.current_name` and
+/// writes a `renamed` change-log entry, but leaves `files.path`,
+/// `files.source_path`, and the external source file untouched. This preserves
+/// C1-08 index-only semantics while allowing S1-33 to show the requested name.
+///
+/// Repository-owned rename also triggers C1-20 generated-overview
+/// regeneration for the affected category. Those generated-overview writes
+/// are limited to `.areamatrix/generated/` and, only when explicitly
+/// configured, root-level `AREAMATRIX.md`; `README.md` remains user-authored
+/// content. Indexed display-name rename leaves external source files untouched
+/// and only commits metadata plus change-log state.
+///
 /// C1-10 exposes this entry point for manual name-conflict resolution from
-/// S1-23. The input name is a filename, not a path, and must use the same
-/// validation boundary as `ImportOptions::override_filename`. A successful
-/// call returns the updated `FileEntry`, persists matching `files.path` and
-/// `files.current_name`, and records the rename in `change_log` without
-/// changing category or silently overwriting an existing file. Replace flows
-/// remain guarded by S1-24 rather than becoming a default rename branch.
+/// S1-23. Replace flows remain guarded by S1-24 rather than becoming a default
+/// rename branch.
 ///
 /// # Errors
 ///
@@ -323,8 +341,9 @@ pub fn delete_file(_repo_path: String, _file_id: i64, _hard: bool) -> CoreResult
 /// `CoreError::FileNotFound { path }` when the file row or repo-owned file is missing,
 /// `CoreError::Conflict { path }` when a safe final name cannot be resolved,
 /// `CoreError::PermissionDenied { path }` for blocked filesystem writes,
-/// `CoreError::Io { message }` for filesystem failures, and `CoreError::Db { message }` for metadata
-/// persistence failures.
+/// `CoreError::Io { message }` for filesystem or generated-overview write failures,
+/// `CoreError::Db { message }` for metadata persistence failures, and
+/// `CoreError::Config { reason }` for invalid generated-overview configuration.
 pub fn rename_file(repo_path: String, file_id: i64, new_name: String) -> CoreResult<FileEntry> {
     storage::rename_file(repo_path, file_id, new_name)
 }

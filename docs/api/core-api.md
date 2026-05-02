@@ -338,7 +338,7 @@ interface CoreError {
 | `predict_category(repo, name)` | classify | √ | Config / Classify |
 | `import_file(repo, src, options)` | storage | √ | Io / Db / DuplicateFile / InvalidPath |
 | `delete_file(repo, file_id, hard)` | storage | √ | Io / Db / FileNotFound |
-| `rename_file(repo, file_id, new_name)` | storage | √ | Io / InvalidPath |
+| `rename_file(repo, file_id, new_name)` | storage | √ | Io / Db / Config / InvalidPath / Conflict / FileNotFound / PermissionDenied |
 | `move_to_category(repo, file_id, cat)` | storage | √ | Classify / Io |
 | `restore_file(repo, file_id)` | storage | √ | FileNotFound |
 | `list_files(repo, filter)` | query | √ | Db |
@@ -714,7 +714,35 @@ let updated = try await Task.detached {
 appState.replaceFile(updated)
 ```
 
-仅改文件名，不改分类。文件名包含禁用字符（`/ \\ : * ? " < > |`）会抛 `InvalidPath`。
+`newName` 是文件名而不是路径，使用与 `ImportOptions.override_filename` 相同的校验边界。
+空名、路径分隔符、metadata 内部路径或禁用字符（`/ \\ : * ? " < > |`）会抛
+`InvalidPath`。
+
+副作用边界：
+
+- Copy / Move 等 repo-owned 文件只在当前目录内执行安全 rename，更新
+  `files.path`、`files.current_name`、`updated_at`，并写入 `change_log.action =
+  renamed`。
+- Indexed 文件只更新 `files.current_name` 和 change log，保留 `files.path`、
+  `files.source_path`，且不移动、重命名或覆盖外部源文件。
+- 成功 rename 不改变 `file_id`、category、tags、notes、hash、storage mode、origin
+  或 source path。
+- 同目录同名时复用 C1-10 的安全编号策略，不覆盖已有文件；只有编号耗尽或竞态无法
+  解析时抛 `Conflict`。
+- Copy / Move rename 成功后触发 C1-20 generated overview 再生成；默认只写
+  `.areamatrix/generated/**`，仅当配置显式允许时维护根目录 `AREAMATRIX.md`，
+  不触碰用户 `README.md`。Indexed display-name rename 不触发文件系统 rename，也不
+  触碰外部源文件。
+
+错误：
+
+- `InvalidPath`：`repoPath` 或 `newName` 为空、不安全，或命中 metadata 内部路径。
+- `FileNotFound`：`fileId` 对应的 active row 不存在，或 repo-owned 文件已消失。
+- `Conflict`：安全目标名无法解析。
+- `PermissionDenied`：文件系统 rename 或 metadata 写入被权限阻断。
+- `Io`：文件系统读写失败。
+- `Db`：SQLite 查询、更新或 change log 写入失败。
+- `Config`：generated overview 输出配置无效。
 
 ### `move_to_category(repoPath, fileId, newCategory) throws -> FileEntry`
 

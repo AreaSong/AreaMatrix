@@ -2,7 +2,7 @@ use std::path::{Path, PathBuf};
 
 use serde_json::json;
 
-use crate::{db, overview, CoreError, CoreResult, FileEntry};
+use crate::{db, overview, CoreError, CoreResult, FileEntry, StorageMode};
 
 use super::{dedup, hash, safe_move::move_recoverable_file, validate};
 
@@ -18,36 +18,56 @@ pub(crate) fn rename_file(
     validate::filename(&new_name)?;
 
     let entry = db::get_active_file_by_id(&repo, file_id)?;
+    match entry.storage_mode {
+        StorageMode::Moved | StorageMode::Copied => rename_repo_owned_file(&repo, entry, &new_name),
+        StorageMode::Indexed => rename_indexed_file(&repo, entry, &new_name),
+    }
+}
+
+fn rename_repo_owned_file(repo: &Path, entry: FileEntry, new_name: &str) -> CoreResult<FileEntry> {
     if !dedup::is_repo_owned(&entry) {
         return Err(CoreError::invalid_path("invalid path"));
     }
-
-    let current_path = repo_relative_file_path(&repo, &entry.path)?;
+    let current_path = repo_relative_file_path(repo, &entry.path)?;
     ensure_regular_file(&current_path)?;
     let target_directory = current_path
         .parent()
         .ok_or_else(|| CoreError::invalid_path("invalid path"))?;
-    let final_path = dedup::resolve_rename_path(target_directory, &new_name, &current_path)?;
+    let final_path = dedup::resolve_rename_path(target_directory, new_name, &current_path)?;
     if final_path == current_path {
         return Ok(entry);
     }
 
     let final_name = filename_from_path(&final_path)?;
-    let final_relative_path = relative_repo_path(&repo, &final_path)?;
+    let final_relative_path = relative_repo_path(repo, &final_path)?;
     move_recoverable_file(&current_path, &final_path)?;
     let mut guard = RenameRollbackGuard::new(final_path.clone(), current_path.clone());
 
     db::rename_active_file(
-        &repo,
-        file_id,
+        repo,
+        entry.id,
         &final_relative_path,
         &final_name,
-        &rename_detail(&entry, &new_name, &final_relative_path, &final_name),
+        &rename_detail(&entry, new_name, &final_relative_path, &final_name, false),
     )?;
     guard.disarm();
-    let updated = db::get_active_file_by_id(&repo, file_id)?;
-    overview::regenerate_for_node(&repo, &updated.category)?;
+    let updated = db::get_active_file_by_id(repo, entry.id)?;
+    overview::regenerate_for_node(repo, &updated.category)?;
     Ok(updated)
+}
+
+fn rename_indexed_file(repo: &Path, entry: FileEntry, new_name: &str) -> CoreResult<FileEntry> {
+    if entry.current_name == new_name {
+        return Ok(entry);
+    }
+
+    db::rename_indexed_display_name(
+        repo,
+        entry.id,
+        new_name,
+        &rename_detail(&entry, new_name, &entry.path, new_name, true),
+    )?;
+    db::get_active_file_by_id(repo, entry.id)
 }
 
 fn rename_detail(
@@ -55,6 +75,7 @@ fn rename_detail(
     requested_name: &str,
     final_path: &str,
     final_name: &str,
+    index_only: bool,
 ) -> serde_json::Value {
     json!({
         "from_path": entry.path,
@@ -63,8 +84,18 @@ fn rename_detail(
         "requested_name": requested_name,
         "final_name": final_name,
         "name_conflict_resolved": requested_name != final_name,
+        "storage_mode": storage_mode_detail(&entry.storage_mode),
+        "index_only": index_only,
         "by": "user",
     })
+}
+
+fn storage_mode_detail(mode: &StorageMode) -> &'static str {
+    match mode {
+        StorageMode::Moved => "moved",
+        StorageMode::Copied => "copied",
+        StorageMode::Indexed => "indexed",
+    }
 }
 
 fn validate_repo_path(repo_path: &str) -> CoreResult<PathBuf> {

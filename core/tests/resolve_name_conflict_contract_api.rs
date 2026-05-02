@@ -346,8 +346,8 @@ fn resolve_name_conflict_contract_docs_api_udl_and_control_map_stay_aligned() {
 
     for fragment in [
         "可能抛：`Io` / `Db` / `DuplicateFile` / `Conflict` / `InvalidPath`",
-        "仅改文件名，不改分类。",
-        "文件名包含禁用字符",
+        "成功 rename 不改变 `file_id`、category",
+        "`newName` 是文件名而不是路径",
     ] {
         assert_contains(CORE_API, fragment);
     }

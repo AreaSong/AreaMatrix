@@ -283,6 +283,40 @@ pub(crate) fn rename_active_file(
         .map_err(|error| CoreError::db(error.to_string()))
 }
 
+pub(crate) fn rename_indexed_display_name(
+    repo_path: &Path,
+    file_id: i64,
+    final_name: &str,
+    detail: &Value,
+) -> CoreResult<()> {
+    let detail_json =
+        serde_json::to_string(detail).map_err(|error| CoreError::internal(error.to_string()))?;
+    let mut connection = open_repo_connection(repo_path)?;
+    let tx = connection
+        .transaction()
+        .map_err(|error| CoreError::db(error.to_string()))?;
+    let changed = tx
+        .execute(
+            "UPDATE files
+             SET current_name = ?2,
+                 updated_at = strftime('%s', 'now')
+             WHERE id = ?1 AND status = 'active' AND storage_mode = 'indexed'",
+            params![file_id, final_name],
+        )
+        .map_err(|error| CoreError::db(error.to_string()))?;
+    if changed != 1 {
+        return Err(CoreError::db("database error"));
+    }
+    tx.execute(
+        "INSERT INTO change_log (file_id, action, detail_json, occurred_at)
+         VALUES (?1, 'renamed', ?2, strftime('%s', 'now'))",
+        params![file_id, detail_json],
+    )
+    .map_err(|error| CoreError::db(error.to_string()))?;
+    tx.commit()
+        .map_err(|error| CoreError::db(error.to_string()))
+}
+
 pub(crate) fn delete_file_row(repo_path: &Path, file_id: i64) -> CoreResult<()> {
     let mut connection = open_repo_connection(repo_path)?;
     let tx = connection

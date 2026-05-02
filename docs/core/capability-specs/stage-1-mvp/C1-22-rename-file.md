@@ -30,6 +30,9 @@
 - Copy / Move 文件在资料库内执行安全 rename。
 - Indexed 文件只更新索引显示名，不移动外部源文件。
 - 不覆盖同目录已有文件。
+- Copy / Move rename 成功后触发 C1-20 generated overview 再生成；默认只写
+  `.areamatrix/generated/**`，仅当配置显式允许时维护根目录 `AREAMATRIX.md`，
+  不触碰用户 `README.md`。
 
 ## 错误码
 
@@ -39,6 +42,7 @@
 - `PermissionDenied`
 - `Io`
 - `Db`
+- `Config`
 
 ## 验收标准
 
