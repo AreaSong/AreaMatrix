@@ -7,7 +7,7 @@ use serde_json::json;
 
 use crate::{db, CoreError, CoreResult, FileEntry, StorageMode};
 
-use super::{dedup, hash, safe_move::move_recoverable_file};
+use super::{dedup, hash, replacement_trash::ReplacementFileGuard};
 
 const AREA_MATRIX_DIR: &str = ".areamatrix";
 const TRASH_PENDING_DIR: &str = "trash-pending";
@@ -266,96 +266,6 @@ impl ReplacementPlan {
     }
 }
 
-pub(super) struct ReplacementFileGuard {
-    original_path: PathBuf,
-    archived_path: PathBuf,
-    archive_dir: PathBuf,
-    trash_copy_path: Option<PathBuf>,
-    armed: bool,
-}
-
-impl ReplacementFileGuard {
-    fn archive(original_path: &Path, archived_path: &Path) -> CoreResult<Self> {
-        if !path_exists(original_path)? {
-            return Err(CoreError::FileNotFound);
-        }
-        let archive_dir = archived_path
-            .parent()
-            .ok_or(CoreError::InvalidPath)?
-            .to_path_buf();
-        fs::create_dir_all(&archive_dir).map_err(hash::map_io_error)?;
-        move_recoverable_file(original_path, archived_path)?;
-        Ok(Self {
-            original_path: original_path.to_path_buf(),
-            archived_path: archived_path.to_path_buf(),
-            archive_dir,
-            trash_copy_path: None,
-            armed: true,
-        })
-    }
-
-    pub(super) fn ensure_system_trash_copy(&mut self) -> CoreResult<()> {
-        if self.trash_copy_path.is_some() {
-            return Ok(());
-        }
-
-        let filename = self
-            .archived_path
-            .file_name()
-            .ok_or(CoreError::InvalidPath)?;
-        let trash_copy_dir = self
-            .archive_dir
-            .join(format!("system-trash-copy-{}", uuid::Uuid::new_v4()));
-        fs::create_dir(&trash_copy_dir).map_err(hash::map_io_error)?;
-        let trash_copy_path = trash_copy_dir.join(filename);
-        let copied_size = hash::copy_to_new_file(&self.archived_path, &trash_copy_path)?;
-        let expected_size = self
-            .archived_path
-            .metadata()
-            .map_err(hash::map_io_error)?
-            .len();
-        if copied_size != expected_size {
-            let _cleanup_result = fs::remove_file(&trash_copy_path);
-            return Err(CoreError::Io);
-        }
-
-        if let Err(error) = send_to_system_trash(&trash_copy_path) {
-            let _cleanup_result = fs::remove_file(&trash_copy_path);
-            let _cleanup_result = fs::remove_dir(&trash_copy_dir);
-            return Err(error);
-        }
-        self.trash_copy_path = Some(trash_copy_path);
-        Ok(())
-    }
-
-    pub(super) fn disarm(&mut self) {
-        if let Some(trash_copy_path) = &self.trash_copy_path {
-            let _cleanup_result = fs::remove_file(trash_copy_path);
-            if let Some(parent) = trash_copy_path.parent() {
-                let _cleanup_result = fs::remove_dir(parent);
-            }
-        }
-        let _cleanup_result = fs::remove_file(&self.archived_path);
-        let _cleanup_result = fs::remove_dir(&self.archive_dir);
-        self.armed = false;
-    }
-}
-
-impl Drop for ReplacementFileGuard {
-    fn drop(&mut self) {
-        if let Some(trash_copy_path) = &self.trash_copy_path {
-            let _cleanup_result = fs::remove_file(trash_copy_path);
-            if let Some(parent) = trash_copy_path.parent() {
-                let _cleanup_result = fs::remove_dir(parent);
-            }
-        }
-        if self.armed && self.archived_path.exists() && !self.original_path.exists() {
-            let _restore_result = move_recoverable_file(&self.archived_path, &self.original_path);
-            let _cleanup_result = fs::remove_dir(&self.archive_dir);
-        }
-    }
-}
-
 struct CreatedDirectoryGuard {
     final_path: PathBuf,
     created: Vec<PathBuf>,
@@ -473,83 +383,6 @@ fn replacement_trash_marker(filename: &str) -> String {
         uuid::Uuid::new_v4(),
         filename
     )
-}
-
-fn send_to_system_trash(path: &Path) -> CoreResult<()> {
-    system_trash_delete(path)
-}
-
-#[cfg(target_os = "macos")]
-fn system_trash_delete(path: &Path) -> CoreResult<()> {
-    use trash::{
-        macos::{DeleteMethod, TrashContextExtMacos},
-        TrashContext,
-    };
-
-    let mut context = TrashContext::new();
-    context.set_delete_method(DeleteMethod::NsFileManager);
-    match context.delete(path) {
-        Ok(()) => Ok(()),
-        Err(error) => {
-            tracing::warn!(
-                path = %path.display(),
-                error = %error,
-                "system trash API failed; falling back to user Trash directory"
-            );
-            move_to_user_trash(path)
-        }
-    }
-}
-
-#[cfg(not(target_os = "macos"))]
-fn system_trash_delete(path: &Path) -> CoreResult<()> {
-    trash::delete(path).map_err(|error| {
-        tracing::warn!(
-            path = %path.display(),
-            error = %error,
-            "failed to move replacement file to system trash"
-        );
-        CoreError::Io
-    })
-}
-
-#[cfg(target_os = "macos")]
-fn move_to_user_trash(path: &Path) -> CoreResult<()> {
-    let home = std::env::var_os("HOME").ok_or(CoreError::Io)?;
-    let trash_dir = PathBuf::from(home).join(".Trash");
-    fs::create_dir_all(&trash_dir).map_err(hash::map_io_error)?;
-    let filename = filename_from_path(path)?;
-    let destination = unique_trash_destination(&trash_dir, &filename)?;
-    move_recoverable_file(path, &destination)
-}
-
-#[cfg(target_os = "macos")]
-fn unique_trash_destination(trash_dir: &Path, filename: &str) -> CoreResult<PathBuf> {
-    let candidate = trash_dir.join(filename);
-    if !path_exists(&candidate)? {
-        return Ok(candidate);
-    }
-
-    for index in 1..1000 {
-        let candidate = trash_dir.join(numbered_filename(filename, index));
-        if !path_exists(&candidate)? {
-            return Ok(candidate);
-        }
-    }
-
-    Err(CoreError::Conflict)
-}
-
-#[cfg(target_os = "macos")]
-fn numbered_filename(filename: &str, index: usize) -> String {
-    if filename.starts_with('.') && filename.matches('.').count() == 1 {
-        return format!("{filename}_{index}");
-    }
-
-    match filename.rsplit_once('.') {
-        Some((stem, extension)) if !stem.is_empty() => format!("{stem}_{index}.{extension}"),
-        _ => format!("{filename}_{index}"),
-    }
 }
 
 fn storage_mode_detail(mode: &StorageMode) -> &'static str {

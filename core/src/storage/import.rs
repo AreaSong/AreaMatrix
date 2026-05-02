@@ -9,9 +9,11 @@ use crate::{
 
 use super::{
     dedup,
-    destination::{ImportDestinationPlan, ReplacementFileGuard, ReplacementPlan},
+    destination::{ImportDestinationPlan, ReplacementPlan},
     hash,
+    replacement_trash::ReplacementFileGuard,
     safe_move::{move_recoverable_file, move_source_to_staging, FinalFileGuard, StagingFileGuard},
+    staging_row::DbStagingRowGuard,
     validate,
 };
 
@@ -444,35 +446,6 @@ fn requested_target_relative_path(prepared: &PreparedImport) -> CoreResult<Strin
         .join(&prepared.target.relative_dir)
         .join(&prepared.target_filename);
     relative_repo_path(&prepared.repo, &target_path)
-}
-
-struct DbStagingRowGuard {
-    repo: PathBuf,
-    file_id: i64,
-    armed: bool,
-}
-
-impl DbStagingRowGuard {
-    fn new(repo: PathBuf, file_id: i64) -> Self {
-        Self {
-            repo,
-            file_id,
-            armed: true,
-        }
-    }
-
-    fn disarm(&mut self) {
-        self.armed = false;
-    }
-}
-
-impl Drop for DbStagingRowGuard {
-    fn drop(&mut self) {
-        if self.armed {
-            // Best-effort rollback for the staging metadata row owned by this attempt.
-            let _cleanup_result = db::delete_file_row(&self.repo, self.file_id);
-        }
-    }
 }
 
 #[cfg(test)]
