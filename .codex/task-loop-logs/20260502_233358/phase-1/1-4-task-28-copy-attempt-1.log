@@ -1,0 +1,42 @@
+一、执行结论
+
+- 已完成 `1-4/task-28`。
+
+二、执行范围
+
+- 单任务：C1-21 error-mapping failure-recovery。
+- 新增文件：[core/tests/error_mapping_failure_recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/error_mapping_failure_recovery.rs:1)
+- 未触碰 `apps/**`。
+- 工作区原有脏文件 `.codex/task-loop-runs/20260502_233358/summary.json`、`tasks/prompts/_shared/progress.json` 未修改、未回退。
+
+三、完成情况
+
+- 只处理 C1-21：通过新增 failure-recovery 测试覆盖 `map_core_error`。
+- Exact Docs 已读取并按 SSOT 执行。
+- 未实现相邻 C1 能力或 UI 页面。
+- 覆盖失败/恢复边界：
+  - 权限错误不变成 retryable：[line 35](/Users/as/Ai-Project/project/AreaMatrix/core/tests/error_mapping_failure_recovery.rs:35)
+  - iCloud/Duplicate/Internal 恢复策略按结构化 `ErrorKind` 分支：[line 59](/Users/as/Ai-Project/project/AreaMatrix/core/tests/error_mapping_failure_recovery.rs:59)
+  - 重复执行幂等：[line 102](/Users/as/Ai-Project/project/AreaMatrix/core/tests/error_mapping_failure_recovery.rs:102)
+  - 映射过程不创建 `.areamatrix`、不改用户 `README.md`：[line 124](/Users/as/Ai-Project/project/AreaMatrix/core/tests/error_mapping_failure_recovery.rs:124)
+
+四、工程质量
+
+- 测试结构清晰，没有新增生产抽象、依赖、mock-only 或硬编码通过态。
+- C1-21 是无 DB/FS 副作用能力；测试用 tempdir 证明映射不触碰用户文件。
+- public Rust API / UDL 未变更，因此无需新增 rustdoc 或同步 UDL。
+- 文件长度 157 行，符合规范。
+
+五、验证情况
+
+- `cd core && cargo fmt --all -- --check`：通过。
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过。
+- `cd core && cargo test --workspace error_mapping`：通过；新增 `error_mapping_failure_recovery` 4 个测试全部通过。
+- 额外跑了 `git diff --check -- core/tests/error_mapping_failure_recovery.rs`：通过。
+- 未运行项：无本任务要求内未运行项。
+
+六、风险与后续
+
+- 剩余风险：当前只证明 Core 错误映射元数据；Swift `AppError` 和 S1 页面消费由后续 UI/page-feature task 验证。
+- 建议下一个任务：`1-4/task-29`，C1-21 error-mapping validation。
+
