@@ -12,8 +12,10 @@ use crate::{
     StorageMode,
 };
 
+mod change_log;
 mod import;
 mod scan;
+pub(crate) use change_log::list_changes;
 pub(crate) use import::{
     delete_file_row, find_active_file_by_hash, find_active_file_by_path, get_active_file_by_id,
     insert_active_indexed_import, insert_import_staging, insert_replacing_active_indexed_import,

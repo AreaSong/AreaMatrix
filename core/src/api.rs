@@ -369,8 +369,8 @@ pub fn get_file(repo_path: String, file_id: i64) -> CoreResult<FileEntry> {
 /// Returns `CoreError::RepoNotInitialized` when repository metadata is missing
 /// and `CoreError::Db` when SQLite rows or persisted change-log details cannot
 /// be read as the documented contract.
-pub fn list_changes(_repo_path: String, _filter: ChangeFilter) -> CoreResult<Vec<ChangeLogEntry>> {
-    not_implemented()
+pub fn list_changes(repo_path: String, filter: ChangeFilter) -> CoreResult<Vec<ChangeLogEntry>> {
+    db::list_changes(repo_path, filter)
 }
 
 /// Returns repository tree data as JSON.
