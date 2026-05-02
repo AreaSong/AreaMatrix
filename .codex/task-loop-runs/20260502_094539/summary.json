@@ -99,6 +99,52 @@
     "1-2/task-18": {
       "attempts": 1,
       "copy_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260502_094539/phase-1/1-2-task-18-copy-attempt-1.log",
+      "git": {
+        "attempts": 1,
+        "branch": "codex/areamatrix-task-loop-20260501_132850",
+        "changed_files": [
+          ".codex/task-loop-logs/20260502_094539/phase-1/1-2-task-18-copy-attempt-1.log",
+          ".codex/task-loop-logs/20260502_094539/phase-1/1-2-task-18-verify-attempt-1.log",
+          ".codex/task-loop-runs/20260502_094539/summary.json",
+          ".codex/task-loop-runs/index.json",
+          "core/tests/import_index_file_validation.rs",
+          "tasks/prompts/_shared/progress.json"
+        ],
+        "commit": "69339e0fcaa4fb33afe957e9f5049e15aa500fbe",
+        "copy_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260502_094539/phase-1/1-2-task-18-copy-attempt-1.log",
+        "diff_name_status": [
+          "M\t.codex/task-loop-runs/20260502_094539/summary.json",
+          "M\t.codex/task-loop-runs/index.json",
+          "M\ttasks/prompts/_shared/progress.json"
+        ],
+        "label": "1-2/task-18",
+        "mode": "commit",
+        "phase": "phase-1",
+        "push_status": "not_requested",
+        "remote": "",
+        "run_id": "20260502_094539",
+        "staged_name_status": [
+          "A\t.codex/task-loop-logs/20260502_094539/phase-1/1-2-task-18-copy-attempt-1.log",
+          "A\t.codex/task-loop-logs/20260502_094539/phase-1/1-2-task-18-verify-attempt-1.log",
+          "M\t.codex/task-loop-runs/20260502_094539/summary.json",
+          "M\t.codex/task-loop-runs/index.json",
+          "A\tcore/tests/import_index_file_validation.rs",
+          "M\ttasks/prompts/_shared/progress.json"
+        ],
+        "status": "committed",
+        "status_short": [
+          " M .codex/task-loop-runs/20260502_094539/summary.json",
+          " M .codex/task-loop-runs/index.json",
+          " M tasks/prompts/_shared/progress.json",
+          "?? .codex/task-loop-logs/20260502_094539/phase-1/1-2-task-18-copy-attempt-1.log",
+          "?? .codex/task-loop-logs/20260502_094539/phase-1/1-2-task-18-verify-attempt-1.log",
+          "?? core/tests/import_index_file_validation.rs"
+        ],
+        "summary_file": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-runs/20260502_094539/summary.json",
+        "task_name": "1-2-task-18",
+        "updated_at": "2026-05-02T02:10:39.094647+00:00",
+        "verify_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260502_094539/phase-1/1-2-task-18-verify-attempt-1.log"
+      },
       "note": "自动执行验收通过",
       "phase": "phase-1",
       "risk": "Mission-Critical",
@@ -113,7 +159,7 @@
     "retries": 0,
     "task_count": 637
   },
-  "updated_at": "2026-05-02T02:10:38.910962+00:00",
+  "updated_at": "2026-05-02T02:10:39.095770+00:00",
   "verify_root": "/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/verify-ready",
   "version": 1
 }
