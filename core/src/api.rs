@@ -459,6 +459,7 @@ pub fn write_note(repo_path: String, file_id: i64, content_md: String) -> CoreRe
 }
 
 /// Synchronizes external filesystem changes after app-layer filtering.
+///
 /// C1-17 owns the `ExternalEventKind::Created` contract.
 /// The platform layer is responsible for FSEvents startup, debounce,
 /// in-flight filtering, and iCloud placeholder download coordination.
@@ -467,13 +468,28 @@ pub fn write_note(repo_path: String, file_id: i64, content_md: String) -> CoreRe
 /// writes a queryable change-log entry with `change_log.action =
 /// external_modified` and `kind = create`. It increments
 /// `SyncResult::detected_creates` and must skip `.areamatrix/` plus generated overview output.
-/// It must not move,
-/// delete, rename, overwrite, copy, or download the external user file.
+/// It must not move, delete, rename, overwrite, copy, or download the
+/// external user file.
+///
+/// C1-18 owns the `ExternalEventKind::Renamed` contract. A rename event's
+/// `path` is the repository-relative or absolute new path after app-layer
+/// FSEvents pairing/debounce. The contract result is a `files.path` and
+/// `files.current_name` update, `updated_at` refresh, `change_log.action =
+/// renamed` with old/new path detail, and `SyncResult::detected_renames`
+/// increment. The sync branch only confirms the new path exists and must not
+/// rename, move, delete, overwrite, copy, or download a user file. If a rename
+/// cannot be paired, callers may replay it as removed + created; the rename
+/// branch must then avoid claiming a detected rename.
+///
 /// Cursor persistence is part of the batch success contract.
+///
 /// # Errors
 /// Returns `CoreError::InvalidPath`, `CoreError::ICloudPlaceholder`,
-/// `CoreError::PermissionDenied`, `CoreError::Io`, or `CoreError::Db` for path,
-/// placeholder, metadata/hash, or transactional persistence failures.
+/// `CoreError::PermissionDenied`, `CoreError::Io`, or `CoreError::Db` for
+/// path, placeholder, metadata/hash, or transactional persistence failures.
+/// Returns `CoreError::FileNotFound` when a renamed target no longer exists and
+/// `CoreError::Conflict` when a renamed target cannot be paired without
+/// colliding with another active row.
 pub fn sync_external_changes(
     repo_path: String,
     events: Vec<ExternalEvent>,
