@@ -173,6 +173,25 @@ pub(super) struct ReplacementPlan {
 }
 
 impl ReplacementPlan {
+    pub(super) fn prepare_for_existing(repo: &Path, existing: FileEntry) -> CoreResult<Self> {
+        if !dedup::is_repo_owned(&existing) {
+            return Ok(Self::metadata_only(existing));
+        }
+
+        let original_path = repo_relative_file_path(repo, &existing.path)?;
+        if !path_exists(&original_path)? {
+            return Err(CoreError::FileNotFound);
+        }
+
+        let archived_relative_path = replacement_archive_path(&existing.current_name);
+        let archived_path = repo.join(&archived_relative_path);
+        Ok(Self {
+            archived_relative_path,
+            archived_path: Some(archived_path),
+            existing,
+        })
+    }
+
     pub(super) fn metadata_only(existing: FileEntry) -> Self {
         Self {
             archived_relative_path: replacement_archive_path(&existing.current_name),
@@ -186,6 +205,17 @@ impl ReplacementPlan {
             existing_id: self.existing.id,
             archived_path: self.archived_relative_path.clone(),
         }
+    }
+
+    pub(super) fn archive_existing_file(
+        &self,
+        repo: &Path,
+    ) -> CoreResult<Option<ReplacementFileGuard>> {
+        let Some(archived_path) = &self.archived_path else {
+            return Ok(None);
+        };
+        let original_path = repo_relative_file_path(repo, &self.existing.path)?;
+        ReplacementFileGuard::archive(&original_path, archived_path).map(Some)
     }
 
     pub(super) fn deleted_change_detail(&self) -> serde_json::Value {

@@ -1,0 +1,37 @@
+**一、执行结论**
+已完成 `1-2/task-24` repair retry。
+
+**二、执行范围**
+单任务：C1-09 detect-duplicate integration-verify。
+
+产品修复文件：
+- [destination.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/destination.rs:176)
+- [import.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/import.rs:245)
+- [detect_duplicate_integration_verify.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/detect_duplicate_integration_verify.rs:373)
+
+未触碰 `apps/**`。`core/area_matrix.udl` 未改，因 API/UDL 已与 C1-09 当前合同一致。
+
+**三、完成情况**
+- 只处理 C1-09 integration-verify 范围：通过。
+- Exact Docs 作为 SSOT：通过。
+- 未实现相邻 C1 能力或 UI 页面：通过。
+- capability / control map / S1-22 / S1-24 交叉检查：通过。
+- 无 mock、空壳、硬编码通过态：通过。
+- Forbidden Touches：未触碰。
+
+核心修复是 Indexed import 的 `DuplicateStrategy::Overwrite` 不再只做 metadata-only replacement。若被替换对象是 repo-owned `Copied` / `Moved` 文件，会先安全归档旧物理文件到 `.areamatrix/trash/replace-*`，DB 成功后解除 guard；DB 失败时 guard 恢复旧文件，避免文件系统与 DB 不一致。
+
+**四、工程质量**
+代码结构保持在现有 `ReplacementPlan` / `ReplacementFileGuard` 语义内，没有新增依赖和额外抽象。错误路径显式传播；repo-owned 旧文件缺失会返回 `FileNotFound`，DB 失败会回滚并恢复归档文件。测试补齐了成功归档和 DB 失败恢复两条关键边界。
+
+**五、验证情况**
+已通过：
+- `cd core && cargo fmt --all -- --check`
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`
+- `cd core && cargo test --workspace detect_duplicate`
+- `cd core && cargo test --workspace`
+- `cd core && cargo test --workspace detect_duplicate_integration_verify_indexed_overwrite`
+- `git diff --check`
+
+**六、风险与后续**
+当前阻塞项已修复。残余风险主要是 macOS 端 Replace 二次确认 UI 尚不在本 task 范围内，应由后续 `2-2` 页面任务和 page integration verify 覆盖。工作区还保留 task-loop 的 progress/log/summary 证据变更，我没有清理或回滚这些运行态文件。下一步建议进入该任务的 verify-ready 验收。  

@@ -249,8 +249,9 @@ fn insert_replacing_indexed_row(
 ) -> CoreResult<i64> {
     let imported_at = chrono::Utc::now().timestamp();
     let source_path = prepared.source.to_string_lossy().into_owned();
-    let replacement = ReplacementPlan::metadata_only(existing);
-    db::insert_replacing_active_indexed_import(
+    let replacement = ReplacementPlan::prepare_for_existing(&prepared.repo, existing)?;
+    let mut replacement_guard = replacement.archive_existing_file(&prepared.repo)?;
+    let file_id = db::insert_replacing_active_indexed_import(
         &prepared.repo,
         replacement.db_row(),
         db::NewImportRow {
@@ -277,7 +278,11 @@ fn insert_replacing_indexed_row(
             "by": "user",
         }),
         &replacement.deleted_change_detail(),
-    )
+    )?;
+    if let Some(guard) = &mut replacement_guard {
+        guard.disarm();
+    }
+    Ok(file_id)
 }
 
 fn import_change_detail(
