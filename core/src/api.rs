@@ -131,7 +131,27 @@ pub fn update_config(repo_path: String, new_config: RepoConfig) -> CoreResult<()
     db::update_config(repo_path, new_config)
 }
 
-/// Performs startup recovery.
+/// Recovers AreaMatrix-owned startup residue before the UI opens.
+///
+/// C1-16 exposes this API for first-launch initialization, main-window
+/// reopening, advanced settings, and error-recovery surfaces. The input is an
+/// initialized repository root. The output reports how many safe staging files
+/// were removed, how many unfinished `files.status = staging` rows were
+/// reverted, and any warnings that S1-32 can display without parsing logs.
+///
+/// The only allowed filesystem side effect is cleanup inside the
+/// AreaMatrix-owned `.areamatrix/staging/` directory. The API must not delete,
+/// move, rename, overwrite, or reclassify any active repository file or other
+/// user-authored final content. Startup recovery does not repair corrupted
+/// databases, reindex the repository, process FSEvents, or generate overviews;
+/// those adjacent capabilities stay with their own C1 tasks.
+///
+/// # Errors
+///
+/// Returns `CoreError::RepoNotInitialized` when repository metadata is absent,
+/// `CoreError::PermissionDenied` when metadata or staging cannot be inspected
+/// or updated, `CoreError::Io` for staging filesystem failures, and
+/// `CoreError::Db` for SQLite recovery failures.
 pub fn recover_on_startup(_repo_path: String) -> CoreResult<RecoveryReport> {
     not_implemented()
 }
