@@ -1,6 +1,7 @@
 //! External filesystem synchronization.
 
 use std::{
+    collections::BTreeSet,
     fs,
     io::{self, Read},
     path::{Component, Path, PathBuf},
@@ -11,7 +12,7 @@ use sha2::{Digest, Sha256};
 
 use crate::{
     db::{self, ExternalCreatedRow, ExternalRemovedRow, ExternalRenamedRow},
-    repo_path, CoreError, CoreResult, ExternalEvent, ExternalEventKind, SyncResult,
+    overview, repo_path, CoreError, CoreResult, ExternalEvent, ExternalEventKind, SyncResult,
 };
 
 const AREA_MATRIX_DIR: &str = ".areamatrix";
@@ -25,10 +26,12 @@ struct CreatedPlan {
 
 struct RenamedPlan {
     row: ExternalRenamedRow,
+    category: String,
 }
 
 struct RemovedPlan {
     row: ExternalRemovedRow,
+    category: String,
 }
 
 struct ResolvedEventPath {
@@ -86,12 +89,14 @@ pub(crate) fn sync_external_changes(
         }
     }
 
+    let affected_nodes = affected_nodes_for_batch(&created_plans, &renamed_plans, &removed_plans);
     let cursor = cursor_for_batch(max_sync_event_id, has_out_of_scope_events);
     let created_rows = created_plans.into_iter().map(|plan| plan.row).collect();
     let renamed_rows = renamed_plans.into_iter().map(|plan| plan.row).collect();
     let removed_rows = removed_plans.into_iter().map(|plan| plan.row).collect();
     let applied =
         db::apply_external_sync_batch(&repo, created_rows, renamed_rows, removed_rows, cursor)?;
+    regenerate_affected_overviews(&repo, &affected_nodes)?;
 
     Ok(SyncResult {
         detected_creates: applied.detected_creates,
@@ -217,6 +222,7 @@ fn plan_renamed_event(repo: &Path, event: &ExternalEvent) -> CoreResult<Option<R
             current_name,
             detail_json,
         },
+        category,
     }))
 }
 
@@ -239,7 +245,27 @@ fn plan_removed_event(repo: &Path, event: &ExternalEvent) -> CoreResult<Option<R
             file_id: file.id,
             detail_json,
         },
+        category: file.category,
     }))
+}
+
+fn affected_nodes_for_batch(
+    created_plans: &[CreatedPlan],
+    renamed_plans: &[RenamedPlan],
+    removed_plans: &[RemovedPlan],
+) -> BTreeSet<String> {
+    let mut nodes = BTreeSet::new();
+    nodes.extend(created_plans.iter().map(|plan| plan.row.category.clone()));
+    nodes.extend(renamed_plans.iter().map(|plan| plan.category.clone()));
+    nodes.extend(removed_plans.iter().map(|plan| plan.category.clone()));
+    nodes
+}
+
+fn regenerate_affected_overviews(repo: &Path, nodes: &BTreeSet<String>) -> CoreResult<()> {
+    for node in nodes {
+        overview::regenerate_for_node(repo, node)?;
+    }
+    Ok(())
 }
 
 fn resolve_event_path(repo: &Path, raw_path: &str) -> CoreResult<Option<ResolvedEventPath>> {

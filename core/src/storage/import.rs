@@ -1,9 +1,9 @@
 use std::path::{Path, PathBuf};
 
-use serde_json::json;
+use serde_json::{json, Value};
 
 use crate::{
-    classify, db, CoreError, CoreResult, DuplicateStrategy, FileEntry, FileOrigin,
+    db, overview, CoreError, CoreResult, DuplicateStrategy, FileEntry, FileOrigin,
     ImportDestination, ImportOptions, StorageMode,
 };
 
@@ -11,6 +11,7 @@ use super::{
     dedup,
     destination::{ImportDestinationPlan, ReplacementPlan},
     hash,
+    import_target::{resolve_import_target, ImportTarget},
     replacement_trash::ReplacementFileGuard,
     safe_move::{move_recoverable_file, move_source_to_staging, FinalFileGuard, StagingFileGuard},
     staging_row::DbStagingRowGuard,
@@ -48,14 +49,20 @@ pub(crate) fn import_file(
     );
     ensure_replacement_is_recoverable_from_system_trash(&mut replacement_guard)?;
 
+    let replacement_rollback = destination
+        .replacement()
+        .map(ReplacementDbRollback::from_plan);
     promote_import(&prepared, file_id, &destination)?;
+    let entry = db::get_active_file_by_id(&prepared.repo, file_id)?;
+    let entry = finish_overview_regeneration(&prepared.repo, entry, replacement_rollback.as_ref())?;
+
     db_guard.disarm();
     final_guard.disarm();
     if let Some(guard) = &mut replacement_guard {
         guard.disarm();
     }
     destination.disarm();
-    db::get_active_file_by_id(&prepared.repo, file_id)
+    Ok(entry)
 }
 
 struct PreparedImport {
@@ -97,6 +104,38 @@ struct StagedImport {
     staging_guard: StagingFileGuard,
     hash_sha256: String,
     size_bytes: i64,
+}
+
+struct ReplacementDbRollback {
+    existing_id: i64,
+    original_path: String,
+    deleted_detail: Value,
+}
+
+impl ReplacementDbRollback {
+    fn from_plan(plan: &ReplacementPlan) -> Self {
+        Self {
+            existing_id: plan.replaced_file_id(),
+            original_path: plan.replaced_path().to_owned(),
+            deleted_detail: plan.deleted_change_detail(),
+        }
+    }
+
+    fn rollback(&self, repo: &Path, new_file_id: i64) -> CoreResult<()> {
+        db::rollback_replacing_imported_file(
+            repo,
+            self.existing_id,
+            &self.original_path,
+            new_file_id,
+            &self.deleted_detail,
+        )
+    }
+}
+
+struct IndexedImportCommit {
+    file_id: i64,
+    replacement_guard: Option<ReplacementFileGuard>,
+    replacement_rollback: Option<ReplacementDbRollback>,
 }
 
 fn stage_source(prepared: &PreparedImport) -> CoreResult<StagedImport> {
@@ -150,15 +189,44 @@ fn import_indexed_file(prepared: PreparedImport) -> CoreResult<FileEntry> {
     let fingerprint = hash::hash_file(&prepared.source)?;
     let duplicate_resolution = check_duplicate(&prepared, &fingerprint.hash_sha256)?;
 
-    let file_id = match duplicate_resolution {
+    let mut commit = match duplicate_resolution {
         dedup::DuplicateResolution::Overwrite { existing, .. } => {
             insert_replacing_indexed_row(&prepared, &fingerprint, existing)?
         }
         dedup::DuplicateResolution::NoDuplicate | dedup::DuplicateResolution::KeepBoth => {
-            insert_indexed_row(&prepared, &fingerprint)?
+            IndexedImportCommit {
+                file_id: insert_indexed_row(&prepared, &fingerprint)?,
+                replacement_guard: None,
+                replacement_rollback: None,
+            }
         }
     };
-    db::get_active_file_by_id(&prepared.repo, file_id)
+    let mut db_guard = DbStagingRowGuard::new(prepared.repo.clone(), commit.file_id);
+    let entry = db::get_active_file_by_id(&prepared.repo, commit.file_id)?;
+    let entry =
+        finish_overview_regeneration(&prepared.repo, entry, commit.replacement_rollback.as_ref())?;
+
+    db_guard.disarm();
+    if let Some(guard) = &mut commit.replacement_guard {
+        guard.disarm();
+    }
+    Ok(entry)
+}
+
+fn finish_overview_regeneration(
+    repo: &Path,
+    entry: FileEntry,
+    replacement_rollback: Option<&ReplacementDbRollback>,
+) -> CoreResult<FileEntry> {
+    match overview::regenerate_after_import(repo, &entry) {
+        Ok(()) => Ok(entry),
+        Err(error) => {
+            if let Some(rollback) = replacement_rollback {
+                rollback.rollback(repo, entry.id)?;
+            }
+            Err(error)
+        }
+    }
 }
 
 fn insert_staging_row(
@@ -263,7 +331,7 @@ fn insert_replacing_indexed_row(
     prepared: &PreparedImport,
     fingerprint: &hash::HashedCopy,
     existing: FileEntry,
-) -> CoreResult<i64> {
+) -> CoreResult<IndexedImportCommit> {
     let imported_at = chrono::Utc::now().timestamp();
     let source_path = prepared.source.to_string_lossy().into_owned();
     let replacement = ReplacementPlan::prepare_for_existing(&prepared.repo, existing)?;
@@ -298,10 +366,11 @@ fn insert_replacing_indexed_row(
         }),
         &replacement.deleted_change_detail(),
     )?;
-    if let Some(guard) = &mut replacement_guard {
-        guard.disarm();
-    }
-    Ok(file_id)
+    Ok(IndexedImportCommit {
+        file_id,
+        replacement_guard,
+        replacement_rollback: Some(ReplacementDbRollback::from_plan(&replacement)),
+    })
 }
 
 fn import_change_detail(
@@ -340,11 +409,6 @@ fn import_change_detail(
     }
 }
 
-struct ImportTarget {
-    relative_dir: String,
-    category: String,
-}
-
 fn validate_repo_path(repo_path: &str) -> CoreResult<PathBuf> {
     if repo_path.trim().is_empty() {
         return Err(CoreError::InvalidPath);
@@ -359,59 +423,6 @@ fn source_filename(source: &Path) -> CoreResult<String> {
         .filter(|value| !value.is_empty())
         .map(str::to_owned)
         .ok_or(CoreError::InvalidPath)
-}
-
-fn resolve_import_target(
-    repo: &Path,
-    repo_path: &str,
-    original_name: &str,
-    options: &ImportOptions,
-) -> CoreResult<ImportTarget> {
-    match options.destination {
-        ImportDestination::AutoClassify => {
-            let category = match &options.override_category {
-                Some(category) => category.clone(),
-                None => {
-                    classify::predict_category(repo_path.to_owned(), original_name.to_owned())?
-                        .category
-                }
-            };
-            validate::category_slug(&category)?;
-            Ok(ImportTarget {
-                relative_dir: category.clone(),
-                category,
-            })
-        }
-        ImportDestination::SelectedDirectory => {
-            let directory = options
-                .target_directory
-                .as_deref()
-                .ok_or(CoreError::InvalidPath)?;
-            validate::relative_directory(directory)?;
-            let category = validate::top_level_category(directory)?;
-            Ok(ImportTarget {
-                relative_dir: directory.to_owned(),
-                category,
-            })
-        }
-        ImportDestination::Category => {
-            let category = options
-                .override_category
-                .as_deref()
-                .ok_or(CoreError::InvalidPath)?;
-            validate::category_slug(category)?;
-            let relative_dir = repo
-                .join(category)
-                .strip_prefix(repo)
-                .map_err(|_| CoreError::InvalidPath)?
-                .to_string_lossy()
-                .into_owned();
-            Ok(ImportTarget {
-                relative_dir,
-                category: category.to_owned(),
-            })
-        }
-    }
 }
 
 fn storage_mode_detail(mode: &StorageMode) -> &'static str {

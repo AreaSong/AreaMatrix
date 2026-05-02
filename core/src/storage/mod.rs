@@ -4,6 +4,7 @@ mod dedup;
 mod destination;
 mod hash;
 mod import;
+mod import_target;
 mod rename;
 mod replacement_trash;
 mod safe_move;

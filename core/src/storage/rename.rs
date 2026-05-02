@@ -2,7 +2,7 @@ use std::path::{Path, PathBuf};
 
 use serde_json::json;
 
-use crate::{db, CoreError, CoreResult, FileEntry};
+use crate::{db, overview, CoreError, CoreResult, FileEntry};
 
 use super::{dedup, hash, safe_move::move_recoverable_file, validate};
 
@@ -43,7 +43,9 @@ pub(crate) fn rename_file(
         &rename_detail(&entry, &new_name, &final_relative_path, &final_name),
     )?;
     guard.disarm();
-    db::get_active_file_by_id(&repo, file_id)
+    let updated = db::get_active_file_by_id(&repo, file_id)?;
+    overview::regenerate_for_node(&repo, &updated.category)?;
+    Ok(updated)
 }
 
 fn rename_detail(

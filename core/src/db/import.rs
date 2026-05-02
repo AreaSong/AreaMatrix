@@ -263,11 +263,61 @@ pub(crate) fn rename_active_file(
 }
 
 pub(crate) fn delete_file_row(repo_path: &Path, file_id: i64) -> CoreResult<()> {
-    let connection = open_repo_connection(repo_path)?;
-    connection
-        .execute("DELETE FROM files WHERE id = ?1", params![file_id])
-        .map(|_| ())
-        .map_err(|_| CoreError::Db)
+    let mut connection = open_repo_connection(repo_path)?;
+    let tx = connection.transaction().map_err(|_| CoreError::Db)?;
+    tx.execute(
+        "DELETE FROM change_log WHERE file_id = ?1",
+        params![file_id],
+    )
+    .map_err(|_| CoreError::Db)?;
+    tx.execute("DELETE FROM files WHERE id = ?1", params![file_id])
+        .map_err(|_| CoreError::Db)?;
+    tx.commit().map_err(|_| CoreError::Db)
+}
+
+pub(crate) fn rollback_replacing_imported_file(
+    repo_path: &Path,
+    existing_id: i64,
+    original_path: &str,
+    new_file_id: i64,
+    deleted_detail: &Value,
+) -> CoreResult<()> {
+    let deleted_detail_json =
+        serde_json::to_string(deleted_detail).map_err(|_| CoreError::Internal)?;
+    let mut connection = open_repo_connection(repo_path)?;
+    let tx = connection.transaction().map_err(|_| CoreError::Db)?;
+
+    tx.execute(
+        "DELETE FROM change_log
+         WHERE file_id = ?1 AND action = 'imported'",
+        params![new_file_id],
+    )
+    .map_err(|_| CoreError::Db)?;
+    tx.execute("DELETE FROM files WHERE id = ?1", params![new_file_id])
+        .map_err(|_| CoreError::Db)?;
+
+    let restored = tx
+        .execute(
+            "UPDATE files
+             SET path = ?2,
+                 deleted_at = NULL,
+                 updated_at = strftime('%s', 'now'),
+                 status = 'active'
+             WHERE id = ?1 AND status = 'deleted'",
+            params![existing_id, original_path],
+        )
+        .map_err(|_| CoreError::Db)?;
+    if restored != 1 {
+        return Err(CoreError::Db);
+    }
+
+    tx.execute(
+        "DELETE FROM change_log
+         WHERE file_id = ?1 AND action = 'deleted' AND detail_json = ?2",
+        params![existing_id, deleted_detail_json],
+    )
+    .map_err(|_| CoreError::Db)?;
+    tx.commit().map_err(|_| CoreError::Db)
 }
 
 fn insert_active_indexed_file(tx: &rusqlite::Transaction<'_>, row: NewImportRow) -> CoreResult<()> {

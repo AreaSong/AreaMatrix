@@ -1,0 +1,56 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`1-4/task-22`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-1/1-4-recovery-sync-overview/task-22-c1-20-implementation.md`
+- 代码范围：`core/src/**`、`core/area_matrix.udl`、`core/tests/**`
+- Forbidden Touches：`apps/**`
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：1
+- 通过项数：9
+- 不通过项数：1
+- 阻塞项数：1
+
+四、逐项验收结果
+
+- Exact Docs 读取与 SSOT 对齐：通过。C1-20 要求默认写 `.areamatrix/generated/*.md`，可选 `AREAMATRIX.md`，不覆盖 `README.md`，见 [C1-20-overview-generated.md](/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-20-overview-generated.md:20)。
+- Control map 范围：通过。C1-20 只绑定 S1-27 / S1-30 的 settings 消费上下文，未发现 `apps/**` 改动，见 [mvp-control-map.md](/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:42)。
+- Expected New Paths：通过。`core/src/**`、`core/area_matrix.udl`、`core/tests/**` 均存在；新增实现位于 `core/src/overview/mod.rs`、`core/src/db/overview.rs`、`core/tests/overview_generated_implementation.rs`。
+- Forbidden Touches：通过。`git diff --name-only -- apps` 无输出。
+- 最小真实路径：通过。`import_file`、`rename_file`、`sync_external_changes` 已接入 overview regeneration，生成 root/node overview。
+- README / AREAMATRIX 边界：通过。测试覆盖 `README.md` 保留、`AREAMATRIX.md` 显式启用与标记块替换。
+- 错误与回滚边界：不通过。见阻塞项 P0。
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过。happy path 清晰，但 overview regeneration 失败会在 import 已提交后返回错误，破坏失败语义。
+- 注释 / rustdoc / 文档同步：通过。API/UDL/文档合同已有覆盖。
+- 错误处理与边界处理：不通过。缺少 overview 写入失败后的 DB/文件系统一致性或降级策略证据。
+- 测试与验证覆盖：不通过。验证命令通过，但现有失败测试只断言错误类型，没有断言 active rows、final file、source/staging 状态。
+- 占位、硬编码、mock-only、一次性实现检查：通过。未发现 mock-only 或硬编码通过态。
+
+六、阻塞项
+
+- P0：overview regeneration 失败会把已提交 import 变成 `Err`，但缺少回滚或一致性证据。
+  说明：`import_file` 在 `promote_import` 后 disarm DB/final/replacement guards，再调用 `finish_overview_regeneration`；若 overview 写入失败，API 返回 `Err`，但 active row 和 final file 已可能存在。对应代码在 [import.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/import.rs:51) 和 [import.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/import.rs:59)，实际错误传播在 [import.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/import.rs:166)。现有测试只断言返回 `Io/Config/PermissionDenied`，未断言无 active row 或无 final half-product，见 [overview_generated_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/overview_generated_implementation.rs:168)。这与 API rustdoc 的失败导入不得留下 active rows/final half-products 要求冲突，见 [api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:295)，也不满足 file-safety DB/rollback evidence 要求。
+
+七、验证情况
+
+- `cd core && cargo fmt --all -- --check`：通过
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过
+- `cd core && cargo test --workspace overview_generated`：通过，C1-20 contract/implementation 相关测试通过
+- `cd core && cargo test --workspace`：通过
+- `git diff --check -- core/src core/area_matrix.udl core/tests`：通过
+- 未运行：无必需验证缺失；macOS app 验证不属于本 task，且 `apps/**` 未触碰
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+
+VERIFY_RESULT: FAIL
