@@ -1,0 +1,63 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`phase-1` / `1-4/task-08`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-1/1-4-recovery-sync-overview/task-08-c1-17-failure-recovery.md`
+- 实现范围：`/Users/as/Ai-Project/project/AreaMatrix/core/src/sync/mod.rs`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs`
+- 测试范围：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/sync_external_created_failure_recovery.rs`，并交叉读取既有 C1-17 contract / implementation 测试
+- 禁止范围：`apps/**`
+
+三、完成度摘要
+
+- 已覆盖项数：21
+- 未覆盖项数：0
+- 通过项数：21
+- 不通过项数：0
+- 阻塞项数：0
+- `Exact Docs`：5/5 已读取
+- `Existing Code`：2/2 已检查
+- `Expected New Paths`：3/3 已落地
+- `Forbidden Touches`：1/1 未违规
+
+四、逐项验收结果
+
+| 项目 | 结果 | 证据 | 涉及文件 |
+|---|---|---|---|
+| 只处理 C1-17 failure-recovery | 通过 | diff 仅涉及 C1-17 sync 错误映射、public rustdoc 和 C1-17 failure 测试；未实现 Removed/Modified/Renamed | `core/src/sync/mod.rs:40` |
+| Exact Docs 作为 SSOT | 通过 | C1-17 要求 Created 入库、External origin、change_log、cursor 成功后推进、跳过 `.areamatrix/` / overview；实现与测试均覆盖 | `docs/core/capability-specs/stage-1-mvp/C1-17-sync-external-created.md` |
+| 不实现相邻能力或 UI | 通过 | `apps/**` 无 diff；UDL 未被无关修改；非 Created 事件仅跳过不实现 | `core/src/sync/mod.rs:49` |
+| 覆盖失败、回滚、重复执行或权限错误 | 通过 | DB 失败回滚 row/cursor、missing file 失败后可重放、PermissionDenied 保持 DB/cursor/user file 不变；既有 implementation 覆盖重复事件幂等 | `core/tests/sync_external_created_failure_recovery.rs:73` |
+| 不删除/覆盖/移动未确认用户文件 | 通过 | C1-17 使用 metadata/hash + Indexed metadata 写入；测试断言用户文件内容保持可读不变 | `core/src/sync/mod.rs:106` |
+| C1-17 failure-recovery 目标可证明 | 通过 | `cargo test --workspace sync_external_created` 中 C1-17 相关 13 个测试通过，其中 failure-recovery 3 个通过 | `core/tests/sync_external_created_failure_recovery.rs:73` |
+| 没有扩展未绑定能力 | 通过 | 变更只在 `core/src/api.rs`、`core/src/sync/mod.rs`、C1-17 测试文件；无 `apps/**` 触碰 | `git status --short` / `git diff --name-only -- apps` |
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。`sync_external_changes` 保持批次规划与 DB transaction 分离；cursor 只在 `apply_external_created_batch` 成功 commit 路径更新。
+- 注释 / rustdoc / 文档同步：通过。public API rustdoc 补齐 `PermissionDenied`；UDL 与 Core API 既有 C1-17 合同一致。
+- 错误处理与边界处理：通过。生产代码未发现 `unwrap()` / `expect()` / `panic!()` / `TODO`；权限错误经 `map_io_error` 显式映射。
+- 测试与验证覆盖：通过。覆盖 DB 失败、缺失文件重放、权限失败、重复事件幂等、cursor 回滚/推进、跳过 internal/generated。
+- 占位、硬编码、mock-only、一次性实现检查：通过。测试使用真实 temp repo、SQLite 和文件系统路径；未发现 mock-only 或静态通过态。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- `cd core && cargo fmt --all -- --check`：通过
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过
+- `cd core && cargo test --workspace sync_external_created`：通过
+- 额外补跑 `cd core && cargo test --workspace`：通过
+- 额外补跑 `git diff --check`：通过
+- 缺失：无本任务必需验证缺失。远端 CI 未在本地触发，不属于本次 verify-ready 指定命令。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+- 注意：验收前 `.codex/task-loop-runs/20260502_094539/summary.json` 仍显示 `1-4/task-08` 为 `in_progress`，且 verify log 尚未由 runner 写出；本次只读验收已经补齐实际验证证据，后续由 task-loop 根据本结果更新进度与 evidence。
+
+VERIFY_RESULT: PASS

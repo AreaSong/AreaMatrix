@@ -472,8 +472,8 @@ pub fn write_note(repo_path: String, file_id: i64, content_md: String) -> CoreRe
 /// Cursor persistence is part of the batch success contract.
 /// # Errors
 /// Returns `CoreError::InvalidPath`, `CoreError::ICloudPlaceholder`,
-/// `CoreError::Io`, or `CoreError::Db` for path, placeholder, metadata/hash, or
-/// transactional persistence failures.
+/// `CoreError::PermissionDenied`, `CoreError::Io`, or `CoreError::Db` for path,
+/// placeholder, metadata/hash, or transactional persistence failures.
 pub fn sync_external_changes(
     repo_path: String,
     events: Vec<ExternalEvent>,

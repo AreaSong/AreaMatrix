@@ -34,6 +34,7 @@ struct ResolvedEventPath {
 ///
 /// Returns `CoreError::InvalidPath` for paths outside the initialized
 /// repository, `CoreError::ICloudPlaceholder` for placeholder paths,
+/// `CoreError::PermissionDenied` for unreadable created files,
 /// `CoreError::Io` for metadata/hash failures, or `CoreError::Db` for
 /// transactional persistence failures.
 pub(crate) fn sync_external_changes(
@@ -290,6 +291,7 @@ fn sha256_file(path: &Path) -> CoreResult<String> {
 fn map_io_error(error: io::Error) -> CoreError {
     match error.kind() {
         io::ErrorKind::InvalidInput => CoreError::InvalidPath,
+        io::ErrorKind::PermissionDenied => CoreError::PermissionDenied,
         _ => CoreError::Io,
     }
 }
