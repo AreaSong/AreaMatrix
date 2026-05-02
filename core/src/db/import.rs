@@ -20,6 +20,11 @@ pub(crate) struct NewImportRow {
     pub(crate) imported_at: i64,
 }
 
+pub(crate) struct ReplacementImportRow {
+    pub(crate) existing_id: i64,
+    pub(crate) archived_path: String,
+}
+
 pub(crate) fn find_active_file_by_hash(
     repo_path: &Path,
     hash_sha256: &str,
@@ -130,6 +135,27 @@ pub(crate) fn insert_active_indexed_import(
     Ok(file_id)
 }
 
+pub(crate) fn insert_replacing_active_indexed_import(
+    repo_path: &Path,
+    replacement: ReplacementImportRow,
+    row: NewImportRow,
+    import_detail: &Value,
+    deleted_detail: &Value,
+) -> CoreResult<i64> {
+    let import_detail_json =
+        serde_json::to_string(import_detail).map_err(|_| CoreError::Internal)?;
+    let deleted_detail_json =
+        serde_json::to_string(deleted_detail).map_err(|_| CoreError::Internal)?;
+    let mut connection = open_repo_connection(repo_path)?;
+    let tx = connection.transaction().map_err(|_| CoreError::Db)?;
+    soft_delete_replaced_file(&tx, replacement, &deleted_detail_json)?;
+    insert_active_indexed_file(&tx, row)?;
+    let file_id = tx.last_insert_rowid();
+    insert_import_change(&tx, file_id, &import_detail_json)?;
+    tx.commit().map_err(|_| CoreError::Db)?;
+    Ok(file_id)
+}
+
 pub(crate) fn promote_imported_file(
     repo_path: &Path,
     file_id: i64,
@@ -164,12 +190,126 @@ pub(crate) fn promote_imported_file(
     tx.commit().map_err(|_| CoreError::Db)
 }
 
+pub(crate) fn promote_replacing_imported_file(
+    repo_path: &Path,
+    replacement: ReplacementImportRow,
+    file_id: i64,
+    final_path: &str,
+    final_name: &str,
+    import_detail: &Value,
+    deleted_detail: &Value,
+) -> CoreResult<()> {
+    let import_detail_json =
+        serde_json::to_string(import_detail).map_err(|_| CoreError::Internal)?;
+    let deleted_detail_json =
+        serde_json::to_string(deleted_detail).map_err(|_| CoreError::Internal)?;
+    let mut connection = open_repo_connection(repo_path)?;
+    let tx = connection.transaction().map_err(|_| CoreError::Db)?;
+    soft_delete_replaced_file(&tx, replacement, &deleted_detail_json)?;
+    promote_staging_file(&tx, file_id, final_path, final_name)?;
+    insert_import_change(&tx, file_id, &import_detail_json)?;
+    tx.commit().map_err(|_| CoreError::Db)
+}
+
 pub(crate) fn delete_file_row(repo_path: &Path, file_id: i64) -> CoreResult<()> {
     let connection = open_repo_connection(repo_path)?;
     connection
         .execute("DELETE FROM files WHERE id = ?1", params![file_id])
         .map(|_| ())
         .map_err(|_| CoreError::Db)
+}
+
+fn insert_active_indexed_file(tx: &rusqlite::Transaction<'_>, row: NewImportRow) -> CoreResult<()> {
+    tx.execute(
+        "INSERT INTO files (
+            path, original_name, current_name, category, size_bytes,
+            hash_sha256, storage_mode, origin, source_path,
+            imported_at, updated_at, status
+         ) VALUES (
+            ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9,
+            ?10, ?10, 'active'
+         )",
+        params![
+            row.path,
+            row.original_name,
+            row.current_name,
+            row.category,
+            row.size_bytes,
+            row.hash_sha256,
+            storage_mode_to_db(&row.storage_mode),
+            origin_to_db(&row.origin),
+            row.source_path,
+            row.imported_at,
+        ],
+    )
+    .map(|_| ())
+    .map_err(|_| CoreError::Db)
+}
+
+fn promote_staging_file(
+    tx: &rusqlite::Transaction<'_>,
+    file_id: i64,
+    final_path: &str,
+    final_name: &str,
+) -> CoreResult<()> {
+    let changed = tx
+        .execute(
+            "UPDATE files
+             SET path = ?2,
+                 current_name = ?3,
+                 updated_at = strftime('%s', 'now'),
+                 status = 'active'
+             WHERE id = ?1 AND status = 'staging'",
+            params![file_id, final_path, final_name],
+        )
+        .map_err(|_| CoreError::Db)?;
+    if changed == 1 {
+        Ok(())
+    } else {
+        Err(CoreError::Db)
+    }
+}
+
+fn soft_delete_replaced_file(
+    tx: &rusqlite::Transaction<'_>,
+    replacement: ReplacementImportRow,
+    detail_json: &str,
+) -> CoreResult<()> {
+    let changed = tx
+        .execute(
+            "UPDATE files
+             SET path = ?2,
+                 deleted_at = strftime('%s', 'now'),
+                 updated_at = strftime('%s', 'now'),
+                 status = 'deleted'
+             WHERE id = ?1 AND status = 'active'",
+            params![replacement.existing_id, replacement.archived_path],
+        )
+        .map_err(|_| CoreError::Db)?;
+    if changed != 1 {
+        return Err(CoreError::Db);
+    }
+    tx.execute(
+        "INSERT INTO change_log (file_id, action, detail_json, occurred_at)
+         VALUES (?1, 'deleted', ?2, strftime('%s', 'now'))",
+        params![replacement.existing_id, detail_json],
+    )
+    .map(|_| ())
+    .map_err(|_| CoreError::Db)
+}
+
+fn insert_import_change(
+    tx: &rusqlite::Transaction<'_>,
+    file_id: i64,
+    detail_json: &str,
+) -> CoreResult<()> {
+    tx.execute(
+        "INSERT INTO change_log (file_id, action, detail_json, occurred_at)
+         VALUES (?1, 'imported', ?2, strftime('%s', 'now'))",
+        params![file_id, detail_json],
+    )
+    .map(|_| ())
+    .map_err(|_| CoreError::Db)
 }
 
 fn origin_to_db(origin: &FileOrigin) -> &'static str {

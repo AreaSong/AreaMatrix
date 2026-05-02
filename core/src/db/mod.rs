@@ -16,7 +16,8 @@ mod import;
 mod scan;
 pub(crate) use import::{
     delete_file_row, find_active_file_by_hash, get_active_file_by_id, insert_active_indexed_import,
-    insert_import_staging, promote_imported_file, NewImportRow,
+    insert_import_staging, insert_replacing_active_indexed_import, promote_imported_file,
+    promote_replacing_imported_file, NewImportRow, ReplacementImportRow,
 };
 pub(crate) use scan::*;
 

@@ -148,7 +148,7 @@ fn restore_staged_source_or_keep_recoverable(current_path: &Path, source: &Path)
     let _restore_result = move_recoverable_file(current_path, source);
 }
 
-fn move_recoverable_file(current_path: &Path, source: &Path) -> CoreResult<()> {
+pub(super) fn move_recoverable_file(current_path: &Path, source: &Path) -> CoreResult<()> {
     match fs::rename(current_path, source) {
         Ok(()) => Ok(()),
         Err(error) if is_cross_device_error(&error) => {

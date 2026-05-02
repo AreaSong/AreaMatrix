@@ -229,9 +229,11 @@ pub fn predict_category(repo_path: String, filename: String) -> CoreResult<Class
 /// already owns the hash, and must leave the attempted source, final
 /// destination, active rows, and change log unchanged. `KeepBoth` allows a
 /// second active row with the same hash when the resolved destination path is
-/// distinct. Destructive replacement semantics for `Overwrite` require the
-/// later C1-09 implementation/failure tasks so this contract-api slice does not
-/// add unconfirmed delete or Trash behavior.
+/// distinct. `Overwrite` is accepted only after the UI has made the dangerous
+/// replace decision; it safely archives the old repo-owned file under
+/// AreaMatrix metadata, soft-deletes the old active row, promotes the new
+/// import, and writes deleted/imported change-log entries in the same
+/// metadata transition.
 ///
 /// # Errors
 ///

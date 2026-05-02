@@ -1,0 +1,74 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`1-2/task-21`
+- 对应文件路径：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-1/1-2-import-classify/task-21-c1-09-implementation.md`
+- 实际验收范围：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/**`
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：2
+- 通过项数：10
+- 不通过项数：2
+- 阻塞项数：1
+
+四、逐项验收结果
+
+- 项目：Exact Docs / Existing Code / Expected New Paths 读取与落地
+- 结果：通过
+- 证据：5 个 Exact Docs 均已读取；`core/src/storage/dedup.rs`、`core/src/storage/import.rs`、`core/area_matrix.udl`、`core/tests/detect_duplicate_implementation.rs` 均存在。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/dedup.rs`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/detect_duplicate_implementation.rs`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git status --short -- apps` 无输出，`apps/**` 未被触碰。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/**`
+
+- 项目：Skip / Ask 重复检测
+- 结果：通过
+- 证据：`core/src/storage/import.rs:122-128` 查询 active hash；`core/src/storage/dedup.rs:21-30` 对 `Skip` / `Ask` 返回 `DuplicateFile { existing_path }`；测试覆盖 `detect_duplicate_ask_returns_existing_path_without_side_effects`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/dedup.rs:21`
+
+- 项目：KeepBoth 重复导入
+- 结果：通过
+- 证据：`core/src/storage/dedup.rs:21-23` 允许 `KeepBoth`；`core/src/storage/dedup.rs:35-49` 为 KeepBoth 解析去冲突路径；测试覆盖同 hash 两个 active entry。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/dedup.rs:21`
+
+- 项目：Overwrite / Replace 语义
+- 结果：不通过
+- 证据：SSOT 要求 `Overwrite` 继续导入、软删除旧文件并写 change_log、走安全替换或 Trash：`docs/core/capability-specs/stage-1-mvp/C1-09-detect-duplicate.md:20-32`，UX 要求 Replace 写入 change_log 且旧文件进入 Trash：`docs/ux/dedup-conflict.md:92-115`。但实现把 `DuplicateStrategy::Overwrite` 与 `Skip` / `Ask` 同样返回 `DuplicateFile`：`core/src/storage/dedup.rs:21-30`，且 `rg` 未发现 detect_duplicate 测试覆盖 Overwrite。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/dedup.rs:23`
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过。Skip / Ask / KeepBoth 结构清晰，但 C1-09 的 Overwrite 分支缺失，不能证明完整实现目标。
+- 注释 / rustdoc / 文档同步：不通过。Rustdoc 仍写着 Overwrite 需要后续任务处理：`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:226-234`，与当前 implementation task 的 SSOT 范围不一致。
+- 错误处理与边界处理：不通过。Skip / Ask 失败路径有回滚证据，但 Overwrite 的软删除、Trash / safe replace、change_log 语义没有实现路径。
+- 测试与验证覆盖：不通过。验证命令通过，但测试只覆盖 Skip / Ask / KeepBoth / same-name conflict，不覆盖 Overwrite。
+- 占位、硬编码、mock-only、一次性实现检查：通过。未发现 mock-only 或硬编码通过态；问题是能力语义缺口。
+
+六、阻塞项
+
+- P0：C1-09 Overwrite / Replace 语义未实现
+- 说明：文档要求 `Overwrite` 对重复文件继续导入，并对旧文件执行软删除、Trash / 安全替换与 change_log 记录；当前实现直接返回 `DuplicateFile`，等价于拒绝导入，导致 C1-09 implementation 不完整。
+- 绝对路径与行号：`/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/dedup.rs:23`
+- 为什么导致不通过：这是 C1-09 SSOT 明确定义的核心分支，不是后续优化；缺失后无法证明 “C1-09 的 implementation 目标可用证据证明”。
+
+七、验证情况
+
+- 已运行：`cd core && cargo fmt --all -- --check`：通过
+- 已运行：`cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过
+- 已运行：`cd core && cargo test --workspace detect_duplicate`：通过，6 个 detect_duplicate 测试通过
+- 已运行：`cd core && cargo test --workspace`：通过
+- 缺失：无命令缺失；但测试语义缺失 Overwrite / Replace 分支
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。命令通过不能覆盖 SSOT 语义缺口；当前 task 必须补齐 C1-09 Overwrite / Replace 的真实实现与测试后才能重新验收。
+
+
+VERIFY_RESULT: FAIL

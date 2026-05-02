@@ -1,0 +1,33 @@
+一、执行结论：已完成 `1-2/task-21`。
+
+二、执行范围：单任务，仅改 Core 允许路径：
+- [core/src/storage/dedup.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/dedup.rs)
+- [core/src/storage/import.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/import.rs)
+- [core/src/storage/mod.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/mod.rs)
+- [core/tests/detect_duplicate_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/detect_duplicate_implementation.rs)
+
+三、完成情况：
+- C1-09 implementation 范围：完成。
+- Exact Docs 已按 manifest 读取并以文档为 SSOT。
+- 未实现相邻 C1 能力或 UI 页面；不同 hash 同名仍返回 `Conflict`，未提前做 C1-10。
+- 最小真实路径：新增 `storage::dedup`，将重复 hash 策略从 import 主流程拆出；`KeepBoth` 在重复同名目标时生成 `report_1.pdf` 这类编号路径。
+- Forbidden Touches：未触碰 `apps/**`。
+
+四、工程质量：
+- 生产代码无新增依赖，无 `unwrap/expect/panic/TODO`。
+- `core/src/storage/import.rs` 保持 500 行以内，去重逻辑拆到小模块。
+- 测试覆盖 `Ask` 无副作用、`KeepBoth` 自动编号、不同 hash 同名不越界。
+- `Overwrite` 仍保持安全拒绝为 `DuplicateFile`，没有在缺少 S1-24 二次确认与 Trash/恢复链路前执行破坏性替换。
+
+五、验证情况：
+- `cd core && cargo fmt --all -- --check`：通过。
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过。
+- `cd core && cargo test --workspace detect_duplicate`：通过，6 个相关测试。
+- `cd core && cargo test --workspace`：通过。
+- `git diff --check`：通过。
+
+六、风险与后续：
+- 剩余风险：`Overwrite` 的真正替换语义仍需后续带二次确认、Trash/回滚证据的任务接入。
+- 建议下一个任务：`1-2/task-22`，补 C1-09 failure-recovery，重点验证重复拒绝、编号导入和未来替换路径的失败回滚。
+- 备注：工作区中已有 `.codex/task-loop-runs/20260502_094539/summary.json` 和 `tasks/prompts/_shared/progress.json` 的未提交改动，我没有触碰它们，也未纳入本任务范围。
+

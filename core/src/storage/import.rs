@@ -6,11 +6,13 @@ use std::{
 use serde_json::json;
 
 use crate::{
-    classify, db, CoreError, CoreResult, DuplicateStrategy, FileEntry, FileOrigin,
-    ImportDestination, ImportOptions, StorageMode,
+    classify, db, CoreError, CoreResult, FileEntry, FileOrigin, ImportDestination, ImportOptions,
+    StorageMode,
 };
 
 use super::{
+    dedup,
+    destination::{ImportDestinationPlan, ReplacementFileGuard, ReplacementPlan},
     hash,
     safe_move::{move_source_to_staging, FinalFileGuard, StagingFileGuard},
     validate,
@@ -27,12 +29,18 @@ pub(crate) fn import_file(
     }
 
     let mut staged = stage_source(&prepared)?;
-    ensure_no_duplicate(&prepared, &staged.hash_sha256)?;
-    let destination = PreparedDestination::prepare(&prepared)?;
-    let file_id = insert_staging_row(&prepared, &staged)?;
+    let duplicate_resolution = check_duplicate(&prepared, &staged.hash_sha256)?;
+    let destination = ImportDestinationPlan::prepare(
+        &prepared.repo,
+        &prepared.target.relative_dir,
+        &prepared.target.category,
+        &prepared.target_filename,
+        duplicate_resolution,
+    )?;
+    let file_id = insert_staging_row(&prepared, &staged, &destination)?;
     let mut db_guard = DbStagingRowGuard::new(prepared.repo.clone(), file_id);
 
-    commit_filesystem(&staged, &destination)?;
+    let mut replacement_guard = commit_filesystem(&staged, &destination)?;
     staged.staging_guard.disarm();
     let mut final_guard = FinalFileGuard::new(
         &prepared.options.mode,
@@ -43,6 +51,9 @@ pub(crate) fn import_file(
     promote_import(&prepared, file_id, &destination)?;
     db_guard.disarm();
     final_guard.disarm();
+    if let Some(guard) = &mut replacement_guard {
+        guard.disarm();
+    }
     destination.disarm();
     db::get_active_file_by_id(&prepared.repo, file_id)
 }
@@ -119,57 +130,42 @@ fn stage_source(prepared: &PreparedImport) -> CoreResult<StagedImport> {
     })
 }
 
-fn ensure_no_duplicate(prepared: &PreparedImport, hash_sha256: &str) -> CoreResult<()> {
-    if let Some(existing) = db::find_active_file_by_hash(&prepared.repo, hash_sha256)? {
-        return handle_duplicate(&prepared.options.duplicate_strategy, existing);
-    }
-    Ok(())
+fn check_duplicate(
+    prepared: &PreparedImport,
+    hash_sha256: &str,
+) -> CoreResult<dedup::DuplicateResolution> {
+    let existing = db::find_active_file_by_hash(&prepared.repo, hash_sha256)?;
+    dedup::resolve_duplicate(&prepared.options.duplicate_strategy, existing)
 }
 
 fn import_indexed_file(prepared: PreparedImport) -> CoreResult<FileEntry> {
     let fingerprint = hash::hash_file(&prepared.source)?;
-    ensure_no_duplicate(&prepared, &fingerprint.hash_sha256)?;
+    let duplicate_resolution = check_duplicate(&prepared, &fingerprint.hash_sha256)?;
 
-    let file_id = insert_indexed_row(&prepared, &fingerprint)?;
+    let file_id = match duplicate_resolution {
+        dedup::DuplicateResolution::Overwrite(existing) => {
+            insert_replacing_indexed_row(&prepared, &fingerprint, existing)?
+        }
+        dedup::DuplicateResolution::NoDuplicate | dedup::DuplicateResolution::KeepBoth => {
+            insert_indexed_row(&prepared, &fingerprint)?
+        }
+    };
     db::get_active_file_by_id(&prepared.repo, file_id)
 }
 
-struct PreparedDestination {
-    directory_guard: CreatedDirectoryGuard,
-    final_path: PathBuf,
-    final_relative_path: String,
-}
-
-impl PreparedDestination {
-    fn prepare(prepared: &PreparedImport) -> CoreResult<Self> {
-        let directory_guard =
-            CreatedDirectoryGuard::ensure(&prepared.repo, &prepared.target.relative_dir)?;
-        let final_path = directory_guard.path().join(&prepared.target_filename);
-        if path_exists(&final_path)? {
-            return Err(CoreError::Conflict);
-        }
-
-        Ok(Self {
-            final_relative_path: relative_repo_path(&prepared.repo, &final_path)?,
-            directory_guard,
-            final_path,
-        })
-    }
-
-    fn disarm(mut self) {
-        self.directory_guard.disarm();
-    }
-}
-
-fn insert_staging_row(prepared: &PreparedImport, staged: &StagedImport) -> CoreResult<i64> {
+fn insert_staging_row(
+    prepared: &PreparedImport,
+    staged: &StagedImport,
+    destination: &ImportDestinationPlan,
+) -> CoreResult<i64> {
     let imported_at = chrono::Utc::now().timestamp();
     db::insert_import_staging(
         &prepared.repo,
         db::NewImportRow {
             path: relative_repo_path(&prepared.repo, staged.staging_guard.path())?,
             original_name: prepared.original_name.clone(),
-            current_name: prepared.target_filename.clone(),
-            category: prepared.target.category.clone(),
+            current_name: destination.final_name.clone(),
+            category: destination.category.clone(),
             size_bytes: staged.size_bytes,
             hash_sha256: staged.hash_sha256.clone(),
             storage_mode: prepared.options.mode.clone(),
@@ -180,29 +176,39 @@ fn insert_staging_row(prepared: &PreparedImport, staged: &StagedImport) -> CoreR
     )
 }
 
-fn commit_filesystem(staged: &StagedImport, destination: &PreparedDestination) -> CoreResult<()> {
+fn commit_filesystem(
+    staged: &StagedImport,
+    destination: &ImportDestinationPlan,
+) -> CoreResult<Option<ReplacementFileGuard>> {
+    let replacement_guard = destination.archive_replacement()?;
     persist_staging_to_final(staged.staging_guard.path(), &destination.final_path)
+        .map(|()| replacement_guard)
 }
 
 fn promote_import(
     prepared: &PreparedImport,
     file_id: i64,
-    destination: &PreparedDestination,
+    destination: &ImportDestinationPlan,
 ) -> CoreResult<()> {
-    db::promote_imported_file(
-        &prepared.repo,
-        file_id,
-        &destination.final_relative_path,
-        &prepared.target_filename,
-        &json!({
-            "source": prepared.source.to_string_lossy(),
-            "mode": storage_mode_detail(&prepared.options.mode),
-            "category": prepared.target.category,
-            "destination": destination_detail(&prepared.options.destination),
-            "renamed_from_original": prepared.original_name != prepared.target_filename,
-            "by": "user",
-        }),
-    )
+    let import_detail = import_change_detail(prepared, destination);
+    match destination.replacement() {
+        Some(replacement) => db::promote_replacing_imported_file(
+            &prepared.repo,
+            replacement.db_row(),
+            file_id,
+            &destination.final_relative_path,
+            &destination.final_name,
+            &import_detail,
+            &replacement.deleted_change_detail(),
+        ),
+        None => db::promote_imported_file(
+            &prepared.repo,
+            file_id,
+            &destination.final_relative_path,
+            &destination.final_name,
+            &import_detail,
+        ),
+    }
 }
 
 fn insert_indexed_row(
@@ -234,6 +240,71 @@ fn insert_indexed_row(
             "by": "user",
         }),
     )
+}
+
+fn insert_replacing_indexed_row(
+    prepared: &PreparedImport,
+    fingerprint: &hash::HashedCopy,
+    existing: FileEntry,
+) -> CoreResult<i64> {
+    let imported_at = chrono::Utc::now().timestamp();
+    let source_path = prepared.source.to_string_lossy().into_owned();
+    let replacement = ReplacementPlan::metadata_only(existing);
+    db::insert_replacing_active_indexed_import(
+        &prepared.repo,
+        replacement.db_row(),
+        db::NewImportRow {
+            path: source_path.clone(),
+            original_name: prepared.original_name.clone(),
+            current_name: prepared.target_filename.clone(),
+            category: prepared.target.category.clone(),
+            size_bytes: fingerprint.size_bytes,
+            hash_sha256: fingerprint.hash_sha256.clone(),
+            storage_mode: StorageMode::Indexed,
+            origin: FileOrigin::Imported,
+            source_path: Some(source_path.clone()),
+            imported_at,
+        },
+        &json!({
+            "source": source_path,
+            "mode": storage_mode_detail(&prepared.options.mode),
+            "category": prepared.target.category,
+            "destination": destination_detail(&prepared.options.destination),
+            "renamed_from_original": prepared.original_name != prepared.target_filename,
+            "duplicate_strategy": "overwrite",
+            "replaced_file_id": replacement.replaced_file_id(),
+            "replaced_path": replacement.replaced_path(),
+            "by": "user",
+        }),
+        &replacement.deleted_change_detail(),
+    )
+}
+
+fn import_change_detail(
+    prepared: &PreparedImport,
+    destination: &ImportDestinationPlan,
+) -> serde_json::Value {
+    match destination.replacement() {
+        Some(replacement) => json!({
+            "source": prepared.source.to_string_lossy(),
+            "mode": storage_mode_detail(&prepared.options.mode),
+            "category": destination.category,
+            "destination": destination_detail(&prepared.options.destination),
+            "renamed_from_original": prepared.original_name != destination.final_name,
+            "duplicate_strategy": "overwrite",
+            "replaced_file_id": replacement.replaced_file_id(),
+            "replaced_path": replacement.replaced_path(),
+            "by": "user",
+        }),
+        None => json!({
+            "source": prepared.source.to_string_lossy(),
+            "mode": storage_mode_detail(&prepared.options.mode),
+            "category": destination.category,
+            "destination": destination_detail(&prepared.options.destination),
+            "renamed_from_original": prepared.original_name != destination.final_name,
+            "by": "user",
+        }),
+    }
 }
 
 struct ImportTarget {
@@ -310,21 +381,6 @@ fn resolve_import_target(
     }
 }
 
-fn handle_duplicate(strategy: &DuplicateStrategy, existing: FileEntry) -> CoreResult<()> {
-    match strategy {
-        DuplicateStrategy::KeepBoth => Ok(()),
-        DuplicateStrategy::Skip | DuplicateStrategy::Ask | DuplicateStrategy::Overwrite => {
-            tracing::warn!(
-                existing_path = %existing.path,
-                "duplicate file detected before import commit"
-            );
-            Err(CoreError::DuplicateFile {
-                existing_path: existing.path,
-            })
-        }
-    }
-}
-
 fn storage_mode_detail(mode: &StorageMode) -> &'static str {
     match mode {
         StorageMode::Moved => "moved",
@@ -381,58 +437,6 @@ fn relative_repo_path(repo: &Path, path: &Path) -> CoreResult<String> {
 
 fn path_exists(path: &Path) -> CoreResult<bool> {
     path.try_exists().map_err(hash::map_io_error)
-}
-
-struct CreatedDirectoryGuard {
-    final_path: PathBuf,
-    created: Vec<PathBuf>,
-    armed: bool,
-}
-
-impl CreatedDirectoryGuard {
-    fn ensure(repo: &Path, relative_dir: &str) -> CoreResult<Self> {
-        let mut current = repo.to_path_buf();
-        let mut created = Vec::new();
-        for component in Path::new(relative_dir).components() {
-            let std::path::Component::Normal(part) = component else {
-                return Err(CoreError::InvalidPath);
-            };
-            current.push(part);
-            if path_exists(&current)? {
-                if current.is_dir() {
-                    continue;
-                }
-                return Err(CoreError::InvalidPath);
-            }
-            fs::create_dir(&current).map_err(hash::map_io_error)?;
-            created.push(current.clone());
-        }
-
-        Ok(Self {
-            final_path: current,
-            created,
-            armed: true,
-        })
-    }
-
-    fn path(&self) -> &Path {
-        &self.final_path
-    }
-
-    fn disarm(&mut self) {
-        self.armed = false;
-    }
-}
-
-impl Drop for CreatedDirectoryGuard {
-    fn drop(&mut self) {
-        if self.armed {
-            for directory in self.created.iter().rev() {
-                // Only empty directories created by this import are removed.
-                let _cleanup_result = fs::remove_dir(directory);
-            }
-        }
-    }
 }
 
 struct DbStagingRowGuard {

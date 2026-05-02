@@ -105,7 +105,7 @@ pub enum ScanSessionStatus {
 pub enum DuplicateStrategy {
     /// Do not import the duplicate.
     Skip,
-    /// Replace the existing entry when allowed by later storage logic.
+    /// Replace the existing active entry after the UI has confirmed the danger.
     Overwrite,
     /// Keep both files with conflict-free naming.
     KeepBoth,
