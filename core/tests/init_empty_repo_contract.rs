@@ -60,11 +60,31 @@ fn init_empty_repo_contract_exposes_documented_outputs() {
         fallback_to_inbox: true,
         allow_replace_during_import: false,
     };
-    let empty_tree_json = r#"{"children":[]}"#.to_owned();
+    let repo = tempfile::tempdir().expect("create temporary repository directory");
+    init_repo(
+        repo.path().to_string_lossy().into_owned(),
+        RepoInitOptions {
+            mode: RepoInitMode::CreateEmpty,
+            create_default_categories: false,
+            overview_output: OverviewOutput::GeneratedOnly,
+        },
+    )
+    .expect("initialize empty repository");
+    let empty_tree_json = list_tree_json(
+        repo.path().to_string_lossy().into_owned(),
+        "zh-Hans".to_owned(),
+    )
+    .expect("list initialized empty tree");
+    let empty_tree: serde_json::Value =
+        serde_json::from_str(&empty_tree_json).expect("parse empty tree JSON");
 
     assert_eq!(config.repo_path, "/tmp/area-matrix-empty");
     assert_eq!(config.overview_output, OverviewOutput::GeneratedOnly);
-    assert_eq!(empty_tree_json, r#"{"children":[]}"#);
+    assert_eq!(empty_tree["slug"], "__root__");
+    assert!(empty_tree["children"]
+        .as_array()
+        .expect("empty tree children should be an array")
+        .is_empty());
 }
 
 #[test]

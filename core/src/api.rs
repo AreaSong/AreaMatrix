@@ -375,14 +375,24 @@ pub fn list_changes(repo_path: String, filter: ChangeFilter) -> CoreResult<Vec<C
 
 /// Returns repository tree data as JSON.
 ///
-/// After C1-02 empty initialization this returns the empty repository tree that
-/// the first main window can render without scanning user files.
+/// C1-15 defines this as the read-only tree query for the Stage 1 main window.
+/// The caller supplies an initialized repository path and a display locale such
+/// as `zh-Hans` or `en`. The output is a single JSON string so Swift can decode
+/// one `TreeNode` snapshot without repeated FFI crossings. Tree nodes must use
+/// stable path keys, stable sibling ordering, and a Swift-compatible `children`
+/// array shape. The query may read repository file paths and classifier config
+/// to build display names, but it must not create generated overviews, mutate
+/// repository metadata, or modify user files.
+///
+/// Virtual smart lists, search result trees, and Stage 2 tree projections remain
+/// outside this API boundary.
 ///
 /// # Errors
 ///
 /// Returns `CoreError::RepoNotInitialized` when metadata is missing,
 /// `CoreError::Db` when the tree cannot be read from SQLite, and
-/// `CoreError::Io` when repository metadata cannot be inspected.
+/// `CoreError::Io` when repository file paths, file metadata, or classifier
+/// config cannot be inspected.
 pub fn list_tree_json(repo_path: String, locale: String) -> CoreResult<String> {
     tree::list_tree_json(repo_path, locale)
 }

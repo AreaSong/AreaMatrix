@@ -188,7 +188,7 @@ fn import_copy_file_integration_verify_real_copy_supports_consuming_context() {
 
     let tree_json =
         list_tree_json(path_string(repo.path()), "zh-Hans".to_owned()).expect("list tree json");
-    assert_contains(&tree_json, r#""name":"finance""#);
+    assert_contains(&tree_json, r#""slug":"finance""#);
 
     assert_file_row_matches_import(repo.path(), entry.id, &entry.path, &source);
     assert_change_log_matches_import(repo.path(), entry.id, &source);

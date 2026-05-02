@@ -1,0 +1,83 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`1-3/task-18`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-1/1-3-query-detail/task-18-c1-15-contract-api.md`
+- Exact Docs：`C1-15-build-tree.md`、`mvp-control-map.md`、`core-api.md`、`error-codes.md`
+- Existing Code：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+- Expected New Paths：`core/src/**`、`core/area_matrix.udl`、`core/tests/**`
+- Forbidden Touches：`apps/**`
+
+三、完成度摘要
+
+- 已覆盖项数：15
+- 未覆盖项数：0
+- 通过项数：12
+- 不通过项数：3
+- 阻塞项数：2
+
+四、逐项验收结果
+
+- 项目：只处理 C1-15 contract-api 范围
+  结果：通过
+  证据：实际产品改动集中在 `core/src/api.rs` 与 `core/tests/build_tree_contract_api.rs`；`git diff --name-only -- apps` 无输出。
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/build_tree_contract_api.rs`
+
+- 项目：Exact Docs 逐项读取并作为 SSOT
+  结果：通过
+  证据：manifest `1-3/task-18` 指定 4 个 Exact Docs，位于 `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-1.md:2078` 到 `:2082`。
+  涉及文件：4 个 Exact Docs
+
+- 项目：不实现相邻 C1 能力或 UI 页面
+  结果：通过
+  证据：未发现 `apps/**` 差异；未发现新增 UI 页面实现。
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/**`
+
+- 项目：更新或校准 Core API / UDL 合同意图
+  结果：不通过
+  证据：C1-15 spec 要求错误码为 `RepoNotInitialized`、`Db`、`Io`（`C1-15-build-tree.md:31` 到 `:35`），但 Core API 总览仍把 `list_tree_json` 主要错误写成仅 `Io`（`docs/api/core-api.md:320`）。UDL 只有签名（`core/area_matrix.udl:63` 到 `:64`），不能补足这个 SSOT 漂移。
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+
+- 项目：明确输入、输出、错误码和副作用边界
+  结果：不通过
+  证据：`api.rs` rustdoc 已写输入、JSON 输出、只读边界和错误（`core/src/api.rs:376` 到 `:395`），但权威 Core API 文档的 `list_tree_json` 小节只说明返回 JSON 与 Swift 解码（`docs/api/core-api.md:766` 到 `:779`），没有同步明确错误码和副作用边界。
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs`
+
+- 项目：Expected New Paths 落地
+  结果：通过
+  证据：`core/src/**` 存在 `api.rs` 与 `tree/mod.rs`；`core/area_matrix.udl` 存在 `list_tree_json`；`core/tests/**` 新增 `build_tree_contract_api.rs`。
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/**`
+
+- 项目：C1-15 contract-api 目标可用证据证明
+  结果：不通过
+  证据：新增测试主要检查静态文档片段与静态 JSON fixture，`build_tree_contract_api_exposes...` 只做函数签名断言和 fixture 解析（`core/tests/build_tree_contract_api.rs:21` 到 `:61`），没有调用真实 `list_tree_json` 证明输出 schema 或错误边界。现有实现实际返回 `{"children": ...}` 形态（`core/src/tree/mod.rs:12` 到 `:17`、`:27` 到 `:31`），与 Core API 引用的 TreeNode schema 目标不一致。
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/build_tree_contract_api.rs`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/tree/mod.rs`
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过。`api.rs` 的合同说明清楚，但真实 `tree::list_tree_json` 仍是最小目录 JSON，未能证明与 C1-15 的 Swift-compatible Tree JSON 合同一致。
+- 注释 / rustdoc / 文档同步：不通过。rustdoc 已补，但 `docs/api/core-api.md` 作为 SSOT 未同步错误码和副作用边界。
+- 错误处理与边界处理：不通过。C1-15 spec 只列 `RepoNotInitialized`、`Db`、`Io`，当前实现还能从 `map_io_error` 返回 `PermissionDenied` / `InvalidPath`（`core/src/tree/mod.rs:51` 到 `:56`），合同边界未收敛。
+- 测试与验证覆盖：不通过。命令通过，但新增 contract 测试没有调用真实 API 输出，也没有验证真实错误路径和副作用边界。
+- 占位、硬编码、mock-only、一次性实现检查：不通过。新增测试内的 Tree JSON 是静态 fixture，不是产品路径证据。
+
+六、阻塞项
+
+- P0：Core API SSOT 与 C1-15 错误码不一致。`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:320` 仅列 `Io`，而 `/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-15-build-tree.md:31` 到 `:35` 要求 `RepoNotInitialized`、`Db`、`Io`。这直接导致 checklist 4/5 不通过。
+- P1：contract 测试不能证明真实 API 合同。`/Users/as/Ai-Project/project/AreaMatrix/core/tests/build_tree_contract_api.rs:30` 到 `:58` 使用静态 JSON fixture，未调用 `list_tree_json`；`/Users/as/Ai-Project/project/AreaMatrix/core/src/tree/mod.rs:12` 到 `:17` 的真实输出也未覆盖 C1-15 TreeNode schema 证据。因此不能证明 contract-api 目标完成。
+
+七、验证情况
+
+- 已运行：`cd core && cargo fmt --all -- --check`，通过。
+- 已运行：`cd core && cargo clippy --all-targets --all-features -- -D warnings`，通过。
+- 已运行：`cd core && cargo test --workspace build_tree`，通过；`build_tree_contract_api.rs` 3 个测试通过。
+- 已运行：`cd core && cargo test --workspace`，通过；完整 workspace 测试无失败。
+- 缺失：没有真实 API 输出 schema、真实错误路径、真实副作用边界的测试证据。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。验证命令通过，但 SSOT 文档未对齐，且测试证据不足以证明 C1-15 contract-api 真实完成。
+VERIFY_RESULT: FAIL

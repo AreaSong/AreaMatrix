@@ -317,7 +317,7 @@ interface CoreError {
 | `list_files(repo, filter)` | query | √ | Db |
 | `get_file(repo, file_id)` | query | √ | FileNotFound |
 | `list_changes(repo, filter)` | query | √ | Db |
-| `list_tree_json(repo, locale)` | query | √ | Io |
+| `list_tree_json(repo, locale)` | query | √ | RepoNotInitialized / Db / Io |
 | `read_note(repo, file_id)` | note | √ | Io |
 | `write_note(repo, file_id, content)` | note | √ | Io |
 | `sync_external_changes(repo, events)` | sync | √ | Db |
@@ -776,7 +776,41 @@ let tree = try decoder.decode(TreeNode.self, from: json.data(using: .utf8)!)
 sidebar.update(tree)
 ```
 
-返回 JSON 字符串而非 `TreeNode`，避免大 sequence 跨 FFI 多次拷贝。详见 [../modules/tree-scan.md](../modules/tree-scan.md)。
+输入：
+
+- `repoPath`：已初始化的资料库根目录。
+- `locale`：显示名 locale，例如 `zh-Hans` 或 `en`；未知 locale 可回退到稳定 slug。
+
+输出为 Swift 可解码的 `TreeNode` JSON 字符串，而非跨 FFI 返回
+`TreeNode` 对象，避免大 sequence 多次拷贝。JSON 根节点和所有子节点使用同一
+schema：
+
+```json
+{
+  "slug": "__root__",
+  "display_name": "资料库",
+  "kind": "RepositoryRoot",
+  "relative_path": "",
+  "file_count": 0,
+  "size_bytes": 0,
+  "depth": 0,
+  "children": []
+}
+```
+
+`relative_path` 是稳定 path key；同级 `children` 必须稳定排序。`kind` 取值
+为 `RepositoryRoot`、`SystemCategory`、`UserFolder` 或 `Subdir`，字段名保持
+snake_case 以配合 Swift `JSONDecoder.KeyDecodingStrategy.convertFromSnakeCase`。
+
+错误码边界：
+
+- `RepoNotInitialized`：资料库 metadata 缺失。
+- `Db`：树构建需要读取 SQLite metadata 时失败。
+- `Io`：资料库目录、文件路径、文件 metadata 或分类配置无法读取。
+
+副作用边界：该 API 只读取资料库文件路径和分类配置，不写 DB，不创建 generated
+overview，不移动、重命名、删除或修改用户文件。虚拟智能列表、搜索结果树和
+Stage 2 tree projection 不属于本接口。详见 [../modules/tree-scan.md](../modules/tree-scan.md)。
 
 ---
 

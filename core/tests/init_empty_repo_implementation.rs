@@ -66,10 +66,16 @@ fn init_empty_repo_creates_metadata_db_config_rules_and_generated_overview() {
 
     let files = list_files(path_string(repo.path()), empty_filter()).expect("list empty files");
     assert!(files.is_empty());
-    assert_eq!(
-        list_tree_json(path_string(repo.path()), "zh-Hans".to_owned()).expect("list empty tree"),
-        r#"{"children":[]}"#
-    );
+    let empty_tree =
+        list_tree_json(path_string(repo.path()), "zh-Hans".to_owned()).expect("list empty tree");
+    let empty_tree: Value = serde_json::from_str(&empty_tree).expect("parse empty tree json");
+    assert_eq!(empty_tree["slug"], "__root__");
+    assert_eq!(empty_tree["kind"], "RepositoryRoot");
+    assert_eq!(empty_tree["file_count"], 0);
+    assert!(empty_tree["children"]
+        .as_array()
+        .expect("empty tree children should be an array")
+        .is_empty());
 
     let connection =
         Connection::open(metadata_dir.join("index.db")).expect("open initialized database");
@@ -274,7 +280,7 @@ fn init_empty_repo_can_create_default_category_directories() {
         .expect("tree children should be an array");
     let names = children
         .iter()
-        .filter_map(|child| child["name"].as_str())
+        .filter_map(|child| child["slug"].as_str())
         .collect::<Vec<_>>();
     assert_eq!(
         names,

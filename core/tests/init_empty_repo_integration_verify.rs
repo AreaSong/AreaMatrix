@@ -59,9 +59,9 @@ fn tree_child_names(tree_json: &str) -> Vec<String> {
     children
         .iter()
         .map(|child| {
-            child["name"]
+            child["slug"]
                 .as_str()
-                .expect("tree child should expose a name")
+                .expect("tree child should expose a slug")
                 .to_owned()
         })
         .collect()
