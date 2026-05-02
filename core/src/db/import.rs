@@ -87,6 +87,49 @@ pub(crate) fn insert_import_staging(repo_path: &Path, row: NewImportRow) -> Core
     Ok(file_id)
 }
 
+pub(crate) fn insert_active_indexed_import(
+    repo_path: &Path,
+    row: NewImportRow,
+    detail: &Value,
+) -> CoreResult<i64> {
+    let detail_json = serde_json::to_string(detail).map_err(|_| CoreError::Internal)?;
+    let mut connection = open_repo_connection(repo_path)?;
+    let tx = connection.transaction().map_err(|_| CoreError::Db)?;
+    tx.execute(
+        "INSERT INTO files (
+            path, original_name, current_name, category, size_bytes,
+            hash_sha256, storage_mode, origin, source_path,
+            imported_at, updated_at, status
+         ) VALUES (
+            ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9,
+            ?10, ?10, 'active'
+         )",
+        params![
+            row.path,
+            row.original_name,
+            row.current_name,
+            row.category,
+            row.size_bytes,
+            row.hash_sha256,
+            storage_mode_to_db(&row.storage_mode),
+            origin_to_db(&row.origin),
+            row.source_path,
+            row.imported_at,
+        ],
+    )
+    .map_err(|_| CoreError::Db)?;
+    let file_id = tx.last_insert_rowid();
+
+    tx.execute(
+        "INSERT INTO change_log (file_id, action, detail_json, occurred_at)
+         VALUES (?1, 'imported', ?2, strftime('%s', 'now'))",
+        params![file_id, detail_json],
+    )
+    .map_err(|_| CoreError::Db)?;
+    tx.commit().map_err(|_| CoreError::Db)?;
+    Ok(file_id)
+}
+
 pub(crate) fn promote_imported_file(
     repo_path: &Path,
     file_id: i64,
