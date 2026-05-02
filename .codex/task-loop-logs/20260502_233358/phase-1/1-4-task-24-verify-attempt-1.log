@@ -1,0 +1,56 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`1-4/task-24`
+- Task 文件：[/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-1/1-4-recovery-sync-overview/task-24-c1-20-validation.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-1/1-4-recovery-sync-overview/task-24-c1-20-validation.md:1)
+- 涉及路径：`core/src/**`、`core/area_matrix.udl`、`core/tests/**`
+- 禁止边界：`apps/**`
+
+三、完成度摘要
+
+- 已覆盖项数：7（核对清单 5 + 完成标准 2）
+- 未覆盖项数：0
+- 通过项数：7
+- 不通过项数：0
+- 阻塞项数：0
+- Expected New Paths 缺失：0
+- Forbidden Touches：未发现 `apps/**` 脏改动
+
+四、逐项验收结果
+
+- 只处理 C1-20 validation 范围：通过。变更集中在 `core/src/overview/mod.rs`、`core/src/overview/atomic_write.rs`、`core/tests/overview_generated_validation.rs`，无 `apps/**` 变更。
+- Exact Docs 已读取并按 SSOT 验收：通过。C1-20 要求 `init_repo`、`import_file`、`update_config` 与内部 overview regeneration，输出 `.areamatrix/generated/*.md`，可选 `AREAMATRIX.md`，不得覆盖 `README.md`，见 [/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-20-overview-generated.md](/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-20-overview-generated.md:8)。
+- 不实现相邻 C1 能力或 UI 页面：通过。control map 只确认 S1-27/S1-30 对 C1-20 的消费声明，未触碰 UI，见 [/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md](/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:42)。
+- Rust 测试补齐：通过。新增 `core/tests/overview_generated_validation.rs` 覆盖默认生成、配置切换、root 失败回滚、symlink 拒绝，见 [/Users/as/Ai-Project/project/AreaMatrix/core/tests/overview_generated_validation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/overview_generated_validation.rs:157)。
+- 成功路径和关键错误路径：通过。成功路径覆盖默认导入更新 generated root/node；错误路径覆盖 root blocker、symlink、DB/FS 回滚，见 [/Users/as/Ai-Project/project/AreaMatrix/core/tests/overview_generated_validation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/overview_generated_validation.rs:211)。
+- C1-20 validation 目标可证明：通过。`import_file` 成功后触发 overview regeneration，失败时返回错误并由 guard/rollback 清理状态，见 [/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/import.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/import.rs:216)。
+- 没有扩展到未绑定能力：通过。UDL 仍只暴露既有 `OverviewOutput` 配置面，未新增相邻 FFI API，见 [/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:82)。
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。overview regeneration 通过 `WritePlan` 批量写入并统一 rollback，结构清晰，文件长度未超过 500 行。
+- 注释 / rustdoc / 文档同步：通过。public API / domain 已有 C1-20 rustdoc，UDL 与 `docs/api/core-api.md` 的 `OverviewOutput` 保持一致。
+- 错误处理与边界处理：通过。root `AREAMATRIX.md` 非普通文件返回 `Config`；写入失败会恢复 snapshots；`README.md` 不被触碰。
+- 测试与验证覆盖：通过。manifest 定向测试 23 条 `overview_generated_*` 全部通过，并补跑 workspace 全量测试。
+- 占位、硬编码、mock-only、一次性实现检查：通过。实现连接真实 `init_repo`、`import_file`、`update_config`、DB 查询、文件系统写入与回滚路径，未发现 mock-only 闭环。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- `cd core && cargo fmt --all -- --check`：通过
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过
+- `cd core && cargo test --workspace overview_generated`：通过，23 条匹配测试通过
+- 补充验证 `cd core && cargo test --workspace`：通过
+- 未运行：无必需验证缺失
+
+八、最终判定说明
+
+- 本次执行已达到验收标准，可以视为完成。
+
+VERIFY_RESULT: PASS

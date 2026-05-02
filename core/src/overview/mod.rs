@@ -6,10 +6,13 @@ use std::{
     path::Path,
 };
 
+use self::atomic_write::{write_plans_with_rollback, WritePlan};
 use crate::{
     db::{self, OverviewChangeRow, OverviewFileRow, OverviewNodeSummary},
     CoreError, CoreResult, FileEntry, OverviewOutput,
 };
+
+mod atomic_write;
 
 const BEGIN_TAG: &str =
     "<!-- AREAMATRIX:BEGIN auto-generated content; do NOT edit between markers -->";
@@ -47,42 +50,41 @@ pub(crate) fn regenerate_for_node(repo: &Path, node_slug: &str) -> CoreResult<()
     let files = db::list_overview_node_files(repo, node_slug, NODE_OVERVIEW_LIMIT)?;
     let recent =
         db::list_overview_recent_changes(repo, Some(node_slug), NODE_RECENT_DAYS, RECENT_LIMIT)?;
-    let node_dir = repo.join(GENERATED_DIR).join("nodes");
-    fs::create_dir_all(&node_dir).map_err(map_io_error)?;
-    write_atomic_replace(
-        &node_dir.join(format!("{node_slug}.md")),
-        &node_document(node_slug, locale, &files, &recent),
-    )?;
-    regenerate_root_with_config(repo, &config)
-}
-
-fn regenerate_root_with_config(repo: &Path, config: &crate::RepoConfig) -> CoreResult<()> {
-    let locale = config.locale.as_str();
     let summaries = db::list_overview_node_summaries(repo)?;
-    let recent = db::list_overview_recent_changes(repo, None, ROOT_RECENT_DAYS, RECENT_LIMIT)?;
+    let root_recent = db::list_overview_recent_changes(repo, None, ROOT_RECENT_DAYS, RECENT_LIMIT)?;
     let generated_dir = repo.join(GENERATED_DIR);
-    fs::create_dir_all(&generated_dir).map_err(map_io_error)?;
-    let managed = root_managed_block(locale, &summaries, &recent);
-    write_atomic_replace(
-        &generated_dir.join("root.md"),
-        &root_document(locale, &summaries, &recent),
-    )?;
+    let managed = root_managed_block(locale, &summaries, &root_recent);
+    let mut plans = vec![
+        WritePlan::new(
+            generated_dir.join("nodes").join(format!("{node_slug}.md")),
+            node_document(node_slug, locale, &files, &recent),
+        ),
+        WritePlan::new(
+            generated_dir.join("root.md"),
+            root_document(locale, &summaries, &root_recent),
+        ),
+    ];
     if config.overview_output == OverviewOutput::RootAreaMatrixFile {
-        write_root_entry(repo, locale, &managed)?;
+        plans.push(WritePlan::new(
+            repo.join("AREAMATRIX.md"),
+            root_entry_content(repo, locale, &managed)?,
+        ));
     }
-    Ok(())
+    write_plans_with_rollback(&plans)
 }
 
-fn write_root_entry(repo: &Path, locale: &str, managed: &str) -> CoreResult<()> {
+fn root_entry_content(repo: &Path, locale: &str, managed: &str) -> CoreResult<String> {
     let path = repo.join("AREAMATRIX.md");
-    let content = match fs::read_to_string(&path) {
-        Ok(existing) => merge_managed_block(&existing, managed),
+    match fs::symlink_metadata(&path) {
+        Ok(metadata) if metadata.is_file() => {}
+        Ok(_) => return Err(CoreError::Config),
         Err(error) if error.kind() == io::ErrorKind::NotFound => {
-            root_entry_template(locale, managed)
+            return Ok(root_entry_template(locale, managed));
         }
         Err(error) => return Err(map_io_error(error)),
     };
-    write_atomic_replace(&path, &content)
+    let existing = fs::read_to_string(&path).map_err(map_io_error)?;
+    Ok(merge_managed_block(&existing, managed))
 }
 
 fn node_document(
