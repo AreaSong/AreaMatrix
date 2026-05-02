@@ -86,6 +86,12 @@ pub fn validate_initialized_repo_path(repo_path: String) -> CoreResult<RepoPathV
 /// directory, retrying initialization may remove only that internal temporary
 /// state before creating the final `.areamatrix/` directory.
 ///
+/// C1-20 uses `RepoInitOptions::overview_output` as the initial generated
+/// overview policy. `OverviewOutput::GeneratedOnly` writes the generated root
+/// overview only under `.areamatrix/generated/`; `RootAreaMatrixFile` also
+/// creates a root-level `AREAMATRIX.md` for an empty repository. `README.md`
+/// remains user content and is never created or overwritten by this API.
+///
 /// # Errors
 ///
 /// Returns `CoreError::InvalidPath` for empty paths or `.areamatrix` internals,
@@ -120,6 +126,10 @@ pub fn load_config(repo_path: String) -> CoreResult<RepoConfig> {
 /// The API only persists the settings contract. It does not create
 /// `AREAMATRIX.md`, rewrite `classifier.yaml`, touch `README.md`, or perform
 /// any adjacent import, overview, or classifier behavior.
+/// For C1-20, this is the contract boundary for changing the persisted
+/// `OverviewOutput` policy: later overview-regeneration triggers read the
+/// policy from `repo_config`, while the settings call itself stays free of
+/// file side effects.
 ///
 /// # Errors
 ///
@@ -264,6 +274,13 @@ pub fn predict_category(repo_path: String, filename: String) -> CoreResult<Class
 /// `CoreError::Conflict` is reserved for exhausted or raced resolution.
 /// Dangerous replacement remains explicit through `DuplicateStrategy::Overwrite`
 /// after S1-24 has confirmed the user decision.
+///
+/// C1-20 uses a successful import as a generated-overview trigger. The trigger
+/// has no extra FFI input: Core derives the changed node/category from the
+/// committed [`FileEntry`] and the current [`RepoConfig::overview_output`].
+/// Its allowed filesystem side effects are limited to generated markdown under
+/// `.areamatrix/generated/` and, only when explicitly configured,
+/// `AREAMATRIX.md`; `README.md` remains user-authored content.
 ///
 /// # Errors
 ///

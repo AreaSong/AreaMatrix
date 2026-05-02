@@ -1,0 +1,77 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`1-4/task-21`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-1/1-4-recovery-sync-overview/task-21-c1-20-contract-api.md`
+- Manifest 章节：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-1.md:2834`
+- 实际范围：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/**`
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：0
+- 通过项数：10
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 C1-20 contract-api 范围
+- 结果：通过
+- 证据：变更集中在 `core/src/api.rs` 的 C1-20 rustdoc 合同说明和 `core/tests/overview_generated_contract_api.rs`；`git status --short -- apps` 为空。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:89`、`:126`、`:278`
+
+- 项目：Exact Docs 已读取并作为 SSOT
+- 结果：通过
+- 证据：C1-20 文档声明 `OverviewOutput` 输入、`.areamatrix/generated/*.md` / 可选 `AREAMATRIX.md` 输出、禁止覆盖 `README.md`、错误码 `PermissionDenied` / `Io` / `Config`；control map 声明 S1-27、S1-30 消费 C1-20。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-20-overview-generated.md:15`、`:20`、`:29`、`:35`；`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:42`、`:45`
+
+- 项目：不实现相邻 C1 能力或 UI 页面
+- 结果：通过
+- 证据：未触碰 `apps/**`；新增测试只验证 C1-20 contract-api、UDL、文档对齐和真实 `init_repo` / `update_config` 合同边界。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/overview_generated_contract_api.rs:38`
+
+- 项目：Core API / UDL 合同意图已校准
+- 结果：通过
+- 证据：`RepoConfig` 与 `RepoInitOptions` 暴露 `OverviewOutput overview_output`，UDL 暴露 `OverviewOutput { "GeneratedOnly", "RootAreaMatrixFile" }`；Rust domain 有对应 rustdoc。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:82`、`:95`、`:226`；`/Users/as/Ai-Project/project/AreaMatrix/core/src/domain.rs:59`、`:149`、`:174`
+
+- 项目：输入、输出、错误码和副作用边界明确
+- 结果：通过
+- 证据：API rustdoc 明确 `init_repo` 初始 overview 策略、`update_config` 只持久化策略不写文件、`import_file` 后续 regeneration trigger 的副作用限制；测试覆盖文档、UDL、API 文本和真实文件不覆盖行为。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:89`、`:126`、`:278`；`/Users/as/Ai-Project/project/AreaMatrix/core/tests/overview_generated_contract_api.rs:128`、`:167`、`:200`
+
+- 项目：Expected New Paths 落地
+- 结果：通过
+- 证据：`core/src`、`core/area_matrix.udl`、`core/tests` 均存在；新增 `core/tests/overview_generated_contract_api.rs` 已落地。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/overview_generated_contract_api.rs:1`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。未新增执行路径或复杂抽象；contract-api 只补充 API 边界说明和聚焦测试。
+- 注释 / rustdoc / 文档同步：通过。新增 public API rustdoc 明确 C1-20 输入、输出、错误和副作用；测试用 Exact Docs / UDL / Rust 文本锁定同步。
+- 错误处理与边界处理：通过。合同声明 `PermissionDenied` / `Io` / `Config`，真实 `overview` 写入使用 `create_new`，避免覆盖已有文件。
+- 测试与验证覆盖：通过。`overview_generated` 6 个测试通过，且补跑 `cargo test --workspace` 全量通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。测试使用真实临时 repo、真实 `init_repo` / `update_config`，未用 mock-only 闭环伪造通过。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`cd core && cargo fmt --all -- --check`：通过
+- 已运行：`cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过
+- 已运行：`cd core && cargo test --workspace overview_generated`：通过，6 passed
+- 已运行：`cd core && cargo test --workspace`：通过
+- 已运行：`git diff --check`：通过
+- 已运行：`git status --short -- apps`：通过，输出为空
+- 缺失：无
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+VERIFY_RESULT: PASS
