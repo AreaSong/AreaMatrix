@@ -1,7 +1,7 @@
 use std::{
     ffi::OsStr,
     fs,
-    io::Write,
+    io::{self, Write},
     path::{Component, Path, PathBuf},
 };
 
@@ -40,8 +40,9 @@ pub(crate) fn write_note(repo_path: String, file_id: i64, content_md: String) ->
 
     let length_before = markdown_len(previous_note.as_deref().unwrap_or_default());
     let length_after = markdown_len(&content_md);
+    let write_policy = SidecarWritePolicy::from_previous(previous_sidecar.as_deref());
     let mut rollback = SidecarRollback::capture(&sidecar, previous_sidecar);
-    write_sidecar_atomically(&sidecar, &content_md)?;
+    write_sidecar_atomically(&sidecar, &content_md, write_policy)?;
 
     if let Err(error) =
         db::upsert_note_and_log(&repo, file_id, &content_md, length_before, length_after)
@@ -139,10 +140,30 @@ fn read_optional_text_file(path: &Path) -> CoreResult<Option<String>> {
     }
 }
 
-fn write_sidecar_atomically(path: &Path, content: &str) -> CoreResult<()> {
+#[derive(Clone, Copy)]
+enum SidecarWritePolicy {
+    CreateNew,
+    ReplaceExisting,
+}
+
+impl SidecarWritePolicy {
+    fn from_previous(previous_sidecar: Option<&str>) -> Self {
+        match previous_sidecar {
+            Some(_) => Self::ReplaceExisting,
+            None => Self::CreateNew,
+        }
+    }
+}
+
+fn write_sidecar_atomically(
+    path: &Path,
+    content: &str,
+    policy: SidecarWritePolicy,
+) -> CoreResult<()> {
     let parent = path.parent().ok_or(CoreError::InvalidPath)?;
     let temp_path = temporary_sidecar_path(path)?;
-    let result = write_temp_file(&temp_path, content).and_then(|()| rename_temp(&temp_path, path));
+    let result =
+        write_temp_file(&temp_path, content).and_then(|()| persist_temp(&temp_path, path, policy));
     if result.is_err() {
         // The destination is unchanged on this branch; leftover temp cleanup is best effort.
         let _cleanup_result = fs::remove_file(&temp_path);
@@ -150,6 +171,62 @@ fn write_sidecar_atomically(path: &Path, content: &str) -> CoreResult<()> {
     // The temp file itself is fsync'ed; directory fsync is best effort for portability.
     let _sync_result = sync_directory(parent);
     result
+}
+
+fn persist_temp(temp_path: &Path, final_path: &Path, policy: SidecarWritePolicy) -> CoreResult<()> {
+    match policy {
+        SidecarWritePolicy::CreateNew => persist_temp_without_replace(temp_path, final_path),
+        SidecarWritePolicy::ReplaceExisting => rename_temp(temp_path, final_path),
+    }
+}
+
+fn persist_temp_without_replace(temp_path: &Path, final_path: &Path) -> CoreResult<()> {
+    match fs::hard_link(temp_path, final_path) {
+        Ok(()) => remove_temp_after_persist(temp_path, final_path),
+        Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {
+            Err(CoreError::PermissionDenied)
+        }
+        Err(_) => copy_temp_without_replace(temp_path, final_path),
+    }
+}
+
+fn copy_temp_without_replace(temp_path: &Path, final_path: &Path) -> CoreResult<()> {
+    let mut source = fs::File::open(temp_path).map_err(map_io_error)?;
+    let expected_size = source.metadata().map_err(map_io_error)?.len();
+    let mut destination = fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(final_path)
+        .map_err(map_create_sidecar_error)?;
+
+    let result = copy_temp_to_new_file(&mut source, &mut destination, expected_size)
+        .and_then(|()| remove_temp_after_persist(temp_path, final_path));
+    if result.is_err() {
+        let _cleanup_result = fs::remove_file(final_path);
+    }
+    result
+}
+
+fn copy_temp_to_new_file(
+    source: &mut fs::File,
+    destination: &mut fs::File,
+    expected_size: u64,
+) -> CoreResult<()> {
+    let copied_size = io::copy(source, destination).map_err(map_io_error)?;
+    if copied_size != expected_size {
+        return Err(CoreError::Io);
+    }
+    destination.sync_all().map_err(map_io_error)
+}
+
+fn remove_temp_after_persist(temp_path: &Path, final_path: &Path) -> CoreResult<()> {
+    match fs::remove_file(temp_path) {
+        Ok(()) => Ok(()),
+        Err(error) => {
+            let _cleanup_result = fs::remove_file(final_path);
+            Err(map_io_error(error))
+        }
+    }
 }
 
 fn temporary_sidecar_path(path: &Path) -> CoreResult<PathBuf> {
@@ -193,6 +270,13 @@ fn map_io_error(error: std::io::Error) -> CoreError {
     }
 }
 
+fn map_create_sidecar_error(error: std::io::Error) -> CoreError {
+    match error.kind() {
+        std::io::ErrorKind::AlreadyExists => CoreError::PermissionDenied,
+        _ => map_io_error(error),
+    }
+}
+
 struct SidecarRollback {
     path: PathBuf,
     previous: Option<String>,
@@ -214,7 +298,9 @@ impl SidecarRollback {
         }
 
         match &self.previous {
-            Some(content) => write_sidecar_atomically(&self.path, content)?,
+            Some(content) => {
+                write_sidecar_atomically(&self.path, content, SidecarWritePolicy::ReplaceExisting)?;
+            }
             None => match fs::remove_file(&self.path) {
                 Ok(()) => {}
                 Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
@@ -227,5 +313,25 @@ impl SidecarRollback {
 
     fn disarm(&mut self) {
         self.armed = false;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn read_write_note_sidecar_create_new_refuses_final_time_existing_destination() {
+        let dir = tempfile::tempdir().expect("create note tempdir");
+        let sidecar = dir.path().join("report.pdf.md");
+        fs::write(&sidecar, "external note").expect("write external sidecar");
+
+        let result = write_sidecar_atomically(&sidecar, "new note", SidecarWritePolicy::CreateNew);
+
+        assert_eq!(result, Err(CoreError::PermissionDenied));
+        assert_eq!(
+            fs::read_to_string(&sidecar).expect("read preserved external sidecar"),
+            "external note"
+        );
     }
 }
