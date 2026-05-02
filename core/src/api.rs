@@ -350,7 +350,25 @@ pub fn get_file(repo_path: String, file_id: i64) -> CoreResult<FileEntry> {
     db::get_active_file_by_id(&repo, file_id)
 }
 
-/// Lists change-log entries.
+/// Lists change-log entries from repository metadata.
+///
+/// C1-13 defines this as the read-only change-log query used by Stage 1 detail
+/// log, import result, and error recovery surfaces. The public contract accepts
+/// a [`ChangeFilter`] for optional `file_id`, `category`, `action`,
+/// `occurred_at` bounds, `limit`, and `offset`. Returned rows are ordered by
+/// `occurred_at DESC`, and each [`ChangeLogEntry::detail_json`] value must
+/// remain parseable JSON for action-specific UI rendering.
+///
+/// This API has no write side effects: it must not mutate repository metadata,
+/// create files, rename files, or probe user file contents. Undo history,
+/// rollback, and batch revert behavior belong to Stage 2 and must not be
+/// hidden behind this query entry point.
+///
+/// # Errors
+///
+/// Returns `CoreError::RepoNotInitialized` when repository metadata is missing
+/// and `CoreError::Db` when SQLite rows or persisted change-log details cannot
+/// be read as the documented contract.
 pub fn list_changes(_repo_path: String, _filter: ChangeFilter) -> CoreResult<Vec<ChangeLogEntry>> {
     not_implemented()
 }

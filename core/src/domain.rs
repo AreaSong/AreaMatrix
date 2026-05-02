@@ -245,11 +245,11 @@ pub struct ChangeFilter {
     pub file_id: Option<i64>,
     /// Optional category slug.
     pub category: Option<String>,
-    /// Optional action string.
+    /// Optional exact action string such as `imported`, `renamed`, or `external_modified`.
     pub action: Option<String>,
-    /// Lower timestamp bound.
+    /// Lower `occurred_at` timestamp bound, inclusive.
     pub since: Option<i64>,
-    /// Upper timestamp bound.
+    /// Upper `occurred_at` timestamp bound, exclusive.
     pub until: Option<i64>,
     /// Maximum number of rows to return.
     pub limit: i64,
@@ -303,7 +303,7 @@ pub struct ChangeLogEntry {
     pub category: String,
     /// Action string.
     pub action: String,
-    /// JSON detail payload.
+    /// JSON detail payload that callers may parse for action-specific metadata.
     pub detail_json: String,
     /// Unix timestamp for the event.
     pub occurred_at: i64,
