@@ -308,21 +308,27 @@ pub fn restore_file(_repo_path: String, _file_id: i64) -> CoreResult<FileEntry> 
 
 /// Lists file entries from repository metadata.
 ///
-/// C1-02 uses this to prove an initialized empty repository is readable. Later
-/// query tasks can extend filtering semantics without changing the empty-repo
-/// contract.
+/// C1-11 defines this as the read-only file-list query used by the Stage 1
+/// main window and multi-selection summary. The public contract accepts a
+/// [`FileFilter`] for exact category filtering, optional deleted-row inclusion,
+/// import-time bounds, `limit` clamping, and offset pagination. Returned rows
+/// are ordered by `imported_at DESC`.
+///
+/// This API must not write repository metadata or mutate user files. Search,
+/// tag filtering, smart lists, and single-file detail aggregation belong to
+/// later capabilities and must not be hidden behind this entry point.
 ///
 /// C1-08 indexed import entries remain references to external source files. If
 /// a listed indexed import source has disappeared, this returns
 /// `CoreError::FileNotFound` so the UI can present the documented recoverable
-/// missing-source state.
+/// missing-source state without expanding C1-11 into a detail-query task.
 ///
 /// # Errors
 ///
 /// Returns `CoreError::RepoNotInitialized` when the repository metadata is
-/// missing, `CoreError::Db` when SQLite rows cannot be read, and
-/// `CoreError::FileNotFound` when an indexed import source file is no longer
-/// present.
+/// missing and `CoreError::Db` when SQLite rows cannot be read. Existing C1-08
+/// indexed-source probes can also surface file availability errors for active
+/// indexed import rows without writing to the filesystem or database.
 pub fn list_files(repo_path: String, filter: FileFilter) -> CoreResult<Vec<FileEntry>> {
     let files = db::list_files(repo_path, filter)?;
     ensure_indexed_sources_available(&files)?;

@@ -1,0 +1,41 @@
+一、执行结论
+
+- 已完成：`1-3/task-01` C1-11 list-files contract-api。
+
+二、执行范围
+
+- 单任务：只处理 C1-11 contract-api。
+- 修改文件：
+  - [core/src/api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:309)
+  - [core/tests/list_files_contract_api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/list_files_contract_api.rs:1)
+- 未触碰 `apps/**`。
+- 当前工作区仍显示 `.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json` 有既有改动；我未修改它们。
+
+三、完成情况
+
+- 核对清单：全部完成。
+- C1-11 范围：只校准 `list_files` contract，没有实现相邻 C1 能力或 UI。
+- Core API / UDL：UDL 已有 `list_files`、`FileFilter`、`FileEntry`，无需改；新增 contract 测试锁定 API / UDL / docs / control map / error codes 对齐。
+- 输入、输出、错误码、副作用边界：已在 `list_files` rustdoc 中明确。
+- Forbidden Touches：未触碰。
+
+四、工程质量
+
+- 结构清晰：只新增 contract 测试和 public API rustdoc，没有引入新抽象。
+- 没有新增依赖。
+- 没有 mock-only、硬编码通过态或一次性脚本。
+- 错误边界明确：C1-11 的 `RepoNotInitialized` / `Db` 与既有 C1-08 indexed-source 可恢复错误分开说明。
+
+五、验证情况
+
+- `cd core && cargo fmt --all -- --check`：通过
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过
+- `cd core && cargo test --workspace list_files`：通过
+- 额外验证：
+  - `cd core && cargo test --workspace`：通过
+  - `git diff --check`：通过
+
+六、风险与后续
+
+- 剩余风险：本任务是 contract-api，未提前实现完整 list-files runtime filtering；分类过滤、时间过滤、分页边界的真实行为应在 `1-3/task-02` / `1-3/task-03` 继续落地和验证。
+- 建议下一个任务：`1-3/task-02` C1-11 list-files implementation。 
