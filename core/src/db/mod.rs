@@ -1,7 +1,8 @@
 //! SQLite helpers for repository metadata.
 
 use std::{
-    fs::Metadata,
+    fs::{File, Metadata},
+    io::Read,
     path::{Path, PathBuf},
 };
 
@@ -28,6 +29,7 @@ pub(crate) use scan::*;
 
 const AREA_MATRIX_DIR: &str = ".areamatrix";
 const INDEX_DB_FILE: &str = "index.db";
+const SQLITE_HEADER: &[u8; 16] = b"SQLite format 3\0";
 
 const INITIAL_SCHEMA: &str = r#"
 CREATE TABLE IF NOT EXISTS schema_version (
@@ -242,6 +244,18 @@ pub(crate) fn ensure_initialized(repo_path: &Path) -> CoreResult<()> {
         Ok(())
     } else {
         Err(CoreError::RepoNotInitialized)
+    }
+}
+
+pub(crate) fn ensure_initialized_readable(repo_path: &Path) -> CoreResult<()> {
+    ensure_initialized(repo_path)?;
+    let mut file = File::open(db_path(repo_path)).map_err(|_| CoreError::Db)?;
+    let mut header = [0_u8; 16];
+    file.read_exact(&mut header).map_err(|_| CoreError::Db)?;
+    if &header == SQLITE_HEADER {
+        Ok(())
+    } else {
+        Err(CoreError::Db)
     }
 }
 
