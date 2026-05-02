@@ -11,6 +11,9 @@ use pretty_assertions::assert_eq;
 use rusqlite::Connection;
 use serde_json::Value;
 
+mod support;
+use support::system_trash_home::with_test_system_trash;
+
 fn path_string(path: &Path) -> String {
     path.to_string_lossy().into_owned()
 }
@@ -208,49 +211,54 @@ fn detect_duplicate_validation_keep_both_creates_distinct_active_paths_with_same
 
 #[test]
 fn detect_duplicate_validation_overwrite_archives_old_file_and_logs_replacement() {
-    let repo = initialized_repo();
-    let (_source_root_a, source_a) = source_file("report.pdf", b"same bytes");
-    let (_source_root_b, source_b) = source_file("replacement.pdf", b"same bytes");
+    with_test_system_trash(|trash_dir| {
+        let repo = initialized_repo();
+        let (_source_root_a, source_a) = source_file("report.pdf", b"same bytes");
+        let (_source_root_b, source_b) = source_file("replacement.pdf", b"same bytes");
 
-    let first = import_file(
-        path_string(repo.path()),
-        path_string(&source_a),
-        copied_options(DuplicateStrategy::Skip),
-    )
-    .expect("import first copied file");
-    let replacement = import_file(
-        path_string(repo.path()),
-        path_string(&source_b),
-        copied_options(DuplicateStrategy::Overwrite),
-    )
-    .expect("overwrite duplicate after user confirmation");
+        let first = import_file(
+            path_string(repo.path()),
+            path_string(&source_a),
+            copied_options(DuplicateStrategy::Skip),
+        )
+        .expect("import first copied file");
+        let replacement = import_file(
+            path_string(repo.path()),
+            path_string(&source_b),
+            copied_options(DuplicateStrategy::Overwrite),
+        )
+        .expect("overwrite duplicate after user confirmation");
 
-    assert_eq!(replacement.path, first.path);
-    assert_ne!(replacement.id, first.id);
-    assert_eq!(
-        fs::read(repo.path().join(&replacement.path)).expect("read replacement final file"),
-        b"same bytes"
-    );
-    assert_eq!(
-        fs::read(&source_b).expect("read copied source after overwrite"),
-        b"same bytes"
-    );
+        assert_eq!(replacement.path, first.path);
+        assert_ne!(replacement.id, first.id);
+        assert_eq!(
+            fs::read(repo.path().join(&replacement.path)).expect("read replacement final file"),
+            b"same bytes"
+        );
+        assert_eq!(
+            fs::read(&source_b).expect("read copied source after overwrite"),
+            b"same bytes"
+        );
 
-    let (old_status, archived_path) = file_status_and_path(repo.path(), first.id);
-    assert_eq!(old_status, "deleted");
-    assert!(archived_path.starts_with(".areamatrix/trash/replace-"));
-    assert_eq!(
-        fs::read(repo.path().join(&archived_path)).expect("read archived old file"),
-        b"same bytes"
-    );
-    assert_clean_duplicate_state(repo.path(), 1, 1, 3);
+        let (old_status, archived_path) = file_status_and_path(repo.path(), first.id);
+        assert_eq!(old_status, "deleted");
+        assert!(archived_path.starts_with("system-trash://replace-"));
+        assert!(!repo.path().join(".areamatrix/trash").exists());
+        assert_clean_duplicate_state(repo.path(), 1, 1, 3);
 
-    let deleted_detail = change_log_detail(repo.path(), first.id, "deleted");
-    assert_eq!(deleted_detail["reason"], "duplicate_overwrite");
-    assert_eq!(deleted_detail["from_path"], "finance/report.pdf");
-    assert_eq!(deleted_detail["archived_path"], archived_path);
-    let imported_detail = change_log_detail(repo.path(), replacement.id, "imported");
-    assert_eq!(imported_detail["duplicate_strategy"], "overwrite");
-    assert_eq!(imported_detail["replaced_file_id"], first.id);
-    assert_eq!(imported_detail["replaced_path"], "finance/report.pdf");
+        let deleted_detail = change_log_detail(repo.path(), first.id, "deleted");
+        assert_eq!(deleted_detail["reason"], "duplicate_overwrite");
+        assert_eq!(deleted_detail["from_path"], "finance/report.pdf");
+        assert_eq!(deleted_detail["archived_path"], archived_path);
+        assert_eq!(deleted_detail["trash_location"], "system");
+        assert_eq!(deleted_detail["trashed"], true);
+        assert_eq!(
+            fs::read(trash_dir.join("report.pdf")).expect("read old file from system Trash"),
+            b"same bytes"
+        );
+        let imported_detail = change_log_detail(repo.path(), replacement.id, "imported");
+        assert_eq!(imported_detail["duplicate_strategy"], "overwrite");
+        assert_eq!(imported_detail["replaced_file_id"], first.id);
+        assert_eq!(imported_detail["replaced_path"], "finance/report.pdf");
+    });
 }

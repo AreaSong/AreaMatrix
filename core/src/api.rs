@@ -230,10 +230,10 @@ pub fn predict_category(repo_path: String, filename: String) -> CoreResult<Class
 /// destination, active rows, and change log unchanged. `KeepBoth` allows a
 /// second active row with the same hash when the resolved destination path is
 /// distinct. `Overwrite` is accepted only after the UI has made the dangerous
-/// replace decision; it safely archives the old repo-owned file under
-/// AreaMatrix metadata, soft-deletes the old active row, promotes the new
-/// import, and writes deleted/imported change-log entries in the same
-/// metadata transition.
+/// replace decision; it moves a recoverable copy of the old repo-owned file to
+/// the system Trash, soft-deletes the old active row, promotes the new import,
+/// and writes deleted/imported change-log entries in the same metadata
+/// transition.
 ///
 /// C1-10 owns same-name conflict handling for this entry point. The target
 /// name comes from the source filename or `ImportOptions::override_filename`;

@@ -116,25 +116,7 @@ impl Drop for FinalFileGuard {
 }
 
 pub(super) fn move_source_to_staging(source: &Path, staging: &Path) -> CoreResult<()> {
-    match fs::rename(source, staging) {
-        Ok(()) => Ok(()),
-        Err(error) if is_cross_device_error(&error) => copy_then_remove_source(source, staging),
-        Err(error) => Err(hash::map_io_error(error)),
-    }
-}
-
-fn copy_then_remove_source(source: &Path, staging: &Path) -> CoreResult<()> {
-    let expected_size = source.metadata().map_err(hash::map_io_error)?.len();
-    let copied_size = hash::copy_to_new_file(source, staging)?;
-    if copied_size != expected_size {
-        let _cleanup_result = fs::remove_file(staging);
-        return Err(CoreError::Io);
-    }
-    if let Err(error) = fs::remove_file(source) {
-        let _cleanup_result = fs::remove_file(staging);
-        return Err(hash::map_io_error(error));
-    }
-    Ok(())
+    move_file_no_replace(source, staging)
 }
 
 fn restore_staged_source_or_keep_recoverable(current_path: &Path, source: &Path) {
@@ -149,31 +131,61 @@ fn restore_staged_source_or_keep_recoverable(current_path: &Path, source: &Path)
 }
 
 pub(super) fn move_recoverable_file(current_path: &Path, source: &Path) -> CoreResult<()> {
-    match fs::rename(current_path, source) {
-        Ok(()) => Ok(()),
-        Err(error) if is_cross_device_error(&error) => {
-            copy_then_remove_recoverable(current_path, source)
+    move_file_no_replace(current_path, source)
+}
+
+fn move_file_no_replace(current_path: &Path, destination: &Path) -> CoreResult<()> {
+    match fs::hard_link(current_path, destination) {
+        Ok(()) => {}
+        Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {
+            return Err(CoreError::Conflict);
         }
-        Err(error) => Err(hash::map_io_error(error)),
+        Err(_) => copy_to_new_destination(current_path, destination)?,
+    }
+
+    match fs::remove_file(current_path) {
+        Ok(()) => Ok(()),
+        Err(error) => {
+            let _cleanup_result = fs::remove_file(destination);
+            Err(hash::map_io_error(error))
+        }
     }
 }
 
-fn copy_then_remove_recoverable(current_path: &Path, source: &Path) -> CoreResult<()> {
+fn copy_to_new_destination(current_path: &Path, destination: &Path) -> CoreResult<()> {
     let expected_size = current_path.metadata().map_err(hash::map_io_error)?.len();
-    let copied_size = hash::copy_to_new_file(current_path, source)?;
+    let copied_size = hash::copy_to_new_file(current_path, destination)?;
     if copied_size != expected_size {
-        let _cleanup_result = fs::remove_file(source);
+        let _cleanup_result = fs::remove_file(destination);
         return Err(CoreError::Io);
     }
-    fs::remove_file(current_path).map_err(hash::map_io_error)
+    Ok(())
 }
 
-#[cfg(unix)]
-fn is_cross_device_error(error: &std::io::Error) -> bool {
-    error.raw_os_error() == Some(18)
-}
+#[cfg(test)]
+mod tests {
+    use std::fs;
 
-#[cfg(windows)]
-fn is_cross_device_error(error: &std::io::Error) -> bool {
-    error.raw_os_error() == Some(17)
+    use super::*;
+
+    #[test]
+    fn resolve_name_conflict_safe_move_refuses_existing_destination_without_overwrite() {
+        let dir = tempfile::tempdir().expect("create safe-move tempdir");
+        let source = dir.path().join("source.pdf");
+        let destination = dir.path().join("target.pdf");
+        fs::write(&source, b"new content").expect("write source file");
+        fs::write(&destination, b"existing content").expect("write existing destination");
+
+        let result = move_recoverable_file(&source, &destination);
+
+        assert_eq!(result, Err(CoreError::Conflict));
+        assert_eq!(
+            fs::read(&source).expect("source remains readable after refused move"),
+            b"new content"
+        );
+        assert_eq!(
+            fs::read(&destination).expect("destination remains unmodified"),
+            b"existing content"
+        );
+    }
 }

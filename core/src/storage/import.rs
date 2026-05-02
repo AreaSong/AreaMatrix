@@ -1,20 +1,17 @@
-use std::{
-    fs,
-    path::{Path, PathBuf},
-};
+use std::path::{Path, PathBuf};
 
 use serde_json::json;
 
 use crate::{
-    classify, db, CoreError, CoreResult, FileEntry, FileOrigin, ImportDestination, ImportOptions,
-    StorageMode,
+    classify, db, CoreError, CoreResult, DuplicateStrategy, FileEntry, FileOrigin,
+    ImportDestination, ImportOptions, StorageMode,
 };
 
 use super::{
     dedup,
     destination::{ImportDestinationPlan, ReplacementFileGuard, ReplacementPlan},
     hash,
-    safe_move::{move_source_to_staging, FinalFileGuard, StagingFileGuard},
+    safe_move::{move_recoverable_file, move_source_to_staging, FinalFileGuard, StagingFileGuard},
     validate,
 };
 
@@ -23,7 +20,7 @@ pub(crate) fn import_file(
     source_path: String,
     options: ImportOptions,
 ) -> CoreResult<FileEntry> {
-    let prepared = prepare_import(repo_path, source_path, options)?;
+    let prepared = PreparedImport::new(repo_path, source_path, options)?;
     if matches!(prepared.options.mode, StorageMode::Indexed) {
         return import_indexed_file(prepared);
     }
@@ -47,6 +44,7 @@ pub(crate) fn import_file(
         destination.final_path.clone(),
         prepared.source.clone(),
     );
+    ensure_replacement_is_recoverable_from_system_trash(&mut replacement_guard)?;
 
     promote_import(&prepared, file_id, &destination)?;
     db_guard.disarm();
@@ -93,14 +91,6 @@ impl PreparedImport {
     }
 }
 
-fn prepare_import(
-    repo_path: String,
-    source_path: String,
-    options: ImportOptions,
-) -> CoreResult<PreparedImport> {
-    PreparedImport::new(repo_path, source_path, options)
-}
-
 struct StagedImport {
     staging_guard: StagingFileGuard,
     hash_sha256: String,
@@ -135,7 +125,23 @@ fn check_duplicate(
     hash_sha256: &str,
 ) -> CoreResult<dedup::DuplicateResolution> {
     let existing = db::find_active_file_by_hash(&prepared.repo, hash_sha256)?;
-    dedup::resolve_duplicate(&prepared.options.duplicate_strategy, existing)
+    if existing.is_some() {
+        return dedup::resolve_duplicate(&prepared.options.duplicate_strategy, existing);
+    }
+    if matches!(
+        prepared.options.duplicate_strategy,
+        DuplicateStrategy::Overwrite
+    ) {
+        let target_path = requested_target_relative_path(prepared)?;
+        let existing_by_path = db::find_active_file_by_path(&prepared.repo, &target_path)?;
+        if let Some(existing) = existing_by_path {
+            return Ok(dedup::DuplicateResolution::Overwrite {
+                existing,
+                reason: dedup::ReplacementReason::NameConflict,
+            });
+        }
+    }
+    dedup::resolve_duplicate(&prepared.options.duplicate_strategy, None)
 }
 
 fn import_indexed_file(prepared: PreparedImport) -> CoreResult<FileEntry> {
@@ -143,7 +149,7 @@ fn import_indexed_file(prepared: PreparedImport) -> CoreResult<FileEntry> {
     let duplicate_resolution = check_duplicate(&prepared, &fingerprint.hash_sha256)?;
 
     let file_id = match duplicate_resolution {
-        dedup::DuplicateResolution::Overwrite(existing) => {
+        dedup::DuplicateResolution::Overwrite { existing, .. } => {
             insert_replacing_indexed_row(&prepared, &fingerprint, existing)?
         }
         dedup::DuplicateResolution::NoDuplicate | dedup::DuplicateResolution::KeepBoth => {
@@ -183,6 +189,15 @@ fn commit_filesystem(
     let replacement_guard = destination.archive_replacement()?;
     persist_staging_to_final(staged.staging_guard.path(), &destination.final_path)
         .map(|()| replacement_guard)
+}
+
+fn ensure_replacement_is_recoverable_from_system_trash(
+    replacement_guard: &mut Option<ReplacementFileGuard>,
+) -> CoreResult<()> {
+    if let Some(guard) = replacement_guard {
+        guard.ensure_system_trash_copy()?;
+    }
+    Ok(())
 }
 
 fn promote_import(
@@ -251,6 +266,7 @@ fn insert_replacing_indexed_row(
     let source_path = prepared.source.to_string_lossy().into_owned();
     let replacement = ReplacementPlan::prepare_for_existing(&prepared.repo, existing)?;
     let mut replacement_guard = replacement.archive_existing_file(&prepared.repo)?;
+    ensure_replacement_is_recoverable_from_system_trash(&mut replacement_guard)?;
     let file_id = db::insert_replacing_active_indexed_import(
         &prepared.repo,
         replacement.db_row(),
@@ -273,6 +289,7 @@ fn insert_replacing_indexed_row(
             "destination": destination_detail(&prepared.options.destination),
             "renamed_from_original": prepared.original_name != prepared.target_filename,
             "duplicate_strategy": "overwrite",
+            "replace_reason": replacement.reason_detail(),
             "replaced_file_id": replacement.replaced_file_id(),
             "replaced_path": replacement.replaced_path(),
             "by": "user",
@@ -301,6 +318,7 @@ fn import_change_detail(
             "final_path": destination.final_relative_path,
             "name_conflict_resolved": prepared.target_filename != destination.final_name,
             "duplicate_strategy": "overwrite",
+            "replace_reason": replacement.reason_detail(),
             "replaced_file_id": replacement.replaced_file_id(),
             "replaced_path": replacement.replaced_path(),
             "by": "user",
@@ -411,35 +429,7 @@ fn destination_detail(destination: &ImportDestination) -> &'static str {
 }
 
 fn persist_staging_to_final(staging: &Path, final_path: &Path) -> CoreResult<()> {
-    if path_exists(final_path)? {
-        return Err(CoreError::Conflict);
-    }
-
-    match fs::rename(staging, final_path) {
-        Ok(()) => Ok(()),
-        Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => Err(CoreError::Conflict),
-        Err(_) => copy_staging_to_final(staging, final_path),
-    }
-}
-
-fn copy_staging_to_final(staging: &Path, final_path: &Path) -> CoreResult<()> {
-    let expected_size = staging.metadata().map_err(hash::map_io_error)?.len();
-    let copied_size = hash::copy_to_new_file(staging, final_path)?;
-    if copied_size != expected_size {
-        let _ = fs::remove_file(final_path);
-        return Err(CoreError::Io);
-    }
-    match remove_staging_after_persist(staging) {
-        Ok(()) => Ok(()),
-        Err(error) => {
-            let _cleanup_result = fs::remove_file(final_path);
-            Err(error)
-        }
-    }
-}
-
-fn remove_staging_after_persist(staging: &Path) -> CoreResult<()> {
-    fs::remove_file(staging).map_err(hash::map_io_error)
+    move_recoverable_file(staging, final_path)
 }
 
 fn relative_repo_path(repo: &Path, path: &Path) -> CoreResult<String> {
@@ -448,8 +438,12 @@ fn relative_repo_path(repo: &Path, path: &Path) -> CoreResult<String> {
         .map(|relative| relative.to_string_lossy().into_owned())
 }
 
-fn path_exists(path: &Path) -> CoreResult<bool> {
-    path.try_exists().map_err(hash::map_io_error)
+fn requested_target_relative_path(prepared: &PreparedImport) -> CoreResult<String> {
+    let target_path = prepared
+        .repo
+        .join(&prepared.target.relative_dir)
+        .join(&prepared.target_filename);
+    relative_repo_path(&prepared.repo, &target_path)
 }
 
 struct DbStagingRowGuard {
@@ -478,5 +472,33 @@ impl Drop for DbStagingRowGuard {
             // Best-effort rollback for the staging metadata row owned by this attempt.
             let _cleanup_result = db::delete_file_row(&self.repo, self.file_id);
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::fs;
+
+    use super::*;
+
+    #[test]
+    fn resolve_name_conflict_persist_refuses_raced_final_without_overwrite() {
+        let dir = tempfile::tempdir().expect("create import tempdir");
+        let staging = dir.path().join("staging-file");
+        let final_path = dir.path().join("final.pdf");
+        fs::write(&staging, b"new content").expect("write staging file");
+        fs::write(&final_path, b"raced content").expect("write raced final file");
+
+        let result = persist_staging_to_final(&staging, &final_path);
+
+        assert_eq!(result, Err(CoreError::Conflict));
+        assert_eq!(
+            fs::read(&staging).expect("staging remains recoverable"),
+            b"new content"
+        );
+        assert_eq!(
+            fs::read(&final_path).expect("raced final remains unmodified"),
+            b"raced content"
+        );
     }
 }

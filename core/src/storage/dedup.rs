@@ -8,7 +8,16 @@ use super::hash;
 pub(super) enum DuplicateResolution {
     NoDuplicate,
     KeepBoth,
-    Overwrite(FileEntry),
+    Overwrite {
+        existing: FileEntry,
+        reason: ReplacementReason,
+    },
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(super) enum ReplacementReason {
+    DuplicateHash,
+    NameConflict,
 }
 
 pub(super) fn resolve_duplicate(
@@ -21,7 +30,10 @@ pub(super) fn resolve_duplicate(
 
     match strategy {
         DuplicateStrategy::KeepBoth => Ok(DuplicateResolution::KeepBoth),
-        DuplicateStrategy::Overwrite => Ok(DuplicateResolution::Overwrite(existing)),
+        DuplicateStrategy::Overwrite => Ok(DuplicateResolution::Overwrite {
+            existing,
+            reason: ReplacementReason::DuplicateHash,
+        }),
         DuplicateStrategy::Skip | DuplicateStrategy::Ask => {
             tracing::warn!(
                 existing_path = %existing.path,
@@ -43,7 +55,7 @@ pub(super) fn resolve_final_path(
         DuplicateResolution::NoDuplicate | DuplicateResolution::KeepBoth => {
             resolve_numbered_path(directory, filename)
         }
-        DuplicateResolution::Overwrite(_) => Err(CoreError::Internal),
+        DuplicateResolution::Overwrite { .. } => Err(CoreError::Internal),
     }
 }
 

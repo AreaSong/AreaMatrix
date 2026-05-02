@@ -45,6 +45,25 @@ pub(crate) fn find_active_file_by_hash(
         .map_err(|_| CoreError::Db)
 }
 
+pub(crate) fn find_active_file_by_path(
+    repo_path: &Path,
+    relative_path: &str,
+) -> CoreResult<Option<FileEntry>> {
+    let connection = open_repo_connection(repo_path)?;
+    connection
+        .query_row(
+            "SELECT id, path, original_name, current_name, category, size_bytes,
+                    hash_sha256, storage_mode, origin, source_path, imported_at, updated_at
+             FROM files
+             WHERE path = ?1 AND status = 'active'
+             LIMIT 1",
+            params![relative_path],
+            file_entry_from_row,
+        )
+        .optional()
+        .map_err(|_| CoreError::Db)
+}
+
 pub(crate) fn get_active_file_by_id(repo_path: &Path, file_id: i64) -> CoreResult<FileEntry> {
     let connection = open_repo_connection(repo_path)?;
     connection

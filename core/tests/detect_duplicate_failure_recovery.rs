@@ -10,6 +10,9 @@ use area_matrix_core::{
 use pretty_assertions::assert_eq;
 use rusqlite::Connection;
 
+mod support;
+use support::system_trash_home::with_test_system_trash;
+
 fn path_string(path: &Path) -> String {
     path.to_string_lossy().into_owned()
 }
@@ -181,61 +184,68 @@ fn detect_duplicate_failure_recovery_repeated_ask_is_idempotent() {
 
 #[test]
 fn detect_duplicate_failure_recovery_overwrite_db_failure_can_be_retried() {
-    let repo = initialized_repo();
-    let (_source_root_a, source_a) = source_file("report.pdf", b"same bytes");
-    let (_source_root_b, source_b) = source_file("replacement.pdf", b"same bytes");
+    with_test_system_trash(|trash_dir| {
+        let repo = initialized_repo();
+        let (_source_root_a, source_a) = source_file("report.pdf", b"same bytes");
+        let (_source_root_b, source_b) = source_file("replacement.pdf", b"same bytes");
 
-    let first = import_file(
-        path_string(repo.path()),
-        path_string(&source_a),
-        import_options(StorageMode::Copied, DuplicateStrategy::Skip),
-    )
-    .expect("import first copied file");
-    install_deleted_change_log_failure(repo.path());
+        let first = import_file(
+            path_string(repo.path()),
+            path_string(&source_a),
+            import_options(StorageMode::Copied, DuplicateStrategy::Skip),
+        )
+        .expect("import first copied file");
+        install_deleted_change_log_failure(repo.path());
 
-    let failed = import_file(
-        path_string(repo.path()),
-        path_string(&source_b),
-        import_options(StorageMode::Copied, DuplicateStrategy::Overwrite),
-    );
+        let failed = import_file(
+            path_string(repo.path()),
+            path_string(&source_b),
+            import_options(StorageMode::Copied, DuplicateStrategy::Overwrite),
+        );
 
-    assert_eq!(failed, Err(CoreError::Db));
-    assert_eq!(
-        fs::read(repo.path().join(&first.path)).expect("read restored original final file"),
-        b"same bytes"
-    );
-    assert_eq!(
-        fs::read(&source_b).expect("read replacement source after failed overwrite"),
-        b"same bytes"
-    );
-    assert_eq!(count_rows(repo.path(), "active"), 1);
-    assert_eq!(count_rows(repo.path(), "deleted"), 0);
-    assert_clean_duplicate_state(repo.path(), 1);
+        assert_eq!(failed, Err(CoreError::Db));
+        assert_eq!(
+            fs::read(repo.path().join(&first.path)).expect("read restored original final file"),
+            b"same bytes"
+        );
+        assert_eq!(
+            fs::read(&source_b).expect("read replacement source after failed overwrite"),
+            b"same bytes"
+        );
+        assert_eq!(count_rows(repo.path(), "active"), 1);
+        assert_eq!(count_rows(repo.path(), "deleted"), 0);
+        assert_clean_duplicate_state(repo.path(), 1);
 
-    remove_deleted_change_log_failure(repo.path());
-    let replacement = import_file(
-        path_string(repo.path()),
-        path_string(&source_b),
-        import_options(StorageMode::Copied, DuplicateStrategy::Overwrite),
-    )
-    .expect("retry overwrite duplicate after DB recovery");
+        remove_deleted_change_log_failure(repo.path());
+        let replacement = import_file(
+            path_string(repo.path()),
+            path_string(&source_b),
+            import_options(StorageMode::Copied, DuplicateStrategy::Overwrite),
+        )
+        .expect("retry overwrite duplicate after DB recovery");
 
-    assert_eq!(replacement.path, first.path);
-    assert_ne!(replacement.id, first.id);
-    let (old_status, archived_path) = file_status_and_path(repo.path(), first.id);
-    assert_eq!(old_status, "deleted");
-    assert!(archived_path.starts_with(".areamatrix/trash/replace-"));
-    assert_eq!(
-        fs::read(repo.path().join(&replacement.path)).expect("read replacement final file"),
-        b"same bytes"
-    );
-    assert_eq!(
-        fs::read(&source_b).expect("read copied replacement source after retry"),
-        b"same bytes"
-    );
-    assert_eq!(count_rows(repo.path(), "active"), 1);
-    assert_eq!(count_rows(repo.path(), "deleted"), 1);
-    assert_clean_duplicate_state(repo.path(), 3);
+        assert_eq!(replacement.path, first.path);
+        assert_ne!(replacement.id, first.id);
+        let (old_status, archived_path) = file_status_and_path(repo.path(), first.id);
+        assert_eq!(old_status, "deleted");
+        assert!(archived_path.starts_with("system-trash://replace-"));
+        assert!(!repo.path().join(".areamatrix/trash").exists());
+        assert_eq!(
+            fs::read(repo.path().join(&replacement.path)).expect("read replacement final file"),
+            b"same bytes"
+        );
+        assert_eq!(
+            fs::read(&source_b).expect("read copied replacement source after retry"),
+            b"same bytes"
+        );
+        assert_eq!(count_rows(repo.path(), "active"), 1);
+        assert_eq!(count_rows(repo.path(), "deleted"), 1);
+        assert_clean_duplicate_state(repo.path(), 3);
+        assert_eq!(
+            fs::read(trash_dir.join("report.pdf")).expect("read old file from system Trash"),
+            b"same bytes"
+        );
+    });
 }
 
 #[cfg(unix)]
