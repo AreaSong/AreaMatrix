@@ -1,0 +1,35 @@
+一、执行结论：已完成
+
+二、执行范围：单任务 `1-3/task-02`，只处理 C1-11 `list_files` implementation。  
+修改文件：
+
+- [core/src/db/mod.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/db/mod.rs:176)：补齐 `FileFilter.category`、`imported_after`、`imported_before` 查询条件，保留默认排除 deleted/staging、`include_deleted`、`limit <= 1000` clamp、`offset >= 0` 和 `imported_at DESC`。
+- [core/tests/list_files_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/list_files_implementation.rs:67)：新增 C1-11 implementation 集成测试。
+
+三、完成情况：
+
+- 核对清单：5 项完成。
+- 完成标准：C1-11 implementation 有测试和命令证据；未扩展到 UI、C1-12、搜索、标签或智能列表。
+- Forbidden Touches：未触碰 `apps/**`。
+- 现有非本次脏文件：`.codex/task-loop-runs/20260502_094539/summary.json`、`tasks/prompts/_shared/progress.json` 已存在改动，未修改。
+
+四、工程质量：
+
+- 代码结构保持在 DB 层，只读查询，无文件系统写入、无 DB 写入、无新依赖。
+- 没有新增 public API，因此不需要 UDL 或 rustdoc 同步。
+- 错误仍通过现有 `open_repo_connection` / row mapping 显式传播为 `RepoNotInitialized` 或 `Db`。
+- 未引入 mock-only、硬编码通过态或一次性脚本化实现。
+
+五、验证情况：全部通过
+
+- `cd core && cargo fmt --all -- --check`
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`
+- `cd core && cargo test --workspace list_files`
+- 额外按 validation-driver 补跑：`cd core && cargo test --workspace`
+- 额外检查：`git diff --check -- core/src/db/mod.rs core/tests/list_files_implementation.rs`
+
+六、风险与后续：
+
+- 剩余风险：无当前 C1-11 范围内阻断项。
+- 建议下一个任务：`1-3/task-03: C1-11 list-files validation`。
+

@@ -5,7 +5,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use rusqlite::{params, Connection, OptionalExtension, Transaction};
+use rusqlite::{params, Connection, OptionalExtension, Rows, Transaction};
 
 use crate::{
     config, CoreError, CoreResult, FileEntry, FileFilter, FileOrigin, OverviewOutput, RepoConfig,
@@ -176,23 +176,41 @@ pub(crate) fn update_config(repo_path: String, new_config: RepoConfig) -> CoreRe
 pub(crate) fn list_files(repo_path: String, filter: FileFilter) -> CoreResult<Vec<FileEntry>> {
     let repo = PathBuf::from(repo_path);
     let connection = open_repo_connection(&repo)?;
-    let include_deleted = filter.include_deleted.unwrap_or(false);
-    let status_clause = if include_deleted {
-        "status != 'staging'"
-    } else {
-        "status = 'active'"
-    };
     let limit = filter.limit.clamp(0, 1000);
     let offset = filter.offset.max(0);
+    let status_clause = list_files_status_clause(filter.include_deleted);
     let sql = format!(
         "SELECT id, path, original_name, current_name, category, size_bytes, \
          hash_sha256, storage_mode, origin, source_path, imported_at, updated_at \
-         FROM files WHERE {status_clause} ORDER BY imported_at DESC LIMIT ?1 OFFSET ?2"
+         FROM files \
+         WHERE {status_clause} \
+           AND (?3 IS NULL OR category = ?3) \
+           AND (?4 IS NULL OR imported_at >= ?4) \
+           AND (?5 IS NULL OR imported_at < ?5) \
+         ORDER BY imported_at DESC LIMIT ?1 OFFSET ?2"
     );
     let mut statement = connection.prepare(&sql).map_err(|_| CoreError::Db)?;
     let mut rows = statement
-        .query(params![limit, offset])
+        .query(params![
+            limit,
+            offset,
+            filter.category,
+            filter.imported_after,
+            filter.imported_before,
+        ])
         .map_err(|_| CoreError::Db)?;
+    collect_file_entries(&mut rows)
+}
+
+fn list_files_status_clause(include_deleted: Option<bool>) -> &'static str {
+    if include_deleted.unwrap_or(false) {
+        "status != 'staging'"
+    } else {
+        "status = 'active'"
+    }
+}
+
+fn collect_file_entries(rows: &mut Rows<'_>) -> CoreResult<Vec<FileEntry>> {
     let mut files = Vec::new();
     while let Some(row) = rows.next().map_err(|_| CoreError::Db)? {
         let storage_mode_value: String = row.get(7).map_err(|_| CoreError::Db)?;

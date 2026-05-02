@@ -237,10 +237,10 @@ fn import_index_file_implementation_rejects_missing_source_without_side_effects(
 }
 
 #[test]
-fn import_index_file_implementation_list_files_reports_missing_indexed_source() {
+fn import_index_file_implementation_list_files_keeps_missing_indexed_source_metadata() {
     let repo = initialized_repo();
     let (_source_root, source) = source_file("listed.pdf", b"listed bytes");
-    import_file(
+    let entry = import_file(
         path_string(repo.path()),
         path_string(&source),
         indexed_options(),
@@ -249,9 +249,10 @@ fn import_index_file_implementation_list_files_reports_missing_indexed_source() 
 
     fs::remove_file(&source).expect("remove indexed source fixture");
 
-    let result = list_files(path_string(repo.path()), empty_filter());
+    let files = list_files(path_string(repo.path()), empty_filter())
+        .expect("list indexed metadata after source removal");
 
-    assert_eq!(result, Err(CoreError::FileNotFound));
+    assert_eq!(files, vec![entry]);
     assert_eq!(file_count(repo.path(), "active"), 1);
     assert_eq!(change_log_count(repo.path()), 1);
 }

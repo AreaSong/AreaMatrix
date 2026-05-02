@@ -1,12 +1,10 @@
 //! Public functions exposed through the UniFFI boundary.
 
-use std::path::Path;
-
 use crate::{
     classify, db, repo_init, repo_path, repo_scan, storage, tree, ChangeFilter, ChangeLogEntry,
-    ClassifyResult, CoreError, CoreResult, ExternalEvent, FileEntry, FileFilter, FileOrigin,
-    ImportOptions, RecoveryReport, ReindexReport, RepoConfig, RepoInitOptions, RepoPathValidation,
-    ScanSession, StorageMode, SyncResult,
+    ClassifyResult, CoreError, CoreResult, ExternalEvent, FileEntry, FileFilter, ImportOptions,
+    RecoveryReport, ReindexReport, RepoConfig, RepoInitOptions, RepoPathValidation, ScanSession,
+    SyncResult,
 };
 
 fn not_implemented<T>() -> CoreResult<T> {
@@ -318,28 +316,19 @@ pub fn restore_file(_repo_path: String, _file_id: i64) -> CoreResult<FileEntry> 
 /// tag filtering, smart lists, and single-file detail aggregation belong to
 /// later capabilities and must not be hidden behind this entry point.
 ///
-/// C1-08 indexed import entries remain references to external source files. If
-/// a listed indexed import source has disappeared, this returns
-/// `CoreError::FileNotFound` so the UI can present the documented recoverable
-/// missing-source state without expanding C1-11 into a detail-query task.
-///
 /// # Errors
 ///
 /// Returns `CoreError::RepoNotInitialized` when the repository metadata is
-/// missing and `CoreError::Db` when SQLite rows cannot be read. Existing C1-08
-/// indexed-source probes can also surface file availability errors for active
-/// indexed import rows without writing to the filesystem or database.
+/// missing and `CoreError::Db` when SQLite rows cannot be read.
 pub fn list_files(repo_path: String, filter: FileFilter) -> CoreResult<Vec<FileEntry>> {
-    let files = db::list_files(repo_path, filter)?;
-    ensure_indexed_sources_available(&files)?;
-    Ok(files)
+    db::list_files(repo_path, filter)
 }
 
 /// Gets a single active file entry from repository metadata.
 ///
 /// C1-12 owns the real detail-query implementation. C1-08 keeps indexed import
-/// missing-source evidence on `list_files` so this task does not expand into
-/// the adjacent detail capability.
+/// missing-source evidence out of C1-11 so this task does not expand into the
+/// adjacent detail capability.
 ///
 /// # Errors
 ///
@@ -394,33 +383,4 @@ pub fn get_fs_event_cursor(_repo_path: String) -> CoreResult<Option<i64>> {
 /// Sets the latest filesystem event cursor.
 pub fn set_fs_event_cursor(_repo_path: String, _last_event_id: i64) -> CoreResult<()> {
     not_implemented()
-}
-
-fn ensure_indexed_sources_available(files: &[FileEntry]) -> CoreResult<()> {
-    for file in files {
-        ensure_indexed_source_available(file)?;
-    }
-    Ok(())
-}
-
-fn ensure_indexed_source_available(file: &FileEntry) -> CoreResult<()> {
-    if file.storage_mode != StorageMode::Indexed || file.origin != FileOrigin::Imported {
-        return Ok(());
-    }
-
-    let source_path = file.source_path.as_deref().ok_or(CoreError::Db)?;
-    match Path::new(source_path).try_exists() {
-        Ok(true) => Ok(()),
-        Ok(false) => Err(CoreError::FileNotFound),
-        Err(error) => Err(map_file_probe_error(error)),
-    }
-}
-
-fn map_file_probe_error(error: std::io::Error) -> CoreError {
-    match error.kind() {
-        std::io::ErrorKind::NotFound => CoreError::FileNotFound,
-        std::io::ErrorKind::PermissionDenied => CoreError::PermissionDenied,
-        std::io::ErrorKind::InvalidInput => CoreError::InvalidPath,
-        _ => CoreError::Io,
-    }
 }

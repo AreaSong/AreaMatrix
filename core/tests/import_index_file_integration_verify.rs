@@ -203,7 +203,7 @@ fn import_index_file_integration_verify_real_index_supports_consuming_context() 
 }
 
 #[test]
-fn import_index_file_integration_verify_missing_external_source_is_recoverable_error() {
+fn import_index_file_integration_verify_missing_external_source_keeps_metadata() {
     let repo = initialized_repo();
     let (_source_root, source) = source_file("missing-later.pdf", b"indexed bytes");
     let entry = import_file(
@@ -215,9 +215,10 @@ fn import_index_file_integration_verify_missing_external_source_is_recoverable_e
 
     fs::remove_file(&source).expect("remove indexed source fixture");
 
-    let result = list_files(path_string(repo.path()), empty_filter());
+    let files = list_files(path_string(repo.path()), empty_filter())
+        .expect("list indexed metadata after source removal");
 
-    assert_eq!(result, Err(CoreError::FileNotFound));
+    assert_eq!(files, vec![entry.clone()]);
     assert_eq!(entry.storage_mode, StorageMode::Indexed);
     assert_eq!(count_rows(repo.path(), "files", Some("active")), 1);
     assert_eq!(count_rows(repo.path(), "change_log", None), 1);
