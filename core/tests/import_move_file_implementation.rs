@@ -194,7 +194,7 @@ fn import_move_file_implementation_duplicate_hash_restores_source_without_new_ro
 }
 
 #[test]
-fn import_move_file_implementation_name_conflict_restores_source_and_existing_file() {
+fn import_move_file_implementation_name_conflict_auto_numbers_and_consumes_source() {
     let repo = initialized_repo();
     let (_source_root_a, source_a) = source_file("first.pdf", b"first content");
     let (_source_root_b, source_b) = source_file("second.pdf", b"second content");
@@ -207,20 +207,27 @@ fn import_move_file_implementation_name_conflict_restores_source_and_existing_fi
         options.clone(),
     )
     .expect("import first moved file");
-    let result = import_file(path_string(repo.path()), path_string(&source_b), options);
+    let second = import_file(path_string(repo.path()), path_string(&source_b), options)
+        .expect("import second moved file with numbered name");
 
-    assert_eq!(result, Err(CoreError::Conflict));
+    assert_eq!(first.path, "finance/same.pdf");
+    assert_eq!(second.path, "finance/same_1.pdf");
+    assert_eq!(second.current_name, "same_1.pdf");
     assert_eq!(
-        fs::read(repo.path().join(first.path)).expect("read first imported file"),
+        fs::read(repo.path().join(&first.path)).expect("read first imported file"),
         b"first content"
     );
     assert_eq!(
-        fs::read(&source_b).expect("read restored conflicting source"),
+        fs::read(repo.path().join(&second.path)).expect("read second imported file"),
         b"second content"
     );
-    assert_eq!(count_rows(repo.path(), "files", Some("active")), 1);
+    assert!(
+        !source_b.exists(),
+        "moved import should consume source path"
+    );
+    assert_eq!(count_rows(repo.path(), "files", Some("active")), 2);
     assert_eq!(count_rows(repo.path(), "files", Some("staging")), 0);
-    assert_eq!(count_rows(repo.path(), "change_log", None), 1);
+    assert_eq!(count_rows(repo.path(), "change_log", None), 2);
     assert_eq!(staging_entries(repo.path()), Vec::<PathBuf>::new());
 }
 

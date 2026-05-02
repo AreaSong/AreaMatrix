@@ -199,7 +199,7 @@ fn detect_duplicate_keep_both_auto_numbers_when_target_name_matches_existing() {
 }
 
 #[test]
-fn detect_duplicate_keep_both_does_not_mask_same_name_different_content_conflict() {
+fn detect_duplicate_keep_both_auto_numbers_same_name_different_content() {
     let repo = initialized_repo();
     let (_source_root_a, source_a) = source_file("report.pdf", b"first bytes");
     let (_source_root_b, source_b) = source_file("report.pdf", b"second bytes");
@@ -214,25 +214,32 @@ fn detect_duplicate_keep_both_does_not_mask_same_name_different_content_conflict
         path_string(repo.path()),
         path_string(&source_b),
         copied_options(DuplicateStrategy::KeepBoth),
-    );
+    )
+    .expect("import same-name file with numbered destination");
 
-    assert_eq!(result, Err(CoreError::Conflict));
+    assert_eq!(result.path, "finance/report_1.pdf");
+    assert_eq!(result.current_name, "report_1.pdf");
     assert_eq!(
-        fs::read(repo.path().join(first.path)).expect("read original final"),
+        fs::read(repo.path().join(&first.path)).expect("read original final"),
         b"first bytes"
     );
     assert_eq!(
-        fs::read(&source_b).expect("read rejected conflicting source"),
+        fs::read(repo.path().join(&result.path)).expect("read numbered final"),
         b"second bytes"
     );
-    assert_eq!(count_file_rows(repo.path(), "active"), 1);
+    assert_eq!(
+        fs::read(&source_b).expect("read copied source"),
+        b"second bytes"
+    );
+    assert_eq!(count_file_rows(repo.path(), "active"), 2);
     assert_eq!(count_file_rows(repo.path(), "staging"), 0);
-    assert_eq!(change_log_count(repo.path()), 1);
+    assert_eq!(change_log_count(repo.path()), 2);
     assert_eq!(staging_entries(repo.path()), Vec::<PathBuf>::new());
 
     let files = list_files(path_string(repo.path()), empty_filter()).expect("list active files");
-    assert_eq!(files.len(), 1);
-    assert_eq!(files[0].path, "finance/report.pdf");
+    assert_eq!(files.len(), 2);
+    assert!(files.iter().any(|file| file.path == "finance/report.pdf"));
+    assert!(files.iter().any(|file| file.path == "finance/report_1.pdf"));
 }
 
 #[test]

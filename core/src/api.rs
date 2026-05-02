@@ -235,6 +235,16 @@ pub fn predict_category(repo_path: String, filename: String) -> CoreResult<Class
 /// import, and writes deleted/imported change-log entries in the same
 /// metadata transition.
 ///
+/// C1-10 owns same-name conflict handling for this entry point. The target
+/// name comes from the source filename or `ImportOptions::override_filename`;
+/// the output `FileEntry.path` and `FileEntry.current_name` must report the
+/// final conflict-free name that was actually written. Same-name imports with
+/// different content must not overwrite an existing user file by default:
+/// Core resolves a safe numbered name such as `name_1.ext`, while
+/// `CoreError::Conflict` is reserved for exhausted or raced resolution.
+/// Dangerous replacement remains explicit through `DuplicateStrategy::Overwrite`
+/// after S1-24 has confirmed the user decision.
+///
 /// # Errors
 ///
 /// Returns `CoreError::InvalidPath` for an empty, metadata-internal, or unsafe
@@ -260,9 +270,26 @@ pub fn delete_file(_repo_path: String, _file_id: i64, _hard: bool) -> CoreResult
     not_implemented()
 }
 
-/// Renames a file entry.
-pub fn rename_file(_repo_path: String, _file_id: i64, _new_name: String) -> CoreResult<FileEntry> {
-    not_implemented()
+/// Renames a file entry to a conflict-free filename in its current category.
+///
+/// C1-10 exposes this entry point for manual name-conflict resolution from
+/// S1-23. The input name is a filename, not a path, and must use the same
+/// validation boundary as `ImportOptions::override_filename`. A successful
+/// call returns the updated `FileEntry`, persists matching `files.path` and
+/// `files.current_name`, and records the rename in `change_log` without
+/// changing category or silently overwriting an existing file. Replace flows
+/// remain guarded by S1-24 rather than becoming a default rename branch.
+///
+/// # Errors
+///
+/// Returns `CoreError::InvalidPath` for empty or unsafe names,
+/// `CoreError::FileNotFound` when the file row or repo-owned file is missing,
+/// `CoreError::Conflict` when a safe final name cannot be resolved,
+/// `CoreError::PermissionDenied` for blocked filesystem writes,
+/// `CoreError::Io` for filesystem failures, and `CoreError::Db` for metadata
+/// persistence failures.
+pub fn rename_file(repo_path: String, file_id: i64, new_name: String) -> CoreResult<FileEntry> {
+    storage::rename_file(repo_path, file_id, new_name)
 }
 
 /// Moves a file entry to a category.

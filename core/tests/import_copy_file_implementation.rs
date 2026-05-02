@@ -171,7 +171,7 @@ fn import_copy_file_implementation_duplicate_hash_returns_error_without_new_rows
 }
 
 #[test]
-fn import_copy_file_implementation_name_conflict_does_not_overwrite_existing_file() {
+fn import_copy_file_implementation_name_conflict_auto_numbers_without_overwrite() {
     let repo = initialized_repo();
     let (_source_root_a, source_a) = source_file("first.pdf", b"first content");
     let (_source_root_b, source_b) = source_file("second.pdf", b"second content");
@@ -184,18 +184,25 @@ fn import_copy_file_implementation_name_conflict_does_not_overwrite_existing_fil
         options.clone(),
     )
     .expect("import first file");
-    let result = import_file(path_string(repo.path()), path_string(&source_b), options);
+    let second = import_file(path_string(repo.path()), path_string(&source_b), options)
+        .expect("import second file with numbered name");
 
-    assert_eq!(result, Err(CoreError::Conflict));
+    assert_eq!(first.path, "finance/same.pdf");
+    assert_eq!(second.path, "finance/same_1.pdf");
+    assert_eq!(second.current_name, "same_1.pdf");
     assert_eq!(
-        fs::read(repo.path().join(first.path)).expect("read first imported file"),
+        fs::read(repo.path().join(&first.path)).expect("read first imported file"),
         b"first content"
+    );
+    assert_eq!(
+        fs::read(repo.path().join(&second.path)).expect("read second imported file"),
+        b"second content"
     );
     assert_eq!(
         fs::read(&source_b).expect("read second source"),
         b"second content"
     );
-    assert_eq!(active_file_count(repo.path()), 1);
+    assert_eq!(active_file_count(repo.path()), 2);
     assert_eq!(staging_entries(repo.path()), Vec::<PathBuf>::new());
 }
 

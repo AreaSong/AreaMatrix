@@ -211,6 +211,38 @@ pub(crate) fn promote_replacing_imported_file(
     tx.commit().map_err(|_| CoreError::Db)
 }
 
+pub(crate) fn rename_active_file(
+    repo_path: &Path,
+    file_id: i64,
+    final_path: &str,
+    final_name: &str,
+    detail: &Value,
+) -> CoreResult<()> {
+    let detail_json = serde_json::to_string(detail).map_err(|_| CoreError::Internal)?;
+    let mut connection = open_repo_connection(repo_path)?;
+    let tx = connection.transaction().map_err(|_| CoreError::Db)?;
+    let changed = tx
+        .execute(
+            "UPDATE files
+             SET path = ?2,
+                 current_name = ?3,
+                 updated_at = strftime('%s', 'now')
+             WHERE id = ?1 AND status = 'active'",
+            params![file_id, final_path, final_name],
+        )
+        .map_err(|_| CoreError::Db)?;
+    if changed != 1 {
+        return Err(CoreError::Db);
+    }
+    tx.execute(
+        "INSERT INTO change_log (file_id, action, detail_json, occurred_at)
+         VALUES (?1, 'renamed', ?2, strftime('%s', 'now'))",
+        params![file_id, detail_json],
+    )
+    .map_err(|_| CoreError::Db)?;
+    tx.commit().map_err(|_| CoreError::Db)
+}
+
 pub(crate) fn delete_file_row(repo_path: &Path, file_id: i64) -> CoreResult<()> {
     let connection = open_repo_connection(repo_path)?;
     connection

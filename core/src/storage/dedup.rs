@@ -40,16 +40,31 @@ pub(super) fn resolve_final_path(
     resolution: DuplicateResolution,
 ) -> CoreResult<PathBuf> {
     match resolution {
-        DuplicateResolution::NoDuplicate => {
-            let candidate = directory.join(filename);
-            if path_exists(&candidate)? {
-                return Err(CoreError::Conflict);
-            }
-            Ok(candidate)
+        DuplicateResolution::NoDuplicate | DuplicateResolution::KeepBoth => {
+            resolve_numbered_path(directory, filename)
         }
-        DuplicateResolution::KeepBoth => resolve_numbered_path(directory, filename),
         DuplicateResolution::Overwrite(_) => Err(CoreError::Internal),
     }
+}
+
+pub(super) fn resolve_rename_path(
+    directory: &Path,
+    filename: &str,
+    current_path: &Path,
+) -> CoreResult<PathBuf> {
+    let candidate = directory.join(filename);
+    if candidate == current_path || !path_exists(&candidate)? {
+        return Ok(candidate);
+    }
+
+    for index in 1..1000 {
+        let candidate = directory.join(numbered_filename(filename, index));
+        if candidate == current_path || !path_exists(&candidate)? {
+            return Ok(candidate);
+        }
+    }
+
+    Err(CoreError::Conflict)
 }
 
 pub(super) fn is_repo_owned(entry: &FileEntry) -> bool {
