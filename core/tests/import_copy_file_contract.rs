@@ -144,7 +144,9 @@ fn import_copy_file_contract_docs_udl_and_control_map_stay_aligned() {
 fn import_copy_file_contract_documents_error_codes_and_side_effects() {
     let errors = [
         CoreError::InvalidPath,
-        CoreError::DuplicateFile,
+        CoreError::DuplicateFile {
+            existing_path: "finance/existing.pdf".to_owned(),
+        },
         CoreError::ICloudPlaceholder,
         CoreError::PermissionDenied,
         CoreError::Io,

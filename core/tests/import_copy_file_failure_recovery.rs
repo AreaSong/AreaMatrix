@@ -180,7 +180,13 @@ fn import_copy_file_failure_recovery_duplicate_ask_leaves_no_side_effects() {
     options.duplicate_strategy = DuplicateStrategy::Ask;
     let result = import_file(path_string(repo.path()), path_string(&source_b), options);
 
-    assert_eq!(result, Err(CoreError::DuplicateFile));
+    assert!(
+        matches!(
+            result,
+            Err(CoreError::DuplicateFile { existing_path }) if existing_path == "finance/first.pdf"
+        ),
+        "duplicate error should report the existing imported path"
+    );
     assert_eq!(
         fs::read(&source_b).expect("read duplicate source"),
         b"same bytes"

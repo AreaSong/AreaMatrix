@@ -134,9 +134,9 @@ fn import_index_file_integration_verify_docs_api_udl_and_consumers_stay_aligned(
         "StorageMode storage_mode;",
         "string? source_path;",
         "enum StorageMode { \"Moved\", \"Copied\", \"Indexed\" };",
-        "\"FileNotFound\"",
-        "\"ICloudPlaceholder\"",
-        "\"PermissionDenied\"",
+        "FileNotFound();",
+        "ICloudPlaceholder();",
+        "PermissionDenied();",
     ] {
         assert_contains(CORE_API, fragment);
         assert_contains(UDL, fragment);

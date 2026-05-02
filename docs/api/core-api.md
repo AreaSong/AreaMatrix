@@ -256,10 +256,19 @@ enum ClassifyReason { "Keyword", "Extension", "AiPredicted", "Default" };
 enum ExternalEventKind { "Created", "Removed", "Modified", "Renamed" };
 
 [Error]
-enum CoreError {
-    "Io", "Db", "Config", "Classify", "Conflict",
-    "DuplicateFile", "FileNotFound", "RepoNotInitialized",
-    "InvalidPath", "ICloudPlaceholder", "PermissionDenied", "Internal"
+interface CoreError {
+    Io();
+    Db();
+    Config();
+    Classify();
+    Conflict();
+    DuplicateFile(string existing_path);
+    FileNotFound();
+    RepoNotInitialized();
+    InvalidPath();
+    ICloudPlaceholder();
+    PermissionDenied();
+    Internal();
 };
 ```
 

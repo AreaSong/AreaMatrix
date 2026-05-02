@@ -223,15 +223,26 @@ pub fn predict_category(repo_path: String, filename: String) -> CoreResult<Class
 /// indexed contracts explicit instead of hiding adjacent behavior behind a
 /// generic import success path.
 ///
+/// C1-09 owns duplicate detection for this entry point. Core hashes the source
+/// bytes before committing a final destination. `Skip` and `Ask` return
+/// `CoreError::DuplicateFile { existing_path }` with the first active path that
+/// already owns the hash, and must leave the attempted source, final
+/// destination, active rows, and change log unchanged. `KeepBoth` allows a
+/// second active row with the same hash when the resolved destination path is
+/// distinct. Destructive replacement semantics for `Overwrite` require the
+/// later C1-09 implementation/failure tasks so this contract-api slice does not
+/// add unconfirmed delete or Trash behavior.
+///
 /// # Errors
 ///
 /// Returns `CoreError::InvalidPath` for an empty, metadata-internal, or unsafe
 /// source or destination path, `CoreError::FileNotFound` when the source cannot
-/// be found, `CoreError::DuplicateFile` for duplicate hashes when the selected
-/// strategy requires user choice or skip behavior, `CoreError::ICloudPlaceholder`
-/// for unavailable iCloud placeholders, `CoreError::PermissionDenied` for
-/// unreadable sources or unwritable metadata, `CoreError::Io` for filesystem
-/// failures, and `CoreError::Db` for metadata persistence failures.
+/// be found, `CoreError::DuplicateFile { existing_path }` for duplicate hashes
+/// when the selected strategy requires user choice or skip behavior,
+/// `CoreError::ICloudPlaceholder` for unavailable iCloud placeholders,
+/// `CoreError::PermissionDenied` for unreadable sources or unwritable metadata,
+/// `CoreError::Io` for filesystem failures, and `CoreError::Db` for metadata
+/// persistence failures.
 /// Failed imports must not leave active file rows or final destination half-products;
 /// staging residue is reserved for later recovery cleanup.
 pub fn import_file(

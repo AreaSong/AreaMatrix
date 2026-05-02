@@ -228,7 +228,13 @@ fn import_copy_file_validation_duplicate_skip_keeps_existing_state() {
         copied_options(),
     );
 
-    assert_eq!(result, Err(CoreError::DuplicateFile));
+    assert!(
+        matches!(
+            result,
+            Err(CoreError::DuplicateFile { existing_path }) if existing_path == "finance/first.pdf"
+        ),
+        "duplicate error should report the existing imported path"
+    );
     assert_eq!(
         fs::read(repo.path().join(entry.path)).expect("read existing imported file"),
         b"same bytes"

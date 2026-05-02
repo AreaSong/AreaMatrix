@@ -182,7 +182,14 @@ fn import_index_file_implementation_duplicate_hash_leaves_source_and_db_unchange
         indexed_options(),
     );
 
-    assert_eq!(result, Err(CoreError::DuplicateFile));
+    let existing_path = path_string(&source_a);
+    assert!(
+        matches!(
+            result,
+            Err(CoreError::DuplicateFile { existing_path: reported }) if reported == existing_path
+        ),
+        "duplicate error should report the indexed source path"
+    );
     assert_eq!(
         fs::read(&source_b).expect("read duplicate source"),
         b"same bytes"

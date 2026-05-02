@@ -6,7 +6,7 @@ use thiserror::Error;
 pub type CoreResult<T> = Result<T, CoreError>;
 
 /// Error variants exposed through the UniFFI boundary.
-#[derive(Clone, Copy, Debug, Eq, Error, PartialEq)]
+#[derive(Clone, Debug, Eq, Error, PartialEq)]
 pub enum CoreError {
     /// Underlying filesystem or IO failure.
     #[error("io")]
@@ -23,9 +23,9 @@ pub enum CoreError {
     /// Path or naming conflict.
     #[error("conflict")]
     Conflict,
-    /// Duplicate file detected.
-    #[error("duplicate file")]
-    DuplicateFile,
+    /// Duplicate file detected, with the first active path that owns the hash.
+    #[error("duplicate file already exists at: {existing_path}")]
+    DuplicateFile { existing_path: String },
     /// Requested file does not exist.
     #[error("file not found")]
     FileNotFound,

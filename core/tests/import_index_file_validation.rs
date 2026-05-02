@@ -270,7 +270,14 @@ fn import_index_file_validation_duplicate_skip_keeps_source_and_existing_state()
         indexed_auto_options(),
     );
 
-    assert_eq!(result, Err(CoreError::DuplicateFile));
+    let existing_path = path_string(&source_a);
+    assert!(
+        matches!(
+            result,
+            Err(CoreError::DuplicateFile { existing_path: reported }) if reported == existing_path
+        ),
+        "duplicate error should report the indexed source path"
+    );
     assert_eq!(
         fs::read(&source_a).expect("read indexed source after duplicate attempt"),
         b"same bytes"

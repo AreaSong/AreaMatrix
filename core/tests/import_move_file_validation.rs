@@ -227,7 +227,13 @@ fn import_move_file_validation_duplicate_skip_restores_source_and_keeps_existing
         moved_auto_options(),
     );
 
-    assert_eq!(result, Err(CoreError::DuplicateFile));
+    assert!(
+        matches!(
+            result,
+            Err(CoreError::DuplicateFile { existing_path }) if existing_path == "finance/first.pdf"
+        ),
+        "duplicate error should report the existing moved path"
+    );
     assert_eq!(
         fs::read(repo.path().join(entry.path)).expect("read existing moved file"),
         b"same bytes"

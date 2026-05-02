@@ -194,7 +194,14 @@ fn import_index_file_failure_recovery_repeated_same_source_is_duplicate_only() {
         indexed_options(),
     );
 
-    assert_eq!(result, Err(CoreError::DuplicateFile));
+    let existing_path = path_string(&source);
+    assert!(
+        matches!(
+            result,
+            Err(CoreError::DuplicateFile { existing_path: reported }) if reported == existing_path
+        ),
+        "duplicate error should report the indexed source path"
+    );
     assert_eq!(
         fs::read(&source).expect("read source after duplicate indexed attempt"),
         b"repeat indexed source"

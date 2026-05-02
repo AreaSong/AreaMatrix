@@ -155,7 +155,13 @@ fn import_copy_file_implementation_duplicate_hash_returns_error_without_new_rows
         copied_options(),
     );
 
-    assert_eq!(result, Err(CoreError::DuplicateFile));
+    assert!(
+        matches!(
+            result,
+            Err(CoreError::DuplicateFile { existing_path }) if existing_path == "finance/first.pdf"
+        ),
+        "duplicate error should report the existing imported path"
+    );
     assert_eq!(
         fs::read(&source_b).expect("read duplicate source"),
         b"same bytes"

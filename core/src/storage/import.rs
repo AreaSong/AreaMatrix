@@ -120,8 +120,8 @@ fn stage_source(prepared: &PreparedImport) -> CoreResult<StagedImport> {
 }
 
 fn ensure_no_duplicate(prepared: &PreparedImport, hash_sha256: &str) -> CoreResult<()> {
-    if db::find_active_file_by_hash(&prepared.repo, hash_sha256)?.is_some() {
-        return duplicate_error(&prepared.options.duplicate_strategy);
+    if let Some(existing) = db::find_active_file_by_hash(&prepared.repo, hash_sha256)? {
+        return handle_duplicate(&prepared.options.duplicate_strategy, existing);
     }
     Ok(())
 }
@@ -310,8 +310,19 @@ fn resolve_import_target(
     }
 }
 
-fn duplicate_error(_strategy: &DuplicateStrategy) -> CoreResult<()> {
-    Err(CoreError::DuplicateFile)
+fn handle_duplicate(strategy: &DuplicateStrategy, existing: FileEntry) -> CoreResult<()> {
+    match strategy {
+        DuplicateStrategy::KeepBoth => Ok(()),
+        DuplicateStrategy::Skip | DuplicateStrategy::Ask | DuplicateStrategy::Overwrite => {
+            tracing::warn!(
+                existing_path = %existing.path,
+                "duplicate file detected before import commit"
+            );
+            Err(CoreError::DuplicateFile {
+                existing_path: existing.path,
+            })
+        }
+    }
 }
 
 fn storage_mode_detail(mode: &StorageMode) -> &'static str {
