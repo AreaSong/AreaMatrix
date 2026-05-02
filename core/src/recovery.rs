@@ -1,10 +1,11 @@
 use std::{
     collections::HashSet,
-    fs,
+    fs::{self, File, OpenOptions},
+    io,
     path::{Component, Path, PathBuf},
 };
 
-use crate::{db, CoreError, CoreResult, RecoveryReport};
+use crate::{db, CoreError, CoreResult, RecoveryReport, StorageMode};
 
 const AREA_MATRIX_DIR: &str = ".areamatrix";
 const STAGING_DIR: &str = "staging";
@@ -18,6 +19,11 @@ enum StagingFileState {
     Missing,
     Removable(PathBuf),
     Unsafe(String),
+}
+
+enum MovedFileRecovery {
+    Restored,
+    Kept(String),
 }
 
 pub(crate) fn recover_on_startup(repo_path: String) -> CoreResult<RecoveryReport> {
@@ -65,8 +71,21 @@ fn recover_staging_row(
         return Ok(());
     };
 
+    if row.storage_mode == StorageMode::Moved {
+        return recover_moved_staging_row(repo, staging_root, row, &relative_path, report);
+    }
+    recover_internal_staging_row(repo, staging_root, row, &relative_path, report)
+}
+
+fn recover_internal_staging_row(
+    repo: &Path,
+    staging_root: &StagingRoot,
+    row: db::StagingFileRow,
+    relative_path: &Path,
+    report: &mut RecoveryReport,
+) -> CoreResult<()> {
     if let StagingRoot::Directory(staging_dir) = staging_root {
-        match staging_file_state(staging_dir, &relative_path)? {
+        match staging_file_state(staging_dir, relative_path)? {
             StagingFileState::Removable(path) => {
                 ensure_staging_root_is_directory(staging_dir)?;
                 remove_staging_file(&path)?;
@@ -81,6 +100,45 @@ fn recover_staging_row(
     }
     db::delete_staging_file_row(repo, row.id)?;
     report.reverted_staging_db_rows += 1;
+    Ok(())
+}
+
+fn recover_moved_staging_row(
+    repo: &Path,
+    staging_root: &StagingRoot,
+    row: db::StagingFileRow,
+    relative_path: &Path,
+    report: &mut RecoveryReport,
+) -> CoreResult<()> {
+    let StagingRoot::Directory(staging_dir) = staging_root else {
+        db::delete_staging_file_row(repo, row.id)?;
+        report.reverted_staging_db_rows += 1;
+        return Ok(());
+    };
+
+    match staging_file_state(staging_dir, relative_path)? {
+        StagingFileState::Removable(path) => {
+            ensure_staging_root_is_directory(staging_dir)?;
+            match restore_moved_staging_file(&path, row.source_path.as_deref())? {
+                MovedFileRecovery::Restored => {
+                    db::delete_staging_file_row(repo, row.id)?;
+                    report.reverted_staging_db_rows += 1;
+                }
+                MovedFileRecovery::Kept(reason) => report.warnings.push(format!(
+                    "Kept moved staging row {} at {}: {}",
+                    row.id, row.path, reason
+                )),
+            }
+        }
+        StagingFileState::Missing => {
+            db::delete_staging_file_row(repo, row.id)?;
+            report.reverted_staging_db_rows += 1;
+        }
+        StagingFileState::Unsafe(reason) => report.warnings.push(format!(
+            "Kept unsafe moved staging row {} at {}: {}",
+            row.id, row.path, reason
+        )),
+    }
     Ok(())
 }
 
@@ -110,9 +168,16 @@ fn clean_orphan_staging_files(
         }
 
         if file_type.is_file() || file_type.is_symlink() {
-            ensure_staging_root_is_directory(staging_dir)?;
-            remove_staging_file(&entry.path())?;
-            report.cleaned_staging_files += 1;
+            if is_safe_copy_orphan_name(&entry.file_name()) {
+                ensure_staging_root_is_directory(staging_dir)?;
+                remove_staging_file(&entry.path())?;
+                report.cleaned_staging_files += 1;
+            } else {
+                report.warnings.push(format!(
+                    "Kept unclassified staging file {}",
+                    relative_path.display()
+                ));
+            }
         } else {
             report.warnings.push(format!(
                 "Kept non-file staging entry {}",
@@ -151,6 +216,10 @@ fn protected_staging_paths(repo: &Path) -> CoreResult<HashSet<PathBuf>> {
         .filter_map(|path| safe_staging_relative_path(&path))
         .collect::<HashSet<_>>();
     Ok(paths)
+}
+
+fn is_safe_copy_orphan_name(name: &std::ffi::OsStr) -> bool {
+    name.to_string_lossy().starts_with("copy-import-")
 }
 
 fn safe_staging_relative_path(value: &str) -> Option<PathBuf> {
@@ -218,6 +287,97 @@ fn is_safe_component(component: &Component<'_>) -> bool {
 
 fn remove_staging_file(path: &Path) -> CoreResult<()> {
     fs::remove_file(path).map_err(map_io_error)
+}
+
+fn restore_moved_staging_file(
+    staging_path: &Path,
+    source_path: Option<&str>,
+) -> CoreResult<MovedFileRecovery> {
+    let Some(source_path) = recoverable_source_path(source_path) else {
+        return Ok(MovedFileRecovery::Kept(
+            "missing absolute original source path".to_owned(),
+        ));
+    };
+    if source_path.try_exists().map_err(map_io_error)? {
+        return Ok(MovedFileRecovery::Kept(format!(
+            "original source path already exists at {}",
+            source_path.display()
+        )));
+    }
+    let Some(parent) = source_path.parent() else {
+        return Ok(MovedFileRecovery::Kept(
+            "original source path has no parent".to_owned(),
+        ));
+    };
+    if !parent.try_exists().map_err(map_io_error)? {
+        return Ok(MovedFileRecovery::Kept(format!(
+            "original source parent is missing at {}",
+            parent.display()
+        )));
+    }
+
+    match move_file_no_replace(staging_path, &source_path) {
+        Ok(()) => Ok(MovedFileRecovery::Restored),
+        Err(CoreError::Conflict) => Ok(MovedFileRecovery::Kept(format!(
+            "original source path appeared during recovery at {}",
+            source_path.display()
+        ))),
+        Err(error) => Err(error),
+    }
+}
+
+fn recoverable_source_path(source_path: Option<&str>) -> Option<PathBuf> {
+    source_path
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(PathBuf::from)
+        .filter(|path| path.is_absolute())
+}
+
+fn move_file_no_replace(current_path: &Path, destination: &Path) -> CoreResult<()> {
+    match fs::hard_link(current_path, destination) {
+        Ok(()) => {}
+        Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {
+            return Err(CoreError::Conflict);
+        }
+        Err(_) => copy_to_new_destination(current_path, destination)?,
+    }
+
+    match fs::remove_file(current_path) {
+        Ok(()) => Ok(()),
+        Err(error) => {
+            let _cleanup_result = fs::remove_file(destination);
+            Err(map_io_error(error))
+        }
+    }
+}
+
+fn copy_to_new_destination(current_path: &Path, destination: &Path) -> CoreResult<()> {
+    let expected_size = current_path.metadata().map_err(map_io_error)?.len();
+    let mut reader = File::open(current_path).map_err(map_io_error)?;
+    let mut writer = match OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(destination)
+    {
+        Ok(file) => file,
+        Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {
+            return Err(CoreError::Conflict);
+        }
+        Err(error) => return Err(map_io_error(error)),
+    };
+    let copied_size = match io::copy(&mut reader, &mut writer) {
+        Ok(size) => size,
+        Err(error) => {
+            let _cleanup_result = fs::remove_file(destination);
+            return Err(map_io_error(error));
+        }
+    };
+    if copied_size != expected_size {
+        let _cleanup_result = fs::remove_file(destination);
+        return Err(CoreError::Io);
+    }
+    Ok(())
 }
 
 fn map_io_error(error: std::io::Error) -> CoreError {

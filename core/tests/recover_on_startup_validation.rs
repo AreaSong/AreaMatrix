@@ -113,7 +113,7 @@ fn recover_on_startup_validation_proves_report_db_and_filesystem_cleanup() {
     insert_file_row(repo.path(), "finance/active.pdf", "active");
 
     let staged = staging_path(repo.path(), "interrupted-import");
-    let orphan = staging_path(repo.path(), "orphan-staging-file");
+    let orphan = staging_path(repo.path(), "copy-import-orphan-staging-file");
     fs::write(&staged, b"staged bytes").expect("write interrupted staging file");
     fs::write(&orphan, b"orphan bytes").expect("write orphan staging file");
     insert_file_row(

@@ -18,18 +18,18 @@ pub(super) struct StagingFileGuard {
 
 impl StagingFileGuard {
     pub(super) fn create_for_copy(repo: &Path) -> CoreResult<Self> {
-        Self::create(repo, StagingCleanup::Delete)
+        Self::create(repo, "copy-import", StagingCleanup::Delete)
     }
 
     pub(super) fn create_for_move(repo: &Path, source: PathBuf) -> CoreResult<Self> {
-        Self::create(repo, StagingCleanup::RestoreSource(source))
+        Self::create(repo, "move-import", StagingCleanup::RestoreSource(source))
     }
 
-    fn create(repo: &Path, cleanup: StagingCleanup) -> CoreResult<Self> {
+    fn create(repo: &Path, prefix: &str, cleanup: StagingCleanup) -> CoreResult<Self> {
         let staging_dir = repo.join(AREA_MATRIX_DIR).join(STAGING_DIR);
         fs::create_dir_all(&staging_dir).map_err(hash::map_io_error)?;
         Ok(Self {
-            path: staging_dir.join(format!("import-{}", uuid::Uuid::new_v4())),
+            path: staging_dir.join(format!("{}-{}", prefix, uuid::Uuid::new_v4())),
             cleanup,
             armed: true,
         })

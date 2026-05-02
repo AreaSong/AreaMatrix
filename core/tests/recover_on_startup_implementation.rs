@@ -45,6 +45,16 @@ fn count_rows(repo: &Path, status: &str) -> i64 {
 }
 
 fn insert_file_row(repo: &Path, relative_path: &str, status: &str) -> i64 {
+    insert_file_row_with_storage(repo, relative_path, status, StorageMode::Copied, None)
+}
+
+fn insert_file_row_with_storage(
+    repo: &Path,
+    relative_path: &str,
+    status: &str,
+    storage_mode: StorageMode,
+    source_path: Option<&str>,
+) -> i64 {
     let connection = open_db(repo);
     connection
         .execute(
@@ -53,8 +63,8 @@ fn insert_file_row(repo: &Path, relative_path: &str, status: &str) -> i64 {
                 hash_sha256, storage_mode, origin, source_path,
                 imported_at, updated_at, status
              ) VALUES (
-                ?1, ?2, ?2, ?3, ?4, ?5, ?6, ?7, NULL,
-                1, 1, ?8
+                ?1, ?2, ?2, ?3, ?4, ?5, ?6, ?7, ?8,
+                1, 1, ?9
              )",
             params![
                 relative_path,
@@ -62,8 +72,9 @@ fn insert_file_row(repo: &Path, relative_path: &str, status: &str) -> i64 {
                 "finance",
                 12_i64,
                 format!("hash-{relative_path}"),
-                storage_mode_value(&StorageMode::Copied),
+                storage_mode_value(&storage_mode),
                 origin_value(&FileOrigin::Imported),
+                source_path,
                 status,
             ],
         )
@@ -130,7 +141,7 @@ fn recover_on_startup_implementation_cleans_staging_row_and_preserves_active_fil
 #[test]
 fn recover_on_startup_implementation_removes_orphan_staging_file() {
     let repo = initialized_repo();
-    let orphan = staging_path(repo.path(), "orphan");
+    let orphan = staging_path(repo.path(), "copy-import-orphan");
     fs::write(&orphan, b"orphan bytes").expect("write orphan staging file");
 
     let report = recover_on_startup(path_string(repo.path())).expect("recover orphan staging file");
@@ -140,6 +151,90 @@ fn recover_on_startup_implementation_removes_orphan_staging_file() {
     assert!(report.warnings.is_empty());
     assert!(!orphan.exists());
     assert_eq!(count_rows(repo.path(), "staging"), 0);
+}
+
+#[test]
+fn recover_on_startup_implementation_keeps_unclassified_orphan_staging_file() {
+    let repo = initialized_repo();
+    let orphan = staging_path(repo.path(), "move-import-crash-before-row");
+    fs::write(&orphan, b"moved source bytes").expect("write moved orphan staging file");
+
+    let report =
+        recover_on_startup(path_string(repo.path())).expect("recover moved orphan staging file");
+
+    assert_eq!(report.cleaned_staging_files, 0);
+    assert_eq!(report.reverted_staging_db_rows, 0);
+    assert_eq!(
+        report.warnings,
+        vec!["Kept unclassified staging file .areamatrix/staging/move-import-crash-before-row"]
+    );
+    assert_eq!(
+        fs::read(&orphan).expect("unclassified moved orphan should stay recoverable"),
+        b"moved source bytes"
+    );
+    assert_eq!(count_rows(repo.path(), "staging"), 0);
+}
+
+#[test]
+fn recover_on_startup_implementation_restores_moved_staging_row_to_source() {
+    let repo = initialized_repo();
+    let source_root = tempfile::tempdir().expect("create source parent directory");
+    let source = source_root.path().join("moved.pdf");
+    let staged = staging_path(repo.path(), "move-import-crash-after-row");
+    fs::write(&staged, b"moved source bytes").expect("write moved staging file");
+    insert_file_row_with_storage(
+        repo.path(),
+        ".areamatrix/staging/move-import-crash-after-row",
+        "staging",
+        StorageMode::Moved,
+        Some(path_string(&source).as_str()),
+    );
+
+    let report =
+        recover_on_startup(path_string(repo.path())).expect("restore moved staging residue");
+
+    assert_eq!(report.cleaned_staging_files, 0);
+    assert_eq!(report.reverted_staging_db_rows, 1);
+    assert!(report.warnings.is_empty());
+    assert!(!staged.exists());
+    assert_eq!(
+        fs::read(&source).expect("moved source should be restored"),
+        b"moved source bytes"
+    );
+    assert_eq!(count_rows(repo.path(), "staging"), 0);
+}
+
+#[test]
+fn recover_on_startup_implementation_keeps_moved_staging_when_source_path_exists() {
+    let repo = initialized_repo();
+    let source_root = tempfile::tempdir().expect("create source parent directory");
+    let source = source_root.path().join("moved.pdf");
+    let staged = staging_path(repo.path(), "move-import-source-conflict");
+    fs::write(&source, b"new user bytes").expect("write existing source path");
+    fs::write(&staged, b"recoverable moved bytes").expect("write moved staging file");
+    insert_file_row_with_storage(
+        repo.path(),
+        ".areamatrix/staging/move-import-source-conflict",
+        "staging",
+        StorageMode::Moved,
+        Some(path_string(&source).as_str()),
+    );
+
+    let report =
+        recover_on_startup(path_string(repo.path())).expect("keep conflicting moved residue");
+
+    assert_eq!(report.cleaned_staging_files, 0);
+    assert_eq!(report.reverted_staging_db_rows, 0);
+    assert!(report.warnings[0].contains("original source path already exists"));
+    assert_eq!(
+        fs::read(&source).expect("existing source path should not be overwritten"),
+        b"new user bytes"
+    );
+    assert_eq!(
+        fs::read(&staged).expect("moved staging file should remain recoverable"),
+        b"recoverable moved bytes"
+    );
+    assert_eq!(count_rows(repo.path(), "staging"), 1);
 }
 
 #[cfg(unix)]
@@ -188,7 +283,7 @@ fn recover_on_startup_implementation_does_not_follow_nested_staging_symlink_pare
     let report = recover_on_startup(path_string(repo.path()))
         .expect("recover should skip unsafe nested symlink target");
 
-    assert_eq!(report.cleaned_staging_files, 1);
+    assert_eq!(report.cleaned_staging_files, 0);
     assert_eq!(report.reverted_staging_db_rows, 1);
     assert_eq!(
         fs::read(&user_file).expect("external user file must remain readable"),
@@ -198,7 +293,10 @@ fn recover_on_startup_implementation_does_not_follow_nested_staging_symlink_pare
         report.warnings[0].contains("parent")
             && report.warnings[0].contains("is not an owned staging directory")
     );
-    assert!(!symlink_parent.exists());
+    assert!(fs::symlink_metadata(&symlink_parent)
+        .expect("unsafe symlink should remain inspectable")
+        .file_type()
+        .is_symlink());
     assert_eq!(count_rows(repo.path(), "staging"), 0);
 }
 
@@ -218,7 +316,7 @@ fn recover_on_startup_implementation_reverts_missing_staging_row() {
 #[test]
 fn recover_on_startup_implementation_is_idempotent_after_cleanup() {
     let repo = initialized_repo();
-    let orphan = staging_path(repo.path(), "orphan");
+    let orphan = staging_path(repo.path(), "copy-import-orphan");
     fs::write(&orphan, b"orphan bytes").expect("write orphan staging file");
     recover_on_startup(path_string(repo.path())).expect("first recovery");
 

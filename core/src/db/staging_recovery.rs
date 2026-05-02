@@ -1,12 +1,14 @@
 use rusqlite::params;
 
-use crate::{CoreError, CoreResult};
+use crate::{CoreError, CoreResult, StorageMode};
 
-use super::open_repo_connection;
+use super::{open_repo_connection, storage_mode_from_db};
 
 pub(crate) struct StagingFileRow {
     pub(crate) id: i64,
     pub(crate) path: String,
+    pub(crate) storage_mode: StorageMode,
+    pub(crate) source_path: Option<String>,
 }
 
 pub(crate) fn list_staging_file_rows(
@@ -15,7 +17,7 @@ pub(crate) fn list_staging_file_rows(
     let connection = open_repo_connection(repo_path)?;
     let mut statement = connection
         .prepare(
-            "SELECT id, path
+            "SELECT id, path, storage_mode, source_path
              FROM files
              WHERE status = 'staging'
              ORDER BY id ASC",
@@ -26,6 +28,9 @@ pub(crate) fn list_staging_file_rows(
             Ok(StagingFileRow {
                 id: row.get(0)?,
                 path: row.get(1)?,
+                storage_mode: storage_mode_from_db(&row.get::<_, String>(2)?)
+                    .map_err(|_| rusqlite::Error::InvalidQuery)?,
+                source_path: row.get(3)?,
             })
         })
         .map_err(|_| CoreError::Db)?;
