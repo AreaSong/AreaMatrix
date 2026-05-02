@@ -387,12 +387,43 @@ pub fn list_tree_json(repo_path: String, locale: String) -> CoreResult<String> {
     tree::list_tree_json(repo_path, locale)
 }
 
-/// Reads a markdown note for a file.
+/// Reads the markdown note associated with one active file entry.
+///
+/// C1-14 exposes this read-only query for the S1-14 detail-note surface. The
+/// caller supplies a repository path and stable `file_id`; the result is
+/// `Some(markdown)` when a note exists and `None` when the file has no note.
+/// This API must not create note rows, write sidecar files, insert change-log
+/// entries, or mutate user files.
+///
+/// # Errors
+///
+/// Returns `CoreError::RepoNotInitialized` when repository metadata is missing,
+/// `CoreError::FileNotFound` when the active file row is absent,
+/// `CoreError::PermissionDenied` or `CoreError::Io` for blocked sidecar or
+/// metadata reads, and `CoreError::Db` when note metadata cannot be queried.
 pub fn read_note(_repo_path: String, _file_id: i64) -> CoreResult<Option<String>> {
     not_implemented()
 }
 
-/// Writes a markdown note for a file.
+/// Writes markdown note content for one active file entry.
+///
+/// C1-14 writes exactly one note for the target file. A successful call upserts
+/// the `notes` row, writes the same-directory sidecar markdown file, and records
+/// `change_log.action = edited_note` only after DB state and sidecar content are
+/// consistent. The app layer owns `InFlightTracker` marking so watcher events
+/// from the sidecar write are not treated as external changes.
+///
+/// The call must not delete, move, rename, or overwrite the target file or any
+/// unconfirmed user-authored file. Failed writes must preserve the previous note
+/// content and must not leave a successful change-log entry without matching DB
+/// and sidecar state.
+///
+/// # Errors
+///
+/// Returns `CoreError::RepoNotInitialized` when repository metadata is missing,
+/// `CoreError::FileNotFound` when the active file row is absent,
+/// `CoreError::PermissionDenied` for blocked writes, `CoreError::Io` for
+/// filesystem failures, and `CoreError::Db` for transactional metadata failures.
 pub fn write_note(_repo_path: String, _file_id: i64, _content_md: String) -> CoreResult<()> {
     not_implemented()
 }
