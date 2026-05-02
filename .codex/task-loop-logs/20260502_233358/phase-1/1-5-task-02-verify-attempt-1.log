@@ -1,0 +1,82 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`1-5/task-02`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-1/1-5-file-actions-repair/task-02-c1-22-implementation.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/rename.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/db/rename.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/tests/rename_file_contract_api.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/tests/rename_file_implementation.rs`
+
+三、完成度摘要
+
+- 已覆盖项数：17
+- 未覆盖项数：0
+- 通过项数：17
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 C1-22 implementation 范围
+- 结果：通过
+- 证据：`delete_file`、`move_to_category`、`restore_file` 仍为 `not_implemented()`；本次真实实现集中在 `rename_file`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:305`、`:347`、`:351`
+
+- 项目：Exact Docs 以文档为 SSOT
+- 结果：通过
+- 证据：C1-22 文档要求 repo-owned 安全 rename、Indexed 只改显示名、change_log renamed、overview 再生成；实现和测试均对齐。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-22-rename-file.md:12`、`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:704`
+
+- 项目：最小真实路径
+- 结果：通过
+- 证据：公开 API 调用 `storage::rename_file`；repo-owned 分支移动文件、更新 DB、写 change_log、再生成 overview；Indexed 分支只更新 `current_name` 和 change_log。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/rename.rs:11`、`:27`、`:57`
+
+- 项目：UDL / Core API 对齐
+- 结果：通过
+- 证据：UDL 暴露 `FileEntry rename_file(string repo_path, i64 file_id, string new_name);`，与 docs/api 和 Rust public API 一致。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:45`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:347`
+
+- 项目：Expected New Paths
+- 结果：通过
+- 证据：`core/src/**`、`core/area_matrix.udl`、`core/tests/**` 均存在；新增 `core/src/db/rename.rs` 和 `core/tests/rename_file_implementation.rs` 已落地。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/db/rename.rs:1`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/rename_file_implementation.rs:1`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git status --short -- apps` 与 `git diff --name-only -- apps` 均无输出。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。rename storage 层、DB 层、overview 触发职责分离，未把 UI 或相邻能力混入。
+- 注释 / rustdoc / 文档同步：通过。`rename_file` public API 有 rustdoc 和 `# Errors`，UDL 与 docs/api 对齐。
+- 错误处理与边界处理：通过。空名/非法名走 `InvalidPath`；缺失文件走 `FileNotFound`；冲突编号耗尽走 `Conflict`；IO/权限通过映射传播。
+- 测试与验证覆盖：通过。覆盖 repo-owned rename、Indexed rename、同名安全编号、非法名、missing id、overview/README 边界、失败回滚。
+- 占位、硬编码、mock-only、一次性实现检查：通过。实现连接真实 FS、SQLite、change_log 和 generated overview，不是 mock-only。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`cd core && cargo fmt --all -- --check`：通过
+- 已运行：`cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过
+- 已运行：`cd core && cargo test --workspace rename_file`：通过，`rename_file_contract_api` 7 个测试通过，`rename_file_implementation` 3 个测试通过
+- 已运行：`cd core && cargo test --workspace`：通过，全量 workspace 测试通过
+- 失败：无
+- 缺失：无
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS

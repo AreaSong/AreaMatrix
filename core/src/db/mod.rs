@@ -17,6 +17,7 @@ mod change_log;
 mod import;
 mod note;
 mod overview;
+mod rename;
 mod scan;
 mod staging_recovery;
 mod sync;
@@ -24,14 +25,16 @@ pub(crate) use change_log::list_changes;
 pub(crate) use import::{
     delete_file_row, find_active_file_by_hash, find_active_file_by_path, get_active_file_by_id,
     insert_active_indexed_import, insert_import_staging, insert_replacing_active_indexed_import,
-    promote_imported_file, promote_replacing_imported_file, rename_active_file,
-    rename_indexed_display_name, rollback_replacing_imported_file, NewImportRow,
-    ReplacementImportRow,
+    promote_imported_file, promote_replacing_imported_file, rollback_replacing_imported_file,
+    NewImportRow, ReplacementImportRow,
 };
 pub(crate) use note::{read_note_content, upsert_note_and_log};
 pub(crate) use overview::{
     list_overview_node_files, list_overview_node_summaries, list_overview_recent_changes,
     OverviewChangeRow, OverviewFileRow, OverviewNodeSummary,
+};
+pub(crate) use rename::{
+    rename_active_file, rename_indexed_display_name, rollback_renamed_active_file,
 };
 pub(crate) use scan::*;
 pub(crate) use staging_recovery::{

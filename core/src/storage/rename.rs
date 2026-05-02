@@ -40,19 +40,17 @@ fn rename_repo_owned_file(repo: &Path, entry: FileEntry, new_name: &str) -> Core
 
     let final_name = filename_from_path(&final_path)?;
     let final_relative_path = relative_repo_path(repo, &final_path)?;
+    let detail = rename_detail(&entry, new_name, &final_relative_path, &final_name, false);
     move_recoverable_file(&current_path, &final_path)?;
     let mut guard = RenameRollbackGuard::new(final_path.clone(), current_path.clone());
 
-    db::rename_active_file(
-        repo,
-        entry.id,
-        &final_relative_path,
-        &final_name,
-        &rename_detail(&entry, new_name, &final_relative_path, &final_name, false),
-    )?;
-    guard.disarm();
+    db::rename_active_file(repo, entry.id, &final_relative_path, &final_name, &detail)?;
     let updated = db::get_active_file_by_id(repo, entry.id)?;
-    overview::regenerate_for_node(repo, &updated.category)?;
+    if let Err(error) = overview::regenerate_for_node(repo, &updated.category) {
+        rollback_repo_owned_rename(repo, &entry, &mut guard, &detail)?;
+        return Err(error);
+    }
+    guard.disarm();
     Ok(updated)
 }
 
@@ -78,6 +76,8 @@ fn rename_detail(
     index_only: bool,
 ) -> serde_json::Value {
     json!({
+        "from": entry.current_name,
+        "to": final_name,
         "from_path": entry.path,
         "to_path": final_path,
         "from_name": entry.current_name,
@@ -88,6 +88,16 @@ fn rename_detail(
         "index_only": index_only,
         "by": "user",
     })
+}
+
+fn rollback_repo_owned_rename(
+    repo: &Path,
+    entry: &FileEntry,
+    guard: &mut RenameRollbackGuard,
+    detail: &serde_json::Value,
+) -> CoreResult<()> {
+    guard.rollback()?;
+    db::rollback_renamed_active_file(repo, entry.id, &entry.path, &entry.current_name, detail)
 }
 
 fn storage_mode_detail(mode: &StorageMode) -> &'static str {
@@ -166,6 +176,14 @@ impl RenameRollbackGuard {
 
     fn disarm(&mut self) {
         self.armed = false;
+    }
+
+    fn rollback(&mut self) -> CoreResult<()> {
+        if self.armed && self.current_path.exists() && !self.original_path.exists() {
+            move_recoverable_file(&self.current_path, &self.original_path)?;
+        }
+        self.armed = false;
+        Ok(())
     }
 }
 
