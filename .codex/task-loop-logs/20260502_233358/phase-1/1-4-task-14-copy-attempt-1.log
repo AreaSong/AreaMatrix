@@ -1,0 +1,35 @@
+一、执行结论
+
+已完成。
+
+二、执行范围
+
+- 单任务：`1-4/task-14`，仅处理 C1-18 `sync-external-renamed` validation。
+- 修改文件：新增 [sync_external_renamed_validation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/sync_external_renamed_validation.rs:1)。
+- 未触碰 `apps/**`。工作区原有的 `.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json` 脏状态未修改。
+
+三、完成情况
+
+- 已按 manifest 读取 Exact Docs，并以 C1-18 文档为 SSOT。
+- 未实现相邻 C1 能力或 UI 页面。
+- 新增 4 个 Rust validation 测试，覆盖成功路径、`FileNotFound`、`Conflict`、以及未实现事件不推进 cursor 的范围边界。
+- 完成标准满足：C1-18 validation 有文件、DB、change log、cursor 和命令证据。
+
+四、工程质量
+
+测试使用临时 repo、真实文件系统 rename、真实 DB 和公开 Core API；没有 mock-only、硬编码通过态或一次性脚本。新增文件 260 行，未新增 public API，因此无新增 rustdoc 需求。
+
+五、验证情况
+
+全部通过：
+
+- `cd core && cargo fmt --all -- --check`
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`
+- `cd core && cargo test --workspace sync_external_renamed`，C1-18 相关 15 个测试通过
+- `cd core && cargo test --workspace`
+- `git diff --check`
+
+六、风险与后续
+
+剩余风险：未做 macOS UI 真实消费验证，属于后续页面 feature / integration task 范围。建议下一个任务继续执行 manifest 顺序中的 `1-4/task-15`。  
+
