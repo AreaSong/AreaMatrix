@@ -131,7 +131,7 @@ pub enum ClassifyReason {
 pub enum ExternalEventKind {
     /// A path was created.
     Created,
-    /// A path was removed.
+    /// A path was externally removed and should be reflected as a soft delete in metadata.
     Removed,
     /// A path was modified.
     Modified,
@@ -393,7 +393,7 @@ pub struct SyncResult {
     pub detected_creates: i64,
     /// Number of renames detected.
     pub detected_renames: i64,
-    /// Number of deletes detected.
+    /// Number of removed paths reflected as deleted metadata rows.
     pub detected_deletes: i64,
     /// Number of modifications detected.
     pub detected_modifies: i64,

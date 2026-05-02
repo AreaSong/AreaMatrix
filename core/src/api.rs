@@ -481,6 +481,16 @@ pub fn write_note(repo_path: String, file_id: i64, content_md: String) -> CoreRe
 /// cannot be paired, callers may replay it as removed + created; the rename
 /// branch must then avoid claiming a detected rename.
 ///
+/// C1-19 owns the `ExternalEventKind::Removed` contract. A removed event's
+/// `path` is the repository-relative or absolute path after app-layer debounce and rename pairing.
+/// The sync branch only confirms the path is absent,
+/// marks the matching active row as `status = deleted`, refreshes `deleted_at`
+/// and `updated_at`, writes `change_log.action = deleted` with external deletion detail,
+/// and increments `SyncResult::detected_deletes`. It must not
+/// remove, trash, move, rename, overwrite, copy, or download a user file.
+/// Deleted rows are not visible to default `list_files` and return `CoreError::FileNotFound`
+/// through `get_file`.
+///
 /// Cursor persistence is part of the batch success contract.
 ///
 /// # Errors
@@ -488,6 +498,7 @@ pub fn write_note(repo_path: String, file_id: i64, content_md: String) -> CoreRe
 /// `CoreError::PermissionDenied`, `CoreError::Io`, or `CoreError::Db` for
 /// path, placeholder, metadata/hash, or transactional persistence failures.
 /// Returns `CoreError::FileNotFound` when a renamed target no longer exists and
+/// when a deleted row is later opened through detail APIs. Returns
 /// `CoreError::Conflict` when a renamed target cannot be paired without
 /// colliding with another active row.
 pub fn sync_external_changes(
