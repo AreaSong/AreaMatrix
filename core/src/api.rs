@@ -326,14 +326,23 @@ pub fn list_files(repo_path: String, filter: FileFilter) -> CoreResult<Vec<FileE
 
 /// Gets a single active file entry from repository metadata.
 ///
-/// C1-12 owns the real detail-query implementation. C1-08 keeps indexed import
-/// missing-source evidence out of C1-11 so this task does not expand into the
-/// adjacent detail capability.
+/// C1-12 defines this as the read-only detail query used by Stage 1 detail
+/// panes. The caller supplies a repository path and stable `file_id`; the
+/// contract returns exactly one active [`FileEntry`] and must not infer
+/// metadata from the filesystem path in the UI layer.
+///
+/// This API has no write side effects. Implementations may inspect target
+/// metadata to detect stale rows, but they must not create, delete, move,
+/// rename, or overwrite user files. File preview, Quick Look, OCR metadata,
+/// change-log aggregation, and note aggregation belong to adjacent capabilities
+/// and must not be hidden behind this entry point.
 ///
 /// # Errors
 ///
-/// Returns `CoreError::Internal` until the C1-12 detail-query task implements
-/// this endpoint.
+/// Returns `CoreError::RepoNotInitialized` when repository metadata is missing,
+/// `CoreError::FileNotFound` when the requested active file row is absent or
+/// not visible to detail consumers, and `CoreError::Db` when SQLite rows cannot
+/// be read.
 pub fn get_file(_repo_path: String, _file_id: i64) -> CoreResult<FileEntry> {
     not_implemented()
 }
