@@ -217,7 +217,7 @@ fn assert_rust_entry_points_are_real_created_wiring() {
     }
 
     for fragment in [
-        "if event.kind != ExternalEventKind::Created",
+        "ExternalEventKind::Created =>",
         "plan_created_event",
         "should_skip_relative_path",
         "has_icloud_placeholder_marker",
@@ -229,7 +229,7 @@ fn assert_rust_entry_points_are_real_created_wiring() {
     }
 
     for fragment in [
-        "apply_external_created_batch",
+        "apply_external_sync_batch",
         "INSERT OR IGNORE INTO files",
         "'external'",
         "storage_mode_to_db(&crate::StorageMode::Indexed)",

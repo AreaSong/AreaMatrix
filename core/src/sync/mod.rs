@@ -10,7 +10,7 @@ use serde_json::json;
 use sha2::{Digest, Sha256};
 
 use crate::{
-    db::{self, ExternalCreatedRow},
+    db::{self, ExternalCreatedRow, ExternalRenamedRow},
     repo_path, CoreError, CoreResult, ExternalEvent, ExternalEventKind, SyncResult,
 };
 
@@ -23,48 +23,65 @@ struct CreatedPlan {
     row: ExternalCreatedRow,
 }
 
+struct RenamedPlan {
+    row: ExternalRenamedRow,
+}
+
 struct ResolvedEventPath {
     absolute_path: PathBuf,
     relative_path: String,
 }
 
-/// Synchronizes external created-file events into repository metadata.
+/// Synchronizes implemented external filesystem events into repository metadata.
 ///
 /// # Errors
 ///
 /// Returns `CoreError::InvalidPath` for paths outside the initialized
 /// repository, `CoreError::ICloudPlaceholder` for placeholder paths,
-/// `CoreError::PermissionDenied` for unreadable created files,
-/// `CoreError::Io` for metadata/hash failures, or `CoreError::Db` for
-/// transactional persistence failures.
+/// `CoreError::PermissionDenied` for unreadable files, `CoreError::FileNotFound`
+/// for missing renamed targets, `CoreError::Conflict` for ambiguous or
+/// cross-category rename pairing, `CoreError::Io` for metadata/hash failures,
+/// or `CoreError::Db` for transactional persistence failures.
 pub(crate) fn sync_external_changes(
     repo_path: String,
     events: Vec<ExternalEvent>,
 ) -> CoreResult<SyncResult> {
     let repo = initialized_repo_path(&repo_path)?;
-    let mut plans = Vec::new();
-    let mut max_created_event_id = None;
+    let mut created_plans = Vec::new();
+    let mut renamed_plans = Vec::new();
+    let mut max_sync_event_id = None;
     let mut has_out_of_scope_events = false;
 
     for event in events {
-        if event.kind != ExternalEventKind::Created {
-            has_out_of_scope_events = true;
-            continue;
-        }
-        validate_event_id(event.fs_event_id)?;
-        max_created_event_id = Some(max_event_id(max_created_event_id, event.fs_event_id));
-        if let Some(plan) = plan_created_event(&repo, &event)? {
-            plans.push(plan);
+        match event.kind {
+            ExternalEventKind::Created => {
+                validate_event_id(event.fs_event_id)?;
+                max_sync_event_id = Some(max_event_id(max_sync_event_id, event.fs_event_id));
+                if let Some(plan) = plan_created_event(&repo, &event)? {
+                    created_plans.push(plan);
+                }
+            }
+            ExternalEventKind::Renamed => {
+                validate_event_id(event.fs_event_id)?;
+                max_sync_event_id = Some(max_event_id(max_sync_event_id, event.fs_event_id));
+                if let Some(plan) = plan_renamed_event(&repo, &event)? {
+                    renamed_plans.push(plan);
+                }
+            }
+            ExternalEventKind::Removed | ExternalEventKind::Modified => {
+                has_out_of_scope_events = true;
+            }
         }
     }
 
-    let cursor = cursor_for_batch(max_created_event_id, has_out_of_scope_events);
-    let rows = plans.into_iter().map(|plan| plan.row).collect();
-    let detected_creates = db::apply_external_created_batch(&repo, rows, cursor)?;
+    let cursor = cursor_for_batch(max_sync_event_id, has_out_of_scope_events);
+    let created_rows = created_plans.into_iter().map(|plan| plan.row).collect();
+    let renamed_rows = renamed_plans.into_iter().map(|plan| plan.row).collect();
+    let applied = db::apply_external_sync_batch(&repo, created_rows, renamed_rows, cursor)?;
 
     Ok(SyncResult {
-        detected_creates,
-        detected_renames: 0,
+        detected_creates: applied.detected_creates,
+        detected_renames: applied.detected_renames,
         detected_deletes: 0,
         detected_modifies: 0,
         errors: Vec::new(),
@@ -129,6 +146,61 @@ fn plan_created_event(repo: &Path, event: &ExternalEvent) -> CoreResult<Option<C
             category,
             size_bytes: metadata.len() as i64,
             hash_sha256,
+            detail_json,
+        },
+    }))
+}
+
+fn plan_renamed_event(repo: &Path, event: &ExternalEvent) -> CoreResult<Option<RenamedPlan>> {
+    let Some(resolved) = resolve_event_path(repo, &event.path)? else {
+        return Ok(None);
+    };
+    if has_icloud_placeholder_marker(Path::new(&resolved.relative_path)) {
+        return Err(CoreError::ICloudPlaceholder);
+    }
+
+    let metadata =
+        fs::symlink_metadata(&resolved.absolute_path).map_err(map_renamed_target_metadata_error)?;
+    if metadata.is_dir() {
+        return Ok(None);
+    }
+    if !metadata.is_file() {
+        return Err(CoreError::InvalidPath);
+    }
+
+    let hash_sha256 = sha256_file(&resolved.absolute_path)?;
+    let current_name = file_name_from_relative(&resolved.relative_path)?;
+    let category = category_for_relative_path(&resolved.relative_path);
+
+    if let Some(active_at_target) = db::find_active_file_by_path(repo, &resolved.relative_path)? {
+        if active_at_target.hash_sha256 == hash_sha256 {
+            return Ok(None);
+        }
+        return Err(CoreError::Conflict);
+    }
+
+    let candidates =
+        db::find_external_rename_candidates_by_hash(repo, &hash_sha256, &resolved.relative_path)?;
+    let candidate = match candidates.as_slice() {
+        [candidate] => candidate,
+        _ => return Err(CoreError::Conflict),
+    };
+    if candidate.category != category {
+        return Err(CoreError::Conflict);
+    }
+
+    let detail_json = external_rename_detail(
+        &candidate.path,
+        &resolved.relative_path,
+        &candidate.current_name,
+        &current_name,
+    )?;
+
+    Ok(Some(RenamedPlan {
+        row: ExternalRenamedRow {
+            file_id: candidate.id,
+            path: resolved.relative_path,
+            current_name,
             detail_json,
         },
     }))
@@ -245,6 +317,22 @@ fn external_create_detail(
     .map_err(|_| CoreError::Internal)
 }
 
+fn external_rename_detail(
+    from_path: &str,
+    to_path: &str,
+    from_name: &str,
+    to_name: &str,
+) -> CoreResult<String> {
+    serde_json::to_string(&json!({
+        "from_path": from_path,
+        "to_path": to_path,
+        "from_name": from_name,
+        "to_name": to_name,
+        "by": "external",
+    }))
+    .map_err(|_| CoreError::Internal)
+}
+
 fn initialized_repo_path(repo_path: &str) -> CoreResult<PathBuf> {
     repo_path::validate_initialized_repo_path(repo_path.to_owned())?;
     Ok(PathBuf::from(repo_path))
@@ -262,14 +350,11 @@ fn max_event_id(current: Option<i64>, candidate: i64) -> i64 {
     current.map_or(candidate, |value| value.max(candidate))
 }
 
-fn cursor_for_batch(
-    max_created_event_id: Option<i64>,
-    has_out_of_scope_events: bool,
-) -> Option<i64> {
+fn cursor_for_batch(max_sync_event_id: Option<i64>, has_out_of_scope_events: bool) -> Option<i64> {
     if has_out_of_scope_events {
         None
     } else {
-        max_created_event_id
+        max_sync_event_id
     }
 }
 
@@ -290,6 +375,15 @@ fn sha256_file(path: &Path) -> CoreResult<String> {
 
 fn map_io_error(error: io::Error) -> CoreError {
     match error.kind() {
+        io::ErrorKind::InvalidInput => CoreError::InvalidPath,
+        io::ErrorKind::PermissionDenied => CoreError::PermissionDenied,
+        _ => CoreError::Io,
+    }
+}
+
+fn map_renamed_target_metadata_error(error: io::Error) -> CoreError {
+    match error.kind() {
+        io::ErrorKind::NotFound => CoreError::FileNotFound,
         io::ErrorKind::InvalidInput => CoreError::InvalidPath,
         io::ErrorKind::PermissionDenied => CoreError::PermissionDenied,
         _ => CoreError::Io,
