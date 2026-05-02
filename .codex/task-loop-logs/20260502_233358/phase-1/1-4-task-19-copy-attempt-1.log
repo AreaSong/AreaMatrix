@@ -1,0 +1,39 @@
+一、执行结论
+
+已完成 `1-4/task-19`。
+
+二、执行范围
+
+单任务：`C1-19 sync-external-removed validation`。  
+修改文件：新增 [sync_external_removed_validation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/sync_external_removed_validation.rs:1)。
+
+未触碰 `apps/**`。当前工作区另有进入本任务前已存在的 `.codex/task-loop-runs/20260502_233358/summary.json` 和 `tasks/prompts/_shared/progress.json` 修改，我没有处理或回滚。
+
+三、完成情况
+
+- 只处理 C1-19 validation：通过，新测试只覆盖 `Removed` 事件。
+- Exact Docs 已按 manifest 读取并以文档为 SSOT。
+- 未实现相邻 C1 能力或 UI 页面；还专门覆盖 `Modified` 事件不被本任务声明为完成。
+- 补齐 Rust validation 测试：新增 5 个测试。
+- 覆盖成功路径和关键错误路径：成功软删除、路径仍存在、DB/change_log 失败回滚、坏路径/iCloud placeholder、相邻 modified scope。
+
+四、工程质量
+
+测试使用真实临时 repo、真实 SQLite、真实 `sync_external_changes`/`list_files`/`get_file`/`list_changes` 路径，不是 mock-only 或硬编码通过态。文件安全证据包含：默认列表隐藏 deleted、详情返回 `FileNotFound`、`change_log.deleted` 可追溯、DB 失败回滚 status/log/cursor、无关用户文件保持不变。
+
+五、验证情况
+
+已通过：
+
+```bash
+cd core && cargo fmt --all -- --check
+cd core && cargo clippy --all-targets --all-features -- -D warnings
+cd core && cargo test --workspace sync_external_removed
+cd core && cargo test --workspace
+```
+
+六、风险与后续
+
+剩余风险：未做 macOS FSEvents 真机集成验证；本 task 是 Core validation 范围，未触碰 UI。  
+建议下一个任务：继续按 manifest 推进 `1-4/task-20`。
+

@@ -1,0 +1,72 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`phase-1 / 1-4/task-19`
+- Task：[task-19-c1-19-validation.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-1/1-4-recovery-sync-overview/task-19-c1-19-validation.md:1)
+- Manifest：[phase-1.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-1.md:2770)
+- Core 相关文件：[sync/mod.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/sync/mod.rs:49)、[db/sync.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/db/sync.rs:44)、[area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:73)、[sync_external_removed_validation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/sync_external_removed_validation.rs:155)
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：0
+- 通过项数：10
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 C1-19 validation 范围
+- 结果：通过
+- 证据：Task 绑定单一 Core 能力 C1-19；新增验证只在 `core/tests/sync_external_removed_validation.rs`，未触碰 UI 或相邻能力实现。
+- 涉及文件：[task-19-c1-19-validation.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-1/1-4-recovery-sync-overview/task-19-c1-19-validation.md:12)
+
+- 项目：Exact Docs 作为 SSOT
+- 结果：通过
+- 证据：C1-19 规定 Removed 事件、`detected_deletes`、`files.status=deleted`、`change_log.deleted`、只读确认路径缺失、不删除其他文件；control map 声明 C1-19 由 S1-11/S1-13 消费。
+- 涉及文件：[C1-19-sync-external-removed.md](/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-19-sync-external-removed.md:15)、[mvp-control-map.md](/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:26)
+
+- 项目：Rust/UDL/API 一致
+- 结果：通过
+- 证据：UDL 暴露 `sync_external_changes`、`ExternalEventKind.Removed`、`SyncResult.detected_deletes`；Rust public API 文档明确 C1-19 删除语义和错误边界。
+- 涉及文件：[area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:73)、[api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:484)
+
+- 项目：成功路径和关键错误路径验证
+- 结果：通过
+- 证据：测试覆盖软删除后默认列表隐藏、include_deleted 可查、`get_file` 返回 `FileNotFound`、写 deleted change log、保留无关文件、存在路径报错不改状态、DB 失败回滚、Modified 不越界、坏路径/iCloud marker 不改状态。
+- 涉及文件：[sync_external_removed_validation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/sync_external_removed_validation.rs:155)
+
+- 项目：Expected New Paths / Forbidden Touches
+- 结果：通过
+- 证据：`core/src/**`、`core/area_matrix.udl`、`core/tests/**` 均存在；`git status --short -- apps core/area_matrix.udl core/src core/tests` 仅显示 `?? core/tests/sync_external_removed_validation.rs`，未发现 `apps/**` 修改。
+- 涉及文件：[phase-1.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-1.md:2785)
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。Removed 事件规划在 `plan_removed_event`，事务落库在 `apply_external_sync_batch`，职责清楚。
+- 注释 / rustdoc / 文档同步：通过。public API 文档说明 C1-19 范围、错误和副作用边界。
+- 错误处理与边界处理：通过。路径逃逸、iCloud marker、现存路径、DB 失败、cursor 回滚均有测试证据。
+- 测试与验证覆盖：通过。manifest 三条命令全部通过，并补跑 `cargo test --workspace`。
+- 占位、硬编码、mock-only、一次性实现检查：通过。测试走真实 repo、真实文件系统、真实 SQLite 事务，不是 mock-only。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`cd core && cargo fmt --all -- --check`：通过
+- 已运行：`cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过
+- 已运行：`cd core && cargo test --workspace sync_external_removed`：通过，C1-19 相关 18 个测试通过
+- 已运行：`cd core && cargo test --workspace`：通过，全 workspace 测试通过
+- 未运行：无本任务必需验证缺失；macOS/Xcode 检查不属于本 Core validation task 范围
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。当前实现能证明 C1-19 sync-external-removed 的 validation 目标：外部删除事件只读确认路径缺失，软删除 DB 行，写入 deleted change log，默认列表隐藏，详情返回 `FileNotFound`，错误路径不留下部分状态，且未扩展到未绑定 UI 或相邻能力。
+
+
+VERIFY_RESULT: PASS
