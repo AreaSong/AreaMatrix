@@ -3,10 +3,10 @@
 use std::path::PathBuf;
 
 use crate::{
-    classify, db, note, recovery, repo_init, repo_path, repo_scan, storage, tree, ChangeFilter,
-    ChangeLogEntry, ClassifyResult, CoreError, CoreResult, ExternalEvent, FileEntry, FileFilter,
-    ImportOptions, RecoveryReport, ReindexReport, RepoConfig, RepoInitOptions, RepoPathValidation,
-    ScanSession, SyncResult,
+    classify, db, note, recovery, repo_init, repo_path, repo_scan, storage, sync, tree,
+    ChangeFilter, ChangeLogEntry, ClassifyResult, CoreError, CoreResult, ExternalEvent, FileEntry,
+    FileFilter, ImportOptions, RecoveryReport, ReindexReport, RepoConfig, RepoInitOptions,
+    RepoPathValidation, ScanSession, SyncResult,
 };
 
 fn not_implemented<T>() -> CoreResult<T> {
@@ -463,9 +463,11 @@ pub fn write_note(repo_path: String, file_id: i64, content_md: String) -> CoreRe
 /// The platform layer is responsible for FSEvents startup, debounce,
 /// in-flight filtering, and iCloud placeholder download coordination.
 /// Created sync reads only metadata/hash, inserts an active `FileEntry` with
-/// `storage_mode = StorageMode::Indexed`, `origin = FileOrigin::External`, writes
-/// a queryable change-log entry, increments `SyncResult::detected_creates`, and
-/// must skip `.areamatrix/` plus generated overview output. It must not move,
+/// `storage_mode = StorageMode::Indexed`, `origin = FileOrigin::External`, and
+/// writes a queryable change-log entry with `change_log.action =
+/// external_modified` and `kind = create`. It increments
+/// `SyncResult::detected_creates` and must skip `.areamatrix/` plus generated overview output.
+/// It must not move,
 /// delete, rename, overwrite, copy, or download the external user file.
 /// Cursor persistence is part of the batch success contract.
 /// # Errors
@@ -473,17 +475,17 @@ pub fn write_note(repo_path: String, file_id: i64, content_md: String) -> CoreRe
 /// `CoreError::Io`, or `CoreError::Db` for path, placeholder, metadata/hash, or
 /// transactional persistence failures.
 pub fn sync_external_changes(
-    _repo_path: String,
-    _events: Vec<ExternalEvent>,
+    repo_path: String,
+    events: Vec<ExternalEvent>,
 ) -> CoreResult<SyncResult> {
-    not_implemented()
+    sync::sync_external_changes(repo_path, events)
 }
 
 /// Returns the latest processed filesystem event cursor, or `None` before the first durable batch.
 /// # Errors
 /// Returns `CoreError::RepoNotInitialized` or `CoreError::Db`.
-pub fn get_fs_event_cursor(_repo_path: String) -> CoreResult<Option<i64>> {
-    not_implemented()
+pub fn get_fs_event_cursor(repo_path: String) -> CoreResult<Option<i64>> {
+    sync::get_fs_event_cursor(repo_path)
 }
 
 /// Persists the latest processed filesystem event cursor in `.areamatrix/index.db`.
@@ -491,6 +493,6 @@ pub fn get_fs_event_cursor(_repo_path: String) -> CoreResult<Option<i64>> {
 /// This must not inspect, create, move, delete, rename, overwrite, copy, or download user files.
 /// # Errors
 /// Returns `CoreError::RepoNotInitialized`, `CoreError::InvalidPath`, or `CoreError::Db`.
-pub fn set_fs_event_cursor(_repo_path: String, _last_event_id: i64) -> CoreResult<()> {
-    not_implemented()
+pub fn set_fs_event_cursor(repo_path: String, last_event_id: i64) -> CoreResult<()> {
+    sync::set_fs_event_cursor(repo_path, last_event_id)
 }

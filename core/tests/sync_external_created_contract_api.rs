@@ -74,6 +74,7 @@ fn sync_external_created_contract_api_docs_control_map_and_udl_stay_aligned() {
         "- `ExternalEvent { kind: Created, path, fs_event_id }`",
         "- `SyncResult.detected_creates`",
         "- 新建 `files.origin = External`。",
+        "- 写入 `change_log.external_modified` 或更具体动作。",
         "- 更新 `fs_event_cursor`。",
         "- 读取新增文件 metadata/hash。",
         "- 不移动、不覆盖新增文件。",
@@ -90,10 +91,13 @@ fn sync_external_created_contract_api_docs_control_map_and_udl_stay_aligned() {
 
     for fragment in [
         "| S1-09 | main-list | C1-11, C1-12, C1-15 | `list_files`, `get_file`, `list_tree_json`",
-        "| S1-10 | main-loading | C1-03, C1-15, C1-16 | `get_latest_scan_session`, `resume_scan_session`, `list_tree_json`",
-        "| S1-13 | detail-log | C1-13, C1-17, C1-18, C1-19 | `list_changes`, `sync_external_changes`",
+        "| S1-10 | main-loading | C1-03, C1-15, C1-16 |",
+        "`get_latest_scan_session`, `resume_scan_session`, `list_tree_json`",
+        "| S1-13 | detail-log | C1-13, C1-17, C1-18, C1-19 |",
+        "`list_changes`, `sync_external_changes`",
         "Core 能力若未在本矩阵出现，默认不得提前进入 Stage 1 实现。",
-        "不可 mock：路径校验、init/adopt、导入、重复检测、同名冲突、详情、日志、笔记、Tree、recovery、错误映射。",
+        "不可 mock：路径校验、init/adopt、导入、重复检测、同名冲突",
+        "详情、日志、笔记、Tree、recovery、错误映射",
     ] {
         assert_contains(CONTROL_MAP, fragment);
     }
@@ -137,6 +141,9 @@ fn sync_external_created_contract_api_documents_errors_side_effects_and_scope() 
         "`storage_mode = StorageMode::Indexed`",
         "`origin = FileOrigin::External`",
         "queryable change-log entry",
+        "`change_log.action =",
+        "external_modified`",
+        "`kind = create`",
         "`SyncResult::detected_creates`",
         "skip `.areamatrix/`",
         "generated overview output",

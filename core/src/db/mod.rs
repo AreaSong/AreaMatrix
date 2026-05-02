@@ -18,6 +18,7 @@ mod import;
 mod note;
 mod scan;
 mod staging_recovery;
+mod sync;
 pub(crate) use change_log::list_changes;
 pub(crate) use import::{
     delete_file_row, find_active_file_by_hash, find_active_file_by_path, get_active_file_by_id,
@@ -30,6 +31,7 @@ pub(crate) use scan::*;
 pub(crate) use staging_recovery::{
     delete_staging_file_row, list_protected_staging_paths, list_staging_file_rows, StagingFileRow,
 };
+pub(crate) use sync::*;
 
 const AREA_MATRIX_DIR: &str = ".areamatrix";
 const INDEX_DB_FILE: &str = "index.db";
