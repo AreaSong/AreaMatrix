@@ -1,5 +1,7 @@
 //! Public functions exposed through the UniFFI boundary.
 
+use std::path::PathBuf;
+
 use crate::{
     classify, db, repo_init, repo_path, repo_scan, storage, tree, ChangeFilter, ChangeLogEntry,
     ClassifyResult, CoreError, CoreResult, ExternalEvent, FileEntry, FileFilter, ImportOptions,
@@ -343,8 +345,9 @@ pub fn list_files(repo_path: String, filter: FileFilter) -> CoreResult<Vec<FileE
 /// `CoreError::FileNotFound` when the requested active file row is absent or
 /// not visible to detail consumers, and `CoreError::Db` when SQLite rows cannot
 /// be read.
-pub fn get_file(_repo_path: String, _file_id: i64) -> CoreResult<FileEntry> {
-    not_implemented()
+pub fn get_file(repo_path: String, file_id: i64) -> CoreResult<FileEntry> {
+    let repo = PathBuf::from(repo_path);
+    db::get_active_file_by_id(&repo, file_id)
 }
 
 /// Lists change-log entries.
