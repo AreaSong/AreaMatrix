@@ -1,0 +1,64 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`1-4/task-09`
+- 对应文件路径：
+  - [task-09-c1-17-validation.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-1/1-4-recovery-sync-overview/task-09-c1-17-validation.md:1)
+  - [C1-17-sync-external-created.md](/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-17-sync-external-created.md:1)
+  - [sync/mod.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/sync/mod.rs:40)
+  - [sync.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/db/sync.rs:19)
+  - [sync_external_created_validation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/sync_external_created_validation.rs:89)
+  - [area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:73)
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：0
+- 通过项数：10
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+| 项目 | 结果 | 证据 | 涉及文件 |
+|---|---|---|---|
+| 只处理 C1-17 validation 范围 | 通过 | 当前新增产品相关路径仅为 `core/tests/sync_external_created_validation.rs`；实现对非 Created 事件不计数、不推进 cursor，未实现 renamed/removed/modified | [sync_external_created_validation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/sync_external_created_validation.rs:197), [sync/mod.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/sync/mod.rs:49) |
+| Exact Docs 以 SSOT 验收 | 通过 | C1-17 文档要求 Created 事件、`detected_creates`、`origin=External`、`external_modified`、cursor 成功后推进、跳过 `.areamatrix/` 和 generated overview | [C1-17-sync-external-created.md](/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-17-sync-external-created.md:1) |
+| 不实现相邻 C1 能力或 UI 页面 | 通过 | `apps/**` 无 Git 状态变更；`sync_external_changes` 对非 Created 事件保持 0 结果 | [sync/mod.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/sync/mod.rs:50) |
+| Rust 测试补齐 | 通过 | validation 测试覆盖成功链路、跳过内部路径、绝对路径越界、负 event id、未实现事件类型不推进 cursor | [sync_external_created_validation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/sync_external_created_validation.rs:89) |
+| 成功路径和关键错误路径 | 通过 | 成功路径到 list/tree/detail/log/cursor；错误路径覆盖 InvalidPath、负 cursor、无状态写入 | [sync_external_created_validation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/sync_external_created_validation.rs:165) |
+| API / UDL 对齐 | 通过 | UDL 暴露 `sync_external_changes`、cursor API、`ExternalEvent`、`SyncResult`、`ExternalEventKind::Created` | [area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:73) |
+| DB / change_log / cursor 真实落地 | 通过 | 批量事务插入 `files.origin='external'`、写 `change_log.action='external_modified'`、同事务推进 `fs_event_cursor` | [sync.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/db/sync.rs:19) |
+| Expected New Paths | 通过 | `core/src/**`、`core/area_matrix.udl`、`core/tests/**` 均存在；新增 validation 测试位于允许路径 | [sync_external_created_validation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/sync_external_created_validation.rs:1) |
+| Forbidden Touches | 通过 | `git status --short -- apps core/src core/area_matrix.udl core/tests` 只显示 `?? core/tests/sync_external_created_validation.rs`，无 `apps/**` 变更 | `/Users/as/Ai-Project/project/AreaMatrix/apps/**` |
+| Manifest 验证命令 | 通过 | 三条 manifest 命令全部通过；按 validation-driver 额外运行 `cargo test --workspace` 也通过 | `/Users/as/Ai-Project/project/AreaMatrix/core` |
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。同步逻辑拆在 `core/src/sync/mod.rs`，DB 事务拆在 `core/src/db/sync.rs`，职责清晰。
+- 注释 / rustdoc / 文档同步：通过。公开 API 有 rustdoc，UDL 与 `docs/api/core-api.md` 对齐。
+- 错误处理与边界处理：通过。无生产路径 `unwrap/expect/panic`；InvalidPath、ICloudPlaceholder、PermissionDenied、Io、Db 都有可传播路径。
+- 测试与验证覆盖：通过。新增 validation 测试覆盖成功路径和关键错误路径，已有 implementation/failure 测试覆盖事务回滚、权限、重放、幂等。
+- 占位、硬编码、mock-only、一次性实现检查：通过。测试调用真实 `init_repo`、真实 DB、真实文件系统和真实 Core API。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`cd core && cargo fmt --all -- --check`：通过
+- 已运行：`cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过
+- 已运行：`cd core && cargo test --workspace sync_external_created`：通过，C1-17 相关 contract 3、failure 3、implementation 7、validation 5 全部通过
+- 已运行：`cd core && cargo test --workspace`：通过
+- 失败：无
+- 缺失：无
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS
