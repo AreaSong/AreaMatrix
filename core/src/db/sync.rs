@@ -23,6 +23,11 @@ pub(crate) struct ExternalRenamedRow {
     pub(crate) detail_json: String,
 }
 
+pub(crate) struct ExternalRemovedRow {
+    pub(crate) file_id: i64,
+    pub(crate) detail_json: String,
+}
+
 pub(crate) struct ExternalRenameCandidate {
     pub(crate) id: i64,
     pub(crate) path: String,
@@ -33,18 +38,21 @@ pub(crate) struct ExternalRenameCandidate {
 pub(crate) struct ExternalSyncApplyResult {
     pub(crate) detected_creates: i64,
     pub(crate) detected_renames: i64,
+    pub(crate) detected_deletes: i64,
 }
 
 pub(crate) fn apply_external_sync_batch(
     repo_path: &Path,
     created_rows: Vec<ExternalCreatedRow>,
     renamed_rows: Vec<ExternalRenamedRow>,
+    removed_rows: Vec<ExternalRemovedRow>,
     cursor: Option<i64>,
 ) -> CoreResult<ExternalSyncApplyResult> {
     let mut connection = open_repo_connection(repo_path)?;
     let tx = connection.transaction().map_err(|_| CoreError::Db)?;
     let mut detected_creates = 0_i64;
     let mut detected_renames = 0_i64;
+    let mut detected_deletes = 0_i64;
 
     for row in created_rows {
         if insert_external_file(&tx, row)? {
@@ -55,6 +63,10 @@ pub(crate) fn apply_external_sync_batch(
         update_external_renamed_file(&tx, row)?;
         detected_renames += 1;
     }
+    for row in removed_rows {
+        soft_delete_external_removed_file(&tx, row)?;
+        detected_deletes += 1;
+    }
     if let Some(last_event_id) = cursor {
         set_cursor(&tx, last_event_id)?;
     }
@@ -63,6 +75,7 @@ pub(crate) fn apply_external_sync_batch(
     Ok(ExternalSyncApplyResult {
         detected_creates,
         detected_renames,
+        detected_deletes,
     })
 }
 
@@ -171,6 +184,33 @@ fn update_external_renamed_file(tx: &Transaction<'_>, row: ExternalRenamedRow) -
     tx.execute(
         "INSERT INTO change_log (file_id, action, detail_json, occurred_at)
          VALUES (?1, 'renamed', ?2, strftime('%s', 'now'))",
+        params![row.file_id, row.detail_json],
+    )
+    .map(|_| ())
+    .map_err(|_| CoreError::Db)
+}
+
+fn soft_delete_external_removed_file(
+    tx: &Transaction<'_>,
+    row: ExternalRemovedRow,
+) -> CoreResult<()> {
+    let changed = tx
+        .execute(
+            "UPDATE files
+             SET deleted_at = strftime('%s', 'now'),
+                 updated_at = strftime('%s', 'now'),
+                 status = 'deleted'
+             WHERE id = ?1 AND status = 'active'",
+            params![row.file_id],
+        )
+        .map_err(|_| CoreError::Db)?;
+    if changed != 1 {
+        return Err(CoreError::FileNotFound);
+    }
+
+    tx.execute(
+        "INSERT INTO change_log (file_id, action, detail_json, occurred_at)
+         VALUES (?1, 'deleted', ?2, strftime('%s', 'now'))",
         params![row.file_id, row.detail_json],
     )
     .map(|_| ())

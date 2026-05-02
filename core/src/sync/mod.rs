@@ -10,7 +10,7 @@ use serde_json::json;
 use sha2::{Digest, Sha256};
 
 use crate::{
-    db::{self, ExternalCreatedRow, ExternalRenamedRow},
+    db::{self, ExternalCreatedRow, ExternalRemovedRow, ExternalRenamedRow},
     repo_path, CoreError, CoreResult, ExternalEvent, ExternalEventKind, SyncResult,
 };
 
@@ -25,6 +25,10 @@ struct CreatedPlan {
 
 struct RenamedPlan {
     row: ExternalRenamedRow,
+}
+
+struct RemovedPlan {
+    row: ExternalRemovedRow,
 }
 
 struct ResolvedEventPath {
@@ -49,6 +53,7 @@ pub(crate) fn sync_external_changes(
     let repo = initialized_repo_path(&repo_path)?;
     let mut created_plans = Vec::new();
     let mut renamed_plans = Vec::new();
+    let mut removed_plans = Vec::new();
     let mut max_sync_event_id = None;
     let mut has_out_of_scope_events = false;
 
@@ -68,7 +73,14 @@ pub(crate) fn sync_external_changes(
                     renamed_plans.push(plan);
                 }
             }
-            ExternalEventKind::Removed | ExternalEventKind::Modified => {
+            ExternalEventKind::Removed => {
+                validate_event_id(event.fs_event_id)?;
+                max_sync_event_id = Some(max_event_id(max_sync_event_id, event.fs_event_id));
+                if let Some(plan) = plan_removed_event(&repo, &event)? {
+                    removed_plans.push(plan);
+                }
+            }
+            ExternalEventKind::Modified => {
                 has_out_of_scope_events = true;
             }
         }
@@ -77,12 +89,14 @@ pub(crate) fn sync_external_changes(
     let cursor = cursor_for_batch(max_sync_event_id, has_out_of_scope_events);
     let created_rows = created_plans.into_iter().map(|plan| plan.row).collect();
     let renamed_rows = renamed_plans.into_iter().map(|plan| plan.row).collect();
-    let applied = db::apply_external_sync_batch(&repo, created_rows, renamed_rows, cursor)?;
+    let removed_rows = removed_plans.into_iter().map(|plan| plan.row).collect();
+    let applied =
+        db::apply_external_sync_batch(&repo, created_rows, renamed_rows, removed_rows, cursor)?;
 
     Ok(SyncResult {
         detected_creates: applied.detected_creates,
         detected_renames: applied.detected_renames,
-        detected_deletes: 0,
+        detected_deletes: applied.detected_deletes,
         detected_modifies: 0,
         errors: Vec::new(),
     })
@@ -201,6 +215,28 @@ fn plan_renamed_event(repo: &Path, event: &ExternalEvent) -> CoreResult<Option<R
             file_id: candidate.id,
             path: resolved.relative_path,
             current_name,
+            detail_json,
+        },
+    }))
+}
+
+fn plan_removed_event(repo: &Path, event: &ExternalEvent) -> CoreResult<Option<RemovedPlan>> {
+    let Some(resolved) = resolve_event_path(repo, &event.path)? else {
+        return Ok(None);
+    };
+    if has_icloud_placeholder_marker(Path::new(&resolved.relative_path)) {
+        return Err(CoreError::ICloudPlaceholder);
+    }
+    ensure_path_absent(&resolved.absolute_path)?;
+
+    let Some(file) = db::find_active_file_by_path(repo, &resolved.relative_path)? else {
+        return Ok(None);
+    };
+    let detail_json = external_removed_detail()?;
+
+    Ok(Some(RemovedPlan {
+        row: ExternalRemovedRow {
+            file_id: file.id,
             detail_json,
         },
     }))
@@ -333,6 +369,14 @@ fn external_rename_detail(
     .map_err(|_| CoreError::Internal)
 }
 
+fn external_removed_detail() -> CoreResult<String> {
+    serde_json::to_string(&json!({
+        "hard": false,
+        "by": "external",
+    }))
+    .map_err(|_| CoreError::Internal)
+}
+
 fn initialized_repo_path(repo_path: &str) -> CoreResult<PathBuf> {
     repo_path::validate_initialized_repo_path(repo_path.to_owned())?;
     Ok(PathBuf::from(repo_path))
@@ -371,6 +415,18 @@ fn sha256_file(path: &Path) -> CoreResult<String> {
         hasher.update(&buffer[..bytes_read]);
     }
     Ok(format!("{:x}", hasher.finalize()))
+}
+
+fn ensure_path_absent(path: &Path) -> CoreResult<()> {
+    match fs::symlink_metadata(path) {
+        Ok(_) => Err(CoreError::Io),
+        Err(error) => match error.kind() {
+            io::ErrorKind::NotFound => Ok(()),
+            io::ErrorKind::InvalidInput => Err(CoreError::InvalidPath),
+            io::ErrorKind::PermissionDenied => Err(CoreError::PermissionDenied),
+            _ => Err(CoreError::Io),
+        },
+    }
 }
 
 fn map_io_error(error: io::Error) -> CoreError {
