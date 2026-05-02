@@ -14,6 +14,7 @@ use crate::{
 
 mod change_log;
 mod import;
+mod note;
 mod scan;
 pub(crate) use change_log::list_changes;
 pub(crate) use import::{
@@ -22,6 +23,7 @@ pub(crate) use import::{
     promote_imported_file, promote_replacing_imported_file, rename_active_file, NewImportRow,
     ReplacementImportRow,
 };
+pub(crate) use note::{read_note_content, upsert_note_and_log};
 pub(crate) use scan::*;
 
 const AREA_MATRIX_DIR: &str = ".areamatrix";

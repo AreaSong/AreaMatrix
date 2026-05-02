@@ -11,6 +11,7 @@ pub mod config;
 pub mod db;
 pub mod domain;
 pub mod error;
+mod note;
 pub mod overview;
 mod repo_entries;
 mod repo_init;

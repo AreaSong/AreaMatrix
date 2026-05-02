@@ -3,10 +3,10 @@
 use std::path::PathBuf;
 
 use crate::{
-    classify, db, repo_init, repo_path, repo_scan, storage, tree, ChangeFilter, ChangeLogEntry,
-    ClassifyResult, CoreError, CoreResult, ExternalEvent, FileEntry, FileFilter, ImportOptions,
-    RecoveryReport, ReindexReport, RepoConfig, RepoInitOptions, RepoPathValidation, ScanSession,
-    SyncResult,
+    classify, db, note, repo_init, repo_path, repo_scan, storage, tree, ChangeFilter,
+    ChangeLogEntry, ClassifyResult, CoreError, CoreResult, ExternalEvent, FileEntry, FileFilter,
+    ImportOptions, RecoveryReport, ReindexReport, RepoConfig, RepoInitOptions, RepoPathValidation,
+    ScanSession, SyncResult,
 };
 
 fn not_implemented<T>() -> CoreResult<T> {
@@ -401,8 +401,8 @@ pub fn list_tree_json(repo_path: String, locale: String) -> CoreResult<String> {
 /// `CoreError::FileNotFound` when the active file row is absent,
 /// `CoreError::PermissionDenied` or `CoreError::Io` for blocked sidecar or
 /// metadata reads, and `CoreError::Db` when note metadata cannot be queried.
-pub fn read_note(_repo_path: String, _file_id: i64) -> CoreResult<Option<String>> {
-    not_implemented()
+pub fn read_note(repo_path: String, file_id: i64) -> CoreResult<Option<String>> {
+    note::read_note(repo_path, file_id)
 }
 
 /// Writes markdown note content for one active file entry.
@@ -424,8 +424,8 @@ pub fn read_note(_repo_path: String, _file_id: i64) -> CoreResult<Option<String>
 /// `CoreError::FileNotFound` when the active file row is absent,
 /// `CoreError::PermissionDenied` for blocked writes, `CoreError::Io` for
 /// filesystem failures, and `CoreError::Db` for transactional metadata failures.
-pub fn write_note(_repo_path: String, _file_id: i64, _content_md: String) -> CoreResult<()> {
-    not_implemented()
+pub fn write_note(repo_path: String, file_id: i64, content_md: String) -> CoreResult<()> {
+    note::write_note(repo_path, file_id, content_md)
 }
 
 /// Synchronizes external filesystem changes.
