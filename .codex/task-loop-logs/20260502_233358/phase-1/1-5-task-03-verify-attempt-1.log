@@ -1,0 +1,76 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`1-5/task-03`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-1/1-5-file-actions-repair/task-03-c1-22-failure-recovery.md`
+- 实现范围：`/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/rename.rs`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/db/rename.rs`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/rename_file_failure_recovery.rs`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：11
+- 未覆盖项数：0
+- 通过项数：11
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 C1-22 的 failure-recovery 范围
+- 结果：通过
+- 证据：task 只绑定 C1-22，见 `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-1/1-5-file-actions-repair/task-03-c1-22-failure-recovery.md:10`、`:16`；实现入口为 `rename_file`，见 `/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/rename.rs:11`；UDL 签名存在，见 `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:46`
+- 涉及文件：`core/src/storage/rename.rs`、`core/area_matrix.udl`
+
+- 项目：Exact Docs 作为 SSOT
+- 结果：通过
+- 证据：C1-22 文档定义 repo-owned rename、indexed display-name rename、不覆盖同目录文件和错误码，见 `/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-22-rename-file.md:23`、`:28`、`:37`；Core API 与 Rust public API 对齐，见 `/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:704`、`:721`、`:737` 和 `/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:310`
+- 涉及文件：Exact Docs、`core/src/api.rs`
+
+- 项目：不实现相邻 C1 能力或 UI 页面
+- 结果：通过
+- 证据：`git status --short -- apps` 输出为空；control map 仅声明 S1-33 使用 C1-22 `rename_file`，见 `/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:48`
+- 涉及文件：`apps/**` 未触碰
+
+- 项目：覆盖失败、回滚、重复执行或权限错误路径
+- 结果：通过
+- 证据：repo-owned rename 在 DB/overview 失败时通过 rollback guard 恢复或保持 FS/DB 一致，见 `/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/rename.rs:44`、`:49`、`:93`、`:190`；DB rename / rollback 为事务，见 `/Users/as/Ai-Project/project/AreaMatrix/core/src/db/rename.rs:18`、`:68`；测试覆盖 DB failure retry、indexed DB failure、rollback failure consistency、permission denied，见 `/Users/as/Ai-Project/project/AreaMatrix/core/tests/rename_file_failure_recovery.rs:112`、`:172`、`:200`、`:239`
+- 涉及文件：`core/src/storage/rename.rs`、`core/src/db/rename.rs`、`core/tests/rename_file_failure_recovery.rs`
+
+- 项目：不得删除、覆盖或移动未确认的用户文件
+- 结果：通过
+- 证据：safe move 使用 no-replace 语义，已存在目标返回 `Conflict`，见 `/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/safe_move.rs:137`；Indexed rename 只更新 DB display name，不移动外部源，见 `/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/rename.rs:57`；测试断言外部源、已有同名目标、README 均不被破坏，见 `/Users/as/Ai-Project/project/AreaMatrix/core/tests/rename_file_failure_recovery.rs:187`、`:273` 和 `/Users/as/Ai-Project/project/AreaMatrix/core/tests/rename_file_contract_api.rs:285`
+- 涉及文件：`core/src/storage/safe_move.rs`、`core/src/storage/rename.rs`、`core/tests/**`
+
+- 项目：Expected New Paths / Forbidden Touches
+- 结果：通过
+- 证据：`core/src/**`、`core/area_matrix.udl`、`core/tests/**` 均存在；新增 `core/tests/rename_file_failure_recovery.rs` 已被 `cargo test --workspace rename_file` 执行；`apps/**` 无修改
+- 涉及文件：manifest 允许范围内文件
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。`core/src/storage/rename.rs` 212 行、`core/src/db/rename.rs` 119 行，职责拆分为 repo-owned rename、indexed rename、DB transaction、rollback guard；未发现单文件超 500 行或明显函数失控。
+- 注释 / rustdoc / 文档同步：通过。public API `rename_file` 有 rustdoc 与 `# Errors`，见 `/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:310`、`:338`；UDL、Core API、capability spec 对齐。
+- 错误处理与边界处理：通过。生产路径未发现 `unwrap()` / `expect()` / `panic!()`；IO 映射区分 `Conflict`、`FileNotFound`、`PermissionDenied`，见 `/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/hash.rs:95`。
+- 测试与验证覆盖：通过。新增 failure-recovery 测试使用真实 tempdir、SQLite、文件系统权限和 DB trigger，不是 mock-only。
+- 占位、硬编码、mock-only、一次性实现检查：通过。实现走真实 `rename_file`、DB transaction、filesystem move、overview regeneration 路径；未发现 hardcoded PASS 或空壳。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`cd core && cargo fmt --all -- --check`：通过。
+- 已运行：`cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过。
+- 已运行：`cd core && cargo test --workspace rename_file`：通过；rename 相关 contract、implementation、failure-recovery 测试全部通过。
+- 已运行：`cd core && cargo test --workspace`：通过；全量 workspace 测试与 doc-tests 完成，无失败。
+- 失败：无。
+- 缺失：本地必需验证无缺失；远端 CI 不在本次只读本地验收执行范围内。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。C1-22 rename-file failure-recovery 有真实 Rust/UDL/API/test 证据支撑，未触碰 `apps/**`，未扩展到未绑定 UI 或相邻能力，不能确认的项目为 0。
+
+VERIFY_RESULT: PASS

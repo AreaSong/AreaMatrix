@@ -97,7 +97,16 @@ fn rollback_repo_owned_rename(
     detail: &serde_json::Value,
 ) -> CoreResult<()> {
     guard.rollback()?;
-    db::rollback_renamed_active_file(repo, entry.id, &entry.path, &entry.current_name, detail)
+    match db::rollback_renamed_active_file(repo, entry.id, &entry.path, &entry.current_name, detail)
+    {
+        Ok(()) => Ok(()),
+        Err(error) => {
+            // Keep FS and DB aligned when metadata rollback itself fails after
+            // the physical file has already been restored.
+            guard.restore_committed_state()?;
+            Err(error)
+        }
+    }
 }
 
 fn storage_mode_detail(mode: &StorageMode) -> &'static str {
@@ -183,6 +192,13 @@ impl RenameRollbackGuard {
             move_recoverable_file(&self.current_path, &self.original_path)?;
         }
         self.armed = false;
+        Ok(())
+    }
+
+    fn restore_committed_state(&mut self) -> CoreResult<()> {
+        if self.original_path.exists() && !self.current_path.exists() {
+            move_recoverable_file(&self.original_path, &self.current_path)?;
+        }
         Ok(())
     }
 }
