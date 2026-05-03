@@ -290,6 +290,31 @@ pub struct FileEntry {
     pub updated_at: i64,
 }
 
+/// Read-only preview for a C1-24 category move.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct MoveToCategoryPreview {
+    /// Stable database identifier for the active file.
+    pub file_id: i64,
+    /// Current category slug before confirmation.
+    pub from_category: String,
+    /// Target category slug requested by the caller.
+    pub to_category: String,
+    /// Current entry path before confirmation.
+    pub current_path: String,
+    /// Final path that `move_to_category` will use if the user confirms.
+    pub target_path: String,
+    /// Final file name that `move_to_category` will use if the user confirms.
+    pub target_name: String,
+    /// Storage behavior for this entry.
+    pub storage_mode: StorageMode,
+    /// Whether confirmation only changes metadata and never moves an external file.
+    pub index_only: bool,
+    /// Whether C1-10 conflict-free numbering changed the final file name.
+    pub name_conflict_resolved: bool,
+    /// Whether confirmation will physically move a repo-owned file.
+    pub will_move_file: bool,
+}
+
 /// A user-visible change-log entry.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ChangeLogEntry {

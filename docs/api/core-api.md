@@ -73,6 +73,11 @@ namespace area_matrix {
     FileEntry rename_file(string repo_path, i64 file_id, string new_name);
 
     [Throws=CoreError]
+    MoveToCategoryPreview preview_move_to_category(
+        string repo_path, i64 file_id, string new_category
+    );
+
+    [Throws=CoreError]
     FileEntry move_to_category(string repo_path, i64 file_id, string new_category);
 
     [Throws=CoreError]
@@ -183,6 +188,19 @@ dictionary FileEntry {
     string? source_path;
     i64 imported_at;
     i64 updated_at;
+};
+
+dictionary MoveToCategoryPreview {
+    i64 file_id;
+    string from_category;
+    string to_category;
+    string current_path;
+    string target_path;
+    string target_name;
+    StorageMode storage_mode;
+    boolean index_only;
+    boolean name_conflict_resolved;
+    boolean will_move_file;
 };
 
 dictionary ChangeLogEntry {
@@ -343,6 +361,7 @@ interface CoreError {
 | `delete_file(repo, file_id)` | storage | √ | Io / Db / FileNotFound / PermissionDenied / Internal |
 | `remove_index_entry(repo, file_id)` | storage | √ | Db / FileNotFound / PermissionDenied / Internal |
 | `rename_file(repo, file_id, new_name)` | storage | √ | Io / Db / Config / InvalidPath / Conflict / FileNotFound / PermissionDenied |
+| `preview_move_to_category(repo, file_id, cat)` | storage | √ | Classify / Conflict / FileNotFound / PermissionDenied / Io / Db |
 | `move_to_category(repo, file_id, cat)` | storage | √ | Classify / Conflict / FileNotFound / PermissionDenied / Io / Db |
 | `restore_file(repo, file_id)` | storage | √ | FileNotFound |
 | `list_files(repo, filter)` | query | √ | Db |
@@ -806,6 +825,49 @@ appState.replaceFile(updated)
 - `Db`：SQLite 查询、更新或 change log 写入失败。
 - `Config`：generated overview 输出配置无效。
 
+### `preview_move_to_category(repoPath, fileId, newCategory) throws -> MoveToCategoryPreview`
+
+```swift
+let preview = try await Task.detached {
+    try AreaMatrix.previewMoveToCategory(
+        repoPath: repoPath,
+        fileId: entry.id,
+        newCategory: "finance"
+    )
+}.value
+targetPathLabel = preview.targetPath
+```
+
+`preview_move_to_category` 是 C1-24 的确认前目标路径解析入口。输入与
+`move_to_category` 相同，输出 `MoveToCategoryPreview`，包含原分类、目标分类、
+当前路径、确认后最终路径、最终文件名、storage mode、是否 Index-only、是否因
+C1-10 自动编号改名、确认后是否会移动 repo-owned 文件。
+
+该函数只允许读取 classifier、DB 和文件系统状态。它必须复用
+`move_to_category` 的目标路径解析、同名编号、repo-owned / Indexed 分流和
+错误映射，但不得创建分类目录、移动文件、重命名文件、删除文件、更新
+`files` 或写入 `change_log`。S1-35 的 `Cancel` 和目标分类下拉预检必须使用此
+类无副作用路径，不能用会写入的 `move_to_category` 代替 preview。
+
+副作用边界：
+
+- Copy / Move 等 repo-owned 文件返回确认后将使用的 repository-relative
+  `target_path` 和 `target_name`；目标分类目录尚不存在时也只计算路径，不创建目录。
+- 同名目标按 C1-10 安全编号策略解析，`name_conflict_resolved = true` 时 UI 必须
+  展示最终名称，不得假设原文件名会被保留。
+- Indexed 文件返回原 `path` / `current_name`，`index_only = true` 且
+  `will_move_file = false`；不得移动、重命名或覆盖外部源文件。
+- 目标分类等于当前分类时返回当前路径，`will_move_file = false`，由 UI 禁用确认按钮。
+
+错误：
+
+- `Classify`：目标分类不存在或 classifier 规则不可用。
+- `FileNotFound`：`fileId` 对应的 active row 不存在，或 repo-owned 文件已消失。
+- `Conflict`：目标分类路径不是目录、note sidecar 冲突，或安全目标名无法解析。
+- `PermissionDenied`：文件系统或 metadata inspection 被权限阻断。
+- `Io`：文件系统读取、路径存在性检查或 note sidecar 读取失败。
+- `Db`：SQLite 查询失败。
+
 ### `move_to_category(repoPath, fileId, newCategory) throws -> FileEntry`
 
 ```swift
@@ -1101,6 +1163,7 @@ public actor CoreBridge {
 - `resume_scan_session`（可能继续全扫）
 - `recover_on_startup`（启动时）
 - `list_tree_json`（大库）
+- `preview_move_to_category`（目标路径和同名冲突预检）
 - `move_to_category`（可能移动 repo-owned 文件）
 - `sync_external_changes`（批量事件）
 

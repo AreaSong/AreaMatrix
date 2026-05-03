@@ -5,11 +5,40 @@ use std::{
 
 use serde_json::{json, Value};
 
-use crate::{classify, db, CoreError, CoreResult, FileEntry, StorageMode};
+use crate::{classify, db, CoreError, CoreResult, FileEntry, MoveToCategoryPreview, StorageMode};
 
 use super::{dedup, hash, safe_move::move_recoverable_file};
 
 const AREA_MATRIX_DIR: &str = ".areamatrix";
+
+pub(crate) fn preview_move_to_category(
+    repo_path: String,
+    file_id: i64,
+    new_category: String,
+) -> CoreResult<MoveToCategoryPreview> {
+    let repo = validate_repo_path(&repo_path)?;
+    db::ensure_initialized(&repo)?;
+    classify::ensure_category_exists(&repo, &new_category)?;
+
+    let entry = db::get_active_file_by_id(&repo, file_id)?;
+    if entry.category == new_category {
+        return preview_same_category_entry(&repo, &entry, &new_category);
+    }
+
+    match entry.storage_mode {
+        StorageMode::Moved | StorageMode::Copied => {
+            preview_repo_owned_file(&repo, &entry, &new_category)
+        }
+        StorageMode::Indexed => Ok(preview_for_entry(
+            &entry,
+            &new_category,
+            &entry.path,
+            &entry.current_name,
+            true,
+            false,
+        )),
+    }
+}
 
 pub(crate) fn move_to_category(
     repo_path: String,
@@ -42,31 +71,27 @@ fn move_repo_owned_file(
         return Err(CoreError::invalid_path("invalid path"));
     }
 
-    let current_path = repo_relative_file_path(repo, &entry.path)?;
-    ensure_regular_file(&current_path)?;
     let mut target_directory = CategoryDirectoryGuard::ensure(repo, new_category)?;
-    let final_path =
-        dedup::resolve_rename_path(target_directory.path(), &entry.current_name, &current_path)?;
-    let final_name = filename_from_path(&final_path)?;
-    let final_relative_path = relative_repo_path(repo, &final_path)?;
+    let target = resolve_repo_owned_target(repo, &entry, target_directory.path())?;
     let detail = move_detail(
         &entry,
         new_category,
-        &final_relative_path,
-        &final_name,
+        &target.final_relative_path,
+        &target.final_name,
         false,
     );
-    let note_sidecar = NoteSidecarPlan::from_move(repo, entry.id, &current_path, &final_path)?;
+    let note_sidecar =
+        NoteSidecarPlan::from_move(repo, entry.id, &target.current_path, &target.final_path)?;
 
-    move_recoverable_file(&current_path, &final_path)?;
-    let mut file_guard = MoveRollbackGuard::new(final_path.clone(), current_path);
+    move_recoverable_file(&target.current_path, &target.final_path)?;
+    let mut file_guard = MoveRollbackGuard::new(target.final_path.clone(), target.current_path);
     let mut note_guard = move_note_sidecar(note_sidecar, &mut file_guard)?;
 
     if let Err(error) = db::move_repo_owned_file_to_category(
         repo,
         entry.id,
-        &final_relative_path,
-        &final_name,
+        &target.final_relative_path,
+        &target.final_name,
         new_category,
         &detail,
     ) {
@@ -82,6 +107,29 @@ fn move_repo_owned_file(
     db::get_active_file_by_id(repo, entry.id)
 }
 
+fn preview_repo_owned_file(
+    repo: &Path,
+    entry: &FileEntry,
+    new_category: &str,
+) -> CoreResult<MoveToCategoryPreview> {
+    if !dedup::is_repo_owned(entry) {
+        return Err(CoreError::invalid_path("invalid path"));
+    }
+
+    let target_directory = preview_category_directory(repo, new_category)?;
+    let target = resolve_repo_owned_target(repo, entry, &target_directory)?;
+    NoteSidecarPlan::from_move(repo, entry.id, &target.current_path, &target.final_path)?;
+
+    Ok(preview_for_entry(
+        entry,
+        new_category,
+        &target.final_relative_path,
+        &target.final_name,
+        false,
+        target.final_path != target.current_path,
+    ))
+}
+
 fn move_indexed_file(repo: &Path, entry: FileEntry, new_category: &str) -> CoreResult<FileEntry> {
     db::move_indexed_file_to_category(
         repo,
@@ -92,6 +140,28 @@ fn move_indexed_file(repo: &Path, entry: FileEntry, new_category: &str) -> CoreR
     db::get_active_file_by_id(repo, entry.id)
 }
 
+fn preview_same_category_entry(
+    repo: &Path,
+    entry: &FileEntry,
+    new_category: &str,
+) -> CoreResult<MoveToCategoryPreview> {
+    if matches!(entry.storage_mode, StorageMode::Moved | StorageMode::Copied) {
+        if !dedup::is_repo_owned(entry) {
+            return Err(CoreError::invalid_path("invalid path"));
+        }
+        ensure_regular_file(&repo_relative_file_path(repo, &entry.path)?)?;
+    }
+
+    Ok(preview_for_entry(
+        entry,
+        new_category,
+        &entry.path,
+        &entry.current_name,
+        entry.storage_mode == StorageMode::Indexed,
+        false,
+    ))
+}
+
 fn validate_same_category_entry(repo: &Path, entry: FileEntry) -> CoreResult<FileEntry> {
     if matches!(entry.storage_mode, StorageMode::Moved | StorageMode::Copied) {
         if !dedup::is_repo_owned(&entry) {
@@ -100,6 +170,28 @@ fn validate_same_category_entry(repo: &Path, entry: FileEntry) -> CoreResult<Fil
         ensure_regular_file(&repo_relative_file_path(repo, &entry.path)?)?;
     }
     Ok(entry)
+}
+
+fn preview_for_entry(
+    entry: &FileEntry,
+    new_category: &str,
+    target_path: &str,
+    target_name: &str,
+    index_only: bool,
+    will_move_file: bool,
+) -> MoveToCategoryPreview {
+    MoveToCategoryPreview {
+        file_id: entry.id,
+        from_category: entry.category.clone(),
+        to_category: new_category.to_owned(),
+        current_path: entry.path.clone(),
+        target_path: target_path.to_owned(),
+        target_name: target_name.to_owned(),
+        storage_mode: entry.storage_mode.clone(),
+        index_only,
+        name_conflict_resolved: target_name != entry.current_name,
+        will_move_file,
+    }
 }
 
 fn move_detail(
@@ -211,6 +303,44 @@ fn relative_repo_path(repo: &Path, path: &Path) -> CoreResult<String> {
     path.strip_prefix(repo)
         .map_err(|error| CoreError::invalid_path(error.to_string()))
         .map(|relative| relative.to_string_lossy().into_owned())
+}
+
+struct RepoOwnedMoveTarget {
+    current_path: PathBuf,
+    final_path: PathBuf,
+    final_relative_path: String,
+    final_name: String,
+}
+
+fn resolve_repo_owned_target(
+    repo: &Path,
+    entry: &FileEntry,
+    target_directory: &Path,
+) -> CoreResult<RepoOwnedMoveTarget> {
+    let current_path = repo_relative_file_path(repo, &entry.path)?;
+    ensure_regular_file(&current_path)?;
+    let final_path =
+        dedup::resolve_rename_path(target_directory, &entry.current_name, &current_path)?;
+    let final_name = filename_from_path(&final_path)?;
+    let final_relative_path = relative_repo_path(repo, &final_path)?;
+
+    Ok(RepoOwnedMoveTarget {
+        current_path,
+        final_path,
+        final_relative_path,
+        final_name,
+    })
+}
+
+fn preview_category_directory(repo: &Path, category: &str) -> CoreResult<PathBuf> {
+    let path = repo.join(category);
+    if path_exists(&path)? {
+        if path.is_dir() {
+            return Ok(path);
+        }
+        return Err(CoreError::conflict("path conflict"));
+    }
+    Ok(path)
 }
 
 struct CategoryDirectoryGuard {

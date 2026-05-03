@@ -1,5 +1,6 @@
 use area_matrix_core::{
-    move_to_category, CoreError, CoreResult, FileEntry, FileOrigin, StorageMode,
+    move_to_category, preview_move_to_category, CoreError, CoreResult, FileEntry, FileOrigin,
+    MoveToCategoryPreview, StorageMode,
 };
 
 const CAPABILITY_SPEC: &str =
@@ -20,11 +21,18 @@ fn assert_contains(haystack: &str, needle: &str) {
 #[test]
 fn move_to_category_contract_exports_core_api_and_udl_signature() {
     fn assert_move(_: fn(String, i64, String) -> CoreResult<FileEntry>) {}
+    fn assert_preview(_: fn(String, i64, String) -> CoreResult<MoveToCategoryPreview>) {}
 
     assert_move(move_to_category);
+    assert_preview(preview_move_to_category);
 
     for fragment in [
+        "MoveToCategoryPreview preview_move_to_category(",
         "FileEntry move_to_category(string repo_path, i64 file_id, string new_category);",
+        "dictionary MoveToCategoryPreview",
+        "string target_path;",
+        "boolean name_conflict_resolved;",
+        "boolean will_move_file;",
         "dictionary FileEntry",
         "string path;",
         "string current_name;",
@@ -43,7 +51,9 @@ fn move_to_category_contract_docs_api_udl_and_control_map_stay_aligned() {
         "- S1-35 change-category-sheet",
         "- S1-09 main-list",
         "- S1-12 detail-meta",
+        "`preview_move_to_category(repo_path, file_id, new_category) -> MoveToCategoryPreview`",
         "`move_to_category(repo_path, file_id, new_category) -> FileEntry`",
+        "preview 不移动文件",
         "更新 `files.category`、`files.path`、`updated_at`。",
         "写入 `change_log.moved`。",
         "Indexed 文件只更新分类元数据，不移动源文件。",
@@ -53,7 +63,7 @@ fn move_to_category_contract_docs_api_udl_and_control_map_stay_aligned() {
     }
 
     for fragment in [
-        "| S1-35 | change-category-sheet | C1-24, C1-10 | `move_to_category`",
+        "| S1-35 | change-category-sheet | C1-24, C1-10 | `preview_move_to_category`, `move_to_category`",
         "| C1-22..C1-26 | `1-5/task-01` 到 `1-5/task-25`",
         "Core 能力若未在本矩阵出现，默认不得提前进入 Stage 1 实现。",
     ] {
@@ -61,7 +71,10 @@ fn move_to_category_contract_docs_api_udl_and_control_map_stay_aligned() {
     }
 
     for fragment in [
+        "| `preview_move_to_category(repo, file_id, cat)` | storage | √ | Classify / Conflict / FileNotFound / PermissionDenied / Io / Db |",
         "| `move_to_category(repo, file_id, cat)` | storage | √ | Classify / Conflict / FileNotFound / PermissionDenied / Io / Db |",
+        "`preview_move_to_category` 是 C1-24 的确认前目标路径解析入口",
+        "不得创建分类目录、移动文件、重命名文件、删除文件、更新",
         "`move_to_category` 是 C1-24 的单文件改分类入口",
         "`newCategory` 必须存在于",
         "Core\n不得隐式创建新分类",
@@ -74,6 +87,8 @@ fn move_to_category_contract_docs_api_udl_and_control_map_stay_aligned() {
     }
 
     for fragment in [
+        "Previews the final destination for a C1-24 category move",
+        "must not create category directories",
         "C1-24 owns the user-visible change-category contract",
         "not an arbitrary directory",
         "records `change_log.action = moved`",

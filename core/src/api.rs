@@ -5,8 +5,8 @@ use std::path::PathBuf;
 use crate::{
     classify, db, note, recovery, repo_init, repo_path, repo_scan, storage, sync, tree,
     ChangeFilter, ChangeLogEntry, ClassifyResult, CoreError, CoreResult, ExternalEvent, FileEntry,
-    FileFilter, ImportOptions, RecoveryReport, ReindexReport, RepoConfig, RepoInitOptions,
-    RepoPathValidation, ScanSession, SyncResult,
+    FileFilter, ImportOptions, MoveToCategoryPreview, RecoveryReport, ReindexReport, RepoConfig,
+    RepoInitOptions, RepoPathValidation, ScanSession, SyncResult,
 };
 
 fn not_implemented<T>() -> CoreResult<T> {
@@ -383,6 +383,30 @@ pub fn remove_index_entry(repo_path: String, file_id: i64) -> CoreResult<()> {
 /// `CoreError::Config { reason }` for invalid generated-overview configuration.
 pub fn rename_file(repo_path: String, file_id: i64, new_name: String) -> CoreResult<FileEntry> {
     storage::rename_file(repo_path, file_id, new_name)
+}
+
+/// Previews the final destination for a C1-24 category move.
+///
+/// This read-only entry point exists for S1-35 so the UI can show the exact
+/// target path, C1-10 numbering result, and index-only behavior before the
+/// user confirms. It must not create category directories, move files, rename
+/// files, write `files`, or write `change_log`; confirmation remains owned by
+/// [`move_to_category`].
+///
+/// # Errors
+///
+/// Returns the same preflight errors as [`move_to_category`]: `CoreError::Classify { reason }`
+/// for unknown or unreadable categories, `CoreError::FileNotFound { path }` for missing rows or
+/// repo-owned files, `CoreError::Conflict { path }` when the target category path or safe final
+/// name cannot be resolved, `CoreError::PermissionDenied { path }` for blocked metadata or
+/// filesystem inspection, `CoreError::Io { message }` for filesystem inspection failures, and
+/// `CoreError::Db { message }` for metadata reads.
+pub fn preview_move_to_category(
+    repo_path: String,
+    file_id: i64,
+    new_category: String,
+) -> CoreResult<MoveToCategoryPreview> {
+    storage::preview_move_to_category(repo_path, file_id, new_category)
 }
 
 /// Moves one active file entry to a target category.

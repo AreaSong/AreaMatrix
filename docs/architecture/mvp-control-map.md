@@ -47,7 +47,7 @@
 | S1-32 | error-recovery | C1-16, C1-21 | `recover_on_startup`, error mapping | `files`, `scan_sessions` | staging cleanup | Db, Io, Internal | `2-3/task-28`, `2-3/task-29`, `2-3/task-30` | Real Core |
 | S1-33 | file-rename-sheet | C1-22 | `rename_file` | `files`, `change_log` | safe rename or index-only metadata | InvalidPath, Conflict, PermissionDenied | `2-3/task-32` | Real Core |
 | S1-34 | file-delete-confirm | C1-23 | `delete_file`, `remove_index_entry` | `files`, `change_log` | Trash or index-only removal | FileNotFound, PermissionDenied, Io | `2-3/task-33` | Real Core |
-| S1-35 | change-category-sheet | C1-24, C1-10 | `move_to_category` | `files`, `change_log` | safe move or index-only metadata | Classify, Conflict, PermissionDenied | `2-3/task-34`, `2-3/task-35`, `2-3/task-36` | Real Core |
+| S1-35 | change-category-sheet | C1-24, C1-10 | `preview_move_to_category`, `move_to_category` | `files`, `change_log` | safe preview, safe move or index-only metadata | Classify, Conflict, PermissionDenied | `2-3/task-34`, `2-3/task-35`, `2-3/task-36` | Real Core |
 | S1-36 | icloud-conflict-list | C1-25 | `list_icloud_conflicts` | conflict state, change_log | read conflicted copies only | ICloudPlaceholder, Io | `2-4/task-04` | Real Core |
 | S1-37 | db-repair-confirm | C1-26, C1-16 | `repair_metadata`, `reindex_from_filesystem` | `scan_sessions`, `files` | metadata repair only | Db, PermissionDenied, Io | `2-4/task-05`, `2-4/task-06`, `2-4/task-07` | Real Core |
 

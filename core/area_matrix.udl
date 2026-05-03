@@ -49,6 +49,11 @@ namespace area_matrix {
     FileEntry rename_file(string repo_path, i64 file_id, string new_name);
 
     [Throws=CoreError]
+    MoveToCategoryPreview preview_move_to_category(
+        string repo_path, i64 file_id, string new_category
+    );
+
+    [Throws=CoreError]
     FileEntry move_to_category(string repo_path, i64 file_id, string new_category);
 
     [Throws=CoreError]
@@ -159,6 +164,19 @@ dictionary FileEntry {
     string? source_path;
     i64 imported_at;
     i64 updated_at;
+};
+
+dictionary MoveToCategoryPreview {
+    i64 file_id;
+    string from_category;
+    string to_category;
+    string current_path;
+    string target_path;
+    string target_name;
+    StorageMode storage_mode;
+    boolean index_only;
+    boolean name_conflict_resolved;
+    boolean will_move_file;
 };
 
 dictionary ChangeLogEntry {

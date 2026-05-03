@@ -15,5 +15,5 @@ mod validate;
 
 pub(crate) use delete::{delete_file, remove_index_entry};
 pub(crate) use import::import_file;
-pub(crate) use move_to_category::move_to_category;
+pub(crate) use move_to_category::{move_to_category, preview_move_to_category};
 pub(crate) use rename::rename_file;
