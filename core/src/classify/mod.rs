@@ -101,6 +101,24 @@ pub(crate) fn predict_category(repo_path: String, filename: String) -> CoreResul
     })
 }
 
+pub(crate) fn ensure_category_exists(repo: &Path, category: &str) -> CoreResult<()> {
+    if !is_valid_slug(category) {
+        return Err(CoreError::classify("classification error"));
+    }
+
+    let config =
+        load_classifier_config(repo).map_err(|_| CoreError::classify("classification error"))?;
+    if config
+        .categories
+        .iter()
+        .any(|candidate| candidate.slug == category)
+    {
+        Ok(())
+    } else {
+        Err(CoreError::classify(format!("unknown category: {category}")))
+    }
+}
+
 fn normalize_repo_path(repo_path: &str) -> CoreResult<PathBuf> {
     if repo_path.trim().is_empty() {
         return Err(CoreError::config("configuration error"));

@@ -16,6 +16,7 @@ use crate::{
 mod change_log;
 mod delete;
 mod import;
+mod move_to_category;
 mod note;
 mod overview;
 mod rename;
@@ -31,6 +32,9 @@ pub(crate) use import::{
     insert_active_indexed_import, insert_import_staging, insert_replacing_active_indexed_import,
     promote_imported_file, promote_replacing_imported_file, rollback_replacing_imported_file,
     NewImportRow, ReplacementImportRow,
+};
+pub(crate) use move_to_category::{
+    move_indexed_file_to_category, move_repo_owned_file_to_category,
 };
 pub(crate) use note::{read_note_content, upsert_note_and_log};
 pub(crate) use overview::{

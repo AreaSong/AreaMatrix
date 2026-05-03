@@ -6,6 +6,7 @@ mod destination;
 mod hash;
 mod import;
 mod import_target;
+mod move_to_category;
 mod rename;
 mod replacement_trash;
 mod safe_move;
@@ -14,4 +15,5 @@ mod validate;
 
 pub(crate) use delete::{delete_file, remove_index_entry};
 pub(crate) use import::import_file;
+pub(crate) use move_to_category::move_to_category;
 pub(crate) use rename::rename_file;

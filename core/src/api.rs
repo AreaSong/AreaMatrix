@@ -414,11 +414,11 @@ pub fn rename_file(repo_path: String, file_id: i64, new_name: String) -> CoreRes
 /// filesystem failures, and `CoreError::Db { message }` for metadata persistence
 /// failures.
 pub fn move_to_category(
-    _repo_path: String,
-    _file_id: i64,
-    _new_category: String,
+    repo_path: String,
+    file_id: i64,
+    new_category: String,
 ) -> CoreResult<FileEntry> {
-    not_implemented()
+    storage::move_to_category(repo_path, file_id, new_category)
 }
 
 /// Restores a deleted file entry.
