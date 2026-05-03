@@ -1,0 +1,31 @@
+**一、执行结论**
+已完成 `1-5/task-10`。
+
+**二、执行范围**
+- 单任务：C1-23 `delete-remove-index` integration-verify
+- 修改文件：新增 [delete_remove_index_integration_verify.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/delete_remove_index_integration_verify.rs:1)
+- 未触碰 `apps/**`
+- 现有脏文件 `.codex/task-loop-runs/20260502_233358/summary.json`、`tasks/prompts/_shared/progress.json` 是本次开始前已有状态，我没有改它们。
+
+**三、完成情况**
+- 已交叉核对 C1-23 capability、`mvp-control-map`、`core-api.md`、S1-34 消费页与 Rust/UDL 实现。
+- 新增 4 个 integration verify 测试，覆盖 docs/API/UDL/consumer 对齐、Delete 进系统 Trash、Remove from Index 不触碰源文件、错误路径无副作用。
+- 未扩展到相邻 C1 能力或 UI 页面。
+- 未发现 mock、空壳或硬编码通过态。
+
+**四、工程质量**
+新增测试 459 行，仍低于 500 行文件阈值；只补集成验收证据，不改产品逻辑。测试使用临时 repo、临时 HOME Trash、SQLite integrity/foreign key 检查来证明文件系统与 DB 一致性；未新增依赖。
+
+**五、验证情况**
+已通过：
+- `cd core && cargo fmt --all -- --check`
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`
+- `cd core && cargo test --workspace delete_remove_index`
+- `cd core && cargo test --workspace`
+- `git diff --check`
+
+失败项：无。无法运行项：无。
+
+**六、风险与后续**
+剩余风险：本任务只验证 Core 能力和 S1-34 消费合同，不修改或验收 macOS UI 实现。建议下一个任务按队列进入 `1-5/task-11`。
+

@@ -1,0 +1,62 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`1-5/task-10`
+- 对应文件路径：
+  - `tasks/prompts/phase-1/1-5-file-actions-repair/task-10-c1-23-integration-verify.md`
+  - `core/src/api.rs`
+  - `core/src/storage/delete.rs`
+  - `core/src/db/delete.rs`
+  - `core/area_matrix.udl`
+  - `core/tests/delete_remove_index_*.rs`
+
+三、完成度摘要
+
+- Exact Docs：4/4 已读取并核对
+- Existing Code：2/2 已核对
+- Expected New Paths：3/3 已落地，Missing Expected Paths = 0
+- Forbidden Touches：1/1 未发现违规修改
+- 核对清单：5/5 通过
+- 完成标准：2/2 通过
+- 验证命令：4/4 通过，含 3 条 manifest 命令 + validation-driver 要求的全量 `cargo test --workspace`
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- C1-23 范围：通过。实现仅覆盖 `delete_file` / `remove_index_entry`，未扩展批量删除、Undo、永久删除或 UI 页面；证据见 `C1-23-delete-remove-index.md:11`、`core/src/api.rs:305`、`core/src/storage/delete.rs:18`。
+- 文档 SSOT：通过。C1-23、control map、Core API、S1-34 均声明 `delete_file` 走 Trash、`remove_index_entry` 不删除原文件；证据见 `docs/core/.../C1-23-delete-remove-index.md:45`、`docs/architecture/mvp-control-map.md:49`、`docs/api/core-api.md:683`、`docs/ux/.../S1-34-file-delete-confirm.md:64`。
+- API / UDL：通过。`core/area_matrix.udl:42` 到 `:46` 暴露 `delete_file(repo_path, file_id)` 和 `remove_index_entry(repo_path, file_id)`，无 `hard` 永久删除参数。
+- Rust 实现：通过。`delete_file` 校验 repo-owned active row、归档后送系统 Trash、DB soft delete 并写 `change_log`；`remove_index_entry` 只更新 metadata/change_log，不触碰源文件；证据见 `core/src/storage/delete.rs:18`、`:41`、`core/src/db/delete.rs:10`、`:18`。
+- UX 消费一致性：通过。S1-34 control map 绑定 C1-23 与 `delete_file` / `remove_index_entry`；本任务未要求实现 `apps/**`，且 `git diff --name-only -- apps` 为空。
+- 无 mock / 空壳：通过。测试使用真实临时 repo、SQLite、文件 IO、Trash 替身目录和真实 Core API，不是 mock-only；证据见 `core/tests/delete_remove_index_integration_verify.rs:280`、`:353`、`:406`。
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。API、storage、DB 分层清楚，`DeleteArchiveGuard` 负责失败回滚，DB 更新与 change_log 在事务中提交。
+- 注释 / rustdoc / 文档同步：通过。新增 public API 有 rustdoc 和 `# Errors`，Core API 与 UDL 对齐。
+- 错误处理与边界处理：通过。错误路径覆盖 wrong operation、missing file、DB failure、重复操作；失败不清空 note、不删除无关文件、不触碰外部 source。
+- 测试与验证覆盖：通过。覆盖 Trash、soft delete、remove-index、list/detail 隐藏、change_log、DB rollback、metadata consistency。
+- 占位、硬编码、mock-only、一次性实现检查：通过。未发现通过静态状态或测试专用业务分支伪完成。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- `cd core && cargo fmt --all -- --check`：通过
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过
+- `cd core && cargo test --workspace delete_remove_index`：通过，相关 19 条测试全部通过
+- `cd core && cargo test --workspace`：通过，全 workspace 测试通过
+- 未运行 macOS `xcodebuild`：`apps/**` 是本任务 Forbidden Touches，Swift UI 页面实现不属于本次 Core integration verify 验收范围
+- 未运行远端 CI：当前是本地单任务只读验收；合并前仍需 CI / Git checkpoint 证据
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS
