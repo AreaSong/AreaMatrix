@@ -1,0 +1,72 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`1-5/task-19`
+- Task 文件：[task-19-c1-25-validation.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-1/1-5-file-actions-repair/task-19-c1-25-validation.md:1)
+- 对应 Core 文件：[icloud_conflicts.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/icloud_conflicts.rs:31)、[api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:545)、[domain.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/domain.rs:318)、[area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:75)
+- 对应测试：[list_icloud_conflicts_validation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/list_icloud_conflicts_validation.rs:100)
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：0
+- 通过项数：10
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 C1-25 validation 范围
+  - 结果：通过
+  - 证据：task 绑定 C1-25，核对清单限定 validation；未发现 `apps/**` 变更，`mark_icloud_conflict_resolved` 仅存在于文档延后语义中，未在 core 实现。
+  - 涉及文件：[task](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-1/1-5-file-actions-repair/task-19-c1-25-validation.md:12)、[manifest](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-1.md:3720)
+
+- 项目：Exact Docs 以文档为 SSOT
+  - 结果：通过
+  - 证据：C1-25 要求只读扫描、空态/失败/不确定结构化表达、NeedsReview；API 文档要求不删除/移动/重命名/覆盖/合并、不触发 placeholder 下载、不写 `files`。
+  - 涉及文件：[C1-25](/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-25-list-icloud-conflicts.md:27)、[core-api](/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:1033)、[control-map](/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:51)
+
+- 项目：Rust/UDL/API 合同一致
+  - 结果：通过
+  - 证据：UDL 暴露 `list_icloud_conflicts`、`ICloudConflictPair`、`ICloudConflictStatus`；Rust public API 有 rustdoc 和 `# Errors`，委托真实实现；domain 类型字段覆盖文档输出。
+  - 涉及文件：[area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:185)、[api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:545)、[domain.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/domain.rs:327)
+
+- 项目：补齐 Rust validation 测试
+  - 结果：通过
+  - 证据：新增 validation 测试覆盖成功排序和只读、missing original `NeedsReview`、placeholder error、missing repo IO、permission denied preservation。
+  - 涉及文件：[list_icloud_conflicts_validation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/list_icloud_conflicts_validation.rs:100)
+
+- 项目：成功路径和关键错误路径
+  - 结果：通过
+  - 证据：成功路径断言原始/冲突路径、mtime、状态、DB/change_log/file snapshot 不变；错误路径断言 placeholder、missing repo、permission denied 不破坏状态。
+  - 涉及文件：[validation success](/Users/as/Ai-Project/project/AreaMatrix/core/tests/list_icloud_conflicts_validation.rs:121)、[validation errors](/Users/as/Ai-Project/project/AreaMatrix/core/tests/list_icloud_conflicts_validation.rs:175)
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。`list_icloud_conflicts` 使用独立模块，扫描、候选转换、原始文件推断、placeholder、错误映射拆分清楚；函数长度和嵌套未见 task 范围内失控。
+- 注释 / rustdoc / 文档同步：通过。public API 和 domain 类型有 rustdoc；UDL、API 文档、control map、能力规格与测试互相约束。
+- 错误处理与边界处理：通过。生产路径未发现 `unwrap()` / `expect()` / `panic!()`；placeholder、permission denied、IO 均显式返回 `CoreError`。
+- 测试与验证覆盖：通过。targeted `list_icloud_conflicts` 测试 18 个通过，并额外跑完整 `cargo test --workspace` 通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。实现走真实 filesystem traversal 和 metadata，不接 UI mock，不做静态完成态。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`cd core && cargo fmt --all -- --check`：通过
+- 已运行：`cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过
+- 已运行：`cd core && cargo test --workspace list_icloud_conflicts`：通过，`list_icloud_conflicts_*` 相关测试 18 个通过
+- 已运行：`cd core && cargo test --workspace`：通过
+- 已检查：`git diff --name-only -- apps` 与 `git ls-files --others --exclude-standard -- apps` 均无输出，未触碰 Forbidden Touches。
+- 未运行：macOS UI build/test；本 task 是 Core validation，`apps/**` 为禁止触碰路径。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。C1-25 validation 目标可由文档、Rust/UDL 实现、测试文件和验证命令共同证明；未扩展到未绑定能力。
+
+VERIFY_RESULT: PASS
