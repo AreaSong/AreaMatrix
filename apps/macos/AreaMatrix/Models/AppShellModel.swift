@@ -1,81 +1,6 @@
-import AppKit
 import Combine
 import Foundation
 
-struct AppShellModel: Equatable, Sendable {
-    var statusText = "Onboarding configuration router"
-}
-
-protocol AppSettingsReading {
-    func configuredRepoPath() -> String?
-}
-protocol AppSettingsWriting {
-    func saveConfiguredRepoPath(_ repoPath: String)
-}
-struct UserDefaultsAppSettingsReader: AppSettingsReading {
-    private let defaults: UserDefaults
-    private let repoPathKey: String
-
-    init(defaults: UserDefaults = .standard, repoPathKey: String = "AreaMatrix.repoPath") {
-        self.defaults = defaults
-        self.repoPathKey = repoPathKey
-    }
-
-    func configuredRepoPath() -> String? {
-        guard let value = defaults.string(forKey: repoPathKey) else {
-            return nil
-        }
-
-        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmed.isEmpty ? nil : trimmed
-    }
-}
-
-extension UserDefaultsAppSettingsReader: AppSettingsWriting {
-    func saveConfiguredRepoPath(_ repoPath: String) {
-        defaults.set(repoPath, forKey: repoPathKey)
-    }
-}
-
-protocol WelcomeHelpOpening {
-    func openWelcomeHelp() throws
-}
-protocol RepositoryDirectoryPicking {
-    @MainActor
-    func chooseDirectory() -> URL?
-}
-
-struct LocalWelcomeHelpOpener: WelcomeHelpOpening {
-    func openWelcomeHelp() throws {
-        let docsURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
-            .appendingPathComponent("docs/product/prd.md")
-
-        guard FileManager.default.fileExists(atPath: docsURL.path) else {
-            throw WelcomeHelpError.helpDocumentUnavailable
-        }
-
-        NSWorkspace.shared.open(docsURL)
-    }
-}
-
-struct NSOpenPanelRepositoryDirectoryPicker: RepositoryDirectoryPicking {
-    @MainActor
-    func chooseDirectory() -> URL? {
-        let panel = NSOpenPanel()
-        panel.canChooseFiles = false
-        panel.canChooseDirectories = true
-        panel.allowsMultipleSelection = false
-        panel.canCreateDirectories = false
-        panel.prompt = "Choose"
-        panel.message = "Choose a repository folder."
-
-        return panel.runModal() == .OK ? panel.url : nil
-    }
-}
-
-enum WelcomeHelpError: Error, Equatable, Sendable {
-    case helpDocumentUnavailable
-}
 final class OnboardingModel: ObservableObject {
     enum Route: Equatable, Sendable {
         case loadingConfiguration
@@ -143,6 +68,7 @@ final class OnboardingModel: ObservableObject {
     private let settingsWriter: any AppSettingsWriting
     private let configLoader: any CoreConfigurationLoading
     private let pathValidator: any CoreRepositoryPathValidating
+    private let repositoryInitializer: any CoreEmptyRepositoryInitializing
     private let existingRepositoryMetadataReader: any ExistingRepositoryMetadataReading
     private let scanSessionReader: any CoreScanSessionReading
     private let errorMapper: any CoreErrorMapping
@@ -156,6 +82,7 @@ final class OnboardingModel: ObservableObject {
         settingsWriter: any AppSettingsWriting = UserDefaultsAppSettingsReader(),
         configLoader: any CoreConfigurationLoading = CoreBridge(),
         pathValidator: any CoreRepositoryPathValidating = CoreBridge(),
+        repositoryInitializer: any CoreEmptyRepositoryInitializing = CoreBridge(),
         existingRepositoryMetadataReader: any ExistingRepositoryMetadataReading =
             SQLiteExistingRepositoryMetadataReader(),
         scanSessionReader: any CoreScanSessionReading = CoreBridge(),
@@ -167,6 +94,7 @@ final class OnboardingModel: ObservableObject {
         self.settingsWriter = settingsWriter
         self.configLoader = configLoader
         self.pathValidator = pathValidator
+        self.repositoryInitializer = repositoryInitializer
         self.existingRepositoryMetadataReader = existingRepositoryMetadataReader
         self.scanSessionReader = scanSessionReader
         self.errorMapper = errorMapper
@@ -308,7 +236,40 @@ final class OnboardingModel: ObservableObject {
         route = .mainLoading(validation.repoPath)
     }
 
-    var shouldConfirmSetupExit: Bool { route == .validatePath }
+    @MainActor
+    func createEmptyRepositoryFromConfirmInit() async {
+        guard case .confirmRepositoryInitialization(let draft) = route, draft.mode == .createEmpty else {
+            return
+        }
+
+        let repoPath = draft.validation.repoPath
+        route = .mainLoading(repoPath)
+
+        do {
+            let latestValidation = try await pathValidator.validateRepoPath(repoPath: repoPath)
+            guard latestValidation.recommendedMode == .createEmpty,
+                  latestValidation.isEmpty,
+                  !latestValidation.isInitialized
+            else {
+                repositoryPathValidation = latestValidation
+                repositoryPathError = "路径状态已变化，请返回重新校验"
+                route = .validatePath
+                return
+            }
+
+            try await repositoryInitializer.initializeEmptyRepository(repoPath: repoPath)
+            settingsWriter.saveConfiguredRepoPath(repoPath)
+            route = .mainLoading(repoPath)
+        } catch {
+            await routeInitializationFailure(error, repoPath: repoPath)
+        }
+    }
+
+    var shouldConfirmSetupExit: Bool {
+        if route == .validatePath { return true }
+        if case .confirmRepositoryInitialization = route { return true }
+        return false
+    }
 
     @MainActor
     func requestSetupQuit() {
@@ -447,6 +408,7 @@ final class OnboardingModel: ObservableObject {
     private func shouldLoadLatestScanSession(for validation: RepoPathValidationSnapshot) -> Bool {
         validation.hasUnfinishedScanSession || validation.issues.contains(.unfinishedScanSession)
     }
+
     private func localRepositoryPathError(for value: String) -> String? {
         let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
 
@@ -495,5 +457,19 @@ final class OnboardingModel: ObservableObject {
         default:
             route = .validatePath
         }
+    }
+
+    @MainActor
+    private func routeInitializationFailure(
+        _ error: Error,
+        repoPath: String
+    ) async {
+        guard let coreError = error as? CoreError else {
+            route = .mainRepoError(repoPath, nil)
+            return
+        }
+
+        let mapping = await errorMapper.mapCoreError(coreError)
+        route = .mainRepoError(repoPath, mapping)
     }
 }

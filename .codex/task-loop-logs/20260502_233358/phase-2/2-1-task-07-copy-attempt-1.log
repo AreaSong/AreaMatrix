@@ -1,0 +1,46 @@
+一、执行结论
+
+已完成 `2-1/task-07: S1-04 + C1-02 init-empty-repo`。
+
+二、执行范围
+
+本次只改了 `apps/macos/AreaMatrix/**` 内文件：
+
+- [AreaMatrixApp.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/App/AreaMatrixApp.swift)
+- [AreaMatrixAppSmokeTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/App/AreaMatrixAppSmokeTests.swift)
+- [CoreBridge.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift)
+- [AppShellModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/AppShellModel.swift)
+- [MainWindow.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/MainWindow.swift)
+
+工作区原本已有 `.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json` 脏状态，本次未作为任务改动处理。
+
+三、完成情况
+
+核对清单全部完成：只接了 `S1-04` 中 `C1-02 CreateEmpty`；读取并对齐了 UX 页面、control map、Core API、C1-02 spec；生产路径通过 `CoreBridge.initializeEmptyRepository` 调真实 `initRepo`；没有实现相邻页面。
+
+完成标准全部满足：`Create Repository` 可触发真实 Core 初始化，成功后保存 repo path 并进入 `mainLoading`；生产代码没有 mock/fixture/静态成功态；`Adopt Folder`/`C1-03` 未接入，仍留给后续 task。
+
+Forbidden Touches：未触碰 `core/src/**`，也未修改 `core/area_matrix.udl` 或 Xcode project。
+
+四、工程质量
+
+代码结构保持在现有目标文件内，所有改动文件行数均不超过 500。新增错误路径会在 init 失败时通过 `CoreErrorMapping` 映射到 repo error route；点击前会重新校验路径，若目录状态变化则退回校验页。没有新增依赖，没有 `try!`、强制解包或 mock-only wiring。
+
+五、验证情况
+
+已运行并通过：
+
+- `xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+- `bash scripts/check-macos-tests.sh`：标准 `xcodebuild test` 被本地 sandbox 的 `testmanagerd` 阻断，脚本 fallback 到 `xcrun xctest`，39/39 tests passed
+- `git diff --check`
+
+未运行：
+
+- `swiftformat --lint` / `swiftlint --strict`：当前环境未安装对应可执行文件，`command -v` 无输出。
+
+六、风险与后续
+
+剩余风险：未做真实 UI 点击截图/手工冒烟；`C1-03 AdoptExisting` 是同页后续能力，本次按 task 边界没有接入。
+
+建议下一个任务：继续 `2-1/task-08` / `2-1/task-09`，把 `S1-04` 的 `C1-03` 接管目录能力补齐后再做页面级 integration verify。
+

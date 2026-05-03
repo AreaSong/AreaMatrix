@@ -12,6 +12,10 @@ protocol CoreRepositoryPathValidating: Sendable {
     func validateRepoPath(repoPath: String) async throws -> RepoPathValidationSnapshot
 }
 
+protocol CoreEmptyRepositoryInitializing: Sendable {
+    func initializeEmptyRepository(repoPath: String) async throws
+}
+
 protocol CoreScanSessionReading: Sendable {
     func latestScanSession(repoPath: String) async throws -> ScanSessionSnapshot?
 }
@@ -325,6 +329,14 @@ actor CoreBridge {
         )
     }
 
+    func initializeEmptyRepository(repoPath: String) async throws {
+        try initRepo(repoPath: repoPath, options: RepoInitOptions(
+            mode: .createEmpty,
+            createDefaultCategories: true,
+            overviewOutput: .generatedOnly
+        ))
+    }
+
     func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
         CoreErrorMappingSnapshot(coreMapping: mapCoreErrorFromCore(error))
     }
@@ -413,6 +425,7 @@ actor CoreBridge {
 extension CoreBridge:
     CoreConfigurationLoading,
     CoreConfigurationUpdating,
+    CoreEmptyRepositoryInitializing,
     CoreErrorMapping,
     CoreRepositoryPathValidating,
     CoreScanSessionReading {}

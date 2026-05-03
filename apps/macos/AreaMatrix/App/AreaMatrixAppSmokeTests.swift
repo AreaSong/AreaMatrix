@@ -12,25 +12,29 @@ final class AreaMatrixAppSmokeTests: XCTestCase {
 
 final class AreaMatrixAdoptExistingTests: XCTestCase {
     @MainActor
-    func testCreateEmptyContinueShowsConfirmInitializationHandoff() async {
-        let validation = RepoPathValidationSnapshot.fixture(repoPath: "/tmp/empty-repo")
+    func testCreateEmptyConfirmInitializesRepositoryThroughCoreBridge() async throws {
+        let repoURL = try makeTemporaryRepositoryURL()
+        defer { try? FileManager.default.removeItem(at: repoURL) }
+        let validation = RepoPathValidationSnapshot.fixture(repoPath: repoURL.path)
+        let writer = RecordingSettingsWriter()
         let model = OnboardingModel(
             settingsReader: StaticSettingsReader(repoPath: nil),
+            settingsWriter: writer,
             configLoader: RecordingConfigLoader(result: .success(.fixture(repoPath: "/tmp/repo"))),
             pathValidator: RecordingPathValidator(result: .success(validation)),
             helpOpener: NoopWelcomeHelpOpener()
         )
 
-        model.updateRepositoryPath("/tmp/empty-repo")
+        model.updateRepositoryPath(repoURL.path)
         await model.continueFromChoosePath()
         model.continueFromValidatePath()
+        await model.createEmptyRepositoryFromConfirmInit()
 
-        XCTAssertEqual(model.validatePathAction, .continueRequested(validation))
-        XCTAssertEqual(model.route, .confirmRepositoryInitialization(RepositoryInitializationDraft(
-            validation: validation,
-            mode: .createEmpty,
-            scanSession: nil
-        )))
+        let indexDatabasePath = repoURL.appendingPathComponent(".areamatrix/index.db").path
+        XCTAssertTrue(FileManager.default.fileExists(atPath: indexDatabasePath))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: repoURL.appendingPathComponent("README.md").path))
+        XCTAssertEqual(writer.savedRepoPaths, [repoURL.path])
+        XCTAssertEqual(model.route, .mainLoading(repoURL.path))
     }
 
     @MainActor
