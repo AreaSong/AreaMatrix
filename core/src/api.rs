@@ -3,11 +3,11 @@
 use std::path::PathBuf;
 
 use crate::{
-    classify, db, icloud_conflicts, note, recovery, repo_init, repo_path, repo_scan, storage, sync,
-    tree, ChangeFilter, ChangeLogEntry, ClassifyResult, CoreError, CoreResult, DiagnosticsSnapshot,
-    ExternalEvent, FileEntry, FileFilter, ICloudConflictPair, ImportOptions, MoveToCategoryPreview,
-    RecoveryReport, ReindexReport, RepairOptions, RepairReport, RepoConfig, RepoInitOptions,
-    RepoPathValidation, ScanSession, SyncResult,
+    classify, db, icloud_conflicts, note, recovery, repair, repo_init, repo_path, repo_scan,
+    storage, sync, tree, ChangeFilter, ChangeLogEntry, ClassifyResult, CoreError, CoreResult,
+    DiagnosticsSnapshot, ExternalEvent, FileEntry, FileFilter, ICloudConflictPair, ImportOptions,
+    MoveToCategoryPreview, RecoveryReport, ReindexReport, RepairOptions, RepairReport, RepoConfig,
+    RepoInitOptions, RepoPathValidation, ScanSession, SyncResult,
 };
 
 fn not_implemented<T>() -> CoreResult<T> {
@@ -187,8 +187,8 @@ pub fn recover_on_startup(repo_path: String) -> CoreResult<RecoveryReport> {
 /// content or metadata cannot be inspected, `CoreError::Io { message }` for
 /// filesystem traversal failures, and `CoreError::Internal { message }` for
 /// invariant failures that should be surfaced through C1-21 error mapping.
-pub fn reindex_from_filesystem(_repo_path: String) -> CoreResult<ReindexReport> {
-    not_implemented()
+pub fn reindex_from_filesystem(repo_path: String) -> CoreResult<ReindexReport> {
+    repair::reindex_from_filesystem(repo_path)
 }
 
 /// Creates a diagnostics snapshot for C1-26 metadata repair.
@@ -207,8 +207,8 @@ pub fn reindex_from_filesystem(_repo_path: String) -> CoreResult<ReindexReport> 
 /// `CoreError::PermissionDenied { path }` when diagnostics cannot be written,
 /// `CoreError::Io { message }` for filesystem failures, and
 /// `CoreError::Internal { message }` for invalid repair invariants.
-pub fn create_diagnostics_snapshot(_repo_path: String) -> CoreResult<DiagnosticsSnapshot> {
-    not_implemented()
+pub fn create_diagnostics_snapshot(repo_path: String) -> CoreResult<DiagnosticsSnapshot> {
+    repair::create_diagnostics_snapshot(repo_path)
 }
 
 /// Repairs AreaMatrix metadata without mutating user files.
@@ -229,8 +229,8 @@ pub fn create_diagnostics_snapshot(_repo_path: String) -> CoreResult<Diagnostics
 /// failures, `CoreError::PermissionDenied { path }` for blocked metadata access,
 /// `CoreError::Io { message }` for repository traversal or snapshot failures,
 /// and `CoreError::Internal { message }` for inconsistent repair state.
-pub fn repair_metadata(_repo_path: String, _options: RepairOptions) -> CoreResult<RepairReport> {
-    not_implemented()
+pub fn repair_metadata(repo_path: String, options: RepairOptions) -> CoreResult<RepairReport> {
+    repair::repair_metadata(repo_path, options)
 }
 
 /// Returns the latest adopt or reindex scan session if one exists.

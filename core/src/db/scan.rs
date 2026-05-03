@@ -1,6 +1,7 @@
 use std::path::Path;
 
 use rusqlite::{params, types::Type, OptionalExtension, Row};
+use serde_json::json;
 
 use crate::{
     CoreError, CoreResult, FileOrigin, ScanSession, ScanSessionKind, ScanSessionStatus, StorageMode,
@@ -107,7 +108,7 @@ pub(crate) fn upsert_adopted_file(
         .map_err(|error| CoreError::db(error.to_string()))?;
     let existing = existing_file_for_path(&tx, &input.path)?;
     let change = match existing {
-        Some(existing) if existing.matches(input) => ScanFileChange::Skipped,
+        Some(existing) if existing.matches(input, FileOrigin::Adopted) => ScanFileChange::Skipped,
         Some(existing) => {
             tx.execute(
                 "UPDATE files
@@ -161,6 +162,75 @@ pub(crate) fn upsert_adopted_file(
                 params![file_id, r#"{"mode":"indexed","source":"adopt_existing"}"#],
             )
             .map_err(|error| CoreError::db(error.to_string()))?;
+            ScanFileChange::Inserted
+        }
+    };
+    tx.commit()
+        .map_err(|error| CoreError::db(error.to_string()))?;
+    Ok(change)
+}
+
+pub(crate) fn upsert_reindexed_file(
+    repo_path: &Path,
+    input: &FileIndexInput,
+) -> CoreResult<ScanFileChange> {
+    let mut connection = open_repo_connection(repo_path)?;
+    let tx = connection
+        .transaction()
+        .map_err(|error| CoreError::db(error.to_string()))?;
+    let existing = existing_file_for_path(&tx, &input.path)?;
+    let change = match existing {
+        Some(existing) if existing.matches(input, FileOrigin::External) => ScanFileChange::Skipped,
+        Some(existing) => {
+            tx.execute(
+                "UPDATE files
+                 SET original_name = ?2,
+                     current_name = ?3,
+                     category = ?4,
+                     size_bytes = ?5,
+                     hash_sha256 = ?6,
+                     storage_mode = 'indexed',
+                     origin = 'external',
+                     source_path = NULL,
+                     deleted_at = NULL,
+                     updated_at = strftime('%s', 'now'),
+                     status = 'active'
+                 WHERE id = ?1",
+                params![
+                    existing.id,
+                    input.original_name,
+                    input.current_name,
+                    input.category,
+                    input.size_bytes,
+                    input.hash_sha256,
+                ],
+            )
+            .map_err(|error| CoreError::db(error.to_string()))?;
+            insert_reindex_change(&tx, existing.id, input)?;
+            ScanFileChange::Updated
+        }
+        None => {
+            tx.execute(
+                "INSERT INTO files (
+                    path, original_name, current_name, category, size_bytes,
+                    hash_sha256, storage_mode, origin, source_path,
+                    imported_at, updated_at, status
+                 ) VALUES (
+                    ?1, ?2, ?3, ?4, ?5, ?6, 'indexed', 'external', NULL,
+                    strftime('%s', 'now'), strftime('%s', 'now'), 'active'
+                 )",
+                params![
+                    input.path,
+                    input.original_name,
+                    input.current_name,
+                    input.category,
+                    input.size_bytes,
+                    input.hash_sha256,
+                ],
+            )
+            .map_err(|error| CoreError::db(error.to_string()))?;
+            let file_id = tx.last_insert_rowid();
+            insert_reindex_change(&tx, file_id, input)?;
             ScanFileChange::Inserted
         }
     };
@@ -249,16 +319,38 @@ struct ExistingFile {
 }
 
 impl ExistingFile {
-    fn matches(&self, input: &FileIndexInput) -> bool {
+    fn matches(&self, input: &FileIndexInput, origin: FileOrigin) -> bool {
         self.original_name == input.original_name
             && self.current_name == input.current_name
             && self.category == input.category
             && self.size_bytes == input.size_bytes
             && self.hash_sha256 == input.hash_sha256
             && self.storage_mode == StorageMode::Indexed
-            && self.origin == FileOrigin::Adopted
+            && self.origin == origin
             && self.status == "active"
     }
+}
+
+fn insert_reindex_change(
+    tx: &rusqlite::Transaction<'_>,
+    file_id: i64,
+    input: &FileIndexInput,
+) -> CoreResult<()> {
+    let detail_json = json!({
+        "kind": "reindex",
+        "path": input.path,
+        "category": input.category,
+        "hash_after": input.hash_sha256,
+        "size_bytes": input.size_bytes,
+    })
+    .to_string();
+    tx.execute(
+        "INSERT INTO change_log (file_id, action, detail_json, occurred_at)
+         VALUES (?1, 'external_modified', ?2, strftime('%s', 'now'))",
+        params![file_id, detail_json],
+    )
+    .map(|_| ())
+    .map_err(|error| CoreError::db(error.to_string()))
 }
 
 fn existing_file_for_path(

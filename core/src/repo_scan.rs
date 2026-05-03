@@ -40,6 +40,14 @@ pub(crate) fn start_adopt_scan(repo_path: &Path) -> CoreResult<()> {
     run_adopt_scan(repo_path, scan_session_id, None)
 }
 
+pub(crate) fn reindex_from_filesystem(repo_path: String) -> CoreResult<ReindexReport> {
+    let repo = initialized_repo_path(&repo_path)?;
+    let scan_session_id = db::create_scan_session(&repo, ScanSessionKind::Reindex)?;
+    run_filesystem_scan(&repo, scan_session_id, None, ScanMode::Reindex)?;
+    let finished = db::scan_session_by_id(&repo, scan_session_id)?;
+    Ok(report_from_session(&finished))
+}
+
 pub(crate) fn get_latest_scan_session(repo_path: String) -> CoreResult<Option<ScanSession>> {
     let repo = initialized_repo_path(&repo_path)?;
     db::latest_scan_session(&repo)
@@ -54,12 +62,15 @@ pub(crate) fn resume_scan_session(
     if session.status == ScanSessionStatus::Completed {
         return Ok(empty_report(scan_session_id));
     }
-    if session.kind != ScanSessionKind::Adopt {
-        return Err(CoreError::config("configuration error"));
-    }
+    let scan_mode = ScanMode::from_kind(&session.kind);
 
     db::mark_scan_session_running_for_resume(&repo, scan_session_id)?;
-    run_adopt_scan(&repo, scan_session_id, session.last_path.as_deref())?;
+    run_filesystem_scan(
+        &repo,
+        scan_session_id,
+        session.last_path.as_deref(),
+        scan_mode,
+    )?;
     let finished = db::scan_session_by_id(&repo, scan_session_id)?;
     Ok(report_from_session(&finished))
 }
@@ -69,7 +80,16 @@ fn run_adopt_scan(
     scan_session_id: i64,
     resume_after: Option<&str>,
 ) -> CoreResult<()> {
-    let plan = match collect_adopt_files(repo_path, resume_after) {
+    run_filesystem_scan(repo_path, scan_session_id, resume_after, ScanMode::Adopt)
+}
+
+fn run_filesystem_scan(
+    repo_path: &Path,
+    scan_session_id: i64,
+    resume_after: Option<&str>,
+    mode: ScanMode,
+) -> CoreResult<()> {
+    let plan = match collect_scan_files(repo_path, resume_after) {
         Ok(plan) => plan,
         Err(error) => {
             return finish_failed_scan(repo_path, scan_session_id, "scan setup", error);
@@ -86,7 +106,7 @@ fn run_adopt_scan(
                 return finish_failed_scan(repo_path, scan_session_id, &file.relative_path, error);
             }
         };
-        let change = match db::upsert_adopted_file(repo_path, &index_input) {
+        let change = match upsert_scan_file(repo_path, &index_input, mode) {
             Ok(change) => change,
             Err(error) => {
                 return finish_failed_scan(repo_path, scan_session_id, &index_input.path, error);
@@ -103,7 +123,7 @@ fn run_adopt_scan(
     )
 }
 
-fn collect_adopt_files(repo_path: &Path, resume_after: Option<&str>) -> CoreResult<ScanPlan> {
+fn collect_scan_files(repo_path: &Path, resume_after: Option<&str>) -> CoreResult<ScanPlan> {
     let matcher = IgnoreMatcher::load(repo_path)?;
     let mut files = Vec::new();
     let mut skipped = 0;
@@ -121,6 +141,12 @@ fn collect_adopt_files(repo_path: &Path, resume_after: Option<&str>) -> CoreResu
         }
 
         let relative_path = relative_repo_path(repo_path, path)?;
+        if has_icloud_placeholder_marker(&relative_path) {
+            if should_process_after_resume(&relative_path, resume_after) {
+                skipped += 1;
+            }
+            continue;
+        }
         if matcher.is_ignored(&relative_path, entry.file_type().is_dir()) {
             if should_process_after_resume(&relative_path, resume_after) {
                 skipped += 1;
@@ -145,6 +171,17 @@ fn collect_adopt_files(repo_path: &Path, resume_after: Option<&str>) -> CoreResu
 
     files.sort_by(|left, right| left.relative_path.cmp(&right.relative_path));
     Ok(ScanPlan { files, skipped })
+}
+
+fn upsert_scan_file(
+    repo_path: &Path,
+    input: &FileIndexInput,
+    mode: ScanMode,
+) -> CoreResult<ScanFileChange> {
+    match mode {
+        ScanMode::Adopt => db::upsert_adopted_file(repo_path, input),
+        ScanMode::Reindex => db::upsert_reindexed_file(repo_path, input),
+    }
 }
 
 fn finish_failed_scan(
@@ -354,4 +391,25 @@ fn file_name_from_relative(relative_path: &str) -> Option<&str> {
         .rsplit('/')
         .next()
         .filter(|name| !name.is_empty())
+}
+
+fn has_icloud_placeholder_marker(relative_path: &str) -> bool {
+    relative_path
+        .split('/')
+        .any(|component| component.to_ascii_lowercase().ends_with(".icloud"))
+}
+
+#[derive(Clone, Copy)]
+enum ScanMode {
+    Adopt,
+    Reindex,
+}
+
+impl ScanMode {
+    fn from_kind(kind: &ScanSessionKind) -> Self {
+        match kind {
+            ScanSessionKind::Adopt => Self::Adopt,
+            ScanSessionKind::Reindex => Self::Reindex,
+        }
+    }
 }

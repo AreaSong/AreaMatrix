@@ -1,0 +1,41 @@
+一、执行结论：已完成。
+
+二、执行范围：单任务 `1-5/task-22`。修改范围仅限 `core/**`，未触碰 `apps/**`。  
+修改文件：
+
+- [api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:190)：接通 C1-26 三个公开 API。
+- [repair.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/repair.rs:1)：新增诊断快照、metadata repair 编排。
+- [repo_scan.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/repo_scan.rs:43)：新增 reindex scan session 路径，并复用扫描进度。
+- [scan.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/db/scan.rs:173)：新增 reindex upsert，写入 `files` 和 `change_log`。
+- [lib.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/lib.rs:18)：注册 repair 模块。
+- [repair_reindex_metadata_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/repair_reindex_metadata_implementation.rs:33)：新增实现级测试。
+
+三、完成情况：
+
+- C1-26 implementation 范围：完成。
+- Exact Docs 已按 SSOT 对齐；`core/area_matrix.udl` 已有合同，无需修改。
+- 未实现相邻 C1 能力或 UI 页面。
+- 最小真实路径已打通：`reindex_from_filesystem`、`create_diagnostics_snapshot`、`repair_metadata`。
+- Forbidden Touches：未触碰，`apps/**` diff 为空。
+
+四、工程质量：
+
+- 代码结构按 `api -> repair/repo_scan -> db` 分层，Core 层无 macOS 依赖。
+- 诊断快照只写 `.areamatrix/diagnostics/`，不会移动、重命名、删除、覆盖用户文件或 `README.md`。
+- `repair_metadata` 会先保留诊断快照，再做 DB health check 和可选 full rescan。
+- 无新增依赖；生产路径没有新增 `unwrap()` / `expect()` / `panic!()`。
+- 没有 mock-only、硬编码通过态或一次性脚本实现。
+
+五、验证情况：
+
+- `cd core && cargo fmt --all -- --check`：通过。
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过。
+- `cd core && cargo test --workspace repair_reindex_metadata`：通过；C1-26 contract 3 个测试、implementation 4 个测试均通过。
+- 额外跑了 `git diff --check`：通过。
+
+六、风险与后续：
+
+- 剩余风险：损坏 DB 重建、权限中断、失败后诊断保留等更强 failure-recovery 场景属于后续 `1-5/task-23` / `1-5/task-24` 深化范围。
+- 工作区中 `.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json` 是本轮开始前已有 task-loop 状态改动，我未回退，也未纳入本任务修改清单。
+- 建议下一个任务：`1-5/task-23`，补齐 C1-26 failure-recovery 失败、回滚、重复执行和权限错误路径。
+

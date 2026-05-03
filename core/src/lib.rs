@@ -15,6 +15,7 @@ mod icloud_conflicts;
 mod note;
 pub mod overview;
 mod recovery;
+mod repair;
 mod repo_entries;
 mod repo_init;
 mod repo_path;
