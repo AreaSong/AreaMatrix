@@ -12,9 +12,30 @@ protocol CoreRepositoryPathValidating: Sendable {
     func validateRepoPath(repoPath: String) async throws -> RepoPathValidationSnapshot
 }
 
+protocol CoreScanSessionReading: Sendable {
+    func latestScanSession(repoPath: String) async throws -> ScanSessionSnapshot?
+}
+
+protocol CoreRepositoryAdopting: Sendable {
+    func adoptExistingRepo(repoPath: String) async throws -> ScanSessionSnapshot?
+}
+
 enum RepoInitModeSnapshot: String, Equatable, Sendable {
     case createEmpty = "CreateEmpty"
     case adoptExisting = "AdoptExisting"
+}
+
+enum ScanSessionKindSnapshot: String, Equatable, Sendable {
+    case adopt = "Adopt"
+    case reindex = "Reindex"
+}
+
+enum ScanSessionStatusSnapshot: String, Equatable, Sendable {
+    case running = "Running"
+    case completed = "Completed"
+    case paused = "Paused"
+    case failed = "Failed"
+    case interrupted = "Interrupted"
 }
 
 enum RepoPathIssueSnapshot: String, Equatable, Sendable {
@@ -44,6 +65,26 @@ struct RepoPathValidationSnapshot: Equatable, Sendable {
     var issues: [RepoPathIssueSnapshot]
 }
 
+struct RepositoryInitializationDraft: Equatable, Sendable {
+    var validation: RepoPathValidationSnapshot
+    var mode: RepoInitModeSnapshot
+    var scanSession: ScanSessionSnapshot?
+}
+
+struct ScanSessionSnapshot: Equatable, Sendable {
+    var id: Int64
+    var kind: ScanSessionKindSnapshot
+    var status: ScanSessionStatusSnapshot
+    var lastPath: String?
+    var inserted: Int64
+    var updated: Int64
+    var skipped: Int64
+    var startedAt: Int64
+    var updatedAt: Int64
+    var finishedAt: Int64?
+    var errors: [String]
+}
+
 struct RepoConfigSnapshot: Equatable, Sendable {
     var repoPath: String
     var defaultMode: String
@@ -69,6 +110,50 @@ private extension RepoConfigSnapshot {
         enableKeywordRules = coreConfig.enableKeywordRules
         fallbackToInbox = coreConfig.fallbackToInbox
         allowReplaceDuringImport = coreConfig.allowReplaceDuringImport
+    }
+}
+
+private extension ScanSessionSnapshot {
+    init(coreSession: ScanSession) {
+        id = coreSession.id
+        kind = ScanSessionKindSnapshot(coreKind: coreSession.kind)
+        status = ScanSessionStatusSnapshot(coreStatus: coreSession.status)
+        lastPath = coreSession.lastPath
+        inserted = coreSession.inserted
+        updated = coreSession.updated
+        skipped = coreSession.skipped
+        startedAt = coreSession.startedAt
+        updatedAt = coreSession.updatedAt
+        finishedAt = coreSession.finishedAt
+        errors = coreSession.errors
+    }
+}
+
+private extension ScanSessionKindSnapshot {
+    init(coreKind: ScanSessionKind) {
+        switch coreKind {
+        case .adopt:
+            self = .adopt
+        case .reindex:
+            self = .reindex
+        }
+    }
+}
+
+private extension ScanSessionStatusSnapshot {
+    init(coreStatus: ScanSessionStatus) {
+        switch coreStatus {
+        case .running:
+            self = .running
+        case .completed:
+            self = .completed
+        case .paused:
+            self = .paused
+        case .failed:
+            self = .failed
+        case .interrupted:
+            self = .interrupted
+        }
     }
 }
 
@@ -171,8 +256,20 @@ actor CoreBridge {
         RepoPathValidationSnapshot(coreValidation: try validateCoreRepoPath(repoPath: repoPath))
     }
 
-    func initializeRepo() async throws -> Never {
-        try requireGeneratedBindings(for: .initRepo)
+    func latestScanSession(repoPath: String) async throws -> ScanSessionSnapshot? {
+        try latestCoreScanSession(repoPath: repoPath).map(ScanSessionSnapshot.init(coreSession:))
+    }
+
+    func adoptExistingRepo(repoPath: String) async throws -> ScanSessionSnapshot? {
+        try initializeCoreRepo(
+            repoPath: repoPath,
+            options: RepoInitOptions(
+                mode: .adoptExisting,
+                createDefaultCategories: false,
+                overviewOutput: .generatedOnly
+            )
+        )
+        return try latestCoreScanSession(repoPath: repoPath).map(ScanSessionSnapshot.init(coreSession:))
     }
 
     func loadConfig() async throws -> Never {
@@ -286,7 +383,12 @@ actor CoreBridge {
     }
 }
 
-extension CoreBridge: CoreConfigurationLoading, CoreConfigurationUpdating, CoreRepositoryPathValidating {}
+extension CoreBridge:
+    CoreConfigurationLoading,
+    CoreConfigurationUpdating,
+    CoreRepositoryAdopting,
+    CoreRepositoryPathValidating,
+    CoreScanSessionReading {}
 
 private func loadCoreConfig(repoPath: String) throws -> RepoConfig {
     try loadConfig(repoPath: repoPath)
@@ -296,8 +398,16 @@ private func updateCoreConfig(repoPath: String, newConfig: RepoConfig) throws {
     try updateConfig(repoPath: repoPath, newConfig: newConfig)
 }
 
+private func initializeCoreRepo(repoPath: String, options: RepoInitOptions) throws {
+    try initRepo(repoPath: repoPath, options: options)
+}
+
 private func validateCoreRepoPath(repoPath: String) throws -> RepoPathValidation {
     try validateRepoPath(repoPath: repoPath)
+}
+
+private func latestCoreScanSession(repoPath: String) throws -> ScanSession? {
+    try getLatestScanSession(repoPath: repoPath)
 }
 
 private extension StorageMode {

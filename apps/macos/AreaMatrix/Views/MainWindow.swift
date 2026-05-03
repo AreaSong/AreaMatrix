@@ -63,6 +63,7 @@ struct MainWindow: View {
             ValidatePathStepView(
                 pathText: model.repositoryPathText,
                 validation: model.repositoryPathValidation,
+                latestScanSession: model.latestScanSession,
                 errorMessage: model.repositoryPathError,
                 isValidating: model.isValidatingRepositoryPath,
                 isICloudRiskAccepted: model.isICloudRiskAccepted,
@@ -78,6 +79,12 @@ struct MainWindow: View {
                 onICloudRiskAcceptedChanged: model.updateICloudRiskAccepted,
                 onContinue: model.continueFromValidatePath
             )
+        case .confirmRepositoryInitialization(let draft):
+            RepositoryInitializationHandoffView(
+                draft: draft,
+                onBack: model.showValidatePath,
+                onChangePath: model.showChoosePath
+            )
         case .repositoryReady(let config):
             RepositoryReadyView(config: config)
         case .configurationError(let failure):
@@ -91,6 +98,78 @@ struct MainWindow: View {
                 onStartSetup: model.showWelcome
             )
         }
+    }
+}
+
+private struct RepositoryInitializationHandoffView: View {
+    let draft: RepositoryInitializationDraft
+    let onBack: () -> Void
+    let onChangePath: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 22) {
+            header
+            repositorySummary
+            safetySummary
+            footer
+        }
+        .padding(.horizontal, 72)
+        .padding(.vertical, 48)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+    }
+
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("准备接管已有目录")
+                .font(.system(size: 34, weight: .semibold, design: .default))
+                .accessibilityAddTraits(.isHeader)
+            Text("路径校验已完成，下一步将确认接管范围。")
+                .font(.title3)
+                .frame(maxWidth: 620, alignment: .leading)
+        }
+    }
+
+    private var repositorySummary: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("资料库路径")
+                .font(.headline)
+            Text(draft.validation.repoPath)
+                .font(.system(.body, design: .monospaced))
+                .textSelection(.enabled)
+                .lineLimit(2)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 8)
+                .frame(maxWidth: 620, alignment: .leading)
+                .background(.quaternary, in: RoundedRectangle(cornerRadius: 6))
+        }
+    }
+
+    private var safetySummary: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label("接管承诺", systemImage: "folder.badge.gearshape")
+                .font(.headline)
+                .foregroundStyle(.orange)
+            Text("AreaMatrix 将只写入 .areamatrix/ 管理目录，保留已有文件、README.md 和目录结构。")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+            if let session = draft.scanSession {
+                Text("最近接管扫描：\(session.status.rawValue)，已索引 \(session.inserted) 个项目。")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(14)
+        .frame(maxWidth: 620, alignment: .leading)
+        .background(Color.orange.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
+    }
+
+    private var footer: some View {
+        HStack {
+            Button("Back", action: onBack)
+            Button("Change Path", action: onChangePath)
+            Spacer()
+        }
+        .frame(maxWidth: 620)
     }
 }
 

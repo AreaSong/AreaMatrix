@@ -145,6 +145,7 @@ final class OnboardingModel: ObservableObject {
         case welcome
         case choosePath
         case validatePath
+        case confirmRepositoryInitialization(RepositoryInitializationDraft)
         case repositoryReady(RepoConfigSnapshot)
         case configurationError(ConfigLoadFailure)
     }
@@ -159,6 +160,7 @@ final class OnboardingModel: ObservableObject {
 
     enum ValidatePathAction: Equatable, Sendable {
         case continueRequested(RepoPathValidationSnapshot)
+        case adoptExistingRequested(RepoPathValidationSnapshot, scanSession: ScanSessionSnapshot?)
         case openExistingRepositoryRequested(RepoPathValidationSnapshot)
     }
 
@@ -172,6 +174,7 @@ final class OnboardingModel: ObservableObject {
     @Published private(set) var repositoryPathText = OnboardingModel.defaultRepositoryPathDisplay
     @Published private(set) var repositoryPathError: String?
     @Published private(set) var repositoryPathValidation: RepoPathValidationSnapshot?
+    @Published private(set) var latestScanSession: ScanSessionSnapshot?
     @Published private(set) var isValidatingRepositoryPath = false
     @Published private(set) var isICloudRiskAccepted = false
 
@@ -202,6 +205,7 @@ final class OnboardingModel: ObservableObject {
     private let settingsReader: any AppSettingsReading
     private let configLoader: any CoreConfigurationLoading
     private let pathValidator: any CoreRepositoryPathValidating
+    private let scanSessionReader: any CoreScanSessionReading
     private let helpOpener: any WelcomeHelpOpening
     private let directoryPicker: any RepositoryDirectoryPicking
     private var didBootstrap = false
@@ -210,12 +214,14 @@ final class OnboardingModel: ObservableObject {
         settingsReader: any AppSettingsReading = UserDefaultsAppSettingsReader(),
         configLoader: any CoreConfigurationLoading = CoreBridge(),
         pathValidator: any CoreRepositoryPathValidating = CoreBridge(),
+        scanSessionReader: any CoreScanSessionReading = CoreBridge(),
         helpOpener: any WelcomeHelpOpening = LocalWelcomeHelpOpener(),
         directoryPicker: any RepositoryDirectoryPicking = NSOpenPanelRepositoryDirectoryPicker()
     ) {
         self.settingsReader = settingsReader
         self.configLoader = configLoader
         self.pathValidator = pathValidator
+        self.scanSessionReader = scanSessionReader
         self.helpOpener = helpOpener
         self.directoryPicker = directoryPicker
     }
@@ -236,10 +242,7 @@ final class OnboardingModel: ObservableObject {
     }
 
     @MainActor
-    func showWelcome() {
-        route = .welcome
-        toastMessage = nil
-    }
+    func showWelcome() { route = .welcome; toastMessage = nil }
 
     @MainActor
     func showChoosePath() {
@@ -247,6 +250,9 @@ final class OnboardingModel: ObservableObject {
         toastMessage = nil
         repositoryPathError = localRepositoryPathError(for: repositoryPathText)
     }
+
+    @MainActor
+    func showValidatePath() { route = .validatePath; toastMessage = nil }
 
     @MainActor
     func continueFromWelcome() {
@@ -260,6 +266,7 @@ final class OnboardingModel: ObservableObject {
     func updateRepositoryPath(_ value: String) {
         repositoryPathText = value
         repositoryPathValidation = nil
+        latestScanSession = nil
         choosePathAction = nil
         validatePathAction = nil
         toastMessage = nil
@@ -315,7 +322,17 @@ final class OnboardingModel: ObservableObject {
         if validation.isInitialized {
             validatePathAction = .openExistingRepositoryRequested(validation)
         } else {
-            validatePathAction = .continueRequested(validation)
+            switch validation.recommendedMode {
+            case .adoptExisting:
+                validatePathAction = .adoptExistingRequested(validation, scanSession: latestScanSession)
+                route = .confirmRepositoryInitialization(RepositoryInitializationDraft(
+                    validation: validation,
+                    mode: .adoptExisting,
+                    scanSession: latestScanSession
+                ))
+            default:
+                validatePathAction = .continueRequested(validation)
+            }
         }
     }
 
@@ -323,6 +340,7 @@ final class OnboardingModel: ObservableObject {
     private func validateSelectedRepositoryPath() async {
         isValidatingRepositoryPath = true
         choosePathAction = nil
+        latestScanSession = nil
         repositoryPathError = nil
         defer {
             isValidatingRepositoryPath = false
@@ -332,6 +350,16 @@ final class OnboardingModel: ObservableObject {
             let normalizedPath = Self.normalizedRepositoryPath(repositoryPathText)
             let validation = try await pathValidator.validateRepoPath(repoPath: normalizedPath)
             repositoryPathValidation = validation
+
+            if shouldLoadLatestScanSession(for: validation) {
+                do {
+                    latestScanSession = try await scanSessionReader.latestScanSession(repoPath: validation.repoPath)
+                } catch {
+                    repositoryPathError = Self.scanSessionErrorMessage(for: error)
+                    return
+                }
+            }
+
             repositoryPathError = validatePathBlockingMessage(for: validation)
 
             if repositoryPathError != nil {
@@ -355,9 +383,7 @@ final class OnboardingModel: ObservableObject {
     }
 
     @MainActor
-    func clearToast() {
-        toastMessage = nil
-    }
+    func clearToast() { toastMessage = nil }
 
     @MainActor
     private func loadConfiguredRepository() async {
@@ -408,6 +434,10 @@ final class OnboardingModel: ObservableObject {
         return nil
     }
 
+    private func shouldLoadLatestScanSession(for validation: RepoPathValidationSnapshot) -> Bool {
+        validation.hasUnfinishedScanSession || validation.issues.contains(.unfinishedScanSession)
+    }
+
     private func localRepositoryPathError(for value: String) -> String? {
         let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
 
@@ -451,6 +481,19 @@ final class OnboardingModel: ObservableObject {
             return "该位置仍是 iCloud 占位内容，无法校验"
         default:
             return "路径字符串无法解析"
+        }
+    }
+
+    private static func scanSessionErrorMessage(for error: Error) -> String {
+        guard let coreError = error as? CoreError else {
+            return "无法读取接管扫描状态，请进入修复流程"
+        }
+
+        switch coreError {
+        case .PermissionDenied:
+            return "AreaMatrix 没有读取接管扫描状态的权限"
+        default:
+            return "无法读取接管扫描状态，请进入修复流程"
         }
     }
 }

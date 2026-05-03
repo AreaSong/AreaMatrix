@@ -1,0 +1,61 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`2-1/task-04`
+- 对应文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-1-first-launch-main/task-04-s1-03-c1-03-adopt-existing-repo.md`
+- 主要实现范围：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`
+- 测试范围：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**` 与测试 target 中的 `AreaMatrixAppSmokeTests.swift`
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：1
+- 通过项数：10
+- 不通过项数：1
+- 阻塞项数：1
+
+四、逐项验收结果
+
+- 只处理 S1-03 页面中的 C1-03 功能点：通过。证据：新增 `latestScanSession`、`adoptExistingRequested`、接管提示和 scan session notice，集中在 `ValidatePathStepView` / `OnboardingModel` / `CoreBridge`。
+- 已读取页面规格、control map、Core API、C1-03 能力规格：通过。证据：S1-03 明确非空目录承诺与流程；control map 绑定 `S1-03: C1-01, C1-03, C1-21`；C1-03 规格要求 scan session 与 Adopted 索引语义。
+- 只接入 C1-03 对应 CoreBridge / 状态 / 错误映射：通过。证据：`CoreBridge.latestScanSession(repoPath:)` 调用真实 UniFFI `getLatestScanSession`，`OnboardingModel` 在 unfinished scan 时读取 scan session 并映射错误。
+- 不顺手实现相邻页面：通过。证据：未新增 S1-04/S1-05/S1-10 页面闭环，仅在 S1-03 validate path 上记录 action 与显示状态。
+- 用户可见功能可触发：通过。证据：非空目录显示“将接管已有目录”，主按钮触发 `.adoptExistingRequested(...)`。
+- 无 mock / fixture / 静态状态伪造生产闭环：通过。证据：生产默认依赖 `CoreBridge()`；fixture 只出现在 XCTest。
+- 未触碰 control map 之外 Core 能力：通过。证据：本次实现未修改 `core/src/**`，`git diff -- core/src | wc -l` 为 `0`。
+- Expected New Paths：通过。证据：`apps/macos/AreaMatrix/**` 与 `apps/macos/AreaMatrixTests/**` 均存在，测试 target 包含新增 adopt-existing tests。
+- Forbidden Touches：通过。证据：`core/src/**` 无 diff。
+- Manifest build 验证：通过。证据：`xcodebuild build ... CODE_SIGNING_ALLOWED=NO` 返回 0，`BUILD SUCCEEDED`。
+- validation-driver macOS test 验证：不通过。证据：`xcodebuild test ... CODE_SIGNING_ALLOWED=NO` 返回 65，测试运行器因 sandbox 无法连接 `com.apple.testmanagerd.control`，未产生用例通过结果。
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。`CoreBridge`、snapshot 类型、model state、view notice 分层清楚；主要文件均未超过 500 行。
+- 注释 / rustdoc / 文档同步：通过。本 task 未改 Rust public API；Swift 代码无多余叙述性注释。
+- 错误处理与边界处理：通过。scan session 读取失败会保留 validation 结果并阻断 Continue；权限错误有明确中文提示。
+- 测试与验证覆盖：不通过。build 与 build-for-testing 通过，但 `xcodebuild test` 没有跑到测试用例结果。
+- 占位、硬编码、mock-only、一次性实现检查：通过。生产路径使用真实 UniFFI binding；测试 fixture 未进入生产路径。
+
+六、阻塞项
+
+- P0：必需 macOS test 验证未完成。
+  说明：repo-local validation-driver 要求 `apps/macos/**` 变更运行 `xcodebuild test`；本次命令在测试运行器通信阶段失败，无法证明新增 adopt-existing 行为的 XCTest 实际通过。
+  绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/.codex/skills-src/areamatrix-validation-driver/references/validation-matrix.md:45`
+  失败证据：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/DerivedData/AreaMatrix/Logs/Test/Test-AreaMatrix-2026.05.04_02-54-23-+0800.xcresult`
+  关键错误：`Failed to establish communication with the test runner`，`com.apple.testmanagerd.control ... Sandbox restriction`。
+
+七、验证情况
+
+- 已运行：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：通过。
+- 已运行：`xcodebuild build-for-testing -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：通过。
+- 已运行：`xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：失败，测试运行器通信被 sandbox 阻断。
+- 缺失：没有可采信的 XCTest 用例运行通过结果。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。产品代码本身未发现 S1-03/C1-03 范围内的明确实现阻塞，但必需测试验证缺失，按“无法证明通过，就判定不通过”处理。
+
+VERIFY_RESULT: FAIL

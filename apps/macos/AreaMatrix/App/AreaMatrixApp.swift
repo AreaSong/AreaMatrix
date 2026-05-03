@@ -13,6 +13,7 @@ struct AreaMatrixApp: App {
 struct ValidatePathStepView: View {
     let pathText: String
     let validation: RepoPathValidationSnapshot?
+    let latestScanSession: ScanSessionSnapshot?
     let errorMessage: String?
     let isValidating: Bool
     let isICloudRiskAccepted: Bool
@@ -109,7 +110,7 @@ struct ValidatePathStepView: View {
                     "Repo path: \(displayedPath)",
                 ])
             }
-            if validation?.issues.contains(.nonEmptyDirectory) == true {
+            if shouldShowAdoptExistingNotice {
                 notice("将接管已有目录", "folder.badge.gearshape", .orange, [
                     "将创建 .areamatrix/ 内部目录。",
                     "将扫描现有文件和文件夹。",
@@ -120,7 +121,23 @@ struct ValidatePathStepView: View {
             if validation?.isICloudPath == true {
                 iCloudNotice
             }
+            if let session = latestAdoptScanSession {
+                scanSessionNotice(session)
+            }
         }
+    }
+
+    private var shouldShowAdoptExistingNotice: Bool {
+        validation?.recommendedMode == .adoptExisting ||
+            validation?.issues.contains(.nonEmptyDirectory) == true
+    }
+
+    private var latestAdoptScanSession: ScanSessionSnapshot? {
+        guard latestScanSession?.kind == .adopt else {
+            return nil
+        }
+
+        return latestScanSession
     }
 
     private var iCloudNotice: some View {
@@ -139,6 +156,14 @@ struct ValidatePathStepView: View {
         .padding(14)
         .frame(maxWidth: 620, alignment: .leading)
         .background(Color.blue.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
+    }
+
+    private func scanSessionNotice(_ session: ScanSessionSnapshot) -> some View {
+        notice("发现未完成接管扫描", "arrow.clockwise.circle", .orange, [
+            "状态：\(session.status.rawValue)。",
+            "已索引 \(session.inserted) 个，更新 \(session.updated) 个，跳过 \(session.skipped) 个。",
+            "最后位置：\(session.lastPath ?? "尚未记录")。",
+        ])
     }
 
     private var footer: some View {
