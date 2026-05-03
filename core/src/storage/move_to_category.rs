@@ -22,7 +22,7 @@ pub(crate) fn move_to_category(
 
     let entry = db::get_active_file_by_id(&repo, file_id)?;
     if entry.category == new_category {
-        return Ok(entry);
+        return validate_same_category_entry(&repo, entry);
     }
 
     match entry.storage_mode {
@@ -90,6 +90,16 @@ fn move_indexed_file(repo: &Path, entry: FileEntry, new_category: &str) -> CoreR
         &move_detail(&entry, new_category, &entry.path, &entry.current_name, true),
     )?;
     db::get_active_file_by_id(repo, entry.id)
+}
+
+fn validate_same_category_entry(repo: &Path, entry: FileEntry) -> CoreResult<FileEntry> {
+    if matches!(entry.storage_mode, StorageMode::Moved | StorageMode::Copied) {
+        if !dedup::is_repo_owned(&entry) {
+            return Err(CoreError::invalid_path("invalid path"));
+        }
+        ensure_regular_file(&repo_relative_file_path(repo, &entry.path)?)?;
+    }
+    Ok(entry)
 }
 
 fn move_detail(
@@ -220,7 +230,7 @@ impl CategoryDirectoryGuard {
                     armed: false,
                 });
             }
-            return Err(CoreError::invalid_path("invalid path"));
+            return Err(CoreError::conflict("path conflict"));
         }
 
         fs::create_dir(&path).map_err(hash::map_io_error)?;
