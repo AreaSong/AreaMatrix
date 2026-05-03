@@ -1,8 +1,45 @@
 import Foundation
 
+protocol CoreConfigurationLoading: Sendable {
+    func loadConfig(repoPath: String) async throws -> RepoConfigSnapshot
+}
+
+protocol CoreConfigurationUpdating: Sendable {
+    func updateConfig(repoPath: String, newConfig: RepoConfigSnapshot) async throws
+}
+
+struct RepoConfigSnapshot: Equatable, Sendable {
+    var repoPath: String
+    var defaultMode: String
+    var overviewOutput: String
+    var aiEnabled: Bool
+    var locale: String
+    var iCloudWarn: Bool
+    var enableExtensionRules: Bool
+    var enableKeywordRules: Bool
+    var fallbackToInbox: Bool
+    var allowReplaceDuringImport: Bool
+}
+
+private extension RepoConfigSnapshot {
+    init(coreConfig: RepoConfig) {
+        repoPath = coreConfig.repoPath
+        defaultMode = coreConfig.defaultMode.displayName
+        overviewOutput = coreConfig.overviewOutput.displayName
+        aiEnabled = coreConfig.aiEnabled
+        locale = coreConfig.locale
+        iCloudWarn = coreConfig.icloudWarn
+        enableExtensionRules = coreConfig.enableExtensionRules
+        enableKeywordRules = coreConfig.enableKeywordRules
+        fallbackToInbox = coreConfig.fallbackToInbox
+        allowReplaceDuringImport = coreConfig.allowReplaceDuringImport
+    }
+}
+
 actor CoreBridge {
     enum BridgeState: Equatable, Sendable {
         case placeholder
+        case generatedBindings
     }
 
     private let repoURL: URL?
@@ -14,7 +51,7 @@ actor CoreBridge {
     }
 
     nonisolated var state: BridgeState {
-        .placeholder
+        .generatedBindings
     }
 
     func currentState() -> CoreBridgePlaceholderState {
@@ -22,7 +59,7 @@ actor CoreBridge {
     }
 
     nonisolated func coreAvailability() -> String {
-        "placeholder"
+        "generated-bindings"
     }
 
     func declaredBoundaries() -> [CoreBridgeBoundary] {
@@ -53,8 +90,30 @@ actor CoreBridge {
         try requireGeneratedBindings(for: .loadConfig)
     }
 
+    func loadConfig(repoPath: String) async throws -> RepoConfigSnapshot {
+        RepoConfigSnapshot(coreConfig: try loadCoreConfig(repoPath: repoPath))
+    }
+
     func updateConfig() async throws -> Never {
         try requireGeneratedBindings(for: .updateConfig)
+    }
+
+    func updateConfig(repoPath: String, newConfig: RepoConfigSnapshot) async throws {
+        try updateCoreConfig(
+            repoPath: repoPath,
+            newConfig: RepoConfig(
+                repoPath: newConfig.repoPath,
+                defaultMode: try StorageMode(snapshotValue: newConfig.defaultMode),
+                overviewOutput: try OverviewOutput(snapshotValue: newConfig.overviewOutput),
+                aiEnabled: newConfig.aiEnabled,
+                locale: newConfig.locale,
+                icloudWarn: newConfig.iCloudWarn,
+                enableExtensionRules: newConfig.enableExtensionRules,
+                enableKeywordRules: newConfig.enableKeywordRules,
+                fallbackToInbox: newConfig.fallbackToInbox,
+                allowReplaceDuringImport: newConfig.allowReplaceDuringImport
+            )
+        )
     }
 
     func recoverOnStartup() async throws -> Never {
@@ -135,5 +194,63 @@ actor CoreBridge {
 
     func repoPathForDiagnostics() -> String? {
         repoURL?.path
+    }
+}
+
+extension CoreBridge: CoreConfigurationLoading, CoreConfigurationUpdating {}
+
+private func loadCoreConfig(repoPath: String) throws -> RepoConfig {
+    try loadConfig(repoPath: repoPath)
+}
+
+private func updateCoreConfig(repoPath: String, newConfig: RepoConfig) throws {
+    try updateConfig(repoPath: repoPath, newConfig: newConfig)
+}
+
+private extension StorageMode {
+    init(snapshotValue: String) throws {
+        switch snapshotValue {
+        case "Moved":
+            self = .moved
+        case "Copied":
+            self = .copied
+        case "Indexed":
+            self = .indexed
+        default:
+            throw CoreError.Config(reason: "unsupported storage mode: \(snapshotValue)")
+        }
+    }
+
+    var displayName: String {
+        switch self {
+        case .moved:
+            return "Moved"
+        case .copied:
+            return "Copied"
+        case .indexed:
+            return "Indexed"
+        }
+    }
+}
+
+private extension OverviewOutput {
+    init(snapshotValue: String) throws {
+        switch snapshotValue {
+        case "GeneratedOnly":
+            self = .generatedOnly
+        case "RootAreaMatrixFile":
+            self = .rootAreaMatrixFile
+        default:
+            throw CoreError.Config(reason: "unsupported overview output: \(snapshotValue)")
+        }
+    }
+
+    var displayName: String {
+        switch self {
+        case .generatedOnly:
+            return "GeneratedOnly"
+        case .rootAreaMatrixFile:
+            return "RootAreaMatrixFile"
+        }
     }
 }

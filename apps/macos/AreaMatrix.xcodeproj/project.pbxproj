@@ -14,6 +14,7 @@
 		0A0000000000000000000006 /* AppShellModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000018 /* AppShellModel.swift */; };
 		0A0000000000000000000007 /* CoreBridgePlaceholderState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000019 /* CoreBridgePlaceholderState.swift */; };
 		0A0000000000000000000008 /* AreaMatrixShellTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000001A /* AreaMatrixShellTests.swift */; };
+		0A0000000000000000000009 /* area_matrix.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000001C /* area_matrix.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -37,6 +38,10 @@
 		0A0000000000000000000018 /* AppShellModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/AppShellModel.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000019 /* CoreBridgePlaceholderState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/CoreBridgePlaceholderState.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000001A /* AreaMatrixShellTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/AreaMatrixShellTests.swift; sourceTree = SOURCE_ROOT; };
+		0A000000000000000000001B /* AreaMatrix-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "AreaMatrix/AreaMatrix-Bridging-Header.h"; sourceTree = SOURCE_ROOT; };
+		0A000000000000000000001C /* area_matrix.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/UniFFI/area_matrix.swift; sourceTree = SOURCE_ROOT; };
+		0A000000000000000000001D /* area_matrixFFI.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AreaMatrix/Bridge/UniFFI/area_matrixFFI.h; sourceTree = SOURCE_ROOT; };
+		0A000000000000000000001E /* module.modulemap */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.module-map"; path = AreaMatrix/Bridge/UniFFI/module.modulemap; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -117,8 +122,20 @@
 			isa = PBXGroup;
 			children = (
 				0A0000000000000000000017 /* CoreBridge.swift */,
+				0A000000000000000000001B /* AreaMatrix-Bridging-Header.h */,
+				0A000000000000000000003B /* UniFFI */,
 			);
 			name = Bridge;
+			sourceTree = "<group>";
+		};
+		0A000000000000000000003B /* UniFFI */ = {
+			isa = PBXGroup;
+			children = (
+				0A000000000000000000001C /* area_matrix.swift */,
+				0A000000000000000000001D /* area_matrixFFI.h */,
+				0A000000000000000000001E /* module.modulemap */,
+			);
+			name = UniFFI;
 			sourceTree = "<group>";
 		};
 		0A0000000000000000000038 /* Models */ = {
@@ -152,6 +169,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 0A0000000000000000000070 /* Build configuration list for PBXNativeTarget "AreaMatrix" */;
 			buildPhases = (
+				0A0000000000000000000054 /* Build Core Static Library */,
 				0A0000000000000000000050 /* Sources */,
 				0A0000000000000000000021 /* Frameworks */,
 				0A0000000000000000000051 /* Resources */,
@@ -237,6 +255,27 @@
 		};
 /* End PBXResourcesBuildPhase section */
 
+/* Begin PBXShellScriptBuildPhase section */
+		0A0000000000000000000054 /* Build Core Static Library */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/../../core/Cargo.toml",
+				"$(SRCROOT)/../../core/area_matrix.udl",
+			);
+			name = "Build Core Static Library";
+			outputPaths = (
+				"$(SRCROOT)/../../core/target/aarch64-apple-darwin/$(AREAMATRIX_CORE_PROFILE)/libarea_matrix_core.a",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -euo pipefail\nexport MACOSX_DEPLOYMENT_TARGET=\"${MACOSX_DEPLOYMENT_TARGET:-14.0}\"\nif [ \"${CONFIGURATION:-Debug}\" = \"Release\" ]; then\n  cargo build --manifest-path \"${SRCROOT}/../../core/Cargo.toml\" --target aarch64-apple-darwin --release\nelse\n  cargo build --manifest-path \"${SRCROOT}/../../core/Cargo.toml\" --target aarch64-apple-darwin\nfi\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
 		0A0000000000000000000050 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
@@ -247,6 +286,7 @@
 				0A0000000000000000000005 /* CoreBridge.swift in Sources */,
 				0A0000000000000000000006 /* AppShellModel.swift in Sources */,
 				0A0000000000000000000007 /* CoreBridgePlaceholderState.swift in Sources */,
+				0A0000000000000000000009 /* area_matrix.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -273,19 +313,37 @@
 		0A0000000000000000000080 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				AREAMATRIX_CORE_PROFILE = debug;
 				CODE_SIGN_ENTITLEMENTS = "";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/AreaMatrix/Bridge/UniFFI",
+				);
 				INFOPLIST_KEY_CFBundleDisplayName = AreaMatrix;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/../../core/target/aarch64-apple-darwin/$(AREAMATRIX_CORE_PROFILE)",
+				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 0.1.0;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-larea_matrix_core",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = app.areamatrix.AreaMatrix;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
+				SWIFT_INCLUDE_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/AreaMatrix/Bridge/UniFFI",
+				);
+				SWIFT_OBJC_BRIDGING_HEADER = "AreaMatrix/AreaMatrix-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 			};
 			name = Debug;
@@ -293,19 +351,37 @@
 		0A0000000000000000000081 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				AREAMATRIX_CORE_PROFILE = release;
 				CODE_SIGN_ENTITLEMENTS = "";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/AreaMatrix/Bridge/UniFFI",
+				);
 				INFOPLIST_KEY_CFBundleDisplayName = AreaMatrix;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/../../core/target/aarch64-apple-darwin/$(AREAMATRIX_CORE_PROFILE)",
+				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 0.1.0;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-larea_matrix_core",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = app.areamatrix.AreaMatrix;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
+				SWIFT_INCLUDE_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/AreaMatrix/Bridge/UniFFI",
+				);
+				SWIFT_OBJC_BRIDGING_HEADER = "AreaMatrix/AreaMatrix-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 			};
 			name = Release;
@@ -316,6 +392,10 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/AreaMatrix/Bridge/UniFFI",
+				);
 				INFOPLIST_KEY_CFBundleDisplayName = AreaMatrixTests;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -329,6 +409,10 @@
 				PRODUCT_BUNDLE_IDENTIFIER = app.areamatrix.AreaMatrixTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
+				SWIFT_INCLUDE_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/AreaMatrix/Bridge/UniFFI",
+				);
 				SWIFT_VERSION = 5.0;
 			};
 			name = Debug;
@@ -339,6 +423,10 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/AreaMatrix/Bridge/UniFFI",
+				);
 				INFOPLIST_KEY_CFBundleDisplayName = AreaMatrixTests;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -352,6 +440,10 @@
 				PRODUCT_BUNDLE_IDENTIFIER = app.areamatrix.AreaMatrixTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
+				SWIFT_INCLUDE_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/AreaMatrix/Bridge/UniFFI",
+				);
 				SWIFT_VERSION = 5.0;
 			};
 			name = Release;

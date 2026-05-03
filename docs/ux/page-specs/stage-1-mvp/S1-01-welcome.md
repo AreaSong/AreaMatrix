@@ -11,7 +11,7 @@
 - **目标平台**：macOS 首次启动向导。
 - **建议目录**：`apps/macos/AreaMatrix/Features/Onboarding/WelcomeStepView.swift`。
 - **建议组件**：`WelcomeStepView`、`OnboardingFlowView`、`SafetyPromiseList`。
-- **实现说明**：这是首次启动向导第一个 step，不执行文件 IO，只负责解释产品承诺并进入下一步。
+- **实现说明**：这是首次启动向导第一个 step。页面本体不执行文件 IO；外层 onboarding shell 可在显示本页前通过 C1-04 `load_config` 读取已配置 repo，用于决定继续显示欢迎页、进入已就绪状态或显示配置错误。
 
 ## 页面背景
 
@@ -77,13 +77,15 @@
 ## 数据与依赖
 
 - App settings：判断是否已有 repo。
+- C1-04 `load_config`：仅当 App settings 已有 repo path 时由外层 onboarding shell 触发，用于读取真实 `RepoConfig` 或映射配置错误。
 - Onboarding route state。
 - Help link opener。
-- 不依赖 Core，不创建 `.areamatrix/`，不访问用户文件。
+- 欢迎页内容本身不创建 `.areamatrix/`，不访问用户文件，也不执行配置更新。
 
 ## 验收清单
 
 - 无 repo 配置时启动必须显示本页。
+- 有 repo 配置时，外层 onboarding shell 必须通过 C1-04 `load_config` 读取真实配置；配置缺失返回默认值且不得创建 metadata。
 - 页面包含 4 条安全承诺，且明确“不覆盖 README/用户文件”。
 - Continue 可通过鼠标、Enter 和 VoiceOver 操作。
 - Learn more 失败不阻断继续。

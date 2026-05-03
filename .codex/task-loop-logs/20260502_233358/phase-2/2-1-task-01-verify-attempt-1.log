@@ -1,0 +1,64 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`2-1/task-01`
+- 对应文件：`tasks/prompts/phase-2/2-1-first-launch-main/task-01-s1-01-c1-04-load-update-config.md`
+- 代码范围：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`core/area_matrix.udl`
+- 禁止触碰：`core/src/**`
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：0
+- 通过项数：7
+- 不通过项数：3
+- 阻塞项数：2
+
+四、逐项验收结果
+
+| 项目 | 结果 | 证据 | 涉及文件 |
+|---|---|---|---|
+| 只处理 S1-01 页面中的 C1-04 功能点 | 通过 | 当前 UI 只新增 welcome / config-load routing，未实现相邻页面真实功能 | [MainWindow.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/MainWindow.swift:31) |
+| 读取页面规格、control map、Core API、C1-04 规格 | 通过 | 已逐个读取 Exact Docs；control map 绑定 `S1-01 -> C1-04/load_config` | [mvp-control-map.md](/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:16) |
+| 只接入 C1-04 对应 CoreBridge / 状态 / 错误映射 | 不通过 | `loadConfig(repoPath:)` 仍只调用 placeholder error，没有真实 UniFFI / Core 调用 | [CoreBridge.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift:77) |
+| 不顺手实现相邻页面 | 通过 | `Continue` 只记录 action，未实现 S1-02 页面 | [AppShellModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/AppShellModel.swift:131) |
+| S1-01 中 C1-04 用户可见功能可触发和验收 | 不通过 | 有 repo path 时会调用 `configLoader.loadConfig`，但默认 loader 是 placeholder `CoreBridge()`，真实路径进入配置错误 | [AppShellModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/AppShellModel.swift:101) |
+| 没有 mock / fixture / 静态状态伪造真实 Core 闭环 | 不通过 | 测试成功路径依赖 `RecordingConfigLoader` 和 `RepoConfigSnapshot.fixture`，不是默认 CoreBridge 真实闭环 | [AreaMatrixShellTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/AreaMatrixShellTests.swift:31) |
+| 未触碰 control map 之外 Core 能力 | 通过 | 未发现页面消费其他 Core 能力；UDL 仅作为既有合同存在 | [core/area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:17) |
+| Expected New Paths 落地 | 通过 | `apps/macos/AreaMatrix/**` 与 `apps/macos/AreaMatrixTests/**` 均存在 | [AreaMatrixShellTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/AreaMatrixShellTests.swift:1) |
+| Forbidden Touches | 通过 | `git diff --name-only -- core/src` 无输出；未发现 `core/src/**` 脏改动 | `core/src/**` |
+| 验证命令 | 通过但不足以验收 | manifest build 通过；测试 fallback 通过，但只能证明可编译和 mock 单测，不能证明真实 Core 闭环 | `xcodebuild build` / `scripts/check-macos-tests.sh` |
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过。结构可读、文件未超 500 行，但核心业务路径仍是 placeholder；默认 `CoreBridge` 无法返回真实 `RepoConfigSnapshot`。
+- 注释 / rustdoc / 文档同步：不通过。`C1-04` 能力规格服务页面不包含 `S1-01`，但 control map 和 task 绑定 `S1-01`，存在 SSOT 漂移。
+- 错误处理与边界处理：不通过。当前只把 `CoreBridgeError.generatedBindingsUnavailable` 映射成通用恢复文案，没有覆盖 C1-04 的 `Config` / `PermissionDenied` / `Io` / `Db` 真实错误。
+- 测试与验证覆盖：不通过。7 个 XCTest 通过，但成功路径来自 test double / fixture；缺少真实 CoreBridge `load_config` 成功与失败路径证据。
+- 占位、硬编码、mock-only、一次性实现检查：不通过。`CoreBridge.state == .placeholder` 且 generated binding 文件不存在，不能作为真实闭环通过。
+
+六、阻塞项
+
+- P0：C1-04 `load_config` 没有接入真实 CoreBridge，用户可见闭环不成立。  
+  绝对路径：/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift:77  
+  说明：`loadConfig(repoPath:)` 最终走 [CoreBridge.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift:53) 的 `generatedBindingsUnavailable`；与 Core API 要求的 `load_config(repoPath) -> RepoConfig` 不一致，见 [core-api.md](/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:577)。这直接导致完成标准“没有 mock / fixture / 静态状态伪造真实 Core 闭环”不满足。
+
+- P1：验收证据是 mock-only / fixture-only，不能证明默认 App 路径。  
+  绝对路径：/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/AreaMatrixShellTests.swift:31  
+  说明：成功用例注入 `RecordingConfigLoader` 和 `RepoConfigSnapshot.fixture`，而默认实现 [AppShellModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/AppShellModel.swift:101) 使用 `CoreBridge()`。当前测试证明了路由可被假数据驱动，不证明真实 C1-04 闭环。
+
+七、验证情况
+
+- 已运行：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：通过，`BUILD SUCCEEDED`。
+- 已运行：`xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：失败，原因是本地沙箱无法连接 `com.apple.testmanagerd.control`，不是断言失败。
+- 已运行：`bash scripts/check-macos-tests.sh`：通过；脚本识别 testmanagerd 沙箱阻断后用 `xcrun xctest` fallback，7 tests，0 failures。
+- 缺失：真实 generated UniFFI binding / CoreBridge `load_config` 调用证据；缺少默认 App 路径下的真实 `RepoConfig` 成功加载证据。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。主要原因是 C1-04 在 macOS 端仍是 placeholder / test-double 驱动，不是可证明的真实 Core 闭环。
+
+VERIFY_RESULT: FAIL

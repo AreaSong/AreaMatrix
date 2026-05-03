@@ -13,7 +13,7 @@
 
 | UX | 页面 | Core 能力 | Core API | DB 表 | 文件系统 | 错误态 | Prompt | Core 接入 |
 |---|---|---|---|---|---|---|---|---|
-| S1-01 | welcome | C1-04 | `load_config` | `repo_config` | app config | Config | `2-1/task-01` | Preview 可 mock |
+| S1-01 | welcome | C1-04 | `load_config` | `repo_config` | app config | Config | `2-1/task-01` | Real Core（config routing） |
 | S1-02 | choose-path | C1-01 | `validate_repo_path` | none | selected path stat | InvalidPath, PermissionDenied | `2-1/task-02` | Real Core |
 | S1-03 | validate-path | C1-01, C1-03, C1-21 | `validate_repo_path`, `get_latest_scan_session` | `scan_sessions` | `.areamatrix/` probe | InvalidPath, PermissionDenied, ICloudPlaceholder | `2-1/task-03`, `2-1/task-04`, `2-1/task-05`, `2-1/task-06` | Real Core |
 | S1-04 | confirm-init | C1-02, C1-03 | `init_repo` | `schema_version`, `repo_config`, `scan_sessions` | `.areamatrix/**` | Config, PermissionDenied | `2-1/task-07`, `2-1/task-08`, `2-1/task-09` | Real Core |
