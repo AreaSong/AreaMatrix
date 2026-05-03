@@ -385,7 +385,34 @@ pub fn rename_file(repo_path: String, file_id: i64, new_name: String) -> CoreRes
     storage::rename_file(repo_path, file_id, new_name)
 }
 
-/// Moves a file entry to a category.
+/// Moves one active file entry to a target category.
+///
+/// C1-24 owns the user-visible change-category contract for S1-35. The input
+/// category is a classifier category slug, not an arbitrary directory. Core
+/// must validate it against the repository classifier rules and must not
+/// create undeclared categories as a side effect.
+///
+/// For repository-owned `Copied` and `Moved` rows, Core moves the file into
+/// the target category directory, persists matching `files.category`,
+/// `files.path`, and `updated_at`, and records `change_log.action = moved`.
+/// Same-name targets reuse C1-10 conflict-free numbering and never overwrite
+/// existing files.
+///
+/// Indexed rows are metadata-only: Core updates `files.category` and writes a
+/// `moved` change-log entry while leaving `files.path`, `files.source_path`,
+/// and the external source file untouched. Successful category moves preserve
+/// `file_id`, filenames, tags, notes, hash, storage mode, origin, and source
+/// path.
+///
+/// # Errors
+///
+/// Returns `CoreError::Classify { reason }` when the target category is not in
+/// classifier rules or classifier rules cannot be read, `CoreError::FileNotFound { path }`
+/// when the active row or repo-owned file is missing, `CoreError::Conflict { path }`
+/// when a safe destination cannot be resolved, `CoreError::PermissionDenied { path }`
+/// for blocked filesystem or metadata writes, `CoreError::Io { message }` for
+/// filesystem failures, and `CoreError::Db { message }` for metadata persistence
+/// failures.
 pub fn move_to_category(
     _repo_path: String,
     _file_id: i64,

@@ -343,7 +343,7 @@ interface CoreError {
 | `delete_file(repo, file_id)` | storage | √ | Io / Db / FileNotFound / PermissionDenied / Internal |
 | `remove_index_entry(repo, file_id)` | storage | √ | Db / FileNotFound / PermissionDenied / Internal |
 | `rename_file(repo, file_id, new_name)` | storage | √ | Io / Db / Config / InvalidPath / Conflict / FileNotFound / PermissionDenied |
-| `move_to_category(repo, file_id, cat)` | storage | √ | Classify / Io |
+| `move_to_category(repo, file_id, cat)` | storage | √ | Classify / Conflict / FileNotFound / PermissionDenied / Io / Db |
 | `restore_file(repo, file_id)` | storage | √ | FileNotFound |
 | `list_files(repo, filter)` | query | √ | Db |
 | `get_file(repo, file_id)` | query | √ | FileNotFound |
@@ -818,7 +818,31 @@ let moved = try await Task.detached {
 }.value
 ```
 
-`new_category` 必须在 `classifier.yaml` 中存在，否则抛 `Classify`。
+`move_to_category` 是 C1-24 的单文件改分类入口。输入是初始化后的
+`repoPath`、active `fileId` 和目标分类 slug `newCategory`；输出是同一个
+`file_id` 更新后的 `FileEntry`。`newCategory` 必须存在于
+`.areamatrix/classifier.yaml` 或内置默认 classifier，否则抛 `Classify`，Core
+不得隐式创建新分类。
+
+副作用边界：
+
+- Copy / Move 等 repo-owned 文件移动到目标分类目录，更新 `files.category`、
+  `files.path`、`updated_at`，并写入 `change_log.action = moved`。
+- 目标分类目录不存在时可创建该分类目录；同名目标按 C1-10 安全编号策略解析，
+  不覆盖已有文件，编号耗尽或竞态无法解析时抛 `Conflict`。
+- Indexed 文件只更新 `files.category`、`updated_at` 和 `change_log.moved`，
+  保留 `files.path` / `files.source_path`，不移动、重命名或覆盖外部源文件。
+- 成功改分类不改变 `file_id`、`original_name`、`current_name`、hash、storage
+  mode、origin、source path、tags 或 notes。
+
+错误：
+
+- `Classify`：目标分类不存在或 classifier 规则不可用。
+- `FileNotFound`：`fileId` 对应的 active row 不存在，或 repo-owned 文件已消失。
+- `Conflict`：目标同名安全路径无法解析。
+- `PermissionDenied`：文件系统移动或 metadata 写入被权限阻断。
+- `Io`：文件系统读写失败。
+- `Db`：SQLite 查询、更新或 change log 写入失败。
 
 ### `restore_file(repoPath, fileId) throws -> FileEntry`
 
@@ -1077,6 +1101,7 @@ public actor CoreBridge {
 - `resume_scan_session`（可能继续全扫）
 - `recover_on_startup`（启动时）
 - `list_tree_json`（大库）
+- `move_to_category`（可能移动 repo-owned 文件）
 - `sync_external_changes`（批量事件）
 
 下列函数轻量，可同步调（< 5ms）：

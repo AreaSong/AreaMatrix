@@ -1,0 +1,71 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`phase-1 / 1-5/task-11`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-1/1-5-file-actions-repair/task-11-c1-24-contract-api.md`
+- 核验路径：`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/move_to_category_contract_api.rs`、`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md`
+
+三、完成度摘要
+
+- 已覆盖项数：5
+- 未覆盖项数：0
+- 通过项数：5
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 C1-24 contract-api 范围
+- 结果：通过
+- 证据：task 明确范围为 C1-24 contract-api；实际新增/修改集中在 Core API rustdoc、UDL 合同、Core API 文档和 contract 测试，`apps/**` 无变更。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-1/1-5-file-actions-repair/task-11-c1-24-contract-api.md:10`、`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-1.md:3488`
+
+- 项目：读取 Exact Docs 并以文档为 SSOT
+- 结果：通过
+- 证据：manifest 的 4 个 Exact Docs 均存在并已核验；C1-24 规格定义 API、输入、输出、DB/FS 副作用、错误码和延后范围。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-1.md:3473`、`/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-24-move-to-category.md:9`
+
+- 项目：不实现相邻 C1 能力或 UI 页面
+- 结果：通过
+- 证据：Control map 仅声明 S1-35 消费 `move_to_category`，C1-10 仅作为安全编号依赖；实际无 `apps/**` 变更。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:50`
+
+- 项目：更新或校准 Core API / UDL 合同意图
+- 结果：通过
+- 证据：UDL 暴露 `FileEntry move_to_category(string repo_path, i64 file_id, string new_category)`；Rust public API 具备 rustdoc 和 `# Errors`；Core API 文档同步 Swift 调用、输入输出、副作用和错误。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:51`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:390`、`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:809`
+
+- 项目：明确输入、输出、错误码和副作用边界
+- 结果：通过
+- 证据：文档明确 `repoPath/fileId/newCategory`、同一 `file_id` 的 `FileEntry` 输出、Copy/Move 与 Indexed 的不同副作用，以及 `Classify/Conflict/FileNotFound/PermissionDenied/Io/Db`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:821`、`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:827`、`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:838`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。当前 task 是 contract-api，`move_to_category` 仍为后续 implementation task 的 `not_implemented()` stub，但合同边界通过 rustdoc、UDL 和 contract test 固化。
+- 注释 / rustdoc / 文档同步：通过。public Rust API 有 `# Errors`，Core API 文档和 UDL 与 capability/control map 对齐。
+- 错误处理与边界处理：通过。合同列明 6 类错误，UDL `CoreError` 包含对应结构化 variant。
+- 测试与验证覆盖：通过。新增 contract 测试覆盖 API/UDL 签名、文档对齐、错误码与边界。
+- 占位、硬编码、mock-only、一次性实现检查：通过。未把 stub 当成实现闭环；本 task 只验 contract-api，真实移动实现应由 `1-5/task-12` 继续覆盖。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- `cd core && cargo fmt --all -- --check`：通过
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过
+- `cd core && cargo test --workspace move_to_category`：通过，`move_to_category_contract_api` 3 个测试通过
+- `cd core && cargo test --workspace`：通过
+- `git diff --check`：通过
+- 缺失：未运行 macOS app 验证，原因是本 task 禁止触碰 `apps/**`，且实际无 app 变更。
+
+八、最终判定说明
+
+- 本次执行已达到 `1-5/task-11` 的 contract-api 验收标准。实现闭环、失败恢复和 integration verify 不属于本 task，应由后续 C1-24 implementation / validation / integration 任务继续验收。
+
+VERIFY_RESULT: PASS
