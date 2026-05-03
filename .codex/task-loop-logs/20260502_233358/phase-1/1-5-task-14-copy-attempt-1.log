@@ -1,0 +1,21 @@
+一、执行结论：已完成。
+
+二、执行范围：单任务 `1-5/task-14`，只新增 [core/tests/move_to_category_validation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/move_to_category_validation.rs:1)。未修改生产代码、UDL、docs，也未触碰 `apps/**`。当前 `git status` 里已有的 `.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json` 是本次前已存在的无关改动，我未处理。
+
+三、完成情况：新增 5 条 C1-24 validation 测试，覆盖：
+- 成功改分类后通过 Tree/List/Detail/Log 可见新位置：[line 130](/Users/as/Ai-Project/project/AreaMatrix/core/tests/move_to_category_validation.rs:130)
+- 目标同名时安全编号且不覆盖目标文件：[line 169](/Users/as/Ai-Project/project/AreaMatrix/core/tests/move_to_category_validation.rs:169)
+- Indexed 文件只更新 metadata，不移动外部源文件：[line 210](/Users/as/Ai-Project/project/AreaMatrix/core/tests/move_to_category_validation.rs:210)
+- classifier 不可用时返回 `Classify` 且保持 FS/DB 不变：[line 245](/Users/as/Ai-Project/project/AreaMatrix/core/tests/move_to_category_validation.rs:245)
+- 缺失 active fileId 返回 `FileNotFound` 且不写 moved 日志：[line 281](/Users/as/Ai-Project/project/AreaMatrix/core/tests/move_to_category_validation.rs:281)
+
+四、工程质量：测试使用真实 `init_repo` / `import_file` / `move_to_category` / 查询 API 和 tempfile repo，没有 mock-only、硬编码通过态或一次性脚本逻辑。没有新增依赖；文件操作全部在测试临时目录内。
+
+五、验证情况：
+- `cd core && cargo fmt --all -- --check`：通过
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过
+- `cd core && cargo test --workspace move_to_category`：通过，C1-24 相关 17 条测试通过
+- 额外按 validation-driver 补跑 `cd core && cargo test --workspace`：通过
+- `git diff --check`：通过
+
+六、风险与后续：剩余风险为本任务只覆盖 Core validation，不实现 UI 的预检/路径预览交互；这属于后续 `1-5/task-15` integration verify 和 Stage 2/页面任务范围。建议下一个任务执行 `1-5/task-15`，交叉核验 C1-24 API / UDL / Rust / 测试 / UX 消费一致性。
