@@ -3356,6 +3356,9 @@
 - `core/src/**`
 - `core/area_matrix.udl`
 - `core/tests/**`
+- `docs/modules/change-log.md`
+- `tasks/prompts/_shared/copy-ready/phase-1/1-5-task-07.md`
+- `tasks/prompts/_shared/verify-ready/phase-1/1-5-task-07.md`
 
 ### Forbidden Touches
 - `apps/**`

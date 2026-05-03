@@ -14,6 +14,7 @@ use crate::{
 };
 
 mod change_log;
+mod delete;
 mod import;
 mod note;
 mod overview;
@@ -22,6 +23,9 @@ mod scan;
 mod staging_recovery;
 mod sync;
 pub(crate) use change_log::list_changes;
+pub(crate) use delete::{
+    remove_index_entry_row, rollback_deleted_repo_owned_file, soft_delete_repo_owned_file,
+};
 pub(crate) use import::{
     delete_file_row, find_active_file_by_hash, find_active_file_by_path, get_active_file_by_id,
     insert_active_indexed_import, insert_import_staging, insert_replacing_active_indexed_import,
@@ -86,7 +90,7 @@ CREATE TABLE IF NOT EXISTS change_log (
   file_id INTEGER,
   action TEXT NOT NULL CHECK (action IN (
     'imported','adopted','renamed','moved','edited_note',
-    'deleted','restored','external_modified'
+    'deleted','removed_from_index','restored','external_modified'
   )),
   detail_json TEXT NOT NULL,
   occurred_at INTEGER NOT NULL,

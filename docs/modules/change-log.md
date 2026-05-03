@@ -16,7 +16,7 @@
 
 ---
 
-## 动作类型（7 种）
+## 动作类型（9 种）
 
 ```rust
 // core/src/change_log/mod.rs
@@ -29,6 +29,7 @@ pub enum ChangeAction {
     Moved,
     EditedNote,
     Deleted,
+    RemovedFromIndex,
     Restored,
     ExternalModified,
 }
@@ -42,6 +43,7 @@ impl ChangeAction {
             ChangeAction::Moved => "moved",
             ChangeAction::EditedNote => "edited_note",
             ChangeAction::Deleted => "deleted",
+            ChangeAction::RemovedFromIndex => "removed_from_index",
             ChangeAction::Restored => "restored",
             ChangeAction::ExternalModified => "external_modified",
         }
@@ -55,6 +57,7 @@ impl ChangeAction {
             "moved" => Self::Moved,
             "edited_note" => Self::EditedNote,
             "deleted" => Self::Deleted,
+            "removed_from_index" => Self::RemovedFromIndex,
             "restored" => Self::Restored,
             "external_modified" => Self::ExternalModified,
             _ => return None,
@@ -150,6 +153,22 @@ impl ChangeAction {
 - `"user"`：UI 触发
 - `"external"`：FSEvents 检测到外部删除
 - `"startup_reconcile"`：启动重建发现孤儿 DB 行
+
+### RemovedFromIndex
+
+```json
+{
+  "index_only": true,
+  "path": "/Users/foo/External/report.pdf",
+  "storage_mode": "indexed",
+  "origin": "imported",
+  "by": "user"
+}
+```
+
+C1-23 的 Remove from Index 只移除 Indexed / Adopted / External / Missing
+metadata 在默认 list/detail 中的可见性，不移动、不删除、不重命名、不覆盖、
+不 Trash 外部源文件，也不清空 notes / tags 等关联 metadata。
 
 ### Restored
 
@@ -420,14 +439,14 @@ struct ChangeRowView: View {
 | INV-CL3 | 文件物理删除时 `file_id` 置 NULL（FK `ON DELETE SET NULL`） |
 | INV-CL4 | 同一事务内的多次 INSERT 共享同一 `occurred_at`（性能）— 通过 `clock` 抽象支持测试 |
 | INV-CL5 | `detail_json` 必须是合法 JSON 对象（不允许 array / scalar） |
-| INV-CL6 | `action` 字段值必须在 8 种枚举内（DB CHECK 约束） |
+| INV-CL6 | `action` 字段值必须在 9 种枚举内（DB CHECK 约束） |
 
 DB 端 CHECK 约束：
 
 ```sql
 CONSTRAINT action_valid CHECK (action IN (
     'imported','adopted','renamed','moved','edited_note',
-    'deleted','restored','external_modified'
+    'deleted','removed_from_index','restored','external_modified'
 ))
 ```
 

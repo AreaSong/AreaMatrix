@@ -96,7 +96,7 @@ impl Drop for ReplacementFileGuard {
     }
 }
 
-fn send_to_system_trash(path: &Path) -> CoreResult<()> {
+pub(super) fn send_to_system_trash(path: &Path) -> CoreResult<()> {
     match trash::delete(path) {
         Ok(()) => Ok(()),
         Err(error) => {

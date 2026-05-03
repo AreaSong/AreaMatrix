@@ -321,8 +321,8 @@ pub fn import_file(
 /// writes are blocked, `CoreError::Io { message }` for filesystem failures,
 /// `CoreError::Db { message }` for metadata persistence failures, and
 /// `CoreError::Internal { message }` for unexpected Trash or state-transition failures.
-pub fn delete_file(_repo_path: String, _file_id: i64) -> CoreResult<()> {
-    not_implemented()
+pub fn delete_file(repo_path: String, file_id: i64) -> CoreResult<()> {
+    storage::delete_file(repo_path, file_id)
 }
 
 /// Removes an indexed file entry from AreaMatrix without touching the source file.
@@ -340,8 +340,8 @@ pub fn delete_file(_repo_path: String, _file_id: i64) -> CoreResult<()> {
 /// absent, `CoreError::PermissionDenied { path }` when metadata writes are blocked,
 /// `CoreError::Db { message }` for SQLite failures, and
 /// `CoreError::Internal { message }` for unexpected state-transition failures.
-pub fn remove_index_entry(_repo_path: String, _file_id: i64) -> CoreResult<()> {
-    not_implemented()
+pub fn remove_index_entry(repo_path: String, file_id: i64) -> CoreResult<()> {
+    storage::remove_index_entry(repo_path, file_id)
 }
 
 /// Renames a file entry to a conflict-free filename in its current category.
