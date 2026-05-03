@@ -3536,6 +3536,65 @@
     "2-1/task-02": {
       "attempts": 1,
       "copy_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260502_233358/phase-2/2-1-task-02-copy-attempt-1.log",
+      "git": {
+        "attempts": 1,
+        "branch": "codex/areamatrix-task-loop-20260501_132850",
+        "changed_files": [
+          ".codex/task-loop-logs/20260502_233358/phase-2/2-1-task-02-copy-attempt-1.log",
+          ".codex/task-loop-logs/20260502_233358/phase-2/2-1-task-02-verify-attempt-1.log",
+          ".codex/task-loop-runs/20260502_233358/summary.json",
+          ".codex/task-loop-runs/index.json",
+          "apps/macos/AreaMatrix/Bridge/CoreBridge.swift",
+          "apps/macos/AreaMatrix/Models/AppShellModel.swift",
+          "apps/macos/AreaMatrix/Views/MainWindow.swift",
+          "apps/macos/AreaMatrixTests/AreaMatrixShellTests.swift",
+          "tasks/prompts/_shared/progress.json"
+        ],
+        "commit": "291f5f9043bf7c4ef598db7be5c68afa0a8437fe",
+        "copy_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260502_233358/phase-2/2-1-task-02-copy-attempt-1.log",
+        "diff_name_status": [
+          "M\t.codex/task-loop-runs/20260502_233358/summary.json",
+          "M\t.codex/task-loop-runs/index.json",
+          "M\tapps/macos/AreaMatrix/Bridge/CoreBridge.swift",
+          "M\tapps/macos/AreaMatrix/Models/AppShellModel.swift",
+          "M\tapps/macos/AreaMatrix/Views/MainWindow.swift",
+          "M\tapps/macos/AreaMatrixTests/AreaMatrixShellTests.swift",
+          "M\ttasks/prompts/_shared/progress.json"
+        ],
+        "label": "2-1/task-02",
+        "mode": "commit",
+        "phase": "phase-2",
+        "push_status": "not_requested",
+        "remote": "",
+        "run_id": "20260502_233358",
+        "staged_name_status": [
+          "A\t.codex/task-loop-logs/20260502_233358/phase-2/2-1-task-02-copy-attempt-1.log",
+          "A\t.codex/task-loop-logs/20260502_233358/phase-2/2-1-task-02-verify-attempt-1.log",
+          "M\t.codex/task-loop-runs/20260502_233358/summary.json",
+          "M\t.codex/task-loop-runs/index.json",
+          "M\tapps/macos/AreaMatrix/Bridge/CoreBridge.swift",
+          "M\tapps/macos/AreaMatrix/Models/AppShellModel.swift",
+          "M\tapps/macos/AreaMatrix/Views/MainWindow.swift",
+          "M\tapps/macos/AreaMatrixTests/AreaMatrixShellTests.swift",
+          "M\ttasks/prompts/_shared/progress.json"
+        ],
+        "status": "committed",
+        "status_short": [
+          " M .codex/task-loop-runs/20260502_233358/summary.json",
+          " M .codex/task-loop-runs/index.json",
+          " M apps/macos/AreaMatrix/Bridge/CoreBridge.swift",
+          " M apps/macos/AreaMatrix/Models/AppShellModel.swift",
+          " M apps/macos/AreaMatrix/Views/MainWindow.swift",
+          " M apps/macos/AreaMatrixTests/AreaMatrixShellTests.swift",
+          " M tasks/prompts/_shared/progress.json",
+          "?? .codex/task-loop-logs/20260502_233358/phase-2/2-1-task-02-copy-attempt-1.log",
+          "?? .codex/task-loop-logs/20260502_233358/phase-2/2-1-task-02-verify-attempt-1.log"
+        ],
+        "summary_file": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-runs/20260502_233358/summary.json",
+        "task_name": "2-1-task-02",
+        "updated_at": "2026-05-03T18:03:38.677289+00:00",
+        "verify_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260502_233358/phase-2/2-1-task-02-verify-attempt-1.log"
+      },
       "note": "自动执行验收通过",
       "phase": "phase-2",
       "risk": "High",
@@ -3550,7 +3609,7 @@
     "retries": 8,
     "task_count": 637
   },
-  "updated_at": "2026-05-03T18:03:38.426287+00:00",
+  "updated_at": "2026-05-03T18:03:38.680207+00:00",
   "verify_root": "/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/verify-ready",
   "version": 1
 }
