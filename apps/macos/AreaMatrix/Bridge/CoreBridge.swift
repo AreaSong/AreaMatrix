@@ -16,10 +16,6 @@ protocol CoreScanSessionReading: Sendable {
     func latestScanSession(repoPath: String) async throws -> ScanSessionSnapshot?
 }
 
-protocol CoreRepositoryAdopting: Sendable {
-    func adoptExistingRepo(repoPath: String) async throws -> ScanSessionSnapshot?
-}
-
 enum RepoInitModeSnapshot: String, Equatable, Sendable {
     case createEmpty = "CreateEmpty"
     case adoptExisting = "AdoptExisting"
@@ -61,8 +57,22 @@ struct RepoPathValidationSnapshot: Equatable, Sendable {
     var isInsideAreaMatrix: Bool
     var isICloudPath: Bool
     var hasUnfinishedScanSession: Bool
+    var availableCapacityBytes: Int64?
+    var isExternalVolume: Bool?
     var recommendedMode: RepoInitModeSnapshot?
     var issues: [RepoPathIssueSnapshot]
+}
+
+extension RepoPathValidationSnapshot {
+    static let minimumUsableCapacityBytes: Int64 = 512 * 1024 * 1024
+
+    var hasInsufficientAvailableCapacity: Bool {
+        availableCapacityBytes.map { $0 < Self.minimumUsableCapacityBytes } ?? false
+    }
+
+    var hasMissingEnvironmentChecks: Bool {
+        availableCapacityBytes == nil || isExternalVolume == nil
+    }
 }
 
 struct RepositoryInitializationDraft: Equatable, Sendable {
@@ -159,6 +169,8 @@ private extension ScanSessionStatusSnapshot {
 
 private extension RepoPathValidationSnapshot {
     init(coreValidation: RepoPathValidation) {
+        let environment = RepositoryPathEnvironmentSnapshot.inspect(repoPath: coreValidation.repoPath)
+
         repoPath = coreValidation.repoPath
         exists = coreValidation.exists
         isDirectory = coreValidation.isDirectory
@@ -169,8 +181,31 @@ private extension RepoPathValidationSnapshot {
         isInsideAreaMatrix = coreValidation.isInsideAreaMatrix
         isICloudPath = coreValidation.isIcloudPath
         hasUnfinishedScanSession = coreValidation.hasUnfinishedScanSession
+        availableCapacityBytes = environment.availableCapacityBytes
+        isExternalVolume = environment.isExternalVolume
         recommendedMode = coreValidation.recommendedMode.map(RepoInitModeSnapshot.init(coreMode:))
         issues = coreValidation.issues.map(RepoPathIssueSnapshot.init(coreIssue:))
+    }
+}
+
+private struct RepositoryPathEnvironmentSnapshot {
+    var availableCapacityBytes: Int64?
+    var isExternalVolume: Bool?
+
+    static func inspect(repoPath: String) -> RepositoryPathEnvironmentSnapshot {
+        do {
+            let keys: Set<URLResourceKey> = [
+                .volumeAvailableCapacityForImportantUsageKey, .volumeAvailableCapacityKey, .volumeIsInternalKey,
+            ]
+            let values = try URL(fileURLWithPath: repoPath).resourceValues(forKeys: keys)
+            return RepositoryPathEnvironmentSnapshot(
+                availableCapacityBytes: values.volumeAvailableCapacityForImportantUsage ??
+                    values.volumeAvailableCapacity.map(Int64.init),
+                isExternalVolume: values.volumeIsInternal.map { !$0 }
+            )
+        } catch {
+            return RepositoryPathEnvironmentSnapshot(availableCapacityBytes: nil, isExternalVolume: nil)
+        }
     }
 }
 
@@ -258,18 +293,6 @@ actor CoreBridge {
 
     func latestScanSession(repoPath: String) async throws -> ScanSessionSnapshot? {
         try latestCoreScanSession(repoPath: repoPath).map(ScanSessionSnapshot.init(coreSession:))
-    }
-
-    func adoptExistingRepo(repoPath: String) async throws -> ScanSessionSnapshot? {
-        try initializeCoreRepo(
-            repoPath: repoPath,
-            options: RepoInitOptions(
-                mode: .adoptExisting,
-                createDefaultCategories: false,
-                overviewOutput: .generatedOnly
-            )
-        )
-        return try latestCoreScanSession(repoPath: repoPath).map(ScanSessionSnapshot.init(coreSession:))
     }
 
     func loadConfig() async throws -> Never {
@@ -391,7 +414,6 @@ extension CoreBridge:
     CoreConfigurationLoading,
     CoreConfigurationUpdating,
     CoreErrorMapping,
-    CoreRepositoryAdopting,
     CoreRepositoryPathValidating,
     CoreScanSessionReading {}
 
@@ -401,10 +423,6 @@ private func loadCoreConfig(repoPath: String) throws -> RepoConfig {
 
 private func updateCoreConfig(repoPath: String, newConfig: RepoConfig) throws {
     try updateConfig(repoPath: repoPath, newConfig: newConfig)
-}
-
-private func initializeCoreRepo(repoPath: String, options: RepoInitOptions) throws {
-    try initRepo(repoPath: repoPath, options: options)
 }
 
 private func validateCoreRepoPath(repoPath: String) throws -> RepoPathValidation {

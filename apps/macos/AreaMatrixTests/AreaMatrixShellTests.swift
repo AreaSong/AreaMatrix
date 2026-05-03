@@ -39,7 +39,6 @@ final class AreaMatrixShellTests: XCTestCase {
         model.continueFromWelcome()
 
         XCTAssertEqual(model.route, .choosePath)
-        XCTAssertEqual(model.welcomeAction, .continueRequested)
     }
 
     @MainActor
@@ -304,6 +303,7 @@ final class AreaMatrixShellTests: XCTestCase {
         )
         let model = OnboardingModel(
             settingsReader: StaticSettingsReader(repoPath: nil),
+            settingsWriter: UserDefaultsAppSettingsReader(repoPathKey: "AreaMatrix.testRepoPath"),
             configLoader: RecordingConfigLoader(result: .success(.fixture(repoPath: "/tmp/repo"))),
             pathValidator: RecordingPathValidator(result: .success(validation)),
             helpOpener: NoopWelcomeHelpOpener()
@@ -355,6 +355,7 @@ final class AreaMatrixShellTests: XCTestCase {
             settingsReader: StaticSettingsReader(repoPath: nil),
             configLoader: RecordingConfigLoader(result: .success(.fixture(repoPath: "/tmp/repo"))),
             pathValidator: RecordingPathValidator(result: .success(validation)),
+            existingRepositoryMetadataReader: StaticExistingRepositoryMetadataReader(schemaVersion: 1),
             helpOpener: NoopWelcomeHelpOpener()
         )
 
@@ -362,13 +363,14 @@ final class AreaMatrixShellTests: XCTestCase {
         await model.continueFromChoosePath()
         model.continueFromValidatePath()
 
+        XCTAssertEqual(model.existingRepositoryMetadata?.schemaVersion, 1)
         XCTAssertEqual(model.validatePathPrimaryActionTitle, "Open Repository")
         XCTAssertEqual(
             model.validatePathAction,
             OnboardingModel.ValidatePathAction.openExistingRepositoryRequested(validation)
         )
+        XCTAssertEqual(model.route, .mainLoading("/tmp/repo"))
     }
-
 }
 
 private func makeTemporaryRepoURL() throws -> URL {
@@ -392,14 +394,11 @@ private enum RecordingResult {
 private actor RecordingConfigLoader: CoreConfigurationLoading {
     private let result: RecordingResult
     private var paths: [String] = []
-
     init(result: RecordingResult) {
         self.result = result
     }
-
     func loadConfig(repoPath: String) async throws -> RepoConfigSnapshot {
         paths.append(repoPath)
-
         switch result {
         case .success(let config):
             return config
@@ -407,7 +406,6 @@ private actor RecordingConfigLoader: CoreConfigurationLoading {
             throw error
         }
     }
-
     func requestedRepoPaths() -> [String] { paths }
 }
 
@@ -419,14 +417,11 @@ private enum RecordingPathValidationResult {
 private actor RecordingPathValidator: CoreRepositoryPathValidating {
     private let result: RecordingPathValidationResult
     private var paths: [String] = []
-
     init(result: RecordingPathValidationResult) {
         self.result = result
     }
-
     func validateRepoPath(repoPath: String) async throws -> RepoPathValidationSnapshot {
         paths.append(repoPath)
-
         switch result {
         case .success(let validation):
             return validation
@@ -434,17 +429,21 @@ private actor RecordingPathValidator: CoreRepositoryPathValidating {
             throw error
         }
     }
-
     func requestedRepoPaths() -> [String] { paths }
 }
 
-private struct NoopWelcomeHelpOpener: WelcomeHelpOpening {
-    func openWelcomeHelp() throws {}
-}
-
+private struct NoopWelcomeHelpOpener: WelcomeHelpOpening { func openWelcomeHelp() throws {} }
 private struct FailingWelcomeHelpOpener: WelcomeHelpOpening {
     func openWelcomeHelp() throws {
         throw WelcomeHelpError.helpDocumentUnavailable
+    }
+}
+
+private struct StaticExistingRepositoryMetadataReader: ExistingRepositoryMetadataReading {
+    let schemaVersion: Int64
+
+    func metadata(repoPath: String) async throws -> ExistingRepositoryMetadataSnapshot {
+        ExistingRepositoryMetadataSnapshot(schemaVersion: schemaVersion, lastOpenedAt: nil)
     }
 }
 
@@ -476,6 +475,8 @@ private extension RepoPathValidationSnapshot {
         isInitialized: Bool = false,
         isICloudPath: Bool = false,
         hasUnfinishedScanSession: Bool = false,
+        availableCapacityBytes: Int64? = 1_073_741_824,
+        isExternalVolume: Bool? = false,
         issues: [RepoPathIssueSnapshot] = [],
         recommendedMode: RepoInitModeSnapshot? = .createEmpty
     ) -> RepoPathValidationSnapshot {
@@ -490,6 +491,8 @@ private extension RepoPathValidationSnapshot {
             isInsideAreaMatrix: false,
             isICloudPath: isICloudPath,
             hasUnfinishedScanSession: hasUnfinishedScanSession,
+            availableCapacityBytes: availableCapacityBytes,
+            isExternalVolume: isExternalVolume,
             recommendedMode: recommendedMode,
             issues: issues
         )

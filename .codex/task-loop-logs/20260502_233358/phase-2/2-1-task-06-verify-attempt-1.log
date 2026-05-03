@@ -1,0 +1,55 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`2-1/task-06`
+- 对应路径：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-1-first-launch-main/task-06-s1-03-page-integration-verify.md`
+- 实际核对：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：9
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：5
+- 阻塞项数：3
+
+四、逐项验收结果
+
+- Exact Docs / Existing Code / Expected New Paths：通过。6 个 Exact Docs 均存在并已读取；`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`core/area_matrix.udl` 均存在。
+- Forbidden Touches：通过。`git status --short -- core/src` 无输出，未发现 `core/src/**` 被触碰。
+- page-feature task 覆盖：不通过。`C1-01/C1-03/C1-21` 有部分 Swift/CoreBridge 接入，但整页闭环未完成。
+- 页面状态、入口、退出、错误态、CoreBridge 闭环：不通过。`Continue`、`Open Repository`、repair/error 出口不完整。
+- 移除 mock / fixture / 硬编码状态：不通过。生产 UI 仍存在 handoff-only / spinner-only 的非闭环状态。
+- 不新增 control map 外能力：通过。未发现 S1-03 之外的新 Core 能力扩展。
+- 完成标准：不通过。S1-03 不能按 page spec 和 control map 完整验收。
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过。页面路由停在中间态，未形成 S1-03 到 S1-04 / S1-10 / S1-11 / S1-37 的完整控制流。
+- 注释 / rustdoc / 文档同步：不通过。实现未对齐 `S1-03-validate-path.md` 的 Open Repository、schema 信息、错误/修复出口要求。
+- 错误处理与边界处理：不通过。C1-21 mapping 已接入，但高风险 repo 错误只显示/阻断，缺少明确修复或 repo error 路径。
+- 测试与验证覆盖：不通过。兜底 XCTest 29 tests pass，但测试没有覆盖 create-empty Continue 进入 S1-04，也没有覆盖 Open Repository 真打开流程。
+- 占位、硬编码、mock-only、一次性实现检查：不通过。`ExistingRepositoryHandoffView` 只有进度指示，缺主动作和真实打开流程。
+
+六、阻塞项
+
+- P0：新建/空目录分支 `Continue` 没有进入 `S1-04 confirm-init`。说明：page spec 要求新建或接管分支点击 Continue 进入 S1-04；当前 `.createEmpty` 默认分支只写 `validatePathAction`，不改变 route。路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/AppShellModel.swift:333`
+- P0：已存在完整 repo 分支不是可执行的 Open Repository 闭环。说明：page spec 要求底部有主按钮 `Open Repository`，点击后保存/更新 repo 选择并进入 `S1-10 main-loading`；当前 route 进入 handoff view，footer 只有 Back、Choose another folder 和 `ProgressView()`。路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/MainWindow.swift:153`
+- P1：不完整 / 不兼容 / corrupted / repair-needed repo 没有明确错误或修复出口。说明：page spec 要求进入 `S1-11 main-repo-error` 或 `S1-37 db-repair-confirm`；当前 Route enum 没有这些状态，unfinished scan 仅返回“请先进入修复流程”。路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/AppShellModel.swift:143`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/AppShellModel.swift:444`
+
+七、验证情况
+
+- 已运行：`xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：失败，退出码 65；build 完成后被本地 sandbox 阻断 `com.apple.testmanagerd.control` 通信。
+- 已运行：`bash scripts/check-macos-tests.sh`：通过；标准 xcodebuild 同样被 sandbox 阻断后，复用 XCTest bundle，`xcrun xctest` 执行 29 tests，0 failures。
+- 已运行：`git status --short -- core/src`：通过，无 Forbidden Touches 证据。
+- 缺失：没有证明 S1-03 Open Repository 真进入主加载/主列表/空列表/错误页的测试或实现证据。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+
+
+VERIFY_RESULT: FAIL

@@ -1,5 +1,83 @@
 import Foundation
 
+protocol ExistingRepositoryMetadataReading: Sendable {
+    func metadata(repoPath: String) async throws -> ExistingRepositoryMetadataSnapshot
+}
+
+struct ExistingRepositoryMetadataSnapshot: Equatable, Sendable {
+    var schemaVersion: Int64
+    var lastOpenedAt: Int64?
+}
+
+struct ConfigLoadFailure: Equatable, Sendable {
+    var repoPath: String
+    var title: String
+    var message: String
+    var recoveryAction: String
+
+    static func map(repoPath: String, error: Error) -> ConfigLoadFailure {
+        if let coreError = error as? CoreError {
+            return map(repoPath: repoPath, coreError: coreError)
+        }
+
+        if let bridgeError = error as? CoreBridgeError {
+            return ConfigLoadFailure(
+                repoPath: repoPath,
+                title: "Unable to load repository settings",
+                message: bridgeError.localizedDescription,
+                recoveryAction: "Check the Core bridge integration, then retry opening the repository."
+            )
+        }
+
+        return ConfigLoadFailure(
+            repoPath: repoPath,
+            title: "Unable to load repository settings",
+            message: error.localizedDescription,
+            recoveryAction: "Retry opening the repository or start setup again with a different folder."
+        )
+    }
+
+    private static func map(repoPath: String, coreError: CoreError) -> ConfigLoadFailure {
+        switch coreError {
+        case .Config(let reason):
+            return ConfigLoadFailure(
+                repoPath: repoPath,
+                title: "Repository settings are invalid",
+                message: "AreaMatrix could not read the saved settings: \(reason)",
+                recoveryAction: "Start setup again or choose a different repository folder."
+            )
+        case .PermissionDenied(let path):
+            return ConfigLoadFailure(
+                repoPath: repoPath,
+                title: "Repository settings need permission",
+                message: "AreaMatrix cannot read repository settings at \(path).",
+                recoveryAction: "Grant folder access, then retry opening the repository."
+            )
+        case .Io(let message):
+            return ConfigLoadFailure(
+                repoPath: repoPath,
+                title: "Repository settings are unavailable",
+                message: "File system error while reading settings: \(message)",
+                recoveryAction: "Make sure the folder is available, then retry."
+            )
+        case .Db(let message):
+            return ConfigLoadFailure(
+                repoPath: repoPath,
+                title: "Repository metadata cannot be opened",
+                message: "Database error while reading settings: \(message)",
+                recoveryAction: "Retry opening the repository or start setup again."
+            )
+        default:
+            return ConfigLoadFailure(
+                repoPath: repoPath,
+                title: "Unable to load repository settings",
+                message: coreError.localizedDescription,
+                recoveryAction: "Retry opening the repository or start setup again with a different folder."
+            )
+        }
+    }
+}
+
 enum CoreBridgeBoundary: String, CaseIterable, Equatable, Sendable {
     case getVersion = "get_version"
     case initLogging = "init_logging"
@@ -187,5 +265,80 @@ enum CoreBridgeError: Error, Equatable, LocalizedError, Sendable {
         case .generatedBindingsUnavailable(let boundary, let state):
             return "\(state.statusLabel): \(boundary.rawValue) requires generated UniFFI bindings."
         }
+    }
+}
+
+struct SQLiteExistingRepositoryMetadataReader: ExistingRepositoryMetadataReading {
+    private static let supportedSchemaVersion: Int64 = 1
+
+    func metadata(repoPath: String) async throws -> ExistingRepositoryMetadataSnapshot {
+        let schemaVersion = try Self.readSchemaVersion(repoPath: repoPath)
+        guard schemaVersion <= Self.supportedSchemaVersion else {
+            throw CoreError.Config(reason: "unsupported schema version \(schemaVersion)")
+        }
+
+        return ExistingRepositoryMetadataSnapshot(schemaVersion: schemaVersion, lastOpenedAt: nil)
+    }
+
+    private static func readSchemaVersion(repoPath: String) throws -> Int64 {
+        let dbURL = URL(fileURLWithPath: repoPath)
+            .appendingPathComponent(".areamatrix", isDirectory: true)
+            .appendingPathComponent("index.db")
+        guard FileManager.default.fileExists(atPath: dbURL.path) else {
+            throw CoreError.Db(message: "missing .areamatrix/index.db")
+        }
+
+        var database: OpaquePointer?
+        let flags = SQLITE_OPEN_READONLY
+        let openResult = sqlite3_open_v2(dbURL.path, &database, flags, nil)
+        guard openResult == SQLITE_OK, let openedDatabase = database else {
+            let message = sqliteMessage(database)
+            if let database {
+                sqlite3_close(database)
+            }
+            throw CoreError.Db(message: message)
+        }
+        defer {
+            sqlite3_close(openedDatabase)
+        }
+
+        let version = try readRequiredInt64(
+            database: openedDatabase,
+            sql: "SELECT COALESCE(MAX(version), 0) FROM schema_version"
+        )
+        guard version > 0 else {
+            throw CoreError.Db(message: "schema_version is empty")
+        }
+
+        return version
+    }
+
+    private static func readRequiredInt64(database: OpaquePointer, sql: String) throws -> Int64 {
+        var statement: OpaquePointer?
+        let prepareResult = sqlite3_prepare_v2(database, sql, -1, &statement, nil)
+        guard prepareResult == SQLITE_OK, let preparedStatement = statement else {
+            let message = sqliteMessage(database)
+            if let statement {
+                sqlite3_finalize(statement)
+            }
+            throw CoreError.Db(message: message)
+        }
+        defer {
+            sqlite3_finalize(preparedStatement)
+        }
+
+        guard sqlite3_step(preparedStatement) == SQLITE_ROW else {
+            throw CoreError.Db(message: "schema_version row is missing")
+        }
+
+        return sqlite3_column_int64(preparedStatement, 0)
+    }
+
+    private static func sqliteMessage(_ database: OpaquePointer?) -> String {
+        guard let database, let message = sqlite3_errmsg(database) else {
+            return "sqlite metadata read failed"
+        }
+
+        return String(cString: message)
     }
 }

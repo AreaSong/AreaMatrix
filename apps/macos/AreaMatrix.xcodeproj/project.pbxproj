@@ -15,6 +15,8 @@
 		0A0000000000000000000007 /* CoreBridgePlaceholderState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000019 /* CoreBridgePlaceholderState.swift */; };
 		0A0000000000000000000008 /* AreaMatrixShellTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000001A /* AreaMatrixShellTests.swift */; };
 		0A0000000000000000000009 /* area_matrix.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000001C /* area_matrix.swift */; };
+		0A000000000000000000000A /* ValidatePathStepView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000001F /* ValidatePathStepView.swift */; };
+		0A000000000000000000000B /* ValidatePathIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000020 /* ValidatePathIntegrationTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -42,6 +44,8 @@
 		0A000000000000000000001C /* area_matrix.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/UniFFI/area_matrix.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000001D /* area_matrixFFI.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AreaMatrix/Bridge/UniFFI/area_matrixFFI.h; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000001E /* module.modulemap */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.module-map"; path = AreaMatrix/Bridge/UniFFI/module.modulemap; sourceTree = SOURCE_ROOT; };
+		0A000000000000000000001F /* ValidatePathStepView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Onboarding/ValidatePathStepView.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000020 /* ValidatePathIntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ValidatePathIntegrationTests.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -114,6 +118,7 @@
 			isa = PBXGroup;
 			children = (
 				0A0000000000000000000014 /* MainWindow.swift */,
+				0A000000000000000000001F /* ValidatePathStepView.swift */,
 			);
 			name = Views;
 			sourceTree = "<group>";
@@ -158,6 +163,7 @@
 			isa = PBXGroup;
 			children = (
 				0A000000000000000000001A /* AreaMatrixShellTests.swift */,
+				0A0000000000000000000020 /* ValidatePathIntegrationTests.swift */,
 			);
 			name = Tests;
 			sourceTree = "<group>";
@@ -287,6 +293,7 @@
 				0A0000000000000000000006 /* AppShellModel.swift in Sources */,
 				0A0000000000000000000007 /* CoreBridgePlaceholderState.swift in Sources */,
 				0A0000000000000000000009 /* area_matrix.swift in Sources */,
+				0A000000000000000000000A /* ValidatePathStepView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -296,6 +303,7 @@
 			files = (
 				0A0000000000000000000004 /* AreaMatrixAppSmokeTests.swift in Sources */,
 				0A0000000000000000000008 /* AreaMatrixShellTests.swift in Sources */,
+				0A000000000000000000000B /* ValidatePathIntegrationTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

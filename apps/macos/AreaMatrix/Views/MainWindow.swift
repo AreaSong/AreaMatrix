@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 struct MainWindow: View {
@@ -22,6 +23,27 @@ struct MainWindow: View {
             }
         }
         .frame(minWidth: 760, minHeight: 520)
+        .background(WindowCloseConfirmationObserver(
+            shouldConfirm: { model.shouldConfirmSetupExit },
+            onAttemptClose: model.requestSetupQuit
+        ))
+        .onExitCommand(perform: model.requestSetupQuit)
+        .confirmationDialog(
+            "Quit setup?",
+            isPresented: Binding(
+                get: { model.isSetupQuitConfirmationPresented },
+                set: { if !$0 { model.cancelSetupQuit() } }
+            )
+        ) {
+            Button("Quit", role: .destructive) {
+                if model.confirmSetupQuit() {
+                    NSApplication.shared.keyWindow?.close()
+                }
+            }
+            Button("Cancel", role: .cancel, action: model.cancelSetupQuit)
+        } message: {
+            Text("AreaMatrix will not create .areamatrix/ or save this repository selection.")
+        }
         .task {
             await model.bootstrapIfNeeded()
         }
@@ -46,23 +68,16 @@ struct MainWindow: View {
                 errorMessage: model.repositoryPathError,
                 isValidating: model.isValidatingRepositoryPath,
                 canContinue: model.canContinueFromChoosePath,
-                onBack: model.showWelcome,
+                onBack: model.returnFromChoosePath,
                 onChoose: model.chooseRepositoryPath,
-                onUseDefault: {
-                    Task {
-                        await model.useDefaultRepositoryPath()
-                    }
-                },
-                onContinue: {
-                    Task {
-                        await model.continueFromChoosePath()
-                    }
-                }
+                onUseDefault: { Task { await model.useDefaultRepositoryPath() } },
+                onContinue: { Task { await model.continueFromChoosePath() } }
             )
         case .validatePath:
             ValidatePathStepView(
                 pathText: model.repositoryPathText,
                 validation: model.repositoryPathValidation,
+                existingRepositoryMetadata: model.existingRepositoryMetadata,
                 latestScanSession: model.latestScanSession,
                 errorMessage: model.repositoryPathError,
                 errorMapping: model.repositoryPathErrorMapping,
@@ -70,7 +85,9 @@ struct MainWindow: View {
                 isICloudRiskAccepted: model.isICloudRiskAccepted,
                 canContinue: model.canContinueFromValidatePath,
                 primaryActionTitle: model.validatePathPrimaryActionTitle,
-                onBack: model.showChoosePath,
+                showsCancel: model.validatePathReturnRouteIsSettings,
+                onBack: model.returnFromValidatePath,
+                onCancel: model.returnFromValidatePath,
                 onChangePath: model.showChoosePath,
                 onRetry: {
                     Task {
@@ -86,6 +103,19 @@ struct MainWindow: View {
                 onBack: model.showValidatePath,
                 onChangePath: model.showChoosePath
             )
+        case .mainLoading(let repoPath):
+            MainLoadingView(repoPath: repoPath, onChooseAnotherFolder: model.showChoosePath)
+        case .mainRepoError(let repoPath, let mapping):
+            MainRepoErrorView(repoPath: repoPath, mapping: mapping, onChooseAnotherFolder: model.showChoosePath)
+        case .dbRepairConfirm(let repoPath, let scanSession, let mapping):
+            DBRepairConfirmView(
+                repoPath: repoPath,
+                scanSession: scanSession,
+                mapping: mapping,
+                onChooseAnotherFolder: model.showChoosePath
+            )
+        case .settingsRepository:
+            SettingsRepositoryReturnView()
         case .repositoryReady(let config):
             RepositoryReadyView(config: config)
         case .configurationError(let failure):
@@ -99,6 +129,61 @@ struct MainWindow: View {
                 onStartSetup: model.showWelcome
             )
         }
+    }
+}
+
+private struct WindowCloseConfirmationObserver: NSViewRepresentable {
+    let shouldConfirm: () -> Bool
+    let onAttemptClose: () -> Void
+
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView(frame: .zero)
+        DispatchQueue.main.async { context.coordinator.attach(to: view.window) }
+        return view
+    }
+
+    func updateNSView(_ view: NSView, context: Context) {
+        context.coordinator.shouldConfirm = shouldConfirm
+        context.coordinator.onAttemptClose = onAttemptClose
+        DispatchQueue.main.async { context.coordinator.attach(to: view.window) }
+    }
+
+    func makeCoordinator() -> Coordinator { Coordinator(shouldConfirm: shouldConfirm, onAttemptClose: onAttemptClose) }
+
+    final class Coordinator: NSObject, NSWindowDelegate {
+        var shouldConfirm: () -> Bool
+        var onAttemptClose: () -> Void
+        private weak var observedWindow: NSWindow?
+        private weak var previousDelegate: NSWindowDelegate?
+
+        init(shouldConfirm: @escaping () -> Bool, onAttemptClose: @escaping () -> Void) {
+            self.shouldConfirm = shouldConfirm
+            self.onAttemptClose = onAttemptClose
+        }
+
+        func attach(to window: NSWindow?) {
+            guard let window, observedWindow !== window else { return }
+            previousDelegate = window.delegate
+            window.delegate = self
+            observedWindow = window
+        }
+
+        func windowShouldClose(_ sender: NSWindow) -> Bool {
+            guard shouldConfirm() else {
+                return previousDelegate?.windowShouldClose?(sender) ?? true
+            }
+
+            onAttemptClose()
+            return false
+        }
+    }
+}
+
+private struct SettingsRepositoryReturnView: View {
+    var body: some View {
+        ContentUnavailableView {
+            Label("Repository settings", systemImage: "gearshape")
+        } description: { Text("Repository change was cancelled before opening a new repository.") }
     }
 }
 
@@ -409,19 +494,5 @@ private struct ConfigurationErrorView: View {
         }
         .padding(48)
         .frame(maxWidth: 620, maxHeight: .infinity, alignment: .center)
-    }
-}
-
-private struct RepositoryReadyView: View {
-    let config: RepoConfigSnapshot
-
-    var body: some View {
-        ContentUnavailableView {
-            Label("Repository ready", systemImage: "checkmark.circle")
-        } description: {
-            Text(config.repoPath)
-            Text("Locale: \(config.locale)")
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }

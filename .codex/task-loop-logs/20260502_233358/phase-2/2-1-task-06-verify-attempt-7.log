@@ -1,0 +1,75 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`2-1/task-06`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-1-first-launch-main/task-06-s1-03-page-integration-verify.md`
+- 代码范围：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+- Forbidden Touches：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+三、完成度摘要
+
+- 已覆盖项数：11
+- 未覆盖项数：0
+- 通过项数：11
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：Exact Docs / manifest / Existing Code 覆盖
+- 结果：通过
+- 证据：6 个 Exact Docs 均已读取；manifest `2-1/task-06` 声明 S1-03 绑定 `C1-01, C1-03, C1-21`，control map 同样声明 S1-03 只消费这些能力。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-2.md:143`，`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:18`
+
+- 项目：所有 page-feature task 完成
+- 结果：通过
+- 证据：`2-1/task-03/04/05` 在 progress 中为 completed，verify logs 最终均为 `VERIFY_RESULT: PASS`；当前代码也实际覆盖 C1-01 路径校验、C1-03 scan session / adopt handoff、C1-21 error mapping。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/progress.json:3743`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift:290`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/AppShellModel.swift:352`
+
+- 项目：页面状态、入口、退出、错误态、CoreBridge 调用闭环
+- 结果：通过
+- 证据：S1-02 进入 validate 后立即 `validateRepoPath`；成功后 Continue / Open Repository 分支明确；不可写、容量缺失、scan session、schema/db 错误分别阻断或路由到错误/修复页；Back / Change Path / Settings / Quit 均有返回路径。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/AppShellModel.swift:252`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/AppShellModel.swift:275`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/AppShellModel.swift:490`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/MainWindow.swift:76`
+
+- 项目：移除 mock / fixture / 硬编码最终态
+- 结果：通过
+- 证据：生产路径默认注入 `CoreBridge()`，真实调用生成 UniFFI binding；fixture 仅出现在 XCTest helper 中，未用于生产闭环。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/AppShellModel.swift:154`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift:290`
+
+- 项目：不新增 control map 外功能
+- 结果：通过
+- 证据：S1-03 当前只消费 `validate_repo_path`、`get_latest_scan_session`、`map_core_error` 相关链路；未在本页执行 `init_repo` 或相邻页面导入/列表能力。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:18`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift:290`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。View / Model / CoreBridge 分层清楚，相关生产 Swift 文件未超过 500 行。
+- 注释 / rustdoc / 文档同步：通过。UDL 与 `docs/api/core-api.md` 的 S1-03 相关 API / gap 说明对齐。
+- 错误处理与边界处理：通过。`CoreError` 经 `map_core_error` 结构化映射，DB / Config / Permission / validation 缺失分支均显式处理。
+- 测试与验证覆盖：通过。39 个 XCTest 经本地 sandbox fallback 全部通过；`git diff --check` 通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。未发现生产路径 mock-only 或静态通过态。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+  - 结果：构建完成，但 test runner 因本地 sandbox 无法访问 `com.apple.testmanagerd.control` 返回 code 65。
+- 已运行：`bash scripts/check-macos-tests.sh`
+  - 结果：通过。脚本按仓库测试策略复用已构建 `AreaMatrixTests.xctest`，`xcrun xctest` 执行 39 tests，0 failures。
+- 已运行：`git diff --check -- apps/macos/AreaMatrix apps/macos/AreaMatrixTests docs/api/core-api.md`
+  - 结果：通过。
+- 已运行：`git diff --name-only -- core/src`
+  - 结果：无输出，未发现 Forbidden Touches 被修改。
+- 缺失：未在非 sandbox CI 环境复跑原生 `xcodebuild test`；本地已按仓库文档允许的 fallback 补齐执行证据。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。S1-03 可以按 page spec 与 control map 完整验收，声明的 `C1-01 / C1-03 / C1-21` 均已真实接入或有明确错误/修复路由证据。
+
+VERIFY_RESULT: PASS
