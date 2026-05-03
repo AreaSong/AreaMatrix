@@ -11,6 +11,7 @@ pub mod config;
 pub mod db;
 pub mod domain;
 pub mod error;
+mod icloud_conflicts;
 mod note;
 pub mod overview;
 mod recovery;

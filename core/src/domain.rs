@@ -315,6 +315,34 @@ pub struct MoveToCategoryPreview {
     pub will_move_file: bool,
 }
 
+/// Lifecycle state for an iCloud conflicted copy pair.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub enum ICloudConflictStatus {
+    /// The pair still needs explicit user review before any resolution action.
+    NeedsReview,
+    /// The pair was marked resolved by a later resolution flow.
+    Resolved,
+}
+
+/// Read-only iCloud conflicted copy pair returned to Swift.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct ICloudConflictPair {
+    /// Stable identifier for later single-item resolution.
+    pub conflict_id: String,
+    /// Repository-relative original path when it can be identified.
+    pub original_path: Option<String>,
+    /// Repository-relative conflicted copy path.
+    pub conflicted_copy_path: String,
+    /// Original file modification timestamp when available.
+    pub original_modified_at: Option<i64>,
+    /// Conflicted copy modification timestamp.
+    pub conflicted_modified_at: i64,
+    /// Current user-visible conflict state.
+    pub status: ICloudConflictStatus,
+    /// Reason shown when pairing is uncertain and needs user review.
+    pub uncertainty_reason: Option<String>,
+}
+
 /// A user-visible change-log entry.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ChangeLogEntry {

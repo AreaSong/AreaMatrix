@@ -96,6 +96,9 @@ namespace area_matrix {
     string list_tree_json(string repo_path, string locale);
 
     [Throws=CoreError]
+    sequence<ICloudConflictPair> list_icloud_conflicts(string repo_path);
+
+    [Throws=CoreError]
     string? read_note(string repo_path, i64 file_id);
 
     [Throws=CoreError]
@@ -203,6 +206,16 @@ dictionary MoveToCategoryPreview {
     boolean will_move_file;
 };
 
+dictionary ICloudConflictPair {
+    string conflict_id;
+    string? original_path;
+    string conflicted_copy_path;
+    i64? original_modified_at;
+    i64 conflicted_modified_at;
+    ICloudConflictStatus status;
+    string? uncertainty_reason;
+};
+
 dictionary ChangeLogEntry {
     i64 id;
     i64? file_id;
@@ -292,6 +305,7 @@ enum ScanSessionKind { "Adopt", "Reindex" };
 enum ScanSessionStatus { "Running", "Completed", "Paused", "Failed", "Interrupted" };
 enum DuplicateStrategy { "Skip", "Overwrite", "KeepBoth", "Ask" };
 enum ClassifyReason { "Keyword", "Extension", "AiPredicted", "Default" };
+enum ICloudConflictStatus { "NeedsReview", "Resolved" };
 enum ExternalEventKind { "Created", "Removed", "Modified", "Renamed" };
 enum ErrorKind {
     "Io", "Db", "Config", "Classify", "Conflict", "DuplicateFile",
@@ -368,6 +382,7 @@ interface CoreError {
 | `get_file(repo, file_id)` | query | √ | FileNotFound |
 | `list_changes(repo, filter)` | query | √ | Db |
 | `list_tree_json(repo, locale)` | query | √ | RepoNotInitialized / Db / Io |
+| `list_icloud_conflicts(repo)` | query | √ | ICloudPlaceholder / PermissionDenied / Io / Db |
 | `read_note(repo, file_id)` | note | √ | Io |
 | `write_note(repo, file_id, content)` | note | √ | Io |
 | `sync_external_changes(repo, events)` | sync | √ | Db |
@@ -1015,6 +1030,43 @@ snake_case 以配合 Swift `JSONDecoder.KeyDecodingStrategy.convertFromSnakeCase
 overview，不移动、重命名、删除或修改用户文件。虚拟智能列表、搜索结果树和
 Stage 2 tree projection 不属于本接口。详见 [../modules/tree-scan.md](../modules/tree-scan.md)。
 
+### `list_icloud_conflicts(repoPath) throws -> [ICloudConflictPair]`
+
+```swift
+let conflicts = try await Task.detached(priority: .userInitiated) {
+    try AreaMatrix.listIcloudConflicts(repoPath: repoPath)
+}.value
+let needsReview = conflicts.filter { $0.status == .needsReview }
+```
+
+`list_icloud_conflicts` 是 C1-25 的只读 iCloud conflicted copy 列表入口，
+用于 S1-36。输入是已初始化的资料库根路径；输出按冲突副本返回
+`ICloudConflictPair`：
+
+- `conflict_id`：稳定冲突 ID，供后续单项 resolve 入口使用。
+- `original_path` / `original_modified_at`：可识别时返回原始版本路径和修改时间。
+- `conflicted_copy_path` / `conflicted_modified_at`：冲突副本路径和修改时间。
+- `status`：当前状态；识别不确定或需要用户决策时必须为 `NeedsReview`。
+- `uncertainty_reason`：原始版本无法确定、多个候选或 metadata 不完整时的结构化原因。
+
+副作用边界：
+
+- 只扫描 iCloud conflicted copy 和可选 conflict state metadata。
+- 不删除、不移动、不重命名、不覆盖、不合并任何原始文件或冲突副本。
+- 不触发 iCloud placeholder 下载；下载协调属于平台层。
+- 不写 `files` 记录；后续 `mark_icloud_conflict_resolved` 这类单项 resolve
+  入口必须显式由用户确认，不能藏在列表查询中。
+
+错误：
+
+- `ICloudPlaceholder`：关键 metadata 或冲突副本仍是未下载占位符。
+- `PermissionDenied`：资料库、冲突副本或 conflict state metadata 无法检查。
+- `Io`：文件系统扫描、metadata 读取或路径解析失败。
+- `Db`：可选 conflict state metadata 读取失败。
+
+空态返回空数组。加载失败必须通过结构化 `CoreError` 抛出；识别不确定的
+冲突仍返回条目，但 `status = NeedsReview`。
+
 ---
 
 ## note API
@@ -1163,6 +1215,7 @@ public actor CoreBridge {
 - `resume_scan_session`（可能继续全扫）
 - `recover_on_startup`（启动时）
 - `list_tree_json`（大库）
+- `list_icloud_conflicts`（扫描 iCloud conflicted copy）
 - `preview_move_to_category`（目标路径和同名冲突预检）
 - `move_to_category`（可能移动 repo-owned 文件）
 - `sync_external_changes`（批量事件）

@@ -72,6 +72,9 @@ namespace area_matrix {
     string list_tree_json(string repo_path, string locale);
 
     [Throws=CoreError]
+    sequence<ICloudConflictPair> list_icloud_conflicts(string repo_path);
+
+    [Throws=CoreError]
     string? read_note(string repo_path, i64 file_id);
 
     [Throws=CoreError]
@@ -179,6 +182,16 @@ dictionary MoveToCategoryPreview {
     boolean will_move_file;
 };
 
+dictionary ICloudConflictPair {
+    string conflict_id;
+    string? original_path;
+    string conflicted_copy_path;
+    i64? original_modified_at;
+    i64 conflicted_modified_at;
+    ICloudConflictStatus status;
+    string? uncertainty_reason;
+};
+
 dictionary ChangeLogEntry {
     i64 id;
     i64? file_id;
@@ -268,6 +281,7 @@ enum ScanSessionKind { "Adopt", "Reindex" };
 enum ScanSessionStatus { "Running", "Completed", "Paused", "Failed", "Interrupted" };
 enum DuplicateStrategy { "Skip", "Overwrite", "KeepBoth", "Ask" };
 enum ClassifyReason { "Keyword", "Extension", "AiPredicted", "Default" };
+enum ICloudConflictStatus { "NeedsReview", "Resolved" };
 enum ExternalEventKind { "Created", "Removed", "Modified", "Renamed" };
 enum ErrorKind {
     "Io", "Db", "Config", "Classify", "Conflict", "DuplicateFile",

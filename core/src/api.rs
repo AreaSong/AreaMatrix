@@ -3,10 +3,11 @@
 use std::path::PathBuf;
 
 use crate::{
-    classify, db, note, recovery, repo_init, repo_path, repo_scan, storage, sync, tree,
-    ChangeFilter, ChangeLogEntry, ClassifyResult, CoreError, CoreResult, ExternalEvent, FileEntry,
-    FileFilter, ImportOptions, MoveToCategoryPreview, RecoveryReport, ReindexReport, RepoConfig,
-    RepoInitOptions, RepoPathValidation, ScanSession, SyncResult,
+    classify, db, icloud_conflicts, note, recovery, repo_init, repo_path, repo_scan, storage, sync,
+    tree, ChangeFilter, ChangeLogEntry, ClassifyResult, CoreError, CoreResult, ExternalEvent,
+    FileEntry, FileFilter, ICloudConflictPair, ImportOptions, MoveToCategoryPreview,
+    RecoveryReport, ReindexReport, RepoConfig, RepoInitOptions, RepoPathValidation, ScanSession,
+    SyncResult,
 };
 
 fn not_implemented<T>() -> CoreResult<T> {
@@ -539,6 +540,29 @@ pub fn list_changes(repo_path: String, filter: ChangeFilter) -> CoreResult<Vec<C
 /// config cannot be inspected.
 pub fn list_tree_json(repo_path: String, locale: String) -> CoreResult<String> {
     tree::list_tree_json(repo_path, locale)
+}
+
+/// Lists iCloud conflicted copy pairs without resolving them.
+///
+/// C1-25 owns the read-only contract for S1-36. The caller supplies an
+/// initialized repository root and receives one row per detected conflicted
+/// copy pair. The output preserves the original path when Core can identify
+/// it, the conflicted copy path, both modification timestamps when available,
+/// and a status value. Ambiguous pairings must be returned as
+/// `ICloudConflictStatus::NeedsReview` instead of being silently merged.
+///
+/// This API must not delete, move, rename, overwrite, merge, or download any
+/// file. Single-item resolution remains a later explicit action and is not
+/// hidden behind this list query.
+///
+/// # Errors
+///
+/// Returns `CoreError::ICloudPlaceholder { path }` for unavailable iCloud
+/// metadata, `CoreError::PermissionDenied { path }` for blocked inspection,
+/// `CoreError::Io { message }` for filesystem scan failures, and
+/// `CoreError::Db { message }` for optional conflict-state reads.
+pub fn list_icloud_conflicts(repo_path: String) -> CoreResult<Vec<ICloudConflictPair>> {
+    icloud_conflicts::list_icloud_conflicts(repo_path)
 }
 
 /// Reads the markdown note associated with one active file entry.

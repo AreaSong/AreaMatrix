@@ -1,0 +1,16 @@
+一、执行结论：已完成。
+
+二、执行范围：单任务 `1-5/task-16`。修改了 [core/area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:74)、[core/src/domain.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/domain.rs:318)、[core/src/api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:545)、[core/src/lib.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/lib.rs:14)、[core/src/icloud_conflicts.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/icloud_conflicts.rs:1)、[core/tests/list_icloud_conflicts_contract_api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/list_icloud_conflicts_contract_api.rs:1)，并同步了直接相关 Core API 源事实 [docs/api/core-api.md](/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:1033)。
+
+三、完成情况：C1-25 仅处理 `list_icloud_conflicts` contract/API 范围；未实现 resolve 入口、未碰 UI、未触碰 `apps/**`。新增 `ICloudConflictPair` / `ICloudConflictStatus`，UDL 暴露 `list_icloud_conflicts(repo_path)`，Rust public API 接真实只读扫描路径。扫描只识别 conflicted copy，返回 `NeedsReview`，不删除、不移动、不重命名、不覆盖、不合并、不触发 iCloud 下载，也不写 `files`。
+
+四、工程质量：没有新增依赖；实现拆到独立 Core 模块，public API 和新 public 类型均有 rustdoc。错误路径显式映射 `ICloudPlaceholder` / `PermissionDenied` / `Io`，`Db` 保留在合同中供后续 conflict state metadata 扩展。不存在 mock-only 或硬编码通过态；测试覆盖 API/UDL/docs 对齐、空态、以及扫描不修改原文件和冲突副本。
+
+五、验证情况：全部通过。
+
+- `cd core && cargo fmt --all -- --check`
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`
+- `cd core && cargo test --workspace list_icloud_conflicts`，其中新增 C1-25 测试 5 个通过
+- `git diff --check`
+
+六、风险与后续：当前是最小真实只读扫描，未实现持久化 conflict state、复杂 iCloud 命名变体、resolved 状态读取或单项 resolve；这些应进入下一个任务 `1-5/task-17` / 后续 C1-25 切片。工作区中原本已有 `.codex/task-loop-runs/20260502_233358/summary.json` 和 `tasks/prompts/_shared/progress.json` 脏改动，我没有修改它们。  
