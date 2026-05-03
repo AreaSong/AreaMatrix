@@ -1,0 +1,44 @@
+一、执行结论
+
+- 已完成。
+- 本轮 repair retry 没有追加源代码改动；上次失败的唯一 P0 是 macOS test 证据缺失，本轮用仓库已文档化的 `scripts/check-macos-tests.sh` fallback 补齐了验证证据。
+
+二、执行范围
+
+- 单任务：`phase-2 / 2-1/task-05`
+- 产品实现相关文件：
+  - [AreaMatrixApp.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/App/AreaMatrixApp.swift)
+  - [CoreBridge.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift)
+  - [AppShellModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/AppShellModel.swift)
+  - [CoreBridgePlaceholderState.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/CoreBridgePlaceholderState.swift)
+  - [MainWindow.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/MainWindow.swift)
+  - [AreaMatrixShellTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/AreaMatrixShellTests.swift)
+  - [AreaMatrixAppSmokeTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/App/AreaMatrixAppSmokeTests.swift)
+
+三、完成情况
+
+- 核对清单：4/4 通过。只处理 S1-03 + C1-21；接入真实 `CoreBridge.mapCoreError`；未实现同页 C1-01/C1-03；未扩展相邻页面。
+- 完成标准：3/3 通过。S1-03 错误态可展示 `userMessage`、`suggestedAction`、`severity`、`recoverability`；生产路径默认 `CoreBridge()`；未触碰 control map 外能力。
+- Forbidden Touches：未触碰。`git diff --name-only -- core/src` 无输出。
+- Expected New Paths：存在并落地。`apps/macos/AreaMatrix/**` 与 `apps/macos/AreaMatrixTests/**` 均存在。
+
+四、工程质量
+
+- 结构清晰：错误映射 DTO、CoreBridge 调用、model 状态、UI 展示和测试分层清楚。
+- 错误处理：Swift 侧按 `CoreError` variant 构造 `ErrorMappingInput`，没有用字符串 contains 做 C1-21 主分支。
+- 无 mock-only 闭环：测试 fixture 只在测试文件内；生产默认调用真实 generated binding。
+- 文件长度仍在 500 行以内。无新增依赖。
+
+五、验证情况
+
+- 通过：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`，结果 `BUILD SUCCEEDED`。
+- 通过：`bash scripts/check-macos-tests.sh`。标准 `xcodebuild test` 仍被 `com.apple.testmanagerd.control` 沙箱限制阻断；脚本按仓库文档 fallback 到 `xcrun xctest`，`28 tests, 0 failures`。
+- 通过：`cd core && cargo test error_mapping`，C1-21 相关 Rust 测试通过，包含 22 个 error_mapping 测试。
+- 通过：`git diff --check`。
+- 未运行：`swiftlint --strict`、`swiftformat --lint .`，当前环境未安装 `swiftlint` / `swiftformat`。
+
+六、风险与后续
+
+- 剩余风险：本地标准 `xcodebuild test` 仍受沙箱限制，远端 CI 仍应跑原生 `xcodebuild test` 作为最终 macOS 门禁。
+- 建议下一个任务：进入 `2-1/task-05` verify-ready 只读验收；通过后再推进 `2-1/task-06`。
+

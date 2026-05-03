@@ -109,7 +109,10 @@ final class AreaMatrixAdoptExistingTests: XCTestCase {
 
         XCTAssertEqual(requestedScanPaths, ["/tmp/repo"])
         XCTAssertEqual(model.latestScanSession, scanSession)
-        XCTAssertEqual(model.repositoryPathError, "该资料库存在未完成的扫描记录，请先进入修复流程")
+        XCTAssertEqual(
+            model.repositoryPathError,
+            "该资料库存在未完成的扫描记录，请先进入修复流程"
+        )
         XCTAssertFalse(model.canContinueFromValidatePath)
     }
 
@@ -134,8 +137,42 @@ final class AreaMatrixAdoptExistingTests: XCTestCase {
 
         XCTAssertEqual(model.repositoryPathValidation, validation)
         XCTAssertNil(model.latestScanSession)
-        XCTAssertEqual(model.repositoryPathError, "无法读取接管扫描状态，请进入修复流程")
+        XCTAssertEqual(model.repositoryPathError, "数据库错误")
         XCTAssertFalse(model.canContinueFromValidatePath)
+    }
+}
+
+final class ValidatePathErrorMappingTests: XCTestCase {
+    @MainActor
+    func testValidatePathMapsCoreFailureThroughC121ErrorMapper() async {
+        let mapping = CoreErrorMappingSnapshot.permissionDeniedFixture(rawContext: "/tmp/repo")
+        let errorMapper = RecordingErrorMapper(mapping: mapping)
+        let model = OnboardingModel(
+            settingsReader: StaticSettingsReader(repoPath: nil),
+            configLoader: RecordingConfigLoader(result: .success(.fixture(repoPath: "/tmp/repo"))),
+            pathValidator: RecordingPathValidator(result: .failure(CoreError.PermissionDenied(path: "/tmp/repo"))),
+            errorMapper: errorMapper,
+            helpOpener: NoopWelcomeHelpOpener()
+        )
+
+        model.updateRepositoryPath("/tmp/repo")
+        await model.continueFromChoosePath()
+
+        XCTAssertEqual(errorMapper.mappedErrors, [CoreError.PermissionDenied(path: "/tmp/repo")])
+        XCTAssertEqual(model.repositoryPathError, "无访问权限")
+        XCTAssertEqual(model.repositoryPathErrorMapping, mapping)
+        XCTAssertFalse(model.canContinueFromValidatePath)
+    }
+
+    func testCoreBridgeMapsCoreErrorThroughGeneratedBindings() async {
+        let mapping = await CoreBridge().mapCoreError(CoreError.PermissionDenied(path: "/restricted/repo"))
+
+        XCTAssertEqual(mapping.kind, .permissionDenied)
+        XCTAssertEqual(mapping.userMessage, "无访问权限")
+        XCTAssertEqual(mapping.severity, .high)
+        XCTAssertEqual(mapping.recoverability, .userActionRequired)
+        XCTAssertEqual(mapping.rawContext, "/restricted/repo")
+        XCTAssertFalse(mapping.suggestedAction.isEmpty)
     }
 }
 
@@ -173,6 +210,7 @@ private actor RecordingConfigLoader: CoreConfigurationLoading {
 
 private enum RecordingPathValidationResult {
     case success(RepoPathValidationSnapshot)
+    case failure(Error)
 }
 
 private actor RecordingPathValidator: CoreRepositoryPathValidating {
@@ -186,7 +224,23 @@ private actor RecordingPathValidator: CoreRepositoryPathValidating {
         switch result {
         case .success(let validation):
             return validation
+        case .failure(let error):
+            throw error
         }
+    }
+}
+
+private final class RecordingErrorMapper: CoreErrorMapping {
+    private let mapping: CoreErrorMappingSnapshot
+    private(set) var mappedErrors: [CoreError] = []
+
+    init(mapping: CoreErrorMappingSnapshot) {
+        self.mapping = mapping
+    }
+
+    func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
+        mappedErrors.append(error)
+        return mapping
     }
 }
 
@@ -287,6 +341,19 @@ private extension ScanSessionSnapshot {
             updatedAt: 1_700_000_120,
             finishedAt: nil,
             errors: []
+        )
+    }
+}
+
+private extension CoreErrorMappingSnapshot {
+    static func permissionDeniedFixture(rawContext: String) -> CoreErrorMappingSnapshot {
+        CoreErrorMappingSnapshot(
+            kind: .permissionDenied,
+            userMessage: "无访问权限",
+            severity: .high,
+            suggestedAction: "请在系统设置中授予权限，或选择其他资料库位置",
+            recoverability: .userActionRequired,
+            rawContext: rawContext
         )
     }
 }

@@ -65,6 +65,7 @@ struct MainWindow: View {
                 validation: model.repositoryPathValidation,
                 latestScanSession: model.latestScanSession,
                 errorMessage: model.repositoryPathError,
+                errorMapping: model.repositoryPathErrorMapping,
                 isValidating: model.isValidatingRepositoryPath,
                 isICloudRiskAccepted: model.isICloudRiskAccepted,
                 canContinue: model.canContinueFromValidatePath,
@@ -149,7 +150,9 @@ private struct RepositoryInitializationHandoffView: View {
             Label("接管承诺", systemImage: "folder.badge.gearshape")
                 .font(.headline)
                 .foregroundStyle(.orange)
-            Text("AreaMatrix 将只写入 .areamatrix/ 管理目录，保留已有文件、README.md 和目录结构。")
+            Text(
+                "AreaMatrix 将只写入 .areamatrix/ 管理目录，保留已有文件、README.md 和目录结构。"
+            )
                 .font(.callout)
                 .foregroundStyle(.secondary)
             if let session = draft.scanSession {

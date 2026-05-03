@@ -1,0 +1,51 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`2-1/task-05`
+- Task：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-1-first-launch-main/task-05-s1-03-c1-21-error-mapping.md`
+- 实际核验：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`core/area_matrix.udl`
+- 禁止触碰：`core/src/**`
+
+三、完成度摘要
+
+- 已覆盖项数：4 个核对项 + 3 个完成标准 + 5 个工程质量项
+- 未覆盖项数：0
+- 通过项数：12
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 范围限定：通过。Task 明确只做 `S1-03 + C1-21`，实现只把 `CoreErrorMapping` 接入 S1-03 validate-path 错误态。
+- 文档读取与对齐：通过。S1-03 control map 绑定 `C1-01, C1-03, C1-21`，本 task 只验 C1-21；Core API 明确 `map_core_error(input) -> ErrorMapping`。
+- CoreBridge / 状态 / 错误映射：通过。`CoreBridge.mapCoreError` 调真实 generated binding；`OnboardingModel.applyMappedRepositoryPathError` 将 `CoreError` 映射为 `repositoryPathErrorMapping` 和用户文案；`ValidatePathStepView` 展示 message、severity、suggested action、recoverability。
+- 不实现其他页面或越界能力：通过。未发现本 task 新增相邻页面实现；当前 C1-21 UI 消费集中在 S1-03。
+- Expected New Paths：通过。`apps/macos/AreaMatrix` 和 `apps/macos/AreaMatrixTests` 均存在并有任务相关实现/测试。
+- Forbidden Touches：通过。`git diff --name-only -- core/src` 无输出，未发现 `core/src/**` 被触碰。
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。Core mapping 类型、桥接、状态和视图展示分层清楚；非 generated Swift 文件均未超过 500 行。
+- 注释 / rustdoc / 文档同步：通过。此 task 未新增 public Rust API；UDL 已含 `map_core_error`、`ErrorMappingInput`、`ErrorMapping`、完整 `CoreError` enum。
+- 错误处理与边界处理：通过。Swift 层对 `CoreError` 走结构化 enum switch 和 Core 映射；未发现字符串 contains 作为错误主分支。
+- 测试与验证覆盖：通过。C1-21 覆盖了注入 mapper 的 UI 状态测试和真实 `CoreBridge().mapCoreError` binding 测试。
+- 占位、硬编码、mock-only、一次性实现检查：通过。生产路径调用真实 `mapCoreError` binding；fixture 仅存在于测试辅助。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行并通过：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+- 已运行但环境失败：`xcodebuild test ...`，失败点是 sandbox 无法连接 `com.apple.testmanagerd.control`，不是测试断言失败。
+- 已运行并通过替代执行：`xcrun xctest apps/macos/DerivedData/AreaMatrix/Build/Products/Debug/AreaMatrixTests.xctest`，28 tests，0 failures。
+- 残余风险：当前沙箱无法完成 Xcode testmanagerd 编排路径，但同一测试 bundle 已直接执行通过。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准，可以视为完成。
+VERIFY_RESULT: PASS

@@ -302,6 +302,10 @@ actor CoreBridge {
         )
     }
 
+    func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
+        CoreErrorMappingSnapshot(coreMapping: mapCoreErrorFromCore(error))
+    }
+
     func recoverOnStartup() async throws -> Never {
         try requireGeneratedBindings(for: .recoverOnStartup)
     }
@@ -386,6 +390,7 @@ actor CoreBridge {
 extension CoreBridge:
     CoreConfigurationLoading,
     CoreConfigurationUpdating,
+    CoreErrorMapping,
     CoreRepositoryAdopting,
     CoreRepositoryPathValidating,
     CoreScanSessionReading {}

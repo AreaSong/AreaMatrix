@@ -114,7 +114,7 @@ final class AreaMatrixShellTests: XCTestCase {
         model.updateRepositoryPath("/tmp/repo")
         await model.continueFromChoosePath()
 
-        XCTAssertEqual(model.repositoryPathError, "AreaMatrix 没有读取该位置的权限")
+        XCTAssertEqual(model.repositoryPathError, "无访问权限")
         XCTAssertNil(model.choosePathAction)
     }
 
@@ -290,7 +290,7 @@ final class AreaMatrixShellTests: XCTestCase {
         await model.continueFromChoosePath()
 
         XCTAssertEqual(model.route, .validatePath)
-        XCTAssertEqual(model.repositoryPathError, "AreaMatrix 没有读取该位置的权限")
+        XCTAssertEqual(model.repositoryPathError, "无访问权限")
         XCTAssertFalse(model.canContinueFromValidatePath)
         XCTAssertNil(model.repositoryPathValidation)
     }

@@ -173,6 +173,7 @@ final class OnboardingModel: ObservableObject {
     @Published private(set) var validatePathAction: ValidatePathAction?
     @Published private(set) var repositoryPathText = OnboardingModel.defaultRepositoryPathDisplay
     @Published private(set) var repositoryPathError: String?
+    @Published private(set) var repositoryPathErrorMapping: CoreErrorMappingSnapshot?
     @Published private(set) var repositoryPathValidation: RepoPathValidationSnapshot?
     @Published private(set) var latestScanSession: ScanSessionSnapshot?
     @Published private(set) var isValidatingRepositoryPath = false
@@ -206,6 +207,7 @@ final class OnboardingModel: ObservableObject {
     private let configLoader: any CoreConfigurationLoading
     private let pathValidator: any CoreRepositoryPathValidating
     private let scanSessionReader: any CoreScanSessionReading
+    private let errorMapper: any CoreErrorMapping
     private let helpOpener: any WelcomeHelpOpening
     private let directoryPicker: any RepositoryDirectoryPicking
     private var didBootstrap = false
@@ -215,6 +217,7 @@ final class OnboardingModel: ObservableObject {
         configLoader: any CoreConfigurationLoading = CoreBridge(),
         pathValidator: any CoreRepositoryPathValidating = CoreBridge(),
         scanSessionReader: any CoreScanSessionReading = CoreBridge(),
+        errorMapper: any CoreErrorMapping = CoreBridge(),
         helpOpener: any WelcomeHelpOpening = LocalWelcomeHelpOpener(),
         directoryPicker: any RepositoryDirectoryPicking = NSOpenPanelRepositoryDirectoryPicker()
     ) {
@@ -222,6 +225,7 @@ final class OnboardingModel: ObservableObject {
         self.configLoader = configLoader
         self.pathValidator = pathValidator
         self.scanSessionReader = scanSessionReader
+        self.errorMapper = errorMapper
         self.helpOpener = helpOpener
         self.directoryPicker = directoryPicker
     }
@@ -248,6 +252,7 @@ final class OnboardingModel: ObservableObject {
     func showChoosePath() {
         route = .choosePath
         toastMessage = nil
+        repositoryPathErrorMapping = nil
         repositoryPathError = localRepositoryPathError(for: repositoryPathText)
     }
 
@@ -269,6 +274,7 @@ final class OnboardingModel: ObservableObject {
         latestScanSession = nil
         choosePathAction = nil
         validatePathAction = nil
+        repositoryPathErrorMapping = nil
         toastMessage = nil
         isICloudRiskAccepted = false
         repositoryPathError = localRepositoryPathError(for: value)
@@ -341,6 +347,7 @@ final class OnboardingModel: ObservableObject {
         isValidatingRepositoryPath = true
         choosePathAction = nil
         latestScanSession = nil
+        repositoryPathErrorMapping = nil
         repositoryPathError = nil
         defer {
             isValidatingRepositoryPath = false
@@ -350,17 +357,22 @@ final class OnboardingModel: ObservableObject {
             let normalizedPath = Self.normalizedRepositoryPath(repositoryPathText)
             let validation = try await pathValidator.validateRepoPath(repoPath: normalizedPath)
             repositoryPathValidation = validation
+            repositoryPathErrorMapping = nil
 
             if shouldLoadLatestScanSession(for: validation) {
                 do {
                     latestScanSession = try await scanSessionReader.latestScanSession(repoPath: validation.repoPath)
                 } catch {
-                    repositoryPathError = Self.scanSessionErrorMessage(for: error)
+                    await applyMappedRepositoryPathError(
+                        error,
+                        fallbackMessage: "无法读取接管扫描状态，请进入修复流程"
+                    )
                     return
                 }
             }
 
             repositoryPathError = validatePathBlockingMessage(for: validation)
+            repositoryPathErrorMapping = nil
 
             if repositoryPathError != nil {
                 return
@@ -369,7 +381,7 @@ final class OnboardingModel: ObservableObject {
             choosePathAction = .continueRequested(validation)
         } catch {
             repositoryPathValidation = nil
-            repositoryPathError = Self.repositoryPathValidationErrorMessage(for: error)
+            await applyMappedRepositoryPathError(error, fallbackMessage: "路径字符串无法解析")
         }
     }
 
@@ -467,33 +479,16 @@ final class OnboardingModel: ObservableObject {
             .contains(".areamatrix")
     }
 
-    private static func repositoryPathValidationErrorMessage(for error: Error) -> String {
+    @MainActor
+    private func applyMappedRepositoryPathError(_ error: Error, fallbackMessage: String) async {
         guard let coreError = error as? CoreError else {
-            return "路径字符串无法解析"
+            repositoryPathErrorMapping = nil
+            repositoryPathError = fallbackMessage
+            return
         }
 
-        switch coreError {
-        case .InvalidPath:
-            return "路径字符串无法解析"
-        case .PermissionDenied:
-            return "AreaMatrix 没有读取该位置的权限"
-        case .ICloudPlaceholder:
-            return "该位置仍是 iCloud 占位内容，无法校验"
-        default:
-            return "路径字符串无法解析"
-        }
-    }
-
-    private static func scanSessionErrorMessage(for error: Error) -> String {
-        guard let coreError = error as? CoreError else {
-            return "无法读取接管扫描状态，请进入修复流程"
-        }
-
-        switch coreError {
-        case .PermissionDenied:
-            return "AreaMatrix 没有读取接管扫描状态的权限"
-        default:
-            return "无法读取接管扫描状态，请进入修复流程"
-        }
+        let mapping = await errorMapper.mapCoreError(coreError)
+        repositoryPathErrorMapping = mapping
+        repositoryPathError = mapping.userMessage
     }
 }

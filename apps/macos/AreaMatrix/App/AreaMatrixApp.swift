@@ -15,6 +15,7 @@ struct ValidatePathStepView: View {
     let validation: RepoPathValidationSnapshot?
     let latestScanSession: ScanSessionSnapshot?
     let errorMessage: String?
+    let errorMapping: CoreErrorMappingSnapshot?
     let isValidating: Bool
     let isICloudRiskAccepted: Bool
     let canContinue: Bool
@@ -100,7 +101,9 @@ struct ValidatePathStepView: View {
             if isValidating {
                 ProgressView("正在检查路径...")
             }
-            if let errorMessage {
+            if let errorMapping {
+                errorMappingNotice(errorMapping)
+            } else if let errorMessage {
                 notice("路径不可用", "exclamationmark.triangle", .red, [errorMessage])
             }
             if validation?.isInitialized == true {
@@ -163,6 +166,14 @@ struct ValidatePathStepView: View {
             "状态：\(session.status.rawValue)。",
             "已索引 \(session.inserted) 个，更新 \(session.updated) 个，跳过 \(session.skipped) 个。",
             "最后位置：\(session.lastPath ?? "尚未记录")。",
+        ])
+    }
+
+    private func errorMappingNotice(_ mapping: CoreErrorMappingSnapshot) -> some View {
+        notice("路径不可用", "exclamationmark.triangle", mapping.severity.tint, [
+            mapping.userMessage,
+            "建议：\(mapping.suggestedAction)",
+            "严重程度：\(mapping.severity.displayName)；恢复方式：\(mapping.recoverability.displayName)",
         ])
     }
 
@@ -236,6 +247,37 @@ struct ValidatePathStepView: View {
         .padding(14)
         .frame(maxWidth: 620, alignment: .leading)
         .background(tint.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
+    }
+}
+
+private extension CoreErrorSeveritySnapshot {
+    var displayName: String {
+        switch self {
+        case .low: return "Low"
+        case .medium: return "Medium"
+        case .high: return "High"
+        case .critical: return "Critical"
+        }
+    }
+
+    var tint: Color {
+        switch self {
+        case .low: return .yellow
+        case .medium: return .orange
+        case .high: return .red
+        case .critical: return .purple
+        }
+    }
+}
+
+private extension CoreErrorRecoverabilitySnapshot {
+    var displayName: String {
+        switch self {
+        case .retryable: return "Retryable"
+        case .userActionRequired: return "User action required"
+        case .refreshRequired: return "Refresh required"
+        case .fatal: return "Fatal"
+        }
     }
 }
 
