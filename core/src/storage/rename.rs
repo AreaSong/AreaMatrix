@@ -1,4 +1,7 @@
-use std::path::{Path, PathBuf};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+};
 
 use serde_json::json;
 
@@ -41,16 +44,23 @@ fn rename_repo_owned_file(repo: &Path, entry: FileEntry, new_name: &str) -> Core
     let final_name = filename_from_path(&final_path)?;
     let final_relative_path = relative_repo_path(repo, &final_path)?;
     let detail = rename_detail(&entry, new_name, &final_relative_path, &final_name, false);
+    let note_sidecar = NoteSidecarPlan::from_rename(repo, entry.id, &current_path, &final_path)?;
     move_recoverable_file(&current_path, &final_path)?;
-    let mut guard = RenameRollbackGuard::new(final_path.clone(), current_path.clone());
+    let mut file_guard = RenameRollbackGuard::new(final_path.clone(), current_path.clone());
+    let mut note_guard = move_note_sidecar(note_sidecar, &mut file_guard)?;
 
-    db::rename_active_file(repo, entry.id, &final_relative_path, &final_name, &detail)?;
-    let updated = db::get_active_file_by_id(repo, entry.id)?;
-    if let Err(error) = overview::regenerate_for_node(repo, &updated.category) {
-        rollback_repo_owned_rename(repo, &entry, &mut guard, &detail)?;
+    if let Err(error) =
+        db::rename_active_file(repo, entry.id, &final_relative_path, &final_name, &detail)
+    {
+        rollback_filesystem_rename(&mut file_guard, &mut note_guard)?;
         return Err(error);
     }
-    guard.disarm();
+    let updated = db::get_active_file_by_id(repo, entry.id)?;
+    if let Err(error) = overview::regenerate_for_node(repo, &updated.category) {
+        rollback_repo_owned_rename(repo, &entry, &mut file_guard, note_guard.as_mut(), &detail)?;
+        return Err(error);
+    }
+    disarm_rename_guards(&mut file_guard, note_guard.as_mut());
     Ok(updated)
 }
 
@@ -93,19 +103,79 @@ fn rename_detail(
 fn rollback_repo_owned_rename(
     repo: &Path,
     entry: &FileEntry,
-    guard: &mut RenameRollbackGuard,
+    file_guard: &mut RenameRollbackGuard,
+    note_guard: Option<&mut RenameRollbackGuard>,
     detail: &serde_json::Value,
 ) -> CoreResult<()> {
-    guard.rollback()?;
+    let mut note_guard = note_guard;
+    rollback_borrowed_filesystem_rename(file_guard, &mut note_guard)?;
     match db::rollback_renamed_active_file(repo, entry.id, &entry.path, &entry.current_name, detail)
     {
         Ok(()) => Ok(()),
         Err(error) => {
             // Keep FS and DB aligned when metadata rollback itself fails after
             // the physical file has already been restored.
-            guard.restore_committed_state()?;
+            restore_borrowed_committed_filesystem_state(file_guard, &mut note_guard)?;
             Err(error)
         }
+    }
+}
+
+fn move_note_sidecar(
+    note_sidecar: Option<NoteSidecarPlan>,
+    file_guard: &mut RenameRollbackGuard,
+) -> CoreResult<Option<RenameRollbackGuard>> {
+    let Some(note_sidecar) = note_sidecar else {
+        return Ok(None);
+    };
+
+    match note_sidecar.move_to_final() {
+        Ok(guard) => Ok(Some(guard)),
+        Err(error) => {
+            file_guard.rollback()?;
+            Err(error)
+        }
+    }
+}
+
+fn rollback_filesystem_rename(
+    file_guard: &mut RenameRollbackGuard,
+    note_guard: &mut Option<RenameRollbackGuard>,
+) -> CoreResult<()> {
+    if let Some(note_guard) = note_guard.as_mut() {
+        note_guard.rollback()?;
+    }
+    file_guard.rollback()
+}
+
+fn rollback_borrowed_filesystem_rename(
+    file_guard: &mut RenameRollbackGuard,
+    note_guard: &mut Option<&mut RenameRollbackGuard>,
+) -> CoreResult<()> {
+    if let Some(note_guard) = note_guard.as_mut() {
+        note_guard.rollback()?;
+    }
+    file_guard.rollback()
+}
+
+fn restore_borrowed_committed_filesystem_state(
+    file_guard: &mut RenameRollbackGuard,
+    note_guard: &mut Option<&mut RenameRollbackGuard>,
+) -> CoreResult<()> {
+    file_guard.restore_committed_state()?;
+    if let Some(note_guard) = note_guard.as_mut() {
+        note_guard.restore_committed_state()?;
+    }
+    Ok(())
+}
+
+fn disarm_rename_guards(
+    file_guard: &mut RenameRollbackGuard,
+    note_guard: Option<&mut RenameRollbackGuard>,
+) {
+    file_guard.disarm();
+    if let Some(note_guard) = note_guard {
+        note_guard.disarm();
     }
 }
 
@@ -166,6 +236,54 @@ fn relative_repo_path(repo: &Path, path: &Path) -> CoreResult<String> {
     path.strip_prefix(repo)
         .map_err(|error| CoreError::invalid_path(error.to_string()))
         .map(|relative| relative.to_string_lossy().into_owned())
+}
+
+struct NoteSidecarPlan {
+    current_path: PathBuf,
+    final_path: PathBuf,
+}
+
+impl NoteSidecarPlan {
+    fn from_rename(
+        repo: &Path,
+        file_id: i64,
+        current_file: &Path,
+        final_file: &Path,
+    ) -> CoreResult<Option<Self>> {
+        let Some(note_content) = db::read_note_content(repo, file_id)? else {
+            return Ok(None);
+        };
+        let current_path = sidecar_path_for_file(current_file)?;
+        let final_path = sidecar_path_for_file(final_file)?;
+        let sidecar_content = fs::read_to_string(&current_path).map_err(hash::map_io_error)?;
+        if sidecar_content != note_content {
+            return Err(CoreError::db("database error"));
+        }
+        if final_path.try_exists().map_err(hash::map_io_error)? {
+            return Err(CoreError::conflict("path conflict"));
+        }
+        Ok(Some(Self {
+            current_path,
+            final_path,
+        }))
+    }
+
+    fn move_to_final(self) -> CoreResult<RenameRollbackGuard> {
+        move_recoverable_file(&self.current_path, &self.final_path)?;
+        Ok(RenameRollbackGuard::new(self.final_path, self.current_path))
+    }
+}
+
+fn sidecar_path_for_file(file_path: &Path) -> CoreResult<PathBuf> {
+    let parent = file_path
+        .parent()
+        .ok_or_else(|| CoreError::invalid_path("invalid path"))?;
+    let file_name = file_path
+        .file_name()
+        .and_then(|value| value.to_str())
+        .filter(|value| !value.is_empty())
+        .ok_or_else(|| CoreError::invalid_path("invalid path"))?;
+    Ok(parent.join(format!("{file_name}.md")))
 }
 
 struct RenameRollbackGuard {

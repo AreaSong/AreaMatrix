@@ -100,7 +100,13 @@ fn change_detail(repo: &Path, file_id: i64, action: &str) -> Value {
     serde_json::from_str(&detail_json).expect("parse change detail")
 }
 
-fn insert_note_and_tag(repo: &Path, file_id: i64) {
+fn sidecar_path(repo: &Path, relative_path: &str) -> PathBuf {
+    let path = repo.join(relative_path);
+    let file_name = path.file_name().expect("relative path has file name");
+    path.with_file_name(format!("{}.md", file_name.to_string_lossy()))
+}
+
+fn insert_note_and_tag(repo: &Path, file_id: i64, relative_path: &str) {
     open_db(repo)
         .execute_batch(&format!(
             "INSERT INTO notes (file_id, content_md, updated_at)
@@ -109,6 +115,7 @@ fn insert_note_and_tag(repo: &Path, file_id: i64) {
              VALUES ({file_id}, 'keep-tag', 11);"
         ))
         .expect("insert note and tag metadata");
+    fs::write(sidecar_path(repo, relative_path), "original note").expect("write note sidecar");
 }
 
 fn note_and_tag_snapshot(repo: &Path, file_id: i64) -> (String, String) {
@@ -236,7 +243,7 @@ fn rename_file_contract_repo_owned_rename_preserves_identity_metadata_and_logs()
         import_options(StorageMode::Copied, "draft.pdf"),
     )
     .expect("import copied file before rename");
-    insert_note_and_tag(repo.path(), entry.id);
+    insert_note_and_tag(repo.path(), entry.id, &entry.path);
 
     let renamed = rename_file(path_string(repo.path()), entry.id, "final.pdf".to_owned())
         .expect("rename copied file");
