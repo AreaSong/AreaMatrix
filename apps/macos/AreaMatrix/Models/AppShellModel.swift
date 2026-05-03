@@ -33,6 +33,11 @@ protocol WelcomeHelpOpening {
     func openWelcomeHelp() throws
 }
 
+protocol RepositoryDirectoryPicking {
+    @MainActor
+    func chooseDirectory() -> URL?
+}
+
 struct LocalWelcomeHelpOpener: WelcomeHelpOpening {
     func openWelcomeHelp() throws {
         let docsURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
@@ -43,6 +48,21 @@ struct LocalWelcomeHelpOpener: WelcomeHelpOpening {
         }
 
         NSWorkspace.shared.open(docsURL)
+    }
+}
+
+struct NSOpenPanelRepositoryDirectoryPicker: RepositoryDirectoryPicking {
+    @MainActor
+    func chooseDirectory() -> URL? {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.allowsMultipleSelection = false
+        panel.canCreateDirectories = false
+        panel.prompt = "Choose"
+        panel.message = "Choose a repository folder."
+
+        return panel.runModal() == .OK ? panel.url : nil
     }
 }
 
@@ -123,6 +143,7 @@ final class OnboardingModel: ObservableObject {
     enum Route: Equatable, Sendable {
         case loadingConfiguration
         case welcome
+        case choosePath
         case repositoryReady(RepoConfigSnapshot)
         case configurationError(ConfigLoadFailure)
     }
@@ -131,23 +152,44 @@ final class OnboardingModel: ObservableObject {
         case continueRequested
     }
 
+    enum ChoosePathAction: Equatable, Sendable {
+        case continueRequested(RepoPathValidationSnapshot)
+    }
+
+    private static let defaultRepositoryPathDisplay = "~/AreaMatrix/"
+
     @Published private(set) var route: Route = .loadingConfiguration
     @Published private(set) var toastMessage: String?
     @Published private(set) var welcomeAction: WelcomeAction?
+    @Published private(set) var choosePathAction: ChoosePathAction?
+    @Published private(set) var repositoryPathText = OnboardingModel.defaultRepositoryPathDisplay
+    @Published private(set) var repositoryPathError: String?
+    @Published private(set) var repositoryPathValidation: RepoPathValidationSnapshot?
+    @Published private(set) var isValidatingRepositoryPath = false
+
+    var canContinueFromChoosePath: Bool {
+        !isValidatingRepositoryPath && repositoryPathError == nil
+    }
 
     private let settingsReader: any AppSettingsReading
     private let configLoader: any CoreConfigurationLoading
+    private let pathValidator: any CoreRepositoryPathValidating
     private let helpOpener: any WelcomeHelpOpening
+    private let directoryPicker: any RepositoryDirectoryPicking
     private var didBootstrap = false
 
     init(
         settingsReader: any AppSettingsReading = UserDefaultsAppSettingsReader(),
         configLoader: any CoreConfigurationLoading = CoreBridge(),
-        helpOpener: any WelcomeHelpOpening = LocalWelcomeHelpOpener()
+        pathValidator: any CoreRepositoryPathValidating = CoreBridge(),
+        helpOpener: any WelcomeHelpOpening = LocalWelcomeHelpOpener(),
+        directoryPicker: any RepositoryDirectoryPicking = NSOpenPanelRepositoryDirectoryPicker()
     ) {
         self.settingsReader = settingsReader
         self.configLoader = configLoader
+        self.pathValidator = pathValidator
         self.helpOpener = helpOpener
+        self.directoryPicker = directoryPicker
     }
 
     @MainActor
@@ -174,6 +216,61 @@ final class OnboardingModel: ObservableObject {
     @MainActor
     func continueFromWelcome() {
         welcomeAction = .continueRequested
+        route = .choosePath
+        toastMessage = nil
+        repositoryPathError = localRepositoryPathError(for: repositoryPathText)
+    }
+
+    @MainActor
+    func updateRepositoryPath(_ value: String) {
+        repositoryPathText = value
+        repositoryPathValidation = nil
+        choosePathAction = nil
+        toastMessage = nil
+        repositoryPathError = localRepositoryPathError(for: value)
+    }
+
+    @MainActor
+    func chooseRepositoryPath() {
+        guard let selectedURL = directoryPicker.chooseDirectory() else {
+            return
+        }
+
+        updateRepositoryPath(selectedURL.path)
+    }
+
+    @MainActor
+    func useDefaultRepositoryPath() async {
+        updateRepositoryPath(Self.defaultRepositoryPathDisplay)
+        await continueFromChoosePath()
+    }
+
+    @MainActor
+    func continueFromChoosePath() async {
+        guard repositoryPathError == nil else {
+            return
+        }
+
+        isValidatingRepositoryPath = true
+        defer {
+            isValidatingRepositoryPath = false
+        }
+
+        do {
+            let normalizedPath = Self.normalizedRepositoryPath(repositoryPathText)
+            let validation = try await pathValidator.validateRepoPath(repoPath: normalizedPath)
+            repositoryPathValidation = validation
+
+            if let message = choosePathBlockingMessage(for: validation) {
+                repositoryPathError = message
+                return
+            }
+
+            choosePathAction = .continueRequested(validation)
+        } catch {
+            repositoryPathValidation = nil
+            repositoryPathError = Self.repositoryPathValidationErrorMessage(for: error)
+        }
     }
 
     @MainActor
@@ -204,6 +301,64 @@ final class OnboardingModel: ObservableObject {
             route = .repositoryReady(config)
         } catch {
             route = .configurationError(ConfigLoadFailure.map(repoPath: repoPath, error: error))
+        }
+    }
+
+    private func choosePathBlockingMessage(for validation: RepoPathValidationSnapshot) -> String? {
+        if validation.isInsideAreaMatrix || validation.issues.contains(.insideAreaMatrix) {
+            return "请选择资料库根目录，而不是 .areamatrix 内部目录"
+        }
+
+        if validation.issues.contains(.notDirectory) {
+            return "请选择文件夹路径"
+        }
+
+        return nil
+    }
+
+    private func localRepositoryPathError(for value: String) -> String? {
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if trimmed.isEmpty {
+            return "请输入资料库路径"
+        }
+
+        if trimmed.contains("\0") {
+            return "路径字符串无法解析"
+        }
+
+        if Self.pathContainsAreaMatrixComponent(trimmed) {
+            return "请选择资料库根目录，而不是 .areamatrix 内部目录"
+        }
+
+        return nil
+    }
+
+    private static func normalizedRepositoryPath(_ value: String) -> String {
+        (value.trimmingCharacters(in: .whitespacesAndNewlines) as NSString).expandingTildeInPath
+    }
+
+    private static func pathContainsAreaMatrixComponent(_ value: String) -> Bool {
+        let normalized = normalizedRepositoryPath(value)
+        return normalized
+            .split(separator: "/", omittingEmptySubsequences: true)
+            .contains(".areamatrix")
+    }
+
+    private static func repositoryPathValidationErrorMessage(for error: Error) -> String {
+        guard let coreError = error as? CoreError else {
+            return "路径字符串无法解析"
+        }
+
+        switch coreError {
+        case .InvalidPath:
+            return "路径字符串无法解析"
+        case .PermissionDenied:
+            return "AreaMatrix 没有读取该位置的权限"
+        case .ICloudPlaceholder:
+            return "该位置仍是 iCloud 占位内容，无法校验"
+        default:
+            return "路径字符串无法解析"
         }
     }
 }

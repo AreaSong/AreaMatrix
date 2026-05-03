@@ -8,6 +8,42 @@ protocol CoreConfigurationUpdating: Sendable {
     func updateConfig(repoPath: String, newConfig: RepoConfigSnapshot) async throws
 }
 
+protocol CoreRepositoryPathValidating: Sendable {
+    func validateRepoPath(repoPath: String) async throws -> RepoPathValidationSnapshot
+}
+
+enum RepoInitModeSnapshot: String, Equatable, Sendable {
+    case createEmpty = "CreateEmpty"
+    case adoptExisting = "AdoptExisting"
+}
+
+enum RepoPathIssueSnapshot: String, Equatable, Sendable {
+    case missingPath = "MissingPath"
+    case notDirectory = "NotDirectory"
+    case notReadable = "NotReadable"
+    case notWritable = "NotWritable"
+    case nonEmptyDirectory = "NonEmptyDirectory"
+    case alreadyInitialized = "AlreadyInitialized"
+    case insideAreaMatrix = "InsideAreaMatrix"
+    case iCloudPath = "ICloudPath"
+    case unfinishedScanSession = "UnfinishedScanSession"
+}
+
+struct RepoPathValidationSnapshot: Equatable, Sendable {
+    var repoPath: String
+    var exists: Bool
+    var isDirectory: Bool
+    var isReadable: Bool
+    var isWritable: Bool
+    var isEmpty: Bool
+    var isInitialized: Bool
+    var isInsideAreaMatrix: Bool
+    var isICloudPath: Bool
+    var hasUnfinishedScanSession: Bool
+    var recommendedMode: RepoInitModeSnapshot?
+    var issues: [RepoPathIssueSnapshot]
+}
+
 struct RepoConfigSnapshot: Equatable, Sendable {
     var repoPath: String
     var defaultMode: String
@@ -33,6 +69,59 @@ private extension RepoConfigSnapshot {
         enableKeywordRules = coreConfig.enableKeywordRules
         fallbackToInbox = coreConfig.fallbackToInbox
         allowReplaceDuringImport = coreConfig.allowReplaceDuringImport
+    }
+}
+
+private extension RepoPathValidationSnapshot {
+    init(coreValidation: RepoPathValidation) {
+        repoPath = coreValidation.repoPath
+        exists = coreValidation.exists
+        isDirectory = coreValidation.isDirectory
+        isReadable = coreValidation.isReadable
+        isWritable = coreValidation.isWritable
+        isEmpty = coreValidation.isEmpty
+        isInitialized = coreValidation.isInitialized
+        isInsideAreaMatrix = coreValidation.isInsideAreaMatrix
+        isICloudPath = coreValidation.isIcloudPath
+        hasUnfinishedScanSession = coreValidation.hasUnfinishedScanSession
+        recommendedMode = coreValidation.recommendedMode.map(RepoInitModeSnapshot.init(coreMode:))
+        issues = coreValidation.issues.map(RepoPathIssueSnapshot.init(coreIssue:))
+    }
+}
+
+private extension RepoInitModeSnapshot {
+    init(coreMode: RepoInitMode) {
+        switch coreMode {
+        case .createEmpty:
+            self = .createEmpty
+        case .adoptExisting:
+            self = .adoptExisting
+        }
+    }
+}
+
+private extension RepoPathIssueSnapshot {
+    init(coreIssue: RepoPathIssue) {
+        switch coreIssue {
+        case .missingPath:
+            self = .missingPath
+        case .notDirectory:
+            self = .notDirectory
+        case .notReadable:
+            self = .notReadable
+        case .notWritable:
+            self = .notWritable
+        case .nonEmptyDirectory:
+            self = .nonEmptyDirectory
+        case .alreadyInitialized:
+            self = .alreadyInitialized
+        case .insideAreaMatrix:
+            self = .insideAreaMatrix
+        case .iCloudPath:
+            self = .iCloudPath
+        case .unfinishedScanSession:
+            self = .unfinishedScanSession
+        }
     }
 }
 
@@ -78,8 +167,8 @@ actor CoreBridge {
         try requireGeneratedBindings(for: .initLogging)
     }
 
-    func validateRepoPath(_ candidateURL: URL) async throws -> Never {
-        try requireGeneratedBindings(for: .validateRepoPath)
+    func validateRepoPath(repoPath: String) async throws -> RepoPathValidationSnapshot {
+        RepoPathValidationSnapshot(coreValidation: try validateCoreRepoPath(repoPath: repoPath))
     }
 
     func initializeRepo() async throws -> Never {
@@ -197,7 +286,7 @@ actor CoreBridge {
     }
 }
 
-extension CoreBridge: CoreConfigurationLoading, CoreConfigurationUpdating {}
+extension CoreBridge: CoreConfigurationLoading, CoreConfigurationUpdating, CoreRepositoryPathValidating {}
 
 private func loadCoreConfig(repoPath: String) throws -> RepoConfig {
     try loadConfig(repoPath: repoPath)
@@ -205,6 +294,10 @@ private func loadCoreConfig(repoPath: String) throws -> RepoConfig {
 
 private func updateCoreConfig(repoPath: String, newConfig: RepoConfig) throws {
     try updateConfig(repoPath: repoPath, newConfig: newConfig)
+}
+
+private func validateCoreRepoPath(repoPath: String) throws -> RepoPathValidation {
+    try validateRepoPath(repoPath: repoPath)
 }
 
 private extension StorageMode {

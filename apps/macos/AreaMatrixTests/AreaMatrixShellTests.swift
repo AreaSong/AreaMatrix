@@ -28,6 +28,97 @@ final class AreaMatrixShellTests: XCTestCase {
     }
 
     @MainActor
+    func testWelcomeContinueShowsChoosePathStep() {
+        let model = OnboardingModel(
+            settingsReader: StaticSettingsReader(repoPath: nil),
+            configLoader: RecordingConfigLoader(result: .success(.fixture(repoPath: "/tmp/repo"))),
+            pathValidator: RecordingPathValidator(result: .success(.fixture(repoPath: "/tmp/repo"))),
+            helpOpener: NoopWelcomeHelpOpener()
+        )
+
+        model.continueFromWelcome()
+
+        XCTAssertEqual(model.route, .choosePath)
+        XCTAssertEqual(model.welcomeAction, .continueRequested)
+    }
+
+    @MainActor
+    func testChoosePathRejectsEmptyPathBeforeCallingCore() async {
+        let validator = RecordingPathValidator(result: .success(.fixture(repoPath: "/tmp/repo")))
+        let model = OnboardingModel(
+            settingsReader: StaticSettingsReader(repoPath: nil),
+            configLoader: RecordingConfigLoader(result: .success(.fixture(repoPath: "/tmp/repo"))),
+            pathValidator: validator,
+            helpOpener: NoopWelcomeHelpOpener()
+        )
+
+        model.updateRepositoryPath("  ")
+        await model.continueFromChoosePath()
+        let requestedRepoPaths = await validator.requestedRepoPaths()
+
+        XCTAssertEqual(model.repositoryPathError, "请输入资料库路径")
+        XCTAssertFalse(model.canContinueFromChoosePath)
+        XCTAssertEqual(requestedRepoPaths, [])
+    }
+
+    @MainActor
+    func testChoosePathRejectsAreaMatrixInternalPathBeforeCallingCore() async {
+        let validator = RecordingPathValidator(result: .success(.fixture(repoPath: "/tmp/repo")))
+        let model = OnboardingModel(
+            settingsReader: StaticSettingsReader(repoPath: nil),
+            configLoader: RecordingConfigLoader(result: .success(.fixture(repoPath: "/tmp/repo"))),
+            pathValidator: validator,
+            helpOpener: NoopWelcomeHelpOpener()
+        )
+
+        model.updateRepositoryPath("/tmp/repo/.areamatrix")
+        await model.continueFromChoosePath()
+        let requestedRepoPaths = await validator.requestedRepoPaths()
+
+        XCTAssertEqual(model.repositoryPathError, "请选择资料库根目录，而不是 .areamatrix 内部目录")
+        XCTAssertFalse(model.canContinueFromChoosePath)
+        XCTAssertEqual(requestedRepoPaths, [])
+    }
+
+    @MainActor
+    func testChoosePathValidatesCandidateThroughCoreBoundary() async {
+        let expandedPath = ("~/AreaMatrix/" as NSString).expandingTildeInPath
+        let validation = RepoPathValidationSnapshot.fixture(repoPath: expandedPath)
+        let validator = RecordingPathValidator(result: .success(validation))
+        let model = OnboardingModel(
+            settingsReader: StaticSettingsReader(repoPath: nil),
+            configLoader: RecordingConfigLoader(result: .success(.fixture(repoPath: "/tmp/repo"))),
+            pathValidator: validator,
+            helpOpener: NoopWelcomeHelpOpener()
+        )
+
+        await model.continueFromChoosePath()
+        let requestedRepoPaths = await validator.requestedRepoPaths()
+
+        XCTAssertEqual(requestedRepoPaths, [expandedPath])
+        XCTAssertNil(model.repositoryPathError)
+        XCTAssertEqual(model.repositoryPathValidation, validation)
+        XCTAssertEqual(model.choosePathAction, .continueRequested(validation))
+    }
+
+    @MainActor
+    func testChoosePathMapsCoreValidationFailure() async {
+        let validator = RecordingPathValidator(result: .failure(CoreError.PermissionDenied(path: "/tmp/repo")))
+        let model = OnboardingModel(
+            settingsReader: StaticSettingsReader(repoPath: nil),
+            configLoader: RecordingConfigLoader(result: .success(.fixture(repoPath: "/tmp/repo"))),
+            pathValidator: validator,
+            helpOpener: NoopWelcomeHelpOpener()
+        )
+
+        model.updateRepositoryPath("/tmp/repo")
+        await model.continueFromChoosePath()
+
+        XCTAssertEqual(model.repositoryPathError, "AreaMatrix 没有读取该位置的权限")
+        XCTAssertNil(model.choosePathAction)
+    }
+
+    @MainActor
     func testOnboardingLoadsConfiguredRepoThroughCoreBridgeBoundary() async {
         let config = RepoConfigSnapshot.fixture(repoPath: "/tmp/repo")
         let loader = RecordingConfigLoader(result: .success(config))
@@ -85,6 +176,21 @@ final class AreaMatrixShellTests: XCTestCase {
                 return XCTFail("expected Config, got \(error)")
             }
         }
+    }
+
+    func testCoreBridgeValidatesTemporaryRepoPathWithoutCreatingMetadata() async throws {
+        let repoURL = try makeTemporaryRepoURL()
+        defer {
+            try? FileManager.default.removeItem(at: repoURL)
+        }
+
+        let validation = try await CoreBridge().validateRepoPath(repoPath: repoURL.path)
+
+        XCTAssertEqual(validation.repoPath, repoURL.path)
+        XCTAssertTrue(validation.exists)
+        XCTAssertTrue(validation.isDirectory)
+        XCTAssertFalse(validation.isInsideAreaMatrix)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: repoURL.appendingPathComponent(".areamatrix").path))
     }
 
     @MainActor
@@ -194,6 +300,35 @@ private actor RecordingConfigLoader: CoreConfigurationLoading {
     }
 }
 
+private enum RecordingPathValidationResult {
+    case success(RepoPathValidationSnapshot)
+    case failure(Error)
+}
+
+private actor RecordingPathValidator: CoreRepositoryPathValidating {
+    private let result: RecordingPathValidationResult
+    private var paths: [String] = []
+
+    init(result: RecordingPathValidationResult) {
+        self.result = result
+    }
+
+    func validateRepoPath(repoPath: String) async throws -> RepoPathValidationSnapshot {
+        paths.append(repoPath)
+
+        switch result {
+        case .success(let validation):
+            return validation
+        case .failure(let error):
+            throw error
+        }
+    }
+
+    func requestedRepoPaths() -> [String] {
+        paths
+    }
+}
+
 private struct NoopWelcomeHelpOpener: WelcomeHelpOpening {
     func openWelcomeHelp() throws {}
 }
@@ -217,6 +352,29 @@ private extension RepoConfigSnapshot {
             enableKeywordRules: true,
             fallbackToInbox: true,
             allowReplaceDuringImport: false
+        )
+    }
+}
+
+private extension RepoPathValidationSnapshot {
+    static func fixture(
+        repoPath: String,
+        issues: [RepoPathIssueSnapshot] = [],
+        recommendedMode: RepoInitModeSnapshot? = .createEmpty
+    ) -> RepoPathValidationSnapshot {
+        RepoPathValidationSnapshot(
+            repoPath: repoPath,
+            exists: true,
+            isDirectory: true,
+            isReadable: true,
+            isWritable: true,
+            isEmpty: true,
+            isInitialized: false,
+            isInsideAreaMatrix: false,
+            isICloudPath: false,
+            hasUnfinishedScanSession: false,
+            recommendedMode: recommendedMode,
+            issues: issues
         )
     }
 }
