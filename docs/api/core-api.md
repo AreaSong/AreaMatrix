@@ -50,6 +50,12 @@ namespace area_matrix {
     ReindexReport reindex_from_filesystem(string repo_path);
 
     [Throws=CoreError]
+    DiagnosticsSnapshot create_diagnostics_snapshot(string repo_path);
+
+    [Throws=CoreError]
+    RepairReport repair_metadata(string repo_path, RepairOptions options);
+
+    [Throws=CoreError]
     ScanSession? get_latest_scan_session(string repo_path);
 
     [Throws=CoreError]
@@ -247,6 +253,26 @@ dictionary ReindexReport {
     sequence<string> errors;
 };
 
+dictionary RepairOptions {
+    boolean full_rescan;
+    boolean preserve_diagnostics_snapshot;
+};
+
+dictionary DiagnosticsSnapshot {
+    string snapshot_path;
+    i64 created_at;
+    sequence<string> warnings;
+};
+
+dictionary RepairReport {
+    i64? scan_session_id;
+    string? diagnostics_snapshot_path;
+    i64 inserted;
+    i64 updated;
+    i64 skipped;
+    sequence<string> errors;
+};
+
 dictionary ScanSession {
     i64 id;
     ScanSessionKind kind;
@@ -368,6 +394,8 @@ interface CoreError {
 | `update_config(repo, cfg)` | repo | √ | Config / PermissionDenied / Io / Db |
 | `recover_on_startup(repo)` | repo | √ | Db |
 | `reindex_from_filesystem(repo)` | repo | √ | Io / Db |
+| `create_diagnostics_snapshot(repo)` | repo | √ | Db / PermissionDenied / Io / Internal |
+| `repair_metadata(repo, options)` | repo | √ | Db / PermissionDenied / Io / Internal |
 | `get_latest_scan_session(repo)` | repo | √ | Db |
 | `resume_scan_session(repo, id)` | repo | √ | Io / Db |
 | `predict_category(repo, name)` | classify | √ | Config / Classify |
@@ -622,6 +650,90 @@ print("inserted: \(report.inserted), updated: \(report.updated), skipped: \(repo
 - 启动后的全量重建或外部补扫写入 `FileEntry.origin = .external`。
 - 首次接管扫描由 `init_repo(mode=.adoptExisting)` 的内部流程触发，写入 `FileEntry.origin = .adopted`。
 - `README.md` 作为普通用户文件索引；`AREAMATRIX.md` 与 `.areamatrix/generated/` 始终跳过。
+
+错误与副作用边界：
+
+- `Db`：scan session、`files` metadata 或诊断状态读写失败。
+- `PermissionDenied`：资料库文件、目录 metadata 或 `.areamatrix/` 写入被阻断。
+- `Io`：文件系统遍历、metadata 读取或 hash 计算失败。
+- `Internal`：重建过程发现无法恢复的一致性不变量破坏。
+- 只允许写 `.areamatrix/index.db` 与 scan session metadata。
+- 不移动、不重命名、不删除、不覆盖、不 Trash 用户文件。
+- 不覆盖 `README.md`，不触发 iCloud placeholder 下载，不上传诊断。
+
+### `create_diagnostics_snapshot(repoPath: String) throws -> DiagnosticsSnapshot`
+
+```swift
+let snapshot = try await Task.detached(priority: .userInitiated) {
+    try AreaMatrix.createDiagnosticsSnapshot(repoPath: repoPath)
+}.value
+print(snapshot.snapshotPath)
+```
+
+C1-26 的只创建诊断入口。调用方在用户确认修复后、任何 metadata 修复前调用，
+用于保留损坏 DB 或 repair context 的 AreaMatrix-owned 引用。返回的
+`snapshot_path` 必须位于 `.areamatrix/` 内，Swift 只展示引用，不解析用户文件。
+
+输入：
+
+- `repoPath`：已初始化资料库根目录。
+
+输出：
+
+- `DiagnosticsSnapshot.snapshot_path`：仓库相对路径，指向 `.areamatrix/` 下的诊断快照。
+- `DiagnosticsSnapshot.created_at`：Unix 秒级时间戳。
+- `DiagnosticsSnapshot.warnings`：无法完整采集但未破坏用户文件的诊断说明。
+
+错误与副作用边界：
+
+- `Db`：损坏 metadata 无法以诊断模式打开或读取。
+- `PermissionDenied`：无法写入 `.areamatrix/` 诊断位置。
+- `Io`：复制或读取诊断材料失败。
+- `Internal`：诊断快照路径不在 `.areamatrix/` 内等不变量失败。
+- 不修改 `files`、`scan_sessions` 或用户文件。
+- 不写 `AREAMATRIX.md`、`README.md` 或 `.areamatrix/generated/`。
+- 云端备份恢复和自动上传诊断不属于 Stage 1。
+
+### `repair_metadata(repoPath: String, options: RepairOptions) throws -> RepairReport`
+
+```swift
+let report = try await Task.detached(priority: .userInitiated) {
+    try AreaMatrix.repairMetadata(
+        repoPath: repoPath,
+        options: RepairOptions(
+            fullRescan: true,
+            preserveDiagnosticsSnapshot: true
+        )
+    )
+}.value
+```
+
+C1-26 的用户确认后 metadata repair 入口。`RepairOptions.full_rescan = true`
+表示执行全量 filesystem rescan 并返回 `scan_session_id`；`false` 只允许执行
+metadata 层可恢复修复。`preserve_diagnostics_snapshot = true` 时，修复前必须先
+保留诊断快照，并在 `RepairReport.diagnostics_snapshot_path` 返回引用。
+
+输入：
+
+- `repoPath`：已初始化资料库根目录。
+- `RepairOptions.full_rescan`：是否执行全量重建。
+- `RepairOptions.preserve_diagnostics_snapshot`：是否先保留损坏状态诊断引用。
+
+输出：
+
+- `RepairReport.scan_session_id`：全量重建对应的 scan session，非全扫可为空。
+- `RepairReport.diagnostics_snapshot_path`：修复前保留的诊断快照引用，可为空。
+- `inserted` / `updated` / `skipped` / `errors`：与 metadata 修复或全扫相关的结构化摘要。
+
+错误与副作用边界：
+
+- `Db`：SQLite 损坏、schema 读取、metadata upsert 或 scan session 持久化失败。
+- `PermissionDenied`：`.areamatrix/` 诊断、DB 或 metadata 写入被阻断。
+- `Io`：文件系统遍历、诊断材料复制或 metadata 读取失败。
+- `Internal`：修复后 DB/FS 一致性检查无法满足。
+- 修复只处理 `.areamatrix/` metadata；不移动、不重命名、不删除、不覆盖用户文件。
+- 修复失败不得删除用户文件，也不得清空已生成的诊断信息。
+- 成功后 Tree/List 可通过 `list_tree_json` / `list_files` 重新加载。
 
 ### `get_latest_scan_session(repoPath: String) throws -> ScanSession?`
 
@@ -1212,6 +1324,8 @@ public actor CoreBridge {
 
 - `import_file`（hash 大文件）
 - `reindex_from_filesystem`（全扫）
+- `create_diagnostics_snapshot`（可能复制损坏 metadata）
+- `repair_metadata`（可能创建诊断并全扫）
 - `resume_scan_session`（可能继续全扫）
 - `recover_on_startup`（启动时）
 - `list_tree_json`（大库）

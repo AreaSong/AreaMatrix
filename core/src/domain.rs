@@ -401,6 +401,43 @@ pub struct ReindexReport {
     pub errors: Vec<String>,
 }
 
+/// Options for C1-26 metadata repair.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct RepairOptions {
+    /// Whether repair should run a full filesystem rescan after diagnostics.
+    pub full_rescan: bool,
+    /// Whether repair should preserve the damaged metadata state before mutation.
+    pub preserve_diagnostics_snapshot: bool,
+}
+
+/// Reference to an AreaMatrix-owned diagnostics snapshot.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct DiagnosticsSnapshot {
+    /// Repository-relative path under `.areamatrix/` where the snapshot was written.
+    pub snapshot_path: String,
+    /// Unix timestamp for snapshot creation.
+    pub created_at: i64,
+    /// Human-readable warnings about partial or skipped diagnostics.
+    pub warnings: Vec<String>,
+}
+
+/// Metadata repair summary returned to Swift.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct RepairReport {
+    /// Optional scan session identifier used by a full repair rescan.
+    pub scan_session_id: Option<i64>,
+    /// Optional diagnostics snapshot path preserved before repair mutation.
+    pub diagnostics_snapshot_path: Option<String>,
+    /// Number of metadata rows inserted by the repair pass.
+    pub inserted: i64,
+    /// Number of metadata rows updated by the repair pass.
+    pub updated: i64,
+    /// Number of filesystem entries skipped by the repair pass.
+    pub skipped: i64,
+    /// Human-readable errors that did not delete user files or clear diagnostics.
+    pub errors: Vec<String>,
+}
+
 /// Persisted scan session state.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ScanSession {

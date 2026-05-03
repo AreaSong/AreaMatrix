@@ -4,10 +4,10 @@ use std::path::PathBuf;
 
 use crate::{
     classify, db, icloud_conflicts, note, recovery, repo_init, repo_path, repo_scan, storage, sync,
-    tree, ChangeFilter, ChangeLogEntry, ClassifyResult, CoreError, CoreResult, ExternalEvent,
-    FileEntry, FileFilter, ICloudConflictPair, ImportOptions, MoveToCategoryPreview,
-    RecoveryReport, ReindexReport, RepoConfig, RepoInitOptions, RepoPathValidation, ScanSession,
-    SyncResult,
+    tree, ChangeFilter, ChangeLogEntry, ClassifyResult, CoreError, CoreResult, DiagnosticsSnapshot,
+    ExternalEvent, FileEntry, FileFilter, ICloudConflictPair, ImportOptions, MoveToCategoryPreview,
+    RecoveryReport, ReindexReport, RepairOptions, RepairReport, RepoConfig, RepoInitOptions,
+    RepoPathValidation, ScanSession, SyncResult,
 };
 
 fn not_implemented<T>() -> CoreResult<T> {
@@ -167,8 +167,69 @@ pub fn recover_on_startup(repo_path: String) -> CoreResult<RecoveryReport> {
     recovery::recover_on_startup(repo_path)
 }
 
-/// Reindexes a repository from the filesystem.
+/// Reindexes repository metadata from the current filesystem state.
+///
+/// C1-26 exposes this full-rescan API for repair and advanced settings flows.
+/// The input is an initialized repository root. Core may create or reuse a
+/// `scan_sessions(kind = Reindex)` row, update `.areamatrix/index.db` metadata,
+/// and return inserted/updated/skipped counters in [`ReindexReport`].
+///
+/// The API treats filesystem content as read-only input. It must skip
+/// `.areamatrix/`, `.areamatrix/generated/`, root `AREAMATRIX.md`, ignored
+/// directories, and system temporary files. It must not move, rename, delete,
+/// overwrite, trash, or download user files, and it must not overwrite
+/// `README.md`.
+///
+/// # Errors
+///
+/// Returns `CoreError::Db { message }` when scan-session or file metadata cannot
+/// be read or written, `CoreError::PermissionDenied { path }` when repository
+/// content or metadata cannot be inspected, `CoreError::Io { message }` for
+/// filesystem traversal failures, and `CoreError::Internal { message }` for
+/// invariant failures that should be surfaced through C1-21 error mapping.
 pub fn reindex_from_filesystem(_repo_path: String) -> CoreResult<ReindexReport> {
+    not_implemented()
+}
+
+/// Creates a diagnostics snapshot for C1-26 metadata repair.
+///
+/// The snapshot is AreaMatrix-owned diagnostic metadata that preserves the
+/// damaged database or repair context before any mutation. Its returned path
+/// must point under `.areamatrix/` so Swift can show or retain the reference
+/// without scanning user-authored files.
+///
+/// This API must not modify repository files, generate overviews, process
+/// FSEvents, upload diagnostics, or write outside AreaMatrix metadata.
+///
+/// # Errors
+///
+/// Returns `CoreError::Db { message }` when metadata cannot be opened or read,
+/// `CoreError::PermissionDenied { path }` when diagnostics cannot be written,
+/// `CoreError::Io { message }` for filesystem failures, and
+/// `CoreError::Internal { message }` for invalid repair invariants.
+pub fn create_diagnostics_snapshot(_repo_path: String) -> CoreResult<DiagnosticsSnapshot> {
+    not_implemented()
+}
+
+/// Repairs AreaMatrix metadata without mutating user files.
+///
+/// C1-26 uses [`RepairOptions::preserve_diagnostics_snapshot`] to decide
+/// whether the damaged metadata state is preserved before repair. When
+/// [`RepairOptions::full_rescan`] is true, repair may run the same metadata
+/// rescan boundary as [`reindex_from_filesystem`] and report the scan session.
+///
+/// The only allowed side effects are writes under `.areamatrix/` metadata:
+/// diagnostics snapshots, scan-session rows, and repaired file metadata. The
+/// function must never move, rename, delete, overwrite, trash, or download user
+/// files, and failure must leave any diagnostics reference intact.
+///
+/// # Errors
+///
+/// Returns `CoreError::Db { message }` for SQLite corruption or persistence
+/// failures, `CoreError::PermissionDenied { path }` for blocked metadata access,
+/// `CoreError::Io { message }` for repository traversal or snapshot failures,
+/// and `CoreError::Internal { message }` for inconsistent repair state.
+pub fn repair_metadata(_repo_path: String, _options: RepairOptions) -> CoreResult<RepairReport> {
     not_implemented()
 }
 

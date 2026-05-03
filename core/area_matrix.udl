@@ -26,6 +26,12 @@ namespace area_matrix {
     ReindexReport reindex_from_filesystem(string repo_path);
 
     [Throws=CoreError]
+    DiagnosticsSnapshot create_diagnostics_snapshot(string repo_path);
+
+    [Throws=CoreError]
+    RepairReport repair_metadata(string repo_path, RepairOptions options);
+
+    [Throws=CoreError]
     ScanSession? get_latest_scan_session(string repo_path);
 
     [Throws=CoreError]
@@ -217,6 +223,26 @@ dictionary RecoveryReport {
 
 dictionary ReindexReport {
     i64? scan_session_id;
+    i64 inserted;
+    i64 updated;
+    i64 skipped;
+    sequence<string> errors;
+};
+
+dictionary RepairOptions {
+    boolean full_rescan;
+    boolean preserve_diagnostics_snapshot;
+};
+
+dictionary DiagnosticsSnapshot {
+    string snapshot_path;
+    i64 created_at;
+    sequence<string> warnings;
+};
+
+dictionary RepairReport {
+    i64? scan_session_id;
+    string? diagnostics_snapshot_path;
     i64 inserted;
     i64 updated;
     i64 skipped;

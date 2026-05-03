@@ -9,17 +9,20 @@
 ## Core API
 
 - `reindex_from_filesystem(repo_path) -> ReindexReport`
-- 计划新增：`create_diagnostics_snapshot(repo_path) -> DiagnosticsSnapshot`
-- 计划新增：`repair_metadata(repo_path, options) -> RepairReport`
+- `create_diagnostics_snapshot(repo_path) -> DiagnosticsSnapshot`
+- `repair_metadata(repo_path, options) -> RepairReport`
 
 ## 输入
 
 - `repo_path`
-- 修复选项：full rescan、保留损坏 DB 诊断快照。
+- `RepairOptions.full_rescan`
+- `RepairOptions.preserve_diagnostics_snapshot`
 
 ## 输出
 
-- `RepairReport` 或 `ReindexReport`。
+- `ReindexReport.scan_session_id` / `inserted` / `updated` / `skipped` / `errors`
+- `DiagnosticsSnapshot.snapshot_path` / `created_at` / `warnings`
+- `RepairReport.scan_session_id` / `diagnostics_snapshot_path` / `inserted` / `updated` / `skipped` / `errors`
 
 ## DB 变化
 
