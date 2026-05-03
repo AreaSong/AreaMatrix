@@ -66,7 +66,7 @@ fn repair_reindex_metadata_failure_recovery_repeated_reindex_is_idempotent() {
 }
 
 #[test]
-fn repair_reindex_metadata_failure_recovery_preserves_snapshot_when_repair_fails() {
+fn repair_reindex_metadata_failure_recovery_rebuilds_corrupted_db_after_snapshot() {
     let repo = tempfile::tempdir().expect("create temporary repository directory");
     init_repo(path_string(repo.path()), create_empty_options()).expect("initialize repository");
     let readme = repo.path().join("README.md");
@@ -75,22 +75,34 @@ fn repair_reindex_metadata_failure_recovery_preserves_snapshot_when_repair_fails
     let db_path = repo.path().join(".areamatrix/index.db");
     fs::write(&db_path, b"not a sqlite database").expect("corrupt AreaMatrix metadata");
 
-    let result = repair_metadata(
+    let report = repair_metadata(
         path_string(repo.path()),
         RepairOptions {
             full_rescan: true,
             preserve_diagnostics_snapshot: true,
         },
-    );
+    )
+    .expect("confirmed full rescan should rebuild corrupted metadata");
 
-    assert!(matches!(result, Err(CoreError::Db { .. })));
     assert_eq!(user_file_snapshot(&[&readme]), before);
+    assert!(report.scan_session_id.is_some());
+    assert_eq!(report.inserted, 1);
+    assert_eq!(report.updated, 0);
+    assert_eq!(report.errors, Vec::<String>::new());
+    assert_eq!(indexed_paths(repo.path()), vec!["README.md"]);
+
     let snapshots = diagnostics_snapshots(repo.path());
     assert_eq!(snapshots.len(), 1);
     assert_eq!(
         fs::read(&snapshots[0]).expect("read preserved diagnostics snapshot"),
         b"not a sqlite database"
     );
+    let session = get_latest_scan_session(path_string(repo.path()))
+        .expect("read repair scan session")
+        .expect("corrupted metadata repair should create scan session");
+    assert_eq!(Some(session.id), report.scan_session_id);
+    assert_eq!(session.kind, ScanSessionKind::Reindex);
+    assert_eq!(session.status, ScanSessionStatus::Completed);
 }
 
 #[cfg(unix)]

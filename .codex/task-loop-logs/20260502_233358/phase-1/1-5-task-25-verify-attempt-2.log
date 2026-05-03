@@ -1,0 +1,93 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`phase-1 / 1-5/task-25`
+- 验收对象：C1-26 `repair-reindex-metadata` integration-verify
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-1/1-5-file-actions-repair/task-25-c1-26-integration-verify.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-26-repair-reindex-metadata.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/tests/**`
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：0
+- 通过项数：10
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 C1-26 integration-verify 范围
+- 结果：通过
+- 证据：实现只新增/核验 `repair_metadata`、`reindex_from_filesystem`、`create_diagnostics_snapshot`；未发现 `apps/**` 变更。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:190`、`:210`、`:232`
+
+- 项目：Exact Docs 以 SSOT 交叉验收
+- 结果：通过
+- 证据：C1-26 spec 明确三组 API、`.areamatrix/` metadata 边界、不得移动/删除/覆盖用户文件、未确认前不运行修复。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-26-repair-reindex-metadata.md:11`
+
+- 项目：API / UDL / Rust 类型一致
+- 结果：通过
+- 证据：`core-api.md`、`area_matrix.udl`、Rust public API 和 domain types 均包含 `ReindexReport`、`RepairOptions`、`DiagnosticsSnapshot`、`RepairReport`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:50`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:26`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/domain.rs:391`
+
+- 项目：真实实现闭环
+- 结果：通过
+- 证据：`repair.rs` 真实复制诊断快照、重建损坏 index DB、调用 reindex；`repo_scan.rs` 真实遍历文件系统并写 scan session / files metadata。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/repair.rs:27`、`:54`、`:113`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/repo_scan.rs:43`
+
+- 项目：消费页面与 control map 一致
+- 结果：通过
+- 证据：control map 仅 S1-37 绑定 C1-26；S1-11 和 S1-32 只路由到 S1-37，不在本页直接修复。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:52`、`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-11-main-repo-error.md:78`、`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-32-error-recovery.md:92`
+
+- 项目：Expected New Paths
+- 结果：通过
+- 证据：`core/src/**`、`core/area_matrix.udl`、`core/tests/**` 均存在；C1-26 集成验收测试已落地。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/repair_reindex_metadata_integration_verify.rs:105`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git status --short -- apps` 无输出；未触碰 `apps/**`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/**`
+
+- 项目：无 mock / 空壳 / 硬编码伪完成
+- 结果：通过
+- 证据：测试覆盖真实 repo、真实 SQLite metadata、损坏 DB、诊断快照、list/tree reload、权限失败和 resume；未发现生产实现 mock/stub。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/repair_reindex_metadata_integration_verify.rs:164`、`:235`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。`core/src/repair.rs` 339 行，职责集中；API wrapper、domain type、repair helper、scan helper 分层清楚。
+- 注释 / rustdoc / 文档同步：通过。新增 public API 有 rustdoc，并与 `core-api.md` / UDL 对齐。
+- 错误处理与边界处理：通过。生产路径未发现 `unwrap()` / `expect()` / `panic!()`；诊断复制、DB rebuild、权限和 IO 均返回 `CoreError`。
+- 测试与验证覆盖：通过。C1-26 targeted tests 覆盖 contract、implementation、failure、validation、integration verify 共 18 个测试。
+- 占位、硬编码、mock-only、一次性实现检查：通过。实现连接真实文件系统、SQLite metadata、scan session、list/tree reload，不是 dry-run 或 fixture-only 闭环。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`cd core && cargo fmt --all -- --check`，通过。
+- 已运行：`cd core && cargo clippy --all-targets --all-features -- -D warnings`，通过。
+- 已运行：`cd core && cargo test --workspace repair_reindex_metadata`，通过。
+- 已运行：`cd core && cargo test --workspace`，通过。
+- 已运行：`python3 tasks/prompts/_shared/prompt_pipeline.py doctor`，通过，`tasks: 637`、`manifests: 637`。
+- 已运行：`git diff --check`，通过。
+- 缺失：无。macOS app 验证不属于本 task manifest，且 `apps/**` 未变更。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+VERIFY_RESULT: PASS

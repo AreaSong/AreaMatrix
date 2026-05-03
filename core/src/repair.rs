@@ -11,8 +11,8 @@ use rusqlite::Connection;
 use uuid::Uuid;
 
 use crate::{
-    repo_scan, CoreError, CoreResult, DiagnosticsSnapshot, ReindexReport, RepairOptions,
-    RepairReport,
+    config, db, repo_scan, CoreError, CoreResult, DiagnosticsSnapshot, OverviewOutput,
+    ReindexReport, RepairOptions, RepairReport,
 };
 
 const AREA_MATRIX_DIR: &str = ".areamatrix";
@@ -55,17 +55,22 @@ pub(crate) fn repair_metadata(
     repo_path: String,
     options: RepairOptions,
 ) -> CoreResult<RepairReport> {
-    let snapshot = if options.preserve_diagnostics_snapshot {
+    let mut snapshot = if options.preserve_diagnostics_snapshot {
         Some(create_diagnostics_snapshot(repo_path.clone())?)
     } else {
         None
     };
     let repo = diagnostics_repo_path(&repo_path)?;
-    verify_metadata_health(&repo)?;
 
     let reindex_report = if options.full_rescan {
+        if let Some(repair_snapshot) =
+            prepare_full_rescan_metadata(&repo, &repo_path, snapshot.is_some())?
+        {
+            snapshot = Some(repair_snapshot);
+        }
         reindex_from_filesystem(repo_path)?
     } else {
+        verify_metadata_health(&repo)?;
         ReindexReport {
             scan_session_id: None,
             inserted: 0,
@@ -83,6 +88,113 @@ pub(crate) fn repair_metadata(
         skipped: reindex_report.skipped,
         errors: reindex_report.errors,
     })
+}
+
+fn prepare_full_rescan_metadata(
+    repo: &Path,
+    repo_path: &str,
+    has_snapshot: bool,
+) -> CoreResult<Option<DiagnosticsSnapshot>> {
+    match verify_metadata_health(repo) {
+        Ok(()) => Ok(None),
+        Err(CoreError::Db { .. } | CoreError::Internal { .. }) => {
+            let snapshot = if has_snapshot {
+                None
+            } else {
+                Some(create_diagnostics_snapshot(repo_path.to_owned())?)
+            };
+            rebuild_index_db(repo, repo_path)?;
+            Ok(snapshot)
+        }
+        Err(error) => Err(error),
+    }
+}
+
+fn rebuild_index_db(repo: &Path, repo_path: &str) -> CoreResult<()> {
+    let area_matrix = repo.join(AREA_MATRIX_DIR);
+    let temp_db = area_matrix.join(format!("{INDEX_DB_FILE}.repair-{}", Uuid::new_v4()));
+    let result = build_replacement_index_db(&temp_db, repo_path)
+        .and_then(|()| install_replacement_index_db(&area_matrix, &temp_db));
+    if result.is_err() {
+        cleanup_temp_sqlite_files(&temp_db);
+    }
+    result
+}
+
+fn build_replacement_index_db(temp_db: &Path, repo_path: &str) -> CoreResult<()> {
+    let repo_config =
+        config::default_repo_config(repo_path.to_owned(), OverviewOutput::GeneratedOnly);
+    db::initialize_repository_db(temp_db, &repo_config)?;
+    checkpoint_replacement_db(temp_db)?;
+    remove_sqlite_companions(temp_db)
+}
+
+fn install_replacement_index_db(area_matrix: &Path, temp_db: &Path) -> CoreResult<()> {
+    let index_db = area_matrix.join(INDEX_DB_FILE);
+    let retired_db = area_matrix.join(format!("{INDEX_DB_FILE}.replaced-{}", Uuid::new_v4()));
+    remove_sqlite_companions(&index_db)?;
+    fs::rename(&index_db, &retired_db).map_err(map_io_error)?;
+
+    match fs::rename(temp_db, &index_db) {
+        Ok(()) => {
+            cleanup_temp_file(&retired_db);
+            Ok(())
+        }
+        Err(error) => {
+            restore_retired_index_db(&retired_db, &index_db)?;
+            Err(map_io_error(error))
+        }
+    }
+}
+
+fn restore_retired_index_db(retired_db: &Path, index_db: &Path) -> CoreResult<()> {
+    fs::rename(retired_db, index_db).map_err(map_io_error)
+}
+
+fn checkpoint_replacement_db(db_path: &Path) -> CoreResult<()> {
+    let connection = Connection::open(db_path).map_err(|error| CoreError::db(error.to_string()))?;
+    connection
+        .execute_batch("PRAGMA wal_checkpoint(TRUNCATE);")
+        .map_err(|error| CoreError::db(error.to_string()))
+}
+
+fn remove_sqlite_companions(db_path: &Path) -> CoreResult<()> {
+    for suffix in ["-wal", "-shm"] {
+        remove_file_if_present(&sqlite_companion_path(db_path, suffix)?)?;
+    }
+    Ok(())
+}
+
+fn sqlite_companion_path(db_path: &Path, suffix: &str) -> CoreResult<PathBuf> {
+    let file_name = db_path
+        .file_name()
+        .ok_or_else(|| CoreError::internal("internal error"))?
+        .to_string_lossy();
+    Ok(db_path.with_file_name(format!("{file_name}{suffix}")))
+}
+
+fn remove_file_if_present(path: &Path) -> CoreResult<()> {
+    match fs::remove_file(path) {
+        Ok(()) => Ok(()),
+        Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(()),
+        Err(error) => Err(map_io_error(error)),
+    }
+}
+
+fn cleanup_temp_sqlite_files(temp_db: &Path) {
+    cleanup_temp_file(temp_db);
+    for suffix in ["-wal", "-shm"] {
+        if let Ok(path) = sqlite_companion_path(temp_db, suffix) {
+            cleanup_temp_file(&path);
+        }
+    }
+}
+
+fn cleanup_temp_file(path: &Path) {
+    // Best-effort cleanup keeps the primary repair error visible to the caller.
+    if matches!(path.try_exists(), Ok(true)) {
+        let _ = fs::remove_file(path);
+    }
 }
 
 fn diagnostics_repo_path(repo_path: &str) -> CoreResult<PathBuf> {
