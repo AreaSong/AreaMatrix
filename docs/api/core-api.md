@@ -64,7 +64,10 @@ namespace area_matrix {
     );
 
     [Throws=CoreError]
-    void delete_file(string repo_path, i64 file_id, boolean hard);
+    void delete_file(string repo_path, i64 file_id);
+
+    [Throws=CoreError]
+    void remove_index_entry(string repo_path, i64 file_id);
 
     [Throws=CoreError]
     FileEntry rename_file(string repo_path, i64 file_id, string new_name);
@@ -337,7 +340,8 @@ interface CoreError {
 | `resume_scan_session(repo, id)` | repo | √ | Io / Db |
 | `predict_category(repo, name)` | classify | √ | Config / Classify |
 | `import_file(repo, src, options)` | storage | √ | Io / Db / DuplicateFile / InvalidPath |
-| `delete_file(repo, file_id, hard)` | storage | √ | Io / Db / FileNotFound |
+| `delete_file(repo, file_id)` | storage | √ | Io / Db / FileNotFound / PermissionDenied / Internal |
+| `remove_index_entry(repo, file_id)` | storage | √ | Db / FileNotFound / PermissionDenied / Internal |
 | `rename_file(repo, file_id, new_name)` | storage | √ | Io / Db / Config / InvalidPath / Conflict / FileNotFound / PermissionDenied |
 | `move_to_category(repo, file_id, cat)` | storage | √ | Classify / Io |
 | `restore_file(repo, file_id)` | storage | √ | FileNotFound |
@@ -676,16 +680,15 @@ func importDroppedFile(_ url: URL) async {
 | `SelectedDirectory` | `target_directory` 必填 | 放入用户显式 drop 的目录，不再自动分类 |
 | `Category` | `override_category` 必填 | 放入指定系统分类目录，必要时创建 `<slug>/` |
 
-### `delete_file(repoPath, fileId, hard) throws`
+### `delete_file(repoPath, fileId) throws`
 
 ```swift
-func deleteFile(_ entry: FileEntry, hard: Bool = false) async {
+func deleteFile(_ entry: FileEntry) async {
     do {
         try await Task.detached {
             try AreaMatrix.deleteFile(
                 repoPath: repoPath,
-                fileId: entry.id,
-                hard: hard
+                fileId: entry.id
             )
         }.value
         appState.removeFile(id: entry.id)
@@ -698,8 +701,67 @@ func deleteFile(_ entry: FileEntry, hard: Bool = false) async {
 }
 ```
 
-`hard=false`：移到废纸篓 + DB 软删除。
-`hard=true`：物理删除 + DB 软删除。
+`delete_file` 是用户确认后的 repo-owned 删除入口：仅用于 `Copied` / `Moved`
+等 AreaMatrix 管理的 active 条目。成功时 Core 必须把目标文件移入系统 Trash，
+将对应 metadata 标记为 `files.status = deleted`，刷新 `deleted_at` / `updated_at`，
+并写入 `change_log.action = deleted`。
+
+副作用边界：
+
+- 不提供永久删除参数，不直接物理删除目标文件。
+- 不删除、移动、重命名或覆盖任何其他用户文件。
+- 不清空 notes / tags 等关联 metadata。
+- Indexed、Adopted、External 或 Missing 条目的索引移除必须使用
+  `remove_index_entry`。
+
+错误：
+
+- `FileNotFound`：`fileId` 对应的 active row 不存在，或 repo-owned 文件已消失。
+- `PermissionDenied`：系统 Trash、目标文件或 metadata 写入被权限阻断。
+- `Io`：Trash 或文件系统操作失败。
+- `Db`：SQLite 查询、软删除或 change log 写入失败。
+- `Internal`：Trash 适配或状态转换出现未预期错误。
+
+### `remove_index_entry(repoPath, fileId) throws`
+
+```swift
+func removeIndexEntry(_ entry: FileEntry) async {
+    do {
+        try await Task.detached {
+            try AreaMatrix.removeIndexEntry(
+                repoPath: repoPath,
+                fileId: entry.id
+            )
+        }.value
+        appState.removeFile(id: entry.id)
+    } catch CoreError.FileNotFound(let path) {
+        appState.removeFile(id: entry.id)
+        print("index entry already gone: \(path)")
+    } catch {
+        await showAlert("移除索引失败：\(error.localizedDescription)")
+    }
+}
+```
+
+`remove_index_entry` 是 index-only 删除入口：用于 Indexed / Adopted / External
+或 Missing metadata，不移动、不删除、不重命名、不覆盖、不 Trash 外部源文件。
+成功时 Core 只更新 metadata，使该条目不再出现在默认 list/detail 中，并写入
+`change_log.action = removed_from_index`。
+
+副作用边界：
+
+- 不触碰外部源文件，即使 `files.source_path` 指向的文件存在。
+- 不触发 iCloud placeholder 下载。
+- 不删除 notes / tags 等关联 metadata，除非后续恢复/清理 task 明确扩展。
+- 不替代 Finder/FSEvents 外部删除同步；外部 removed 仍属于
+  `sync_external_changes`。
+
+错误：
+
+- `FileNotFound`：`fileId` 对应的 removable active row 不存在。
+- `PermissionDenied`：metadata 写入被权限阻断。
+- `Db`：SQLite 查询、索引移除或 change log 写入失败。
+- `Internal`：状态转换出现未预期错误。
 
 ### `rename_file(repoPath, fileId, newName) throws -> FileEntry`
 

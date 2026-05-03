@@ -302,8 +302,45 @@ pub fn import_file(
     storage::import_file(repo_path, source_path, options)
 }
 
-/// Deletes a file entry.
-pub fn delete_file(_repo_path: String, _file_id: i64, _hard: bool) -> CoreResult<()> {
+/// Moves a repo-owned file entry to the system Trash and soft-deletes metadata.
+///
+/// C1-23 owns the user-visible delete/remove-index contract for S1-34.
+/// `delete_file` is only for AreaMatrix-managed `Copied` / `Moved` active rows.
+/// A successful implementation must send the target file to the system Trash,
+/// mark the matching row as `files.status = deleted`, refresh `deleted_at` and
+/// `updated_at`, and write `change_log.action = deleted`.
+///
+/// This entry point intentionally has no `hard` or permanent-delete flag. Indexed,
+/// adopted, external, or missing references must use [`remove_index_entry`] so
+/// external source files are never deleted as an index cleanup side effect.
+///
+/// # Errors
+///
+/// Returns `CoreError::FileNotFound { path }` when the active row or repo-owned
+/// file is absent, `CoreError::PermissionDenied { path }` when Trash or metadata
+/// writes are blocked, `CoreError::Io { message }` for filesystem failures,
+/// `CoreError::Db { message }` for metadata persistence failures, and
+/// `CoreError::Internal { message }` for unexpected Trash or state-transition failures.
+pub fn delete_file(_repo_path: String, _file_id: i64) -> CoreResult<()> {
+    not_implemented()
+}
+
+/// Removes an indexed file entry from AreaMatrix without touching the source file.
+///
+/// C1-23 uses this explicit index-only entry point for Indexed / Adopted /
+/// External / Missing references. A successful implementation must make the
+/// entry disappear from default list/detail queries and write
+/// `change_log.action = removed_from_index`, while leaving `files.source_path`
+/// targets and other user files untouched. It must not move anything to Trash,
+/// trigger iCloud downloads, or perform permanent deletion.
+///
+/// # Errors
+///
+/// Returns `CoreError::FileNotFound { path }` when the active removable row is
+/// absent, `CoreError::PermissionDenied { path }` when metadata writes are blocked,
+/// `CoreError::Db { message }` for SQLite failures, and
+/// `CoreError::Internal { message }` for unexpected state-transition failures.
+pub fn remove_index_entry(_repo_path: String, _file_id: i64) -> CoreResult<()> {
     not_implemented()
 }
 

@@ -264,7 +264,7 @@ fn file_not_found_after_external_delete() {
     let repo = setup();
     let entry = import_simple(&repo);
     std::fs::remove_file(repo.path().join(&entry.path)).unwrap();
-    let r = delete_file(&repo.path(), entry.id, true);
+    let r = delete_file(&repo.path(), entry.id);
     assert!(matches!(r, Err(CoreError::FileNotFound { .. }) | Ok(_)));
 }
 ```

@@ -40,7 +40,10 @@ namespace area_matrix {
     );
 
     [Throws=CoreError]
-    void delete_file(string repo_path, i64 file_id, boolean hard);
+    void delete_file(string repo_path, i64 file_id);
+
+    [Throws=CoreError]
+    void remove_index_entry(string repo_path, i64 file_id);
 
     [Throws=CoreError]
     FileEntry rename_file(string repo_path, i64 file_id, string new_name);
