@@ -34,6 +34,7 @@ pub(crate) fn list_icloud_conflicts(repo_path: String) -> CoreResult<Vec<ICloudC
     }
 
     let repo = PathBuf::from(repo_path);
+    reject_placeholder_path(&repo)?;
     let mut conflicts = Vec::new();
 
     for entry in WalkDir::new(&repo)
