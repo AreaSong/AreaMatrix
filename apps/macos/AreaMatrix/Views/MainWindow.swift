@@ -59,6 +59,25 @@ struct MainWindow: View {
                     }
                 }
             )
+        case .validatePath:
+            ValidatePathStepView(
+                pathText: model.repositoryPathText,
+                validation: model.repositoryPathValidation,
+                errorMessage: model.repositoryPathError,
+                isValidating: model.isValidatingRepositoryPath,
+                isICloudRiskAccepted: model.isICloudRiskAccepted,
+                canContinue: model.canContinueFromValidatePath,
+                primaryActionTitle: model.validatePathPrimaryActionTitle,
+                onBack: model.showChoosePath,
+                onChangePath: model.showChoosePath,
+                onRetry: {
+                    Task {
+                        await model.retryRepositoryPathValidation()
+                    }
+                },
+                onICloudRiskAcceptedChanged: model.updateICloudRiskAccepted,
+                onContinue: model.continueFromValidatePath
+            )
         case .repositoryReady(let config):
             RepositoryReadyView(config: config)
         case .configurationError(let failure):

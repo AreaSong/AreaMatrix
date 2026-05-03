@@ -254,6 +254,121 @@ final class AreaMatrixShellTests: XCTestCase {
         XCTAssertEqual(model.toastMessage, "Learn more is unavailable right now.")
         XCTAssertEqual(model.route, .loadingConfiguration)
     }
+
+    @MainActor
+    func testChoosePathContinueShowsValidatePathAndStoresCoreResult() async {
+        let validation = RepoPathValidationSnapshot.fixture(repoPath: "/tmp/repo")
+        let validator = RecordingPathValidator(result: .success(validation))
+        let model = OnboardingModel(
+            settingsReader: StaticSettingsReader(repoPath: nil),
+            configLoader: RecordingConfigLoader(result: .success(.fixture(repoPath: "/tmp/repo"))),
+            pathValidator: validator,
+            helpOpener: NoopWelcomeHelpOpener()
+        )
+
+        model.updateRepositoryPath("/tmp/repo")
+        await model.continueFromChoosePath()
+        let requestedRepoPaths = await validator.requestedRepoPaths()
+
+        XCTAssertEqual(model.route, .validatePath)
+        XCTAssertEqual(requestedRepoPaths, ["/tmp/repo"])
+        XCTAssertEqual(model.repositoryPathValidation, validation)
+        XCTAssertTrue(model.canContinueFromValidatePath)
+        XCTAssertEqual(model.choosePathAction, .continueRequested(validation))
+    }
+
+    @MainActor
+    func testValidatePathKeepsPermissionFailureOnValidatePage() async {
+        let model = OnboardingModel(
+            settingsReader: StaticSettingsReader(repoPath: nil),
+            configLoader: RecordingConfigLoader(result: .success(.fixture(repoPath: "/tmp/repo"))),
+            pathValidator: RecordingPathValidator(result: .failure(CoreError.PermissionDenied(path: "/tmp/repo"))),
+            helpOpener: NoopWelcomeHelpOpener()
+        )
+
+        model.updateRepositoryPath("/tmp/repo")
+        await model.continueFromChoosePath()
+
+        XCTAssertEqual(model.route, .validatePath)
+        XCTAssertEqual(model.repositoryPathError, "AreaMatrix 没有读取该位置的权限")
+        XCTAssertFalse(model.canContinueFromValidatePath)
+        XCTAssertNil(model.repositoryPathValidation)
+    }
+
+    @MainActor
+    func testICloudPathRequiresRiskAcknowledgement() async {
+        let validation = RepoPathValidationSnapshot.fixture(
+            repoPath: "/Users/me/Library/Mobile Documents/repo",
+            isICloudPath: true,
+            issues: [.iCloudPath]
+        )
+        let model = OnboardingModel(
+            settingsReader: StaticSettingsReader(repoPath: nil),
+            configLoader: RecordingConfigLoader(result: .success(.fixture(repoPath: "/tmp/repo"))),
+            pathValidator: RecordingPathValidator(result: .success(validation)),
+            helpOpener: NoopWelcomeHelpOpener()
+        )
+
+        model.updateRepositoryPath(validation.repoPath)
+        await model.continueFromChoosePath()
+
+        XCTAssertFalse(model.canContinueFromValidatePath)
+
+        model.updateICloudRiskAccepted(true)
+
+        XCTAssertTrue(model.canContinueFromValidatePath)
+    }
+
+    @MainActor
+    func testNonWritableValidationBlocksContinue() async {
+        let validation = RepoPathValidationSnapshot.fixture(
+            repoPath: "/tmp/repo",
+            isWritable: false,
+            issues: [.notWritable],
+            recommendedMode: nil
+        )
+        let model = OnboardingModel(
+            settingsReader: StaticSettingsReader(repoPath: nil),
+            configLoader: RecordingConfigLoader(result: .success(.fixture(repoPath: "/tmp/repo"))),
+            pathValidator: RecordingPathValidator(result: .success(validation)),
+            helpOpener: NoopWelcomeHelpOpener()
+        )
+
+        model.updateRepositoryPath("/tmp/repo")
+        await model.continueFromChoosePath()
+
+        XCTAssertEqual(model.repositoryPathError, "AreaMatrix 没有写入该位置的权限")
+        XCTAssertFalse(model.canContinueFromValidatePath)
+        XCTAssertNil(model.choosePathAction)
+    }
+
+    @MainActor
+    func testInitializedRepoUsesOpenRepositoryPrimaryAction() async {
+        let validation = RepoPathValidationSnapshot.fixture(
+            repoPath: "/tmp/repo",
+            isEmpty: false,
+            isInitialized: true,
+            issues: [.alreadyInitialized],
+            recommendedMode: nil
+        )
+        let model = OnboardingModel(
+            settingsReader: StaticSettingsReader(repoPath: nil),
+            configLoader: RecordingConfigLoader(result: .success(.fixture(repoPath: "/tmp/repo"))),
+            pathValidator: RecordingPathValidator(result: .success(validation)),
+            helpOpener: NoopWelcomeHelpOpener()
+        )
+
+        model.updateRepositoryPath("/tmp/repo")
+        await model.continueFromChoosePath()
+        model.continueFromValidatePath()
+
+        XCTAssertEqual(model.validatePathPrimaryActionTitle, "Open Repository")
+        XCTAssertEqual(
+            model.validatePathAction,
+            OnboardingModel.ValidatePathAction.openExistingRepositoryRequested(validation)
+        )
+    }
+
 }
 
 private func makeTemporaryRepoURL() throws -> URL {
@@ -266,9 +381,7 @@ private func makeTemporaryRepoURL() throws -> URL {
 private struct StaticSettingsReader: AppSettingsReading {
     let repoPath: String?
 
-    func configuredRepoPath() -> String? {
-        repoPath
-    }
+    func configuredRepoPath() -> String? { repoPath }
 }
 
 private enum RecordingResult {
@@ -295,9 +408,7 @@ private actor RecordingConfigLoader: CoreConfigurationLoading {
         }
     }
 
-    func requestedRepoPaths() -> [String] {
-        paths
-    }
+    func requestedRepoPaths() -> [String] { paths }
 }
 
 private enum RecordingPathValidationResult {
@@ -324,9 +435,7 @@ private actor RecordingPathValidator: CoreRepositoryPathValidating {
         }
     }
 
-    func requestedRepoPaths() -> [String] {
-        paths
-    }
+    func requestedRepoPaths() -> [String] { paths }
 }
 
 private struct NoopWelcomeHelpOpener: WelcomeHelpOpening {
@@ -359,20 +468,28 @@ private extension RepoConfigSnapshot {
 private extension RepoPathValidationSnapshot {
     static func fixture(
         repoPath: String,
+        exists: Bool = true,
+        isDirectory: Bool = true,
+        isReadable: Bool = true,
+        isWritable: Bool = true,
+        isEmpty: Bool = true,
+        isInitialized: Bool = false,
+        isICloudPath: Bool = false,
+        hasUnfinishedScanSession: Bool = false,
         issues: [RepoPathIssueSnapshot] = [],
         recommendedMode: RepoInitModeSnapshot? = .createEmpty
     ) -> RepoPathValidationSnapshot {
         RepoPathValidationSnapshot(
             repoPath: repoPath,
-            exists: true,
-            isDirectory: true,
-            isReadable: true,
-            isWritable: true,
-            isEmpty: true,
-            isInitialized: false,
+            exists: exists,
+            isDirectory: isDirectory,
+            isReadable: isReadable,
+            isWritable: isWritable,
+            isEmpty: isEmpty,
+            isInitialized: isInitialized,
             isInsideAreaMatrix: false,
-            isICloudPath: false,
-            hasUnfinishedScanSession: false,
+            isICloudPath: isICloudPath,
+            hasUnfinishedScanSession: hasUnfinishedScanSession,
             recommendedMode: recommendedMode,
             issues: issues
         )

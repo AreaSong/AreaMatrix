@@ -144,6 +144,7 @@ final class OnboardingModel: ObservableObject {
         case loadingConfiguration
         case welcome
         case choosePath
+        case validatePath
         case repositoryReady(RepoConfigSnapshot)
         case configurationError(ConfigLoadFailure)
     }
@@ -156,19 +157,46 @@ final class OnboardingModel: ObservableObject {
         case continueRequested(RepoPathValidationSnapshot)
     }
 
+    enum ValidatePathAction: Equatable, Sendable {
+        case continueRequested(RepoPathValidationSnapshot)
+        case openExistingRepositoryRequested(RepoPathValidationSnapshot)
+    }
+
     private static let defaultRepositoryPathDisplay = "~/AreaMatrix/"
 
     @Published private(set) var route: Route = .loadingConfiguration
     @Published private(set) var toastMessage: String?
     @Published private(set) var welcomeAction: WelcomeAction?
     @Published private(set) var choosePathAction: ChoosePathAction?
+    @Published private(set) var validatePathAction: ValidatePathAction?
     @Published private(set) var repositoryPathText = OnboardingModel.defaultRepositoryPathDisplay
     @Published private(set) var repositoryPathError: String?
     @Published private(set) var repositoryPathValidation: RepoPathValidationSnapshot?
     @Published private(set) var isValidatingRepositoryPath = false
+    @Published private(set) var isICloudRiskAccepted = false
 
     var canContinueFromChoosePath: Bool {
         !isValidatingRepositoryPath && repositoryPathError == nil
+    }
+
+    var canContinueFromValidatePath: Bool {
+        guard !isValidatingRepositoryPath, let validation = repositoryPathValidation else {
+            return false
+        }
+
+        if validatePathBlockingMessage(for: validation) != nil {
+            return false
+        }
+
+        if validation.isICloudPath && !isICloudRiskAccepted {
+            return false
+        }
+
+        return validation.recommendedMode != nil || validation.isInitialized
+    }
+
+    var validatePathPrimaryActionTitle: String {
+        repositoryPathValidation?.isInitialized == true ? "Open Repository" : "Continue"
     }
 
     private let settingsReader: any AppSettingsReading
@@ -214,6 +242,13 @@ final class OnboardingModel: ObservableObject {
     }
 
     @MainActor
+    func showChoosePath() {
+        route = .choosePath
+        toastMessage = nil
+        repositoryPathError = localRepositoryPathError(for: repositoryPathText)
+    }
+
+    @MainActor
     func continueFromWelcome() {
         welcomeAction = .continueRequested
         route = .choosePath
@@ -226,7 +261,9 @@ final class OnboardingModel: ObservableObject {
         repositoryPathText = value
         repositoryPathValidation = nil
         choosePathAction = nil
+        validatePathAction = nil
         toastMessage = nil
+        isICloudRiskAccepted = false
         repositoryPathError = localRepositoryPathError(for: value)
     }
 
@@ -251,7 +288,42 @@ final class OnboardingModel: ObservableObject {
             return
         }
 
+        route = .validatePath
+        repositoryPathValidation = nil
+        validatePathAction = nil
+        isICloudRiskAccepted = false
+        await validateSelectedRepositoryPath()
+    }
+
+    @MainActor
+    func retryRepositoryPathValidation() async {
+        validatePathAction = nil
+        await validateSelectedRepositoryPath()
+    }
+
+    @MainActor
+    func updateICloudRiskAccepted(_ isAccepted: Bool) {
+        isICloudRiskAccepted = isAccepted
+    }
+
+    @MainActor
+    func continueFromValidatePath() {
+        guard canContinueFromValidatePath, let validation = repositoryPathValidation else {
+            return
+        }
+
+        if validation.isInitialized {
+            validatePathAction = .openExistingRepositoryRequested(validation)
+        } else {
+            validatePathAction = .continueRequested(validation)
+        }
+    }
+
+    @MainActor
+    private func validateSelectedRepositoryPath() async {
         isValidatingRepositoryPath = true
+        choosePathAction = nil
+        repositoryPathError = nil
         defer {
             isValidatingRepositoryPath = false
         }
@@ -260,9 +332,9 @@ final class OnboardingModel: ObservableObject {
             let normalizedPath = Self.normalizedRepositoryPath(repositoryPathText)
             let validation = try await pathValidator.validateRepoPath(repoPath: normalizedPath)
             repositoryPathValidation = validation
+            repositoryPathError = validatePathBlockingMessage(for: validation)
 
-            if let message = choosePathBlockingMessage(for: validation) {
-                repositoryPathError = message
+            if repositoryPathError != nil {
                 return
             }
 
@@ -304,13 +376,33 @@ final class OnboardingModel: ObservableObject {
         }
     }
 
-    private func choosePathBlockingMessage(for validation: RepoPathValidationSnapshot) -> String? {
+    private func validatePathBlockingMessage(for validation: RepoPathValidationSnapshot) -> String? {
         if validation.isInsideAreaMatrix || validation.issues.contains(.insideAreaMatrix) {
             return "请选择资料库根目录，而不是 .areamatrix 内部目录"
         }
 
-        if validation.issues.contains(.notDirectory) {
+        if !validation.exists || validation.issues.contains(.missingPath) {
+            return "路径不存在，请选择已存在的文件夹"
+        }
+
+        if !validation.isDirectory || validation.issues.contains(.notDirectory) {
             return "请选择文件夹路径"
+        }
+
+        if !validation.isReadable || validation.issues.contains(.notReadable) {
+            return "AreaMatrix 没有读取该位置的权限"
+        }
+
+        if !validation.isWritable || validation.issues.contains(.notWritable) {
+            return "AreaMatrix 没有写入该位置的权限"
+        }
+
+        if validation.hasUnfinishedScanSession || validation.issues.contains(.unfinishedScanSession) {
+            return "该资料库存在未完成的扫描记录，请先进入修复流程"
+        }
+
+        if validation.recommendedMode == nil && !validation.isInitialized {
+            return "该路径暂时不能作为资料库使用"
         }
 
         return nil

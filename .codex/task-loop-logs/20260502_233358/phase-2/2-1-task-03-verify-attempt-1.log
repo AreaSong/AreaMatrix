@@ -1,0 +1,71 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`2-1/task-03`
+- Task：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-1-first-launch-main/task-03-s1-03-c1-01-validate-repo-path.md`
+- 代码范围：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+- 禁止触碰：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+三、完成度摘要
+
+- 已覆盖项数：11
+- 未覆盖项数：0
+- 通过项数：10
+- 不通过项数：1
+- 阻塞项数：1
+
+四、逐项验收结果
+
+- 只处理 S1-03 页面中的 C1-01 功能点：通过  
+  证据：`ValidatePathStepView` 只消费 `RepoPathValidationSnapshot`，`OnboardingModel` 只调用 `pathValidator.validateRepoPath`。涉及 `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/App/AreaMatrixApp.swift:13`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/AppShellModel.swift:323`
+
+- 读取页面规格、control map、Core API、C1-01 能力规格：通过  
+  证据：S1-03 要求进入页面后检查、展示路径检查、iCloud/非空/已初始化状态；control map 声明 S1-03 覆盖 C1-01/C1-03/C1-21，但本 task 只覆盖 C1-01；Core API 与 UDL 均存在 `validate_repo_path`。涉及 `/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-03-validate-path.md:65`、`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:18`、`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:476`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:7`
+
+- 只接入 C1-01 对应 CoreBridge / 状态 / 错误映射：通过  
+  证据：`CoreBridge.validateRepoPath` 调用真实 UniFFI 绑定，不是 mock；状态处理覆盖不可写、iCloud、已初始化、非空目录。涉及 `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift:170`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/AppShellModel.swift:379`
+
+- 不顺手实现相邻页面：通过  
+  证据：diff 只在 S1-03 validate-path route/view/model/test 上扩展；`core/src/**` 无工作区改动。
+
+- Expected New Paths：通过  
+  证据：`apps/macos/AreaMatrix/**` 与 `apps/macos/AreaMatrixTests/**` 均存在。
+
+- Forbidden Touches：通过  
+  证据：`git status --short -- core/src` 无输出，`git diff -- core/src` 无输出。
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。`CoreBridge`、`OnboardingModel`、`ValidatePathStepView` 分层清楚，UI 没有直接调用 UniFFI。
+- 注释 / rustdoc / 文档同步：通过。本 task 未新增 public Rust API；UDL 已有 C1-01 合同。
+- 错误处理与边界处理：通过。不可写、不可读、`.areamatrix` 内部路径、iCloud 风险、已初始化 repo 都有状态或测试证据。
+- 测试与验证覆盖：通过但有环境说明。manifest build 通过；标准 `xcodebuild test` 被 testmanagerd 沙箱阻断；`bash scripts/check-macos-tests.sh` fallback 跑 21 个 XCTest，0 失败。
+- 占位、硬编码、mock-only、一次性实现检查：通过。生产路径调用真实 `validateRepoPath`；测试中的 fixture/recording validator 未替代生产闭环。
+- 编码规范：不通过。新增 Swift 代码存在超过 120 字符行，违反 `docs/development/coding-standards.md` 的 SwiftLint `line_length: 120` 规则。
+
+六、阻塞项
+
+- P1：新增 Swift 行宽违反编码规范  
+  说明：`App/AreaMatrixApp.swift` 中新增 `checkRows` 多行超过 120 字符：172 行 215 字符、175 行 124 字符、176 行 135 字符、177 行 169 字符。当前环境缺少 `swiftlint` / `swiftformat`，但手工只读检查已经证明违反仓库编码规范。  
+  路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/App/AreaMatrixApp.swift:172`  
+  为什么导致不通过：工程质量规则要求遵守 `docs/development/coding-standards.md`，验收模式下编码规范 blocker 不能报告 PASS。
+
+七、验证情况
+
+- 已运行：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：通过，`BUILD SUCCEEDED`
+- 已运行：`xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：失败，原因是本地沙箱阻断 `com.apple.testmanagerd.control`
+- 已运行：`bash scripts/check-macos-tests.sh`：通过，fallback `xcrun xctest` 执行 21 tests，0 failures
+- 已运行：`git diff --check -- ...`：通过
+- 已运行：`swiftlint --strict`：未执行成功，当前环境 `command not found`
+- 已运行：`swiftformat --lint .`：未执行成功，当前环境 `command not found`
+
+八、最终判定说明
+
+本次执行尚未达到验收标准，不能视为完成。功能闭环和验证主体已经成立，但新增 Swift 代码存在明确编码规范阻塞项，按工程质量规则不能判定 PASS。
+
+
+
+VERIFY_RESULT: FAIL
