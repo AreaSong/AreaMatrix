@@ -36,11 +36,13 @@ pub(crate) fn list_icloud_conflicts(repo_path: String) -> CoreResult<Vec<ICloudC
     let repo = PathBuf::from(repo_path);
     let mut conflicts = Vec::new();
 
-    for entry in WalkDir::new(&repo).follow_links(false) {
+    for entry in WalkDir::new(&repo)
+        .follow_links(false)
+        .same_file_system(true)
+        .into_iter()
+        .filter_entry(|entry| should_descend(&repo, entry))
+    {
         let entry = entry.map_err(map_walkdir_error)?;
-        if should_skip_entry(&entry) {
-            continue;
-        }
         if !entry.file_type().is_file() {
             continue;
         }
@@ -136,11 +138,21 @@ fn original_name_from_conflicted_copy(file_name: &str) -> Option<String> {
     }
 }
 
-fn should_skip_entry(entry: &DirEntry) -> bool {
+fn should_descend(repo: &Path, entry: &DirEntry) -> bool {
+    if entry.path() == repo {
+        return true;
+    }
+
     entry
         .path()
-        .components()
-        .any(|component| component.as_os_str() == AREA_MATRIX_DIR)
+        .strip_prefix(repo)
+        .ok()
+        .map(|relative| {
+            !relative
+                .components()
+                .any(|component| component.as_os_str() == AREA_MATRIX_DIR)
+        })
+        .unwrap_or(false)
 }
 
 fn is_conflicted_copy(path: &Path) -> bool {
@@ -196,7 +208,8 @@ fn map_io_error(error: std::io::Error) -> CoreError {
 
 #[cfg(test)]
 mod tests {
-    use super::original_name_from_conflicted_copy;
+    use super::{original_name_from_conflicted_copy, should_descend};
+    use walkdir::WalkDir;
 
     #[test]
     fn parses_standard_conflicted_copy_name() {
@@ -204,5 +217,28 @@ mod tests {
             original_name_from_conflicted_copy("report (Alice's conflicted copy).pdf").as_deref(),
             Some("report.pdf")
         );
+    }
+
+    #[test]
+    fn does_not_descend_into_metadata_directory() {
+        let repo = tempfile::tempdir().expect("create temp repository");
+        let metadata = repo.path().join(".areamatrix");
+        std::fs::create_dir(&metadata).expect("create metadata directory");
+
+        let root = WalkDir::new(repo.path())
+            .max_depth(0)
+            .into_iter()
+            .next()
+            .expect("root entry")
+            .expect("root entry result");
+        assert!(should_descend(repo.path(), &root));
+
+        let metadata_entry = WalkDir::new(&metadata)
+            .max_depth(0)
+            .into_iter()
+            .next()
+            .expect("metadata entry")
+            .expect("metadata entry result");
+        assert!(!should_descend(repo.path(), &metadata_entry));
     }
 }

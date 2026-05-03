@@ -1,0 +1,86 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`1-5/task-17`
+- 对应文件路径：
+  - [task-17-c1-25-implementation.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-1/1-5-file-actions-repair/task-17-c1-25-implementation.md)
+  - [C1-25-list-icloud-conflicts.md](/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-25-list-icloud-conflicts.md)
+  - [core/src/icloud_conflicts.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/icloud_conflicts.rs:31)
+  - [core/src/api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:545)
+  - [core/src/domain.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/domain.rs:318)
+  - [core/area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:75)
+  - [core/tests/list_icloud_conflicts_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/list_icloud_conflicts_implementation.rs:50)
+
+三、完成度摘要
+
+- 已覆盖项数：7
+- 未覆盖项数：0
+- 通过项数：7
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 C1-25 implementation 范围
+- 结果：通过
+- 证据：实际实现集中在 [core/src/icloud_conflicts.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/icloud_conflicts.rs:31)，导出入口为 [core/src/api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:564)，未实现相邻 C1 能力。
+- 涉及文件：`core/src/icloud_conflicts.rs`、`core/src/api.rs`
+
+- 项目：Exact Docs 以文档为 SSOT
+- 结果：通过
+- 证据：C1 spec 要求 `list_icloud_conflicts`、冲突组输出、只读扫描和 `Needs review`；Core API 明确只读、副作用边界和错误类型。
+- 涉及文件：[C1-25 spec](/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-25-list-icloud-conflicts.md:11)、[core-api.md](/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:1033)
+
+- 项目：不实现相邻 C1 能力或 UI 页面
+- 结果：通过
+- 证据：`git status --short apps` 无输出；`apps/**` 未触碰。没有新增 UI 或相邻 C1 API。
+- 涉及文件：`apps/**`
+
+- 项目：实现最小真实路径
+- 结果：通过
+- 证据：递归只读扫描 repo、跳过 `.areamatrix`、识别 conflicted copy、返回原始/冲突副本路径和时间戳，placeholder 返回结构化错误。
+- 涉及文件：[icloud_conflicts.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/icloud_conflicts.rs:39)、[icloud_conflicts.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/icloud_conflicts.rs:78)、[icloud_conflicts.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/icloud_conflicts.rs:165)
+
+- 项目：保持 layered design
+- 结果：通过
+- 证据：Core 实现位于 platform-neutral Rust core，API 层只委托模块函数，未引入 macOS/FSEvents 平台依赖。
+- 涉及文件：[lib.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/lib.rs:14)、[api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:564)
+
+- 项目：C1-25 implementation 目标可用证据证明
+- 结果：通过
+- 证据：UDL 暴露 `sequence<ICloudConflictPair> list_icloud_conflicts`，domain 类型完整，测试覆盖空态、标准冲突、缺失原始版本、不扫描内部 metadata、placeholder 错误与只读性。
+- 涉及文件：[area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:75)、[domain.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/domain.rs:327)、[implementation test](/Users/as/Ai-Project/project/AreaMatrix/core/tests/list_icloud_conflicts_implementation.rs:51)
+
+- 项目：Expected New Paths / Forbidden Touches
+- 结果：通过
+- 证据：`core/src/**`、`core/area_matrix.udl`、`core/tests/**` 均已落地；`apps/**` 无改动。当前存在 task-loop runtime 状态文件变化，不属于产品实现路径，也未命中 Forbidden Touches。
+- 涉及文件：`core/src/**`、`core/area_matrix.udl`、`core/tests/**`、`apps/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。`icloud_conflicts.rs` 244 行，主函数约 32 行，扫描、候选构造、原始文件推断、错误映射拆分清楚。
+- 注释 / rustdoc / 文档同步：通过。public API 和 domain 类型有 rustdoc；UDL、Core API、control map 与 Rust 类型一致。
+- 错误处理与边界处理：通过。生产路径未发现 `unwrap()` / `expect()` / `panic!()`；placeholder、permission、IO traversal 均映射为结构化 `CoreError`。
+- 测试与验证覆盖：通过。新增 implementation 测试覆盖成功路径、缺失原始版本、placeholder、`.areamatrix` 跳过和只读性；manifest 验证通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。实现基于真实 filesystem traversal 和 metadata 读取，不是 mock-only 或静态示例数据。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`cd core && cargo fmt --all -- --check`：通过
+- 已运行：`cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过
+- 已运行：`cd core && cargo test --workspace list_icloud_conflicts`：通过，C1-25 相关 9 个测试通过
+- 已运行：`cd core && cargo test --workspace`：通过，workspace 测试和 doctest 均退出码 0
+- 未运行：macOS `xcodebuild` / Swift 检查；原因是本 task 为 core-only，绑定 UX 为 None，且 `apps/**` 为 forbidden scope。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。C1-25 `list_icloud_conflicts` implementation 可以由文档、UDL/API/Rust 实现、测试和验证命令共同证明完成。
+
+VERIFY_RESULT: PASS

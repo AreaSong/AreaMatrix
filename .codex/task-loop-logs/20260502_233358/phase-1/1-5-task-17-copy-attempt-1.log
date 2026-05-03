@@ -1,0 +1,35 @@
+一、执行结论
+
+已完成 `1-5/task-17`。
+
+二、执行范围
+
+修改文件：
+- [core/src/icloud_conflicts.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/icloud_conflicts.rs:39)
+- [core/tests/list_icloud_conflicts_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/list_icloud_conflicts_implementation.rs:50)
+
+未触碰 `apps/**`。现有脏文件 `.codex/task-loop-runs/20260502_233358/summary.json`、`tasks/prompts/_shared/progress.json` 是执行前已有状态文件，本次未修改。
+
+三、完成情况
+
+- 只处理 C1-25：是。
+- 已按 Exact Docs 对齐：`list_icloud_conflicts` 保持只读扫描，不 resolve、不移动、不删除、不下载。
+- 未实现相邻能力或 UI：是。
+- 最小真实路径：增强 Core 扫描边界，新增真实文件系统测试。
+- Forbidden Touches：未触碰。
+
+四、工程质量
+
+实现补强了 `.areamatrix/` 元数据目录的递归跳过，并限制在同一文件系统扫描，避免列表能力误扫内部 metadata 或跨挂载边界。新增测试覆盖标准 conflicted copy、缺失 original 的 `NeedsReview` 不确定态、`.icloud` placeholder 错误、内部 metadata 忽略、文件和 DB 不变性。没有新增依赖、没有 mock-only、没有硬编码通过态，UDL/API 文档当前无需同步。
+
+五、验证情况
+
+- `cd core && cargo fmt --all -- --check`：通过。
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过。
+- `cd core && cargo test --workspace list_icloud_conflicts`：通过，C1-25 相关 9 个测试通过。
+- `git diff --check -- core/src/icloud_conflicts.rs core/tests/list_icloud_conflicts_implementation.rs`：通过。
+
+六、风险与后续
+
+剩余风险：未做 macOS 真机 iCloud 占位符状态验证；本任务是平台无关 Core 只读扫描，下载协调按文档属于 Swift 平台层，未纳入本 task。建议下一个任务继续 `1-5/task-18`，补 C1-25 failure/recovery 边界。
+
