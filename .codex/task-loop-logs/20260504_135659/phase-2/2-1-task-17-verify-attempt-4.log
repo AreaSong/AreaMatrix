@@ -1,0 +1,56 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`2-1/task-17`
+- Task：[/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-1-first-launch-main/task-17-s1-07-page-integration-verify.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-1-first-launch-main/task-17-s1-07-page-integration-verify.md:1)
+- 实现范围：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`apps/macos/AreaMatrix.xcodeproj/project.pbxproj`、`core/area_matrix.udl`
+- 禁止范围：`core/src/**`
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：0
+- 通过项数：7
+- 不通过项数：3
+- 阻塞项数：2
+
+四、逐项验收结果
+
+- page-feature task 覆盖：通过。`2-1/task-15` 覆盖 C1-02，`2-1/task-16` 覆盖 C1-03；control map 中 S1-07 也仅声明 C1-02/C1-03。
+- 页面闭环：不通过。`Open Repository` 已能进入 `.mainLoading` 并经 CoreBridge `loadConfig` / `listTreeJson` 落到空库或列表，但 Finder 失败未按 S1-07 可访问性要求做 toast / VoiceOver 宣告。
+- mock / fixture / 硬编码：通过。生产路径通过 [CoreRepositoryOpening.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreRepositoryOpening.swift:47) 调用真实 `loadConfig` 和 `listTreeJson`；fixture 仅在测试内使用。
+- control map 外能力：通过。未发现 S1-07 新增 C1-02/C1-03 之外能力；`git diff --name-only -- core/src` 无输出。
+- Expected New Paths：通过。`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`apps/macos/AreaMatrix.xcodeproj/project.pbxproj` 均存在。
+- Forbidden Touches：通过。`core/src/**` 未显示改动。
+- 验证命令：通过。`bash scripts/check-macos-tests.sh` 最终通过。
+- 工程质量：不通过。测试文件超过编码规范单文件 500 行上限。
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过。[/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/AreaMatrixShellTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/AreaMatrixShellTests.swift:552) 当前 552 行，违反 `docs/development/coding-standards.md` 单文件 ≤500 行要求。
+- 注释 / rustdoc / 文档同步：通过。未改 Core public API；`core/area_matrix.udl` 与 Core API 中 `init_repo`、`load_config`、`list_tree_json` 声明一致。
+- 错误处理与边界处理：不通过。Finder 失败只返回字符串并渲染 inline label，未满足 S1-07 对 toast / VoiceOver 宣告的验收要求。
+- 测试与验证覆盖：通过。`xcrun xctest` 跑过 62 个测试 0 失败；其中包含 C1-02/C1-03 的真实 CoreBridge 打开测试。
+- 占位、硬编码、mock-only、一次性实现检查：通过。未发现生产路径用 mock-only 闭环代替真实 CoreBridge。
+
+六、阻塞项
+
+- P1：测试文件长度越过编码规范门禁。文件：[/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/AreaMatrixShellTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/AreaMatrixShellTests.swift:552)。规范要求单文件 ≤500 行，证据在 [/Users/as/Ai-Project/project/AreaMatrix/docs/development/coding-standards.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/coding-standards.md:13)。该 task 修改后文件达到 552 行，导致工程质量不能判通过。
+- P1：Finder 失败态未满足页面可访问性规格。规格要求 Finder 打开失败 toast 可被 VoiceOver 宣告，证据在 [/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-07-init-done.md](/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-07-init-done.md:76)。当前实现仅在 [InitializingStepView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Onboarding/InitializingStepView.swift:319) 渲染 inline `Label`，模型方法 [OnboardingInitializationProgress.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/OnboardingInitializationProgress.swift:55) 也只是返回错误字符串，缺少 toast / VoiceOver 宣告证据。
+
+七、验证情况
+
+- 已运行：`bash scripts/check-macos-tests.sh`。`xcodebuild test` 被本地 sandbox `testmanagerd` 限制阻断后，脚本按设计使用 `xcrun xctest` fallback；结果 62 tests，0 failures。
+- 已运行：`git diff --check -- apps/macos/AreaMatrix apps/macos/AreaMatrixTests apps/macos/AreaMatrix.xcodeproj/project.pbxproj`，通过。
+- 已运行：`git diff --name-only -- core/src`，无输出。
+- 未运行：`swiftlint --strict`、`swiftformat --lint .`，当前环境 `command -v swiftlint` / `command -v swiftformat` 无输出。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+
+
+VERIFY_RESULT: FAIL

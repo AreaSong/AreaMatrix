@@ -25,6 +25,8 @@
 		0A00000000000000000000B1 /* InitFailedErrorMappingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000000B3 /* InitFailedErrorMappingTests.swift */; };
 		0A00000000000000000000C0 /* CoreRepositoryOpening.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000000C2 /* CoreRepositoryOpening.swift */; };
 		0A00000000000000000000C1 /* InitDoneEmptyRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000000C3 /* InitDoneEmptyRepositoryTests.swift */; };
+		0A00000000000000000000D0 /* MainRepositoryContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000000D1 /* MainRepositoryContentView.swift */; };
+		0A00000000000000000000E0 /* CoreBridgeRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000000E1 /* CoreBridgeRepositoryTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -62,6 +64,8 @@
 		0A00000000000000000000B3 /* InitFailedErrorMappingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/InitFailedErrorMappingTests.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000000C2 /* CoreRepositoryOpening.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/CoreRepositoryOpening.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000000C3 /* InitDoneEmptyRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/InitDoneEmptyRepositoryTests.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000000D1 /* MainRepositoryContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/MainRepositoryContentView.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000000E1 /* CoreBridgeRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/CoreBridgeRepositoryTests.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -134,6 +138,7 @@
 			isa = PBXGroup;
 			children = (
 				0A0000000000000000000014 /* MainWindow.swift */,
+				0A00000000000000000000D1 /* MainRepositoryContentView.swift */,
 				0A000000000000000000001F /* ValidatePathStepView.swift */,
 				0A00000000000000000000A0 /* InitializingStepView.swift */,
 				0A00000000000000000000A3 /* InitializingStepRow.swift */,
@@ -188,6 +193,7 @@
 				0A00000000000000000000A1 /* InitializingStepIntegrationTests.swift */,
 				0A00000000000000000000B3 /* InitFailedErrorMappingTests.swift */,
 				0A00000000000000000000C3 /* InitDoneEmptyRepositoryTests.swift */,
+				0A00000000000000000000E1 /* CoreBridgeRepositoryTests.swift */,
 			);
 			name = Tests;
 			sourceTree = "<group>";
@@ -316,6 +322,7 @@
 				0A0000000000000000000005 /* CoreBridge.swift in Sources */,
 				0A0000000000000000000006 /* AppShellModel.swift in Sources */,
 				0A0000000000000000000007 /* CoreBridgePlaceholderState.swift in Sources */,
+				0A00000000000000000000D0 /* MainRepositoryContentView.swift in Sources */,
 				0A0000000000000000000009 /* area_matrix.swift in Sources */,
 				0A000000000000000000000A /* ValidatePathStepView.swift in Sources */,
 				0A000000000000000000000C /* InitializingStepView.swift in Sources */,
@@ -336,6 +343,7 @@
 				0A000000000000000000000D /* InitializingStepIntegrationTests.swift in Sources */,
 				0A00000000000000000000B1 /* InitFailedErrorMappingTests.swift in Sources */,
 				0A00000000000000000000C1 /* InitDoneEmptyRepositoryTests.swift in Sources */,
+				0A00000000000000000000E0 /* CoreBridgeRepositoryTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

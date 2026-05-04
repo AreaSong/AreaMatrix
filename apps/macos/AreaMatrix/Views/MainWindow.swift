@@ -190,8 +190,10 @@ struct MainWindow: View {
             )
         case .settingsRepository:
             SettingsRepositoryReturnView()
-        case .repositoryReady(let config):
-            RepositoryReadyView(config: config)
+        case .mainEmpty(let opening):
+            MainRepositoryContentView(opening: opening, state: .empty)
+        case .mainList(let opening):
+            MainRepositoryContentView(opening: opening, state: .list)
         case .configurationError(let failure):
             ConfigurationErrorView(
                 failure: failure,

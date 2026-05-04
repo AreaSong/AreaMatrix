@@ -119,93 +119,35 @@ final class AreaMatrixShellTests: XCTestCase {
 
     @MainActor
     func testOnboardingLoadsConfiguredRepoThroughCoreBridgeBoundary() async {
-        let config = RepoConfigSnapshot.fixture(repoPath: "/tmp/repo")
-        let loader = RecordingConfigLoader(result: .success(config))
+        let opening = RepositoryOpeningResult.fixture(repoPath: "/tmp/repo", fileCount: 0)
+        let opener = RecordingRepositoryOpener(result: .success(opening))
         let model = OnboardingModel(
             settingsReader: StaticSettingsReader(repoPath: "/tmp/repo"),
-            configLoader: loader,
+            emptyRepositoryOpener: opener,
             helpOpener: NoopWelcomeHelpOpener()
         )
 
         await model.bootstrapIfNeeded()
-        let requestedRepoPaths = await loader.requestedRepoPaths()
+        let requestedRepoPaths = await opener.requestedConfiguredRepoPaths()
 
-        XCTAssertEqual(model.route, .repositoryReady(config))
+        XCTAssertEqual(model.route, .mainEmpty(opening))
         XCTAssertEqual(requestedRepoPaths, ["/tmp/repo"])
     }
 
     @MainActor
-    func testOnboardingLoadsConfiguredRepoThroughDefaultCoreBridge() async throws {
-        let repoURL = try makeTemporaryRepoURL()
-        defer {
-            try? FileManager.default.removeItem(at: repoURL)
-        }
-
-        let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: repoURL.path),
-            configLoader: CoreBridge(),
-            helpOpener: NoopWelcomeHelpOpener()
-        )
-
-        await model.bootstrapIfNeeded()
-
-        let expectedConfig = RepoConfigSnapshot(
-            repoPath: repoURL.path,
-            defaultMode: "Copied",
-            overviewOutput: "GeneratedOnly",
-            aiEnabled: false,
-            locale: "zh-Hans",
-            iCloudWarn: true,
-            enableExtensionRules: true,
-            enableKeywordRules: true,
-            fallbackToInbox: true,
-            allowReplaceDuringImport: false
-        )
-
-        XCTAssertEqual(model.route, .repositoryReady(expectedConfig))
-        XCTAssertFalse(FileManager.default.fileExists(atPath: repoURL.appendingPathComponent(".areamatrix").path))
-    }
-
-    func testCoreBridgePropagatesRealConfigError() async throws {
-        do {
-            _ = try await CoreBridge().loadConfig(repoPath: "")
-            XCTFail("expected CoreError.Config")
-        } catch let error as CoreError {
-            guard case .Config = error else {
-                return XCTFail("expected Config, got \(error)")
-            }
-        }
-    }
-
-    func testCoreBridgeValidatesTemporaryRepoPathWithoutCreatingMetadata() async throws {
-        let repoURL = try makeTemporaryRepoURL()
-        defer {
-            try? FileManager.default.removeItem(at: repoURL)
-        }
-
-        let validation = try await CoreBridge().validateRepoPath(repoPath: repoURL.path)
-
-        XCTAssertEqual(validation.repoPath, repoURL.path)
-        XCTAssertTrue(validation.exists)
-        XCTAssertTrue(validation.isDirectory)
-        XCTAssertFalse(validation.isInsideAreaMatrix)
-        XCTAssertFalse(FileManager.default.fileExists(atPath: repoURL.appendingPathComponent(".areamatrix").path))
-    }
-
-    @MainActor
     func testOnboardingMapsConfigLoadFailureWithoutShowingWelcomeAsSuccess() async {
-        let loader = RecordingConfigLoader(result: .failure(CoreBridgeError.generatedBindingsUnavailable(
+        let opener = RecordingRepositoryOpener(result: .failure(CoreBridgeError.generatedBindingsUnavailable(
             boundary: .loadConfig,
             state: .phase0
         )))
         let model = OnboardingModel(
             settingsReader: StaticSettingsReader(repoPath: "/tmp/repo"),
-            configLoader: loader,
+            emptyRepositoryOpener: opener,
             helpOpener: NoopWelcomeHelpOpener()
         )
 
         await model.bootstrapIfNeeded()
-        let requestedRepoPaths = await loader.requestedRepoPaths()
+        let requestedRepoPaths = await opener.requestedConfiguredRepoPaths()
 
         guard case .configurationError(let failure) = model.route else {
             return XCTFail("expected configuration error")
@@ -373,13 +315,6 @@ final class AreaMatrixShellTests: XCTestCase {
     }
 }
 
-private func makeTemporaryRepoURL() throws -> URL {
-    let url = FileManager.default.temporaryDirectory
-        .appendingPathComponent("AreaMatrixShellTests-\(UUID().uuidString)", isDirectory: true)
-    try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
-    return url
-}
-
 private struct StaticSettingsReader: AppSettingsReading {
     let repoPath: String?
 
@@ -388,6 +323,11 @@ private struct StaticSettingsReader: AppSettingsReading {
 
 private enum RecordingResult {
     case success(RepoConfigSnapshot)
+    case failure(Error)
+}
+
+private enum RecordingRepositoryOpenResult {
+    case success(RepositoryOpeningResult)
     case failure(Error)
 }
 
@@ -407,6 +347,35 @@ private actor RecordingConfigLoader: CoreConfigurationLoading {
         }
     }
     func requestedRepoPaths() -> [String] { paths }
+}
+
+private actor RecordingRepositoryOpener: CoreEmptyRepositoryOpening {
+    private let result: RecordingRepositoryOpenResult
+    private var configuredPaths: [String] = []
+
+    init(result: RecordingRepositoryOpenResult) {
+        self.result = result
+    }
+
+    func openEmptyRepository(repoPath: String) async throws -> RepositoryOpeningResult {
+        try await openConfiguredRepository(repoPath: repoPath)
+    }
+
+    func openAdoptedRepository(repoPath: String) async throws -> RepositoryOpeningResult {
+        try await openConfiguredRepository(repoPath: repoPath)
+    }
+
+    func openConfiguredRepository(repoPath: String) async throws -> RepositoryOpeningResult {
+        configuredPaths.append(repoPath)
+        switch result {
+        case .success(let opening):
+            return opening
+        case .failure(let error):
+            throw error
+        }
+    }
+
+    func requestedConfiguredRepoPaths() -> [String] { configuredPaths }
 }
 
 private enum RecordingPathValidationResult {
@@ -460,6 +429,20 @@ private extension RepoConfigSnapshot {
             enableKeywordRules: true,
             fallbackToInbox: true,
             allowReplaceDuringImport: false
+        )
+    }
+}
+
+private extension RepositoryOpeningResult {
+    static func fixture(repoPath: String, fileCount: Int64) -> RepositoryOpeningResult {
+        RepositoryOpeningResult(
+            config: .fixture(repoPath: repoPath),
+            tree: RepositoryTreeNodeSnapshot(
+                slug: "__root__",
+                displayName: "资料库",
+                fileCount: fileCount,
+                children: []
+            )
         )
     }
 }

@@ -53,6 +53,11 @@ protocol RepositoryFinderOpening {
     func openRepositoryInFinder(repoPath: String) throws
 }
 
+protocol AccessibilityAnnouncing {
+    @MainActor
+    func announce(_ message: String)
+}
+
 struct LocalWelcomeHelpOpener: WelcomeHelpOpening {
     func openWelcomeHelp() throws {
         let docsURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
@@ -91,6 +96,20 @@ struct NSWorkspaceRepositoryFinderOpener: RepositoryFinderOpening {
         guard NSWorkspace.shared.open(url) else {
             throw RepositoryFinderOpenError.openRejected(repoPath)
         }
+    }
+}
+
+struct VoiceOverAccessibilityAnnouncer: AccessibilityAnnouncing {
+    @MainActor
+    func announce(_ message: String) {
+        NSAccessibility.post(
+            element: NSApplication.shared,
+            notification: .announcementRequested,
+            userInfo: [
+                .announcement: message,
+                .priority: NSAccessibilityPriorityLevel.high.rawValue,
+            ]
+        )
     }
 }
 
@@ -188,20 +207,6 @@ struct DBRepairConfirmView: View {
             }
             Button("Choose another folder", action: onChooseAnotherFolder)
         }
-    }
-}
-
-struct RepositoryReadyView: View {
-    let config: RepoConfigSnapshot
-
-    var body: some View {
-        ContentUnavailableView {
-            Label("Repository ready", systemImage: "checkmark.circle")
-        } description: {
-            Text(config.repoPath)
-            Text("Locale: \(config.locale)")
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 

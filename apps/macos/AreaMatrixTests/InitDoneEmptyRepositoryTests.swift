@@ -5,8 +5,8 @@ import XCTest
 final class InitDoneEmptyRepositoryTests: XCTestCase {
     @MainActor
     func testOpenRepositoryFromInitDoneUsesC102CoreOpenBoundary() async {
-        let config = RepoConfigSnapshot.fixture(repoPath: "/tmp/empty-repo")
-        let opener = RecordingEmptyRepositoryOpener(result: .success(config))
+        let opening = RepositoryOpeningResult.fixture(repoPath: "/tmp/empty-repo", fileCount: 0)
+        let opener = RecordingEmptyRepositoryOpener(result: .success(opening))
         let model = OnboardingModel(
             settingsReader: StaticSettingsReader(repoPath: nil),
             emptyRepositoryOpener: opener,
@@ -24,7 +24,7 @@ final class InitDoneEmptyRepositoryTests: XCTestCase {
         let requestedRepoPaths = await opener.requestedRepoPaths()
         XCTAssertEqual(requestedRepoPaths, ["/tmp/empty-repo"])
         XCTAssertNil(model.initializationOpenErrorMapping)
-        XCTAssertEqual(model.route, .repositoryReady(config))
+        XCTAssertEqual(model.route, .mainEmpty(opening))
     }
 
     @MainActor
@@ -54,24 +54,54 @@ final class InitDoneEmptyRepositoryTests: XCTestCase {
         XCTAssertEqual(errorMapper.mappedErrors, [error])
     }
 
+    @MainActor
+    func testOpenRepositoryShowsMainLoadingUntilCoreOpenCompletes() async {
+        let opening = RepositoryOpeningResult.fixture(repoPath: "/tmp/empty-repo", fileCount: 0)
+        let opener = PausingEmptyRepositoryOpener(opening: opening)
+        let model = OnboardingModel(
+            settingsReader: StaticSettingsReader(repoPath: nil),
+            emptyRepositoryOpener: opener,
+            helpOpener: NoopWelcomeHelpOpener()
+        )
+
+        model.route = .initializationDone(RepositoryInitializationResult(
+            repoPath: "/tmp/empty-repo",
+            mode: .createEmpty,
+            scanSession: nil,
+            recoveryReport: nil
+        ))
+        let openTask = Task {
+            await model.openInitializedRepository()
+        }
+
+        await opener.waitUntilStarted()
+
+        XCTAssertEqual(model.route, .mainLoading("/tmp/empty-repo"))
+        await opener.finishOpen()
+        await openTask.value
+        XCTAssertEqual(model.route, .mainEmpty(opening))
+    }
+
     func testDefaultCoreBridgeOpensRealEmptyRepositoryThroughLoadConfigAndTree() async throws {
         let repoURL = try makeTemporaryRepositoryURL()
         defer { try? FileManager.default.removeItem(at: repoURL) }
 
         let bridge = CoreBridge()
         try await bridge.initializeEmptyRepository(repoPath: repoURL.path)
-        let config = try await bridge.openEmptyRepository(repoPath: repoURL.path)
+        let opening = try await bridge.openEmptyRepository(repoPath: repoURL.path)
 
-        XCTAssertEqual(config.repoPath, repoURL.path)
-        XCTAssertEqual(config.locale, "zh-Hans")
+        XCTAssertEqual(opening.config.repoPath, repoURL.path)
+        XCTAssertEqual(opening.config.locale, "zh-Hans")
+        XCTAssertTrue(opening.isEmpty)
+        XCTAssertEqual(opening.tree.totalFileCount, 0)
         XCTAssertTrue(FileManager.default.fileExists(atPath: repoURL.appendingPathComponent(".areamatrix").path))
         XCTAssertFalse(FileManager.default.fileExists(atPath: repoURL.appendingPathComponent("README.md").path))
     }
 
     @MainActor
     func testOpenRepositoryFromAdoptDoneUsesC103CoreOpenBoundary() async {
-        let config = RepoConfigSnapshot.fixture(repoPath: "/tmp/adopted-repo")
-        let opener = RecordingEmptyRepositoryOpener(result: .success(config))
+        let opening = RepositoryOpeningResult.fixture(repoPath: "/tmp/adopted-repo", fileCount: 1)
+        let opener = RecordingEmptyRepositoryOpener(result: .success(opening))
         let model = OnboardingModel(
             settingsReader: StaticSettingsReader(repoPath: nil),
             emptyRepositoryOpener: opener,
@@ -89,7 +119,7 @@ final class InitDoneEmptyRepositoryTests: XCTestCase {
         let opened = await opener.requestedAdoptedRepoPaths()
         XCTAssertEqual(opened, ["/tmp/adopted-repo"])
         XCTAssertNil(model.initializationOpenErrorMapping)
-        XCTAssertEqual(model.route, .repositoryReady(config))
+        XCTAssertEqual(model.route, .mainList(opening))
     }
 
     @MainActor
@@ -122,6 +152,7 @@ final class InitDoneEmptyRepositoryTests: XCTestCase {
     @MainActor
     func testOpenInitDoneRepositoryInFinderReportsNonBlockingFailure() async {
         let finderOpener = RecordingFinderOpener(result: .failure(.openRejected("/tmp/adopted-repo")))
+        let accessibilityAnnouncer = RecordingAccessibilityAnnouncer()
         let result = RepositoryInitializationResult(
             repoPath: "/tmp/adopted-repo",
             mode: .adoptExisting,
@@ -131,15 +162,20 @@ final class InitDoneEmptyRepositoryTests: XCTestCase {
         let model = OnboardingModel(
             settingsReader: StaticSettingsReader(repoPath: nil),
             finderOpener: finderOpener,
+            accessibilityAnnouncer: accessibilityAnnouncer,
             helpOpener: NoopWelcomeHelpOpener()
         )
 
         model.route = .initializationDone(result)
-        let message = await model.openInitializedRepositoryInFinder()
+        await model.openInitializedRepositoryInFinder()
+        guard let message = model.toastMessage else {
+            return XCTFail("expected Finder failure toast")
+        }
 
         XCTAssertEqual(finderOpener.openedRepoPaths, ["/tmp/adopted-repo"])
         XCTAssertEqual(model.route, .initializationDone(result))
-        XCTAssertTrue(message?.contains("无法在 Finder 中打开资料库") == true)
+        XCTAssertTrue(message.contains("无法在 Finder 中打开资料库"))
+        XCTAssertEqual(accessibilityAnnouncer.announcements, [message])
     }
 
     func testDefaultCoreBridgeOpensRealAdoptedRepositoryThroughLoadConfigAndTree() async throws {
@@ -151,10 +187,12 @@ final class InitDoneEmptyRepositoryTests: XCTestCase {
 
         let bridge = CoreBridge()
         try await bridge.adoptExistingRepository(repoPath: repoURL.path)
-        let config = try await bridge.openAdoptedRepository(repoPath: repoURL.path)
+        let opening = try await bridge.openAdoptedRepository(repoPath: repoURL.path)
 
-        XCTAssertEqual(config.repoPath, repoURL.path)
-        XCTAssertEqual(config.locale, "zh-Hans")
+        XCTAssertEqual(opening.config.repoPath, repoURL.path)
+        XCTAssertEqual(opening.config.locale, "zh-Hans")
+        XCTAssertFalse(opening.isEmpty)
+        XCTAssertGreaterThan(opening.tree.totalFileCount, 0)
         XCTAssertEqual(try String(contentsOf: readmeURL, encoding: .utf8), "# User project\n")
         XCTAssertTrue(FileManager.default.fileExists(atPath: repoURL.appendingPathComponent(".areamatrix").path))
         XCTAssertFalse(FileManager.default.fileExists(atPath: repoURL.appendingPathComponent("AREAMATRIX.md").path))
@@ -162,7 +200,7 @@ final class InitDoneEmptyRepositoryTests: XCTestCase {
 }
 
 private enum EmptyRepositoryOpenResult {
-    case success(RepoConfigSnapshot)
+    case success(RepositoryOpeningResult)
     case failure(Error)
 }
 
@@ -175,21 +213,21 @@ private actor RecordingEmptyRepositoryOpener: CoreEmptyRepositoryOpening {
         self.result = result
     }
 
-    func openEmptyRepository(repoPath: String) async throws -> RepoConfigSnapshot {
+    func openEmptyRepository(repoPath: String) async throws -> RepositoryOpeningResult {
         paths.append(repoPath)
         switch result {
-        case .success(let config):
-            return config
+        case .success(let opening):
+            return opening
         case .failure(let error):
             throw error
         }
     }
 
-    func openAdoptedRepository(repoPath: String) async throws -> RepoConfigSnapshot {
+    func openAdoptedRepository(repoPath: String) async throws -> RepositoryOpeningResult {
         adoptedPaths.append(repoPath)
         switch result {
-        case .success(let config):
-            return config
+        case .success(let opening):
+            return opening
         case .failure(let error):
             throw error
         }
@@ -197,6 +235,57 @@ private actor RecordingEmptyRepositoryOpener: CoreEmptyRepositoryOpening {
 
     func requestedRepoPaths() -> [String] { paths }
     func requestedAdoptedRepoPaths() -> [String] { adoptedPaths }
+}
+
+private actor PausingEmptyRepositoryOpener: CoreEmptyRepositoryOpening {
+    private let opening: RepositoryOpeningResult
+    private var didStart = false
+    private var didFinish = false
+    private var startContinuations: [CheckedContinuation<Void, Never>] = []
+    private var finishContinuation: CheckedContinuation<Void, Never>?
+
+    init(opening: RepositoryOpeningResult) {
+        self.opening = opening
+    }
+
+    func openEmptyRepository(repoPath: String) async throws -> RepositoryOpeningResult {
+        didStart = true
+        resumeStartContinuations()
+        await waitForFinishSignal()
+        return opening
+    }
+
+    func openAdoptedRepository(repoPath: String) async throws -> RepositoryOpeningResult {
+        try await openEmptyRepository(repoPath: repoPath)
+    }
+
+    func waitUntilStarted() async {
+        guard !didStart else { return }
+
+        await withCheckedContinuation { continuation in
+            startContinuations.append(continuation)
+        }
+    }
+
+    func finishOpen() {
+        didFinish = true
+        finishContinuation?.resume()
+        finishContinuation = nil
+    }
+
+    private func waitForFinishSignal() async {
+        guard !didFinish else { return }
+
+        await withCheckedContinuation { continuation in
+            finishContinuation = continuation
+        }
+    }
+
+    private func resumeStartContinuations() {
+        let continuations = startContinuations
+        startContinuations.removeAll()
+        continuations.forEach { $0.resume() }
+    }
 }
 
 private final class RecordingFinderOpener: RepositoryFinderOpening {
@@ -211,6 +300,15 @@ private final class RecordingFinderOpener: RepositoryFinderOpening {
     func openRepositoryInFinder(repoPath: String) throws {
         openedRepoPaths.append(repoPath)
         try result.get()
+    }
+}
+
+@MainActor
+private final class RecordingAccessibilityAnnouncer: AccessibilityAnnouncing {
+    private(set) var announcements: [String] = []
+
+    func announce(_ message: String) {
+        announcements.append(message)
     }
 }
 
@@ -251,6 +349,20 @@ private extension RepoConfigSnapshot {
             enableKeywordRules: true,
             fallbackToInbox: true,
             allowReplaceDuringImport: false
+        )
+    }
+}
+
+private extension RepositoryOpeningResult {
+    static func fixture(repoPath: String, fileCount: Int64) -> RepositoryOpeningResult {
+        RepositoryOpeningResult(
+            config: .fixture(repoPath: repoPath),
+            tree: RepositoryTreeNodeSnapshot(
+                slug: "__root__",
+                displayName: "资料库",
+                fileCount: fileCount,
+                children: []
+            )
         )
     }
 }

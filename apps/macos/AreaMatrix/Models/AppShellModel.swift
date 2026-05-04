@@ -15,7 +15,8 @@ final class OnboardingModel: ObservableObject {
         case mainRepoError(String, CoreErrorMappingSnapshot?)
         case dbRepairConfirm(String, ScanSessionSnapshot?, CoreErrorMappingSnapshot?)
         case settingsRepository
-        case repositoryReady(RepoConfigSnapshot)
+        case mainEmpty(RepositoryOpeningResult)
+        case mainList(RepositoryOpeningResult)
         case configurationError(ConfigLoadFailure)
     }
 
@@ -81,12 +82,12 @@ final class OnboardingModel: ObservableObject {
     let scanSessionReader: any CoreScanSessionReading
     let errorMapper: any CoreErrorMapping
     let finderOpener: any RepositoryFinderOpening
+    let accessibilityAnnouncer: any AccessibilityAnnouncing
     private let helpOpener: any WelcomeHelpOpening
     private let directoryPicker: any RepositoryDirectoryPicking
     private var didBootstrap = false
     private var validatePathReturnRoute: Route = .choosePath
     var initializationProgressTask: Task<Void, Never>?
-
     init(
         settingsReader: any AppSettingsReading = UserDefaultsAppSettingsReader(),
         settingsWriter: any AppSettingsWriting = UserDefaultsAppSettingsReader(),
@@ -100,6 +101,7 @@ final class OnboardingModel: ObservableObject {
         scanSessionReader: any CoreScanSessionReading = CoreBridge(),
         errorMapper: any CoreErrorMapping = CoreBridge(),
         finderOpener: any RepositoryFinderOpening = NSWorkspaceRepositoryFinderOpener(),
+        accessibilityAnnouncer: any AccessibilityAnnouncing = VoiceOverAccessibilityAnnouncer(),
         helpOpener: any WelcomeHelpOpening = LocalWelcomeHelpOpener(),
         directoryPicker: any RepositoryDirectoryPicking = NSOpenPanelRepositoryDirectoryPicker()
     ) {
@@ -114,6 +116,7 @@ final class OnboardingModel: ObservableObject {
         self.scanSessionReader = scanSessionReader
         self.errorMapper = errorMapper
         self.finderOpener = finderOpener
+        self.accessibilityAnnouncer = accessibilityAnnouncer
         self.helpOpener = helpOpener
         self.directoryPicker = directoryPicker
     }
@@ -205,7 +208,6 @@ final class OnboardingModel: ObservableObject {
     }
     @MainActor
     func retryRepositoryPathValidation() async { validatePathAction = nil; await validateSelectedRepositoryPath() }
-
     @MainActor
     func updateICloudRiskAccepted(_ isAccepted: Bool) { isICloudRiskAccepted = isAccepted }
     @MainActor
@@ -245,7 +247,6 @@ final class OnboardingModel: ObservableObject {
     }
     @MainActor
     func createEmptyRepositoryFromConfirmInit() async { await initializeRepositoryFromConfirmInit(mode: .createEmpty) }
-
     @MainActor
     func adoptExistingRepositoryFromConfirmInit() async {
         await initializeRepositoryFromConfirmInit(mode: .adoptExisting)
@@ -399,8 +400,8 @@ final class OnboardingModel: ObservableObject {
         route = .loadingConfiguration
 
         do {
-            let config = try await configLoader.loadConfig(repoPath: repoPath)
-            route = .repositoryReady(config)
+            let opening = try await emptyRepositoryOpener.openConfiguredRepository(repoPath: repoPath)
+            route = Self.mainRoute(for: opening)
         } catch {
             route = .configurationError(ConfigLoadFailure.map(repoPath: repoPath, error: error))
         }
@@ -495,5 +496,4 @@ final class OnboardingModel: ObservableObject {
             route = .validatePath
         }
     }
-
 }

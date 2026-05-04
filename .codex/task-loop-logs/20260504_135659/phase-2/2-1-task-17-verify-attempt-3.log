@@ -1,0 +1,84 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`2-1/task-17`
+- Task：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-1-first-launch-main/task-17-s1-07-page-integration-verify.md`
+- 覆盖代码：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+- 禁止触碰：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+三、完成度摘要
+
+- 已覆盖项数：7
+- 未覆盖项数：0
+- 通过项数：6
+- 不通过项数：1
+- 阻塞项数：1
+
+四、逐项验收结果
+
+- 项目：逐项验收本页所有 page-feature task 是否完成  
+  结果：通过  
+  证据：task 绑定 `2-1/task-15`、`2-1/task-16`；control map 中 S1-07 覆盖 `C1-02, C1-03`，Prompt 为 `2-1/task-15/16/17`。空库与接管完成页分别有 `InitDoneEmptyRepositoryTests` 覆盖。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-1-first-launch-main/task-17-s1-07-page-integration-verify.md:16`，`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:22`
+
+- 项目：页面状态、入口、退出、错误态和 CoreBridge 调用串成闭环  
+  结果：通过  
+  证据：S1-07 spec 要求 `Open Repository` 进入 `S1-10 main-loading` 后到 `S1-08/S1-09`，`Open in Finder` 为次动作；实现中完成页路由到 `InitDoneStepView`，主按钮调用 `openInitializedRepository()`，先切 `mainLoading`，再按目录树结果进入 `mainEmpty/mainList`；失败回到完成页并展示 inline retry error。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-07-init-done.md:60`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/OnboardingInitializationProgress.swift:40`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreRepositoryOpening.swift:47`
+
+- 项目：移除无法最终验收的 mock、fixture 或硬编码状态  
+  结果：通过  
+  证据：生产路径 `CoreBridge.state` 为 `generatedBindings`，S1-07 打开资料库使用真实 `loadConfig` / `listTreeJson`；`fixture` 命中集中在测试文件。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift:267`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreRepositoryOpening.swift:57`
+
+- 项目：不新增 control map 外功能  
+  结果：通过  
+  证据：S1-07 control map 仅声明 `C1-02, C1-03` 与 `load_config/list_tree_json`；当前页面只做完成确认、打开资料库、打开 Finder。Finder 次动作在 page spec 中明确声明。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:22`，`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-07-init-done.md:56`
+
+- 项目：S1-07 可按 page spec 和 control map 完整验收  
+  结果：通过（代码证据层面）  
+  证据：页面展示 repoPath、新建/接管摘要、Open Repository、Open in Finder、Finder 非阻断错误、Open Repository inline error。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Onboarding/InitializingStepView.swift:238`
+
+- 项目：页面声明的 Core 能力真实接入或有阻塞证据  
+  结果：通过  
+  证据：`C1-02` / `C1-03` 对应 `init_repo`、`load_config`、`list_tree_json`；Swift bridge 通过 UniFFI 调用真实 Core，测试覆盖空库和接管真实路径。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:14`，`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:17`，`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:78`
+
+- 项目：任务要求验证命令  
+  结果：不通过  
+  证据：`xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO` 本次退出码 65，`xctest` 无法与 test runner 通信，错误包含 `com.apple.testmanagerd.control ... Sandbox restriction`，最终输出 `** TEST FAILED **`。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-1-first-launch-main/task-17-s1-07-page-integration-verify.md:34`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，S1-07 视图、路由状态、Core opening bridge 分层清晰。
+- 注释 / rustdoc / 文档同步：通过，本任务未新增 public Rust API；UDL、Core API、control map 与 Swift 消费路径一致。
+- 错误处理与边界处理：通过，Open Repository 失败回到完成页并映射 Core error；Finder 失败为非阻断 inline 错误。
+- 测试与验证覆盖：不通过，必需 `xcodebuild test` 在当前环境失败，无法形成验收通过证据。
+- 占位、硬编码、mock-only、一次性实现检查：通过，未发现 S1-07 生产闭环依赖 mock-only；测试 fixture 未进入生产路径。
+
+六、阻塞项
+
+- P0：必需验证命令未通过  
+  说明：task 明确要求运行 `xcodebuild test`；本次实跑失败，失败点为当前沙箱无法连接 macOS test runner 服务。按“无法证明通过就判定不通过”，不能标记该 task completed。  
+  绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-1-first-launch-main/task-17-s1-07-page-integration-verify.md:34`  
+  为什么导致不通过：验收门禁要求必需验证命令通过或给出可接受的阻塞证据；当前只有失败输出，没有通过证据。
+
+七、验证情况
+
+- 已运行：`git status --short -- core/src`，无输出，未发现 forbidden touches。
+- 已运行：`git diff --name-only -- core/src`，无输出，未发现 forbidden touches。
+- 已运行：Expected New Paths 存在性检查，`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`apps/macos/AreaMatrix.xcodeproj/project.pbxproj` 均存在。
+- 已运行：`xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`，失败，退出码 65。
+- 未运行：formatter/codegen 修复命令；本次是只读验收，且 manifest 只要求 xcodebuild test。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。代码层面的 S1-07 闭环证据基本齐备，但必需验证命令在当前环境失败，验收结果必须判定为不通过。
+
+VERIFY_RESULT: FAIL

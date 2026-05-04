@@ -1,0 +1,54 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`2-1/task-17`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-1-first-launch-main/task-17-s1-07-page-integration-verify.md`
+- 代码范围：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+- 禁止路径：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+三、完成度摘要
+
+- 已覆盖项数：14
+- 未覆盖项数：0
+- 通过项数：14
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- page-feature task 完成性：通过。`2-1/task-15`、`2-1/task-16` 在 `progress.json` 中均为 `completed`，对应 verify log 最终均为 `VERIFY_RESULT: PASS`。
+- S1-07 页面闭环：通过。`InitDoneStepView` 展示 repoPath、完成摘要、Open Repository / Open in Finder；`MainWindow` 绑定 done 页按钮到 `model.openInitializedRepository()`。
+- 入口 / 退出 / 错误态：通过。Open Repository 先切到 `.mainLoading`，成功后进入 `.mainEmpty` 或 `.mainList`，失败回到 done 页并显示 inline retry error。
+- CoreBridge 调用：通过。`CoreRepositoryOpening.swift` 通过 `load_config` 和 `list_tree_json` 打开已初始化资料库，覆盖 C1-02 空库与 C1-03 接管后读取。
+- mock / fixture / 硬编码状态：通过。生产路径未发现 mock-only 闭环；fixture 仅存在于 XCTest。
+- control map 越界：通过。S1-07 只覆盖 control map 声明的 C1-02、C1-03；未新增本页未声明 Core 能力。
+- Expected New Paths：通过。`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`project.pbxproj` 均存在并纳入 Xcode target。
+- Forbidden Touches：通过。`git status --short -- core/src` 无输出，未触碰 `core/src/**`。
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。打开逻辑集中在 `CoreRepositoryOpening.swift`，视图、model、Finder 平台能力边界清楚。
+- 注释 / rustdoc / 文档同步：通过。本任务未新增 Rust public API；`core/area_matrix.udl` 与 Core API 中 `load_config`、`list_tree_json`、`RepoInitMode` 对齐。
+- 错误处理与边界处理：通过。Open Repository 失败不清空完成配置，Finder 失败为非阻断 toast，并触发可访问性 announcement。
+- 测试与验证覆盖：通过。测试覆盖空库打开、接管库打开、main-loading 中间态、失败 retry、Finder 非阻断失败和真实 Core 临时 repo。
+- 占位、硬编码、mock-only、一次性实现检查：通过。未发现生产路径用静态状态伪造真实 Core 闭环。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：失败，退出码 65；失败点是当前沙箱无法访问 `com.apple.testmanagerd.control`，错误明确为 `Sandbox restriction`。
+- 已运行：`bash scripts/check-macos-tests.sh`：通过。脚本按 repo-local validation-driver 规则识别 testmanagerd 沙箱阻断后复用 XCTest bundle，`xcrun xctest` 执行 62 tests，0 failures。
+- 已运行：`git diff --check -- apps/macos/AreaMatrix apps/macos/AreaMatrixTests apps/macos/AreaMatrix.xcodeproj/project.pbxproj core/area_matrix.udl`：通过。
+- 未运行：`swiftlint --strict`、`swiftformat --lint .`；当前环境 `command -v swiftlint` / `command -v swiftformat` 无输出，工具不可用。它们不在本 task manifest 的唯一验证命令中，记录为 CI 工具残余缺口。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。标准 `xcodebuild test` 在本地沙箱受阻，但 repo-local 允许的 fallback 单测门禁已通过，且代码证据满足 S1-07 + C1-02/C1-03 页面集成闭环。
+
+VERIFY_RESULT: PASS

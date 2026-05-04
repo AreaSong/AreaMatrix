@@ -43,8 +43,8 @@ extension OnboardingModel {
         route = .mainLoading(result.repoPath)
 
         do {
-            let config = try await openInitializedRepository(result)
-            route = .repositoryReady(config)
+            let opening = try await openInitializedRepository(result)
+            route = Self.mainRoute(for: opening)
         } catch {
             route = .initializationDone(result)
             initializationOpenErrorMapping = await openingFailureMapping(for: error)
@@ -52,14 +52,16 @@ extension OnboardingModel {
     }
 
     @MainActor
-    func openInitializedRepositoryInFinder() async -> String? {
-        guard case .initializationDone(let result) = route else { return nil }
+    func openInitializedRepositoryInFinder() async {
+        guard case .initializationDone(let result) = route else { return }
 
         do {
             try finderOpener.openRepositoryInFinder(repoPath: result.repoPath)
-            return nil
+            toastMessage = nil
         } catch {
-            return "无法在 Finder 中打开资料库：\(error.localizedDescription)"
+            let message = "无法在 Finder 中打开资料库：\(error.localizedDescription)"
+            toastMessage = message
+            accessibilityAnnouncer.announce(message)
         }
     }
 
@@ -132,13 +134,19 @@ extension OnboardingModel {
         }
     }
 
-    private func openInitializedRepository(_ result: RepositoryInitializationResult) async throws -> RepoConfigSnapshot {
+    private func openInitializedRepository(
+        _ result: RepositoryInitializationResult
+    ) async throws -> RepositoryOpeningResult {
         switch result.mode {
         case .createEmpty:
             return try await emptyRepositoryOpener.openEmptyRepository(repoPath: result.repoPath)
         case .adoptExisting:
             return try await emptyRepositoryOpener.openAdoptedRepository(repoPath: result.repoPath)
         }
+    }
+
+    static func mainRoute(for opening: RepositoryOpeningResult) -> Route {
+        opening.isEmpty ? .mainEmpty(opening) : .mainList(opening)
     }
 
     static func validationStillMatchesConfirmMode(

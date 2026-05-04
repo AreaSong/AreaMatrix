@@ -239,10 +239,9 @@ struct InitDoneStepView: View {
     let result: RepositoryInitializationResult
     let errorMapping: CoreErrorMappingSnapshot?
     let onOpenRepository: () -> Void
-    let onOpenInFinder: () async -> String?
+    let onOpenInFinder: () async -> Void
 
     @State private var isOpeningFinder = false
-    @State private var finderOpenErrorMessage: String?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 22) {
@@ -250,7 +249,6 @@ struct InitDoneStepView: View {
             pathBox
             summarySection
             openErrorSection
-            finderErrorSection
             footer
         }
         .padding(.horizontal, 72)
@@ -264,7 +262,8 @@ struct InitDoneStepView: View {
                 .font(.system(size: 34, weight: .semibold))
                 .foregroundStyle(.green)
                 .accessibilityAddTraits(.isHeader)
-            Text("AreaMatrix 已完成初始化。你现在可以浏览资料库，或把文件拖进窗口开始归档。")
+            Text("AreaMatrix 已完成初始化。你现在可以浏览资料库，" +
+                "或把文件拖进窗口开始归档。")
                 .font(.title3)
                 .frame(maxWidth: 720, alignment: .leading)
         }
@@ -314,18 +313,6 @@ struct InitDoneStepView: View {
         }
     }
 
-    @ViewBuilder
-    private var finderErrorSection: some View {
-        if let finderOpenErrorMessage {
-            Label(finderOpenErrorMessage, systemImage: "exclamationmark.triangle")
-                .font(.callout)
-                .foregroundStyle(.orange)
-                .padding(14)
-                .frame(maxWidth: 720, alignment: .leading)
-                .background(Color.orange.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
-        }
-    }
-
     private var footer: some View {
         HStack(spacing: 12) {
             Button("Open in Finder") {
@@ -356,7 +343,7 @@ struct InitDoneStepView: View {
         defer {
             isOpeningFinder = false
         }
-        finderOpenErrorMessage = await onOpenInFinder()
+        await onOpenInFinder()
     }
 
     private var summaryItems: [String] {
@@ -364,7 +351,12 @@ struct InitDoneStepView: View {
         case .createEmpty:
             return ["已创建默认分类", "已创建本地索引", "已启用自动概览"]
         case .adoptExisting:
-            return ["已建立本地索引", "已扫描现有文件", "已保留原有目录结构", "已生成内部概览"]
+            return [
+                "已建立本地索引",
+                "已扫描现有文件",
+                "已保留原有目录结构",
+                "已生成内部概览",
+            ]
         }
     }
 }
@@ -395,7 +387,8 @@ struct InitFailedStepView: View {
             Text("初始化未完成")
                 .font(.system(size: 34, weight: .semibold))
                 .accessibilityAddTraits(.isHeader)
-            Text("AreaMatrix 没能完成资料库初始化。你的原始文件没有被移动、重命名、删除或覆盖。")
+            Text("AreaMatrix 没能完成资料库初始化。你的原始文件没有被移动、" +
+                "重命名、删除或覆盖。")
                 .font(.title3)
                 .frame(maxWidth: 720, alignment: .leading)
         }
@@ -431,7 +424,8 @@ struct InitFailedStepView: View {
         VStack(alignment: .leading, spacing: 8) {
             Text("恢复建议")
                 .font(.headline)
-            Text(mapping?.suggestedAction ?? "请检查文件夹权限、释放磁盘空间，或选择其他资料库位置后重试。")
+            Text(mapping?.suggestedAction ??
+                "请检查文件夹权限、释放磁盘空间，或选择其他资料库位置后重试。")
         }
         .font(.callout)
         .frame(maxWidth: 720, alignment: .leading)
