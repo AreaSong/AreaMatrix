@@ -148,6 +148,7 @@ final class ValidatePathRepairRegressionTests: XCTestCase {
             configLoader: RecordingConfigLoader(config: .fixture(repoPath: "/tmp/repo")),
             pathValidator: RecordingPathValidator(validation: validation),
             repositoryInitializer: initializer,
+            startupRecoverer: StaticStartupRecoverer(),
             helpOpener: NoopWelcomeHelpOpener()
         )
 
@@ -210,6 +211,7 @@ final class ValidatePathRepairRegressionTests: XCTestCase {
             configLoader: RecordingConfigLoader(config: .fixture(repoPath: "/tmp/repo")),
             pathValidator: RecordingPathValidator(validation: validation),
             repositoryInitializer: initializer,
+            startupRecoverer: StaticStartupRecoverer(),
             helpOpener: NoopWelcomeHelpOpener()
         )
 
@@ -434,6 +436,12 @@ private actor PausingRepositoryInitializer: CoreRepositoryInitializing {
     func createdRepoPaths() -> [String] { createdPaths }
 }
 
+private actor StaticStartupRecoverer: CoreStartupRecovering {
+    func recoverOnStartup(repoPath: String) async throws -> RecoveryReportSnapshot {
+        RecoveryReportSnapshot(cleanedStagingFiles: 0, revertedStagingDbRows: 0, warnings: [])
+    }
+}
+
 private struct StaticExistingRepositoryMetadataReader: ExistingRepositoryMetadataReading {
     let schemaVersion: Int64
 
@@ -442,9 +450,7 @@ private struct StaticExistingRepositoryMetadataReader: ExistingRepositoryMetadat
     }
 }
 
-private struct NoopWelcomeHelpOpener: WelcomeHelpOpening {
-    func openWelcomeHelp() throws {}
-}
+private struct NoopWelcomeHelpOpener: WelcomeHelpOpening { func openWelcomeHelp() throws {} }
 
 private extension RepoConfigSnapshot {
     static func fixture(repoPath: String) -> RepoConfigSnapshot {

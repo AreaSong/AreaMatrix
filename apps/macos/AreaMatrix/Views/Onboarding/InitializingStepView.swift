@@ -3,6 +3,7 @@ import SwiftUI
 struct InitializingStepView: View {
     let draft: RepositoryInitializationDraft
     let scanSession: ScanSessionSnapshot?
+    let recoveryReport: RecoveryReportSnapshot?
     let progressWarning: String?
 
     private var isCreateMode: Bool {
@@ -13,6 +14,7 @@ struct InitializingStepView: View {
         VStack(alignment: .leading, spacing: 22) {
             header
             pathBox
+            recoverySection
             progressSection
             stepList
             warningSection
@@ -65,6 +67,27 @@ struct InitializingStepView: View {
             .padding(14)
             .frame(maxWidth: 680, alignment: .leading)
             .background(.quaternary.opacity(0.45), in: RoundedRectangle(cornerRadius: 8))
+        }
+    }
+
+    @ViewBuilder
+    private var recoverySection: some View {
+        if let recoveryReport, recoveryReport.hasVisibleDetails {
+            VStack(alignment: .leading, spacing: 8) {
+                Label("启动恢复已执行", systemImage: "arrow.clockwise.circle")
+                    .font(.headline)
+                Text(recoveryReport.summaryText)
+                    .font(.callout)
+                ForEach(recoveryReport.warnings.prefix(3), id: \.self) { warning in
+                    Text(warning)
+                        .font(.callout)
+                        .foregroundStyle(.orange)
+                }
+            }
+            .padding(14)
+            .frame(maxWidth: 680, alignment: .leading)
+            .background(.quaternary.opacity(0.45), in: RoundedRectangle(cornerRadius: 8))
+            .accessibilityElement(children: .combine)
         }
     }
 
@@ -262,5 +285,14 @@ private extension ScanSessionSnapshot {
 
     var hasIndexedFiles: Bool {
         processedCount > 0 || status == .completed
+    }
+}
+
+private extension RecoveryReportSnapshot {
+    var summaryText: String {
+        """
+        已清理临时文件：\(cleanedStagingFiles)；\
+        已回滚 staging 记录：\(revertedStagingDbRows)
+        """
     }
 }

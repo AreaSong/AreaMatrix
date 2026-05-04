@@ -15,6 +15,7 @@ final class InitializingStepIntegrationTests: XCTestCase {
             configLoader: RecordingConfigLoader(config: .fixture(repoPath: "/tmp/adopt")),
             pathValidator: RecordingPathValidator(validation: validation),
             repositoryInitializer: initializer,
+            startupRecoverer: StaticStartupRecoverer(),
             scanSessionReader: StaticScanSessionReader(session: scanSession),
             helpOpener: NoopWelcomeHelpOpener()
         )
@@ -54,6 +55,7 @@ final class InitializingStepIntegrationTests: XCTestCase {
             configLoader: RecordingConfigLoader(config: .fixture(repoPath: "/tmp/adopt")),
             pathValidator: RecordingPathValidator(validation: validation),
             repositoryInitializer: FailingRepositoryInitializer(error: CoreError.PermissionDenied(path: "/tmp/adopt")),
+            startupRecoverer: StaticStartupRecoverer(),
             errorMapper: errorMapper,
             helpOpener: NoopWelcomeHelpOpener()
         )
@@ -64,6 +66,75 @@ final class InitializingStepIntegrationTests: XCTestCase {
         await model.adoptExistingRepositoryFromConfirmInit()
 
         XCTAssertEqual(errorMapper.mappedErrors, [CoreError.PermissionDenied(path: "/tmp/adopt")])
+        XCTAssertEqual(model.route, .initializationFailed("/tmp/adopt", mapping))
+        XCTAssertEqual(writer.savedRepoPaths, [])
+    }
+
+    @MainActor
+    func testInitializingRunsStartupRecoveryBeforeRepositoryWriteAndShowsReport() async {
+        let validation = RepoPathValidationSnapshot.adoptExistingFixture(repoPath: "/tmp/adopt")
+        let report = RecoveryReportSnapshot(
+            cleanedStagingFiles: 2,
+            revertedStagingDbRows: 1,
+            warnings: ["Kept recoverable moved staging file"]
+        )
+        let startupRecoverer = RecordingStartupRecoverer(result: .success(report))
+        let initializer = PausingRepositoryInitializer()
+        let model = OnboardingModel(
+            settingsReader: StaticSettingsReader(repoPath: nil),
+            settingsWriter: RecordingSettingsWriter(),
+            configLoader: RecordingConfigLoader(config: .fixture(repoPath: "/tmp/adopt")),
+            pathValidator: RecordingPathValidator(validation: validation),
+            repositoryInitializer: initializer,
+            startupRecoverer: startupRecoverer,
+            helpOpener: NoopWelcomeHelpOpener()
+        )
+
+        model.updateRepositoryPath("/tmp/adopt")
+        await model.continueFromChoosePath()
+        model.continueFromValidatePath()
+        let initializationTask = Task {
+            await model.adoptExistingRepositoryFromConfirmInit()
+        }
+
+        await startupRecoverer.waitUntilRecovered()
+        await initializer.waitUntilStarted()
+        let recoveredPaths = await startupRecoverer.requestedRepoPaths()
+
+        XCTAssertEqual(recoveredPaths, ["/tmp/adopt"])
+        XCTAssertEqual(model.initializationRecoveryReport, report)
+        XCTAssertEqual(model.route, .initializing(RepositoryInitializationDraft(
+            validation: validation,
+            mode: .adoptExisting,
+            scanSession: nil
+        )))
+
+        await initializationTask.value
+    }
+
+    @MainActor
+    func testStartupRecoveryErrorRoutesToInitFailedBeforeRepositoryWrite() async {
+        let validation = RepoPathValidationSnapshot.adoptExistingFixture(repoPath: "/tmp/adopt")
+        let mapping = CoreErrorMappingSnapshot.dbFixture(rawContext: "recovery db")
+        let errorMapper = RecordingErrorMapper(mapping: mapping)
+        let writer = RecordingSettingsWriter()
+        let model = OnboardingModel(
+            settingsReader: StaticSettingsReader(repoPath: nil),
+            settingsWriter: writer,
+            configLoader: RecordingConfigLoader(config: .fixture(repoPath: "/tmp/adopt")),
+            pathValidator: RecordingPathValidator(validation: validation),
+            repositoryInitializer: PausingRepositoryInitializer(),
+            startupRecoverer: RecordingStartupRecoverer(result: .failure(CoreError.Db(message: "recovery db"))),
+            errorMapper: errorMapper,
+            helpOpener: NoopWelcomeHelpOpener()
+        )
+
+        model.updateRepositoryPath("/tmp/adopt")
+        await model.continueFromChoosePath()
+        model.continueFromValidatePath()
+        await model.adoptExistingRepositoryFromConfirmInit()
+
+        XCTAssertEqual(errorMapper.mappedErrors, [CoreError.Db(message: "recovery db")])
         XCTAssertEqual(model.route, .initializationFailed("/tmp/adopt", mapping))
         XCTAssertEqual(writer.savedRepoPaths, [])
     }
@@ -145,6 +216,46 @@ private actor FailingRepositoryInitializer: CoreRepositoryInitializing {
     func adoptExistingRepository(repoPath: String) async throws {
         throw error
     }
+}
+
+private enum StartupRecoveryResult {
+    case success(RecoveryReportSnapshot)
+    case failure(Error)
+}
+
+private actor StaticStartupRecoverer: CoreStartupRecovering {
+    func recoverOnStartup(repoPath: String) async throws -> RecoveryReportSnapshot {
+        RecoveryReportSnapshot(cleanedStagingFiles: 0, revertedStagingDbRows: 0, warnings: [])
+    }
+}
+
+private actor RecordingStartupRecoverer: CoreStartupRecovering {
+    private let result: StartupRecoveryResult
+    private var paths: [String] = []
+    private var didRecover = false
+
+    init(result: StartupRecoveryResult) {
+        self.result = result
+    }
+
+    func recoverOnStartup(repoPath: String) async throws -> RecoveryReportSnapshot {
+        paths.append(repoPath)
+        didRecover = true
+        switch result {
+        case .success(let report):
+            return report
+        case .failure(let error):
+            throw error
+        }
+    }
+
+    func waitUntilRecovered() async {
+        while !didRecover {
+            await Task.yield()
+        }
+    }
+
+    func requestedRepoPaths() -> [String] { paths }
 }
 
 private actor StaticScanSessionReader: CoreScanSessionReading {
@@ -241,6 +352,17 @@ private extension CoreErrorMappingSnapshot {
             severity: .high,
             suggestedAction: "请在系统设置中授予权限，或选择其他资料库位置",
             recoverability: .userActionRequired,
+            rawContext: rawContext
+        )
+    }
+
+    static func dbFixture(rawContext: String) -> CoreErrorMappingSnapshot {
+        CoreErrorMappingSnapshot(
+            kind: .db,
+            userMessage: "数据库错误",
+            severity: .critical,
+            suggestedAction: "请检查资料库 metadata 后重试",
+            recoverability: .fatal,
             rawContext: rawContext
         )
     }

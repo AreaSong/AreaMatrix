@@ -122,6 +122,7 @@ struct MainWindow: View {
             InitializingStepView(
                 draft: draft,
                 scanSession: model.initializationScanSession,
+                recoveryReport: model.initializationRecoveryReport,
                 progressWarning: model.initializationProgressWarning
             )
         case .initializationFailed(let repoPath, let mapping):

@@ -40,6 +40,7 @@ final class OnboardingModel: ObservableObject {
     @Published private(set) var existingRepositoryMetadata: ExistingRepositoryMetadataSnapshot?
     @Published private(set) var latestScanSession: ScanSessionSnapshot?
     @Published var initializationScanSession: ScanSessionSnapshot?
+    @Published var initializationRecoveryReport: RecoveryReportSnapshot?
     @Published var initializationProgressWarning: String?
     @Published private(set) var isValidatingRepositoryPath = false
     @Published private(set) var isICloudRiskAccepted = false
@@ -73,6 +74,7 @@ final class OnboardingModel: ObservableObject {
     private let configLoader: any CoreConfigurationLoading
     private let pathValidator: any CoreRepositoryPathValidating
     let repositoryInitializer: any CoreRepositoryInitializing
+    let startupRecoverer: any CoreStartupRecovering
     private let existingRepositoryMetadataReader: any ExistingRepositoryMetadataReading
     let scanSessionReader: any CoreScanSessionReading
     let errorMapper: any CoreErrorMapping
@@ -88,6 +90,7 @@ final class OnboardingModel: ObservableObject {
         configLoader: any CoreConfigurationLoading = CoreBridge(),
         pathValidator: any CoreRepositoryPathValidating = CoreBridge(),
         repositoryInitializer: any CoreRepositoryInitializing = CoreBridge(),
+        startupRecoverer: any CoreStartupRecovering = CoreBridge(),
         existingRepositoryMetadataReader: any ExistingRepositoryMetadataReading =
             SQLiteExistingRepositoryMetadataReader(),
         scanSessionReader: any CoreScanSessionReading = CoreBridge(),
@@ -100,6 +103,7 @@ final class OnboardingModel: ObservableObject {
         self.configLoader = configLoader
         self.pathValidator = pathValidator
         self.repositoryInitializer = repositoryInitializer
+        self.startupRecoverer = startupRecoverer
         self.existingRepositoryMetadataReader = existingRepositoryMetadataReader
         self.scanSessionReader = scanSessionReader
         self.errorMapper = errorMapper
@@ -162,6 +166,7 @@ final class OnboardingModel: ObservableObject {
         existingRepositoryMetadata = nil
         latestScanSession = nil
         initializationScanSession = nil
+        initializationRecoveryReport = nil
         initializationProgressWarning = nil
         choosePathAction = nil
         validatePathAction = nil
@@ -275,6 +280,7 @@ final class OnboardingModel: ObservableObject {
         existingRepositoryMetadata = nil
         latestScanSession = nil
         initializationScanSession = nil
+        initializationRecoveryReport = nil
         initializationProgressWarning = nil
         stopInitializationProgressPolling()
         route = shouldCloseWindow ? .welcome : .settingsRepository
@@ -344,6 +350,7 @@ final class OnboardingModel: ObservableObject {
 
         let repoPath = draft.validation.repoPath
         initializationScanSession = draft.scanSession
+        initializationRecoveryReport = nil
         initializationProgressWarning = nil
         route = .initializing(draft)
         startInitializationProgressPolling(repoPath: repoPath, mode: mode)
@@ -358,6 +365,7 @@ final class OnboardingModel: ObservableObject {
                 return
             }
 
+            try await recoverStartupResidue(repoPath: repoPath)
             try await initializeRepository(repoPath: repoPath, mode: mode)
             settingsWriter.saveConfiguredRepoPath(repoPath)
             route = .mainLoading(repoPath)

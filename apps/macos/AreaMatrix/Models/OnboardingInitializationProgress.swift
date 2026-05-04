@@ -1,5 +1,25 @@
 import Foundation
 
+protocol CoreStartupRecovering: Sendable {
+    func recoverOnStartup(repoPath: String) async throws -> RecoveryReportSnapshot
+}
+
+struct RecoveryReportSnapshot: Equatable, Sendable {
+    var cleanedStagingFiles: Int64
+    var revertedStagingDbRows: Int64
+    var warnings: [String]
+
+    var hasVisibleDetails: Bool {
+        cleanedStagingFiles > 0 || revertedStagingDbRows > 0 || !warnings.isEmpty
+    }
+}
+
+extension CoreBridge: CoreStartupRecovering {
+    func recoverOnStartup(repoPath: String) async throws -> RecoveryReportSnapshot {
+        RecoveryReportSnapshot(coreReport: try recoverCoreOnStartup(repoPath: repoPath))
+    }
+}
+
 extension OnboardingModel {
     func initializeRepository(repoPath: String, mode: RepoInitModeSnapshot) async throws {
         switch mode {
@@ -78,4 +98,26 @@ extension OnboardingModel {
         guard case .initializing(let draft) = route else { return false }
         return draft.mode == .adoptExisting && draft.validation.repoPath == repoPath
     }
+
+    @MainActor
+    func recoverStartupResidue(repoPath: String) async throws {
+        do {
+            let report = try await startupRecoverer.recoverOnStartup(repoPath: repoPath)
+            initializationRecoveryReport = report.hasVisibleDetails ? report : nil
+        } catch CoreError.RepoNotInitialized(_) {
+            initializationRecoveryReport = nil
+        }
+    }
+}
+
+private extension RecoveryReportSnapshot {
+    init(coreReport: RecoveryReport) {
+        cleanedStagingFiles = coreReport.cleanedStagingFiles
+        revertedStagingDbRows = coreReport.revertedStagingDbRows
+        warnings = coreReport.warnings
+    }
+}
+
+private func recoverCoreOnStartup(repoPath: String) throws -> RecoveryReport {
+    try recoverOnStartup(repoPath: repoPath)
 }
