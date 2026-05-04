@@ -304,7 +304,9 @@ struct InitDoneStepView: View {
 struct InitFailedStepView: View {
     let repoPath: String
     let mapping: CoreErrorMappingSnapshot?
+    let canRetry: Bool
     let onChangePath: () -> Void
+    let onRetry: () -> Void
 
     @State private var isDetailsExpanded = false
 
@@ -313,8 +315,7 @@ struct InitFailedStepView: View {
             header
             errorSummary
             recoveryAdvice
-            Button("Change Path", action: onChangePath)
-                .keyboardShortcut(.defaultAction)
+            footer
         }
         .padding(.horizontal, 72)
         .padding(.vertical, 48)
@@ -341,6 +342,7 @@ struct InitFailedStepView: View {
                 .font(.system(.callout, design: .monospaced))
                 .textSelection(.enabled)
             Text("错误代码：\(mapping?.kind.rawValue ?? "Unknown")")
+            Text("严重程度：\(mapping?.severity.rawValue ?? "Unknown")")
             DisclosureGroup("Show details", isExpanded: $isDetailsExpanded) {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("Recoverability: \(mapping?.recoverability.rawValue ?? "Unknown")")
@@ -365,6 +367,18 @@ struct InitFailedStepView: View {
         }
         .font(.callout)
         .frame(maxWidth: 720, alignment: .leading)
+    }
+
+    private var footer: some View {
+        HStack {
+            Button("Change Path", action: onChangePath)
+            Spacer()
+            Button("Retry", action: onRetry)
+                .keyboardShortcut(.defaultAction)
+                .buttonStyle(.borderedProminent)
+                .disabled(!canRetry)
+        }
+        .frame(maxWidth: 720)
     }
 }
 

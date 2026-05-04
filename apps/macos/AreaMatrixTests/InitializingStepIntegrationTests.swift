@@ -62,7 +62,11 @@ final class InitializingStepIntegrationTests: XCTestCase {
         model.continueFromValidatePath()
         await model.adoptExistingRepositoryFromConfirmInit()
         XCTAssertEqual(errorMapper.mappedErrors, [CoreError.PermissionDenied(path: "/tmp/adopt")])
-        XCTAssertEqual(model.route, .initializationFailed("/tmp/adopt", mapping))
+        XCTAssertEqual(model.route, .initializationFailed(
+            "/tmp/adopt",
+            mapping,
+            RepositoryInitializationDraft(validation: validation, mode: .adoptExisting, scanSession: nil)
+        ))
         XCTAssertEqual(writer.savedRepoPaths, [])
     }
     @MainActor
@@ -123,7 +127,11 @@ final class InitializingStepIntegrationTests: XCTestCase {
         model.continueFromValidatePath()
         await model.adoptExistingRepositoryFromConfirmInit()
         XCTAssertEqual(errorMapper.mappedErrors, [CoreError.Db(message: "recovery db")])
-        XCTAssertEqual(model.route, .initializationFailed("/tmp/adopt", mapping))
+        XCTAssertEqual(model.route, .initializationFailed(
+            "/tmp/adopt",
+            mapping,
+            RepositoryInitializationDraft(validation: validation, mode: .adoptExisting, scanSession: nil)
+        ))
         XCTAssertEqual(writer.savedRepoPaths, [])
     }
     @MainActor

@@ -45,7 +45,7 @@ extension OnboardingModel {
     @MainActor
     func resumeInterruptedInitialization(repoPath: String, scanSession: ScanSessionSnapshot?) async {
         guard let scanSession else {
-            route = .initializationFailed(repoPath, nil)
+            route = .initializationFailed(repoPath, nil, nil)
             return
         }
 

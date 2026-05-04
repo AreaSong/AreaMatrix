@@ -148,8 +148,18 @@ struct MainWindow: View {
                 isCancellationRequested: model.isInitializationCancellationRequested,
                 onCancel: model.requestSetupQuit
             )
-        case .initializationFailed(let repoPath, let mapping):
-            InitFailedStepView(repoPath: repoPath, mapping: mapping, onChangePath: model.showChoosePath)
+        case .initializationFailed(let repoPath, let mapping, let retryDraft):
+            InitFailedStepView(
+                repoPath: repoPath,
+                mapping: mapping,
+                canRetry: retryDraft != nil,
+                onChangePath: model.showChoosePath,
+                onRetry: {
+                    Task {
+                        await model.retryFailedInitialization()
+                    }
+                }
+            )
         case .initializationDone(let result):
             InitDoneStepView(result: result, onOpenRepository: model.openInitializedRepository)
         case .mainLoading(let repoPath):

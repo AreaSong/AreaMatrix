@@ -1,0 +1,86 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`2-1/task-14`
+- Task 文件：[task-14-s1-06-c1-21-error-mapping.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-1-first-launch-main/task-14-s1-06-c1-21-error-mapping.md:12)
+- Manifest 章节：[phase-2.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-2.md:386)
+- 实际验收代码：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`apps/macos/AreaMatrix.xcodeproj/project.pbxproj`、`core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：0
+- 通过项数：10
+- 不通过项数：0
+- 阻塞项数：0
+- 统计口径：仅限本 page-feature 的 `S1-06 + C1-21` error-mapping 范围；`Collect Diagnostics...` / `Quit` 属于 S1-06 完整页面 integration 后续范围，不作为本 task 阻断。
+
+四、逐项验收结果
+
+- 项目：只处理 S1-06 页面中的 C1-21 功能点
+  结果：通过
+  证据：Task 明确范围为 S1-06 init-failed 的 C1-21；control map 写明 S1-06 只有 `C1-21`、Core API 为 `error mapping only`。
+  涉及文件：[task](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-1-first-launch-main/task-14-s1-06-c1-21-error-mapping.md:21)、[mvp-control-map.md](/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:21)
+
+- 项目：读取并对齐页面规格、control map、Core API、C1-21 能力规格
+  结果：通过
+  证据：S1-06 要求失败摘要、错误代码、恢复建议和安全说明；Core API 暴露 `map_core_error`，输出 `kind/user_message/severity/suggested_action/recoverability/raw_context`。
+  涉及文件：[S1-06-init-failed.md](/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-06-init-failed.md:23)、[core-api.md](/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:1349)、[C1-21-error-mapping.md](/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-21-error-mapping.md:48)
+
+- 项目：CoreBridge / 状态 / 错误映射接入真实 C1-21
+  结果：通过
+  证据：`CoreBridge.mapCoreError` 调用 `mapCoreErrorFromCore`，后者按 `CoreError` enum variant 构造 `ErrorMappingInput` 并调用生成绑定 `mapCoreError(input:)`，未用字符串 contains 分支。
+  涉及文件：[CoreBridge.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift:341)、[CoreBridgePlaceholderState.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/CoreBridgePlaceholderState.swift:163)、[area_matrix.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/Generated/area_matrix.swift:4329)
+
+- 项目：S1-06 中 C1-21 用户可见功能可触发
+  结果：通过
+  证据：初始化失败时进入 `.initializationFailed(repoPath, mapping, retryDraft)`；失败页显示用户消息、错误代码、严重程度、恢复建议、折叠详情，并提供 Change Path / Retry。
+  涉及文件：[InitializationFailureActions.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/InitializationFailureActions.swift:5)、[MainWindow.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/MainWindow.swift:151)、[InitializingStepView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Onboarding/InitializingStepView.swift:304)
+
+- 项目：没有 mock、fixture 或静态状态伪造真实 Core 闭环
+  结果：通过
+  证据：生产默认 `errorMapper` 是 `CoreBridge()`；测试 fixture 仅用于注入失败路径，另有 `CoreBridge().mapCoreError(...)` 覆盖真实生成绑定合同。
+  涉及文件：[AppShellModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/AppShellModel.swift:97)、[InitFailedErrorMappingTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/InitFailedErrorMappingTests.swift:50)
+
+- 项目：未触碰 control map 之外 Core 能力或相邻页面
+  结果：通过
+  证据：新增/修改路径只围绕 init-failed 路由、视图、测试和 Xcode project；差异检索未发现新增 `importFile`、`listFiles`、`repairMetadata` 等相邻 Core 能力调用。
+  涉及文件：[InitializationFailureActions.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/InitializationFailureActions.swift:18)、[InitFailedErrorMappingTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/InitFailedErrorMappingTests.swift:6)
+
+- 项目：Expected New Paths 落地
+  结果：通过
+  证据：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**` 和 `project.pbxproj` 均有实际文件/项目引用；新增测试已加入 Xcode Sources。
+  涉及文件：[project.pbxproj](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj:24)
+
+- 项目：Forbidden Touches
+  结果：通过
+  证据：`git diff --name-only -- core/src` 与 `git status --short -- core/src` 均为空，未触碰 `core/src/**`。
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。失败路由被拆到 `InitializationFailureActions.swift`，`AppShellModel.swift` 保持 490 行，主要视图文件 402 行，未超过 500 行阈值。
+- 注释 / rustdoc / 文档同步：通过。本 task 不新增 public Rust API；UDL 已声明 C1-21 结构化映射边界。
+- 错误处理与边界处理：通过。CoreError 走 enum 分支映射，不解析本地化字符串；非 CoreError 保留 Unknown fallback。
+- 测试与验证覆盖：通过。新增 `InitFailedErrorMappingTests` 覆盖失败映射、Retry 重跑和真实 CoreBridge mapping；集成测试覆盖 fatal error route。
+- 占位、硬编码、mock-only、一次性实现检查：通过。生产路径使用 CoreBridge 生成绑定；测试 fixture 未冒充生产闭环。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：通过，`BUILD SUCCEEDED`。
+- 已运行：`xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：环境性失败；test target 已构建，但本地沙箱阻断 `com.apple.testmanagerd.control`。
+- 已运行：`bash scripts/check-macos-tests.sh`：通过；fallback 到 `xcrun xctest`，54 个测试 0 失败。
+- 已运行：`git diff --check`：通过。
+- 缺失：`swiftlint --strict`、`swiftformat --lint .` 均因本机 `command not found` 未完成；这是本地工具缺口，需由安装工具或 CI 补跑。
+
+八、最终判定说明
+
+- 本次执行已达到 `2-1/task-14` 的单任务验收标准。SwiftLint/SwiftFormat 本机缺失是残余 CI 风险，但 manifest validation、macOS build、fallback XCTest 和 task 范围交叉验收均已通过，不构成本 task 阻塞。
+VERIFY_RESULT: PASS

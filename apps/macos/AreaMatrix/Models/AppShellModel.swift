@@ -9,7 +9,7 @@ final class OnboardingModel: ObservableObject {
         case validatePath
         case confirmRepositoryInitialization(RepositoryInitializationDraft)
         case initializing(RepositoryInitializationDraft)
-        case initializationFailed(String, CoreErrorMappingSnapshot?)
+        case initializationFailed(String, CoreErrorMappingSnapshot?, RepositoryInitializationDraft?)
         case initializationDone(RepositoryInitializationResult)
         case mainLoading(String)
         case mainRepoError(String, CoreErrorMappingSnapshot?)
@@ -487,14 +487,4 @@ final class OnboardingModel: ObservableObject {
         }
     }
 
-    @MainActor
-    func routeInitializationFailure(_ error: Error, repoPath: String) async {
-        guard let coreError = error as? CoreError else {
-            route = .initializationFailed(repoPath, nil)
-            return
-        }
-
-        let mapping = await errorMapper.mapCoreError(coreError)
-        route = .initializationFailed(repoPath, mapping)
-    }
 }
