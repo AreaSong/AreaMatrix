@@ -63,9 +63,28 @@ Repo-local skills：
 ./dev
 ```
 
-控制台会显示当前进度、runner / `codex exec` 进程数量、stale 状态和 drain 状态，并提供继续、优雅收尾、检查、日志等菜单项。
+控制台默认显示彩色首页：顶部是进度、下一任务、runner / `codex exec` 折叠摘要、stale / drain、最近 run 和 verify；下方是快捷键操作区。
 启动或继续任务时，控制台会先阻止重复 live runner，再选择前台/后台、Git checkpoint 模式和任务数量上限；默认 Git 为本地 `commit`，任务数量为无限。
 优化或排查控制台时，优先用 `./dev preview` 预览命令，或用 `./dev dry-run` 跑临时目录演练；这两者都不会写真实 progress。
+
+颜色默认强制开启；需要关闭时使用：
+
+```bash
+./dev --color never
+NO_COLOR=1 ./dev
+```
+
+需要在脚本或截图中渲染一次首页后退出：
+
+```bash
+./dev --once
+```
+
+完整进程命令不在首页展开；需要查看时使用：
+
+```bash
+./dev processes
+```
 
 日常观看进度时使用：
 
@@ -73,7 +92,7 @@ Repo-local skills：
 ./dev status
 ```
 
-在 TTY 里它会显示彩色实时看板，默认每 5 秒刷新；非 TTY 会输出一次快照后退出。需要旧版长报告、完整进程列表、最近 run 和 verify 摘要时使用：
+`./dev status` 支持同样的颜色开关，例如 `./dev status --once --color always`。需要旧版长报告、完整进程列表、最近 run 和 verify 摘要时使用：
 
 ```bash
 ./dev status --verbose

@@ -42,6 +42,7 @@ class ConsoleConfig:
     task_loop_bin: Path
     pipeline: Path
     console_log_root: Path
+    color_mode: str = "always"
 
     @classmethod
     def from_env(cls) -> "ConsoleConfig":
@@ -51,6 +52,13 @@ class ConsoleConfig:
         pipeline = Path(os.environ.get("PIPELINE", runtime.root_dir / "tasks/prompts/_shared/prompt_pipeline.py"))
         console_log_root = Path(os.environ.get("CONSOLE_LOG_ROOT", runtime.root_dir / ".codex/task-loop-console"))
         return cls(runtime=runtime, task_loop_bin=task_loop_bin, pipeline=pipeline, console_log_root=console_log_root)
+
+
+@dataclass
+class DevArgs:
+    command_args: list[str]
+    color_mode: str
+    once: bool
 
 
 @dataclass
@@ -92,12 +100,26 @@ def timestamp() -> str:
     return datetime.now().strftime("%Y%m%d_%H%M%S")
 
 
-def supports_color(force_no_color: bool = False) -> bool:
+def normalize_color_mode(value: str) -> str:
+    return value if value in {"always", "never", "auto"} else "always"
+
+
+def color_enabled(mode: str = "always") -> bool:
+    if os.environ.get("NO_COLOR"):
+        return False
+    if mode == "never":
+        return False
+    if mode == "auto":
+        return sys.stdout.isatty() and bool(os.environ.get("TERM"))
+    return True
+
+
+def supports_color(force_no_color: bool = False, mode: str = "always") -> bool:
     if force_no_color:
         return False
-    if os.environ.get("NO_COLOR") or os.environ.get("DEV_NO_COLOR"):
+    if os.environ.get("DEV_NO_COLOR"):
         return False
-    return sys.stdout.isatty() and bool(os.environ.get("TERM"))
+    return color_enabled(mode)
 
 
 def ansi(text: str, code: str, color: bool) -> str:
@@ -141,6 +163,37 @@ def rel_path(root: Path, path: Path | str | None) -> str:
         return str(value.resolve().relative_to(root.resolve()))
     except (OSError, ValueError):
         return str(path)
+
+
+def parse_global_args(args: Sequence[str]) -> DevArgs:
+    remaining = list(args)
+    color_mode = normalize_color_mode(os.environ.get("DEV_COLOR", "always"))
+    once = False
+    command_args: list[str] = []
+    index = 0
+    while index < len(remaining):
+        value = remaining[index]
+        if value == "--once":
+            once = True
+            index += 1
+            continue
+        if value == "--no-color":
+            color_mode = "never"
+            index += 1
+            continue
+        if value == "--color":
+            if index + 1 >= len(remaining):
+                raise ValueError("--color requires always, never, or auto")
+            color_mode = normalize_color_mode(remaining[index + 1])
+            index += 2
+            continue
+        if value.startswith("--color="):
+            color_mode = normalize_color_mode(value.split("=", 1)[1])
+            index += 1
+            continue
+        command_args.extend(remaining[index:])
+        break
+    return DevArgs(command_args=command_args, color_mode=color_mode, once=once)
 
 
 def print_banner() -> None:
@@ -263,6 +316,35 @@ def show_processes(cfg: ConsoleConfig) -> None:
     if host_codex:
         print("\nhost codex exec:")
         print("\n".join(host_codex))
+
+
+def summarize_process_line(line: str, root: Path) -> str:
+    parts = line.split()
+    pid = parts[0] if parts else "?"
+    cwd_match = re.search(r"--cd\s+(\S+)", line)
+    cwd = cwd_match.group(1) if cwd_match else ""
+    out_match = re.search(r"-o\s+(\S+)", line)
+    out_path = out_match.group(1) if out_match else ""
+    cwd_name = Path(cwd).name if cwd else "unknown"
+    out_name = Path(out_path).name if out_path else "no-log"
+    if cwd and root.as_posix() in cwd:
+        cwd_name = "AreaMatrix"
+    return f"pid={pid} {cwd_name} {out_name}"
+
+
+def process_summary_line(cfg: ConsoleConfig, snapshot: ProcessSnapshot) -> str:
+    other = [line for line in snapshot.host_codex if line not in snapshot.repo_codex]
+    summary = (
+        f"runner={len(snapshot.runners)} | "
+        f"AreaMatrix codex={len(snapshot.repo_codex)} | "
+        f"other codex={len(other)}"
+    )
+    examples: list[str] = []
+    for line in [*snapshot.runners[:1], *snapshot.repo_codex[:1], *other[:1]]:
+        examples.append(summarize_process_line(line, cfg.runtime.root_dir))
+    if examples:
+        summary += ": " + " ; ".join(examples)
+    return summary
 
 
 def read_json(path: Path, default: object) -> object:
@@ -530,7 +612,7 @@ def dashboard_lines(cfg: ConsoleConfig, snapshot: DashboardSnapshot, *, color: b
         f"{dim('exit', color)} Ctrl+C",
         "",
         f"{bold('状态', color)} {status_badge(state_name, state_color, color)} "
-        f"runner={len(snapshot.process.runners)} AreaMatrix-codex={len(snapshot.process.repo_codex)} host-codex={len(snapshot.process.host_codex)}",
+        f"{process_summary_line(cfg, snapshot.process)}",
         f"{bold('进度', color)} {prompt.completed}/{prompt.total} completed  {prompt.pending} pending  {percent:.1f}%",
         f"      {render_progress_bar(prompt.completed, prompt.total, color)}",
         f"{bold('下一任务', color)} {cyan(prompt.first_ready, color) if prompt.first_ready not in {'None', 'unknown'} else prompt.first_ready}",
@@ -580,7 +662,7 @@ def render_status_dashboard(cfg: ConsoleConfig, *, color: bool, realtime: bool) 
 
 
 def show_status_dashboard(cfg: ConsoleConfig, *, refresh_seconds: float = 5.0, once: bool = False, no_color: bool = False) -> int:
-    color = supports_color(no_color)
+    color = supports_color(no_color, cfg.color_mode)
     realtime = sys.stdout.isatty() and not once
     if not realtime:
         render_status_dashboard(cfg, color=color, realtime=False)
@@ -821,6 +903,7 @@ def parse_status_args(args: Sequence[str]) -> argparse.Namespace:
     parser.add_argument("--verbose", action="store_true", help="Show the full legacy status report")
     parser.add_argument("--once", action="store_true", help="Render one compact dashboard snapshot and exit")
     parser.add_argument("--refresh", type=float, default=5.0, help="TUI refresh interval in seconds")
+    parser.add_argument("--color", choices=["always", "never", "auto"], help="Color mode; overrides DEV_COLOR")
     parser.add_argument("--no-color", action="store_true", help="Disable ANSI color")
     return parser.parse_args(list(args))
 
@@ -854,44 +937,66 @@ def reset_progress(cfg: ConsoleConfig) -> int:
     return subprocess.run([str(cfg.task_loop_bin), "reset-progress"], env=env, check=False).returncode
 
 
+def clear_screen() -> None:
+    if sys.stdout.isatty() and os.environ.get("TERM"):
+        print("\033[2J\033[H", end="")
+
+
+def shortcut_lines(color: bool) -> list[str]:
+    normal = [
+        ("s", "start", "从下一个 pending 继续"),
+        ("p", "preflight", "启动前检查"),
+        ("v", "preview", "预览命令，不执行"),
+        ("d", "dry-run", "临时演练，不写真实 progress"),
+        ("r", "resume-stale", "恢复 stale"),
+        ("f", "resume-failed", "恢复 failed"),
+        ("g", "drain", "优雅收尾"),
+        ("l", "logs", "后台日志"),
+        ("y", "verify-summary", "最近 verify"),
+        ("c", "check", "doctor + task-loop 自检"),
+        ("x", "processes", "完整进程"),
+        ("h", "help", "帮助"),
+        ("q", "quit", "退出"),
+    ]
+    lines = [bold("快捷键", color)]
+    for key, command, note in normal:
+        lines.append(f"  {cyan(key, color)}  {command:<15} {dim(note, color)}")
+    lines.append("")
+    lines.append(red("危险操作", color))
+    lines.append(f"  {yellow('clear-stale', color):<15}  清理 stale in_progress（会备份 progress）")
+    lines.append(f"  {red('reset-progress', color):<15}  重置 progress 从 0 开始（需输入 RESET）")
+    lines.append("")
+    lines.append(dim("旧数字键仍可用；完整长状态：./dev status --verbose；关闭颜色：./dev --color never。", color))
+    return lines
+
+
 def print_menu(cfg: ConsoleConfig) -> None:
-    print_banner()
-    print_status_compact(cfg)
-    show_processes(cfg)
-    print(
-        """
-操作：
-  1) 刷新详细状态
-  2) 启动前检查（preflight）
-  3) 预览启动命令（不执行）
-  4) 临时 dry-run 演练（不写真实 progress）
-  5) 从 stale 任务继续
-  6) 从 failed 任务继续
-  7) 从下一个 pending 继续
-  8) 一键优雅收尾（当前 task 完成 + checkpoint 后停止）
-  9) 查看最近后台控制台日志
-  10) 查看最近 verify 摘要
-  11) 运行 doctor + task-loop 自检
-
-  12) 清理 stale in_progress（会备份 progress）
-  13) 重置 progress 从 0 开始（需输入 RESET）
-
-  h) 帮助    q) 退出"""
-    )
+    color = color_enabled(cfg.color_mode)
+    clear_screen()
+    snapshot = dashboard_snapshot(cfg)
+    print("\n".join(dashboard_lines(cfg, snapshot, color=color, realtime=False)))
+    print()
+    print("\n".join(shortcut_lines(color)))
 
 
 def print_help() -> None:
     print_banner()
     print(
         """常用理解：
+- ./dev 默认是彩色首页：状态看板 + 快捷键。
 - stale 继续：用于关机、强停、断电后恢复半截任务。
 - 优雅收尾：用于 runner 正在执行时，请求它做完当前 task、完成 verify 和 Git checkpoint 后停止。
 - Git 默认：commit；需要上传时启动向导里选择 commit + push。
 - 任务数默认：无限；启动向导可选 1、5、20 或自定义。
 - 已有 live runner 时，控制台会阻止启动第二个 runner。
+- 颜色默认强制开启；可用 ./dev --color never 或 NO_COLOR=1 关闭。
 
 快捷命令：
+  ./dev --once
+  ./dev --color always --once
+  ./dev --color never --once
   ./dev status
+  ./dev status --color always --once
   ./dev status --verbose
   ./dev compact
   ./dev preflight
@@ -910,6 +1015,9 @@ def print_help() -> None:
 
 
 def interactive_loop(cfg: ConsoleConfig) -> int:
+    if not sys.stdin.isatty():
+        print_menu(cfg)
+        return 0
     while True:
         print_menu(cfg)
         choice = input("\n> ").strip()
@@ -940,6 +1048,34 @@ def interactive_loop(cfg: ConsoleConfig) -> int:
             clear_stale(cfg)
         elif choice == "13":
             reset_progress(cfg)
+        elif choice == "s":
+            start_with_wizard(cfg, "run")
+        elif choice == "p":
+            show_preflight(cfg)
+        elif choice == "v":
+            preview_with_wizard(cfg)
+        elif choice == "d":
+            run_temp_dry_run(cfg)
+        elif choice == "r":
+            start_with_wizard(cfg, "resume-stale")
+        elif choice == "f":
+            start_with_wizard(cfg, "resume-failed")
+        elif choice == "g":
+            request_drain(cfg)
+        elif choice == "l":
+            show_latest_console_log(cfg)
+        elif choice == "y":
+            print_banner()
+            show_latest_failure_summary(cfg)
+        elif choice == "c":
+            run_health_checks(cfg)
+        elif choice == "x":
+            print_banner()
+            show_processes(cfg)
+        elif choice == "clear-stale":
+            clear_stale(cfg)
+        elif choice == "reset-progress":
+            reset_progress(cfg)
         elif choice in {"h", "help"}:
             print_help()
         elif choice in {"q", "quit", "exit", "0"}:
@@ -950,19 +1086,30 @@ def interactive_loop(cfg: ConsoleConfig) -> int:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    args = list(argv or sys.argv[1:])
+    try:
+        parsed = parse_global_args(list(argv or sys.argv[1:]))
+    except ValueError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 2
+    args = parsed.command_args
     command = args[0] if args else "menu"
     cfg = ConsoleConfig.from_env()
+    cfg.color_mode = parsed.color_mode
     if command in {"", "menu"}:
+        if parsed.once:
+            print_menu(cfg)
+            return 0
         return interactive_loop(cfg)
     if command == "status":
         status_args = parse_status_args(args[1:])
+        if status_args.color:
+            cfg.color_mode = status_args.color
         if status_args.verbose:
             return show_status_verbose(cfg)
         return show_status_dashboard(
             cfg,
             refresh_seconds=max(status_args.refresh, 0.5),
-            once=status_args.once,
+            once=status_args.once or parsed.once,
             no_color=status_args.no_color,
         )
     if command == "compact":

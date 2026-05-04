@@ -32,9 +32,11 @@ For day-to-day operation, prefer the root console:
 ./dev
 ```
 
-It shows task-loop status, runner and `codex exec` process counts, and menu actions for resume, drain, checks, and logs without requiring long command recall.
+It shows a color dashboard first: progress, next task, runner state, folded process summary, latest run, latest verify, and shortcut actions for resume, drain, checks, and logs without requiring long command recall.
 
-`./dev status` is the daily watching view. In a TTY it renders a compact color dashboard and refreshes every 5 seconds; in non-TTY contexts it prints one snapshot and exits. Use `./dev status --verbose` for the full legacy report with raw paths, process details, recent run records, verify excerpts, and recovery hints.
+Color defaults to `always`. Use `./dev --color never` or `NO_COLOR=1 ./dev` for plain text. Use `./dev --once` for one homepage render, and `./dev processes` or `./dev status --verbose` for full process commands.
+
+`./dev status` is the daily watching view. It shares the same dashboard and supports `--color always|never|auto`; use `./dev status --verbose` for the full legacy report with raw paths, process details, recent run records, verify excerpts, and recovery hints.
 
 Before starting or resuming, the console blocks duplicate live runners and asks for foreground/background execution, Git mode, task count, and optional stop targets.
 For script work, use `./dev preview` to inspect the command without execution, or `./dev dry-run` to run against temporary progress/log/summary directories.

@@ -50,6 +50,11 @@ def assert_contains(text: str, needle: str, label: str) -> None:
         raise CheckFailure(f"missing text for {label}: {needle}")
 
 
+def assert_not_contains(text: str, needle: str, label: str) -> None:
+    if needle in text:
+        raise CheckFailure(f"unexpected text for {label}: {needle}")
+
+
 def assert_not_exists(path: Path, label: str) -> None:
     if path.exists():
         raise CheckFailure(f"unexpected path exists for {label}: {path}")
@@ -205,6 +210,33 @@ def check_real_status(h: Harness) -> None:
     assert_contains(dev_verbose, "进程快照", "dev verbose process snapshot")
     preflight = h.dev_run("dev-preflight", ["preflight"]).stdout
     assert_contains(preflight, "Preflight", "dev preflight header")
+
+
+def check_dev_home(h: Harness) -> None:
+    log("dev home dashboard and color controls")
+    home = h.run([h.dev, "--once"], env={"DEV_COLOR": "always", "NO_COLOR": ""}).stdout
+    assert_contains(home, "\033[", "dev home default color")
+    assert_contains(home, "AreaMatrix Task Loop", "dev home dashboard header")
+    assert_contains(home, "快捷键", "dev home shortcuts")
+    assert_contains(home, "other codex=", "dev home folded process count")
+    assert_not_contains(home, "/Applications/Codex.app/Contents/Resources/codex exec", "dev home folded process command")
+
+    no_color = h.run([h.dev, "--color", "never", "--once"]).stdout
+    assert_not_contains(no_color, "\033[", "dev home color never")
+    assert_contains(no_color, "快捷键", "dev home no-color shortcuts")
+
+    env_color_never = h.run([h.dev, "--once"], env={"DEV_COLOR": "never"}).stdout
+    assert_not_contains(env_color_never, "\033[", "dev home DEV_COLOR never")
+
+    env_no_color = h.run([h.dev, "--once"], env={"NO_COLOR": "1"}).stdout
+    assert_not_contains(env_no_color, "\033[", "dev home NO_COLOR")
+
+    status_color = h.run([h.dev, "status", "--once", "--color", "always"], env={"NO_COLOR": ""}).stdout
+    assert_contains(status_color, "\033[", "dev status color always")
+
+    processes = h.run([h.dev, "processes"]).stdout
+    assert_contains(processes, "进程快照", "dev processes header")
+    assert_contains(processes, "host codex exec", "dev processes full section")
 
 
 def check_dev_console(h: Harness) -> None:
@@ -607,6 +639,7 @@ def run_check(root_dir: Path) -> int:
             check_repo_health(harness)
             check_v2_changes(harness)
             check_real_status(harness)
+            check_dev_home(harness)
             check_dev_console(harness)
             check_runner_core(harness)
             check_git_helpers(harness)
