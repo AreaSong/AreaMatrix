@@ -111,6 +111,35 @@ struct MainLoadingView: View {
     }
 }
 
+struct InitializingStepView: View {
+    let draft: RepositoryInitializationDraft
+
+    private var isCreateMode: Bool {
+        draft.mode == .createEmpty
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            ProgressView()
+                .controlSize(.large)
+            Text(isCreateMode ? "正在创建资料库" : "正在接管已有目录")
+                .font(.title2.weight(.semibold))
+                .accessibilityAddTraits(.isHeader)
+            Text(draft.validation.repoPath)
+                .font(.system(.body, design: .monospaced))
+                .textSelection(.enabled)
+                .lineLimit(3)
+            Text(isCreateMode ? "正在初始化 .areamatrix/ 元数据。" : "正在创建内部元数据并扫描现有文件。")
+                .font(.callout)
+            Text("AreaMatrix 不会移动、重命名、删除或覆盖用户原文件。")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+        }
+        .padding(48)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+    }
+}
+
 struct MainRepoErrorView: View {
     let repoPath: String
     let mapping: CoreErrorMappingSnapshot?
@@ -206,6 +235,7 @@ struct ConfirmInitStepView: View {
                     header
                     pathBox
                     planSection
+                    confirmationIssueSection
                     safetySection
                     iCloudWarning
                 }
@@ -226,7 +256,7 @@ struct ConfirmInitStepView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(isCreateEmpty ? "将创建新的 AreaMatrix 资料库" : "将接管已有目录")
+            Text(isCreateMode ? "将创建新的 AreaMatrix 资料库" : "将接管已有目录")
                 .font(.system(size: 34, weight: .semibold))
                 .accessibilityAddTraits(.isHeader)
             Text("确认后才会开始写入 .areamatrix/ 元数据。")
@@ -250,11 +280,23 @@ struct ConfirmInitStepView: View {
     }
 
     private var planSection: some View {
-        InitPlanList(title: isCreateEmpty ? "将创建" : "将执行", items: isCreateEmpty ? createItems : adoptItems)
+        InitPlanList(title: isCreateMode ? "将创建" : "将执行", items: isCreateMode ? createItems : adoptItems)
     }
 
     private var safetySection: some View {
         InitPlanList(title: "不会执行", items: safetyItems, iconName: "checkmark.shield")
+    }
+
+    @ViewBuilder
+    private var confirmationIssueSection: some View {
+        if let issue = ConfirmInitStepRules.blockingMessage(for: draft) {
+            Label(issue, systemImage: "exclamationmark.triangle")
+                .font(.callout)
+                .foregroundStyle(.red)
+                .padding(12)
+                .frame(maxWidth: 680, alignment: .leading)
+                .background(Color.red.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
+        }
     }
 
     @ViewBuilder
@@ -271,38 +313,111 @@ struct ConfirmInitStepView: View {
 
     private var footer: some View {
         HStack {
-            Button("Back", action: onBack)
-            Button("Cancel Setup") {
-                isCancelConfirmationPresented = true
+            if footerActions.contains(.back) {
+                Button("Back", action: onBack)
             }
-            Button("Change Path", action: onChangePath)
+            if footerActions.contains(.cancelSetup) {
+                Button("Cancel Setup") {
+                    isCancelConfirmationPresented = true
+                }
+            }
+            if footerActions.contains(.changePath) {
+                Button("Change Path", action: onChangePath)
+            }
             Spacer()
-            Button(isCreateEmpty ? "Create Repository" : "Adopt Folder", action: primaryAction)
-                .keyboardShortcut(.defaultAction)
-                .buttonStyle(.borderedProminent)
-                .disabled(!canRunPrimaryAction)
+            if footerActions.contains(.primary) {
+                Button(isCreateMode ? "Create Repository" : "Adopt Folder", action: primaryAction)
+                    .keyboardShortcut(.defaultAction)
+                    .buttonStyle(.borderedProminent)
+                    .disabled(!canRunPrimaryAction)
+            }
         }
         .frame(maxWidth: 680)
         .padding(.top, 18)
     }
 
     private var primaryAction: () -> Void {
-        isCreateEmpty ? onCreateEmpty : onAdoptExisting
+        isCreateMode ? onCreateEmpty : onAdoptExisting
     }
 
     private var canRunPrimaryAction: Bool {
-        isCreateEmpty || isAdoptExisting
+        ConfirmInitStepRules.canRunPrimaryAction(for: draft)
     }
 
-    private var isCreateEmpty: Bool {
-        draft.mode == .createEmpty && draft.validation.recommendedMode == .createEmpty
+    private var footerActions: [ConfirmInitFooterAction] {
+        ConfirmInitStepRules.footerActions(for: draft)
     }
 
-    private var isAdoptExisting: Bool {
+    private var isCreateMode: Bool {
+        draft.mode == .createEmpty
+    }
+}
+
+enum ConfirmInitFooterAction: Equatable {
+    case back
+    case cancelSetup
+    case changePath
+    case primary
+}
+
+enum ConfirmInitStepRules {
+    static func footerActions(for draft: RepositoryInitializationDraft) -> [ConfirmInitFooterAction] {
+        guard canRunPrimaryAction(for: draft) else {
+            return [.back, .cancelSetup]
+        }
+
+        return [.back, .cancelSetup, .changePath, .primary]
+    }
+
+    static func canRunPrimaryAction(for draft: RepositoryInitializationDraft) -> Bool {
+        blockingMessage(for: draft) == nil
+    }
+
+    static func canCreateEmpty(for draft: RepositoryInitializationDraft) -> Bool {
+        draft.mode == .createEmpty &&
+            draft.validation.recommendedMode == .createEmpty &&
+            draft.validation.isEmpty &&
+            !draft.validation.isInitialized
+    }
+
+    static func canAdoptExisting(for draft: RepositoryInitializationDraft) -> Bool {
         draft.mode == .adoptExisting &&
             draft.validation.recommendedMode == .adoptExisting &&
             !draft.validation.isEmpty &&
             !draft.validation.isInitialized
+    }
+
+    static func blockingMessage(for draft: RepositoryInitializationDraft) -> String? {
+        let validation = draft.validation
+
+        guard validation.exists, validation.isDirectory else {
+            return "路径状态已变化，请返回校验页。"
+        }
+        guard validation.isReadable, validation.isWritable else {
+            return "路径权限已变化，请返回校验页。"
+        }
+        guard !validation.isInsideAreaMatrix else {
+            return "请选择资料库根目录，而不是 .areamatrix 内部目录。"
+        }
+        guard !validation.isInitialized else {
+            return "该路径已经是 AreaMatrix 资料库，请返回校验页。"
+        }
+        guard !validation.hasUnfinishedScanSession else {
+            return "该资料库存在未完成的扫描记录，请返回修复流程。"
+        }
+        guard !validation.hasMissingEnvironmentChecks else {
+            return "路径环境检查缺失，请返回校验页。"
+        }
+        guard validation.recommendedMode == draft.mode else {
+            return "路径初始化模式已变化，请返回校验页。"
+        }
+
+        switch draft.mode {
+        case .createEmpty:
+            return validation.isEmpty ? nil : "路径已不是空目录，请返回校验页。"
+        case .adoptExisting:
+            return validation.isEmpty ? "路径已变为空目录，请返回校验页。" : nil
+        }
     }
 }
 

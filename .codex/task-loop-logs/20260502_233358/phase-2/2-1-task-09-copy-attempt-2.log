@@ -1,0 +1,45 @@
+**一、执行结论**
+
+已完成。源码阻塞项已修复；manifest 原始 `xcodebuild test` 在当前沙箱仍被 `testmanagerd` 阻断，但仓库认可的 fallback 验证已通过 44 个 XCTest。
+
+**二、执行范围**
+
+单任务：`2-1/task-09`
+
+修改文件：
+- [AppShellModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/AppShellModel.swift:11)
+- [AreaMatrixApp.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/App/AreaMatrixApp.swift:114)
+- [MainWindow.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/MainWindow.swift:121)
+- [ValidatePathIntegrationTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ValidatePathIntegrationTests.swift:167)
+
+**三、完成情况**
+
+- S1-04 主按钮现在先进入 `.initializing(draft)`，由 `InitializingStepView` 渲染 S1-05 handoff，不再直接复用 `mainLoading`。
+- S1-04 错误态 footer 现在按规则只显示 `Back` / `Cancel Setup`，不再显示 `Change Path` 或主按钮。
+- 补了回归测试：覆盖错误态 footer action、主按钮进入 initializing route、写入前 revalidate 阻断路径状态变化。
+- 未触碰 `Forbidden Touches`：`core/src/**` 无改动；`core/area_matrix.udl` 无改动。
+- 未新增 control map 之外功能；新增的 initializing view 只作为 S1-04 到 S1-05 的 wiring/handoff。
+
+**四、工程质量**
+
+结构保持在现有模型内：route 状态在 `OnboardingModel`，页面渲染在 SwiftUI view，规则抽在 `ConfirmInitStepRules` 并有测试。没有新增依赖、mock-only 生产路径、硬编码通过态或一次性脚本逻辑。用户文件安全边界没有扩大：本次没有增加任何文件删除、移动、覆盖或重命名行为。
+
+**五、验证情况**
+
+通过：
+- `python3 tasks/prompts/_shared/prompt_pipeline.py audit --pages`：S1-04 Missing/Extra 均为 None。
+- `git diff --check`
+- `xcodebuild -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' build CODE_SIGNING_ALLOWED=NO`
+- `bash scripts/check-macos-tests.sh`：fallback `xcrun xctest` 44 tests, 0 failures。
+- `git status --short -- core/src core/area_matrix.udl ...`：只显示 Expected New Paths 内的 macOS 源码/测试改动。
+
+失败但属环境阻塞：
+- `xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：构建通过后，测试 runner 因 `com.apple.testmanagerd.control` sandbox restriction 退出 65。
+
+未运行：
+- `swiftformat --lint .`、`swiftlint --strict`：当前环境找不到 `swiftformat` / `swiftlint` 可执行文件。
+
+**六、风险与后续**
+
+剩余风险：未做真实 macOS UI 手工点击验证；标准 `xcodebuild test` 仍需在非受限 macOS 环境补跑。建议下一个任务进入 `2-1/task-10`，继续实现 S1-05 initializing 的完整进度/取消语义。当前工作区还有 task-loop 运行产物脏状态，属于本次开始前已存在的执行器证据文件，不是本次源码修复内容。
+

@@ -164,6 +164,111 @@ final class ValidatePathRepairRegressionTests: XCTestCase {
         XCTAssertEqual(model.route, .mainLoading("/tmp/repo"))
     }
 
+    func testConfirmInitRulesRequireMatchingSafeDraftState() {
+        let createDraft = RepositoryInitializationDraft(
+            validation: .fixture(repoPath: "/tmp/create"),
+            mode: .createEmpty,
+            scanSession: nil
+        )
+        let adoptDraft = RepositoryInitializationDraft(
+            validation: .fixture(
+                repoPath: "/tmp/adopt",
+                isEmpty: false,
+                issues: [.nonEmptyDirectory],
+                recommendedMode: .adoptExisting
+            ),
+            mode: .adoptExisting,
+            scanSession: nil
+        )
+        let staleCreateDraft = RepositoryInitializationDraft(
+            validation: .fixture(repoPath: "/tmp/stale", isEmpty: false),
+            mode: .createEmpty,
+            scanSession: nil
+        )
+
+        XCTAssertTrue(ConfirmInitStepRules.canRunPrimaryAction(for: createDraft))
+        XCTAssertTrue(ConfirmInitStepRules.canRunPrimaryAction(for: adoptDraft))
+        XCTAssertFalse(ConfirmInitStepRules.canRunPrimaryAction(for: staleCreateDraft))
+        XCTAssertEqual(ConfirmInitStepRules.footerActions(for: createDraft), [
+            .back, .cancelSetup, .changePath, .primary,
+        ])
+        XCTAssertEqual(ConfirmInitStepRules.footerActions(for: staleCreateDraft), [.back, .cancelSetup])
+        XCTAssertEqual(
+            ConfirmInitStepRules.blockingMessage(for: staleCreateDraft),
+            "路径已不是空目录，请返回校验页。"
+        )
+    }
+
+    @MainActor
+    func testConfirmInitPrimaryActionShowsInitializingRouteBeforeCoreWriteCompletes() async {
+        let validation = RepoPathValidationSnapshot.fixture(repoPath: "/tmp/repo")
+        let writer = RecordingSettingsWriter()
+        let initializer = PausingRepositoryInitializer()
+        let model = OnboardingModel(
+            settingsReader: StaticSettingsReader(repoPath: nil),
+            settingsWriter: writer,
+            configLoader: RecordingConfigLoader(config: .fixture(repoPath: "/tmp/repo")),
+            pathValidator: RecordingPathValidator(validation: validation),
+            repositoryInitializer: initializer,
+            helpOpener: NoopWelcomeHelpOpener()
+        )
+
+        model.updateRepositoryPath("/tmp/repo")
+        await model.continueFromChoosePath()
+        model.continueFromValidatePath()
+        let draft = RepositoryInitializationDraft(validation: validation, mode: .createEmpty, scanSession: nil)
+        let initializationTask = Task {
+            await model.createEmptyRepositoryFromConfirmInit()
+        }
+
+        await initializer.waitUntilStarted()
+
+        XCTAssertEqual(model.route, .initializing(draft))
+
+        await initializationTask.value
+        let createdPaths = await initializer.createdRepoPaths()
+
+        XCTAssertEqual(createdPaths, ["/tmp/repo"])
+        XCTAssertEqual(writer.savedRepoPaths, ["/tmp/repo"])
+        XCTAssertEqual(model.route, .mainLoading("/tmp/repo"))
+    }
+
+    @MainActor
+    func testConfirmInitRevalidatesBeforeWritingAndBlocksChangedPathState() async {
+        let initialValidation = RepoPathValidationSnapshot.fixture(repoPath: "/tmp/repo")
+        let changedValidation = RepoPathValidationSnapshot.fixture(
+            repoPath: "/tmp/repo",
+            isEmpty: false,
+            issues: [.nonEmptyDirectory],
+            recommendedMode: .adoptExisting
+        )
+        let validator = SequencePathValidator(validations: [initialValidation, changedValidation])
+        let writer = RecordingSettingsWriter()
+        let initializer = RecordingRepositoryInitializer()
+        let model = OnboardingModel(
+            settingsReader: StaticSettingsReader(repoPath: nil),
+            settingsWriter: writer,
+            configLoader: RecordingConfigLoader(config: .fixture(repoPath: "/tmp/repo")),
+            pathValidator: validator,
+            repositoryInitializer: initializer,
+            helpOpener: NoopWelcomeHelpOpener()
+        )
+
+        model.updateRepositoryPath("/tmp/repo")
+        await model.continueFromChoosePath()
+        model.continueFromValidatePath()
+        await model.createEmptyRepositoryFromConfirmInit()
+        let createdPaths = await initializer.createdRepoPaths()
+        let adoptedPaths = await initializer.adoptedRepoPaths()
+
+        XCTAssertEqual(createdPaths, [])
+        XCTAssertEqual(adoptedPaths, [])
+        XCTAssertEqual(writer.savedRepoPaths, [])
+        XCTAssertEqual(model.repositoryPathValidation, changedValidation)
+        XCTAssertEqual(model.repositoryPathError, "路径状态已变化，请返回重新校验")
+        XCTAssertEqual(model.route, .validatePath)
+    }
+
     func testDefaultCoreAdoptExistingPreservesUserFiles() async throws {
         let repoURL = try makeTemporaryAdoptRepoURL()
         defer { try? FileManager.default.removeItem(at: repoURL) }
@@ -241,6 +346,22 @@ private actor RecordingPathValidator: CoreRepositoryPathValidating {
     }
 }
 
+private actor SequencePathValidator: CoreRepositoryPathValidating {
+    private var validations: [RepoPathValidationSnapshot]
+
+    init(validations: [RepoPathValidationSnapshot]) {
+        self.validations = validations
+    }
+
+    func validateRepoPath(repoPath: String) async throws -> RepoPathValidationSnapshot {
+        guard !validations.isEmpty else {
+            throw CoreError.Config(reason: "missing validation fixture")
+        }
+
+        return validations.removeFirst()
+    }
+}
+
 private actor RecordingRepositoryInitializer: CoreRepositoryInitializing {
     private var createdPaths: [String] = []
     private var adoptedPaths: [String] = []
@@ -255,6 +376,32 @@ private actor RecordingRepositoryInitializer: CoreRepositoryInitializing {
 
     func createdRepoPaths() -> [String] { createdPaths }
     func adoptedRepoPaths() -> [String] { adoptedPaths }
+}
+
+private actor PausingRepositoryInitializer: CoreRepositoryInitializing {
+    private var createdPaths: [String] = []
+    private var adoptedPaths: [String] = []
+    private var didStart = false
+
+    func initializeEmptyRepository(repoPath: String) async throws {
+        createdPaths.append(repoPath)
+        didStart = true
+        try await Task.sleep(nanoseconds: 100_000_000)
+    }
+
+    func adoptExistingRepository(repoPath: String) async throws {
+        adoptedPaths.append(repoPath)
+        didStart = true
+        try await Task.sleep(nanoseconds: 100_000_000)
+    }
+
+    func waitUntilStarted() async {
+        while !didStart {
+            await Task.yield()
+        }
+    }
+
+    func createdRepoPaths() -> [String] { createdPaths }
 }
 
 private struct StaticExistingRepositoryMetadataReader: ExistingRepositoryMetadataReading {

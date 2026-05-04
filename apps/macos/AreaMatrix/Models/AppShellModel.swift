@@ -8,6 +8,7 @@ final class OnboardingModel: ObservableObject {
         case choosePath
         case validatePath
         case confirmRepositoryInitialization(RepositoryInitializationDraft)
+        case initializing(RepositoryInitializationDraft)
         case mainLoading(String)
         case mainRepoError(String, CoreErrorMappingSnapshot?)
         case dbRepairConfirm(String, ScanSessionSnapshot?, CoreErrorMappingSnapshot?)
@@ -331,7 +332,7 @@ final class OnboardingModel: ObservableObject {
         guard case .confirmRepositoryInitialization(let draft) = route, draft.mode == mode else { return }
 
         let repoPath = draft.validation.repoPath
-        route = .mainLoading(repoPath)
+        route = .initializing(draft)
 
         do {
             let latestValidation = try await pathValidator.validateRepoPath(repoPath: repoPath)
