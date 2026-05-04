@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Sequence
 
 from .build import run_bindings_update, run_core_build
-from .changes import run_changes_doctor, run_changes_preview
+from .changes import run_changes_doctor, run_changes_generate, run_changes_preview
 from .checks import (
     run_all_check,
     run_diff_check,
@@ -19,6 +19,7 @@ from .checks import (
 )
 from .common import ToolError, print_error, project_root
 from .macos import run_macos_tests
+from .workflow import run_workflow_doctor, run_workflow_plan, run_workflow_queue, run_workflow_status
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -64,6 +65,29 @@ def _build_parser() -> argparse.ArgumentParser:
     changes_doctor.add_argument("--file", help="Validate one change file instead of all v2 changes")
     changes_preview = changes_sub.add_parser("preview", help="Preview v2 workflow tasks without generating prompts")
     changes_preview.add_argument("--file", help="Preview one change file instead of all v2 changes")
+    changes_generate = changes_sub.add_parser("generate", help="Generate v2 prompt drafts from change tracking files")
+    changes_generate.add_argument("--file", help="Generate from one change file instead of all v2 changes")
+    changes_generate.add_argument("--feature", help="Generate only one feature id")
+    changes_generate.add_argument("--write", action="store_true", help="Write draft files instead of printing a preview")
+    changes_generate.add_argument("--out-dir", help="Draft output directory; defaults to workflow/versions/v2/drafts")
+    changes_generate.add_argument("--force", action="store_true", help="Allow overwriting existing draft files when --write is used")
+
+    workflow = subparsers.add_parser("workflow", help="Manage versioned workflow templates, plans, and queue candidates")
+    workflow_sub = workflow.add_subparsers(dest="workflow_command", required=True)
+    workflow_sub.add_parser("doctor", help="Validate versioned workflow structure and gates")
+    workflow_sub.add_parser("status", help="Show versioned workflow status and promotion gates")
+    workflow_plan = workflow_sub.add_parser("plan", help="Render docs-change ledger plans")
+    workflow_plan.add_argument("--version", default="v2", help="Workflow version to plan; defaults to v2")
+    workflow_plan.add_argument("--feature", help="Render only one feature id")
+    workflow_plan.add_argument("--write", action="store_true", help="Write plan files instead of printing a preview")
+    workflow_plan.add_argument("--out-dir", help="Plan output directory; defaults to workflow/versions/<version>/plans")
+    workflow_plan.add_argument("--force", action="store_true", help="Allow overwriting existing plan files when --write is used")
+    workflow_queue = workflow_sub.add_parser("queue", help="Render workflow queue candidates")
+    workflow_queue.add_argument("--version", default="v2", help="Workflow version to queue; defaults to v2")
+    workflow_queue.add_argument("--feature", help="Render only one feature id")
+    workflow_queue.add_argument("--write", action="store_true", help="Write queue candidate files instead of printing a preview")
+    workflow_queue.add_argument("--out-dir", help="Queue output directory; defaults to workflow/versions/<version>/queue")
+    workflow_queue.add_argument("--force", action="store_true", help="Allow overwriting existing queue files when --write is used")
 
     return parser
 
@@ -108,6 +132,16 @@ def main(argv: Sequence[str] | None = None) -> int:
             return run_changes_doctor(root, args)
         if args.command == "changes" and args.changes_command == "preview":
             return run_changes_preview(root, args)
+        if args.command == "changes" and args.changes_command == "generate":
+            return run_changes_generate(root, args)
+        if args.command == "workflow" and args.workflow_command == "doctor":
+            return run_workflow_doctor(root, args)
+        if args.command == "workflow" and args.workflow_command == "status":
+            return run_workflow_status(root, args)
+        if args.command == "workflow" and args.workflow_command == "plan":
+            return run_workflow_plan(root, args)
+        if args.command == "workflow" and args.workflow_command == "queue":
+            return run_workflow_queue(root, args)
         parser.error("unsupported command")
         return 2
     except ToolError as exc:

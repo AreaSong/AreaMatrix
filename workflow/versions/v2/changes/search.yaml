@@ -1,0 +1,164 @@
+id: v2-search-workflow
+title: Stage 2 search workflow planning
+version: v2
+status: draft
+features:
+  - id: v2-search-query
+    module: search
+    intent: Add the v2 search query surface as a future prompt-workflow unit.
+    depends_on: []
+    docs:
+      source:
+        - docs/ux/page-specs/stage-2-experience/S2-01-search-results.md
+        - docs/core/capability-specs/stage-2-experience/C2-01-search-query-files.md
+        - docs/api/core-api.md
+      update:
+        - docs/architecture/mvp-control-map.md
+        - tasks/prompts/README.md
+      api:
+        - docs/api/core-api.md
+      udl:
+        - core/area_matrix.udl
+    doc_changes:
+      - file: docs/ux/page-specs/stage-2-experience/S2-01-search-results.md
+        operation: reference
+        line_start: 23
+        line_end: 31
+        heading: 页面功能
+        excerpt: 支持关键词大小写不敏感、模糊匹配和中文拼音首字母匹配。
+        summary: Search results define query behavior, result presentation, and matcher expectations for v2 search.
+        depends_on: []
+        tasks:
+          - docs-contract
+          - macos-search-ui
+      - file: docs/core/capability-specs/stage-2-experience/C2-01-search-query-files.md
+        operation: reference
+        line_start: 9
+        line_end: 19
+        heading: Core API
+        excerpt: search_files(repo_path, query, filter, sort, pagination) -> SearchResultPage
+        summary: Core capability defines the search_files contract and result shape for query execution.
+        depends_on:
+          - docs/ux/page-specs/stage-2-experience/S2-01-search-results.md
+        tasks:
+          - docs-contract
+          - core-query
+      - file: docs/api/core-api.md
+        operation: reference
+        line_start: 436
+        line_end: 444
+        heading: Stage 2-4 API 规划入口
+        excerpt: Stage 2：搜索、标签、Smart List、Undo/Redo
+        summary: Core API currently keeps Stage 2 search as capability-spec planning until promoted to UDL.
+        depends_on:
+          - docs/core/capability-specs/stage-2-experience/C2-01-search-query-files.md
+        tasks:
+          - docs-contract
+          - core-query
+    code_impacts:
+      existing:
+        - docs/ux/page-specs/stage-2-experience/S2-01-search-results.md
+        - docs/core/capability-specs/stage-2-experience/C2-01-search-query-files.md
+        - docs/api/core-api.md
+        - docs/architecture/mvp-control-map.md
+        - core/area_matrix.udl
+        - apps/macos/AreaMatrix/**
+      expected:
+        - apps/macos/AreaMatrix/Features/Search/**
+        - core/src/search/**
+      tests:
+        - apps/macos/AreaMatrixTests/**
+        - core/tests/**
+    risk:
+      level: High
+      boundaries:
+        - Does not move, delete, rename, or overwrite user files.
+        - Does not connect to the live v1 task-loop queue.
+        - Core API and UDL changes must stay aligned with docs/api/core-api.md.
+    task_split:
+      - id: docs-contract
+        title: Align source docs, Core API notes, and control-map references.
+        validation:
+          - ./dev workflow doctor
+          - ./dev check prompts
+      - id: core-query
+        title: Implement or revise the core query capability behind search results.
+        validation:
+          - cargo fmt --all -- --check
+          - cargo clippy --all-targets --all-features -- -D warnings
+          - cargo test --workspace
+      - id: macos-search-ui
+        title: Wire the macOS search results UI to the documented Core capability.
+        validation:
+          - ./dev test macos
+  - id: v2-search-filters
+    module: search
+    intent: Add typed filters after the base search query capability is available.
+    depends_on:
+      - v2-search-query
+    docs:
+      source:
+        - docs/ux/page-specs/stage-2-experience/S2-02-search-filters.md
+        - docs/core/capability-specs/stage-2-experience/C2-02-search-filters.md
+        - docs/api/core-api.md
+      update:
+        - docs/architecture/mvp-control-map.md
+      api:
+        - docs/api/core-api.md
+      udl:
+        - core/area_matrix.udl
+    doc_changes:
+      - file: docs/ux/page-specs/stage-2-experience/S2-02-search-filters.md
+        operation: reference
+        line_start: 23
+        line_end: 32
+        heading: 页面功能
+        excerpt: 将过滤条件显示为 chips。
+        summary: Search filters define user-facing filter controls and chip behavior.
+        depends_on:
+          - docs/ux/page-specs/stage-2-experience/S2-01-search-results.md
+        tasks:
+          - filter-contract
+      - file: docs/core/capability-specs/stage-2-experience/C2-02-search-filters.md
+        operation: reference
+        line_start: 8
+        line_end: 19
+        heading: Core API
+        excerpt: list_filter_facets(repo_path, query) -> SearchFacets
+        summary: Core capability defines filter facets and filtered result expectations.
+        depends_on:
+          - docs/core/capability-specs/stage-2-experience/C2-01-search-query-files.md
+        tasks:
+          - filter-contract
+          - filter-core-bridge
+    code_impacts:
+      existing:
+        - docs/ux/page-specs/stage-2-experience/S2-02-search-filters.md
+        - docs/core/capability-specs/stage-2-experience/C2-02-search-filters.md
+        - docs/api/core-api.md
+        - docs/architecture/mvp-control-map.md
+        - core/area_matrix.udl
+        - apps/macos/AreaMatrix/**
+      expected:
+        - apps/macos/AreaMatrix/Features/Search/**
+        - core/src/search/**
+      tests:
+        - apps/macos/AreaMatrixTests/**
+        - core/tests/**
+    risk:
+      level: High
+      boundaries:
+        - Filter changes must be read-only until the user applies an explicit action.
+        - Query errors must not mutate saved searches or file metadata.
+        - Does not connect to the live v1 task-loop queue.
+    task_split:
+      - id: filter-contract
+        title: Define filter semantics, empty states, and error boundaries.
+        validation:
+          - ./dev workflow plan --version v2
+          - ./dev check prompts
+      - id: filter-core-bridge
+        title: Wire filter DTOs through Core API, UDL, and Swift bridge.
+        validation:
+          - ./dev build core --profile debug
+          - ./dev test macos

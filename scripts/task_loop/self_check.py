@@ -194,6 +194,89 @@ def check_v2_changes(h: Harness) -> None:
     assert_contains(preview, "V2 change preview", "changes preview header")
     assert_contains(preview, "preview only; no prompt files are generated", "changes preview no writes")
     assert_contains(preview, "v2-search-query", "changes preview feature")
+    generated = h.run([h.dev, "changes", "generate"]).stdout
+    assert_contains(generated, "V2 generated prompt drafts", "changes generate header")
+    assert_contains(generated, "preview only; no files written", "changes generate no writes")
+    assert_contains(generated, "workflow/versions/v2/drafts/v2-search-query/manifest.md", "changes generate manifest path")
+    assert_contains(generated, "v2-search-query/docs-contract", "changes generate semantic task")
+    assert_contains(generated, "VERIFY_RESULT: PASS", "changes generate verify prompt")
+
+    feature_only = h.run([h.dev, "changes", "generate", "--feature", "v2-search-query"]).stdout
+    assert_contains(feature_only, "v2-search-query/docs-contract", "changes generate feature filter include")
+    assert_not_contains(feature_only, "v2-search-filters/filter-contract", "changes generate feature filter exclude")
+
+    draft_out = h.tmp / "v2-drafts"
+    first_write = h.run([h.dev, "changes", "generate", "--write", "--out-dir", str(draft_out)]).stdout
+    assert_contains(first_write, "v2 change generate: wrote draft files", "changes generate write")
+    assert_exists(draft_out / "v2-search-query/manifest.md", "changes generate manifest write")
+    assert_exists(draft_out / "v2-search-query/docs-contract.copy.md", "changes generate copy write")
+    assert_exists(draft_out / "v2-search-query/docs-contract.verify.md", "changes generate verify write")
+
+    second_write = h.run([h.dev, "changes", "generate", "--write", "--out-dir", str(draft_out)], check=False)
+    if second_write.returncode == 0:
+        raise CheckFailure("v2 draft overwrite unexpectedly succeeded without --force")
+    assert_contains(second_write.stdout + second_write.stderr, "use --force to overwrite", "changes generate overwrite guard")
+
+    force_write = h.run([h.dev, "changes", "generate", "--write", "--force", "--out-dir", str(draft_out)]).stdout
+    assert_contains(force_write, "v2 change generate: wrote draft files", "changes generate force write")
+
+    bad_force = h.run([h.dev, "changes", "generate", "--force"], check=False)
+    if bad_force.returncode == 0:
+        raise CheckFailure("v2 draft generate unexpectedly accepted --force without --write")
+    assert_contains(bad_force.stdout + bad_force.stderr, "--force requires --write", "changes generate force guard")
+
+
+def check_versioned_workflow(h: Harness) -> None:
+    log("versioned workflow tracking")
+    doctor = h.run([h.dev, "workflow", "doctor"]).stdout
+    assert_contains(doctor, "workflow doctor: OK", "workflow doctor")
+    assert_contains(doctor, "v1 gate: queue-only for v2", "workflow v1 gate")
+
+    status = h.run([h.dev, "workflow", "status"]).stdout
+    assert_contains(status, "v1-mvp: live-running", "workflow status v1")
+    assert_contains(status, "v2: planning", "workflow status v2")
+    assert_contains(status, "must not promote to tasks/prompts/**", "workflow promote gate")
+
+    plan = h.run([h.dev, "workflow", "plan", "--version", "v2", "--feature", "v2-search-query"]).stdout
+    assert_contains(plan, "Workflow plans", "workflow plan header")
+    assert_contains(plan, "Docs Change Ledger", "workflow plan ledger")
+    assert_contains(plan, "23-31", "workflow plan line range")
+    assert_contains(plan, "Code Impact", "workflow plan code impact")
+    assert_contains(plan, "blocked while `v1-mvp` is `live-running`", "workflow plan v1 block")
+
+    queue = h.run([h.dev, "workflow", "queue", "--version", "v2", "--feature", "v2-search-query"]).stdout
+    assert_contains(queue, "Workflow queue candidates", "workflow queue header")
+    assert_contains(queue, "depends_on: []", "workflow queue empty deps")
+    assert_contains(queue, "live_queue_blocked: true", "workflow queue live block")
+
+    plan_out = h.tmp / "workflow-plans"
+    first_plan_write = h.run([h.dev, "workflow", "plan", "--version", "v2", "--write", "--out-dir", str(plan_out)]).stdout
+    assert_contains(first_plan_write, "workflow plan: wrote files", "workflow plan write")
+    assert_exists(plan_out / "v2-search-query.plan.md", "workflow plan file")
+    second_plan_write = h.run([h.dev, "workflow", "plan", "--version", "v2", "--write", "--out-dir", str(plan_out)], check=False)
+    if second_plan_write.returncode == 0:
+        raise CheckFailure("workflow plan overwrite unexpectedly succeeded without --force")
+    assert_contains(second_plan_write.stdout + second_plan_write.stderr, "use --force to overwrite", "workflow plan overwrite guard")
+    h.run([h.dev, "workflow", "plan", "--version", "v2", "--write", "--force", "--out-dir", str(plan_out)])
+    bad_plan_force = h.run([h.dev, "workflow", "plan", "--version", "v2", "--force"], check=False)
+    if bad_plan_force.returncode == 0:
+        raise CheckFailure("workflow plan unexpectedly accepted --force without --write")
+    assert_contains(bad_plan_force.stdout + bad_plan_force.stderr, "--force requires --write", "workflow plan force guard")
+
+    queue_out = h.tmp / "workflow-queue"
+    first_queue_write = h.run([h.dev, "workflow", "queue", "--version", "v2", "--write", "--out-dir", str(queue_out)]).stdout
+    assert_contains(first_queue_write, "workflow queue: wrote files", "workflow queue write")
+    assert_exists(queue_out / "v2-search-query/queue.yaml", "workflow queue yaml")
+    assert_exists(queue_out / "v2-search-query/queue.md", "workflow queue markdown")
+    second_queue_write = h.run([h.dev, "workflow", "queue", "--version", "v2", "--write", "--out-dir", str(queue_out)], check=False)
+    if second_queue_write.returncode == 0:
+        raise CheckFailure("workflow queue overwrite unexpectedly succeeded without --force")
+    assert_contains(second_queue_write.stdout + second_queue_write.stderr, "use --force to overwrite", "workflow queue overwrite guard")
+    h.run([h.dev, "workflow", "queue", "--version", "v2", "--write", "--force", "--out-dir", str(queue_out)])
+    bad_queue_force = h.run([h.dev, "workflow", "queue", "--version", "v2", "--force"], check=False)
+    if bad_queue_force.returncode == 0:
+        raise CheckFailure("workflow queue unexpectedly accepted --force without --write")
+    assert_contains(bad_queue_force.stdout + bad_queue_force.stderr, "--force requires --write", "workflow queue force guard")
 
 
 def check_real_status(h: Harness) -> None:
@@ -638,6 +721,7 @@ def run_check(root_dir: Path) -> int:
             check_static(harness)
             check_repo_health(harness)
             check_v2_changes(harness)
+            check_versioned_workflow(harness)
             check_real_status(harness)
             check_dev_home(harness)
             check_dev_console(harness)

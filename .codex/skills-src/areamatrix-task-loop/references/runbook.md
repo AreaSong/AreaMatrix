@@ -57,6 +57,39 @@ Dry-run proves only runner flow. It does not prove implementation, verification,
 
 `RISK_POLICY=allow` injects an explicit silent-approval context into copy-ready runs. The agent should still record risk, validation, and rollback notes, but should not pause for High / Mission-Critical confirmation unless the task would delete, move, overwrite, or otherwise destructively modify real user files.
 
+## Versioned Workflow Planning
+
+Future v* requirements are tracked outside the live v1 queue:
+
+```text
+workflow/versions/v2/changes/*.yaml
+```
+
+Use these commands before creating review artifacts:
+
+```bash
+./dev workflow doctor
+./dev workflow status
+./dev workflow plan --version v2
+./dev workflow queue --version v2
+./dev changes doctor
+./dev changes preview
+./dev changes generate
+```
+
+`workflow plan` creates the docs-change ledger. `workflow queue` creates queue candidates. `changes generate` creates the draft manifest / copy / verify package. All default to stdout preview and write nothing. Explicit writes require `--write`, and `--out-dir` should be used for temp validation:
+
+```bash
+./dev workflow plan --version v2 --write --out-dir /tmp/areamatrix-v2-plans
+./dev workflow queue --version v2 --write --out-dir /tmp/areamatrix-v2-queue
+./dev changes generate --feature v2-search-query
+./dev changes generate --write
+./dev changes generate --write --out-dir /tmp/areamatrix-v2-drafts
+./dev changes generate --write --force
+```
+
+Plans, queue candidates, and drafts are review artifacts only: they are not `tasks/prompts/**`, do not change `progress.json`, and must not be treated as live task-loop work. While `v1-mvp` is `live-running`, v2 may reach queue candidates but must not promote into `tasks/prompts/**`.
+
 ## Graceful Drain
 
 Use drain when the machine needs to shut down, token budget is nearly exhausted, or the operator wants a clean pause without leaving a half-finished `in_progress` task:

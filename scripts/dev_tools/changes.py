@@ -4,15 +4,18 @@ from __future__ import annotations
 
 import argparse
 import ast
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Sequence
 
 
 CHANGE_ROOT = Path("workflow/versions/v2/changes")
+DEFAULT_DRAFT_ROOT = Path("workflow/versions/v2/drafts")
 ALLOWED_STATUS = {"draft", "planned", "ready", "blocked", "archived"}
 ALLOWED_RISK = {"Low", "Medium", "High", "Mission-Critical"}
 SYNC_DOC_KEYS = ("update", "api", "udl")
+SLUG_RE = re.compile(r"^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$")
 
 
 class ChangeYAMLError(ValueError):
@@ -28,6 +31,23 @@ class FeatureRecord:
     @property
     def feature_id(self) -> str:
         return str(self.feature.get("id", ""))
+
+
+@dataclass(frozen=True)
+class DraftArtifact:
+    path: Path
+    content: str
+
+
+@dataclass(frozen=True)
+class DraftTask:
+    task_id: str
+    feature_id: str
+    task_key: str
+    title: str
+    manifest: str
+    copy_prompt: str
+    verify_prompt: str
 
 
 def parse_scalar(raw: str, path: Path, line_no: int) -> Any:
@@ -223,6 +243,10 @@ def validate_feature(root: Path, path: Path, index: int, feature: dict[str, Any]
             errors.append(f"{prefix}: missing field: {key}")
     if not isinstance(feature.get("id"), str) or not str(feature.get("id")).strip():
         errors.append(f"{prefix}: id must be a non-empty string")
+    elif not SLUG_RE.fullmatch(str(feature.get("id"))):
+        errors.append(f"{prefix}: id must be a lowercase slug")
+    elif not str(feature.get("id")).startswith("v2-"):
+        errors.append(f"{prefix}: id must start with v2-")
     if "depends_on" in feature and not isinstance(feature.get("depends_on"), list):
         errors.append(f"{prefix}: depends_on must be a list")
     docs = feature.get("docs")
@@ -259,6 +283,7 @@ def validate_feature(root: Path, path: Path, index: int, feature: dict[str, Any]
     if not isinstance(task_split, list) or not task_split:
         errors.append(f"{prefix}: task_split must be a non-empty list")
     else:
+        task_ids: set[str] = set()
         for task_index, task in enumerate(task_split, start=1):
             if not isinstance(task, dict):
                 errors.append(f"{prefix}: task_split #{task_index} must be a mapping")
@@ -266,6 +291,13 @@ def validate_feature(root: Path, path: Path, index: int, feature: dict[str, Any]
             for task_key in ["id", "title"]:
                 if not isinstance(task.get(task_key), str) or not str(task.get(task_key)).strip():
                     errors.append(f"{prefix}: task_split #{task_index} missing {task_key}")
+            task_id = str(task.get("id", ""))
+            if task_id:
+                if not SLUG_RE.fullmatch(task_id):
+                    errors.append(f"{prefix}: task_split #{task_index} id must be a lowercase slug")
+                if task_id in task_ids:
+                    errors.append(f"{prefix}: duplicate task_split id: {task_id}")
+                task_ids.add(task_id)
             if "validation" in task and not isinstance(task.get("validation"), list):
                 errors.append(f"{prefix}: task_split #{task_index} validation must be a list")
 
@@ -363,6 +395,235 @@ def ordered_features(records: Sequence[FeatureRecord]) -> list[FeatureRecord]:
     return result
 
 
+def filter_feature_records(records: Sequence[FeatureRecord], feature_id: str | None) -> tuple[list[str], list[FeatureRecord]]:
+    if not feature_id:
+        return [], list(records)
+    selected = [record for record in records if record.feature_id == feature_id]
+    if not selected:
+        return [f"unknown feature id: {feature_id}"], []
+    return [], selected
+
+
+def bullet_lines(values: Sequence[Any], empty: str = "None") -> list[str]:
+    items = [str(value) for value in values if isinstance(value, str) and value.strip()]
+    return [f"- `{item}`" for item in items] if items else [f"- {empty}"]
+
+
+def plain_bullet_lines(values: Sequence[Any], empty: str = "None") -> list[str]:
+    items = [str(value) for value in values if isinstance(value, str) and value.strip()]
+    return [f"- {item}" for item in items] if items else [f"- {empty}"]
+
+
+def docs_map(feature: dict[str, Any]) -> dict[str, Any]:
+    return feature.get("docs", {}) if isinstance(feature.get("docs"), dict) else {}
+
+
+def risk_map(feature: dict[str, Any]) -> dict[str, Any]:
+    return feature.get("risk", {}) if isinstance(feature.get("risk"), dict) else {}
+
+
+def sync_targets(docs: dict[str, Any]) -> list[str]:
+    result: list[str] = []
+    seen: set[str] = set()
+    for key in SYNC_DOC_KEYS:
+        for value in as_list(docs.get(key)):
+            if isinstance(value, str) and value not in seen:
+                result.append(value)
+                seen.add(value)
+    return result
+
+
+def display_path(root: Path, path: Path) -> str:
+    try:
+        return str(path.resolve().relative_to(root.resolve()))
+    except ValueError:
+        return str(path)
+
+
+def task_validation(task: dict[str, Any]) -> list[Any]:
+    return as_list(task.get("validation"))
+
+
+def render_manifest_section(root: Path, record: FeatureRecord, task: dict[str, Any]) -> str:
+    feature = record.feature
+    docs = docs_map(feature)
+    risk = risk_map(feature)
+    task_key = str(task.get("id", "unknown"))
+    task_id = f"{record.feature_id}/{task_key}"
+    lines = [
+        f"## {task_id}",
+        "",
+        f"> source change: `{display_path(root, record.file)}`",
+        f"> feature: `{record.feature_id}`",
+        f"> module: `{feature.get('module', 'unknown')}`",
+        f"> depends: {', '.join(f'`{dep}`' for dep in as_list(feature.get('depends_on'))) or 'None'}",
+        "",
+        "### Intent",
+        f"- {feature.get('intent', '')}",
+        "",
+        "### Task",
+        f"- `{task_key}`: {task.get('title', '')}",
+        "",
+        "### Exact Docs",
+        *bullet_lines(as_list(docs.get("source"))),
+        "",
+        "### Sync Targets",
+        *bullet_lines(sync_targets(docs)),
+        "",
+        "### Risk Level",
+        f"- {risk.get('level', 'Unspecified')}",
+        "",
+        "### Risk Boundaries",
+        *plain_bullet_lines(as_list(risk.get("boundaries"))),
+        "",
+        "### Validation",
+        *plain_bullet_lines(task_validation(task)),
+    ]
+    return "\n".join(lines).rstrip() + "\n"
+
+
+def render_copy_prompt(root: Path, record: FeatureRecord, task: dict[str, Any]) -> str:
+    feature = record.feature
+    docs = docs_map(feature)
+    risk = risk_map(feature)
+    task_key = str(task.get("id", "unknown"))
+    task_id = f"{record.feature_id}/{task_key}"
+    lines = [
+        f"# V2 Copy-ready Draft: {task_id}",
+        "",
+        "你现在进入 AreaMatrix v2 草稿任务执行模式。",
+        "",
+        "## 工作边界",
+        f"- Source change: `{display_path(root, record.file)}`",
+        f"- Feature: `{record.feature_id}`",
+        f"- Module: `{feature.get('module', 'unknown')}`",
+        f"- Task: `{task_key}` - {task.get('title', '')}",
+        f"- Risk: `{risk.get('level', 'Unspecified')}`",
+        "- 是否允许修改文件：`是，但仅限本 v2 草稿任务直接要求的 docs/API/UDL/实现/测试；不得接入 live v1 task-loop queue`",
+        "",
+        "## Exact Docs",
+        *bullet_lines(as_list(docs.get("source"))),
+        "",
+        "## 必须同步检查",
+        *bullet_lines(sync_targets(docs)),
+        "",
+        "## 风险边界",
+        *plain_bullet_lines(as_list(risk.get("boundaries"))),
+        "",
+        "## 执行要求",
+        "- 先读取 Source change、Exact Docs、Sync Targets，再决定实现范围。",
+        "- 若涉及 Core API，必须保持 `docs/api/core-api.md` 与 `core/area_matrix.udl` 一致。",
+        "- 不得移动、删除、覆盖用户原文件；不得把 v2 草稿直接写入 `tasks/prompts/**`。",
+        "- 完成后记录实际改动、验证命令、风险处理和未覆盖项。",
+        "",
+        "## 建议验证",
+        *plain_bullet_lines(task_validation(task)),
+    ]
+    return "\n".join(lines).rstrip() + "\n"
+
+
+def render_verify_prompt(root: Path, record: FeatureRecord, task: dict[str, Any]) -> str:
+    feature = record.feature
+    docs = docs_map(feature)
+    risk = risk_map(feature)
+    task_key = str(task.get("id", "unknown"))
+    task_id = f"{record.feature_id}/{task_key}"
+    lines = [
+        f"# V2 Verify-ready Draft: {task_id}",
+        "",
+        "你现在进入 AreaMatrix v2 草稿任务只读验收模式。",
+        "这次是验收，不是修复：禁止修改文件，禁止边验边改。",
+        "",
+        "## 验收对象",
+        f"- Source change: `{display_path(root, record.file)}`",
+        f"- Feature: `{record.feature_id}`",
+        f"- Module: `{feature.get('module', 'unknown')}`",
+        f"- Task: `{task_key}` - {task.get('title', '')}",
+        f"- Risk: `{risk.get('level', 'Unspecified')}`",
+        "",
+        "## 必须读取",
+        f"- Change YAML: `{display_path(root, record.file)}`",
+        f"- Manifest draft section: `## {task_id}`",
+        *bullet_lines(as_list(docs.get("source"))),
+        "",
+        "## 验收清单",
+        "- task 实现必须能回到 Source change、Exact Docs 和 Manifest draft 逐项证明。",
+        "- docs/API/UDL sync targets 必须无漂移；如未涉及，需要说明为什么无需修改。",
+        "- 风险边界必须逐条证明未破坏。",
+        "- 不得把草稿误判为已进入 live v1 queue；不得修改 progress。",
+        "- 不能只看 diff；必须核对文档、草稿 manifest、实际文件和验证证据。",
+        "",
+        "## 建议验证",
+        *plain_bullet_lines(task_validation(task)),
+        "",
+        "## 输出要求",
+        "- 若通过，最后一行写：`VERIFY_RESULT: PASS`",
+        "- 若不通过，最后一行写：`VERIFY_RESULT: FAIL`，并列出阻塞项。",
+    ]
+    return "\n".join(lines).rstrip() + "\n"
+
+
+def build_draft_tasks(root: Path, record: FeatureRecord) -> list[DraftTask]:
+    drafts: list[DraftTask] = []
+    for task in as_list(record.feature.get("task_split")):
+        if not isinstance(task, dict):
+            continue
+        task_key = str(task.get("id", "unknown"))
+        task_id = f"{record.feature_id}/{task_key}"
+        drafts.append(
+            DraftTask(
+                task_id=task_id,
+                feature_id=record.feature_id,
+                task_key=task_key,
+                title=str(task.get("title", "")),
+                manifest=render_manifest_section(root, record, task),
+                copy_prompt=render_copy_prompt(root, record, task),
+                verify_prompt=render_verify_prompt(root, record, task),
+            )
+        )
+    return drafts
+
+
+def manifest_artifact(root: Path, record: FeatureRecord, drafts: Sequence[DraftTask]) -> DraftArtifact:
+    content = f"# V2 Manifest Draft: {record.feature_id}\n\n" + "\n".join(draft.manifest for draft in drafts)
+    return DraftArtifact(path=root / record.feature_id / "manifest.md", content=content.rstrip() + "\n")
+
+
+def draft_artifacts(repo_root: Path, output_root: Path, records: Sequence[FeatureRecord]) -> list[DraftArtifact]:
+    artifacts: list[DraftArtifact] = []
+    for record in ordered_features(records):
+        drafts = build_draft_tasks(repo_root, record)
+        artifacts.append(manifest_artifact(output_root, record, drafts))
+        for draft in drafts:
+            feature_dir = output_root / draft.feature_id
+            artifacts.append(DraftArtifact(path=feature_dir / f"{draft.task_key}.copy.md", content=draft.copy_prompt))
+            artifacts.append(DraftArtifact(path=feature_dir / f"{draft.task_key}.verify.md", content=draft.verify_prompt))
+    return artifacts
+
+
+def print_artifacts(repo_root: Path, artifacts: Sequence[DraftArtifact]) -> None:
+    print("V2 generated prompt drafts")
+    print("- mode: preview only; no files written")
+    print("- queue: not connected to current v1 task-loop")
+    for artifact in artifacts:
+        print()
+        print(f"--- {display_path(repo_root, artifact.path)} ---")
+        print(artifact.content.rstrip())
+
+
+def write_artifacts(artifacts: Sequence[DraftArtifact], *, force: bool, label: str = "draft file") -> list[Path]:
+    existing = [artifact.path for artifact in artifacts if artifact.path.exists()]
+    if existing and not force:
+        existing_text = "\n".join(f"- {path}" for path in existing[:10])
+        raise FileExistsError(f"{label} already exists; use --force to overwrite:\n{existing_text}")
+    written: list[Path] = []
+    for artifact in artifacts:
+        artifact.path.parent.mkdir(parents=True, exist_ok=True)
+        artifact.path.write_text(artifact.content, encoding="utf-8")
+        written.append(artifact.path)
+    return written
+
+
 def run_changes_doctor(root: Path, args: argparse.Namespace) -> int:
     errors, records, files = collect_changes(root, args.file)
     if errors:
@@ -409,4 +670,40 @@ def run_changes_preview(root: Path, args: argparse.Namespace) -> int:
                 print(f"     - {task.get('id', 'unknown')}: {task.get('title', '')}")
                 for validation in as_list(task.get("validation")):
                     print(f"       validation: {validation}")
+    return 0
+
+
+def run_changes_generate(root: Path, args: argparse.Namespace) -> int:
+    if args.force and not args.write:
+        print("v2 change generate: --force requires --write")
+        return 1
+    errors, records, _ = collect_changes(root, args.file)
+    if errors:
+        print("v2 change generate: doctor failed")
+        for error in errors:
+            print(f"- {error}")
+        return 1
+    filter_errors, selected = filter_feature_records(records, args.feature)
+    if filter_errors:
+        print("v2 change generate: selection failed")
+        for error in filter_errors:
+            print(f"- {error}")
+        return 1
+    output_root = Path(args.out_dir) if args.out_dir else root / DEFAULT_DRAFT_ROOT
+    if not output_root.is_absolute():
+        output_root = root / output_root
+    artifacts = draft_artifacts(root, output_root, selected)
+    if not args.write:
+        print_artifacts(root, artifacts)
+        return 0
+    try:
+        written = write_artifacts(artifacts, force=args.force)
+    except FileExistsError as exc:
+        print(f"v2 change generate: {exc}")
+        return 1
+    print("v2 change generate: wrote draft files")
+    print(f"- root: {output_root}")
+    print(f"- files: {len(written)}")
+    for path in written:
+        print(f"  - {path}")
     return 0

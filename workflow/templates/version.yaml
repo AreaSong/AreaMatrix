@@ -1,0 +1,9 @@
+id: v*
+title: Version workflow template
+status: planning
+depends_on: []
+live_queue: ""
+middle_layers: required
+gate: queue-only-until-prerequisites-complete
+promotion: explicit-only
+archive_policy: archive-after-complete

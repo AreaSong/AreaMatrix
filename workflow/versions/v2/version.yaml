@@ -1,0 +1,10 @@
+id: v2
+title: AreaMatrix v2 planning workflow
+status: planning
+depends_on:
+  - v1-mvp
+live_queue: ""
+middle_layers: required
+gate: queue-only-until-v1-complete
+promotion: explicit-only
+archive_policy: archive-after-complete

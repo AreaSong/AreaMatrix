@@ -175,7 +175,53 @@ DRY_RUN_RESULT=PASS \
 
 ---
 
-## 四、日志与进度
+## 四、v* Workflow 规划（不进 live 队列）
+
+`workflow/` 是大功能 / 版本 / 重构 / 优化的生命周期系统；`tasks/prompts/**` 是已批准的小任务执行队列；`./task-loop` 只执行 tasks。
+
+新增 v2 需求先写入：
+
+```
+workflow/versions/v2/changes/*.yaml
+```
+
+检查、生成 docs-change ledger 和 queue candidate：
+
+```bash
+./dev workflow doctor
+./dev workflow status
+./dev workflow plan --version v2
+./dev workflow queue --version v2
+```
+
+兼容的 changes / drafts 入口：
+
+```bash
+./dev changes doctor
+./dev changes preview
+./dev changes generate
+./dev changes generate --feature v2-search-query
+```
+
+默认只输出到终端，不写文件。需要落盘时显式使用：
+
+```bash
+./dev changes generate --write
+./dev changes generate --write --out-dir /tmp/areamatrix-v2-drafts
+./dev changes generate --write --force
+```
+
+默认写入 `workflow/versions/v2/drafts/`，每个 feature 一个目录，包含：
+
+- `manifest.md`
+- `<task-id>.copy.md`
+- `<task-id>.verify.md`
+
+plans、drafts 和 queue candidates 都只是 review artifact，不会写 `tasks/prompts/**`，不会修改 `progress.json`，不会启动 `./task-loop`。v1 完成前，v2 只允许推进到 queue candidate，不允许 promote。
+
+---
+
+## 五、日志与进度
 
 runner 默认在 `.codex/task-loop-logs/<timestamp>/phase/...` 生成日志：
 

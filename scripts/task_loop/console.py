@@ -1009,8 +1009,13 @@ def print_help() -> None:
   ./dev logs
   ./dev verify-summary
   ./dev check
+  ./dev workflow doctor
+  ./dev workflow status
+  ./dev workflow plan --version v2
+  ./dev workflow queue --version v2
   ./dev changes doctor
-  ./dev changes preview"""
+  ./dev changes preview
+  ./dev changes generate"""
     )
 
 
@@ -1142,7 +1147,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 0
     if command == "check":
         return dev_tools_cli.main(["check", *args[1:]])
-    if command in {"build", "test", "bindings", "changes"}:
+    if command in {"build", "test", "bindings", "changes", "workflow"}:
         return dev_tools_cli.main(args)
     if command in {"help", "-h", "--help"}:
         print_help()

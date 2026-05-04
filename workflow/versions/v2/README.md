@@ -1,14 +1,45 @@
 # v2 Workflow
 
-`v2` is the planning surface for new requirements after the current MVP queue.
+`v2` is the first reusable v* workflow instance for requirements after the current MVP queue.
 
-The first supported input is `changes/*.yaml`. Each change file should describe features, exact source docs, docs/API/UDL sync targets, dependencies, risk boundaries, and an expected task split.
+The supported flow is:
+
+```text
+changes/*.yaml
+-> plans/*.plan.md
+-> drafts/<feature>/
+-> queue/<feature>/
+-> future explicit promote into tasks/prompts/**
+```
+
+While `v1-mvp` is `live-running`, v2 may reach queue candidates but must not promote into the live task queue.
 
 Use:
 
 ```bash
+./dev workflow doctor
+./dev workflow status
+./dev workflow plan --version v2
+./dev workflow queue --version v2
 ./dev changes doctor
 ./dev changes preview
+./dev changes generate
 ```
 
-These commands validate and preview only. They do not write copy-ready or verify-ready prompts, do not edit manifests, and do not connect to `./task-loop`.
+`workflow plan` generates the docs-change ledger. `workflow queue` generates queue candidates. `changes generate` remains the compatible draft generator.
+
+To write drafts explicitly:
+
+```bash
+./dev changes generate --write
+./dev changes generate --feature v2-search-query --write
+./dev changes generate --write --out-dir /tmp/areamatrix-v2-drafts
+```
+
+The default write target is `workflow/versions/v2/drafts/`. Existing draft files are protected; use `--force` with `--write` only when intentionally replacing a draft package:
+
+```bash
+./dev changes generate --write --force
+```
+
+Plans, drafts, and queue candidates are review artifacts. They are not `tasks/prompts/**`, do not edit v1 manifests, do not write `progress.json`, and do not connect to `./task-loop`.

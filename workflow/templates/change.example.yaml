@@ -1,0 +1,43 @@
+id: v2-example-change
+title: Example versioned feature change
+version: v2
+status: draft
+features:
+  - id: v2-example-feature
+    module: example
+    intent: Describe the feature outcome and why it belongs in this version.
+    depends_on: []
+    docs:
+      source:
+        - docs/example/source.md
+      update:
+        - docs/example/source.md
+      api: []
+      udl: []
+    doc_changes:
+      - file: docs/example/source.md
+        operation: update
+        line_start: 10
+        line_end: 20
+        heading: Example heading
+        excerpt: Short exact excerpt used to detect line drift.
+        summary: Explain what changed in the docs and why.
+        depends_on: []
+        tasks:
+          - docs-contract
+    code_impacts:
+      existing:
+        - apps/macos/AreaMatrix/**
+      expected:
+        - apps/macos/AreaMatrix/Features/Example/**
+      tests:
+        - apps/macos/AreaMatrixTests/**
+    risk:
+      level: High
+      boundaries:
+        - Does not move, delete, rename, or overwrite user files.
+    task_split:
+      - id: docs-contract
+        title: Align docs and public contracts.
+        validation:
+          - ./dev workflow doctor
