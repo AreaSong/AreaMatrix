@@ -20,7 +20,7 @@ Manifest：[./_shared/manifests/](./_shared/manifests/)
 6. 执行与验收都必须应用 `engineering-quality-rules.md` 和 `docs/development/coding-standards.md`。
 7. 任务完成后用 `render --mode verify` 或 `verify` 生成只读验收 prompt。
 8. 需要批量复制时，用 `export --phase` 或 `export --all` 把 copy-ready / verify-ready prompt 导出为静态文件。
-9. Runner 只负责 prompt 生成、进度和状态管理；自动闭环由 `scripts/run_area_matrix_task_pipeline.sh` 调用 `codex exec`。
+9. Runner 只负责 prompt 生成、进度和状态管理；自动闭环由 `./task-loop run` 调用 `codex exec`。
 
 ## Runner
 
@@ -87,9 +87,9 @@ python3 tasks/prompts/_shared/prompt_pipeline.py mark --task 0-1/task-01 --statu
 
 进度写入本地文件 `tasks/prompts/_shared/progress.json`，默认不提交。`next` 和 `status` 会读取这个文件来判断下一个可执行任务。
 
-## 自动化执行脚本（可选）
+## 自动化执行 Runner（可选）
 
-仓库提供 `scripts/run_area_matrix_task_pipeline.sh`，可将 copy-ready + verify-ready 做成闭环执行：
+仓库提供 `./task-loop run`，可将 copy-ready + verify-ready 做成闭环执行：
 
 1. 读取 copy-ready 并调用 `codex exec` 执行。
 2. 再读取 verify-ready 进行只读验收。
@@ -130,7 +130,7 @@ RISK_POLICY=pause
 基本用法（全量执行）：
 
 ```bash
-MAX_RETRIES=0 bash scripts/run_area_matrix_task_pipeline.sh
+MAX_RETRIES=0 ./task-loop run
 ```
 
 全静默执行：
@@ -138,7 +138,7 @@ MAX_RETRIES=0 bash scripts/run_area_matrix_task_pipeline.sh
 ```bash
 RISK_POLICY=allow \
   MAX_RETRIES=0 \
-  bash scripts/run_area_matrix_task_pipeline.sh
+  ./task-loop run
 ```
 
 只执行某个起点和阶段，便于试跑：
@@ -146,7 +146,7 @@ RISK_POLICY=allow \
 ```bash
 MAX_RETRIES=0 \
   START_FROM=phase-1/1-1-task-01 \
-  bash scripts/run_area_matrix_task_pipeline.sh --phase phase-1 --max-tasks 5
+  ./task-loop run --phase phase-1 --max-tasks 5
 ```
 
 Dry-run（预演，不改文件）：
@@ -155,17 +155,17 @@ Dry-run（预演，不改文件）：
 DRY_RUN=1 \
   MAX_RETRIES=1 \
   DRY_RUN_RESULT=PASS \
-  bash scripts/run_area_matrix_task_pipeline.sh --phase phase-1 --max-tasks 1
+  ./task-loop run --phase phase-1 --max-tasks 1
 ```
 
-脚本会在 `.codex/task-loop-logs/<timestamp>/<phase>/` 写入每次执行和验收日志。
+Python runner 会在 `.codex/task-loop-logs/<timestamp>/<phase>/` 写入每次执行和验收日志。
 进度统一写入 `tasks/prompts/_shared/progress.json`，因此 `next` 和 `status` 会直接反映自动执行结果。
 
 查看或恢复：
 
 ```bash
-bash scripts/run_area_matrix_task_pipeline.sh --status
-bash scripts/run_area_matrix_task_pipeline.sh --resume-failed
+./task-loop status
+./task-loop resume-failed
 ```
 
 ## Phase 概览

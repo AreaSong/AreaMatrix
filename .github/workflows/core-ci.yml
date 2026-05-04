@@ -73,7 +73,7 @@ jobs:
       - name: Install UniFFI bindgen
         run: cargo install uniffi-bindgen --locked --version 0.28.3
       - name: Build core
-        run: ./scripts/build-core.sh
+        run: ./dev build core
 
   coverage:
     name: coverage gate

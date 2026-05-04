@@ -28,9 +28,9 @@ Use these gates when reviewing enterprise governance impact.
 ## Required Local Checks
 
 ```bash
-bash scripts/check-governance.sh
-bash scripts/check-skills.sh
-bash scripts/check-task-loop.sh
-python3 tasks/prompts/_shared/prompt_pipeline.py doctor
-git diff --check
+./dev check governance
+./dev check skills
+./dev check task-loop
+./dev check prompts
+./dev check diff
 ```

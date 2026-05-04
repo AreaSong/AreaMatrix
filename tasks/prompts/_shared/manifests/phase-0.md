@@ -217,7 +217,8 @@
 - `core/**`
 
 ### Expected New Paths
-- `scripts/build-core.sh`
+- `scripts/dev_tools/build.py`
+- `scripts/dev_tools/cli.py`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -227,7 +228,7 @@
 - Medium
 
 ### Validation
-- `bash -n scripts/build-core.sh`
+- `python3 -m py_compile scripts/dev_tools/*.py`
 
 ## 0-2/task-07
 
@@ -243,7 +244,8 @@
 - `core/area_matrix.udl`
 
 ### Expected New Paths
-- `scripts/update-bindings.sh`
+- `scripts/dev_tools/build.py`
+- `scripts/dev_tools/cli.py`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -253,7 +255,7 @@
 - High
 
 ### Validation
-- `bash -n scripts/update-bindings.sh`
+- `python3 -m py_compile scripts/dev_tools/*.py`
 
 ## 0-2/task-08
 
@@ -270,7 +272,8 @@
 - `.github/workflows/macos-ci.yml`
 
 ### Expected New Paths
-- `scripts/check-all.sh`
+- `scripts/dev_tools/checks.py`
+- `scripts/dev_tools/cli.py`
 - `.github/workflows/core-ci.yml`
 - `.github/workflows/macos-ci.yml`
 
@@ -282,7 +285,7 @@
 - Medium
 
 ### Validation
-- `bash -n scripts/check-all.sh`
+- `python3 -m py_compile scripts/dev_tools/*.py`
 - `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`
 
 ## 0-2/task-09

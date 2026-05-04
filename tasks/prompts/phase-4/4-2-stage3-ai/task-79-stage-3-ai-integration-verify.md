@@ -34,5 +34,5 @@ integration
 ```bash
 python3 tasks/prompts/_shared/prompt_pipeline.py doctor
 python3 tasks/prompts/_shared/prompt_pipeline.py audit --pages
-./scripts/check-all.sh
+./dev check all
 ```

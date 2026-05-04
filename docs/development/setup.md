@@ -39,9 +39,7 @@ xcode-select --install
 
 ### Homebrew
 
-```bash
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-```
+按 Homebrew 官方安装页执行安装命令。
 
 ---
 
@@ -118,7 +116,7 @@ cd AreaMatrix
 ## 第 6 步：构建 Rust 核心
 
 ```bash
-./scripts/build-core.sh
+./dev build core
 ```
 
 这个脚本做了：
@@ -175,7 +173,7 @@ xcodebuild test \
 
 ```bash
 # 全套构建 + 测试 + lint
-./scripts/check-all.sh
+./dev check all
 ```
 
 如果脚本不存在：
@@ -211,7 +209,7 @@ cd ../..
 
 | 改动类型 | 怎么重建 |
 |---|---|
-| 改 Rust 业务代码（不改 UDL） | `./scripts/build-core.sh && Xcode rebuild` |
+| 改 Rust 业务代码（不改 UDL） | `./dev build core && Xcode rebuild` |
 | 改 Rust 接口（改 UDL） | 同上（脚本会重新生成 bindings） |
 | 只改 Swift 代码 | Xcode ⌘R 即可 |
 | 只改 SQL schema | 加 migration 文件（不要改 schema.sql v1） |
@@ -227,7 +225,7 @@ cd ../..
 **修复**：
 
 ```bash
-./scripts/build-core.sh
+./dev build core
 # 然后 Xcode → Product → Clean Build Folder（⇧⌘K）
 ```
 

@@ -120,7 +120,7 @@ flowchart TB
 ### 重新生成
 
 ```bash
-./scripts/build-core.sh
+./dev build core
 ```
 
 详见 [ffi-design.md](ffi-design.md)。

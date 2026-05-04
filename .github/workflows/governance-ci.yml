@@ -14,16 +14,16 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Governance check
-        run: bash scripts/check-governance.sh
+        run: ./dev check governance
 
       - name: Skill health
-        run: bash scripts/check-skills.sh
+        run: ./dev check skills
 
       - name: Task-loop health
-        run: bash scripts/check-task-loop.sh
+        run: ./dev check task-loop
 
       - name: Prompt doctor
-        run: python3 tasks/prompts/_shared/prompt_pipeline.py doctor
+        run: ./dev check prompts
 
       - name: Diff whitespace check
-        run: git diff --check
+        run: ./dev check diff

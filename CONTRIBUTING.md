@@ -58,7 +58,7 @@ flowchart LR
 ```bash
 git clone https://github.com/<your-org>/AreaMatrix.git
 cd AreaMatrix
-./scripts/build-core.sh
+./dev build core
 open apps/macos/AreaMatrix.xcodeproj
 ```
 

@@ -45,3 +45,4 @@ AreaMatrix-dev/
 .codex/task-loop-lock/
 .codex/task-loop-control/
 .codex/task-loop-tmp/
+.codex/task-loop-console/

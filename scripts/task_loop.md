@@ -17,16 +17,16 @@
 - 每次执行会持有 `.codex/task-loop-lock/` 运行锁，避免两个 runner 同时写 progress/logs。
 - 每次执行会写 `.codex/task-loop-runs/<run_id>/summary.json`，作为可上传、可续工的运行摘要。
 - 每次执行结束会更新 `.codex/task-loop-runs/index.json`，用于快速查看最近 run 的状态。
-- 需要优雅收尾时，可用 `--request-drain` 请求 live runner 完成当前 task、Git checkpoint / push 和 summary 后停止，不进入下一个 task。
-- progress / stale / lock status / summary 逻辑集中在 `scripts/task_loop_state.py`；shell 脚本只负责任务调度和 `codex exec`。
-- Git checkpoint 逻辑集中在 `scripts/task_loop_git.py`；默认每个 PASS task 自动本地 commit。
+- 需要优雅收尾时，可用 `./task-loop drain` 请求 live runner 完成当前 task、Git checkpoint / push 和 summary 后停止，不进入下一个 task。
+- progress / stale / lock status / summary 逻辑集中在 `scripts/task_loop/state.py`；Python runner 负责 CLI、调度与 `codex exec`。
+- Git checkpoint 逻辑集中在 `scripts/task_loop/git.py`；默认每个 PASS task 自动本地 commit。
 
 默认模型：
 - `MODEL=gpt-5.5`
 - `MODEL_REASONING_EFFORT=xhigh`
 
 Codex CLI：
-- 脚本会优先查找 `codex`。
+- runner 会优先查找 `codex`。
 - 如果普通终端没有 `codex`，会自动尝试 `/Applications/Codex.app/Contents/Resources/codex`。
 - 如果你安装在其他位置，可以显式设置 `CODEX_BIN=/path/to/codex`。
 
@@ -60,16 +60,17 @@ Repo-local skills：
 日常不需要记忆下面这些长命令时，优先使用根目录控制台：
 
 ```bash
-./dev.sh
+./dev
 ```
 
 控制台会显示当前进度、runner / `codex exec` 进程数量、stale 状态和 drain 状态，并提供继续、优雅收尾、检查、日志等菜单项。
 启动或继续任务时，控制台会先阻止重复 live runner，再选择前台/后台、Git checkpoint 模式和任务数量上限；默认 Git 为本地 `commit`，任务数量为无限。
+优化或排查控制台时，优先用 `./dev preview` 预览命令，或用 `./dev dry-run` 跑临时目录演练；这两者都不会写真实 progress。
 
 ### 1) 全量执行
 
 ```bash
-MAX_RETRIES=0 bash scripts/run_area_matrix_task_pipeline.sh
+MAX_RETRIES=0 ./task-loop run
 ```
 
 全静默执行（包括 Mission-Critical task）：
@@ -77,7 +78,7 @@ MAX_RETRIES=0 bash scripts/run_area_matrix_task_pipeline.sh
 ```bash
 RISK_POLICY=allow \
 MAX_RETRIES=0 \
-bash scripts/run_area_matrix_task_pipeline.sh
+./task-loop run
 ```
 
 如果只想临时关闭 Git checkpoint：
@@ -86,7 +87,7 @@ bash scripts/run_area_matrix_task_pipeline.sh
 GIT_CHECKPOINT=off \
 RISK_POLICY=allow \
 MAX_RETRIES=0 \
-bash scripts/run_area_matrix_task_pipeline.sh
+./task-loop run
 ```
 
 如果要每个 PASS task commit 后立即上传：
@@ -95,7 +96,7 @@ bash scripts/run_area_matrix_task_pipeline.sh
 GIT_CHECKPOINT=push \
 RISK_POLICY=allow \
 MAX_RETRIES=0 \
-bash scripts/run_area_matrix_task_pipeline.sh
+./task-loop run
 ```
 
 ### 2) 从指定任务开始
@@ -103,7 +104,7 @@ bash scripts/run_area_matrix_task_pipeline.sh
 ```bash
 MAX_RETRIES=0 \
 START_FROM=phase-1/1-1-task-01 \
-bash scripts/run_area_matrix_task_pipeline.sh --phase phase-1 --max-tasks 5
+./task-loop run --phase phase-1 --max-tasks 5
 ```
 
 `START_FROM` 同时支持 `phase-1/1-1-task-01` 和 `1-1/task-01`。
@@ -111,7 +112,7 @@ bash scripts/run_area_matrix_task_pipeline.sh --phase phase-1 --max-tasks 5
 ### 3) 只跑某个 phase
 
 ```bash
-MAX_RETRIES=0 bash scripts/run_area_matrix_task_pipeline.sh --phase phase-1 --max-tasks 20
+MAX_RETRIES=0 ./task-loop run --phase phase-1 --max-tasks 20
 ```
 
 > 注意：`--phase` 可重复，形成子集，如 `--phase phase-1 --phase phase-2`。
@@ -123,7 +124,7 @@ MAX_RETRIES=0 bash scripts/run_area_matrix_task_pipeline.sh --phase phase-1 --ma
 完整 runner 自检：
 
 ```bash
-bash scripts/check-task-loop.sh
+./task-loop check
 ```
 
 该命令使用临时 progress/log/summary/lock 目录验证 dry-run、stale、resume、lock 和 summary index，不会修改真实任务进度。
@@ -132,7 +133,7 @@ bash scripts/check-task-loop.sh
 DRY_RUN=1 \
 MAX_RETRIES=1 \
 DRY_RUN_RESULT=PASS \
-bash scripts/run_area_matrix_task_pipeline.sh --phase phase-1 --max-tasks 1
+./task-loop run --phase phase-1 --max-tasks 1
 ```
 
 ### 参数说明
@@ -145,7 +146,7 @@ bash scripts/run_area_matrix_task_pipeline.sh --phase phase-1 --max-tasks 1
 
 ## 四、日志与进度
 
-脚本默认在 `.codex/task-loop-logs/<timestamp>/phase/...` 生成日志：
+runner 默认在 `.codex/task-loop-logs/<timestamp>/phase/...` 生成日志：
 
 - `*-copy-attempt-<n>.log`：第 n 次 copy 执行日志
 - `*-verify-attempt-<n>.log`：第 n 次 verify 日志；最后一行必须是 `VERIFY_RESULT: PASS` 或 `VERIFY_RESULT: FAIL`
@@ -183,7 +184,7 @@ tasks/prompts/_shared/progress.json
 查看自动执行状态：
 
 ```bash
-bash scripts/run_area_matrix_task_pipeline.sh --status
+./task-loop status
 ```
 
 状态输出会同时显示：
@@ -197,7 +198,7 @@ bash scripts/run_area_matrix_task_pipeline.sh --status
 优雅收尾当前 live runner：
 
 ```bash
-bash scripts/run_area_matrix_task_pipeline.sh --request-drain
+./task-loop drain
 ```
 
 该命令要求当前存在 live runner；它不会启动新任务循环。runner 收到请求后会继续完成当前 task，如果 verify 失败仍会按现有规则 repair retry；只有当前 task `VERIFY_RESULT: PASS`、progress 写入、Git checkpoint / push 和 summary 收口完成后，才以 `drained` 状态退出并保留下一个 pending task 给下次继续。
@@ -205,40 +206,41 @@ bash scripts/run_area_matrix_task_pipeline.sh --request-drain
 跑到指定 task 后停止：
 
 ```bash
-bash scripts/run_area_matrix_task_pipeline.sh --stop-after 2-1/task-18
+./task-loop run --stop-after 2-1/task-18
 ```
 
 `--stop-after` 只在目标 task `PASS` 且 Git checkpoint / push 完成后停止，不会跳过验收。
+`--start-from` / `--stop-after` 会在 live Git preflight 前校验：目标必须落在当前 `--phase` 选择内，并且 copy-ready 与 verify-ready prompt 都存在。
 
 从第一个失败任务恢复：
 
 ```bash
-bash scripts/run_area_matrix_task_pipeline.sh --resume-failed
+./task-loop resume-failed
 ```
 
 从第一个 stale in_progress 任务恢复：
 
 ```bash
-bash scripts/run_area_matrix_task_pipeline.sh --resume-stale
+./task-loop resume-stale
 ```
 
 只清理 stale in_progress，不动 completed / failed / blocked：
 
 ```bash
-bash scripts/run_area_matrix_task_pipeline.sh --clear-stale
+./task-loop clear-stale
 ```
 
 如果要从头开始，使用内置重置命令。它会先备份当前 progress，再写入空进度；不会删除历史日志：
 
 ```bash
-bash scripts/run_area_matrix_task_pipeline.sh --reset-progress
+./task-loop reset-progress
 ```
 
 ---
 
 ## 五、和 prompt runner 的关系
 
-这个脚本是“自动执行器”，不是 prompt 体系本体。
+这个 Python runner 是“自动执行器”，不是 prompt 体系本体。
 你仍然需要先确保：
 
 - `copy-ready` / `verify-ready` 已经用 `python3 tasks/prompts/_shared/prompt_pipeline.py export --all` 生成；

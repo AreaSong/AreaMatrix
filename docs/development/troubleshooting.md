@@ -106,7 +106,7 @@ otool -L apps/macos/AreaMatrix/Frameworks/AreaMatrixCore.framework/AreaMatrixCor
 
 **解决**：
 
-1. 重新生成 XCFramework：`./scripts/build-xcframework.sh`
+1. 重新生成 Core 静态库与 Swift bindings：`./dev build core`
 2. 在 Xcode → Build Phases → Link Binary With Libraries 添加 `AreaMatrixCore.xcframework`
 3. 在 Build Phases → Embed Frameworks 也加入
 4. Clean Build Folder（⇧⌘K）后重试
@@ -181,7 +181,7 @@ cat apps/macos/AreaMatrix/Generated/area_matrix.swift | head -30
 **解决**：
 
 ```bash
-./scripts/regen-bindings.sh
+./dev bindings update --udl core/area_matrix.udl --out-dir apps/macos/AreaMatrix/Bridge/Generated
 ```
 
 确保 build script（`core/build.rs`）在 udl 改动时触发：

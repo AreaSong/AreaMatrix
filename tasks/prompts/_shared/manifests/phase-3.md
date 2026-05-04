@@ -130,7 +130,7 @@
 
 ### Validation
 - `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`
-- `./scripts/check-all.sh`
+- `./dev check all`
 - `cargo update --dry-run`
 - `git diff --check`
 
@@ -169,5 +169,5 @@
 
 ### Validation
 - `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`
-- `./scripts/check-all.sh`
+- `./dev check all`
 - `git diff --check`

@@ -205,9 +205,9 @@ AreaMatrix/                            # Git 仓库
 │       ├── Views/                     # SwiftUI views
 │       └── Resources/
 │
-├── scripts/                           # 构建脚本
-│   ├── build-core.sh
-│   └── update-bindings.sh
+├── scripts/
+│   ├── dev_tools/                     # ./dev check/build/test/bindings
+│   └── task_loop/                     # ./task-loop runner
 │
 └── docs/                              # 项目文档（本目录）
 ```

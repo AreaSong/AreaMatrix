@@ -11,7 +11,7 @@ Use this skill when the work is about the automated prompt task runner rather th
 
 1. [AGENTS.md](../../../AGENTS.md)
 2. [.ai-governance/workflows/prompt-task-runtime.md](../../../.ai-governance/workflows/prompt-task-runtime.md)
-3. [scripts/run_area_matrix_task_pipeline.md](../../../scripts/run_area_matrix_task_pipeline.md)
+3. [scripts/task_loop.md](../../../scripts/task_loop.md)
 4. [tasks/prompts/README.md](../../../tasks/prompts/README.md)
 5. [tasks/prompts/_shared/engineering-quality-rules.md](../../../tasks/prompts/_shared/engineering-quality-rules.md)
 
@@ -24,9 +24,9 @@ Use this skill when the work is about the automated prompt task runner rather th
 ## Workflow
 
 1. Check health with `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`.
-2. Check task-loop health with `bash scripts/check-task-loop.sh` when runner behavior changed.
+2. Check task-loop health with `./task-loop check` when runner behavior changed.
 3. Check current queue state with `python3 tasks/prompts/_shared/prompt_pipeline.py status`.
-4. Check task-loop state with `bash scripts/run_area_matrix_task_pipeline.sh --status`.
+4. Check task-loop state with `./task-loop status`.
 5. Load the Git checkpoint skill before changing commit or push behavior.
 6. Load the runbook before recommending a live command.
 7. Load failure recovery before changing progress or restarting from a failed task.

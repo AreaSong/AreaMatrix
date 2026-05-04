@@ -33,7 +33,7 @@ flowchart LR
 
 ## 完整构建脚本
 
-文件：`scripts/build-core.sh`
+文件：`./dev build core`
 
 ```bash
 #!/usr/bin/env bash
@@ -78,7 +78,7 @@ echo "    header:    ${OUT_DIR}/area_matrixFFI.h"
 赋可执行权限：
 
 ```bash
-chmod +x scripts/build-core.sh
+chmod +x ./dev build core
 ```
 
 ---
@@ -174,7 +174,7 @@ fn main() {
 ### Debug 配置
 
 ```bash
-BUILD_PROFILE=debug ./scripts/build-core.sh
+./dev build core --profile debug
 ```
 
 调试时 `cargo build` 默认 debug，体积大但启动快、含 panic 信息。
@@ -182,7 +182,7 @@ BUILD_PROFILE=debug ./scripts/build-core.sh
 ### Release 配置（默认）
 
 ```bash
-./scripts/build-core.sh
+./dev build core
 ```
 
 启用所有优化，体积小。
@@ -207,14 +207,14 @@ panic = "abort"
 ### 改 Rust 代码（不动 UDL）
 
 ```bash
-./scripts/build-core.sh   # ~30s 增量
+./dev build core   # ~30s 增量
 # 然后 Xcode 自动检测 staticlib 改动并重新链接
 ```
 
 ### 改 UDL
 
 ```bash
-./scripts/build-core.sh   # ~45s 增量（含 bindings 重生成）
+./dev build core   # ~45s 增量（含 bindings 重生成）
 # Xcode 重新编译 area_matrix.swift
 ```
 
@@ -234,7 +234,7 @@ CI 在 macos-14 runner 上执行：
 2. `cargo clippy -- -D warnings`
 3. `cargo test --workspace`
 4. `cargo llvm-cov --fail-under-lines 70`
-5. `./scripts/build-core.sh`
+5. `./dev build core`
 6. `xcodebuild test`
 7. `swiftformat --lint`
 8. `swiftlint --strict`
@@ -257,7 +257,7 @@ PR 要全绿才能合并。
 
 ```bash
 # 1. 构建 release
-./scripts/build-core.sh
+./dev build core
 xcodebuild -project apps/macos/AreaMatrix.xcodeproj \
   -scheme AreaMatrix \
   -configuration Release \
@@ -294,7 +294,7 @@ hdiutil create -volname "AreaMatrix" -srcfolder build/Build/Products/Release/Are
 
 ```bash
 rm -f apps/macos/AreaMatrix/Bridge/Generated/libarea_matrix_core.a
-./scripts/build-core.sh
+./dev build core
 ```
 
 ### `uniffi-bindgen` 版本不匹配

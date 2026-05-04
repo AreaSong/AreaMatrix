@@ -226,7 +226,7 @@ xcodebuild test \
 通信阶段失败。此时使用：
 
 ```bash
-bash scripts/check-macos-tests.sh
+./dev test macos
 ```
 
 该脚本先运行标准 `xcodebuild test`。只有失败日志明确指向
@@ -403,8 +403,8 @@ fn sigkill_during_import_safe() {
 2. cargo clippy -- -D warnings
 3. cargo test --workspace
 4. cargo llvm-cov --fail-under-lines 70
-5. ./scripts/build-core.sh
-6. xcodebuild test（本地沙箱可用 `bash scripts/check-macos-tests.sh` 补执行证据）
+5. ./dev build core
+6. xcodebuild test（本地沙箱可用 `./dev test macos` 补执行证据）
 7. swiftformat --lint
 8. swiftlint --strict
 

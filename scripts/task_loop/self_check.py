@@ -1,0 +1,613 @@
+"""Self-check suite for the Python AreaMatrix task loop."""
+
+from __future__ import annotations
+
+import json
+import os
+import shutil
+import subprocess
+import tempfile
+import time
+from pathlib import Path
+from typing import Callable, Sequence
+
+from scripts.dev_tools.checks import run_skills_check
+
+from . import git as git_helpers
+from . import state
+
+
+class CheckFailure(RuntimeError):
+    pass
+
+
+def log(message: str) -> None:
+    print(f"[task-loop-check] {message}")
+
+
+def root_executable(root: Path, name: str) -> str:
+    path = root / name
+    return str(path if path.exists() else name)
+
+
+def read_json(path: Path) -> dict[str, object]:
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def write_json(path: Path, data: dict[str, object]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(data, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def assert_json(path: Path, predicate: Callable[[dict[str, object]], bool], label: str) -> None:
+    data = read_json(path)
+    if not predicate(data):
+        raise CheckFailure(f"json assertion failed: {label} ({path})")
+
+
+def assert_contains(text: str, needle: str, label: str) -> None:
+    if needle not in text:
+        raise CheckFailure(f"missing text for {label}: {needle}")
+
+
+def assert_not_exists(path: Path, label: str) -> None:
+    if path.exists():
+        raise CheckFailure(f"unexpected path exists for {label}: {path}")
+
+
+def assert_exists(path: Path, label: str) -> None:
+    if not path.exists():
+        raise CheckFailure(f"missing path for {label}: {path}")
+
+
+class Harness:
+    def __init__(self, root: Path, tmp: Path) -> None:
+        self.root = root
+        self.tmp = tmp
+        self.python = os.environ.get("PYTHON_BIN", "python3")
+        self.task_loop = root_executable(root, "task-loop")
+        self.dev = root_executable(root, "dev")
+
+    def run(
+        self,
+        argv: Sequence[str],
+        *,
+        env: dict[str, str] | None = None,
+        cwd: Path | None = None,
+        check: bool = True,
+    ) -> subprocess.CompletedProcess[str]:
+        merged = os.environ.copy()
+        if env:
+            merged.update(env)
+        proc = subprocess.run(
+            list(argv),
+            cwd=cwd or self.root,
+            env=merged,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+        if check and proc.returncode != 0:
+            raise CheckFailure(
+                f"command failed ({proc.returncode}): {list(argv)}\n"
+                f"stdout:\n{proc.stdout}\n"
+                f"stderr:\n{proc.stderr}"
+            )
+        return proc
+
+    def temp_env(self, prefix: str, extra: dict[str, str] | None = None) -> dict[str, str]:
+        base = self.tmp / prefix
+        env = {
+            "ROOT_DIR": str(self.root),
+            "PROGRESS_FILE": str(base / "progress.json"),
+            "LOG_ROOT": str(base / "logs"),
+            "RUN_SUMMARY_ROOT": str(base / "runs"),
+            "PROGRESS_BACKUP_ROOT": str(base / "backups"),
+            "LOCK_DIR": str(base / "lock"),
+            "CONTROL_DIR": str(base / "control"),
+            "CONSOLE_LOG_ROOT": str(base / "console"),
+        }
+        if extra:
+            env.update(extra)
+        return env
+
+    def task_loop_run(
+        self,
+        prefix: str,
+        args: Sequence[str],
+        *,
+        extra_env: dict[str, str] | None = None,
+        check: bool = True,
+    ) -> subprocess.CompletedProcess[str]:
+        return self.run([self.task_loop, *args], env=self.temp_env(prefix, extra_env), check=check)
+
+    def dev_run(
+        self,
+        prefix: str,
+        args: Sequence[str],
+        *,
+        extra_env: dict[str, str] | None = None,
+        check: bool = True,
+    ) -> subprocess.CompletedProcess[str]:
+        return self.run([self.dev, *args], env=self.temp_env(prefix, extra_env), check=check)
+
+
+def init_temp_git_repo(repo: Path) -> None:
+    repo.mkdir(parents=True, exist_ok=True)
+    subprocess.run(["git", "init", "-q"], cwd=repo, check=True)
+    subprocess.run(["git", "branch", "-M", "main"], cwd=repo, check=True)
+    subprocess.run(["git", "config", "user.email", "task-loop-check@example.invalid"], cwd=repo, check=True)
+    subprocess.run(["git", "config", "user.name", "AreaMatrix Task Loop Check"], cwd=repo, check=True)
+    (repo / ".gitignore").write_text(
+        ".codex/task-loop-lock/\n.codex/task-loop-tmp/\n.codex/task-loop-control/\n",
+        encoding="utf-8",
+    )
+    (repo / "README.md").write_text("baseline\n", encoding="utf-8")
+    subprocess.run(["git", "add", "."], cwd=repo, check=True)
+    subprocess.run(["git", "commit", "-q", "-m", "initial"], cwd=repo, check=True)
+
+
+def add_prompt_fixture(repo: Path, labels: Sequence[str]) -> None:
+    for label in labels:
+        phase = f"phase-{label.split('-', 1)[0]}"
+        task_name = label.replace("/task-", "-task-")
+        copy_file = repo / "tasks/prompts/_shared/copy-ready" / phase / f"{task_name}.md"
+        verify_file = repo / "tasks/prompts/_shared/verify-ready" / phase / f"{task_name}.md"
+        copy_file.parent.mkdir(parents=True, exist_ok=True)
+        verify_file.parent.mkdir(parents=True, exist_ok=True)
+        copy_file.write_text(f"# copy {label}\n风险等级：`Medium`\n", encoding="utf-8")
+        verify_file.write_text(f"# verify {label}\n", encoding="utf-8")
+
+
+def write_live_lock(lock_dir: Path, run_id: str, operation: str = "run") -> None:
+    lock_dir.mkdir(parents=True, exist_ok=True)
+    (lock_dir / "pid").write_text(f"{os.getpid()}\n", encoding="utf-8")
+    (lock_dir / "run_id").write_text(f"{run_id}\n", encoding="utf-8")
+    (lock_dir / "operation").write_text(f"{operation}\n", encoding="utf-8")
+    (lock_dir / "started_at").write_text("now\n", encoding="utf-8")
+
+
+def check_static(h: Harness) -> None:
+    log("static checks")
+    files = sorted((h.root / "scripts/task_loop").glob("*.py")) + sorted((h.root / "scripts/dev_tools").glob("*.py"))
+    h.run([h.python, "-m", "py_compile", *[str(path) for path in files]])
+
+
+def check_repo_health(h: Harness) -> None:
+    log("repo health")
+    if run_skills_check(h.root) != 0:
+        raise CheckFailure("skill health failed")
+    h.run([h.python, "tasks/prompts/_shared/prompt_pipeline.py", "doctor"])
+
+
+def check_real_status(h: Harness) -> None:
+    log("real status is readable")
+    status = h.run([h.task_loop, "status"]).stdout
+    assert_contains(status, "stale_in_progress:", "task-loop status stale count")
+    assert_contains(status, "drain_requested:", "task-loop status drain")
+    dev_status = h.run([h.dev, "status"]).stdout
+    assert_contains(dev_status, "AreaMatrix Task Loop 控制台", "dev status header")
+    assert_contains(dev_status, "进程快照", "dev status process snapshot")
+    preflight = h.dev_run("dev-preflight", ["preflight"]).stdout
+    assert_contains(preflight, "Preflight", "dev preflight header")
+
+
+def check_dev_console(h: Harness) -> None:
+    log("dev recovery hints use stable action names")
+    prefix = h.tmp / "dev-hints"
+    write_live_lock(prefix / "lock", "dev-hints-run")
+    write_json(
+        prefix / "progress.json",
+        {
+            "version": 1,
+            "tasks": {
+                "0-1/task-01": {
+                    "attempts": 1,
+                    "copy_log": "/tmp/missing-copy.log",
+                    "note": "fake stale",
+                    "run_id": "missing-run",
+                    "status": "in_progress",
+                    "verify_log": "/tmp/missing-verify.log",
+                },
+                "0-1/task-02": {"note": "fake failed", "status": "failed"},
+                "0-2/task-01": {"note": "fake blocked", "status": "blocked"},
+            },
+        },
+    )
+    hints = h.dev_run("dev-hints", ["status"]).stdout
+    assert_contains(hints, "从 stale 任务继续", "dev stale action")
+    assert_contains(hints, "./dev resume-stale", "dev stale command")
+    assert_contains(hints, "从 failed 任务继续", "dev failed action")
+    assert_contains(hints, "./dev resume-failed", "dev failed command")
+    assert_contains(hints, "一键优雅收尾", "dev drain action")
+    assert_contains(hints, "./dev drain", "dev drain command")
+
+    log("dev console preview does not execute")
+    preview = h.dev_run(
+        "dev-preview",
+        ["preview"],
+        extra_env={"DEV_SH_EXECUTION_MODE": "foreground", "DEV_SH_GIT_CHECKPOINT": "off", "DEV_SH_MAX_TASKS": "1"},
+    ).stdout
+    assert_contains(preview, "未执行。", "dev preview no execution")
+    assert_contains(preview, "--max-tasks 1", "dev preview max tasks")
+    assert_not_exists(h.tmp / "dev-preview/progress.json", "dev preview progress")
+
+    log("dev console temp dry-run avoids real progress")
+    temp_dry = h.dev_run("dev-temp-dry-run", ["dry-run"], extra_env={"DEV_SH_MAX_TASKS": "1"}).stdout
+    assert_contains(temp_dry, "临时 dry-run 完成，真实 progress/logs 未修改。", "dev temp dry-run")
+    assert_not_exists(h.tmp / "dev-temp-dry-run/progress.json", "dev temp dry-run configured progress")
+
+    log("dev console dry-run foreground command choices")
+    h.dev_run(
+        "dev-foreground",
+        ["start"],
+        extra_env={
+            "DEV_SH_EXECUTION_MODE": "foreground",
+            "DEV_SH_GIT_CHECKPOINT": "off",
+            "DEV_SH_MAX_TASKS": "1",
+            "DEV_SH_DRY_RUN": "1",
+            "DEV_SH_DRY_RUN_RESULT": "PASS",
+        },
+    )
+    assert_json(
+        h.tmp / "dev-foreground/progress.json",
+        lambda data: data["tasks"]["0-1/task-01"]["status"] == "completed",  # type: ignore[index]
+        "dev foreground completed",
+    )
+
+    log("dev console dry-run background command choices")
+    background = h.dev_run(
+        "dev-background",
+        ["start"],
+        extra_env={
+            "DEV_SH_EXECUTION_MODE": "background",
+            "DEV_SH_GIT_CHECKPOINT": "off",
+            "DEV_SH_MAX_TASKS": "1",
+            "DEV_SH_DRY_RUN": "1",
+            "DEV_SH_DRY_RUN_RESULT": "PASS",
+            "DEV_SH_STOP_AFTER": "0-1/task-01",
+        },
+    ).stdout
+    assert_contains(background, "已后台启动：pid=", "dev background start")
+    assert_contains(background, "--stop-after 0-1/task-01", "dev background stop target")
+    progress = h.tmp / "dev-background/progress.json"
+    for _ in range(50):
+        if progress.exists():
+            data = read_json(progress)
+            entry = data.get("tasks", {}).get("0-1/task-01", {})  # type: ignore[union-attr]
+            if isinstance(entry, dict) and entry.get("status") == "completed":
+                break
+        time.sleep(0.1)
+    assert_json(progress, lambda data: data["tasks"]["0-1/task-01"]["status"] == "completed", "dev background completed")  # type: ignore[index]
+    if not list((h.tmp / "dev-background/console").glob("*.log")):
+        raise CheckFailure("dev background console log missing")
+
+    log("dev console blocks duplicate live runner")
+    write_live_lock(h.tmp / "dev-live/lock", "live-run")
+    live = h.dev_run(
+        "dev-live",
+        ["start"],
+        extra_env={
+            "DEV_SH_EXECUTION_MODE": "foreground",
+            "DEV_SH_GIT_CHECKPOINT": "off",
+            "DEV_SH_MAX_TASKS": "1",
+            "DEV_SH_DRY_RUN": "1",
+        },
+        check=False,
+    )
+    if live.returncode == 0:
+        raise CheckFailure("dev console unexpectedly allowed duplicate live runner")
+    assert_contains(live.stdout + live.stderr, "已有 live runner，已阻止启动第二个 runner", "dev live guard")
+
+
+def check_runner_core(h: Harness) -> None:
+    log("drain request requires a live runner")
+    no_drain = h.task_loop_run("drain-no-runner", ["drain"], check=False)
+    if no_drain.returncode == 0:
+        raise CheckFailure("drain request unexpectedly succeeded without a live runner")
+    assert_contains(no_drain.stdout + no_drain.stderr, "no live task loop lock found", "drain no live runner")
+
+    log("dry-run PASS writes temp progress, logs, summary, and index")
+    h.task_loop_run("pass", ["run", "--dry-run", "--phase", "phase-0", "--max-tasks", "1"], extra_env={"DRY_RUN_RESULT": "PASS", "MAX_RETRIES": "1"})
+    assert_json(h.tmp / "pass/progress.json", lambda data: data["tasks"]["0-1/task-01"]["status"] == "completed", "pass progress")  # type: ignore[index]
+    summary = next((h.tmp / "pass/runs").rglob("summary.json"))
+    assert_json(summary, lambda data: data["status"] == "completed" and data["totals"]["completed_in_run"] == 1, "pass summary")  # type: ignore[index]
+    assert_json(h.tmp / "pass/runs/index.json", lambda data: data["runs"][0]["status"] == "completed", "pass index")  # type: ignore[index]
+    assert_not_exists(h.tmp / "pass/lock", "pass lock release")
+
+    log("runner validates explicit start and stop targets before execution")
+    start_guard = h.task_loop_run("start-target-guard", ["run", "--dry-run", "--phase", "phase-0", "--start-from", "2-1/task-19", "--max-tasks", "1"], check=False)
+    if start_guard.returncode == 0:
+        raise CheckFailure("start target outside selected phase unexpectedly succeeded")
+    assert_contains(start_guard.stdout + start_guard.stderr, "START_FROM label is not runnable in selected phases", "start guard")
+    assert_not_exists(h.tmp / "start-target-guard/progress.json", "start guard progress")
+    stop_guard = h.task_loop_run("stop-target-guard", ["run", "--dry-run", "--phase", "phase-0", "--stop-after", "9-9/task-99", "--max-tasks", "1"], check=False)
+    if stop_guard.returncode == 0:
+        raise CheckFailure("missing stop target unexpectedly succeeded")
+    assert_contains(stop_guard.stdout + stop_guard.stderr, "STOP_AFTER label is not runnable in selected phases", "stop guard")
+    assert_not_exists(h.tmp / "stop-target-guard/progress.json", "stop guard progress")
+
+    log("drain request stops after current task")
+    drain_repo = h.tmp / "drain-repo"
+    add_prompt_fixture(drain_repo, ["0-1/task-01", "0-1/task-02"])
+    drain_env = {
+        "ROOT_DIR": str(drain_repo),
+        "PROGRESS_FILE": str(h.tmp / "drain/progress.json"),
+        "LOG_ROOT": str(h.tmp / "drain/logs"),
+        "RUN_SUMMARY_ROOT": str(h.tmp / "drain/runs"),
+        "PROGRESS_BACKUP_ROOT": str(h.tmp / "drain/backups"),
+        "LOCK_DIR": str(h.tmp / "drain/lock"),
+        "CONTROL_DIR": str(h.tmp / "drain/control"),
+    }
+    write_live_lock(h.tmp / "drain/lock", "drain-run")
+    request = h.run([h.task_loop, "drain"], env={**drain_env, "RUN_ID": "drain-request"})
+    assert_contains(request.stdout, "request drain for live runner", "drain request")
+    shutil.rmtree(h.tmp / "drain/lock")
+    run = h.run(
+        [h.task_loop, "run", "--dry-run", "--phase", "phase-0"],
+        env={**drain_env, "RUN_ID": "drain-run", "DRY_RUN_RESULT": "PASS", "MAX_RETRIES": "1"},
+    )
+    assert_json(
+        h.tmp / "drain/progress.json",
+        lambda data: data["tasks"]["0-1/task-01"]["status"] == "completed" and "0-1/task-02" not in data["tasks"],  # type: ignore[index]
+        "drain progress",
+    )
+    assert_json(h.tmp / "drain/runs/drain-run/summary.json", lambda data: data["status"] == "drained", "drain summary")
+    assert_not_exists(h.tmp / "drain/control/drain.request", "drain request cleared")
+    assert_contains(run.stdout, "drain requested; stop after completed task=0-1/task-01", "drain stop log")
+
+    log("stale status and clear use only temp progress")
+    write_json(
+        h.tmp / "stale/progress.json",
+        {
+            "version": 1,
+            "tasks": {
+                "0-1/task-01": {
+                    "attempts": 1,
+                    "copy_log": "/tmp/missing-copy.log",
+                    "note": "fake stale",
+                    "risk": "Medium",
+                    "run_id": "missing-run",
+                    "status": "in_progress",
+                    "verify_log": "/tmp/missing-verify.log",
+                }
+            },
+        },
+    )
+    stale_status = h.task_loop_run("stale", ["status"]).stdout
+    assert_contains(stale_status, "stale_in_progress: 1", "stale status")
+    h.task_loop_run("stale", ["clear-stale"])
+    assert_json(h.tmp / "stale/progress.json", lambda data: data["tasks"] == {}, "clear stale")  # type: ignore[index]
+    if not list((h.tmp / "stale/backups").glob("progress-before-clear-stale-*.json")):
+        raise CheckFailure("clear-stale backup missing")
+
+    log("resume-stale FAIL does not mark completed")
+    write_json(
+        h.tmp / "resume/progress.json",
+        {
+            "version": 1,
+            "tasks": {
+                "0-1/task-01": {
+                    "attempts": 1,
+                    "copy_log": "/tmp/missing-copy.log",
+                    "note": "fake stale",
+                    "risk": "Medium",
+                    "run_id": "missing-run",
+                    "status": "in_progress",
+                    "verify_log": "/tmp/missing-verify.log",
+                }
+            },
+        },
+    )
+    resume = h.task_loop_run(
+        "resume",
+        ["resume-stale", "--dry-run", "--phase", "phase-0"],
+        extra_env={"DRY_RUN_RESULT": "FAIL", "DRY_RUN_MAX_ATTEMPTS": "1", "MAX_RETRIES": "1"},
+        check=False,
+    )
+    if resume.returncode == 0:
+        raise CheckFailure("resume-stale FAIL path unexpectedly succeeded")
+    assert_json(h.tmp / "resume/progress.json", lambda data: data["tasks"]["0-1/task-01"]["status"] == "failed", "resume failed")  # type: ignore[index]
+    resume_summary = next((h.tmp / "resume/runs").rglob("summary.json"))
+    assert_json(resume_summary, lambda data: data["status"] == "failed" and data["totals"]["retries"] == 1, "resume summary")  # type: ignore[index]
+
+    log("live lock blocks second runner")
+    write_live_lock(h.tmp / "lockcase/lock", "fake-run")
+    lockcase = h.task_loop_run("lockcase", ["run", "--dry-run", "--phase", "phase-0", "--max-tasks", "1"], check=False)
+    if lockcase.returncode == 0:
+        raise CheckFailure("lock conflict unexpectedly allowed a second runner")
+    assert_contains(lockcase.stdout + lockcase.stderr, "task loop lock is held by live pid", "lock conflict")
+
+
+def check_git_helpers(h: Harness) -> None:
+    log("git helper preflight and checkpoint")
+    git_repo = h.tmp / "git-helper"
+    init_temp_git_repo(git_repo)
+    preflight = git_helpers.preflight(git_repo, "commit", "auto", "origin", True, "check001")
+    if preflight.get("status") != "ok" or not str(preflight.get("branch", "")).startswith("codex/areamatrix-task-loop-check001"):
+        raise CheckFailure(f"bad git preflight: {preflight}")
+    if git_helpers.current_branch(git_repo) != "codex/areamatrix-task-loop-check001":
+        raise CheckFailure("auto branch was not created")
+    progress = git_repo / "tasks/prompts/_shared/progress.json"
+    summary = git_repo / ".codex/task-loop-runs/check001/summary.json"
+    write_json(progress, {"version": 1, "tasks": {"0-1/task-01": {"status": "completed"}}})
+    write_json(summary, {"version": 1, "tasks": {"0-1/task-01": {"status": "completed"}}})
+    (git_repo / "implemented.txt").write_text("implemented\n", encoding="utf-8")
+    evidence = git_helpers.checkpoint(
+        git_repo,
+        "commit",
+        "origin",
+        True,
+        "0-1/task-01",
+        "phase-0",
+        "0-1-task-01",
+        1,
+        "check001",
+        str(git_repo / ".codex/task-loop-logs/check001/phase-0/copy.log"),
+        str(git_repo / ".codex/task-loop-logs/check001/phase-0/verify.log"),
+        progress,
+        summary,
+    )
+    if evidence.get("status") != "committed" or len(str(evidence.get("commit", ""))) < 7:
+        raise CheckFailure(f"bad git checkpoint evidence: {evidence}")
+    assert_json(progress, lambda data: data["tasks"]["0-1/task-01"]["git_checkpoint_status"] == "committed", "git checkpoint progress")  # type: ignore[index]
+    if git_helpers.status_short(git_repo):
+        raise CheckFailure("git checkpoint left dirty worktree")
+
+    dirty_repo = h.tmp / "git-dirty"
+    init_temp_git_repo(dirty_repo)
+    (dirty_repo / "README.md").write_text("baseline\ndirty\n", encoding="utf-8")
+    try:
+        git_helpers.preflight(dirty_repo, "commit", "auto", "origin", True, "dirty")
+    except git_helpers.GitError as exc:
+        assert_contains(str(exc), "requires a clean worktree", "dirty preflight")
+    else:
+        raise CheckFailure("dirty git preflight unexpectedly succeeded")
+
+    push_fail_repo = h.tmp / "git-push-fail"
+    init_temp_git_repo(push_fail_repo)
+    subprocess.run(["git", "checkout", "-q", "-b", "codex/push-fail"], cwd=push_fail_repo, check=True)
+    push_progress = push_fail_repo / "tasks/prompts/_shared/progress.json"
+    push_summary = push_fail_repo / ".codex/task-loop-runs/pushfail/summary.json"
+    write_json(push_progress, {"version": 1, "tasks": {"0-1/task-01": {"status": "completed"}}})
+    write_json(push_summary, {"version": 1, "tasks": {"0-1/task-01": {"status": "completed"}}})
+    (push_fail_repo / "push-fail.txt").write_text("push fail\n", encoding="utf-8")
+    try:
+        git_helpers.checkpoint(
+            push_fail_repo,
+            "push",
+            "missing",
+            True,
+            "0-1/task-01",
+            "phase-0",
+            "0-1-task-01",
+            1,
+            "pushfail",
+            "",
+            "",
+            push_progress,
+            push_summary,
+        )
+    except git_helpers.GitError:
+        pass
+    else:
+        raise CheckFailure("push failure checkpoint unexpectedly succeeded")
+    assert_json(push_progress, lambda data: data["tasks"]["0-1/task-01"]["git_checkpoint_status"] == "git_push_failed", "push failure progress")  # type: ignore[index]
+    if git_helpers.status_short(push_fail_repo):
+        raise CheckFailure("push failure checkpoint left dirty worktree")
+
+
+def check_runner_git_checkpoint(h: Harness) -> None:
+    log("runner git checkpoint with fake codex in temp repo")
+    runner_repo = h.tmp / "runner-git"
+    init_temp_git_repo(runner_repo)
+    add_prompt_fixture(runner_repo, ["0-1/task-01"])
+    subprocess.run(["git", "add", "."], cwd=runner_repo, check=True)
+    subprocess.run(["git", "commit", "-q", "-m", "add prompt fixtures"], cwd=runner_repo, check=True)
+    fake_codex = h.tmp / "fake-codex"
+    fake_codex.write_text(
+        """#!/usr/bin/env bash
+set -euo pipefail
+out=""
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    -o)
+      out="$2"
+      shift 2
+      ;;
+    --cd)
+      cd "$2"
+      shift 2
+      ;;
+    *)
+      shift
+      ;;
+  esac
+done
+input="$(cat)"
+mkdir -p "$(dirname "$out")"
+if printf '%s' "$input" | grep -q 'VERIFY_RESULT'; then
+  printf '验收通过\\nVERIFY_RESULT: PASS\\n' > "$out"
+else
+  printf 'copy ok\\n' > "$out"
+fi
+""",
+        encoding="utf-8",
+    )
+    fake_codex.chmod(0o755)
+    h.run(
+        [h.task_loop, "run", "--phase", "phase-0", "--max-tasks", "1"],
+        env={
+            "ROOT_DIR": str(runner_repo),
+            "CODEX_BIN": str(fake_codex),
+            "RISK_POLICY": "allow",
+            "MAX_RETRIES": "1",
+        },
+    )
+    progress = runner_repo / "tasks/prompts/_shared/progress.json"
+    assert_json(
+        progress,
+        lambda data: data["tasks"]["0-1/task-01"]["status"] == "completed" and len(data["tasks"]["0-1/task-01"].get("git_commit", "")) >= 7,  # type: ignore[index]
+        "runner git progress",
+    )
+    if git_helpers.status_short(runner_repo):
+        raise CheckFailure("runner git checkpoint left dirty worktree")
+    if not git_helpers.current_branch(runner_repo).startswith("codex/areamatrix-task-loop-"):
+        raise CheckFailure("runner did not auto-create task branch")
+
+
+def check_git_ignore(h: Harness) -> None:
+    log("git ignore policy")
+    ignored = [
+        ".codex/task-loop-lock/foo",
+        ".codex/task-loop-control/drain.request",
+        ".codex/task-loop-tmp/foo",
+        ".codex/task-loop-console/foo.log",
+    ]
+    tracked = [
+        "tasks/prompts/_shared/progress.json",
+        ".codex/task-loop-runs/index.json",
+        ".codex/task-loop-runs/example/summary.json",
+        ".codex/task-loop-progress-backups/progress-before-reset-example.json",
+        ".codex/task-loop-logs/example/phase-0/example.log",
+    ]
+    for item in ignored:
+        proc = h.run(["git", "check-ignore", "-q", item], check=False)
+        if proc.returncode != 0:
+            raise CheckFailure(f"expected ignored: {item}")
+    for item in tracked:
+        proc = h.run(["git", "check-ignore", "-q", item], check=False)
+        if proc.returncode == 0:
+            raise CheckFailure(f"expected tracked/not ignored: {item}")
+
+
+def run_check(root_dir: Path) -> int:
+    root = root_dir.resolve()
+    keep = os.environ.get("KEEP_TASK_LOOP_CHECK_TMP") == "1"
+    with tempfile.TemporaryDirectory(prefix="areamatrix-task-loop-check-") as tmp_name:
+        tmp = Path(tmp_name)
+        harness = Harness(root, tmp)
+        try:
+            check_static(harness)
+            check_repo_health(harness)
+            check_real_status(harness)
+            check_dev_console(harness)
+            check_runner_core(harness)
+            check_git_helpers(harness)
+            check_runner_git_checkpoint(harness)
+            check_git_ignore(harness)
+        except CheckFailure as exc:
+            print(f"[task-loop-check] FAIL: {exc}")
+            print(f"[task-loop-check] temp dir: {tmp}")
+            if keep:
+                print(f"[task-loop-check] kept temp dir: {tmp}")
+                return 1
+            return 1
+        if keep:
+            preserved = root / ".codex/task-loop-tmp" / tmp.name
+            preserved.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copytree(tmp, preserved, dirs_exist_ok=True)
+            print(f"[task-loop-check] kept temp dir: {preserved}")
+        log("OK")
+        return 0

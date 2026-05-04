@@ -433,11 +433,11 @@ struct DebugMenu: View {
 
 ---
 
-## 诊断包导出脚本
+## 诊断包导出命令示例
 
 ```bash
 #!/bin/bash
-# scripts/collect-diagnostics.sh
+# 可按需封装到 ./dev diagnostics collect
 set -euo pipefail
 
 OUT="${1:-/tmp/am-diag-$(date +%Y%m%d-%H%M%S).zip}"

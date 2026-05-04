@@ -19,15 +19,15 @@ Validation is not complete when commands pass but the implementation is a placeh
 | `tasks/prompts/**` | `python3 tasks/prompts/_shared/prompt_pipeline.py doctor` |
 | prompt manifests or shared rules | add `python3 tasks/prompts/_shared/prompt_pipeline.py status` and render one affected task |
 | prompt coverage or control maps | add `python3 tasks/prompts/_shared/prompt_pipeline.py audit --pages` |
-| `scripts/run_area_matrix_task_pipeline.sh` | `bash -n scripts/run_area_matrix_task_pipeline.sh`; `bash scripts/run_area_matrix_task_pipeline.sh --status`; dry-run one task |
-| `.codex/skills-src/**` or `.agents/skills/**` | `bash scripts/check-skills.sh`; `python3 tasks/prompts/_shared/prompt_pipeline.py doctor` |
-| governance docs, PR/issue templates, CODEOWNERS, CI workflows | `bash scripts/check-governance.sh`; `bash scripts/check-skills.sh`; `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`; YAML parse workflows |
+| `task-loop`, `dev`, `scripts/task_loop/**`, `scripts/dev_tools/**` | `python3 -m py_compile scripts/task_loop/*.py scripts/dev_tools/*.py`; `./task-loop status`; `./dev preflight`; `./task-loop check` |
+| `.codex/skills-src/**` or `.agents/skills/**` | `./dev check skills`; `./dev check prompts` |
+| governance docs, PR/issue templates, CODEOWNERS, CI workflows | `./dev check governance`; `./dev check skills`; `./dev check prompts`; YAML parse workflows |
 
 Dry-run examples:
 
 ```bash
-DRY_RUN=1 DRY_RUN_RESULT=PASS MAX_RETRIES=1 bash scripts/run_area_matrix_task_pipeline.sh --phase phase-1 --max-tasks 1
-DRY_RUN=1 RISK_GATE=high RISK_POLICY=pause bash scripts/run_area_matrix_task_pipeline.sh --phase phase-1 --max-tasks 1
+DRY_RUN=1 DRY_RUN_RESULT=PASS MAX_RETRIES=1 ./task-loop run --phase phase-1 --max-tasks 1
+DRY_RUN=1 RISK_GATE=high RISK_POLICY=pause ./task-loop run --phase phase-1 --max-tasks 1
 ```
 
 ## Rust Core
@@ -48,10 +48,10 @@ Required for `apps/macos/**`:
 
 ```bash
 xcodebuild -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' build CODE_SIGNING_ALLOWED=NO
-bash scripts/check-macos-tests.sh
+./dev test macos
 ```
 
-`scripts/check-macos-tests.sh` is the local macOS unit-test gate. It first runs the
+`./dev test macos` is the local macOS unit-test gate. It first runs the
 standard `xcodebuild test` command. Only when the failure log explicitly points
 to a local `testmanagerd` sandbox restriction may it reuse the built XCTest
 bundle through `xcrun xctest`. Non-sandbox failures, assertion failures, build
@@ -66,7 +66,7 @@ Docs-only changes do not need code tests by default. Still run targeted checks w
 - Prompt docs or manifests: run `doctor`.
 - API or UDL docs: inspect `docs/api/core-api.md` and `core/area_matrix.udl` alignment.
 - UX page specs with control maps: run page audit when prompt coverage can drift.
-- Skill docs: run `bash scripts/check-skills.sh`.
+- Skill docs: run `./dev check skills`.
 
 ## Mixed Changes
 

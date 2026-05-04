@@ -97,7 +97,7 @@ CI 在 tag push 时触发 release workflow（详见 `.github/workflows/release.y
 ```bash
 # 1. 干净构建
 git clean -fdx -e .vscode -e .idea  # 谨慎！会删除未提交文件
-BUILD_PROFILE=release ./scripts/build-core.sh
+./dev build core --profile release
 
 # 2. Xcode Release
 xcodebuild -project apps/macos/AreaMatrix.xcodeproj \

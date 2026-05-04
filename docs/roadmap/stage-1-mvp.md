@@ -107,7 +107,7 @@ flowchart LR
 
 - [ ] `area_matrix.udl` 完整定义（[ffi-design.md](../architecture/ffi-design.md)）
 - [ ] build.rs + scaffolding
-- [ ] `scripts/build-core.sh` 跑通
+- [ ] `./dev build core` 跑通
 - [ ] 在 Xcode 中能调用 `init_repo` 并验证 DB 创建
 
 ### 交付物

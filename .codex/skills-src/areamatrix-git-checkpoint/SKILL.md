@@ -12,7 +12,7 @@ Use this skill when a task-loop run needs Git checkpoint policy, commit review, 
 1. [AGENTS.md](../../../AGENTS.md)
 2. [CODE_REVIEW.md](../../../CODE_REVIEW.md)
 3. [docs/development/ci-governance.md](../../../docs/development/ci-governance.md)
-4. [scripts/run_area_matrix_task_pipeline.md](../../../scripts/run_area_matrix_task_pipeline.md)
+4. [scripts/task_loop.md](../../../scripts/task_loop.md)
 5. [areamatrix-task-loop](../areamatrix-task-loop/SKILL.md)
 6. [references/checkpoint-policy.md](references/checkpoint-policy.md)
 
