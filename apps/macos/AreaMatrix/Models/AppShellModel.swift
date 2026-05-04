@@ -10,6 +10,7 @@ final class OnboardingModel: ObservableObject {
         case confirmRepositoryInitialization(RepositoryInitializationDraft)
         case initializing(RepositoryInitializationDraft)
         case initializationFailed(String, CoreErrorMappingSnapshot?)
+        case initializationDone(RepositoryInitializationResult)
         case mainLoading(String)
         case mainRepoError(String, CoreErrorMappingSnapshot?)
         case dbRepairConfirm(String, ScanSessionSnapshot?, CoreErrorMappingSnapshot?)
@@ -29,25 +30,25 @@ final class OnboardingModel: ObservableObject {
     }
 
     private static let defaultRepositoryPathDisplay = "~/AreaMatrix/"
-    @Published private(set) var route: Route = .loadingConfiguration
-    @Published private(set) var toastMessage: String?
+    @Published var route: Route = .loadingConfiguration
+    @Published var toastMessage: String?
     @Published private(set) var choosePathAction: ChoosePathAction?
     @Published private(set) var validatePathAction: ValidatePathAction?
-    @Published private(set) var repositoryPathText = OnboardingModel.defaultRepositoryPathDisplay
-    @Published private(set) var repositoryPathError: String?
-    @Published private(set) var repositoryPathErrorMapping: CoreErrorMappingSnapshot?
-    @Published private(set) var repositoryPathValidation: RepoPathValidationSnapshot?
+    @Published var repositoryPathText = OnboardingModel.defaultRepositoryPathDisplay
+    @Published var repositoryPathError: String?
+    @Published var repositoryPathErrorMapping: CoreErrorMappingSnapshot?
+    @Published var repositoryPathValidation: RepoPathValidationSnapshot?
     @Published private(set) var existingRepositoryMetadata: ExistingRepositoryMetadataSnapshot?
-    @Published private(set) var latestScanSession: ScanSessionSnapshot?
+    @Published var latestScanSession: ScanSessionSnapshot?
     @Published var initializationScanSession: ScanSessionSnapshot?
     @Published var initializationRecoveryReport: RecoveryReportSnapshot?
     @Published var initializationProgressWarning: String?
+    @Published private(set) var isInitializationCancellationRequested = false
     @Published private(set) var isValidatingRepositoryPath = false
     @Published private(set) var isICloudRiskAccepted = false
     @Published private(set) var isSetupQuitConfirmationPresented = false
 
     var canContinueFromChoosePath: Bool { !isValidatingRepositoryPath && repositoryPathError == nil }
-
     var canContinueFromValidatePath: Bool {
         guard !isValidatingRepositoryPath, let validation = repositoryPathValidation else {
             return false
@@ -67,12 +68,11 @@ final class OnboardingModel: ObservableObject {
     var validatePathPrimaryActionTitle: String {
         repositoryPathValidation?.isInitialized == true ? "Open Repository" : "Continue"
     }
-
     var validatePathReturnRouteIsSettings: Bool { validatePathReturnRoute == .settingsRepository }
     private let settingsReader: any AppSettingsReading
-    private let settingsWriter: any AppSettingsWriting
+    let settingsWriter: any AppSettingsWriting
     private let configLoader: any CoreConfigurationLoading
-    private let pathValidator: any CoreRepositoryPathValidating
+    let pathValidator: any CoreRepositoryPathValidating
     let repositoryInitializer: any CoreRepositoryInitializing
     let startupRecoverer: any CoreStartupRecovering
     private let existingRepositoryMetadataReader: any ExistingRepositoryMetadataReading
@@ -110,7 +110,6 @@ final class OnboardingModel: ObservableObject {
         self.helpOpener = helpOpener
         self.directoryPicker = directoryPicker
     }
-
     @MainActor
     func bootstrapIfNeeded() async {
         guard !didBootstrap else { return }
@@ -144,21 +143,18 @@ final class OnboardingModel: ObservableObject {
         isICloudRiskAccepted = false
         await validateSelectedRepositoryPath()
     }
-
     @MainActor
     func returnFromValidatePath() {
         route = validatePathReturnRoute
         toastMessage = nil
         repositoryPathErrorMapping = nil
     }
-
     @MainActor
     func continueFromWelcome() {
         route = .choosePath
         toastMessage = nil
         repositoryPathError = localRepositoryPathError(for: repositoryPathText)
     }
-
     @MainActor
     func updateRepositoryPath(_ value: String) {
         repositoryPathText = value
@@ -168,6 +164,7 @@ final class OnboardingModel: ObservableObject {
         initializationScanSession = nil
         initializationRecoveryReport = nil
         initializationProgressWarning = nil
+        isInitializationCancellationRequested = false
         choosePathAction = nil
         validatePathAction = nil
         repositoryPathErrorMapping = nil
@@ -175,19 +172,15 @@ final class OnboardingModel: ObservableObject {
         isICloudRiskAccepted = false
         repositoryPathError = localRepositoryPathError(for: value)
     }
-
     @MainActor
     func chooseRepositoryPath() {
-        guard let selectedURL = directoryPicker.chooseDirectory() else { return }
-        updateRepositoryPath(selectedURL.path)
+        if let selectedURL = directoryPicker.chooseDirectory() { updateRepositoryPath(selectedURL.path) }
     }
-
     @MainActor
     func useDefaultRepositoryPath() async {
         updateRepositoryPath(Self.defaultRepositoryPathDisplay)
         await continueFromChoosePath()
     }
-
     @MainActor
     func continueFromChoosePath() async {
         guard repositoryPathError == nil else {
@@ -202,12 +195,8 @@ final class OnboardingModel: ObservableObject {
         isICloudRiskAccepted = false
         await validateSelectedRepositoryPath()
     }
-
     @MainActor
-    func retryRepositoryPathValidation() async {
-        validatePathAction = nil
-        await validateSelectedRepositoryPath()
-    }
+    func retryRepositoryPathValidation() async { validatePathAction = nil; await validateSelectedRepositoryPath() }
 
     @MainActor
     func updateICloudRiskAccepted(_ isAccepted: Bool) { isICloudRiskAccepted = isAccepted }
@@ -239,7 +228,6 @@ final class OnboardingModel: ObservableObject {
             }
         }
     }
-
     @MainActor
     func openExistingRepository(_ validation: RepoPathValidationSnapshot) {
         if validatePathReturnRoute != .settingsRepository {
@@ -247,7 +235,6 @@ final class OnboardingModel: ObservableObject {
         }
         route = .mainLoading(validation.repoPath)
     }
-
     @MainActor
     func createEmptyRepositoryFromConfirmInit() async { await initializeRepositoryFromConfirmInit(mode: .createEmpty) }
 
@@ -255,17 +242,16 @@ final class OnboardingModel: ObservableObject {
     func adoptExistingRepositoryFromConfirmInit() async {
         await initializeRepositoryFromConfirmInit(mode: .adoptExisting)
     }
-
     var shouldConfirmSetupExit: Bool {
         if route == .validatePath { return true }
         if case .confirmRepositoryInitialization = route { return true }
+        if case .initializing = route { return true }
         return false
     }
 
     @MainActor
     func requestSetupQuit() {
-        guard shouldConfirmSetupExit else { return }
-        isSetupQuitConfirmationPresented = true
+        if shouldConfirmSetupExit { isSetupQuitConfirmationPresented = true }
     }
 
     @MainActor
@@ -273,6 +259,13 @@ final class OnboardingModel: ObservableObject {
     @MainActor
     @discardableResult
     func confirmSetupQuit() -> Bool {
+        if case .initializing = route {
+            isSetupQuitConfirmationPresented = false
+            isInitializationCancellationRequested = true
+            toastMessage = "正在暂停初始化，AreaMatrix 会等待 Core 到达安全点。"
+            return false
+        }
+
         let shouldCloseWindow = validatePathReturnRoute != .settingsRepository
         isSetupQuitConfirmationPresented = false
         validatePathAction = nil
@@ -282,6 +275,7 @@ final class OnboardingModel: ObservableObject {
         initializationScanSession = nil
         initializationRecoveryReport = nil
         initializationProgressWarning = nil
+        isInitializationCancellationRequested = false
         stopInitializationProgressPolling()
         route = shouldCloseWindow ? .welcome : .settingsRepository
         return shouldCloseWindow
@@ -353,7 +347,6 @@ final class OnboardingModel: ObservableObject {
         initializationRecoveryReport = nil
         initializationProgressWarning = nil
         route = .initializing(draft)
-        startInitializationProgressPolling(repoPath: repoPath, mode: mode)
         defer { stopInitializationProgressPolling() }
 
         do {
@@ -366,9 +359,17 @@ final class OnboardingModel: ObservableObject {
             }
 
             try await recoverStartupResidue(repoPath: repoPath)
+            if finishInitializationCancellationIfRequested() { return }
+            startInitializationProgressPolling(repoPath: repoPath, mode: mode)
             try await initializeRepository(repoPath: repoPath, mode: mode)
+            if finishInitializationCancellationIfRequested() { return }
             settingsWriter.saveConfiguredRepoPath(repoPath)
-            route = .mainLoading(repoPath)
+            route = .initializationDone(RepositoryInitializationResult(
+                repoPath: repoPath,
+                mode: mode,
+                scanSession: initializationScanSession,
+                recoveryReport: initializationRecoveryReport
+            ))
         } catch {
             await routeInitializationFailure(error, repoPath: repoPath)
         }
@@ -396,7 +397,7 @@ final class OnboardingModel: ObservableObject {
         }
     }
 
-    private func validatePathBlockingMessage(for validation: RepoPathValidationSnapshot) -> String? {
+    func validatePathBlockingMessage(for validation: RepoPathValidationSnapshot) -> String? {
         let checks: [(Bool, String)] = [
             (
                 validation.isInsideAreaMatrix || validation.issues.contains(.insideAreaMatrix),
@@ -433,16 +434,11 @@ final class OnboardingModel: ObservableObject {
     private func localRepositoryPathError(for value: String) -> String? {
         let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
 
-        if trimmed.isEmpty {
-            return "请输入资料库路径"
-        }
-        if trimmed.contains("\0") {
-            return "路径字符串无法解析"
-        }
+        if trimmed.isEmpty { return "请输入资料库路径" }
+        if trimmed.contains("\0") { return "路径字符串无法解析" }
         if Self.pathContainsAreaMatrixComponent(trimmed) {
             return "请选择资料库根目录，而不是 .areamatrix 内部目录"
         }
-
         return nil
     }
 
@@ -456,10 +452,21 @@ final class OnboardingModel: ObservableObject {
     }
 
     @MainActor
-    private func routeValidationFailure(
-        _ error: Error,
-        repoPath: String
-    ) async {
+    private func finishInitializationCancellationIfRequested() -> Bool {
+        guard isInitializationCancellationRequested else { return false }
+
+        initializationScanSession = nil
+        initializationRecoveryReport = nil
+        initializationProgressWarning = nil
+        isInitializationCancellationRequested = false
+        route = .welcome
+        toastMessage = "初始化已在安全点停止。下次选择同一资料库时，" +
+            "AreaMatrix 会继续或进入恢复。"
+        return true
+    }
+
+    @MainActor
+    private func routeValidationFailure(_ error: Error, repoPath: String) async {
         guard let coreError = error as? CoreError else {
             repositoryPathErrorMapping = nil
             repositoryPathError = "路径字符串无法解析"
@@ -481,10 +488,7 @@ final class OnboardingModel: ObservableObject {
     }
 
     @MainActor
-    private func routeInitializationFailure(
-        _ error: Error,
-        repoPath: String
-    ) async {
+    func routeInitializationFailure(_ error: Error, repoPath: String) async {
         guard let coreError = error as? CoreError else {
             route = .initializationFailed(repoPath, nil)
             return

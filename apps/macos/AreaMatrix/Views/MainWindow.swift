@@ -29,24 +29,45 @@ struct MainWindow: View {
         ))
         .onExitCommand(perform: model.requestSetupQuit)
         .confirmationDialog(
-            "Quit setup?",
+            setupQuitConfirmationTitle,
             isPresented: Binding(
                 get: { model.isSetupQuitConfirmationPresented },
                 set: { if !$0 { model.cancelSetupQuit() } }
             )
         ) {
-            Button("Quit", role: .destructive) {
+            Button(setupQuitConfirmationActionTitle, role: .destructive) {
                 if model.confirmSetupQuit() {
                     NSApplication.shared.keyWindow?.close()
                 }
             }
             Button("Cancel", role: .cancel, action: model.cancelSetupQuit)
         } message: {
-            Text("AreaMatrix will not create .areamatrix/ or save this repository selection.")
+            Text(setupQuitConfirmationMessage)
         }
         .task {
             await model.bootstrapIfNeeded()
         }
+    }
+
+    private var isConfirmingInitializationCancel: Bool {
+        if case .initializing = model.route { return true }
+        return false
+    }
+
+    private var setupQuitConfirmationTitle: String {
+        isConfirmingInitializationCancel ? "退出初始化？" : "Quit setup?"
+    }
+
+    private var setupQuitConfirmationActionTitle: String {
+        isConfirmingInitializationCancel ? "Stop at Safe Point" : "Quit"
+    }
+
+    private var setupQuitConfirmationMessage: String {
+        if isConfirmingInitializationCancel {
+            return "AreaMatrix 会在当前 Core 操作到达安全点后停止；不会删除用户原文件。"
+        }
+
+        return "AreaMatrix will not create .areamatrix/ or save this repository selection."
     }
 
     @ViewBuilder
@@ -123,10 +144,14 @@ struct MainWindow: View {
                 draft: draft,
                 scanSession: model.initializationScanSession,
                 recoveryReport: model.initializationRecoveryReport,
-                progressWarning: model.initializationProgressWarning
+                progressWarning: model.initializationProgressWarning,
+                isCancellationRequested: model.isInitializationCancellationRequested,
+                onCancel: model.requestSetupQuit
             )
         case .initializationFailed(let repoPath, let mapping):
             InitFailedStepView(repoPath: repoPath, mapping: mapping, onChangePath: model.showChoosePath)
+        case .initializationDone(let result):
+            InitDoneStepView(result: result, onOpenRepository: model.openInitializedRepository)
         case .mainLoading(let repoPath):
             MainLoadingView(repoPath: repoPath, onChooseAnotherFolder: model.showChoosePath)
         case .mainRepoError(let repoPath, let mapping):
@@ -136,6 +161,16 @@ struct MainWindow: View {
                 repoPath: repoPath,
                 scanSession: scanSession,
                 mapping: mapping,
+                onResume: {
+                    Task {
+                        await model.resumeInterruptedInitialization(repoPath: repoPath, scanSession: scanSession)
+                    }
+                },
+                onCleanUpAndRetry: {
+                    Task {
+                        await model.cleanUpInterruptedInitialization(repoPath: repoPath)
+                    }
+                },
                 onChooseAnotherFolder: model.showChoosePath
             )
         case .settingsRepository:

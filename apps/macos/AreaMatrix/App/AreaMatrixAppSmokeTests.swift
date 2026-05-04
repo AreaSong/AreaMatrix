@@ -34,7 +34,12 @@ final class AreaMatrixAdoptExistingTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: indexDatabasePath))
         XCTAssertFalse(FileManager.default.fileExists(atPath: repoURL.appendingPathComponent("README.md").path))
         XCTAssertEqual(writer.savedRepoPaths, [repoURL.path])
-        XCTAssertEqual(model.route, .mainLoading(repoURL.path))
+        XCTAssertEqual(model.route, .initializationDone(RepositoryInitializationResult(
+            repoPath: repoURL.path,
+            mode: .createEmpty,
+            scanSession: nil,
+            recoveryReport: nil
+        )))
     }
 
     @MainActor
@@ -305,21 +310,16 @@ private enum RecordingConfigResult {
 
 private struct StaticSettingsReader: AppSettingsReading {
     let repoPath: String?
-
     func configuredRepoPath() -> String? { repoPath }
 }
-
 private final class RecordingSettingsWriter: AppSettingsWriting {
     private(set) var savedRepoPaths: [String] = []
-
     func saveConfiguredRepoPath(_ repoPath: String) {
         savedRepoPaths.append(repoPath)
     }
 }
-
 private actor RecordingConfigLoader: CoreConfigurationLoading {
     private let result: RecordingConfigResult
-
     init(result: RecordingConfigResult) {
         self.result = result
     }

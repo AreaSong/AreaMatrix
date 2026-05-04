@@ -1,0 +1,55 @@
+一、执行结论
+
+已完成 `2-1/task-13` 修复重试。
+
+二、执行范围
+
+单任务：`2-1/task-13`
+
+修改文件：
+- `apps/macos/AreaMatrix/Bridge/CoreBridge.swift`
+- `apps/macos/AreaMatrix/Models/AppShellModel.swift`
+- `apps/macos/AreaMatrix/Models/OnboardingInitializationProgress.swift`
+- `apps/macos/AreaMatrix/Views/MainWindow.swift`
+- `apps/macos/AreaMatrix/App/AreaMatrixApp.swift`
+- `apps/macos/AreaMatrix/Views/Onboarding/InitializingStepView.swift`
+- `apps/macos/AreaMatrix/App/AreaMatrixAppSmokeTests.swift`
+- `apps/macos/AreaMatrixTests/InitializingStepIntegrationTests.swift`
+- `apps/macos/AreaMatrixTests/ValidatePathIntegrationTests.swift`
+
+三、完成情况
+
+核对清单已修复：
+- page-feature 覆盖：`2-1/task-10/11/12` 对应 C1-02、C1-03、C1-16 的生产 CoreBridge 路径保持存在。
+- 页面闭环：初始化成功现在进入 `S1-07 init-done`，再由 `Open Repository` 进入主加载；初始化失败仍进入失败页；unfinished scan session 现在提供 `Resume` 和 `Clean up and retry`。
+- mock / fixture / 硬编码：生产路径继续使用真实 `CoreBridge()`；测试 fake 仅在 XCTest 中使用。
+- control map 范围：只覆盖 S1-05 声明的 C1-02、C1-03、C1-16，未新增额外能力。
+
+完成标准已满足：S1-05 可以按 page spec/control map 验收，页面声明的 Core 能力均有真实接入路径或恢复入口。未触碰 `core/src/**`，`Forbidden Touches` 符合要求。
+
+四、工程质量
+
+状态迁移集中在 onboarding model，View 只负责渲染与触发动作；新增的 interrupted recovery 通过 CoreBridge 调用 `resume_scan_session` / `recover_on_startup`，没有在 Swift 侧删除、移动或覆盖用户文件。错误路径继续走现有 mapper 和 toast/error route，避免静默吞错。未新增 Rust public API，因此无 rustdoc 变更需求。已检查主要触碰文件行数，均在当前规则阈值内；未引入 mock-only、硬编码完成态或一次性脚本逻辑。
+
+五、验证情况
+
+已运行并通过：
+- `xcodebuild -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' build CODE_SIGNING_ALLOWED=NO`
+- `bash scripts/check-macos-tests.sh`，最终 `xcrun xctest`：`52 tests, 0 failures`
+- `git diff --check`
+- `git diff --name-only -- core/src` 无输出
+
+任务要求的命令已运行：
+- `xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+
+结果：构建和测试包生成已完成，但本地 sandbox 阻断 `com.apple.testmanagerd.control`，test runner 无法通信；已用仓库脚本 fallback 验证同一测试包通过。
+
+未运行：
+- SwiftLint / SwiftFormat：当前环境 `command -v swiftlint`、`command -v swiftformat` 无输出。
+
+六、风险与后续
+
+剩余风险主要是本地 sandbox 无法完整跑通原生 `xcodebuild test` runner，需要在正常 macOS/CI 环境复跑一次。当前修复只完成 S1-05 的整页 integration wiring；S1-07 更完整的完成页功能仍应由后续对应任务继续推进。
+
+建议下一个任务继续按队列执行 `2-1/task-14`。
+

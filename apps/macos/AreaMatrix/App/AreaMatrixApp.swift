@@ -132,6 +132,8 @@ struct DBRepairConfirmView: View {
     let repoPath: String
     let scanSession: ScanSessionSnapshot?
     let mapping: CoreErrorMappingSnapshot?
+    let onResume: () -> Void
+    let onCleanUpAndRetry: () -> Void
     let onChooseAnotherFolder: () -> Void
 
     var body: some View {
@@ -147,6 +149,11 @@ struct DBRepairConfirmView: View {
             }
             Text(repoPath)
         } actions: {
+            if scanSession != nil {
+                Button("Resume", action: onResume)
+                    .keyboardShortcut(.defaultAction)
+                Button("Clean up and retry", action: onCleanUpAndRetry)
+            }
             Button("Choose another folder", action: onChooseAnotherFolder)
         }
     }

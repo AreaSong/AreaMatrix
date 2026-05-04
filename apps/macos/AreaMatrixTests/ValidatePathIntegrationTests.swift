@@ -162,7 +162,12 @@ final class ValidatePathRepairRegressionTests: XCTestCase {
         XCTAssertEqual(createdPaths, [])
         XCTAssertEqual(adoptedPaths, ["/tmp/repo"])
         XCTAssertEqual(writer.savedRepoPaths, ["/tmp/repo"])
-        XCTAssertEqual(model.route, .mainLoading("/tmp/repo"))
+        XCTAssertEqual(model.route, .initializationDone(RepositoryInitializationResult(
+            repoPath: "/tmp/repo",
+            mode: .adoptExisting,
+            scanSession: nil,
+            recoveryReport: nil
+        )))
     }
 
     func testConfirmInitRulesRequireMatchingSafeDraftState() {
@@ -232,7 +237,12 @@ final class ValidatePathRepairRegressionTests: XCTestCase {
 
         XCTAssertEqual(createdPaths, ["/tmp/repo"])
         XCTAssertEqual(writer.savedRepoPaths, ["/tmp/repo"])
-        XCTAssertEqual(model.route, .mainLoading("/tmp/repo"))
+        XCTAssertEqual(model.route, .initializationDone(RepositoryInitializationResult(
+            repoPath: "/tmp/repo",
+            mode: .createEmpty,
+            scanSession: nil,
+            recoveryReport: nil
+        )))
     }
 
     @MainActor
@@ -342,37 +352,28 @@ private func makeTemporaryAdoptRepoURL() throws -> URL {
 
 private struct StaticSettingsReader: AppSettingsReading {
     let repoPath: String?
-
     func configuredRepoPath() -> String? { repoPath }
 }
-
 private final class RecordingSettingsWriter: AppSettingsWriting {
     private(set) var savedRepoPaths: [String] = []
-
     func saveConfiguredRepoPath(_ repoPath: String) {
         savedRepoPaths.append(repoPath)
     }
 }
-
 private actor RecordingConfigLoader: CoreConfigurationLoading {
     private let config: RepoConfigSnapshot
-
     init(config: RepoConfigSnapshot) {
         self.config = config
     }
-
     func loadConfig(repoPath: String) async throws -> RepoConfigSnapshot {
         config
     }
 }
-
 private actor RecordingPathValidator: CoreRepositoryPathValidating {
     private let validation: RepoPathValidationSnapshot
-
     init(validation: RepoPathValidationSnapshot) {
         self.validation = validation
     }
-
     func validateRepoPath(repoPath: String) async throws -> RepoPathValidationSnapshot {
         validation
     }

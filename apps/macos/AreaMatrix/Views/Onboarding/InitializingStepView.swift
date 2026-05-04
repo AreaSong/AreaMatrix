@@ -5,6 +5,8 @@ struct InitializingStepView: View {
     let scanSession: ScanSessionSnapshot?
     let recoveryReport: RecoveryReportSnapshot?
     let progressWarning: String?
+    let isCancellationRequested: Bool
+    let onCancel: () -> Void
 
     private var isCreateMode: Bool {
         draft.mode == .createEmpty
@@ -19,6 +21,7 @@ struct InitializingStepView: View {
             stepList
             warningSection
             safetyText
+            footer
         }
         .padding(.horizontal, 72)
         .padding(.vertical, 48)
@@ -136,7 +139,28 @@ struct InitializingStepView: View {
             .frame(maxWidth: 680, alignment: .leading)
     }
 
+    private var footer: some View {
+        HStack(spacing: 12) {
+            if isCancellationRequested {
+                ProgressView()
+                    .controlSize(.small)
+                Text("正在暂停...")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+            Button("Cancel", action: onCancel)
+                .disabled(isCancellationRequested)
+        }
+        .frame(maxWidth: 680)
+    }
+
     private var statusText: String {
+        if isCancellationRequested {
+            return "正在等待 Core 到达安全点"
+        }
+
         if isCreateMode {
             return "正在初始化本地索引"
         }
@@ -208,6 +232,72 @@ struct InitializingStepView: View {
             .completed("写入索引", when: scanSession?.hasIndexedFiles == true),
             .completed("生成资料库概览", when: scanSession?.status == .completed),
         ]
+    }
+}
+
+struct InitDoneStepView: View {
+    let result: RepositoryInitializationResult
+    let onOpenRepository: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 22) {
+            header
+            pathBox
+            summarySection
+            Button("Open Repository", action: onOpenRepository)
+                .keyboardShortcut(.defaultAction)
+        }
+        .padding(.horizontal, 72)
+        .padding(.vertical, 48)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+    }
+
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label("资料库已准备好", systemImage: "checkmark.circle.fill")
+                .font(.system(size: 34, weight: .semibold))
+                .foregroundStyle(.green)
+                .accessibilityAddTraits(.isHeader)
+            Text("AreaMatrix 已完成初始化。你现在可以浏览资料库，或把文件拖进窗口开始归档。")
+                .font(.title3)
+                .frame(maxWidth: 720, alignment: .leading)
+        }
+    }
+
+    private var pathBox: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("资料库路径")
+                .font(.headline)
+            Text(result.repoPath)
+                .font(.system(.body, design: .monospaced))
+                .textSelection(.enabled)
+                .lineLimit(3)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 8)
+                .frame(maxWidth: 720, alignment: .leading)
+                .background(.quaternary, in: RoundedRectangle(cornerRadius: 6))
+        }
+    }
+
+    private var summarySection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("完成摘要")
+                .font(.headline)
+            ForEach(summaryItems, id: \.self) { item in
+                Label(item, systemImage: "checkmark")
+                    .font(.callout)
+            }
+        }
+        .frame(maxWidth: 720, alignment: .leading)
+    }
+
+    private var summaryItems: [String] {
+        switch result.mode {
+        case .createEmpty:
+            return ["已创建默认分类", "已创建本地索引", "已启用自动概览"]
+        case .adoptExisting:
+            return ["已建立本地索引", "已扫描现有文件", "已保留原有目录结构", "已生成内部概览"]
+        }
     }
 }
 

@@ -3,29 +3,29 @@ import Foundation
 protocol CoreConfigurationLoading: Sendable {
     func loadConfig(repoPath: String) async throws -> RepoConfigSnapshot
 }
-
 protocol CoreConfigurationUpdating: Sendable {
     func updateConfig(repoPath: String, newConfig: RepoConfigSnapshot) async throws
 }
-
 protocol CoreRepositoryPathValidating: Sendable {
     func validateRepoPath(repoPath: String) async throws -> RepoPathValidationSnapshot
 }
-
 protocol CoreRepositoryInitializing: Sendable {
     func initializeEmptyRepository(repoPath: String) async throws
     func adoptExistingRepository(repoPath: String) async throws
 }
-
 protocol CoreScanSessionReading: Sendable {
     func latestScanSession(repoPath: String) async throws -> ScanSessionSnapshot?
+    func resumeScanSession(repoPath: String, scanSessionId: Int64) async throws -> ReindexReportSnapshot
 }
-
+extension CoreScanSessionReading {
+    func resumeScanSession(repoPath: String, scanSessionId: Int64) async throws -> ReindexReportSnapshot {
+        throw CoreError.Internal(message: "scan session resume is unavailable")
+    }
+}
 enum RepoInitModeSnapshot: String, Equatable, Sendable {
     case createEmpty = "CreateEmpty"
     case adoptExisting = "AdoptExisting"
 }
-
 enum ScanSessionKindSnapshot: String, Equatable, Sendable {
     case adopt = "Adopt"
     case reindex = "Reindex"
@@ -354,8 +354,8 @@ actor CoreBridge {
         try requireGeneratedBindings(for: .getLatestScanSession)
     }
 
-    func resumeScanSession(id: Int64) async throws -> Never {
-        try requireGeneratedBindings(for: .resumeScanSession)
+    func resumeScanSession(repoPath: String, scanSessionId: Int64) async throws -> ReindexReportSnapshot {
+        ReindexReportSnapshot(coreReport: try resumeCoreScanSession(repoPath: repoPath, scanSessionId: scanSessionId))
     }
 
     func predictCategory(filename: String) async throws -> Never {
@@ -445,6 +445,10 @@ private func validateCoreRepoPath(repoPath: String) throws -> RepoPathValidation
 
 private func latestCoreScanSession(repoPath: String) throws -> ScanSession? {
     try getLatestScanSession(repoPath: repoPath)
+}
+
+private func resumeCoreScanSession(repoPath: String, scanSessionId: Int64) throws -> ReindexReport {
+    try resumeScanSession(repoPath: repoPath, scanSessionId: scanSessionId)
 }
 
 private extension StorageMode {
