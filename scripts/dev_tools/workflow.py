@@ -21,6 +21,12 @@ from .changes import (
     task_validation,
     write_artifacts,
 )
+from .discussion import (
+    DISCUSSION_TEMPLATES,
+    discussion_gate_label,
+    discussion_gate_message,
+    validate_discussion_records,
+)
 from .promotion import (
     PROMOTION_ROOT_NAME,
     build_promotion_tasks,
@@ -43,6 +49,7 @@ ALLOWED_DOC_OPS = {"create", "update", "delete", "reference"}
 REQUIRED_TEMPLATES = [
     "version.yaml",
     "change.example.yaml",
+    *DISCUSSION_TEMPLATES,
     "plan.md",
     "queue.yaml",
     "queue.md",
@@ -437,6 +444,7 @@ def run_workflow_doctor(root: Path, args: argparse.Namespace) -> int:
     errors.extend(version_errors)
     errors.extend(validate_promotion_preview_configs(root, versions))
     errors.extend(validate_v1_gate(root, versions))
+    errors.extend(validate_discussion_records(root, versions))
     change_errors, _ = collect_workflow(root, DEFAULT_VERSION)
     errors.extend(change_errors)
     if errors:
@@ -447,6 +455,8 @@ def run_workflow_doctor(root: Path, args: argparse.Namespace) -> int:
     print("workflow doctor: OK")
     print(f"- templates: {len(REQUIRED_TEMPLATES)}")
     print(f"- versions: {len(versions)}")
+    for record in versions:
+        print(f"- discussion {record.version_id}: {discussion_gate_label(record.version_id, record.data)}")
     print("- promotion preview: configured")
     print("- v1 gate: queue-only for v2 while v1 is live-running")
     return 0
@@ -467,6 +477,7 @@ def run_workflow_status(root: Path, args: argparse.Namespace) -> int:
         print(f"  live_queue: {record.data.get('live_queue') or 'None'}")
         print(f"  gate: {record.data.get('gate') or 'None'}")
         print(f"  promotion: {record.data.get('promotion') or 'None'}")
+        print(f"  discussion: {discussion_gate_message(record.version_id, record.data)}")
     print()
     print("Current gate: v2 may reach queue candidates, but must not promote to tasks/prompts/** while v1-mvp is live-running.")
     return 0

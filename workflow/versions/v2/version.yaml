@@ -5,6 +5,10 @@ depends_on:
   - v1-mvp
 live_queue: ""
 middle_layers: required
+discussion:
+  required: false
+  status: compatibility-exemption
+  reason: Existing v2 instance predates the discussion gate; new versions must use discussion before changes.
 gate: queue-only-until-v1-complete
 promotion: explicit-only
 promotion_preview:

@@ -15,6 +15,7 @@ It is separate from `tasks/prompts/**`, which is the approved small-task executi
 docs
 -> workflow/templates
 -> workflow/versions/v*/version.yaml
+-> workflow/versions/v*/discussion
 -> workflow/versions/v*/changes
 -> workflow/versions/v*/plans
 -> workflow/versions/v*/drafts
@@ -24,6 +25,10 @@ docs
 -> ./task-loop run
 -> workflow/versions/v*/archive
 ```
+
+New v* versions must pass the discussion gate before writing changes. The
+discussion gate records docs intent, middle-layer carry-forward rules, decisions,
+open questions, blockers, and whether the version may enter `changes/`.
 
 Large features and versioned work go through `workflow` first. Small, already
 clear bug fixes can go directly to `tasks/prompts/**` or a focused local task.

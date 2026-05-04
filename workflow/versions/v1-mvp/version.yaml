@@ -5,6 +5,10 @@ depends_on: []
 live_queue: tasks/prompts
 middle_layers: skipped
 middle_layers_reason: MVP scope is mandatory, so docs were directly split into executable tasks.
+discussion:
+  required: false
+  status: skipped
+  reason: v1-mvp is already live-running and will be archived after completion.
 gate: none
 promotion: already-live
 archive_policy: archive-after-complete

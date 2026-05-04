@@ -21,6 +21,7 @@
 - `areamatrix-validation-driver`
 - `areamatrix-doc-sync`
 - `areamatrix-file-safety`
+- `areamatrix-workflow-planning`：v* 版本规划、docs 讨论、中间层讨论和 prompt 生成前门禁。
 
 每个 skill 应保持：
 

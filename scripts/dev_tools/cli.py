@@ -18,6 +18,7 @@ from .checks import (
     run_task_loop_check,
 )
 from .common import ToolError, print_error, project_root
+from .discussion import run_workflow_discuss
 from .macos import run_macos_tests
 from .workflow import run_workflow_doctor, run_workflow_plan, run_workflow_promote, run_workflow_queue, run_workflow_status
 
@@ -76,6 +77,15 @@ def _build_parser() -> argparse.ArgumentParser:
     workflow_sub = workflow.add_subparsers(dest="workflow_command", required=True)
     workflow_sub.add_parser("doctor", help="Validate versioned workflow structure and gates")
     workflow_sub.add_parser("status", help="Show versioned workflow status and promotion gates")
+    workflow_discuss = workflow_sub.add_parser("discuss", help="Manage pre-change workflow discussion gates")
+    workflow_discuss.add_argument("--version", required=True, help="Workflow version to discuss, such as v3")
+    workflow_discuss_sub = workflow_discuss.add_subparsers(dest="discuss_command", required=True)
+    workflow_discuss_sub.add_parser("doctor", help="Validate the discussion gate for one workflow version")
+    workflow_discuss_sub.add_parser("preview", help="Preview the discussion gate state for one workflow version")
+    workflow_discuss_init = workflow_discuss_sub.add_parser("init", help="Render discussion gate starter files")
+    workflow_discuss_init.add_argument("--write", action="store_true", help="Write discussion files instead of printing a preview")
+    workflow_discuss_init.add_argument("--out-dir", help="Discussion output directory; defaults to workflow/versions/<version>/discussion")
+    workflow_discuss_init.add_argument("--force", action="store_true", help="Allow overwriting existing discussion files when --write is used")
     workflow_plan = workflow_sub.add_parser("plan", help="Render docs-change ledger plans")
     workflow_plan.add_argument("--version", default="v2", help="Workflow version to plan; defaults to v2")
     workflow_plan.add_argument("--feature", help="Render only one feature id")
@@ -145,6 +155,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             return run_workflow_doctor(root, args)
         if args.command == "workflow" and args.workflow_command == "status":
             return run_workflow_status(root, args)
+        if args.command == "workflow" and args.workflow_command == "discuss":
+            return run_workflow_discuss(root, args)
         if args.command == "workflow" and args.workflow_command == "plan":
             return run_workflow_plan(root, args)
         if args.command == "workflow" and args.workflow_command == "queue":

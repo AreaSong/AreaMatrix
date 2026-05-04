@@ -5,7 +5,8 @@
 The supported flow is:
 
 ```text
-changes/*.yaml
+discussion compatibility exemption
+-> changes/*.yaml
 -> plans/*.plan.md
 -> drafts/<feature>/
 -> queue/<feature>/
@@ -14,12 +15,17 @@ changes/*.yaml
 ```
 
 While `v1-mvp` is `live-running`, v2 may reach queue candidates but must not promote into the live task queue.
+`v2` predates the discussion gate, so `version.yaml` records an existing-instance
+compatibility exemption. Future versions must create and pass `discussion/`
+before writing `changes/`.
 
 Use:
 
 ```bash
 ./dev workflow doctor
 ./dev workflow status
+./dev workflow discuss --version v2 doctor
+./dev workflow discuss --version v2 preview
 ./dev workflow plan --version v2
 ./dev workflow queue --version v2
 ./dev workflow promote --version v2 --preview

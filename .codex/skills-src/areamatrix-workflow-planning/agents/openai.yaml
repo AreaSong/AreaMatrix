@@ -1,0 +1,6 @@
+interface:
+  display_name: "AreaMatrix Workflow Planning"
+  short_description: "Plan v* workflow gates before prompt drafts"
+  default_prompt: "Use $areamatrix-workflow-planning to plan this AreaMatrix v* workflow, discussion gate, and prompt-generation handoff."
+policy:
+  allow_implicit_invocation: true

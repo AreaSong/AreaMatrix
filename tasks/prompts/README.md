@@ -22,6 +22,7 @@ Manifest：[./_shared/manifests/](./_shared/manifests/)
 8. 需要批量复制时，用 `export --phase` 或 `export --all` 把 copy-ready / verify-ready prompt 导出为静态文件。
 9. Runner 只负责 prompt 生成、进度和状态管理；自动闭环由 `./task-loop run` 调用 `codex exec`。
 10. 当前 637 个任务是 `v1-mvp` live queue；新增 v2 需求先写入 `workflow/versions/v2/changes/*.yaml`，通过 `./dev changes doctor|preview|generate` 检查、预览和生成 review 草稿，不直接改 live queue。
+11. 新 v* 版本在生成执行 / 检查 prompt 之前，必须先完成 `workflow/versions/v*/discussion/` 的 docs 讨论与中间层讨论门禁；v2 是既有实例兼容豁免，v1 继续在本目录 live 执行，完成后再归档到 workflow。
 
 ## Runner
 

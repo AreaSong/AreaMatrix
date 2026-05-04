@@ -12,6 +12,8 @@ from pathlib import Path
 from typing import Callable, Sequence
 
 from scripts.dev_tools.checks import run_skills_check
+from scripts.dev_tools.discussion import discussion_artifacts, validate_discussion_artifacts
+from scripts.dev_tools.changes import write_artifacts
 
 from . import git as git_helpers
 from . import state
@@ -231,11 +233,103 @@ def check_versioned_workflow(h: Harness) -> None:
     doctor = h.run([h.dev, "workflow", "doctor"]).stdout
     assert_contains(doctor, "workflow doctor: OK", "workflow doctor")
     assert_contains(doctor, "v1 gate: queue-only for v2", "workflow v1 gate")
+    assert_contains(doctor, "discussion v2: compatibility-exemption", "workflow discussion exemption")
 
     status = h.run([h.dev, "workflow", "status"]).stdout
     assert_contains(status, "v1-mvp: live-running", "workflow status v1")
     assert_contains(status, "v2: planning", "workflow status v2")
+    assert_contains(status, "discussion: v2: existing-instance compatibility exemption", "workflow status discussion")
     assert_contains(status, "must not promote to tasks/prompts/**", "workflow promote gate")
+
+    discuss_doctor = h.run([h.dev, "workflow", "discuss", "--version", "v2", "doctor"]).stdout
+    assert_contains(discuss_doctor, "workflow discuss doctor: OK", "workflow discuss v2 doctor")
+    assert_contains(discuss_doctor, "compatibility exemption", "workflow discuss v2 exemption")
+    discuss_preview = h.run([h.dev, "workflow", "discuss", "--version", "v2", "preview"]).stdout
+    assert_contains(discuss_preview, "Workflow discussion preview", "workflow discuss preview")
+    assert_contains(discuss_preview, "compatibility-exemption", "workflow discuss preview exemption")
+
+    discussion_out = h.tmp / "workflow-discussion"
+    discussion_init = h.run(
+        [h.dev, "workflow", "discuss", "--version", "v3", "init", "--write", "--out-dir", str(discussion_out)]
+    ).stdout
+    assert_contains(discussion_init, "workflow discuss init: wrote files", "workflow discuss init write")
+    assert_exists(discussion_out / "docs-discussion.md", "workflow discussion docs file")
+    assert_exists(discussion_out / "middle-layer-discussion.md", "workflow discussion middle file")
+    assert_exists(discussion_out / "decisions.yaml", "workflow discussion decisions file")
+    second_discussion_init = h.run(
+        [h.dev, "workflow", "discuss", "--version", "v3", "init", "--write", "--out-dir", str(discussion_out)],
+        check=False,
+    )
+    if second_discussion_init.returncode == 0:
+        raise CheckFailure("workflow discussion overwrite unexpectedly succeeded without --force")
+    assert_contains(
+        second_discussion_init.stdout + second_discussion_init.stderr,
+        "use --force to overwrite",
+        "workflow discussion overwrite guard",
+    )
+    h.run([h.dev, "workflow", "discuss", "--version", "v3", "init", "--write", "--force", "--out-dir", str(discussion_out)])
+    bad_discussion_force = h.run([h.dev, "workflow", "discuss", "--version", "v3", "init", "--force"], check=False)
+    if bad_discussion_force.returncode == 0:
+        raise CheckFailure("workflow discussion init unexpectedly accepted --force without --write")
+    assert_contains(bad_discussion_force.stdout + bad_discussion_force.stderr, "--force requires --write", "workflow discussion force guard")
+
+    blocked_discussion = h.tmp / "blocked-discussion"
+    write_artifacts(discussion_artifacts(h.root, "v3", str(blocked_discussion)), force=False, label="test discussion file")
+    blocked_errors = validate_discussion_artifacts(h.root, "v3", blocked_discussion)
+    if not any("allow_changes must be true" in error for error in blocked_errors):
+        raise CheckFailure(f"workflow discussion did not reject unapproved decisions: {blocked_errors}")
+    if not any("unresolved blocker" in error for error in blocked_errors):
+        raise CheckFailure(f"workflow discussion did not reject unresolved blockers: {blocked_errors}")
+    approved_discussion = h.tmp / "approved-discussion"
+    write_artifacts(discussion_artifacts(h.root, "v3", str(approved_discussion)), force=False, label="test discussion file")
+    (approved_discussion / "decisions.yaml").write_text(
+        """version: v3
+status: approved
+allow_changes: true
+exact_docs:
+  - docs/README.md
+decisions:
+  - id: docs-scope
+    status: accepted
+    summary: Use docs README as a placeholder source for the test discussion.
+open_questions: []
+blockers: []
+risk_boundaries:
+  - Do not write live tasks/prompts from discussion.
+next_layers:
+  changes: allowed
+  plans: blocked
+  drafts: blocked
+  queue: blocked
+  promotion: blocked
+""",
+        encoding="utf-8",
+    )
+    approved_errors = validate_discussion_artifacts(h.root, "v3", approved_discussion)
+    if approved_errors:
+        raise CheckFailure(f"workflow discussion approved fixture failed: {approved_errors}")
+    (approved_discussion / "decisions.yaml").write_text(
+        """version: v3
+status: approved
+allow_changes: true
+exact_docs:
+  - docs/missing-discussion-source.md
+decisions:
+  - id: docs-scope
+    status: accepted
+    summary: Bad doc path test.
+open_questions: []
+blockers: []
+risk_boundaries:
+  - Do not write live tasks/prompts from discussion.
+next_layers:
+  changes: allowed
+""",
+        encoding="utf-8",
+    )
+    missing_doc_errors = validate_discussion_artifacts(h.root, "v3", approved_discussion)
+    if not any("Exact Docs path does not exist" in error for error in missing_doc_errors):
+        raise CheckFailure(f"workflow discussion did not reject missing Exact Docs: {missing_doc_errors}")
 
     plan = h.run([h.dev, "workflow", "plan", "--version", "v2", "--feature", "v2-search-query"]).stdout
     assert_contains(plan, "Workflow plans", "workflow plan header")

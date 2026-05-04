@@ -4,6 +4,9 @@ status: planning
 depends_on: []
 live_queue: ""
 middle_layers: required
+discussion:
+  required: true
+  status: required-before-changes
 gate: queue-only-until-prerequisites-complete
 promotion: explicit-only
 promotion_preview:
