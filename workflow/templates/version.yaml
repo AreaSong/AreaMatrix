@@ -9,10 +9,12 @@ discussion:
   status: required-before-changes
 gate: queue-only-until-prerequisites-complete
 promotion: explicit-only
-promotion_preview:
-  target_queue: tasks/prompts
-  phase: phase-5
-  batch: 5-1
+local_queue:
+  phase: phase-0
+  batch: 0-1
   batch_slug: v-next
   start_task: 1
+promotion_preview:
+  target_queue: tasks/prompts
+  live_mapping: pending
 archive_policy: archive-after-complete

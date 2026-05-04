@@ -28,3 +28,7 @@ Layer responsibilities:
 
 `v1-mvp` remains live-running until its current queue completes. Existing `v2` has a compatibility exemption because it predates the discussion gate. Future versions must pass discussion before changes.
 
+Create future versions with `./dev workflow init --version v3`. New versions use
+version-local numbering starting at `phase-0 / 0-1 / task-01`; live
+`tasks/prompts/**` mapping remains pending until a later explicit promotion
+mapping step.

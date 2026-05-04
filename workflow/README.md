@@ -30,6 +30,18 @@ New v* versions must pass the discussion gate before writing changes. The
 discussion gate records docs intent, middle-layer carry-forward rules, decisions,
 open questions, blockers, and whether the version may enter `changes/`.
 
+Create a new version skeleton with:
+
+```bash
+./dev workflow init --version v3
+./dev workflow init --version v3 --write
+```
+
+Each v* has its own version-local queue numbering, starting at
+`phase-0 / 0-1 / task-01`. Live `tasks/prompts/**` labels remain globally unique;
+new versions keep `promotion_preview.live_mapping: pending` until a later
+explicit mapping step.
+
 Large features and versioned work go through `workflow` first. Small, already
 clear bug fixes can go directly to `tasks/prompts/**` or a focused local task.
 

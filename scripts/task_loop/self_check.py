@@ -14,6 +14,7 @@ from typing import Callable, Sequence
 from scripts.dev_tools.checks import run_skills_check
 from scripts.dev_tools.discussion import discussion_artifacts, validate_discussion_artifacts
 from scripts.dev_tools.changes import write_artifacts
+from scripts.dev_tools.workflow_init import init_artifacts
 
 from . import git as git_helpers
 from . import state
@@ -234,12 +235,82 @@ def check_versioned_workflow(h: Harness) -> None:
     assert_contains(doctor, "workflow doctor: OK", "workflow doctor")
     assert_contains(doctor, "v1 gate: queue-only for v2", "workflow v1 gate")
     assert_contains(doctor, "discussion v2: compatibility-exemption", "workflow discussion exemption")
+    assert_contains(doctor, "local queue v2: phase-0/0-1/task-01", "workflow local queue")
+    assert_contains(doctor, "live mapping v2: configured (phase-5/5-1)", "workflow live mapping")
 
     status = h.run([h.dev, "workflow", "status"]).stdout
     assert_contains(status, "v1-mvp: live-running", "workflow status v1")
     assert_contains(status, "v2: planning", "workflow status v2")
     assert_contains(status, "discussion: v2: existing-instance compatibility exemption", "workflow status discussion")
+    assert_contains(status, "local_queue: phase-0/0-1/task-01", "workflow status local queue")
+    assert_contains(status, "live_mapping: configured (phase-5/5-1)", "workflow status live mapping")
     assert_contains(status, "must not promote to tasks/prompts/**", "workflow promote gate")
+
+    init_preview = h.run([h.dev, "workflow", "init", "--version", "v3"]).stdout
+    assert_contains(init_preview, "Workflow version init", "workflow init preview")
+    assert_contains(init_preview, "mode: preview only; no files written", "workflow init no write")
+    assert_contains(init_preview, "workflow/versions/v3/version.yaml", "workflow init version path")
+    assert_contains(init_preview, "local_queue:", "workflow init local queue")
+    assert_contains(init_preview, "live_mapping: pending", "workflow init live mapping pending")
+    bad_name = h.run([h.dev, "workflow", "init", "--version", "bad-name"], check=False)
+    if bad_name.returncode == 0:
+        raise CheckFailure("workflow init unexpectedly accepted bad version name")
+    assert_contains(bad_name.stdout + bad_name.stderr, "version must look like v3", "workflow init version guard")
+    bad_v1 = h.run([h.dev, "workflow", "init", "--version", "v1-mvp"], check=False)
+    if bad_v1.returncode == 0:
+        raise CheckFailure("workflow init unexpectedly accepted v1-mvp")
+    assert_contains(bad_v1.stdout + bad_v1.stderr, "cannot create v1-mvp", "workflow init v1 guard")
+
+    version_out = h.tmp / "v3-version"
+    init_write = h.run([h.dev, "workflow", "init", "--version", "v3", "--write", "--out-dir", str(version_out)]).stdout
+    assert_contains(init_write, "workflow init: wrote files", "workflow init write")
+    assert_exists(version_out / "version.yaml", "workflow init version yaml")
+    assert_exists(version_out / "discussion/docs-discussion.md", "workflow init docs discussion")
+    assert_exists(version_out / "discussion/middle-layer-discussion.md", "workflow init middle discussion")
+    assert_exists(version_out / "discussion/decisions.yaml", "workflow init decisions")
+    for layer in ["changes", "plans", "drafts", "queue", "promotion"]:
+        assert_exists(version_out / layer / "README.md", f"workflow init {layer} README")
+    second_init_write = h.run([h.dev, "workflow", "init", "--version", "v3", "--write", "--out-dir", str(version_out)], check=False)
+    if second_init_write.returncode == 0:
+        raise CheckFailure("workflow init overwrite unexpectedly succeeded without --force")
+    assert_contains(second_init_write.stdout + second_init_write.stderr, "use --force to overwrite", "workflow init overwrite guard")
+    h.run([h.dev, "workflow", "init", "--version", "v3", "--write", "--force", "--out-dir", str(version_out)])
+    bad_init_force = h.run([h.dev, "workflow", "init", "--version", "v3", "--force"], check=False)
+    if bad_init_force.returncode == 0:
+        raise CheckFailure("workflow init unexpectedly accepted --force without --write")
+    assert_contains(bad_init_force.stdout + bad_init_force.stderr, "--force requires --write", "workflow init force guard")
+
+    init_discussion_errors = validate_discussion_artifacts(h.root, "v3", version_out / "discussion")
+    if not any("allow_changes must be true" in error for error in init_discussion_errors):
+        raise CheckFailure(f"workflow init did not create blocked discussion gate: {init_discussion_errors}")
+    approved_version = h.tmp / "approved-v3-version"
+    write_artifacts(init_artifacts(h.root, "v3", None, str(approved_version)), force=False, label="test workflow init file")
+    (approved_version / "discussion/decisions.yaml").write_text(
+        """version: v3
+status: approved
+allow_changes: true
+exact_docs:
+  - docs/README.md
+decisions:
+  - id: docs-scope
+    status: accepted
+    summary: Use docs README as a placeholder source for the test version.
+open_questions: []
+blockers: []
+risk_boundaries:
+  - Do not write live tasks/prompts from discussion.
+next_layers:
+  changes: allowed
+  plans: blocked
+  drafts: blocked
+  queue: blocked
+  promotion: blocked
+""",
+        encoding="utf-8",
+    )
+    approved_version_errors = validate_discussion_artifacts(h.root, "v3", approved_version / "discussion")
+    if approved_version_errors:
+        raise CheckFailure(f"workflow init approved discussion failed: {approved_version_errors}")
 
     discuss_doctor = h.run([h.dev, "workflow", "discuss", "--version", "v2", "doctor"]).stdout
     assert_contains(discuss_doctor, "workflow discuss doctor: OK", "workflow discuss v2 doctor")

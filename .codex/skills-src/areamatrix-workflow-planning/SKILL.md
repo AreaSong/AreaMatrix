@@ -23,11 +23,12 @@ Use this skill before turning a large feature, version, refactor, or optimizatio
 ## Workflow
 
 1. Start from `docs/` as source of truth, then identify the v* version and feature intent.
-2. Ensure `workflow/versions/<version>/discussion/` exists for new versions.
-3. Review `docs-discussion.md` for Exact Docs, user paths, non-goals, contention points, and acceptance boundary.
-4. Review `middle-layer-discussion.md` for how changes, plans, drafts, queue, and promotion preview will carry the feature.
-5. Review `decisions.yaml`; do not enter `changes/` until `allow_changes: true` and blockers/open questions are resolved or explicitly deferred.
-6. Run `./dev workflow discuss --version <version> doctor`, then `./dev workflow doctor`.
+2. Use `./dev workflow init --version <version>` to create or preview a new version skeleton.
+3. Ensure `workflow/versions/<version>/discussion/` exists for new versions.
+4. Review `docs-discussion.md` for Exact Docs, user paths, non-goals, contention points, and acceptance boundary.
+5. Review `middle-layer-discussion.md` for how changes, plans, drafts, queue, and promotion preview will carry the feature.
+6. Review `decisions.yaml`; do not enter `changes/` until `allow_changes: true` and blockers/open questions are resolved or explicitly deferred.
+7. Run `./dev workflow discuss --version <version> doctor`, then `./dev workflow doctor`.
 
 ## Guardrails
 
@@ -36,4 +37,3 @@ Use this skill before turning a large feature, version, refactor, or optimizatio
 - Do not use workflow docs as the product source of truth; product behavior remains in `docs/`.
 - Do not bypass the discussion gate for new versions just because a change YAML can be written.
 - Keep this skill focused on planning and gates; use `areamatrix-doc-sync` for drift checks.
-

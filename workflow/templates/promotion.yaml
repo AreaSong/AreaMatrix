@@ -1,6 +1,10 @@
 version: v*
 mode: preview
 target_queue: tasks/prompts
+live_mapping: pending
+local_phase: phase-0
+local_batch: 0-1
+local_start_task: 1
 phase: phase-5
 batch: 5-1
 batch_slug: v-next

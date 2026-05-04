@@ -15,3 +15,5 @@ Templates define the reusable shape for future `workflow/versions/v*/` instances
 - `promotion.md`: human-readable promotion preview shape.
 
 Use templates as references only. Real work lives under `workflow/versions/v*/`.
+For new versions, prefer `./dev workflow init --version v3`; it renders a full
+skeleton and keeps live promotion mapping pending by default.

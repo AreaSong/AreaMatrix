@@ -78,11 +78,16 @@ def validate_promotion_preview_configs(root: Path, records: Sequence[Any]) -> li
 
 def validate_promotion_preview_config(prefix: str, config: dict[str, Any]) -> list[str]:
     errors: list[str] = []
-    for key in ["target_queue", "phase", "batch", "batch_slug", "start_task"]:
+    for key in ["target_queue"]:
         if key not in config:
             errors.append(f"{prefix}: missing field: {key}")
     if config.get("target_queue") != "tasks/prompts":
         errors.append(f"{prefix}: target_queue must be tasks/prompts")
+    if config.get("live_mapping") == "pending":
+        return errors
+    for key in ["phase", "batch", "batch_slug", "start_task"]:
+        if key not in config:
+            errors.append(f"{prefix}: missing field: {key}")
     phase = config.get("phase")
     if not isinstance(phase, str) or not phase.startswith("phase-") or not phase.split("-", 1)[1].isdigit():
         errors.append(f"{prefix}: phase must look like phase-5")
@@ -103,6 +108,8 @@ def promotion_config_from_record(root: Path, record: Any) -> tuple[list[str], Pr
     prefix = f"{display_path(root, record.path)}: promotion_preview"
     if not isinstance(config, dict):
         return [f"{prefix} must be a mapping"], None
+    if config.get("live_mapping") == "pending":
+        return [f"{prefix}: live_mapping is pending; configure live phase/batch before promotion preview"], None
     errors = validate_promotion_preview_config(prefix, config)
     if errors:
         return errors, None

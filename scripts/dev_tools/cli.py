@@ -20,6 +20,7 @@ from .checks import (
 from .common import ToolError, print_error, project_root
 from .discussion import run_workflow_discuss
 from .macos import run_macos_tests
+from .workflow_init import run_workflow_init
 from .workflow import run_workflow_doctor, run_workflow_plan, run_workflow_promote, run_workflow_queue, run_workflow_status
 
 
@@ -77,6 +78,12 @@ def _build_parser() -> argparse.ArgumentParser:
     workflow_sub = workflow.add_subparsers(dest="workflow_command", required=True)
     workflow_sub.add_parser("doctor", help="Validate versioned workflow structure and gates")
     workflow_sub.add_parser("status", help="Show versioned workflow status and promotion gates")
+    workflow_init = workflow_sub.add_parser("init", help="Render or write a new v* workflow version skeleton")
+    workflow_init.add_argument("--version", required=True, help="Workflow version to initialize, such as v3")
+    workflow_init.add_argument("--title", help="Workflow title; defaults to 'AreaMatrix <version> planning workflow'")
+    workflow_init.add_argument("--write", action="store_true", help="Write version files instead of printing a preview")
+    workflow_init.add_argument("--out-dir", help="Version output directory; defaults to workflow/versions/<version>")
+    workflow_init.add_argument("--force", action="store_true", help="Allow overwriting existing version skeleton files when --write is used")
     workflow_discuss = workflow_sub.add_parser("discuss", help="Manage pre-change workflow discussion gates")
     workflow_discuss.add_argument("--version", required=True, help="Workflow version to discuss, such as v3")
     workflow_discuss_sub = workflow_discuss.add_subparsers(dest="discuss_command", required=True)
@@ -155,6 +162,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             return run_workflow_doctor(root, args)
         if args.command == "workflow" and args.workflow_command == "status":
             return run_workflow_status(root, args)
+        if args.command == "workflow" and args.workflow_command == "init":
+            return run_workflow_init(root, args)
         if args.command == "workflow" and args.workflow_command == "discuss":
             return run_workflow_discuss(root, args)
         if args.command == "workflow" and args.workflow_command == "plan":

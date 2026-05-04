@@ -57,6 +57,7 @@ REQUIRED_TEMPLATES = [
     "promotion.yaml",
     "promotion.md",
 ]
+ALLOWED_LOCAL_QUEUE_KEYS = {"phase", "batch", "batch_slug", "start_task"}
 
 
 @dataclass(frozen=True)
@@ -111,6 +112,64 @@ def validate_version_graph(root: Path, records: Sequence[VersionRecord]) -> list
             elif dep not in by_id:
                 errors.append(f"{display_path(root, record.path)}: depends on unknown version {dep}")
     return errors
+
+
+def validate_local_queue(root: Path, records: Sequence[VersionRecord]) -> list[str]:
+    errors: list[str] = []
+    for record in records:
+        if record.data.get("promotion") == "already-live":
+            continue
+        prefix = f"{display_path(root, record.path)}: local_queue"
+        local_queue = record.data.get("local_queue")
+        if not isinstance(local_queue, dict):
+            errors.append(f"{prefix} must be a mapping")
+            continue
+        for key in ["phase", "batch", "batch_slug", "start_task"]:
+            if key not in local_queue:
+                errors.append(f"{prefix}: missing field: {key}")
+        for key in local_queue:
+            if key not in ALLOWED_LOCAL_QUEUE_KEYS:
+                errors.append(f"{prefix}: unsupported field: {key}")
+        phase = local_queue.get("phase")
+        if not isinstance(phase, str) or not phase.startswith("phase-") or not phase.split("-", 1)[1].isdigit():
+            errors.append(f"{prefix}: phase must look like phase-0")
+        batch = local_queue.get("batch")
+        if not isinstance(batch, str) or len(batch.split("-")) != 2 or not all(part.isdigit() for part in batch.split("-")):
+            errors.append(f"{prefix}: batch must look like 0-1")
+        batch_slug = local_queue.get("batch_slug")
+        if not isinstance(batch_slug, str) or not batch_slug.strip():
+            errors.append(f"{prefix}: batch_slug must be a non-empty string")
+        start_task = int_field(local_queue.get("start_task"))
+        if start_task is None or start_task < 1:
+            errors.append(f"{prefix}: start_task must be an integer >= 1")
+    return errors
+
+
+def promotion_mapping_label(record: VersionRecord) -> str:
+    if record.data.get("promotion") == "already-live":
+        return "already-live"
+    config = record.data.get("promotion_preview")
+    if not isinstance(config, dict):
+        return "missing"
+    if config.get("live_mapping") == "pending":
+        return "pending"
+    phase = config.get("phase")
+    batch = config.get("batch")
+    if phase and batch:
+        return f"configured ({phase}/{batch})"
+    return "incomplete"
+
+
+def local_queue_label(record: VersionRecord) -> str:
+    if record.data.get("promotion") == "already-live":
+        return "already-live"
+    config = record.data.get("local_queue")
+    if not isinstance(config, dict):
+        return "None"
+    phase = config.get("phase", "unknown")
+    batch = config.get("batch", "unknown")
+    start_task = config.get("start_task", "unknown")
+    return f"{phase}/{batch}/task-{int_field(start_task) or 1:02d}"
 
 
 def validate_templates(root: Path) -> list[str]:
@@ -442,6 +501,7 @@ def run_workflow_doctor(root: Path, args: argparse.Namespace) -> int:
     errors.extend(validate_templates(root))
     version_errors, versions = load_versions(root)
     errors.extend(version_errors)
+    errors.extend(validate_local_queue(root, versions))
     errors.extend(validate_promotion_preview_configs(root, versions))
     errors.extend(validate_v1_gate(root, versions))
     errors.extend(validate_discussion_records(root, versions))
@@ -457,6 +517,9 @@ def run_workflow_doctor(root: Path, args: argparse.Namespace) -> int:
     print(f"- versions: {len(versions)}")
     for record in versions:
         print(f"- discussion {record.version_id}: {discussion_gate_label(record.version_id, record.data)}")
+        if record.data.get("promotion") != "already-live":
+            print(f"- local queue {record.version_id}: {local_queue_label(record)}")
+            print(f"- live mapping {record.version_id}: {promotion_mapping_label(record)}")
     print("- promotion preview: configured")
     print("- v1 gate: queue-only for v2 while v1 is live-running")
     return 0
@@ -477,6 +540,8 @@ def run_workflow_status(root: Path, args: argparse.Namespace) -> int:
         print(f"  live_queue: {record.data.get('live_queue') or 'None'}")
         print(f"  gate: {record.data.get('gate') or 'None'}")
         print(f"  promotion: {record.data.get('promotion') or 'None'}")
+        print(f"  local_queue: {local_queue_label(record)}")
+        print(f"  live_mapping: {promotion_mapping_label(record)}")
         print(f"  discussion: {discussion_gate_message(record.version_id, record.data)}")
     print()
     print("Current gate: v2 may reach queue candidates, but must not promote to tasks/prompts/** while v1-mvp is live-running.")

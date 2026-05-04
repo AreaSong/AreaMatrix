@@ -57,3 +57,8 @@ The default write target is `workflow/versions/v2/drafts/`. Existing draft files
 Plans, drafts, and queue candidates are review artifacts. They are not `tasks/prompts/**`, do not edit v1 manifests, do not write `progress.json`, and do not connect to `./task-loop`.
 Promotion previews are also review artifacts. Explicit `--write` writes only
 `workflow/versions/v2/promotion/` preview files; it still does not promote.
+
+`v2` now records a version-local queue (`phase-0 / 0-1 / task-01`) separately
+from its existing future live mapping (`phase-5 / 5-1`). New v* versions start
+with local queue numbering only and leave live mapping pending until promotion is
+explicitly configured.
