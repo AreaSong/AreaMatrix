@@ -37,9 +37,20 @@ extension CoreBridge: CoreStartupRecovering {
 
 extension OnboardingModel {
     @MainActor
-    func openInitializedRepository() {
+    func openInitializedRepository() async {
         guard case .initializationDone(let result) = route else { return }
+        initializationOpenErrorMapping = nil
         route = .mainLoading(result.repoPath)
+
+        guard result.mode == .createEmpty else { return }
+
+        do {
+            let config = try await emptyRepositoryOpener.openEmptyRepository(repoPath: result.repoPath)
+            route = .repositoryReady(config)
+        } catch {
+            route = .initializationDone(result)
+            initializationOpenErrorMapping = await openingFailureMapping(for: error)
+        }
     }
 
     @MainActor
@@ -247,6 +258,14 @@ extension OnboardingModel {
             finishedAt: finishedAt,
             errors: report.errors
         )
+    }
+
+    private func openingFailureMapping(for error: Error) async -> CoreErrorMappingSnapshot {
+        if let coreError = error as? CoreError {
+            return await errorMapper.mapCoreError(coreError)
+        }
+
+        return await errorMapper.mapCoreError(CoreError.Internal(message: error.localizedDescription))
     }
 }
 

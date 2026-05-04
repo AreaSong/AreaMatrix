@@ -48,8 +48,14 @@ Required for `apps/macos/**`:
 
 ```bash
 xcodebuild -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' build CODE_SIGNING_ALLOWED=NO
-xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO
+bash scripts/check-macos-tests.sh
 ```
+
+`scripts/check-macos-tests.sh` is the local macOS unit-test gate. It first runs the
+standard `xcodebuild test` command. Only when the failure log explicitly points
+to a local `testmanagerd` sandbox restriction may it reuse the built XCTest
+bundle through `xcrun xctest`. Non-sandbox failures, assertion failures, build
+failures, or link failures still fail the validation.
 
 If Xcode is unavailable, report it as blocked with exact command and error.
 

@@ -43,6 +43,7 @@ final class OnboardingModel: ObservableObject {
     @Published var initializationScanSession: ScanSessionSnapshot?
     @Published var initializationRecoveryReport: RecoveryReportSnapshot?
     @Published var initializationProgressWarning: String?
+    @Published var initializationOpenErrorMapping: CoreErrorMappingSnapshot?
     @Published private(set) var isInitializationCancellationRequested = false
     @Published private(set) var isValidatingRepositoryPath = false
     @Published private(set) var isICloudRiskAccepted = false
@@ -74,6 +75,7 @@ final class OnboardingModel: ObservableObject {
     private let configLoader: any CoreConfigurationLoading
     let pathValidator: any CoreRepositoryPathValidating
     let repositoryInitializer: any CoreRepositoryInitializing
+    let emptyRepositoryOpener: any CoreEmptyRepositoryOpening
     let startupRecoverer: any CoreStartupRecovering
     private let existingRepositoryMetadataReader: any ExistingRepositoryMetadataReading
     let scanSessionReader: any CoreScanSessionReading
@@ -90,6 +92,7 @@ final class OnboardingModel: ObservableObject {
         configLoader: any CoreConfigurationLoading = CoreBridge(),
         pathValidator: any CoreRepositoryPathValidating = CoreBridge(),
         repositoryInitializer: any CoreRepositoryInitializing = CoreBridge(),
+        emptyRepositoryOpener: any CoreEmptyRepositoryOpening = CoreBridge(),
         startupRecoverer: any CoreStartupRecovering = CoreBridge(),
         existingRepositoryMetadataReader: any ExistingRepositoryMetadataReading =
             SQLiteExistingRepositoryMetadataReader(),
@@ -103,6 +106,7 @@ final class OnboardingModel: ObservableObject {
         self.configLoader = configLoader
         self.pathValidator = pathValidator
         self.repositoryInitializer = repositoryInitializer
+        self.emptyRepositoryOpener = emptyRepositoryOpener
         self.startupRecoverer = startupRecoverer
         self.existingRepositoryMetadataReader = existingRepositoryMetadataReader
         self.scanSessionReader = scanSessionReader
@@ -164,6 +168,7 @@ final class OnboardingModel: ObservableObject {
         initializationScanSession = nil
         initializationRecoveryReport = nil
         initializationProgressWarning = nil
+        initializationOpenErrorMapping = nil
         isInitializationCancellationRequested = false
         choosePathAction = nil
         validatePathAction = nil
@@ -364,6 +369,7 @@ final class OnboardingModel: ObservableObject {
             try await initializeRepository(repoPath: repoPath, mode: mode)
             if finishInitializationCancellationIfRequested() { return }
             settingsWriter.saveConfiguredRepoPath(repoPath)
+            initializationOpenErrorMapping = nil
             route = .initializationDone(RepositoryInitializationResult(
                 repoPath: repoPath,
                 mode: mode,

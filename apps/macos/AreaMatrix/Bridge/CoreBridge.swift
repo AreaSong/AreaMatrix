@@ -113,7 +113,7 @@ struct RepoConfigSnapshot: Equatable, Sendable {
     var allowReplaceDuringImport: Bool
 }
 
-private extension RepoConfigSnapshot {
+extension RepoConfigSnapshot {
     init(coreConfig: RepoConfig) {
         repoPath = coreConfig.repoPath
         defaultMode = coreConfig.defaultMode.displayName

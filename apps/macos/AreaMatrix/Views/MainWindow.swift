@@ -161,7 +161,11 @@ struct MainWindow: View {
                 }
             )
         case .initializationDone(let result):
-            InitDoneStepView(result: result, onOpenRepository: model.openInitializedRepository)
+            InitDoneStepView(
+                result: result,
+                errorMapping: model.initializationOpenErrorMapping,
+                onOpenRepository: { Task { await model.openInitializedRepository() } }
+            )
         case .mainLoading(let repoPath):
             MainLoadingView(repoPath: repoPath, onChooseAnotherFolder: model.showChoosePath)
         case .mainRepoError(let repoPath, let mapping):

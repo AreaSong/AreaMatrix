@@ -237,6 +237,7 @@ struct InitializingStepView: View {
 
 struct InitDoneStepView: View {
     let result: RepositoryInitializationResult
+    let errorMapping: CoreErrorMappingSnapshot?
     let onOpenRepository: () -> Void
 
     var body: some View {
@@ -244,8 +245,8 @@ struct InitDoneStepView: View {
             header
             pathBox
             summarySection
-            Button("Open Repository", action: onOpenRepository)
-                .keyboardShortcut(.defaultAction)
+            openErrorSection
+            footer
         }
         .padding(.horizontal, 72)
         .padding(.vertical, 48)
@@ -289,6 +290,29 @@ struct InitDoneStepView: View {
             }
         }
         .frame(maxWidth: 720, alignment: .leading)
+    }
+
+    @ViewBuilder
+    private var openErrorSection: some View {
+        if let errorMapping {
+            VStack(alignment: .leading, spacing: 8) {
+                Label("无法打开资料库", systemImage: "exclamationmark.triangle")
+                    .font(.headline)
+                Text(errorMapping.userMessage)
+                Text(errorMapping.suggestedAction)
+                    .foregroundStyle(.secondary)
+            }
+            .font(.callout)
+            .padding(14)
+            .frame(maxWidth: 720, alignment: .leading)
+            .background(Color.red.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
+        }
+    }
+
+    private var footer: some View {
+        Button(errorMapping == nil ? "Open Repository" : "Retry Open Repository", action: onOpenRepository)
+            .keyboardShortcut(.defaultAction)
+            .buttonStyle(.borderedProminent)
     }
 
     private var summaryItems: [String] {
