@@ -1,10 +1,10 @@
 {
-  "latest_run_id": "20260504_135659",
+  "latest_run_id": "20260504_190145",
   "runs": [
     {
-      "completed": 2,
-      "exit_code": null,
-      "finished_at": "",
+      "completed": 1,
+      "exit_code": 0,
+      "finished_at": "2026-05-04T11:18:26.077143+00:00",
       "phases": [
         "phase-0",
         "phase-1",
@@ -12,13 +12,108 @@
         "phase-3",
         "phase-4"
       ],
-      "retries": 5,
+      "retries": 0,
+      "run_id": "20260504_190145",
+      "start_from": "2-1/task-18",
+      "started_at": "2026-05-04T11:01:46.933423+00:00",
+      "status": "completed",
+      "summary_file": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-runs/20260504_190145/summary.json",
+      "updated_at": "2026-05-04T11:18:26.077623+00:00"
+    },
+    {
+      "completed": 0,
+      "exit_code": 1,
+      "finished_at": "2026-05-04T10:57:13.894827+00:00",
+      "phases": [
+        "phase-0",
+        "phase-1",
+        "phase-2",
+        "phase-3",
+        "phase-4"
+      ],
+      "retries": 0,
+      "run_id": "20260504_185707",
+      "start_from": "2-1/task-18",
+      "started_at": "2026-05-04T10:57:08.892748+00:00",
+      "status": "failed",
+      "summary_file": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-runs/20260504_185707/summary.json",
+      "updated_at": "2026-05-04T10:57:13.895438+00:00"
+    },
+    {
+      "completed": 0,
+      "exit_code": 1,
+      "finished_at": "2026-05-04T10:45:14.598664+00:00",
+      "phases": [
+        "phase-0",
+        "phase-1",
+        "phase-2",
+        "phase-3",
+        "phase-4"
+      ],
+      "retries": 0,
+      "run_id": "20260504_184508",
+      "start_from": "2-1/task-18",
+      "started_at": "2026-05-04T10:45:09.731987+00:00",
+      "status": "failed",
+      "summary_file": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-runs/20260504_184508/summary.json",
+      "updated_at": "2026-05-04T10:45:14.599160+00:00"
+    },
+    {
+      "completed": 0,
+      "exit_code": 1,
+      "finished_at": "2026-05-04T10:39:52.390442+00:00",
+      "phases": [
+        "phase-0",
+        "phase-1",
+        "phase-2",
+        "phase-3",
+        "phase-4"
+      ],
+      "retries": 0,
+      "run_id": "20260504_182025",
+      "start_from": "2-1/task-18",
+      "started_at": "2026-05-04T10:20:26.649714+00:00",
+      "status": "failed",
+      "summary_file": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-runs/20260504_182025/summary.json",
+      "updated_at": "2026-05-04T10:39:52.391009+00:00"
+    },
+    {
+      "completed": 0,
+      "exit_code": 1,
+      "finished_at": "2026-05-04T10:19:22.409613+00:00",
+      "phases": [
+        "phase-0",
+        "phase-1",
+        "phase-2",
+        "phase-3",
+        "phase-4"
+      ],
+      "retries": 0,
+      "run_id": "20260504_181916",
+      "start_from": "2-1/task-18",
+      "started_at": "2026-05-04T10:19:17.711023+00:00",
+      "status": "failed",
+      "summary_file": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-runs/20260504_181916/summary.json",
+      "updated_at": "2026-05-04T10:19:22.410315+00:00"
+    },
+    {
+      "completed": 2,
+      "exit_code": 1,
+      "finished_at": "2026-05-04T10:17:30.431222+00:00",
+      "phases": [
+        "phase-0",
+        "phase-1",
+        "phase-2",
+        "phase-3",
+        "phase-4"
+      ],
+      "retries": 6,
       "run_id": "20260504_135659",
       "start_from": "",
       "started_at": "2026-05-04T05:57:00.498321+00:00",
-      "status": "running",
+      "status": "failed",
       "summary_file": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-runs/20260504_135659/summary.json",
-      "updated_at": "2026-05-04T09:16:30.045040+00:00"
+      "updated_at": "2026-05-04T10:17:30.431911+00:00"
     },
     {
       "completed": 1,
@@ -135,6 +230,6 @@
       "updated_at": "2026-05-02T00:54:49.413976+00:00"
     }
   ],
-  "updated_at": "2026-05-04T09:16:30.045147+00:00",
+  "updated_at": "2026-05-04T11:18:26.077629+00:00",
   "version": 1
 }

@@ -37,6 +37,20 @@ extension CoreBridge: CoreStartupRecovering {
 
 extension OnboardingModel {
     @MainActor
+    func openExistingRepository(_ validation: RepoPathValidationSnapshot) async {
+        initializationOpenErrorMapping = nil
+        route = .mainLoading(validation.repoPath)
+
+        do {
+            let opening = try await emptyRepositoryOpener.openConfiguredRepository(repoPath: validation.repoPath)
+            settingsWriter.saveConfiguredRepoPath(validation.repoPath)
+            route = Self.mainRoute(for: opening)
+        } catch {
+            route = .mainRepoError(validation.repoPath, await openingFailureMapping(for: error))
+        }
+    }
+
+    @MainActor
     func openInitializedRepository() async {
         guard case .initializationDone(let result) = route else { return }
         initializationOpenErrorMapping = nil
@@ -119,7 +133,7 @@ extension OnboardingModel {
                 return
             }
 
-            routeCleanRetryValidation(validation)
+            await routeCleanRetryValidation(validation)
         } catch {
             await routeInitializationFailure(error, repoPath: repoPath)
         }
@@ -229,7 +243,7 @@ extension OnboardingModel {
     }
 
     @MainActor
-    private func routeCleanRetryValidation(_ validation: RepoPathValidationSnapshot) {
+    private func routeCleanRetryValidation(_ validation: RepoPathValidationSnapshot) async {
         repositoryPathError = validatePathBlockingMessage(for: validation)
         guard repositoryPathError == nil else {
             route = .validatePath
@@ -237,7 +251,7 @@ extension OnboardingModel {
         }
 
         if validation.isInitialized {
-            openExistingRepository(validation)
+            await openExistingRepository(validation)
             return
         }
 

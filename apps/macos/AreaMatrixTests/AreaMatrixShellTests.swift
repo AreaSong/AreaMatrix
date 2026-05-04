@@ -13,11 +13,11 @@ final class AreaMatrixShellTests: XCTestCase {
 
     @MainActor
     func testOnboardingShowsWelcomeWhenNoRepoPathIsConfigured() async {
-        let loader = RecordingConfigLoader(result: .success(.fixture(repoPath: "/tmp/repo")))
+        let loader = ShellRecordingConfigLoader(result: .success(.shellFixture(repoPath: "/tmp/repo")))
         let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: nil),
+            settingsReader: ShellStaticSettingsReader(repoPath: nil),
             configLoader: loader,
-            helpOpener: NoopWelcomeHelpOpener()
+            helpOpener: ShellNoopWelcomeHelpOpener()
         )
 
         await model.bootstrapIfNeeded()
@@ -30,10 +30,10 @@ final class AreaMatrixShellTests: XCTestCase {
     @MainActor
     func testWelcomeContinueShowsChoosePathStep() {
         let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: nil),
-            configLoader: RecordingConfigLoader(result: .success(.fixture(repoPath: "/tmp/repo"))),
-            pathValidator: RecordingPathValidator(result: .success(.fixture(repoPath: "/tmp/repo"))),
-            helpOpener: NoopWelcomeHelpOpener()
+            settingsReader: ShellStaticSettingsReader(repoPath: nil),
+            configLoader: ShellRecordingConfigLoader(result: .success(.shellFixture(repoPath: "/tmp/repo"))),
+            pathValidator: ShellRecordingPathValidator(result: .success(.shellFixture(repoPath: "/tmp/repo"))),
+            helpOpener: ShellNoopWelcomeHelpOpener()
         )
 
         model.continueFromWelcome()
@@ -43,12 +43,12 @@ final class AreaMatrixShellTests: XCTestCase {
 
     @MainActor
     func testChoosePathRejectsEmptyPathBeforeCallingCore() async {
-        let validator = RecordingPathValidator(result: .success(.fixture(repoPath: "/tmp/repo")))
+        let validator = ShellRecordingPathValidator(result: .success(.shellFixture(repoPath: "/tmp/repo")))
         let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: nil),
-            configLoader: RecordingConfigLoader(result: .success(.fixture(repoPath: "/tmp/repo"))),
+            settingsReader: ShellStaticSettingsReader(repoPath: nil),
+            configLoader: ShellRecordingConfigLoader(result: .success(.shellFixture(repoPath: "/tmp/repo"))),
             pathValidator: validator,
-            helpOpener: NoopWelcomeHelpOpener()
+            helpOpener: ShellNoopWelcomeHelpOpener()
         )
 
         model.updateRepositoryPath("  ")
@@ -62,12 +62,12 @@ final class AreaMatrixShellTests: XCTestCase {
 
     @MainActor
     func testChoosePathRejectsAreaMatrixInternalPathBeforeCallingCore() async {
-        let validator = RecordingPathValidator(result: .success(.fixture(repoPath: "/tmp/repo")))
+        let validator = ShellRecordingPathValidator(result: .success(.shellFixture(repoPath: "/tmp/repo")))
         let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: nil),
-            configLoader: RecordingConfigLoader(result: .success(.fixture(repoPath: "/tmp/repo"))),
+            settingsReader: ShellStaticSettingsReader(repoPath: nil),
+            configLoader: ShellRecordingConfigLoader(result: .success(.shellFixture(repoPath: "/tmp/repo"))),
             pathValidator: validator,
-            helpOpener: NoopWelcomeHelpOpener()
+            helpOpener: ShellNoopWelcomeHelpOpener()
         )
 
         model.updateRepositoryPath("/tmp/repo/.areamatrix")
@@ -82,13 +82,13 @@ final class AreaMatrixShellTests: XCTestCase {
     @MainActor
     func testChoosePathValidatesCandidateThroughCoreBoundary() async {
         let expandedPath = ("~/AreaMatrix/" as NSString).expandingTildeInPath
-        let validation = RepoPathValidationSnapshot.fixture(repoPath: expandedPath)
-        let validator = RecordingPathValidator(result: .success(validation))
+        let validation = RepoPathValidationSnapshot.shellFixture(repoPath: expandedPath)
+        let validator = ShellRecordingPathValidator(result: .success(validation))
         let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: nil),
-            configLoader: RecordingConfigLoader(result: .success(.fixture(repoPath: "/tmp/repo"))),
+            settingsReader: ShellStaticSettingsReader(repoPath: nil),
+            configLoader: ShellRecordingConfigLoader(result: .success(.shellFixture(repoPath: "/tmp/repo"))),
             pathValidator: validator,
-            helpOpener: NoopWelcomeHelpOpener()
+            helpOpener: ShellNoopWelcomeHelpOpener()
         )
 
         await model.continueFromChoosePath()
@@ -102,12 +102,12 @@ final class AreaMatrixShellTests: XCTestCase {
 
     @MainActor
     func testChoosePathMapsCoreValidationFailure() async {
-        let validator = RecordingPathValidator(result: .failure(CoreError.PermissionDenied(path: "/tmp/repo")))
+        let validator = ShellRecordingPathValidator(result: .failure(CoreError.PermissionDenied(path: "/tmp/repo")))
         let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: nil),
-            configLoader: RecordingConfigLoader(result: .success(.fixture(repoPath: "/tmp/repo"))),
+            settingsReader: ShellStaticSettingsReader(repoPath: nil),
+            configLoader: ShellRecordingConfigLoader(result: .success(.shellFixture(repoPath: "/tmp/repo"))),
             pathValidator: validator,
-            helpOpener: NoopWelcomeHelpOpener()
+            helpOpener: ShellNoopWelcomeHelpOpener()
         )
 
         model.updateRepositoryPath("/tmp/repo")
@@ -119,12 +119,12 @@ final class AreaMatrixShellTests: XCTestCase {
 
     @MainActor
     func testOnboardingLoadsConfiguredRepoThroughCoreBridgeBoundary() async {
-        let opening = RepositoryOpeningResult.fixture(repoPath: "/tmp/repo", fileCount: 0)
-        let opener = RecordingRepositoryOpener(result: .success(opening))
+        let opening = RepositoryOpeningResult.shellFixture(repoPath: "/tmp/repo", fileCount: 0)
+        let opener = ShellRecordingRepositoryOpener(result: .success(opening))
         let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: "/tmp/repo"),
+            settingsReader: ShellStaticSettingsReader(repoPath: "/tmp/repo"),
             emptyRepositoryOpener: opener,
-            helpOpener: NoopWelcomeHelpOpener()
+            helpOpener: ShellNoopWelcomeHelpOpener()
         )
 
         await model.bootstrapIfNeeded()
@@ -136,14 +136,14 @@ final class AreaMatrixShellTests: XCTestCase {
 
     @MainActor
     func testOnboardingMapsConfigLoadFailureWithoutShowingWelcomeAsSuccess() async {
-        let opener = RecordingRepositoryOpener(result: .failure(CoreBridgeError.generatedBindingsUnavailable(
+        let opener = ShellRecordingRepositoryOpener(result: .failure(CoreBridgeError.generatedBindingsUnavailable(
             boundary: .loadConfig,
             state: .phase0
         )))
         let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: "/tmp/repo"),
+            settingsReader: ShellStaticSettingsReader(repoPath: "/tmp/repo"),
             emptyRepositoryOpener: opener,
-            helpOpener: NoopWelcomeHelpOpener()
+            helpOpener: ShellNoopWelcomeHelpOpener()
         )
 
         await model.bootstrapIfNeeded()
@@ -185,9 +185,9 @@ final class AreaMatrixShellTests: XCTestCase {
     @MainActor
     func testWelcomeLearnMoreFailureIsNonBlockingToast() {
         let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: nil),
-            configLoader: RecordingConfigLoader(result: .success(.fixture(repoPath: "/tmp/repo"))),
-            helpOpener: FailingWelcomeHelpOpener()
+            settingsReader: ShellStaticSettingsReader(repoPath: nil),
+            configLoader: ShellRecordingConfigLoader(result: .success(.shellFixture(repoPath: "/tmp/repo"))),
+            helpOpener: ShellFailingWelcomeHelpOpener()
         )
 
         model.openLearnMore()
@@ -198,13 +198,13 @@ final class AreaMatrixShellTests: XCTestCase {
 
     @MainActor
     func testChoosePathContinueShowsValidatePathAndStoresCoreResult() async {
-        let validation = RepoPathValidationSnapshot.fixture(repoPath: "/tmp/repo")
-        let validator = RecordingPathValidator(result: .success(validation))
+        let validation = RepoPathValidationSnapshot.shellFixture(repoPath: "/tmp/repo")
+        let validator = ShellRecordingPathValidator(result: .success(validation))
         let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: nil),
-            configLoader: RecordingConfigLoader(result: .success(.fixture(repoPath: "/tmp/repo"))),
+            settingsReader: ShellStaticSettingsReader(repoPath: nil),
+            configLoader: ShellRecordingConfigLoader(result: .success(.shellFixture(repoPath: "/tmp/repo"))),
             pathValidator: validator,
-            helpOpener: NoopWelcomeHelpOpener()
+            helpOpener: ShellNoopWelcomeHelpOpener()
         )
 
         model.updateRepositoryPath("/tmp/repo")
@@ -221,10 +221,10 @@ final class AreaMatrixShellTests: XCTestCase {
     @MainActor
     func testValidatePathKeepsPermissionFailureOnValidatePage() async {
         let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: nil),
-            configLoader: RecordingConfigLoader(result: .success(.fixture(repoPath: "/tmp/repo"))),
-            pathValidator: RecordingPathValidator(result: .failure(CoreError.PermissionDenied(path: "/tmp/repo"))),
-            helpOpener: NoopWelcomeHelpOpener()
+            settingsReader: ShellStaticSettingsReader(repoPath: nil),
+            configLoader: ShellRecordingConfigLoader(result: .success(.shellFixture(repoPath: "/tmp/repo"))),
+            pathValidator: ShellRecordingPathValidator(result: .failure(CoreError.PermissionDenied(path: "/tmp/repo"))),
+            helpOpener: ShellNoopWelcomeHelpOpener()
         )
 
         model.updateRepositoryPath("/tmp/repo")
@@ -238,17 +238,17 @@ final class AreaMatrixShellTests: XCTestCase {
 
     @MainActor
     func testICloudPathRequiresRiskAcknowledgement() async {
-        let validation = RepoPathValidationSnapshot.fixture(
+        let validation = RepoPathValidationSnapshot.shellFixture(
             repoPath: "/Users/me/Library/Mobile Documents/repo",
             isICloudPath: true,
             issues: [.iCloudPath]
         )
         let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: nil),
+            settingsReader: ShellStaticSettingsReader(repoPath: nil),
             settingsWriter: UserDefaultsAppSettingsReader(repoPathKey: "AreaMatrix.testRepoPath"),
-            configLoader: RecordingConfigLoader(result: .success(.fixture(repoPath: "/tmp/repo"))),
-            pathValidator: RecordingPathValidator(result: .success(validation)),
-            helpOpener: NoopWelcomeHelpOpener()
+            configLoader: ShellRecordingConfigLoader(result: .success(.shellFixture(repoPath: "/tmp/repo"))),
+            pathValidator: ShellRecordingPathValidator(result: .success(validation)),
+            helpOpener: ShellNoopWelcomeHelpOpener()
         )
 
         model.updateRepositoryPath(validation.repoPath)
@@ -263,17 +263,17 @@ final class AreaMatrixShellTests: XCTestCase {
 
     @MainActor
     func testNonWritableValidationBlocksContinue() async {
-        let validation = RepoPathValidationSnapshot.fixture(
+        let validation = RepoPathValidationSnapshot.shellFixture(
             repoPath: "/tmp/repo",
             isWritable: false,
             issues: [.notWritable],
             recommendedMode: nil
         )
         let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: nil),
-            configLoader: RecordingConfigLoader(result: .success(.fixture(repoPath: "/tmp/repo"))),
-            pathValidator: RecordingPathValidator(result: .success(validation)),
-            helpOpener: NoopWelcomeHelpOpener()
+            settingsReader: ShellStaticSettingsReader(repoPath: nil),
+            configLoader: ShellRecordingConfigLoader(result: .success(.shellFixture(repoPath: "/tmp/repo"))),
+            pathValidator: ShellRecordingPathValidator(result: .success(validation)),
+            helpOpener: ShellNoopWelcomeHelpOpener()
         )
 
         model.updateRepositoryPath("/tmp/repo")
@@ -286,24 +286,30 @@ final class AreaMatrixShellTests: XCTestCase {
 
     @MainActor
     func testInitializedRepoUsesOpenRepositoryPrimaryAction() async {
-        let validation = RepoPathValidationSnapshot.fixture(
+        let validation = RepoPathValidationSnapshot.shellFixture(
             repoPath: "/tmp/repo",
             isEmpty: false,
             isInitialized: true,
             issues: [.alreadyInitialized],
             recommendedMode: nil
         )
+        let opening = RepositoryOpeningResult.shellFixture(repoPath: "/tmp/repo", fileCount: 1)
+        let opener = ShellRecordingRepositoryOpener(result: .success(opening))
+        let writer = ShellRecordingSettingsWriter()
         let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: nil),
-            configLoader: RecordingConfigLoader(result: .success(.fixture(repoPath: "/tmp/repo"))),
-            pathValidator: RecordingPathValidator(result: .success(validation)),
-            existingRepositoryMetadataReader: StaticExistingRepositoryMetadataReader(schemaVersion: 1),
-            helpOpener: NoopWelcomeHelpOpener()
+            settingsReader: ShellStaticSettingsReader(repoPath: nil),
+            settingsWriter: writer,
+            configLoader: ShellRecordingConfigLoader(result: .success(.shellFixture(repoPath: "/tmp/repo"))),
+            pathValidator: ShellRecordingPathValidator(result: .success(validation)),
+            emptyRepositoryOpener: opener,
+            existingRepositoryMetadataReader: ShellStaticExistingRepositoryMetadataReader(schemaVersion: 1),
+            helpOpener: ShellNoopWelcomeHelpOpener()
         )
 
         model.updateRepositoryPath("/tmp/repo")
         await model.continueFromChoosePath()
-        model.continueFromValidatePath()
+        await model.continueFromValidatePath()
+        let requestedRepoPaths = await opener.requestedConfiguredRepoPaths()
 
         XCTAssertEqual(model.existingRepositoryMetadata?.schemaVersion, 1)
         XCTAssertEqual(model.validatePathPrimaryActionTitle, "Open Repository")
@@ -311,173 +317,44 @@ final class AreaMatrixShellTests: XCTestCase {
             model.validatePathAction,
             OnboardingModel.ValidatePathAction.openExistingRepositoryRequested(validation)
         )
-        XCTAssertEqual(model.route, .mainLoading("/tmp/repo"))
-    }
-}
-
-private struct StaticSettingsReader: AppSettingsReading {
-    let repoPath: String?
-
-    func configuredRepoPath() -> String? { repoPath }
-}
-
-private enum RecordingResult {
-    case success(RepoConfigSnapshot)
-    case failure(Error)
-}
-
-private enum RecordingRepositoryOpenResult {
-    case success(RepositoryOpeningResult)
-    case failure(Error)
-}
-
-private actor RecordingConfigLoader: CoreConfigurationLoading {
-    private let result: RecordingResult
-    private var paths: [String] = []
-    init(result: RecordingResult) {
-        self.result = result
-    }
-    func loadConfig(repoPath: String) async throws -> RepoConfigSnapshot {
-        paths.append(repoPath)
-        switch result {
-        case .success(let config):
-            return config
-        case .failure(let error):
-            throw error
-        }
-    }
-    func requestedRepoPaths() -> [String] { paths }
-}
-
-private actor RecordingRepositoryOpener: CoreEmptyRepositoryOpening {
-    private let result: RecordingRepositoryOpenResult
-    private var configuredPaths: [String] = []
-
-    init(result: RecordingRepositoryOpenResult) {
-        self.result = result
+        XCTAssertEqual(requestedRepoPaths, ["/tmp/repo"])
+        XCTAssertEqual(writer.savedRepoPaths, ["/tmp/repo"])
+        XCTAssertEqual(model.route, .mainList(opening))
     }
 
-    func openEmptyRepository(repoPath: String) async throws -> RepositoryOpeningResult {
-        try await openConfiguredRepository(repoPath: repoPath)
-    }
-
-    func openAdoptedRepository(repoPath: String) async throws -> RepositoryOpeningResult {
-        try await openConfiguredRepository(repoPath: repoPath)
-    }
-
-    func openConfiguredRepository(repoPath: String) async throws -> RepositoryOpeningResult {
-        configuredPaths.append(repoPath)
-        switch result {
-        case .success(let opening):
-            return opening
-        case .failure(let error):
-            throw error
-        }
-    }
-
-    func requestedConfiguredRepoPaths() -> [String] { configuredPaths }
-}
-
-private enum RecordingPathValidationResult {
-    case success(RepoPathValidationSnapshot)
-    case failure(Error)
-}
-
-private actor RecordingPathValidator: CoreRepositoryPathValidating {
-    private let result: RecordingPathValidationResult
-    private var paths: [String] = []
-    init(result: RecordingPathValidationResult) {
-        self.result = result
-    }
-    func validateRepoPath(repoPath: String) async throws -> RepoPathValidationSnapshot {
-        paths.append(repoPath)
-        switch result {
-        case .success(let validation):
-            return validation
-        case .failure(let error):
-            throw error
-        }
-    }
-    func requestedRepoPaths() -> [String] { paths }
-}
-
-private struct NoopWelcomeHelpOpener: WelcomeHelpOpening { func openWelcomeHelp() throws {} }
-private struct FailingWelcomeHelpOpener: WelcomeHelpOpening {
-    func openWelcomeHelp() throws {
-        throw WelcomeHelpError.helpDocumentUnavailable
-    }
-}
-
-private struct StaticExistingRepositoryMetadataReader: ExistingRepositoryMetadataReading {
-    let schemaVersion: Int64
-
-    func metadata(repoPath: String) async throws -> ExistingRepositoryMetadataSnapshot {
-        ExistingRepositoryMetadataSnapshot(schemaVersion: schemaVersion, lastOpenedAt: nil)
-    }
-}
-
-private extension RepoConfigSnapshot {
-    static func fixture(repoPath: String) -> RepoConfigSnapshot {
-        RepoConfigSnapshot(
-            repoPath: repoPath,
-            defaultMode: "Copied",
-            overviewOutput: "GeneratedOnly",
-            aiEnabled: false,
-            locale: "zh-Hans",
-            iCloudWarn: true,
-            enableExtensionRules: true,
-            enableKeywordRules: true,
-            fallbackToInbox: true,
-            allowReplaceDuringImport: false
+    @MainActor
+    func testInitializedRepoOpenFailureRoutesToMainRepoErrorWithoutSavingSelection() async {
+        let validation = RepoPathValidationSnapshot.shellFixture(
+            repoPath: "/tmp/repo",
+            isEmpty: false,
+            isInitialized: true,
+            issues: [.alreadyInitialized],
+            recommendedMode: nil
         )
-    }
-}
-
-private extension RepositoryOpeningResult {
-    static func fixture(repoPath: String, fileCount: Int64) -> RepositoryOpeningResult {
-        RepositoryOpeningResult(
-            config: .fixture(repoPath: repoPath),
-            tree: RepositoryTreeNodeSnapshot(
-                slug: "__root__",
-                displayName: "资料库",
-                fileCount: fileCount,
-                children: []
-            )
+        let opener = ShellRecordingRepositoryOpener(result: .failure(CoreError.Db(message: "open failed")))
+        let writer = ShellRecordingSettingsWriter()
+        let model = OnboardingModel(
+            settingsReader: ShellStaticSettingsReader(repoPath: nil),
+            settingsWriter: writer,
+            configLoader: ShellRecordingConfigLoader(result: .success(.shellFixture(repoPath: "/tmp/repo"))),
+            pathValidator: ShellRecordingPathValidator(result: .success(validation)),
+            emptyRepositoryOpener: opener,
+            existingRepositoryMetadataReader: ShellStaticExistingRepositoryMetadataReader(schemaVersion: 1),
+            helpOpener: ShellNoopWelcomeHelpOpener()
         )
-    }
-}
 
-private extension RepoPathValidationSnapshot {
-    static func fixture(
-        repoPath: String,
-        exists: Bool = true,
-        isDirectory: Bool = true,
-        isReadable: Bool = true,
-        isWritable: Bool = true,
-        isEmpty: Bool = true,
-        isInitialized: Bool = false,
-        isICloudPath: Bool = false,
-        hasUnfinishedScanSession: Bool = false,
-        availableCapacityBytes: Int64? = 1_073_741_824,
-        isExternalVolume: Bool? = false,
-        issues: [RepoPathIssueSnapshot] = [],
-        recommendedMode: RepoInitModeSnapshot? = .createEmpty
-    ) -> RepoPathValidationSnapshot {
-        RepoPathValidationSnapshot(
-            repoPath: repoPath,
-            exists: exists,
-            isDirectory: isDirectory,
-            isReadable: isReadable,
-            isWritable: isWritable,
-            isEmpty: isEmpty,
-            isInitialized: isInitialized,
-            isInsideAreaMatrix: false,
-            isICloudPath: isICloudPath,
-            hasUnfinishedScanSession: hasUnfinishedScanSession,
-            availableCapacityBytes: availableCapacityBytes,
-            isExternalVolume: isExternalVolume,
-            recommendedMode: recommendedMode,
-            issues: issues
-        )
+        model.updateRepositoryPath("/tmp/repo")
+        await model.continueFromChoosePath()
+        await model.continueFromValidatePath()
+        let requestedRepoPaths = await opener.requestedConfiguredRepoPaths()
+
+        guard case .mainRepoError(let repoPath, let mapping) = model.route else {
+            return XCTFail("expected main repo error, got \(model.route)")
+        }
+
+        XCTAssertEqual(repoPath, "/tmp/repo")
+        XCTAssertEqual(mapping?.kind, .db)
+        XCTAssertEqual(requestedRepoPaths, ["/tmp/repo"])
+        XCTAssertEqual(writer.savedRepoPaths, [])
     }
 }

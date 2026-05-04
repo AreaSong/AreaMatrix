@@ -159,6 +159,7 @@ def update_index(run_summary_root: Path, summary_file: Path) -> None:
         "summary_file": str(summary_file),
         "phases": summary.get("phases", []),
         "start_from": summary.get("start_from", ""),
+        "stop_after": summary.get("stop_after", ""),
         "completed": summary.get("totals", {}).get("completed_in_run", 0),
         "retries": summary.get("totals", {}).get("retries", 0),
         "exit_code": summary.get("exit_code"),
@@ -281,9 +282,29 @@ def print_lock_fragment(lock_dir: Path) -> None:
         print(f"- lock_command: {lock['command']}")
 
 
+def read_control_file(path: Path) -> dict[str, str]:
+    if not path.exists():
+        return {}
+    values: dict[str, str] = {}
+    for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
+        if "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        values[key.strip()] = value.strip()
+    return values
+
+
 def command_status_fragment(args: argparse.Namespace) -> int:
     print(f"- lock_dir: {args.lock_dir}")
     print_lock_fragment(args.lock_dir)
+    if args.drain_request_file:
+        drain_file = Path(args.drain_request_file)
+        drain = read_control_file(drain_file)
+        print(f"- drain_requested: {'yes' if drain else 'no'}")
+        if drain:
+            print(f"- drain_target: {drain.get('target', 'after_current_task')}")
+            print(f"- drain_requested_at: {drain.get('requested_at', 'unknown')}")
+            print(f"- drain_run_id: {drain.get('lock_run_id', 'unknown') or 'unknown'}")
     latest_log = ""
     if args.log_root.is_dir():
         latest_logs = sorted(path for path in args.log_root.iterdir() if path.is_dir() and path.name.startswith("20"))
@@ -340,6 +361,7 @@ def command_init_summary(args: argparse.Namespace) -> int:
         "max_retries": args.max_retries,
         "max_tasks": args.max_tasks,
         "start_from": args.start_from,
+        "stop_after": args.stop_after,
         "progress_file": args.progress_file,
         "log_root": args.log_root,
         "copy_root": args.copy_root,
@@ -463,6 +485,7 @@ def build_parser() -> argparse.ArgumentParser:
     add_common_path(status, "--progress-file")
     add_common_path(status, "--lock-dir")
     add_common_path(status, "--log-root")
+    status.add_argument("--drain-request-file", default="")
     status.set_defaults(func=command_status_fragment)
 
     init_summary = subparsers.add_parser("init-summary")
@@ -478,6 +501,7 @@ def build_parser() -> argparse.ArgumentParser:
     init_summary.add_argument("--max-retries", type=int, required=True)
     init_summary.add_argument("--max-tasks", type=int, required=True)
     init_summary.add_argument("--start-from", default="")
+    init_summary.add_argument("--stop-after", default="")
     init_summary.add_argument("--progress-file", required=True)
     init_summary.add_argument("--log-root", required=True)
     init_summary.add_argument("--copy-root", required=True)

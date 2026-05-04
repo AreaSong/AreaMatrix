@@ -17,6 +17,7 @@
 - 每次执行会持有 `.codex/task-loop-lock/` 运行锁，避免两个 runner 同时写 progress/logs。
 - 每次执行会写 `.codex/task-loop-runs/<run_id>/summary.json`，作为可上传、可续工的运行摘要。
 - 每次执行结束会更新 `.codex/task-loop-runs/index.json`，用于快速查看最近 run 的状态。
+- 需要优雅收尾时，可用 `--request-drain` 请求 live runner 完成当前 task、Git checkpoint / push 和 summary 后停止，不进入下一个 task。
 - progress / stale / lock status / summary 逻辑集中在 `scripts/task_loop_state.py`；shell 脚本只负责任务调度和 `codex exec`。
 - Git checkpoint 逻辑集中在 `scripts/task_loop_git.py`；默认每个 PASS task 自动本地 commit。
 
@@ -55,6 +56,15 @@ Repo-local skills：
 ---
 
 ## 二、正式执行（推荐）
+
+日常不需要记忆下面这些长命令时，优先使用根目录控制台：
+
+```bash
+./dev.sh
+```
+
+控制台会显示当前进度、runner / `codex exec` 进程数量、stale 状态和 drain 状态，并提供继续、优雅收尾、检查、日志等菜单项。
+启动或继续任务时，控制台会先阻止重复 live runner，再选择前台/后台、Git checkpoint 模式和任务数量上限；默认 Git 为本地 `commit`，任务数量为无限。
 
 ### 1) 全量执行
 
@@ -182,6 +192,23 @@ bash scripts/run_area_matrix_task_pipeline.sh --status
 - 最新日志目录；
 - progress 里的 completed / failed / blocked / in_progress 计数；
 - 是否存在 stale in_progress，也就是没有活锁且 verify 未 PASS 的中断残留。
+- 是否存在 drain request，也就是已请求当前 runner 在当前 task 完成并 checkpoint 后停止。
+
+优雅收尾当前 live runner：
+
+```bash
+bash scripts/run_area_matrix_task_pipeline.sh --request-drain
+```
+
+该命令要求当前存在 live runner；它不会启动新任务循环。runner 收到请求后会继续完成当前 task，如果 verify 失败仍会按现有规则 repair retry；只有当前 task `VERIFY_RESULT: PASS`、progress 写入、Git checkpoint / push 和 summary 收口完成后，才以 `drained` 状态退出并保留下一个 pending task 给下次继续。
+
+跑到指定 task 后停止：
+
+```bash
+bash scripts/run_area_matrix_task_pipeline.sh --stop-after 2-1/task-18
+```
+
+`--stop-after` 只在目标 task `PASS` 且 Git checkpoint / push 完成后停止，不会跳过验收。
 
 从第一个失败任务恢复：
 

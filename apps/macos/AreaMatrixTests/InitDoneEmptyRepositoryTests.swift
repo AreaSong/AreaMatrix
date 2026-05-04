@@ -5,12 +5,12 @@ import XCTest
 final class InitDoneEmptyRepositoryTests: XCTestCase {
     @MainActor
     func testOpenRepositoryFromInitDoneUsesC102CoreOpenBoundary() async {
-        let opening = RepositoryOpeningResult.fixture(repoPath: "/tmp/empty-repo", fileCount: 0)
+        let opening = RepositoryOpeningResult.initDoneFixture(repoPath: "/tmp/empty-repo", fileCount: 0)
         let opener = RecordingEmptyRepositoryOpener(result: .success(opening))
         let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: nil),
+            settingsReader: InitDoneStaticSettingsReader(repoPath: nil),
             emptyRepositoryOpener: opener,
-            helpOpener: NoopWelcomeHelpOpener()
+            helpOpener: InitDoneNoopWelcomeHelpOpener()
         )
 
         model.route = .initializationDone(RepositoryInitializationResult(
@@ -30,9 +30,9 @@ final class InitDoneEmptyRepositoryTests: XCTestCase {
     @MainActor
     func testOpenRepositoryFailureReturnsToDonePageWithInlineRetryError() async {
         let error = CoreError.Config(reason: "tree json unavailable")
-        let mapping = CoreErrorMappingSnapshot.configFixture(rawContext: "tree json unavailable")
+        let mapping = CoreErrorMappingSnapshot.initDoneConfigFixture(rawContext: "tree json unavailable")
         let opener = RecordingEmptyRepositoryOpener(result: .failure(error))
-        let errorMapper = RecordingErrorMapper(mapping: mapping)
+        let errorMapper = InitDoneRecordingErrorMapper(mapping: mapping)
         let result = RepositoryInitializationResult(
             repoPath: "/tmp/empty-repo",
             mode: .createEmpty,
@@ -40,10 +40,10 @@ final class InitDoneEmptyRepositoryTests: XCTestCase {
             recoveryReport: nil
         )
         let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: nil),
+            settingsReader: InitDoneStaticSettingsReader(repoPath: nil),
             emptyRepositoryOpener: opener,
             errorMapper: errorMapper,
-            helpOpener: NoopWelcomeHelpOpener()
+            helpOpener: InitDoneNoopWelcomeHelpOpener()
         )
 
         model.route = .initializationDone(result)
@@ -56,12 +56,12 @@ final class InitDoneEmptyRepositoryTests: XCTestCase {
 
     @MainActor
     func testOpenRepositoryShowsMainLoadingUntilCoreOpenCompletes() async {
-        let opening = RepositoryOpeningResult.fixture(repoPath: "/tmp/empty-repo", fileCount: 0)
+        let opening = RepositoryOpeningResult.initDoneFixture(repoPath: "/tmp/empty-repo", fileCount: 0)
         let opener = PausingEmptyRepositoryOpener(opening: opening)
         let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: nil),
+            settingsReader: InitDoneStaticSettingsReader(repoPath: nil),
             emptyRepositoryOpener: opener,
-            helpOpener: NoopWelcomeHelpOpener()
+            helpOpener: InitDoneNoopWelcomeHelpOpener()
         )
 
         model.route = .initializationDone(RepositoryInitializationResult(
@@ -100,12 +100,12 @@ final class InitDoneEmptyRepositoryTests: XCTestCase {
 
     @MainActor
     func testOpenRepositoryFromAdoptDoneUsesC103CoreOpenBoundary() async {
-        let opening = RepositoryOpeningResult.fixture(repoPath: "/tmp/adopted-repo", fileCount: 1)
+        let opening = RepositoryOpeningResult.initDoneFixture(repoPath: "/tmp/adopted-repo", fileCount: 1)
         let opener = RecordingEmptyRepositoryOpener(result: .success(opening))
         let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: nil),
+            settingsReader: InitDoneStaticSettingsReader(repoPath: nil),
             emptyRepositoryOpener: opener,
-            helpOpener: NoopWelcomeHelpOpener()
+            helpOpener: InitDoneNoopWelcomeHelpOpener()
         )
 
         model.route = .initializationDone(RepositoryInitializationResult(
@@ -125,9 +125,9 @@ final class InitDoneEmptyRepositoryTests: XCTestCase {
     @MainActor
     func testAdoptOpenFailureReturnsToDonePageWithInlineRetryError() async {
         let error = CoreError.Db(message: "tree unavailable")
-        let mapping = CoreErrorMappingSnapshot.dbFixture(rawContext: "tree unavailable")
+        let mapping = CoreErrorMappingSnapshot.initDoneDbFixture(rawContext: "tree unavailable")
         let opener = RecordingEmptyRepositoryOpener(result: .failure(error))
-        let errorMapper = RecordingErrorMapper(mapping: mapping)
+        let errorMapper = InitDoneRecordingErrorMapper(mapping: mapping)
         let result = RepositoryInitializationResult(
             repoPath: "/tmp/adopted-repo",
             mode: .adoptExisting,
@@ -135,10 +135,10 @@ final class InitDoneEmptyRepositoryTests: XCTestCase {
             recoveryReport: nil
         )
         let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: nil),
+            settingsReader: InitDoneStaticSettingsReader(repoPath: nil),
             emptyRepositoryOpener: opener,
             errorMapper: errorMapper,
-            helpOpener: NoopWelcomeHelpOpener()
+            helpOpener: InitDoneNoopWelcomeHelpOpener()
         )
 
         model.route = .initializationDone(result)
@@ -160,10 +160,10 @@ final class InitDoneEmptyRepositoryTests: XCTestCase {
             recoveryReport: nil
         )
         let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: nil),
+            settingsReader: InitDoneStaticSettingsReader(repoPath: nil),
             finderOpener: finderOpener,
             accessibilityAnnouncer: accessibilityAnnouncer,
-            helpOpener: NoopWelcomeHelpOpener()
+            helpOpener: InitDoneNoopWelcomeHelpOpener()
         )
 
         model.route = .initializationDone(result)
@@ -312,17 +312,17 @@ private final class RecordingAccessibilityAnnouncer: AccessibilityAnnouncing {
     }
 }
 
-private struct StaticSettingsReader: AppSettingsReading {
+private struct InitDoneStaticSettingsReader: AppSettingsReading {
     let repoPath: String?
 
     func configuredRepoPath() -> String? { repoPath }
 }
 
-private struct NoopWelcomeHelpOpener: WelcomeHelpOpening {
+private struct InitDoneNoopWelcomeHelpOpener: WelcomeHelpOpening {
     func openWelcomeHelp() throws {}
 }
 
-private final class RecordingErrorMapper: CoreErrorMapping {
+private final class InitDoneRecordingErrorMapper: CoreErrorMapping {
     private let mapping: CoreErrorMappingSnapshot
     private(set) var mappedErrors: [CoreError] = []
 
@@ -337,7 +337,7 @@ private final class RecordingErrorMapper: CoreErrorMapping {
 }
 
 private extension RepoConfigSnapshot {
-    static func fixture(repoPath: String) -> RepoConfigSnapshot {
+    static func initDoneFixture(repoPath: String) -> RepoConfigSnapshot {
         RepoConfigSnapshot(
             repoPath: repoPath,
             defaultMode: "Copied",
@@ -354,9 +354,9 @@ private extension RepoConfigSnapshot {
 }
 
 private extension RepositoryOpeningResult {
-    static func fixture(repoPath: String, fileCount: Int64) -> RepositoryOpeningResult {
+    static func initDoneFixture(repoPath: String, fileCount: Int64) -> RepositoryOpeningResult {
         RepositoryOpeningResult(
-            config: .fixture(repoPath: repoPath),
+            config: .initDoneFixture(repoPath: repoPath),
             tree: RepositoryTreeNodeSnapshot(
                 slug: "__root__",
                 displayName: "资料库",
@@ -368,7 +368,7 @@ private extension RepositoryOpeningResult {
 }
 
 private extension CoreErrorMappingSnapshot {
-    static func configFixture(rawContext: String) -> CoreErrorMappingSnapshot {
+    static func initDoneConfigFixture(rawContext: String) -> CoreErrorMappingSnapshot {
         CoreErrorMappingSnapshot(
             kind: .config,
             userMessage: "资料库配置不可用",
@@ -379,7 +379,7 @@ private extension CoreErrorMappingSnapshot {
         )
     }
 
-    static func dbFixture(rawContext: String) -> CoreErrorMappingSnapshot {
+    static func initDoneDbFixture(rawContext: String) -> CoreErrorMappingSnapshot {
         CoreErrorMappingSnapshot(
             kind: .db,
             userMessage: "资料库树不可用",

@@ -5,84 +5,98 @@ import XCTest
 final class ValidatePathRepairRegressionTests: XCTestCase {
     @MainActor
     func testInitializedRepoWithNonEmptyIssueDoesNotShowAdoptNotice() async {
-        let validation = RepoPathValidationSnapshot.fixture(
+        let validation = RepoPathValidationSnapshot.repairFixture(
             repoPath: "/tmp/repo",
             isEmpty: false,
             isInitialized: true,
             issues: [.alreadyInitialized, .nonEmptyDirectory],
             recommendedMode: nil
         )
-        let writer = RecordingSettingsWriter()
-        let model = makeModel(validation: validation, writer: writer)
+        let writer = RepairRecordingSettingsWriter()
+        let opening = RepositoryOpeningResult.repairFixture(repoPath: "/tmp/repo", fileCount: 1)
+        let opener = RepairRecordingRepositoryOpener(result: .success(opening))
+        let model = makeModel(validation: validation, writer: writer, opener: opener)
 
         XCTAssertFalse(ValidatePathNoticeRules.shouldShowAdoptExistingNotice(for: validation))
 
         model.updateRepositoryPath("/tmp/repo")
         await model.continueFromChoosePath()
-        model.continueFromValidatePath()
+        await model.continueFromValidatePath()
+        let requestedRepoPaths = await opener.requestedRepoPaths()
 
         XCTAssertEqual(model.validatePathPrimaryActionTitle, "Open Repository")
         XCTAssertEqual(model.validatePathAction, .openExistingRepositoryRequested(validation))
+        XCTAssertEqual(requestedRepoPaths, ["/tmp/repo"])
         XCTAssertEqual(writer.savedRepoPaths, ["/tmp/repo"])
-        XCTAssertEqual(model.route, .mainLoading("/tmp/repo"))
+        XCTAssertEqual(model.route, .mainList(opening))
     }
 
     @MainActor
-    func testSettingsOpenExistingRepositoryDoesNotSaveCandidateBeforeMainLoading() async {
-        let validation = RepoPathValidationSnapshot.fixture(
+    func testSettingsOpenExistingRepositorySavesCandidateAfterSuccessfulOpen() async {
+        let validation = RepoPathValidationSnapshot.repairFixture(
             repoPath: "/tmp/new-repo",
             isEmpty: false,
             isInitialized: true,
             issues: [.alreadyInitialized, .nonEmptyDirectory],
             recommendedMode: nil
         )
-        let writer = RecordingSettingsWriter()
+        let writer = RepairRecordingSettingsWriter()
+        let opening = RepositoryOpeningResult.repairFixture(repoPath: "/tmp/new-repo", fileCount: 1)
+        let opener = RepairRecordingRepositoryOpener(result: .success(opening))
         let model = makeModel(
             validation: validation,
             settingsRepoPath: "/tmp/current-repo",
-            writer: writer
+            writer: writer,
+            opener: opener
         )
 
         await model.beginSettingsRepositoryPathValidation("/tmp/new-repo")
-        model.continueFromValidatePath()
+        await model.continueFromValidatePath()
+        let requestedRepoPaths = await opener.requestedRepoPaths()
 
         XCTAssertEqual(model.validatePathAction, .openExistingRepositoryRequested(validation))
-        XCTAssertEqual(writer.savedRepoPaths, [])
-        XCTAssertEqual(model.route, .mainLoading("/tmp/new-repo"))
+        XCTAssertEqual(requestedRepoPaths, ["/tmp/new-repo"])
+        XCTAssertEqual(writer.savedRepoPaths, ["/tmp/new-repo"])
+        XCTAssertEqual(model.route, .mainList(opening))
     }
 
     @MainActor
     func testSettingsChangePathKeepsSourceWhenOpeningExistingRepository() async {
-        let validation = RepoPathValidationSnapshot.fixture(
+        let validation = RepoPathValidationSnapshot.repairFixture(
             repoPath: "/tmp/second-repo",
             isEmpty: false,
             isInitialized: true,
             issues: [.alreadyInitialized, .nonEmptyDirectory],
             recommendedMode: nil
         )
-        let writer = RecordingSettingsWriter()
+        let writer = RepairRecordingSettingsWriter()
+        let opening = RepositoryOpeningResult.repairFixture(repoPath: "/tmp/second-repo", fileCount: 1)
+        let opener = RepairRecordingRepositoryOpener(result: .success(opening))
         let model = makeModel(
             validation: validation,
             settingsRepoPath: "/tmp/current-repo",
-            writer: writer
+            writer: writer,
+            opener: opener
         )
 
         await model.beginSettingsRepositoryPathValidation("/tmp/new-repo")
         model.showChoosePath()
         model.updateRepositoryPath("/tmp/second-repo")
         await model.continueFromChoosePath()
-        model.continueFromValidatePath()
+        await model.continueFromValidatePath()
+        let requestedRepoPaths = await opener.requestedRepoPaths()
 
         XCTAssertTrue(model.validatePathReturnRouteIsSettings)
         XCTAssertEqual(model.validatePathAction, .openExistingRepositoryRequested(validation))
-        XCTAssertEqual(writer.savedRepoPaths, [])
-        XCTAssertEqual(model.route, .mainLoading("/tmp/second-repo"))
+        XCTAssertEqual(requestedRepoPaths, ["/tmp/second-repo"])
+        XCTAssertEqual(writer.savedRepoPaths, ["/tmp/second-repo"])
+        XCTAssertEqual(model.route, .mainList(opening))
     }
 
     @MainActor
     func testSettingsQuitConfirmationReturnsToSettingsWithoutSavingCandidate() async {
-        let validation = RepoPathValidationSnapshot.fixture(repoPath: "/tmp/new-repo")
-        let writer = RecordingSettingsWriter()
+        let validation = RepoPathValidationSnapshot.repairFixture(repoPath: "/tmp/new-repo")
+        let writer = RepairRecordingSettingsWriter()
         let model = makeModel(
             validation: validation,
             settingsRepoPath: "/tmp/current-repo",
@@ -100,11 +114,11 @@ final class ValidatePathRepairRegressionTests: XCTestCase {
 
     @MainActor
     func testMissingCapacityResultBlocksContinue() async {
-        let validation = RepoPathValidationSnapshot.fixture(
+        let validation = RepoPathValidationSnapshot.repairFixture(
             repoPath: "/tmp/repo",
             availableCapacityBytes: nil
         )
-        let writer = RecordingSettingsWriter()
+        let writer = RepairRecordingSettingsWriter()
         let model = makeModel(validation: validation, writer: writer)
 
         model.updateRepositoryPath("/tmp/repo")
@@ -117,11 +131,11 @@ final class ValidatePathRepairRegressionTests: XCTestCase {
 
     @MainActor
     func testMissingExternalVolumeResultBlocksContinue() async {
-        let validation = RepoPathValidationSnapshot.fixture(
+        let validation = RepoPathValidationSnapshot.repairFixture(
             repoPath: "/tmp/repo",
             isExternalVolume: nil
         )
-        let writer = RecordingSettingsWriter()
+        let writer = RepairRecordingSettingsWriter()
         let model = makeModel(validation: validation, writer: writer)
 
         model.updateRepositoryPath("/tmp/repo")
@@ -134,27 +148,27 @@ final class ValidatePathRepairRegressionTests: XCTestCase {
 
     @MainActor
     func testAdoptExistingConfirmCallsRepositoryInitializerAndSavesPath() async {
-        let validation = RepoPathValidationSnapshot.fixture(
+        let validation = RepoPathValidationSnapshot.repairFixture(
             repoPath: "/tmp/repo",
             isEmpty: false,
             issues: [.nonEmptyDirectory],
             recommendedMode: .adoptExisting
         )
-        let writer = RecordingSettingsWriter()
-        let initializer = RecordingRepositoryInitializer()
+        let writer = RepairRecordingSettingsWriter()
+        let initializer = RepairRecordingRepositoryInitializer()
         let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: nil),
+            settingsReader: RepairStaticSettingsReader(repoPath: nil),
             settingsWriter: writer,
-            configLoader: RecordingConfigLoader(config: .fixture(repoPath: "/tmp/repo")),
-            pathValidator: RecordingPathValidator(validation: validation),
+            configLoader: RepairRecordingConfigLoader(config: .repairFixture(repoPath: "/tmp/repo")),
+            pathValidator: RepairRecordingPathValidator(validation: validation),
             repositoryInitializer: initializer,
-            startupRecoverer: StaticStartupRecoverer(),
-            helpOpener: NoopWelcomeHelpOpener()
+            startupRecoverer: RepairStaticStartupRecoverer(),
+            helpOpener: RepairNoopWelcomeHelpOpener()
         )
 
         model.updateRepositoryPath("/tmp/repo")
         await model.continueFromChoosePath()
-        model.continueFromValidatePath()
+        await model.continueFromValidatePath()
         await model.adoptExistingRepositoryFromConfirmInit()
         let createdPaths = await initializer.createdRepoPaths()
         let adoptedPaths = await initializer.adoptedRepoPaths()
@@ -172,12 +186,12 @@ final class ValidatePathRepairRegressionTests: XCTestCase {
 
     func testConfirmInitRulesRequireMatchingSafeDraftState() {
         let createDraft = RepositoryInitializationDraft(
-            validation: .fixture(repoPath: "/tmp/create"),
+            validation: .repairFixture(repoPath: "/tmp/create"),
             mode: .createEmpty,
             scanSession: nil
         )
         let adoptDraft = RepositoryInitializationDraft(
-            validation: .fixture(
+            validation: .repairFixture(
                 repoPath: "/tmp/adopt",
                 isEmpty: false,
                 issues: [.nonEmptyDirectory],
@@ -187,7 +201,7 @@ final class ValidatePathRepairRegressionTests: XCTestCase {
             scanSession: nil
         )
         let staleCreateDraft = RepositoryInitializationDraft(
-            validation: .fixture(repoPath: "/tmp/stale", isEmpty: false),
+            validation: .repairFixture(repoPath: "/tmp/stale", isEmpty: false),
             mode: .createEmpty,
             scanSession: nil
         )
@@ -207,22 +221,22 @@ final class ValidatePathRepairRegressionTests: XCTestCase {
 
     @MainActor
     func testConfirmInitPrimaryActionShowsInitializingRouteBeforeCoreWriteCompletes() async {
-        let validation = RepoPathValidationSnapshot.fixture(repoPath: "/tmp/repo")
-        let writer = RecordingSettingsWriter()
-        let initializer = PausingRepositoryInitializer()
+        let validation = RepoPathValidationSnapshot.repairFixture(repoPath: "/tmp/repo")
+        let writer = RepairRecordingSettingsWriter()
+        let initializer = RepairPausingRepositoryInitializer()
         let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: nil),
+            settingsReader: RepairStaticSettingsReader(repoPath: nil),
             settingsWriter: writer,
-            configLoader: RecordingConfigLoader(config: .fixture(repoPath: "/tmp/repo")),
-            pathValidator: RecordingPathValidator(validation: validation),
+            configLoader: RepairRecordingConfigLoader(config: .repairFixture(repoPath: "/tmp/repo")),
+            pathValidator: RepairRecordingPathValidator(validation: validation),
             repositoryInitializer: initializer,
-            startupRecoverer: StaticStartupRecoverer(),
-            helpOpener: NoopWelcomeHelpOpener()
+            startupRecoverer: RepairStaticStartupRecoverer(),
+            helpOpener: RepairNoopWelcomeHelpOpener()
         )
 
         model.updateRepositoryPath("/tmp/repo")
         await model.continueFromChoosePath()
-        model.continueFromValidatePath()
+        await model.continueFromValidatePath()
         let draft = RepositoryInitializationDraft(validation: validation, mode: .createEmpty, scanSession: nil)
         let initializationTask = Task {
             await model.createEmptyRepositoryFromConfirmInit()
@@ -247,28 +261,28 @@ final class ValidatePathRepairRegressionTests: XCTestCase {
 
     @MainActor
     func testConfirmInitRevalidatesBeforeWritingAndBlocksChangedPathState() async {
-        let initialValidation = RepoPathValidationSnapshot.fixture(repoPath: "/tmp/repo")
-        let changedValidation = RepoPathValidationSnapshot.fixture(
+        let initialValidation = RepoPathValidationSnapshot.repairFixture(repoPath: "/tmp/repo")
+        let changedValidation = RepoPathValidationSnapshot.repairFixture(
             repoPath: "/tmp/repo",
             isEmpty: false,
             issues: [.nonEmptyDirectory],
             recommendedMode: .adoptExisting
         )
-        let validator = SequencePathValidator(validations: [initialValidation, changedValidation])
-        let writer = RecordingSettingsWriter()
-        let initializer = RecordingRepositoryInitializer()
+        let validator = RepairSequencePathValidator(validations: [initialValidation, changedValidation])
+        let writer = RepairRecordingSettingsWriter()
+        let initializer = RepairRecordingRepositoryInitializer()
         let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: nil),
+            settingsReader: RepairStaticSettingsReader(repoPath: nil),
             settingsWriter: writer,
-            configLoader: RecordingConfigLoader(config: .fixture(repoPath: "/tmp/repo")),
+            configLoader: RepairRecordingConfigLoader(config: .repairFixture(repoPath: "/tmp/repo")),
             pathValidator: validator,
             repositoryInitializer: initializer,
-            helpOpener: NoopWelcomeHelpOpener()
+            helpOpener: RepairNoopWelcomeHelpOpener()
         )
 
         model.updateRepositoryPath("/tmp/repo")
         await model.continueFromChoosePath()
-        model.continueFromValidatePath()
+        await model.continueFromValidatePath()
         await model.createEmptyRepositoryFromConfirmInit()
         let createdPaths = await initializer.createdRepoPaths()
         let adoptedPaths = await initializer.adoptedRepoPaths()
@@ -282,7 +296,7 @@ final class ValidatePathRepairRegressionTests: XCTestCase {
     }
 
     func testDefaultCoreAdoptExistingPreservesUserFiles() async throws {
-        let repoURL = try makeTemporaryAdoptRepoURL()
+        let repoURL = try makeRepairTemporaryAdoptRepoURL()
         defer { try? FileManager.default.removeItem(at: repoURL) }
 
         let readmeURL = repoURL.appendingPathComponent("README.md")
@@ -297,7 +311,7 @@ final class ValidatePathRepairRegressionTests: XCTestCase {
     }
 
     func testDefaultCoreCreateEmptyWritesRecoverableMetadataOnly() async throws {
-        let repoURL = try makeTemporaryAdoptRepoURL()
+        let repoURL = try makeRepairTemporaryAdoptRepoURL()
         defer { try? FileManager.default.removeItem(at: repoURL) }
 
         try await CoreBridge().initializeEmptyRepository(repoPath: repoURL.path)
@@ -330,171 +344,19 @@ final class ValidatePathRepairRegressionTests: XCTestCase {
     private func makeModel(
         validation: RepoPathValidationSnapshot,
         settingsRepoPath: String? = nil,
-        writer: RecordingSettingsWriter
+        writer: RepairRecordingSettingsWriter,
+        opener: (any CoreEmptyRepositoryOpening)? = nil
     ) -> OnboardingModel {
-        OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: settingsRepoPath),
+        let repositoryOpener: any CoreEmptyRepositoryOpening = opener ??
+            RepairRecordingRepositoryOpener(result: .success(.repairFixture(repoPath: validation.repoPath, fileCount: 1)))
+        return OnboardingModel(
+            settingsReader: RepairStaticSettingsReader(repoPath: settingsRepoPath),
             settingsWriter: writer,
-            configLoader: RecordingConfigLoader(config: .fixture(repoPath: settingsRepoPath ?? "/tmp/repo")),
-            pathValidator: RecordingPathValidator(validation: validation),
-            existingRepositoryMetadataReader: StaticExistingRepositoryMetadataReader(schemaVersion: 1),
-            helpOpener: NoopWelcomeHelpOpener()
-        )
-    }
-}
-
-private func makeTemporaryAdoptRepoURL() throws -> URL {
-    let url = FileManager.default.temporaryDirectory
-        .appendingPathComponent("AreaMatrixAdoptExisting-\(UUID().uuidString)", isDirectory: true)
-    try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
-    return url
-}
-
-private struct StaticSettingsReader: AppSettingsReading {
-    let repoPath: String?
-    func configuredRepoPath() -> String? { repoPath }
-}
-private final class RecordingSettingsWriter: AppSettingsWriting {
-    private(set) var savedRepoPaths: [String] = []
-    func saveConfiguredRepoPath(_ repoPath: String) {
-        savedRepoPaths.append(repoPath)
-    }
-}
-private actor RecordingConfigLoader: CoreConfigurationLoading {
-    private let config: RepoConfigSnapshot
-    init(config: RepoConfigSnapshot) {
-        self.config = config
-    }
-    func loadConfig(repoPath: String) async throws -> RepoConfigSnapshot {
-        config
-    }
-}
-private actor RecordingPathValidator: CoreRepositoryPathValidating {
-    private let validation: RepoPathValidationSnapshot
-    init(validation: RepoPathValidationSnapshot) {
-        self.validation = validation
-    }
-    func validateRepoPath(repoPath: String) async throws -> RepoPathValidationSnapshot {
-        validation
-    }
-}
-
-private actor SequencePathValidator: CoreRepositoryPathValidating {
-    private var validations: [RepoPathValidationSnapshot]
-
-    init(validations: [RepoPathValidationSnapshot]) {
-        self.validations = validations
-    }
-
-    func validateRepoPath(repoPath: String) async throws -> RepoPathValidationSnapshot {
-        guard !validations.isEmpty else {
-            throw CoreError.Config(reason: "missing validation fixture")
-        }
-
-        return validations.removeFirst()
-    }
-}
-
-private actor RecordingRepositoryInitializer: CoreRepositoryInitializing {
-    private var createdPaths: [String] = []
-    private var adoptedPaths: [String] = []
-
-    func initializeEmptyRepository(repoPath: String) async throws {
-        createdPaths.append(repoPath)
-    }
-
-    func adoptExistingRepository(repoPath: String) async throws {
-        adoptedPaths.append(repoPath)
-    }
-
-    func createdRepoPaths() -> [String] { createdPaths }
-    func adoptedRepoPaths() -> [String] { adoptedPaths }
-}
-
-private actor PausingRepositoryInitializer: CoreRepositoryInitializing {
-    private var createdPaths: [String] = []
-    private var adoptedPaths: [String] = []
-    private var didStart = false
-
-    func initializeEmptyRepository(repoPath: String) async throws {
-        createdPaths.append(repoPath)
-        didStart = true
-        try await Task.sleep(nanoseconds: 100_000_000)
-    }
-
-    func adoptExistingRepository(repoPath: String) async throws {
-        adoptedPaths.append(repoPath)
-        didStart = true
-        try await Task.sleep(nanoseconds: 100_000_000)
-    }
-
-    func waitUntilStarted() async {
-        while !didStart {
-            await Task.yield()
-        }
-    }
-
-    func createdRepoPaths() -> [String] { createdPaths }
-}
-
-private actor StaticStartupRecoverer: CoreStartupRecovering {
-    func recoverOnStartup(repoPath: String) async throws -> RecoveryReportSnapshot {
-        RecoveryReportSnapshot(cleanedStagingFiles: 0, revertedStagingDbRows: 0, warnings: [])
-    }
-}
-
-private struct StaticExistingRepositoryMetadataReader: ExistingRepositoryMetadataReading {
-    let schemaVersion: Int64
-
-    func metadata(repoPath: String) async throws -> ExistingRepositoryMetadataSnapshot {
-        ExistingRepositoryMetadataSnapshot(schemaVersion: schemaVersion, lastOpenedAt: nil)
-    }
-}
-
-private struct NoopWelcomeHelpOpener: WelcomeHelpOpening { func openWelcomeHelp() throws {} }
-
-private extension RepoConfigSnapshot {
-    static func fixture(repoPath: String) -> RepoConfigSnapshot {
-        RepoConfigSnapshot(
-            repoPath: repoPath,
-            defaultMode: "Copied",
-            overviewOutput: "GeneratedOnly",
-            aiEnabled: false,
-            locale: "zh-Hans",
-            iCloudWarn: true,
-            enableExtensionRules: true,
-            enableKeywordRules: true,
-            fallbackToInbox: true,
-            allowReplaceDuringImport: false
-        )
-    }
-}
-
-private extension RepoPathValidationSnapshot {
-    static func fixture(
-        repoPath: String,
-        isEmpty: Bool = true,
-        isInitialized: Bool = false,
-        availableCapacityBytes: Int64? = 1_073_741_824,
-        isExternalVolume: Bool? = false,
-        issues: [RepoPathIssueSnapshot] = [],
-        recommendedMode: RepoInitModeSnapshot? = .createEmpty
-    ) -> RepoPathValidationSnapshot {
-        RepoPathValidationSnapshot(
-            repoPath: repoPath,
-            exists: true,
-            isDirectory: true,
-            isReadable: true,
-            isWritable: true,
-            isEmpty: isEmpty,
-            isInitialized: isInitialized,
-            isInsideAreaMatrix: false,
-            isICloudPath: false,
-            hasUnfinishedScanSession: false,
-            availableCapacityBytes: availableCapacityBytes,
-            isExternalVolume: isExternalVolume,
-            recommendedMode: recommendedMode,
-            issues: issues
+            configLoader: RepairRecordingConfigLoader(config: .repairFixture(repoPath: settingsRepoPath ?? "/tmp/repo")),
+            pathValidator: RepairRecordingPathValidator(validation: validation),
+            emptyRepositoryOpener: repositoryOpener,
+            existingRepositoryMetadataReader: RepairStaticExistingRepositoryMetadataReader(schemaVersion: 1),
+            helpOpener: RepairNoopWelcomeHelpOpener()
         )
     }
 }

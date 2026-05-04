@@ -43,4 +43,5 @@ AreaMatrix-dev/
 # AreaMatrix task-loop progress and logs are tracked as resumable workflow evidence.
 # Only volatile runner coordination files stay local.
 .codex/task-loop-lock/
+.codex/task-loop-control/
 .codex/task-loop-tmp/

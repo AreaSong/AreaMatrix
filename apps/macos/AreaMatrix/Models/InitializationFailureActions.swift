@@ -1,5 +1,13 @@
 import Foundation
 
+enum InitializationDiagnosticsState: Equatable, Sendable {
+    case idle
+    case confirmingPrivacy
+    case collecting
+    case collected(DiagnosticsSnapshotSnapshot)
+    case failed(CoreErrorMappingSnapshot)
+}
+
 extension OnboardingModel {
     @MainActor
     func routeInitializationFailure(_ error: Error, repoPath: String) async {
@@ -32,5 +40,42 @@ extension OnboardingModel {
         case .adoptExisting:
             await adoptExistingRepositoryFromConfirmInit()
         }
+    }
+
+    @MainActor
+    func requestInitializationDiagnosticsPrivacyConfirmation() {
+        guard case .initializationFailed = route else { return }
+        initializationDiagnostics = .confirmingPrivacy
+    }
+
+    @MainActor
+    func cancelInitializationDiagnosticsPrivacyConfirmation() {
+        guard case .confirmingPrivacy = initializationDiagnostics else { return }
+        initializationDiagnostics = .idle
+    }
+
+    @MainActor
+    func collectInitializationDiagnostics() async {
+        guard case .initializationFailed(let repoPath, _, _) = route else { return }
+
+        initializationDiagnostics = .collecting
+        do {
+            let snapshot = try await diagnosticsCollector.createDiagnosticsSnapshot(repoPath: repoPath)
+            guard case .initializationFailed(let currentRepoPath, _, _) = route,
+                  currentRepoPath == repoPath else { return }
+            initializationDiagnostics = .collected(snapshot)
+        } catch {
+            guard case .initializationFailed(let currentRepoPath, _, _) = route,
+                  currentRepoPath == repoPath else { return }
+            initializationDiagnostics = .failed(await diagnosticsFailureMapping(for: error))
+        }
+    }
+
+    private func diagnosticsFailureMapping(for error: Error) async -> CoreErrorMappingSnapshot {
+        if let coreError = error as? CoreError {
+            return await errorMapper.mapCoreError(coreError)
+        }
+
+        return await errorMapper.mapCoreError(CoreError.Internal(message: error.localizedDescription))
     }
 }

@@ -15,19 +15,19 @@ final class AreaMatrixAdoptExistingTests: XCTestCase {
     func testCreateEmptyConfirmInitializesRepositoryThroughCoreBridge() async throws {
         let repoURL = try makeTemporaryRepositoryURL()
         defer { try? FileManager.default.removeItem(at: repoURL) }
-        let validation = RepoPathValidationSnapshot.fixture(repoPath: repoURL.path)
-        let writer = RecordingSettingsWriter()
+        let validation = RepoPathValidationSnapshot.smokeFixture(repoPath: repoURL.path)
+        let writer = SmokeRecordingSettingsWriter()
         let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: nil),
+            settingsReader: SmokeStaticSettingsReader(repoPath: nil),
             settingsWriter: writer,
-            configLoader: RecordingConfigLoader(result: .success(.fixture(repoPath: "/tmp/repo"))),
-            pathValidator: RecordingPathValidator(result: .success(validation)),
-            helpOpener: NoopWelcomeHelpOpener()
+            configLoader: SmokeRecordingConfigLoader(result: .success(.smokeFixture(repoPath: "/tmp/repo"))),
+            pathValidator: SmokeRecordingPathValidator(result: .success(validation)),
+            helpOpener: SmokeNoopWelcomeHelpOpener()
         )
 
         model.updateRepositoryPath(repoURL.path)
         await model.continueFromChoosePath()
-        model.continueFromValidatePath()
+        await model.continueFromValidatePath()
         await model.createEmptyRepositoryFromConfirmInit()
 
         let indexDatabasePath = repoURL.appendingPathComponent(".areamatrix/index.db").path
@@ -44,19 +44,19 @@ final class AreaMatrixAdoptExistingTests: XCTestCase {
 
     @MainActor
     func testAdoptExistingContinueShowsConfirmInitializationHandoff() async {
-        let validation = RepoPathValidationSnapshot.adoptExistingFixture(repoPath: "/tmp/repo")
-        let scanReader = RecordingScanSessionReader(result: .success(nil))
+        let validation = RepoPathValidationSnapshot.smokeAdoptExistingFixture(repoPath: "/tmp/repo")
+        let scanReader = SmokeRecordingScanSessionReader(result: .success(nil))
         let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: nil),
-            configLoader: RecordingConfigLoader(result: .success(.fixture(repoPath: "/tmp/repo"))),
-            pathValidator: RecordingPathValidator(result: .success(validation)),
+            settingsReader: SmokeStaticSettingsReader(repoPath: nil),
+            configLoader: SmokeRecordingConfigLoader(result: .success(.smokeFixture(repoPath: "/tmp/repo"))),
+            pathValidator: SmokeRecordingPathValidator(result: .success(validation)),
             scanSessionReader: scanReader,
-            helpOpener: NoopWelcomeHelpOpener()
+            helpOpener: SmokeNoopWelcomeHelpOpener()
         )
 
         model.updateRepositoryPath("/tmp/repo")
         await model.continueFromChoosePath()
-        model.continueFromValidatePath()
+        await model.continueFromValidatePath()
         let requestedScanPaths = await scanReader.requestedRepoPaths()
 
         XCTAssertTrue(model.canContinueFromValidatePath)
@@ -70,31 +70,36 @@ final class AreaMatrixAdoptExistingTests: XCTestCase {
     }
 
     @MainActor
-    func testOpenExistingRepositorySavesSelectionAndEntersMainLoading() async {
-        let validation = RepoPathValidationSnapshot.fixture(
+    func testOpenExistingRepositorySavesSelectionAndOpensMainList() async {
+        let validation = RepoPathValidationSnapshot.smokeFixture(
             repoPath: "/tmp/repo",
             isEmpty: false,
             isInitialized: true,
             issues: [.alreadyInitialized],
             recommendedMode: nil
         )
-        let writer = RecordingSettingsWriter()
+        let writer = SmokeRecordingSettingsWriter()
+        let opening = RepositoryOpeningResult.smokeFixture(repoPath: "/tmp/repo", fileCount: 1)
+        let opener = SmokeRecordingRepositoryOpener(result: .success(opening))
         let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: nil),
+            settingsReader: SmokeStaticSettingsReader(repoPath: nil),
             settingsWriter: writer,
-            configLoader: RecordingConfigLoader(result: .success(.fixture(repoPath: "/tmp/repo"))),
-            pathValidator: RecordingPathValidator(result: .success(validation)),
-            existingRepositoryMetadataReader: StaticExistingRepositoryMetadataReader(schemaVersion: 1),
-            helpOpener: NoopWelcomeHelpOpener()
+            configLoader: SmokeRecordingConfigLoader(result: .success(.smokeFixture(repoPath: "/tmp/repo"))),
+            pathValidator: SmokeRecordingPathValidator(result: .success(validation)),
+            emptyRepositoryOpener: opener,
+            existingRepositoryMetadataReader: SmokeStaticExistingRepositoryMetadataReader(schemaVersion: 1),
+            helpOpener: SmokeNoopWelcomeHelpOpener()
         )
 
         model.updateRepositoryPath("/tmp/repo")
         await model.continueFromChoosePath()
-        model.continueFromValidatePath()
+        await model.continueFromValidatePath()
+        let requestedRepoPaths = await opener.requestedRepoPaths()
 
         XCTAssertEqual(model.existingRepositoryMetadata?.schemaVersion, 1)
+        XCTAssertEqual(requestedRepoPaths, ["/tmp/repo"])
         XCTAssertEqual(writer.savedRepoPaths, ["/tmp/repo"])
-        XCTAssertEqual(model.route, .mainLoading("/tmp/repo"))
+        XCTAssertEqual(model.route, .mainList(opening))
     }
 
     func testDefaultCoreValidationDetectsTemporaryNonEmptyDirectoryAsAdoptExisting() async throws {
@@ -117,7 +122,7 @@ final class AreaMatrixAdoptExistingTests: XCTestCase {
 
     @MainActor
     func testUnfinishedAdoptScanLoadsLatestSessionAndBlocksContinue() async {
-        let validation = RepoPathValidationSnapshot.fixture(
+        let validation = RepoPathValidationSnapshot.smokeFixture(
             repoPath: "/tmp/repo",
             isEmpty: false,
             isInitialized: true,
@@ -126,13 +131,13 @@ final class AreaMatrixAdoptExistingTests: XCTestCase {
             recommendedMode: nil
         )
         let scanSession = ScanSessionSnapshot.adoptFixture()
-        let scanReader = RecordingScanSessionReader(result: .success(scanSession))
+        let scanReader = SmokeRecordingScanSessionReader(result: .success(scanSession))
         let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: nil),
-            configLoader: RecordingConfigLoader(result: .success(.fixture(repoPath: "/tmp/repo"))),
-            pathValidator: RecordingPathValidator(result: .success(validation)),
+            settingsReader: SmokeStaticSettingsReader(repoPath: nil),
+            configLoader: SmokeRecordingConfigLoader(result: .success(.smokeFixture(repoPath: "/tmp/repo"))),
+            pathValidator: SmokeRecordingPathValidator(result: .success(validation)),
             scanSessionReader: scanReader,
-            helpOpener: NoopWelcomeHelpOpener()
+            helpOpener: SmokeNoopWelcomeHelpOpener()
         )
 
         model.updateRepositoryPath("/tmp/repo")
@@ -147,18 +152,18 @@ final class AreaMatrixAdoptExistingTests: XCTestCase {
 
     @MainActor
     func testScanSessionFailurePreservesPathValidationAndBlocksContinue() async {
-        let validation = RepoPathValidationSnapshot.fixture(
+        let validation = RepoPathValidationSnapshot.smokeFixture(
             repoPath: "/tmp/repo",
             hasUnfinishedScanSession: true,
             issues: [.unfinishedScanSession],
             recommendedMode: nil
         )
         let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: nil),
-            configLoader: RecordingConfigLoader(result: .success(.fixture(repoPath: "/tmp/repo"))),
-            pathValidator: RecordingPathValidator(result: .success(validation)),
-            scanSessionReader: RecordingScanSessionReader(result: .failure(CoreError.Db(message: "db"))),
-            helpOpener: NoopWelcomeHelpOpener()
+            settingsReader: SmokeStaticSettingsReader(repoPath: nil),
+            configLoader: SmokeRecordingConfigLoader(result: .success(.smokeFixture(repoPath: "/tmp/repo"))),
+            pathValidator: SmokeRecordingPathValidator(result: .success(validation)),
+            scanSessionReader: SmokeRecordingScanSessionReader(result: .failure(CoreError.Db(message: "db"))),
+            helpOpener: SmokeNoopWelcomeHelpOpener()
         )
 
         model.updateRepositoryPath("/tmp/repo")
@@ -176,14 +181,14 @@ final class AreaMatrixAdoptExistingTests: XCTestCase {
 
     @MainActor
     func testSettingsOriginBackReturnsRepositorySettingsWithoutSavingNewPath() async {
-        let validation = RepoPathValidationSnapshot.fixture(repoPath: "/tmp/new-repo")
-        let writer = RecordingSettingsWriter()
+        let validation = RepoPathValidationSnapshot.smokeFixture(repoPath: "/tmp/new-repo")
+        let writer = SmokeRecordingSettingsWriter()
         let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: "/tmp/current-repo"),
+            settingsReader: SmokeStaticSettingsReader(repoPath: "/tmp/current-repo"),
             settingsWriter: writer,
-            configLoader: RecordingConfigLoader(result: .success(.fixture(repoPath: "/tmp/current-repo"))),
-            pathValidator: RecordingPathValidator(result: .success(validation)),
-            helpOpener: NoopWelcomeHelpOpener()
+            configLoader: SmokeRecordingConfigLoader(result: .success(.smokeFixture(repoPath: "/tmp/current-repo"))),
+            pathValidator: SmokeRecordingPathValidator(result: .success(validation)),
+            helpOpener: SmokeNoopWelcomeHelpOpener()
         )
 
         await model.beginSettingsRepositoryPathValidation("/tmp/new-repo")
@@ -199,14 +204,14 @@ final class AreaMatrixAdoptExistingTests: XCTestCase {
 
     @MainActor
     func testValidatePathQuitConfirmationDoesNotSaveCandidateRepository() async {
-        let validation = RepoPathValidationSnapshot.fixture(repoPath: "/tmp/repo")
-        let writer = RecordingSettingsWriter()
+        let validation = RepoPathValidationSnapshot.smokeFixture(repoPath: "/tmp/repo")
+        let writer = SmokeRecordingSettingsWriter()
         let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: nil),
+            settingsReader: SmokeStaticSettingsReader(repoPath: nil),
             settingsWriter: writer,
-            configLoader: RecordingConfigLoader(result: .success(.fixture(repoPath: "/tmp/repo"))),
-            pathValidator: RecordingPathValidator(result: .success(validation)),
-            helpOpener: NoopWelcomeHelpOpener()
+            configLoader: SmokeRecordingConfigLoader(result: .success(.smokeFixture(repoPath: "/tmp/repo"))),
+            pathValidator: SmokeRecordingPathValidator(result: .success(validation)),
+            helpOpener: SmokeNoopWelcomeHelpOpener()
         )
 
         model.updateRepositoryPath("/tmp/repo")
@@ -223,80 +228,6 @@ final class AreaMatrixAdoptExistingTests: XCTestCase {
     }
 }
 
-final class ValidatePathErrorMappingTests: XCTestCase {
-    @MainActor
-    func testValidatePathMapsCoreFailureThroughC121ErrorMapper() async {
-        let mapping = CoreErrorMappingSnapshot.permissionDeniedFixture(rawContext: "/tmp/repo")
-        let errorMapper = RecordingErrorMapper(mapping: mapping)
-        let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: nil),
-            configLoader: RecordingConfigLoader(result: .success(.fixture(repoPath: "/tmp/repo"))),
-            pathValidator: RecordingPathValidator(result: .failure(CoreError.PermissionDenied(path: "/tmp/repo"))),
-            errorMapper: errorMapper,
-            helpOpener: NoopWelcomeHelpOpener()
-        )
-
-        model.updateRepositoryPath("/tmp/repo")
-        await model.continueFromChoosePath()
-
-        XCTAssertEqual(errorMapper.mappedErrors, [CoreError.PermissionDenied(path: "/tmp/repo")])
-        XCTAssertEqual(model.repositoryPathError, "无访问权限")
-        XCTAssertEqual(model.repositoryPathErrorMapping, mapping)
-        XCTAssertFalse(model.canContinueFromValidatePath)
-    }
-
-    func testCoreBridgeMapsCoreErrorThroughGeneratedBindings() async {
-        let mapping = await CoreBridge().mapCoreError(CoreError.PermissionDenied(path: "/restricted/repo"))
-
-        XCTAssertEqual(mapping.kind, .permissionDenied)
-        XCTAssertEqual(mapping.userMessage, "无访问权限")
-        XCTAssertEqual(mapping.severity, .high)
-        XCTAssertEqual(mapping.recoverability, .userActionRequired)
-        XCTAssertEqual(mapping.rawContext, "/restricted/repo")
-        XCTAssertFalse(mapping.suggestedAction.isEmpty)
-    }
-
-    @MainActor
-    func testConfigValidationFailureRoutesToMainRepoError() async {
-        let mapping = CoreErrorMappingSnapshot.configFixture(rawContext: "schema mismatch")
-        let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: nil),
-            configLoader: RecordingConfigLoader(result: .success(.fixture(repoPath: "/tmp/repo"))),
-            pathValidator: RecordingPathValidator(result: .failure(CoreError.Config(reason: "schema mismatch"))),
-            errorMapper: RecordingErrorMapper(mapping: mapping),
-            helpOpener: NoopWelcomeHelpOpener()
-        )
-
-        model.updateRepositoryPath("/tmp/repo")
-        await model.continueFromChoosePath()
-
-        XCTAssertEqual(model.route, .mainRepoError("/tmp/repo", mapping))
-        XCTAssertFalse(model.canContinueFromValidatePath)
-    }
-}
-
-final class ValidatePathIntegrationTests: XCTestCase {
-    @MainActor
-    func testInsufficientCapacityBlocksValidatePathContinue() async {
-        let validation = RepoPathValidationSnapshot.fixture(
-            repoPath: "/tmp/repo",
-            availableCapacityBytes: 128 * 1024 * 1024
-        )
-        let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: nil),
-            configLoader: RecordingConfigLoader(result: .success(.fixture(repoPath: "/tmp/repo"))),
-            pathValidator: RecordingPathValidator(result: .success(validation)),
-            helpOpener: NoopWelcomeHelpOpener()
-        )
-
-        model.updateRepositoryPath("/tmp/repo")
-        await model.continueFromChoosePath()
-
-        XCTAssertEqual(model.repositoryPathError, "可用空间不足，请释放空间或选择其他路径")
-        XCTAssertFalse(model.canContinueFromValidatePath)
-    }
-}
-
 private func makeTemporaryRepositoryURL() throws -> URL {
     let url = FileManager.default.temporaryDirectory
         .appendingPathComponent("AreaMatrixAdoptExistingTests-\(UUID().uuidString)", isDirectory: true)
@@ -304,23 +235,23 @@ private func makeTemporaryRepositoryURL() throws -> URL {
     return url
 }
 
-private enum RecordingConfigResult {
+enum SmokeRecordingConfigResult {
     case success(RepoConfigSnapshot)
 }
 
-private struct StaticSettingsReader: AppSettingsReading {
+struct SmokeStaticSettingsReader: AppSettingsReading {
     let repoPath: String?
     func configuredRepoPath() -> String? { repoPath }
 }
-private final class RecordingSettingsWriter: AppSettingsWriting {
+final class SmokeRecordingSettingsWriter: AppSettingsWriting {
     private(set) var savedRepoPaths: [String] = []
     func saveConfiguredRepoPath(_ repoPath: String) {
         savedRepoPaths.append(repoPath)
     }
 }
-private actor RecordingConfigLoader: CoreConfigurationLoading {
-    private let result: RecordingConfigResult
-    init(result: RecordingConfigResult) {
+actor SmokeRecordingConfigLoader: CoreConfigurationLoading {
+    private let result: SmokeRecordingConfigResult
+    init(result: SmokeRecordingConfigResult) {
         self.result = result
     }
 
@@ -332,14 +263,14 @@ private actor RecordingConfigLoader: CoreConfigurationLoading {
     }
 }
 
-private enum RecordingPathValidationResult {
+enum SmokeRecordingPathValidationResult {
     case success(RepoPathValidationSnapshot)
     case failure(Error)
 }
 
-private actor RecordingPathValidator: CoreRepositoryPathValidating {
-    private let result: RecordingPathValidationResult
-    init(result: RecordingPathValidationResult) {
+actor SmokeRecordingPathValidator: CoreRepositoryPathValidating {
+    private let result: SmokeRecordingPathValidationResult
+    init(result: SmokeRecordingPathValidationResult) {
         self.result = result
     }
     func validateRepoPath(repoPath: String) async throws -> RepoPathValidationSnapshot {
@@ -352,7 +283,41 @@ private actor RecordingPathValidator: CoreRepositoryPathValidating {
     }
 }
 
-private final class RecordingErrorMapper: CoreErrorMapping {
+enum SmokeRecordingRepositoryOpenResult {
+    case success(RepositoryOpeningResult)
+    case failure(Error)
+}
+
+actor SmokeRecordingRepositoryOpener: CoreEmptyRepositoryOpening {
+    private let result: SmokeRecordingRepositoryOpenResult
+    private var paths: [String] = []
+
+    init(result: SmokeRecordingRepositoryOpenResult) {
+        self.result = result
+    }
+
+    func openEmptyRepository(repoPath: String) async throws -> RepositoryOpeningResult {
+        try await openConfiguredRepository(repoPath: repoPath)
+    }
+
+    func openAdoptedRepository(repoPath: String) async throws -> RepositoryOpeningResult {
+        try await openConfiguredRepository(repoPath: repoPath)
+    }
+
+    func openConfiguredRepository(repoPath: String) async throws -> RepositoryOpeningResult {
+        paths.append(repoPath)
+        switch result {
+        case .success(let opening):
+            return opening
+        case .failure(let error):
+            throw error
+        }
+    }
+
+    func requestedRepoPaths() -> [String] { paths }
+}
+
+final class SmokeRecordingErrorMapper: CoreErrorMapping {
     private let mapping: CoreErrorMappingSnapshot
     private(set) var mappedErrors: [CoreError] = []
 
@@ -366,15 +331,15 @@ private final class RecordingErrorMapper: CoreErrorMapping {
     }
 }
 
-private enum RecordingScanSessionResult {
+enum SmokeRecordingScanSessionResult {
     case success(ScanSessionSnapshot?)
     case failure(Error)
 }
 
-private actor RecordingScanSessionReader: CoreScanSessionReading {
-    private let result: RecordingScanSessionResult
+actor SmokeRecordingScanSessionReader: CoreScanSessionReading {
+    private let result: SmokeRecordingScanSessionResult
     private var paths: [String] = []
-    init(result: RecordingScanSessionResult) {
+    init(result: SmokeRecordingScanSessionResult) {
         self.result = result
     }
     func latestScanSession(repoPath: String) async throws -> ScanSessionSnapshot? {
@@ -389,11 +354,11 @@ private actor RecordingScanSessionReader: CoreScanSessionReading {
     func requestedRepoPaths() -> [String] { paths }
 }
 
-private struct NoopWelcomeHelpOpener: WelcomeHelpOpening {
+struct SmokeNoopWelcomeHelpOpener: WelcomeHelpOpening {
     func openWelcomeHelp() throws {}
 }
 
-private struct StaticExistingRepositoryMetadataReader: ExistingRepositoryMetadataReading {
+struct SmokeStaticExistingRepositoryMetadataReader: ExistingRepositoryMetadataReading {
     let schemaVersion: Int64
 
     func metadata(repoPath: String) async throws -> ExistingRepositoryMetadataSnapshot {
@@ -401,8 +366,8 @@ private struct StaticExistingRepositoryMetadataReader: ExistingRepositoryMetadat
     }
 }
 
-private extension RepoConfigSnapshot {
-    static func fixture(repoPath: String) -> RepoConfigSnapshot {
+extension RepoConfigSnapshot {
+    static func smokeFixture(repoPath: String) -> RepoConfigSnapshot {
         RepoConfigSnapshot(
             repoPath: repoPath,
             defaultMode: "Copied",
@@ -418,9 +383,23 @@ private extension RepoConfigSnapshot {
     }
 }
 
-private extension RepoPathValidationSnapshot {
-    static func adoptExistingFixture(repoPath: String) -> RepoPathValidationSnapshot {
-        fixture(
+extension RepositoryOpeningResult {
+    static func smokeFixture(repoPath: String, fileCount: Int64) -> RepositoryOpeningResult {
+        RepositoryOpeningResult(
+            config: .smokeFixture(repoPath: repoPath),
+            tree: RepositoryTreeNodeSnapshot(
+                slug: "__root__",
+                displayName: "资料库",
+                fileCount: fileCount,
+                children: []
+            )
+        )
+    }
+}
+
+extension RepoPathValidationSnapshot {
+    static func smokeAdoptExistingFixture(repoPath: String) -> RepoPathValidationSnapshot {
+        smokeFixture(
             repoPath: repoPath,
             isEmpty: false,
             issues: [.nonEmptyDirectory],
@@ -428,7 +407,7 @@ private extension RepoPathValidationSnapshot {
         )
     }
 
-    static func fixture(
+    static func smokeFixture(
         repoPath: String,
         isEmpty: Bool = true,
         isInitialized: Bool = false,
@@ -457,7 +436,7 @@ private extension RepoPathValidationSnapshot {
     }
 }
 
-private extension ScanSessionSnapshot {
+extension ScanSessionSnapshot {
     static func adoptFixture() -> ScanSessionSnapshot {
         ScanSessionSnapshot(
             id: 7,
@@ -475,8 +454,8 @@ private extension ScanSessionSnapshot {
     }
 }
 
-private extension CoreErrorMappingSnapshot {
-    static func permissionDeniedFixture(rawContext: String) -> CoreErrorMappingSnapshot {
+extension CoreErrorMappingSnapshot {
+    static func smokePermissionDeniedFixture(rawContext: String) -> CoreErrorMappingSnapshot {
         CoreErrorMappingSnapshot(
             kind: .permissionDenied,
             userMessage: "无访问权限",
@@ -487,7 +466,7 @@ private extension CoreErrorMappingSnapshot {
         )
     }
 
-    static func configFixture(rawContext: String) -> CoreErrorMappingSnapshot {
+    static func smokeConfigFixture(rawContext: String) -> CoreErrorMappingSnapshot {
         CoreErrorMappingSnapshot(
             kind: .config,
             userMessage: "资料库 schema 不兼容",

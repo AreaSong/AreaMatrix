@@ -45,6 +45,7 @@ final class OnboardingModel: ObservableObject {
     @Published var initializationRecoveryReport: RecoveryReportSnapshot?
     @Published var initializationProgressWarning: String?
     @Published var initializationOpenErrorMapping: CoreErrorMappingSnapshot?
+    @Published var initializationDiagnostics: InitializationDiagnosticsState = .idle
     @Published private(set) var isInitializationCancellationRequested = false
     @Published private(set) var isValidatingRepositoryPath = false
     @Published private(set) var isICloudRiskAccepted = false
@@ -80,6 +81,7 @@ final class OnboardingModel: ObservableObject {
     let startupRecoverer: any CoreStartupRecovering
     private let existingRepositoryMetadataReader: any ExistingRepositoryMetadataReading
     let scanSessionReader: any CoreScanSessionReading
+    let diagnosticsCollector: any CoreDiagnosticsCollecting
     let errorMapper: any CoreErrorMapping
     let finderOpener: any RepositoryFinderOpening
     let accessibilityAnnouncer: any AccessibilityAnnouncing
@@ -99,6 +101,7 @@ final class OnboardingModel: ObservableObject {
         existingRepositoryMetadataReader: any ExistingRepositoryMetadataReading =
             SQLiteExistingRepositoryMetadataReader(),
         scanSessionReader: any CoreScanSessionReading = CoreBridge(),
+        diagnosticsCollector: any CoreDiagnosticsCollecting = CoreBridge(),
         errorMapper: any CoreErrorMapping = CoreBridge(),
         finderOpener: any RepositoryFinderOpening = NSWorkspaceRepositoryFinderOpener(),
         accessibilityAnnouncer: any AccessibilityAnnouncing = VoiceOverAccessibilityAnnouncer(),
@@ -114,6 +117,7 @@ final class OnboardingModel: ObservableObject {
         self.startupRecoverer = startupRecoverer
         self.existingRepositoryMetadataReader = existingRepositoryMetadataReader
         self.scanSessionReader = scanSessionReader
+        self.diagnosticsCollector = diagnosticsCollector
         self.errorMapper = errorMapper
         self.finderOpener = finderOpener
         self.accessibilityAnnouncer = accessibilityAnnouncer
@@ -175,6 +179,7 @@ final class OnboardingModel: ObservableObject {
         initializationRecoveryReport = nil
         initializationProgressWarning = nil
         initializationOpenErrorMapping = nil
+        initializationDiagnostics = .idle
         isInitializationCancellationRequested = false
         choosePathAction = nil
         validatePathAction = nil
@@ -211,14 +216,14 @@ final class OnboardingModel: ObservableObject {
     @MainActor
     func updateICloudRiskAccepted(_ isAccepted: Bool) { isICloudRiskAccepted = isAccepted }
     @MainActor
-    func continueFromValidatePath() {
+    func continueFromValidatePath() async {
         guard canContinueFromValidatePath, let validation = repositoryPathValidation else {
             return
         }
 
         if validation.isInitialized {
             validatePathAction = .openExistingRepositoryRequested(validation)
-            openExistingRepository(validation)
+            await openExistingRepository(validation)
         } else {
             switch validation.recommendedMode {
             case .adoptExisting:
@@ -237,13 +242,6 @@ final class OnboardingModel: ObservableObject {
                 ))
             }
         }
-    }
-    @MainActor
-    func openExistingRepository(_ validation: RepoPathValidationSnapshot) {
-        if validatePathReturnRoute != .settingsRepository {
-            settingsWriter.saveConfiguredRepoPath(validation.repoPath)
-        }
-        route = .mainLoading(validation.repoPath)
     }
     @MainActor
     func createEmptyRepositoryFromConfirmInit() async { await initializeRepositoryFromConfirmInit(mode: .createEmpty) }
@@ -355,6 +353,7 @@ final class OnboardingModel: ObservableObject {
         initializationScanSession = draft.scanSession
         initializationRecoveryReport = nil
         initializationProgressWarning = nil
+        initializationDiagnostics = .idle
         route = .initializing(draft)
         defer { stopInitializationProgressPolling() }
 
@@ -468,6 +467,7 @@ final class OnboardingModel: ObservableObject {
         initializationScanSession = nil
         initializationRecoveryReport = nil
         initializationProgressWarning = nil
+        initializationDiagnostics = .idle
         isInitializationCancellationRequested = false
         route = .welcome
         toastMessage = "初始化已在安全点停止。下次选择同一资料库时，" +

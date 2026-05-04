@@ -33,6 +33,10 @@
 - 自动进度统一写入 `tasks/prompts/_shared/progress.json`。
 - 默认 `RISK_GATE=mission-critical` 且 `RISK_POLICY=pause`；确认要全静默时必须显式设置 `RISK_POLICY=allow`。
 - `RISK_POLICY=allow` 会向 copy prompt 注入用户已授权静默执行的上下文；High / Mission-Critical task 仍需记录风险、验证和回滚，但不再停下来等人工确认。
+- 需要关机、额度不足或临时收尾时，使用 `--request-drain` 请求 live runner 跑完当前 task、完成 verify 与 Git checkpoint 后停止；它不得跳过当前 task 的 repair retry、验收或 checkpoint，也不得进入下一个 task。
+
+日常操作优先使用根目录 `./dev.sh` 进入交互控制台；它封装 status、runner/codex 进程快照、后台继续、stale/failed 恢复、优雅收尾和健康检查，避免操作员记忆长命令。
+控制台启动/继续前必须阻止重复 live runner；默认 Git checkpoint 为本地 `commit`，任务数为无限，前台/后台由操作员当次选择。
 
 ## 任务边界
 

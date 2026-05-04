@@ -4,23 +4,23 @@ import XCTest
 final class InitializingStepIntegrationTests: XCTestCase {
     @MainActor
     func testAdoptExistingInitializingPollsLatestScanSession() async {
-        let validation = RepoPathValidationSnapshot.adoptExistingFixture(repoPath: "/tmp/adopt")
+        let validation = RepoPathValidationSnapshot.initializingAdoptExistingFixture(repoPath: "/tmp/adopt")
         let scanSession = ScanSessionSnapshot.adoptRunningFixture()
-        let writer = RecordingSettingsWriter()
+        let writer = InitializingRecordingSettingsWriter()
         let initializer = PausingRepositoryInitializer()
         let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: nil),
+            settingsReader: InitializingStaticSettingsReader(repoPath: nil),
             settingsWriter: writer,
-            configLoader: RecordingConfigLoader(config: .fixture(repoPath: "/tmp/adopt")),
-            pathValidator: RecordingPathValidator(validation: validation),
+            configLoader: InitializingRecordingConfigLoader(config: .initializingFixture(repoPath: "/tmp/adopt")),
+            pathValidator: InitializingRecordingPathValidator(validation: validation),
             repositoryInitializer: initializer,
             startupRecoverer: StaticStartupRecoverer(),
             scanSessionReader: StaticScanSessionReader(session: scanSession),
-            helpOpener: NoopWelcomeHelpOpener()
+            helpOpener: InitializingNoopWelcomeHelpOpener()
         )
         model.updateRepositoryPath("/tmp/adopt")
         await model.continueFromChoosePath()
-        model.continueFromValidatePath()
+        await model.continueFromValidatePath()
         let initializationTask = Task {
             await model.adoptExistingRepositoryFromConfirmInit()
         }
@@ -43,25 +43,27 @@ final class InitializingStepIntegrationTests: XCTestCase {
     }
     @MainActor
     func testAdoptExistingFatalErrorRoutesToInitFailed() async {
-        let validation = RepoPathValidationSnapshot.adoptExistingFixture(repoPath: "/tmp/adopt")
-        let mapping = CoreErrorMappingSnapshot.permissionDeniedFixture(rawContext: "/tmp/adopt")
-        let errorMapper = RecordingErrorMapper(mapping: mapping)
-        let writer = RecordingSettingsWriter()
+        let validation = RepoPathValidationSnapshot.initializingAdoptExistingFixture(repoPath: "/tmp/adopt")
+        let mapping = CoreErrorMappingSnapshot.initializingPermissionDeniedFixture(rawContext: "/tmp/adopt")
+        let errorMapper = InitializingRecordingErrorMapper(mapping: mapping)
+        let writer = InitializingRecordingSettingsWriter()
         let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: nil),
+            settingsReader: InitializingStaticSettingsReader(repoPath: nil),
             settingsWriter: writer,
-            configLoader: RecordingConfigLoader(config: .fixture(repoPath: "/tmp/adopt")),
-            pathValidator: RecordingPathValidator(validation: validation),
+            configLoader: InitializingRecordingConfigLoader(config: .initializingFixture(repoPath: "/tmp/adopt")),
+            pathValidator: InitializingRecordingPathValidator(validation: validation),
             repositoryInitializer: FailingRepositoryInitializer(error: CoreError.PermissionDenied(path: "/tmp/adopt")),
             startupRecoverer: StaticStartupRecoverer(),
+            scanSessionReader: StaticScanSessionReader(session: nil),
             errorMapper: errorMapper,
-            helpOpener: NoopWelcomeHelpOpener()
+            helpOpener: InitializingNoopWelcomeHelpOpener()
         )
         model.updateRepositoryPath("/tmp/adopt")
         await model.continueFromChoosePath()
-        model.continueFromValidatePath()
+        await model.continueFromValidatePath()
         await model.adoptExistingRepositoryFromConfirmInit()
-        XCTAssertEqual(errorMapper.mappedErrors, [CoreError.PermissionDenied(path: "/tmp/adopt")])
+        let mappedErrors = await errorMapper.mappedErrors()
+        XCTAssertEqual(mappedErrors, [CoreError.PermissionDenied(path: "/tmp/adopt")])
         XCTAssertEqual(model.route, .initializationFailed(
             "/tmp/adopt",
             mapping,
@@ -71,7 +73,7 @@ final class InitializingStepIntegrationTests: XCTestCase {
     }
     @MainActor
     func testInitializingRunsStartupRecoveryBeforeRepositoryWriteAndShowsReport() async {
-        let validation = RepoPathValidationSnapshot.adoptExistingFixture(repoPath: "/tmp/adopt")
+        let validation = RepoPathValidationSnapshot.initializingAdoptExistingFixture(repoPath: "/tmp/adopt")
         let report = RecoveryReportSnapshot(
             cleanedStagingFiles: 2,
             revertedStagingDbRows: 1,
@@ -80,17 +82,17 @@ final class InitializingStepIntegrationTests: XCTestCase {
         let startupRecoverer = RecordingStartupRecoverer(result: .success(report))
         let initializer = PausingRepositoryInitializer()
         let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: nil),
-            settingsWriter: RecordingSettingsWriter(),
-            configLoader: RecordingConfigLoader(config: .fixture(repoPath: "/tmp/adopt")),
-            pathValidator: RecordingPathValidator(validation: validation),
+            settingsReader: InitializingStaticSettingsReader(repoPath: nil),
+            settingsWriter: InitializingRecordingSettingsWriter(),
+            configLoader: InitializingRecordingConfigLoader(config: .initializingFixture(repoPath: "/tmp/adopt")),
+            pathValidator: InitializingRecordingPathValidator(validation: validation),
             repositoryInitializer: initializer,
             startupRecoverer: startupRecoverer,
-            helpOpener: NoopWelcomeHelpOpener()
+            helpOpener: InitializingNoopWelcomeHelpOpener()
         )
         model.updateRepositoryPath("/tmp/adopt")
         await model.continueFromChoosePath()
-        model.continueFromValidatePath()
+        await model.continueFromValidatePath()
         let initializationTask = Task {
             await model.adoptExistingRepositoryFromConfirmInit()
         }
@@ -108,25 +110,26 @@ final class InitializingStepIntegrationTests: XCTestCase {
     }
     @MainActor
     func testStartupRecoveryErrorRoutesToInitFailedBeforeRepositoryWrite() async {
-        let validation = RepoPathValidationSnapshot.adoptExistingFixture(repoPath: "/tmp/adopt")
-        let mapping = CoreErrorMappingSnapshot.dbFixture(rawContext: "recovery db")
-        let errorMapper = RecordingErrorMapper(mapping: mapping)
-        let writer = RecordingSettingsWriter()
+        let validation = RepoPathValidationSnapshot.initializingAdoptExistingFixture(repoPath: "/tmp/adopt")
+        let mapping = CoreErrorMappingSnapshot.initializingDbFixture(rawContext: "recovery db")
+        let errorMapper = InitializingRecordingErrorMapper(mapping: mapping)
+        let writer = InitializingRecordingSettingsWriter()
         let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: nil),
+            settingsReader: InitializingStaticSettingsReader(repoPath: nil),
             settingsWriter: writer,
-            configLoader: RecordingConfigLoader(config: .fixture(repoPath: "/tmp/adopt")),
-            pathValidator: RecordingPathValidator(validation: validation),
+            configLoader: InitializingRecordingConfigLoader(config: .initializingFixture(repoPath: "/tmp/adopt")),
+            pathValidator: InitializingRecordingPathValidator(validation: validation),
             repositoryInitializer: PausingRepositoryInitializer(),
             startupRecoverer: RecordingStartupRecoverer(result: .failure(CoreError.Db(message: "recovery db"))),
             errorMapper: errorMapper,
-            helpOpener: NoopWelcomeHelpOpener()
+            helpOpener: InitializingNoopWelcomeHelpOpener()
         )
         model.updateRepositoryPath("/tmp/adopt")
         await model.continueFromChoosePath()
-        model.continueFromValidatePath()
+        await model.continueFromValidatePath()
         await model.adoptExistingRepositoryFromConfirmInit()
-        XCTAssertEqual(errorMapper.mappedErrors, [CoreError.Db(message: "recovery db")])
+        let mappedErrors = await errorMapper.mappedErrors()
+        XCTAssertEqual(mappedErrors, [CoreError.Db(message: "recovery db")])
         XCTAssertEqual(model.route, .initializationFailed(
             "/tmp/adopt",
             mapping,
@@ -136,21 +139,21 @@ final class InitializingStepIntegrationTests: XCTestCase {
     }
     @MainActor
     func testInitializingCancelWaitsForSafePointAndDoesNotSaveRepositoryPath() async {
-        let validation = RepoPathValidationSnapshot.adoptExistingFixture(repoPath: "/tmp/adopt")
-        let writer = RecordingSettingsWriter()
+        let validation = RepoPathValidationSnapshot.initializingAdoptExistingFixture(repoPath: "/tmp/adopt")
+        let writer = InitializingRecordingSettingsWriter()
         let initializer = PausingRepositoryInitializer()
         let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: nil),
+            settingsReader: InitializingStaticSettingsReader(repoPath: nil),
             settingsWriter: writer,
-            configLoader: RecordingConfigLoader(config: .fixture(repoPath: "/tmp/adopt")),
-            pathValidator: RecordingPathValidator(validation: validation),
+            configLoader: InitializingRecordingConfigLoader(config: .initializingFixture(repoPath: "/tmp/adopt")),
+            pathValidator: InitializingRecordingPathValidator(validation: validation),
             repositoryInitializer: initializer,
             startupRecoverer: StaticStartupRecoverer(),
-            helpOpener: NoopWelcomeHelpOpener()
+            helpOpener: InitializingNoopWelcomeHelpOpener()
         )
         model.updateRepositoryPath("/tmp/adopt")
         await model.continueFromChoosePath()
-        model.continueFromValidatePath()
+        await model.continueFromValidatePath()
         let initializationTask = Task {
             await model.adoptExistingRepositoryFromConfirmInit()
         }
@@ -175,7 +178,7 @@ final class InitializingStepIntegrationTests: XCTestCase {
     @MainActor
     func testResumeInterruptedInitializationUsesScanSessionResumeAndShowsDonePage() async {
         let scanSession = ScanSessionSnapshot.adoptRunningFixture()
-        let writer = RecordingSettingsWriter()
+        let writer = InitializingRecordingSettingsWriter()
         let scanReader = RecordingResumeScanSessionReader(
             session: scanSession,
             resumeReport: ReindexReportSnapshot(
@@ -187,14 +190,14 @@ final class InitializingStepIntegrationTests: XCTestCase {
             )
         )
         let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: nil),
+            settingsReader: InitializingStaticSettingsReader(repoPath: nil),
             settingsWriter: writer,
-            configLoader: RecordingConfigLoader(config: .fixture(repoPath: "/tmp/adopt")),
-            pathValidator: RecordingPathValidator(validation: .adoptExistingFixture(repoPath: "/tmp/adopt")),
+            configLoader: InitializingRecordingConfigLoader(config: .initializingFixture(repoPath: "/tmp/adopt")),
+            pathValidator: InitializingRecordingPathValidator(validation: .initializingAdoptExistingFixture(repoPath: "/tmp/adopt")),
             repositoryInitializer: PausingRepositoryInitializer(),
             startupRecoverer: StaticStartupRecoverer(),
             scanSessionReader: scanReader,
-            helpOpener: NoopWelcomeHelpOpener()
+            helpOpener: InitializingNoopWelcomeHelpOpener()
         )
         await model.resumeInterruptedInitialization(repoPath: "/tmp/adopt", scanSession: scanSession)
         let resumedRequests = await scanReader.resumedRequests()
@@ -221,19 +224,19 @@ final class InitializingStepIntegrationTests: XCTestCase {
     }
     @MainActor
     func testCleanUpInterruptedInitializationRunsRecoveryAndReturnsToConfirmInit() async {
-        let validation = RepoPathValidationSnapshot.adoptExistingFixture(repoPath: "/tmp/adopt")
+        let validation = RepoPathValidationSnapshot.initializingAdoptExistingFixture(repoPath: "/tmp/adopt")
         let startupRecoverer = RecordingStartupRecoverer(result: .success(RecoveryReportSnapshot(
             cleanedStagingFiles: 1,
             revertedStagingDbRows: 1,
             warnings: []
         )))
         let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: nil),
-            configLoader: RecordingConfigLoader(config: .fixture(repoPath: "/tmp/adopt")),
-            pathValidator: RecordingPathValidator(validation: validation),
+            settingsReader: InitializingStaticSettingsReader(repoPath: nil),
+            configLoader: InitializingRecordingConfigLoader(config: .initializingFixture(repoPath: "/tmp/adopt")),
+            pathValidator: InitializingRecordingPathValidator(validation: validation),
             repositoryInitializer: PausingRepositoryInitializer(),
             startupRecoverer: startupRecoverer,
-            helpOpener: NoopWelcomeHelpOpener()
+            helpOpener: InitializingNoopWelcomeHelpOpener()
         )
         await model.cleanUpInterruptedInitialization(repoPath: "/tmp/adopt")
         let recoveredPaths = await startupRecoverer.requestedRepoPaths()
@@ -256,17 +259,17 @@ final class InitializingStepIntegrationTests: XCTestCase {
         }
     }
 }
-private struct StaticSettingsReader: AppSettingsReading {
+private struct InitializingStaticSettingsReader: AppSettingsReading {
     let repoPath: String?
     func configuredRepoPath() -> String? { repoPath }
 }
-private final class RecordingSettingsWriter: AppSettingsWriting {
+private final class InitializingRecordingSettingsWriter: AppSettingsWriting {
     private(set) var savedRepoPaths: [String] = []
     func saveConfiguredRepoPath(_ repoPath: String) {
         savedRepoPaths.append(repoPath)
     }
 }
-private actor RecordingConfigLoader: CoreConfigurationLoading {
+private actor InitializingRecordingConfigLoader: CoreConfigurationLoading {
     private let config: RepoConfigSnapshot
     init(config: RepoConfigSnapshot) {
         self.config = config
@@ -275,7 +278,7 @@ private actor RecordingConfigLoader: CoreConfigurationLoading {
         config
     }
 }
-private actor RecordingPathValidator: CoreRepositoryPathValidating {
+private actor InitializingRecordingPathValidator: CoreRepositoryPathValidating {
     private let validation: RepoPathValidationSnapshot
     init(validation: RepoPathValidationSnapshot) {
         self.validation = validation
@@ -343,8 +346,8 @@ private actor RecordingStartupRecoverer: CoreStartupRecovering {
     func requestedRepoPaths() -> [String] { paths }
 }
 private actor StaticScanSessionReader: CoreScanSessionReading {
-    private let session: ScanSessionSnapshot
-    init(session: ScanSessionSnapshot) {
+    private let session: ScanSessionSnapshot?
+    init(session: ScanSessionSnapshot?) {
         self.session = session
     }
     func latestScanSession(repoPath: String) async throws -> ScanSessionSnapshot? {
@@ -368,22 +371,23 @@ private actor RecordingResumeScanSessionReader: CoreScanSessionReading {
     }
     func resumedRequests() -> [String] { requests }
 }
-private struct NoopWelcomeHelpOpener: WelcomeHelpOpening {
+private struct InitializingNoopWelcomeHelpOpener: WelcomeHelpOpening {
     func openWelcomeHelp() throws {}
 }
-private final class RecordingErrorMapper: CoreErrorMapping {
+private actor InitializingRecordingErrorMapper: CoreErrorMapping {
     private let mapping: CoreErrorMappingSnapshot
-    private(set) var mappedErrors: [CoreError] = []
+    private var errors: [CoreError] = []
     init(mapping: CoreErrorMappingSnapshot) {
         self.mapping = mapping
     }
     func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
-        mappedErrors.append(error)
+        errors.append(error)
         return mapping
     }
+    func mappedErrors() -> [CoreError] { errors }
 }
 private extension RepoConfigSnapshot {
-    static func fixture(repoPath: String) -> RepoConfigSnapshot {
+    static func initializingFixture(repoPath: String) -> RepoConfigSnapshot {
         RepoConfigSnapshot(
             repoPath: repoPath,
             defaultMode: "Copied",
@@ -399,7 +403,7 @@ private extension RepoConfigSnapshot {
     }
 }
 private extension RepoPathValidationSnapshot {
-    static func adoptExistingFixture(repoPath: String) -> RepoPathValidationSnapshot {
+    static func initializingAdoptExistingFixture(repoPath: String) -> RepoPathValidationSnapshot {
         RepoPathValidationSnapshot(
             repoPath: repoPath,
             exists: true,
@@ -436,7 +440,7 @@ private extension ScanSessionSnapshot {
     }
 }
 private extension CoreErrorMappingSnapshot {
-    static func permissionDeniedFixture(rawContext: String) -> CoreErrorMappingSnapshot {
+    static func initializingPermissionDeniedFixture(rawContext: String) -> CoreErrorMappingSnapshot {
         CoreErrorMappingSnapshot(
             kind: .permissionDenied,
             userMessage: "无访问权限",
@@ -446,7 +450,7 @@ private extension CoreErrorMappingSnapshot {
             rawContext: rawContext
         )
     }
-    static func dbFixture(rawContext: String) -> CoreErrorMappingSnapshot {
+    static func initializingDbFixture(rawContext: String) -> CoreErrorMappingSnapshot {
         CoreErrorMappingSnapshot(
             kind: .db,
             userMessage: "数据库错误",

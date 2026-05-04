@@ -4,24 +4,24 @@ import XCTest
 final class InitFailedErrorMappingTests: XCTestCase {
     @MainActor
     func testInitializationFailureMapsCoreErrorAndRetryRerunsStoredDraft() async {
-        let validation = RepoPathValidationSnapshot.adoptExistingFixture(repoPath: "/tmp/adopt")
-        let mapping = CoreErrorMappingSnapshot.permissionDeniedFixture(rawContext: "/tmp/adopt")
+        let validation = RepoPathValidationSnapshot.initFailedAdoptExistingFixture(repoPath: "/tmp/adopt")
+        let mapping = CoreErrorMappingSnapshot.initFailedPermissionDeniedFixture(rawContext: "/tmp/adopt")
         let initializer = RetryingRepositoryInitializer(firstError: CoreError.PermissionDenied(path: "/tmp/adopt"))
-        let errorMapper = RecordingErrorMapper(mapping: mapping)
-        let writer = RecordingSettingsWriter()
+        let errorMapper = InitFailedRecordingErrorMapper(mapping: mapping)
+        let writer = InitFailedRecordingSettingsWriter()
         let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: nil),
+            settingsReader: InitFailedStaticSettingsReader(repoPath: nil),
             settingsWriter: writer,
             pathValidator: StaticPathValidator(validation: validation),
             repositoryInitializer: initializer,
             startupRecoverer: StaticStartupRecoverer(),
             errorMapper: errorMapper,
-            helpOpener: NoopWelcomeHelpOpener()
+            helpOpener: InitFailedNoopWelcomeHelpOpener()
         )
 
         model.updateRepositoryPath("/tmp/adopt")
         await model.continueFromChoosePath()
-        model.continueFromValidatePath()
+        await model.continueFromValidatePath()
         await model.adoptExistingRepositoryFromConfirmInit()
 
         let retryDraft = RepositoryInitializationDraft(
@@ -57,6 +57,52 @@ final class InitFailedErrorMappingTests: XCTestCase {
         XCTAssertFalse(mapping.suggestedAction.isEmpty)
         XCTAssertEqual(mapping.rawContext, "/tmp/repo")
     }
+
+    @MainActor
+    func testInitializationFailureCollectsDiagnosticsWithoutSavingRepositorySelection() async {
+        let snapshot = DiagnosticsSnapshotSnapshot(
+            snapshotPath: "/tmp/diagnostics/redacted.zip",
+            createdAt: 1_700_000_000,
+            warnings: ["paths redacted"]
+        )
+        let collector = InitFailedRecordingDiagnosticsCollector(result: .success(snapshot))
+        let writer = InitFailedRecordingSettingsWriter()
+        let model = OnboardingModel(
+            settingsReader: InitFailedStaticSettingsReader(repoPath: nil),
+            settingsWriter: writer,
+            diagnosticsCollector: collector,
+            helpOpener: InitFailedNoopWelcomeHelpOpener()
+        )
+
+        model.route = .initializationFailed("/Users/example/private-repo", nil, nil)
+        await model.collectInitializationDiagnostics()
+
+        let requestedRepoPaths = await collector.requestedRepoPaths()
+        XCTAssertEqual(requestedRepoPaths, ["/Users/example/private-repo"])
+        XCTAssertEqual(model.initializationDiagnostics, .collected(snapshot))
+        XCTAssertEqual(writer.savedRepoPaths, [])
+        XCTAssertEqual(model.route, .initializationFailed("/Users/example/private-repo", nil, nil))
+    }
+
+    @MainActor
+    func testInitializationDiagnosticsFailureMapsErrorAndStaysOnFailedPage() async {
+        let mapping = CoreErrorMappingSnapshot.initFailedPermissionDeniedFixture(rawContext: "/tmp/repo")
+        let collector = InitFailedRecordingDiagnosticsCollector(result: .failure(CoreError.PermissionDenied(path: "/tmp/repo")))
+        let errorMapper = InitFailedRecordingErrorMapper(mapping: mapping)
+        let model = OnboardingModel(
+            settingsReader: InitFailedStaticSettingsReader(repoPath: nil),
+            diagnosticsCollector: collector,
+            errorMapper: errorMapper,
+            helpOpener: InitFailedNoopWelcomeHelpOpener()
+        )
+
+        model.route = .initializationFailed("/tmp/repo", nil, nil)
+        await model.collectInitializationDiagnostics()
+
+        XCTAssertEqual(model.initializationDiagnostics, .failed(mapping))
+        XCTAssertEqual(errorMapper.mappedErrors, [CoreError.PermissionDenied(path: "/tmp/repo")])
+        XCTAssertEqual(model.route, .initializationFailed("/tmp/repo", nil, nil))
+    }
 }
 
 private actor RetryingRepositoryInitializer: CoreRepositoryInitializing {
@@ -85,18 +131,44 @@ private actor RetryingRepositoryInitializer: CoreRepositoryInitializing {
     func adoptRequests() -> [String] { adoptPaths }
 }
 
-private struct StaticSettingsReader: AppSettingsReading {
+private struct InitFailedStaticSettingsReader: AppSettingsReading {
     let repoPath: String?
 
     func configuredRepoPath() -> String? { repoPath }
 }
 
-private final class RecordingSettingsWriter: AppSettingsWriting {
+private final class InitFailedRecordingSettingsWriter: AppSettingsWriting {
     private(set) var savedRepoPaths: [String] = []
 
     func saveConfiguredRepoPath(_ repoPath: String) {
         savedRepoPaths.append(repoPath)
     }
+}
+
+private enum InitFailedDiagnosticsResult {
+    case success(DiagnosticsSnapshotSnapshot)
+    case failure(Error)
+}
+
+private actor InitFailedRecordingDiagnosticsCollector: CoreDiagnosticsCollecting {
+    private let result: InitFailedDiagnosticsResult
+    private var repoPaths: [String] = []
+
+    init(result: InitFailedDiagnosticsResult) {
+        self.result = result
+    }
+
+    func createDiagnosticsSnapshot(repoPath: String) async throws -> DiagnosticsSnapshotSnapshot {
+        repoPaths.append(repoPath)
+        switch result {
+        case .success(let snapshot):
+            return snapshot
+        case .failure(let error):
+            throw error
+        }
+    }
+
+    func requestedRepoPaths() -> [String] { repoPaths }
 }
 
 private actor StaticPathValidator: CoreRepositoryPathValidating {
@@ -117,7 +189,7 @@ private actor StaticStartupRecoverer: CoreStartupRecovering {
     }
 }
 
-private final class RecordingErrorMapper: CoreErrorMapping {
+private final class InitFailedRecordingErrorMapper: CoreErrorMapping {
     private let mapping: CoreErrorMappingSnapshot
     private(set) var mappedErrors: [CoreError] = []
 
@@ -131,12 +203,12 @@ private final class RecordingErrorMapper: CoreErrorMapping {
     }
 }
 
-private struct NoopWelcomeHelpOpener: WelcomeHelpOpening {
+private struct InitFailedNoopWelcomeHelpOpener: WelcomeHelpOpening {
     func openWelcomeHelp() throws {}
 }
 
 private extension RepoPathValidationSnapshot {
-    static func adoptExistingFixture(repoPath: String) -> RepoPathValidationSnapshot {
+    static func initFailedAdoptExistingFixture(repoPath: String) -> RepoPathValidationSnapshot {
         RepoPathValidationSnapshot(
             repoPath: repoPath,
             exists: true,
@@ -157,7 +229,7 @@ private extension RepoPathValidationSnapshot {
 }
 
 private extension CoreErrorMappingSnapshot {
-    static func permissionDeniedFixture(rawContext: String) -> CoreErrorMappingSnapshot {
+    static func initFailedPermissionDeniedFixture(rawContext: String) -> CoreErrorMappingSnapshot {
         CoreErrorMappingSnapshot(
             kind: .permissionDenied,
             userMessage: "无访问权限",

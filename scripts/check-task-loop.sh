@@ -4,6 +4,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+REPO_ROOT="$ROOT_DIR"
 PYTHON_BIN="${PYTHON_BIN:-python3}"
 TMP_DIR="$(mktemp -d)"
 
@@ -58,11 +59,16 @@ assert_not_ignored() {
 run_with_temp_state() {
   local prefix="$1"
   shift
+  ROOT_DIR="$ROOT_DIR" \
+  RUNNER="$ROOT_DIR/scripts/run_area_matrix_task_pipeline.sh" \
+  PIPELINE="$ROOT_DIR/tasks/prompts/_shared/prompt_pipeline.py" \
   PROGRESS_FILE="$TMP_DIR/$prefix/progress.json" \
   LOG_ROOT="$TMP_DIR/$prefix/logs" \
   RUN_SUMMARY_ROOT="$TMP_DIR/$prefix/runs" \
   PROGRESS_BACKUP_ROOT="$TMP_DIR/$prefix/backups" \
   LOCK_DIR="$TMP_DIR/$prefix/lock" \
+  CONTROL_DIR="$TMP_DIR/$prefix/control" \
+  CONSOLE_LOG_ROOT="$TMP_DIR/$prefix/console" \
   "$@"
 }
 
@@ -73,7 +79,7 @@ init_temp_git_repo() {
   git -C "$repo" branch -M main
   git -C "$repo" config user.email "task-loop-check@example.invalid"
   git -C "$repo" config user.name "AreaMatrix Task Loop Check"
-  printf '.codex/task-loop-lock/\n.codex/task-loop-tmp/\n' > "$repo/.gitignore"
+  printf '.codex/task-loop-lock/\n.codex/task-loop-tmp/\n.codex/task-loop-control/\n' > "$repo/.gitignore"
   printf 'baseline\n' > "$repo/README.md"
   git -C "$repo" add .
   git -C "$repo" commit -q -m "initial"
@@ -89,7 +95,7 @@ write_json_file() {
 cd "$ROOT_DIR"
 
 log "static checks"
-bash -n scripts/run_area_matrix_task_pipeline.sh scripts/check-task-loop.sh
+bash -n dev.sh scripts/run_area_matrix_task_pipeline.sh scripts/check-task-loop.sh
 "$PYTHON_BIN" -m py_compile scripts/task_loop_state.py scripts/task_loop_git.py
 
 log "repo health"
@@ -99,6 +105,71 @@ bash scripts/check-skills.sh
 log "real status is readable"
 bash scripts/run_area_matrix_task_pipeline.sh --status > "$TMP_DIR/status.out"
 grep -q 'stale_in_progress:' "$TMP_DIR/status.out" || fail "status output missing stale_in_progress"
+grep -q 'drain_requested:' "$TMP_DIR/status.out" || fail "status output missing drain_requested"
+./dev.sh status > "$TMP_DIR/dev-status.out"
+grep -q 'AreaMatrix Task Loop 控制台' "$TMP_DIR/dev-status.out" || fail "dev status header missing"
+grep -q '进程快照' "$TMP_DIR/dev-status.out" || fail "dev status process snapshot missing"
+
+log "dev console dry-run foreground command choices"
+mkdir -p "$TMP_DIR/dev-foreground"
+run_with_temp_state dev-foreground \
+  env DEV_SH_EXECUTION_MODE=foreground DEV_SH_GIT_CHECKPOINT=off DEV_SH_MAX_TASKS=1 DEV_SH_DRY_RUN=1 DEV_SH_DRY_RUN_RESULT=PASS \
+  ./dev.sh start > "$TMP_DIR/dev-foreground/out.txt" 2>&1
+grep -q 'GIT_CHECKPOINT=off' "$TMP_DIR/dev-foreground/out.txt" || fail "dev foreground did not apply git mode"
+grep -q -- '--max-tasks 1' "$TMP_DIR/dev-foreground/out.txt" || fail "dev foreground did not apply max tasks"
+assert_json_expr "$TMP_DIR/dev-foreground/progress.json" 'data["tasks"]["0-1/task-01"]["status"] == "completed"'
+
+log "dev console dry-run background command choices"
+mkdir -p "$TMP_DIR/dev-background"
+run_with_temp_state dev-background \
+  env DEV_SH_EXECUTION_MODE=background DEV_SH_GIT_CHECKPOINT=off DEV_SH_MAX_TASKS=1 DEV_SH_DRY_RUN=1 DEV_SH_DRY_RUN_RESULT=PASS DEV_SH_STOP_AFTER=0-1/task-01 \
+  ./dev.sh start > "$TMP_DIR/dev-background/out.txt" 2>&1
+grep -q '已后台启动：pid=' "$TMP_DIR/dev-background/out.txt" || fail "dev background did not start"
+grep -q -- '--stop-after 0-1/task-01' "$TMP_DIR/dev-background/out.txt" || fail "dev background did not apply stop-after"
+bg_pid="$(sed -n 's/已后台启动：pid=//p' "$TMP_DIR/dev-background/out.txt" | head -n 1)"
+for _ in $(seq 1 30); do
+  if [ -f "$TMP_DIR/dev-background/progress.json" ] && \
+    "$PYTHON_BIN" - "$TMP_DIR/dev-background/progress.json" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+path = Path(sys.argv[1])
+try:
+    data = json.loads(path.read_text(encoding="utf-8"))
+except Exception:
+    raise SystemExit(1)
+entry = data.get("tasks", {}).get("0-1/task-01", {})
+raise SystemExit(0 if entry.get("status") == "completed" else 1)
+PY
+  then
+    break
+  fi
+  sleep 0.2
+done
+assert_json_expr "$TMP_DIR/dev-background/progress.json" 'data["tasks"]["0-1/task-01"]["status"] == "completed"'
+find "$TMP_DIR/dev-background/console" -type f -name '*.log' | grep -q . || fail "dev background console log missing"
+
+log "dev console blocks duplicate live runner"
+mkdir -p "$TMP_DIR/dev-live/lock"
+printf '%s\n' "$$" > "$TMP_DIR/dev-live/lock/pid"
+printf '%s\n' "live-run" > "$TMP_DIR/dev-live/lock/run_id"
+printf '%s\n' "run" > "$TMP_DIR/dev-live/lock/operation"
+printf '%s\n' "now" > "$TMP_DIR/dev-live/lock/started_at"
+if run_with_temp_state dev-live \
+  env DEV_SH_EXECUTION_MODE=foreground DEV_SH_GIT_CHECKPOINT=off DEV_SH_MAX_TASKS=1 DEV_SH_DRY_RUN=1 \
+  ./dev.sh start > "$TMP_DIR/dev-live/out.txt" 2>&1; then
+  fail "dev console unexpectedly allowed duplicate live runner"
+fi
+grep -q '已有 live runner，已阻止启动第二个 runner' "$TMP_DIR/dev-live/out.txt" || fail "dev live guard message missing"
+
+log "drain request requires a live runner"
+mkdir -p "$TMP_DIR/drain-no-runner"
+if run_with_temp_state drain-no-runner \
+  bash scripts/run_area_matrix_task_pipeline.sh --request-drain > "$TMP_DIR/drain-no-runner/out.txt" 2>&1; then
+  fail "drain request unexpectedly succeeded without a live runner"
+fi
+grep -q 'no live task loop lock found' "$TMP_DIR/drain-no-runner/out.txt" || fail "missing no-live-runner drain error"
 
 log "dry-run PASS writes temp progress, logs, summary, and index"
 mkdir -p "$TMP_DIR/pass"
@@ -111,6 +182,56 @@ pass_summary="$(find "$TMP_DIR/pass/runs" -type f -name summary.json | head -n 1
 assert_json_expr "$pass_summary" 'data["status"] == "completed" and data["totals"]["completed_in_run"] == 1'
 assert_json_expr "$TMP_DIR/pass/runs/index.json" 'data["runs"][0]["status"] == "completed" and data["runs"][0]["completed"] == 1'
 [ ! -d "$TMP_DIR/pass/lock" ] || fail "lock dir not released after PASS dry-run"
+
+log "drain request stops after current task"
+drain_repo="$TMP_DIR/drain-repo"
+mkdir -p "$drain_repo/tasks/prompts/_shared/copy-ready/phase-0"
+mkdir -p "$drain_repo/tasks/prompts/_shared/verify-ready/phase-0"
+for task in 01 02; do
+  printf '# copy %s\n风险等级：`Medium`\n' "$task" > "$drain_repo/tasks/prompts/_shared/copy-ready/phase-0/0-1-task-${task}.md"
+  printf '# verify %s\n' "$task" > "$drain_repo/tasks/prompts/_shared/verify-ready/phase-0/0-1-task-${task}.md"
+done
+mkdir -p "$TMP_DIR/drain/control" "$TMP_DIR/drain/lock"
+printf '%s\n' "$$" > "$TMP_DIR/drain/lock/pid"
+printf '%s\n' "drain-run" > "$TMP_DIR/drain/lock/run_id"
+printf '%s\n' "run" > "$TMP_DIR/drain/lock/operation"
+printf '%s\n' "now" > "$TMP_DIR/drain/lock/started_at"
+RUN_ID=drain-request \
+ROOT_DIR="$drain_repo" \
+COPY_ROOT="$drain_repo/tasks/prompts/_shared/copy-ready" \
+VERIFY_ROOT="$drain_repo/tasks/prompts/_shared/verify-ready" \
+STATE_TOOL="$REPO_ROOT/scripts/task_loop_state.py" \
+GIT_TOOL="$REPO_ROOT/scripts/task_loop_git.py" \
+PROGRESS_FILE="$TMP_DIR/drain/progress.json" \
+LOG_ROOT="$TMP_DIR/drain/logs" \
+RUN_SUMMARY_ROOT="$TMP_DIR/drain/runs" \
+PROGRESS_BACKUP_ROOT="$TMP_DIR/drain/backups" \
+LOCK_DIR="$TMP_DIR/drain/lock" \
+CONTROL_DIR="$TMP_DIR/drain/control" \
+bash scripts/run_area_matrix_task_pipeline.sh --request-drain > "$TMP_DIR/drain/request.out"
+grep -q 'request drain for live runner' "$TMP_DIR/drain/request.out" || fail "drain request did not target live runner"
+rm -rf "$TMP_DIR/drain/lock"
+RUN_ID=drain-run \
+ROOT_DIR="$drain_repo" \
+COPY_ROOT="$drain_repo/tasks/prompts/_shared/copy-ready" \
+VERIFY_ROOT="$drain_repo/tasks/prompts/_shared/verify-ready" \
+STATE_TOOL="$REPO_ROOT/scripts/task_loop_state.py" \
+GIT_TOOL="$REPO_ROOT/scripts/task_loop_git.py" \
+PROGRESS_FILE="$TMP_DIR/drain/progress.json" \
+LOG_ROOT="$TMP_DIR/drain/logs" \
+RUN_SUMMARY_ROOT="$TMP_DIR/drain/runs" \
+PROGRESS_BACKUP_ROOT="$TMP_DIR/drain/backups" \
+LOCK_DIR="$TMP_DIR/drain/lock" \
+CONTROL_DIR="$TMP_DIR/drain/control" \
+DRY_RUN=1 \
+DRY_RUN_RESULT=PASS \
+MAX_RETRIES=1 \
+bash scripts/run_area_matrix_task_pipeline.sh --phase phase-0 > "$TMP_DIR/drain/run.out"
+assert_json_expr "$TMP_DIR/drain/progress.json" 'data["tasks"]["0-1/task-01"]["status"] == "completed" and "0-1/task-02" not in data["tasks"]'
+drain_summary="$TMP_DIR/drain/runs/drain-run/summary.json"
+assert_json_expr "$drain_summary" 'data["status"] == "drained" and data["totals"]["completed_in_run"] == 1'
+[ ! -f "$TMP_DIR/drain/control/drain.request" ] || fail "drain request file was not cleared"
+grep -q 'drain requested; stop after completed task=0-1/task-01' "$TMP_DIR/drain/run.out" || fail "drain stop log missing"
 
 log "stale status and clear use only temp progress"
 mkdir -p "$TMP_DIR/stale"
@@ -300,6 +421,7 @@ esac
 
 log "git ignore policy"
 assert_ignored ".codex/task-loop-lock/foo"
+assert_ignored ".codex/task-loop-control/drain.request"
 assert_ignored ".codex/task-loop-tmp/foo"
 assert_not_ignored "tasks/prompts/_shared/progress.json"
 assert_not_ignored ".codex/task-loop-runs/index.json"

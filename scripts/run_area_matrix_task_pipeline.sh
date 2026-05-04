@@ -32,6 +32,8 @@ LOG_ROOT="${LOG_ROOT:-$ROOT_DIR/.codex/task-loop-logs}"
 RUN_SUMMARY_ROOT="${RUN_SUMMARY_ROOT:-$ROOT_DIR/.codex/task-loop-runs}"
 PROGRESS_BACKUP_ROOT="${PROGRESS_BACKUP_ROOT:-$ROOT_DIR/.codex/task-loop-progress-backups}"
 LOCK_DIR="${LOCK_DIR:-$ROOT_DIR/.codex/task-loop-lock}"
+CONTROL_DIR="${CONTROL_DIR:-$ROOT_DIR/.codex/task-loop-control}"
+DRAIN_REQUEST_FILE="${DRAIN_REQUEST_FILE:-$CONTROL_DIR/drain.request}"
 
 GIT_CHECKPOINT="${GIT_CHECKPOINT:-commit}"
 GIT_BRANCH_POLICY="${GIT_BRANCH_POLICY:-auto}"
@@ -46,6 +48,8 @@ MAX_TASKS="${MAX_TASKS:-0}"
 
 # 可选从某个 task 开始，例如 phase-1/1-1-task-01.
 START_FROM="${START_FROM:-}"
+# 可选在某个 task 验收通过并完成 Git checkpoint 后停止，例如 1-1/task-01.
+STOP_AFTER="${STOP_AFTER:-}"
 
 # 风险门禁：默认只拦截 Mission-Critical。可设为 high / mission-critical / none。
 RISK_GATE="${RISK_GATE:-mission-critical}"
@@ -69,16 +73,18 @@ DRY_RUN_RESULT="${DRY_RUN_RESULT:-PASS}"
 DRY_RUN_MAX_ATTEMPTS="${DRY_RUN_MAX_ATTEMPTS:-10}"
 
 STATUS_ONLY=0
+REQUEST_DRAIN=0
 RESUME_FAILED=0
 RESUME_STALE=0
 CLEAR_STALE=0
 RESET_PROGRESS=0
 
-RUN_ID=""
+RUN_ID="${RUN_ID:-}"
 SESSION_LOG_ROOT=""
 RUN_SUMMARY_FILE=""
 LOCK_ACQUIRED=0
 ORIGINAL_COMMAND=""
+RUN_FINAL_STATUS=""
 
 timestamp() {
   date '+%F %T'
@@ -98,6 +104,7 @@ Usage:
 
 Options:
   --dry-run                 仅模拟执行，不调用 codex（默认 0）
+  --request-drain           请求当前 live runner 跑完当前 task、完成 checkpoint 后停止
   --clear-stale             清理无活进程且未完成的 in_progress 记录
   --help, -h                输出帮助
   --resume-failed           从 progress.json 中第一个 failed task 恢复
@@ -106,6 +113,7 @@ Options:
   --risk-gate <level>       风险门禁范围：mission-critical/high/none
   --risk-policy <policy>    风险命中策略：pause/skip/allow
   --start-from <label>      从某个 task 开始，例如 phase-1/1-1-task-01
+  --stop-after <label>      在某个 task PASS + checkpoint 后停止
   --status                  输出任务循环状态，不执行任务
   --max-tasks <n>           最多执行 n 个 task（0 表示不限制）
   --phase <phase>           仅运行指定 phase，可重复使用；默认 phase-0..phase-4
@@ -119,6 +127,7 @@ Env vars:
   MAX_RETRIES:               0 表示无限重试，默认 0
   MAX_TASKS:                 0 表示不限制，默认 0
   START_FROM:                e.g. phase-1/1-1-task-01 或 1-1/task-01
+  STOP_AFTER:                e.g. phase-1/1-1-task-01 或 1-1/task-01
   DRY_RUN:                   1/0，默认 0
   DRY_RUN_RESULT:            PASS/FAIL，用于 dry-run 的验收结果（默认 PASS）
   DRY_RUN_MAX_ATTEMPTS:      dry-run 下失败时最多重试次数（默认 10）
@@ -136,6 +145,7 @@ Env vars:
   RUN_SUMMARY_ROOT:           运行摘要目录，默认 .codex/task-loop-runs
   PROGRESS_BACKUP_ROOT:       progress 备份目录，默认 .codex/task-loop-progress-backups
   LOCK_DIR:                  运行锁目录，默认 .codex/task-loop-lock
+  CONTROL_DIR:               运行控制目录，默认 .codex/task-loop-control
   PROGRESS_FILE:             统一进度文件，默认 tasks/prompts/_shared/progress.json
   STATE_FILE:                旧版完成记录文件，仅兼容读取
 
@@ -231,6 +241,18 @@ acquire_lock() {
   printf '%s\n' "${ORIGINAL_COMMAND:-$0}" > "$LOCK_DIR/command"
 }
 
+clear_stale_drain_request_for_new_run() {
+  if [ ! -f "$DRAIN_REQUEST_FILE" ]; then
+    return 0
+  fi
+  local requested_run_id=""
+  requested_run_id="$(sed -n 's/^lock_run_id=//p' "$DRAIN_REQUEST_FILE" | head -n 1)"
+  if [ "$requested_run_id" != "$RUN_ID" ]; then
+    log_event WARN "clear stale drain request before new run: $DRAIN_REQUEST_FILE"
+    rm -f "$DRAIN_REQUEST_FILE"
+  fi
+}
+
 release_lock() {
   if [ "$LOCK_ACQUIRED" != "1" ]; then
     return 0
@@ -242,6 +264,55 @@ release_lock() {
     rm -rf "$LOCK_DIR"
   fi
   LOCK_ACQUIRED=0
+}
+
+request_drain() {
+  ensure_run_id
+  mkdir -p "$CONTROL_DIR"
+
+  local lock_run_id=""
+  local lock_operation=""
+  local pid=""
+  if [ -f "$LOCK_DIR/run_id" ]; then
+    lock_run_id="$(tr -d '[:space:]' < "$LOCK_DIR/run_id")"
+  fi
+  if [ -f "$LOCK_DIR/operation" ]; then
+    lock_operation="$(tr -d '[:space:]' < "$LOCK_DIR/operation")"
+  fi
+  pid="$(lock_pid)"
+
+  if [ ! -d "$LOCK_DIR" ]; then
+    log_event ERROR "no live task loop lock found; nothing to drain"
+    return 1
+  fi
+  if ! is_pid_alive "$pid"; then
+    log_event ERROR "task loop lock exists but pid is not alive; use --status and recovery commands instead"
+    return 1
+  fi
+  if [ "$lock_operation" != "run" ]; then
+    log_event ERROR "live task loop operation is ${lock_operation:-unknown}, not run; drain request refused"
+    return 1
+  fi
+  log_event INFO "request drain for live runner pid=$pid run_id=${lock_run_id:-unknown}"
+
+  {
+    printf 'requested_at=%s\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+    printf 'requested_by_pid=%s\n' "$$"
+    printf 'target=after_current_task\n'
+    printf 'lock_run_id=%s\n' "$lock_run_id"
+    printf 'lock_operation=%s\n' "$lock_operation"
+  } > "$DRAIN_REQUEST_FILE"
+  log_event INFO "drain_request_file=$DRAIN_REQUEST_FILE"
+}
+
+drain_requested() {
+  [ -f "$DRAIN_REQUEST_FILE" ]
+}
+
+clear_drain_request() {
+  if [ -f "$DRAIN_REQUEST_FILE" ]; then
+    rm -f "$DRAIN_REQUEST_FILE"
+  fi
 }
 
 reset_progress() {
@@ -287,6 +358,7 @@ init_run_summary() {
     --max-retries "$MAX_RETRIES" \
     --max-tasks "$MAX_TASKS" \
     --start-from "$START_FROM" \
+    --stop-after "$STOP_AFTER" \
     --progress-file "$PROGRESS_FILE" \
     --log-root "$SESSION_LOG_ROOT" \
     --copy-root "$COPY_ROOT" \
@@ -365,7 +437,11 @@ cleanup() {
   set +e
   if [ -n "$RUN_SUMMARY_FILE" ] && [ -f "$RUN_SUMMARY_FILE" ]; then
     if [ "$exit_code" -eq 0 ]; then
-      finalize_run_summary "completed" "$exit_code"
+      if [ -n "$RUN_FINAL_STATUS" ]; then
+        finalize_run_summary "$RUN_FINAL_STATUS" "$exit_code"
+      else
+        finalize_run_summary "completed" "$exit_code"
+      fi
       run_git_run_summary_checkpoint
       local git_summary_rc=$?
       if [ "$git_summary_rc" -ne 0 ]; then
@@ -698,7 +774,7 @@ print_loop_status() {
     echo "- legacy_completed_count: 0"
   fi
 
-  state_tool status-fragment --progress-file "$PROGRESS_FILE" --lock-dir "$LOCK_DIR" --log-root "$LOG_ROOT"
+  state_tool status-fragment --progress-file "$PROGRESS_FILE" --lock-dir "$LOCK_DIR" --log-root "$LOG_ROOT" --drain-request-file "$DRAIN_REQUEST_FILE"
 
   echo
   "$PYTHON_BIN" "$ROOT_DIR/tasks/prompts/_shared/prompt_pipeline.py" status || true
@@ -828,6 +904,7 @@ print_launch_header() {
   log_event INFO "LOG_ROOT=$SESSION_LOG_ROOT"
   log_event INFO "RUN_SUMMARY_FILE=$RUN_SUMMARY_FILE"
   log_event INFO "LOCK_DIR=$LOCK_DIR"
+  log_event INFO "CONTROL_DIR=$CONTROL_DIR"
   log_event INFO "RISK_GATE=$RISK_GATE RISK_POLICY=$RISK_POLICY"
   log_event INFO "GIT_CHECKPOINT=$GIT_CHECKPOINT GIT_BRANCH_POLICY=$GIT_BRANCH_POLICY"
   if [ "$GIT_CHECKPOINT" = "push" ]; then
@@ -840,6 +917,9 @@ print_launch_header() {
   log_event INFO "TOTAL_TASKS=$TOTAL_TASKS"
   if [ -n "$START_FROM" ]; then
     log_event INFO "START_FROM=$START_FROM"
+  fi
+  if [ -n "$STOP_AFTER" ]; then
+    log_event INFO "STOP_AFTER=$STOP_AFTER"
   fi
   if [ "$MAX_TASKS" -gt 0 ]; then
     log_event INFO "MAX_TASKS=$MAX_TASKS"
@@ -1024,6 +1104,10 @@ main() {
         DRY_RUN=1
         shift
         ;;
+      --request-drain)
+        REQUEST_DRAIN=1
+        shift
+        ;;
       --clear-stale)
         CLEAR_STALE=1
         shift
@@ -1062,6 +1146,14 @@ main() {
           return 1
         fi
         START_FROM="$(normalize_task_ref "$2")"
+        shift 2
+        ;;
+      --stop-after)
+        if [ "$#" -lt 2 ]; then
+          log_event ERROR "--stop-after requires <label>"
+          return 1
+        fi
+        STOP_AFTER="$(normalize_task_ref "$2")"
         shift 2
         ;;
       --status)
@@ -1112,10 +1204,18 @@ main() {
   if [ -n "$START_FROM" ]; then
     START_FROM="$(normalize_task_ref "$START_FROM")"
   fi
+  if [ -n "$STOP_AFTER" ]; then
+    STOP_AFTER="$(normalize_task_ref "$STOP_AFTER")"
+  fi
 
   validate_runtime_options || return 1
   validate_state_tool || return 1
   validate_git_tool || return 1
+
+  if [ "$REQUEST_DRAIN" = "1" ]; then
+    request_drain
+    return 0
+  fi
 
   if [ "$STATUS_ONLY" = "1" ]; then
     print_loop_status
@@ -1138,6 +1238,7 @@ main() {
 
   ensure_run_id
   acquire_lock "run" || return 1
+  clear_stale_drain_request_for_new_run
 
   if [ "$DRY_RUN" != "1" ]; then
     resolve_codex_bin || return 1
@@ -1282,6 +1383,17 @@ main() {
           update_run_index
           run_git_checkpoint "$label" "$phase" "$task_name" "$attempt" "$copy_log" "$verify_log"
           print_task_progress "PASS" "$label" "$attempt" "$copy_log" "$verify_log"
+          if [ -n "$STOP_AFTER" ] && [ "$label" = "$STOP_AFTER" ]; then
+            log_event STOP "stop-after reached; stop after completed task=$label"
+            RUN_FINAL_STATUS="stopped"
+            return 0
+          fi
+          if drain_requested; then
+            log_event DRAIN "drain requested; stop after completed task=$label"
+            clear_drain_request
+            RUN_FINAL_STATUS="drained"
+            return 0
+          fi
           break
         fi
 

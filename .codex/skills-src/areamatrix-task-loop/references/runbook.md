@@ -26,6 +26,15 @@ Check that:
 
 ## Execution Modes
 
+For day-to-day operation, prefer the root console:
+
+```bash
+./dev.sh
+```
+
+It shows task-loop status, runner and `codex exec` process counts, and menu actions for resume, drain, checks, and logs without requiring long command recall.
+Before starting or resuming, the console blocks duplicate live runners and asks for foreground/background execution, Git mode, task count, and optional stop targets.
+
 | Mode | Command | Use when |
 |---|---|---|
 | Cautious default | `MAX_RETRIES=0 bash scripts/run_area_matrix_task_pipeline.sh` | The run should pause at `Mission-Critical` tasks. |
@@ -33,12 +42,33 @@ Check that:
 | No Git checkpoint | `GIT_CHECKPOINT=off MAX_RETRIES=0 bash scripts/run_area_matrix_task_pipeline.sh` | Temporary infrastructure diagnostics only. |
 | Push checkpoints | `GIT_CHECKPOINT=push RISK_POLICY=allow MAX_RETRIES=0 bash scripts/run_area_matrix_task_pipeline.sh` | Commit and upload each PASS task after remote credentials are ready. |
 | One phase | `MAX_RETRIES=0 bash scripts/run_area_matrix_task_pipeline.sh --phase phase-1` | Validate a phase-sized slice. |
+| Stop after task | `MAX_RETRIES=0 bash scripts/run_area_matrix_task_pipeline.sh --stop-after 2-1/task-18` | Stop after the target task passes and checkpoints. |
 | Small trial | `MAX_RETRIES=1 bash scripts/run_area_matrix_task_pipeline.sh --phase phase-1 --max-tasks 1` | Prove live behavior on one task. |
 | Dry run | `DRY_RUN=1 DRY_RUN_RESULT=PASS bash scripts/run_area_matrix_task_pipeline.sh --phase phase-1 --max-tasks 1` | Prove runner wiring without executing Codex. |
+| Graceful drain | `bash scripts/run_area_matrix_task_pipeline.sh --request-drain` | Ask the live runner to finish the current task, checkpoint it, and stop before the next task. |
 
 Dry-run proves only runner flow. It does not prove implementation, verification, engineering quality, or task completion.
 
 `RISK_POLICY=allow` injects an explicit silent-approval context into copy-ready runs. The agent should still record risk, validation, and rollback notes, but should not pause for High / Mission-Critical confirmation unless the task would delete, move, overwrite, or otherwise destructively modify real user files.
+
+## Graceful Drain
+
+Use drain when the machine needs to shut down, token budget is nearly exhausted, or the operator wants a clean pause without leaving a half-finished `in_progress` task:
+
+```bash
+bash scripts/run_area_matrix_task_pipeline.sh --request-drain
+bash scripts/run_area_matrix_task_pipeline.sh --status
+```
+
+The same operation is available from `./dev.sh` as menu item `5`, or non-interactively:
+
+```bash
+./dev.sh drain
+```
+
+`--request-drain` requires a live runner lock. It writes a local control request under `.codex/task-loop-control/`; that directory is not workflow evidence and stays ignored by git.
+
+The active runner checks the request only after the current task reaches `VERIFY_RESULT: PASS`, writes progress, runs the configured Git checkpoint or push, records run summary/index, and then exits with status `drained`. It does not skip verify, bypass repair retries, or advance into the next task.
 
 ## Skill Paths
 
