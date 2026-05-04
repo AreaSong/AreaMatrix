@@ -239,6 +239,10 @@ struct InitDoneStepView: View {
     let result: RepositoryInitializationResult
     let errorMapping: CoreErrorMappingSnapshot?
     let onOpenRepository: () -> Void
+    let onOpenInFinder: () async -> String?
+
+    @State private var isOpeningFinder = false
+    @State private var finderOpenErrorMessage: String?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 22) {
@@ -246,6 +250,7 @@ struct InitDoneStepView: View {
             pathBox
             summarySection
             openErrorSection
+            finderErrorSection
             footer
         }
         .padding(.horizontal, 72)
@@ -309,10 +314,49 @@ struct InitDoneStepView: View {
         }
     }
 
+    @ViewBuilder
+    private var finderErrorSection: some View {
+        if let finderOpenErrorMessage {
+            Label(finderOpenErrorMessage, systemImage: "exclamationmark.triangle")
+                .font(.callout)
+                .foregroundStyle(.orange)
+                .padding(14)
+                .frame(maxWidth: 720, alignment: .leading)
+                .background(Color.orange.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
+        }
+    }
+
     private var footer: some View {
-        Button(errorMapping == nil ? "Open Repository" : "Retry Open Repository", action: onOpenRepository)
-            .keyboardShortcut(.defaultAction)
-            .buttonStyle(.borderedProminent)
+        HStack(spacing: 12) {
+            Button("Open in Finder") {
+                Task {
+                    await openInFinder()
+                }
+            }
+            .disabled(isOpeningFinder)
+
+            if isOpeningFinder {
+                ProgressView()
+                    .controlSize(.small)
+            }
+
+            Spacer()
+            Button(errorMapping == nil ? "Open Repository" : "Retry Open Repository", action: onOpenRepository)
+                .keyboardShortcut(.defaultAction)
+                .buttonStyle(.borderedProminent)
+        }
+        .frame(maxWidth: 720)
+    }
+
+    @MainActor
+    private func openInFinder() async {
+        guard !isOpeningFinder else { return }
+
+        isOpeningFinder = true
+        defer {
+            isOpeningFinder = false
+        }
+        finderOpenErrorMessage = await onOpenInFinder()
     }
 
     private var summaryItems: [String] {

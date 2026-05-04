@@ -48,6 +48,11 @@ protocol RepositoryDirectoryPicking {
     func chooseDirectory() -> URL?
 }
 
+protocol RepositoryFinderOpening {
+    @MainActor
+    func openRepositoryInFinder(repoPath: String) throws
+}
+
 struct LocalWelcomeHelpOpener: WelcomeHelpOpening {
     func openWelcomeHelp() throws {
         let docsURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
@@ -76,8 +81,35 @@ struct NSOpenPanelRepositoryDirectoryPicker: RepositoryDirectoryPicking {
     }
 }
 
+struct NSWorkspaceRepositoryFinderOpener: RepositoryFinderOpening {
+    @MainActor
+    func openRepositoryInFinder(repoPath: String) throws {
+        let url = URL(fileURLWithPath: repoPath, isDirectory: true)
+        guard FileManager.default.fileExists(atPath: url.path) else {
+            throw RepositoryFinderOpenError.repositoryFolderMissing(repoPath)
+        }
+        guard NSWorkspace.shared.open(url) else {
+            throw RepositoryFinderOpenError.openRejected(repoPath)
+        }
+    }
+}
+
 enum WelcomeHelpError: Error, Equatable, Sendable {
     case helpDocumentUnavailable
+}
+
+enum RepositoryFinderOpenError: Error, Equatable, LocalizedError, Sendable {
+    case repositoryFolderMissing(String)
+    case openRejected(String)
+
+    var errorDescription: String? {
+        switch self {
+        case .repositoryFolderMissing(let path):
+            return "Repository folder is missing: \(path)"
+        case .openRejected(let path):
+            return "Finder rejected opening repository: \(path)"
+        }
+    }
 }
 
 @main

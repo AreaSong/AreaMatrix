@@ -42,14 +42,24 @@ extension OnboardingModel {
         initializationOpenErrorMapping = nil
         route = .mainLoading(result.repoPath)
 
-        guard result.mode == .createEmpty else { return }
-
         do {
-            let config = try await emptyRepositoryOpener.openEmptyRepository(repoPath: result.repoPath)
+            let config = try await openInitializedRepository(result)
             route = .repositoryReady(config)
         } catch {
             route = .initializationDone(result)
             initializationOpenErrorMapping = await openingFailureMapping(for: error)
+        }
+    }
+
+    @MainActor
+    func openInitializedRepositoryInFinder() async -> String? {
+        guard case .initializationDone(let result) = route else { return nil }
+
+        do {
+            try finderOpener.openRepositoryInFinder(repoPath: result.repoPath)
+            return nil
+        } catch {
+            return "无法在 Finder 中打开资料库：\(error.localizedDescription)"
         }
     }
 
@@ -119,6 +129,15 @@ extension OnboardingModel {
             try await repositoryInitializer.initializeEmptyRepository(repoPath: repoPath)
         case .adoptExisting:
             try await repositoryInitializer.adoptExistingRepository(repoPath: repoPath)
+        }
+    }
+
+    private func openInitializedRepository(_ result: RepositoryInitializationResult) async throws -> RepoConfigSnapshot {
+        switch result.mode {
+        case .createEmpty:
+            return try await emptyRepositoryOpener.openEmptyRepository(repoPath: result.repoPath)
+        case .adoptExisting:
+            return try await emptyRepositoryOpener.openAdoptedRepository(repoPath: result.repoPath)
         }
     }
 

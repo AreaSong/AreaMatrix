@@ -80,6 +80,7 @@ final class OnboardingModel: ObservableObject {
     private let existingRepositoryMetadataReader: any ExistingRepositoryMetadataReading
     let scanSessionReader: any CoreScanSessionReading
     let errorMapper: any CoreErrorMapping
+    let finderOpener: any RepositoryFinderOpening
     private let helpOpener: any WelcomeHelpOpening
     private let directoryPicker: any RepositoryDirectoryPicking
     private var didBootstrap = false
@@ -98,6 +99,7 @@ final class OnboardingModel: ObservableObject {
             SQLiteExistingRepositoryMetadataReader(),
         scanSessionReader: any CoreScanSessionReading = CoreBridge(),
         errorMapper: any CoreErrorMapping = CoreBridge(),
+        finderOpener: any RepositoryFinderOpening = NSWorkspaceRepositoryFinderOpener(),
         helpOpener: any WelcomeHelpOpening = LocalWelcomeHelpOpener(),
         directoryPicker: any RepositoryDirectoryPicking = NSOpenPanelRepositoryDirectoryPicker()
     ) {
@@ -111,6 +113,7 @@ final class OnboardingModel: ObservableObject {
         self.existingRepositoryMetadataReader = existingRepositoryMetadataReader
         self.scanSessionReader = scanSessionReader
         self.errorMapper = errorMapper
+        self.finderOpener = finderOpener
         self.helpOpener = helpOpener
         self.directoryPicker = directoryPicker
     }
