@@ -111,61 +111,6 @@ struct MainLoadingView: View {
     }
 }
 
-struct InitializingStepView: View {
-    let draft: RepositoryInitializationDraft
-
-    private var isCreateMode: Bool {
-        draft.mode == .createEmpty
-    }
-
-    private var statusText: String {
-        isCreateMode ? "正在初始化本地索引" : "正在创建内部元数据并扫描现有文件"
-    }
-
-    private var detailText: String {
-        isCreateMode ? "Core 正在创建空资料库所需的 .areamatrix/ 元数据。"
-            : "Core 正在接管目录；已有文件只会被扫描和索引。"
-    }
-
-    private let createEmptySteps = [
-        "创建 .areamatrix/ 内部目录",
-        "初始化 index.db",
-        "创建默认分类与 ignore.yaml",
-        "写入 .areamatrix/generated/root.md",
-    ]
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            ProgressView(statusText)
-                .controlSize(.large)
-            Text(isCreateMode ? "正在创建资料库" : "正在接管已有目录")
-                .font(.title2.weight(.semibold))
-                .accessibilityAddTraits(.isHeader)
-            Text(draft.validation.repoPath)
-                .font(.system(.body, design: .monospaced))
-                .textSelection(.enabled)
-                .lineLimit(3)
-            Text(detailText)
-                .font(.callout)
-            if isCreateMode {
-                VStack(alignment: .leading, spacing: 8) {
-                    ForEach(createEmptySteps, id: \.self) { step in
-                        Label(step, systemImage: "clock")
-                            .font(.callout)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-                .accessibilityElement(children: .combine)
-            }
-            Text("AreaMatrix 不会移动、重命名、删除或覆盖用户原文件。")
-                .font(.callout)
-                .foregroundStyle(.secondary)
-        }
-        .padding(48)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-    }
-}
-
 struct MainRepoErrorView: View {
     let repoPath: String
     let mapping: CoreErrorMappingSnapshot?

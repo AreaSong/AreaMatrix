@@ -1,0 +1,25 @@
+一、执行结论：已完成。
+
+二、执行范围：单任务 `2-1/task-11`。产品改动仍限定在 `apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`；`core/src/**` 未触碰。主要文件：
+- [CoreBridge.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift:333)
+- [AppShellModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/AppShellModel.swift:341)
+- [OnboardingInitializationProgress.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/OnboardingInitializationProgress.swift:3)
+- [InitializingStepView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Onboarding/InitializingStepView.swift:3)
+- [InitializingStepRow.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Onboarding/InitializingStepRow.swift:3)
+- [MainWindow.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/MainWindow.swift:121)
+- [InitializingStepIntegrationTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/InitializingStepIntegrationTests.swift:7)
+
+三、完成情况：S1-05 的 C1-03 接管链路已接真实 `CoreBridge.adoptExistingRepository`，初始化页轮询 `latestScanSession(repoPath:)`，显示扫描状态、计数、当前文件和 warning；没有实现同页 C1-02/C1-16，也没有触碰相邻页面。生产路径没有 mock/fixture/静态成功态。
+
+四、工程质量：补上了上次缺失的 XCTest 证据；另外把 `InitializingStepRow` 拆出，`InitializingStepView.swift` 降到 199 行，满足 SwiftUI 视图拆分阈值。无新增依赖，无 public Rust API，无 rustdoc/doc sync 需求。错误路径会把 scan session 读取失败映射成用户可见 warning。
+
+五、验证情况：
+- `xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：通过，`** BUILD SUCCEEDED **`
+- `bash scripts/check-macos-tests.sh`：通过。脚本内标准 `xcodebuild test` 仍被本地 sandbox 的 `testmanagerd.control` 阻断，但按仓库 documented fallback 复用同一 XCTest bundle 执行 `xcrun xctest`，46 tests / 0 failures。
+- `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`：通过。
+- `git diff --check`：通过。
+- `git diff --name-only -- core/src`：无输出，Forbidden Touches 未触碰。
+- `swiftlint` / `swiftformat`：当前环境未安装，无法运行。
+
+六、风险与后续：本地 sandbox 下标准 `xcodebuild test` 仍不能直连 test runner；CI/非受限 macOS 环境仍应跑标准 `xcodebuild test`。建议下一个任务继续 `2-1/task-12`。工作区还保留 task-loop 运行产生的 `.codex/task-loop-*` 与 `progress.json` 脏状态，我未回滚这些证据文件。
+

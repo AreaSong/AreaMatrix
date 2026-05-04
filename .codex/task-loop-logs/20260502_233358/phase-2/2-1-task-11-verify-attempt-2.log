@@ -1,0 +1,54 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`2-1/task-11`
+- 对应路径：`tasks/prompts/phase-2/2-1-first-launch-main/task-11-s1-05-c1-03-adopt-existing-repo.md`
+- 只读验收，未修改文件
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：0
+- 通过项数：8
+- 不通过项数：2
+- 阻塞项数：2
+
+四、逐项验收结果
+
+- 读取 task / 规则 / manifest / Exact Docs：通过。4 个 Exact Docs 均存在并已读取。
+- C1-03 CoreBridge 接入：通过。`adoptExistingRepository` 调用真实 `initRepo(mode: .adoptExisting)`，`latestScanSession` 调用真实 `getLatestScanSession`。涉及 [CoreBridge.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift:333)。
+- S1-05 可见触发与进度：通过。确认后先进入 `.initializing`，非空目录启动 scan session polling。涉及 [AppShellModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/AppShellModel.swift:341)、[InitializingStepView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Onboarding/InitializingStepView.swift:116)。
+- mock / fixture / 静态状态伪造：通过。生产路径默认使用 `CoreBridge()`；测试 fixture 未替代生产闭环。
+- Forbidden Touches：通过。`git diff -- core/src` 无输出，未触碰 `core/src/**`。
+- Expected New Paths：通过但有范围漂移。`apps/macos/AreaMatrix/**` 与 `apps/macos/AreaMatrixTests/**` 已落地。
+- 错误映射 / fatal route：不通过。SSOT 要求 S1-05 fatal error 进入 `S1-06 init-failed`，但当前 `routeInitializationFailure` 把 CoreError 路由到 `.mainRepoError`。涉及 [S1-05-initializing.md](/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-05-initializing.md:61)、[AppShellModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/AppShellModel.swift:475)、[MainWindow.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/MainWindow.swift:129)。
+- Manifest 范围：不通过。实际修改了 `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`，但 task manifest 的 `Expected New Paths` 只允许 `apps/macos/AreaMatrix/**` 和 `apps/macos/AreaMatrixTests/**`。涉及 [phase-2.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-2.md:301)、[project.pbxproj](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj:20)。
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过。主链路清晰，但 fatal error 路由与 S1-05 SSOT 不一致。
+- 注释 / rustdoc / 文档同步：不通过。manifest 未覆盖实际必须修改的 Xcode project 文件，范围源事实漂移。
+- 错误处理与边界处理：不通过。C1-03 adopt 失败没有进入 S1-06 init-failed。
+- 测试与验证覆盖：通过。build 通过；macOS tests 经仓库 fallback 跑过 46 tests 通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。未发现生产路径 mock-only 闭环。
+
+六、阻塞项
+
+- P0：S1-05 adopt fatal error 路由错误。说明：文档要求 fatal error 自动进入 `S1-06 init-failed` 并保留错误码/恢复信息，当前进入 `.mainRepoError`。绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/AppShellModel.swift:475`。
+- P1：修改路径超出 manifest。说明：`project.pbxproj` 被修改以挂载新 Swift 文件，但该路径未在 `Expected New Paths` 或 `Existing Code` 中声明，会导致 task scope / checkpoint 证据不收敛。绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj:20`。
+
+七、验证情况
+
+- 已运行：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：通过，`BUILD SUCCEEDED`。
+- 已运行：`xcodebuild test ...`：失败于本地 sandbox `com.apple.testmanagerd.control`，测试 bundle 已构建。
+- 已运行：`bash scripts/check-macos-tests.sh`：通过；`xcrun xctest` 执行 46 tests，0 failures。
+- 已运行：`git diff -- core/src`：通过，无 forbidden touch。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+
+VERIFY_RESULT: FAIL

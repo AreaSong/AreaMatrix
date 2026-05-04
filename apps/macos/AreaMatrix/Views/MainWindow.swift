@@ -119,7 +119,13 @@ struct MainWindow: View {
                 }
             )
         case .initializing(let draft):
-            InitializingStepView(draft: draft)
+            InitializingStepView(
+                draft: draft,
+                scanSession: model.initializationScanSession,
+                progressWarning: model.initializationProgressWarning
+            )
+        case .initializationFailed(let repoPath, let mapping):
+            InitFailedStepView(repoPath: repoPath, mapping: mapping, onChangePath: model.showChoosePath)
         case .mainLoading(let repoPath):
             MainLoadingView(repoPath: repoPath, onChooseAnotherFolder: model.showChoosePath)
         case .mainRepoError(let repoPath, let mapping):

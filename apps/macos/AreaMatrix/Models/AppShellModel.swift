@@ -9,6 +9,7 @@ final class OnboardingModel: ObservableObject {
         case validatePath
         case confirmRepositoryInitialization(RepositoryInitializationDraft)
         case initializing(RepositoryInitializationDraft)
+        case initializationFailed(String, CoreErrorMappingSnapshot?)
         case mainLoading(String)
         case mainRepoError(String, CoreErrorMappingSnapshot?)
         case dbRepairConfirm(String, ScanSessionSnapshot?, CoreErrorMappingSnapshot?)
@@ -38,6 +39,8 @@ final class OnboardingModel: ObservableObject {
     @Published private(set) var repositoryPathValidation: RepoPathValidationSnapshot?
     @Published private(set) var existingRepositoryMetadata: ExistingRepositoryMetadataSnapshot?
     @Published private(set) var latestScanSession: ScanSessionSnapshot?
+    @Published var initializationScanSession: ScanSessionSnapshot?
+    @Published var initializationProgressWarning: String?
     @Published private(set) var isValidatingRepositoryPath = false
     @Published private(set) var isICloudRiskAccepted = false
     @Published private(set) var isSetupQuitConfirmationPresented = false
@@ -69,14 +72,15 @@ final class OnboardingModel: ObservableObject {
     private let settingsWriter: any AppSettingsWriting
     private let configLoader: any CoreConfigurationLoading
     private let pathValidator: any CoreRepositoryPathValidating
-    private let repositoryInitializer: any CoreRepositoryInitializing
+    let repositoryInitializer: any CoreRepositoryInitializing
     private let existingRepositoryMetadataReader: any ExistingRepositoryMetadataReading
-    private let scanSessionReader: any CoreScanSessionReading
-    private let errorMapper: any CoreErrorMapping
+    let scanSessionReader: any CoreScanSessionReading
+    let errorMapper: any CoreErrorMapping
     private let helpOpener: any WelcomeHelpOpening
     private let directoryPicker: any RepositoryDirectoryPicking
     private var didBootstrap = false
     private var validatePathReturnRoute: Route = .choosePath
+    var initializationProgressTask: Task<Void, Never>?
 
     init(
         settingsReader: any AppSettingsReading = UserDefaultsAppSettingsReader(),
@@ -157,6 +161,8 @@ final class OnboardingModel: ObservableObject {
         repositoryPathValidation = nil
         existingRepositoryMetadata = nil
         latestScanSession = nil
+        initializationScanSession = nil
+        initializationProgressWarning = nil
         choosePathAction = nil
         validatePathAction = nil
         repositoryPathErrorMapping = nil
@@ -241,7 +247,9 @@ final class OnboardingModel: ObservableObject {
     func createEmptyRepositoryFromConfirmInit() async { await initializeRepositoryFromConfirmInit(mode: .createEmpty) }
 
     @MainActor
-    func adoptExistingRepositoryFromConfirmInit() async { await initializeRepositoryFromConfirmInit(mode: .adoptExisting) }
+    func adoptExistingRepositoryFromConfirmInit() async {
+        await initializeRepositoryFromConfirmInit(mode: .adoptExisting)
+    }
 
     var shouldConfirmSetupExit: Bool {
         if route == .validatePath { return true }
@@ -266,6 +274,9 @@ final class OnboardingModel: ObservableObject {
         repositoryPathValidation = nil
         existingRepositoryMetadata = nil
         latestScanSession = nil
+        initializationScanSession = nil
+        initializationProgressWarning = nil
+        stopInitializationProgressPolling()
         route = shouldCloseWindow ? .welcome : .settingsRepository
         return shouldCloseWindow
     }
@@ -332,7 +343,11 @@ final class OnboardingModel: ObservableObject {
         guard case .confirmRepositoryInitialization(let draft) = route, draft.mode == mode else { return }
 
         let repoPath = draft.validation.repoPath
+        initializationScanSession = draft.scanSession
+        initializationProgressWarning = nil
         route = .initializing(draft)
+        startInitializationProgressPolling(repoPath: repoPath, mode: mode)
+        defer { stopInitializationProgressPolling() }
 
         do {
             let latestValidation = try await pathValidator.validateRepoPath(repoPath: repoPath)
@@ -348,29 +363,6 @@ final class OnboardingModel: ObservableObject {
             route = .mainLoading(repoPath)
         } catch {
             await routeInitializationFailure(error, repoPath: repoPath)
-        }
-    }
-
-    private func initializeRepository(repoPath: String, mode: RepoInitModeSnapshot) async throws {
-        switch mode {
-        case .createEmpty:
-            try await repositoryInitializer.initializeEmptyRepository(repoPath: repoPath)
-        case .adoptExisting:
-            try await repositoryInitializer.adoptExistingRepository(repoPath: repoPath)
-        }
-    }
-
-    private static func validationStillMatchesConfirmMode(
-        _ validation: RepoPathValidationSnapshot,
-        mode: RepoInitModeSnapshot
-    ) -> Bool {
-        guard validation.recommendedMode == mode, !validation.isInitialized else { return false }
-
-        switch mode {
-        case .createEmpty:
-            return validation.isEmpty
-        case .adoptExisting:
-            return !validation.isEmpty
         }
     }
 
@@ -430,10 +422,6 @@ final class OnboardingModel: ObservableObject {
         return checks.first { $0.0 }?.1
     }
 
-    private func shouldLoadLatestScanSession(for validation: RepoPathValidationSnapshot) -> Bool {
-        validation.hasUnfinishedScanSession || validation.issues.contains(.unfinishedScanSession)
-    }
-
     private func localRepositoryPathError(for value: String) -> String? {
         let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
 
@@ -490,11 +478,11 @@ final class OnboardingModel: ObservableObject {
         repoPath: String
     ) async {
         guard let coreError = error as? CoreError else {
-            route = .mainRepoError(repoPath, nil)
+            route = .initializationFailed(repoPath, nil)
             return
         }
 
         let mapping = await errorMapper.mapCoreError(coreError)
-        route = .mainRepoError(repoPath, mapping)
+        route = .initializationFailed(repoPath, mapping)
     }
 }

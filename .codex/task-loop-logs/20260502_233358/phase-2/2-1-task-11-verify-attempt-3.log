@@ -1,0 +1,93 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`2-1/task-11`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-1-first-launch-main/task-11-s1-05-c1-03-adopt-existing-repo.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/App/AreaMatrixApp.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/AppShellModel.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/OnboardingInitializationProgress.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/MainWindow.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Onboarding/InitializingStepView.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Onboarding/InitializingStepRow.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/InitializingStepIntegrationTests.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：7
+- 未覆盖项数：0
+- 通过项数：7
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 S1-05 页面中的 C1-03 功能点
+- 结果：通过
+- 证据：S1-05 control map 绑定 C1-02/C1-03/C1-16；本 task 只验 C1-03。实现只在 `.initializing` 路由、adopt-existing 初始化和 scan session 进度展示上接线。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:20`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/MainWindow.swift:121`
+
+- 项目：读取页面规格、control map、Core API、C1-03 能力规格
+- 结果：通过
+- 证据：S1-05 要求初始化/接管中显示路径、阶段、扫描数量、当前文件和取消安全语义；C1-03 要求 `init_repo(...AdoptExisting...)`、scan session 和 `files.origin = Adopted`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-05-initializing.md:20`，`/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-03-adopt-existing-repo.md:10`
+
+- 项目：只接入 C1-03 对应 CoreBridge / 状态 / 错误映射
+- 结果：通过
+- 证据：`CoreBridge.adoptExistingRepository` 调用真实 `initRepo`，mode 为 `.adoptExisting`；`latestScanSession` 调用真实 `getLatestScanSession`；失败进入 `initializationFailed` 并经 `mapCoreError` 映射。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift:333`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift:446`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/AppShellModel.swift:476`
+
+- 项目：不顺手实现相邻页面
+- 结果：通过
+- 证据：实现入口集中在 S1-05 initializing，未发现 control map 外能力调用；C1-02、C1-16 仍由相邻 task/page integration 覆盖。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/OnboardingInitializationProgress.swift:4`
+
+- 项目：用户可见功能可触发和验收
+- 结果：通过
+- 证据：Confirm Init 中 Adopt Folder 触发 `adoptExistingRepositoryFromConfirmInit()`；路由进入 `InitializingStepView`；视图显示 repo path、扫描数量、当前文件、warning 和安全说明。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/MainWindow.swift:110`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Onboarding/InitializingStepView.swift:55`
+
+- 项目：没有 mock / fixture / 静态状态伪造真实 Core 闭环
+- 结果：通过
+- 证据：生产默认依赖均为 `CoreBridge()`，`CoreBridge.state` 为 `generatedBindings`；测试使用 fixture 只作为 XCTest 注入，不替代生产路径。`testDefaultCoreAdoptExistingPreservesUserFiles` 在本轮 `xcrun xctest` 中通过。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/AppShellModel.swift:85`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift:267`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git diff --name-only -- core/src` 无输出；`core/area_matrix.udl` 与 docs API 的 C1-03 UDL 入口一致。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:13`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。初始化执行、进度轮询、视图展示已拆到 `AppShellModel`、`OnboardingInitializationProgress`、`InitializingStepView`。
+- 注释 / rustdoc / 文档同步：通过。未新增 Rust public API；UDL 与 Core API 对齐。live manifest 当前已把 `project.pbxproj` 纳入 Existing/Expected，`doctor` 通过。
+- 错误处理与边界处理：通过。初始化失败进入失败页，CoreError 走结构化 mapping；非空目录接管的“不移动、不删除、不覆盖”由 CoreBridge 真实 C1-03 路径和回归测试证明。
+- 测试与验证覆盖：通过。build 通过；标准 `xcodebuild test` 被本地 testmanagerd sandbox 阻断后，仓库脚本 fallback 到 `xcrun xctest`，47 tests 全部通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。生产路径未发现 `try!`、直接 View 调 UniFFI、`print()` 调试或 mock-only wiring；`git diff --check` 通过。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：通过，`BUILD SUCCEEDED`
+- 已运行：`xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：失败，原因是本地 sandbox 阻断 `com.apple.testmanagerd.control`
+- 已运行：`bash scripts/check-macos-tests.sh`：通过；先复现 testmanagerd sandbox block，再用 `xcrun xctest` 执行 `AreaMatrixTests.xctest`，47 tests，0 failures
+- 已运行：`python3 tasks/prompts/_shared/prompt_pipeline.py doctor`：通过，`doctor: OK`
+- 已运行：`python3 tasks/prompts/_shared/prompt_pipeline.py status`：通过
+- 已运行：`python3 tasks/prompts/_shared/prompt_pipeline.py render --task 2-1/task-11 --mode verify`：通过，当前 rendered manifest 计数为 Existing 3 / Expected 3
+- 已运行：`git diff --check`：通过
+- 已运行：`command -v swiftlint`、`command -v swiftformat`：未发现可执行文件，未运行 SwiftLint / SwiftFormat lint
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+
+VERIFY_RESULT: PASS
