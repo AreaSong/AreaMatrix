@@ -67,6 +67,18 @@ Repo-local skills：
 启动或继续任务时，控制台会先阻止重复 live runner，再选择前台/后台、Git checkpoint 模式和任务数量上限；默认 Git 为本地 `commit`，任务数量为无限。
 优化或排查控制台时，优先用 `./dev preview` 预览命令，或用 `./dev dry-run` 跑临时目录演练；这两者都不会写真实 progress。
 
+日常观看进度时使用：
+
+```bash
+./dev status
+```
+
+在 TTY 里它会显示彩色实时看板，默认每 5 秒刷新；非 TTY 会输出一次快照后退出。需要旧版长报告、完整进程列表、最近 run 和 verify 摘要时使用：
+
+```bash
+./dev status --verbose
+```
+
 ### 1) 全量执行
 
 ```bash
@@ -246,3 +258,24 @@ tasks/prompts/_shared/progress.json
 - `copy-ready` / `verify-ready` 已经用 `python3 tasks/prompts/_shared/prompt_pipeline.py export --all` 生成；
 - 对应任务本身在文档与 manifest 上自洽；
 - 阶段通过后再做后续阶段。
+
+---
+
+## 六、后续版本变更追踪
+
+当前 637 个任务仍是 v1-mvp 队列，继续由 `tasks/prompts/**` 与 `tasks/prompts/_shared/progress.json` 驱动，不移动、不重置。
+
+后续新增功能先记录到：
+
+```
+workflow/versions/v2/changes/*.yaml
+```
+
+第一版只做 tracking + doctor + preview：
+
+```bash
+./dev changes doctor
+./dev changes preview
+```
+
+它会校验 feature id、依赖、精确 docs、同步目标、风险边界和预期 task split，并预览将来的任务顺序；不会生成 copy-ready / verify-ready 文件，也不会接入 live task-loop。

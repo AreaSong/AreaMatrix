@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Sequence
 
 from .build import run_bindings_update, run_core_build
+from .changes import run_changes_doctor, run_changes_preview
 from .checks import (
     run_all_check,
     run_diff_check,
@@ -57,6 +58,13 @@ def _build_parser() -> argparse.ArgumentParser:
     update.add_argument("--udl", required=True, help="UDL file path")
     update.add_argument("--out-dir", "--output-dir", dest="out_dir", required=True, help="Output directory")
 
+    changes = subparsers.add_parser("changes", help="Validate and preview versioned workflow changes")
+    changes_sub = changes.add_subparsers(dest="changes_command", required=True)
+    changes_doctor = changes_sub.add_parser("doctor", help="Validate v2 workflow change tracking files")
+    changes_doctor.add_argument("--file", help="Validate one change file instead of all v2 changes")
+    changes_preview = changes_sub.add_parser("preview", help="Preview v2 workflow tasks without generating prompts")
+    changes_preview.add_argument("--file", help="Preview one change file instead of all v2 changes")
+
     return parser
 
 
@@ -96,6 +104,10 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
         if args.command == "bindings" and args.bindings_command == "update":
             return run_bindings_update(root, args.udl, args.out_dir)
+        if args.command == "changes" and args.changes_command == "doctor":
+            return run_changes_doctor(root, args)
+        if args.command == "changes" and args.changes_command == "preview":
+            return run_changes_preview(root, args)
         parser.error("unsupported command")
         return 2
     except ToolError as exc:

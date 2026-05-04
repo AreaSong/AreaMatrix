@@ -181,14 +181,28 @@ def check_repo_health(h: Harness) -> None:
     h.run([h.python, "tasks/prompts/_shared/prompt_pipeline.py", "doctor"])
 
 
+def check_v2_changes(h: Harness) -> None:
+    log("v2 change tracking")
+    doctor = h.run([h.dev, "changes", "doctor"]).stdout
+    assert_contains(doctor, "v2 change doctor: OK", "changes doctor")
+    preview = h.run([h.dev, "changes", "preview"]).stdout
+    assert_contains(preview, "V2 change preview", "changes preview header")
+    assert_contains(preview, "preview only; no prompt files are generated", "changes preview no writes")
+    assert_contains(preview, "v2-search-query", "changes preview feature")
+
+
 def check_real_status(h: Harness) -> None:
     log("real status is readable")
     status = h.run([h.task_loop, "status"]).stdout
     assert_contains(status, "stale_in_progress:", "task-loop status stale count")
     assert_contains(status, "drain_requested:", "task-loop status drain")
     dev_status = h.run([h.dev, "status"]).stdout
-    assert_contains(dev_status, "AreaMatrix Task Loop 控制台", "dev status header")
-    assert_contains(dev_status, "进程快照", "dev status process snapshot")
+    assert_contains(dev_status, "AreaMatrix Task Loop", "dev status dashboard header")
+    assert_contains(dev_status, "下一步建议", "dev status dashboard suggestions")
+    assert_contains(dev_status, "详细长输出：./dev status --verbose", "dev status verbose hint")
+    dev_verbose = h.run([h.dev, "status", "--verbose"]).stdout
+    assert_contains(dev_verbose, "AreaMatrix Task Loop 控制台", "dev verbose status header")
+    assert_contains(dev_verbose, "进程快照", "dev verbose process snapshot")
     preflight = h.dev_run("dev-preflight", ["preflight"]).stdout
     assert_contains(preflight, "Preflight", "dev preflight header")
 
@@ -591,6 +605,7 @@ def run_check(root_dir: Path) -> int:
         try:
             check_static(harness)
             check_repo_health(harness)
+            check_v2_changes(harness)
             check_real_status(harness)
             check_dev_console(harness)
             check_runner_core(harness)

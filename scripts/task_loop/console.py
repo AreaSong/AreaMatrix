@@ -2,16 +2,18 @@
 
 from __future__ import annotations
 
+import argparse
 import os
 import re
 import shlex
 import subprocess
 import sys
 import tempfile
+import time
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Sequence
+from typing import Any, Sequence
 
 from . import state
 from .runner import RuntimeConfig, print_loop_status
@@ -51,8 +53,94 @@ class ConsoleConfig:
         return cls(runtime=runtime, task_loop_bin=task_loop_bin, pipeline=pipeline, console_log_root=console_log_root)
 
 
+@dataclass
+class PromptSnapshot:
+    total: int
+    completed: int
+    pending: int
+    first_ready: str
+    by_status: dict[str, int]
+    by_phase: dict[str, int]
+    error: str = ""
+
+
+@dataclass
+class ProcessSnapshot:
+    runners: list[str]
+    repo_codex: list[str]
+    host_codex: list[str]
+
+
+@dataclass
+class DashboardSnapshot:
+    prompt: PromptSnapshot
+    progress_counts: dict[str, int]
+    process: ProcessSnapshot
+    lock: dict[str, Any]
+    stale_count: int
+    drain_requested: bool
+    latest_log_dir: Path | None
+    latest_run: dict[str, Any] | None
+    latest_verify_result: str
+    latest_verify_log: Path | None
+    interesting_task: tuple[str, dict[str, Any]] | None
+    git_dirty: bool
+    captured_at: datetime
+
+
 def timestamp() -> str:
     return datetime.now().strftime("%Y%m%d_%H%M%S")
+
+
+def supports_color(force_no_color: bool = False) -> bool:
+    if force_no_color:
+        return False
+    if os.environ.get("NO_COLOR") or os.environ.get("DEV_NO_COLOR"):
+        return False
+    return sys.stdout.isatty() and bool(os.environ.get("TERM"))
+
+
+def ansi(text: str, code: str, color: bool) -> str:
+    return f"\033[{code}m{text}\033[0m" if color else text
+
+
+def bold(text: str, color: bool) -> str:
+    return ansi(text, "1", color)
+
+
+def green(text: str, color: bool) -> str:
+    return ansi(text, "32", color)
+
+
+def yellow(text: str, color: bool) -> str:
+    return ansi(text, "33", color)
+
+
+def red(text: str, color: bool) -> str:
+    return ansi(text, "31", color)
+
+
+def cyan(text: str, color: bool) -> str:
+    return ansi(text, "36", color)
+
+
+def dim(text: str, color: bool) -> str:
+    return ansi(text, "2", color)
+
+
+def status_badge(text: str, color_name: str, color: bool) -> str:
+    code = {"green": "1;32", "yellow": "1;33", "red": "1;31", "cyan": "1;36", "dim": "2"}.get(color_name, "1")
+    return ansi(f" {text} ", code, color)
+
+
+def rel_path(root: Path, path: Path | str | None) -> str:
+    if not path:
+        return "none"
+    value = Path(path)
+    try:
+        return str(value.resolve().relative_to(root.resolve()))
+    except (OSError, ValueError):
+        return str(path)
 
 
 def print_banner() -> None:
@@ -111,6 +199,14 @@ def repo_codex_processes(cfg: ConsoleConfig) -> list[str]:
     return [line for line in codex_processes() if root in line]
 
 
+def process_snapshot(cfg: ConsoleConfig) -> ProcessSnapshot:
+    return ProcessSnapshot(
+        runners=runner_processes(cfg),
+        repo_codex=repo_codex_processes(cfg),
+        host_codex=codex_processes(),
+    )
+
+
 def live_runner_active(cfg: ConsoleConfig) -> bool:
     lock = state.lock_info(cfg.runtime.lock_dir)
     return bool(lock["exists"] and lock["alive"] and lock.get("operation") == "run")
@@ -150,9 +246,10 @@ def print_status_compact(cfg: ConsoleConfig) -> None:
 
 
 def show_processes(cfg: ConsoleConfig) -> None:
-    runners = runner_processes(cfg)
-    repo_codex = repo_codex_processes(cfg)
-    host_codex = codex_processes()
+    snapshot = process_snapshot(cfg)
+    runners = snapshot.runners
+    repo_codex = snapshot.repo_codex
+    host_codex = snapshot.host_codex
     print("\n进程快照")
     print(f"- task-loop runner: {len(runners)}")
     print(f"- AreaMatrix codex exec: {len(repo_codex)}")
@@ -220,6 +317,12 @@ def latest_verify_log(log_root: Path) -> Path | None:
     return logs[-1] if logs else None
 
 
+def latest_verify_result(path: Path | None) -> str:
+    if not path:
+        return "missing"
+    return state.verify_result(str(path))
+
+
 def show_latest_failure_summary(cfg: ConsoleConfig) -> None:
     print("\n最近 verify 摘要")
     latest = latest_verify_log(cfg.runtime.log_root)
@@ -241,6 +344,121 @@ def git_dirty(root: Path) -> bool:
     return bool(proc.stdout.strip())
 
 
+def load_prompt_snapshot(cfg: ConsoleConfig) -> PromptSnapshot:
+    try:
+        from tasks.prompts._shared.prompt_pipeline_lib.repository import (
+            load_manifests,
+            load_progress,
+            ordered_labels,
+            ready_for_next,
+            scan_task_files,
+            task_status,
+        )
+
+        tasks = scan_task_files()
+        manifests = load_manifests()
+        progress = load_progress()
+        labels = ordered_labels(tasks, manifests)
+        by_status: dict[str, int] = {}
+        by_phase: dict[str, int] = {}
+        first_ready = "None"
+        for label in labels:
+            if label not in manifests:
+                continue
+            task = tasks[label]
+            by_phase[task.phase] = by_phase.get(task.phase, 0) + 1
+            status_name = task_status(progress, label)
+            by_status[status_name] = by_status.get(status_name, 0) + 1
+            if first_ready == "None" and status_name != "completed" and ready_for_next(label, manifests, progress):
+                first_ready = label
+        total = len(tasks)
+        completed = by_status.get("completed", 0)
+        return PromptSnapshot(
+            total=total,
+            completed=completed,
+            pending=max(total - completed, 0),
+            first_ready=first_ready,
+            by_status=by_status,
+            by_phase=by_phase,
+        )
+    except Exception as exc:
+        data = read_json(cfg.runtime.progress_file, {"tasks": {}})
+        tasks = data.get("tasks", {}) if isinstance(data, dict) else {}
+        completed = sum(1 for value in tasks.values() if isinstance(value, dict) and value.get("status") == "completed") if isinstance(tasks, dict) else 0
+        return PromptSnapshot(
+            total=completed,
+            completed=completed,
+            pending=0,
+            first_ready="unknown",
+            by_status={"completed": completed},
+            by_phase={},
+            error=str(exc),
+        )
+
+
+def latest_log_dir(log_root: Path) -> Path | None:
+    if not log_root.is_dir():
+        return None
+    logs = sorted(path for path in log_root.iterdir() if path.is_dir() and path.name.startswith("20"))
+    return logs[-1] if logs else None
+
+
+def latest_run(cfg: ConsoleConfig) -> dict[str, Any] | None:
+    index = read_json(cfg.runtime.run_summary_root / "index.json", {"runs": []})
+    runs = index.get("runs", []) if isinstance(index, dict) else []
+    for item in runs:
+        if isinstance(item, dict):
+            return item
+    return None
+
+
+def current_interesting_task(cfg: ConsoleConfig) -> tuple[str, dict[str, Any]] | None:
+    data = read_json(cfg.runtime.progress_file, {"tasks": {}})
+    tasks = data.get("tasks", {}) if isinstance(data, dict) else {}
+    interesting: list[tuple[str, str, dict[str, Any]]] = []
+    if isinstance(tasks, dict):
+        for label, value in tasks.items():
+            if isinstance(value, dict) and value.get("status") in {"in_progress", "failed", "blocked"}:
+                interesting.append((str(value.get("updated_at", "")), str(label), value))
+    if not interesting:
+        return None
+    _, label, entry = sorted(interesting, reverse=True)[0]
+    return label, entry
+
+
+def runtime_progress_counts(cfg: ConsoleConfig) -> dict[str, int]:
+    data = read_json(cfg.runtime.progress_file, {"tasks": {}})
+    tasks = data.get("tasks", {}) if isinstance(data, dict) else {}
+    counts: dict[str, int] = {}
+    if isinstance(tasks, dict):
+        for value in tasks.values():
+            if not isinstance(value, dict):
+                continue
+            status_name = str(value.get("status", "pending"))
+            counts[status_name] = counts.get(status_name, 0) + 1
+    return counts
+
+
+def dashboard_snapshot(cfg: ConsoleConfig) -> DashboardSnapshot:
+    lock = state.lock_info(cfg.runtime.lock_dir)
+    latest_verify = latest_verify_log(cfg.runtime.log_root)
+    return DashboardSnapshot(
+        prompt=load_prompt_snapshot(cfg),
+        progress_counts=runtime_progress_counts(cfg),
+        process=process_snapshot(cfg),
+        lock=lock,
+        stale_count=len(state.stale_tasks(cfg.runtime.progress_file, cfg.runtime.lock_dir)),
+        drain_requested=bool(state.read_control_file(cfg.runtime.drain_request_file)),
+        latest_log_dir=latest_log_dir(cfg.runtime.log_root),
+        latest_run=latest_run(cfg),
+        latest_verify_result=latest_verify_result(latest_verify),
+        latest_verify_log=latest_verify,
+        interesting_task=current_interesting_task(cfg),
+        git_dirty=git_dirty(cfg.runtime.root_dir),
+        captured_at=datetime.now(),
+    )
+
+
 def show_recovery_hints(cfg: ConsoleConfig) -> None:
     output = status_output(cfg)
     print("\n恢复建议")
@@ -254,6 +472,128 @@ def show_recovery_hints(cfg: ConsoleConfig) -> None:
         print("- 当前已有 live runner；不要启动第二个。需要停机请选“一键优雅收尾”或运行 ./dev drain。")
     if git_dirty(cfg.runtime.root_dir):
         print("- 工作区非干净；commit/push checkpoint 模式启动前会被 Git gate 拦截。可先查看 git status。")
+
+
+def runner_state(snapshot: DashboardSnapshot) -> tuple[str, str]:
+    lock = snapshot.lock
+    if lock["exists"] and lock["alive"]:
+        if snapshot.drain_requested:
+            return "draining", "yellow"
+        return "running", "green"
+    if snapshot.stale_count:
+        return "stale", "red"
+    if snapshot.progress_counts.get("failed", 0):
+        return "failed", "red"
+    if snapshot.progress_counts.get("blocked", 0):
+        return "blocked", "yellow"
+    if snapshot.git_dirty:
+        return "dirty", "yellow"
+    return "idle", "cyan"
+
+
+def verify_text(result: str, color: bool) -> str:
+    if result == "pass":
+        return green("PASS", color)
+    if result == "fail":
+        return red("FAIL", color)
+    if result == "unfinished":
+        return yellow("unfinished", color)
+    return dim(result, color)
+
+
+def render_progress_bar(completed: int, total: int, color: bool, width: int = 28) -> str:
+    if total <= 0:
+        return dim("[" + "-" * width + "]", color)
+    filled = int(round(width * min(completed, total) / total))
+    bar = "#" * filled + "-" * (width - filled)
+    return green(f"[{bar}]", color)
+
+
+def dashboard_lines(cfg: ConsoleConfig, snapshot: DashboardSnapshot, *, color: bool, realtime: bool) -> list[str]:
+    state_name, state_color = runner_state(snapshot)
+    prompt = snapshot.prompt
+    percent = (prompt.completed / prompt.total * 100) if prompt.total else 0.0
+    latest_run = snapshot.latest_run or {}
+    latest_status = latest_run.get("status", "none")
+    latest_run_id = latest_run.get("run_id", "")
+    latest_completed = latest_run.get("completed", 0)
+    latest_retries = latest_run.get("retries", 0)
+    task_line = "none"
+    if snapshot.interesting_task:
+        label, entry = snapshot.interesting_task
+        task_line = f"{label} ({entry.get('status', 'unknown')}, attempts={entry.get('attempts', 0)})"
+
+    lines = [
+        bold("AreaMatrix Task Loop", color),
+        f"{dim('captured', color)} {snapshot.captured_at.strftime('%Y-%m-%d %H:%M:%S')}    "
+        f"{dim('mode', color)} {'realtime 5s' if realtime else 'snapshot'}    "
+        f"{dim('exit', color)} Ctrl+C",
+        "",
+        f"{bold('状态', color)} {status_badge(state_name, state_color, color)} "
+        f"runner={len(snapshot.process.runners)} AreaMatrix-codex={len(snapshot.process.repo_codex)} host-codex={len(snapshot.process.host_codex)}",
+        f"{bold('进度', color)} {prompt.completed}/{prompt.total} completed  {prompt.pending} pending  {percent:.1f}%",
+        f"      {render_progress_bar(prompt.completed, prompt.total, color)}",
+        f"{bold('下一任务', color)} {cyan(prompt.first_ready, color) if prompt.first_ready not in {'None', 'unknown'} else prompt.first_ready}",
+        f"{bold('当前任务', color)} {task_line}",
+        f"{bold('锁 / stale', color)} lock={'live' if snapshot.lock['exists'] and snapshot.lock['alive'] else 'none'} "
+        f"stale={snapshot.stale_count} drain={'yes' if snapshot.drain_requested else 'no'}",
+        f"{bold('最近 run', color)} {latest_run_id or 'none'} status={latest_status} completed={latest_completed} retries={latest_retries}",
+        f"{bold('最近 verify', color)} {verify_text(snapshot.latest_verify_result, color)} "
+        f"{dim(rel_path(cfg.runtime.root_dir, snapshot.latest_verify_log), color)}",
+        f"{bold('日志', color)} {rel_path(cfg.runtime.root_dir, snapshot.latest_log_dir)}",
+    ]
+    if prompt.error:
+        lines.append(f"{bold('prompt 状态', color)} {yellow('fallback', color)} {prompt.error}")
+
+    suggestions = dashboard_suggestions(cfg, snapshot)
+    lines.append("")
+    lines.append(bold("下一步建议", color))
+    lines.extend([f"- {item}" for item in suggestions])
+    lines.append("")
+    lines.append(dim("详细长输出：./dev status --verbose；一次性快照：./dev status --once。", color))
+    return lines
+
+
+def dashboard_suggestions(cfg: ConsoleConfig, snapshot: DashboardSnapshot) -> list[str]:
+    suggestions: list[str] = []
+    if snapshot.lock["exists"] and snapshot.lock["alive"]:
+        suggestions.append("一键优雅收尾：./dev drain  当前 task 完成、验收和 checkpoint 后停止")
+    if snapshot.stale_count:
+        suggestions.append("从 stale 任务继续：./dev resume-stale")
+    if snapshot.progress_counts.get("failed", 0):
+        suggestions.append("从 failed 任务继续：./dev resume-failed")
+    if snapshot.progress_counts.get("blocked", 0):
+        suggestions.append("blocked 授权继续：RISK_POLICY=allow START_FROM=<label> ./task-loop run")
+    if snapshot.git_dirty:
+        suggestions.append("git status --short  先收口工作区，避免 Git checkpoint gate 拦截")
+    if not suggestions:
+        suggestions.append("RISK_POLICY=allow MAX_RETRIES=0 ./task-loop run  无限继续当前队列")
+    suggestions.append("./dev preflight  启动前检查 Git、锁、进程和恢复建议")
+    if snapshot.latest_verify_log:
+        suggestions.append("./dev verify-summary  查看最近 verify 摘要")
+    return suggestions
+
+
+def render_status_dashboard(cfg: ConsoleConfig, *, color: bool, realtime: bool) -> None:
+    snapshot = dashboard_snapshot(cfg)
+    print("\n".join(dashboard_lines(cfg, snapshot, color=color, realtime=realtime)))
+
+
+def show_status_dashboard(cfg: ConsoleConfig, *, refresh_seconds: float = 5.0, once: bool = False, no_color: bool = False) -> int:
+    color = supports_color(no_color)
+    realtime = sys.stdout.isatty() and not once
+    if not realtime:
+        render_status_dashboard(cfg, color=color, realtime=False)
+        return 0
+    try:
+        while True:
+            print("\033[2J\033[H", end="")
+            render_status_dashboard(cfg, color=color, realtime=True)
+            sys.stdout.flush()
+            time.sleep(refresh_seconds)
+    except KeyboardInterrupt:
+        print()
+        return 0
 
 
 def show_preflight(cfg: ConsoleConfig) -> int:
@@ -277,7 +617,7 @@ def show_preflight(cfg: ConsoleConfig) -> int:
     return 0
 
 
-def show_status(cfg: ConsoleConfig) -> int:
+def show_status_verbose(cfg: ConsoleConfig) -> int:
     print_banner()
     print_loop_status(cfg.runtime)
     show_processes(cfg)
@@ -476,6 +816,15 @@ def run_health_checks(cfg: ConsoleConfig) -> int:
     return dev_tools_cli.main(["check"])
 
 
+def parse_status_args(args: Sequence[str]) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(prog="./dev status", description="Show AreaMatrix task-loop status")
+    parser.add_argument("--verbose", action="store_true", help="Show the full legacy status report")
+    parser.add_argument("--once", action="store_true", help="Render one compact dashboard snapshot and exit")
+    parser.add_argument("--refresh", type=float, default=5.0, help="TUI refresh interval in seconds")
+    parser.add_argument("--no-color", action="store_true", help="Disable ANSI color")
+    return parser.parse_args(list(args))
+
+
 def show_latest_console_log(cfg: ConsoleConfig) -> int:
     print_banner()
     logs = sorted(cfg.console_log_root.glob("*.log")) if cfg.console_log_root.exists() else []
@@ -543,6 +892,7 @@ def print_help() -> None:
 
 快捷命令：
   ./dev status
+  ./dev status --verbose
   ./dev compact
   ./dev preflight
   ./dev preview
@@ -553,7 +903,9 @@ def print_help() -> None:
   ./dev drain
   ./dev logs
   ./dev verify-summary
-  ./dev check"""
+  ./dev check
+  ./dev changes doctor
+  ./dev changes preview"""
     )
 
 
@@ -562,7 +914,7 @@ def interactive_loop(cfg: ConsoleConfig) -> int:
         print_menu(cfg)
         choice = input("\n> ").strip()
         if choice in {"1", ""}:
-            show_status(cfg)
+            show_status_verbose(cfg)
         elif choice == "2":
             show_preflight(cfg)
         elif choice == "3":
@@ -604,7 +956,15 @@ def main(argv: Sequence[str] | None = None) -> int:
     if command in {"", "menu"}:
         return interactive_loop(cfg)
     if command == "status":
-        return show_status(cfg)
+        status_args = parse_status_args(args[1:])
+        if status_args.verbose:
+            return show_status_verbose(cfg)
+        return show_status_dashboard(
+            cfg,
+            refresh_seconds=max(status_args.refresh, 0.5),
+            once=status_args.once,
+            no_color=status_args.no_color,
+        )
     if command == "compact":
         print_banner()
         print_status_compact(cfg)
@@ -635,7 +995,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 0
     if command == "check":
         return dev_tools_cli.main(["check", *args[1:]])
-    if command in {"build", "test", "bindings"}:
+    if command in {"build", "test", "bindings", "changes"}:
         return dev_tools_cli.main(args)
     if command in {"help", "-h", "--help"}:
         print_help()

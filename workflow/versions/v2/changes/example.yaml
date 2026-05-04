@@ -1,0 +1,76 @@
+id: v2-search-workflow-example
+title: Stage 2 search workflow planning example
+version: v2
+status: draft
+features:
+  - id: v2-search-query
+    module: search
+    intent: Add the v2 search query surface as a future prompt-workflow unit.
+    depends_on: []
+    docs:
+      source:
+        - docs/ux/page-specs/stage-2-experience/S2-01-search-results.md
+        - docs/core/capability-specs/stage-2-experience/C2-01-search-query-files.md
+        - docs/api/core-api.md
+      update:
+        - docs/architecture/mvp-control-map.md
+        - tasks/prompts/README.md
+      api:
+        - docs/api/core-api.md
+      udl:
+        - core/area_matrix.udl
+    risk:
+      level: High
+      boundaries:
+        - Does not move, delete, rename, or overwrite user files.
+        - Does not connect to the live v1 task-loop queue.
+        - Core API and UDL changes must stay aligned with docs/api/core-api.md.
+    task_split:
+      - id: docs-contract
+        title: Align source docs, Core API notes, and control-map references.
+        validation:
+          - ./dev changes doctor
+          - ./dev check prompts
+      - id: core-query
+        title: Implement or revise the core query capability behind search results.
+        validation:
+          - cargo fmt --all -- --check
+          - cargo clippy --all-targets --all-features -- -D warnings
+          - cargo test --workspace
+      - id: macos-search-ui
+        title: Wire the macOS search results UI to the documented Core capability.
+        validation:
+          - ./dev test macos
+  - id: v2-search-filters
+    module: search
+    intent: Add typed filters after the base search query capability is available.
+    depends_on:
+      - v2-search-query
+    docs:
+      source:
+        - docs/ux/page-specs/stage-2-experience/S2-02-search-filters.md
+        - docs/core/capability-specs/stage-2-experience/C2-02-search-filters.md
+        - docs/api/core-api.md
+      update:
+        - docs/architecture/mvp-control-map.md
+      api:
+        - docs/api/core-api.md
+      udl:
+        - core/area_matrix.udl
+    risk:
+      level: High
+      boundaries:
+        - Filter changes must be read-only until the user applies an explicit action.
+        - Query errors must not mutate saved searches or file metadata.
+        - Does not connect to the live v1 task-loop queue.
+    task_split:
+      - id: filter-contract
+        title: Define filter semantics, empty states, and error boundaries.
+        validation:
+          - ./dev changes preview
+          - ./dev check prompts
+      - id: filter-core-bridge
+        title: Wire filter DTOs through Core API, UDL, and Swift bridge.
+        validation:
+          - ./dev build core --profile debug
+          - ./dev test macos

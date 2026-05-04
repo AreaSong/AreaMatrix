@@ -32,4 +32,4 @@
 
 - 变更 skill 时，同时检查 `agents/openai.yaml` 是否仍与 `SKILL.md` 匹配。
 - 不在 skill 目录内添加 README、变更日志或低价值说明文件。
-- 验收时先运行 `bash scripts/check-skills.sh`；涉及 task-loop 时再运行 `./task-loop check` 和 prompt runner 基线。
+- 验收时先运行 `./dev check skills`；涉及 task-loop 时再运行 `./task-loop check` 和 prompt runner 基线。
