@@ -284,6 +284,36 @@ final class ValidatePathRepairRegressionTests: XCTestCase {
         XCTAssertFalse(FileManager.default.fileExists(atPath: repoURL.appendingPathComponent("docs").path))
     }
 
+    func testDefaultCoreCreateEmptyWritesRecoverableMetadataOnly() async throws {
+        let repoURL = try makeTemporaryAdoptRepoURL()
+        defer { try? FileManager.default.removeItem(at: repoURL) }
+
+        try await CoreBridge().initializeEmptyRepository(repoPath: repoURL.path)
+
+        let metadataURL = repoURL.appendingPathComponent(".areamatrix", isDirectory: true)
+        let expectedMetadataPaths = [
+            "index.db", "classifier.yaml", "ignore.yaml", "staging",
+            "archives", "generated", "generated/root.md",
+        ]
+
+        for relativePath in expectedMetadataPaths {
+            let path = metadataURL.appendingPathComponent(relativePath).path
+            XCTAssertTrue(FileManager.default.fileExists(atPath: path), "missing \(relativePath)")
+        }
+
+        do {
+            try await CoreBridge().initializeEmptyRepository(repoPath: repoURL.path)
+            XCTFail("expected repeat initialization to fail")
+        } catch let error as CoreError {
+            guard case .Config = error else {
+                return XCTFail("expected Config, got \(error)")
+            }
+        }
+
+        XCTAssertFalse(FileManager.default.fileExists(atPath: repoURL.appendingPathComponent("README.md").path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: metadataURL.appendingPathComponent("index.db").path))
+    }
+
     @MainActor
     private func makeModel(
         validation: RepoPathValidationSnapshot,
