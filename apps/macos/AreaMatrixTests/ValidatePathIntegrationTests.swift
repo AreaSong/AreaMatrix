@@ -1,3 +1,4 @@
+import Foundation
 import XCTest
 @testable import AreaMatrix
 
@@ -132,6 +133,53 @@ final class ValidatePathRepairRegressionTests: XCTestCase {
     }
 
     @MainActor
+    func testAdoptExistingConfirmCallsRepositoryInitializerAndSavesPath() async {
+        let validation = RepoPathValidationSnapshot.fixture(
+            repoPath: "/tmp/repo",
+            isEmpty: false,
+            issues: [.nonEmptyDirectory],
+            recommendedMode: .adoptExisting
+        )
+        let writer = RecordingSettingsWriter()
+        let initializer = RecordingRepositoryInitializer()
+        let model = OnboardingModel(
+            settingsReader: StaticSettingsReader(repoPath: nil),
+            settingsWriter: writer,
+            configLoader: RecordingConfigLoader(config: .fixture(repoPath: "/tmp/repo")),
+            pathValidator: RecordingPathValidator(validation: validation),
+            repositoryInitializer: initializer,
+            helpOpener: NoopWelcomeHelpOpener()
+        )
+
+        model.updateRepositoryPath("/tmp/repo")
+        await model.continueFromChoosePath()
+        model.continueFromValidatePath()
+        await model.adoptExistingRepositoryFromConfirmInit()
+        let createdPaths = await initializer.createdRepoPaths()
+        let adoptedPaths = await initializer.adoptedRepoPaths()
+
+        XCTAssertEqual(createdPaths, [])
+        XCTAssertEqual(adoptedPaths, ["/tmp/repo"])
+        XCTAssertEqual(writer.savedRepoPaths, ["/tmp/repo"])
+        XCTAssertEqual(model.route, .mainLoading("/tmp/repo"))
+    }
+
+    func testDefaultCoreAdoptExistingPreservesUserFiles() async throws {
+        let repoURL = try makeTemporaryAdoptRepoURL()
+        defer { try? FileManager.default.removeItem(at: repoURL) }
+
+        let readmeURL = repoURL.appendingPathComponent("README.md")
+        try "# User project\n".write(to: readmeURL, atomically: true, encoding: .utf8)
+
+        try await CoreBridge().adoptExistingRepository(repoPath: repoURL.path)
+
+        let areaMatrixURL = repoURL.appendingPathComponent(".areamatrix")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: areaMatrixURL.appendingPathComponent("index.db").path))
+        XCTAssertEqual(try String(contentsOf: readmeURL, encoding: .utf8), "# User project\n")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: repoURL.appendingPathComponent("docs").path))
+    }
+
+    @MainActor
     private func makeModel(
         validation: RepoPathValidationSnapshot,
         settingsRepoPath: String? = nil,
@@ -146,6 +194,13 @@ final class ValidatePathRepairRegressionTests: XCTestCase {
             helpOpener: NoopWelcomeHelpOpener()
         )
     }
+}
+
+private func makeTemporaryAdoptRepoURL() throws -> URL {
+    let url = FileManager.default.temporaryDirectory
+        .appendingPathComponent("AreaMatrixAdoptExisting-\(UUID().uuidString)", isDirectory: true)
+    try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+    return url
 }
 
 private struct StaticSettingsReader: AppSettingsReading {
@@ -184,6 +239,22 @@ private actor RecordingPathValidator: CoreRepositoryPathValidating {
     func validateRepoPath(repoPath: String) async throws -> RepoPathValidationSnapshot {
         validation
     }
+}
+
+private actor RecordingRepositoryInitializer: CoreRepositoryInitializing {
+    private var createdPaths: [String] = []
+    private var adoptedPaths: [String] = []
+
+    func initializeEmptyRepository(repoPath: String) async throws {
+        createdPaths.append(repoPath)
+    }
+
+    func adoptExistingRepository(repoPath: String) async throws {
+        adoptedPaths.append(repoPath)
+    }
+
+    func createdRepoPaths() -> [String] { createdPaths }
+    func adoptedRepoPaths() -> [String] { adoptedPaths }
 }
 
 private struct StaticExistingRepositoryMetadataReader: ExistingRepositoryMetadataReading {

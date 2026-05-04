@@ -107,6 +107,11 @@ struct MainWindow: View {
                         await model.createEmptyRepositoryFromConfirmInit()
                     }
                 },
+                onAdoptExisting: {
+                    Task {
+                        await model.adoptExistingRepositoryFromConfirmInit()
+                    }
+                },
                 onCancelSetup: {
                     if model.confirmSetupQuit() {
                         NSApplication.shared.keyWindow?.close()

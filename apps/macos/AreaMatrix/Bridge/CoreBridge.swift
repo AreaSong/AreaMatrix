@@ -12,8 +12,9 @@ protocol CoreRepositoryPathValidating: Sendable {
     func validateRepoPath(repoPath: String) async throws -> RepoPathValidationSnapshot
 }
 
-protocol CoreEmptyRepositoryInitializing: Sendable {
+protocol CoreRepositoryInitializing: Sendable {
     func initializeEmptyRepository(repoPath: String) async throws
+    func adoptExistingRepository(repoPath: String) async throws
 }
 
 protocol CoreScanSessionReading: Sendable {
@@ -299,16 +300,8 @@ actor CoreBridge {
         try latestCoreScanSession(repoPath: repoPath).map(ScanSessionSnapshot.init(coreSession:))
     }
 
-    func loadConfig() async throws -> Never {
-        try requireGeneratedBindings(for: .loadConfig)
-    }
-
     func loadConfig(repoPath: String) async throws -> RepoConfigSnapshot {
         RepoConfigSnapshot(coreConfig: try loadCoreConfig(repoPath: repoPath))
-    }
-
-    func updateConfig() async throws -> Never {
-        try requireGeneratedBindings(for: .updateConfig)
     }
 
     func updateConfig(repoPath: String, newConfig: RepoConfigSnapshot) async throws {
@@ -333,6 +326,14 @@ actor CoreBridge {
         try initRepo(repoPath: repoPath, options: RepoInitOptions(
             mode: .createEmpty,
             createDefaultCategories: true,
+            overviewOutput: .generatedOnly
+        ))
+    }
+
+    func adoptExistingRepository(repoPath: String) async throws {
+        try initRepo(repoPath: repoPath, options: RepoInitOptions(
+            mode: .adoptExisting,
+            createDefaultCategories: false,
             overviewOutput: .generatedOnly
         ))
     }
@@ -425,8 +426,8 @@ actor CoreBridge {
 extension CoreBridge:
     CoreConfigurationLoading,
     CoreConfigurationUpdating,
-    CoreEmptyRepositoryInitializing,
     CoreErrorMapping,
+    CoreRepositoryInitializing,
     CoreRepositoryPathValidating,
     CoreScanSessionReading {}
 

@@ -68,7 +68,7 @@ final class OnboardingModel: ObservableObject {
     private let settingsWriter: any AppSettingsWriting
     private let configLoader: any CoreConfigurationLoading
     private let pathValidator: any CoreRepositoryPathValidating
-    private let repositoryInitializer: any CoreEmptyRepositoryInitializing
+    private let repositoryInitializer: any CoreRepositoryInitializing
     private let existingRepositoryMetadataReader: any ExistingRepositoryMetadataReading
     private let scanSessionReader: any CoreScanSessionReading
     private let errorMapper: any CoreErrorMapping
@@ -82,7 +82,7 @@ final class OnboardingModel: ObservableObject {
         settingsWriter: any AppSettingsWriting = UserDefaultsAppSettingsReader(),
         configLoader: any CoreConfigurationLoading = CoreBridge(),
         pathValidator: any CoreRepositoryPathValidating = CoreBridge(),
-        repositoryInitializer: any CoreEmptyRepositoryInitializing = CoreBridge(),
+        repositoryInitializer: any CoreRepositoryInitializing = CoreBridge(),
         existingRepositoryMetadataReader: any ExistingRepositoryMetadataReading =
             SQLiteExistingRepositoryMetadataReader(),
         scanSessionReader: any CoreScanSessionReading = CoreBridge(),
@@ -237,33 +237,10 @@ final class OnboardingModel: ObservableObject {
     }
 
     @MainActor
-    func createEmptyRepositoryFromConfirmInit() async {
-        guard case .confirmRepositoryInitialization(let draft) = route, draft.mode == .createEmpty else {
-            return
-        }
+    func createEmptyRepositoryFromConfirmInit() async { await initializeRepositoryFromConfirmInit(mode: .createEmpty) }
 
-        let repoPath = draft.validation.repoPath
-        route = .mainLoading(repoPath)
-
-        do {
-            let latestValidation = try await pathValidator.validateRepoPath(repoPath: repoPath)
-            guard latestValidation.recommendedMode == .createEmpty,
-                  latestValidation.isEmpty,
-                  !latestValidation.isInitialized
-            else {
-                repositoryPathValidation = latestValidation
-                repositoryPathError = "路径状态已变化，请返回重新校验"
-                route = .validatePath
-                return
-            }
-
-            try await repositoryInitializer.initializeEmptyRepository(repoPath: repoPath)
-            settingsWriter.saveConfiguredRepoPath(repoPath)
-            route = .mainLoading(repoPath)
-        } catch {
-            await routeInitializationFailure(error, repoPath: repoPath)
-        }
-    }
+    @MainActor
+    func adoptExistingRepositoryFromConfirmInit() async { await initializeRepositoryFromConfirmInit(mode: .adoptExisting) }
 
     var shouldConfirmSetupExit: Bool {
         if route == .validatePath { return true }
@@ -346,6 +323,53 @@ final class OnboardingModel: ObservableObject {
         } catch {
             repositoryPathValidation = nil
             await routeValidationFailure(error, repoPath: Self.normalizedRepositoryPath(repositoryPathText))
+        }
+    }
+
+    @MainActor
+    private func initializeRepositoryFromConfirmInit(mode: RepoInitModeSnapshot) async {
+        guard case .confirmRepositoryInitialization(let draft) = route, draft.mode == mode else { return }
+
+        let repoPath = draft.validation.repoPath
+        route = .mainLoading(repoPath)
+
+        do {
+            let latestValidation = try await pathValidator.validateRepoPath(repoPath: repoPath)
+            guard Self.validationStillMatchesConfirmMode(latestValidation, mode: mode) else {
+                repositoryPathValidation = latestValidation
+                repositoryPathError = "路径状态已变化，请返回重新校验"
+                route = .validatePath
+                return
+            }
+
+            try await initializeRepository(repoPath: repoPath, mode: mode)
+            settingsWriter.saveConfiguredRepoPath(repoPath)
+            route = .mainLoading(repoPath)
+        } catch {
+            await routeInitializationFailure(error, repoPath: repoPath)
+        }
+    }
+
+    private func initializeRepository(repoPath: String, mode: RepoInitModeSnapshot) async throws {
+        switch mode {
+        case .createEmpty:
+            try await repositoryInitializer.initializeEmptyRepository(repoPath: repoPath)
+        case .adoptExisting:
+            try await repositoryInitializer.adoptExistingRepository(repoPath: repoPath)
+        }
+    }
+
+    private static func validationStillMatchesConfirmMode(
+        _ validation: RepoPathValidationSnapshot,
+        mode: RepoInitModeSnapshot
+    ) -> Bool {
+        guard validation.recommendedMode == mode, !validation.isInitialized else { return false }
+
+        switch mode {
+        case .createEmpty:
+            return validation.isEmpty
+        case .adoptExisting:
+            return !validation.isEmpty
         }
     }
 

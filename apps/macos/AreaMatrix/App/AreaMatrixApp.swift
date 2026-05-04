@@ -171,6 +171,7 @@ struct ConfirmInitStepView: View {
     let onBack: () -> Void
     let onChangePath: () -> Void
     let onCreateEmpty: () -> Void
+    let onAdoptExisting: () -> Void
     let onCancelSetup: () -> Void
 
     @State private var isCancelConfirmationPresented = false
@@ -276,17 +277,32 @@ struct ConfirmInitStepView: View {
             }
             Button("Change Path", action: onChangePath)
             Spacer()
-            Button(isCreateEmpty ? "Create Repository" : "Adopt Folder", action: onCreateEmpty)
+            Button(isCreateEmpty ? "Create Repository" : "Adopt Folder", action: primaryAction)
                 .keyboardShortcut(.defaultAction)
                 .buttonStyle(.borderedProminent)
-                .disabled(!isCreateEmpty)
+                .disabled(!canRunPrimaryAction)
         }
         .frame(maxWidth: 680)
         .padding(.top, 18)
     }
 
+    private var primaryAction: () -> Void {
+        isCreateEmpty ? onCreateEmpty : onAdoptExisting
+    }
+
+    private var canRunPrimaryAction: Bool {
+        isCreateEmpty || isAdoptExisting
+    }
+
     private var isCreateEmpty: Bool {
         draft.mode == .createEmpty && draft.validation.recommendedMode == .createEmpty
+    }
+
+    private var isAdoptExisting: Bool {
+        draft.mode == .adoptExisting &&
+            draft.validation.recommendedMode == .adoptExisting &&
+            !draft.validation.isEmpty &&
+            !draft.validation.isInitialized
     }
 }
 
