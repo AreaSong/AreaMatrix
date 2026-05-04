@@ -6,4 +6,10 @@ live_queue: ""
 middle_layers: required
 gate: queue-only-until-prerequisites-complete
 promotion: explicit-only
+promotion_preview:
+  target_queue: tasks/prompts
+  phase: phase-5
+  batch: 5-1
+  batch_slug: v-next
+  start_task: 1
 archive_policy: archive-after-complete

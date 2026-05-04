@@ -19,7 +19,7 @@ from .checks import (
 )
 from .common import ToolError, print_error, project_root
 from .macos import run_macos_tests
-from .workflow import run_workflow_doctor, run_workflow_plan, run_workflow_queue, run_workflow_status
+from .workflow import run_workflow_doctor, run_workflow_plan, run_workflow_promote, run_workflow_queue, run_workflow_status
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -88,6 +88,13 @@ def _build_parser() -> argparse.ArgumentParser:
     workflow_queue.add_argument("--write", action="store_true", help="Write queue candidate files instead of printing a preview")
     workflow_queue.add_argument("--out-dir", help="Queue output directory; defaults to workflow/versions/<version>/queue")
     workflow_queue.add_argument("--force", action="store_true", help="Allow overwriting existing queue files when --write is used")
+    workflow_promote = workflow_sub.add_parser("promote", help="Preview workflow queue promotion into future live task labels")
+    workflow_promote.add_argument("--version", default="v2", help="Workflow version to promote-preview; defaults to v2")
+    workflow_promote.add_argument("--feature", help="Preview only one feature id, including upstream feature dependencies")
+    workflow_promote.add_argument("--preview", action="store_true", help="Explicit preview mode; this is also the default")
+    workflow_promote.add_argument("--write", action="store_true", help="Write promotion preview files instead of printing to stdout")
+    workflow_promote.add_argument("--out-dir", help="Promotion preview output directory; defaults to workflow/versions/<version>/promotion")
+    workflow_promote.add_argument("--force", action="store_true", help="Allow overwriting existing promotion preview files when --write is used")
 
     return parser
 
@@ -142,6 +149,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             return run_workflow_plan(root, args)
         if args.command == "workflow" and args.workflow_command == "queue":
             return run_workflow_queue(root, args)
+        if args.command == "workflow" and args.workflow_command == "promote":
+            return run_workflow_promote(root, args)
         parser.error("unsupported command")
         return 2
     except ToolError as exc:

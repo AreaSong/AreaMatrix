@@ -11,3 +11,10 @@ Use:
 
 While v1 is still running, v2 can produce queue candidates but must not promote
 them into live `tasks/prompts/**`.
+
+After queue review, use promotion preview to inspect future live labels without
+writing the live queue:
+
+```bash
+./dev workflow promote --version v2 --preview
+```

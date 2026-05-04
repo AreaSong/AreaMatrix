@@ -8,21 +8,28 @@ from pathlib import Path
 from typing import Any, Sequence
 
 from .changes import (
-    CHANGE_ROOT,
     DraftArtifact,
     as_list,
     collect_changes,
     display_path,
     docs_map,
-    draft_artifacts,
     filter_feature_records,
-    load_change,
     ordered_features,
     parse_yaml_subset,
     risk_map,
     sync_targets,
     task_validation,
     write_artifacts,
+)
+from .promotion import (
+    PROMOTION_ROOT_NAME,
+    build_promotion_tasks,
+    last_live_label,
+    promotion_artifacts,
+    promotion_config_from_record,
+    promotion_gate_status,
+    select_feature_closure,
+    validate_promotion_preview_configs,
 )
 
 
@@ -40,6 +47,8 @@ REQUIRED_TEMPLATES = [
     "queue.yaml",
     "queue.md",
     "drafts.md",
+    "promotion.yaml",
+    "promotion.md",
 ]
 
 
@@ -55,14 +64,6 @@ def read_yaml_file(path: Path) -> dict[str, Any]:
     if not isinstance(data, dict):
         raise ValueError(f"{path}: top-level YAML must be a mapping")
     return data
-
-
-def version_dir(root: Path, version: str) -> Path:
-    return root / VERSION_ROOT / version
-
-
-def version_file(root: Path, version: str) -> Path:
-    return version_dir(root, version) / "version.yaml"
 
 
 def load_versions(root: Path) -> tuple[list[str], list[VersionRecord]]:
@@ -112,6 +113,17 @@ def validate_templates(root: Path) -> list[str]:
         if not path.is_file():
             errors.append(f"missing workflow template: {display_path(root, path)}")
     return errors
+
+
+def promotion_config_for(root: Path, version: str) -> tuple[list[str], Any | None, VersionRecord | None, list[VersionRecord]]:
+    errors, versions = load_versions(root)
+    record = next((item for item in versions if item.version_id == version), None)
+    if not record:
+        errors.append(f"unknown workflow version: {version}")
+        return errors, None, None, versions
+    config_errors, config = promotion_config_from_record(root, record)
+    errors.extend(config_errors)
+    return errors, config, record, versions
 
 
 def validate_v1_gate(root: Path, versions: Sequence[VersionRecord]) -> list[str]:
@@ -224,6 +236,20 @@ def collect_workflow(root: Path, version: str, feature: str | None = None) -> tu
     records = [record for record in records if record.file.resolve().is_relative_to(expected_prefix.resolve())]
     filter_errors, selected = filter_feature_records(records, feature)
     errors.extend(filter_errors)
+    errors.extend(validate_doc_changes(root, selected))
+    errors.extend(validate_code_impacts(root, selected))
+    return errors, selected
+
+
+def collect_workflow_with_dependencies(root: Path, version: str, feature: str | None = None) -> tuple[list[str], list[Any]]:
+    change_root = VERSION_ROOT / version / "changes"
+    errors, records, _ = collect_changes(root, None)
+    if version != DEFAULT_VERSION:
+        errors.append(f"unsupported workflow version for changes: {version}")
+    expected_prefix = root / change_root
+    version_records = [record for record in records if record.file.resolve().is_relative_to(expected_prefix.resolve())]
+    selected_errors, selected = select_feature_closure(version_records, feature)
+    errors.extend(selected_errors)
     errors.extend(validate_doc_changes(root, selected))
     errors.extend(validate_code_impacts(root, selected))
     return errors, selected
@@ -409,6 +435,7 @@ def run_workflow_doctor(root: Path, args: argparse.Namespace) -> int:
     errors.extend(validate_templates(root))
     version_errors, versions = load_versions(root)
     errors.extend(version_errors)
+    errors.extend(validate_promotion_preview_configs(root, versions))
     errors.extend(validate_v1_gate(root, versions))
     change_errors, _ = collect_workflow(root, DEFAULT_VERSION)
     errors.extend(change_errors)
@@ -420,6 +447,7 @@ def run_workflow_doctor(root: Path, args: argparse.Namespace) -> int:
     print("workflow doctor: OK")
     print(f"- templates: {len(REQUIRED_TEMPLATES)}")
     print(f"- versions: {len(versions)}")
+    print("- promotion preview: configured")
     print("- v1 gate: queue-only for v2 while v1 is live-running")
     return 0
 
@@ -491,6 +519,49 @@ def run_workflow_queue(root: Path, args: argparse.Namespace) -> int:
         return 1
     print("workflow queue: wrote files")
     print(f"- files: {len(written)}")
+    for path in written:
+        print(f"  - {path}")
+    return 0
+
+
+def run_workflow_promote(root: Path, args: argparse.Namespace) -> int:
+    if args.force and not args.write:
+        print("workflow promote: --force requires --write")
+        return 1
+    config_errors, config, version_record, versions = promotion_config_for(root, args.version)
+    errors = list(config_errors)
+    errors.extend(validate_v1_gate(root, versions))
+    workflow_errors, records = collect_workflow_with_dependencies(root, args.version, args.feature)
+    errors.extend(workflow_errors)
+    if errors or not config:
+        print("workflow promote: doctor failed")
+        for error in errors:
+            print(f"- {error}")
+        return 1
+    root_dependency = last_live_label()
+    blocked, gate_message = promotion_gate_status(version_record, versions)
+    tasks = build_promotion_tasks(root, args.version, config, records, root_dependency)
+    artifacts = promotion_artifacts(
+        root,
+        args.version,
+        output_root(root, args.version, args.out_dir, PROMOTION_ROOT_NAME),
+        config,
+        tasks,
+        blocked,
+        gate_message,
+        root_dependency,
+    )
+    if not args.write:
+        print_named_artifacts(root, "Workflow promotion preview", artifacts)
+        return 0
+    try:
+        written = write_artifacts(artifacts, force=args.force, label="workflow promotion preview file")
+    except FileExistsError as exc:
+        print(f"workflow promote: {exc}")
+        return 1
+    print("workflow promote: wrote preview files")
+    print(f"- files: {len(written)}")
+    print(f"- gate: {gate_message}")
     for path in written:
         print(f"  - {path}")
     return 0

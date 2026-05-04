@@ -249,6 +249,20 @@ def check_versioned_workflow(h: Harness) -> None:
     assert_contains(queue, "depends_on: []", "workflow queue empty deps")
     assert_contains(queue, "live_queue_blocked: true", "workflow queue live block")
 
+    promote = h.run([h.dev, "workflow", "promote", "--version", "v2", "--preview"]).stdout
+    assert_contains(promote, "Workflow promotion preview", "workflow promote header")
+    assert_contains(promote, "promotion blocked: v1-mvp is live-running", "workflow promote v1 block")
+    assert_contains(promote, "v2-search-query/docs-contract", "workflow promote semantic task")
+    assert_contains(promote, "5-1/task-01", "workflow promote live label")
+    assert_contains(promote, "tasks/prompts/phase-5/5-1-v2-search/task-01-docs-contract.md", "workflow promote task path")
+    assert_contains(promote, "tasks/prompts/_shared/manifests/phase-5.md", "workflow promote manifest path")
+    assert_contains(promote, "tasks/prompts/_shared/copy-ready/phase-5/5-1-task-01.md", "workflow promote copy-ready path")
+    assert_contains(promote, "Live queue: not modified", "workflow promote no live writes")
+
+    promote_feature = h.run([h.dev, "workflow", "promote", "--version", "v2", "--feature", "v2-search-query", "--preview"]).stdout
+    assert_contains(promote_feature, "v2-search-query/docs-contract", "workflow promote feature include")
+    assert_not_contains(promote_feature, "v2-search-filters/filter-contract", "workflow promote feature exclude")
+
     plan_out = h.tmp / "workflow-plans"
     first_plan_write = h.run([h.dev, "workflow", "plan", "--version", "v2", "--write", "--out-dir", str(plan_out)]).stdout
     assert_contains(first_plan_write, "workflow plan: wrote files", "workflow plan write")
@@ -277,6 +291,22 @@ def check_versioned_workflow(h: Harness) -> None:
     if bad_queue_force.returncode == 0:
         raise CheckFailure("workflow queue unexpectedly accepted --force without --write")
     assert_contains(bad_queue_force.stdout + bad_queue_force.stderr, "--force requires --write", "workflow queue force guard")
+
+    promotion_out = h.tmp / "workflow-promotion"
+    first_promotion_write = h.run([h.dev, "workflow", "promote", "--version", "v2", "--write", "--out-dir", str(promotion_out)]).stdout
+    assert_contains(first_promotion_write, "workflow promote: wrote preview files", "workflow promote write")
+    assert_contains(first_promotion_write, "promotion blocked: v1-mvp is live-running", "workflow promote write gate")
+    assert_exists(promotion_out / "promotion.yaml", "workflow promotion yaml")
+    assert_exists(promotion_out / "promotion.md", "workflow promotion markdown")
+    second_promotion_write = h.run([h.dev, "workflow", "promote", "--version", "v2", "--write", "--out-dir", str(promotion_out)], check=False)
+    if second_promotion_write.returncode == 0:
+        raise CheckFailure("workflow promotion overwrite unexpectedly succeeded without --force")
+    assert_contains(second_promotion_write.stdout + second_promotion_write.stderr, "use --force to overwrite", "workflow promotion overwrite guard")
+    h.run([h.dev, "workflow", "promote", "--version", "v2", "--write", "--force", "--out-dir", str(promotion_out)])
+    bad_promotion_force = h.run([h.dev, "workflow", "promote", "--version", "v2", "--force"], check=False)
+    if bad_promotion_force.returncode == 0:
+        raise CheckFailure("workflow promote unexpectedly accepted --force without --write")
+    assert_contains(bad_promotion_force.stdout + bad_promotion_force.stderr, "--force requires --write", "workflow promote force guard")
 
 
 def check_real_status(h: Harness) -> None:

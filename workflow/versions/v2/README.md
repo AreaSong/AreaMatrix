@@ -9,6 +9,7 @@ changes/*.yaml
 -> plans/*.plan.md
 -> drafts/<feature>/
 -> queue/<feature>/
+-> promotion/
 -> future explicit promote into tasks/prompts/**
 ```
 
@@ -21,12 +22,17 @@ Use:
 ./dev workflow status
 ./dev workflow plan --version v2
 ./dev workflow queue --version v2
+./dev workflow promote --version v2 --preview
+./dev workflow promote --version v2 --feature v2-search-query --preview
 ./dev changes doctor
 ./dev changes preview
 ./dev changes generate
 ```
 
 `workflow plan` generates the docs-change ledger. `workflow queue` generates queue candidates. `changes generate` remains the compatible draft generator.
+`workflow promote` previews how semantic workflow tasks would map into future
+numeric `tasks/prompts/**` labels; it is blocked while v1 is live and does not
+write the live queue.
 
 To write drafts explicitly:
 
@@ -43,3 +49,5 @@ The default write target is `workflow/versions/v2/drafts/`. Existing draft files
 ```
 
 Plans, drafts, and queue candidates are review artifacts. They are not `tasks/prompts/**`, do not edit v1 manifests, do not write `progress.json`, and do not connect to `./task-loop`.
+Promotion previews are also review artifacts. Explicit `--write` writes only
+`workflow/versions/v2/promotion/` preview files; it still does not promote.

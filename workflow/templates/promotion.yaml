@@ -1,0 +1,22 @@
+version: v*
+mode: preview
+target_queue: tasks/prompts
+phase: phase-5
+batch: 5-1
+batch_slug: v-next
+start_task: 1
+root_dependency: 4-3/task-165
+blocked: true
+gate_message: promotion blocked: prerequisite version is live-running
+tasks:
+  - semantic_id: v*-feature-id/docs-contract
+    live_label: 5-1/task-01
+    feature: v*-feature-id
+    task_key: docs-contract
+    title: Align docs and public contracts.
+    task_file: tasks/prompts/phase-5/5-1-v-next/task-01-docs-contract.md
+    manifest: tasks/prompts/_shared/manifests/phase-5.md
+    copy_ready: tasks/prompts/_shared/copy-ready/phase-5/5-1-task-01.md
+    verify_ready: tasks/prompts/_shared/verify-ready/phase-5/5-1-task-01.md
+    depends_on:
+      - 4-3/task-165
