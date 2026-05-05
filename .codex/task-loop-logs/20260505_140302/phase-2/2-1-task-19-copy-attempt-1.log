@@ -1,0 +1,24 @@
+一、执行结论：已完成。
+
+二、执行范围：单任务 `2-1/task-19`，仅实现 S1-08 中 C1-11 `list_files` 的 macOS 接入。修改文件包括：
+
+- [CoreFileListing.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreFileListing.swift)
+- [CoreBridge.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift)
+- [CoreRepositoryOpening.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreRepositoryOpening.swift)
+- [MainRepositoryContentView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift)
+- [project.pbxproj](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj)
+- 相关 macOS XCTest fixture/test 文件
+
+三、完成情况：已读取 task、共享规则、切片规则、工程质量规则、编码规范、repo-local validation skill、依赖图、manifest、Exact Docs 和 Existing Code。C1-11 现在通过 `CoreBridge.listFiles(repoPath:filter:)` 调真实 UniFFI `list_files`，打开资料库时加载当前分类文件列表，S1-08 空列表由真实 Core 返回的空数组支撑；没有 mock、fixture 或静态状态伪造产品闭环。未触碰 `core/src/**`，也未修改 `core/area_matrix.udl`。
+
+四、工程质量：新增 `FileFilterSnapshot` / `FileEntrySnapshot` / `CoreFileListing` 隔离 Swift UI 与 UniFFI 类型；错误继续由 Core throw 并沿现有 open repo 路径传播。没有新增依赖，没有 `try!` 或强制解包，没有实现 C1-15 之外的新能力或相邻页面。Import/Settings 入口只保持页面可见结构，未接入后续导入能力。
+
+五、验证情况：
+
+- `xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：通过。
+- `./dev test macos`：通过；标准 `xcodebuild test` 被本地 sandbox 的 `testmanagerd` 通信限制阻断，按仓库规则 fallback 到 `xcrun xctest`，65 tests，0 failures。
+- `git diff --check`：通过。
+- 禁区检查：`core/src/**` 无改动。
+
+六、风险与后续：发现 `core/area_matrix.udl` 中 `FileEntry.hash_sha256` 有重复声明的既有漂移，但本任务不允许改 UDL，且生成 Swift binding 当前可编译。建议下一个任务继续执行 `2-1/task-20`，补齐 S1-08 + C1-15 build-tree 的页面功能点。
+

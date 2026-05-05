@@ -14,6 +14,7 @@ extension CoreEmptyRepositoryOpening {
 struct RepositoryOpeningResult: Equatable, Sendable {
     var config: RepoConfigSnapshot
     var tree: RepositoryTreeNodeSnapshot
+    var currentCategoryFiles: [FileEntrySnapshot]
 
     var isEmpty: Bool {
         tree.totalFileCount == 0
@@ -37,19 +38,29 @@ struct RepositoryTreeNodeSnapshot: Equatable, Identifiable, Sendable {
 
 extension CoreBridge: CoreEmptyRepositoryOpening {
     func openEmptyRepository(repoPath: String) async throws -> RepositoryOpeningResult {
-        try await openInitializedRepository(repoPath: repoPath)
+        try await openInitializedRepository(repoPath: repoPath, loadsCurrentCategoryFiles: true)
     }
 
     func openAdoptedRepository(repoPath: String) async throws -> RepositoryOpeningResult {
-        try await openInitializedRepository(repoPath: repoPath)
+        try await openInitializedRepository(repoPath: repoPath, loadsCurrentCategoryFiles: false)
     }
 
-    private func openInitializedRepository(repoPath: String) async throws -> RepositoryOpeningResult {
+    private func openInitializedRepository(
+        repoPath: String,
+        loadsCurrentCategoryFiles: Bool
+    ) async throws -> RepositoryOpeningResult {
         let config = RepoConfigSnapshot(coreConfig: try loadOpeningCoreConfig(repoPath: repoPath))
         let treeJSON = try listOpeningCoreTreeJSON(repoPath: repoPath, locale: config.locale)
+        let tree = try decodeOpeningTreeSnapshot(treeJSON)
+        let files = try currentCategoryFiles(
+            repoPath: repoPath,
+            tree: tree,
+            shouldLoad: loadsCurrentCategoryFiles
+        )
         return RepositoryOpeningResult(
             config: config,
-            tree: try decodeOpeningTreeSnapshot(treeJSON)
+            tree: tree,
+            currentCategoryFiles: files
         )
     }
 }
@@ -60,6 +71,23 @@ private func loadOpeningCoreConfig(repoPath: String) throws -> RepoConfig {
 
 private func listOpeningCoreTreeJSON(repoPath: String, locale: String) throws -> String {
     try listTreeJson(repoPath: repoPath, locale: locale)
+}
+
+private func listOpeningCoreFiles(repoPath: String, filter: FileFilterSnapshot) throws -> [FileEntry] {
+    try listFiles(repoPath: repoPath, filter: FileFilter(filter))
+}
+
+private func currentCategoryFiles(
+    repoPath: String,
+    tree: RepositoryTreeNodeSnapshot,
+    shouldLoad: Bool
+) throws -> [FileEntrySnapshot] {
+    guard shouldLoad else { return [] }
+
+    return try listOpeningCoreFiles(
+        repoPath: repoPath,
+        filter: FileFilterSnapshot.currentCategory(tree.defaultCategory)
+    ).map(FileEntrySnapshot.init(coreEntry:))
 }
 
 private func decodeOpeningTreeSnapshot(_ json: String) throws -> RepositoryTreeNodeSnapshot {
@@ -97,5 +125,10 @@ private extension RepositoryTreeNodeSnapshot {
         displayName = decoded.displayName
         fileCount = decoded.fileCount
         children = decoded.children.map(RepositoryTreeNodeSnapshot.init)
+    }
+
+    var defaultCategory: String? {
+        let firstNode = children.first ?? self
+        return firstNode.slug == "__root__" ? nil : firstNode.slug
     }
 }

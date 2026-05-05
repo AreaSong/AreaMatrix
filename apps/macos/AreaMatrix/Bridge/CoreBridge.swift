@@ -264,8 +264,10 @@ actor CoreBridge {
         try requireGeneratedBindings(for: .restoreFile)
     }
 
-    func listFiles() async throws -> Never {
-        try requireGeneratedBindings(for: .listFiles)
+    func listFiles(repoPath: String, filter: FileFilterSnapshot) async throws -> [FileEntrySnapshot] {
+        try await Task.detached(priority: .userInitiated) {
+            try listCoreFiles(repoPath: repoPath, filter: FileFilter(filter)).map(FileEntrySnapshot.init(coreEntry:))
+        }.value
     }
 
     func getFile(id: Int64) async throws -> Never {
@@ -336,6 +338,10 @@ private func resumeCoreScanSession(repoPath: String, scanSessionId: Int64) throw
 
 private func createCoreDiagnosticsSnapshot(repoPath: String) throws -> DiagnosticsSnapshot {
     try createDiagnosticsSnapshot(repoPath: repoPath)
+}
+
+private func listCoreFiles(repoPath: String, filter: FileFilter) throws -> [FileEntry] {
+    try listFiles(repoPath: repoPath, filter: filter)
 }
 
 private extension StorageMode {

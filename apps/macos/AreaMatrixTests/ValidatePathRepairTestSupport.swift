@@ -174,7 +174,8 @@ extension RepositoryOpeningResult {
                 displayName: "资料库",
                 fileCount: fileCount,
                 children: []
-            )
+            ),
+            currentCategoryFiles: []
         )
     }
 }

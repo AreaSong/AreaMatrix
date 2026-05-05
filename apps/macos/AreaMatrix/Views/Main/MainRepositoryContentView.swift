@@ -33,6 +33,19 @@ struct MainRepositoryContentView: View {
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
             Spacer()
+            TextField("Filter current list", text: .constant(""))
+                .textFieldStyle(.roundedBorder)
+                .frame(width: 180)
+                .disabled(true)
+            Button("Import...") {}
+                .disabled(true)
+            Button {
+            } label: {
+                Image(systemName: "gearshape")
+            }
+            .buttonStyle(.borderless)
+            .accessibilityLabel("Settings")
+            .disabled(true)
             Text(statusText)
                 .font(.callout)
                 .foregroundStyle(.secondary)
@@ -64,8 +77,13 @@ struct MainRepositoryContentView: View {
                 Text("把文件拖到这里，AreaMatrix 会自动分类、命名并记录改动。")
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
+                Button("Import...") {
+                    // Import is owned by later S1-17/S1-18/S1-19 tasks; keep the visible affordance inert here.
+                }
+                    .disabled(true)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .accessibilityElement(children: .contain)
         case .list:
             VStack(alignment: .leading, spacing: 12) {
                 Text(selectedListTitle)

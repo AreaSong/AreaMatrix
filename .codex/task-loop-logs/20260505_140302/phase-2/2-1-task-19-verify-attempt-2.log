@@ -1,0 +1,72 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`2-1/task-19`
+- Task 文件：`tasks/prompts/phase-2/2-1-first-launch-main/task-19-s1-08-c1-11-list-files.md`
+- 关键实现路径：
+  - `apps/macos/AreaMatrix/Bridge/CoreFileListing.swift`
+  - `apps/macos/AreaMatrix/Bridge/CoreBridge.swift`
+  - `apps/macos/AreaMatrix/Bridge/CoreRepositoryOpening.swift`
+  - `apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift`
+  - `apps/macos/AreaMatrixTests/InitDoneEmptyRepositoryTests.swift`
+  - `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 S1-08 页面中的 C1-11 功能点  
+  结果：通过  
+  证据：实现新增 `CoreFileListing` / `FileFilterSnapshot` / `FileEntrySnapshot`，`CoreBridge.listFiles(repoPath:filter:)` 调用真实 `listFiles` UniFFI 绑定；S1-08 main-empty 打开路径通过 `openEmptyRepository` 加载当前分类文件。  
+  涉及文件：`apps/macos/AreaMatrix/Bridge/CoreFileListing.swift:3`、`apps/macos/AreaMatrix/Bridge/CoreBridge.swift:267`、`apps/macos/AreaMatrix/Bridge/CoreRepositoryOpening.swift:55`
+
+- 项目：读取页面规格、MVP control map、Core API 和 C1-11 能力规格  
+  结果：通过  
+  证据：已核对 S1-08 要求当前分类文件查询返回空；control map 将 S1-08 绑定 C1-11 / C1-15，当前 task 只验 C1-11；Core API / UDL 均声明 `list_files(repo_path, filter)`、`FileFilter`、`FileEntry`。  
+  涉及文件：`docs/ux/page-specs/stage-1-mvp/S1-08-main-empty.md:87`、`docs/architecture/mvp-control-map.md:23`、`docs/api/core-api.md:93`、`docs/core/capability-specs/stage-1-mvp/C1-11-list-files.md:12`、`core/area_matrix.udl:68`
+
+- 项目：只接入 C1-11 对应 CoreBridge / 状态 / 错误映射，不实现本页面其他 Core 功能点  
+  结果：通过  
+  证据：生产路径通过 `CoreBridge.listFiles` 读取真实 Core；打开失败会回到 done 页面并写入 `initializationOpenErrorMapping`，测试覆盖 Config / Db 错误映射；未发现当前 task 触碰 C1-15 之外的实现扩散。  
+  涉及文件：`apps/macos/AreaMatrix/Models/OnboardingInitializationProgress.swift:54`、`apps/macos/AreaMatrixTests/InitDoneEmptyRepositoryTests.swift:30`
+
+- 项目：不顺手实现相邻页面  
+  结果：通过  
+  证据：S1-08 仍只进入 `MainRepositoryContentView(opening:state:.empty)`；Import / drag 等相邻页面入口未在本 task 实现真实功能。  
+  涉及文件：`apps/macos/AreaMatrix/Views/MainWindow.swift:204`、`apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift:80`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，`CoreFileListing.swift` 将 filter / entry snapshot 与 CoreBridge 边界拆开，`CoreRepositoryOpening.swift` 保持打开 repo 的配置、树、当前分类文件读取流程清晰。
+- 注释 / rustdoc / 文档同步：通过，本任务没有新增 Rust public API；Swift 注释只说明 Import 属后续任务边界。
+- 错误处理与边界处理：通过，`listFiles` 抛错可沿 opening 流程传播并映射为初始化打开错误；无静默吞错。
+- 测试与验证覆盖：通过，真实 Core 空库测试覆盖 `initializeEmptyRepository` 后 `bridge.listFiles(... .currentCategory("inbox")) == []`，并覆盖打开失败错误映射。
+- 占位、硬编码、mock-only、一次性实现检查：通过，生产路径调用真实 UniFFI `listFiles`；fixture 仅用于 XCTest 测试替身，不作为生产闭环。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`  
+  结果：通过，输出 `** BUILD SUCCEEDED **`。
+- 已运行：`./dev test macos`  
+  结果：通过。标准 `xcodebuild test` 先被本地 `testmanagerd` sandbox 通信限制阻断；repo-local 脚本按规则复用已构建 XCTest bundle 执行 `xcrun xctest`，65 个测试 0 失败。
+- Forbidden Touches：通过，`git status` / `git diff` 未显示 `core/src/**` 改动。
+- Expected New Paths：通过，`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`apps/macos/AreaMatrix.xcodeproj/project.pbxproj` 均有对应落地或修改。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。S1-08 中 C1-11 list-files 已通过真实 CoreBridge 接入、可触发、可测试验证，未发现 mock-only 闭环、越界实现或 forbidden path 违规。
+
+VERIFY_RESULT: PASS

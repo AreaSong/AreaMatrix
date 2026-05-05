@@ -88,12 +88,15 @@ final class InitDoneEmptyRepositoryTests: XCTestCase {
 
         let bridge = CoreBridge()
         try await bridge.initializeEmptyRepository(repoPath: repoURL.path)
+        let listedFiles = try await bridge.listFiles(repoPath: repoURL.path, filter: .currentCategory("inbox"))
         let opening = try await bridge.openEmptyRepository(repoPath: repoURL.path)
 
         XCTAssertEqual(opening.config.repoPath, repoURL.path)
         XCTAssertEqual(opening.config.locale, "zh-Hans")
         XCTAssertTrue(opening.isEmpty)
         XCTAssertEqual(opening.tree.totalFileCount, 0)
+        XCTAssertEqual(listedFiles, [])
+        XCTAssertEqual(opening.currentCategoryFiles, [])
         XCTAssertTrue(FileManager.default.fileExists(atPath: repoURL.appendingPathComponent(".areamatrix").path))
         XCTAssertFalse(FileManager.default.fileExists(atPath: repoURL.appendingPathComponent("README.md").path))
     }
@@ -362,7 +365,8 @@ private extension RepositoryOpeningResult {
                 displayName: "资料库",
                 fileCount: fileCount,
                 children: []
-            )
+            ),
+            currentCategoryFiles: []
         )
     }
 }
