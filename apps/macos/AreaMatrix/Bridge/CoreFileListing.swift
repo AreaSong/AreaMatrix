@@ -4,6 +4,10 @@ protocol CoreFileListing: Sendable {
     func listFiles(repoPath: String, filter: FileFilterSnapshot) async throws -> [FileEntrySnapshot]
 }
 
+protocol CoreFileDetailing: Sendable {
+    func getFile(repoPath: String, fileID: Int64) async throws -> FileEntrySnapshot
+}
+
 struct FileFilterSnapshot: Equatable, Sendable {
     var category: String?
     var includeDeleted: Bool?
@@ -39,7 +43,7 @@ struct FileEntrySnapshot: Equatable, Identifiable, Sendable {
     var updatedAt: Int64
 }
 
-extension CoreBridge: CoreFileListing {}
+extension CoreBridge: CoreFileListing, CoreFileDetailing {}
 
 extension FileFilter {
     init(_ snapshot: FileFilterSnapshot) {

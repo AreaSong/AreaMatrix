@@ -1,0 +1,86 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`2-1/task-23`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-1-first-launch-main/task-23-s1-09-c1-12-get-file-detail.md`
+- 代码范围：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+- 禁止触碰范围：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+三、完成度摘要
+
+- 已覆盖项数：12
+- 未覆盖项数：0
+- 通过项数：12
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 S1-09 页面中的 C1-12 功能点
+- 结果：通过
+- 证据：S1-09 表格单选触发 Detail 加载，`Table(... selection: $selectedFileID)` 与 `.onChange(of: selectedFileID)` 调用 `fileListModel.selectFile`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift:40`、`:206`
+
+- 项目：读取并对齐页面规格、control map、Core API、C1-12 能力规格
+- 结果：通过
+- 证据：文档要求 S1-09 单击 List 行显示 Detail；control map 绑定 S1-09 到 `get_file`；Core API / UDL 均存在 `get_file(repoPath, fileId) -> FileEntry`；能力规格要求返回完整 `FileEntry` 且 Detail UI 不从路径反推 DB 字段。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-09-main-list.md:77`、`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:24`、`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:1068`、`/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-12-get-file-detail.md:35`
+
+- 项目：只接入 C1-12 对应 CoreBridge / 状态 / 错误映射
+- 结果：通过
+- 证据：`CoreFileDetailing.getFile` 协议只暴露 C1-12；`CoreBridge.getFile` 通过生成绑定 `getFile(repoPath:fileId:)` 返回 `FileEntrySnapshot`；模型维护 detail loading、detail error、selected detail 状态，并通过 `CoreErrorMapping` 映射 `FileNotFound` 等错误。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreFileListing.swift:7`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift:273`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileListModel.swift:91`
+
+- 项目：不顺手实现相邻页面 / control map 外能力
+- 结果：通过
+- 证据：当前 diff 集中在 S1-09 主列表 Detail 选择链路；未修改 `core/src/**`；未发现 `rename_file`、`delete_file`、`move_to_category`、`list_changes`、`read_note` 等相邻能力接入。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift:271`
+
+- 项目：S1-09 中 C1-12 用户可见功能可触发和验收
+- 结果：通过
+- 证据：Detail pane 有 loading、error、metadata、empty 四态；metadata 展示 category、path、size、storage、origin、imported、modified、SHA-256。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift:271`、`:330`
+
+- 项目：没有使用 mock / fixture / 静态状态伪造真实 Core 闭环
+- 结果：通过
+- 证据：生产路径默认注入 `CoreBridge()`，`CoreBridge.getFile` 调用真实生成绑定；测试中同时存在真实临时 repo 集成测试 `testDefaultCoreBridgeGetsRealFileDetailForMainListSelection`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift:133`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift:351`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/MainListFilesTests.swift:154`
+
+- 项目：Expected New Paths 落地
+- 结果：通过
+- 证据：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**` 存在并包含实现与测试；相关文件已在 `project.pbxproj` Sources 中登记。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj:376`、`:414`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git diff -- core/src` 无输出，未发现 `core/src/**` 被修改。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，`MainFileListModel` 承担状态与 Core 调用，View 只做交互和展示；未发现 View body 内 IO 或直接 UniFFI 调用。
+- 注释 / rustdoc / 文档同步：通过，本 task 未新增 public Rust API；Swift 改动沿既有协议/bridge 模式，无需额外文档。
+- 错误处理与边界处理：通过，`getFile` 失败映射到 `detailErrorMapping`，UI 提供 inline error、Retry 和 Technical Details。
+- 测试与验证覆盖：通过，覆盖选择加载、缺失文件错误映射、切换分类清空 Detail、真实 CoreBridge get_file 闭环。
+- 占位、硬编码、mock-only、一次性实现检查：通过，生产默认路径是 `CoreBridge()` + 生成绑定；fixture 仅用于单元测试，真实集成测试已覆盖 Core 闭环。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+- 结果：通过，输出 `** BUILD SUCCEEDED **`
+- 已运行：`./dev test macos`
+- 结果：通过；标准 `xcodebuild test` 被本地 `testmanagerd` sandbox 限制阻断后，脚本按 repo 规则复用已构建 XCTest bundle 执行 `xcrun xctest`，最终 `Executed 81 tests, with 0 failures`
+- 缺失：未运行 SwiftFormat / SwiftLint；本 task manifest 未要求，且当前必需 build/test 已覆盖本次 C1-12 wiring 风险。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS

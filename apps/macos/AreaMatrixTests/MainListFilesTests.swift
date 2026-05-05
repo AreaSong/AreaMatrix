@@ -14,6 +14,7 @@ final class MainListFilesTests: XCTestCase {
         let model = MainFileListModel(
             opening: .mainListFixture(repoPath: "/tmp/repo", currentCategoryFiles: []),
             fileLister: lister,
+            fileDetailer: MainListRecordingFileDetailer(results: []),
             errorMapper: MainListRecordingErrorMapper(mapping: .mainListDbFixture(rawContext: "unused"))
         )
 
@@ -39,6 +40,7 @@ final class MainListFilesTests: XCTestCase {
         let model = MainFileListModel(
             opening: .mainListFixture(repoPath: "/tmp/repo", currentCategoryFiles: []),
             fileLister: lister,
+            fileDetailer: MainListRecordingFileDetailer(results: []),
             errorMapper: mapper
         )
 
@@ -64,6 +66,7 @@ final class MainListFilesTests: XCTestCase {
                 currentCategoryFiles: [.mainListFixture(id: 1, path: "inbox/a.txt", category: "inbox", currentName: "a.txt")]
             ),
             fileLister: MainListRecordingFileLister(results: [.failure(CoreError.Db(message: "list db locked"))]),
+            fileDetailer: MainListRecordingFileDetailer(results: []),
             errorMapper: mapper
         )
 
@@ -74,6 +77,98 @@ final class MainListFilesTests: XCTestCase {
         XCTAssertEqual(model.errorMapping, mapping)
         XCTAssertEqual(mappedErrors, [CoreError.Db(message: "list db locked")])
         XCTAssertFalse(model.isLoading)
+    }
+
+    @MainActor
+    func testMainListLoadsSelectedFileDetailThroughC112GetFile() async {
+        let detail = FileEntrySnapshot.mainListFixture(
+            id: 42,
+            path: "docs/contracts/customer.pdf",
+            category: "docs",
+            currentName: "customer.pdf"
+        )
+        let detailer = MainListRecordingFileDetailer(results: [.success(detail)])
+        let model = MainFileListModel(
+            opening: .mainListFixture(repoPath: "/tmp/repo", currentCategoryFiles: [detail]),
+            fileLister: MainListRecordingFileLister(results: []),
+            fileDetailer: detailer,
+            errorMapper: MainListRecordingErrorMapper(mapping: .mainListDbFixture(rawContext: "unused"))
+        )
+
+        await model.selectFile(id: detail.id)
+        let requests = await detailer.recordedRequests()
+
+        XCTAssertEqual(requests, [MainListFileDetailRequest(repoPath: "/tmp/repo", fileID: detail.id)])
+        XCTAssertEqual(model.selectedFileID, detail.id)
+        XCTAssertEqual(model.selectedFileDetail, detail)
+        XCTAssertNil(model.detailErrorMapping)
+        XCTAssertFalse(model.isDetailLoading)
+    }
+
+    @MainActor
+    func testMainListMapsMissingSelectedFileDetailInline() async {
+        let mapping = CoreErrorMappingSnapshot.mainListFileNotFoundFixture(rawContext: "missing")
+        let mapper = MainListRecordingErrorMapper(mapping: mapping)
+        let model = MainFileListModel(
+            opening: .mainListFixture(repoPath: "/tmp/repo", currentCategoryFiles: []),
+            fileLister: MainListRecordingFileLister(results: []),
+            fileDetailer: MainListRecordingFileDetailer(results: [
+                .failure(CoreError.FileNotFound(path: "docs/missing.pdf")),
+            ]),
+            errorMapper: mapper
+        )
+
+        await model.selectFile(id: 404)
+        let mappedErrors = await mapper.recordedErrors()
+
+        XCTAssertNil(model.selectedFileDetail)
+        XCTAssertEqual(model.detailErrorMapping, mapping)
+        XCTAssertEqual(mappedErrors, [CoreError.FileNotFound(path: "docs/missing.pdf")])
+        XCTAssertFalse(model.isDetailLoading)
+    }
+
+    @MainActor
+    func testMainListClearsDetailWhenCategoryChanges() async {
+        let detail = FileEntrySnapshot.mainListFixture(
+            id: 8,
+            path: "docs/a.pdf",
+            category: "docs",
+            currentName: "a.pdf"
+        )
+        let model = MainFileListModel(
+            opening: .mainListFixture(repoPath: "/tmp/repo", currentCategoryFiles: [detail]),
+            fileLister: MainListRecordingFileLister(results: [.success([])]),
+            fileDetailer: MainListRecordingFileDetailer(results: [.success(detail)]),
+            errorMapper: MainListRecordingErrorMapper(mapping: .mainListDbFixture(rawContext: "unused"))
+        )
+
+        await model.selectFile(id: detail.id)
+        await model.loadCurrentCategory("finance")
+
+        XCTAssertNil(model.selectedFileID)
+        XCTAssertNil(model.selectedFileDetail)
+        XCTAssertNil(model.detailErrorMapping)
+        XCTAssertFalse(model.isDetailLoading)
+    }
+
+    func testDefaultCoreBridgeGetsRealFileDetailForMainListSelection() async throws {
+        let repoURL = try makeMainListTemporaryRepositoryURL()
+        defer { try? FileManager.default.removeItem(at: repoURL) }
+        let docsURL = repoURL.appendingPathComponent("docs", isDirectory: true)
+        try FileManager.default.createDirectory(at: docsURL, withIntermediateDirectories: true)
+        try "# User project\n".write(
+            to: docsURL.appendingPathComponent("report.md"),
+            atomically: true,
+            encoding: .utf8
+        )
+
+        let bridge = CoreBridge()
+        try await bridge.adoptExistingRepository(repoPath: repoURL.path)
+        let listed = try await firstListedFile(bridge: bridge, repoPath: repoURL.path, category: "docs")
+        let detail = try await bridge.getFile(repoPath: repoURL.path, fileID: listed.id)
+
+        XCTAssertEqual(detail, listed)
+        XCTAssertEqual(detail.currentName, listed.currentName)
     }
 }
 
@@ -103,6 +198,41 @@ private actor MainListRecordingFileLister: CoreFileListing {
     }
 
     func recordedRequests() -> [FileFilterSnapshot] { requests }
+}
+
+private struct MainListFileDetailRequest: Equatable {
+    var repoPath: String
+    var fileID: Int64
+}
+
+private actor MainListRecordingFileDetailer: CoreFileDetailing {
+    enum Result {
+        case success(FileEntrySnapshot)
+        case failure(Error)
+    }
+
+    private var results: [Result]
+    private var requests: [MainListFileDetailRequest] = []
+
+    init(results: [Result]) {
+        self.results = results
+    }
+
+    func getFile(repoPath: String, fileID: Int64) async throws -> FileEntrySnapshot {
+        requests.append(MainListFileDetailRequest(repoPath: repoPath, fileID: fileID))
+        guard !results.isEmpty else {
+            throw CoreError.FileNotFound(path: "\(fileID)")
+        }
+
+        switch results.removeFirst() {
+        case .success(let file):
+            return file
+        case .failure(let error):
+            throw error
+        }
+    }
+
+    func recordedRequests() -> [MainListFileDetailRequest] { requests }
 }
 
 private actor MainListRecordingErrorMapper: CoreErrorMapping {
@@ -213,4 +343,35 @@ private extension CoreErrorMappingSnapshot {
             rawContext: rawContext
         )
     }
+
+    static func mainListFileNotFoundFixture(rawContext: String) -> CoreErrorMappingSnapshot {
+        CoreErrorMappingSnapshot(
+            kind: .fileNotFound,
+            userMessage: "文件不存在",
+            severity: .medium,
+            suggestedAction: "刷新当前列表，确认文件是否已被移动或删除。",
+            recoverability: .refreshRequired,
+            rawContext: rawContext
+        )
+    }
+}
+
+private func makeMainListTemporaryRepositoryURL() throws -> URL {
+    let url = FileManager.default.temporaryDirectory
+        .appendingPathComponent("AreaMatrixMainListTests-\(UUID().uuidString)", isDirectory: true)
+    try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+    return url
+}
+
+private func firstListedFile(
+    bridge: CoreBridge,
+    repoPath: String,
+    category: String
+) async throws -> FileEntrySnapshot {
+    let files = try await bridge.listFiles(repoPath: repoPath, filter: .currentCategory(category))
+    if let first = files.first {
+        return first
+    }
+
+    throw CoreError.FileNotFound(path: "\(repoPath)#\(category)")
 }

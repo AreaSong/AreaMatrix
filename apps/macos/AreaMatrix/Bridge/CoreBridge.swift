@@ -270,8 +270,10 @@ actor CoreBridge {
         }.value
     }
 
-    func getFile(id: Int64) async throws -> Never {
-        try requireGeneratedBindings(for: .getFile)
+    func getFile(repoPath: String, fileID: Int64) async throws -> FileEntrySnapshot {
+        try await Task.detached(priority: .userInitiated) {
+            try FileEntrySnapshot(coreEntry: getCoreFile(repoPath: repoPath, fileID: fileID))
+        }.value
     }
 
     func listChanges() async throws -> Never {
@@ -344,6 +346,10 @@ private func createCoreDiagnosticsSnapshot(repoPath: String) throws -> Diagnosti
 
 private func listCoreFiles(repoPath: String, filter: FileFilter) throws -> [FileEntry] {
     try listFiles(repoPath: repoPath, filter: filter)
+}
+
+private func getCoreFile(repoPath: String, fileID: Int64) throws -> FileEntry {
+    try getFile(repoPath: repoPath, fileId: fileID)
 }
 
 private func listCoreTreeJSON(repoPath: String, locale: String) throws -> String {

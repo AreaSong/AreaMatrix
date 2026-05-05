@@ -15,6 +15,7 @@ struct MainRepositoryContentView: View {
     let onRetryCurrentList: () -> Void
     @StateObject private var fileListModel: MainFileListModel
     @State private var selectedCategory: String = "inbox"
+    @State private var selectedFileID: Int64?
     @State private var filterText: String = ""
     @State private var isDropTargeted = false
 
@@ -33,7 +34,13 @@ struct MainRepositoryContentView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .task(id: selectedCategory) {
             guard state == .list else { return }
+            selectedFileID = nil
             await fileListModel.loadCurrentCategory(selectedCategoryForCore)
+        }
+        .onChange(of: selectedFileID) { _, fileID in
+            Task {
+                await fileListModel.selectFile(id: fileID)
+            }
         }
     }
 
@@ -124,6 +131,7 @@ struct MainRepositoryContentView: View {
         onOpenSettings: @escaping () -> Void = {},
         onRetryCurrentList: @escaping () -> Void = {},
         fileLister: any CoreFileListing = CoreBridge(),
+        fileDetailer: any CoreFileDetailing = CoreBridge(),
         errorMapper: any CoreErrorMapping = CoreBridge()
     ) {
         self.opening = opening
@@ -135,6 +143,7 @@ struct MainRepositoryContentView: View {
         _fileListModel = StateObject(wrappedValue: MainFileListModel(
             opening: opening,
             fileLister: fileLister,
+            fileDetailer: fileDetailer,
             errorMapper: errorMapper
         ))
         _selectedCategory = State(initialValue: Self.defaultSelectedCategory(from: opening.tree.sidebarNodes))
@@ -194,7 +203,7 @@ struct MainRepositoryContentView: View {
     }
 
     private var fileTable: some View {
-        Table(fileListModel.files) {
+        Table(fileListModel.files, selection: $selectedFileID) {
             TableColumn("Name") { file in
                 Text(file.currentName)
                     .lineLimit(1)
@@ -260,6 +269,21 @@ struct MainRepositoryContentView: View {
     }
 
     private var detailPane: some View {
+        Group {
+            if let error = fileListModel.detailErrorMapping {
+                detailErrorPane(error)
+            } else if fileListModel.isDetailLoading {
+                detailLoadingPane
+            } else if let detail = fileListModel.selectedFileDetail {
+                detailMetadataPane(detail)
+            } else {
+                emptyDetailPane
+            }
+        }
+        .frame(minWidth: 220, idealWidth: 260, maxWidth: 320, maxHeight: .infinity, alignment: .topLeading)
+    }
+
+    private var emptyDetailPane: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("选择一个文件查看详情")
                 .font(.headline)
@@ -267,9 +291,79 @@ struct MainRepositoryContentView: View {
                 .foregroundStyle(.secondary)
         }
         .padding(18)
-        .frame(minWidth: 220, idealWidth: 260, maxWidth: 320, maxHeight: .infinity, alignment: .topLeading)
     }
 
+    private var detailLoadingPane: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            ProgressView()
+                .controlSize(.small)
+            Text("Loading file details")
+                .font(.headline)
+        }
+        .padding(18)
+    }
+
+    private func detailErrorPane(_ error: CoreErrorMappingSnapshot) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Label("File details cannot be loaded", systemImage: "exclamationmark.triangle")
+                .font(.headline)
+            Text(error.userMessage)
+                .foregroundStyle(.secondary)
+            Text(error.suggestedAction)
+                .font(.callout)
+                .foregroundStyle(.secondary)
+            Button("Retry") {
+                Task {
+                    await fileListModel.retrySelectedFileDetail()
+                }
+            }
+            DisclosureGroup("Technical Details") {
+                Text(error.rawContext)
+                    .font(.system(.caption, design: .monospaced))
+                    .textSelection(.enabled)
+            }
+        }
+        .padding(18)
+        .accessibilityElement(children: .contain)
+    }
+
+    private func detailMetadataPane(_ detail: FileEntrySnapshot) -> some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 14) {
+                Text(detail.currentName)
+                    .font(.headline)
+                    .textSelection(.enabled)
+                metadataRows(for: detail)
+            }
+            .padding(18)
+            .frame(maxWidth: .infinity, alignment: .topLeading)
+        }
+    }
+
+    private func metadataRows(for detail: FileEntrySnapshot) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            metadataRow("Category", detail.category)
+            metadataRow("Path", detail.path)
+            metadataRow("Size", detail.sizeDisplay)
+            metadataRow("Storage", detail.storageMode)
+            metadataRow("Origin", detail.origin)
+            metadataRow("Imported", detail.importedAtDisplay)
+            metadataRow("Modified", detail.updatedAtDisplay)
+            metadataRow("SHA-256", detail.hashSha256)
+        }
+    }
+
+    private func metadataRow(_ label: String, _ value: String) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(label)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Text(value)
+                .font(.callout)
+                .textSelection(.enabled)
+                .lineLimit(3)
+        }
+    }
 }
 
 private extension FileEntrySnapshot {
