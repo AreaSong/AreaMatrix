@@ -201,3 +201,9 @@ extension RepoPathValidationSnapshot {
         )
     }
 }
+
+actor ShellStaticStartupRecoverer: CoreStartupRecovering {
+    func recoverOnStartup(repoPath: String) async throws -> RecoveryReportSnapshot {
+        RecoveryReportSnapshot(cleanedStagingFiles: 0, revertedStagingDbRows: 0, warnings: [])
+    }
+}

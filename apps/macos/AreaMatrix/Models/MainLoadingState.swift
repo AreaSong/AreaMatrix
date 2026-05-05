@@ -11,19 +11,28 @@ enum MainLoadingTreeState: Equatable, Sendable {
     }
 }
 
+enum MainLoadingRecoveryState: Equatable, Sendable {
+    case checking
+    case completed(RecoveryReportSnapshot?)
+    case failed(CoreErrorMappingSnapshot)
+}
+
 struct MainLoadingState: Equatable, Sendable {
     var repoPath: String
+    var startupRecovery: MainLoadingRecoveryState?
     var scanSession: ScanSessionSnapshot?
     var scanSessionErrorMapping: CoreErrorMappingSnapshot?
     var treeLoading: MainLoadingTreeState?
 
     init(
         repoPath: String,
+        startupRecovery: MainLoadingRecoveryState? = nil,
         scanSession: ScanSessionSnapshot? = nil,
         scanSessionErrorMapping: CoreErrorMappingSnapshot? = nil,
         treeLoading: MainLoadingTreeState? = nil
     ) {
         self.repoPath = repoPath
+        self.startupRecovery = startupRecovery
         self.scanSession = scanSession
         self.scanSessionErrorMapping = scanSessionErrorMapping
         self.treeLoading = treeLoading
@@ -73,6 +82,37 @@ struct MainLoadingState: Equatable, Sendable {
         return firstError
     }
 
+    var recoveryStatusText: String? {
+        guard let startupRecovery else { return nil }
+
+        switch startupRecovery {
+        case .checking:
+            return "正在执行启动恢复检查..."
+        case .completed(let report):
+            guard let report, report.hasVisibleDetails else {
+                return "启动恢复检查完成"
+            }
+
+            return """
+            启动恢复已完成：清理 \(report.cleanedStagingFiles) 个临时文件，\
+            回滚 \(report.revertedStagingDbRows) 条 staging 记录
+            """
+        case .failed(let mapping):
+            return "启动恢复失败：\(mapping.userMessage)"
+        }
+    }
+
+    var recoveryVisibleReport: RecoveryReportSnapshot? {
+        guard case .completed(let report) = startupRecovery else { return nil }
+        guard report?.hasVisibleDetails == true else { return nil }
+        return report
+    }
+
+    var recoveryErrorMapping: CoreErrorMappingSnapshot? {
+        guard case .failed(let mapping) = startupRecovery else { return nil }
+        return mapping
+    }
+
     var treeStatusText: String? {
         guard let treeLoading else { return nil }
 
@@ -93,6 +133,7 @@ struct MainLoadingState: Equatable, Sendable {
     var accessibilityStatusText: String {
         [
             "Opening repository",
+            recoveryStatusText,
             adoptStatusText,
             adoptProgressText,
             adoptCurrentPathText,

@@ -1,0 +1,46 @@
+一、执行结论
+
+已完成 `2-1/task-28`。
+
+二、执行范围
+
+单任务：S1-10 main-loading 中的 C1-16 recover-on-startup。
+
+修改文件清单：
+- `apps/macos/AreaMatrix/Models/AppShellModel.swift`
+- `apps/macos/AreaMatrix/Models/MainLoadingState.swift`
+- `apps/macos/AreaMatrix/Models/OnboardingInitializationProgress.swift`
+- `apps/macos/AreaMatrix/Views/Main/MainLoadingView.swift`
+- `apps/macos/AreaMatrix/App/AreaMatrixAppSmokeTests.swift`
+- `apps/macos/AreaMatrixTests/AreaMatrixShellTestSupport.swift`
+- `apps/macos/AreaMatrixTests/AreaMatrixShellTests.swift`
+- `apps/macos/AreaMatrixTests/InitDoneEmptyRepositoryTests.swift`
+- `apps/macos/AreaMatrixTests/MainEmptyBuildTreeTests.swift`
+- `apps/macos/AreaMatrixTests/MainLoadingAdoptExistingTests.swift`
+- `apps/macos/AreaMatrixTests/ValidatePathIntegrationTests.swift`
+
+三、完成情况
+
+- 已只处理 S1-10 + C1-16：main-loading 在打开已初始化 repo 前调用真实 `CoreStartupRecovering.recoverOnStartup`。
+- 已读取并对齐 S1-10、MVP control map、Core API、C1-16 能力规格。
+- 已接入 CoreBridge / 状态 / 错误映射：恢复中、恢复完成、恢复失败都有用户可见状态；失败会映射 Core error 并阻止继续 open。
+- 未实现同页其他 Core 能力；C1-03/C1-15 只保持已有链路兼容。
+- Forbidden Touches：未触碰，`git diff -- core/src` 为空。
+
+四、工程质量
+
+产品路径没有 mock、fixture 或硬编码完成态；默认注入仍是 `CoreBridge()`，测试 fake 只用于隔离 XCTest。恢复流程带 cancellation token，避免取消打开后 late result 写回；恢复失败不会保存 repo path，也不会继续 open。Swift 改动集中在状态、模型编排和视图展示，没有新增依赖或 Core API。
+
+五、验证情况
+
+- `./dev test macos`：通过。标准 `xcodebuild test` 被本地 `testmanagerd` sandbox 限制，脚本按仓库规则复用已构建 XCTest bundle；`xcrun xctest` 实跑 107 tests，0 failures。
+- `xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：通过，`BUILD SUCCEEDED`。
+- `git diff --check`：通过，无 whitespace 问题。
+- `git diff -- core/src`：通过，无输出。
+
+六、风险与后续
+
+High 风险点已控制在 macOS UI 编排层：本任务只调用既有 Core recovery，不改 Core 的 staging/DB/用户文件行为。回滚方式是回退上述 macOS app/test 文件即可。工作区另有既存 dirty 文件 `.codex/task-loop-runs/20260505_225703/summary.json` 和 `tasks/prompts/_shared/progress.json`，未作为本任务产品改动处理。
+
+建议下一个任务进入 `2-1/task-29` 的 S1-10 页面 integration verify，确认 C1-03/C1-15/C1-16 在整页层面的覆盖闭环。
+

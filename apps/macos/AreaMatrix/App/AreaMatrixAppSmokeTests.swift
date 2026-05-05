@@ -87,6 +87,7 @@ final class AreaMatrixAdoptExistingTests: XCTestCase {
             configLoader: SmokeRecordingConfigLoader(result: .success(.smokeFixture(repoPath: "/tmp/repo"))),
             pathValidator: SmokeRecordingPathValidator(result: .success(validation)),
             emptyRepositoryOpener: opener,
+            startupRecoverer: ShellStaticStartupRecoverer(),
             existingRepositoryMetadataReader: SmokeStaticExistingRepositoryMetadataReader(schemaVersion: 1),
             helpOpener: SmokeNoopWelcomeHelpOpener()
         )

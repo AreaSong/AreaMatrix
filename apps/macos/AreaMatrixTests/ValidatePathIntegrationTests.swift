@@ -277,6 +277,7 @@ final class ValidatePathRepairRegressionTests: XCTestCase {
             configLoader: RepairRecordingConfigLoader(config: .repairFixture(repoPath: "/tmp/repo")),
             pathValidator: validator,
             repositoryInitializer: initializer,
+            startupRecoverer: RepairStaticStartupRecoverer(),
             helpOpener: RepairNoopWelcomeHelpOpener()
         )
 
@@ -355,6 +356,7 @@ final class ValidatePathRepairRegressionTests: XCTestCase {
             configLoader: RepairRecordingConfigLoader(config: .repairFixture(repoPath: settingsRepoPath ?? "/tmp/repo")),
             pathValidator: RepairRecordingPathValidator(validation: validation),
             emptyRepositoryOpener: repositoryOpener,
+            startupRecoverer: RepairStaticStartupRecoverer(),
             existingRepositoryMetadataReader: RepairStaticExistingRepositoryMetadataReader(schemaVersion: 1),
             helpOpener: RepairNoopWelcomeHelpOpener()
         )

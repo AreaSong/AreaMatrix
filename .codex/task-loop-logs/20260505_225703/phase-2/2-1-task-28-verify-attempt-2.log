@@ -1,0 +1,80 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`2-1/task-28`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-1-first-launch-main/task-28-s1-10-c1-16-recover-on-startup.md`
+- Manifest：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-2.md:807`
+- 主要实现：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+- 禁止触碰：`core/src/**`
+
+三、完成度摘要
+
+- 已覆盖项数：15
+- 未覆盖项数：0
+- 通过项数：14
+- 不通过项数：1
+- 阻塞项数：1
+
+四、逐项验收结果
+
+- 项目：只处理 S1-10 页面中的 C1-16 功能点
+- 结果：通过
+- 证据：S1-10 control map 绑定 `C1-03, C1-15, C1-16`，本 task 主要新增 `startupRecovery` 状态、恢复展示和 failure routing。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainLoadingState.swift:14`
+
+- 项目：C1-16 用户可见功能可触发
+- 结果：通过
+- 证据：`openExistingRepository` 进入 `.mainLoading(... startupRecovery: .checking)` 后先执行 `recoverMainOpeningResidue`，恢复报告显示在 `MainLoadingView.recoverySection`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/OnboardingInitializationProgress.swift:19`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainLoadingView.swift:39`
+
+- 项目：无 mock-only / 静态状态伪造真实闭环
+- 结果：通过
+- 证据：生产默认注入 `CoreBridge()`，测试替身只在 XCTest 内使用。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/AppShellModel.swift:79`
+
+- 项目：Core API 调用规范
+- 结果：不通过
+- 证据：Core API 明确要求 `recover_on_startup` 这类耗时不可预测函数必须在 Swift 侧用 `Task.detached`；当前 `CoreBridge: CoreStartupRecovering` 直接同步调用 generated binding `recoverOnStartup(repoPath:)`，未使用 `Task.detached`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:1324`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/StartupRecoveryModels.swift:30`
+
+- 项目：Expected New Paths
+- 结果：通过
+- 证据：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`project.pbxproj` 均已落地，新增测试/模型文件已加入 target。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj:56`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git diff --name-only -- core/src` 无输出。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过。C1-16 Core API 调用未按 SSOT 使用 `Task.detached` 隔离耗时 FFI 调用。
+- 注释 / rustdoc / 文档同步：通过。未新增 Rust public API；UDL 已有 `RecoveryReport` 与 `recover_on_startup`。
+- 错误处理与边界处理：通过。恢复失败设置 `.failed(mapping)` 并抛出，后续 open/save 不执行。
+- 测试与验证覆盖：通过。`MainLoadingAdoptExistingTests` 覆盖恢复先于 open、失败阻断 open/save、恢复状态展示。
+- 占位、硬编码、mock-only、一次性实现检查：通过。生产路径不是 mock；测试替身仅用于 XCTest。
+
+六、阻塞项
+
+- P1 Core API 调用规范不满足
+  说明：`docs/api/core-api.md` 将 `recover_on_startup` 列为必须在 Swift 侧用 `Task.detached` 包裹的耗时不可预测调用；当前实现直接调用 generated binding。
+  绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/StartupRecoveryModels.swift:30`
+  为什么导致不通过：Exact Docs 是 SSOT；当前实现没有满足 C1-16 的调用规范，不能判定该真实 Core 闭环达到完成标准。
+
+七、验证情况
+
+- 已运行：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`，结果：`BUILD SUCCEEDED`
+- 已运行：`./dev test macos`，结果：标准 `xcodebuild test` 被本地 `testmanagerd` sandbox 限制阻断后，repo 脚本回退 `xcrun xctest`，107 tests，0 failures
+- 已运行：`git diff --check -- apps/macos/AreaMatrix apps/macos/AreaMatrixTests apps/macos/AreaMatrix.xcodeproj/project.pbxproj`，结果：通过
+- 已运行：Swift 相关文件行数检查，结果：相关文件均 ≤500 行
+- 缺失：`swiftlint --strict`、`swiftformat --lint .` 未运行，本机未找到可执行文件
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。功能链路和验证命令基本通过，但 C1-16 的 Core API 调用规范仍有阻塞缺口。
+
+VERIFY_RESULT: FAIL

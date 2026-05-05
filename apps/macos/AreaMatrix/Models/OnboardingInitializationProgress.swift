@@ -1,40 +1,5 @@
 import Foundation
 
-protocol CoreStartupRecovering: Sendable {
-    func recoverOnStartup(repoPath: String) async throws -> RecoveryReportSnapshot
-}
-
-struct RecoveryReportSnapshot: Equatable, Sendable {
-    var cleanedStagingFiles: Int64
-    var revertedStagingDbRows: Int64
-    var warnings: [String]
-
-    var hasVisibleDetails: Bool {
-        cleanedStagingFiles > 0 || revertedStagingDbRows > 0 || !warnings.isEmpty
-    }
-}
-
-struct ReindexReportSnapshot: Equatable, Sendable {
-    var scanSessionId: Int64?
-    var inserted: Int64
-    var updated: Int64
-    var skipped: Int64
-    var errors: [String]
-}
-
-struct RepositoryInitializationResult: Equatable, Sendable {
-    var repoPath: String
-    var mode: RepoInitModeSnapshot
-    var scanSession: ScanSessionSnapshot?
-    var recoveryReport: RecoveryReportSnapshot?
-}
-
-extension CoreBridge: CoreStartupRecovering {
-    func recoverOnStartup(repoPath: String) async throws -> RecoveryReportSnapshot {
-        RecoveryReportSnapshot(coreReport: try recoverCoreOnStartup(repoPath: repoPath))
-    }
-}
-
 extension OnboardingModel {
     @MainActor
     func cancelMainOpening() {
@@ -53,22 +18,24 @@ extension OnboardingModel {
         openingCancellationToken = cancellationToken
         route = .mainLoading(MainLoadingState(
             repoPath: validation.repoPath,
+            startupRecovery: .checking,
             treeLoading: mainLoadingTreeLister != nil ? .loading : nil
         ))
-        let loadingRefreshTask = Task { [weak self] in
-            await self?.refreshMainLoadingState(
-                repoPath: validation.repoPath,
-                cancellationToken: cancellationToken,
-                shouldLoadAdoptSession: true,
-                shouldLoadTree: true
-            )
-        }
-        defer { loadingRefreshTask.cancel() }
 
         await Task.yield()
         guard openingCancellationToken == cancellationToken else { return }
 
         do {
+            try await recoverMainOpeningResidue(repoPath: validation.repoPath, cancellationToken: cancellationToken)
+            let loadingRefreshTask = Task { [weak self] in
+                await self?.refreshMainLoadingState(
+                    repoPath: validation.repoPath,
+                    cancellationToken: cancellationToken,
+                    shouldLoadAdoptSession: true,
+                    shouldLoadTree: true
+                )
+            }
+            defer { loadingRefreshTask.cancel() }
             let opening = try await emptyRepositoryOpener.openConfiguredRepository(repoPath: validation.repoPath)
             guard openingCancellationToken == cancellationToken else { return }
             settingsWriter.saveConfiguredRepoPath(validation.repoPath)
@@ -87,24 +54,26 @@ extension OnboardingModel {
         openingCancellationToken = cancellationToken
         route = .mainLoading(MainLoadingState(
             repoPath: result.repoPath,
+            startupRecovery: .checking,
             scanSession: result.scanSession,
             treeLoading: mainLoadingTreeLister != nil ? .loading : nil
         ))
-        let loadingRefreshTask = Task { [weak self] in
-            await self?.refreshMainLoadingState(
-                repoPath: result.repoPath,
-                seedSession: result.scanSession,
-                cancellationToken: cancellationToken,
-                shouldLoadAdoptSession: result.mode == .adoptExisting,
-                shouldLoadTree: true
-            )
-        }
-        defer { loadingRefreshTask.cancel() }
 
         await Task.yield()
         guard openingCancellationToken == cancellationToken else { return }
 
         do {
+            try await recoverMainOpeningResidue(repoPath: result.repoPath, cancellationToken: cancellationToken)
+            let loadingRefreshTask = Task { [weak self] in
+                await self?.refreshMainLoadingState(
+                    repoPath: result.repoPath,
+                    seedSession: result.scanSession,
+                    cancellationToken: cancellationToken,
+                    shouldLoadAdoptSession: result.mode == .adoptExisting,
+                    shouldLoadTree: true
+                )
+            }
+            defer { loadingRefreshTask.cancel() }
             let opening = try await openInitializedRepository(result)
             guard openingCancellationToken == cancellationToken else { return }
             route = Self.mainRoute(for: opening)
@@ -237,6 +206,7 @@ extension OnboardingModel {
 
         route = .mainLoading(MainLoadingState(
             repoPath: repoPath,
+            startupRecovery: currentState.startupRecovery,
             scanSession: scanSession,
             scanSessionErrorMapping: scanSessionErrorMapping,
             treeLoading: treeLoading
@@ -256,6 +226,24 @@ extension OnboardingModel {
 
         latestState.treeLoading = result.treeLoading
         route = .mainLoading(latestState)
+    }
+
+    @MainActor
+    func recoverMainOpeningResidue(repoPath: String, cancellationToken: UUID) async throws {
+        do {
+            let report = try await startupRecoverer.recoverOnStartup(repoPath: repoPath)
+            guard openingCancellationToken == cancellationToken else { return }
+            guard case .mainLoading(var state) = route, state.repoPath == repoPath else { return }
+            state.startupRecovery = .completed(report.hasVisibleDetails ? report : nil)
+            route = .mainLoading(state)
+        } catch {
+            guard openingCancellationToken == cancellationToken else { return }
+            guard case .mainLoading(var state) = route, state.repoPath == repoPath else { return }
+            let mapping = await openingFailureMapping(for: error)
+            state.startupRecovery = .failed(mapping)
+            route = .mainLoading(state)
+            throw error
+        }
     }
 
     @MainActor
@@ -456,26 +444,4 @@ extension OnboardingModel {
 
         return await errorMapper.mapCoreError(CoreError.Internal(message: error.localizedDescription))
     }
-}
-
-private extension RecoveryReportSnapshot {
-    init(coreReport: RecoveryReport) {
-        cleanedStagingFiles = coreReport.cleanedStagingFiles
-        revertedStagingDbRows = coreReport.revertedStagingDbRows
-        warnings = coreReport.warnings
-    }
-}
-
-extension ReindexReportSnapshot {
-    init(coreReport: ReindexReport) {
-        scanSessionId = coreReport.scanSessionId
-        inserted = coreReport.inserted
-        updated = coreReport.updated
-        skipped = coreReport.skipped
-        errors = coreReport.errors
-    }
-}
-
-private func recoverCoreOnStartup(repoPath: String) throws -> RecoveryReport {
-    try recoverOnStartup(repoPath: repoPath)
 }

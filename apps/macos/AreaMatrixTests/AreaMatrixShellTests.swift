@@ -124,6 +124,7 @@ final class AreaMatrixShellTests: XCTestCase {
         let model = OnboardingModel(
             settingsReader: ShellStaticSettingsReader(repoPath: "/tmp/repo"),
             emptyRepositoryOpener: opener,
+            startupRecoverer: ShellStaticStartupRecoverer(),
             helpOpener: ShellNoopWelcomeHelpOpener()
         )
 
@@ -143,6 +144,7 @@ final class AreaMatrixShellTests: XCTestCase {
         let model = OnboardingModel(
             settingsReader: ShellStaticSettingsReader(repoPath: "/tmp/repo"),
             emptyRepositoryOpener: opener,
+            startupRecoverer: ShellStaticStartupRecoverer(),
             helpOpener: ShellNoopWelcomeHelpOpener()
         )
 
@@ -303,6 +305,7 @@ final class AreaMatrixShellTests: XCTestCase {
             configLoader: ShellRecordingConfigLoader(result: .success(.shellFixture(repoPath: "/tmp/repo"))),
             pathValidator: ShellRecordingPathValidator(result: .success(validation)),
             emptyRepositoryOpener: opener,
+            startupRecoverer: ShellStaticStartupRecoverer(),
             existingRepositoryMetadataReader: ShellStaticExistingRepositoryMetadataReader(schemaVersion: 1),
             helpOpener: ShellNoopWelcomeHelpOpener()
         )
@@ -340,6 +343,7 @@ final class AreaMatrixShellTests: XCTestCase {
             configLoader: ShellRecordingConfigLoader(result: .success(.shellFixture(repoPath: "/tmp/repo"))),
             pathValidator: ShellRecordingPathValidator(result: .success(validation)),
             emptyRepositoryOpener: opener,
+            startupRecoverer: ShellStaticStartupRecoverer(),
             existingRepositoryMetadataReader: ShellStaticExistingRepositoryMetadataReader(schemaVersion: 1),
             helpOpener: ShellNoopWelcomeHelpOpener()
         )

@@ -2,34 +2,6 @@ import Combine
 import Foundation
 
 final class OnboardingModel: ObservableObject {
-    enum Route: Equatable, Sendable {
-        case loadingConfiguration
-        case welcome
-        case choosePath
-        case validatePath
-        case confirmRepositoryInitialization(RepositoryInitializationDraft)
-        case initializing(RepositoryInitializationDraft)
-        case initializationFailed(String, CoreErrorMappingSnapshot?, RepositoryInitializationDraft?)
-        case initializationDone(RepositoryInitializationResult)
-        case mainLoading(MainLoadingState)
-        case mainRepoError(String, CoreErrorMappingSnapshot?)
-        case dbRepairConfirm(String, ScanSessionSnapshot?, CoreErrorMappingSnapshot?)
-        case settingsRepository
-        case mainEmpty(RepositoryOpeningResult)
-        case mainList(RepositoryOpeningResult)
-        case configurationError(ConfigLoadFailure)
-    }
-
-    enum ChoosePathAction: Equatable, Sendable {
-        case continueRequested(RepoPathValidationSnapshot)
-    }
-
-    enum ValidatePathAction: Equatable, Sendable {
-        case continueRequested(RepoPathValidationSnapshot)
-        case adoptExistingRequested(RepoPathValidationSnapshot, scanSession: ScanSessionSnapshot?)
-        case openExistingRepositoryRequested(RepoPathValidationSnapshot)
-    }
-
     private static let defaultRepositoryPathDisplay = "~/AreaMatrix/"
     @Published var route: Route = .loadingConfiguration
     @Published var toastMessage: String?
@@ -450,12 +422,18 @@ final class OnboardingModel: ObservableObject {
     @MainActor
     private func loadConfiguredRepository() async {
         guard let repoPath = settingsReader.configuredRepoPath() else { route = .welcome; return }
-        route = .loadingConfiguration
+        let cancellationToken = UUID()
+        openingCancellationToken = cancellationToken
+        route = .mainLoading(MainLoadingState(repoPath: repoPath, startupRecovery: .checking))
 
         do {
+            try await recoverMainOpeningResidue(repoPath: repoPath, cancellationToken: cancellationToken)
+            guard openingCancellationToken == cancellationToken else { return }
             let opening = try await emptyRepositoryOpener.openConfiguredRepository(repoPath: repoPath)
+            guard openingCancellationToken == cancellationToken else { return }
             route = Self.mainRoute(for: opening)
         } catch {
+            guard openingCancellationToken == cancellationToken else { return }
             route = .mainRepoError(repoPath, await openingFailureMapping(for: error))
         }
     }

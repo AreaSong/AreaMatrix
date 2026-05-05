@@ -10,6 +10,7 @@ final class InitDoneEmptyRepositoryTests: XCTestCase {
         let model = OnboardingModel(
             settingsReader: InitDoneStaticSettingsReader(repoPath: nil),
             emptyRepositoryOpener: opener,
+            startupRecoverer: ShellStaticStartupRecoverer(),
             helpOpener: InitDoneNoopWelcomeHelpOpener()
         )
 
@@ -42,6 +43,7 @@ final class InitDoneEmptyRepositoryTests: XCTestCase {
         let model = OnboardingModel(
             settingsReader: InitDoneStaticSettingsReader(repoPath: nil),
             emptyRepositoryOpener: opener,
+            startupRecoverer: ShellStaticStartupRecoverer(),
             errorMapper: errorMapper,
             helpOpener: InitDoneNoopWelcomeHelpOpener()
         )
@@ -61,6 +63,7 @@ final class InitDoneEmptyRepositoryTests: XCTestCase {
         let model = OnboardingModel(
             settingsReader: InitDoneStaticSettingsReader(repoPath: nil),
             emptyRepositoryOpener: opener,
+            startupRecoverer: ShellStaticStartupRecoverer(),
             helpOpener: InitDoneNoopWelcomeHelpOpener()
         )
 
@@ -76,14 +79,17 @@ final class InitDoneEmptyRepositoryTests: XCTestCase {
 
         await opener.waitUntilStarted()
 
-        XCTAssertEqual(model.route, .mainLoading(MainLoadingState(repoPath: "/tmp/empty-repo")))
+        XCTAssertEqual(model.route, .mainLoading(MainLoadingState(
+            repoPath: "/tmp/empty-repo",
+            startupRecovery: .completed(nil)
+        )))
         await opener.finishOpen()
         await openTask.value
         XCTAssertEqual(model.route, .mainEmpty(opening))
     }
 
     func testDefaultCoreBridgeOpensRealEmptyRepositoryThroughLoadConfigAndTree() async throws {
-        let repoURL = try makeTemporaryRepositoryURL()
+        let repoURL = try makeInitDoneTemporaryRepositoryURL()
         defer { try? FileManager.default.removeItem(at: repoURL) }
 
         let bridge = CoreBridge()
@@ -108,6 +114,7 @@ final class InitDoneEmptyRepositoryTests: XCTestCase {
         let model = OnboardingModel(
             settingsReader: InitDoneStaticSettingsReader(repoPath: nil),
             emptyRepositoryOpener: opener,
+            startupRecoverer: ShellStaticStartupRecoverer(),
             helpOpener: InitDoneNoopWelcomeHelpOpener()
         )
 
@@ -140,6 +147,7 @@ final class InitDoneEmptyRepositoryTests: XCTestCase {
         let model = OnboardingModel(
             settingsReader: InitDoneStaticSettingsReader(repoPath: nil),
             emptyRepositoryOpener: opener,
+            startupRecoverer: ShellStaticStartupRecoverer(),
             errorMapper: errorMapper,
             helpOpener: InitDoneNoopWelcomeHelpOpener()
         )
@@ -182,7 +190,7 @@ final class InitDoneEmptyRepositoryTests: XCTestCase {
     }
 
     func testDefaultCoreBridgeOpensRealAdoptedRepositoryThroughLoadConfigAndTree() async throws {
-        let repoURL = try makeTemporaryRepositoryURL()
+        let repoURL = try makeInitDoneTemporaryRepositoryURL()
         defer { try? FileManager.default.removeItem(at: repoURL) }
 
         let readmeURL = repoURL.appendingPathComponent("README.md")
@@ -202,7 +210,7 @@ final class InitDoneEmptyRepositoryTests: XCTestCase {
     }
 
     func testDefaultCoreBridgeReopensConfiguredEmptyRepositoryThroughTreeAndCurrentCategoryList() async throws {
-        let repoURL = try makeTemporaryRepositoryURL()
+        let repoURL = try makeInitDoneTemporaryRepositoryURL()
         defer { try? FileManager.default.removeItem(at: repoURL) }
 
         let bridge = CoreBridge()
@@ -487,11 +495,4 @@ private extension ScanSessionSnapshot {
             errors: []
         )
     }
-}
-
-private func makeTemporaryRepositoryURL() throws -> URL {
-    let url = FileManager.default.temporaryDirectory
-        .appendingPathComponent("AreaMatrixInitDoneTests-\(UUID().uuidString)", isDirectory: true)
-    try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
-    return url
 }

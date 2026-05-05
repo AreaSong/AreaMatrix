@@ -43,6 +43,7 @@ final class MainEmptyBuildTreeTests: XCTestCase {
         let model = OnboardingModel(
             settingsReader: BuildTreeStaticSettingsReader(repoPath: "/tmp/repo"),
             emptyRepositoryOpener: opener,
+            startupRecoverer: ShellStaticStartupRecoverer(),
             helpOpener: BuildTreeNoopWelcomeHelpOpener()
         )
 

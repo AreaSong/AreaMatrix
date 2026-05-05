@@ -13,6 +13,7 @@ struct MainLoadingView: View {
             Text("正在打开资料库...")
                 .font(.title2.weight(.semibold))
             pathBox
+            recoverySection
             treeLoadingSection
             adoptScanSection
             safetyText
@@ -32,6 +33,39 @@ struct MainLoadingView: View {
             .padding(.vertical, 8)
             .frame(maxWidth: 640, alignment: .leading)
             .background(.quaternary.opacity(0.45), in: RoundedRectangle(cornerRadius: 6))
+    }
+
+    @ViewBuilder
+    private var recoverySection: some View {
+        if let recoveryStatus = state.recoveryStatusText {
+            VStack(alignment: .leading, spacing: 6) {
+                Label(recoveryStatus, systemImage: recoveryIcon)
+                    .font(.headline)
+                    .foregroundStyle(recoveryColor)
+
+                if let report = state.recoveryVisibleReport {
+                    Text("Warnings: \(report.warnings.count)")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                    ForEach(report.warnings.prefix(3), id: \.self) { warning in
+                        Text(warning)
+                            .font(.callout)
+                            .foregroundStyle(.orange)
+                    }
+                }
+
+                if let mapping = state.recoveryErrorMapping {
+                    Text(mapping.suggestedAction)
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .padding(14)
+            .frame(maxWidth: 640, alignment: .leading)
+            .background(.quaternary.opacity(0.35), in: RoundedRectangle(cornerRadius: 8))
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(recoveryStatus)
+        }
     }
 
     @ViewBuilder
@@ -91,6 +125,28 @@ struct MainLoadingView: View {
             .font(.callout)
             .foregroundStyle(.secondary)
             .frame(maxWidth: 640, alignment: .leading)
+    }
+
+    private var recoveryIcon: String {
+        switch state.startupRecovery {
+        case .checking:
+            return "arrow.clockwise.circle"
+        case .completed:
+            return "checkmark.circle"
+        case .failed:
+            return "exclamationmark.triangle"
+        case nil:
+            return "arrow.clockwise.circle"
+        }
+    }
+
+    private var recoveryColor: Color {
+        switch state.startupRecovery {
+        case .failed:
+            return .red
+        default:
+            return .primary
+        }
     }
 
     private func treeIcon(for state: MainLoadingTreeState) -> String {

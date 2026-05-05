@@ -56,6 +56,11 @@
 		0A0000000000000000000146 /* MainLoadingState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000147 /* MainLoadingState.swift */; };
 		0A0000000000000000000148 /* MainLoadingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000149 /* MainLoadingView.swift */; };
 		0A000000000000000000014A /* MainLoadingAdoptExistingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000014B /* MainLoadingAdoptExistingTests.swift */; };
+		0A000000000000000000014C /* StartupRecoveryModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000014D /* StartupRecoveryModels.swift */; };
+		0A000000000000000000014E /* OnboardingRoute.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000014F /* OnboardingRoute.swift */; };
+		0A0000000000000000000150 /* MainLoadingTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000151 /* MainLoadingTestSupport.swift */; };
+		0A0000000000000000000152 /* MainLoadingFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000153 /* MainLoadingFixtures.swift */; };
+		0A0000000000000000000154 /* InitDoneTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000155 /* InitDoneTestSupport.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -124,6 +129,11 @@
 		0A0000000000000000000147 /* MainLoadingState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/MainLoadingState.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000149 /* MainLoadingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/MainLoadingView.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000014B /* MainLoadingAdoptExistingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/MainLoadingAdoptExistingTests.swift; sourceTree = SOURCE_ROOT; };
+		0A000000000000000000014D /* StartupRecoveryModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/StartupRecoveryModels.swift; sourceTree = SOURCE_ROOT; };
+		0A000000000000000000014F /* OnboardingRoute.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/OnboardingRoute.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000151 /* MainLoadingTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/MainLoadingTestSupport.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000153 /* MainLoadingFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/MainLoadingFixtures.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000155 /* InitDoneTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/InitDoneTestSupport.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -243,12 +253,14 @@
 			isa = PBXGroup;
 			children = (
 				0A0000000000000000000018 /* AppShellModel.swift */,
+				0A000000000000000000014F /* OnboardingRoute.swift */,
 				0A0000000000000000000019 /* CoreBridgePlaceholderState.swift */,
 				0A0000000000000000000121 /* ImportEntryRequest.swift */,
 				0A0000000000000000000123 /* OnboardingModelInputs.swift */,
 				0A0000000000000000000131 /* MainFileListModel.swift */,
 				0A0000000000000000000135 /* MainListVisibleFileFiltering.swift */,
 				0A0000000000000000000147 /* MainLoadingState.swift */,
+				0A000000000000000000014D /* StartupRecoveryModels.swift */,
 				0A00000000000000000000F7 /* DiagnosticsSnapshotState.swift */,
 				0A00000000000000000000A2 /* OnboardingInitializationProgress.swift */,
 				0A00000000000000000000B2 /* InitializationFailureActions.swift */,
@@ -271,12 +283,15 @@
 				0A00000000000000000000A1 /* InitializingStepIntegrationTests.swift */,
 				0A00000000000000000000B3 /* InitFailedErrorMappingTests.swift */,
 				0A00000000000000000000C3 /* InitDoneEmptyRepositoryTests.swift */,
+				0A0000000000000000000155 /* InitDoneTestSupport.swift */,
 				0A0000000000000000000111 /* MainEmptyBuildTreeTests.swift */,
 				0A000000000000000000012B /* MainEmptyImportEntryTests.swift */,
 				0A0000000000000000000133 /* MainListFilesTests.swift */,
 				0A0000000000000000000137 /* MainListIntegrationFilterTests.swift */,
 				0A0000000000000000000139 /* MainListIntegrationClosureTests.swift */,
 				0A000000000000000000014B /* MainLoadingAdoptExistingTests.swift */,
+				0A0000000000000000000151 /* MainLoadingTestSupport.swift */,
+				0A0000000000000000000153 /* MainLoadingFixtures.swift */,
 				0A00000000000000000000E1 /* CoreBridgeRepositoryTests.swift */,
 				0A00000000000000000000FB /* ValidatePathErrorMappingSmokeTests.swift */,
 				0A00000000000000000000FD /* AreaMatrixShellTestSupport.swift */,
@@ -408,6 +423,7 @@
 				0A0000000000000000000003 /* MainWindow.swift in Sources */,
 				0A0000000000000000000005 /* CoreBridge.swift in Sources */,
 				0A0000000000000000000006 /* AppShellModel.swift in Sources */,
+				0A000000000000000000014E /* OnboardingRoute.swift in Sources */,
 				0A0000000000000000000007 /* CoreBridgePlaceholderState.swift in Sources */,
 				0A0000000000000000000124 /* AppPlatformServices.swift in Sources */,
 				0A0000000000000000000120 /* ImportEntryRequest.swift in Sources */,
@@ -422,6 +438,7 @@
 				0A0000000000000000000142 /* ChangeCategorySheet.swift in Sources */,
 				0A0000000000000000000144 /* DeleteFileConfirmSheet.swift in Sources */,
 				0A0000000000000000000146 /* MainLoadingState.swift in Sources */,
+				0A000000000000000000014C /* StartupRecoveryModels.swift in Sources */,
 				0A0000000000000000000148 /* MainLoadingView.swift in Sources */,
 				0A00000000000000000000D0 /* MainRepositoryContentView.swift in Sources */,
 				0A0000000000000000000009 /* area_matrix.swift in Sources */,
@@ -450,12 +467,15 @@
 				0A000000000000000000000D /* InitializingStepIntegrationTests.swift in Sources */,
 				0A00000000000000000000B1 /* InitFailedErrorMappingTests.swift in Sources */,
 				0A00000000000000000000C1 /* InitDoneEmptyRepositoryTests.swift in Sources */,
+				0A0000000000000000000154 /* InitDoneTestSupport.swift in Sources */,
 				0A0000000000000000000110 /* MainEmptyBuildTreeTests.swift in Sources */,
 				0A000000000000000000012A /* MainEmptyImportEntryTests.swift in Sources */,
 				0A0000000000000000000132 /* MainListFilesTests.swift in Sources */,
 				0A0000000000000000000136 /* MainListIntegrationFilterTests.swift in Sources */,
 				0A0000000000000000000138 /* MainListIntegrationClosureTests.swift in Sources */,
 				0A000000000000000000014A /* MainLoadingAdoptExistingTests.swift in Sources */,
+				0A0000000000000000000150 /* MainLoadingTestSupport.swift in Sources */,
+				0A0000000000000000000152 /* MainLoadingFixtures.swift in Sources */,
 				0A00000000000000000000E0 /* CoreBridgeRepositoryTests.swift in Sources */,
 				0A00000000000000000000FA /* ValidatePathErrorMappingSmokeTests.swift in Sources */,
 				0A00000000000000000000FC /* AreaMatrixShellTestSupport.swift in Sources */,
