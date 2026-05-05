@@ -1,0 +1,64 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`2-1/task-27`
+- 对应文件路径：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`apps/macos/AreaMatrix.xcodeproj/project.pbxproj`、`core/area_matrix.udl`
+- 禁止触碰路径：`core/src/**`
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 S1-10 页面中的 C1-15 功能点
+- 结果：通过
+- 证据：`MainLoadingState` 只新增 tree loading/loaded/failed 状态；`MainLoadingView` 只展示 tree loading、loaded rows、Retry Tree；未发现本任务改动触碰 control map 外能力。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainLoadingState.swift`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainLoadingView.swift`
+
+- 项目：读取并对齐页面规格、control map、Core API、C1-15 能力规格
+- 结果：通过
+- 证据：S1-10 control map 绑定 C1-15 的 Core API 是 `list_tree_json`；`core/area_matrix.udl` 存在 `string list_tree_json(string repo_path, string locale)`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+
+- 项目：只接入 C1-15 对应 CoreBridge / 状态 / 错误映射
+- 结果：通过
+- 证据：`OnboardingInitializationProgress.loadMainLoadingTree` 调用 `mainLoadingTreeLister.listTree(...)`；默认注入来自 `CoreBridge`，最终链路为 `CoreBridge.listTreeJSON` -> `listCoreTreeJSON` -> UniFFI `listTreeJson`。失败路径映射为 `CoreErrorMappingSnapshot`，Retry 会重新触发 tree load。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/OnboardingInitializationProgress.swift`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreRepositoryOpening.swift`
+
+- 项目：不顺手实现相邻页面
+- 结果：通过
+- 证据：本次 diff 仅限 S1-10 main loading 相关 model/view/window/test；`core/src/**` 无改动。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/AppShellModel.swift`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/MainWindow.swift`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，tree 状态拆在 `MainLoadingState`，加载编排在 `OnboardingInitializationProgress`，展示在 `MainLoadingView`，没有把 Core 调用塞进 View body。
+- 注释 / rustdoc / 文档同步：通过，本任务未新增 public Rust API；Swift 改动不需要额外文档同步，UDL 与 Core API 文档已对齐。
+- 错误处理与边界处理：通过，C1-15 tree load 失败进入 `.failed(CoreErrorMappingSnapshot)`，UI 提供 `Retry Tree`，取消打开不保存配置、不修改用户文件。
+- 测试与验证覆盖：通过，新增 `MainLoadingAdoptExistingTests` 覆盖 loading、失败映射、Retry、真实 CoreBridge tree 调用；macOS 测试总计 105 项通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过，生产链路使用 `CoreBridge -> listTreeJson` 真实 Core；fixture 仅出现在单元测试中。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：通过，`BUILD SUCCEEDED`
+- 已运行：`./dev test macos`：通过；标准 `xcodebuild test` 被本地 `testmanagerd` sandbox 限制阻断后，脚本按仓库规则复用已构建 XCTest bundle，`xcrun xctest` 执行 105 tests，0 failures
+- 失败：无产品验证失败
+- 缺失：未做真机人工 UI 点击验收；本次以 build、XCTest、文件链路证据完成只读验收
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS

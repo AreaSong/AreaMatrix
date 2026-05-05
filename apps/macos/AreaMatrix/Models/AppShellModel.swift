@@ -80,6 +80,7 @@ final class OnboardingModel: ObservableObject {
     let pathValidator: any CoreRepositoryPathValidating
     let repositoryInitializer: any CoreRepositoryInitializing
     let emptyRepositoryOpener: any CoreEmptyRepositoryOpening
+    let mainLoadingTreeLister: (any CoreRepositoryTreeListing)?
     let startupRecoverer: any CoreStartupRecovering
     private let existingRepositoryMetadataReader: any ExistingRepositoryMetadataReading
     let scanSessionReader: any CoreScanSessionReading
@@ -102,6 +103,7 @@ final class OnboardingModel: ObservableObject {
         pathValidator: any CoreRepositoryPathValidating = CoreBridge(),
         repositoryInitializer: any CoreRepositoryInitializing = CoreBridge(),
         emptyRepositoryOpener: any CoreEmptyRepositoryOpening = CoreBridge(),
+        mainLoadingTreeLister: (any CoreRepositoryTreeListing)? = nil,
         startupRecoverer: any CoreStartupRecovering = CoreBridge(),
         existingRepositoryMetadataReader: any ExistingRepositoryMetadataReading =
             SQLiteExistingRepositoryMetadataReader(),
@@ -122,6 +124,7 @@ final class OnboardingModel: ObservableObject {
         self.pathValidator = pathValidator
         self.repositoryInitializer = repositoryInitializer
         self.emptyRepositoryOpener = emptyRepositoryOpener
+        self.mainLoadingTreeLister = mainLoadingTreeLister ?? (emptyRepositoryOpener as? any CoreRepositoryTreeListing)
         self.startupRecoverer = startupRecoverer
         self.existingRepositoryMetadataReader = existingRepositoryMetadataReader
         self.scanSessionReader = scanSessionReader

@@ -51,12 +51,16 @@ extension OnboardingModel {
         initializationOpenErrorMapping = nil
         let cancellationToken = UUID()
         openingCancellationToken = cancellationToken
-        route = .mainLoading(MainLoadingState(repoPath: validation.repoPath))
+        route = .mainLoading(MainLoadingState(
+            repoPath: validation.repoPath,
+            treeLoading: mainLoadingTreeLister != nil ? .loading : nil
+        ))
         let loadingRefreshTask = Task { [weak self] in
             await self?.refreshMainLoadingState(
                 repoPath: validation.repoPath,
                 cancellationToken: cancellationToken,
-                shouldLoadAdoptSession: true
+                shouldLoadAdoptSession: true,
+                shouldLoadTree: true
             )
         }
         defer { loadingRefreshTask.cancel() }
@@ -81,13 +85,18 @@ extension OnboardingModel {
         initializationOpenErrorMapping = nil
         let cancellationToken = UUID()
         openingCancellationToken = cancellationToken
-        route = .mainLoading(MainLoadingState(repoPath: result.repoPath, scanSession: result.scanSession))
+        route = .mainLoading(MainLoadingState(
+            repoPath: result.repoPath,
+            scanSession: result.scanSession,
+            treeLoading: mainLoadingTreeLister != nil ? .loading : nil
+        ))
         let loadingRefreshTask = Task { [weak self] in
             await self?.refreshMainLoadingState(
                 repoPath: result.repoPath,
                 seedSession: result.scanSession,
                 cancellationToken: cancellationToken,
-                shouldLoadAdoptSession: result.mode == .adoptExisting
+                shouldLoadAdoptSession: result.mode == .adoptExisting,
+                shouldLoadTree: true
             )
         }
         defer { loadingRefreshTask.cancel() }
@@ -160,23 +169,56 @@ extension OnboardingModel {
         repoPath: String,
         seedSession: ScanSessionSnapshot? = nil,
         cancellationToken: UUID,
-        shouldLoadAdoptSession: Bool
+        shouldLoadAdoptSession: Bool,
+        shouldLoadTree: Bool
     ) async {
-        guard shouldLoadAdoptSession else { return }
-        if seedSession?.kind == .adopt, seedSession?.status == .completed { return }
+        async let scanResult = loadMainLoadingScanSession(
+            repoPath: repoPath,
+            seedSession: seedSession,
+            shouldLoadAdoptSession: shouldLoadAdoptSession
+        )
+        async let treeResult = loadMainLoadingTree(repoPath: repoPath, shouldLoadTree: shouldLoadTree)
+
+        let loadingUpdate = await MainLoadingRefreshUpdate(
+            scanResult: scanResult,
+            treeResult: treeResult
+        )
+        applyMainLoadingState(repoPath: repoPath, cancellationToken: cancellationToken, update: loadingUpdate)
+    }
+
+    private func loadMainLoadingScanSession(
+        repoPath: String,
+        seedSession: ScanSessionSnapshot?,
+        shouldLoadAdoptSession: Bool
+    ) async -> MainLoadingScanRefreshResult? {
+        guard shouldLoadAdoptSession else { return nil }
+        if seedSession?.kind == .adopt, seedSession?.status == .completed { return nil }
 
         do {
-            applyMainLoadingState(
-                repoPath: repoPath,
-                cancellationToken: cancellationToken,
-                scanSession: try await scanSessionReader.latestScanSession(repoPath: repoPath) ?? seedSession
+            return MainLoadingScanRefreshResult(
+                scanSession: try await scanSessionReader.latestScanSession(repoPath: repoPath) ?? seedSession,
+                scanSessionErrorMapping: nil
             )
         } catch {
-            applyMainLoadingState(
-                repoPath: repoPath,
-                cancellationToken: cancellationToken,
+            return MainLoadingScanRefreshResult(
                 scanSession: seedSession,
                 scanSessionErrorMapping: await openingFailureMapping(for: error)
+            )
+        }
+    }
+
+    private func loadMainLoadingTree(
+        repoPath: String,
+        shouldLoadTree: Bool
+    ) async -> MainLoadingTreeRefreshResult? {
+        guard shouldLoadTree, let mainLoadingTreeLister else { return nil }
+
+        do {
+            let tree = try await mainLoadingTreeLister.listTree(repoPath: repoPath, locale: Self.mainLoadingTreeLocale)
+            return MainLoadingTreeRefreshResult(treeLoading: .loaded(tree))
+        } catch {
+            return MainLoadingTreeRefreshResult(
+                treeLoading: .failed(await openingFailureMapping(for: error))
             )
         }
     }
@@ -185,17 +227,35 @@ extension OnboardingModel {
     private func applyMainLoadingState(
         repoPath: String,
         cancellationToken: UUID,
-        scanSession: ScanSessionSnapshot?,
-        scanSessionErrorMapping: CoreErrorMappingSnapshot? = nil
+        update: MainLoadingRefreshUpdate
     ) {
         guard openingCancellationToken == cancellationToken else { return }
-        guard case .mainLoading = route else { return }
+        guard case .mainLoading(let currentState) = route else { return }
+        let scanSession = update.scanResult?.scanSession ?? currentState.scanSession
+        let scanSessionErrorMapping = update.scanResult.map(\.scanSessionErrorMapping) ?? currentState.scanSessionErrorMapping
+        let treeLoading = update.treeResult?.treeLoading ?? currentState.treeLoading
 
         route = .mainLoading(MainLoadingState(
             repoPath: repoPath,
             scanSession: scanSession,
-            scanSessionErrorMapping: scanSessionErrorMapping
+            scanSessionErrorMapping: scanSessionErrorMapping,
+            treeLoading: treeLoading
         ))
+    }
+
+    @MainActor
+    func retryMainLoadingTree() async {
+        guard case .mainLoading(var state) = route else { return }
+        guard mainLoadingTreeLister != nil else { return }
+
+        state.treeLoading = .loading
+        route = .mainLoading(state)
+
+        guard let result = await loadMainLoadingTree(repoPath: state.repoPath, shouldLoadTree: true) else { return }
+        guard case .mainLoading(var latestState) = route, latestState.repoPath == state.repoPath else { return }
+
+        latestState.treeLoading = result.treeLoading
+        route = .mainLoading(latestState)
     }
 
     @MainActor
@@ -245,6 +305,10 @@ extension OnboardingModel {
 
     static func mainRoute(for opening: RepositoryOpeningResult) -> Route {
         opening.isEmpty ? .mainEmpty(opening) : .mainList(opening)
+    }
+
+    private static var mainLoadingTreeLocale: String {
+        Locale.preferredLanguages.first ?? "zh-Hans"
     }
 
     static func validationStillMatchesConfirmMode(

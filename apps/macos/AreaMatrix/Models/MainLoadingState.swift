@@ -1,18 +1,32 @@
 import Foundation
 
+enum MainLoadingTreeState: Equatable, Sendable {
+    case loading
+    case loaded(RepositoryTreeNodeSnapshot)
+    case failed(CoreErrorMappingSnapshot)
+
+    var loadedTree: RepositoryTreeNodeSnapshot? {
+        guard case .loaded(let tree) = self else { return nil }
+        return tree
+    }
+}
+
 struct MainLoadingState: Equatable, Sendable {
     var repoPath: String
     var scanSession: ScanSessionSnapshot?
     var scanSessionErrorMapping: CoreErrorMappingSnapshot?
+    var treeLoading: MainLoadingTreeState?
 
     init(
         repoPath: String,
         scanSession: ScanSessionSnapshot? = nil,
-        scanSessionErrorMapping: CoreErrorMappingSnapshot? = nil
+        scanSessionErrorMapping: CoreErrorMappingSnapshot? = nil,
+        treeLoading: MainLoadingTreeState? = nil
     ) {
         self.repoPath = repoPath
         self.scanSession = scanSession
         self.scanSessionErrorMapping = scanSessionErrorMapping
+        self.treeLoading = treeLoading
     }
 
     var adoptScanSession: ScanSessionSnapshot? {
@@ -59,14 +73,46 @@ struct MainLoadingState: Equatable, Sendable {
         return firstError
     }
 
+    var treeStatusText: String? {
+        guard let treeLoading else { return nil }
+
+        switch treeLoading {
+        case .loading:
+            return "正在加载资料库目录..."
+        case .loaded(let tree):
+            return "目录已加载：\(tree.totalFileCount) 个文件"
+        case .failed(let mapping):
+            return "目录加载失败：\(mapping.userMessage)"
+        }
+    }
+
+    var treeRows: [RepositorySidebarRowSnapshot] {
+        treeLoading?.loadedTree?.sidebarRows ?? []
+    }
+
     var accessibilityStatusText: String {
         [
             "Opening repository",
             adoptStatusText,
             adoptProgressText,
             adoptCurrentPathText,
+            treeStatusText,
         ].compactMap { $0 }.joined(separator: "。")
     }
+}
+
+struct MainLoadingScanRefreshResult: Equatable, Sendable {
+    var scanSession: ScanSessionSnapshot?
+    var scanSessionErrorMapping: CoreErrorMappingSnapshot?
+}
+
+struct MainLoadingTreeRefreshResult: Equatable, Sendable {
+    var treeLoading: MainLoadingTreeState
+}
+
+struct MainLoadingRefreshUpdate: Equatable, Sendable {
+    var scanResult: MainLoadingScanRefreshResult?
+    var treeResult: MainLoadingTreeRefreshResult?
 }
 
 private extension ScanSessionSnapshot {

@@ -3,6 +3,110 @@ import XCTest
 
 final class MainLoadingAdoptExistingTests: XCTestCase {
     @MainActor
+    func testMainLoadingUsesC115TreeWhileRepositoryOpenIsStillRunning() async {
+        let tree = RepositoryTreeNodeSnapshot.mainLoadingTreeFixture()
+        let opener = MainLoadingPausingRepositoryOpener(
+            opening: .mainLoadingFixture(repoPath: "/tmp/repo", fileCount: 2)
+        )
+        let treeLister = MainLoadingRecordingTreeLister(result: .success(tree))
+        let model = OnboardingModel(
+            settingsReader: MainLoadingStaticSettingsReader(repoPath: nil),
+            emptyRepositoryOpener: opener,
+            mainLoadingTreeLister: treeLister,
+            scanSessionReader: MainLoadingStaticScanSessionReader(result: .success(nil)),
+            helpOpener: MainLoadingNoopWelcomeHelpOpener()
+        )
+
+        let validation = RepoPathValidationSnapshot.mainLoadingInitializedFixture(repoPath: "/tmp/repo")
+        let openTask = Task {
+            await model.openExistingRepository(validation)
+        }
+
+        await opener.waitUntilStarted()
+        guard let state = await waitForMainLoadingState(model, matching: { $0.treeRows.count == 2 }) else {
+            await opener.finishOpen()
+            await openTask.value
+            return
+        }
+
+        let treeRequests = await treeLister.requestedRepoPaths()
+        XCTAssertEqual(treeRequests, ["/tmp/repo"])
+        XCTAssertEqual(state.treeStatusText, "目录已加载：1 个文件")
+        XCTAssertEqual(state.treeRows.map(\.id), ["docs", "docs/contracts"])
+
+        await opener.finishOpen()
+        await openTask.value
+    }
+
+    @MainActor
+    func testMainLoadingMapsC115TreeFailureAndRetryReloadsTree() async {
+        let mapping = CoreErrorMappingSnapshot.mainLoadingDbFixture(rawContext: "tree db locked")
+        let opener = MainLoadingPausingRepositoryOpener(
+            opening: .mainLoadingFixture(repoPath: "/tmp/repo", fileCount: 2)
+        )
+        let treeLister = MainLoadingRecordingTreeLister(results: [
+            .failure(CoreError.Db(message: "tree db locked")),
+            .success(.mainLoadingTreeFixture()),
+        ])
+        let model = OnboardingModel(
+            settingsReader: MainLoadingStaticSettingsReader(repoPath: nil),
+            emptyRepositoryOpener: opener,
+            mainLoadingTreeLister: treeLister,
+            scanSessionReader: MainLoadingStaticScanSessionReader(result: .success(nil)),
+            errorMapper: MainLoadingRecordingErrorMapper(mapping: mapping),
+            helpOpener: MainLoadingNoopWelcomeHelpOpener()
+        )
+
+        let validation = RepoPathValidationSnapshot.mainLoadingInitializedFixture(repoPath: "/tmp/repo")
+        let openTask = Task {
+            await model.openExistingRepository(validation)
+        }
+
+        await opener.waitUntilStarted()
+        guard let failedState = await waitForMainLoadingState(model, matching: {
+            if case .failed = $0.treeLoading { return true }
+            return false
+        }) else {
+            await opener.finishOpen()
+            await openTask.value
+            return
+        }
+
+        XCTAssertEqual(failedState.treeStatusText, "目录加载失败：扫描状态暂不可用")
+
+        await model.retryMainLoadingTree()
+
+        guard case .mainLoading(let retriedState) = model.route else {
+            await opener.finishOpen()
+            await openTask.value
+            return XCTFail("expected main loading after retry, got \(model.route)")
+        }
+
+        let treeRequests = await treeLister.requestedRepoPaths()
+        XCTAssertEqual(treeRequests, ["/tmp/repo", "/tmp/repo"])
+        XCTAssertEqual(retriedState.treeRows.map(\.id), ["docs", "docs/contracts"])
+
+        await opener.finishOpen()
+        await openTask.value
+    }
+
+    func testDefaultCoreBridgeListsRealRepositoryTreeForMainLoading() async throws {
+        let repoURL = try makeMainLoadingTemporaryRepositoryURL()
+        defer { try? FileManager.default.removeItem(at: repoURL) }
+
+        let docsURL = repoURL.appendingPathComponent("docs", isDirectory: true)
+        try FileManager.default.createDirectory(at: docsURL, withIntermediateDirectories: true)
+        try "hello".write(to: docsURL.appendingPathComponent("plan.txt"), atomically: true, encoding: .utf8)
+
+        let bridge = CoreBridge()
+        try await bridge.adoptExistingRepository(repoPath: repoURL.path)
+        let tree = try await bridge.listTree(repoPath: repoURL.path, locale: "zh-Hans")
+
+        XCTAssertGreaterThan(tree.totalFileCount, 0)
+        XCTAssertTrue(tree.sidebarRows.contains { $0.id == "docs" })
+    }
+
+    @MainActor
     func testInitializedAdoptOpenShowsLatestScanSessionInMainLoading() async {
         let scanSession = ScanSessionSnapshot.mainLoadingAdoptFixture(status: .running)
         let opener = MainLoadingPausingRepositoryOpener(
@@ -118,6 +222,11 @@ private enum MainLoadingScanSessionResult {
     case failure(Error)
 }
 
+private enum MainLoadingTreeResult {
+    case success(RepositoryTreeNodeSnapshot)
+    case failure(Error)
+}
+
 private actor MainLoadingStaticScanSessionReader: CoreScanSessionReading {
     private let result: MainLoadingScanSessionResult
 
@@ -132,6 +241,34 @@ private actor MainLoadingStaticScanSessionReader: CoreScanSessionReading {
         case .failure(let error):
             throw error
         }
+    }
+}
+
+private actor MainLoadingRecordingTreeLister: CoreRepositoryTreeListing {
+    private var results: [MainLoadingTreeResult]
+    private var requests: [String] = []
+
+    init(result: MainLoadingTreeResult) {
+        results = [result]
+    }
+
+    init(results: [MainLoadingTreeResult]) {
+        self.results = results
+    }
+
+    func listTree(repoPath: String, locale: String) async throws -> RepositoryTreeNodeSnapshot {
+        requests.append(repoPath)
+        let result = results.isEmpty ? .failure(CoreError.Internal(message: "missing tree result")) : results.removeFirst()
+        switch result {
+        case .success(let tree):
+            return tree
+        case .failure(let error):
+            throw error
+        }
+    }
+
+    func requestedRepoPaths() -> [String] {
+        requests
     }
 }
 
@@ -247,6 +384,40 @@ private extension RepositoryOpeningResult {
     }
 }
 
+private extension RepositoryTreeNodeSnapshot {
+    static func mainLoadingTreeFixture() -> RepositoryTreeNodeSnapshot {
+        RepositoryTreeNodeSnapshot(
+            slug: "__root__",
+            displayName: "资料库",
+            kind: "RepositoryRoot",
+            relativePath: "",
+            fileCount: 0,
+            depth: 0,
+            children: [
+                RepositoryTreeNodeSnapshot(
+                    slug: "docs",
+                    displayName: "docs",
+                    kind: "SystemCategory",
+                    relativePath: "docs",
+                    fileCount: 1,
+                    depth: 1,
+                    children: [
+                        RepositoryTreeNodeSnapshot(
+                            slug: "contracts",
+                            displayName: "contracts",
+                            kind: "Folder",
+                            relativePath: "docs/contracts",
+                            fileCount: 1,
+                            depth: 2,
+                            children: []
+                        ),
+                    ]
+                ),
+            ]
+        )
+    }
+}
+
 private extension RepoConfigSnapshot {
     static func mainLoadingFixture(repoPath: String) -> RepoConfigSnapshot {
         RepoConfigSnapshot(
@@ -314,4 +485,11 @@ private extension CoreErrorMappingSnapshot {
             rawContext: rawContext
         )
     }
+}
+
+private func makeMainLoadingTemporaryRepositoryURL() throws -> URL {
+    let url = FileManager.default.temporaryDirectory
+        .appendingPathComponent("AreaMatrixMainLoadingTreeTests-\(UUID().uuidString)", isDirectory: true)
+    try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+    return url
 }
