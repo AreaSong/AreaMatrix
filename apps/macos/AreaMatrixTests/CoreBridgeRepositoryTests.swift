@@ -64,6 +64,22 @@ final class CoreBridgeRepositoryTests: XCTestCase {
         XCTAssertFalse(validation.isInsideAreaMatrix)
         XCTAssertFalse(FileManager.default.fileExists(atPath: repoURL.appendingPathComponent(".areamatrix").path))
     }
+
+    func testCoreBridgeValidateInitializedRepoPathRequiresInitializedMetadata() async throws {
+        let repoURL = try makeTemporaryRepoURL()
+        defer {
+            try? FileManager.default.removeItem(at: repoURL)
+        }
+
+        do {
+            _ = try await CoreBridge().validateInitializedRepoPath(repoPath: repoURL.path)
+            XCTFail("expected RepoNotInitialized")
+        } catch let error as CoreError {
+            guard case .RepoNotInitialized = error else {
+                return XCTFail("expected RepoNotInitialized, got \(error)")
+            }
+        }
+    }
 }
 
 private func makeTemporaryRepoURL() throws -> URL {

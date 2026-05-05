@@ -101,6 +101,27 @@ actor ShellRecordingPathValidator: CoreRepositoryPathValidating {
     func requestedRepoPaths() -> [String] { paths }
 }
 
+actor ShellRecordingInitializedPathValidator: CoreInitializedRepositoryPathValidating {
+    private let result: ShellRecordingPathValidationResult
+    private var paths: [String] = []
+
+    init(result: ShellRecordingPathValidationResult) {
+        self.result = result
+    }
+
+    func validateInitializedRepoPath(repoPath: String) async throws -> RepoPathValidationSnapshot {
+        paths.append(repoPath)
+        switch result {
+        case .success(let validation):
+            return validation
+        case .failure(let error):
+            throw error
+        }
+    }
+
+    func requestedRepoPaths() -> [String] { paths }
+}
+
 struct ShellNoopWelcomeHelpOpener: WelcomeHelpOpening { func openWelcomeHelp() throws {} }
 
 struct ShellFailingWelcomeHelpOpener: WelcomeHelpOpening {

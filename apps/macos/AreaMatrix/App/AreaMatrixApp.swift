@@ -14,16 +14,101 @@ struct AreaMatrixApp: App {
 struct MainRepoErrorView: View {
     let repoPath: String
     let mapping: CoreErrorMappingSnapshot?
+    let validation: RepoPathValidationSnapshot?
+    let isRetrying: Bool
+    let retryErrorMapping: CoreErrorMappingSnapshot?
+    let onRetry: () -> Void
     let onChooseAnotherFolder: () -> Void
 
     var body: some View {
-        ContentUnavailableView {
-            Label("Repository cannot be opened", systemImage: "exclamationmark.triangle")
-        } description: {
-            Text(mapping?.userMessage ?? "AreaMatrix could not open the selected repository.")
+        VStack(alignment: .leading, spacing: 20) {
+            header
+            repositoryDetails
+            actionRow
+        }
+        .frame(maxWidth: 620, alignment: .leading)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(48)
+        .accessibilityElement(children: .contain)
+    }
+
+    init(
+        repoPath: String,
+        mapping: CoreErrorMappingSnapshot?,
+        validation: RepoPathValidationSnapshot? = nil,
+        isRetrying: Bool = false,
+        retryErrorMapping: CoreErrorMappingSnapshot? = nil,
+        onRetry: @escaping () -> Void = {},
+        onChooseAnotherFolder: @escaping () -> Void
+    ) {
+        self.repoPath = repoPath
+        self.mapping = mapping
+        self.validation = validation
+        self.isRetrying = isRetrying
+        self.retryErrorMapping = retryErrorMapping
+        self.onRetry = onRetry
+        self.onChooseAnotherFolder = onChooseAnotherFolder
+    }
+
+    private var activeMapping: CoreErrorMappingSnapshot? {
+        retryErrorMapping ?? mapping
+    }
+
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Label("Repository could not be opened", systemImage: "exclamationmark.triangle")
+                .font(.title.weight(.semibold))
+                .accessibilityAddTraits(.isHeader)
+            Text(activeMapping?.userMessage ?? "AreaMatrix could not open the selected repository.")
+                .font(.body)
+                .foregroundStyle(.secondary)
+            Text("This error does not mean your files were deleted.")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private var repositoryDetails: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Repository")
+                .font(.headline)
             Text(repoPath)
-        } actions: {
-            Button("Choose another folder", action: onChooseAnotherFolder)
+                .font(.system(.body, design: .monospaced))
+                .textSelection(.enabled)
+                .lineLimit(3)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 8)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(.quaternary, in: RoundedRectangle(cornerRadius: 6))
+            if let activeMapping {
+                Text("Error: \(activeMapping.kind.rawValue)")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                Text("Action: \(activeMapping.suggestedAction)")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+            if let validation {
+                Text("Last validation: initialized=\(validation.isInitialized ? "yes" : "no")")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private var actionRow: some View {
+        HStack(spacing: 12) {
+            Button(isRetrying ? "Retrying..." : "Retry", action: onRetry)
+                .keyboardShortcut(.defaultAction)
+                .buttonStyle(.borderedProminent)
+                .disabled(isRetrying)
+            Button("Choose another repository", action: onChooseAnotherFolder)
+                .disabled(isRetrying)
+            if isRetrying {
+                ProgressView()
+                    .controlSize(.small)
+                    .accessibilityLabel("Retrying repository validation")
+            }
         }
     }
 }

@@ -192,7 +192,19 @@ struct MainWindow: View {
                 }
             )
         case .mainRepoError(let repoPath, let mapping):
-            MainRepoErrorView(repoPath: repoPath, mapping: mapping, onChooseAnotherFolder: model.showChoosePath)
+            MainRepoErrorView(
+                repoPath: repoPath,
+                mapping: mapping,
+                validation: model.mainRepoRecoveryValidation,
+                isRetrying: model.isRetryingMainRepository,
+                retryErrorMapping: model.mainRepoRecoveryErrorMapping,
+                onRetry: {
+                    Task {
+                        await model.retryMainRepositoryFromError(repoPath: repoPath)
+                    }
+                },
+                onChooseAnotherFolder: model.showChoosePath
+            )
         case .dbRepairConfirm(let repoPath, let scanSession, let mapping):
             DBRepairConfirmView(
                 repoPath: repoPath,

@@ -17,6 +17,9 @@ final class OnboardingModel: ObservableObject {
     @Published var initializationRecoveryReport: RecoveryReportSnapshot?
     @Published var initializationProgressWarning: String?
     @Published var initializationOpenErrorMapping: CoreErrorMappingSnapshot?
+    @Published var mainRepoRecoveryValidation: RepoPathValidationSnapshot?
+    @Published var mainRepoRecoveryErrorMapping: CoreErrorMappingSnapshot?
+    @Published var isRetryingMainRepository = false
     var openingCancellationToken: UUID?
     @Published var initializationDiagnostics: InitializationDiagnosticsState = .idle
     @Published var pendingImportEntry: ImportEntryRequest?
@@ -50,6 +53,7 @@ final class OnboardingModel: ObservableObject {
     let settingsWriter: any AppSettingsWriting
     private let configLoader: any CoreConfigurationLoading
     let pathValidator: any CoreRepositoryPathValidating
+    let initializedPathValidator: any CoreInitializedRepositoryPathValidating
     let repositoryInitializer: any CoreRepositoryInitializing
     let emptyRepositoryOpener: any CoreEmptyRepositoryOpening
     let mainLoadingTreeLister: (any CoreRepositoryTreeListing)?
@@ -73,6 +77,7 @@ final class OnboardingModel: ObservableObject {
         settingsWriter: any AppSettingsWriting = UserDefaultsAppSettingsReader(),
         configLoader: any CoreConfigurationLoading = CoreBridge(),
         pathValidator: any CoreRepositoryPathValidating = CoreBridge(),
+        initializedPathValidator: any CoreInitializedRepositoryPathValidating = CoreBridge(),
         repositoryInitializer: any CoreRepositoryInitializing = CoreBridge(),
         emptyRepositoryOpener: any CoreEmptyRepositoryOpening = CoreBridge(),
         mainLoadingTreeLister: (any CoreRepositoryTreeListing)? = nil,
@@ -94,6 +99,7 @@ final class OnboardingModel: ObservableObject {
         self.settingsWriter = settingsWriter
         self.configLoader = configLoader
         self.pathValidator = pathValidator
+        self.initializedPathValidator = initializedPathValidator
         self.repositoryInitializer = repositoryInitializer
         self.emptyRepositoryOpener = emptyRepositoryOpener
         self.mainLoadingTreeLister = mainLoadingTreeLister ?? (emptyRepositoryOpener as? any CoreRepositoryTreeListing)
@@ -174,6 +180,9 @@ final class OnboardingModel: ObservableObject {
         initializationRecoveryReport = nil
         initializationProgressWarning = nil
         initializationOpenErrorMapping = nil
+        mainRepoRecoveryValidation = nil
+        mainRepoRecoveryErrorMapping = nil
+        isRetryingMainRepository = false
         initializationDiagnostics = .idle
         isInitializationCancellationRequested = false
         choosePathAction = nil

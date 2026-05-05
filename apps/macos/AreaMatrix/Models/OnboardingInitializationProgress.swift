@@ -14,6 +14,7 @@ extension OnboardingModel {
     @MainActor
     func openExistingRepository(_ validation: RepoPathValidationSnapshot) async {
         initializationOpenErrorMapping = nil
+        mainRepoRecoveryErrorMapping = nil
         let cancellationToken = UUID()
         openingCancellationToken = cancellationToken
         route = .mainLoading(MainLoadingState(
@@ -43,6 +44,29 @@ extension OnboardingModel {
         } catch {
             guard openingCancellationToken == cancellationToken else { return }
             route = .mainRepoError(validation.repoPath, await openingFailureMapping(for: error))
+        }
+    }
+
+    @MainActor
+    func retryMainRepositoryFromError(repoPath: String) async {
+        guard !isRetryingMainRepository else { return }
+
+        isRetryingMainRepository = true
+        mainRepoRecoveryValidation = nil
+        mainRepoRecoveryErrorMapping = nil
+        defer {
+            isRetryingMainRepository = false
+        }
+
+        do {
+            let validation = try await initializedPathValidator.validateInitializedRepoPath(repoPath: repoPath)
+            mainRepoRecoveryValidation = validation
+            repositoryPathText = validation.repoPath
+            repositoryPathValidation = validation
+            await openExistingRepository(validation)
+        } catch {
+            mainRepoRecoveryErrorMapping = await openingFailureMapping(for: error)
+            route = .mainRepoError(repoPath, mainRepoRecoveryErrorMapping)
         }
     }
 

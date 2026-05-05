@@ -9,6 +9,9 @@ protocol CoreConfigurationUpdating: Sendable {
 protocol CoreRepositoryPathValidating: Sendable {
     func validateRepoPath(repoPath: String) async throws -> RepoPathValidationSnapshot
 }
+protocol CoreInitializedRepositoryPathValidating: Sendable {
+    func validateInitializedRepoPath(repoPath: String) async throws -> RepoPathValidationSnapshot
+}
 protocol CoreRepositoryInitializing: Sendable {
     func initializeEmptyRepository(repoPath: String) async throws
     func adoptExistingRepository(repoPath: String) async throws
@@ -180,6 +183,10 @@ actor CoreBridge {
         RepoPathValidationSnapshot(coreValidation: try validateCoreRepoPath(repoPath: repoPath))
     }
 
+    func validateInitializedRepoPath(repoPath: String) async throws -> RepoPathValidationSnapshot {
+        RepoPathValidationSnapshot(coreValidation: try validateCoreInitializedRepoPath(repoPath: repoPath))
+    }
+
     func latestScanSession(repoPath: String) async throws -> ScanSessionSnapshot? {
         try latestCoreScanSession(repoPath: repoPath).map(ScanSessionSnapshot.init(coreSession:))
     }
@@ -323,6 +330,7 @@ extension CoreBridge:
     CoreDiagnosticsCollecting,
     CoreErrorMapping,
     CoreRepositoryInitializing,
+    CoreInitializedRepositoryPathValidating,
     CoreRepositoryPathValidating,
     CoreScanSessionReading {}
 
@@ -336,6 +344,10 @@ private func updateCoreConfig(repoPath: String, newConfig: RepoConfig) throws {
 
 private func validateCoreRepoPath(repoPath: String) throws -> RepoPathValidation {
     try validateRepoPath(repoPath: repoPath)
+}
+
+private func validateCoreInitializedRepoPath(repoPath: String) throws -> RepoPathValidation {
+    try validateInitializedRepoPath(repoPath: repoPath)
 }
 
 private func latestCoreScanSession(repoPath: String) throws -> ScanSession? {

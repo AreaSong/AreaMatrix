@@ -161,6 +161,72 @@ final class AreaMatrixShellTests: XCTestCase {
         XCTAssertEqual(requestedRepoPaths, ["/tmp/repo"])
     }
 
+    @MainActor
+    func testMainRepoErrorRetryValidatesInitializedPathBeforeOpeningRepository() async {
+        let validation = RepoPathValidationSnapshot.shellFixture(
+            repoPath: "/tmp/repo",
+            isEmpty: false,
+            isInitialized: true,
+            issues: [.alreadyInitialized],
+            recommendedMode: nil
+        )
+        let opening = RepositoryOpeningResult.shellFixture(repoPath: "/tmp/repo", fileCount: 1)
+        let initializedValidator = ShellRecordingInitializedPathValidator(result: .success(validation))
+        let opener = ShellRecordingRepositoryOpener(result: .success(opening))
+        let writer = ShellRecordingSettingsWriter()
+        let model = OnboardingModel(
+            settingsReader: ShellStaticSettingsReader(repoPath: nil),
+            settingsWriter: writer,
+            initializedPathValidator: initializedValidator,
+            emptyRepositoryOpener: opener,
+            startupRecoverer: ShellStaticStartupRecoverer(),
+            helpOpener: ShellNoopWelcomeHelpOpener()
+        )
+
+        await model.retryMainRepositoryFromError(repoPath: "/tmp/repo")
+        let validatedPaths = await initializedValidator.requestedRepoPaths()
+        let openedPaths = await opener.requestedConfiguredRepoPaths()
+
+        XCTAssertEqual(validatedPaths, ["/tmp/repo"])
+        XCTAssertEqual(openedPaths, ["/tmp/repo"])
+        XCTAssertEqual(model.mainRepoRecoveryValidation, validation)
+        XCTAssertNil(model.mainRepoRecoveryErrorMapping)
+        XCTAssertFalse(model.isRetryingMainRepository)
+        XCTAssertEqual(writer.savedRepoPaths, ["/tmp/repo"])
+        XCTAssertEqual(model.route, .mainList(opening))
+    }
+
+    @MainActor
+    func testMainRepoErrorRetryMapsInitializedValidationFailureWithoutOpeningRepository() async {
+        let initializedValidator = ShellRecordingInitializedPathValidator(
+            result: .failure(CoreError.RepoNotInitialized(path: "/tmp/repo"))
+        )
+        let opener = ShellRecordingRepositoryOpener(result: .success(.shellFixture(repoPath: "/tmp/repo", fileCount: 1)))
+        let model = OnboardingModel(
+            settingsReader: ShellStaticSettingsReader(repoPath: nil),
+            initializedPathValidator: initializedValidator,
+            emptyRepositoryOpener: opener,
+            startupRecoverer: ShellStaticStartupRecoverer(),
+            helpOpener: ShellNoopWelcomeHelpOpener()
+        )
+
+        await model.retryMainRepositoryFromError(repoPath: "/tmp/repo")
+        let validatedPaths = await initializedValidator.requestedRepoPaths()
+        let openedPaths = await opener.requestedConfiguredRepoPaths()
+
+        guard case .mainRepoError(let repoPath, let mapping) = model.route else {
+            return XCTFail("expected main repo error, got \(model.route)")
+        }
+
+        XCTAssertEqual(validatedPaths, ["/tmp/repo"])
+        XCTAssertEqual(openedPaths, [])
+        XCTAssertEqual(repoPath, "/tmp/repo")
+        XCTAssertEqual(mapping?.kind, .repoNotInitialized)
+        XCTAssertEqual(model.mainRepoRecoveryErrorMapping?.kind, .repoNotInitialized)
+        XCTAssertNil(model.mainRepoRecoveryValidation)
+        XCTAssertFalse(model.isRetryingMainRepository)
+    }
+
     func testConfigLoadFailureMapsCoreErrors() {
         let config = ConfigLoadFailure.map(
             repoPath: "/tmp/repo",
