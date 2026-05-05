@@ -103,6 +103,25 @@ extension ScanSessionSnapshot {
             errors: []
         )
     }
+
+    static func mainLoadingReindexFixture(
+        status: ScanSessionStatusSnapshot,
+        errors: [String] = []
+    ) -> ScanSessionSnapshot {
+        ScanSessionSnapshot(
+            id: 84,
+            kind: .reindex,
+            status: status,
+            lastPath: "docs/contracts/customer.pdf",
+            inserted: 300,
+            updated: 20,
+            skipped: 4,
+            startedAt: 1_700_000_100,
+            updatedAt: 1_700_000_140,
+            finishedAt: nil,
+            errors: errors
+        )
+    }
 }
 
 extension CoreErrorMappingSnapshot {

@@ -222,9 +222,9 @@ final class MainLoadingAdoptExistingTests: XCTestCase {
 
         XCTAssertEqual(state.repoPath, "/tmp/adopted-repo")
         XCTAssertEqual(state.scanSession, scanSession)
-        XCTAssertEqual(state.adoptStatusText, "正在扫描资料库 15")
-        XCTAssertEqual(state.adoptProgressText, "新增 12，更新 2，跳过 1")
-        XCTAssertEqual(state.adoptCurrentPathText, "当前路径：docs/plan.md")
+        XCTAssertEqual(state.scanStatusText, "正在扫描资料库 15")
+        XCTAssertEqual(state.scanProgressText, "新增 12，更新 2，跳过 1")
+        XCTAssertEqual(state.scanCurrentPathText, "当前路径：docs/plan.md")
 
         await opener.finishOpen()
         await openTask.value
@@ -263,10 +263,68 @@ final class MainLoadingAdoptExistingTests: XCTestCase {
         }
 
         XCTAssertEqual(state.scanSessionErrorMapping, mapping)
-        XCTAssertEqual(state.adoptStatusText, "接管扫描状态不可用：扫描状态暂不可用")
+        XCTAssertEqual(state.scanStatusText, "扫描状态不可用：扫描状态暂不可用")
 
         await opener.finishOpen()
         await openTask.value
+    }
+
+    @MainActor
+    func testConfiguredRepositoryMainLoadingRefreshesTreeAndScanSessionBeforeOpenCompletes() async {
+        let scanSession = ScanSessionSnapshot.mainLoadingAdoptFixture(status: .running)
+        let tree = RepositoryTreeNodeSnapshot.mainLoadingTreeFixture()
+        let opener = MainLoadingPausingRepositoryOpener(
+            opening: .mainLoadingFixture(repoPath: "/tmp/saved-repo", fileCount: 1)
+        )
+        let treeLister = MainLoadingRecordingTreeLister(result: .success(tree))
+        let model = OnboardingModel(
+            settingsReader: MainLoadingStaticSettingsReader(repoPath: "/tmp/saved-repo"),
+            emptyRepositoryOpener: opener,
+            mainLoadingTreeLister: treeLister,
+            startupRecoverer: MainLoadingStaticStartupRecoverer(),
+            scanSessionReader: MainLoadingStaticScanSessionReader(result: .success(scanSession)),
+            helpOpener: MainLoadingNoopWelcomeHelpOpener()
+        )
+
+        let bootstrapTask = Task {
+            await model.bootstrapIfNeeded()
+        }
+
+        await opener.waitUntilStarted()
+        guard let state = await waitForMainLoadingState(model, matching: {
+            $0.scanSession == scanSession && $0.treeRows.count == 2
+        }) else {
+            await opener.finishOpen()
+            await bootstrapTask.value
+            return
+        }
+
+        let treeRequests = await treeLister.requestedRepoPaths()
+        XCTAssertEqual(treeRequests, ["/tmp/saved-repo"])
+        XCTAssertEqual(state.scanStatusText, "正在扫描资料库 15")
+        XCTAssertEqual(state.treeStatusText, "目录已加载：1 个文件")
+
+        await opener.finishOpen()
+        await bootstrapTask.value
+    }
+
+    @MainActor
+    func testMainLoadingShowsReindexRescanProgressAndFailureStatus() async {
+        let runningSession = ScanSessionSnapshot.mainLoadingReindexFixture(status: .running)
+        let failedSession = ScanSessionSnapshot.mainLoadingReindexFixture(
+            status: .failed,
+            errors: ["docs/contracts/customer.pdf could not be indexed"]
+        )
+
+        var state = MainLoadingState(repoPath: "/tmp/repo", scanSession: runningSession)
+        XCTAssertEqual(state.scanStatusText, "正在扫描资料库 324")
+        XCTAssertEqual(state.scanProgressText, "新增 300，更新 20，跳过 4")
+        XCTAssertEqual(state.scanCurrentPathText, "当前路径：docs/contracts/customer.pdf")
+        XCTAssertTrue(state.accessibilityStatusText.contains("Scanning changes"))
+
+        state.scanSession = failedSession
+        XCTAssertEqual(state.scanStatusText, "重新扫描失败 324")
+        XCTAssertEqual(state.scanWarningText, "docs/contracts/customer.pdf could not be indexed")
     }
 
     @MainActor

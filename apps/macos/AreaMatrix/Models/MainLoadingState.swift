@@ -38,47 +38,41 @@ struct MainLoadingState: Equatable, Sendable {
         self.treeLoading = treeLoading
     }
 
-    var adoptScanSession: ScanSessionSnapshot? {
-        guard scanSession?.kind == .adopt else { return nil }
-        return scanSession
-    }
-
-    var adoptStatusText: String? {
+    var scanStatusText: String? {
         if let scanSessionErrorMapping {
-            return "接管扫描状态不可用：\(scanSessionErrorMapping.userMessage)"
+            return "扫描状态不可用：\(scanSessionErrorMapping.userMessage)"
         }
 
-        guard let adoptScanSession else { return nil }
+        guard let scanSession else { return nil }
 
-        switch adoptScanSession.status {
+        switch scanSession.status {
         case .running:
-            return "正在扫描资料库 \(adoptScanSession.processedCount)"
+            return "正在扫描资料库 \(scanSession.processedCount)"
         case .completed:
-            return "接管扫描已完成 \(adoptScanSession.processedCount)"
+            return "\(scanSession.kind.completedStatusPrefix) \(scanSession.processedCount)"
         case .paused:
-            return "接管扫描已暂停 \(adoptScanSession.processedCount)"
+            return "\(scanSession.kind.pausedStatusPrefix) \(scanSession.processedCount)"
         case .failed:
-            return "接管扫描失败 \(adoptScanSession.processedCount)"
+            return "\(scanSession.kind.failedStatusPrefix) \(scanSession.processedCount)"
         case .interrupted:
-            return "接管扫描已中断 \(adoptScanSession.processedCount)"
+            return "\(scanSession.kind.interruptedStatusPrefix) \(scanSession.processedCount)"
         }
     }
 
-    var adoptProgressText: String? {
-        guard let adoptScanSession else { return nil }
+    var scanProgressText: String? {
+        guard let scanSession else { return nil }
         return """
-        新增 \(adoptScanSession.inserted)，更新 \(adoptScanSession.updated)，\
-        跳过 \(adoptScanSession.skipped)
+        新增 \(scanSession.inserted)，更新 \(scanSession.updated)，跳过 \(scanSession.skipped)
         """
     }
 
-    var adoptCurrentPathText: String? {
-        guard let lastPath = adoptScanSession?.lastPath, !lastPath.isEmpty else { return nil }
+    var scanCurrentPathText: String? {
+        guard let lastPath = scanSession?.lastPath, !lastPath.isEmpty else { return nil }
         return "当前路径：\(lastPath)"
     }
 
-    var adoptWarningText: String? {
-        guard let firstError = adoptScanSession?.errors.first else { return nil }
+    var scanWarningText: String? {
+        guard let firstError = scanSession?.errors.first else { return nil }
         return firstError
     }
 
@@ -134,11 +128,17 @@ struct MainLoadingState: Equatable, Sendable {
         [
             "Opening repository",
             recoveryStatusText,
-            adoptStatusText,
-            adoptProgressText,
-            adoptCurrentPathText,
+            scanAccessibilityStageText,
+            scanStatusText,
+            scanProgressText,
+            scanCurrentPathText,
             treeStatusText,
         ].compactMap { $0 }.joined(separator: "。")
+    }
+
+    private var scanAccessibilityStageText: String? {
+        guard scanSession != nil || scanSessionErrorMapping != nil else { return nil }
+        return "Scanning changes"
     }
 }
 
@@ -159,5 +159,43 @@ struct MainLoadingRefreshUpdate: Equatable, Sendable {
 private extension ScanSessionSnapshot {
     var processedCount: Int64 {
         inserted + updated + skipped
+    }
+}
+
+private extension ScanSessionKindSnapshot {
+    var completedStatusPrefix: String {
+        switch self {
+        case .adopt:
+            return "接管扫描已完成"
+        case .reindex:
+            return "重新扫描已完成"
+        }
+    }
+
+    var pausedStatusPrefix: String {
+        switch self {
+        case .adopt:
+            return "接管扫描已暂停"
+        case .reindex:
+            return "重新扫描已暂停"
+        }
+    }
+
+    var failedStatusPrefix: String {
+        switch self {
+        case .adopt:
+            return "接管扫描失败"
+        case .reindex:
+            return "重新扫描失败"
+        }
+    }
+
+    var interruptedStatusPrefix: String {
+        switch self {
+        case .adopt:
+            return "接管扫描已中断"
+        case .reindex:
+            return "重新扫描已中断"
+        }
     }
 }

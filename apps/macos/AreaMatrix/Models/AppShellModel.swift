@@ -424,11 +424,24 @@ final class OnboardingModel: ObservableObject {
         guard let repoPath = settingsReader.configuredRepoPath() else { route = .welcome; return }
         let cancellationToken = UUID()
         openingCancellationToken = cancellationToken
-        route = .mainLoading(MainLoadingState(repoPath: repoPath, startupRecovery: .checking))
+        route = .mainLoading(MainLoadingState(
+            repoPath: repoPath,
+            startupRecovery: .checking,
+            treeLoading: mainLoadingTreeLister != nil ? .loading : nil
+        ))
 
         do {
             try await recoverMainOpeningResidue(repoPath: repoPath, cancellationToken: cancellationToken)
             guard openingCancellationToken == cancellationToken else { return }
+            let loadingRefreshTask = Task { [weak self] in
+                await self?.refreshMainLoadingState(
+                    repoPath: repoPath,
+                    cancellationToken: cancellationToken,
+                    shouldLoadAdoptSession: true,
+                    shouldLoadTree: true
+                )
+            }
+            defer { loadingRefreshTask.cancel() }
             let opening = try await emptyRepositoryOpener.openConfiguredRepository(repoPath: repoPath)
             guard openingCancellationToken == cancellationToken else { return }
             route = Self.mainRoute(for: opening)

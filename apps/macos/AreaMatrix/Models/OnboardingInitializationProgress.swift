@@ -134,7 +134,7 @@ extension OnboardingModel {
     }
 
     @MainActor
-    private func refreshMainLoadingState(
+    func refreshMainLoadingState(
         repoPath: String,
         seedSession: ScanSessionSnapshot? = nil,
         cancellationToken: UUID,

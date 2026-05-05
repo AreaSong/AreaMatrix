@@ -248,6 +248,16 @@ final class MainFileListModel: ObservableObject {
         return nil
     }
 
+    var loadingStatusText: String? {
+        guard isLoading else { return nil }
+        return "正在加载 \(currentCategoryDisplayName)..."
+    }
+
+    var loadingAccessibilityText: String? {
+        guard let loadingStatusText else { return nil }
+        return "Loading files. \(loadingStatusText)"
+    }
+
     func collectCurrentListDiagnostics() async {
         guard diagnosticsState != .collecting else { return }
 
@@ -329,6 +339,11 @@ final class MainFileListModel: ObservableObject {
         }
 
         return await errorMapper.mapCoreError(CoreError.Internal(message: error.localizedDescription))
+    }
+
+    private var currentCategoryDisplayName: String {
+        guard let currentCategory, !currentCategory.isEmpty else { return "files" }
+        return currentCategory
     }
 }
 

@@ -1,0 +1,38 @@
+一、执行结论
+
+已完成。原始 manifest 的 `xcodebuild test` 在当前 Codex sandbox 中仍被 `com.apple.testmanagerd.control` 阻断，但这是仓库文档明确支持 fallback 的环境型失败；随后 `./dev test macos` 复现同一 sandbox 阻断后，用同一构建产物执行 `xcrun xctest`，108 个 XCTest 全部通过。
+
+二、执行范围
+
+单任务：`2-1/task-29`
+
+当前任务相关改动：
+- [AppShellModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/AppShellModel.swift:423)：configured repo 启动进入 `MainLoadingState` 后并行刷新 scan session 和 tree。
+- [OnboardingInitializationProgress.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/OnboardingInitializationProgress.swift:137)：复用 S1-10 loading refresh，覆盖 C1-03/C1-15 错误与成功状态。
+- [MainLoadingAdoptExistingTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/MainLoadingAdoptExistingTests.swift:273)：新增 configured repo opening 未完成前刷新 tree + scan session 的回归测试。
+
+三、完成情况
+
+核对清单：page-feature 依赖 2-1/task-26/27/28 已覆盖；S1-10 opening、cancel、startup recovery、scan session、tree loading、tree retry、repo error 路径已串联；生产路径未依赖 mock-only；未新增 control map 外能力。
+
+完成标准：S1-10 对应 C1-03/C1-15/C1-16 已通过 CoreBridge 真实路径消费。`core/src/**` 未被触碰，`git diff --name-only -- core/src` 为空。
+
+四、工程质量
+
+结构保持在现有 `OnboardingModel` / `MainLoadingState` / `MainLoadingView` 分层内，没有新增依赖或一次性脚本。错误路径通过 `openingFailureMapping` 映射为 UI state；cancel token 防止 late result 覆盖取消后的页面。未新增 public Rust API，因此无 rustdoc 变更。
+
+五、验证情况
+
+已运行：
+- `xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：失败，exit 65；构建完成后 test runner 被 sandbox 阻断，xcresult 为 `apps/macos/DerivedData/AreaMatrix/Logs/Test/Test-AreaMatrix-2026.05.06_06-50-56-+0800.xcresult`。
+- `./dev test macos`：通过；先确认同一 `testmanagerd` sandbox 阻断，再 `xcrun xctest`，108 tests, 0 failures。
+- `xcodebuild -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' build CODE_SIGNING_ALLOWED=NO`：通过。
+
+未运行：
+- `swiftformat --lint .` / `swiftlint --strict`：当前环境找不到 `swiftformat` 和 `swiftlint` 可执行文件。
+
+六、风险与后续
+
+剩余风险：当前环境无法直接让原始 `xcodebuild test` 完成 runner 通信；已用仓库允许的 macOS local fallback 补足本地证据，但最终合并前仍应在未受该 sandbox 限制的 CI/macOS 环境确认原始 test job。
+
+建议下一个任务：进入 `2-1/task-30` 前，先让 verify-ready 重新验收 `2-1/task-29`，确认这次 fallback 证据被接受。  

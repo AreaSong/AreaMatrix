@@ -15,7 +15,7 @@ struct MainLoadingView: View {
             pathBox
             recoverySection
             treeLoadingSection
-            adoptScanSection
+            scanSection
             safetyText
             Button("Cancel opening", action: onCancelOpening)
                 .accessibilityHint("Cancel opening returns to folder validation and does not modify user files.")
@@ -69,19 +69,19 @@ struct MainLoadingView: View {
     }
 
     @ViewBuilder
-    private var adoptScanSection: some View {
-        if let status = state.adoptStatusText {
+    private var scanSection: some View {
+        if let status = state.scanStatusText {
             VStack(alignment: .leading, spacing: 6) {
                 Text(status)
                     .font(.headline)
-                if let progress = state.adoptProgressText {
+                if let progress = state.scanProgressText {
                     Text(progress)
                 }
-                if let currentPath = state.adoptCurrentPathText {
+                if let currentPath = state.scanCurrentPathText {
                     Text(currentPath)
                         .lineLimit(2)
                 }
-                if let warning = state.adoptWarningText {
+                if let warning = state.scanWarningText {
                     Label(warning, systemImage: "exclamationmark.triangle")
                         .foregroundStyle(.orange)
                 }
@@ -90,6 +90,8 @@ struct MainLoadingView: View {
             .padding(14)
             .frame(maxWidth: 640, alignment: .leading)
             .background(.quaternary.opacity(0.35), in: RoundedRectangle(cornerRadius: 8))
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("Scanning changes. \(status)")
         }
     }
 

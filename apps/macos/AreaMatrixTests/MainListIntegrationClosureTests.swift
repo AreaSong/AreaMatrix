@@ -247,6 +247,25 @@ final class MainListIntegrationClosureTests: XCTestCase {
             "iCloud"
         )
     }
+
+    @MainActor
+    func testListLoadingExposesCurrentCategoryStageText() async {
+        let file = FileEntrySnapshot.integrationClosureFixture(id: 12, currentName: "loading.pdf")
+        let lister = MainListIntegrationSuspendedLister()
+        let model = MainFileListModel(
+            opening: .integrationClosureFixture(repoPath: "/tmp/repo", files: [file]),
+            fileLister: lister,
+            fileDetailer: MainListIntegrationNoopDetailer(),
+            errorMapper: MainListIntegrationErrorMapper(mapping: .integrationClosureDbFixture())
+        )
+
+        let loadingTask = Task { await model.loadCurrentCategory("docs") }
+        await lister.waitForRequest()
+        XCTAssertEqual(model.loadingStatusText, "正在加载 docs...")
+        XCTAssertEqual(model.loadingAccessibilityText, "Loading files. 正在加载 docs...")
+        await lister.finish()
+        await loadingTask.value
+    }
 }
 
 private actor MainListIntegrationNoopLister: CoreFileListing {

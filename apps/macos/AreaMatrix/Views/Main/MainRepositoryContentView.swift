@@ -214,10 +214,7 @@ struct MainRepositoryContentView: View {
                         .font(.callout)
                         .foregroundStyle(.secondary)
                     Spacer()
-                    if fileListModel.isLoading {
-                        ProgressView()
-                            .controlSize(.small)
-                    }
+                    listLoadingIndicator
                 }
                 Divider()
                 statusBanner
@@ -225,6 +222,21 @@ struct MainRepositoryContentView: View {
             }
             .padding(18)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        }
+    }
+
+    @ViewBuilder
+    private var listLoadingIndicator: some View {
+        if let loadingStatus = fileListModel.loadingStatusText {
+            HStack(spacing: 8) {
+                ProgressView()
+                    .controlSize(.small)
+                Text(loadingStatus)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(fileListModel.loadingAccessibilityText ?? "Loading files")
         }
     }
 
