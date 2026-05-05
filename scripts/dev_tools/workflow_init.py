@@ -7,11 +7,13 @@ import re
 from pathlib import Path
 
 from .changes import DraftArtifact, display_path, write_artifacts
+from .middle_layer import middle_layer_readme
 
 
 VERSION_RE = re.compile(r"^v[2-9][0-9]*$")
 VERSION_ROOT = Path("workflow/versions")
 LAYER_READMES = {
+    "middle-layer": "Middle-layer",
     "changes": "Change Files",
     "plans": "Plans",
     "drafts": "Drafts",
@@ -158,7 +160,9 @@ next_layers:
 
 
 def layer_readme(version: str, layer: str, title: str) -> str:
-    if layer == "changes":
+    if layer == "middle-layer":
+        detail = "Middle-layer ledgers are feature-level implementation intent records created after discussion approval."
+    elif layer == "changes":
         detail = "This directory starts with README only. Add real change YAML after discussion doctor passes."
     elif layer == "promotion":
         detail = "Promotion preview is blocked until live mapping is explicitly configured."
@@ -183,6 +187,7 @@ def workflow_readme(version: str) -> str:
 
 ```text
 discussion
+-> middle-layer
 -> changes
 -> plans
 -> drafts
@@ -206,8 +211,11 @@ def init_artifacts(root: Path, version: str, title: str | None, out_dir: str | N
         DraftArtifact(target / "discussion/docs-discussion.md", docs_discussion(version)),
         DraftArtifact(target / "discussion/middle-layer-discussion.md", middle_layer_discussion(version)),
         DraftArtifact(target / "discussion/decisions.yaml", decisions(version)),
+        DraftArtifact(target / "middle-layer/README.md", middle_layer_readme(version)),
     ]
     for layer, title_value in LAYER_READMES.items():
+        if layer == "middle-layer":
+            continue
         artifacts.append(DraftArtifact(target / layer / "README.md", layer_readme(version, layer, title_value)))
     return artifacts
 

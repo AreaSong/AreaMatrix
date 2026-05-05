@@ -6,6 +6,7 @@ Templates define the reusable shape for future `workflow/versions/v*/` instances
 - `docs-discussion.md`: docs intent, user paths, Exact Docs, non-goals, and acceptance boundary.
 - `middle-layer-discussion.md`: how discussion feeds changes, plans, drafts, queue, and promotion preview.
 - `decisions.yaml`: machine-readable discussion approval, blockers, open questions, and risk boundaries.
+- `middle-layer.example.yaml`: feature-level implementation intent ledger shape.
 - `change.example.yaml`: structured feature change source with docs ledger fields.
 - `plan.md`: human-readable docs-change ledger output.
 - `queue.yaml`: machine-readable queue candidate shape.

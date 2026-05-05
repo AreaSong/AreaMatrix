@@ -27,6 +27,10 @@ from .discussion import (
     discussion_gate_message,
     validate_discussion_records,
 )
+from .middle_layer import (
+    MiddleLayerRecord,
+    collect_middle_layer_workflow,
+)
 from .promotion import (
     PROMOTION_ROOT_NAME,
     build_promotion_tasks,
@@ -54,6 +58,7 @@ REQUIRED_TEMPLATES = [
     "queue.yaml",
     "queue.md",
     "drafts.md",
+    "middle-layer.example.yaml",
     "promotion.yaml",
     "promotion.md",
 ]
@@ -293,35 +298,92 @@ def validate_code_impacts(root: Path, records: Sequence[Any]) -> list[str]:
     return errors
 
 
-def collect_workflow(root: Path, version: str, feature: str | None = None) -> tuple[list[str], list[Any]]:
+def middle_layer_required(record: VersionRecord | None) -> bool:
+    if not record:
+        return False
+    if record.version_id == "v1-mvp":
+        return False
+    if record.data.get("discussion", {}).get("status") == "compatibility-exemption":
+        return (record.path.parent / "middle-layer").is_dir()
+    return record.data.get("middle_layers") == "required"
+
+
+def version_record_for(root: Path, version: str) -> tuple[list[str], VersionRecord | None]:
+    errors, versions = load_versions(root)
+    record = next((item for item in versions if item.version_id == version), None)
+    if not record:
+        errors.append(f"unknown workflow version: {version}")
+    return errors, record
+
+
+def collect_workflow(root: Path, version: str, feature: str | None = None) -> tuple[list[str], list[Any], list[MiddleLayerRecord]]:
     change_root = VERSION_ROOT / version / "changes"
-    errors, records, _ = collect_changes(root, None)
-    if version != DEFAULT_VERSION:
-        errors.append(f"unsupported workflow version for changes: {version}")
+    errors, version_record = version_record_for(root, version)
+    change_errors, records, _ = collect_changes(root, None, version)
+    errors.extend(change_errors)
     expected_prefix = root / change_root
     records = [record for record in records if record.file.resolve().is_relative_to(expected_prefix.resolve())]
     filter_errors, selected = filter_feature_records(records, feature)
     errors.extend(filter_errors)
     errors.extend(validate_doc_changes(root, selected))
     errors.extend(validate_code_impacts(root, selected))
-    return errors, selected
+    middle_records: list[MiddleLayerRecord] = []
+    if middle_layer_required(version_record):
+        middle_errors, middle_records, _ = collect_middle_layer_workflow(root, version, feature)
+        errors.extend(middle_errors)
+    return errors, selected, middle_records
 
 
-def collect_workflow_with_dependencies(root: Path, version: str, feature: str | None = None) -> tuple[list[str], list[Any]]:
+def collect_workflow_with_dependencies(root: Path, version: str, feature: str | None = None) -> tuple[list[str], list[Any], list[MiddleLayerRecord]]:
     change_root = VERSION_ROOT / version / "changes"
-    errors, records, _ = collect_changes(root, None)
-    if version != DEFAULT_VERSION:
-        errors.append(f"unsupported workflow version for changes: {version}")
+    errors, version_record = version_record_for(root, version)
+    change_errors, records, _ = collect_changes(root, None, version)
+    errors.extend(change_errors)
     expected_prefix = root / change_root
     version_records = [record for record in records if record.file.resolve().is_relative_to(expected_prefix.resolve())]
     selected_errors, selected = select_feature_closure(version_records, feature)
     errors.extend(selected_errors)
     errors.extend(validate_doc_changes(root, selected))
     errors.extend(validate_code_impacts(root, selected))
-    return errors, selected
+    middle_records: list[MiddleLayerRecord] = []
+    if middle_layer_required(version_record):
+        middle_errors, middle_records, _ = collect_middle_layer_workflow(root, version, None)
+        errors.extend(middle_errors)
+        if feature:
+            wanted = {record.feature_id for record in selected}
+            middle_records = [record for record in middle_records if record.feature_id in wanted]
+    return errors, selected, middle_records
 
 
-def feature_plan_content(root: Path, version: str, record: Any) -> str:
+def middle_record_for(feature_id: str, records: Sequence[MiddleLayerRecord]) -> MiddleLayerRecord | None:
+    return next((record for record in records if record.feature_id == feature_id), None)
+
+
+def middle_plan_lines(root: Path, record: MiddleLayerRecord | None) -> list[str]:
+    if not record:
+        return ["- Middle-layer: compatibility exemption or not present for this version."]
+    deps = record.data.get("dependencies") if isinstance(record.data.get("dependencies"), dict) else {}
+    lines = [
+        f"- Middle-layer ledger: `{display_path(root, record.file)}`",
+        f"- Feature dependencies: {', '.join(f'`{dep}`' for dep in as_list(deps.get('features'))) or 'None'}",
+        "",
+        "### Insertions",
+    ]
+    for item in as_list(record.data.get("insertions")):
+        if isinstance(item, dict):
+            lines.append(f"- `{item.get('target', '')}`: {item.get('reason', '')}")
+    lines.extend(["", "### Linked Features"])
+    for item in as_list(record.data.get("links")):
+        if isinstance(item, dict):
+            lines.append(f"- `{item.get('feature', '')}` ({item.get('relationship', '')}): {item.get('reason', '')}")
+    lines.extend(["", "### Slice Plan"])
+    for item in as_list(record.data.get("slice_plan")):
+        if isinstance(item, dict):
+            lines.append(f"- `{item.get('id', '')}`: {item.get('purpose', '')}")
+    return lines
+
+
+def feature_plan_content(root: Path, version: str, record: Any, middle_record: MiddleLayerRecord | None = None) -> str:
     feature = record.feature
     docs = docs_map(feature)
     impacts = feature.get("code_impacts") if isinstance(feature.get("code_impacts"), dict) else {}
@@ -340,7 +402,7 @@ def feature_plan_content(root: Path, version: str, record: Any) -> str:
         "",
         str(feature.get("intent", "")),
         "",
-        "## Docs Change Ledger",
+            "## Docs Change Ledger",
         "",
         "| File | Lines | Heading | Operation | Summary | Tasks |",
         "|---|---:|---|---|---|---|",
@@ -355,6 +417,10 @@ def feature_plan_content(root: Path, version: str, record: Any) -> str:
         )
     lines.extend(
         [
+            "",
+            "## Middle-layer Ledger",
+            "",
+            *middle_plan_lines(root, middle_record),
             "",
             "## Exact Docs",
             *[f"- `{doc}`" for doc in as_list(docs.get("source"))],
@@ -395,9 +461,9 @@ def feature_plan_content(root: Path, version: str, record: Any) -> str:
     return "\n".join(lines).rstrip() + "\n"
 
 
-def plan_artifacts(root: Path, version: str, out_root: Path, records: Sequence[Any]) -> list[DraftArtifact]:
+def plan_artifacts(root: Path, version: str, out_root: Path, records: Sequence[Any], middle_records: Sequence[MiddleLayerRecord] = ()) -> list[DraftArtifact]:
     return [
-        DraftArtifact(path=out_root / f"{record.feature_id}.plan.md", content=feature_plan_content(root, version, record))
+        DraftArtifact(path=out_root / f"{record.feature_id}.plan.md", content=feature_plan_content(root, version, record, middle_record_for(record.feature_id, middle_records)))
         for record in ordered_features(records)
     ]
 
@@ -505,8 +571,12 @@ def run_workflow_doctor(root: Path, args: argparse.Namespace) -> int:
     errors.extend(validate_promotion_preview_configs(root, versions))
     errors.extend(validate_v1_gate(root, versions))
     errors.extend(validate_discussion_records(root, versions))
-    change_errors, _ = collect_workflow(root, DEFAULT_VERSION)
+    change_errors, _, middle_records = collect_workflow(root, DEFAULT_VERSION)
     errors.extend(change_errors)
+    for record in versions:
+        if middle_layer_required(record) and record.version_id != DEFAULT_VERSION:
+            middle_errors, _, _ = collect_middle_layer_workflow(root, record.version_id, None)
+            errors.extend(middle_errors)
     if errors:
         print("workflow doctor: FAILED")
         for error in errors:
@@ -515,11 +585,13 @@ def run_workflow_doctor(root: Path, args: argparse.Namespace) -> int:
     print("workflow doctor: OK")
     print(f"- templates: {len(REQUIRED_TEMPLATES)}")
     print(f"- versions: {len(versions)}")
+    print(f"- middle-layer {DEFAULT_VERSION}: {len(middle_records)}")
     for record in versions:
         print(f"- discussion {record.version_id}: {discussion_gate_label(record.version_id, record.data)}")
         if record.data.get("promotion") != "already-live":
             print(f"- local queue {record.version_id}: {local_queue_label(record)}")
             print(f"- live mapping {record.version_id}: {promotion_mapping_label(record)}")
+            print(f"- middle-layer {record.version_id}: {'required' if middle_layer_required(record) else 'compatibility/skipped'}")
     print("- promotion preview: configured")
     print("- v1 gate: queue-only for v2 while v1 is live-running")
     return 0
@@ -552,13 +624,13 @@ def run_workflow_plan(root: Path, args: argparse.Namespace) -> int:
     if args.force and not args.write:
         print("workflow plan: --force requires --write")
         return 1
-    errors, records = collect_workflow(root, args.version, args.feature)
+    errors, records, middle_records = collect_workflow(root, args.version, args.feature)
     if errors:
         print("workflow plan: doctor failed")
         for error in errors:
             print(f"- {error}")
         return 1
-    artifacts = plan_artifacts(root, args.version, output_root(root, args.version, args.out_dir, PLAN_ROOT_NAME), records)
+    artifacts = plan_artifacts(root, args.version, output_root(root, args.version, args.out_dir, PLAN_ROOT_NAME), records, middle_records)
     if not args.write:
         print_named_artifacts(root, "Workflow plans", artifacts)
         return 0
@@ -578,7 +650,7 @@ def run_workflow_queue(root: Path, args: argparse.Namespace) -> int:
     if args.force and not args.write:
         print("workflow queue: --force requires --write")
         return 1
-    errors, records = collect_workflow(root, args.version, args.feature)
+    errors, records, _ = collect_workflow(root, args.version, args.feature)
     if errors:
         print("workflow queue: doctor failed")
         for error in errors:
@@ -607,7 +679,7 @@ def run_workflow_promote(root: Path, args: argparse.Namespace) -> int:
     config_errors, config, version_record, versions = promotion_config_for(root, args.version)
     errors = list(config_errors)
     errors.extend(validate_v1_gate(root, versions))
-    workflow_errors, records = collect_workflow_with_dependencies(root, args.version, args.feature)
+    workflow_errors, records, _ = collect_workflow_with_dependencies(root, args.version, args.feature)
     errors.extend(workflow_errors)
     if errors or not config:
         print("workflow promote: doctor failed")

@@ -1,0 +1,44 @@
+id: v-next-example-feature-middle-layer
+version: v*
+feature_id: v-next-example-feature
+module: example
+status: draft
+docs_refs:
+  - file: docs/example/source.md
+    line_start: 10
+    line_end: 20
+    heading: Example heading
+    excerpt: Short exact excerpt used to detect line drift.
+insertions:
+  - target: existing feature or document section
+    reason: Why this feature is inserted here.
+    before: Existing behavior that must remain stable.
+    after: New behavior that becomes available.
+links:
+  - feature: v-next-related-feature
+    relationship: coordinates-with
+    reason: How the related feature affects this feature.
+code_impacts:
+  existing:
+    - apps/macos/AreaMatrix/**
+  expected:
+    - apps/macos/AreaMatrix/Features/Example/**
+  tests:
+    - apps/macos/AreaMatrixTests/**
+dependencies:
+  features: []
+  docs:
+    - docs/example/source.md
+  code: []
+  tasks: []
+slice_plan:
+  - id: docs-contract
+    purpose: Align docs and public contracts.
+    inputs:
+      - docs/example/source.md
+    outputs:
+      - workflow plan review artifact
+    acceptance:
+      - ./dev workflow doctor
+risk_boundaries:
+  - Do not write live tasks/prompts from middle-layer planning.

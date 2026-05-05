@@ -5,7 +5,7 @@ It is separate from `tasks/prompts/**`, which is the approved small-task executi
 
 ## Layers
 
-- `workflow/`: requirement flow, version planning, docs-change ledger, drafts, queue candidates, and archive policy.
+- `workflow/`: requirement flow, version planning, middle-layer ledgers, docs-change ledger, drafts, queue candidates, and archive policy.
 - `tasks/prompts/**`: executable copy-ready / verify-ready task queue.
 - `./task-loop`: runner that executes approved tasks; it does not make requirement decisions.
 
@@ -16,6 +16,7 @@ docs
 -> workflow/templates
 -> workflow/versions/v*/version.yaml
 -> workflow/versions/v*/discussion
+-> workflow/versions/v*/middle-layer
 -> workflow/versions/v*/changes
 -> workflow/versions/v*/plans
 -> workflow/versions/v*/drafts
@@ -29,6 +30,12 @@ docs
 New v* versions must pass the discussion gate before writing changes. The
 discussion gate records docs intent, middle-layer carry-forward rules, decisions,
 open questions, blockers, and whether the version may enter `changes/`.
+
+`middle-layer/*.yaml` records feature-level implementation intent after docs
+discussion: Exact Docs line references, insertion points, related feature links,
+code impact, dependencies, slice plans, and risk boundaries. `changes/*.yaml`
+stays focused on the docs-change ledger. Both sources must agree before plans,
+drafts, queue candidates, or promotion preview are generated.
 
 Create a new version skeleton with:
 

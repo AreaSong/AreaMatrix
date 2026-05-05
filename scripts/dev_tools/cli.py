@@ -20,6 +20,7 @@ from .checks import (
 from .common import ToolError, print_error, project_root
 from .discussion import run_workflow_discuss
 from .macos import run_macos_tests
+from .middle_layer import run_workflow_middle
 from .workflow_init import run_workflow_init
 from .workflow import run_workflow_doctor, run_workflow_plan, run_workflow_promote, run_workflow_queue, run_workflow_status
 
@@ -93,6 +94,16 @@ def _build_parser() -> argparse.ArgumentParser:
     workflow_discuss_init.add_argument("--write", action="store_true", help="Write discussion files instead of printing a preview")
     workflow_discuss_init.add_argument("--out-dir", help="Discussion output directory; defaults to workflow/versions/<version>/discussion")
     workflow_discuss_init.add_argument("--force", action="store_true", help="Allow overwriting existing discussion files when --write is used")
+    workflow_middle = workflow_sub.add_parser("middle", help="Manage feature-level middle-layer workflow ledgers")
+    workflow_middle.add_argument("--version", required=True, help="Workflow version to inspect, such as v3")
+    workflow_middle.add_argument("--feature", help="Inspect only one feature id")
+    workflow_middle_sub = workflow_middle.add_subparsers(dest="middle_command", required=True)
+    workflow_middle_sub.add_parser("doctor", help="Validate middle-layer ledgers and matching changes")
+    workflow_middle_sub.add_parser("preview", help="Preview docs -> middle-layer -> changes -> slices")
+    workflow_middle_init = workflow_middle_sub.add_parser("init", help="Render middle-layer starter files")
+    workflow_middle_init.add_argument("--write", action="store_true", help="Write middle-layer files instead of printing a preview")
+    workflow_middle_init.add_argument("--out-dir", help="Middle-layer output directory; defaults to workflow/versions/<version>/middle-layer")
+    workflow_middle_init.add_argument("--force", action="store_true", help="Allow overwriting existing middle-layer files when --write is used")
     workflow_plan = workflow_sub.add_parser("plan", help="Render docs-change ledger plans")
     workflow_plan.add_argument("--version", default="v2", help="Workflow version to plan; defaults to v2")
     workflow_plan.add_argument("--feature", help="Render only one feature id")
@@ -166,6 +177,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             return run_workflow_init(root, args)
         if args.command == "workflow" and args.workflow_command == "discuss":
             return run_workflow_discuss(root, args)
+        if args.command == "workflow" and args.workflow_command == "middle":
+            return run_workflow_middle(root, args)
         if args.command == "workflow" and args.workflow_command == "plan":
             return run_workflow_plan(root, args)
         if args.command == "workflow" and args.workflow_command == "queue":

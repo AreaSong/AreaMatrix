@@ -14,6 +14,7 @@
 docs
 -> workflow/templates
 -> workflow/versions/v*/discussion
+-> middle-layer
 -> changes
 -> plans
 -> drafts
@@ -31,10 +32,13 @@ docs
 - `docs-discussion.md` 负责功能意图、用户路径、Exact Docs、争议点、非目标和验收边界。
 - `middle-layer-discussion.md` 负责说明 changes、plans、drafts、queue、promotion 如何承接，以及哪些 docs/API/UDL/task 必须同步。
 - `decisions.yaml` 是机器可校验账本；只有 `allow_changes: true` 且无 unresolved blockers/open questions 时，才允许进入 changes。
+- `middle-layer/*.yaml` 是正式中间层账本，按 feature 记录插入点、联动关系、Exact Docs 行号、代码影响、依赖、slice 计划和风险边界。
+- `changes/*.yaml` 保持 docs-change ledger；进入 plans/drafts/queue 前必须与 `middle-layer/*.yaml` 通过双源互校验。
 
 ## 边界
 
 - `workflow/` 不能在讨论、预览、plan、queue 或 promotion preview 阶段写 live `tasks/prompts/**`。
+- `middle-layer/` 不能替代 `docs/` 的产品语义；它只承接和细化已确认的 docs 意图。
 - v1 live queue 未完成前，不移动、不重命名、不归档当前 `tasks/prompts/**`。
 - promotion preview 只是映射预演，不等于真实 promote/apply。
 - 产品行为仍以 `docs/` 为源事实；workflow 只能记录、拆分和追踪，不替代 docs。

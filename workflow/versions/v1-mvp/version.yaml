@@ -3,6 +3,10 @@ title: AreaMatrix MVP live task queue
 status: live-running
 depends_on: []
 live_queue: tasks/prompts
+live_task_count_source: tasks/prompts/_shared/prompt_pipeline.py doctor
+progress_source: tasks/prompts/_shared/progress.json
+runner: ./task-loop
+console: ./dev
 middle_layers: skipped
 middle_layers_reason: MVP scope is mandatory, so docs were directly split into executable tasks.
 discussion:
@@ -12,3 +16,7 @@ discussion:
 gate: none
 promotion: already-live
 archive_policy: archive-after-complete
+archive_evidence_after_complete:
+  - tasks/prompts/_shared/progress.json
+  - .codex/task-loop-runs
+  - tasks/prompts/_shared/manifests

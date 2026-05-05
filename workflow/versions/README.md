@@ -19,6 +19,8 @@ Use:
 ```bash
 ./dev workflow doctor
 ./dev workflow status
+./dev workflow middle --version v2 doctor
+./dev workflow middle --version v2 preview
 ./dev workflow plan --version v2
 ./dev workflow queue --version v2
 ./dev workflow init --version v3

@@ -6,6 +6,7 @@ The supported flow is:
 
 ```text
 discussion compatibility exemption
+-> middle-layer/*.yaml
 -> changes/*.yaml
 -> plans/*.plan.md
 -> drafts/<feature>/
@@ -26,6 +27,8 @@ Use:
 ./dev workflow status
 ./dev workflow discuss --version v2 doctor
 ./dev workflow discuss --version v2 preview
+./dev workflow middle --version v2 doctor
+./dev workflow middle --version v2 preview
 ./dev workflow plan --version v2
 ./dev workflow queue --version v2
 ./dev workflow promote --version v2 --preview
@@ -35,7 +38,9 @@ Use:
 ./dev changes generate
 ```
 
-`workflow plan` generates the docs-change ledger. `workflow queue` generates queue candidates. `changes generate` remains the compatible draft generator.
+`workflow middle` validates the feature-level implementation intent ledger against `changes/*.yaml`.
+`workflow plan` generates the docs-change ledger plus middle-layer execution view.
+`workflow queue` generates queue candidates. `changes generate` remains the compatible draft generator.
 `workflow promote` previews how semantic workflow tasks would map into future
 numeric `tasks/prompts/**` labels; it is blocked while v1 is live and does not
 write the live queue.

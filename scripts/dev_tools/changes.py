@@ -10,8 +10,10 @@ from pathlib import Path
 from typing import Any, Sequence
 
 
-CHANGE_ROOT = Path("workflow/versions/v2/changes")
-DEFAULT_DRAFT_ROOT = Path("workflow/versions/v2/drafts")
+DEFAULT_VERSION = "v2"
+VERSION_ROOT = Path("workflow/versions")
+CHANGE_ROOT = VERSION_ROOT / DEFAULT_VERSION / "changes"
+DEFAULT_DRAFT_ROOT = VERSION_ROOT / DEFAULT_VERSION / "drafts"
 ALLOWED_STATUS = {"draft", "planned", "ready", "blocked", "archived"}
 ALLOWED_RISK = {"Low", "Medium", "High", "Mission-Critical"}
 SYNC_DOC_KEYS = ("update", "api", "udl")
@@ -188,11 +190,15 @@ def parse_list(lines: list[tuple[int, int, str]], index: int, indent: int, path:
     return result, index
 
 
-def change_files(root: Path, file_arg: str | None) -> list[Path]:
+def change_root(version: str = DEFAULT_VERSION) -> Path:
+    return VERSION_ROOT / version / "changes"
+
+
+def change_files(root: Path, file_arg: str | None, version: str = DEFAULT_VERSION) -> list[Path]:
     if file_arg:
         path = Path(file_arg)
         return [path if path.is_absolute() else root / path]
-    directory = root / CHANGE_ROOT
+    directory = root / change_root(version)
     return sorted(directory.glob("*.yaml")) if directory.is_dir() else []
 
 
@@ -212,14 +218,14 @@ def load_change(path: Path) -> dict[str, Any]:
     return data
 
 
-def validate_loaded_change(root: Path, path: Path, data: dict[str, Any]) -> tuple[list[str], list[FeatureRecord]]:
+def validate_loaded_change(root: Path, path: Path, data: dict[str, Any], version: str = DEFAULT_VERSION) -> tuple[list[str], list[FeatureRecord]]:
     errors: list[str] = []
     features: list[FeatureRecord] = []
     for key in ["id", "title", "version", "status", "features"]:
         if key not in data:
             errors.append(f"{path}: missing top-level field: {key}")
-    if data.get("version") != "v2":
-        errors.append(f"{path}: version must be v2")
+    if data.get("version") != version:
+        errors.append(f"{path}: version must be {version}")
     if data.get("status") not in ALLOWED_STATUS:
         errors.append(f"{path}: status must be one of {', '.join(sorted(ALLOWED_STATUS))}")
     raw_features = data.get("features")
@@ -231,12 +237,12 @@ def validate_loaded_change(root: Path, path: Path, data: dict[str, Any]) -> tupl
         if not isinstance(raw_feature, dict):
             errors.append(f"{path}: feature #{index} must be a mapping")
             continue
-        validate_feature(root, path, index, raw_feature, errors)
+        validate_feature(root, path, index, raw_feature, errors, version)
         features.append(FeatureRecord(file=path, change_id=change_id, feature=raw_feature))
     return errors, features
 
 
-def validate_feature(root: Path, path: Path, index: int, feature: dict[str, Any], errors: list[str]) -> None:
+def validate_feature(root: Path, path: Path, index: int, feature: dict[str, Any], errors: list[str], version: str = DEFAULT_VERSION) -> None:
     prefix = f"{path}: feature #{index}"
     for key in ["id", "module", "intent", "docs", "risk", "task_split"]:
         if key not in feature:
@@ -245,8 +251,8 @@ def validate_feature(root: Path, path: Path, index: int, feature: dict[str, Any]
         errors.append(f"{prefix}: id must be a non-empty string")
     elif not SLUG_RE.fullmatch(str(feature.get("id"))):
         errors.append(f"{prefix}: id must be a lowercase slug")
-    elif not str(feature.get("id")).startswith("v2-"):
-        errors.append(f"{prefix}: id must start with v2-")
+    elif not str(feature.get("id")).startswith(f"{version}-"):
+        errors.append(f"{prefix}: id must start with {version}-")
     if "depends_on" in feature and not isinstance(feature.get("depends_on"), list):
         errors.append(f"{prefix}: depends_on must be a list")
     docs = feature.get("docs")
@@ -302,12 +308,12 @@ def validate_feature(root: Path, path: Path, index: int, feature: dict[str, Any]
                 errors.append(f"{prefix}: task_split #{task_index} validation must be a list")
 
 
-def collect_changes(root: Path, file_arg: str | None = None) -> tuple[list[str], list[FeatureRecord], list[Path]]:
+def collect_changes(root: Path, file_arg: str | None = None, version: str = DEFAULT_VERSION) -> tuple[list[str], list[FeatureRecord], list[Path]]:
     errors: list[str] = []
     records: list[FeatureRecord] = []
-    files = change_files(root, file_arg)
+    files = change_files(root, file_arg, version)
     if not files:
-        errors.append(f"no v2 change files found under {CHANGE_ROOT}")
+        errors.append(f"no {version} change files found under {change_root(version)}")
         return errors, records, files
     for path in files:
         if not path.is_file():
@@ -318,7 +324,7 @@ def collect_changes(root: Path, file_arg: str | None = None) -> tuple[list[str],
         except ChangeYAMLError as exc:
             errors.append(str(exc))
             continue
-        file_errors, file_records = validate_loaded_change(root, path, data)
+        file_errors, file_records = validate_loaded_change(root, path, data, version)
         errors.extend(file_errors)
         records.extend(file_records)
     errors.extend(validate_feature_graph(records))
