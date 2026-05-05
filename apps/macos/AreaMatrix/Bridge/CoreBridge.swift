@@ -136,10 +136,16 @@ actor CoreBridge {
 
     private let repoURL: URL?
     private let placeholderState: CoreBridgePlaceholderState
+    private let availabilityChecker: any FileAvailabilityChecking
 
-    init(repoURL: URL? = nil, placeholderState: CoreBridgePlaceholderState = .phase0) {
+    init(
+        repoURL: URL? = nil,
+        placeholderState: CoreBridgePlaceholderState = .phase0,
+        availabilityChecker: any FileAvailabilityChecking = LocalFileAvailabilityChecker()
+    ) {
         self.repoURL = repoURL
         self.placeholderState = placeholderState
+        self.availabilityChecker = availabilityChecker
     }
 
     nonisolated var state: BridgeState {
@@ -265,14 +271,18 @@ actor CoreBridge {
     }
 
     func listFiles(repoPath: String, filter: FileFilterSnapshot) async throws -> [FileEntrySnapshot] {
-        try await Task.detached(priority: .userInitiated) {
-            try listCoreFiles(repoPath: repoPath, filter: FileFilter(filter)).map(FileEntrySnapshot.init(coreEntry:))
+        let availabilityChecker = availabilityChecker
+        return try await Task.detached(priority: .userInitiated) {
+            let coreFiles = try listCoreFiles(repoPath: repoPath, filter: FileFilter(filter))
+            return await snapshots(from: coreFiles, repoPath: repoPath, availabilityChecker: availabilityChecker)
         }.value
     }
 
     func getFile(repoPath: String, fileID: Int64) async throws -> FileEntrySnapshot {
-        try await Task.detached(priority: .userInitiated) {
-            try FileEntrySnapshot(coreEntry: getCoreFile(repoPath: repoPath, fileID: fileID))
+        let availabilityChecker = availabilityChecker
+        return try await Task.detached(priority: .userInitiated) {
+            let coreFile = try getCoreFile(repoPath: repoPath, fileID: fileID)
+            return await snapshot(from: coreFile, repoPath: repoPath, availabilityChecker: availabilityChecker)
         }.value
     }
 
@@ -292,10 +302,6 @@ actor CoreBridge {
 
     func writeNote(fileID: Int64, contentMarkdown: String) async throws -> Never {
         try requireGeneratedBindings(for: .writeNote)
-    }
-
-    func syncExternalChanges() async throws -> Never {
-        try requireGeneratedBindings(for: .syncExternalChanges)
     }
 
     func getFSEventCursor() async throws -> Never {
@@ -346,6 +352,33 @@ private func createCoreDiagnosticsSnapshot(repoPath: String) throws -> Diagnosti
 
 private func listCoreFiles(repoPath: String, filter: FileFilter) throws -> [FileEntry] {
     try listFiles(repoPath: repoPath, filter: filter)
+}
+
+private func snapshots(
+    from coreFiles: [FileEntry],
+    repoPath: String,
+    availabilityChecker: any FileAvailabilityChecking
+) async -> [FileEntrySnapshot] {
+    var snapshots: [FileEntrySnapshot] = []
+    snapshots.reserveCapacity(coreFiles.count)
+    for coreFile in coreFiles {
+        let fileSnapshot = await snapshot(from: coreFile, repoPath: repoPath, availabilityChecker: availabilityChecker)
+        snapshots.append(fileSnapshot)
+    }
+    return snapshots
+}
+
+private func snapshot(
+    from coreFile: FileEntry,
+    repoPath: String,
+    availabilityChecker: any FileAvailabilityChecking
+) async -> FileEntrySnapshot {
+    let availability = await availabilityChecker.availability(
+        repoPath: repoPath,
+        relativePath: coreFile.path,
+        sourcePath: coreFile.sourcePath
+    )
+    return FileEntrySnapshot(coreEntry: coreFile) { _, _ in availability }
 }
 
 private func getCoreFile(repoPath: String, fileID: Int64) throws -> FileEntry {

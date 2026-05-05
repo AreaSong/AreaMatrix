@@ -109,6 +109,24 @@ struct ShellFailingWelcomeHelpOpener: WelcomeHelpOpening {
     }
 }
 
+@MainActor
+final class ShellRecordingFileRevealer: RepositoryFileRevealing {
+    private(set) var requests: [(repoPath: String, relativePath: String)] = []
+
+    func revealFile(repoPath: String, relativePath: String) throws {
+        requests.append((repoPath: repoPath, relativePath: relativePath))
+    }
+}
+
+@MainActor
+final class ShellRecordingPathCopier: RepositoryPathCopying {
+    private(set) var requests: [(repoPath: String, relativePath: String)] = []
+
+    func copyPath(repoPath: String, relativePath: String) throws {
+        requests.append((repoPath: repoPath, relativePath: relativePath))
+    }
+}
+
 struct ShellStaticExistingRepositoryMetadataReader: ExistingRepositoryMetadataReading {
     let schemaVersion: Int64
 

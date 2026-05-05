@@ -57,6 +57,16 @@ protocol RepositoryFinderOpening {
     func openRepositoryInFinder(repoPath: String) throws
 }
 
+protocol RepositoryFileRevealing {
+    @MainActor
+    func revealFile(repoPath: String, relativePath: String) throws
+}
+
+protocol RepositoryPathCopying {
+    @MainActor
+    func copyPath(repoPath: String, relativePath: String) throws
+}
+
 protocol AccessibilityAnnouncing {
     @MainActor
     func announce(_ message: String)
@@ -118,6 +128,27 @@ struct NSWorkspaceRepositoryFinderOpener: RepositoryFinderOpening {
     }
 }
 
+struct NSWorkspaceRepositoryFileRevealer: RepositoryFileRevealing {
+    @MainActor
+    func revealFile(repoPath: String, relativePath: String) throws {
+        let url = try RepositoryFilePathResolver.fileURL(repoPath: repoPath, relativePath: relativePath)
+        guard FileManager.default.fileExists(atPath: url.path) else {
+            throw RepositoryFileActionError.fileMissing(relativePath)
+        }
+
+        NSWorkspace.shared.activateFileViewerSelecting([url])
+    }
+}
+
+struct NSPasteboardRepositoryPathCopier: RepositoryPathCopying {
+    @MainActor
+    func copyPath(repoPath: String, relativePath: String) throws {
+        let path = try RepositoryFilePathResolver.fileURL(repoPath: repoPath, relativePath: relativePath).path
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(path, forType: .string)
+    }
+}
+
 struct VoiceOverAccessibilityAnnouncer: AccessibilityAnnouncing {
     @MainActor
     func announce(_ message: String) {
@@ -147,5 +178,39 @@ enum RepositoryFinderOpenError: Error, Equatable, LocalizedError, Sendable {
         case .openRejected(let path):
             return "Finder rejected opening repository: \(path)"
         }
+    }
+}
+
+enum RepositoryFileActionError: Error, Equatable, LocalizedError, Sendable {
+    case unsafeRelativePath(String)
+    case fileMissing(String)
+
+    var errorDescription: String? {
+        switch self {
+        case .unsafeRelativePath(let path):
+            return "File path is outside this repository: \(path)"
+        case .fileMissing(let path):
+            return "File is missing from this repository: \(path)"
+        }
+    }
+}
+
+private enum RepositoryFilePathResolver {
+    static func fileURL(repoPath: String, relativePath: String) throws -> URL {
+        let components = relativePath.split(separator: "/", omittingEmptySubsequences: false)
+        guard !components.isEmpty,
+              !relativePath.hasPrefix("/"),
+              !components.contains(".."),
+              !components.contains(".") else {
+            throw RepositoryFileActionError.unsafeRelativePath(relativePath)
+        }
+
+        let repoURL = URL(fileURLWithPath: repoPath, isDirectory: true).standardizedFileURL
+        let fileURL = repoURL.appendingPathComponent(relativePath).standardizedFileURL
+        guard fileURL.path.hasPrefix(repoURL.path + "/") else {
+            throw RepositoryFileActionError.unsafeRelativePath(relativePath)
+        }
+
+        return fileURL
     }
 }

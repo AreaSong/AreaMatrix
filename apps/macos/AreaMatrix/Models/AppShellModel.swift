@@ -85,6 +85,8 @@ final class OnboardingModel: ObservableObject {
     let diagnosticsCollector: any CoreDiagnosticsCollecting
     let errorMapper: any CoreErrorMapping
     let finderOpener: any RepositoryFinderOpening
+    let fileRevealer: any RepositoryFileRevealing
+    let pathCopier: any RepositoryPathCopying
     let accessibilityAnnouncer: any AccessibilityAnnouncing
     let helpOpener: any WelcomeHelpOpening
     let directoryPicker: any RepositoryDirectoryPicking
@@ -106,6 +108,8 @@ final class OnboardingModel: ObservableObject {
         diagnosticsCollector: any CoreDiagnosticsCollecting = CoreBridge(),
         errorMapper: any CoreErrorMapping = CoreBridge(),
         finderOpener: any RepositoryFinderOpening = NSWorkspaceRepositoryFinderOpener(),
+        fileRevealer: any RepositoryFileRevealing = NSWorkspaceRepositoryFileRevealer(),
+        pathCopier: any RepositoryPathCopying = NSPasteboardRepositoryPathCopier(),
         accessibilityAnnouncer: any AccessibilityAnnouncing = VoiceOverAccessibilityAnnouncer(),
         helpOpener: any WelcomeHelpOpening = LocalWelcomeHelpOpener(),
         directoryPicker: any RepositoryDirectoryPicking = NSOpenPanelRepositoryDirectoryPicker(),
@@ -123,6 +127,8 @@ final class OnboardingModel: ObservableObject {
         self.diagnosticsCollector = diagnosticsCollector
         self.errorMapper = errorMapper
         self.finderOpener = finderOpener
+        self.fileRevealer = fileRevealer
+        self.pathCopier = pathCopier
         self.accessibilityAnnouncer = accessibilityAnnouncer
         self.helpOpener = helpOpener
         self.directoryPicker = directoryPicker
@@ -394,6 +400,37 @@ final class OnboardingModel: ObservableObject {
             try helpOpener.openWelcomeHelp()
         } catch {
             toastMessage = "Learn more is unavailable right now."
+        }
+    }
+
+    @MainActor
+    func showMainListFileInFinder(opening: RepositoryOpeningResult, relativePath: String) {
+        do {
+            try fileRevealer.revealFile(repoPath: opening.config.repoPath, relativePath: relativePath)
+            toastMessage = nil
+        } catch {
+            toastMessage = "File cannot be shown in Finder."
+        }
+    }
+
+    @MainActor
+    func copyMainListPath(opening: RepositoryOpeningResult, relativePath: String) {
+        do {
+            try pathCopier.copyPath(repoPath: opening.config.repoPath, relativePath: relativePath)
+            toastMessage = "Path copied."
+        } catch {
+            toastMessage = "Path cannot be copied."
+        }
+    }
+
+    @MainActor
+    func collectMainListDiagnostics(opening: RepositoryOpeningResult) async {
+        do {
+            let snapshot = try await diagnosticsCollector.createDiagnosticsSnapshot(repoPath: opening.config.repoPath)
+            toastMessage = "Diagnostics collected at \(snapshot.snapshotPath)."
+        } catch {
+            let mapping = await openingFailureMapping(for: error)
+            toastMessage = mapping.userMessage
         }
     }
 

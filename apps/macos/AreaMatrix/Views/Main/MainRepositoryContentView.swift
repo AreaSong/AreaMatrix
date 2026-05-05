@@ -13,11 +13,17 @@ struct MainRepositoryContentView: View {
     let onDropImport: ([URL]) -> Void
     let onOpenSettings: () -> Void
     let onRetryCurrentList: () -> Void
+    let onCollectDiagnostics: () async -> Void
+    let onShowInFinder: (String) -> Void
+    let onCopyPath: (String) -> Void
     @StateObject private var fileListModel: MainFileListModel
     @State private var selectedSidebarID: String = "inbox"
-    @State private var selectedFileID: Int64?
+    @State private var selectedFileIDs: Set<Int64> = []
     @State private var filterText: String = ""
     @State private var isDropTargeted = false
+    @State private var tableSortOrder: [KeyPathComparator<FileEntrySnapshot>] = [
+        KeyPathComparator(\FileEntrySnapshot.importedAt, order: .reverse),
+    ]
 
     var body: some View {
         VStack(spacing: 0) {
@@ -34,14 +40,28 @@ struct MainRepositoryContentView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .task(id: selectedSidebarID) {
             guard state == .list else { return }
-            selectedFileID = nil
+            selectedFileIDs = []
             await fileListModel.loadCurrentCategory(selectedSidebarRow.categoryForFileList)
         }
-        .onChange(of: selectedFileID) { _, fileID in
+        .onChange(of: selectedFileIDs) { _, ids in
             Task {
-                await fileListModel.selectFile(id: fileID)
+                await fileListModel.selectFiles(ids)
             }
         }
+        .sheet(item: actionDestinationBinding) { destination in
+            actionRoutingSheet(destination)
+        }
+    }
+
+    private var actionDestinationBinding: Binding<MainFileActionDestination?> {
+        Binding(
+            get: { fileListModel.pendingActionDestination },
+            set: { value in
+                if value == nil {
+                    fileListModel.clearPendingActionDestination()
+                }
+            }
+        )
     }
 
     private var toolbar: some View {
@@ -127,9 +147,13 @@ struct MainRepositoryContentView: View {
         onDropImport: @escaping ([URL]) -> Void,
         onOpenSettings: @escaping () -> Void = {},
         onRetryCurrentList: @escaping () -> Void = {},
+        onCollectDiagnostics: @escaping () async -> Void = {},
+        onShowInFinder: @escaping (String) -> Void = { _ in },
+        onCopyPath: @escaping (String) -> Void = { _ in },
         fileLister: any CoreFileListing = CoreBridge(),
         fileDetailer: any CoreFileDetailing = CoreBridge(),
-        errorMapper: any CoreErrorMapping = CoreBridge()
+        errorMapper: any CoreErrorMapping = CoreBridge(),
+        diagnosticsCollector: any CoreDiagnosticsCollecting = CoreBridge()
     ) {
         self.opening = opening
         self.state = state
@@ -137,11 +161,15 @@ struct MainRepositoryContentView: View {
         self.onDropImport = onDropImport
         self.onOpenSettings = onOpenSettings
         self.onRetryCurrentList = onRetryCurrentList
+        self.onCollectDiagnostics = onCollectDiagnostics
+        self.onShowInFinder = onShowInFinder
+        self.onCopyPath = onCopyPath
         _fileListModel = StateObject(wrappedValue: MainFileListModel(
             opening: opening,
             fileLister: fileLister,
             fileDetailer: fileDetailer,
-            errorMapper: errorMapper
+            errorMapper: errorMapper,
+            diagnosticsCollector: diagnosticsCollector
         ))
         _selectedSidebarID = State(initialValue: Self.defaultSelectedSidebarID(from: opening.tree.sidebarRows))
     }
@@ -192,6 +220,7 @@ struct MainRepositoryContentView: View {
                     }
                 }
                 Divider()
+                statusBanner
                 fileTable
             }
             .padding(18)
@@ -200,31 +229,36 @@ struct MainRepositoryContentView: View {
     }
 
     private var fileTable: some View {
-        Table(visibleFiles, selection: $selectedFileID) {
-            TableColumn("Name") { file in
+        Table(visibleFiles, selection: $selectedFileIDs, sortOrder: $tableSortOrder) {
+            TableColumn("Name", sortUsing: KeyPathComparator(\FileEntrySnapshot.currentName)) { file in
                 Text(file.currentName)
                     .lineLimit(1)
             }
-            TableColumn("Category / Path") { file in
+            TableColumn("Category / Path", sortUsing: KeyPathComparator(\FileEntrySnapshot.path)) { file in
                 Text(file.categoryPathDisplay)
                     .lineLimit(1)
                     .foregroundStyle(.secondary)
             }
-            TableColumn("Size") { file in
+            TableColumn("Size", sortUsing: KeyPathComparator(\FileEntrySnapshot.sizeBytes)) { file in
                 Text(file.sizeDisplay)
                     .monospacedDigit()
             }
-            TableColumn("Modified") { file in
+            TableColumn("Modified", sortUsing: KeyPathComparator(\FileEntrySnapshot.updatedAt)) { file in
                 Text(file.updatedAtDisplay)
                     .monospacedDigit()
             }
-            TableColumn("Imported") { file in
+            TableColumn("Imported", sortUsing: KeyPathComparator(\FileEntrySnapshot.importedAt)) { file in
                 Text(file.importedAtDisplay)
                     .monospacedDigit()
             }
-            TableColumn("Status") { file in
+            TableColumn("Status", sortUsing: KeyPathComparator(\FileEntrySnapshot.statusDisplay)) { file in
                 Text(file.statusDisplay)
             }
+        }
+        .contextMenu(forSelectionType: Int64.self) { selection in
+            contextMenu(for: selection)
+        } primaryAction: { selection in
+            selectedFileIDs = selection
         }
         .overlay {
             if !fileListModel.isLoading && visibleFiles.isEmpty {
@@ -235,7 +269,83 @@ struct MainRepositoryContentView: View {
     }
 
     private var visibleFiles: [FileEntrySnapshot] {
-        fileListModel.files.filter { selectedSidebarRow.contains($0) }
+        MainListVisibleFileFiltering.visibleFiles(
+            from: fileListModel.files,
+            sidebarRow: selectedSidebarRow,
+            filterText: filterText
+        )
+        .sorted(using: tableSortOrder)
+    }
+
+    @ViewBuilder
+    private var statusBanner: some View {
+        if let banner = fileListModel.statusBanner {
+            HStack(spacing: 10) {
+                Label(banner.message, systemImage: "arrow.triangle.2.circlepath")
+                    .font(.callout)
+                Spacer()
+                Button("Retry") {
+                    Task {
+                        await fileListModel.retryCurrentCategory()
+                    }
+                }
+                Button("Dismiss") {
+                    fileListModel.clearStatusBanner()
+                }
+            }
+            .padding(10)
+            .background(Color.yellow.opacity(0.12))
+        }
+    }
+
+    @ViewBuilder
+    private func contextMenu(for selection: Set<Int64>) -> some View {
+        let selectedFiles = files(for: selection)
+        if selectedFiles.count == 1, let file = selectedFiles.first {
+            Button("Show in Finder") {
+                onShowInFinder(file.path)
+            }
+            Button("Rename...") {
+                fileListModel.beginRename(fileID: file.id)
+            }
+            .disabled(fileListModel.writeActionDisabledReason(fileID: file.id) != nil)
+            Button("Change Category...") {
+                fileListModel.beginChangeCategory(fileID: file.id)
+            }
+            .disabled(fileListModel.writeActionDisabledReason(fileID: file.id) != nil)
+            Button("Delete...", role: .destructive) {
+                fileListModel.beginDelete(fileID: file.id)
+            }
+            .disabled(fileListModel.writeActionDisabledReason(fileID: file.id) != nil)
+            Divider()
+            Button("Copy Path") {
+                onCopyPath(file.path)
+            }
+        } else {
+            Button("Copy Paths") {
+                onCopyPath(selectedFiles.map(\.path).joined(separator: "\n"))
+            }
+            .disabled(selectedFiles.isEmpty)
+        }
+    }
+
+    private func files(for selection: Set<Int64>) -> [FileEntrySnapshot] {
+        visibleFiles.filter { selection.contains($0.id) }
+    }
+
+    private func actionRoutingSheet(_ destination: MainFileActionDestination) -> some View {
+        let file = file(for: destination.fileID)
+        return MainFileActionRoutingSheet(
+            destination: destination,
+            file: file,
+            categoryRows: opening.tree.sidebarRows,
+            onDismiss: fileListModel.clearPendingActionDestination
+        )
+    }
+
+    private func file(for fileID: Int64) -> FileEntrySnapshot? {
+        fileListModel.files.first { $0.id == fileID } ??
+            fileListModel.selectedFileDetail.flatMap { $0.id == fileID ? $0 : nil }
     }
 
     private func currentListErrorPane(_ error: CoreErrorMappingSnapshot) -> some View {
@@ -257,142 +367,78 @@ struct MainRepositoryContentView: View {
                         onRetryCurrentList()
                     }
                 }
+                Button("Collect Diagnostics...") {
+                    if state == .list {
+                        Task {
+                            await fileListModel.collectCurrentListDiagnostics()
+                        }
+                    } else {
+                        Task {
+                            await onCollectDiagnostics()
+                        }
+                    }
+                }
+                .disabled(isCollectingCurrentListDiagnostics)
                 DisclosureGroup("Technical Details") {
                     Text(error.rawContext)
                         .font(.system(.caption, design: .monospaced))
                         .textSelection(.enabled)
                 }
             }
+            currentListDiagnosticsStatus
         }
         .padding(18)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .accessibilityElement(children: .contain)
     }
 
-    private var detailPane: some View {
-        Group {
-            if let error = fileListModel.detailErrorMapping {
-                detailErrorPane(error)
-            } else if fileListModel.isDetailLoading {
-                detailLoadingPane
-            } else if let detail = fileListModel.selectedFileDetail {
-                detailMetadataPane(detail)
-            } else {
-                emptyDetailPane
-            }
+    private var isCollectingCurrentListDiagnostics: Bool {
+        if case .collecting = fileListModel.diagnosticsState {
+            return true
         }
-        .frame(minWidth: 220, idealWidth: 260, maxWidth: 320, maxHeight: .infinity, alignment: .topLeading)
+        return false
     }
 
-    private var emptyDetailPane: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("选择一个文件查看详情")
-                .font(.headline)
-            Text("文件的元数据、改动时间线和伴生笔记会显示在这里。")
-                .foregroundStyle(.secondary)
-        }
-        .padding(18)
-    }
-
-    private var detailLoadingPane: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            ProgressView()
-                .controlSize(.small)
-            Text("Loading file details")
-                .font(.headline)
-        }
-        .padding(18)
-    }
-
-    private func detailErrorPane(_ error: CoreErrorMappingSnapshot) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Label("File details cannot be loaded", systemImage: "exclamationmark.triangle")
-                .font(.headline)
-            Text(error.userMessage)
-                .foregroundStyle(.secondary)
-            Text(error.suggestedAction)
+    @ViewBuilder
+    private var currentListDiagnosticsStatus: some View {
+        switch fileListModel.diagnosticsState {
+        case .idle:
+            EmptyView()
+        case .collecting:
+            Label("Preparing diagnostics...", systemImage: "arrow.clockwise")
                 .font(.callout)
                 .foregroundStyle(.secondary)
-            Button("Retry") {
+        case .collected(let snapshot):
+            VStack(alignment: .leading, spacing: 4) {
+                Label("Diagnostics collected", systemImage: "doc.badge.gearshape")
+                Text(snapshot.snapshotPath)
+                    .font(.system(.caption, design: .monospaced))
+                    .textSelection(.enabled)
+            }
+            .font(.callout)
+        case .failed(let mapping):
+            VStack(alignment: .leading, spacing: 4) {
+                Label("Diagnostics could not be collected", systemImage: "exclamationmark.triangle")
+                Text(mapping.userMessage)
+                Text(mapping.suggestedAction)
+                    .foregroundStyle(.secondary)
+            }
+            .font(.callout)
+        }
+    }
+
+    private var detailPane: some View {
+        MainRepositoryDetailPane(
+            selection: fileListModel.selection,
+            detailErrorMapping: fileListModel.detailErrorMapping,
+            isDetailLoading: fileListModel.isDetailLoading,
+            selectedFileDetail: fileListModel.selectedFileDetail,
+            onRetrySelectedFileDetail: {
                 Task {
                     await fileListModel.retrySelectedFileDetail()
                 }
             }
-            DisclosureGroup("Technical Details") {
-                Text(error.rawContext)
-                    .font(.system(.caption, design: .monospaced))
-                    .textSelection(.enabled)
-            }
-        }
-        .padding(18)
-        .accessibilityElement(children: .contain)
+        )
+        .frame(minWidth: 220, idealWidth: 260, maxWidth: 320, maxHeight: .infinity, alignment: .topLeading)
     }
-
-    private func detailMetadataPane(_ detail: FileEntrySnapshot) -> some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 14) {
-                Text(detail.currentName)
-                    .font(.headline)
-                    .textSelection(.enabled)
-                metadataRows(for: detail)
-            }
-            .padding(18)
-            .frame(maxWidth: .infinity, alignment: .topLeading)
-        }
-    }
-
-    private func metadataRows(for detail: FileEntrySnapshot) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            metadataRow("Category", detail.category)
-            metadataRow("Path", detail.path)
-            metadataRow("Size", detail.sizeDisplay)
-            metadataRow("Storage", detail.storageMode)
-            metadataRow("Origin", detail.origin)
-            metadataRow("Imported", detail.importedAtDisplay)
-            metadataRow("Modified", detail.updatedAtDisplay)
-            metadataRow("SHA-256", detail.hashSha256)
-        }
-    }
-
-    private func metadataRow(_ label: String, _ value: String) -> some View {
-        VStack(alignment: .leading, spacing: 3) {
-            Text(label)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            Text(value)
-                .font(.callout)
-                .textSelection(.enabled)
-                .lineLimit(3)
-        }
-    }
-}
-
-private extension FileEntrySnapshot {
-    var categoryPathDisplay: String {
-        let pathPrefix = path.split(separator: "/").dropLast().joined(separator: "/")
-        return pathPrefix.isEmpty ? category : pathPrefix
-    }
-
-    var sizeDisplay: String {
-        ByteCountFormatter.string(fromByteCount: sizeBytes, countStyle: .file)
-    }
-
-    var importedAtDisplay: String {
-        Self.dateFormatter.string(from: Date(timeIntervalSince1970: TimeInterval(importedAt)))
-    }
-
-    var updatedAtDisplay: String {
-        Self.dateFormatter.string(from: Date(timeIntervalSince1970: TimeInterval(updatedAt)))
-    }
-
-    var statusDisplay: String {
-        storageMode == "Indexed" ? "Index-only" : "OK"
-    }
-
-    private static let dateFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .none
-        return formatter
-    }()
 }

@@ -21,6 +21,8 @@ struct RepositoryOpeningResult: Equatable, Sendable {
     var tree: RepositoryTreeNodeSnapshot
     var currentCategoryFiles: [FileEntrySnapshot]
     var currentCategoryListError: CoreErrorMappingSnapshot? = nil
+    var isReadOnly: Bool = false
+    var writeLockedFileIDs: Set<Int64> = []
 
     var isEmpty: Bool {
         tree.totalFileCount == 0 && currentCategoryFiles.isEmpty
@@ -178,7 +180,8 @@ extension CoreBridge: CoreEmptyRepositoryOpening, CoreRepositoryTreeListing {
             config: config,
             tree: tree,
             currentCategoryFiles: currentCategory.files,
-            currentCategoryListError: currentCategory.errorMapping
+            currentCategoryListError: currentCategory.errorMapping,
+            isReadOnly: RepositoryOpeningAccessState.isReadOnly(repoPath: repoPath)
         )
     }
 
@@ -188,12 +191,41 @@ extension CoreBridge: CoreEmptyRepositoryOpening, CoreRepositoryTreeListing {
     }
 }
 
+private enum RepositoryOpeningAccessState {
+    static func isReadOnly(repoPath: String) -> Bool {
+        !FileManager.default.isWritableFile(atPath: repoPath)
+    }
+}
+
 private func loadOpeningCoreConfig(repoPath: String) throws -> RepoConfig {
     try loadConfig(repoPath: repoPath)
 }
 
 private func listOpeningCoreFiles(repoPath: String, filter: FileFilterSnapshot) throws -> [FileEntrySnapshot] {
-    try listFiles(repoPath: repoPath, filter: FileFilter(filter)).map(FileEntrySnapshot.init(coreEntry:))
+    try listFiles(repoPath: repoPath, filter: FileFilter(filter)).map { coreEntry in
+        FileEntrySnapshot(coreEntry: coreEntry) { path, sourcePath in
+            FileAvailabilityResolverForOpening.availability(
+                repoPath: repoPath,
+                relativePath: path,
+                sourcePath: sourcePath
+            )
+        }
+    }
+}
+
+private enum FileAvailabilityResolverForOpening {
+    static func availability(repoPath: String, relativePath: String, sourcePath: String?) -> FileAvailabilitySnapshot {
+        if isICloudPlaceholder(relativePath) || sourcePath.map(isICloudPlaceholder) == true {
+            return .iCloudPlaceholder
+        }
+
+        let fileURL = URL(fileURLWithPath: repoPath, isDirectory: true).appendingPathComponent(relativePath)
+        return FileManager.default.fileExists(atPath: fileURL.path) ? .available : .missing
+    }
+
+    private static func isICloudPlaceholder(_ path: String) -> Bool {
+        path.hasSuffix(".icloud") || path.contains(".icloud/")
+    }
 }
 
 private enum CurrentCategoryFileLoading {

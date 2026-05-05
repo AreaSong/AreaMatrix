@@ -1,0 +1,25 @@
+一、执行结论：已完成。
+
+二、执行范围：单任务 `2-1/task-25`。本轮修复集中在 `apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`；未触碰 `core/src/**`。此前漂移的 `docs/core/capability-specs/stage-1-mvp/C1-12-get-file-detail.md` 已恢复，不再出现在工作树变更中。
+
+三、完成情况：
+- S1-09 的 `Retry` / `Collect Diagnostics...` 已补齐，诊断入口走 `CoreDiagnosticsCollecting.createDiagnosticsSnapshot`。
+- Rename / Change Category / Delete 已按 repo read-only、list loading、import lock 建模禁用；Show in Finder / Copy Path 保留。
+- `MainFileActionRoutingSheet` 去掉了硬编码 `inbox/docs/media` 和静态 `No conflict at target location`，不再伪造后续 S1-35 能力。
+- C1-11 / C1-12 / C1-15 仍通过 `CoreBridge` 真实接入；没有新增 control map 之外 Core 调用。
+
+四、工程质量：
+- 新增状态集中在 `MainFileListModel`，视图只做展示和事件转发。
+- 错误态、诊断成功/失败、写操作禁用边界都有测试覆盖。
+- 没有新增依赖；没有 mock-only 成功路径或硬编码通过态。
+- SwiftFormat / SwiftLint 未运行：当前 PATH 下未找到 `swiftformat` / `swiftlint`。
+
+五、验证情况：
+- `xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：构建通过后被本机 sandbox 阻断，错误为 `com.apple.testmanagerd.control ... Sandbox restriction`。
+- `./dev test macos`：通过；按 repo fallback 使用 `xcrun xctest`，98 tests、0 failures。
+- `xcodebuild ... build CODE_SIGNING_ALLOWED=NO`：通过，`BUILD SUCCEEDED`。
+- `git diff --check`：通过。
+
+六、风险与后续：
+- 未做真实 UI 手动交互验收。
+- 后续建议进入 `2-1/task-25` verify-ready 验收；如果继续推进写操作真实闭环，应由 S1-33/S1-34/S1-35 对应任务接管。

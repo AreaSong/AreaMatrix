@@ -99,7 +99,7 @@ final class MainListFilesTests: XCTestCase {
         let requests = await detailer.recordedRequests()
 
         XCTAssertEqual(requests, [MainListFileDetailRequest(repoPath: "/tmp/repo", fileID: detail.id)])
-        XCTAssertEqual(model.selectedFileID, detail.id)
+        XCTAssertEqual(model.selection, .single(detail.id))
         XCTAssertEqual(model.selectedFileDetail, detail)
         XCTAssertNil(model.detailErrorMapping)
         XCTAssertFalse(model.isDetailLoading)
@@ -145,7 +145,7 @@ final class MainListFilesTests: XCTestCase {
         await model.selectFile(id: detail.id)
         await model.loadCurrentCategory("finance")
 
-        XCTAssertNil(model.selectedFileID)
+        XCTAssertEqual(model.selection, .none)
         XCTAssertNil(model.selectedFileDetail)
         XCTAssertNil(model.detailErrorMapping)
         XCTAssertFalse(model.isDetailLoading)
@@ -205,6 +205,22 @@ final class MainListFilesTests: XCTestCase {
 
         XCTAssertEqual(detail, listed)
         XCTAssertEqual(detail.currentName, listed.currentName)
+    }
+
+    func testDefaultCoreBridgeMarksMissingFilesFromFilesystemState() async throws {
+        let repoURL = try makeMainListTemporaryRepositoryURL()
+        defer { try? FileManager.default.removeItem(at: repoURL) }
+        let docsURL = repoURL.appendingPathComponent("docs", isDirectory: true)
+        let reportURL = docsURL.appendingPathComponent("report.md")
+        try FileManager.default.createDirectory(at: docsURL, withIntermediateDirectories: true)
+        try "report".write(to: reportURL, atomically: true, encoding: .utf8)
+
+        let bridge = CoreBridge()
+        try await bridge.adoptExistingRepository(repoPath: repoURL.path)
+        try FileManager.default.removeItem(at: reportURL)
+        let listed = try await firstListedFile(bridge: bridge, repoPath: repoURL.path, category: "docs")
+
+        XCTAssertEqual(listed.statusDisplay, "Missing")
     }
 
     func testDefaultCoreBridgeListsRealPopulatedRepositoryTreeForMainList() async throws {

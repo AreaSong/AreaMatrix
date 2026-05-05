@@ -28,6 +28,22 @@ struct FileFilterSnapshot: Equatable, Sendable {
     }
 }
 
+enum FileAvailabilitySnapshot: String, Equatable, Sendable {
+    case available
+    case missing
+    case iCloudPlaceholder
+}
+
+protocol FileAvailabilityChecking: Sendable {
+    func availability(repoPath: String, relativePath: String, sourcePath: String?) async -> FileAvailabilitySnapshot
+}
+
+struct LocalFileAvailabilityChecker: FileAvailabilityChecking {
+    func availability(repoPath: String, relativePath: String, sourcePath: String?) async -> FileAvailabilitySnapshot {
+        FileAvailabilityResolver.availability(repoPath: repoPath, relativePath: relativePath, sourcePath: sourcePath)
+    }
+}
+
 struct FileEntrySnapshot: Equatable, Identifiable, Sendable {
     var id: Int64
     var path: String
@@ -41,6 +57,20 @@ struct FileEntrySnapshot: Equatable, Identifiable, Sendable {
     var sourcePath: String?
     var importedAt: Int64
     var updatedAt: Int64
+    var availability: FileAvailabilitySnapshot = .available
+}
+
+extension FileEntrySnapshot {
+    var statusDisplay: String {
+        switch availability {
+        case .missing:
+            return "Missing"
+        case .iCloudPlaceholder:
+            return "iCloud"
+        case .available:
+            return storageMode == "Indexed" ? "Index-only" : "OK"
+        }
+    }
 }
 
 extension CoreBridge: CoreFileListing, CoreFileDetailing {}
@@ -59,7 +89,7 @@ extension FileFilter {
 }
 
 extension FileEntrySnapshot {
-    init(coreEntry: FileEntry) {
+    init(coreEntry: FileEntry, availabilityChecker: (String, String?) -> FileAvailabilitySnapshot) {
         id = coreEntry.id
         path = coreEntry.path
         originalName = coreEntry.originalName
@@ -72,6 +102,22 @@ extension FileEntrySnapshot {
         sourcePath = coreEntry.sourcePath
         importedAt = coreEntry.importedAt
         updatedAt = coreEntry.updatedAt
+        availability = availabilityChecker(coreEntry.path, coreEntry.sourcePath)
+    }
+}
+
+private enum FileAvailabilityResolver {
+    static func availability(repoPath: String, relativePath: String, sourcePath: String?) -> FileAvailabilitySnapshot {
+        if isICloudPlaceholder(relativePath) || sourcePath.map(isICloudPlaceholder) == true {
+            return .iCloudPlaceholder
+        }
+
+        let fileURL = URL(fileURLWithPath: repoPath, isDirectory: true).appendingPathComponent(relativePath)
+        return FileManager.default.fileExists(atPath: fileURL.path) ? .available : .missing
+    }
+
+    private static func isICloudPlaceholder(_ path: String) -> Bool {
+        path.hasSuffix(".icloud") || path.contains(".icloud/")
     }
 }
 

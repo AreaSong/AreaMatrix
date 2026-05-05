@@ -213,7 +213,10 @@ struct MainWindow: View {
                     model.startImportEntry(opening: opening, source: .dropZone, urls: urls)
                 },
                 onOpenSettings: { Task { await model.beginSettingsRepositoryPathValidation(opening.config.repoPath) } },
-                onRetryCurrentList: { Task { await model.retryConfigurationLoad() } }
+                onRetryCurrentList: { Task { await model.retryConfigurationLoad() } },
+                onCollectDiagnostics: { await model.collectMainListDiagnostics(opening: opening) },
+                onShowInFinder: { model.showMainListFileInFinder(opening: opening, relativePath: $0) },
+                onCopyPath: { model.copyMainListPath(opening: opening, relativePath: $0) }
             )
         case .mainList(let opening):
             MainRepositoryContentView(
@@ -224,7 +227,10 @@ struct MainWindow: View {
                     model.startImportEntry(opening: opening, source: .dropZone, urls: urls)
                 },
                 onOpenSettings: { Task { await model.beginSettingsRepositoryPathValidation(opening.config.repoPath) } },
-                onRetryCurrentList: { Task { await model.retryConfigurationLoad() } }
+                onRetryCurrentList: { Task { await model.retryConfigurationLoad() } },
+                onCollectDiagnostics: { await model.collectMainListDiagnostics(opening: opening) },
+                onShowInFinder: { model.showMainListFileInFinder(opening: opening, relativePath: $0) },
+                onCopyPath: { model.copyMainListPath(opening: opening, relativePath: $0) }
             )
         case .configurationError(let failure):
             ConfigurationErrorView(

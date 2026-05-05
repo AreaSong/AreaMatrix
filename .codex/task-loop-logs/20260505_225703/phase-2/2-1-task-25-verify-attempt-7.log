@@ -1,0 +1,56 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`2-1/task-25`
+- 对应路径：
+- `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-1-first-launch-main/task-25-s1-09-page-integration-verify.md`
+- `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`
+- `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`
+- `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+- `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：0
+- 通过项数：10
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- page-feature task 覆盖：通过。`2-1/task-22/23/24` 分别对应 C1-11/C1-12/C1-15；control map 明确 S1-09 绑定 `list_files/get_file/list_tree_json` 和这 4 个 prompt。证据：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:24`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift:273`。
+- 页面闭环：通过。Tree/List/Detail 通过 `CoreBridge` 串接，分类切换触发列表加载，单选触发详情加载，多选进入多选摘要，错误态保持 inline。证据：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift:41`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileListModel.swift:149`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryDetailPane.swift:10`。
+- mock/fixture/硬编码状态：通过。生产路径的 S1-09 三个 Core 能力调用真实 UniFFI 绑定；fixture 仅出现在测试文件。证据：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift:353`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/MainListFilesTests.swift:190`。
+- 未新增 control map 外能力：通过。右键 Rename/Change Category/Delete 只路由到对应 sheet，不在 S1-09 中调用 C1-22/C1-23/C1-24。证据：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift:301`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainFileActionRoutingSheet.swift:9`。
+- Expected New Paths：通过。`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`project.pbxproj` 均已落地。
+- Forbidden Touches：通过。`git status --short -- core/src ...` 与 `git diff --name-only -- core/src ...` 未显示 `core/src/**` 变更。
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。主模型、Bridge、视图、过滤和 action sheet 已拆分，关键文件均低于 500 行。
+- 注释 / rustdoc / 文档同步：通过。本 task 未新增 Rust public API；UDL 已包含 `list_files/get_file/list_tree_json`。证据：`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:68`。
+- 错误处理与边界处理：通过。列表错误、详情错误、DB locked 诊断、外部 rename/remove、只读/import lock 均有显式路径。证据：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileListModel.swift:219`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift:351`。
+- 测试与验证覆盖：通过。`./dev test macos` 最终 99 tests、0 failures；S1-09 相关 `MainListFilesTests`、`MainListIntegrationClosureTests`、`MainListIntegrationFilterTests` 均通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。手写生产路径未发现 `try!`、mock-only 闭环；UniFFI 生成文件中的 `try!` 属生成绑定，不作为本 task 手写实现阻塞。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+- 结果：失败，退出码 65；失败原因是本地 sandbox 无法连接 `com.apple.testmanagerd.control`，不是测试断言失败。
+- 已运行：`./dev test macos`
+- 结果：通过。该命令先运行标准 `xcodebuild test`，识别 sandbox 限制后按 repo-local validation-driver 复用已构建 XCTest bundle；`xcrun xctest` 通过，99 tests、0 failures。
+- 缺失：未缺失必需验证；manifest 命令已尝试，环境阻断已由 repo-local macOS test gate 合规 fallback 覆盖。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS

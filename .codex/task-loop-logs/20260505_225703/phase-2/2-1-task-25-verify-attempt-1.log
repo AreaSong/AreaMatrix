@@ -1,0 +1,96 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`2-1/task-25`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-1-first-launch-main/task-25-s1-09-page-integration-verify.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-09-main-list.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：0
+- 通过项数：8
+- 不通过项数：2
+- 阻塞项数：1
+
+四、逐项验收结果
+
+- 项目：Exact Docs / manifest / 依赖读取
+- 结果：通过
+- 证据：`2-1/task-25` manifest 声明 6 个 Exact Docs、依赖 `2-1/task-22/23/24`，均已读取并交叉检查。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-2.md:718`
+
+- 项目：C1-11 / C1-12 / C1-15 真实 CoreBridge 接入
+- 结果：通过
+- 证据：`CoreBridge.listFiles/getFile/listTreeJSON` 分别调用真实 UniFFI 绑定 `listFiles/getFile/listTreeJson`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift:267`
+
+- 项目：S1-09 Tree/List/Detail 联动
+- 结果：通过
+- 证据：Tree row 选择触发 `loadCurrentCategory`，List 行选择触发 `selectFile`，Detail 通过 `getFile` 加载。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift:38`
+
+- 项目：当前列表过滤
+- 结果：通过
+- 证据：过滤只作用于已加载文件名，并配合 sidebar row path prefix 做当前范围过滤，未新增全库搜索能力。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainListVisibleFileFiltering.swift:3`
+
+- 项目：错误态闭环
+- 结果：不通过
+- 证据：S1-09 要求当前 List 查询失败时保留 Tree/Toolbar，DB locked 显示 `Retry` / `Collect Diagnostics...`；实现只有 `Retry` 和 `Technical Details`，缺少 `Collect Diagnostics...` 入口。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-09-main-list.md:68`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift:249`
+
+- 项目：Expected New Paths
+- 结果：通过
+- 证据：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`apps/macos/AreaMatrix.xcodeproj/project.pbxproj` 均已存在，且新增测试/源码已加入 Xcode project。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj:48`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git diff --name-only -- core/src` 无输出，未发现 `core/src/**` 被本任务触碰。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+- 项目：验证命令
+- 结果：不通过
+- 证据：manifest 指定的原始 `xcodebuild test ...` 退出 65，被本地 sandbox 阻断 `com.apple.testmanagerd.control`；repo-local `./dev test macos` fallback 通过 86 tests，但原始命令未直接完成。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/.codex/skills-src/areamatrix-validation-driver/references/validation-matrix.md:45`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。S1-09 状态拆在 `MainFileListModel`、`MainListVisibleFileFiltering`、`MainRepositoryContentView`，Core 调用经协议和 `CoreBridge` 注入，未绕过桥接。
+- 注释 / rustdoc / 文档同步：通过。当前为 Swift UI/bridge wiring，未新增 Rust public API；UDL 与 Core API 的三项签名一致。
+- 错误处理与边界处理：不通过。当前 List DB 错误有 inline error 和 Retry，但缺少 page spec 明确要求的 `Collect Diagnostics...`。
+- 测试与验证覆盖：部分通过。`./dev test macos` 通过 86 tests；原始 manifest `xcodebuild test` 被本地 sandbox 阻断。
+- 占位、硬编码、mock-only、一次性实现检查：通过。生产路径未发现 mock-only；测试替身只在 XCTest 中使用。
+
+六、阻塞项
+
+- P1：S1-09 当前列表错误态缺少 `Collect Diagnostics...`
+- 说明：page spec 明确要求 DB locked inline error 显示 `Retry` / `Collect Diagnostics...`，现有 S1-09 错误面板没有诊断收集入口，导致“页面状态、错误态完整闭环”无法证明通过。
+- 绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift`
+- 行号：249
+- 为什么导致不通过：这是 `2-1/task-25` 的整页集成验收项，属于 S1-09 + C1-11 查询失败错误态，不能作为后续优化放过。
+
+七、验证情况
+
+- 已运行：`xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+- 结果：失败 / 环境阻断，退出 65，`testmanagerd.control` sandbox restriction。
+- 已运行：`./dev test macos`
+- 结果：通过。标准 `xcodebuild test` 被同类 sandbox 阻断后，复用 built XCTest bundle 直跑，86 tests passed。
+- 已运行：`xcodebuild -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' build CODE_SIGNING_ALLOWED=NO`
+- 结果：通过，`BUILD SUCCEEDED`。
+- 未运行：SwiftLint / SwiftFormat
+- 原因：当前环境 `swiftlint`、`swiftformat` 命令不可用。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+
+VERIFY_RESULT: FAIL

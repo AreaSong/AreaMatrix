@@ -1,0 +1,53 @@
+一、执行结论
+
+- 已完成：`2-1/task-25` repair retry 已修复上一轮验收失败项。
+- 指定 `xcodebuild test` 仍被当前 sandbox 的 `testmanagerd` 权限阻断，但仓库定义的 macOS fallback 验证通过。
+
+二、执行范围
+
+- 单任务：`2-1/task-25`
+- 修改范围：
+  - `apps/macos/AreaMatrix/Bridge/CoreFileListing.swift`
+  - `apps/macos/AreaMatrix/Models/MainFileListModel.swift`
+  - `apps/macos/AreaMatrix/Models/MainListVisibleFileFiltering.swift`
+  - `apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift`
+  - `apps/macos/AreaMatrixTests/MainListFilesTests.swift`
+  - `apps/macos/AreaMatrixTests/MainListIntegrationClosureTests.swift`
+  - `apps/macos/AreaMatrixTests/MainListIntegrationFilterTests.swift`
+  - `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+  - `docs/core/capability-specs/stage-1-mvp/C1-12-get-file-detail.md`
+
+三、完成情况
+
+- page-feature 覆盖：已补齐 S1-09 的 `C1-11/C1-12/C1-15` 页面闭环证据，page audit 显示 S1-09 Missing/Extra 均为 `None`。
+- 页面状态/入口/退出/错误态：已加入多选状态、右键出口 wiring、列表内同步 banner、单文件详情错误恢复。
+- mock/fixture/硬编码状态：移除了 S1-09 当前列表错误里的 diagnostics 越界入口；状态列改为 `OK / Index-only / Missing / iCloud` 的模型层展示。
+- control map 边界：S1-09 不再接入 `createDiagnosticsSnapshot`；Onboarding 既有 diagnostics 未触碰。
+- Forbidden Touches：未触碰 `core/src/**`，`git status --short -- core/src` 无输出。
+- SSOT 漂移：已把 `C1-12` 服务页面补上 `S1-09 main-list`，对齐 task/control map。
+
+四、工程质量
+
+- 代码结构：选择状态、右键目的地、同步 banner 都集中在 `MainFileListModel`；可见列表过滤拆到 `MainListVisibleFileFiltering`。
+- 错误与边界：多选不会触发单文件 `getFile`；外部删除映射为 selected file missing；partial sync 走非阻断 banner。
+- 占位检查：没有新增 mock-only Core wiring，没有新增 control map 外 Core 调用。
+- 依赖：未新增依赖。
+- SwiftFormat/SwiftLint：当前环境没有 Homebrew `swiftformat` / `swiftlint`，无法运行仓库 CI 要求的这两个命令；`xcrun --find swift-format` 存在但不是仓库配置的门禁工具。
+
+五、验证情况
+
+- `xcodebuild -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' build CODE_SIGNING_ALLOWED=NO`：通过。
+- `xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：失败，code 65；原因是 `com.apple.testmanagerd.control` lookup error 159 sandbox restriction。
+- `./dev test macos`：通过；先复现同类 sandbox block，再用 `xcrun xctest` 执行同一 XCTest bundle，`93 tests, 0 failures`。
+- `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`：通过，`doctor: OK`。
+- `python3 tasks/prompts/_shared/prompt_pipeline.py audit --pages`：通过，S1-09 为 OK。
+- `git diff --check`：通过。
+- `git status --short -- core/src`：通过，无 Forbidden Touches。
+
+六、风险与后续
+
+- 剩余风险：未做真实 UI 手工点击验证；exact manifest `xcodebuild test` 在当前 sandbox 仍无法 clean pass。
+- High 风险影响：本次只改 S1-09 macOS 页面 wiring、测试和 C1-12 文档漂移，不涉及用户文件删除/移动、DB migration、Core Rust 实现或 UDL 破坏性变更。
+- 回滚思路：回滚上述修改文件即可；没有 migration、外部资源或用户数据落盘变更。
+- 建议下一个任务：进入 `2-1/task-25` verify-ready 验收，重点复核右键/多选/状态列和 control map 边界证据。
+
