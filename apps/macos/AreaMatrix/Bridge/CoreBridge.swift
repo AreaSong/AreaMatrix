@@ -278,8 +278,10 @@ actor CoreBridge {
         try requireGeneratedBindings(for: .listChanges)
     }
 
-    func listTreeJSON(locale: String) async throws -> Never {
-        try requireGeneratedBindings(for: .listTreeJSON)
+    func listTreeJSON(repoPath: String, locale: String) async throws -> String {
+        try await Task.detached(priority: .userInitiated) {
+            try listCoreTreeJSON(repoPath: repoPath, locale: locale)
+        }.value
     }
 
     func readNote(fileID: Int64) async throws -> Never {
@@ -342,6 +344,10 @@ private func createCoreDiagnosticsSnapshot(repoPath: String) throws -> Diagnosti
 
 private func listCoreFiles(repoPath: String, filter: FileFilter) throws -> [FileEntry] {
     try listFiles(repoPath: repoPath, filter: filter)
+}
+
+private func listCoreTreeJSON(repoPath: String, locale: String) throws -> String {
+    try listTreeJson(repoPath: repoPath, locale: locale)
 }
 
 private extension StorageMode {

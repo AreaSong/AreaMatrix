@@ -1,10 +1,10 @@
 {
-  "latest_run_id": "20260505_140302",
+  "latest_run_id": "20260505_222707",
   "runs": [
     {
       "completed": 1,
-      "exit_code": null,
-      "finished_at": "",
+      "exit_code": 0,
+      "finished_at": "2026-05-05T14:40:14.234006+00:00",
       "phases": [
         "phase-0",
         "phase-1",
@@ -12,14 +12,54 @@
         "phase-3",
         "phase-4"
       ],
-      "retries": 1,
+      "retries": 0,
+      "run_id": "20260505_222707",
+      "start_from": "2-1/task-20",
+      "started_at": "2026-05-05T14:27:07.250206+00:00",
+      "status": "completed",
+      "stop_after": "",
+      "summary_file": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-runs/20260505_222707/summary.json",
+      "updated_at": "2026-05-05T14:40:14.234207+00:00"
+    },
+    {
+      "completed": 0,
+      "exit_code": 1,
+      "finished_at": "2026-05-05T14:21:56.187246+00:00",
+      "phases": [
+        "phase-0",
+        "phase-1",
+        "phase-2",
+        "phase-3",
+        "phase-4"
+      ],
+      "retries": 0,
+      "run_id": "20260505_221315",
+      "start_from": "2-1/task-20",
+      "started_at": "2026-05-05T14:13:15.591582+00:00",
+      "status": "failed",
+      "stop_after": "",
+      "summary_file": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-runs/20260505_221315/summary.json",
+      "updated_at": "2026-05-05T14:21:56.188115+00:00"
+    },
+    {
+      "completed": 1,
+      "exit_code": 1,
+      "finished_at": "2026-05-05T07:10:49.734377+00:00",
+      "phases": [
+        "phase-0",
+        "phase-1",
+        "phase-2",
+        "phase-3",
+        "phase-4"
+      ],
+      "retries": 2,
       "run_id": "20260505_140302",
       "start_from": "2-1/task-19",
       "started_at": "2026-05-05T06:03:02.493022+00:00",
-      "status": "running",
+      "status": "failed",
       "stop_after": "",
       "summary_file": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-runs/20260505_140302/summary.json",
-      "updated_at": "2026-05-05T06:43:25.598140+00:00"
+      "updated_at": "2026-05-05T07:10:49.735362+00:00"
     },
     {
       "completed": 1,
@@ -250,6 +290,6 @@
       "updated_at": "2026-05-02T00:54:49.413976+00:00"
     }
   ],
-  "updated_at": "2026-05-05T06:43:25.598167+00:00",
+  "updated_at": "2026-05-05T14:40:14.234211+00:00",
   "version": 1
 }

@@ -8,6 +8,7 @@ enum MainRepositoryContentState: Equatable, Sendable {
 struct MainRepositoryContentView: View {
     let opening: RepositoryOpeningResult
     let state: MainRepositoryContentState
+    @State private var selectedCategory: String = "inbox"
 
     var body: some View {
         VStack(spacing: 0) {
@@ -55,16 +56,45 @@ struct MainRepositoryContentView: View {
     }
 
     private var sidebar: some View {
-        List(opening.tree.sidebarNodes) { node in
-            HStack {
-                Text(node.displayName)
-                Spacer()
-                Text("\(node.totalFileCount)")
-                    .foregroundStyle(.secondary)
+        List(selection: $selectedCategory) {
+            ForEach(opening.tree.sidebarNodes) { node in
+                sidebarRow(node)
+                    .tag(node.slug)
             }
         }
         .listStyle(.sidebar)
         .frame(minWidth: 180, idealWidth: 220, maxWidth: 260)
+        .onChange(of: opening.tree.sidebarNodes) { _, nodes in
+            selectedCategory = Self.defaultSelectedCategory(from: nodes)
+        }
+    }
+
+    private func sidebarRow(_ node: RepositoryTreeNodeSnapshot) -> some View {
+        HStack {
+            Text(node.displayName)
+            Spacer()
+            Text("\(node.totalFileCount)")
+                .foregroundStyle(.secondary)
+        }
+        .accessibilityLabel("\(node.displayName) \(node.totalFileCount)")
+    }
+
+    private static func defaultSelectedCategory(from nodes: [RepositoryTreeNodeSnapshot]) -> String {
+        nodes.first { $0.slug == "inbox" }?.slug ?? nodes.first?.slug ?? "__root__"
+    }
+
+    private var statusText: String {
+        state == .empty ? "Idle" : "Synced"
+    }
+
+    private var selectedListTitle: String {
+        opening.tree.sidebarNodes.first?.displayName ?? opening.tree.displayName
+    }
+
+    init(opening: RepositoryOpeningResult, state: MainRepositoryContentState) {
+        self.opening = opening
+        self.state = state
+        _selectedCategory = State(initialValue: Self.defaultSelectedCategory(from: opening.tree.sidebarNodes))
     }
 
     @ViewBuilder
@@ -119,17 +149,4 @@ struct MainRepositoryContentView: View {
         .frame(minWidth: 220, idealWidth: 260, maxWidth: 320, maxHeight: .infinity, alignment: .topLeading)
     }
 
-    private var statusText: String {
-        state == .empty ? "Idle" : "Synced"
-    }
-
-    private var selectedListTitle: String {
-        opening.tree.sidebarNodes.first?.displayName ?? opening.tree.displayName
-    }
-}
-
-private extension RepositoryTreeNodeSnapshot {
-    var sidebarNodes: [RepositoryTreeNodeSnapshot] {
-        children.isEmpty ? [self] : children
-    }
 }

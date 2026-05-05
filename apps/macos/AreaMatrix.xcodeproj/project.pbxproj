@@ -36,6 +36,7 @@
 		0A00000000000000000000FC /* AreaMatrixShellTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000000FD /* AreaMatrixShellTestSupport.swift */; };
 		0A00000000000000000000FE /* ValidatePathRepairTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000000FF /* ValidatePathRepairTestSupport.swift */; };
 		0A0000000000000000000100 /* CoreFileListing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000101 /* CoreFileListing.swift */; };
+		0A0000000000000000000110 /* MainEmptyBuildTreeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000111 /* MainEmptyBuildTreeTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -84,6 +85,7 @@
 		0A00000000000000000000FD /* AreaMatrixShellTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/AreaMatrixShellTestSupport.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000000FF /* ValidatePathRepairTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ValidatePathRepairTestSupport.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000101 /* CoreFileListing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/CoreFileListing.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000111 /* MainEmptyBuildTreeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/MainEmptyBuildTreeTests.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -217,6 +219,7 @@
 				0A00000000000000000000A1 /* InitializingStepIntegrationTests.swift */,
 				0A00000000000000000000B3 /* InitFailedErrorMappingTests.swift */,
 				0A00000000000000000000C3 /* InitDoneEmptyRepositoryTests.swift */,
+				0A0000000000000000000111 /* MainEmptyBuildTreeTests.swift */,
 				0A00000000000000000000E1 /* CoreBridgeRepositoryTests.swift */,
 				0A00000000000000000000FB /* ValidatePathErrorMappingSmokeTests.swift */,
 				0A00000000000000000000FD /* AreaMatrixShellTestSupport.swift */,
@@ -376,6 +379,7 @@
 				0A000000000000000000000D /* InitializingStepIntegrationTests.swift in Sources */,
 				0A00000000000000000000B1 /* InitFailedErrorMappingTests.swift in Sources */,
 				0A00000000000000000000C1 /* InitDoneEmptyRepositoryTests.swift in Sources */,
+				0A0000000000000000000110 /* MainEmptyBuildTreeTests.swift in Sources */,
 				0A00000000000000000000E0 /* CoreBridgeRepositoryTests.swift in Sources */,
 				0A00000000000000000000FA /* ValidatePathErrorMappingSmokeTests.swift in Sources */,
 				0A00000000000000000000FC /* AreaMatrixShellTestSupport.swift in Sources */,

@@ -1,0 +1,90 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`2-1/task-20`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-1-first-launch-main/task-20-s1-08-c1-15-build-tree.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-08-main-empty.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-15-build-tree.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreRepositoryOpening.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/MainEmptyBuildTreeTests.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：7（核对清单 4 + 完成标准 3）
+- 未覆盖项数：0
+- 通过项数：7
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 S1-08 页面中的 C1-15 功能点
+- 结果：通过
+- 证据：S1-08 在 control map 中绑定 `C1-11, C1-15`，本 task 只接入 `list_tree_json` / tree sidebar；`MainRepositoryContentView` 使用 `opening.tree.sidebarNodes` 渲染默认分类树，没有实现 C1-11 之外的新查询功能。
+- 涉及文件：`MainRepositoryContentView.swift:58`、`MainRepositoryContentView.swift:60`、`CoreRepositoryOpening.swift:66`
+
+- 项目：读取并对齐页面规格、MVP control map、Core API、C1-15 能力规格
+- 结果：通过
+- 证据：UDL 与 Core API 均声明 `list_tree_json(repo_path, locale) -> string`；C1-15 要求空资料库返回合法空树、JSON 与 Swift 模型兼容；测试覆盖空库 root、默认分类、计数为 0。
+- 涉及文件：`core/area_matrix.udl:78`、`CoreBridge.swift:281`、`CoreRepositoryOpening.swift:155`、`MainEmptyBuildTreeTests.swift:6`
+
+- 项目：只接入 C1-15 对应 CoreBridge / 状态 / 错误映射
+- 结果：通过
+- 证据：`CoreBridge.listTreeJSON` 通过 generated UniFFI `listTreeJson` 调真实 Core；`CoreRepositoryOpening.listTree` 解码 JSON；错误没有吞掉，测试验证未初始化 repo 传播 `RepoNotInitialized`。
+- 涉及文件：`CoreBridge.swift:281`、`CoreBridge.swift:350`、`CoreRepositoryOpening.swift:128`、`MainEmptyBuildTreeTests.swift:24`
+
+- 项目：不顺手实现相邻页面
+- 结果：通过
+- 证据：改动集中在 macOS main window tree opening/rendering 和测试；未新增 S1-09/S1-10 页面行为，也未触碰 `core/src/**`。
+- 涉及文件：`git status --short -- core/src` 无输出；改动仅在 `apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`project.pbxproj`
+
+- 项目：S1-08 中 C1-15 用户可见功能可触发和验收
+- 结果：通过
+- 证据：启动已配置 repo 时 `OnboardingModel.loadConfiguredRepository()` 调 `openConfiguredRepository()`，再路由 `.mainEmpty`；主窗口 sidebar 渲染 `inbox/docs/code/design/finance/media` 和计数。
+- 涉及文件：`AppShellModel.swift:397`、`AppShellModel.swift:402`、`MainWindow.swift:204`、`MainRepositoryContentView.swift:60`
+
+- 项目：没有 mock、fixture 或静态状态伪造真实 Core 闭环
+- 结果：通过
+- 证据：生产路径调用真实 `listTreeJson`；测试中 fixture 仅用于 route/view 断言，真实 Core 测试覆盖 `initializeEmptyRepository` 后调用 `bridge.listTree`。
+- 涉及文件：`CoreBridge.swift:350`、`MainEmptyBuildTreeTests.swift:10`、`MainEmptyBuildTreeTests.swift:12`
+
+- 项目：未触碰 control map 之外 Core 能力
+- 结果：通过
+- 证据：未修改 `core/src/**`；UDL 中 `list_tree_json` 已存在；macOS 侧只新增/使用 C1-15 tree listing。
+- 涉及文件：`core/area_matrix.udl:78`、`CoreRepositoryOpening.swift:8`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。CoreBridge 调用、JSON 解码、opening 结果、sidebar 渲染职责清晰分层。
+- 注释 / rustdoc / 文档同步：通过。当前为 Swift app 内部接入，无新增 public Rust API；文档与 UDL 已一致。
+- 错误处理与边界处理：通过。`listTreeJSON` / `listTree` 均 `throws` 传播；测试覆盖 `RepoNotInitialized`。
+- 测试与验证覆盖：通过。新增 `MainEmptyBuildTreeTests` 已加入 xcodeproj；真实 Core 空库树、错误传播、可见 sidebar 路由均有测试。
+- 占位、硬编码、mock-only、一次性实现检查：通过。生产代码无静态默认分类数组伪造 tree；排序数组仅用于 sidebar 展示顺序，不替代 Core 数据。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+- 结果：通过，输出 `** BUILD SUCCEEDED **`
+- 已运行：`./dev test macos`
+- 结果：通过。标准 `xcodebuild test` 被本地 `testmanagerd` sandbox 限制阻断后，脚本按仓库规则复用已构建 XCTest bundle 执行 `xcrun xctest`，最终 68 tests、0 failures；`MainEmptyBuildTreeTests` 3 tests 全部通过。
+- 缺失：未做人工 UI 点击/VoiceOver 验证；本 task 的 C1-15 build-tree 验收已有 build + XCTest 证据覆盖。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS
