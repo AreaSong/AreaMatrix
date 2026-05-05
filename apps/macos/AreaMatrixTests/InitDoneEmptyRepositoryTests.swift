@@ -200,6 +200,63 @@ final class InitDoneEmptyRepositoryTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: repoURL.appendingPathComponent(".areamatrix").path))
         XCTAssertFalse(FileManager.default.fileExists(atPath: repoURL.appendingPathComponent("AREAMATRIX.md").path))
     }
+
+    func testDefaultCoreBridgeReopensConfiguredEmptyRepositoryThroughTreeAndCurrentCategoryList() async throws {
+        let repoURL = try makeTemporaryRepositoryURL()
+        defer { try? FileManager.default.removeItem(at: repoURL) }
+
+        let bridge = CoreBridge()
+        try await bridge.initializeEmptyRepository(repoPath: repoURL.path)
+        let opening = try await bridge.openConfiguredRepository(repoPath: repoURL.path)
+
+        XCTAssertTrue(opening.isEmpty)
+        XCTAssertEqual(opening.tree.sidebarNodes.map(\.slug), ["inbox", "docs", "code", "design", "finance", "media"])
+        XCTAssertEqual(opening.currentCategoryFiles, [])
+    }
+
+    func testOpeningResultIsNotEmptyWhenTreeCountAndCurrentCategoryListDisagree() {
+        let staleTree = RepositoryTreeNodeSnapshot(
+            slug: "__root__",
+            displayName: "资料库",
+            kind: "RepositoryRoot",
+            relativePath: "",
+            fileCount: 0,
+            depth: 0,
+            children: []
+        )
+        let opening = RepositoryOpeningResult(
+            config: .initDoneFixture(repoPath: "/tmp/repo"),
+            tree: staleTree,
+            currentCategoryFiles: [.initDoneFileFixture(category: "inbox")]
+        )
+
+        XCTAssertFalse(opening.isEmpty)
+    }
+
+    func testCurrentCategoryListFailureStaysInlineInsteadOfFailingRepositoryOpen() {
+        let tree = RepositoryTreeNodeSnapshot(
+            slug: "__root__",
+            displayName: "资料库",
+            kind: "RepositoryRoot",
+            relativePath: "",
+            fileCount: 0,
+            depth: 0,
+            children: []
+        )
+        let mapping = CoreErrorMappingSnapshot.initDoneDbFixture(rawContext: "list db locked")
+
+        let result = loadOpeningCurrentCategoryFiles(
+            repoPath: "/tmp/repo",
+            tree: tree,
+            shouldLoad: true,
+            listFiles: { _, _ in throw CoreError.Db(message: "list db locked") },
+            mapError: { _ in mapping }
+        )
+
+        XCTAssertEqual(result.files, [])
+        XCTAssertEqual(result.errorMapping, mapping)
+    }
+
 }
 
 private enum EmptyRepositoryOpenResult {
@@ -367,6 +424,25 @@ private extension RepositoryOpeningResult {
                 children: []
             ),
             currentCategoryFiles: []
+        )
+    }
+}
+
+private extension FileEntrySnapshot {
+    static func initDoneFileFixture(category: String) -> FileEntrySnapshot {
+        FileEntrySnapshot(
+            id: 1,
+            path: "\(category)/report.pdf",
+            originalName: "report.pdf",
+            currentName: "report.pdf",
+            category: category,
+            sizeBytes: 128,
+            hashSha256: "fixture-hash",
+            storageMode: "Copied",
+            origin: "Imported",
+            sourcePath: nil,
+            importedAt: 1_700_000_000,
+            updatedAt: 1_700_000_000
         )
     }
 }

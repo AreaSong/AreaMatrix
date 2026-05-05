@@ -1,6 +1,7 @@
 import Foundation
 
 protocol CoreEmptyRepositoryOpening: Sendable {
+    func openConfiguredRepository(repoPath: String) async throws -> RepositoryOpeningResult
     func openEmptyRepository(repoPath: String) async throws -> RepositoryOpeningResult
     func openAdoptedRepository(repoPath: String) async throws -> RepositoryOpeningResult
 }
@@ -19,10 +20,16 @@ struct RepositoryOpeningResult: Equatable, Sendable {
     var config: RepoConfigSnapshot
     var tree: RepositoryTreeNodeSnapshot
     var currentCategoryFiles: [FileEntrySnapshot]
+    var currentCategoryListError: CoreErrorMappingSnapshot? = nil
 
     var isEmpty: Bool {
-        tree.totalFileCount == 0
+        tree.totalFileCount == 0 && currentCategoryFiles.isEmpty
     }
+}
+
+struct RepositoryCurrentCategoryFilesResult: Equatable, Sendable {
+    var files: [FileEntrySnapshot]
+    var errorMapping: CoreErrorMappingSnapshot?
 }
 
 struct RepositoryTreeNodeSnapshot: Equatable, Identifiable, Sendable {
@@ -99,29 +106,36 @@ struct RepositoryTreeNodeSnapshot: Equatable, Identifiable, Sendable {
 }
 
 extension CoreBridge: CoreEmptyRepositoryOpening, CoreRepositoryTreeListing {
+    func openConfiguredRepository(repoPath: String) async throws -> RepositoryOpeningResult {
+        try await openInitializedRepository(repoPath: repoPath, fileLoading: .whenTreeIsEmpty)
+    }
+
     func openEmptyRepository(repoPath: String) async throws -> RepositoryOpeningResult {
-        try await openInitializedRepository(repoPath: repoPath, loadsCurrentCategoryFiles: true)
+        try await openInitializedRepository(repoPath: repoPath, fileLoading: .always)
     }
 
     func openAdoptedRepository(repoPath: String) async throws -> RepositoryOpeningResult {
-        try await openInitializedRepository(repoPath: repoPath, loadsCurrentCategoryFiles: false)
+        try await openInitializedRepository(repoPath: repoPath, fileLoading: .never)
     }
 
     private func openInitializedRepository(
         repoPath: String,
-        loadsCurrentCategoryFiles: Bool
+        fileLoading: CurrentCategoryFileLoading
     ) async throws -> RepositoryOpeningResult {
         let config = RepoConfigSnapshot(coreConfig: try loadOpeningCoreConfig(repoPath: repoPath))
         let tree = try await listTree(repoPath: repoPath, locale: config.locale)
-        let files = try currentCategoryFiles(
+        let currentCategory = loadOpeningCurrentCategoryFiles(
             repoPath: repoPath,
             tree: tree,
-            shouldLoad: loadsCurrentCategoryFiles
+            shouldLoad: fileLoading.shouldLoadFiles(for: tree),
+            listFiles: listOpeningCoreFiles,
+            mapError: openingCurrentListErrorMapping
         )
         return RepositoryOpeningResult(
             config: config,
             tree: tree,
-            currentCategoryFiles: files
+            currentCategoryFiles: currentCategory.files,
+            currentCategoryListError: currentCategory.errorMapping
         )
     }
 
@@ -135,21 +149,54 @@ private func loadOpeningCoreConfig(repoPath: String) throws -> RepoConfig {
     try loadConfig(repoPath: repoPath)
 }
 
-private func listOpeningCoreFiles(repoPath: String, filter: FileFilterSnapshot) throws -> [FileEntry] {
-    try listFiles(repoPath: repoPath, filter: FileFilter(filter))
+private func listOpeningCoreFiles(repoPath: String, filter: FileFilterSnapshot) throws -> [FileEntrySnapshot] {
+    try listFiles(repoPath: repoPath, filter: FileFilter(filter)).map(FileEntrySnapshot.init(coreEntry:))
 }
 
-private func currentCategoryFiles(
+private enum CurrentCategoryFileLoading {
+    case never
+    case whenTreeIsEmpty
+    case always
+
+    func shouldLoadFiles(for tree: RepositoryTreeNodeSnapshot) -> Bool {
+        switch self {
+        case .never:
+            return false
+        case .whenTreeIsEmpty:
+            return tree.totalFileCount == 0
+        case .always:
+            return true
+        }
+    }
+}
+
+func loadOpeningCurrentCategoryFiles(
     repoPath: String,
     tree: RepositoryTreeNodeSnapshot,
-    shouldLoad: Bool
-) throws -> [FileEntrySnapshot] {
-    guard shouldLoad else { return [] }
+    shouldLoad: Bool,
+    listFiles: (String, FileFilterSnapshot) throws -> [FileEntrySnapshot],
+    mapError: (Error) -> CoreErrorMappingSnapshot
+) -> RepositoryCurrentCategoryFilesResult {
+    guard shouldLoad else {
+        return RepositoryCurrentCategoryFilesResult(files: [], errorMapping: nil)
+    }
 
-    return try listOpeningCoreFiles(
-        repoPath: repoPath,
-        filter: FileFilterSnapshot.currentCategory(tree.defaultCategory)
-    ).map(FileEntrySnapshot.init(coreEntry:))
+    do {
+        let files = try listFiles(repoPath, FileFilterSnapshot.currentCategory(tree.defaultCategory))
+        return RepositoryCurrentCategoryFilesResult(files: files, errorMapping: nil)
+    } catch {
+        return RepositoryCurrentCategoryFilesResult(files: [], errorMapping: mapError(error))
+    }
+}
+
+private func openingCurrentListErrorMapping(_ error: Error) -> CoreErrorMappingSnapshot {
+    if let coreError = error as? CoreError {
+        return CoreErrorMappingSnapshot(coreMapping: mapCoreErrorFromCore(coreError))
+    }
+
+    return CoreErrorMappingSnapshot(coreMapping: mapCoreErrorFromCore(
+        CoreError.Internal(message: error.localizedDescription)
+    ))
 }
 
 private func decodeOpeningTreeSnapshot(_ json: String) throws -> RepositoryTreeNodeSnapshot {

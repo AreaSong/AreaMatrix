@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 enum MainRepositoryContentState: Equatable, Sendable {
     case empty
@@ -8,7 +9,13 @@ enum MainRepositoryContentState: Equatable, Sendable {
 struct MainRepositoryContentView: View {
     let opening: RepositoryOpeningResult
     let state: MainRepositoryContentState
+    let onImport: () -> Void
+    let onDropImport: ([URL]) -> Void
+    let onOpenSettings: () -> Void
+    let onRetryCurrentList: () -> Void
     @State private var selectedCategory: String = "inbox"
+    @State private var filterText: String = ""
+    @State private var isDropTargeted = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -27,26 +34,29 @@ struct MainRepositoryContentView: View {
 
     private var toolbar: some View {
         HStack(spacing: 14) {
-            Label("AreaMatrix", systemImage: "folder")
+            Menu {
+                Text(opening.config.repoPath)
+                Button("Settings", action: onOpenSettings)
+            } label: {
+                HStack(spacing: 5) {
+                    Image(systemName: "folder")
+                    Text("AreaMatrix")
+                    Image(systemName: "chevron.down")
+                        .font(.caption)
+                }
                 .font(.headline)
-            Text(opening.config.repoPath)
-                .font(.callout)
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
+            }
+            .accessibilityLabel("Repository AreaMatrix")
             Spacer()
-            TextField("Filter current list", text: .constant(""))
+            TextField("Filter current list", text: $filterText)
                 .textFieldStyle(.roundedBorder)
                 .frame(width: 180)
-                .disabled(true)
-            Button("Import...") {}
-                .disabled(true)
-            Button {
-            } label: {
+            Button("Import...", action: onImport)
+            Button(action: onOpenSettings) {
                 Image(systemName: "gearshape")
             }
             .buttonStyle(.borderless)
             .accessibilityLabel("Settings")
-            .disabled(true)
             Text(statusText)
                 .font(.callout)
                 .foregroundStyle(.secondary)
@@ -88,17 +98,43 @@ struct MainRepositoryContentView: View {
     }
 
     private var selectedListTitle: String {
-        opening.tree.sidebarNodes.first?.displayName ?? opening.tree.displayName
+        selectedSidebarNode.displayName
     }
 
-    init(opening: RepositoryOpeningResult, state: MainRepositoryContentState) {
+    private var selectedSidebarNode: RepositoryTreeNodeSnapshot {
+        opening.tree.sidebarNodes.first { $0.slug == selectedCategory } ??
+            opening.tree.sidebarNodes.first ??
+            opening.tree
+    }
+
+    init(
+        opening: RepositoryOpeningResult,
+        state: MainRepositoryContentState,
+        onImport: @escaping () -> Void,
+        onDropImport: @escaping ([URL]) -> Void,
+        onOpenSettings: @escaping () -> Void = {},
+        onRetryCurrentList: @escaping () -> Void = {}
+    ) {
         self.opening = opening
         self.state = state
+        self.onImport = onImport
+        self.onDropImport = onDropImport
+        self.onOpenSettings = onOpenSettings
+        self.onRetryCurrentList = onRetryCurrentList
         _selectedCategory = State(initialValue: Self.defaultSelectedCategory(from: opening.tree.sidebarNodes))
     }
 
     @ViewBuilder
     private var listPane: some View {
+        if let error = opening.currentCategoryListError {
+            currentListErrorPane(error)
+        } else {
+            listContentPane
+        }
+    }
+
+    @ViewBuilder
+    private var listContentPane: some View {
         switch state {
         case .empty:
             VStack(spacing: 14) {
@@ -107,12 +143,13 @@ struct MainRepositoryContentView: View {
                 Text("把文件拖到这里，AreaMatrix 会自动分类、命名并记录改动。")
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
-                Button("Import...") {
-                    // Import is owned by later S1-17/S1-18/S1-19 tasks; keep the visible affordance inert here.
-                }
-                    .disabled(true)
+                Button("Import...", action: onImport)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(isDropTargeted ? Color.accentColor.opacity(0.12) : Color.clear)
+            .onDrop(of: [.fileURL], isTargeted: $isDropTargeted) { providers in
+                FileDropAdapter(onDrop: onDropImport).handle(providers)
+            }
             .accessibilityElement(children: .contain)
         case .list:
             VStack(alignment: .leading, spacing: 12) {
@@ -136,6 +173,29 @@ struct MainRepositoryContentView: View {
             .padding(18)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
+    }
+
+    private func currentListErrorPane(_ error: CoreErrorMappingSnapshot) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Label("Current list cannot be loaded", systemImage: "exclamationmark.triangle")
+                .font(.headline)
+            Text(error.userMessage)
+                .foregroundStyle(.secondary)
+            Text(error.suggestedAction)
+                .font(.callout)
+                .foregroundStyle(.secondary)
+            HStack {
+                Button("Retry", action: onRetryCurrentList)
+                DisclosureGroup("Technical Details") {
+                    Text(error.rawContext)
+                        .font(.system(.caption, design: .monospaced))
+                        .textSelection(.enabled)
+                }
+            }
+        }
+        .padding(18)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .accessibilityElement(children: .contain)
     }
 
     private var detailPane: some View {

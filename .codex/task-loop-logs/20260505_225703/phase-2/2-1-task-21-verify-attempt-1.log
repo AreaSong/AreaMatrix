@@ -1,0 +1,81 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`2-1/task-21`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-1-first-launch-main/task-21-s1-08-page-integration-verify.md`
+- 对应实现：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`
+- 对应测试：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`
+- UDL：`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：6
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：2
+- 阻塞项数：1
+
+四、逐项验收结果
+
+- 项目：所有 page-feature task 覆盖
+- 结果：通过
+- 证据：control map 将 S1-08 绑定到 C1-11、C1-15 和 `2-1/task-19/20/21`；UDL 暴露 `list_files` 与 `list_tree_json`；Swift 通过 `CoreBridge.listFiles` 和 `CoreBridge.listTreeJSON` 调用生成绑定。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:23`，`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:69`，`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:78`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift:267`
+
+- 项目：页面状态与 CoreBridge 闭环
+- 结果：通过
+- 证据：打开 repo 时加载 config、tree，并在空 tree 时加载当前分类文件；`isEmpty` 同时要求 tree 总数为 0 且当前分类列表为空；错误进入 `mainRepoError` 或回到 init-done inline error。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreRepositoryOpening.swift:24`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreRepositoryOpening.swift:119`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/OnboardingInitializationProgress.swift:40`
+
+- 项目：S1-08 入口与页面交互
+- 结果：不通过
+- 证据：UX 要求 Import 和拖拽入口可用，并且点击 Import 进入后续 import sheet、拖入文件进入 S1-16；当前 `MainWindow` 没有传入 `onImport`，`MainRepositoryContentView` 默认 `onImport = {}`，按钮实际无动作；drop zone 的 `.onDrop` 固定返回 `false`，不会进入 drag-hover 或任何可验收状态。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-08-main-empty.md:75`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/MainWindow.swift:204`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift:104`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift:128`
+
+- 项目：mock、fixture、硬编码状态检查
+- 结果：通过
+- 证据：生产路径的 C1-11/C1-15 使用生成绑定，不是 mock；fixture 仅在 XCTest 内。`CoreBridge.state` 为 generated bindings。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift:267`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/InitDoneEmptyRepositoryTests.swift:85`
+
+- 项目：不新增 control map 外能力
+- 结果：通过
+- 证据：当前 S1-08 实现只真实接入 `list_files`、`list_tree_json`；未发现本页生产路径调用 import/classify 等 control map 外 Core 能力。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:23`
+
+- 项目：Expected New Paths / Forbidden Touches
+- 结果：通过
+- 证据：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`apps/macos/AreaMatrix.xcodeproj/project.pbxproj` 均存在；`git status --short -- core/src ...` 未显示 `core/src/**` 修改。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过。Core 数据流清晰，但 S1-08 入口闭环留下 no-op action 和拒绝 drop，不能按页面规格完整验收。
+- 注释 / rustdoc / 文档同步：通过。当前验收范围是 Swift UI/CoreBridge wiring，未新增 public Rust API；文档与 control map 对 C1-11/C1-15 的声明一致。
+- 错误处理与边界处理：通过。Core opening 错误会映射到 main repo error 或 init-done retry error。
+- 测试与验证覆盖：部分通过。`./dev test macos` fallback 执行 70 个 XCTest 通过；标准 manifest `xcodebuild test` 被本地 sandbox 的 `testmanagerd.control` 限制阻断。
+- 占位、硬编码、mock-only、一次性实现检查：不通过。Import 按钮实际使用默认空闭包，drop handler 固定 `false`，属于页面入口伪可用。
+
+六、阻塞项
+
+- P0：S1-08 Import / drag entry 不可用，导致页面无法按 page spec 完整验收。
+  说明：页面规格要求 Import 和拖拽入口可用；当前按钮存在但未连接实际路由或 sheet，drop zone 固定拒绝 drop。
+  绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/MainWindow.swift:204`
+  绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift:104`
+  绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift:128`
+  为什么导致不通过：task-21 的完成标准要求 S1-08 可按 page spec 和 control map 完整验收；入口不可用直接违反 S1-08 验收清单。
+
+七、验证情况
+
+- 已运行：`xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+  结果：失败，退出码 65；build 已进入测试阶段，但 XCTest runner 因 `com.apple.testmanagerd.control` sandbox restriction 无法通信。
+- 已运行：`./dev test macos`
+  结果：通过；先复现同一 sandbox 限制，再按 repo-local validation driver 复用已构建 XCTest bundle，`xcrun xctest` 执行 70 tests，0 failures。
+- 缺失：无真实 UI 交互验证证明 Import/drag 入口可用；文件证据反而证明入口当前 no-op/拒绝 drop。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+VERIFY_RESULT: FAIL

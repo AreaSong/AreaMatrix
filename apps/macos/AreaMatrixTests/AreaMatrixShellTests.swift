@@ -149,12 +149,13 @@ final class AreaMatrixShellTests: XCTestCase {
         await model.bootstrapIfNeeded()
         let requestedRepoPaths = await opener.requestedConfiguredRepoPaths()
 
-        guard case .configurationError(let failure) = model.route else {
-            return XCTFail("expected configuration error")
+        guard case .mainRepoError(let repoPath, let mapping) = model.route else {
+            return XCTFail("expected main repo error")
         }
 
-        XCTAssertEqual(failure.repoPath, "/tmp/repo")
-        XCTAssertTrue(failure.message.contains("load_config"))
+        XCTAssertEqual(repoPath, "/tmp/repo")
+        XCTAssertEqual(mapping?.kind, .internal)
+        XCTAssertTrue(mapping?.rawContext.contains("load_config") == true)
         XCTAssertEqual(requestedRepoPaths, ["/tmp/repo"])
     }
 

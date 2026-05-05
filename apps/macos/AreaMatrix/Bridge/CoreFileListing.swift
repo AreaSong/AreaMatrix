@@ -18,7 +18,7 @@ struct FileFilterSnapshot: Equatable, Sendable {
             includeDeleted: false,
             importedAfter: nil,
             importedBefore: nil,
-            limit: 200,
+            limit: 50,
             offset: 0
         )
     }

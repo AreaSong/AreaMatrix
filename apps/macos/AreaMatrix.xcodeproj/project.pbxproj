@@ -37,6 +37,12 @@
 		0A00000000000000000000FE /* ValidatePathRepairTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000000FF /* ValidatePathRepairTestSupport.swift */; };
 		0A0000000000000000000100 /* CoreFileListing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000101 /* CoreFileListing.swift */; };
 		0A0000000000000000000110 /* MainEmptyBuildTreeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000111 /* MainEmptyBuildTreeTests.swift */; };
+		0A0000000000000000000120 /* ImportEntryRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000121 /* ImportEntryRequest.swift */; };
+		0A0000000000000000000122 /* OnboardingModelInputs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000123 /* OnboardingModelInputs.swift */; };
+		0A0000000000000000000124 /* AppPlatformServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000125 /* AppPlatformServices.swift */; };
+		0A0000000000000000000126 /* FileDropAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000127 /* FileDropAdapter.swift */; };
+		0A0000000000000000000128 /* ImportEntrySheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000129 /* ImportEntrySheetView.swift */; };
+		0A000000000000000000012A /* MainEmptyImportEntryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000012B /* MainEmptyImportEntryTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -86,6 +92,12 @@
 		0A00000000000000000000FF /* ValidatePathRepairTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ValidatePathRepairTestSupport.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000101 /* CoreFileListing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/CoreFileListing.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000111 /* MainEmptyBuildTreeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/MainEmptyBuildTreeTests.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000121 /* ImportEntryRequest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ImportEntryRequest.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000123 /* OnboardingModelInputs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/OnboardingModelInputs.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000125 /* AppPlatformServices.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/App/AppPlatformServices.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000127 /* FileDropAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/FileDropAdapter.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000129 /* ImportEntrySheetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/ImportEntrySheetView.swift; sourceTree = SOURCE_ROOT; };
+		0A000000000000000000012B /* MainEmptyImportEntryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/MainEmptyImportEntryTests.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -149,6 +161,7 @@
 			isa = PBXGroup;
 			children = (
 				0A0000000000000000000013 /* AreaMatrixApp.swift */,
+				0A0000000000000000000125 /* AppPlatformServices.swift */,
 				0A0000000000000000000015 /* AreaMatrixAppSmokeTests.swift */,
 			);
 			name = App;
@@ -159,6 +172,8 @@
 			children = (
 				0A0000000000000000000014 /* MainWindow.swift */,
 				0A00000000000000000000D1 /* MainRepositoryContentView.swift */,
+				0A0000000000000000000127 /* FileDropAdapter.swift */,
+				0A0000000000000000000129 /* ImportEntrySheetView.swift */,
 				0A000000000000000000001F /* ValidatePathStepView.swift */,
 				0A00000000000000000000A0 /* InitializingStepView.swift */,
 				0A00000000000000000000A3 /* InitializingStepRow.swift */,
@@ -197,6 +212,8 @@
 			children = (
 				0A0000000000000000000018 /* AppShellModel.swift */,
 				0A0000000000000000000019 /* CoreBridgePlaceholderState.swift */,
+				0A0000000000000000000121 /* ImportEntryRequest.swift */,
+				0A0000000000000000000123 /* OnboardingModelInputs.swift */,
 				0A00000000000000000000F7 /* DiagnosticsSnapshotState.swift */,
 				0A00000000000000000000A2 /* OnboardingInitializationProgress.swift */,
 				0A00000000000000000000B2 /* InitializationFailureActions.swift */,
@@ -220,6 +237,7 @@
 				0A00000000000000000000B3 /* InitFailedErrorMappingTests.swift */,
 				0A00000000000000000000C3 /* InitDoneEmptyRepositoryTests.swift */,
 				0A0000000000000000000111 /* MainEmptyBuildTreeTests.swift */,
+				0A000000000000000000012B /* MainEmptyImportEntryTests.swift */,
 				0A00000000000000000000E1 /* CoreBridgeRepositoryTests.swift */,
 				0A00000000000000000000FB /* ValidatePathErrorMappingSmokeTests.swift */,
 				0A00000000000000000000FD /* AreaMatrixShellTestSupport.swift */,
@@ -352,6 +370,11 @@
 				0A0000000000000000000005 /* CoreBridge.swift in Sources */,
 				0A0000000000000000000006 /* AppShellModel.swift in Sources */,
 				0A0000000000000000000007 /* CoreBridgePlaceholderState.swift in Sources */,
+				0A0000000000000000000124 /* AppPlatformServices.swift in Sources */,
+				0A0000000000000000000120 /* ImportEntryRequest.swift in Sources */,
+				0A0000000000000000000122 /* OnboardingModelInputs.swift in Sources */,
+				0A0000000000000000000126 /* FileDropAdapter.swift in Sources */,
+				0A0000000000000000000128 /* ImportEntrySheetView.swift in Sources */,
 				0A00000000000000000000D0 /* MainRepositoryContentView.swift in Sources */,
 				0A0000000000000000000009 /* area_matrix.swift in Sources */,
 				0A000000000000000000000A /* ValidatePathStepView.swift in Sources */,
@@ -380,6 +403,7 @@
 				0A00000000000000000000B1 /* InitFailedErrorMappingTests.swift in Sources */,
 				0A00000000000000000000C1 /* InitDoneEmptyRepositoryTests.swift in Sources */,
 				0A0000000000000000000110 /* MainEmptyBuildTreeTests.swift in Sources */,
+				0A000000000000000000012A /* MainEmptyImportEntryTests.swift in Sources */,
 				0A00000000000000000000E0 /* CoreBridgeRepositoryTests.swift in Sources */,
 				0A00000000000000000000FA /* ValidatePathErrorMappingSmokeTests.swift in Sources */,
 				0A00000000000000000000FC /* AreaMatrixShellTestSupport.swift in Sources */,

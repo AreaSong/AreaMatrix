@@ -47,6 +47,9 @@ struct MainWindow: View {
         .task {
             await model.bootstrapIfNeeded()
         }
+        .sheet(item: $model.pendingImportEntry) { request in
+            ImportEntrySheetView(request: request, onCancel: model.dismissImportEntry)
+        }
     }
 
     private var isConfirmingInitializationCancel: Bool {
@@ -202,9 +205,27 @@ struct MainWindow: View {
         case .settingsRepository:
             SettingsRepositoryReturnView()
         case .mainEmpty(let opening):
-            MainRepositoryContentView(opening: opening, state: .empty)
+            MainRepositoryContentView(
+                opening: opening,
+                state: .empty,
+                onImport: { model.chooseImportSources(opening: opening) },
+                onDropImport: { urls in
+                    model.startImportEntry(opening: opening, source: .dropZone, urls: urls)
+                },
+                onOpenSettings: { Task { await model.beginSettingsRepositoryPathValidation(opening.config.repoPath) } },
+                onRetryCurrentList: { Task { await model.retryConfigurationLoad() } }
+            )
         case .mainList(let opening):
-            MainRepositoryContentView(opening: opening, state: .list)
+            MainRepositoryContentView(
+                opening: opening,
+                state: .list,
+                onImport: { model.chooseImportSources(opening: opening) },
+                onDropImport: { urls in
+                    model.startImportEntry(opening: opening, source: .dropZone, urls: urls)
+                },
+                onOpenSettings: { Task { await model.beginSettingsRepositoryPathValidation(opening.config.repoPath) } },
+                onRetryCurrentList: { Task { await model.retryConfigurationLoad() } }
+            )
         case .configurationError(let failure):
             ConfigurationErrorView(
                 failure: failure,

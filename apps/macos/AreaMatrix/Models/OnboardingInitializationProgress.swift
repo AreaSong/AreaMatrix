@@ -301,7 +301,7 @@ extension OnboardingModel {
         )
     }
 
-    private func openingFailureMapping(for error: Error) async -> CoreErrorMappingSnapshot {
+    func openingFailureMapping(for error: Error) async -> CoreErrorMappingSnapshot {
         if let coreError = error as? CoreError {
             return await errorMapper.mapCoreError(coreError)
         }

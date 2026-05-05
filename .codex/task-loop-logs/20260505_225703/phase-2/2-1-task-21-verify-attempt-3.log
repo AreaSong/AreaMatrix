@@ -1,0 +1,67 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`2-1/task-21`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-1-first-launch-main/task-21-s1-08-page-integration-verify.md`
+- 覆盖代码：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+- 禁止触碰：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：0
+- 通过项数：10
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：逐项验收本页所有 page-feature task 是否完成
+- 结果：通过
+- 证据：`2-1/task-19` 的 C1-11 真实接入在 `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift:267`，并由空库真实 Core 测试覆盖 `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/InitDoneEmptyRepositoryTests.swift:85`；`2-1/task-20` 的 C1-15 真实接入在 `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift:281`，并由 tree 测试覆盖 `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/MainEmptyBuildTreeTests.swift:6`
+- 涉及文件：上述 Swift 与测试文件
+
+- 项目：检查页面状态、入口、退出、错误态和 CoreBridge 调用是否串成完整页面闭环
+- 结果：通过
+- 证据：`mainLoading/mainRepoError/mainEmpty` 路由存在于 `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/AppShellModel.swift:14`；打开 repo 后按空库结果路由在 `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/OnboardingInitializationProgress.swift:162`；S1-08 UI 包含 toolbar、sidebar、empty list、drop zone、inline list error、empty detail，见 `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift:35`、`:68`、`:127`、`:178`、`:201`
+- 涉及文件：`MainWindow.swift`、`MainRepositoryContentView.swift`、`AppShellModel.swift`
+
+- 项目：移除本页无法通过最终验收的 mock、fixture 或硬编码状态
+- 结果：通过
+- 证据：生产路径使用 generated UniFFI bindings，`CoreBridge.state` 为 `.generatedBindings`，见 `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift:145`；`list_files` / `list_tree_json` 均调用真实 Core，见同文件 `:267`、`:281`。fixture 命中仅在测试文件中，不作为生产闭环
+- 涉及文件：`CoreBridge.swift`、`CoreRepositoryOpening.swift`、测试文件
+
+- 项目：不新增本页未在 control map 中声明的功能
+- 结果：通过
+- 证据：control map 对 S1-08 只声明 `C1-11, C1-15` 与 `list_files/list_tree_json`，见 `/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:23`；生产 CoreBridge 本页闭环只消费这两个 Core API。Import/drop 仅创建入口请求，没有在本 task 中提前接入 C1-05/C1-06 等后续能力
+- 涉及文件：`mvp-control-map.md`、`OnboardingModelInputs.swift`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。相关生产文件均低于 500 行，`MainRepositoryContentView.swift` 按 toolbar/sidebar/list/detail 分块，Core opening 逻辑拆在 `CoreRepositoryOpening.swift`
+- 注释 / rustdoc / 文档同步：通过。未改 Rust public API；`docs/api/core-api.md:1049`、`:1097` 与 `core/area_matrix.udl:69`、`:78` 对齐
+- 错误处理与边界处理：通过。list 局部错误被转为 inline error，不把空库误判为 repo error，见 `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreRepositoryOpening.swift:184`；repo 打开失败进入 `mainRepoError`，见 `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/AppShellModel.swift:405`
+- 测试与验证覆盖：通过。`./dev test macos` 最终通过，74 tests、0 failures；相关 suites 包括 `MainEmptyBuildTreeTests`、`MainEmptyImportEntryTests`、`InitDoneEmptyRepositoryTests`
+- 占位、硬编码、mock-only、一次性实现检查：通过。生产 S1-08 闭环未发现 mock-only wiring；`rg` 命中 fixture 均在测试或 generated UniFFI，不作为产品路径
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+- 结果：失败，原因是本地 sandbox 阻断 `com.apple.testmanagerd.control`，错误为 `Connection init failed at lookup with error 159 - Sandbox restriction`
+- 已运行：`./dev test macos`
+- 结果：通过。该命令先复现同一个 `xcodebuild test` sandbox 阻断，再按 repo-local validation-driver 允许路径复用已构建 XCTest bundle 执行 `xcrun xctest`，最终 `Executed 74 tests, with 0 failures`
+- 已运行：只读路径与边界检查，包括 Expected New Paths 存在性、`git status --short -- core/src`、生产 mock/fixture 扫描
+- 缺失：未做人工 VoiceOver 实机走查；当前 task 的必需自动验证已通过允许的 macOS 本地 fallback gate
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS

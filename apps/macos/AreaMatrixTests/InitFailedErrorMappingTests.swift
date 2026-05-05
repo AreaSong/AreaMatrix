@@ -15,6 +15,7 @@ final class InitFailedErrorMappingTests: XCTestCase {
             pathValidator: StaticPathValidator(validation: validation),
             repositoryInitializer: initializer,
             startupRecoverer: StaticStartupRecoverer(),
+            scanSessionReader: StaticInitFailedScanSessionReader(),
             errorMapper: errorMapper,
             helpOpener: InitFailedNoopWelcomeHelpOpener()
         )
@@ -186,6 +187,12 @@ private actor StaticPathValidator: CoreRepositoryPathValidating {
 private actor StaticStartupRecoverer: CoreStartupRecovering {
     func recoverOnStartup(repoPath: String) async throws -> RecoveryReportSnapshot {
         RecoveryReportSnapshot(cleanedStagingFiles: 0, revertedStagingDbRows: 0, warnings: [])
+    }
+}
+
+private actor StaticInitFailedScanSessionReader: CoreScanSessionReading {
+    func latestScanSession(repoPath: String) async throws -> ScanSessionSnapshot? {
+        nil
     }
 }
 
