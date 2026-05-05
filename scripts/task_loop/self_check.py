@@ -17,6 +17,10 @@ from scripts.dev_tools.changes import write_artifacts
 from scripts.dev_tools.workflow_init import init_artifacts
 
 from . import git as git_helpers
+from .actions import ACTIONS, COMMAND_ALIASES, MENUS, SHORTCUT_ALIASES, validate_actions
+from .dev_config import config_path, save_lang_mode, saved_lang_mode
+from .i18n import load_catalog, validate_catalogs
+from .lifecycle import validate_lifecycle_snapshot
 from . import state
 
 
@@ -85,6 +89,7 @@ class Harness:
         check: bool = True,
     ) -> subprocess.CompletedProcess[str]:
         merged = os.environ.copy()
+        merged.setdefault("DEV_LANG", "mixed")
         if env:
             merged.update(env)
         proc = subprocess.run(
@@ -180,6 +185,38 @@ def check_static(h: Harness) -> None:
     log("static checks")
     files = sorted((h.root / "scripts/task_loop").glob("*.py")) + sorted((h.root / "scripts/dev_tools").glob("*.py"))
     h.run([h.python, "-m", "py_compile", *[str(path) for path in files]])
+    static_errors = validate_catalogs() + validate_actions() + validate_lifecycle_snapshot(h.root)
+    if static_errors:
+        raise CheckFailure("static registry/catalog validation failed:\n" + "\n".join(static_errors))
+    for action_id in MENUS["home"].action_ids:
+        if action_id not in ACTIONS:
+            raise CheckFailure(f"home menu action is not registered: {action_id}")
+    for menu in MENUS.values():
+        for action_id in menu.action_ids:
+            if action_id not in ACTIONS:
+                raise CheckFailure(f"menu action is not registered: {menu.id}:{action_id}")
+    for alias, action_id in {**COMMAND_ALIASES, **SHORTCUT_ALIASES}.items():
+        if action_id not in ACTIONS:
+            raise CheckFailure(f"action alias is not registered: {alias}->{action_id}")
+    for command in ["lifecycle", "live-queue", "tools", "lang", "shortcuts"]:
+        if command not in COMMAND_ALIASES:
+            raise CheckFailure(f"missing dev console command alias: {command}")
+    help_lines = load_catalog("mixed").get("help.lines", [])
+    if not isinstance(help_lines, list):
+        raise CheckFailure("help.lines catalog entry must be a list")
+    for line in help_lines:
+        if not isinstance(line, str):
+            continue
+        parts = line.strip().split()
+        if len(parts) < 2 or parts[0] != "./dev" or parts[1].startswith("-"):
+            continue
+        if parts[1] not in COMMAND_ALIASES:
+            raise CheckFailure(f"help command is not registered: {parts[1]}")
+    pref_root = h.tmp / "dev-config-root"
+    save_lang_mode(pref_root, "zh")
+    if saved_lang_mode(pref_root) != "zh":
+        raise CheckFailure("dev config did not persist zh language mode")
+    assert_exists(config_path(pref_root), "dev console local config")
 
 
 def check_repo_health(h: Harness) -> None:
@@ -479,12 +516,23 @@ def check_real_status(h: Harness) -> None:
     status = h.run([h.task_loop, "status"]).stdout
     assert_contains(status, "stale_in_progress:", "task-loop status stale count")
     assert_contains(status, "drain_requested:", "task-loop status drain")
-    dev_status = h.run([h.dev, "status"]).stdout
-    assert_contains(dev_status, "AreaMatrix Task Loop", "dev status dashboard header")
-    assert_contains(dev_status, "下一步建议", "dev status dashboard suggestions")
-    assert_contains(dev_status, "详细长输出：./dev status --verbose", "dev status verbose hint")
-    dev_verbose = h.run([h.dev, "status", "--verbose"]).stdout
-    assert_contains(dev_verbose, "AreaMatrix Task Loop 控制台", "dev verbose status header")
+    dev_status = h.run([h.dev, "--lang", "mixed", "status"]).stdout
+    assert_contains(dev_status, "AreaMatrix Dev Console", "dev status dashboard header")
+    assert_contains(dev_status, "当前局势", "dev status situation")
+    assert_contains(dev_status, "推荐行动链", "dev status recommendation chain")
+    assert_contains(dev_status, "进度概览", "dev status progress overview")
+    assert_contains(dev_status, "lang mixed", "dev status language mode")
+    assert_contains(dev_status, "v1-mvp live queue", "dev status v1 overview")
+    dev_status_zh = h.run([h.dev, "status", "--lang", "zh", "--once", "--color", "never"]).stdout
+    assert_contains(dev_status_zh, "语言 zh | 快照", "dev status zh header")
+    status_help_en = h.run([h.dev, "status", "--lang", "en", "--help"]).stdout
+    assert_contains(status_help_en, "Usage: ./dev status", "dev status en help usage")
+    assert_contains(status_help_en, "Language mode; overrides DEV_LANG", "dev status en help lang")
+    status_help_zh = h.run([h.dev, "status", "--lang", "zh", "--help"]).stdout
+    assert_contains(status_help_zh, "用法: ./dev status", "dev status zh help usage")
+    assert_contains(status_help_zh, "显示语言；覆盖 DEV_LANG", "dev status zh help lang")
+    dev_verbose = h.run([h.dev, "--lang", "mixed", "status", "--verbose"]).stdout
+    assert_contains(dev_verbose, "AreaMatrix Dev Console", "dev verbose status header")
     assert_contains(dev_verbose, "进程快照", "dev verbose process snapshot")
     preflight = h.dev_run("dev-preflight", ["preflight"]).stdout
     assert_contains(preflight, "Preflight", "dev preflight header")
@@ -492,16 +540,65 @@ def check_real_status(h: Harness) -> None:
 
 def check_dev_home(h: Harness) -> None:
     log("dev home dashboard and color controls")
-    home = h.run([h.dev, "--once"], env={"DEV_COLOR": "always", "NO_COLOR": ""}).stdout
+    home = h.run([h.dev, "--lang", "mixed", "--once"], env={"DEV_COLOR": "always", "NO_COLOR": ""}).stdout
     assert_contains(home, "\033[", "dev home default color")
-    assert_contains(home, "AreaMatrix Task Loop", "dev home dashboard header")
-    assert_contains(home, "快捷键", "dev home shortcuts")
-    assert_contains(home, "other codex=", "dev home folded process count")
+    assert_contains(home, "AreaMatrix Dev Console", "dev home dashboard header")
+    assert_contains(home, "当前局势", "dev home situation")
+    assert_contains(home, "不安全：dirty worktree + stale task + promotion blocked", "dev home unsafe summary")
+    assert_contains(home, "current task: 2-1/task-19", "dev home current task")
+    assert_contains(home, "Git checkpoint 会被 dirty worktree 拦截", "dev home dirty reason")
+    assert_contains(home, "还没有 verify PASS", "dev home stale reason")
+    assert_contains(home, "推荐行动链", "dev home action chain")
+    assert_contains(home, "git status --short", "dev home guide first step")
+    assert_contains(home, "./dev resume-stale", "dev home guide resume step")
+    assert_contains(home, "verify PASS 后", "dev home guide after")
+    assert_contains(home, "进度概览", "dev home progress overview")
+    assert_contains(home, "v1-mvp live queue", "dev home v1 card")
+    assert_contains(home, "v2 planning", "dev home v2 card")
+    assert_contains(home, "去哪里看更多", "dev home navigation")
+    assert_contains(home, "recommended guide", "dev home recommended guide")
+    assert_contains(home, "lifecycle map", "dev home lifecycle map")
+    assert_contains(home, "live queue details", "dev home live queue details")
+    assert_contains(home, "shortcuts", "dev home shortcuts action")
+    assert_contains(home, "当前语言: mixed", "dev home language mode")
+    assert_contains(home, "输入 lang 持久切换", "dev home language switch hint")
+    assert_contains(home, "输入 ? 查看全部快捷键", "dev home shortcut help hint")
+    assert_contains(home, "Enter 只显示完整状态，不启动任务", "dev home enter is status only")
+    assert_contains(home, "v2: queue-only-until-v1-complete", "dev home promotion blocker")
+    assert_not_contains(home, "任务快捷操作", "dev home should not show full shortcut list")
+    assert_not_contains(home, "clear-stale", "dev home hides dangerous clear-stale")
+    assert_not_contains(home, "reset-progress", "dev home hides dangerous reset-progress")
     assert_not_contains(home, "/Applications/Codex.app/Contents/Resources/codex exec", "dev home folded process command")
 
     no_color = h.run([h.dev, "--color", "never", "--once"]).stdout
     assert_not_contains(no_color, "\033[", "dev home color never")
-    assert_contains(no_color, "快捷键", "dev home no-color shortcuts")
+    assert_contains(no_color, "去哪里看更多", "dev home no-color navigation")
+
+    zh_home = h.run([h.dev, "--lang", "zh", "--once", "--color", "never"]).stdout
+    assert_contains(zh_home, "语言 zh | 快照", "dev home zh header")
+    assert_contains(zh_home, "当前局势", "dev home zh situation")
+    assert_contains(zh_home, "推荐行动链", "dev home zh guide")
+    assert_contains(zh_home, "进度概览", "dev home zh progress")
+    assert_contains(zh_home, "快捷键", "dev home zh shortcut action")
+    assert_not_contains(zh_home, "Primary Actions", "dev home zh no english title")
+
+    en_home = h.run([h.dev, "--lang", "en", "--once", "--color", "never"]).stdout
+    assert_contains(en_home, "lang en", "dev home en language mode")
+    assert_contains(en_home, "Current Situation", "dev home en situation")
+    assert_contains(en_home, "Recommended Action Chain", "dev home en guide")
+    assert_contains(en_home, "Progress Overview", "dev home en progress")
+    assert_contains(en_home, "Where To See More", "dev home en navigation")
+    assert_contains(en_home, "type lang to persist", "dev home en language switch hint")
+    assert_contains(en_home, "Enter shows full status only", "dev home en enter is status only")
+    assert_not_contains(en_home, "主要入口", "dev home en no chinese title")
+
+    en_help = h.run([h.dev, "--lang", "en", "help"]).stdout
+    assert_contains(en_help, "Quick Model:", "dev help en title")
+    assert_contains(en_help, "Live queue:", "dev help en live queue")
+    zh_help = h.run([h.dev, "--lang", "zh", "help"]).stdout
+    assert_contains(zh_help, "常用理解：", "dev help zh title")
+    assert_contains(zh_help, "Live queue：", "dev help zh live queue")
+    assert_contains(zh_help, "./dev lifecycle", "dev help lifecycle command")
 
     env_color_never = h.run([h.dev, "--once"], env={"DEV_COLOR": "never"}).stdout
     assert_not_contains(env_color_never, "\033[", "dev home DEV_COLOR never")
@@ -515,6 +612,20 @@ def check_dev_home(h: Harness) -> None:
     processes = h.run([h.dev, "processes"]).stdout
     assert_contains(processes, "进程快照", "dev processes header")
     assert_contains(processes, "host codex exec", "dev processes full section")
+    lifecycle = h.run([h.dev, "--lang", "mixed", "lifecycle"]).stdout
+    assert_contains(lifecycle, "Lifecycle Wizard", "dev lifecycle command")
+    assert_contains(lifecycle, "v1-mvp live-running", "dev lifecycle v1")
+    assert_contains(lifecycle, "v2 planning", "dev lifecycle v2")
+    live_queue = h.run([h.dev, "--lang", "mixed", "live-queue"]).stdout
+    assert_contains(live_queue, "Live Queue", "dev live queue command")
+    assert_contains(live_queue, "maintenance / danger", "dev live queue maintenance")
+    tools = h.run([h.dev, "--lang", "mixed", "tools"]).stdout
+    assert_contains(tools, "workflow / 工程检查", "dev tools command")
+    lang = h.run([h.dev, "--lang", "mixed", "lang"]).stdout
+    assert_contains(lang, "本地偏好文件", "dev lang config path")
+    shortcuts = h.run([h.dev, "--lang", "mixed", "shortcuts"]).stdout
+    assert_contains(shortcuts, "1", "dev shortcuts command")
+    assert_contains(shortcuts, "recommended guide", "dev shortcuts recommended")
 
 
 def check_dev_console(h: Harness) -> None:
@@ -539,13 +650,18 @@ def check_dev_console(h: Harness) -> None:
             },
         },
     )
-    hints = h.dev_run("dev-hints", ["status"]).stdout
-    assert_contains(hints, "从 stale 任务继续", "dev stale action")
-    assert_contains(hints, "./dev resume-stale", "dev stale command")
-    assert_contains(hints, "从 failed 任务继续", "dev failed action")
-    assert_contains(hints, "./dev resume-failed", "dev failed command")
-    assert_contains(hints, "一键优雅收尾", "dev drain action")
-    assert_contains(hints, "./dev drain", "dev drain command")
+    hints = h.dev_run("dev-hints", ["--lang", "mixed", "status"]).stdout
+    assert_contains(hints, "AreaMatrix Dev Console", "dev hints dashboard")
+    assert_contains(hints, "推荐行动链", "dev hints recommendation")
+    assert_contains(hints, "./dev drain", "dev live drain command")
+    assert_contains(hints, "进度概览", "dev hints progress context")
+
+    verbose_hints = h.dev_run("dev-hints", ["--lang", "mixed", "status", "--verbose"]).stdout
+    assert_contains(verbose_hints, "从 stale 任务继续", "dev stale action")
+    assert_contains(verbose_hints, "./dev resume-stale", "dev stale command")
+    assert_contains(verbose_hints, "从 failed 任务继续", "dev failed action")
+    assert_contains(verbose_hints, "./dev resume-failed", "dev failed command")
+    assert_contains(verbose_hints, "一键优雅收尾", "dev drain action")
 
     log("dev console preview does not execute")
     preview = h.dev_run(
@@ -888,6 +1004,7 @@ def check_git_ignore(h: Harness) -> None:
         ".codex/task-loop-control/drain.request",
         ".codex/task-loop-tmp/foo",
         ".codex/task-loop-console/foo.log",
+        ".codex/dev-console/config.json",
     ]
     tracked = [
         "tasks/prompts/_shared/progress.json",

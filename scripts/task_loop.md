@@ -57,15 +57,22 @@ Repo-local skills：
 
 ## 二、正式执行（推荐）
 
-日常不需要记忆下面这些长命令时，优先使用根目录控制台：
+日常不需要记忆下面这些长命令时，优先使用根目录 Dev Console：
 
 ```bash
 ./dev
 ```
 
-控制台默认显示彩色首页：顶部是进度、下一任务、runner / `codex exec` 折叠摘要、stale / drain、最近 run 和 verify；下方是快捷键操作区。
+`./dev` 是 AreaMatrix Dev Console 总控入口，默认展示局势诊断首页。首页只回答三件事：现在安全吗、推荐下一步是什么、去哪里看更多。
+控制台按版本组织 `docs -> workflow discussion -> changes -> plans -> drafts -> queue -> promotion preview -> tasks/prompts -> task-loop -> archive`。当前 live queue 仍来自 `tasks/prompts/**`；`workflow/` 是后续版本和大型变更的规划生命周期，不会直接修改 live queue。
+控制台默认显示四段：`当前局势` 说明安全结论和原因，`推荐行动链` 给出只读恢复步骤，`进度概览` 用两行版本卡展示 `v1-mvp live queue` 与 `v2 planning`，`去哪里看更多` 放主入口。最近 run、verify 日志、完整 pid 和长路径改到 `./dev status --verbose`、`./dev processes`、`./dev logs`。
+下方只显示主要入口：`1 recommended guide`、`2 lifecycle map`、`3 live queue details`、`4 tools`、`? shortcuts`、`h help`、`q quit`。直接按 Enter 只看完整状态，不启动任务；`1` 只打开推荐向导，不自动执行命令。
 启动或继续任务时，控制台会先阻止重复 live runner，再选择前台/后台、Git checkpoint 模式和任务数量上限；默认 Git 为本地 `commit`，任务数量为无限。
 优化或排查控制台时，优先用 `./dev preview` 预览命令，或用 `./dev dry-run` 跑临时目录演练；这两者都不会写真实 progress。
+
+默认语言为 `mixed`：命令、状态术语和 runtime 关键词保留英文，解释使用中文。首页顶部会显示当前 `lang mixed|zh|en`；语言优先级是 `./dev --lang mixed|zh|en` > `DEV_LANG=mixed|zh|en` > `.codex/dev-console/config.json` > `mixed`。交互模式输入 `lang` 会写入本仓库本地偏好，下次 `./dev` 自动沿用；命令和路径不翻译。
+`./dev` 自己打印的控制台文案由 `scripts/task_loop/locales/{mixed,zh,en}.json` 管理，并通过 `scripts/task_loop/i18n.py` 做 key、类型和 placeholder 完整性校验。首页、子菜单、快捷键和顶层命令的动作结构集中在 `scripts/task_loop/actions.py`；语言文件只放 `action.<id>.label/note` 等展示文案，实际执行函数仍在 `scripts/task_loop/console.py`。命令、路径、环境变量、task label 和底层 runner / workflow 透传输出不翻译。
+本地偏好目录 `.codex/dev-console/` 已在 `.gitignore` 中忽略，避免个人显示设置进入 git diff。
 
 颜色默认强制开启；需要关闭时使用：
 
@@ -78,6 +85,18 @@ NO_COLOR=1 ./dev
 
 ```bash
 ./dev --once
+./dev --lang zh --once
+./dev status --lang en --once
+```
+
+查看分层入口：
+
+```bash
+./dev lifecycle
+./dev live-queue
+./dev tools
+./dev shortcuts
+./dev lang
 ```
 
 完整进程命令不在首页展开；需要查看时使用：

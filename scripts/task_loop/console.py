@@ -15,7 +15,10 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Sequence
 
-from . import state
+from . import dev_config, state
+from .actions import ACTIONS, COMMAND_ALIASES, MENUS, SHORTCUT_ALIASES
+from .i18n import normalize_lang_mode, t, t_lines
+from .lifecycle import LIFECYCLE_STAGES, LifecycleSnapshot, VersionLifecycle, load_lifecycle_snapshot
 from .runner import RuntimeConfig, print_loop_status
 from scripts.dev_tools import cli as dev_tools_cli
 
@@ -43,6 +46,7 @@ class ConsoleConfig:
     pipeline: Path
     console_log_root: Path
     color_mode: str = "always"
+    lang_mode: str = "mixed"
 
     @classmethod
     def from_env(cls) -> "ConsoleConfig":
@@ -58,7 +62,15 @@ class ConsoleConfig:
 class DevArgs:
     command_args: list[str]
     color_mode: str
+    lang_mode: str | None
     once: bool
+
+
+class DevArgError(ValueError):
+    def __init__(self, key: str, lang_mode: str) -> None:
+        self.key = key
+        self.lang_mode = lang_mode
+        super().__init__(key)
 
 
 @dataclass
@@ -81,6 +93,7 @@ class ProcessSnapshot:
 
 @dataclass
 class DashboardSnapshot:
+    lifecycle: LifecycleSnapshot
     prompt: PromptSnapshot
     progress_counts: dict[str, int]
     process: ProcessSnapshot
@@ -155,6 +168,18 @@ def status_badge(text: str, color_name: str, color: bool) -> str:
     return ansi(f" {text} ", code, color)
 
 
+def tr(cfg: ConsoleConfig, key: str, **params: Any) -> str:
+    return t(cfg.lang_mode, key, **params)
+
+
+def tr_lines(cfg: ConsoleConfig, key: str, **params: Any) -> list[str]:
+    return t_lines(cfg.lang_mode, key, **params)
+
+
+def print_lines(cfg: ConsoleConfig, key: str, **params: Any) -> None:
+    print("\n".join(tr_lines(cfg, key, **params)))
+
+
 def rel_path(root: Path, path: Path | str | None) -> str:
     if not path:
         return "none"
@@ -168,6 +193,8 @@ def rel_path(root: Path, path: Path | str | None) -> str:
 def parse_global_args(args: Sequence[str]) -> DevArgs:
     remaining = list(args)
     color_mode = normalize_color_mode(os.environ.get("DEV_COLOR", "always"))
+    lang_mode: str | None = None
+    error_lang = normalize_lang_mode(os.environ.get("DEV_LANG", "mixed"))
     once = False
     command_args: list[str] = []
     index = 0
@@ -183,7 +210,7 @@ def parse_global_args(args: Sequence[str]) -> DevArgs:
             continue
         if value == "--color":
             if index + 1 >= len(remaining):
-                raise ValueError("--color requires always, never, or auto")
+                raise DevArgError("color_requires", lang_mode or error_lang)
             color_mode = normalize_color_mode(remaining[index + 1])
             index += 2
             continue
@@ -191,33 +218,56 @@ def parse_global_args(args: Sequence[str]) -> DevArgs:
             color_mode = normalize_color_mode(value.split("=", 1)[1])
             index += 1
             continue
+        if value == "--lang":
+            if index + 1 >= len(remaining):
+                raise DevArgError("lang_requires", lang_mode or error_lang)
+            lang_mode = normalize_lang_mode(remaining[index + 1])
+            index += 2
+            continue
+        if value.startswith("--lang="):
+            lang_mode = normalize_lang_mode(value.split("=", 1)[1])
+            index += 1
+            continue
         command_args.extend(remaining[index:])
         break
-    return DevArgs(command_args=command_args, color_mode=color_mode, once=once)
+    return DevArgs(command_args=command_args, color_mode=color_mode, lang_mode=lang_mode, once=once)
 
 
-def print_banner() -> None:
+def resolve_lang_mode(root: Path, cli_lang: str | None) -> str:
+    if cli_lang:
+        return normalize_lang_mode(cli_lang)
+    env_lang = os.environ.get("DEV_LANG")
+    if env_lang:
+        return normalize_lang_mode(env_lang)
+    return dev_config.saved_lang_mode(root)
+
+
+def banner_lang(cfg: ConsoleConfig | None = None) -> str:
+    if cfg:
+        return cfg.lang_mode
+    return normalize_lang_mode(os.environ.get("DEV_LANG", "mixed"))
+
+
+def print_banner(cfg: ConsoleConfig | None = None) -> None:
     if sys.stdout.isatty() and os.environ.get("TERM"):
         subprocess.run(["clear"], check=False)
-    print(
-        """============================================================
-        AreaMatrix Task Loop 控制台
-============================================================"""
-    )
+    print("============================================================")
+    print(f"        {t(banner_lang(cfg), 'banner.title')}")
+    print("============================================================")
 
 
-def pause() -> None:
+def pause(cfg: ConsoleConfig) -> None:
     if not sys.stdin.isatty():
         return
-    input("\n按 Enter 返回菜单...")
+    input(tr(cfg, "pause.return"))
 
 
-def confirm(prompt: str) -> bool:
+def confirm(cfg: ConsoleConfig, prompt: str) -> bool:
     if env_value("CONFIRM") == "1":
         return True
     if not sys.stdin.isatty():
         return False
-    answer = input(f"{prompt} [y/N] ").strip().lower()
+    answer = input(tr(cfg, "confirm.suffix", prompt=prompt)).strip().lower()
     return answer in {"y", "yes"}
 
 
@@ -303,18 +353,18 @@ def show_processes(cfg: ConsoleConfig) -> None:
     runners = snapshot.runners
     repo_codex = snapshot.repo_codex
     host_codex = snapshot.host_codex
-    print("\n进程快照")
-    print(f"- task-loop runner: {len(runners)}")
-    print(f"- AreaMatrix codex exec: {len(repo_codex)}")
-    print(f"- host codex exec: {len(host_codex)}")
+    print(tr(cfg, "processes.title"))
+    print(tr(cfg, "processes.runner", count=len(runners)))
+    print(tr(cfg, "processes.area_codex", count=len(repo_codex)))
+    print(tr(cfg, "processes.host_codex", count=len(host_codex)))
     if runners:
-        print("\nrunner:")
+        print(tr(cfg, "processes.runner_title"))
         print("\n".join(runners))
     if repo_codex:
-        print("\nAreaMatrix codex exec:")
+        print(tr(cfg, "processes.area_codex_title"))
         print("\n".join(repo_codex))
     if host_codex:
-        print("\nhost codex exec:")
+        print(tr(cfg, "processes.host_codex_title"))
         print("\n".join(host_codex))
 
 
@@ -332,13 +382,15 @@ def summarize_process_line(line: str, root: Path) -> str:
     return f"pid={pid} {cwd_name} {out_name}"
 
 
-def process_summary_line(cfg: ConsoleConfig, snapshot: ProcessSnapshot) -> str:
+def process_summary_line(cfg: ConsoleConfig, snapshot: ProcessSnapshot, *, detailed: bool = True) -> str:
     other = [line for line in snapshot.host_codex if line not in snapshot.repo_codex]
     summary = (
         f"runner={len(snapshot.runners)} | "
         f"AreaMatrix codex={len(snapshot.repo_codex)} | "
         f"other codex={len(other)}"
     )
+    if not detailed:
+        return summary
     examples: list[str] = []
     for line in [*snapshot.runners[:1], *snapshot.repo_codex[:1], *other[:1]]:
         examples.append(summarize_process_line(line, cfg.runtime.root_dir))
@@ -365,7 +417,7 @@ def show_latest_task_details(cfg: ConsoleConfig) -> None:
             interesting.append((str(value.get("updated_at", "")), label, value))
     interesting.sort(reverse=True)
 
-    print("\n当前任务")
+    print(tr(cfg, "task_details.title"))
     if interesting:
         _, label, entry = interesting[0]
         print(f"- label: {label}")
@@ -376,11 +428,11 @@ def show_latest_task_details(cfg: ConsoleConfig) -> None:
             if entry.get(key):
                 print(f"- {key}: {entry[key]}")
     else:
-        print("- none")
+        print(tr(cfg, "task_details.none"))
 
     index = read_json(cfg.runtime.run_summary_root / "index.json", {"runs": []})
     runs = index.get("runs", []) if isinstance(index, dict) else []
-    print("\n最近 run")
+    print(tr(cfg, "task_details.recent_run"))
     for item in [run for run in runs if isinstance(run, dict)][:5]:
         print(
             f"- {item.get('run_id', 'unknown')} "
@@ -406,12 +458,12 @@ def latest_verify_result(path: Path | None) -> str:
 
 
 def show_latest_failure_summary(cfg: ConsoleConfig) -> None:
-    print("\n最近 verify 摘要")
+    print(tr(cfg, "verify_summary.title"))
     latest = latest_verify_log(cfg.runtime.log_root)
     if not latest:
-        print("- 暂无 verify 日志。")
+        print(tr(cfg, "verify_summary.none"))
         return
-    print(f"- log: {latest}")
+    print(tr(cfg, "verify_summary.log", path=latest))
     lines = latest.read_text(encoding="utf-8", errors="replace").splitlines()
     for line in lines[-60:-5][-40:]:
         if "VERIFY_RESULT:" not in line:
@@ -525,6 +577,7 @@ def dashboard_snapshot(cfg: ConsoleConfig) -> DashboardSnapshot:
     lock = state.lock_info(cfg.runtime.lock_dir)
     latest_verify = latest_verify_log(cfg.runtime.log_root)
     return DashboardSnapshot(
+        lifecycle=load_lifecycle_snapshot(cfg.runtime.root_dir),
         prompt=load_prompt_snapshot(cfg),
         progress_counts=runtime_progress_counts(cfg),
         process=process_snapshot(cfg),
@@ -543,17 +596,17 @@ def dashboard_snapshot(cfg: ConsoleConfig) -> DashboardSnapshot:
 
 def show_recovery_hints(cfg: ConsoleConfig) -> None:
     output = status_output(cfg)
-    print("\n恢复建议")
+    print(tr(cfg, "recovery.hint.title"))
     if re.search(r"stale_in_progress: [1-9]", output):
-        print("- 存在 stale：优先选“从 stale 任务继续”或运行 ./dev resume-stale。")
+        print(tr(cfg, "recovery.hint.stale"))
     if re.search(r"^- failed: ", output, flags=re.MULTILINE):
-        print("- 存在 failed：先看最近 verify 摘要，再选“从 failed 任务继续”或运行 ./dev resume-failed。")
+        print(tr(cfg, "recovery.hint.failed"))
     if re.search(r"^- blocked: ", output, flags=re.MULTILINE):
-        print("- 存在 blocked：检查风险门禁，确认后用 allow 模式从对应 task 继续。")
+        print(tr(cfg, "recovery.hint.blocked"))
     if live_runner_active(cfg):
-        print("- 当前已有 live runner；不要启动第二个。需要停机请选“一键优雅收尾”或运行 ./dev drain。")
+        print(tr(cfg, "recovery.hint.live"))
     if git_dirty(cfg.runtime.root_dir):
-        print("- 工作区非干净；commit/push checkpoint 模式启动前会被 Git gate 拦截。可先查看 git status。")
+        print(tr(cfg, "recovery.hint.dirty"))
 
 
 def runner_state(snapshot: DashboardSnapshot) -> tuple[str, str]:
@@ -571,6 +624,39 @@ def runner_state(snapshot: DashboardSnapshot) -> tuple[str, str]:
     if snapshot.git_dirty:
         return "dirty", "yellow"
     return "idle", "cyan"
+
+
+def state_text(cfg: ConsoleConfig, state_name: str) -> str:
+    return tr(cfg, f"state.{state_name}")
+
+
+def recommended_action(cfg: ConsoleConfig, snapshot: DashboardSnapshot) -> tuple[str, str]:
+    if snapshot.lock["exists"] and snapshot.lock["alive"]:
+        if snapshot.drain_requested:
+            return tr(cfg, "action.wait_drain"), "./dev status"
+        return tr(cfg, "action.request_drain"), "./dev drain"
+    if snapshot.git_dirty and env_value("GIT_CHECKPOINT", cfg.runtime.git_checkpoint) != "off":
+        return tr(cfg, "action.handle_dirty"), "git status --short"
+    if snapshot.stale_count:
+        return tr(cfg, "action.resume_stale"), "./dev resume-stale"
+    if snapshot.progress_counts.get("failed", 0):
+        return tr(cfg, "action.resume_failed"), "./dev resume-failed"
+    if snapshot.progress_counts.get("blocked", 0):
+        return tr(cfg, "action.continue_blocked"), "RISK_POLICY=allow START_FROM=<label> ./task-loop run"
+    if snapshot.lifecycle.promotion_blockers:
+        return tr(cfg, "action.review_workflow"), "./dev workflow status"
+    return tr(cfg, "action.continue_queue"), "RISK_POLICY=allow MAX_RETRIES=0 ./task-loop run"
+
+
+def blocker_lines(cfg: ConsoleConfig, snapshot: DashboardSnapshot) -> list[str]:
+    lines: list[str] = []
+    if snapshot.git_dirty:
+        lines.append(tr(cfg, "blocker.dirty"))
+    if snapshot.stale_count:
+        lines.append(tr(cfg, "blocker.stale"))
+    for blocker in snapshot.lifecycle.promotion_blockers:
+        lines.append(tr(cfg, "blocker.promotion", blocker=blocker))
+    return lines
 
 
 def verify_text(result: str, color: bool) -> str:
@@ -591,69 +677,187 @@ def render_progress_bar(completed: int, total: int, color: bool, width: int = 28
     return green(f"[{bar}]", color)
 
 
-def dashboard_lines(cfg: ConsoleConfig, snapshot: DashboardSnapshot, *, color: bool, realtime: bool) -> list[str]:
-    state_name, state_color = runner_state(snapshot)
-    prompt = snapshot.prompt
-    percent = (prompt.completed / prompt.total * 100) if prompt.total else 0.0
-    latest_run = snapshot.latest_run or {}
-    latest_status = latest_run.get("status", "none")
-    latest_run_id = latest_run.get("run_id", "")
-    latest_completed = latest_run.get("completed", 0)
-    latest_retries = latest_run.get("retries", 0)
-    task_line = "none"
-    if snapshot.interesting_task:
-        label, entry = snapshot.interesting_task
-        task_line = f"{label} ({entry.get('status', 'unknown')}, attempts={entry.get('attempts', 0)})"
+def progress_text(cfg: ConsoleConfig, prompt: PromptSnapshot, percent: float) -> str:
+    return tr(cfg, "progress.text", completed=prompt.completed, total=prompt.total, pending=prompt.pending, percent=percent)
 
-    lines = [
-        bold("AreaMatrix Task Loop", color),
-        f"{dim('captured', color)} {snapshot.captured_at.strftime('%Y-%m-%d %H:%M:%S')}    "
-        f"{dim('mode', color)} {'realtime 5s' if realtime else 'snapshot'}    "
-        f"{dim('exit', color)} Ctrl+C",
-        "",
-        f"{bold('状态', color)} {status_badge(state_name, state_color, color)} "
-        f"{process_summary_line(cfg, snapshot.process)}",
-        f"{bold('进度', color)} {prompt.completed}/{prompt.total} completed  {prompt.pending} pending  {percent:.1f}%",
-        f"      {render_progress_bar(prompt.completed, prompt.total, color)}",
-        f"{bold('下一任务', color)} {cyan(prompt.first_ready, color) if prompt.first_ready not in {'None', 'unknown'} else prompt.first_ready}",
-        f"{bold('当前任务', color)} {task_line}",
-        f"{bold('锁 / stale', color)} lock={'live' if snapshot.lock['exists'] and snapshot.lock['alive'] else 'none'} "
-        f"stale={snapshot.stale_count} drain={'yes' if snapshot.drain_requested else 'no'}",
-        f"{bold('最近 run', color)} {latest_run_id or 'none'} status={latest_status} completed={latest_completed} retries={latest_retries}",
-        f"{bold('最近 verify', color)} {verify_text(snapshot.latest_verify_result, color)} "
-        f"{dim(rel_path(cfg.runtime.root_dir, snapshot.latest_verify_log), color)}",
-        f"{bold('日志', color)} {rel_path(cfg.runtime.root_dir, snapshot.latest_log_dir)}",
+
+def lifecycle_summary_text(cfg: ConsoleConfig, lifecycle: LifecycleSnapshot) -> str:
+    return tr(
+        cfg,
+        "lifecycle.summary",
+        count=len(lifecycle.versions),
+        live=lifecycle.live_version,
+        active=lifecycle.active_version,
+        planning=lifecycle.planning_versions,
+    )
+
+
+def lifecycle_version_line(cfg: ConsoleConfig, version: VersionLifecycle) -> str:
+    parts = [
+        f"{version.version_id} {version.status}",
+        f"discussion={version.discussion}",
+        f"changes={version.changes_count}",
+        f"plans={version.plans_count}",
+        f"drafts={version.drafts_count}",
+        f"queue={version.queue_count}",
+        f"promotion={version.promotion}",
     ]
-    if prompt.error:
-        lines.append(f"{bold('prompt 状态', color)} {yellow('fallback', color)} {prompt.error}")
+    if version.live_queue:
+        parts.append(f"live={version.live_queue}")
+    if version.gate and version.gate != "none":
+        parts.append(f"gate={version.gate}")
+    return " | ".join(parts)
 
-    suggestions = dashboard_suggestions(cfg, snapshot)
-    lines.append("")
-    lines.append(bold("下一步建议", color))
-    lines.extend([f"- {item}" for item in suggestions])
-    lines.append("")
-    lines.append(dim("详细长输出：./dev status --verbose；一次性快照：./dev status --once。", color))
+
+def current_task_parts(snapshot: DashboardSnapshot) -> tuple[str, str, int]:
+    if not snapshot.interesting_task:
+        return "none", "none", 0
+    task_label, entry = snapshot.interesting_task
+    return task_label, str(entry.get("status", "unknown")), int(entry.get("attempts", 0) or 0)
+
+
+def safety_issue_labels(cfg: ConsoleConfig, snapshot: DashboardSnapshot) -> list[str]:
+    issues: list[str] = []
+    if snapshot.lock["exists"] and snapshot.lock["alive"]:
+        issues.append(tr(cfg, "situation.issue.running"))
+    if snapshot.git_dirty and env_value("GIT_CHECKPOINT", cfg.runtime.git_checkpoint) != "off":
+        issues.append(tr(cfg, "situation.issue.dirty"))
+    if snapshot.stale_count:
+        issues.append(tr(cfg, "situation.issue.stale"))
+    if snapshot.progress_counts.get("failed", 0):
+        issues.append(tr(cfg, "situation.issue.failed"))
+    if snapshot.progress_counts.get("blocked", 0):
+        issues.append(tr(cfg, "situation.issue.blocked"))
+    if snapshot.lifecycle.promotion_blockers:
+        issues.append(tr(cfg, "situation.issue.promotion"))
+    return issues
+
+
+def situation_reason_lines(cfg: ConsoleConfig, snapshot: DashboardSnapshot) -> list[str]:
+    task_label, _, attempts = current_task_parts(snapshot)
+    lines: list[str] = []
+    if snapshot.git_dirty and env_value("GIT_CHECKPOINT", cfg.runtime.git_checkpoint) != "off":
+        lines.append(tr(cfg, "situation.reason.dirty"))
+    if snapshot.stale_count:
+        lines.append(tr(cfg, "situation.reason.stale", task=task_label, attempts=attempts))
+    if snapshot.progress_counts.get("failed", 0):
+        lines.append(tr(cfg, "situation.reason.failed"))
+    if snapshot.progress_counts.get("blocked", 0):
+        lines.append(tr(cfg, "situation.reason.blocked"))
+    if snapshot.lock["exists"] and snapshot.lock["alive"]:
+        lines.append(tr(cfg, "situation.reason.running"))
+    for blocker in snapshot.lifecycle.promotion_blockers:
+        lines.append(tr(cfg, "situation.reason.promotion", blocker=blocker))
+    return lines or [tr(cfg, "situation.reason.none")]
+
+
+def situation_lines(cfg: ConsoleConfig, snapshot: DashboardSnapshot, color: bool) -> list[str]:
+    state_name, state_color = runner_state(snapshot)
+    task_label, task_status, attempts = current_task_parts(snapshot)
+    issues = safety_issue_labels(cfg, snapshot)
+    summary = (
+        tr(cfg, "situation.summary.unsafe", issues=" + ".join(issues))
+        if issues
+        else tr(cfg, "situation.summary.safe")
+    )
+    lines = [
+        bold(tr(cfg, "situation.title"), color),
+        f"{status_badge(state_text(cfg, state_name), state_color, color)} {summary}",
+        tr(cfg, "situation.current_task", task=task_label, status=task_status, attempts=attempts),
+        tr(cfg, "situation.reasons"),
+    ]
+    lines.extend(f"- {line}" for line in situation_reason_lines(cfg, snapshot))
     return lines
 
 
-def dashboard_suggestions(cfg: ConsoleConfig, snapshot: DashboardSnapshot) -> list[str]:
-    suggestions: list[str] = []
+def recommended_chain_steps(cfg: ConsoleConfig, snapshot: DashboardSnapshot) -> list[str]:
+    dirty_blocks_checkpoint = snapshot.git_dirty and env_value("GIT_CHECKPOINT", cfg.runtime.git_checkpoint) != "off"
     if snapshot.lock["exists"] and snapshot.lock["alive"]:
-        suggestions.append("一键优雅收尾：./dev drain  当前 task 完成、验收和 checkpoint 后停止")
+        if snapshot.drain_requested:
+            return [tr(cfg, "guide.step.status"), tr(cfg, "guide.step.wait_drain")]
+        return [tr(cfg, "guide.step.drain"), tr(cfg, "guide.step.status")]
+    if dirty_blocks_checkpoint:
+        if snapshot.stale_count:
+            final_step = tr(cfg, "guide.step.resume_stale")
+        elif snapshot.progress_counts.get("failed", 0):
+            final_step = tr(cfg, "guide.step.resume_failed")
+        else:
+            final_step = tr(cfg, "guide.step.run_queue")
+        return [tr(cfg, "guide.step.git_status"), tr(cfg, "guide.step.save_worktree"), final_step]
     if snapshot.stale_count:
-        suggestions.append("从 stale 任务继续：./dev resume-stale")
+        return [tr(cfg, "guide.step.resume_stale")]
     if snapshot.progress_counts.get("failed", 0):
-        suggestions.append("从 failed 任务继续：./dev resume-failed")
+        return [tr(cfg, "guide.step.resume_failed")]
     if snapshot.progress_counts.get("blocked", 0):
-        suggestions.append("blocked 授权继续：RISK_POLICY=allow START_FROM=<label> ./task-loop run")
-    if snapshot.git_dirty:
-        suggestions.append("git status --short  先收口工作区，避免 Git checkpoint gate 拦截")
-    if not suggestions:
-        suggestions.append("RISK_POLICY=allow MAX_RETRIES=0 ./task-loop run  无限继续当前队列")
-    suggestions.append("./dev preflight  启动前检查 Git、锁、进程和恢复建议")
-    if snapshot.latest_verify_log:
-        suggestions.append("./dev verify-summary  查看最近 verify 摘要")
-    return suggestions
+        return [tr(cfg, "guide.step.review_blocked")]
+    if snapshot.lifecycle.promotion_blockers:
+        return [tr(cfg, "guide.step.workflow_status")]
+    return [tr(cfg, "guide.step.run_queue")]
+
+
+def recommended_chain_lines(cfg: ConsoleConfig, snapshot: DashboardSnapshot, color: bool) -> list[str]:
+    lines = [bold(tr(cfg, "guide.title"), color)]
+    for index, step in enumerate(recommended_chain_steps(cfg, snapshot), start=1):
+        lines.append(f"{index}. {step}")
+    lines.append(tr(cfg, "guide.after"))
+    return lines
+
+
+def progress_overview_lines(cfg: ConsoleConfig, snapshot: DashboardSnapshot, color: bool) -> list[str]:
+    prompt = snapshot.prompt
+    percent = (prompt.completed / prompt.total * 100) if prompt.total else 0.0
+    task_label, _, _ = current_task_parts(snapshot)
+    task_marker = task_label if snapshot.stale_count else prompt.first_ready
+    v1 = next((item for item in snapshot.lifecycle.versions if item.version_id == "v1-mvp"), None)
+    v2 = next((item for item in snapshot.lifecycle.versions if item.version_id == "v2"), None)
+    promotion_state = tr(cfg, "progress_overview.promotion_blocked") if snapshot.lifecycle.promotion_blockers else (v2.promotion if v2 else "none")
+    lines = [bold(tr(cfg, "progress_overview.title"), color)]
+    lines.append(
+        tr(
+            cfg,
+            "progress_overview.v1",
+            version=v1.version_id if v1 else "v1-mvp",
+            completed=prompt.completed,
+            total=prompt.total,
+            percent=percent,
+            status=runner_state(snapshot)[0],
+            task=task_marker,
+        )
+    )
+    if v2:
+        lines.append(
+            tr(
+                cfg,
+                "progress_overview.v2",
+                version=v2.version_id,
+                changes=v2.changes_count,
+                plans=v2.plans_count,
+                drafts=v2.drafts_count,
+                queue=v2.queue_count,
+                promotion=promotion_state,
+            )
+        )
+    return lines
+
+
+def dashboard_lines(cfg: ConsoleConfig, snapshot: DashboardSnapshot, *, color: bool, realtime: bool) -> list[str]:
+    mode_value = tr(cfg, "dashboard.mode.realtime_5s" if realtime else "dashboard.mode.snapshot")
+
+    lines = [
+        bold(tr(cfg, "dashboard.title"), color),
+        f"{dim(tr(cfg, 'dashboard.lang'), color)} {cfg.lang_mode} | "
+        f"{mode_value} {snapshot.captured_at.strftime('%Y-%m-%d %H:%M:%S')} | "
+        f"{dim(tr(cfg, 'dashboard.exit'), color)} Ctrl+C",
+        "",
+        *situation_lines(cfg, snapshot, color),
+        "",
+        *recommended_chain_lines(cfg, snapshot, color),
+        "",
+        *progress_overview_lines(cfg, snapshot, color),
+    ]
+    if snapshot.prompt.error:
+        lines.append(f"{bold(tr(cfg, 'dashboard.prompt_status'), color)} {yellow('fallback', color)} {snapshot.prompt.error}")
+    return lines
 
 
 def render_status_dashboard(cfg: ConsoleConfig, *, color: bool, realtime: bool) -> None:
@@ -679,19 +883,19 @@ def show_status_dashboard(cfg: ConsoleConfig, *, refresh_seconds: float = 5.0, o
 
 
 def show_preflight(cfg: ConsoleConfig) -> int:
-    print_banner()
-    print("Preflight")
-    print(f"- root: {cfg.runtime.root_dir}")
+    print_banner(cfg)
+    print(tr(cfg, "preflight.title"))
+    print(tr(cfg, "preflight.root", root=cfg.runtime.root_dir))
     branch = subprocess.run(["git", "branch", "--show-current"], cwd=cfg.runtime.root_dir, text=True, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, check=False)
     remote = subprocess.run(["git", "remote", "get-url", "origin"], cwd=cfg.runtime.root_dir, text=True, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, check=False)
-    print(f"- branch: {branch.stdout.strip() or 'unknown'}")
-    print(f"- remote: {remote.stdout.strip() or 'none'}")
+    print(tr(cfg, "preflight.branch", branch=branch.stdout.strip() or "unknown"))
+    print(tr(cfg, "preflight.remote", remote=remote.stdout.strip() or "none"))
     if git_dirty(cfg.runtime.root_dir):
-        print("- worktree: dirty")
+        print(tr(cfg, "preflight.worktree_dirty"))
         status = subprocess.run(["git", "status", "--short"], cwd=cfg.runtime.root_dir, text=True, stdout=subprocess.PIPE, check=False)
         print("\n".join(status.stdout.splitlines()[:20]))
     else:
-        print("- worktree: clean")
+        print(tr(cfg, "preflight.worktree_clean"))
     print()
     print_status_compact(cfg)
     show_processes(cfg)
@@ -700,7 +904,7 @@ def show_preflight(cfg: ConsoleConfig) -> int:
 
 
 def show_status_verbose(cfg: ConsoleConfig) -> int:
-    print_banner()
+    print_banner(cfg)
     print_loop_status(cfg.runtime)
     show_processes(cfg)
     show_latest_task_details(cfg)
@@ -712,35 +916,35 @@ def show_status_verbose(cfg: ConsoleConfig) -> int:
 def guard_no_live_runner(cfg: ConsoleConfig) -> bool:
     if not live_runner_active(cfg):
         return True
-    print_banner()
-    print("已有 live runner，已阻止启动第二个 runner。\n")
+    print_banner(cfg)
+    print(tr(cfg, "guard.live.line1"))
     print_status_compact(cfg)
     show_processes(cfg)
-    print("\n可选操作：")
-    print("  ./dev drain   请求当前 task 完成并 checkpoint 后停止")
-    print("  ./dev status  查看详细状态和日志")
+    print(tr(cfg, "guard.live.options"))
+    print(tr(cfg, "guard.live.option_drain"))
+    print(tr(cfg, "guard.live.option_status"))
     return False
 
 
-def choose_execution_mode() -> str:
+def choose_execution_mode(cfg: ConsoleConfig) -> str:
     value = env_value("EXECUTION_MODE")
     if value in {"foreground", "background"}:
         return value
     if not sys.stdin.isatty():
         return "background"
-    print("\n执行方式：\n  1) 后台运行\n  2) 前台运行")
-    answer = input("> ").strip()
+    print("\n".join(tr_lines(cfg, "choose.execution.lines")))
+    answer = input(tr(cfg, "prompt.selection")).strip()
     return "foreground" if answer in {"2", "foreground"} else "background"
 
 
-def choose_git_mode() -> str:
+def choose_git_mode(cfg: ConsoleConfig) -> str:
     value = env_value("GIT_CHECKPOINT")
     if value:
         return value
     if not sys.stdin.isatty():
         return "commit"
-    print("\nGit checkpoint：\n  1) 本地 commit（默认）\n  2) commit + push\n  3) off（仅诊断）")
-    answer = input("> ").strip()
+    print("\n".join(tr_lines(cfg, "choose.git.lines")))
+    answer = input(tr(cfg, "prompt.selection")).strip()
     if answer in {"2", "push"}:
         return "push"
     if answer in {"3", "off"}:
@@ -748,14 +952,14 @@ def choose_git_mode() -> str:
     return "commit"
 
 
-def choose_max_tasks() -> str:
+def choose_max_tasks(cfg: ConsoleConfig) -> str:
     value = env_value("MAX_TASKS")
     if value:
         return value
     if not sys.stdin.isatty():
         return "0"
-    print("\n任务数量上限：\n  1) 无限（默认）\n  2) 1 个\n  3) 5 个\n  4) 20 个\n  5) 自定义 N")
-    answer = input("> ").strip()
+    print("\n".join(tr_lines(cfg, "choose.max_tasks.lines")))
+    answer = input(tr(cfg, "prompt.selection")).strip()
     if answer == "2":
         return "1"
     if answer == "3":
@@ -763,22 +967,22 @@ def choose_max_tasks() -> str:
     if answer == "4":
         return "20"
     if answer == "5":
-        custom = input("N=").strip()
+        custom = input(tr(cfg, "prompt.custom_n")).strip()
         return custom if custom.isdigit() else "0"
     return "0"
 
 
-def choose_stop_target() -> tuple[str, str]:
+def choose_stop_target(cfg: ConsoleConfig) -> tuple[str, str]:
     phase = env_value("PHASE")
     stop_after = env_value("STOP_AFTER")
     if phase or stop_after or not sys.stdin.isatty():
         return phase, stop_after
-    print("\n停止点：\n  1) 不限制（默认）\n  2) 只跑某个 phase\n  3) 跑到某个 task 后停止")
-    answer = input("> ").strip()
+    print("\n".join(tr_lines(cfg, "choose.stop.lines")))
+    answer = input(tr(cfg, "prompt.selection")).strip()
     if answer == "2":
-        return input("phase=").strip(), ""
+        return input(tr(cfg, "prompt.phase")).strip(), ""
     if answer == "3":
-        return "", input("task label=").strip()
+        return "", input(tr(cfg, "prompt.task_label")).strip()
     return "", ""
 
 
@@ -801,10 +1005,10 @@ def base_env(cfg: ConsoleConfig, git_mode: str) -> tuple[dict[str, str], list[st
 
 
 def build_runner_command(cfg: ConsoleConfig, subcommand: str, extra_args: Sequence[str]) -> RunnerCommand:
-    execution_mode = choose_execution_mode()
-    git_mode = choose_git_mode()
-    max_tasks = choose_max_tasks()
-    phase, stop_after = choose_stop_target()
+    execution_mode = choose_execution_mode(cfg)
+    git_mode = choose_git_mode(cfg)
+    max_tasks = choose_max_tasks(cfg)
+    phase, stop_after = choose_stop_target(cfg)
     env, env_bits = base_env(cfg, git_mode)
     argv = [str(cfg.task_loop_bin), subcommand]
     if env_value("DRY_RUN", "0") == "1":
@@ -821,23 +1025,23 @@ def build_runner_command(cfg: ConsoleConfig, subcommand: str, extra_args: Sequen
     return RunnerCommand(argv=argv, env=env, env_bits=env_bits, execution_mode=execution_mode)
 
 
-def print_command_preview(command: RunnerCommand) -> None:
-    print("\n即将执行：" + shlex.join(["env", *command.env_bits, *command.argv]))
-    print(f"执行方式：{command.execution_mode}")
+def print_command_preview(cfg: ConsoleConfig, command: RunnerCommand) -> None:
+    print(tr(cfg, "command_preview.prefix", command=shlex.join(["env", *command.env_bits, *command.argv])))
+    print(tr(cfg, "command_preview.execution_mode", mode=command.execution_mode))
 
 
 def run_runner_command(cfg: ConsoleConfig, command: RunnerCommand) -> int:
     cfg.console_log_root.mkdir(parents=True, exist_ok=True)
-    print_command_preview(command)
+    print_command_preview(cfg, command)
     if command.execution_mode == "foreground":
         return subprocess.run(command.argv, env=command.env, check=False).returncode
     log_file = cfg.console_log_root / f"task-loop-{timestamp()}.log"
     with log_file.open("w", encoding="utf-8") as stream:
         proc = subprocess.Popen(command.argv, env=command.env, stdout=stream, stderr=subprocess.STDOUT)
     (cfg.console_log_root / "last-task-loop.pid").write_text(f"{proc.pid}\n", encoding="utf-8")
-    print(f"已后台启动：pid={proc.pid}")
-    print(f"控制台日志：{log_file}")
-    print("任务详细日志仍写入 .codex/task-loop-logs/<run_id>/...")
+    print(tr(cfg, "runner.background.started", pid=proc.pid))
+    print(tr(cfg, "runner.console_log", path=log_file))
+    print(tr(cfg, "runner.task_logs"))
     return 0
 
 
@@ -849,17 +1053,17 @@ def start_with_wizard(cfg: ConsoleConfig, subcommand: str) -> int:
 
 def preview_with_wizard(cfg: ConsoleConfig) -> int:
     command = build_runner_command(cfg, "run", [])
-    print_command_preview(command)
+    print_command_preview(cfg, command)
     if live_runner_active(cfg):
-        print("注意：当前已有 live runner；这里只是预览，没有启动第二个 runner。")
-    print("未执行。")
+        print(tr(cfg, "preview.live_runner"))
+    print(tr(cfg, "preview.not_executed"))
     return 0
 
 
 def run_temp_dry_run(cfg: ConsoleConfig) -> int:
     with tempfile.TemporaryDirectory(prefix="areamatrix-task-loop-") as tmp:
         tmp_dir = Path(tmp)
-        print(f"临时 dry-run 目录：{tmp_dir}")
+        print(tr(cfg, "dry_run.temp_dir", path=tmp_dir))
         env = os.environ.copy()
         env.update(
             {
@@ -882,13 +1086,13 @@ def run_temp_dry_run(cfg: ConsoleConfig) -> int:
             argv.extend(["--phase", env_value("PHASE")])
         rc = subprocess.run(argv, env=env, check=False).returncode
         if rc == 0:
-            print("\n临时 dry-run 完成，真实 progress/logs 未修改。")
+            print(tr(cfg, "dry_run.done"))
         return rc
 
 
 def request_drain(cfg: ConsoleConfig) -> int:
     if not live_runner_active(cfg):
-        print("当前没有 live runner，无法请求优雅收尾。")
+        print(tr(cfg, "drain.no_runner"))
         return 1
     env, _ = base_env(cfg, cfg.runtime.git_checkpoint)
     return subprocess.run([str(cfg.task_loop_bin), "drain"], env=env, check=False).returncode
@@ -898,40 +1102,55 @@ def run_health_checks(cfg: ConsoleConfig) -> int:
     return dev_tools_cli.main(["check"])
 
 
-def parse_status_args(args: Sequence[str]) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(prog="./dev status", description="Show AreaMatrix task-loop status")
-    parser.add_argument("--verbose", action="store_true", help="Show the full legacy status report")
-    parser.add_argument("--once", action="store_true", help="Render one compact dashboard snapshot and exit")
-    parser.add_argument("--refresh", type=float, default=5.0, help="TUI refresh interval in seconds")
-    parser.add_argument("--color", choices=["always", "never", "auto"], help="Color mode; overrides DEV_COLOR")
-    parser.add_argument("--no-color", action="store_true", help="Disable ANSI color")
+def lang_from_status_args(args: Sequence[str], default: str) -> str:
+    values = list(args)
+    for index, value in enumerate(values):
+        if value == "--lang" and index + 1 < len(values):
+            return normalize_lang_mode(values[index + 1])
+        if value.startswith("--lang="):
+            return normalize_lang_mode(value.split("=", 1)[1])
+    return default
+
+
+def parse_status_args(args: Sequence[str], default_lang: str) -> argparse.Namespace:
+    lang = lang_from_status_args(args, default_lang)
+    if "-h" in args or "--help" in args:
+        print("\n".join(t_lines(lang, "status_help.lines")))
+        raise SystemExit(0)
+    parser = argparse.ArgumentParser(prog="./dev status", add_help=False)
+    parser.add_argument("--verbose", action="store_true")
+    parser.add_argument("--once", action="store_true")
+    parser.add_argument("--refresh", type=float, default=5.0)
+    parser.add_argument("--color", choices=["always", "never", "auto"])
+    parser.add_argument("--lang", choices=["mixed", "zh", "en"])
+    parser.add_argument("--no-color", action="store_true")
     return parser.parse_args(list(args))
 
 
 def show_latest_console_log(cfg: ConsoleConfig) -> int:
-    print_banner()
+    print_banner(cfg)
     logs = sorted(cfg.console_log_root.glob("*.log")) if cfg.console_log_root.exists() else []
     if not logs:
-        print("暂无控制台后台日志。")
+        print(tr(cfg, "logs.none"))
         return 0
     latest = logs[-1]
-    print(f"latest: {latest}\n")
+    print(tr(cfg, "logs.latest", path=latest))
     print("\n".join(latest.read_text(encoding="utf-8", errors="replace").splitlines()[-100:]))
     return 0
 
 
 def clear_stale(cfg: ConsoleConfig) -> int:
-    if not confirm("确认只清理 stale in_progress 记录？该操作会先备份 progress.json。"):
-        print("已取消。")
+    if not confirm(cfg, tr(cfg, "clear_stale.confirm")):
+        print(tr(cfg, "error.cancelled"))
         return 1
     env, _ = base_env(cfg, cfg.runtime.git_checkpoint)
     return subprocess.run([str(cfg.task_loop_bin), "clear-stale"], env=env, check=False).returncode
 
 
 def reset_progress(cfg: ConsoleConfig) -> int:
-    print("高风险操作：这会备份并清空 progress.json，从 0 开始。")
-    if env_value("RESET_CONFIRM") != "RESET" and (not sys.stdin.isatty() or input("请输入 RESET 确认：").strip() != "RESET"):
-        print("已取消。")
+    print(tr(cfg, "reset.warning"))
+    if env_value("RESET_CONFIRM") != "RESET" and (not sys.stdin.isatty() or input(tr(cfg, "reset.confirm")).strip() != "RESET"):
+        print(tr(cfg, "error.cancelled"))
         return 1
     env, _ = base_env(cfg, cfg.runtime.git_checkpoint)
     return subprocess.run([str(cfg.task_loop_bin), "reset-progress"], env=env, check=False).returncode
@@ -942,31 +1161,70 @@ def clear_screen() -> None:
         print("\033[2J\033[H", end="")
 
 
-def shortcut_lines(color: bool) -> list[str]:
-    normal = [
-        ("s", "start", "从下一个 pending 继续"),
-        ("p", "preflight", "启动前检查"),
-        ("v", "preview", "预览命令，不执行"),
-        ("d", "dry-run", "临时演练，不写真实 progress"),
-        ("r", "resume-stale", "恢复 stale"),
-        ("f", "resume-failed", "恢复 failed"),
-        ("g", "drain", "优雅收尾"),
-        ("l", "logs", "后台日志"),
-        ("y", "verify-summary", "最近 verify"),
-        ("c", "check", "doctor + task-loop 自检"),
-        ("x", "processes", "完整进程"),
-        ("h", "help", "帮助"),
-        ("q", "quit", "退出"),
-    ]
-    lines = [bold("快捷键", color)]
-    for key, command, note in normal:
-        lines.append(f"  {cyan(key, color)}  {command:<15} {dim(note, color)}")
+def action_label(cfg: ConsoleConfig, action_id: str) -> str:
+    return tr(cfg, ACTIONS[action_id].label_key)
+
+
+def action_note(cfg: ConsoleConfig, action_id: str) -> str:
+    return tr(cfg, ACTIONS[action_id].note_key)
+
+
+def home_action_key(action_id: str) -> str:
+    spec = ACTIONS[action_id]
+    return spec.shortcuts[0] if spec.shortcuts else spec.command
+
+
+def home_action_lines(cfg: ConsoleConfig, color: bool) -> list[str]:
+    actions = [(home_action_key(action_id), action_label(cfg, action_id), action_note(cfg, action_id)) for action_id in MENUS["home"].action_ids]
+    lines = [bold(tr(cfg, "home.title"), color)]
+    width = max(24, *(len(command) for _, command, _ in actions))
+    for key, command, note in actions:
+        lines.append(f"  {cyan(key, color)}  {command:<{width}}  {dim(note, color)}")
     lines.append("")
-    lines.append(red("危险操作", color))
-    lines.append(f"  {yellow('clear-stale', color):<15}  清理 stale in_progress（会备份 progress）")
-    lines.append(f"  {red('reset-progress', color):<15}  重置 progress 从 0 开始（需输入 RESET）")
-    lines.append("")
-    lines.append(dim("旧数字键仍可用；完整长状态：./dev status --verbose；关闭颜色：./dev --color never。", color))
+    lines.append(dim(tr(cfg, "home.footer"), color))
+    lines.append(dim(tr(cfg, "home.meta", mode=cfg.lang_mode), color))
+    return lines
+
+
+def show_recommended_guide(cfg: ConsoleConfig) -> int:
+    print_banner(cfg)
+    color = color_enabled(cfg.color_mode)
+    snapshot = dashboard_snapshot(cfg)
+    print("\n".join(situation_lines(cfg, snapshot, color)))
+    print("")
+    print("\n".join(recommended_chain_lines(cfg, snapshot, color)))
+    print("")
+    print(dim(tr(cfg, "guide.not_executed"), color))
+    return 0
+
+
+def menu_key(action_id: str, index: int) -> str:
+    if action_id == "maintenance-menu":
+        return "m"
+    if action_id == "new-version-preview":
+        return "n"
+    spec = ACTIONS[action_id]
+    return spec.shortcuts[0] if spec.shortcuts else str(index)
+
+
+def submenu_rows(cfg: ConsoleConfig, menu_id: str) -> list[tuple[str, str, str, str]]:
+    rows: list[tuple[str, str, str, str]] = []
+    for index, action_id in enumerate(MENUS[menu_id].action_ids, start=1):
+        rows.append((menu_key(action_id, index), action_id, action_label(cfg, action_id), action_note(cfg, action_id)))
+    return rows
+
+
+def submenu_lines(cfg: ConsoleConfig, menu_id: str, color: bool) -> list[str]:
+    title = tr(cfg, MENUS[menu_id].title_key)
+    items = submenu_rows(cfg, menu_id)
+    back_label = tr(cfg, "submenu.back.label")
+    back_note = tr(cfg, "submenu.back.note")
+    lines = [bold(title, color)]
+    for key, _, command, note in items:
+        lines.append(f"  {cyan(key, color)}  {command:<18} {dim(note, color)}")
+    lines.append(f"  {cyan('?', color)}  {action_label(cfg, 'shortcuts-help'):<18} {dim(action_note(cfg, 'shortcuts-help'), color)}")
+    lines.append(f"  {cyan('lang', color)}  {action_label(cfg, 'language-menu'):<18} {dim(action_note(cfg, 'language-menu'), color)}")
+    lines.append(f"  {cyan('0', color)}  {back_label:<18} {dim(back_note, color)}")
     return lines
 
 
@@ -976,47 +1234,310 @@ def print_menu(cfg: ConsoleConfig) -> None:
     snapshot = dashboard_snapshot(cfg)
     print("\n".join(dashboard_lines(cfg, snapshot, color=color, realtime=False)))
     print()
-    print("\n".join(shortcut_lines(color)))
+    print("\n".join(home_action_lines(cfg, color)))
 
 
-def print_help() -> None:
-    print_banner()
-    print(
-        """常用理解：
-- ./dev 默认是彩色首页：状态看板 + 快捷键。
-- stale 继续：用于关机、强停、断电后恢复半截任务。
-- 优雅收尾：用于 runner 正在执行时，请求它做完当前 task、完成 verify 和 Git checkpoint 后停止。
-- Git 默认：commit；需要上传时启动向导里选择 commit + push。
-- 任务数默认：无限；启动向导可选 1、5、20 或自定义。
-- 已有 live runner 时，控制台会阻止启动第二个 runner。
-- 颜色默认强制开启；可用 ./dev --color never 或 NO_COLOR=1 关闭。
+def print_lifecycle_versions(cfg: ConsoleConfig, snapshot: LifecycleSnapshot, color: bool) -> None:
+    print(bold(tr(cfg, "lifecycle.title"), color))
+    print(lifecycle_summary_text(cfg, snapshot))
+    if snapshot.promotion_blockers:
+        print(tr(cfg, "lifecycle.blockers"))
+        for blocker in snapshot.promotion_blockers:
+            print(f"- {blocker}")
+    print()
+    for index, version in enumerate(snapshot.versions, start=1):
+        print(f"  {cyan(str(index), color)}  {lifecycle_version_line(cfg, version)}")
 
-快捷命令：
-  ./dev --once
-  ./dev --color always --once
-  ./dev --color never --once
-  ./dev status
-  ./dev status --color always --once
-  ./dev status --verbose
-  ./dev compact
-  ./dev preflight
-  ./dev preview
-  ./dev dry-run
-  ./dev resume-stale
-  ./dev resume-failed
-  ./dev start
-  ./dev drain
-  ./dev logs
-  ./dev verify-summary
-  ./dev check
-  ./dev workflow doctor
-  ./dev workflow status
-  ./dev workflow plan --version v2
-  ./dev workflow queue --version v2
-  ./dev changes doctor
-  ./dev changes preview
-  ./dev changes generate"""
+
+def version_lifecycle_lines(cfg: ConsoleConfig, version: VersionLifecycle, color: bool) -> list[str]:
+    lines = [
+        bold(tr(cfg, "lifecycle.version_title", version=version.version_id), color),
+        tr(cfg, "lifecycle.version_status", status=version.status, title=version.title),
+        tr(cfg, "lifecycle.version_queue", local=version.local_queue, live=version.live_queue or "none", mapping=version.live_mapping),
+        "",
+        tr(cfg, "lifecycle.stages"),
+    ]
+    for stage in LIFECYCLE_STAGES:
+        lines.append(f"  - {stage}: {version.stage_statuses.get(stage, 'unknown')}")
+    lines.extend(
+        [
+            "",
+            tr(cfg, "lifecycle.safe_actions"),
+            "  1  ./dev workflow status",
+            "  2  ./dev workflow doctor",
+            f"  3  ./dev workflow discuss --version {version.version_id} preview",
+            f"  4  ./dev workflow plan --version {version.version_id}",
+            f"  5  ./dev workflow queue --version {version.version_id}",
+            f"  6  ./dev workflow promote --version {version.version_id} --preview",
+            f"  7  ./dev workflow init --version <vN>",
+            "",
+            dim(tr(cfg, "lifecycle.safe_note"), color),
+        ]
     )
+    return lines
+
+
+def run_lifecycle_command(cfg: ConsoleConfig, version: VersionLifecycle, choice: str) -> int:
+    commands = {
+        "1": ["workflow", "status"],
+        "2": ["workflow", "doctor"],
+        "3": ["workflow", "discuss", "--version", version.version_id, "preview"],
+        "4": ["workflow", "plan", "--version", version.version_id],
+        "5": ["workflow", "queue", "--version", version.version_id],
+        "6": ["workflow", "promote", "--version", version.version_id, "--preview"],
+    }
+    command = commands.get(choice)
+    if command:
+        return dev_tools_cli.main(command)
+    if choice == "7":
+        if not sys.stdin.isatty():
+            print(tr(cfg, "lifecycle.init_hint"))
+            return 0
+        version_id = input(tr(cfg, "lifecycle.version_prompt")).strip()
+        if not version_id:
+            return 0
+        return dev_tools_cli.main(["workflow", "init", "--version", version_id])
+    print(tr(cfg, "error.unknown_option", choice=choice))
+    return 1
+
+
+def show_version_lifecycle(cfg: ConsoleConfig, version: VersionLifecycle) -> int:
+    color = color_enabled(cfg.color_mode)
+    if not sys.stdin.isatty():
+        print("\n".join(version_lifecycle_lines(cfg, version, color)))
+        return 0
+    while True:
+        print_banner(cfg)
+        print("\n".join(version_lifecycle_lines(cfg, version, color)))
+        choice = input("\n" + tr(cfg, "prompt.selection")).strip()
+        if choice in {"0", "q", "back"}:
+            return 0
+        run_lifecycle_command(cfg, version, choice)
+        pause(cfg)
+
+
+def show_lifecycle_menu(cfg: ConsoleConfig) -> int:
+    color = color_enabled(cfg.color_mode)
+    snapshot = load_lifecycle_snapshot(cfg.runtime.root_dir)
+    if not sys.stdin.isatty():
+        print_lifecycle_versions(cfg, snapshot, color)
+        print("")
+        print(tr(cfg, "lifecycle.noninteractive_hint"))
+        return 0
+    while True:
+        print_banner(cfg)
+        print_lifecycle_versions(cfg, snapshot, color)
+        print(f"  {cyan('n', color)}  {tr(cfg, 'lifecycle.new_version')}")
+        print(f"  {cyan('0', color)}  {tr(cfg, 'submenu.back.label')}")
+        choice = input("\n" + tr(cfg, "prompt.selection")).strip()
+        if choice in {"0", "q", "back"}:
+            return 0
+        if choice == "n":
+            run_lifecycle_command(cfg, snapshot.versions[0] if snapshot.versions else VersionLifecycle("", "", "", (), "", "", "", "", "", "", 0, 0, 0, 0, 0, {}), "7")
+            pause(cfg)
+            continue
+        if choice.isdigit() and 1 <= int(choice) <= len(snapshot.versions):
+            show_version_lifecycle(cfg, snapshot.versions[int(choice) - 1])
+            snapshot = load_lifecycle_snapshot(cfg.runtime.root_dir)
+            continue
+        print(tr(cfg, "error.unknown_option", choice=choice))
+        pause(cfg)
+
+
+def print_help(cfg: ConsoleConfig | None = None) -> None:
+    print_banner(cfg)
+    lang = cfg.lang_mode if cfg else banner_lang()
+    print("\n".join(t_lines(lang, "help.lines")))
+
+
+def quick_continue(cfg: ConsoleConfig) -> int:
+    snapshot = dashboard_snapshot(cfg)
+    if snapshot.lock["exists"] and snapshot.lock["alive"]:
+        print_banner(cfg)
+        print(tr(cfg, "guard.quick_live.line1"))
+        print(tr(cfg, "guard.quick_live.line2"))
+        return 1
+    if snapshot.git_dirty and env_value("GIT_CHECKPOINT", cfg.runtime.git_checkpoint) != "off":
+        print_banner(cfg)
+        print(tr(cfg, "dirty_continue.line1"))
+        print(tr(cfg, "dirty_continue.line2"))
+        print(tr(cfg, "dirty_continue.line3"))
+        print(tr(cfg, "dirty_continue.line4"))
+        if snapshot.stale_count:
+            print(tr(cfg, "dirty_continue.stale"))
+        elif snapshot.progress_counts.get("failed", 0):
+            print(tr(cfg, "dirty_continue.failed"))
+        else:
+            print(tr(cfg, "dirty_continue.run"))
+        return 1
+    if snapshot.stale_count:
+        return start_with_wizard(cfg, "resume-stale")
+    if snapshot.progress_counts.get("failed", 0):
+        return start_with_wizard(cfg, "resume-failed")
+    return start_with_wizard(cfg, "run")
+
+
+def show_interruption_recovery(cfg: ConsoleConfig) -> int:
+    print_banner(cfg)
+    print_lines(cfg, "recovery.interruption.lines")
+    print_status_compact(cfg)
+    return 0
+
+
+def shortcut_key_text(shortcuts: Sequence[str]) -> str:
+    return ", ".join("Enter" if item == "" else item for item in shortcuts)
+
+
+def show_shortcuts_help(cfg: ConsoleConfig) -> int:
+    print_banner(cfg)
+    color = color_enabled(cfg.color_mode)
+    rows = [
+        (shortcut_key_text(spec.shortcuts), action_label(cfg, action_id), action_note(cfg, action_id))
+        for action_id, spec in ACTIONS.items()
+        if spec.shortcuts
+    ]
+    width = max(12, *(len(keys) for keys, _, _ in rows))
+    print(bold(tr(cfg, "shortcuts.title"), color))
+    for keys, label, note in rows:
+        print(f"  {cyan(keys, color):<{width}}  {label:<24} {dim(note, color)}")
+    print("")
+    print(dim(tr(cfg, "shortcuts.footer", mode=cfg.lang_mode), color))
+    return 0
+
+
+def show_language_menu(cfg: ConsoleConfig) -> int:
+    color = color_enabled(cfg.color_mode)
+    options = [("1", "mixed", tr(cfg, "language.option.mixed")), ("2", "zh", tr(cfg, "language.option.zh")), ("3", "en", tr(cfg, "language.option.en"))]
+    if not sys.stdin.isatty():
+        print_banner(cfg)
+        print(tr(cfg, "language.current", mode=cfg.lang_mode))
+        print(tr(cfg, "language.config_path", path=dev_config.config_path(cfg.runtime.root_dir)))
+        for key, lang, note in options:
+            print(f"  {key}  {lang:<5} {note}")
+        print(tr(cfg, "language.command_hint"))
+        return 0
+    while True:
+        print_banner(cfg)
+        print(bold(tr(cfg, "language.title"), color))
+        print(tr(cfg, "language.current", mode=cfg.lang_mode))
+        for key, lang, note in options:
+            print(f"  {cyan(key, color)}  {lang:<5} {dim(note, color)}")
+        choice = input("\n" + tr(cfg, "prompt.selection")).strip()
+        if choice in {"0", "q", "back"}:
+            return 0
+        selected = {"1": "mixed", "2": "zh", "3": "en", "mixed": "mixed", "zh": "zh", "en": "en"}.get(choice)
+        if not selected:
+            print(tr(cfg, "error.unknown_option", choice=choice))
+            pause(cfg)
+            continue
+        cfg.lang_mode = selected
+        dev_config.save_lang_mode(cfg.runtime.root_dir, selected)
+        print(tr(cfg, "language.saved", mode=cfg.lang_mode, path=dev_config.config_path(cfg.runtime.root_dir)))
+        return 0
+
+
+def run_action(cfg: ConsoleConfig, action_id: str, args: Sequence[str] = ()) -> int:
+    if action_id == "full-status":
+        return show_status_verbose(cfg)
+    if action_id == "recommended-next":
+        return show_recommended_guide(cfg)
+    if action_id == "lifecycle-menu":
+        return show_lifecycle_menu(cfg)
+    if action_id == "live-queue-menu":
+        return submenu_loop(cfg, "live_queue")
+    if action_id == "quick-continue":
+        return quick_continue(cfg)
+    if action_id == "tools-menu":
+        return submenu_loop(cfg, "tools")
+    if action_id == "language-menu":
+        return show_language_menu(cfg)
+    if action_id == "shortcuts-help":
+        return show_shortcuts_help(cfg)
+    if action_id == "help":
+        print_help(cfg)
+        return 0
+    if action_id == "quit":
+        return 0
+    if action_id == "start":
+        return start_with_wizard(cfg, "run")
+    if action_id == "resume-stale":
+        return start_with_wizard(cfg, "resume-stale")
+    if action_id == "resume-failed":
+        return start_with_wizard(cfg, "resume-failed")
+    if action_id == "drain":
+        return request_drain(cfg)
+    if action_id == "logs":
+        return show_latest_console_log(cfg)
+    if action_id == "verify-summary":
+        print_banner(cfg)
+        show_latest_failure_summary(cfg)
+        return 0
+    if action_id == "preflight":
+        return show_preflight(cfg)
+    if action_id == "preview":
+        return preview_with_wizard(cfg)
+    if action_id == "dry-run":
+        return run_temp_dry_run(cfg)
+    if action_id == "processes":
+        show_processes(cfg)
+        return 0
+    if action_id == "compact":
+        print_banner(cfg)
+        print_status_compact(cfg)
+        show_processes(cfg)
+        return 0
+    if action_id == "clear-stale":
+        return clear_stale(cfg)
+    if action_id == "reset-progress":
+        return reset_progress(cfg)
+    if action_id == "interrupted-help":
+        return show_interruption_recovery(cfg)
+    if action_id == "maintenance-menu":
+        return submenu_loop(cfg, "maintenance")
+    if action_id == "new-version-preview":
+        return dev_tools_cli.main(["workflow", "init", "--version", "v3"])
+    if action_id == "workflow-status":
+        return dev_tools_cli.main(["workflow", "status"])
+    if action_id == "workflow-doctor":
+        return dev_tools_cli.main(["workflow", "doctor"])
+    if action_id == "changes-preview":
+        return dev_tools_cli.main(["changes", "preview"])
+    spec = ACTIONS[action_id]
+    if spec.passthrough:
+        return dev_tools_cli.main([spec.command, *args])
+    raise KeyError(f"unhandled action: {action_id}")
+
+
+def submenu_loop(cfg: ConsoleConfig, menu_id: str) -> int:
+    color = color_enabled(cfg.color_mode)
+    if not sys.stdin.isatty():
+        print("\n".join(submenu_lines(cfg, menu_id, color)))
+        return 0
+    while True:
+        print_banner(cfg)
+        print("\n".join(submenu_lines(cfg, menu_id, color)))
+        choice = input("\n" + tr(cfg, "prompt.selection")).strip()
+        if choice in {"0", "q", "back"}:
+            return 0
+        if choice == "?":
+            show_shortcuts_help(cfg)
+            pause(cfg)
+            continue
+        if choice == "lang":
+            show_language_menu(cfg)
+            continue
+        action_ids = MENUS[menu_id].action_ids
+        keyed = {menu_key(action_id, index): action_id for index, action_id in enumerate(action_ids, start=1)}
+        action_id = keyed.get(choice)
+        if not action_id:
+            shortcut_action = SHORTCUT_ALIASES.get(choice)
+            if shortcut_action in action_ids:
+                action_id = shortcut_action
+        if not action_id:
+            print(tr(cfg, "error.unknown_option", choice=choice))
+            pause(cfg)
+            continue
+        return run_action(cfg, action_id)
 
 
 def interactive_loop(cfg: ConsoleConfig) -> int:
@@ -1025,90 +1546,45 @@ def interactive_loop(cfg: ConsoleConfig) -> int:
         return 0
     while True:
         print_menu(cfg)
-        choice = input("\n> ").strip()
-        if choice in {"1", ""}:
-            show_status_verbose(cfg)
-        elif choice == "2":
-            show_preflight(cfg)
-        elif choice == "3":
-            preview_with_wizard(cfg)
-        elif choice == "4":
-            run_temp_dry_run(cfg)
-        elif choice == "5":
-            start_with_wizard(cfg, "resume-stale")
-        elif choice == "6":
-            start_with_wizard(cfg, "resume-failed")
-        elif choice == "7":
-            start_with_wizard(cfg, "run")
-        elif choice == "8":
-            request_drain(cfg)
-        elif choice == "9":
-            show_latest_console_log(cfg)
-        elif choice == "10":
-            print_banner()
-            show_latest_failure_summary(cfg)
-        elif choice == "11":
-            run_health_checks(cfg)
-        elif choice == "12":
-            clear_stale(cfg)
-        elif choice == "13":
-            reset_progress(cfg)
-        elif choice == "s":
-            start_with_wizard(cfg, "run")
-        elif choice == "p":
-            show_preflight(cfg)
-        elif choice == "v":
-            preview_with_wizard(cfg)
-        elif choice == "d":
-            run_temp_dry_run(cfg)
-        elif choice == "r":
-            start_with_wizard(cfg, "resume-stale")
-        elif choice == "f":
-            start_with_wizard(cfg, "resume-failed")
-        elif choice == "g":
-            request_drain(cfg)
-        elif choice == "l":
-            show_latest_console_log(cfg)
-        elif choice == "y":
-            print_banner()
-            show_latest_failure_summary(cfg)
-        elif choice == "c":
-            run_health_checks(cfg)
-        elif choice == "x":
-            print_banner()
-            show_processes(cfg)
-        elif choice == "clear-stale":
-            clear_stale(cfg)
-        elif choice == "reset-progress":
-            reset_progress(cfg)
-        elif choice in {"h", "help"}:
-            print_help()
-        elif choice in {"q", "quit", "exit", "0"}:
+        choice = input("\n" + tr(cfg, "prompt.selection")).strip()
+        action_id = SHORTCUT_ALIASES.get(choice)
+        if action_id == "quit":
             return 0
+        if action_id:
+            run_action(cfg, action_id)
         else:
-            print(f"未知选项：{choice}")
-        pause()
+            print(tr(cfg, "error.unknown_option", choice=choice))
+        pause(cfg)
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     try:
         parsed = parse_global_args(list(argv or sys.argv[1:]))
+    except DevArgError as exc:
+        message = t(exc.lang_mode, f"error.{exc.key}")
+        print(t(exc.lang_mode, "error.prefix", message=message), file=sys.stderr)
+        return 2
     except ValueError as exc:
-        print(f"error: {exc}", file=sys.stderr)
+        lang = normalize_lang_mode(os.environ.get("DEV_LANG", "mixed"))
+        print(t(lang, "error.prefix", message=str(exc)), file=sys.stderr)
         return 2
     args = parsed.command_args
     command = args[0] if args else "menu"
     cfg = ConsoleConfig.from_env()
     cfg.color_mode = parsed.color_mode
+    cfg.lang_mode = resolve_lang_mode(cfg.runtime.root_dir, parsed.lang_mode)
     if command in {"", "menu"}:
         if parsed.once:
             print_menu(cfg)
             return 0
         return interactive_loop(cfg)
-    if command == "status":
-        status_args = parse_status_args(args[1:])
+    action_id = COMMAND_ALIASES.get(command)
+    if action_id == "status":
+        status_args = parse_status_args(args[1:], cfg.lang_mode)
         if status_args.color:
             cfg.color_mode = status_args.color
+        if status_args.lang:
+            cfg.lang_mode = status_args.lang
         if status_args.verbose:
             return show_status_verbose(cfg)
         return show_status_dashboard(
@@ -1117,43 +1593,10 @@ def main(argv: Sequence[str] | None = None) -> int:
             once=status_args.once or parsed.once,
             no_color=status_args.no_color,
         )
-    if command == "compact":
-        print_banner()
-        print_status_compact(cfg)
-        show_processes(cfg)
-        return 0
-    if command == "preflight":
-        return show_preflight(cfg)
-    if command == "preview":
-        return preview_with_wizard(cfg)
-    if command == "dry-run":
-        return run_temp_dry_run(cfg)
-    if command in {"processes", "ps"}:
-        show_processes(cfg)
-        return 0
-    if command == "resume-stale":
-        return start_with_wizard(cfg, "resume-stale")
-    if command == "resume-failed":
-        return start_with_wizard(cfg, "resume-failed")
-    if command == "start":
-        return start_with_wizard(cfg, "run")
-    if command == "drain":
-        return request_drain(cfg)
-    if command == "logs":
-        return show_latest_console_log(cfg)
-    if command == "verify-summary":
-        print_banner()
-        show_latest_failure_summary(cfg)
-        return 0
-    if command == "check":
-        return dev_tools_cli.main(["check", *args[1:]])
-    if command in {"build", "test", "bindings", "changes", "workflow"}:
-        return dev_tools_cli.main(args)
-    if command in {"help", "-h", "--help"}:
-        print_help()
-        return 0
-    print(f"未知命令：{command}\n", file=sys.stderr)
-    print_help()
+    if action_id:
+        return run_action(cfg, action_id, args[1:])
+    print(tr(cfg, "error.unknown_command", command=command), file=sys.stderr)
+    print_help(cfg)
     return 1
 
 
