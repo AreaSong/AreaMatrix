@@ -181,8 +181,8 @@ struct MainWindow: View {
                 onOpenRepository: { Task { await model.openInitializedRepository() } },
                 onOpenInFinder: model.openInitializedRepositoryInFinder
             )
-        case .mainLoading(let repoPath):
-            MainLoadingView(repoPath: repoPath, onChooseAnotherFolder: model.showChoosePath)
+        case .mainLoading(let state):
+            MainLoadingView(state: state, onCancelOpening: model.cancelMainOpening)
         case .mainRepoError(let repoPath, let mapping):
             MainRepoErrorView(repoPath: repoPath, mapping: mapping, onChooseAnotherFolder: model.showChoosePath)
         case .dbRepairConfirm(let repoPath, let scanSession, let mapping):

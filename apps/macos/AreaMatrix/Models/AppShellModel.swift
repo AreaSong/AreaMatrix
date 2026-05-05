@@ -11,7 +11,7 @@ final class OnboardingModel: ObservableObject {
         case initializing(RepositoryInitializationDraft)
         case initializationFailed(String, CoreErrorMappingSnapshot?, RepositoryInitializationDraft?)
         case initializationDone(RepositoryInitializationResult)
-        case mainLoading(String)
+        case mainLoading(MainLoadingState)
         case mainRepoError(String, CoreErrorMappingSnapshot?)
         case dbRepairConfirm(String, ScanSessionSnapshot?, CoreErrorMappingSnapshot?)
         case settingsRepository
@@ -45,6 +45,7 @@ final class OnboardingModel: ObservableObject {
     @Published var initializationRecoveryReport: RecoveryReportSnapshot?
     @Published var initializationProgressWarning: String?
     @Published var initializationOpenErrorMapping: CoreErrorMappingSnapshot?
+    var openingCancellationToken: UUID?
     @Published var initializationDiagnostics: InitializationDiagnosticsState = .idle
     @Published var pendingImportEntry: ImportEntryRequest?
     @Published private(set) var isInitializationCancellationRequested = false
@@ -154,6 +155,15 @@ final class OnboardingModel: ObservableObject {
     }
     @MainActor
     func showValidatePath() { route = .validatePath; toastMessage = nil }
+    @MainActor
+    func resetCancelledMainOpening(repoPath: String) {
+        repositoryPathText = repoPath
+        repositoryPathValidation = nil
+        existingRepositoryMetadata = nil
+        latestScanSession = nil
+        initializationOpenErrorMapping = nil
+        validatePathAction = nil
+    }
     @MainActor
     func returnFromChoosePath() { validatePathReturnRouteIsSettings ? returnFromValidatePath() : showWelcome() }
     @MainActor

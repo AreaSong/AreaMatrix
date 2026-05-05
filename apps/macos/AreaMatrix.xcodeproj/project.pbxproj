@@ -53,6 +53,9 @@
 		0A0000000000000000000140 /* RenameFileSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000141 /* RenameFileSheet.swift */; };
 		0A0000000000000000000142 /* ChangeCategorySheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000143 /* ChangeCategorySheet.swift */; };
 		0A0000000000000000000144 /* DeleteFileConfirmSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000145 /* DeleteFileConfirmSheet.swift */; };
+		0A0000000000000000000146 /* MainLoadingState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000147 /* MainLoadingState.swift */; };
+		0A0000000000000000000148 /* MainLoadingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000149 /* MainLoadingView.swift */; };
+		0A000000000000000000014A /* MainLoadingAdoptExistingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000014B /* MainLoadingAdoptExistingTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -118,6 +121,9 @@
 		0A0000000000000000000141 /* RenameFileSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/RenameFileSheet.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000143 /* ChangeCategorySheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/ChangeCategorySheet.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000145 /* DeleteFileConfirmSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/DeleteFileConfirmSheet.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000147 /* MainLoadingState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/MainLoadingState.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000149 /* MainLoadingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/MainLoadingView.swift; sourceTree = SOURCE_ROOT; };
+		0A000000000000000000014B /* MainLoadingAdoptExistingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/MainLoadingAdoptExistingTests.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -197,6 +203,7 @@
 				0A0000000000000000000141 /* RenameFileSheet.swift */,
 				0A0000000000000000000143 /* ChangeCategorySheet.swift */,
 				0A0000000000000000000145 /* DeleteFileConfirmSheet.swift */,
+				0A0000000000000000000149 /* MainLoadingView.swift */,
 				0A0000000000000000000127 /* FileDropAdapter.swift */,
 				0A0000000000000000000129 /* ImportEntrySheetView.swift */,
 				0A000000000000000000001F /* ValidatePathStepView.swift */,
@@ -241,6 +248,7 @@
 				0A0000000000000000000123 /* OnboardingModelInputs.swift */,
 				0A0000000000000000000131 /* MainFileListModel.swift */,
 				0A0000000000000000000135 /* MainListVisibleFileFiltering.swift */,
+				0A0000000000000000000147 /* MainLoadingState.swift */,
 				0A00000000000000000000F7 /* DiagnosticsSnapshotState.swift */,
 				0A00000000000000000000A2 /* OnboardingInitializationProgress.swift */,
 				0A00000000000000000000B2 /* InitializationFailureActions.swift */,
@@ -268,6 +276,7 @@
 				0A0000000000000000000133 /* MainListFilesTests.swift */,
 				0A0000000000000000000137 /* MainListIntegrationFilterTests.swift */,
 				0A0000000000000000000139 /* MainListIntegrationClosureTests.swift */,
+				0A000000000000000000014B /* MainLoadingAdoptExistingTests.swift */,
 				0A00000000000000000000E1 /* CoreBridgeRepositoryTests.swift */,
 				0A00000000000000000000FB /* ValidatePathErrorMappingSmokeTests.swift */,
 				0A00000000000000000000FD /* AreaMatrixShellTestSupport.swift */,
@@ -412,6 +421,8 @@
 				0A0000000000000000000140 /* RenameFileSheet.swift in Sources */,
 				0A0000000000000000000142 /* ChangeCategorySheet.swift in Sources */,
 				0A0000000000000000000144 /* DeleteFileConfirmSheet.swift in Sources */,
+				0A0000000000000000000146 /* MainLoadingState.swift in Sources */,
+				0A0000000000000000000148 /* MainLoadingView.swift in Sources */,
 				0A00000000000000000000D0 /* MainRepositoryContentView.swift in Sources */,
 				0A0000000000000000000009 /* area_matrix.swift in Sources */,
 				0A000000000000000000000A /* ValidatePathStepView.swift in Sources */,
@@ -444,6 +455,7 @@
 				0A0000000000000000000132 /* MainListFilesTests.swift in Sources */,
 				0A0000000000000000000136 /* MainListIntegrationFilterTests.swift in Sources */,
 				0A0000000000000000000138 /* MainListIntegrationClosureTests.swift in Sources */,
+				0A000000000000000000014A /* MainLoadingAdoptExistingTests.swift in Sources */,
 				0A00000000000000000000E0 /* CoreBridgeRepositoryTests.swift in Sources */,
 				0A00000000000000000000FA /* ValidatePathErrorMappingSmokeTests.swift in Sources */,
 				0A00000000000000000000FC /* AreaMatrixShellTestSupport.swift in Sources */,

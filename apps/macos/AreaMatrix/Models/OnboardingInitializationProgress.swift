@@ -37,15 +37,40 @@ extension CoreBridge: CoreStartupRecovering {
 
 extension OnboardingModel {
     @MainActor
+    func cancelMainOpening() {
+        guard case .mainLoading(let state) = route else { return }
+
+        openingCancellationToken = UUID()
+        resetCancelledMainOpening(repoPath: state.repoPath)
+        route = .validatePath
+        toastMessage = "Opening was cancelled. Repository configuration and user files were not changed."
+    }
+
+    @MainActor
     func openExistingRepository(_ validation: RepoPathValidationSnapshot) async {
         initializationOpenErrorMapping = nil
-        route = .mainLoading(validation.repoPath)
+        let cancellationToken = UUID()
+        openingCancellationToken = cancellationToken
+        route = .mainLoading(MainLoadingState(repoPath: validation.repoPath))
+        let loadingRefreshTask = Task { [weak self] in
+            await self?.refreshMainLoadingState(
+                repoPath: validation.repoPath,
+                cancellationToken: cancellationToken,
+                shouldLoadAdoptSession: true
+            )
+        }
+        defer { loadingRefreshTask.cancel() }
+
+        await Task.yield()
+        guard openingCancellationToken == cancellationToken else { return }
 
         do {
             let opening = try await emptyRepositoryOpener.openConfiguredRepository(repoPath: validation.repoPath)
+            guard openingCancellationToken == cancellationToken else { return }
             settingsWriter.saveConfiguredRepoPath(validation.repoPath)
             route = Self.mainRoute(for: opening)
         } catch {
+            guard openingCancellationToken == cancellationToken else { return }
             route = .mainRepoError(validation.repoPath, await openingFailureMapping(for: error))
         }
     }
@@ -54,12 +79,28 @@ extension OnboardingModel {
     func openInitializedRepository() async {
         guard case .initializationDone(let result) = route else { return }
         initializationOpenErrorMapping = nil
-        route = .mainLoading(result.repoPath)
+        let cancellationToken = UUID()
+        openingCancellationToken = cancellationToken
+        route = .mainLoading(MainLoadingState(repoPath: result.repoPath, scanSession: result.scanSession))
+        let loadingRefreshTask = Task { [weak self] in
+            await self?.refreshMainLoadingState(
+                repoPath: result.repoPath,
+                seedSession: result.scanSession,
+                cancellationToken: cancellationToken,
+                shouldLoadAdoptSession: result.mode == .adoptExisting
+            )
+        }
+        defer { loadingRefreshTask.cancel() }
+
+        await Task.yield()
+        guard openingCancellationToken == cancellationToken else { return }
 
         do {
             let opening = try await openInitializedRepository(result)
+            guard openingCancellationToken == cancellationToken else { return }
             route = Self.mainRoute(for: opening)
         } catch {
+            guard openingCancellationToken == cancellationToken else { return }
             route = .initializationDone(result)
             initializationOpenErrorMapping = await openingFailureMapping(for: error)
         }
@@ -112,6 +153,49 @@ extension OnboardingModel {
         } catch {
             await routeInitializationFailure(error, repoPath: repoPath)
         }
+    }
+
+    @MainActor
+    private func refreshMainLoadingState(
+        repoPath: String,
+        seedSession: ScanSessionSnapshot? = nil,
+        cancellationToken: UUID,
+        shouldLoadAdoptSession: Bool
+    ) async {
+        guard shouldLoadAdoptSession else { return }
+        if seedSession?.kind == .adopt, seedSession?.status == .completed { return }
+
+        do {
+            applyMainLoadingState(
+                repoPath: repoPath,
+                cancellationToken: cancellationToken,
+                scanSession: try await scanSessionReader.latestScanSession(repoPath: repoPath) ?? seedSession
+            )
+        } catch {
+            applyMainLoadingState(
+                repoPath: repoPath,
+                cancellationToken: cancellationToken,
+                scanSession: seedSession,
+                scanSessionErrorMapping: await openingFailureMapping(for: error)
+            )
+        }
+    }
+
+    @MainActor
+    private func applyMainLoadingState(
+        repoPath: String,
+        cancellationToken: UUID,
+        scanSession: ScanSessionSnapshot?,
+        scanSessionErrorMapping: CoreErrorMappingSnapshot? = nil
+    ) {
+        guard openingCancellationToken == cancellationToken else { return }
+        guard case .mainLoading = route else { return }
+
+        route = .mainLoading(MainLoadingState(
+            repoPath: repoPath,
+            scanSession: scanSession,
+            scanSessionErrorMapping: scanSessionErrorMapping
+        ))
     }
 
     @MainActor

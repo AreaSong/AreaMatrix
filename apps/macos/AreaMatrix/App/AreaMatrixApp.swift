@@ -11,27 +11,6 @@ struct AreaMatrixApp: App {
     }
 }
 
-struct MainLoadingView: View {
-    let repoPath: String
-    let onChooseAnotherFolder: () -> Void
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            ProgressView()
-                .controlSize(.large)
-            Text("Opening repository...")
-                .font(.title2.weight(.semibold))
-            Text(repoPath)
-                .font(.system(.body, design: .monospaced))
-                .textSelection(.enabled)
-                .lineLimit(2)
-            Button("Choose another folder", action: onChooseAnotherFolder)
-        }
-        .padding(48)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-    }
-}
-
 struct MainRepoErrorView: View {
     let repoPath: String
     let mapping: CoreErrorMappingSnapshot?

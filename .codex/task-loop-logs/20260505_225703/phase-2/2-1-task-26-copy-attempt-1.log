@@ -1,0 +1,48 @@
+一、执行结论
+
+已完成 `2-1/task-26: S1-10 + C1-03 adopt-existing-repo`。
+
+二、执行范围
+
+单任务，仅修改 `Expected New Paths` 内文件：
+
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+- `apps/macos/AreaMatrix/App/AreaMatrixApp.swift`
+- `apps/macos/AreaMatrix/Models/AppShellModel.swift`
+- `apps/macos/AreaMatrix/Models/OnboardingInitializationProgress.swift`
+- `apps/macos/AreaMatrix/Models/MainLoadingState.swift`
+- `apps/macos/AreaMatrix/Views/MainWindow.swift`
+- `apps/macos/AreaMatrix/Views/Main/MainLoadingView.swift`
+- `apps/macos/AreaMatrixTests/InitDoneEmptyRepositoryTests.swift`
+- `apps/macos/AreaMatrixTests/MainLoadingAdoptExistingTests.swift`
+
+已有本地脏文件 `.codex/task-loop-runs/20260505_225703/summary.json`、`tasks/prompts/_shared/progress.json` 未作为本任务改动处理。
+
+三、完成情况
+
+核对清单全部完成：只处理 S1-10 中 C1-03；已按 task/manifest 读取 UX、control map、Core API、C1-03 spec；只接入 adopt scan session 的 loading 状态和错误映射；未实现 C1-15/C1-16，也未触碰相邻页面。
+
+完成标准满足：S1-10 main loading 现在可展示真实 C1-03 adopt scan session 状态、进度、当前路径、警告与 scan session 读取错误；生产路径通过 `CoreScanSessionReading/CoreBridge`，没有用 mock 或静态状态伪造闭环；未触碰 control map 之外能力。
+
+Forbidden Touches：`core/src/**` 未触碰，`git diff --name-only -- core/src` 为空。
+
+四、工程质量
+
+结构上将 loading 状态抽成 `MainLoadingState`，视图抽成 `MainLoadingView`，主流程保留在 `OnboardingInitializationProgress`。取消打开使用 token 防止 late async result 写回 route，也不会保存配置或修改用户文件。错误路径通过 `CoreErrorMapping` 映射到用户可见状态；测试覆盖成功读取、读取失败不阻塞打开、取消打开不保存配置。未新增 Rust public API，无 rustdoc 需求；没有占位、硬编码通过态、mock-only 生产逻辑或一次性脚本实现。
+
+五、验证情况
+
+已运行并通过：
+
+- `xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：`BUILD SUCCEEDED`
+- `./dev test macos`：命令整体通过；`xcodebuild test` 被本机 `testmanagerd` sandbox restriction 阻断后，仓库脚本按规则 fallback 到 `xcrun xctest`，102 tests，0 failures
+- `git diff --check`：通过
+- `git diff --name-only -- core/src`：空输出
+- touched Swift 文件行数检查：均低于 500 行阈值
+
+六、风险与后续
+
+剩余风险：未做手动 UI 点击/截图验证；当前证据覆盖 build、单元测试、状态与取消路径。高风险文件安全边界已通过“不触碰 Core 文件系统实现、不执行真实用户文件接管、不保存取消后的配置”控制。
+
+建议下一个任务：`2-1/task-27`，继续 S1-10 同页的 `C1-15 build-tree` 切片；`2-1/task-28` 再覆盖 `C1-16 recover-on-startup`。
+

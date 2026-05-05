@@ -76,7 +76,7 @@ final class InitDoneEmptyRepositoryTests: XCTestCase {
 
         await opener.waitUntilStarted()
 
-        XCTAssertEqual(model.route, .mainLoading("/tmp/empty-repo"))
+        XCTAssertEqual(model.route, .mainLoading(MainLoadingState(repoPath: "/tmp/empty-repo")))
         await opener.finishOpen()
         await openTask.value
         XCTAssertEqual(model.route, .mainEmpty(opening))
