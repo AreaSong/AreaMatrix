@@ -151,6 +151,42 @@ final class MainListFilesTests: XCTestCase {
         XCTAssertFalse(model.isDetailLoading)
     }
 
+    func testMainListSidebarRowsExposeC115TreeSubdirectoriesForVisibleFiltering() {
+        let tree = RepositoryTreeNodeSnapshot.mainListNestedFixtureTree()
+        let rows = tree.sidebarRows
+
+        XCTAssertEqual(rows.map(\.id), ["inbox", "docs", "docs/contracts", "docs/references"])
+        XCTAssertEqual(rows.map(\.displayName), ["inbox", "docs", "contracts", "references"])
+        XCTAssertEqual(rows.map(\.depth), [0, 0, 1, 1])
+        XCTAssertEqual(rows.map(\.totalFileCount), [1, 2, 1, 1])
+        XCTAssertEqual(tree.sidebarRow(id: "docs/contracts")?.categoryForFileList, "docs")
+        XCTAssertEqual(tree.sidebarRow(id: "docs/contracts")?.pathFilterPrefix, "docs/contracts")
+    }
+
+    func testMainListTreeSubdirectoryRowFiltersCurrentCategoryFilesWithoutNewCoreCapability() {
+        let tree = RepositoryTreeNodeSnapshot.mainListNestedFixtureTree()
+        guard let contractsRow = tree.sidebarRow(id: "docs/contracts") else {
+            return XCTFail("expected C1-15 contracts tree row")
+        }
+
+        let contracts = FileEntrySnapshot.mainListFixture(
+            id: 21,
+            path: "docs/contracts/customer.pdf",
+            category: "docs",
+            currentName: "customer.pdf"
+        )
+        let references = FileEntrySnapshot.mainListFixture(
+            id: 22,
+            path: "docs/references/research.md",
+            category: "docs",
+            currentName: "research.md"
+        )
+
+        XCTAssertTrue(contractsRow.contains(contracts))
+        XCTAssertFalse(contractsRow.contains(references))
+        XCTAssertEqual([contracts, references].filter(contractsRow.contains), [contracts])
+    }
+
     func testDefaultCoreBridgeGetsRealFileDetailForMainListSelection() async throws {
         let repoURL = try makeMainListTemporaryRepositoryURL()
         defer { try? FileManager.default.removeItem(at: repoURL) }
@@ -169,6 +205,36 @@ final class MainListFilesTests: XCTestCase {
 
         XCTAssertEqual(detail, listed)
         XCTAssertEqual(detail.currentName, listed.currentName)
+    }
+
+    func testDefaultCoreBridgeListsRealPopulatedRepositoryTreeForMainList() async throws {
+        let repoURL = try makeMainListTemporaryRepositoryURL()
+        defer { try? FileManager.default.removeItem(at: repoURL) }
+        let contractsURL = repoURL.appendingPathComponent("docs/contracts", isDirectory: true)
+        let referencesURL = repoURL.appendingPathComponent("docs/references", isDirectory: true)
+        try FileManager.default.createDirectory(at: contractsURL, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: referencesURL, withIntermediateDirectories: true)
+        try "contract".write(
+            to: contractsURL.appendingPathComponent("customer.pdf"),
+            atomically: true,
+            encoding: .utf8
+        )
+        try "research".write(
+            to: referencesURL.appendingPathComponent("research.md"),
+            atomically: true,
+            encoding: .utf8
+        )
+
+        let bridge = CoreBridge()
+        try await bridge.adoptExistingRepository(repoPath: repoURL.path)
+        let tree = try await bridge.listTree(repoPath: repoURL.path, locale: "en")
+        let rowIDs = tree.sidebarRows.map(\.id)
+
+        XCTAssertTrue(rowIDs.contains("docs"))
+        XCTAssertTrue(rowIDs.contains("docs/contracts"))
+        XCTAssertTrue(rowIDs.contains("docs/references"))
+        XCTAssertEqual(tree.sidebarRow(id: "docs/contracts")?.categoryForFileList, "docs")
+        XCTAssertEqual(tree.sidebarRow(id: "docs/contracts")?.pathFilterPrefix, "docs/contracts")
     }
 }
 
@@ -302,6 +368,50 @@ private extension RepositoryTreeNodeSnapshot {
                     displayName: "docs",
                     fileCount: 42,
                     children: []
+                ),
+            ]
+        )
+    }
+
+    static func mainListNestedFixtureTree() -> RepositoryTreeNodeSnapshot {
+        RepositoryTreeNodeSnapshot(
+            slug: "__root__",
+            displayName: "资料库",
+            kind: "RepositoryRoot",
+            relativePath: "",
+            fileCount: 0,
+            depth: 0,
+            children: [
+                RepositoryTreeNodeSnapshot(
+                    slug: "inbox",
+                    displayName: "inbox",
+                    fileCount: 1,
+                    children: []
+                ),
+                RepositoryTreeNodeSnapshot(
+                    slug: "docs",
+                    displayName: "docs",
+                    fileCount: 0,
+                    children: [
+                        RepositoryTreeNodeSnapshot(
+                            slug: "contracts",
+                            displayName: "contracts",
+                            kind: "Subdir",
+                            relativePath: "docs/contracts",
+                            fileCount: 1,
+                            depth: 2,
+                            children: []
+                        ),
+                        RepositoryTreeNodeSnapshot(
+                            slug: "references",
+                            displayName: "references",
+                            kind: "Subdir",
+                            relativePath: "docs/references",
+                            fileCount: 1,
+                            depth: 2,
+                            children: []
+                        ),
+                    ]
                 ),
             ]
         )

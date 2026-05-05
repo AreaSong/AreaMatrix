@@ -1,0 +1,69 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`2-1/task-24`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-1-first-launch-main/task-24-s1-09-c1-15-build-tree.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreRepositoryOpening.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/MainListFilesTests.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 S1-09 页面中的 C1-15 功能点
+- 结果：通过
+- 证据：S1-09 要求 Sidebar tree 来自 Core `list_tree_json`；实现通过 `CoreBridge.listTreeJSON -> listTreeJson` 读取真实 Core JSON，再解码为 `RepositoryTreeNodeSnapshot` 并用于 Sidebar rows。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreRepositoryOpening.swift:185`
+
+- 项目：读取页面规格、MVP control map、Core API 和 C1-15 能力规格
+- 结果：通过
+- 证据：Exact Docs 全部存在并核验；control map 明确 S1-09 绑定 C1-11/C1-12/C1-15，当前 task 对应 `list_tree_json`；C1-15 规定 JSON tree、无写入、副作用边界。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:24`
+
+- 项目：只接入 C1-15 对应的 CoreBridge / 状态 / 错误映射，不实现本页面其他 Core 功能点
+- 结果：通过
+- 证据：本 task 改动集中在 tree decoding、sidebar rows、subdir filtering 和真实 tree 测试；C1-11/C1-12 代码虽存在于同页模型，但属于依赖任务遗留/同页能力，不是本次 diff 新增范围。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift:80`
+
+- 项目：不顺手实现相邻页面
+- 结果：通过
+- 证据：git diff 仅显示 `CoreRepositoryOpening.swift`、`MainRepositoryContentView.swift`、`MainListFilesTests.swift`；未触碰相邻页面实现文件。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/MainListFilesTests.swift:210`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。Core tree listing、tree snapshot、Sidebar row 映射、UI 渲染职责分离清楚；相关文件均未超过 500 行。
+- 注释 / rustdoc / 文档同步：通过。本 task 未新增 Rust public API；UDL 已存在 `list_tree_json`，Swift 按 Core API JSON schema 解码。
+- 错误处理与边界处理：通过。`listTree` 抛出真实 Core/JSON decode 错误，上层 opening failure 会映射为 repo error；C1-15 无写入副作用。
+- 测试与验证覆盖：通过。包含真实临时仓库 `CoreBridge.listTree` populated tree 测试，且 macOS 测试门禁 84 tests 通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。产品路径调用真实 `listTreeJson`；fixture 仅用于单元测试，不替代真实 Core 闭环。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+- 结果：通过，输出 `** BUILD SUCCEEDED **`
+- 已运行：`./dev test macos`
+- 结果：通过。标准 `xcodebuild test` 被本地 `testmanagerd` sandbox 通信限制阻断，脚本按 repo 规则复用同一 XCTest bundle 执行 `xcrun xctest`，最终 84 tests、0 failures。
+- 缺失：无必需验证缺失。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+VERIFY_RESULT: PASS

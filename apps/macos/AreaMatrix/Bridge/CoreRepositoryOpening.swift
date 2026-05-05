@@ -75,6 +75,20 @@ struct RepositoryTreeNodeSnapshot: Equatable, Identifiable, Sendable {
         return Self.sortForSidebar(nodes)
     }
 
+    var sidebarRows: [RepositorySidebarRowSnapshot] {
+        let nodes = children.isEmpty ? [self] : children
+        return Self.sortForSidebar(nodes).flatMap { $0.sidebarRows(depth: 0) }
+    }
+
+    func sidebarRow(id: String) -> RepositorySidebarRowSnapshot? {
+        sidebarRows.first { $0.id == id }
+    }
+
+    private func sidebarRows(depth: Int) -> [RepositorySidebarRowSnapshot] {
+        let childRows = Self.sortForSidebar(children).flatMap { $0.sidebarRows(depth: depth + 1) }
+        return [RepositorySidebarRowSnapshot(node: self, depth: depth)] + childRows
+    }
+
     private static func sortForSidebar(
         _ nodes: [RepositoryTreeNodeSnapshot]
     ) -> [RepositoryTreeNodeSnapshot] {
@@ -103,6 +117,35 @@ struct RepositoryTreeNodeSnapshot: Equatable, Identifiable, Sendable {
         "finance": 4,
         "media": 5,
     ]
+}
+
+struct RepositorySidebarRowSnapshot: Equatable, Identifiable, Sendable {
+    var node: RepositoryTreeNodeSnapshot
+    var depth: Int
+
+    var id: String { node.id }
+    var displayName: String { node.displayName }
+    var totalFileCount: Int64 { node.totalFileCount }
+
+    var categoryForFileList: String? {
+        let path = node.relativePath
+        guard !path.isEmpty else {
+            return node.slug == "__root__" ? nil : node.slug
+        }
+
+        return path.split(separator: "/").first.map(String.init)
+    }
+
+    var pathFilterPrefix: String? {
+        let path = node.relativePath
+        guard path.contains("/") else { return nil }
+        return path
+    }
+
+    func contains(_ file: FileEntrySnapshot) -> Bool {
+        guard let pathFilterPrefix else { return true }
+        return file.path == pathFilterPrefix || file.path.hasPrefix("\(pathFilterPrefix)/")
+    }
 }
 
 extension CoreBridge: CoreEmptyRepositoryOpening, CoreRepositoryTreeListing {

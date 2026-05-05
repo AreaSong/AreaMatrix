@@ -14,7 +14,7 @@ struct MainRepositoryContentView: View {
     let onOpenSettings: () -> Void
     let onRetryCurrentList: () -> Void
     @StateObject private var fileListModel: MainFileListModel
-    @State private var selectedCategory: String = "inbox"
+    @State private var selectedSidebarID: String = "inbox"
     @State private var selectedFileID: Int64?
     @State private var filterText: String = ""
     @State private var isDropTargeted = false
@@ -32,10 +32,10 @@ struct MainRepositoryContentView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .task(id: selectedCategory) {
+        .task(id: selectedSidebarID) {
             guard state == .list else { return }
             selectedFileID = nil
-            await fileListModel.loadCurrentCategory(selectedCategoryForCore)
+            await fileListModel.loadCurrentCategory(selectedSidebarRow.categoryForFileList)
         }
         .onChange(of: selectedFileID) { _, fileID in
             Task {
@@ -78,31 +78,32 @@ struct MainRepositoryContentView: View {
     }
 
     private var sidebar: some View {
-        List(selection: $selectedCategory) {
-            ForEach(opening.tree.sidebarNodes) { node in
-                sidebarRow(node)
-                    .tag(node.slug)
+        List(selection: $selectedSidebarID) {
+            ForEach(opening.tree.sidebarRows) { row in
+                sidebarRow(row)
+                    .tag(row.id)
             }
         }
         .listStyle(.sidebar)
         .frame(minWidth: 180, idealWidth: 220, maxWidth: 260)
-        .onChange(of: opening.tree.sidebarNodes) { _, nodes in
-            selectedCategory = Self.defaultSelectedCategory(from: nodes)
+        .onChange(of: opening.tree.sidebarRows) { _, rows in
+            selectedSidebarID = Self.defaultSelectedSidebarID(from: rows)
         }
     }
 
-    private func sidebarRow(_ node: RepositoryTreeNodeSnapshot) -> some View {
-        HStack {
-            Text(node.displayName)
+    private func sidebarRow(_ row: RepositorySidebarRowSnapshot) -> some View {
+        HStack(spacing: 6) {
+            Text(row.displayName)
+                .padding(.leading, CGFloat(row.depth) * 14)
             Spacer()
-            Text("\(node.totalFileCount)")
+            Text("\(row.totalFileCount)")
                 .foregroundStyle(.secondary)
         }
-        .accessibilityLabel("\(node.displayName) \(node.totalFileCount)")
+        .accessibilityLabel("\(row.displayName) \(row.totalFileCount)")
     }
 
-    private static func defaultSelectedCategory(from nodes: [RepositoryTreeNodeSnapshot]) -> String {
-        nodes.first { $0.slug == "inbox" }?.slug ?? nodes.first?.slug ?? "__root__"
+    private static func defaultSelectedSidebarID(from rows: [RepositorySidebarRowSnapshot]) -> String {
+        rows.first { $0.node.slug == "inbox" }?.id ?? rows.first?.id ?? "__root__"
     }
 
     private var statusText: String {
@@ -110,17 +111,13 @@ struct MainRepositoryContentView: View {
     }
 
     private var selectedListTitle: String {
-        selectedSidebarNode.displayName
+        selectedSidebarRow.displayName
     }
 
-    private var selectedSidebarNode: RepositoryTreeNodeSnapshot {
-        opening.tree.sidebarNodes.first { $0.slug == selectedCategory } ??
-            opening.tree.sidebarNodes.first ??
-            opening.tree
-    }
-
-    private var selectedCategoryForCore: String? {
-        selectedCategory == "__root__" ? nil : selectedCategory
+    private var selectedSidebarRow: RepositorySidebarRowSnapshot {
+        opening.tree.sidebarRow(id: selectedSidebarID) ??
+            opening.tree.sidebarRows.first ??
+            RepositorySidebarRowSnapshot(node: opening.tree, depth: 0)
     }
 
     init(
@@ -146,7 +143,7 @@ struct MainRepositoryContentView: View {
             fileDetailer: fileDetailer,
             errorMapper: errorMapper
         ))
-        _selectedCategory = State(initialValue: Self.defaultSelectedCategory(from: opening.tree.sidebarNodes))
+        _selectedSidebarID = State(initialValue: Self.defaultSelectedSidebarID(from: opening.tree.sidebarRows))
     }
 
     @ViewBuilder
@@ -185,7 +182,7 @@ struct MainRepositoryContentView: View {
                 HStack(alignment: .firstTextBaseline) {
                     Text(selectedListTitle)
                         .font(.title3.weight(.semibold))
-                    Text("\(fileListModel.files.count) files")
+                    Text("\(visibleFiles.count) files")
                         .font(.callout)
                         .foregroundStyle(.secondary)
                     Spacer()
@@ -203,7 +200,7 @@ struct MainRepositoryContentView: View {
     }
 
     private var fileTable: some View {
-        Table(fileListModel.files, selection: $selectedFileID) {
+        Table(visibleFiles, selection: $selectedFileID) {
             TableColumn("Name") { file in
                 Text(file.currentName)
                     .lineLimit(1)
@@ -230,11 +227,15 @@ struct MainRepositoryContentView: View {
             }
         }
         .overlay {
-            if !fileListModel.isLoading && fileListModel.files.isEmpty {
+            if !fileListModel.isLoading && visibleFiles.isEmpty {
                 Text("No files in this category")
                     .foregroundStyle(.secondary)
             }
         }
+    }
+
+    private var visibleFiles: [FileEntrySnapshot] {
+        fileListModel.files.filter { selectedSidebarRow.contains($0) }
     }
 
     private func currentListErrorPane(_ error: CoreErrorMappingSnapshot) -> some View {
