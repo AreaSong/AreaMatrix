@@ -13,6 +13,7 @@ struct MainRepositoryContentView: View {
     let onDropImport: ([URL]) -> Void
     let onOpenSettings: () -> Void
     let onRetryCurrentList: () -> Void
+    @StateObject private var fileListModel: MainFileListModel
     @State private var selectedCategory: String = "inbox"
     @State private var filterText: String = ""
     @State private var isDropTargeted = false
@@ -30,6 +31,10 @@ struct MainRepositoryContentView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .task(id: selectedCategory) {
+            guard state == .list else { return }
+            await fileListModel.loadCurrentCategory(selectedCategoryForCore)
+        }
     }
 
     private var toolbar: some View {
@@ -107,13 +112,19 @@ struct MainRepositoryContentView: View {
             opening.tree
     }
 
+    private var selectedCategoryForCore: String? {
+        selectedCategory == "__root__" ? nil : selectedCategory
+    }
+
     init(
         opening: RepositoryOpeningResult,
         state: MainRepositoryContentState,
         onImport: @escaping () -> Void,
         onDropImport: @escaping ([URL]) -> Void,
         onOpenSettings: @escaping () -> Void = {},
-        onRetryCurrentList: @escaping () -> Void = {}
+        onRetryCurrentList: @escaping () -> Void = {},
+        fileLister: any CoreFileListing = CoreBridge(),
+        errorMapper: any CoreErrorMapping = CoreBridge()
     ) {
         self.opening = opening
         self.state = state
@@ -121,16 +132,25 @@ struct MainRepositoryContentView: View {
         self.onDropImport = onDropImport
         self.onOpenSettings = onOpenSettings
         self.onRetryCurrentList = onRetryCurrentList
+        _fileListModel = StateObject(wrappedValue: MainFileListModel(
+            opening: opening,
+            fileLister: fileLister,
+            errorMapper: errorMapper
+        ))
         _selectedCategory = State(initialValue: Self.defaultSelectedCategory(from: opening.tree.sidebarNodes))
     }
 
     @ViewBuilder
     private var listPane: some View {
-        if let error = opening.currentCategoryListError {
+        if let error = currentListError {
             currentListErrorPane(error)
         } else {
             listContentPane
         }
+    }
+
+    private var currentListError: CoreErrorMappingSnapshot? {
+        state == .list ? fileListModel.errorMapping : opening.currentCategoryListError
     }
 
     @ViewBuilder
@@ -153,25 +173,58 @@ struct MainRepositoryContentView: View {
             .accessibilityElement(children: .contain)
         case .list:
             VStack(alignment: .leading, spacing: 12) {
-                Text(selectedListTitle)
-                    .font(.title3.weight(.semibold))
-                Text("\(opening.tree.totalFileCount) files")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                Divider()
-                ForEach(opening.tree.sidebarNodes) { node in
-                    HStack {
-                        Text(node.displayName)
-                        Spacer()
-                        Text("\(node.totalFileCount)")
-                            .foregroundStyle(.secondary)
+                HStack(alignment: .firstTextBaseline) {
+                    Text(selectedListTitle)
+                        .font(.title3.weight(.semibold))
+                    Text("\(fileListModel.files.count) files")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    if fileListModel.isLoading {
+                        ProgressView()
+                            .controlSize(.small)
                     }
-                    .padding(.vertical, 4)
                 }
-                Spacer()
+                Divider()
+                fileTable
             }
             .padding(18)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        }
+    }
+
+    private var fileTable: some View {
+        Table(fileListModel.files) {
+            TableColumn("Name") { file in
+                Text(file.currentName)
+                    .lineLimit(1)
+            }
+            TableColumn("Category / Path") { file in
+                Text(file.categoryPathDisplay)
+                    .lineLimit(1)
+                    .foregroundStyle(.secondary)
+            }
+            TableColumn("Size") { file in
+                Text(file.sizeDisplay)
+                    .monospacedDigit()
+            }
+            TableColumn("Modified") { file in
+                Text(file.updatedAtDisplay)
+                    .monospacedDigit()
+            }
+            TableColumn("Imported") { file in
+                Text(file.importedAtDisplay)
+                    .monospacedDigit()
+            }
+            TableColumn("Status") { file in
+                Text(file.statusDisplay)
+            }
+        }
+        .overlay {
+            if !fileListModel.isLoading && fileListModel.files.isEmpty {
+                Text("No files in this category")
+                    .foregroundStyle(.secondary)
+            }
         }
     }
 
@@ -185,7 +238,15 @@ struct MainRepositoryContentView: View {
                 .font(.callout)
                 .foregroundStyle(.secondary)
             HStack {
-                Button("Retry", action: onRetryCurrentList)
+                Button("Retry") {
+                    if state == .list {
+                        Task {
+                            await fileListModel.retryCurrentCategory()
+                        }
+                    } else {
+                        onRetryCurrentList()
+                    }
+                }
                 DisclosureGroup("Technical Details") {
                     Text(error.rawContext)
                         .font(.system(.caption, design: .monospaced))
@@ -209,4 +270,34 @@ struct MainRepositoryContentView: View {
         .frame(minWidth: 220, idealWidth: 260, maxWidth: 320, maxHeight: .infinity, alignment: .topLeading)
     }
 
+}
+
+private extension FileEntrySnapshot {
+    var categoryPathDisplay: String {
+        let pathPrefix = path.split(separator: "/").dropLast().joined(separator: "/")
+        return pathPrefix.isEmpty ? category : pathPrefix
+    }
+
+    var sizeDisplay: String {
+        ByteCountFormatter.string(fromByteCount: sizeBytes, countStyle: .file)
+    }
+
+    var importedAtDisplay: String {
+        Self.dateFormatter.string(from: Date(timeIntervalSince1970: TimeInterval(importedAt)))
+    }
+
+    var updatedAtDisplay: String {
+        Self.dateFormatter.string(from: Date(timeIntervalSince1970: TimeInterval(updatedAt)))
+    }
+
+    var statusDisplay: String {
+        storageMode == "Indexed" ? "Index-only" : "OK"
+    }
+
+    private static let dateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .none
+        return formatter
+    }()
 }

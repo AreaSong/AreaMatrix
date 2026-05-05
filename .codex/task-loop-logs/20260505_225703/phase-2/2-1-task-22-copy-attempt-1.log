@@ -1,0 +1,38 @@
+一、执行结论：已完成。
+
+二、执行范围：单任务 `2-1/task-22`，只在 Expected New Paths 内改动：
+
+- [MainFileListModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileListModel.swift)
+- [MainRepositoryContentView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift)
+- [MainListFilesTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/MainListFilesTests.swift)
+- [project.pbxproj](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj)
+
+三、完成情况：
+
+- 已只处理 S1-09 中 C1-11 `list_files`：主列表分类切换会通过 `CoreFileListing.listFiles(repoPath:filter:)` 触发真实 Core 列表读取。
+- 已读取并交叉核对 S1-09 页面规格、MVP control map、Core API、C1-11 能力规格、UDL 和现有 macOS 代码。
+- 未实现 C1-12 `get_file`、C1-15 `list_tree_json` 的新功能，也未实现相邻页面。
+- S1-09 列表现在展示 Name、Category / Path、Size、Modified、Imported、Status，并支持 loading、empty、inline error + Retry。
+- 未触碰 Forbidden Touches：`core/src/**` 未修改；`core/area_matrix.udl` 仅读取未修改。
+
+四、工程质量：
+
+- 生产路径没有 mock、fixture、静态状态伪造；默认注入仍是 `CoreBridge()`。
+- 错误处理显式：CoreError 通过 `CoreErrorMapping` 映射为 inline list error；非 Core error 转为 Internal。
+- 代码规模受控：新增 model 67 行，主 view 303 行，新测试 216 行，均低于 500 行。
+- 新增测试覆盖分类过滤调用、Retry 保持当前分类、DB 错误 inline 映射。
+- 没有新增依赖，没有 Rust public API 或 rustdoc 变更需求。
+
+五、验证情况：
+
+- 通过：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+- 通过：`xcodebuild build-for-testing -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+- 未通过运行环境：`xcodebuild test ...` 编译和链接测试 target 后，在启动测试 runner 时被 sandbox 阻断：`testmanagerd.control ... Sandbox restriction`。这是本地测试服务权限问题，不是编译错误。
+
+六、风险与后续：
+
+- 剩余风险：实际 XCTest 运行未能在当前 sandbox 中完成，只能以 `build-for-testing` 证明测试 target 可构建。
+- 建议下一个任务：继续 `2-1/task-23`，按同页下一能力边界接入 S1-09 的 C1-12，不要把 C1-15 或文件操作混进来。
+
+另：工作区里原本已有 `.codex/task-loop-runs/20260505_225703/summary.json` 和 `tasks/prompts/_shared/progress.json` 修改，本次未处理这些 task-loop 状态文件。
+
