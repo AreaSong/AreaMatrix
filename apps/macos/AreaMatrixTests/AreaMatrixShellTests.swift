@@ -193,6 +193,8 @@ final class AreaMatrixShellTests: XCTestCase {
         XCTAssertNil(model.mainRepoRecoveryErrorMapping)
         XCTAssertFalse(model.isRetryingMainRepository)
         XCTAssertEqual(writer.savedRepoPaths, ["/tmp/repo"])
+        XCTAssertEqual(writer.successfulRepoOpens.map(\.repoPath), ["/tmp/repo"])
+        XCTAssertNotNil(model.mainRepoLastOpenedAt)
         XCTAssertEqual(model.route, .mainList(opening))
     }
 
@@ -389,6 +391,7 @@ final class AreaMatrixShellTests: XCTestCase {
         )
         XCTAssertEqual(requestedRepoPaths, ["/tmp/repo"])
         XCTAssertEqual(writer.savedRepoPaths, ["/tmp/repo"])
+        XCTAssertEqual(writer.successfulRepoOpens.map(\.repoPath), ["/tmp/repo"])
         XCTAssertEqual(model.route, .mainList(opening))
     }
 
@@ -450,4 +453,22 @@ final class AreaMatrixShellTests: XCTestCase {
         XCTAssertEqual(copier.requests.map(\.relativePath), ["docs/a.pdf"])
         XCTAssertEqual(model.toastMessage, "Path copied.")
     }
+
+    @MainActor
+    func testMainRepoErrorRevealLastKnownFolderUsesFinderWithoutMutatingRepoState() {
+        let finder = ShellRecordingFinderOpener()
+        let model = OnboardingModel(
+            settingsReader: ShellStaticSettingsReader(repoPath: nil),
+            finderOpener: finder,
+            helpOpener: ShellNoopWelcomeHelpOpener()
+        )
+        model.route = .mainRepoError("/tmp/repo", nil)
+
+        model.revealMainRepositoryFolder(repoPath: "/tmp/repo")
+
+        XCTAssertEqual(finder.openedRepoPaths, ["/tmp/repo"])
+        XCTAssertEqual(model.route, .mainRepoError("/tmp/repo", nil))
+        XCTAssertNil(model.toastMessage)
+    }
+
 }

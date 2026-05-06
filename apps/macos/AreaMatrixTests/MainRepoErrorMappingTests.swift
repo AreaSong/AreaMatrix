@@ -132,6 +132,158 @@ final class MainRepoErrorMappingTests: XCTestCase {
         XCTAssertEqual(model.route, .mainRepoError("/tmp/repo", mapping))
         XCTAssertEqual(model.mainRepoRecoveryErrorMapping, mapping)
     }
+
+    @MainActor
+    func testMainRepoErrorDiagnosticsRequirePrivacyConfirmationAndUseCoreSnapshot() async {
+        let snapshot = DiagnosticsSnapshotSnapshot(
+            snapshotPath: "/tmp/repo/.areamatrix/diagnostics/main-repo.zip",
+            createdAt: 1_778_000_000,
+            warnings: ["paths redacted"]
+        )
+        let collector = ShellRecordingDiagnosticsCollector(result: .success(snapshot))
+        let model = OnboardingModel(
+            settingsReader: ShellStaticSettingsReader(repoPath: nil),
+            diagnosticsCollector: collector,
+            helpOpener: ShellNoopWelcomeHelpOpener()
+        )
+        model.route = .mainRepoError("/tmp/repo", nil)
+
+        await model.collectMainRepositoryDiagnostics(repoPath: "/tmp/repo")
+        XCTAssertEqual(model.mainRepoDiagnostics, .idle)
+
+        model.requestMainRepositoryDiagnosticsPrivacyConfirmation(repoPath: "/tmp/repo")
+        await model.collectMainRepositoryDiagnostics(repoPath: "/tmp/repo")
+        let repoPaths = await collector.requestedRepoPaths()
+
+        XCTAssertEqual(repoPaths, ["/tmp/repo"])
+        XCTAssertEqual(model.mainRepoDiagnostics, .collected(snapshot))
+        XCTAssertEqual(model.route, .mainRepoError("/tmp/repo", nil))
+    }
+
+    @MainActor
+    func testMainRepoErrorDiagnosticsFailureMapsCoreErrorWithoutLeavingPage() async {
+        let collector = ShellRecordingDiagnosticsCollector(
+            result: .failure(CoreError.PermissionDenied(path: "/tmp/repo"))
+        )
+        let model = OnboardingModel(
+            settingsReader: ShellStaticSettingsReader(repoPath: nil),
+            diagnosticsCollector: collector,
+            helpOpener: ShellNoopWelcomeHelpOpener()
+        )
+        model.route = .mainRepoError("/tmp/repo", nil)
+
+        model.requestMainRepositoryDiagnosticsPrivacyConfirmation(repoPath: "/tmp/repo")
+        await model.collectMainRepositoryDiagnostics(repoPath: "/tmp/repo")
+
+        guard case .failed(let mapping) = model.mainRepoDiagnostics else {
+            return XCTFail("expected failed diagnostics state")
+        }
+
+        XCTAssertEqual(mapping.kind, .permissionDenied)
+        XCTAssertEqual(model.route, .mainRepoError("/tmp/repo", nil))
+    }
+
+    @MainActor
+    func testMainRepoErrorUsesPersistedLastSuccessfulOpenTime() {
+        let model = OnboardingModel(
+            settingsReader: ShellStaticSettingsReader(
+                repoPath: nil,
+                lastOpenedAtByRepoPath: ["/tmp/repo": 1_777_000_000]
+            ),
+            helpOpener: ShellNoopWelcomeHelpOpener()
+        )
+
+        model.routeMainRepositoryError(repoPath: "/tmp/repo", mapping: nil)
+
+        XCTAssertEqual(model.mainRepoLastOpenedAt, 1_777_000_000)
+        XCTAssertEqual(model.route, .mainRepoError("/tmp/repo", nil))
+    }
+
+    @MainActor
+    func testMainRepoErrorReconnectFolderUsesPickerAndValidatedSelectedPath() async {
+        let selectedPath = "/tmp/repo-reconnected"
+        let validation = RepoPathValidationSnapshot.shellFixture(
+            repoPath: selectedPath,
+            isEmpty: false,
+            isInitialized: true,
+            issues: [.alreadyInitialized],
+            recommendedMode: nil
+        )
+        let picker = ShellRecordingDirectoryPicker(selectedURL: URL(fileURLWithPath: selectedPath, isDirectory: true))
+        let initializedValidator = ShellRecordingInitializedPathValidator(result: .success(validation))
+        let opening = RepositoryOpeningResult.shellFixture(repoPath: selectedPath, fileCount: 1)
+        let opener = ShellRecordingRepositoryOpener(result: .success(opening))
+        let writer = ShellRecordingSettingsWriter()
+        let model = OnboardingModel(
+            settingsReader: ShellStaticSettingsReader(repoPath: nil),
+            settingsWriter: writer,
+            initializedPathValidator: initializedValidator,
+            emptyRepositoryOpener: opener,
+            startupRecoverer: ShellStaticStartupRecoverer(),
+            existingRepositoryMetadataReader: ShellStaticExistingRepositoryMetadataReader(
+                schemaVersion: 1,
+                configuredRepoPath: "/tmp/repo"
+            ),
+            helpOpener: ShellNoopWelcomeHelpOpener(),
+            directoryPicker: picker
+        )
+        model.route = OnboardingModel.Route.mainRepoError(
+            "/tmp/repo",
+            CoreErrorMappingSnapshot.mainRepoFixture(kind: .invalidPath, rawContext: "/tmp/repo")
+        )
+
+        await model.reconnectMainRepositoryFolder(from: "/tmp/repo")
+        let validatedPaths = await initializedValidator.requestedRepoPaths()
+        let openedPaths = await opener.requestedConfiguredRepoPaths()
+
+        XCTAssertEqual(picker.chooseCount, 1)
+        XCTAssertEqual(validatedPaths, [selectedPath])
+        XCTAssertEqual(openedPaths, [selectedPath])
+        XCTAssertEqual(writer.savedRepoPaths, [selectedPath])
+        XCTAssertEqual(model.route, OnboardingModel.Route.mainList(opening))
+    }
+
+    @MainActor
+    func testMainRepoErrorReconnectFolderRejectsDifferentInitializedRepo() async {
+        let selectedPath = "/tmp/other-repo"
+        let validation = RepoPathValidationSnapshot.shellFixture(
+            repoPath: selectedPath,
+            isEmpty: false,
+            isInitialized: true,
+            issues: [.alreadyInitialized],
+            recommendedMode: nil
+        )
+        let picker = ShellRecordingDirectoryPicker(selectedURL: URL(fileURLWithPath: selectedPath, isDirectory: true))
+        let initializedValidator = ShellRecordingInitializedPathValidator(result: .success(validation))
+        let opener = ShellRecordingRepositoryOpener(result: .success(.shellFixture(repoPath: selectedPath, fileCount: 1)))
+        let model = OnboardingModel(
+            settingsReader: ShellStaticSettingsReader(repoPath: nil),
+            initializedPathValidator: initializedValidator,
+            emptyRepositoryOpener: opener,
+            startupRecoverer: ShellStaticStartupRecoverer(),
+            existingRepositoryMetadataReader: ShellStaticExistingRepositoryMetadataReader(
+                schemaVersion: 1,
+                configuredRepoPath: "/tmp/some-other-repo"
+            ),
+            helpOpener: ShellNoopWelcomeHelpOpener(),
+            directoryPicker: picker
+        )
+        model.route = OnboardingModel.Route.mainRepoError(
+            "/tmp/repo",
+            CoreErrorMappingSnapshot.mainRepoFixture(kind: .invalidPath, rawContext: "/tmp/repo")
+        )
+
+        await model.reconnectMainRepositoryFolder(from: "/tmp/repo")
+        let openedPaths = await opener.requestedConfiguredRepoPaths()
+
+        XCTAssertEqual(openedPaths, [])
+        XCTAssertEqual(model.mainRepoRecoveryErrorMapping?.kind, .invalidPath)
+        XCTAssertEqual(
+            model.route,
+            OnboardingModel.Route.mainRepoError("/tmp/repo", model.mainRepoRecoveryErrorMapping)
+        )
+        XCTAssertFalse(model.isRetryingMainRepository)
+    }
 }
 
 private final class MainRepoRecordingErrorMapper: CoreErrorMapping {

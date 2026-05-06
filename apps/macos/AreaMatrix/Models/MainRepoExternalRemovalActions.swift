@@ -41,7 +41,7 @@ extension OnboardingModel {
             let mapping = await openingFailureMapping(for: error)
             mainRepoExternalRemoval = .failed(mapping)
             mainRepoRecoveryErrorMapping = mapping
-            route = .mainRepoError(repoPath, mapping)
+            routeMainRepositoryError(repoPath: repoPath, mapping: mapping)
         }
     }
 

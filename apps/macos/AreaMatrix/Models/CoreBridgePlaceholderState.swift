@@ -7,6 +7,7 @@ protocol ExistingRepositoryMetadataReading: Sendable {
 struct ExistingRepositoryMetadataSnapshot: Equatable, Sendable {
     var schemaVersion: Int64
     var lastOpenedAt: Int64?
+    var configuredRepoPath: String? = nil
 }
 
 struct ConfigLoadFailure: Equatable, Sendable {
@@ -274,15 +275,32 @@ struct SQLiteExistingRepositoryMetadataReader: ExistingRepositoryMetadataReading
     private static let supportedSchemaVersion: Int64 = 1
 
     func metadata(repoPath: String) async throws -> ExistingRepositoryMetadataSnapshot {
-        let schemaVersion = try Self.readSchemaVersion(repoPath: repoPath)
+        let openedDatabase = try Self.openMetadataDatabase(repoPath: repoPath)
+        defer {
+            sqlite3_close(openedDatabase)
+        }
+
+        let schemaVersion = try Self.readRequiredInt64(
+            database: openedDatabase,
+            sql: "SELECT COALESCE(MAX(version), 0) FROM schema_version"
+        )
+        guard schemaVersion > 0 else {
+            throw CoreError.Db(message: "schema_version is empty")
+        }
         guard schemaVersion <= Self.supportedSchemaVersion else {
             throw CoreError.Config(reason: "unsupported schema version \(schemaVersion)")
         }
 
-        return ExistingRepositoryMetadataSnapshot(schemaVersion: schemaVersion, lastOpenedAt: nil)
+        let configuredRepoPath = try Self.readOptionalConfigString(database: openedDatabase, key: "repo_path")
+        let lastOpenedAt = try Self.readOptionalConfigInt64(database: openedDatabase, key: "last_opened_at")
+        return ExistingRepositoryMetadataSnapshot(
+            schemaVersion: schemaVersion,
+            lastOpenedAt: lastOpenedAt,
+            configuredRepoPath: configuredRepoPath
+        )
     }
 
-    private static func readSchemaVersion(repoPath: String) throws -> Int64 {
+    private static func openMetadataDatabase(repoPath: String) throws -> OpaquePointer {
         let dbURL = URL(fileURLWithPath: repoPath)
             .appendingPathComponent(".areamatrix", isDirectory: true)
             .appendingPathComponent("index.db")
@@ -291,8 +309,7 @@ struct SQLiteExistingRepositoryMetadataReader: ExistingRepositoryMetadataReading
         }
 
         var database: OpaquePointer?
-        let flags = SQLITE_OPEN_READONLY
-        let openResult = sqlite3_open_v2(dbURL.path, &database, flags, nil)
+        let openResult = sqlite3_open_v2(dbURL.path, &database, SQLITE_OPEN_READONLY, nil)
         guard openResult == SQLITE_OK, let openedDatabase = database else {
             let message = sqliteMessage(database)
             if let database {
@@ -300,19 +317,8 @@ struct SQLiteExistingRepositoryMetadataReader: ExistingRepositoryMetadataReading
             }
             throw CoreError.Db(message: message)
         }
-        defer {
-            sqlite3_close(openedDatabase)
-        }
 
-        let version = try readRequiredInt64(
-            database: openedDatabase,
-            sql: "SELECT COALESCE(MAX(version), 0) FROM schema_version"
-        )
-        guard version > 0 else {
-            throw CoreError.Db(message: "schema_version is empty")
-        }
-
-        return version
+        return openedDatabase
     }
 
     private static func readRequiredInt64(database: OpaquePointer, sql: String) throws -> Int64 {
@@ -334,6 +340,44 @@ struct SQLiteExistingRepositoryMetadataReader: ExistingRepositoryMetadataReading
         }
 
         return sqlite3_column_int64(preparedStatement, 0)
+    }
+
+    private static func readOptionalConfigString(database: OpaquePointer, key: String) throws -> String? {
+        try readOptionalConfigValue(database: database, key: key)
+    }
+
+    private static func readOptionalConfigInt64(database: OpaquePointer, key: String) throws -> Int64? {
+        guard let value = try readOptionalConfigValue(database: database, key: key) else {
+            return nil
+        }
+
+        return Int64(value)
+    }
+
+    private static func readOptionalConfigValue(database: OpaquePointer, key: String) throws -> String? {
+        var statement: OpaquePointer?
+        let sql = "SELECT value FROM repo_config WHERE key = ?1 LIMIT 1"
+        let prepareResult = sqlite3_prepare_v2(database, sql, -1, &statement, nil)
+        guard prepareResult == SQLITE_OK, let preparedStatement = statement else {
+            let message = sqliteMessage(database)
+            if let statement {
+                sqlite3_finalize(statement)
+            }
+            throw CoreError.Db(message: message)
+        }
+        defer {
+            sqlite3_finalize(preparedStatement)
+        }
+
+        sqlite3_bind_text(preparedStatement, 1, key, -1, unsafeBitCast(-1, to: sqlite3_destructor_type.self))
+        guard sqlite3_step(preparedStatement) == SQLITE_ROW else {
+            return nil
+        }
+        guard let text = sqlite3_column_text(preparedStatement, 0) else {
+            return nil
+        }
+
+        return String(cString: text)
     }
 
     private static func sqliteMessage(_ database: OpaquePointer?) -> String {

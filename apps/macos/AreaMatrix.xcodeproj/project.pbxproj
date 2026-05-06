@@ -67,6 +67,7 @@
 		0A000000000000000000015C /* RepositoryErrorPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000015D /* RepositoryErrorPresentation.swift */; };
 		0A000000000000000000015E /* RepositoryErrorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000015F /* RepositoryErrorView.swift */; };
 		0A0000000000000000000160 /* MainRepoErrorMappingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000161 /* MainRepoErrorMappingTests.swift */; };
+		0A0000000000000000000162 /* MainRepoErrorActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000163 /* MainRepoErrorActions.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -146,6 +147,7 @@
 		0A000000000000000000015D /* RepositoryErrorPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/RepositoryErrorPresentation.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000015F /* RepositoryErrorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/RepositoryErrorView.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000161 /* MainRepoErrorMappingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/MainRepoErrorMappingTests.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000163 /* MainRepoErrorActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/MainRepoErrorActions.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -279,6 +281,7 @@
 				0A000000000000000000015D /* RepositoryErrorPresentation.swift */,
 				0A00000000000000000000A2 /* OnboardingInitializationProgress.swift */,
 				0A0000000000000000000159 /* MainRepoExternalRemovalActions.swift */,
+				0A0000000000000000000163 /* MainRepoErrorActions.swift */,
 				0A00000000000000000000B2 /* InitializationFailureActions.swift */,
 			);
 			name = Models;
@@ -476,6 +479,7 @@
 				0A0000000000000000000100 /* CoreFileListing.swift in Sources */,
 				0A0000000000000000000156 /* CoreExternalChangesSyncing.swift in Sources */,
 				0A0000000000000000000158 /* MainRepoExternalRemovalActions.swift in Sources */,
+				0A0000000000000000000162 /* MainRepoErrorActions.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -7,9 +7,16 @@ struct MainRepoErrorView: View {
     let isRetrying: Bool
     let retryErrorMapping: CoreErrorMappingSnapshot?
     let externalRemoval: MainRepoExternalRemovalState
+    let diagnostics: MainRepoDiagnosticsState
+    let lastOpenedAt: Int64?
     let onRetry: () -> Void
+    let onReconnectFolder: () -> Void
     let onOpenRepair: () -> Void
     let onConfirmExternalRemoval: () -> Void
+    let onRevealFolder: () -> Void
+    let onRequestDiagnostics: () -> Void
+    let onConfirmDiagnostics: () -> Void
+    let onCancelDiagnostics: () -> Void
     let onChooseAnotherFolder: () -> Void
 
     init(
@@ -19,9 +26,16 @@ struct MainRepoErrorView: View {
         isRetrying: Bool = false,
         retryErrorMapping: CoreErrorMappingSnapshot? = nil,
         externalRemoval: MainRepoExternalRemovalState = .unavailable,
+        diagnostics: MainRepoDiagnosticsState = .idle,
+        lastOpenedAt: Int64? = nil,
         onRetry: @escaping () -> Void = {},
+        onReconnectFolder: @escaping () -> Void = {},
         onOpenRepair: @escaping () -> Void = {},
         onConfirmExternalRemoval: @escaping () -> Void = {},
+        onRevealFolder: @escaping () -> Void = {},
+        onRequestDiagnostics: @escaping () -> Void = {},
+        onConfirmDiagnostics: @escaping () -> Void = {},
+        onCancelDiagnostics: @escaping () -> Void = {},
         onChooseAnotherFolder: @escaping () -> Void
     ) {
         self.repoPath = repoPath
@@ -30,9 +44,16 @@ struct MainRepoErrorView: View {
         self.isRetrying = isRetrying
         self.retryErrorMapping = retryErrorMapping
         self.externalRemoval = externalRemoval
+        self.diagnostics = diagnostics
+        self.lastOpenedAt = lastOpenedAt
         self.onRetry = onRetry
+        self.onReconnectFolder = onReconnectFolder
         self.onOpenRepair = onOpenRepair
         self.onConfirmExternalRemoval = onConfirmExternalRemoval
+        self.onRevealFolder = onRevealFolder
+        self.onRequestDiagnostics = onRequestDiagnostics
+        self.onConfirmDiagnostics = onConfirmDiagnostics
+        self.onCancelDiagnostics = onCancelDiagnostics
         self.onChooseAnotherFolder = onChooseAnotherFolder
     }
 
@@ -40,6 +61,7 @@ struct MainRepoErrorView: View {
         VStack(alignment: .leading, spacing: 20) {
             header
             repositoryDetails
+            diagnosticsSection
             actionRow
         }
         .frame(maxWidth: 620, alignment: .leading)
@@ -91,6 +113,9 @@ struct MainRepoErrorView: View {
                     .foregroundStyle(.secondary)
                 technicalDetails(activeMapping)
             }
+            Text(lastOpenedLine)
+                .font(.callout)
+                .foregroundStyle(.secondary)
             if let validation {
                 Text("Last validation: initialized=\(validation.isInitialized ? "yes" : "no")")
                     .font(.callout)
@@ -148,11 +173,58 @@ struct MainRepoErrorView: View {
             }
             Button("Choose another repository", action: onChooseAnotherFolder)
                 .disabled(isRetrying)
+            Button("Export diagnostics", action: onRequestDiagnostics)
+                .disabled(isRetrying || diagnosticsIsBusy)
+            if shouldShowRevealFolder {
+                Button("Reveal last known folder", action: onRevealFolder)
+                    .disabled(isRetrying)
+            }
             if isRetrying {
                 ProgressView()
                     .controlSize(.small)
                     .accessibilityLabel("Retrying repository validation")
             }
+        }
+    }
+
+    @ViewBuilder
+    private var diagnosticsSection: some View {
+        switch diagnostics {
+        case .idle:
+            EmptyView()
+        case .confirmingPrivacy:
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Diagnostics do not include user file contents, are not uploaded, and redact paths and usernames.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                HStack(spacing: 10) {
+                    Button("Create diagnostics", action: onConfirmDiagnostics)
+                        .buttonStyle(.borderedProminent)
+                    Button("Cancel", action: onCancelDiagnostics)
+                }
+            }
+            .padding(12)
+            .background(.quaternary, in: RoundedRectangle(cornerRadius: 6))
+        case .collecting:
+            Label("Preparing redacted diagnostics...", systemImage: "arrow.clockwise")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+        case .collected(let snapshot):
+            VStack(alignment: .leading, spacing: 4) {
+                Label("Diagnostics collected", systemImage: "doc.badge.gearshape")
+                Text(snapshot.snapshotPath)
+                    .font(.system(.caption, design: .monospaced))
+                    .textSelection(.enabled)
+                if !snapshot.warnings.isEmpty {
+                    Text(snapshot.warnings.joined(separator: "\n"))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        case .failed(let mapping):
+            Text("Diagnostics failed: \(mapping.userMessage)")
+                .font(.callout)
+                .foregroundStyle(.secondary)
         }
     }
 
@@ -164,8 +236,28 @@ struct MainRepoErrorView: View {
         switch presentation.primaryAction {
         case .openRepair:
             return onOpenRepair
-        case .retry, .reconnectFolder, .downloadAndRetry:
+        case .reconnectFolder:
+            return onReconnectFolder
+        case .retry, .downloadAndRetry:
             return onRetry
         }
+    }
+
+    private var lastOpenedLine: String {
+        guard let lastOpenedAt else { return "Last opened: Not recorded" }
+
+        let date = Date(timeIntervalSince1970: TimeInterval(lastOpenedAt))
+        return "Last opened: \(date.formatted(date: .abbreviated, time: .shortened))"
+    }
+
+    private var shouldShowRevealFolder: Bool {
+        if validation?.exists == true { return true }
+        guard let kind = activeMapping?.kind else { return false }
+        return kind != .fileNotFound && kind != .invalidPath
+    }
+
+    private var diagnosticsIsBusy: Bool {
+        if case .collecting = diagnostics { return true }
+        return false
     }
 }

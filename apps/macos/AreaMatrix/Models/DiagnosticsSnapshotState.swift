@@ -10,6 +10,14 @@ struct DiagnosticsSnapshotSnapshot: Equatable, Sendable {
     var warnings: [String]
 }
 
+enum MainRepoDiagnosticsState: Equatable, Sendable {
+    case idle
+    case confirmingPrivacy
+    case collecting
+    case collected(DiagnosticsSnapshotSnapshot)
+    case failed(CoreErrorMappingSnapshot)
+}
+
 extension DiagnosticsSnapshotSnapshot {
     init(coreSnapshot: DiagnosticsSnapshot) {
         snapshotPath = coreSnapshot.snapshotPath

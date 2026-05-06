@@ -7,19 +7,31 @@ struct AppShellModel: Equatable, Sendable {
 
 protocol AppSettingsReading {
     func configuredRepoPath() -> String?
+    func lastSuccessfulRepoOpenAt(repoPath: String) -> Int64?
 }
 
 protocol AppSettingsWriting {
     func saveConfiguredRepoPath(_ repoPath: String)
+    func saveSuccessfulRepoOpen(repoPath: String, openedAt: Int64)
+}
+
+extension AppSettingsReading {
+    func lastSuccessfulRepoOpenAt(repoPath: String) -> Int64? { nil }
+}
+
+extension AppSettingsWriting {
+    func saveSuccessfulRepoOpen(repoPath: String, openedAt: Int64) {}
 }
 
 struct UserDefaultsAppSettingsReader: AppSettingsReading {
     private let defaults: UserDefaults
     private let repoPathKey: String
+    private let lastOpenKey: String
 
     init(defaults: UserDefaults = .standard, repoPathKey: String = "AreaMatrix.repoPath") {
         self.defaults = defaults
         self.repoPathKey = repoPathKey
+        lastOpenKey = "\(repoPathKey).lastSuccessfulOpen"
     }
 
     func configuredRepoPath() -> String? {
@@ -30,11 +42,27 @@ struct UserDefaultsAppSettingsReader: AppSettingsReading {
         let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
         return trimmed.isEmpty ? nil : trimmed
     }
+
+    func lastSuccessfulRepoOpenAt(repoPath: String) -> Int64? {
+        guard let value = defaults.dictionary(forKey: lastOpenKey)?[repoPath] else {
+            return nil
+        }
+
+        if let number = value as? NSNumber { return number.int64Value }
+        if let timestamp = value as? Int64 { return timestamp }
+        return nil
+    }
 }
 
 extension UserDefaultsAppSettingsReader: AppSettingsWriting {
     func saveConfiguredRepoPath(_ repoPath: String) {
         defaults.set(repoPath, forKey: repoPathKey)
+    }
+
+    func saveSuccessfulRepoOpen(repoPath: String, openedAt: Int64) {
+        var timestamps = defaults.dictionary(forKey: lastOpenKey) ?? [:]
+        timestamps[repoPath] = openedAt
+        defaults.set(timestamps, forKey: lastOpenKey)
     }
 }
 

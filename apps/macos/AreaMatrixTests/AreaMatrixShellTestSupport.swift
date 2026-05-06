@@ -3,15 +3,24 @@ import XCTest
 
 struct ShellStaticSettingsReader: AppSettingsReading {
     let repoPath: String?
+    var lastOpenedAtByRepoPath: [String: Int64] = [:]
 
     func configuredRepoPath() -> String? { repoPath }
+    func lastSuccessfulRepoOpenAt(repoPath: String) -> Int64? {
+        lastOpenedAtByRepoPath[repoPath]
+    }
 }
 
 final class ShellRecordingSettingsWriter: AppSettingsWriting {
     private(set) var savedRepoPaths: [String] = []
+    private(set) var successfulRepoOpens: [(repoPath: String, openedAt: Int64)] = []
 
     func saveConfiguredRepoPath(_ repoPath: String) {
         savedRepoPaths.append(repoPath)
+    }
+
+    func saveSuccessfulRepoOpen(repoPath: String, openedAt: Int64) {
+        successfulRepoOpens.append((repoPath: repoPath, openedAt: openedAt))
     }
 }
 
@@ -148,11 +157,42 @@ actor ShellRecordingExternalChangesSyncer: CoreExternalChangesSyncing {
     func recordedRequests() -> [ShellExternalRemovalRequest] { requests }
 }
 
+actor ShellRecordingDiagnosticsCollector: CoreDiagnosticsCollecting {
+    private let result: Result<DiagnosticsSnapshotSnapshot, Error>
+    private var repoPaths: [String] = []
+
+    init(result: Result<DiagnosticsSnapshotSnapshot, Error>) {
+        self.result = result
+    }
+
+    func createDiagnosticsSnapshot(repoPath: String) async throws -> DiagnosticsSnapshotSnapshot {
+        repoPaths.append(repoPath)
+        return try result.get()
+    }
+
+    func requestedRepoPaths() -> [String] { repoPaths }
+}
+
 struct ShellNoopWelcomeHelpOpener: WelcomeHelpOpening { func openWelcomeHelp() throws {} }
 
 struct ShellFailingWelcomeHelpOpener: WelcomeHelpOpening {
     func openWelcomeHelp() throws {
         throw WelcomeHelpError.helpDocumentUnavailable
+    }
+}
+
+@MainActor
+final class ShellRecordingFinderOpener: RepositoryFinderOpening {
+    private let result: Result<Void, RepositoryFinderOpenError>
+    private(set) var openedRepoPaths: [String] = []
+
+    init(result: Result<Void, RepositoryFinderOpenError> = .success(())) {
+        self.result = result
+    }
+
+    func openRepositoryInFinder(repoPath: String) throws {
+        openedRepoPaths.append(repoPath)
+        try result.get()
     }
 }
 
@@ -176,9 +216,30 @@ final class ShellRecordingPathCopier: RepositoryPathCopying {
 
 struct ShellStaticExistingRepositoryMetadataReader: ExistingRepositoryMetadataReading {
     let schemaVersion: Int64
+    var lastOpenedAt: Int64?
+    var configuredRepoPath: String?
 
     func metadata(repoPath: String) async throws -> ExistingRepositoryMetadataSnapshot {
-        ExistingRepositoryMetadataSnapshot(schemaVersion: schemaVersion, lastOpenedAt: nil)
+        ExistingRepositoryMetadataSnapshot(
+            schemaVersion: schemaVersion,
+            lastOpenedAt: lastOpenedAt,
+            configuredRepoPath: configuredRepoPath
+        )
+    }
+}
+
+@MainActor
+final class ShellRecordingDirectoryPicker: RepositoryDirectoryPicking {
+    private let selectedURL: URL?
+    private(set) var chooseCount = 0
+
+    init(selectedURL: URL?) {
+        self.selectedURL = selectedURL
+    }
+
+    func chooseDirectory() -> URL? {
+        chooseCount += 1
+        return selectedURL
     }
 }
 

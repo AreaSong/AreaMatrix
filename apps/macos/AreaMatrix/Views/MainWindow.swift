@@ -204,9 +204,16 @@ struct MainWindow: View {
                 isRetrying: model.isRetryingMainRepository,
                 retryErrorMapping: model.mainRepoRecoveryErrorMapping,
                 externalRemoval: model.mainRepoExternalRemoval,
+                diagnostics: model.mainRepoDiagnostics,
+                lastOpenedAt: model.mainRepoLastOpenedAt,
                 onRetry: {
                     Task {
                         await model.retryMainRepositoryFromError(repoPath: repoPath)
+                    }
+                },
+                onReconnectFolder: {
+                    Task {
+                        await model.reconnectMainRepositoryFolder(from: repoPath)
                     }
                 },
                 onOpenRepair: {
@@ -217,6 +224,18 @@ struct MainWindow: View {
                         await model.confirmMainRepositoryExternalRemoval(repoPath: repoPath)
                     }
                 },
+                onRevealFolder: {
+                    model.revealMainRepositoryFolder(repoPath: repoPath)
+                },
+                onRequestDiagnostics: {
+                    model.requestMainRepositoryDiagnosticsPrivacyConfirmation(repoPath: repoPath)
+                },
+                onConfirmDiagnostics: {
+                    Task {
+                        await model.collectMainRepositoryDiagnostics(repoPath: repoPath)
+                    }
+                },
+                onCancelDiagnostics: model.cancelMainRepositoryDiagnosticsPrivacyConfirmation,
                 onChooseAnotherFolder: model.showChoosePath
             )
         case .dbRepairConfirm(let repoPath, let scanSession, let mapping):

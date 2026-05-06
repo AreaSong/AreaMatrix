@@ -28,19 +28,17 @@ extension OnboardingModel {
 
         do {
             try await recoverMainOpeningResidue(repoPath: validation.repoPath, cancellationToken: cancellationToken)
-            let loadingRefreshTask = Task { [weak self] in
-                await self?.refreshMainLoadingState(
-                    repoPath: validation.repoPath,
-                    cancellationToken: cancellationToken,
-                    shouldLoadAdoptSession: true,
-                    shouldLoadTree: true
-                )
-            }
+            let loadingRefreshTask = makeMainLoadingRefreshTask(
+                repoPath: validation.repoPath,
+                cancellationToken: cancellationToken,
+                shouldLoadAdoptSession: true,
+                shouldLoadTree: true
+            )
             defer { loadingRefreshTask.cancel() }
             let opening = try await emptyRepositoryOpener.openConfiguredRepository(repoPath: validation.repoPath)
             guard openingCancellationToken == cancellationToken else { return }
             settingsWriter.saveConfiguredRepoPath(validation.repoPath)
-            route = Self.mainRoute(for: opening)
+            finishSuccessfulRepositoryOpen(opening)
         } catch {
             guard openingCancellationToken == cancellationToken else { return }
             await updateMainRepoExternalRemoval(from: error, repoPath: validation.repoPath)
@@ -100,19 +98,17 @@ extension OnboardingModel {
 
         do {
             try await recoverMainOpeningResidue(repoPath: result.repoPath, cancellationToken: cancellationToken)
-            let loadingRefreshTask = Task { [weak self] in
-                await self?.refreshMainLoadingState(
-                    repoPath: result.repoPath,
-                    seedSession: result.scanSession,
-                    cancellationToken: cancellationToken,
-                    shouldLoadAdoptSession: result.mode == .adoptExisting,
-                    shouldLoadTree: true
-                )
-            }
+            let loadingRefreshTask = makeMainLoadingRefreshTask(
+                repoPath: result.repoPath,
+                seedSession: result.scanSession,
+                cancellationToken: cancellationToken,
+                shouldLoadAdoptSession: result.mode == .adoptExisting,
+                shouldLoadTree: true
+            )
             defer { loadingRefreshTask.cancel() }
             let opening = try await openInitializedRepository(result)
             guard openingCancellationToken == cancellationToken else { return }
-            route = Self.mainRoute(for: opening)
+            finishSuccessfulRepositoryOpen(opening)
         } catch {
             guard openingCancellationToken == cancellationToken else { return }
             route = .initializationDone(result)
@@ -495,6 +491,6 @@ extension OnboardingModel {
             route = .mainLoading(state.withRepositoryOpeningError(mapping))
             return
         }
-        route = .mainRepoError(repoPath, mapping)
+        routeMainRepositoryError(repoPath: repoPath, mapping: mapping)
     }
 }
