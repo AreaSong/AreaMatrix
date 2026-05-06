@@ -72,6 +72,8 @@
 		0A0000000000000000000166 /* ImportDropPreviewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000167 /* ImportDropPreviewModel.swift */; };
 		0A0000000000000000000168 /* ImportDropTargetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000169 /* ImportDropTargetView.swift */; };
 		0A000000000000000000016A /* ImportDropPreviewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000016B /* ImportDropPreviewModelTests.swift */; };
+		0A000000000000000000016C /* ImportSingleFilePreviewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000016D /* ImportSingleFilePreviewModel.swift */; };
+		0A000000000000000000016E /* ImportSingleFilePreviewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000016F /* ImportSingleFilePreviewModelTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -156,6 +158,8 @@
 		0A0000000000000000000167 /* ImportDropPreviewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ImportDropPreviewModel.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000169 /* ImportDropTargetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/ImportDropTargetView.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000016B /* ImportDropPreviewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportDropPreviewModelTests.swift; sourceTree = SOURCE_ROOT; };
+		0A000000000000000000016D /* ImportSingleFilePreviewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ImportSingleFilePreviewModel.swift; sourceTree = SOURCE_ROOT; };
+		0A000000000000000000016F /* ImportSingleFilePreviewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportSingleFilePreviewModelTests.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -282,6 +286,7 @@
 				0A0000000000000000000019 /* CoreBridgePlaceholderState.swift */,
 				0A0000000000000000000121 /* ImportEntryRequest.swift */,
 				0A0000000000000000000167 /* ImportDropPreviewModel.swift */,
+				0A000000000000000000016D /* ImportSingleFilePreviewModel.swift */,
 				0A0000000000000000000123 /* OnboardingModelInputs.swift */,
 				0A0000000000000000000131 /* MainFileListModel.swift */,
 				0A0000000000000000000135 /* MainListVisibleFileFiltering.swift */,
@@ -319,6 +324,7 @@
 				0A0000000000000000000111 /* MainEmptyBuildTreeTests.swift */,
 				0A000000000000000000012B /* MainEmptyImportEntryTests.swift */,
 				0A000000000000000000016B /* ImportDropPreviewModelTests.swift */,
+				0A000000000000000000016F /* ImportSingleFilePreviewModelTests.swift */,
 				0A0000000000000000000133 /* MainListFilesTests.swift */,
 				0A0000000000000000000137 /* MainListIntegrationFilterTests.swift */,
 				0A0000000000000000000139 /* MainListIntegrationClosureTests.swift */,
@@ -467,6 +473,7 @@
 				0A0000000000000000000168 /* ImportDropTargetView.swift in Sources */,
 				0A0000000000000000000128 /* ImportEntrySheetView.swift in Sources */,
 				0A0000000000000000000166 /* ImportDropPreviewModel.swift in Sources */,
+				0A000000000000000000016C /* ImportSingleFilePreviewModel.swift in Sources */,
 				0A000000000000000000013C /* MainRepositoryDetailPane.swift in Sources */,
 				0A000000000000000000013E /* MainFileActionRoutingSheet.swift in Sources */,
 				0A0000000000000000000140 /* RenameFileSheet.swift in Sources */,
@@ -514,6 +521,7 @@
 				0A0000000000000000000110 /* MainEmptyBuildTreeTests.swift in Sources */,
 				0A000000000000000000012A /* MainEmptyImportEntryTests.swift in Sources */,
 				0A000000000000000000016A /* ImportDropPreviewModelTests.swift in Sources */,
+				0A000000000000000000016E /* ImportSingleFilePreviewModelTests.swift in Sources */,
 				0A0000000000000000000132 /* MainListFilesTests.swift in Sources */,
 				0A0000000000000000000136 /* MainListIntegrationFilterTests.swift in Sources */,
 				0A0000000000000000000138 /* MainListIntegrationClosureTests.swift in Sources */,
