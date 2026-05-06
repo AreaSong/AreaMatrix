@@ -1,0 +1,51 @@
+一、执行结论
+
+已完成 `2-2/task-12`。
+
+二、执行范围
+
+单任务：S1-19 import-folder-sheet 中的 C1-06 Copy 导入功能。
+
+修改文件：
+
+- [ImportFolderPreviewModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportFolderPreviewModel.swift)
+- [ImportEntrySheetView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportEntrySheetView.swift)
+- [ImportFolderPreviewSections.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportFolderPreviewSections.swift)
+- [ImportFolderPreviewModelTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportFolderPreviewModelTests.swift)
+
+未触碰 `core/src/**`。当前 worktree 里还有既存变更：`.codex/task-loop-runs/20260507_013505/summary.json`、`tasks/prompts/_shared/progress.json`，本轮未修改它们。
+
+三、完成情况
+
+核对清单通过：
+
+- 只处理 S1-19 + C1-06。
+- 已读取页面规格、MVP control map、Core API、C1-06 能力规格。
+- S1-19 的 ready 行现在通过 `CoreBatchCopyImporting` / `CoreBridge` 走真实 `import_file` Copy 路径。
+- 未实现 C1-08 Index-only、Move、相邻页面或 control map 外能力。
+
+完成标准通过：
+
+- `Import Folder` 可触发 Copy 导入，进度、失败和成功结果接入现有 import-progress 回调。
+- 生产代码没有 mock、fixture 或静态成功态。
+- iCloud placeholder 和 preview error 不进入导入队列。
+
+四、工程质量
+
+代码结构保持在现有 S1-19 模型和 footer 内，没有绕过 `CoreBridge` 直接调 UniFFI。错误通过 `CoreErrorMapping` 显式映射；导入失败会转为行级 `ERROR` 并暂停到 import-progress 失败态。新增测试覆盖 ready-only 入队、Core 权限错误映射、drop category 目标透传、真实 Core Copy 保留源文件并创建 repo 副本。
+
+五、验证情况
+
+已运行：
+
+- `xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：通过。
+- `./dev test macos`：通过。标准 `xcodebuild test` 被本地 sandbox 的 `testmanagerd` 通信限制挡住，脚本按仓库规则复用同一 XCTest bundle，`xcrun xctest` 跑完 `223` 个测试，`0` 失败。
+- `git diff --check`：通过。
+- `git diff --name-only -- core/src`：无输出，确认未触碰 Forbidden Touches。
+
+六、风险与后续
+
+剩余风险：未做真实 UI 手工点击验证；已通过 build 和 XCTest 覆盖模型、CoreBridge 和回调路径。C1-08 仍按任务边界留给 `2-2/task-13`。
+
+建议下一个任务：`2-2/task-13`，接 S1-19 的 C1-08 Index-only 能力。
+

@@ -61,6 +61,8 @@ enum ImportFolderPreviewRowStatus: Equatable, Sendable {
     case loading
     case ready(reasonLabel: String)
     case iCloudPlaceholder(path: String)
+    case importing
+    case imported
     case error(String)
 
     var tag: String {
@@ -71,6 +73,10 @@ enum ImportFolderPreviewRowStatus: Equatable, Sendable {
             return "OK"
         case .iCloudPlaceholder:
             return "ICLOUD"
+        case .importing:
+            return "IMPORTING"
+        case .imported:
+            return "IMPORTED"
         case .error:
             return "ERROR"
         }
@@ -84,6 +90,10 @@ enum ImportFolderPreviewRowStatus: Equatable, Sendable {
             return reasonLabel
         case .iCloudPlaceholder(let path):
             return "iCloud placeholder 需要下载后才能导入：\(path)"
+        case .importing:
+            return "正在复制导入..."
+        case .imported:
+            return "已复制导入"
         case .error(let message):
             return message
         }
@@ -96,6 +106,11 @@ enum ImportFolderPreviewRowStatus: Equatable, Sendable {
 
     var isFailed: Bool {
         if case .error = self { return true }
+        return false
+    }
+
+    var isImporting: Bool {
+        if case .importing = self { return true }
         return false
     }
 }
@@ -167,15 +182,22 @@ final class ImportFolderPreviewModel: ObservableObject {
     @Published var followSymlinks = false
 
     private let predictor: any CoreCategoryPredicting
+    private let importer: any CoreBatchCopyImporting
+    private let errorMapper: any CoreErrorMapping
     private let scanner: any ImportFolderScanning
     private var request: ImportEntryRequest?
     private var generation = 0
+    private(set) var lastFailureMapping: CoreErrorMappingSnapshot?
 
     init(
         predictor: any CoreCategoryPredicting,
+        importer: any CoreBatchCopyImporting,
+        errorMapper: any CoreErrorMapping,
         scanner: any ImportFolderScanning = LocalImportFolderScanner()
     ) {
         self.predictor = predictor
+        self.importer = importer
+        self.errorMapper = errorMapper
         self.scanner = scanner
     }
 
@@ -211,14 +233,26 @@ final class ImportFolderPreviewModel: ObservableObject {
         }.count
     }
 
+    var importableRows: [ImportFolderPreviewRow] {
+        rows.filter(\.status.isReady)
+    }
+
+    var currentImportPath: String? {
+        rows.first(where: { $0.status.isImporting }).map { targetRelativePath(for: $0) }
+            ?? importableRows.first.map { targetRelativePath(for: $0) }
+    }
+
     var importDisabledReason: String? {
         if status.isScanning {
             return "预扫描完成前不能导入"
         }
-        if rows.isEmpty {
+        if rows.contains(where: { $0.status.isImporting }) {
+            return "正在复制导入"
+        }
+        if rows.isEmpty || importableRows.isEmpty {
             return "没有可导入文件"
         }
-        return "C1-06/C1-08 导入执行由后续任务接入"
+        return nil
     }
 
     func load(request: ImportEntryRequest) async {
@@ -236,6 +270,7 @@ final class ImportFolderPreviewModel: ObservableObject {
         folderCount = 0
         skippedRules = []
         scanErrors = []
+        lastFailureMapping = nil
 
         let result = await scanner.scanFolder(
             rootURL: rootURL,
@@ -298,6 +333,7 @@ final class ImportFolderPreviewModel: ObservableObject {
         folderCount = 0
         skippedRules = []
         scanErrors = []
+        lastFailureMapping = nil
         status = .failed(message)
     }
 
@@ -317,6 +353,123 @@ final class ImportFolderPreviewModel: ObservableObject {
             return "分类预览文件读取失败：\(message)"
         default:
             return "无法完成分类预览"
+        }
+    }
+}
+
+@MainActor
+extension ImportFolderPreviewModel {
+    func importReadyFiles(
+        reportProgress: @escaping @MainActor (ImportBatchProgressSnapshot) -> Void = { _ in }
+    ) async -> ImportBatchImportResult? {
+        guard let request, importDisabledReason == nil else { return nil }
+
+        let readyRowIDs = Set(importableRows.map(\.id))
+        let total = importableRows.count
+        let initialPreviewErrorCount = failedCount
+        var completed = 0
+        var failed = 0
+        var succeededEntries: [FileEntrySnapshot] = []
+        var lastImportedPath = ""
+        lastFailureMapping = nil
+
+        for index in rows.indices where readyRowIDs.contains(rows[index].id) {
+            let cycle = await runFolderCopyCycle(
+                at: index,
+                request: request,
+                completed: completed,
+                failed: failed,
+                total: total
+            )
+            completed = cycle.completed
+            failed = cycle.failed
+            lastImportedPath = cycle.lastImportedPath ?? lastImportedPath
+            if let entry = cycle.entry {
+                succeededEntries.append(entry)
+            }
+            reportProgress(cycle.progress)
+        }
+
+        return ImportBatchImportResult(
+            succeededEntries: succeededEntries,
+            failedCount: failed,
+            previewErrorCount: initialPreviewErrorCount,
+            total: total,
+            lastImportedPath: lastImportedPath,
+            pendingDuplicateCount: 0,
+            skippedDuplicateCount: 0,
+            pendingICloudCount: iCloudPlaceholderCount
+        )
+    }
+
+    func targetRelativePath(for row: ImportFolderPreviewRow) -> String {
+        let filename = row.suggestedName.trimmingCharacters(in: .whitespacesAndNewlines)
+        if request?.destination == .repositoryRoot {
+            return filename
+        }
+        let category = row.predictedCategory?.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let category, !category.isEmpty else {
+            return filename
+        }
+        return "\(category)/\(filename)"
+    }
+
+    private func runFolderCopyCycle(
+        at rowIndex: Int,
+        request: ImportEntryRequest,
+        completed: Int,
+        failed: Int,
+        total: Int
+    ) async -> ImportBatchCopyCycleResult {
+        let row = rows[rowIndex]
+        let currentPath = targetRelativePath(for: row)
+        rows[rowIndex].status = .importing
+
+        do {
+            let entry = try await importer.importCopiedFile(
+                repoPath: request.repoPath,
+                sourceURL: row.fileURL,
+                destination: request.destination,
+                suggestedCategory: suggestedCategory(for: row, request: request),
+                overrideFilename: row.suggestedName,
+                duplicateStrategy: .ask
+            )
+            rows[rowIndex].status = .imported
+            return .success(
+                entry: entry,
+                completed: completed + 1,
+                failed: failed,
+                total: total,
+                currentPath: currentPath
+            )
+        } catch {
+            let mapping = await mapImportError(error)
+            lastFailureMapping = mapping
+            rows[rowIndex].status = .error(mapping.userMessage)
+            return .failure(
+                completed: completed,
+                failed: failed + 1,
+                total: total,
+                currentPath: currentPath
+            )
+        }
+    }
+
+    private func mapImportError(_ error: Error) async -> CoreErrorMappingSnapshot {
+        if let coreError = error as? CoreError {
+            return await errorMapper.mapCoreError(coreError)
+        }
+        return await errorMapper.mapCoreError(CoreError.Internal(message: error.localizedDescription))
+    }
+
+    private func suggestedCategory(for row: ImportFolderPreviewRow, request: ImportEntryRequest) -> String? {
+        switch request.destination {
+        case .autoClassify:
+            return row.predictedCategory
+        case .category(let slug):
+            return slug
+        case .repositoryRoot:
+            return nil
         }
     }
 }

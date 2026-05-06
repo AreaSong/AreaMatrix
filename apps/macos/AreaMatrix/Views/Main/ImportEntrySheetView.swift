@@ -67,6 +67,8 @@ struct ImportEntrySheetView: View {
         ))
         _folderPreviewModel = StateObject(wrappedValue: ImportFolderPreviewModel(
             predictor: categoryPredictor,
+            importer: batchFileImporter,
+            errorMapper: errorMapper,
             scanner: folderScanner
         ))
     }
@@ -348,8 +350,13 @@ struct ImportEntrySheetView: View {
                 )
             } else if case .folder = request.kind {
                 ImportFolderFooterSection(
+                    request: request,
+                    model: folderPreviewModel,
                     importDisabledReason: folderPreviewModel.importDisabledReason,
                     onCancel: onCancel,
+                    onImportProgress: onBatchImportProgress,
+                    onImportFailed: onBatchImportFailed,
+                    onImported: onImported,
                     onRetryScan: {
                         Task { await folderPreviewModel.retryScan() }
                     }

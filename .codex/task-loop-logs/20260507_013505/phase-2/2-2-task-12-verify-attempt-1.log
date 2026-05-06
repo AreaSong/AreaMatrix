@@ -1,0 +1,96 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`2-2/task-12`
+- Task：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-2-import-conflict/task-12-s1-19-c1-06-import-copy-file.md`
+- 主要实现：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportFolderPreviewModel.swift`
+- 主要 UI：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportEntrySheetView.swift`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportFolderPreviewSections.swift`
+- 测试：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportFolderPreviewModelTests.swift`
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：0
+- 通过项数：10
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 S1-19 页面中的 C1-06 功能点
+  - 结果：通过
+  - 证据：改动集中在文件夹导入 sheet 的 copy 导入触发、状态和进度；未改 `core/src/**`。
+  - 涉及文件：`ImportFolderPreviewModel.swift:362`、`ImportFolderPreviewSections.swift:225`
+
+- 项目：读取页面规格、control map、Core API、C1-06 能力规格
+  - 结果：通过
+  - 证据：已按 manifest 读取四个 Exact Docs，并核对 `S1-19 -> C1-06 -> import_file`。
+  - 涉及文件：`S1-19-import-folder-sheet.md`、`mvp-control-map.md`、`core-api.md`、`C1-06-import-copy-file.md`
+
+- 项目：只接入 C1-06 对应 CoreBridge / 状态 / 错误映射
+  - 结果：通过
+  - 证据：`ImportFolderPreviewModel.importReadyFiles()` 调用注入的 `CoreBatchCopyImporting.importCopiedFile`；默认生产注入来自 `CoreBridge()`；错误通过 `CoreErrorMapping` 映射。
+  - 涉及文件：`ImportFolderPreviewModel.swift:429`、`ImportEntrySheetView.swift:68`
+
+- 项目：不顺手实现相邻页面
+  - 结果：通过
+  - 证据：diff 仅包含 S1-19 相关 model/view/tests；未扩展到 S1-20/S1-21/S1-24 等页面实现。
+  - 涉及文件：`git diff --name-only` 输出的 4 个 macOS 文件
+
+- 项目：S1-19 中 C1-06 用户可见功能可触发
+  - 结果：通过
+  - 证据：`Import Folder` 按钮会执行 `Task { await importFolder() }`，随后调用 `model.importReadyFiles` 并上报进度/成功/失败。
+  - 涉及文件：`ImportFolderPreviewSections.swift:225`
+
+- 项目：真实 Core 闭环，不使用 mock/fixture/静态状态伪造
+  - 结果：通过
+  - 证据：生产 `CoreBridge.importCopiedFile` 构造 `ImportOptions(mode: .copied, ...)` 并调用 `AreaMatrix.importFile(...)`。
+  - 涉及文件：`CoreImporting.swift:160`、`CoreImporting.swift:249`
+
+- 项目：未触碰 control map 之外 Core 能力
+  - 结果：通过
+  - 证据：`core/src/**` 无改动；`core/area_matrix.udl` 未改；实现只消费已有 `import_file`。
+  - 涉及文件：`core/area_matrix.udl:44`
+
+- 项目：Expected New Paths 落地
+  - 结果：通过
+  - 证据：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**` 有实际实现/测试；相关 S1-19 文件已在 `project.pbxproj` Sources 中登记。
+  - 涉及文件：`project.pbxproj:585`、`project.pbxproj:661`
+
+- 项目：Forbidden Touches
+  - 结果：通过
+  - 证据：`git status --short -- core/src` 无输出，未触碰禁止路径。
+  - 涉及文件：`core/src/**`
+
+- 项目：依赖任务边界
+  - 结果：通过
+  - 证据：本 task 依赖 `2-2/task-11` 的 folder scan / classify preview 和 `1-2/task-09` 的 Core import_file；当前只做 S1-19 消费 C1-06。
+  - 涉及文件：`phase-2.md:1348`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，导入循环拆为 `importReadyFiles` / `runFolderCopyCycle` / `mapImportError` / `suggestedCategory`，未把 IO 放进 SwiftUI body。
+- 注释 / rustdoc / 文档同步：通过，本 task 无新增 public Rust API；UDL/API 文档无需变更。
+- 错误处理与边界处理：通过，Core error 经 `mapImportError` 映射；iCloud placeholder 和预览错误不进入 ready 导入队列。
+- 测试与验证覆盖：通过，新增 S1-19 copy 导入测试覆盖 ready-only、Core failure mapping、drop category、真实 CoreBridge copy 保留源文件。
+- 占位、硬编码、mock-only、一次性实现检查：通过，测试 mock 仅用于单元隔离；生产默认走 `CoreBridge -> AreaMatrix.importFile`。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：通过，`BUILD SUCCEEDED`
+- 已运行：`./dev test macos`：通过；标准 `xcodebuild test` 被本地 sandbox 的 `testmanagerd` 通信限制阻断后，按 repo-local driver 复用已构建 XCTest bundle，`xcrun xctest` 通过，223 tests / 0 failures
+- 已运行：`git diff --check -- ...`：通过，无 whitespace error
+- 缺失：未做人工 UI 点击冒烟；当前验收已有构建、单元/集成测试和真实 CoreBridge copy 证据，未构成阻断
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS

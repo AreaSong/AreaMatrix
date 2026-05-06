@@ -202,8 +202,13 @@ struct ImportFolderRowsSection: View {
 }
 
 struct ImportFolderFooterSection: View {
+    let request: ImportEntryRequest
+    let model: ImportFolderPreviewModel
     let importDisabledReason: String?
     let onCancel: () -> Void
+    let onImportProgress: (ImportBatchProgressSnapshot) -> Void
+    let onImportFailed: (ImportBatchProgressSnapshot, CoreErrorMappingSnapshot) -> Void
+    let onImported: (String, FileEntrySnapshot) -> Void
     let onRetryScan: () -> Void
 
     var body: some View {
@@ -217,9 +222,56 @@ struct ImportFolderFooterSection: View {
             Button("Retry scan", action: onRetryScan)
             Button("Cancel", action: onCancel)
                 .keyboardShortcut(.cancelAction)
-            Button("Import Folder") {}
+            Button("Import Folder") {
+                Task { await importFolder() }
+            }
                 .keyboardShortcut(.defaultAction)
                 .disabled(importDisabledReason != nil)
         }
+    }
+
+    @MainActor
+    private func importFolder() async {
+        if let initialProgress = initialProgressSnapshot() {
+            onImportProgress(initialProgress)
+        }
+
+        var lastProgress: ImportBatchProgressSnapshot?
+        let outcome = await model.importReadyFiles { progress in
+            lastProgress = progress
+            if progress.completed > 0 || progress.failed > 0 {
+                onImportProgress(progress)
+            }
+        }
+
+        guard let outcome else { return }
+        if outcome.failedCount > 0, let failure = model.lastFailureMapping, let progress = lastProgress {
+            onImportFailed(progress, failure)
+            return
+        }
+        guard outcome.failedCount == 0 else { return }
+        if outcome.needsResultSummary {
+            onImportProgress(outcome.progressSnapshot(currentPath: model.currentImportPath ?? request.sheetTitle))
+            return
+        }
+        guard let importedEntry = outcome.succeededEntries.last else {
+            onCancel()
+            return
+        }
+
+        onImported(request.repoPath, importedEntry)
+    }
+
+    private func initialProgressSnapshot() -> ImportBatchProgressSnapshot? {
+        guard importDisabledReason == nil else { return nil }
+        let total = model.importableRows.count
+        guard total > 0 else { return nil }
+        return ImportBatchProgressSnapshot(
+            completed: 0,
+            failed: 0,
+            total: total,
+            remaining: total,
+            currentPath: model.currentImportPath ?? request.sheetTitle
+        )
     }
 }
