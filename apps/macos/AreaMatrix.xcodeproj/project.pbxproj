@@ -64,6 +64,9 @@
 		0A0000000000000000000156 /* CoreExternalChangesSyncing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000157 /* CoreExternalChangesSyncing.swift */; };
 		0A0000000000000000000158 /* MainRepoExternalRemovalActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000159 /* MainRepoExternalRemovalActions.swift */; };
 		0A000000000000000000015A /* MainRepoExternalRemovalTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000015B /* MainRepoExternalRemovalTests.swift */; };
+		0A000000000000000000015C /* RepositoryErrorPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000015D /* RepositoryErrorPresentation.swift */; };
+		0A000000000000000000015E /* RepositoryErrorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000015F /* RepositoryErrorView.swift */; };
+		0A0000000000000000000160 /* MainRepoErrorMappingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000161 /* MainRepoErrorMappingTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -140,6 +143,9 @@
 		0A0000000000000000000157 /* CoreExternalChangesSyncing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/CoreExternalChangesSyncing.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000159 /* MainRepoExternalRemovalActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/MainRepoExternalRemovalActions.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000015B /* MainRepoExternalRemovalTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/MainRepoExternalRemovalTests.swift; sourceTree = SOURCE_ROOT; };
+		0A000000000000000000015D /* RepositoryErrorPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/RepositoryErrorPresentation.swift; sourceTree = SOURCE_ROOT; };
+		0A000000000000000000015F /* RepositoryErrorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/RepositoryErrorView.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000161 /* MainRepoErrorMappingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/MainRepoErrorMappingTests.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -220,6 +226,7 @@
 				0A0000000000000000000143 /* ChangeCategorySheet.swift */,
 				0A0000000000000000000145 /* DeleteFileConfirmSheet.swift */,
 				0A0000000000000000000149 /* MainLoadingView.swift */,
+				0A000000000000000000015F /* RepositoryErrorView.swift */,
 				0A0000000000000000000127 /* FileDropAdapter.swift */,
 				0A0000000000000000000129 /* ImportEntrySheetView.swift */,
 				0A000000000000000000001F /* ValidatePathStepView.swift */,
@@ -269,6 +276,7 @@
 				0A0000000000000000000147 /* MainLoadingState.swift */,
 				0A000000000000000000014D /* StartupRecoveryModels.swift */,
 				0A00000000000000000000F7 /* DiagnosticsSnapshotState.swift */,
+				0A000000000000000000015D /* RepositoryErrorPresentation.swift */,
 				0A00000000000000000000A2 /* OnboardingInitializationProgress.swift */,
 				0A0000000000000000000159 /* MainRepoExternalRemovalActions.swift */,
 				0A00000000000000000000B2 /* InitializationFailureActions.swift */,
@@ -288,6 +296,7 @@
 			children = (
 				0A000000000000000000001A /* AreaMatrixShellTests.swift */,
 				0A000000000000000000015B /* MainRepoExternalRemovalTests.swift */,
+				0A0000000000000000000161 /* MainRepoErrorMappingTests.swift */,
 				0A0000000000000000000020 /* ValidatePathIntegrationTests.swift */,
 				0A00000000000000000000A1 /* InitializingStepIntegrationTests.swift */,
 				0A00000000000000000000B3 /* InitFailedErrorMappingTests.swift */,
@@ -449,6 +458,8 @@
 				0A0000000000000000000146 /* MainLoadingState.swift in Sources */,
 				0A000000000000000000014C /* StartupRecoveryModels.swift in Sources */,
 				0A0000000000000000000148 /* MainLoadingView.swift in Sources */,
+				0A000000000000000000015C /* RepositoryErrorPresentation.swift in Sources */,
+				0A000000000000000000015E /* RepositoryErrorView.swift in Sources */,
 				0A00000000000000000000D0 /* MainRepositoryContentView.swift in Sources */,
 				0A0000000000000000000009 /* area_matrix.swift in Sources */,
 				0A000000000000000000000A /* ValidatePathStepView.swift in Sources */,
@@ -475,6 +486,7 @@
 				0A0000000000000000000004 /* AreaMatrixAppSmokeTests.swift in Sources */,
 				0A0000000000000000000008 /* AreaMatrixShellTests.swift in Sources */,
 				0A000000000000000000015A /* MainRepoExternalRemovalTests.swift in Sources */,
+				0A0000000000000000000160 /* MainRepoErrorMappingTests.swift in Sources */,
 				0A000000000000000000000B /* ValidatePathIntegrationTests.swift in Sources */,
 				0A000000000000000000000D /* InitializingStepIntegrationTests.swift in Sources */,
 				0A00000000000000000000B1 /* InitFailedErrorMappingTests.swift in Sources */,

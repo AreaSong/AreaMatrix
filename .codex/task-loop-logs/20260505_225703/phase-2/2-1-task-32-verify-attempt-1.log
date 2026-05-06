@@ -1,0 +1,86 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`2-1/task-32`
+- 对应文件路径：
+  - [task-32-s1-11-c1-21-error-mapping.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-1-first-launch-main/task-32-s1-11-c1-21-error-mapping.md:1)
+  - [S1-11-main-repo-error.md](/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-11-main-repo-error.md:1)
+  - [RepositoryErrorPresentation.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/RepositoryErrorPresentation.swift:1)
+  - [RepositoryErrorView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/RepositoryErrorView.swift:1)
+  - [OnboardingInitializationProgress.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/OnboardingInitializationProgress.swift:1)
+  - [MainRepoErrorMappingTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/MainRepoErrorMappingTests.swift:1)
+
+三、完成度摘要
+
+- 已覆盖项数：11
+- 未覆盖项数：1
+- 通过项数：9
+- 不通过项数：2
+- 阻塞项数：1
+
+四、逐项验收结果
+
+- 项目：只处理 S1-11 页面中的 C1-21 功能点
+- 结果：通过
+- 证据：实现集中在 S1-11 repo error 的错误映射展示与主动作；未见 `core/src/**` 改动。
+- 涉及文件：[RepositoryErrorPresentation.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/RepositoryErrorPresentation.swift:18)
+
+- 项目：读取页面规格、control map、Core API、C1-21 能力规格并交叉实现
+- 结果：通过
+- 证据：S1-11 绑定 C1-01/C1-19/C1-21；本 task 只覆盖 C1-21。Core API 规定 `map_core_error` 输出结构化字段，Swift 不得用字符串 contains 做主分支。
+- 涉及文件：[mvp-control-map.md](/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:26)、[core-api.md](/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:1349)
+
+- 项目：接入 C1-21 CoreBridge / 状态 / 错误映射
+- 结果：通过
+- 证据：`CoreBridge.mapCoreError` 调用真实 `mapCoreErrorFromCore`，后者把 `CoreError` 转为 `ErrorMappingInput` 并调用 `mapCoreError`。
+- 涉及文件：[CoreBridge.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift:232)、[CoreBridgePlaceholderState.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/CoreBridgePlaceholderState.swift:165)
+
+- 项目：S1-11 中 C1-21 用户可见功能可触发
+- 结果：不通过
+- 证据：打开 repo 失败会进入 `.mainRepoError`，但 DB locked 与 DB corrupted 未区分；所有 `.db` 都被映射为整页 `Open repair`。
+- 涉及文件：[OnboardingInitializationProgress.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/OnboardingInitializationProgress.swift:51)、[RepositoryErrorPresentation.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/RepositoryErrorPresentation.swift:49)
+
+- 项目：没有使用 mock、fixture 或静态状态伪造真实 Core 闭环
+- 结果：通过
+- 证据：生产路径通过 `CoreBridge` 和 `CoreErrorMapping` 协议调用；fixture 仅出现在测试。
+- 涉及文件：[CoreBridge.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift:327)、[MainRepoErrorMappingTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/MainRepoErrorMappingTests.swift:104)
+
+- 项目：未触碰 control map 之外 Core 能力 / Forbidden Touches
+- 结果：通过
+- 证据：`git status --short -- core/src` 无输出；未见 `core/src/**` 被触碰。
+- 涉及文件：`core/src/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过。主要结构清晰，但 DB 错误分支把不同恢复语义折叠成单一路径。
+- 注释 / rustdoc / 文档同步：通过。当前为 Swift UI/模型改动，无新增 public Rust API。
+- 错误处理与边界处理：不通过。S1-11 明确 DB locked 不进入整页错误态，但当前 `.db` 一律整页修复。
+- 测试与验证覆盖：不通过。已有 5 个 `MainRepoErrorMappingTests` 通过，但缺 DB locked 不进入 S1-11 的回归测试。
+- 占位、硬编码、mock-only、一次性实现检查：通过。未发现生产路径 mock-only；问题是错误分类不足，不是 mock。
+
+六、阻塞项
+
+- P0：DB locked 被路由到 S1-11 整页 repo error / Open repair
+  - 说明：S1-11 规定 DB locked 不进入整页错误态，应由 S1-32 inline error 呈现并保持 Tree 可用；当前 `.db` 统一显示 `Repository metadata needs repair` 和 `Open repair`。
+  - 绝对路径与行号：
+    - [/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-11-main-repo-error.md:62](/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-11-main-repo-error.md:62)
+    - [/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/RepositoryErrorPresentation.swift:49](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/RepositoryErrorPresentation.swift:49)
+    - [/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/AppShellModel.swift:457](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/AppShellModel.swift:457)
+    - [/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/MainRepoErrorMappingTests.swift:31](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/MainRepoErrorMappingTests.swift:31)
+  - 为什么导致不通过：C1-21 的核心是结构化错误映射和正确 UI 路由；当前实现无法证明 DB locked 与 DB corrupted 的用户路径被正确区分，直接违反 S1-11 验收清单。
+
+七、验证情况
+
+- 已运行：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：通过，`BUILD SUCCEEDED`。
+- 已运行：`./dev test macos`：通过。标准 `xcodebuild test` 受本地 `testmanagerd` sandbox 阻断，脚本按规则复用已构建 XCTest bundle 执行 `xcrun xctest`，121 tests，0 failures。
+- 失败：产品验收失败，原因是上述 P0 行为缺口。
+- 缺失：DB locked 不进入 S1-11 整页错误态的实现证据与回归测试。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+
+VERIFY_RESULT: FAIL

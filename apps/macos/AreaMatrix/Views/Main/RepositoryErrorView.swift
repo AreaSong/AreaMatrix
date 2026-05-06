@@ -1,0 +1,171 @@
+import SwiftUI
+
+struct MainRepoErrorView: View {
+    let repoPath: String
+    let mapping: CoreErrorMappingSnapshot?
+    let validation: RepoPathValidationSnapshot?
+    let isRetrying: Bool
+    let retryErrorMapping: CoreErrorMappingSnapshot?
+    let externalRemoval: MainRepoExternalRemovalState
+    let onRetry: () -> Void
+    let onOpenRepair: () -> Void
+    let onConfirmExternalRemoval: () -> Void
+    let onChooseAnotherFolder: () -> Void
+
+    init(
+        repoPath: String,
+        mapping: CoreErrorMappingSnapshot?,
+        validation: RepoPathValidationSnapshot? = nil,
+        isRetrying: Bool = false,
+        retryErrorMapping: CoreErrorMappingSnapshot? = nil,
+        externalRemoval: MainRepoExternalRemovalState = .unavailable,
+        onRetry: @escaping () -> Void = {},
+        onOpenRepair: @escaping () -> Void = {},
+        onConfirmExternalRemoval: @escaping () -> Void = {},
+        onChooseAnotherFolder: @escaping () -> Void
+    ) {
+        self.repoPath = repoPath
+        self.mapping = mapping
+        self.validation = validation
+        self.isRetrying = isRetrying
+        self.retryErrorMapping = retryErrorMapping
+        self.externalRemoval = externalRemoval
+        self.onRetry = onRetry
+        self.onOpenRepair = onOpenRepair
+        self.onConfirmExternalRemoval = onConfirmExternalRemoval
+        self.onChooseAnotherFolder = onChooseAnotherFolder
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            header
+            repositoryDetails
+            actionRow
+        }
+        .frame(maxWidth: 620, alignment: .leading)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(48)
+        .accessibilityElement(children: .contain)
+    }
+
+    private var activeMapping: CoreErrorMappingSnapshot? {
+        retryErrorMapping ?? mapping
+    }
+
+    private var presentation: RepositoryErrorPresentation {
+        RepositoryErrorPresentation.mainRepo(mapping: activeMapping)
+    }
+
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Label(presentation.title, systemImage: "exclamationmark.triangle")
+                .font(.title.weight(.semibold))
+                .accessibilityAddTraits(.isHeader)
+            Text(presentation.message)
+                .font(.body)
+                .foregroundStyle(.secondary)
+            Text("This error does not mean your files were deleted.")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private var repositoryDetails: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Repository")
+                .font(.headline)
+            Text(repoPath)
+                .font(.system(.body, design: .monospaced))
+                .textSelection(.enabled)
+                .lineLimit(3)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 8)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(.quaternary, in: RoundedRectangle(cornerRadius: 6))
+            if let activeMapping {
+                Text("Error: \(activeMapping.kind.rawValue)")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                Text("Action: \(activeMapping.suggestedAction)")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                technicalDetails(activeMapping)
+            }
+            if let validation {
+                Text("Last validation: initialized=\(validation.isInitialized ? "yes" : "no")")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+            externalRemovalStatus
+        }
+    }
+
+    @ViewBuilder
+    private func technicalDetails(_ mapping: CoreErrorMappingSnapshot) -> some View {
+        if presentation.showsTechnicalDetails {
+            DisclosureGroup("Technical Details") {
+                Text(mapping.rawContext)
+                    .font(.system(.caption, design: .monospaced))
+                    .textSelection(.enabled)
+            }
+            .font(.callout)
+        }
+    }
+
+    @ViewBuilder
+    private var externalRemovalStatus: some View {
+        switch externalRemoval {
+        case .idle(let path):
+            Text("External removal candidate: \(path)")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+        case .syncing(let path):
+            Text("Syncing external removal: \(path)")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+        case .synced(let result):
+            Text("External removals synced: \(result.detectedDeletes)")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+        case .failed(let mapping):
+            Text("External removal sync failed: \(mapping.userMessage)")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+        case .unavailable:
+            EmptyView()
+        }
+    }
+
+    private var actionRow: some View {
+        HStack(spacing: 12) {
+            Button(primaryActionTitle, action: primaryAction)
+                .keyboardShortcut(.defaultAction)
+                .buttonStyle(.borderedProminent)
+                .disabled(isRetrying)
+            if case .idle = externalRemoval {
+                Button("Confirm external removal", action: onConfirmExternalRemoval)
+                    .disabled(isRetrying)
+            }
+            Button("Choose another repository", action: onChooseAnotherFolder)
+                .disabled(isRetrying)
+            if isRetrying {
+                ProgressView()
+                    .controlSize(.small)
+                    .accessibilityLabel("Retrying repository validation")
+            }
+        }
+    }
+
+    private var primaryActionTitle: String {
+        isRetrying ? presentation.runningActionTitle : presentation.primaryActionTitle
+    }
+
+    private var primaryAction: () -> Void {
+        switch presentation.primaryAction {
+        case .openRepair:
+            return onOpenRepair
+        case .retry, .reconnectFolder, .downloadAndRetry:
+            return onRetry
+        }
+    }
+}

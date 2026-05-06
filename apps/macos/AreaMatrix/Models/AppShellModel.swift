@@ -457,7 +457,7 @@ final class OnboardingModel: ObservableObject {
         } catch {
             guard openingCancellationToken == cancellationToken else { return }
             await updateMainRepoExternalRemoval(from: error, repoPath: repoPath)
-            route = .mainRepoError(repoPath, await openingFailureMapping(for: error))
+            await routeMainOpeningFailure(error, repoPath: repoPath, cancellationToken: cancellationToken)
         }
     }
 

@@ -4,6 +4,7 @@ struct MainLoadingView: View {
     let state: MainLoadingState
     let onCancelOpening: () -> Void
     let onRetryTree: () -> Void
+    let onRetryOpening: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
@@ -15,6 +16,7 @@ struct MainLoadingView: View {
             pathBox
             recoverySection
             treeLoadingSection
+            openingErrorSection
             scanSection
             safetyText
             Button("Cancel opening", action: onCancelOpening)
@@ -65,6 +67,27 @@ struct MainLoadingView: View {
             .background(.quaternary.opacity(0.35), in: RoundedRectangle(cornerRadius: 8))
             .accessibilityElement(children: .combine)
             .accessibilityLabel(recoveryStatus)
+        }
+    }
+
+    @ViewBuilder
+    private var openingErrorSection: some View {
+        if let mapping = state.repositoryOpeningErrorMapping {
+            VStack(alignment: .leading, spacing: 8) {
+                Label("Repository is temporarily unavailable", systemImage: "exclamationmark.triangle")
+                    .font(.headline)
+                    .foregroundStyle(.orange)
+                Text(mapping.userMessage)
+                Text(mapping.suggestedAction)
+                    .foregroundStyle(.secondary)
+                Button("Retry", action: onRetryOpening)
+            }
+            .font(.callout)
+            .padding(14)
+            .frame(maxWidth: 640, alignment: .leading)
+            .background(.quaternary.opacity(0.35), in: RoundedRectangle(cornerRadius: 8))
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(state.repositoryOpeningErrorText ?? mapping.userMessage)
         }
     }
 

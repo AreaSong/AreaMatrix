@@ -51,7 +51,7 @@ final class MainLoadingAdoptExistingTests: XCTestCase {
     }
 
     @MainActor
-    func testMainLoadingRecoveryFailureMapsErrorAndDoesNotOpenOrSaveRepository() async {
+    func testMainLoadingRecoveryFailureMapsRetryableDbErrorInlineAndDoesNotOpenOrSaveRepository() async {
         let writer = MainLoadingRecordingSettingsWriter()
         let mapping = CoreErrorMappingSnapshot.mainLoadingDbFixture(rawContext: "recovery db locked")
         let startupRecoverer = MainLoadingRecordingStartupRecoverer(
@@ -78,7 +78,73 @@ final class MainLoadingAdoptExistingTests: XCTestCase {
         XCTAssertEqual(openRequests, [])
         XCTAssertEqual(writer.savedRepoPaths, [])
         XCTAssertEqual(recoveryRequests, ["/tmp/repo"])
-        XCTAssertEqual(model.route, .mainRepoError("/tmp/repo", mapping))
+        guard case .mainLoading(let state) = model.route else {
+            return XCTFail("expected inline main loading error, got \(model.route)")
+        }
+        XCTAssertEqual(state.recoveryErrorMapping, mapping)
+        XCTAssertEqual(state.treeLoading, .failed(mapping))
+        XCTAssertEqual(state.repositoryOpeningErrorMapping, mapping)
+        XCTAssertEqual(state.treeStatusText, "目录加载失败：扫描状态暂不可用")
+    }
+
+    @MainActor
+    func testConfiguredRepoOpenRetryableDbFailureStaysInlineInsteadOfMainRepoError() async {
+        let writer = MainLoadingRecordingSettingsWriter()
+        let mapping = CoreErrorMappingSnapshot.mainLoadingDbFixture(rawContext: "database is locked")
+        let opener = MainLoadingFailingRepositoryOpener(error: CoreError.Db(message: "database is locked"))
+        let model = OnboardingModel(
+            settingsReader: MainLoadingStaticSettingsReader(repoPath: nil),
+            settingsWriter: writer,
+            emptyRepositoryOpener: opener,
+            startupRecoverer: MainLoadingStaticStartupRecoverer(),
+            scanSessionReader: MainLoadingStaticScanSessionReader(result: .success(nil)),
+            errorMapper: MainLoadingRecordingErrorMapper(mapping: mapping),
+            helpOpener: MainLoadingNoopWelcomeHelpOpener()
+        )
+
+        let validation = RepoPathValidationSnapshot.mainLoadingInitializedFixture(repoPath: "/tmp/repo")
+        await model.openExistingRepository(validation)
+
+        let openRequests = await opener.requestedConfiguredRepoPaths()
+        XCTAssertEqual(openRequests, ["/tmp/repo"])
+        XCTAssertEqual(writer.savedRepoPaths, [])
+        XCTAssertEqual(model.mainRepoRecoveryErrorMapping, mapping)
+        guard case .mainLoading(let state) = model.route else {
+            return XCTFail("expected inline main loading error, got \(model.route)")
+        }
+        XCTAssertEqual(state.repoPath, "/tmp/repo")
+        XCTAssertEqual(state.treeLoading, .failed(mapping))
+        XCTAssertEqual(state.repositoryOpeningErrorMapping, mapping)
+    }
+
+    @MainActor
+    func testSavedRepoRetryableDbOpenFailureKeepsLoadedTreeInline() async {
+        let mapping = CoreErrorMappingSnapshot.mainLoadingDbFixture(rawContext: "database is locked")
+        let tree = RepositoryTreeNodeSnapshot.mainLoadingTreeFixture()
+        let opener = MainLoadingFailingRepositoryOpener(error: CoreError.Db(message: "database is locked"))
+        let model = OnboardingModel(
+            settingsReader: MainLoadingStaticSettingsReader(repoPath: "/tmp/repo"),
+            emptyRepositoryOpener: opener,
+            mainLoadingTreeLister: MainLoadingRecordingTreeLister(result: .success(tree)),
+            startupRecoverer: MainLoadingStaticStartupRecoverer(),
+            scanSessionReader: MainLoadingStaticScanSessionReader(result: .success(nil)),
+            errorMapper: MainLoadingRecordingErrorMapper(mapping: mapping),
+            helpOpener: MainLoadingNoopWelcomeHelpOpener()
+        )
+
+        await model.bootstrapIfNeeded()
+
+        let openRequests = await opener.requestedConfiguredRepoPaths()
+        XCTAssertEqual(openRequests, ["/tmp/repo"])
+        XCTAssertEqual(model.mainRepoRecoveryErrorMapping, mapping)
+        guard case .mainLoading(let state) = model.route else {
+            return XCTFail("expected inline main loading error, got \(model.route)")
+        }
+        XCTAssertEqual(state.repoPath, "/tmp/repo")
+        XCTAssertEqual(state.recoveryStatusText, "启动恢复检查完成")
+        XCTAssertEqual(state.repositoryOpeningErrorMapping, mapping)
+        XCTAssertEqual(state.treeRows.map(\.id), ["docs", "docs/contracts"])
+        XCTAssertEqual(state.treeStatusText, "目录已加载：1 个文件")
     }
 
     @MainActor

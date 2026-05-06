@@ -44,7 +44,7 @@ extension OnboardingModel {
         } catch {
             guard openingCancellationToken == cancellationToken else { return }
             await updateMainRepoExternalRemoval(from: error, repoPath: validation.repoPath)
-            route = .mainRepoError(validation.repoPath, await openingFailureMapping(for: error))
+            await routeMainOpeningFailure(error, repoPath: validation.repoPath, cancellationToken: cancellationToken)
         }
     }
 
@@ -67,9 +67,19 @@ extension OnboardingModel {
             await openExistingRepository(validation)
         } catch {
             await updateMainRepoExternalRemoval(from: error, repoPath: repoPath)
-            mainRepoRecoveryErrorMapping = await openingFailureMapping(for: error)
-            route = .mainRepoError(repoPath, mainRepoRecoveryErrorMapping)
+            await routeMainOpeningFailure(error, repoPath: repoPath)
         }
+    }
+
+    @MainActor
+    func openMainRepositoryRepair(repoPath: String) {
+        let routeMapping: CoreErrorMappingSnapshot?
+        if case .mainRepoError(let errorRepoPath, let mapping) = route, errorRepoPath == repoPath {
+            routeMapping = mapping
+        } else { routeMapping = nil }
+        let mapping = mainRepoRecoveryErrorMapping ?? routeMapping
+        mainRepoRecoveryErrorMapping = nil
+        route = .dbRepairConfirm(repoPath, nil, mapping)
     }
 
     @MainActor
@@ -235,7 +245,8 @@ extension OnboardingModel {
             startupRecovery: currentState.startupRecovery,
             scanSession: scanSession,
             scanSessionErrorMapping: scanSessionErrorMapping,
-            treeLoading: treeLoading
+            treeLoading: treeLoading,
+            repositoryOpeningErrorMapping: currentState.repositoryOpeningErrorMapping
         ))
     }
 
@@ -469,5 +480,21 @@ extension OnboardingModel {
         }
 
         return await errorMapper.mapCoreError(CoreError.Internal(message: error.localizedDescription))
+    }
+
+    @MainActor
+    func routeMainOpeningFailure(_ error: Error, repoPath: String, cancellationToken: UUID? = nil) async {
+        let mapping = await openingFailureMapping(for: error)
+        guard cancellationToken == nil || openingCancellationToken == cancellationToken else { return }
+        mainRepoRecoveryErrorMapping = mapping
+        if mapping.usesInlineRepositoryOpeningError {
+            var state = MainLoadingState(repoPath: repoPath)
+            if case .mainLoading(let currentState) = route, currentState.repoPath == repoPath {
+                state = currentState
+            }
+            route = .mainLoading(state.withRepositoryOpeningError(mapping))
+            return
+        }
+        route = .mainRepoError(repoPath, mapping)
     }
 }

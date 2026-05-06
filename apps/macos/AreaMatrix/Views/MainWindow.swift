@@ -189,6 +189,11 @@ struct MainWindow: View {
                     Task {
                         await model.retryMainLoadingTree()
                     }
+                },
+                onRetryOpening: {
+                    Task {
+                        await model.retryMainRepositoryFromError(repoPath: state.repoPath)
+                    }
                 }
             )
         case .mainRepoError(let repoPath, let mapping):
@@ -203,6 +208,9 @@ struct MainWindow: View {
                     Task {
                         await model.retryMainRepositoryFromError(repoPath: repoPath)
                     }
+                },
+                onOpenRepair: {
+                    model.openMainRepositoryRepair(repoPath: repoPath)
                 },
                 onConfirmExternalRemoval: {
                     Task {

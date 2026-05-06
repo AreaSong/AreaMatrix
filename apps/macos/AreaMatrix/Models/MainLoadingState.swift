@@ -23,19 +23,22 @@ struct MainLoadingState: Equatable, Sendable {
     var scanSession: ScanSessionSnapshot?
     var scanSessionErrorMapping: CoreErrorMappingSnapshot?
     var treeLoading: MainLoadingTreeState?
+    var repositoryOpeningErrorMapping: CoreErrorMappingSnapshot?
 
     init(
         repoPath: String,
         startupRecovery: MainLoadingRecoveryState? = nil,
         scanSession: ScanSessionSnapshot? = nil,
         scanSessionErrorMapping: CoreErrorMappingSnapshot? = nil,
-        treeLoading: MainLoadingTreeState? = nil
+        treeLoading: MainLoadingTreeState? = nil,
+        repositoryOpeningErrorMapping: CoreErrorMappingSnapshot? = nil
     ) {
         self.repoPath = repoPath
         self.startupRecovery = startupRecovery
         self.scanSession = scanSession
         self.scanSessionErrorMapping = scanSessionErrorMapping
         self.treeLoading = treeLoading
+        self.repositoryOpeningErrorMapping = repositoryOpeningErrorMapping
     }
 
     var scanStatusText: String? {
@@ -124,6 +127,17 @@ struct MainLoadingState: Equatable, Sendable {
         treeLoading?.loadedTree?.sidebarRows ?? []
     }
 
+    var repositoryOpeningErrorText: String? {
+        repositoryOpeningErrorMapping.map { "资料库暂时不可用：\($0.userMessage)" }
+    }
+
+    func withRepositoryOpeningError(_ mapping: CoreErrorMappingSnapshot) -> MainLoadingState {
+        var state = self
+        if state.treeLoading == nil { state.treeLoading = .failed(mapping) }
+        state.repositoryOpeningErrorMapping = mapping
+        return state
+    }
+
     var accessibilityStatusText: String {
         [
             "Opening repository",
@@ -133,6 +147,7 @@ struct MainLoadingState: Equatable, Sendable {
             scanProgressText,
             scanCurrentPathText,
             treeStatusText,
+            repositoryOpeningErrorText,
         ].compactMap { $0 }.joined(separator: "。")
     }
 

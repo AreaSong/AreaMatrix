@@ -198,6 +198,32 @@ actor MainLoadingPausingRepositoryOpener: CoreEmptyRepositoryOpening {
     }
 }
 
+actor MainLoadingFailingRepositoryOpener: CoreEmptyRepositoryOpening {
+    private let error: Error
+    private var configuredPaths: [String] = []
+
+    init(error: Error) {
+        self.error = error
+    }
+
+    func openConfiguredRepository(repoPath: String) async throws -> RepositoryOpeningResult {
+        configuredPaths.append(repoPath)
+        throw error
+    }
+
+    func openEmptyRepository(repoPath: String) async throws -> RepositoryOpeningResult {
+        try await openConfiguredRepository(repoPath: repoPath)
+    }
+
+    func openAdoptedRepository(repoPath: String) async throws -> RepositoryOpeningResult {
+        try await openConfiguredRepository(repoPath: repoPath)
+    }
+
+    func requestedConfiguredRepoPaths() -> [String] {
+        configuredPaths
+    }
+}
+
 final class MainLoadingRecordingSettingsWriter: AppSettingsWriting {
     private(set) var savedRepoPaths: [String] = []
 
