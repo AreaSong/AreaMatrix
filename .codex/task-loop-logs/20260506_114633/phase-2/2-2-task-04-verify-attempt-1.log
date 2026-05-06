@@ -1,0 +1,66 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`2-2/task-04`
+- 对应文件路径：`tasks/prompts/phase-2/2-2-import-conflict/task-04-s1-17-c1-07-import-move-file.md`
+- 验收代码范围：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`apps/macos/AreaMatrix.xcodeproj/project.pbxproj`、`core/area_matrix.udl`
+- 禁止触碰范围：`core/src/**`
+
+三、完成度摘要
+
+- 已覆盖项数：4/4 task 核对清单，3/3 完成标准
+- 未覆盖项数：0
+- 通过项数：7
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 S1-17 页面中的 C1-07 功能点
+- 结果：通过
+- 证据：S1-17 control map 声明 C1-07 属于 `import-single-sheet` 且为 Real Core；实现只新增 Move 模式路径，未实现 Index-only 或相邻页面。`ImportSingleFileStorageMode` 只有 `copy/move`，Move 文案明确源文件会移走。
+- 涉及文件：`docs/architecture/mvp-control-map.md:31-32`，`apps/macos/AreaMatrix/Models/ImportSingleFilePreviewModel.swift:68-80`
+
+- 项目：读取并对齐页面规格、MVP control map、Core API、C1-07 能力规格
+- 结果：通过
+- 证据：S1-17 要求 Copy/Move/Index-only 选择和 Move 源文件移走说明；C1-07 要求 `ImportOptions.mode = Moved`、成功后源路径不存在、最终路径存在；Core API/UDL 均提供 `import_file`、`ImportOptions.mode`、`StorageMode.Moved`。
+- 涉及文件：`docs/ux/page-specs/stage-1-mvp/S1-17-import-single-sheet.md:52-56`，`docs/core/capability-specs/stage-1-mvp/C1-07-import-move-file.md:10-48`，`docs/api/core-api.md:159-166`，`core/area_matrix.udl:43-46`
+
+- 项目：只接入 C1-07 对应 CoreBridge / 状态 / 错误映射
+- 结果：通过
+- 证据：`CoreBridge.importMovedFile` 通过 `Task.detached` 调真实 `AreaMatrix.importFile`，传入 `.moved`；model 在选择 Move 后调用 `importMovedFile`，错误通过 `CoreErrorMapping` 映射，不用字符串分支或静态成功态。
+- 涉及文件：`apps/macos/AreaMatrix/Bridge/CoreImporting.swift:35-69`，`apps/macos/AreaMatrix/Models/ImportSingleFilePreviewModel.swift:181-202`，`apps/macos/AreaMatrix/Models/ImportSingleFilePreviewModel.swift:233-262`
+
+- 项目：不顺手实现相邻页面
+- 结果：通过
+- 证据：本次变更集中在 S1-17 sheet、CoreBridge import wrapper、单文件导入 model/tests；未发现 `S1-20/S1-21/S1-26` 页面实现扩散。
+- 涉及文件：`apps/macos/AreaMatrix/Views/Main/ImportEntrySheetView.swift:46-56`，`apps/macos/AreaMatrix/Views/Main/ImportSingleFileSheetSections.swift:3-20`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。Move 被收敛为 `CoreFileImporting.importMovedFile` + model storage-mode switch，未引入复杂抽象。
+- 注释 / rustdoc / 文档同步：通过。当前是 Swift UI/CoreBridge 接入，无新增 public Rust API；UDL/API 已有 `Moved` 合同。
+- 错误处理与边界处理：通过。导入失败映射到 `CoreErrorMappingSnapshot`；测试覆盖 `PermissionDenied` 失败路径。
+- 测试与验证覆盖：通过。新增单测覆盖 Move 请求参数、错误映射、真实 CoreBridge move 后源文件消失和目标文件存在。
+- 占位、硬编码、mock-only、一次性实现检查：通过。model 单测使用 recording double，但另有真实 `CoreBridge` 测试走 Core 导入闭环，不以 mock-only 作为完成证据。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：通过，`** BUILD SUCCEEDED **`
+- 已运行：`./dev test macos`：通过；标准 `xcodebuild test` 被本地 `testmanagerd` sandbox 限制阻断后，按仓库规则 fallback 到 `xcrun xctest`，153 tests、0 failures
+- 已运行：`git diff --check -- <task files>`：通过，无 whitespace error
+- 已运行：`git diff --name-only -- core/src`：无输出，未发现 Forbidden Touches
+- 未运行：`swiftlint --strict`、`swiftformat --lint .`；当前环境 `command -v swiftlint` / `command -v swiftformat` 均无可执行文件
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。S1-17 的 C1-07 Move 导入已可由用户选择并触发真实 CoreBridge 闭环，验证证明成功路径会移走源文件并生成 repo 内最终文件，失败路径不会伪造成功态。
+
+VERIFY_RESULT: PASS

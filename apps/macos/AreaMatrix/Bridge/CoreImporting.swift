@@ -7,6 +7,13 @@ protocol CoreFileImporting: Sendable {
         overrideCategory: String,
         overrideFilename: String
     ) async throws -> FileEntrySnapshot
+
+    func importMovedFile(
+        repoPath: String,
+        sourceURL: URL,
+        overrideCategory: String,
+        overrideFilename: String
+    ) async throws -> FileEntrySnapshot
 }
 
 extension CoreBridge: CoreFileImporting {
@@ -16,8 +23,39 @@ extension CoreBridge: CoreFileImporting {
         overrideCategory: String,
         overrideFilename: String
     ) async throws -> FileEntrySnapshot {
-        let options = ImportOptions(
+        try await importFile(
+            repoPath: repoPath,
+            sourceURL: sourceURL,
             mode: .copied,
+            overrideCategory: overrideCategory,
+            overrideFilename: overrideFilename
+        )
+    }
+
+    func importMovedFile(
+        repoPath: String,
+        sourceURL: URL,
+        overrideCategory: String,
+        overrideFilename: String
+    ) async throws -> FileEntrySnapshot {
+        try await importFile(
+            repoPath: repoPath,
+            sourceURL: sourceURL,
+            mode: .moved,
+            overrideCategory: overrideCategory,
+            overrideFilename: overrideFilename
+        )
+    }
+
+    private func importFile(
+        repoPath: String,
+        sourceURL: URL,
+        mode: StorageMode,
+        overrideCategory: String,
+        overrideFilename: String
+    ) async throws -> FileEntrySnapshot {
+        let options = ImportOptions(
+            mode: mode,
             destination: .autoClassify,
             targetDirectory: nil,
             overrideCategory: overrideCategory,

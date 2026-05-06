@@ -76,6 +76,7 @@
 		0A000000000000000000016E /* ImportSingleFilePreviewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000016F /* ImportSingleFilePreviewModelTests.swift */; };
 		0A0000000000000000000170 /* CoreImporting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000171 /* CoreImporting.swift */; };
 		0A0000000000000000000172 /* ImportSingleFileSheetSections.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000173 /* ImportSingleFileSheetSections.swift */; };
+		0A0000000000000000000174 /* ImportSingleFileMoveImportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000175 /* ImportSingleFileMoveImportTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -164,6 +165,7 @@
 		0A000000000000000000016F /* ImportSingleFilePreviewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportSingleFilePreviewModelTests.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000171 /* CoreImporting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/CoreImporting.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000173 /* ImportSingleFileSheetSections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/ImportSingleFileSheetSections.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000175 /* ImportSingleFileMoveImportTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportSingleFileMoveImportTests.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -331,6 +333,7 @@
 				0A000000000000000000012B /* MainEmptyImportEntryTests.swift */,
 				0A000000000000000000016B /* ImportDropPreviewModelTests.swift */,
 				0A000000000000000000016F /* ImportSingleFilePreviewModelTests.swift */,
+				0A0000000000000000000175 /* ImportSingleFileMoveImportTests.swift */,
 				0A0000000000000000000133 /* MainListFilesTests.swift */,
 				0A0000000000000000000137 /* MainListIntegrationFilterTests.swift */,
 				0A0000000000000000000139 /* MainListIntegrationClosureTests.swift */,
@@ -530,6 +533,7 @@
 				0A000000000000000000012A /* MainEmptyImportEntryTests.swift in Sources */,
 				0A000000000000000000016A /* ImportDropPreviewModelTests.swift in Sources */,
 				0A000000000000000000016E /* ImportSingleFilePreviewModelTests.swift in Sources */,
+				0A0000000000000000000174 /* ImportSingleFileMoveImportTests.swift in Sources */,
 				0A0000000000000000000132 /* MainListFilesTests.swift in Sources */,
 				0A0000000000000000000136 /* MainListIntegrationFilterTests.swift in Sources */,
 				0A0000000000000000000138 /* MainListIntegrationClosureTests.swift in Sources */,

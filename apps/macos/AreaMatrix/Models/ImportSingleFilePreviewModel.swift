@@ -39,7 +39,7 @@ enum ImportSingleFilePreviewStatus: Equatable, Sendable {
 
 enum ImportSingleFileImportStatus: Equatable, Sendable {
     case idle
-    case importing
+    case importing(ImportSingleFileStorageMode)
     case imported(FileEntrySnapshot)
     case failed(CoreErrorMappingSnapshot)
     case blocked(String)
@@ -53,14 +53,48 @@ enum ImportSingleFileImportStatus: Equatable, Sendable {
         switch self {
         case .idle:
             return nil
-        case .importing:
-            return "正在复制导入..."
+        case .importing(let mode):
+            return mode.importingMessage
         case .imported(let entry):
             return "已导入：\(entry.currentName)"
         case .failed(let mapping):
             return mapping.userMessage
         case .blocked(let message):
             return message
+        }
+    }
+}
+
+enum ImportSingleFileStorageMode: String, CaseIterable, Equatable, Identifiable, Sendable {
+    case copy = "Copy"
+    case move = "Move"
+
+    var id: String { rawValue }
+
+    var explanation: String {
+        switch self {
+        case .copy:
+            return "保留原文件，复制到 AreaMatrix 资料库。"
+        case .move:
+            return "源文件会从原位置移走，并安全写入 AreaMatrix 资料库。"
+        }
+    }
+
+    var importingMessage: String {
+        switch self {
+        case .copy:
+            return "正在复制导入..."
+        case .move:
+            return "正在移动导入..."
+        }
+    }
+
+    var importingBlockingMessage: String {
+        switch self {
+        case .copy:
+            return "正在复制导入"
+        case .move:
+            return "正在移动导入"
         }
     }
 }
@@ -73,6 +107,7 @@ final class ImportSingleFilePreviewModel: ObservableObject {
     @Published private(set) var importStatus: ImportSingleFileImportStatus = .idle
     @Published var selectedCategory = "inbox"
     @Published var suggestedName = ""
+    @Published var selectedStorageMode: ImportSingleFileStorageMode = .copy
 
     private let predictor: any CoreCategoryPredicting
     private let importer: any CoreFileImporting
@@ -95,11 +130,11 @@ final class ImportSingleFilePreviewModel: ObservableObject {
         return "\(prediction.reason.displayLabel) · \(prediction.confidencePercent)%"
     }
 
-    var copyImportDisabledReason: String? {
+    var importDisabledReason: String? {
         if importStatus.isImporting {
-            return "正在复制导入"
+            return importStatus.blockingMessage ?? "正在导入"
         }
-        if !isReadyForCopyImport {
+        if !isReadyForImport {
             return status.message ?? "导入预检未完成"
         }
         if selectedCategory.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
@@ -125,6 +160,7 @@ final class ImportSingleFilePreviewModel: ObservableObject {
         source = ImportSingleFileSource(url: sourceURL)
         prediction = nil
         status = .loading
+        selectedStorageMode = .copy
         selectedCategory = request.explicitCategory ?? "inbox"
         suggestedName = sourceURL.lastPathComponent
 
@@ -142,19 +178,19 @@ final class ImportSingleFilePreviewModel: ObservableObject {
         }
     }
 
-    func importCopy() async {
+    func importSelectedFile() async {
         guard let request, let sourceURL = request.urls.first else {
             importStatus = .blocked("没有可导入的单文件来源")
             return
         }
-        if let disabledReason = copyImportDisabledReason {
+        if let disabledReason = importDisabledReason {
             importStatus = .blocked(disabledReason)
             return
         }
 
-        importStatus = .importing
+        importStatus = .importing(selectedStorageMode)
         do {
-            let entry = try await importer.importCopiedFile(
+            let entry = try await importFile(
                 repoPath: request.repoPath,
                 sourceURL: sourceURL,
                 overrideCategory: selectedCategory.trimmingCharacters(in: .whitespacesAndNewlines),
@@ -171,6 +207,7 @@ final class ImportSingleFilePreviewModel: ObservableObject {
         prediction = nil
         selectedCategory = "inbox"
         suggestedName = ""
+        selectedStorageMode = .copy
         status = .unsupported(message)
         importStatus = .idle
     }
@@ -188,9 +225,33 @@ final class ImportSingleFilePreviewModel: ObservableObject {
         status = .ready
     }
 
-    private var isReadyForCopyImport: Bool {
+    private var isReadyForImport: Bool {
         guard case .ready = status else { return false }
         return true
+    }
+
+    private func importFile(
+        repoPath: String,
+        sourceURL: URL,
+        overrideCategory: String,
+        overrideFilename: String
+    ) async throws -> FileEntrySnapshot {
+        switch selectedStorageMode {
+        case .copy:
+            return try await importer.importCopiedFile(
+                repoPath: repoPath,
+                sourceURL: sourceURL,
+                overrideCategory: overrideCategory,
+                overrideFilename: overrideFilename
+            )
+        case .move:
+            return try await importer.importMovedFile(
+                repoPath: repoPath,
+                sourceURL: sourceURL,
+                overrideCategory: overrideCategory,
+                overrideFilename: overrideFilename
+            )
+        }
     }
 
     private func mapImportError(_ error: Error) async -> CoreErrorMappingSnapshot {
@@ -213,6 +274,13 @@ final class ImportSingleFilePreviewModel: ObservableObject {
         default:
             return "无法预览分类"
         }
+    }
+}
+
+private extension ImportSingleFileImportStatus {
+    var blockingMessage: String? {
+        guard case .importing(let mode) = self else { return nil }
+        return mode.importingBlockingMessage
     }
 }
 

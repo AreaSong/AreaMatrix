@@ -1,21 +1,25 @@
 import SwiftUI
 
-struct ImportCopyStorageModeSection: View {
+struct ImportSingleFileStorageModeSection: View {
+    @Binding var selectedMode: ImportSingleFileStorageMode
+
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Picker("存储模式", selection: .constant("Copy")) {
-                Text("Copy").tag("Copy")
+            Picker("存储模式", selection: $selectedMode) {
+                ForEach(ImportSingleFileStorageMode.allCases) { mode in
+                    Text(mode.rawValue).tag(mode)
+                }
             }
             .pickerStyle(.segmented)
-            .frame(maxWidth: 220)
-            Text("保留原文件，复制到 AreaMatrix 资料库。")
+            .frame(maxWidth: 260)
+            Text(selectedMode.explanation)
                 .font(.callout)
                 .foregroundStyle(.secondary)
         }
     }
 }
 
-struct ImportCopyStatusSection: View {
+struct ImportSingleFileImportStatusSection: View {
     let status: ImportSingleFileImportStatus
     let disabledReason: String?
 
@@ -25,7 +29,7 @@ struct ImportCopyStatusSection: View {
                 HStack(spacing: 8) {
                     ProgressView()
                         .controlSize(.small)
-                    Text(status.message ?? "正在复制导入...")
+                    Text(status.message ?? "正在导入...")
                 }
                 .font(.callout)
                 .foregroundStyle(.secondary)

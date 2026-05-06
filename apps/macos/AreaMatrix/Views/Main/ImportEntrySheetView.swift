@@ -47,11 +47,11 @@ struct ImportEntrySheetView: View {
         VStack(alignment: .leading, spacing: 12) {
             fileInformation
             classifyControls
-            ImportCopyStorageModeSection()
+            ImportSingleFileStorageModeSection(selectedMode: $previewModel.selectedStorageMode)
             previewStatus
-            ImportCopyStatusSection(
+            ImportSingleFileImportStatusSection(
                 status: previewModel.importStatus,
-                disabledReason: previewModel.copyImportDisabledReason
+                disabledReason: previewModel.importDisabledReason
             )
         }
     }
@@ -124,11 +124,11 @@ struct ImportEntrySheetView: View {
             if request.kind == .singleFile {
                 Button("Import") {
                     Task {
-                        await previewModel.importCopy()
+                        await previewModel.importSelectedFile()
                     }
                 }
                 .keyboardShortcut(.defaultAction)
-                .disabled(previewModel.copyImportDisabledReason != nil)
+                .disabled(previewModel.importDisabledReason != nil)
             }
         }
     }

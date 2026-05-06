@@ -35,6 +35,7 @@ final class ImportSingleFilePreviewModelTests: XCTestCase {
         XCTAssertEqual(model.source?.fileName, "合同.pdf")
         XCTAssertEqual(model.selectedCategory, "docs")
         XCTAssertEqual(model.suggestedName, "2026Q1_合同_客户A.pdf")
+        XCTAssertEqual(model.selectedStorageMode, .copy)
         XCTAssertEqual(model.reasonSummary, "keyword · 93%")
         XCTAssertEqual(model.status, .ready)
     }
@@ -155,13 +156,14 @@ final class ImportSingleFilePreviewModelTests: XCTestCase {
         await model.load(request: request)
         model.selectedCategory = " legal "
         model.suggestedName = " contract.pdf "
-        await model.importCopy()
+        await model.importSelectedFile()
         let requests = await importer.recordedRequests()
 
         XCTAssertEqual(requests, [
             ImportSingleFileImportRequest(
                 repoPath: "/tmp/repo",
                 sourceURL: sourceURL,
+                storageMode: .copy,
                 overrideCategory: "legal",
                 overrideFilename: "contract.pdf"
             ),
@@ -197,7 +199,7 @@ final class ImportSingleFilePreviewModelTests: XCTestCase {
         )
 
         await model.load(request: request)
-        await model.importCopy()
+        await model.importSelectedFile()
         let mappedErrors = await errorMapper.recordedErrors()
 
         XCTAssertEqual(mappedErrors, [CoreError.DuplicateFile(existingPath: "docs/source.pdf")])
@@ -208,7 +210,7 @@ final class ImportSingleFilePreviewModelTests: XCTestCase {
     }
 
     @MainActor
-    func testCopyImportRequiresCompletedPreview() async {
+    func testImportRequiresCompletedPreview() async {
         let importer = ImportSingleFileRecordingImporter(results: [])
         let model = ImportSingleFilePreviewModel(
             predictor: ImportSingleFileRecordingPredictor(results: []),
@@ -216,7 +218,7 @@ final class ImportSingleFilePreviewModelTests: XCTestCase {
             errorMapper: ImportSingleFileRecordingErrorMapper()
         )
 
-        await model.importCopy()
+        await model.importSelectedFile()
         let requests = await importer.recordedRequests()
 
         XCTAssertEqual(requests, [])
@@ -249,6 +251,7 @@ final class ImportSingleFilePreviewModelTests: XCTestCase {
         XCTAssertEqual(entry.storageMode, "Copied")
         XCTAssertTrue(FileManager.default.fileExists(atPath: repoURL.appendingPathComponent(entry.path).path))
     }
+
 }
 
 private struct ImportSingleFilePredictRequest: Equatable, Sendable {
@@ -259,6 +262,7 @@ private struct ImportSingleFilePredictRequest: Equatable, Sendable {
 private struct ImportSingleFileImportRequest: Equatable, Sendable {
     var repoPath: String
     var sourceURL: URL
+    var storageMode: ImportSingleFileStorageMode
     var overrideCategory: String
     var overrideFilename: String
 }
@@ -304,9 +308,41 @@ private actor ImportSingleFileRecordingImporter: CoreFileImporting {
         overrideCategory: String,
         overrideFilename: String
     ) async throws -> FileEntrySnapshot {
+        try recordImport(
+            repoPath: repoPath,
+            sourceURL: sourceURL,
+            storageMode: .copy,
+            overrideCategory: overrideCategory,
+            overrideFilename: overrideFilename
+        )
+    }
+
+    func importMovedFile(
+        repoPath: String,
+        sourceURL: URL,
+        overrideCategory: String,
+        overrideFilename: String
+    ) async throws -> FileEntrySnapshot {
+        try recordImport(
+            repoPath: repoPath,
+            sourceURL: sourceURL,
+            storageMode: .move,
+            overrideCategory: overrideCategory,
+            overrideFilename: overrideFilename
+        )
+    }
+
+    private func recordImport(
+        repoPath: String,
+        sourceURL: URL,
+        storageMode: ImportSingleFileStorageMode,
+        overrideCategory: String,
+        overrideFilename: String
+    ) throws -> FileEntrySnapshot {
         requests.append(ImportSingleFileImportRequest(
             repoPath: repoPath,
             sourceURL: sourceURL,
+            storageMode: storageMode,
             overrideCategory: overrideCategory,
             overrideFilename: overrideFilename
         ))
@@ -359,7 +395,11 @@ private actor ImportSingleFileRecordingErrorMapper: CoreErrorMapping {
 }
 
 private extension FileEntrySnapshot {
-    static func importSingleFileFixture(currentName: String, category: String) -> FileEntrySnapshot {
+    static func importSingleFileFixture(
+        currentName: String,
+        category: String,
+        storageMode: String = "Copied"
+    ) -> FileEntrySnapshot {
         FileEntrySnapshot(
             id: 42,
             path: "\(category)/\(currentName)",
@@ -368,7 +408,7 @@ private extension FileEntrySnapshot {
             category: category,
             sizeBytes: 12,
             hashSha256: "hash",
-            storageMode: "Copied",
+            storageMode: storageMode,
             origin: "Imported",
             sourcePath: "/tmp/source.pdf",
             importedAt: 1_700_000_000,

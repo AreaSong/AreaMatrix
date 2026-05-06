@@ -1,0 +1,41 @@
+一、执行结论
+
+已完成 `2-2/task-04`。
+
+二、执行范围
+
+单任务：S1-17 import-single-sheet 的 C1-07 `import-move-file`。
+
+修改文件：
+- [CoreImporting.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreImporting.swift)
+- [ImportSingleFilePreviewModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreviewModel.swift)
+- [ImportEntrySheetView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportEntrySheetView.swift)
+- [ImportSingleFileSheetSections.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportSingleFileSheetSections.swift)
+- [ImportSingleFilePreviewModelTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFilePreviewModelTests.swift)
+- [ImportSingleFileMoveImportTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFileMoveImportTests.swift)
+- [project.pbxproj](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj)
+
+三、完成情况
+
+核对清单通过：只处理 S1-17 + C1-07；已读取 UX spec、control map、Core API、C1-07 spec；只接入 `CoreBridge` 的 `import_file(... mode: .moved ...)`、状态与错误映射；未实现相邻页面或 Index-only/Replace 等其他能力。
+
+完成标准通过：S1-17 的存储模式现在可选 `Move`，点击 `Import` 会走真实 CoreBridge/UniFFI `importFile`，使用 `StorageMode.moved`；未使用 mock 伪造产品闭环；未触碰 control map 外能力。
+
+Forbidden Touches：未触碰 `core/src/**`。当前 worktree 里已有 task-loop 的 `.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json` 修改，我未改它们。
+
+四、工程质量
+
+结构保持在 macOS 层：View 只负责选择和触发，`ImportSingleFilePreviewModel` 管状态，`CoreImporting` 统一构造 `ImportOptions`。错误继续走 `CoreErrorMapping`，Move 失败不会写静态成功态。新增 XCTest 覆盖 Move UI 状态路由、错误映射、真实 CoreBridge move 后源文件消失且目标文件存在。
+
+五、验证情况
+
+已通过：
+- `xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+- `./dev test macos`
+
+说明：`./dev test macos` 中标准 `xcodebuild test` 被本地 sandbox 的 `testmanagerd` 通信限制阻断，脚本按仓库规则复用同一 XCTest bundle 运行 `xcrun xctest`，最终 `153 tests, 0 failures`。`git diff --check` 通过。
+
+六、风险与后续
+
+剩余风险：本 task 只覆盖 C1-07 Move；同页 C1-08 Index-only、冲突/Replace、iCloud placeholder 等仍由后续 page-feature 或 page integration verify 覆盖。建议下一个任务继续 `2-2/task-05`，实现 S1-17 + C1-08 Index-only。
+
