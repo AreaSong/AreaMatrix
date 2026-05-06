@@ -305,6 +305,93 @@ final class ImportFolderPreviewModelTests: XCTestCase {
     }
 
     @MainActor
+    func testS119FolderIndexOnlyImportCallsC108ImporterForReadyRows() async {
+        let sourceURL = URL(fileURLWithPath: "/tmp/reference.pdf")
+        let scanner = S119StaticFolderScanner(result: ImportFolderScanResult(
+            rows: [ImportFolderPreviewRow.loading(
+                fileURL: sourceURL,
+                rootURL: URL(fileURLWithPath: "/tmp", isDirectory: true)
+            )],
+            folderCount: 0,
+            skippedRules: [],
+            errors: []
+        ))
+        let predictor = S119RecordingPredictor(results: [
+            .success(ClassifyResultSnapshot(
+                category: "finance",
+                suggestedName: "indexed-reference.pdf",
+                reason: .keyword,
+                confidence: 0.9
+            )),
+        ])
+        let importer = S118RecordingBatchImporter()
+        let model = ImportFolderPreviewModel(
+            predictor: predictor,
+            importer: importer,
+            errorMapper: S117RecordingErrorMapper(),
+            scanner: scanner
+        )
+
+        await model.load(request: s119FolderRequest(rootURL: URL(fileURLWithPath: "/tmp", isDirectory: true)))
+        model.selectedStorageMode = .indexOnly
+        let outcome = await model.importReadyFiles()
+        let recordedRequests = await importer.recordedRequests()
+
+        XCTAssertEqual(recordedRequests, [
+            S118BatchImportRequest(
+                storageMode: .indexOnly,
+                destination: .autoClassify,
+                suggestedCategory: "finance",
+                overrideFilename: "indexed-reference.pdf",
+                duplicateStrategy: .ask
+            ),
+        ])
+        XCTAssertEqual(outcome?.succeededEntries.first?.storageMode, "Indexed")
+        XCTAssertEqual(model.rows.first?.status.detail, "已写入索引")
+    }
+
+    @MainActor
+    func testS119FolderImportDisablesMoveWithoutCallingImporter() async {
+        let sourceURL = URL(fileURLWithPath: "/tmp/move-later.pdf")
+        let scanner = S119StaticFolderScanner(result: ImportFolderScanResult(
+            rows: [ImportFolderPreviewRow.loading(
+                fileURL: sourceURL,
+                rootURL: URL(fileURLWithPath: "/tmp", isDirectory: true)
+            )],
+            folderCount: 0,
+            skippedRules: [],
+            errors: []
+        ))
+        let predictor = S119RecordingPredictor(results: [
+            .success(ClassifyResultSnapshot(
+                category: "docs",
+                suggestedName: "move-later.pdf",
+                reason: .extension,
+                confidence: 0.7
+            )),
+        ])
+        let importer = S118RecordingBatchImporter()
+        let model = ImportFolderPreviewModel(
+            predictor: predictor,
+            importer: importer,
+            errorMapper: S117RecordingErrorMapper(),
+            scanner: scanner
+        )
+
+        await model.load(request: s119FolderRequest(rootURL: URL(fileURLWithPath: "/tmp", isDirectory: true)))
+        model.selectedStorageMode = .move
+        let outcome = await model.importReadyFiles()
+        let recordedRequests = await importer.recordedRequests()
+
+        XCTAssertNil(outcome)
+        XCTAssertEqual(
+            model.importDisabledReason,
+            "文件夹导入当前只接入 Copy / Index-only；Move 属于 C1-07 后续能力"
+        )
+        XCTAssertEqual(recordedRequests, [])
+    }
+
+    @MainActor
     func testDefaultCoreBridgeFolderCopyImportKeepsSourceAndCreatesRepoCopy() async throws {
         let repoURL = try makeImportFolderTemporaryDirectory()
         let sourceRoot = try makeImportFolderTemporaryDirectory()
@@ -333,90 +420,37 @@ final class ImportFolderPreviewModelTests: XCTestCase {
         XCTAssertEqual(try Data(contentsOf: sourceURL), sourceBefore)
         XCTAssertTrue(FileManager.default.fileExists(atPath: repoURL.appendingPathComponent(entry.path).path))
     }
-}
 
-private struct S119PredictRequest: Equatable, Sendable {
-    var repoPath: String
-    var filename: String
-}
-
-private actor S119RecordingPredictor: CoreCategoryPredicting {
-    private var results: [Result<ClassifyResultSnapshot, Error>]
-    private var requests: [S119PredictRequest] = []
-
-    init(results: [Result<ClassifyResultSnapshot, Error>]) {
-        self.results = results
-    }
-
-    func predictCategory(repoPath: String, filename: String) async throws -> ClassifyResultSnapshot {
-        requests.append(S119PredictRequest(repoPath: repoPath, filename: filename))
-        guard !results.isEmpty else {
-            throw CoreError.Classify(reason: "missing test result")
+    @MainActor
+    func testDefaultCoreBridgeFolderIndexOnlyImportKeepsSourceWithoutRepoCopy() async throws {
+        let repoURL = try makeImportFolderTemporaryDirectory()
+        let sourceRoot = try makeImportFolderTemporaryDirectory()
+        defer {
+            try? FileManager.default.removeItem(at: repoURL)
+            try? FileManager.default.removeItem(at: sourceRoot)
         }
-        switch results.removeFirst() {
-        case .success(let snapshot):
-            return snapshot
-        case .failure(let error):
-            throw error
-        }
+
+        let sourceURL = sourceRoot.appendingPathComponent("reference.pdf")
+        try Data("reference bytes".utf8).write(to: sourceURL)
+        let sourceBefore = try Data(contentsOf: sourceURL)
+        let bridge = CoreBridge()
+
+        try await bridge.initializeEmptyRepository(repoPath: repoURL.path)
+        let entry = try await bridge.importBatchFile(
+            repoPath: repoURL.path,
+            sourceURL: sourceURL,
+            storageMode: .indexOnly,
+            destination: .autoClassify,
+            suggestedCategory: "docs",
+            overrideFilename: "reference-index.pdf",
+            duplicateStrategy: .ask
+        )
+
+        XCTAssertEqual(try Data(contentsOf: sourceURL), sourceBefore)
+        XCTAssertEqual(entry.currentName, "reference-index.pdf")
+        XCTAssertEqual(entry.category, "docs")
+        XCTAssertEqual(entry.storageMode, "Indexed")
+        XCTAssertEqual(entry.sourcePath, sourceURL.path)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: repoURL.appendingPathComponent(entry.path).path))
     }
-
-    func recordedRequests() -> [S119PredictRequest] {
-        requests
-    }
-}
-
-private actor S119MappedPredictor: CoreCategoryPredicting {
-    private let resultsByFilename: [String: Result<ClassifyResultSnapshot, Error>]
-    private var requests: [S119PredictRequest] = []
-
-    init(resultsByFilename: [String: Result<ClassifyResultSnapshot, Error>]) {
-        self.resultsByFilename = resultsByFilename
-    }
-
-    func predictCategory(repoPath: String, filename: String) async throws -> ClassifyResultSnapshot {
-        requests.append(S119PredictRequest(repoPath: repoPath, filename: filename))
-        guard let result = resultsByFilename[filename] else {
-            throw CoreError.Classify(reason: "missing test result")
-        }
-        switch result {
-        case .success(let snapshot):
-            return snapshot
-        case .failure(let error):
-            throw error
-        }
-    }
-
-    func recordedRequests() -> [S119PredictRequest] {
-        requests
-    }
-}
-
-private struct S119StaticFolderScanner: ImportFolderScanning {
-    var result: ImportFolderScanResult
-
-    func scanFolder(rootURL: URL, includeHiddenFiles: Bool, followSymlinks: Bool) async -> ImportFolderScanResult {
-        result
-    }
-}
-
-private func s119FolderRequest(
-    rootURL: URL,
-    destination: ImportEntryDestination = .autoClassify
-) -> ImportEntryRequest {
-    ImportEntryRequest(
-        repoPath: "/tmp/repo",
-        source: .dropZone,
-        destination: destination,
-        urls: [rootURL],
-        kind: .folder,
-        availableCategories: ["inbox", "docs", "finance"]
-    )
-}
-
-private func makeImportFolderTemporaryDirectory() throws -> URL {
-    let url = FileManager.default.temporaryDirectory
-        .appendingPathComponent("AreaMatrixImportFolderTests-\(UUID().uuidString)", isDirectory: true)
-    try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
-    return url
 }

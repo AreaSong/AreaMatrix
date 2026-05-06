@@ -19,6 +19,11 @@ struct ImportFolderPreviewView: View {
                 followSymlinks: followSymlinksBinding,
                 isDisabled: model.status.isScanning
             )
+            ImportFolderStorageModeSection(
+                selectedStorageMode: $model.selectedStorageMode,
+                riskMessage: model.storageModeRiskMessage,
+                isDisabled: model.status.isScanning || model.rows.contains { $0.status.isImporting }
+            )
             ImportFolderPreviewStatusSection(status: model.status)
             ImportFolderErrorSummary(errors: model.scanErrors)
             ImportFolderRowsSection(rows: model.rows)
@@ -115,6 +120,34 @@ struct ImportFolderAdvancedOptionsSection: View {
             .padding(.top, 6)
         }
         .disabled(isDisabled)
+    }
+}
+
+struct ImportFolderStorageModeSection: View {
+    @Binding var selectedStorageMode: ImportSingleFileStorageMode
+    let riskMessage: String?
+    let isDisabled: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Picker("存储模式", selection: $selectedStorageMode) {
+                ForEach(ImportSingleFileStorageMode.allCases) { mode in
+                    Text(mode.rawValue).tag(mode)
+                }
+            }
+            .pickerStyle(.segmented)
+            .frame(maxWidth: 300)
+            .disabled(isDisabled)
+
+            Text(selectedStorageMode.explanation)
+                .font(.callout)
+                .foregroundStyle(.secondary)
+            if let riskMessage {
+                Text(riskMessage)
+                    .font(.caption)
+                    .foregroundStyle(selectedStorageMode == .move ? Color.orange : Color.secondary)
+            }
+        }
     }
 }
 

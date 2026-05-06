@@ -191,17 +191,35 @@ extension CoreBridge: CoreFileImporting, CoreBatchCopyImporting {
         overrideFilename: String,
         duplicateStrategy: DuplicateStrategy
     ) async throws -> FileEntrySnapshot {
-        guard storageMode == .copy else {
-            throw CoreError.Internal(message: "S1-18 batch import only supports Copy storage mode.")
+        switch storageMode {
+        case .copy:
+            return try await importCopiedFile(
+                repoPath: repoPath,
+                sourceURL: sourceURL,
+                destination: destination,
+                suggestedCategory: suggestedCategory,
+                overrideFilename: overrideFilename,
+                duplicateStrategy: duplicateStrategy
+            )
+        case .indexOnly:
+            return try await importFile(
+                repoPath: repoPath,
+                sourceURL: sourceURL,
+                options: ImportOptions(
+                    mode: .indexed,
+                    destination: coreImportDestination(for: destination),
+                    targetDirectory: coreImportTargetDirectory(for: destination),
+                    overrideCategory: coreImportCategoryOverride(
+                        for: destination,
+                        suggestedCategory: suggestedCategory
+                    ),
+                    overrideFilename: overrideFilename,
+                    duplicateStrategy: duplicateStrategy
+                )
+            )
+        case .move:
+            throw CoreError.Internal(message: "S1-19 folder import does not implement Move storage mode.")
         }
-        return try await importCopiedFile(
-            repoPath: repoPath,
-            sourceURL: sourceURL,
-            destination: destination,
-            suggestedCategory: suggestedCategory,
-            overrideFilename: overrideFilename,
-            duplicateStrategy: duplicateStrategy
-        )
     }
 
     func importMovedFile(

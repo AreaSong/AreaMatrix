@@ -1,0 +1,77 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`2-2/task-13`
+- Task：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-2-import-conflict/task-13-s1-19-c1-08-import-index-file.md`
+- 代码范围：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`apps/macos/AreaMatrix.xcodeproj/project.pbxproj`、`core/area_matrix.udl`
+- Forbidden Touches：`core/src/**`
+
+三、完成度摘要
+
+- 已覆盖项数：13
+- 未覆盖项数：0
+- 通过项数：13
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 S1-19 页面中的 C1-08 功能点
+- 结果：通过
+- 证据：`S1-19` control map 绑定 `C1-05, C1-06, C1-08`，当前实现只新增/验收 Index-only 路径；Move 被显式阻断为后续能力，未开启 C1-07。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportFolderPreviewModel.swift:242`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreImporting.swift:204`
+
+- 项目：读取页面规格、MVP control map、Core API 和 C1-08 能力规格
+- 结果：通过
+- 证据：已核对 S1-19 的 Index-only 说明、control map 的 Real Core 要求、`import_file` API、C1-08 的 `Indexed` / `source_path` / 不复制不移动要求。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-19-import-folder-sheet.md:50`、`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:34`、`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:67`、`/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-08-import-index-file.md:13`
+
+- 项目：只接入 C1-08 对应 CoreBridge / 状态 / 错误映射
+- 结果：通过
+- 证据：Folder sheet 的 `Import Folder` 调用 `importReadyFiles`；Index-only 分支通过 `ImportOptions(mode: .indexed, ...)` 调用真实 `AreaMatrix.importFile`；错误经 `mapImportError` 映射。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportFolderPreviewSections.swift:258`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportFolderImporting.swift:63`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreImporting.swift:205`
+
+- 项目：不顺手实现相邻页面 / control map 外能力
+- 结果：通过
+- 证据：未发现 `core/src/**` 修改；Move 路径明确禁用；未新增 control map 外 Core 能力。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreImporting.swift:220`
+
+- 项目：S1-19 中 C1-08 用户可见功能可触发和验收
+- 结果：通过
+- 证据：S1-19 sheet 显示存储模式 Picker，用户可选 `Index-only`；点击 `Import Folder` 后进入真实导入流程。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportFolderPreviewSections.swift:126`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportFolderPreviewSections.swift:258`
+
+- 项目：没有 mock / fixture / 静态状态伪造真实 Core 闭环
+- 结果：通过
+- 证据：生产路径最终调用 `AreaMatrix.importFile`；测试同时覆盖真实 CoreBridge 的 folder Index-only 导入，断言源文件不变、`storageMode == Indexed`、`sourcePath` 保留且 repo 内无副本。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreImporting.swift:273`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportFolderPreviewModelTests.swift:425`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。Folder import 执行逻辑拆到 `ImportFolderImporting.swift`，主模型、视图、CoreBridge 分层清楚；相关 Swift 文件均低于 500 行。
+- 注释 / rustdoc / 文档同步：通过。本任务未新增 Rust public API；`core/area_matrix.udl` 与 Core API 中 `import_file` / `ImportOptions.mode` / `StorageMode.Indexed` 对齐。
+- 错误处理与边界处理：通过。Index-only 失败走 Core error mapping；Move 明确阻断；iCloud placeholder 不进入导入队列。
+- 测试与验证覆盖：通过。新增/现有测试覆盖 S1-19 Index-only importer 调用、真实 CoreBridge Index-only 不复制源文件、Move 禁用、错误映射。
+- 占位、硬编码、mock-only、一次性实现检查：通过。生产路径无 mock-only；测试 fake 仅用于单元验证，真实 CoreBridge 路径已覆盖。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+- 结果：通过，输出包含 `** BUILD SUCCEEDED **`
+- 已运行：`./dev test macos`
+- 结果：通过；标准 `xcodebuild test` 被本地 `testmanagerd` sandbox 通信限制阻断后，repo-local 脚本按规则复用已构建 XCTest bundle，`xcrun xctest` 通过；226 tests，0 failures。
+- 已运行：`git diff --name-only -- core/src`
+- 结果：通过，无输出，未触碰 Forbidden Touches。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS
