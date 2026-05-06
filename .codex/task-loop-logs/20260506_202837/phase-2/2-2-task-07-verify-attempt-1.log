@@ -1,0 +1,86 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`2-2/task-07`
+- 对应文件路径：[ImportDropPreviewModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportDropPreviewModel.swift:183)、[ImportEntrySheetView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportEntrySheetView.swift:3)、[OnboardingModelInputs.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/OnboardingModelInputs.swift:3)、[ImportEntryRequest.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportEntryRequest.swift:21)、[ImportDropPreviewModelTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportDropPreviewModelTests.swift:4)、[MainEmptyImportEntryTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/MainEmptyImportEntryTests.swift:5)
+- 只读对照文档：[S1-18-import-batch-sheet.md](/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-18-import-batch-sheet.md:23)、[mvp-control-map.md](/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:31)、[C1-05-classify-preview.md](/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-05-classify-preview.md:11)、[core-api.md](/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:64)
+
+三、完成度摘要
+
+- 已覆盖项数：8
+- 未覆盖项数：0
+- 通过项数：8
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 S1-18 页面中的 C1-05 功能点  
+  结果：通过  
+  证据：批量路径只创建 `.multipleItems` 请求并进入批量预览分支；批量 `Import` 按钮保持禁用，重复检测/冲突处理明确留给后续任务。[ImportEntryRequest.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportEntryRequest.swift:54) [ImportEntrySheetView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportEntrySheetView.swift:130) [ImportEntrySheetView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportEntrySheetView.swift:338)  
+  涉及文件：[ImportEntryRequest.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportEntryRequest.swift:54)、[ImportEntrySheetView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportEntrySheetView.swift:130)
+
+- 项目：页面规格、control map、Core API、C1-05 能力规格已交叉对齐  
+  结果：通过  
+  证据：S1-18 绑定 `C1-05/C1-06/C1-09`，本 task 只应消费 `predict_category`；C1-05 明确允许 UI 预填，但不能当最终导入。[S1-18-import-batch-sheet.md](/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-18-import-batch-sheet.md:123) [mvp-control-map.md](/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:33) [C1-05-classify-preview.md](/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-05-classify-preview.md:41) [core-api.md](/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:64)  
+  涉及文件：上述 4 份 SSOT 文档
+
+- 项目：只接入 C1-05 对应的 CoreBridge / 状态 / 错误映射  
+  结果：通过  
+  证据：`ImportBatchPreviewModel.load` 对每个文件调用 `predictCategory`；错误仅映射 `Config/Classify`；默认 `categoryPredictor` 为 `CoreBridge`，而 `CoreBridge.predictCategory` 直连 generated bindings 的 `predictCoreCategory`。[ImportDropPreviewModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportDropPreviewModel.swift:395) [ImportDropPreviewModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportDropPreviewModel.swift:440) [ImportEntrySheetView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportEntrySheetView.swift:22) [CoreBridge.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift:259)  
+  涉及文件：[ImportDropPreviewModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportDropPreviewModel.swift:329)、[CoreBridge.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift:259)
+
+- 项目：不顺手实现相邻页面  
+  结果：通过  
+  证据：当前变更集中在批量导入入口、批量预览状态和相关测试；未新增 `S1-20/S1-21/S1-22/S1-24` 的实际导入、结果页、重复冲突或 replace-confirm 逻辑。批量边界在 UI 中有显式说明。[ImportEntrySheetView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportEntrySheetView.swift:308)  
+  涉及文件：[ImportEntrySheetView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportEntrySheetView.swift:308)
+
+- 项目：S1-18 中 C1-05 对应的用户可见功能可被触发和验收  
+  结果：通过  
+  证据：主窗口多文件入口会创建批量请求；sheet 在 `.multipleItems` 下展示摘要、批量目标选择、逐项分类/建议命名/状态，并支持失败后 `Retry preview`。[OnboardingModelInputs.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/OnboardingModelInputs.swift:11) [MainEmptyImportEntryTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/MainEmptyImportEntryTests.swift:48) [ImportEntrySheetView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportEntrySheetView.swift:221)  
+  涉及文件：[OnboardingModelInputs.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/OnboardingModelInputs.swift:24)、[ImportEntrySheetView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportEntrySheetView.swift:271)
+
+- 项目：没有使用 mock、fixture 或静态状态伪造真实 Core 闭环  
+  结果：通过  
+  证据：运行时默认不走 test double；测试同时覆盖 injected predictor 和真实仓库下的 `CoreBridge.predictCategory`；批量 `Import` 明确禁用，没有把 preview 伪装成导入完成。[ImportDropPreviewModelTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportDropPreviewModelTests.swift:30) [ImportEntrySheetView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportEntrySheetView.swift:338) [C1-05-classify-preview.md](/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-05-classify-preview.md:45)  
+  涉及文件：[ImportDropPreviewModelTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportDropPreviewModelTests.swift:30)、[CoreBridge.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift:259)
+
+- 项目：未触碰 control map 之外的 Core 能力，且 `Forbidden Touches` 无违规  
+  结果：通过  
+  证据：批量路径没有调用 `import_file`、duplicate/conflict 或 replace 相关 Core 能力；`git diff --name-only -- core/src` 结果为空。  
+  涉及文件：[ImportDropPreviewModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportDropPreviewModel.swift:377)、[ImportEntrySheetView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportEntrySheetView.swift:338)
+
+- 项目：Expected New Paths 落地且任务要求的验证完成  
+  结果：通过  
+  证据：实现落在 `apps/macos/AreaMatrix/**` 与 `apps/macos/AreaMatrixTests/**`；`xcodebuild build` 成功；`./dev test macos` 通过，`183 tests, 0 failures`。  
+  涉及文件：[ImportDropPreviewModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportDropPreviewModel.swift:329)、[ImportDropPreviewModelTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportDropPreviewModelTests.swift:130)、[MainEmptyImportEntryTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/MainEmptyImportEntryTests.swift:48)
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。批量预览状态被单独封装到 `ImportBatchPreviewModel`，View 只做分支渲染；[ImportDropPreviewModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportDropPreviewModel.swift:328) 487 行、[ImportEntrySheetView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportEntrySheetView.swift:3) 400 行，均未超文件长度门槛。
+- 注释 / rustdoc / 文档同步：通过。本 task 未新增 public Rust API、未改 UDL；实现与 `S1-18` / `C1-05` / `Core API` 文档一致，未发现 SSOT 漂移。
+- 错误处理与边界处理：通过。分类失败显式映射 `Config/Classify`，批量导入执行和冲突处理显式留后续 task，不存在静默吞错或假成功态。[ImportDropPreviewModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportDropPreviewModel.swift:440) [ImportEntrySheetView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportEntrySheetView.swift:308)
+- 测试与验证覆盖：通过。新增测试覆盖真实 `predict_category`、逐文件批量预览、失败映射、多文件入口；`xcodebuild build` 和 `./dev test macos` 已实际执行并通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。重复/冲突文案是显式边界提示，不被当作已实现闭环；当前真正闭环仅限 C1-05 分类预览。[ImportEntrySheetView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportEntrySheetView.swift:230) [ImportEntrySheetView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportEntrySheetView.swift:312)
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`，通过。
+- 已运行：`./dev test macos`，通过；`183 tests, 0 failures`。
+- 哪些失败：无。
+- 哪些缺失：无必需验证缺失。
+- 说明：当前 worktree 另有 `tasks/prompts/_shared/progress.json` 的运行态更新与 `.codex/task-loop-*` 日志目录，但它们未被作为产品通过证据。
+
+八、最终判定说明
+
+- 本次执行已达到 `2-2/task-07` 的验收标准。
+- 本次通过仅针对 `S1-18 + C1-05 classify-preview` 单功能 task；`S1-18` 页面其余 `C1-06`、`C1-09` 仍待各自 task 与后续 page integration verify 覆盖。
+
+VERIFY_RESULT: PASS

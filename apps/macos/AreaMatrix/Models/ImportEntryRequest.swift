@@ -58,7 +58,7 @@ struct ImportEntryRequest: Equatable, Sendable, Identifiable {
         case .singleFile:
             return "导入 1 个文件"
         case .multipleItems(let count):
-            return "Import \(count) items"
+            return "导入 \(count) 个文件"
         }
     }
 

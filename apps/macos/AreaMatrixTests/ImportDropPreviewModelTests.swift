@@ -126,6 +126,85 @@ final class ImportDropPreviewModelTests: XCTestCase {
         XCTAssertEqual(contracts.importDropTarget, .category("finance"))
         XCTAssertEqual(finance.importDropTarget.sidebarHelp, "Import into \"finance\"")
     }
+
+    @MainActor
+    func testBatchPreviewCallsPredictorForEachFileAndUsesRealPredictions() async {
+        let invoiceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
+        let contractURL = URL(fileURLWithPath: "/tmp/合同.pdf")
+        let predictor = ImportDropRecordingPredictor(results: [
+            .success(ClassifyResultSnapshot(
+                category: "finance",
+                suggestedName: "Invoice_2026Q1.pdf",
+                reason: .keyword,
+                confidence: 0.9
+            )),
+            .success(ClassifyResultSnapshot(
+                category: "docs",
+                suggestedName: "2026Q1_合同.pdf",
+                reason: .keyword,
+                confidence: 0.82
+            )),
+        ])
+        let model = ImportBatchPreviewModel(predictor: predictor)
+        let request = ImportEntryRequest(
+            repoPath: "/tmp/repo",
+            source: .dropZone,
+            destination: .autoClassify,
+            urls: [invoiceURL, contractURL],
+            kind: .multipleItems(2),
+            availableCategories: ["inbox", "docs", "finance"]
+        )
+
+        await model.load(request: request)
+        let requests = await predictor.recordedRequests()
+
+        XCTAssertEqual(requests, [
+            ImportDropPredictRequest(repoPath: "/tmp/repo", filename: "Invoice_2026Q1.pdf"),
+            ImportDropPredictRequest(repoPath: "/tmp/repo", filename: "合同.pdf"),
+        ])
+        XCTAssertEqual(model.rows.count, 2)
+        XCTAssertEqual(model.rows[0].predictedCategory, "finance")
+        XCTAssertEqual(model.rows[1].predictedCategory, "docs")
+        XCTAssertEqual(model.rows[1].suggestedName, "2026Q1_合同.pdf")
+        XCTAssertEqual(model.rows[0].status.tag, "OK")
+        XCTAssertEqual(model.rows[1].status.tag, "OK")
+        XCTAssertEqual(model.status.message, "已完成 2 个文件的分类预览")
+        XCTAssertEqual(model.importDisabledReason, "本任务仅接入 C1-05 classify-preview；批量导入执行与冲突处理将在后续任务接入。")
+    }
+
+    @MainActor
+    func testBatchPreviewMapsClassifyFailuresPerRowWithoutCreatingStaticSuccess() async {
+        let goodURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
+        let badURL = URL(fileURLWithPath: "/tmp/Bad.pdf")
+        let predictor = ImportDropRecordingPredictor(results: [
+            .success(ClassifyResultSnapshot(
+                category: "finance",
+                suggestedName: "Invoice_2026Q1.pdf",
+                reason: .keyword,
+                confidence: 0.9
+            )),
+            .failure(CoreError.Config(reason: "classifier.yaml line 7")),
+        ])
+        let model = ImportBatchPreviewModel(predictor: predictor)
+        let request = ImportEntryRequest(
+            repoPath: "/tmp/repo",
+            source: .filePicker,
+            destination: .autoClassify,
+            urls: [goodURL, badURL],
+            kind: .multipleItems(2),
+            availableCategories: ["inbox", "finance"]
+        )
+
+        await model.load(request: request)
+
+        XCTAssertEqual(model.successfulPreviewCount, 1)
+        XCTAssertEqual(model.failedPreviewCount, 1)
+        XCTAssertEqual(model.rows[0].status.tag, "OK")
+        XCTAssertEqual(model.rows[1].status.tag, "ERROR")
+        XCTAssertEqual(model.rows[1].status.detail, "分类规则无效：classifier.yaml line 7")
+        XCTAssertEqual(model.status.message, "已完成 1/2 个文件的分类预览，1 个失败")
+        XCTAssertTrue(model.showsRetryPreview)
+    }
 }
 
 private struct ImportDropPredictRequest: Equatable, Sendable {

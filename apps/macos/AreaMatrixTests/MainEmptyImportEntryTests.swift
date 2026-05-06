@@ -45,6 +45,29 @@ final class MainEmptyImportEntryTests: XCTestCase {
     }
 
     @MainActor
+    func testMainEmptyMultipleDropEntryCreatesBatchRequestForS118() {
+        let firstURL = URL(fileURLWithPath: "/tmp/a.pdf")
+        let secondURL = URL(fileURLWithPath: "/tmp/b.pdf")
+        let opening = RepositoryOpeningResult.mainEmptyImportFixture(repoPath: "/tmp/empty-repo")
+        let model = OnboardingModel(
+            settingsReader: MainEmptyImportStaticSettingsReader(repoPath: nil),
+            accessibilityAnnouncer: MainEmptyImportRecordingAccessibilityAnnouncer(),
+            helpOpener: MainEmptyImportNoopWelcomeHelpOpener()
+        )
+
+        model.startImportEntry(
+            opening: opening,
+            source: .dropZone,
+            urls: [firstURL, secondURL]
+        )
+
+        XCTAssertEqual(model.pendingImportEntry?.kind, .multipleItems(2))
+        XCTAssertEqual(model.pendingImportEntry?.sheetTitle, "导入 2 个文件")
+        XCTAssertEqual(model.pendingImportEntry?.source, .dropZone)
+        XCTAssertEqual(model.pendingImportEntry?.urls, [firstURL, secondURL])
+    }
+
+    @MainActor
     func testMainEmptyDropEntryRejectsInvalidItemsWithAccessibleToast() throws {
         let opening = RepositoryOpeningResult.mainEmptyImportFixture(repoPath: "/tmp/empty-repo")
         let accessibilityAnnouncer = MainEmptyImportRecordingAccessibilityAnnouncer()
