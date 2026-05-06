@@ -7,6 +7,7 @@ extension OnboardingModel {
         settingsWriter.saveSuccessfulRepoOpen(repoPath: opening.config.repoPath, openedAt: openedAt)
         mainRepoLastOpenedAt = openedAt
         route = Self.mainRoute(for: opening)
+        consumeQueuedDockImportIfPossible()
     }
 
     @MainActor

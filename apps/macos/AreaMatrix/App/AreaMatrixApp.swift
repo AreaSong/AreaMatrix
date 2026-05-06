@@ -3,6 +3,8 @@ import SwiftUI
 
 @main
 struct AreaMatrixApp: App {
+    @NSApplicationDelegateAdaptor(AreaMatrixDockOpenAppDelegate.self) private var appDelegate
+
     var body: some Scene {
         WindowGroup {
             MainWindow()
@@ -265,6 +267,34 @@ enum ConfirmInitStepRules {
         case .adoptExisting:
             return validation.isEmpty ? "路径已变为空目录，请返回校验页。" : nil
         }
+    }
+}
+
+@MainActor
+enum AreaMatrixDockOpenRelay {
+    static let notification = Notification.Name("AreaMatrixDockOpenRelay.notification")
+    private static var pendingBatches: [[URL]] = []
+
+    static func publish(_ urls: [URL]) {
+        pendingBatches.append(urls)
+        NotificationCenter.default.post(name: notification, object: nil)
+    }
+
+    static func takePendingBatches() -> [[URL]] {
+        let batches = pendingBatches
+        pendingBatches.removeAll()
+        return batches
+    }
+}
+
+final class AreaMatrixDockOpenAppDelegate: NSObject, NSApplicationDelegate {
+    func application(_ application: NSApplication, open urls: [URL]) {
+        AreaMatrixDockOpenRelay.publish(urls)
+    }
+
+    func application(_ sender: NSApplication, openFiles filenames: [String]) {
+        AreaMatrixDockOpenRelay.publish(filenames.map(URL.init(fileURLWithPath:)))
+        sender.reply(toOpenOrPrint: .success)
     }
 }
 

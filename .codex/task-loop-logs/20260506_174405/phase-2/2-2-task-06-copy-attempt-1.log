@@ -1,0 +1,44 @@
+**一、执行结论**
+- 已完成
+
+**二、执行范围**
+- 单任务，基于现有未提交的 S1-17 相关改动继续补齐，未回退既有工作。
+- 修改文件清单：
+- [CoreImporting.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreImporting.swift)
+- [ImportSingleFilePreviewModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreviewModel.swift)
+- [ImportSingleFilePreflight.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreflight.swift)
+- [ImportEntrySheetView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportEntrySheetView.swift)
+- [ImportSingleFileSheetSections.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportSingleFileSheetSections.swift)
+- [ImportSingleFileTestSupport.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFileTestSupport.swift)
+- [ImportSingleFilePreviewModelTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFilePreviewModelTests.swift)
+- [ImportSingleFileMoveImportTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFileMoveImportTests.swift)
+- [ImportSingleFileIndexImportTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFileIndexImportTests.swift)
+- [ImportSingleFilePageIntegrationVerifyTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFilePageIntegrationVerifyTests.swift)
+- [ImportSingleFilePreflightTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFilePreflightTests.swift)
+
+**三、完成情况**
+- 核对清单 1：已完成。S1-17 的整页 page-feature 覆盖已通过整页集成测试和真实导入路径交叉证明。
+- 核对清单 2：已完成。入口、Cancel、`Switch to local repo...`、Import 到 S1-20、iCloud placeholder、错误态、Replace confirm、CoreBridge 调用已串成闭环。
+- 核对清单 3：已完成。默认真实路径不再被缺失的 `preview_import` binding 阻塞；Replace 最终导入已落到真实 `duplicateStrategy: .overwrite`。
+- 核对清单 4：已完成。未新增 control map 之外功能。
+- 完成标准 1：已满足。S1-17 可按 page spec 和 control map 完整验收。
+- 完成标准 2：已满足。C1-05/C1-06/C1-07/C1-08 均已真实接入；`preview_import` API gap 由文档允许的 Swift 平台层 adapter 补齐。
+- Forbidden Touches：未触碰 `core/src/**`。
+
+**四、工程质量**
+- 代码结构清晰。预检、最终导入策略、错误态恢复入口分别落在独立 Swift 层职责中，没有把视图直接耦合到底层 UniFFI。
+- 注释 / rustdoc / 文档同步：本轮未改 Rust / UDL / docs；保持在允许的 macOS 与测试路径内。
+- 错误处理与边界处理完整：覆盖了 source missing、不可读、非法文件名、duplicate hash、same-name conflict、iCloud placeholder、Replace confirmation、Retry preview。
+- 不存在 mock-only 或一次性通过态。生产路径已改为真实 Swift preflight，而不是继续依赖 `preview_import` placeholder 缺口。
+
+**五、验证情况**
+- `xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：通过。
+- `xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：未能完成；失败原因为本机 `com.apple.testmanagerd.control` sandbox restriction，不是编译或断言失败。
+- `./dev test macos`：通过。脚本按仓库规则在 `xcodebuild test` 被本地沙箱阻断后复用同一 XCTest bundle 执行 `xcrun xctest`，最终 `174 tests, 0 failures`。
+
+**六、风险与后续**
+- 剩余风险：`preview_import` 仍属于 `docs/api/core-api.md` 记录的 Stage 1 API gap；当前任务已用真实 Swift adapter 闭环，不阻塞验收，但后续若 Core/UDL 正式补齐，应把这层 fallback 收敛回标准 Core boundary。
+- 剩余风险：未做手工 UI 点击验证；当前证据来自 build 与 XCTest。
+- 回滚思路：若后续发现回归，只需回退本任务涉及的 `apps/macos/AreaMatrix/**` 与 `apps/macos/AreaMatrixTests/**` Swift 改动；`core/src/**` 未改。
+- 建议下一个任务：进入 `2-2/task-06` 的 verify-ready 验收。
+

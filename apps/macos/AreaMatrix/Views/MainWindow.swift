@@ -46,9 +46,24 @@ struct MainWindow: View {
         }
         .task {
             await model.bootstrapIfNeeded()
+            model.consumePendingDockOpenRequests()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: AreaMatrixDockOpenRelay.notification)) { _ in
+            model.consumePendingDockOpenRequests()
         }
         .sheet(item: $model.pendingImportEntry) { request in
-            ImportEntrySheetView(request: request, onCancel: model.dismissImportEntry)
+            ImportEntrySheetView(
+                request: request,
+                onCancel: model.dismissImportEntry,
+                onSwitchToLocalRepo: model.switchImportEntryToLocalRepository,
+                onImportStarted: model.beginImportEntryProgress,
+                onImportFailed: model.failImportEntry,
+                onImported: { repoPath, entry in
+                    Task {
+                        await model.finishImportEntry(repoPath: repoPath, entry: entry)
+                    }
+                }
+            )
         }
     }
 
@@ -257,6 +272,11 @@ struct MainWindow: View {
             )
         case .settingsRepository:
             SettingsRepositoryReturnView()
+        case .importProgress(let state):
+            ImportProgressView(
+                state: state,
+                onReturnToRepository: model.returnFromImportProgress
+            )
         case .mainEmpty(let opening):
             MainRepositoryContentView(
                 opening: opening,

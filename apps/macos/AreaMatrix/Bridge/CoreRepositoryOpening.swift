@@ -27,6 +27,17 @@ struct RepositoryOpeningResult: Equatable, Sendable {
     var isEmpty: Bool {
         tree.totalFileCount == 0 && currentCategoryFiles.isEmpty
     }
+
+    var availableImportCategories: [String] {
+        var categories: [String] = []
+        for category in tree.sidebarRows.compactMap(\.categoryForFileList) where !categories.contains(category) {
+            categories.append(category)
+        }
+        if categories.isEmpty {
+            categories.append("inbox")
+        }
+        return categories
+    }
 }
 
 struct RepositoryCurrentCategoryFilesResult: Equatable, Sendable {

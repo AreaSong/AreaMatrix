@@ -40,7 +40,7 @@ class TaskFile:
 class RuntimeConfig:
     root_dir: Path
     python_bin: str = "python3"
-    model: str = "gpt-5.5"
+    model: str = "gpt-5.4"
     model_reasoning_effort: str = "xhigh"
     codex_bin: str = ""
     codex_bin_resolved: str = ""
@@ -77,7 +77,7 @@ class RuntimeConfig:
         root = Path(os.environ.get("ROOT_DIR", Path(__file__).resolve().parents[2])).resolve()
         cfg = cls(root_dir=root)
         cfg.python_bin = os.environ.get("PYTHON_BIN", "python3")
-        cfg.model = os.environ.get("MODEL", "gpt-5.5")
+        cfg.model = os.environ.get("MODEL", "gpt-5.4")
         cfg.model_reasoning_effort = os.environ.get("MODEL_REASONING_EFFORT", "xhigh")
         cfg.codex_bin = os.environ.get("CODEX_BIN", "")
         cfg.copy_root = Path(os.environ.get("COPY_ROOT", root / "tasks/prompts/_shared/copy-ready"))

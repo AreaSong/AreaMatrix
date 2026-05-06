@@ -3,6 +3,7 @@ import Foundation
 enum ImportEntrySource: Equatable, Sendable {
     case filePicker
     case dropZone
+    case dockOpenFile
 }
 
 enum ImportEntryDestination: Equatable, Sendable {
@@ -24,6 +25,9 @@ struct ImportEntryRequest: Equatable, Sendable, Identifiable {
     let destination: ImportEntryDestination
     let urls: [URL]
     let kind: ImportEntryKind
+    let availableCategories: [String]
+    let allowReplaceDuringImport: Bool
+    let isTrashAvailable: Bool
 
     init(
         id: UUID = UUID(),
@@ -31,7 +35,10 @@ struct ImportEntryRequest: Equatable, Sendable, Identifiable {
         source: ImportEntrySource,
         destination: ImportEntryDestination,
         urls: [URL],
-        kind: ImportEntryKind
+        kind: ImportEntryKind,
+        availableCategories: [String] = [],
+        allowReplaceDuringImport: Bool = false,
+        isTrashAvailable: Bool = true
     ) {
         self.id = id
         self.repoPath = repoPath
@@ -39,6 +46,9 @@ struct ImportEntryRequest: Equatable, Sendable, Identifiable {
         self.destination = destination
         self.urls = urls
         self.kind = kind
+        self.availableCategories = availableCategories
+        self.allowReplaceDuringImport = allowReplaceDuringImport
+        self.isTrashAvailable = isTrashAvailable
     }
 
     var sheetTitle: String {

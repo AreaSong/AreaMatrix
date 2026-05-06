@@ -21,6 +21,7 @@ final class ImportSingleFileIndexImportTests: XCTestCase {
         let model = ImportSingleFilePreviewModel(
             predictor: predictor,
             importer: importer,
+            preflight: ImportSingleFileStaticPreflight.ready(),
             errorMapper: IndexImportRecordingErrorMapper()
         )
         let request = ImportEntryRequest(
@@ -35,6 +36,7 @@ final class ImportSingleFileIndexImportTests: XCTestCase {
         model.selectedStorageMode = .indexOnly
         model.selectedCategory = " docs "
         model.suggestedName = " indexed.pdf "
+        await waitForImportSingleFilePreflightToSettle(model)
         await model.importSelectedFile()
         let requests = await importer.recordedRequests()
 
@@ -67,6 +69,7 @@ final class ImportSingleFileIndexImportTests: XCTestCase {
         let model = ImportSingleFilePreviewModel(
             predictor: predictor,
             importer: importer,
+            preflight: ImportSingleFileStaticPreflight.ready(),
             errorMapper: errorMapper
         )
         let request = ImportEntryRequest(
@@ -124,6 +127,7 @@ private struct IndexImportRequest: Equatable, Sendable {
     var storageMode: ImportSingleFileStorageMode
     var overrideCategory: String
     var overrideFilename: String
+    var duplicateStrategy: DuplicateStrategy = .ask
 }
 
 private actor IndexImportRecordingPredictor: CoreCategoryPredicting {
@@ -159,14 +163,16 @@ private actor IndexImportRecordingImporter: CoreFileImporting {
         repoPath: String,
         sourceURL: URL,
         overrideCategory: String,
-        overrideFilename: String
+        overrideFilename: String,
+        duplicateStrategy: DuplicateStrategy
     ) async throws -> FileEntrySnapshot {
         try recordImport(
             repoPath: repoPath,
             sourceURL: sourceURL,
             storageMode: .copy,
             overrideCategory: overrideCategory,
-            overrideFilename: overrideFilename
+            overrideFilename: overrideFilename,
+            duplicateStrategy: duplicateStrategy
         )
     }
 
@@ -174,14 +180,16 @@ private actor IndexImportRecordingImporter: CoreFileImporting {
         repoPath: String,
         sourceURL: URL,
         overrideCategory: String,
-        overrideFilename: String
+        overrideFilename: String,
+        duplicateStrategy: DuplicateStrategy
     ) async throws -> FileEntrySnapshot {
         try recordImport(
             repoPath: repoPath,
             sourceURL: sourceURL,
             storageMode: .move,
             overrideCategory: overrideCategory,
-            overrideFilename: overrideFilename
+            overrideFilename: overrideFilename,
+            duplicateStrategy: duplicateStrategy
         )
     }
 
@@ -189,14 +197,16 @@ private actor IndexImportRecordingImporter: CoreFileImporting {
         repoPath: String,
         sourceURL: URL,
         overrideCategory: String,
-        overrideFilename: String
+        overrideFilename: String,
+        duplicateStrategy: DuplicateStrategy
     ) async throws -> FileEntrySnapshot {
         try recordImport(
             repoPath: repoPath,
             sourceURL: sourceURL,
             storageMode: .indexOnly,
             overrideCategory: overrideCategory,
-            overrideFilename: overrideFilename
+            overrideFilename: overrideFilename,
+            duplicateStrategy: duplicateStrategy
         )
     }
 
@@ -209,14 +219,16 @@ private actor IndexImportRecordingImporter: CoreFileImporting {
         sourceURL: URL,
         storageMode: ImportSingleFileStorageMode,
         overrideCategory: String,
-        overrideFilename: String
+        overrideFilename: String,
+        duplicateStrategy: DuplicateStrategy
     ) throws -> FileEntrySnapshot {
         requests.append(IndexImportRequest(
             repoPath: repoPath,
             sourceURL: sourceURL,
             storageMode: storageMode,
             overrideCategory: overrideCategory,
-            overrideFilename: overrideFilename
+            overrideFilename: overrideFilename,
+            duplicateStrategy: duplicateStrategy
         ))
         guard !results.isEmpty else {
             throw CoreError.Internal(message: "missing import test result")

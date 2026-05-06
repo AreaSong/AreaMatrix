@@ -93,6 +93,7 @@ enum CoreBridgeBoundary: String, CaseIterable, Equatable, Sendable {
     case getLatestScanSession = "get_latest_scan_session"
     case resumeScanSession = "resume_scan_session"
     case predictCategory = "predict_category"
+    case previewImport = "preview_import"
     case importFile = "import_file"
     case deleteFile = "delete_file"
     case renameFile = "rename_file"

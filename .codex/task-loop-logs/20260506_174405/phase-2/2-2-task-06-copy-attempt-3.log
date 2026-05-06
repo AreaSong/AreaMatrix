@@ -1,0 +1,53 @@
+**执行结论**
+
+- 已完成
+
+本次修复把上次 3 个阻塞点都收口了：补上了 Dock 单文件入口、把 `S1-17` 的分类下拉改为真实 repo 分类集合、并把单文件导入的成功/失败闭环接回主路由与 `S1-20` 最小错误态，不再靠空按钮或提前切页掩盖结果。
+
+**执行范围**
+
+- 单任务：`2-2/task-06`
+- 修改文件清单：
+- [AreaMatrixApp.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/App/AreaMatrixApp.swift:4)
+- [CoreRepositoryOpening.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreRepositoryOpening.swift:19)
+- [AppShellModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/AppShellModel.swift:4)
+- [ImportEntryRequest.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportEntryRequest.swift:3)
+- [ImportProgressRouteState.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportProgressRouteState.swift:3)
+- [ImportSingleFilePreviewModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreviewModel.swift:91)
+- [MainRepoErrorActions.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainRepoErrorActions.swift:4)
+- [OnboardingModelInputs.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/OnboardingModelInputs.swift:11)
+- [ImportEntrySheetView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportEntrySheetView.swift:3)
+- [ImportProgressView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportProgressView.swift:3)
+- [MainWindow.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/MainWindow.swift:5)
+- [ImportSingleFilePageIntegrationVerifyTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFilePageIntegrationVerifyTests.swift:4)
+- [ImportSingleFileTestSupport.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFileTestSupport.swift:1)
+
+**完成情况**
+
+- 核对清单 1：通过。`C1-05..08` 仍经真实 `CoreBridge`/importer 路径接入，且整页集成测试补到了成功、失败、Dock 入口、分类集合。
+- 核对清单 2：通过。[OnboardingModelInputs.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/OnboardingModelInputs.swift:50) 现在把导入前进度态、失败态、成功后回主窗口 toast 串成闭环；[ImportProgressView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportProgressView.swift:3) 不再是空壳。
+- 核对清单 3：通过。`ImportProgressView` 的空 `View details` 和永久 disabled `Stop after current file` 已移除；失败详情改为真实错误映射展示。
+- 核对清单 4：通过。未新增 control map 之外功能；改动仅限 `apps/macos/**` 和测试。
+- 完成标准 1：通过。`S1-17` 现在具备 `filePicker`、drop、Dock 单文件入口，分类/命名可编辑，成功/失败闭环可验。
+- 完成标准 2：通过。页面声明的 `C1-05..08` 都已真实接入；若导入失败，会把真实 `CoreErrorMappingSnapshot` 带回 UI。
+- Forbidden Touches：未触碰。`git diff --name-only | rg '^core/src/'` 无输出。
+
+**工程质量**
+
+- 代码结构与逻辑：清晰。入口队列、sheet、progress、成功回主窗口分别落在 app delegate、shell model、sheet view、progress state/view，没有把文件 IO 放回 View。
+- 注释 / rustdoc / 文档同步：本次仅改 Swift macOS 层，无 Rust public API 变更；实现现在与 `S1-17` / `S1-20` 文档要求对齐。
+- 错误处理与边界处理：`ImportEntrySheetView` 通过 [ImportSingleFilePreviewModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreviewModel.swift:219) 读取真实失败映射并回传；Dock 打开的文件会先排队，等 repo 就绪再消费，不会越过 repo 状态直接写文件。
+- 占位、硬编码、mock-only、一次性实现：已移除本任务相关的占位进度按钮和硬编码禁用态；分类下拉改为真实 repo 分类集合 [CoreRepositoryOpening.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreRepositoryOpening.swift:31)。
+
+**验证情况**
+
+- 已运行：`xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+- 结果：编译通过，但测试运行阶段被本地 `testmanagerd` 沙箱限制阻断，不是断言失败。
+- 已运行：`./dev test macos`
+- 结果：通过。脚本识别到 `testmanagerd` 沙箱阻断后，回退到 hostless `xcrun xctest`；新增的 `ImportSingleFilePageIntegrationVerifyTests` 13 项全部通过，整套 macOS tests 最终通过。
+- 未运行：无额外命令。
+
+**风险与后续**
+
+- 剩余风险：Dock 导入在 repo 尚未打开时采用“排队等待 repo 就绪”策略，没有在本任务里扩展出新的 pre-repo 导入流程；这不阻断 `S1-17` 当前验收，但属于后续整体导入 UX 可继续优化的点。
+- 建议下一个任务：继续 `2-2` 中与 `S1-20` / `S1-21` 相关的后续任务，补齐批量队列、结果页和 fatal queue error 的完整页面语义。

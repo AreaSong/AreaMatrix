@@ -73,6 +73,7 @@ final class OnboardingModel: ObservableObject {
     let directoryPicker: any RepositoryDirectoryPicking
     let importPicker: any RepositoryImportPicking
     private var didBootstrap = false
+    var queuedDockImportBatches: [[URL]] = []
     private var validatePathReturnRoute: Route = .choosePath
     var initializationProgressTask: Task<Void, Never>?
     init(

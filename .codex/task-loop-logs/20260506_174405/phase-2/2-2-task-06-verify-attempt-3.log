@@ -1,0 +1,56 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`2-2/task-06`
+- 文档范围：`docs/ux/page-specs/stage-1-mvp/S1-17-import-single-sheet.md`、`docs/architecture/mvp-control-map.md`、`docs/api/core-api.md`、`docs/core/capability-specs/stage-1-mvp/C1-05-classify-preview.md`、`C1-06-import-copy-file.md`、`C1-07-import-move-file.md`、`C1-08-import-index-file.md`
+- 代码范围：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：8
+- 未覆盖项数：0
+- 通过项数：6
+- 不通过项数：2
+- 阻塞项数：2
+
+四、逐项验收结果
+
+- `Checklist-1` 所有 page-feature task 覆盖：通过。`C1-05` 分类预览、`C1-06` Copy、`C1-07` Move、`C1-08` Index-only 均有真实调用与测试证据；见 [ImportSingleFilePreviewModelTests.swift:5](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFilePreviewModelTests.swift:5)、[ImportSingleFileMoveImportTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFileMoveImportTests.swift)、[ImportSingleFileIndexImportTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFileIndexImportTests.swift)、[ImportSingleFilePageIntegrationVerifyTests.swift:126](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFilePageIntegrationVerifyTests.swift:126)。涉及文件：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`
+- `Checklist-2` 页面状态、入口、退出、错误态、CoreBridge 闭环：不通过。入口、Cancel、`Import -> S1-20` 已打通，但 `iCloud` 下载失败态和 `duplicate/name conflict` 交接态与 page spec 不一致。涉及文件：见“阻塞项”
+- `Checklist-3` mock / fixture / 硬编码通过态移除：通过。生产默认依赖为真实 `CoreBridge`、`CoreImportSingleFilePreflight`、`LocalICloudPlaceholderDownloader`，不是 mock-only wiring；见 [ImportEntrySheetView.swift:21](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportEntrySheetView.swift:21)、[ImportSingleFilePreflight.swift:286](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreflight.swift:286)。涉及文件：`apps/macos/AreaMatrix/**`
+- `Checklist-4` 未新增 control map 外能力：通过。当前仍围绕 `predict_category`、`import_file`、Replace 确认和 `S1-20` progress 路由，没有额外未声明 Core 能力接入。涉及文件：`apps/macos/AreaMatrix/**`、`docs/architecture/mvp-control-map.md`
+- `Completion-1` S1-17 可按 page spec 和 control map 完整验收：不通过。原因是两个页面规格级阻塞项未满足。涉及文件：见“阻塞项”
+- `Completion-2` 页面声明的 Core 能力都已真实接入或有明确阻塞证据：通过。`predict_category` 与三种 `import_file` 模式均有真实桥接与真实 repo 测试；见 [ImportSingleFilePageIntegrationVerifyTests.swift:126](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFilePageIntegrationVerifyTests.swift:126)、[ImportSingleFilePreflightTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFilePreflightTests.swift)。涉及文件：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`
+- `Manifest Expected New Paths`：通过。`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`apps/macos/AreaMatrix.xcodeproj/project.pbxproj` 均已落地；路径检查返回 `OK`。涉及文件：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+- `Manifest Forbidden Touches`：通过。`git diff --name-only -- core/src core/area_matrix.udl` 为空，未发现 `core/src/**` 违规触碰。涉及文件：`core/src/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。`preview / preflight / import / route` 已拆分到独立模型和视图，结构清晰；见 [ImportSingleFilePreviewModel.swift:224](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreviewModel.swift:224)、[ImportSingleFilePreflight.swift:286](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreflight.swift:286)、[OnboardingModelInputs.swift:49](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/OnboardingModelInputs.swift:49)
+- 注释 / rustdoc / 文档同步：不通过。实现与 S1-17 文档在冲突跳转和 iCloud 下载失败恢复动作上存在漂移；见 [S1-17-import-single-sheet.md:77](/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-17-import-single-sheet.md:77)
+- 错误处理与边界处理：不通过。iCloud 下载失败后没有保留文档要求的恢复动作，错误态闭环断裂；见 [ImportSingleFilePreviewModel.swift:195](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreviewModel.swift:195)、[ImportSingleFilePreviewModel.swift:291](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreviewModel.swift:291)
+- 测试与验证覆盖：不通过。自动化测试很多且大部分通过，但缺少“iCloud 下载失败后仍保留 `Download & retry / Switch to local repo...`”和“进入 `S1-22 / S1-23`”的验收证据
+- 占位、硬编码、mock-only、一次性实现检查：通过。最终导入调用走真实 CoreBridge / real repo tests，不是静态成功态；见 [ImportSingleFilePageIntegrationVerifyTests.swift:358](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFilePageIntegrationVerifyTests.swift:358)
+
+六、阻塞项
+
+- `P0` iCloud 下载失败后丢失页面规格要求的恢复动作。S1-17 明确要求下载失败时留在本 sheet，显示错误原因，并继续提供 `Download & retry` / `Switch to local repo...`；当前实现把失败写成普通 `.error(...)`，而 `showsICloudActions` 只对 `.iCloudPlaceholder` 返回真，结果会退化成普通 `Retry preview`，不再保留切换本地 repo 的恢复路径。绝对路径与行号：[S1-17-import-single-sheet.md:84](/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-17-import-single-sheet.md:84)、[ImportSingleFilePreviewModel.swift:195](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreviewModel.swift:195)、[ImportSingleFilePreviewModel.swift:291](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreviewModel.swift:291)、[ImportEntrySheetView.swift:83](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportEntrySheetView.swift:83)。为什么导致不通过：直接违反 page spec 的错误态与恢复动作要求，S1-17 在 iCloud 路径下不能完整验收
+- `P0` duplicate / name conflict 没有进入文档声明的 `S1-22` / `S1-23` 交接页。S1-17 明确写了“目标同名进入 `S1-23 conflict-name`，hash 重复进入 `S1-22 conflict-duplicate`”；当前实现仅在本 sheet 内显示 inline conflict 文案和可选 Replace 按钮，没有冲突页路由，import flow 只存在 `sheet -> importProgress` 主线。绝对路径与行号：[S1-17-import-single-sheet.md:77](/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-17-import-single-sheet.md:77)、[ImportSingleFileSheetSections.swift:119](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportSingleFileSheetSections.swift:119)、[OnboardingModelInputs.swift:49](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/OnboardingModelInputs.swift:49)、[MainWindow.swift:275](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/MainWindow.swift:275)。为什么导致不通过：页面冲突态没有按 spec 形成闭环，S1-17 不能按“整页多功能闭环”标准通过
+
+七、验证情况
+
+- 已运行：`xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+- 结果：失败。失败原因不是业务断言，而是本地沙箱拦截 `com.apple.testmanagerd.control`，报错为 `Sandbox restriction`
+- 已运行：`./dev test macos`
+- 结果：通过。该命令先复现同一 `xcodebuild test` 沙箱阻断，再按 repo-local validation-driver 回退到 `xcrun xctest`；最终 `178` 个测试全部通过
+- 关键通过套件：`ImportSingleFilePageIntegrationVerifyTests` 13/13、`ImportSingleFilePreflightTests` 6/6、`ImportSingleFilePreviewModelTests` 11/11、`ImportSingleFileMoveImportTests` 3/3、`ImportSingleFileIndexImportTests` 3/3
+- 缺失验证：未找到“iCloud 下载失败后仍保留 `Download & retry / Switch to local repo...`”的自动化证据；未找到 `S1-22 / S1-23` 冲突交接页的实现或验收证据
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+
+VERIFY_RESULT: FAIL

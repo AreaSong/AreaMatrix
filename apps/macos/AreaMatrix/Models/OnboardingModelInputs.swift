@@ -26,7 +26,10 @@ extension OnboardingModel {
             source: source,
             destination: destination,
             urls: fileURLs,
-            kind: ImportEntryKind.resolved(for: fileURLs)
+            kind: ImportEntryKind.resolved(for: fileURLs),
+            availableCategories: resolvedImportCategories(opening: opening, destination: destination),
+            allowReplaceDuringImport: opening.config.allowReplaceDuringImport,
+            isTrashAvailable: Self.isSystemTrashAvailable()
         )
         toastMessage = nil
     }
@@ -34,6 +37,99 @@ extension OnboardingModel {
     @MainActor
     func dismissImportEntry() {
         pendingImportEntry = nil
+        consumeQueuedDockImportIfPossible()
+    }
+
+    @MainActor
+    func switchImportEntryToLocalRepository() {
+        pendingImportEntry = nil
+        showChoosePath()
+    }
+
+    @MainActor
+    func beginImportEntryProgress(currentPath: String) {
+        guard let opening = currentOpeningForImport else { return }
+        pendingImportEntry = nil
+        route = .importProgress(ImportProgressRouteState(
+            sourceOpening: opening,
+            currentPath: currentPath
+        ))
+    }
+
+    @MainActor
+    func failImportEntry(currentPath: String, mapping: CoreErrorMappingSnapshot) {
+        guard case .importProgress(let state) = route else { return }
+        route = .importProgress(ImportProgressRouteState(
+            sourceOpening: state.sourceOpening,
+            currentPath: currentPath,
+            status: .failed(mapping),
+            completed: 0,
+            failed: 1,
+            remaining: 0
+        ))
+    }
+
+    @MainActor
+    func finishImportEntry(repoPath: String, entry: FileEntrySnapshot) async {
+        do {
+            let opening = try await emptyRepositoryOpener.openConfiguredRepository(repoPath: repoPath)
+            finishSuccessfulRepositoryOpen(opening)
+            toastMessage = "已导入：\(entry.currentName)"
+            accessibilityAnnouncer.announce("已导入：\(entry.currentName)")
+        } catch {
+            await routeMainOpeningFailure(error, repoPath: repoPath)
+        }
+    }
+
+    @MainActor
+    func returnFromImportProgress() {
+        guard case .importProgress(let state) = route else { return }
+        route = Self.mainRoute(for: state.sourceOpening)
+        consumeQueuedDockImportIfPossible()
+    }
+
+    @MainActor
+    func handleDockOpenFiles(_ urls: [URL]) {
+        let fileURLs = Self.validFileURLs(from: urls)
+        guard !fileURLs.isEmpty else { return }
+        queuedDockImportBatches.append(fileURLs)
+        consumeQueuedDockImportIfPossible()
+    }
+
+    @MainActor
+    func consumePendingDockOpenRequests() {
+        for urls in AreaMatrixDockOpenRelay.takePendingBatches() {
+            handleDockOpenFiles(urls)
+        }
+    }
+
+    @MainActor
+    func consumeQueuedDockImportIfPossible() {
+        guard pendingImportEntry == nil else { return }
+        guard let opening = currentOpeningForImport else { return }
+        guard queuedDockImportBatches.isEmpty == false else { return }
+        let urls = queuedDockImportBatches.removeFirst()
+        startImportEntry(opening: opening, source: .dockOpenFile, urls: urls)
+    }
+
+    private func resolvedImportCategories(
+        opening: RepositoryOpeningResult,
+        destination: ImportEntryDestination
+    ) -> [String] {
+        var categories = opening.availableImportCategories
+        if case .category(let slug) = destination, !categories.contains(slug) {
+            categories.append(slug)
+        }
+        return categories
+    }
+
+    private var currentOpeningForImport: RepositoryOpeningResult? {
+        switch route {
+        case .mainEmpty(let opening), .mainList(let opening):
+            return opening
+        default:
+            return nil
+        }
     }
 
     func validatePathBlockingMessage(for validation: RepoPathValidationSnapshot) -> String? {
@@ -94,6 +190,10 @@ extension OnboardingModel {
         urls.filter { url in
             url.isFileURL && !url.path.isEmpty
         }
+    }
+
+    static func isSystemTrashAvailable() -> Bool {
+        FileManager.default.urls(for: .trashDirectory, in: .userDomainMask).isEmpty == false
     }
 
 }
