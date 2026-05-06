@@ -1,0 +1,225 @@
+import SwiftUI
+
+struct ImportFolderPreviewView: View {
+    @ObservedObject var model: ImportFolderPreviewModel
+    let request: ImportEntryRequest
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            ImportFolderSummarySection(
+                folderPath: model.folderPathLabel,
+                fileCount: model.rows.count,
+                totalSizeDescription: model.totalSizeDescription,
+                folderCount: model.folderCount,
+                iCloudPlaceholderCount: model.iCloudPlaceholderCount
+            )
+            ImportFolderExclusionSection(skippedRules: model.skippedRules)
+            ImportFolderAdvancedOptionsSection(
+                includeHiddenFiles: includeHiddenFilesBinding,
+                followSymlinks: followSymlinksBinding,
+                isDisabled: model.status.isScanning
+            )
+            ImportFolderPreviewStatusSection(status: model.status)
+            ImportFolderErrorSummary(errors: model.scanErrors)
+            ImportFolderRowsSection(rows: model.rows)
+            Text("导入目标：\(request.destinationLabel)")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private var includeHiddenFilesBinding: Binding<Bool> {
+        Binding(
+            get: { model.includeHiddenFiles },
+            set: { model.updateIncludeHiddenFiles($0) }
+        )
+    }
+
+    private var followSymlinksBinding: Binding<Bool> {
+        Binding(
+            get: { model.followSymlinks },
+            set: { model.updateFollowSymlinks($0) }
+        )
+    }
+}
+
+struct ImportFolderSummarySection: View {
+    let folderPath: String
+    let fileCount: Int
+    let totalSizeDescription: String?
+    let folderCount: Int
+    let iCloudPlaceholderCount: Int
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("文件夹信息")
+                .font(.headline)
+            LabeledContent("文件夹", value: folderPath)
+            HStack(spacing: 16) {
+                LabeledContent("已发现", value: "\(fileCount) 个文件")
+                LabeledContent("总大小", value: totalSizeDescription ?? "计算中")
+                LabeledContent("子文件夹", value: "\(folderCount) 个")
+                LabeledContent("iCloud", value: "\(iCloudPlaceholderCount) 个")
+            }
+            .font(.callout)
+            .foregroundStyle(.secondary)
+        }
+    }
+}
+
+struct ImportFolderExclusionSection: View {
+    let skippedRules: [ImportFolderSkippedRule]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("默认排除")
+                .font(.headline)
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 120), spacing: 8)], alignment: .leading, spacing: 8) {
+                ForEach(defaultRules, id: \.self) { rule in
+                    Text(ruleLabel(rule))
+                        .font(.caption)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.secondary.opacity(0.12), in: RoundedRectangle(cornerRadius: 6))
+                }
+            }
+        }
+    }
+
+    private var defaultRules: [String] {
+        [".DS_Store", ".git/", ".areamatrix/", "node_modules/", "隐藏文件", "符号链接"]
+    }
+
+    private func ruleLabel(_ rule: String) -> String {
+        guard let skipped = skippedRules.first(where: { $0.label == rule }) else {
+            return rule
+        }
+        return "\(rule) · \(skipped.count)"
+    }
+}
+
+struct ImportFolderAdvancedOptionsSection: View {
+    @Binding var includeHiddenFiles: Bool
+    @Binding var followSymlinks: Bool
+    let isDisabled: Bool
+
+    var body: some View {
+        DisclosureGroup("高级选项") {
+            VStack(alignment: .leading, spacing: 8) {
+                Toggle("包含隐藏文件", isOn: $includeHiddenFiles)
+                Toggle("跟随符号链接", isOn: $followSymlinks)
+                Text("选项变化后会重新预扫描；确认前不会复制、移动或写入文件。")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.top, 6)
+        }
+        .disabled(isDisabled)
+    }
+}
+
+struct ImportFolderPreviewStatusSection: View {
+    let status: ImportFolderPreviewStatus
+
+    var body: some View {
+        HStack(spacing: 8) {
+            if status.isScanning {
+                ProgressView()
+                    .controlSize(.small)
+            }
+            if let message = status.message {
+                Text(message)
+                    .font(.callout)
+                    .foregroundStyle(statusColor)
+            }
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    private var statusColor: Color {
+        if case .failed = status {
+            return .red
+        }
+        return .secondary
+    }
+}
+
+struct ImportFolderErrorSummary: View {
+    let errors: [ImportFolderScanError]
+
+    var body: some View {
+        if let firstError = errors.first {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("预扫描错误")
+                    .font(.headline)
+                Text("\(firstError.path)：\(firstError.message)")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+                    .lineLimit(2)
+            }
+        }
+    }
+}
+
+struct ImportFolderRowsSection: View {
+    let rows: [ImportFolderPreviewRow]
+
+    var body: some View {
+        DisclosureGroup("View files...") {
+            Table(rows) {
+                TableColumn("File") { row in
+                    Text(row.originalName)
+                }
+                TableColumn("Relative path") { row in
+                    Text(row.relativePath)
+                }
+                TableColumn("Suggested category") { row in
+                    Text(row.predictedCategory ?? "未生成")
+                }
+                TableColumn("Suggested name") { row in
+                    Text(row.suggestedName)
+                }
+                TableColumn("Status") { row in
+                    statusCell(for: row)
+                }
+            }
+            .frame(minHeight: 240)
+        }
+        .disabled(rows.isEmpty)
+    }
+
+    private func statusCell(for row: ImportFolderPreviewRow) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(row.status.tag)
+                .font(.caption.weight(.semibold))
+            if let detail = row.status.detail {
+                Text(detail)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+}
+
+struct ImportFolderFooterSection: View {
+    let importDisabledReason: String?
+    let onCancel: () -> Void
+    let onRetryScan: () -> Void
+
+    var body: some View {
+        HStack {
+            if let importDisabledReason {
+                Text(importDisabledReason)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+            Button("Retry scan", action: onRetryScan)
+            Button("Cancel", action: onCancel)
+                .keyboardShortcut(.cancelAction)
+            Button("Import Folder") {}
+                .keyboardShortcut(.defaultAction)
+                .disabled(importDisabledReason != nil)
+        }
+    }
+}

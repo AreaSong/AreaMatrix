@@ -1,0 +1,76 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`2-2/task-11`
+- Task：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-2-import-conflict/task-11-s1-19-c1-05-classify-preview.md`
+- 实现范围：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+- 禁止范围：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：0
+- 通过项数：10
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 S1-19 页面中的 C1-05 功能点
+- 结果：通过
+- 证据：folder 分支只接 `ImportFolderPreviewModel`，`Import Folder` 被禁用并明确写明 `C1-06/C1-08 导入执行由后续任务接入`
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportEntrySheetView.swift:84`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportFolderPreviewModel.swift:214`
+
+- 项目：读取页面规格、control map、Core API、C1-05 能力规格并对齐
+- 结果：通过
+- 证据：S1-19 声明 `predict_category` 属于 Real Core；C1-05 只读 `.areamatrix/classifier.yaml`，输出 category/suggested_name/reason/confidence；UDL 暴露 `predict_category`
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:39`、`/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-05-classify-preview.md:9`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:41`
+
+- 项目：只接入 C1-05 CoreBridge / 状态 / 错误映射
+- 结果：通过
+- 证据：生产默认 predictor 为 `CoreBridge()`；folder preview 对每个 ready file 调用 `predictCategory(repoPath:filename:)`；CoreBridge 通过生成绑定调用 `predictCategory`
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportEntrySheetView.swift:32`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportFolderPreviewModel.swift:280`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift:259`
+
+- 项目：不顺手实现相邻页面或其他 Core 功能点
+- 结果：通过
+- 证据：未调用 `import_file`、`rename_file`、`delete_file` 等相邻能力；folder footer 的导入按钮无动作且禁用，C1-06/C1-08 留给后续任务
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportFolderPreviewSections.swift:220`
+
+- 项目：Expected New Paths
+- 结果：通过
+- 证据：新增/引用了 `ImportFolderPreviewModel.swift`、`ImportFolderScanner.swift`、`ImportFolderPreviewSections.swift`、`ImportFolderPreviewModelTests.swift`，并加入 Xcode project sources
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj:96`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git diff --name-only -- core/src` 无输出，未触碰 `core/src/**`
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，folder scan、preview model、view section、test 分层清楚，未把导入执行塞进 C1-05。
+- 注释 / rustdoc / 文档同步：通过，本 task 未新增 public Rust API；Swift 代码未出现无意义注释或文档漂移。
+- 错误处理与边界处理：通过，`Config`、`Classify` 等 Core 错误映射到逐行 ERROR；iCloud placeholder 不进入 predictor。
+- 测试与验证覆盖：通过，新增测试覆盖 ready files 调 Core predictor、默认排除规则、分类失败、iCloud placeholder、真实 CoreBridge 分类。
+- 占位、硬编码、mock-only、一次性实现检查：通过，生产路径默认使用 `CoreBridge()`；测试 mock 仅用于单测注入，不伪造生产闭环。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+- 结果：通过，`BUILD SUCCEEDED`
+- 已运行：`./dev test macos`
+- 结果：通过；标准 `xcodebuild test` 被本地 sandbox 的 `testmanagerd` 通信限制阻断后，脚本按 repo 规则复用同一 XCTest bundle，`xcrun xctest` 通过，219 tests，0 failures
+- 缺失：未发现必需验证缺失
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS

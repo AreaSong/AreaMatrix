@@ -14,6 +14,7 @@ struct ImportEntrySheetView: View {
     @StateObject private var previewModel: ImportSingleFilePreviewModel
     @StateObject private var batchPreviewModel: ImportBatchPreviewModel
     @StateObject private var batchImportModel: ImportBatchCopyImportModel
+    @StateObject private var folderPreviewModel: ImportFolderPreviewModel
     @State private var isReasonPopoverPresented = false
     @State private var showsBatchConflictReview = false
     @State private var pendingBatchReplaceConfirmation: ImportBatchReplaceConfirmation?
@@ -33,6 +34,7 @@ struct ImportEntrySheetView: View {
         batchFileImporter: any CoreBatchCopyImporting = CoreBridge(),
         batchDuplicatePrechecker: any ImportBatchDuplicatePrechecking = CoreImportBatchDuplicatePrechecker(),
         batchNameConflictPrechecker: any ImportBatchNameConflictPrechecking = CoreImportBatchNameConflictPrechecker(),
+        folderScanner: any ImportFolderScanning = LocalImportFolderScanner(),
         preflight: any ImportSingleFilePreflighting = CoreImportSingleFilePreflight(),
         placeholderDownloader: any ICloudPlaceholderDownloading = LocalICloudPlaceholderDownloader(),
         errorMapper: any CoreErrorMapping = CoreBridge()
@@ -63,6 +65,10 @@ struct ImportEntrySheetView: View {
             errorMapper: errorMapper,
             placeholderDownloader: placeholderDownloader
         ))
+        _folderPreviewModel = StateObject(wrappedValue: ImportFolderPreviewModel(
+            predictor: categoryPredictor,
+            scanner: folderScanner
+        ))
     }
 
     var body: some View {
@@ -76,7 +82,7 @@ struct ImportEntrySheetView: View {
             case .multipleItems(_):
                 batchPreview
             case .folder:
-                genericImportSummary
+                folderPreview
             }
 
             footer
@@ -95,7 +101,7 @@ struct ImportEntrySheetView: View {
                     selectedDestination: batchPreviewModel.selectedDestination
                 )
             case .folder:
-                break
+                await folderPreviewModel.load(request: request)
             }
         }
         .onChange(of: batchPreviewModel.rows) { _, rows in
@@ -340,6 +346,14 @@ struct ImportEntrySheetView: View {
                     onImportFailed: onBatchImportFailed,
                     onImported: onImported
                 )
+            } else if case .folder = request.kind {
+                ImportFolderFooterSection(
+                    importDisabledReason: folderPreviewModel.importDisabledReason,
+                    onCancel: onCancel,
+                    onRetryScan: {
+                        Task { await folderPreviewModel.retryScan() }
+                    }
+                )
             }
         }
     }
@@ -364,14 +378,8 @@ struct ImportEntrySheetView: View {
         }
     }
 
-    private var genericImportSummary: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(primaryFileLabel)
-                .font(.callout)
-                .lineLimit(2)
-                .textSelection(.enabled)
-            LabeledContent("Destination", value: request.destinationLabel)
-        }
+    private var folderPreview: some View {
+        ImportFolderPreviewView(model: folderPreviewModel, request: request)
     }
 
     private var categoryOptions: [String] {
