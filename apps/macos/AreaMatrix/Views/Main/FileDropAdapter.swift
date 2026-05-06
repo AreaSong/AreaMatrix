@@ -6,16 +6,20 @@ struct FileDropAdapter {
     let onDrop: ([URL]) -> Void
 
     func handle(_ providers: [NSItemProvider]) -> Bool {
-        let fileURLProviders = providers.filter { $0.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier) }
+        let fileURLProviders = Self.fileURLProviders(from: providers)
         guard !fileURLProviders.isEmpty else { return false }
 
-        loadFileURLs(from: fileURLProviders) { urls in
+        Self.loadFileURLs(from: fileURLProviders) { urls in
             onDrop(urls)
         }
         return true
     }
 
-    private func loadFileURLs(from providers: [NSItemProvider], completion: @escaping ([URL]) -> Void) {
+    static func fileURLProviders(from providers: [NSItemProvider]) -> [NSItemProvider] {
+        providers.filter { $0.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier) }
+    }
+
+    static func loadFileURLs(from providers: [NSItemProvider], completion: @escaping ([URL]) -> Void) {
         let group = DispatchGroup()
         let lock = NSLock()
         var urls: [URL] = []

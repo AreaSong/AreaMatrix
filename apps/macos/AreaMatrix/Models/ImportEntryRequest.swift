@@ -8,6 +8,7 @@ enum ImportEntrySource: Equatable, Sendable {
 enum ImportEntryDestination: Equatable, Sendable {
     case autoClassify
     case category(String)
+    case repositoryRoot
 }
 
 enum ImportEntryKind: Equatable, Sendable {
@@ -57,7 +58,39 @@ struct ImportEntryRequest: Equatable, Sendable, Identifiable {
             return "Auto classify"
         case .category(let slug):
             return slug
+        case .repositoryRoot:
+            return "Repo root"
         }
     }
 
+}
+
+extension ImportEntryKind {
+    static func resolved(for urls: [URL]) -> ImportEntryKind {
+        if urls.contains(where: isDirectory) {
+            return .folder
+        }
+
+        if urls.count == 1 {
+            return .singleFile
+        }
+
+        return .multipleItems(urls.count)
+    }
+
+    var dropHoverTitle: String {
+        switch self {
+        case .folder:
+            return "Drop folder to import recursively"
+        case .singleFile:
+            return "Drop files to import"
+        case .multipleItems(let count):
+            return "Drop \(count) files to import"
+        }
+    }
+
+    private static func isDirectory(_ url: URL) -> Bool {
+        var isDirectory: ObjCBool = false
+        return FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory) && isDirectory.boolValue
+    }
 }

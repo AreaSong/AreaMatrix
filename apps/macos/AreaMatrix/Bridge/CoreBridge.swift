@@ -20,6 +20,9 @@ protocol CoreScanSessionReading: Sendable {
     func latestScanSession(repoPath: String) async throws -> ScanSessionSnapshot?
     func resumeScanSession(repoPath: String, scanSessionId: Int64) async throws -> ReindexReportSnapshot
 }
+protocol CoreCategoryPredicting: Sendable {
+    func predictCategory(repoPath: String, filename: String) async throws -> ClassifyResultSnapshot
+}
 extension CoreScanSessionReading {
     func resumeScanSession(repoPath: String, scanSessionId: Int64) async throws -> ReindexReportSnapshot {
         throw CoreError.Internal(message: "scan session resume is unavailable")
@@ -253,8 +256,10 @@ actor CoreBridge {
         ReindexReportSnapshot(coreReport: try resumeCoreScanSession(repoPath: repoPath, scanSessionId: scanSessionId))
     }
 
-    func predictCategory(filename: String) async throws -> Never {
-        try requireGeneratedBindings(for: .predictCategory)
+    func predictCategory(repoPath: String, filename: String) async throws -> ClassifyResultSnapshot {
+        try await Task.detached(priority: .userInitiated) {
+            ClassifyResultSnapshot(coreResult: try predictCoreCategory(repoPath: repoPath, filename: filename))
+        }.value
     }
 
     func importFile(from sourceURL: URL) async throws -> Never {
@@ -329,6 +334,7 @@ extension CoreBridge:
     CoreConfigurationUpdating,
     CoreDiagnosticsCollecting,
     CoreErrorMapping,
+    CoreCategoryPredicting,
     CoreRepositoryInitializing,
     CoreInitializedRepositoryPathValidating,
     CoreRepositoryPathValidating,
@@ -356,6 +362,10 @@ private func latestCoreScanSession(repoPath: String) throws -> ScanSession? {
 
 private func resumeCoreScanSession(repoPath: String, scanSessionId: Int64) throws -> ReindexReport {
     try resumeScanSession(repoPath: repoPath, scanSessionId: scanSessionId)
+}
+
+private func predictCoreCategory(repoPath: String, filename: String) throws -> ClassifyResult {
+    try predictCategory(repoPath: repoPath, filename: filename)
 }
 
 private func createCoreDiagnosticsSnapshot(repoPath: String) throws -> DiagnosticsSnapshot {

@@ -26,7 +26,7 @@ extension OnboardingModel {
             source: source,
             destination: destination,
             urls: fileURLs,
-            kind: Self.importEntryKind(for: fileURLs)
+            kind: ImportEntryKind.resolved(for: fileURLs)
         )
         toastMessage = nil
     }
@@ -96,20 +96,4 @@ extension OnboardingModel {
         }
     }
 
-    private static func importEntryKind(for urls: [URL]) -> ImportEntryKind {
-        if urls.contains(where: isDirectory) {
-            return .folder
-        }
-
-        if urls.count == 1 {
-            return .singleFile
-        }
-
-        return .multipleItems(urls.count)
-    }
-
-    private static func isDirectory(_ url: URL) -> Bool {
-        var isDirectory: ObjCBool = false
-        return FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory) && isDirectory.boolValue
-    }
 }

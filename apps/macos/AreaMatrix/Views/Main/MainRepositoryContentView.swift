@@ -10,7 +10,7 @@ struct MainRepositoryContentView: View {
     let opening: RepositoryOpeningResult
     let state: MainRepositoryContentState
     let onImport: () -> Void
-    let onDropImport: ([URL]) -> Void
+    let onDropImport: ([URL], ImportEntryDestination) -> Void
     let onOpenSettings: () -> Void
     let onRetryCurrentList: () -> Void
     let onCollectDiagnostics: () async -> Void
@@ -20,7 +20,7 @@ struct MainRepositoryContentView: View {
     @State private var selectedSidebarID: String = "inbox"
     @State private var selectedFileIDs: Set<Int64> = []
     @State private var filterText: String = ""
-    @State private var isDropTargeted = false
+    @StateObject private var dropPreviewModel: ImportDropPreviewModel
     @State private var tableSortOrder: [KeyPathComparator<FileEntrySnapshot>] = [
         KeyPathComparator(\FileEntrySnapshot.importedAt, order: .reverse),
     ]
@@ -38,6 +38,9 @@ struct MainRepositoryContentView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .overlay(alignment: .center) {
+            dropOverlay
+        }
         .task(id: selectedSidebarID) {
             guard state == .list else { return }
             selectedFileIDs = []
@@ -119,7 +122,16 @@ struct MainRepositoryContentView: View {
             Text("\(row.totalFileCount)")
                 .foregroundStyle(.secondary)
         }
+        .modifier(ImportDropTargetModifier(
+            target: row.importDropTarget,
+            dropPreviewModel: dropPreviewModel,
+            onDropImport: { urls, target in
+                onDropImport(urls, target.entryDestination)
+            }
+        ))
+        .help(row.importDropTarget.sidebarHelp)
         .accessibilityLabel("\(row.displayName) \(row.totalFileCount)")
+        .accessibilityHint(row.importDropTarget.sidebarHelp)
     }
 
     private static func defaultSelectedSidebarID(from rows: [RepositorySidebarRowSnapshot]) -> String {
@@ -144,7 +156,7 @@ struct MainRepositoryContentView: View {
         opening: RepositoryOpeningResult,
         state: MainRepositoryContentState,
         onImport: @escaping () -> Void,
-        onDropImport: @escaping ([URL]) -> Void,
+        onDropImport: @escaping ([URL], ImportEntryDestination) -> Void,
         onOpenSettings: @escaping () -> Void = {},
         onRetryCurrentList: @escaping () -> Void = {},
         onCollectDiagnostics: @escaping () async -> Void = {},
@@ -152,6 +164,7 @@ struct MainRepositoryContentView: View {
         onCopyPath: @escaping (String) -> Void = { _ in },
         fileLister: any CoreFileListing = CoreBridge(),
         fileDetailer: any CoreFileDetailing = CoreBridge(),
+        categoryPredictor: any CoreCategoryPredicting = CoreBridge(),
         errorMapper: any CoreErrorMapping = CoreBridge(),
         diagnosticsCollector: any CoreDiagnosticsCollecting = CoreBridge()
     ) {
@@ -164,6 +177,10 @@ struct MainRepositoryContentView: View {
         self.onCollectDiagnostics = onCollectDiagnostics
         self.onShowInFinder = onShowInFinder
         self.onCopyPath = onCopyPath
+        _dropPreviewModel = StateObject(wrappedValue: ImportDropPreviewModel(
+            repoPath: opening.config.repoPath,
+            predictor: categoryPredictor
+        ))
         _fileListModel = StateObject(wrappedValue: MainFileListModel(
             opening: opening,
             fileLister: fileLister,
@@ -200,10 +217,13 @@ struct MainRepositoryContentView: View {
                 Button("Import...", action: onImport)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(isDropTargeted ? Color.accentColor.opacity(0.12) : Color.clear)
-            .onDrop(of: [.fileURL], isTargeted: $isDropTargeted) { providers in
-                FileDropAdapter(onDrop: onDropImport).handle(providers)
-            }
+            .modifier(ImportDropTargetModifier(
+                target: .autoClassify,
+                dropPreviewModel: dropPreviewModel,
+                onDropImport: { urls, target in
+                    onDropImport(urls, target.entryDestination)
+                }
+            ))
             .accessibilityElement(children: .contain)
         case .list:
             VStack(alignment: .leading, spacing: 12) {
@@ -222,6 +242,13 @@ struct MainRepositoryContentView: View {
             }
             .padding(18)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .modifier(ImportDropTargetModifier(
+                target: selectedSidebarRow.importDropTarget,
+                dropPreviewModel: dropPreviewModel,
+                onDropImport: { urls, target in
+                    onDropImport(urls, target.entryDestination)
+                }
+            ))
         }
     }
 
@@ -452,5 +479,13 @@ struct MainRepositoryContentView: View {
             }
         )
         .frame(minWidth: 220, idealWidth: 260, maxWidth: 320, maxHeight: .infinity, alignment: .topLeading)
+    }
+
+    @ViewBuilder
+    private var dropOverlay: some View {
+        if let presentation = dropPreviewModel.presentation {
+            DropZoneOverlay(presentation: presentation)
+                .padding(24)
+        }
     }
 }

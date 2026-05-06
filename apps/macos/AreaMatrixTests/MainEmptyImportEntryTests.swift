@@ -24,6 +24,27 @@ final class MainEmptyImportEntryTests: XCTestCase {
     }
 
     @MainActor
+    func testMainEmptyDropEntryKeepsSidebarDestination() {
+        let importURL = URL(fileURLWithPath: "/tmp/source.pdf")
+        let opening = RepositoryOpeningResult.mainEmptyImportFixture(repoPath: "/tmp/empty-repo")
+        let model = OnboardingModel(
+            settingsReader: MainEmptyImportStaticSettingsReader(repoPath: nil),
+            accessibilityAnnouncer: MainEmptyImportRecordingAccessibilityAnnouncer(),
+            helpOpener: MainEmptyImportNoopWelcomeHelpOpener()
+        )
+
+        model.startImportEntry(
+            opening: opening,
+            source: .dropZone,
+            urls: [importURL],
+            destination: .category("finance")
+        )
+
+        XCTAssertEqual(model.pendingImportEntry?.destination, .category("finance"))
+        XCTAssertEqual(model.pendingImportEntry?.destinationLabel, "finance")
+    }
+
+    @MainActor
     func testMainEmptyDropEntryRejectsInvalidItemsWithAccessibleToast() throws {
         let opening = RepositoryOpeningResult.mainEmptyImportFixture(repoPath: "/tmp/empty-repo")
         let accessibilityAnnouncer = MainEmptyImportRecordingAccessibilityAnnouncer()

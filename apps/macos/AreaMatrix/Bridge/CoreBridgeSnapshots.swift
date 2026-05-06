@@ -1,5 +1,60 @@
 import Foundation
 
+enum ClassifyReasonSnapshot: String, Equatable, Sendable {
+    case keyword = "Keyword"
+    case `extension` = "Extension"
+    case aiPredicted = "AiPredicted"
+    case `default` = "Default"
+
+    var displayLabel: String {
+        switch self {
+        case .keyword:
+            return "keyword"
+        case .`extension`:
+            return "extension"
+        case .aiPredicted:
+            return "AI"
+        case .`default`:
+            return "default"
+        }
+    }
+}
+
+struct ClassifyResultSnapshot: Equatable, Sendable {
+    var category: String
+    var suggestedName: String
+    var reason: ClassifyReasonSnapshot
+    var confidence: Float
+
+    var confidencePercent: Int {
+        Int((confidence * 100).rounded())
+    }
+}
+
+extension ClassifyResultSnapshot {
+    init(coreResult: ClassifyResult) {
+        category = coreResult.category
+        suggestedName = coreResult.suggestedName
+        reason = ClassifyReasonSnapshot(coreReason: coreResult.reason)
+        confidence = coreResult.confidence
+    }
+}
+
+private extension ClassifyReasonSnapshot {
+    init(coreReason: ClassifyReason) {
+        switch coreReason {
+        case .keyword:
+            self = .keyword
+        case .`extension`:
+            self = .`extension`
+        case .aiPredicted:
+            self = .aiPredicted
+        case .`default`:
+            self = .`default`
+        }
+    }
+}
+
 extension ScanSessionSnapshot {
     init(coreSession: ScanSession) {
         id = coreSession.id

@@ -262,8 +262,13 @@ struct MainWindow: View {
                 opening: opening,
                 state: .empty,
                 onImport: { model.chooseImportSources(opening: opening) },
-                onDropImport: { urls in
-                    model.startImportEntry(opening: opening, source: .dropZone, urls: urls)
+                onDropImport: { urls, destination in
+                    model.startImportEntry(
+                        opening: opening,
+                        source: .dropZone,
+                        urls: urls,
+                        destination: destination
+                    )
                 },
                 onOpenSettings: { Task { await model.beginSettingsRepositoryPathValidation(opening.config.repoPath) } },
                 onRetryCurrentList: { Task { await model.retryConfigurationLoad() } },
@@ -276,8 +281,13 @@ struct MainWindow: View {
                 opening: opening,
                 state: .list,
                 onImport: { model.chooseImportSources(opening: opening) },
-                onDropImport: { urls in
-                    model.startImportEntry(opening: opening, source: .dropZone, urls: urls)
+                onDropImport: { urls, destination in
+                    model.startImportEntry(
+                        opening: opening,
+                        source: .dropZone,
+                        urls: urls,
+                        destination: destination
+                    )
                 },
                 onOpenSettings: { Task { await model.beginSettingsRepositoryPathValidation(opening.config.repoPath) } },
                 onRetryCurrentList: { Task { await model.retryConfigurationLoad() } },

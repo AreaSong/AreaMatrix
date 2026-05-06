@@ -69,6 +69,9 @@
 		0A0000000000000000000160 /* MainRepoErrorMappingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000161 /* MainRepoErrorMappingTests.swift */; };
 		0A0000000000000000000162 /* MainRepoErrorActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000163 /* MainRepoErrorActions.swift */; };
 		0A0000000000000000000164 /* MainWindowIntegrationVerifyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000165 /* MainWindowIntegrationVerifyTests.swift */; };
+		0A0000000000000000000166 /* ImportDropPreviewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000167 /* ImportDropPreviewModel.swift */; };
+		0A0000000000000000000168 /* ImportDropTargetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000169 /* ImportDropTargetView.swift */; };
+		0A000000000000000000016A /* ImportDropPreviewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000016B /* ImportDropPreviewModelTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -150,6 +153,9 @@
 		0A0000000000000000000161 /* MainRepoErrorMappingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/MainRepoErrorMappingTests.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000163 /* MainRepoErrorActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/MainRepoErrorActions.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000165 /* MainWindowIntegrationVerifyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/MainWindowIntegrationVerifyTests.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000167 /* ImportDropPreviewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ImportDropPreviewModel.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000169 /* ImportDropTargetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/ImportDropTargetView.swift; sourceTree = SOURCE_ROOT; };
+		0A000000000000000000016B /* ImportDropPreviewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportDropPreviewModelTests.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -232,6 +238,7 @@
 				0A0000000000000000000149 /* MainLoadingView.swift */,
 				0A000000000000000000015F /* RepositoryErrorView.swift */,
 				0A0000000000000000000127 /* FileDropAdapter.swift */,
+				0A0000000000000000000169 /* ImportDropTargetView.swift */,
 				0A0000000000000000000129 /* ImportEntrySheetView.swift */,
 				0A000000000000000000001F /* ValidatePathStepView.swift */,
 				0A00000000000000000000A0 /* InitializingStepView.swift */,
@@ -274,6 +281,7 @@
 				0A000000000000000000014F /* OnboardingRoute.swift */,
 				0A0000000000000000000019 /* CoreBridgePlaceholderState.swift */,
 				0A0000000000000000000121 /* ImportEntryRequest.swift */,
+				0A0000000000000000000167 /* ImportDropPreviewModel.swift */,
 				0A0000000000000000000123 /* OnboardingModelInputs.swift */,
 				0A0000000000000000000131 /* MainFileListModel.swift */,
 				0A0000000000000000000135 /* MainListVisibleFileFiltering.swift */,
@@ -310,6 +318,7 @@
 				0A0000000000000000000155 /* InitDoneTestSupport.swift */,
 				0A0000000000000000000111 /* MainEmptyBuildTreeTests.swift */,
 				0A000000000000000000012B /* MainEmptyImportEntryTests.swift */,
+				0A000000000000000000016B /* ImportDropPreviewModelTests.swift */,
 				0A0000000000000000000133 /* MainListFilesTests.swift */,
 				0A0000000000000000000137 /* MainListIntegrationFilterTests.swift */,
 				0A0000000000000000000139 /* MainListIntegrationClosureTests.swift */,
@@ -455,7 +464,9 @@
 				0A0000000000000000000134 /* MainListVisibleFileFiltering.swift in Sources */,
 				0A0000000000000000000122 /* OnboardingModelInputs.swift in Sources */,
 				0A0000000000000000000126 /* FileDropAdapter.swift in Sources */,
+				0A0000000000000000000168 /* ImportDropTargetView.swift in Sources */,
 				0A0000000000000000000128 /* ImportEntrySheetView.swift in Sources */,
+				0A0000000000000000000166 /* ImportDropPreviewModel.swift in Sources */,
 				0A000000000000000000013C /* MainRepositoryDetailPane.swift in Sources */,
 				0A000000000000000000013E /* MainFileActionRoutingSheet.swift in Sources */,
 				0A0000000000000000000140 /* RenameFileSheet.swift in Sources */,
@@ -502,6 +513,7 @@
 				0A0000000000000000000154 /* InitDoneTestSupport.swift in Sources */,
 				0A0000000000000000000110 /* MainEmptyBuildTreeTests.swift in Sources */,
 				0A000000000000000000012A /* MainEmptyImportEntryTests.swift in Sources */,
+				0A000000000000000000016A /* ImportDropPreviewModelTests.swift in Sources */,
 				0A0000000000000000000132 /* MainListFilesTests.swift in Sources */,
 				0A0000000000000000000136 /* MainListIntegrationFilterTests.swift in Sources */,
 				0A0000000000000000000138 /* MainListIntegrationClosureTests.swift in Sources */,
