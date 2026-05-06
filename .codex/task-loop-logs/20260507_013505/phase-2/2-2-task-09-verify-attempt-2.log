@@ -1,0 +1,89 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`2-2/task-09`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-2-import-conflict/task-09-s1-18-c1-09-detect-duplicate.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：12
+- 未覆盖项数：0
+- 通过项数：9
+- 不通过项数：3
+- 阻塞项数：2
+
+四、逐项验收结果
+
+- 只处理 S1-18 页面中的 C1-09 功能点  
+  结果：不通过  
+  证据：生产实现默认通过 `CoreImportBatchDuplicatePrechecker(fileLister: CoreBridge())` 调用 `listFiles` 做重复预检；`list_files` 在 control map 中属于 C1-11，不在 S1-18 的 C1-05/C1-06/C1-09 范围内。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportBatchPreviewModel.swift:198`
+
+- 读取页面规格、MVP control map、Core API 和 C1-09 能力规格  
+  结果：通过  
+  证据：已读取 4 个 Exact Docs，均存在；S1-18 明确要求预计重复、DUP 默认 Skip、冲突表；control map 标记 S1-18 为 Real Core；C1-09 绑定 `import_file` 内部 hash 检测。
+
+- 只接入 C1-09 对应的 CoreBridge / 状态 / 错误映射  
+  结果：不通过  
+  证据：预览阶段新增 `CoreFileListing` 依赖并分页读取 `listFiles`，不是 C1-09 文档列出的 `import_file` 或独立 preview API。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportBatchPreviewModel.swift:226`
+
+- 不顺手实现相邻页面  
+  结果：通过  
+  证据：改动集中在 S1-18 batch sheet、batch preview/import model 和对应测试；未发现 S1-22/S1-24 页面实现扩展。
+
+- S1-18 中 C1-09 用户可见功能可触发和验收  
+  结果：通过  
+  证据：摘要显示预计重复；冲突区显示 `Review conflicts`、`Duplicate content`、existing item、Strategy；DUP 默认 Skip，可切 Keep both。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportEntrySheetView.swift:166`
+
+- 没有 mock、fixture 或静态状态伪造真实 Core 闭环  
+  结果：通过  
+  证据：生产默认使用 `CoreBridge()`，导入通过 `AreaMatrix.importFile(...)`，测试中的 fake 仅用于单测注入。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreImporting.swift:195`
+
+- 未触碰 control map 之外的 Core 能力  
+  结果：不通过  
+  证据：S1-18 control map 只列 C1-05、C1-06、C1-09，但生产重复预检消费了 `list_files`/C1-11。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportBatchPreviewModel.swift:226`
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过。`ImportBatchCopyImportModel.swift` 当前 520 行，超过 `docs/development/coding-standards.md` 的 Swift 单文件 ≤500 行阈值；该文件 HEAD 为 400 行，本 task 增量后越界。
+- 注释 / rustdoc / 文档同步：通过。未新增 Rust public API；`core/area_matrix.udl` 与 Core API 的 `DuplicateStrategy`、`DuplicateFile` 保持一致。
+- 错误处理与边界处理：通过。预览映射 `Config/Classify/PermissionDenied/Io/Db`，导入失败经 `CoreErrorMapping` 处理。
+- 测试与验证覆盖：通过。重复预检、DUP 默认 Skip、Keep both 传递 `.keepBoth`、预览策略保留均有 XCTest 覆盖。
+- 占位、硬编码、mock-only、一次性实现检查：通过。生产路径没有 mock-only 闭环；测试 fixture 未被当作产品证据。
+
+六、阻塞项
+
+- P1：重复预检越界消费 C1-11 / `list_files`  
+  说明：本 task 只允许 S1-18 + C1-09，control map 对 S1-18 未列 C1-11；当前生产实现用 `CoreFileListing.listFiles` 读取文件列表做 hash 比对，导致能力边界不收敛。  
+  绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportBatchPreviewModel.swift:198`  
+  为什么导致不通过：违反 task checklist 第 1、3 项和完成标准“未触碰 control map 之外的 Core 能力”。
+
+- P1：Swift 文件长度超过编码规范阈值  
+  说明：`ImportBatchCopyImportModel.swift` 当前 520 行，超过单文件 ≤500 行规范。  
+  绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportBatchCopyImportModel.swift:520`  
+  为什么导致不通过：engineering-quality-rules 明确严重违反编码规范不能判定完成。
+
+七、验证情况
+
+- 已运行：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：通过，`BUILD SUCCEEDED`。
+- 已运行：`./dev test macos`：通过；标准 `xcodebuild test` 被本地 `testmanagerd` sandbox 限制阻断，仓库脚本按规则改用已构建 XCTest bundle，`xcrun xctest` 通过，194 tests、0 failures。
+- Forbidden Touches：`git diff --name-only -- core/src` 和 `git ls-files --others --exclude-standard -- core/src` 均为空，未发现 `core/src/**` 被触碰。
+- 缺失：未发现缺失的 Expected New Paths；新增 Swift 文件和测试已在 `project.pbxproj` 注册。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。主要原因不是编译或测试失败，而是能力边界越界和编码规范阈值被当前改动打破。
+
+VERIFY_RESULT: FAIL

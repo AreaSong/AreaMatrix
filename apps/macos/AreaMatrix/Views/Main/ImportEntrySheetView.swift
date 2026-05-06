@@ -12,6 +12,7 @@ struct ImportEntrySheetView: View {
     @StateObject private var batchPreviewModel: ImportBatchPreviewModel
     @StateObject private var batchImportModel: ImportBatchCopyImportModel
     @State private var isReasonPopoverPresented = false
+    @State private var showsBatchConflictReview = false
 
     init(
         request: ImportEntryRequest,
@@ -23,6 +24,7 @@ struct ImportEntrySheetView: View {
         categoryPredictor: any CoreCategoryPredicting = CoreBridge(),
         fileImporter: any CoreFileImporting = CoreBridge(),
         batchFileImporter: any CoreBatchCopyImporting = CoreBridge(),
+        batchDuplicatePrechecker: any ImportBatchDuplicatePrechecking = CoreImportBatchDuplicatePrechecker(),
         preflight: any ImportSingleFilePreflighting = CoreImportSingleFilePreflight(),
         placeholderDownloader: any ICloudPlaceholderDownloading = LocalICloudPlaceholderDownloader(),
         errorMapper: any CoreErrorMapping = CoreBridge()
@@ -41,7 +43,8 @@ struct ImportEntrySheetView: View {
             errorMapper: errorMapper
         ))
         _batchPreviewModel = StateObject(wrappedValue: ImportBatchPreviewModel(
-            predictor: categoryPredictor
+            predictor: categoryPredictor,
+            duplicatePrechecker: batchDuplicatePrechecker
         ))
         _batchImportModel = StateObject(wrappedValue: ImportBatchCopyImportModel(
             importer: batchFileImporter,
@@ -162,6 +165,13 @@ struct ImportEntrySheetView: View {
             batchDestinationSection
             batchStatusSection
             batchRowsSection
+            if batchImportModel.duplicateCount > 0 || showsBatchConflictReview {
+                ImportBatchConflictSection(
+                    duplicateCount: batchImportModel.duplicateCount,
+                    batchImportModel: batchImportModel,
+                    isExpanded: $showsBatchConflictReview
+                )
+            }
             if batchPreviewModel.showsRetryPreview {
                 HStack(spacing: 10) {
                     Button("Retry preview") {
@@ -255,7 +265,7 @@ struct ImportEntrySheetView: View {
                     LabeledContent("总大小", value: totalSizeDescription)
                 }
                 LabeledContent("来源", value: batchPreviewModel.sourceLabel)
-                LabeledContent("预计重复", value: "未检测")
+                LabeledContent("预计重复", value: "\(batchImportModel.duplicateCount) 个")
                 LabeledContent("重名冲突", value: "未检测")
             }
             .font(.callout)

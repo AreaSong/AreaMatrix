@@ -169,12 +169,11 @@ private enum ImportSingleFileHasher {
         defer { try? handle.close() }
 
         var hasher = SHA256()
-        while autoreleasepool(invoking: {
-            let data = try? handle.read(upToCount: 64 * 1024)
-            guard let data, !data.isEmpty else { return false }
+        while true {
+            let data = try handle.read(upToCount: 64 * 1024)
+            guard let data, !data.isEmpty else { break }
             hasher.update(data: data)
-            return true
-        }) {}
+        }
         return hasher.finalize().map { String(format: "%02x", $0) }.joined()
     }
 }

@@ -1,0 +1,53 @@
+一、执行结论
+
+已完成。
+
+二、执行范围
+
+单任务：`2-2/task-09`，只处理 S1-18 中 C1-09 detect-duplicate。
+
+修改文件：
+- `apps/macos/AreaMatrix/Models/ImportBatchPreviewModel.swift`
+- `apps/macos/AreaMatrix/Models/ImportBatchCopyImportModel.swift`
+- `apps/macos/AreaMatrix/Models/ImportDropPreviewModel.swift`
+- `apps/macos/AreaMatrix/Models/ImportFileHasher.swift`
+- `apps/macos/AreaMatrix/Models/ImportSingleFilePreflightCorePreview.swift`
+- `apps/macos/AreaMatrix/Views/Main/ImportBatchConflictSection.swift`
+- `apps/macos/AreaMatrix/Views/Main/ImportBatchCopyFooterSection.swift`
+- `apps/macos/AreaMatrix/Views/Main/ImportEntrySheetView.swift`
+- `apps/macos/AreaMatrixTests/ImportBatchCopyImportModelTests.swift`
+- `apps/macos/AreaMatrixTests/ImportDropPreviewModelTests.swift`
+- `apps/macos/AreaMatrixTests/ImportSingleFileTestFixtures.swift`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+
+三、完成情况
+
+- 核对清单：已读取 S1-18、MVP control map、Core API、C1-09，并只接入 C1-09 的重复检测路径。
+- 用户可见功能：S1-18 批量导入摘要现在显示预计重复数量；DUP 行进入 `Review conflicts` 表。
+- 默认策略：重复项默认 `Skip`，不会进入 Core 导入写入队列。
+- Keep both：用户可将 DUP 行策略改为 `Keep both`，导入时传真实 Core `DuplicateStrategy.keepBoth`。
+- 未实现相邻能力：未补 C1-05/C1-06 之外功能，未实现重名冲突、iCloud 下载、Replace 二次确认等相邻任务。
+- Forbidden Touches：未触碰 `core/src/**`。
+
+四、工程质量
+
+- 代码结构：把批量预览从过大的 `ImportDropPreviewModel.swift` 拆到 `ImportBatchPreviewModel.swift`；冲突表拆到 `ImportBatchConflictSection.swift`。
+- 真实闭环：重复检测通过源文件 SHA256 + `CoreBridge`/`CoreFileListing` 读取真实 active 文件列表完成，没有 mock-only 产品路径。
+- 错误处理：hash 读取、Core list_files、分类失败都会显式映射为行级 ERROR；没有静默吞错。
+- 文件安全：本任务只读源文件与 Core 元数据，不删除、移动、覆盖用户文件；Skip 不写最终文件。
+- 未新增依赖，未改文档/API/UDL。
+
+五、验证情况
+
+已运行并通过：
+- `xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+- `./dev test macos`：标准 `xcodebuild test` 遇到本地 sandbox 的 `testmanagerd` 通信限制，脚本按仓库规则复用已构建 XCTest bundle 执行 `xcrun xctest`，最终 `192 tests, 0 failures`。
+- `git diff --check -- apps/macos/AreaMatrix apps/macos/AreaMatrixTests apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+
+六、风险与后续
+
+剩余风险：本 task 只覆盖 S1-18 + C1-09。S1-18 的重名冲突、Replace 确认、iCloud placeholder、完整批量导入结果页仍由后续 page-feature / integration task 覆盖。
+
+建议下一个任务：继续 `2-2/task-10` 或对应 S1-18 page integration verify，检查同页 C1-05/C1-06/C1-09 的组合闭环。
+
+备注：工作区里已有 `tasks/prompts/_shared/progress.json` 和 `.codex/task-loop-runs/20260507_013505/` 变更/未跟踪项，我没有纳入本任务修改，也没有回滚。

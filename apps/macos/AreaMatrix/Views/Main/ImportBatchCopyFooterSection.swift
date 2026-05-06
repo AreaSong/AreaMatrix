@@ -25,14 +25,14 @@ struct ImportBatchCopyFooterSection: View {
         if batchPreviewModel.status.isLoading {
             return true
         }
-        return batchImportModel.importDisabledReason != nil
+        return batchPreviewModel.importDisabledReason != nil || batchImportModel.importDisabledReason != nil
     }
 
     private var importButtonHelp: String {
         if batchPreviewModel.status.isLoading {
             return "Preparing preview..."
         }
-        return batchImportModel.importDisabledReason ?? ""
+        return batchPreviewModel.importDisabledReason ?? batchImportModel.importDisabledReason ?? ""
     }
 
     @MainActor
@@ -41,6 +41,9 @@ struct ImportBatchCopyFooterSection: View {
         let outcome = await batchImportModel.importReadyFiles(selectedDestination: batchPreviewModel.selectedDestination)
 
         guard let outcome else { return }
+        if outcome.pendingDuplicateCount > 0 {
+            return
+        }
         guard outcome.failedCount == 0 else {
             return
         }
@@ -55,6 +58,7 @@ struct ImportBatchCopyFooterSection: View {
 
     @MainActor
     private func prepareImport() {
+        guard !batchImportModel.hasPendingDuplicateResolution else { return }
         batchImportModel.applyPreviewRows(
             batchPreviewModel.rows,
             request: request,

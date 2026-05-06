@@ -25,12 +25,14 @@ extension FileEntrySnapshot {
     static func s117Fixture(
         currentName: String,
         category: String,
+        hashSha256: String = "hash",
         storageMode: String = "Copied"
     ) -> FileEntrySnapshot {
         makeImportSingleFileFixture(
             id: 117,
             currentName: currentName,
             category: category,
+            hashSha256: hashSha256,
             storageMode: storageMode
         )
     }
@@ -38,12 +40,14 @@ extension FileEntrySnapshot {
     static func importSingleFileFixture(
         currentName: String,
         category: String,
+        hashSha256: String = "hash",
         storageMode: String = "Copied"
     ) -> FileEntrySnapshot {
         makeImportSingleFileFixture(
             id: 42,
             currentName: currentName,
             category: category,
+            hashSha256: hashSha256,
             storageMode: storageMode
         )
     }
@@ -52,6 +56,7 @@ extension FileEntrySnapshot {
         id: Int64,
         currentName: String,
         category: String,
+        hashSha256: String,
         storageMode: String
     ) -> FileEntrySnapshot {
         FileEntrySnapshot(
@@ -61,7 +66,7 @@ extension FileEntrySnapshot {
             currentName: currentName,
             category: category,
             sizeBytes: 12,
-            hashSha256: "hash",
+            hashSha256: hashSha256,
             storageMode: storageMode,
             origin: "Imported",
             sourcePath: "/tmp/source.pdf",

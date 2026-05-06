@@ -168,13 +168,14 @@ final class ImportDropPreviewModelTests: XCTestCase {
         XCTAssertEqual(model.rows[1].suggestedName, "2026Q1_合同.pdf")
         XCTAssertEqual(model.rows[0].status.tag, "OK")
         XCTAssertEqual(model.rows[1].status.tag, "OK")
-        XCTAssertEqual(model.status.message, "已完成 2 个文件的分类预览")
-        XCTAssertEqual(model.importDisabledReason, "本任务仅接入 C1-05 classify-preview；批量导入执行与冲突处理将在后续任务接入。")
+        XCTAssertEqual(model.status.message, "已完成 2 个文件的导入预览")
+        XCTAssertNil(model.importDisabledReason)
     }
 
     @MainActor
-    func testBatchPreviewMapsClassifyFailuresPerRowWithoutCreatingStaticSuccess() async {
+    func testBatchPreviewMapsClassifyFailuresAndDuplicatePrecheckPerRow() async {
         let goodURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
+        let duplicateURL = URL(fileURLWithPath: "/tmp/Duplicate.pdf")
         let badURL = URL(fileURLWithPath: "/tmp/Bad.pdf")
         let predictor = ImportDropRecordingPredictor(results: [
             .success(ClassifyResultSnapshot(
@@ -183,27 +184,142 @@ final class ImportDropPreviewModelTests: XCTestCase {
                 reason: .keyword,
                 confidence: 0.9
             )),
+            .success(ClassifyResultSnapshot(
+                category: "finance",
+                suggestedName: "Duplicate.pdf",
+                reason: .extension,
+                confidence: 0.7
+            )),
             .failure(CoreError.Config(reason: "classifier.yaml line 7")),
         ])
-        let model = ImportBatchPreviewModel(predictor: predictor)
+        let duplicatePrechecker = ImportBatchStaticDuplicatePrechecker(results: [
+            duplicateURL.path: .duplicate(existingPath: "finance/existing.pdf"),
+        ])
+        let model = ImportBatchPreviewModel(
+            predictor: predictor,
+            duplicatePrechecker: duplicatePrechecker
+        )
         let request = ImportEntryRequest(
             repoPath: "/tmp/repo",
             source: .filePicker,
             destination: .autoClassify,
-            urls: [goodURL, badURL],
-            kind: .multipleItems(2),
+            urls: [goodURL, duplicateURL, badURL],
+            kind: .multipleItems(3),
             availableCategories: ["inbox", "finance"]
         )
 
         await model.load(request: request)
+        let precheckRequests = await duplicatePrechecker.recordedRequests()
 
-        XCTAssertEqual(model.successfulPreviewCount, 1)
+        XCTAssertEqual(precheckRequests, [
+            ImportBatchDuplicatePrecheckRequest(repoPath: "/tmp/repo", paths: [
+                "/tmp/Invoice_2026Q1.pdf",
+                "/tmp/Duplicate.pdf",
+                "/tmp/Bad.pdf",
+            ]),
+        ])
+        XCTAssertEqual(model.successfulPreviewCount, 2)
         XCTAssertEqual(model.failedPreviewCount, 1)
         XCTAssertEqual(model.rows[0].status.tag, "OK")
-        XCTAssertEqual(model.rows[1].status.tag, "ERROR")
-        XCTAssertEqual(model.rows[1].status.detail, "分类规则无效：classifier.yaml line 7")
-        XCTAssertEqual(model.status.message, "已完成 1/2 个文件的分类预览，1 个失败")
+        XCTAssertEqual(model.rows[1].status.tag, "DUP")
+        XCTAssertEqual(model.rows[1].status.detail, "Skip: finance/existing.pdf")
+        XCTAssertEqual(model.rows[2].status.tag, "ERROR")
+        XCTAssertEqual(model.rows[2].status.detail, "分类规则无效：classifier.yaml line 7")
+        XCTAssertEqual(model.status.message, "已完成 2/3 个文件的导入预览，1 个失败")
         XCTAssertTrue(model.showsRetryPreview)
+    }
+
+    @MainActor
+    func testBatchPreviewDuplicatePrecheckFeedsS118ConflictRowsBeforeImport() async {
+        let invoiceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
+        let contractURL = URL(fileURLWithPath: "/tmp/合同.pdf")
+        let predictor = ImportDropRecordingPredictor(results: [
+            .success(ClassifyResultSnapshot(
+                category: "finance",
+                suggestedName: "Invoice_2026Q1.pdf",
+                reason: .keyword,
+                confidence: 0.9
+            )),
+            .success(ClassifyResultSnapshot(
+                category: "docs",
+                suggestedName: "2026Q1_合同.pdf",
+                reason: .keyword,
+                confidence: 0.82
+            )),
+        ])
+        let duplicatePrechecker = ImportBatchStaticDuplicatePrechecker(results: [
+            invoiceURL.path: .duplicate(existingPath: "finance/existing-invoice.pdf"),
+        ])
+        let previewModel = ImportBatchPreviewModel(
+            predictor: predictor,
+            duplicatePrechecker: duplicatePrechecker
+        )
+        let importModel = ImportBatchCopyImportModel(
+            importer: S118RecordingBatchImporter(),
+            errorMapper: S117RecordingErrorMapper()
+        )
+        let request = ImportEntryRequest(
+            repoPath: "/tmp/repo",
+            source: .dropZone,
+            destination: .autoClassify,
+            urls: [invoiceURL, contractURL],
+            kind: .multipleItems(2),
+            availableCategories: ["inbox", "docs", "finance"]
+        )
+
+        await previewModel.load(request: request)
+        importModel.applyPreviewRows(
+            previewModel.rows,
+            request: request,
+            selectedDestination: previewModel.selectedDestination
+        )
+
+        XCTAssertEqual(previewModel.rows.map(\.status.tag), ["DUP", "OK"])
+        XCTAssertEqual(importModel.duplicateCount, 1)
+        XCTAssertEqual(importModel.rows.map(\.status.tag), ["DUP", "OK"])
+        XCTAssertEqual(importModel.rows.first?.status.detail, "Skip: finance/existing-invoice.pdf")
+        XCTAssertNil(importModel.importDisabledReason)
+    }
+
+    func testDefaultCoreBridgeBatchDuplicateDetectionUsesImportFileDuplicateError() async throws {
+        let repoURL = try makeImportDropTemporaryRepositoryURL()
+        let sourceRoot = try makeImportDropTemporaryDirectory(prefix: "duplicate-source")
+        defer {
+            try? FileManager.default.removeItem(at: repoURL)
+            try? FileManager.default.removeItem(at: sourceRoot)
+        }
+
+        let firstURL = sourceRoot.appendingPathComponent("existing.pdf")
+        let duplicateURL = sourceRoot.appendingPathComponent("incoming.pdf")
+        try Data("same duplicate bytes".utf8).write(to: firstURL)
+        try Data("same duplicate bytes".utf8).write(to: duplicateURL)
+        let bridge = CoreBridge()
+
+        try await bridge.initializeEmptyRepository(repoPath: repoURL.path)
+        let imported = try await bridge.importCopiedFile(
+            repoPath: repoURL.path,
+            sourceURL: firstURL,
+            destination: .category("finance"),
+            suggestedCategory: "finance",
+            overrideFilename: "existing.pdf"
+        )
+
+        do {
+            _ = try await bridge.importCopiedFile(
+                repoPath: repoURL.path,
+                sourceURL: duplicateURL,
+                destination: .category("finance"),
+                suggestedCategory: "finance",
+                overrideFilename: "incoming.pdf",
+                duplicateStrategy: .ask
+            )
+            XCTFail("Expected import_file to return DuplicateFile for duplicate content")
+        } catch CoreError.DuplicateFile(let existingPath) {
+            XCTAssertEqual(existingPath, imported.path)
+        } catch {
+            XCTFail("Expected DuplicateFile, got \(error)")
+        }
+        XCTAssertTrue(FileManager.default.fileExists(atPath: duplicateURL.path))
     }
 }
 
@@ -238,9 +354,45 @@ private actor ImportDropRecordingPredictor: CoreCategoryPredicting {
     }
 }
 
+private struct ImportBatchDuplicatePrecheckRequest: Equatable, Sendable {
+    var repoPath: String
+    var paths: [String]
+}
+
+private actor ImportBatchStaticDuplicatePrechecker: ImportBatchDuplicatePrechecking {
+    private let results: [String: ImportBatchDuplicatePrecheckResult]
+    private var requests: [ImportBatchDuplicatePrecheckRequest] = []
+
+    init(results: [String: ImportBatchDuplicatePrecheckResult]) {
+        self.results = results
+    }
+
+    func precheckDuplicates(
+        repoPath: String,
+        sourceURLs: [URL]
+    ) async -> [String: ImportBatchDuplicatePrecheckResult] {
+        requests.append(ImportBatchDuplicatePrecheckRequest(
+            repoPath: repoPath,
+            paths: sourceURLs.map(\.path)
+        ))
+        return results
+    }
+
+    func recordedRequests() -> [ImportBatchDuplicatePrecheckRequest] {
+        requests
+    }
+}
+
 private func makeImportDropTemporaryRepositoryURL() throws -> URL {
     let url = FileManager.default.temporaryDirectory
         .appendingPathComponent("AreaMatrixImportDropTests-\(UUID().uuidString)", isDirectory: true)
+    try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+    return url
+}
+
+private func makeImportDropTemporaryDirectory(prefix: String) throws -> URL {
+    let url = FileManager.default.temporaryDirectory
+        .appendingPathComponent("AreaMatrixImportDropTests-\(prefix)-\(UUID().uuidString)", isDirectory: true)
     try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
     return url
 }
