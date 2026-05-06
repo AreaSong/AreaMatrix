@@ -68,6 +68,7 @@
 		0A000000000000000000015E /* RepositoryErrorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000015F /* RepositoryErrorView.swift */; };
 		0A0000000000000000000160 /* MainRepoErrorMappingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000161 /* MainRepoErrorMappingTests.swift */; };
 		0A0000000000000000000162 /* MainRepoErrorActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000163 /* MainRepoErrorActions.swift */; };
+		0A0000000000000000000164 /* MainWindowIntegrationVerifyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000165 /* MainWindowIntegrationVerifyTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -148,6 +149,7 @@
 		0A000000000000000000015F /* RepositoryErrorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/RepositoryErrorView.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000161 /* MainRepoErrorMappingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/MainRepoErrorMappingTests.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000163 /* MainRepoErrorActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/MainRepoErrorActions.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000165 /* MainWindowIntegrationVerifyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/MainWindowIntegrationVerifyTests.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -300,6 +302,7 @@
 				0A000000000000000000001A /* AreaMatrixShellTests.swift */,
 				0A000000000000000000015B /* MainRepoExternalRemovalTests.swift */,
 				0A0000000000000000000161 /* MainRepoErrorMappingTests.swift */,
+				0A0000000000000000000165 /* MainWindowIntegrationVerifyTests.swift */,
 				0A0000000000000000000020 /* ValidatePathIntegrationTests.swift */,
 				0A00000000000000000000A1 /* InitializingStepIntegrationTests.swift */,
 				0A00000000000000000000B3 /* InitFailedErrorMappingTests.swift */,
@@ -491,6 +494,7 @@
 				0A0000000000000000000008 /* AreaMatrixShellTests.swift in Sources */,
 				0A000000000000000000015A /* MainRepoExternalRemovalTests.swift in Sources */,
 				0A0000000000000000000160 /* MainRepoErrorMappingTests.swift in Sources */,
+				0A0000000000000000000164 /* MainWindowIntegrationVerifyTests.swift in Sources */,
 				0A000000000000000000000B /* ValidatePathIntegrationTests.swift in Sources */,
 				0A000000000000000000000D /* InitializingStepIntegrationTests.swift in Sources */,
 				0A00000000000000000000B1 /* InitFailedErrorMappingTests.swift in Sources */,
