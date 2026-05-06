@@ -87,6 +87,10 @@
 		0A0000000000000000000184 /* ImportSingleFilePreflightCorePreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000185 /* ImportSingleFilePreflightCorePreview.swift */; };
 		0A0000000000000000000186 /* ImportSingleFilePreviewModelState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000187 /* ImportSingleFilePreviewModelState.swift */; };
 		0A0000000000000000000188 /* ImportSingleFileTestFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000189 /* ImportSingleFileTestFixtures.swift */; };
+		0A000000000000000000018C /* ImportBatchCopyImportModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000018D /* ImportBatchCopyImportModel.swift */; };
+		0A000000000000000000018E /* ImportBatchCopyImportModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000018F /* ImportBatchCopyImportModelTests.swift */; };
+		0A0000000000000000000190 /* ImportBatchCopyFooterSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000191 /* ImportBatchCopyFooterSection.swift */; };
+		0A0000000000000000000192 /* ImportBatchCopyPageIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000193 /* ImportBatchCopyPageIntegrationTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -186,6 +190,10 @@
 		0A0000000000000000000185 /* ImportSingleFilePreflightCorePreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ImportSingleFilePreflightCorePreview.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000187 /* ImportSingleFilePreviewModelState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ImportSingleFilePreviewModelState.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000189 /* ImportSingleFileTestFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportSingleFileTestFixtures.swift; sourceTree = SOURCE_ROOT; };
+		0A000000000000000000018D /* ImportBatchCopyImportModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ImportBatchCopyImportModel.swift; sourceTree = SOURCE_ROOT; };
+		0A000000000000000000018F /* ImportBatchCopyImportModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportBatchCopyImportModelTests.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000191 /* ImportBatchCopyFooterSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/ImportBatchCopyFooterSection.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000193 /* ImportBatchCopyPageIntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportBatchCopyPageIntegrationTests.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -270,6 +278,7 @@
 				0A0000000000000000000127 /* FileDropAdapter.swift */,
 				0A0000000000000000000169 /* ImportDropTargetView.swift */,
 				0A0000000000000000000129 /* ImportEntrySheetView.swift */,
+				0A0000000000000000000191 /* ImportBatchCopyFooterSection.swift */,
 				0A0000000000000000000173 /* ImportSingleFileSheetSections.swift */,
 				0A000000000000000000017F /* ImportProgressView.swift */,
 				0A000000000000000000001F /* ValidatePathStepView.swift */,
@@ -315,6 +324,7 @@
 				0A0000000000000000000019 /* CoreBridgePlaceholderState.swift */,
 				0A0000000000000000000121 /* ImportEntryRequest.swift */,
 				0A0000000000000000000167 /* ImportDropPreviewModel.swift */,
+				0A000000000000000000018D /* ImportBatchCopyImportModel.swift */,
 				0A000000000000000000016D /* ImportSingleFilePreviewModel.swift */,
 				0A0000000000000000000187 /* ImportSingleFilePreviewModelState.swift */,
 				0A000000000000000000017B /* ImportSingleFilePreflight.swift */,
@@ -357,6 +367,8 @@
 				0A0000000000000000000111 /* MainEmptyBuildTreeTests.swift */,
 				0A000000000000000000012B /* MainEmptyImportEntryTests.swift */,
 				0A000000000000000000016B /* ImportDropPreviewModelTests.swift */,
+				0A0000000000000000000193 /* ImportBatchCopyPageIntegrationTests.swift */,
+				0A000000000000000000018F /* ImportBatchCopyImportModelTests.swift */,
 				0A000000000000000000016F /* ImportSingleFilePreviewModelTests.swift */,
 				0A0000000000000000000181 /* ImportSingleFileTestSupport.swift */,
 				0A0000000000000000000189 /* ImportSingleFileTestFixtures.swift */,
@@ -511,8 +523,10 @@
 				0A0000000000000000000126 /* FileDropAdapter.swift in Sources */,
 				0A0000000000000000000168 /* ImportDropTargetView.swift in Sources */,
 				0A0000000000000000000128 /* ImportEntrySheetView.swift in Sources */,
+				0A0000000000000000000190 /* ImportBatchCopyFooterSection.swift in Sources */,
 				0A0000000000000000000172 /* ImportSingleFileSheetSections.swift in Sources */,
 				0A0000000000000000000166 /* ImportDropPreviewModel.swift in Sources */,
+				0A000000000000000000018C /* ImportBatchCopyImportModel.swift in Sources */,
 				0A000000000000000000016C /* ImportSingleFilePreviewModel.swift in Sources */,
 				0A0000000000000000000186 /* ImportSingleFilePreviewModelState.swift in Sources */,
 				0A000000000000000000017A /* ImportSingleFilePreflight.swift in Sources */,
@@ -567,6 +581,8 @@
 				0A0000000000000000000110 /* MainEmptyBuildTreeTests.swift in Sources */,
 				0A000000000000000000012A /* MainEmptyImportEntryTests.swift in Sources */,
 				0A000000000000000000016A /* ImportDropPreviewModelTests.swift in Sources */,
+				0A0000000000000000000192 /* ImportBatchCopyPageIntegrationTests.swift in Sources */,
+				0A000000000000000000018E /* ImportBatchCopyImportModelTests.swift in Sources */,
 				0A000000000000000000016E /* ImportSingleFilePreviewModelTests.swift in Sources */,
 				0A0000000000000000000180 /* ImportSingleFileTestSupport.swift in Sources */,
 				0A0000000000000000000188 /* ImportSingleFileTestFixtures.swift in Sources */,

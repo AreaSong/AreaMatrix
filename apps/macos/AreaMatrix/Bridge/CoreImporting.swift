@@ -26,6 +26,17 @@ protocol CoreFileImporting: Sendable {
     ) async throws -> FileEntrySnapshot
 }
 
+protocol CoreBatchCopyImporting: Sendable {
+    func importCopiedFile(
+        repoPath: String,
+        sourceURL: URL,
+        destination: ImportEntryDestination,
+        suggestedCategory: String?,
+        overrideFilename: String,
+        duplicateStrategy: DuplicateStrategy
+    ) async throws -> FileEntrySnapshot
+}
+
 extension CoreFileImporting {
     func importCopiedFile(
         repoPath: String,
@@ -73,7 +84,26 @@ extension CoreFileImporting {
     }
 }
 
-extension CoreBridge: CoreFileImporting {
+extension CoreBatchCopyImporting {
+    func importCopiedFile(
+        repoPath: String,
+        sourceURL: URL,
+        destination: ImportEntryDestination,
+        suggestedCategory: String?,
+        overrideFilename: String
+    ) async throws -> FileEntrySnapshot {
+        try await importCopiedFile(
+            repoPath: repoPath,
+            sourceURL: sourceURL,
+            destination: destination,
+            suggestedCategory: suggestedCategory,
+            overrideFilename: overrideFilename,
+            duplicateStrategy: .ask
+        )
+    }
+}
+
+extension CoreBridge: CoreFileImporting, CoreBatchCopyImporting {
     func importCopiedFile(
         repoPath: String,
         sourceURL: URL,
@@ -84,10 +114,39 @@ extension CoreBridge: CoreFileImporting {
         try await importFile(
             repoPath: repoPath,
             sourceURL: sourceURL,
-            mode: .copied,
-            overrideCategory: overrideCategory,
-            overrideFilename: overrideFilename,
-            duplicateStrategy: duplicateStrategy
+            options: ImportOptions(
+                mode: .copied,
+                destination: .autoClassify,
+                targetDirectory: nil,
+                overrideCategory: overrideCategory,
+                overrideFilename: overrideFilename,
+                duplicateStrategy: duplicateStrategy
+            )
+        )
+    }
+
+    func importCopiedFile(
+        repoPath: String,
+        sourceURL: URL,
+        destination: ImportEntryDestination,
+        suggestedCategory: String?,
+        overrideFilename: String,
+        duplicateStrategy: DuplicateStrategy
+    ) async throws -> FileEntrySnapshot {
+        try await importFile(
+            repoPath: repoPath,
+            sourceURL: sourceURL,
+            options: ImportOptions(
+                mode: .copied,
+                destination: coreImportDestination(for: destination),
+                targetDirectory: coreImportTargetDirectory(for: destination),
+                overrideCategory: coreImportCategoryOverride(
+                    for: destination,
+                    suggestedCategory: suggestedCategory
+                ),
+                overrideFilename: overrideFilename,
+                duplicateStrategy: duplicateStrategy
+            )
         )
     }
 
@@ -101,10 +160,14 @@ extension CoreBridge: CoreFileImporting {
         try await importFile(
             repoPath: repoPath,
             sourceURL: sourceURL,
-            mode: .moved,
-            overrideCategory: overrideCategory,
-            overrideFilename: overrideFilename,
-            duplicateStrategy: duplicateStrategy
+            options: ImportOptions(
+                mode: .moved,
+                destination: .autoClassify,
+                targetDirectory: nil,
+                overrideCategory: overrideCategory,
+                overrideFilename: overrideFilename,
+                duplicateStrategy: duplicateStrategy
+            )
         )
     }
 
@@ -118,32 +181,59 @@ extension CoreBridge: CoreFileImporting {
         try await importFile(
             repoPath: repoPath,
             sourceURL: sourceURL,
-            mode: .indexed,
-            overrideCategory: overrideCategory,
-            overrideFilename: overrideFilename,
-            duplicateStrategy: duplicateStrategy
+            options: ImportOptions(
+                mode: .indexed,
+                destination: .autoClassify,
+                targetDirectory: nil,
+                overrideCategory: overrideCategory,
+                overrideFilename: overrideFilename,
+                duplicateStrategy: duplicateStrategy
+            )
         )
     }
 
     private func importFile(
         repoPath: String,
         sourceURL: URL,
-        mode: StorageMode,
-        overrideCategory: String,
-        overrideFilename: String,
-        duplicateStrategy: DuplicateStrategy
+        options: ImportOptions
     ) async throws -> FileEntrySnapshot {
-        let options = ImportOptions(
-            mode: mode,
-            destination: .autoClassify,
-            targetDirectory: nil,
-            overrideCategory: overrideCategory,
-            overrideFilename: overrideFilename,
-            duplicateStrategy: duplicateStrategy
-        )
         let entry = try await Task.detached(priority: .userInitiated) {
             try AreaMatrix.importFile(repoPath: repoPath, sourcePath: sourceURL.path, options: options)
         }.value
         return FileEntrySnapshot(coreEntry: entry) { _, _ in .available }
+    }
+}
+
+private func coreImportDestination(for destination: ImportEntryDestination) -> ImportDestination {
+    switch destination {
+    case .autoClassify:
+        return .autoClassify
+    case .category:
+        return .category
+    case .repositoryRoot:
+        return .selectedDirectory
+    }
+}
+
+private func coreImportTargetDirectory(for destination: ImportEntryDestination) -> String? {
+    switch destination {
+    case .autoClassify, .category:
+        return nil
+    case .repositoryRoot:
+        return ""
+    }
+}
+
+private func coreImportCategoryOverride(
+    for destination: ImportEntryDestination,
+    suggestedCategory: String?
+) -> String? {
+    switch destination {
+    case .autoClassify:
+        return suggestedCategory
+    case .category(let slug):
+        return slug
+    case .repositoryRoot:
+        return nil
     }
 }

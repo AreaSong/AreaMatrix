@@ -185,6 +185,17 @@ enum ImportBatchDestinationOption: Hashable, Sendable {
     case category(String)
     case repositoryRoot
 
+    var entryDestination: ImportEntryDestination {
+        switch self {
+        case .autoClassify:
+            return .autoClassify
+        case .category(let slug):
+            return .category(slug)
+        case .repositoryRoot:
+            return .repositoryRoot
+        }
+    }
+
     var title: String {
         switch self {
         case .autoClassify:

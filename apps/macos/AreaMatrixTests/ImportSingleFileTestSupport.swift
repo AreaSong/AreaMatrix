@@ -53,6 +53,13 @@ struct S117ImportRequest: Equatable, Sendable {
     var duplicateStrategy: DuplicateStrategy = .ask
 }
 
+struct S118BatchImportRequest: Equatable, Sendable {
+    var destination: ImportEntryDestination
+    var suggestedCategory: String?
+    var overrideFilename: String
+    var duplicateStrategy: DuplicateStrategy
+}
+
 actor S117RecordingPredictor: CoreCategoryPredicting {
     private let result: ClassifyResultSnapshot
     private var requests: [S117PredictRequest] = []
@@ -255,6 +262,113 @@ actor S117FailingImporter: CoreFileImporting {
         duplicateStrategy: DuplicateStrategy
     ) async throws -> FileEntrySnapshot {
         throw error
+    }
+}
+
+actor S118RecordingBatchImporter: CoreBatchCopyImporting {
+    private var requests: [S118BatchImportRequest] = []
+
+    func importCopiedFile(
+        repoPath: String,
+        sourceURL: URL,
+        destination: ImportEntryDestination,
+        suggestedCategory: String?,
+        overrideFilename: String,
+        duplicateStrategy: DuplicateStrategy
+    ) async throws -> FileEntrySnapshot {
+        requests.append(S118BatchImportRequest(
+            destination: destination,
+            suggestedCategory: suggestedCategory,
+            overrideFilename: overrideFilename,
+            duplicateStrategy: duplicateStrategy
+        ))
+
+        let category: String
+        switch destination {
+        case .autoClassify:
+            category = suggestedCategory ?? "inbox"
+        case .category(let slug):
+            category = slug
+        case .repositoryRoot:
+            category = "__root__"
+        }
+
+        return FileEntrySnapshot.s117Fixture(
+            currentName: overrideFilename,
+            category: category
+        )
+    }
+
+    func recordedRequests() -> [S118BatchImportRequest] {
+        requests
+    }
+}
+
+actor S118FailingBatchImporter: CoreBatchCopyImporting {
+    private let error: CoreError
+    private var requests: [S118BatchImportRequest] = []
+
+    init(error: CoreError) {
+        self.error = error
+    }
+
+    func importCopiedFile(
+        repoPath: String,
+        sourceURL: URL,
+        destination: ImportEntryDestination,
+        suggestedCategory: String?,
+        overrideFilename: String,
+        duplicateStrategy: DuplicateStrategy
+    ) async throws -> FileEntrySnapshot {
+        requests.append(S118BatchImportRequest(
+            destination: destination,
+            suggestedCategory: suggestedCategory,
+            overrideFilename: overrideFilename,
+            duplicateStrategy: duplicateStrategy
+        ))
+        throw error
+    }
+
+    func recordedRequests() -> [S118BatchImportRequest] {
+        requests
+    }
+}
+
+actor S118SequenceBatchImporter: CoreBatchCopyImporting {
+    private var results: [Result<FileEntrySnapshot, Error>]
+    private var requests: [S118BatchImportRequest] = []
+
+    init(results: [Result<FileEntrySnapshot, Error>]) {
+        self.results = results
+    }
+
+    func importCopiedFile(
+        repoPath: String,
+        sourceURL: URL,
+        destination: ImportEntryDestination,
+        suggestedCategory: String?,
+        overrideFilename: String,
+        duplicateStrategy: DuplicateStrategy
+    ) async throws -> FileEntrySnapshot {
+        requests.append(S118BatchImportRequest(
+            destination: destination,
+            suggestedCategory: suggestedCategory,
+            overrideFilename: overrideFilename,
+            duplicateStrategy: duplicateStrategy
+        ))
+        guard !results.isEmpty else {
+            throw CoreError.Internal(message: "missing batch import test result")
+        }
+        switch results.removeFirst() {
+        case .success(let entry):
+            return entry
+        case .failure(let error):
+            throw error
+        }
+    }
+
+    func recordedRequests() -> [S118BatchImportRequest] {
+        requests
     }
 }
 

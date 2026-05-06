@@ -122,12 +122,41 @@ extension CoreErrorMappingSnapshot {
     ) -> CoreErrorMappingSnapshot {
         CoreErrorMappingSnapshot(
             kind: kind,
-            userMessage: "Import failed",
+            userMessage: importErrorMessage(for: kind),
             severity: .high,
             suggestedAction: suggestedAction,
             recoverability: .userActionRequired,
             rawContext: rawContext
         )
+    }
+
+    private static func importErrorMessage(for kind: CoreErrorKindSnapshot) -> String {
+        switch kind {
+        case .duplicateFile:
+            return "检测到重复文件"
+        case .invalidPath:
+            return "路径无效"
+        case .permissionDenied:
+            return "无访问权限"
+        case .iCloudPlaceholder:
+            return "iCloud 文件尚未下载"
+        case .io:
+            return "文件读写失败"
+        case .db:
+            return "数据库错误"
+        case .fileNotFound:
+            return "文件不存在"
+        case .config:
+            return "配置不可用"
+        case .classify:
+            return "分类失败"
+        case .conflict:
+            return "命名冲突未解决"
+        case .repoNotInitialized:
+            return "资料库尚未初始化"
+        case .internal:
+            return "内部错误"
+        }
     }
 }
 

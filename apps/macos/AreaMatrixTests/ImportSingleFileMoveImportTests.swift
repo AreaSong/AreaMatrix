@@ -296,7 +296,7 @@ private extension CoreErrorMappingSnapshot {
     static func moveImportFixture(kind: CoreErrorKindSnapshot) -> CoreErrorMappingSnapshot {
         CoreErrorMappingSnapshot(
             kind: kind,
-            userMessage: "Import failed",
+            userMessage: kind == .permissionDenied ? "无访问权限" : "导入失败",
             severity: .high,
             suggestedAction: "Choose a different file or resolve the conflict.",
             recoverability: .userActionRequired,

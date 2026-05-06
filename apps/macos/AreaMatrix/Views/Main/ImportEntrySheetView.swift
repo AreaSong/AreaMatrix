@@ -10,6 +10,7 @@ struct ImportEntrySheetView: View {
 
     @StateObject private var previewModel: ImportSingleFilePreviewModel
     @StateObject private var batchPreviewModel: ImportBatchPreviewModel
+    @StateObject private var batchImportModel: ImportBatchCopyImportModel
     @State private var isReasonPopoverPresented = false
 
     init(
@@ -21,6 +22,7 @@ struct ImportEntrySheetView: View {
         onImported: @escaping (String, FileEntrySnapshot) -> Void = { _, _ in },
         categoryPredictor: any CoreCategoryPredicting = CoreBridge(),
         fileImporter: any CoreFileImporting = CoreBridge(),
+        batchFileImporter: any CoreBatchCopyImporting = CoreBridge(),
         preflight: any ImportSingleFilePreflighting = CoreImportSingleFilePreflight(),
         placeholderDownloader: any ICloudPlaceholderDownloading = LocalICloudPlaceholderDownloader(),
         errorMapper: any CoreErrorMapping = CoreBridge()
@@ -40,6 +42,10 @@ struct ImportEntrySheetView: View {
         ))
         _batchPreviewModel = StateObject(wrappedValue: ImportBatchPreviewModel(
             predictor: categoryPredictor
+        ))
+        _batchImportModel = StateObject(wrappedValue: ImportBatchCopyImportModel(
+            importer: batchFileImporter,
+            errorMapper: errorMapper
         ))
     }
 
@@ -67,8 +73,31 @@ struct ImportEntrySheetView: View {
                 await previewModel.load(request: request)
             case .multipleItems(_):
                 await batchPreviewModel.load(request: request)
+                batchImportModel.applyPreviewRows(
+                    batchPreviewModel.rows,
+                    request: request,
+                    selectedDestination: batchPreviewModel.selectedDestination
+                )
             case .folder:
                 break
+            }
+        }
+        .onChange(of: batchPreviewModel.rows) { _, rows in
+            if case .multipleItems = request.kind {
+                batchImportModel.applyPreviewRows(
+                    rows,
+                    request: request,
+                    selectedDestination: batchPreviewModel.selectedDestination
+                )
+            }
+        }
+        .onChange(of: batchPreviewModel.selectedDestination) { _, selectedDestination in
+            if case .multipleItems = request.kind {
+                batchImportModel.applyPreviewRows(
+                    batchPreviewModel.rows,
+                    request: request,
+                    selectedDestination: selectedDestination
+                )
             }
         }
         .sheet(item: Binding(
@@ -140,7 +169,6 @@ struct ImportEntrySheetView: View {
                     }
                 }
             }
-            batchBoundarySection
         }
     }
 
@@ -227,8 +255,8 @@ struct ImportEntrySheetView: View {
                     LabeledContent("总大小", value: totalSizeDescription)
                 }
                 LabeledContent("来源", value: batchPreviewModel.sourceLabel)
-                LabeledContent("预计重复", value: "待后续重复检测任务接入")
-                LabeledContent("重名冲突", value: "待后续冲突任务接入")
+                LabeledContent("预计重复", value: "未检测")
+                LabeledContent("重名冲突", value: "未检测")
             }
             .font(.callout)
             .foregroundStyle(.secondary)
@@ -243,6 +271,7 @@ struct ImportEntrySheetView: View {
                 }
             }
             .pickerStyle(.segmented)
+            .disabled(batchImportModel.status.isImporting)
 
             if let helperMessage = batchPreviewModel.destinationHelperMessage {
                 Text(helperMessage)
@@ -254,12 +283,12 @@ struct ImportEntrySheetView: View {
 
     private var batchStatusSection: some View {
         HStack(spacing: 8) {
-            if batchPreviewModel.status.isLoading {
+            if batchPreviewModel.status.isLoading || batchImportModel.status.isImporting {
                 ProgressView()
                     .controlSize(.small)
             }
 
-            if let message = batchPreviewModel.status.message {
+            if let message = batchImportModel.status.message ?? batchPreviewModel.status.message {
                 Text(message)
                     .font(.callout)
                     .foregroundStyle(batchPreviewStatusStyle)
@@ -271,7 +300,7 @@ struct ImportEntrySheetView: View {
     private var batchRowsSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             DisclosureGroup("查看 \(request.urls.count) 个项目") {
-                Table(batchPreviewModel.rows) {
+                Table(batchImportModel.rows) {
                     TableColumn("原文件名") { row in
                         VStack(alignment: .leading, spacing: 2) {
                             Text(row.originalName)
@@ -301,46 +330,43 @@ struct ImportEntrySheetView: View {
                 }
                 .frame(minHeight: 240)
             }
-            .disabled(batchPreviewModel.rows.isEmpty)
-        }
-    }
-
-    private var batchBoundarySection: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("当前任务边界")
-                .font(.headline)
-            Text("已接入真实 predict_category 批量分类预览、加载态和 classify 错误映射。")
-                .font(.callout)
-            Text("批量导入执行、重复检测和冲突处理留给后续 S1-18 任务。")
-                .font(.callout)
-                .foregroundStyle(.secondary)
+            .disabled(batchImportModel.rows.isEmpty)
         }
     }
 
     private var footer: some View {
+        Group {
+            if request.kind == .singleFile {
+                singleFileFooter
+            } else if case .multipleItems = request.kind {
+                ImportBatchCopyFooterSection(
+                    request: request,
+                    batchPreviewModel: batchPreviewModel,
+                    batchImportModel: batchImportModel,
+                    onCancel: onCancel,
+                    onImported: onImported
+                )
+            }
+        }
+    }
+
+    private var singleFileFooter: some View {
         HStack {
             Spacer()
             Button("Cancel", action: onCancel)
                 .keyboardShortcut(.cancelAction)
-            if request.kind == .singleFile {
-                Button("Import") {
-                    Task {
-                        onImportStarted(previewModel.progressCurrentPath)
-                        if let entry = await previewModel.importSelectedFile() {
-                            onImported(request.repoPath, entry)
-                        } else if let mapping = previewModel.importFailureMapping {
-                            onImportFailed(previewModel.progressCurrentPath, mapping)
-                        }
+            Button("Import") {
+                Task {
+                    onImportStarted(previewModel.progressCurrentPath)
+                    if let entry = await previewModel.importSelectedFile() {
+                        onImported(request.repoPath, entry)
+                    } else if let mapping = previewModel.importFailureMapping {
+                        onImportFailed(previewModel.progressCurrentPath, mapping)
                     }
                 }
-                .keyboardShortcut(.defaultAction)
-                .disabled(previewModel.importDisabledReason != nil)
-            } else if case .multipleItems = request.kind {
-                Button("Import") {}
-                    .keyboardShortcut(.defaultAction)
-                    .disabled(true)
-                    .help(batchPreviewModel.importDisabledReason)
             }
+            .keyboardShortcut(.defaultAction)
+            .disabled(previewModel.importDisabledReason != nil)
         }
     }
 
@@ -376,6 +402,16 @@ struct ImportEntrySheetView: View {
     }
 
     private var batchPreviewStatusStyle: Color {
+        if case .imported(_, let failed) = batchImportModel.status, failed > 0 {
+            return .orange
+        }
+        switch batchImportModel.status {
+        case .importing, .imported:
+            return .secondary
+        case .idle:
+            break
+        }
+
         switch batchPreviewModel.status {
         case .loaded(_, _, let failed) where failed > 0:
             return .orange

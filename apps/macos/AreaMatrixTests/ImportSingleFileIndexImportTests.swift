@@ -299,7 +299,7 @@ private extension CoreErrorMappingSnapshot {
     static func indexImportFixture(kind: CoreErrorKindSnapshot) -> CoreErrorMappingSnapshot {
         CoreErrorMappingSnapshot(
             kind: kind,
-            userMessage: "Import failed",
+            userMessage: kind == .iCloudPlaceholder ? "iCloud 文件尚未下载" : "导入失败",
             severity: .high,
             suggestedAction: "Choose a different file or resolve the conflict.",
             recoverability: .userActionRequired,
