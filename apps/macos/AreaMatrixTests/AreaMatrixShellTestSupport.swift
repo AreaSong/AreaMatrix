@@ -122,6 +122,32 @@ actor ShellRecordingInitializedPathValidator: CoreInitializedRepositoryPathValid
     func requestedRepoPaths() -> [String] { paths }
 }
 
+struct ShellExternalRemovalRequest: Equatable {
+    var repoPath: String
+    var relativePath: String
+}
+
+actor ShellRecordingExternalChangesSyncer: CoreExternalChangesSyncing {
+    private let result: Result<SyncResultSnapshot, Error>
+    private var requests: [ShellExternalRemovalRequest] = []
+
+    init(result: Result<SyncResultSnapshot, Error>) {
+        self.result = result
+    }
+
+    func syncExternalRemoved(repoPath: String, relativePath: String, fsEventID: Int64) async throws -> SyncResultSnapshot {
+        requests.append(ShellExternalRemovalRequest(repoPath: repoPath, relativePath: relativePath))
+        switch result {
+        case .success(let snapshot):
+            return snapshot
+        case .failure(let error):
+            throw error
+        }
+    }
+
+    func recordedRequests() -> [ShellExternalRemovalRequest] { requests }
+}
+
 struct ShellNoopWelcomeHelpOpener: WelcomeHelpOpening { func openWelcomeHelp() throws {} }
 
 struct ShellFailingWelcomeHelpOpener: WelcomeHelpOpening {
@@ -184,6 +210,18 @@ extension RepositoryOpeningResult {
                 children: []
             ),
             currentCategoryFiles: []
+        )
+    }
+}
+
+extension SyncResultSnapshot {
+    static func shellDeletedFixture() -> SyncResultSnapshot {
+        SyncResultSnapshot(
+            detectedCreates: 0,
+            detectedRenames: 0,
+            detectedDeletes: 1,
+            detectedModifies: 0,
+            errors: []
         )
     }
 }

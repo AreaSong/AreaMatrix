@@ -43,6 +43,7 @@ extension OnboardingModel {
             route = Self.mainRoute(for: opening)
         } catch {
             guard openingCancellationToken == cancellationToken else { return }
+            await updateMainRepoExternalRemoval(from: error, repoPath: validation.repoPath)
             route = .mainRepoError(validation.repoPath, await openingFailureMapping(for: error))
         }
     }
@@ -65,6 +66,7 @@ extension OnboardingModel {
             repositoryPathValidation = validation
             await openExistingRepository(validation)
         } catch {
+            await updateMainRepoExternalRemoval(from: error, repoPath: repoPath)
             mainRepoRecoveryErrorMapping = await openingFailureMapping(for: error)
             route = .mainRepoError(repoPath, mainRepoRecoveryErrorMapping)
         }

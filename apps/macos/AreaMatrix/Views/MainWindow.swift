@@ -198,9 +198,15 @@ struct MainWindow: View {
                 validation: model.mainRepoRecoveryValidation,
                 isRetrying: model.isRetryingMainRepository,
                 retryErrorMapping: model.mainRepoRecoveryErrorMapping,
+                externalRemoval: model.mainRepoExternalRemoval,
                 onRetry: {
                     Task {
                         await model.retryMainRepositoryFromError(repoPath: repoPath)
+                    }
+                },
+                onConfirmExternalRemoval: {
+                    Task {
+                        await model.confirmMainRepositoryExternalRemoval(repoPath: repoPath)
                     }
                 },
                 onChooseAnotherFolder: model.showChoosePath

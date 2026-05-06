@@ -17,7 +17,9 @@ struct MainRepoErrorView: View {
     let validation: RepoPathValidationSnapshot?
     let isRetrying: Bool
     let retryErrorMapping: CoreErrorMappingSnapshot?
+    let externalRemoval: MainRepoExternalRemovalState
     let onRetry: () -> Void
+    let onConfirmExternalRemoval: () -> Void
     let onChooseAnotherFolder: () -> Void
 
     var body: some View {
@@ -38,7 +40,9 @@ struct MainRepoErrorView: View {
         validation: RepoPathValidationSnapshot? = nil,
         isRetrying: Bool = false,
         retryErrorMapping: CoreErrorMappingSnapshot? = nil,
+        externalRemoval: MainRepoExternalRemovalState = .unavailable,
         onRetry: @escaping () -> Void = {},
+        onConfirmExternalRemoval: @escaping () -> Void = {},
         onChooseAnotherFolder: @escaping () -> Void
     ) {
         self.repoPath = repoPath
@@ -46,7 +50,9 @@ struct MainRepoErrorView: View {
         self.validation = validation
         self.isRetrying = isRetrying
         self.retryErrorMapping = retryErrorMapping
+        self.externalRemoval = externalRemoval
         self.onRetry = onRetry
+        self.onConfirmExternalRemoval = onConfirmExternalRemoval
         self.onChooseAnotherFolder = onChooseAnotherFolder
     }
 
@@ -93,6 +99,31 @@ struct MainRepoErrorView: View {
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }
+            externalRemovalStatus
+        }
+    }
+
+    @ViewBuilder
+    private var externalRemovalStatus: some View {
+        switch externalRemoval {
+        case .idle(let path):
+            Text("External removal candidate: \(path)")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+        case .syncing(let path):
+            Text("Syncing external removal: \(path)")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+        case .synced(let result):
+            Text("External removals synced: \(result.detectedDeletes)")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+        case .failed(let mapping):
+            Text("External removal sync failed: \(mapping.userMessage)")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+        case .unavailable:
+            EmptyView()
         }
     }
 
@@ -102,6 +133,10 @@ struct MainRepoErrorView: View {
                 .keyboardShortcut(.defaultAction)
                 .buttonStyle(.borderedProminent)
                 .disabled(isRetrying)
+            if case .idle = externalRemoval {
+                Button("Confirm external removal", action: onConfirmExternalRemoval)
+                    .disabled(isRetrying)
+            }
             Button("Choose another repository", action: onChooseAnotherFolder)
                 .disabled(isRetrying)
             if isRetrying {

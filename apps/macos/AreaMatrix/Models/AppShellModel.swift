@@ -19,6 +19,7 @@ final class OnboardingModel: ObservableObject {
     @Published var initializationOpenErrorMapping: CoreErrorMappingSnapshot?
     @Published var mainRepoRecoveryValidation: RepoPathValidationSnapshot?
     @Published var mainRepoRecoveryErrorMapping: CoreErrorMappingSnapshot?
+    @Published var mainRepoExternalRemoval: MainRepoExternalRemovalState = .unavailable
     @Published var isRetryingMainRepository = false
     var openingCancellationToken: UUID?
     @Published var initializationDiagnostics: InitializationDiagnosticsState = .idle
@@ -51,13 +52,13 @@ final class OnboardingModel: ObservableObject {
     var validatePathReturnRouteIsSettings: Bool { validatePathReturnRoute == .settingsRepository }
     private let settingsReader: any AppSettingsReading
     let settingsWriter: any AppSettingsWriting
-    private let configLoader: any CoreConfigurationLoading
     let pathValidator: any CoreRepositoryPathValidating
     let initializedPathValidator: any CoreInitializedRepositoryPathValidating
     let repositoryInitializer: any CoreRepositoryInitializing
     let emptyRepositoryOpener: any CoreEmptyRepositoryOpening
     let mainLoadingTreeLister: (any CoreRepositoryTreeListing)?
     let startupRecoverer: any CoreStartupRecovering
+    let externalChangesSyncer: any CoreExternalChangesSyncing
     private let existingRepositoryMetadataReader: any ExistingRepositoryMetadataReading
     let scanSessionReader: any CoreScanSessionReading
     let diagnosticsCollector: any CoreDiagnosticsCollecting
@@ -82,6 +83,7 @@ final class OnboardingModel: ObservableObject {
         emptyRepositoryOpener: any CoreEmptyRepositoryOpening = CoreBridge(),
         mainLoadingTreeLister: (any CoreRepositoryTreeListing)? = nil,
         startupRecoverer: any CoreStartupRecovering = CoreBridge(),
+        externalChangesSyncer: any CoreExternalChangesSyncing = CoreBridge(),
         existingRepositoryMetadataReader: any ExistingRepositoryMetadataReading =
             SQLiteExistingRepositoryMetadataReader(),
         scanSessionReader: any CoreScanSessionReading = CoreBridge(),
@@ -97,13 +99,13 @@ final class OnboardingModel: ObservableObject {
     ) {
         self.settingsReader = settingsReader
         self.settingsWriter = settingsWriter
-        self.configLoader = configLoader
         self.pathValidator = pathValidator
         self.initializedPathValidator = initializedPathValidator
         self.repositoryInitializer = repositoryInitializer
         self.emptyRepositoryOpener = emptyRepositoryOpener
         self.mainLoadingTreeLister = mainLoadingTreeLister ?? (emptyRepositoryOpener as? any CoreRepositoryTreeListing)
         self.startupRecoverer = startupRecoverer
+        self.externalChangesSyncer = externalChangesSyncer
         self.existingRepositoryMetadataReader = existingRepositoryMetadataReader
         self.scanSessionReader = scanSessionReader
         self.diagnosticsCollector = diagnosticsCollector
@@ -116,16 +118,13 @@ final class OnboardingModel: ObservableObject {
         self.directoryPicker = directoryPicker
         self.importPicker = importPicker
     }
-    @MainActor
-    func bootstrapIfNeeded() async {
+    @MainActor func bootstrapIfNeeded() async {
         guard !didBootstrap else { return }
         didBootstrap = true
         await loadConfiguredRepository()
     }
-    @MainActor
-    func retryConfigurationLoad() async { await loadConfiguredRepository() }
-    @MainActor
-    func showWelcome() { route = .welcome; toastMessage = nil }
+    @MainActor func retryConfigurationLoad() async { await loadConfiguredRepository() }
+    @MainActor func showWelcome() { route = .welcome; toastMessage = nil }
     @MainActor
     func showChoosePath() {
         if validatePathReturnRoute != .settingsRepository { validatePathReturnRoute = .choosePath }
@@ -182,6 +181,7 @@ final class OnboardingModel: ObservableObject {
         initializationOpenErrorMapping = nil
         mainRepoRecoveryValidation = nil
         mainRepoRecoveryErrorMapping = nil
+        mainRepoExternalRemoval = .unavailable
         isRetryingMainRepository = false
         initializationDiagnostics = .idle
         isInitializationCancellationRequested = false
@@ -456,6 +456,7 @@ final class OnboardingModel: ObservableObject {
             route = Self.mainRoute(for: opening)
         } catch {
             guard openingCancellationToken == cancellationToken else { return }
+            await updateMainRepoExternalRemoval(from: error, repoPath: repoPath)
             route = .mainRepoError(repoPath, await openingFailureMapping(for: error))
         }
     }

@@ -1,0 +1,80 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`2-1/task-31`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-1-first-launch-main/task-31-s1-11-c1-19-sync-external-removed.md`
+- 主要实现路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreExternalChangesSyncing.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainRepoExternalRemovalActions.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/App/AreaMatrixApp.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/MainWindow.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/MainRepoExternalRemovalTests.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+
+三、完成度摘要
+
+- 已覆盖项数：14
+- 未覆盖项数：0
+- 通过项数：14
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 S1-11 页面中的 C1-19 功能点  
+  结果：通过  
+  证据：S1-11 在 control map 中绑定 `C1-01, C1-19, C1-21`，本实现新增的是 external removed 状态与确认动作；未实现同页 C1-01/C1-21 新能力。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/App/AreaMatrixApp.swift:107`
+
+- 项目：读取页面规格、control map、Core API、C1-19 能力规格  
+  结果：通过  
+  证据：已逐项读取 4 个 Exact Docs；C1-19 API 为 `sync_external_changes(repo_path, events)`，Removed 事件输出 `detected_deletes`。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-19-sync-external-removed.md:9`
+
+- 项目：接入 C1-19 对应 CoreBridge / 状态 / 错误映射  
+  结果：通过  
+  证据：`syncExternalRemoved` 构造 `.removed` ExternalEvent 并调用真实 `syncExternalChanges`；失败路径通过 `openingFailureMapping` 映射回 S1-11 error route。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreExternalChangesSyncing.swift:15`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainRepoExternalRemovalActions.swift:30`
+
+- 项目：不顺手实现相邻页面  
+  结果：通过  
+  证据：改动集中在 S1-11 main repo error、CoreBridge wrapper、测试和 project 注册；未发现相邻页面功能新增。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/MainWindow.swift:194`
+
+- 项目：Expected New Paths 落地  
+  结果：通过  
+  证据：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`project.pbxproj` 均存在对应新增/变更；project 已把新增生产文件和测试文件加入 Sources。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj:64`
+
+- 项目：Forbidden Touches  
+  结果：通过  
+  证据：`git status --short -- core/src` 与 `git diff --name-only -- core/src` 无输出，未触碰 `core/src/**`。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。C1-19 被拆到 `CoreExternalChangesSyncing` 和 `MainRepoExternalRemovalActions`，UI 只负责展示和触发。
+- 注释 / rustdoc / 文档同步：通过。本 task 未新增 public Rust API；Swift 生产代码未绕过 CoreBridge。
+- 错误处理与边界处理：通过。只接受 repo 内 `FileNotFound` 路径，拒绝 repo 外路径和 `../`，Core sync 失败保持错误态。
+- 测试与验证覆盖：通过。新增 3 个 macOS 测试覆盖成功、repo 外路径拒绝、Core sync 失败保留错误页；另跑了 C1-19 Core 定向测试。
+- 占位、硬编码、mock-only、一次性实现检查：通过。生产路径调用真实 UniFFI `syncExternalChanges`；mock 仅存在于测试 support。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：通过，`** BUILD SUCCEEDED **`
+- 已运行：`./dev test macos`：通过；标准 `xcodebuild test` 受本地 sandbox `testmanagerd` 通信限制，但 repo-local runner 复用同一 XCTest bundle，最终 116 tests passed。
+- 已运行：`cd core && cargo test --test sync_external_removed_validation`：通过，5 tests passed。
+- 缺失：未做人工 VoiceOver 或真机点击截图；本 task manifest 未要求，且自动化已覆盖本次 C1-19 触发链路。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。S1-11 中 C1-19 对应的外部删除同步动作可从页面状态触发，生产路径接入真实 CoreBridge / UniFFI `sync_external_changes`，未触碰 `core/src/**`，未扩展 control map 之外能力。
+
+VERIFY_RESULT: PASS
