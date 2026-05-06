@@ -12,6 +12,8 @@ struct ImportProgressRouteState: Equatable, Sendable {
     var failed: Int
     var remaining: Int
     var currentPath: String
+    var skipped: Int
+    var pending: Int
 
     init(sourceOpening: RepositoryOpeningResult, currentPath: String, remaining: Int = 1) {
         self.sourceOpening = sourceOpening
@@ -20,6 +22,8 @@ struct ImportProgressRouteState: Equatable, Sendable {
         failed = 0
         self.remaining = remaining
         self.currentPath = currentPath
+        skipped = 0
+        pending = 0
     }
 
     init(
@@ -28,7 +32,9 @@ struct ImportProgressRouteState: Equatable, Sendable {
         status: Status,
         completed: Int,
         failed: Int,
-        remaining: Int
+        remaining: Int,
+        skipped: Int = 0,
+        pending: Int = 0
     ) {
         self.sourceOpening = sourceOpening
         self.status = status
@@ -36,6 +42,8 @@ struct ImportProgressRouteState: Equatable, Sendable {
         self.failed = failed
         self.remaining = remaining
         self.currentPath = currentPath
+        self.skipped = skipped
+        self.pending = pending
     }
 
     var repoPath: String {
@@ -65,14 +73,35 @@ struct ImportProgressRouteState: Equatable, Sendable {
         if let errorMapping {
             return errorMapping.userMessage
         }
-        return "已完成 \(completed)，失败 \(failed)，剩余 \(remaining)"
+        let extras = resultExtras
+        return extras.isEmpty
+            ? "已完成 \(completed)，失败 \(failed)，剩余 \(remaining)"
+            : "已完成 \(completed)，失败 \(failed)，剩余 \(remaining)，\(extras)"
     }
 
     var titleText: String {
-        isFailed ? "导入已暂停" : "正在导入 1 个文件"
+        if isFailed {
+            return "导入已暂停"
+        }
+        return total <= 1 ? "正在导入 1 个文件" : "正在导入 \(total) 个文件"
     }
 
     var detailsButtonTitle: String {
         "View details"
+    }
+
+    private var total: Int {
+        completed + failed + remaining + skipped + pending
+    }
+
+    private var resultExtras: String {
+        var parts: [String] = []
+        if skipped > 0 {
+            parts.append("跳过 \(skipped)")
+        }
+        if pending > 0 {
+            parts.append("待下载 \(pending)")
+        }
+        return parts.joined(separator: "，")
     }
 }

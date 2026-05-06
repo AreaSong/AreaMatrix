@@ -6,13 +6,17 @@ struct ImportEntrySheetView: View {
     let onSwitchToLocalRepo: () -> Void
     let onImportStarted: (String) -> Void
     let onImportFailed: (String, CoreErrorMappingSnapshot) -> Void
+    let onBatchImportProgress: (ImportBatchProgressSnapshot) -> Void
+    let onBatchImportFailed: (ImportBatchProgressSnapshot, CoreErrorMappingSnapshot) -> Void
     let onImported: (String, FileEntrySnapshot) -> Void
+    let onShowExistingFile: (String) -> Void
 
     @StateObject private var previewModel: ImportSingleFilePreviewModel
     @StateObject private var batchPreviewModel: ImportBatchPreviewModel
     @StateObject private var batchImportModel: ImportBatchCopyImportModel
     @State private var isReasonPopoverPresented = false
     @State private var showsBatchConflictReview = false
+    @State private var pendingBatchReplaceConfirmation: ImportBatchReplaceConfirmation?
 
     init(
         request: ImportEntryRequest,
@@ -20,11 +24,15 @@ struct ImportEntrySheetView: View {
         onSwitchToLocalRepo: (() -> Void)? = nil,
         onImportStarted: @escaping (String) -> Void = { _ in },
         onImportFailed: @escaping (String, CoreErrorMappingSnapshot) -> Void = { _, _ in },
+        onBatchImportProgress: @escaping (ImportBatchProgressSnapshot) -> Void = { _ in },
+        onBatchImportFailed: @escaping (ImportBatchProgressSnapshot, CoreErrorMappingSnapshot) -> Void = { _, _ in },
         onImported: @escaping (String, FileEntrySnapshot) -> Void = { _, _ in },
+        onShowExistingFile: @escaping (String) -> Void = { _ in },
         categoryPredictor: any CoreCategoryPredicting = CoreBridge(),
         fileImporter: any CoreFileImporting = CoreBridge(),
         batchFileImporter: any CoreBatchCopyImporting = CoreBridge(),
         batchDuplicatePrechecker: any ImportBatchDuplicatePrechecking = CoreImportBatchDuplicatePrechecker(),
+        batchNameConflictPrechecker: any ImportBatchNameConflictPrechecking = CoreImportBatchNameConflictPrechecker(),
         preflight: any ImportSingleFilePreflighting = CoreImportSingleFilePreflight(),
         placeholderDownloader: any ICloudPlaceholderDownloading = LocalICloudPlaceholderDownloader(),
         errorMapper: any CoreErrorMapping = CoreBridge()
@@ -34,7 +42,10 @@ struct ImportEntrySheetView: View {
         self.onSwitchToLocalRepo = onSwitchToLocalRepo ?? onCancel
         self.onImportStarted = onImportStarted
         self.onImportFailed = onImportFailed
+        self.onBatchImportProgress = onBatchImportProgress
+        self.onBatchImportFailed = onBatchImportFailed
         self.onImported = onImported
+        self.onShowExistingFile = onShowExistingFile
         _previewModel = StateObject(wrappedValue: ImportSingleFilePreviewModel(
             predictor: categoryPredictor,
             importer: fileImporter,
@@ -44,11 +55,13 @@ struct ImportEntrySheetView: View {
         ))
         _batchPreviewModel = StateObject(wrappedValue: ImportBatchPreviewModel(
             predictor: categoryPredictor,
-            duplicatePrechecker: batchDuplicatePrechecker
+            duplicatePrechecker: batchDuplicatePrechecker,
+            nameConflictPrechecker: batchNameConflictPrechecker
         ))
         _batchImportModel = StateObject(wrappedValue: ImportBatchCopyImportModel(
             importer: batchFileImporter,
-            errorMapper: errorMapper
+            errorMapper: errorMapper,
+            placeholderDownloader: placeholderDownloader
         ))
     }
 
@@ -103,14 +116,21 @@ struct ImportEntrySheetView: View {
                 )
             }
         }
-        .sheet(item: Binding(
-            get: { previewModel.pendingReplaceConfirmation },
-            set: { if $0 == nil { previewModel.cancelReplaceConfirmation() } }
-        )) { context in
+        .sheet(item: singleFileReplaceBinding) { context in
             ReplaceConfirmSheet(
                 context: context,
                 onCancel: previewModel.cancelReplaceConfirmation,
                 onConfirm: previewModel.applyReplaceConfirmation
+            )
+        }
+        .sheet(item: $pendingBatchReplaceConfirmation) { item in
+            ReplaceConfirmSheet(
+                context: item.context,
+                onCancel: { pendingBatchReplaceConfirmation = nil },
+                onConfirm: { decision in
+                    batchImportModel.applyReplaceConfirmation(for: item.rowID, decision: decision)
+                    pendingBatchReplaceConfirmation = nil
+                }
             )
         }
     }
@@ -161,15 +181,49 @@ struct ImportEntrySheetView: View {
 
     private var batchPreview: some View {
         VStack(alignment: .leading, spacing: 16) {
-            batchSummary
-            batchDestinationSection
+            ImportBatchSummarySection(
+                totalSizeDescription: batchPreviewModel.totalSizeDescription,
+                sourceLabel: batchPreviewModel.sourceLabel,
+                duplicateCount: batchImportModel.duplicateCount,
+                nameConflictCount: batchImportModel.nameConflictCount,
+                iCloudPlaceholderCount: batchImportModel.iCloudPlaceholderCount
+            )
+            ImportBatchDestinationSection(
+                selectedDestination: $batchPreviewModel.selectedDestination,
+                destinationOptions: batchPreviewModel.destinationOptions,
+                selectedStorageMode: $batchImportModel.selectedStorageMode,
+                selectedNamingStrategy: Binding(
+                    get: { batchImportModel.selectedNamingStrategy },
+                    set: { batchImportModel.updateNamingStrategy($0) }
+                ),
+                namingPrefix: $batchImportModel.namingPrefix,
+                isImporting: batchImportModel.status.isImporting,
+                destinationHelperMessage: batchPreviewModel.destinationHelperMessage,
+                storageModeRiskMessage: batchImportModel.storageModeRiskMessage
+            )
             batchStatusSection
-            batchRowsSection
-            if batchImportModel.duplicateCount > 0 || showsBatchConflictReview {
+            ImportBatchRowsSection(
+                itemCount: request.urls.count,
+                rows: batchImportModel.rows,
+                selectedDestination: batchPreviewModel.selectedDestination,
+                isImporting: batchImportModel.status.isImporting,
+                categoryOptions: batchCategoryOptions,
+                onUpdateCategory: batchImportModel.updateCategoryOverride
+            )
+            if batchImportModel.duplicateCount > 0
+                || batchImportModel.nameConflictCount > 0
+                || batchImportModel.iCloudPlaceholderCount > 0
+                || batchImportModel.blockedCount > 0
+                || showsBatchConflictReview {
                 ImportBatchConflictSection(
-                    duplicateCount: batchImportModel.duplicateCount,
                     batchImportModel: batchImportModel,
-                    isExpanded: $showsBatchConflictReview
+                    isExpanded: $showsBatchConflictReview,
+                    pendingReplaceConfirmation: $pendingBatchReplaceConfirmation,
+                    onRetryPreview: {
+                        Task { await batchPreviewModel.retryPreview() }
+                    },
+                    onSwitchToLocalRepo: onSwitchToLocalRepo,
+                    onShowExistingFile: onShowExistingFile
                 )
             }
             if batchPreviewModel.showsRetryPreview {
@@ -256,41 +310,6 @@ struct ImportEntrySheetView: View {
         .accessibilityElement(children: .combine)
     }
 
-    private var batchSummary: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("批量导入摘要")
-                .font(.headline)
-            HStack(spacing: 16) {
-                if let totalSizeDescription = batchPreviewModel.totalSizeDescription {
-                    LabeledContent("总大小", value: totalSizeDescription)
-                }
-                LabeledContent("来源", value: batchPreviewModel.sourceLabel)
-                LabeledContent("预计重复", value: "\(batchImportModel.duplicateCount) 个")
-                LabeledContent("重名冲突", value: "未检测")
-            }
-            .font(.callout)
-            .foregroundStyle(.secondary)
-        }
-    }
-
-    private var batchDestinationSection: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Picker("导入到", selection: $batchPreviewModel.selectedDestination) {
-                ForEach(batchPreviewModel.destinationOptions, id: \.self) { option in
-                    Text(option.title).tag(option)
-                }
-            }
-            .pickerStyle(.segmented)
-            .disabled(batchImportModel.status.isImporting)
-
-            if let helperMessage = batchPreviewModel.destinationHelperMessage {
-                Text(helperMessage)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-        }
-    }
-
     private var batchStatusSection: some View {
         HStack(spacing: 8) {
             if batchPreviewModel.status.isLoading || batchImportModel.status.isImporting {
@@ -307,43 +326,6 @@ struct ImportEntrySheetView: View {
         .accessibilityElement(children: .combine)
     }
 
-    private var batchRowsSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            DisclosureGroup("查看 \(request.urls.count) 个项目") {
-                Table(batchImportModel.rows) {
-                    TableColumn("原文件名") { row in
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(row.originalName)
-                            Text(row.sourcePath)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(1)
-                        }
-                    }
-                    TableColumn("建议分类") { row in
-                        Text(row.displayCategory(for: batchPreviewModel.selectedDestination))
-                    }
-                    TableColumn("建议新名称") { row in
-                        Text(row.suggestedName)
-                    }
-                    TableColumn("状态") { row in
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(row.status.tag)
-                                .font(.caption.weight(.semibold))
-                            if let detail = row.status.detail {
-                                Text(detail)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-                    }
-                }
-                .frame(minHeight: 240)
-            }
-            .disabled(batchImportModel.rows.isEmpty)
-        }
-    }
-
     private var footer: some View {
         Group {
             if request.kind == .singleFile {
@@ -354,6 +336,8 @@ struct ImportEntrySheetView: View {
                     batchPreviewModel: batchPreviewModel,
                     batchImportModel: batchImportModel,
                     onCancel: onCancel,
+                    onImportProgress: onBatchImportProgress,
+                    onImportFailed: onBatchImportFailed,
                     onImported: onImported
                 )
             }
@@ -391,14 +375,11 @@ struct ImportEntrySheetView: View {
     }
 
     private var categoryOptions: [String] {
-        let values = request.availableCategories + [previewModel.selectedCategory, previewModel.prediction?.category, "inbox"]
-        var uniqueValues: [String] = []
-        for value in values.compactMap({ $0 }).filter({ !$0.isEmpty }) {
-            if !uniqueValues.contains(value) {
-                uniqueValues.append(value)
-            }
-        }
-        return uniqueValues
+        ImportEntrySheetHelper.categoryOptions(
+            availableCategories: request.availableCategories,
+            selectedCategory: previewModel.selectedCategory,
+            predictedCategory: previewModel.prediction?.category
+        )
     }
 
     private var previewStatusStyle: Color {
@@ -433,14 +414,13 @@ struct ImportEntrySheetView: View {
     }
 
     private var primaryFileLabel: String {
-        guard let firstURL = request.urls.first else {
-            return "No valid file URL"
-        }
+        ImportEntrySheetHelper.primaryFileLabel(urls: request.urls)
+    }
 
-        if request.urls.count == 1 {
-            return firstURL.path
-        }
-
-        return "\(firstURL.path) and \(request.urls.count - 1) more"
+    private var singleFileReplaceBinding: Binding<ImportSingleFileReplaceConfirmationContext?> {
+        Binding(
+            get: { previewModel.pendingReplaceConfirmation },
+            set: { if $0 == nil { previewModel.cancelReplaceConfirmation() } }
+        )
     }
 }

@@ -1,0 +1,98 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`2-2/task-10`
+- Task：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-2-import-conflict/task-10-s1-18-page-integration-verify.md`
+- Manifest：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-2.md`
+- 代码范围：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+- 禁止触碰：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：0
+- 通过项数：6
+- 不通过项数：4
+- 阻塞项数：2
+
+四、逐项验收结果
+
+- 项目：page-feature task 覆盖完整性
+- 结果：通过
+- 证据：task 绑定 `2-2/task-07`、`2-2/task-08`、`2-2/task-09`，对应 C1-05 / C1-06 / C1-09；control map 也声明 S1-18 只绑定这三项。
+- 涉及文件：`tasks/prompts/phase-2/2-2-import-conflict/task-10-s1-18-page-integration-verify.md:16`、`docs/architecture/mvp-control-map.md:33`
+
+- 项目：CoreBridge 真实接入
+- 结果：通过
+- 证据：`predictCategory` 调用真实 `predictCategory` 绑定；批量 Copy 通过 `CoreBridge.importFile` 组装 `ImportOptions(mode: .copied)` 后调用 Core `AreaMatrix.importFile`。
+- 涉及文件：`apps/macos/AreaMatrix/Bridge/CoreBridge.swift:259`、`apps/macos/AreaMatrix/Bridge/CoreImporting.swift:168`、`apps/macos/AreaMatrix/Bridge/CoreImporting.swift:249`
+
+- 项目：页面入口、导入进度退出
+- 结果：通过
+- 证据：多文件 drop / picker 会创建 `.multipleItems` 的 `pendingImportEntry`；Import 后通过 `updateImportEntryProgress` 进入 S1-20。
+- 涉及文件：`apps/macos/AreaMatrix/Models/OnboardingModelInputs.swift:24`、`apps/macos/AreaMatrix/Models/OnboardingModelInputs.swift:61`、`apps/macos/AreaMatrix/Views/MainWindow.swift:54`
+
+- 项目：错误态与结果摘要闭环
+- 结果：不通过
+- 证据：S1-18 要求单项 ERROR 可继续导入，但结果页必须报告失败项；当前 `ImportBatchImportResult` 只统计 Core 导入失败、skipped duplicate、pending iCloud，没有把 preview ERROR 行计入结果摘要。
+- 涉及文件：`docs/ux/page-specs/stage-1-mvp/S1-18-import-batch-sheet.md:98`、`apps/macos/AreaMatrix/Models/ImportBatchCopyImportModel.swift:184`、`apps/macos/AreaMatrix/Models/ImportBatchCopyImportModel.swift:221`、`apps/macos/AreaMatrix/Models/ImportBatchCopyImportState.swift:310`
+
+- 项目：mock / fixture / 硬编码状态检查
+- 结果：通过
+- 证据：生产路径默认注入 `CoreBridge()`，测试 fixture 限定在 `AreaMatrixTests`；未发现 S1-18 生产闭环以 mock-only 替代真实 Core。
+- 涉及文件：`apps/macos/AreaMatrix/Views/Main/ImportEntrySheetView.swift:31`
+
+- 项目：不新增 control map 外功能
+- 结果：通过
+- 证据：S1-18 真实导入限制为 Copy；Move / Index-only 只显示风险并阻止执行，未真实接入 C1-07 / C1-08。
+- 涉及文件：`docs/architecture/mvp-control-map.md:33`、`apps/macos/AreaMatrix/Models/ImportBatchCopyImportModel.swift:54`、`apps/macos/AreaMatrix/Bridge/CoreImporting.swift:194`
+
+- 项目：Expected New Paths
+- 结果：通过
+- 证据：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`apps/macos/AreaMatrix.xcodeproj/project.pbxproj` 均存在。
+- 涉及文件：`tasks/prompts/_shared/manifests/phase-2.md:1305`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git status --short -- core/src` 与 `git diff --name-only -- core/src` 均为空，未发现 `core/src/**` 被修改。
+- 涉及文件：`tasks/prompts/_shared/manifests/phase-2.md:1310`
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过，原因是 preview ERROR 行没有进入最终结果摘要模型，错误流不完整。
+- 注释 / rustdoc / 文档同步：通过，当前 task 主要为 Swift UI 集成，未新增 public Rust API；UDL 与 API 的 C1-05/C1-06/C1-09 基础合同可对应。
+- 错误处理与边界处理：不通过，单项 preview ERROR 可继续导入但不报告，违反 S1-18 错误态验收。
+- 测试与验证覆盖：不通过，必需 `xcodebuild test` 未完成；且未看到覆盖“preview ERROR + 部分成功导入 + 结果摘要报告失败项”的测试证据。
+- 占位、硬编码、mock-only、一次性实现检查：通过，未发现生产闭环用 mock-only 伪造 Real Core。
+
+六、阻塞项
+
+- P0：必需验证命令失败，不能证明 task 通过
+  - 说明：task 和 manifest 都要求运行 `xcodebuild test`；本次实际运行退出码 65，失败原因是 test runner 无法与 `com.apple.testmanagerd.control` 通信，报 `Sandbox restriction`。按验收规则，缺失必需验证不能判定完成。
+  - 绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-2-import-conflict/task-10-s1-18-page-integration-verify.md:35`
+  - 绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-2.md:1316`
+  - 为什么导致不通过：无法用必需测试命令证明当前实现达到完成标准。
+
+- P1：S1-18 单项 preview ERROR 未进入结果摘要
+  - 说明：页面 spec 要求单项 ERROR 可保留并继续导入，但结果页必须报告失败项；当前结果模型没有 preview error 计数字段，`needsResultSummary` 也不会因 preview ERROR 触发。
+  - 绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-18-import-batch-sheet.md:98`
+  - 绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportBatchCopyImportModel.swift:221`
+  - 绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportBatchCopyImportState.swift:310`
+  - 为什么导致不通过：页面错误态和结果闭环未完整满足 S1-18 最终验收标准。
+
+七、验证情况
+
+- 已运行：`xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+- 结果：失败，退出码 65
+- 通过部分：构建推进到 `AreaMatrixTests.xctest` 产物生成阶段
+- 失败部分：测试 runner 启动失败，报 `Failed to establish communication with the test runner`，底层错误为 `com.apple.testmanagerd.control` sandbox restriction
+- 缺失：没有成功完成 manifest 要求的测试结果
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+
+VERIFY_RESULT: FAIL

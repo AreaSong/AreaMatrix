@@ -1,0 +1,90 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`2-2/task-10`
+- 对应文件路径：
+- `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-2-import-conflict/task-10-s1-18-page-integration-verify.md`
+- `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`
+- `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`
+- `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+- `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：3
+- 未覆盖项数：5
+- 通过项数：3
+- 不通过项数：5
+- 阻塞项数：3
+
+四、逐项验收结果
+
+- 项目：Exact Docs / Existing Code / manifest 交叉读取
+- 结果：通过
+- 证据：6 个 Exact Docs 均存在并已读取；`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`project.pbxproj`、`core/area_matrix.udl` 均存在。
+- 涉及文件：manifest 章节 `2-2/task-10`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git status --short -- core/src` 无输出；`git diff --name-only -- core/src ...` 未列出 `core/src/**`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+- 项目：C1-05 / C1-06 真实 CoreBridge 调用
+- 结果：通过
+- 证据：`ImportBatchPreviewModel` 调用 `predictCategory`；`ImportBatchCopyImportModel` 通过 `CoreBatchCopyImporting.importCopiedFile`，`CoreBridge` 最终调用 `AreaMatrix.importFile`。
+- 涉及文件：`apps/macos/AreaMatrix/Models/ImportBatchPreviewModel.swift:302`、`apps/macos/AreaMatrix/Models/ImportBatchCopyImportModel.swift:223`、`apps/macos/AreaMatrix/Bridge/CoreImporting.swift:128`
+
+- 项目：S1-18 全页状态、入口、退出、错误态闭环
+- 结果：不通过
+- 证据：页面 spec 要求 `OK/DUP/NAME/ICLOUD/ERROR/BLOCKED`、Move/Index-only 风险、iCloud 下载、Replace 确认等完整状态；当前 batch 状态只有 `loading/ready/duplicate/importing/skippedDuplicate/imported/error`，未实现 `NAME/ICLOUD/BLOCKED` 批量状态。
+- 涉及文件：`docs/ux/page-specs/stage-1-mvp/S1-18-import-batch-sheet.md:51`、`apps/macos/AreaMatrix/Models/ImportBatchCopyImportState.swift:3`
+
+- 项目：冲突表完整性
+- 结果：不通过
+- 证据：spec 要求 Duplicate content / Same name different content、Rename incoming、Confirm Replace、BLOCKED；当前冲突表固定显示 `0 name conflict · 0 blocked`，Conflict 固定为 `Duplicate content`，Action 固定为文本 `Show existing file`。
+- 涉及文件：`docs/ux/page-specs/stage-1-mvp/S1-18-import-batch-sheet.md:55`、`apps/macos/AreaMatrix/Views/Main/ImportBatchConflictSection.swift:22`
+
+- 项目：mock / fixture / 硬编码状态检查
+- 结果：不通过
+- 证据：批量摘要将“重名冲突”硬编码为“未检测”；冲突摘要硬编码 `0 name conflict · 0 blocked`，这不能作为 Real Core 页面最终验收证据。
+- 涉及文件：`apps/macos/AreaMatrix/Views/Main/ImportEntrySheetView.swift:275`、`apps/macos/AreaMatrix/Views/Main/ImportBatchConflictSection.swift:22`
+
+- 项目：不新增 control map 外能力
+- 结果：通过
+- 证据：当前实现仍围绕 S1-18 的 C1-05/C1-06/C1-09，没有发现新增 control map 外 Core 能力。
+- 涉及文件：`docs/architecture/mvp-control-map.md:33`
+
+- 项目：任务要求验证
+- 结果：不通过
+- 证据：已运行 manifest 指定 `xcodebuild test ...`，退出码 65；失败原因为当前沙箱无法与 `com.apple.testmanagerd.control` 通信，未获得测试通过证据。
+- 涉及文件：`apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过，S1-18 integration verify 要求整页闭环，但当前模型只覆盖 batch copy + duplicate 子集，未覆盖 name conflict、iCloud、Replace、Move/Index-only。
+- 注释 / rustdoc / 文档同步：不通过，文档要求与实现明显不一致，尤其是 S1-18 状态与冲突面板。
+- 错误处理与边界处理：不通过，批量 iCloud placeholder、BLOCKED、未确认 Replace 禁用 Import、全部错误禁用 Import等路径缺实现证据。
+- 测试与验证覆盖：不通过，manifest 验证命令失败；现有测试覆盖 batch copy/duplicate 部分，不覆盖完整 S1-18 page spec。
+- 占位、硬编码、mock-only、一次性实现检查：不通过，`未检测`、`0 name conflict · 0 blocked`、固定 `Duplicate content` 属于无法通过最终验收的硬编码状态。
+
+六、阻塞项
+
+- P0：S1-18 页面没有完整实现 page spec 声明的 NAME / ICLOUD / BLOCKED / Replace / Move / Index-only 状态闭环。绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportBatchCopyImportState.swift:3`。原因：page integration verify 必须覆盖 control map 中该页全部能力和页面状态，当前只能证明部分 batch copy / duplicate。
+- P0：冲突表仍硬编码同名冲突和 blocked 数量，无法验收真实冲突闭环。绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportBatchConflictSection.swift:22`。原因：spec 要求重名冲突、Rename incoming、Confirm Replace、BLOCKED 行为；当前无真实数据与动作。
+- P1：必需验证命令未通过。绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj`。原因：`xcodebuild test` 退出码 65，测试运行阶段因 sandbox restriction 无法连接 `testmanagerd`，不能宣称验证通过。
+
+七、验证情况
+
+- 已运行：`xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+- 通过：无
+- 失败：上述命令失败，退出码 65，核心错误为 `Failed to establish communication with the test runner` / `Sandbox restriction`
+- 缺失：没有可替代的完整 S1-18 页面闭环测试通过证据；没有 NAME、ICLOUD、BLOCKED、Replace、Move/Index-only 的实现与测试证据。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+
+VERIFY_RESULT: FAIL

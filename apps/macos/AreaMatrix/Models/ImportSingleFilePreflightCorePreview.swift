@@ -163,7 +163,7 @@ private enum ImportSingleFileReplaceVisibility {
     }
 }
 
-private enum ImportSingleFileHasher {
+enum ImportSingleFileHasher {
     static func sha256Hex(for fileURL: URL) throws -> String {
         let handle = try FileHandle(forReadingFrom: fileURL)
         defer { try? handle.close() }

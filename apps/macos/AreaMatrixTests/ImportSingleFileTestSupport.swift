@@ -54,6 +54,7 @@ struct S117ImportRequest: Equatable, Sendable {
 }
 
 struct S118BatchImportRequest: Equatable, Sendable {
+    var storageMode: ImportSingleFileStorageMode = .copy
     var destination: ImportEntryDestination
     var suggestedCategory: String?
     var overrideFilename: String
@@ -276,26 +277,47 @@ actor S118RecordingBatchImporter: CoreBatchCopyImporting {
         overrideFilename: String,
         duplicateStrategy: DuplicateStrategy
     ) async throws -> FileEntrySnapshot {
+        try await importBatchFile(
+            repoPath: repoPath,
+            sourceURL: sourceURL,
+            storageMode: .copy,
+            destination: destination,
+            suggestedCategory: suggestedCategory,
+            overrideFilename: overrideFilename,
+            duplicateStrategy: duplicateStrategy
+        )
+    }
+
+    func importBatchFile(
+        repoPath: String,
+        sourceURL: URL,
+        storageMode: ImportSingleFileStorageMode,
+        destination: ImportEntryDestination,
+        suggestedCategory: String?,
+        overrideFilename: String,
+        duplicateStrategy: DuplicateStrategy
+    ) async throws -> FileEntrySnapshot {
         requests.append(S118BatchImportRequest(
+            storageMode: storageMode,
             destination: destination,
             suggestedCategory: suggestedCategory,
             overrideFilename: overrideFilename,
             duplicateStrategy: duplicateStrategy
         ))
 
-        let category: String
-        switch destination {
+        let category = switch destination {
         case .autoClassify:
-            category = suggestedCategory ?? "inbox"
+            suggestedCategory ?? "inbox"
         case .category(let slug):
-            category = slug
+            slug
         case .repositoryRoot:
-            category = "__root__"
+            "__root__"
         }
 
         return FileEntrySnapshot.s117Fixture(
             currentName: overrideFilename,
-            category: category
+            category: category,
+            storageMode: storageMode.coreStorageMode
         )
     }
 
@@ -368,6 +390,38 @@ actor S118SequenceBatchImporter: CoreBatchCopyImporting {
     }
 
     func recordedRequests() -> [S118BatchImportRequest] {
+        requests
+    }
+}
+
+struct S118NameConflictPrecheckRequest: Equatable, Sendable {
+    var repoPath: String
+    var rowIDs: [String]
+    var destination: ImportBatchDestinationOption
+}
+
+actor S118StaticNameConflictPrechecker: ImportBatchNameConflictPrechecking {
+    private let results: [String: ImportBatchNameConflictPrecheckResult]
+    private var requests: [S118NameConflictPrecheckRequest] = []
+
+    init(results: [String: ImportBatchNameConflictPrecheckResult]) {
+        self.results = results
+    }
+
+    func precheckNameConflicts(
+        repoPath: String,
+        rows: [ImportBatchPreviewRow],
+        destination: ImportBatchDestinationOption
+    ) async -> [String: ImportBatchNameConflictPrecheckResult] {
+        requests.append(S118NameConflictPrecheckRequest(
+            repoPath: repoPath,
+            rowIDs: rows.map(\.id),
+            destination: destination
+        ))
+        return results
+    }
+
+    func recordedRequests() -> [S118NameConflictPrecheckRequest] {
         requests
     }
 }

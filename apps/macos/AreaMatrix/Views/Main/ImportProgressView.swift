@@ -27,6 +27,12 @@ struct ImportProgressView: View {
                     Text("资料库：\(state.repoPath)")
                         .textSelection(.enabled)
                     Text("已完成 \(state.completed)，失败 \(state.failed)，剩余 \(state.remaining)")
+                    if state.skipped > 0 {
+                        Text("跳过 \(state.skipped)")
+                    }
+                    if state.pending > 0 {
+                        Text("待下载 \(state.pending)")
+                    }
                     if let errorMapping = state.errorMapping {
                         Text("错误级别：\(errorMapping.severity.rawValue)")
                         Text("建议操作：\(errorMapping.suggestedAction)")

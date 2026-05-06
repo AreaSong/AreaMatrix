@@ -48,25 +48,69 @@ extension OnboardingModel {
 
     @MainActor
     func beginImportEntryProgress(currentPath: String) {
-        guard let opening = currentOpeningForImport else { return }
-        pendingImportEntry = nil
-        route = .importProgress(ImportProgressRouteState(
-            sourceOpening: opening,
+        updateImportEntryProgress(ImportBatchProgressSnapshot(
+            completed: 0,
+            failed: 0,
+            total: 1,
+            remaining: 1,
             currentPath: currentPath
         ))
     }
 
     @MainActor
+    func updateImportEntryProgress(_ progress: ImportBatchProgressSnapshot) {
+        guard let opening = currentOpeningForImportOrProgress else { return }
+        pendingImportEntry = nil
+        route = .importProgress(ImportProgressRouteState(
+            sourceOpening: opening,
+            currentPath: progress.currentPath,
+            status: .running,
+            completed: progress.completed,
+            failed: progress.failed,
+            remaining: progress.remaining,
+            skipped: progress.skipped,
+            pending: progress.pending
+        ))
+    }
+
+    @MainActor
     func failImportEntry(currentPath: String, mapping: CoreErrorMappingSnapshot) {
+        failImportEntry(
+            progress: ImportBatchProgressSnapshot(
+                completed: 0,
+                failed: 1,
+                total: 1,
+                remaining: 0,
+                currentPath: currentPath
+            ),
+            mapping: mapping
+        )
+    }
+
+    @MainActor
+    func failImportEntry(progress: ImportBatchProgressSnapshot, mapping: CoreErrorMappingSnapshot) {
         guard case .importProgress(let state) = route else { return }
         route = .importProgress(ImportProgressRouteState(
             sourceOpening: state.sourceOpening,
-            currentPath: currentPath,
+            currentPath: progress.currentPath,
             status: .failed(mapping),
-            completed: 0,
-            failed: 1,
-            remaining: 0
+            completed: progress.completed,
+            failed: progress.failed,
+            remaining: progress.remaining,
+            skipped: progress.skipped,
+            pending: progress.pending
         ))
+    }
+
+    @MainActor
+    func showImportEntryExistingFile(relativePath: String) {
+        guard let request = pendingImportEntry else { return }
+        do {
+            try fileRevealer.revealFile(repoPath: request.repoPath, relativePath: relativePath)
+            toastMessage = nil
+        } catch {
+            toastMessage = "Existing file cannot be shown in Finder."
+        }
     }
 
     @MainActor
@@ -129,6 +173,15 @@ extension OnboardingModel {
             return opening
         default:
             return nil
+        }
+    }
+
+    private var currentOpeningForImportOrProgress: RepositoryOpeningResult? {
+        switch route {
+        case .importProgress(let state):
+            return state.sourceOpening
+        default:
+            return currentOpeningForImport
         }
     }
 

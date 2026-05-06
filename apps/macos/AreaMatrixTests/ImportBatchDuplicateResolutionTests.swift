@@ -180,6 +180,57 @@ final class ImportBatchDuplicateResolutionTests: XCTestCase {
     }
 
     @MainActor
+    func testShowExistingFileRevealsDuplicatePathFromPendingBatchRequest() {
+        let revealer = S118RecordingFileRevealer()
+        let model = OnboardingModel(
+            settingsReader: S117StaticSettingsReader(repoPath: nil),
+            fileRevealer: revealer,
+            accessibilityAnnouncer: S117RecordingAccessibilityAnnouncer(),
+            helpOpener: S117NoopWelcomeHelpOpener()
+        )
+        let opening = RepositoryOpeningResult.s117Fixture(repoPath: "/tmp/repo")
+
+        model.startImportEntry(
+            opening: opening,
+            source: .dropZone,
+            urls: [
+                URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf"),
+                URL(fileURLWithPath: "/tmp/合同.pdf"),
+            ]
+        )
+        model.showImportEntryExistingFile(relativePath: "finance/existing-invoice.pdf")
+
+        XCTAssertEqual(revealer.requests.map(\.repoPath), ["/tmp/repo"])
+        XCTAssertEqual(revealer.requests.map(\.relativePath), ["finance/existing-invoice.pdf"])
+        XCTAssertNil(model.toastMessage)
+    }
+
+    @MainActor
+    func testShowExistingFileFailureReportsActionError() {
+        let revealer = S118RecordingFileRevealer(result: .failure(RepositoryFileActionError.fileMissing("missing.pdf")))
+        let model = OnboardingModel(
+            settingsReader: S117StaticSettingsReader(repoPath: nil),
+            fileRevealer: revealer,
+            accessibilityAnnouncer: S117RecordingAccessibilityAnnouncer(),
+            helpOpener: S117NoopWelcomeHelpOpener()
+        )
+        let opening = RepositoryOpeningResult.s117Fixture(repoPath: "/tmp/repo")
+
+        model.startImportEntry(
+            opening: opening,
+            source: .dropZone,
+            urls: [
+                URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf"),
+                URL(fileURLWithPath: "/tmp/合同.pdf"),
+            ]
+        )
+        model.showImportEntryExistingFile(relativePath: "finance/missing.pdf")
+
+        XCTAssertEqual(revealer.requests.map(\.relativePath), ["finance/missing.pdf"])
+        XCTAssertEqual(model.toastMessage, "Existing file cannot be shown in Finder.")
+    }
+
+    @MainActor
     func testCoreDetectedDuplicateKeepBothSurvivesFooterPreviewRowReapplyBeforeImport() async {
         let invoiceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
         let importer = S118SequenceBatchImporter(results: [
@@ -242,7 +293,22 @@ private func s118BatchRequest(urls: [URL]) -> ImportEntryRequest {
         source: .dropZone,
         destination: .autoClassify,
         urls: urls,
-        kind: .multipleItems(2),
+        kind: .multipleItems(urls.count),
         availableCategories: ["inbox", "docs", "finance"]
     )
+}
+
+@MainActor
+private final class S118RecordingFileRevealer: RepositoryFileRevealing {
+    private let result: Result<Void, Error>
+    private(set) var requests: [(repoPath: String, relativePath: String)] = []
+
+    init(result: Result<Void, Error> = .success(())) {
+        self.result = result
+    }
+
+    func revealFile(repoPath: String, relativePath: String) throws {
+        requests.append((repoPath: repoPath, relativePath: relativePath))
+        try result.get()
+    }
 }

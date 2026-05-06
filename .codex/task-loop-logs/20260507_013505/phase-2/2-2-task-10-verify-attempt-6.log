@@ -1,0 +1,94 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`2-2/task-10`
+- Task 文件：[task-10-s1-18-page-integration-verify.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-2-import-conflict/task-10-s1-18-page-integration-verify.md:1)
+- Manifest 章节：[phase-2.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-2.md:1288)
+- 代码范围：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`apps/macos/AreaMatrix.xcodeproj/project.pbxproj`、`core/area_matrix.udl`
+- 禁止触碰范围：`core/src/**`
+
+三、完成度摘要
+
+- 已覆盖项数：12
+- 未覆盖项数：0
+- 通过项数：8
+- 不通过项数：4
+- 阻塞项数：3
+
+四、逐项验收结果
+
+- 项目：Exact Docs / Manifest 覆盖
+- 结果：通过
+- 证据：Manifest 明确列出 6 个 Exact Docs、2 个 Existing Code、3 个 Expected New Paths、1 个 Forbidden Touch、1 条验证命令，均已读取或核验。
+- 涉及文件：[phase-2.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-2.md:1293)
+
+- 项目：所有 page-feature task 覆盖
+- 结果：通过
+- 证据：S1-18 在 control map 中声明 C1-05、C1-06、C1-09；task-07/08/09 分别覆盖这三个能力，task-10 依赖三者。
+- 涉及文件：[mvp-control-map.md](/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:33)、[phase-2.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-2.md:1201)
+
+- 项目：页面状态、入口、退出、错误态和 CoreBridge 调用闭环
+- 结果：通过
+- 证据：S1-18 入口由 `MainWindow` 打开 `ImportEntrySheetView`，Cancel 回调存在；批量预览默认注入 `CoreBridge`，导入进度路由到 S1-20；错误通过 `CoreErrorMappingSnapshot` 进入失败状态。
+- 涉及文件：[MainWindow.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/MainWindow.swift:54)、[ImportEntrySheetView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportEntrySheetView.swift:31)、[ImportProgressRouteState.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportProgressRouteState.swift:3)
+
+- 项目：真实 Core 接入，非 mock-only 闭环
+- 结果：通过
+- 证据：分类使用 `predictCategory`，批量导入最终通过 `CoreBridge.importFile -> AreaMatrix.importFile`，重复/重名预检读取真实 Core 文件列表。
+- 涉及文件：[ImportBatchPreviewModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportBatchPreviewModel.swift:350)、[CoreImporting.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreImporting.swift:253)、[ImportBatchDuplicatePrecheck.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportBatchDuplicatePrecheck.swift:7)
+
+- 项目：不新增 control map 之外功能
+- 结果：不通过
+- 证据：S1-18 control map 只声明 C1-05、C1-06、C1-09，且 C1-06 是 copy import；当前批量页把 Move / Index-only 也接到真实 Core 导入。
+- 涉及文件：[mvp-control-map.md](/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:33)、[CoreImporting.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreImporting.swift:185)
+
+- 项目：Expected New Paths
+- 结果：通过
+- 证据：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`project.pbxproj` 均存在变更；pbxproj 已注册新增源文件和测试文件。
+- 涉及文件：[project.pbxproj](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj:45)
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git diff --name-only -- core/src` 和 `git ls-files --others --exclude-standard core/src` 均无输出；未发现 `core/src/**` 被触碰。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过。主要功能拆到了模型、预检、冲突区和 footer，但仍存在 control map 越界接通 Move / Index-only，且 `ImportEntrySheetView.swift` 已达 514 行，超过编码规范单文件 ≤500 行。
+- 注释 / rustdoc / 文档同步：不通过。`C1-09` 能力规格的服务页面未列出 S1-18，但 control map 和本 task 都绑定 S1-18，文档交叉验收存在漂移。
+- 错误处理与边界处理：通过。重复、权限失败、iCloud pending、Replace 二次确认、BLOCKED 状态均有生产路径和测试覆盖。
+- 测试与验证覆盖：不通过。`./dev test macos` fallback 通过 213 tests / 0 failures，但 manifest 原始 `xcodebuild test` 被本地 sandbox 阻断；`swiftformat`、`swiftlint` 当前环境不可用。
+- 占位、硬编码、mock-only、一次性实现检查：通过。生产路径未发现 mock-only 闭环；测试 fixture 限于测试文件。
+
+六、阻塞项
+
+- P0：S1-18 接入了 control map 之外的真实 Core 能力。  
+  说明：本 task 明确只覆盖 C1-05、C1-06、C1-09；但批量导入通过 `selectedStorageMode` 把 Move / Index-only 映射为 `.moved` / `.indexed` 并调用真实 `AreaMatrix.importFile`。这等于在 S1-18 page integration 中接入 C1-07 / C1-08 行为，违反“不新增 control map 之外功能”。  
+  路径：[/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreImporting.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreImporting.swift:185)、[/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreImporting.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreImporting.swift:299)、[/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportBatchCopyImportModelTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportBatchCopyImportModelTests.swift:232)
+
+- P1：编码规范文件长度不达标。  
+  说明：`docs/development/coding-standards.md` 要求单文件 ≤500 行；当前 `ImportEntrySheetView.swift` 为 514 行，`ImportBatchCopyPageIntegrationTests.swift` 为 585 行。高风险集成验收不能在明确质量门禁超标时判定通过。  
+  路径：[/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportEntrySheetView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportEntrySheetView.swift:514)、[/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportBatchCopyPageIntegrationTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportBatchCopyPageIntegrationTests.swift:585)
+
+- P1：验证证据不完整。  
+  说明：任务要求的原始 `xcodebuild test` 命令退出 65，错误为 `com.apple.testmanagerd.control` sandbox restriction；`./dev test macos` fallback 已通过，但原始 manifest validation 仍未在当前环境直接完成。SwiftFormat / SwiftLint 也因命令不存在未能执行。  
+  路径：[/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-2-import-conflict/task-10-s1-18-page-integration-verify.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-2-import-conflict/task-10-s1-18-page-integration-verify.md:32)、[/Users/as/Ai-Project/project/AreaMatrix/docs/development/coding-standards.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/coding-standards.md:123)
+
+七、验证情况
+
+- 已运行：`xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+- 结果：失败 / 环境阻断，退出码 65，`testmanagerd.control` sandbox restriction。
+- 已运行：`./dev test macos`
+- 结果：通过；标准 xcodebuild 被 sandbox 阻断后复用 XCTest bundle，`xcrun xctest` 执行 213 tests，0 failures。
+- 已运行：`swiftformat --lint apps/macos/AreaMatrix apps/macos/AreaMatrixTests`
+- 结果：失败，`swiftformat` command not found。
+- 已运行：`swiftlint --strict`
+- 结果：失败，`swiftlint` command not found。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。主要原因是 S1-18 当前实现接入了 control map 之外的 Move / Index-only 真实导入能力，并且仍有验证与编码规范缺口。
+VERIFY_RESULT: FAIL

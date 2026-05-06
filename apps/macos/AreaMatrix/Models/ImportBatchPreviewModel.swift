@@ -33,6 +33,9 @@ enum ImportBatchPreviewRowStatus: Equatable, Sendable {
     case loading
     case ready(reasonLabel: String)
     case duplicate(existingPath: String, reasonLabel: String)
+    case nameConflict(existingPath: String, reasonLabel: String)
+    case iCloudPlaceholder(path: String, reasonLabel: String)
+    case blocked(String)
     case error(String)
 
     var tag: String {
@@ -43,6 +46,12 @@ enum ImportBatchPreviewRowStatus: Equatable, Sendable {
             return "OK"
         case .duplicate:
             return "DUP"
+        case .nameConflict:
+            return "NAME"
+        case .iCloudPlaceholder:
+            return "ICLOUD"
+        case .blocked:
+            return "BLOCKED"
         case .error:
             return "ERROR"
         }
@@ -52,7 +61,8 @@ enum ImportBatchPreviewRowStatus: Equatable, Sendable {
         switch self {
         case .loading:
             return "Preparing preview..."
-        case .ready(let reasonLabel), .duplicate(_, let reasonLabel), .error(let reasonLabel):
+        case .ready(let reasonLabel), .duplicate(_, let reasonLabel), .nameConflict(_, let reasonLabel),
+             .iCloudPlaceholder(_, let reasonLabel), .blocked(let reasonLabel), .error(let reasonLabel):
             return reasonLabel
         }
     }
@@ -64,15 +74,16 @@ enum ImportBatchPreviewRowStatus: Equatable, Sendable {
 
     var isPrepared: Bool {
         switch self {
-        case .ready, .duplicate:
+        case .ready, .duplicate, .nameConflict:
             return true
-        case .loading, .error:
+        case .loading, .iCloudPlaceholder, .blocked, .error:
             return false
         }
     }
 
     var isError: Bool {
         if case .error = self { return true }
+        if case .blocked = self { return true }
         return false
     }
 }
@@ -135,6 +146,32 @@ struct ImportBatchPreviewRow: Identifiable, Equatable, Sendable {
         )
     }
 
+    static func nameConflict(
+        url: URL,
+        prediction: ClassifyResultSnapshot,
+        existingPath: String
+    ) -> ImportBatchPreviewRow {
+        ImportBatchPreviewRow(
+            originalName: url.lastPathComponent,
+            sourcePath: (url.path as NSString).abbreviatingWithTildeInPath,
+            sizeBytes: (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize).map(Int64.init),
+            predictedCategory: prediction.category,
+            suggestedName: prediction.suggestedName.isEmpty ? url.lastPathComponent : prediction.suggestedName,
+            status: .nameConflict(existingPath: existingPath, reasonLabel: "Keep both (auto-number): \(existingPath)")
+        )
+    }
+
+    static func iCloudPlaceholder(url: URL, message: String) -> ImportBatchPreviewRow {
+        ImportBatchPreviewRow(
+            originalName: url.lastPathComponent,
+            sourcePath: (url.path as NSString).abbreviatingWithTildeInPath,
+            sizeBytes: nil,
+            predictedCategory: nil,
+            suggestedName: url.lastPathComponent,
+            status: .iCloudPlaceholder(path: url.path, reasonLabel: message)
+        )
+    }
+
     static func failed(url: URL, message: String) -> ImportBatchPreviewRow {
         ImportBatchPreviewRow(
             originalName: url.lastPathComponent,
@@ -191,15 +228,18 @@ final class ImportBatchPreviewModel: ObservableObject {
 
     private let predictor: any CoreCategoryPredicting
     private let duplicatePrechecker: (any ImportBatchDuplicatePrechecking)?
+    private let nameConflictPrechecker: (any ImportBatchNameConflictPrechecking)?
     private var request: ImportEntryRequest?
     private var generation = 0
 
     init(
         predictor: any CoreCategoryPredicting,
-        duplicatePrechecker: (any ImportBatchDuplicatePrechecking)? = nil
+        duplicatePrechecker: (any ImportBatchDuplicatePrechecking)? = nil,
+        nameConflictPrechecker: (any ImportBatchNameConflictPrechecking)? = nil
     ) {
         self.predictor = predictor
         self.duplicatePrechecker = duplicatePrechecker
+        self.nameConflictPrechecker = nameConflictPrechecker
     }
 
     var destinationOptions: [ImportBatchDestinationOption] {
@@ -271,7 +311,8 @@ final class ImportBatchPreviewModel: ObservableObject {
         status = .loading(completed: 0, total: request.urls.count)
         let duplicatePrecheck = await duplicatePrechecker?.precheckDuplicates(
             repoPath: request.repoPath,
-            sourceURLs: request.urls
+            sourceURLs: request.urls,
+            destination: selectedDestination
         ) ?? [:]
 
         var completed = 0
@@ -286,6 +327,7 @@ final class ImportBatchPreviewModel: ObservableObject {
             status = .loading(completed: completed, total: request.urls.count)
         }
 
+        await applyNameConflictPrecheck(repoPath: request.repoPath, generation: currentGeneration)
         guard generation == currentGeneration else { return }
         status = .loaded(
             successful: successfulPreviewCount,
@@ -318,6 +360,32 @@ final class ImportBatchPreviewModel: ObservableObject {
         }
     }
 
+    private func applyNameConflictPrecheck(repoPath: String, generation currentGeneration: Int) async {
+        guard let nameConflictPrechecker else { return }
+        let eligibleRows = rows.filter(\.canRunNameConflictPrecheck)
+        guard !eligibleRows.isEmpty else { return }
+
+        let conflicts = await nameConflictPrechecker.precheckNameConflicts(
+            repoPath: repoPath,
+            rows: eligibleRows,
+            destination: selectedDestination
+        )
+        guard generation == currentGeneration else { return }
+
+        rows = rows.map { row in
+            guard let conflict = conflicts[row.id] else { return row }
+            switch conflict {
+            case .conflict(let existingPath):
+                return row.withStatus(.nameConflict(
+                    existingPath: existingPath,
+                    reasonLabel: "Keep both (auto-number): \(existingPath)"
+                ))
+            case .failed(let message):
+                return row.withStatus(.error(message))
+            }
+        }
+    }
+
     private func row(
         url: URL,
         prediction: ClassifyResultSnapshot,
@@ -326,6 +394,12 @@ final class ImportBatchPreviewModel: ObservableObject {
         switch duplicatePrecheck {
         case .duplicate(let existingPath):
             return .duplicate(url: url, prediction: prediction, existingPath: existingPath)
+        case .nameConflict(let existingPath):
+            return .nameConflict(url: url, prediction: prediction, existingPath: existingPath)
+        case .iCloudPlaceholder:
+            return .iCloudPlaceholder(url: url, message: "iCloud placeholder 需要下载后才能导入")
+        case .blocked(let message):
+            return .failed(url: url, message: message)
         case .failed(let message):
             return .failed(url: url, message: message)
         }
@@ -353,16 +427,20 @@ final class ImportBatchPreviewModel: ObservableObject {
     }
 }
 
-private extension ImportEntryRequest {
-    var initialBatchDestination: ImportBatchDestinationOption {
-        switch destination {
-        case .autoClassify:
-            return .autoClassify
-        case .category(let slug):
-            return .category(slug)
-        case .repositoryRoot:
-            return .repositoryRoot
+private extension ImportBatchPreviewRow {
+    var canRunNameConflictPrecheck: Bool {
+        switch status {
+        case .ready:
+            return true
+        case .loading, .duplicate, .nameConflict, .iCloudPlaceholder, .blocked, .error:
+            return false
         }
+    }
+
+    func withStatus(_ status: ImportBatchPreviewRowStatus) -> ImportBatchPreviewRow {
+        var row = self
+        row.status = status
+        return row
     }
 }
 

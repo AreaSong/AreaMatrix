@@ -1,0 +1,84 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`2-2/task-10`
+- Task：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-2-import-conflict/task-10-s1-18-page-integration-verify.md`
+- 代码范围：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`apps/macos/AreaMatrix.xcodeproj/project.pbxproj`、`core/area_matrix.udl`
+- 禁止触碰范围：`core/src/**`
+
+三、完成度摘要
+
+- 已覆盖项数：8
+- 未覆盖项数：0
+- 通过项数：5
+- 不通过项数：3
+- 阻塞项数：2
+
+四、逐项验收结果
+
+- 项目：page-feature task 覆盖
+- 结果：不通过
+- 证据：2-2/task-07/08/09 已有对应实现与测试，但 S1-18 要求展示预计重复和重名冲突数量，并在预检中输出 `DUP` / `NAME`。当前 `CoreImportBatchDuplicatePrechecker` 只识别 iCloud placeholder；`CoreImportBatchNameConflictPrechecker` 直接返回空字典且未被 `ImportBatchPreviewModel` 使用。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportBatchDuplicatePrecheck.swift:18`
+
+- 项目：页面状态、入口、退出、错误态和 CoreBridge 调用闭环
+- 结果：部分通过
+- 证据：入口通过 `MainWindow` 打开 `ImportEntrySheetView`；C1-05 使用 `CoreBridge.predictCategory`，C1-06 使用 `CoreBridge.importCopiedFile` -> `AreaMatrix.importFile`；Cancel 路径存在。失败点是冲突预检闭环未真实接入，无法按 page spec 在导入前完整展示重复/重名冲突。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/MainWindow.swift:54`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreImporting.swift:128`
+
+- 项目：移除 mock、fixture、硬编码状态
+- 结果：不通过
+- 证据：生产路径的 name conflict prechecker 返回 `[:]`，等同于硬编码“无重名冲突”；duplicate prechecker 不读 Core/DB/hash，只做 iCloud placeholder 检查。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportBatchDuplicatePrecheck.swift:18`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportBatchDuplicatePrecheck.swift:36`
+
+- 项目：不新增 control map 外功能
+- 结果：通过
+- 证据：实现集中在 S1-18 声明的 C1-05/C1-06/C1-09、iCloud/Replace 相关页面流；未发现新增 control map 外 Core 能力。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:33`
+
+- 项目：Expected New Paths
+- 结果：通过
+- 证据：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`apps/macos/AreaMatrix.xcodeproj/project.pbxproj` 均已存在并纳入 Xcode target。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj:91`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git status --short -- core/src` 无输出，未发现 `core/src/**` 被触碰。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过，冲突预检协议存在但生产实现为空/未接入，导致真实闭环断裂。
+- 注释 / rustdoc / 文档同步：不通过，文档要求 duplicate/conflict precheck；实现没有同步出明确阻塞提示或替代证据。
+- 错误处理与边界处理：不通过，导入时可处理 `DuplicateFile`，但预检阶段不能真实发现重复/重名冲突。
+- 测试与验证覆盖：部分通过，`./dev test macos` 补跑 205 tests 通过；但原始 manifest 命令被 sandbox 阻断，且测试大量使用 synthetic rows，不能证明真实预检闭环。
+- 占位、硬编码、mock-only、一次性实现检查：不通过，`CoreImportBatchNameConflictPrechecker` 返回空字典是生产路径硬编码空结果。
+
+六、阻塞项
+
+- P0：S1-18 冲突预检没有真实接入，无法按页面规格验收重复/重名冲突数量
+  说明：page spec 要求展示预计重复和重名冲突数量，并由 batch preview adapter 组合 Core `predict_category`、duplicate/conflict precheck、ignore rules 与文件可读性结果。当前生产 prechecker 不读 Core/DB/hash，无法在导入前生成真实 `DUP` / `NAME`。
+  路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportBatchDuplicatePrecheck.swift:36`
+  为什么导致不通过：S1-18 是 Real Core 页面，最终验收不得以空预检或导入时才发现冲突替代页面预检闭环。
+
+- P1：Name conflict prechecker 未接入且硬编码空结果
+  说明：`CoreImportBatchNameConflictPrechecker.precheckNameConflicts` 直接返回 `[:]`；`ImportBatchPreviewModel` init 参数接收 `nameConflictPrechecker`，但没有保存和调用。
+  路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportBatchDuplicatePrecheck.swift:18`；`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportBatchPreviewModel.swift:234`
+  为什么导致不通过：页面要求 `NAME` 行默认 Keep both，并支持 rename/blocked；当前只能由测试手造 `nameConflict` row，真实页面无法预检产生。
+
+七、验证情况
+
+- 已运行：`xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+- 结果：失败，退出码 65；构建完成后测试 runner 被本地 sandbox 阻断，错误为 `testmanagerd.control ... Sandbox restriction`。
+- 已运行：`./dev test macos`
+- 结果：通过；仓库脚本识别同类 sandbox 限制后复用已构建 XCTest bundle，`xcrun xctest` 执行 205 tests，0 failures。
+- 缺失：未取得原始 manifest `xcodebuild test` 的直接 PASS；真实 duplicate/name conflict 预检闭环缺少实现证据。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。核心原因不是测试数量不足，而是 S1-18 的 Real Core 冲突预检闭环仍未按 page spec 和 control map 真实落地。
+
+VERIFY_RESULT: FAIL

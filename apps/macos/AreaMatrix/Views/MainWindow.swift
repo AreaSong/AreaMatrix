@@ -58,11 +58,14 @@ struct MainWindow: View {
                 onSwitchToLocalRepo: model.switchImportEntryToLocalRepository,
                 onImportStarted: model.beginImportEntryProgress,
                 onImportFailed: model.failImportEntry,
+                onBatchImportProgress: model.updateImportEntryProgress,
+                onBatchImportFailed: model.failImportEntry,
                 onImported: { repoPath, entry in
                     Task {
                         await model.finishImportEntry(repoPath: repoPath, entry: entry)
                     }
-                }
+                },
+                onShowExistingFile: model.showImportEntryExistingFile
             )
         }
     }

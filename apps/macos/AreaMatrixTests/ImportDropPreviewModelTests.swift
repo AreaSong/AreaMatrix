@@ -281,6 +281,90 @@ final class ImportDropPreviewModelTests: XCTestCase {
         XCTAssertNil(importModel.importDisabledReason)
     }
 
+    @MainActor
+    func testBatchPreviewUsesRealCoreMetadataForDuplicateAndNameConflictPrecheck() async throws {
+        let sourceRoot = try makeImportDropTemporaryDirectory(prefix: "batch-precheck-source")
+        defer { try? FileManager.default.removeItem(at: sourceRoot) }
+        let invoiceURL = sourceRoot.appendingPathComponent("Invoice_2026Q1.pdf")
+        let contractURL = sourceRoot.appendingPathComponent("合同.pdf")
+        try Data("same duplicate bytes".utf8).write(to: invoiceURL)
+        try Data("unique contract bytes".utf8).write(to: contractURL)
+        let duplicateHash = try ImportSingleFileHasher.sha256Hex(for: invoiceURL)
+        let duplicateFile = FileEntrySnapshot.s117Fixture(
+            currentName: "existing-invoice.pdf",
+            category: "finance",
+            hashSha256: duplicateHash
+        )
+        let nameConflictFile = FileEntrySnapshot.s117Fixture(
+            currentName: "合同.pdf",
+            category: "docs",
+            hashSha256: "different-contract-hash"
+        )
+        let predictor = ImportDropRecordingPredictor(results: [
+            .success(ClassifyResultSnapshot(
+                category: "finance",
+                suggestedName: "Invoice_2026Q1.pdf",
+                reason: .keyword,
+                confidence: 0.9
+            )),
+            .success(ClassifyResultSnapshot(
+                category: "docs",
+                suggestedName: "合同.pdf",
+                reason: .keyword,
+                confidence: 0.82
+            )),
+        ])
+        let duplicateFileLoader = S118StaticBatchFileLoader(pagesByCategory: [
+            "__all__": [[duplicateFile, nameConflictFile]],
+        ])
+        let nameConflictFileLoader = S118StaticBatchFileLoader(pagesByCategory: [
+            "docs": [[nameConflictFile]],
+        ])
+        let model = ImportBatchPreviewModel(
+            predictor: predictor,
+            duplicatePrechecker: CoreImportBatchDuplicatePrechecker(fileLoader: duplicateFileLoader),
+            nameConflictPrechecker: CoreImportBatchNameConflictPrechecker(fileLoader: nameConflictFileLoader)
+        )
+        let request = ImportEntryRequest(
+            repoPath: "/tmp/repo",
+            source: .dropZone,
+            destination: .autoClassify,
+            urls: [invoiceURL, contractURL],
+            kind: .multipleItems(2),
+            availableCategories: ["inbox", "docs", "finance"]
+        )
+
+        await model.load(request: request)
+        let duplicateRequests = await duplicateFileLoader.recordedRequests()
+        let nameConflictRequests = await nameConflictFileLoader.recordedRequests()
+
+        XCTAssertEqual(model.rows.map(\.status.tag), ["DUP", "NAME"])
+        XCTAssertEqual(model.rows[0].status.detail, "Skip: finance/existing-invoice.pdf")
+        XCTAssertEqual(model.rows[1].status.detail, "Keep both (auto-number): docs/合同.pdf")
+        XCTAssertEqual(model.successfulPreviewCount, 2)
+        XCTAssertEqual(model.failedPreviewCount, 0)
+        XCTAssertEqual(duplicateRequests, [
+            FileFilterSnapshot(
+                category: nil,
+                includeDeleted: false,
+                importedAfter: nil,
+                importedBefore: nil,
+                limit: 200,
+                offset: 0
+            ),
+        ])
+        XCTAssertEqual(nameConflictRequests, [
+            FileFilterSnapshot(
+                category: "docs",
+                includeDeleted: false,
+                importedAfter: nil,
+                importedBefore: nil,
+                limit: 200,
+                offset: 0
+            ),
+        ])
+    }
+
     func testDefaultCoreBridgeBatchDuplicateDetectionUsesImportFileDuplicateError() async throws {
         let repoURL = try makeImportDropTemporaryRepositoryURL()
         let sourceRoot = try makeImportDropTemporaryDirectory(prefix: "duplicate-source")
@@ -369,7 +453,8 @@ private actor ImportBatchStaticDuplicatePrechecker: ImportBatchDuplicatePrecheck
 
     func precheckDuplicates(
         repoPath: String,
-        sourceURLs: [URL]
+        sourceURLs: [URL],
+        destination: ImportBatchDestinationOption
     ) async -> [String: ImportBatchDuplicatePrecheckResult] {
         requests.append(ImportBatchDuplicatePrecheckRequest(
             repoPath: repoPath,

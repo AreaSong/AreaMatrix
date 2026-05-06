@@ -1,0 +1,71 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`2-2/task-10`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-2-import-conflict/task-10-s1-18-page-integration-verify.md`
+- 核验范围：S1-18 page spec、mvp control map、core-api、C1-05/C1-06/C1-09、`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：0
+- 通过项数：5
+- 不通过项数：5
+- 阻塞项数：4
+
+四、逐项验收结果
+
+- 页面所有 page-feature task 覆盖：不通过  
+  证据：C1-05/C1-06/C1-09 都有实现痕迹，但 S1-18 page spec 的命名策略、iCloud 批量下载/切换本地 repo、skipped/pending 结果汇报未闭环。
+- 页面状态、入口、退出、错误态、CoreBridge 调用闭环：不通过  
+  证据：多文件入口和 S1-20 progress 路由存在；但 iCloud pending/duplicate skip 没有进入结果摘要闭环。
+- mock / fixture / 硬编码状态：不通过  
+  证据：生产代码未见 mock-only 成功态，但 `Download & retry` 只把 iCloud 行改成 blocked 文案，没有调用真实下载或重试。
+- 不新增 control map 外能力：不通过  
+  证据：S1-18 control map 只声明 C1-05/C1-06/C1-09；当前 duplicate/name precheck 直接消费 `listFiles`，属于 C1-11 范畴，未在 S1-18 control map 声明。
+- Expected New Paths：通过  
+  证据：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`apps/macos/AreaMatrix.xcodeproj/project.pbxproj` 均存在。
+- Forbidden Touches：通过  
+  证据：`git diff --name-only -- core/src` 无输出，未发现 `core/src/**` 被修改。
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过，批量导入模型已拆分，但 page spec 关键状态未闭环。
+- 注释 / rustdoc / 文档同步：不通过，实现与 S1-18 文档要求存在漂移。
+- 错误处理与边界处理：不通过，iCloud pending、download retry、skipped duplicate 的结果路径缺失。
+- 测试与验证覆盖：不通过，`./dev test macos` 兜底通过 202 tests，但测试覆盖的是当前不完整行为，不足以证明 page spec 完整闭环。
+- 占位、硬编码、mock-only、一次性实现检查：不通过，`Download & retry` 当前是阻塞文案状态，不是真实下载重试闭环。
+
+六、阻塞项
+
+- P0：iCloud placeholder 批量闭环不符合 page spec  
+  说明：文档要求部分 iCloud placeholder 时 Import 可继续处理已就绪项，并在结果页报告未下载项；还要求 `Download all & retry preview`、逐项 `Download & retry`、`Switch to local repo...`。当前 iCloud 行默认导致 Import 被 blocked，逐项下载只是写入 blocked 文案。  
+  路径：`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-18-import-batch-sheet.md:92`、`:94`、`:96`、`:111`、`:113`；`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportBatchCopyImportState.swift:196`；`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportBatchConflictActions.swift:72`
+
+- P0：skipped / pending 结果摘要未闭环  
+  说明：文档要求 DUP Skip 与未下载 iCloud 项进入结果摘要；当前 footer 对 pending duplicate 直接 return，对只有 pending iCloud 的场景直接 cancel，对成功场景只用最后一个 entry 回主页面 toast。  
+  路径：`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-18-import-batch-sheet.md:107`、`:113`；`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportBatchCopyFooterSection.swift:54`、`:58`、`:70`；`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/OnboardingModelInputs.swift:102`
+
+- P1：缺少批量命名策略 UI  
+  说明：文档要求“使用建议命名 / 保留原名 / 仅标准化字符 / 统一前缀”；当前 batch 设置只包含导入目的地和存储模式。  
+  路径：`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-18-import-batch-sheet.md:45`；`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportEntrySheetView.swift:297`
+
+- P1：S1-18 使用了 control map 未声明的 Core 能力  
+  说明：control map 对 S1-18 只声明 `predict_category`、`import_file`；当前 duplicate/name precheck 通过 `listFiles` 读取现有文件 hash/path，无法证明没有越界消费 C1-11。  
+  路径：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:33`；`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportBatchDuplicatePrecheck.swift:27`、`:66`、`:107`、`:133`
+
+七、验证情况
+
+- 已运行：`xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`  
+  结果：失败，退出码 65；失败原因为本地 sandbox 无法连接 `com.apple.testmanagerd.control`。
+- 已运行：`./dev test macos`  
+  结果：通过；先复现同一 `xcodebuild test` sandbox block，再用 `xcrun xctest` 复用已构建 XCTest bundle，202 tests 通过。
+- 缺失：没有证据证明 S1-18 的 iCloud 下载、skipped/pending 结果页、批量命名策略完整通过验收。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+VERIFY_RESULT: FAIL

@@ -228,4 +228,146 @@ final class ImportBatchCopyImportModelTests: XCTestCase {
         ))
     }
 
+    @MainActor
+    func testBatchMoveAndIndexOnlyShowRiskAndBlockRealImport() async {
+        let sourceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
+        let rows = [
+            ImportBatchPreviewRow.ready(
+                url: sourceURL,
+                prediction: ClassifyResultSnapshot(
+                    category: "finance",
+                    suggestedName: "Invoice_2026Q1.pdf",
+                    reason: .keyword,
+                    confidence: 0.9
+                )
+            ),
+        ]
+        let request = ImportEntryRequest(
+            repoPath: "/tmp/repo",
+            source: .dropZone,
+            destination: .autoClassify,
+            urls: [sourceURL],
+            kind: .multipleItems(1),
+            availableCategories: ["inbox", "finance"]
+        )
+        let importer = S118RecordingBatchImporter()
+        let model = ImportBatchCopyImportModel(importer: importer, errorMapper: S117RecordingErrorMapper())
+
+        model.applyPreviewRows(rows, request: request, selectedDestination: .autoClassify)
+        model.selectedStorageMode = .move
+        XCTAssertEqual(model.storageModeRiskMessage, "Move 模式仅显示风险提示；S1-18 当前不能执行真实 Move 导入。")
+        XCTAssertEqual(model.importDisabledReason, "批量导入当前只接入 Copy；Move / Index-only 属于后续页面能力")
+        let moved = await model.importReadyFiles(selectedDestination: .autoClassify)
+        XCTAssertNil(moved)
+        model.applyPreviewRows(rows, request: request, selectedDestination: .autoClassify)
+        model.selectedStorageMode = .indexOnly
+        XCTAssertEqual(model.storageModeRiskMessage, "Index-only 仅显示风险提示；S1-18 当前不能执行真实 Index-only 导入。")
+        XCTAssertEqual(model.importDisabledReason, "批量导入当前只接入 Copy；Move / Index-only 属于后续页面能力")
+        let indexed = await model.importReadyFiles(selectedDestination: .autoClassify)
+        XCTAssertNil(indexed)
+        let recordedRequests = await importer.recordedRequests()
+
+        XCTAssertTrue(recordedRequests.isEmpty)
+    }
+
+    @MainActor
+    func testBatchCopyImportUsesPerRowCategoryOverrideForAutoClassify() async {
+        let invoiceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
+        let contractURL = URL(fileURLWithPath: "/tmp/合同.pdf")
+        let rows = [
+            ImportBatchPreviewRow.ready(
+                url: invoiceURL,
+                prediction: ClassifyResultSnapshot(
+                    category: "finance",
+                    suggestedName: "Invoice_2026Q1.pdf",
+                    reason: .keyword,
+                    confidence: 0.9
+                )
+            ),
+            ImportBatchPreviewRow.ready(
+                url: contractURL,
+                prediction: ClassifyResultSnapshot(
+                    category: "docs",
+                    suggestedName: "2026Q1_合同.pdf",
+                    reason: .keyword,
+                    confidence: 0.82
+                )
+            ),
+        ]
+        let request = ImportEntryRequest(
+            repoPath: "/tmp/repo",
+            source: .dropZone,
+            destination: .autoClassify,
+            urls: [invoiceURL, contractURL],
+            kind: .multipleItems(2),
+            availableCategories: ["inbox", "docs", "finance", "media"]
+        )
+        let importer = S118RecordingBatchImporter()
+        let model = ImportBatchCopyImportModel(importer: importer, errorMapper: S117RecordingErrorMapper())
+
+        model.applyPreviewRows(rows, request: request, selectedDestination: .autoClassify)
+        model.updateCategoryOverride(for: rows[1].id, category: "media")
+        XCTAssertEqual(model.rows[1].displayCategory(for: .autoClassify), "media")
+        XCTAssertEqual(model.targetRelativePath(for: model.rows[1], destination: .autoClassify), "media/2026Q1_合同.pdf")
+
+        _ = await model.importReadyFiles(selectedDestination: .autoClassify)
+        let recordedRequests = await importer.recordedRequests()
+
+        XCTAssertEqual(recordedRequests, [
+            S118BatchImportRequest(
+                destination: .autoClassify,
+                suggestedCategory: "finance",
+                overrideFilename: "Invoice_2026Q1.pdf",
+                duplicateStrategy: .ask
+            ),
+            S118BatchImportRequest(
+                destination: .category("media"),
+                suggestedCategory: "media",
+                overrideFilename: "2026Q1_合同.pdf",
+                duplicateStrategy: .ask
+            ),
+        ])
+    }
+
+    @MainActor
+    func testBatchCopyImportPreservesPerRowCategoryOverrideAcrossPreviewReapply() async {
+        let invoiceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
+        let rows = [
+            ImportBatchPreviewRow.ready(
+                url: invoiceURL,
+                prediction: ClassifyResultSnapshot(
+                    category: "finance",
+                    suggestedName: "Invoice_2026Q1.pdf",
+                    reason: .keyword,
+                    confidence: 0.9
+                )
+            ),
+        ]
+        let request = ImportEntryRequest(
+            repoPath: "/tmp/repo",
+            source: .dropZone,
+            destination: .autoClassify,
+            urls: [invoiceURL],
+            kind: .multipleItems(1),
+            availableCategories: ["inbox", "finance", "docs"]
+        )
+        let importer = S118RecordingBatchImporter()
+        let model = ImportBatchCopyImportModel(importer: importer, errorMapper: S117RecordingErrorMapper())
+
+        model.applyPreviewRows(rows, request: request, selectedDestination: .autoClassify)
+        model.updateCategoryOverride(for: rows[0].id, category: "docs")
+        model.applyPreviewRows(rows, request: request, selectedDestination: .autoClassify)
+        _ = await model.importReadyFiles(selectedDestination: .autoClassify)
+        let recordedRequests = await importer.recordedRequests()
+
+        XCTAssertEqual(model.rows.first?.displayCategory(for: .autoClassify), "docs")
+        XCTAssertEqual(recordedRequests, [
+            S118BatchImportRequest(
+                destination: .category("docs"),
+                suggestedCategory: "docs",
+                overrideFilename: "Invoice_2026Q1.pdf",
+                duplicateStrategy: .ask
+            ),
+        ])
+    }
 }

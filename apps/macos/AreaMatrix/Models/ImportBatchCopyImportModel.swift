@@ -4,19 +4,26 @@ import Foundation
 final class ImportBatchCopyImportModel: ObservableObject {
     @Published private(set) var rows: [ImportBatchCopyImportRow] = []
     @Published private(set) var status: ImportBatchCopyImportStatus = .idle
+    @Published var selectedStorageMode: ImportSingleFileStorageMode = .copy
+    @Published var selectedNamingStrategy: ImportBatchNamingStrategy = .suggestedName
+    @Published var namingPrefix = "Import"
+    @Published var isICloudDownloading = false
 
     private let importer: any CoreBatchCopyImporting
     private let errorMapper: any CoreErrorMapping
-    private var request: ImportEntryRequest?
-    private var selectedDestination: ImportBatchDestinationOption = .autoClassify
+    let placeholderDownloader: any ICloudPlaceholderDownloading
+    var request: ImportEntryRequest?
+    var selectedDestination: ImportBatchDestinationOption = .autoClassify
     private(set) var lastFailureMapping: CoreErrorMappingSnapshot?
 
     init(
         importer: any CoreBatchCopyImporting,
-        errorMapper: any CoreErrorMapping
+        errorMapper: any CoreErrorMapping,
+        placeholderDownloader: any ICloudPlaceholderDownloading = LocalICloudPlaceholderDownloader()
     ) {
         self.importer = importer
         self.errorMapper = errorMapper
+        self.placeholderDownloader = placeholderDownloader
     }
 
     var currentImportPath: String? {
@@ -32,16 +39,40 @@ final class ImportBatchCopyImportModel: ObservableObject {
         if status.isImporting {
             return "正在复制导入"
         }
+        if isICloudDownloading {
+            return "正在下载 iCloud 文件"
+        }
+        if blockedCount > 0 {
+            return "存在 BLOCKED 项，请先完成冲突处理"
+        }
+        if isAllRowsUnavailable {
+            return "没有可导入的批量项目"
+        }
         if !hasActionableRows {
             return "没有可导入或可跳过的批量项目"
         }
+        if selectedStorageMode != .copy {
+            return "批量导入当前只接入 Copy；Move / Index-only 属于后续页面能力"
+        }
         return nil
+    }
+
+    var storageModeRiskMessage: String? {
+        switch selectedStorageMode {
+        case .copy:
+            return nil
+        case .move:
+            return "Move 模式仅显示风险提示；S1-18 当前不能执行真实 Move 导入。"
+        case .indexOnly:
+            return "Index-only 仅显示风险提示；S1-18 当前不能执行真实 Index-only 导入。"
+        }
     }
 
     var importableRows: [ImportBatchCopyImportRow] {
         rows.filter { row in
             if row.status.isReady { return true }
             return row.duplicateResolution?.importsIncomingFile == true
+                || row.nameConflictResolution?.importsIncomingFile == true
         }
     }
 
@@ -54,7 +85,9 @@ final class ImportBatchCopyImportModel: ObservableObject {
     }
 
     private var hasActionableRows: Bool {
-        !importableRows.isEmpty || rows.contains { $0.duplicateResolution == .skip }
+        !importableRows.isEmpty
+            || rows.contains { $0.duplicateResolution == .skip }
+            || rows.contains { if case .iCloudPlaceholder = $0.status { return true }; return false }
     }
 
     var duplicateCount: Int {
@@ -63,6 +96,40 @@ final class ImportBatchCopyImportModel: ObservableObject {
             if case .skippedDuplicate = row.status { return true }
             return false
         }.count
+    }
+
+    var nameConflictCount: Int {
+        rows.filter { row in
+            if case .nameConflict = row.status { return true }
+            return false
+        }.count
+    }
+
+    var iCloudPlaceholderCount: Int {
+        rows.filter { row in
+            if case .iCloudPlaceholder = row.status { return true }
+            return false
+        }.count
+    }
+
+    var pendingICloudSummaryCount: Int {
+        pendingICloudCount
+    }
+
+    var previewErrorCount: Int {
+        rows.filter { row in
+            if case .error = row.status { return true }
+            return false
+        }.count
+    }
+
+    var blockedCount: Int {
+        rows.filter(\.isBlockedForImport).count
+    }
+
+    var replaceOptionVisibility: ImportSingleFileReplaceOptionVisibility {
+        guard request?.allowReplaceDuringImport == true else { return .hidden }
+        return request?.isTrashAvailable == true ? .enabled : .disabled
     }
 
     var hasPendingDuplicateResolution: Bool {
@@ -76,6 +143,17 @@ final class ImportBatchCopyImportModel: ObservableObject {
         }.count
     }
 
+    private var isAllRowsUnavailable: Bool {
+        !rows.isEmpty && importableRows.isEmpty && rows.allSatisfy { row in
+            switch row.status {
+            case .error, .blocked, .iCloudPlaceholder, .skippedICloud:
+                return true
+            case .loading, .ready, .duplicate, .nameConflict, .importing, .skippedDuplicate, .imported:
+                return false
+            }
+        }
+    }
+
     func applyPreviewRows(
         _ previewRows: [ImportBatchPreviewRow],
         request: ImportEntryRequest?,
@@ -83,9 +161,14 @@ final class ImportBatchCopyImportModel: ObservableObject {
     ) {
         let duplicateStrategies = currentDuplicateStrategiesByRowID()
         let duplicateStatuses = currentDuplicateStatusesByRowID()
+        let nameConflictResolutions = currentNameConflictResolutionsByRowID()
+        let categoryOverrides = currentCategoryOverridesByRowID()
         self.rows = mapPreviewRows(previewRows, request: request)
+            .map { applyNamingStrategy(to: $0) }
+            .map { restoreCategoryOverride(for: $0, from: categoryOverrides) }
             .map { restoreDuplicateStatus(for: $0, from: duplicateStatuses) }
             .map { restoreDuplicateStrategy(for: $0, from: duplicateStrategies) }
+            .map { restoreNameConflictResolution(for: $0, from: nameConflictResolutions) }
         self.request = request
         self.selectedDestination = selectedDestination
         lastFailureMapping = nil
@@ -107,6 +190,7 @@ final class ImportBatchCopyImportModel: ObservableObject {
 
         let readyRowIDs = Set(importableRows.map(\.id))
         let total = importableRows.count
+        let initialPreviewErrorCount = previewErrorCount
         var completed = 0
         var failed = 0
         var succeededEntries: [FileEntrySnapshot] = []
@@ -145,9 +229,12 @@ final class ImportBatchCopyImportModel: ObservableObject {
         return ImportBatchImportResult(
             succeededEntries: succeededEntries,
             failedCount: failed,
+            previewErrorCount: initialPreviewErrorCount,
             total: total,
             lastImportedPath: lastImportedPath,
-            pendingDuplicateCount: unresolvedDuplicateCount
+            pendingDuplicateCount: unresolvedDuplicateCount,
+            skippedDuplicateCount: skippedDuplicateCount,
+            pendingICloudCount: pendingICloudCount
         )
     }
 
@@ -225,38 +312,34 @@ final class ImportBatchCopyImportModel: ObservableObject {
         request: ImportEntryRequest,
         selectedDestination: ImportBatchDestinationOption
     ) async throws -> FileEntrySnapshot {
-        try await importer.importCopiedFile(
+        try await importer.importBatchFile(
             repoPath: request.repoPath,
             sourceURL: row.sourceURL,
-            destination: selectedDestination.entryDestination,
-            suggestedCategory: row.predictedCategory,
-            overrideFilename: row.suggestedName,
+            storageMode: selectedStorageMode,
+            destination: entryDestination(for: row, selectedDestination: selectedDestination),
+            suggestedCategory: row.categoryOverride ?? row.predictedCategory,
+            overrideFilename: row.resolvedIncomingName,
             duplicateStrategy: duplicateStrategy(for: row)
         )
     }
 
-    func updateDuplicateStrategy(
-        for rowID: ImportBatchCopyImportRow.ID,
-        strategy: ImportBatchDuplicateResolutionStrategy
-    ) {
+    func setStatus(_ status: ImportBatchCopyImportRowStatus, for rowID: ImportBatchCopyImportRow.ID) {
         guard let index = rows.firstIndex(where: { $0.id == rowID }) else { return }
-        guard case .duplicate(let existingPath, _) = rows[index].status else { return }
-        rows[index].status = .duplicate(existingPath: existingPath, strategy: strategy)
+        rows[index].status = status
     }
 
-    private func targetRelativePath(
-        for row: ImportBatchCopyImportRow,
-        destination: ImportBatchDestinationOption
-    ) -> String {
-        let filename = row.suggestedName.trimmingCharacters(in: .whitespacesAndNewlines)
-        switch destination {
-        case .autoClassify:
-            let category = (row.predictedCategory ?? "inbox").trimmingCharacters(in: .whitespacesAndNewlines)
-            return category.isEmpty ? filename : "\(category)/\(filename)"
-        case .category(let slug):
-            return "\(slug)/\(filename)"
-        case .repositoryRoot:
-            return filename
+    func updateNamingStrategy(_ strategy: ImportBatchNamingStrategy) {
+        selectedNamingStrategy = strategy
+        rows = rows.map(applyNamingStrategy)
+    }
+
+    func updateCategoryOverride(for rowID: ImportBatchCopyImportRow.ID, category: String) {
+        guard let index = rows.firstIndex(where: { $0.id == rowID }) else { return }
+        let trimmedCategory = category.trimmingCharacters(in: .whitespacesAndNewlines)
+        if shouldClearCategoryOverride(trimmedCategory, for: rows[index]) {
+            rows[index].categoryOverride = nil
+        } else {
+            rows[index].categoryOverride = trimmedCategory
         }
     }
 
@@ -281,6 +364,7 @@ final class ImportBatchCopyImportModel: ObservableObject {
                 sourceURL: sourceURL,
                 sizeBytes: row.sizeBytes,
                 predictedCategory: row.predictedCategory,
+                categoryOverride: nil,
                 suggestedName: row.suggestedName,
                 status: copyStatus(from: row.status)
             )
@@ -303,7 +387,13 @@ final class ImportBatchCopyImportModel: ObservableObject {
         case .ready(let reasonLabel):
             return .ready(reasonLabel: reasonLabel)
         case .duplicate(let existingPath, _):
-            return .duplicate(existingPath: existingPath, strategy: .skip)
+            return .duplicate(existingPath: existingPath, strategy: .skip, isReplaceConfirmed: false)
+        case .nameConflict(let existingPath, _):
+            return .nameConflict(existingPath: existingPath, resolution: .keepBoth)
+        case .iCloudPlaceholder(let path, let message):
+            return .iCloudPlaceholder(path: path, message: message)
+        case .blocked(let message):
+            return .blocked(message)
         case .error(let message):
             return .error(message)
         }
@@ -318,8 +408,17 @@ final class ImportBatchCopyImportModel: ObservableObject {
 
     private func currentDuplicateStatusesByRowID() -> [ImportBatchCopyImportRow.ID: String] {
         rows.reduce(into: [:]) { duplicates, row in
-            guard case .duplicate(let existingPath, _) = row.status else { return }
+            guard case .duplicate(let existingPath, _, _) = row.status else { return }
             duplicates[row.id] = existingPath
+        }
+    }
+
+    private func currentNameConflictResolutionsByRowID()
+        -> [ImportBatchCopyImportRow.ID: ImportBatchNameConflictResolution]
+    {
+        rows.reduce(into: [:]) { resolutions, row in
+            guard case .nameConflict(_, let resolution) = row.status else { return }
+            resolutions[row.id] = resolution
         }
     }
 
@@ -328,8 +427,9 @@ final class ImportBatchCopyImportModel: ObservableObject {
         from duplicateStatuses: [ImportBatchCopyImportRow.ID: String]
     ) -> ImportBatchCopyImportRow {
         guard let existingPath = duplicateStatuses[row.id] else { return row }
+        guard case .ready = row.status else { return row }
         var restoredRow = row
-        restoredRow.status = .duplicate(existingPath: existingPath, strategy: .skip)
+        restoredRow.status = .duplicate(existingPath: existingPath, strategy: .skip, isReplaceConfirmed: false)
         return restoredRow
     }
 
@@ -338,100 +438,66 @@ final class ImportBatchCopyImportModel: ObservableObject {
         from strategies: [ImportBatchCopyImportRow.ID: ImportBatchDuplicateResolutionStrategy]
     ) -> ImportBatchCopyImportRow {
         guard let strategy = strategies[row.id] else { return row }
-        guard case .duplicate(let existingPath, _) = row.status else { return row }
+        guard case .duplicate(let existingPath, _, let isReplaceConfirmed) = row.status else { return row }
         var restoredRow = row
-        restoredRow.status = .duplicate(existingPath: existingPath, strategy: strategy)
+        restoredRow.status = .duplicate(
+            existingPath: existingPath,
+            strategy: strategy,
+            isReplaceConfirmed: strategy == .replace ? isReplaceConfirmed : false
+        )
+        return restoredRow
+    }
+
+    private func restoreNameConflictResolution(
+        for row: ImportBatchCopyImportRow,
+        from resolutions: [ImportBatchCopyImportRow.ID: ImportBatchNameConflictResolution]
+    ) -> ImportBatchCopyImportRow {
+        guard let resolution = resolutions[row.id] else { return row }
+        guard case .nameConflict(let existingPath, _) = row.status else { return row }
+        var restoredRow = row
+        restoredRow.status = .nameConflict(existingPath: existingPath, resolution: resolution)
         return restoredRow
     }
 
     private func duplicateStrategy(for row: ImportBatchCopyImportRow) -> DuplicateStrategy {
-        row.duplicateResolution?.duplicateStrategy ?? .ask
+        if let duplicateResolution = row.duplicateResolution {
+            return duplicateResolution.duplicateStrategy
+        }
+        if let nameConflictResolution = row.nameConflictResolution {
+            if nameConflictResolution.isReplace {
+                return .overwrite
+            }
+            return .keepBoth
+        }
+        return .ask
     }
 
     private func handleDuplicateFile(_ error: Error, at rowIndex: Int) -> Bool {
         guard let coreError = error as? CoreError else { return false }
         guard case .DuplicateFile(let existingPath) = coreError else { return false }
-        rows[rowIndex].status = .duplicate(existingPath: existingPath, strategy: .skip)
+        rows[rowIndex].status = .duplicate(existingPath: existingPath, strategy: .skip, isReplaceConfirmed: false)
         return true
     }
 
     private func markSkippedDuplicates() {
         for index in rows.indices where rows[index].duplicateResolution == .skip {
-            if case .duplicate(let existingPath, _) = rows[index].status {
+            if case .duplicate(let existingPath, _, _) = rows[index].status {
                 rows[index].status = .skippedDuplicate(existingPath: existingPath)
             }
         }
     }
-}
 
-private struct ImportBatchCopyCycleResult {
-    var entry: FileEntrySnapshot?
-    var completed: Int
-    var failed: Int
-    var total: Int
-    var currentPath: String
-    var lastImportedPath: String?
-    var stoppedForDuplicate: Bool
-
-    var progress: ImportBatchProgressSnapshot {
-        ImportBatchProgressSnapshot(
-            completed: completed,
-            failed: failed,
-            total: total,
-            remaining: total - completed - failed,
-            currentPath: currentPath
-        )
+    private func shouldClearCategoryOverride(_ category: String, for row: ImportBatchCopyImportRow) -> Bool {
+        category.isEmpty
+            || category == row.defaultCategory(for: selectedDestination)
+            || category == "repo root"
     }
 
-    static func success(
-        entry: FileEntrySnapshot,
-        completed: Int,
-        failed: Int,
-        total: Int,
-        currentPath: String
-    ) -> ImportBatchCopyCycleResult {
-        ImportBatchCopyCycleResult(
-            entry: entry,
-            completed: completed,
-            failed: failed,
-            total: total,
-            currentPath: currentPath,
-            lastImportedPath: entry.path,
-            stoppedForDuplicate: false
-        )
-    }
-
-    static func failure(
-        completed: Int,
-        failed: Int,
-        total: Int,
-        currentPath: String
-    ) -> ImportBatchCopyCycleResult {
-        ImportBatchCopyCycleResult(
-            entry: nil,
-            completed: completed,
-            failed: failed,
-            total: total,
-            currentPath: currentPath,
-            lastImportedPath: nil,
-            stoppedForDuplicate: false
-        )
-    }
-
-    static func duplicate(
-        completed: Int,
-        failed: Int,
-        total: Int,
-        currentPath: String
-    ) -> ImportBatchCopyCycleResult {
-        ImportBatchCopyCycleResult(
-            entry: nil,
-            completed: completed,
-            failed: failed,
-            total: total,
-            currentPath: currentPath,
-            lastImportedPath: nil,
-            stoppedForDuplicate: true
-        )
+    private var pendingICloudCount: Int {
+        rows.filter { row in
+            if case .iCloudPlaceholder = row.status { return true }
+            if case .skippedICloud = row.status { return true }
+            return false
+        }.count
     }
 }

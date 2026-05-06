@@ -35,6 +35,16 @@ protocol CoreBatchCopyImporting: Sendable {
         overrideFilename: String,
         duplicateStrategy: DuplicateStrategy
     ) async throws -> FileEntrySnapshot
+
+    func importBatchFile(
+        repoPath: String,
+        sourceURL: URL,
+        storageMode: ImportSingleFileStorageMode,
+        destination: ImportEntryDestination,
+        suggestedCategory: String?,
+        overrideFilename: String,
+        duplicateStrategy: DuplicateStrategy
+    ) async throws -> FileEntrySnapshot
 }
 
 extension CoreFileImporting {
@@ -85,6 +95,28 @@ extension CoreFileImporting {
 }
 
 extension CoreBatchCopyImporting {
+    func importBatchFile(
+        repoPath: String,
+        sourceURL: URL,
+        storageMode: ImportSingleFileStorageMode,
+        destination: ImportEntryDestination,
+        suggestedCategory: String?,
+        overrideFilename: String,
+        duplicateStrategy: DuplicateStrategy
+    ) async throws -> FileEntrySnapshot {
+        guard storageMode == .copy else {
+            throw CoreError.Internal(message: "Batch \(storageMode.rawValue) import is unavailable.")
+        }
+        return try await importCopiedFile(
+            repoPath: repoPath,
+            sourceURL: sourceURL,
+            destination: destination,
+            suggestedCategory: suggestedCategory,
+            overrideFilename: overrideFilename,
+            duplicateStrategy: duplicateStrategy
+        )
+    }
+
     func importCopiedFile(
         repoPath: String,
         sourceURL: URL,
@@ -147,6 +179,28 @@ extension CoreBridge: CoreFileImporting, CoreBatchCopyImporting {
                 overrideFilename: overrideFilename,
                 duplicateStrategy: duplicateStrategy
             )
+        )
+    }
+
+    func importBatchFile(
+        repoPath: String,
+        sourceURL: URL,
+        storageMode: ImportSingleFileStorageMode,
+        destination: ImportEntryDestination,
+        suggestedCategory: String?,
+        overrideFilename: String,
+        duplicateStrategy: DuplicateStrategy
+    ) async throws -> FileEntrySnapshot {
+        guard storageMode == .copy else {
+            throw CoreError.Internal(message: "S1-18 batch import only supports Copy storage mode.")
+        }
+        return try await importCopiedFile(
+            repoPath: repoPath,
+            sourceURL: sourceURL,
+            destination: destination,
+            suggestedCategory: suggestedCategory,
+            overrideFilename: overrideFilename,
+            duplicateStrategy: duplicateStrategy
         )
     }
 
