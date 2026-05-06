@@ -10,11 +10,17 @@ struct ImportEntrySheetView: View {
     init(
         request: ImportEntryRequest,
         onCancel: @escaping () -> Void,
-        categoryPredictor: any CoreCategoryPredicting = CoreBridge()
+        categoryPredictor: any CoreCategoryPredicting = CoreBridge(),
+        fileImporter: any CoreFileImporting = CoreBridge(),
+        errorMapper: any CoreErrorMapping = CoreBridge()
     ) {
         self.request = request
         self.onCancel = onCancel
-        _previewModel = StateObject(wrappedValue: ImportSingleFilePreviewModel(predictor: categoryPredictor))
+        _previewModel = StateObject(wrappedValue: ImportSingleFilePreviewModel(
+            predictor: categoryPredictor,
+            importer: fileImporter,
+            errorMapper: errorMapper
+        ))
     }
 
     var body: some View {
@@ -41,7 +47,12 @@ struct ImportEntrySheetView: View {
         VStack(alignment: .leading, spacing: 12) {
             fileInformation
             classifyControls
+            ImportCopyStorageModeSection()
             previewStatus
+            ImportCopyStatusSection(
+                status: previewModel.importStatus,
+                disabledReason: previewModel.copyImportDisabledReason
+            )
         }
     }
 
@@ -110,6 +121,15 @@ struct ImportEntrySheetView: View {
             Spacer()
             Button("Cancel", action: onCancel)
                 .keyboardShortcut(.cancelAction)
+            if request.kind == .singleFile {
+                Button("Import") {
+                    Task {
+                        await previewModel.importCopy()
+                    }
+                }
+                .keyboardShortcut(.defaultAction)
+                .disabled(previewModel.copyImportDisabledReason != nil)
+            }
         }
     }
 

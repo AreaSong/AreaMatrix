@@ -74,6 +74,8 @@
 		0A000000000000000000016A /* ImportDropPreviewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000016B /* ImportDropPreviewModelTests.swift */; };
 		0A000000000000000000016C /* ImportSingleFilePreviewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000016D /* ImportSingleFilePreviewModel.swift */; };
 		0A000000000000000000016E /* ImportSingleFilePreviewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000016F /* ImportSingleFilePreviewModelTests.swift */; };
+		0A0000000000000000000170 /* CoreImporting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000171 /* CoreImporting.swift */; };
+		0A0000000000000000000172 /* ImportSingleFileSheetSections.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000173 /* ImportSingleFileSheetSections.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -160,6 +162,8 @@
 		0A000000000000000000016B /* ImportDropPreviewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportDropPreviewModelTests.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000016D /* ImportSingleFilePreviewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ImportSingleFilePreviewModel.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000016F /* ImportSingleFilePreviewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportSingleFilePreviewModelTests.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000171 /* CoreImporting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/CoreImporting.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000173 /* ImportSingleFileSheetSections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/ImportSingleFileSheetSections.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -244,6 +248,7 @@
 				0A0000000000000000000127 /* FileDropAdapter.swift */,
 				0A0000000000000000000169 /* ImportDropTargetView.swift */,
 				0A0000000000000000000129 /* ImportEntrySheetView.swift */,
+				0A0000000000000000000173 /* ImportSingleFileSheetSections.swift */,
 				0A000000000000000000001F /* ValidatePathStepView.swift */,
 				0A00000000000000000000A0 /* InitializingStepView.swift */,
 				0A00000000000000000000A3 /* InitializingStepRow.swift */,
@@ -261,6 +266,7 @@
 				0A00000000000000000000F9 /* CoreBridgeSnapshots.swift */,
 				0A00000000000000000000C2 /* CoreRepositoryOpening.swift */,
 				0A0000000000000000000101 /* CoreFileListing.swift */,
+				0A0000000000000000000171 /* CoreImporting.swift */,
 				0A0000000000000000000157 /* CoreExternalChangesSyncing.swift */,
 				0A000000000000000000001B /* AreaMatrix-Bridging-Header.h */,
 				0A000000000000000000003B /* UniFFI */,
@@ -472,6 +478,7 @@
 				0A0000000000000000000126 /* FileDropAdapter.swift in Sources */,
 				0A0000000000000000000168 /* ImportDropTargetView.swift in Sources */,
 				0A0000000000000000000128 /* ImportEntrySheetView.swift in Sources */,
+				0A0000000000000000000172 /* ImportSingleFileSheetSections.swift in Sources */,
 				0A0000000000000000000166 /* ImportDropPreviewModel.swift in Sources */,
 				0A000000000000000000016C /* ImportSingleFilePreviewModel.swift in Sources */,
 				0A000000000000000000013C /* MainRepositoryDetailPane.swift in Sources */,
@@ -498,6 +505,7 @@
 				0A00000000000000000000C0 /* CoreRepositoryOpening.swift in Sources */,
 				0A00000000000000000000F8 /* CoreBridgeSnapshots.swift in Sources */,
 				0A0000000000000000000100 /* CoreFileListing.swift in Sources */,
+				0A0000000000000000000170 /* CoreImporting.swift in Sources */,
 				0A0000000000000000000156 /* CoreExternalChangesSyncing.swift in Sources */,
 				0A0000000000000000000158 /* MainRepoExternalRemovalActions.swift in Sources */,
 				0A0000000000000000000162 /* MainRepoErrorActions.swift in Sources */,

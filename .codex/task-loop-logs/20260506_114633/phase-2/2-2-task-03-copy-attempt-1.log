@@ -1,0 +1,38 @@
+一、执行结论
+
+已完成 `2-2/task-03`。
+
+二、执行范围
+
+单任务：`S1-17 + C1-06 import-copy-file`
+
+修改文件清单：
+- [CoreImporting.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreImporting.swift)
+- [ImportSingleFilePreviewModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreviewModel.swift)
+- [ImportEntrySheetView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportEntrySheetView.swift)
+- [ImportSingleFileSheetSections.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportSingleFileSheetSections.swift)
+- [ImportSingleFilePreviewModelTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFilePreviewModelTests.swift)
+- [project.pbxproj](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj)
+
+三、完成情况
+
+核对清单：已只处理 S1-17 中 C1-06 Copy 导入；已读取 UX、control map、Core API、C1-06 spec；只接入 `import_file` 的 `StorageMode.copied`；未实现 Move、Index-only、冲突页或相邻页面。
+
+完成标准：S1-17 现在有可触发的 Import 按钮，完成预览后调用真实 CoreBridge `importCopiedFile -> import_file(... mode: .copied ...)`；没有 mock-only 或静态成功态；未触碰 control map 外能力。
+
+Forbidden Touches：未触碰 `core/src/**`。现有 `.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json` 是本轮前已存在的本地运行状态改动，我未回退也未纳入产品改动。
+
+四、工程质量
+
+实现保持在 macOS 允许范围内，通过 `CoreFileImporting` 协议隔离 UI 与 CoreBridge；错误通过 `CoreErrorMapping` 显式映射；Import 禁用原因、导入中、成功、失败状态都有用户可见文本。没有新增依赖、没有强制解包、没有 `try!`，也没有在 View body 内做 IO。
+
+五、验证情况
+
+已运行：
+- `xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：通过。
+- `./dev test macos`：标准 `xcodebuild test` 被本地 `testmanagerd` sandbox 限制阻断，脚本按仓库规则复用已构建 XCTest bundle；`xcrun xctest` 通过，150 tests，0 failures。
+
+六、风险与后续
+
+剩余风险：未做真实 UI 手工点击验证；当前只覆盖 build、XCTest、CoreBridge 真实 Copy 导入测试。后续建议进入 `2-2/task-04`，继续按切片只实现 S1-17 的 C1-07 Move 导入，不要在本任务里混入。
+
