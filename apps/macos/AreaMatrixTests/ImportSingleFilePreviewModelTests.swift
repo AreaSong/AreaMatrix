@@ -332,6 +332,21 @@ private actor ImportSingleFileRecordingImporter: CoreFileImporting {
         )
     }
 
+    func importIndexedFile(
+        repoPath: String,
+        sourceURL: URL,
+        overrideCategory: String,
+        overrideFilename: String
+    ) async throws -> FileEntrySnapshot {
+        try recordImport(
+            repoPath: repoPath,
+            sourceURL: sourceURL,
+            storageMode: .indexOnly,
+            overrideCategory: overrideCategory,
+            overrideFilename: overrideFilename
+        )
+    }
+
     private func recordImport(
         repoPath: String,
         sourceURL: URL,

@@ -14,6 +14,13 @@ protocol CoreFileImporting: Sendable {
         overrideCategory: String,
         overrideFilename: String
     ) async throws -> FileEntrySnapshot
+
+    func importIndexedFile(
+        repoPath: String,
+        sourceURL: URL,
+        overrideCategory: String,
+        overrideFilename: String
+    ) async throws -> FileEntrySnapshot
 }
 
 extension CoreBridge: CoreFileImporting {
@@ -42,6 +49,21 @@ extension CoreBridge: CoreFileImporting {
             repoPath: repoPath,
             sourceURL: sourceURL,
             mode: .moved,
+            overrideCategory: overrideCategory,
+            overrideFilename: overrideFilename
+        )
+    }
+
+    func importIndexedFile(
+        repoPath: String,
+        sourceURL: URL,
+        overrideCategory: String,
+        overrideFilename: String
+    ) async throws -> FileEntrySnapshot {
+        try await importFile(
+            repoPath: repoPath,
+            sourceURL: sourceURL,
+            mode: .indexed,
             overrideCategory: overrideCategory,
             overrideFilename: overrideFilename
         )

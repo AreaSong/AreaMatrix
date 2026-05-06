@@ -68,6 +68,7 @@ enum ImportSingleFileImportStatus: Equatable, Sendable {
 enum ImportSingleFileStorageMode: String, CaseIterable, Equatable, Identifiable, Sendable {
     case copy = "Copy"
     case move = "Move"
+    case indexOnly = "Index-only"
 
     var id: String { rawValue }
 
@@ -77,6 +78,8 @@ enum ImportSingleFileStorageMode: String, CaseIterable, Equatable, Identifiable,
             return "保留原文件，复制到 AreaMatrix 资料库。"
         case .move:
             return "源文件会从原位置移走，并安全写入 AreaMatrix 资料库。"
+        case .indexOnly:
+            return "不复制，只记录引用路径；源文件移动后会缺失。"
         }
     }
 
@@ -86,6 +89,8 @@ enum ImportSingleFileStorageMode: String, CaseIterable, Equatable, Identifiable,
             return "正在复制导入..."
         case .move:
             return "正在移动导入..."
+        case .indexOnly:
+            return "正在写入索引..."
         }
     }
 
@@ -95,6 +100,8 @@ enum ImportSingleFileStorageMode: String, CaseIterable, Equatable, Identifiable,
             return "正在复制导入"
         case .move:
             return "正在移动导入"
+        case .indexOnly:
+            return "正在写入索引"
         }
     }
 }
@@ -246,6 +253,13 @@ final class ImportSingleFilePreviewModel: ObservableObject {
             )
         case .move:
             return try await importer.importMovedFile(
+                repoPath: repoPath,
+                sourceURL: sourceURL,
+                overrideCategory: overrideCategory,
+                overrideFilename: overrideFilename
+            )
+        case .indexOnly:
+            return try await importer.importIndexedFile(
                 repoPath: repoPath,
                 sourceURL: sourceURL,
                 overrideCategory: overrideCategory,

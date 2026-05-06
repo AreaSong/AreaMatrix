@@ -1,11 +1,11 @@
 import XCTest
 @testable import AreaMatrix
 
-final class ImportSingleFileMoveImportTests: XCTestCase {
+final class ImportSingleFileIndexImportTests: XCTestCase {
     @MainActor
-    func testMoveImportCallsC107ImporterWithEditedCategoryAndFilename() async {
+    func testIndexOnlyImportCallsC108ImporterWithEditedCategoryAndFilename() async {
         let sourceURL = URL(fileURLWithPath: "/tmp/source.pdf")
-        let predictor = MoveImportRecordingPredictor(results: [
+        let predictor = IndexImportRecordingPredictor(results: [
             .success(ClassifyResultSnapshot(
                 category: "docs",
                 suggestedName: "source.pdf",
@@ -13,15 +13,15 @@ final class ImportSingleFileMoveImportTests: XCTestCase {
                 confidence: 0.7
             )),
         ])
-        let movedEntry = FileEntrySnapshot.moveImportFixture(
-            currentName: "moved.pdf",
+        let indexedEntry = FileEntrySnapshot.indexImportFixture(
+            currentName: "indexed.pdf",
             category: "docs"
         )
-        let importer = MoveImportRecordingImporter(results: [.success(movedEntry)])
+        let importer = IndexImportRecordingImporter(results: [.success(indexedEntry)])
         let model = ImportSingleFilePreviewModel(
             predictor: predictor,
             importer: importer,
-            errorMapper: MoveImportRecordingErrorMapper()
+            errorMapper: IndexImportRecordingErrorMapper()
         )
         let request = ImportEntryRequest(
             repoPath: "/tmp/repo",
@@ -32,27 +32,27 @@ final class ImportSingleFileMoveImportTests: XCTestCase {
         )
 
         await model.load(request: request)
-        model.selectedStorageMode = .move
+        model.selectedStorageMode = .indexOnly
         model.selectedCategory = " docs "
-        model.suggestedName = " moved.pdf "
+        model.suggestedName = " indexed.pdf "
         await model.importSelectedFile()
         let requests = await importer.recordedRequests()
 
         XCTAssertEqual(requests, [
-            MoveImportRequest(
+            IndexImportRequest(
                 repoPath: "/tmp/repo",
                 sourceURL: sourceURL,
-                storageMode: .move,
+                storageMode: .indexOnly,
                 overrideCategory: "docs",
-                overrideFilename: "moved.pdf"
+                overrideFilename: "indexed.pdf"
             ),
         ])
-        XCTAssertEqual(model.importStatus, .imported(movedEntry))
+        XCTAssertEqual(model.importStatus, .imported(indexedEntry))
     }
 
     @MainActor
-    func testMoveImportMapsCoreFailureWithoutCreatingStaticSuccess() async {
-        let predictor = MoveImportRecordingPredictor(results: [
+    func testIndexOnlyImportMapsCoreFailureWithoutCreatingStaticSuccess() async {
+        let predictor = IndexImportRecordingPredictor(results: [
             .success(ClassifyResultSnapshot(
                 category: "docs",
                 suggestedName: "source.pdf",
@@ -60,10 +60,10 @@ final class ImportSingleFileMoveImportTests: XCTestCase {
                 confidence: 0.7
             )),
         ])
-        let importer = MoveImportRecordingImporter(results: [
-            .failure(CoreError.PermissionDenied(path: "/tmp/source.pdf")),
+        let importer = IndexImportRecordingImporter(results: [
+            .failure(CoreError.ICloudPlaceholder(path: "/tmp/source.pdf")),
         ])
-        let errorMapper = MoveImportRecordingErrorMapper()
+        let errorMapper = IndexImportRecordingErrorMapper()
         let model = ImportSingleFilePreviewModel(
             predictor: predictor,
             importer: importer,
@@ -78,46 +78,47 @@ final class ImportSingleFileMoveImportTests: XCTestCase {
         )
 
         await model.load(request: request)
-        model.selectedStorageMode = .move
+        model.selectedStorageMode = .indexOnly
         await model.importSelectedFile()
         let mappedErrors = await errorMapper.recordedErrors()
 
-        XCTAssertEqual(mappedErrors, [CoreError.PermissionDenied(path: "/tmp/source.pdf")])
+        XCTAssertEqual(mappedErrors, [CoreError.ICloudPlaceholder(path: "/tmp/source.pdf")])
         XCTAssertEqual(
             model.importStatus,
-            .failed(CoreErrorMappingSnapshot.moveImportFixture(kind: .permissionDenied))
+            .failed(CoreErrorMappingSnapshot.indexImportFixture(kind: .iCloudPlaceholder))
         )
     }
 
-    func testDefaultCoreBridgeImportsMovedFileAndRemovesSource() async throws {
-        let repoURL = try makeMoveImportTemporaryDirectory(prefix: "repo")
-        let sourceRoot = try makeMoveImportTemporaryDirectory(prefix: "source")
+    func testDefaultCoreBridgeImportsIndexedFileWithoutMovingOrCopyingSource() async throws {
+        let repoURL = try makeIndexImportTemporaryDirectory(prefix: "repo")
+        let sourceRoot = try makeIndexImportTemporaryDirectory(prefix: "source")
         defer {
             try? FileManager.default.removeItem(at: repoURL)
             try? FileManager.default.removeItem(at: sourceRoot)
         }
-        let sourceURL = sourceRoot.appendingPathComponent("move.pdf")
-        try Data("move bytes".utf8).write(to: sourceURL)
+        let sourceURL = sourceRoot.appendingPathComponent("indexed.pdf")
+        try Data("indexed bytes".utf8).write(to: sourceURL)
+        let sourceBefore = try Data(contentsOf: sourceURL)
         let bridge = CoreBridge()
 
         try await bridge.initializeEmptyRepository(repoPath: repoURL.path)
-        let entry = try await bridge.importMovedFile(
+        let entry = try await bridge.importIndexedFile(
             repoPath: repoURL.path,
             sourceURL: sourceURL,
             overrideCategory: "docs",
-            overrideFilename: "moved.pdf"
+            overrideFilename: "indexed-display.pdf"
         )
 
-        XCTAssertFalse(FileManager.default.fileExists(atPath: sourceURL.path))
-        XCTAssertEqual(entry.currentName, "moved.pdf")
+        XCTAssertEqual(try Data(contentsOf: sourceURL), sourceBefore)
+        XCTAssertEqual(entry.currentName, "indexed-display.pdf")
         XCTAssertEqual(entry.category, "docs")
-        XCTAssertEqual(entry.storageMode, "Moved")
+        XCTAssertEqual(entry.storageMode, "Indexed")
         XCTAssertEqual(entry.sourcePath, sourceURL.path)
-        XCTAssertTrue(FileManager.default.fileExists(atPath: repoURL.appendingPathComponent(entry.path).path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: repoURL.appendingPathComponent(entry.path).path))
     }
 }
 
-private struct MoveImportRequest: Equatable, Sendable {
+private struct IndexImportRequest: Equatable, Sendable {
     var repoPath: String
     var sourceURL: URL
     var storageMode: ImportSingleFileStorageMode
@@ -125,7 +126,7 @@ private struct MoveImportRequest: Equatable, Sendable {
     var overrideFilename: String
 }
 
-private actor MoveImportRecordingPredictor: CoreCategoryPredicting {
+private actor IndexImportRecordingPredictor: CoreCategoryPredicting {
     private var results: [Result<ClassifyResultSnapshot, Error>]
 
     init(results: [Result<ClassifyResultSnapshot, Error>]) {
@@ -146,9 +147,9 @@ private actor MoveImportRecordingPredictor: CoreCategoryPredicting {
     }
 }
 
-private actor MoveImportRecordingImporter: CoreFileImporting {
+private actor IndexImportRecordingImporter: CoreFileImporting {
     private var results: [Result<FileEntrySnapshot, Error>]
-    private var requests: [MoveImportRequest] = []
+    private var requests: [IndexImportRequest] = []
 
     init(results: [Result<FileEntrySnapshot, Error>]) {
         self.results = results
@@ -199,7 +200,7 @@ private actor MoveImportRecordingImporter: CoreFileImporting {
         )
     }
 
-    func recordedRequests() -> [MoveImportRequest] {
+    func recordedRequests() -> [IndexImportRequest] {
         requests
     }
 
@@ -210,7 +211,7 @@ private actor MoveImportRecordingImporter: CoreFileImporting {
         overrideCategory: String,
         overrideFilename: String
     ) throws -> FileEntrySnapshot {
-        requests.append(MoveImportRequest(
+        requests.append(IndexImportRequest(
             repoPath: repoPath,
             sourceURL: sourceURL,
             storageMode: storageMode,
@@ -229,12 +230,12 @@ private actor MoveImportRecordingImporter: CoreFileImporting {
     }
 }
 
-private actor MoveImportRecordingErrorMapper: CoreErrorMapping {
+private actor IndexImportRecordingErrorMapper: CoreErrorMapping {
     private var errors: [CoreError] = []
 
     func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
         errors.append(error)
-        return CoreErrorMappingSnapshot.moveImportFixture(kind: kind(for: error))
+        return CoreErrorMappingSnapshot.indexImportFixture(kind: kind(for: error))
     }
 
     func recordedErrors() -> [CoreError] {
@@ -251,6 +252,8 @@ private actor MoveImportRecordingErrorMapper: CoreErrorMapping {
             return .iCloudPlaceholder
         case .PermissionDenied:
             return .permissionDenied
+        case .FileNotFound:
+            return .fileNotFound
         case .Io:
             return .io
         case .Db:
@@ -262,16 +265,16 @@ private actor MoveImportRecordingErrorMapper: CoreErrorMapping {
 }
 
 private extension FileEntrySnapshot {
-    static func moveImportFixture(currentName: String, category: String) -> FileEntrySnapshot {
+    static func indexImportFixture(currentName: String, category: String) -> FileEntrySnapshot {
         FileEntrySnapshot(
-            id: 42,
-            path: "\(category)/\(currentName)",
+            id: 43,
+            path: "/tmp/source.pdf",
             originalName: "source.pdf",
             currentName: currentName,
             category: category,
             sizeBytes: 12,
             hashSha256: "hash",
-            storageMode: "Moved",
+            storageMode: "Indexed",
             origin: "Imported",
             sourcePath: "/tmp/source.pdf",
             importedAt: 1_700_000_000,
@@ -281,21 +284,21 @@ private extension FileEntrySnapshot {
 }
 
 private extension CoreErrorMappingSnapshot {
-    static func moveImportFixture(kind: CoreErrorKindSnapshot) -> CoreErrorMappingSnapshot {
+    static func indexImportFixture(kind: CoreErrorKindSnapshot) -> CoreErrorMappingSnapshot {
         CoreErrorMappingSnapshot(
             kind: kind,
             userMessage: "Import failed",
             severity: .high,
             suggestedAction: "Choose a different file or resolve the conflict.",
             recoverability: .userActionRequired,
-            rawContext: "move import"
+            rawContext: "index import"
         )
     }
 }
 
-private func makeMoveImportTemporaryDirectory(prefix: String) throws -> URL {
+private func makeIndexImportTemporaryDirectory(prefix: String) throws -> URL {
     let url = FileManager.default.temporaryDirectory
-        .appendingPathComponent("AreaMatrixImportMove-\(prefix)-\(UUID().uuidString)", isDirectory: true)
+        .appendingPathComponent("AreaMatrixImportIndex-\(prefix)-\(UUID().uuidString)", isDirectory: true)
     try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
     return url
 }
