@@ -103,7 +103,16 @@ extension ImportSingleFilePreviewModel {
         if let duplicateResolutionBlockingReason {
             return duplicateResolutionBlockingReason
         }
+        if nameConflictResolution == .replace, !isReplaceConfirmed, replaceOptionVisibility == .enabled {
+            return nil
+        }
+        if let nameConflictResolutionBlockingReason {
+            return nameConflictResolutionBlockingReason
+        }
         if isDuplicateConflictResolvedForImport {
+            return nil
+        }
+        if isNameConflictResolvedForImport {
             return nil
         }
         if let preflightBlocker = preflightStatus.importBlockingReason() {

@@ -123,8 +123,14 @@ struct ImportSingleFileConflictSection: View {
     let sourcePath: String?
     let replaceOptionVisibility: ImportSingleFileReplaceOptionVisibility
     @Binding var duplicateResolution: ImportSingleFileDuplicateResolutionStrategy
+    @Binding var nameConflictResolution: ImportSingleFileNameConflictResolution
+    let resolvedNameConflictFilename: String
+    let resolvedNameConflictPath: String
+    let nameConflictBlockingReason: String?
+    let existingFile: FileEntrySnapshot?
     let onBeginReplaceConfirmation: () -> Void
     let onShowExistingFile: (String) -> Void
+    let onRenameNameConflictFile: (String) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -149,6 +155,9 @@ struct ImportSingleFileConflictSection: View {
 
             if case .duplicate = result.conflict {
                 duplicateResolutionOptions
+            }
+            if case .name = result.conflict {
+                nameConflictResolutionOptions
             }
 
         }
@@ -192,6 +201,71 @@ struct ImportSingleFileConflictSection: View {
         }
     }
 
+    private var nameConflictResolutionOptions: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Picker("处理选项", selection: $nameConflictResolution) {
+                Text(ImportSingleFileNameConflictResolution.keepBoth.title)
+                    .tag(ImportSingleFileNameConflictResolution.keepBoth)
+                Text(ImportSingleFileNameConflictResolution.renameIncoming(resolvedNameConflictFilename).title)
+                    .tag(ImportSingleFileNameConflictResolution.renameIncoming(resolvedNameConflictFilename))
+                if replaceOptionVisibility == .enabled {
+                    Text(ImportSingleFileNameConflictResolution.replace.title)
+                        .tag(ImportSingleFileNameConflictResolution.replace)
+                } else if replaceOptionVisibility == .disabled {
+                    Text("Replace requires system Trash")
+                        .tag(ImportSingleFileNameConflictResolution.replace)
+                }
+            }
+            .pickerStyle(.radioGroup)
+
+            Text(nameConflictResolution.detail)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            nameConflictResolutionDetails
+
+            if case .name(let existingPath) = result.conflict {
+                Button("Show existing file") {
+                    onShowExistingFile(existingPath)
+                }
+                .help(existingPath)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var nameConflictResolutionDetails: some View {
+        switch nameConflictResolution {
+        case .keepBoth:
+            if result.keepBothTargetRelativePath != nil {
+                Text("最终文件名：\(resolvedNameConflictFilename)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            } else {
+                Text("无法生成可用文件名")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+            }
+        case .renameIncoming(let name):
+            TextField("新文件名", text: Binding(
+                get: { name },
+                set: onRenameNameConflictFile
+            ))
+            .textFieldStyle(.roundedBorder)
+            if let nameConflictBlockingReason {
+                Text(nameConflictBlockingReason)
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+            } else {
+                Text("最终路径：\(resolvedNameConflictPath)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        case .replace:
+            nameReplaceAction
+        }
+    }
+
     private var duplicateStrategies: [ImportSingleFileDuplicateResolutionStrategy] {
         switch replaceOptionVisibility {
         case .hidden:
@@ -207,8 +281,33 @@ struct ImportSingleFileConflictSection: View {
         case .hidden:
             EmptyView()
         case .enabled:
-            Button("Confirm Replace...", action: onBeginReplaceConfirmation)
-                .help("Replace 每次必须先二次确认")
+            VStack(alignment: .leading, spacing: 6) {
+                Text("替换操作需要二次确认。旧文件不会直接删除，会移到废纸篓。")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+                Button("Confirm Replace...", action: onBeginReplaceConfirmation)
+                    .help("Replace 每次必须先二次确认")
+            }
+        case .disabled:
+            Text("Replace requires system Trash")
+                .font(.caption)
+                .foregroundStyle(.orange)
+        }
+    }
+
+    @ViewBuilder
+    private var nameReplaceAction: some View {
+        switch replaceOptionVisibility {
+        case .hidden:
+            EmptyView()
+        case .enabled:
+            VStack(alignment: .leading, spacing: 6) {
+                Text("替换操作需要二次确认。旧文件不会直接删除，会移到废纸篓。")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+                Button("Confirm Replace...", action: onBeginReplaceConfirmation)
+                    .help("Replace 每次必须先二次确认")
+            }
         case .disabled:
             Text("Replace requires system Trash")
                 .font(.caption)
@@ -232,13 +331,33 @@ struct ImportSingleFileConflictSection: View {
             .font(.caption)
         case .name(let path):
             VStack(alignment: .leading, spacing: 4) {
-                LabeledContent("目标位置", value: path)
+                LabeledContent("已存在", value: path)
+                if let size = existingFile?.sizeBytes {
+                    LabeledContent("已有文件大小", value: ByteCountFormatter.string(
+                        fromByteCount: size,
+                        countStyle: .file
+                    ))
+                }
+                if let updatedAt = existingFile?.updatedAt {
+                    LabeledContent("已有文件修改时间", value: DateFormatter.localizedString(
+                        from: Date(timeIntervalSince1970: TimeInterval(updatedAt)),
+                        dateStyle: .medium,
+                        timeStyle: .short
+                    ))
+                }
                 if let sourceFilename {
                     LabeledContent("当前文件", value: sourceFilename)
                 }
                 if let sourcePath {
                     LabeledContent("来源", value: sourcePath)
                 }
+                if let sourceSize = result.sourceSizeBytes {
+                    LabeledContent("当前文件大小", value: ByteCountFormatter.string(
+                        fromByteCount: sourceSize,
+                        countStyle: .file
+                    ))
+                }
+                LabeledContent("hash 结论", value: "同名但内容不同")
             }
             .font(.caption)
         case .none, .invalidFilename, .iCloudPlaceholder, .iCloudDownloadFailed, .corePreviewUnavailable,

@@ -1,0 +1,50 @@
+一、执行结论
+
+- 已完成。
+
+二、执行范围
+
+- 单任务：`2-2/task-23`，只处理 `S1-23 conflict-name` + `C1-10 resolve-name-conflict`。
+- 修改了 macOS app / test / Xcode project 内允许路径；未修改 `core/src/**`。
+- 任务实现文件：
+  - [ImportSingleFilePreflight.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreflight.swift)
+  - [ImportSingleFileDuplicateResolution.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFileDuplicateResolution.swift)
+  - [ImportSingleFilePreviewModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreviewModel.swift)
+  - [ImportSingleFilePreviewPresentation.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreviewPresentation.swift)
+  - [ImportEntrySheetView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportEntrySheetView.swift)
+  - [ImportSingleFileSheetSections.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportSingleFileSheetSections.swift)
+  - [ImportSingleFileDuplicateResolutionTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFileDuplicateResolutionTests.swift)
+  - [ImportSingleFilePreflightTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFilePreflightTests.swift)
+  - [ImportSingleFileNameConflictCoreTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFileNameConflictCoreTests.swift)
+  - [project.pbxproj](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj)
+
+三、完成情况
+
+- 核对清单：已按 `S1-23`、MVP control map、Core API、`C1-10` 交叉实现。
+- 用户可见功能：同名不同 hash 会进入 `S1-23 conflict-name`，默认保留两份并预览自动编号；支持手动重命名并即时校验；Replace 仅在允许且 Trash 可用时进入二次确认。
+- Core 闭环：最终导入仍走真实 `CoreBridge.import_file`，KeepBoth / rename / overwrite 策略映射到真实 Core 参数，没有 mock-only 闭环。
+- Forbidden Touches：未触碰 `core/src/**`。
+- 现有 dirty 状态中 `.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json` 是运行状态文件，不属于本次产品实现改动。
+
+四、工程质量
+
+- 代码结构按现有 ImportSheet model / presentation / section 分层扩展，没有新增无关抽象。
+- 错误与边界：覆盖非法文件名、重命名仍冲突、自动编号失败、Trash 不可用、Replace 二次确认。
+- 文件长度已核对，相关 Swift 文件均在 500 行以内；`git diff --check` 通过。
+- 未新增依赖；未修改文档、UDL、Rust public API，因此无 rustdoc / 依赖许可证同步项。
+- 高风险边界处理：默认不覆盖用户文件；Replace 不在 S1-23 直接执行，必须经 S1-24 二次确认；回滚方式是撤回上述 macOS app/test/project 文件改动，不涉及用户文件迁移或删除。
+
+五、验证情况
+
+- 通过：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+- 通过：`./dev test macos`
+  - 标准 `xcodebuild test` 被当前 sandbox 的 `testmanagerd` 权限阻断。
+  - 脚本按仓库规则 fallback 到 `xcrun xctest`，`270 tests, 0 failures`。
+- 通过：`git diff --check`
+- 通过：`git diff --name-only -- 'core/src/**'` 无输出。
+
+六、风险与后续
+
+- 剩余风险：未做真实 UI 手工点击验证；当前证据覆盖 build、模型状态、CoreBridge 真实导入测试和 XCTest。
+- 建议下一个任务：继续 `2-2/task-24`，即 `S1-24 replace-confirm`，用于承接本任务的 Replace 二次确认页面闭环。
+

@@ -57,6 +57,35 @@ final class ImportSingleFilePreflightTests: XCTestCase {
         XCTAssertEqual(actual.importBlockingReason(), "请先完成 S1-22 conflict-duplicate 处理")
     }
 
+    func testCorePreflightDetectsSameNameDifferentHashForS123() async throws {
+        let sourceRoot = try makeImportSingleFileTemporaryDirectory(prefix: "preflight-name-conflict")
+        defer { try? FileManager.default.removeItem(at: sourceRoot) }
+        let sourceURL = sourceRoot.appendingPathComponent("source.pdf")
+        try Data("incoming bytes".utf8).write(to: sourceURL)
+        let sameName = FileEntrySnapshot.s117Fixture(
+            currentName: "source.pdf",
+            category: "docs",
+            hashSha256: "different-hash"
+        )
+        let fileLoader = ImportSingleFileStaticFileLoader(files: [
+            sameName,
+            .s117Fixture(currentName: "source_1.pdf", category: "docs", hashSha256: "other"),
+        ])
+
+        let actual = await CoreImportSingleFilePreflight(fileLoader: fileLoader).preflightSingleFileImport(request: .fixture(
+            repoPath: "/tmp/repo",
+            sourceURL: sourceURL,
+            category: "docs",
+            targetFilename: "source.pdf"
+        ))
+
+        XCTAssertEqual(actual.conflict, .name(path: "docs/source.pdf"))
+        XCTAssertEqual(actual.keepBothTargetRelativePath, "docs/source_2.pdf")
+        XCTAssertEqual(actual.existingPaths, ["docs/source.pdf", "docs/source_1.pdf"])
+        XCTAssertEqual(actual.existingFile, sameName)
+        XCTAssertEqual(actual.importBlockingReason(), "请先完成 S1-23 conflict-name 处理")
+    }
+
     func testCorePreflightRejectsInvalidTargetFilenameBeforeImport() async throws {
         let sourceRoot = try makeImportSingleFileTemporaryDirectory(prefix: "preflight-source")
         defer { try? FileManager.default.removeItem(at: sourceRoot) }

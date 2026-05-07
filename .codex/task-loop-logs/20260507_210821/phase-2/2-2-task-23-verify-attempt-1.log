@@ -1,0 +1,88 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`2-2/task-23`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-2-import-conflict/task-23-s1-23-c1-10-resolve-name-conflict.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：11
+- 未覆盖项数：0
+- 通过项数：11
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 S1-23 页面中的 C1-10 功能点
+- 结果：通过
+- 证据：control map 将 S1-23 绑定到 C1-10、`import_file` / `rename_file`；实际实现新增 `ImportSingleFileNameConflictResolution`，只在 `.name` 冲突下生效。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFileDuplicateResolution.swift:121`
+
+- 项目：读取页面规格、MVP control map、Core API 和 C1-10 能力规格
+- 结果：通过
+- 证据：已按顺序读取 4 个 Exact Docs；UDL 暴露 `import_file`、`rename_file` 与 C1-10 需要的 `DuplicateStrategy.KeepBoth/Overwrite`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:55`
+
+- 项目：只接入 C1-10 对应的 CoreBridge / 状态 / 错误映射
+- 结果：通过
+- 证据：CoreBridge 最终调用真实 `AreaMatrix.importFile(...)`，未直接在 View 调 UniFFI；同名冲突预检读取真实 `listFiles` 快照并比较 hash/path。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreImporting.swift:267`
+
+- 项目：不顺手实现相邻页面
+- 结果：通过
+- 证据：Replace 分支只进入既有二次确认上下文，未在 S1-23 直接执行替换；`.overwrite` 仅在确认后传给 Core。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFileDuplicateResolution.swift:160`
+
+- 项目：S1-23 中 C1-10 用户可见功能可触发和验收
+- 结果：通过
+- 证据：UI 展示同名不同内容、Keep both、Rename incoming、Replace gated 选项；真实 Core 测试验证同名不同内容默认导入为 `docs/source_1.pdf`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFileNameConflictCoreTests.swift:6`
+
+- 项目：没有 mock、fixture 或静态状态伪造真实 Core 闭环
+- 结果：通过
+- 证据：新增真实 Core 测试用 `CoreBridge()` 初始化 repo、先导入已有文件，再通过模型触发真实导入；断言文件系统同时存在 `source.pdf` 和 `source_1.pdf`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFileNameConflictCoreTests.swift:72`
+
+- 项目：Expected New Paths
+- 结果：通过
+- 证据：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`project.pbxproj` 均有落地；新增测试已加入 pbxproj sources。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj:98`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git status --short -- core/src` 无输出；未触碰 `core/src/**`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，状态、预检、UI 展示、CoreBridge 调用分层清楚，未发现单次脚本化实现。
+- 注释 / rustdoc / 文档同步：通过，本任务无 public Rust API 新增；UDL/API 已存在并与消费路径一致。
+- 错误处理与边界处理：通过，非法文件名、仍然冲突、自动编号失败、Trash unavailable、Replace 未确认都有阻断状态。
+- 测试与验证覆盖：通过，包含模型级策略测试和真实 Core 文件系统闭环测试。
+- 占位、硬编码、mock-only、一次性实现检查：通过，产品默认路径使用 CoreBridge 和真实 Core；测试 fixture 只用于模型单元测试，不替代真实闭环验收。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`，通过，输出 `** BUILD SUCCEEDED **`。
+- 已运行：`./dev test macos`，通过。标准 `xcodebuild test` 被本地 `testmanagerd` sandbox 限制阻断，脚本按仓库规则复用已构建 XCTest bundle，`xcrun xctest` 通过，270 tests，0 failures。
+- 额外尝试：定向 `xcodebuild test -only-testing:AreaMatrixTests/ImportSingleFileNameConflictCoreTests`，同样被 `testmanagerd` sandbox 阻断，未计为产品失败。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+- 残余风险：S1-23 文档中的 `Reveal target folder` 辅助动作当前未见独立按钮证据，但它不是本 task 绑定的 C1-10 核心闭环阻断项。
+
+VERIFY_RESULT: PASS

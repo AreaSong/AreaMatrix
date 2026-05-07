@@ -224,13 +224,22 @@ struct ImportEntrySheetView: View {
                         get: { previewModel.duplicateResolution },
                         set: { previewModel.updateDuplicateResolution($0) }
                     ),
+                    nameConflictResolution: Binding(
+                        get: { previewModel.nameConflictResolution },
+                        set: { previewModel.updateNameConflictResolution($0) }
+                    ),
+                    resolvedNameConflictFilename: previewModel.resolvedNameConflictFilename,
+                    resolvedNameConflictPath: previewModel.resolvedImportRelativePathForNameConflict,
+                    nameConflictBlockingReason: previewModel.nameConflictResolutionBlockingReason,
+                    existingFile: result.existingFile,
                     onBeginReplaceConfirmation: {
                         previewModel.beginReplaceConfirmation()
                         if let context = previewModel.pendingReplaceConfirmation {
                             pendingSingleFileReplaceConfirmation = ImportSingleFileReplaceConfirmation(context: context)
                         }
                     },
-                    onShowExistingFile: onShowExistingFile
+                    onShowExistingFile: onShowExistingFile,
+                    onRenameNameConflictFile: previewModel.renameIncomingNameConflictFile
                 )
             }
             ImportSingleFileImportStatusSection(

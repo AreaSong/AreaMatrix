@@ -23,6 +23,8 @@ struct ImportSingleFilePreflightResult: Equatable, Sendable {
     var targetRelativePath: String
     var conflict: ImportSingleFileConflict
     var keepBothTargetRelativePath: String? = nil
+    var existingPaths: Set<String> = []
+    var existingFile: FileEntrySnapshot? = nil
 
     var statusMessage: String {
         switch conflict {
@@ -31,7 +33,7 @@ struct ImportSingleFilePreflightResult: Equatable, Sendable {
         case .invalidFilename(let message):
             return message
         case .name(let path):
-            return "目标同名：\(path)"
+            return "目标目录中已经存在同名文件，但内容不同：\(path)"
         case .duplicate(let path):
             return "hash 重复：\(path)"
         case .iCloudPlaceholder:
@@ -115,12 +117,15 @@ enum ImportSingleFileConflict: Equatable, Sendable {
 
 enum ImportSingleFileConflictPage: Equatable, Sendable {
     case duplicate
+    case name
 
     init?(conflict: ImportSingleFileConflict) {
         switch conflict {
         case .duplicate:
             self = .duplicate
-        case .none, .invalidFilename, .name, .iCloudPlaceholder, .iCloudDownloadFailed, .corePreviewUnavailable,
+        case .name:
+            self = .name
+        case .none, .invalidFilename, .iCloudPlaceholder, .iCloudDownloadFailed, .corePreviewUnavailable,
              .sourceUnavailable, .error:
             return nil
         }
@@ -130,6 +135,8 @@ enum ImportSingleFileConflictPage: Equatable, Sendable {
         switch self {
         case .duplicate:
             return "S1-22 conflict-duplicate"
+        case .name:
+            return "S1-23 conflict-name"
         }
     }
 
@@ -137,6 +144,8 @@ enum ImportSingleFileConflictPage: Equatable, Sendable {
         switch self {
         case .duplicate:
             return "冲突：内容重复"
+        case .name:
+            return "冲突：目标位置已有同名文件"
         }
     }
 
@@ -144,6 +153,8 @@ enum ImportSingleFileConflictPage: Equatable, Sendable {
         switch self {
         case .duplicate:
             return "资料库中已存在相同内容的文件。请先进入冲突处理区域决定后续策略。"
+        case .name:
+            return "目标目录中已经存在同名文件，但内容不同。"
         }
     }
 
@@ -286,7 +297,23 @@ struct CoreImportSingleFilePreflight: ImportSingleFilePreflighting {
                 keepBothTargetRelativePath: keepBothTargetRelativePath(
                     preferredPath: targetRelativePath,
                     files: files
-                )
+                ),
+                existingPaths: Set(files.map(\.path)),
+                existingFile: duplicate
+            )
+        }
+        if let sameName = files.first(where: { $0.path == targetRelativePath }) {
+            return ImportSingleFilePreflightResult(
+                sourceSizeBytes: sourceSizeBytes,
+                hashSha256: hashSha256,
+                targetRelativePath: targetRelativePath,
+                conflict: .name(path: sameName.path),
+                keepBothTargetRelativePath: keepBothTargetRelativePath(
+                    preferredPath: targetRelativePath,
+                    files: files
+                ),
+                existingPaths: Set(files.map(\.path)),
+                existingFile: sameName
             )
         }
 
@@ -295,7 +322,8 @@ struct CoreImportSingleFilePreflight: ImportSingleFilePreflighting {
             hashSha256: hashSha256,
             targetRelativePath: targetRelativePath,
             conflict: .none,
-            keepBothTargetRelativePath: nil
+            keepBothTargetRelativePath: nil,
+            existingPaths: Set(files.map(\.path))
         )
     }
 

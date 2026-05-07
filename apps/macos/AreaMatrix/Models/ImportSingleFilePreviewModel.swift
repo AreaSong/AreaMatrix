@@ -10,6 +10,7 @@ final class ImportSingleFilePreviewModel: ObservableObject {
     @Published private(set) var preflightStatus: ImportSingleFilePreflightStatus = .idle
     @Published private(set) var isICloudDownloading = false
     @Published var duplicateResolution: ImportSingleFileDuplicateResolutionStrategy = .skip
+    @Published var nameConflictResolution: ImportSingleFileNameConflictResolution = .keepBoth
     @Published private(set) var isReplaceConfirmed = false
     @Published private(set) var pendingReplaceConfirmation: ImportSingleFileReplaceConfirmationContext?
     @Published var selectedCategory = "inbox" {
@@ -56,7 +57,7 @@ extension ImportSingleFilePreviewModel {
             sourcePath: sourceURL.path,
             storageMode: selectedStorageMode,
             overrideCategory: selectedCategory.trimmingCharacters(in: .whitespacesAndNewlines),
-            overrideFilename: suggestedName.trimmingCharacters(in: .whitespacesAndNewlines),
+            overrideFilename: resolvedImportFilename,
             duplicateStrategy: ImportProgressDuplicateStrategy(coreStrategy: resolvedDuplicateStrategy)
         )
     }
@@ -115,6 +116,7 @@ extension ImportSingleFilePreviewModel {
         generation += 1
         let currentGeneration = generation
         resetDuplicateResolutionForPreflight()
+        resetNameConflictResolutionForPreflight()
         preflightStatus = .checking("Checking duplicate...")
         Task { await runPreflightIfReady(generation: currentGeneration) }
     }
@@ -140,7 +142,7 @@ extension ImportSingleFilePreviewModel {
                 repoPath: request.repoPath,
                 sourceURL: sourceURL,
                 overrideCategory: selectedCategory.trimmingCharacters(in: .whitespacesAndNewlines),
-                overrideFilename: suggestedName.trimmingCharacters(in: .whitespacesAndNewlines)
+                overrideFilename: resolvedImportFilename
             )
             importStatus = .imported(entry)
             return entry
@@ -160,6 +162,7 @@ private extension ImportSingleFilePreviewModel {
         prediction = nil
         preflightStatus = .idle
         duplicateResolution = .skip
+        resetNameConflictResolutionForPreflight()
         resetReplaceStateForPreflight()
         selectedCategory = "inbox"
         suggestedName = ""
@@ -189,6 +192,7 @@ private extension ImportSingleFilePreviewModel {
     private func runPreflightIfReady(generation currentGeneration: Int) async {
         guard let request, let sourceURL = request.urls.first, isReadyForImport else { return }
         resetDuplicateResolutionForPreflight()
+        resetNameConflictResolutionForPreflight()
         resetReplaceStateForPreflight()
         if let invalidFilenamePreflightResult {
             preflightStatus = .blocked(invalidFilenamePreflightResult)
@@ -221,9 +225,9 @@ private extension ImportSingleFilePreviewModel {
 
     private func isImportablePreflightResult(_ result: ImportSingleFilePreflightResult) -> Bool {
         switch result.conflict {
-        case .none, .duplicate:
+        case .none, .duplicate, .name:
             return true
-        case .invalidFilename, .name, .iCloudPlaceholder, .iCloudDownloadFailed, .corePreviewUnavailable,
+        case .invalidFilename, .iCloudPlaceholder, .iCloudDownloadFailed, .corePreviewUnavailable,
              .sourceUnavailable, .error:
             return false
         }
@@ -311,6 +315,7 @@ private extension ImportSingleFilePreviewModel {
         status = .loading
         isICloudDownloading = false
         resetDuplicateResolutionForPreflight()
+        resetNameConflictResolutionForPreflight()
         resetReplaceStateForPreflight()
         selectedStorageMode = .copy
         selectedCategory = request.explicitCategory ?? "inbox"
@@ -324,6 +329,7 @@ private extension ImportSingleFilePreviewModel {
         guard let invalidFilenamePreflightResult else { return false }
         generation += 1
         resetDuplicateResolutionForPreflight()
+        resetNameConflictResolutionForPreflight()
         resetReplaceStateForPreflight()
         preflightStatus = .blocked(invalidFilenamePreflightResult)
         return true
@@ -335,6 +341,7 @@ private extension ImportSingleFilePreviewModel {
             filename: suggestedName
         )
         duplicateResolution = .skip
+        resetNameConflictResolutionForPreflight()
         resetReplaceStateForPreflight()
         importStatus = .idle
         preflightStatus = .blocked(ImportSingleFilePreflightResult(
@@ -363,6 +370,14 @@ extension ImportSingleFilePreviewModel {
     func resetReplaceStateForPreflight() {
         isReplaceConfirmed = false
         pendingReplaceConfirmation = nil
+    }
+
+    func setNameConflictResolution(_ resolution: ImportSingleFileNameConflictResolution) {
+        nameConflictResolution = resolution
+    }
+
+    func resetNameConflictResolutionForPreflight() {
+        nameConflictResolution = .keepBoth
     }
 }
 
