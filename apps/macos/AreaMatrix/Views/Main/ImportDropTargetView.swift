@@ -5,17 +5,23 @@ struct ImportDropTargetModifier: ViewModifier {
     let target: ImportDropTarget
     @ObservedObject var dropPreviewModel: ImportDropPreviewModel
     let onDropImport: ([URL], ImportDropTarget) -> Void
+    var isEnabled = true
     @State private var isTargeted = false
 
+    @ViewBuilder
     func body(content: Content) -> some View {
-        content
-            .background(isTargeted ? Color.accentColor.opacity(0.08) : Color.clear)
-            .onDrop(of: [.fileURL], delegate: ImportDropDelegate(
-                target: target,
-                dropPreviewModel: dropPreviewModel,
-                isTargeted: $isTargeted,
-                onDropImport: onDropImport
-            ))
+        if isEnabled {
+            content
+                .background(isTargeted ? Color.accentColor.opacity(0.08) : Color.clear)
+                .onDrop(of: [.fileURL], delegate: ImportDropDelegate(
+                    target: target,
+                    dropPreviewModel: dropPreviewModel,
+                    isTargeted: $isTargeted,
+                    onDropImport: onDropImport
+                ))
+        } else {
+            content
+        }
     }
 }
 

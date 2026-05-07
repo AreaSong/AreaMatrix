@@ -306,6 +306,8 @@ struct ImportBatchProgressSnapshot: Equatable, Sendable {
         case pending = "Pending"
         case copying = "Copying"
         case moving = "Moving"
+        case hashing = "Hashing"
+        case classifying = "Classifying"
         case writingIndex = "Writing index"
         case done = "Done"
         case failed = "Failed"
@@ -341,9 +343,15 @@ struct ImportBatchImportResult: Equatable, Sendable {
     var pendingDuplicateCount: Int
     var skippedDuplicateCount: Int
     var pendingICloudCount: Int
+    var didStopAfterCurrentFile = false
+    var fatalRetryContext: ImportProgressRetryContext?
 
     var needsResultSummary: Bool {
-        failedCount > 0 || previewErrorCount > 0 || skippedDuplicateCount > 0 || pendingICloudCount > 0
+        didStopAfterCurrentFile
+            || failedCount > 0
+            || previewErrorCount > 0
+            || skippedDuplicateCount > 0
+            || pendingICloudCount > 0
     }
 
     func progressSnapshot(currentPath fallbackPath: String) -> ImportBatchProgressSnapshot {
@@ -353,9 +361,15 @@ struct ImportBatchImportResult: Equatable, Sendable {
             total: total + previewErrorCount + skippedDuplicateCount + pendingICloudCount,
             remaining: 0,
             currentPath: lastImportedPath.isEmpty ? fallbackPath : lastImportedPath,
-            skipped: skippedDuplicateCount,
+            skipped: skippedDuplicateCount + stoppedPendingCount,
             pending: pendingICloudCount
         )
+    }
+
+    private var stoppedPendingCount: Int {
+        guard didStopAfterCurrentFile else { return 0 }
+        let processed = succeededEntries.count + failedCount
+        return max(total - processed, 0)
     }
 }
 

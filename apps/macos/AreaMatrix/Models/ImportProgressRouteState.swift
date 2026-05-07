@@ -63,6 +63,53 @@ enum ImportProgressStopState: Equatable, Sendable {
     case stopped
 }
 
+typealias ImportBatchProgressHandler = (ImportBatchProgressSnapshot) -> Void
+typealias ImportBatchFailureHandler = (
+    ImportBatchProgressSnapshot,
+    CoreErrorMappingSnapshot,
+    ImportProgressRetryContext?,
+    ImportProgressRecoveryCheckState?
+) -> Void
+
+@MainActor
+protocol ImportProgressQueueContinuing: AnyObject {
+    func continueImportProgressQueue(
+        afterRetried context: ImportProgressRetryContext,
+        entry: FileEntrySnapshot,
+        controlState: ImportProgressControlState,
+        reportProgress: @escaping @MainActor (ImportBatchProgressSnapshot) -> Void
+    ) async -> ImportBatchImportResult?
+}
+
+final class ImportProgressControlState {
+    private(set) var isStopAfterCurrentFileRequested = false
+    private(set) var didStopAfterCurrentFile = false
+    private(set) var queueContinuation: (any ImportProgressQueueContinuing)?
+
+    func reset() {
+        isStopAfterCurrentFileRequested = false
+        didStopAfterCurrentFile = false
+        queueContinuation = nil
+    }
+
+    func requestStopAfterCurrentFile() {
+        isStopAfterCurrentFileRequested = true
+    }
+
+    func markStoppedAfterCurrentFile() {
+        didStopAfterCurrentFile = true
+        isStopAfterCurrentFileRequested = false
+    }
+
+    func registerQueueContinuation(_ continuation: (any ImportProgressQueueContinuing)?) {
+        queueContinuation = continuation
+    }
+
+    func clearQueueContinuation() {
+        queueContinuation = nil
+    }
+}
+
 struct ImportProgressRouteState: Equatable, Sendable {
     enum Status: Equatable, Sendable {
         case running
@@ -343,6 +390,19 @@ struct ImportProgressRouteState: Equatable, Sendable {
 }
 
 extension ImportProgressRouteState {
+    var progressSnapshot: ImportBatchProgressSnapshot {
+        ImportBatchProgressSnapshot(
+            completed: completed,
+            failed: failed,
+            total: total,
+            remaining: remaining,
+            currentPath: currentPath,
+            skipped: skipped,
+            pending: pending,
+            items: items
+        )
+    }
+
     var retryStatusText: String {
         switch recoveryCheck {
         case .unavailable:
@@ -379,12 +439,7 @@ extension ImportProgressRouteState {
 
 private extension ImportSingleFileStorageMode {
     var isImportProgressRetryable: Bool {
-        switch self {
-        case .move, .indexOnly:
-            return true
-        case .copy:
-            return false
-        }
+        true
     }
 
     var progressPhase: ImportBatchProgressSnapshot.Phase {

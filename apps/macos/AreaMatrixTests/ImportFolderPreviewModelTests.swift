@@ -211,12 +211,80 @@ final class ImportFolderPreviewModelTests: XCTestCase {
         XCTAssertEqual(outcome?.previewErrorCount, 1)
         XCTAssertEqual(outcome?.pendingICloudCount, 1)
         XCTAssertEqual(model.rows.map(\.status.tag), ["IMPORTED", "ICLOUD", "ERROR"])
-        XCTAssertEqual(progressSnapshots.last, ImportBatchProgressSnapshot(
-            completed: 1,
-            failed: 0,
-            total: 1,
+        XCTAssertEqual(progressSnapshots.last?.completed, 1)
+        XCTAssertEqual(progressSnapshots.last?.failed, 0)
+        XCTAssertEqual(progressSnapshots.last?.total, 1)
+        XCTAssertEqual(progressSnapshots.last?.remaining, 0)
+        XCTAssertEqual(progressSnapshots.last?.currentPath, "finance/Invoice_2026Q1.pdf")
+        XCTAssertEqual(progressSnapshots.last?.items.map(\.phase), [.done, .pending, .failed])
+        XCTAssertEqual(progressSnapshots.last?.items.last?.errorMessage, "无法预览分类：missing test result")
+    }
+
+    @MainActor
+    func testS119FolderResultSummaryKeepsPerRowStatusesForFailureAndPendingRows() async {
+        let invoiceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
+        let cloudURL = URL(fileURLWithPath: "/tmp/iCloudOnly.pdf.icloud")
+        let scanner = S119StaticFolderScanner(result: ImportFolderScanResult(
+            rows: [
+                ImportFolderPreviewRow.loading(
+                    fileURL: invoiceURL,
+                    rootURL: URL(fileURLWithPath: "/tmp", isDirectory: true)
+                ),
+                ImportFolderPreviewRow.loading(
+                    fileURL: cloudURL,
+                    rootURL: URL(fileURLWithPath: "/tmp", isDirectory: true)
+                ).withStatus(.iCloudPlaceholder(path: cloudURL.path)),
+            ],
+            folderCount: 0,
+            skippedRules: [],
+            errors: []
+        ))
+        let predictor = S119RecordingPredictor(results: [
+            .success(ClassifyResultSnapshot(
+                category: "finance",
+                suggestedName: "Invoice_2026Q1.pdf",
+                reason: .keyword,
+                confidence: 0.9
+            )),
+        ])
+        let importer = S118SequenceBatchImporter(results: [
+            .failure(CoreError.PermissionDenied(path: invoiceURL.path)),
+        ])
+        let model = ImportFolderPreviewModel(
+            predictor: predictor,
+            importer: importer,
+            errorMapper: S117RecordingErrorMapper(),
+            conflictPrechecker: S119NoopConflictPrechecker(),
+            scanner: scanner
+        )
+
+        await model.load(request: s119FolderRequest(rootURL: URL(fileURLWithPath: "/tmp", isDirectory: true)))
+        let outcome = await model.importReadyFiles()
+        let summary = outcome?.progressSnapshot(currentPath: "finance/Invoice_2026Q1.pdf")
+            .withItems(model.progressItems())
+
+        XCTAssertEqual(summary, ImportBatchProgressSnapshot(
+            completed: 0,
+            failed: 1,
+            total: 2,
             remaining: 0,
-            currentPath: "finance/Invoice_2026Q1.pdf"
+            currentPath: "finance/Invoice_2026Q1.pdf",
+            skipped: 0,
+            pending: 1,
+            items: [
+                ImportBatchProgressSnapshot.Item(
+                    sourcePath: invoiceURL.path,
+                    targetPath: "finance/Invoice_2026Q1.pdf",
+                    phase: .failed,
+                    errorMessage: "无访问权限"
+                ),
+                ImportBatchProgressSnapshot.Item(
+                    sourcePath: cloudURL.path,
+                    targetPath: "iCloudOnly.pdf.icloud",
+                    phase: .pending,
+                    errorMessage: nil
+                ),
+            ]
         ))
     }
 

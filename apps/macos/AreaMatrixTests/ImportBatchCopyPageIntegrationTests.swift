@@ -156,7 +156,7 @@ final class ImportBatchCopyPageIntegrationTests: XCTestCase {
     }
 
     @MainActor
-    func testS118BatchImportFailureKeepsS120ProgressCountsAndMappedError() {
+    func testS118BatchImportFailureRoutesToS121ResultInsteadOfFatalPause() {
         let opening = RepositoryOpeningResult.s117Fixture(repoPath: "/tmp/repo")
         let model = OnboardingModel(
             settingsReader: S117StaticSettingsReader(repoPath: nil),
@@ -176,19 +176,39 @@ final class ImportBatchCopyPageIntegrationTests: XCTestCase {
         model.updateImportEntryProgress(progress)
         model.failImportEntry(progress: progress, mapping: mapping)
 
-        XCTAssertEqual(model.route, .importProgress(ImportProgressRouteState(
-            sourceOpening: opening,
-            currentPath: "finance/合同.pdf",
-            status: .failed(mapping),
-            completed: 1,
-            failed: 1,
-            remaining: 0
-        )))
-        if case .importProgress(let state) = model.route {
-            XCTAssertEqual(state.titleText, "导入已暂停")
-            XCTAssertEqual(state.bannerText, "无访问权限")
+        if case .importResult(let result) = model.route {
+            XCTAssertEqual(result.resultSummaryText, "Imported 1, failed 1, stopped 0, pending 0.")
+            XCTAssertEqual(result.items.map(\.status), [.failed])
         } else {
-            XCTFail("Expected S1-20 failed import progress route")
+            XCTFail("Expected S1-21 import result route")
+        }
+    }
+
+    @MainActor
+    func testS120ViewDetailsRoutesToS121ImportResult() {
+        let opening = RepositoryOpeningResult.s117Fixture(repoPath: "/tmp/repo")
+        let model = OnboardingModel(
+            settingsReader: S117StaticSettingsReader(repoPath: nil),
+            accessibilityAnnouncer: S117RecordingAccessibilityAnnouncer(),
+            helpOpener: S117NoopWelcomeHelpOpener()
+        )
+        let progress = ImportBatchProgressSnapshot(
+            completed: 1,
+            failed: 0,
+            total: 2,
+            remaining: 1,
+            currentPath: "finance/合同.pdf"
+        )
+
+        model.route = .mainList(opening)
+        model.updateImportEntryProgress(progress)
+        model.viewImportProgressDetails()
+
+        if case .importResult(let result) = model.route {
+            XCTAssertEqual(result.resultSummaryText, "Imported 1, failed 0, stopped 0, pending 1.")
+            XCTAssertEqual(result.currentPath, "finance/合同.pdf")
+        } else {
+            XCTFail("Expected S1-21 import result route")
         }
     }
 

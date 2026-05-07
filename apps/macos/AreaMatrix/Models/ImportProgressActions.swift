@@ -9,7 +9,7 @@ extension OnboardingModel {
         route = .importProgress(state.withRecoveryCheck(.checking))
         do {
             let entry = try await importCurrentProgressItem(context)
-            finishRetriedImportProgressItem(entry, from: state)
+            await finishRetriedImportProgressItem(entry, from: state)
         } catch {
             await failRetriedImportProgressItem(error, context: context)
         }
@@ -18,16 +18,21 @@ extension OnboardingModel {
     @MainActor
     func stopImportProgressAfterCurrentFile() {
         guard case .importProgress(let state) = route else { return }
+        importProgressControlState.requestStopAfterCurrentFile()
         route = .importProgress(state.withStopState(.stopping))
-        route = .importProgress(state.withStopState(.stopped))
+    }
+
+    @MainActor
+    func viewImportProgressDetails() {
+        guard case .importProgress(let state) = route else { return }
+        showImportResult(from: state)
     }
 
     @MainActor
     func stopImportProgressAndViewResults() {
         guard case .importProgress(let state) = route else { return }
-        toastMessage = state.resultSummaryText
-        route = Self.mainRoute(for: state.sourceOpening)
-        consumeQueuedDockImportIfPossible()
+        importProgressControlState.clearQueueContinuation()
+        showImportResult(from: state)
     }
 
     @MainActor
@@ -75,7 +80,6 @@ extension OnboardingModel {
         guard case .importProgress(let state) = route else { return }
         guard case .checking = state.recoveryCheck else { return }
         guard let context = state.retryContext else { return }
-        guard context.storageMode == .move || context.storageMode == .indexOnly else { return }
 
         do {
             let report = try await startupRecoverer.recoverOnStartup(repoPath: context.repoPath)
@@ -91,6 +95,14 @@ extension OnboardingModel {
     private func importCurrentProgressItem(_ context: ImportProgressRetryContext) async throws -> FileEntrySnapshot {
         let sourceURL = URL(fileURLWithPath: context.sourcePath)
         switch context.storageMode {
+        case .copy:
+            return try await importProgressImporter.importCopiedFile(
+                repoPath: context.repoPath,
+                sourceURL: sourceURL,
+                overrideCategory: context.overrideCategory,
+                overrideFilename: context.overrideFilename,
+                duplicateStrategy: context.duplicateStrategy.coreStrategy
+            )
         case .move:
             return try await importProgressImporter.importMovedFile(
                 repoPath: context.repoPath,
@@ -107,8 +119,6 @@ extension OnboardingModel {
                 overrideFilename: context.overrideFilename,
                 duplicateStrategy: context.duplicateStrategy.coreStrategy
             )
-        case .copy:
-            throw CoreError.Internal(message: "Only C1-07 move and C1-08 index retry are available from S1-20.")
         }
     }
 
@@ -116,11 +126,18 @@ extension OnboardingModel {
     private func finishRetriedImportProgressItem(
         _ entry: FileEntrySnapshot,
         from state: ImportProgressRouteState
-    ) {
-        route = Self.mainRoute(for: state.sourceOpening)
-        toastMessage = "已导入：\(entry.currentName)"
-        accessibilityAnnouncer.announce("已导入：\(entry.currentName)")
-        consumeQueuedDockImportIfPossible()
+    ) async {
+        guard let context = state.retryContext else { return }
+        if let continuation = importProgressControlState.queueContinuation {
+            await continueQueueAfterRetriedImport(
+                continuation,
+                context: context,
+                entry: entry,
+                fallbackState: state
+            )
+            return
+        }
+        finishStandaloneRetriedImport(entry, from: state)
     }
 
     @MainActor
@@ -157,5 +174,70 @@ extension OnboardingModel {
             return await errorMapper.mapCoreError(coreError)
         }
         return await errorMapper.mapCoreError(CoreError.Internal(message: error.localizedDescription))
+    }
+
+    @MainActor
+    private func finishStandaloneRetriedImport(
+        _ entry: FileEntrySnapshot,
+        from state: ImportProgressRouteState
+    ) {
+        importProgressControlState.clearQueueContinuation()
+        route = Self.mainRoute(for: state.sourceOpening)
+        toastMessage = "已导入：\(entry.currentName)"
+        accessibilityAnnouncer.announce("已导入：\(entry.currentName)")
+        consumeQueuedDockImportIfPossible()
+    }
+
+    @MainActor
+    private func continueQueueAfterRetriedImport(
+        _ continuation: any ImportProgressQueueContinuing,
+        context: ImportProgressRetryContext,
+        entry: FileEntrySnapshot,
+        fallbackState: ImportProgressRouteState
+    ) async {
+        let outcome = await continuation.continueImportProgressQueue(
+            afterRetried: context,
+            entry: entry,
+            controlState: importProgressControlState
+        ) { progress in
+            self.updateImportEntryProgress(progress)
+        }
+        importProgressControlState.clearQueueContinuation()
+        finishContinuedImportProgressOutcome(outcome, retriedEntry: entry, fallbackState: fallbackState)
+    }
+
+    @MainActor
+    private func finishContinuedImportProgressOutcome(
+        _ outcome: ImportBatchImportResult?,
+        retriedEntry: FileEntrySnapshot,
+        fallbackState: ImportProgressRouteState
+    ) {
+        guard let outcome else {
+            finishStandaloneRetriedImport(retriedEntry, from: fallbackState)
+            return
+        }
+        if outcome.failedCount == 0, !outcome.needsResultSummary, let importedEntry = outcome.succeededEntries.last {
+            finishStandaloneRetriedImport(importedEntry, from: fallbackState)
+            return
+        }
+        let summary = outcome.progressSnapshot(currentPath: fallbackState.currentPath)
+        showImportEntryResults(summary)
+    }
+
+    @MainActor
+    func showImportResult(from state: ImportProgressRouteState) {
+        toastMessage = nil
+        route = .importResult(ImportResultRouteState(
+            sourceOpening: state.sourceOpening,
+            progressState: state
+        ))
+    }
+
+    @MainActor
+    func finishImportResult() {
+        guard case .importResult(let state) = route else { return }
+        route = Self.mainRoute(for: state.sourceOpening)
+        toastMessage = nil
+        consumeQueuedDockImportIfPossible()
     }
 }

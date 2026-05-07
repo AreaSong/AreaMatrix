@@ -46,7 +46,7 @@ final class ImportSingleFilePageIntegrationVerifyTests: XCTestCase {
     }
 
     @MainActor
-    func testS117FailedImportRemainsOnProgressWithVisibleErrorState() {
+    func testS117FailedImportRoutesThroughS121ResultSummary() {
         let opening = RepositoryOpeningResult.s117Fixture(repoPath: "/tmp/repo")
         let model = OnboardingModel(
             settingsReader: S117StaticSettingsReader(repoPath: nil),
@@ -58,14 +58,11 @@ final class ImportSingleFilePageIntegrationVerifyTests: XCTestCase {
         model.beginImportEntryProgress(currentPath: "docs/source.pdf")
         model.failImportEntry(currentPath: "docs/source.pdf", mapping: .s117Error(kind: .duplicateFile))
 
-        XCTAssertEqual(model.route, .importProgress(ImportProgressRouteState(
-            sourceOpening: opening,
-            currentPath: "docs/source.pdf",
-            status: .failed(.s117Error(kind: .duplicateFile)),
-            completed: 0,
-            failed: 1,
-            remaining: 0
-        )))
+        guard case .importResult(let result) = model.route else {
+            return XCTFail("Expected S1-21 import result route")
+        }
+        XCTAssertEqual(result.resultSummaryText, "Imported 0, failed 1, stopped 0, pending 0.")
+        XCTAssertEqual(result.items.map(\.status), [.failed])
     }
 
     @MainActor

@@ -1,0 +1,77 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`2-2/task-18`
+- 只读验收，无文件修改
+- 任务文件：[task-18-s1-20-page-integration-verify.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-2-import-conflict/task-18-s1-20-page-integration-verify.md:1)
+- 主要代码范围：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：16
+- 未覆盖项数：0
+- 通过项数：10
+- 不通过项数：4
+- 阻塞项数：3
+
+四、逐项验收结果
+
+- 项目：Exact Docs / Existing Code / Expected New Paths / Forbidden Touches
+- 结果：通过
+- 证据：6 个 Exact Docs 均已读取；Expected New Paths 三项均存在；`git diff -- core/src | wc -l` 为 `0`，未发现 `core/src/**` 触碰。
+- 涉及文件：[phase-2.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-2.md:1524)
+
+- 项目：本页所有 page-feature task 是否完成
+- 结果：不通过
+- 证据：C1-06/C1-07/C1-08 有 CoreBridge 接入证据，但整页仍缺 S1-20 page spec 的 List 临时导入行与选中详情闭环。
+- 涉及文件：[S1-20-import-progress.md](/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-20-import-progress.md:25)、[MainWindow.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/MainWindow.swift:341)、[ImportProgressView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportProgressView.swift:33)
+
+- 项目：页面状态、入口、退出、错误态和 CoreBridge 调用闭环
+- 结果：不通过
+- 证据：入口、toast / result 退出、CoreBridge `import_file` 调用存在；但 folder import fatal error 不进入 S1-20 fatal pause 面板，`ImportFolderImporting` 返回 `fatalRetryContext: nil`，footer 也未触发 `onImportFailed`。
+- 涉及文件：[ImportFolderImporting.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportFolderImporting.swift:45)、[ImportFolderPreviewSections.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportFolderPreviewSections.swift:359)
+
+- 项目：mock / fixture / 硬编码状态检查
+- 结果：通过
+- 证据：生产路径默认使用 `CoreBridge()`，测试中的 Recording/Static helper 仅在测试目标内；未发现生产路径以 mock-only 伪装 `import_file` 闭环。
+- 涉及文件：[CoreImporting.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreImporting.swift:138)
+
+- 项目：不新增 control map 外功能
+- 结果：通过
+- 证据：S1-20 control map 仅声明 C1-06/C1-07/C1-08，当前实现仍围绕 `import_file`、progress、result、diagnostics、recovery；未发现新增未声明 Core 能力。
+- 涉及文件：[mvp-control-map.md](/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:35)
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过。整页 progress rows 在侧栏面板中渲染，未按页面规格插入主 List，也没有选中临时行到 Detail 的实现证据。
+- 注释 / rustdoc / 文档同步：通过。未改文档；UDL `import_file` 与 Core API 文档一致。
+- 错误处理与边界处理：不通过。folder import 对 fatal recoverability 未执行暂停、retry gating、未开始项停止逻辑。
+- 测试与验证覆盖：不通过。`xcodebuild test` 必需命令失败；`./dev test macos` fallback 通过 251 tests，但不能证明 manifest 指定命令通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。未发现生产 mock-only；测试 helper 不计入生产伪闭环。
+
+六、阻塞项
+
+- P0：S1-20 未实现主 List 临时导入行和选中详情闭环。页面规格要求“在 List 插入临时导入行”和“选中临时行时 Detail 显示导入详情”，当前只在 `ImportProgressView` 侧栏内部 `ForEach(state.items)` 渲染。导致 S1-20 不能按 page spec 完整验收。
+  路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportProgressView.swift:33`
+
+- P0：S1-19 folder import 的 fatal queue error 未接入 S1-20 fatal pause/retry 闭环。`ImportFolderImporting` 对错误只记录 failed 并继续/汇总，返回 `fatalRetryContext: nil`；footer 不调用 `onImportFailed`，因此 C1-08 folder/index 队列级 fatal error 无法留在 S1-20 面板并停止未开始项。
+  路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportFolderImporting.swift:45`
+
+- P1：manifest 指定验证命令未通过。`xcodebuild test ... CODE_SIGNING_ALLOWED=NO` 失败于 `testmanagerd.control` sandbox 通信限制。`./dev test macos` fallback 通过 251 tests，但本次验收不能把原命令视为通过。
+  路径：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-2.md:1552`
+
+七、验证情况
+
+- 已运行：`xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+- 结果：失败，`Failed to establish communication with the test runner`，底层错误为 `testmanagerd.control` sandbox restriction。
+- 已运行：`./dev test macos`
+- 结果：fallback 通过，`xcrun xctest` 执行 `251 tests, 0 failures`。
+- 缺失：manifest 指定的标准 `xcodebuild test` 绿灯证据。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+VERIFY_RESULT: FAIL

@@ -323,8 +323,10 @@ struct ImportFolderFooterSection: View {
     let model: ImportFolderPreviewModel
     let importDisabledReason: String?
     let onCancel: () -> Void
-    let onImportProgress: (ImportBatchProgressSnapshot) -> Void
-    let onImportFailed: (ImportBatchProgressSnapshot, CoreErrorMappingSnapshot) -> Void
+    let onImportProgress: ImportBatchProgressHandler
+    let onImportFailed: ImportBatchFailureHandler
+    let onImportResults: ImportBatchProgressHandler
+    let importProgressControlState: ImportProgressControlState
     let onImported: (String, FileEntrySnapshot) -> Void
     let onRetryScan: () -> Void
 
@@ -349,12 +351,13 @@ struct ImportFolderFooterSection: View {
 
     @MainActor
     private func importFolder() async {
+        importProgressControlState.reset()
         if let initialProgress = initialProgressSnapshot() {
             onImportProgress(initialProgress)
         }
 
         var lastProgress: ImportBatchProgressSnapshot?
-        let outcome = await model.importReadyFiles { progress in
+        let outcome = await model.importReadyFiles(controlState: importProgressControlState) { progress in
             lastProgress = progress
             if progress.completed > 0 || progress.failed > 0 {
                 onImportProgress(progress)
@@ -362,15 +365,28 @@ struct ImportFolderFooterSection: View {
         }
 
         guard let outcome else { return }
-        if outcome.failedCount > 0, let failure = model.lastFailureMapping, let progress = lastProgress {
-            onImportFailed(progress, failure)
+        if let retryContext = outcome.fatalRetryContext,
+           let failure = model.lastFailureMapping,
+           let progress = lastProgress {
+            onImportFailed(progress, failure, retryContext, .checking)
+            importProgressControlState.registerQueueContinuation(model)
+            return
+        }
+        if outcome.didStopAfterCurrentFile {
+            onImportResults(
+                outcome.progressSnapshot(currentPath: model.currentImportPath ?? request.sheetTitle)
+                    .withItems(model.progressItems())
+            )
+            return
+        }
+        if outcome.needsResultSummary {
+            onImportResults(
+                outcome.progressSnapshot(currentPath: model.currentImportPath ?? request.sheetTitle)
+                    .withItems(model.progressItems())
+            )
             return
         }
         guard outcome.failedCount == 0 else { return }
-        if outcome.needsResultSummary {
-            onImportProgress(outcome.progressSnapshot(currentPath: model.currentImportPath ?? request.sheetTitle))
-            return
-        }
         guard let importedEntry = outcome.succeededEntries.last else {
             onCancel()
             return
@@ -388,7 +404,8 @@ struct ImportFolderFooterSection: View {
             failed: 0,
             total: total,
             remaining: total,
-            currentPath: model.currentImportPath ?? request.sheetTitle
+            currentPath: model.currentImportPath ?? request.sheetTitle,
+            items: model.progressItems()
         )
     }
 }

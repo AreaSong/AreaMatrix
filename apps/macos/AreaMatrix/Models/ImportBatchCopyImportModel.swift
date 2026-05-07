@@ -1,7 +1,7 @@
 import Foundation
 
 @MainActor
-final class ImportBatchCopyImportModel: ObservableObject {
+final class ImportBatchCopyImportModel: ObservableObject, ImportProgressQueueContinuing {
     @Published private(set) var rows: [ImportBatchCopyImportRow] = []
     @Published private(set) var status: ImportBatchCopyImportStatus = .idle
     @Published var selectedStorageMode: ImportSingleFileStorageMode = .copy
@@ -101,9 +101,7 @@ final class ImportBatchCopyImportModel: ObservableObject {
         }.count
     }
 
-    var pendingICloudSummaryCount: Int {
-        pendingICloudCount
-    }
+    var pendingICloudSummaryCount: Int { pendingICloudCount }
 
     var previewErrorCount: Int {
         rows.filter { row in
@@ -112,20 +110,16 @@ final class ImportBatchCopyImportModel: ObservableObject {
         }.count
     }
 
-    var blockedCount: Int {
-        rows.filter(\.isBlockedForImport).count
-    }
+    var blockedCount: Int { rows.filter(\.isBlockedForImport).count }
 
     var replaceOptionVisibility: ImportSingleFileReplaceOptionVisibility {
         guard request?.allowReplaceDuringImport == true else { return .hidden }
         return request?.isTrashAvailable == true ? .enabled : .disabled
     }
 
-    var hasPendingDuplicateResolution: Bool {
-        unresolvedDuplicateCount > 0
-    }
+    var hasPendingDuplicateResolution: Bool { unresolvedDuplicateCount > 0 }
 
-    private var unresolvedDuplicateCount: Int {
+    var unresolvedDuplicateCount: Int {
         rows.filter { row in
             if case .duplicate = row.status { return true }
             return false
@@ -171,6 +165,7 @@ final class ImportBatchCopyImportModel: ObservableObject {
 
     func importReadyFiles(
         selectedDestination: ImportBatchDestinationOption,
+        controlState: ImportProgressControlState? = nil,
         reportProgress: @escaping @MainActor (ImportBatchProgressSnapshot) -> Void = { _ in }
     ) async -> ImportBatchImportResult? {
         guard let request else { return nil }
@@ -185,6 +180,8 @@ final class ImportBatchCopyImportModel: ObservableObject {
         var succeededEntries: [FileEntrySnapshot] = []
         var lastImportedPath = ""
         var stoppedForDuplicate = false
+        var didStopAfterCurrentFile = false
+        var fatalRetryContext: ImportProgressRetryContext?
         lastFailureMapping = nil
 
         for index in rows.indices where readyRowIDs.contains(rows[index].id) {
@@ -208,6 +205,16 @@ final class ImportBatchCopyImportModel: ObservableObject {
             if stoppedForDuplicate {
                 break
             }
+            if cycle.stoppedForQueue {
+                fatalRetryContext = retryContext(for: rows[index], request: request)
+                break
+            }
+            if controlState?.isStopAfterCurrentFileRequested == true {
+                controlState?.markStoppedAfterCurrentFile()
+                didStopAfterCurrentFile = true
+                reportProgress(stoppedProgressSnapshot(currentPath: lastImportedPath))
+                break
+            }
         }
 
         if !stoppedForDuplicate {
@@ -224,11 +231,13 @@ final class ImportBatchCopyImportModel: ObservableObject {
             lastImportedPath: lastImportedPath,
             pendingDuplicateCount: unresolvedDuplicateCount,
             skippedDuplicateCount: skippedDuplicateCount,
-            pendingICloudCount: pendingICloudCount
+            pendingICloudCount: pendingICloudCount,
+            didStopAfterCurrentFile: didStopAfterCurrentFile,
+            fatalRetryContext: fatalRetryContext
         )
     }
 
-    private func runImportCycle(
+    func runImportCycle(
         at rowIndex: Int,
         request: ImportEntryRequest,
         selectedDestination: ImportBatchDestinationOption,
@@ -284,7 +293,8 @@ final class ImportBatchCopyImportModel: ObservableObject {
                 completed: completed,
                 failed: failed + 1,
                 total: total,
-                currentPath: currentPath
+                currentPath: currentPath,
+                stoppedForQueue: mapping.recoverability == .fatal
             )
         }
     }
@@ -348,55 +358,6 @@ final class ImportBatchCopyImportModel: ObservableObject {
         return await errorMapper.mapCoreError(CoreError.Internal(message: error.localizedDescription))
     }
 
-    private func mapPreviewRows(
-        _ previewRows: [ImportBatchPreviewRow],
-        request: ImportEntryRequest?
-    ) -> [ImportBatchCopyImportRow] {
-        guard let request else { return [] }
-
-        return previewRows.compactMap { row in
-            guard let sourceURL = sourceURL(for: row, request: request) else { return nil }
-            return ImportBatchCopyImportRow(
-                originalName: row.originalName,
-                sourcePath: row.sourcePath,
-                sourceURL: sourceURL,
-                sizeBytes: row.sizeBytes,
-                predictedCategory: row.predictedCategory,
-                categoryOverride: nil,
-                suggestedName: row.suggestedName,
-                status: copyStatus(from: row.status)
-            )
-        }
-    }
-
-    private func sourceURL(
-        for row: ImportBatchPreviewRow,
-        request: ImportEntryRequest
-    ) -> URL? {
-        request.urls.first { url in
-            (url.path as NSString).abbreviatingWithTildeInPath == row.sourcePath
-        }
-    }
-
-    private func copyStatus(from previewStatus: ImportBatchPreviewRowStatus) -> ImportBatchCopyImportRowStatus {
-        switch previewStatus {
-        case .loading:
-            return .loading
-        case .ready(let reasonLabel):
-            return .ready(reasonLabel: reasonLabel)
-        case .duplicate(let existingPath, _):
-            return .duplicate(existingPath: existingPath, strategy: .skip, isReplaceConfirmed: false)
-        case .nameConflict(let existingPath, _):
-            return .nameConflict(existingPath: existingPath, resolution: .keepBoth)
-        case .iCloudPlaceholder(let path, let message):
-            return .iCloudPlaceholder(path: path, message: message)
-        case .blocked(let message):
-            return .blocked(message)
-        case .error(let message):
-            return .error(message)
-        }
-    }
-
     private func currentDuplicateStrategiesByRowID() -> [ImportBatchCopyImportRow.ID: ImportBatchDuplicateResolutionStrategy] {
         rows.reduce(into: [:]) { strategies, row in
             guard let strategy = row.duplicateResolution else { return }
@@ -455,7 +416,7 @@ final class ImportBatchCopyImportModel: ObservableObject {
         return restoredRow
     }
 
-    private func duplicateStrategy(for row: ImportBatchCopyImportRow) -> DuplicateStrategy {
+    func duplicateStrategy(for row: ImportBatchCopyImportRow) -> DuplicateStrategy {
         if let duplicateResolution = row.duplicateResolution {
             return duplicateResolution.duplicateStrategy
         }
@@ -475,24 +436,20 @@ final class ImportBatchCopyImportModel: ObservableObject {
         return true
     }
 
-    private func markSkippedDuplicates() {
+    func markSkippedDuplicates(excluding excludedIndex: Int? = nil) {
         for index in rows.indices where rows[index].duplicateResolution == .skip {
+            guard index != excludedIndex else { continue }
             if case .duplicate(let existingPath, _, _) = rows[index].status {
                 rows[index].status = .skippedDuplicate(existingPath: existingPath)
             }
         }
     }
 
-    private func shouldClearCategoryOverride(_ category: String, for row: ImportBatchCopyImportRow) -> Bool {
-        category.isEmpty
-            || category == row.defaultCategory(for: selectedDestination)
-            || category == "repo root"
+    func clearLastFailureMapping() {
+        lastFailureMapping = nil
     }
-    private var pendingICloudCount: Int {
-        rows.filter { row in
-            if case .iCloudPlaceholder = row.status { return true }
-            if case .skippedICloud = row.status { return true }
-            return false
-        }.count
+
+    func finishImportedStatus(successful: Int, failed: Int) {
+        status = .imported(successful: successful, failed: failed)
     }
 }

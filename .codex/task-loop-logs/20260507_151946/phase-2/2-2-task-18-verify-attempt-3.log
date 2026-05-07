@@ -1,0 +1,64 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`2-2/task-18`
+- Task：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-2-import-conflict/task-18-s1-20-page-integration-verify.md`
+- 代码范围：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：6
+- 未覆盖项数：0
+- 通过项数：3
+- 不通过项数：2
+- 阻塞项数：1
+
+四、逐项验收结果
+
+- page-feature task 覆盖：不通过。`2-2/task-15/16/17` 均存在对应实现和测试痕迹，但整页验收命令未通过，且普通失败路径被错误路由到 fatal 暂停态。
+- 页面状态、入口、退出、错误态、CoreBridge 闭环：不通过。`CoreBridge` 已真实调用 `AreaMatrix.importFile` 覆盖 copy/move/index，但退出和错误态不符合 S1-20 规格。
+- mock / fixture / 硬编码状态：通过。生产路径未发现用 mock-only 伪造 `import_file`；测试中的 fixture 属测试替身。
+- 不新增 control map 外功能：通过。S1-20 仍绑定 C1-06/C1-07/C1-08，未发现新增 control map 外 Core 能力。
+- Expected New Paths：通过。`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`project.pbxproj` 均存在。
+- Forbidden Touches：通过。`git status --short -- core/src` 未显示 `core/src/**` 被修改。
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过。普通失败与 fatal queue error 语义混淆。
+- 注释 / rustdoc / 文档同步：不通过。实现与 S1-20 page spec 的退出、错误态规则不一致。
+- 错误处理与边界处理：不通过。普通单项失败不应进入 `导入已暂停` fatal 面板。
+- 测试与验证覆盖：不通过。必需 `xcodebuild test` 未成功完成。
+- 占位、硬编码、mock-only、一次性实现检查：通过。未发现生产代码 mock-only 闭环。
+
+六、阻塞项
+
+- P0：普通单项失败被当成队列级 fatal 暂停处理。S1-20 规格要求“单项失败不阻断批次”“当前项失败后继续下一项；队列结束后汇总到结果页”，且 fatal error 不包含普通单项失败。实现中 batch/folder 失败后调用 `onImportFailed`，最终 `status: .failed` 会显示 fatal 面板 `导入已暂停`。
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-20-import-progress.md:75`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-20-import-progress.md:81`
+  - `/Users/as/Ai-Project/project/AreaMatrix/Views/Main/ImportBatchCopyFooterSection.swift:70`
+  - `/Users/as/Ai-Project/project/AreaMatrix/Views/Main/ImportFolderPreviewSections.swift:372`
+  - `/Users/as/Ai-Project/project/AreaMatrix/Models/OnboardingModelInputs.swift:200`
+  - `/Users/as/Ai-Project/project/AreaMatrix/Views/Main/ImportProgressView.swift:60`
+
+- P1：`View details` 没有按 page spec 进入 S1-21 import-result，只是在当前 S1-20 内展开详情。规格明确写“用户点击 View details 时进入 S1-21 import-result”。
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-20-import-progress.md:21`
+  - `/Users/as/Ai-Project/project/AreaMatrix/Views/Main/ImportProgressView.swift:64`
+
+- P1：必需验证命令失败，不能证明当前实现通过。`xcodebuild test` 构建后在测试 runner 阶段失败，错误为 `testmanagerd.control ... Sandbox restriction`，退出 code 65。
+  - 命令：`xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+
+七、验证情况
+
+- 已运行：`xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+- 结果：失败，退出 code 65。
+- 失败原因：无法与 XCTest runner 建立通信，`com.apple.testmanagerd.control` 被 sandbox restriction 阻断。
+- 缺失：没有成功测试结果，因此不能作为通过证据。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+
+VERIFY_RESULT: FAIL

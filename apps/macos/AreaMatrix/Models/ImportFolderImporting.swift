@@ -3,6 +3,7 @@ import Foundation
 @MainActor
 extension ImportFolderPreviewModel {
     func importReadyFiles(
+        controlState: ImportProgressControlState? = nil,
         reportProgress: @escaping @MainActor (ImportBatchProgressSnapshot) -> Void = { _ in }
     ) async -> ImportBatchImportResult? {
         guard let request, importDisabledReason == nil else { return nil }
@@ -15,6 +16,8 @@ extension ImportFolderPreviewModel {
         var failed = 0
         var succeededEntries: [FileEntrySnapshot] = []
         var lastImportedPath = ""
+        var didStopAfterCurrentFile = false
+        var fatalRetryContext: ImportProgressRetryContext?
         clearLastFailureMapping()
 
         for index in rows.indices where readyRowIDs.contains(rows[index].id) {
@@ -32,7 +35,16 @@ extension ImportFolderPreviewModel {
             if let entry = cycle.entry {
                 succeededEntries.append(entry)
             }
-            reportProgress(cycle.progress)
+            reportProgress(cycle.progress.withItems(progressItems()))
+            if cycle.stoppedForQueue {
+                fatalRetryContext = retryContext(for: rows[index], request: request, storageMode: storageMode)
+                break
+            }
+            if controlState?.isStopAfterCurrentFileRequested == true {
+                controlState?.markStoppedAfterCurrentFile()
+                didStopAfterCurrentFile = true
+                break
+            }
         }
 
         return ImportBatchImportResult(
@@ -43,11 +55,13 @@ extension ImportFolderPreviewModel {
             lastImportedPath: lastImportedPath,
             pendingDuplicateCount: 0,
             skippedDuplicateCount: skippedDuplicateCount,
-            pendingICloudCount: pendingICloudCount
+            pendingICloudCount: pendingICloudCount,
+            didStopAfterCurrentFile: didStopAfterCurrentFile,
+            fatalRetryContext: fatalRetryContext
         )
     }
 
-    private func runFolderImportCycle(
+    func runFolderImportCycle(
         at rowIndex: Int,
         request: ImportEntryRequest,
         storageMode: ImportSingleFileStorageMode,
@@ -85,9 +99,25 @@ extension ImportFolderPreviewModel {
                 completed: completed,
                 failed: failed + 1,
                 total: total,
-                currentPath: currentPath
+                currentPath: currentPath,
+                stoppedForQueue: mapping.recoverability == .fatal
             )
         }
+    }
+
+    func retryContext(
+        for row: ImportFolderPreviewRow,
+        request: ImportEntryRequest,
+        storageMode: ImportSingleFileStorageMode? = nil
+    ) -> ImportProgressRetryContext {
+        ImportProgressRetryContext(
+            repoPath: request.repoPath,
+            sourcePath: row.fileURL.path,
+            storageMode: storageMode ?? selectedStorageMode,
+            overrideCategory: retryCategory(for: row),
+            overrideFilename: row.resolvedIncomingName,
+            duplicateStrategy: ImportProgressDuplicateStrategy(coreStrategy: duplicateStrategy(for: row))
+        )
     }
 
     private func mapImportError(_ error: Error) async -> CoreErrorMappingSnapshot {
@@ -125,7 +155,25 @@ extension ImportFolderPreviewModel {
         return .ask
     }
 
-    private var skippedDuplicateCount: Int {
+    private func retryCategory(for row: ImportFolderPreviewRow) -> String {
+        if let category = retryCategoryValue(for: row), !category.isEmpty {
+            return category
+        }
+        return "inbox"
+    }
+
+    private func retryCategoryValue(for row: ImportFolderPreviewRow) -> String? {
+        switch modelDestination {
+        case .autoClassify:
+            return row.predictedCategory
+        case .category(let slug):
+            return slug
+        case .repositoryRoot:
+            return nil
+        }
+    }
+
+    var skippedDuplicateCount: Int {
         rows.filter { row in
             if case .skippedDuplicate = row.status { return true }
             if row.duplicateResolution == .skip { return true }
@@ -133,11 +181,54 @@ extension ImportFolderPreviewModel {
         }.count
     }
 
-    private var pendingICloudCount: Int {
+    var pendingICloudCount: Int {
         rows.filter { row in
             if case .iCloudPlaceholder = row.status { return true }
             if case .skippedICloud = row.status { return true }
             return false
         }.count
+    }
+
+    func progressItems() -> [ImportBatchProgressSnapshot.Item] {
+        rows.map { row in
+            ImportBatchProgressSnapshot.Item(
+                sourcePath: row.fileURL.path,
+                targetPath: targetRelativePath(for: row),
+                phase: progressPhase(for: row.status),
+                errorMessage: progressErrorMessage(for: row.status)
+            )
+        }
+    }
+
+    private func progressPhase(for status: ImportFolderPreviewRowStatus) -> ImportBatchProgressSnapshot.Phase {
+        switch status {
+        case .importing(let mode):
+            return mode.folderProgressPhase
+        case .imported:
+            return .done
+        case .error:
+            return .failed
+        case .loading, .ready, .duplicate, .nameConflict, .iCloudPlaceholder, .blocked,
+             .skippedDuplicate, .skippedICloud:
+            return .pending
+        }
+    }
+
+    private func progressErrorMessage(for status: ImportFolderPreviewRowStatus) -> String? {
+        guard case .error(let message) = status else { return nil }
+        return message
+    }
+}
+
+private extension ImportSingleFileStorageMode {
+    var folderProgressPhase: ImportBatchProgressSnapshot.Phase {
+        switch self {
+        case .copy:
+            return .copying
+        case .move:
+            return .moving
+        case .indexOnly:
+            return .writingIndex
+        }
     }
 }

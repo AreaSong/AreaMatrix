@@ -5,8 +5,10 @@ struct ImportBatchCopyFooterSection: View {
     let batchPreviewModel: ImportBatchPreviewModel
     let batchImportModel: ImportBatchCopyImportModel
     let onCancel: () -> Void
-    let onImportProgress: (ImportBatchProgressSnapshot) -> Void
-    let onImportFailed: (ImportBatchProgressSnapshot, CoreErrorMappingSnapshot) -> Void
+    let onImportProgress: ImportBatchProgressHandler
+    let onImportFailed: ImportBatchFailureHandler
+    let onImportResults: ImportBatchProgressHandler
+    let importProgressControlState: ImportProgressControlState
     let onImported: (String, FileEntrySnapshot) -> Void
 
     var body: some View {
@@ -40,32 +42,46 @@ struct ImportBatchCopyFooterSection: View {
     @MainActor
     private func importBatch() async {
         prepareImport()
+        importProgressControlState.reset()
         if let initialProgress = initialProgressSnapshot() {
             onImportProgress(initialProgress)
         }
         var lastProgress: ImportBatchProgressSnapshot?
-        let outcome = await batchImportModel.importReadyFiles(selectedDestination: batchPreviewModel.selectedDestination) { progress in
+        let outcome = await batchImportModel.importReadyFiles(
+            selectedDestination: batchPreviewModel.selectedDestination,
+            controlState: importProgressControlState
+        ) { progress in
             let progressWithItems = progress.withItems(batchImportModel.progressItems())
             lastProgress = progressWithItems
             onImportProgress(progressWithItems)
         }
 
         guard let outcome else { return }
-        if outcome.pendingDuplicateCount > 0 {
-            return
-        }
-        if outcome.failedCount > 0, let failure = batchImportModel.lastFailureMapping, let progress = lastProgress {
-            onImportFailed(progress, failure)
-            return
-        }
-        guard outcome.failedCount == 0 else {
-            return
-        }
-        if outcome.needsResultSummary {
-            onImportProgress(
+        if outcome.didStopAfterCurrentFile {
+            onImportResults(
                 outcome.progressSnapshot(currentPath: batchImportModel.currentImportPath ?? request.sheetTitle)
                     .withItems(batchImportModel.progressItems())
             )
+            return
+        }
+        if outcome.pendingDuplicateCount > 0 {
+            return
+        }
+        if let retryContext = outcome.fatalRetryContext,
+           let failure = batchImportModel.lastFailureMapping,
+           let progress = lastProgress {
+            onImportFailed(progress, failure, retryContext, .checking)
+            importProgressControlState.registerQueueContinuation(batchImportModel)
+            return
+        }
+        if outcome.needsResultSummary {
+            onImportResults(
+                outcome.progressSnapshot(currentPath: batchImportModel.currentImportPath ?? request.sheetTitle)
+                    .withItems(batchImportModel.progressItems())
+            )
+            return
+        }
+        guard outcome.failedCount == 0 else {
             return
         }
 

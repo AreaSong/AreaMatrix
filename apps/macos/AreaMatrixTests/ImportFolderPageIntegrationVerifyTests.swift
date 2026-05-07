@@ -328,7 +328,82 @@ final class ImportFolderPageIntegrationVerifyTests: XCTestCase {
     }
 
     @MainActor
-    func testS119FailedImportRemainsOnProgressWithMappedError() {
+    func testS119FolderFatalImportRoutesToS120PauseWithRetryContextAndPendingRows() async {
+        let firstURL = URL(fileURLWithPath: "/tmp/client-a/first.pdf")
+        let secondURL = URL(fileURLWithPath: "/tmp/client-a/second.pdf")
+        let thirdURL = URL(fileURLWithPath: "/tmp/client-a/third.pdf")
+        let scanner = S119StaticFolderScanner(result: ImportFolderScanResult(
+            rows: [firstURL, secondURL, thirdURL].map {
+                ImportFolderPreviewRow.loading(fileURL: $0, rootURL: URL(fileURLWithPath: "/tmp/client-a"))
+            },
+            folderCount: 0,
+            skippedRules: [],
+            errors: []
+        ))
+        let predictor = S119MappedPredictor(resultsByFilename: [
+            "first.pdf": .success(.s119Prediction(category: "docs", suggestedName: "first.pdf")),
+            "second.pdf": .success(.s119Prediction(category: "docs", suggestedName: "second.pdf")),
+            "third.pdf": .success(.s119Prediction(category: "docs", suggestedName: "third.pdf")),
+        ])
+        let importer = S118SequenceBatchImporter(results: [
+            .success(.s117Fixture(currentName: "first.pdf", category: "docs")),
+            .failure(CoreError.Io(message: "staging write failed")),
+            .success(.s117Fixture(currentName: "third.pdf", category: "docs")),
+        ])
+        let importModel = ImportFolderPreviewModel(
+            predictor: predictor,
+            importer: importer,
+            errorMapper: S120FatalFolderErrorMapper(),
+            conflictPrechecker: S119NoopConflictPrechecker(),
+            scanner: scanner
+        )
+        let opening = RepositoryOpeningResult.s117Fixture(repoPath: "/tmp/repo")
+        let controlState = ImportProgressControlState()
+        let model = OnboardingModel(
+            settingsReader: S117StaticSettingsReader(repoPath: nil),
+            importProgressControlState: controlState,
+            accessibilityAnnouncer: S117RecordingAccessibilityAnnouncer(),
+            helpOpener: S117NoopWelcomeHelpOpener()
+        )
+
+        await importModel.load(request: s119FolderRequest(rootURL: URL(fileURLWithPath: "/tmp/client-a")))
+        model.route = .mainList(opening)
+        let outcome = await importModel.importReadyFiles(controlState: controlState) { progress in
+            model.updateImportEntryProgress(progress)
+        }
+
+        guard case .importProgress(let progress) = model.route else {
+            return XCTFail("Expected S1-20 progress route")
+        }
+        model.failImportEntry(
+            progress: progress.progressSnapshot,
+            mapping: S120FatalFolderErrorMapper.mapping,
+            retryContext: outcome?.fatalRetryContext,
+            recoveryCheck: .checking
+        )
+        controlState.registerQueueContinuation(importModel)
+        let requests = await importer.recordedRequests()
+
+        XCTAssertEqual(requests.map(\.overrideFilename), ["first.pdf", "second.pdf"])
+        XCTAssertEqual(outcome?.fatalRetryContext, ImportProgressRetryContext(
+            repoPath: "/tmp/repo",
+            sourcePath: secondURL.path,
+            storageMode: .copy,
+            overrideCategory: "docs",
+            overrideFilename: "second.pdf",
+            duplicateStrategy: .ask
+        ))
+        guard case .importProgress(let pausedState) = model.route else {
+            return XCTFail("Expected S1-20 fatal pause route")
+        }
+        XCTAssertEqual(pausedState.titleText, "导入已暂停")
+        XCTAssertEqual(pausedState.items.map(\.phase), [.done, .failed, .pending])
+        XCTAssertFalse(pausedState.canRetryCurrentItem)
+        XCTAssertEqual(pausedState.retryStatusText, "Checking recovery state...")
+    }
+
+    @MainActor
+    func testS119FailedImportRoutesToS121ResultInsteadOfFatalPause() {
         let opening = RepositoryOpeningResult.s117Fixture(repoPath: "/tmp/repo")
         let model = OnboardingModel(
             settingsReader: S117StaticSettingsReader(repoPath: nil),
@@ -348,13 +423,26 @@ final class ImportFolderPageIntegrationVerifyTests: XCTestCase {
         model.updateImportEntryProgress(progress)
         model.failImportEntry(progress: progress, mapping: mapping)
 
-        XCTAssertEqual(model.route, .importProgress(ImportProgressRouteState(
-            sourceOpening: opening,
-            currentPath: "docs/private.pdf",
-            status: .failed(mapping),
-            completed: 1,
-            failed: 1,
-            remaining: 0
-        )))
+        if case .importResult(let result) = model.route {
+            XCTAssertEqual(result.resultSummaryText, "Imported 1, failed 1, stopped 0, pending 0.")
+            XCTAssertEqual(result.items.map(\.status), [.failed])
+        } else {
+            XCTFail("Expected S1-21 import result route")
+        }
+    }
+}
+
+private struct S120FatalFolderErrorMapper: CoreErrorMapping {
+    static let mapping = CoreErrorMappingSnapshot(
+        kind: .io,
+        userMessage: "文件读写失败",
+        severity: .critical,
+        suggestedAction: "AreaMatrix 会先确认 staging 状态，再允许重试当前项。",
+        recoverability: .fatal,
+        rawContext: "S1-20 folder fatal import progress"
+    )
+
+    func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
+        Self.mapping
     }
 }

@@ -3,9 +3,11 @@ import SwiftUI
 
 struct MainWindow: View {
     @StateObject private var model: OnboardingModel
+    private let importProgressControlState: ImportProgressControlState
 
     init(model: OnboardingModel = OnboardingModel()) {
         _model = StateObject(wrappedValue: model)
+        importProgressControlState = model.importProgressControlState
     }
 
     var body: some View {
@@ -61,6 +63,8 @@ struct MainWindow: View {
                 onImportFailed: model.failImportEntry,
                 onBatchImportProgress: model.updateImportEntryProgress,
                 onBatchImportFailed: model.failImportEntry,
+                onBatchImportResults: model.showImportEntryResults,
+                importProgressControlState: importProgressControlState,
                 onImported: { repoPath, entry in
                     Task {
                         await model.finishImportEntry(repoPath: repoPath, entry: entry)
@@ -277,24 +281,12 @@ struct MainWindow: View {
         case .settingsRepository:
             SettingsRepositoryReturnView()
         case .importProgress(let state):
-            ImportProgressView(
+            importProgressContent(state)
+        case .importResult(let state):
+            ImportResultView(
                 state: state,
-                onStopAfterCurrentFile: model.stopImportProgressAfterCurrentFile,
-                onRetryCurrentItem: {
-                    Task { await model.retryCurrentImportProgressItem() }
-                },
-                onStopAndViewResults: model.stopImportProgressAndViewResults,
-                onRequestDiagnostics: model.requestImportProgressDiagnosticsPrivacyConfirmation,
-                onConfirmDiagnostics: {
-                    Task { await model.collectImportProgressDiagnostics() }
-                },
-                onCancelDiagnostics: model.cancelImportProgressDiagnosticsPrivacyConfirmation,
-                onOpenRepositoryInFinder: model.openImportProgressRepositoryInFinder,
-                onReturnToRepository: model.returnFromImportProgress
+                onDone: model.finishImportResult
             )
-            .task(id: state.recoveryCheckTaskID) {
-                await model.checkImportProgressRecoveryIfNeeded()
-            }
         case .mainEmpty(let opening):
             MainRepositoryContentView(
                 opening: opening,
@@ -344,5 +336,53 @@ struct MainWindow: View {
                 onStartSetup: model.showWelcome
             )
         }
+    }
+
+    private func importProgressContent(_ state: ImportProgressRouteState) -> some View {
+        ZStack(alignment: .trailing) {
+            MainRepositoryContentView(
+                opening: state.sourceOpening.importProgressReadOnlyOpening,
+                state: .list,
+                onImport: {},
+                onDropImport: { _, _ in },
+                onOpenSettings: { Task { await model.beginSettingsRepositoryPathValidation(state.repoPath) } },
+                onRetryCurrentList: { Task { await model.retryConfigurationLoad() } },
+                onCollectDiagnostics: { await model.collectMainListDiagnostics(opening: state.sourceOpening) },
+                onShowInFinder: { model.showMainListFileInFinder(opening: state.sourceOpening, relativePath: $0) },
+                onCopyPath: { model.copyMainListPath(opening: state.sourceOpening, relativePath: $0) },
+                importProgressItems: state.items
+            )
+            ImportProgressView(
+                state: state,
+                onStopAfterCurrentFile: model.stopImportProgressAfterCurrentFile,
+                onViewDetails: model.viewImportProgressDetails,
+                onRetryCurrentItem: {
+                    Task { await model.retryCurrentImportProgressItem() }
+                },
+                onStopAndViewResults: model.stopImportProgressAndViewResults,
+                onRequestDiagnostics: model.requestImportProgressDiagnosticsPrivacyConfirmation,
+                onConfirmDiagnostics: {
+                    Task { await model.collectImportProgressDiagnostics() }
+                },
+                onCancelDiagnostics: model.cancelImportProgressDiagnosticsPrivacyConfirmation,
+                onOpenRepositoryInFinder: model.openImportProgressRepositoryInFinder
+            )
+            .frame(width: 380)
+            .background(.regularMaterial)
+            .overlay(alignment: .leading) {
+                Divider()
+            }
+        }
+        .task(id: state.recoveryCheckTaskID) {
+            await model.checkImportProgressRecoveryIfNeeded()
+        }
+    }
+}
+
+private extension RepositoryOpeningResult {
+    var importProgressReadOnlyOpening: RepositoryOpeningResult {
+        var opening = self
+        opening.isReadOnly = true
+        return opening
     }
 }

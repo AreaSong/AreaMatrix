@@ -54,6 +54,7 @@ extension OnboardingModel {
     @MainActor
     func beginImportEntryProgress(currentPath: String, storageMode: ImportSingleFileStorageMode) {
         guard let opening = currentOpeningForImportOrProgress else { return }
+        importProgressControlState.reset()
         pendingImportEntry = nil
         route = .importProgress(ImportProgressRouteState(
             sourceOpening: opening,
@@ -72,6 +73,7 @@ extension OnboardingModel {
         duplicateStrategy: DuplicateStrategy
     ) {
         guard let opening = currentOpeningForImportOrProgress else { return }
+        importProgressControlState.reset()
         let retryContext = ImportProgressRetryContext(
             repoPath: opening.config.repoPath,
             sourcePath: sourcePath,
@@ -94,7 +96,15 @@ extension OnboardingModel {
     func updateImportEntryProgress(_ progress: ImportBatchProgressSnapshot) {
         guard let opening = currentOpeningForImportOrProgress else { return }
         pendingImportEntry = nil
-        route = .importProgress(ImportProgressRouteState(
+        let stopState: ImportProgressStopState
+        if importProgressControlState.didStopAfterCurrentFile {
+            stopState = .stopped
+        } else if importProgressControlState.isStopAfterCurrentFileRequested {
+            stopState = .stopping
+        } else {
+            stopState = .idle
+        }
+        let nextState = ImportProgressRouteState(
             sourceOpening: opening,
             currentPath: progress.currentPath,
             status: .running,
@@ -103,8 +113,22 @@ extension OnboardingModel {
             remaining: progress.remaining,
             skipped: progress.skipped,
             pending: progress.pending,
-            items: progress.items
-        ))
+            items: progress.items,
+            stopState: stopState
+        )
+        route = .importProgress(nextState)
+        if importProgressControlState.didStopAfterCurrentFile {
+            showImportResult(from: nextState)
+        }
+    }
+
+    @MainActor
+    func showImportEntryResults(_ progress: ImportBatchProgressSnapshot) {
+        guard let opening = currentOpeningForImportOrProgress else { return }
+        pendingImportEntry = nil
+        importProgressControlState.clearQueueContinuation()
+        toastMessage = nil
+        route = .importResult(ImportResultRouteState(sourceOpening: opening, progress: progress))
     }
 
     @MainActor
@@ -145,6 +169,21 @@ extension OnboardingModel {
     func failImportEntry(
         progress: ImportBatchProgressSnapshot,
         mapping: CoreErrorMappingSnapshot,
+        retryContext: ImportProgressRetryContext?,
+        recoveryCheck: ImportProgressRecoveryCheckState?
+    ) {
+        applyImportEntryFailure(
+            progress: progress,
+            mapping: mapping,
+            retryContext: retryContext,
+            recoveryCheck: recoveryCheck
+        )
+    }
+
+    @MainActor
+    func failImportEntry(
+        progress: ImportBatchProgressSnapshot,
+        mapping: CoreErrorMappingSnapshot,
         retryContext: ImportProgressRetryContext?
     ) {
         applyImportEntryFailure(progress: progress, mapping: mapping, retryContext: retryContext, recoveryCheck: nil)
@@ -158,6 +197,10 @@ extension OnboardingModel {
         recoveryCheck: ImportProgressRecoveryCheckState?
     ) {
         guard case .importProgress(let state) = route else { return }
+        guard mapping.recoverability == .fatal else {
+            showImportEntryResults(progress)
+            return
+        }
         route = .importProgress(ImportProgressRouteState(
             sourceOpening: state.sourceOpening,
             currentPath: progress.currentPath,
@@ -197,13 +240,6 @@ extension OnboardingModel {
         } catch {
             await routeMainOpeningFailure(error, repoPath: repoPath)
         }
-    }
-
-    @MainActor
-    func returnFromImportProgress() {
-        guard case .importProgress(let state) = route else { return }
-        route = Self.mainRoute(for: state.sourceOpening)
-        consumeQueuedDockImportIfPossible()
     }
 
     @MainActor

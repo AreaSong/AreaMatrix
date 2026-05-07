@@ -3,15 +3,14 @@ import SwiftUI
 struct ImportProgressView: View {
     let state: ImportProgressRouteState
     let onStopAfterCurrentFile: () -> Void
+    let onViewDetails: () -> Void
     let onRetryCurrentItem: () -> Void
     let onStopAndViewResults: () -> Void
     let onRequestDiagnostics: () -> Void
     let onConfirmDiagnostics: () -> Void
     let onCancelDiagnostics: () -> Void
     let onOpenRepositoryInFinder: () -> Void
-    let onReturnToRepository: () -> Void
 
-    @State private var showsDetails = false
     @State private var isStopConfirmationPresented = false
 
     var body: some View {
@@ -37,42 +36,19 @@ struct ImportProgressView: View {
             }
             .accessibilityElement(children: .contain)
 
-            if showsDetails {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("资料库：\(state.repoPath)")
-                        .textSelection(.enabled)
-                    Text("已完成 \(state.completed)，失败 \(state.failed)，剩余 \(state.remaining)")
-                    if state.skipped > 0 {
-                        Text("跳过 \(state.skipped)")
-                    }
-                    if state.pending > 0 {
-                        Text("待下载 \(state.pending)")
-                    }
-                    if let errorMapping = state.errorMapping {
-                        Text("错误级别：\(errorMapping.severity.rawValue)")
-                        Text("建议操作：\(errorMapping.suggestedAction)")
-                    }
-                }
-                .font(.callout)
-                .foregroundStyle(.secondary)
-            }
-
             if state.isFailed {
                 fatalErrorPanel
             }
 
             HStack {
                 Button(state.detailsButtonTitle) {
-                    showsDetails.toggle()
+                    onViewDetails()
                 }
                 if state.isRunning {
                     Button(stopButtonTitle) {
                         isStopConfirmationPresented = true
                     }
                     .disabled(state.stopState != .idle)
-                }
-                if state.isFailed {
-                    Button("Back to repository", action: onReturnToRepository)
                 }
             }
         }
@@ -209,7 +185,7 @@ private struct ImportingListRow: View {
     @ViewBuilder
     private var statusIcon: some View {
         switch item.phase {
-        case .copying:
+        case .copying, .hashing, .classifying:
             ProgressView()
                 .controlSize(.small)
         case .moving:
@@ -238,7 +214,7 @@ private struct ImportingListRow: View {
             return .green
         case .moving:
             return .orange
-        case .copying, .pending, .writingIndex:
+        case .copying, .pending, .hashing, .classifying, .writingIndex:
             return .secondary
         }
     }

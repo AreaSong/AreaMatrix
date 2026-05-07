@@ -16,9 +16,11 @@ struct MainRepositoryContentView: View {
     let onCollectDiagnostics: () async -> Void
     let onShowInFinder: (String) -> Void
     let onCopyPath: (String) -> Void
+    let importProgressItems: [ImportBatchProgressSnapshot.Item]
     @StateObject private var fileListModel: MainFileListModel
     @State private var selectedSidebarID: String = "inbox"
     @State private var selectedFileIDs: Set<Int64> = []
+    @State private var selectedImportProgressIDs: Set<String> = []
     @State private var filterText: String = ""
     @StateObject private var dropPreviewModel: ImportDropPreviewModel
     @State private var tableSortOrder: [KeyPathComparator<FileEntrySnapshot>] = [
@@ -47,9 +49,16 @@ struct MainRepositoryContentView: View {
             await fileListModel.loadCurrentCategory(selectedSidebarRow.categoryForFileList)
         }
         .onChange(of: selectedFileIDs) { _, ids in
+            if !ids.isEmpty {
+                selectedImportProgressIDs = []
+            }
             Task {
                 await fileListModel.selectFiles(ids)
             }
+        }
+        .onChange(of: selectedImportProgressIDs) { _, ids in
+            guard !ids.isEmpty else { return }
+            selectedFileIDs = []
         }
         .sheet(item: actionDestinationBinding) { destination in
             actionRoutingSheet(destination)
@@ -87,6 +96,7 @@ struct MainRepositoryContentView: View {
                 .textFieldStyle(.roundedBorder)
                 .frame(width: 180)
             Button("Import...", action: onImport)
+                .disabled(opening.isReadOnly)
             Button(action: onOpenSettings) {
                 Image(systemName: "gearshape")
             }
@@ -127,7 +137,8 @@ struct MainRepositoryContentView: View {
             dropPreviewModel: dropPreviewModel,
             onDropImport: { urls, target in
                 onDropImport(urls, target.entryDestination)
-            }
+            },
+            isEnabled: !opening.isReadOnly
         ))
         .help(row.importDropTarget.sidebarHelp)
         .accessibilityLabel("\(row.displayName) \(row.totalFileCount)")
@@ -162,6 +173,7 @@ struct MainRepositoryContentView: View {
         onCollectDiagnostics: @escaping () async -> Void = {},
         onShowInFinder: @escaping (String) -> Void = { _ in },
         onCopyPath: @escaping (String) -> Void = { _ in },
+        importProgressItems: [ImportBatchProgressSnapshot.Item] = [],
         fileLister: any CoreFileListing = CoreBridge(),
         fileDetailer: any CoreFileDetailing = CoreBridge(),
         categoryPredictor: any CoreCategoryPredicting = CoreBridge(),
@@ -177,6 +189,7 @@ struct MainRepositoryContentView: View {
         self.onCollectDiagnostics = onCollectDiagnostics
         self.onShowInFinder = onShowInFinder
         self.onCopyPath = onCopyPath
+        self.importProgressItems = importProgressItems
         _dropPreviewModel = StateObject(wrappedValue: ImportDropPreviewModel(
             repoPath: opening.config.repoPath,
             predictor: categoryPredictor
@@ -215,6 +228,7 @@ struct MainRepositoryContentView: View {
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
                 Button("Import...", action: onImport)
+                    .disabled(opening.isReadOnly)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .modifier(ImportDropTargetModifier(
@@ -222,7 +236,8 @@ struct MainRepositoryContentView: View {
                 dropPreviewModel: dropPreviewModel,
                 onDropImport: { urls, target in
                     onDropImport(urls, target.entryDestination)
-                }
+                },
+                isEnabled: !opening.isReadOnly
             ))
             .accessibilityElement(children: .contain)
         case .list:
@@ -247,7 +262,8 @@ struct MainRepositoryContentView: View {
                 dropPreviewModel: dropPreviewModel,
                 onDropImport: { urls, target in
                     onDropImport(urls, target.entryDestination)
-                }
+                },
+                isEnabled: !opening.isReadOnly
             ))
         }
     }
@@ -268,6 +284,41 @@ struct MainRepositoryContentView: View {
     }
 
     private var fileTable: some View {
+        VStack(spacing: 8) {
+            importProgressTable
+            fileTableContent
+        }
+        .overlay {
+            if !fileListModel.isLoading && visibleFiles.isEmpty && importProgressRows.isEmpty {
+                Text("No files in this category")
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var importProgressTable: some View {
+        if !importProgressRows.isEmpty {
+            Table(importProgressRows, selection: $selectedImportProgressIDs) {
+                TableColumn("Importing") { row in
+                    Text(row.displayName)
+                        .lineLimit(1)
+                }
+                TableColumn("Target") { row in
+                    Text(row.categoryPathDisplay)
+                        .lineLimit(1)
+                        .foregroundStyle(.secondary)
+                }
+                TableColumn("Status") { row in
+                    Text(row.phaseText)
+                        .monospacedDigit()
+                }
+            }
+            .frame(minHeight: 96, idealHeight: importProgressTableHeight, maxHeight: importProgressTableHeight)
+        }
+    }
+
+    private var fileTableContent: some View {
         Table(visibleFiles, selection: $selectedFileIDs, sortOrder: $tableSortOrder) {
             TableColumn("Name", sortUsing: KeyPathComparator(\FileEntrySnapshot.currentName)) { file in
                 Text(file.currentName)
@@ -299,12 +350,6 @@ struct MainRepositoryContentView: View {
         } primaryAction: { selection in
             selectedFileIDs = selection
         }
-        .overlay {
-            if !fileListModel.isLoading && visibleFiles.isEmpty {
-                Text("No files in this category")
-                    .foregroundStyle(.secondary)
-            }
-        }
     }
 
     private var visibleFiles: [FileEntrySnapshot] {
@@ -314,6 +359,14 @@ struct MainRepositoryContentView: View {
             filterText: filterText
         )
         .sorted(using: tableSortOrder)
+    }
+
+    private var importProgressRows: [ImportProgressListRow] {
+        importProgressItems.map(ImportProgressListRow.init)
+    }
+
+    private var importProgressTableHeight: CGFloat {
+        CGFloat(min(max(importProgressRows.count, 1), 4)) * 34 + 34
     }
 
     @ViewBuilder
@@ -388,82 +441,13 @@ struct MainRepositoryContentView: View {
     }
 
     private func currentListErrorPane(_ error: CoreErrorMappingSnapshot) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Label("Current list cannot be loaded", systemImage: "exclamationmark.triangle")
-                .font(.headline)
-            Text(error.userMessage)
-                .foregroundStyle(.secondary)
-            Text(error.suggestedAction)
-                .font(.callout)
-                .foregroundStyle(.secondary)
-            HStack {
-                Button("Retry") {
-                    if state == .list {
-                        Task {
-                            await fileListModel.retryCurrentCategory()
-                        }
-                    } else {
-                        onRetryCurrentList()
-                    }
-                }
-                Button("Collect Diagnostics...") {
-                    if state == .list {
-                        Task {
-                            await fileListModel.collectCurrentListDiagnostics()
-                        }
-                    } else {
-                        Task {
-                            await onCollectDiagnostics()
-                        }
-                    }
-                }
-                .disabled(isCollectingCurrentListDiagnostics)
-                DisclosureGroup("Technical Details") {
-                    Text(error.rawContext)
-                        .font(.system(.caption, design: .monospaced))
-                        .textSelection(.enabled)
-                }
-            }
-            currentListDiagnosticsStatus
-        }
-        .padding(18)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .accessibilityElement(children: .contain)
-    }
-
-    private var isCollectingCurrentListDiagnostics: Bool {
-        if case .collecting = fileListModel.diagnosticsState {
-            return true
-        }
-        return false
-    }
-
-    @ViewBuilder
-    private var currentListDiagnosticsStatus: some View {
-        switch fileListModel.diagnosticsState {
-        case .idle:
-            EmptyView()
-        case .collecting:
-            Label("Preparing diagnostics...", systemImage: "arrow.clockwise")
-                .font(.callout)
-                .foregroundStyle(.secondary)
-        case .collected(let snapshot):
-            VStack(alignment: .leading, spacing: 4) {
-                Label("Diagnostics collected", systemImage: "doc.badge.gearshape")
-                Text(snapshot.snapshotPath)
-                    .font(.system(.caption, design: .monospaced))
-                    .textSelection(.enabled)
-            }
-            .font(.callout)
-        case .failed(let mapping):
-            VStack(alignment: .leading, spacing: 4) {
-                Label("Diagnostics could not be collected", systemImage: "exclamationmark.triangle")
-                Text(mapping.userMessage)
-                Text(mapping.suggestedAction)
-                    .foregroundStyle(.secondary)
-            }
-            .font(.callout)
-        }
+        MainCurrentListErrorPane(
+            error: error,
+            state: state,
+            fileListModel: fileListModel,
+            onRetryCurrentList: onRetryCurrentList,
+            onCollectDiagnostics: onCollectDiagnostics
+        )
     }
 
     private var detailPane: some View {
@@ -472,6 +456,7 @@ struct MainRepositoryContentView: View {
             detailErrorMapping: fileListModel.detailErrorMapping,
             isDetailLoading: fileListModel.isDetailLoading,
             selectedFileDetail: fileListModel.selectedFileDetail,
+            selectedImportProgressRow: selectedImportProgressRow,
             onRetrySelectedFileDetail: {
                 Task {
                     await fileListModel.retrySelectedFileDetail()
@@ -487,5 +472,10 @@ struct MainRepositoryContentView: View {
             DropZoneOverlay(presentation: presentation)
                 .padding(24)
         }
+    }
+
+    private var selectedImportProgressRow: ImportProgressListRow? {
+        guard let id = selectedImportProgressIDs.first else { return nil }
+        return importProgressRows.first { $0.id == id }
     }
 }

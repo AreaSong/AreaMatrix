@@ -14,8 +14,10 @@ struct ImportEntrySheetView: View {
         DuplicateStrategy
     ) -> Void
     let onImportFailed: (String, CoreErrorMappingSnapshot) -> Void
-    let onBatchImportProgress: (ImportBatchProgressSnapshot) -> Void
-    let onBatchImportFailed: (ImportBatchProgressSnapshot, CoreErrorMappingSnapshot) -> Void
+    let onBatchImportProgress: ImportBatchProgressHandler
+    let onBatchImportFailed: ImportBatchFailureHandler
+    let onBatchImportResults: ImportBatchProgressHandler
+    let importProgressControlState: ImportProgressControlState
     let onImported: (String, FileEntrySnapshot) -> Void
     let onShowExistingFile: (String) -> Void
 
@@ -43,8 +45,10 @@ struct ImportEntrySheetView: View {
             DuplicateStrategy
         ) -> Void = { _, _, _, _, _, _ in },
         onImportFailed: @escaping (String, CoreErrorMappingSnapshot) -> Void = { _, _ in },
-        onBatchImportProgress: @escaping (ImportBatchProgressSnapshot) -> Void = { _ in },
-        onBatchImportFailed: @escaping (ImportBatchProgressSnapshot, CoreErrorMappingSnapshot) -> Void = { _, _ in },
+        onBatchImportProgress: @escaping ImportBatchProgressHandler = { _ in },
+        onBatchImportFailed: @escaping ImportBatchFailureHandler = { _, _, _, _ in },
+        onBatchImportResults: @escaping ImportBatchProgressHandler = { _ in },
+        importProgressControlState: ImportProgressControlState = ImportProgressControlState(),
         onImported: @escaping (String, FileEntrySnapshot) -> Void = { _, _ in },
         onShowExistingFile: @escaping (String) -> Void = { _ in },
         categoryPredictor: any CoreCategoryPredicting = CoreBridge(),
@@ -65,6 +69,8 @@ struct ImportEntrySheetView: View {
         self.onImportFailed = onImportFailed
         self.onBatchImportProgress = onBatchImportProgress
         self.onBatchImportFailed = onBatchImportFailed
+        self.onBatchImportResults = onBatchImportResults
+        self.importProgressControlState = importProgressControlState
         self.onImported = onImported
         self.onShowExistingFile = onShowExistingFile
         _previewModel = StateObject(wrappedValue: ImportSingleFilePreviewModel(
@@ -376,6 +382,8 @@ struct ImportEntrySheetView: View {
                     onCancel: onCancel,
                     onImportProgress: onBatchImportProgress,
                     onImportFailed: onBatchImportFailed,
+                    onImportResults: onBatchImportResults,
+                    importProgressControlState: importProgressControlState,
                     onImported: onImported
                 )
             } else if case .folder = request.kind {
@@ -386,6 +394,8 @@ struct ImportEntrySheetView: View {
                     onCancel: onCancel,
                     onImportProgress: onBatchImportProgress,
                     onImportFailed: onBatchImportFailed,
+                    onImportResults: onBatchImportResults,
+                    importProgressControlState: importProgressControlState,
                     onImported: onImported,
                     onRetryScan: {
                         Task { await folderPreviewModel.retryScan() }

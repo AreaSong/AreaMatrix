@@ -1,0 +1,21 @@
+一、执行结论：已完成。
+
+二、执行范围：单任务 `2-2/task-18`。本次 retry 直接修复：
+- [ImportProgressView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportProgressView.swift:3)：移除未声明的 `Back to repository` 按钮和 `onReturnToRepository` wiring。
+- [MainWindow.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/MainWindow.swift:355)：移除对应回调注入。
+- [OnboardingModelInputs.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/OnboardingModelInputs.swift:242)：删除 fatal import progress 直返主页面方法。
+- [ImportProgressPageIntegrationVerifyTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportProgressPageIntegrationVerifyTests.swift:16)：新增回归测试，证明 fatal exit 必须进入 S1-21 结果汇总。
+
+三、完成情况：上次失败的两个点已修复。fatal error 面板现在只保留 page spec 声明的 `Retry current item`、`Stop and view results`、`Collect Diagnostics...`、`Open repository in Finder`。`Stop and view results` 会进入 `ImportResultRouteState`，包含 imported / failed / stopped / pending 数量。未触碰 `core/src/**`，`git diff --name-only -- core/src` 输出为空。
+
+四、工程质量：没有新增 mock、硬编码通过态或 control map 外功能；修复是删除越界退出路径并补测试锁定 S1-20 -> S1-21 闭环。未新增依赖，未新增 public Rust API，文档/UDL/Core API 未变更。
+
+五、验证情况：
+- `xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：失败，退出码 65，原因仍是本地 sandbox 阻断 `com.apple.testmanagerd.control`。
+- `./dev test macos`：通过；复现 sandbox block 后 fallback 到 `xcrun xctest`，`254 tests, 0 failures`，新增测试通过。
+- `xcodebuild -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' build CODE_SIGNING_ALLOWED=NO`：通过。
+- `git diff --check`：通过。
+- `swiftlint --strict` / `swiftformat --lint .`：无法运行，本机未安装对应命令。
+
+六、风险与后续：剩余风险仅是当前沙箱环境无法给出原始 `xcodebuild test` 的完整绿色结果，需要在可访问 `testmanagerd` 的本机/CI 补跑。建议下一步进入该 task 的 verify-ready 只读验收。 
+

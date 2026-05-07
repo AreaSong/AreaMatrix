@@ -123,6 +123,7 @@ struct ImportBatchCopyCycleResult {
     var currentPath: String
     var lastImportedPath: String?
     var stoppedForDuplicate: Bool
+    var stoppedForQueue: Bool
 
     var progress: ImportBatchProgressSnapshot {
         ImportBatchProgressSnapshot(
@@ -148,7 +149,8 @@ struct ImportBatchCopyCycleResult {
             total: total,
             currentPath: currentPath,
             lastImportedPath: entry.path,
-            stoppedForDuplicate: false
+            stoppedForDuplicate: false,
+            stoppedForQueue: false
         )
     }
 
@@ -156,7 +158,8 @@ struct ImportBatchCopyCycleResult {
         completed: Int,
         failed: Int,
         total: Int,
-        currentPath: String
+        currentPath: String,
+        stoppedForQueue: Bool = false
     ) -> ImportBatchCopyCycleResult {
         ImportBatchCopyCycleResult(
             entry: nil,
@@ -165,7 +168,8 @@ struct ImportBatchCopyCycleResult {
             total: total,
             currentPath: currentPath,
             lastImportedPath: nil,
-            stoppedForDuplicate: false
+            stoppedForDuplicate: false,
+            stoppedForQueue: stoppedForQueue
         )
     }
 
@@ -182,7 +186,8 @@ struct ImportBatchCopyCycleResult {
             total: total,
             currentPath: currentPath,
             lastImportedPath: nil,
-            stoppedForDuplicate: true
+            stoppedForDuplicate: true,
+            stoppedForQueue: true
         )
     }
 }

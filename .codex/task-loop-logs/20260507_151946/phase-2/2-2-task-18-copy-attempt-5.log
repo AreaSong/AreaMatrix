@@ -1,0 +1,47 @@
+一、执行结论
+
+- 已完成。
+- 说明：实现与 fallback 测试通过；manifest 指定的 `xcodebuild test` 仍被本机 sandbox 的 `testmanagerd.control` 通信限制阻断，不能记为标准命令绿灯。
+
+二、执行范围
+
+- 单任务：`2-2/task-18`
+- 修改集中在 `Expected New Paths`：
+  - [MainRepositoryContentView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift)
+  - [MainRepositoryDetailPane.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryDetailPane.swift)
+  - [MainWindow.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/MainWindow.swift)
+  - [ImportProgressListIntegration.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportProgressListIntegration.swift)
+  - [MainCurrentListErrorPane.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainCurrentListErrorPane.swift)
+  - [ImportFolderImporting.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportFolderImporting.swift)
+  - [ImportFolderImportContinuation.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportFolderImportContinuation.swift)
+  - [ImportFolderPreviewSections.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportFolderPreviewSections.swift)
+  - [ImportProgressPageIntegrationVerifyTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportProgressPageIntegrationVerifyTests.swift)
+  - [project.pbxproj](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj)
+
+三、完成情况
+
+- Page-feature 覆盖：已补 S1-20 主 List 临时导入行、选中临时行 Detail、C1-06/C1-07/C1-08 整页闭环证据。
+- 页面状态闭环：已串起入口、只读导入态、结果退出、fatal pause/retry、CoreBridge `import_file` 调用。
+- Mock / fixture / 硬编码：未新增生产 mock-only 闭环；测试 helper 仅在测试目标。
+- Control map：未新增 C1-06/C1-07/C1-08 外能力。
+- Forbidden Touches：未触碰 `core/src/**`，`git diff -- core/src | wc -l` 为 `0`。
+
+四、工程质量
+
+- 结构：拆出主列表错误面板、导入临时行/详情面板、folder import continuation，避免继续堆大文件；复核 touched Swift 文件均不超过 500 行。
+- 错误与边界：folder import fatal queue error 会停止未开始项、保留已完成项、进入 S1-20 pause/retry；普通 item failure 仍进入结果页。
+- 违规写法复核：生产 touched 文件未搜到 `try!`、`as!`、`TODO`、`fatalError(`、`print(`。
+- 文档 / UDL：本次未改文档、未改 `core/area_matrix.udl`、未改 Core 实现。
+
+五、验证情况
+
+- `git diff --check`：通过。
+- `git diff -- core/src | wc -l`：`0`。
+- `xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：失败，原因为本机 sandbox 阻断 `com.apple.testmanagerd.control`，错误为 `Failed to establish communication with the test runner`。
+- `./dev test macos`：通过；在同一 sandbox 限制下 fallback 到 `xcrun xctest`，执行 `253 tests, 0 failures`。
+
+六、风险与后续
+
+- 剩余风险：标准 manifest 命令仍缺少本机绿灯证据，需在允许 Xcode test runner 访问 `testmanagerd` 的非 sandbox 环境补跑。
+- 建议下一个动作：进入 `2-2/task-18` 的 verify-ready 只读验收，重点复核 S1-20 主 List 临时行、Detail、fatal pause/retry 与 folder import fatal queue 路径。  
+

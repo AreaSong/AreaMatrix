@@ -1,0 +1,52 @@
+一、执行结论
+
+已完成。本次 repair retry 已修复上次验收指出的普通失败误入 fatal 暂停态、`View details` 未进入 S1-21 的问题。
+
+二、执行范围
+
+单任务：`2-2/task-18`
+
+本次修复主要涉及：
+
+- `apps/macos/AreaMatrix/Models/OnboardingModelInputs.swift`
+- `apps/macos/AreaMatrix/Models/ImportProgressActions.swift`
+- `apps/macos/AreaMatrix/Models/ImportFolderImporting.swift`
+- `apps/macos/AreaMatrix/Views/Main/ImportProgressView.swift`
+- `apps/macos/AreaMatrix/Views/Main/ImportBatchCopyFooterSection.swift`
+- `apps/macos/AreaMatrix/Views/Main/ImportFolderPreviewSections.swift`
+- 相关 XCTest：`ImportBatchCopyPageIntegrationTests`、`ImportFolderPageIntegrationVerifyTests`、`ImportProgressCopyPageFeatureTests`、`ImportFolderPreviewModelTests` 等
+
+三、完成情况
+
+- page-feature task 覆盖：通过，S1-20 的 C1-06/C1-07/C1-08 仍走真实 `CoreBridge.import_file` 路径。
+- 页面状态/入口/退出/错误态/CoreBridge 闭环：通过。普通单项失败进入 S1-21 结果页；只有 fatal import error 保留在 S1-20 暂停面板。
+- mock / fixture / 硬编码状态：通过。生产路径未新增 mock-only 或硬编码完成态。
+- control map 外功能：未新增。
+- Forbidden Touches：未触碰，`git status --short -- core/src` 无输出。
+
+四、工程质量
+
+普通失败和 fatal 队列错误已分流，避免语义混淆。`View details` 现在直接进入 S1-21；批量/文件夹结果页保留逐行 imported/failed/pending 状态，便于最终验收。未新增依赖，未修改 Rust Core，未引入用户文件删除/移动/覆盖逻辑。
+
+五、验证情况
+
+已运行：
+
+```bash
+xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO
+./dev test macos
+git diff --check
+git status --short -- core/src
+```
+
+结果：
+
+- 标准 `xcodebuild test`：构建/链接完成，但 XCTest runner 阶段被本地 sandbox 阻断，`com.apple.testmanagerd.control ... Sandbox restriction`，退出 65。
+- `./dev test macos`：通过；检测到上述 sandbox 限制后复用同一 XCTest bundle，`251 tests, 0 failures`。
+- `git diff --check`：通过。
+- `core/src/**`：未修改。
+
+六、风险与后续
+
+剩余风险是当前 sandbox 环境无法让标准 `xcodebuild test` 完成 testmanagerd 通信；需要在非 sandbox macOS/CI 环境补跑标准命令。建议下一步进入 `2-2/task-18` 的 verify-ready 验收。
+

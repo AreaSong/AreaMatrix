@@ -5,11 +5,14 @@ struct MainRepositoryDetailPane: View {
     let detailErrorMapping: CoreErrorMappingSnapshot?
     let isDetailLoading: Bool
     let selectedFileDetail: FileEntrySnapshot?
+    let selectedImportProgressRow: ImportProgressListRow?
     let onRetrySelectedFileDetail: () -> Void
 
     var body: some View {
         Group {
-            if selection.isMultiple {
+            if let selectedImportProgressRow {
+                ImportProgressDetailPane(row: selectedImportProgressRow)
+            } else if selection.isMultiple {
                 multiSelectionDetailPane
             } else if let error = detailErrorMapping {
                 detailErrorPane(error)
