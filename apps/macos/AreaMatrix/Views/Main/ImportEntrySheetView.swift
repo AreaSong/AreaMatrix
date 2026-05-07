@@ -4,7 +4,15 @@ struct ImportEntrySheetView: View {
     let request: ImportEntryRequest
     let onCancel: () -> Void
     let onSwitchToLocalRepo: () -> Void
-    let onImportStarted: (String) -> Void
+    let onImportStarted: (String, ImportSingleFileStorageMode) -> Void
+    let onImportStartedWithRetryContext: (
+        String,
+        String,
+        ImportSingleFileStorageMode,
+        String,
+        String,
+        DuplicateStrategy
+    ) -> Void
     let onImportFailed: (String, CoreErrorMappingSnapshot) -> Void
     let onBatchImportProgress: (ImportBatchProgressSnapshot) -> Void
     let onBatchImportFailed: (ImportBatchProgressSnapshot, CoreErrorMappingSnapshot) -> Void
@@ -25,7 +33,15 @@ struct ImportEntrySheetView: View {
         request: ImportEntryRequest,
         onCancel: @escaping () -> Void,
         onSwitchToLocalRepo: (() -> Void)? = nil,
-        onImportStarted: @escaping (String) -> Void = { _ in },
+        onImportStarted: @escaping (String, ImportSingleFileStorageMode) -> Void = { _, _ in },
+        onImportStartedWithRetryContext: @escaping (
+            String,
+            String,
+            ImportSingleFileStorageMode,
+            String,
+            String,
+            DuplicateStrategy
+        ) -> Void = { _, _, _, _, _, _ in },
         onImportFailed: @escaping (String, CoreErrorMappingSnapshot) -> Void = { _, _ in },
         onBatchImportProgress: @escaping (ImportBatchProgressSnapshot) -> Void = { _ in },
         onBatchImportFailed: @escaping (ImportBatchProgressSnapshot, CoreErrorMappingSnapshot) -> Void = { _, _ in },
@@ -45,6 +61,7 @@ struct ImportEntrySheetView: View {
         self.onCancel = onCancel
         self.onSwitchToLocalRepo = onSwitchToLocalRepo ?? onCancel
         self.onImportStarted = onImportStarted
+        self.onImportStartedWithRetryContext = onImportStartedWithRetryContext
         self.onImportFailed = onImportFailed
         self.onBatchImportProgress = onBatchImportProgress
         self.onBatchImportFailed = onBatchImportFailed
@@ -385,7 +402,18 @@ struct ImportEntrySheetView: View {
                 .keyboardShortcut(.cancelAction)
             Button("Import") {
                 Task {
-                    onImportStarted(previewModel.progressCurrentPath)
+                    if let context = previewModel.progressRetryContext {
+                        onImportStartedWithRetryContext(
+                            previewModel.progressCurrentPath,
+                            context.sourcePath,
+                            context.storageMode,
+                            context.overrideCategory,
+                            context.overrideFilename,
+                            context.duplicateStrategy.coreStrategy
+                        )
+                    } else {
+                        onImportStarted(previewModel.progressCurrentPath, previewModel.selectedStorageMode)
+                    }
                     if let entry = await previewModel.importSelectedFile() {
                         onImported(request.repoPath, entry)
                     } else if let mapping = previewModel.importFailureMapping {

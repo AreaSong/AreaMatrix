@@ -57,6 +57,7 @@ struct MainWindow: View {
                 onCancel: model.dismissImportEntry,
                 onSwitchToLocalRepo: model.switchImportEntryToLocalRepository,
                 onImportStarted: model.beginImportEntryProgress,
+                onImportStartedWithRetryContext: model.beginImportEntryProgress,
                 onImportFailed: model.failImportEntry,
                 onBatchImportProgress: model.updateImportEntryProgress,
                 onBatchImportFailed: model.failImportEntry,
@@ -278,8 +279,22 @@ struct MainWindow: View {
         case .importProgress(let state):
             ImportProgressView(
                 state: state,
+                onStopAfterCurrentFile: model.stopImportProgressAfterCurrentFile,
+                onRetryCurrentItem: {
+                    Task { await model.retryCurrentImportProgressItem() }
+                },
+                onStopAndViewResults: model.stopImportProgressAndViewResults,
+                onRequestDiagnostics: model.requestImportProgressDiagnosticsPrivacyConfirmation,
+                onConfirmDiagnostics: {
+                    Task { await model.collectImportProgressDiagnostics() }
+                },
+                onCancelDiagnostics: model.cancelImportProgressDiagnosticsPrivacyConfirmation,
+                onOpenRepositoryInFinder: model.openImportProgressRepositoryInFinder,
                 onReturnToRepository: model.returnFromImportProgress
             )
+            .task(id: state.recoveryCheckTaskID) {
+                await model.checkImportProgressRecoveryIfNeeded()
+            }
         case .mainEmpty(let opening):
             MainRepositoryContentView(
                 opening: opening,

@@ -84,6 +84,7 @@
 		0A000000000000000000017A /* ImportSingleFilePreflight.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000017B /* ImportSingleFilePreflight.swift */; };
 		0A000000000000000000017C /* ImportProgressRouteState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000017D /* ImportProgressRouteState.swift */; };
 		0A000000000000000000017E /* ImportProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000017F /* ImportProgressView.swift */; };
+		0A00000000000000000001CE /* ImportProgressActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001CF /* ImportProgressActions.swift */; };
 		0A0000000000000000000180 /* ImportSingleFileTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000181 /* ImportSingleFileTestSupport.swift */; };
 		0A0000000000000000000182 /* ImportSingleFilePreflightTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000183 /* ImportSingleFilePreflightTests.swift */; };
 		0A0000000000000000000184 /* ImportSingleFilePreflightCorePreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000185 /* ImportSingleFilePreflightCorePreview.swift */; };
@@ -216,6 +217,7 @@
 		0A000000000000000000017B /* ImportSingleFilePreflight.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ImportSingleFilePreflight.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000017D /* ImportProgressRouteState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ImportProgressRouteState.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000017F /* ImportProgressView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/ImportProgressView.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000001CF /* ImportProgressActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ImportProgressActions.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000181 /* ImportSingleFileTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportSingleFileTestSupport.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000183 /* ImportSingleFilePreflightTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportSingleFilePreflightTests.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000185 /* ImportSingleFilePreflightCorePreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ImportSingleFilePreflightCorePreview.swift; sourceTree = SOURCE_ROOT; };
@@ -407,6 +409,7 @@
 				0A0000000000000000000185 /* ImportSingleFilePreflightCorePreview.swift */,
 				0A0000000000000000000197 /* ImportBatchDuplicatePrecheck.swift */,
 				0A000000000000000000017D /* ImportProgressRouteState.swift */,
+				0A00000000000000000001CF /* ImportProgressActions.swift */,
 				0A0000000000000000000123 /* OnboardingModelInputs.swift */,
 				0A0000000000000000000131 /* MainFileListModel.swift */,
 				0A0000000000000000000135 /* MainListVisibleFileFiltering.swift */,
@@ -638,6 +641,7 @@
 				0A0000000000000000000184 /* ImportSingleFilePreflightCorePreview.swift in Sources */,
 				0A0000000000000000000196 /* ImportBatchDuplicatePrecheck.swift in Sources */,
 				0A000000000000000000017C /* ImportProgressRouteState.swift in Sources */,
+				0A00000000000000000001CE /* ImportProgressActions.swift in Sources */,
 				0A000000000000000000017E /* ImportProgressView.swift in Sources */,
 				0A000000000000000000013C /* MainRepositoryDetailPane.swift in Sources */,
 				0A000000000000000000013E /* MainFileActionRoutingSheet.swift in Sources */,

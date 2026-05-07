@@ -305,6 +305,7 @@ struct ImportBatchProgressSnapshot: Equatable, Sendable {
     enum Phase: String, Equatable, Sendable {
         case pending = "Pending"
         case copying = "Copying"
+        case moving = "Moving"
         case done = "Done"
         case failed = "Failed"
     }

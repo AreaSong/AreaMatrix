@@ -48,12 +48,45 @@ extension OnboardingModel {
 
     @MainActor
     func beginImportEntryProgress(currentPath: String) {
-        updateImportEntryProgress(ImportBatchProgressSnapshot(
-            completed: 0,
-            failed: 0,
-            total: 1,
-            remaining: 1,
-            currentPath: currentPath
+        beginImportEntryProgress(currentPath: currentPath, storageMode: .copy)
+    }
+
+    @MainActor
+    func beginImportEntryProgress(currentPath: String, storageMode: ImportSingleFileStorageMode) {
+        guard let opening = currentOpeningForImportOrProgress else { return }
+        pendingImportEntry = nil
+        route = .importProgress(ImportProgressRouteState(
+            sourceOpening: opening,
+            currentPath: currentPath,
+            storageMode: storageMode
+        ))
+    }
+
+    @MainActor
+    func beginImportEntryProgress(
+        currentPath: String,
+        sourcePath: String,
+        storageMode: ImportSingleFileStorageMode,
+        overrideCategory: String,
+        overrideFilename: String,
+        duplicateStrategy: DuplicateStrategy
+    ) {
+        guard let opening = currentOpeningForImportOrProgress else { return }
+        let retryContext = ImportProgressRetryContext(
+            repoPath: opening.config.repoPath,
+            sourcePath: sourcePath,
+            storageMode: storageMode,
+            overrideCategory: overrideCategory,
+            overrideFilename: overrideFilename,
+            duplicateStrategy: ImportProgressDuplicateStrategy(coreStrategy: duplicateStrategy)
+        )
+        pendingImportEntry = nil
+        route = .importProgress(ImportProgressRouteState(
+            sourceOpening: opening,
+            currentPath: currentPath,
+            storageMode: storageMode,
+            retryContext: retryContext,
+            isRepositoryFinderAvailable: FileManager.default.fileExists(atPath: opening.config.repoPath)
         ))
     }
 
@@ -90,6 +123,40 @@ extension OnboardingModel {
 
     @MainActor
     func failImportEntry(progress: ImportBatchProgressSnapshot, mapping: CoreErrorMappingSnapshot) {
+        failImportEntry(progress: progress, mapping: mapping, retryContext: nil)
+    }
+
+    @MainActor
+    func failImportEntry(
+        progress: ImportBatchProgressSnapshot,
+        mapping: CoreErrorMappingSnapshot,
+        retryContext: ImportProgressRetryContext?,
+        recoveryCheck: ImportProgressRecoveryCheckState
+    ) {
+        applyImportEntryFailure(
+            progress: progress,
+            mapping: mapping,
+            retryContext: retryContext,
+            recoveryCheck: recoveryCheck
+        )
+    }
+
+    @MainActor
+    func failImportEntry(
+        progress: ImportBatchProgressSnapshot,
+        mapping: CoreErrorMappingSnapshot,
+        retryContext: ImportProgressRetryContext?
+    ) {
+        applyImportEntryFailure(progress: progress, mapping: mapping, retryContext: retryContext, recoveryCheck: nil)
+    }
+
+    @MainActor
+    private func applyImportEntryFailure(
+        progress: ImportBatchProgressSnapshot,
+        mapping: CoreErrorMappingSnapshot,
+        retryContext: ImportProgressRetryContext?,
+        recoveryCheck: ImportProgressRecoveryCheckState?
+    ) {
         guard case .importProgress(let state) = route else { return }
         route = .importProgress(ImportProgressRouteState(
             sourceOpening: state.sourceOpening,
@@ -100,7 +167,12 @@ extension OnboardingModel {
             remaining: progress.remaining,
             skipped: progress.skipped,
             pending: progress.pending,
-            items: progress.items
+            items: progress.items,
+            retryContext: retryContext ?? state.retryContext,
+            recoveryCheck: recoveryCheck,
+            diagnostics: state.diagnostics,
+            stopState: state.stopState,
+            isRepositoryFinderAvailable: state.isRepositoryFinderAvailable
         ))
     }
 

@@ -87,6 +87,18 @@ extension ImportSingleFilePreviewModel {
         )
     }
 
+    var progressRetryContext: ImportProgressRetryContext? {
+        guard let request, let sourceURL = request.urls.first else { return nil }
+        return ImportProgressRetryContext(
+            repoPath: request.repoPath,
+            sourcePath: sourceURL.path,
+            storageMode: selectedStorageMode,
+            overrideCategory: selectedCategory.trimmingCharacters(in: .whitespacesAndNewlines),
+            overrideFilename: suggestedName.trimmingCharacters(in: .whitespacesAndNewlines),
+            duplicateStrategy: ImportProgressDuplicateStrategy(coreStrategy: resolvedDuplicateStrategy)
+        )
+    }
+
     var showsICloudActions: Bool {
         guard let result = currentPreflightResult else { return false }
         switch result.conflict {
