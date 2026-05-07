@@ -5,8 +5,16 @@ struct MainRepositoryDetailPane: View {
     let detailErrorMapping: CoreErrorMappingSnapshot?
     let isDetailLoading: Bool
     let selectedFileDetail: FileEntrySnapshot?
+    let detailLogState: MainDetailLogState
+    let detailLogDiagnosticsState: MainDetailLogDiagnosticsState
     let selectedImportProgressRow: ImportProgressListRow?
     let onRetrySelectedFileDetail: () -> Void
+    let onRefreshChangeLog: () -> Void
+    let onRequestDetailLogDiagnostics: () -> Void
+    let onConfirmDetailLogDiagnostics: () -> Void
+    let onCancelDetailLogDiagnostics: () -> Void
+
+    @State private var selectedTab: DetailPaneTab = .meta
 
     var body: some View {
         Group {
@@ -83,11 +91,36 @@ struct MainRepositoryDetailPane: View {
                 Text(detail.currentName)
                     .font(.headline)
                     .textSelection(.enabled)
-                detailStatusSection
-                metadataRows(for: detail)
+                Picker("Detail tab", selection: $selectedTab) {
+                    ForEach(DetailPaneTab.allCases) { tab in
+                        Text(tab.title).tag(tab)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                detailTabContent(for: detail)
             }
             .padding(18)
             .frame(maxWidth: .infinity, alignment: .topLeading)
+        }
+    }
+
+    @ViewBuilder
+    private func detailTabContent(for detail: FileEntrySnapshot) -> some View {
+        switch selectedTab {
+        case .meta:
+            detailStatusSection
+            metadataRows(for: detail)
+        case .log:
+            DetailLogTabView(
+                selection: selection,
+                detailLogState: detailLogState,
+                diagnosticsState: detailLogDiagnosticsState,
+                onRefreshChangeLog: onRefreshChangeLog,
+                onRequestDiagnostics: onRequestDetailLogDiagnostics,
+                onConfirmDiagnostics: onConfirmDetailLogDiagnostics,
+                onCancelDiagnostics: onCancelDetailLogDiagnostics
+            )
         }
     }
 
@@ -139,6 +172,7 @@ struct MainRepositoryDetailPane: View {
                 .lineLimit(3)
         }
     }
+
 }
 
 struct DetailMetaMetadataRow: Equatable, Identifiable, Sendable {

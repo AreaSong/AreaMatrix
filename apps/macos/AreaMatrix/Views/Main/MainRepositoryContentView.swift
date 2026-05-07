@@ -176,6 +176,7 @@ struct MainRepositoryContentView: View {
         importProgressItems: [ImportBatchProgressSnapshot.Item] = [],
         fileLister: any CoreFileListing = CoreBridge(),
         fileDetailer: any CoreFileDetailing = CoreBridge(),
+        changeLogLister: any CoreChangeLogListing = CoreBridge(),
         categoryPredictor: any CoreCategoryPredicting = CoreBridge(),
         errorMapper: any CoreErrorMapping = CoreBridge(),
         diagnosticsCollector: any CoreDiagnosticsCollecting = CoreBridge()
@@ -198,6 +199,7 @@ struct MainRepositoryContentView: View {
             opening: opening,
             fileLister: fileLister,
             fileDetailer: fileDetailer,
+            changeLogLister: changeLogLister,
             errorMapper: errorMapper,
             diagnosticsCollector: diagnosticsCollector
         ))
@@ -456,12 +458,26 @@ struct MainRepositoryContentView: View {
             detailErrorMapping: fileListModel.detailErrorMapping,
             isDetailLoading: fileListModel.isDetailLoading,
             selectedFileDetail: fileListModel.selectedFileDetail,
+            detailLogState: fileListModel.detailLogState,
+            detailLogDiagnosticsState: fileListModel.detailLogDiagnosticsState,
             selectedImportProgressRow: selectedImportProgressRow,
             onRetrySelectedFileDetail: {
                 Task {
                     await fileListModel.retrySelectedFileDetail()
                 }
-            }
+            },
+            onRefreshChangeLog: {
+                Task {
+                    await fileListModel.loadSelectedFileChangeLog()
+                }
+            },
+            onRequestDetailLogDiagnostics: fileListModel.requestDetailLogDiagnosticsPrivacyConfirmation,
+            onConfirmDetailLogDiagnostics: {
+                Task {
+                    await fileListModel.collectDetailLogDiagnostics()
+                }
+            },
+            onCancelDetailLogDiagnostics: fileListModel.cancelDetailLogDiagnosticsPrivacyConfirmation
         )
         .frame(minWidth: 220, idealWidth: 260, maxWidth: 320, maxHeight: .infinity, alignment: .topLeading)
     }

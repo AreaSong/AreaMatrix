@@ -22,6 +22,18 @@ struct ChangeFilterSnapshot: Equatable, Sendable {
         limit: 100,
         offset: 0
     )
+
+    static func detailLog(fileID: Int64) -> ChangeFilterSnapshot {
+        ChangeFilterSnapshot(
+            fileID: fileID,
+            category: nil,
+            action: nil,
+            since: nil,
+            until: nil,
+            limit: 100,
+            offset: 0
+        )
+    }
 }
 
 struct ChangeLogEntrySnapshot: Equatable, Identifiable, Sendable {

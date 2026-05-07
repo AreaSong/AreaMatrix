@@ -70,11 +70,153 @@ final class DetailMetaPageFeatureTests: XCTestCase {
 
         XCTAssertEqual(detailMetaMetadataRows(for: detail).value(for: "Source"), "Not available")
     }
+
+    @MainActor
+    func testS113LoadsSelectedFileChangeLogThroughC113ListChanges() async {
+        let detail = FileEntrySnapshot.detailMetaFixture(id: 16, currentName: "logged.pdf")
+        let entry = ChangeLogEntrySnapshot.detailLogFixture(fileID: detail.id, action: "imported")
+        let lister = DetailLogRecordingLister(results: [.success([entry])])
+        let model = MainFileListModel(
+            opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [detail]),
+            fileLister: DetailMetaNoopLister(),
+            fileDetailer: DetailMetaImmediateDetailer(result: .success(detail)),
+            changeLogLister: lister,
+            errorMapper: DetailMetaErrorMapper(mapping: .detailMetaFileNotFound())
+        )
+
+        await model.selectFiles([detail.id])
+        await model.loadSelectedFileChangeLog()
+        let requests = await lister.recordedRequests()
+
+        XCTAssertEqual(requests, [
+            DetailLogRequest(repoPath: "/tmp/repo", filter: .detailLog(fileID: detail.id)),
+        ])
+        XCTAssertEqual(model.detailLogState, .loaded(fileID: detail.id, entries: [entry]))
+    }
+
+    @MainActor
+    func testS113MapsListChangesFailureInline() async {
+        let detail = FileEntrySnapshot.detailMetaFixture(id: 17, currentName: "locked.pdf")
+        let mapping = CoreErrorMappingSnapshot.detailLogDb()
+        let mapper = DetailMetaErrorMapper(mapping: mapping)
+        let model = MainFileListModel(
+            opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [detail]),
+            fileLister: DetailMetaNoopLister(),
+            fileDetailer: DetailMetaImmediateDetailer(result: .success(detail)),
+            changeLogLister: DetailLogRecordingLister(results: [.failure(CoreError.Db(message: "change log locked"))]),
+            errorMapper: mapper
+        )
+
+        await model.selectFiles([detail.id])
+        await model.loadSelectedFileChangeLog()
+        let mappedErrors = await mapper.recordedErrors()
+
+        XCTAssertEqual(model.detailLogState, .failed(fileID: detail.id, mapping))
+        XCTAssertEqual(mappedErrors, [CoreError.Db(message: "change log locked")])
+    }
+
+    @MainActor
+    func testS113StaleChangeLogRequestDoesNotOverwriteNewSelection() async {
+        let oldFile = FileEntrySnapshot.detailMetaFixture(id: 18, currentName: "old.pdf")
+        let newFile = FileEntrySnapshot.detailMetaFixture(id: 19, currentName: "new.pdf")
+        let lister = DetailLogSuspendedLister(entries: [
+            ChangeLogEntrySnapshot.detailLogFixture(fileID: oldFile.id, action: "imported"),
+        ])
+        let model = MainFileListModel(
+            opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [oldFile, newFile]),
+            fileLister: DetailMetaNoopLister(),
+            fileDetailer: DetailMetaSequenceDetailer(results: [.success(oldFile), .success(newFile)]),
+            changeLogLister: lister,
+            errorMapper: DetailMetaErrorMapper(mapping: .detailMetaFileNotFound())
+        )
+
+        await model.selectFiles([oldFile.id])
+        let loadTask = Task { await model.loadSelectedFileChangeLog() }
+        await lister.waitForRequest()
+        await model.selectFiles([newFile.id])
+        await lister.finish()
+        await loadTask.value
+
+        XCTAssertEqual(model.selection, .single(newFile.id))
+        XCTAssertEqual(model.detailLogState, .notLoaded)
+    }
+
+    @MainActor
+    func testS113DetailLogDiagnosticsRequiresPrivacyConfirmationAndCollectsCoreSnapshot() async {
+        let detail = FileEntrySnapshot.detailMetaFixture(id: 20, currentName: "diagnostics.pdf")
+        let mapping = CoreErrorMappingSnapshot.detailLogDb()
+        let snapshot = DiagnosticsSnapshotSnapshot(
+            snapshotPath: "/tmp/repo/.areamatrix/diagnostics/detail-log.zip",
+            createdAt: 1_700_000_300,
+            warnings: ["paths redacted", "usernames redacted"]
+        )
+        let diagnosticsCollector = ShellRecordingDiagnosticsCollector(result: .success(snapshot))
+        let model = MainFileListModel(
+            opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [detail]),
+            fileLister: DetailMetaNoopLister(),
+            fileDetailer: DetailMetaImmediateDetailer(result: .success(detail)),
+            changeLogLister: DetailLogRecordingLister(results: [.failure(CoreError.Db(message: "change log locked"))]),
+            errorMapper: DetailMetaErrorMapper(mapping: mapping),
+            diagnosticsCollector: diagnosticsCollector
+        )
+
+        await model.selectFiles([detail.id])
+        await model.loadSelectedFileChangeLog()
+        await model.collectDetailLogDiagnostics()
+        let preConfirmationPaths = await diagnosticsCollector.requestedRepoPaths()
+
+        XCTAssertEqual(preConfirmationPaths, [])
+        XCTAssertEqual(model.detailLogDiagnosticsState, .idle)
+
+        model.requestDetailLogDiagnosticsPrivacyConfirmation()
+        await model.collectDetailLogDiagnostics()
+        let collectedPaths = await diagnosticsCollector.requestedRepoPaths()
+
+        XCTAssertEqual(collectedPaths, ["/tmp/repo"])
+        XCTAssertEqual(model.detailLogDiagnosticsState, .collected(fileID: detail.id, snapshot))
+    }
+
+    @MainActor
+    func testS113DetailLogDiagnosticsFailureMapsCoreErrorInline() async {
+        let detail = FileEntrySnapshot.detailMetaFixture(id: 21, currentName: "diagnostics-fail.pdf")
+        let mapping = CoreErrorMappingSnapshot.detailLogDb()
+        let mapper = DetailMetaErrorMapper(mapping: mapping)
+        let diagnosticsCollector = ShellRecordingDiagnosticsCollector(
+            result: .failure(CoreError.PermissionDenied(path: "/tmp/repo"))
+        )
+        let model = MainFileListModel(
+            opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [detail]),
+            fileLister: DetailMetaNoopLister(),
+            fileDetailer: DetailMetaImmediateDetailer(result: .success(detail)),
+            changeLogLister: DetailLogRecordingLister(results: [.failure(CoreError.Db(message: "change log locked"))]),
+            errorMapper: mapper,
+            diagnosticsCollector: diagnosticsCollector
+        )
+
+        await model.selectFiles([detail.id])
+        await model.loadSelectedFileChangeLog()
+        model.requestDetailLogDiagnosticsPrivacyConfirmation()
+        await model.collectDetailLogDiagnostics()
+        let mappedErrors = await mapper.recordedErrors()
+
+        XCTAssertEqual(model.detailLogDiagnosticsState, .failed(fileID: detail.id, mapping))
+        XCTAssertEqual(mappedErrors, [
+            CoreError.Db(message: "change log locked"),
+            CoreError.PermissionDenied(path: "/tmp/repo"),
+        ])
+    }
+
 }
 
 private actor DetailMetaNoopLister: CoreFileListing {
     func listFiles(repoPath: String, filter: FileFilterSnapshot) async throws -> [FileEntrySnapshot] {
         []
+    }
+}
+
+private actor DetailMetaNoopDetailer: CoreFileDetailing {
+    func getFile(repoPath: String, fileID: Int64) async throws -> FileEntrySnapshot {
+        throw CoreError.FileNotFound(path: "\(fileID)")
     }
 }
 
@@ -136,6 +278,29 @@ private actor DetailMetaSuspendedDetailer: CoreFileDetailing {
     }
 }
 
+private actor DetailMetaSequenceDetailer: CoreFileDetailing {
+    typealias Result = DetailMetaImmediateDetailer.Result
+
+    private var results: [Result]
+
+    init(results: [Result]) {
+        self.results = results
+    }
+
+    func getFile(repoPath: String, fileID: Int64) async throws -> FileEntrySnapshot {
+        guard !results.isEmpty else {
+            throw CoreError.FileNotFound(path: "\(fileID)")
+        }
+
+        switch results.removeFirst() {
+        case .success(let file):
+            return file
+        case .failure(let error):
+            throw error
+        }
+    }
+}
+
 private actor DetailMetaErrorMapper: CoreErrorMapping {
     private let mapping: CoreErrorMappingSnapshot
     private var errors: [CoreError] = []
@@ -150,6 +315,68 @@ private actor DetailMetaErrorMapper: CoreErrorMapping {
     }
 
     func recordedErrors() -> [CoreError] { errors }
+}
+
+private struct DetailLogRequest: Equatable {
+    var repoPath: String
+    var filter: ChangeFilterSnapshot
+}
+
+private actor DetailLogRecordingLister: CoreChangeLogListing {
+    enum Result {
+        case success([ChangeLogEntrySnapshot])
+        case failure(Error)
+    }
+
+    private var results: [Result]
+    private var requests: [DetailLogRequest] = []
+
+    init(results: [Result]) {
+        self.results = results
+    }
+
+    func listChanges(repoPath: String, filter: ChangeFilterSnapshot) async throws -> [ChangeLogEntrySnapshot] {
+        requests.append(DetailLogRequest(repoPath: repoPath, filter: filter))
+        guard !results.isEmpty else { return [] }
+
+        switch results.removeFirst() {
+        case .success(let entries):
+            return entries
+        case .failure(let error):
+            throw error
+        }
+    }
+
+    func recordedRequests() -> [DetailLogRequest] { requests }
+}
+
+private actor DetailLogSuspendedLister: CoreChangeLogListing {
+    private let entries: [ChangeLogEntrySnapshot]
+    private var continuation: CheckedContinuation<Void, Never>?
+    private var didReceiveRequest = false
+
+    init(entries: [ChangeLogEntrySnapshot]) {
+        self.entries = entries
+    }
+
+    func listChanges(repoPath: String, filter: ChangeFilterSnapshot) async throws -> [ChangeLogEntrySnapshot] {
+        didReceiveRequest = true
+        await withCheckedContinuation { continuation in
+            self.continuation = continuation
+        }
+        return entries
+    }
+
+    func waitForRequest() async {
+        while !didReceiveRequest {
+            await Task.yield()
+        }
+    }
+
+    func finish() {
+        continuation?.resume()
+        continuation = nil
+    }
 }
 
 private extension RepositoryOpeningResult {
@@ -202,6 +429,20 @@ private extension FileEntrySnapshot {
     }
 }
 
+private extension ChangeLogEntrySnapshot {
+    static func detailLogFixture(fileID: Int64, action: String) -> ChangeLogEntrySnapshot {
+        ChangeLogEntrySnapshot(
+            id: fileID + 100,
+            fileID: fileID,
+            filename: "logged.pdf",
+            category: "docs",
+            action: action,
+            detailJSON: #"{"changed":"modified_at"}"#,
+            occurredAt: 1_700_000_200
+        )
+    }
+}
+
 private extension [DetailMetaMetadataRow] {
     func value(for label: String) -> String? {
         first { $0.label == label }?.value
@@ -217,6 +458,17 @@ private extension CoreErrorMappingSnapshot {
             suggestedAction: "刷新当前列表，确认文件是否已被移动或删除。",
             recoverability: .refreshRequired,
             rawContext: "S1-12 C1-12 get_file"
+        )
+    }
+
+    static func detailLogDb() -> CoreErrorMappingSnapshot {
+        CoreErrorMappingSnapshot(
+            kind: .db,
+            userMessage: "无法加载改动记录",
+            severity: .medium,
+            suggestedAction: "请重试改动时间线。",
+            recoverability: .retryable,
+            rawContext: "S1-13 C1-13 list_changes"
         )
     }
 }

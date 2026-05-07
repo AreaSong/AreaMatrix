@@ -104,6 +104,31 @@ enum MainListDiagnosticsState: Equatable, Sendable {
     case failed(CoreErrorMappingSnapshot)
 }
 
+enum MainDetailLogState: Equatable, Sendable {
+    case notLoaded
+    case loading(fileID: Int64)
+    case loaded(fileID: Int64, entries: [ChangeLogEntrySnapshot])
+    case failed(fileID: Int64, CoreErrorMappingSnapshot)
+
+    var isLoading: Bool {
+        if case .loading = self { return true }
+        return false
+    }
+}
+
+enum MainDetailLogDiagnosticsState: Equatable, Sendable {
+    case idle
+    case confirmingPrivacy(fileID: Int64)
+    case collecting(fileID: Int64)
+    case collected(fileID: Int64, DiagnosticsSnapshotSnapshot)
+    case failed(fileID: Int64, CoreErrorMappingSnapshot)
+
+    var isCollecting: Bool {
+        if case .collecting = self { return true }
+        return false
+    }
+}
+
 @MainActor
 final class MainFileListModel: ObservableObject {
     @Published private(set) var files: [FileEntrySnapshot]
@@ -113,6 +138,8 @@ final class MainFileListModel: ObservableObject {
     @Published private(set) var selectedFileDetail: FileEntrySnapshot?
     @Published private(set) var isDetailLoading = false
     @Published private(set) var detailErrorMapping: CoreErrorMappingSnapshot?
+    @Published private(set) var detailLogState: MainDetailLogState = .notLoaded
+    @Published private(set) var detailLogDiagnosticsState: MainDetailLogDiagnosticsState = .idle
     @Published private(set) var pendingActionDestination: MainFileActionDestination?
     @Published private(set) var statusBanner: MainListStatusBanner?
     @Published private(set) var diagnosticsState: MainListDiagnosticsState = .idle
@@ -122,16 +149,19 @@ final class MainFileListModel: ObservableObject {
     private let writeLockedFileIDs: Set<Int64>
     private let fileLister: any CoreFileListing
     private let fileDetailer: any CoreFileDetailing
+    private let changeLogLister: any CoreChangeLogListing
     private let errorMapper: any CoreErrorMapping
     private let diagnosticsCollector: any CoreDiagnosticsCollecting
     private var currentCategory: String?
     private var loadGeneration = 0
     private var detailGeneration = 0
+    private var detailLogGeneration = 0
 
     init(
         opening: RepositoryOpeningResult,
         fileLister: any CoreFileListing,
         fileDetailer: any CoreFileDetailing,
+        changeLogLister: any CoreChangeLogListing = CoreBridge(),
         errorMapper: any CoreErrorMapping,
         diagnosticsCollector: any CoreDiagnosticsCollecting = CoreBridge()
     ) {
@@ -142,6 +172,7 @@ final class MainFileListModel: ObservableObject {
         errorMapping = opening.currentCategoryListError
         self.fileLister = fileLister
         self.fileDetailer = fileDetailer
+        self.changeLogLister = changeLogLister
         self.errorMapper = errorMapper
         self.diagnosticsCollector = diagnosticsCollector
     }
@@ -166,6 +197,7 @@ final class MainFileListModel: ObservableObject {
             selectedFileDetail = nil
             detailErrorMapping = nil
             isDetailLoading = false
+            resetDetailLog()
             return
         }
 
@@ -182,6 +214,7 @@ final class MainFileListModel: ObservableObject {
         selectedFileDetail = cachedFile(id: id)
         detailErrorMapping = nil
         isDetailLoading = true
+        resetDetailLog()
         await loadDetail(id: id)
     }
 
@@ -192,6 +225,43 @@ final class MainFileListModel: ObservableObject {
         detailErrorMapping = nil
         isDetailLoading = true
         await loadDetail(id: selectedFileID)
+    }
+
+    func loadSelectedFileChangeLog() async {
+        guard let selectedFileID = selection.singleFileID else { return }
+        await loadChangeLog(fileID: selectedFileID)
+    }
+
+    func retrySelectedFileChangeLog() async {
+        guard let selectedFileID = selection.singleFileID else { return }
+        await loadChangeLog(fileID: selectedFileID)
+    }
+
+    func requestDetailLogDiagnosticsPrivacyConfirmation() {
+        guard case .failed(let fileID, _) = detailLogState,
+              selection.singleFileID == fileID else { return }
+        detailLogDiagnosticsState = .confirmingPrivacy(fileID: fileID)
+    }
+
+    func cancelDetailLogDiagnosticsPrivacyConfirmation() {
+        guard case .confirmingPrivacy = detailLogDiagnosticsState else { return }
+        detailLogDiagnosticsState = .idle
+    }
+
+    func collectDetailLogDiagnostics() async {
+        guard case .confirmingPrivacy(let fileID) = detailLogDiagnosticsState,
+              selection.singleFileID == fileID else { return }
+
+        detailLogDiagnosticsState = .collecting(fileID: fileID)
+        do {
+            let snapshot = try await diagnosticsCollector.createDiagnosticsSnapshot(repoPath: repoPath)
+            guard canApplyDetailLogDiagnosticsResult(fileID: fileID) else { return }
+            detailLogDiagnosticsState = .collected(fileID: fileID, snapshot)
+        } catch {
+            let mappedError = await mapCoreError(error)
+            guard canApplyDetailLogDiagnosticsResult(fileID: fileID) else { return }
+            detailLogDiagnosticsState = .failed(fileID: fileID, mappedError)
+        }
     }
 
     func beginRename(fileID: Int64? = nil) {
@@ -323,17 +393,50 @@ final class MainFileListModel: ObservableObject {
         }
     }
 
+    private func loadChangeLog(fileID: Int64) async {
+        detailLogGeneration += 1
+        let generation = detailLogGeneration
+
+        detailLogState = .loading(fileID: fileID)
+        detailLogDiagnosticsState = .idle
+        do {
+            let entries = try await changeLogLister.listChanges(
+                repoPath: repoPath,
+                filter: .detailLog(fileID: fileID)
+            )
+            guard generation == detailLogGeneration, selection.singleFileID == fileID else { return }
+            detailLogState = .loaded(fileID: fileID, entries: entries)
+        } catch {
+            let mappedError = await mapCoreError(error)
+            guard generation == detailLogGeneration, selection.singleFileID == fileID else { return }
+            detailLogState = .failed(fileID: fileID, mappedError)
+        }
+    }
+
     private func clearDetail() {
         detailGeneration += 1
         selection = .none
         selectedFileDetail = nil
         detailErrorMapping = nil
         isDetailLoading = false
+        resetDetailLog()
         pendingActionDestination = nil
+    }
+
+    private func resetDetailLog() {
+        detailLogGeneration += 1
+        detailLogState = .notLoaded
+        detailLogDiagnosticsState = .idle
     }
 
     private func mapListError(_ error: Error) async -> CoreErrorMappingSnapshot {
         await mapCoreError(error)
+    }
+
+    private func canApplyDetailLogDiagnosticsResult(fileID: Int64) -> Bool {
+        guard selection.singleFileID == fileID,
+              case .failed(let failedFileID, _) = detailLogState else { return false }
+        return failedFileID == fileID
     }
 
     private func mapCoreError(_ error: Error) async -> CoreErrorMappingSnapshot {
