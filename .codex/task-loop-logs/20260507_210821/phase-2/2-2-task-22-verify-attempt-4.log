@@ -1,0 +1,101 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`2-2/task-22`
+- 对应文件路径：
+  - `tasks/prompts/phase-2/2-2-import-conflict/task-22-s1-22-c1-09-detect-duplicate.md`
+  - `docs/ux/page-specs/stage-1-mvp/S1-22-conflict-duplicate.md`
+  - `docs/architecture/mvp-control-map.md`
+  - `docs/api/core-api.md`
+  - `docs/core/capability-specs/stage-1-mvp/C1-09-detect-duplicate.md`
+  - `apps/macos/AreaMatrix/**`
+  - `apps/macos/AreaMatrixTests/**`
+  - `core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：7
+- 未覆盖项数：3
+- 通过项数：7
+- 不通过项数：3
+- 阻塞项数：2
+
+四、逐项验收结果
+
+- 项目：Exact Docs / Existing Code / manifest 章节读取
+- 结果：通过
+- 证据：manifest `2-2/task-22` 声明 4 个 Exact Docs、2 类 Existing Code、3 类 Expected New Paths、1 类 Forbidden Touches。
+- 涉及文件：`tasks/prompts/_shared/manifests/phase-2.md`
+
+- 项目：Expected New Paths 落地
+- 结果：通过
+- 证据：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`apps/macos/AreaMatrix.xcodeproj/project.pbxproj` 均存在并参与 build/test。
+- 涉及文件：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git status --short -- core/src` 无输出，未发现 `core/src/**` 被触碰。
+- 涉及文件：`core/src/**`
+
+- 项目：S1-22 重复检测默认 Skip
+- 结果：通过
+- 证据：重复冲突会进入 `.duplicate`，默认 `duplicateResolution = .skip`，Skip 不调用 importer，并显示 skipped duplicate。
+- 涉及文件：`apps/macos/AreaMatrix/Models/ImportSingleFilePreviewModel.swift`、`apps/macos/AreaMatrixTests/ImportSingleFileDuplicateResolutionTests.swift`
+
+- 项目：S1-22 KeepBoth
+- 结果：通过
+- 证据：KeepBoth 选择会把 `duplicateStrategy` 传为 `.keepBoth`，并预览自动编号目标路径。
+- 涉及文件：`apps/macos/AreaMatrix/Models/ImportSingleFileDuplicateResolution.swift`
+
+- 项目：S1-22 Replace 可见性 / Continue 路由
+- 结果：不通过
+- 证据：页面规格要求 `allowReplaceDuringImport=true` 时显示 Replace，并在 Trash 可用时进入二次确认；当前单文件重复策略只有 `.skip`、`.keepBoth`，footer 始终是 `Import`，测试还断言 replace settings 不改变 duplicate actions。
+- 涉及文件：`docs/ux/page-specs/stage-1-mvp/S1-22-conflict-duplicate.md`、`apps/macos/AreaMatrix/Models/ImportSingleFileDuplicateResolution.swift`、`apps/macos/AreaMatrix/Views/Main/ImportEntrySingleFileFooter.swift`
+
+- 项目：只接入 C1-09 对应 CoreBridge，不越界到其他 Core 能力
+- 结果：不通过
+- 证据：S1-22 control map 绑定 Core API 是 `import_file`；当前用户可见预检主要通过 Swift SHA256 + `CoreBridge.listFiles` 读取 active files 完成，`list_files` 属于 C1-11 查询面，未在 S1-22 control map 中声明。
+- 涉及文件：`docs/architecture/mvp-control-map.md`、`apps/macos/AreaMatrix/Models/ImportSingleFilePreflight.swift`、`apps/macos/AreaMatrix/Models/ImportSingleFilePreflightCorePreview.swift`
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过。主要 blocker 是文档合同与实现边界不一致；文件长度未发现明显超限。
+- 注释 / rustdoc / 文档同步：不通过。S1-22 page spec 的 Replace/Continue/Trash 状态未同步到单文件重复冲突实现。
+- 错误处理与边界处理：不通过。Trash 不可用、Replace hidden/enabled/disabled 的 S1-22 状态缺失。
+- 测试与验证覆盖：不通过。命令通过，但测试中存在与 SSOT 相反的断言：`allowReplaceDuringImport=true` 不改变 S1-22 duplicate actions。
+- 占位、硬编码、mock-only、一次性实现检查：通过。重复检测不是纯静态 UI；已有真实 CoreBridge/listFiles 与 import_file 路径证据，但 Core 能力边界仍不合格。
+
+六、阻塞项
+
+- P1：S1-22 Replace/Continue/Trash 状态缺失
+  - 说明：Exact Doc 要求 Replace 默认隐藏，设置开启且 Trash 可用时显示并二次确认；当前单文件 S1-22 只支持 Skip / KeepBoth。
+  - 绝对路径与行号：
+    - `/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-22-conflict-duplicate.md:51`
+    - `/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-22-conflict-duplicate.md:60`
+    - `/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-22-conflict-duplicate.md:65`
+    - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFileDuplicateResolution.swift:3`
+    - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportEntrySingleFileFooter.swift:9`
+  - 为什么导致不通过：C1-09 spec 包含 Overwrite 二次确认要求，S1-22 页面规格也要求 Replace 入口；当前用户无法触发该分支。
+
+- P1：S1-22 C1-09 Core API 边界漂移
+  - 说明：control map 声明 S1-22 使用 `import_file`；当前预检使用 Swift SHA256 + `listFiles` 读取 Core 文件列表，消费了未在 S1-22 control map 声明的查询能力。
+  - 绝对路径与行号：
+    - `/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:37`
+    - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreflight.swift:264`
+    - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreflightCorePreview.swift:24`
+  - 为什么导致不通过：task 要求只接入 C1-09 对应 CoreBridge / 状态 / 错误映射；当前实现无法证明没有越界到 control map 之外能力。
+
+七、验证情况
+
+- 已运行：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`，通过。
+- 已运行：`./dev test macos`，标准 `xcodebuild test` 被本地 `testmanagerd` sandbox 阻断后，脚本按规则复用已构建 XCTest bundle，最终 261 tests 通过。
+- 失败：产品验收失败，原因是文档合同和能力边界未满足，不是编译或测试命令失败。
+- 缺失：没有能证明 S1-22 Replace enabled/disabled/Continue 路由符合 page spec 的实现与测试证据。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+VERIFY_RESULT: FAIL

@@ -108,7 +108,7 @@ struct ImportSingleFileImportStatusSection: View {
         switch status {
         case .failed, .blocked:
             return .red
-        case .imported:
+        case .imported, .skippedDuplicate:
             return .green
         case .idle, .importing:
             return .secondary
@@ -121,8 +121,10 @@ struct ImportSingleFileConflictSection: View {
     let activePage: ImportSingleFileConflictPage?
     let sourceFilename: String?
     let sourcePath: String?
-    let isReplaceConfirmed: Bool
-    let onOpenReplaceConfirm: () -> Void
+    let replaceOptionVisibility: ImportSingleFileReplaceOptionVisibility
+    @Binding var duplicateResolution: ImportSingleFileDuplicateResolutionStrategy
+    let onBeginReplaceConfirmation: () -> Void
+    let onShowExistingFile: (String) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -145,24 +147,73 @@ struct ImportSingleFileConflictSection: View {
                 .font(.callout)
                 .foregroundStyle(statusColor)
 
-            if activePage != nil {
-                Text(result.replaceOptionVisibility.label)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+            if case .duplicate = result.conflict {
+                duplicateResolutionOptions
             }
 
-            if result.replaceOptionVisibility == .enabled {
-                HStack(spacing: 8) {
-                    Button("Replace") {
-                        onOpenReplaceConfirm()
-                    }
-                    Text(isReplaceConfirmed ? "Replace confirmed" : "进入 S1-24 replace-confirm 后回到本 sheet")
-                        .font(.caption)
-                        .foregroundStyle(isReplaceConfirmed ? .green : .secondary)
-                }
-            }
         }
         .accessibilityElement(children: .combine)
+    }
+
+    private var duplicateResolutionOptions: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Picker("重复处理策略", selection: $duplicateResolution) {
+                ForEach(duplicateStrategies) { strategy in
+                    Text(strategy.title).tag(strategy)
+                }
+            }
+            .pickerStyle(.radioGroup)
+
+            Text(duplicateResolution.detail)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            if duplicateResolution == .keepBoth {
+                if let keepBothPath = result.keepBothTargetRelativePath {
+                    Text("新文件名：\(keepBothPath)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else {
+                    Text("无法生成可用文件名")
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                }
+            }
+            if duplicateResolution == .replace {
+                replaceAction
+            }
+
+            if case .duplicate(let existingPath) = result.conflict {
+                Button("Show existing file") {
+                    onShowExistingFile(existingPath)
+                }
+                .help(existingPath)
+            }
+        }
+    }
+
+    private var duplicateStrategies: [ImportSingleFileDuplicateResolutionStrategy] {
+        switch replaceOptionVisibility {
+        case .hidden:
+            return [.skip, .keepBoth]
+        case .enabled, .disabled:
+            return [.skip, .keepBoth, .replace]
+        }
+    }
+
+    @ViewBuilder
+    private var replaceAction: some View {
+        switch replaceOptionVisibility {
+        case .hidden:
+            EmptyView()
+        case .enabled:
+            Button("Confirm Replace...", action: onBeginReplaceConfirmation)
+                .help("Replace 每次必须先二次确认")
+        case .disabled:
+            Text("Replace requires system Trash")
+                .font(.caption)
+                .foregroundStyle(.orange)
+        }
     }
 
     @ViewBuilder
@@ -204,6 +255,14 @@ struct ImportSingleFileConflictSection: View {
              .corePreviewUnavailable, .sourceUnavailable, .error:
             return .orange
         }
+    }
+}
+
+struct ImportSingleFileReplaceConfirmation: Identifiable, Equatable {
+    var context: ImportSingleFileReplaceConfirmationContext
+
+    var id: String {
+        context.id
     }
 }
 

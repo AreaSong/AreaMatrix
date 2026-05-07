@@ -44,6 +44,7 @@ enum ImportSingleFileImportStatus: Equatable, Sendable {
     case imported(FileEntrySnapshot)
     case failed(CoreErrorMappingSnapshot)
     case blocked(String)
+    case skippedDuplicate(String)
 
     var isImporting: Bool {
         if case .importing = self { return true }
@@ -62,6 +63,8 @@ enum ImportSingleFileImportStatus: Equatable, Sendable {
             return mapping.userMessage
         case .blocked(let message):
             return message
+        case .skippedDuplicate(let existingPath):
+            return "已跳过重复文件：\(existingPath)"
         }
     }
 }

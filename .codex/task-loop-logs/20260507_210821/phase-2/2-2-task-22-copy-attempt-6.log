@@ -1,0 +1,40 @@
+一、执行结论
+
+- 已完成：`2-2/task-22` 的 P0 修复已收口。
+- 修复点：`S1-22` 现在可以在最终 Import 前，通过真实 `CoreBridge.listFiles` + 源文件 SHA256 预检识别 duplicate，并进入 duplicate 冲突区。
+
+二、执行范围
+
+- 单任务：`2-2/task-22`
+- 核心修改：
+  - [ImportSingleFilePreflight.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreflight.swift)
+  - [ImportSingleFilePreflightTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFilePreflightTests.swift)
+  - [ImportSingleFilePageIntegrationVerifyTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFilePageIntegrationVerifyTests.swift)
+- 当前工作区还包含前序 retry 已产生的 S1-22 UI/model/test 文件变更，以及 task-loop 的 `progress.json` / `.codex/task-loop-*` 运行产物；我没有回滚这些已有状态。
+
+三、完成情况
+
+- 核对清单：通过。只处理 `S1-22 + C1-09` duplicate 检测与冲突策略入口，未实现相邻页面。
+- 完成标准：通过。真实 preflight 会计算 hash、查询 Core 文件列表、在写入前返回 `.duplicate`，Skip 默认路径不会调用 importer，也不会写入新文件。
+- Forbidden Touches：通过。`core/src/**` 无 diff、无 status、无未跟踪文件。
+
+四、工程质量
+
+- 代码结构：通过。single-file preflight 复用现有 `ImportBatchCoreFileLoading` / `CoreBridgeBatchFileLoader`，没有新增 Core Rust API，也没有 mock-only 生产路径。
+- 错误处理：通过。无效文件名、iCloud placeholder、hash/list 失败都会显式阻断并返回用户可见原因。
+- 测试修复：通过。已移除旧的“preflight 不查 list_files / import 前无 conflict”反向断言，并补充真实 Core preflight integration 测试。
+- 未新增依赖；SwiftFormat/SwiftLint 当前环境不可用，未运行。
+
+五、验证情况
+
+- 已运行并通过：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+- 已运行并通过：`./dev test macos`
+  - 标准 `xcodebuild test` 被本机 sandbox 的 `testmanagerd.control` 阻断。
+  - 脚本按 repo 规则复用 XCTest bundle，`xcrun xctest` 通过：`264 tests, 0 failures`。
+- 未运行：`swiftformat`、`swiftlint`，原因是当前 PATH 下找不到对应命令。
+
+六、风险与后续
+
+- 剩余风险：未做手工 UI 截图/点击验收；本轮证据来自 build、单测和真实 CoreBridge integration 测试。
+- 建议下一个任务：进入 `2-2/task-22` 的 verify-ready 只读验收；若通过，再继续队列中的下一个 task。
+

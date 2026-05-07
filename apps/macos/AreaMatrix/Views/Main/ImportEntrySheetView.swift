@@ -21,13 +21,14 @@ struct ImportEntrySheetView: View {
     let onImported: (String, FileEntrySnapshot) -> Void
     let onShowExistingFile: (String) -> Void
 
-    @StateObject private var previewModel: ImportSingleFilePreviewModel
+    @StateObject var previewModel: ImportSingleFilePreviewModel
     @StateObject private var batchPreviewModel: ImportBatchPreviewModel
     @StateObject private var batchImportModel: ImportBatchCopyImportModel
     @StateObject private var folderPreviewModel: ImportFolderPreviewModel
     @State private var isReasonPopoverPresented = false
     @State private var showsBatchConflictReview = false
     @State private var pendingBatchReplaceConfirmation: ImportBatchReplaceConfirmation?
+    @State var pendingSingleFileReplaceConfirmation: ImportSingleFileReplaceConfirmation?
     @State private var showsFolderConflictReview = false
     @State private var pendingFolderReplaceConfirmation: ImportFolderReplaceConfirmation?
 
@@ -150,13 +151,6 @@ struct ImportEntrySheetView: View {
                 )
             }
         }
-        .sheet(item: singleFileReplaceBinding) { context in
-            ReplaceConfirmSheet(
-                context: context,
-                onCancel: previewModel.cancelReplaceConfirmation,
-                onConfirm: previewModel.applyReplaceConfirmation
-            )
-        }
         .sheet(item: $pendingBatchReplaceConfirmation) { item in
             ReplaceConfirmSheet(
                 context: item.context,
@@ -164,6 +158,19 @@ struct ImportEntrySheetView: View {
                 onConfirm: { decision in
                     batchImportModel.applyReplaceConfirmation(for: item.rowID, decision: decision)
                     pendingBatchReplaceConfirmation = nil
+                }
+            )
+        }
+        .sheet(item: $pendingSingleFileReplaceConfirmation) { item in
+            ReplaceConfirmSheet(
+                context: item.context,
+                onCancel: {
+                    previewModel.cancelReplaceConfirmation()
+                    pendingSingleFileReplaceConfirmation = nil
+                },
+                onConfirm: { decision in
+                    previewModel.applyReplaceConfirmation(decision)
+                    pendingSingleFileReplaceConfirmation = nil
                 }
             )
         }
@@ -212,8 +219,18 @@ struct ImportEntrySheetView: View {
                     activePage: previewModel.activeConflictPage,
                     sourceFilename: previewModel.source?.fileName,
                     sourcePath: previewModel.source?.sourcePath,
-                    isReplaceConfirmed: previewModel.isReplaceConfirmed,
-                    onOpenReplaceConfirm: previewModel.beginReplaceConfirmation
+                    replaceOptionVisibility: previewModel.replaceOptionVisibility,
+                    duplicateResolution: Binding(
+                        get: { previewModel.duplicateResolution },
+                        set: { previewModel.updateDuplicateResolution($0) }
+                    ),
+                    onBeginReplaceConfirmation: {
+                        previewModel.beginReplaceConfirmation()
+                        if let context = previewModel.pendingReplaceConfirmation {
+                            pendingSingleFileReplaceConfirmation = ImportSingleFileReplaceConfirmation(context: context)
+                        }
+                    },
+                    onShowExistingFile: onShowExistingFile
                 )
             }
             ImportSingleFileImportStatusSection(
@@ -405,37 +422,6 @@ struct ImportEntrySheetView: View {
         }
     }
 
-    private var singleFileFooter: some View {
-        HStack {
-            Spacer()
-            Button("Cancel", action: onCancel)
-                .keyboardShortcut(.cancelAction)
-            Button("Import") {
-                Task {
-                    if let context = previewModel.progressRetryContext {
-                        onImportStartedWithRetryContext(
-                            previewModel.progressCurrentPath,
-                            context.sourcePath,
-                            context.storageMode,
-                            context.overrideCategory,
-                            context.overrideFilename,
-                            context.duplicateStrategy.coreStrategy
-                        )
-                    } else {
-                        onImportStarted(previewModel.progressCurrentPath, previewModel.selectedStorageMode)
-                    }
-                    if let entry = await previewModel.importSelectedFile() {
-                        onImported(request.repoPath, entry)
-                    } else if let mapping = previewModel.importFailureMapping {
-                        onImportFailed(previewModel.progressCurrentPath, mapping)
-                    }
-                }
-            }
-            .keyboardShortcut(.defaultAction)
-            .disabled(previewModel.importDisabledReason != nil)
-        }
-    }
-
     private var folderPreview: some View {
         ImportFolderPreviewView(
             model: folderPreviewModel,
@@ -490,10 +476,4 @@ struct ImportEntrySheetView: View {
         ImportEntrySheetHelper.primaryFileLabel(urls: request.urls)
     }
 
-    private var singleFileReplaceBinding: Binding<ImportSingleFileReplaceConfirmationContext?> {
-        Binding(
-            get: { previewModel.pendingReplaceConfirmation },
-            set: { if $0 == nil { previewModel.cancelReplaceConfirmation() } }
-        )
-    }
 }

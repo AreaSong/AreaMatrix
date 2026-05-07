@@ -91,6 +91,10 @@
 		0A0000000000000000000182 /* ImportSingleFilePreflightTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000183 /* ImportSingleFilePreflightTests.swift */; };
 		0A0000000000000000000184 /* ImportSingleFilePreflightCorePreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000185 /* ImportSingleFilePreflightCorePreview.swift */; };
 		0A0000000000000000000186 /* ImportSingleFilePreviewModelState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000187 /* ImportSingleFilePreviewModelState.swift */; };
+		0A00000000000000000001E4 /* ImportSingleFileDuplicateResolution.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001E5 /* ImportSingleFileDuplicateResolution.swift */; };
+		0A00000000000000000001E6 /* ImportSingleFileDuplicateResolutionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001E7 /* ImportSingleFileDuplicateResolutionTests.swift */; };
+		0A00000000000000000001E8 /* ImportSingleFilePreviewPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001E9 /* ImportSingleFilePreviewPresentation.swift */; };
+		0A00000000000000000001EA /* ImportEntrySingleFileFooter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001EB /* ImportEntrySingleFileFooter.swift */; };
 		0A0000000000000000000188 /* ImportSingleFileTestFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000189 /* ImportSingleFileTestFixtures.swift */; };
 		0A0000000000000000000194 /* ImportBatchPreviewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000195 /* ImportBatchPreviewModel.swift */; };
 		0A0000000000000000000196 /* ImportBatchDuplicatePrecheck.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000197 /* ImportBatchDuplicatePrecheck.swift */; };
@@ -236,6 +240,10 @@
 		0A0000000000000000000183 /* ImportSingleFilePreflightTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportSingleFilePreflightTests.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000185 /* ImportSingleFilePreflightCorePreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ImportSingleFilePreflightCorePreview.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000187 /* ImportSingleFilePreviewModelState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ImportSingleFilePreviewModelState.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000001E5 /* ImportSingleFileDuplicateResolution.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ImportSingleFileDuplicateResolution.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000001E7 /* ImportSingleFileDuplicateResolutionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportSingleFileDuplicateResolutionTests.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000001E9 /* ImportSingleFilePreviewPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ImportSingleFilePreviewPresentation.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000001EB /* ImportEntrySingleFileFooter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/ImportEntrySingleFileFooter.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000189 /* ImportSingleFileTestFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportSingleFileTestFixtures.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000195 /* ImportBatchPreviewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ImportBatchPreviewModel.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000197 /* ImportBatchDuplicatePrecheck.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ImportBatchDuplicatePrecheck.swift; sourceTree = SOURCE_ROOT; };
@@ -363,6 +371,7 @@
 				0A00000000000000000001B7 /* ImportFolderPreviewSections.swift */,
 				0A00000000000000000001C7 /* ImportFolderConflictSection.swift */,
 				0A0000000000000000000191 /* ImportBatchCopyFooterSection.swift */,
+				0A00000000000000000001EB /* ImportEntrySingleFileFooter.swift */,
 				0A0000000000000000000199 /* ImportBatchConflictSection.swift */,
 				0A00000000000000000001A1 /* ImportBatchNamingOptionsSection.swift */,
 				0A0000000000000000000173 /* ImportSingleFileSheetSections.swift */,
@@ -431,6 +440,8 @@
 				0A00000000000000000001AB /* ImportBatchNamingState.swift */,
 				0A000000000000000000016D /* ImportSingleFilePreviewModel.swift */,
 				0A0000000000000000000187 /* ImportSingleFilePreviewModelState.swift */,
+				0A00000000000000000001E5 /* ImportSingleFileDuplicateResolution.swift */,
+				0A00000000000000000001E9 /* ImportSingleFilePreviewPresentation.swift */,
 				0A000000000000000000017B /* ImportSingleFilePreflight.swift */,
 				0A0000000000000000000185 /* ImportSingleFilePreflightCorePreview.swift */,
 				0A0000000000000000000197 /* ImportBatchDuplicatePrecheck.swift */,
@@ -490,6 +501,7 @@
 				0A00000000000000000001C1 /* ImportFolderPageIntegrationVerifyTests.swift */,
 				0A00000000000000000001BF /* ImportFolderTestSupport.swift */,
 				0A000000000000000000016F /* ImportSingleFilePreviewModelTests.swift */,
+				0A00000000000000000001E7 /* ImportSingleFileDuplicateResolutionTests.swift */,
 				0A0000000000000000000181 /* ImportSingleFileTestSupport.swift */,
 				0A0000000000000000000189 /* ImportSingleFileTestFixtures.swift */,
 				0A0000000000000000000175 /* ImportSingleFileMoveImportTests.swift */,
@@ -648,6 +660,7 @@
 				0A00000000000000000001B6 /* ImportFolderPreviewSections.swift in Sources */,
 				0A00000000000000000001C6 /* ImportFolderConflictSection.swift in Sources */,
 				0A0000000000000000000190 /* ImportBatchCopyFooterSection.swift in Sources */,
+				0A00000000000000000001EA /* ImportEntrySingleFileFooter.swift in Sources */,
 				0A0000000000000000000198 /* ImportBatchConflictSection.swift in Sources */,
 				0A00000000000000000001A0 /* ImportBatchNamingOptionsSection.swift in Sources */,
 				0A0000000000000000000172 /* ImportSingleFileSheetSections.swift in Sources */,
@@ -669,6 +682,8 @@
 				0A00000000000000000001AA /* ImportBatchNamingState.swift in Sources */,
 				0A000000000000000000016C /* ImportSingleFilePreviewModel.swift in Sources */,
 				0A0000000000000000000186 /* ImportSingleFilePreviewModelState.swift in Sources */,
+				0A00000000000000000001E4 /* ImportSingleFileDuplicateResolution.swift in Sources */,
+				0A00000000000000000001E8 /* ImportSingleFilePreviewPresentation.swift in Sources */,
 				0A000000000000000000017A /* ImportSingleFilePreflight.swift in Sources */,
 				0A0000000000000000000184 /* ImportSingleFilePreflightCorePreview.swift in Sources */,
 				0A0000000000000000000196 /* ImportBatchDuplicatePrecheck.swift in Sources */,
@@ -744,6 +759,7 @@
 				0A00000000000000000001C0 /* ImportFolderPageIntegrationVerifyTests.swift in Sources */,
 				0A00000000000000000001BE /* ImportFolderTestSupport.swift in Sources */,
 				0A000000000000000000016E /* ImportSingleFilePreviewModelTests.swift in Sources */,
+				0A00000000000000000001E6 /* ImportSingleFileDuplicateResolutionTests.swift in Sources */,
 				0A0000000000000000000180 /* ImportSingleFileTestSupport.swift in Sources */,
 				0A0000000000000000000188 /* ImportSingleFileTestFixtures.swift in Sources */,
 				0A0000000000000000000174 /* ImportSingleFileMoveImportTests.swift in Sources */,

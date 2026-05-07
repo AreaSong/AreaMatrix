@@ -10,19 +10,11 @@ protocol ICloudPlaceholderDownloading: Sendable {
     func downloadPlaceholder(at sourceURL: URL) async throws
 }
 
-protocol CoreImportPreviewing: Sendable {
-    func previewSingleFileImport(
-        request: ImportSingleFilePreflightRequest
-    ) async throws -> ImportSingleFilePreflightResult
-}
-
 struct ImportSingleFilePreflightRequest: Equatable, Sendable {
     var repoPath: String
     var sourceURL: URL
     var category: String
     var targetFilename: String
-    var allowReplaceDuringImport: Bool
-    var isTrashAvailable: Bool
 }
 
 struct ImportSingleFilePreflightResult: Equatable, Sendable {
@@ -30,12 +22,12 @@ struct ImportSingleFilePreflightResult: Equatable, Sendable {
     var hashSha256: String?
     var targetRelativePath: String
     var conflict: ImportSingleFileConflict
-    var replaceOptionVisibility: ImportSingleFileReplaceOptionVisibility
+    var keepBothTargetRelativePath: String? = nil
 
     var statusMessage: String {
         switch conflict {
         case .none:
-            return "preview/hash/conflict precheck 完成：冲突：无"
+            return "hash 预检完成；未发现内容重复。"
         case .invalidFilename(let message):
             return message
         case .name(let path):
@@ -53,16 +45,13 @@ struct ImportSingleFilePreflightResult: Equatable, Sendable {
         }
     }
 
-    func importBlockingReason(isReplaceConfirmed: Bool) -> String? {
+    func importBlockingReason() -> String? {
         switch conflict {
         case .none:
             return nil
         case .invalidFilename(let message):
             return message
         case .name, .duplicate:
-            if replaceOptionVisibility == .enabled, isReplaceConfirmed {
-                return nil
-            }
             return ImportSingleFileConflictPage(conflict: conflict)?.blockingReason ?? "请先完成冲突处理"
         case .iCloudPlaceholder:
             return "iCloud placeholder 需要下载后才能导入"
@@ -75,29 +64,6 @@ struct ImportSingleFilePreflightResult: Equatable, Sendable {
         }
     }
 
-    func replaceConfirmationContext(
-        incomingPath: String
-    ) -> ImportSingleFileReplaceConfirmationContext? {
-        guard replaceOptionVisibility == .enabled else { return nil }
-        let existingPath: String
-        switch conflict {
-        case .invalidFilename:
-            return nil
-        case .name(let path):
-            existingPath = path
-        case .duplicate(let existing):
-            existingPath = existing
-        case .none, .iCloudPlaceholder, .iCloudDownloadFailed, .corePreviewUnavailable, .sourceUnavailable, .error:
-            return nil
-        }
-        return ImportSingleFileReplaceConfirmationContext(
-            existingPath: existingPath,
-            incomingPath: incomingPath,
-            incomingSizeBytes: sourceSizeBytes,
-            targetRelativePath: targetRelativePath,
-            isTrashAvailable: replaceOptionVisibility == .enabled
-        )
-    }
 }
 
 enum ImportSingleFilePreflightStatus: Equatable, Sendable {
@@ -122,14 +88,14 @@ enum ImportSingleFilePreflightStatus: Equatable, Sendable {
         }
     }
 
-    func importBlockingReason(isReplaceConfirmed: Bool) -> String? {
+    func importBlockingReason() -> String? {
         switch self {
         case .idle:
             return "导入预检未开始"
         case .checking:
-            return "正在检查 preview/hash/conflict precheck"
+            return "Checking duplicate..."
         case .ready(let result), .blocked(let result):
-            return result.importBlockingReason(isReplaceConfirmed: isReplaceConfirmed)
+            return result.importBlockingReason()
         }
     }
 }
@@ -145,28 +111,16 @@ enum ImportSingleFileConflict: Equatable, Sendable {
     case sourceUnavailable(String)
     case error(String)
 
-    var isConflict: Bool {
-        switch self {
-        case .name, .duplicate:
-            return true
-        case .none, .invalidFilename, .iCloudPlaceholder, .iCloudDownloadFailed, .corePreviewUnavailable,
-             .sourceUnavailable, .error:
-            return false
-        }
-    }
 }
 
 enum ImportSingleFileConflictPage: Equatable, Sendable {
     case duplicate
-    case nameConflict
 
     init?(conflict: ImportSingleFileConflict) {
         switch conflict {
         case .duplicate:
             self = .duplicate
-        case .name:
-            self = .nameConflict
-        case .none, .invalidFilename, .iCloudPlaceholder, .iCloudDownloadFailed, .corePreviewUnavailable,
+        case .none, .invalidFilename, .name, .iCloudPlaceholder, .iCloudDownloadFailed, .corePreviewUnavailable,
              .sourceUnavailable, .error:
             return nil
         }
@@ -176,8 +130,6 @@ enum ImportSingleFileConflictPage: Equatable, Sendable {
         switch self {
         case .duplicate:
             return "S1-22 conflict-duplicate"
-        case .nameConflict:
-            return "S1-23 conflict-name"
         }
     }
 
@@ -185,8 +137,6 @@ enum ImportSingleFileConflictPage: Equatable, Sendable {
         switch self {
         case .duplicate:
             return "冲突：内容重复"
-        case .nameConflict:
-            return "冲突：目标位置已有同名文件"
         }
     }
 
@@ -194,8 +144,6 @@ enum ImportSingleFileConflictPage: Equatable, Sendable {
         switch self {
         case .duplicate:
             return "资料库中已存在相同内容的文件。请先进入冲突处理区域决定后续策略。"
-        case .nameConflict:
-            return "目标目录中已经存在同名文件，但内容不同。请先进入冲突处理区域决定后续策略。"
         }
     }
 
@@ -257,10 +205,10 @@ enum ImportSingleFileReplaceOptionVisibility: Equatable, Sendable {
 }
 
 struct CoreImportSingleFilePreflight: ImportSingleFilePreflighting {
-    private let previewer: any CoreImportPreviewing
+    private let fileLoader: any ImportBatchCoreFileLoading
 
-    init(previewer: any CoreImportPreviewing = CoreBridge()) {
-        self.previewer = previewer
+    init(fileLoader: any ImportBatchCoreFileLoading = CoreBridgeBatchFileLoader()) {
+        self.fileLoader = fileLoader
     }
 
     func preflightSingleFileImport(
@@ -272,25 +220,31 @@ struct CoreImportSingleFilePreflight: ImportSingleFilePreflighting {
                 return blockedResult(
                     request: request,
                     sourceSizeBytes: source.sizeBytes,
+                    hashSha256: nil,
                     conflict: .invalidFilename(validationMessage)
                 )
             }
-            do {
-                return try await previewer.previewSingleFileImport(request: request)
-            } catch {
-                return blockedResult(
-                    request: request,
-                    sourceSizeBytes: source.sizeBytes,
-                    conflict: previewConflict(for: error)
-                )
-            }
+            let sourceHash = try ImportSingleFileHasher.sha256Hex(for: request.sourceURL)
+            let files = try await fileLoader.loadImportPreviewFiles(repoPath: request.repoPath, categories: [nil])
+            return readyResult(
+                request: request,
+                sourceSizeBytes: source.sizeBytes,
+                hashSha256: sourceHash,
+                files: files
+            )
         } catch let error as ImportSingleFilePreflightError {
-            return blockedResult(request: request, sourceSizeBytes: error.sourceSizeBytes, conflict: error.conflict)
+            return blockedResult(
+                request: request,
+                sourceSizeBytes: error.sourceSizeBytes,
+                hashSha256: nil,
+                conflict: error.conflict
+            )
         } catch {
             return blockedResult(
                 request: request,
                 sourceSizeBytes: nil,
-                conflict: .error("导入预检失败：\(error.localizedDescription)")
+                hashSha256: nil,
+                conflict: .error("导入预检失败：\(Self.readableMessage(for: error))")
             )
         }
     }
@@ -298,42 +252,80 @@ struct CoreImportSingleFilePreflight: ImportSingleFilePreflighting {
     private func blockedResult(
         request: ImportSingleFilePreflightRequest,
         sourceSizeBytes: Int64?,
+        hashSha256: String?,
         conflict: ImportSingleFileConflict
     ) -> ImportSingleFilePreflightResult {
         ImportSingleFilePreflightResult(
             sourceSizeBytes: sourceSizeBytes,
-            hashSha256: nil,
+            hashSha256: hashSha256,
             targetRelativePath: ImportSingleFilePreflightTarget.relativePath(
                 category: request.category,
                 filename: request.targetFilename
             ),
             conflict: conflict,
-            replaceOptionVisibility: replaceVisibility(for: conflict, request: request)
+            keepBothTargetRelativePath: nil
         )
     }
 
-    private func replaceVisibility(
-        for conflict: ImportSingleFileConflict,
-        request: ImportSingleFilePreflightRequest
-    ) -> ImportSingleFileReplaceOptionVisibility {
-        guard conflict.isConflict else { return .hidden }
-        if !request.allowReplaceDuringImport { return .hidden }
-        return request.isTrashAvailable ? .enabled : .disabled
+    private func readyResult(
+        request: ImportSingleFilePreflightRequest,
+        sourceSizeBytes: Int64,
+        hashSha256: String,
+        files: [FileEntrySnapshot]
+    ) -> ImportSingleFilePreflightResult {
+        let targetRelativePath = ImportSingleFilePreflightTarget.relativePath(
+            category: request.category,
+            filename: request.targetFilename
+        )
+        if let duplicate = files.first(where: { $0.hashSha256 == hashSha256 }) {
+            return ImportSingleFilePreflightResult(
+                sourceSizeBytes: sourceSizeBytes,
+                hashSha256: hashSha256,
+                targetRelativePath: targetRelativePath,
+                conflict: .duplicate(existingPath: duplicate.path),
+                keepBothTargetRelativePath: keepBothTargetRelativePath(
+                    preferredPath: targetRelativePath,
+                    files: files
+                )
+            )
+        }
+
+        return ImportSingleFilePreflightResult(
+            sourceSizeBytes: sourceSizeBytes,
+            hashSha256: hashSha256,
+            targetRelativePath: targetRelativePath,
+            conflict: .none,
+            keepBothTargetRelativePath: nil
+        )
     }
 
-    private func previewConflict(for error: Error) -> ImportSingleFileConflict {
-        if let bridgeError = error as? CoreBridgeError {
-            return .corePreviewUnavailable(Self.previewUnavailableMessage(bridgeError.localizedDescription))
-        }
-        if error is CoreError {
-            return .error("Core preview_import 预检失败：\(error.localizedDescription)")
-        }
-        return .error("Core preview_import 预检失败：\(error.localizedDescription)")
+    private func keepBothTargetRelativePath(
+        preferredPath: String,
+        files: [FileEntrySnapshot]
+    ) -> String? {
+        ImportSingleFileDuplicateKeepBothPreview.nextAvailablePath(
+            preferredPath: preferredPath,
+            existingPaths: Set(files.map(\.path))
+        )
     }
 
-    private static func previewUnavailableMessage(_ detail: String) -> String {
-        "Core preview_import 尚未在 UDL / generated bindings 中接入，无法完成 preview/hash/conflict precheck。\(detail)"
+    private static func readableMessage(for error: Error) -> String {
+        guard let coreError = error as? CoreError else {
+            return error.localizedDescription
+        }
+
+        switch coreError {
+        case .Io(let message), .Db(let message), .Internal(let message):
+            return message
+        case .Config(let reason), .Classify(let reason):
+            return reason
+        case .Conflict(let path), .DuplicateFile(let path), .FileNotFound(let path),
+             .RepoNotInitialized(let path), .InvalidPath(let path), .ICloudPlaceholder(let path),
+             .PermissionDenied(let path):
+            return path
+        }
     }
+
 }
 
 enum ImportSingleFileFilenameValidator {

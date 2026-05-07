@@ -9,6 +9,7 @@ final class ImportSingleFilePreviewModel: ObservableObject {
     @Published private(set) var importStatus: ImportSingleFileImportStatus = .idle
     @Published private(set) var preflightStatus: ImportSingleFilePreflightStatus = .idle
     @Published private(set) var isICloudDownloading = false
+    @Published var duplicateResolution: ImportSingleFileDuplicateResolutionStrategy = .skip
     @Published private(set) var isReplaceConfirmed = false
     @Published private(set) var pendingReplaceConfirmation: ImportSingleFileReplaceConfirmationContext?
     @Published var selectedCategory = "inbox" {
@@ -27,8 +28,6 @@ final class ImportSingleFilePreviewModel: ObservableObject {
     private var request: ImportEntryRequest?
     private var generation = 0
     private var isLoadingRequest = false
-    private var allowReplaceDuringImport = false
-    private var isTrashAvailable = true
 
     init(
         predictor: any CoreCategoryPredicting,
@@ -46,45 +45,8 @@ final class ImportSingleFilePreviewModel: ObservableObject {
 }
 
 extension ImportSingleFilePreviewModel {
-    var reasonSummary: String {
-        guard let prediction else { return "暂无分类解释" }
-        return "\(prediction.reason.displayLabel) · \(prediction.confidencePercent)%"
-    }
-
-    var sourceSizeDescription: String? {
-        let sizeBytes = source?.sizeBytes ?? currentPreflightResult?.sourceSizeBytes
-        guard let sizeBytes else { return nil }
-        return ByteCountFormatter.string(fromByteCount: sizeBytes, countStyle: .file)
-    }
-
-    var filenameValidationMessage: String? {
-        ImportSingleFileFilenameValidator.validationMessage(for: suggestedName)
-    }
-
-    var preflightMessage: String? {
-        if isICloudDownloading {
-            return "正在下载 iCloud 文件..."
-        }
-        return preflightStatus.message
-    }
-
-    var currentPreflightResult: ImportSingleFilePreflightResult? {
-        switch preflightStatus {
-        case .ready(let result), .blocked(let result):
-            return result
-        case .idle, .checking:
-            return nil
-        }
-    }
-
-    var progressCurrentPath: String {
-        if let currentPreflightResult {
-            return currentPreflightResult.targetRelativePath
-        }
-        return ImportSingleFilePreflightTarget.relativePath(
-            category: selectedCategory,
-            filename: suggestedName
-        )
+    var importRequest: ImportEntryRequest? {
+        request
     }
 
     var progressRetryContext: ImportProgressRetryContext? {
@@ -97,70 +59,6 @@ extension ImportSingleFilePreviewModel {
             overrideFilename: suggestedName.trimmingCharacters(in: .whitespacesAndNewlines),
             duplicateStrategy: ImportProgressDuplicateStrategy(coreStrategy: resolvedDuplicateStrategy)
         )
-    }
-
-    var showsICloudActions: Bool {
-        guard let result = currentPreflightResult else { return false }
-        switch result.conflict {
-        case .iCloudPlaceholder, .iCloudDownloadFailed:
-            return true
-        case .none, .invalidFilename, .name, .duplicate, .corePreviewUnavailable, .sourceUnavailable, .error:
-            return false
-        }
-    }
-
-    var showsRetryPreviewAction: Bool {
-        guard let result = currentPreflightResult else { return false }
-        switch result.conflict {
-        case .sourceUnavailable, .error:
-            return true
-        case .none, .invalidFilename, .name, .duplicate, .iCloudPlaceholder, .iCloudDownloadFailed,
-             .corePreviewUnavailable:
-            return false
-        }
-    }
-
-    var showsConflictSection: Bool {
-        guard let result = currentPreflightResult else { return false }
-        switch result.conflict {
-        case .none, .name, .duplicate:
-            return true
-        case .invalidFilename, .iCloudPlaceholder, .iCloudDownloadFailed, .corePreviewUnavailable,
-             .sourceUnavailable, .error:
-            return false
-        }
-    }
-
-    var activeConflictPage: ImportSingleFileConflictPage? {
-        guard let result = currentPreflightResult else { return nil }
-        return ImportSingleFileConflictPage(conflict: result.conflict)
-    }
-
-    var importFailureMapping: CoreErrorMappingSnapshot? {
-        guard case .failed(let mapping) = importStatus else { return nil }
-        return mapping
-    }
-
-    var importDisabledReason: String? {
-        if importStatus.isImporting {
-            return importStatus.blockingMessage ?? "正在导入"
-        }
-        if importStatus.isImported {
-            return "文件已导入"
-        }
-        if !isReadyForImport {
-            return status.message ?? "导入预检未完成"
-        }
-        if selectedCategory.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            return "请选择导入分类"
-        }
-        if let filenameValidationMessage {
-            return filenameValidationMessage
-        }
-        if let preflightBlocker = preflightStatus.importBlockingReason(isReplaceConfirmed: isReplaceConfirmed) {
-            return preflightBlocker
-        }
-        return nil
     }
 }
 
@@ -205,36 +103,9 @@ extension ImportSingleFilePreviewModel {
                     filename: suggestedName
                 ),
                 conflict: .iCloudDownloadFailed(path: sourceURL.path, reason: error.localizedDescription),
-                replaceOptionVisibility: .hidden
+                keepBothTargetRelativePath: nil
             ))
         }
-    }
-
-    func beginReplaceConfirmation() {
-        guard let request, let sourceURL = request.urls.first else { return }
-        pendingReplaceConfirmation = currentPreflightResult?.replaceConfirmationContext(
-            incomingPath: sourceURL.path
-        )
-    }
-
-    func cancelReplaceConfirmation() {
-        pendingReplaceConfirmation = nil
-    }
-
-    func applyReplaceConfirmation(_ decision: ImportSingleFileReplaceConfirmationDecision) {
-        guard pendingReplaceConfirmation == decision.context else {
-            importStatus = .blocked("Replace confirmation context expired")
-            pendingReplaceConfirmation = nil
-            isReplaceConfirmed = false
-            return
-        }
-        guard decision.understandsReplace else {
-            importStatus = .blocked("Replace 需要先勾选二次确认")
-            isReplaceConfirmed = false
-            return
-        }
-        pendingReplaceConfirmation = nil
-        isReplaceConfirmed = true
     }
 
     private func schedulePreflightForCurrentEdits() {
@@ -243,8 +114,8 @@ extension ImportSingleFilePreviewModel {
         guard !applyInvalidFilenamePreflightIfNeeded() else { return }
         generation += 1
         let currentGeneration = generation
-        resetReplaceStateForPreflight()
-        preflightStatus = .checking("正在检查 preview/hash/conflict precheck")
+        resetDuplicateResolutionForPreflight()
+        preflightStatus = .checking("Checking duplicate...")
         Task { await runPreflightIfReady(generation: currentGeneration) }
     }
 
@@ -252,6 +123,10 @@ extension ImportSingleFilePreviewModel {
     func importSelectedFile() async -> FileEntrySnapshot? {
         guard let request, let sourceURL = request.urls.first else {
             importStatus = .blocked("没有可导入的单文件来源")
+            return nil
+        }
+        if let existingPath = skippedDuplicateExistingPath {
+            importStatus = .skippedDuplicate(existingPath)
             return nil
         }
         if let disabledReason = importDisabledReason {
@@ -269,6 +144,9 @@ extension ImportSingleFilePreviewModel {
             )
             importStatus = .imported(entry)
             return entry
+        } catch CoreError.DuplicateFile(let existingPath) {
+            applyDuplicateConflict(existingPath: existingPath)
+            return nil
         } catch {
             importStatus = .failed(await mapImportError(error))
             return nil
@@ -281,8 +159,8 @@ private extension ImportSingleFilePreviewModel {
         source = nil
         prediction = nil
         preflightStatus = .idle
-        isReplaceConfirmed = false
-        pendingReplaceConfirmation = nil
+        duplicateResolution = .skip
+        resetReplaceStateForPreflight()
         selectedCategory = "inbox"
         suggestedName = ""
         selectedStorageMode = .copy
@@ -310,22 +188,21 @@ private extension ImportSingleFilePreviewModel {
 
     private func runPreflightIfReady(generation currentGeneration: Int) async {
         guard let request, let sourceURL = request.urls.first, isReadyForImport else { return }
+        resetDuplicateResolutionForPreflight()
         resetReplaceStateForPreflight()
         if let invalidFilenamePreflightResult {
             preflightStatus = .blocked(invalidFilenamePreflightResult)
             return
         }
-        preflightStatus = .checking("正在检查 preview/hash/conflict precheck")
+        preflightStatus = .checking("Checking duplicate...")
         let result = await preflight.preflightSingleFileImport(request: ImportSingleFilePreflightRequest(
             repoPath: request.repoPath,
             sourceURL: sourceURL,
             category: selectedCategory,
-            targetFilename: suggestedName,
-            allowReplaceDuringImport: allowReplaceDuringImport,
-            isTrashAvailable: isTrashAvailable
+            targetFilename: suggestedName
         ))
         guard generation == currentGeneration else { return }
-        preflightStatus = result.importBlockingReason(isReplaceConfirmed: false) == nil ? .ready(result) : .blocked(result)
+        preflightStatus = isImportablePreflightResult(result) ? .ready(result) : .blocked(result)
     }
 
     private var invalidFilenamePreflightResult: ImportSingleFilePreflightResult? {
@@ -338,8 +215,18 @@ private extension ImportSingleFilePreviewModel {
                 filename: suggestedName
             ),
             conflict: .invalidFilename(validationMessage),
-            replaceOptionVisibility: .hidden
+            keepBothTargetRelativePath: nil
         )
+    }
+
+    private func isImportablePreflightResult(_ result: ImportSingleFilePreflightResult) -> Bool {
+        switch result.conflict {
+        case .none, .duplicate:
+            return true
+        case .invalidFilename, .name, .iCloudPlaceholder, .iCloudDownloadFailed, .corePreviewUnavailable,
+             .sourceUnavailable, .error:
+            return false
+        }
     }
 
     private func importFile(
@@ -375,10 +262,6 @@ private extension ImportSingleFilePreviewModel {
                 duplicateStrategy: duplicateStrategy
             )
         }
-    }
-
-    private var resolvedDuplicateStrategy: DuplicateStrategy {
-        isReplaceConfirmed ? .overwrite : .ask
     }
 
     private func mapImportError(_ error: Error) async -> CoreErrorMappingSnapshot {
@@ -427,36 +310,59 @@ private extension ImportSingleFilePreviewModel {
         preflightStatus = .idle
         status = .loading
         isICloudDownloading = false
+        resetDuplicateResolutionForPreflight()
         resetReplaceStateForPreflight()
         selectedStorageMode = .copy
-        allowReplaceDuringImport = request.allowReplaceDuringImport
-        isTrashAvailable = request.isTrashAvailable
         selectedCategory = request.explicitCategory ?? "inbox"
         suggestedName = sourceURL.lastPathComponent
     }
-    private func resetReplaceStateForPreflight() {
-        isReplaceConfirmed = false
-        pendingReplaceConfirmation = nil
+    private func resetDuplicateResolutionForPreflight() {
+        duplicateResolution = .skip
     }
 
     private func applyInvalidFilenamePreflightIfNeeded() -> Bool {
         guard let invalidFilenamePreflightResult else { return false }
         generation += 1
+        resetDuplicateResolutionForPreflight()
         resetReplaceStateForPreflight()
         preflightStatus = .blocked(invalidFilenamePreflightResult)
         return true
     }
+
+    private func applyDuplicateConflict(existingPath: String) {
+        let targetRelativePath = ImportSingleFilePreflightTarget.relativePath(
+            category: selectedCategory,
+            filename: suggestedName
+        )
+        duplicateResolution = .skip
+        resetReplaceStateForPreflight()
+        importStatus = .idle
+        preflightStatus = .blocked(ImportSingleFilePreflightResult(
+            sourceSizeBytes: source?.sizeBytes,
+            hashSha256: currentPreflightResult?.hashSha256,
+            targetRelativePath: targetRelativePath,
+            conflict: .duplicate(existingPath: existingPath),
+            keepBothTargetRelativePath: currentPreflightResult?.keepBothTargetRelativePath
+        ))
+    }
 }
 
-private extension ImportSingleFileImportStatus {
-    var isImported: Bool {
-        if case .imported = self { return true }
-        return false
+extension ImportSingleFilePreviewModel {
+    func blockImportForDuplicateResolution(_ message: String) {
+        importStatus = .blocked(message)
     }
 
-    var blockingMessage: String? {
-        guard case .importing(let mode) = self else { return nil }
-        return mode.importingBlockingMessage
+    func setPendingReplaceConfirmation(_ context: ImportSingleFileReplaceConfirmationContext?) {
+        pendingReplaceConfirmation = context
+    }
+
+    func markReplaceConfirmed(_ isConfirmed: Bool) {
+        isReplaceConfirmed = isConfirmed
+    }
+
+    func resetReplaceStateForPreflight() {
+        isReplaceConfirmed = false
+        pendingReplaceConfirmation = nil
     }
 }
 

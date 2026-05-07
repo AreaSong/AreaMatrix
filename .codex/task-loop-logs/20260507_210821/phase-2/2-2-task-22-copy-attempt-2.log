@@ -1,0 +1,65 @@
+**一、执行结论**
+
+已完成。
+
+**二、执行范围**
+
+单任务：`2-2/task-22`，只修复上次验收指出的 S1-22 / C1-09 问题。
+
+修改文件清单：
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+- `apps/macos/AreaMatrix/Models/ImportSingleFilePreflight.swift`
+- `apps/macos/AreaMatrix/Models/ImportSingleFilePreflightCorePreview.swift`
+- `apps/macos/AreaMatrix/Models/ImportSingleFilePreviewModel.swift`
+- `apps/macos/AreaMatrix/Models/ImportSingleFilePreviewModelState.swift`
+- `apps/macos/AreaMatrix/Models/ImportSingleFileDuplicateResolution.swift`
+- `apps/macos/AreaMatrix/Views/Main/ImportEntrySheetView.swift`
+- `apps/macos/AreaMatrix/Views/Main/ImportSingleFileSheetSections.swift`
+- `apps/macos/AreaMatrixTests/ImportSingleFileDuplicateResolutionTests.swift`
+- `apps/macos/AreaMatrixTests/ImportSingleFilePreflightTests.swift`
+- `apps/macos/AreaMatrixTests/ImportSingleFilePageIntegrationVerifyTests.swift`
+- `apps/macos/AreaMatrixTests/ImportSingleFilePreviewModelTests.swift`
+
+另有 task-loop 生成的 `progress.json` / `.codex/task-loop-*` 运行证据仍在 worktree，未作为产品实现改动处理。
+
+**三、完成情况**
+
+核对清单全部通过：
+- 仅处理 S1-22 中 C1-09 duplicate hash 功能点。
+- 已按 task / manifest / Exact Docs / Existing Code 交叉核对。
+- 单文件预检改为全库 active 文件 hash 检测，不再按当前 category 漏检跨分类重复。
+- 移除了单文件入口中的 S1-23 name conflict 路由和 S1-24 replace confirm 流程。
+
+完成标准全部通过：
+- S1-22 可见功能已落地：默认 Skip、Keep both 自动编号预览、Show existing file。
+- Skip 不调用 importer，不写文件；Keep both 最终通过真实 Core importer 传入 `.keepBoth`。
+- 没有接入 control map 之外的能力。
+- `Forbidden Touches`: 未触碰 `core/src/**`，`core/area_matrix.udl` 也未修改。
+
+**四、工程质量**
+
+代码结构已收敛到 S1-22 专属重复处理：新增 duplicate resolution 小模型，UI 和 import 状态分离。触碰文件均低于 500 行，`git diff --check` 通过；未发现新增 `try!`、强制转换、`print()`、TODO/FIXME 等明显阻断项。
+
+本任务未新增 Rust public API、UDL 或依赖，因此无 rustdoc / 依赖许可证同步需求。错误和边界覆盖包括：跨分类同 hash、同名但非重复不进入本 task、Skip 不导入、Keep both 使用 Core 策略、Keep both 自动编号失败会阻断。
+
+**五、验证情况**
+
+已运行并通过：
+- `xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`  
+  结果：`** BUILD SUCCEEDED **`
+- `./dev test macos`  
+  结果：标准 `xcodebuild test` 被本地 `testmanagerd` sandbox 限制阻断，脚本按仓库规则复用 XCTest bundle，`xcrun xctest` 执行 263 tests，0 failures。
+- `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`  
+  结果：`doctor: OK`，637 tasks / 637 manifests。
+- `git diff --check`  
+  结果：通过。
+
+未运行：
+- `swiftformat --lint .`、`swiftlint --strict`：当前 PATH 下没有 `swiftformat` / `swiftlint` 可执行文件。
+
+**六、风险与后续**
+
+剩余风险：未做真实 macOS 手工交互验证，且 SwiftFormat / SwiftLint 需要在具备工具的环境补跑。实现层面没有用户文件删除、移动、覆盖或 DB migration；回滚方式是 revert 上述 app/test/project 文件即可。
+
+建议下一个任务：对 `2-2/task-22` 执行 verify-ready 只读验收；通过后再继续 `2-2/task-23`，不要把 name conflict 回灌到本 task。
+

@@ -216,7 +216,7 @@ final class ImportSingleFilePageIntegrationVerifyTests: XCTestCase {
     }
 
     @MainActor
-    func testS117FailureMapsCoreErrorAndDoesNotCreateSuccess() async {
+    func testS122ImportFileDuplicateErrorOpensDuplicateConflictPage() async {
         let request = ImportEntryRequest(
             repoPath: "/tmp/repo",
             source: .filePicker,
@@ -237,93 +237,42 @@ final class ImportSingleFilePageIntegrationVerifyTests: XCTestCase {
 
         XCTAssertNil(imported)
         let mappedErrors = await errorMapper.recordedErrors()
-        XCTAssertEqual(mappedErrors, [
-            CoreError.DuplicateFile(existingPath: "docs/source.pdf"),
-        ])
-        XCTAssertEqual(model.importStatus, .failed(.s117Error(kind: .duplicateFile)))
+        XCTAssertEqual(mappedErrors, [])
+        XCTAssertEqual(model.activeConflictPage, .duplicate)
+        XCTAssertEqual(model.importStatus, .idle)
+        XCTAssertEqual(model.currentPreflightResult?.conflict, .duplicate(existingPath: "docs/source.pdf"))
+        XCTAssertNil(model.currentPreflightResult?.keepBothTargetRelativePath)
+        XCTAssertEqual(model.duplicateResolution, .skip)
+        XCTAssertNil(model.importDisabledReason)
     }
 
     @MainActor
-    func testS117PreflightSurfacesNameConflictReplaceVisibilityAndConfirmation() async {
-        let result = ImportSingleFilePreflightResult(
-            sourceSizeBytes: 12,
-            hashSha256: "hash",
-            targetRelativePath: "docs/source.pdf",
-            conflict: .name(path: "docs/source.pdf"),
-            replaceOptionVisibility: .enabled
-        )
-        let importer = S117RecordingImporter()
-        let request = ImportEntryRequest(
-            repoPath: "/tmp/repo",
-            source: .filePicker,
-            destination: .autoClassify,
-            urls: [URL(fileURLWithPath: "/tmp/source.pdf")],
-            kind: .singleFile,
-            allowReplaceDuringImport: true,
-            isTrashAvailable: true
-        )
-        let model = ImportSingleFilePreviewModel(
-            predictor: S117RecordingPredictor(result: .s117Fixture()),
-            importer: importer,
-            preflight: ImportSingleFileStaticPreflight(result: result),
-            errorMapper: S117RecordingErrorMapper()
-        )
-
-        await model.load(request: request)
-
-        XCTAssertEqual(model.currentPreflightResult?.conflict, .name(path: "docs/source.pdf"))
-        XCTAssertEqual(model.currentPreflightResult?.replaceOptionVisibility, .enabled)
-        XCTAssertEqual(model.activeConflictPage, .nameConflict)
-        XCTAssertEqual(model.importDisabledReason, "请先完成 S1-23 conflict-name 处理")
-
-        model.beginReplaceConfirmation()
-        guard let context = model.pendingReplaceConfirmation else {
-            return XCTFail("Expected S1-24 replace-confirm context")
-        }
-        model.applyReplaceConfirmation(context.decision(understandsReplace: true))
-        let imported = await model.importSelectedFile()
-        let requests = await importer.recordedRequests()
-        XCTAssertEqual(imported?.storageMode, "Copied")
-        XCTAssertEqual(requests.last?.duplicateStrategy, .overwrite)
-    }
-
-    @MainActor
-    func testS117ReplaceHiddenAndDisabledStatesBlockImport() async {
+    func testS122DuplicateDefaultsToSkipWithoutEnteringAdjacentPages() async {
         let hidden = ImportSingleFilePreflightResult(
             sourceSizeBytes: 12,
             hashSha256: "hash",
             targetRelativePath: "docs/source.pdf",
-            conflict: .duplicate(existingPath: "docs/source.pdf"),
-            replaceOptionVisibility: .hidden
+            conflict: .duplicate(existingPath: "docs/source.pdf")
         )
-        let disabled = ImportSingleFilePreflightResult(
-            sourceSizeBytes: 12,
-            hashSha256: "hash",
-            targetRelativePath: "docs/source.pdf",
-            conflict: .name(path: "docs/source.pdf"),
-            replaceOptionVisibility: .disabled
-        )
+        let importer = S117RecordingImporter()
 
         let hiddenModel = ImportSingleFilePreviewModel(
             predictor: S117RecordingPredictor(result: .s117Fixture()),
-            importer: S117RecordingImporter(),
+            importer: importer,
             preflight: ImportSingleFileStaticPreflight(result: hidden),
-            errorMapper: S117RecordingErrorMapper()
-        )
-        let disabledModel = ImportSingleFilePreviewModel(
-            predictor: S117RecordingPredictor(result: .s117Fixture()),
-            importer: S117RecordingImporter(),
-            preflight: ImportSingleFileStaticPreflight(result: disabled),
             errorMapper: S117RecordingErrorMapper()
         )
 
         await hiddenModel.load(request: .s117ImportRequest())
-        await disabledModel.load(request: .s117ImportRequest())
+        let skipped = await hiddenModel.importSelectedFile()
+        let requests = await importer.recordedRequests()
 
         XCTAssertEqual(hiddenModel.activeConflictPage, .duplicate)
-        XCTAssertEqual(disabledModel.activeConflictPage, .nameConflict)
-        XCTAssertEqual(hiddenModel.importDisabledReason, "请先完成 S1-22 conflict-duplicate 处理")
-        XCTAssertEqual(disabledModel.importDisabledReason, "请先完成 S1-23 conflict-name 处理")
+        XCTAssertEqual(hiddenModel.duplicateResolution, .skip)
+        XCTAssertNil(skipped)
+        XCTAssertEqual(hiddenModel.importStatus, .skippedDuplicate("docs/source.pdf"))
+        XCTAssertEqual(hiddenModel.importDisabledReason, "重复文件已跳过")
+        XCTAssertEqual(requests, [])
     }
 
     @MainActor
@@ -332,8 +281,7 @@ final class ImportSingleFilePageIntegrationVerifyTests: XCTestCase {
             sourceSizeBytes: nil,
             hashSha256: nil,
             targetRelativePath: "docs/source.pdf",
-            conflict: .iCloudPlaceholder(path: "/tmp/source.pdf"),
-            replaceOptionVisibility: .hidden
+            conflict: .iCloudPlaceholder(path: "/tmp/source.pdf")
         )
         let importer = S117RecordingImporter()
         let model = ImportSingleFilePreviewModel(
@@ -361,8 +309,7 @@ final class ImportSingleFilePageIntegrationVerifyTests: XCTestCase {
             sourceSizeBytes: nil,
             hashSha256: nil,
             targetRelativePath: "docs/source.pdf",
-            conflict: .iCloudPlaceholder(path: "/tmp/source.pdf"),
-            replaceOptionVisibility: .hidden
+            conflict: .iCloudPlaceholder(path: "/tmp/source.pdf")
         )
         let model = ImportSingleFilePreviewModel(
             predictor: S117RecordingPredictor(result: .s117Fixture()),
@@ -389,18 +336,29 @@ final class ImportSingleFilePageIntegrationVerifyTests: XCTestCase {
     }
 
     @MainActor
-    func testS117DefaultPreflightRunsSwiftFallbackWithoutPreviewImportBindings() async throws {
-        let sourceRoot = try makeImportSingleFileTemporaryDirectory(prefix: "s117-source")
-        defer { try? FileManager.default.removeItem(at: sourceRoot) }
+    func testS122RealCorePreImportDuplicateRendersPageAndSkipDoesNotWrite() async throws {
+        let repoURL = try makeImportSingleFileTemporaryDirectory(prefix: "s122-repo")
+        let sourceRoot = try makeImportSingleFileTemporaryDirectory(prefix: "s122-source")
+        defer {
+            try? FileManager.default.removeItem(at: repoURL)
+            try? FileManager.default.removeItem(at: sourceRoot)
+        }
+        let existingURL = sourceRoot.appendingPathComponent("existing.pdf")
+        try Data("source".utf8).write(to: existingURL)
         let sourceURL = sourceRoot.appendingPathComponent("source.pdf")
         try Data("source".utf8).write(to: sourceURL)
-        let repoURL = try makeImportSingleFileTemporaryDirectory(prefix: "s117-repo")
-        defer { try? FileManager.default.removeItem(at: repoURL) }
-        try await CoreBridge().initializeEmptyRepository(repoPath: repoURL.path)
-        let importer = S117RecordingImporter()
+        let bridge = CoreBridge()
+        try await bridge.initializeEmptyRepository(repoPath: repoURL.path)
+        let existing = try await bridge.importCopiedFile(
+            repoPath: repoURL.path,
+            sourceURL: existingURL,
+            overrideCategory: "docs",
+            overrideFilename: "existing.pdf"
+        )
         let model = ImportSingleFilePreviewModel(
             predictor: S117RecordingPredictor(result: .s117Fixture()),
-            importer: importer,
+            importer: bridge,
+            preflight: CoreImportSingleFilePreflight(),
             errorMapper: S117RecordingErrorMapper()
         )
 
@@ -412,13 +370,66 @@ final class ImportSingleFilePageIntegrationVerifyTests: XCTestCase {
             kind: .singleFile
         ))
 
-        XCTAssertEqual(model.currentPreflightResult?.conflict, ImportSingleFileConflict.none)
-        XCTAssertNil(model.importDisabledReason)
-        XCTAssertNotNil(model.currentPreflightResult?.hashSha256)
+        XCTAssertEqual(model.currentPreflightResult?.hashSha256, "41cf6794ba4200b839c53531555f0f3998df4cbb01a4d5cb0b94e3ca5e23947d")
+        XCTAssertEqual(model.currentPreflightResult?.conflict, .duplicate(existingPath: existing.path))
+        XCTAssertEqual(model.currentPreflightResult?.keepBothTargetRelativePath, "docs/source.pdf")
+        XCTAssertEqual(model.activeConflictPage, .duplicate)
+        XCTAssertEqual(model.importStatus, .idle)
+
+        let skipped = await model.importSelectedFile()
+        XCTAssertNil(skipped)
+        XCTAssertEqual(model.importStatus, .skippedDuplicate(existing.path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: sourceURL.path))
+        let docsURL = repoURL.appendingPathComponent("docs")
+        let repoFiles = try FileManager.default.contentsOfDirectory(atPath: docsURL.path)
+        XCTAssertEqual(repoFiles.sorted(), ["existing.pdf"])
+    }
+
+    @MainActor
+    func testS122RealCoreKeepBothPreviewMatchesFinalNumberedImport() async throws {
+        let repoURL = try makeImportSingleFileTemporaryDirectory(prefix: "s122-keepboth-repo")
+        let sourceRoot = try makeImportSingleFileTemporaryDirectory(prefix: "s122-keepboth-source")
+        defer {
+            try? FileManager.default.removeItem(at: repoURL)
+            try? FileManager.default.removeItem(at: sourceRoot)
+        }
+        let existingURL = sourceRoot.appendingPathComponent("existing.pdf")
+        let sourceURL = sourceRoot.appendingPathComponent("source.pdf")
+        try Data("same".utf8).write(to: existingURL)
+        try Data("same".utf8).write(to: sourceURL)
+
+        let bridge = CoreBridge()
+        try await bridge.initializeEmptyRepository(repoPath: repoURL.path)
+        _ = try await bridge.importCopiedFile(
+            repoPath: repoURL.path,
+            sourceURL: existingURL,
+            overrideCategory: "docs",
+            overrideFilename: "source.pdf"
+        )
+
+        let model = ImportSingleFilePreviewModel(
+            predictor: S117RecordingPredictor(result: .s117Fixture()),
+            importer: bridge,
+            preflight: CoreImportSingleFilePreflight(),
+            errorMapper: S117RecordingErrorMapper()
+        )
+        await model.load(request: ImportEntryRequest(
+            repoPath: repoURL.path,
+            source: .filePicker,
+            destination: .autoClassify,
+            urls: [sourceURL],
+            kind: .singleFile
+        ))
+
+        XCTAssertEqual(model.currentPreflightResult?.conflict, .duplicate(existingPath: "docs/source.pdf"))
+        XCTAssertEqual(model.currentPreflightResult?.keepBothTargetRelativePath, "docs/source_1.pdf")
+
+        model.updateDuplicateResolution(.keepBoth)
         let imported = await model.importSelectedFile()
-        let importRequests = await importer.recordedRequests()
-        XCTAssertEqual(imported?.storageMode, "Copied")
-        XCTAssertEqual(importRequests.last?.duplicateStrategy, .ask)
+
+        XCTAssertEqual(model.progressCurrentPath, "docs/source_1.pdf")
+        XCTAssertEqual(imported?.path, "docs/source_1.pdf")
+        XCTAssertEqual(imported?.hashSha256, model.currentPreflightResult?.hashSha256)
     }
 
     @MainActor

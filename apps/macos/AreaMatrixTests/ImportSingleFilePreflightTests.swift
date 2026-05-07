@@ -3,124 +3,58 @@ import XCTest
 @testable import AreaMatrix
 
 final class ImportSingleFilePreflightTests: XCTestCase {
-    func testCorePreflightUsesSwiftFallbackWhenPreviewImportBindingIsMissing() async throws {
-        let repoURL = try makeImportSingleFileTemporaryDirectory(prefix: "preflight-repo")
+    func testCorePreflightComputesHashAndUsesCoreListFilesWithoutDuplicate() async throws {
         let sourceRoot = try makeImportSingleFileTemporaryDirectory(prefix: "preflight-source")
         defer {
-            try? FileManager.default.removeItem(at: repoURL)
             try? FileManager.default.removeItem(at: sourceRoot)
         }
         let sourceURL = sourceRoot.appendingPathComponent("source.pdf")
-        try Data("new".utf8).write(to: sourceURL)
+        try Data("same bytes".utf8).write(to: sourceURL)
+        let fileLoader = ImportSingleFileStaticFileLoader(files: [
+            .s117Fixture(currentName: "other.pdf", category: "docs", hashSha256: "other-hash"),
+        ])
 
-        try await CoreBridge().initializeEmptyRepository(repoPath: repoURL.path)
-        let result = await CoreImportSingleFilePreflight().preflightSingleFileImport(request: .fixture(
-            repoPath: repoURL.path,
+        let result = await CoreImportSingleFilePreflight(fileLoader: fileLoader).preflightSingleFileImport(request: .fixture(
+            repoPath: "/tmp/repo",
             sourceURL: sourceURL,
             category: "docs",
             targetFilename: "source.pdf"
         ))
+        let loadRequests = await fileLoader.recordedRequests()
 
-        XCTAssertEqual(result.sourceSizeBytes, 3)
-        XCTAssertNotNil(result.hashSha256)
+        XCTAssertEqual(result.sourceSizeBytes, 10)
+        XCTAssertEqual(result.hashSha256, "58100dc8fc06562ce3e578231dc948e083520ee49c4b4ee5a5a28bb4b4003feb")
         XCTAssertEqual(result.targetRelativePath, "docs/source.pdf")
-        XCTAssertEqual(result.replaceOptionVisibility, .hidden)
         XCTAssertEqual(result.conflict, .none)
-        XCTAssertNil(result.importBlockingReason(isReplaceConfirmed: false))
+        XCTAssertNil(result.keepBothTargetRelativePath)
+        XCTAssertNil(result.importBlockingReason())
+        XCTAssertEqual(loadRequests, [ImportSingleFileFileLoadRequest(repoPath: "/tmp/repo", categories: [nil])])
     }
 
-    func testCorePreflightUsesInjectedPreviewerResultWhenPreviewImportExists() async throws {
+    func testCorePreflightDetectsDuplicateHashAndComputesKeepBothPreviewFromCoreListFiles() async throws {
         let sourceRoot = try makeImportSingleFileTemporaryDirectory(prefix: "preflight-source")
         defer { try? FileManager.default.removeItem(at: sourceRoot) }
         let sourceURL = sourceRoot.appendingPathComponent("source.pdf")
         try Data("new".utf8).write(to: sourceURL)
-        let result = ImportSingleFilePreflightResult(
-            sourceSizeBytes: 3,
-            hashSha256: "core-hash",
-            targetRelativePath: "docs/source.pdf",
-            conflict: .name(path: "docs/source.pdf"),
-            replaceOptionVisibility: .enabled
-        )
+        let duplicateHash = "11507a0e2f5e69d5dfa40a62a1bd7b6ee57e6bcd85c67c9b8431b36fff21c437"
+        let fileLoader = ImportSingleFileStaticFileLoader(files: [
+            .s117Fixture(currentName: "existing.pdf", category: "docs", hashSha256: duplicateHash),
+            .s117Fixture(currentName: "source.pdf", category: "docs", hashSha256: "name-only"),
+        ])
 
-        let preflight = CoreImportSingleFilePreflight(previewer: StaticCoreImportPreviewer(result: result))
-        let actual = await preflight.preflightSingleFileImport(request: .fixture(
+        let actual = await CoreImportSingleFilePreflight(fileLoader: fileLoader).preflightSingleFileImport(request: .fixture(
             repoPath: "/tmp/repo",
             sourceURL: sourceURL,
             category: "docs",
             targetFilename: "source.pdf"
         ))
 
-        XCTAssertEqual(actual, result)
-        XCTAssertEqual(actual.importBlockingReason(isReplaceConfirmed: false), "请先完成 S1-23 conflict-name 处理")
-    }
-
-    func testCorePreflightDetectsDuplicateHashViaSwiftFallback() async throws {
-        let repoURL = try makeImportSingleFileTemporaryDirectory(prefix: "preflight-repo")
-        let sourceRoot = try makeImportSingleFileTemporaryDirectory(prefix: "preflight-source")
-        defer {
-            try? FileManager.default.removeItem(at: repoURL)
-            try? FileManager.default.removeItem(at: sourceRoot)
-        }
-
-        let existingURL = sourceRoot.appendingPathComponent("existing.pdf")
-        let incomingURL = sourceRoot.appendingPathComponent("incoming.pdf")
-        let bytes = Data("same-bytes".utf8)
-        try bytes.write(to: existingURL)
-        try bytes.write(to: incomingURL)
-
-        let bridge = CoreBridge()
-        try await bridge.initializeEmptyRepository(repoPath: repoURL.path)
-        _ = try await bridge.importCopiedFile(
-            repoPath: repoURL.path,
-            sourceURL: existingURL,
-            overrideCategory: "docs",
-            overrideFilename: "existing.pdf"
-        )
-
-        let result = await CoreImportSingleFilePreflight().preflightSingleFileImport(request: .fixture(
-            repoPath: repoURL.path,
-            sourceURL: incomingURL,
-            category: "docs",
-            targetFilename: "incoming.pdf"
-        ))
-
-        XCTAssertEqual(result.conflict, .duplicate(existingPath: "docs/existing.pdf"))
-        XCTAssertEqual(result.replaceOptionVisibility, .enabled)
-        XCTAssertEqual(result.importBlockingReason(isReplaceConfirmed: false), "请先完成 S1-22 conflict-duplicate 处理")
-    }
-
-    func testCorePreflightDetectsSameNameConflictViaSwiftFallback() async throws {
-        let repoURL = try makeImportSingleFileTemporaryDirectory(prefix: "preflight-repo")
-        let sourceRoot = try makeImportSingleFileTemporaryDirectory(prefix: "preflight-source")
-        defer {
-            try? FileManager.default.removeItem(at: repoURL)
-            try? FileManager.default.removeItem(at: sourceRoot)
-        }
-
-        let existingURL = sourceRoot.appendingPathComponent("existing.pdf")
-        let incomingURL = sourceRoot.appendingPathComponent("incoming.pdf")
-        try Data("old".utf8).write(to: existingURL)
-        try Data("new".utf8).write(to: incomingURL)
-
-        let bridge = CoreBridge()
-        try await bridge.initializeEmptyRepository(repoPath: repoURL.path)
-        _ = try await bridge.importCopiedFile(
-            repoPath: repoURL.path,
-            sourceURL: existingURL,
-            overrideCategory: "docs",
-            overrideFilename: "shared.pdf"
-        )
-
-        let result = await CoreImportSingleFilePreflight().preflightSingleFileImport(request: .fixture(
-            repoPath: repoURL.path,
-            sourceURL: incomingURL,
-            category: "docs",
-            targetFilename: "shared.pdf"
-        ))
-
-        XCTAssertEqual(result.conflict, .name(path: "docs/shared.pdf"))
-        XCTAssertEqual(result.replaceOptionVisibility, .enabled)
-        XCTAssertEqual(result.importBlockingReason(isReplaceConfirmed: false), "请先完成 S1-23 conflict-name 处理")
+        XCTAssertEqual(actual.sourceSizeBytes, 3)
+        XCTAssertEqual(actual.hashSha256, duplicateHash)
+        XCTAssertEqual(actual.targetRelativePath, "docs/source.pdf")
+        XCTAssertEqual(actual.conflict, .duplicate(existingPath: "docs/existing.pdf"))
+        XCTAssertEqual(actual.keepBothTargetRelativePath, "docs/source_1.pdf")
+        XCTAssertEqual(actual.importBlockingReason(), "请先完成 S1-22 conflict-duplicate 处理")
     }
 
     func testCorePreflightRejectsInvalidTargetFilenameBeforeImport() async throws {
@@ -129,7 +63,9 @@ final class ImportSingleFilePreflightTests: XCTestCase {
         let sourceURL = sourceRoot.appendingPathComponent("source.pdf")
         try Data("new".utf8).write(to: sourceURL)
 
-        let result = await CoreImportSingleFilePreflight().preflightSingleFileImport(request: .fixture(
+        let result = await CoreImportSingleFilePreflight(
+            fileLoader: ImportSingleFileStaticFileLoader(files: [])
+        ).preflightSingleFileImport(request: .fixture(
             repoPath: "/tmp/repo",
             sourceURL: sourceURL,
             category: "docs",
@@ -142,7 +78,7 @@ final class ImportSingleFilePreflightTests: XCTestCase {
             .invalidFilename("文件名不能包含 / \\ : * ? \" < > |")
         )
         XCTAssertEqual(
-            result.importBlockingReason(isReplaceConfirmed: false),
+            result.importBlockingReason(),
             "文件名不能包含 / \\ : * ? \" < > |"
         )
     }
@@ -151,39 +87,43 @@ final class ImportSingleFilePreflightTests: XCTestCase {
         let sourceRoot = try makeImportSingleFileTemporaryDirectory(prefix: "preflight-source")
         defer { try? FileManager.default.removeItem(at: sourceRoot) }
         let sourceURL = sourceRoot.appendingPathComponent("source.pdf.icloud")
-        let previewer = StaticCoreImportPreviewer(result: .readyFixture())
 
-        let result = await CoreImportSingleFilePreflight(previewer: previewer).preflightSingleFileImport(request: .fixture(
+        let fileLoader = ImportSingleFileStaticFileLoader(files: [])
+
+        let result = await CoreImportSingleFilePreflight(fileLoader: fileLoader).preflightSingleFileImport(request: .fixture(
             repoPath: "/tmp/repo",
             sourceURL: sourceURL,
             category: "docs",
             targetFilename: "source.pdf"
         ))
-        let requests = await previewer.recordedRequests()
+
+        let loadRequests = await fileLoader.recordedRequests()
 
         XCTAssertEqual(result.conflict, .iCloudPlaceholder(path: sourceURL.path))
-        XCTAssertEqual(result.replaceOptionVisibility, .hidden)
-        XCTAssertEqual(requests, [])
-        XCTAssertEqual(result.importBlockingReason(isReplaceConfirmed: false), "iCloud placeholder 需要下载后才能导入")
+        XCTAssertEqual(result.importBlockingReason(), "iCloud placeholder 需要下载后才能导入")
+        XCTAssertEqual(loadRequests, [])
     }
 }
 
-private actor StaticCoreImportPreviewer: CoreImportPreviewing {
-    private let result: ImportSingleFilePreflightResult
-    private var requests: [ImportSingleFilePreflightRequest] = []
+private struct ImportSingleFileFileLoadRequest: Equatable, Sendable {
+    var repoPath: String
+    var categories: Set<String?>
+}
 
-    init(result: ImportSingleFilePreflightResult) {
-        self.result = result
+private actor ImportSingleFileStaticFileLoader: ImportBatchCoreFileLoading {
+    private let files: [FileEntrySnapshot]
+    private var requests: [ImportSingleFileFileLoadRequest] = []
+
+    init(files: [FileEntrySnapshot]) {
+        self.files = files
     }
 
-    func previewSingleFileImport(
-        request: ImportSingleFilePreflightRequest
-    ) async throws -> ImportSingleFilePreflightResult {
-        requests.append(request)
-        return result
+    func loadImportPreviewFiles(repoPath: String, categories: Set<String?>) async throws -> [FileEntrySnapshot] {
+        requests.append(ImportSingleFileFileLoadRequest(repoPath: repoPath, categories: categories))
+        return files
     }
 
-    func recordedRequests() -> [ImportSingleFilePreflightRequest] {
+    func recordedRequests() -> [ImportSingleFileFileLoadRequest] {
         requests
     }
 }
@@ -199,21 +139,7 @@ private extension ImportSingleFilePreflightRequest {
             repoPath: repoPath,
             sourceURL: sourceURL,
             category: category,
-            targetFilename: targetFilename,
-            allowReplaceDuringImport: true,
-            isTrashAvailable: true
-        )
-    }
-}
-
-private extension ImportSingleFilePreflightResult {
-    static func readyFixture() -> ImportSingleFilePreflightResult {
-        ImportSingleFilePreflightResult(
-            sourceSizeBytes: 12,
-            hashSha256: "hash",
-            targetRelativePath: "docs/source.pdf",
-            conflict: .none,
-            replaceOptionVisibility: .hidden
+            targetFilename: targetFilename
         )
     }
 }

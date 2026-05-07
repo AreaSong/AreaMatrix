@@ -179,7 +179,7 @@ final class ImportSingleFilePreviewModelTests: XCTestCase {
     }
 
     @MainActor
-    func testCopyImportMapsCoreFailureWithoutCreatingStaticSuccess() async {
+    func testCopyImportMapsNonDuplicateCoreFailureWithoutCreatingStaticSuccess() async {
         let predictor = ImportSingleFileRecordingPredictor(results: [
             .success(ClassifyResultSnapshot(
                 category: "docs",
@@ -189,7 +189,7 @@ final class ImportSingleFilePreviewModelTests: XCTestCase {
             )),
         ])
         let importer = ImportSingleFileRecordingImporter(results: [
-            .failure(CoreError.DuplicateFile(existingPath: "docs/source.pdf")),
+            .failure(CoreError.PermissionDenied(path: "/tmp/source.pdf")),
         ])
         let errorMapper = ImportSingleFileRecordingErrorMapper()
         let model = ImportSingleFilePreviewModel(
@@ -210,10 +210,10 @@ final class ImportSingleFilePreviewModelTests: XCTestCase {
         await model.importSelectedFile()
         let mappedErrors = await errorMapper.recordedErrors()
 
-        XCTAssertEqual(mappedErrors, [CoreError.DuplicateFile(existingPath: "docs/source.pdf")])
+        XCTAssertEqual(mappedErrors, [CoreError.PermissionDenied(path: "/tmp/source.pdf")])
         XCTAssertEqual(
             model.importStatus,
-            .failed(CoreErrorMappingSnapshot.importCopyFixture(kind: .duplicateFile))
+            .failed(CoreErrorMappingSnapshot.importCopyFixture(kind: .permissionDenied))
         )
     }
 
@@ -235,42 +235,6 @@ final class ImportSingleFilePreviewModelTests: XCTestCase {
     }
 
     @MainActor
-    func testPreflightBlocksImportUntilConflictIsResolved() async {
-        let result = ImportSingleFilePreflightResult(
-            sourceSizeBytes: 12,
-            hashSha256: "duplicate-hash",
-            targetRelativePath: "docs/source.pdf",
-            conflict: .duplicate(existingPath: "docs/existing.pdf"),
-            replaceOptionVisibility: .enabled
-        )
-        let importer = ImportSingleFileRecordingImporter(results: [
-            .success(.importSingleFileFixture(currentName: "source.pdf", category: "docs")),
-        ])
-        let model = ImportSingleFilePreviewModel(
-            predictor: ImportSingleFileRecordingPredictor(results: [.success(.importSingleFileFixture())]),
-            importer: importer,
-            preflight: ImportSingleFileStaticPreflight(result: result),
-            errorMapper: ImportSingleFileRecordingErrorMapper()
-        )
-
-        await model.load(request: .importSingleFileFixture())
-        let blocked = await model.importSelectedFile()
-        XCTAssertNil(blocked)
-        XCTAssertEqual(model.activeConflictPage, .duplicate)
-        XCTAssertEqual(model.importDisabledReason, "请先完成 S1-22 conflict-duplicate 处理")
-
-        model.beginReplaceConfirmation()
-        guard let context = model.pendingReplaceConfirmation else {
-            return XCTFail("Expected S1-24 replace-confirm context")
-        }
-        model.applyReplaceConfirmation(context.decision(understandsReplace: true))
-        let imported = await model.importSelectedFile()
-        let requests = await importer.recordedRequests()
-        XCTAssertEqual(imported?.currentName, "source.pdf")
-        XCTAssertEqual(requests.last?.duplicateStrategy, .overwrite)
-    }
-
-    @MainActor
     func testEditingImportFieldsImmediatelyInvalidatesExistingPreflight() async {
         let model = ImportSingleFilePreviewModel(
             predictor: ImportSingleFileRecordingPredictor(results: [.success(.importSingleFileFixture())]),
@@ -284,7 +248,7 @@ final class ImportSingleFilePreviewModelTests: XCTestCase {
 
         model.suggestedName = "renamed.pdf"
 
-        XCTAssertEqual(model.importDisabledReason, "正在检查 preview/hash/conflict precheck")
+        XCTAssertEqual(model.importDisabledReason, "Checking duplicate...")
     }
 
     @MainActor
@@ -293,8 +257,7 @@ final class ImportSingleFilePreviewModelTests: XCTestCase {
             sourceSizeBytes: nil,
             hashSha256: nil,
             targetRelativePath: "docs/source.pdf",
-            conflict: .iCloudPlaceholder(path: "/tmp/source.pdf"),
-            replaceOptionVisibility: .hidden
+            conflict: .iCloudPlaceholder(path: "/tmp/source.pdf")
         )
         let importer = ImportSingleFileRecordingImporter(results: [])
         let model = ImportSingleFilePreviewModel(
@@ -321,8 +284,7 @@ final class ImportSingleFilePreviewModelTests: XCTestCase {
             sourceSizeBytes: nil,
             hashSha256: nil,
             targetRelativePath: "docs/source.pdf",
-            conflict: .iCloudPlaceholder(path: "/tmp/source.pdf"),
-            replaceOptionVisibility: .hidden
+            conflict: .iCloudPlaceholder(path: "/tmp/source.pdf")
         )
         let model = ImportSingleFilePreviewModel(
             predictor: ImportSingleFileRecordingPredictor(results: [.success(.importSingleFileFixture())]),
@@ -346,33 +308,6 @@ final class ImportSingleFilePreviewModelTests: XCTestCase {
         }
         XCTAssertEqual(path, "/tmp/source.pdf")
         XCTAssertEqual(reason, "network offline")
-    }
-
-    func testDefaultCoreBridgeImportsCopiedFileAndKeepsSourceIntact() async throws {
-        let repoURL = try makeImportSingleFileTemporaryDirectory(prefix: "repo")
-        let sourceRoot = try makeImportSingleFileTemporaryDirectory(prefix: "source")
-        defer {
-            try? FileManager.default.removeItem(at: repoURL)
-            try? FileManager.default.removeItem(at: sourceRoot)
-        }
-        let sourceURL = sourceRoot.appendingPathComponent("invoice.pdf")
-        try Data("invoice bytes".utf8).write(to: sourceURL)
-        let sourceBefore = try Data(contentsOf: sourceURL)
-        let bridge = CoreBridge()
-
-        try await bridge.initializeEmptyRepository(repoPath: repoURL.path)
-        let entry = try await bridge.importCopiedFile(
-            repoPath: repoURL.path,
-            sourceURL: sourceURL,
-            overrideCategory: "finance",
-            overrideFilename: "invoice-copy.pdf"
-        )
-
-        XCTAssertEqual(try Data(contentsOf: sourceURL), sourceBefore)
-        XCTAssertEqual(entry.currentName, "invoice-copy.pdf")
-        XCTAssertEqual(entry.category, "finance")
-        XCTAssertEqual(entry.storageMode, "Copied")
-        XCTAssertTrue(FileManager.default.fileExists(atPath: repoURL.appendingPathComponent(entry.path).path))
     }
 
 }

@@ -11,8 +11,7 @@ struct ImportSingleFileStaticPreflight: ImportSingleFilePreflighting {
             sourceSizeBytes: 12,
             hashSha256: "hash",
             targetRelativePath: targetRelativePath,
-            conflict: .none,
-            replaceOptionVisibility: .hidden
+            conflict: .none
         ))
     }
 

@@ -1,0 +1,86 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`2-2/task-22`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-2-import-conflict/task-22-s1-22-c1-09-detect-duplicate.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：5
+- 未覆盖项数：3
+- 通过项数：5
+- 不通过项数：3
+- 阻塞项数：3
+
+四、逐项验收结果
+
+- 项目：Exact Docs / control map / C1-09 合同读取与交叉核验
+- 结果：通过
+- 证据：`S1-22` 绑定 `C1-09`，control map 标记为 `Real Core`，API 现有 `import_file` / `DuplicateStrategy` / `DuplicateFile`
+- 涉及文件：`docs/ux/page-specs/stage-1-mvp/S1-22-conflict-duplicate.md`、`docs/architecture/mvp-control-map.md`、`docs/api/core-api.md`、`core/area_matrix.udl`
+
+- 项目：Expected New Paths 落地
+- 结果：通过
+- 证据：新增/修改 Swift、测试、`project.pbxproj` 均在 manifest 允许路径内
+- 涉及文件：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git diff --name-only` 未出现 `core/src/**`
+- 涉及文件：`core/src/**`
+
+- 项目：只处理 S1-22 页面中的 C1-09 功能点
+- 结果：不通过
+- 证据：生产预检只计算源文件 hash，并返回 `.none`；测试也确认预检不会读取 repo 文件做 duplicate detection
+- 涉及文件：[ImportSingleFilePreflight.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreflight.swift:223)、[ImportSingleFilePreflightTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFilePreflightTests.swift:29)
+
+- 项目：S1-22 中 C1-09 对应用户可见功能可被触发和验收
+- 结果：不通过
+- 证据：真实 Core 重复只在用户第一次点击 `Import` 后由 `CoreError.DuplicateFile` 打开冲突页；不是页面规格要求的“导入冲突区检测到 hash 重复”后直接渲染
+- 涉及文件：[ImportSingleFilePreviewModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreviewModel.swift:145)、[ImportSingleFilePageIntegrationVerifyTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFilePageIntegrationVerifyTests.swift:372)
+
+- 项目：没有使用 mock、fixture 或静态状态伪造真实 Core 闭环
+- 结果：不通过
+- 证据：Keep Both 的新文件名验收依赖静态 preflight fixture；真实 DuplicateFile 路径把 `keepBothTargetRelativePath` 设置成原目标路径，不能证明自动编号预览真实可用
+- 涉及文件：[ImportSingleFilePreviewModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreviewModel.swift:333)、[ImportSingleFileDuplicateResolutionTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFileDuplicateResolutionTests.swift:73)
+
+- 项目：未触碰 control map 之外 Core 能力
+- 结果：通过
+- 证据：单文件 duplicate 路径通过 `CoreBridge.importFile` 传递 `DuplicateStrategy`，未见新增 `core/src/**` 或越界 Core API 调用
+- 涉及文件：[CoreImporting.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreImporting.swift:138)
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过，预检、导入错误处理和 S1-22 冲突展示的状态流不符合页面入口语义。
+- 注释 / rustdoc / 文档同步：不通过，文档要求 S1-22 冲突区在 hash 重复时渲染，代码文案却说明“重复检测将在 Import 时由 Core 执行”。
+- 错误处理与边界处理：不通过，`DuplicateFile` 被捕获，但首个 `Import` 变成发现冲突的副作用触发点；Keep Both 自动编号失败路径没有真实 Core 证据。
+- 测试与验证覆盖：不通过，build/test 通过，但测试本身证明预检不做 repo duplicate detection，且 Keep Both 关键预览使用 fixture。
+- 占位、硬编码、mock-only、一次性实现检查：不通过，真实 Core skip 路径有证据，但 Keep Both 预览和 S1-22 首次可见触发仍缺真实闭环证据。
+
+六、阻塞项
+
+- P0：S1-22 不能在导入前真实检测并渲染 duplicate conflict。生产预检只 hash 源文件并返回 `.none`，实际 duplicate 由第一次 `import_file(..., .ask)` 抛错后才打开页面，导致用户第一次点击 `Import` 不是执行默认 Skip，而是发现冲突。绝对路径：[ImportSingleFilePreflight.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreflight.swift:223)、[ImportSingleFilePreviewModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreviewModel.swift:145)。
+
+- P0：Keep Both 自动编号预览没有真实 Core / repo 证据。真实 DuplicateFile 路径把 `keepBothTargetRelativePath` 填成原目标路径，静态 fixture 才提供 `docs/source_1.pdf`，无法证明“保留两份会预览新文件名”。绝对路径：[ImportSingleFilePreviewModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreviewModel.swift:338)、[ImportSingleFileDuplicateResolutionTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFileDuplicateResolutionTests.swift:73)。
+
+- P1：S1-22 页面规格中的 Replace 可见性未在单文件 duplicate 页面实现，测试反而断言开启设置时 Replace 仍 out of scope。若这是刻意拆给后续 task，当前 task/manifest 没有给出豁免。绝对路径：[ImportSingleFileDuplicateResolutionTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFileDuplicateResolutionTests.swift:53)、[ImportSingleFileDuplicateResolution.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFileDuplicateResolution.swift:3)。
+
+七、验证情况
+
+- 已运行：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`，通过，`BUILD SUCCEEDED`。
+- 已运行：`./dev test macos`，最终通过；标准 `xcodebuild test` 受本地 `testmanagerd` sandbox 限制，随后按 validation-driver fallback 使用 `xcrun xctest`，261 tests passed。
+- 缺失：没有通过真实 pre-import Core duplicate preview 或等价只读 repo hash 查询证明 S1-22 首次渲染闭环。
+- 缺失：没有真实 Core Keep Both 自动编号预览测试。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+VERIFY_RESULT: FAIL
