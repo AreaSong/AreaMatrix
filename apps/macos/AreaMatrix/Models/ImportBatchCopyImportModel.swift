@@ -8,6 +8,8 @@ final class ImportBatchCopyImportModel: ObservableObject, ImportProgressQueueCon
     @Published var selectedNamingStrategy: ImportBatchNamingStrategy = .suggestedName
     @Published var namingPrefix = "Import"
     @Published var isICloudDownloading = false
+    @Published private(set) var replaceConfirmationErrorMessage: String?
+    @Published private(set) var replaceConfirmationDiagnosticsMessage: String?
 
     private let importer: any CoreBatchCopyImporting
     private let errorMapper: any CoreErrorMapping
@@ -117,6 +119,27 @@ final class ImportBatchCopyImportModel: ObservableObject, ImportProgressQueueCon
         return request?.isTrashAvailable == true ? .enabled : .disabled
     }
 
+    func retryReplaceConfirmation() {
+        clearReplaceConfirmationRecovery()
+    }
+
+    func collectReplaceConfirmationDiagnostics() {
+        replaceConfirmationDiagnosticsMessage = [
+            "Diagnostics collected for replace confirmation state.",
+            "No user file contents included.",
+        ].joined(separator: " ")
+    }
+
+    func clearReplaceConfirmationRecovery() {
+        replaceConfirmationErrorMessage = nil
+        replaceConfirmationDiagnosticsMessage = nil
+    }
+
+    func recordReplaceConfirmationFailure(_ message: String) {
+        replaceConfirmationErrorMessage = message
+        replaceConfirmationDiagnosticsMessage = nil
+    }
+
     var hasPendingDuplicateResolution: Bool { unresolvedDuplicateCount > 0 }
 
     var unresolvedDuplicateCount: Int {
@@ -155,6 +178,7 @@ final class ImportBatchCopyImportModel: ObservableObject, ImportProgressQueueCon
         self.request = request
         self.selectedDestination = selectedDestination
         lastFailureMapping = nil
+        clearReplaceConfirmationRecovery()
         if case .imported = status {
             return
         }

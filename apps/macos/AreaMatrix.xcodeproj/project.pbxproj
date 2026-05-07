@@ -93,9 +93,11 @@
 		0A0000000000000000000186 /* ImportSingleFilePreviewModelState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000187 /* ImportSingleFilePreviewModelState.swift */; };
 		0A00000000000000000001E4 /* ImportSingleFileDuplicateResolution.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001E5 /* ImportSingleFileDuplicateResolution.swift */; };
 		0A00000000000000000001E6 /* ImportSingleFileDuplicateResolutionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001E7 /* ImportSingleFileDuplicateResolutionTests.swift */; };
+		0A00000000000000000001F0 /* ReplaceConfirmPageIntegrationVerifyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001F1 /* ReplaceConfirmPageIntegrationVerifyTests.swift */; };
 		0A00000000000000000001E8 /* ImportSingleFilePreviewPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001E9 /* ImportSingleFilePreviewPresentation.swift */; };
 		0A00000000000000000001EA /* ImportEntrySingleFileFooter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001EB /* ImportEntrySingleFileFooter.swift */; };
 		0A00000000000000000001EE /* ReplaceConfirmSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001EF /* ReplaceConfirmSheet.swift */; };
+		0A00000000000000000001F2 /* ImportEntryReplaceConfirmationSheets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001F3 /* ImportEntryReplaceConfirmationSheets.swift */; };
 		0A00000000000000000001EC /* ImportSingleFileNameConflictCoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001ED /* ImportSingleFileNameConflictCoreTests.swift */; };
 		0A0000000000000000000188 /* ImportSingleFileTestFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000189 /* ImportSingleFileTestFixtures.swift */; };
 		0A0000000000000000000194 /* ImportBatchPreviewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000195 /* ImportBatchPreviewModel.swift */; };
@@ -244,9 +246,11 @@
 		0A0000000000000000000187 /* ImportSingleFilePreviewModelState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ImportSingleFilePreviewModelState.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000001E5 /* ImportSingleFileDuplicateResolution.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ImportSingleFileDuplicateResolution.swift; sourceTree = SOURCE_ROOT; };
 			0A00000000000000000001E7 /* ImportSingleFileDuplicateResolutionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportSingleFileDuplicateResolutionTests.swift; sourceTree = SOURCE_ROOT; };
+			0A00000000000000000001F1 /* ReplaceConfirmPageIntegrationVerifyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ReplaceConfirmPageIntegrationVerifyTests.swift; sourceTree = SOURCE_ROOT; };
 			0A00000000000000000001E9 /* ImportSingleFilePreviewPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ImportSingleFilePreviewPresentation.swift; sourceTree = SOURCE_ROOT; };
 			0A00000000000000000001EB /* ImportEntrySingleFileFooter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/ImportEntrySingleFileFooter.swift; sourceTree = SOURCE_ROOT; };
 			0A00000000000000000001EF /* ReplaceConfirmSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/ReplaceConfirmSheet.swift; sourceTree = SOURCE_ROOT; };
+			0A00000000000000000001F3 /* ImportEntryReplaceConfirmationSheets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/ImportEntryReplaceConfirmationSheets.swift; sourceTree = SOURCE_ROOT; };
 			0A00000000000000000001ED /* ImportSingleFileNameConflictCoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportSingleFileNameConflictCoreTests.swift; sourceTree = SOURCE_ROOT; };
 			0A0000000000000000000189 /* ImportSingleFileTestFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportSingleFileTestFixtures.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000195 /* ImportBatchPreviewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ImportBatchPreviewModel.swift; sourceTree = SOURCE_ROOT; };
@@ -377,6 +381,7 @@
 				0A0000000000000000000191 /* ImportBatchCopyFooterSection.swift */,
 				0A00000000000000000001EB /* ImportEntrySingleFileFooter.swift */,
 				0A00000000000000000001EF /* ReplaceConfirmSheet.swift */,
+				0A00000000000000000001F3 /* ImportEntryReplaceConfirmationSheets.swift */,
 				0A0000000000000000000199 /* ImportBatchConflictSection.swift */,
 				0A00000000000000000001A1 /* ImportBatchNamingOptionsSection.swift */,
 				0A0000000000000000000173 /* ImportSingleFileSheetSections.swift */,
@@ -507,6 +512,7 @@
 				0A00000000000000000001BF /* ImportFolderTestSupport.swift */,
 				0A000000000000000000016F /* ImportSingleFilePreviewModelTests.swift */,
 				0A00000000000000000001E7 /* ImportSingleFileDuplicateResolutionTests.swift */,
+				0A00000000000000000001F1 /* ReplaceConfirmPageIntegrationVerifyTests.swift */,
 				0A0000000000000000000181 /* ImportSingleFileTestSupport.swift */,
 				0A0000000000000000000189 /* ImportSingleFileTestFixtures.swift */,
 					0A0000000000000000000175 /* ImportSingleFileMoveImportTests.swift */,
@@ -668,6 +674,7 @@
 				0A0000000000000000000190 /* ImportBatchCopyFooterSection.swift in Sources */,
 				0A00000000000000000001EA /* ImportEntrySingleFileFooter.swift in Sources */,
 				0A00000000000000000001EE /* ReplaceConfirmSheet.swift in Sources */,
+				0A00000000000000000001F2 /* ImportEntryReplaceConfirmationSheets.swift in Sources */,
 				0A0000000000000000000198 /* ImportBatchConflictSection.swift in Sources */,
 				0A00000000000000000001A0 /* ImportBatchNamingOptionsSection.swift in Sources */,
 				0A0000000000000000000172 /* ImportSingleFileSheetSections.swift in Sources */,
@@ -767,6 +774,7 @@
 				0A00000000000000000001BE /* ImportFolderTestSupport.swift in Sources */,
 				0A000000000000000000016E /* ImportSingleFilePreviewModelTests.swift in Sources */,
 				0A00000000000000000001E6 /* ImportSingleFileDuplicateResolutionTests.swift in Sources */,
+				0A00000000000000000001F0 /* ReplaceConfirmPageIntegrationVerifyTests.swift in Sources */,
 				0A0000000000000000000180 /* ImportSingleFileTestSupport.swift in Sources */,
 				0A0000000000000000000188 /* ImportSingleFileTestFixtures.swift in Sources */,
 				0A0000000000000000000174 /* ImportSingleFileMoveImportTests.swift in Sources */,

@@ -33,6 +33,7 @@ extension ImportBatchCopyImportModel {
     func beginReplaceConfirmation(for rowID: ImportBatchCopyImportRow.ID)
         -> ImportSingleFileReplaceConfirmationContext?
     {
+        clearReplaceConfirmationRecovery()
         guard let row = rows.first(where: { $0.id == rowID }) else { return nil }
         guard request?.allowReplaceDuringImport == true, request?.isTrashAvailable == true else { return nil }
         guard let existingPath = row.existingConflictPath else { return nil }
@@ -48,10 +49,16 @@ extension ImportBatchCopyImportModel {
     func applyReplaceConfirmation(
         for rowID: ImportBatchCopyImportRow.ID,
         decision: ImportSingleFileReplaceConfirmationDecision
-    ) {
-        guard decision.understandsReplace else { return }
-        guard let expected = beginReplaceConfirmation(for: rowID), expected == decision.context else { return }
-        guard let row = rows.first(where: { $0.id == rowID }) else { return }
+    ) -> Bool {
+        guard decision.understandsReplace else {
+            recordReplaceConfirmationFailure("Replace 需要先勾选二次确认")
+            return false
+        }
+        guard let expected = currentReplaceConfirmationContext(for: rowID), expected == decision.context else {
+            recordReplaceConfirmationFailure("Replace confirmation context expired")
+            return false
+        }
+        guard let row = rows.first(where: { $0.id == rowID }) else { return false }
 
         switch row.status {
         case .duplicate(let existingPath, .replace, _):
@@ -67,8 +74,11 @@ extension ImportBatchCopyImportModel {
             ), for: rowID)
         case .loading, .ready, .duplicate, .nameConflict, .iCloudPlaceholder, .blocked, .importing,
              .skippedDuplicate, .skippedICloud, .imported, .error:
-            break
+            recordReplaceConfirmationFailure("Replace confirmation context expired")
+            return false
         }
+        clearReplaceConfirmationRecovery()
+        return true
     }
 
     func downloadICloudPlaceholderAndRetry(rowID: ImportBatchCopyImportRow.ID) async -> Bool {
@@ -113,6 +123,22 @@ extension ImportBatchCopyImportModel {
     private func canSelectNameConflictResolution(_ resolution: ImportBatchNameConflictResolution) -> Bool {
         !resolution.isReplace || replaceOptionVisibility == .enabled
     }
+
+    private func currentReplaceConfirmationContext(
+        for rowID: ImportBatchCopyImportRow.ID
+    ) -> ImportSingleFileReplaceConfirmationContext? {
+        guard let row = rows.first(where: { $0.id == rowID }) else { return nil }
+        guard request?.allowReplaceDuringImport == true, request?.isTrashAvailable == true else { return nil }
+        guard let existingPath = row.existingConflictPath else { return nil }
+        return ImportSingleFileReplaceConfirmationContext(
+            existingPath: existingPath,
+            incomingPath: row.sourceURL.path,
+            incomingSizeBytes: row.sizeBytes,
+            targetRelativePath: targetRelativePath(for: row, destination: selectedDestination),
+            isTrashAvailable: true
+        )
+    }
+
 }
 
 struct ImportBatchCopyCycleResult {

@@ -1,0 +1,49 @@
+**一、执行结论**
+
+已完成。S1-24 `replace-confirm` 整页闭环已补齐批量/文件夹路径的失败恢复，不再让过期确认上下文静默关闭 sheet 或误进入 overwrite 导入。
+
+High 风险记录：影响面是 Replace 二次确认 UI 状态，不改 Core 文件写入、不改 DB、不改 UDL；风险主要是误确认导致 overwrite。回滚可直接回退本次 `apps/macos/**` 与测试文件改动，无 migration 或数据修复成本。
+
+**二、执行范围**
+
+单任务：`2-2/task-26`
+
+修改文件清单：
+- [ImportBatchCopyImportModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportBatchCopyImportModel.swift)
+- [ImportBatchConflictActions.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportBatchConflictActions.swift)
+- [ImportFolderPreviewModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportFolderPreviewModel.swift)
+- [ImportFolderConflictActions.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportFolderConflictActions.swift)
+- [ImportEntrySheetView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportEntrySheetView.swift)
+- [ImportEntryReplaceConfirmationSheets.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportEntryReplaceConfirmationSheets.swift)
+- [ReplaceConfirmPageIntegrationVerifyTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ReplaceConfirmPageIntegrationVerifyTests.swift)
+- [project.pbxproj](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj)
+
+工作区另有既存 runner 状态改动：`.codex/task-loop-runs/20260507_210821/summary.json`、`tasks/prompts/_shared/progress.json`，未纳入本任务改动范围。
+
+**三、完成情况**
+
+核对清单：通过。已覆盖 `2-2/task-24` / `2-2/task-25` 对应的 `C1-09` duplicate 与 `C1-10` name conflict；确认 sheet 只保存 Replace confirmed 状态，不直接导入；最终导入仍回到来源 ImportSheet 走真实 importer，并以 `.overwrite` 进入 Core 路径。
+
+错误态：批量/文件夹 Replace 确认上下文过期或确认缺失时会留在 sheet，显示 `Retry` / `Cancel` / `Collect Diagnostics...`，且不会产生 overwrite 请求。
+
+Forbidden Touches：未触碰 `core/src/**`，也未修改 `core/area_matrix.udl`。未新增 control map 之外能力。
+
+**四、工程质量**
+
+结构上把 `ImportEntrySheetView` 的 Replace sheet wiring 拆到独立 helper，主视图仍低于 500 行；model 状态保持 `private(set)`，写入集中在受控方法里。没有新增依赖，没有 mock-only 产品路径，没有硬编码通过态；测试 fixture 只存在于 XCTest。
+
+**五、验证情况**
+
+通过：
+- `xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+- `./dev test macos`，标准 `xcodebuild test` 被本机 `testmanagerd` sandbox 阻断后按 repo 规则 fallback 到 `xcrun xctest`，结果 `278 tests, 0 failures`
+- `git diff --check`
+- 文件长度检查：相关 Swift 文件均未超过 500 行
+
+未直接通过：
+- Manifest 原始 `xcodebuild test ...` 在当前 sandbox 下失败，错误为 `com.apple.testmanagerd.control ... Sandbox restriction`；不是编译、链接或断言失败。
+
+**六、风险与后续**
+
+剩余风险：本机 sandbox 无法证明原始 `xcodebuild test` 在非 sandbox 环境下退出码为 0，但同一测试 bundle 已由 `xcrun xctest` 跑通。建议下一个任务进入 verify-ready 严格验收 `2-2/task-26`。  
+

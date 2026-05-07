@@ -10,6 +10,8 @@ final class ImportFolderPreviewModel: ObservableObject {
     @Published private(set) var scanErrors: [ImportFolderScanError] = []
     @Published private(set) var isICloudDownloading = false
     @Published private(set) var iCloudDownloadErrorMessage: String?
+    @Published private(set) var replaceConfirmationErrorMessage: String?
+    @Published private(set) var replaceConfirmationDiagnosticsMessage: String?
     @Published var includeHiddenFiles = false
     @Published var followSymlinks = false
     @Published var selectedDestination: ImportBatchDestinationOption = .autoClassify
@@ -102,6 +104,27 @@ final class ImportFolderPreviewModel: ObservableObject {
         return request?.isTrashAvailable == true ? .enabled : .disabled
     }
 
+    func retryReplaceConfirmation() {
+        clearReplaceConfirmationRecovery()
+    }
+
+    func collectReplaceConfirmationDiagnostics() {
+        replaceConfirmationDiagnosticsMessage = [
+            "Diagnostics collected for replace confirmation state.",
+            "No user file contents included.",
+        ].joined(separator: " ")
+    }
+
+    func clearReplaceConfirmationRecovery() {
+        replaceConfirmationErrorMessage = nil
+        replaceConfirmationDiagnosticsMessage = nil
+    }
+
+    func recordReplaceConfirmationFailure(_ message: String) {
+        replaceConfirmationErrorMessage = message
+        replaceConfirmationDiagnosticsMessage = nil
+    }
+
     var iCloudPlaceholderCount: Int {
         rows.filter { row in
             if case .iCloudPlaceholder = row.status { return true }
@@ -175,6 +198,7 @@ final class ImportFolderPreviewModel: ObservableObject {
         skippedRules = []
         scanErrors = []
         iCloudDownloadErrorMessage = nil
+        clearReplaceConfirmationRecovery()
         lastFailureMapping = nil
 
         let result = await scanner.scanFolder(

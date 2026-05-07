@@ -152,46 +152,24 @@ struct ImportEntrySheetView: View {
             }
         }
         .sheet(item: $pendingBatchReplaceConfirmation) { item in
-            ReplaceConfirmSheet(
-                context: item.context,
-                onCancel: { pendingBatchReplaceConfirmation = nil },
-                onRetry: {},
-                onCollectDiagnostics: {},
-                onConfirm: { decision in
-                    batchImportModel.applyReplaceConfirmation(for: item.rowID, decision: decision)
-                    pendingBatchReplaceConfirmation = nil
-                }
+            ImportEntryReplaceConfirmationSheets.batch(
+                item: item,
+                model: batchImportModel,
+                pending: $pendingBatchReplaceConfirmation
             )
         }
         .sheet(item: $pendingSingleFileReplaceConfirmation) { item in
-            ReplaceConfirmSheet(
-                context: item.context,
-                errorMessage: previewModel.replaceConfirmationErrorMessage,
-                diagnosticsMessage: previewModel.replaceConfirmationDiagnosticsMessage,
-                onCancel: {
-                    previewModel.cancelReplaceConfirmation()
-                    pendingSingleFileReplaceConfirmation = nil
-                },
-                onRetry: previewModel.retryReplaceConfirmation,
-                onCollectDiagnostics: previewModel.collectReplaceConfirmationDiagnostics,
-                onConfirm: { decision in
-                    previewModel.applyReplaceConfirmation(decision)
-                    if previewModel.pendingReplaceConfirmation == nil {
-                        pendingSingleFileReplaceConfirmation = nil
-                    }
-                }
+            ImportEntryReplaceConfirmationSheets.singleFile(
+                item: item,
+                model: previewModel,
+                pending: $pendingSingleFileReplaceConfirmation
             )
         }
         .sheet(item: $pendingFolderReplaceConfirmation) { item in
-            ReplaceConfirmSheet(
-                context: item.context,
-                onCancel: { pendingFolderReplaceConfirmation = nil },
-                onRetry: {},
-                onCollectDiagnostics: {},
-                onConfirm: { decision in
-                    folderPreviewModel.applyReplaceConfirmation(for: item.rowID, decision: decision)
-                    pendingFolderReplaceConfirmation = nil
-                }
+            ImportEntryReplaceConfirmationSheets.folder(
+                item: item,
+                model: folderPreviewModel,
+                pending: $pendingFolderReplaceConfirmation
             )
         }
     }
