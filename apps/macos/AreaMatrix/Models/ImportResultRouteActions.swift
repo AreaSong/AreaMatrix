@@ -5,6 +5,27 @@ extension ImportResultRouteState {
         isRetryingFailedItems ? "Retrying..." : "Retry Failed"
     }
 
+    var exportDetailsText: String {
+        var lines = [
+            "AreaMatrix Import Result",
+            summaryText,
+            "No user file contents are included.",
+            "",
+        ]
+        lines.append(contentsOf: items.map(exportLine(for:)))
+        return lines.joined(separator: "\n")
+    }
+
+    private func exportLine(for item: Item) -> String {
+        [
+            item.status.rawValue,
+            item.sanitizedTargetPath,
+            item.reason,
+            "source \(item.sanitizedSourcePath)",
+            item.existingRelativePath.map { "existing \(Self.sanitizedPathDisplay($0))" },
+        ].compactMap { $0 }.joined(separator: " | ")
+    }
+
     func replacing(isRetryingFailedItems: Bool) -> ImportResultRouteState {
         ImportResultRouteState(
             sourceOpening: sourceOpening,
@@ -15,7 +36,8 @@ extension ImportResultRouteState {
             currentPath: currentPath,
             items: items,
             isRetryingFailedItems: isRetryingFailedItems,
-            changeLog: changeLog
+            changeLog: changeLog,
+            exportState: exportState
         )
     }
 
@@ -29,7 +51,23 @@ extension ImportResultRouteState {
             currentPath: currentPath,
             items: items,
             isRetryingFailedItems: isRetryingFailedItems,
-            changeLog: changeLog
+            changeLog: changeLog,
+            exportState: exportState
+        )
+    }
+
+    func replacing(exportState: ExportState) -> ImportResultRouteState {
+        ImportResultRouteState(
+            sourceOpening: sourceOpening,
+            imported: imported,
+            failed: failed,
+            stopped: stopped,
+            pending: pending,
+            currentPath: currentPath,
+            items: items,
+            isRetryingFailedItems: isRetryingFailedItems,
+            changeLog: changeLog,
+            exportState: exportState
         )
     }
 
@@ -41,7 +79,8 @@ extension ImportResultRouteState {
                 targetPath: entry.path,
                 status: .imported,
                 reason: "-",
-                retryContext: nil
+                retryContext: nil,
+                existingRelativePath: nil
             ),
             importedDelta: 1,
             failedDelta: -1
@@ -56,7 +95,8 @@ extension ImportResultRouteState {
                 targetPath: item.targetPath,
                 status: .failed,
                 reason: message,
-                retryContext: item.retryContext
+                retryContext: item.retryContext,
+                existingRelativePath: item.existingRelativePath
             ),
             importedDelta: 0,
             failedDelta: 0
@@ -81,7 +121,8 @@ extension ImportResultRouteState {
             currentPath: replacement.targetPath,
             items: updatedItems,
             isRetryingFailedItems: isRetryingFailedItems,
-            changeLog: changeLog
+            changeLog: changeLog,
+            exportState: exportState
         )
     }
 }

@@ -1,5 +1,6 @@
 import AppKit
 import Foundation
+import UniformTypeIdentifiers
 
 struct AppShellModel: Equatable, Sendable {
     var statusText = "Onboarding configuration router"
@@ -95,6 +96,11 @@ protocol RepositoryPathCopying {
     func copyPath(repoPath: String, relativePath: String) throws
 }
 
+protocol ImportResultDetailsExporting {
+    @MainActor
+    func exportDetails(_ details: String, suggestedFilename: String) throws -> String
+}
+
 protocol AccessibilityAnnouncing {
     @MainActor
     func announce(_ message: String)
@@ -177,6 +183,24 @@ struct NSPasteboardRepositoryPathCopier: RepositoryPathCopying {
     }
 }
 
+struct NSSavePanelImportResultDetailsExporter: ImportResultDetailsExporting {
+    @MainActor
+    func exportDetails(_ details: String, suggestedFilename: String) throws -> String {
+        let panel = NSSavePanel()
+        panel.canCreateDirectories = true
+        panel.nameFieldStringValue = suggestedFilename
+        panel.allowedContentTypes = [.plainText]
+        panel.message = "Export import result details with redacted paths and no file contents."
+
+        guard panel.runModal() == .OK, let url = panel.url else {
+            throw ImportResultExportError.cancelled
+        }
+
+        try details.write(to: url, atomically: true, encoding: .utf8)
+        return url.path
+    }
+}
+
 struct VoiceOverAccessibilityAnnouncer: AccessibilityAnnouncing {
     @MainActor
     func announce(_ message: String) {
@@ -219,6 +243,17 @@ enum RepositoryFileActionError: Error, Equatable, LocalizedError, Sendable {
             return "File path is outside this repository: \(path)"
         case .fileMissing(let path):
             return "File is missing from this repository: \(path)"
+        }
+    }
+}
+
+enum ImportResultExportError: Error, Equatable, LocalizedError, Sendable {
+    case cancelled
+
+    var errorDescription: String? {
+        switch self {
+        case .cancelled:
+            return "Import result export was cancelled."
         }
     }
 }

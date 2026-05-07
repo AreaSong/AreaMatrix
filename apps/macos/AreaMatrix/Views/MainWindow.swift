@@ -291,7 +291,11 @@ struct MainWindow: View {
                 },
                 onLoadChangeLog: {
                     Task { await model.loadImportResultChangeLog() }
-                }
+                },
+                onShowExistingFile: model.showImportResultExistingFile,
+                onRequestExport: model.requestImportResultExportPrivacyConfirmation,
+                onConfirmExport: model.exportImportResultDetails,
+                onCancelExport: model.cancelImportResultExport
             )
         case .mainEmpty(let opening):
             MainRepositoryContentView(

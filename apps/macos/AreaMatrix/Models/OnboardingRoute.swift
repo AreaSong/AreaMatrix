@@ -40,6 +40,13 @@ struct ImportResultRouteState: Equatable, Sendable {
         case failed(CoreErrorMappingSnapshot)
     }
 
+    enum ExportState: Equatable, Sendable {
+        case idle
+        case confirmingPrivacy
+        case exported(String)
+        case failed(String)
+    }
+
     struct Item: Identifiable, Equatable, Sendable {
         enum Status: String, Equatable, Hashable, Sendable {
             case imported = "Imported"
@@ -53,9 +60,22 @@ struct ImportResultRouteState: Equatable, Sendable {
         var status: Status
         var reason: String
         var retryContext: ImportProgressRetryContext?
+        var existingRelativePath: String?
 
         var id: String {
             sourcePath + "|" + targetPath + "|" + status.rawValue
+        }
+
+        var sanitizedSourcePath: String {
+            ImportResultRouteState.sanitizedPathDisplay(sourcePath)
+        }
+
+        var sanitizedTargetPath: String {
+            ImportResultRouteState.sanitizedPathDisplay(targetPath)
+        }
+
+        var canShowExistingFile: Bool {
+            status == .skipped && existingRelativePath?.isEmpty == false
         }
     }
 
@@ -68,6 +88,7 @@ struct ImportResultRouteState: Equatable, Sendable {
     var items: [Item]
     var isRetryingFailedItems: Bool
     var changeLog: ChangeLogState
+    var exportState: ExportState
 
     init(sourceOpening: RepositoryOpeningResult, progress: ImportBatchProgressSnapshot) {
         self.sourceOpening = sourceOpening
@@ -78,6 +99,7 @@ struct ImportResultRouteState: Equatable, Sendable {
         currentPath = progress.currentPath
         isRetryingFailedItems = false
         changeLog = .notLoaded
+        exportState = .idle
         items = Self.resultItems(
             from: progress.items,
             repoPath: sourceOpening.config.repoPath,
@@ -102,7 +124,8 @@ struct ImportResultRouteState: Equatable, Sendable {
         currentPath: String,
         items: [Item],
         isRetryingFailedItems: Bool = false,
-        changeLog: ChangeLogState = .notLoaded
+        changeLog: ChangeLogState = .notLoaded,
+        exportState: ExportState = .idle
     ) {
         self.sourceOpening = sourceOpening
         self.imported = imported
@@ -113,6 +136,7 @@ struct ImportResultRouteState: Equatable, Sendable {
         self.items = items
         self.isRetryingFailedItems = isRetryingFailedItems
         self.changeLog = changeLog
+        self.exportState = exportState
     }
 
     var summaryText: String {
@@ -151,7 +175,8 @@ struct ImportResultRouteState: Equatable, Sendable {
                 targetPath: item.targetPath,
                 status: status(for: item.phase, stopped: stopped),
                 reason: reason(for: item),
-                retryContext: retryContext(for: item, repoPath: repoPath)
+                retryContext: retryContext(for: item, repoPath: repoPath),
+                existingRelativePath: item.existingRelativePath
             )
         }
     }
@@ -168,7 +193,8 @@ struct ImportResultRouteState: Equatable, Sendable {
             targetPath: currentPath,
             status: fallbackStatus(imported: imported, failed: failed, stopped: stopped, pending: pending),
             reason: fallbackReason(failed: failed, stopped: stopped, pending: pending),
-            retryContext: nil
+            retryContext: nil,
+            existingRelativePath: nil
         )
     }
 
@@ -248,5 +274,10 @@ struct ImportResultRouteState: Equatable, Sendable {
             category: category.isEmpty || category == "." ? "inbox" : category,
             filename: filename.isEmpty ? "untitled" : filename
         )
+    }
+
+    static func sanitizedPathDisplay(_ path: String) -> String {
+        let name = (path as NSString).lastPathComponent
+        return name.isEmpty ? "redacted path" : ".../\(name)"
     }
 }

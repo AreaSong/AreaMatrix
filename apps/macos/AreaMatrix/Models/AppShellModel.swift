@@ -70,6 +70,7 @@ final class OnboardingModel: ObservableObject {
     let finderOpener: any RepositoryFinderOpening
     let fileRevealer: any RepositoryFileRevealing
     let pathCopier: any RepositoryPathCopying
+    let importResultExporter: any ImportResultDetailsExporting
     let importProgressControlState: ImportProgressControlState
     let accessibilityAnnouncer: any AccessibilityAnnouncing
     let helpOpener: any WelcomeHelpOpening
@@ -99,6 +100,7 @@ final class OnboardingModel: ObservableObject {
         finderOpener: any RepositoryFinderOpening = NSWorkspaceRepositoryFinderOpener(),
         fileRevealer: any RepositoryFileRevealing = NSWorkspaceRepositoryFileRevealer(),
         pathCopier: any RepositoryPathCopying = NSPasteboardRepositoryPathCopier(),
+        importResultExporter: any ImportResultDetailsExporting = NSSavePanelImportResultDetailsExporter(),
         importProgressControlState: ImportProgressControlState = ImportProgressControlState(),
         accessibilityAnnouncer: any AccessibilityAnnouncing = VoiceOverAccessibilityAnnouncer(),
         helpOpener: any WelcomeHelpOpening = LocalWelcomeHelpOpener(),
@@ -123,6 +125,7 @@ final class OnboardingModel: ObservableObject {
         self.finderOpener = finderOpener
         self.fileRevealer = fileRevealer
         self.pathCopier = pathCopier
+        self.importResultExporter = importResultExporter
         self.importProgressControlState = importProgressControlState
         self.accessibilityAnnouncer = accessibilityAnnouncer
         self.helpOpener = helpOpener

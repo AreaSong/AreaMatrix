@@ -250,14 +250,87 @@ extension OnboardingModel {
     @MainActor
     func retryImportResultFailedItems() async {
         guard case .importResult(let state) = route, state.canRetryFailedItems else { return }
-        route = .importResult(state.replacing(isRetryingFailedItems: true))
-        var nextState = state
-        for item in state.items where item.status == .failed {
-            guard let context = item.retryContext, context.storageMode == .copy else { continue }
-            nextState = await retryImportResultItem(item, context: context, state: nextState)
-            route = .importResult(nextState)
+
+        let retryItems = state.items.filter { $0.status == .failed && $0.retryContext?.storageMode == .copy }
+        var resultState = state.replacing(isRetryingFailedItems: true)
+        var progressItems = retryItems.map { retryProgressItem(for: $0, phase: .pending) }
+        var completed = 0
+        var failed = 0
+
+        for index in retryItems.indices {
+            let item = retryItems[index]
+            guard let context = item.retryContext else { continue }
+
+            progressItems[index] = retryProgressItem(for: item, phase: .copying)
+            routeImportResultRetryProgress(
+                state: state,
+                progressItems: progressItems,
+                completed: completed,
+                failed: failed,
+                currentPath: item.targetPath
+            )
+
+            let retry = await retryImportResultItem(item, context: context, state: resultState)
+            resultState = retry.resultState
+            progressItems[index] = retry.progressItem
+            completed += retry.didImport ? 1 : 0
+            failed += retry.didImport ? 0 : 1
+
+            routeImportResultRetryProgress(
+                state: state,
+                progressItems: progressItems,
+                completed: completed,
+                failed: failed,
+                currentPath: retry.progressItem.targetPath
+            )
         }
-        route = .importResult(nextState.replacing(isRetryingFailedItems: false))
+
+        route = .importResult(resultState.replacing(isRetryingFailedItems: false))
+    }
+
+    @MainActor
+    func showImportResultExistingFile(itemID: ImportResultRouteState.Item.ID) {
+        guard case .importResult(let state) = route else { return }
+        guard let item = state.items.first(where: { $0.id == itemID }),
+              let relativePath = item.existingRelativePath else { return }
+
+        do {
+            try fileRevealer.revealFile(repoPath: state.sourceOpening.config.repoPath, relativePath: relativePath)
+            toastMessage = nil
+        } catch {
+            toastMessage = "Existing file cannot be shown in Finder."
+        }
+    }
+
+    @MainActor
+    func requestImportResultExportPrivacyConfirmation() {
+        guard case .importResult(let state) = route else { return }
+        route = .importResult(state.replacing(exportState: .confirmingPrivacy))
+    }
+
+    @MainActor
+    func cancelImportResultExport() {
+        guard case .importResult(let state) = route else { return }
+        guard case .confirmingPrivacy = state.exportState else { return }
+        route = .importResult(state.replacing(exportState: .idle))
+    }
+
+    @MainActor
+    func exportImportResultDetails() {
+        guard case .importResult(let state) = route else { return }
+
+        do {
+            let exportedPath = try importResultExporter.exportDetails(
+                state.exportDetailsText,
+                suggestedFilename: "AreaMatrix-Import-Result.txt"
+            )
+            route = .importResult(state.replacing(exportState: .exported(exportedPath)))
+            toastMessage = "Import result details exported."
+        } catch ImportResultExportError.cancelled {
+            route = .importResult(state.replacing(exportState: .idle))
+        } catch {
+            route = .importResult(state.replacing(exportState: .failed("Export details failed.")))
+        }
     }
 
     @MainActor
@@ -282,7 +355,7 @@ extension OnboardingModel {
         _ item: ImportResultRouteState.Item,
         context: ImportProgressRetryContext,
         state: ImportResultRouteState
-    ) async -> ImportResultRouteState {
+    ) async -> ImportResultRetryOutcome {
         do {
             let entry = try await importProgressImporter.importCopiedFile(
                 repoPath: context.repoPath,
@@ -291,10 +364,58 @@ extension OnboardingModel {
                 overrideFilename: context.overrideFilename,
                 duplicateStrategy: context.duplicateStrategy.coreStrategy
             )
-            return state.markingImported(item, entry: entry)
+            return ImportResultRetryOutcome(
+                resultState: state.markingImported(item, entry: entry),
+                progressItem: retryProgressItem(for: item, targetPath: entry.path, phase: .done),
+                didImport: true
+            )
         } catch {
             let mapping = await importProgressMapping(for: error)
-            return state.markingFailed(item, message: mapping.userMessage)
+            return ImportResultRetryOutcome(
+                resultState: state.markingFailed(item, message: mapping.userMessage),
+                progressItem: retryProgressItem(for: item, phase: .failed, errorMessage: mapping.userMessage),
+                didImport: false
+            )
         }
     }
+
+    @MainActor
+    private func routeImportResultRetryProgress(
+        state: ImportResultRouteState,
+        progressItems: [ImportBatchProgressSnapshot.Item],
+        completed: Int,
+        failed: Int,
+        currentPath: String
+    ) {
+        route = .importProgress(ImportProgressRouteState(
+            sourceOpening: state.sourceOpening,
+            currentPath: currentPath,
+            status: .running,
+            completed: completed,
+            failed: failed,
+            remaining: max(progressItems.count - completed - failed, 0),
+            items: progressItems
+        ))
+    }
+}
+
+private struct ImportResultRetryOutcome {
+    var resultState: ImportResultRouteState
+    var progressItem: ImportBatchProgressSnapshot.Item
+    var didImport: Bool
+}
+
+private func retryProgressItem(
+    for item: ImportResultRouteState.Item,
+    targetPath: String? = nil,
+    phase: ImportBatchProgressSnapshot.Phase,
+    errorMessage: String? = nil
+) -> ImportBatchProgressSnapshot.Item {
+    ImportBatchProgressSnapshot.Item(
+        sourcePath: item.sourcePath,
+        targetPath: targetPath ?? item.targetPath,
+        phase: phase,
+        errorMessage: errorMessage,
+        existingRelativePath: item.existingRelativePath
+    )
 }

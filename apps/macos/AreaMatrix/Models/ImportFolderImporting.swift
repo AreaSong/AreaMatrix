@@ -195,7 +195,8 @@ extension ImportFolderPreviewModel {
                 sourcePath: row.fileURL.path,
                 targetPath: targetRelativePath(for: row),
                 phase: progressPhase(for: row.status),
-                errorMessage: progressErrorMessage(for: row.status)
+                errorMessage: progressErrorMessage(for: row.status),
+                existingRelativePath: row.existingConflictPath
             )
         }
     }

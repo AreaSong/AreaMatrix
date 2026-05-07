@@ -5,8 +5,13 @@ struct ImportResultView: View {
     let onDone: () -> Void
     let onRetryFailed: () -> Void
     let onLoadChangeLog: () -> Void
+    let onShowExistingFile: (ImportResultRouteState.Item.ID) -> Void
+    let onRequestExport: () -> Void
+    let onConfirmExport: () -> Void
+    let onCancelExport: () -> Void
 
     @State private var filter: ImportResultRouteState.Item.Status?
+    @State private var selectedItemID: ImportResultRouteState.Item.ID?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -25,7 +30,7 @@ struct ImportResultView: View {
             .pickerStyle(.segmented)
             .labelsHidden()
 
-            Table(filteredItems) {
+            Table(filteredItems, selection: $selectedItemID) {
                 TableColumn("文件名") { item in
                     Text(displayName(for: item.targetPath))
                 }
@@ -38,9 +43,23 @@ struct ImportResultView: View {
                 TableColumn("原因") { item in
                     Text(item.reason)
                 }
+                TableColumn("动作") { item in
+                    if item.canShowExistingFile {
+                        Button("Show existing file") {
+                            onShowExistingFile(item.id)
+                        }
+                    } else {
+                        Text("-")
+                            .foregroundStyle(.secondary)
+                    }
+                }
             }
             .frame(minHeight: 220)
+            .accessibilityLabel(state.summaryText)
 
+            if let selectedItem {
+                ImportErrorDetailView(item: selectedItem)
+            }
             changeLogSection
 
             HStack {
@@ -54,13 +73,25 @@ struct ImportResultView: View {
                     ProgressView()
                         .controlSize(.small)
                 }
+                Button("Export Details...", action: onRequestExport)
                 Button(state.retryButtonTitle, action: onRetryFailed)
                     .disabled(!state.canRetryFailedItems)
                 Button("Done", action: onDone)
                     .keyboardShortcut(.defaultAction)
             }
+            exportStatus
         }
         .padding(24)
+        .confirmationDialog(
+            "Export import result details?",
+            isPresented: exportConfirmationBinding,
+            titleVisibility: .visible
+        ) {
+            Button("Export Details...", action: onConfirmExport)
+            Button("Cancel", role: .cancel, action: onCancelExport)
+        } message: {
+            Text("The export contains result rows, error codes, and redacted paths. It does not include user file contents or upload data.")
+        }
         .task(id: state.sourceOpening.config.repoPath) {
             onLoadChangeLog()
         }
@@ -69,6 +100,44 @@ struct ImportResultView: View {
     private var filteredItems: [ImportResultRouteState.Item] {
         guard let filter else { return state.items }
         return state.items.filter { $0.status == filter }
+    }
+
+    private var selectedItem: ImportResultRouteState.Item? {
+        if let selectedItemID,
+           let item = state.items.first(where: { $0.id == selectedItemID }) {
+            return item
+        }
+        return state.items.first(where: { $0.status == .failed })
+    }
+
+    private var exportConfirmationBinding: Binding<Bool> {
+        Binding(
+            get: {
+                if case .confirmingPrivacy = state.exportState { return true }
+                return false
+            },
+            set: { isPresented in
+                if !isPresented {
+                    onCancelExport()
+                }
+            }
+        )
+    }
+
+    @ViewBuilder
+    private var exportStatus: some View {
+        switch state.exportState {
+        case .idle, .confirmingPrivacy:
+            EmptyView()
+        case .exported(let path):
+            Text("Exported details to \(path)")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        case .failed(let message):
+            Label(message, systemImage: "exclamationmark.triangle")
+                .font(.caption)
+                .foregroundStyle(.red)
+        }
     }
 
     private func displayName(for path: String) -> String {
@@ -145,5 +214,53 @@ struct ImportResultView: View {
     private var changeLogIsLoading: Bool {
         if case .loading = state.changeLog { return true }
         return false
+    }
+}
+
+private struct ImportErrorDetailView: View {
+    let item: ImportResultRouteState.Item
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label("Result details", systemImage: item.status.detailSystemImage)
+                .font(.headline)
+            detailRow("Status", item.status.rawValue)
+            detailRow("Source", item.sanitizedSourcePath)
+            detailRow("Target", item.sanitizedTargetPath)
+            detailRow("Reason", item.reason)
+            if let existingRelativePath = item.existingRelativePath {
+                detailRow("Existing file", ImportResultRouteState.sanitizedPathDisplay(existingRelativePath))
+            }
+        }
+        .padding(12)
+        .background(Color(nsColor: .controlBackgroundColor))
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .accessibilityElement(children: .contain)
+    }
+
+    private func detailRow(_ label: String, _ value: String) -> some View {
+        HStack(alignment: .firstTextBaseline) {
+            Text(label)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .frame(width: 84, alignment: .leading)
+            Text(value)
+                .font(.callout)
+                .textSelection(.enabled)
+                .lineLimit(3)
+        }
+    }
+}
+
+private extension ImportResultRouteState.Item.Status {
+    var detailSystemImage: String {
+        switch self {
+        case .imported:
+            return "checkmark.circle"
+        case .skipped, .pending:
+            return "clock"
+        case .failed:
+            return "exclamationmark.triangle"
+        }
     }
 }

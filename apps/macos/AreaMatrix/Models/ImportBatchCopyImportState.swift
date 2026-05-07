@@ -213,9 +213,7 @@ struct ImportBatchCopyImportRow: Identifiable, Equatable, Sendable {
         switch status {
         case .duplicate(let existingPath, _, _), .nameConflict(let existingPath, _), .skippedDuplicate(let existingPath):
             return existingPath
-        case .iCloudPlaceholder(let path, _), .skippedICloud(let path):
-            return path
-        case .loading, .ready, .blocked, .importing, .imported, .error:
+        case .loading, .ready, .iCloudPlaceholder, .blocked, .importing, .skippedICloud, .imported, .error:
             return nil
         }
     }
@@ -318,6 +316,7 @@ struct ImportBatchProgressSnapshot: Equatable, Sendable {
         var targetPath: String
         var phase: Phase
         var errorMessage: String?
+        var existingRelativePath: String? = nil
 
         var id: String {
             sourcePath

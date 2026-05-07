@@ -8,7 +8,8 @@ extension ImportBatchCopyImportModel {
                 sourcePath: row.sourcePath,
                 targetPath: targetRelativePath(for: row, destination: selectedDestination),
                 phase: Self.progressPhase(for: row.status),
-                errorMessage: Self.progressErrorMessage(for: row.status)
+                errorMessage: Self.progressErrorMessage(for: row.status),
+                existingRelativePath: row.existingConflictPath
             )
         }
     }
