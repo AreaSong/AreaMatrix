@@ -21,9 +21,46 @@ extension ImportEntrySheetView {
             return
         }
 
+        let runner = ImportEntrySingleFileImportRunner(
+            request: request,
+            previewModel: previewModel,
+            onImportStarted: onImportStarted,
+            onImportStartedWithRetryContext: onImportStartedWithRetryContext,
+            onImportFailed: onImportFailed,
+            onImported: onImported
+        )
+        await runner.run()
+    }
+}
+
+struct ImportEntrySingleFileImportRunner {
+    let request: ImportEntryRequest
+    let previewModel: ImportSingleFilePreviewModel
+    let onImportStarted: (String, ImportSingleFileStorageMode) -> Void
+    let onImportStartedWithRetryContext: (
+        String,
+        String,
+        ImportSingleFileStorageMode,
+        String,
+        String,
+        DuplicateStrategy
+    ) -> Void
+    let onImportFailed: (String, CoreErrorMappingSnapshot) -> Void
+    let onImported: (String, FileEntrySnapshot) -> Void
+
+    @MainActor
+    func run() async {
         let shouldReportProgress = previewModel.shouldStartImportProgress
         let startingPath = previewModel.progressCurrentPath
         if let context = shouldReportProgress ? previewModel.progressRetryContext : nil {
+            onImportStartedWithRetryContext(
+                startingPath,
+                context.sourcePath,
+                context.storageMode,
+                context.overrideCategory,
+                context.overrideFilename,
+                context.duplicateStrategy.coreStrategy
+            )
             let entry = await previewModel.importSelectedFile()
             handleCompletedSingleFileImport(
                 entry: entry,
@@ -34,6 +71,9 @@ extension ImportEntrySheetView {
             return
         }
 
+        if shouldReportProgress {
+            onImportStarted(startingPath, previewModel.selectedStorageMode)
+        }
         let entry = await previewModel.importSelectedFile()
         handleCompletedSingleFileImport(
             entry: entry,
@@ -51,18 +91,6 @@ extension ImportEntrySheetView {
         shouldReportProgress: Bool
     ) {
         if let entry {
-            if let context {
-                onImportStartedWithRetryContext(
-                    startingPath,
-                    context.sourcePath,
-                    context.storageMode,
-                    context.overrideCategory,
-                    context.overrideFilename,
-                    context.duplicateStrategy.coreStrategy
-                )
-            } else if shouldReportProgress {
-                onImportStarted(startingPath, previewModel.selectedStorageMode)
-            }
             onImported(request.repoPath, entry)
         } else if let mapping = previewModel.importFailureMapping {
             onImportFailed(startingPath, mapping)

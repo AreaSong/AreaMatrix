@@ -427,7 +427,7 @@ final class ImportFolderPreviewModelTests: XCTestCase {
     }
 
     @MainActor
-    func testS119FolderImportDisablesMoveWithoutCallingImporter() async {
+    func testS119FolderMoveUsesRealCoreImportMode() async {
         let sourceURL = URL(fileURLWithPath: "/tmp/move-later.pdf")
         let scanner = S119StaticFolderScanner(result: ImportFolderScanResult(
             rows: [ImportFolderPreviewRow.loading(
@@ -457,77 +457,20 @@ final class ImportFolderPreviewModelTests: XCTestCase {
 
         await model.load(request: s119FolderRequest(rootURL: URL(fileURLWithPath: "/tmp", isDirectory: true)))
         model.selectedStorageMode = .move
+        XCTAssertNil(model.importDisabledReason)
         let outcome = await model.importReadyFiles()
         let recordedRequests = await importer.recordedRequests()
 
-        XCTAssertNil(outcome)
-        XCTAssertEqual(
-            model.importDisabledReason,
-            "文件夹导入当前只接入 Copy / Index-only；Move 属于 C1-07 后续能力"
-        )
-        XCTAssertEqual(recordedRequests, [])
+        XCTAssertEqual(outcome?.succeededEntries.count, 1)
+        XCTAssertEqual(recordedRequests, [
+            S118BatchImportRequest(
+                storageMode: .move,
+                destination: .autoClassify,
+                suggestedCategory: "docs",
+                overrideFilename: "move-later.pdf",
+                duplicateStrategy: .ask
+            ),
+        ])
     }
 
-    @MainActor
-    func testDefaultCoreBridgeFolderCopyImportKeepsSourceAndCreatesRepoCopy() async throws {
-        let repoURL = try makeImportFolderTemporaryDirectory()
-        let sourceRoot = try makeImportFolderTemporaryDirectory()
-        defer {
-            try? FileManager.default.removeItem(at: repoURL)
-            try? FileManager.default.removeItem(at: sourceRoot)
-        }
-
-        let sourceURL = sourceRoot.appendingPathComponent("invoice.pdf")
-        try Data("invoice bytes".utf8).write(to: sourceURL)
-        let sourceBefore = try Data(contentsOf: sourceURL)
-        let bridge = CoreBridge()
-
-        try await bridge.initializeEmptyRepository(repoPath: repoURL.path)
-        let entry = try await bridge.importCopiedFile(
-            repoPath: repoURL.path,
-            sourceURL: sourceURL,
-            destination: .autoClassify,
-            suggestedCategory: "finance",
-            overrideFilename: "folder-invoice.pdf"
-        )
-
-        XCTAssertEqual(entry.currentName, "folder-invoice.pdf")
-        XCTAssertEqual(entry.category, "finance")
-        XCTAssertEqual(entry.storageMode, "Copied")
-        XCTAssertEqual(try Data(contentsOf: sourceURL), sourceBefore)
-        XCTAssertTrue(FileManager.default.fileExists(atPath: repoURL.appendingPathComponent(entry.path).path))
-    }
-
-    @MainActor
-    func testDefaultCoreBridgeFolderIndexOnlyImportKeepsSourceWithoutRepoCopy() async throws {
-        let repoURL = try makeImportFolderTemporaryDirectory()
-        let sourceRoot = try makeImportFolderTemporaryDirectory()
-        defer {
-            try? FileManager.default.removeItem(at: repoURL)
-            try? FileManager.default.removeItem(at: sourceRoot)
-        }
-
-        let sourceURL = sourceRoot.appendingPathComponent("reference.pdf")
-        try Data("reference bytes".utf8).write(to: sourceURL)
-        let sourceBefore = try Data(contentsOf: sourceURL)
-        let bridge = CoreBridge()
-
-        try await bridge.initializeEmptyRepository(repoPath: repoURL.path)
-        let entry = try await bridge.importBatchFile(
-            repoPath: repoURL.path,
-            sourceURL: sourceURL,
-            storageMode: .indexOnly,
-            destination: .autoClassify,
-            suggestedCategory: "docs",
-            overrideFilename: "reference-index.pdf",
-            duplicateStrategy: .ask
-        )
-
-        XCTAssertEqual(try Data(contentsOf: sourceURL), sourceBefore)
-        XCTAssertEqual(entry.currentName, "reference-index.pdf")
-        XCTAssertEqual(entry.category, "docs")
-        XCTAssertEqual(entry.storageMode, "Indexed")
-        XCTAssertEqual(entry.sourcePath, sourceURL.path)
-        XCTAssertFalse(FileManager.default.fileExists(atPath: repoURL.appendingPathComponent(entry.path).path))
-    }
 }

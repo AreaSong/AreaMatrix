@@ -1,0 +1,81 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`2-2/task-27`
+- 对应文件路径：`tasks/prompts/phase-2/2-2-import-conflict/task-27-import-conflict-integration-verify.md`
+- 实际核验：`docs/**` 18 个 Exact Docs、`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`apps/macos/AreaMatrix.xcodeproj/project.pbxproj`、`core/area_matrix.udl`
+- Forbidden Touches：`core/src/**` 当前未见本范围改动
+
+三、完成度摘要
+
+- 已覆盖项数：3
+- 未覆盖项数：2
+- 通过项数：5
+- 不通过项数：2
+- 阻塞项数：2
+
+四、逐项验收结果
+
+- 项目：Expected New Paths 落地
+  结果：通过
+  证据：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`apps/macos/AreaMatrix.xcodeproj/project.pbxproj` 均存在；新增 `ImportConflictIntegrationVerifyTests.swift` 已加入 pbxproj。
+  涉及文件：`apps/macos/AreaMatrixTests/ImportConflictIntegrationVerifyTests.swift`、`apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+
+- 项目：Forbidden Touches
+  结果：通过
+  证据：`git status --short -- ... core/src` 未显示 `core/src/**` 改动。
+  涉及文件：`core/src/**`
+
+- 项目：本闭环页面与能力任务覆盖
+  结果：通过
+  证据：`2-2/task-01` 到 `2-2/task-26` 覆盖 S1-16..S1-24 atomic/page integration verify，task-27 为最终 integration verify。
+  涉及文件：`tasks/prompts/phase-2/2-2-import-conflict/**`
+
+- 项目：用户路径按 S1-17 -> S1-20 走通
+  结果：不通过
+  证据：单文件 footer 在点击 Import 后先 `await previewModel.importSelectedFile()`，Core 导入完成后才调用 `onImportStarted...`，随后同一分支继续 `onImported(...)` 回主列表；这不是文档要求的“Import 进入 S1-20 import-progress”。
+  涉及文件：`apps/macos/AreaMatrix/Views/Main/ImportEntrySingleFileFooter.swift:24`、`:27`、`:53`、`:64`、`:66`
+
+- 项目：不得把本闭环最终能力留作后续
+  结果：不通过
+  证据：S1-18 control map 绑定 C1-06/C1-09，S1-19 绑定 C1-05/C1-06/C1-08；但批量导入模型阻断非 Copy 并写明 `Move / Index-only 属于后续页面能力`，文件夹导入阻断 Move 并写明 `Move 属于 C1-07 后续能力`。最终集成验收不能把闭环能力声明为后续。
+  涉及文件：`apps/macos/AreaMatrix/Models/ImportBatchCopyImportModel.swift:56`、`apps/macos/AreaMatrix/Models/ImportFolderPreviewModel.swift:163`
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过。主要阻断是单文件导入流程的路由顺序与 S1-20 规格不一致。
+- 注释 / rustdoc / 文档同步：不通过。代码中“后续页面能力”的实现边界与本 task/control map 的最终闭环要求冲突。
+- 错误处理与边界处理：部分通过。Replace 二次确认、iCloud placeholder、fatal recovery 有路径；但单文件进度路径缺失导致用户不可验证 S1-20 中间态。
+- 测试与验证覆盖：不通过。`./dev test macos` 通过 fallback 执行 279 tests，但新增 integration test 主要用 recording/static doubles，未捕获生产 footer 真实路由顺序问题。
+- 占位、硬编码、mock-only、一次性实现检查：不通过。测试证据存在 test doubles；更关键的是生产路径仍有“后续能力”阻断文案，不能作为最终闭环通过。
+
+六、阻塞项
+
+- P0：单文件导入没有真实进入 S1-20 后再完成
+  说明：S1-17 规定点击 Import 进入 `S1-20 import-progress`；当前实现先等待 Core 导入完成，再短暂设置 progress，并立即 `finishImportEntry` 回主列表/toast，用户路径无法稳定验收 S1-20。
+  绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportEntrySingleFileFooter.swift:24`
+  为什么导致不通过：完成标准要求“该闭环可以按用户路径走通”，此处用户路径顺序不符合页面规格。
+
+- P1：闭环内部分能力仍被声明为后续能力
+  说明：批量导入非 Copy、文件夹 Move 被当前实现阻断为后续能力。
+  绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportBatchCopyImportModel.swift:56`
+  绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportFolderPreviewModel.swift:163`
+  为什么导致不通过：task-27 是 import-conflict 最终 integration verify，不允许把最终闭环能力留作后续且仍判定完成。
+
+七、验证情况
+
+- 已运行：`xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+  结果：失败，exit 65；错误为 `com.apple.testmanagerd.control` sandbox restriction，无法建立 test runner 通信。
+- 已运行：`./dev test macos`
+  结果：通过 fallback；标准 xcodebuild test 同样被 testmanagerd sandbox 阻断后，脚本复用 XCTest bundle，`xcrun xctest` 执行 279 tests，0 failures。
+- 缺失：没有生产路径证据证明单文件点击 Import 后可稳定停留/展示 S1-20 进度页。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+
+
+VERIFY_RESULT: FAIL

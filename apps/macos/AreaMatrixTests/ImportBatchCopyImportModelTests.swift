@@ -306,7 +306,7 @@ final class ImportBatchCopyImportModelTests: XCTestCase {
     }
 
     @MainActor
-    func testBatchMoveAndIndexOnlyShowRiskAndBlockRealImport() async {
+    func testBatchMoveAndIndexOnlyUseRealCoreImportModes() async {
         let sourceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
         let rows = [
             ImportBatchPreviewRow.ready(
@@ -332,19 +332,34 @@ final class ImportBatchCopyImportModelTests: XCTestCase {
 
         model.applyPreviewRows(rows, request: request, selectedDestination: .autoClassify)
         model.selectedStorageMode = .move
-        XCTAssertEqual(model.storageModeRiskMessage, "Move 模式仅显示风险提示；S1-18 当前不能执行真实 Move 导入。")
-        XCTAssertEqual(model.importDisabledReason, "批量导入当前只接入 Copy；Move / Index-only 属于后续页面能力")
+        XCTAssertEqual(model.storageModeRiskMessage, "Move 模式会移走源文件；请确认批量队列只包含要移入资料库的文件。")
+        XCTAssertNil(model.importDisabledReason)
         let moved = await model.importReadyFiles(selectedDestination: .autoClassify)
-        XCTAssertNil(moved)
+        XCTAssertEqual(moved?.succeededEntries.count, 1)
         model.applyPreviewRows(rows, request: request, selectedDestination: .autoClassify)
         model.selectedStorageMode = .indexOnly
-        XCTAssertEqual(model.storageModeRiskMessage, "Index-only 仅显示风险提示；S1-18 当前不能执行真实 Index-only 导入。")
-        XCTAssertEqual(model.importDisabledReason, "批量导入当前只接入 Copy；Move / Index-only 属于后续页面能力")
+        XCTAssertEqual(model.storageModeRiskMessage, "Index-only 不复制文件，只写入索引；源文件移动或删除后会显示缺失。")
+        XCTAssertNil(model.importDisabledReason)
         let indexed = await model.importReadyFiles(selectedDestination: .autoClassify)
-        XCTAssertNil(indexed)
+        XCTAssertEqual(indexed?.succeededEntries.count, 1)
         let recordedRequests = await importer.recordedRequests()
 
-        XCTAssertTrue(recordedRequests.isEmpty)
+        XCTAssertEqual(recordedRequests, [
+            S118BatchImportRequest(
+                storageMode: .move,
+                destination: .autoClassify,
+                suggestedCategory: "finance",
+                overrideFilename: "Invoice_2026Q1.pdf",
+                duplicateStrategy: .ask
+            ),
+            S118BatchImportRequest(
+                storageMode: .indexOnly,
+                destination: .autoClassify,
+                suggestedCategory: "finance",
+                overrideFilename: "Invoice_2026Q1.pdf",
+                duplicateStrategy: .ask
+            ),
+        ])
     }
 
     @MainActor

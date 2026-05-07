@@ -325,36 +325,6 @@ actor S118RecordingBatchImporter: CoreBatchCopyImporting {
     }
 }
 
-actor S118FailingBatchImporter: CoreBatchCopyImporting {
-    private let error: CoreError
-    private var requests: [S118BatchImportRequest] = []
-
-    init(error: CoreError) {
-        self.error = error
-    }
-
-    func importCopiedFile(
-        repoPath: String,
-        sourceURL: URL,
-        destination: ImportEntryDestination,
-        suggestedCategory: String?,
-        overrideFilename: String,
-        duplicateStrategy: DuplicateStrategy
-    ) async throws -> FileEntrySnapshot {
-        requests.append(S118BatchImportRequest(
-            destination: destination,
-            suggestedCategory: suggestedCategory,
-            overrideFilename: overrideFilename,
-            duplicateStrategy: duplicateStrategy
-        ))
-        throw error
-    }
-
-    func recordedRequests() -> [S118BatchImportRequest] {
-        requests
-    }
-}
-
 actor S118SequenceBatchImporter: CoreBatchCopyImporting {
     private var results: [Result<FileEntrySnapshot, Error>]
     private var requests: [S118BatchImportRequest] = []
@@ -372,6 +342,34 @@ actor S118SequenceBatchImporter: CoreBatchCopyImporting {
         duplicateStrategy: DuplicateStrategy
     ) async throws -> FileEntrySnapshot {
         requests.append(S118BatchImportRequest(
+            storageMode: .copy,
+            destination: destination,
+            suggestedCategory: suggestedCategory,
+            overrideFilename: overrideFilename,
+            duplicateStrategy: duplicateStrategy
+        ))
+        guard !results.isEmpty else {
+            throw CoreError.Internal(message: "missing batch import test result")
+        }
+        switch results.removeFirst() {
+        case .success(let entry):
+            return entry
+        case .failure(let error):
+            throw error
+        }
+    }
+
+    func importBatchFile(
+        repoPath: String,
+        sourceURL: URL,
+        storageMode: ImportSingleFileStorageMode,
+        destination: ImportEntryDestination,
+        suggestedCategory: String?,
+        overrideFilename: String,
+        duplicateStrategy: DuplicateStrategy
+    ) async throws -> FileEntrySnapshot {
+        requests.append(S118BatchImportRequest(
+            storageMode: storageMode,
             destination: destination,
             suggestedCategory: suggestedCategory,
             overrideFilename: overrideFilename,

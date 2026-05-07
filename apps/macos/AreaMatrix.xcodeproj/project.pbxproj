@@ -94,6 +94,8 @@
 		0A00000000000000000001E4 /* ImportSingleFileDuplicateResolution.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001E5 /* ImportSingleFileDuplicateResolution.swift */; };
 		0A00000000000000000001E6 /* ImportSingleFileDuplicateResolutionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001E7 /* ImportSingleFileDuplicateResolutionTests.swift */; };
 		0A00000000000000000001F0 /* ReplaceConfirmPageIntegrationVerifyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001F1 /* ReplaceConfirmPageIntegrationVerifyTests.swift */; };
+		0A00000000000000000001F4 /* ImportConflictIntegrationVerifyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001F5 /* ImportConflictIntegrationVerifyTests.swift */; };
+		0A00000000000000000001F6 /* ImportFolderCoreBridgeModeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001F7 /* ImportFolderCoreBridgeModeTests.swift */; };
 		0A00000000000000000001E8 /* ImportSingleFilePreviewPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001E9 /* ImportSingleFilePreviewPresentation.swift */; };
 		0A00000000000000000001EA /* ImportEntrySingleFileFooter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001EB /* ImportEntrySingleFileFooter.swift */; };
 		0A00000000000000000001EE /* ReplaceConfirmSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001EF /* ReplaceConfirmSheet.swift */; };
@@ -247,6 +249,8 @@
 		0A00000000000000000001E5 /* ImportSingleFileDuplicateResolution.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ImportSingleFileDuplicateResolution.swift; sourceTree = SOURCE_ROOT; };
 			0A00000000000000000001E7 /* ImportSingleFileDuplicateResolutionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportSingleFileDuplicateResolutionTests.swift; sourceTree = SOURCE_ROOT; };
 			0A00000000000000000001F1 /* ReplaceConfirmPageIntegrationVerifyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ReplaceConfirmPageIntegrationVerifyTests.swift; sourceTree = SOURCE_ROOT; };
+			0A00000000000000000001F5 /* ImportConflictIntegrationVerifyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportConflictIntegrationVerifyTests.swift; sourceTree = SOURCE_ROOT; };
+			0A00000000000000000001F7 /* ImportFolderCoreBridgeModeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportFolderCoreBridgeModeTests.swift; sourceTree = SOURCE_ROOT; };
 			0A00000000000000000001E9 /* ImportSingleFilePreviewPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ImportSingleFilePreviewPresentation.swift; sourceTree = SOURCE_ROOT; };
 			0A00000000000000000001EB /* ImportEntrySingleFileFooter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/ImportEntrySingleFileFooter.swift; sourceTree = SOURCE_ROOT; };
 			0A00000000000000000001EF /* ReplaceConfirmSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/ReplaceConfirmSheet.swift; sourceTree = SOURCE_ROOT; };
@@ -513,6 +517,8 @@
 				0A000000000000000000016F /* ImportSingleFilePreviewModelTests.swift */,
 				0A00000000000000000001E7 /* ImportSingleFileDuplicateResolutionTests.swift */,
 				0A00000000000000000001F1 /* ReplaceConfirmPageIntegrationVerifyTests.swift */,
+				0A00000000000000000001F5 /* ImportConflictIntegrationVerifyTests.swift */,
+				0A00000000000000000001F7 /* ImportFolderCoreBridgeModeTests.swift */,
 				0A0000000000000000000181 /* ImportSingleFileTestSupport.swift */,
 				0A0000000000000000000189 /* ImportSingleFileTestFixtures.swift */,
 					0A0000000000000000000175 /* ImportSingleFileMoveImportTests.swift */,
@@ -775,6 +781,8 @@
 				0A000000000000000000016E /* ImportSingleFilePreviewModelTests.swift in Sources */,
 				0A00000000000000000001E6 /* ImportSingleFileDuplicateResolutionTests.swift in Sources */,
 				0A00000000000000000001F0 /* ReplaceConfirmPageIntegrationVerifyTests.swift in Sources */,
+				0A00000000000000000001F4 /* ImportConflictIntegrationVerifyTests.swift in Sources */,
+				0A00000000000000000001F6 /* ImportFolderCoreBridgeModeTests.swift in Sources */,
 				0A0000000000000000000180 /* ImportSingleFileTestSupport.swift in Sources */,
 				0A0000000000000000000188 /* ImportSingleFileTestFixtures.swift in Sources */,
 				0A0000000000000000000174 /* ImportSingleFileMoveImportTests.swift in Sources */,

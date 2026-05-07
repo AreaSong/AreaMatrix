@@ -160,9 +160,6 @@ final class ImportFolderPreviewModel: ObservableObject {
         if rows.isEmpty || importableRows.isEmpty {
             return "没有可导入文件"
         }
-        if selectedStorageMode == .move {
-            return "文件夹导入当前只接入 Copy / Index-only；Move 属于 C1-07 后续能力"
-        }
         return nil
     }
 
@@ -171,7 +168,7 @@ final class ImportFolderPreviewModel: ObservableObject {
         case .copy:
             return nil
         case .move:
-            return "Move 模式会移走源文件；S1-19 当前不执行真实 Move 导入。"
+            return "Move 模式会移走源文件夹中的已就绪文件；请确认这些文件要移入资料库。"
         case .indexOnly:
             return "Index-only 不复制文件，只写入索引；源文件移动或删除后会显示缺失。"
         }

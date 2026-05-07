@@ -11,7 +11,7 @@ enum ImportBatchCopyImportRowStatus: Equatable, Sendable {
     case nameConflict(existingPath: String, resolution: ImportBatchNameConflictResolution)
     case iCloudPlaceholder(path: String, message: String)
     case blocked(String)
-    case importing
+    case importing(ImportSingleFileStorageMode)
     case skippedDuplicate(existingPath: String)
     case skippedICloud(path: String)
     case imported
@@ -61,14 +61,14 @@ enum ImportBatchCopyImportRowStatus: Equatable, Sendable {
             return message
         case .blocked(let message):
             return message
-        case .importing:
-            return "正在复制导入..."
+        case .importing(let mode):
+            return mode.importingMessage
         case .skippedDuplicate(let existingPath):
             return "Duplicate skipped: \(existingPath)"
         case .skippedICloud(let path):
             return "iCloud pending: \(path)"
         case .imported:
-            return "已复制导入"
+            return "已完成导入"
         }
     }
 
@@ -279,7 +279,7 @@ enum ImportBatchCopyImportStatus: Equatable, Sendable {
         case .idle:
             return nil
         case .importing(let completed, let total, let failed, _):
-            return "正在复制导入：已完成 \(completed)/\(total)，失败 \(failed)"
+            return "正在导入：已完成 \(completed)/\(total)，失败 \(failed)"
         case .imported(let successful, let failed):
             return "批量导入完成：成功 \(successful)，失败 \(failed)"
         }
@@ -292,9 +292,9 @@ extension ImportBatchCopyImportModel {
         case .copy:
             return nil
         case .move:
-            return "Move 模式仅显示风险提示；S1-18 当前不能执行真实 Move 导入。"
+            return "Move 模式会移走源文件；请确认批量队列只包含要移入资料库的文件。"
         case .indexOnly:
-            return "Index-only 仅显示风险提示；S1-18 当前不能执行真实 Index-only 导入。"
+            return "Index-only 不复制文件，只写入索引；源文件移动或删除后会显示缺失。"
         }
     }
 }

@@ -39,7 +39,7 @@ final class ImportBatchCopyImportModel: ObservableObject, ImportProgressQueueCon
 
     var importDisabledReason: String? {
         if status.isImporting {
-            return "正在复制导入"
+            return selectedStorageMode.importingBlockingMessage
         }
         if isICloudDownloading {
             return "正在下载 iCloud 文件"
@@ -52,9 +52,6 @@ final class ImportBatchCopyImportModel: ObservableObject, ImportProgressQueueCon
         }
         if !hasActionableRows {
             return "没有可导入或可跳过的批量项目"
-        }
-        if selectedStorageMode != .copy {
-            return "批量导入当前只接入 Copy；Move / Index-only 属于后续页面能力"
         }
         return nil
     }
@@ -330,7 +327,7 @@ final class ImportBatchCopyImportModel: ObservableObject, ImportProgressQueueCon
         total: Int,
         currentPath: String
     ) {
-        rows[rowIndex].status = .importing
+        rows[rowIndex].status = .importing(selectedStorageMode)
         status = .importing(
             completed: completed,
             total: total,
