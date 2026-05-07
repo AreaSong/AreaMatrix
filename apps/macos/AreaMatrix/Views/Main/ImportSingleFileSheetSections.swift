@@ -308,7 +308,8 @@ struct ImportSingleFileConflictSection: View {
                 Text("替换操作需要二次确认。旧文件不会直接删除，会移到废纸篓。")
                     .font(.caption)
                     .foregroundStyle(.orange)
-                Button("Confirm Replace...", action: onBeginReplaceConfirmation)
+                Button(duplicateReplaceActionTitle, action: onBeginReplaceConfirmation)
+                    .disabled(isReplaceConfirmed)
                     .help("Replace 每次必须先二次确认")
             }
         case .disabled:

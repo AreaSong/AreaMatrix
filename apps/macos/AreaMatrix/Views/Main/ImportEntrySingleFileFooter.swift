@@ -16,11 +16,8 @@ extension ImportEntrySheetView {
 
     @MainActor
     func runSingleFileImportAction() async {
-        if previewModel.duplicateResolution == .replace, !previewModel.isReplaceConfirmed {
-            previewModel.beginReplaceConfirmation()
-            if let context = previewModel.pendingReplaceConfirmation {
-                pendingSingleFileReplaceConfirmation = ImportSingleFileReplaceConfirmation(context: context)
-            }
+        if let confirmation = ImportEntrySingleFilePrimaryActionGate.pendingReplaceConfirmation(for: previewModel) {
+            pendingSingleFileReplaceConfirmation = confirmation
             return
         }
 
@@ -70,5 +67,17 @@ extension ImportEntrySheetView {
         } else if let mapping = previewModel.importFailureMapping {
             onImportFailed(startingPath, mapping)
         }
+    }
+}
+
+enum ImportEntrySingleFilePrimaryActionGate {
+    @MainActor
+    static func pendingReplaceConfirmation(
+        for previewModel: ImportSingleFilePreviewModel
+    ) -> ImportSingleFileReplaceConfirmation? {
+        guard previewModel.isPendingReplaceConfirmation else { return nil }
+        previewModel.beginReplaceConfirmation()
+        guard let context = previewModel.pendingReplaceConfirmation else { return nil }
+        return ImportSingleFileReplaceConfirmation(context: context)
     }
 }

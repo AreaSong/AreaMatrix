@@ -298,6 +298,116 @@ final class ImportSingleFileDuplicateResolutionTests: XCTestCase {
     }
 
     @MainActor
+    func testS124NameConflictReplaceConfirmationMarksC110ReplaceWithoutImportSideEffect() async throws {
+        let existingFile = nameConflictReplaceExistingFile()
+        let importer = S117RecordingImporter()
+        let model = ImportSingleFilePreviewModel(
+            predictor: S117RecordingPredictor(result: .s117Fixture()),
+            importer: importer,
+            preflight: ImportSingleFileStaticPreflight(result: nameConflictReplaceResult(existingFile: existingFile)),
+            errorMapper: S117RecordingErrorMapper()
+        )
+
+        await model.load(request: .importSingleFileFixture(
+            allowReplaceDuringImport: true,
+            isTrashAvailable: true
+        ))
+        model.updateNameConflictResolution(.replace)
+        model.beginReplaceConfirmation()
+        let context = try XCTUnwrap(model.pendingReplaceConfirmation)
+        let requestsBeforeConfirmation = await importer.recordedRequests()
+
+        XCTAssertEqual(model.activeConflictPage, .name)
+        XCTAssertEqual(requestsBeforeConfirmation, [])
+        XCTAssertEqual(context.existingPath, existingFile.path)
+        XCTAssertEqual(context.existingSizeBytes, existingFile.sizeBytes)
+        XCTAssertEqual(context.incomingPath, "/tmp/source.pdf")
+        XCTAssertEqual(context.incomingSizeBytes, 912 * 1_024)
+        XCTAssertEqual(context.targetRelativePath, existingFile.path)
+
+        model.applyReplaceConfirmation(context.decision(understandsReplace: true))
+
+        XCTAssertTrue(model.isReplaceConfirmed)
+        XCTAssertNil(model.pendingReplaceConfirmation)
+        XCTAssertEqual(model.replaceConfirmationActionTitle, "Replace confirmed")
+        XCTAssertEqual(model.singleFilePrimaryActionTitle, "Import")
+
+        _ = await model.importSelectedFile()
+        let requests = await importer.recordedRequests()
+        XCTAssertEqual(requests, [
+            S117ImportRequest(
+                mode: .copy,
+                overrideCategory: "docs",
+                overrideFilename: "source.pdf",
+                duplicateStrategy: .overwrite
+            ),
+        ])
+    }
+
+    @MainActor
+    func testS124NameConflictReplacePrimaryActionOpensConfirmationBeforeCoreOverwrite() async throws {
+        let existingFile = nameConflictReplaceExistingFile()
+        let importer = S117RecordingImporter()
+        let model = ImportSingleFilePreviewModel(
+            predictor: S117RecordingPredictor(result: .s117Fixture()),
+            importer: importer,
+            preflight: ImportSingleFileStaticPreflight(result: nameConflictReplaceResult(existingFile: existingFile)),
+            errorMapper: S117RecordingErrorMapper()
+        )
+
+        await model.load(request: .importSingleFileFixture(
+            allowReplaceDuringImport: true,
+            isTrashAvailable: true
+        ))
+        model.updateNameConflictResolution(.replace)
+
+        let confirmation = ImportEntrySingleFilePrimaryActionGate.pendingReplaceConfirmation(for: model)
+        let requestsBeforeConfirmation = await importer.recordedRequests()
+
+        XCTAssertEqual(requestsBeforeConfirmation, [])
+        XCTAssertEqual(confirmation?.context.existingPath, existingFile.path)
+        XCTAssertEqual(confirmation?.context.targetRelativePath, existingFile.path)
+        XCTAssertFalse(model.isReplaceConfirmed)
+        XCTAssertEqual(model.singleFilePrimaryActionTitle, "Continue")
+
+        let context = try XCTUnwrap(confirmation?.context)
+        model.applyReplaceConfirmation(context.decision(understandsReplace: true))
+
+        XCTAssertNil(ImportEntrySingleFilePrimaryActionGate.pendingReplaceConfirmation(for: model))
+        _ = await model.importSelectedFile()
+        let requestsAfterConfirmation = await importer.recordedRequests()
+
+        XCTAssertEqual(requestsAfterConfirmation.last?.duplicateStrategy, .overwrite)
+        XCTAssertEqual(requestsAfterConfirmation.last?.overrideFilename, "source.pdf")
+    }
+
+    @MainActor
+    func testS124NameConflictReplaceCannotBypassConfirmationThroughModelImport() async {
+        let importer = S117RecordingImporter()
+        let model = ImportSingleFilePreviewModel(
+            predictor: S117RecordingPredictor(result: .s117Fixture()),
+            importer: importer,
+            preflight: ImportSingleFileStaticPreflight(result: nameConflictReplaceResult(
+                existingFile: nameConflictReplaceExistingFile()
+            )),
+            errorMapper: S117RecordingErrorMapper()
+        )
+
+        await model.load(request: .importSingleFileFixture(
+            allowReplaceDuringImport: true,
+            isTrashAvailable: true
+        ))
+        model.updateNameConflictResolution(.replace)
+
+        let imported = await model.importSelectedFile()
+        let requests = await importer.recordedRequests()
+
+        XCTAssertNil(imported)
+        XCTAssertEqual(requests, [])
+        XCTAssertEqual(model.importStatus, .blocked("Replace 必须先进入二次确认"))
+    }
+
+    @MainActor
     func testS123ReplaceCannotBeSelectedWhenTrashUnavailableOrSettingHidden() async {
         let trashUnavailableModel = ImportSingleFilePreviewModel(
             predictor: S117RecordingPredictor(result: .s117Fixture()),
@@ -348,6 +458,38 @@ final class ImportSingleFileDuplicateResolutionTests: XCTestCase {
             conflict: .name(path: "docs/source.pdf"),
             keepBothTargetRelativePath: "docs/source_1.pdf",
             existingPaths: ["docs/source.pdf", "docs/source_1.pdf"]
+        )
+    }
+
+    private func nameConflictReplaceExistingFile() -> FileEntrySnapshot {
+        FileEntrySnapshot(
+            id: 125,
+            path: "docs/reports/报告.pdf",
+            originalName: "报告.pdf",
+            currentName: "报告.pdf",
+            category: "docs",
+            sizeBytes: 860 * 1_024,
+            hashSha256: "existing-hash",
+            storageMode: "Copied",
+            origin: "Imported",
+            sourcePath: nil,
+            importedAt: 1_700_000_000,
+            updatedAt: 1_776_660_840
+        )
+    }
+
+    private func nameConflictReplaceResult(
+        existingFile: FileEntrySnapshot
+    ) -> ImportSingleFilePreflightResult {
+        ImportSingleFilePreflightResult(
+            sourceSizeBytes: 912 * 1_024,
+            sourceModifiedAt: 1_777_445_400,
+            hashSha256: "incoming-hash",
+            targetRelativePath: existingFile.path,
+            conflict: .name(path: existingFile.path),
+            keepBothTargetRelativePath: "docs/reports/报告_1.pdf",
+            existingPaths: [existingFile.path],
+            existingFile: existingFile
         )
     }
 }

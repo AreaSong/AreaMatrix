@@ -133,6 +133,10 @@ extension ImportSingleFilePreviewModel {
             importStatus = .skippedDuplicate(existingPath)
             return nil
         }
+        if isPendingReplaceConfirmation {
+            importStatus = .blocked("Replace 必须先进入二次确认")
+            return nil
+        }
         if let disabledReason = importDisabledReason {
             importStatus = .blocked(disabledReason)
             return nil

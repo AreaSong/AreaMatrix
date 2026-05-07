@@ -193,8 +193,12 @@ extension ImportSingleFilePreviewModel {
         clearReplaceConfirmationRecovery()
     }
 
-    var duplicateReplaceConfirmationActionTitle: String {
+    var replaceConfirmationActionTitle: String {
         isReplaceConfirmed ? "Replace confirmed" : "Confirm Replace..."
+    }
+
+    var duplicateReplaceConfirmationActionTitle: String {
+        replaceConfirmationActionTitle
     }
 
     func canSelectDuplicateResolution(_ strategy: ImportSingleFileDuplicateResolutionStrategy) -> Bool {
