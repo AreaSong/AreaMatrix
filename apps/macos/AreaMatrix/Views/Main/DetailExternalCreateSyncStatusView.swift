@@ -8,7 +8,7 @@ struct DetailExternalCreateSyncStatusView: View {
         case .idle:
             EmptyView()
         case .syncing(let event):
-            Label("Syncing external created file: \(event.relativePath)", systemImage: "arrow.triangle.2.circlepath")
+            Label("Syncing external \(event.kind.displayName) file: \(event.relativePath)", systemImage: "arrow.triangle.2.circlepath")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         case .synced(let event, let fileID, let result):
@@ -24,7 +24,7 @@ struct DetailExternalCreateSyncStatusView: View {
         result: SyncResultSnapshot
     ) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Label("External created file synced", systemImage: "checkmark.circle")
+            Label("External \(event.kind.displayName) file synced", systemImage: "checkmark.circle")
             Text(summary(event: event, fileID: fileID, result: result))
                 .foregroundStyle(.secondary)
         }
@@ -36,7 +36,7 @@ struct DetailExternalCreateSyncStatusView: View {
         mapping: CoreErrorMappingSnapshot
     ) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Label("External created sync failed", systemImage: "exclamationmark.triangle")
+            Label("External \(event.kind.displayName) sync failed", systemImage: "exclamationmark.triangle")
             Text(event.relativePath)
                 .foregroundStyle(.secondary)
             Text(mapping.userMessage)
@@ -54,6 +54,6 @@ struct DetailExternalCreateSyncStatusView: View {
         result: SyncResultSnapshot
     ) -> String {
         let fileText = fileID.map { "file #\($0)" } ?? "file not selected"
-        return "\(event.relativePath) · \(fileText) · created \(result.detectedCreates)"
+        return "\(event.relativePath) · \(fileText) · created \(result.detectedCreates) · renamed \(result.detectedRenames)"
     }
 }

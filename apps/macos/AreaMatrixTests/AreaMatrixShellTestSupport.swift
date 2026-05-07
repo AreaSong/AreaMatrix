@@ -141,6 +141,7 @@ actor ShellRecordingExternalChangesSyncer: CoreExternalChangesSyncing {
     private let result: Result<SyncResultSnapshot, Error>
     private var requests: [ShellExternalRemovalRequest] = []
     private var createdRequests: [ShellExternalRemovalRequest] = []
+    private var renamedRequests: [ShellExternalRemovalRequest] = []
 
     init(result: Result<SyncResultSnapshot, Error>) {
         self.result = result
@@ -160,8 +161,26 @@ actor ShellRecordingExternalChangesSyncer: CoreExternalChangesSyncing {
         }
     }
 
+    func syncExternalRenamed(repoPath: String, relativePath: String, fsEventID: Int64) async throws -> SyncResultSnapshot {
+        renamedRequests.append(ShellExternalRemovalRequest(
+            repoPath: repoPath,
+            relativePath: relativePath,
+            fsEventID: fsEventID
+        ))
+        switch result {
+        case .success(let snapshot):
+            return snapshot
+        case .failure(let error):
+            throw error
+        }
+    }
+
     func syncExternalRemoved(repoPath: String, relativePath: String, fsEventID: Int64) async throws -> SyncResultSnapshot {
-        requests.append(ShellExternalRemovalRequest(repoPath: repoPath, relativePath: relativePath, fsEventID: fsEventID))
+        requests.append(ShellExternalRemovalRequest(
+            repoPath: repoPath,
+            relativePath: relativePath,
+            fsEventID: fsEventID
+        ))
         switch result {
         case .success(let snapshot):
             return snapshot
@@ -172,6 +191,7 @@ actor ShellRecordingExternalChangesSyncer: CoreExternalChangesSyncing {
 
     func recordedRequests() -> [ShellExternalRemovalRequest] { requests }
     func recordedCreatedRequests() -> [ShellExternalRemovalRequest] { createdRequests }
+    func recordedRenamedRequests() -> [ShellExternalRemovalRequest] { renamedRequests }
 
     func getFSEventCursor(repoPath: String) async throws -> Int64? { nil }
     func setFSEventCursor(repoPath: String, lastEventID: Int64) async throws {}
@@ -301,6 +321,16 @@ extension SyncResultSnapshot {
             detectedCreates: 0,
             detectedRenames: 0,
             detectedDeletes: 1,
+            detectedModifies: 0,
+            errors: []
+        )
+    }
+
+    static func shellRenamedFixture() -> SyncResultSnapshot {
+        SyncResultSnapshot(
+            detectedCreates: 0,
+            detectedRenames: 1,
+            detectedDeletes: 0,
             detectedModifies: 0,
             errors: []
         )

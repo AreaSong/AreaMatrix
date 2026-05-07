@@ -254,6 +254,10 @@ private actor DetailLogExternalCreatedSyncer: CoreExternalChangesSyncing {
         throw CoreError.Internal(message: "external removed is outside S1-13 C1-17")
     }
 
+    func syncExternalRenamed(repoPath: String, relativePath: String, fsEventID: Int64) async throws -> SyncResultSnapshot {
+        throw CoreError.Internal(message: "external renamed is outside S1-13 C1-17")
+    }
+
     func getFSEventCursor(repoPath: String) async throws -> Int64? { nil }
     func setFSEventCursor(repoPath: String, lastEventID: Int64) async throws {}
 

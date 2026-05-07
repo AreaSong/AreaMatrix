@@ -73,6 +73,7 @@ final class MainExternalCreatedFileWatcher: ObservableObject {
                 eventID: event.eventID
             ) else { continue }
             AreaMatrixExternalCreatedFileRelay.publish(
+                kind: signal.kind,
                 repoPath: signal.repoPath,
                 relativePath: signal.relativePath,
                 fsEventID: signal.fsEventID
@@ -90,7 +91,14 @@ final class MainExternalCreatedFileWatcher: ObservableObject {
             | FSEventStreamEventFlags(kFSEventStreamEventFlagMustScanSubDirs)
             | FSEventStreamEventFlags(kFSEventStreamEventFlagHistoryDone)
         guard flags & ignoredFlags == 0 else { return nil }
-        guard flags & FSEventStreamEventFlags(kFSEventStreamEventFlagItemCreated) != 0 else { return nil }
+        let syncKind: MainExternalSyncEventKind
+        if flags & FSEventStreamEventFlags(kFSEventStreamEventFlagItemRenamed) != 0 {
+            syncKind = .renamed
+        } else if flags & FSEventStreamEventFlags(kFSEventStreamEventFlagItemCreated) != 0 {
+            syncKind = .created
+        } else {
+            return nil
+        }
         guard flags & FSEventStreamEventFlags(kFSEventStreamEventFlagItemIsDir) == 0 else { return nil }
         guard eventID > 0, eventID <= FSEventStreamEventId(Int64.max) else { return nil }
 
@@ -101,6 +109,7 @@ final class MainExternalCreatedFileWatcher: ObservableObject {
         guard relativePath != ".areamatrix", !relativePath.hasPrefix(".areamatrix/") else { return nil }
 
         return MainExternalCreatedFileSignal(
+            kind: syncKind,
             repoPath: normalizedRepoPath,
             relativePath: relativePath,
             fsEventID: Int64(eventID)

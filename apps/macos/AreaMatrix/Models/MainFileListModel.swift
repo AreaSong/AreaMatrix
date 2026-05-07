@@ -116,15 +116,11 @@ final class MainFileListModel: ObservableObject {
     func syncExternalCreated(_ event: MainExternalCreatedFileEvent) async {
         detailExternalCreateSyncState = .syncing(event: event)
         do {
-            let result = try await externalChangesSyncer.syncExternalCreated(
-                repoPath: repoPath,
-                relativePath: event.relativePath,
-                fsEventID: event.fsEventID
-            )
-            try validateExternalCreatedSyncResult(result, event: event)
-            let createdFileID = try await refreshAfterExternalCreated(event)
-            detailExternalCreateSyncState = .synced(event: event, fileID: createdFileID, result)
-            await loadChangeLog(fileID: createdFileID)
+            let result = try await syncExternalChange(event)
+            try validateExternalSyncResult(result, event: event)
+            let fileID = try await refreshAfterExternalSync(event)
+            detailExternalCreateSyncState = .synced(event: event, fileID: fileID, result)
+            await loadChangeLog(fileID: fileID)
         } catch {
             let mappedError = await mapCoreError(error)
             detailExternalCreateSyncState = .failed(event: event, mappedError)
@@ -307,21 +303,45 @@ final class MainFileListModel: ObservableObject {
         }
     }
 
-    private func refreshAfterExternalCreated(_ event: MainExternalCreatedFileEvent) async throws -> Int64 {
+    private func syncExternalChange(_ event: MainExternalCreatedFileEvent) async throws -> SyncResultSnapshot {
+        switch event.kind {
+        case .created:
+            return try await externalChangesSyncer.syncExternalCreated(
+                repoPath: repoPath,
+                relativePath: event.relativePath,
+                fsEventID: event.fsEventID
+            )
+        case .renamed:
+            return try await externalChangesSyncer.syncExternalRenamed(
+                repoPath: repoPath,
+                relativePath: event.relativePath,
+                fsEventID: event.fsEventID
+            )
+        }
+    }
+
+    private func refreshAfterExternalSync(_ event: MainExternalCreatedFileEvent) async throws -> Int64 {
         let loadedFiles = try await reloadFilesForExternalCreated()
-        guard let createdFile = loadedFiles.first(where: { $0.path == event.relativePath }) else {
-            throw CoreError.Internal(message: "created file was not visible after sync: \(event.relativePath)")
+        guard let file = loadedFiles.first(where: { $0.path == event.relativePath }) else {
+            throw CoreError.Internal(
+                message: "\(event.kind.displayName) file was not visible after sync: \(event.relativePath)"
+            )
         }
 
-        selection = .single(createdFile.id)
-        selectedFileDetail = createdFile
+        selection = .single(file.id)
+        selectedFileDetail = file
         detailErrorMapping = nil
         isDetailLoading = true
-        await loadDetail(id: createdFile.id)
-        guard selectedFileDetail?.id == createdFile.id, detailErrorMapping == nil else {
-            throw CoreError.Internal(message: "created file detail was not visible after sync: \(event.relativePath)")
+        await loadDetail(id: file.id)
+        guard selectedFileDetail?.id == file.id, detailErrorMapping == nil else {
+            throw CoreError.Internal(
+                message: "\(event.kind.displayName) file detail was not visible after sync: \(event.relativePath)"
+            )
         }
-        return createdFile.id
+        if event.kind == .renamed {
+            statusBanner = .renamedPreservedSelection(fileID: file.id)
+        }
+        return file.id
     }
 
     private func reloadFilesForExternalCreated() async throws -> [FileEntrySnapshot] {
@@ -377,13 +397,15 @@ final class MainFileListModel: ObservableObject {
         return await errorMapper.mapCoreError(CoreError.Internal(message: error.localizedDescription))
     }
 
-    private func validateExternalCreatedSyncResult(
+    private func validateExternalSyncResult(
         _ result: SyncResultSnapshot,
         event: MainExternalCreatedFileEvent
     ) throws {
         guard result.errors.isEmpty else {
             let message = result.errors.joined(separator: "; ")
-            throw CoreError.Internal(message: "created event \(event.fsEventID) returned sync errors: \(message)")
+            throw CoreError.Internal(
+                message: "\(event.kind.displayName) event \(event.fsEventID) returned sync errors: \(message)"
+            )
         }
     }
 

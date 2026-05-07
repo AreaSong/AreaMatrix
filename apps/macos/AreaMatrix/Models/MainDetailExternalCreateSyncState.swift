@@ -1,14 +1,29 @@
 import Foundation
 
+enum MainExternalSyncEventKind: String, Equatable, Sendable {
+    case created
+    case renamed
+
+    var displayName: String {
+        switch self {
+        case .created:
+            return "created"
+        case .renamed:
+            return "renamed"
+        }
+    }
+}
+
 struct MainExternalCreatedFileEvent: Equatable, Identifiable, Sendable {
+    let kind: MainExternalSyncEventKind
     let relativePath: String
     let fsEventID: Int64
 
     var id: String {
-        "\(fsEventID):\(relativePath)"
+        "\(kind.rawValue):\(fsEventID):\(relativePath)"
     }
 
-    init?(relativePath: String, fsEventID: Int64) {
+    init?(kind: MainExternalSyncEventKind = .created, relativePath: String, fsEventID: Int64) {
         let trimmedPath = relativePath.trimmingCharacters(in: .whitespacesAndNewlines)
         guard fsEventID > 0,
               !trimmedPath.isEmpty,
@@ -16,23 +31,34 @@ struct MainExternalCreatedFileEvent: Equatable, Identifiable, Sendable {
               !trimmedPath.hasPrefix("../"),
               !trimmedPath.contains("/../") else { return nil }
 
+        self.kind = kind
         self.relativePath = trimmedPath
         self.fsEventID = fsEventID
     }
 }
 
 struct MainExternalCreatedFileSignal: Equatable, Sendable {
+    let kind: MainExternalSyncEventKind
     let repoPath: String
     let relativePath: String
     let fsEventID: Int64
 
-    init?(repoPath: String, relativePath: String, fsEventID: Int64) {
+    init?(
+        kind: MainExternalSyncEventKind = .created,
+        repoPath: String,
+        relativePath: String,
+        fsEventID: Int64
+    ) {
         let normalizedRepoPath = Self.normalizedRepoPath(repoPath)
-        guard !normalizedRepoPath.isEmpty,
-              MainExternalCreatedFileEvent(relativePath: relativePath, fsEventID: fsEventID) != nil else { return nil }
+        guard let event = MainExternalCreatedFileEvent(
+            kind: kind,
+            relativePath: relativePath,
+            fsEventID: fsEventID
+        ), !normalizedRepoPath.isEmpty else { return nil }
 
+        self.kind = event.kind
         self.repoPath = normalizedRepoPath
-        self.relativePath = relativePath.trimmingCharacters(in: .whitespacesAndNewlines)
+        self.relativePath = event.relativePath
         self.fsEventID = fsEventID
     }
 
@@ -49,6 +75,7 @@ struct MainPendingExternalCreatedFileEvent: Equatable, Sendable {
 
     init?(signal: MainExternalCreatedFileSignal) {
         guard let event = MainExternalCreatedFileEvent(
+            kind: signal.kind,
             relativePath: signal.relativePath,
             fsEventID: signal.fsEventID
         ) else { return nil }

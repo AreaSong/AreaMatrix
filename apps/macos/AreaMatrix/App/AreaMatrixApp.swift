@@ -292,8 +292,14 @@ enum AreaMatrixExternalCreatedFileRelay {
     static let notification = Notification.Name("AreaMatrixExternalCreatedFileRelay.notification")
     private static var pendingSignals: [MainExternalCreatedFileSignal] = []
 
-    static func publish(repoPath: String, relativePath: String, fsEventID: Int64) {
+    static func publish(
+        kind: MainExternalSyncEventKind = .created,
+        repoPath: String,
+        relativePath: String,
+        fsEventID: Int64
+    ) {
         guard let signal = MainExternalCreatedFileSignal(
+            kind: kind,
             repoPath: repoPath,
             relativePath: relativePath,
             fsEventID: fsEventID
