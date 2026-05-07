@@ -1,0 +1,80 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`2-2/task-15`
+- Task：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-2-import-conflict/task-15-s1-20-c1-06-import-copy-file.md`
+- 文档：S1-20、MVP control map、Core API、C1-06 capability spec
+- 代码：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+- 禁止触碰：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：0
+- 通过项数：10
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 S1-20 页面中的 C1-06 功能点
+- 结果：通过
+- 证据：`selectedStorageMode != .copy` 会禁用批量真实导入，Move / Index-only 只显示风险提示，不执行真实导入；同页 C1-07、C1-08 未作为本 task 新增闭环。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportBatchCopyImportModel.swift:54`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportBatchCopyImportState.swift:292`
+
+- 项目：读取并对齐页面规格、control map、Core API、C1-06
+- 结果：通过
+- 证据：S1-20 control map 绑定 `C1-06, C1-07, C1-08`，本 task 只验 C1-06；Core API / UDL 均存在 `import_file`、`ImportOptions`、`StorageMode.Copied`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md`，`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:44`
+
+- 项目：C1-06 CoreBridge / 状态 / 错误映射接入
+- 结果：通过
+- 证据：Import 按钮触发 `importReadyFiles`，再经 `CoreBridge.importBatchFile` 调用 `AreaMatrix.importFile(... mode: .copied ...)`；CoreError 经 `mapCoreError` 映射到进度失败态。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportBatchCopyFooterSection.swift:47`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreImporting.swift:172`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreImporting.swift:273`
+
+- 项目：S1-20 中 C1-06 用户可见功能可触发和验收
+- 结果：通过
+- 证据：批量 Copy 进度会进入 `.importProgress` route，显示 toolbar、banner、当前文件和逐行 Pending / Copying / Done / Failed 状态。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/OnboardingModelInputs.swift:61`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportProgressView.swift:25`
+
+- 项目：没有 mock、fixture 或静态状态伪造真实 Core 闭环
+- 结果：通过
+- 证据：生产默认注入 `CoreBridge()`；测试包含真实 CoreBridge Copy 导入，验证源文件保留、目标文件落地、列表可见、storageMode 为 `Copied`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportEntrySheetView.swift:36`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportBatchCopyImportModelTests.swift:70`
+
+- 项目：Expected New Paths 落地
+- 结果：通过
+- 证据：`ImportBatchProgressItems.swift` 与 `ImportProgressCopyPageFeatureTests.swift` 已加入 Xcode project sources。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj:108`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git diff --name-only -- core/src` 无输出，未触碰 `core/src/**`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。进度 item 计算拆到 `ImportBatchProgressItems.swift`，页面只渲染状态；相关文件未超过 500 行，最大 `ImportBatchCopyImportModel.swift` 为 498 行。
+- 注释 / rustdoc / 文档同步：通过。本 task 未新增 public Rust API；Swift 改动不需要 rustdoc。UDL 与 Core API 的 C1-06 合同已对齐。
+- 错误处理与边界处理：通过。CoreError 映射到用户可见失败态；DuplicateFile 不伪造成成功；非 Core error 走 Internal 映射。
+- 测试与验证覆盖：通过。覆盖真实 Core Copy 导入、进度行状态、失败映射、Move / Index-only 阻断。
+- 占位、硬编码、mock-only、一次性实现检查：通过。生产路径使用 `CoreBridge` 和真实 `AreaMatrix.importFile`，未发现 mock-only 闭环。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：通过，输出 `** BUILD SUCCEEDED **`。
+- 已运行：`./dev test macos`：通过。标准 `xcodebuild test` 被本地 `testmanagerd` sandbox 限制阻断后，按 repo 规则复用已构建 XCTest bundle；`xcrun xctest` 通过，238 tests，0 failures。
+- 缺失：`swiftlint --strict`、`swiftformat --lint .` 未执行；当前环境 `command -v swiftlint` / `command -v swiftformat` 返回非 0，工具不可用。此项不属于本 task manifest 指定验证，作为残余本地 lint 风险记录。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS

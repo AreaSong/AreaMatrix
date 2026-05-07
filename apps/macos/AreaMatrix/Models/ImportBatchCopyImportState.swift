@@ -288,7 +288,38 @@ enum ImportBatchCopyImportStatus: Equatable, Sendable {
     }
 }
 
+extension ImportBatchCopyImportModel {
+    var storageModeRiskMessage: String? {
+        switch selectedStorageMode {
+        case .copy:
+            return nil
+        case .move:
+            return "Move 模式仅显示风险提示；S1-18 当前不能执行真实 Move 导入。"
+        case .indexOnly:
+            return "Index-only 仅显示风险提示；S1-18 当前不能执行真实 Index-only 导入。"
+        }
+    }
+}
+
 struct ImportBatchProgressSnapshot: Equatable, Sendable {
+    enum Phase: String, Equatable, Sendable {
+        case pending = "Pending"
+        case copying = "Copying"
+        case done = "Done"
+        case failed = "Failed"
+    }
+
+    struct Item: Identifiable, Equatable, Sendable {
+        var sourcePath: String
+        var targetPath: String
+        var phase: Phase
+        var errorMessage: String?
+
+        var id: String {
+            sourcePath
+        }
+    }
+
     var completed: Int
     var failed: Int
     var total: Int
@@ -296,6 +327,7 @@ struct ImportBatchProgressSnapshot: Equatable, Sendable {
     var currentPath: String
     var skipped: Int = 0
     var pending: Int = 0
+    var items: [Item] = []
 }
 
 struct ImportBatchImportResult: Equatable, Sendable {
@@ -321,6 +353,21 @@ struct ImportBatchImportResult: Equatable, Sendable {
             currentPath: lastImportedPath.isEmpty ? fallbackPath : lastImportedPath,
             skipped: skippedDuplicateCount,
             pending: pendingICloudCount
+        )
+    }
+}
+
+extension ImportBatchProgressSnapshot {
+    func withItems(_ items: [Item]) -> ImportBatchProgressSnapshot {
+        ImportBatchProgressSnapshot(
+            completed: completed,
+            failed: failed,
+            total: total,
+            remaining: remaining,
+            currentPath: currentPath,
+            skipped: skipped,
+            pending: pending,
+            items: items
         )
     }
 }

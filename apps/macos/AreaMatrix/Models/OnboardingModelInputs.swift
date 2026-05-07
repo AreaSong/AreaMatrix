@@ -69,7 +69,8 @@ extension OnboardingModel {
             failed: progress.failed,
             remaining: progress.remaining,
             skipped: progress.skipped,
-            pending: progress.pending
+            pending: progress.pending,
+            items: progress.items
         ))
     }
 
@@ -98,7 +99,8 @@ extension OnboardingModel {
             failed: progress.failed,
             remaining: progress.remaining,
             skipped: progress.skipped,
-            pending: progress.pending
+            pending: progress.pending,
+            items: progress.items
         ))
     }
 

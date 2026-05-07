@@ -45,10 +45,9 @@ struct ImportBatchCopyFooterSection: View {
         }
         var lastProgress: ImportBatchProgressSnapshot?
         let outcome = await batchImportModel.importReadyFiles(selectedDestination: batchPreviewModel.selectedDestination) { progress in
-            lastProgress = progress
-            if progress.completed > 0 || progress.failed > 0 {
-                onImportProgress(progress)
-            }
+            let progressWithItems = progress.withItems(batchImportModel.progressItems())
+            lastProgress = progressWithItems
+            onImportProgress(progressWithItems)
         }
 
         guard let outcome else { return }
@@ -63,7 +62,10 @@ struct ImportBatchCopyFooterSection: View {
             return
         }
         if outcome.needsResultSummary {
-            onImportProgress(outcome.progressSnapshot(currentPath: batchImportModel.currentImportPath ?? request.sheetTitle))
+            onImportProgress(
+                outcome.progressSnapshot(currentPath: batchImportModel.currentImportPath ?? request.sheetTitle)
+                    .withItems(batchImportModel.progressItems())
+            )
             return
         }
 
@@ -94,7 +96,8 @@ struct ImportBatchCopyFooterSection: View {
             failed: 0,
             total: total,
             remaining: total,
-            currentPath: batchImportModel.currentImportPath ?? request.sheetTitle
+            currentPath: batchImportModel.currentImportPath ?? request.sheetTitle,
+            items: batchImportModel.progressItems()
         )
     }
 }

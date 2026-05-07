@@ -57,17 +57,6 @@ final class ImportBatchCopyImportModel: ObservableObject {
         return nil
     }
 
-    var storageModeRiskMessage: String? {
-        switch selectedStorageMode {
-        case .copy:
-            return nil
-        case .move:
-            return "Move 模式仅显示风险提示；S1-18 当前不能执行真实 Move 导入。"
-        case .indexOnly:
-            return "Index-only 仅显示风险提示；S1-18 当前不能执行真实 Index-only 导入。"
-        }
-    }
-
     var importableRows: [ImportBatchCopyImportRow] {
         rows.filter { row in
             if row.status.isReady { return true }
@@ -205,7 +194,8 @@ final class ImportBatchCopyImportModel: ObservableObject {
                 selectedDestination: selectedDestination,
                 completed: completed,
                 failed: failed,
-                total: total
+                total: total,
+                reportProgress: reportProgress
             )
             completed = cycle.completed
             failed = cycle.failed
@@ -244,7 +234,8 @@ final class ImportBatchCopyImportModel: ObservableObject {
         selectedDestination: ImportBatchDestinationOption,
         completed: Int,
         failed: Int,
-        total: Int
+        total: Int,
+        reportProgress: @escaping @MainActor (ImportBatchProgressSnapshot) -> Void
     ) async -> ImportBatchCopyCycleResult {
         let row = rows[rowIndex]
         let currentPath = targetRelativePath(for: row, destination: selectedDestination)
@@ -255,6 +246,13 @@ final class ImportBatchCopyImportModel: ObservableObject {
             total: total,
             currentPath: currentPath
         )
+        reportProgress(ImportBatchProgressSnapshot(
+            completed: completed,
+            failed: failed,
+            total: total,
+            remaining: total - completed - failed,
+            currentPath: currentPath
+        ))
 
         do {
             let entry = try await importRow(
@@ -432,7 +430,6 @@ final class ImportBatchCopyImportModel: ObservableObject {
         restoredRow.status = .duplicate(existingPath: existingPath, strategy: .skip, isReplaceConfirmed: false)
         return restoredRow
     }
-
     private func restoreDuplicateStrategy(
         for row: ImportBatchCopyImportRow,
         from strategies: [ImportBatchCopyImportRow.ID: ImportBatchDuplicateResolutionStrategy]
@@ -447,7 +444,6 @@ final class ImportBatchCopyImportModel: ObservableObject {
         )
         return restoredRow
     }
-
     private func restoreNameConflictResolution(
         for row: ImportBatchCopyImportRow,
         from resolutions: [ImportBatchCopyImportRow.ID: ImportBatchNameConflictResolution]
@@ -492,7 +488,6 @@ final class ImportBatchCopyImportModel: ObservableObject {
             || category == row.defaultCategory(for: selectedDestination)
             || category == "repo root"
     }
-
     private var pendingICloudCount: Int {
         rows.filter { row in
             if case .iCloudPlaceholder = row.status { return true }

@@ -105,6 +105,8 @@
 		0A00000000000000000001C4 /* ImportFolderConflictActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001C5 /* ImportFolderConflictActions.swift */; };
 		0A00000000000000000001C6 /* ImportFolderConflictSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001C7 /* ImportFolderConflictSection.swift */; };
 		0A00000000000000000001C8 /* ImportFolderConflictResolutionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001C9 /* ImportFolderConflictResolutionTests.swift */; };
+		0A00000000000000000001CA /* ImportBatchProgressItems.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001CB /* ImportBatchProgressItems.swift */; };
+		0A00000000000000000001CC /* ImportProgressCopyPageFeatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001CD /* ImportProgressCopyPageFeatureTests.swift */; };
 		0A000000000000000000018C /* ImportBatchCopyImportModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000018D /* ImportBatchCopyImportModel.swift */; };
 		0A000000000000000000019A /* ImportBatchCopyImportState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000019B /* ImportBatchCopyImportState.swift */; };
 		0A000000000000000000019E /* ImportBatchConflictActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000019F /* ImportBatchConflictActions.swift */; };
@@ -235,6 +237,8 @@
 		0A00000000000000000001C5 /* ImportFolderConflictActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ImportFolderConflictActions.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000001C7 /* ImportFolderConflictSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/ImportFolderConflictSection.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000001C9 /* ImportFolderConflictResolutionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportFolderConflictResolutionTests.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000001CB /* ImportBatchProgressItems.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ImportBatchProgressItems.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000001CD /* ImportProgressCopyPageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportProgressCopyPageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000018D /* ImportBatchCopyImportModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ImportBatchCopyImportModel.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000019B /* ImportBatchCopyImportState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ImportBatchCopyImportState.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000019F /* ImportBatchConflictActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ImportBatchConflictActions.swift; sourceTree = SOURCE_ROOT; };
@@ -393,6 +397,7 @@
 				0A00000000000000000001B5 /* ImportFolderScanner.swift */,
 				0A000000000000000000018D /* ImportBatchCopyImportModel.swift */,
 				0A000000000000000000019B /* ImportBatchCopyImportState.swift */,
+				0A00000000000000000001CB /* ImportBatchProgressItems.swift */,
 				0A000000000000000000019F /* ImportBatchConflictActions.swift */,
 				0A00000000000000000001A3 /* ImportBatchNamingActions.swift */,
 				0A00000000000000000001AB /* ImportBatchNamingState.swift */,
@@ -440,6 +445,7 @@
 				0A000000000000000000012B /* MainEmptyImportEntryTests.swift */,
 				0A000000000000000000016B /* ImportDropPreviewModelTests.swift */,
 				0A0000000000000000000193 /* ImportBatchCopyPageIntegrationTests.swift */,
+				0A00000000000000000001CD /* ImportProgressCopyPageFeatureTests.swift */,
 				0A000000000000000000018F /* ImportBatchCopyImportModelTests.swift */,
 				0A000000000000000000019D /* ImportBatchDuplicateResolutionTests.swift */,
 				0A00000000000000000001A7 /* ImportBatchResultSummaryTests.swift */,
@@ -622,6 +628,7 @@
 				0A00000000000000000001B4 /* ImportFolderScanner.swift in Sources */,
 				0A000000000000000000018C /* ImportBatchCopyImportModel.swift in Sources */,
 				0A000000000000000000019A /* ImportBatchCopyImportState.swift in Sources */,
+				0A00000000000000000001CA /* ImportBatchProgressItems.swift in Sources */,
 				0A000000000000000000019E /* ImportBatchConflictActions.swift in Sources */,
 				0A00000000000000000001A2 /* ImportBatchNamingActions.swift in Sources */,
 				0A00000000000000000001AA /* ImportBatchNamingState.swift in Sources */,
@@ -681,6 +688,7 @@
 				0A000000000000000000012A /* MainEmptyImportEntryTests.swift in Sources */,
 				0A000000000000000000016A /* ImportDropPreviewModelTests.swift in Sources */,
 				0A0000000000000000000192 /* ImportBatchCopyPageIntegrationTests.swift in Sources */,
+				0A00000000000000000001CC /* ImportProgressCopyPageFeatureTests.swift in Sources */,
 				0A000000000000000000018E /* ImportBatchCopyImportModelTests.swift in Sources */,
 				0A000000000000000000019C /* ImportBatchDuplicateResolutionTests.swift in Sources */,
 				0A00000000000000000001A6 /* ImportBatchResultSummaryTests.swift in Sources */,

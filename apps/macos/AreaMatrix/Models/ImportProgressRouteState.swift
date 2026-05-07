@@ -14,6 +14,7 @@ struct ImportProgressRouteState: Equatable, Sendable {
     var currentPath: String
     var skipped: Int
     var pending: Int
+    var items: [ImportBatchProgressSnapshot.Item]
 
     init(sourceOpening: RepositoryOpeningResult, currentPath: String, remaining: Int = 1) {
         self.sourceOpening = sourceOpening
@@ -24,6 +25,14 @@ struct ImportProgressRouteState: Equatable, Sendable {
         self.currentPath = currentPath
         skipped = 0
         pending = 0
+        items = [
+            ImportBatchProgressSnapshot.Item(
+                sourcePath: currentPath,
+                targetPath: currentPath,
+                phase: .copying,
+                errorMessage: nil
+            ),
+        ]
     }
 
     init(
@@ -34,7 +43,8 @@ struct ImportProgressRouteState: Equatable, Sendable {
         failed: Int,
         remaining: Int,
         skipped: Int = 0,
-        pending: Int = 0
+        pending: Int = 0,
+        items: [ImportBatchProgressSnapshot.Item] = []
     ) {
         self.sourceOpening = sourceOpening
         self.status = status
@@ -44,6 +54,13 @@ struct ImportProgressRouteState: Equatable, Sendable {
         self.currentPath = currentPath
         self.skipped = skipped
         self.pending = pending
+        self.items = Self.resolvedItems(
+            from: items,
+            currentPath: currentPath,
+            status: status,
+            completed: completed,
+            failed: failed
+        )
     }
 
     var repoPath: String {
@@ -103,5 +120,55 @@ struct ImportProgressRouteState: Equatable, Sendable {
             parts.append("待下载 \(pending)")
         }
         return parts.joined(separator: "，")
+    }
+
+    private static func resolvedItems(
+        from items: [ImportBatchProgressSnapshot.Item],
+        currentPath: String,
+        status: Status,
+        completed: Int,
+        failed: Int
+    ) -> [ImportBatchProgressSnapshot.Item] {
+        guard !items.isEmpty else {
+            return [fallbackItem(
+                currentPath: currentPath,
+                status: status,
+                completed: completed,
+                failed: failed
+            )]
+        }
+        return items
+    }
+
+    private static func fallbackItem(
+        currentPath: String,
+        status: Status,
+        completed: Int,
+        failed: Int
+    ) -> ImportBatchProgressSnapshot.Item {
+        ImportBatchProgressSnapshot.Item(
+            sourcePath: currentPath,
+            targetPath: currentPath,
+            phase: fallbackPhase(status: status, completed: completed, failed: failed),
+            errorMessage: fallbackErrorMessage(status: status)
+        )
+    }
+
+    private static func fallbackPhase(
+        status: Status,
+        completed: Int,
+        failed: Int
+    ) -> ImportBatchProgressSnapshot.Phase {
+        switch status {
+        case .running:
+            return completed > 0 ? .done : .copying
+        case .failed:
+            return failed > 0 ? .failed : .pending
+        }
+    }
+
+    private static func fallbackErrorMessage(status: Status) -> String? {
+        guard case .failed(let mapping) = status else { return nil }
+        return mapping.userMessage
     }
 }

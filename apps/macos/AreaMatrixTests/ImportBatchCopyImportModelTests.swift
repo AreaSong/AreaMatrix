@@ -68,6 +68,83 @@ final class ImportBatchCopyImportModelTests: XCTestCase {
     }
 
     @MainActor
+    func testS120C106CopyProgressItemsComeFromRealCoreImportCallbacks() async throws {
+        let repoURL = try makeImportSingleFileTemporaryDirectory(prefix: "s120-progress-repo")
+        let sourceRoot = try makeImportSingleFileTemporaryDirectory(prefix: "s120-progress-source")
+        defer {
+            try? FileManager.default.removeItem(at: repoURL)
+            try? FileManager.default.removeItem(at: sourceRoot)
+        }
+
+        let sourceURL = sourceRoot.appendingPathComponent("invoice.pdf")
+        try Data("invoice bytes".utf8).write(to: sourceURL)
+        let sourceBefore = try Data(contentsOf: sourceURL)
+        let bridge = CoreBridge()
+        try await bridge.initializeEmptyRepository(repoPath: repoURL.path)
+        let request = ImportEntryRequest(
+            repoPath: repoURL.path,
+            source: .dropZone,
+            destination: .autoClassify,
+            urls: [sourceURL],
+            kind: .multipleItems(1),
+            availableCategories: ["inbox", "finance"]
+        )
+        let model = ImportBatchCopyImportModel(importer: bridge, errorMapper: bridge)
+
+        model.applyPreviewRows(
+            [
+                ImportBatchPreviewRow.ready(
+                    url: sourceURL,
+                    prediction: ClassifyResultSnapshot(
+                        category: "finance",
+                        suggestedName: "invoice-copy.pdf",
+                        reason: .keyword,
+                        confidence: 0.9
+                    )
+                ),
+            ],
+            request: request,
+            selectedDestination: .autoClassify
+        )
+
+        XCTAssertEqual(model.progressItems(), [
+            ImportBatchProgressSnapshot.Item(
+                sourcePath: sourceURL.path,
+                targetPath: "finance/invoice-copy.pdf",
+                phase: .pending,
+                errorMessage: nil
+            ),
+        ])
+
+        var progressSnapshots: [ImportBatchProgressSnapshot] = []
+        let outcome = await model.importReadyFiles(selectedDestination: .autoClassify) { progress in
+            progressSnapshots.append(progress.withItems(model.progressItems()))
+        }
+
+        XCTAssertEqual(try Data(contentsOf: sourceURL), sourceBefore)
+        XCTAssertEqual(outcome?.succeededEntries.first?.storageMode, "Copied")
+        XCTAssertEqual(progressSnapshots.first?.items, [
+            ImportBatchProgressSnapshot.Item(
+                sourcePath: sourceURL.path,
+                targetPath: "finance/invoice-copy.pdf",
+                phase: .copying,
+                errorMessage: nil
+            ),
+        ])
+        XCTAssertEqual(progressSnapshots.last?.items, [
+            ImportBatchProgressSnapshot.Item(
+                sourcePath: sourceURL.path,
+                targetPath: "finance/invoice-copy.pdf",
+                phase: .done,
+                errorMessage: nil
+            ),
+        ])
+        XCTAssertTrue(FileManager.default.fileExists(
+            atPath: repoURL.appendingPathComponent("finance/invoice-copy.pdf").path
+        ))
+    }
+
+    @MainActor
     func testBatchCopyImportUsesRealImporterForEachPreviewedFile() async {
         let invoiceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
         let contractURL = URL(fileURLWithPath: "/tmp/合同.pdf")
