@@ -18,6 +18,8 @@ struct ImportEntrySheetView: View {
     @State private var isReasonPopoverPresented = false
     @State private var showsBatchConflictReview = false
     @State private var pendingBatchReplaceConfirmation: ImportBatchReplaceConfirmation?
+    @State private var showsFolderConflictReview = false
+    @State private var pendingFolderReplaceConfirmation: ImportFolderReplaceConfirmation?
 
     init(
         request: ImportEntryRequest,
@@ -69,7 +71,8 @@ struct ImportEntrySheetView: View {
             predictor: categoryPredictor,
             importer: batchFileImporter,
             errorMapper: errorMapper,
-            scanner: folderScanner
+            scanner: folderScanner,
+            placeholderDownloader: placeholderDownloader
         ))
     }
 
@@ -138,6 +141,16 @@ struct ImportEntrySheetView: View {
                 onConfirm: { decision in
                     batchImportModel.applyReplaceConfirmation(for: item.rowID, decision: decision)
                     pendingBatchReplaceConfirmation = nil
+                }
+            )
+        }
+        .sheet(item: $pendingFolderReplaceConfirmation) { item in
+            ReplaceConfirmSheet(
+                context: item.context,
+                onCancel: { pendingFolderReplaceConfirmation = nil },
+                onConfirm: { decision in
+                    folderPreviewModel.applyReplaceConfirmation(for: item.rowID, decision: decision)
+                    pendingFolderReplaceConfirmation = nil
                 }
             )
         }
@@ -386,7 +399,14 @@ struct ImportEntrySheetView: View {
     }
 
     private var folderPreview: some View {
-        ImportFolderPreviewView(model: folderPreviewModel, request: request)
+        ImportFolderPreviewView(
+            model: folderPreviewModel,
+            request: request,
+            showsConflictReview: $showsFolderConflictReview,
+            pendingReplaceConfirmation: $pendingFolderReplaceConfirmation,
+            onSwitchToLocalRepo: onSwitchToLocalRepo,
+            onShowExistingFile: onShowExistingFile
+        )
     }
 
     private var categoryOptions: [String] {

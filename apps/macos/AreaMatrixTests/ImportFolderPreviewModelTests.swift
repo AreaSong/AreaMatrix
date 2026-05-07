@@ -28,7 +28,8 @@ final class ImportFolderPreviewModelTests: XCTestCase {
         let model = ImportFolderPreviewModel(
             predictor: predictor,
             importer: S118RecordingBatchImporter(),
-            errorMapper: S117RecordingErrorMapper()
+            errorMapper: S117RecordingErrorMapper(),
+            conflictPrechecker: S119NoopConflictPrechecker()
         )
 
         await model.load(request: s119FolderRequest(rootURL: rootURL))
@@ -71,7 +72,8 @@ final class ImportFolderPreviewModelTests: XCTestCase {
         let model = ImportFolderPreviewModel(
             predictor: predictor,
             importer: S118RecordingBatchImporter(),
-            errorMapper: S117RecordingErrorMapper()
+            errorMapper: S117RecordingErrorMapper(),
+            conflictPrechecker: S119NoopConflictPrechecker()
         )
 
         await model.load(request: s119FolderRequest(rootURL: rootURL))
@@ -94,7 +96,8 @@ final class ImportFolderPreviewModelTests: XCTestCase {
         let model = ImportFolderPreviewModel(
             predictor: predictor,
             importer: S118RecordingBatchImporter(),
-            errorMapper: S117RecordingErrorMapper()
+            errorMapper: S117RecordingErrorMapper(),
+            conflictPrechecker: S119NoopConflictPrechecker()
         )
 
         await model.load(request: s119FolderRequest(rootURL: rootURL))
@@ -122,6 +125,7 @@ final class ImportFolderPreviewModelTests: XCTestCase {
             predictor: predictor,
             importer: S118RecordingBatchImporter(),
             errorMapper: S117RecordingErrorMapper(),
+            conflictPrechecker: S119NoopConflictPrechecker(),
             scanner: scanner
         )
 
@@ -183,6 +187,7 @@ final class ImportFolderPreviewModelTests: XCTestCase {
             predictor: predictor,
             importer: importer,
             errorMapper: S117RecordingErrorMapper(),
+            conflictPrechecker: S119NoopConflictPrechecker(),
             scanner: scanner
         )
         var progressSnapshots: [ImportBatchProgressSnapshot] = []
@@ -243,6 +248,7 @@ final class ImportFolderPreviewModelTests: XCTestCase {
             predictor: predictor,
             importer: importer,
             errorMapper: errorMapper,
+            conflictPrechecker: S119NoopConflictPrechecker(),
             scanner: scanner
         )
 
@@ -283,6 +289,7 @@ final class ImportFolderPreviewModelTests: XCTestCase {
             predictor: predictor,
             importer: importer,
             errorMapper: S117RecordingErrorMapper(),
+            conflictPrechecker: S119NoopConflictPrechecker(),
             scanner: scanner
         )
         let request = s119FolderRequest(
@@ -329,6 +336,7 @@ final class ImportFolderPreviewModelTests: XCTestCase {
             predictor: predictor,
             importer: importer,
             errorMapper: S117RecordingErrorMapper(),
+            conflictPrechecker: S119NoopConflictPrechecker(),
             scanner: scanner
         )
 
@@ -375,6 +383,7 @@ final class ImportFolderPreviewModelTests: XCTestCase {
             predictor: predictor,
             importer: importer,
             errorMapper: S117RecordingErrorMapper(),
+            conflictPrechecker: S119NoopConflictPrechecker(),
             scanner: scanner
         )
 

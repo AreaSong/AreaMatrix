@@ -42,8 +42,8 @@ extension ImportFolderPreviewModel {
             total: total,
             lastImportedPath: lastImportedPath,
             pendingDuplicateCount: 0,
-            skippedDuplicateCount: 0,
-            pendingICloudCount: iCloudPlaceholderCount
+            skippedDuplicateCount: skippedDuplicateCount,
+            pendingICloudCount: pendingICloudCount
         )
     }
 
@@ -64,10 +64,10 @@ extension ImportFolderPreviewModel {
                 repoPath: request.repoPath,
                 sourceURL: row.fileURL,
                 storageMode: storageMode,
-                destination: request.destination,
+                destination: modelDestination,
                 suggestedCategory: suggestedCategory(for: row, request: request),
-                overrideFilename: row.suggestedName,
-                duplicateStrategy: .ask
+                overrideFilename: row.resolvedIncomingName,
+                duplicateStrategy: duplicateStrategy(for: row)
             )
             updateRowStatus(at: rowIndex, status: .imported(storageMode))
             return .success(
@@ -98,7 +98,7 @@ extension ImportFolderPreviewModel {
     }
 
     private func suggestedCategory(for row: ImportFolderPreviewRow, request: ImportEntryRequest) -> String? {
-        switch request.destination {
+        switch modelDestination {
         case .autoClassify:
             return row.predictedCategory
         case .category(let slug):
@@ -106,5 +106,38 @@ extension ImportFolderPreviewModel {
         case .repositoryRoot:
             return nil
         }
+    }
+
+    private var modelDestination: ImportEntryDestination {
+        selectedDestination.entryDestination
+    }
+
+    private func duplicateStrategy(for row: ImportFolderPreviewRow) -> DuplicateStrategy {
+        if let duplicateResolution = row.duplicateResolution {
+            return duplicateResolution.duplicateStrategy
+        }
+        if let nameConflictResolution = row.nameConflictResolution {
+            if nameConflictResolution.isReplace {
+                return .overwrite
+            }
+            return .keepBoth
+        }
+        return .ask
+    }
+
+    private var skippedDuplicateCount: Int {
+        rows.filter { row in
+            if case .skippedDuplicate = row.status { return true }
+            if row.duplicateResolution == .skip { return true }
+            return false
+        }.count
+    }
+
+    private var pendingICloudCount: Int {
+        rows.filter { row in
+            if case .iCloudPlaceholder = row.status { return true }
+            if case .skippedICloud = row.status { return true }
+            return false
+        }.count
     }
 }

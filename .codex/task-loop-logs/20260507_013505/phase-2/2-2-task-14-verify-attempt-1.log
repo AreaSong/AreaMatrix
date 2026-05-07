@@ -1,0 +1,110 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`2-2/task-14`
+- Task 文件：[task-14-s1-19-page-integration-verify.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-2-import-conflict/task-14-s1-19-page-integration-verify.md:1)
+- Manifest 章节：[phase-2.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-2.md:1406)
+- 对应实现：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`core/area_matrix.udl`
+- 禁止触碰：`core/src/**`
+
+三、完成度摘要
+
+- 已覆盖项数：12
+- 未覆盖项数：0
+- 通过项数：8
+- 不通过项数：4
+- 阻塞项数：3
+
+四、逐项验收结果
+
+- 项目：Exact Docs / manifest 范围
+  结果：通过
+  证据：manifest 要求的 6 个 Exact Docs 均已读取；S1-19、control map、Core API、C1-05/C1-06/C1-08 均存在。
+  涉及文件：[phase-2.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-2.md:1411)
+
+- 项目：Expected New Paths
+  结果：通过
+  证据：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`apps/macos/AreaMatrix.xcodeproj/project.pbxproj` 均已落地并被项目引用。
+  涉及文件：[project.pbxproj](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj:96)
+
+- 项目：Forbidden Touches
+  结果：通过
+  证据：`git status --short -- core/src` 无输出，`git diff -- core/src` 无输出。
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+- 项目：C1-05 classify-preview
+  结果：通过
+  证据：S1-19 预扫描后逐行调用 `predictCategory`，默认 `CoreBridge` 走生成绑定。
+  涉及文件：[ImportFolderPreviewModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportFolderPreviewModel.swift:372)、[CoreBridge.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift:259)
+
+- 项目：C1-06 import-copy-file
+  结果：通过
+  证据：Copy 路径通过 `CoreBridge.importBatchFile` 进入 `AreaMatrix.importFile`，测试包含真实 repo copy 证据。
+  涉及文件：[CoreImporting.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreImporting.swift:194)、[ImportFolderPreviewModelTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportFolderPreviewModelTests.swift:395)
+
+- 项目：C1-08 import-index-file
+  结果：通过
+  证据：Index-only 路径传入 `.indexed`，测试断言源文件保留、无 repo 副本、`sourcePath` 保留。
+  涉及文件：[CoreImporting.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreImporting.swift:204)、[ImportFolderPreviewModelTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportFolderPreviewModelTests.swift:425)
+
+- 项目：页面入口、退出、进度路由
+  结果：通过
+  证据：folder request 可从入口打开，Cancel 清 pending，Import 进入 S1-20 progress，成功后回主页面并 toast。
+  涉及文件：[ImportFolderPageIntegrationVerifyTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportFolderPageIntegrationVerifyTests.swift:6)
+
+- 项目：iCloud / 扫描错误态
+  结果：通过
+  证据：扫描错误阻止导入，iCloud placeholder 不进入 ready 队列，下载重试保留 storage mode 和 destination。
+  涉及文件：[ImportFolderPageIntegrationVerifyTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportFolderPageIntegrationVerifyTests.swift:127)
+
+- 项目：冲突预检、Review conflicts、DUP/NAME/BLOCKED、Replace 二次确认
+  结果：不通过
+  证据：S1-19 page spec 明确要求冲突面板、DUP/NAME/BLOCKED、Rename/Confirm Replace/Show existing；当前 `ImportFolderPreviewRowStatus` 只有 loading/ready/iCloud/importing/imported/error，视图只有 `View files...`，无 `Review conflicts` 面板。
+  涉及文件：[S1-19-import-folder-sheet.md](/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-19-import-folder-sheet.md:61)、[ImportFolderPreviewModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportFolderPreviewModel.swift:46)、[ImportFolderPreviewSections.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportFolderPreviewSections.swift:262)
+
+- 项目：按 page spec 和 control map 完整验收
+  结果：不通过
+  证据：control map 标记 S1-19 为 Real Core，但 page spec 的冲突闭环未实现；页面不能按 spec 完整验收。
+  涉及文件：[mvp-control-map.md](/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:34)、[S1-19-import-folder-sheet.md](/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-19-import-folder-sheet.md:132)
+
+- 项目：不新增 control map 外能力
+  结果：通过
+  证据：Move 被显式禁用，未执行 C1-07；当前实现只调用 C1-05/C1-06/C1-08 相关 CoreBridge 路径。
+  涉及文件：[ImportFolderPreviewModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportFolderPreviewModel.swift:266)
+
+- 项目：任务要求验证
+  结果：不通过
+  证据：`xcodebuild test ...` 返回 code 65，失败原因为当前沙箱无法连接 `com.apple.testmanagerd.control`，未得到测试通过证据。
+  涉及文件：[phase-2.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-2.md:1435)
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过。文件长度未超过 500 行，但 S1-19 缺少冲突预检/冲突状态机/逐项处理闭环。
+- 注释 / rustdoc / 文档同步：不通过。S1-19 page spec 要求冲突处理，当前 control map 与实现未形成可验收闭环。
+- 错误处理与边界处理：不通过。扫描、iCloud、分类、导入错误有处理；Duplicate/NAME/BLOCKED/Replace 边界缺失。
+- 测试与验证覆盖：不通过。集成测试覆盖 Copy/Index/iCloud/入口退出，但缺冲突面板与 Replace 场景；必需 xcodebuild test 未通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。生产默认使用 `CoreBridge()` 和 `LocalImportFolderScanner()`；测试 fixture 未进入生产路径。
+
+六、阻塞项
+
+- P0：S1-19 冲突闭环缺失。page spec 要求 `Review conflicts`、DUP/NAME/BLOCKED、Skip/Keep both/Rename/Replace confirmed；当前 folder model/view 没有对应状态和 UI，Core `DuplicateFile` 也只会被映射为普通 error。绝对路径：[S1-19-import-folder-sheet.md](/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-19-import-folder-sheet.md:61)、[ImportFolderPreviewModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportFolderPreviewModel.swift:46)、[ImportFolderImporting.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportFolderImporting.swift:80)。这直接导致整页不能按 page spec 验收。
+
+- P1：S1-19 page spec 与 control map/当前 task 能力边界存在未闭合点。page spec 描述 Move 和冲突处理，但 control map 当前只声明 C1-05/C1-06/C1-08；实现禁用 Move，冲突未实现。绝对路径：[S1-19-import-folder-sheet.md](/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-19-import-folder-sheet.md:52)、[mvp-control-map.md](/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:34)、[ImportFolderPreviewModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportFolderPreviewModel.swift:266)。这导致“按 page spec 和 control map 完整验收”无法成立。
+
+- P1：必需验证命令失败。`xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO` 返回 code 65，错误为 `testmanagerd.control` sandbox restriction。绝对路径：[phase-2.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-2.md:1435)。没有测试通过证据，不能判定完成。
+
+七、验证情况
+
+- 已运行：`xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：失败，code 65，test runner 通信被沙箱限制。
+- 已运行：`git status --short -- core/src`：通过，无 forbidden touch 证据。
+- 已运行：`git diff -- core/src`：通过，无 diff。
+- 已运行：`rg Review conflicts / DUP / NAME / BLOCKED / Confirm Replace`：不通过，S1-19 production 路径未发现 folder 冲突闭环实现。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。核心原因是 S1-19 整页冲突闭环缺失，且必需 xcodebuild test 未通过。
+
+VERIFY_RESULT: FAIL

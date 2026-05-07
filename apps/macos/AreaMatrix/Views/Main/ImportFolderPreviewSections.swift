@@ -3,6 +3,10 @@ import SwiftUI
 struct ImportFolderPreviewView: View {
     @ObservedObject var model: ImportFolderPreviewModel
     let request: ImportEntryRequest
+    @Binding var showsConflictReview: Bool
+    @Binding var pendingReplaceConfirmation: ImportFolderReplaceConfirmation?
+    let onSwitchToLocalRepo: () -> Void
+    let onShowExistingFile: (String) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -19,15 +23,45 @@ struct ImportFolderPreviewView: View {
                 followSymlinks: followSymlinksBinding,
                 isDisabled: model.status.isScanning
             )
+            ImportFolderDestinationSection(
+                selectedDestination: $model.selectedDestination,
+                destinationOptions: model.destinationOptions,
+                isDisabled: model.status.isScanning || model.rows.contains { $0.status.isImporting }
+            )
             ImportFolderStorageModeSection(
                 selectedStorageMode: $model.selectedStorageMode,
                 riskMessage: model.storageModeRiskMessage,
                 isDisabled: model.status.isScanning || model.rows.contains { $0.status.isImporting }
             )
             ImportFolderPreviewStatusSection(status: model.status)
+            ImportFolderICloudSummarySection(
+                iCloudPlaceholderCount: model.iCloudPlaceholderCount,
+                isDownloading: model.isICloudDownloading,
+                downloadErrorMessage: model.iCloudDownloadErrorMessage,
+                onDownloadAndRetry: {
+                    Task { _ = await model.downloadICloudPlaceholdersAndRetry() }
+                },
+                onSwitchToLocalRepo: onSwitchToLocalRepo
+            )
             ImportFolderErrorSummary(errors: model.scanErrors)
             ImportFolderRowsSection(rows: model.rows)
-            Text("导入目标：\(request.destinationLabel)")
+            if model.duplicateCount > 0
+                || model.nameConflictCount > 0
+                || model.iCloudPlaceholderCount > 0
+                || model.blockedCount > 0
+                || showsConflictReview {
+                ImportFolderConflictSection(
+                    model: model,
+                    isExpanded: $showsConflictReview,
+                    pendingReplaceConfirmation: $pendingReplaceConfirmation,
+                    onRetryScan: {
+                        Task { await model.retryScan() }
+                    },
+                    onSwitchToLocalRepo: onSwitchToLocalRepo,
+                    onShowExistingFile: onShowExistingFile
+                )
+            }
+            Text("导入目标：\(model.selectedDestination.title)")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -45,6 +79,22 @@ struct ImportFolderPreviewView: View {
             get: { model.followSymlinks },
             set: { model.updateFollowSymlinks($0) }
         )
+    }
+}
+
+struct ImportFolderDestinationSection: View {
+    @Binding var selectedDestination: ImportBatchDestinationOption
+    let destinationOptions: [ImportBatchDestinationOption]
+    let isDisabled: Bool
+
+    var body: some View {
+        Picker("导入到", selection: $selectedDestination) {
+            ForEach(destinationOptions, id: \.self) { destination in
+                Text(destination.title).tag(destination)
+            }
+        }
+        .frame(maxWidth: 320)
+        .disabled(isDisabled)
     }
 }
 
@@ -189,6 +239,40 @@ struct ImportFolderErrorSummary: View {
                     .font(.caption)
                     .foregroundStyle(.orange)
                     .lineLimit(2)
+            }
+        }
+    }
+}
+
+struct ImportFolderICloudSummarySection: View {
+    let iCloudPlaceholderCount: Int
+    let isDownloading: Bool
+    let downloadErrorMessage: String?
+    let onDownloadAndRetry: () -> Void
+    let onSwitchToLocalRepo: () -> Void
+
+    var body: some View {
+        if iCloudPlaceholderCount > 0 || isDownloading || downloadErrorMessage != nil {
+            VStack(alignment: .leading, spacing: 6) {
+                if iCloudPlaceholderCount > 0 {
+                    Text("\(iCloudPlaceholderCount) files are still in iCloud")
+                        .font(.headline)
+                }
+                if let downloadErrorMessage {
+                    Text(downloadErrorMessage)
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                }
+                HStack(spacing: 10) {
+                    Button("Download & retry scan", action: onDownloadAndRetry)
+                        .disabled(isDownloading)
+                    Button("Switch to local repo...", action: onSwitchToLocalRepo)
+                        .disabled(isDownloading)
+                    if isDownloading {
+                        ProgressView()
+                            .controlSize(.small)
+                    }
+                }
             }
         }
     }

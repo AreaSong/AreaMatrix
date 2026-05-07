@@ -1,162 +1,6 @@
 import Combine
 import Foundation
 
-protocol ImportFolderScanning: Sendable {
-    func scanFolder(rootURL: URL, includeHiddenFiles: Bool, followSymlinks: Bool) async -> ImportFolderScanResult
-}
-
-struct ImportFolderScanResult: Equatable, Sendable {
-    var rows: [ImportFolderPreviewRow]
-    var folderCount: Int
-    var skippedRules: [ImportFolderSkippedRule]
-    var errors: [ImportFolderScanError]
-}
-
-enum ImportFolderPreviewStatus: Equatable, Sendable {
-    case idle
-    case scanning(path: String)
-    case loaded(ready: Int, total: Int, failed: Int)
-    case empty
-    case failed(String)
-
-    var isScanning: Bool {
-        if case .scanning = self { return true }
-        return false
-    }
-
-    var message: String? {
-        switch self {
-        case .idle:
-            return nil
-        case .scanning(let path):
-            return "正在预扫描 \(path)"
-        case .loaded(let ready, let total, let failed):
-            if failed == 0 {
-                return "已完成 \(total) 个文件的分类预览"
-            }
-            return "已完成 \(ready)/\(total) 个文件的分类预览，\(failed) 个失败"
-        case .empty:
-            return "没有可导入文件"
-        case .failed(let message):
-            return message
-        }
-    }
-}
-
-enum ImportFolderPreviewRowStatus: Equatable, Sendable {
-    case loading
-    case ready(reasonLabel: String)
-    case iCloudPlaceholder(path: String)
-    case importing(ImportSingleFileStorageMode)
-    case imported(ImportSingleFileStorageMode)
-    case error(String)
-
-    var tag: String {
-        switch self {
-        case .loading:
-            return "PREVIEW"
-        case .ready:
-            return "OK"
-        case .iCloudPlaceholder:
-            return "ICLOUD"
-        case .importing:
-            return "IMPORTING"
-        case .imported:
-            return "IMPORTED"
-        case .error:
-            return "ERROR"
-        }
-    }
-
-    var detail: String? {
-        switch self {
-        case .loading:
-            return "Preparing preview..."
-        case .ready(let reasonLabel):
-            return reasonLabel
-        case .iCloudPlaceholder(let path):
-            return "iCloud placeholder 需要下载后才能导入：\(path)"
-        case .importing(let mode):
-            return mode.importingMessage
-        case .imported(let mode):
-            return mode.folderImportedMessage
-        case .error(let message):
-            return message
-        }
-    }
-
-    var isReady: Bool {
-        if case .ready = self { return true }
-        return false
-    }
-
-    var isFailed: Bool {
-        if case .error = self { return true }
-        return false
-    }
-
-    var isImporting: Bool {
-        if case .importing = self { return true }
-        return false
-    }
-}
-
-struct ImportFolderPreviewRow: Identifiable, Equatable, Sendable {
-    var fileURL: URL
-    var rootURL: URL
-    var originalName: String
-    var relativePath: String
-    var sizeBytes: Int64?
-    var predictedCategory: String?
-    var suggestedName: String
-    var status: ImportFolderPreviewRowStatus
-
-    var id: String { fileURL.path }
-
-    static func loading(fileURL: URL, rootURL: URL) -> ImportFolderPreviewRow {
-        ImportFolderPreviewRow(
-            fileURL: fileURL,
-            rootURL: rootURL,
-            originalName: fileURL.lastPathComponent,
-            relativePath: relativePath(for: fileURL, rootURL: rootURL),
-            sizeBytes: Self.sizeBytes(for: fileURL),
-            predictedCategory: nil,
-            suggestedName: fileURL.lastPathComponent,
-            status: .loading
-        )
-    }
-
-    func withPrediction(_ prediction: ClassifyResultSnapshot) -> ImportFolderPreviewRow {
-        var row = self
-        row.predictedCategory = prediction.category
-        row.suggestedName = prediction.suggestedName.isEmpty ? originalName : prediction.suggestedName
-        row.status = .ready(reasonLabel: "\(prediction.reason.displayLabel) · \(prediction.confidencePercent)%")
-        return row
-    }
-
-    func withStatus(_ status: ImportFolderPreviewRowStatus) -> ImportFolderPreviewRow {
-        var row = self
-        row.status = status
-        return row
-    }
-
-    private static func sizeBytes(for url: URL) -> Int64? {
-        (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize).map(Int64.init)
-    }
-
-    private static func relativePath(for fileURL: URL, rootURL: URL) -> String {
-        let rootPath = rootURL.standardizedFileURL.path
-        let filePath = fileURL.standardizedFileURL.path
-        guard filePath.hasPrefix(rootPath) else {
-            return fileURL.lastPathComponent
-        }
-
-        let startIndex = filePath.index(filePath.startIndex, offsetBy: rootPath.count)
-        let relative = filePath[startIndex...].trimmingCharacters(in: CharacterSet(charactersIn: "/"))
-        return relative.isEmpty ? fileURL.lastPathComponent : relative
-    }
-}
-
 @MainActor
 final class ImportFolderPreviewModel: ObservableObject {
     @Published private(set) var rows: [ImportFolderPreviewRow] = []
@@ -164,14 +8,19 @@ final class ImportFolderPreviewModel: ObservableObject {
     @Published private(set) var folderCount = 0
     @Published private(set) var skippedRules: [ImportFolderSkippedRule] = []
     @Published private(set) var scanErrors: [ImportFolderScanError] = []
+    @Published private(set) var isICloudDownloading = false
+    @Published private(set) var iCloudDownloadErrorMessage: String?
     @Published var includeHiddenFiles = false
     @Published var followSymlinks = false
+    @Published var selectedDestination: ImportBatchDestinationOption = .autoClassify
     @Published var selectedStorageMode: ImportSingleFileStorageMode = .copy
 
     private let predictor: any CoreCategoryPredicting
     let importer: any CoreBatchCopyImporting
     let errorMapper: any CoreErrorMapping
+    private let conflictPrechecker: any ImportFolderConflictPrechecking
     private let scanner: any ImportFolderScanning
+    private let placeholderDownloader: any ICloudPlaceholderDownloading
     var request: ImportEntryRequest?
     private var generation = 0
     private(set) var lastFailureMapping: CoreErrorMappingSnapshot?
@@ -180,12 +29,16 @@ final class ImportFolderPreviewModel: ObservableObject {
         predictor: any CoreCategoryPredicting,
         importer: any CoreBatchCopyImporting,
         errorMapper: any CoreErrorMapping,
-        scanner: any ImportFolderScanning = LocalImportFolderScanner()
+        conflictPrechecker: any ImportFolderConflictPrechecking = CoreImportFolderConflictPrechecker(),
+        scanner: any ImportFolderScanning = LocalImportFolderScanner(),
+        placeholderDownloader: any ICloudPlaceholderDownloading = LocalICloudPlaceholderDownloader()
     ) {
         self.predictor = predictor
         self.importer = importer
         self.errorMapper = errorMapper
+        self.conflictPrechecker = conflictPrechecker
         self.scanner = scanner
+        self.placeholderDownloader = placeholderDownloader
     }
 
     var folderURL: URL? {
@@ -199,6 +52,18 @@ final class ImportFolderPreviewModel: ObservableObject {
         return (path as NSString).abbreviatingWithTildeInPath
     }
 
+    var destinationOptions: [ImportBatchDestinationOption] {
+        var options: [ImportBatchDestinationOption] = [.autoClassify]
+        if request?.destination == .repositoryRoot {
+            options.append(.repositoryRoot)
+        }
+        options.append(contentsOf: request?.availableCategories.map(ImportBatchDestinationOption.category) ?? [])
+        if let selected = request?.destination.folderDestinationOption, !options.contains(selected) {
+            options.append(selected)
+        }
+        return options.uniqued()
+    }
+
     var totalSizeDescription: String? {
         let total = rows.compactMap(\.sizeBytes).reduce(0, +)
         guard total > 0 else { return nil }
@@ -206,11 +71,35 @@ final class ImportFolderPreviewModel: ObservableObject {
     }
 
     var readyCount: Int {
-        rows.filter(\.status.isReady).count
+        rows.filter(\.status.importsIncomingFile).count
     }
 
     var failedCount: Int {
         rows.filter(\.status.isFailed).count
+    }
+
+    var duplicateCount: Int {
+        rows.filter { row in
+            if case .duplicate = row.status { return true }
+            if case .skippedDuplicate = row.status { return true }
+            return false
+        }.count
+    }
+
+    var nameConflictCount: Int {
+        rows.filter { row in
+            if case .nameConflict = row.status { return true }
+            return false
+        }.count
+    }
+
+    var blockedCount: Int {
+        rows.filter(\.isBlockedForImport).count
+    }
+
+    var replaceOptionVisibility: ImportSingleFileReplaceOptionVisibility {
+        guard request?.allowReplaceDuringImport == true else { return .hidden }
+        return request?.isTrashAvailable == true ? .enabled : .disabled
     }
 
     var iCloudPlaceholderCount: Int {
@@ -221,7 +110,7 @@ final class ImportFolderPreviewModel: ObservableObject {
     }
 
     var importableRows: [ImportFolderPreviewRow] {
-        rows.filter(\.status.isReady)
+        rows.filter(\.status.importsIncomingFile)
     }
 
     var currentImportPath: String? {
@@ -233,8 +122,17 @@ final class ImportFolderPreviewModel: ObservableObject {
         if status.isScanning {
             return "预扫描完成前不能导入"
         }
+        if isICloudDownloading {
+            return "正在下载 iCloud 文件"
+        }
         if rows.contains(where: { $0.status.isImporting }) {
             return selectedStorageMode.importingBlockingMessage
+        }
+        if !scanErrors.isEmpty {
+            return "预扫描存在错误，请先 Retry scan 或 Cancel"
+        }
+        if blockedCount > 0 {
+            return "存在 BLOCKED 项，请先完成冲突处理"
         }
         if rows.isEmpty || importableRows.isEmpty {
             return "没有可导入文件"
@@ -263,6 +161,7 @@ final class ImportFolderPreviewModel: ObservableObject {
         self.request = request
         if isNewRequest {
             selectedStorageMode = .copy
+            selectedDestination = request.destination.folderDestinationOption
         }
 
         guard case .folder = request.kind, let rootURL = request.urls.first else {
@@ -275,6 +174,7 @@ final class ImportFolderPreviewModel: ObservableObject {
         folderCount = 0
         skippedRules = []
         scanErrors = []
+        iCloudDownloadErrorMessage = nil
         lastFailureMapping = nil
 
         let result = await scanner.scanFolder(
@@ -300,6 +200,37 @@ final class ImportFolderPreviewModel: ObservableObject {
     func retryScan() async {
         guard let request else { return }
         await load(request: request)
+    }
+
+    func downloadICloudPlaceholdersAndRetry() async -> Bool {
+        let placeholderURLs = rows.compactMap { row -> URL? in
+            if case .iCloudPlaceholder = row.status {
+                return row.fileURL
+            }
+            return nil
+        }
+        guard !placeholderURLs.isEmpty else { return false }
+
+        isICloudDownloading = true
+        iCloudDownloadErrorMessage = nil
+        defer { isICloudDownloading = false }
+
+        var failures: [String] = []
+        for url in placeholderURLs {
+            do {
+                try await placeholderDownloader.downloadPlaceholder(at: url)
+            } catch {
+                failures.append("\(url.lastPathComponent): \(error.localizedDescription)")
+            }
+        }
+
+        guard failures.isEmpty else {
+            iCloudDownloadErrorMessage = "iCloud 下载失败：\(failures.count) 个，\(failures[0])"
+            return false
+        }
+
+        await retryScan()
+        return true
     }
 
     func updateIncludeHiddenFiles(_ value: Bool) {
@@ -330,7 +261,25 @@ final class ImportFolderPreviewModel: ObservableObject {
         }
 
         guard generation == currentGeneration else { return }
+        await precheckConflicts(repoPath: repoPath, generation: currentGeneration)
+        guard generation == currentGeneration else { return }
         status = .loaded(ready: readyCount, total: rows.count, failed: failedCount)
+    }
+
+    private func precheckConflicts(repoPath: String, generation currentGeneration: Int) async {
+        status = .checkingConflicts
+        let results = await conflictPrechecker.precheckFolderConflicts(
+            repoPath: repoPath,
+            rows: rows,
+            destination: selectedDestination
+        )
+        guard generation == currentGeneration else { return }
+        guard !results.isEmpty else { return }
+
+        rows = rows.map { row in
+            guard let result = results[row.id] else { return row }
+            return row.withConflictPrecheck(result)
+        }
     }
 
     private func reset(message: String) {
@@ -356,6 +305,11 @@ final class ImportFolderPreviewModel: ObservableObject {
         rows[index].status = status
     }
 
+    func setRowStatus(_ status: ImportFolderPreviewRowStatus, for rowID: ImportFolderPreviewRow.ID) {
+        guard let index = rows.firstIndex(where: { $0.id == rowID }) else { return }
+        rows[index].status = status
+    }
+
     private static func previewMessage(for error: Error) -> String {
         guard let coreError = error as? CoreError else {
             return "无法完成分类预览"
@@ -378,27 +332,58 @@ final class ImportFolderPreviewModel: ObservableObject {
 
 extension ImportFolderPreviewModel {
     func targetRelativePath(for row: ImportFolderPreviewRow) -> String {
-        let filename = row.suggestedName.trimmingCharacters(in: .whitespacesAndNewlines)
-        if request?.destination == .repositoryRoot {
+        let filename = row.resolvedIncomingName.trimmingCharacters(in: .whitespacesAndNewlines)
+        if selectedDestination == .repositoryRoot {
             return filename
         }
-        let category = row.predictedCategory?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let category = targetCategory(for: row)
         guard let category, !category.isEmpty else {
             return filename
         }
         return "\(category)/\(filename)"
     }
+
+    private func targetCategory(for row: ImportFolderPreviewRow) -> String? {
+        switch selectedDestination {
+        case .autoClassify:
+            return row.predictedCategory?.trimmingCharacters(in: .whitespacesAndNewlines)
+        case .category(let slug):
+            return slug.trimmingCharacters(in: .whitespacesAndNewlines)
+        case .repositoryRoot:
+            return nil
+        }
+    }
 }
 
-private extension ImportSingleFileStorageMode {
-    var folderImportedMessage: String {
-        switch self {
-        case .copy:
-            return "已复制导入"
-        case .move:
-            return "已移动导入"
-        case .indexOnly:
-            return "已写入索引"
+private extension ImportFolderPreviewRow {
+    func withConflictPrecheck(_ result: ImportFolderConflictPrecheckResult) -> ImportFolderPreviewRow {
+        switch result {
+        case .duplicate(let existingPath):
+            return withStatus(.duplicate(existingPath: existingPath, strategy: .skip, isReplaceConfirmed: false))
+        case .nameConflict(let existingPath):
+            return withStatus(.nameConflict(existingPath: existingPath, resolution: .keepBoth))
+        case .blocked(let message):
+            return withStatus(.blocked(message))
         }
+    }
+}
+
+private extension ImportEntryDestination {
+    var folderDestinationOption: ImportBatchDestinationOption {
+        switch self {
+        case .autoClassify:
+            return .autoClassify
+        case .category(let slug):
+            return .category(slug)
+        case .repositoryRoot:
+            return .repositoryRoot
+        }
+    }
+}
+
+private extension Array where Element == ImportBatchDestinationOption {
+    func uniqued() -> [ImportBatchDestinationOption] {
+        var seen = Set<ImportBatchDestinationOption>()
+        return filter { seen.insert($0).inserted }
     }
 }

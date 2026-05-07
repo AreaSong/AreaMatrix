@@ -1,0 +1,71 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`2-2/task-14`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-2-import-conflict/task-14-s1-19-page-integration-verify.md`
+- 实际验收文件：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`apps/macos/AreaMatrix.xcodeproj/project.pbxproj`、`core/area_matrix.udl`
+- Forbidden Touches：`core/src/**` 未发现改动
+
+三、完成度摘要
+
+- 已覆盖项数：9
+- 未覆盖项数：0
+- 通过项数：9
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：所有 page-feature task 覆盖
+- 结果：通过
+- 证据：manifest 依赖 `2-2/task-11/12/13` 覆盖 `C1-05/C1-06/C1-08`；S1-19 control map 只声明这三个能力；`ImportFolderPreviewModel` 通过 predictor 做分类预览，`ImportFolderImporting` 通过 importer 串 Copy / Index-only 导入。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportFolderPreviewModel.swift:246`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportFolderImporting.swift:5`
+
+- 项目：页面状态、入口、退出、错误态和 CoreBridge 闭环
+- 结果：通过
+- 证据：folder request 在 sheet 中加载；footer 进入 import progress / result；失败路径映射 CoreError；`CoreBridge` 调用生成绑定的 `predictCategory` 与 `AreaMatrix.importFile`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportEntrySheetView.swift:97`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportFolderPreviewSections.swift:321`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift:259`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreImporting.swift:185`
+
+- 项目：mock、fixture、硬编码状态检查
+- 结果：通过
+- 证据：生产默认依赖为 `CoreBridge()`、`LocalImportFolderScanner()`、`CoreImportFolderConflictPrechecker()`；测试 fake 仅用于 XCTest 隔离，不是生产闭环。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportEntrySheetView.swift:34`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportFolderConflictActions.swift:17`
+
+- 项目：不新增 control map 外能力
+- 结果：通过
+- 证据：页面实际接入 `predict_category` 与 `import_file` 的 Copied / Indexed；Move 可见但被阻断为后续 `C1-07`，未执行真实 Move 写操作。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportFolderPreviewModel.swift:140`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreImporting.swift:220`
+
+- 项目：Expected New Paths
+- 结果：通过
+- 证据：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`project.pbxproj` 均存在；新增 S1-19 测试和 Swift 源已纳入 Xcode project。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj:96`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。S1-19 预扫描、状态、冲突、导入拆在独立 model / view / action 文件；抽象用于协议注入和 XCTest 隔离，未发现单文件超 500 行。
+- 注释 / rustdoc / 文档同步：通过。本 task 未新增 Rust public API；`core/area_matrix.udl` 与 `docs/api/core-api.md` 的 `predict_category`、`import_file`、`ImportOptions`、`StorageMode` 对齐。
+- 错误处理与边界处理：通过。扫描错误、iCloud placeholder、BLOCKED、Replace 未确认、Core 导入失败均阻断或映射。
+- 测试与验证覆盖：通过。`./dev test macos` 通过，235 tests, 0 failures；标准 `xcodebuild test` 在当前沙箱被 `testmanagerd.control` 阻断，已按 repo-local validation-driver fallback 执行同一 XCTest bundle。
+- 占位、硬编码、mock-only、一次性实现检查：通过。未发现生产路径 `try!`、`fatalError`、TODO/mock-only 闭环；fixture 仅出现在测试文件。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+- 结果：失败，退出码 65；原因是当前执行环境无法访问 `com.apple.testmanagerd.control`，属于 sandbox restriction，非编译或断言失败。
+- 已运行：`./dev test macos`
+- 结果：通过；先复现同一 sandbox block，再用 `xcrun xctest` 执行已构建 XCTest bundle，235 tests, 0 failures。
+- 缺失：远端 CI 未运行，本次只做本地只读验收。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS
