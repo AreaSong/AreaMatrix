@@ -14,7 +14,22 @@ extension ImportResultRouteState {
             pending: pending,
             currentPath: currentPath,
             items: items,
-            isRetryingFailedItems: isRetryingFailedItems
+            isRetryingFailedItems: isRetryingFailedItems,
+            changeLog: changeLog
+        )
+    }
+
+    func replacing(changeLog: ChangeLogState) -> ImportResultRouteState {
+        ImportResultRouteState(
+            sourceOpening: sourceOpening,
+            imported: imported,
+            failed: failed,
+            stopped: stopped,
+            pending: pending,
+            currentPath: currentPath,
+            items: items,
+            isRetryingFailedItems: isRetryingFailedItems,
+            changeLog: changeLog
         )
     }
 
@@ -65,7 +80,8 @@ extension ImportResultRouteState {
             pending: pending,
             currentPath: replacement.targetPath,
             items: updatedItems,
-            isRetryingFailedItems: isRetryingFailedItems
+            isRetryingFailedItems: isRetryingFailedItems,
+            changeLog: changeLog
         )
     }
 }

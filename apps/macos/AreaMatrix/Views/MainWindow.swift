@@ -288,6 +288,9 @@ struct MainWindow: View {
                 onDone: model.finishImportResult,
                 onRetryFailed: {
                     Task { await model.retryImportResultFailedItems() }
+                },
+                onLoadChangeLog: {
+                    Task { await model.loadImportResultChangeLog() }
                 }
             )
         case .mainEmpty(let opening):

@@ -64,6 +64,7 @@
 		0A0000000000000000000152 /* MainLoadingFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000153 /* MainLoadingFixtures.swift */; };
 		0A0000000000000000000154 /* InitDoneTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000155 /* InitDoneTestSupport.swift */; };
 		0A0000000000000000000156 /* CoreExternalChangesSyncing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000157 /* CoreExternalChangesSyncing.swift */; };
+		0A00000000000000000001E2 /* CoreChangeLogListing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001E3 /* CoreChangeLogListing.swift */; };
 		0A0000000000000000000158 /* MainRepoExternalRemovalActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000159 /* MainRepoExternalRemovalActions.swift */; };
 		0A000000000000000000015A /* MainRepoExternalRemovalTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000015B /* MainRepoExternalRemovalTests.swift */; };
 		0A000000000000000000015C /* RepositoryErrorPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000015D /* RepositoryErrorPresentation.swift */; };
@@ -206,6 +207,7 @@
 		0A0000000000000000000153 /* MainLoadingFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/MainLoadingFixtures.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000155 /* InitDoneTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/InitDoneTestSupport.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000157 /* CoreExternalChangesSyncing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/CoreExternalChangesSyncing.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000001E3 /* CoreChangeLogListing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/CoreChangeLogListing.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000159 /* MainRepoExternalRemovalActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/MainRepoExternalRemovalActions.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000015B /* MainRepoExternalRemovalTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/MainRepoExternalRemovalTests.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000015D /* RepositoryErrorPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/RepositoryErrorPresentation.swift; sourceTree = SOURCE_ROOT; };
@@ -387,6 +389,7 @@
 				0A0000000000000000000101 /* CoreFileListing.swift */,
 				0A0000000000000000000171 /* CoreImporting.swift */,
 				0A0000000000000000000157 /* CoreExternalChangesSyncing.swift */,
+				0A00000000000000000001E3 /* CoreChangeLogListing.swift */,
 				0A000000000000000000001B /* AreaMatrix-Bridging-Header.h */,
 				0A000000000000000000003B /* UniFFI */,
 			);
@@ -702,6 +705,7 @@
 				0A0000000000000000000100 /* CoreFileListing.swift in Sources */,
 				0A0000000000000000000170 /* CoreImporting.swift in Sources */,
 				0A0000000000000000000156 /* CoreExternalChangesSyncing.swift in Sources */,
+				0A00000000000000000001E2 /* CoreChangeLogListing.swift in Sources */,
 				0A0000000000000000000158 /* MainRepoExternalRemovalActions.swift in Sources */,
 				0A0000000000000000000162 /* MainRepoErrorActions.swift in Sources */,
 			);

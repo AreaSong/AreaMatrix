@@ -33,6 +33,13 @@ extension OnboardingModel {
 }
 
 struct ImportResultRouteState: Equatable, Sendable {
+    enum ChangeLogState: Equatable, Sendable {
+        case notLoaded
+        case loading
+        case loaded([ChangeLogEntrySnapshot])
+        case failed(CoreErrorMappingSnapshot)
+    }
+
     struct Item: Identifiable, Equatable, Sendable {
         enum Status: String, Equatable, Hashable, Sendable {
             case imported = "Imported"
@@ -60,6 +67,7 @@ struct ImportResultRouteState: Equatable, Sendable {
     var currentPath: String
     var items: [Item]
     var isRetryingFailedItems: Bool
+    var changeLog: ChangeLogState
 
     init(sourceOpening: RepositoryOpeningResult, progress: ImportBatchProgressSnapshot) {
         self.sourceOpening = sourceOpening
@@ -69,6 +77,7 @@ struct ImportResultRouteState: Equatable, Sendable {
         pending = progress.remaining + progress.pending
         currentPath = progress.currentPath
         isRetryingFailedItems = false
+        changeLog = .notLoaded
         items = Self.resultItems(
             from: progress.items,
             repoPath: sourceOpening.config.repoPath,
@@ -92,7 +101,8 @@ struct ImportResultRouteState: Equatable, Sendable {
         pending: Int,
         currentPath: String,
         items: [Item],
-        isRetryingFailedItems: Bool = false
+        isRetryingFailedItems: Bool = false,
+        changeLog: ChangeLogState = .notLoaded
     ) {
         self.sourceOpening = sourceOpening
         self.imported = imported
@@ -102,6 +112,7 @@ struct ImportResultRouteState: Equatable, Sendable {
         self.currentPath = currentPath
         self.items = items
         self.isRetryingFailedItems = isRetryingFailedItems
+        self.changeLog = changeLog
     }
 
     var summaryText: String {

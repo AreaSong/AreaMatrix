@@ -242,6 +242,12 @@ extension OnboardingModel {
     }
 
     @MainActor
+    func loadImportResultChangeLog() async {
+        guard case .importResult(let state) = route else { return }
+        await loadImportResultChangeLog(from: state)
+    }
+
+    @MainActor
     func retryImportResultFailedItems() async {
         guard case .importResult(let state) = route, state.canRetryFailedItems else { return }
         route = .importResult(state.replacing(isRetryingFailedItems: true))
@@ -252,6 +258,23 @@ extension OnboardingModel {
             route = .importResult(nextState)
         }
         route = .importResult(nextState.replacing(isRetryingFailedItems: false))
+    }
+
+    @MainActor
+    private func loadImportResultChangeLog(from state: ImportResultRouteState) async {
+        route = .importResult(state.replacing(changeLog: .loading))
+        do {
+            let entries = try await importResultChangeLister.listChanges(
+                repoPath: state.sourceOpening.config.repoPath,
+                filter: .importResultRecent
+            )
+            guard case .importResult(let latestState) = route else { return }
+            route = .importResult(latestState.replacing(changeLog: .loaded(entries)))
+        } catch {
+            let mapping = await importProgressMapping(for: error)
+            guard case .importResult(let latestState) = route else { return }
+            route = .importResult(latestState.replacing(changeLog: .failed(mapping)))
+        }
     }
 
     @MainActor

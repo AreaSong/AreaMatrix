@@ -59,6 +59,7 @@ final class OnboardingModel: ObservableObject {
     let repositoryInitializer: any CoreRepositoryInitializing
     let emptyRepositoryOpener: any CoreEmptyRepositoryOpening
     let importProgressImporter: any CoreFileImporting
+    let importResultChangeLister: any CoreChangeLogListing
     let mainLoadingTreeLister: (any CoreRepositoryTreeListing)?
     let startupRecoverer: any CoreStartupRecovering
     let externalChangesSyncer: any CoreExternalChangesSyncing
@@ -87,6 +88,7 @@ final class OnboardingModel: ObservableObject {
         repositoryInitializer: any CoreRepositoryInitializing = CoreBridge(),
         emptyRepositoryOpener: any CoreEmptyRepositoryOpening = CoreBridge(),
         importProgressImporter: any CoreFileImporting = CoreBridge(),
+        importResultChangeLister: any CoreChangeLogListing = CoreBridge(),
         mainLoadingTreeLister: (any CoreRepositoryTreeListing)? = nil,
         startupRecoverer: any CoreStartupRecovering = CoreBridge(),
         externalChangesSyncer: any CoreExternalChangesSyncing = CoreBridge(),
@@ -110,6 +112,7 @@ final class OnboardingModel: ObservableObject {
         self.repositoryInitializer = repositoryInitializer
         self.emptyRepositoryOpener = emptyRepositoryOpener
         self.importProgressImporter = importProgressImporter
+        self.importResultChangeLister = importResultChangeLister
         self.mainLoadingTreeLister = mainLoadingTreeLister ?? (emptyRepositoryOpener as? any CoreRepositoryTreeListing)
         self.startupRecoverer = startupRecoverer
         self.externalChangesSyncer = externalChangesSyncer

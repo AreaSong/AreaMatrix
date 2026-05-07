@@ -298,10 +298,6 @@ actor CoreBridge {
         }.value
     }
 
-    func listChanges() async throws -> Never {
-        try requireGeneratedBindings(for: .listChanges)
-    }
-
     func listTreeJSON(repoPath: String, locale: String) async throws -> String {
         try await Task.detached(priority: .userInitiated) {
             try listCoreTreeJSON(repoPath: repoPath, locale: locale)
