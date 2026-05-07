@@ -14,12 +14,12 @@ struct MainRepositoryDetailPane: View {
                 ImportProgressDetailPane(row: selectedImportProgressRow)
             } else if selection.isMultiple {
                 multiSelectionDetailPane
+            } else if let detail = selectedFileDetail {
+                detailMetadataPane(detail)
             } else if let error = detailErrorMapping {
                 detailErrorPane(error)
             } else if isDetailLoading {
                 detailLoadingPane
-            } else if let detail = selectedFileDetail {
-                detailMetadataPane(detail)
             } else {
                 emptyDetailPane
             }
@@ -83,6 +83,7 @@ struct MainRepositoryDetailPane: View {
                 Text(detail.currentName)
                     .font(.headline)
                     .textSelection(.enabled)
+                detailStatusSection
                 metadataRows(for: detail)
             }
             .padding(18)
@@ -90,16 +91,40 @@ struct MainRepositoryDetailPane: View {
         }
     }
 
+    @ViewBuilder
+    private var detailStatusSection: some View {
+        if let error = detailErrorMapping {
+            detailInlineError(error)
+        } else if isDetailLoading {
+            HStack(spacing: 8) {
+                ProgressView()
+                    .controlSize(.small)
+                Text("Refreshing file details")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+            .accessibilityElement(children: .combine)
+        }
+    }
+
+    private func detailInlineError(_ error: CoreErrorMappingSnapshot) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label("无法加载文件详情", systemImage: "exclamationmark.triangle")
+                .font(.callout.weight(.semibold))
+            Text(error.userMessage)
+                .foregroundStyle(.secondary)
+            Button("Retry", action: onRetrySelectedFileDetail)
+        }
+        .padding(10)
+        .background(Color.yellow.opacity(0.12))
+        .accessibilityElement(children: .contain)
+    }
+
     private func metadataRows(for detail: FileEntrySnapshot) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            metadataRow("Category", detail.category)
-            metadataRow("Path", detail.path)
-            metadataRow("Size", detail.sizeDisplay)
-            metadataRow("Storage", detail.storageMode)
-            metadataRow("Origin", detail.origin)
-            metadataRow("Imported", detail.importedAtDisplay)
-            metadataRow("Modified", detail.updatedAtDisplay)
-            metadataRow("SHA-256", detail.hashSha256)
+            ForEach(detailMetaMetadataRows(for: detail)) { row in
+                metadataRow(row.label, row.value)
+            }
         }
     }
 
@@ -114,4 +139,31 @@ struct MainRepositoryDetailPane: View {
                 .lineLimit(3)
         }
     }
+}
+
+struct DetailMetaMetadataRow: Equatable, Identifiable, Sendable {
+    let label: String
+    let value: String
+
+    var id: String { label }
+}
+
+func detailMetaMetadataRows(for detail: FileEntrySnapshot) -> [DetailMetaMetadataRow] {
+    [
+        DetailMetaMetadataRow(label: "Category", value: detail.category),
+        DetailMetaMetadataRow(label: "Path", value: detail.path),
+        DetailMetaMetadataRow(label: "Size", value: detail.sizeDisplay),
+        DetailMetaMetadataRow(label: "Storage", value: detail.storageMode),
+        DetailMetaMetadataRow(label: "Origin", value: detail.origin),
+        DetailMetaMetadataRow(label: "Imported", value: detail.importedAtDisplay),
+        DetailMetaMetadataRow(label: "Modified", value: detail.updatedAtDisplay),
+        DetailMetaMetadataRow(label: "SHA-256", value: detail.hashSha256),
+        DetailMetaMetadataRow(label: "Source", value: detailMetaDisplayValue(detail.sourcePath)),
+        DetailMetaMetadataRow(label: "Status", value: detail.statusDisplay),
+    ]
+}
+
+private func detailMetaDisplayValue(_ value: String?) -> String {
+    guard let value, !value.isEmpty else { return "Not available" }
+    return value
 }

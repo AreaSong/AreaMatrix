@@ -179,7 +179,7 @@ final class MainFileListModel: ObservableObject {
         }
 
         selection = .single(id)
-        selectedFileDetail = nil
+        selectedFileDetail = cachedFile(id: id)
         detailErrorMapping = nil
         isDetailLoading = true
         await loadDetail(id: id)
@@ -188,7 +188,7 @@ final class MainFileListModel: ObservableObject {
     func retrySelectedFileDetail() async {
         guard let selectedFileID = selection.singleFileID else { return }
 
-        selectedFileDetail = nil
+        selectedFileDetail = selectedFileDetail ?? cachedFile(id: selectedFileID)
         detailErrorMapping = nil
         isDetailLoading = true
         await loadDetail(id: selectedFileID)
@@ -309,12 +309,15 @@ final class MainFileListModel: ObservableObject {
             guard generation == detailGeneration else { return }
             selection = .single(loadedFile.id)
             selectedFileDetail = loadedFile
+            files = files.map { file in
+                file.id == loadedFile.id ? loadedFile : file
+            }
             detailErrorMapping = nil
             isDetailLoading = false
         } catch {
             let mappedError = await mapCoreError(error)
             guard generation == detailGeneration else { return }
-            selectedFileDetail = nil
+            selectedFileDetail = selectedFileDetail ?? cachedFile(id: id)
             detailErrorMapping = mappedError
             isDetailLoading = false
         }
@@ -344,6 +347,10 @@ final class MainFileListModel: ObservableObject {
     private var currentCategoryDisplayName: String {
         guard let currentCategory, !currentCategory.isEmpty else { return "files" }
         return currentCategory
+    }
+
+    private func cachedFile(id: Int64) -> FileEntrySnapshot? {
+        files.first { $0.id == id }
     }
 }
 
