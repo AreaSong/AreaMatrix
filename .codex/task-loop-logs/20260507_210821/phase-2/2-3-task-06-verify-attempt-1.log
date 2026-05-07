@@ -1,0 +1,70 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`2-3/task-06`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-3-detail-settings/task-06-s1-13-page-integration-verify.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：逐项验收本页所有 page-feature task 是否完成
+- 结果：通过
+- 证据：`2-3/task-02..05` 覆盖 C1-13/C1-17/C1-18/C1-19；测试包含 `DetailMetaPageFeatureTests.swift`、`DetailLogExternalCreatedPageFeatureTests.swift`、`DetailLogExternalRenamedPageFeatureTests.swift`、`DetailLogExternalRemovedPageFeatureTests.swift`、`DetailLogPageIntegrationVerifyTests.swift`
+- 涉及文件：`apps/macos/AreaMatrixTests/**`
+
+- 项目：页面状态、入口、退出、错误态和 CoreBridge 调用闭环
+- 结果：通过
+- 证据：`DetailLogTabView` 覆盖 loading/empty/error/retry/diagnostics/disclosure；`MainRepositoryDetailPane` 提供 Log tab 入口并在无选中/多选退出；`MainFileListModel` 通过 `CoreChangeLogListing` 和 `CoreExternalChangesSyncing` 调用真实 `CoreBridge`
+- 涉及文件：`apps/macos/AreaMatrix/Views/Main/DetailLogTabView.swift`、`apps/macos/AreaMatrix/Views/Main/MainRepositoryDetailPane.swift`、`apps/macos/AreaMatrix/Models/MainFileListModel.swift`
+
+- 项目：移除无法通过最终验收的 mock、fixture 或硬编码状态
+- 结果：通过
+- 证据：生产路径默认依赖 `CoreBridge()`，`CoreBridge` 包装 generated UniFFI 的 `listChanges`、`syncExternalChanges`、`getFsEventCursor`、`setFsEventCursor`；fixture 仅存在于测试文件
+- 涉及文件：`apps/macos/AreaMatrix/Bridge/CoreChangeLogListing.swift`、`apps/macos/AreaMatrix/Bridge/CoreExternalChangesSyncing.swift`
+
+- 项目：不新增 control map 外功能
+- 结果：通过
+- 证据：S1-13 control map 声明 C1-13/C1-17/C1-18/C1-19；实现只围绕 `list_changes`、`sync_external_changes`、FSEvents relay、detail log 状态和诊断入口；未发现超出本页声明能力的新增 Core 功能
+- 涉及文件：`docs/architecture/mvp-control-map.md`、`apps/macos/AreaMatrix/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。CoreBridge 协议、状态模型、视图和测试分层清楚；`detailLogGeneration` 防旧请求覆盖。
+- 注释 / rustdoc / 文档同步：通过。未改 Rust public API；`core/area_matrix.udl` 与 `docs/api/core-api.md` 对齐包含 S1-13 所需接口。
+- 错误处理与边界处理：通过。DB/权限/同步错误映射为 inline error；诊断需要隐私确认；外部事件拒绝绝对路径、`../`、目录和 `.areamatrix/`。
+- 测试与验证覆盖：通过。`./dev test macos` 执行 313 个测试，0 failures。
+- 占位、硬编码、mock-only、一次性实现检查：通过。生产路径未发现 mock-only 闭环；测试 fixture 未进入生产代码。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+- 结果：失败，但失败点是本地沙箱阻断 `com.apple.testmanagerd.control`，日志明确为 `Sandbox restriction`；build 已进入测试 runner 阶段，不是编译或断言失败。
+- 已运行：`./dev test macos`
+- 结果：通过。该命令按 repo-local validation-driver 先运行标准 `xcodebuild test`，遇到明确 `testmanagerd` sandbox block 后复用已构建 XCTest bundle，`xcrun xctest` 通过；总计 313 tests，0 failures。
+- Forbidden Touches：通过。`git diff --name-only -- core/src` 和 `git ls-files --others --exclude-standard core/src` 无输出，未发现 `core/src/**` 被触碰。
+- Expected New Paths：通过。`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`apps/macos/AreaMatrix.xcodeproj/project.pbxproj` 均存在并被纳入工程。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS

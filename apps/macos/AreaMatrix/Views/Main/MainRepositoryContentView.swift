@@ -448,6 +448,7 @@ struct MainRepositoryContentView: View {
             detailLogState: fileListModel.detailLogState,
             detailLogDiagnosticsState: fileListModel.detailLogDiagnosticsState,
             detailExternalCreateSyncState: fileListModel.detailExternalCreateSyncState,
+            detailTabRequest: fileListModel.detailTabRequest,
             selectedImportProgressRow: selectedImportProgressRow,
             onRetrySelectedFileDetail: {
                 Task {
@@ -465,7 +466,8 @@ struct MainRepositoryContentView: View {
                     await fileListModel.collectDetailLogDiagnostics()
                 }
             },
-            onCancelDetailLogDiagnostics: fileListModel.cancelDetailLogDiagnosticsPrivacyConfirmation
+            onCancelDetailLogDiagnostics: fileListModel.cancelDetailLogDiagnosticsPrivacyConfirmation,
+            onDetailTabRequestConsumed: fileListModel.consumeDetailTabRequest
         )
         .frame(minWidth: 220, idealWidth: 260, maxWidth: 320, maxHeight: .infinity, alignment: .topLeading)
     }

@@ -8,12 +8,14 @@ struct MainRepositoryDetailPane: View {
     let detailLogState: MainDetailLogState
     let detailLogDiagnosticsState: MainDetailLogDiagnosticsState
     let detailExternalCreateSyncState: MainDetailExternalCreateSyncState
+    let detailTabRequest: MainDetailTabRequest?
     let selectedImportProgressRow: ImportProgressListRow?
     let onRetrySelectedFileDetail: () -> Void
     let onRefreshChangeLog: () -> Void
     let onRequestDetailLogDiagnostics: () -> Void
     let onConfirmDetailLogDiagnostics: () -> Void
     let onCancelDetailLogDiagnostics: () -> Void
+    let onDetailTabRequestConsumed: (MainDetailTabRequest) -> Void
 
     @State private var selectedTab: DetailPaneTab = .meta
 
@@ -32,6 +34,10 @@ struct MainRepositoryDetailPane: View {
             } else {
                 emptyDetailPane
             }
+        }
+        .onChange(of: detailTabRequest) { _, request in
+            guard let request else { return }
+            applyDetailTabRequest(request)
         }
     }
 
@@ -135,6 +141,14 @@ struct MainRepositoryDetailPane: View {
                 onCancelDiagnostics: onCancelDetailLogDiagnostics
             )
         }
+    }
+
+    private func applyDetailTabRequest(_ request: MainDetailTabRequest) {
+        switch request {
+        case .automatic(let tab):
+            selectedTab = tab
+        }
+        onDetailTabRequestConsumed(request)
     }
 
     @ViewBuilder

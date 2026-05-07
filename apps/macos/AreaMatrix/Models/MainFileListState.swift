@@ -1,5 +1,21 @@
 import Foundation
 
+enum DetailPaneTab: String, CaseIterable, Identifiable, Sendable {
+    case meta
+    case log
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .meta:
+            return "Meta"
+        case .log:
+            return "Log"
+        }
+    }
+}
+
 enum MainFileSelectionState: Equatable, Sendable {
     case none
     case single(Int64)
@@ -69,6 +85,10 @@ enum MainListStatusBanner: Equatable, Sendable {
             return "Selected file is missing or was removed outside AreaMatrix."
         }
     }
+}
+
+enum MainDetailTabRequest: Equatable, Sendable {
+    case automatic(DetailPaneTab)
 }
 
 enum MainFileWriteActionDisabledReason: String, Equatable, Sendable {

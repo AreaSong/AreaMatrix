@@ -1,0 +1,43 @@
+一、执行结论
+
+已完成。S1-13 detail-log 的整页集成闭环已补齐：外部 created / renamed / removed 同步成功后，会刷新列表、详情、change log，并请求自动切到 Log tab；失败时保持 inline error，不用 mock 伪装通过。
+
+二、执行范围
+
+单任务：`2-3/task-06`
+
+修改文件：
+- [MainFileListState.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileListState.swift:3)
+- [MainFileListModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileListModel.swift:16)
+- [MainRepositoryDetailPane.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryDetailPane.swift:11)
+- [MainRepositoryContentView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift:448)
+- [DetailLogTabView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/DetailLogTabView.swift:1)
+- [DetailLogPageIntegrationVerifyTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/DetailLogPageIntegrationVerifyTests.swift:4)
+- [project.pbxproj](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj:56)
+
+三、完成情况
+
+- page-feature task 覆盖：C1-13 / C1-17 / C1-18 / C1-19 均有现有 feature 测试，并新增整页 integration verify 测试串联。
+- 页面状态、入口、退出、错误态、CoreBridge 调用：已覆盖同步成功、同步失败、无选中、多选退出、日志刷新与 tab request 消费。
+- mock / fixture / 硬编码状态：生产代码未新增 mock；测试替身仅用于 XCTest 验证协议调用。
+- Control map 越界：未新增 control map 外功能。
+- Forbidden Touches：未触碰 `core/src/**`。
+
+四、工程质量
+
+代码结构保持在现有模型/视图分层内：`MainFileListModel` 发出 `MainDetailTabRequest`，`MainRepositoryDetailPane` 消费后切换 tab。没有新增依赖，没有绕过 `CoreBridge`，没有 `try!` 或强制解包。改动只补 wiring 和测试证据，未改 Core API / UDL / 文档源事实。
+
+五、验证情况
+
+已运行：
+- `git diff --check`：通过。
+- `xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：通过。
+- `xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：编译/链接完成，但测试 runner 因本地 sandbox 无法连接 `com.apple.testmanagerd.control`，exit 65。
+- `./dev test macos`：通过；按仓库 fallback 规则复用 XCTest bundle，`xcrun xctest` 执行 313 tests，0 failures。
+
+六、风险与后续
+
+剩余风险：标准 `xcodebuild test` 在当前沙箱环境仍会被 testmanagerd 通信限制阻断；本地等价 fallback 已通过。仓库中已有未相关改动 `.codex/task-loop-runs/20260507_210821/summary.json` 和 `tasks/prompts/_shared/progress.json`，本任务未处理它们。
+
+建议下一个任务：进入 `2-3/task-07`，开始 S1-14 detail-note 的单页能力闭环。
+

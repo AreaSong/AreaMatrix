@@ -1,21 +1,5 @@
 import SwiftUI
 
-enum DetailPaneTab: String, CaseIterable, Identifiable {
-    case meta
-    case log
-
-    var id: String { rawValue }
-
-    var title: String {
-        switch self {
-        case .meta:
-            return "Meta"
-        case .log:
-            return "Log"
-        }
-    }
-}
-
 struct DetailLogTabView: View {
     let selection: MainFileSelectionState
     let detailLogState: MainDetailLogState

@@ -53,6 +53,7 @@
 		0A0000000000000000000202 /* DetailLogExternalCreatedPageFeatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000203 /* DetailLogExternalCreatedPageFeatureTests.swift */; };
 		0A0000000000000000000204 /* DetailLogExternalRenamedPageFeatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000205 /* DetailLogExternalRenamedPageFeatureTests.swift */; };
 		0A0000000000000000000206 /* DetailLogExternalRemovedPageFeatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000207 /* DetailLogExternalRemovedPageFeatureTests.swift */; };
+		0A0000000000000000000230 /* DetailLogPageIntegrationVerifyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000231 /* DetailLogPageIntegrationVerifyTests.swift */; };
 		0A0000000000000000000134 /* MainListVisibleFileFiltering.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000135 /* MainListVisibleFileFiltering.swift */; };
 		0A0000000000000000000136 /* MainListIntegrationFilterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000137 /* MainListIntegrationFilterTests.swift */; };
 		0A0000000000000000000138 /* MainListIntegrationClosureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000139 /* MainListIntegrationClosureTests.swift */; };
@@ -216,6 +217,7 @@
 		0A0000000000000000000203 /* DetailLogExternalCreatedPageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/DetailLogExternalCreatedPageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000205 /* DetailLogExternalRenamedPageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/DetailLogExternalRenamedPageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000207 /* DetailLogExternalRemovedPageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/DetailLogExternalRemovedPageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000231 /* DetailLogPageIntegrationVerifyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/DetailLogPageIntegrationVerifyTests.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000135 /* MainListVisibleFileFiltering.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/MainListVisibleFileFiltering.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000137 /* MainListIntegrationFilterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/MainListIntegrationFilterTests.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000139 /* MainListIntegrationClosureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/MainListIntegrationClosureTests.swift; sourceTree = SOURCE_ROOT; };
@@ -557,6 +559,7 @@
 					0A0000000000000000000203 /* DetailLogExternalCreatedPageFeatureTests.swift */,
 					0A0000000000000000000205 /* DetailLogExternalRenamedPageFeatureTests.swift */,
 					0A0000000000000000000207 /* DetailLogExternalRemovedPageFeatureTests.swift */,
+					0A0000000000000000000231 /* DetailLogPageIntegrationVerifyTests.swift */,
 				0A0000000000000000000137 /* MainListIntegrationFilterTests.swift */,
 				0A0000000000000000000139 /* MainListIntegrationClosureTests.swift */,
 				0A000000000000000000014B /* MainLoadingAdoptExistingTests.swift */,
@@ -831,6 +834,7 @@
 					0A0000000000000000000202 /* DetailLogExternalCreatedPageFeatureTests.swift in Sources */,
 					0A0000000000000000000204 /* DetailLogExternalRenamedPageFeatureTests.swift in Sources */,
 					0A0000000000000000000206 /* DetailLogExternalRemovedPageFeatureTests.swift in Sources */,
+					0A0000000000000000000230 /* DetailLogPageIntegrationVerifyTests.swift in Sources */,
 				0A0000000000000000000136 /* MainListIntegrationFilterTests.swift in Sources */,
 				0A0000000000000000000138 /* MainListIntegrationClosureTests.swift in Sources */,
 				0A000000000000000000014A /* MainLoadingAdoptExistingTests.swift in Sources */,

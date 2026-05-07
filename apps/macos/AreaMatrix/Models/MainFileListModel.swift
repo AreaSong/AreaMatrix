@@ -13,6 +13,7 @@ final class MainFileListModel: ObservableObject {
     @Published private(set) var detailLogState: MainDetailLogState = .notLoaded
     @Published private(set) var detailLogDiagnosticsState: MainDetailLogDiagnosticsState = .idle
     @Published private(set) var detailExternalCreateSyncState: MainDetailExternalCreateSyncState = .idle
+    @Published private(set) var detailTabRequest: MainDetailTabRequest?
     @Published private(set) var pendingActionDestination: MainFileActionDestination?
     @Published private(set) var statusBanner: MainListStatusBanner?
     @Published private(set) var diagnosticsState: MainListDiagnosticsState = .idle
@@ -113,6 +114,11 @@ final class MainFileListModel: ObservableObject {
         await loadChangeLog(fileID: selectedFileID)
     }
 
+    func consumeDetailTabRequest(_ request: MainDetailTabRequest) {
+        guard detailTabRequest == request else { return }
+        detailTabRequest = nil
+    }
+
     func syncExternalCreated(_ event: MainExternalCreatedFileEvent) async {
         detailExternalCreateSyncState = .syncing(event: event)
         do {
@@ -122,6 +128,9 @@ final class MainFileListModel: ObservableObject {
             detailExternalCreateSyncState = .synced(event: event, fileID: fileID, result)
             if let fileID {
                 await loadChangeLog(fileID: fileID)
+                if case .loaded(let loadedFileID, _) = detailLogState, loadedFileID == fileID {
+                    detailTabRequest = .automatic(.log)
+                }
             }
         } catch {
             let mappedError = await mapCoreError(error)
@@ -417,6 +426,7 @@ final class MainFileListModel: ObservableObject {
         detailLogState = .notLoaded
         detailLogDiagnosticsState = .idle
         detailExternalCreateSyncState = .idle
+        detailTabRequest = nil
     }
 
     private func mapListError(_ error: Error) async -> CoreErrorMappingSnapshot {
