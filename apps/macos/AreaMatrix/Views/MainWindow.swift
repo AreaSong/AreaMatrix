@@ -285,7 +285,10 @@ struct MainWindow: View {
         case .importResult(let state):
             ImportResultView(
                 state: state,
-                onDone: model.finishImportResult
+                onDone: model.finishImportResult,
+                onRetryFailed: {
+                    Task { await model.retryImportResultFailedItems() }
+                }
             )
         case .mainEmpty(let opening):
             MainRepositoryContentView(

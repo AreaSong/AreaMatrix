@@ -1,3 +1,5 @@
+import Foundation
+
 extension OnboardingModel {
     enum Route: Equatable, Sendable {
         case loadingConfiguration
@@ -43,6 +45,7 @@ struct ImportResultRouteState: Equatable, Sendable {
         var targetPath: String
         var status: Status
         var reason: String
+        var retryContext: ImportProgressRetryContext?
 
         var id: String {
             sourcePath + "|" + targetPath + "|" + status.rawValue
@@ -56,6 +59,7 @@ struct ImportResultRouteState: Equatable, Sendable {
     var pending: Int
     var currentPath: String
     var items: [Item]
+    var isRetryingFailedItems: Bool
 
     init(sourceOpening: RepositoryOpeningResult, progress: ImportBatchProgressSnapshot) {
         self.sourceOpening = sourceOpening
@@ -64,8 +68,10 @@ struct ImportResultRouteState: Equatable, Sendable {
         stopped = progress.skipped
         pending = progress.remaining + progress.pending
         currentPath = progress.currentPath
+        isRetryingFailedItems = false
         items = Self.resultItems(
             from: progress.items,
+            repoPath: sourceOpening.config.repoPath,
             currentPath: progress.currentPath,
             imported: progress.completed,
             failed: progress.failed,
@@ -78,6 +84,26 @@ struct ImportResultRouteState: Equatable, Sendable {
         self.init(sourceOpening: sourceOpening, progress: progressState.progressSnapshot)
     }
 
+    init(
+        sourceOpening: RepositoryOpeningResult,
+        imported: Int,
+        failed: Int,
+        stopped: Int,
+        pending: Int,
+        currentPath: String,
+        items: [Item],
+        isRetryingFailedItems: Bool = false
+    ) {
+        self.sourceOpening = sourceOpening
+        self.imported = imported
+        self.failed = failed
+        self.stopped = stopped
+        self.pending = pending
+        self.currentPath = currentPath
+        self.items = items
+        self.isRetryingFailedItems = isRetryingFailedItems
+    }
+
     var summaryText: String {
         "成功 \(imported) · 停止 \(stopped) · 失败 \(failed) · 待处理 \(pending)"
     }
@@ -86,8 +112,13 @@ struct ImportResultRouteState: Equatable, Sendable {
         "Imported \(imported), failed \(failed), stopped \(stopped), pending \(pending)."
     }
 
+    var canRetryFailedItems: Bool {
+        !isRetryingFailedItems && items.contains { $0.retryContext?.storageMode == .copy && $0.status == .failed }
+    }
+
     private static func resultItems(
         from progressItems: [ImportBatchProgressSnapshot.Item],
+        repoPath: String,
         currentPath: String,
         imported: Int,
         failed: Int,
@@ -108,7 +139,8 @@ struct ImportResultRouteState: Equatable, Sendable {
                 sourcePath: item.sourcePath,
                 targetPath: item.targetPath,
                 status: status(for: item.phase, stopped: stopped),
-                reason: reason(for: item)
+                reason: reason(for: item),
+                retryContext: retryContext(for: item, repoPath: repoPath)
             )
         }
     }
@@ -124,7 +156,8 @@ struct ImportResultRouteState: Equatable, Sendable {
             sourcePath: currentPath,
             targetPath: currentPath,
             status: fallbackStatus(imported: imported, failed: failed, stopped: stopped, pending: pending),
-            reason: fallbackReason(failed: failed, stopped: stopped, pending: pending)
+            reason: fallbackReason(failed: failed, stopped: stopped, pending: pending),
+            retryContext: nil
         )
     }
 
@@ -178,5 +211,31 @@ struct ImportResultRouteState: Equatable, Sendable {
         if stopped > 0 { return "Stopped before import" }
         if pending > 0 { return "Import not completed" }
         return "-"
+    }
+
+    private static func retryContext(
+        for item: ImportBatchProgressSnapshot.Item,
+        repoPath: String
+    ) -> ImportProgressRetryContext? {
+        guard item.phase == .failed else { return nil }
+        let target = splitTargetPath(item.targetPath)
+        return ImportProgressRetryContext(
+            repoPath: repoPath,
+            sourcePath: item.sourcePath,
+            storageMode: .copy,
+            overrideCategory: target.category,
+            overrideFilename: target.filename,
+            duplicateStrategy: .ask
+        )
+    }
+
+    private static func splitTargetPath(_ targetPath: String) -> (category: String, filename: String) {
+        let nsPath = targetPath as NSString
+        let filename = nsPath.lastPathComponent
+        let category = nsPath.deletingLastPathComponent
+        return (
+            category: category.isEmpty || category == "." ? "inbox" : category,
+            filename: filename.isEmpty ? "untitled" : filename
+        )
     }
 }

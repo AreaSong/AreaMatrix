@@ -240,4 +240,38 @@ extension OnboardingModel {
         toastMessage = nil
         consumeQueuedDockImportIfPossible()
     }
+
+    @MainActor
+    func retryImportResultFailedItems() async {
+        guard case .importResult(let state) = route, state.canRetryFailedItems else { return }
+        route = .importResult(state.replacing(isRetryingFailedItems: true))
+        var nextState = state
+        for item in state.items where item.status == .failed {
+            guard let context = item.retryContext, context.storageMode == .copy else { continue }
+            nextState = await retryImportResultItem(item, context: context, state: nextState)
+            route = .importResult(nextState)
+        }
+        route = .importResult(nextState.replacing(isRetryingFailedItems: false))
+    }
+
+    @MainActor
+    private func retryImportResultItem(
+        _ item: ImportResultRouteState.Item,
+        context: ImportProgressRetryContext,
+        state: ImportResultRouteState
+    ) async -> ImportResultRouteState {
+        do {
+            let entry = try await importProgressImporter.importCopiedFile(
+                repoPath: context.repoPath,
+                sourceURL: URL(fileURLWithPath: context.sourcePath),
+                overrideCategory: context.overrideCategory,
+                overrideFilename: context.overrideFilename,
+                duplicateStrategy: context.duplicateStrategy.coreStrategy
+            )
+            return state.markingImported(item, entry: entry)
+        } catch {
+            let mapping = await importProgressMapping(for: error)
+            return state.markingFailed(item, message: mapping.userMessage)
+        }
+    }
 }

@@ -3,6 +3,7 @@ import SwiftUI
 struct ImportResultView: View {
     let state: ImportResultRouteState
     let onDone: () -> Void
+    let onRetryFailed: () -> Void
 
     @State private var filter: ImportResultRouteState.Item.Status?
 
@@ -46,6 +47,12 @@ struct ImportResultView: View {
                     .lineLimit(1)
                     .textSelection(.enabled)
                 Spacer()
+                if state.isRetryingFailedItems {
+                    ProgressView()
+                        .controlSize(.small)
+                }
+                Button(state.retryButtonTitle, action: onRetryFailed)
+                    .disabled(!state.canRetryFailedItems)
                 Button("Done", action: onDone)
                     .keyboardShortcut(.defaultAction)
             }
