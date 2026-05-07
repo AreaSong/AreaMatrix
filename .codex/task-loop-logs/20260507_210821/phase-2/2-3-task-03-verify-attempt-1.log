@@ -1,0 +1,80 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`2-3/task-03`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-3-detail-settings/task-03-s1-13-c1-17-sync-external-created.md`
+- 实际涉及：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`apps/macos/AreaMatrix.xcodeproj/project.pbxproj`、`core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：0
+- 通过项数：6
+- 不通过项数：4
+- 阻塞项数：2
+
+四、逐项验收结果
+
+- Exact Docs：通过  
+  证据：已读取 S1-13 页面规格、MVP control map、Core API、C1-17 能力规格。
+
+- Expected New Paths：通过  
+  证据：`MainDetailExternalCreateSyncState.swift`、`DetailLogExternalCreatedPageFeatureTests.swift` 已落地，`project.pbxproj` 已加入 source entries。
+
+- Forbidden Touches：通过  
+  证据：`git status --short -- core/src` 与 `git diff --name-only -- core/src` 均为空。
+
+- 只处理 S1-13 中 C1-17：不通过  
+  证据：UI 新增 `Sync Created`，但触发的是当前已选文件路径，不是外部 created 事件来源。见 `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileListModel.swift:244`。
+
+- 读取页面规格、control map、Core API、C1-17：通过  
+  证据：文档要求已交叉核验；control map 中 S1-13 绑定 `C1-13, C1-17, C1-18, C1-19`，本 task 只应验 C1-17。
+
+- 只接入 C1-17 CoreBridge / 状态 / 错误映射：不通过  
+  证据：`CoreBridge.syncExternalCreated` 调用真实 `syncExternalChanges`，但 `fsEventID` 由 `Date()` 临时生成，未来自 FSEvents 或真实 external event。见 `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileListModel.swift:251`。
+
+- 不顺手实现相邻页面：通过  
+  证据：未发现相邻页面新增闭环；`core/src/**` 未触碰。
+
+- 用户可见功能可触发和验收：不通过  
+  证据：按钮可触发，但无法证明“外部新增文件出现在 list/tree/detail”这一 C1-17 验收标准；当前实现要求文件已被选中，逻辑上不是新增外部文件发现闭环。
+
+- 无 mock / fixture / 静态状态伪造真实 Core 闭环：不通过  
+  证据：生产路径用合成 `fsEventID`，测试只验证 fake `CoreExternalChangesSyncing` 请求，未证明真实外部新增事件闭环。见 `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/DetailLogExternalCreatedPageFeatureTests.swift:67`。
+
+- 未触碰 control map 之外 Core 能力：通过  
+  证据：新增生产 Core 调用集中在 `syncExternalCreated` / `sync_external_changes Created`。
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过。C1-17 事件来源不真实，且 `DetailLogTabView.swift` 为 227 行，超过 SwiftUI 视图建议拆分阈值。
+- 注释 / rustdoc / 文档同步：不通过。`Sync Created` 是新增用户可见命令，但 S1-13 UX 规格只定义 `Refresh` 与诊断入口，未定义该按钮。
+- 错误处理与边界处理：不通过。`SyncResult.errors` 非空时仍进入 `.synced` 展示，仅显示 errors count，未映射为失败或部分失败。
+- 测试与验证覆盖：不通过。build/test 命令通过，但测试只覆盖协议 fake wiring，缺少真实 external-created 事件验收证据。
+- 占位、硬编码、mock-only、一次性实现检查：不通过。`Date().timeIntervalSince1970 * 1_000` 合成 `fsEventID` 不能作为真实 FSEvents cursor 证据。
+
+六、阻塞项
+
+- P0：C1-17 真实外部新增闭环未成立  
+  说明：实现用当前已选文件的 `file.path` 发起 Created event；外部新增文件在进入 DB 前无法成为当前选中详情文件，不能证明 C1-17 的“外部新增文件出现在 list/tree/detail”。  
+  路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileListModel.swift:244`  
+  为什么不通过：违反 C1-17 验收标准和真实闭环要求。
+
+- P0：`fs_event_id` 为合成值，cursor 语义不可证明  
+  说明：`fsEventID` 来自 `Date()`，不是 FSEvents 或真实事件批次 ID。  
+  路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileListModel.swift:254`  
+  为什么不通过：C1-17 要求 cursor 只在事件批次成功处理后推进；合成 ID 会伪造外部同步进度。
+
+七、验证情况
+
+- 已运行：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：通过，`BUILD SUCCEEDED`。
+- 已运行：`./dev test macos`：通过；标准 `xcodebuild test` 被本地 `testmanagerd` sandbox 限制阻断，随后复用已构建 XCTest bundle，`xcrun xctest` 通过，290 tests，0 failures。
+- 缺失：真实外部 created 事件来源、真实 cursor 事件 ID、外部新增文件进入 list/tree/detail 的验收证据。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+VERIFY_RESULT: FAIL

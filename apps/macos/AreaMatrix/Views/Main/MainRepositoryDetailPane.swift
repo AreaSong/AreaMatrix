@@ -7,6 +7,7 @@ struct MainRepositoryDetailPane: View {
     let selectedFileDetail: FileEntrySnapshot?
     let detailLogState: MainDetailLogState
     let detailLogDiagnosticsState: MainDetailLogDiagnosticsState
+    let detailExternalCreateSyncState: MainDetailExternalCreateSyncState
     let selectedImportProgressRow: ImportProgressListRow?
     let onRetrySelectedFileDetail: () -> Void
     let onRefreshChangeLog: () -> Void
@@ -116,6 +117,7 @@ struct MainRepositoryDetailPane: View {
                 selection: selection,
                 detailLogState: detailLogState,
                 diagnosticsState: detailLogDiagnosticsState,
+                externalCreateSyncState: detailExternalCreateSyncState,
                 onRefreshChangeLog: onRefreshChangeLog,
                 onRequestDiagnostics: onRequestDetailLogDiagnostics,
                 onConfirmDiagnostics: onConfirmDetailLogDiagnostics,

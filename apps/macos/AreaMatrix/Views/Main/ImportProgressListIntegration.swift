@@ -21,6 +21,36 @@ struct ImportProgressListRow: Identifiable, Equatable {
     var errorMessage: String? { item.errorMessage }
 }
 
+struct ImportProgressTableView: View {
+    let rows: [ImportProgressListRow]
+    @Binding var selection: Set<String>
+
+    var body: some View {
+        if !rows.isEmpty {
+            Table(rows, selection: $selection) {
+                TableColumn("Importing") { row in
+                    Text(row.displayName)
+                        .lineLimit(1)
+                }
+                TableColumn("Target") { row in
+                    Text(row.categoryPathDisplay)
+                        .lineLimit(1)
+                        .foregroundStyle(.secondary)
+                }
+                TableColumn("Status") { row in
+                    Text(row.phaseText)
+                        .monospacedDigit()
+                }
+            }
+            .frame(minHeight: 96, idealHeight: tableHeight, maxHeight: tableHeight)
+        }
+    }
+
+    private var tableHeight: CGFloat {
+        CGFloat(min(max(rows.count, 1), 4)) * 34 + 34
+    }
+}
+
 struct ImportProgressDetailPane: View {
     let row: ImportProgressListRow
 

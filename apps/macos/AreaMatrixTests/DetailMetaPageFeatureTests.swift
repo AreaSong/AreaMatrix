@@ -208,7 +208,7 @@ final class DetailMetaPageFeatureTests: XCTestCase {
 
 }
 
-private actor DetailMetaNoopLister: CoreFileListing {
+actor DetailMetaNoopLister: CoreFileListing {
     func listFiles(repoPath: String, filter: FileFilterSnapshot) async throws -> [FileEntrySnapshot] {
         []
     }
@@ -220,7 +220,7 @@ private actor DetailMetaNoopDetailer: CoreFileDetailing {
     }
 }
 
-private actor DetailMetaImmediateDetailer: CoreFileDetailing {
+actor DetailMetaImmediateDetailer: CoreFileDetailing {
     enum Result {
         case success(FileEntrySnapshot)
         case failure(Error)
@@ -301,7 +301,7 @@ private actor DetailMetaSequenceDetailer: CoreFileDetailing {
     }
 }
 
-private actor DetailMetaErrorMapper: CoreErrorMapping {
+actor DetailMetaErrorMapper: CoreErrorMapping {
     private let mapping: CoreErrorMappingSnapshot
     private var errors: [CoreError] = []
 
@@ -317,12 +317,12 @@ private actor DetailMetaErrorMapper: CoreErrorMapping {
     func recordedErrors() -> [CoreError] { errors }
 }
 
-private struct DetailLogRequest: Equatable {
+struct DetailLogRequest: Equatable {
     var repoPath: String
     var filter: ChangeFilterSnapshot
 }
 
-private actor DetailLogRecordingLister: CoreChangeLogListing {
+actor DetailLogRecordingLister: CoreChangeLogListing {
     enum Result {
         case success([ChangeLogEntrySnapshot])
         case failure(Error)
@@ -379,7 +379,7 @@ private actor DetailLogSuspendedLister: CoreChangeLogListing {
     }
 }
 
-private extension RepositoryOpeningResult {
+extension RepositoryOpeningResult {
     static func detailMetaFixture(repoPath: String, files: [FileEntrySnapshot]) -> RepositoryOpeningResult {
         RepositoryOpeningResult(
             config: RepoConfigSnapshot(
@@ -405,7 +405,7 @@ private extension RepositoryOpeningResult {
     }
 }
 
-private extension FileEntrySnapshot {
+extension FileEntrySnapshot {
     static func detailMetaFixture(
         id: Int64,
         currentName: String,
@@ -429,7 +429,7 @@ private extension FileEntrySnapshot {
     }
 }
 
-private extension ChangeLogEntrySnapshot {
+extension ChangeLogEntrySnapshot {
     static func detailLogFixture(fileID: Int64, action: String) -> ChangeLogEntrySnapshot {
         ChangeLogEntrySnapshot(
             id: fileID + 100,
@@ -449,7 +449,7 @@ private extension [DetailMetaMetadataRow] {
     }
 }
 
-private extension CoreErrorMappingSnapshot {
+extension CoreErrorMappingSnapshot {
     static func detailMetaFileNotFound() -> CoreErrorMappingSnapshot {
         CoreErrorMappingSnapshot(
             kind: .fileNotFound,
@@ -471,4 +471,5 @@ private extension CoreErrorMappingSnapshot {
             rawContext: "S1-13 C1-13 list_changes"
         )
     }
+
 }

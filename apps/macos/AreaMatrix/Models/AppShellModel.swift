@@ -22,6 +22,7 @@ final class OnboardingModel: ObservableObject {
     @Published var mainRepoExternalRemoval: MainRepoExternalRemovalState = .unavailable
     @Published var mainRepoDiagnostics: MainRepoDiagnosticsState = .idle
     @Published var mainRepoLastOpenedAt: Int64?
+    @Published var pendingExternalCreatedFileEvent: MainPendingExternalCreatedFileEvent?
     @Published var isRetryingMainRepository = false
     var openingCancellationToken: UUID?
     @Published var initializationDiagnostics: InitializationDiagnosticsState = .idle

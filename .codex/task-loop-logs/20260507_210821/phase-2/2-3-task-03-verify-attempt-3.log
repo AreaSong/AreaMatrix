@@ -1,0 +1,65 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`2-3/task-03`
+- 对应文件路径：`tasks/prompts/phase-2/2-3-detail-settings/task-03-s1-13-c1-17-sync-external-created.md`
+- 覆盖范围：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`apps/macos/AreaMatrix.xcodeproj/project.pbxproj`、`core/area_matrix.udl`
+- 禁止触碰范围：`core/src/**`
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 S1-13 页面中的 C1-17 功能点
+- 结果：通过
+- 证据：`S1-13` 在 control map 绑定 `C1-13, C1-17, C1-18, C1-19`，本任务实际新增/接入的是外部新增 created 事件、`sync_external_changes`、Log tab 状态提示与刷新链路。
+- 涉及文件：`apps/macos/AreaMatrix/Models/MainFileListModel.swift`、`apps/macos/AreaMatrix/Views/Main/DetailLogTabView.swift`
+
+- 项目：读取并对齐页面规格、control map、Core API、C1-17 能力规格
+- 结果：通过
+- 证据：S1-13 要求 change_log 时间线、外部修改追加记录、失败 Retry/Diagnostics；C1-17 要求 `ExternalEvent Created`、`detected_creates`、External origin、change_log、cursor；实际测试覆盖 list/tree/detail/log/cursor。
+- 涉及文件：`docs/ux/page-specs/stage-1-mvp/S1-13-detail-log.md`、`docs/core/capability-specs/stage-1-mvp/C1-17-sync-external-created.md`、`apps/macos/AreaMatrixTests/DetailLogExternalCreatedPageFeatureTests.swift`
+
+- 项目：只接入 C1-17 对应 CoreBridge / 状态 / 错误映射
+- 结果：通过
+- 证据：`CoreExternalChangesSyncing.syncExternalCreated` 构造 `.created` 事件并通过 `Task.detached` 调真实 `syncExternalChanges`；失败路径映射 CoreError，`SyncResult.errors` 非空被判失败。
+- 涉及文件：`apps/macos/AreaMatrix/Bridge/CoreExternalChangesSyncing.swift`、`apps/macos/AreaMatrix/Models/MainDetailExternalCreateSyncState.swift`
+
+- 项目：不顺手实现相邻页面
+- 结果：通过
+- 证据：未发现对 S1-14/S1-15 或 control map 外能力的新增闭环；`core/src/**` 无工作区改动。
+- 涉及文件：`git status --short -- core/src` 无输出
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。事件采集、relay、页面消费、CoreBridge、状态展示分层清楚，新增关键文件均低于 500 行。
+- 注释 / rustdoc / 文档同步：通过。当前为 Swift app 层接入，无新增 public Rust API；实现与现有 Core API/UDL 对齐。
+- 错误处理与边界处理：通过。无效相对路径、绝对路径、`../`、非正 fsEventID、`.areamatrix/`、目录事件均有过滤；Core 失败和 partial sync errors 均进入失败状态。
+- 测试与验证覆盖：通过。新增测试覆盖 relay、watcher 过滤、模型刷新、错误映射、partial errors、真实 CoreBridge 集成闭环。
+- 占位、硬编码、mock-only、一次性实现检查：通过。生产路径调用真实 `syncExternalChanges`；测试中的 fixture 只用于单元测试，真实集成测试使用临时 repo + CoreBridge。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：通过，`BUILD SUCCEEDED`
+- 已运行：`./dev test macos`：通过。标准 `xcodebuild test` 被本地 `testmanagerd` sandbox 限制阻断后，按仓库脚本规则复用已构建 XCTest bundle；`xcrun xctest` 通过，296 tests，0 failures。
+- 失败：无产品验证失败。
+- 缺失：未做手工 UI 真机交互截图；本 task 验收已有 build + XCTest + CoreBridge 临时 repo 闭环证据。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS

@@ -312,14 +312,6 @@ actor CoreBridge {
         try requireGeneratedBindings(for: .writeNote)
     }
 
-    func getFSEventCursor() async throws -> Never {
-        try requireGeneratedBindings(for: .getFSEventCursor)
-    }
-
-    func setFSEventCursor(_ cursor: Int64) async throws -> Never {
-        try requireGeneratedBindings(for: .setFSEventCursor)
-    }
-
     func repoPathForDiagnostics() -> String? {
         repoURL?.path
     }

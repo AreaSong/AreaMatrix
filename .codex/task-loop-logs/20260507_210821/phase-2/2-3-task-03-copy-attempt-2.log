@@ -1,0 +1,48 @@
+**一、执行结论**
+
+已完成 `2-3/task-03` repair retry。
+
+**二、执行范围**
+
+单任务：`2-3/task-03`，仅围绕 S1-13 detail-log 的 C1-17 `sync-external-created`。
+
+主要产品改动：
+- 新增真实 external-created event 状态模型：[MainDetailExternalCreateSyncState.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainDetailExternalCreateSyncState.swift:3)
+- 接入 C1-17 CoreBridge 调用、结果校验、list/detail/log 刷新：[MainFileListModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileListModel.swift:116)
+- Core bridge 改为真实 `sync_external_changes Created` 与 cursor API：[CoreExternalChangesSyncing.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreExternalChangesSyncing.swift:3)
+- S1-13 页面显示外部新增同步状态，不新增未定义的手动按钮：[DetailLogTabView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/DetailLogTabView.swift:29)
+- 新增真实 CoreBridge 临时仓库闭环测试：[DetailLogExternalCreatedPageFeatureTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/DetailLogExternalCreatedPageFeatureTests.swift:110)
+
+另有 `.codex/task-loop-*` 与 `tasks/prompts/_shared/progress.json` 运行器状态/日志文件仍在工作区中；产品修复未依赖这些文件通过验收。
+
+**三、完成情况**
+
+- 只处理 S1-13 中 C1-17：通过。移除了之前的 selected-file 伪 created 路径和 `Sync Created` 手动按钮。
+- 读取并交叉核验 UX、control map、Core API、C1-17：通过。
+- 只接入 C1-17 CoreBridge / 状态 / 错误映射：通过。`fsEventID` 来自 `MainExternalCreatedFileEvent`，不再由 `Date()` 合成。
+- 不顺手实现相邻页面/能力：通过。C1-18/C1-19 未实现，watcher 启停/去抖仍按文档属于延后范围。
+- 完成标准：通过。测试证明外部新增文件进入 list/tree/detail/log，并验证 cursor 为真实事件 ID `8001`。
+- Forbidden Touches：通过。`git diff --name-only -- core/src` 与 `git status --short -- core/src` 均为空；未修改 `core/src/**`。
+
+**四、工程质量**
+
+代码结构已收敛：`MainFileListModel.swift` 411 行，`MainRepositoryContentView.swift` 481 行，`DetailLogTabView.swift` 191 行，均低于 500 行；并拆出 `MainFileListState`、`DetailExternalCreateSyncStatusView`、`ImportProgressTableView` 降低视图/模型复杂度。
+
+错误处理已补齐：Core 抛错会映射到 `.failed`；`SyncResult.errors` 非空也会被视为失败，不再展示为成功。没有新增依赖、mock-only 生产路径、硬编码完成态或 synthetic cursor。
+
+**五、验证情况**
+
+已运行并通过：
+- `xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：`BUILD SUCCEEDED`
+- `./dev test macos`：标准 `xcodebuild test` 被本地 sandbox 的 `testmanagerd` 访问限制阻断；脚本按项目规则复用已构建 XCTest bundle 执行 `xcrun xctest`，通过 `293 tests, 0 failures`
+- `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`：`doctor: OK`
+- `python3 tasks/prompts/_shared/prompt_pipeline.py status`：通过，当前 first task 仍为 `2-3/task-03`
+- `git diff --check`：通过
+- Forbidden Touches 检查：`core/src/**` 无 diff、无 status
+
+**六、风险与后续**
+
+剩余风险：本 task 已完成 S1-13 对 C1-17 event 的消费与真实 CoreBridge 闭环；macOS FSEvents watcher 的启动、去抖、事件注入是文档明确的延后范围，不在本 page-feature task 内。
+
+建议下一步：对 `2-3/task-03` 跑 verify-ready 验收；通过后进入 `2-3/task-04`（同页 C1-18 renamed）或由 task-loop 继续队列。
+

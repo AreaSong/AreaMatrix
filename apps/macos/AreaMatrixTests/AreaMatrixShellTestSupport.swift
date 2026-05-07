@@ -134,18 +134,34 @@ actor ShellRecordingInitializedPathValidator: CoreInitializedRepositoryPathValid
 struct ShellExternalRemovalRequest: Equatable {
     var repoPath: String
     var relativePath: String
+    var fsEventID: Int64
 }
 
 actor ShellRecordingExternalChangesSyncer: CoreExternalChangesSyncing {
     private let result: Result<SyncResultSnapshot, Error>
     private var requests: [ShellExternalRemovalRequest] = []
+    private var createdRequests: [ShellExternalRemovalRequest] = []
 
     init(result: Result<SyncResultSnapshot, Error>) {
         self.result = result
     }
 
+    func syncExternalCreated(repoPath: String, relativePath: String, fsEventID: Int64) async throws -> SyncResultSnapshot {
+        createdRequests.append(ShellExternalRemovalRequest(
+            repoPath: repoPath,
+            relativePath: relativePath,
+            fsEventID: fsEventID
+        ))
+        switch result {
+        case .success(let snapshot):
+            return snapshot
+        case .failure(let error):
+            throw error
+        }
+    }
+
     func syncExternalRemoved(repoPath: String, relativePath: String, fsEventID: Int64) async throws -> SyncResultSnapshot {
-        requests.append(ShellExternalRemovalRequest(repoPath: repoPath, relativePath: relativePath))
+        requests.append(ShellExternalRemovalRequest(repoPath: repoPath, relativePath: relativePath, fsEventID: fsEventID))
         switch result {
         case .success(let snapshot):
             return snapshot
@@ -155,6 +171,10 @@ actor ShellRecordingExternalChangesSyncer: CoreExternalChangesSyncing {
     }
 
     func recordedRequests() -> [ShellExternalRemovalRequest] { requests }
+    func recordedCreatedRequests() -> [ShellExternalRemovalRequest] { createdRequests }
+
+    func getFSEventCursor(repoPath: String) async throws -> Int64? { nil }
+    func setFSEventCursor(repoPath: String, lastEventID: Int64) async throws {}
 }
 
 actor ShellRecordingDiagnosticsCollector: CoreDiagnosticsCollecting {

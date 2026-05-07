@@ -287,6 +287,29 @@ enum AreaMatrixDockOpenRelay {
     }
 }
 
+@MainActor
+enum AreaMatrixExternalCreatedFileRelay {
+    static let notification = Notification.Name("AreaMatrixExternalCreatedFileRelay.notification")
+    private static var pendingSignals: [MainExternalCreatedFileSignal] = []
+
+    static func publish(repoPath: String, relativePath: String, fsEventID: Int64) {
+        guard let signal = MainExternalCreatedFileSignal(
+            repoPath: repoPath,
+            relativePath: relativePath,
+            fsEventID: fsEventID
+        ) else { return }
+
+        pendingSignals.append(signal)
+        NotificationCenter.default.post(name: notification, object: nil)
+    }
+
+    static func takePendingSignals() -> [MainExternalCreatedFileSignal] {
+        let signals = pendingSignals
+        pendingSignals.removeAll()
+        return signals
+    }
+}
+
 final class AreaMatrixDockOpenAppDelegate: NSObject, NSApplicationDelegate {
     func application(_ application: NSApplication, open urls: [URL]) {
         AreaMatrixDockOpenRelay.publish(urls)

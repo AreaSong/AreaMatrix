@@ -1,134 +1,6 @@
 import Combine
 import Foundation
 
-enum MainFileSelectionState: Equatable, Sendable {
-    case none
-    case single(Int64)
-    case multiple(Set<Int64>)
-
-    var singleFileID: Int64? {
-        if case .single(let id) = self { return id }
-        return nil
-    }
-
-    var isMultiple: Bool {
-        if case .multiple = self { return true }
-        return false
-    }
-}
-
-enum MainFileActionDestination: Equatable, Sendable {
-    case rename(fileID: Int64)
-    case changeCategory(fileID: Int64)
-    case delete(fileID: Int64)
-
-    var pageID: String {
-        switch self {
-        case .rename:
-            return "S1-33"
-        case .changeCategory:
-            return "S1-35"
-        case .delete:
-            return "S1-34"
-        }
-    }
-
-    var pageTitle: String {
-        switch self {
-        case .rename:
-            return "Rename File"
-        case .changeCategory:
-            return "Change Category"
-        case .delete:
-            return "Move File to Trash?"
-        }
-    }
-
-    var fileID: Int64 {
-        switch self {
-        case .rename(let fileID), .changeCategory(let fileID), .delete(let fileID):
-            return fileID
-        }
-    }
-}
-
-extension MainFileActionDestination: Identifiable {
-    var id: String {
-        "\(pageID)-\(fileID)"
-    }
-}
-
-enum MainListStatusBanner: Equatable, Sendable {
-    case renamedPreservedSelection(fileID: Int64)
-    case removedSelectedFile(fileID: Int64)
-
-    var message: String {
-        switch self {
-        case .renamedPreservedSelection:
-            return "External rename detected. The same file remains selected."
-        case .removedSelectedFile:
-            return "Selected file is missing or was removed outside AreaMatrix."
-        }
-    }
-}
-
-enum MainFileWriteActionDisabledReason: String, Equatable, Sendable {
-    case repoReadOnly = "Repository is read-only"
-    case listLoading = "Current list is loading"
-    case importLocked = "This file is locked by an import"
-}
-
-enum MainFileActionCategoryOptions {
-    static func availableCategories(
-        file: FileEntrySnapshot?,
-        categoryRows: [RepositorySidebarRowSnapshot]
-    ) -> [String] {
-        let categories = categoryRows.compactMap(\.categoryForFileList)
-        let current = file.map { [$0.category] } ?? []
-        return Array(Set(categories + current)).sorted()
-    }
-
-    static func defaultTargetCategory(
-        for file: FileEntrySnapshot?,
-        categoryRows: [RepositorySidebarRowSnapshot]
-    ) -> String {
-        let categories = availableCategories(file: nil, categoryRows: categoryRows)
-        return categories.first { $0 != file?.category } ?? file?.category ?? ""
-    }
-}
-
-enum MainListDiagnosticsState: Equatable, Sendable {
-    case idle
-    case collecting
-    case collected(DiagnosticsSnapshotSnapshot)
-    case failed(CoreErrorMappingSnapshot)
-}
-
-enum MainDetailLogState: Equatable, Sendable {
-    case notLoaded
-    case loading(fileID: Int64)
-    case loaded(fileID: Int64, entries: [ChangeLogEntrySnapshot])
-    case failed(fileID: Int64, CoreErrorMappingSnapshot)
-
-    var isLoading: Bool {
-        if case .loading = self { return true }
-        return false
-    }
-}
-
-enum MainDetailLogDiagnosticsState: Equatable, Sendable {
-    case idle
-    case confirmingPrivacy(fileID: Int64)
-    case collecting(fileID: Int64)
-    case collected(fileID: Int64, DiagnosticsSnapshotSnapshot)
-    case failed(fileID: Int64, CoreErrorMappingSnapshot)
-
-    var isCollecting: Bool {
-        if case .collecting = self { return true }
-        return false
-    }
-}
-
 @MainActor
 final class MainFileListModel: ObservableObject {
     @Published private(set) var files: [FileEntrySnapshot]
@@ -140,6 +12,7 @@ final class MainFileListModel: ObservableObject {
     @Published private(set) var detailErrorMapping: CoreErrorMappingSnapshot?
     @Published private(set) var detailLogState: MainDetailLogState = .notLoaded
     @Published private(set) var detailLogDiagnosticsState: MainDetailLogDiagnosticsState = .idle
+    @Published private(set) var detailExternalCreateSyncState: MainDetailExternalCreateSyncState = .idle
     @Published private(set) var pendingActionDestination: MainFileActionDestination?
     @Published private(set) var statusBanner: MainListStatusBanner?
     @Published private(set) var diagnosticsState: MainListDiagnosticsState = .idle
@@ -150,6 +23,7 @@ final class MainFileListModel: ObservableObject {
     private let fileLister: any CoreFileListing
     private let fileDetailer: any CoreFileDetailing
     private let changeLogLister: any CoreChangeLogListing
+    private let externalChangesSyncer: any CoreExternalChangesSyncing
     private let errorMapper: any CoreErrorMapping
     private let diagnosticsCollector: any CoreDiagnosticsCollecting
     private var currentCategory: String?
@@ -162,6 +36,7 @@ final class MainFileListModel: ObservableObject {
         fileLister: any CoreFileListing,
         fileDetailer: any CoreFileDetailing,
         changeLogLister: any CoreChangeLogListing = CoreBridge(),
+        externalChangesSyncer: any CoreExternalChangesSyncing = CoreBridge(),
         errorMapper: any CoreErrorMapping,
         diagnosticsCollector: any CoreDiagnosticsCollecting = CoreBridge()
     ) {
@@ -173,6 +48,7 @@ final class MainFileListModel: ObservableObject {
         self.fileLister = fileLister
         self.fileDetailer = fileDetailer
         self.changeLogLister = changeLogLister
+        self.externalChangesSyncer = externalChangesSyncer
         self.errorMapper = errorMapper
         self.diagnosticsCollector = diagnosticsCollector
     }
@@ -235,6 +111,24 @@ final class MainFileListModel: ObservableObject {
     func retrySelectedFileChangeLog() async {
         guard let selectedFileID = selection.singleFileID else { return }
         await loadChangeLog(fileID: selectedFileID)
+    }
+
+    func syncExternalCreated(_ event: MainExternalCreatedFileEvent) async {
+        detailExternalCreateSyncState = .syncing(event: event)
+        do {
+            let result = try await externalChangesSyncer.syncExternalCreated(
+                repoPath: repoPath,
+                relativePath: event.relativePath,
+                fsEventID: event.fsEventID
+            )
+            try validateExternalCreatedSyncResult(result, event: event)
+            let createdFileID = try await refreshAfterExternalCreated(event)
+            detailExternalCreateSyncState = .synced(event: event, fileID: createdFileID, result)
+            await loadChangeLog(fileID: createdFileID)
+        } catch {
+            let mappedError = await mapCoreError(error)
+            detailExternalCreateSyncState = .failed(event: event, mappedError)
+        }
     }
 
     func requestDetailLogDiagnosticsPrivacyConfirmation() {
@@ -413,6 +307,41 @@ final class MainFileListModel: ObservableObject {
         }
     }
 
+    private func refreshAfterExternalCreated(_ event: MainExternalCreatedFileEvent) async throws -> Int64 {
+        let loadedFiles = try await reloadFilesForExternalCreated()
+        guard let createdFile = loadedFiles.first(where: { $0.path == event.relativePath }) else {
+            throw CoreError.Internal(message: "created file was not visible after sync: \(event.relativePath)")
+        }
+
+        selection = .single(createdFile.id)
+        selectedFileDetail = createdFile
+        detailErrorMapping = nil
+        isDetailLoading = true
+        await loadDetail(id: createdFile.id)
+        guard selectedFileDetail?.id == createdFile.id, detailErrorMapping == nil else {
+            throw CoreError.Internal(message: "created file detail was not visible after sync: \(event.relativePath)")
+        }
+        return createdFile.id
+    }
+
+    private func reloadFilesForExternalCreated() async throws -> [FileEntrySnapshot] {
+        isLoading = true
+        do {
+            let loadedFiles = try await fileLister.listFiles(
+                repoPath: repoPath,
+                filter: .currentCategory(currentCategory)
+            )
+            files = loadedFiles
+            errorMapping = nil
+            isLoading = false
+            return loadedFiles
+        } catch {
+            errorMapping = await mapListError(error)
+            isLoading = false
+            throw error
+        }
+    }
+
     private func clearDetail() {
         detailGeneration += 1
         selection = .none
@@ -427,6 +356,7 @@ final class MainFileListModel: ObservableObject {
         detailLogGeneration += 1
         detailLogState = .notLoaded
         detailLogDiagnosticsState = .idle
+        detailExternalCreateSyncState = .idle
     }
 
     private func mapListError(_ error: Error) async -> CoreErrorMappingSnapshot {
@@ -445,6 +375,16 @@ final class MainFileListModel: ObservableObject {
         }
 
         return await errorMapper.mapCoreError(CoreError.Internal(message: error.localizedDescription))
+    }
+
+    private func validateExternalCreatedSyncResult(
+        _ result: SyncResultSnapshot,
+        event: MainExternalCreatedFileEvent
+    ) throws {
+        guard result.errors.isEmpty else {
+            let message = result.errors.joined(separator: "; ")
+            throw CoreError.Internal(message: "created event \(event.fsEventID) returned sync errors: \(message)")
+        }
     }
 
     private var currentCategoryDisplayName: String {

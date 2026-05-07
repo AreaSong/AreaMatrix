@@ -3,6 +3,7 @@ import SwiftUI
 
 struct MainWindow: View {
     @StateObject private var model: OnboardingModel
+    @StateObject private var externalCreatedFileWatcher = MainExternalCreatedFileWatcher()
     private let importProgressControlState: ImportProgressControlState
 
     init(model: OnboardingModel = OnboardingModel()) {
@@ -53,6 +54,16 @@ struct MainWindow: View {
         .onReceive(NotificationCenter.default.publisher(for: AreaMatrixDockOpenRelay.notification)) { _ in
             model.consumePendingDockOpenRequests()
         }
+        .onReceive(NotificationCenter.default.publisher(for: AreaMatrixExternalCreatedFileRelay.notification)) { _ in
+            model.consumePendingExternalCreatedFileSignals()
+        }
+        .task(id: activeMainRepositoryPath) {
+            if let activeMainRepositoryPath {
+                externalCreatedFileWatcher.start(repoPath: activeMainRepositoryPath)
+            } else {
+                externalCreatedFileWatcher.stop()
+            }
+        }
         .sheet(item: $model.pendingImportEntry) { request in
             ImportEntrySheetView(
                 request: request,
@@ -94,6 +105,15 @@ struct MainWindow: View {
         }
 
         return "AreaMatrix will not create .areamatrix/ or save this repository selection."
+    }
+
+    private var activeMainRepositoryPath: String? {
+        switch model.route {
+        case .mainEmpty(let opening), .mainList(let opening):
+            return opening.config.repoPath
+        default:
+            return nil
+        }
     }
 
     @ViewBuilder
@@ -314,7 +334,9 @@ struct MainWindow: View {
                 onRetryCurrentList: { Task { await model.retryConfigurationLoad() } },
                 onCollectDiagnostics: { await model.collectMainListDiagnostics(opening: opening) },
                 onShowInFinder: { model.showMainListFileInFinder(opening: opening, relativePath: $0) },
-                onCopyPath: { model.copyMainListPath(opening: opening, relativePath: $0) }
+                onCopyPath: { model.copyMainListPath(opening: opening, relativePath: $0) },
+                externalCreatedEvent: model.externalCreatedEvent(for: opening),
+                onExternalCreatedEventHandled: model.finishExternalCreatedFileEvent
             )
         case .mainList(let opening):
             MainRepositoryContentView(
@@ -333,7 +355,9 @@ struct MainWindow: View {
                 onRetryCurrentList: { Task { await model.retryConfigurationLoad() } },
                 onCollectDiagnostics: { await model.collectMainListDiagnostics(opening: opening) },
                 onShowInFinder: { model.showMainListFileInFinder(opening: opening, relativePath: $0) },
-                onCopyPath: { model.copyMainListPath(opening: opening, relativePath: $0) }
+                onCopyPath: { model.copyMainListPath(opening: opening, relativePath: $0) },
+                externalCreatedEvent: model.externalCreatedEvent(for: opening),
+                onExternalCreatedEventHandled: model.finishExternalCreatedFileEvent
             )
         case .configurationError(let failure):
             ConfigurationErrorView(
@@ -360,6 +384,8 @@ struct MainWindow: View {
                 onCollectDiagnostics: { await model.collectMainListDiagnostics(opening: state.sourceOpening) },
                 onShowInFinder: { model.showMainListFileInFinder(opening: state.sourceOpening, relativePath: $0) },
                 onCopyPath: { model.copyMainListPath(opening: state.sourceOpening, relativePath: $0) },
+                externalCreatedEvent: model.externalCreatedEvent(for: state.sourceOpening),
+                onExternalCreatedEventHandled: model.finishExternalCreatedFileEvent,
                 importProgressItems: state.items
             )
             ImportProgressView(

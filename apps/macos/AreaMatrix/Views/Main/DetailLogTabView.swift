@@ -20,6 +20,7 @@ struct DetailLogTabView: View {
     let selection: MainFileSelectionState
     let detailLogState: MainDetailLogState
     let diagnosticsState: MainDetailLogDiagnosticsState
+    let externalCreateSyncState: MainDetailExternalCreateSyncState
     let onRefreshChangeLog: () -> Void
     let onRequestDiagnostics: () -> Void
     let onConfirmDiagnostics: () -> Void
@@ -28,6 +29,7 @@ struct DetailLogTabView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             header
+            DetailExternalCreateSyncStatusView(state: externalCreateSyncState)
             content
         }
         .task(id: selection.singleFileID) {
@@ -47,7 +49,7 @@ struct DetailLogTabView: View {
             }
             Spacer()
             Button("Refresh", action: onRefreshChangeLog)
-                .disabled(detailLogState.isLoading)
+                .disabled(detailLogState.isLoading || externalCreateSyncState.isSyncing)
         }
     }
 

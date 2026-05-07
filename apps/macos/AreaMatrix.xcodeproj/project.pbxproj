@@ -45,14 +45,18 @@
 		0A00000000000000000001A4 /* ImportEntrySheetHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001A5 /* ImportEntrySheetHelpers.swift */; };
 		0A00000000000000000001AE /* ImportBatchOverviewSections.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001AF /* ImportBatchOverviewSections.swift */; };
 		0A000000000000000000012A /* MainEmptyImportEntryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000012B /* MainEmptyImportEntryTests.swift */; };
+		0A0000000000000000000228 /* MainExternalCreatedFileWatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000229 /* MainExternalCreatedFileWatcher.swift */; };
 		0A0000000000000000000130 /* MainFileListModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000131 /* MainFileListModel.swift */; };
+		0A0000000000000000000222 /* MainFileListState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000223 /* MainFileListState.swift */; };
 		0A0000000000000000000132 /* MainListFilesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000133 /* MainListFilesTests.swift */; };
 		0A0000000000000000000200 /* DetailMetaPageFeatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000201 /* DetailMetaPageFeatureTests.swift */; };
+		0A0000000000000000000202 /* DetailLogExternalCreatedPageFeatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000203 /* DetailLogExternalCreatedPageFeatureTests.swift */; };
 		0A0000000000000000000134 /* MainListVisibleFileFiltering.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000135 /* MainListVisibleFileFiltering.swift */; };
 		0A0000000000000000000136 /* MainListIntegrationFilterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000137 /* MainListIntegrationFilterTests.swift */; };
 		0A0000000000000000000138 /* MainListIntegrationClosureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000139 /* MainListIntegrationClosureTests.swift */; };
 		0A000000000000000000013C /* MainRepositoryDetailPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000013D /* MainRepositoryDetailPane.swift */; };
 		0A0000000000000000000210 /* DetailLogTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000211 /* DetailLogTabView.swift */; };
+		0A0000000000000000000224 /* DetailExternalCreateSyncStatusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000225 /* DetailExternalCreateSyncStatusView.swift */; };
 		0A000000000000000000013E /* MainFileActionRoutingSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000013F /* MainFileActionRoutingSheet.swift */; };
 		0A0000000000000000000140 /* RenameFileSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000141 /* RenameFileSheet.swift */; };
 		0A0000000000000000000142 /* ChangeCategorySheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000143 /* ChangeCategorySheet.swift */; };
@@ -66,6 +70,8 @@
 		0A0000000000000000000152 /* MainLoadingFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000153 /* MainLoadingFixtures.swift */; };
 		0A0000000000000000000154 /* InitDoneTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000155 /* InitDoneTestSupport.swift */; };
 		0A0000000000000000000156 /* CoreExternalChangesSyncing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000157 /* CoreExternalChangesSyncing.swift */; };
+		0A0000000000000000000220 /* MainDetailExternalCreateSyncState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000221 /* MainDetailExternalCreateSyncState.swift */; };
+		0A0000000000000000000226 /* MainExternalCreatedFileActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000227 /* MainExternalCreatedFileActions.swift */; };
 		0A00000000000000000001E2 /* CoreChangeLogListing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001E3 /* CoreChangeLogListing.swift */; };
 		0A0000000000000000000158 /* MainRepoExternalRemovalActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000159 /* MainRepoExternalRemovalActions.swift */; };
 		0A000000000000000000015A /* MainRepoExternalRemovalTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000015B /* MainRepoExternalRemovalTests.swift */; };
@@ -200,14 +206,18 @@
 		0A00000000000000000001A5 /* ImportEntrySheetHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/ImportEntrySheetHelpers.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000001AF /* ImportBatchOverviewSections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/ImportBatchOverviewSections.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000012B /* MainEmptyImportEntryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/MainEmptyImportEntryTests.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000229 /* MainExternalCreatedFileWatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/App/MainExternalCreatedFileWatcher.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000131 /* MainFileListModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/MainFileListModel.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000223 /* MainFileListState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/MainFileListState.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000133 /* MainListFilesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/MainListFilesTests.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000201 /* DetailMetaPageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/DetailMetaPageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000203 /* DetailLogExternalCreatedPageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/DetailLogExternalCreatedPageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000135 /* MainListVisibleFileFiltering.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/MainListVisibleFileFiltering.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000137 /* MainListIntegrationFilterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/MainListIntegrationFilterTests.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000139 /* MainListIntegrationClosureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/MainListIntegrationClosureTests.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000013D /* MainRepositoryDetailPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/MainRepositoryDetailPane.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000211 /* DetailLogTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/DetailLogTabView.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000225 /* DetailExternalCreateSyncStatusView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/DetailExternalCreateSyncStatusView.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000013F /* MainFileActionRoutingSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/MainFileActionRoutingSheet.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000141 /* RenameFileSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/RenameFileSheet.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000143 /* ChangeCategorySheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/ChangeCategorySheet.swift; sourceTree = SOURCE_ROOT; };
@@ -221,6 +231,8 @@
 		0A0000000000000000000153 /* MainLoadingFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/MainLoadingFixtures.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000155 /* InitDoneTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/InitDoneTestSupport.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000157 /* CoreExternalChangesSyncing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/CoreExternalChangesSyncing.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000221 /* MainDetailExternalCreateSyncState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/MainDetailExternalCreateSyncState.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000227 /* MainExternalCreatedFileActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/MainExternalCreatedFileActions.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000001E3 /* CoreChangeLogListing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/CoreChangeLogListing.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000159 /* MainRepoExternalRemovalActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/MainRepoExternalRemovalActions.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000015B /* MainRepoExternalRemovalTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/MainRepoExternalRemovalTests.swift; sourceTree = SOURCE_ROOT; };
@@ -362,6 +374,7 @@
 			children = (
 				0A0000000000000000000013 /* AreaMatrixApp.swift */,
 				0A0000000000000000000125 /* AppPlatformServices.swift */,
+				0A0000000000000000000229 /* MainExternalCreatedFileWatcher.swift */,
 				0A0000000000000000000015 /* AreaMatrixAppSmokeTests.swift */,
 			);
 			name = App;
@@ -374,6 +387,7 @@
 				0A00000000000000000000D1 /* MainRepositoryContentView.swift */,
 				0A000000000000000000013D /* MainRepositoryDetailPane.swift */,
 				0A0000000000000000000211 /* DetailLogTabView.swift */,
+				0A0000000000000000000225 /* DetailExternalCreateSyncStatusView.swift */,
 				0A000000000000000000013F /* MainFileActionRoutingSheet.swift */,
 				0A0000000000000000000141 /* RenameFileSheet.swift */,
 				0A0000000000000000000143 /* ChangeCategorySheet.swift */,
@@ -469,6 +483,9 @@
 				0A00000000000000000001DF /* ImportResultRouteActions.swift */,
 				0A0000000000000000000123 /* OnboardingModelInputs.swift */,
 				0A0000000000000000000131 /* MainFileListModel.swift */,
+				0A0000000000000000000223 /* MainFileListState.swift */,
+				0A0000000000000000000221 /* MainDetailExternalCreateSyncState.swift */,
+				0A0000000000000000000227 /* MainExternalCreatedFileActions.swift */,
 				0A0000000000000000000135 /* MainListVisibleFileFiltering.swift */,
 				0A0000000000000000000147 /* MainLoadingState.swift */,
 				0A000000000000000000014D /* StartupRecoveryModels.swift */,
@@ -533,6 +550,7 @@
 					0A00000000000000000001ED /* ImportSingleFileNameConflictCoreTests.swift */,
 					0A0000000000000000000133 /* MainListFilesTests.swift */,
 					0A0000000000000000000201 /* DetailMetaPageFeatureTests.swift */,
+					0A0000000000000000000203 /* DetailLogExternalCreatedPageFeatureTests.swift */,
 				0A0000000000000000000137 /* MainListIntegrationFilterTests.swift */,
 				0A0000000000000000000139 /* MainListIntegrationClosureTests.swift */,
 				0A000000000000000000014B /* MainLoadingAdoptExistingTests.swift */,
@@ -666,6 +684,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				0A0000000000000000000002 /* AreaMatrixApp.swift in Sources */,
+				0A0000000000000000000228 /* MainExternalCreatedFileWatcher.swift in Sources */,
 				0A0000000000000000000003 /* MainWindow.swift in Sources */,
 				0A0000000000000000000005 /* CoreBridge.swift in Sources */,
 				0A0000000000000000000006 /* AppShellModel.swift in Sources */,
@@ -722,6 +741,7 @@
 				0A00000000000000000001DA /* MainCurrentListErrorPane.swift in Sources */,
 				0A000000000000000000013C /* MainRepositoryDetailPane.swift in Sources */,
 				0A0000000000000000000210 /* DetailLogTabView.swift in Sources */,
+				0A0000000000000000000224 /* DetailExternalCreateSyncStatusView.swift in Sources */,
 				0A000000000000000000013E /* MainFileActionRoutingSheet.swift in Sources */,
 				0A0000000000000000000140 /* RenameFileSheet.swift in Sources */,
 				0A0000000000000000000142 /* ChangeCategorySheet.swift in Sources */,
@@ -748,6 +768,9 @@
 				0A0000000000000000000170 /* CoreImporting.swift in Sources */,
 				0A0000000000000000000156 /* CoreExternalChangesSyncing.swift in Sources */,
 				0A00000000000000000001E2 /* CoreChangeLogListing.swift in Sources */,
+				0A0000000000000000000222 /* MainFileListState.swift in Sources */,
+				0A0000000000000000000220 /* MainDetailExternalCreateSyncState.swift in Sources */,
+				0A0000000000000000000226 /* MainExternalCreatedFileActions.swift in Sources */,
 				0A0000000000000000000158 /* MainRepoExternalRemovalActions.swift in Sources */,
 				0A0000000000000000000162 /* MainRepoErrorActions.swift in Sources */,
 			);
@@ -799,6 +822,7 @@
 					0A00000000000000000001EC /* ImportSingleFileNameConflictCoreTests.swift in Sources */,
 					0A0000000000000000000132 /* MainListFilesTests.swift in Sources */,
 					0A0000000000000000000200 /* DetailMetaPageFeatureTests.swift in Sources */,
+					0A0000000000000000000202 /* DetailLogExternalCreatedPageFeatureTests.swift in Sources */,
 				0A0000000000000000000136 /* MainListIntegrationFilterTests.swift in Sources */,
 				0A0000000000000000000138 /* MainListIntegrationClosureTests.swift in Sources */,
 				0A000000000000000000014A /* MainLoadingAdoptExistingTests.swift in Sources */,

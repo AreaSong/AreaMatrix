@@ -16,6 +16,8 @@ struct MainRepositoryContentView: View {
     let onCollectDiagnostics: () async -> Void
     let onShowInFinder: (String) -> Void
     let onCopyPath: (String) -> Void
+    let externalCreatedEvent: MainExternalCreatedFileEvent?
+    let onExternalCreatedEventHandled: (MainExternalCreatedFileEvent) -> Void
     let importProgressItems: [ImportBatchProgressSnapshot.Item]
     @StateObject private var fileListModel: MainFileListModel
     @State private var selectedSidebarID: String = "inbox"
@@ -47,6 +49,11 @@ struct MainRepositoryContentView: View {
             guard state == .list else { return }
             selectedFileIDs = []
             await fileListModel.loadCurrentCategory(selectedSidebarRow.categoryForFileList)
+        }
+        .task(id: externalCreatedEvent?.id) {
+            guard let externalCreatedEvent else { return }
+            await fileListModel.syncExternalCreated(externalCreatedEvent)
+            onExternalCreatedEventHandled(externalCreatedEvent)
         }
         .onChange(of: selectedFileIDs) { _, ids in
             if !ids.isEmpty {
@@ -173,10 +180,13 @@ struct MainRepositoryContentView: View {
         onCollectDiagnostics: @escaping () async -> Void = {},
         onShowInFinder: @escaping (String) -> Void = { _ in },
         onCopyPath: @escaping (String) -> Void = { _ in },
+        externalCreatedEvent: MainExternalCreatedFileEvent? = nil,
+        onExternalCreatedEventHandled: @escaping (MainExternalCreatedFileEvent) -> Void = { _ in },
         importProgressItems: [ImportBatchProgressSnapshot.Item] = [],
         fileLister: any CoreFileListing = CoreBridge(),
         fileDetailer: any CoreFileDetailing = CoreBridge(),
         changeLogLister: any CoreChangeLogListing = CoreBridge(),
+        externalChangesSyncer: any CoreExternalChangesSyncing = CoreBridge(),
         categoryPredictor: any CoreCategoryPredicting = CoreBridge(),
         errorMapper: any CoreErrorMapping = CoreBridge(),
         diagnosticsCollector: any CoreDiagnosticsCollecting = CoreBridge()
@@ -190,6 +200,8 @@ struct MainRepositoryContentView: View {
         self.onCollectDiagnostics = onCollectDiagnostics
         self.onShowInFinder = onShowInFinder
         self.onCopyPath = onCopyPath
+        self.externalCreatedEvent = externalCreatedEvent
+        self.onExternalCreatedEventHandled = onExternalCreatedEventHandled
         self.importProgressItems = importProgressItems
         _dropPreviewModel = StateObject(wrappedValue: ImportDropPreviewModel(
             repoPath: opening.config.repoPath,
@@ -200,6 +212,7 @@ struct MainRepositoryContentView: View {
             fileLister: fileLister,
             fileDetailer: fileDetailer,
             changeLogLister: changeLogLister,
+            externalChangesSyncer: externalChangesSyncer,
             errorMapper: errorMapper,
             diagnosticsCollector: diagnosticsCollector
         ))
@@ -287,7 +300,7 @@ struct MainRepositoryContentView: View {
 
     private var fileTable: some View {
         VStack(spacing: 8) {
-            importProgressTable
+            ImportProgressTableView(rows: importProgressRows, selection: $selectedImportProgressIDs)
             fileTableContent
         }
         .overlay {
@@ -295,28 +308,6 @@ struct MainRepositoryContentView: View {
                 Text("No files in this category")
                     .foregroundStyle(.secondary)
             }
-        }
-    }
-
-    @ViewBuilder
-    private var importProgressTable: some View {
-        if !importProgressRows.isEmpty {
-            Table(importProgressRows, selection: $selectedImportProgressIDs) {
-                TableColumn("Importing") { row in
-                    Text(row.displayName)
-                        .lineLimit(1)
-                }
-                TableColumn("Target") { row in
-                    Text(row.categoryPathDisplay)
-                        .lineLimit(1)
-                        .foregroundStyle(.secondary)
-                }
-                TableColumn("Status") { row in
-                    Text(row.phaseText)
-                        .monospacedDigit()
-                }
-            }
-            .frame(minHeight: 96, idealHeight: importProgressTableHeight, maxHeight: importProgressTableHeight)
         }
     }
 
@@ -365,10 +356,6 @@ struct MainRepositoryContentView: View {
 
     private var importProgressRows: [ImportProgressListRow] {
         importProgressItems.map(ImportProgressListRow.init)
-    }
-
-    private var importProgressTableHeight: CGFloat {
-        CGFloat(min(max(importProgressRows.count, 1), 4)) * 34 + 34
     }
 
     @ViewBuilder
@@ -460,6 +447,7 @@ struct MainRepositoryContentView: View {
             selectedFileDetail: fileListModel.selectedFileDetail,
             detailLogState: fileListModel.detailLogState,
             detailLogDiagnosticsState: fileListModel.detailLogDiagnosticsState,
+            detailExternalCreateSyncState: fileListModel.detailExternalCreateSyncState,
             selectedImportProgressRow: selectedImportProgressRow,
             onRetrySelectedFileDetail: {
                 Task {

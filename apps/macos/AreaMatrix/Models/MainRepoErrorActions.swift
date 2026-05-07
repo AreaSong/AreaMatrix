@@ -8,6 +8,7 @@ extension OnboardingModel {
         mainRepoLastOpenedAt = openedAt
         route = Self.mainRoute(for: opening)
         consumeQueuedDockImportIfPossible()
+        consumePendingExternalCreatedFileSignals()
     }
 
     @MainActor
