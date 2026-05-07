@@ -81,6 +81,17 @@ struct MainRepositoryDetailPane: View {
                     .font(.system(.caption, design: .monospaced))
                     .textSelection(.enabled)
             }
+            Divider()
+            DetailLogTabView(
+                selection: selection,
+                detailLogState: detailLogState,
+                diagnosticsState: detailLogDiagnosticsState,
+                externalCreateSyncState: detailExternalCreateSyncState,
+                onRefreshChangeLog: onRefreshChangeLog,
+                onRequestDiagnostics: onRequestDetailLogDiagnostics,
+                onConfirmDiagnostics: onConfirmDetailLogDiagnostics,
+                onCancelDiagnostics: onCancelDetailLogDiagnostics
+            )
         }
         .padding(18)
         .accessibilityElement(children: .contain)

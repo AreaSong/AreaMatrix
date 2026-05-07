@@ -118,9 +118,11 @@ final class MainFileListModel: ObservableObject {
         do {
             let result = try await syncExternalChange(event)
             try validateExternalSyncResult(result, event: event)
-            let fileID = try await refreshAfterExternalSync(event)
+            let fileID = try await refreshAfterExternalSync(event, result: result)
             detailExternalCreateSyncState = .synced(event: event, fileID: fileID, result)
-            await loadChangeLog(fileID: fileID)
+            if let fileID {
+                await loadChangeLog(fileID: fileID)
+            }
         } catch {
             let mappedError = await mapCoreError(error)
             detailExternalCreateSyncState = .failed(event: event, mappedError)
@@ -317,11 +319,24 @@ final class MainFileListModel: ObservableObject {
                 relativePath: event.relativePath,
                 fsEventID: event.fsEventID
             )
+        case .removed:
+            return try await externalChangesSyncer.syncExternalRemoved(
+                repoPath: repoPath,
+                relativePath: event.relativePath,
+                fsEventID: event.fsEventID
+            )
         }
     }
 
-    private func refreshAfterExternalSync(_ event: MainExternalCreatedFileEvent) async throws -> Int64 {
-        let loadedFiles = try await reloadFilesForExternalCreated()
+    private func refreshAfterExternalSync(
+        _ event: MainExternalCreatedFileEvent,
+        result: SyncResultSnapshot
+    ) async throws -> Int64? {
+        if event.kind == .removed {
+            return try await refreshAfterExternalRemovedSync(event, result: result)
+        }
+
+        let loadedFiles = try await reloadFilesForExternalSync()
         guard let file = loadedFiles.first(where: { $0.path == event.relativePath }) else {
             throw CoreError.Internal(
                 message: "\(event.kind.displayName) file was not visible after sync: \(event.relativePath)"
@@ -344,7 +359,32 @@ final class MainFileListModel: ObservableObject {
         return file.id
     }
 
-    private func reloadFilesForExternalCreated() async throws -> [FileEntrySnapshot] {
+    private func refreshAfterExternalRemovedSync(
+        _ event: MainExternalCreatedFileEvent,
+        result: SyncResultSnapshot
+    ) async throws -> Int64? {
+        let removedFileID = selectedFileIDForExternalRemoval(path: event.relativePath)
+        let loadedFiles = try await reloadFilesForExternalSync()
+        if removedFileID == nil {
+            return nil
+        }
+        guard result.detectedDeletes > 0 else {
+            throw CoreError.Internal(
+                message: "removed event \(event.fsEventID) did not report a detected delete: \(event.relativePath)"
+            )
+        }
+        guard let removedFileID else { return nil }
+
+        files = loadedFiles.filter { $0.id != removedFileID }
+        selection = .single(removedFileID)
+        selectedFileDetail = nil
+        detailErrorMapping = CoreErrorMappingSnapshot.missingFromExternalChange(fileID: removedFileID)
+        isDetailLoading = false
+        statusBanner = .removedSelectedFile(fileID: removedFileID)
+        return removedFileID
+    }
+
+    private func reloadFilesForExternalSync() async throws -> [FileEntrySnapshot] {
         isLoading = true
         do {
             let loadedFiles = try await fileLister.listFiles(
@@ -416,6 +456,13 @@ final class MainFileListModel: ObservableObject {
 
     private func cachedFile(id: Int64) -> FileEntrySnapshot? {
         files.first { $0.id == id }
+    }
+
+    private func selectedFileIDForExternalRemoval(path: String) -> Int64? {
+        if let selectedFileDetail, selectedFileDetail.path == path {
+            return selectedFileDetail.id
+        }
+        return files.first { $0.path == path }?.id
     }
 }
 

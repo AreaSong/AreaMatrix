@@ -54,6 +54,9 @@ struct DetailExternalCreateSyncStatusView: View {
         result: SyncResultSnapshot
     ) -> String {
         let fileText = fileID.map { "file #\($0)" } ?? "file not selected"
-        return "\(event.relativePath) · \(fileText) · created \(result.detectedCreates) · renamed \(result.detectedRenames)"
+        return """
+        \(event.relativePath) · \(fileText) · created \(result.detectedCreates) · \
+        renamed \(result.detectedRenames) · deleted \(result.detectedDeletes)
+        """
     }
 }

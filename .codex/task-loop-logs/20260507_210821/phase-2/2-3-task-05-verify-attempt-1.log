@@ -1,0 +1,60 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`2-3/task-05`
+- Task：[/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-3-detail-settings/task-05-s1-13-c1-19-sync-external-removed.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-3-detail-settings/task-05-s1-13-c1-19-sync-external-removed.md:1)
+- Exact Docs：`S1-13-detail-log.md`、`mvp-control-map.md`、`core-api.md`、`C1-19-sync-external-removed.md`
+- Existing / Expected：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`apps/macos/AreaMatrix.xcodeproj/project.pbxproj`、`core/area_matrix.udl`
+- Forbidden Touches：`core/src/**` 只读检查，无本轮 diff/status 改动
+
+三、完成度摘要
+
+- 已覆盖项数：12
+- 未覆盖项数：0
+- 通过项数：12
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+| 项目 | 结果 | 证据 | 涉及文件 |
+|---|---|---|---|
+| 只处理 S1-13 + C1-19 | 通过 | Task 绑定 S1-13/C1-19；control map 声明 S1-13 包含 C1-19 且为 Real Core | [task](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-3-detail-settings/task-05-s1-13-c1-19-sync-external-removed.md:16), [mvp-control-map.md](/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:28) |
+| C1-19 文档语义 | 通过 | Removed event 输入、`detected_deletes` 输出、DB soft delete、`change_log.deleted`、不删除其他文件均有规格 | [C1-19](/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-19-sync-external-removed.md:15) |
+| Core API / UDL 对齐 | 通过 | `sync_external_changes`、`ExternalEventKind.Removed`、`SyncResult.detected_deletes` 在 UDL 存在 | [core/area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:89) |
+| Swift CoreBridge 接入 | 通过 | `syncExternalRemoved` 包装 `.removed` 并调用真实 `syncExternalChanges` | [CoreExternalChangesSyncing.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreExternalChangesSyncing.swift:28) |
+| 用户可见触发 | 通过 | FSEvents `ItemRemoved` 转为 `.removed` signal，过滤目录和 `.areamatrix` 内部路径，经 Relay 进入当前主窗口 | [MainExternalCreatedFileWatcher.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/App/MainExternalCreatedFileWatcher.swift:94), [AreaMatrixApp.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/App/AreaMatrixApp.swift:295) |
+| S1-13 Log 刷新闭环 | 通过 | removed sync 后刷新列表、保留 deleted file_id 选择、显示 missing detail，并加载该 file_id 的 change log | [MainFileListModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileListModel.swift:116), [MainFileListModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileListModel.swift:362) |
+| 用户可见状态 | 通过 | Log tab 显示 sync 状态、Refresh、Retry、Collect Diagnostics，错误态保留技术详情 | [DetailLogTabView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/DetailLogTabView.swift:32), [DetailExternalCreateSyncStatusView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/DetailExternalCreateSyncStatusView.swift:10) |
+| 不用 mock 伪造闭环 | 通过 | 生产路径调用真实 CoreBridge；测试包含真实临时 repo、真实文件删除、真实 CoreBridge sync/list/log/cursor 断言 | [DetailLogExternalRemovedPageFeatureTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/DetailLogExternalRemovedPageFeatureTests.swift:179) |
+| 未越界实现其他能力 | 通过 | 当前新增测试和生产路径仅对 `.removed` 分支新增/验收；created/renamed 已有任务路径未作为本任务阻断 | [DetailLogExternalRemovedPageFeatureTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/DetailLogExternalRemovedPageFeatureTests.swift:289) |
+| Expected New Paths | 通过 | macOS 生产文件、测试文件、pbxproj 均落地；测试 target 已包含 `DetailLogExternalRemovedPageFeatureTests` | [project.pbxproj](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj:55) |
+| Forbidden Touches | 通过 | `git status --short -- core/src` 无输出；diff name-only 仅显示允许的 macOS/pbxproj 路径 | 命令证据 |
+| Manifest 验证命令 | 通过 | `xcodebuild build ... CODE_SIGNING_ALLOWED=NO` 结束为 `** BUILD SUCCEEDED **` | 命令证据 |
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。Watcher/Relay/Model/View/CoreBridge 分层清楚，View 未直接调 UniFFI，CoreBridge 是唯一入口。
+- 注释 / rustdoc / 文档同步：通过。C1-19 Core 行为已有 rustdoc 说明 soft delete、`change_log.deleted` 和不删除用户文件边界。
+- 错误处理与边界处理：通过。sync failure、`detectedDeletes == 0`、非法 relative path、目录和 `.areamatrix` 内部事件均有处理或测试。
+- 测试与验证覆盖：通过。新增 page-feature tests 覆盖 relay、watcher、model、失败映射、真实 CoreBridge 删除闭环。
+- 占位、硬编码、mock-only、一次性实现检查：通过。生产路径未发现 mock-only；测试 fixture 仅用于测试断言，另有真实 CoreBridge 集成证据。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：通过，`BUILD SUCCEEDED`。
+- 已运行：`./dev test macos`：通过。标准 `xcodebuild test` 被本地 `testmanagerd` sandbox 通信阻断，脚本按 repo 规则复用已构建 XCTest bundle；`xcrun xctest` 执行 310 tests，0 failures。
+- 缺失：未运行远端 CI；本次是本地单任务只读验收。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。S1-13 中 C1-19 外部删除同步功能可由真实文件事件触发，能进入真实 CoreBridge/Core 闭环，并可在 Log tab 追溯 deleted change log。
+
+VERIFY_RESULT: PASS

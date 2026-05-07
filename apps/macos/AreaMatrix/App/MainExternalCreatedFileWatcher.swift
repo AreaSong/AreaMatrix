@@ -96,6 +96,8 @@ final class MainExternalCreatedFileWatcher: ObservableObject {
             syncKind = .renamed
         } else if flags & FSEventStreamEventFlags(kFSEventStreamEventFlagItemCreated) != 0 {
             syncKind = .created
+        } else if flags & FSEventStreamEventFlags(kFSEventStreamEventFlagItemRemoved) != 0 {
+            syncKind = .removed
         } else {
             return nil
         }

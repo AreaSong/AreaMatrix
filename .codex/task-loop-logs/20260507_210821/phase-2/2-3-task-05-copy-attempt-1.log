@@ -1,0 +1,37 @@
+一、执行结论
+
+- 已完成：`2-3/task-05` 的 S1-13 + C1-19 `sync-external-removed` 页面功能已接入真实 CoreBridge 闭环。
+
+二、执行范围
+
+修改文件：
+- [MainExternalCreatedFileWatcher.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/App/MainExternalCreatedFileWatcher.swift:99)：识别 `ItemRemoved` FSEvents。
+- [MainDetailExternalCreateSyncState.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainDetailExternalCreateSyncState.swift:3)：新增 `.removed` 事件类型。
+- [MainFileListModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileListModel.swift:116)：removed 事件调用 `syncExternalRemoved`，刷新列表、保留已删除 file_id 的详情错误状态并加载 change log。
+- [DetailExternalCreateSyncStatusView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/DetailExternalCreateSyncStatusView.swift:51)：同步结果展示 `deleted` 计数。
+- [MainRepositoryDetailPane.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryDetailPane.swift:84)：详情缺失错误下仍显示 Log tab。
+- [DetailLogExternalRemovedPageFeatureTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/DetailLogExternalRemovedPageFeatureTests.swift:4)：新增 S1-13/C1-19 覆盖测试。
+- [project.pbxproj](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj:52)：加入新增测试文件。
+
+三、完成情况
+
+- 核对清单：4/4 完成，只处理 S1-13 中 C1-19 removed 同步功能。
+- 完成标准：3/3 满足，用户可见链路可触发，测试覆盖真实 `CoreBridge.syncExternalRemoved`，未使用 mock 伪造最终闭环。
+- Forbidden Touches：未触碰 `core/src/**`。
+
+四、工程质量
+
+代码沿用现有 `MainFileListModel`、watcher、CoreBridge 注入模式，没有新增依赖或跨能力抽象。错误路径包括 Core 同步失败、`detectedDeletes == 0` 异常、非法 removed event、缺失文件仍可看日志；测试覆盖 watcher/relay/UI model/真实 CoreBridge。未新增 rustdoc，因本次没有新增 Rust public API。
+
+五、验证情况
+
+已运行并通过：
+- `xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+- `./dev test macos`
+
+说明：`./dev test macos` 中 `xcodebuild test` 实际跑到 `AreaMatrixTests.xctest`，310 个测试 0 failures；随后被本地 sandbox 的 `testmanagerd` 通信限制阻断，脚本按 repo validation driver 规则复用已构建 XCTest bundle，`xcrun xctest` 通过。
+
+六、风险与后续
+
+剩余风险：未做人工 UI 点击验收，只完成 build/test 级验证。当前工作区还显示 `.codex/task-loop-runs/20260507_210821/summary.json` 与 `tasks/prompts/_shared/progress.json` 为 dirty 运行状态文件，未纳入本任务改动清单。建议下一个任务继续执行 `2-3/task-06` 页面 integration verify，检查 S1-13 的 C1-13/C1-17/C1-18/C1-19 整页覆盖。
+

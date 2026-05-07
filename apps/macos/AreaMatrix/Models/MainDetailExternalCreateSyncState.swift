@@ -3,6 +3,7 @@ import Foundation
 enum MainExternalSyncEventKind: String, Equatable, Sendable {
     case created
     case renamed
+    case removed
 
     var displayName: String {
         switch self {
@@ -10,6 +11,8 @@ enum MainExternalSyncEventKind: String, Equatable, Sendable {
             return "created"
         case .renamed:
             return "renamed"
+        case .removed:
+            return "removed"
         }
     }
 }
