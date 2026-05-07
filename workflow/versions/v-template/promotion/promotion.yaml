@@ -1,0 +1,72 @@
+version: v-template
+status: blocked
+kind: promotion-preview
+mode: preview
+target_kind: preview-only
+writes_live_queue: false
+template_reference: true
+apply_allowed: false
+target_queue: tasks/prompts
+phase: phase-5
+batch: 5-1
+batch_slug: template-reference
+start_task: 1
+root_dependency: 4-3/task-165
+blocked: true
+gate_message: promotion blocked: v-template is a template reference and cannot apply to live tasks/prompts/**
+tasks:
+  - semantic_id: template-docs-contract/docs-baseline
+    live_label: 5-1/task-01
+    feature: template-docs-contract
+    task_key: docs-baseline
+    title: Validate Exact Docs baseline and drift checks for the template reference.
+    task_file: tasks/prompts/phase-5/5-1-template-reference/task-01-docs-baseline.md
+    manifest: tasks/prompts/_shared/manifests/phase-5.md
+    copy_ready: tasks/prompts/_shared/copy-ready/phase-5/5-1-task-01.md
+    verify_ready: tasks/prompts/_shared/verify-ready/phase-5/5-1-task-01.md
+    depends_on:
+      - 4-3/task-165
+  - semantic_id: template-docs-contract/discussion-gate
+    live_label: 5-1/task-02
+    feature: template-docs-contract
+    task_key: discussion-gate
+    title: Validate discussion decisions and boundary language for the template reference.
+    task_file: tasks/prompts/phase-5/5-1-template-reference/task-02-discussion-gate.md
+    manifest: tasks/prompts/_shared/manifests/phase-5.md
+    copy_ready: tasks/prompts/_shared/copy-ready/phase-5/5-1-task-02.md
+    verify_ready: tasks/prompts/_shared/verify-ready/phase-5/5-1-task-02.md
+    depends_on:
+      - 5-1/task-01
+  - semantic_id: template-execution-contract/queue-candidate
+    live_label: 5-1/task-03
+    feature: template-execution-contract
+    task_key: queue-candidate
+    title: Validate version-local queue candidate structure for the template reference.
+    task_file: tasks/prompts/phase-5/5-1-template-reference/task-03-queue-candidate.md
+    manifest: tasks/prompts/_shared/manifests/phase-5.md
+    copy_ready: tasks/prompts/_shared/copy-ready/phase-5/5-1-task-03.md
+    verify_ready: tasks/prompts/_shared/verify-ready/phase-5/5-1-task-03.md
+    depends_on:
+      - 5-1/task-02
+  - semantic_id: template-execution-contract/promotion-preview
+    live_label: 5-1/task-04
+    feature: template-execution-contract
+    task_key: promotion-preview
+    title: Validate promotion preview and apply-preview safety gates for the template reference.
+    task_file: tasks/prompts/phase-5/5-1-template-reference/task-04-promotion-preview.md
+    manifest: tasks/prompts/_shared/manifests/phase-5.md
+    copy_ready: tasks/prompts/_shared/copy-ready/phase-5/5-1-task-04.md
+    verify_ready: tasks/prompts/_shared/verify-ready/phase-5/5-1-task-04.md
+    depends_on:
+      - 5-1/task-03
+  - semantic_id: template-execution-contract/projection-closeout
+    live_label: 5-1/task-05
+    feature: template-execution-contract
+    task_key: projection-closeout
+    title: Validate projection and closeout evidence gates for the template reference.
+    task_file: tasks/prompts/phase-5/5-1-template-reference/task-05-projection-closeout.md
+    manifest: tasks/prompts/_shared/manifests/phase-5.md
+    copy_ready: tasks/prompts/_shared/copy-ready/phase-5/5-1-task-05.md
+    verify_ready: tasks/prompts/_shared/verify-ready/phase-5/5-1-task-05.md
+    depends_on:
+      - 5-1/task-04

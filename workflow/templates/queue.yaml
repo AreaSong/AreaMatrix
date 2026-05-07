@@ -1,6 +1,7 @@
 version: v*
 feature: v*-feature-id
-status: candidate
+status: ready
+kind: queue-candidate
 promotion_gate: explicit-only
 live_queue_blocked: true
 tasks:

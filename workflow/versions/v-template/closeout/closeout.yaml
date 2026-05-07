@@ -1,0 +1,15 @@
+version: v-template
+status: blocked
+kind: closeout-audit
+projection_status: blocked
+blockers:
+  - projection status is blocked, expected done
+evidence:
+  projection: workflow/versions/v-template/projection/projection.yaml
+  promotion: workflow/versions/v-template/promotion/promotion.yaml
+  progress: tasks/prompts/_shared/progress.json
+  verify: required-for-done
+  checkpoint: required-for-done
+remaining_risks:
+  - projection status is blocked, expected done
+archive_readiness: blocked

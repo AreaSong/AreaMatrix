@@ -1,0 +1,32 @@
+version: v-template
+status: ready
+allow_changes: true
+exact_docs:
+  - workflow/architecture.md
+  - workflow/pipeline.md
+decisions:
+  - id: template-reference-purpose
+    status: accepted
+    summary: v-template is a managed template reference, not a real product workflow.
+  - id: promotion-write-block
+    status: accepted
+    summary: v-template promotion apply write must remain blocked.
+open_questions:
+  - id: none
+    status: none
+    question: No open questions for the template reference.
+blockers:
+  - id: none
+    status: none
+    summary: No blockers for template reference checks.
+risk_boundaries:
+  - Do not write live tasks/prompts from v-template.
+  - Do not use v-template as a product roadmap version.
+  - Do not start task-loop from v-template.
+next_layers:
+  middle-layer: ready
+  changes: ready
+  plans: ready
+  drafts: ready
+  queue: ready
+  promotion: blocked

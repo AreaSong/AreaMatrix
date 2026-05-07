@@ -65,7 +65,7 @@ Repo-local skills：
 
 `./dev` 是 AreaMatrix Dev Console 总控入口，默认展示局势诊断首页。首页只回答三件事：现在安全吗、推荐下一步是什么、去哪里看更多。
 控制台按版本组织 `docs -> workflow discussion -> changes -> plans -> drafts -> queue -> promotion preview -> tasks/prompts -> task-loop -> archive`。当前 live queue 仍来自 `tasks/prompts/**`；`workflow/` 是后续版本和大型变更的规划生命周期，不会直接修改 live queue。
-控制台默认显示四段：`当前局势` 说明安全结论和原因，`推荐行动链` 给出只读恢复步骤，`进度概览` 用两行版本卡展示 `v1-mvp live queue` 与 `v2 planning`，`去哪里看更多` 放主入口。最近 run、verify 日志、完整 pid 和长路径改到 `./dev status --verbose`、`./dev processes`、`./dev logs`。
+控制台默认显示四段：`当前局势` 说明安全结论和原因，`推荐行动链` 给出只读恢复步骤，`进度概览` 用两行版本卡展示 `v1-mvp live queue` 与 `template reference`，`去哪里看更多` 放主入口。最近 run、verify 日志、完整 pid 和长路径改到 `./dev status --verbose`、`./dev processes`、`./dev logs`。
 下方只显示主要入口：`1 recommended guide`、`2 lifecycle map`、`3 live queue details`、`4 tools`、`? shortcuts`、`h help`、`q quit`。直接按 Enter 只看完整状态，不启动任务；`1` 只打开推荐向导，不自动执行命令。
 启动或继续任务时，控制台会先阻止重复 live runner，再选择前台/后台、Git checkpoint 模式和任务数量上限；默认 Git 为本地 `commit`，任务数量为无限。
 优化或排查控制台时，优先用 `./dev preview` 预览命令，或用 `./dev dry-run` 跑临时目录演练；这两者都不会写真实 progress。
@@ -198,10 +198,10 @@ DRY_RUN_RESULT=PASS \
 
 `workflow/` 是大功能 / 版本 / 重构 / 优化的生命周期系统；`tasks/prompts/**` 是已批准的小任务执行队列；`./task-loop` 只执行 tasks。
 
-新增 v2 需求先写入：
+模板验收实例位于：
 
 ```
-workflow/versions/v2/changes/*.yaml
+workflow/versions/v-template/changes/*.yaml
 ```
 
 检查、生成 docs-change ledger 和 queue candidate：
@@ -209,8 +209,8 @@ workflow/versions/v2/changes/*.yaml
 ```bash
 ./dev workflow doctor
 ./dev workflow status
-./dev workflow plan --version v2
-./dev workflow queue --version v2
+./dev workflow plan --version v-template
+./dev workflow queue --version v-template
 ```
 
 兼容的 changes / drafts 入口：
@@ -219,24 +219,24 @@ workflow/versions/v2/changes/*.yaml
 ./dev changes doctor
 ./dev changes preview
 ./dev changes generate
-./dev changes generate --feature v2-search-query
+./dev changes generate --feature template-docs-contract
 ```
 
 默认只输出到终端，不写文件。需要落盘时显式使用：
 
 ```bash
 ./dev changes generate --write
-./dev changes generate --write --out-dir /tmp/areamatrix-v2-drafts
+./dev changes generate --write --out-dir /tmp/areamatrix-template-drafts
 ./dev changes generate --write --force
 ```
 
-默认写入 `workflow/versions/v2/drafts/`，每个 feature 一个目录，包含：
+默认写入 `workflow/versions/v-template/drafts/`，每个 feature 一个目录，包含：
 
 - `manifest.md`
 - `<task-id>.copy.md`
 - `<task-id>.verify.md`
 
-plans、drafts 和 queue candidates 都只是 review artifact，不会写 `tasks/prompts/**`，不会修改 `progress.json`，不会启动 `./task-loop`。v1 完成前，v2 只允许推进到 queue candidate，不允许 promote。
+plans、drafts 和 queue candidates 都只是 review artifact，不会写 `tasks/prompts/**`，不会修改 `progress.json`，不会启动 `./task-loop`。`v-template` 是模板验收实例，不允许 apply 写入 live queue。
 
 ---
 
@@ -349,10 +349,10 @@ tasks/prompts/_shared/progress.json
 
 当前 637 个任务仍是 v1-mvp 队列，继续由 `tasks/prompts/**` 与 `tasks/prompts/_shared/progress.json` 驱动，不移动、不重置。
 
-后续新增功能先记录到：
+后续新增功能先进入真实 `vN` workflow；模板验收实例只用于检查链路：
 
 ```
-workflow/versions/v2/changes/*.yaml
+workflow/versions/v-template/changes/*.yaml
 ```
 
 第一版只做 tracking + doctor + preview：

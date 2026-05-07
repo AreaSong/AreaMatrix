@@ -11,24 +11,28 @@ from .middle_layer import middle_layer_readme
 
 
 VERSION_RE = re.compile(r"^v[2-9][0-9]*$")
+TEMPLATE_REFERENCE_VERSION = "v-template"
 VERSION_ROOT = Path("workflow/versions")
 LAYER_READMES = {
+    "baseline": "Docs Baseline",
     "middle-layer": "Middle-layer",
     "changes": "Change Files",
     "plans": "Plans",
     "drafts": "Drafts",
     "queue": "Queue Candidates",
     "promotion": "Promotion Preview",
+    "projection": "Result Projection",
+    "closeout": "Closeout Audit",
 }
 
 
 def validate_init_version(version: str) -> list[str]:
     if version == "v1-mvp":
         return ["workflow init cannot create v1-mvp; it is the historical live queue record"]
+    if version == TEMPLATE_REFERENCE_VERSION:
+        return ["workflow init cannot recreate v-template; it is the managed template reference instance"]
     if not VERSION_RE.fullmatch(version):
-        return ["workflow init version must look like v3, v4, or v10"]
-    if version == "v2":
-        return ["workflow init cannot recreate v2; v2 is an existing compatibility instance"]
+        return ["workflow init version must look like v2, v3, or v10"]
     return []
 
 
@@ -44,7 +48,7 @@ def default_version_root(root: Path, version: str, out_dir: str | None) -> Path:
 def version_yaml(version: str, title: str) -> str:
     return f"""id: {version}
 title: {title}
-status: planning
+lifecycle_status: planning
 depends_on:
   - v1-mvp
 live_queue: ""
@@ -164,6 +168,8 @@ def layer_readme(version: str, layer: str, title: str) -> str:
         detail = "Middle-layer ledgers are feature-level implementation intent records created after discussion approval."
     elif layer == "changes":
         detail = "This directory starts with README only. Add real change YAML after discussion doctor passes."
+    elif layer == "baseline":
+        detail = "Docs baselines record Exact Docs line ranges and hashes for drift detection."
     elif layer == "promotion":
         detail = "Promotion preview is blocked until live mapping is explicitly configured."
     else:

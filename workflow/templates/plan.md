@@ -5,7 +5,8 @@
 - Version: `v*`
 - Feature: `v*-feature-id`
 - Module: `module`
-- Status: `planning`
+- Status: `ready`
+- Kind: workflow-plan
 
 ## Docs Change Ledger
 

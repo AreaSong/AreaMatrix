@@ -1,0 +1,20 @@
+version: v-template
+feature: template-docs-contract
+status: ready
+kind: queue-candidate
+promotion_gate: explicit-only
+live_queue_blocked: true
+tasks:
+  - id: template-docs-contract/docs-baseline
+    depends_on: []
+    draft_copy: workflow/versions/v-template/drafts/template-docs-contract/docs-baseline.copy.md
+    draft_verify: workflow/versions/v-template/drafts/template-docs-contract/docs-baseline.verify.md
+    validation:
+      - ./dev workflow baseline --version v-template doctor
+      - ./dev workflow doctor
+  - id: template-docs-contract/discussion-gate
+    depends_on: []
+    draft_copy: workflow/versions/v-template/drafts/template-docs-contract/discussion-gate.copy.md
+    draft_verify: workflow/versions/v-template/drafts/template-docs-contract/discussion-gate.verify.md
+    validation:
+      - ./dev workflow doctor

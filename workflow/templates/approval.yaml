@@ -1,0 +1,16 @@
+version: v*
+status: blocked
+kind: promotion-approval
+approved: false
+gate_message: promotion blocked: prerequisite version is live-running
+mode: approval-only
+target_kind: approval-only
+writes_live_queue: false
+template_reference: false
+apply_allowed: false
+tasks:
+  - semantic_id: v*-feature-id/docs-contract
+    live_label: 5-1/task-01
+    task_file: tasks/prompts/phase-5/5-1-v-next/task-01-docs-contract.md
+    copy_ready: tasks/prompts/_shared/copy-ready/phase-5/5-1-task-01.md
+    verify_ready: tasks/prompts/_shared/verify-ready/phase-5/5-1-task-01.md

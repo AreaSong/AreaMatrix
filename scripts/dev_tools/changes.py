@@ -1,4 +1,4 @@
-"""V2 workflow change tracking checks and previews."""
+"""Versioned workflow change tracking checks and draft generation."""
 
 from __future__ import annotations
 
@@ -9,12 +9,12 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Sequence
 
+from .workflow_states import ARTIFACT_STATUSES, status_list
 
-DEFAULT_VERSION = "v2"
+
+DEFAULT_VERSION = "v-template"
 VERSION_ROOT = Path("workflow/versions")
-CHANGE_ROOT = VERSION_ROOT / DEFAULT_VERSION / "changes"
-DEFAULT_DRAFT_ROOT = VERSION_ROOT / DEFAULT_VERSION / "drafts"
-ALLOWED_STATUS = {"draft", "planned", "ready", "blocked", "archived"}
+ALLOWED_STATUS = ARTIFACT_STATUSES
 ALLOWED_RISK = {"Low", "Medium", "High", "Mission-Critical"}
 SYNC_DOC_KEYS = ("update", "api", "udl")
 SLUG_RE = re.compile(r"^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$")
@@ -194,6 +194,10 @@ def change_root(version: str = DEFAULT_VERSION) -> Path:
     return VERSION_ROOT / version / "changes"
 
 
+def draft_root(version: str = DEFAULT_VERSION) -> Path:
+    return VERSION_ROOT / version / "drafts"
+
+
 def change_files(root: Path, file_arg: str | None, version: str = DEFAULT_VERSION) -> list[Path]:
     if file_arg:
         path = Path(file_arg)
@@ -227,7 +231,7 @@ def validate_loaded_change(root: Path, path: Path, data: dict[str, Any], version
     if data.get("version") != version:
         errors.append(f"{path}: version must be {version}")
     if data.get("status") not in ALLOWED_STATUS:
-        errors.append(f"{path}: status must be one of {', '.join(sorted(ALLOWED_STATUS))}")
+        errors.append(f"{path}: status must be one of {status_list(ALLOWED_STATUS)}")
     raw_features = data.get("features")
     if not isinstance(raw_features, list) or not raw_features:
         errors.append(f"{path}: features must be a non-empty list")
@@ -242,6 +246,12 @@ def validate_loaded_change(root: Path, path: Path, data: dict[str, Any], version
     return errors, features
 
 
+def feature_id_matches_version(feature_id: str, version: str) -> bool:
+    if version == "v-template":
+        return feature_id.startswith("template-")
+    return feature_id.startswith(f"{version}-")
+
+
 def validate_feature(root: Path, path: Path, index: int, feature: dict[str, Any], errors: list[str], version: str = DEFAULT_VERSION) -> None:
     prefix = f"{path}: feature #{index}"
     for key in ["id", "module", "intent", "docs", "risk", "task_split"]:
@@ -251,8 +261,9 @@ def validate_feature(root: Path, path: Path, index: int, feature: dict[str, Any]
         errors.append(f"{prefix}: id must be a non-empty string")
     elif not SLUG_RE.fullmatch(str(feature.get("id"))):
         errors.append(f"{prefix}: id must be a lowercase slug")
-    elif not str(feature.get("id")).startswith(f"{version}-"):
-        errors.append(f"{prefix}: id must start with {version}-")
+    elif not feature_id_matches_version(str(feature.get("id")), version):
+        expected = "template-" if version == "v-template" else f"{version}-"
+        errors.append(f"{prefix}: id must start with {expected}")
     if "depends_on" in feature and not isinstance(feature.get("depends_on"), list):
         errors.append(f"{prefix}: depends_on must be a list")
     docs = feature.get("docs")
@@ -488,16 +499,17 @@ def render_manifest_section(root: Path, record: FeatureRecord, task: dict[str, A
     return "\n".join(lines).rstrip() + "\n"
 
 
-def render_copy_prompt(root: Path, record: FeatureRecord, task: dict[str, Any]) -> str:
+def render_copy_prompt(root: Path, version: str, record: FeatureRecord, task: dict[str, Any]) -> str:
     feature = record.feature
     docs = docs_map(feature)
     risk = risk_map(feature)
     task_key = str(task.get("id", "unknown"))
     task_id = f"{record.feature_id}/{task_key}"
+    title_version = version.upper()
     lines = [
-        f"# V2 Copy-ready Draft: {task_id}",
+        f"# {title_version} Copy-ready Draft: {task_id}",
         "",
-        "你现在进入 AreaMatrix v2 草稿任务执行模式。",
+        f"你现在进入 AreaMatrix {version} 草稿任务执行模式。",
         "",
         "## 工作边界",
         f"- Source change: `{display_path(root, record.file)}`",
@@ -505,7 +517,7 @@ def render_copy_prompt(root: Path, record: FeatureRecord, task: dict[str, Any]) 
         f"- Module: `{feature.get('module', 'unknown')}`",
         f"- Task: `{task_key}` - {task.get('title', '')}",
         f"- Risk: `{risk.get('level', 'Unspecified')}`",
-        "- 是否允许修改文件：`是，但仅限本 v2 草稿任务直接要求的 docs/API/UDL/实现/测试；不得接入 live v1 task-loop queue`",
+        f"- 是否允许修改文件：`是，但仅限本 {version} 草稿任务直接要求的 docs/API/UDL/实现/测试；不得接入 live v1 task-loop queue`",
         "",
         "## Exact Docs",
         *bullet_lines(as_list(docs.get("source"))),
@@ -519,7 +531,7 @@ def render_copy_prompt(root: Path, record: FeatureRecord, task: dict[str, Any]) 
         "## 执行要求",
         "- 先读取 Source change、Exact Docs、Sync Targets，再决定实现范围。",
         "- 若涉及 Core API，必须保持 `docs/api/core-api.md` 与 `core/area_matrix.udl` 一致。",
-        "- 不得移动、删除、覆盖用户原文件；不得把 v2 草稿直接写入 `tasks/prompts/**`。",
+        f"- 不得移动、删除、覆盖用户原文件；不得把 {version} 草稿直接写入 `tasks/prompts/**`。",
         "- 完成后记录实际改动、验证命令、风险处理和未覆盖项。",
         "",
         "## 建议验证",
@@ -528,16 +540,17 @@ def render_copy_prompt(root: Path, record: FeatureRecord, task: dict[str, Any]) 
     return "\n".join(lines).rstrip() + "\n"
 
 
-def render_verify_prompt(root: Path, record: FeatureRecord, task: dict[str, Any]) -> str:
+def render_verify_prompt(root: Path, version: str, record: FeatureRecord, task: dict[str, Any]) -> str:
     feature = record.feature
     docs = docs_map(feature)
     risk = risk_map(feature)
     task_key = str(task.get("id", "unknown"))
     task_id = f"{record.feature_id}/{task_key}"
+    title_version = version.upper()
     lines = [
-        f"# V2 Verify-ready Draft: {task_id}",
+        f"# {title_version} Verify-ready Draft: {task_id}",
         "",
-        "你现在进入 AreaMatrix v2 草稿任务只读验收模式。",
+        f"你现在进入 AreaMatrix {version} 草稿任务只读验收模式。",
         "这次是验收，不是修复：禁止修改文件，禁止边验边改。",
         "",
         "## 验收对象",
@@ -569,7 +582,7 @@ def render_verify_prompt(root: Path, record: FeatureRecord, task: dict[str, Any]
     return "\n".join(lines).rstrip() + "\n"
 
 
-def build_draft_tasks(root: Path, record: FeatureRecord) -> list[DraftTask]:
+def build_draft_tasks(root: Path, version: str, record: FeatureRecord) -> list[DraftTask]:
     drafts: list[DraftTask] = []
     for task in as_list(record.feature.get("task_split")):
         if not isinstance(task, dict):
@@ -583,23 +596,23 @@ def build_draft_tasks(root: Path, record: FeatureRecord) -> list[DraftTask]:
                 task_key=task_key,
                 title=str(task.get("title", "")),
                 manifest=render_manifest_section(root, record, task),
-                copy_prompt=render_copy_prompt(root, record, task),
-                verify_prompt=render_verify_prompt(root, record, task),
+                copy_prompt=render_copy_prompt(root, version, record, task),
+                verify_prompt=render_verify_prompt(root, version, record, task),
             )
         )
     return drafts
 
 
-def manifest_artifact(root: Path, record: FeatureRecord, drafts: Sequence[DraftTask]) -> DraftArtifact:
-    content = f"# V2 Manifest Draft: {record.feature_id}\n\n" + "\n".join(draft.manifest for draft in drafts)
+def manifest_artifact(root: Path, version: str, record: FeatureRecord, drafts: Sequence[DraftTask]) -> DraftArtifact:
+    content = f"# {version.upper()} Manifest Draft: {record.feature_id}\n\n" + "\n".join(draft.manifest for draft in drafts)
     return DraftArtifact(path=root / record.feature_id / "manifest.md", content=content.rstrip() + "\n")
 
 
-def draft_artifacts(repo_root: Path, output_root: Path, records: Sequence[FeatureRecord]) -> list[DraftArtifact]:
+def draft_artifacts(repo_root: Path, version: str, output_root: Path, records: Sequence[FeatureRecord]) -> list[DraftArtifact]:
     artifacts: list[DraftArtifact] = []
     for record in ordered_features(records):
-        drafts = build_draft_tasks(repo_root, record)
-        artifacts.append(manifest_artifact(output_root, record, drafts))
+        drafts = build_draft_tasks(repo_root, version, record)
+        artifacts.append(manifest_artifact(output_root, version, record, drafts))
         for draft in drafts:
             feature_dir = output_root / draft.feature_id
             artifacts.append(DraftArtifact(path=feature_dir / f"{draft.task_key}.copy.md", content=draft.copy_prompt))
@@ -607,8 +620,8 @@ def draft_artifacts(repo_root: Path, output_root: Path, records: Sequence[Featur
     return artifacts
 
 
-def print_artifacts(repo_root: Path, artifacts: Sequence[DraftArtifact]) -> None:
-    print("V2 generated prompt drafts")
+def print_artifacts(repo_root: Path, version: str, artifacts: Sequence[DraftArtifact]) -> None:
+    print(f"{version} generated prompt drafts")
     print("- mode: preview only; no files written")
     print("- queue: not connected to current v1 task-loop")
     for artifact in artifacts:
@@ -631,26 +644,34 @@ def write_artifacts(artifacts: Sequence[DraftArtifact], *, force: bool, label: s
 
 
 def run_changes_doctor(root: Path, args: argparse.Namespace) -> int:
-    errors, records, files = collect_changes(root, args.file)
+    version = args.version
+    errors, records, files = collect_changes(root, args.file, version)
+    if args.file is None:
+        from .workflow_baseline import baseline_path, validate_baseline
+
+        if baseline_path(root, version).is_file():
+            baseline_errors, _ = validate_baseline(root, version, require_file=True)
+            errors.extend(baseline_errors)
     if errors:
-        print("v2 change doctor: FAILED")
+        print(f"{version} change doctor: FAILED")
         for error in errors:
             print(f"- {error}")
         return 1
-    print("v2 change doctor: OK")
+    print(f"{version} change doctor: OK")
     print(f"- files: {len(files)}")
     print(f"- features: {len(records)}")
     return 0
 
 
 def run_changes_preview(root: Path, args: argparse.Namespace) -> int:
-    errors, records, _ = collect_changes(root, args.file)
+    version = args.version
+    errors, records, _ = collect_changes(root, args.file, version)
     if errors:
-        print("v2 change preview: doctor failed")
+        print(f"{version} change preview: doctor failed")
         for error in errors:
             print(f"- {error}")
         return 1
-    print("V2 change preview")
+    print(f"{version} change preview")
     print("- mode: preview only; no prompt files are generated")
     print("- queue: not connected to current v1 task-loop")
     for index, record in enumerate(ordered_features(records), start=1):
@@ -680,34 +701,35 @@ def run_changes_preview(root: Path, args: argparse.Namespace) -> int:
 
 
 def run_changes_generate(root: Path, args: argparse.Namespace) -> int:
+    version = args.version
     if args.force and not args.write:
-        print("v2 change generate: --force requires --write")
+        print(f"{version} change generate: --force requires --write")
         return 1
-    errors, records, _ = collect_changes(root, args.file)
+    errors, records, _ = collect_changes(root, args.file, version)
     if errors:
-        print("v2 change generate: doctor failed")
+        print(f"{version} change generate: doctor failed")
         for error in errors:
             print(f"- {error}")
         return 1
     filter_errors, selected = filter_feature_records(records, args.feature)
     if filter_errors:
-        print("v2 change generate: selection failed")
+        print(f"{version} change generate: selection failed")
         for error in filter_errors:
             print(f"- {error}")
         return 1
-    output_root = Path(args.out_dir) if args.out_dir else root / DEFAULT_DRAFT_ROOT
+    output_root = Path(args.out_dir) if args.out_dir else root / draft_root(version)
     if not output_root.is_absolute():
         output_root = root / output_root
-    artifacts = draft_artifacts(root, output_root, selected)
+    artifacts = draft_artifacts(root, version, output_root, selected)
     if not args.write:
-        print_artifacts(root, artifacts)
+        print_artifacts(root, version, artifacts)
         return 0
     try:
         written = write_artifacts(artifacts, force=args.force)
     except FileExistsError as exc:
-        print(f"v2 change generate: {exc}")
+        print(f"{version} change generate: {exc}")
         return 1
-    print("v2 change generate: wrote draft files")
+    print(f"{version} change generate: wrote draft files")
     print(f"- root: {output_root}")
     print(f"- files: {len(written)}")
     for path in written:

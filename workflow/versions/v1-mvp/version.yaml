@@ -1,6 +1,6 @@
 id: v1-mvp
 title: AreaMatrix MVP live task queue
-status: live-running
+lifecycle_status: live-running
 depends_on: []
 live_queue: tasks/prompts
 live_task_count_source: tasks/prompts/_shared/prompt_pipeline.py doctor

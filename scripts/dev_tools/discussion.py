@@ -50,8 +50,8 @@ def discussion_gate_label(version: str, data: dict[str, Any]) -> str:
     status = str(config.get("status", "")).strip()
     if version == "v1-mvp" or data.get("middle_layers") == "skipped":
         return "skipped"
-    if status == "compatibility-exemption":
-        return "compatibility-exemption"
+    if status == "template-reference":
+        return "template-reference"
     if config.get("required") is False:
         return "not-required"
     return "required"
@@ -67,9 +67,9 @@ def discussion_gate_message(version: str, data: dict[str, Any]) -> str:
     reason = str(config.get("reason", "")).strip()
     if label == "skipped":
         return f"{version}: discussion gate skipped"
-    if label == "compatibility-exemption":
+    if label == "template-reference":
         suffix = f"; {reason}" if reason else ""
-        return f"{version}: existing-instance compatibility exemption{suffix}"
+        return f"{version}: managed template reference{suffix}"
     if label == "not-required":
         suffix = f"; {reason}" if reason else ""
         return f"{version}: discussion gate not required{suffix}"
@@ -254,6 +254,11 @@ def validate_discussion_artifacts(root: Path, version: str, directory: Path | No
         if keyword not in middle_text:
             errors.append(f"{display_path(root, paths['middle-layer-discussion.md'])}: missing layer keyword: {keyword}")
     errors.extend(validate_decisions(root, version, paths["decisions.yaml"], paths["docs-discussion.md"]))
+    from .workflow_baseline import baseline_path, validate_baseline
+
+    if baseline_path(root, version).is_file():
+        baseline_errors, _ = validate_baseline(root, version, require_file=True)
+        errors.extend(baseline_errors)
     return errors
 
 
@@ -281,7 +286,7 @@ def print_discussion_preview(root: Path, version: str, data: dict[str, Any]) -> 
     print(f"- gate: {label}")
     print(f"- status: {discussion_gate_message(version, data)}")
     if label != "required":
-        print("- next: current version may continue under its recorded compatibility policy.")
+        print("- next: current version may continue under its recorded discussion policy.")
         return 0
     base = discussion_dir(root, version)
     print(f"- discussion_dir: {display_path(root, base)}")

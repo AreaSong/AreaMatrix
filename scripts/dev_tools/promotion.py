@@ -18,11 +18,14 @@ from .changes import (
     sync_targets,
     task_validation,
 )
+from .workflow_states import ARTIFACT_STATUSES, status_list
 from tasks.prompts._shared.prompt_pipeline_lib.paths import COPY_READY_ROOT, VERIFY_READY_ROOT, label_sort_key
 from tasks.prompts._shared.prompt_pipeline_lib.repository import scan_task_files
 
 
 PROMOTION_ROOT_NAME = "promotion"
+APPROVAL_FILE_NAME = "approval.yaml"
+TEMPLATE_REFERENCE_VERSION = "v-template"
 
 
 @dataclass(frozen=True)
@@ -160,7 +163,7 @@ def promotion_gate_status(version_record: Any | None, versions: Sequence[Any]) -
     by_id = {record.version_id: record for record in versions}
     v1 = by_id.get("v1-mvp")
     if version_record and version_record.data.get("gate") == "queue-only-until-v1-complete":
-        if v1 and v1.data.get("status") == "live-running":
+        if v1 and v1.data.get("lifecycle_status") == "live-running":
             return True, "promotion blocked: v1-mvp is live-running"
     return False, "promotion gate: open"
 
@@ -349,6 +352,101 @@ def promotion_artifacts(
     ]
 
 
+def approval_artifact(root: Path, version: str, blocked: bool, gate_message: str, tasks: Sequence[PromotionTask]) -> DraftArtifact:
+    status = "blocked" if blocked else "ready"
+    template_reference = version == TEMPLATE_REFERENCE_VERSION
+    lines = [
+        f"version: {version}",
+        f"status: {status}",
+        "kind: promotion-approval",
+        "approved: " + ("false" if blocked else "true"),
+        f"gate_message: {gate_message}",
+        "mode: approval-only",
+        "target_kind: approval-only",
+        "writes_live_queue: false",
+        f"template_reference: {'true' if template_reference else 'false'}",
+        f"apply_allowed: {'false' if blocked or template_reference else 'true'}",
+        "tasks:",
+    ]
+    for task in tasks:
+        lines.extend(
+            [
+                f"  - semantic_id: {task.semantic_id}",
+                f"    live_label: {task.live_label}",
+                f"    task_file: {display_path(root, task.task_path)}",
+                f"    copy_ready: {display_path(root, task.copy_ready_path)}",
+                f"    verify_ready: {display_path(root, task.verify_ready_path)}",
+            ]
+        )
+    return DraftArtifact(root / "workflow/versions" / version / PROMOTION_ROOT_NAME / APPROVAL_FILE_NAME, "\n".join(lines).rstrip() + "\n")
+
+
+def load_approval(path: Path) -> tuple[list[str], dict[str, Any] | None]:
+    from .changes import parse_yaml_subset
+
+    try:
+        data = parse_yaml_subset(path.read_text(encoding="utf-8"), path)
+    except ValueError as exc:
+        return [str(exc)], None
+    if not isinstance(data, dict):
+        return [f"{path}: top-level YAML must be a mapping"], None
+    return [], data
+
+
+def validate_approval(root: Path, version: str) -> list[str]:
+    path = root / "workflow/versions" / version / PROMOTION_ROOT_NAME / APPROVAL_FILE_NAME
+    if not path.is_file():
+        return [f"missing promotion approval: {display_path(root, path)}"]
+    errors, data = load_approval(path)
+    if errors or data is None:
+        return errors
+    if data.get("version") != version:
+        errors.append(f"{display_path(root, path)}: version must be {version}")
+    if data.get("status") not in ARTIFACT_STATUSES:
+        errors.append(f"{display_path(root, path)}: status must be one of {status_list(ARTIFACT_STATUSES)}")
+    if data.get("kind") != "promotion-approval":
+        errors.append(f"{display_path(root, path)}: kind must be promotion-approval")
+    if data.get("approved") is not True:
+        errors.append(f"{display_path(root, path)}: approved must be true before apply")
+    if data.get("writes_live_queue") is not False:
+        errors.append(f"{display_path(root, path)}: approval must not write live queue")
+    return errors
+
+
+def validate_apply(root: Path, tasks: Sequence[PromotionTask]) -> list[str]:
+    errors: list[str] = []
+    existing_labels = set(scan_task_files())
+    seen_labels: set[str] = set()
+    for task in tasks:
+        if task.live_label in existing_labels:
+            errors.append(f"live label already exists: {task.live_label}")
+        if task.live_label in seen_labels:
+            errors.append(f"duplicate promotion live label: {task.live_label}")
+        seen_labels.add(task.live_label)
+        for path in [task.task_path, task.copy_ready_path, task.verify_ready_path]:
+            if path.exists():
+                errors.append(f"promotion target already exists: {display_path(root, path)}")
+        if not task.manifest_section.strip():
+            errors.append(f"{task.semantic_id}: manifest section is empty")
+        if not task.task_content.strip():
+            errors.append(f"{task.semantic_id}: task content is empty")
+    return errors
+
+
+def promotion_apply_artifacts(tasks: Sequence[PromotionTask]) -> list[DraftArtifact]:
+    artifacts: list[DraftArtifact] = []
+    manifest_sections: dict[Path, list[str]] = {}
+    for task in tasks:
+        artifacts.append(DraftArtifact(task.task_path, task.task_content))
+        artifacts.append(DraftArtifact(task.copy_ready_path, task.task_content))
+        artifacts.append(DraftArtifact(task.verify_ready_path, task.task_content))
+        manifest_sections.setdefault(task.manifest_path, []).append(task.manifest_section)
+    for path, sections in manifest_sections.items():
+        header = f"# {path.stem}\n\n" if not path.exists() else path.read_text(encoding="utf-8").rstrip() + "\n\n"
+        artifacts.append(DraftArtifact(path, header + "\n\n".join(section.rstrip() for section in sections) + "\n"))
+    return artifacts
+
+
 def promotion_yaml_content(
     root: Path,
     version: str,
@@ -358,9 +456,17 @@ def promotion_yaml_content(
     gate_message: str,
     root_dependency: str,
 ) -> str:
+    status = "blocked" if blocked else "ready"
+    template_reference = version == TEMPLATE_REFERENCE_VERSION
     lines = [
         f"version: {version}",
+        f"status: {status}",
+        "kind: promotion-preview",
         "mode: preview",
+        "target_kind: preview-only",
+        "writes_live_queue: false",
+        f"template_reference: {'true' if template_reference else 'false'}",
+        f"apply_allowed: {'false' if blocked or template_reference else 'true'}",
         f"target_queue: {config.target_queue}",
         f"phase: {config.phase}",
         f"batch: {config.batch}",
@@ -394,6 +500,34 @@ def promotion_yaml_content(
     return "\n".join(lines).rstrip() + "\n"
 
 
+def promotion_apply_preview_artifact(root: Path, version: str, tasks: Sequence[PromotionTask], blocked: bool, gate_message: str, errors: Sequence[str]) -> DraftArtifact:
+    status = "blocked" if blocked or errors else "ready"
+    template_reference = version == TEMPLATE_REFERENCE_VERSION
+    lines = [
+        f"version: {version}",
+        f"status: {status}",
+        "kind: promotion-apply-preview",
+        "target_kind: apply-preview",
+        "writes_live_queue: false",
+        f"template_reference: {'true' if template_reference else 'false'}",
+        f"apply_allowed: {'false' if blocked or errors or template_reference else 'true'}",
+        f"gate_message: {gate_message}",
+        "files_to_write:",
+    ]
+    for task in tasks:
+        for path in [task.task_path, task.copy_ready_path, task.verify_ready_path, task.manifest_path]:
+            lines.append(f"  - {display_path(root, path)}")
+    lines.append("blocked_by:")
+    if blocked or errors:
+        for error in ([gate_message] if blocked else []):
+            lines.append(f"  - {error}")
+        for error in errors:
+            lines.append(f"  - {error}")
+    else:
+        lines.append("  - None")
+    return DraftArtifact(root / "workflow/versions" / version / PROMOTION_ROOT_NAME / "apply.yaml", "\n".join(lines).rstrip() + "\n")
+
+
 def promotion_md_content(
     root: Path,
     version: str,
@@ -409,6 +543,11 @@ def promotion_md_content(
         "- Mode: preview only",
         "- Live queue: not modified",
         "- Progress file: not modified",
+        "- Future live paths below are previews only; no files have been written.",
+        f"- Target kind: `preview-only`",
+        f"- Writes live queue: `false`",
+        f"- Template reference: `{'true' if version == TEMPLATE_REFERENCE_VERSION else 'false'}`",
+        f"- Apply allowed: `{'false' if blocked or version == TEMPLATE_REFERENCE_VERSION else 'true'}`",
         f"- Gate: {gate_message}",
         f"- Target queue: `{config.target_queue}`",
         f"- Future phase: `{config.phase}`",

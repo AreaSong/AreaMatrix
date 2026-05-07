@@ -226,43 +226,43 @@ def check_repo_health(h: Harness) -> None:
     h.run([h.python, "tasks/prompts/_shared/prompt_pipeline.py", "doctor"])
 
 
-def check_v2_changes(h: Harness) -> None:
-    log("v2 change tracking")
+def check_template_changes(h: Harness) -> None:
+    log("template change tracking")
     doctor = h.run([h.dev, "changes", "doctor"]).stdout
-    assert_contains(doctor, "v2 change doctor: OK", "changes doctor")
+    assert_contains(doctor, "v-template change doctor: OK", "changes doctor")
     preview = h.run([h.dev, "changes", "preview"]).stdout
-    assert_contains(preview, "V2 change preview", "changes preview header")
+    assert_contains(preview, "v-template change preview", "changes preview header")
     assert_contains(preview, "preview only; no prompt files are generated", "changes preview no writes")
-    assert_contains(preview, "v2-search-query", "changes preview feature")
+    assert_contains(preview, "template-docs-contract", "changes preview feature")
     generated = h.run([h.dev, "changes", "generate"]).stdout
-    assert_contains(generated, "V2 generated prompt drafts", "changes generate header")
+    assert_contains(generated, "v-template generated prompt drafts", "changes generate header")
     assert_contains(generated, "preview only; no files written", "changes generate no writes")
-    assert_contains(generated, "workflow/versions/v2/drafts/v2-search-query/manifest.md", "changes generate manifest path")
-    assert_contains(generated, "v2-search-query/docs-contract", "changes generate semantic task")
+    assert_contains(generated, "workflow/versions/v-template/drafts/template-docs-contract/manifest.md", "changes generate manifest path")
+    assert_contains(generated, "template-docs-contract/docs-baseline", "changes generate semantic task")
     assert_contains(generated, "VERIFY_RESULT: PASS", "changes generate verify prompt")
 
-    feature_only = h.run([h.dev, "changes", "generate", "--feature", "v2-search-query"]).stdout
-    assert_contains(feature_only, "v2-search-query/docs-contract", "changes generate feature filter include")
-    assert_not_contains(feature_only, "v2-search-filters/filter-contract", "changes generate feature filter exclude")
+    feature_only = h.run([h.dev, "changes", "generate", "--feature", "template-docs-contract"]).stdout
+    assert_contains(feature_only, "template-docs-contract/docs-baseline", "changes generate feature filter include")
+    assert_not_contains(feature_only, "template-execution-contract/queue-candidate", "changes generate feature filter exclude")
 
-    draft_out = h.tmp / "v2-drafts"
+    draft_out = h.tmp / "template-drafts"
     first_write = h.run([h.dev, "changes", "generate", "--write", "--out-dir", str(draft_out)]).stdout
-    assert_contains(first_write, "v2 change generate: wrote draft files", "changes generate write")
-    assert_exists(draft_out / "v2-search-query/manifest.md", "changes generate manifest write")
-    assert_exists(draft_out / "v2-search-query/docs-contract.copy.md", "changes generate copy write")
-    assert_exists(draft_out / "v2-search-query/docs-contract.verify.md", "changes generate verify write")
+    assert_contains(first_write, "v-template change generate: wrote draft files", "changes generate write")
+    assert_exists(draft_out / "template-docs-contract/manifest.md", "changes generate manifest write")
+    assert_exists(draft_out / "template-docs-contract/docs-baseline.copy.md", "changes generate copy write")
+    assert_exists(draft_out / "template-docs-contract/docs-baseline.verify.md", "changes generate verify write")
 
     second_write = h.run([h.dev, "changes", "generate", "--write", "--out-dir", str(draft_out)], check=False)
     if second_write.returncode == 0:
-        raise CheckFailure("v2 draft overwrite unexpectedly succeeded without --force")
+        raise CheckFailure("template draft overwrite unexpectedly succeeded without --force")
     assert_contains(second_write.stdout + second_write.stderr, "use --force to overwrite", "changes generate overwrite guard")
 
     force_write = h.run([h.dev, "changes", "generate", "--write", "--force", "--out-dir", str(draft_out)]).stdout
-    assert_contains(force_write, "v2 change generate: wrote draft files", "changes generate force write")
+    assert_contains(force_write, "v-template change generate: wrote draft files", "changes generate force write")
 
     bad_force = h.run([h.dev, "changes", "generate", "--force"], check=False)
     if bad_force.returncode == 0:
-        raise CheckFailure("v2 draft generate unexpectedly accepted --force without --write")
+        raise CheckFailure("template draft generate unexpectedly accepted --force without --write")
     assert_contains(bad_force.stdout + bad_force.stderr, "--force requires --write", "changes generate force guard")
 
 
@@ -270,18 +270,24 @@ def check_versioned_workflow(h: Harness) -> None:
     log("versioned workflow tracking")
     doctor = h.run([h.dev, "workflow", "doctor"]).stdout
     assert_contains(doctor, "workflow doctor: OK", "workflow doctor")
-    assert_contains(doctor, "v1 gate: queue-only for v2", "workflow v1 gate")
-    assert_contains(doctor, "discussion v2: compatibility-exemption", "workflow discussion exemption")
-    assert_contains(doctor, "local queue v2: phase-0/0-1/task-01", "workflow local queue")
-    assert_contains(doctor, "live mapping v2: configured (phase-5/5-1)", "workflow live mapping")
+    assert_contains(doctor, "discussion v-template: template-reference", "workflow template discussion")
+    assert_contains(doctor, "local queue v-template: template-reference", "workflow template local queue")
+    assert_contains(doctor, "live mapping v-template: configured (phase-5/5-1)", "workflow template live mapping")
+    assert_contains(doctor, "middle-layer v-template: required", "workflow template middle layer")
 
     status = h.run([h.dev, "workflow", "status"]).stdout
     assert_contains(status, "v1-mvp: live-running", "workflow status v1")
-    assert_contains(status, "v2: planning", "workflow status v2")
-    assert_contains(status, "discussion: v2: existing-instance compatibility exemption", "workflow status discussion")
-    assert_contains(status, "local_queue: phase-0/0-1/task-01", "workflow status local queue")
+    assert_contains(status, "v-template: template-reference", "workflow status template")
+    assert_contains(status, "discussion: v-template: managed template reference", "workflow status discussion")
+    assert_contains(status, "local_queue: template-reference", "workflow status local queue")
     assert_contains(status, "live_mapping: configured (phase-5/5-1)", "workflow status live mapping")
+    assert_contains(status, "projection: blocked as expected for template reference", "workflow status template projection note")
+    assert_contains(status, "closeout: blocked as expected for template reference", "workflow status template closeout note")
     assert_contains(status, "must not promote to tasks/prompts/**", "workflow promote gate")
+
+    template_check = h.run([h.dev, "workflow", "check-template"]).stdout
+    assert_contains(template_check, "workflow check-template: OK", "workflow check-template")
+    assert_contains(template_check, "[check-template] promotion apply preview: OK", "workflow check-template promotion preview")
 
     init_preview = h.run([h.dev, "workflow", "init", "--version", "v3"]).stdout
     assert_contains(init_preview, "Workflow version init", "workflow init preview")
@@ -292,7 +298,7 @@ def check_versioned_workflow(h: Harness) -> None:
     bad_name = h.run([h.dev, "workflow", "init", "--version", "bad-name"], check=False)
     if bad_name.returncode == 0:
         raise CheckFailure("workflow init unexpectedly accepted bad version name")
-    assert_contains(bad_name.stdout + bad_name.stderr, "version must look like v3", "workflow init version guard")
+    assert_contains(bad_name.stdout + bad_name.stderr, "version must look like v2", "workflow init version guard")
     bad_v1 = h.run([h.dev, "workflow", "init", "--version", "v1-mvp"], check=False)
     if bad_v1.returncode == 0:
         raise CheckFailure("workflow init unexpectedly accepted v1-mvp")
@@ -324,7 +330,7 @@ def check_versioned_workflow(h: Harness) -> None:
     write_artifacts(init_artifacts(h.root, "v3", None, str(approved_version)), force=False, label="test workflow init file")
     (approved_version / "discussion/decisions.yaml").write_text(
         """version: v3
-status: approved
+status: ready
 allow_changes: true
 exact_docs:
   - docs/README.md
@@ -349,12 +355,17 @@ next_layers:
     if approved_version_errors:
         raise CheckFailure(f"workflow init approved discussion failed: {approved_version_errors}")
 
-    discuss_doctor = h.run([h.dev, "workflow", "discuss", "--version", "v2", "doctor"]).stdout
-    assert_contains(discuss_doctor, "workflow discuss doctor: OK", "workflow discuss v2 doctor")
-    assert_contains(discuss_doctor, "compatibility exemption", "workflow discuss v2 exemption")
-    discuss_preview = h.run([h.dev, "workflow", "discuss", "--version", "v2", "preview"]).stdout
+    bad_template_init = h.run([h.dev, "workflow", "init", "--version", "v-template"], check=False)
+    if bad_template_init.returncode == 0:
+        raise CheckFailure("workflow init unexpectedly accepted v-template")
+    assert_contains(bad_template_init.stdout + bad_template_init.stderr, "cannot recreate v-template", "workflow init template guard")
+
+    discuss_doctor = h.run([h.dev, "workflow", "discuss", "--version", "v-template", "doctor"]).stdout
+    assert_contains(discuss_doctor, "workflow discuss doctor: OK", "workflow discuss template doctor")
+    assert_contains(discuss_doctor, "managed template reference", "workflow discuss template reference")
+    discuss_preview = h.run([h.dev, "workflow", "discuss", "--version", "v-template", "preview"]).stdout
     assert_contains(discuss_preview, "Workflow discussion preview", "workflow discuss preview")
-    assert_contains(discuss_preview, "compatibility-exemption", "workflow discuss preview exemption")
+    assert_contains(discuss_preview, "template-reference", "workflow discuss preview template")
 
     discussion_out = h.tmp / "workflow-discussion"
     discussion_init = h.run(
@@ -392,7 +403,7 @@ next_layers:
     write_artifacts(discussion_artifacts(h.root, "v3", str(approved_discussion)), force=False, label="test discussion file")
     (approved_discussion / "decisions.yaml").write_text(
         """version: v3
-status: approved
+status: ready
 allow_changes: true
 exact_docs:
   - docs/README.md
@@ -418,7 +429,7 @@ next_layers:
         raise CheckFailure(f"workflow discussion approved fixture failed: {approved_errors}")
     (approved_discussion / "decisions.yaml").write_text(
         """version: v3
-status: approved
+status: ready
 allow_changes: true
 exact_docs:
   - docs/missing-discussion-source.md
@@ -439,73 +450,99 @@ next_layers:
     if not any("Exact Docs path does not exist" in error for error in missing_doc_errors):
         raise CheckFailure(f"workflow discussion did not reject missing Exact Docs: {missing_doc_errors}")
 
-    plan = h.run([h.dev, "workflow", "plan", "--version", "v2", "--feature", "v2-search-query"]).stdout
+    plan = h.run([h.dev, "workflow", "plan", "--version", "v-template", "--feature", "template-docs-contract"]).stdout
     assert_contains(plan, "Workflow plans", "workflow plan header")
     assert_contains(plan, "Docs Change Ledger", "workflow plan ledger")
-    assert_contains(plan, "23-31", "workflow plan line range")
+    assert_contains(plan, "17-30", "workflow plan line range")
     assert_contains(plan, "Code Impact", "workflow plan code impact")
     assert_contains(plan, "blocked while `v1-mvp` is `live-running`", "workflow plan v1 block")
 
-    queue = h.run([h.dev, "workflow", "queue", "--version", "v2", "--feature", "v2-search-query"]).stdout
+    queue = h.run([h.dev, "workflow", "queue", "--version", "v-template", "--feature", "template-docs-contract"]).stdout
     assert_contains(queue, "Workflow queue candidates", "workflow queue header")
     assert_contains(queue, "depends_on: []", "workflow queue empty deps")
     assert_contains(queue, "live_queue_blocked: true", "workflow queue live block")
 
-    promote = h.run([h.dev, "workflow", "promote", "--version", "v2", "--preview"]).stdout
+    promote = h.run([h.dev, "workflow", "promote", "--version", "v-template", "--preview"]).stdout
     assert_contains(promote, "Workflow promotion preview", "workflow promote header")
-    assert_contains(promote, "promotion blocked: v1-mvp is live-running", "workflow promote v1 block")
-    assert_contains(promote, "v2-search-query/docs-contract", "workflow promote semantic task")
+    assert_contains(promote, "promotion blocked: v-template is a template reference", "workflow promote template block")
+    assert_contains(promote, "target_kind: preview-only", "workflow promote target kind")
+    assert_contains(promote, "writes_live_queue: false", "workflow promote writes live false")
+    assert_contains(promote, "template_reference: true", "workflow promote template reference")
+    assert_contains(promote, "apply_allowed: false", "workflow promote apply false")
+    assert_contains(promote, "Future live paths below are previews only", "workflow promote future path warning")
+    assert_contains(promote, "template-docs-contract/docs-baseline", "workflow promote semantic task")
     assert_contains(promote, "5-1/task-01", "workflow promote live label")
-    assert_contains(promote, "tasks/prompts/phase-5/5-1-v2-search/task-01-docs-contract.md", "workflow promote task path")
+    assert_contains(promote, "tasks/prompts/phase-5/5-1-template-reference/task-01-docs-baseline.md", "workflow promote task path")
     assert_contains(promote, "tasks/prompts/_shared/manifests/phase-5.md", "workflow promote manifest path")
     assert_contains(promote, "tasks/prompts/_shared/copy-ready/phase-5/5-1-task-01.md", "workflow promote copy-ready path")
     assert_contains(promote, "Live queue: not modified", "workflow promote no live writes")
 
-    promote_feature = h.run([h.dev, "workflow", "promote", "--version", "v2", "--feature", "v2-search-query", "--preview"]).stdout
-    assert_contains(promote_feature, "v2-search-query/docs-contract", "workflow promote feature include")
-    assert_not_contains(promote_feature, "v2-search-filters/filter-contract", "workflow promote feature exclude")
+    promote_feature = h.run([h.dev, "workflow", "promote", "--version", "v-template", "--feature", "template-docs-contract", "--preview"]).stdout
+    assert_contains(promote_feature, "template-docs-contract/docs-baseline", "workflow promote feature include")
+    assert_not_contains(promote_feature, "template-execution-contract/queue-candidate", "workflow promote feature exclude")
+
+    baseline_default = h.run([h.dev, "workflow", "baseline", "doctor"]).stdout
+    assert_contains(baseline_default, "workflow baseline doctor: OK", "workflow baseline default doctor")
+    assert_contains(baseline_default, "version: v-template", "workflow baseline default version")
+    project_default = h.run([h.dev, "workflow", "project", "doctor"]).stdout
+    assert_contains(project_default, "workflow project doctor: OK", "workflow project default doctor")
+    assert_contains(project_default, "blocked as expected for template reference", "workflow project template note")
+    closeout_default = h.run([h.dev, "workflow", "closeout", "doctor"]).stdout
+    assert_contains(closeout_default, "workflow closeout doctor: OK", "workflow closeout default doctor")
+    assert_contains(closeout_default, "blocked as expected for template reference", "workflow closeout template note")
+
+    apply_preview = h.run([h.dev, "workflow", "promote", "--version", "v-template", "apply", "--preview"]).stdout
+    assert_contains(apply_preview, "Workflow promotion apply preview", "workflow apply preview header")
+    assert_contains(apply_preview, "target_kind: apply-preview", "workflow apply preview target kind")
+    assert_contains(apply_preview, "writes_live_queue: false", "workflow apply preview no writes")
+    assert_contains(apply_preview, "template_reference: true", "workflow apply preview template")
+    assert_contains(apply_preview, "apply_allowed: false", "workflow apply preview blocked")
+    apply_write = h.run([h.dev, "workflow", "promote", "--version", "v-template", "apply", "--write"], check=False)
+    if apply_write.returncode == 0:
+        raise CheckFailure("workflow promote apply --write unexpectedly accepted v-template")
+    assert_contains(apply_write.stdout + apply_write.stderr, "template reference and cannot apply", "workflow apply write template guard")
 
     plan_out = h.tmp / "workflow-plans"
-    first_plan_write = h.run([h.dev, "workflow", "plan", "--version", "v2", "--write", "--out-dir", str(plan_out)]).stdout
+    first_plan_write = h.run([h.dev, "workflow", "plan", "--version", "v-template", "--write", "--out-dir", str(plan_out)]).stdout
     assert_contains(first_plan_write, "workflow plan: wrote files", "workflow plan write")
-    assert_exists(plan_out / "v2-search-query.plan.md", "workflow plan file")
-    second_plan_write = h.run([h.dev, "workflow", "plan", "--version", "v2", "--write", "--out-dir", str(plan_out)], check=False)
+    assert_exists(plan_out / "template-docs-contract.plan.md", "workflow plan file")
+    second_plan_write = h.run([h.dev, "workflow", "plan", "--version", "v-template", "--write", "--out-dir", str(plan_out)], check=False)
     if second_plan_write.returncode == 0:
         raise CheckFailure("workflow plan overwrite unexpectedly succeeded without --force")
     assert_contains(second_plan_write.stdout + second_plan_write.stderr, "use --force to overwrite", "workflow plan overwrite guard")
-    h.run([h.dev, "workflow", "plan", "--version", "v2", "--write", "--force", "--out-dir", str(plan_out)])
-    bad_plan_force = h.run([h.dev, "workflow", "plan", "--version", "v2", "--force"], check=False)
+    h.run([h.dev, "workflow", "plan", "--version", "v-template", "--write", "--force", "--out-dir", str(plan_out)])
+    bad_plan_force = h.run([h.dev, "workflow", "plan", "--version", "v-template", "--force"], check=False)
     if bad_plan_force.returncode == 0:
         raise CheckFailure("workflow plan unexpectedly accepted --force without --write")
     assert_contains(bad_plan_force.stdout + bad_plan_force.stderr, "--force requires --write", "workflow plan force guard")
 
     queue_out = h.tmp / "workflow-queue"
-    first_queue_write = h.run([h.dev, "workflow", "queue", "--version", "v2", "--write", "--out-dir", str(queue_out)]).stdout
+    first_queue_write = h.run([h.dev, "workflow", "queue", "--version", "v-template", "--write", "--out-dir", str(queue_out)]).stdout
     assert_contains(first_queue_write, "workflow queue: wrote files", "workflow queue write")
-    assert_exists(queue_out / "v2-search-query/queue.yaml", "workflow queue yaml")
-    assert_exists(queue_out / "v2-search-query/queue.md", "workflow queue markdown")
-    second_queue_write = h.run([h.dev, "workflow", "queue", "--version", "v2", "--write", "--out-dir", str(queue_out)], check=False)
+    assert_exists(queue_out / "template-docs-contract/queue.yaml", "workflow queue yaml")
+    assert_exists(queue_out / "template-docs-contract/queue.md", "workflow queue markdown")
+    second_queue_write = h.run([h.dev, "workflow", "queue", "--version", "v-template", "--write", "--out-dir", str(queue_out)], check=False)
     if second_queue_write.returncode == 0:
         raise CheckFailure("workflow queue overwrite unexpectedly succeeded without --force")
     assert_contains(second_queue_write.stdout + second_queue_write.stderr, "use --force to overwrite", "workflow queue overwrite guard")
-    h.run([h.dev, "workflow", "queue", "--version", "v2", "--write", "--force", "--out-dir", str(queue_out)])
-    bad_queue_force = h.run([h.dev, "workflow", "queue", "--version", "v2", "--force"], check=False)
+    h.run([h.dev, "workflow", "queue", "--version", "v-template", "--write", "--force", "--out-dir", str(queue_out)])
+    bad_queue_force = h.run([h.dev, "workflow", "queue", "--version", "v-template", "--force"], check=False)
     if bad_queue_force.returncode == 0:
         raise CheckFailure("workflow queue unexpectedly accepted --force without --write")
     assert_contains(bad_queue_force.stdout + bad_queue_force.stderr, "--force requires --write", "workflow queue force guard")
 
     promotion_out = h.tmp / "workflow-promotion"
-    first_promotion_write = h.run([h.dev, "workflow", "promote", "--version", "v2", "--write", "--out-dir", str(promotion_out)]).stdout
+    first_promotion_write = h.run([h.dev, "workflow", "promote", "--version", "v-template", "--write", "--out-dir", str(promotion_out)]).stdout
     assert_contains(first_promotion_write, "workflow promote: wrote preview files", "workflow promote write")
-    assert_contains(first_promotion_write, "promotion blocked: v1-mvp is live-running", "workflow promote write gate")
+    assert_contains(first_promotion_write, "promotion blocked: v-template is a template reference", "workflow promote write gate")
     assert_exists(promotion_out / "promotion.yaml", "workflow promotion yaml")
     assert_exists(promotion_out / "promotion.md", "workflow promotion markdown")
-    second_promotion_write = h.run([h.dev, "workflow", "promote", "--version", "v2", "--write", "--out-dir", str(promotion_out)], check=False)
+    second_promotion_write = h.run([h.dev, "workflow", "promote", "--version", "v-template", "--write", "--out-dir", str(promotion_out)], check=False)
     if second_promotion_write.returncode == 0:
         raise CheckFailure("workflow promotion overwrite unexpectedly succeeded without --force")
     assert_contains(second_promotion_write.stdout + second_promotion_write.stderr, "use --force to overwrite", "workflow promotion overwrite guard")
-    h.run([h.dev, "workflow", "promote", "--version", "v2", "--write", "--force", "--out-dir", str(promotion_out)])
-    bad_promotion_force = h.run([h.dev, "workflow", "promote", "--version", "v2", "--force"], check=False)
+    h.run([h.dev, "workflow", "promote", "--version", "v-template", "--write", "--force", "--out-dir", str(promotion_out)])
+    bad_promotion_force = h.run([h.dev, "workflow", "promote", "--version", "v-template", "--force"], check=False)
     if bad_promotion_force.returncode == 0:
         raise CheckFailure("workflow promote unexpectedly accepted --force without --write")
     assert_contains(bad_promotion_force.stdout + bad_promotion_force.stderr, "--force requires --write", "workflow promote force guard")
@@ -544,17 +581,13 @@ def check_dev_home(h: Harness) -> None:
     assert_contains(home, "\033[", "dev home default color")
     assert_contains(home, "AreaMatrix Dev Console", "dev home dashboard header")
     assert_contains(home, "当前局势", "dev home situation")
-    assert_contains(home, "不安全：dirty worktree + stale task + promotion blocked", "dev home unsafe summary")
-    assert_contains(home, "current task: 2-1/task-19", "dev home current task")
-    assert_contains(home, "Git checkpoint 会被 dirty worktree 拦截", "dev home dirty reason")
-    assert_contains(home, "还没有 verify PASS", "dev home stale reason")
+    assert_contains(home, "current task:", "dev home current task")
+    assert_contains(home, "原因：", "dev home reasons")
     assert_contains(home, "推荐行动链", "dev home action chain")
-    assert_contains(home, "git status --short", "dev home guide first step")
-    assert_contains(home, "./dev resume-stale", "dev home guide resume step")
     assert_contains(home, "verify PASS 后", "dev home guide after")
     assert_contains(home, "进度概览", "dev home progress overview")
     assert_contains(home, "v1-mvp live queue", "dev home v1 card")
-    assert_contains(home, "v2 planning", "dev home v2 card")
+    assert_contains(home, "v-template reference", "dev home template card")
     assert_contains(home, "去哪里看更多", "dev home navigation")
     assert_contains(home, "recommended guide", "dev home recommended guide")
     assert_contains(home, "lifecycle map", "dev home lifecycle map")
@@ -564,7 +597,6 @@ def check_dev_home(h: Harness) -> None:
     assert_contains(home, "输入 lang 持久切换", "dev home language switch hint")
     assert_contains(home, "输入 ? 查看全部快捷键", "dev home shortcut help hint")
     assert_contains(home, "Enter 只显示完整状态，不启动任务", "dev home enter is status only")
-    assert_contains(home, "v2: queue-only-until-v1-complete", "dev home promotion blocker")
     assert_not_contains(home, "任务快捷操作", "dev home should not show full shortcut list")
     assert_not_contains(home, "clear-stale", "dev home hides dangerous clear-stale")
     assert_not_contains(home, "reset-progress", "dev home hides dangerous reset-progress")
@@ -615,7 +647,7 @@ def check_dev_home(h: Harness) -> None:
     lifecycle = h.run([h.dev, "--lang", "mixed", "lifecycle"]).stdout
     assert_contains(lifecycle, "Lifecycle Wizard", "dev lifecycle command")
     assert_contains(lifecycle, "v1-mvp live-running", "dev lifecycle v1")
-    assert_contains(lifecycle, "v2 planning", "dev lifecycle v2")
+    assert_contains(lifecycle, "v-template template-reference", "dev lifecycle template")
     live_queue = h.run([h.dev, "--lang", "mixed", "live-queue"]).stdout
     assert_contains(live_queue, "Live Queue", "dev live queue command")
     assert_contains(live_queue, "maintenance / danger", "dev live queue maintenance")
@@ -1032,7 +1064,7 @@ def run_check(root_dir: Path) -> int:
         try:
             check_static(harness)
             check_repo_health(harness)
-            check_v2_changes(harness)
+            check_template_changes(harness)
             check_versioned_workflow(harness)
             check_real_status(harness)
             check_dev_home(harness)

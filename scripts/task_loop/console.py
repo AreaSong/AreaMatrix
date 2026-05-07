@@ -809,8 +809,12 @@ def progress_overview_lines(cfg: ConsoleConfig, snapshot: DashboardSnapshot, col
     task_label, _, _ = current_task_parts(snapshot)
     task_marker = task_label if snapshot.stale_count else prompt.first_ready
     v1 = next((item for item in snapshot.lifecycle.versions if item.version_id == "v1-mvp"), None)
-    v2 = next((item for item in snapshot.lifecycle.versions if item.version_id == "v2"), None)
-    promotion_state = tr(cfg, "progress_overview.promotion_blocked") if snapshot.lifecycle.promotion_blockers else (v2.promotion if v2 else "none")
+    template = next((item for item in snapshot.lifecycle.versions if item.version_id == "v-template"), None)
+    promotion_state = (
+        tr(cfg, "progress_overview.promotion_blocked")
+        if snapshot.lifecycle.promotion_blockers
+        else (template.promotion if template else "none")
+    )
     lines = [bold(tr(cfg, "progress_overview.title"), color)]
     lines.append(
         tr(
@@ -824,16 +828,16 @@ def progress_overview_lines(cfg: ConsoleConfig, snapshot: DashboardSnapshot, col
             task=task_marker,
         )
     )
-    if v2:
+    if template:
         lines.append(
             tr(
                 cfg,
-                "progress_overview.v2",
-                version=v2.version_id,
-                changes=v2.changes_count,
-                plans=v2.plans_count,
-                drafts=v2.drafts_count,
-                queue=v2.queue_count,
+                "progress_overview.template",
+                version=template.version_id,
+                changes=template.changes_count,
+                plans=template.plans_count,
+                drafts=template.drafts_count,
+                queue=template.queue_count,
                 promotion=promotion_state,
             )
         )

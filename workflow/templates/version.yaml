@@ -1,6 +1,6 @@
 id: v*
 title: Version workflow template
-status: planning
+lifecycle_status: planning
 depends_on: []
 live_queue: ""
 middle_layers: required

@@ -2,7 +2,8 @@
 
 This file reviews whether a workflow feature is ready to become executable tasks.
 
-- Status: candidate
+- Status: `ready`
+- Kind: queue-candidate
 - Promotion: explicit only
 - Live queue blocked: true while prerequisites are incomplete
 

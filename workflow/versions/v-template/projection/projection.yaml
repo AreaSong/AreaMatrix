@@ -1,0 +1,85 @@
+version: v-template
+status: blocked
+kind: result-projection
+source: tasks/prompts/_shared/progress.json
+tasks:
+  - semantic_id: template-docs-contract/docs-baseline
+    live_label: 5-1/task-01
+    feature: template-docs-contract
+    task_key: docs-baseline
+    status: draft
+    verify: missing
+    checkpoint: missing
+    trace_ok: false
+    trace:
+      promotion_mapping: workflow/versions/v-template/promotion/promotion.yaml
+      queue_candidate: workflow/versions/v-template/queue/template-docs-contract/queue.yaml
+      draft_id: workflow/versions/v-template/drafts/template-docs-contract/docs-baseline.copy.md
+      plan_item: workflow/versions/v-template/plans/template-docs-contract.plan.md
+      change_id: workflow/versions/v-template/changes
+      middle_layer_entry: workflow/versions/v-template/middle-layer/template-docs-contract.yaml
+      docs_discussion: workflow/versions/v-template/discussion/docs-discussion.md
+  - semantic_id: template-docs-contract/discussion-gate
+    live_label: 5-1/task-02
+    feature: template-docs-contract
+    task_key: discussion-gate
+    status: draft
+    verify: missing
+    checkpoint: missing
+    trace_ok: false
+    trace:
+      promotion_mapping: workflow/versions/v-template/promotion/promotion.yaml
+      queue_candidate: workflow/versions/v-template/queue/template-docs-contract/queue.yaml
+      draft_id: workflow/versions/v-template/drafts/template-docs-contract/discussion-gate.copy.md
+      plan_item: workflow/versions/v-template/plans/template-docs-contract.plan.md
+      change_id: workflow/versions/v-template/changes
+      middle_layer_entry: workflow/versions/v-template/middle-layer/template-docs-contract.yaml
+      docs_discussion: workflow/versions/v-template/discussion/docs-discussion.md
+  - semantic_id: template-execution-contract/queue-candidate
+    live_label: 5-1/task-03
+    feature: template-execution-contract
+    task_key: queue-candidate
+    status: draft
+    verify: missing
+    checkpoint: missing
+    trace_ok: false
+    trace:
+      promotion_mapping: workflow/versions/v-template/promotion/promotion.yaml
+      queue_candidate: workflow/versions/v-template/queue/template-execution-contract/queue.yaml
+      draft_id: workflow/versions/v-template/drafts/template-execution-contract/queue-candidate.copy.md
+      plan_item: workflow/versions/v-template/plans/template-execution-contract.plan.md
+      change_id: workflow/versions/v-template/changes
+      middle_layer_entry: workflow/versions/v-template/middle-layer/template-execution-contract.yaml
+      docs_discussion: workflow/versions/v-template/discussion/docs-discussion.md
+  - semantic_id: template-execution-contract/promotion-preview
+    live_label: 5-1/task-04
+    feature: template-execution-contract
+    task_key: promotion-preview
+    status: draft
+    verify: missing
+    checkpoint: missing
+    trace_ok: false
+    trace:
+      promotion_mapping: workflow/versions/v-template/promotion/promotion.yaml
+      queue_candidate: workflow/versions/v-template/queue/template-execution-contract/queue.yaml
+      draft_id: workflow/versions/v-template/drafts/template-execution-contract/promotion-preview.copy.md
+      plan_item: workflow/versions/v-template/plans/template-execution-contract.plan.md
+      change_id: workflow/versions/v-template/changes
+      middle_layer_entry: workflow/versions/v-template/middle-layer/template-execution-contract.yaml
+      docs_discussion: workflow/versions/v-template/discussion/docs-discussion.md
+  - semantic_id: template-execution-contract/projection-closeout
+    live_label: 5-1/task-05
+    feature: template-execution-contract
+    task_key: projection-closeout
+    status: draft
+    verify: missing
+    checkpoint: missing
+    trace_ok: false
+    trace:
+      promotion_mapping: workflow/versions/v-template/promotion/promotion.yaml
+      queue_candidate: workflow/versions/v-template/queue/template-execution-contract/queue.yaml
+      draft_id: workflow/versions/v-template/drafts/template-execution-contract/projection-closeout.copy.md
+      plan_item: workflow/versions/v-template/plans/template-execution-contract.plan.md
+      change_id: workflow/versions/v-template/changes
+      middle_layer_entry: workflow/versions/v-template/middle-layer/template-execution-contract.yaml
+      docs_discussion: workflow/versions/v-template/discussion/docs-discussion.md

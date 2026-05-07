@@ -1,0 +1,66 @@
+id: template-docs-contract-middle-layer
+version: v-template
+feature_id: template-docs-contract
+module: workflow-template
+status: ready
+docs_refs:
+  - file: workflow/architecture.md
+    line_start: 17
+    line_end: 30
+    heading: Architecture Layers
+    excerpt: 七层模型描述的是抽象依赖关系，不是执行步骤。
+  - file: workflow/pipeline.md
+    line_start: 72
+    line_end: 91
+    heading: docs baseline snapshot
+    excerpt: 记录本轮讨论基于哪些 docs 源事实，防止后续 docs drift。
+insertions:
+  - target: workflow template Exact Docs contract
+    reason: Prove that template artifacts keep docs source facts explicit and hash-checkable.
+    before: A template artifact could drift from its source docs without a failing doctor.
+    after: Baseline and discussion artifacts must name Exact Docs and pass drift checks.
+links:
+  - feature: template-execution-contract
+    relationship: prerequisite-for
+    reason: Execution contract artifacts must inherit the docs trace established here.
+code_impacts:
+  existing:
+    - workflow/architecture.md
+    - workflow/pipeline.md
+    - workflow/templates/README.md
+  expected:
+    - workflow/versions/v-template/baseline/docs.yaml
+    - workflow/versions/v-template/discussion/decisions.yaml
+  tests:
+    - scripts/dev_tools/workflow_baseline.py
+    - scripts/dev_tools/discussion.py
+dependencies:
+  features: []
+  docs:
+    - workflow/architecture.md
+    - workflow/pipeline.md
+  code: []
+  tasks: []
+slice_plan:
+  - id: docs-baseline
+    purpose: Prove Exact Docs can be snapshotted and drift-checked.
+    inputs:
+      - workflow/architecture.md
+      - workflow/pipeline.md
+    outputs:
+      - workflow/versions/v-template/baseline/docs.yaml
+    acceptance:
+      - ./dev workflow baseline --version v-template doctor
+  - id: discussion-gate
+    purpose: Prove discussion decisions carry the template reference boundary.
+    inputs:
+      - workflow/versions/v-template/discussion/docs-discussion.md
+      - workflow/versions/v-template/discussion/decisions.yaml
+    outputs:
+      - workflow doctor discussion gate evidence
+    acceptance:
+      - ./dev workflow doctor
+risk_boundaries:
+  - The template reference does not define product behavior.
+  - Exact Docs drift must block downstream template gates.
+  - The template reference must not write live tasks/prompts.

@@ -21,8 +21,19 @@ from .common import ToolError, print_error, project_root
 from .discussion import run_workflow_discuss
 from .macos import run_macos_tests
 from .middle_layer import run_workflow_middle
+from .workflow_baseline import run_workflow_baseline
 from .workflow_init import run_workflow_init
-from .workflow import run_workflow_doctor, run_workflow_plan, run_workflow_promote, run_workflow_queue, run_workflow_status
+from .workflow_projection import run_workflow_closeout, run_workflow_project
+from .workflow import (
+    DEFAULT_VERSION,
+    run_workflow_check_template,
+    run_workflow_doctor,
+    run_workflow_drafts,
+    run_workflow_plan,
+    run_workflow_promote,
+    run_workflow_queue,
+    run_workflow_status,
+)
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -64,21 +75,25 @@ def _build_parser() -> argparse.ArgumentParser:
 
     changes = subparsers.add_parser("changes", help="Validate and preview versioned workflow changes")
     changes_sub = changes.add_subparsers(dest="changes_command", required=True)
-    changes_doctor = changes_sub.add_parser("doctor", help="Validate v2 workflow change tracking files")
-    changes_doctor.add_argument("--file", help="Validate one change file instead of all v2 changes")
-    changes_preview = changes_sub.add_parser("preview", help="Preview v2 workflow tasks without generating prompts")
-    changes_preview.add_argument("--file", help="Preview one change file instead of all v2 changes")
-    changes_generate = changes_sub.add_parser("generate", help="Generate v2 prompt drafts from change tracking files")
-    changes_generate.add_argument("--file", help="Generate from one change file instead of all v2 changes")
+    changes_doctor = changes_sub.add_parser("doctor", help="Validate versioned workflow change tracking files")
+    changes_doctor.add_argument("--version", default=DEFAULT_VERSION, help=f"Workflow version to inspect; defaults to {DEFAULT_VERSION}")
+    changes_doctor.add_argument("--file", help="Validate one change file instead of all version changes")
+    changes_preview = changes_sub.add_parser("preview", help="Preview versioned workflow tasks without generating prompts")
+    changes_preview.add_argument("--version", default=DEFAULT_VERSION, help=f"Workflow version to preview; defaults to {DEFAULT_VERSION}")
+    changes_preview.add_argument("--file", help="Preview one change file instead of all version changes")
+    changes_generate = changes_sub.add_parser("generate", help="Generate versioned prompt drafts from change tracking files")
+    changes_generate.add_argument("--version", default=DEFAULT_VERSION, help=f"Workflow version to generate; defaults to {DEFAULT_VERSION}")
+    changes_generate.add_argument("--file", help="Generate from one change file instead of all version changes")
     changes_generate.add_argument("--feature", help="Generate only one feature id")
     changes_generate.add_argument("--write", action="store_true", help="Write draft files instead of printing a preview")
-    changes_generate.add_argument("--out-dir", help="Draft output directory; defaults to workflow/versions/v2/drafts")
+    changes_generate.add_argument("--out-dir", help="Draft output directory; defaults to workflow/versions/<version>/drafts")
     changes_generate.add_argument("--force", action="store_true", help="Allow overwriting existing draft files when --write is used")
 
     workflow = subparsers.add_parser("workflow", help="Manage versioned workflow templates, plans, and queue candidates")
     workflow_sub = workflow.add_subparsers(dest="workflow_command", required=True)
     workflow_sub.add_parser("doctor", help="Validate versioned workflow structure and gates")
     workflow_sub.add_parser("status", help="Show versioned workflow status and promotion gates")
+    workflow_sub.add_parser("check-template", help=f"Run the full managed template reference gate; defaults to {DEFAULT_VERSION}")
     workflow_init = workflow_sub.add_parser("init", help="Render or write a new v* workflow version skeleton")
     workflow_init.add_argument("--version", required=True, help="Workflow version to initialize, such as v3")
     workflow_init.add_argument("--title", help="Workflow title; defaults to 'AreaMatrix <version> planning workflow'")
@@ -94,6 +109,17 @@ def _build_parser() -> argparse.ArgumentParser:
     workflow_discuss_init.add_argument("--write", action="store_true", help="Write discussion files instead of printing a preview")
     workflow_discuss_init.add_argument("--out-dir", help="Discussion output directory; defaults to workflow/versions/<version>/discussion")
     workflow_discuss_init.add_argument("--force", action="store_true", help="Allow overwriting existing discussion files when --write is used")
+    workflow_baseline = workflow_sub.add_parser("baseline", help="Manage docs baseline and drift checks")
+    workflow_baseline.add_argument(
+        "--version",
+        default=DEFAULT_VERSION,
+        help=f"Workflow version to inspect; defaults to managed template reference {DEFAULT_VERSION}. Use --version vN for real workflows.",
+    )
+    workflow_baseline_sub = workflow_baseline.add_subparsers(dest="baseline_command", required=True)
+    workflow_baseline_sub.add_parser("preview", help="Preview docs baseline without writing files")
+    workflow_baseline_write = workflow_baseline_sub.add_parser("write", help="Write docs baseline file")
+    workflow_baseline_write.add_argument("--force", action="store_true", help="Allow overwriting existing baseline file")
+    workflow_baseline_sub.add_parser("doctor", help="Validate docs baseline and drift")
     workflow_middle = workflow_sub.add_parser("middle", help="Manage feature-level middle-layer workflow ledgers")
     workflow_middle.add_argument("--version", required=True, help="Workflow version to inspect, such as v3")
     workflow_middle.add_argument("--feature", help="Inspect only one feature id")
@@ -104,25 +130,64 @@ def _build_parser() -> argparse.ArgumentParser:
     workflow_middle_init.add_argument("--write", action="store_true", help="Write middle-layer files instead of printing a preview")
     workflow_middle_init.add_argument("--out-dir", help="Middle-layer output directory; defaults to workflow/versions/<version>/middle-layer")
     workflow_middle_init.add_argument("--force", action="store_true", help="Allow overwriting existing middle-layer files when --write is used")
-    workflow_plan = workflow_sub.add_parser("plan", help="Render docs-change ledger plans")
-    workflow_plan.add_argument("--version", default="v2", help="Workflow version to plan; defaults to v2")
+    workflow_plan = workflow_sub.add_parser("plan", help="Render or validate docs-change ledger plans")
+    workflow_plan.add_argument("--version", default=DEFAULT_VERSION, help=f"Workflow version to plan; defaults to {DEFAULT_VERSION}")
     workflow_plan.add_argument("--feature", help="Render only one feature id")
     workflow_plan.add_argument("--write", action="store_true", help="Write plan files instead of printing a preview")
     workflow_plan.add_argument("--out-dir", help="Plan output directory; defaults to workflow/versions/<version>/plans")
     workflow_plan.add_argument("--force", action="store_true", help="Allow overwriting existing plan files when --write is used")
-    workflow_queue = workflow_sub.add_parser("queue", help="Render workflow queue candidates")
-    workflow_queue.add_argument("--version", default="v2", help="Workflow version to queue; defaults to v2")
+    workflow_plan_sub = workflow_plan.add_subparsers(dest="plan_command")
+    workflow_plan_sub.add_parser("doctor", help="Validate plan gate without writing files")
+    workflow_drafts = workflow_sub.add_parser("drafts", help="Validate workflow draft artifacts")
+    workflow_drafts.add_argument("--version", default=DEFAULT_VERSION, help=f"Workflow version to inspect; defaults to {DEFAULT_VERSION}")
+    workflow_drafts.add_argument("--feature", help="Inspect only one feature id")
+    workflow_drafts_sub = workflow_drafts.add_subparsers(dest="drafts_command", required=True)
+    workflow_drafts_sub.add_parser("doctor", help="Validate draft gate without writing files")
+    workflow_queue = workflow_sub.add_parser("queue", help="Render or validate workflow queue candidates")
+    workflow_queue.add_argument("--version", default=DEFAULT_VERSION, help=f"Workflow version to queue; defaults to {DEFAULT_VERSION}")
     workflow_queue.add_argument("--feature", help="Render only one feature id")
     workflow_queue.add_argument("--write", action="store_true", help="Write queue candidate files instead of printing a preview")
     workflow_queue.add_argument("--out-dir", help="Queue output directory; defaults to workflow/versions/<version>/queue")
     workflow_queue.add_argument("--force", action="store_true", help="Allow overwriting existing queue files when --write is used")
-    workflow_promote = workflow_sub.add_parser("promote", help="Preview workflow queue promotion into future live task labels")
-    workflow_promote.add_argument("--version", default="v2", help="Workflow version to promote-preview; defaults to v2")
+    workflow_queue_sub = workflow_queue.add_subparsers(dest="queue_command")
+    workflow_queue_sub.add_parser("doctor", help="Validate queue gate without writing files")
+    workflow_promote = workflow_sub.add_parser("promote", help="Preview, approve, or apply workflow promotion")
+    workflow_promote.add_argument("--version", default=DEFAULT_VERSION, help=f"Workflow version to promote-preview; defaults to {DEFAULT_VERSION}")
     workflow_promote.add_argument("--feature", help="Preview only one feature id, including upstream feature dependencies")
     workflow_promote.add_argument("--preview", action="store_true", help="Explicit preview mode; this is also the default")
     workflow_promote.add_argument("--write", action="store_true", help="Write promotion preview files instead of printing to stdout")
     workflow_promote.add_argument("--out-dir", help="Promotion preview output directory; defaults to workflow/versions/<version>/promotion")
     workflow_promote.add_argument("--force", action="store_true", help="Allow overwriting existing promotion preview files when --write is used")
+    workflow_promote_sub = workflow_promote.add_subparsers(dest="promote_command")
+    workflow_promote_sub.add_parser("preview", help="Preview workflow promotion without writing live files")
+    workflow_promote_approve = workflow_promote_sub.add_parser("approve", help="Write or preview promotion approval")
+    workflow_promote_approve.add_argument("--write", action="store_true", help="Write approval file")
+    workflow_promote_approve.add_argument("--force", action="store_true", help="Allow overwriting existing approval file")
+    workflow_promote_apply = workflow_promote_sub.add_parser("apply", help="Preview or apply approved promotion")
+    workflow_promote_apply.add_argument("--preview", action="store_true", help="Preview apply gates")
+    workflow_promote_apply.add_argument("--write", action="store_true", help="Write live promotion files after gates pass")
+    workflow_project = workflow_sub.add_parser("project", help="Project live task-loop results back to workflow")
+    workflow_project.add_argument(
+        "--version",
+        default=DEFAULT_VERSION,
+        help=f"Workflow version to project; defaults to managed template reference {DEFAULT_VERSION}. Use --version vN for real workflows.",
+    )
+    workflow_project_sub = workflow_project.add_subparsers(dest="project_command", required=True)
+    workflow_project_sub.add_parser("preview", help="Preview workflow projection")
+    workflow_project_write = workflow_project_sub.add_parser("write", help="Write workflow projection file")
+    workflow_project_write.add_argument("--force", action="store_true", help="Allow overwriting existing projection file")
+    workflow_project_sub.add_parser("doctor", help="Validate workflow projection")
+    workflow_closeout = workflow_sub.add_parser("closeout", help="Preview, write, or validate workflow closeout")
+    workflow_closeout.add_argument(
+        "--version",
+        default=DEFAULT_VERSION,
+        help=f"Workflow version to close out; defaults to managed template reference {DEFAULT_VERSION}. Use --version vN for real workflows.",
+    )
+    workflow_closeout_sub = workflow_closeout.add_subparsers(dest="closeout_command", required=True)
+    workflow_closeout_sub.add_parser("preview", help="Preview workflow closeout")
+    workflow_closeout_write = workflow_closeout_sub.add_parser("write", help="Write workflow closeout file")
+    workflow_closeout_write.add_argument("--force", action="store_true", help="Allow overwriting existing closeout file")
+    workflow_closeout_sub.add_parser("doctor", help="Validate workflow closeout")
 
     return parser
 
@@ -173,18 +238,28 @@ def main(argv: Sequence[str] | None = None) -> int:
             return run_workflow_doctor(root, args)
         if args.command == "workflow" and args.workflow_command == "status":
             return run_workflow_status(root, args)
+        if args.command == "workflow" and args.workflow_command == "check-template":
+            return run_workflow_check_template(root, args)
         if args.command == "workflow" and args.workflow_command == "init":
             return run_workflow_init(root, args)
         if args.command == "workflow" and args.workflow_command == "discuss":
             return run_workflow_discuss(root, args)
+        if args.command == "workflow" and args.workflow_command == "baseline":
+            return run_workflow_baseline(root, args)
         if args.command == "workflow" and args.workflow_command == "middle":
             return run_workflow_middle(root, args)
         if args.command == "workflow" and args.workflow_command == "plan":
             return run_workflow_plan(root, args)
+        if args.command == "workflow" and args.workflow_command == "drafts":
+            return run_workflow_drafts(root, args)
         if args.command == "workflow" and args.workflow_command == "queue":
             return run_workflow_queue(root, args)
         if args.command == "workflow" and args.workflow_command == "promote":
             return run_workflow_promote(root, args)
+        if args.command == "workflow" and args.workflow_command == "project":
+            return run_workflow_project(root, args)
+        if args.command == "workflow" and args.workflow_command == "closeout":
+            return run_workflow_closeout(root, args)
         parser.error("unsupported command")
         return 2
     except ToolError as exc:

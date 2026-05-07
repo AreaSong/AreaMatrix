@@ -1,9 +1,9 @@
-id: v2-example-change
+id: v-next-example-change
 title: Example versioned feature change
-version: v2
+version: v*
 status: draft
 features:
-  - id: v2-example-feature
+  - id: v-next-example-feature
     module: example
     intent: Describe the feature outcome and why it belongs in this version.
     depends_on: []

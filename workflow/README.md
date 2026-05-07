@@ -9,6 +9,11 @@ It is separate from `tasks/prompts/**`, which is the approved small-task executi
 - `tasks/prompts/**`: executable copy-ready / verify-ready task queue.
 - `./task-loop`: runner that executes approved tasks; it does not make requirement decisions.
 
+For the conceptual architecture behind these boundaries, see
+[`architecture.md`](architecture.md).
+For the detailed docs-to-task-loop execution flow, see
+[`pipeline.md`](pipeline.md).
+
 ## Standard Flow
 
 ```text
@@ -40,14 +45,26 @@ drafts, queue candidates, or promotion preview are generated.
 Create a new version skeleton with:
 
 ```bash
-./dev workflow init --version v3
-./dev workflow init --version v3 --write
+./dev workflow init --version v2
+./dev workflow init --version v2 --write
+./dev workflow discuss --version v2 doctor
 ```
 
 Each v* has its own version-local queue numbering, starting at
 `phase-0 / 0-1 / task-01`. Live `tasks/prompts/**` labels remain globally unique;
 new versions keep `promotion_preview.live_mapping: pending` until a later
 explicit mapping step.
+
+Check the managed template reference with:
+
+```bash
+./dev workflow check-template
+```
+
+`v-template` is only the golden reference for templates and doctors. It may show
+future live paths in promotion preview, but those paths are not written unless a
+later explicit apply gate passes; `v-template` itself can never apply to live
+`tasks/prompts/**`.
 
 Large features and versioned work go through `workflow` first. Small, already
 clear bug fixes can go directly to `tasks/prompts/**` or a focused local task.

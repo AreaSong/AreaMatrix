@@ -15,16 +15,18 @@ from .changes import (
     as_list,
     collect_changes,
     display_path,
+    feature_id_matches_version,
     filter_feature_records,
     ordered_features,
     parse_yaml_subset,
     write_artifacts,
 )
+from .workflow_states import ARTIFACT_STATUSES, status_list
 
 
 VERSION_ROOT = Path("workflow/versions")
 MIDDLE_LAYER_ROOT_NAME = "middle-layer"
-ALLOWED_STATUS = {"draft", "planned", "ready", "blocked", "archived"}
+ALLOWED_STATUS = ARTIFACT_STATUSES
 
 
 @dataclass(frozen=True)
@@ -67,10 +69,11 @@ def validate_scalar_fields(root: Path, record: MiddleLayerRecord, version: str) 
     feature_id = record.feature_id
     if feature_id and not SLUG_RE.fullmatch(feature_id):
         errors.append(f"{prefix}: feature_id must be a lowercase slug")
-    if feature_id and not feature_id.startswith(f"{version}-"):
-        errors.append(f"{prefix}: feature_id must start with {version}-")
+    if feature_id and not feature_id_matches_version(feature_id, version):
+        expected = "template-" if version == "v-template" else f"{version}-"
+        errors.append(f"{prefix}: feature_id must start with {expected}")
     if record.data.get("status") not in ALLOWED_STATUS:
-        errors.append(f"{prefix}: status must be one of {', '.join(sorted(ALLOWED_STATUS))}")
+        errors.append(f"{prefix}: status must be one of {status_list(ALLOWED_STATUS)}")
     return errors
 
 

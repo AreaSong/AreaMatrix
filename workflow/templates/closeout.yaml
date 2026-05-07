@@ -1,0 +1,15 @@
+version: v*
+status: blocked
+kind: closeout-audit
+projection_status: blocked
+blockers:
+  - projection status is blocked, expected done
+evidence:
+  projection: workflow/versions/v*/projection/projection.yaml
+  promotion: workflow/versions/v*/promotion/promotion.yaml
+  progress: tasks/prompts/_shared/progress.json
+  verify: missing
+  checkpoint: missing
+remaining_risks:
+  - Workflow cannot be complete until verify pass, checkpoint evidence, and trace are present.
+archive_readiness: blocked

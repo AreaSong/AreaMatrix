@@ -1,0 +1,140 @@
+id: template-contracts
+title: Workflow template reference contracts
+version: v-template
+status: ready
+features:
+  - id: template-docs-contract
+    module: workflow-template
+    intent: Prove that template workflow artifacts keep Exact Docs, discussion decisions, and baseline drift checks traceable.
+    depends_on: []
+    docs:
+      source:
+        - workflow/architecture.md
+        - workflow/pipeline.md
+      update:
+        - workflow/templates/README.md
+      api: []
+      udl: []
+    doc_changes:
+      - file: workflow/architecture.md
+        operation: reference
+        line_start: 17
+        line_end: 30
+        heading: Architecture Layers
+        excerpt: 七层模型描述的是抽象依赖关系，不是执行步骤。
+        summary: Architecture layers define the conceptual contract that the template instance demonstrates.
+        depends_on: []
+        tasks:
+          - docs-baseline
+          - discussion-gate
+      - file: workflow/pipeline.md
+        operation: reference
+        line_start: 72
+        line_end: 91
+        heading: docs baseline snapshot
+        excerpt: 记录本轮讨论基于哪些 docs 源事实，防止后续 docs drift。
+        summary: Baseline snapshot is the drift contract that every downstream artifact must preserve.
+        depends_on:
+          - workflow/architecture.md
+        tasks:
+          - docs-baseline
+    code_impacts:
+      existing:
+        - workflow/architecture.md
+        - workflow/pipeline.md
+        - workflow/templates/README.md
+      expected:
+        - workflow/versions/v-template/baseline/docs.yaml
+        - workflow/versions/v-template/discussion/decisions.yaml
+      tests:
+        - scripts/dev_tools/workflow_baseline.py
+        - scripts/dev_tools/discussion.py
+    risk:
+      level: Low
+      boundaries:
+        - Does not define product behavior.
+        - Does not write live tasks/prompts.
+        - Docs drift must block downstream template gates.
+    task_split:
+      - id: docs-baseline
+        title: Validate Exact Docs baseline and drift checks for the template reference.
+        validation:
+          - ./dev workflow baseline --version v-template doctor
+          - ./dev workflow doctor
+      - id: discussion-gate
+        title: Validate discussion decisions and boundary language for the template reference.
+        validation:
+          - ./dev workflow doctor
+  - id: template-execution-contract
+    module: workflow-template
+    intent: Prove that plans, drafts, queue candidates, promotion preview, projection, and closeout remain preview-first and traceable.
+    depends_on:
+      - template-docs-contract
+    docs:
+      source:
+        - workflow/pipeline.md
+      update:
+        - workflow/templates/README.md
+        - tasks/prompts/README.md
+      api: []
+      udl: []
+    doc_changes:
+      - file: workflow/pipeline.md
+        operation: reference
+        line_start: 282
+        line_end: 386
+        heading: queue candidates
+        excerpt: dry-run 预览候选队列进入 live `tasks/prompts/**` 的结果。
+        summary: Queue and promotion stages must stay preview-first until explicit promote.
+        depends_on:
+          - workflow/pipeline.md
+        tasks:
+          - queue-candidate
+          - promotion-preview
+      - file: workflow/pipeline.md
+        operation: reference
+        line_start: 448
+        line_end: 496
+        heading: result projection
+        excerpt: 把 task-loop 结果回写到 workflow 视角。
+        summary: Projection and closeout must require runtime, verify, checkpoint, and trace evidence.
+        depends_on:
+          - workflow/pipeline.md
+        tasks:
+          - projection-closeout
+    code_impacts:
+      existing:
+        - workflow/pipeline.md
+        - tasks/prompts/README.md
+        - scripts/dev_tools/workflow.py
+        - scripts/dev_tools/promotion.py
+        - scripts/dev_tools/workflow_projection.py
+      expected:
+        - workflow/versions/v-template/queue/template-execution-contract/queue.yaml
+        - workflow/versions/v-template/promotion/promotion.yaml
+        - workflow/versions/v-template/projection/projection.yaml
+        - workflow/versions/v-template/closeout/closeout.yaml
+      tests:
+        - scripts/dev_tools/workflow.py
+        - scripts/dev_tools/promotion.py
+        - scripts/dev_tools/workflow_projection.py
+    risk:
+      level: Low
+      boundaries:
+        - Promotion apply write is blocked for v-template.
+        - Preview commands must not write tasks/prompts or progress.json.
+        - Closeout cannot claim done without verify pass and checkpoint evidence.
+    task_split:
+      - id: queue-candidate
+        title: Validate version-local queue candidate structure for the template reference.
+        validation:
+          - ./dev workflow queue --version v-template doctor
+      - id: promotion-preview
+        title: Validate promotion preview and apply-preview safety gates for the template reference.
+        validation:
+          - ./dev workflow promote --version v-template apply --preview
+      - id: projection-closeout
+        title: Validate projection and closeout evidence gates for the template reference.
+        validation:
+          - ./dev workflow project --version v-template doctor
+          - ./dev workflow closeout --version v-template doctor

@@ -127,6 +127,8 @@ def _discussion_status(data: dict[str, Any]) -> str:
 
 
 def _local_queue_label(data: dict[str, Any]) -> str:
+    if data.get("kind") == "template-reference" or data.get("lifecycle_status") == "template-reference":
+        return "template-reference"
     queue = data.get("local_queue")
     if not isinstance(queue, dict):
         return "already-live" if data.get("promotion") == "already-live" else "missing"
@@ -145,7 +147,7 @@ def _live_mapping_label(data: dict[str, Any]) -> str:
 
 
 def _stage_statuses(data: dict[str, Any], version_dir: Path, counts: dict[str, int]) -> dict[str, str]:
-    status = str(data.get("status") or "unknown")
+    status = str(data.get("lifecycle_status") or data.get("status") or "unknown")
     promotion = str(data.get("promotion") or "missing")
     live_queue = str(data.get("live_queue") or "")
     archive_policy = str(data.get("archive_policy") or "missing")
@@ -187,7 +189,7 @@ def load_lifecycle_snapshot(root: Path) -> LifecycleSnapshot:
             VersionLifecycle(
                 version_id=version_id,
                 title=str(data.get("title") or version_id),
-                status=str(data.get("status") or "unknown"),
+                status=str(data.get("lifecycle_status") or data.get("status") or "unknown"),
                 depends_on=_as_tuple(data.get("depends_on")),
                 gate=str(data.get("gate") or "none"),
                 promotion=str(data.get("promotion") or "missing"),
@@ -226,17 +228,15 @@ def validate_lifecycle_snapshot(root: Path) -> list[str]:
     ids = {item.version_id for item in snapshot.versions}
     if "v1-mvp" not in ids:
         errors.append("lifecycle: missing v1-mvp")
-    if "v2" not in ids:
-        errors.append("lifecycle: missing v2")
+    if "v-template" not in ids:
+        errors.append("lifecycle: missing v-template")
     v1 = next((item for item in snapshot.versions if item.version_id == "v1-mvp"), None)
     if v1 and v1.status != "live-running":
         errors.append("lifecycle: v1-mvp must be live-running")
-    v2 = next((item for item in snapshot.versions if item.version_id == "v2"), None)
-    if v2:
-        if v2.status != "planning":
-            errors.append("lifecycle: v2 must be planning")
-        if v2.live_mapping == "missing":
-            errors.append("lifecycle: v2 live mapping missing")
-    if not snapshot.promotion_blockers:
-        errors.append("lifecycle: expected v1 live promotion blocker")
+    template = next((item for item in snapshot.versions if item.version_id == "v-template"), None)
+    if template:
+        if template.status != "template-reference":
+            errors.append("lifecycle: v-template must be template-reference")
+        if template.live_mapping == "missing":
+            errors.append("lifecycle: v-template live mapping missing")
     return errors
