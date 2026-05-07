@@ -164,27 +164,37 @@ extension ImportSingleFilePreviewModel {
             blockImportForDuplicateResolution(replaceOptionVisibility.blockingReason)
             return
         }
+        clearReplaceConfirmationRecovery()
         setPendingReplaceConfirmation(replaceConfirmationContext(incomingPath: sourceURL.path))
     }
 
     func cancelReplaceConfirmation() {
         setPendingReplaceConfirmation(nil)
+        clearReplaceConfirmationRecovery()
     }
 
     func applyReplaceConfirmation(_ decision: ImportSingleFileReplaceConfirmationDecision) {
         guard pendingReplaceConfirmation == decision.context else {
-            blockImportForDuplicateResolution("Replace confirmation context expired")
+            setReplaceConfirmationFailure("Replace confirmation context expired")
             markReplaceConfirmed(false)
-            setPendingReplaceConfirmation(nil)
             return
         }
         guard decision.understandsReplace else {
-            blockImportForDuplicateResolution("Replace 需要先勾选二次确认")
+            setReplaceConfirmationFailure("Replace 需要先勾选二次确认")
             markReplaceConfirmed(false)
             return
         }
         setPendingReplaceConfirmation(nil)
+        clearReplaceConfirmationRecovery()
         markReplaceConfirmed(true)
+    }
+
+    func retryReplaceConfirmation() {
+        clearReplaceConfirmationRecovery()
+    }
+
+    var duplicateReplaceConfirmationActionTitle: String {
+        isReplaceConfirmed ? "Replace confirmed" : "Confirm Replace..."
     }
 
     func canSelectDuplicateResolution(_ strategy: ImportSingleFileDuplicateResolutionStrategy) -> Bool {
@@ -203,8 +213,11 @@ extension ImportSingleFilePreviewModel {
         }
         return ImportSingleFileReplaceConfirmationContext(
             existingPath: existingPath,
+            existingSizeBytes: result.existingFile?.sizeBytes,
+            existingModifiedAt: result.existingFile?.updatedAt,
             incomingPath: incomingPath,
             incomingSizeBytes: result.sourceSizeBytes,
+            incomingModifiedAt: result.sourceModifiedAt,
             targetRelativePath: result.targetRelativePath,
             isTrashAvailable: replaceOptionVisibility == .enabled
         )

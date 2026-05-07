@@ -13,6 +13,8 @@ final class ImportSingleFilePreviewModel: ObservableObject {
     @Published var nameConflictResolution: ImportSingleFileNameConflictResolution = .keepBoth
     @Published private(set) var isReplaceConfirmed = false
     @Published private(set) var pendingReplaceConfirmation: ImportSingleFileReplaceConfirmationContext?
+    @Published private(set) var replaceConfirmationErrorMessage: String?
+    @Published private(set) var replaceConfirmationDiagnosticsMessage: String?
     @Published var selectedCategory = "inbox" {
         didSet { schedulePreflightForCurrentEdits() }
     }
@@ -363,6 +365,23 @@ extension ImportSingleFilePreviewModel {
         pendingReplaceConfirmation = context
     }
 
+    func setReplaceConfirmationFailure(_ message: String) {
+        replaceConfirmationErrorMessage = message
+        replaceConfirmationDiagnosticsMessage = nil
+    }
+
+    func collectReplaceConfirmationDiagnostics() {
+        replaceConfirmationDiagnosticsMessage = [
+            "Diagnostics collected for replace confirmation state.",
+            "No user file contents included.",
+        ].joined(separator: " ")
+    }
+
+    func clearReplaceConfirmationRecovery() {
+        replaceConfirmationErrorMessage = nil
+        replaceConfirmationDiagnosticsMessage = nil
+    }
+
     func markReplaceConfirmed(_ isConfirmed: Bool) {
         isReplaceConfirmed = isConfirmed
     }
@@ -370,6 +389,7 @@ extension ImportSingleFilePreviewModel {
     func resetReplaceStateForPreflight() {
         isReplaceConfirmed = false
         pendingReplaceConfirmation = nil
+        clearReplaceConfirmationRecovery()
     }
 
     func setNameConflictResolution(_ resolution: ImportSingleFileNameConflictResolution) {

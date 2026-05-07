@@ -79,10 +79,110 @@ final class ImportSingleFileDuplicateResolutionTests: XCTestCase {
 
         XCTAssertTrue(model.isReplaceConfirmed)
         XCTAssertEqual(model.singleFilePrimaryActionTitle, "Import")
+        XCTAssertEqual(model.duplicateReplaceConfirmationActionTitle, "Replace confirmed")
 
         _ = await model.importSelectedFile()
         let requests = await importer.recordedRequests()
         XCTAssertEqual(requests.last?.duplicateStrategy, .overwrite)
+    }
+
+    @MainActor
+    func testS124DuplicateReplaceConfirmationFailureKeepsSheetRecoverable() async throws {
+        let importer = S117RecordingImporter()
+        let model = ImportSingleFilePreviewModel(
+            predictor: S117RecordingPredictor(result: .s117Fixture()),
+            importer: importer,
+            preflight: ImportSingleFileStaticPreflight(result: duplicateResult()),
+            errorMapper: S117RecordingErrorMapper()
+        )
+
+        await model.load(request: .importSingleFileFixture(
+            allowReplaceDuringImport: true,
+            isTrashAvailable: true
+        ))
+        model.updateDuplicateResolution(.replace)
+        model.beginReplaceConfirmation()
+        let currentContext = try XCTUnwrap(model.pendingReplaceConfirmation)
+        let staleContext = ImportSingleFileReplaceConfirmationContext(
+            existingPath: "docs/other.pdf",
+            incomingPath: currentContext.incomingPath,
+            incomingSizeBytes: currentContext.incomingSizeBytes,
+            targetRelativePath: currentContext.targetRelativePath,
+            isTrashAvailable: true
+        )
+
+        model.applyReplaceConfirmation(staleContext.decision(understandsReplace: true))
+
+        XCTAssertFalse(model.isReplaceConfirmed)
+        XCTAssertEqual(model.pendingReplaceConfirmation, currentContext)
+        XCTAssertEqual(model.replaceConfirmationErrorMessage, "Replace confirmation context expired")
+        XCTAssertEqual(model.duplicateReplaceConfirmationActionTitle, "Confirm Replace...")
+
+        model.collectReplaceConfirmationDiagnostics()
+        XCTAssertEqual(
+            model.replaceConfirmationDiagnosticsMessage,
+            "Diagnostics collected for replace confirmation state. No user file contents included."
+        )
+
+        model.retryReplaceConfirmation()
+        XCTAssertNil(model.replaceConfirmationErrorMessage)
+        XCTAssertNil(model.replaceConfirmationDiagnosticsMessage)
+
+        model.applyReplaceConfirmation(currentContext.decision(understandsReplace: true))
+        XCTAssertTrue(model.isReplaceConfirmed)
+        XCTAssertNil(model.pendingReplaceConfirmation)
+    }
+
+    @MainActor
+    func testS124DuplicateReplaceConfirmationCarriesCoreDuplicateSummaryWithoutImportSideEffect() async throws {
+        let existingFile = FileEntrySnapshot(
+            id: 124,
+            path: "docs/reports/报告.pdf",
+            originalName: "报告.pdf",
+            currentName: "报告.pdf",
+            category: "docs",
+            sizeBytes: 860 * 1_024,
+            hashSha256: "duplicate-hash",
+            storageMode: "Copied",
+            origin: "Imported",
+            sourcePath: nil,
+            importedAt: 1_700_000_000,
+            updatedAt: 1_776_660_840
+        )
+        let importer = S117RecordingImporter()
+        let model = ImportSingleFilePreviewModel(
+            predictor: S117RecordingPredictor(result: .s117Fixture()),
+            importer: importer,
+            preflight: ImportSingleFileStaticPreflight(result: ImportSingleFilePreflightResult(
+                sourceSizeBytes: 912 * 1_024,
+                sourceModifiedAt: 1_777_445_400,
+                hashSha256: "duplicate-hash",
+                targetRelativePath: "docs/reports/报告.pdf",
+                conflict: .duplicate(existingPath: existingFile.path),
+                keepBothTargetRelativePath: "docs/reports/报告_1.pdf",
+                existingFile: existingFile
+            )),
+            errorMapper: S117RecordingErrorMapper()
+        )
+
+        await model.load(request: .importSingleFileFixture(
+            allowReplaceDuringImport: true,
+            isTrashAvailable: true
+        ))
+        model.updateDuplicateResolution(.replace)
+        model.beginReplaceConfirmation()
+        let context = try XCTUnwrap(model.pendingReplaceConfirmation)
+        let requestsBeforeConfirmation = await importer.recordedRequests()
+
+        XCTAssertEqual(requestsBeforeConfirmation, [])
+        XCTAssertEqual(context.existingPath, existingFile.path)
+        XCTAssertEqual(context.existingSizeBytes, existingFile.sizeBytes)
+        XCTAssertEqual(context.existingModifiedAt, existingFile.updatedAt)
+        XCTAssertEqual(context.incomingPath, "/tmp/source.pdf")
+        XCTAssertEqual(context.incomingSizeBytes, 912 * 1_024)
+        XCTAssertEqual(context.incomingModifiedAt, 1_777_445_400)
+        XCTAssertEqual(context.targetRelativePath, "docs/reports/报告.pdf")
+        XCTAssertTrue(context.isTrashAvailable)
     }
 
     @MainActor

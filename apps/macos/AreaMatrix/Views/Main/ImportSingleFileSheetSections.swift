@@ -128,6 +128,8 @@ struct ImportSingleFileConflictSection: View {
     let resolvedNameConflictPath: String
     let nameConflictBlockingReason: String?
     let existingFile: FileEntrySnapshot?
+    let duplicateReplaceActionTitle: String
+    let isReplaceConfirmed: Bool
     let onBeginReplaceConfirmation: () -> Void
     let onShowExistingFile: (String) -> Void
     let onRenameNameConflictFile: (String) -> Void
@@ -285,7 +287,8 @@ struct ImportSingleFileConflictSection: View {
                 Text("替换操作需要二次确认。旧文件不会直接删除，会移到废纸篓。")
                     .font(.caption)
                     .foregroundStyle(.orange)
-                Button("Confirm Replace...", action: onBeginReplaceConfirmation)
+                Button(duplicateReplaceActionTitle, action: onBeginReplaceConfirmation)
+                    .disabled(isReplaceConfirmed)
                     .help("Replace 每次必须先二次确认")
             }
         case .disabled:
@@ -382,58 +385,5 @@ struct ImportSingleFileReplaceConfirmation: Identifiable, Equatable {
 
     var id: String {
         context.id
-    }
-}
-
-struct ReplaceConfirmSheet: View {
-    let context: ImportSingleFileReplaceConfirmationContext
-    let onCancel: () -> Void
-    let onConfirm: (ImportSingleFileReplaceConfirmationDecision) -> Void
-
-    @State private var understandsReplace = false
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("确认替换？")
-                .font(.title2.weight(.semibold))
-            Text("你将用新文件替换资料库中的已有文件。")
-                .font(.callout)
-
-            VStack(alignment: .leading, spacing: 8) {
-                LabeledContent("将被替换", value: context.existingPath)
-                LabeledContent("替换为", value: context.incomingPath)
-                if let incomingSizeBytes = context.incomingSizeBytes {
-                    LabeledContent("新文件大小", value: ByteCountFormatter.string(
-                        fromByteCount: incomingSizeBytes,
-                        countStyle: .file
-                    ))
-                }
-                LabeledContent("目标位置", value: context.targetRelativePath)
-            }
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text("旧文件将移到系统废纸篓。")
-                Text("新文件将写入原目标位置。")
-                Text("这次操作会记录到改动日志。")
-                Text("如果导入失败，AreaMatrix 会保持原文件不变或恢复到安全状态。")
-            }
-            .font(.callout)
-            .foregroundStyle(.secondary)
-
-            Toggle("我理解这是替换操作", isOn: $understandsReplace)
-
-            HStack {
-                Spacer()
-                Button("Cancel", action: onCancel)
-                    .keyboardShortcut(.cancelAction)
-                Button("Replace", role: .destructive) {
-                    onConfirm(context.decision(understandsReplace: understandsReplace))
-                }
-                .keyboardShortcut(.defaultAction)
-                .disabled(!understandsReplace || !context.isTrashAvailable)
-            }
-        }
-        .padding(24)
-        .frame(minWidth: 460)
     }
 }

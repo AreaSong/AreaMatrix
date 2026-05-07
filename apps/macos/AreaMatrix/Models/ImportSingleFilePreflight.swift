@@ -19,6 +19,7 @@ struct ImportSingleFilePreflightRequest: Equatable, Sendable {
 
 struct ImportSingleFilePreflightResult: Equatable, Sendable {
     var sourceSizeBytes: Int64?
+    var sourceModifiedAt: Int64? = nil
     var hashSha256: String?
     var targetRelativePath: String
     var conflict: ImportSingleFileConflict
@@ -165,8 +166,11 @@ enum ImportSingleFileConflictPage: Equatable, Sendable {
 
 struct ImportSingleFileReplaceConfirmationContext: Equatable, Identifiable, Sendable {
     var existingPath: String
+    var existingSizeBytes: Int64? = nil
+    var existingModifiedAt: Int64? = nil
     var incomingPath: String
     var incomingSizeBytes: Int64?
+    var incomingModifiedAt: Int64? = nil
     var targetRelativePath: String
     var isTrashAvailable: Bool
 
@@ -231,6 +235,7 @@ struct CoreImportSingleFilePreflight: ImportSingleFilePreflighting {
                 return blockedResult(
                     request: request,
                     sourceSizeBytes: source.sizeBytes,
+                    sourceModifiedAt: source.modifiedAt,
                     hashSha256: nil,
                     conflict: .invalidFilename(validationMessage)
                 )
@@ -240,6 +245,7 @@ struct CoreImportSingleFilePreflight: ImportSingleFilePreflighting {
             return readyResult(
                 request: request,
                 sourceSizeBytes: source.sizeBytes,
+                sourceModifiedAt: source.modifiedAt,
                 hashSha256: sourceHash,
                 files: files
             )
@@ -263,11 +269,13 @@ struct CoreImportSingleFilePreflight: ImportSingleFilePreflighting {
     private func blockedResult(
         request: ImportSingleFilePreflightRequest,
         sourceSizeBytes: Int64?,
+        sourceModifiedAt: Int64? = nil,
         hashSha256: String?,
         conflict: ImportSingleFileConflict
     ) -> ImportSingleFilePreflightResult {
         ImportSingleFilePreflightResult(
             sourceSizeBytes: sourceSizeBytes,
+            sourceModifiedAt: sourceModifiedAt,
             hashSha256: hashSha256,
             targetRelativePath: ImportSingleFilePreflightTarget.relativePath(
                 category: request.category,
@@ -281,6 +289,7 @@ struct CoreImportSingleFilePreflight: ImportSingleFilePreflighting {
     private func readyResult(
         request: ImportSingleFilePreflightRequest,
         sourceSizeBytes: Int64,
+        sourceModifiedAt: Int64?,
         hashSha256: String,
         files: [FileEntrySnapshot]
     ) -> ImportSingleFilePreflightResult {
@@ -291,6 +300,7 @@ struct CoreImportSingleFilePreflight: ImportSingleFilePreflighting {
         if let duplicate = files.first(where: { $0.hashSha256 == hashSha256 }) {
             return ImportSingleFilePreflightResult(
                 sourceSizeBytes: sourceSizeBytes,
+                sourceModifiedAt: sourceModifiedAt,
                 hashSha256: hashSha256,
                 targetRelativePath: targetRelativePath,
                 conflict: .duplicate(existingPath: duplicate.path),
@@ -305,6 +315,7 @@ struct CoreImportSingleFilePreflight: ImportSingleFilePreflighting {
         if let sameName = files.first(where: { $0.path == targetRelativePath }) {
             return ImportSingleFilePreflightResult(
                 sourceSizeBytes: sourceSizeBytes,
+                sourceModifiedAt: sourceModifiedAt,
                 hashSha256: hashSha256,
                 targetRelativePath: targetRelativePath,
                 conflict: .name(path: sameName.path),
@@ -319,6 +330,7 @@ struct CoreImportSingleFilePreflight: ImportSingleFilePreflighting {
 
         return ImportSingleFilePreflightResult(
             sourceSizeBytes: sourceSizeBytes,
+            sourceModifiedAt: sourceModifiedAt,
             hashSha256: hashSha256,
             targetRelativePath: targetRelativePath,
             conflict: .none,
@@ -388,6 +400,7 @@ struct LocalICloudPlaceholderDownloader: ICloudPlaceholderDownloading {
 
 private struct SourcePreflightSnapshot {
     var sizeBytes: Int64
+    var modifiedAt: Int64?
 
     static func inspect(sourceURL: URL) throws -> SourcePreflightSnapshot {
         if ImportSingleFilePreflightTarget.isICloudPlaceholder(sourceURL) {
@@ -408,14 +421,21 @@ private struct SourcePreflightSnapshot {
                 sourceSizeBytes: nil
             )
         }
-        let values = try sourceURL.resourceValues(forKeys: [.fileSizeKey, .isRegularFileKey])
+        let values = try sourceURL.resourceValues(forKeys: [
+            .fileSizeKey,
+            .isRegularFileKey,
+            .contentModificationDateKey,
+        ])
         guard values.isRegularFile == true else {
             throw ImportSingleFilePreflightError(
                 .sourceUnavailable("只支持单文件导入"),
                 sourceSizeBytes: nil
             )
         }
-        return SourcePreflightSnapshot(sizeBytes: Int64(values.fileSize ?? 0))
+        return SourcePreflightSnapshot(
+            sizeBytes: Int64(values.fileSize ?? 0),
+            modifiedAt: values.contentModificationDate.map { Int64($0.timeIntervalSince1970) }
+        )
     }
 }
 

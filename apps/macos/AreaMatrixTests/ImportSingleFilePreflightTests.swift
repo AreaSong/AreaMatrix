@@ -50,10 +50,13 @@ final class ImportSingleFilePreflightTests: XCTestCase {
         ))
 
         XCTAssertEqual(actual.sourceSizeBytes, 3)
+        XCTAssertNotNil(actual.sourceModifiedAt)
         XCTAssertEqual(actual.hashSha256, duplicateHash)
         XCTAssertEqual(actual.targetRelativePath, "docs/source.pdf")
         XCTAssertEqual(actual.conflict, .duplicate(existingPath: "docs/existing.pdf"))
         XCTAssertEqual(actual.keepBothTargetRelativePath, "docs/source_1.pdf")
+        XCTAssertEqual(actual.existingFile?.path, "docs/existing.pdf")
+        XCTAssertEqual(actual.existingFile?.sizeBytes, 12)
         XCTAssertEqual(actual.importBlockingReason(), "请先完成 S1-22 conflict-duplicate 处理")
     }
 

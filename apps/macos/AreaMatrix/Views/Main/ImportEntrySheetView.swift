@@ -155,6 +155,8 @@ struct ImportEntrySheetView: View {
             ReplaceConfirmSheet(
                 context: item.context,
                 onCancel: { pendingBatchReplaceConfirmation = nil },
+                onRetry: {},
+                onCollectDiagnostics: {},
                 onConfirm: { decision in
                     batchImportModel.applyReplaceConfirmation(for: item.rowID, decision: decision)
                     pendingBatchReplaceConfirmation = nil
@@ -164,13 +166,19 @@ struct ImportEntrySheetView: View {
         .sheet(item: $pendingSingleFileReplaceConfirmation) { item in
             ReplaceConfirmSheet(
                 context: item.context,
+                errorMessage: previewModel.replaceConfirmationErrorMessage,
+                diagnosticsMessage: previewModel.replaceConfirmationDiagnosticsMessage,
                 onCancel: {
                     previewModel.cancelReplaceConfirmation()
                     pendingSingleFileReplaceConfirmation = nil
                 },
+                onRetry: previewModel.retryReplaceConfirmation,
+                onCollectDiagnostics: previewModel.collectReplaceConfirmationDiagnostics,
                 onConfirm: { decision in
                     previewModel.applyReplaceConfirmation(decision)
-                    pendingSingleFileReplaceConfirmation = nil
+                    if previewModel.pendingReplaceConfirmation == nil {
+                        pendingSingleFileReplaceConfirmation = nil
+                    }
                 }
             )
         }
@@ -178,6 +186,8 @@ struct ImportEntrySheetView: View {
             ReplaceConfirmSheet(
                 context: item.context,
                 onCancel: { pendingFolderReplaceConfirmation = nil },
+                onRetry: {},
+                onCollectDiagnostics: {},
                 onConfirm: { decision in
                     folderPreviewModel.applyReplaceConfirmation(for: item.rowID, decision: decision)
                     pendingFolderReplaceConfirmation = nil
@@ -232,6 +242,8 @@ struct ImportEntrySheetView: View {
                     resolvedNameConflictPath: previewModel.resolvedImportRelativePathForNameConflict,
                     nameConflictBlockingReason: previewModel.nameConflictResolutionBlockingReason,
                     existingFile: result.existingFile,
+                    duplicateReplaceActionTitle: previewModel.duplicateReplaceConfirmationActionTitle,
+                    isReplaceConfirmed: previewModel.isReplaceConfirmed,
                     onBeginReplaceConfirmation: {
                         previewModel.beginReplaceConfirmation()
                         if let context = previewModel.pendingReplaceConfirmation {
