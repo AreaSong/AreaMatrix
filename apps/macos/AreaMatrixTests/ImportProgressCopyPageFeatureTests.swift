@@ -171,6 +171,127 @@ final class ImportProgressCopyPageFeatureTests: XCTestCase {
     }
 
     @MainActor
+    func testS120C108SingleIndexProgressShowsWritingIndexPhase() {
+        let opening = RepositoryOpeningResult.s117Fixture(repoPath: "/tmp/repo")
+        let model = OnboardingModel(
+            settingsReader: S117StaticSettingsReader(repoPath: nil),
+            accessibilityAnnouncer: S117RecordingAccessibilityAnnouncer(),
+            helpOpener: S117NoopWelcomeHelpOpener()
+        )
+
+        model.route = .mainList(opening)
+        model.beginImportEntryProgress(currentPath: "docs/indexed.pdf", storageMode: .indexOnly)
+
+        guard case .importProgress(let state) = model.route else {
+            return XCTFail("Expected S1-20 import progress route")
+        }
+
+        XCTAssertEqual(state.titleText, "正在导入 1 个文件")
+        XCTAssertEqual(state.items, [
+            ImportBatchProgressSnapshot.Item(
+                sourcePath: "docs/indexed.pdf",
+                targetPath: "docs/indexed.pdf",
+                phase: .writingIndex,
+                errorMessage: nil
+            ),
+        ])
+    }
+
+    @MainActor
+    func testS120C108IndexFailureRequiresRecoveryCheckBeforeRetry() async {
+        let opening = RepositoryOpeningResult.s117Fixture(repoPath: "/tmp/repo")
+        let context = Self.indexRetryContext(sourcePath: "/tmp/external.pdf")
+        let recoverer = MainLoadingRecordingStartupRecoverer(result: .success(RecoveryReportSnapshot(
+            cleanedStagingFiles: 0,
+            revertedStagingDbRows: 0,
+            warnings: []
+        )))
+        let model = OnboardingModel(
+            settingsReader: S117StaticSettingsReader(repoPath: nil),
+            startupRecoverer: recoverer,
+            accessibilityAnnouncer: S117RecordingAccessibilityAnnouncer(),
+            helpOpener: S117NoopWelcomeHelpOpener()
+        )
+
+        model.route = .mainList(opening)
+        model.beginImportEntryProgress(
+            currentPath: "docs/indexed.pdf",
+            sourcePath: context.sourcePath,
+            storageMode: .indexOnly,
+            overrideCategory: context.overrideCategory,
+            overrideFilename: context.overrideFilename,
+            duplicateStrategy: context.duplicateStrategy.coreStrategy
+        )
+        model.failImportEntry(
+            progress: Self.indexFailedProgress,
+            mapping: CoreErrorMappingSnapshot.s117Error(kind: .fileNotFound)
+        )
+
+        guard case .importProgress(let failedBeforeCheck) = model.route else {
+            return XCTFail("Expected failed index import progress route")
+        }
+        XCTAssertFalse(failedBeforeCheck.canRetryCurrentItem)
+        XCTAssertEqual(failedBeforeCheck.retryStatusText, "Checking recovery state...")
+
+        await model.checkImportProgressRecoveryIfNeeded()
+        let recovererPaths = await recoverer.requestedRepoPaths()
+
+        guard case .importProgress(let checkedState) = model.route else {
+            return XCTFail("Expected checked index import progress route")
+        }
+        XCTAssertEqual(recovererPaths, ["/tmp/repo"])
+        XCTAssertTrue(checkedState.canRetryCurrentItem)
+        XCTAssertEqual(checkedState.retryContext, context)
+        XCTAssertEqual(
+            checkedState.retryStatusText,
+            "Recovery state checked. Current item can be retried."
+        )
+    }
+
+    @MainActor
+    func testS120C108RetryCurrentIndexItemUsesRealImporterAndReturnsToRepository() async {
+        let opening = RepositoryOpeningResult.s117Fixture(repoPath: "/tmp/repo")
+        let importer = S117RecordingImporter()
+        let model = OnboardingModel(
+            settingsReader: S117StaticSettingsReader(repoPath: nil),
+            importProgressImporter: importer,
+            startupRecoverer: MainLoadingStaticStartupRecoverer(),
+            accessibilityAnnouncer: S117RecordingAccessibilityAnnouncer(),
+            helpOpener: S117NoopWelcomeHelpOpener()
+        )
+
+        model.route = .mainList(opening)
+        model.beginImportEntryProgress(
+            currentPath: "docs/indexed.pdf",
+            sourcePath: "/tmp/external.pdf",
+            storageMode: .indexOnly,
+            overrideCategory: "docs",
+            overrideFilename: "indexed.pdf",
+            duplicateStrategy: .keepBoth
+        )
+        model.failImportEntry(
+            progress: Self.indexFailedProgress,
+            mapping: CoreErrorMappingSnapshot.s117Error(kind: .fileNotFound),
+            retryContext: Self.indexRetryContext(sourcePath: "/tmp/external.pdf"),
+            recoveryCheck: .retryAllowed(nil)
+        )
+
+        await model.retryCurrentImportProgressItem()
+        let requests = await importer.recordedRequests()
+
+        XCTAssertEqual(requests, [
+            S117ImportRequest(
+                mode: .indexOnly,
+                overrideCategory: "docs",
+                overrideFilename: "indexed.pdf",
+                duplicateStrategy: .keepBoth
+            ),
+        ])
+        XCTAssertEqual(model.route, .mainEmpty(opening))
+        XCTAssertEqual(model.toastMessage, "已导入：indexed.pdf")
+    }
+
+    @MainActor
     func testS120C107DiagnosticsAndStopActionsStayOnSafeUiPaths() async {
         let opening = RepositoryOpeningResult.s117Fixture(repoPath: "/tmp/repo")
         let snapshot = DiagnosticsSnapshotSnapshot(
@@ -283,6 +404,22 @@ private extension ImportProgressCopyPageFeatureTests {
         ]
     )
 
+    static let indexFailedProgress = ImportBatchProgressSnapshot(
+        completed: 0,
+        failed: 1,
+        total: 1,
+        remaining: 0,
+        currentPath: "docs/indexed.pdf",
+        items: [
+            ImportBatchProgressSnapshot.Item(
+                sourcePath: "/tmp/external.pdf",
+                targetPath: "docs/indexed.pdf",
+                phase: .failed,
+                errorMessage: "文件不存在"
+            ),
+        ]
+    )
+
     static func moveRetryContext(sourcePath: String) -> ImportProgressRetryContext {
         ImportProgressRetryContext(
             repoPath: "/tmp/repo",
@@ -291,6 +428,17 @@ private extension ImportProgressCopyPageFeatureTests {
             overrideCategory: "docs",
             overrideFilename: "moved.pdf",
             duplicateStrategy: .ask
+        )
+    }
+
+    static func indexRetryContext(sourcePath: String) -> ImportProgressRetryContext {
+        ImportProgressRetryContext(
+            repoPath: "/tmp/repo",
+            sourcePath: sourcePath,
+            storageMode: .indexOnly,
+            overrideCategory: "docs",
+            overrideFilename: "indexed.pdf",
+            duplicateStrategy: .keepBoth
         )
     }
 }

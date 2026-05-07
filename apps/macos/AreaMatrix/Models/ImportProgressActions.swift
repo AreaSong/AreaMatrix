@@ -74,7 +74,8 @@ extension OnboardingModel {
     func checkImportProgressRecoveryIfNeeded() async {
         guard case .importProgress(let state) = route else { return }
         guard case .checking = state.recoveryCheck else { return }
-        guard let context = state.retryContext, context.storageMode == .move else { return }
+        guard let context = state.retryContext else { return }
+        guard context.storageMode == .move || context.storageMode == .indexOnly else { return }
 
         do {
             let report = try await startupRecoverer.recoverOnStartup(repoPath: context.repoPath)
@@ -98,8 +99,16 @@ extension OnboardingModel {
                 overrideFilename: context.overrideFilename,
                 duplicateStrategy: context.duplicateStrategy.coreStrategy
             )
-        case .copy, .indexOnly:
-            throw CoreError.Internal(message: "Only C1-07 move retry is available from S1-20.")
+        case .indexOnly:
+            return try await importProgressImporter.importIndexedFile(
+                repoPath: context.repoPath,
+                sourceURL: sourceURL,
+                overrideCategory: context.overrideCategory,
+                overrideFilename: context.overrideFilename,
+                duplicateStrategy: context.duplicateStrategy.coreStrategy
+            )
+        case .copy:
+            throw CoreError.Internal(message: "Only C1-07 move and C1-08 index retry are available from S1-20.")
         }
     }
 

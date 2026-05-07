@@ -306,6 +306,7 @@ struct ImportBatchProgressSnapshot: Equatable, Sendable {
         case pending = "Pending"
         case copying = "Copying"
         case moving = "Moving"
+        case writingIndex = "Writing index"
         case done = "Done"
         case failed = "Failed"
     }

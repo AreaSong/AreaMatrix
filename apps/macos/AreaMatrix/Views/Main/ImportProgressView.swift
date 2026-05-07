@@ -215,6 +215,9 @@ private struct ImportingListRow: View {
         case .moving:
             Image(systemName: "arrow.right.circle")
                 .foregroundStyle(.orange)
+        case .writingIndex:
+            ProgressView()
+                .controlSize(.small)
         case .done:
             Image(systemName: "checkmark.circle.fill")
                 .foregroundStyle(.green)
@@ -235,7 +238,7 @@ private struct ImportingListRow: View {
             return .green
         case .moving:
             return .orange
-        case .copying, .pending:
+        case .copying, .pending, .writingIndex:
             return .secondary
         }
     }

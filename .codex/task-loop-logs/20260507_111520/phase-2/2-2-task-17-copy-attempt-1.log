@@ -1,0 +1,39 @@
+一、执行结论
+
+已完成。
+
+二、执行范围
+
+单任务：`2-2/task-17`，只处理 `S1-20 import-progress` 中的 `C1-08 import-index-file`。
+
+本轮直接修改：
+- [ImportProgressCopyPageFeatureTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportProgressCopyPageFeatureTests.swift:173)
+
+当前任务相关实现已在工作树中体现：
+- [ImportProgressActions.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportProgressActions.swift:74)
+- [ImportProgressRouteState.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportProgressRouteState.swift:203)
+- [ImportProgressView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportProgressView.swift:218)
+- [ImportBatchCopyImportState.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportBatchCopyImportState.swift)
+
+三、完成情况
+
+核对清单通过：只覆盖 S1-20 + C1-08；已读取页面规格、control map、Core API、C1-08 spec；接入点限定为 Indexed 进度 phase、recovery gate、`importIndexedFile` retry；未实现相邻页面。
+
+完成标准通过：S1-20 可显示 `Writing index`；失败后先 recovery check 才允许 retry；retry 调用真实 `CoreFileImporting.importIndexedFile`，没有静态成功态。未触碰 `core/src/**`。本轮直接代码/测试改动在 Expected New Paths 内；工作树另有 task-loop runtime 状态文件的既有改动，我没有修改它们。
+
+四、工程质量
+
+结构保持现有 S1-20 进度模型，没有新增依赖、无一次性脚本、无 mock-only 产品路径。错误路径通过 `CoreErrorMappingSnapshot` 和 recovery check 显式处理；测试覆盖 Indexed 进度、失败重试门禁、真实 importer 调用。未涉及 Rust public API，因此无 rustdoc/doc 同步需求。
+
+五、验证情况
+
+已通过：
+- `git diff --check`
+- `python3 ... run_macos_tests(...)`：标准 `xcodebuild test` 被本地 sandbox 的 `testmanagerd.control` 阻断后，仓库 fallback `xcrun xctest` 通过，245 tests，0 failures。
+- `xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：`BUILD SUCCEEDED`
+
+六、风险与后续
+
+剩余风险：本地标准 `xcodebuild test` runner 通信仍受 sandbox 限制，但仓库认可的 hostless XCTest fallback 已通过；产品构建已通过。没有用户文件删除、移动、覆盖风险。
+
+建议下一个任务：`2-2/task-18`，做 S1-20 页面 integration verify，收口 C1-06 / C1-07 / C1-08 同页覆盖。  

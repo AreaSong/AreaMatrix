@@ -201,7 +201,7 @@ struct ImportProgressRouteState: Equatable, Sendable {
     }
 
     var canRetryCurrentItem: Bool {
-        guard retryContext?.storageMode == .move else { return false }
+        guard retryContext?.storageMode.isImportProgressRetryable == true else { return false }
         if case .retryAllowed = recoveryCheck { return true }
         return false
     }
@@ -312,7 +312,7 @@ struct ImportProgressRouteState: Equatable, Sendable {
         status: Status,
         retryContext: ImportProgressRetryContext?
     ) -> ImportProgressRecoveryCheckState {
-        guard case .failed = status, retryContext?.storageMode == .move else {
+        guard case .failed = status, retryContext?.storageMode.isImportProgressRetryable == true else {
             return .unavailable
         }
         return .checking
@@ -378,11 +378,22 @@ extension ImportProgressRouteState {
 }
 
 private extension ImportSingleFileStorageMode {
+    var isImportProgressRetryable: Bool {
+        switch self {
+        case .move, .indexOnly:
+            return true
+        case .copy:
+            return false
+        }
+    }
+
     var progressPhase: ImportBatchProgressSnapshot.Phase {
         switch self {
         case .move:
             return .moving
-        case .copy, .indexOnly:
+        case .indexOnly:
+            return .writingIndex
+        case .copy:
             return .copying
         }
     }
