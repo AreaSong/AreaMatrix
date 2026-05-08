@@ -23,6 +23,7 @@ struct MainRepositoryDetailPane: View {
     let onBeginRenameFile: (Int64) -> Void
     let onBeginChangeCategoryFile: (Int64) -> Void
     let onBeginDeleteFile: (Int64) -> Void
+    let onBeginICloudConflictResolution: (Int64) -> Void
     let writeActionDisabledReason: (Int64) -> MainFileWriteActionDisabledReason?
 
     @State private var selectedTab: DetailPaneTab = .meta
@@ -51,6 +52,7 @@ struct MainRepositoryDetailPane: View {
         onBeginRenameFile: @escaping (Int64) -> Void,
         onBeginChangeCategoryFile: @escaping (Int64) -> Void,
         onBeginDeleteFile: @escaping (Int64) -> Void,
+        onBeginICloudConflictResolution: @escaping (Int64) -> Void,
         writeActionDisabledReason: @escaping (Int64) -> MainFileWriteActionDisabledReason?,
         noteModel: DetailNoteModel
     ) {
@@ -76,6 +78,7 @@ struct MainRepositoryDetailPane: View {
         self.onBeginRenameFile = onBeginRenameFile
         self.onBeginChangeCategoryFile = onBeginChangeCategoryFile
         self.onBeginDeleteFile = onBeginDeleteFile
+        self.onBeginICloudConflictResolution = onBeginICloudConflictResolution
         self.writeActionDisabledReason = writeActionDisabledReason
         self.noteModel = noteModel
     }
@@ -308,6 +311,13 @@ struct MainRepositoryDetailPane: View {
                 }
                 .disabled(disabledReason != nil)
                 .accessibilityIdentifier("S1-12-change-category")
+                if detail.hasICloudConflictCopySignal {
+                    Button("Resolve iCloud Conflict...") {
+                        onBeginICloudConflictResolution(detail.id)
+                    }
+                    .disabled(disabledReason != nil)
+                    .accessibilityIdentifier("S1-25-resolve-icloud-conflict")
+                }
                 if shouldShowRemoveFromIndex(for: detail) {
                     Button("Remove from Index", role: .destructive) {
                         onBeginDeleteFile(detail.id)

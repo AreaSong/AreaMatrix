@@ -53,6 +53,7 @@ extension MainRepositoryContentView {
             onBeginRenameFile: fileListModel.beginRename,
             onBeginChangeCategoryFile: fileListModel.beginChangeCategory,
             onBeginDeleteFile: fileListModel.beginDelete,
+            onBeginICloudConflictResolution: fileListModel.beginICloudConflictResolution,
             writeActionDisabledReason: fileListModel.writeActionDisabledReason,
             noteModel: detailNoteModel
         )

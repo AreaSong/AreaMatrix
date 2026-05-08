@@ -100,6 +100,7 @@ final class ChangeCategoryPageIntegrationVerifyTests: XCTestCase {
             onBeginRenameFile: model.beginRename,
             onBeginChangeCategoryFile: model.beginChangeCategory,
             onBeginDeleteFile: model.beginDelete,
+            onBeginICloudConflictResolution: model.beginICloudConflictResolution,
             writeActionDisabledReason: model.writeActionDisabledReason,
             noteModel: DetailNoteModel(
                 repoPath: "/tmp/repo",

@@ -1,0 +1,50 @@
+一、执行结论
+
+已完成 `2-4/task-01`。
+
+二、执行范围
+
+单任务：`S1-25 + C1-01 validate-repo-path`。  
+修改文件清单：
+
+- `apps/macos/AreaMatrix/Models/ICloudConflictMinimalValidation.swift`
+- `apps/macos/AreaMatrix/Views/Main/ICloudConflictMinimalSheet.swift`
+- `apps/macos/AreaMatrix/Models/MainFileActionRoutingActions.swift`
+- `apps/macos/AreaMatrix/Models/MainFileListState.swift`
+- `apps/macos/AreaMatrix/Views/Main/MainFileActionRoutingSheet.swift`
+- `apps/macos/AreaMatrix/Views/Main/MainRepositoryContentActionRouting.swift`
+- `apps/macos/AreaMatrix/Views/Main/MainRepositoryContentNoteDrafts.swift`
+- `apps/macos/AreaMatrix/Views/Main/MainRepositoryDetailPane.swift`
+- `apps/macos/AreaMatrixTests/ICloudConflictMinimalValidationTests.swift`
+- `apps/macos/AreaMatrixTests/ChangeCategoryPageIntegrationVerifyTests.swift`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+
+三、完成情况
+
+核对清单均已完成：只处理 S1-25 中 C1-01；读取并按页面规格、control map、Core API、C1-01 能力规格接入；仅调用真实 `CoreBridge().validateRepoPath(repoPath:)`；未实现 C1-21、Trash 单版本处理、change log、冲突列表或相邻页面。
+
+完成标准均已满足：S1-25 中可从文件详情页冲突副本入口触发最小冲突处理 sheet；Apply 只在真实 repo path validation 通过后启用；没有 mock-only、fixture-only 或静态通过态；未触碰 control map 外 Core 能力。
+
+Forbidden Touches：未触碰 `core/src/**`，复查 `git diff -- core/src --stat` 无输出。
+
+四、工程质量
+
+代码结构按 model、sheet、routing、tests 分层；C1-01 校验状态集中在 `ICloudConflictMinimalModel`，UI 只消费状态和展示错误。错误路径覆盖 invalid path、permission/iCloud placeholder、未初始化、unfinished scan 等 CoreBridge 映射；保留两份动作不移动、不删除、不覆盖用户文件。未新增依赖，未改 Rust public API，因此无 rustdoc / dependency policy 新增项。
+
+五、验证情况
+
+已运行并通过：
+
+- `xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：`BUILD SUCCEEDED`
+- `DYLD_FRAMEWORK_PATH=... DYLD_LIBRARY_PATH=... xcrun xctest -XCTest ICloudConflictMinimalValidationTests ...`：4 tests，0 failures
+- `git diff --check -- <touched allowed files>`：无输出
+- `git diff -- core/src --stat`：无输出
+
+标准 `xcodebuild test` 此前被本机 `testmanagerd` sandbox 限制阻断，不是断言失败或编译失败；按 repo 验证说明使用已构建 XCTest bundle 的 `xcrun xctest` fallback 完成了新增测试复验。
+
+六、风险与后续
+
+剩余风险：未做真实 macOS UI 手工点击截图验证；当前入口是详情页 More 菜单中检测到 `conflicted copy` 信号后的 S1-25 最小入口，S1-36 列表入口和整页 integration 仍由后续任务覆盖。C1-21、单版本保留/移入 Trash、change log 刷新仍应留给 `2-4/task-02` / 页面 integration verify。
+
+建议下一个任务：继续执行 S1-25 同页剩余能力任务，尤其是 C1-21 或对应 page integration verify，确认整页 control map 覆盖闭环。
+

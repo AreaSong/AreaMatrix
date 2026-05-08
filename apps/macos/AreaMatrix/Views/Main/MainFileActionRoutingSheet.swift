@@ -8,7 +8,9 @@ struct MainFileActionRoutingSheet: View {
     let renameState: MainFileRenameState
     let deleteState: MainFileDeleteState
     let changeCategoryState: MainFileCategoryMoveState
+    let repoPath: String
     let isTrashAvailable: Bool
+    let iCloudConflictPathValidator: any CoreRepositoryPathValidating
     let onDismiss: () -> Void
     let onRename: (Int64, String) -> Void
     let onShowExistingFile: (Int64) -> Void
@@ -17,6 +19,7 @@ struct MainFileActionRoutingSheet: View {
     let onRenameFirstFromChangeCategory: (Int64, String) -> Void
     let onOpenChangeCategoryPermissionRecovery: () -> Void
     let onDelete: (Int64, MainFileDeleteOperation) -> Void
+    let onApplyKeepBothICloudConflict: (Int64) -> Void
     let onCollectDiagnostics: () -> Void
 
     var body: some View {
@@ -53,7 +56,55 @@ struct MainFileActionRoutingSheet: View {
                 onConfirm: onDelete,
                 onCollectDiagnostics: onCollectDiagnostics
             )
+        case .iCloudConflict(let fileID):
+            ICloudConflictMinimalSheet(
+                model: ICloudConflictMinimalModel(
+                    repoPath: repoPath,
+                    originalVersion: ICloudConflictVersionSnapshot.originalCandidate(repoPath: repoPath, file: file),
+                    conflictedCopyVersion: ICloudConflictVersionSnapshot.conflictedCandidate(
+                        repoPath: repoPath,
+                        file: file
+                    ),
+                    pathValidator: iCloudConflictPathValidator
+                ),
+                isTrashAvailable: isTrashAvailable,
+                onCancel: onDismiss,
+                onApplyKeepBoth: {
+                    onApplyKeepBothICloudConflict(fileID)
+                }
+            )
         }
+    }
+}
+
+extension ICloudConflictVersionSnapshot {
+    static func originalCandidate(repoPath: String, file: FileEntrySnapshot?) -> ICloudConflictVersionSnapshot {
+        ICloudConflictVersionSnapshot(
+            role: .original,
+            path: file.flatMap { originalCandidatePath(repoPath: repoPath, file: $0) },
+            modifiedAt: file?.updatedAt,
+            sizeBytes: nil
+        )
+    }
+
+    static func conflictedCandidate(repoPath: String, file: FileEntrySnapshot?) -> ICloudConflictVersionSnapshot {
+        ICloudConflictVersionSnapshot(
+            role: .conflictedCopy,
+            path: file.map { absolutePath(repoPath: repoPath, relativePath: $0.path) },
+            modifiedAt: file?.updatedAt,
+            sizeBytes: file?.sizeBytes
+        )
+    }
+
+    private static func originalCandidatePath(repoPath: String, file: FileEntrySnapshot) -> String {
+        let relativePath = file.path.replacingOccurrences(of: " (Conflicted Copy)", with: "")
+        return absolutePath(repoPath: repoPath, relativePath: relativePath)
+    }
+
+    private static func absolutePath(repoPath: String, relativePath: String) -> String {
+        URL(fileURLWithPath: repoPath, isDirectory: true)
+            .appendingPathComponent(relativePath)
+            .path
     }
 }
 

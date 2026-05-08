@@ -44,6 +44,7 @@ enum MainFileActionDestination: Equatable, Sendable {
     case rename(fileID: Int64)
     case changeCategory(fileID: Int64, initialTargetCategory: String? = nil)
     case delete(fileID: Int64)
+    case iCloudConflict(fileID: Int64)
 
     var pageID: String {
         switch self {
@@ -53,6 +54,8 @@ enum MainFileActionDestination: Equatable, Sendable {
             return "S1-35"
         case .delete:
             return "S1-34"
+        case .iCloudConflict:
+            return "S1-25"
         }
     }
 
@@ -64,12 +67,14 @@ enum MainFileActionDestination: Equatable, Sendable {
             return "Change Category"
         case .delete:
             return "Move File to Trash?"
+        case .iCloudConflict:
+            return "Resolve iCloud Conflict"
         }
     }
 
     var fileID: Int64 {
         switch self {
-        case .rename(let fileID), .changeCategory(let fileID, _), .delete(let fileID):
+        case .rename(let fileID), .changeCategory(let fileID, _), .delete(let fileID), .iCloudConflict(let fileID):
             return fileID
         }
     }
@@ -205,6 +210,7 @@ enum MainListStatusBanner: Equatable, Sendable {
     case removedFileFromIndex(fileID: Int64)
     case changedCategory(fileID: Int64, category: String)
     case changedCategoryTreeRefreshFailed(fileID: Int64, category: String)
+    case keptICloudConflictVersions(fileID: Int64)
 
     var message: String {
         switch self {
@@ -224,6 +230,8 @@ enum MainListStatusBanner: Equatable, Sendable {
             return """
             Category changed to \(category). List, detail, and change log are refreshed. Retry to refresh Tree counts.
             """
+        case .keptICloudConflictVersions:
+            return "Both iCloud conflict versions kept. No files were moved or deleted."
         }
     }
 
@@ -233,7 +241,7 @@ enum MainListStatusBanner: Equatable, Sendable {
             return "arrow.triangle.2.circlepath"
         case .removedSelectedFile, .unsavedNoteDraftPreserved, .changedCategoryTreeRefreshFailed:
             return "exclamationmark.triangle"
-        case .movedFileToTrash, .removedFileFromIndex, .changedCategory:
+        case .movedFileToTrash, .removedFileFromIndex, .changedCategory, .keptICloudConflictVersions:
             return "checkmark.circle"
         }
     }
