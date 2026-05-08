@@ -109,7 +109,7 @@ struct MainWindow: View {
 
     private var activeMainRepositoryPath: String? {
         switch model.route {
-        case .mainEmpty(let opening), .mainList(let opening):
+        case .mainEmpty(let opening), .mainList(let opening), .settingsGeneral(let opening):
             return opening.config.repoPath
         default:
             return nil
@@ -300,6 +300,15 @@ struct MainWindow: View {
             )
         case .settingsRepository:
             SettingsRepositoryReturnView()
+        case .settingsGeneral(let opening):
+            GeneralSettingsView(
+                repoPath: opening.config.repoPath,
+                onClose: {
+                    Task {
+                        await model.refreshAfterGeneralSettings(opening: opening)
+                    }
+                }
+            )
         case .importProgress(let state):
             importProgressContent(state)
         case .importResult(let state):
@@ -330,7 +339,7 @@ struct MainWindow: View {
                         destination: destination
                     )
                 },
-                onOpenSettings: { Task { await model.beginSettingsRepositoryPathValidation(opening.config.repoPath) } },
+                onOpenSettings: { model.showGeneralSettings(opening: opening) },
                 onRetryCurrentList: { Task { await model.retryConfigurationLoad() } },
                 onCollectDiagnostics: { await model.collectMainListDiagnostics(opening: opening) },
                 onShowInFinder: { model.showMainListFileInFinder(opening: opening, relativePath: $0) },
@@ -353,7 +362,7 @@ struct MainWindow: View {
                         destination: destination
                     )
                 },
-                onOpenSettings: { Task { await model.beginSettingsRepositoryPathValidation(opening.config.repoPath) } },
+                onOpenSettings: { model.showGeneralSettings(opening: opening) },
                 onRetryCurrentList: { Task { await model.retryConfigurationLoad() } },
                 onCollectDiagnostics: { await model.collectMainListDiagnostics(opening: opening) },
                 onShowInFinder: { model.showMainListFileInFinder(opening: opening, relativePath: $0) },
@@ -383,7 +392,7 @@ struct MainWindow: View {
                 state: .list,
                 onImport: {},
                 onDropImport: { _, _ in },
-                onOpenSettings: { Task { await model.beginSettingsRepositoryPathValidation(state.repoPath) } },
+                onOpenSettings: { model.showGeneralSettings(opening: state.sourceOpening) },
                 onRetryCurrentList: { Task { await model.retryConfigurationLoad() } },
                 onCollectDiagnostics: { await model.collectMainListDiagnostics(opening: state.sourceOpening) },
                 onShowInFinder: { model.showMainListFileInFinder(opening: state.sourceOpening, relativePath: $0) },

@@ -1,0 +1,48 @@
+一、执行结论
+
+- 已完成 `2-3/task-12: S1-26 + C1-04 load-update-config`。
+
+二、执行范围
+
+- 单任务：只实现 `S1-26-settings-general` 中 `C1-04 load-update-config` 对应功能。
+- 修改/新增范围均在允许路径内：
+  - `apps/macos/AreaMatrix/App/RootOverviewFileInspector.swift`
+  - `apps/macos/AreaMatrix/Models/GeneralSettingsModel.swift`
+  - `apps/macos/AreaMatrix/Models/GeneralSettingsActions.swift`
+  - `apps/macos/AreaMatrix/Models/OnboardingRoute.swift`
+  - `apps/macos/AreaMatrix/Models/OnboardingModelInputs.swift`
+  - `apps/macos/AreaMatrix/Models/MainExternalCreatedFileActions.swift`
+  - `apps/macos/AreaMatrix/Views/MainWindow.swift`
+  - `apps/macos/AreaMatrix/Views/Settings/GeneralSettingsView.swift`
+  - `apps/macos/AreaMatrixTests/GeneralSettingsPageFeatureTests.swift`
+  - `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+
+三、完成情况
+
+- 已接入真实 `CoreBridge.loadConfig` / `CoreBridge.updateConfig`，没有 mock-only 或静态状态伪造真实闭环。
+- Settings 入口现在进入 S1-26 general settings 页面，支持加载配置、保存 storage mode / overview output / locale，并处理失败回滚与 retry。
+- `AREAMATRIX.md` 只做只读检查与确认提示；保存设置不会写用户文件，也不会触碰 `README.md`。
+- 未实现 C1-07、ignore.yaml 编辑、相邻页面或 control map 外能力。
+- `Forbidden Touches`: 未触碰 `core/src/**`，核对无 diff、无新增文件。
+
+四、工程质量
+
+- 代码拆在 model / action / view / inspector / tests 中，未做一次性脚本化实现。
+- 高风险点通过确认流、只读检查、失败回滚和测试覆盖处理。
+- 无新增依赖；无 Rust public API 改动，因此无 rustdoc 同步需求。
+- 执行前已有的 `.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json` 是本地运行状态变更，不属于本任务实现范围。
+
+五、验证情况
+
+- 通过：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+- 通过：`./dev test macos`
+  - `xcodebuild test` 受本地 sandbox/testmanagerd 限制，仓库脚本自动 fallback 到 `xcrun xctest`。
+  - 最终 `336` 个测试，`0` 失败。
+- 通过：`git diff --check -- apps/macos/AreaMatrix.xcodeproj/project.pbxproj apps/macos/AreaMatrix apps/macos/AreaMatrixTests`
+- 通过：`core/src/**` forbidden touch 核对。
+
+六、风险与后续
+
+- 剩余风险：未做真实 UI 人工点击验证；本轮以模型测试、真实 CoreBridge 测试和 macOS XCTest 为证据。
+- 建议下一个任务：继续执行同页 C1-07 或对应 page integration verify，补齐 S1-26 control map 的整页覆盖。
+

@@ -33,7 +33,7 @@ extension OnboardingModel {
 
     private var currentMainRepositoryPath: String? {
         switch route {
-        case .mainEmpty(let opening), .mainList(let opening):
+        case .mainEmpty(let opening), .mainList(let opening), .settingsGeneral(let opening):
             return normalizedMainRepositoryPath(opening.config.repoPath)
         case .importProgress(let state):
             return normalizedMainRepositoryPath(state.sourceOpening.config.repoPath)

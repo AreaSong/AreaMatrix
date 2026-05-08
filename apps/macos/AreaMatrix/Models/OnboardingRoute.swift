@@ -14,6 +14,7 @@ extension OnboardingModel {
         case mainRepoError(String, CoreErrorMappingSnapshot?)
         case dbRepairConfirm(String, ScanSessionSnapshot?, CoreErrorMappingSnapshot?)
         case settingsRepository
+        case settingsGeneral(RepositoryOpeningResult)
         case importProgress(ImportProgressRouteState)
         case importResult(ImportResultRouteState)
         case mainEmpty(RepositoryOpeningResult)

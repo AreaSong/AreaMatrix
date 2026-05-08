@@ -279,7 +279,7 @@ extension OnboardingModel {
 
     private var currentOpeningForImport: RepositoryOpeningResult? {
         switch route {
-        case .mainEmpty(let opening), .mainList(let opening):
+        case .mainEmpty(let opening), .mainList(let opening), .settingsGeneral(let opening):
             return opening
         default:
             return nil

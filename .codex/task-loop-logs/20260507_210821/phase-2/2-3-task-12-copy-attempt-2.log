@@ -1,0 +1,29 @@
+一、执行结论：已完成。
+
+二、执行范围：单任务 `2-3/task-12` repair retry。  
+本次直接修复文件：
+- [GeneralSettingsModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/GeneralSettingsModel.swift:83)
+- [GeneralSettingsView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Settings/GeneralSettingsView.swift:8)
+- [GeneralSettingsPageFeatureTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/GeneralSettingsPageFeatureTests.swift:31)
+
+三、完成情况：
+- 已修复 locale 三态：`system`、`zh-CN`、`en` 现在分别持久化为独立值，`Reset this tab` 回到 `system`。
+- 已补齐 unsafe root overview 恢复入口：`Cannot safely update AREAMATRIX.md` 场景显示并接入 `Reveal in Finder`，不会调用 `update_config`。
+- 仅处理 S1-26 + C1-04；未实现 C1-07 或相邻 settings 页面。
+- `Forbidden Touches`：`git diff --name-status -- core/src` 无输出，未触碰 `core/src/**`。
+
+四、工程质量：
+- 代码走现有 `CoreBridge` / model / SwiftUI 注入模式，没有新增依赖。
+- Finder 恢复入口使用可注入 `RepositoryFileRevealing`，测试可验证，生产路径不直接在 View 里做文件 IO。
+- 错误处理已覆盖：Reveal 失败会显示可恢复错误。
+- 无 mock-only 产品闭环；测试桩仅用于 XCTest。
+
+五、验证情况：
+- 通过：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+- 通过：`./dev test macos`。标准 `xcodebuild test` 被本地 `testmanagerd` sandbox 限制阻断，脚本复用已构建 XCTest bundle 后 `xcrun xctest` 通过，`338 tests, 0 failures`。
+- 通过：`git diff --check -- apps/macos/AreaMatrix/Models/GeneralSettingsModel.swift apps/macos/AreaMatrix/Views/Settings/GeneralSettingsView.swift apps/macos/AreaMatrixTests/GeneralSettingsPageFeatureTests.swift`
+
+六、风险与后续：
+- 剩余风险：未做真实 UI 点击截图验证；本任务验证以 build + XCTest 为准。
+- 建议下一个任务：`2-3/task-13`，继续覆盖 S1-26 同页的 C1-07 能力。
+
