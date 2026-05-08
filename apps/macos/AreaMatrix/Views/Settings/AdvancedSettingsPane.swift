@@ -3,9 +3,11 @@ import SwiftUI
 struct AdvancedSettingsPane: View {
     @StateObject private var model: AdvancedSettingsModel
     @State private var isDangerZoneExpanded = false
+    private let onOpenRecoveryTools: () -> Void
 
     init(
         repoPath: String,
+        onOpenRecoveryTools: @escaping () -> Void = {},
         loader: any CoreConfigurationLoading = CoreBridge(),
         updater: any CoreConfigurationUpdating = CoreBridge(),
         rootOverviewInspector: any RootOverviewFileInspecting = LocalRootOverviewFileInspector(),
@@ -18,6 +20,7 @@ struct AdvancedSettingsPane: View {
             rootOverviewInspector: rootOverviewInspector,
             errorMapper: errorMapper
         ))
+        self.onOpenRecoveryTools = onOpenRecoveryTools
     }
 
     var body: some View {
@@ -128,6 +131,12 @@ struct AdvancedSettingsPane: View {
                 }
             }
             .accessibilityIdentifier("S1-30-load-error-retry-status")
+            Button {
+                onOpenRecoveryTools()
+            } label: {
+                Label("Open recovery tools...", systemImage: "arrow.clockwise.circle")
+            }
+            .accessibilityIdentifier("S1-30-C1-16-open-recovery-tools")
         }
     }
 
@@ -184,6 +193,7 @@ struct AdvancedSettingsPane: View {
 
                 overviewOutputSection
                 allowReplaceSection
+                AdvancedSettingsRecoveryToolsSection(onOpenRecoveryTools: onOpenRecoveryTools)
             }
             .padding(.top, 10)
         }
@@ -272,6 +282,31 @@ struct AdvancedSettingsPane: View {
                 }
             }
         )
+    }
+}
+
+struct AdvancedSettingsRecoveryToolsSection: View {
+    let onOpenRecoveryTools: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Recovery tools")
+                .font(.headline)
+            Button {
+                onOpenRecoveryTools()
+            } label: {
+                Label("Open recovery tools...", systemImage: "arrow.clockwise.circle")
+            }
+            .accessibilityIdentifier("S1-30-C1-16-open-recovery-tools")
+            Text(
+                "Startup cleanup and staging recovery stay in the dedicated recovery flow " +
+                    "with confirmation before metadata actions."
+            )
+                .font(.callout)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 

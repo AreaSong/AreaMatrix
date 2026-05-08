@@ -114,7 +114,10 @@ struct GeneralSettingsView: View {
         case "integrations":
             IntegrationsSettingsPane(repoPath: model.repoPath)
         case "advanced":
-            AdvancedSettingsPane(repoPath: model.repoPath)
+            AdvancedSettingsPane(
+                repoPath: model.repoPath,
+                onOpenRecoveryTools: onOpenRepositoryRecovery
+            )
         default:
             generalContent
         }

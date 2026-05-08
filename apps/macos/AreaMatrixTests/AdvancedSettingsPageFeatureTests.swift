@@ -26,6 +26,41 @@ final class AdvancedSettingsPageFeatureTests: XCTestCase {
     }
 
     @MainActor
+    func testRecoveryToolsSectionExposesS130C116EntrypointWithoutInlineRecovery() {
+        var didOpenRecoveryTools = false
+        let section = AdvancedSettingsRecoveryToolsSection {
+            didOpenRecoveryTools = true
+        }
+        let bodyText = advancedSettingsMirrorDescription(of: section.body)
+
+        XCTAssertTrue(bodyText.contains("Recovery tools"))
+        XCTAssertTrue(bodyText.contains("Open recovery tools..."))
+        XCTAssertTrue(bodyText.contains("S1-30-C1-16-open-recovery-tools"))
+
+        section.onOpenRecoveryTools()
+        XCTAssertTrue(didOpenRecoveryTools)
+    }
+
+    @MainActor
+    func testS130RecoveryToolsEntrypointRoutesToRepairConfirmationWithoutRunningRecovery() async {
+        let opening = RepositoryOpeningResult.shellFixture(repoPath: "/tmp/repo", fileCount: 1)
+        let recoverer = AdvancedSettingsRecordingStartupRecoverer()
+        let model = OnboardingModel(
+            settingsReader: ShellStaticSettingsReader(repoPath: nil),
+            startupRecoverer: recoverer,
+            helpOpener: ShellNoopWelcomeHelpOpener()
+        )
+
+        model.route = .settingsGeneral(opening)
+        model.settingsGeneralSelectedTab = "advanced"
+        model.openMainRepositoryRepair(repoPath: opening.config.repoPath)
+        let recoveryRequests = await recoverer.requestedRepoPaths()
+
+        XCTAssertEqual(model.route, .dbRepairConfirm("/tmp/repo", nil, nil))
+        XCTAssertEqual(recoveryRequests, [])
+    }
+
+    @MainActor
     func testRootOverviewRequiresConfirmationAndDoesNotWriteRootFiles() async throws {
         let repoURL = try temporaryAdvancedSettingsRepo()
         defer { try? FileManager.default.removeItem(at: repoURL) }
@@ -228,6 +263,19 @@ private actor AdvancedSettingsStaticErrorMapper: CoreErrorMapping {
     }
 }
 
+private actor AdvancedSettingsRecordingStartupRecoverer: CoreStartupRecovering {
+    private var paths: [String] = []
+
+    func recoverOnStartup(repoPath: String) async throws -> RecoveryReportSnapshot {
+        paths.append(repoPath)
+        return RecoveryReportSnapshot(cleanedStagingFiles: 0, revertedStagingDbRows: 0, warnings: [])
+    }
+
+    func requestedRepoPaths() -> [String] {
+        paths
+    }
+}
+
 private extension RepoConfigSnapshot {
     static func advancedSettingsFixture(
         repoPath: String,
@@ -270,4 +318,21 @@ private func temporaryAdvancedSettingsRepo() throws -> URL {
         .appendingPathComponent("AreaMatrixAdvancedSettings-\(UUID().uuidString)", isDirectory: true)
     try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
     return url
+}
+
+private func advancedSettingsMirrorDescription(of value: Any) -> String {
+    var lines: [String] = []
+    appendAdvancedSettingsMirrorDescription(of: value, to: &lines)
+    return lines.joined(separator: "\n")
+}
+
+private func appendAdvancedSettingsMirrorDescription(of value: Any, to lines: inout [String]) {
+    lines.append(String(describing: type(of: value)))
+    lines.append(String(describing: value))
+    for child in Mirror(reflecting: value).children {
+        if let label = child.label {
+            lines.append(label)
+        }
+        appendAdvancedSettingsMirrorDescription(of: child.value, to: &lines)
+    }
 }
