@@ -20,6 +20,15 @@ extension OnboardingModel {
         case mainEmpty(RepositoryOpeningResult)
         case mainList(RepositoryOpeningResult)
         case configurationError(ConfigLoadFailure)
+
+        var isSettingsReturnRoute: Bool {
+            switch self {
+            case .settingsRepository, .settingsGeneral(_):
+                return true
+            default:
+                return false
+            }
+        }
     }
 
     enum ChoosePathAction: Equatable, Sendable {

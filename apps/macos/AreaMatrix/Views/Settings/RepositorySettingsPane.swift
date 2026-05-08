@@ -2,6 +2,8 @@ import SwiftUI
 
 struct RepositorySettingsPane: View {
     @StateObject private var model: RepositorySettingsModel
+    let onChangeRepository: () -> Void
+    let onOpenRecoveryTools: () -> Void
 
     init(
         repoPath: String,
@@ -12,7 +14,14 @@ struct RepositorySettingsPane: View {
         scanSessionReader: any CoreScanSessionReading = CoreBridge(),
         existingRepositoryMetadataReader: any ExistingRepositoryMetadataReading =
             SQLiteExistingRepositoryMetadataReader(),
-        errorMapper: any CoreErrorMapping = CoreBridge()
+        finderOpener: any RepositoryFinderOpening = NSWorkspaceRepositoryFinderOpener(),
+        pathCopier: any RepositoryPathCopying = NSPasteboardRepositoryPathCopier(),
+        generatedOverviewRevealer: any RepositoryFileRevealing = NSWorkspaceRepositoryFileRevealer(),
+        diagnosticsCollector: any CoreDiagnosticsCollecting = CoreBridge(),
+        errorMapper: any CoreErrorMapping = CoreBridge(),
+        accessibilityAnnouncer: any AccessibilityAnnouncing = VoiceOverAccessibilityAnnouncer(),
+        onChangeRepository: @escaping () -> Void = {},
+        onOpenRecoveryTools: @escaping () -> Void = {}
     ) {
         _model = StateObject(wrappedValue: RepositorySettingsModel(
             repoPath: repoPath,
@@ -22,8 +31,15 @@ struct RepositorySettingsPane: View {
             fileLister: fileLister,
             scanSessionReader: scanSessionReader,
             existingRepositoryMetadataReader: existingRepositoryMetadataReader,
-            errorMapper: errorMapper
+            finderOpener: finderOpener,
+            pathCopier: pathCopier,
+            generatedOverviewRevealer: generatedOverviewRevealer,
+            diagnosticsCollector: diagnosticsCollector,
+            errorMapper: errorMapper,
+            accessibilityAnnouncer: accessibilityAnnouncer
         ))
+        self.onChangeRepository = onChangeRepository
+        self.onOpenRecoveryTools = onOpenRecoveryTools
     }
 
     var body: some View {
@@ -34,6 +50,19 @@ struct RepositorySettingsPane: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .task {
             await model.load()
+        }
+        .confirmationDialog(
+            "Export diagnostics?",
+            isPresented: diagnosticsConfirmationBinding
+        ) {
+            Button("Cancel", role: .cancel, action: model.cancelDiagnosticsExport)
+            Button("Export diagnostics") {
+                Task {
+                    await model.collectDiagnostics()
+                }
+            }
+        } message: {
+            Text("Diagnostics do not include your original file contents and are not uploaded automatically.")
         }
     }
 
@@ -103,6 +132,8 @@ struct RepositorySettingsPane: View {
                     await model.load()
                 }
             }
+            Button("Change repository...", action: onChangeRepository)
+            Button("Open recovery tools...", action: onOpenRecoveryTools)
         }
     }
 
@@ -112,40 +143,174 @@ struct RepositorySettingsPane: View {
                 syncErrorBanner
                 healthErrorBanner
                 overviewActionErrorBanner
+                repositoryActionBanner
+                diagnosticsStatusBanner
 
-                RepositorySettingsSection(title: "路径") {
-                    RepositorySettingsKeyValueRow(label: "Repository name", value: summary.repositoryName)
-                    RepositorySettingsKeyValueRow(label: "Location", value: summary.location)
-                    RepositorySettingsKeyValueRow(label: "Metadata", value: summary.metadataStatus)
-                }
-
-                RepositorySettingsSection(title: "健康") {
-                    RepositorySettingsHealthSection(summary: model.healthSummary)
-                }
-
-                RepositorySettingsSection(title: "概览输出") {
-                    RepositorySettingsKeyValueRow(label: "Generated overview", value: summary.overviewMode)
-                    RepositorySettingsKeyValueRow(label: "Generated path", value: summary.generatedPath)
-                    RepositorySettingsKeyValueRow(label: "Root file", value: summary.rootFile)
-                    RepositorySettingsKeyValueRow(label: "README.md", value: summary.readmePolicy)
-                    Button("Reveal generated overview") {
-                        model.revealGeneratedOverviewInFinder()
-                    }
-                    .accessibilityIdentifier("S1-27-C1-20-reveal-generated-overview")
-                }
-
-                Text(
-                    "Deleting the .areamatrix folder removes AreaMatrix metadata, not your original files. " +
-                        "Do this only if you know what you are doing."
-                )
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                repositoryPathSection(summary)
+                repositoryHealthSection
+                repositoryOverviewSection(summary)
+                repositorySafeActionsSection
+                metadataDeletionWarning
             }
             .frame(maxWidth: 700, alignment: .leading)
             .padding(.horizontal, 34)
             .padding(.vertical, 28)
         }
+    }
+
+    private func repositoryPathSection(_ summary: RepositorySettingsSummary) -> some View {
+        RepositorySettingsSection(title: "路径") {
+            RepositorySettingsKeyValueRow(label: "Repository name", value: summary.repositoryName)
+            RepositorySettingsKeyValueRow(label: "Location", value: summary.location)
+            RepositorySettingsKeyValueRow(label: "Metadata", value: summary.metadataStatus)
+            repositoryPathActions
+        }
+    }
+
+    private var repositoryHealthSection: some View {
+        RepositorySettingsSection(title: "健康") {
+            RepositorySettingsHealthSection(summary: model.healthSummary)
+        }
+    }
+
+    private func repositoryOverviewSection(_ summary: RepositorySettingsSummary) -> some View {
+        RepositorySettingsSection(title: "概览输出") {
+            RepositorySettingsKeyValueRow(label: "Generated overview", value: summary.overviewMode)
+            RepositorySettingsKeyValueRow(label: "Generated path", value: summary.generatedPath)
+            RepositorySettingsKeyValueRow(label: "Root file", value: summary.rootFile)
+            RepositorySettingsKeyValueRow(label: "README.md", value: summary.readmePolicy)
+            Button("Reveal generated overview") {
+                model.revealGeneratedOverviewInFinder()
+            }
+            .accessibilityIdentifier("S1-27-C1-20-reveal-generated-overview")
+        }
+    }
+
+    private var repositorySafeActionsSection: some View {
+        RepositorySettingsSection(title: "安全动作") {
+            Button(diagnosticsButtonTitle) {
+                model.requestDiagnosticsExport()
+            }
+            .disabled(model.diagnosticsState.isCollecting)
+            .accessibilityIdentifier("S1-27-export-diagnostics")
+
+            if model.healthError?.databaseStatus == .needsRecovery {
+                Button("Open recovery tools...", action: onOpenRecoveryTools)
+                    .accessibilityIdentifier("S1-27-open-recovery-tools")
+            }
+
+            Text("Diagnostics do not include your original file contents and are not uploaded automatically.")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private var metadataDeletionWarning: some View {
+        Text(
+            "Deleting the .areamatrix folder removes AreaMatrix metadata, not your original files. " +
+                "Do this only if you know what you are doing."
+        )
+        .font(.callout)
+        .foregroundStyle(.secondary)
+        .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private var repositoryPathActions: some View {
+        HStack(spacing: 10) {
+            Button("Reveal in Finder") {
+                model.revealRepositoryInFinder()
+            }
+            .accessibilityIdentifier("S1-27-reveal-repository")
+
+            Button("Copy path") {
+                model.copyRepositoryPath()
+            }
+            .accessibilityIdentifier("S1-27-copy-repository-path")
+
+            Button("Change repository...", action: onChangeRepository)
+                .accessibilityIdentifier("S1-27-change-repository")
+        }
+    }
+
+    @ViewBuilder
+    private var repositoryActionBanner: some View {
+        if let error = model.repositoryActionError {
+            VStack(alignment: .leading, spacing: 8) {
+                Label(error.message, systemImage: "exclamationmark.triangle")
+                    .foregroundStyle(.red)
+                Text(error.recovery)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.red.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
+            .accessibilityElement(children: .combine)
+        } else if let message = model.repositoryActionMessage {
+            Label(message, systemImage: "checkmark.circle")
+                .foregroundStyle(.green)
+                .padding(12)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color.green.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
+                .accessibilityElement(children: .combine)
+        }
+    }
+
+    @ViewBuilder
+    private var diagnosticsStatusBanner: some View {
+        switch model.diagnosticsState {
+        case .idle, .confirmingPrivacy:
+            EmptyView()
+        case .collecting:
+            HStack(spacing: 10) {
+                ProgressView()
+                    .controlSize(.small)
+                Text("Preparing diagnostics...")
+            }
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.blue.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
+        case .collected(let snapshot):
+            VStack(alignment: .leading, spacing: 8) {
+                Label("Diagnostics exported", systemImage: "checkmark.circle")
+                    .foregroundStyle(.green)
+                Text(snapshot.snapshotPath)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .textSelection(.enabled)
+            }
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.green.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
+            .accessibilityElement(children: .combine)
+        case .failed(let error):
+            VStack(alignment: .leading, spacing: 8) {
+                Label(error.message, systemImage: "exclamationmark.triangle")
+                    .foregroundStyle(.red)
+                Text(error.recovery)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.red.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
+            .accessibilityElement(children: .combine)
+        }
+    }
+
+    private var diagnosticsButtonTitle: String {
+        model.diagnosticsState.isCollecting ? "Exporting diagnostics..." : "Export diagnostics..."
+    }
+
+    private var diagnosticsConfirmationBinding: Binding<Bool> {
+        Binding(
+            get: { model.diagnosticsState.isConfirmingPrivacy },
+            set: { isPresented in
+                if !isPresented {
+                    model.cancelDiagnosticsExport()
+                }
+            }
+        )
     }
 
     @ViewBuilder

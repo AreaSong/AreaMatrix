@@ -2,12 +2,17 @@ import SwiftUI
 
 struct GeneralSettingsView: View {
     @StateObject private var model: GeneralSettingsModel
-    @State private var selectedTab: String? = "general"
+    @Binding private var selectedTab: String?
     let onClose: () -> Void
+    let onChangeRepository: () -> Void
+    let onOpenRepositoryRecovery: () -> Void
 
     init(
         repoPath: String,
+        selectedTab: Binding<String?> = .constant("general"),
         onClose: @escaping () -> Void,
+        onChangeRepository: @escaping () -> Void = {},
+        onOpenRepositoryRecovery: @escaping () -> Void = {},
         loader: any CoreConfigurationLoading = CoreBridge(),
         updater: any CoreConfigurationUpdating = CoreBridge(),
         rootOverviewInspector: any RootOverviewFileInspecting = LocalRootOverviewFileInspector(),
@@ -24,7 +29,10 @@ struct GeneralSettingsView: View {
             ignoreRulesManager: ignoreRulesManager,
             errorMapper: errorMapper
         ))
+        _selectedTab = selectedTab
         self.onClose = onClose
+        self.onChangeRepository = onChangeRepository
+        self.onOpenRepositoryRecovery = onOpenRepositoryRecovery
     }
 
     var body: some View {
@@ -90,7 +98,11 @@ struct GeneralSettingsView: View {
     private var content: some View {
         switch selectedTab {
         case "repository":
-            RepositorySettingsPane(repoPath: model.repoPath)
+            RepositorySettingsPane(
+                repoPath: model.repoPath,
+                onChangeRepository: onChangeRepository,
+                onOpenRecoveryTools: onOpenRepositoryRecovery
+            )
         default:
             generalContent
         }

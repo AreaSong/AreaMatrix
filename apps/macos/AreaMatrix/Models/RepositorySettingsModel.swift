@@ -116,7 +116,10 @@ final class RepositorySettingsModel: ObservableObject {
     @Published private(set) var healthSummary: RepositorySettingsHealthSummary?
     @Published private(set) var healthError: RepositorySettingsHealthError?
     @Published private(set) var syncError: RepositorySettingsSyncError?
+    @Published private(set) var repositoryActionMessage: String?
+    @Published private(set) var repositoryActionError: RepositorySettingsPathActionError?
     @Published private(set) var overviewActionError: RepositorySettingsOverviewActionError?
+    @Published private(set) var diagnosticsState: RepositorySettingsDiagnosticsState = .idle
 
     let repoPath: String
     private let loader: any CoreConfigurationLoading
@@ -125,8 +128,12 @@ final class RepositorySettingsModel: ObservableObject {
     private let fileLister: (any CoreFileListing)?
     private let scanSessionReader: any CoreScanSessionReading
     private let existingRepositoryMetadataReader: any ExistingRepositoryMetadataReading
+    private let finderOpener: any RepositoryFinderOpening
+    private let pathCopier: any RepositoryPathCopying
     private let generatedOverviewRevealer: any RepositoryFileRevealing
+    private let diagnosticsCollector: any CoreDiagnosticsCollecting
     private let errorMapper: any CoreErrorMapping
+    private let accessibilityAnnouncer: any AccessibilityAnnouncing
 
     init(
         repoPath: String,
@@ -137,8 +144,12 @@ final class RepositorySettingsModel: ObservableObject {
         scanSessionReader: any CoreScanSessionReading = CoreBridge(),
         existingRepositoryMetadataReader: any ExistingRepositoryMetadataReading =
             SQLiteExistingRepositoryMetadataReader(),
+        finderOpener: any RepositoryFinderOpening = NSWorkspaceRepositoryFinderOpener(),
+        pathCopier: any RepositoryPathCopying = NSPasteboardRepositoryPathCopier(),
         generatedOverviewRevealer: any RepositoryFileRevealing = NSWorkspaceRepositoryFileRevealer(),
-        errorMapper: any CoreErrorMapping = CoreBridge()
+        diagnosticsCollector: any CoreDiagnosticsCollecting = CoreBridge(),
+        errorMapper: any CoreErrorMapping = CoreBridge(),
+        accessibilityAnnouncer: any AccessibilityAnnouncing = VoiceOverAccessibilityAnnouncer()
     ) {
         self.repoPath = repoPath
         self.loader = loader
@@ -147,8 +158,12 @@ final class RepositorySettingsModel: ObservableObject {
         self.fileLister = fileLister ?? (repositoryOpener as? any CoreFileListing)
         self.scanSessionReader = scanSessionReader
         self.existingRepositoryMetadataReader = existingRepositoryMetadataReader
+        self.finderOpener = finderOpener
+        self.pathCopier = pathCopier
         self.generatedOverviewRevealer = generatedOverviewRevealer
+        self.diagnosticsCollector = diagnosticsCollector
         self.errorMapper = errorMapper
+        self.accessibilityAnnouncer = accessibilityAnnouncer
     }
 
     var isLoading: Bool {
@@ -170,7 +185,10 @@ final class RepositorySettingsModel: ObservableObject {
         healthSummary = nil
         healthError = nil
         syncError = nil
+        repositoryActionMessage = nil
+        repositoryActionError = nil
         overviewActionError = nil
+        diagnosticsState = .idle
         do {
             let config = try await loader.loadConfig(repoPath: repoPath)
             let effectiveConfig = config.withRepositoryPath(repoPath)
@@ -192,13 +210,66 @@ final class RepositorySettingsModel: ObservableObject {
         }
     }
 
+    func revealRepositoryInFinder() {
+        clearRepositoryActionFeedback()
+        do {
+            try finderOpener.openRepositoryInFinder(repoPath: repoPath)
+            repositoryActionMessage = "Repository folder revealed in Finder."
+        } catch {
+            repositoryActionError = RepositorySettingsPathActionError(
+                message: "Repository folder cannot be revealed.",
+                recovery: "Check that the repository folder still exists and Finder has permission to open it."
+            )
+        }
+    }
+
+    func copyRepositoryPath() {
+        clearRepositoryActionFeedback()
+        do {
+            try pathCopier.copyPath(repoPath: repoPath, relativePath: "")
+            repositoryActionMessage = "Repository path copied."
+            accessibilityAnnouncer.announce("Repository path copied.")
+        } catch {
+            repositoryActionError = RepositorySettingsPathActionError(
+                message: "Repository path cannot be copied.",
+                recovery: "Copy the Location row manually after checking clipboard permissions."
+            )
+            accessibilityAnnouncer.announce("Repository path cannot be copied.")
+        }
+    }
+
+    func requestDiagnosticsExport() {
+        clearRepositoryActionFeedback()
+        diagnosticsState = .confirmingPrivacy
+    }
+
+    func cancelDiagnosticsExport() {
+        if diagnosticsState.isConfirmingPrivacy {
+            diagnosticsState = .idle
+        }
+    }
+
+    func collectDiagnostics() async {
+        guard diagnosticsState.isConfirmingPrivacy else { return }
+
+        diagnosticsState = .collecting
+        do {
+            let snapshot = try await diagnosticsCollector.createDiagnosticsSnapshot(repoPath: repoPath)
+            diagnosticsState = .collected(snapshot)
+        } catch {
+            diagnosticsState = .failed(await diagnosticsError(for: error))
+        }
+    }
+
     func revealGeneratedOverviewInFinder() {
+        clearRepositoryActionFeedback()
         do {
             try generatedOverviewRevealer.revealFile(
                 repoPath: repoPath,
                 relativePath: RepositorySettingsSummary.generatedOverviewRelativePath
             )
             overviewActionError = nil
+            repositoryActionMessage = "Generated overview revealed in Finder."
         } catch {
             overviewActionError = overviewError(for: error)
         }
@@ -381,6 +452,27 @@ final class RepositorySettingsModel: ObservableObject {
                 recovery: "Open the repository folder and check .areamatrix/generated/ permissions before retrying."
             )
         }
+    }
+
+    private func clearRepositoryActionFeedback() {
+        repositoryActionMessage = nil
+        repositoryActionError = nil
+        overviewActionError = nil
+    }
+
+    private func diagnosticsError(for error: Error) async -> RepositorySettingsDiagnosticsError {
+        if let coreError = error as? CoreError {
+            let mapping = await errorMapper.mapCoreError(coreError)
+            return RepositorySettingsDiagnosticsError(
+                message: mapping.userMessage,
+                recovery: mapping.suggestedAction
+            )
+        }
+
+        return RepositorySettingsDiagnosticsError(
+            message: "Diagnostics could not be exported.",
+            recovery: "Retry after the repository is available."
+        )
     }
 }
 

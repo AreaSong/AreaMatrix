@@ -1,0 +1,40 @@
+**一、验收结论**
+- 通过
+
+**二、验收范围**
+- 单任务：`2-3/task-18`
+- 对应路径：`[RepositorySettingsPane.swift](</Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Settings/RepositorySettingsPane.swift:45>)`、`[RepositorySettingsModel.swift](</Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/RepositorySettingsModel.swift:183>)`、`[GeneralSettingsView.swift](</Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Settings/GeneralSettingsView.swift:97>)`、`[AppShellModel.swift](</Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/AppShellModel.swift:169>)`、`[OnboardingRoute.swift](</Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/OnboardingRoute.swift:24>)`、`[MainWindow.swift](</Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/MainWindow.swift:301>)`、`[RepositorySettingsPageFeatureTests.swift](</Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/RepositorySettingsPageFeatureTests.swift:4>)`、`[RepositorySettingsPageIntegrationVerifyTests.swift](</Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/RepositorySettingsPageIntegrationVerifyTests.swift:4>)`、`[project.pbxproj](</Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj:175>)`
+
+**三、完成度摘要**
+- 已覆盖项数：4
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：0
+- 阻塞项数：0
+
+**四、逐项验收结果**
+- 页面 feature task 全覆盖：通过。`RepositorySettingsPageFeatureTests` 覆盖 C1-04 / C1-08 / C1-20，`RepositorySettingsPageIntegrationVerifyTests` 覆盖整页闭环和返回链路。证据见 `[RepositorySettingsPageFeatureTests.swift](</Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/RepositorySettingsPageFeatureTests.swift:4>)`、`[RepositorySettingsPageIntegrationVerifyTests.swift](</Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/RepositorySettingsPageIntegrationVerifyTests.swift:4>)`。
+- 页面状态、入口、退出、错误态、CoreBridge 调用闭环：通过。`GeneralSettingsView` 已把 repository tab 接入 `RepositorySettingsPane`，`AppShellModel` / `OnboardingRoute` 已把 `Change repository...` 接回 settingsGeneral，而不是旧的占位路由。证据见 `[GeneralSettingsView.swift](</Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Settings/GeneralSettingsView.swift:97>)`、`[AppShellModel.swift](</Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/AppShellModel.swift:169>)`、`[OnboardingRoute.swift](</Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/OnboardingRoute.swift:24>)`、`[MainWindow.swift](</Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/MainWindow.swift:301>)`。
+- 移除 mock / fixture / 硬编码通过态：通过。生产路径默认走真实 `CoreBridge`、真实 `SQLiteExistingRepositoryMetadataReader`，`Copy path` 也已补上 repo root 复制。证据见 `[RepositorySettingsModel.swift](</Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/RepositorySettingsModel.swift:183>)`、`[CoreBridge.swift](</Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift:197>)`、`[AppPlatformServices.swift](</Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/App/AppPlatformServices.swift:197>)`。
+- 未新增 control map 外功能：通过。新增内容都落在 S1-27 文档和 control map 已声明的路径、健康、overview、reveal/copy、recovery、diagnostics、change repository 范围内，`core/src/**` 未触碰。
+
+**五、工程质量验收**
+- 代码结构与逻辑：通过。`model / view / platform service / test support` 分层清楚。
+- 注释 / rustdoc / 文档同步：通过。实现与 page spec、control map、Core API、C1-04 / C1-08 / C1-20 对齐。
+- 错误处理与边界处理：通过。load / update / metadata / overview / diagnostics / recovery 都有显式错误路径。
+- 测试与验证覆盖：通过。`./dev test macos` 跑过 359 tests，`RepositorySettingsPageFeatureTests` 12 tests、`RepositorySettingsPageIntegrationVerifyTests` 3 tests 全通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。生产闭环连接真实 CoreBridge，测试只用于隔离平台副作用，不是产品占位。
+
+**六、阻塞项**
+- 未发现阻塞项
+
+**七、验证情况**
+- `xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：被本地 `testmanagerd` sandbox 通信阻断。
+- `./dev test macos`：通过，按脚本回退到 `xcrun xctest`，359 个测试全部通过。
+- `git diff --check`：通过。
+- `git diff --name-only -- core/src`：空输出，未触碰禁止目录。
+
+**八、最终判定说明**
+- 本次执行已达到验收标准。
+VERIFY_RESULT: PASS
+

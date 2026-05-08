@@ -303,10 +303,20 @@ struct MainWindow: View {
         case .settingsGeneral(let opening):
             GeneralSettingsView(
                 repoPath: opening.config.repoPath,
+                selectedTab: Binding(
+                    get: { model.settingsGeneralSelectedTab },
+                    set: { model.settingsGeneralSelectedTab = $0 }
+                ),
                 onClose: {
                     Task {
                         await model.refreshAfterGeneralSettings(opening: opening)
                     }
+                },
+                onChangeRepository: {
+                    model.beginSettingsRepositoryChange(from: opening)
+                },
+                onOpenRepositoryRecovery: {
+                    model.openMainRepositoryRepair(repoPath: opening.config.repoPath)
                 }
             )
         case .importProgress(let state):

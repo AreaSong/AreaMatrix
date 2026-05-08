@@ -197,7 +197,7 @@ struct NSWorkspaceRepositoryFileOpener: RepositoryFileOpening {
 struct NSPasteboardRepositoryPathCopier: RepositoryPathCopying {
     @MainActor
     func copyPath(repoPath: String, relativePath: String) throws {
-        let path = try RepositoryFilePathResolver.fileURL(repoPath: repoPath, relativePath: relativePath).path
+        let path = try pathForCopy(repoPath: repoPath, relativePath: relativePath)
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(path, forType: .string)
     }
@@ -209,6 +209,14 @@ struct NSPasteboardRepositoryPathCopier: RepositoryPathCopying {
         }
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(paths.joined(separator: "\n"), forType: .string)
+    }
+
+    private func pathForCopy(repoPath: String, relativePath: String) throws -> String {
+        guard !relativePath.isEmpty else {
+            return URL(fileURLWithPath: repoPath, isDirectory: true).standardizedFileURL.path
+        }
+
+        return try RepositoryFilePathResolver.fileURL(repoPath: repoPath, relativePath: relativePath).path
     }
 }
 

@@ -5,6 +5,7 @@ final class OnboardingModel: ObservableObject {
     private static let defaultRepositoryPathDisplay = "~/AreaMatrix/"
     @Published var route: Route = .loadingConfiguration
     @Published var toastMessage: String?
+    @Published var settingsGeneralSelectedTab: String? = "general"
     @Published private(set) var choosePathAction: ChoosePathAction?
     @Published private(set) var validatePathAction: ValidatePathAction?
     @Published var repositoryPathText = OnboardingModel.defaultRepositoryPathDisplay
@@ -52,7 +53,7 @@ final class OnboardingModel: ObservableObject {
     var validatePathPrimaryActionTitle: String {
         repositoryPathValidation?.isInitialized == true ? "Open Repository" : "Continue"
     }
-    var validatePathReturnRouteIsSettings: Bool { validatePathReturnRoute == .settingsRepository }
+    var validatePathReturnRouteIsSettings: Bool { validatePathReturnRoute.isSettingsReturnRoute }
     let settingsReader: any AppSettingsReading
     let settingsWriter: any AppSettingsWriting
     let pathValidator: any CoreRepositoryPathValidating
@@ -145,7 +146,7 @@ final class OnboardingModel: ObservableObject {
     @MainActor func showWelcome() { route = .welcome; toastMessage = nil }
     @MainActor
     func showChoosePath() {
-        if validatePathReturnRoute != .settingsRepository { validatePathReturnRoute = .choosePath }
+        if !validatePathReturnRoute.isSettingsReturnRoute { validatePathReturnRoute = .choosePath }
         route = .choosePath
         toastMessage = nil
         repositoryPathErrorMapping = nil
@@ -174,6 +175,13 @@ final class OnboardingModel: ObservableObject {
         validatePathAction = nil
         isICloudRiskAccepted = false
         await validateSelectedRepositoryPath()
+    }
+    @MainActor
+    func beginSettingsRepositoryChange(from opening: RepositoryOpeningResult) {
+        validatePathReturnRoute = .settingsGeneral(opening)
+        settingsGeneralSelectedTab = "repository"
+        updateRepositoryPath(opening.config.repoPath)
+        showChoosePath()
     }
     @MainActor
     func returnFromValidatePath() {
@@ -225,7 +233,7 @@ final class OnboardingModel: ObservableObject {
         }
 
         route = .validatePath
-        if validatePathReturnRoute != .settingsRepository { validatePathReturnRoute = .choosePath }
+        if !validatePathReturnRoute.isSettingsReturnRoute { validatePathReturnRoute = .choosePath }
         repositoryPathValidation = nil
         existingRepositoryMetadata = nil
         validatePathAction = nil
@@ -294,7 +302,7 @@ final class OnboardingModel: ObservableObject {
             return false
         }
 
-        let shouldCloseWindow = validatePathReturnRoute != .settingsRepository
+        let shouldCloseWindow = !validatePathReturnRoute.isSettingsReturnRoute
         isSetupQuitConfirmationPresented = false
         validatePathAction = nil
         repositoryPathValidation = nil
@@ -305,7 +313,7 @@ final class OnboardingModel: ObservableObject {
         initializationProgressWarning = nil
         isInitializationCancellationRequested = false
         stopInitializationProgressPolling()
-        route = shouldCloseWindow ? .welcome : .settingsRepository
+        route = shouldCloseWindow ? .welcome : validatePathReturnRoute
         return shouldCloseWindow
     }
 
