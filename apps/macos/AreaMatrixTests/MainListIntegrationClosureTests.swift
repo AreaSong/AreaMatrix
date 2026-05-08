@@ -203,7 +203,9 @@ final class MainListIntegrationClosureTests: XCTestCase {
 
         XCTAssertEqual(model.selection, .single(selected.id))
         XCTAssertEqual(model.files, [])
-        XCTAssertNil(model.selectedFileDetail)
+        var missingSelected = selected
+        missingSelected.availability = .missing
+        XCTAssertEqual(model.selectedFileDetail, missingSelected)
         XCTAssertEqual(model.detailErrorMapping?.kind, .fileNotFound)
         XCTAssertEqual(model.statusBanner, .removedSelectedFile(fileID: selected.id))
     }

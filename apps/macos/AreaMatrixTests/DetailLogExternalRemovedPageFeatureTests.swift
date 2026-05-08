@@ -94,7 +94,9 @@ final class DetailLogExternalRemovedPageFeatureTests: XCTestCase {
         )])
         XCTAssertEqual(model.selection, .single(removed.id))
         XCTAssertEqual(model.files, [keeper])
-        XCTAssertNil(model.selectedFileDetail)
+        var missingRemoved = removed
+        missingRemoved.availability = .missing
+        XCTAssertEqual(model.selectedFileDetail, missingRemoved)
         XCTAssertEqual(model.detailErrorMapping?.kind, .fileNotFound)
         XCTAssertEqual(model.statusBanner, .removedSelectedFile(fileID: removed.id))
         XCTAssertEqual(model.detailExternalCreateSyncState, .synced(event: event, fileID: removed.id, .detailRemovedFixture()))

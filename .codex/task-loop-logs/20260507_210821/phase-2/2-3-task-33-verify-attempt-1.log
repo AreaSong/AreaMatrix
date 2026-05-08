@@ -1,0 +1,92 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`2-3/task-33`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-3-detail-settings/task-33-s1-34-c1-23-delete-remove-index.md`
+- 主要验收文件：
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreFileDeleting.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileDeleteActions.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileListState.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/DeleteFileConfirmSheet.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryDetailPane.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/DeleteFilePageFeatureTests.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：6
+- 未覆盖项数：2
+- 通过项数：6
+- 不通过项数：2
+- 阻塞项数：2
+
+四、逐项验收结果
+
+- 项目：Exact Docs / Existing Code / Expected New Paths / Forbidden Touches 覆盖
+- 结果：通过
+- 证据：manifest 章节 `2-3/task-33` 声明的 4 个 Exact Docs 均已读取；`core/area_matrix.udl` 已包含 `delete_file` 和 `remove_index_entry`；`apps/macos/AreaMatrixTests/DeleteFilePageFeatureTests.swift` 已落地并被 project.pbxproj 收录；`git status --short core/src ...` 未显示 `core/src/**` 改动。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-2.md:2791`
+
+- 项目：只处理 S1-34 页面中的 C1-23 功能点
+- 结果：基本通过
+- 证据：control map 中 S1-34 只绑定 C1-23，API 为 `delete_file` / `remove_index_entry`；Swift 实现新增的是 delete/remove-index sheet、状态和 CoreBridge deleter，没有发现接入 C1-24、C1-10 等相邻能力。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:49`
+
+- 项目：CoreBridge / 状态 / 错误映射接入
+- 结果：通过
+- 证据：`CoreFileDeleting` 协议和 `CoreBridge` extension 通过 `Task.detached` 调 `deleteCoreFile` / `removeCoreIndexEntry`；`MainFileDeleteActions.submitDelete` 按 `.moveToTrash` / `.removeFromIndex` 分流，失败时走 `mapCoreError` 并保持 sheet 打开。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreFileDeleting.swift:3`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileDeleteActions.swift:4`
+
+- 项目：用户可见 S1-34 sheet 可触发
+- 结果：不通过
+- 证据：S1-09 列表右键有 `Delete...` 入口；但 S1-34 页面规格明确还要求 `S1-12 detail-meta` 缺失文件 banner 的 `Remove from index` 入口。当前 `MainRepositoryDetailPane` 的 detail error pane 只有 `Retry`，detail actions 菜单只有 `Rename...`，没有 `Remove from index` 或打开 S1-34 的 delete/remove-index 回调。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-34-file-delete-confirm.md:20`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryDetailPane.swift:208`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryDetailPane.swift:287`
+
+- 项目：Delete / Remove from Index 文案、二次确认、Trash 禁用
+- 结果：通过
+- 证据：sheet 显示操作说明、文件摘要、确认 toggle；危险按钮在未确认、执行中、Trash 不可用时禁用；没有永久删除入口。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/DeleteFileConfirmSheet.swift:14`
+
+- 项目：失败返回路径
+- 结果：不通过
+- 证据：页面规格要求失败时保留 sheet，并显示错误、`Retry` 和 `Collect Diagnostics...`。当前失败视图只有错误信息和 `Collect Diagnostics...`；底部 destructive 主按钮仍显示 `Move to Trash` / `Remove from Index`，没有明确的 `Retry` 文案或 Retry 按钮，无法按规格验收。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-34-file-delete-confirm.md:84`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/DeleteFileConfirmSheet.swift:62`
+
+- 项目：真实 Core 闭环，非 mock-only
+- 结果：通过
+- 证据：测试不仅有 recording deleter，也有真实 `CoreBridge` 路径：初始化临时 repo、导入 indexed 文件、调用 `removeIndexEntry`、确认源文件 bytes 未变、list 为空、change_log 包含 `removed_from_index`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/DeleteFilePageFeatureTests.swift:92`
+
+- 项目：Missing / Index-only 不删除用户原文件
+- 结果：部分通过
+- 证据：模型推荐 Indexed、Missing、External 使用 `.removeFromIndex`，真实 CoreBridge 测试覆盖 indexed source 不被触碰；但 S1-12 缺失文件 banner 入口缺失，导致 missing recovery 这条用户路径不可完整触发。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileListState.swift:88`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/DeleteFilePageFeatureTests.swift:33`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，delete/remove-index 分流集中在 `MainFileDeleteActions`，Core 调用封装在 `CoreFileDeleting`。
+- 注释 / rustdoc / 文档同步：通过，本任务未新增 Rust public API；UDL 与 Core API 文档已有对应函数。
+- 错误处理与边界处理：不通过，失败态缺少规格要求的明确 Retry；S1-12 missing banner 没有 Remove from Index 入口。
+- 测试与验证覆盖：通过，`xcodebuild build` 通过，`./dev test macos` 最终 420 tests 通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过，存在真实 CoreBridge 测试证据；未发现用 mock-only 伪造最终闭环。
+
+六、阻塞项
+
+- P0：S1-12 缺失文件 banner 的 `Remove from index` 入口未实现。说明：S1-34 规格要求入口包含 `S1-12 detail-meta` 缺失文件 banner，但当前 detail pane 的错误态只有 Retry，detail action 菜单也只有 Rename。绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryDetailPane.swift:208`。为什么导致不通过：C1-23 的 Remove from Index 用户路径不能从规格指定入口触发，无法满足“用户可见功能可被触发和验收”。
+
+- P1：失败态缺少明确 `Retry`。说明：S1-34 规格要求失败时显示错误、`Retry` 和 `Collect Diagnostics...`；当前失败视图只显示 `Collect Diagnostics...`，没有 Retry 文案/按钮。绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/DeleteFileConfirmSheet.swift:62`。为什么导致不通过：失败返回路径不完整，高风险删除/移除操作缺少规格要求的可恢复交互证据。
+
+七、验证情况
+
+- 已运行：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：通过，输出 `** BUILD SUCCEEDED **`。
+- 已运行：`./dev test macos`：通过。标准 `xcodebuild test` 被本地 `testmanagerd` sandbox 阻断，脚本按 validation driver 规则复用已构建 XCTest bundle 执行 `xcrun xctest`，最终 `Executed 420 tests, with 0 failures`。
+- 缺失：未做人工 UI 冒烟；当前只读验收无法修复并重新验收缺失入口。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。主要原因不是 build/test，而是 S1-34 文档定义的 S1-12 缺失文件 Remove from Index 入口没有落地，且失败态缺少明确 Retry 交互。
+
+VERIFY_RESULT: FAIL

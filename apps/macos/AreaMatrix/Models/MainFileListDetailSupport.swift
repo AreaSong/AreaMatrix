@@ -75,6 +75,29 @@ extension MainFileListModel {
         }
         return files.first { $0.path == path }?.id
     }
+
+    func missingDetailSnapshotIfNeeded(_ error: Error, fileID: Int64) -> FileEntrySnapshot? {
+        guard case .FileNotFound(let path) = error as? CoreError else { return nil }
+        return missingSnapshot(fileID: fileID, fallbackPath: path)
+    }
+
+    func missingSnapshot(fileID: Int64, fallbackPath: String) -> FileEntrySnapshot? {
+        var snapshot = selectedFileDetail ??
+            files.first { $0.id == fileID } ??
+            cachedFile(id: fileID)
+        snapshot?.availability = .missing
+        if snapshot == nil, fallbackPath == "\(fileID)" || fallbackPath.isEmpty {
+            return nil
+        }
+        return snapshot
+    }
+
+    func mapCoreError(_ error: Error) async -> CoreErrorMappingSnapshot {
+        if let coreError = error as? CoreError {
+            return await errorMapper.mapCoreError(coreError)
+        }
+        return await errorMapper.mapCoreError(CoreError.Internal(message: error.localizedDescription))
+    }
 }
 
 extension CoreErrorMappingSnapshot {

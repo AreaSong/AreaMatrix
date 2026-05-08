@@ -19,6 +19,7 @@ final class MainFileListModel: ObservableObject {
     @Published var statusBanner: MainListStatusBanner?
     @Published private(set) var diagnosticsState: MainListDiagnosticsState = .idle
     @Published var renameState: MainFileRenameState = .idle
+    @Published var deleteState: MainFileDeleteState = .idle
 
     let repoPath: String
     let isReadOnly: Bool
@@ -26,6 +27,7 @@ final class MainFileListModel: ObservableObject {
     private let fileLister: any CoreFileListing
     let fileDetailer: any CoreFileDetailing
     let fileRenamer: any CoreFileRenaming
+    let fileDeleter: any CoreFileDeleting
     private let changeLogLister: any CoreChangeLogListing
     private let externalChangesSyncer: any CoreExternalChangesSyncing
     let errorMapper: any CoreErrorMapping
@@ -40,6 +42,7 @@ final class MainFileListModel: ObservableObject {
         fileLister: any CoreFileListing,
         fileDetailer: any CoreFileDetailing,
         fileRenamer: any CoreFileRenaming = CoreBridge(),
+        fileDeleter: any CoreFileDeleting = CoreBridge(),
         changeLogLister: any CoreChangeLogListing = CoreBridge(),
         externalChangesSyncer: any CoreExternalChangesSyncing = CoreBridge(),
         errorMapper: any CoreErrorMapping,
@@ -53,6 +56,7 @@ final class MainFileListModel: ObservableObject {
         self.fileLister = fileLister
         self.fileDetailer = fileDetailer
         self.fileRenamer = fileRenamer
+        self.fileDeleter = fileDeleter
         self.changeLogLister = changeLogLister
         self.externalChangesSyncer = externalChangesSyncer
         self.errorMapper = errorMapper
@@ -199,9 +203,10 @@ final class MainFileListModel: ObservableObject {
     }
 
     func clearPendingActionDestination() {
-        if !renameState.isRenaming {
+        if !renameState.isRenaming && !deleteState.isDeleting {
             pendingActionDestination = nil
             renameState = .idle
+            deleteState = .idle
         }
     }
 
@@ -217,11 +222,13 @@ final class MainFileListModel: ObservableObject {
     }
 
     func handleExternalRemoval(fileID: Int64) {
+        let removedSnapshot = missingSnapshot(fileID: fileID, fallbackPath: "\(fileID)")
         files.removeAll { $0.id == fileID }
         guard selection.singleFileID == fileID || selectedFileDetail?.id == fileID else { return }
 
         selection = .single(fileID)
-        selectedFileDetail = nil
+        selectedFileDetail = removedSnapshot
+        selectedFileNoteWriteBlock = removedSnapshot.flatMap { noteWriteBlock(for: $0) }
         detailErrorMapping = CoreErrorMappingSnapshot.missingFromExternalChange(fileID: fileID)
         isDetailLoading = false
         statusBanner = .removedSelectedFile(fileID: fileID)
@@ -300,7 +307,9 @@ final class MainFileListModel: ObservableObject {
         } catch {
             let mappedError = await mapCoreError(error)
             guard generation == detailGeneration else { return }
-            selectedFileDetail = selectedFileDetail ?? cachedFile(id: id)
+            selectedFileDetail = missingDetailSnapshotIfNeeded(error, fileID: id) ??
+                selectedFileDetail ??
+                cachedFile(id: id)
             selectedFileNoteWriteBlock = selectedFileDetail.flatMap { noteWriteBlock(for: $0) }
             detailErrorMapping = mappedError
             isDetailLoading = false
@@ -407,6 +416,7 @@ final class MainFileListModel: ObservableObject {
         result: SyncResultSnapshot
     ) async throws -> Int64? {
         let removedFileID = selectedFileIDForExternalRemoval(path: event.relativePath)
+        let removedSnapshot = removedFileID.flatMap { missingSnapshot(fileID: $0, fallbackPath: event.relativePath) }
         let loadedFiles = try await reloadFilesForExternalSync()
         if removedFileID == nil {
             return nil
@@ -420,8 +430,8 @@ final class MainFileListModel: ObservableObject {
 
         files = loadedFiles.filter { $0.id != removedFileID }
         selection = .single(removedFileID)
-        selectedFileDetail = nil
-        selectedFileNoteWriteBlock = nil
+        selectedFileDetail = removedSnapshot
+        selectedFileNoteWriteBlock = removedSnapshot.flatMap { noteWriteBlock(for: $0) }
         detailErrorMapping = CoreErrorMappingSnapshot.missingFromExternalChange(fileID: removedFileID)
         isDetailLoading = false
         statusBanner = .removedSelectedFile(fileID: removedFileID)
@@ -456,6 +466,7 @@ final class MainFileListModel: ObservableObject {
         resetDetailLog()
         pendingActionDestination = nil
         renameState = .idle
+        deleteState = .idle
     }
 
     private func resetDetailLog() {
@@ -474,14 +485,6 @@ final class MainFileListModel: ObservableObject {
 
     private func canApplyMultiSelectionDetailResult(generation: Int, ids: Set<Int64>) -> Bool {
         generation == detailGeneration && selection.multipleFileIDs == ids
-    }
-
-    func mapCoreError(_ error: Error) async -> CoreErrorMappingSnapshot {
-        if let coreError = error as? CoreError {
-            return await errorMapper.mapCoreError(coreError)
-        }
-
-        return await errorMapper.mapCoreError(CoreError.Internal(message: error.localizedDescription))
     }
 
     private func validateExternalSyncResult(

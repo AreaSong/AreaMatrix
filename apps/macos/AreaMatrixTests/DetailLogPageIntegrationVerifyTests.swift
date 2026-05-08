@@ -166,7 +166,9 @@ final class DetailLogPageIntegrationVerifyTests: XCTestCase {
     ) {
         if kind == .removed {
             XCTAssertEqual(model.selection, .single(selected.id))
-            XCTAssertNil(model.selectedFileDetail)
+            var missingSelected = selected
+            missingSelected.availability = .missing
+            XCTAssertEqual(model.selectedFileDetail, missingSelected)
             XCTAssertEqual(model.detailErrorMapping?.kind, .fileNotFound)
         } else {
             XCTAssertEqual(model.selection, .single(synced.id))

@@ -21,6 +21,7 @@ struct MainRepositoryDetailPane: View {
     let onCancelDetailLogDiagnostics: () -> Void
     let onDetailTabRequestConsumed: (MainDetailTabRequest) -> Void
     let onBeginRenameFile: (Int64) -> Void
+    let onBeginDeleteFile: (Int64) -> Void
     let writeActionDisabledReason: (Int64) -> MainFileWriteActionDisabledReason?
 
     @State private var selectedTab: DetailPaneTab = .meta
@@ -47,6 +48,7 @@ struct MainRepositoryDetailPane: View {
         onCancelDetailLogDiagnostics: @escaping () -> Void,
         onDetailTabRequestConsumed: @escaping (MainDetailTabRequest) -> Void,
         onBeginRenameFile: @escaping (Int64) -> Void,
+        onBeginDeleteFile: @escaping (Int64) -> Void,
         writeActionDisabledReason: @escaping (Int64) -> MainFileWriteActionDisabledReason?,
         noteModel: DetailNoteModel
     ) {
@@ -70,6 +72,7 @@ struct MainRepositoryDetailPane: View {
         self.onCancelDetailLogDiagnostics = onCancelDetailLogDiagnostics
         self.onDetailTabRequestConsumed = onDetailTabRequestConsumed
         self.onBeginRenameFile = onBeginRenameFile
+        self.onBeginDeleteFile = onBeginDeleteFile
         self.writeActionDisabledReason = writeActionDisabledReason
         self.noteModel = noteModel
     }
@@ -214,7 +217,10 @@ struct MainRepositoryDetailPane: View {
             Text(error.suggestedAction)
                 .font(.callout)
                 .foregroundStyle(.secondary)
-            Button("Retry", action: onRetrySelectedFileDetail)
+            HStack(spacing: 10) {
+                Button("Retry", action: onRetrySelectedFileDetail)
+                removeFromIndexButton(for: missingErrorFile(), style: .primary)
+            }
             DisclosureGroup("Technical Details") {
                 Text(error.rawContext)
                     .font(.system(.caption, design: .monospaced))
@@ -294,6 +300,13 @@ struct MainRepositoryDetailPane: View {
                 }
                 .disabled(disabledReason != nil)
                 .accessibilityIdentifier("S1-12-rename-file")
+                if shouldShowRemoveFromIndex(for: detail) {
+                    Button("Remove from Index", role: .destructive) {
+                        onBeginDeleteFile(detail.id)
+                    }
+                    .disabled(disabledReason != nil)
+                    .accessibilityIdentifier("S1-12-remove-from-index")
+                }
             } label: {
                 Label("More", systemImage: "ellipsis.circle")
             }
@@ -332,11 +345,34 @@ struct MainRepositoryDetailPane: View {
                 .font(.callout.weight(.semibold))
             Text(error.userMessage)
                 .foregroundStyle(.secondary)
-            Button("Retry", action: onRetrySelectedFileDetail)
+            HStack(spacing: 10) {
+                Button("Retry", action: onRetrySelectedFileDetail)
+                removeFromIndexButton(for: selectedFileDetail, style: .secondary)
+            }
         }
         .padding(10)
         .background(Color.yellow.opacity(0.12))
         .accessibilityElement(children: .contain)
+    }
+
+    @ViewBuilder
+    private func removeFromIndexButton(for file: FileEntrySnapshot?, style: DetailRemoveFromIndexButtonStyle) -> some View {
+        if let file, shouldShowRemoveFromIndex(for: file) {
+            Button("Remove from Index", role: .destructive) {
+                onBeginDeleteFile(file.id)
+            }
+            .disabled(writeActionDisabledReason(file.id) != nil)
+            .accessibilityIdentifier(style.accessibilityIdentifier)
+        }
+    }
+
+    private func missingErrorFile() -> FileEntrySnapshot? {
+        guard let selectedFileDetail, selectedFileDetail.availability == .missing else { return nil }
+        return selectedFileDetail
+    }
+
+    private func shouldShowRemoveFromIndex(for detail: FileEntrySnapshot) -> Bool {
+        MainFileDeleteOperation.recommended(for: detail) == .removeFromIndex
     }
 
     private func metadataRows(for detail: FileEntrySnapshot) -> some View {
@@ -366,6 +402,20 @@ struct DetailMetaMetadataRow: Equatable, Identifiable, Sendable {
     let value: String
 
     var id: String { label }
+}
+
+private enum DetailRemoveFromIndexButtonStyle {
+    case primary
+    case secondary
+
+    var accessibilityIdentifier: String {
+        switch self {
+        case .primary:
+            return "S1-12-missing-remove-from-index"
+        case .secondary:
+            return "S1-12-inline-remove-from-index"
+        }
+    }
 }
 
 func detailMetaMetadataRows(for detail: FileEntrySnapshot) -> [DetailMetaMetadataRow] {

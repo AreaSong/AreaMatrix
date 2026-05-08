@@ -6,9 +6,13 @@ struct MainFileActionRoutingSheet: View {
     let candidateFiles: [FileEntrySnapshot]
     let categoryRows: [RepositorySidebarRowSnapshot]
     let renameState: MainFileRenameState
+    let deleteState: MainFileDeleteState
+    let isTrashAvailable: Bool
     let onDismiss: () -> Void
     let onRename: (Int64, String) -> Void
     let onShowExistingFile: (Int64) -> Void
+    let onDelete: (Int64, MainFileDeleteOperation) -> Void
+    let onCollectDiagnostics: () -> Void
 
     var body: some View {
         switch destination {
@@ -24,7 +28,15 @@ struct MainFileActionRoutingSheet: View {
         case .changeCategory:
             ChangeCategorySheet(file: file, categoryRows: categoryRows, onCancel: onDismiss)
         case .delete:
-            DeleteFileConfirmSheet(file: file, onCancel: onDismiss)
+            DeleteFileConfirmSheet(
+                file: file,
+                operation: file.map(MainFileDeleteOperation.recommended),
+                state: deleteState,
+                isTrashAvailable: isTrashAvailable,
+                onCancel: onDismiss,
+                onConfirm: onDelete,
+                onCollectDiagnostics: onCollectDiagnostics
+            )
         }
     }
 }

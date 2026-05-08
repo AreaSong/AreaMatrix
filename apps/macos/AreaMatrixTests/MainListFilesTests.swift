@@ -107,10 +107,16 @@ final class MainListFilesTests: XCTestCase {
 
     @MainActor
     func testMainListMapsMissingSelectedFileDetailInline() async {
+        let cached = FileEntrySnapshot.mainListFixture(
+            id: 404,
+            path: "docs/missing.pdf",
+            category: "docs",
+            currentName: "missing.pdf"
+        )
         let mapping = CoreErrorMappingSnapshot.mainListFileNotFoundFixture(rawContext: "missing")
         let mapper = MainListRecordingErrorMapper(mapping: mapping)
         let model = MainFileListModel(
-            opening: .mainListFixture(repoPath: "/tmp/repo", currentCategoryFiles: []),
+            opening: .mainListFixture(repoPath: "/tmp/repo", currentCategoryFiles: [cached]),
             fileLister: MainListRecordingFileLister(results: []),
             fileDetailer: MainListRecordingFileDetailer(results: [
                 .failure(CoreError.FileNotFound(path: "docs/missing.pdf")),
@@ -121,7 +127,9 @@ final class MainListFilesTests: XCTestCase {
         await model.selectFile(id: 404)
         let mappedErrors = await mapper.recordedErrors()
 
-        XCTAssertNil(model.selectedFileDetail)
+        var missingCached = cached
+        missingCached.availability = .missing
+        XCTAssertEqual(model.selectedFileDetail, missingCached)
         XCTAssertEqual(model.detailErrorMapping, mapping)
         XCTAssertEqual(mappedErrors, [CoreError.FileNotFound(path: "docs/missing.pdf")])
         XCTAssertFalse(model.isDetailLoading)

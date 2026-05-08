@@ -81,10 +81,118 @@ extension MainFileActionDestination: Identifiable {
     }
 }
 
+enum MainFileDeleteOperation: String, Equatable, Sendable {
+    case moveToTrash
+    case removeFromIndex
+
+    static func recommended(for file: FileEntrySnapshot) -> MainFileDeleteOperation {
+        if file.storageMode == "Indexed" ||
+            file.origin == "Adopted" ||
+            file.origin == "External" ||
+            file.availability == .missing {
+            return .removeFromIndex
+        }
+        return .moveToTrash
+    }
+
+    var title: String {
+        switch self {
+        case .moveToTrash:
+            return "Move File to Trash?"
+        case .removeFromIndex:
+            return "Remove from Index?"
+        }
+    }
+
+    var message: String {
+        switch self {
+        case .moveToTrash:
+            return "AreaMatrix will move this file to the system Trash and keep a change-log record."
+        case .removeFromIndex:
+            return "This removes the AreaMatrix index entry. It does not delete the original file."
+        }
+    }
+
+    var confirmationText: String {
+        switch self {
+        case .moveToTrash:
+            return "我理解该文件会被移到系统废纸篓"
+        case .removeFromIndex:
+            return "我理解该条目会从 AreaMatrix 索引中移除"
+        }
+    }
+
+    var actionTitle: String {
+        switch self {
+        case .moveToTrash:
+            return "Move to Trash"
+        case .removeFromIndex:
+            return "Remove from Index"
+        }
+    }
+
+    var runningTitle: String {
+        switch self {
+        case .moveToTrash:
+            return "Moving to Trash..."
+        case .removeFromIndex:
+            return "Removing..."
+        }
+    }
+
+    var failureTitle: String {
+        switch self {
+        case .moveToTrash:
+            return "Move to Trash failed"
+        case .removeFromIndex:
+            return "Remove from Index failed"
+        }
+    }
+
+    func successBanner(fileID: Int64) -> MainListStatusBanner {
+        switch self {
+        case .moveToTrash:
+            return .movedFileToTrash(fileID: fileID)
+        case .removeFromIndex:
+            return .removedFileFromIndex(fileID: fileID)
+        }
+    }
+}
+
+enum MainFileDeleteState: Equatable, Sendable {
+    case idle
+    case deleting(fileID: Int64, operation: MainFileDeleteOperation)
+    case failed(fileID: Int64, operation: MainFileDeleteOperation, CoreErrorMappingSnapshot)
+
+    var isDeleting: Bool {
+        if case .deleting = self { return true }
+        return false
+    }
+
+    func isDeleting(fileID: Int64) -> Bool {
+        guard case .deleting(let deletingFileID, _) = self else { return false }
+        return deletingFileID == fileID
+    }
+
+    func failure(for fileID: Int64) -> CoreErrorMappingSnapshot? {
+        guard case .failed(let failedFileID, _, let mapping) = self,
+              failedFileID == fileID else { return nil }
+        return mapping
+    }
+
+    func primaryActionTitle(fileID: Int64, operation: MainFileDeleteOperation) -> String {
+        if isDeleting(fileID: fileID) { return operation.runningTitle }
+        if failure(for: fileID) != nil { return "Retry" }
+        return operation.actionTitle
+    }
+}
+
 enum MainListStatusBanner: Equatable, Sendable {
     case renamedPreservedSelection(fileID: Int64)
     case removedSelectedFile(fileID: Int64)
     case unsavedNoteDraftPreserved(fileID: Int64)
+    case movedFileToTrash(fileID: Int64)
+    case removedFileFromIndex(fileID: Int64)
 
     var message: String {
         switch self {
@@ -94,6 +202,21 @@ enum MainListStatusBanner: Equatable, Sendable {
             return "Selected file is missing or was removed outside AreaMatrix."
         case .unsavedNoteDraftPreserved:
             return "无法保存笔记。草稿已保留，返回该文件的 Note tab 后可继续重试。"
+        case .movedFileToTrash:
+            return "Moved to Trash. Metadata retained for traceability."
+        case .removedFileFromIndex:
+            return "Removed from AreaMatrix index. Original file was not deleted."
+        }
+    }
+
+    var systemImage: String {
+        switch self {
+        case .renamedPreservedSelection:
+            return "arrow.triangle.2.circlepath"
+        case .removedSelectedFile, .unsavedNoteDraftPreserved:
+            return "exclamationmark.triangle"
+        case .movedFileToTrash, .removedFileFromIndex:
+            return "checkmark.circle"
         }
     }
 }

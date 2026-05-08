@@ -374,9 +374,9 @@ struct MainRepositoryContentView: View {
 
     @ViewBuilder
     private var statusBanner: some View {
-        if let banner = fileListModel.statusBanner {
-            HStack(spacing: 10) {
-                Label(banner.message, systemImage: "arrow.triangle.2.circlepath")
+            if let banner = fileListModel.statusBanner {
+                HStack(spacing: 10) {
+                Label(banner.message, systemImage: banner.systemImage)
                     .font(.callout)
                 Spacer()
                 Button("Retry") {
@@ -436,6 +436,8 @@ struct MainRepositoryContentView: View {
             candidateFiles: fileListModel.files,
             categoryRows: opening.tree.sidebarRows,
             renameState: fileListModel.renameState,
+            deleteState: fileListModel.deleteState,
+            isTrashAvailable: OnboardingModel.isSystemTrashAvailable(),
             onDismiss: fileListModel.clearPendingActionDestination,
             onRename: { fileID, newName in
                 Task {
@@ -447,6 +449,16 @@ struct MainRepositoryContentView: View {
                 fileListModel.clearPendingActionDestination()
                 Task {
                     await fileListModel.selectFiles([fileID])
+                }
+            },
+            onDelete: { fileID, operation in
+                Task {
+                    await fileListModel.submitDelete(fileID: fileID, operation: operation)
+                }
+            },
+            onCollectDiagnostics: {
+                Task {
+                    await fileListModel.collectCurrentListDiagnostics()
                 }
             }
         )

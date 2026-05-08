@@ -45,7 +45,9 @@ final class DetailMetaPageFeatureTests: XCTestCase {
         await model.selectFiles([cached.id])
         let mappedErrors = await mapper.recordedErrors()
 
-        XCTAssertEqual(model.selectedFileDetail, cached)
+        var missingCached = cached
+        missingCached.availability = .missing
+        XCTAssertEqual(model.selectedFileDetail, missingCached)
         XCTAssertEqual(model.detailErrorMapping, mapping)
         XCTAssertEqual(mappedErrors, [CoreError.FileNotFound(path: cached.path)])
         XCTAssertFalse(model.isDetailLoading)

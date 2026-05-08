@@ -1,0 +1,99 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`2-3/task-33`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-3-detail-settings/task-33-s1-34-c1-23-delete-remove-index.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：0
+- 通过项数：10
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：Exact Docs 与 manifest 覆盖
+- 结果：通过
+- 证据：4 个 Exact Docs 全部存在并已读取；manifest `2-3/task-33` 绑定 S1-34 + C1-23，Validation 为指定 `xcodebuild build`。
+- 涉及文件：`docs/ux/page-specs/stage-1-mvp/S1-34-file-delete-confirm.md`、`docs/architecture/mvp-control-map.md`、`docs/api/core-api.md`、`docs/core/capability-specs/stage-1-mvp/C1-23-delete-remove-index.md`
+
+- 项目：只处理 S1-34 页面中的 C1-23
+- 结果：通过
+- 证据：`MainFileActionDestination.delete` 对应 pageID `S1-34`；`MainFileDeleteOperation` 只区分 `moveToTrash` / `removeFromIndex`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileListState.swift:43`
+
+- 项目：CoreBridge / 状态 / 错误映射真实接入
+- 结果：通过
+- 证据：`CoreFileDeleting` 扩展让 `CoreBridge` 调用 UniFFI `deleteFile(repoPath:fileId:)` 和 `removeIndexEntry(repoPath:fileId:)`；`submitDelete` 成功后移除列表项，失败时保留 sheet 并映射 CoreError。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreFileDeleting.swift:3`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileDeleteActions.swift:4`
+
+- 项目：S1-34 用户可见触发
+- 结果：通过
+- 证据：主列表单选右键提供 `Delete...`；详情缺失 / index-only 场景提供 `Remove from Index` 并路由到 S1-34 sheet。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift:397`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryDetailPane.swift:293`
+
+- 项目：确认 sheet 行为符合页面规格
+- 结果：通过
+- 证据：sheet 显示文件名、路径、storage mode、status；未勾选确认时禁用危险按钮；Trash 不可用时禁用 Move to Trash；失败显示 Retry 和 Collect Diagnostics。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/DeleteFileConfirmSheet.swift:13`
+
+- 项目：Expected New Paths 落地
+- 结果：通过
+- 证据：`CoreFileDeleting.swift`、`MainFileDeleteActions.swift`、`DeleteFilePageFeatureTests.swift` 存在并已加入 `project.pbxproj` Sources。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj:53`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git status --short -- core/src ...` 未显示 `core/src/**` 变更。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+- 项目：无 mock-only / 静态状态伪造
+- 结果：通过
+- 证据：Swift 单测有记录型 mock 验证 UI 调用边界，但默认 `CoreBridge` 测试实际初始化 repo、导入 indexed / copied 文件，并调用真实 `removeIndexEntry`；Rust C1-23 测试证明 Trash、soft delete、change_log、remove-index 安全边界。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/DeleteFilePageFeatureTests.swift:127`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/delete_remove_index_validation.rs`
+
+- 项目：未触碰 control map 之外能力
+- 结果：通过
+- 证据：本任务 UI 只消费 S1-34 对应的 C1-23 API：`delete_file`、`remove_index_entry`；未新增相邻页面能力实现。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileDeleteActions.swift:21`
+
+- 项目：验证命令
+- 结果：通过
+- 证据：manifest build 通过；macOS tests 通过；补充 C1-23 Rust targeted tests 通过。
+- 涉及文件：`apps/macos/AreaMatrix.xcodeproj`、`core/tests/delete_remove_index_*`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。新增路径职责清晰，View 负责展示，Model 负责状态，CoreBridge 负责 UniFFI 调用；核心新增文件均低于 500 行。
+- 注释 / rustdoc / 文档同步：通过。当前为 Swift UI/CoreBridge 接入，无新增 public Rust API；UDL 与 Core API 已含 `delete_file`、`remove_index_entry`。
+- 错误处理与边界处理：通过。失败路径保留 sheet，映射 CoreError；Trash 不可用禁用危险按钮；remove-index 路径不删除外部源文件。
+- 测试与验证覆盖：通过。覆盖 UI 调用、失败映射、missing/indexed 路由、真实 CoreBridge remove-index、Core Trash/soft-delete/change_log 安全边界。
+- 占位、硬编码、mock-only、一次性实现检查：通过。未发现以 mock 或静态状态伪造真实闭环；真实 Core targeted tests 已通过。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：通过，`** BUILD SUCCEEDED **`。
+- 已运行：`./dev test macos`：通过。标准 `xcodebuild test` 被本地 `testmanagerd` sandbox 通信限制阻断，仓库脚本按规则复用已构建 XCTest bundle 执行 `xcrun xctest`，422 tests，0 failures。
+- 已运行：`cd core && cargo test --test delete_remove_index_contract_api --test delete_remove_index_validation --test delete_remove_index_integration_verify`：通过，合计 10 tests，0 failures。
+- 失败：无。
+- 缺失：未做手工 macOS 真机 UI 点击验收；当前以 build、XCTest 和 Core targeted tests 作为本任务验收证据。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS
