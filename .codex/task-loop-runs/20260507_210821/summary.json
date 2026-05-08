@@ -2214,6 +2214,66 @@
     "2-3/task-19": {
       "attempts": 1,
       "copy_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260507_210821/phase-2/2-3-task-19-copy-attempt-1.log",
+      "git": {
+        "attempts": 1,
+        "branch": "codex/areamatrix-task-loop-20260501_132850",
+        "changed_files": [
+          ".codex/task-loop-logs/20260507_210821/phase-2/2-3-task-19-copy-attempt-1.log",
+          ".codex/task-loop-logs/20260507_210821/phase-2/2-3-task-19-verify-attempt-1.log",
+          ".codex/task-loop-runs/20260507_210821/summary.json",
+          ".codex/task-loop-runs/index.json",
+          "apps/macos/AreaMatrix.xcodeproj/project.pbxproj",
+          "apps/macos/AreaMatrix/Models/ClassifierSettingsModel.swift",
+          "apps/macos/AreaMatrix/Views/Settings/ClassifierSettingsPane.swift",
+          "apps/macos/AreaMatrix/Views/Settings/GeneralSettingsView.swift",
+          "apps/macos/AreaMatrixTests/ClassifierSettingsPageFeatureTests.swift",
+          "tasks/prompts/_shared/progress.json"
+        ],
+        "commit": "d41212d286f83f95d899cffa5a1e4c09de04fa34",
+        "copy_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260507_210821/phase-2/2-3-task-19-copy-attempt-1.log",
+        "diff_name_status": [
+          "M\t.codex/task-loop-runs/20260507_210821/summary.json",
+          "M\t.codex/task-loop-runs/index.json",
+          "M\tapps/macos/AreaMatrix.xcodeproj/project.pbxproj",
+          "M\tapps/macos/AreaMatrix/Views/Settings/GeneralSettingsView.swift",
+          "M\ttasks/prompts/_shared/progress.json"
+        ],
+        "label": "2-3/task-19",
+        "mode": "commit",
+        "phase": "phase-2",
+        "push_status": "not_requested",
+        "remote": "",
+        "run_id": "20260507_210821",
+        "staged_name_status": [
+          "A\t.codex/task-loop-logs/20260507_210821/phase-2/2-3-task-19-copy-attempt-1.log",
+          "A\t.codex/task-loop-logs/20260507_210821/phase-2/2-3-task-19-verify-attempt-1.log",
+          "M\t.codex/task-loop-runs/20260507_210821/summary.json",
+          "M\t.codex/task-loop-runs/index.json",
+          "M\tapps/macos/AreaMatrix.xcodeproj/project.pbxproj",
+          "A\tapps/macos/AreaMatrix/Models/ClassifierSettingsModel.swift",
+          "A\tapps/macos/AreaMatrix/Views/Settings/ClassifierSettingsPane.swift",
+          "M\tapps/macos/AreaMatrix/Views/Settings/GeneralSettingsView.swift",
+          "A\tapps/macos/AreaMatrixTests/ClassifierSettingsPageFeatureTests.swift",
+          "M\ttasks/prompts/_shared/progress.json"
+        ],
+        "status": "committed",
+        "status_short": [
+          " M .codex/task-loop-runs/20260507_210821/summary.json",
+          " M .codex/task-loop-runs/index.json",
+          " M apps/macos/AreaMatrix.xcodeproj/project.pbxproj",
+          " M apps/macos/AreaMatrix/Views/Settings/GeneralSettingsView.swift",
+          " M tasks/prompts/_shared/progress.json",
+          "?? .codex/task-loop-logs/20260507_210821/phase-2/2-3-task-19-copy-attempt-1.log",
+          "?? .codex/task-loop-logs/20260507_210821/phase-2/2-3-task-19-verify-attempt-1.log",
+          "?? apps/macos/AreaMatrix/Models/ClassifierSettingsModel.swift",
+          "?? apps/macos/AreaMatrix/Views/Settings/ClassifierSettingsPane.swift",
+          "?? apps/macos/AreaMatrixTests/ClassifierSettingsPageFeatureTests.swift"
+        ],
+        "summary_file": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-runs/20260507_210821/summary.json",
+        "task_name": "2-3-task-19",
+        "updated_at": "2026-05-08T08:43:49.546102+00:00",
+        "verify_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260507_210821/phase-2/2-3-task-19-verify-attempt-1.log"
+      },
       "note": "自动执行验收通过",
       "phase": "phase-2",
       "risk": "High",
@@ -2228,7 +2288,7 @@
     "retries": 23,
     "task_count": 637
   },
-  "updated_at": "2026-05-08T08:43:49.374018+00:00",
+  "updated_at": "2026-05-08T08:43:49.549803+00:00",
   "verify_root": "/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/verify-ready",
   "version": 1
 }
