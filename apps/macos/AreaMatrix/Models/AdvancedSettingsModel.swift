@@ -49,6 +49,13 @@ struct AdvancedSettingsError: Equatable, Sendable {
     var recovery: String
 }
 
+enum AdvancedSettingsAccessibilityID {
+    static let overviewOutput = "S1-30-C1-20-overview-output"
+    static let overviewRetrySave = "S1-30-C1-20-retry-save"
+    static let replaceRetrySave = "S1-30-C1-04-retry-save"
+    static let genericRetrySave = "S1-30-retry-save"
+}
+
 struct AdvancedSettingsDraft: Equatable, Sendable {
     var overviewOutput: AdvancedSettingsOverviewOutput
     var allowReplaceDuringImport: Bool
@@ -103,6 +110,16 @@ final class AdvancedSettingsModel: ObservableObject {
 
     var isLoaded: Bool { loadState == .loaded }
     var hasRetryableSave: Bool { pendingRetry != nil && !isSaving }
+    var retrySaveAccessibilityIdentifier: String {
+        guard let pendingRetry else { return AdvancedSettingsAccessibilityID.genericRetrySave }
+        switch pendingRetry.kind {
+        case .overview:
+            return AdvancedSettingsAccessibilityID.overviewRetrySave
+        case .replace:
+            return AdvancedSettingsAccessibilityID.replaceRetrySave
+        }
+    }
+
     var writesDisabled: Bool {
         isSaving || !isLoaded || pendingRootOverviewStatus != nil || isReplaceConfirmationPending
     }

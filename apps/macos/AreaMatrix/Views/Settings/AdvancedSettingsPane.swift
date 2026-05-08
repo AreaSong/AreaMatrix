@@ -170,7 +170,7 @@ struct AdvancedSettingsPane: View {
                             await model.retrySave()
                         }
                     }
-                    .accessibilityIdentifier("S1-30-C1-04-retry-save")
+                    .accessibilityIdentifier(model.retrySaveAccessibilityIdentifier)
                 }
             }
             .padding(12)
@@ -210,7 +210,7 @@ struct AdvancedSettingsPane: View {
             .pickerStyle(.segmented)
             .disabled(model.writesDisabled)
             .frame(maxWidth: 320)
-            .accessibilityIdentifier("S1-30-C1-04-overview-output")
+            .accessibilityIdentifier(AdvancedSettingsAccessibilityID.overviewOutput)
 
             Text("Generated only writes under .areamatrix/generated/.")
                 .font(.callout)

@@ -96,6 +96,34 @@ final class AdvancedSettingsPageFeatureTests: XCTestCase {
     }
 
     @MainActor
+    func testOverviewSaveFailureUsesC120RetryIdentifierAndRollsBack() async {
+        let updater = AdvancedSettingsRecordingUpdater(result: .failureThenSuccess(CoreError.Db(message: "locked")))
+        let model = await loadedAdvancedModel(updater: updater)
+
+        await model.requestOverviewOutput(.rootAreaMatrixFile)
+        await model.confirmRootOverview()
+
+        XCTAssertEqual(model.draft?.overviewOutput, .generatedOnly)
+        XCTAssertEqual(model.saveError?.message, "Could not save overview setting")
+        XCTAssertEqual(model.retrySaveAccessibilityIdentifier, "S1-30-C1-20-retry-save")
+        XCTAssertTrue(model.hasRetryableSave)
+
+        await model.retrySave()
+        let requests = await updater.requests()
+
+        XCTAssertEqual(requests.map(\.config.overviewOutput), ["RootAreaMatrixFile", "RootAreaMatrixFile"])
+        XCTAssertEqual(model.draft?.overviewOutput, .rootAreaMatrixFile)
+        XCTAssertNil(model.saveError)
+    }
+
+    @MainActor
+    func testOverviewOutputSectionIsTaggedAsS130C120Feature() {
+        XCTAssertEqual(AdvancedSettingsOverviewOutput.generatedOnly.label, "Generated only")
+        XCTAssertEqual(AdvancedSettingsOverviewOutput.rootAreaMatrixFile.label, "Root AREAMATRIX.md")
+        XCTAssertEqual(AdvancedSettingsAccessibilityID.overviewOutput, "S1-30-C1-20-overview-output")
+    }
+
+    @MainActor
     func testAllowReplaceRequiresConfirmationAndDisableSavesDirectly() async {
         let updater = AdvancedSettingsRecordingUpdater(result: .success)
         let model = await loadedAdvancedModel(updater: updater)
@@ -161,6 +189,45 @@ final class AdvancedSettingsPageFeatureTests: XCTestCase {
         XCTAssertTrue(reloaded.allowReplaceDuringImport)
         XCTAssertFalse(FileManager.default.fileExists(atPath: repoURL.appendingPathComponent("AREAMATRIX.md").path))
         XCTAssertFalse(FileManager.default.fileExists(atPath: repoURL.appendingPathComponent("README.md").path))
+    }
+
+    @MainActor
+    func testDefaultCoreBridgeAppliesRootOverviewOnNextRegenerationWithoutTouchingReadme() async throws {
+        let repoURL = try temporaryAdvancedSettingsRepo()
+        let sourceRootURL = try temporaryAdvancedSettingsRepo()
+        defer {
+            try? FileManager.default.removeItem(at: repoURL)
+            try? FileManager.default.removeItem(at: sourceRootURL)
+        }
+        let sourceURL = sourceRootURL.appendingPathComponent("overview-source.txt")
+        let readmeURL = repoURL.appendingPathComponent("README.md")
+        try Data("overview source".utf8).write(to: sourceURL)
+
+        let bridge = CoreBridge()
+        try await bridge.initializeEmptyRepository(repoPath: repoURL.path)
+        try "user readme\n".write(to: readmeURL, atomically: true, encoding: .utf8)
+        let model = AdvancedSettingsModel(repoPath: repoURL.path, loader: bridge, updater: bridge)
+
+        await model.load()
+        await model.requestOverviewOutput(.rootAreaMatrixFile)
+        await model.confirmRootOverview()
+        XCTAssertFalse(FileManager.default.fileExists(atPath: repoURL.appendingPathComponent("AREAMATRIX.md").path))
+
+        _ = try await bridge.importIndexedFile(
+            repoPath: repoURL.path,
+            sourceURL: sourceURL,
+            overrideCategory: "docs",
+            overrideFilename: "overview-source.txt"
+        )
+
+        let rootOverview = try String(contentsOf: repoURL.appendingPathComponent("AREAMATRIX.md"))
+        let generatedOverview = try String(contentsOf: repoURL
+            .appendingPathComponent(".areamatrix", isDirectory: true)
+            .appendingPathComponent("generated", isDirectory: true)
+            .appendingPathComponent("root.md", isDirectory: false))
+        XCTAssertTrue(rootOverview.contains("AREAMATRIX:BEGIN"))
+        XCTAssertTrue(generatedOverview.contains("AREAMATRIX:BEGIN"))
+        XCTAssertEqual(try String(contentsOf: readmeURL), "user readme\n")
     }
 
     @MainActor
