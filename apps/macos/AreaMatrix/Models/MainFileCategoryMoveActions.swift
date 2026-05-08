@@ -4,7 +4,7 @@ extension MainFileListModel {
     typealias MoveToCategoryCompletion = @MainActor (FileEntrySnapshot) -> Void
 
     func loadMoveToCategoryPreview(fileID: Int64, targetCategory: String) async {
-        guard pendingActionDestination == .changeCategory(fileID: fileID),
+        guard pendingActionDestination?.isChangeCategory(fileID: fileID) == true,
               writeActionDisabledReason(fileID: fileID) == nil else { return }
 
         let request = MainFileCategoryMovePreviewRequest(fileID: fileID, targetCategory: targetCategory)
@@ -15,12 +15,12 @@ extension MainFileListModel {
                 fileID: fileID,
                 newCategory: targetCategory
             )
-            guard pendingActionDestination == .changeCategory(fileID: fileID),
+            guard pendingActionDestination?.isChangeCategory(fileID: fileID) == true,
                   changeCategoryState.isChecking(request) else { return }
             changeCategoryState = .ready(request, preview)
         } catch {
             let mapping = await mapCoreError(error)
-            guard pendingActionDestination == .changeCategory(fileID: fileID),
+            guard pendingActionDestination?.isChangeCategory(fileID: fileID) == true,
                   changeCategoryState.isChecking(request) else { return }
             changeCategoryState = .failed(request, operation: .preview, mapping)
         }
@@ -31,7 +31,7 @@ extension MainFileListModel {
         targetCategory: String,
         onMoved: MoveToCategoryCompletion? = nil
     ) async {
-        guard pendingActionDestination == .changeCategory(fileID: fileID),
+        guard pendingActionDestination?.isChangeCategory(fileID: fileID) == true,
               !changeCategoryState.isMoving(fileID: fileID),
               writeActionDisabledReason(fileID: fileID) == nil else { return }
 
@@ -47,7 +47,7 @@ extension MainFileListModel {
             onMoved?(movedFile)
         } catch {
             let mapping = await mapCoreError(error)
-            guard pendingActionDestination == .changeCategory(fileID: fileID) else { return }
+            guard pendingActionDestination?.isChangeCategory(fileID: fileID) == true else { return }
             changeCategoryState = .failed(request, operation: .move, mapping)
         }
     }

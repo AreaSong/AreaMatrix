@@ -7,7 +7,8 @@ struct ChangeCategorySheet: View {
     let onCancel: () -> Void
     let onPreview: (Int64, String) -> Void
     let onChangeCategory: (Int64, String) -> Void
-    let onRenameFirst: (Int64) -> Void
+    let onRenameFirst: (Int64, String) -> Void
+    let onOpenPermissionRecovery: () -> Void
     let onCollectDiagnostics: () -> Void
     @State private var targetCategory: String
 
@@ -15,10 +16,12 @@ struct ChangeCategorySheet: View {
         file: FileEntrySnapshot?,
         categoryRows: [RepositorySidebarRowSnapshot],
         state: MainFileCategoryMoveState,
+        initialTargetCategory: String? = nil,
         onCancel: @escaping () -> Void,
         onPreview: @escaping (Int64, String) -> Void,
         onChangeCategory: @escaping (Int64, String) -> Void,
-        onRenameFirst: @escaping (Int64) -> Void,
+        onRenameFirst: @escaping (Int64, String) -> Void,
+        onOpenPermissionRecovery: @escaping () -> Void,
         onCollectDiagnostics: @escaping () -> Void
     ) {
         self.file = file
@@ -28,8 +31,13 @@ struct ChangeCategorySheet: View {
         self.onPreview = onPreview
         self.onChangeCategory = onChangeCategory
         self.onRenameFirst = onRenameFirst
+        self.onOpenPermissionRecovery = onOpenPermissionRecovery
         self.onCollectDiagnostics = onCollectDiagnostics
-        _targetCategory = State(initialValue: Self.defaultTargetCategory(for: file, categoryRows: categoryRows))
+        _targetCategory = State(initialValue: Self.defaultTargetCategory(
+            for: file,
+            categoryRows: categoryRows,
+            initialTargetCategory: initialTargetCategory
+        ))
     }
 
     var body: some View {
@@ -111,19 +119,22 @@ struct ChangeCategorySheet: View {
             Text(failure.rawContext)
                 .font(.system(.caption, design: .monospaced))
                 .textSelection(.enabled)
-            failureActions(for: file)
+            failureActions(failure, file: file)
         }
         .foregroundStyle(.secondary)
         .padding(10)
         .background(Color.yellow.opacity(0.12))
     }
 
-    private func failureActions(for file: FileEntrySnapshot) -> some View {
+    private func failureActions(_ failure: CoreErrorMappingSnapshot, file: FileEntrySnapshot) -> some View {
         HStack {
             if hasUnresolvedNameConflict(for: file) {
                 Button("Rename first") {
-                    onRenameFirst(file.id)
+                    onRenameFirst(file.id, targetCategory)
                 }
+            }
+            if failure.kind == .permissionDenied {
+                Button("Open folder permissions", action: onOpenPermissionRecovery)
             }
             if state.failureOperation(for: file.id, targetCategory: targetCategory) == .preview {
                 Button("Retry preview") {
@@ -214,8 +225,12 @@ struct ChangeCategorySheet: View {
 
     private static func defaultTargetCategory(
         for file: FileEntrySnapshot?,
-        categoryRows: [RepositorySidebarRowSnapshot]
+        categoryRows: [RepositorySidebarRowSnapshot],
+        initialTargetCategory: String?
     ) -> String {
-        MainFileActionCategoryOptions.defaultTargetCategory(for: file, categoryRows: categoryRows)
+        if let initialTargetCategory, initialTargetCategory != file?.category {
+            return initialTargetCategory
+        }
+        return MainFileActionCategoryOptions.defaultTargetCategory(for: file, categoryRows: categoryRows)
     }
 }

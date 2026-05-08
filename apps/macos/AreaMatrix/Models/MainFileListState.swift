@@ -42,7 +42,7 @@ enum MainFileSelectionState: Equatable, Sendable {
 
 enum MainFileActionDestination: Equatable, Sendable {
     case rename(fileID: Int64)
-    case changeCategory(fileID: Int64)
+    case changeCategory(fileID: Int64, initialTargetCategory: String? = nil)
     case delete(fileID: Int64)
 
     var pageID: String {
@@ -69,9 +69,19 @@ enum MainFileActionDestination: Equatable, Sendable {
 
     var fileID: Int64 {
         switch self {
-        case .rename(let fileID), .changeCategory(let fileID), .delete(let fileID):
+        case .rename(let fileID), .changeCategory(let fileID, _), .delete(let fileID):
             return fileID
         }
+    }
+
+    var initialChangeCategoryTarget: String? {
+        guard case .changeCategory(_, let targetCategory) = self else { return nil }
+        return targetCategory
+    }
+
+    func isChangeCategory(fileID expectedFileID: Int64) -> Bool {
+        guard case .changeCategory(let fileID, _) = self else { return false }
+        return fileID == expectedFileID
     }
 }
 
@@ -211,7 +221,9 @@ enum MainListStatusBanner: Equatable, Sendable {
         case .changedCategory(_, let category):
             return "Category changed to \(category). Tree, list, detail, and change log are refreshed."
         case .changedCategoryTreeRefreshFailed(_, let category):
-            return "Category changed to \(category). List, detail, and change log are refreshed. Retry to refresh Tree counts."
+            return """
+            Category changed to \(category). List, detail, and change log are refreshed. Retry to refresh Tree counts.
+            """
         }
     }
 
@@ -240,17 +252,42 @@ enum MainFileWriteActionDisabledReason: String, Equatable, Sendable {
 enum MainFileRenameState: Equatable, Sendable {
     case idle
     case renaming(fileID: Int64)
+    case returningToChangeCategory(fileID: Int64, targetCategory: String)
+    case renamingFromChangeCategory(fileID: Int64, targetCategory: String)
     case failed(fileID: Int64, CoreErrorMappingSnapshot)
+    case failedFromChangeCategory(fileID: Int64, targetCategory: String, CoreErrorMappingSnapshot)
 
     var isRenaming: Bool {
-        if case .renaming = self { return true }
-        return false
+        switch self {
+        case .renaming, .renamingFromChangeCategory:
+            return true
+        case .idle, .returningToChangeCategory, .failed, .failedFromChangeCategory:
+            return false
+        }
     }
 
     func failure(for fileID: Int64) -> CoreErrorMappingSnapshot? {
-        guard case .failed(let failedFileID, let mapping) = self,
-              failedFileID == fileID else { return nil }
-        return mapping
+        switch self {
+        case .failed(let failedFileID, let mapping) where failedFileID == fileID:
+            return mapping
+        case .failedFromChangeCategory(let failedFileID, _, let mapping) where failedFileID == fileID:
+            return mapping
+        default:
+            return nil
+        }
+    }
+
+    func changeCategoryReturnTarget(for fileID: Int64) -> String? {
+        switch self {
+        case .returningToChangeCategory(let returningFileID, let targetCategory) where returningFileID == fileID:
+            return targetCategory
+        case .renamingFromChangeCategory(let returningFileID, let targetCategory) where returningFileID == fileID:
+            return targetCategory
+        case .failedFromChangeCategory(let returningFileID, let targetCategory, _) where returningFileID == fileID:
+            return targetCategory
+        default:
+            return nil
+        }
     }
 }
 

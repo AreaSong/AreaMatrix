@@ -38,13 +38,19 @@ extension MainRepositoryContentView {
             },
             onChangeCategory: { fileID, targetCategory in
                 Task {
-                    await fileListModel.submitMoveToCategory(fileID: fileID, targetCategory: targetCategory) { movedFile in
+                    await fileListModel.submitMoveToCategory(
+                        fileID: fileID,
+                        targetCategory: targetCategory
+                    ) { movedFile in
                         refreshAfterCategoryMove(movedFile)
                     }
                 }
             },
-            onRenameFirstFromChangeCategory: { fileID in
-                fileListModel.beginRenameFromChangeCategory(fileID: fileID)
+            onRenameFirstFromChangeCategory: { fileID, targetCategory in
+                fileListModel.beginRenameFromChangeCategory(fileID: fileID, targetCategory: targetCategory)
+            },
+            onOpenChangeCategoryPermissionRecovery: {
+                onOpenChangeCategoryPermissionRecovery()
             },
             onDelete: { fileID, operation in
                 Task { await fileListModel.submitDelete(fileID: fileID, operation: operation) }

@@ -6,7 +6,8 @@ extension MainFileListModel {
               !renameState.isRenaming,
               writeActionDisabledReason(fileID: fileID) == nil else { return }
 
-        renameState = .renaming(fileID: fileID)
+        let returnTargetCategory = renameState.changeCategoryReturnTarget(for: fileID)
+        renameState = renameState.renamingState(fileID: fileID, targetCategory: returnTargetCategory)
         do {
             let renamedFile = try await fileRenamer.renameFile(
                 repoPath: repoPath,
@@ -15,7 +16,15 @@ extension MainFileListModel {
             )
             applyRenamedFile(renamedFile)
             renameState = .idle
-            pendingActionDestination = nil
+            if let returnTargetCategory {
+                changeCategoryState = .idle
+                pendingActionDestination = .changeCategory(
+                    fileID: renamedFile.id,
+                    initialTargetCategory: returnTargetCategory
+                )
+            } else {
+                pendingActionDestination = nil
+            }
             statusBanner = .renamedPreservedSelection(fileID: renamedFile.id)
             if selection.singleFileID == renamedFile.id {
                 await loadChangeLog(fileID: renamedFile.id)
@@ -26,7 +35,11 @@ extension MainFileListModel {
         } catch {
             let mapping = await mapCoreError(error)
             guard pendingActionDestination == .rename(fileID: fileID) else { return }
-            renameState = .failed(fileID: fileID, mapping)
+            renameState = renameState.failedState(
+                fileID: fileID,
+                targetCategory: returnTargetCategory,
+                mapping: mapping
+            )
         }
     }
 
@@ -39,5 +52,21 @@ extension MainFileListModel {
         selectedFileNoteWriteBlock = noteWriteBlock(for: renamedFile)
         detailErrorMapping = nil
         isDetailLoading = false
+    }
+}
+
+private extension MainFileRenameState {
+    func renamingState(fileID: Int64, targetCategory: String?) -> MainFileRenameState {
+        guard let targetCategory else { return .renaming(fileID: fileID) }
+        return .renamingFromChangeCategory(fileID: fileID, targetCategory: targetCategory)
+    }
+
+    func failedState(
+        fileID: Int64,
+        targetCategory: String?,
+        mapping: CoreErrorMappingSnapshot
+    ) -> MainFileRenameState {
+        guard let targetCategory else { return .failed(fileID: fileID, mapping) }
+        return .failedFromChangeCategory(fileID: fileID, targetCategory: targetCategory, mapping)
     }
 }

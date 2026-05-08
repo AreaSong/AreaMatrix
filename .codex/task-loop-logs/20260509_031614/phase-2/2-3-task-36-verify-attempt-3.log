@@ -1,0 +1,72 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`2-3/task-36`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-3-detail-settings/task-36-s1-35-page-integration-verify.md`
+- 主要实现：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`
+- 测试与工程配置：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+- UDL 对照：`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：18
+- 未覆盖项数：0
+- 通过项数：18
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：Exact Docs / manifest / task / 共享规则读取
+- 结果：通过
+- 证据：5 个 Exact Docs 均存在并已读取；manifest `2-3/task-36` 声明 S1-35 绑定 `C1-24, C1-10`，依赖 `2-3/task-34, 2-3/task-35`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-2.md`
+
+- 项目：page-feature task 覆盖
+- 结果：通过
+- 证据：`task-34` 覆盖 S1-35 + C1-24，`task-35` 覆盖 S1-35 + C1-10；control map 对 S1-35 只声明 `preview_move_to_category`、`move_to_category` 和 `C1-24, C1-10`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-3-detail-settings/task-34-s1-35-c1-24-move-to-category.md`、`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-3-detail-settings/task-35-s1-35-c1-10-resolve-name-conflict.md`
+
+- 项目：页面状态、入口、退出、错误态、CoreBridge 闭环
+- 结果：通过
+- 证据：`ChangeCategorySheet` 覆盖预览、loading、moving、permission、conflict、Retry、Rename first、diagnostics；右键菜单与 detail-meta 菜单均有 `Change Category...`；成功后刷新 Tree/List/Detail/change log。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ChangeCategorySheet.swift:43`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileCategoryMoveActions.swift:6`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentCategoryMoveRefresh.swift:12`
+
+- 项目：真实 CoreBridge 接入，无 mock-only 产品闭环
+- 结果：通过
+- 证据：生产路径 `CoreBridge` 调用 UniFFI `previewMoveToCategory` / `moveToCategory`；测试中另有真实临时 repo 验证移动、冲突自动编号和 change_log。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreMoveToCategory.swift:41`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ChangeCategoryPageIntegrationVerifyTests.swift:6`
+
+- 项目：Expected New Paths / Forbidden Touches
+- 结果：通过
+- 证据：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`project.pbxproj` 均存在并有 S1-35 测试/源码接入；`git diff --name-only -- core/src` 无输出，未触碰 forbidden `core/src/**`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，CoreBridge 协议、model action、sheet view、content refresh 分层清楚，关键文件均未超过 500 行。
+- 注释 / rustdoc / 文档同步：通过，本 task 未新增 Rust public API；UDL 与 Core API 均已有 `MoveToCategoryPreview`、`preview_move_to_category`、`move_to_category`。
+- 错误处理与边界处理：通过，preview/move 错误经 `mapCoreError` 映射；permission、conflict、missing context、Cancel、moving 防重复点击均有路径。
+- 测试与验证覆盖：通过，真实 CoreBridge + 临时 repo 测试覆盖 preview、move、冲突自动编号、change_log、失败不移动文件、入口和返回路径。
+- 占位、硬编码、mock-only、一次性实现检查：通过，生产路径未发现 mock-only 或静态成功状态；fixture 仅存在于测试代码。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+- 结果：失败，code 65；原因是本机 sandbox 阻断 `com.apple.testmanagerd.control`，不是编译、链接或断言失败。
+- 已运行：`./dev test macos`
+- 结果：通过；该命令先复现同一 testmanagerd sandbox 阻断，再按 repo-local validation-driver 允许的 fallback 执行 `xcrun xctest`；`435 tests, 0 failures`。
+- 缺失：无。manifest 原生命令的环境阻断已由 repo-local validation-driver 允许的 fallback 覆盖。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。S1-35 按 page spec 和 control map 可完整验收，页面声明的 `C1-24` 与 `C1-10` 均有真实 CoreBridge 接入和测试证据；未发现 forbidden touch 或未声明功能扩散。
+
+VERIFY_RESULT: PASS

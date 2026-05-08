@@ -18,6 +18,7 @@ struct MainRepositoryContentView: View {
     let onCopyPath: (String) -> Void
     let onCopyPaths: ([String]) -> Void
     let onOpenNoteFile: (String) -> Void
+    let onOpenChangeCategoryPermissionRecovery: () -> Void
     let treeLister: any CoreRepositoryTreeListing
     let externalCreatedEvent: MainExternalCreatedFileEvent?
     let onExternalCreatedEventHandled: (MainExternalCreatedFileEvent) -> Void
@@ -183,6 +184,7 @@ struct MainRepositoryContentView: View {
         onCopyPath: @escaping (String) -> Void = { _ in },
         onCopyPaths: @escaping ([String]) -> Void = { _ in },
         onOpenNoteFile: @escaping (String) -> Void = { _ in },
+        onOpenChangeCategoryPermissionRecovery: @escaping () -> Void = {},
         treeLister: any CoreRepositoryTreeListing = CoreBridge(),
         externalCreatedEvent: MainExternalCreatedFileEvent? = nil,
         onExternalCreatedEventHandled: @escaping (MainExternalCreatedFileEvent) -> Void = { _ in },
@@ -208,6 +210,7 @@ struct MainRepositoryContentView: View {
         self.onCopyPath = onCopyPath
         self.onCopyPaths = onCopyPaths
         self.onOpenNoteFile = onOpenNoteFile
+        self.onOpenChangeCategoryPermissionRecovery = onOpenChangeCategoryPermissionRecovery
         self.treeLister = treeLister
         self.externalCreatedEvent = externalCreatedEvent
         self.onExternalCreatedEventHandled = onExternalCreatedEventHandled

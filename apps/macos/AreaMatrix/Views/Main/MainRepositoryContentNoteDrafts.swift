@@ -51,6 +51,7 @@ extension MainRepositoryContentView {
             onCancelDetailLogDiagnostics: fileListModel.cancelDetailLogDiagnosticsPrivacyConfirmation,
             onDetailTabRequestConsumed: fileListModel.consumeDetailTabRequest,
             onBeginRenameFile: fileListModel.beginRename,
+            onBeginChangeCategoryFile: fileListModel.beginChangeCategory,
             onBeginDeleteFile: fileListModel.beginDelete,
             writeActionDisabledReason: fileListModel.writeActionDisabledReason,
             noteModel: detailNoteModel

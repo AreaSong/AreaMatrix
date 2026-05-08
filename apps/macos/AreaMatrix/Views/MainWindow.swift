@@ -362,6 +362,9 @@ struct MainWindow: View {
                 onCopyPath: { model.copyMainListPath(opening: opening, relativePath: $0) },
                 onCopyPaths: { model.copyMainListPaths(opening: opening, relativePaths: $0) },
                 onOpenNoteFile: { model.openMainListFile(opening: opening, relativePath: $0) },
+                onOpenChangeCategoryPermissionRecovery: {
+                    model.revealMainRepositoryFolder(repoPath: opening.config.repoPath)
+                },
                 externalCreatedEvent: model.externalCreatedEvent(for: opening),
                 onExternalCreatedEventHandled: model.finishExternalCreatedFileEvent
             )
@@ -385,6 +388,9 @@ struct MainWindow: View {
                 onCopyPath: { model.copyMainListPath(opening: opening, relativePath: $0) },
                 onCopyPaths: { model.copyMainListPaths(opening: opening, relativePaths: $0) },
                 onOpenNoteFile: { model.openMainListFile(opening: opening, relativePath: $0) },
+                onOpenChangeCategoryPermissionRecovery: {
+                    model.revealMainRepositoryFolder(repoPath: opening.config.repoPath)
+                },
                 externalCreatedEvent: model.externalCreatedEvent(for: opening),
                 onExternalCreatedEventHandled: model.finishExternalCreatedFileEvent
             )
@@ -415,6 +421,9 @@ struct MainWindow: View {
                 onCopyPath: { model.copyMainListPath(opening: state.sourceOpening, relativePath: $0) },
                 onCopyPaths: { model.copyMainListPaths(opening: state.sourceOpening, relativePaths: $0) },
                 onOpenNoteFile: { model.openMainListFile(opening: state.sourceOpening, relativePath: $0) },
+                onOpenChangeCategoryPermissionRecovery: {
+                    model.revealMainRepositoryFolder(repoPath: state.sourceOpening.config.repoPath)
+                },
                 externalCreatedEvent: model.externalCreatedEvent(for: state.sourceOpening),
                 onExternalCreatedEventHandled: model.finishExternalCreatedFileEvent,
                 importProgressItems: state.items
