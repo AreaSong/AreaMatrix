@@ -53,6 +53,7 @@
 		0A0000000000000000000200 /* DetailMetaPageFeatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000201 /* DetailMetaPageFeatureTests.swift */; };
 		0A0000000000000000000250 /* DetailMultiListFilesPageFeatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000251 /* DetailMultiListFilesPageFeatureTests.swift */; };
 		0A0000000000000000000252 /* DetailMultiPageIntegrationVerifyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000253 /* DetailMultiPageIntegrationVerifyTests.swift */; };
+		0A0000000000000000000262 /* DetailIntegrationVerifyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000263 /* DetailIntegrationVerifyTests.swift */; };
 		0A0000000000000000000202 /* DetailLogExternalCreatedPageFeatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000203 /* DetailLogExternalCreatedPageFeatureTests.swift */; };
 		0A0000000000000000000204 /* DetailLogExternalRenamedPageFeatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000205 /* DetailLogExternalRenamedPageFeatureTests.swift */; };
 		0A0000000000000000000206 /* DetailLogExternalRemovedPageFeatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000207 /* DetailLogExternalRemovedPageFeatureTests.swift */; };
@@ -228,6 +229,7 @@
 		0A0000000000000000000201 /* DetailMetaPageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/DetailMetaPageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000251 /* DetailMultiListFilesPageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/DetailMultiListFilesPageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000253 /* DetailMultiPageIntegrationVerifyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/DetailMultiPageIntegrationVerifyTests.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000263 /* DetailIntegrationVerifyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/DetailIntegrationVerifyTests.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000203 /* DetailLogExternalCreatedPageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/DetailLogExternalCreatedPageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000205 /* DetailLogExternalRenamedPageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/DetailLogExternalRenamedPageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000207 /* DetailLogExternalRemovedPageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/DetailLogExternalRemovedPageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
@@ -588,6 +590,7 @@
 					0A0000000000000000000201 /* DetailMetaPageFeatureTests.swift */,
 					0A0000000000000000000251 /* DetailMultiListFilesPageFeatureTests.swift */,
 					0A0000000000000000000253 /* DetailMultiPageIntegrationVerifyTests.swift */,
+					0A0000000000000000000263 /* DetailIntegrationVerifyTests.swift */,
 					0A0000000000000000000203 /* DetailLogExternalCreatedPageFeatureTests.swift */,
 					0A0000000000000000000205 /* DetailLogExternalRenamedPageFeatureTests.swift */,
 					0A0000000000000000000207 /* DetailLogExternalRemovedPageFeatureTests.swift */,
@@ -874,6 +877,7 @@
 					0A0000000000000000000200 /* DetailMetaPageFeatureTests.swift in Sources */,
 					0A0000000000000000000250 /* DetailMultiListFilesPageFeatureTests.swift in Sources */,
 					0A0000000000000000000252 /* DetailMultiPageIntegrationVerifyTests.swift in Sources */,
+					0A0000000000000000000262 /* DetailIntegrationVerifyTests.swift in Sources */,
 					0A0000000000000000000202 /* DetailLogExternalCreatedPageFeatureTests.swift in Sources */,
 					0A0000000000000000000204 /* DetailLogExternalRenamedPageFeatureTests.swift in Sources */,
 					0A0000000000000000000206 /* DetailLogExternalRemovedPageFeatureTests.swift in Sources */,

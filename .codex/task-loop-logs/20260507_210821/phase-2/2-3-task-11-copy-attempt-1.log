@@ -1,0 +1,12 @@
+一、执行结论：已完成。
+
+二、执行范围：单任务 `2-3/task-11`。本次只改了 `apps/macos/AreaMatrixTests/DetailIntegrationVerifyTests.swift` 和 `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`；未触碰 `core/src/**`。现有脏文件 `.codex/task-loop-runs/20260507_210821/summary.json`、`tasks/prompts/_shared/progress.json` 是执行前已有状态，未作为本次改动处理。
+
+三、完成情况：新增 detail 闭环集成验收测试，覆盖 S1-12/S1-13/S1-14/S1-15 与 C1-11/C1-12/C1-13/C1-14/C1-17/C1-18/C1-19 的真实 CoreBridge 路径：文件详情、变更日志、笔记读写、外部 created/renamed/removed sync、多选状态退出。没有新增未列页面或 Core 能力，没有保留 product mock-only 闭环。
+
+四、工程质量：未改产品实现，只补充允许范围内的 XCTest 证据；测试使用临时 repo 和真实 CoreBridge 文件操作，不触碰用户原文件。无新增依赖，无一次性硬编码通过态；Swift helper 已按函数长度目标拆分，`git diff --check` 通过。
+
+五、验证情况：任务要求的 `xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO` 已运行，构建和链接通过，但本机 sandbox 阻断 `com.apple.testmanagerd.control`，导致标准 runner 退出 65。随后按 repo validation driver 跑 `./dev test macos`，其 fallback 复用已构建 XCTest bundle，通过 `xcrun xctest` 执行完整套件：329 tests，0 failures。`git diff --check -- apps/macos/AreaMatrixTests/DetailIntegrationVerifyTests.swift apps/macos/AreaMatrix.xcodeproj/project.pbxproj` 通过。
+
+六、风险与后续：剩余风险是本机标准 Xcode test runner 仍受 sandbox 限制，已用仓库认可 fallback 覆盖；未做 UI 手动截图验证，因为本任务是 stage/detail wiring 证据补齐且未改 UI 产品代码。建议下一个任务继续按 manifest 队列进入 `2-3/task-12`。 
+
