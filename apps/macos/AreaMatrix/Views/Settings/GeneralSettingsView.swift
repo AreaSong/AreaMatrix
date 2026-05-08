@@ -95,6 +95,8 @@ struct GeneralSettingsView: View {
                 .tag("integrations")
             Label("高级", systemImage: "wrench.and.screwdriver")
                 .tag("advanced")
+            Label("关于", systemImage: "info.circle")
+                .tag("about")
         }
         .listStyle(.sidebar)
         .frame(width: 180)
@@ -118,6 +120,8 @@ struct GeneralSettingsView: View {
                 repoPath: model.repoPath,
                 onOpenRecoveryTools: onOpenRepositoryRecovery
             )
+        case "about":
+            AboutSettingsPane(repoPath: model.repoPath)
         default:
             generalContent
         }

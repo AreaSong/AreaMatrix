@@ -192,6 +192,9 @@
 		0A00000000000000000002A6 /* AdvancedSettingsPageIntegrationVerifyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002A7 /* AdvancedSettingsPageIntegrationVerifyTests.swift */; };
 		0A00000000000000000002A8 /* AdvancedSettingsDiagnostics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002A9 /* AdvancedSettingsDiagnostics.swift */; };
 		0A00000000000000000002AA /* AdvancedSettingsSupportViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002AB /* AdvancedSettingsSupportViews.swift */; };
+		0A00000000000000000002AC /* AboutSettingsModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002AD /* AboutSettingsModel.swift */; };
+		0A00000000000000000002AE /* AboutSettingsPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002AF /* AboutSettingsPane.swift */; };
+		0A00000000000000000002B0 /* AboutSettingsPageFeatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002B1 /* AboutSettingsPageFeatureTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -304,6 +307,9 @@
 		0A00000000000000000002A7 /* AdvancedSettingsPageIntegrationVerifyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/AdvancedSettingsPageIntegrationVerifyTests.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002A9 /* AdvancedSettingsDiagnostics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/AdvancedSettingsDiagnostics.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002AB /* AdvancedSettingsSupportViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Settings/AdvancedSettingsSupportViews.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000002AD /* AboutSettingsModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/AboutSettingsModel.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000002AF /* AboutSettingsPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Settings/AboutSettingsPane.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000002B1 /* AboutSettingsPageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/AboutSettingsPageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000013F /* MainFileActionRoutingSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/MainFileActionRoutingSheet.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000141 /* RenameFileSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/RenameFileSheet.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000143 /* ChangeCategorySheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/ChangeCategorySheet.swift; sourceTree = SOURCE_ROOT; };
@@ -479,6 +485,7 @@
 				0A000000000000000000029D /* IntegrationsSettingsPane.swift */,
 				0A00000000000000000002A3 /* AdvancedSettingsPane.swift */,
 				0A00000000000000000002AB /* AdvancedSettingsSupportViews.swift */,
+				0A00000000000000000002AF /* AboutSettingsPane.swift */,
 				0A00000000000000000000D1 /* MainRepositoryContentView.swift */,
 				0A000000000000000000013D /* MainRepositoryDetailPane.swift */,
 				0A0000000000000000000211 /* DetailLogTabView.swift */,
@@ -556,6 +563,7 @@
 				0A000000000000000000029B /* IntegrationsSettingsModel.swift */,
 				0A00000000000000000002A1 /* AdvancedSettingsModel.swift */,
 				0A00000000000000000002A9 /* AdvancedSettingsDiagnostics.swift */,
+				0A00000000000000000002AD /* AboutSettingsModel.swift */,
 				0A0000000000000000000277 /* GeneralSettingsActions.swift */,
 				0A0000000000000000000281 /* RepositorySettingsModel.swift */,
 				0A0000000000000000000289 /* RepositorySettingsActionState.swift */,
@@ -676,6 +684,7 @@
 				0A000000000000000000029F /* IntegrationsSettingsPageFeatureTests.swift */,
 				0A00000000000000000002A5 /* AdvancedSettingsPageFeatureTests.swift */,
 				0A00000000000000000002A7 /* AdvancedSettingsPageIntegrationVerifyTests.swift */,
+				0A00000000000000000002B1 /* AboutSettingsPageFeatureTests.swift */,
 				0A000000000000000000027F /* GeneralSettingsPageIntegrationVerifyTests.swift */,
 				0A0000000000000000000285 /* RepositorySettingsPageFeatureTests.swift */,
 				0A000000000000000000028B /* RepositorySettingsPageIntegrationVerifyTests.swift */,
@@ -870,6 +879,7 @@
 				0A000000000000000000029A /* IntegrationsSettingsModel.swift in Sources */,
 				0A00000000000000000002A0 /* AdvancedSettingsModel.swift in Sources */,
 				0A00000000000000000002A8 /* AdvancedSettingsDiagnostics.swift in Sources */,
+				0A00000000000000000002AC /* AboutSettingsModel.swift in Sources */,
 				0A0000000000000000000276 /* GeneralSettingsActions.swift in Sources */,
 				0A0000000000000000000280 /* RepositorySettingsModel.swift in Sources */,
 				0A0000000000000000000288 /* RepositorySettingsActionState.swift in Sources */,
@@ -886,6 +896,7 @@
 				0A000000000000000000029C /* IntegrationsSettingsPane.swift in Sources */,
 				0A00000000000000000002A2 /* AdvancedSettingsPane.swift in Sources */,
 				0A00000000000000000002AA /* AdvancedSettingsSupportViews.swift in Sources */,
+				0A00000000000000000002AE /* AboutSettingsPane.swift in Sources */,
 				0A000000000000000000013C /* MainRepositoryDetailPane.swift in Sources */,
 				0A0000000000000000000210 /* DetailLogTabView.swift in Sources */,
 				0A0000000000000000000224 /* DetailExternalCreateSyncStatusView.swift in Sources */,
@@ -991,6 +1002,7 @@
 					0A000000000000000000029E /* IntegrationsSettingsPageFeatureTests.swift in Sources */,
 					0A00000000000000000002A4 /* AdvancedSettingsPageFeatureTests.swift in Sources */,
 					0A00000000000000000002A6 /* AdvancedSettingsPageIntegrationVerifyTests.swift in Sources */,
+					0A00000000000000000002B0 /* AboutSettingsPageFeatureTests.swift in Sources */,
 					0A000000000000000000027E /* GeneralSettingsPageIntegrationVerifyTests.swift in Sources */,
 					0A0000000000000000000284 /* RepositorySettingsPageFeatureTests.swift in Sources */,
 					0A000000000000000000028A /* RepositorySettingsPageIntegrationVerifyTests.swift in Sources */,
