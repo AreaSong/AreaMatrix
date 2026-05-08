@@ -8,10 +8,23 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
         config.overviewOutput = "RootAreaMatrixFile"
         let loader = RepositorySettingsRecordingLoader(results: [.success(config)])
         let updater = RepositorySettingsRecordingUpdater(result: .success)
+        let metadataReader = RepositorySettingsRecordingMetadataReader(results: [
+            .success(ExistingRepositoryMetadataSnapshot(
+                schemaVersion: 1,
+                lastOpenedAt: 1_778_000_000,
+                configuredRepoPath: "/tmp/AreaMatrixRepo"
+            )),
+        ])
+        let opener = RepositorySettingsRecordingRepositoryOpener(
+            result: .success(RepositoryOpeningResult.s117Fixture(repoPath: "/tmp/AreaMatrixRepo"))
+        )
         let model = RepositorySettingsModel(
             repoPath: "/tmp/AreaMatrixRepo",
             loader: loader,
             updater: updater,
+            repositoryOpener: opener,
+            scanSessionReader: RepositorySettingsRecordingScanSessionReader(result: .success(nil)),
+            existingRepositoryMetadataReader: metadataReader,
             errorMapper: RepositorySettingsStaticErrorMapper()
         )
 
@@ -24,6 +37,7 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
         XCTAssertEqual(model.loadedConfig, config)
         XCTAssertEqual(model.summary?.repositoryName, "AreaMatrixRepo")
         XCTAssertEqual(model.summary?.location, "/tmp/AreaMatrixRepo")
+        XCTAssertEqual(model.summary?.metadataStatus, ".areamatrix/ missing")
         XCTAssertEqual(model.summary?.overviewMode, "Root AREAMATRIX.md enabled")
         XCTAssertEqual(model.summary?.generatedPath, ".areamatrix/generated/root.md")
         XCTAssertEqual(model.summary?.rootFile, "AREAMATRIX.md")
@@ -38,10 +52,28 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
         second.overviewOutput = "RootAreaMatrixFile"
         let loader = RepositorySettingsRecordingLoader(results: [.success(first), .success(second)])
         let updater = RepositorySettingsRecordingUpdater(result: .success)
+        let metadataReader = RepositorySettingsRecordingMetadataReader(results: [
+            .success(ExistingRepositoryMetadataSnapshot(
+                schemaVersion: 1,
+                lastOpenedAt: 1_778_000_000,
+                configuredRepoPath: "/tmp/repo"
+            )),
+            .success(ExistingRepositoryMetadataSnapshot(
+                schemaVersion: 1,
+                lastOpenedAt: 1_778_000_000,
+                configuredRepoPath: "/tmp/repo"
+            )),
+        ])
+        let opener = RepositorySettingsRecordingRepositoryOpener(
+            result: .success(RepositoryOpeningResult.s117Fixture(repoPath: "/tmp/repo"))
+        )
         let model = RepositorySettingsModel(
             repoPath: "/tmp/repo",
             loader: loader,
             updater: updater,
+            repositoryOpener: opener,
+            scanSessionReader: RepositorySettingsRecordingScanSessionReader(result: .success(nil)),
+            existingRepositoryMetadataReader: metadataReader,
             errorMapper: RepositorySettingsStaticErrorMapper()
         )
 
@@ -91,10 +123,23 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
         expected.repoPath = repoURL.path
         let loader = RepositorySettingsRecordingLoader(results: [.success(config)])
         let updater = RepositorySettingsRecordingUpdater(result: .success)
+        let metadataReader = RepositorySettingsRecordingMetadataReader(results: [
+            .success(ExistingRepositoryMetadataSnapshot(
+                schemaVersion: 1,
+                lastOpenedAt: 1_778_000_000,
+                configuredRepoPath: repoURL.path
+            )),
+        ])
+        let opener = RepositorySettingsRecordingRepositoryOpener(
+            result: .success(RepositoryOpeningResult.s117Fixture(repoPath: repoURL.path))
+        )
         let model = RepositorySettingsModel(
             repoPath: repoURL.path,
             loader: loader,
             updater: updater,
+            repositoryOpener: opener,
+            scanSessionReader: RepositorySettingsRecordingScanSessionReader(result: .success(nil)),
+            existingRepositoryMetadataReader: metadataReader,
             errorMapper: RepositorySettingsStaticErrorMapper()
         )
 
@@ -108,6 +153,7 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
         XCTAssertEqual(model.loadedConfig, expected)
         XCTAssertEqual(model.summary?.location, repoURL.path)
         XCTAssertEqual(model.summary?.repositoryName, repoURL.lastPathComponent)
+        XCTAssertEqual(model.summary?.metadataStatus, ".areamatrix/ found")
         XCTAssertEqual(model.summary?.rootFile, "AREAMATRIX.md")
         XCTAssertNil(model.syncError)
     }
@@ -123,10 +169,23 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
         ])
         let updater = RepositorySettingsRecordingUpdater(result: .failure(CoreError.Db(message: "locked")))
         let mapper = RepositorySettingsStaticErrorMapper()
+        let metadataReader = RepositorySettingsRecordingMetadataReader(results: [
+            .success(ExistingRepositoryMetadataSnapshot(
+                schemaVersion: 1,
+                lastOpenedAt: 1_778_000_000,
+                configuredRepoPath: repoURL.path
+            )),
+        ])
+        let opener = RepositorySettingsRecordingRepositoryOpener(
+            result: .success(RepositoryOpeningResult.s117Fixture(repoPath: repoURL.path))
+        )
         let model = RepositorySettingsModel(
             repoPath: repoURL.path,
             loader: loader,
             updater: updater,
+            repositoryOpener: opener,
+            scanSessionReader: RepositorySettingsRecordingScanSessionReader(result: .success(nil)),
+            existingRepositoryMetadataReader: metadataReader,
             errorMapper: mapper
         )
 
@@ -138,6 +197,7 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
         XCTAssertEqual(mappedErrors, [CoreError.Db(message: "locked")])
         XCTAssertEqual(model.loadedConfig?.repoPath, repoURL.path)
         XCTAssertEqual(model.summary?.location, repoURL.path)
+        XCTAssertEqual(model.summary?.metadataStatus, ".areamatrix/ found")
         XCTAssertEqual(model.syncError?.message, "数据库错误")
         XCTAssertEqual(model.syncError?.recovery, "Retry status")
     }
@@ -160,10 +220,30 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
         XCTAssertEqual(model.summary?.location, repoURL.path)
         XCTAssertEqual(model.summary?.overviewMode, "Generated only")
         XCTAssertEqual(model.summary?.rootFile, "Off")
+        XCTAssertEqual(model.summary?.metadataStatus, ".areamatrix/ found")
+        XCTAssertEqual(model.healthSummary?.databaseStatus, .ok)
+        XCTAssertEqual(model.healthSummary?.schemaVersion, 1)
+        XCTAssertEqual(model.healthSummary?.filesIndexed, 0)
         XCTAssertFalse(FileManager.default.fileExists(atPath: repoURL.appendingPathComponent("README.md").path))
         XCTAssertFalse(FileManager.default.fileExists(
             atPath: repoURL.appendingPathComponent("AREAMATRIX.md").path
         ))
+    }
+
+    @MainActor
+    func testMetadataReaderReadsSchemaVersionFromRealInitializedRepositoryWithoutWalSidecars() async throws {
+        let repoURL = try temporaryRepositorySettingsRepo()
+        defer { try? FileManager.default.removeItem(at: repoURL) }
+        let bridge = CoreBridge()
+        try await bridge.initializeEmptyRepository(repoPath: repoURL.path)
+        removeRepositorySettingsMetadataDatabaseSidecars(in: repoURL)
+
+        do {
+            let metadata = try await SQLiteExistingRepositoryMetadataReader().metadata(repoPath: repoURL.path)
+            XCTAssertEqual(metadata.schemaVersion, 1)
+        } catch {
+            XCTFail("metadata read failed: \(error)")
+        }
     }
 
     @MainActor
@@ -194,107 +274,94 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
         XCTAssertEqual(model.summary?.location, movedURL.path)
         XCTAssertEqual(model.loadedConfig?.repoPath, movedURL.path)
         XCTAssertEqual(reloaded.repoPath, movedURL.path)
+        XCTAssertEqual(model.summary?.metadataStatus, ".areamatrix/ found")
+        XCTAssertEqual(model.healthSummary?.databaseStatus, .ok)
+        XCTAssertEqual(model.healthSummary?.filesIndexed, 0)
         XCTAssertNil(model.syncError)
         XCTAssertFalse(FileManager.default.fileExists(atPath: movedURL.appendingPathComponent("README.md").path))
         XCTAssertFalse(FileManager.default.fileExists(
             atPath: movedURL.appendingPathComponent("AREAMATRIX.md").path
         ))
     }
-}
 
-private enum RepositorySettingsLoaderResult {
-    case success(RepoConfigSnapshot)
-    case failure(Error)
-}
-
-private actor RepositorySettingsRecordingLoader: CoreConfigurationLoading {
-    private var results: [RepositorySettingsLoaderResult]
-    private var paths: [String] = []
-
-    init(results: [RepositorySettingsLoaderResult]) {
-        self.results = results
-    }
-
-    func loadConfig(repoPath: String) async throws -> RepoConfigSnapshot {
-        paths.append(repoPath)
-        let result = results.isEmpty ? .failure(CoreError.Internal(message: "missing config")) : results.removeFirst()
-        switch result {
-        case .success(let config):
-            return config
-        case .failure(let error):
-            throw error
-        }
-    }
-
-    func requestedPaths() -> [String] { paths }
-}
-
-private enum RepositorySettingsUpdateResult {
-    case success
-    case failure(Error)
-}
-
-private actor RepositorySettingsRecordingUpdater: CoreConfigurationUpdating {
-    struct Request: Equatable {
-        var repoPath: String
-        var config: RepoConfigSnapshot
-    }
-
-    private let result: RepositorySettingsUpdateResult
-    private var recordedRequests: [Request] = []
-
-    init(result: RepositorySettingsUpdateResult) {
-        self.result = result
-    }
-
-    func updateConfig(repoPath: String, newConfig: RepoConfigSnapshot) async throws {
-        recordedRequests.append(Request(repoPath: repoPath, config: newConfig))
-        switch result {
-        case .success:
-            return
-        case .failure(let error):
-            throw error
-        }
-    }
-
-    func requests() -> [Request] { recordedRequests }
-}
-
-private actor RepositorySettingsStaticErrorMapper: CoreErrorMapping {
-    private var errors: [CoreError] = []
-
-    func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
-        errors.append(error)
-        let userMessage: String
-        switch error {
-        case .Db:
-            userMessage = "数据库错误"
-        default:
-            userMessage = "配置错误"
+    @MainActor
+    func testDefaultCoreBridgeShowsIndexedFileCountAfterIndexedImport() async throws {
+        let repoURL = try temporaryRepositorySettingsRepo()
+        let sourceRoot = try temporaryRepositorySettingsRepo()
+        defer {
+            try? FileManager.default.removeItem(at: repoURL)
+            try? FileManager.default.removeItem(at: sourceRoot)
         }
 
-        return CoreErrorMappingSnapshot(
-            kind: .config,
-            userMessage: userMessage,
-            severity: .medium,
-            suggestedAction: "Retry status",
-            recoverability: .retryable,
-            rawContext: "S1-27 C1-04"
+        let sourceURL = sourceRoot.appendingPathComponent("indexed.pdf")
+        try Data("indexed bytes".utf8).write(to: sourceURL)
+        let bridge = CoreBridge()
+        try await bridge.initializeEmptyRepository(repoPath: repoURL.path)
+        let imported = try await bridge.importIndexedFile(
+            repoPath: repoURL.path,
+            sourceURL: sourceURL,
+            overrideCategory: "docs",
+            overrideFilename: "indexed-display.pdf"
         )
+
+        XCTAssertEqual(imported.storageMode, "Indexed")
+        XCTAssertEqual(imported.sourcePath, sourceURL.path)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: sourceURL.path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: repoURL.appendingPathComponent(imported.path).path))
+
+        let model = RepositorySettingsModel(
+            repoPath: repoURL.path,
+            loader: bridge,
+            updater: bridge,
+            repositoryOpener: bridge,
+            scanSessionReader: bridge,
+            existingRepositoryMetadataReader: SQLiteExistingRepositoryMetadataReader(),
+            errorMapper: bridge
+        )
+
+        await model.load()
+
+        XCTAssertEqual(model.summary?.metadataStatus, ".areamatrix/ found")
+        XCTAssertEqual(model.healthSummary?.databaseStatus, .ok)
+        XCTAssertEqual(model.healthSummary?.schemaVersion, 1)
+        XCTAssertEqual(model.healthSummary?.filesIndexed, 1)
+        XCTAssertEqual(model.healthSummary?.watcherStatus, .paused)
+        XCTAssertNil(model.healthError)
     }
 
-    func mappedErrors() -> [CoreError] { errors }
-}
+    @MainActor
+    func testHealthFailureMapsDbStatusWithoutDiscardingLoadedConfig() async {
+        let loader = RepositorySettingsRecordingLoader(results: [
+            .success(.shellFixture(repoPath: "/tmp/repo")),
+        ])
+        let updater = RepositorySettingsRecordingUpdater(result: .success)
+        let metadataReader = RepositorySettingsRecordingMetadataReader(results: [
+            .success(ExistingRepositoryMetadataSnapshot(
+                schemaVersion: 1,
+                lastOpenedAt: 1_778_000_000,
+                configuredRepoPath: "/tmp/repo"
+            )),
+        ])
+        let opener = RepositorySettingsRecordingRepositoryOpener(
+            result: .failure(CoreError.Db(message: "database is locked"))
+        )
+        let model = RepositorySettingsModel(
+            repoPath: "/tmp/repo",
+            loader: loader,
+            updater: updater,
+            repositoryOpener: opener,
+            scanSessionReader: RepositorySettingsRecordingScanSessionReader(result: .success(nil)),
+            existingRepositoryMetadataReader: metadataReader,
+            errorMapper: RepositorySettingsStaticErrorMapper()
+        )
 
-private func temporaryRepositorySettingsRepo() throws -> URL {
-    let url = FileManager.default.temporaryDirectory
-        .appendingPathComponent("AreaMatrixRepositorySettings-\(UUID().uuidString)", isDirectory: true)
-    try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
-    return url
-}
+        await model.load()
 
-private func createRepositorySettingsMetadataDatabaseMarker(in repoURL: URL) throws {
-    let metadataURL = repoURL.appendingPathComponent(".areamatrix", isDirectory: true)
-    try FileManager.default.createDirectory(at: metadataURL, withIntermediateDirectories: true)
-    try Data().write(to: metadataURL.appendingPathComponent("index.db"))
+        XCTAssertEqual(model.summary?.location, "/tmp/repo")
+        XCTAssertEqual(model.healthSummary?.schemaVersion, 1)
+        XCTAssertEqual(model.healthSummary?.databaseStatus, .locked)
+        XCTAssertEqual(model.healthError?.databaseStatus, .locked)
+        XCTAssertEqual(model.healthError?.message, "数据库错误")
+        XCTAssertEqual(model.healthError?.recovery, "Retry status")
+    }
 }

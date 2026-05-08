@@ -7,12 +7,20 @@ struct RepositorySettingsPane: View {
         repoPath: String,
         loader: any CoreConfigurationLoading = CoreBridge(),
         updater: any CoreConfigurationUpdating = CoreBridge(),
+        repositoryOpener: any CoreEmptyRepositoryOpening = CoreBridge(),
+        fileLister: (any CoreFileListing)? = nil,
+        scanSessionReader: any CoreScanSessionReading = CoreBridge(),
+        existingRepositoryMetadataReader: any ExistingRepositoryMetadataReading = SQLiteExistingRepositoryMetadataReader(),
         errorMapper: any CoreErrorMapping = CoreBridge()
     ) {
         _model = StateObject(wrappedValue: RepositorySettingsModel(
             repoPath: repoPath,
             loader: loader,
             updater: updater,
+            repositoryOpener: repositoryOpener,
+            fileLister: fileLister,
+            scanSessionReader: scanSessionReader,
+            existingRepositoryMetadataReader: existingRepositoryMetadataReader,
             errorMapper: errorMapper
         ))
     }
@@ -101,10 +109,16 @@ struct RepositorySettingsPane: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
                 syncErrorBanner
+                healthErrorBanner
 
                 RepositorySettingsSection(title: "路径") {
                     RepositorySettingsKeyValueRow(label: "Repository name", value: summary.repositoryName)
                     RepositorySettingsKeyValueRow(label: "Location", value: summary.location)
+                    RepositorySettingsKeyValueRow(label: "Metadata", value: summary.metadataStatus)
+                }
+
+                RepositorySettingsSection(title: "健康") {
+                    RepositorySettingsHealthSection(summary: model.healthSummary)
                 }
 
                 RepositorySettingsSection(title: "概览输出") {
@@ -141,6 +155,24 @@ struct RepositorySettingsPane: View {
             .padding(12)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(Color.red.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
+            .accessibilityElement(children: .combine)
+        }
+    }
+
+    @ViewBuilder
+    private var healthErrorBanner: some View {
+        if let error = model.healthError {
+            let tint: Color = error.databaseStatus == .locked ? .orange : .red
+            VStack(alignment: .leading, spacing: 8) {
+                Label(error.message, systemImage: "exclamationmark.triangle")
+                    .foregroundStyle(tint)
+                Text(error.recovery)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(tint.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
             .accessibilityElement(children: .combine)
         }
     }
@@ -181,5 +213,51 @@ private struct RepositorySettingsKeyValueRow: View {
                 .accessibilityLabel("\(label): \(value)")
         }
         .font(.callout)
+    }
+}
+
+private struct RepositorySettingsHealthSection: View {
+    let summary: RepositorySettingsHealthSummary?
+
+    private static let indexedCountFormatter: NumberFormatter = {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        formatter.usesGroupingSeparator = true
+        return formatter
+    }()
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            RepositorySettingsKeyValueRow(label: "Database", value: summary?.databaseStatus.label ?? "—")
+            RepositorySettingsKeyValueRow(label: "Schema version", value: schemaVersionValue)
+            RepositorySettingsKeyValueRow(label: "Files indexed", value: filesIndexedValue)
+            RepositorySettingsKeyValueRow(label: "Last scan", value: lastScanValue)
+            RepositorySettingsKeyValueRow(label: "Watcher", value: summary?.watcherStatus.label ?? "Paused")
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var schemaVersionValue: String {
+        guard let schemaVersion = summary?.schemaVersion else {
+            return "Unknown"
+        }
+        return "v\(schemaVersion)"
+    }
+
+    private var filesIndexedValue: String {
+        guard let filesIndexed = summary?.filesIndexed else {
+            return "—"
+        }
+
+        return Self.indexedCountFormatter.string(from: NSNumber(value: filesIndexed)) ?? "\(filesIndexed)"
+    }
+
+    private var lastScanValue: String {
+        guard let timestamp = summary?.lastScanAt else {
+            return "Not available"
+        }
+
+        return Date(timeIntervalSince1970: TimeInterval(timestamp))
+            .formatted(date: .abbreviated, time: .shortened)
     }
 }

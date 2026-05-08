@@ -175,6 +175,7 @@
 		0A0000000000000000000280 /* RepositorySettingsModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000281 /* RepositorySettingsModel.swift */; };
 		0A0000000000000000000282 /* RepositorySettingsPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000283 /* RepositorySettingsPane.swift */; };
 		0A0000000000000000000284 /* RepositorySettingsPageFeatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000285 /* RepositorySettingsPageFeatureTests.swift */; };
+		0A0000000000000000000286 /* RepositorySettingsTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000287 /* RepositorySettingsTestSupport.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -270,6 +271,7 @@
 		0A0000000000000000000281 /* RepositorySettingsModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/RepositorySettingsModel.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000283 /* RepositorySettingsPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Settings/RepositorySettingsPane.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000285 /* RepositorySettingsPageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/RepositorySettingsPageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000287 /* RepositorySettingsTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/RepositorySettingsTestSupport.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000013F /* MainFileActionRoutingSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/MainFileActionRoutingSheet.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000141 /* RenameFileSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/RenameFileSheet.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000143 /* ChangeCategorySheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/ChangeCategorySheet.swift; sourceTree = SOURCE_ROOT; };
@@ -629,6 +631,7 @@
 				0A000000000000000000027B /* GeneralSettingsImportDefaultModeTests.swift */,
 				0A000000000000000000027F /* GeneralSettingsPageIntegrationVerifyTests.swift */,
 				0A0000000000000000000285 /* RepositorySettingsPageFeatureTests.swift */,
+				0A0000000000000000000287 /* RepositorySettingsTestSupport.swift */,
 				0A0000000000000000000137 /* MainListIntegrationFilterTests.swift */,
 				0A0000000000000000000139 /* MainListIntegrationClosureTests.swift */,
 				0A000000000000000000014B /* MainLoadingAdoptExistingTests.swift */,
@@ -927,6 +930,7 @@
 					0A000000000000000000027A /* GeneralSettingsImportDefaultModeTests.swift in Sources */,
 					0A000000000000000000027E /* GeneralSettingsPageIntegrationVerifyTests.swift in Sources */,
 					0A0000000000000000000284 /* RepositorySettingsPageFeatureTests.swift in Sources */,
+					0A0000000000000000000286 /* RepositorySettingsTestSupport.swift in Sources */,
 				0A0000000000000000000136 /* MainListIntegrationFilterTests.swift in Sources */,
 				0A0000000000000000000138 /* MainListIntegrationClosureTests.swift in Sources */,
 				0A000000000000000000014A /* MainLoadingAdoptExistingTests.swift in Sources */,

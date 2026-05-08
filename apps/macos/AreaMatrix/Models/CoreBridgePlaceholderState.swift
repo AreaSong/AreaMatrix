@@ -276,32 +276,6 @@ struct SQLiteExistingRepositoryMetadataReader: ExistingRepositoryMetadataReading
     private static let supportedSchemaVersion: Int64 = 1
 
     func metadata(repoPath: String) async throws -> ExistingRepositoryMetadataSnapshot {
-        let openedDatabase = try Self.openMetadataDatabase(repoPath: repoPath)
-        defer {
-            sqlite3_close(openedDatabase)
-        }
-
-        let schemaVersion = try Self.readRequiredInt64(
-            database: openedDatabase,
-            sql: "SELECT COALESCE(MAX(version), 0) FROM schema_version"
-        )
-        guard schemaVersion > 0 else {
-            throw CoreError.Db(message: "schema_version is empty")
-        }
-        guard schemaVersion <= Self.supportedSchemaVersion else {
-            throw CoreError.Config(reason: "unsupported schema version \(schemaVersion)")
-        }
-
-        let configuredRepoPath = try Self.readOptionalConfigString(database: openedDatabase, key: "repo_path")
-        let lastOpenedAt = try Self.readOptionalConfigInt64(database: openedDatabase, key: "last_opened_at")
-        return ExistingRepositoryMetadataSnapshot(
-            schemaVersion: schemaVersion,
-            lastOpenedAt: lastOpenedAt,
-            configuredRepoPath: configuredRepoPath
-        )
-    }
-
-    private static func openMetadataDatabase(repoPath: String) throws -> OpaquePointer {
         let dbURL = URL(fileURLWithPath: repoPath)
             .appendingPathComponent(".areamatrix", isDirectory: true)
             .appendingPathComponent("index.db")
@@ -309,8 +283,51 @@ struct SQLiteExistingRepositoryMetadataReader: ExistingRepositoryMetadataReading
             throw CoreError.Db(message: "missing .areamatrix/index.db")
         }
 
+        var lastError: Error?
+        for openFlags in Self.openFlags {
+            do {
+                let openedDatabase = try Self.openMetadataDatabase(dbURL: dbURL, openFlags: openFlags)
+                defer {
+                    sqlite3_close(openedDatabase)
+                }
+                return try Self.readMetadata(database: openedDatabase)
+            } catch {
+                lastError = error
+            }
+        }
+
+        throw lastError ?? CoreError.Db(message: "sqlite metadata read failed")
+    }
+
+    private static let openFlags: [Int32] = [
+        SQLITE_OPEN_READONLY,
+        SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE,
+    ]
+
+    private static func readMetadata(database: OpaquePointer) throws -> ExistingRepositoryMetadataSnapshot {
+        let schemaVersion = try readRequiredInt64(
+            database: database,
+            sql: "SELECT COALESCE(MAX(version), 0) FROM schema_version"
+        )
+        guard schemaVersion > 0 else {
+            throw CoreError.Db(message: "schema_version is empty")
+        }
+        guard schemaVersion <= supportedSchemaVersion else {
+            throw CoreError.Config(reason: "unsupported schema version \(schemaVersion)")
+        }
+
+        let configuredRepoPath = try readOptionalConfigString(database: database, key: "repo_path")
+        let lastOpenedAt = try readOptionalConfigInt64(database: database, key: "last_opened_at")
+        return ExistingRepositoryMetadataSnapshot(
+            schemaVersion: schemaVersion,
+            lastOpenedAt: lastOpenedAt,
+            configuredRepoPath: configuredRepoPath
+        )
+    }
+
+    private static func openMetadataDatabase(dbURL: URL, openFlags: Int32) throws -> OpaquePointer {
         var database: OpaquePointer?
-        let openResult = sqlite3_open_v2(dbURL.path, &database, SQLITE_OPEN_READONLY, nil)
+        let openResult = sqlite3_open_v2(dbURL.path, &database, openFlags, nil)
         guard openResult == SQLITE_OK, let openedDatabase = database else {
             let message = sqliteMessage(database)
             if let database {
