@@ -91,20 +91,38 @@ struct ICloudConflictMinimalSheet: View {
                     Task { await model.validateRepositoryPath() }
                 }
             }
-        case .failed(let failure):
-            VStack(alignment: .leading, spacing: 6) {
-                statusLabel(failure.title, systemImage: "exclamationmark.triangle", color: .red)
-                Text(failure.message)
+        case .failed(let mapping):
+            mappedErrorStatus(mapping)
+        }
+    }
+
+    private func mappedErrorStatus(_ mapping: CoreErrorMappingSnapshot) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            statusLabel(
+                "Repository check failed: \(mapping.kind.rawValue)",
+                systemImage: "exclamationmark.triangle",
+                color: .red
+            )
+            Text(mapping.userMessage)
+                .font(.caption)
+            Text(mapping.suggestedAction)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Text("Severity: \(mapping.severity.rawValue); Recoverability: \(mapping.recoverability.rawValue)")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            if !mapping.rawContext.isEmpty {
+                Text(mapping.rawContext)
                     .font(.system(.caption, design: .monospaced))
                     .textSelection(.enabled)
-                Text(failure.recovery)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Button("Retry repository check") {
-                    Task { await model.validateRepositoryPath() }
-                }
             }
+            Button("Retry repository check") {
+                Task { await model.validateRepositoryPath() }
+            }
+            .accessibilityIdentifier("S1-25-C1-21-retry-repository-check")
         }
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("S1-25-C1-21-error-mapping")
     }
 
     private var keepBothOption: some View {

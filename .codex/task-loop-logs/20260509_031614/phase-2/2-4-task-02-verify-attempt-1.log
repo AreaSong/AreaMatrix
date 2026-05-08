@@ -1,0 +1,91 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`2-4/task-02`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-4-sync-overview/task-02-s1-25-c1-21-error-mapping.md`
+- 实现范围：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`
+- 对照文件：`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+- 禁止触碰：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+三、完成度摘要
+
+- 已覆盖项数：12
+- 未覆盖项数：0
+- 通过项数：12
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 S1-25 页面中的 C1-21 功能点  
+  结果：通过  
+  证据：改动集中在 S1-25 sheet 的错误映射注入与展示；未实现 S1-25 的其他 Core 能力或相邻页面。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ICloudConflictMinimalValidation.swift:54`
+
+- 项目：读取页面规格、control map、Core API、C1-21 能力规格  
+  结果：通过  
+  证据：已逐项读取 4 个 Exact Docs，control map 明确 S1-25 绑定 `C1-01, C1-21`，本 task 覆盖 `C1-21`。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md`
+
+- 项目：接入 C1-21 对应 CoreBridge / 状态 / 错误映射  
+  结果：通过  
+  证据：`ICloudConflictMinimalModel` 将 `CoreError` 交给 `errorMapper.mapCoreError`，非 Core 错误包装为 `CoreError.Internal`；UI 展示 `userMessage`、`suggestedAction`、`severity`、`recoverability`、`rawContext`。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ICloudConflictMinimalValidation.swift:90`
+
+- 项目：不使用字符串 contains 作为错误映射主分支  
+  结果：通过  
+  证据：生产错误映射通过 `ErrorMappingInput(coreError:)` 的结构化 `switch CoreError` 进入 `mapCoreError`。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/CoreBridgePlaceholderState.swift:168`
+
+- 项目：用户可见功能可触发和验收  
+  结果：通过  
+  证据：sheet 在 `.failed(CoreErrorMappingSnapshot)` 状态显示 C1-21 映射块和 Retry 控件，测试覆盖可见文案和 accessibility id。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ICloudConflictMinimalSheet.swift:99`
+
+- 项目：没有 mock / fixture / 静态状态伪造真实 Core 闭环  
+  结果：通过  
+  证据：生产默认 `errorMapper` 是 `CoreBridge()`，路由注入 `fileListModel.errorMapper`；`CoreBridge.mapCoreError` 调用 Core `map_core_error`。测试 fixture 仅用于单测注入。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift:239`
+
+- 项目：未触碰 control map 之外能力  
+  结果：通过  
+  证据：当前 task 未改 `core/src/**`，未新增相邻页面或 control map 外 Core API 消费；S1-25 的 C1-01 仅作为既有前置校验被复用。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentActionRouting.swift:26`
+
+- 项目：Expected New Paths 落地  
+  结果：通过  
+  证据：S1-25 model/view/test 文件存在，测试文件已在 Xcode project Sources 中登记。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj:63`
+
+- 项目：Forbidden Touches  
+  结果：通过  
+  证据：`git diff --name-only -- core/src` 无输出，未触碰 `core/src/**`。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，model 负责状态和映射，view 负责展示，route 负责注入依赖；文件长度均低于 500 行。
+- 注释 / rustdoc / 文档同步：通过，本 task 未新增 public Rust API；UDL 已有 C1-21 结构化错误合同。
+- 错误处理与边界处理：通过，CoreError 结构化映射，非 Core Error 转 Internal，Apply 在校验失败时禁用。
+- 测试与验证覆盖：通过，新增/现有测试覆盖 CoreError 映射、非 Core 错误映射、sheet 可见错误块、真实 CoreBridge 校验不移动冲突文件。
+- 占位、硬编码、mock-only、一次性实现检查：通过，生产路径使用 CoreBridge；测试 fixture 未进入生产路径。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：通过，`BUILD SUCCEEDED`。
+- 已运行：`./dev test macos`：通过；标准 `xcodebuild test` 被本地 sandbox 的 `testmanagerd` 通信限制阻断后，脚本按仓库规则复用已构建 XCTest bundle 执行，`443 tests, 0 failures`。
+- 失败：无产品构建或测试失败。
+- 缺失：未做人工 UI 冒烟；本 task 的必需命令与 macOS 单测门禁已完成。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS

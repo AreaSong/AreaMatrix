@@ -11,6 +11,7 @@ struct MainFileActionRoutingSheet: View {
     let repoPath: String
     let isTrashAvailable: Bool
     let iCloudConflictPathValidator: any CoreRepositoryPathValidating
+    let iCloudConflictErrorMapper: any CoreErrorMapping
     let onDismiss: () -> Void
     let onRename: (Int64, String) -> Void
     let onShowExistingFile: (Int64) -> Void
@@ -65,7 +66,8 @@ struct MainFileActionRoutingSheet: View {
                         repoPath: repoPath,
                         file: file
                     ),
-                    pathValidator: iCloudConflictPathValidator
+                    pathValidator: iCloudConflictPathValidator,
+                    errorMapper: iCloudConflictErrorMapper
                 ),
                 isTrashAvailable: isTrashAvailable,
                 onCancel: onDismiss,

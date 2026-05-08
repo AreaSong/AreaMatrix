@@ -56,21 +56,88 @@ final class ICloudConflictMinimalValidationTests: XCTestCase {
     }
 
     @MainActor
-    func testS125C101FailureKeepsApplyDisabled() async {
+    func testS125C121FailureMapsCoreErrorAndKeepsApplyDisabled() async {
+        let mapping = CoreErrorMappingSnapshot.icloudConflictFixture(
+            kind: .iCloudPlaceholder,
+            rawContext: "/tmp/repo/docs/report.pdf.icloud"
+        )
         let validator = ICloudConflictRecordingPathValidator(
             result: .failure(CoreError.ICloudPlaceholder(path: "/tmp/repo/docs/report.pdf.icloud"))
         )
-        let model = ICloudConflictMinimalModel.fixture(repoPath: "/tmp/repo", validator: validator)
+        let errorMapper = ICloudConflictRecordingErrorMapper(mapping: mapping)
+        let model = ICloudConflictMinimalModel.fixture(
+            repoPath: "/tmp/repo",
+            validator: validator,
+            errorMapper: errorMapper
+        )
 
         await model.validateRepositoryPath()
+        let mappedErrors = await errorMapper.recordedErrors()
 
         guard case .failed(let failure) = model.repositoryValidationState else {
             return XCTFail("expected failed repository validation")
         }
 
-        XCTAssertEqual(failure.title, "iCloud item is not downloaded")
-        XCTAssertEqual(failure.message, "/tmp/repo/docs/report.pdf.icloud")
+        XCTAssertEqual(mappedErrors, [CoreError.ICloudPlaceholder(path: "/tmp/repo/docs/report.pdf.icloud")])
+        XCTAssertEqual(failure, mapping)
         XCTAssertFalse(model.canApplyKeepBoth)
+    }
+
+    @MainActor
+    func testS125C121NonCoreFailureMapsAsInternalError() async {
+        let validator = ICloudConflictRecordingPathValidator(
+            result: .failure(ICloudConflictTestError.staleConflictContext)
+        )
+        let errorMapper = ICloudConflictRecordingErrorMapper(
+            mapping: .icloudConflictFixture(kind: .internal, rawContext: "stale conflict context")
+        )
+        let model = ICloudConflictMinimalModel.fixture(
+            repoPath: "/tmp/repo",
+            validator: validator,
+            errorMapper: errorMapper
+        )
+
+        await model.validateRepositoryPath()
+        let mappedErrors = await errorMapper.recordedErrors()
+
+        XCTAssertEqual(mappedErrors, [CoreError.Internal(message: "stale conflict context")])
+        guard case .failed(let failure) = model.repositoryValidationState else {
+            return XCTFail("expected failed repository validation")
+        }
+        XCTAssertEqual(failure.kind, .internal)
+        XCTAssertFalse(model.canApplyKeepBoth)
+    }
+
+    @MainActor
+    func testS125C121SheetShowsMappedFailureAndRetryHook() async {
+        let mapping = CoreErrorMappingSnapshot.icloudConflictFixture(
+            kind: .permissionDenied,
+            rawContext: "/tmp/repo"
+        )
+        let validator = ICloudConflictRecordingPathValidator(
+            result: .failure(CoreError.PermissionDenied(path: "/tmp/repo"))
+        )
+        let errorMapper = ICloudConflictRecordingErrorMapper(mapping: mapping)
+        let model = ICloudConflictMinimalModel.fixture(
+            repoPath: "/tmp/repo",
+            validator: validator,
+            errorMapper: errorMapper
+        )
+
+        await model.validateRepositoryPath()
+        let view = ICloudConflictMinimalSheet(
+            model: model,
+            isTrashAvailable: true,
+            onCancel: {},
+            onApplyKeepBoth: {}
+        )
+        let body = s125MirrorDescription(of: view.body)
+
+        XCTAssertTrue(body.contains("S1-25-C1-21-error-mapping"))
+        XCTAssertTrue(body.contains("Repository check failed: PermissionDenied"))
+        XCTAssertTrue(body.contains("AreaMatrix cannot inspect this conflict source."))
+        XCTAssertTrue(body.contains("Severity: High; Recoverability: UserActionRequired"))
+        XCTAssertTrue(body.contains("S1-25-C1-21-retry-repository-check"))
     }
 
     @MainActor
@@ -126,13 +193,15 @@ private actor ICloudConflictRecordingPathValidator: CoreRepositoryPathValidating
 private extension ICloudConflictMinimalModel {
     static func fixture(
         repoPath: String,
-        validator: any CoreRepositoryPathValidating
+        validator: any CoreRepositoryPathValidating,
+        errorMapper: any CoreErrorMapping = ICloudConflictRecordingErrorMapper(mapping: .icloudConflictFixture())
     ) -> ICloudConflictMinimalModel {
         ICloudConflictMinimalModel(
             repoPath: repoPath,
             originalVersion: .original(path: "\(repoPath)/docs/report.pdf"),
             conflictedCopyVersion: .conflictedCopy(path: "\(repoPath)/docs/report (Conflicted Copy).pdf"),
-            pathValidator: validator
+            pathValidator: validator,
+            errorMapper: errorMapper
         )
     }
 }
@@ -162,4 +231,63 @@ private func makeICloudConflictTemporaryDirectory(prefix: String) throws -> URL 
         .appendingPathComponent("AreaMatrixICloudConflict-\(prefix)-\(UUID().uuidString)", isDirectory: true)
     try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
     return url
+}
+
+private enum ICloudConflictTestError: LocalizedError {
+    case staleConflictContext
+
+    var errorDescription: String? {
+        "stale conflict context"
+    }
+}
+
+private actor ICloudConflictRecordingErrorMapper: CoreErrorMapping {
+    private let mapping: CoreErrorMappingSnapshot
+    private var errors: [CoreError] = []
+
+    init(mapping: CoreErrorMappingSnapshot) {
+        self.mapping = mapping
+    }
+
+    func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
+        errors.append(error)
+        return mapping
+    }
+
+    func recordedErrors() -> [CoreError] {
+        errors
+    }
+}
+
+private extension CoreErrorMappingSnapshot {
+    static func icloudConflictFixture(
+        kind: CoreErrorKindSnapshot = .iCloudPlaceholder,
+        rawContext: String = "/tmp/repo/docs/report.pdf.icloud"
+    ) -> CoreErrorMappingSnapshot {
+        CoreErrorMappingSnapshot(
+            kind: kind,
+            userMessage: "AreaMatrix cannot inspect this conflict source.",
+            severity: .high,
+            suggestedAction: "Refresh the conflict list or download the iCloud item in Finder, then retry.",
+            recoverability: .userActionRequired,
+            rawContext: rawContext
+        )
+    }
+}
+
+private func s125MirrorDescription(of value: Any) -> String {
+    var lines: [String] = []
+    appendS125MirrorDescription(of: value, to: &lines)
+    return lines.joined(separator: "\n")
+}
+
+private func appendS125MirrorDescription(of value: Any, to lines: inout [String]) {
+    lines.append(String(describing: type(of: value)))
+    lines.append(String(describing: value))
+    for child in Mirror(reflecting: value).children {
+        if let label = child.label {
+            lines.append(label)
+        }
+        appendS125MirrorDescription(of: child.value, to: &lines)
+    }
 }

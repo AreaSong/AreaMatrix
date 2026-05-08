@@ -29,7 +29,7 @@ enum ICloudConflictRepositoryValidationState: Equatable, Sendable {
     case checking
     case ready(RepoPathValidationSnapshot, warnings: [String])
     case blocked(RepoPathValidationSnapshot, reasons: [String])
-    case failed(ICloudConflictRepositoryValidationFailure)
+    case failed(CoreErrorMappingSnapshot)
 
     var allowsKeepBothApply: Bool {
         if case .ready = self { return true }
@@ -42,52 +42,6 @@ enum ICloudConflictRepositoryValidationState: Equatable, Sendable {
     }
 }
 
-struct ICloudConflictRepositoryValidationFailure: Equatable, Sendable {
-    var title: String
-    var message: String
-    var recovery: String
-
-    init(error: Error) {
-        guard let coreError = error as? CoreError else {
-            title = "Repository could not be checked"
-            message = error.localizedDescription
-            recovery = "Retry the repository check or return to the conflict list."
-            return
-        }
-
-        switch coreError {
-        case .InvalidPath(let path):
-            title = "Repository path is invalid"
-            message = path
-            recovery = "Choose the AreaMatrix repository root and retry."
-        case .PermissionDenied(let path):
-            title = "Repository needs permission"
-            message = path
-            recovery = "Grant folder access or choose the repository again."
-        case .ICloudPlaceholder(let path):
-            title = "iCloud item is not downloaded"
-            message = path
-            recovery = "Download the item in Finder, then retry."
-        case .RepoNotInitialized(let path):
-            title = "Repository is not initialized"
-            message = path
-            recovery = "Open an initialized AreaMatrix repository."
-        case .Io(let message), .Db(let message), .Internal(let message):
-            title = "Repository check failed"
-            self.message = message
-            recovery = "Retry the repository check before applying conflict resolution."
-        case .Config(let reason), .Classify(let reason):
-            title = "Repository check failed"
-            message = reason
-            recovery = "Review repository metadata and retry."
-        case .Conflict(let path), .DuplicateFile(let path), .FileNotFound(let path):
-            title = "Repository check failed"
-            message = path
-            recovery = "Return to the conflict list and refresh the repository state."
-        }
-    }
-}
-
 @MainActor
 final class ICloudConflictMinimalModel: ObservableObject {
     @Published private(set) var repositoryValidationState: ICloudConflictRepositoryValidationState = .notChecked
@@ -97,18 +51,21 @@ final class ICloudConflictMinimalModel: ObservableObject {
     let conflictedCopyVersion: ICloudConflictVersionSnapshot
 
     private let pathValidator: any CoreRepositoryPathValidating
+    private let errorMapper: any CoreErrorMapping
     private var validationGeneration = 0
 
     init(
         repoPath: String,
         originalVersion: ICloudConflictVersionSnapshot,
         conflictedCopyVersion: ICloudConflictVersionSnapshot,
-        pathValidator: any CoreRepositoryPathValidating = CoreBridge()
+        pathValidator: any CoreRepositoryPathValidating = CoreBridge(),
+        errorMapper: any CoreErrorMapping = CoreBridge()
     ) {
         self.repoPath = repoPath
         self.originalVersion = originalVersion
         self.conflictedCopyVersion = conflictedCopyVersion
         self.pathValidator = pathValidator
+        self.errorMapper = errorMapper
     }
 
     var canApplyKeepBoth: Bool {
@@ -126,8 +83,16 @@ final class ICloudConflictMinimalModel: ObservableObject {
             repositoryValidationState = Self.state(for: validation)
         } catch {
             guard validationGeneration == currentGeneration else { return }
-            repositoryValidationState = .failed(ICloudConflictRepositoryValidationFailure(error: error))
+            repositoryValidationState = .failed(await mapValidationError(error))
         }
+    }
+
+    private func mapValidationError(_ error: Error) async -> CoreErrorMappingSnapshot {
+        if let coreError = error as? CoreError {
+            return await errorMapper.mapCoreError(coreError)
+        }
+
+        return await errorMapper.mapCoreError(CoreError.Internal(message: error.localizedDescription))
     }
 
     private static func state(for validation: RepoPathValidationSnapshot) -> ICloudConflictRepositoryValidationState {

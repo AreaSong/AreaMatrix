@@ -24,6 +24,7 @@ extension MainRepositoryContentView {
             repoPath: opening.config.repoPath,
             isTrashAvailable: OnboardingModel.isSystemTrashAvailable(),
             iCloudConflictPathValidator: CoreBridge(),
+            iCloudConflictErrorMapper: fileListModel.errorMapper,
             onDismiss: fileListModel.clearPendingActionDestination,
             onRename: { fileID, newName in
                 Task { await fileListModel.submitRename(fileID: fileID, newName: newName) }
