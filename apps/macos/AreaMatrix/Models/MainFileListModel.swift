@@ -21,6 +21,7 @@ final class MainFileListModel: ObservableObject {
     @Published var renameState: MainFileRenameState = .idle
     @Published var deleteState: MainFileDeleteState = .idle
     @Published var changeCategoryState: MainFileCategoryMoveState = .idle
+    @Published var iCloudConflictResolutionState: ICloudConflictResolutionState = .idle
 
     let repoPath: String
     let isReadOnly: Bool
@@ -30,6 +31,7 @@ final class MainFileListModel: ObservableObject {
     let fileRenamer: any CoreFileRenaming
     let fileDeleter: any CoreFileDeleting
     let fileCategoryMover: any CoreFileCategoryMoving
+    let iCloudConflictResolver: any ICloudConflictResolving
     private let changeLogLister: any CoreChangeLogListing
     private let externalChangesSyncer: any CoreExternalChangesSyncing
     let errorMapper: any CoreErrorMapping
@@ -46,6 +48,7 @@ final class MainFileListModel: ObservableObject {
         fileRenamer: any CoreFileRenaming = CoreBridge(),
         fileDeleter: any CoreFileDeleting = CoreBridge(),
         fileCategoryMover: any CoreFileCategoryMoving = CoreBridge(),
+        iCloudConflictResolver: any ICloudConflictResolving = CoreBridge(),
         changeLogLister: any CoreChangeLogListing = CoreBridge(),
         externalChangesSyncer: any CoreExternalChangesSyncing = CoreBridge(),
         errorMapper: any CoreErrorMapping,
@@ -61,6 +64,7 @@ final class MainFileListModel: ObservableObject {
         self.fileRenamer = fileRenamer
         self.fileDeleter = fileDeleter
         self.fileCategoryMover = fileCategoryMover
+        self.iCloudConflictResolver = iCloudConflictResolver
         self.changeLogLister = changeLogLister
         self.externalChangesSyncer = externalChangesSyncer
         self.errorMapper = errorMapper
@@ -466,6 +470,7 @@ final class MainFileListModel: ObservableObject {
         detailLogDiagnosticsState = .idle
         detailExternalCreateSyncState = .idle
         detailTabRequest = nil
+        iCloudConflictResolutionState = .idle
     }
 
     private func canApplyDetailLogDiagnosticsResult(fileID: Int64) -> Bool {

@@ -1,21 +1,32 @@
 import SwiftUI
 
 struct ICloudConflictMinimalSheet: View {
+    let resolutionState: ICloudConflictResolutionState
+    let resolutionCapability: ICloudConflictResolutionCapability
     let isTrashAvailable: Bool
     let onCancel: () -> Void
-    let onApplyKeepBoth: () -> Void
+    let onApply: (ICloudConflictResolutionStrategy, String?, String?) -> Void
+    let onCollectDiagnostics: () -> Void
     @StateObject private var model: ICloudConflictMinimalModel
+    @State private var selectedStrategy: ICloudConflictResolutionStrategy = .keepBoth
+    @State private var didConfirmSingleVersion = false
 
     init(
         model: ICloudConflictMinimalModel,
+        resolutionState: ICloudConflictResolutionState = .idle,
+        resolutionCapability: ICloudConflictResolutionCapability,
         isTrashAvailable: Bool,
         onCancel: @escaping () -> Void,
-        onApplyKeepBoth: @escaping () -> Void
+        onApply: @escaping (ICloudConflictResolutionStrategy, String?, String?) -> Void,
+        onCollectDiagnostics: @escaping () -> Void = {}
     ) {
         _model = StateObject(wrappedValue: model)
+        self.resolutionState = resolutionState
+        self.resolutionCapability = resolutionCapability
         self.isTrashAvailable = isTrashAvailable
         self.onCancel = onCancel
-        self.onApplyKeepBoth = onApplyKeepBoth
+        self.onApply = onApply
+        self.onCollectDiagnostics = onCollectDiagnostics
     }
 
     var body: some View {
@@ -26,8 +37,10 @@ struct ICloudConflictMinimalSheet: View {
                     .foregroundStyle(.secondary)
                 versionList
                 validationStatus
-                keepBothOption
-                singleVersionDisabledNote
+                resolutionCapabilityStatus
+                strategyOptions
+                singleVersionConfirmation
+                resolutionStatus
                 actionButtons
             }
             .task {
@@ -125,24 +138,95 @@ struct ICloudConflictMinimalSheet: View {
         .accessibilityIdentifier("S1-25-C1-21-error-mapping")
     }
 
-    private var keepBothOption: some View {
-        Label("保留两份（推荐）", systemImage: "checkmark.circle")
-            .font(.body.weight(.medium))
-            .foregroundStyle(model.canApplyKeepBoth ? .primary : .secondary)
+    @ViewBuilder
+    private var resolutionCapabilityStatus: some View {
+        if let blocker = resolutionCapability.blocker {
+            VStack(alignment: .leading, spacing: 6) {
+                statusLabel(blocker.title, systemImage: "exclamationmark.triangle", color: .orange)
+                Text(blocker.message)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Text(blocker.suggestedAction)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Text(blocker.rawContext)
+                    .font(.system(.caption, design: .monospaced))
+                    .textSelection(.enabled)
+            }
+            .accessibilityIdentifier("S1-25-core-resolution-blocked")
+        }
+    }
+
+    private var strategyOptions: some View {
+        Picker("Resolution", selection: $selectedStrategy) {
+            ForEach(ICloudConflictResolutionStrategy.allCases) { strategy in
+                Text(strategy.title).tag(strategy)
+            }
+        }
+        .pickerStyle(.radioGroup)
+        .disabled(resolutionState.isApplying)
+        .onChange(of: selectedStrategy) { _, newValue in
+            if !newValue.requiresSecondConfirmation { didConfirmSingleVersion = false }
+        }
     }
 
     @ViewBuilder
-    private var singleVersionDisabledNote: some View {
-        VStack(alignment: .leading, spacing: 5) {
-            Text("This action keeps both versions and does not move files.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            if !isTrashAvailable {
-                Text("Single-version resolution requires system Trash.")
+    private var singleVersionConfirmation: some View {
+        if selectedStrategy.requiresSecondConfirmation {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("AreaMatrix will move the other version to system Trash and keep a change-log record.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                if !isTrashAvailable {
+                    statusLabel("Single-version resolution requires system Trash", systemImage: "trash.slash", color: .orange)
+                } else {
+                    Toggle(
+                        "我理解另一份冲突副本会被移到系统废纸篓",
+                        isOn: $didConfirmSingleVersion
+                    )
+                    .disabled(resolutionState.isApplying)
+                }
+            }
+        } else {
+            VStack(alignment: .leading, spacing: 5) {
+                Text("This action keeps both versions and requires Core support to clear conflict state and write change_log.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                if !isTrashAvailable {
+                    statusLabel("Single-version resolution requires system Trash", systemImage: "trash.slash", color: .orange)
+                }
             }
         }
+    }
+
+    @ViewBuilder
+    private var resolutionStatus: some View {
+        if case .applying(_, let strategy) = resolutionState {
+            statusLabel(strategy.runningTitle, systemImage: "arrow.triangle.2.circlepath", color: .secondary)
+        } else if let failure = resolutionState.failure(fileID: resolutionFileID) {
+            applyFailureView(failure)
+        }
+    }
+
+    private func applyFailureView(_ failure: CoreErrorMappingSnapshot) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            statusLabel("Apply failed: \(failure.kind.rawValue)", systemImage: "exclamationmark.triangle", color: .red)
+            Text(failure.userMessage)
+                .font(.caption)
+            Text(failure.suggestedAction)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Text(failure.rawContext)
+                .font(.system(.caption, design: .monospaced))
+                .textSelection(.enabled)
+            HStack {
+                Button("Retry", action: submit)
+                    .disabled(!canApplySelectedStrategy)
+                Button("Cancel", action: onCancel)
+                Button("Collect Diagnostics...", action: onCollectDiagnostics)
+            }
+        }
+        .accessibilityIdentifier("S1-25-C1-21-apply-failure")
     }
 
     private var actionButtons: some View {
@@ -150,12 +234,34 @@ struct ICloudConflictMinimalSheet: View {
             Spacer()
             Button("Cancel", action: onCancel)
                 .keyboardShortcut(.cancelAction)
-                .disabled(model.repositoryValidationState.isChecking)
-            Button("Apply", action: onApplyKeepBoth)
+                .disabled(resolutionState.isApplying)
+            Button(primaryActionTitle, role: selectedStrategy.requiresSecondConfirmation ? .destructive : nil) {
+                submit()
+            }
                 .keyboardShortcut(.defaultAction)
                 .buttonStyle(.borderedProminent)
-                .disabled(!model.canApplyKeepBoth)
+                .disabled(!canApplySelectedStrategy)
         }
+    }
+
+    private var canApplySelectedStrategy: Bool {
+        guard model.canApplyKeepBoth,
+              resolutionCapability.canResolve,
+              !resolutionState.isApplying else { return false }
+        if !selectedStrategy.requiresSecondConfirmation { return true }
+        return isTrashAvailable && didConfirmSingleVersion
+    }
+
+    private var primaryActionTitle: String {
+        resolutionState.primaryTitle(fileID: resolutionFileID, selectedStrategy: selectedStrategy)
+    }
+
+    private var resolutionFileID: Int64 {
+        resolutionState.fileID ?? -1
+    }
+
+    private func submit() {
+        onApply(selectedStrategy, model.originalVersion.path, model.conflictedCopyVersion.path)
     }
 
     private func statusLabel(_ text: String, systemImage: String, color: Color) -> some View {
@@ -172,5 +278,16 @@ struct ICloudConflictMinimalSheet: View {
     private func sizeLabel(for bytes: Int64?) -> String {
         guard let bytes else { return "Unknown" }
         return ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)
+    }
+}
+
+private extension ICloudConflictResolutionState {
+    var fileID: Int64? {
+        switch self {
+        case .idle:
+            return nil
+        case .applying(let fileID, _), .failed(let fileID, _, _):
+            return fileID
+        }
     }
 }

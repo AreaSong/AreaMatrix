@@ -63,6 +63,9 @@
 		0A00000000000000000002D8 /* ICloudConflictMinimalValidation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002D9 /* ICloudConflictMinimalValidation.swift */; };
 		0A00000000000000000002DA /* ICloudConflictMinimalSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002DB /* ICloudConflictMinimalSheet.swift */; };
 		0A00000000000000000002DC /* ICloudConflictMinimalValidationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002DD /* ICloudConflictMinimalValidationTests.swift */; };
+		0A00000000000000000002DE /* ICloudConflictMinimalPageIntegrationVerifyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002DF /* ICloudConflictMinimalPageIntegrationVerifyTests.swift */; };
+		0A00000000000000000002E0 /* ICloudConflictMinimalResolution.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002E1 /* ICloudConflictMinimalResolution.swift */; };
+		0A00000000000000000002E2 /* ICloudConflictMinimalPageIntegrationTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002E3 /* ICloudConflictMinimalPageIntegrationTestSupport.swift */; };
 		0A0000000000000000000260 /* MainFileListDetailSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000261 /* MainFileListDetailSupport.swift */; };
 		0A0000000000000000000222 /* MainFileListState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000223 /* MainFileListState.swift */; };
 		0A0000000000000000000132 /* MainListFilesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000133 /* MainListFilesTests.swift */; };
@@ -292,6 +295,9 @@
 		0A00000000000000000002D9 /* ICloudConflictMinimalValidation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ICloudConflictMinimalValidation.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002DB /* ICloudConflictMinimalSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/ICloudConflictMinimalSheet.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002DD /* ICloudConflictMinimalValidationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ICloudConflictMinimalValidationTests.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000002DF /* ICloudConflictMinimalPageIntegrationVerifyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ICloudConflictMinimalPageIntegrationVerifyTests.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000002E1 /* ICloudConflictMinimalResolution.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ICloudConflictMinimalResolution.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000002E3 /* ICloudConflictMinimalPageIntegrationTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ICloudConflictMinimalPageIntegrationTestSupport.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000261 /* MainFileListDetailSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/MainFileListDetailSupport.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000223 /* MainFileListState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/MainFileListState.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000133 /* MainListFilesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/MainListFilesTests.swift; sourceTree = SOURCE_ROOT; };
@@ -655,6 +661,7 @@
 				0A00000000000000000002CB /* MainFileCategoryMoveState.swift */,
 				0A00000000000000000002CD /* MainFileActionRoutingActions.swift */,
 				0A00000000000000000002D9 /* ICloudConflictMinimalValidation.swift */,
+				0A00000000000000000002E1 /* ICloudConflictMinimalResolution.swift */,
 				0A0000000000000000000261 /* MainFileListDetailSupport.swift */,
 				0A0000000000000000000223 /* MainFileListState.swift */,
 				0A0000000000000000000245 /* MainDetailNoteState.swift */,
@@ -756,6 +763,8 @@
 				0A00000000000000000002D5 /* ChangeCategoryPageIntegrationVerifyTests.swift */,
 				0A00000000000000000002D7 /* FileActionsIntegrationVerifyTests.swift */,
 				0A00000000000000000002DD /* ICloudConflictMinimalValidationTests.swift */,
+				0A00000000000000000002DF /* ICloudConflictMinimalPageIntegrationVerifyTests.swift */,
+				0A00000000000000000002E3 /* ICloudConflictMinimalPageIntegrationTestSupport.swift */,
 				0A000000000000000000014B /* MainLoadingAdoptExistingTests.swift */,
 				0A0000000000000000000151 /* MainLoadingTestSupport.swift */,
 				0A0000000000000000000153 /* MainLoadingFixtures.swift */,
@@ -904,6 +913,7 @@
 				0A00000000000000000002CA /* MainFileCategoryMoveState.swift in Sources */,
 				0A00000000000000000002CC /* MainFileActionRoutingActions.swift in Sources */,
 				0A00000000000000000002D8 /* ICloudConflictMinimalValidation.swift in Sources */,
+				0A00000000000000000002E0 /* ICloudConflictMinimalResolution.swift in Sources */,
 				0A0000000000000000000134 /* MainListVisibleFileFiltering.swift in Sources */,
 				0A0000000000000000000122 /* OnboardingModelInputs.swift in Sources */,
 				0A0000000000000000000126 /* FileDropAdapter.swift in Sources */,
@@ -1073,6 +1083,8 @@
 					0A00000000000000000002D4 /* ChangeCategoryPageIntegrationVerifyTests.swift in Sources */,
 					0A00000000000000000002D6 /* FileActionsIntegrationVerifyTests.swift in Sources */,
 					0A00000000000000000002DC /* ICloudConflictMinimalValidationTests.swift in Sources */,
+					0A00000000000000000002DE /* ICloudConflictMinimalPageIntegrationVerifyTests.swift in Sources */,
+					0A00000000000000000002E2 /* ICloudConflictMinimalPageIntegrationTestSupport.swift in Sources */,
 					0A0000000000000000000200 /* DetailMetaPageFeatureTests.swift in Sources */,
 					0A0000000000000000000250 /* DetailMultiListFilesPageFeatureTests.swift in Sources */,
 					0A0000000000000000000252 /* DetailMultiPageIntegrationVerifyTests.swift in Sources */,

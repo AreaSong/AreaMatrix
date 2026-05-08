@@ -127,9 +127,11 @@ final class ICloudConflictMinimalValidationTests: XCTestCase {
         await model.validateRepositoryPath()
         let view = ICloudConflictMinimalSheet(
             model: model,
+            resolutionCapability: .supported,
             isTrashAvailable: true,
             onCancel: {},
-            onApplyKeepBoth: {}
+            onApply: { _, _, _ in },
+            onCollectDiagnostics: {}
         )
         let body = s125MirrorDescription(of: view.body)
 

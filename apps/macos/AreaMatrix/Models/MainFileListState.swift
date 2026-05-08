@@ -210,7 +210,7 @@ enum MainListStatusBanner: Equatable, Sendable {
     case removedFileFromIndex(fileID: Int64)
     case changedCategory(fileID: Int64, category: String)
     case changedCategoryTreeRefreshFailed(fileID: Int64, category: String)
-    case keptICloudConflictVersions(fileID: Int64)
+    case resolvedICloudConflict(fileID: Int64, strategy: ICloudConflictResolutionStrategy)
 
     var message: String {
         switch self {
@@ -230,8 +230,8 @@ enum MainListStatusBanner: Equatable, Sendable {
             return """
             Category changed to \(category). List, detail, and change log are refreshed. Retry to refresh Tree counts.
             """
-        case .keptICloudConflictVersions:
-            return "Both iCloud conflict versions kept. No files were moved or deleted."
+        case .resolvedICloudConflict(_, let strategy):
+            return strategy.successMessage
         }
     }
 
@@ -241,7 +241,7 @@ enum MainListStatusBanner: Equatable, Sendable {
             return "arrow.triangle.2.circlepath"
         case .removedSelectedFile, .unsavedNoteDraftPreserved, .changedCategoryTreeRefreshFailed:
             return "exclamationmark.triangle"
-        case .movedFileToTrash, .removedFileFromIndex, .changedCategory, .keptICloudConflictVersions:
+        case .movedFileToTrash, .removedFileFromIndex, .changedCategory, .resolvedICloudConflict:
             return "checkmark.circle"
         }
     }

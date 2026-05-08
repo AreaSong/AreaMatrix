@@ -1,0 +1,75 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`2-4/task-03`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-4-sync-overview/task-03-s1-25-page-integration-verify.md`
+- 主要验收文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：9
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：5
+- 阻塞项数：3
+
+四、逐项验收结果
+
+- 页面 feature task 覆盖：不通过  
+  证据：C1-01 路径校验已接入 `validateRepoPath`，见 `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ICloudConflictMinimalValidation.swift:75`；C1-21 错误映射已接入 `mapCoreError`，见同文件 `:90`。但整页 Apply 仍依赖未实现的 `resolveICloudConflict`，默认 CoreBridge 直接抛错，见 `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ICloudConflictMinimalResolution.swift:111`。
+
+- 页面状态、入口、退出、错误态、CoreBridge 闭环：不通过  
+  证据：入口和 sheet routing 存在，见 `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileActionRoutingActions.swift:32`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainFileActionRoutingSheet.swift:66`。但 Apply 成功路径调用的 resolver 默认不可用，无法完成 page spec 要求的清除冲突状态、写 change_log、Trash 单保留策略。
+
+- mock / fixture / 硬编码状态移除：不通过  
+  证据：生产默认 `CoreBridge.resolveICloudConflict` 是硬编码失败占位，明确写着 “no resolve endpoint”，见 `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ICloudConflictMinimalResolution.swift:114`。成功集成测试使用 `S125RecordingMainCore` fixture 返回 `.resolved`，见 `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ICloudConflictMinimalPageIntegrationVerifyTests.swift:18`。
+
+- 不新增 control map 外能力：通过  
+  证据：control map 对 S1-25 只声明 C1-01、C1-21，见 `/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:40`；测试也断言未声明 C1-23 / C1-25，见 `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ICloudConflictMinimalPageIntegrationVerifyTests.swift:5`。
+
+- Expected New Paths：通过  
+  证据：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`apps/macos/AreaMatrix.xcodeproj/project.pbxproj` 均已有本 task 相关变更或新增文件。
+
+- Forbidden Touches：通过  
+  证据：`git status --short -- core/src ...` 未显示 `core/src/**` 变更。
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过。页面 UI 与 routing 拆分清楚，但核心成功路径停在 `ICloudConflictResolving` 协议和默认 hard-coded failure，未形成真实业务闭环。
+- 注释 / rustdoc / 文档同步：不通过。UDL 命名空间列出了 `list_icloud_conflicts` 和 `map_core_error`，但没有单项 resolve endpoint，见 `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:1`；page spec 又要求 Apply 写 change_log / Trash，见 `/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-25-icloud-conflict-min.md:74`。
+- 错误处理与边界处理：不通过。错误映射和失败留 sheet 有实现，见 `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ICloudConflictMinimalSheet.swift:188`；但 Trash、change_log、清除冲突状态没有真实 Core 证据。
+- 测试与验证覆盖：不通过。必需 `xcodebuild test` 实际失败，且成功路径测试用 fixture 代替真实 CoreBridge。
+- 占位、硬编码、mock-only、一次性实现检查：不通过。默认 resolver 是显式占位失败路径，不能作为最终验收通过证据。
+
+六、阻塞项
+
+- P0：S1-25 Apply 真实闭环不存在  
+  说明：page spec 要求 keep both 清除冲突状态并写 change_log，单保留策略走 Trash 并写 change_log；当前默认 CoreBridge 直接抛 `Internal`，页面无法成功 Apply。  
+  路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ICloudConflictMinimalResolution.swift:111`  
+  为什么导致不通过：Real Core 页面不得用占位或阻塞 stub 通过最终验收。
+
+- P1：成功路径测试是 fixture-only，不能证明生产路径  
+  说明：`testS125EntryCancelAndKeepBothResolutionRefreshesSourceAndChangeLog` 注入 `S125RecordingMainCore` 并返回 `.resolved`，没有覆盖默认 CoreBridge 的真实成功路径。  
+  路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ICloudConflictMinimalPageIntegrationVerifyTests.swift:18`  
+  为什么导致不通过：测试证明的是测试替身行为，不是 S1-25 生产闭环。
+
+- P1：任务要求的验证命令未通过  
+  说明：`xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO` 返回 code 65。错误摘要：`Failed to establish communication with the test runner`，底层为 `com.apple.testmanagerd.control ... Sandbox restriction`。  
+  路径：验证命令输出  
+  为什么导致不通过：必需验证失败，无法证明当前改动可测试通过。
+
+七、验证情况
+
+- 已运行：`xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+- 结果：失败，exit code 65
+- 通过：未发现 `core/src/**` Forbidden Touches；Expected New Paths 已落地
+- 失败：macOS XCTest runner 通信失败；生产 Apply 闭环缺失
+- 缺失：未获得通过的 macOS 测试结果；未获得真实 Core iCloud conflict resolve / Trash / change_log 成功证据
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+VERIFY_RESULT: FAIL

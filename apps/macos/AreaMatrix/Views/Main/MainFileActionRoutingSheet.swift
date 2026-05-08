@@ -8,6 +8,8 @@ struct MainFileActionRoutingSheet: View {
     let renameState: MainFileRenameState
     let deleteState: MainFileDeleteState
     let changeCategoryState: MainFileCategoryMoveState
+    let iCloudConflictResolutionState: ICloudConflictResolutionState
+    let iCloudConflictResolutionCapability: ICloudConflictResolutionCapability
     let repoPath: String
     let isTrashAvailable: Bool
     let iCloudConflictPathValidator: any CoreRepositoryPathValidating
@@ -20,7 +22,12 @@ struct MainFileActionRoutingSheet: View {
     let onRenameFirstFromChangeCategory: (Int64, String) -> Void
     let onOpenChangeCategoryPermissionRecovery: () -> Void
     let onDelete: (Int64, MainFileDeleteOperation) -> Void
-    let onApplyKeepBothICloudConflict: (Int64) -> Void
+    let onApplyICloudConflict: (
+        Int64,
+        ICloudConflictResolutionStrategy,
+        String?,
+        String?
+    ) -> Void
     let onCollectDiagnostics: () -> Void
 
     var body: some View {
@@ -69,10 +76,15 @@ struct MainFileActionRoutingSheet: View {
                     pathValidator: iCloudConflictPathValidator,
                     errorMapper: iCloudConflictErrorMapper
                 ),
+                resolutionState: iCloudConflictResolutionState,
+                resolutionCapability: iCloudConflictResolutionCapability,
                 isTrashAvailable: isTrashAvailable,
                 onCancel: onDismiss,
-                onApplyKeepBoth: {
-                    onApplyKeepBothICloudConflict(fileID)
+                onApply: { strategy, originalPath, conflictedCopyPath in
+                    onApplyICloudConflict(fileID, strategy, originalPath, conflictedCopyPath)
+                },
+                onCollectDiagnostics: {
+                    onCollectDiagnostics()
                 }
             )
         }

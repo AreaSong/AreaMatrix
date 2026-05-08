@@ -21,6 +21,8 @@ extension MainRepositoryContentView {
             renameState: fileListModel.renameState,
             deleteState: fileListModel.deleteState,
             changeCategoryState: fileListModel.changeCategoryState,
+            iCloudConflictResolutionState: fileListModel.iCloudConflictResolutionState,
+            iCloudConflictResolutionCapability: fileListModel.iCloudConflictResolver.iCloudConflictResolutionCapability,
             repoPath: opening.config.repoPath,
             isTrashAvailable: OnboardingModel.isSystemTrashAvailable(),
             iCloudConflictPathValidator: CoreBridge(),
@@ -58,8 +60,15 @@ extension MainRepositoryContentView {
             onDelete: { fileID, operation in
                 Task { await fileListModel.submitDelete(fileID: fileID, operation: operation) }
             },
-            onApplyKeepBothICloudConflict: { fileID in
-                fileListModel.applyKeepBothICloudConflict(fileID: fileID)
+            onApplyICloudConflict: { fileID, strategy, originalPath, conflictedCopyPath in
+                Task {
+                    await fileListModel.applyICloudConflictResolution(
+                        fileID: fileID,
+                        strategy: strategy,
+                        originalPath: originalPath,
+                        conflictedCopyPath: conflictedCopyPath
+                    )
+                }
             },
             onCollectDiagnostics: {
                 Task {

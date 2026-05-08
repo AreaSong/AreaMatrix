@@ -34,21 +34,98 @@ extension MainFileListModel {
               let file = file(for: fileID),
               file.hasICloudConflictCopySignal,
               writeActionDisabledReason(fileID: fileID) == nil else { return }
+        iCloudConflictResolutionState = .idle
         pendingActionDestination = .iCloudConflict(fileID: fileID)
     }
 
-    func applyKeepBothICloudConflict(fileID: Int64) {
+    func applyICloudConflictResolution(
+        fileID: Int64,
+        strategy: ICloudConflictResolutionStrategy,
+        originalPath: String?,
+        conflictedCopyPath: String?
+    ) async {
         guard pendingActionDestination == .iCloudConflict(fileID: fileID) else { return }
+        guard !iCloudConflictResolutionState.isApplying,
+              writeActionDisabledReason(fileID: fileID) == nil else { return }
+
+        if let blocker = iCloudConflictResolver.iCloudConflictResolutionCapability.blocker {
+            let mapping = await mapCoreError(blocker.coreError)
+            iCloudConflictResolutionState = .failed(fileID: fileID, strategy: strategy, mapping)
+            return
+        }
+
+        iCloudConflictResolutionState = .applying(fileID: fileID, strategy: strategy)
+        clearDiagnosticsState()
+        do {
+            let result = try await iCloudConflictResolver.resolveICloudConflict(ICloudConflictResolutionRequest(
+                repoPath: repoPath,
+                fileID: fileID,
+                strategy: strategy,
+                originalPath: originalPath,
+                conflictedCopyPath: conflictedCopyPath
+            ))
+            try validateICloudConflictResolution(result, fileID: fileID)
+            await refreshAfterICloudConflictResolution(fileID: result.focusFileID ?? fileID, strategy: strategy)
+        } catch {
+            let mapping = await mapCoreError(error)
+            guard pendingActionDestination == .iCloudConflict(fileID: fileID) else { return }
+            iCloudConflictResolutionState = .failed(fileID: fileID, strategy: strategy, mapping)
+        }
+    }
+
+    func applyKeepBothICloudConflict(fileID: Int64) async {
+        let versions = iCloudConflictVersions(for: fileID)
+        await applyICloudConflictResolution(
+            fileID: fileID,
+            strategy: .keepBoth,
+            originalPath: versions.original,
+            conflictedCopyPath: versions.conflictedCopy
+        )
+    }
+
+    func iCloudConflictVersions(for fileID: Int64) -> (original: String?, conflictedCopy: String?) {
+        let file = file(for: fileID)
+        return (
+            ICloudConflictVersionSnapshot.originalCandidate(repoPath: repoPath, file: file).path,
+            ICloudConflictVersionSnapshot.conflictedCandidate(repoPath: repoPath, file: file).path
+        )
+    }
+
+    private func validateICloudConflictResolution(
+        _ result: ICloudConflictResolutionResult,
+        fileID: Int64
+    ) throws {
+        guard result.didClearConflictState else {
+            throw CoreError.Internal(message: "iCloud conflict \(fileID) did not clear conflict state")
+        }
+        guard result.didWriteChangeLog else {
+            throw CoreError.Internal(message: "iCloud conflict \(fileID) did not write change_log")
+        }
+    }
+
+    private func refreshAfterICloudConflictResolution(
+        fileID: Int64,
+        strategy: ICloudConflictResolutionStrategy
+    ) async {
+        await loadCurrentCategory(currentCategory, focusingOn: fileID)
+        if selection.singleFileID == fileID {
+            await loadChangeLog(fileID: fileID)
+        }
+        iCloudConflictResolutionState = .idle
         pendingActionDestination = nil
-        statusBanner = .keptICloudConflictVersions(fileID: fileID)
+        statusBanner = .resolvedICloudConflict(fileID: fileID, strategy: strategy)
     }
 
     func clearPendingActionDestination() {
-        if !renameState.isRenaming && !deleteState.isDeleting && !isMovingCategory {
+        if !renameState.isRenaming &&
+            !deleteState.isDeleting &&
+            !isMovingCategory &&
+            !iCloudConflictResolutionState.isApplying {
             pendingActionDestination = nil
             renameState = .idle
             deleteState = .idle
             changeCategoryState = .idle
+            iCloudConflictResolutionState = .idle
         }
     }
 

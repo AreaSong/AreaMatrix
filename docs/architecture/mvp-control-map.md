@@ -37,7 +37,7 @@
 | S1-22 | conflict-duplicate | C1-09 | `import_file` | `files` | hash source + target | DuplicateFile | `2-2/task-22` | Real Core |
 | S1-23 | conflict-name | C1-10 | `import_file`, `rename_file` | `files`, `change_log` | conflict rename | Conflict, InvalidPath | `2-2/task-23` | Real Core |
 | S1-24 | replace-confirm | C1-09, C1-10 | `import_file`, `delete_file` | `files`, `change_log` | Trash / overwrite target | DuplicateFile, Conflict, Io | `2-2/task-24`, `2-2/task-25`, `2-2/task-26` | Real Core |
-| S1-25 | icloud-conflict-min | C1-01, C1-21 | `validate_repo_path`, `import_file` | none | iCloud placeholder probe | ICloudPlaceholder | `2-4/task-01`, `2-4/task-02`, `2-4/task-03` | Real Core |
+| S1-25 | icloud-conflict-min | C1-01, C1-21 | `validate_repo_path`, `map_core_error` | none | iCloud placeholder probe | ICloudPlaceholder, Internal | `2-4/task-01`, `2-4/task-02`, `2-4/task-03` | Real Core |
 | S1-26 | settings-general | C1-04, C1-07 | `load_config`, `update_config` | `repo_config` | app config | Config | `2-3/task-12`, `2-3/task-13`, `2-3/task-14` | Real Core |
 | S1-27 | settings-repository | C1-04, C1-08, C1-20 | `load_config`, `update_config` | `repo_config` | overview output path | Config, PermissionDenied | `2-3/task-15`, `2-3/task-16`, `2-3/task-17`, `2-3/task-18` | Real Core |
 | S1-28 | settings-classifier | C1-04, C1-05 | `load_config`, `predict_category` | `repo_config` | classifier.yaml | Config, Classify | `2-3/task-19`, `2-3/task-20`, `2-3/task-21` | Real Core |
