@@ -174,8 +174,12 @@ actor CoreBridge {
         throw CoreBridgeError.generatedBindingsUnavailable(boundary: boundary, state: placeholderState)
     }
 
-    func getVersion() async throws -> Never {
-        try requireGeneratedBindings(for: .getVersion)
+    func getVersion() async throws -> String {
+        getCoreVersion()
+    }
+
+    func coreVersion() async throws -> String {
+        getCoreVersion()
     }
 
     func initializeLogging(level: String) async throws -> Never {
@@ -320,6 +324,7 @@ actor CoreBridge {
 extension CoreBridge:
     CoreConfigurationLoading,
     CoreConfigurationUpdating,
+    CoreVersionReading,
     CoreDiagnosticsCollecting,
     CoreErrorMapping,
     CoreCategoryPredicting,
@@ -358,6 +363,10 @@ private func predictCoreCategory(repoPath: String, filename: String) throws -> C
 
 private func createCoreDiagnosticsSnapshot(repoPath: String) throws -> DiagnosticsSnapshot {
     try createDiagnosticsSnapshot(repoPath: repoPath)
+}
+
+private func getCoreVersion() -> String {
+    getVersion()
 }
 
 private func listCoreFiles(repoPath: String, filter: FileFilter) throws -> [FileEntry] {

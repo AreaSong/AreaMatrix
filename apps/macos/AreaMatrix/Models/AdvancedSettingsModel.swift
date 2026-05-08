@@ -86,11 +86,21 @@ final class AdvancedSettingsModel: ObservableObject {
     @Published private(set) var pendingRootOverviewStatus: RootOverviewFileStatus?
     @Published private(set) var isReplaceConfirmationPending = false
     @Published private(set) var isSaving = false
+    @Published private(set) var versionInfo = AdvancedSettingsVersionInfo.unknown
+    @Published private(set) var versionError: AdvancedSettingsError?
+    @Published private(set) var diagnosticsState: AdvancedSettingsDiagnosticsState = .idle
+    @Published private(set) var actionFeedback: AdvancedSettingsActionFeedback?
 
     let repoPath: String
     private let loader: any CoreConfigurationLoading
     private let updater: any CoreConfigurationUpdating
     private let rootOverviewInspector: any RootOverviewFileInspecting
+    private let diagnosticsCollector: any CoreDiagnosticsCollecting
+    private let appVersionReader: any AppVersionReading
+    private let coreVersionReader: any CoreVersionReading
+    private let metadataReader: any ExistingRepositoryMetadataReading
+    private let logsOpener: any AdvancedSettingsLogFolderOpening
+    private let summaryCopier: any AdvancedSettingsDiagnosticSummaryCopying
     private let errorMapper: any CoreErrorMapping
     private var pendingRetry: AdvancedSettingsPendingSave?
 
@@ -99,12 +109,25 @@ final class AdvancedSettingsModel: ObservableObject {
         loader: any CoreConfigurationLoading = CoreBridge(),
         updater: any CoreConfigurationUpdating = CoreBridge(),
         rootOverviewInspector: any RootOverviewFileInspecting = LocalRootOverviewFileInspector(),
+        diagnosticsCollector: any CoreDiagnosticsCollecting = CoreBridge(),
+        appVersionReader: any AppVersionReading = BundleAppVersionReader(),
+        coreVersionReader: any CoreVersionReading = CoreBridge(),
+        metadataReader: any ExistingRepositoryMetadataReading = SQLiteExistingRepositoryMetadataReader(),
+        logsOpener: any AdvancedSettingsLogFolderOpening = NSWorkspaceAdvancedSettingsLogFolderOpener(),
+        summaryCopier: any AdvancedSettingsDiagnosticSummaryCopying =
+            NSPasteboardAdvancedSettingsDiagnosticSummaryCopier(),
         errorMapper: any CoreErrorMapping = CoreBridge()
     ) {
         self.repoPath = repoPath
         self.loader = loader
         self.updater = updater
         self.rootOverviewInspector = rootOverviewInspector
+        self.diagnosticsCollector = diagnosticsCollector
+        self.appVersionReader = appVersionReader
+        self.coreVersionReader = coreVersionReader
+        self.metadataReader = metadataReader
+        self.logsOpener = logsOpener
+        self.summaryCopier = summaryCopier
         self.errorMapper = errorMapper
     }
 
@@ -130,6 +153,14 @@ final class AdvancedSettingsModel: ObservableObject {
         pendingRetry = nil
         pendingRootOverviewStatus = nil
         isReplaceConfirmationPending = false
+        diagnosticsState = .idle
+        actionFeedback = nil
+        versionError = nil
+        versionInfo = AdvancedSettingsVersionInfo(
+            appVersion: appVersionReader.appVersion(),
+            coreVersion: "Unknown",
+            repoSchemaVersion: nil
+        )
 
         do {
             let config = try await loader.loadConfig(repoPath: repoPath)
@@ -137,10 +168,65 @@ final class AdvancedSettingsModel: ObservableObject {
             savedConfig = config
             draft = AdvancedSettingsDraft(config: config)
             loadState = .loaded
+            await refreshVersionInfo()
         } catch {
             savedConfig = nil
             draft = nil
             loadState = .failed(await mappedError(for: error, fallbackMessage: "Unable to load advanced settings"))
+        }
+    }
+
+    func requestDiagnosticsExport() {
+        actionFeedback = nil
+        guard !diagnosticsState.isCollecting else { return }
+        diagnosticsState = .confirmingPrivacy
+    }
+
+    func cancelDiagnosticsExport() {
+        if diagnosticsState.isConfirmingPrivacy {
+            diagnosticsState = .idle
+        }
+    }
+
+    func collectDiagnostics() async {
+        guard diagnosticsState.isConfirmingPrivacy else { return }
+
+        diagnosticsState = .collecting
+        actionFeedback = nil
+        do {
+            let snapshot = try await diagnosticsCollector.createDiagnosticsSnapshot(repoPath: repoPath)
+            diagnosticsState = .collected(snapshot)
+        } catch {
+            diagnosticsState = .failed(await mappedError(
+                for: error,
+                fallbackMessage: "Diagnostics could not be exported"
+            ))
+        }
+    }
+
+    func openLogsFolder() {
+        actionFeedback = nil
+        do {
+            let openedPath = try logsOpener.openLogsFolder(repoPath: repoPath)
+            actionFeedback = .success("Logs folder opened: \(openedPath)")
+        } catch {
+            actionFeedback = .failed(AdvancedSettingsError(
+                message: "Open logs folder failed",
+                recovery: "Check that .areamatrix/logs exists, then retry after Core logging is initialized."
+            ))
+        }
+    }
+
+    func copyDiagnosticSummary() {
+        actionFeedback = nil
+        do {
+            try summaryCopier.copyDiagnosticSummary(diagnosticSummary())
+            actionFeedback = .success("Diagnostic summary copied.")
+        } catch {
+            actionFeedback = .failed(AdvancedSettingsError(
+                message: "Diagnostic summary could not be copied",
+                recovery: "Copy the version and repository rows manually after checking clipboard permission."
+            ))
         }
     }
 
@@ -236,6 +322,30 @@ final class AdvancedSettingsModel: ObservableObject {
         }
     }
 
+    private func refreshVersionInfo() async {
+        var info = AdvancedSettingsVersionInfo(
+            appVersion: appVersionReader.appVersion(),
+            coreVersion: "Unknown",
+            repoSchemaVersion: nil
+        )
+        var failures: [AdvancedSettingsError] = []
+
+        do {
+            info.coreVersion = try await coreVersionReader.coreVersion()
+        } catch {
+            failures.append(await mappedError(for: error, fallbackMessage: "Core version unavailable"))
+        }
+
+        do {
+            info.repoSchemaVersion = try await metadataReader.metadata(repoPath: repoPath).schemaVersion
+        } catch {
+            failures.append(await mappedError(for: error, fallbackMessage: "Repo schema version unavailable"))
+        }
+
+        versionInfo = info
+        versionError = Self.combinedVersionError(failures)
+    }
+
     private func mappedError(for error: Error, fallbackMessage: String) async -> AdvancedSettingsError {
         if let coreError = error as? CoreError {
             let mapping = await errorMapper.mapCoreError(coreError)
@@ -246,6 +356,33 @@ final class AdvancedSettingsModel: ObservableObject {
         }
 
         return AdvancedSettingsError(message: fallbackMessage, recovery: error.localizedDescription)
+    }
+
+    private static func combinedVersionError(_ failures: [AdvancedSettingsError]) -> AdvancedSettingsError? {
+        guard let first = failures.first else { return nil }
+        guard failures.count > 1 else { return first }
+
+        return AdvancedSettingsError(
+            message: "Some diagnostics values are unavailable",
+            recovery: failures.map(\.message).joined(separator: "; ")
+        )
+    }
+
+    private func diagnosticSummary() -> String {
+        let schema = versionInfo.repoSchemaVersionLabel
+        let overview = draft?.overviewOutput.snapshotValue ?? "Unknown"
+        let replace = draft?.allowReplaceDuringImport == true ? "true" : "false"
+        let repoName = URL(fileURLWithPath: repoPath, isDirectory: true).lastPathComponent
+        return """
+        AreaMatrix diagnostic summary
+        Repository: \(repoName.isEmpty ? "Unknown" : repoName)
+        App version: \(versionInfo.appVersion)
+        Core version: \(versionInfo.coreVersion)
+        Repo schema version: \(schema)
+        Overview output: \(overview)
+        Allow replace during import: \(replace)
+        Diagnostics exclude original file contents and are not uploaded automatically.
+        """
     }
 }
 

@@ -11,6 +11,13 @@ struct AdvancedSettingsPane: View {
         loader: any CoreConfigurationLoading = CoreBridge(),
         updater: any CoreConfigurationUpdating = CoreBridge(),
         rootOverviewInspector: any RootOverviewFileInspecting = LocalRootOverviewFileInspector(),
+        diagnosticsCollector: any CoreDiagnosticsCollecting = CoreBridge(),
+        appVersionReader: any AppVersionReading = BundleAppVersionReader(),
+        coreVersionReader: any CoreVersionReading = CoreBridge(),
+        metadataReader: any ExistingRepositoryMetadataReading = SQLiteExistingRepositoryMetadataReader(),
+        logsOpener: any AdvancedSettingsLogFolderOpening = NSWorkspaceAdvancedSettingsLogFolderOpener(),
+        summaryCopier: any AdvancedSettingsDiagnosticSummaryCopying =
+            NSPasteboardAdvancedSettingsDiagnosticSummaryCopier(),
         errorMapper: any CoreErrorMapping = CoreBridge()
     ) {
         _model = StateObject(wrappedValue: AdvancedSettingsModel(
@@ -18,6 +25,12 @@ struct AdvancedSettingsPane: View {
             loader: loader,
             updater: updater,
             rootOverviewInspector: rootOverviewInspector,
+            diagnosticsCollector: diagnosticsCollector,
+            appVersionReader: appVersionReader,
+            coreVersionReader: coreVersionReader,
+            metadataReader: metadataReader,
+            logsOpener: logsOpener,
+            summaryCopier: summaryCopier,
             errorMapper: errorMapper
         ))
         self.onOpenRecoveryTools = onOpenRecoveryTools
@@ -31,6 +44,22 @@ struct AdvancedSettingsPane: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .task {
             await model.load()
+        }
+        .confirmationDialog(
+            "Export diagnostics?",
+            isPresented: diagnosticsConfirmationBinding
+        ) {
+            Button("Cancel", role: .cancel, action: model.cancelDiagnosticsExport)
+            Button("Export diagnostics") {
+                Task {
+                    await model.collectDiagnostics()
+                }
+            }
+        } message: {
+            Text(
+                "Diagnostics do not include your original file contents, are not uploaded automatically, " +
+                    "and paths and usernames are redacted before display."
+            )
         }
         .sheet(isPresented: rootOverviewBinding) {
             AdvancedRootOverviewConfirmationSheet(
@@ -144,11 +173,129 @@ struct AdvancedSettingsPane: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
                 saveErrorBanner
+                versionErrorBanner
+                diagnosticsStatusBanner
+                actionFeedbackBanner
+                diagnosticsSection
+                logsSection
                 dangerZoneSection
             }
             .frame(maxWidth: 700, alignment: .leading)
             .padding(.horizontal, 34)
             .padding(.vertical, 28)
+        }
+    }
+
+    @ViewBuilder
+    private var versionErrorBanner: some View {
+        if let error = model.versionError {
+            AdvancedSettingsInlineBanner(error: error, tint: .orange)
+        }
+    }
+
+    @ViewBuilder
+    private var diagnosticsStatusBanner: some View {
+        switch model.diagnosticsState {
+        case .idle, .confirmingPrivacy:
+            EmptyView()
+        case .collecting:
+            HStack(spacing: 10) {
+                ProgressView()
+                    .controlSize(.small)
+                Text("Preparing redacted diagnostics...")
+            }
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.blue.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
+        case .collected(let snapshot):
+            VStack(alignment: .leading, spacing: 8) {
+                Label("Diagnostics exported", systemImage: "checkmark.circle")
+                    .foregroundStyle(.green)
+                Text(snapshot.snapshotPath)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .textSelection(.enabled)
+                ForEach(snapshot.warnings.prefix(3), id: \.self) { warning in
+                    Text(warning)
+                        .font(.callout)
+                        .foregroundStyle(.orange)
+                }
+            }
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.green.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
+            .accessibilityElement(children: .combine)
+        case .failed(let error):
+            AdvancedSettingsInlineBanner(error: error, tint: .red)
+        }
+    }
+
+    @ViewBuilder
+    private var actionFeedbackBanner: some View {
+        if let feedback = model.actionFeedback {
+            switch feedback {
+            case .success(let message):
+                Label(message, systemImage: "checkmark.circle")
+                    .foregroundStyle(.green)
+                    .padding(12)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color.green.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
+                    .accessibilityElement(children: .combine)
+            case .failed(let error):
+                AdvancedSettingsInlineBanner(error: error, tint: .red)
+            }
+        }
+    }
+
+    private var diagnosticsSection: some View {
+        AdvancedSettingsSection(title: "Diagnostics") {
+            AdvancedSettingsKeyValueRow(label: "App version", value: model.versionInfo.appVersion)
+            AdvancedSettingsKeyValueRow(label: "Core version", value: model.versionInfo.coreVersion)
+            AdvancedSettingsKeyValueRow(
+                label: "Repo schema version",
+                value: model.versionInfo.repoSchemaVersionLabel
+            )
+
+            Button {
+                model.requestDiagnosticsExport()
+            } label: {
+                Label(diagnosticsButtonTitle, systemImage: "doc.badge.gearshape")
+            }
+            .disabled(model.diagnosticsState.isCollecting)
+            .accessibilityIdentifier("S1-30-export-diagnostics")
+
+            Text(
+                "Diagnostics do not include your original file contents, are not uploaded automatically, " +
+                    "and paths and usernames are redacted before display."
+            )
+            .font(.callout)
+            .foregroundStyle(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private var logsSection: some View {
+        AdvancedSettingsSection(title: "Logs") {
+            HStack(spacing: 10) {
+                Button {
+                    model.openLogsFolder()
+                } label: {
+                    Label("Open logs folder", systemImage: "folder")
+                }
+                .disabled(model.diagnosticsState.isCollecting)
+                .accessibilityIdentifier("S1-30-open-logs-folder")
+
+                Button {
+                    model.copyDiagnosticSummary()
+                } label: {
+                    Label("Copy diagnostic summary", systemImage: "doc.on.doc")
+                }
+                .accessibilityIdentifier("S1-30-copy-diagnostic-summary")
+            }
+
+            Text("Diagnostics do not include your original file contents.")
+                .font(.callout)
+                .foregroundStyle(.secondary)
         }
     }
 
@@ -283,79 +430,19 @@ struct AdvancedSettingsPane: View {
             }
         )
     }
-}
 
-struct AdvancedSettingsRecoveryToolsSection: View {
-    let onOpenRecoveryTools: () -> Void
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("Recovery tools")
-                .font(.headline)
-            Button {
-                onOpenRecoveryTools()
-            } label: {
-                Label("Open recovery tools...", systemImage: "arrow.clockwise.circle")
+    private var diagnosticsConfirmationBinding: Binding<Bool> {
+        Binding(
+            get: { model.diagnosticsState.isConfirmingPrivacy },
+            set: { isPresented in
+                if !isPresented {
+                    model.cancelDiagnosticsExport()
+                }
             }
-            .accessibilityIdentifier("S1-30-C1-16-open-recovery-tools")
-            Text(
-                "Startup cleanup and staging recovery stay in the dedicated recovery flow " +
-                    "with confirmation before metadata actions."
-            )
-                .font(.callout)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-}
-
-private struct AdvancedSettingsSection<Content: View>: View {
-    let title: String
-    private let content: Content
-
-    init(title: String, @ViewBuilder content: () -> Content) {
-        self.title = title
-        self.content = content()
+        )
     }
 
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text(title)
-                .font(.headline)
-            content
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-}
-
-private struct AdvancedRootOverviewConfirmationSheet: View {
-    let status: RootOverviewFileStatus
-    let onCancel: () -> Void
-    let onEnable: () -> Void
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Enable root AREAMATRIX.md?")
-                .font(.title2.weight(.semibold))
-            Text(
-                "AreaMatrix may create or update AREAMATRIX.md at the repository root " +
-                    "on the next overview regeneration. " +
-                    "Existing content outside the managed marker block is preserved. README.md is never modified."
-            )
-            .fixedSize(horizontal: false, vertical: true)
-            Text(status.confirmationDetail)
-                .foregroundStyle(status.canEnableRootOverview ? Color.secondary : Color.red)
-                .fixedSize(horizontal: false, vertical: true)
-            HStack {
-                Spacer()
-                Button("Cancel", action: onCancel)
-                Button("Enable root file", action: onEnable)
-                    .buttonStyle(.borderedProminent)
-                    .disabled(!status.canEnableRootOverview)
-            }
-        }
-        .padding(24)
-        .frame(width: 520)
+    private var diagnosticsButtonTitle: String {
+        model.diagnosticsState.isCollecting ? "Exporting diagnostics..." : "Export diagnostics..."
     }
 }

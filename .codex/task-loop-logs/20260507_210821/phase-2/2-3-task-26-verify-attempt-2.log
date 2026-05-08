@@ -1,0 +1,49 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`2-3/task-26`
+- Task 文件：[/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-3-detail-settings/task-26-s1-30-page-integration-verify.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-3-detail-settings/task-26-s1-30-page-integration-verify.md:1)
+- 覆盖实现：[/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Settings/AdvancedSettingsPane.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Settings/AdvancedSettingsPane.swift:3)、[/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/AdvancedSettingsModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/AdvancedSettingsModel.swift:75)、[/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/AdvancedSettingsPageIntegrationVerifyTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/AdvancedSettingsPageIntegrationVerifyTests.swift:4)
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 本页 page-feature task 覆盖：通过。Manifest 依赖为 `2-3/task-23/24/25`，分别绑定 C1-04、C1-16、C1-20；代码覆盖配置读取/保存、恢复入口、overview 输出策略，测试覆盖整页闭环。
+- 页面状态、入口、退出、错误态、CoreBridge 调用：通过。`GeneralSettingsView` 的 Advanced tab 进入 S1-30，`AdvancedSettingsPane` 默认注入 `CoreBridge()`，`AdvancedSettingsModel.load/persist/collectDiagnostics` 分别调用真实 config、diagnostics、error mapping；恢复入口路由到 `dbRepairConfirm`，不直接执行恢复。
+- mock、fixture、硬编码状态：通过。生产路径未以 mock 伪造通过；测试中 fixture 仅用于 XCTest。真实 CoreBridge 测试覆盖 `initializeEmptyRepository`、`loadConfig`、`updateConfig`、`importIndexedFile` 后生成 root/generated overview 且不改 `README.md`。
+- control map 越界：通过。S1-30 仅消费 C1-04、C1-16、C1-20；未发现 `reset database`、`delete metadata`、直接 `reindex` 或 README 生成入口。
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。S1-30 model/view/support 文件均低于 500 行，状态拆分清楚。
+- 注释 / rustdoc / 文档同步：通过。本任务未新增 Rust public API；UDL 已包含 `load_config`、`update_config`、`recover_on_startup`、`reindex_from_filesystem`、`create_diagnostics_snapshot` 和 `RepoConfig.allow_replace_during_import`。
+- 错误处理与边界处理：通过。load/save/diagnostics/logs failure 均有错误态；save 失败回滚到 last saved snapshot，并提供 retry。
+- 测试与验证覆盖：通过。`./dev test macos` 在标准 `xcodebuild test` 被 sandbox 阻断后复用 XCTest bundle，393 tests 通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。生产代码使用 CoreBridge 和平台服务；未发现 mock-only 闭环。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：构建/链接完成，但测试 runner 被本地 sandbox 阻断，错误为 `com.apple.testmanagerd.control`。
+- 已运行：`./dev test macos`：通过；脚本识别同一 sandbox 限制后执行 `xcrun xctest`，`AreaMatrixTests.xctest` 执行 393 tests，0 failures。
+- 缺失：无。标准 test 的 runner 阻断已按 repo-local validation-driver 的 macOS 规则补跑。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+
+VERIFY_RESULT: PASS
