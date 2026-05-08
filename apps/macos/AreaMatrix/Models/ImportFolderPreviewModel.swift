@@ -180,7 +180,7 @@ final class ImportFolderPreviewModel: ObservableObject {
         let isNewRequest = self.request?.id != request.id
         self.request = request
         if isNewRequest {
-            selectedStorageMode = .copy
+            selectedStorageMode = request.defaultStorageMode
             selectedDestination = request.destination.folderDestinationOption
         }
 
@@ -309,7 +309,7 @@ final class ImportFolderPreviewModel: ObservableObject {
         skippedRules = []
         scanErrors = []
         lastFailureMapping = nil
-        selectedStorageMode = .copy
+        selectedStorageMode = request?.defaultStorageMode ?? .copy
         status = .failed(message)
     }
 

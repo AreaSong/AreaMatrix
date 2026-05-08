@@ -172,7 +172,7 @@ private extension ImportSingleFilePreviewModel {
         resetReplaceStateForPreflight()
         selectedCategory = "inbox"
         suggestedName = ""
-        selectedStorageMode = .copy
+        selectedStorageMode = request?.defaultStorageMode ?? .copy
         status = .unsupported(message)
         importStatus = .idle
     }
@@ -323,7 +323,7 @@ private extension ImportSingleFilePreviewModel {
         resetDuplicateResolutionForPreflight()
         resetNameConflictResolutionForPreflight()
         resetReplaceStateForPreflight()
-        selectedStorageMode = .copy
+        selectedStorageMode = request.defaultStorageMode
         selectedCategory = request.explicitCategory ?? "inbox"
         suggestedName = sourceURL.lastPathComponent
     }

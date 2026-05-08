@@ -87,6 +87,25 @@ final class GeneralSettingsPageFeatureTests: XCTestCase {
     }
 
     @MainActor
+    func testC107MoveDefaultPersistsOnlyAfterRiskConfirmation() async {
+        let updater = GeneralSettingsRecordingUpdater(result: .success)
+        let model = await loadedModel(updater: updater)
+
+        await model.requestStorageMode(.move)
+        let requestsBeforeConfirmation = await updater.requests()
+        XCTAssertEqual(model.pendingStorageConfirmation, .move)
+        XCTAssertEqual(requestsBeforeConfirmation, [])
+
+        await model.confirmPendingStorageMode()
+        let requests = await updater.requests()
+
+        XCTAssertNil(model.pendingStorageConfirmation)
+        XCTAssertEqual(requests.map(\.repoPath), ["/tmp/repo"])
+        XCTAssertEqual(requests.map(\.config.defaultMode), ["Moved"])
+        XCTAssertEqual(model.draft?.defaultStorageMode, .move)
+    }
+
+    @MainActor
     func testRootOverviewRequiresConfirmationAndDoesNotWriteFilesDuringSettingsSave() async throws {
         let repoURL = try temporaryGeneralSettingsRepo()
         defer { try? FileManager.default.removeItem(at: repoURL) }
@@ -187,6 +206,32 @@ final class GeneralSettingsPageFeatureTests: XCTestCase {
         XCTAssertEqual(reloaded.locale, "zh-CN")
         XCTAssertFalse(FileManager.default.fileExists(atPath: repoURL.appendingPathComponent("README.md").path))
         XCTAssertFalse(FileManager.default.fileExists(atPath: repoURL.appendingPathComponent("AREAMATRIX.md").path))
+    }
+
+    @MainActor
+    func testDefaultCoreBridgePersistsC107MoveDefaultWithoutMovingExternalFiles() async throws {
+        let repoURL = try temporaryGeneralSettingsRepo()
+        let sourceRoot = try temporaryGeneralSettingsRepo()
+        defer {
+            try? FileManager.default.removeItem(at: repoURL)
+            try? FileManager.default.removeItem(at: sourceRoot)
+        }
+        let sourceURL = sourceRoot.appendingPathComponent("source.txt")
+        try "source".write(to: sourceURL, atomically: true, encoding: .utf8)
+        let bridge = CoreBridge()
+        try await bridge.initializeEmptyRepository(repoPath: repoURL.path)
+        let model = GeneralSettingsModel(repoPath: repoURL.path, loader: bridge, updater: bridge)
+
+        await model.load()
+        await model.requestStorageMode(.move)
+        XCTAssertEqual(model.pendingStorageConfirmation, .move)
+        await model.confirmPendingStorageMode()
+        let reloaded = try await bridge.loadConfig(repoPath: repoURL.path)
+
+        XCTAssertEqual(reloaded.defaultMode, "Moved")
+        XCTAssertEqual(model.draft?.defaultStorageMode, .move)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: sourceURL.path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: repoURL.appendingPathComponent("source.txt").path))
     }
 
     @MainActor

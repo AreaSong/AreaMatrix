@@ -162,6 +162,7 @@ final class ImportBatchCopyImportModel: ObservableObject, ImportProgressQueueCon
         request: ImportEntryRequest?,
         selectedDestination: ImportBatchDestinationOption
     ) {
+        let isNewRequest = self.request?.id != request?.id
         let duplicateStrategies = currentDuplicateStrategiesByRowID()
         let duplicateStatuses = currentDuplicateStatusesByRowID()
         let nameConflictResolutions = currentNameConflictResolutionsByRowID()
@@ -174,6 +175,9 @@ final class ImportBatchCopyImportModel: ObservableObject, ImportProgressQueueCon
             .map { restoreNameConflictResolution(for: $0, from: nameConflictResolutions) }
         self.request = request
         self.selectedDestination = selectedDestination
+        if isNewRequest {
+            selectedStorageMode = request?.defaultStorageMode ?? .copy
+        }
         lastFailureMapping = nil
         clearReplaceConfirmationRecovery()
         if case .imported = status {

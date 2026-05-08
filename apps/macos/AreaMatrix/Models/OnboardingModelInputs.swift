@@ -28,6 +28,7 @@ extension OnboardingModel {
             urls: fileURLs,
             kind: ImportEntryKind.resolved(for: fileURLs),
             availableCategories: resolvedImportCategories(opening: opening, destination: destination),
+            defaultStorageMode: ImportSingleFileStorageMode(coreSnapshotValue: opening.config.defaultMode),
             allowReplaceDuringImport: opening.config.allowReplaceDuringImport,
             isTrashAvailable: Self.isSystemTrashAvailable()
         )

@@ -76,6 +76,17 @@ enum ImportSingleFileStorageMode: String, CaseIterable, Equatable, Identifiable,
 
     var id: String { rawValue }
 
+    init(coreSnapshotValue: String) {
+        switch coreSnapshotValue {
+        case "Moved":
+            self = .move
+        case "Indexed":
+            self = .indexOnly
+        default:
+            self = .copy
+        }
+    }
+
     var explanation: String {
         switch self {
         case .copy:

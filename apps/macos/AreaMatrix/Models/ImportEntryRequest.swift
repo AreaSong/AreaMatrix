@@ -26,6 +26,7 @@ struct ImportEntryRequest: Equatable, Sendable, Identifiable {
     let urls: [URL]
     let kind: ImportEntryKind
     let availableCategories: [String]
+    let defaultStorageMode: ImportSingleFileStorageMode
     let allowReplaceDuringImport: Bool
     let isTrashAvailable: Bool
 
@@ -37,6 +38,7 @@ struct ImportEntryRequest: Equatable, Sendable, Identifiable {
         urls: [URL],
         kind: ImportEntryKind,
         availableCategories: [String] = [],
+        defaultStorageMode: ImportSingleFileStorageMode = .copy,
         allowReplaceDuringImport: Bool = false,
         isTrashAvailable: Bool = true
     ) {
@@ -47,6 +49,7 @@ struct ImportEntryRequest: Equatable, Sendable, Identifiable {
         self.urls = urls
         self.kind = kind
         self.availableCategories = availableCategories
+        self.defaultStorageMode = defaultStorageMode
         self.allowReplaceDuringImport = allowReplaceDuringImport
         self.isTrashAvailable = isTrashAvailable
     }
