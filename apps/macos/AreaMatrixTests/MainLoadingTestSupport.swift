@@ -24,15 +24,24 @@ actor MainLoadingStaticStartupRecoverer: CoreStartupRecovering {
 }
 
 actor MainLoadingRecordingStartupRecoverer: CoreStartupRecovering {
-    private let result: MainLoadingStartupRecoveryResult
+    private var results: [MainLoadingStartupRecoveryResult]
     private var paths: [String] = []
 
     init(result: MainLoadingStartupRecoveryResult) {
-        self.result = result
+        results = [result]
+    }
+
+    init(results: [MainLoadingStartupRecoveryResult]) {
+        self.results = results
     }
 
     func recoverOnStartup(repoPath: String) async throws -> RecoveryReportSnapshot {
         paths.append(repoPath)
+        let result = results.isEmpty ? .success(RecoveryReportSnapshot(
+            cleanedStagingFiles: 0,
+            revertedStagingDbRows: 0,
+            warnings: []
+        )) : results.removeFirst()
         switch result {
         case .success(let report):
             return report

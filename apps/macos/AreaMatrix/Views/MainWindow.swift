@@ -227,7 +227,13 @@ struct MainWindow: View {
         case .mainLoading(let state):
             MainLoadingView(
                 state: state,
+                isRetryingStartupRecovery: model.isRetryingMainRepository,
                 onCancelOpening: model.cancelMainOpening,
+                onRetryStartupRecovery: {
+                    Task {
+                        await model.retryMainRepositoryFromError(repoPath: state.repoPath)
+                    }
+                },
                 onRetryTree: {
                     Task {
                         await model.retryMainLoadingTree()

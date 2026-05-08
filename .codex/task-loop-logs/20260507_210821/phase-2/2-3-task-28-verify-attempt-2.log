@@ -1,0 +1,84 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`2-3/task-28`
+- Task：[task-28-s1-32-c1-16-recover-on-startup.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-3-detail-settings/task-28-s1-32-c1-16-recover-on-startup.md:1)
+- 主要实现：[StartupRecoveryModels.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/StartupRecoveryModels.swift:36)、[StartupRecoveryErrorRecoveryView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/StartupRecoveryErrorRecoveryView.swift:3)、[MainLoadingView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainLoadingView.swift:42)、[MainWindow.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/MainWindow.swift:227)
+- 主要测试：[ErrorRecoveryStartupRecoveryPageFeatureTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ErrorRecoveryStartupRecoveryPageFeatureTests.swift:4)
+
+三、完成度摘要
+
+- 已覆盖项数：13
+- 未覆盖项数：0
+- 通过项数：13
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：Exact Docs 读取与对齐
+  结果：通过
+  证据：manifest 指定 4 份文档均存在；S1-32 声明 error-recovery 为共享组件并要求 Retry/技术详情/错误映射，control map 将 S1-32 绑定 C1-16/C1-21，C1-16 规格要求 `recover_on_startup` report 可驱动 S1-32 展示。
+  涉及文件：[S1-32-error-recovery.md](/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-32-error-recovery.md:73)、[mvp-control-map.md](/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:47)、[C1-16-recover-on-startup.md](/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-16-recover-on-startup.md:40)
+
+- 项目：Core API / UDL 合同
+  结果：通过
+  证据：`recover_on_startup(repo_path) -> RecoveryReport` 与 `RecoveryReport` 字段在 UDL、生成 Swift binding 和 Core API 文档一致。
+  涉及文件：[core-api.md](/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:617)、[core/area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:22)、[area_matrix.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/Generated/area_matrix.swift:4370)
+
+- 项目：只处理 S1-32 页面中的 C1-16 功能点
+  结果：通过
+  证据：新增 UI 是 `StartupRecoveryErrorRecoveryView`，只呈现 startup recovery checking/completed/failed、retry 与 technical details；未实现 repair、remove index 等同页其他动作。
+  涉及文件：[StartupRecoveryErrorRecoveryView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/StartupRecoveryErrorRecoveryView.swift:18)
+
+- 项目：只接入 C1-16 对应 CoreBridge / 状态 / 错误映射
+  结果：通过
+  证据：`CoreBridge` 通过 `Task.detached` 调用真实 generated `recoverOnStartup`；主打开流程设置 `.checking`，成功转 `.completed`，失败经既有 `mapCoreError` 转 `.failed`。
+  涉及文件：[StartupRecoveryModels.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/StartupRecoveryModels.swift:36)、[OnboardingInitializationProgress.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/OnboardingInitializationProgress.swift:265)
+
+- 项目：用户可见功能可触发和验收
+  结果：通过
+  证据：MainWindow 将 retry wiring 接入 MainLoadingView；测试覆盖失败停留在 main loading、retry 再次调用 recovery、成功后继续打开 repo。
+  涉及文件：[MainWindow.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/MainWindow.swift:227)、[ErrorRecoveryStartupRecoveryPageFeatureTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ErrorRecoveryStartupRecoveryPageFeatureTests.swift:50)
+
+- 项目：无 mock / fixture / 静态状态伪造真实闭环
+  结果：通过
+  证据：生产默认 `startupRecoverer` 是 `CoreBridge()`；测试 double 只用于 XCTest；另有真实 CoreBridge 初始化空 repo 后调用 `recoverOnStartup` 的测试。
+  涉及文件：[AppShellModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/AppShellModel.swift:86)、[ErrorRecoveryStartupRecoveryPageFeatureTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ErrorRecoveryStartupRecoveryPageFeatureTests.swift:99)
+
+- 项目：Expected New Paths
+  结果：通过
+  证据：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`project.pbxproj` 均有实际落地；新增 view/test 已加入 Xcode sources。
+  涉及文件：[project.pbxproj](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj:83)
+
+- 项目：Forbidden Touches
+  结果：通过
+  证据：`git diff --name-only -- core/src` 与 `git ls-files --others --exclude-standard -- core/src` 无输出，未触碰 `core/src/**`。
+  涉及文件：`core/src/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。新增视图 122 行、MainLoadingView 190 行、MainWindow 455 行，未超过 500 行；C1-16 展示拆到独立视图，主流程只做 wiring。
+- 注释 / rustdoc / 文档同步：通过。未新增 Rust public API；UDL 与 Core API 已存在且一致；Swift 代码无需要解释 WHY 的复杂注释缺口。
+- 错误处理与边界处理：通过。recovery 失败映射为结构化 `CoreErrorMappingSnapshot`，失败时阻止继续 open，retry 防重复点击。
+- 测试与验证覆盖：通过。build 通过，macOS XCTest 402 个测试 0 失败；新增测试覆盖 report 展示、失败 retry、真实 CoreBridge recovery 调用。
+- 占位、硬编码、mock-only、一次性实现检查：通过。生产路径使用 `CoreBridge` + generated UniFFI，不靠 mock-only 闭环。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：通过，`BUILD SUCCEEDED`。
+- 已运行：`./dev test macos`：通过。标准 `xcodebuild test` 被本地 `testmanagerd` sandbox 通信限制拦住，脚本按仓库规则复用同一 XCTest bundle 执行 `xcrun xctest`，402 tests，0 failures。
+- 补充检查：`swiftformat` / `swiftlint` 当前环境未安装，命令返回 `command not found`；这不是 manifest 或 repo-local validation-driver 的必需验证项，但本地 lint 证据缺失，需由 CI 或安装工具后补跑。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。S1-32 + C1-16 recover-on-startup 已有真实 CoreBridge 闭环、用户可见错误恢复入口、retry 行为、测试与 build 证据；未发现越界实现或 forbidden touch。
+
+VERIFY_RESULT: PASS

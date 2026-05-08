@@ -10,6 +10,12 @@ struct RecoveryReportSnapshot: Equatable, Sendable {
     var hasVisibleDetails: Bool {
         cleanedStagingFiles > 0 || revertedStagingDbRows > 0 || !warnings.isEmpty
     }
+
+    var startupRecoverySummaryText: String {
+        """
+        清理 \(cleanedStagingFiles) 个临时文件，回滚 \(revertedStagingDbRows) 条 staging 记录
+        """
+    }
 }
 
 struct ReindexReportSnapshot: Equatable, Sendable {

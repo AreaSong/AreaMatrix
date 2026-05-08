@@ -1,0 +1,26 @@
+一、执行结论：已完成。
+
+二、执行范围：单任务 `2-3/task-28`。本次 repair 只补 S1-32 + C1-16 retry 执行中状态：
+- [StartupRecoveryErrorRecoveryView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/StartupRecoveryErrorRecoveryView.swift:3)：新增 `isRetrying`，按钮执行中显示 `Retrying...` 且 `.disabled(...)`。
+- [MainLoadingView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainLoadingView.swift:3)：把 retrying 状态传给 S1-32 recovery 组件。
+- [MainWindow.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/MainWindow.swift:228)：接入 `model.isRetryingMainRepository`。
+- [ErrorRecoveryStartupRecoveryPageFeatureTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ErrorRecoveryStartupRecoveryPageFeatureTests.swift:35)：新增执行中按钮文案与禁用状态回归测试。
+
+三、完成情况：
+- 核对清单 1-4：通过，只处理 S1-32 中 C1-16 startup recovery retry 状态，未实现 C1-21 或相邻页面。
+- 完成标准：通过，失败态 Retry 可触发，执行中用户可见为 `Retrying...` 且禁用重复点击；仍走真实 `CoreBridge`/UniFFI recovery 链路，没有 mock-only 生产路径。
+- Forbidden Touches：未触碰，`git diff -- core/src` 无输出。
+
+四、工程质量：
+- 结构清晰，没有引入新依赖、全局状态或一次性脚本。
+- 无新增 Rust public API，因此无 rustdoc 需求；Swift 生产代码无 `try!` 或强制解包。
+- 失败路径和防重入由模型层 guard + UI 层禁用共同覆盖，本次补齐上一轮验收缺失的用户可见证据。
+
+五、验证情况：
+- `xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：通过，`** BUILD SUCCEEDED **`。
+- `./dev test macos`：通过。标准 `xcodebuild test` 被本地 `testmanagerd` sandbox 限制阻断，脚本复用同一 XCTest bundle 后 `xcrun xctest` 通过，402 tests，0 failures。
+
+六、风险与后续：
+- 剩余风险：未做真机手工 UI 点击验证；本轮已完成 build + XCTest 证据。
+- 建议下一个任务：进入 `2-3/task-29`，覆盖同页 C1-21 error mapping。
+

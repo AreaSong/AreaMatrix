@@ -2,7 +2,9 @@ import SwiftUI
 
 struct MainLoadingView: View {
     let state: MainLoadingState
+    let isRetryingStartupRecovery: Bool
     let onCancelOpening: () -> Void
+    let onRetryStartupRecovery: () -> Void
     let onRetryTree: () -> Void
     let onRetryOpening: () -> Void
 
@@ -39,34 +41,13 @@ struct MainLoadingView: View {
 
     @ViewBuilder
     private var recoverySection: some View {
-        if let recoveryStatus = state.recoveryStatusText {
-            VStack(alignment: .leading, spacing: 6) {
-                Label(recoveryStatus, systemImage: recoveryIcon)
-                    .font(.headline)
-                    .foregroundStyle(recoveryColor)
-
-                if let report = state.recoveryVisibleReport {
-                    Text("Warnings: \(report.warnings.count)")
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                    ForEach(report.warnings.prefix(3), id: \.self) { warning in
-                        Text(warning)
-                            .font(.callout)
-                            .foregroundStyle(.orange)
-                    }
-                }
-
-                if let mapping = state.recoveryErrorMapping {
-                    Text(mapping.suggestedAction)
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                }
-            }
-            .padding(14)
-            .frame(maxWidth: 640, alignment: .leading)
-            .background(.quaternary.opacity(0.35), in: RoundedRectangle(cornerRadius: 8))
-            .accessibilityElement(children: .combine)
-            .accessibilityLabel(recoveryStatus)
+        if let startupRecovery = state.startupRecovery {
+            StartupRecoveryErrorRecoveryView(
+                state: startupRecovery,
+                isRetrying: isRetryingStartupRecovery,
+                onRetry: onRetryStartupRecovery
+            )
+            .accessibilityLabel(state.recoveryStatusText ?? "Startup recovery")
         }
     }
 
@@ -150,28 +131,6 @@ struct MainLoadingView: View {
             .font(.callout)
             .foregroundStyle(.secondary)
             .frame(maxWidth: 640, alignment: .leading)
-    }
-
-    private var recoveryIcon: String {
-        switch state.startupRecovery {
-        case .checking:
-            return "arrow.clockwise.circle"
-        case .completed:
-            return "checkmark.circle"
-        case .failed:
-            return "exclamationmark.triangle"
-        case nil:
-            return "arrow.clockwise.circle"
-        }
-    }
-
-    private var recoveryColor: Color {
-        switch state.startupRecovery {
-        case .failed:
-            return .red
-        default:
-            return .primary
-        }
     }
 
     private func treeIcon(for state: MainLoadingTreeState) -> String {
