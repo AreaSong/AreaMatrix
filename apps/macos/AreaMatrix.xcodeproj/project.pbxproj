@@ -172,6 +172,9 @@
 		0A000000000000000000027A /* GeneralSettingsImportDefaultModeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000027B /* GeneralSettingsImportDefaultModeTests.swift */; };
 		0A000000000000000000027C /* RepositoryIgnoreRulesManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000027D /* RepositoryIgnoreRulesManager.swift */; };
 		0A000000000000000000027E /* GeneralSettingsPageIntegrationVerifyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000027F /* GeneralSettingsPageIntegrationVerifyTests.swift */; };
+		0A0000000000000000000280 /* RepositorySettingsModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000281 /* RepositorySettingsModel.swift */; };
+		0A0000000000000000000282 /* RepositorySettingsPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000283 /* RepositorySettingsPane.swift */; };
+		0A0000000000000000000284 /* RepositorySettingsPageFeatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000285 /* RepositorySettingsPageFeatureTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -264,6 +267,9 @@
 		0A000000000000000000027B /* GeneralSettingsImportDefaultModeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/GeneralSettingsImportDefaultModeTests.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000027D /* RepositoryIgnoreRulesManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/App/RepositoryIgnoreRulesManager.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000027F /* GeneralSettingsPageIntegrationVerifyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/GeneralSettingsPageIntegrationVerifyTests.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000281 /* RepositorySettingsModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/RepositorySettingsModel.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000283 /* RepositorySettingsPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Settings/RepositorySettingsPane.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000285 /* RepositorySettingsPageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/RepositorySettingsPageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000013F /* MainFileActionRoutingSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/MainFileActionRoutingSheet.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000141 /* RenameFileSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/RenameFileSheet.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000143 /* ChangeCategorySheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/ChangeCategorySheet.swift; sourceTree = SOURCE_ROOT; };
@@ -434,6 +440,7 @@
 			children = (
 				0A0000000000000000000014 /* MainWindow.swift */,
 				0A0000000000000000000273 /* GeneralSettingsView.swift */,
+				0A0000000000000000000283 /* RepositorySettingsPane.swift */,
 				0A00000000000000000000D1 /* MainRepositoryContentView.swift */,
 				0A000000000000000000013D /* MainRepositoryDetailPane.swift */,
 				0A0000000000000000000211 /* DetailLogTabView.swift */,
@@ -507,6 +514,7 @@
 				0A0000000000000000000018 /* AppShellModel.swift */,
 				0A0000000000000000000271 /* GeneralSettingsModel.swift */,
 				0A0000000000000000000277 /* GeneralSettingsActions.swift */,
+				0A0000000000000000000281 /* RepositorySettingsModel.swift */,
 				0A000000000000000000014F /* OnboardingRoute.swift */,
 				0A0000000000000000000019 /* CoreBridgePlaceholderState.swift */,
 				0A0000000000000000000121 /* ImportEntryRequest.swift */,
@@ -620,6 +628,7 @@
 				0A0000000000000000000279 /* GeneralSettingsPageFeatureTests.swift */,
 				0A000000000000000000027B /* GeneralSettingsImportDefaultModeTests.swift */,
 				0A000000000000000000027F /* GeneralSettingsPageIntegrationVerifyTests.swift */,
+				0A0000000000000000000285 /* RepositorySettingsPageFeatureTests.swift */,
 				0A0000000000000000000137 /* MainListIntegrationFilterTests.swift */,
 				0A0000000000000000000139 /* MainListIntegrationClosureTests.swift */,
 				0A000000000000000000014B /* MainLoadingAdoptExistingTests.swift */,
@@ -806,6 +815,7 @@
 				0A000000000000000000017C /* ImportProgressRouteState.swift in Sources */,
 				0A0000000000000000000270 /* GeneralSettingsModel.swift in Sources */,
 				0A0000000000000000000276 /* GeneralSettingsActions.swift in Sources */,
+				0A0000000000000000000280 /* RepositorySettingsModel.swift in Sources */,
 				0A00000000000000000001CE /* ImportProgressActions.swift in Sources */,
 				0A00000000000000000001DE /* ImportResultRouteActions.swift in Sources */,
 				0A000000000000000000024C /* MainListSystemActions.swift in Sources */,
@@ -814,6 +824,7 @@
 				0A00000000000000000001D6 /* ImportProgressListIntegration.swift in Sources */,
 				0A00000000000000000001DA /* MainCurrentListErrorPane.swift in Sources */,
 				0A0000000000000000000272 /* GeneralSettingsView.swift in Sources */,
+				0A0000000000000000000282 /* RepositorySettingsPane.swift in Sources */,
 				0A000000000000000000013C /* MainRepositoryDetailPane.swift in Sources */,
 				0A0000000000000000000210 /* DetailLogTabView.swift in Sources */,
 				0A0000000000000000000224 /* DetailExternalCreateSyncStatusView.swift in Sources */,
@@ -915,6 +926,7 @@
 					0A0000000000000000000278 /* GeneralSettingsPageFeatureTests.swift in Sources */,
 					0A000000000000000000027A /* GeneralSettingsImportDefaultModeTests.swift in Sources */,
 					0A000000000000000000027E /* GeneralSettingsPageIntegrationVerifyTests.swift in Sources */,
+					0A0000000000000000000284 /* RepositorySettingsPageFeatureTests.swift in Sources */,
 				0A0000000000000000000136 /* MainListIntegrationFilterTests.swift in Sources */,
 				0A0000000000000000000138 /* MainListIntegrationClosureTests.swift in Sources */,
 				0A000000000000000000014A /* MainLoadingAdoptExistingTests.swift in Sources */,

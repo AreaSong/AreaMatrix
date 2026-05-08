@@ -1,0 +1,30 @@
+一、执行结论：已完成 `2-3/task-15`。
+
+二、执行范围：
+- 新增 [RepositorySettingsModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/RepositorySettingsModel.swift:1)：只通过 `CoreConfigurationLoading.loadConfig` 读取 C1-04 配置，并用 `CoreErrorMapping` 映射失败。
+- 新增 [RepositorySettingsPane.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Settings/RepositorySettingsPane.swift:1)：Settings sidebar 增加“资料库”页，显示 repo 名称、路径、overview 输出模式、generated path、root file、README policy，并提供 `Retry status` 重新触发 `load_config`。
+- 修改 [GeneralSettingsView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Settings/GeneralSettingsView.swift:78)：接入“资料库”tab。
+- 新增 [RepositorySettingsPageFeatureTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/RepositorySettingsPageFeatureTests.swift:1)：覆盖 load、retry、CoreError mapping、真实 CoreBridge load_config。
+- 更新 [project.pbxproj](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj:172)：加入新源文件和测试文件。
+
+三、完成情况：
+- 核对清单 1-4：通过。只处理 S1-27 + C1-04，没有接入 C1-08/C1-20，也没有实现相邻页面。
+- 完成标准：通过。用户可进入 Settings > 资料库，页面打开和 `Retry status` 都会触发真实 `load_config`；没有 mock-only 闭环；未触碰 control map 外能力。
+- Forbidden Touches：未触碰 `core/src/**`。
+
+四、工程质量：
+- 代码结构保持小文件、小职责；model/view/test 分离。
+- 错误路径显式映射 `CoreError -> CoreErrorMappingSnapshot`，非 Core error 走可重试文案。
+- 无新增依赖，无 `try!`、强制解包、TODO、mock-only 产品路径。
+- 未改文档/API/UDL；本 task 不需要 rustdoc。
+
+五、验证情况：
+- 通过：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+- 通过：`./dev test macos`，标准 `xcodebuild test` 被本地 sandbox `testmanagerd` 通信限制挡住后，脚本按仓库规则用同一 XCTest bundle 执行 `xcrun xctest`，结果 348 tests passed。
+- 未运行：`swiftformat` / `swiftlint`，当前环境 `command -v` 未找到这两个工具。
+
+六、风险与后续：
+- 剩余风险：未做真人 UI 点击冒烟；当前证据覆盖编译、单测和真实 CoreBridge load_config。
+- 建议下一个任务：`2-3/task-16`，继续 S1-27 的 C1-08 页面功能。
+- 备注：worktree 中已有 `.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json` 的既有改动，我未触碰。
+

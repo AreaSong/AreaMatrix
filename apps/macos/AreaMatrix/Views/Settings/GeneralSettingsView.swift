@@ -79,6 +79,8 @@ struct GeneralSettingsView: View {
         List(selection: $selectedTab) {
             Label("通用", systemImage: "gearshape")
                 .tag("general")
+            Label("资料库", systemImage: "folder")
+                .tag("repository")
         }
         .listStyle(.sidebar)
         .frame(width: 180)
@@ -86,6 +88,16 @@ struct GeneralSettingsView: View {
 
     @ViewBuilder
     private var content: some View {
+        switch selectedTab {
+        case "repository":
+            RepositorySettingsPane(repoPath: model.repoPath)
+        default:
+            generalContent
+        }
+    }
+
+    @ViewBuilder
+    private var generalContent: some View {
         switch model.loadState {
         case .loading:
             loadingContent

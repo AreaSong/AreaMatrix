@@ -1,0 +1,51 @@
+一、执行结论
+
+已完成。
+
+二、执行范围
+
+单任务：`2-3/task-15`。本次修复只改了：
+
+- [RepositorySettingsModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/RepositorySettingsModel.swift:57)
+- [RepositorySettingsPane.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Settings/RepositorySettingsPane.swift:6)
+- [RepositorySettingsPageFeatureTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/RepositorySettingsPageFeatureTests.swift:82)
+
+未触碰 `core/src/**`，也未修改 control map 之外能力。
+
+三、完成情况
+
+- 只处理 S1-27 + C1-04：通过。
+- C1-04 `load_config` / `update_config`：通过。现在读取配置后，如果 `.areamatrix/index.db` 存在且 `repo_config.repo_path` 与当前打开路径不一致，会通过 `updateConfig` 同步。
+- 错误映射：通过。`updateConfig` 失败时保留已加载摘要，并在页面显示同步错误提示。
+- 无 mock-only 产品路径：通过。生产路径仍走 `CoreBridge`，测试同时覆盖 recording actor 与真实 CoreBridge 移动 repo 场景。
+- Forbidden Touches：未触碰。
+
+四、工程质量
+
+代码保持在现有 Model/View/Test 边界内，没有新增依赖、没有新增 public Rust API、没有强制解包或一次性脚本逻辑。同步逻辑避免在 metadata DB 不存在时写入，防止把 `load_config` 的默认返回误变成自动创建 metadata。
+
+五、验证情况
+
+已运行并通过：
+
+```bash
+xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO
+```
+
+结果：`BUILD SUCCEEDED`。
+
+已运行：
+
+```bash
+./dev test macos
+```
+
+结果：标准 `xcodebuild test` 被本地 `testmanagerd` sandbox 限制阻断；脚本按 repo 规则复用已构建 XCTest bundle，`xcrun xctest` 通过，`351 tests, 0 failures`。新增 `RepositorySettingsPageFeatureTests` 7 项均通过。
+
+未运行：`swiftformat` / `swiftlint`，本机 `command -v swiftformat` 和 `command -v swiftlint` 均无输出，工具不可用。
+
+六、风险与后续
+
+剩余风险：未做人工 UI/VoiceOver 实机走查；直接 `xcodebuild test` 仍受本地 sandbox 限制，但 repo 测试脚本的 fallback 已通过。
+
+建议下一个任务：先进入 `2-3/task-15` verify-ready；通过后继续 `2-3/task-16`。
