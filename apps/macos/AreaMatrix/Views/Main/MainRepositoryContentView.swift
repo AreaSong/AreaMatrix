@@ -16,6 +16,7 @@ struct MainRepositoryContentView: View {
     let onCollectDiagnostics: () async -> Void
     let onShowInFinder: (String) -> Void
     let onCopyPath: (String) -> Void
+    let onCopyPaths: ([String]) -> Void
     let onOpenNoteFile: (String) -> Void
     let externalCreatedEvent: MainExternalCreatedFileEvent?
     let onExternalCreatedEventHandled: (MainExternalCreatedFileEvent) -> Void
@@ -183,6 +184,7 @@ struct MainRepositoryContentView: View {
         onCollectDiagnostics: @escaping () async -> Void = {},
         onShowInFinder: @escaping (String) -> Void = { _ in },
         onCopyPath: @escaping (String) -> Void = { _ in },
+        onCopyPaths: @escaping ([String]) -> Void = { _ in },
         onOpenNoteFile: @escaping (String) -> Void = { _ in },
         externalCreatedEvent: MainExternalCreatedFileEvent? = nil,
         onExternalCreatedEventHandled: @escaping (MainExternalCreatedFileEvent) -> Void = { _ in },
@@ -205,6 +207,7 @@ struct MainRepositoryContentView: View {
         self.onCollectDiagnostics = onCollectDiagnostics
         self.onShowInFinder = onShowInFinder
         self.onCopyPath = onCopyPath
+        self.onCopyPaths = onCopyPaths
         self.onOpenNoteFile = onOpenNoteFile
         self.externalCreatedEvent = externalCreatedEvent
         self.onExternalCreatedEventHandled = onExternalCreatedEventHandled
@@ -356,7 +359,7 @@ struct MainRepositoryContentView: View {
         }
     }
 
-    private var visibleFiles: [FileEntrySnapshot] {
+    var visibleFiles: [FileEntrySnapshot] {
         MainListVisibleFileFiltering.visibleFiles(
             from: fileListModel.files,
             sidebarRow: selectedSidebarRow,
@@ -415,7 +418,7 @@ struct MainRepositoryContentView: View {
             }
         } else {
             Button("Copy Paths") {
-                onCopyPath(selectedFiles.map(\.path).joined(separator: "\n"))
+                onCopyPaths(selectedFiles.map(\.path))
             }
             .disabled(selectedFiles.isEmpty)
         }

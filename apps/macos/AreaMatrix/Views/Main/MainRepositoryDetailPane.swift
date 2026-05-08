@@ -2,6 +2,7 @@ import SwiftUI
 
 struct MainRepositoryDetailPane: View {
     let selection: MainFileSelectionState
+    let multiSelectionSummary: MultiSelectionDetailSummary
     let detailErrorMapping: CoreErrorMappingSnapshot?
     let isDetailLoading: Bool
     let selectedFileDetail: FileEntrySnapshot?
@@ -12,6 +13,7 @@ struct MainRepositoryDetailPane: View {
     let detailTabRequest: MainDetailTabRequest?
     let selectedImportProgressRow: ImportProgressListRow?
     let onRetrySelectedFileDetail: () -> Void
+    let onCopyPaths: ([String]) -> Void
     let onOpenNoteFile: (String) -> Void
     let onRefreshChangeLog: () -> Void
     let onRequestDetailLogDiagnostics: () -> Void
@@ -24,6 +26,7 @@ struct MainRepositoryDetailPane: View {
 
     init(
         selection: MainFileSelectionState,
+        multiSelectionSummary: MultiSelectionDetailSummary,
         detailErrorMapping: CoreErrorMappingSnapshot?,
         isDetailLoading: Bool,
         selectedFileDetail: FileEntrySnapshot?,
@@ -34,6 +37,7 @@ struct MainRepositoryDetailPane: View {
         detailTabRequest: MainDetailTabRequest?,
         selectedImportProgressRow: ImportProgressListRow?,
         onRetrySelectedFileDetail: @escaping () -> Void,
+        onCopyPaths: @escaping ([String]) -> Void,
         onOpenNoteFile: @escaping (String) -> Void,
         onRefreshChangeLog: @escaping () -> Void,
         onRequestDetailLogDiagnostics: @escaping () -> Void,
@@ -43,6 +47,7 @@ struct MainRepositoryDetailPane: View {
         noteModel: DetailNoteModel
     ) {
         self.selection = selection
+        self.multiSelectionSummary = multiSelectionSummary
         self.detailErrorMapping = detailErrorMapping
         self.isDetailLoading = isDetailLoading
         self.selectedFileDetail = selectedFileDetail
@@ -53,6 +58,7 @@ struct MainRepositoryDetailPane: View {
         self.detailTabRequest = detailTabRequest
         self.selectedImportProgressRow = selectedImportProgressRow
         self.onRetrySelectedFileDetail = onRetrySelectedFileDetail
+        self.onCopyPaths = onCopyPaths
         self.onOpenNoteFile = onOpenNoteFile
         self.onRefreshChangeLog = onRefreshChangeLog
         self.onRequestDetailLogDiagnostics = onRequestDetailLogDiagnostics
@@ -85,14 +91,83 @@ struct MainRepositoryDetailPane: View {
     }
 
     private var multiSelectionDetailPane: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Multiple files selected")
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                multiSelectionHeader
+                multiSelectionWarnings
+                multiSelectionStatistics
+                multiSelectionFileTypes
+                multiSelectionActions
+            }
+            .padding(18)
+            .frame(maxWidth: .infinity, alignment: .topLeading)
+        }
+        .accessibilityElement(children: .contain)
+    }
+
+    private var multiSelectionHeader: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(multiSelectionSummary.title)
                 .font(.headline)
-            Text("S1-15 detail-multi summary is active. Single-file actions are hidden until one file is selected.")
+            Text(multiSelectionSummary.subtitle)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
+            if multiSelectionSummary.isUpdating {
+                Label("Updating selection...", systemImage: "arrow.triangle.2.circlepath")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
         }
-        .padding(18)
+    }
+
+    @ViewBuilder
+    private var multiSelectionWarnings: some View {
+        if !multiSelectionSummary.warningMessages.isEmpty {
+            VStack(alignment: .leading, spacing: 8) {
+                ForEach(multiSelectionSummary.warningMessages, id: \.self) { warning in
+                    Label(warning, systemImage: "exclamationmark.triangle")
+                        .font(.callout)
+                }
+            }
+            .padding(10)
+            .background(Color.yellow.opacity(0.12))
+        }
+    }
+
+    private var multiSelectionStatistics: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            ForEach(multiSelectionSummary.statisticRows) { row in
+                metadataRow(row.label, row.value)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var multiSelectionFileTypes: some View {
+        if !multiSelectionSummary.fileTypeRows.isEmpty {
+            VStack(alignment: .leading, spacing: 10) {
+                Text("File types")
+                    .font(.callout.weight(.semibold))
+                ForEach(multiSelectionSummary.fileTypeRows) { row in
+                    metadataRow(row.label, row.value)
+                }
+            }
+        }
+    }
+
+    private var multiSelectionActions: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Button("Show in Finder") {}
+                .disabled(true)
+                .help("Open one file at a time")
+            Text("Open one file at a time")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Button("Copy Paths") {
+                onCopyPaths(multiSelectionSummary.paths)
+            }
+            .disabled(multiSelectionSummary.paths.isEmpty)
+        }
     }
 
     private var emptyDetailPane: some View {

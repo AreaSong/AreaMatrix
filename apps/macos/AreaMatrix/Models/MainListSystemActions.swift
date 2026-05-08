@@ -35,8 +35,22 @@ extension OnboardingModel {
         do {
             try pathCopier.copyPath(repoPath: opening.config.repoPath, relativePath: relativePath)
             toastMessage = "Path copied."
+            accessibilityAnnouncer.announce("Path copied.")
         } catch {
             toastMessage = "Path cannot be copied."
+            accessibilityAnnouncer.announce("Path cannot be copied.")
+        }
+    }
+
+    @MainActor
+    func copyMainListPaths(opening: RepositoryOpeningResult, relativePaths: [String]) {
+        do {
+            try pathCopier.copyPaths(repoPath: opening.config.repoPath, relativePaths: relativePaths)
+            toastMessage = "\(relativePaths.count) paths copied."
+            accessibilityAnnouncer.announce("\(relativePaths.count) paths copied.")
+        } catch {
+            toastMessage = "Paths cannot be copied."
+            accessibilityAnnouncer.announce("Paths cannot be copied.")
         }
     }
 

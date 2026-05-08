@@ -335,6 +335,7 @@ struct MainWindow: View {
                 onCollectDiagnostics: { await model.collectMainListDiagnostics(opening: opening) },
                 onShowInFinder: { model.showMainListFileInFinder(opening: opening, relativePath: $0) },
                 onCopyPath: { model.copyMainListPath(opening: opening, relativePath: $0) },
+                onCopyPaths: { model.copyMainListPaths(opening: opening, relativePaths: $0) },
                 onOpenNoteFile: { model.openMainListFile(opening: opening, relativePath: $0) },
                 externalCreatedEvent: model.externalCreatedEvent(for: opening),
                 onExternalCreatedEventHandled: model.finishExternalCreatedFileEvent
@@ -357,6 +358,7 @@ struct MainWindow: View {
                 onCollectDiagnostics: { await model.collectMainListDiagnostics(opening: opening) },
                 onShowInFinder: { model.showMainListFileInFinder(opening: opening, relativePath: $0) },
                 onCopyPath: { model.copyMainListPath(opening: opening, relativePath: $0) },
+                onCopyPaths: { model.copyMainListPaths(opening: opening, relativePaths: $0) },
                 onOpenNoteFile: { model.openMainListFile(opening: opening, relativePath: $0) },
                 externalCreatedEvent: model.externalCreatedEvent(for: opening),
                 onExternalCreatedEventHandled: model.finishExternalCreatedFileEvent
@@ -386,6 +388,7 @@ struct MainWindow: View {
                 onCollectDiagnostics: { await model.collectMainListDiagnostics(opening: state.sourceOpening) },
                 onShowInFinder: { model.showMainListFileInFinder(opening: state.sourceOpening, relativePath: $0) },
                 onCopyPath: { model.copyMainListPath(opening: state.sourceOpening, relativePath: $0) },
+                onCopyPaths: { model.copyMainListPaths(opening: state.sourceOpening, relativePaths: $0) },
                 onOpenNoteFile: { model.openMainListFile(opening: state.sourceOpening, relativePath: $0) },
                 externalCreatedEvent: model.externalCreatedEvent(for: state.sourceOpening),
                 onExternalCreatedEventHandled: model.finishExternalCreatedFileEvent,

@@ -99,6 +99,8 @@ protocol RepositoryFileOpening {
 protocol RepositoryPathCopying {
     @MainActor
     func copyPath(repoPath: String, relativePath: String) throws
+    @MainActor
+    func copyPaths(repoPath: String, relativePaths: [String]) throws
 }
 
 protocol ImportResultDetailsExporting {
@@ -198,6 +200,15 @@ struct NSPasteboardRepositoryPathCopier: RepositoryPathCopying {
         let path = try RepositoryFilePathResolver.fileURL(repoPath: repoPath, relativePath: relativePath).path
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(path, forType: .string)
+    }
+
+    @MainActor
+    func copyPaths(repoPath: String, relativePaths: [String]) throws {
+        let paths = try relativePaths.map { relativePath in
+            try RepositoryFilePathResolver.fileURL(repoPath: repoPath, relativePath: relativePath).path
+        }
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(paths.joined(separator: "\n"), forType: .string)
     }
 }
 

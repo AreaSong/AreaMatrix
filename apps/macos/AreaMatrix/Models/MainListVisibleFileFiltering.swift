@@ -40,7 +40,7 @@ extension FileEntrySnapshot {
         Self.mainDisplayDateFormatter.string(from: Date(timeIntervalSince1970: TimeInterval(updatedAt)))
     }
 
-    private static let mainDisplayDateFormatter: DateFormatter = {
+    static let mainDisplayDateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
         formatter.timeStyle = .none

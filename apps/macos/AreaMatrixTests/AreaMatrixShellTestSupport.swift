@@ -257,9 +257,14 @@ final class ShellRecordingFileOpener: RepositoryFileOpening {
 @MainActor
 final class ShellRecordingPathCopier: RepositoryPathCopying {
     private(set) var requests: [(repoPath: String, relativePath: String)] = []
+    private(set) var multiPathRequests: [(repoPath: String, relativePaths: [String])] = []
 
     func copyPath(repoPath: String, relativePath: String) throws {
         requests.append((repoPath: repoPath, relativePath: relativePath))
+    }
+
+    func copyPaths(repoPath: String, relativePaths: [String]) throws {
+        multiPathRequests.append((repoPath: repoPath, relativePaths: relativePaths))
     }
 }
 

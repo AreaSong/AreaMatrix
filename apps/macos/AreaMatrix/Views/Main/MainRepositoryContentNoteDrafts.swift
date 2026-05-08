@@ -16,6 +16,11 @@ extension MainRepositoryContentView {
     var detailPane: some View {
         MainRepositoryDetailPane(
             selection: fileListModel.selection,
+            multiSelectionSummary: MultiSelectionDetailSummary(
+                selection: fileListModel.selection,
+                files: visibleFiles,
+                isUpdating: fileListModel.isLoading
+            ),
             detailErrorMapping: fileListModel.detailErrorMapping,
             isDetailLoading: fileListModel.isDetailLoading,
             selectedFileDetail: fileListModel.selectedFileDetail,
@@ -30,6 +35,7 @@ extension MainRepositoryContentView {
                     await fileListModel.retrySelectedFileDetail()
                 }
             },
+            onCopyPaths: onCopyPaths,
             onOpenNoteFile: onOpenNoteFile,
             onRefreshChangeLog: {
                 Task {
