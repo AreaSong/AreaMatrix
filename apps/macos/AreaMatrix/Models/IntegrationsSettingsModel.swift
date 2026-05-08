@@ -75,6 +75,11 @@ struct IntegrationsSettingsSummary: Equatable, Sendable {
     }
 }
 
+enum IntegrationsSettingsConflictListPresentation {
+    static let reviewConflictsTitle = "Review conflicts"
+    static let reviewConflictsAccessibilityID = "S1-36-C1-25-review-conflicts"
+}
+
 protocol ICloudStatusDetecting: Sendable {
     func snapshot(repoPath: String, config: RepoConfigSnapshot) async -> IntegrationsICloudSnapshot
 }
@@ -235,6 +240,14 @@ final class IntegrationsSettingsModel: ObservableObject {
                 recovery: "Check that the repository folder still exists and Finder has permission to open it."
             ))
         }
+    }
+
+    func recordConflictResolveEntry(_ conflict: ICloudConflictPairSnapshot) {
+        actionFeedback = .success("Open the single-item resolver for \(conflict.fileDisplayName).")
+    }
+
+    func recordConflictDiagnosticsEntry() {
+        actionFeedback = .success("Diagnostics can be collected from the conflict list error state.")
     }
 
     func openICloudHelp() {

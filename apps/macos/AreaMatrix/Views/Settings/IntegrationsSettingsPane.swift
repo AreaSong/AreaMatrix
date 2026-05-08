@@ -2,6 +2,7 @@ import SwiftUI
 
 struct IntegrationsSettingsPane: View {
     @StateObject private var model: IntegrationsSettingsModel
+    @State private var isConflictListPresented = false
 
     init(
         repoPath: String,
@@ -31,6 +32,14 @@ struct IntegrationsSettingsPane: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .task {
             await model.load()
+        }
+        .sheet(isPresented: $isConflictListPresented) {
+            ICloudConflictListView(
+                model: ICloudConflictListModel(repoPath: model.repoPath),
+                onClose: { isConflictListPresented = false },
+                onResolve: model.recordConflictResolveEntry,
+                onCollectDiagnostics: model.recordConflictDiagnosticsEntry
+            )
         }
     }
 
@@ -160,6 +169,18 @@ struct IntegrationsSettingsPane: View {
                         Label("Open iCloud help", systemImage: "questionmark.circle")
                     }
                     .accessibilityIdentifier("S1-29-open-icloud-help")
+
+                    Button {
+                        isConflictListPresented = true
+                    } label: {
+                        Label(
+                            IntegrationsSettingsConflictListPresentation.reviewConflictsTitle,
+                            systemImage: "exclamationmark.icloud"
+                        )
+                    }
+                    .accessibilityIdentifier(
+                        IntegrationsSettingsConflictListPresentation.reviewConflictsAccessibilityID
+                    )
 
                     Button {
                         model.revealRepositoryInFinder()

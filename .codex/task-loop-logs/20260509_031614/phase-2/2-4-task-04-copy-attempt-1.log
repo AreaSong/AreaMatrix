@@ -1,0 +1,52 @@
+一、执行结论
+
+已完成 `2-4/task-04`。
+
+二、执行范围
+
+单任务：S1-36 + C1-25 `list_icloud_conflicts`。
+
+修改文件：
+- `apps/macos/AreaMatrix/Bridge/CoreICloudConflictListing.swift`
+- `apps/macos/AreaMatrix/Models/ICloudConflictListModel.swift`
+- `apps/macos/AreaMatrix/Views/Main/ICloudConflictListView.swift`
+- `apps/macos/AreaMatrix/Models/CoreBridgePlaceholderState.swift`
+- `apps/macos/AreaMatrix/Models/IntegrationsSettingsModel.swift`
+- `apps/macos/AreaMatrix/Views/Settings/IntegrationsSettingsPane.swift`
+- `apps/macos/AreaMatrixTests/ICloudConflictListPageFeatureTests.swift`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+
+工作区另有既有 dirty 文件未纳入本任务实现：`.codex/task-loop-runs/20260509_031614/summary.json`、`tasks/prompts/_shared/progress.json`。
+
+三、完成情况
+
+- 核对清单：已只处理 S1-36 页面中的 C1-25；已对接真实 `CoreBridge.listIcloudConflicts(repoPath:)`；未实现相邻页面或 C1-23/C1-26 等能力。
+- 完成标准：S1-36 可从 Settings Integrations 的 `Review conflicts` 打开；页面支持加载、空态、错误态、刷新、Reveal 和 Resolve 入口；没有用 mock/fixture 伪造生产闭环。
+- Forbidden Touches：未触碰 `core/src/**`。
+
+四、工程质量
+
+实现是只读查询闭环：Swift 模型调用 CoreBridge，错误走 `CoreErrorMapping`，Reveal 走 macOS 平台服务，不删除、不移动、不重命名、不覆盖用户文件，也不触发 iCloud placeholder 下载。测试覆盖 CoreBridge 边界、错误映射、空/加载视图、Settings 入口、平台 Reveal，以及真实临时目录下的 conflicted copy 扫描只读性。
+
+五、验证情况
+
+已运行并通过：
+
+```bash
+xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO
+```
+
+结果：`BUILD SUCCEEDED`。
+
+```bash
+./dev test macos --test-log /tmp/areamatrix-xcodebuild-test-s136-after.log
+```
+
+结果：`xcodebuild test` 被本地 `testmanagerd.control` 沙箱限制阻断后，按仓库规则 fallback 到 `xcrun xctest`；最终 `456 tests, 0 failures`。
+
+六、风险与后续
+
+剩余风险：S1-36 的 `Resolve...` 目前只作为进入单项解决的入口回调，实际 resolution endpoint 仍由 S1-25/后续 Core 能力处理，本任务没有实现合并、删除、移动或清理 conflict state。
+
+建议下一个任务：继续执行 `2-4/task-05` 或对应的 S1-36 page integration verify，用整页视角确认入口来源和后续 resolve 刷新链路。
+
