@@ -183,6 +183,9 @@
 		0A0000000000000000000294 /* ClassifierSettingsPageFeatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000295 /* ClassifierSettingsPageFeatureTests.swift */; };
 		0A0000000000000000000296 /* ClassifierSettingsRecovery.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000297 /* ClassifierSettingsRecovery.swift */; };
 		0A0000000000000000000298 /* ClassifierSettingsRecoveryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000299 /* ClassifierSettingsRecoveryTests.swift */; };
+		0A000000000000000000029A /* IntegrationsSettingsModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000029B /* IntegrationsSettingsModel.swift */; };
+		0A000000000000000000029C /* IntegrationsSettingsPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000029D /* IntegrationsSettingsPane.swift */; };
+		0A000000000000000000029E /* IntegrationsSettingsPageFeatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000029F /* IntegrationsSettingsPageFeatureTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -286,6 +289,9 @@
 		0A0000000000000000000295 /* ClassifierSettingsPageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ClassifierSettingsPageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000297 /* ClassifierSettingsRecovery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ClassifierSettingsRecovery.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000299 /* ClassifierSettingsRecoveryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ClassifierSettingsRecoveryTests.swift; sourceTree = SOURCE_ROOT; };
+		0A000000000000000000029B /* IntegrationsSettingsModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/IntegrationsSettingsModel.swift; sourceTree = SOURCE_ROOT; };
+		0A000000000000000000029D /* IntegrationsSettingsPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Settings/IntegrationsSettingsPane.swift; sourceTree = SOURCE_ROOT; };
+		0A000000000000000000029F /* IntegrationsSettingsPageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/IntegrationsSettingsPageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000013F /* MainFileActionRoutingSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/MainFileActionRoutingSheet.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000141 /* RenameFileSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/RenameFileSheet.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000143 /* ChangeCategorySheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/ChangeCategorySheet.swift; sourceTree = SOURCE_ROOT; };
@@ -458,6 +464,7 @@
 				0A0000000000000000000273 /* GeneralSettingsView.swift */,
 				0A0000000000000000000293 /* ClassifierSettingsPane.swift */,
 				0A0000000000000000000283 /* RepositorySettingsPane.swift */,
+				0A000000000000000000029D /* IntegrationsSettingsPane.swift */,
 				0A00000000000000000000D1 /* MainRepositoryContentView.swift */,
 				0A000000000000000000013D /* MainRepositoryDetailPane.swift */,
 				0A0000000000000000000211 /* DetailLogTabView.swift */,
@@ -532,6 +539,7 @@
 				0A0000000000000000000271 /* GeneralSettingsModel.swift */,
 				0A0000000000000000000291 /* ClassifierSettingsModel.swift */,
 				0A0000000000000000000297 /* ClassifierSettingsRecovery.swift */,
+				0A000000000000000000029B /* IntegrationsSettingsModel.swift */,
 				0A0000000000000000000277 /* GeneralSettingsActions.swift */,
 				0A0000000000000000000281 /* RepositorySettingsModel.swift */,
 				0A0000000000000000000289 /* RepositorySettingsActionState.swift */,
@@ -649,6 +657,7 @@
 				0A000000000000000000027B /* GeneralSettingsImportDefaultModeTests.swift */,
 				0A0000000000000000000295 /* ClassifierSettingsPageFeatureTests.swift */,
 				0A0000000000000000000299 /* ClassifierSettingsRecoveryTests.swift */,
+				0A000000000000000000029F /* IntegrationsSettingsPageFeatureTests.swift */,
 				0A000000000000000000027F /* GeneralSettingsPageIntegrationVerifyTests.swift */,
 				0A0000000000000000000285 /* RepositorySettingsPageFeatureTests.swift */,
 				0A000000000000000000028B /* RepositorySettingsPageIntegrationVerifyTests.swift */,
@@ -840,6 +849,7 @@
 				0A0000000000000000000270 /* GeneralSettingsModel.swift in Sources */,
 				0A0000000000000000000290 /* ClassifierSettingsModel.swift in Sources */,
 				0A0000000000000000000296 /* ClassifierSettingsRecovery.swift in Sources */,
+				0A000000000000000000029A /* IntegrationsSettingsModel.swift in Sources */,
 				0A0000000000000000000276 /* GeneralSettingsActions.swift in Sources */,
 				0A0000000000000000000280 /* RepositorySettingsModel.swift in Sources */,
 				0A0000000000000000000288 /* RepositorySettingsActionState.swift in Sources */,
@@ -853,6 +863,7 @@
 				0A0000000000000000000272 /* GeneralSettingsView.swift in Sources */,
 				0A0000000000000000000292 /* ClassifierSettingsPane.swift in Sources */,
 				0A0000000000000000000282 /* RepositorySettingsPane.swift in Sources */,
+				0A000000000000000000029C /* IntegrationsSettingsPane.swift in Sources */,
 				0A000000000000000000013C /* MainRepositoryDetailPane.swift in Sources */,
 				0A0000000000000000000210 /* DetailLogTabView.swift in Sources */,
 				0A0000000000000000000224 /* DetailExternalCreateSyncStatusView.swift in Sources */,
@@ -955,6 +966,7 @@
 					0A000000000000000000027A /* GeneralSettingsImportDefaultModeTests.swift in Sources */,
 					0A0000000000000000000294 /* ClassifierSettingsPageFeatureTests.swift in Sources */,
 					0A0000000000000000000298 /* ClassifierSettingsRecoveryTests.swift in Sources */,
+					0A000000000000000000029E /* IntegrationsSettingsPageFeatureTests.swift in Sources */,
 					0A000000000000000000027E /* GeneralSettingsPageIntegrationVerifyTests.swift in Sources */,
 					0A0000000000000000000284 /* RepositorySettingsPageFeatureTests.swift in Sources */,
 					0A000000000000000000028A /* RepositorySettingsPageIntegrationVerifyTests.swift in Sources */,

@@ -1,0 +1,48 @@
+一、执行结论
+
+已完成 `2-3/task-22`。
+
+二、执行范围
+
+单任务：S1-29 settings-integrations 中的 C1-04 `load_config` / `update_config` 接入。
+
+修改文件：
+- [IntegrationsSettingsModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/IntegrationsSettingsModel.swift)
+- [IntegrationsSettingsPane.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Settings/IntegrationsSettingsPane.swift)
+- [IntegrationsSettingsPageFeatureTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/IntegrationsSettingsPageFeatureTests.swift)
+- [GeneralSettingsView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Settings/GeneralSettingsView.swift)
+- [project.pbxproj](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj)
+
+三、完成情况
+
+核对清单通过：
+- 只处理 S1-29 + C1-04。
+- 已读取页面规格、MVP control map、Core API、C1-04 能力规格。
+- 页面通过 `CoreBridge` 读取/保存 `RepoConfig.iCloudWarn`，并映射 Core 错误。
+- 未实现相邻页面；未接入 `list_icloud_conflicts` / C1-25。
+
+完成标准通过：
+- Settings 侧栏新增“集成”页。
+- 页面可加载真实 Core config，显示 iCloud 状态、repo 位置、帮助、Finder 入口。
+- “Show iCloud warnings” 通过 `update_config` 持久化，不是 mock-only。
+- 未触碰 `core/src/**`。
+
+四、工程质量
+
+结构按现有 Settings 模式拆成 model / pane / tests；新增文件均低于 500 行。错误路径覆盖 load/save/action 失败，保存失败会回滚 UI 到最后已保存状态并保留 retry。未新增依赖，未写用户文件，未改 DB schema，未修改 Core Rust。
+
+High 风险影响与回滚：影响面仅 macOS app UI/CoreBridge wiring；回滚只需撤回上述 5 个文件改动。没有删除、移动、覆盖真实用户原文件。
+
+五、验证情况
+
+已运行：
+- `xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：通过。
+- `./dev test macos`：通过；标准 `xcodebuild test` 触发本地 `testmanagerd` sandbox 限制，脚本按仓库规则复用已构建 XCTest bundle，`xcrun xctest` 执行 379 tests 全部通过。
+- `git diff --check`：通过。
+- 新增文件 trailing whitespace 检查：通过。
+
+六、风险与后续
+
+剩余风险：未做真实 UI/VoiceOver 手工验证；iCloud 可用性检测是 macOS 平台 best-effort。`Review conflicts` 依赖 S1-36/C1-25，不在本 C1-04 task 中实现。
+
+建议下一个任务：继续 `2-3/task-23`。另外，工作区里原本已有 `.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json` 修改，我没有触碰或回滚。

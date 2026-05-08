@@ -91,6 +91,8 @@ struct GeneralSettingsView: View {
                 .tag("repository")
             Label("分类规则", systemImage: "tag")
                 .tag("classifier")
+            Label("集成", systemImage: "point.3.connected.trianglepath.dotted")
+                .tag("integrations")
         }
         .listStyle(.sidebar)
         .frame(width: 180)
@@ -107,6 +109,8 @@ struct GeneralSettingsView: View {
             )
         case "classifier":
             ClassifierSettingsPane(repoPath: model.repoPath)
+        case "integrations":
+            IntegrationsSettingsPane(repoPath: model.repoPath)
         default:
             generalContent
         }
