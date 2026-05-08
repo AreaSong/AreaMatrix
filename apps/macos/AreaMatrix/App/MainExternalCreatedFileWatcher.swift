@@ -72,12 +72,22 @@ final class MainExternalCreatedFileWatcher: ObservableObject {
                 flags: event.flags,
                 eventID: event.eventID
             ) else { continue }
-            AreaMatrixExternalCreatedFileRelay.publish(
-                kind: signal.kind,
-                repoPath: signal.repoPath,
-                relativePath: signal.relativePath,
-                fsEventID: signal.fsEventID
-            )
+            Task {
+                if await InFlightFileChangeTracker.shared.contains(
+                    repoPath: signal.repoPath,
+                    relativePath: signal.relativePath
+                ) {
+                    return
+                }
+                await MainActor.run {
+                    AreaMatrixExternalCreatedFileRelay.publish(
+                        kind: signal.kind,
+                        repoPath: signal.repoPath,
+                        relativePath: signal.relativePath,
+                        fsEventID: signal.fsEventID
+                    )
+                }
+            }
         }
     }
 

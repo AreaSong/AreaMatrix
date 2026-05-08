@@ -1,0 +1,97 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`2-3/task-07`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-3-detail-settings/task-07-s1-14-c1-14-read-write-note.md`
+- 主要实现路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`
+- 测试路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/DetailNotePageFeatureTests.swift`
+- Manifest 禁止路径：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+三、完成度摘要
+
+- 已覆盖项数：11
+- 未覆盖项数：3
+- 通过项数：11
+- 不通过项数：3
+- 阻塞项数：3
+
+四、逐项验收结果
+
+- 项目：任务边界仅限 `S1-14 + C1-14`
+  结果：通过
+  证据：Control map 明确 `S1-14 detail-note` 只绑定 `C1-14 read_note/write_note`；实现集中在 Detail Note、CoreNoteReadingWriting 与 note 状态。
+  涉及文件：[mvp-control-map.md](/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:29)
+
+- 项目：真实 CoreBridge read/write note 接入
+  结果：通过
+  证据：`CoreNoteReadingWriting` 生产实现调用 UniFFI 生成的 `readNote` / `writeNote`，不是静态状态。
+  涉及文件：[CoreNoteReadingWriting.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreNoteReadingWriting.swift:8)
+
+- 项目：无笔记创建、debounce 自动保存、保存状态
+  结果：通过
+  证据：`DetailNoteModel` 默认 800ms debounce，保存时进入 `.saving`，成功进入 `.saved`。
+  涉及文件：[MainDetailNoteState.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainDetailNoteState.swift:96)
+
+- 项目：保存失败保留草稿与 Retry
+  结果：通过
+  证据：失败时缓存 draft 并显示 `.failed(mappedError)`；测试覆盖失败后重试写入同一最新草稿。
+  涉及文件：[MainDetailNoteState.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainDetailNoteState.swift:234), [DetailNotePageFeatureTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/DetailNotePageFeatureTests.swift:40)
+
+- 项目：只读 repo / 文件缺失禁写
+  结果：通过
+  证据：`noteWriteBlock` 映射只读和 missing，UI 禁用编辑，测试确认不触发写入。
+  涉及文件：[MainDetailNoteActions.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainDetailNoteActions.swift:4)
+
+- 项目：Expected New Paths
+  结果：通过
+  证据：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`project.pbxproj` 均有对应新增/修改，pbxproj 已纳入 source build phase。
+  涉及文件：[project.pbxproj](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj:63)
+
+- 项目：Forbidden Touches
+  结果：通过
+  证据：`git status --short -- core/src` 与 `git diff --name-only -- core/src` 均无输出。
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+- 项目：Open note file 行为
+  结果：不通过
+  证据：页面规格要求点击 `Open note file` 打开伴生笔记文件；当前路由到 `showMainListFileInFinder`，最终是 Finder reveal/select，不是打开文件。
+  涉及文件：[S1-14-detail-note.md](/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-14-detail-note.md:78), [MainWindow.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/MainWindow.swift:360), [AppPlatformServices.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/App/AppPlatformServices.swift:165)
+
+- 项目：Create Note 后聚焦编辑区
+  结果：不通过
+  证据：页面规格要求创建空草稿并聚焦编辑区；当前 `createNote()` 只切换 state，`TextEditor` 没有 `FocusState` 或等价聚焦逻辑。
+  涉及文件：[S1-14-detail-note.md](/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-14-detail-note.md:78), [MainDetailNoteState.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainDetailNoteState.swift:181), [DetailNoteTabView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/DetailNoteTabView.swift:89)
+
+- 项目：切文件前保存失败草稿提示
+  结果：不通过
+  证据：页面规格要求切文件前若保存失败要保留 draft 并提示；实现有 draft cache，但切换 selection 时没有提示入口或 banner 证据。
+  涉及文件：[S1-14-detail-note.md](/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-14-detail-note.md:76), [MainFileListModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileListModel.swift:67)
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，Detail Note 模型、View、CoreBridge 协议拆分清楚，新增文件未超过 500 行。
+- 注释 / rustdoc / 文档同步：通过，本 task 未新增 Rust public API；Swift 无低价值注释堆叠。
+- 错误处理与边界处理：不通过，保存失败本地保留草稿已做，但离开失败草稿时缺少用户提示闭环。
+- 测试与验证覆盖：通过，build 和 macOS test gate 已运行；新增测试覆盖 read/write、失败重试、只读/缺失、真实 CoreBridge note 读写。
+- 占位、硬编码、mock-only、一次性实现检查：通过，生产路径默认 `CoreBridge()`，真实 UniFFI `readNote/writeNote` 可达；测试 mock 未替代生产闭环。
+
+六、阻塞项
+
+- P1：`Open note file` 未真正打开伴生笔记文件。当前调用链是 reveal in Finder，不能证明满足页面规格的“打开伴生笔记文件”。路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/MainWindow.swift:360`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/App/AppPlatformServices.swift:165`。
+- P1：`Create Note` 后没有聚焦编辑器。路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainDetailNoteState.swift:181`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/DetailNoteTabView.swift:89`。
+- P1：保存失败后切换文件缺少提示证据。路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileListModel.swift:67`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainDetailNoteState.swift:134`。
+
+七、验证情况
+
+- 已运行：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：通过，`** BUILD SUCCEEDED **`。
+- 已运行：`./dev test macos`：标准 `xcodebuild test` 被本地 `testmanagerd` sandbox 阻断；按 validation-driver fallback 复用已构建 XCTest bundle，`xcrun xctest` 通过，319 tests，0 failures。
+- 失败：无产品编译或测试断言失败。
+- 缺失：未做人工 macOS UI 点击验证；但当前阻塞项已可由代码路径直接证明。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。核心 read/write note 闭环已接真实 Core 并通过验证，但 S1-14 页面规格仍有 3 个用户可见交互缺口，严格验收不能通过。
+VERIFY_RESULT: FAIL

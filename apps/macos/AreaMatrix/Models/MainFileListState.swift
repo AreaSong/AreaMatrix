@@ -3,6 +3,7 @@ import Foundation
 enum DetailPaneTab: String, CaseIterable, Identifiable, Sendable {
     case meta
     case log
+    case note
 
     var id: String { rawValue }
 
@@ -12,6 +13,8 @@ enum DetailPaneTab: String, CaseIterable, Identifiable, Sendable {
             return "Meta"
         case .log:
             return "Log"
+        case .note:
+            return "Note"
         }
     }
 }
@@ -76,6 +79,7 @@ extension MainFileActionDestination: Identifiable {
 enum MainListStatusBanner: Equatable, Sendable {
     case renamedPreservedSelection(fileID: Int64)
     case removedSelectedFile(fileID: Int64)
+    case unsavedNoteDraftPreserved(fileID: Int64)
 
     var message: String {
         switch self {
@@ -83,6 +87,8 @@ enum MainListStatusBanner: Equatable, Sendable {
             return "External rename detected. The same file remains selected."
         case .removedSelectedFile:
             return "Selected file is missing or was removed outside AreaMatrix."
+        case .unsavedNoteDraftPreserved:
+            return "无法保存笔记。草稿已保留，返回该文件的 Note tab 后可继续重试。"
         }
     }
 }

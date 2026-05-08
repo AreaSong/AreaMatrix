@@ -91,6 +91,11 @@ protocol RepositoryFileRevealing {
     func revealFile(repoPath: String, relativePath: String) throws
 }
 
+protocol RepositoryFileOpening {
+    @MainActor
+    func openFile(repoPath: String, relativePath: String) throws
+}
+
 protocol RepositoryPathCopying {
     @MainActor
     func copyPath(repoPath: String, relativePath: String) throws
@@ -174,6 +179,19 @@ struct NSWorkspaceRepositoryFileRevealer: RepositoryFileRevealing {
     }
 }
 
+struct NSWorkspaceRepositoryFileOpener: RepositoryFileOpening {
+    @MainActor
+    func openFile(repoPath: String, relativePath: String) throws {
+        let url = try RepositoryFilePathResolver.fileURL(repoPath: repoPath, relativePath: relativePath)
+        guard FileManager.default.fileExists(atPath: url.path) else {
+            throw RepositoryFileActionError.fileMissing(relativePath)
+        }
+        guard NSWorkspace.shared.open(url) else {
+            throw RepositoryFileActionError.openRejected(relativePath)
+        }
+    }
+}
+
 struct NSPasteboardRepositoryPathCopier: RepositoryPathCopying {
     @MainActor
     func copyPath(repoPath: String, relativePath: String) throws {
@@ -236,6 +254,7 @@ enum RepositoryFinderOpenError: Error, Equatable, LocalizedError, Sendable {
 enum RepositoryFileActionError: Error, Equatable, LocalizedError, Sendable {
     case unsafeRelativePath(String)
     case fileMissing(String)
+    case openRejected(String)
 
     var errorDescription: String? {
         switch self {
@@ -243,6 +262,8 @@ enum RepositoryFileActionError: Error, Equatable, LocalizedError, Sendable {
             return "File path is outside this repository: \(path)"
         case .fileMissing(let path):
             return "File is missing from this repository: \(path)"
+        case .openRejected(let path):
+            return "File opener rejected this path: \(path)"
         }
     }
 }

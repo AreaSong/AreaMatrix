@@ -1,0 +1,60 @@
+一、执行结论
+
+已完成。上次验收的 3 个 P1 缺口已修复，并完成重新验证。
+
+二、执行范围
+
+单任务：`2-3/task-07`，仅处理 `S1-14 + C1-14 read-write-note`。
+
+本次 repair 修改/新增的主要文件：
+
+- `apps/macos/AreaMatrix/App/AppPlatformServices.swift`
+- `apps/macos/AreaMatrix/Models/AppShellModel.swift`
+- `apps/macos/AreaMatrix/Models/MainListSystemActions.swift`
+- `apps/macos/AreaMatrix/Models/MainFileListModel.swift`
+- `apps/macos/AreaMatrix/Models/MainFileListState.swift`
+- `apps/macos/AreaMatrix/Models/MainDetailNoteState.swift`
+- `apps/macos/AreaMatrix/Views/Main/DetailNoteTabView.swift`
+- `apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift`
+- `apps/macos/AreaMatrix/Views/Main/MainRepositoryContentNoteDrafts.swift`
+- `apps/macos/AreaMatrix/Views/MainWindow.swift`
+- `apps/macos/AreaMatrixTests/AreaMatrixShellTests.swift`
+- `apps/macos/AreaMatrixTests/AreaMatrixShellTestSupport.swift`
+- `apps/macos/AreaMatrixTests/DetailNotePageFeatureTests.swift`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+
+三、完成情况
+
+- 核对清单：已按 S1-14 页面规格、C1-14 能力规格、MVP control map、Core API/UDL 交叉实现。
+- `Open note file`：已从 Finder reveal 改为通过 `RepositoryFileOpening` / `NSWorkspace.open` 打开伴生 `.md` 文件。
+- `Create Note` 聚焦：已增加 editor focus request，创建空草稿后聚焦 `TextEditor`。
+- 保存失败后切文件提示：失败 draft 仍保留，并在离开该文件时显示 status banner。
+- Forbidden Touches：未触碰 `core/src/**`，`git diff/status -- core/src` 无输出。
+
+四、工程质量
+
+- 生产路径没有 mock-only、fixture-only 或静态状态伪造真实闭环。
+- 新增平台打开文件能力复用 repo-relative path 校验，缺失文件和打开失败显式抛错。
+- 未新增依赖。
+- 已控制关键文件长度：`MainFileListModel.swift` 500 行，`MainRepositoryContentView.swift` 466 行。
+- 未新增 Rust public API，因此无 rustdoc 同步需求。
+
+五、验证情况
+
+已运行并通过：
+
+```bash
+xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO
+./dev test macos
+git diff --check -- apps/macos/AreaMatrix apps/macos/AreaMatrixTests apps/macos/AreaMatrix.xcodeproj/project.pbxproj
+```
+
+`./dev test macos` 中标准 `xcodebuild test` 被本机 `testmanagerd` sandbox 限制阻断，脚本按 repo 规则复用已构建 XCTest bundle 执行 `xcrun xctest`，结果：321 tests，0 failures。
+
+未运行：`swiftlint --strict`、`swiftformat --lint .`，本机未安装 `swiftlint` / `swiftformat`。
+
+六、风险与后续
+
+剩余风险：未做人工 macOS UI 点击验证；当前证据来自 build、XCTest 和代码路径。回滚方式是撤销上述 `apps/macos/**` 与 `project.pbxproj` 的本次修复改动。
+
+建议下一个任务：进入 `2-3/task-07` 的 verify-ready 验收。

@@ -70,6 +70,7 @@ final class OnboardingModel: ObservableObject {
     let errorMapper: any CoreErrorMapping
     let finderOpener: any RepositoryFinderOpening
     let fileRevealer: any RepositoryFileRevealing
+    let fileOpener: any RepositoryFileOpening
     let pathCopier: any RepositoryPathCopying
     let importResultExporter: any ImportResultDetailsExporting
     let importProgressControlState: ImportProgressControlState
@@ -100,6 +101,7 @@ final class OnboardingModel: ObservableObject {
         errorMapper: any CoreErrorMapping = CoreBridge(),
         finderOpener: any RepositoryFinderOpening = NSWorkspaceRepositoryFinderOpener(),
         fileRevealer: any RepositoryFileRevealing = NSWorkspaceRepositoryFileRevealer(),
+        fileOpener: any RepositoryFileOpening = NSWorkspaceRepositoryFileOpener(),
         pathCopier: any RepositoryPathCopying = NSPasteboardRepositoryPathCopier(),
         importResultExporter: any ImportResultDetailsExporting = NSSavePanelImportResultDetailsExporter(),
         importProgressControlState: ImportProgressControlState = ImportProgressControlState(),
@@ -125,6 +127,7 @@ final class OnboardingModel: ObservableObject {
         self.errorMapper = errorMapper
         self.finderOpener = finderOpener
         self.fileRevealer = fileRevealer
+        self.fileOpener = fileOpener
         self.pathCopier = pathCopier
         self.importResultExporter = importResultExporter
         self.importProgressControlState = importProgressControlState
@@ -399,46 +402,6 @@ final class OnboardingModel: ObservableObject {
             ))
         } catch {
             await routeInitializationFailure(error, repoPath: repoPath)
-        }
-    }
-
-    @MainActor
-    func openLearnMore() {
-        do {
-            try helpOpener.openWelcomeHelp()
-        } catch {
-            toastMessage = "Learn more is unavailable right now."
-        }
-    }
-
-    @MainActor
-    func showMainListFileInFinder(opening: RepositoryOpeningResult, relativePath: String) {
-        do {
-            try fileRevealer.revealFile(repoPath: opening.config.repoPath, relativePath: relativePath)
-            toastMessage = nil
-        } catch {
-            toastMessage = "File cannot be shown in Finder."
-        }
-    }
-
-    @MainActor
-    func copyMainListPath(opening: RepositoryOpeningResult, relativePath: String) {
-        do {
-            try pathCopier.copyPath(repoPath: opening.config.repoPath, relativePath: relativePath)
-            toastMessage = "Path copied."
-        } catch {
-            toastMessage = "Path cannot be copied."
-        }
-    }
-
-    @MainActor
-    func collectMainListDiagnostics(opening: RepositoryOpeningResult) async {
-        do {
-            let snapshot = try await diagnosticsCollector.createDiagnosticsSnapshot(repoPath: opening.config.repoPath)
-            toastMessage = "Diagnostics collected at \(snapshot.snapshotPath)."
-        } catch {
-            let mapping = await openingFailureMapping(for: error)
-            toastMessage = mapping.userMessage
         }
     }
 

@@ -16,15 +16,17 @@ struct MainRepositoryContentView: View {
     let onCollectDiagnostics: () async -> Void
     let onShowInFinder: (String) -> Void
     let onCopyPath: (String) -> Void
+    let onOpenNoteFile: (String) -> Void
     let externalCreatedEvent: MainExternalCreatedFileEvent?
     let onExternalCreatedEventHandled: (MainExternalCreatedFileEvent) -> Void
     let importProgressItems: [ImportBatchProgressSnapshot.Item]
-    @StateObject private var fileListModel: MainFileListModel
+    @StateObject var fileListModel: MainFileListModel
     @State private var selectedSidebarID: String = "inbox"
     @State private var selectedFileIDs: Set<Int64> = []
     @State private var selectedImportProgressIDs: Set<String> = []
     @State private var filterText: String = ""
     @StateObject private var dropPreviewModel: ImportDropPreviewModel
+    @StateObject var detailNoteModel: DetailNoteModel
     @State private var tableSortOrder: [KeyPathComparator<FileEntrySnapshot>] = [
         KeyPathComparator(\FileEntrySnapshot.importedAt, order: .reverse),
     ]
@@ -55,7 +57,8 @@ struct MainRepositoryContentView: View {
             await fileListModel.syncExternalCreated(externalCreatedEvent)
             onExternalCreatedEventHandled(externalCreatedEvent)
         }
-        .onChange(of: selectedFileIDs) { _, ids in
+        .onChange(of: selectedFileIDs) { previousIDs, ids in
+            showFailedNoteDraftBannerIfNeeded(leaving: previousIDs)
             if !ids.isEmpty {
                 selectedImportProgressIDs = []
             }
@@ -180,6 +183,7 @@ struct MainRepositoryContentView: View {
         onCollectDiagnostics: @escaping () async -> Void = {},
         onShowInFinder: @escaping (String) -> Void = { _ in },
         onCopyPath: @escaping (String) -> Void = { _ in },
+        onOpenNoteFile: @escaping (String) -> Void = { _ in },
         externalCreatedEvent: MainExternalCreatedFileEvent? = nil,
         onExternalCreatedEventHandled: @escaping (MainExternalCreatedFileEvent) -> Void = { _ in },
         importProgressItems: [ImportBatchProgressSnapshot.Item] = [],
@@ -187,6 +191,7 @@ struct MainRepositoryContentView: View {
         fileDetailer: any CoreFileDetailing = CoreBridge(),
         changeLogLister: any CoreChangeLogListing = CoreBridge(),
         externalChangesSyncer: any CoreExternalChangesSyncing = CoreBridge(),
+        noteStore: any CoreNoteReadingWriting = CoreBridge(),
         categoryPredictor: any CoreCategoryPredicting = CoreBridge(),
         errorMapper: any CoreErrorMapping = CoreBridge(),
         diagnosticsCollector: any CoreDiagnosticsCollecting = CoreBridge()
@@ -200,12 +205,18 @@ struct MainRepositoryContentView: View {
         self.onCollectDiagnostics = onCollectDiagnostics
         self.onShowInFinder = onShowInFinder
         self.onCopyPath = onCopyPath
+        self.onOpenNoteFile = onOpenNoteFile
         self.externalCreatedEvent = externalCreatedEvent
         self.onExternalCreatedEventHandled = onExternalCreatedEventHandled
         self.importProgressItems = importProgressItems
         _dropPreviewModel = StateObject(wrappedValue: ImportDropPreviewModel(
             repoPath: opening.config.repoPath,
             predictor: categoryPredictor
+        ))
+        _detailNoteModel = StateObject(wrappedValue: DetailNoteModel(
+            repoPath: opening.config.repoPath,
+            noteStore: noteStore,
+            errorMapper: errorMapper
         ))
         _fileListModel = StateObject(wrappedValue: MainFileListModel(
             opening: opening,
@@ -439,48 +450,16 @@ struct MainRepositoryContentView: View {
         )
     }
 
-    private var detailPane: some View {
-        MainRepositoryDetailPane(
-            selection: fileListModel.selection,
-            detailErrorMapping: fileListModel.detailErrorMapping,
-            isDetailLoading: fileListModel.isDetailLoading,
-            selectedFileDetail: fileListModel.selectedFileDetail,
-            detailLogState: fileListModel.detailLogState,
-            detailLogDiagnosticsState: fileListModel.detailLogDiagnosticsState,
-            detailExternalCreateSyncState: fileListModel.detailExternalCreateSyncState,
-            detailTabRequest: fileListModel.detailTabRequest,
-            selectedImportProgressRow: selectedImportProgressRow,
-            onRetrySelectedFileDetail: {
-                Task {
-                    await fileListModel.retrySelectedFileDetail()
-                }
-            },
-            onRefreshChangeLog: {
-                Task {
-                    await fileListModel.loadSelectedFileChangeLog()
-                }
-            },
-            onRequestDetailLogDiagnostics: fileListModel.requestDetailLogDiagnosticsPrivacyConfirmation,
-            onConfirmDetailLogDiagnostics: {
-                Task {
-                    await fileListModel.collectDetailLogDiagnostics()
-                }
-            },
-            onCancelDetailLogDiagnostics: fileListModel.cancelDetailLogDiagnosticsPrivacyConfirmation,
-            onDetailTabRequestConsumed: fileListModel.consumeDetailTabRequest
-        )
-        .frame(minWidth: 220, idealWidth: 260, maxWidth: 320, maxHeight: .infinity, alignment: .topLeading)
-    }
-
-    @ViewBuilder
-    private var dropOverlay: some View {
-        if let presentation = dropPreviewModel.presentation {
-            DropZoneOverlay(presentation: presentation)
-                .padding(24)
+    var dropOverlay: some View {
+        Group {
+            if let presentation = dropPreviewModel.presentation {
+                DropZoneOverlay(presentation: presentation)
+                    .padding(24)
+            }
         }
     }
 
-    private var selectedImportProgressRow: ImportProgressListRow? {
+    var selectedImportProgressRow: ImportProgressListRow? {
         guard let id = selectedImportProgressIDs.first else { return nil }
         return importProgressRows.first { $0.id == id }
     }

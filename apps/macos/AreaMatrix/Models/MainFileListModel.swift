@@ -13,14 +13,15 @@ final class MainFileListModel: ObservableObject {
     @Published private(set) var detailLogState: MainDetailLogState = .notLoaded
     @Published private(set) var detailLogDiagnosticsState: MainDetailLogDiagnosticsState = .idle
     @Published private(set) var detailExternalCreateSyncState: MainDetailExternalCreateSyncState = .idle
+    @Published private(set) var selectedFileNoteWriteBlock: MainDetailNoteWriteBlock?
     @Published private(set) var detailTabRequest: MainDetailTabRequest?
     @Published private(set) var pendingActionDestination: MainFileActionDestination?
     @Published private(set) var statusBanner: MainListStatusBanner?
     @Published private(set) var diagnosticsState: MainListDiagnosticsState = .idle
 
     private let repoPath: String
-    private let isReadOnly: Bool
-    private let writeLockedFileIDs: Set<Int64>
+    let isReadOnly: Bool
+    let writeLockedFileIDs: Set<Int64>
     private let fileLister: any CoreFileListing
     private let fileDetailer: any CoreFileDetailing
     private let changeLogLister: any CoreChangeLogListing
@@ -72,6 +73,7 @@ final class MainFileListModel: ObservableObject {
         guard ids.count == 1, let id = ids.first else {
             selection = .multiple(ids)
             selectedFileDetail = nil
+            selectedFileNoteWriteBlock = nil
             detailErrorMapping = nil
             isDetailLoading = false
             resetDetailLog()
@@ -89,6 +91,7 @@ final class MainFileListModel: ObservableObject {
 
         selection = .single(id)
         selectedFileDetail = cachedFile(id: id)
+        selectedFileNoteWriteBlock = selectedFileDetail.flatMap { noteWriteBlock(for: $0) }
         detailErrorMapping = nil
         isDetailLoading = true
         resetDetailLog()
@@ -99,6 +102,7 @@ final class MainFileListModel: ObservableObject {
         guard let selectedFileID = selection.singleFileID else { return }
 
         selectedFileDetail = selectedFileDetail ?? cachedFile(id: selectedFileID)
+        selectedFileNoteWriteBlock = selectedFileDetail.flatMap { noteWriteBlock(for: $0) }
         detailErrorMapping = nil
         isDetailLoading = true
         await loadDetail(id: selectedFileID)
@@ -193,6 +197,7 @@ final class MainFileListModel: ObservableObject {
         }
         if selection.singleFileID == updatedFile.id {
             selectedFileDetail = updatedFile
+            selectedFileNoteWriteBlock = noteWriteBlock(for: updatedFile)
             statusBanner = .renamedPreservedSelection(fileID: updatedFile.id)
         }
     }
@@ -208,9 +213,9 @@ final class MainFileListModel: ObservableObject {
         statusBanner = .removedSelectedFile(fileID: fileID)
     }
 
-    func clearStatusBanner() {
-        statusBanner = nil
-    }
+    func clearStatusBanner() { statusBanner = nil }
+
+    func showUnsavedNoteDraftPreserved(fileID: Int64) { statusBanner = .unsavedNoteDraftPreserved(fileID: fileID) }
 
     func writeActionDisabledReason(fileID: Int64) -> MainFileWriteActionDisabledReason? {
         if isReadOnly { return .repoReadOnly }
@@ -280,6 +285,7 @@ final class MainFileListModel: ObservableObject {
             guard generation == detailGeneration else { return }
             selection = .single(loadedFile.id)
             selectedFileDetail = loadedFile
+            selectedFileNoteWriteBlock = noteWriteBlock(for: loadedFile)
             files = files.map { file in
                 file.id == loadedFile.id ? loadedFile : file
             }
@@ -289,6 +295,7 @@ final class MainFileListModel: ObservableObject {
             let mappedError = await mapCoreError(error)
             guard generation == detailGeneration else { return }
             selectedFileDetail = selectedFileDetail ?? cachedFile(id: id)
+            selectedFileNoteWriteBlock = selectedFileDetail.flatMap { noteWriteBlock(for: $0) }
             detailErrorMapping = mappedError
             isDetailLoading = false
         }
@@ -354,6 +361,7 @@ final class MainFileListModel: ObservableObject {
 
         selection = .single(file.id)
         selectedFileDetail = file
+        selectedFileNoteWriteBlock = noteWriteBlock(for: file)
         detailErrorMapping = nil
         isDetailLoading = true
         await loadDetail(id: file.id)
@@ -387,6 +395,7 @@ final class MainFileListModel: ObservableObject {
         files = loadedFiles.filter { $0.id != removedFileID }
         selection = .single(removedFileID)
         selectedFileDetail = nil
+        selectedFileNoteWriteBlock = nil
         detailErrorMapping = CoreErrorMappingSnapshot.missingFromExternalChange(fileID: removedFileID)
         isDetailLoading = false
         statusBanner = .removedSelectedFile(fileID: removedFileID)
@@ -415,6 +424,7 @@ final class MainFileListModel: ObservableObject {
         detailGeneration += 1
         selection = .none
         selectedFileDetail = nil
+        selectedFileNoteWriteBlock = nil
         detailErrorMapping = nil
         isDetailLoading = false
         resetDetailLog()

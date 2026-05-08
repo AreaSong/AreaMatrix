@@ -246,6 +246,15 @@ final class ShellRecordingFileRevealer: RepositoryFileRevealing {
 }
 
 @MainActor
+final class ShellRecordingFileOpener: RepositoryFileOpening {
+    private(set) var requests: [(repoPath: String, relativePath: String)] = []
+
+    func openFile(repoPath: String, relativePath: String) throws {
+        requests.append((repoPath: repoPath, relativePath: relativePath))
+    }
+}
+
+@MainActor
 final class ShellRecordingPathCopier: RepositoryPathCopying {
     private(set) var requests: [(repoPath: String, relativePath: String)] = []
 

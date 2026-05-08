@@ -5,12 +5,14 @@ struct MainRepositoryDetailPane: View {
     let detailErrorMapping: CoreErrorMappingSnapshot?
     let isDetailLoading: Bool
     let selectedFileDetail: FileEntrySnapshot?
+    let noteWriteBlock: MainDetailNoteWriteBlock?
     let detailLogState: MainDetailLogState
     let detailLogDiagnosticsState: MainDetailLogDiagnosticsState
     let detailExternalCreateSyncState: MainDetailExternalCreateSyncState
     let detailTabRequest: MainDetailTabRequest?
     let selectedImportProgressRow: ImportProgressListRow?
     let onRetrySelectedFileDetail: () -> Void
+    let onOpenNoteFile: (String) -> Void
     let onRefreshChangeLog: () -> Void
     let onRequestDetailLogDiagnostics: () -> Void
     let onConfirmDetailLogDiagnostics: () -> Void
@@ -18,6 +20,47 @@ struct MainRepositoryDetailPane: View {
     let onDetailTabRequestConsumed: (MainDetailTabRequest) -> Void
 
     @State private var selectedTab: DetailPaneTab = .meta
+    @ObservedObject private var noteModel: DetailNoteModel
+
+    init(
+        selection: MainFileSelectionState,
+        detailErrorMapping: CoreErrorMappingSnapshot?,
+        isDetailLoading: Bool,
+        selectedFileDetail: FileEntrySnapshot?,
+        noteWriteBlock: MainDetailNoteWriteBlock?,
+        detailLogState: MainDetailLogState,
+        detailLogDiagnosticsState: MainDetailLogDiagnosticsState,
+        detailExternalCreateSyncState: MainDetailExternalCreateSyncState,
+        detailTabRequest: MainDetailTabRequest?,
+        selectedImportProgressRow: ImportProgressListRow?,
+        onRetrySelectedFileDetail: @escaping () -> Void,
+        onOpenNoteFile: @escaping (String) -> Void,
+        onRefreshChangeLog: @escaping () -> Void,
+        onRequestDetailLogDiagnostics: @escaping () -> Void,
+        onConfirmDetailLogDiagnostics: @escaping () -> Void,
+        onCancelDetailLogDiagnostics: @escaping () -> Void,
+        onDetailTabRequestConsumed: @escaping (MainDetailTabRequest) -> Void,
+        noteModel: DetailNoteModel
+    ) {
+        self.selection = selection
+        self.detailErrorMapping = detailErrorMapping
+        self.isDetailLoading = isDetailLoading
+        self.selectedFileDetail = selectedFileDetail
+        self.noteWriteBlock = noteWriteBlock
+        self.detailLogState = detailLogState
+        self.detailLogDiagnosticsState = detailLogDiagnosticsState
+        self.detailExternalCreateSyncState = detailExternalCreateSyncState
+        self.detailTabRequest = detailTabRequest
+        self.selectedImportProgressRow = selectedImportProgressRow
+        self.onRetrySelectedFileDetail = onRetrySelectedFileDetail
+        self.onOpenNoteFile = onOpenNoteFile
+        self.onRefreshChangeLog = onRefreshChangeLog
+        self.onRequestDetailLogDiagnostics = onRequestDetailLogDiagnostics
+        self.onConfirmDetailLogDiagnostics = onConfirmDetailLogDiagnostics
+        self.onCancelDetailLogDiagnostics = onCancelDetailLogDiagnostics
+        self.onDetailTabRequestConsumed = onDetailTabRequestConsumed
+        self.noteModel = noteModel
+    }
 
     var body: some View {
         Group {
@@ -139,6 +182,13 @@ struct MainRepositoryDetailPane: View {
                 onRequestDiagnostics: onRequestDetailLogDiagnostics,
                 onConfirmDiagnostics: onConfirmDetailLogDiagnostics,
                 onCancelDiagnostics: onCancelDetailLogDiagnostics
+            )
+        case .note:
+            DetailNoteTabView(
+                model: noteModel,
+                file: detail,
+                writeBlock: noteWriteBlock,
+                onOpenNoteFile: onOpenNoteFile
             )
         }
     }

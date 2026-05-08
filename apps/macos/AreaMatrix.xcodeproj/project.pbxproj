@@ -60,6 +60,14 @@
 		0A000000000000000000013C /* MainRepositoryDetailPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000013D /* MainRepositoryDetailPane.swift */; };
 		0A0000000000000000000210 /* DetailLogTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000211 /* DetailLogTabView.swift */; };
 		0A0000000000000000000224 /* DetailExternalCreateSyncStatusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000225 /* DetailExternalCreateSyncStatusView.swift */; };
+		0A0000000000000000000240 /* CoreNoteReadingWriting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000241 /* CoreNoteReadingWriting.swift */; };
+		0A0000000000000000000242 /* InFlightFileChangeTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000243 /* InFlightFileChangeTracker.swift */; };
+		0A0000000000000000000244 /* MainDetailNoteState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000245 /* MainDetailNoteState.swift */; };
+		0A0000000000000000000246 /* MainDetailNoteActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000247 /* MainDetailNoteActions.swift */; };
+		0A0000000000000000000248 /* DetailNoteTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000249 /* DetailNoteTabView.swift */; };
+		0A000000000000000000024A /* DetailNotePageFeatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000024B /* DetailNotePageFeatureTests.swift */; };
+		0A000000000000000000024C /* MainListSystemActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000024D /* MainListSystemActions.swift */; };
+		0A000000000000000000024E /* MainRepositoryContentNoteDrafts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000024F /* MainRepositoryContentNoteDrafts.swift */; };
 		0A000000000000000000013E /* MainFileActionRoutingSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000013F /* MainFileActionRoutingSheet.swift */; };
 		0A0000000000000000000140 /* RenameFileSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000141 /* RenameFileSheet.swift */; };
 		0A0000000000000000000142 /* ChangeCategorySheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000143 /* ChangeCategorySheet.swift */; };
@@ -224,6 +232,14 @@
 		0A000000000000000000013D /* MainRepositoryDetailPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/MainRepositoryDetailPane.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000211 /* DetailLogTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/DetailLogTabView.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000225 /* DetailExternalCreateSyncStatusView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/DetailExternalCreateSyncStatusView.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000241 /* CoreNoteReadingWriting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/CoreNoteReadingWriting.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000243 /* InFlightFileChangeTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/App/InFlightFileChangeTracker.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000245 /* MainDetailNoteState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/MainDetailNoteState.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000247 /* MainDetailNoteActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/MainDetailNoteActions.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000249 /* DetailNoteTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/DetailNoteTabView.swift; sourceTree = SOURCE_ROOT; };
+		0A000000000000000000024B /* DetailNotePageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/DetailNotePageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
+		0A000000000000000000024D /* MainListSystemActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/MainListSystemActions.swift; sourceTree = SOURCE_ROOT; };
+		0A000000000000000000024F /* MainRepositoryContentNoteDrafts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/MainRepositoryContentNoteDrafts.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000013F /* MainFileActionRoutingSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/MainFileActionRoutingSheet.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000141 /* RenameFileSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/RenameFileSheet.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000143 /* ChangeCategorySheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/ChangeCategorySheet.swift; sourceTree = SOURCE_ROOT; };
@@ -381,6 +397,7 @@
 				0A0000000000000000000013 /* AreaMatrixApp.swift */,
 				0A0000000000000000000125 /* AppPlatformServices.swift */,
 				0A0000000000000000000229 /* MainExternalCreatedFileWatcher.swift */,
+				0A0000000000000000000243 /* InFlightFileChangeTracker.swift */,
 				0A0000000000000000000015 /* AreaMatrixAppSmokeTests.swift */,
 			);
 			name = App;
@@ -394,6 +411,8 @@
 				0A000000000000000000013D /* MainRepositoryDetailPane.swift */,
 				0A0000000000000000000211 /* DetailLogTabView.swift */,
 				0A0000000000000000000225 /* DetailExternalCreateSyncStatusView.swift */,
+				0A0000000000000000000249 /* DetailNoteTabView.swift */,
+				0A000000000000000000024F /* MainRepositoryContentNoteDrafts.swift */,
 				0A000000000000000000013F /* MainFileActionRoutingSheet.swift */,
 				0A0000000000000000000141 /* RenameFileSheet.swift */,
 				0A0000000000000000000143 /* ChangeCategorySheet.swift */,
@@ -438,6 +457,7 @@
 				0A0000000000000000000171 /* CoreImporting.swift */,
 				0A0000000000000000000157 /* CoreExternalChangesSyncing.swift */,
 				0A00000000000000000001E3 /* CoreChangeLogListing.swift */,
+				0A0000000000000000000241 /* CoreNoteReadingWriting.swift */,
 				0A000000000000000000001B /* AreaMatrix-Bridging-Header.h */,
 				0A000000000000000000003B /* UniFFI */,
 			);
@@ -490,6 +510,9 @@
 				0A0000000000000000000123 /* OnboardingModelInputs.swift */,
 				0A0000000000000000000131 /* MainFileListModel.swift */,
 				0A0000000000000000000223 /* MainFileListState.swift */,
+				0A0000000000000000000245 /* MainDetailNoteState.swift */,
+				0A0000000000000000000247 /* MainDetailNoteActions.swift */,
+				0A000000000000000000024D /* MainListSystemActions.swift */,
 				0A0000000000000000000221 /* MainDetailExternalCreateSyncState.swift */,
 				0A0000000000000000000227 /* MainExternalCreatedFileActions.swift */,
 				0A0000000000000000000135 /* MainListVisibleFileFiltering.swift */,
@@ -560,6 +583,7 @@
 					0A0000000000000000000205 /* DetailLogExternalRenamedPageFeatureTests.swift */,
 					0A0000000000000000000207 /* DetailLogExternalRemovedPageFeatureTests.swift */,
 					0A0000000000000000000231 /* DetailLogPageIntegrationVerifyTests.swift */,
+					0A000000000000000000024B /* DetailNotePageFeatureTests.swift */,
 				0A0000000000000000000137 /* MainListIntegrationFilterTests.swift */,
 				0A0000000000000000000139 /* MainListIntegrationClosureTests.swift */,
 				0A000000000000000000014B /* MainLoadingAdoptExistingTests.swift */,
@@ -744,6 +768,7 @@
 				0A000000000000000000017C /* ImportProgressRouteState.swift in Sources */,
 				0A00000000000000000001CE /* ImportProgressActions.swift in Sources */,
 				0A00000000000000000001DE /* ImportResultRouteActions.swift in Sources */,
+				0A000000000000000000024C /* MainListSystemActions.swift in Sources */,
 				0A000000000000000000017E /* ImportProgressView.swift in Sources */,
 				0A00000000000000000001D4 /* ImportResultView.swift in Sources */,
 				0A00000000000000000001D6 /* ImportProgressListIntegration.swift in Sources */,
@@ -751,6 +776,8 @@
 				0A000000000000000000013C /* MainRepositoryDetailPane.swift in Sources */,
 				0A0000000000000000000210 /* DetailLogTabView.swift in Sources */,
 				0A0000000000000000000224 /* DetailExternalCreateSyncStatusView.swift in Sources */,
+				0A0000000000000000000248 /* DetailNoteTabView.swift in Sources */,
+				0A000000000000000000024E /* MainRepositoryContentNoteDrafts.swift in Sources */,
 				0A000000000000000000013E /* MainFileActionRoutingSheet.swift in Sources */,
 				0A0000000000000000000140 /* RenameFileSheet.swift in Sources */,
 				0A0000000000000000000142 /* ChangeCategorySheet.swift in Sources */,
@@ -773,11 +800,15 @@
 				0A00000000000000000000F6 /* DiagnosticsSnapshotState.swift in Sources */,
 				0A00000000000000000000C0 /* CoreRepositoryOpening.swift in Sources */,
 				0A00000000000000000000F8 /* CoreBridgeSnapshots.swift in Sources */,
+				0A0000000000000000000242 /* InFlightFileChangeTracker.swift in Sources */,
 				0A0000000000000000000100 /* CoreFileListing.swift in Sources */,
 				0A0000000000000000000170 /* CoreImporting.swift in Sources */,
 				0A0000000000000000000156 /* CoreExternalChangesSyncing.swift in Sources */,
 				0A00000000000000000001E2 /* CoreChangeLogListing.swift in Sources */,
+				0A0000000000000000000240 /* CoreNoteReadingWriting.swift in Sources */,
 				0A0000000000000000000222 /* MainFileListState.swift in Sources */,
+				0A0000000000000000000244 /* MainDetailNoteState.swift in Sources */,
+				0A0000000000000000000246 /* MainDetailNoteActions.swift in Sources */,
 				0A0000000000000000000220 /* MainDetailExternalCreateSyncState.swift in Sources */,
 				0A0000000000000000000226 /* MainExternalCreatedFileActions.swift in Sources */,
 				0A0000000000000000000158 /* MainRepoExternalRemovalActions.swift in Sources */,
@@ -835,6 +866,7 @@
 					0A0000000000000000000204 /* DetailLogExternalRenamedPageFeatureTests.swift in Sources */,
 					0A0000000000000000000206 /* DetailLogExternalRemovedPageFeatureTests.swift in Sources */,
 					0A0000000000000000000230 /* DetailLogPageIntegrationVerifyTests.swift in Sources */,
+					0A000000000000000000024A /* DetailNotePageFeatureTests.swift in Sources */,
 				0A0000000000000000000136 /* MainListIntegrationFilterTests.swift in Sources */,
 				0A0000000000000000000138 /* MainListIntegrationClosureTests.swift in Sources */,
 				0A000000000000000000014A /* MainLoadingAdoptExistingTests.swift in Sources */,

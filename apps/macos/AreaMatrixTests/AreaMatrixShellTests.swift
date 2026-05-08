@@ -436,19 +436,24 @@ final class AreaMatrixShellTests: XCTestCase {
     func testMainListSystemActionsUseRepositoryRelativePath() {
         let opening = RepositoryOpeningResult.shellFixture(repoPath: "/tmp/repo", fileCount: 1)
         let revealer = ShellRecordingFileRevealer()
+        let opener = ShellRecordingFileOpener()
         let copier = ShellRecordingPathCopier()
         let model = OnboardingModel(
             settingsReader: ShellStaticSettingsReader(repoPath: nil),
             fileRevealer: revealer,
+            fileOpener: opener,
             pathCopier: copier,
             helpOpener: ShellNoopWelcomeHelpOpener()
         )
 
         model.showMainListFileInFinder(opening: opening, relativePath: "docs/a.pdf")
+        model.openMainListFile(opening: opening, relativePath: "docs/a.pdf.md")
         model.copyMainListPath(opening: opening, relativePath: "docs/a.pdf")
 
         XCTAssertEqual(revealer.requests.map(\.repoPath), ["/tmp/repo"])
         XCTAssertEqual(revealer.requests.map(\.relativePath), ["docs/a.pdf"])
+        XCTAssertEqual(opener.requests.map(\.repoPath), ["/tmp/repo"])
+        XCTAssertEqual(opener.requests.map(\.relativePath), ["docs/a.pdf.md"])
         XCTAssertEqual(copier.requests.map(\.repoPath), ["/tmp/repo"])
         XCTAssertEqual(copier.requests.map(\.relativePath), ["docs/a.pdf"])
         XCTAssertEqual(model.toastMessage, "Path copied.")
