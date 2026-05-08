@@ -178,6 +178,9 @@
 		0A0000000000000000000286 /* RepositorySettingsTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000287 /* RepositorySettingsTestSupport.swift */; };
 		0A0000000000000000000288 /* RepositorySettingsActionState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000289 /* RepositorySettingsActionState.swift */; };
 		0A000000000000000000028A /* RepositorySettingsPageIntegrationVerifyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000028B /* RepositorySettingsPageIntegrationVerifyTests.swift */; };
+		0A0000000000000000000290 /* ClassifierSettingsModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000291 /* ClassifierSettingsModel.swift */; };
+		0A0000000000000000000292 /* ClassifierSettingsPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000293 /* ClassifierSettingsPane.swift */; };
+		0A0000000000000000000294 /* ClassifierSettingsPageFeatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000295 /* ClassifierSettingsPageFeatureTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -276,6 +279,9 @@
 		0A0000000000000000000287 /* RepositorySettingsTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/RepositorySettingsTestSupport.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000289 /* RepositorySettingsActionState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/RepositorySettingsActionState.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000028B /* RepositorySettingsPageIntegrationVerifyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/RepositorySettingsPageIntegrationVerifyTests.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000291 /* ClassifierSettingsModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ClassifierSettingsModel.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000293 /* ClassifierSettingsPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Settings/ClassifierSettingsPane.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000295 /* ClassifierSettingsPageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ClassifierSettingsPageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000013F /* MainFileActionRoutingSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/MainFileActionRoutingSheet.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000141 /* RenameFileSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/RenameFileSheet.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000143 /* ChangeCategorySheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/ChangeCategorySheet.swift; sourceTree = SOURCE_ROOT; };
@@ -446,6 +452,7 @@
 			children = (
 				0A0000000000000000000014 /* MainWindow.swift */,
 				0A0000000000000000000273 /* GeneralSettingsView.swift */,
+				0A0000000000000000000293 /* ClassifierSettingsPane.swift */,
 				0A0000000000000000000283 /* RepositorySettingsPane.swift */,
 				0A00000000000000000000D1 /* MainRepositoryContentView.swift */,
 				0A000000000000000000013D /* MainRepositoryDetailPane.swift */,
@@ -519,6 +526,7 @@
 			children = (
 				0A0000000000000000000018 /* AppShellModel.swift */,
 				0A0000000000000000000271 /* GeneralSettingsModel.swift */,
+				0A0000000000000000000291 /* ClassifierSettingsModel.swift */,
 				0A0000000000000000000277 /* GeneralSettingsActions.swift */,
 				0A0000000000000000000281 /* RepositorySettingsModel.swift */,
 				0A0000000000000000000289 /* RepositorySettingsActionState.swift */,
@@ -634,6 +642,7 @@
 				0A000000000000000000024B /* DetailNotePageFeatureTests.swift */,
 				0A0000000000000000000279 /* GeneralSettingsPageFeatureTests.swift */,
 				0A000000000000000000027B /* GeneralSettingsImportDefaultModeTests.swift */,
+				0A0000000000000000000295 /* ClassifierSettingsPageFeatureTests.swift */,
 				0A000000000000000000027F /* GeneralSettingsPageIntegrationVerifyTests.swift */,
 				0A0000000000000000000285 /* RepositorySettingsPageFeatureTests.swift */,
 				0A000000000000000000028B /* RepositorySettingsPageIntegrationVerifyTests.swift */,
@@ -823,6 +832,7 @@
 				0A0000000000000000000196 /* ImportBatchDuplicatePrecheck.swift in Sources */,
 				0A000000000000000000017C /* ImportProgressRouteState.swift in Sources */,
 				0A0000000000000000000270 /* GeneralSettingsModel.swift in Sources */,
+				0A0000000000000000000290 /* ClassifierSettingsModel.swift in Sources */,
 				0A0000000000000000000276 /* GeneralSettingsActions.swift in Sources */,
 				0A0000000000000000000280 /* RepositorySettingsModel.swift in Sources */,
 				0A0000000000000000000288 /* RepositorySettingsActionState.swift in Sources */,
@@ -834,6 +844,7 @@
 				0A00000000000000000001D6 /* ImportProgressListIntegration.swift in Sources */,
 				0A00000000000000000001DA /* MainCurrentListErrorPane.swift in Sources */,
 				0A0000000000000000000272 /* GeneralSettingsView.swift in Sources */,
+				0A0000000000000000000292 /* ClassifierSettingsPane.swift in Sources */,
 				0A0000000000000000000282 /* RepositorySettingsPane.swift in Sources */,
 				0A000000000000000000013C /* MainRepositoryDetailPane.swift in Sources */,
 				0A0000000000000000000210 /* DetailLogTabView.swift in Sources */,
@@ -935,6 +946,7 @@
 					0A000000000000000000024A /* DetailNotePageFeatureTests.swift in Sources */,
 					0A0000000000000000000278 /* GeneralSettingsPageFeatureTests.swift in Sources */,
 					0A000000000000000000027A /* GeneralSettingsImportDefaultModeTests.swift in Sources */,
+					0A0000000000000000000294 /* ClassifierSettingsPageFeatureTests.swift in Sources */,
 					0A000000000000000000027E /* GeneralSettingsPageIntegrationVerifyTests.swift in Sources */,
 					0A0000000000000000000284 /* RepositorySettingsPageFeatureTests.swift in Sources */,
 					0A000000000000000000028A /* RepositorySettingsPageIntegrationVerifyTests.swift in Sources */,

@@ -89,6 +89,8 @@ struct GeneralSettingsView: View {
                 .tag("general")
             Label("资料库", systemImage: "folder")
                 .tag("repository")
+            Label("分类规则", systemImage: "tag")
+                .tag("classifier")
         }
         .listStyle(.sidebar)
         .frame(width: 180)
@@ -103,6 +105,8 @@ struct GeneralSettingsView: View {
                 onChangeRepository: onChangeRepository,
                 onOpenRecoveryTools: onOpenRepositoryRecovery
             )
+        case "classifier":
+            ClassifierSettingsPane(repoPath: model.repoPath)
         default:
             generalContent
         }
