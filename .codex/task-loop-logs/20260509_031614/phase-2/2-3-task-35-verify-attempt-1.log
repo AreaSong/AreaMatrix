@@ -1,0 +1,79 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`2-3/task-35`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-3-detail-settings/task-35-s1-35-c1-10-resolve-name-conflict.md`
+- 代码范围：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：12
+- 未覆盖项数：0
+- 通过项数：12
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 S1-35 页面中的 C1-10 功能点
+- 结果：通过
+- 证据：`ChangeCategorySheet` 只在 change-category sheet 内消费 `nameConflictResolved`、Conflict 错误和 Rename first 路由；未新增相邻页面实现。涉及 `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ChangeCategorySheet.swift:137`
+
+- 项目：读取并对齐页面规格、control map、Core API、C1-10 规格
+- 结果：通过
+- 证据：control map 声明 `S1-35` 绑定 `C1-24, C1-10`；Core API/UDL 均存在 `preview_move_to_category`、`move_to_category` 和 `name_conflict_resolved`。涉及 `/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:50`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:58`
+
+- 项目：只接入 C1-10 对应 CoreBridge / 状态 / 错误映射
+- 结果：通过
+- 证据：Swift 通过 `CoreFileCategoryMoving` -> `CoreBridge.previewMoveToCategory` -> UniFFI `previewMoveToCategory`，并把 `CoreError.Conflict` 映射为 Rename first。涉及 `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreMoveToCategory.swift:41`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileCategoryMoveState.swift:62`
+
+- 项目：不顺手实现相邻页面
+- 结果：通过
+- 证据：改动集中在 S1-35 routing/state/sheet/tests；`core/src/**` 无 diff，未扩展 Core 能力。涉及 `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentActionRouting.swift:36`
+
+- 项目：S1-35 中 C1-10 用户可见功能可触发和验收
+- 结果：通过
+- 证据：自动编号预览显示 `Target name exists...`；无法自动编号时显示 `Cannot create a safe target name...` 并提供 `Rename first`。测试覆盖自动编号和 Conflict 路由。涉及 `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ChangeCategoryPageFeatureTests.swift:184`
+
+- 项目：没有 mock-only 或静态状态伪造真实 Core 闭环
+- 结果：通过
+- 证据：除模型级 recording 测试外，真实 CoreBridge 测试创建临时 repo、导入冲突文件并调用真实 `previewMoveToCategory`，验证原文件未移动且目标冲突自动编号。涉及 `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ChangeCategoryPageFeatureTests.swift:295`
+
+- 项目：Expected New Paths
+- 结果：通过
+- 证据：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`project.pbxproj` 均存在；测试文件已收录到 Xcode project。涉及 `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj:60`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git diff --name-only -- core/src` 无输出，未触碰 `/Users/as/Ai-Project/project/AreaMatrix/core/src/**`。
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，状态、视图、桥接、路由职责分离，未把 Core 调用写进 SwiftUI body。
+- 注释 / rustdoc / 文档同步：通过，本任务未新增 public Rust API；UDL/Core API 已有对应合同。
+- 错误处理与边界处理：通过，preview/move 错误均走 `mapCoreError`，Conflict 预检失败不会移动文件。
+- 测试与验证覆盖：通过，覆盖模型 preview、自动编号可见性、Conflict -> Rename first、真实 CoreBridge preview/move。
+- 占位、硬编码、mock-only、一次性实现检查：通过，产品路径走 `CoreBridge` 和 generated UniFFI；fixture 仅存在于测试。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+- 结果：通过，`** BUILD SUCCEEDED **`
+
+- 已运行：`./dev test macos`
+- 结果：通过；`xcodebuild test` 被本地 sandbox 的 `testmanagerd.control` 通信限制拦下后，按 repo-local validation-driver fallback 到 `xcrun xctest`，最终 431 tests，0 failures。
+
+- 缺失：未运行 SwiftFormat / SwiftLint；本 task manifest 与 repo-local validation matrix 对 `apps/macos/**` 要求 build + `./dev test macos`，本次已覆盖。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS

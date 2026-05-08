@@ -58,4 +58,14 @@ enum MainFileCategoryMoveState: Equatable, Sendable {
               currentRequest == request else { return nil }
         return operation
     }
+
+    func unresolvedNameConflict(
+        for fileID: Int64,
+        targetCategory: String
+    ) -> CoreErrorMappingSnapshot? {
+        guard failureOperation(for: fileID, targetCategory: targetCategory) == .preview,
+              let mapping = failure(for: fileID, targetCategory: targetCategory),
+              mapping.kind == .conflict else { return nil }
+        return mapping
+    }
 }

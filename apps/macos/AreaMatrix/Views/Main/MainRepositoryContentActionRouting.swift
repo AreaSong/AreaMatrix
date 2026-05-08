@@ -43,6 +43,9 @@ extension MainRepositoryContentView {
                     }
                 }
             },
+            onRenameFirstFromChangeCategory: { fileID in
+                fileListModel.beginRenameFromChangeCategory(fileID: fileID)
+            },
             onDelete: { fileID, operation in
                 Task { await fileListModel.submitDelete(fileID: fileID, operation: operation) }
             },

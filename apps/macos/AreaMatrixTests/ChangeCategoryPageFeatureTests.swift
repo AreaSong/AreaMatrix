@@ -129,7 +129,6 @@ final class ChangeCategoryPageFeatureTests: XCTestCase {
 
     @MainActor
     func testS135C124ContentRefreshUpdatesTreeAndSwitchesToMovedCategory() async {
-        let original = FileEntrySnapshot.changeCategoryFixture(id: 244, name: "contract.pdf")
         let moved = FileEntrySnapshot.changeCategoryFixture(
             id: 244,
             path: "finance/contract.pdf",
@@ -182,6 +181,77 @@ final class ChangeCategoryPageFeatureTests: XCTestCase {
         XCTAssertEqual(mappedErrors, [CoreError.Classify(reason: "unknown category")])
     }
 
+    @MainActor
+    func testS135C110PreviewKeepsCoreAutoNumberedNameVisibleWithoutMovingFile() async {
+        let original = FileEntrySnapshot.changeCategoryFixture(id: 245, name: "contract.pdf")
+        let preview = MoveToCategoryPreviewSnapshot.changeCategoryFixture(
+            fileID: original.id,
+            targetPath: "finance/contract_1.pdf",
+            targetName: "contract_1.pdf",
+            nameConflictResolved: true
+        )
+        let mover = ChangeCategoryRecordingMover(previewResult: .success(preview))
+        let model = MainFileListModel(
+            opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [original]),
+            fileLister: DetailMetaNoopLister(),
+            fileDetailer: DetailMetaImmediateDetailer(result: .success(original)),
+            fileCategoryMover: mover,
+            errorMapper: DetailMetaErrorMapper(mapping: .changeCategoryClassify())
+        )
+
+        await model.selectFiles([original.id])
+        model.beginChangeCategory()
+        await model.loadMoveToCategoryPreview(fileID: original.id, targetCategory: "finance")
+        let requests = await mover.recordedRequests()
+
+        XCTAssertEqual(requests, [.preview(repoPath: "/tmp/repo", fileID: original.id, targetCategory: "finance")])
+        XCTAssertEqual(model.files, [original])
+        XCTAssertEqual(
+            model.changeCategoryState.preview(for: .init(fileID: original.id, targetCategory: "finance")),
+            preview
+        )
+        XCTAssertTrue(preview.nameConflictResolved)
+        XCTAssertEqual(preview.targetName, "contract_1.pdf")
+        XCTAssertEqual(preview.targetPath, "finance/contract_1.pdf")
+    }
+
+    @MainActor
+    func testS135C110UnresolvedNameConflictRoutesToRenameFirstWithoutMoving() async {
+        let original = FileEntrySnapshot.changeCategoryFixture(id: 246, name: "contract.pdf")
+        let mapping = CoreErrorMappingSnapshot.changeCategoryConflict()
+        let mapper = DetailMetaErrorMapper(mapping: mapping)
+        let mover = ChangeCategoryRecordingMover(
+            previewResult: .failure(CoreError.Conflict(path: "finance/contract.pdf"))
+        )
+        let model = MainFileListModel(
+            opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [original]),
+            fileLister: DetailMetaNoopLister(),
+            fileDetailer: DetailMetaImmediateDetailer(result: .success(original)),
+            fileCategoryMover: mover,
+            errorMapper: mapper
+        )
+
+        await model.selectFiles([original.id])
+        model.beginChangeCategory()
+        await model.loadMoveToCategoryPreview(fileID: original.id, targetCategory: "finance")
+        let requests = await mover.recordedRequests()
+        let mappedErrors = await mapper.recordedErrors()
+
+        XCTAssertEqual(requests, [.preview(repoPath: "/tmp/repo", fileID: original.id, targetCategory: "finance")])
+        XCTAssertEqual(mappedErrors, [CoreError.Conflict(path: "finance/contract.pdf")])
+        XCTAssertEqual(model.changeCategoryState.unresolvedNameConflict(
+            for: original.id,
+            targetCategory: "finance"
+        ), mapping)
+
+        model.beginRenameFromChangeCategory(fileID: original.id)
+
+        XCTAssertEqual(model.pendingActionDestination, .rename(fileID: original.id))
+        XCTAssertEqual(model.changeCategoryState, .idle)
+        XCTAssertEqual(model.files, [original])
+        XCTAssertEqual(model.selectedFileDetail, original)
+    }
+
     func testS135C124DefaultCoreBridgePreviewsThenMovesCopiedFileAndWritesChangeLog() async throws {
         let repoURL = try makeChangeCategoryTemporaryDirectory(prefix: "repo")
         let sourceRoot = try makeChangeCategoryTemporaryDirectory(prefix: "source")
@@ -221,16 +291,57 @@ final class ChangeCategoryPageFeatureTests: XCTestCase {
         XCTAssertFalse(FileManager.default.fileExists(atPath: repoURL.appendingPathComponent("docs/contract.pdf").path))
         XCTAssertTrue(changes.contains { $0.action == "moved" })
     }
+
+    func testS135C110DefaultCoreBridgePreviewsAutoNumberedTargetNameWithoutMovingFile() async throws {
+        let repoURL = try makeChangeCategoryTemporaryDirectory(prefix: "repo")
+        let sourceRoot = try makeChangeCategoryTemporaryDirectory(prefix: "source")
+        defer {
+            try? FileManager.default.removeItem(at: repoURL)
+            try? FileManager.default.removeItem(at: sourceRoot)
+        }
+        let financeSourceURL = sourceRoot.appendingPathComponent("finance-contract.pdf")
+        let docsSourceURL = sourceRoot.appendingPathComponent("docs-contract.pdf")
+        try Data("existing finance bytes".utf8).write(to: financeSourceURL)
+        try Data("moving docs bytes".utf8).write(to: docsSourceURL)
+        let bridge = CoreBridge()
+
+        try await bridge.initializeEmptyRepository(repoPath: repoURL.path)
+        _ = try await bridge.importCopiedFile(
+            repoPath: repoURL.path,
+            sourceURL: financeSourceURL,
+            overrideCategory: "finance",
+            overrideFilename: "contract.pdf",
+            duplicateStrategy: .skip
+        )
+        let movingFile = try await bridge.importCopiedFile(
+            repoPath: repoURL.path,
+            sourceURL: docsSourceURL,
+            overrideCategory: "docs",
+            overrideFilename: "contract.pdf",
+            duplicateStrategy: .skip
+        )
+
+        let preview = try await bridge.previewMoveToCategory(
+            repoPath: repoURL.path,
+            fileID: movingFile.id,
+            newCategory: "finance"
+        )
+
+        XCTAssertEqual(preview.fileID, movingFile.id)
+        XCTAssertEqual(preview.fromCategory, "docs")
+        XCTAssertEqual(preview.toCategory, "finance")
+        XCTAssertTrue(preview.nameConflictResolved)
+        XCTAssertTrue(preview.targetPath.hasPrefix("finance/"))
+        XCTAssertNotEqual(preview.targetPath, "finance/contract.pdf")
+        XCTAssertNotEqual(preview.targetName, "contract.pdf")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: repoURL.appendingPathComponent("docs/contract.pdf").path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: repoURL.appendingPathComponent("finance/contract.pdf").path))
+    }
 }
 
 private enum ChangeCategoryRequest: Equatable, Sendable {
     case preview(repoPath: String, fileID: Int64, targetCategory: String)
     case move(repoPath: String, fileID: Int64, targetCategory: String)
-}
-
-private struct ChangeCategoryTreeRequest: Equatable, Sendable {
-    var repoPath: String
-    var locale: String
 }
 
 private actor ChangeCategoryRecordingMover: CoreFileCategoryMoving {
@@ -291,22 +402,6 @@ private actor ChangeCategoryRecordingLister: CoreFileListing {
     func recordedRequests() -> [FileFilterSnapshot] { requests }
 }
 
-private actor ChangeCategoryTreeLister: CoreRepositoryTreeListing {
-    private let result: Result<RepositoryTreeNodeSnapshot, Error>
-    private var requests: [ChangeCategoryTreeRequest] = []
-
-    init(result: Result<RepositoryTreeNodeSnapshot, Error>) {
-        self.result = result
-    }
-
-    func listTree(repoPath: String, locale: String) async throws -> RepositoryTreeNodeSnapshot {
-        requests.append(ChangeCategoryTreeRequest(repoPath: repoPath, locale: locale))
-        return try result.get()
-    }
-
-    func recordedRequests() -> [ChangeCategoryTreeRequest] { requests }
-}
-
 private extension FileEntrySnapshot {
     static func changeCategoryFixture(
         id: Int64,
@@ -332,14 +427,6 @@ private extension FileEntrySnapshot {
     }
 }
 
-private extension RepositoryOpeningResult {
-    static func changeCategoryOpening(repoPath: String, files: [FileEntrySnapshot]) -> RepositoryOpeningResult {
-        var opening = RepositoryOpeningResult.detailMetaFixture(repoPath: repoPath, files: files)
-        opening.tree = .changeCategoryTree(docsCount: Int64(files.count), financeCount: 0)
-        return opening
-    }
-}
-
 private extension RepositoryTreeNodeSnapshot {
     static func changeCategoryTree(docsCount: Int64, financeCount: Int64) -> RepositoryTreeNodeSnapshot {
         RepositoryTreeNodeSnapshot(
@@ -362,7 +449,8 @@ private extension MoveToCategoryPreviewSnapshot {
         fileID: Int64,
         targetPath: String,
         targetName: String,
-        indexOnly: Bool = false
+        indexOnly: Bool = false,
+        nameConflictResolved: Bool = false
     ) -> MoveToCategoryPreviewSnapshot {
         MoveToCategoryPreviewSnapshot(
             fileID: fileID,
@@ -373,7 +461,7 @@ private extension MoveToCategoryPreviewSnapshot {
             targetName: targetName,
             storageMode: indexOnly ? "Indexed" : "Copied",
             indexOnly: indexOnly,
-            nameConflictResolved: false,
+            nameConflictResolved: nameConflictResolved,
             willMoveFile: !indexOnly
         )
     }
@@ -390,11 +478,22 @@ private extension CoreErrorMappingSnapshot {
             rawContext: "S1-35 C1-24 preview_move_to_category"
         )
     }
+
+    static func changeCategoryConflict() -> CoreErrorMappingSnapshot {
+        CoreErrorMappingSnapshot(
+            kind: .conflict,
+            userMessage: "Path conflict.",
+            severity: .medium,
+            suggestedAction: "Rename the file first, then retry.",
+            recoverability: .userActionRequired,
+            rawContext: "S1-35 C1-10 safe target name"
+        )
+    }
 }
 
 private func makeChangeCategoryTemporaryDirectory(prefix: String) throws -> URL {
-    let url = FileManager.default.temporaryDirectory
-        .appendingPathComponent("AreaMatrixChangeCategory-\(prefix)-\(UUID().uuidString)", isDirectory: true)
+    let name = "AreaMatrixChangeCategory-\(prefix)-\(UUID().uuidString)"
+    let url = FileManager.default.temporaryDirectory.appendingPathComponent(name, isDirectory: true)
     try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
     return url
 }

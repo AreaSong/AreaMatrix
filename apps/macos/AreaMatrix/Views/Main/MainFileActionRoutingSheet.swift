@@ -14,6 +14,7 @@ struct MainFileActionRoutingSheet: View {
     let onShowExistingFile: (Int64) -> Void
     let onPreviewChangeCategory: (Int64, String) -> Void
     let onChangeCategory: (Int64, String) -> Void
+    let onRenameFirstFromChangeCategory: (Int64) -> Void
     let onDelete: (Int64, MainFileDeleteOperation) -> Void
     let onCollectDiagnostics: () -> Void
 
@@ -36,6 +37,7 @@ struct MainFileActionRoutingSheet: View {
                 onCancel: onDismiss,
                 onPreview: onPreviewChangeCategory,
                 onChangeCategory: onChangeCategory,
+                onRenameFirst: onRenameFirstFromChangeCategory,
                 onCollectDiagnostics: onCollectDiagnostics
             )
         case .delete:

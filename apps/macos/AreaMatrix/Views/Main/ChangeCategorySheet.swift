@@ -7,6 +7,7 @@ struct ChangeCategorySheet: View {
     let onCancel: () -> Void
     let onPreview: (Int64, String) -> Void
     let onChangeCategory: (Int64, String) -> Void
+    let onRenameFirst: (Int64) -> Void
     let onCollectDiagnostics: () -> Void
     @State private var targetCategory: String
 
@@ -17,6 +18,7 @@ struct ChangeCategorySheet: View {
         onCancel: @escaping () -> Void,
         onPreview: @escaping (Int64, String) -> Void,
         onChangeCategory: @escaping (Int64, String) -> Void,
+        onRenameFirst: @escaping (Int64) -> Void,
         onCollectDiagnostics: @escaping () -> Void
     ) {
         self.file = file
@@ -25,6 +27,7 @@ struct ChangeCategorySheet: View {
         self.onCancel = onCancel
         self.onPreview = onPreview
         self.onChangeCategory = onChangeCategory
+        self.onRenameFirst = onRenameFirst
         self.onCollectDiagnostics = onCollectDiagnostics
         _targetCategory = State(initialValue: Self.defaultTargetCategory(for: file, categoryRows: categoryRows))
     }
@@ -101,7 +104,7 @@ struct ChangeCategorySheet: View {
 
     private func failureView(_ failure: CoreErrorMappingSnapshot, file: FileEntrySnapshot) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Label(failure.userMessage, systemImage: "exclamationmark.triangle")
+            Label(failureMessage(failure, file: file), systemImage: "exclamationmark.triangle")
                 .font(.caption.weight(.semibold))
             Text(failure.suggestedAction)
                 .font(.caption)
@@ -117,6 +120,11 @@ struct ChangeCategorySheet: View {
 
     private func failureActions(for file: FileEntrySnapshot) -> some View {
         HStack {
+            if hasUnresolvedNameConflict(for: file) {
+                Button("Rename first") {
+                    onRenameFirst(file.id)
+                }
+            }
             if state.failureOperation(for: file.id, targetCategory: targetCategory) == .preview {
                 Button("Retry preview") {
                     onPreview(file.id, targetCategory)
@@ -135,7 +143,11 @@ struct ChangeCategorySheet: View {
                     color: .secondary
                 )
             } else if preview.nameConflictResolved {
-                statusLabel("AreaMatrix will use \(preview.targetName).", systemImage: "number", color: .secondary)
+                statusLabel(
+                    "Target name exists. AreaMatrix will use \(preview.targetName).",
+                    systemImage: "number",
+                    color: .secondary
+                )
             } else {
                 statusLabel("No conflict at target location", systemImage: "checkmark.circle", color: .green)
             }
@@ -183,6 +195,17 @@ struct ChangeCategorySheet: View {
             return false
         }
         return state.failureOperation(for: file.id, targetCategory: targetCategory) != .move
+    }
+
+    private func failureMessage(_ failure: CoreErrorMappingSnapshot, file: FileEntrySnapshot) -> String {
+        if hasUnresolvedNameConflict(for: file) {
+            return "Cannot create a safe target name. Rename the file first."
+        }
+        return failure.userMessage
+    }
+
+    private func hasUnresolvedNameConflict(for file: FileEntrySnapshot) -> Bool {
+        state.unresolvedNameConflict(for: file.id, targetCategory: targetCategory) != nil
     }
 
     private var availableCategories: [String] {
