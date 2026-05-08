@@ -89,7 +89,7 @@ enum MainListStatusBanner: Equatable, Sendable {
     var message: String {
         switch self {
         case .renamedPreservedSelection:
-            return "External rename detected. The same file remains selected."
+            return "File renamed. The same file remains selected."
         case .removedSelectedFile:
             return "Selected file is missing or was removed outside AreaMatrix."
         case .unsavedNoteDraftPreserved:
@@ -106,6 +106,23 @@ enum MainFileWriteActionDisabledReason: String, Equatable, Sendable {
     case repoReadOnly = "Repository is read-only"
     case listLoading = "Current list is loading"
     case importLocked = "This file is locked by an import"
+}
+
+enum MainFileRenameState: Equatable, Sendable {
+    case idle
+    case renaming(fileID: Int64)
+    case failed(fileID: Int64, CoreErrorMappingSnapshot)
+
+    var isRenaming: Bool {
+        if case .renaming = self { return true }
+        return false
+    }
+
+    func failure(for fileID: Int64) -> CoreErrorMappingSnapshot? {
+        guard case .failed(let failedFileID, let mapping) = self,
+              failedFileID == fileID else { return nil }
+        return mapping
+    }
 }
 
 enum MainFileActionCategoryOptions {

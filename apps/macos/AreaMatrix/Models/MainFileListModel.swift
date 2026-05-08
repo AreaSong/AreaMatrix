@@ -3,27 +3,29 @@ import Foundation
 
 @MainActor
 final class MainFileListModel: ObservableObject {
-    @Published private(set) var files: [FileEntrySnapshot]
+    @Published var files: [FileEntrySnapshot]
     @Published private(set) var isLoading = false
     @Published private(set) var errorMapping: CoreErrorMappingSnapshot?
-    @Published private(set) var selection: MainFileSelectionState = .none
-    @Published private(set) var selectedFileDetail: FileEntrySnapshot?
-    @Published private(set) var isDetailLoading = false
-    @Published private(set) var detailErrorMapping: CoreErrorMappingSnapshot?
+    @Published var selection: MainFileSelectionState = .none
+    @Published var selectedFileDetail: FileEntrySnapshot?
+    @Published var isDetailLoading = false
+    @Published var detailErrorMapping: CoreErrorMappingSnapshot?
     @Published private(set) var detailLogState: MainDetailLogState = .notLoaded
     @Published private(set) var detailLogDiagnosticsState: MainDetailLogDiagnosticsState = .idle
     @Published private(set) var detailExternalCreateSyncState: MainDetailExternalCreateSyncState = .idle
-    @Published private(set) var selectedFileNoteWriteBlock: MainDetailNoteWriteBlock?
-    @Published private(set) var detailTabRequest: MainDetailTabRequest?
-    @Published private(set) var pendingActionDestination: MainFileActionDestination?
-    @Published private(set) var statusBanner: MainListStatusBanner?
+    @Published var selectedFileNoteWriteBlock: MainDetailNoteWriteBlock?
+    @Published var detailTabRequest: MainDetailTabRequest?
+    @Published var pendingActionDestination: MainFileActionDestination?
+    @Published var statusBanner: MainListStatusBanner?
     @Published private(set) var diagnosticsState: MainListDiagnosticsState = .idle
+    @Published var renameState: MainFileRenameState = .idle
 
     let repoPath: String
     let isReadOnly: Bool
     let writeLockedFileIDs: Set<Int64>
     private let fileLister: any CoreFileListing
     let fileDetailer: any CoreFileDetailing
+    let fileRenamer: any CoreFileRenaming
     private let changeLogLister: any CoreChangeLogListing
     private let externalChangesSyncer: any CoreExternalChangesSyncing
     let errorMapper: any CoreErrorMapping
@@ -37,6 +39,7 @@ final class MainFileListModel: ObservableObject {
         opening: RepositoryOpeningResult,
         fileLister: any CoreFileListing,
         fileDetailer: any CoreFileDetailing,
+        fileRenamer: any CoreFileRenaming = CoreBridge(),
         changeLogLister: any CoreChangeLogListing = CoreBridge(),
         externalChangesSyncer: any CoreExternalChangesSyncing = CoreBridge(),
         errorMapper: any CoreErrorMapping,
@@ -49,6 +52,7 @@ final class MainFileListModel: ObservableObject {
         errorMapping = opening.currentCategoryListError
         self.fileLister = fileLister
         self.fileDetailer = fileDetailer
+        self.fileRenamer = fileRenamer
         self.changeLogLister = changeLogLister
         self.externalChangesSyncer = externalChangesSyncer
         self.errorMapper = errorMapper
@@ -176,24 +180,30 @@ final class MainFileListModel: ObservableObject {
     }
 
     func beginRename(fileID: Int64? = nil) {
-        guard let fileID = fileID ?? selection.singleFileID else { return }
-        guard writeActionDisabledReason(fileID: fileID) == nil else { return }
+        guard let fileID = fileID ?? selection.singleFileID,
+              writeActionDisabledReason(fileID: fileID) == nil else { return }
+        renameState = .idle
         pendingActionDestination = .rename(fileID: fileID)
     }
 
     func beginChangeCategory(fileID: Int64? = nil) {
-        guard let fileID = fileID ?? selection.singleFileID else { return }
-        guard writeActionDisabledReason(fileID: fileID) == nil else { return }
+        guard let fileID = fileID ?? selection.singleFileID,
+              writeActionDisabledReason(fileID: fileID) == nil else { return }
         pendingActionDestination = .changeCategory(fileID: fileID)
     }
 
     func beginDelete(fileID: Int64? = nil) {
-        guard let fileID = fileID ?? selection.singleFileID else { return }
-        guard writeActionDisabledReason(fileID: fileID) == nil else { return }
+        guard let fileID = fileID ?? selection.singleFileID,
+              writeActionDisabledReason(fileID: fileID) == nil else { return }
         pendingActionDestination = .delete(fileID: fileID)
     }
 
-    func clearPendingActionDestination() { pendingActionDestination = nil }
+    func clearPendingActionDestination() {
+        if !renameState.isRenaming {
+            pendingActionDestination = nil
+            renameState = .idle
+        }
+    }
 
     func handleExternalRename(_ updatedFile: FileEntrySnapshot) {
         files = files.map { file in
@@ -242,12 +252,8 @@ final class MainFileListModel: ObservableObject {
         guard diagnosticsState != .collecting else { return }
 
         diagnosticsState = .collecting
-        do {
-            let snapshot = try await diagnosticsCollector.createDiagnosticsSnapshot(repoPath: repoPath)
-            diagnosticsState = .collected(snapshot)
-        } catch {
-            diagnosticsState = .failed(await mapCoreError(error))
-        }
+        do { diagnosticsState = .collected(try await diagnosticsCollector.createDiagnosticsSnapshot(repoPath: repoPath)) }
+        catch { diagnosticsState = .failed(await mapCoreError(error)) }
     }
 
     func clearDiagnosticsState() { diagnosticsState = .idle }
@@ -288,9 +294,7 @@ final class MainFileListModel: ObservableObject {
             selection = .single(loadedFile.id)
             selectedFileDetail = loadedFile
             selectedFileNoteWriteBlock = noteWriteBlock(for: loadedFile)
-            files = files.map { file in
-                file.id == loadedFile.id ? loadedFile : file
-            }
+            files = files.map { $0.id == loadedFile.id ? loadedFile : $0 }
             detailErrorMapping = nil
             isDetailLoading = false
         } catch {
@@ -325,7 +329,7 @@ final class MainFileListModel: ObservableObject {
         isDetailLoading = false
     }
 
-    private func loadChangeLog(fileID: Int64) async {
+    func loadChangeLog(fileID: Int64) async {
         detailLogGeneration += 1
         let generation = detailLogGeneration
 
@@ -394,9 +398,7 @@ final class MainFileListModel: ObservableObject {
                 message: "\(event.kind.displayName) file detail was not visible after sync: \(event.relativePath)"
             )
         }
-        if event.kind == .renamed {
-            statusBanner = .renamedPreservedSelection(fileID: file.id)
-        }
+        if event.kind == .renamed { statusBanner = .renamedPreservedSelection(fileID: file.id) }
         return file.id
     }
 
@@ -453,6 +455,7 @@ final class MainFileListModel: ObservableObject {
         isDetailLoading = false
         resetDetailLog()
         pendingActionDestination = nil
+        renameState = .idle
     }
 
     private func resetDetailLog() {
@@ -473,7 +476,7 @@ final class MainFileListModel: ObservableObject {
         generation == detailGeneration && selection.multipleFileIDs == ids
     }
 
-    private func mapCoreError(_ error: Error) async -> CoreErrorMappingSnapshot {
+    func mapCoreError(_ error: Error) async -> CoreErrorMappingSnapshot {
         if let coreError = error as? CoreError {
             return await errorMapper.mapCoreError(coreError)
         }
@@ -485,12 +488,9 @@ final class MainFileListModel: ObservableObject {
         _ result: SyncResultSnapshot,
         event: MainExternalCreatedFileEvent
     ) throws {
-        guard result.errors.isEmpty else {
-            let message = result.errors.joined(separator: "; ")
-            throw CoreError.Internal(
-                message: "\(event.kind.displayName) event \(event.fsEventID) returned sync errors: \(message)"
-            )
-        }
+        guard result.errors.isEmpty else { throw CoreError.Internal(
+            message: "\(event.kind.displayName) event \(event.fsEventID) returned sync errors: \(result.errors.joined(separator: "; "))"
+        ) }
     }
 
 }

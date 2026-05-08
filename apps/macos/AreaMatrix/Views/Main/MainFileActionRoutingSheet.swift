@@ -3,13 +3,24 @@ import SwiftUI
 struct MainFileActionRoutingSheet: View {
     let destination: MainFileActionDestination
     let file: FileEntrySnapshot?
+    let candidateFiles: [FileEntrySnapshot]
     let categoryRows: [RepositorySidebarRowSnapshot]
+    let renameState: MainFileRenameState
     let onDismiss: () -> Void
+    let onRename: (Int64, String) -> Void
+    let onShowExistingFile: (Int64) -> Void
 
     var body: some View {
         switch destination {
         case .rename:
-            RenameFileSheet(file: file, onCancel: onDismiss)
+            RenameFileSheet(
+                file: file,
+                candidateFiles: candidateFiles,
+                state: renameState,
+                onCancel: onDismiss,
+                onRename: onRename,
+                onShowExistingFile: onShowExistingFile
+            )
         case .changeCategory:
             ChangeCategorySheet(file: file, categoryRows: categoryRows, onCancel: onDismiss)
         case .delete:

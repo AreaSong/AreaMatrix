@@ -1,0 +1,88 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`2-3/task-32`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-3-detail-settings/task-32-s1-33-c1-22-rename-file.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：8
+- 未覆盖项数：0
+- 通过项数：8
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 S1-33 + C1-22  
+  结果：通过  
+  证据：manifest 绑定 S1-33/C1-22 与 `rename_file`，实现集中在 `RenameFileSheet`、`MainFileRenameActions`、`CoreFileRenaming`；未发现接入 S1-34/S1-35 的 Core 写操作。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-2.md:2762`
+
+- 项目：用户可见 Rename sheet 可触发  
+  结果：通过  
+  证据：S1-09 右键 `Rename...`、S1-12 Detail menu `Rename...` 均路由到 `S1-33`。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift:403`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryDetailPane.swift:292`
+
+- 项目：C1-22 真实 CoreBridge 闭环  
+  结果：通过  
+  证据：`CoreFileRenaming` 调用 UniFFI `renameFile(repoPath:fileId:newName:)`，不是 mock-only；测试覆盖真实 copied 文件 rename 与 change log。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreFileRenaming.swift:7`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/RenameFilePageFeatureTests.swift:174`
+
+- 项目：状态、校验、错误映射  
+  结果：通过  
+  证据：空名、非法字符、未变化、同目录冲突会禁用；失败时保留 sheet 并通过 Core error mapping 显示可复制错误和 Retry/Cancel。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/RenameFileSheet.swift:72`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileRenameActions.swift:26`
+
+- 项目：成功后刷新 List / Detail / Log  
+  结果：通过  
+  证据：成功后替换 files、保持同 fileId 选中、更新 detail，并加载 change log。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileRenameActions.swift:16`
+
+- 项目：Expected New Paths  
+  结果：通过  
+  证据：`CoreFileRenaming.swift`、`MainFileRenameActions.swift`、`RenameFileSheet.swift`、`RenameFilePageFeatureTests.swift` 已落地，pbxproj 已登记 source/test build file。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj:50`
+
+- 项目：Forbidden Touches  
+  结果：通过  
+  证据：`git status --short -- core/src` 与 `git diff --name-only -- core/src` 均无输出，未触碰 `core/src/**`。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+- 项目：验证命令  
+  结果：通过  
+  证据：manifest build 成功；macOS 测试门禁执行 415 tests，0 failures。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。CoreBridge wrapper、model action、sheet view 分层清楚；`RenameFileSheet.swift` 331 行，`MainFileListModel.swift` 496 行，未超过 500 行门槛。
+- 注释 / rustdoc / 文档同步：通过。本任务未新增 Rust public API；UDL 已有 `rename_file`，与 Core API 文档一致。
+- 错误处理与边界处理：通过。生产路径未发现 `try!`、`print()`、强制解包；失败路径通过 `mapCoreError` 显示 recoverable UI。
+- 测试与验证覆盖：通过。新增 page-feature 测试覆盖提交、失败、入口、校验、真实 Core rename 和 change_log。
+- 占位、硬编码、mock-only、一次性实现检查：通过。单元测试使用 test doubles，但最终闭环测试走真实 CoreBridge + Core API，不以 fixture 伪造产品闭环。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：通过，`** BUILD SUCCEEDED **`。
+- 已运行：`./dev test macos`：通过；标准 `xcodebuild test` 被本地 `testmanagerd` sandbox 限制阻断后，脚本按 repo-local validation-driver 规则复用已构建 XCTest bundle，`415 tests, 0 failures`。
+- 失败：标准 `xcodebuild test` 的 testmanagerd 通信阶段被本地沙箱阻断；已由 `./dev test macos` fallback 覆盖。
+- 缺失：未跑远端 CI；本次只读验收只验证本地等价命令。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS

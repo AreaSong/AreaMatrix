@@ -20,6 +20,8 @@ struct MainRepositoryDetailPane: View {
     let onConfirmDetailLogDiagnostics: () -> Void
     let onCancelDetailLogDiagnostics: () -> Void
     let onDetailTabRequestConsumed: (MainDetailTabRequest) -> Void
+    let onBeginRenameFile: (Int64) -> Void
+    let writeActionDisabledReason: (Int64) -> MainFileWriteActionDisabledReason?
 
     @State private var selectedTab: DetailPaneTab = .meta
     @ObservedObject private var noteModel: DetailNoteModel
@@ -44,6 +46,8 @@ struct MainRepositoryDetailPane: View {
         onConfirmDetailLogDiagnostics: @escaping () -> Void,
         onCancelDetailLogDiagnostics: @escaping () -> Void,
         onDetailTabRequestConsumed: @escaping (MainDetailTabRequest) -> Void,
+        onBeginRenameFile: @escaping (Int64) -> Void,
+        writeActionDisabledReason: @escaping (Int64) -> MainFileWriteActionDisabledReason?,
         noteModel: DetailNoteModel
     ) {
         self.selection = selection
@@ -65,6 +69,8 @@ struct MainRepositoryDetailPane: View {
         self.onConfirmDetailLogDiagnostics = onConfirmDetailLogDiagnostics
         self.onCancelDetailLogDiagnostics = onCancelDetailLogDiagnostics
         self.onDetailTabRequestConsumed = onDetailTabRequestConsumed
+        self.onBeginRenameFile = onBeginRenameFile
+        self.writeActionDisabledReason = writeActionDisabledReason
         self.noteModel = noteModel
     }
 
@@ -244,6 +250,7 @@ struct MainRepositoryDetailPane: View {
                 .pickerStyle(.segmented)
                 .labelsHidden()
                 detailTabContent(for: detail)
+                detailFileActions(for: detail)
             }
             .padding(18)
             .frame(maxWidth: .infinity, alignment: .topLeading)
@@ -274,6 +281,24 @@ struct MainRepositoryDetailPane: View {
                 writeBlock: noteWriteBlock,
                 onOpenNoteFile: onOpenNoteFile
             )
+        }
+    }
+
+    private func detailFileActions(for detail: FileEntrySnapshot) -> some View {
+        let disabledReason = writeActionDisabledReason(detail.id)
+        return HStack(spacing: 10) {
+            Spacer()
+            Menu {
+                Button("Rename...") {
+                    onBeginRenameFile(detail.id)
+                }
+                .disabled(disabledReason != nil)
+                .accessibilityIdentifier("S1-12-rename-file")
+            } label: {
+                Label("More", systemImage: "ellipsis.circle")
+            }
+            .help(disabledReason?.rawValue ?? "File actions")
+            .accessibilityIdentifier("S1-12-file-action-menu")
         }
     }
 

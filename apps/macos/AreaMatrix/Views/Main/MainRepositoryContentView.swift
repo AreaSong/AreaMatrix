@@ -433,8 +433,22 @@ struct MainRepositoryContentView: View {
         return MainFileActionRoutingSheet(
             destination: destination,
             file: file,
+            candidateFiles: fileListModel.files,
             categoryRows: opening.tree.sidebarRows,
-            onDismiss: fileListModel.clearPendingActionDestination
+            renameState: fileListModel.renameState,
+            onDismiss: fileListModel.clearPendingActionDestination,
+            onRename: { fileID, newName in
+                Task {
+                    await fileListModel.submitRename(fileID: fileID, newName: newName)
+                }
+            },
+            onShowExistingFile: { fileID in
+                selectedFileIDs = [fileID]
+                fileListModel.clearPendingActionDestination()
+                Task {
+                    await fileListModel.selectFiles([fileID])
+                }
+            }
         )
     }
 

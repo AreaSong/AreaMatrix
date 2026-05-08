@@ -50,6 +50,8 @@ extension MainRepositoryContentView {
             },
             onCancelDetailLogDiagnostics: fileListModel.cancelDetailLogDiagnosticsPrivacyConfirmation,
             onDetailTabRequestConsumed: fileListModel.consumeDetailTabRequest,
+            onBeginRenameFile: fileListModel.beginRename,
+            writeActionDisabledReason: fileListModel.writeActionDisabledReason,
             noteModel: detailNoteModel
         )
         .frame(minWidth: 220, idealWidth: 260, maxWidth: 320, maxHeight: .infinity, alignment: .topLeading)

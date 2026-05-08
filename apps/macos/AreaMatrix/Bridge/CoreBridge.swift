@@ -302,6 +302,10 @@ actor CoreBridge {
         }.value
     }
 
+    func makeFileEntrySnapshot(from coreFile: FileEntry, repoPath: String) async -> FileEntrySnapshot {
+        await snapshot(from: coreFile, repoPath: repoPath, availabilityChecker: availabilityChecker)
+    }
+
     func listTreeJSON(repoPath: String, locale: String) async throws -> String {
         try await Task.detached(priority: .userInitiated) {
             try listCoreTreeJSON(repoPath: repoPath, locale: locale)
