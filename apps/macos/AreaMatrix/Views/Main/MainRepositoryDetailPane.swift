@@ -117,6 +117,12 @@ struct MainRepositoryDetailPane: View {
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }
+            if let detailErrorMapping {
+                Label(detailErrorMapping.userMessage, systemImage: "exclamationmark.triangle")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
     }
 
@@ -167,6 +173,9 @@ struct MainRepositoryDetailPane: View {
                 onCopyPaths(multiSelectionSummary.paths)
             }
             .disabled(multiSelectionSummary.paths.isEmpty)
+            if detailErrorMapping != nil {
+                Button("Retry Metadata", action: onRetrySelectedFileDetail)
+            }
         }
     }
 

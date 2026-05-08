@@ -2,7 +2,7 @@ import XCTest
 @testable import AreaMatrix
 
 final class DetailMultiListFilesPageFeatureTests: XCTestCase {
-    func testS115BuildsMultiSelectionSummaryFromC111ListedFilesOnly() {
+    func testS115BuildsMultiSelectionSummaryFromC111AndC112Details() {
         let pdf = FileEntrySnapshot.detailMultiFixture(
             id: 31,
             currentName: "contract.pdf",
@@ -39,7 +39,7 @@ final class DetailMultiListFilesPageFeatureTests: XCTestCase {
         XCTAssertEqual(summary.warningMessages, ["某些条目的来源路径可能在资料库外"])
     }
 
-    func testS115KeepsPartialSummaryWhenSelectedMetadataIsUnavailable() {
+    func testS115KeepsPartialSummaryWhenC112MetadataIsUnavailable() {
         let available = FileEntrySnapshot.detailMultiFixture(
             id: 41,
             currentName: "available.pdf",
@@ -67,10 +67,15 @@ final class DetailMultiListFilesPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS115MultiSelectionDoesNotCallC112GetFile() async {
-        let first = FileEntrySnapshot.detailMultiFixture(id: 33, currentName: "first.pdf")
-        let second = FileEntrySnapshot.detailMultiFixture(id: 34, currentName: "second.pdf")
-        let detailer = DetailMultiRecordingDetailer()
+    func testS115MultiSelectionRefreshesEachSelectedFileThroughC112GetFile() async {
+        let first = FileEntrySnapshot.detailMultiFixture(id: 33, currentName: "first.pdf", sizeBytes: 100)
+        let second = FileEntrySnapshot.detailMultiFixture(id: 34, currentName: "second.pdf", sizeBytes: 100)
+        let refreshedFirst = FileEntrySnapshot.detailMultiFixture(id: 33, currentName: "first.pdf", sizeBytes: 500)
+        let refreshedSecond = FileEntrySnapshot.detailMultiFixture(id: 34, currentName: "second.pdf", sizeBytes: 700)
+        let detailer = DetailMultiRecordingDetailer(results: [
+            .success(refreshedFirst),
+            .success(refreshedSecond),
+        ])
         let model = MainFileListModel(
             opening: .detailMultiFixture(repoPath: "/tmp/repo", files: [first, second]),
             fileLister: DetailMetaNoopLister(),
@@ -79,24 +84,86 @@ final class DetailMultiListFilesPageFeatureTests: XCTestCase {
         )
 
         await model.selectFiles([first.id, second.id])
-        let requestedIDs = await detailer.requestedFileIDs()
+        let requests = await detailer.recordedRequests()
+        let summary = MultiSelectionDetailSummary(selection: model.selection, files: model.files)
 
+        XCTAssertEqual(requests, [
+            DetailMultiFileDetailRequest(repoPath: "/tmp/repo", fileID: first.id),
+            DetailMultiFileDetailRequest(repoPath: "/tmp/repo", fileID: second.id),
+        ])
         XCTAssertEqual(model.selection, .multiple([first.id, second.id]))
         XCTAssertNil(model.selectedFileDetail)
-        XCTAssertEqual(requestedIDs, [])
+        XCTAssertEqual(summary.statisticRows.value(for: "Total size"), ByteCountFormatter.string(
+            fromByteCount: refreshedFirst.sizeBytes + refreshedSecond.sizeBytes,
+            countStyle: .file
+        ))
+        XCTAssertFalse(model.isDetailLoading)
+        XCTAssertNil(model.detailErrorMapping)
+    }
+
+    @MainActor
+    func testS115MapsC112FailureWhileKeepingAvailableMultiSelectionSummary() async {
+        let first = FileEntrySnapshot.detailMultiFixture(id: 43, currentName: "first.pdf")
+        let second = FileEntrySnapshot.detailMultiFixture(id: 44, currentName: "missing.pdf")
+        let mapping = CoreErrorMappingSnapshot.detailMultiFileNotFound()
+        let mapper = DetailMetaErrorMapper(mapping: mapping)
+        let detailer = DetailMultiRecordingDetailer(results: [
+            .success(first),
+            .failure(CoreError.FileNotFound(path: second.path)),
+        ])
+        let model = MainFileListModel(
+            opening: .detailMultiFixture(repoPath: "/tmp/repo", files: [first, second]),
+            fileLister: DetailMetaNoopLister(),
+            fileDetailer: detailer,
+            errorMapper: mapper
+        )
+
+        await model.selectFiles([first.id, second.id])
+        let mappedErrors = await mapper.recordedErrors()
+        let summary = MultiSelectionDetailSummary(selection: model.selection, files: model.files)
+
+        XCTAssertEqual(model.selection, .multiple([first.id, second.id]))
+        XCTAssertEqual(model.detailErrorMapping, mapping)
+        XCTAssertEqual(mappedErrors, [CoreError.FileNotFound(path: second.path)])
+        XCTAssertEqual(summary.selectedCount, 2)
+        XCTAssertEqual(summary.paths, [first.path, second.path])
         XCTAssertFalse(model.isDetailLoading)
     }
 }
 
-private actor DetailMultiRecordingDetailer: CoreFileDetailing {
-    private var fileIDs: [Int64] = []
+private struct DetailMultiFileDetailRequest: Equatable {
+    var repoPath: String
+    var fileID: Int64
+}
 
-    func getFile(repoPath: String, fileID: Int64) async throws -> FileEntrySnapshot {
-        fileIDs.append(fileID)
-        throw CoreError.FileNotFound(path: "\(fileID)")
+private actor DetailMultiRecordingDetailer: CoreFileDetailing {
+    enum Result {
+        case success(FileEntrySnapshot)
+        case failure(Error)
     }
 
-    func requestedFileIDs() -> [Int64] { fileIDs }
+    private var results: [Result]
+    private var requests: [DetailMultiFileDetailRequest] = []
+
+    init(results: [Result]) {
+        self.results = results
+    }
+
+    func getFile(repoPath: String, fileID: Int64) async throws -> FileEntrySnapshot {
+        requests.append(DetailMultiFileDetailRequest(repoPath: repoPath, fileID: fileID))
+        guard !results.isEmpty else {
+            throw CoreError.FileNotFound(path: "\(fileID)")
+        }
+
+        switch results.removeFirst() {
+        case .success(let file):
+            return file
+        case .failure(let error):
+            throw error
+        }
+    }
+
+    func recordedRequests() -> [DetailMultiFileDetailRequest] { requests }
 }
 
 private extension RepositoryOpeningResult {
@@ -155,5 +222,18 @@ private extension FileEntrySnapshot {
 private extension [MultiSelectionSummaryRow] {
     func value(for label: String) -> String? {
         first { $0.label == label }?.value
+    }
+}
+
+private extension CoreErrorMappingSnapshot {
+    static func detailMultiFileNotFound() -> CoreErrorMappingSnapshot {
+        CoreErrorMappingSnapshot(
+            kind: .fileNotFound,
+            userMessage: "部分选中项无法读取元数据",
+            severity: .medium,
+            suggestedAction: "刷新当前选择，确认文件是否仍在资料库中。",
+            recoverability: .refreshRequired,
+            rawContext: "S1-15 C1-12 get_file"
+        )
     }
 }

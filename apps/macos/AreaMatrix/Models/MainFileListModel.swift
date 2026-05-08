@@ -19,16 +19,16 @@ final class MainFileListModel: ObservableObject {
     @Published private(set) var statusBanner: MainListStatusBanner?
     @Published private(set) var diagnosticsState: MainListDiagnosticsState = .idle
 
-    private let repoPath: String
+    let repoPath: String
     let isReadOnly: Bool
     let writeLockedFileIDs: Set<Int64>
     private let fileLister: any CoreFileListing
-    private let fileDetailer: any CoreFileDetailing
+    let fileDetailer: any CoreFileDetailing
     private let changeLogLister: any CoreChangeLogListing
     private let externalChangesSyncer: any CoreExternalChangesSyncing
-    private let errorMapper: any CoreErrorMapping
+    let errorMapper: any CoreErrorMapping
     private let diagnosticsCollector: any CoreDiagnosticsCollecting
-    private var currentCategory: String?
+    var currentCategory: String?
     private var loadGeneration = 0
     private var detailGeneration = 0
     private var detailLogGeneration = 0
@@ -60,9 +60,7 @@ final class MainFileListModel: ObservableObject {
         await reloadCurrentCategory()
     }
 
-    func retryCurrentCategory() async {
-        await reloadCurrentCategory()
-    }
+    func retryCurrentCategory() async { await reloadCurrentCategory() }
 
     func selectFiles(_ ids: Set<Int64>) async {
         if ids.isEmpty {
@@ -75,8 +73,9 @@ final class MainFileListModel: ObservableObject {
             selectedFileDetail = nil
             selectedFileNoteWriteBlock = nil
             detailErrorMapping = nil
-            isDetailLoading = false
+            isDetailLoading = true
             resetDetailLog()
+            await loadMultiSelectionDetails(ids: ids)
             return
         }
 
@@ -99,6 +98,13 @@ final class MainFileListModel: ObservableObject {
     }
 
     func retrySelectedFileDetail() async {
+        if selection.isMultiple {
+            detailErrorMapping = nil
+            isDetailLoading = true
+            await loadMultiSelectionDetails(ids: selection.multipleFileIDs)
+            return
+        }
+
         guard let selectedFileID = selection.singleFileID else { return }
 
         selectedFileDetail = selectedFileDetail ?? cachedFile(id: selectedFileID)
@@ -187,9 +193,7 @@ final class MainFileListModel: ObservableObject {
         pendingActionDestination = .delete(fileID: fileID)
     }
 
-    func clearPendingActionDestination() {
-        pendingActionDestination = nil
-    }
+    func clearPendingActionDestination() { pendingActionDestination = nil }
 
     func handleExternalRename(_ updatedFile: FileEntrySnapshot) {
         files = files.map { file in
@@ -246,9 +250,7 @@ final class MainFileListModel: ObservableObject {
         }
     }
 
-    func clearDiagnosticsState() {
-        diagnosticsState = .idle
-    }
+    func clearDiagnosticsState() { diagnosticsState = .idle }
 
     private func reloadCurrentCategory() async {
         loadGeneration += 1
@@ -268,7 +270,7 @@ final class MainFileListModel: ObservableObject {
             errorMapping = nil
             isLoading = false
         } catch {
-            let mappedError = await mapListError(error)
+            let mappedError = await mapCoreError(error)
             guard generation == loadGeneration else { return }
             files = []
             errorMapping = mappedError
@@ -299,6 +301,28 @@ final class MainFileListModel: ObservableObject {
             detailErrorMapping = mappedError
             isDetailLoading = false
         }
+    }
+
+    private func loadMultiSelectionDetails(ids: Set<Int64>) async {
+        detailGeneration += 1
+        let generation = detailGeneration
+        guard let result = await MultiSelectionDetailLoader.refresh(
+            ids: ids,
+            repoPath: repoPath,
+            currentFiles: files,
+            detailer: fileDetailer,
+            errorMapper: errorMapper,
+            shouldContinue: { [weak self] in
+                self?.canApplyMultiSelectionDetailResult(generation: generation, ids: ids) == true
+            }
+        ) else { return }
+
+        guard canApplyMultiSelectionDetailResult(generation: generation, ids: ids) else { return }
+        files = result.files
+        selectedFileDetail = nil
+        selectedFileNoteWriteBlock = nil
+        detailErrorMapping = result.errorMapping
+        isDetailLoading = false
     }
 
     private func loadChangeLog(fileID: Int64) async {
@@ -414,7 +438,7 @@ final class MainFileListModel: ObservableObject {
             isLoading = false
             return loadedFiles
         } catch {
-            errorMapping = await mapListError(error)
+            errorMapping = await mapCoreError(error)
             isLoading = false
             throw error
         }
@@ -439,14 +463,14 @@ final class MainFileListModel: ObservableObject {
         detailTabRequest = nil
     }
 
-    private func mapListError(_ error: Error) async -> CoreErrorMappingSnapshot {
-        await mapCoreError(error)
-    }
-
     private func canApplyDetailLogDiagnosticsResult(fileID: Int64) -> Bool {
         guard selection.singleFileID == fileID,
               case .failed(let failedFileID, _) = detailLogState else { return false }
         return failedFileID == fileID
+    }
+
+    private func canApplyMultiSelectionDetailResult(generation: Int, ids: Set<Int64>) -> Bool {
+        generation == detailGeneration && selection.multipleFileIDs == ids
     }
 
     private func mapCoreError(_ error: Error) async -> CoreErrorMappingSnapshot {
@@ -469,32 +493,4 @@ final class MainFileListModel: ObservableObject {
         }
     }
 
-    private var currentCategoryDisplayName: String {
-        guard let currentCategory, !currentCategory.isEmpty else { return "files" }
-        return currentCategory
-    }
-
-    private func cachedFile(id: Int64) -> FileEntrySnapshot? {
-        files.first { $0.id == id }
-    }
-
-    private func selectedFileIDForExternalRemoval(path: String) -> Int64? {
-        if let selectedFileDetail, selectedFileDetail.path == path {
-            return selectedFileDetail.id
-        }
-        return files.first { $0.path == path }?.id
-    }
-}
-
-private extension CoreErrorMappingSnapshot {
-    static func missingFromExternalChange(fileID: Int64) -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
-            kind: .fileNotFound,
-            userMessage: "The selected file is missing.",
-            severity: .medium,
-            suggestedAction: "Refresh the current list or remove the stale index entry.",
-            recoverability: .refreshRequired,
-            rawContext: "file_id=\(fileID)"
-        )
-    }
 }

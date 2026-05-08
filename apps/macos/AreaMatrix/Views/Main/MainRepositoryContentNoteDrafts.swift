@@ -19,7 +19,7 @@ extension MainRepositoryContentView {
             multiSelectionSummary: MultiSelectionDetailSummary(
                 selection: fileListModel.selection,
                 files: visibleFiles,
-                isUpdating: fileListModel.isLoading
+                isUpdating: fileListModel.isLoading || fileListModel.isDetailLoading
             ),
             detailErrorMapping: fileListModel.detailErrorMapping,
             isDetailLoading: fileListModel.isDetailLoading,

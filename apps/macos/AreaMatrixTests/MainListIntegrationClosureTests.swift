@@ -3,15 +3,10 @@ import XCTest
 
 final class MainListIntegrationClosureTests: XCTestCase {
     @MainActor
-    func testMultiSelectionRoutesToDetailMultiWithoutSingleFileDetailRequest() async {
+    func testMultiSelectionRoutesToDetailMultiAndRefreshesSelectedDetails() async {
         let docsFile = FileEntrySnapshot.integrationClosureFixture(id: 1, currentName: "a.pdf")
-        let financeFile = FileEntrySnapshot.integrationClosureFixture(
-            id: 2,
-            path: "docs/contracts/b.pdf",
-            category: "docs",
-            currentName: "b.pdf"
-        )
-        let detailer = MainListIntegrationNoopDetailer()
+        let financeFile = FileEntrySnapshot.integrationClosureFixture(id: 2, currentName: "b.pdf")
+        let detailer = MainListIntegrationDetailer(results: [.success(docsFile), .success(financeFile)])
         let model = MainFileListModel(
             opening: .integrationClosureFixture(repoPath: "/tmp/repo", files: [docsFile, financeFile]),
             fileLister: MainListIntegrationNoopLister(),
@@ -25,7 +20,7 @@ final class MainListIntegrationClosureTests: XCTestCase {
         XCTAssertEqual(model.selection, .multiple([docsFile.id, financeFile.id]))
         XCTAssertNil(model.selectedFileDetail)
         XCTAssertNil(model.detailErrorMapping)
-        XCTAssertEqual(detailRequests, [])
+        XCTAssertEqual(detailRequests, [docsFile.id, financeFile.id])
     }
 
     @MainActor
@@ -334,7 +329,9 @@ private actor MainListIntegrationNoopDetailer: CoreFileDetailing {
         throw CoreError.FileNotFound(path: "\(fileID)")
     }
 
-    func recordedRequests() -> [Int64] { requests }
+    func recordedRequests() -> [Int64] {
+        requests
+    }
 }
 
 private actor MainListIntegrationDetailer: CoreFileDetailing {
@@ -344,12 +341,14 @@ private actor MainListIntegrationDetailer: CoreFileDetailing {
     }
 
     private var results: [Result]
+    private var requests: [Int64] = []
 
     init(results: [Result]) {
         self.results = results
     }
 
     func getFile(repoPath: String, fileID: Int64) async throws -> FileEntrySnapshot {
+        requests.append(fileID)
         guard !results.isEmpty else {
             throw CoreError.FileNotFound(path: "\(fileID)")
         }
@@ -361,6 +360,8 @@ private actor MainListIntegrationDetailer: CoreFileDetailing {
             throw error
         }
     }
+
+    func recordedRequests() -> [Int64] { requests }
 }
 
 private actor MainListIntegrationErrorMapper: CoreErrorMapping {
