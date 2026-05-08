@@ -93,6 +93,8 @@ struct GeneralSettingsView: View {
                 .tag("classifier")
             Label("集成", systemImage: "point.3.connected.trianglepath.dotted")
                 .tag("integrations")
+            Label("高级", systemImage: "wrench.and.screwdriver")
+                .tag("advanced")
         }
         .listStyle(.sidebar)
         .frame(width: 180)
@@ -111,6 +113,8 @@ struct GeneralSettingsView: View {
             ClassifierSettingsPane(repoPath: model.repoPath)
         case "integrations":
             IntegrationsSettingsPane(repoPath: model.repoPath)
+        case "advanced":
+            AdvancedSettingsPane(repoPath: model.repoPath)
         default:
             generalContent
         }
