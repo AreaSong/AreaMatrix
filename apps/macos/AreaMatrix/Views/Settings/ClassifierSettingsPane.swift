@@ -7,12 +7,14 @@ struct ClassifierSettingsPane: View {
         repoPath: String,
         loader: any CoreConfigurationLoading = CoreBridge(),
         updater: any CoreConfigurationUpdating = CoreBridge(),
+        predictor: any CoreCategoryPredicting = CoreBridge(),
         errorMapper: any CoreErrorMapping = CoreBridge()
     ) {
         _model = StateObject(wrappedValue: ClassifierSettingsModel(
             repoPath: repoPath,
             loader: loader,
             updater: updater,
+            predictor: predictor,
             errorMapper: errorMapper
         ))
     }
@@ -108,6 +110,7 @@ struct ClassifierSettingsPane: View {
                 saveErrorBanner
                 configPathSection
                 rulesSection
+                previewSection
             }
             .frame(maxWidth: 700, alignment: .leading)
             .padding(.horizontal, 34)
@@ -153,6 +156,45 @@ struct ClassifierSettingsPane: View {
         }
     }
 
+    private var previewSection: some View {
+        ClassifierSettingsSection(title: "分类预览") {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(alignment: .firstTextBaseline, spacing: 12) {
+                    TextField("Invoice_2026Q1.pdf", text: previewFilenameBinding)
+                        .textFieldStyle(.roundedBorder)
+                        .frame(maxWidth: .infinity)
+                        .accessibilityLabel("Preview filename")
+                        .accessibilityIdentifier("S1-28-preview-filename")
+                    Button {
+                        Task {
+                            await model.previewClassification()
+                        }
+                    } label: {
+                        if model.isPreviewing {
+                            ProgressView()
+                                .controlSize(.small)
+                        } else {
+                            Label("Preview", systemImage: "play.circle")
+                        }
+                    }
+                    .disabled(previewButtonDisabled)
+                    .accessibilityLabel("Preview classification")
+                    .accessibilityIdentifier("S1-28-preview-classify")
+                }
+
+                if let error = model.previewError {
+                    previewErrorView(error)
+                } else if let result = model.previewResult {
+                    previewResultView(result)
+                } else if model.isPreviewing {
+                    ProgressView("Previewing...")
+                        .controlSize(.small)
+                }
+            }
+            .accessibilityIdentifier("S1-28-classify-preview")
+        }
+    }
+
     @ViewBuilder
     private var saveErrorBanner: some View {
         if let error = model.saveError {
@@ -180,8 +222,50 @@ struct ClassifierSettingsPane: View {
         }
     }
 
+    @ViewBuilder
+    private func previewErrorView(_ error: ClassifierSettingsPreviewError) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label(error.message, systemImage: "exclamationmark.triangle")
+                .foregroundStyle(.red)
+            Text(error.recovery)
+                .font(.callout)
+                .foregroundStyle(.secondary)
+            Button {
+                Task {
+                    await model.previewClassification()
+                }
+            } label: {
+                Label("Retry preview", systemImage: "arrow.clockwise")
+            }
+            .disabled(previewButtonDisabled)
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.red.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("S1-28-preview-error")
+    }
+
+    @ViewBuilder
+    private func previewResultView(_ result: ClassifyResultSnapshot) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("预览结果")
+                .font(.subheadline.weight(.semibold))
+            ClassifierSettingsKeyValueRow(label: "分类", value: result.category)
+            ClassifierSettingsKeyValueRow(label: "建议名称", value: result.suggestedName)
+            ClassifierSettingsKeyValueRow(label: "原因", value: result.reason.displayLabel)
+            ClassifierSettingsKeyValueRow(label: "置信度", value: "\(result.confidencePercent)%")
+        }
+        .accessibilityIdentifier("S1-28-preview-result")
+    }
+
     private var writesDisabled: Bool {
         model.isSaving || !model.isLoaded
+    }
+
+    private var previewButtonDisabled: Bool {
+        model.isSaving || model.isPreviewing ||
+            model.previewFilename.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
     private var extensionRulesSelection: Binding<Bool> {
@@ -202,6 +286,15 @@ struct ClassifierSettingsPane: View {
                 Task {
                     await model.requestEnableKeywordRules(isEnabled)
                 }
+            }
+        )
+    }
+
+    private var previewFilenameBinding: Binding<String> {
+        Binding(
+            get: { model.previewFilename },
+            set: { newValue in
+                model.updatePreviewFilename(newValue)
             }
         )
     }

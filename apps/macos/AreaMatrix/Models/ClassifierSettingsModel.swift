@@ -11,6 +11,11 @@ struct ClassifierSettingsSaveError: Equatable, Sendable {
     var recovery: String
 }
 
+struct ClassifierSettingsPreviewError: Equatable, Sendable {
+    var message: String
+    var recovery: String
+}
+
 struct ClassifierSettingsPendingSave: Equatable, Sendable {
     var config: RepoConfigSnapshot
     var error: ClassifierSettingsSaveError
@@ -40,24 +45,32 @@ final class ClassifierSettingsModel: ObservableObject {
     @Published private(set) var draft: ClassifierSettingsDraft?
     @Published private(set) var savedConfig: RepoConfigSnapshot?
     @Published private(set) var saveError: ClassifierSettingsSaveError?
+    @Published private(set) var previewFilename = ""
+    @Published private(set) var previewResult: ClassifyResultSnapshot?
+    @Published private(set) var previewError: ClassifierSettingsPreviewError?
+    @Published private(set) var isPreviewing = false
     @Published private(set) var isSaving = false
 
     let repoPath: String
 
     private let loader: any CoreConfigurationLoading
     private let updater: any CoreConfigurationUpdating
+    private let predictor: any CoreCategoryPredicting
     private let errorMapper: any CoreErrorMapping
     private var pendingRetry: ClassifierSettingsPendingSave?
+    private var previewGeneration = 0
 
     init(
         repoPath: String,
         loader: any CoreConfigurationLoading = CoreBridge(),
         updater: any CoreConfigurationUpdating = CoreBridge(),
+        predictor: any CoreCategoryPredicting = CoreBridge(),
         errorMapper: any CoreErrorMapping = CoreBridge()
     ) {
         self.repoPath = repoPath
         self.loader = loader
         self.updater = updater
+        self.predictor = predictor
         self.errorMapper = errorMapper
     }
 
@@ -84,6 +97,7 @@ final class ClassifierSettingsModel: ObservableObject {
         loadState = .loading
         saveError = nil
         pendingRetry = nil
+        clearPreviewState()
         do {
             let config = try await loader.loadConfig(repoPath: repoPath)
             let effectiveConfig = config.withRepositoryPath(repoPath)
@@ -121,6 +135,53 @@ final class ClassifierSettingsModel: ObservableObject {
         await persist(updating: savedConfig.withFallbackToInbox(isEnabled))
     }
 
+    func updatePreviewFilename(_ value: String) {
+        guard previewFilename != value else {
+            return
+        }
+
+        previewFilename = value
+        clearPreviewState()
+    }
+
+    func previewClassification() async {
+        guard isLoaded, !isSaving, !isPreviewing else {
+            return
+        }
+
+        let filename = previewFilename
+        guard !filename.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return
+        }
+
+        previewGeneration += 1
+        let currentGeneration = previewGeneration
+        isPreviewing = true
+        previewResult = nil
+        previewError = nil
+
+        do {
+            let result = try await predictor.predictCategory(repoPath: repoPath, filename: filename)
+            guard previewGeneration == currentGeneration else {
+                return
+            }
+            previewResult = result
+        } catch {
+            guard previewGeneration == currentGeneration else {
+                return
+            }
+            let mappedError = await previewError(for: error)
+            guard previewGeneration == currentGeneration else {
+                return
+            }
+            previewError = mappedError
+        }
+
+        if previewGeneration == currentGeneration {
+            isPreviewing = false
+        }
+    }
+
     func retrySave() async {
         guard let pendingRetry, !isSaving else {
             return
@@ -137,6 +198,7 @@ final class ClassifierSettingsModel: ObservableObject {
             savedConfig = config
             draft = ClassifierSettingsDraft(config: config)
             pendingRetry = nil
+            clearPreviewState()
         } catch {
             if let savedConfig {
                 draft = ClassifierSettingsDraft(config: savedConfig)
@@ -176,6 +238,28 @@ final class ClassifierSettingsModel: ObservableObject {
             message: error.localizedDescription,
             recovery: "Retry save after the repository is available."
         )
+    }
+
+    private func previewError(for error: Error) async -> ClassifierSettingsPreviewError {
+        if let coreError = error as? CoreError {
+            let mapping = await errorMapper.mapCoreError(coreError)
+            return ClassifierSettingsPreviewError(
+                message: mapping.userMessage,
+                recovery: "Retry preview"
+            )
+        }
+
+        return ClassifierSettingsPreviewError(
+            message: error.localizedDescription,
+            recovery: "Retry preview after the repository is available."
+        )
+    }
+
+    private func clearPreviewState() {
+        previewGeneration += 1
+        previewResult = nil
+        previewError = nil
+        isPreviewing = false
     }
 }
 

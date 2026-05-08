@@ -70,6 +70,63 @@ final class ClassifierSettingsPageFeatureTests: XCTestCase {
     }
 
     @MainActor
+    func testPreviewCallsInjectedCoreCategoryPredictorAndClearsStaleResultWhenFilenameChanges() async {
+        let predictor = ClassifierSettingsRecordingPredictor(result: .success(ClassifyResultSnapshot(
+            category: "finance",
+            suggestedName: "Invoice_2026Q1.pdf",
+            reason: .keyword,
+            confidence: 0.9
+        )))
+        let model = await loadedModel(
+            updater: ClassifierSettingsRecordingUpdater(result: .success),
+            predictor: predictor
+        )
+
+        model.updatePreviewFilename("Invoice_2026Q1.pdf")
+        await model.previewClassification()
+
+        let requests = await predictor.requests()
+        XCTAssertEqual(requests, [
+            ClassifierSettingsRecordingPredictor.Request(repoPath: "/tmp/repo", filename: "Invoice_2026Q1.pdf"),
+        ])
+        XCTAssertEqual(model.previewResult?.category, "finance")
+        XCTAssertEqual(model.previewResult?.suggestedName, "Invoice_2026Q1.pdf")
+        XCTAssertEqual(model.previewResult?.reason, .keyword)
+        XCTAssertEqual(model.previewResult?.confidencePercent, 90)
+        XCTAssertNil(model.previewError)
+        XCTAssertFalse(model.isPreviewing)
+
+        model.updatePreviewFilename("Invoice_2026Q2.pdf")
+
+        XCTAssertNil(model.previewResult)
+        XCTAssertNil(model.previewError)
+        XCTAssertEqual(model.previewFilename, "Invoice_2026Q2.pdf")
+    }
+
+    @MainActor
+    func testPreviewFailureMapsCoreErrorWithoutStaticSuccessState() async {
+        let predictor = ClassifierSettingsRecordingPredictor(
+            result: .failure(CoreError.Classify(reason: "classifier unavailable"))
+        )
+        let model = await loadedModel(
+            updater: ClassifierSettingsRecordingUpdater(result: .success),
+            predictor: predictor
+        )
+
+        model.updatePreviewFilename("Bad.pdf")
+        await model.previewClassification()
+
+        let requests = await predictor.requests()
+        XCTAssertEqual(requests, [
+            ClassifierSettingsRecordingPredictor.Request(repoPath: "/tmp/repo", filename: "Bad.pdf"),
+        ])
+        XCTAssertNil(model.previewResult)
+        XCTAssertEqual(model.previewError?.message, "无法预览分类：classifier unavailable")
+        XCTAssertEqual(model.previewError?.recovery, "Retry preview")
+        XCTAssertFalse(model.isPreviewing)
+    }
+
+    @MainActor
     func testDefaultCoreBridgeUpdatesRealClassifierConfigWithoutCreatingClassifierYaml() async throws {
         let repoURL = try temporaryClassifierSettingsRepo()
         defer { try? FileManager.default.removeItem(at: repoURL) }
@@ -79,7 +136,12 @@ final class ClassifierSettingsPageFeatureTests: XCTestCase {
             .appendingPathComponent(".areamatrix", isDirectory: true)
             .appendingPathComponent("classifier.yaml", isDirectory: false)
         let originalClassifierYAML = try String(contentsOf: classifierURL, encoding: .utf8)
-        let model = ClassifierSettingsModel(repoPath: repoURL.path, loader: bridge, updater: bridge, errorMapper: bridge)
+        let model = ClassifierSettingsModel(
+            repoPath: repoURL.path,
+            loader: bridge,
+            updater: bridge,
+            errorMapper: bridge
+        )
 
         await model.load()
         await model.requestEnableExtensionRules(false)
@@ -97,14 +159,47 @@ final class ClassifierSettingsPageFeatureTests: XCTestCase {
     }
 
     @MainActor
+    func testDefaultCoreBridgePreviewReadsRealClassifierYamlWithoutWritingFiles() async throws {
+        let repoURL = try temporaryClassifierSettingsRepo()
+        defer { try? FileManager.default.removeItem(at: repoURL) }
+        let bridge = CoreBridge()
+        try await bridge.initializeEmptyRepository(repoPath: repoURL.path)
+        let classifierURL = repoURL
+            .appendingPathComponent(".areamatrix", isDirectory: true)
+            .appendingPathComponent("classifier.yaml", isDirectory: false)
+        let originalClassifierYAML = try String(contentsOf: classifierURL, encoding: .utf8)
+        let model = ClassifierSettingsModel(
+            repoPath: repoURL.path,
+            loader: bridge,
+            updater: bridge,
+            predictor: bridge,
+            errorMapper: bridge
+        )
+
+        await model.load()
+        model.updatePreviewFilename("Invoice_2026Q1.pdf")
+        await model.previewClassification()
+
+        XCTAssertEqual(model.previewResult?.category, "finance")
+        XCTAssertEqual(model.previewResult?.reason, .keyword)
+        XCTAssertGreaterThan(model.previewResult?.confidence ?? 0, 0)
+        XCTAssertNil(model.previewError)
+        XCTAssertEqual(try String(contentsOf: classifierURL, encoding: .utf8), originalClassifierYAML)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: repoURL.appendingPathComponent("README.md").path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: repoURL.appendingPathComponent("AREAMATRIX.md").path))
+    }
+
+    @MainActor
     private func loadedModel(
         updater: ClassifierSettingsRecordingUpdater,
+        predictor: any CoreCategoryPredicting = CoreBridge(),
         config: RepoConfigSnapshot = .classifierSettingsFixture(repoPath: "/tmp/repo")
     ) async -> ClassifierSettingsModel {
         let model = ClassifierSettingsModel(
             repoPath: config.repoPath,
             loader: ClassifierSettingsRecordingLoader(result: .success(config)),
             updater: updater,
+            predictor: predictor,
             errorMapper: ClassifierSettingsStaticErrorMapper()
         )
         await model.load()
@@ -115,6 +210,39 @@ final class ClassifierSettingsPageFeatureTests: XCTestCase {
 private enum ClassifierSettingsLoaderResult {
     case success(RepoConfigSnapshot)
     case failure(Error)
+}
+
+private enum ClassifierSettingsPreviewResult {
+    case success(ClassifyResultSnapshot)
+    case failure(Error)
+}
+
+private actor ClassifierSettingsRecordingPredictor: CoreCategoryPredicting {
+    struct Request: Equatable {
+        var repoPath: String
+        var filename: String
+    }
+
+    private let result: ClassifierSettingsPreviewResult
+    private var requestsStorage: [Request] = []
+
+    init(result: ClassifierSettingsPreviewResult) {
+        self.result = result
+    }
+
+    func predictCategory(repoPath: String, filename: String) async throws -> ClassifyResultSnapshot {
+        requestsStorage.append(Request(repoPath: repoPath, filename: filename))
+        switch result {
+        case .success(let preview):
+            return preview
+        case .failure(let error):
+            throw error
+        }
+    }
+
+    func requests() -> [Request] {
+        requestsStorage
+    }
 }
 
 private actor ClassifierSettingsRecordingLoader: CoreConfigurationLoading {
@@ -180,8 +308,10 @@ private actor ClassifierSettingsStaticErrorMapper: CoreErrorMapping {
         switch error {
         case .Db:
             return .classifierSettingsMapping(kind: .db, userMessage: "数据库错误")
-        case .Config:
-            return .classifierSettingsMapping(kind: .config, userMessage: "配置错误")
+        case .Config(let reason):
+            return .classifierSettingsMapping(kind: .config, userMessage: "分类规则无效：\(reason)")
+        case .Classify(let reason):
+            return .classifierSettingsMapping(kind: .classify, userMessage: "无法预览分类：\(reason)")
         case .PermissionDenied:
             return .classifierSettingsMapping(kind: .permissionDenied, userMessage: "无访问权限")
         default:
