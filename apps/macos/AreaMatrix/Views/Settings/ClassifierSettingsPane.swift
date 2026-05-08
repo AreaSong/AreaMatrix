@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ClassifierSettingsPane: View {
     @StateObject private var model: ClassifierSettingsModel
+    @State private var showingRevertConfirmation = false
 
     init(
         repoPath: String,
@@ -27,6 +28,16 @@ struct ClassifierSettingsPane: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .task {
             await model.load()
+        }
+        .alert("Revert to last valid classifier.yaml?", isPresented: $showingRevertConfirmation) {
+            Button("Cancel", role: .cancel) {}
+            Button("Revert", role: .destructive) {
+                Task {
+                    await model.revertToLastValid()
+                }
+            }
+        } message: {
+            Text("This replaces the current classifier.yaml with the last validated backup.")
         }
     }
 
@@ -110,6 +121,7 @@ struct ClassifierSettingsPane: View {
                 saveErrorBanner
                 configPathSection
                 rulesSection
+                yamlActionsSection
                 previewSection
             }
             .frame(maxWidth: 700, alignment: .leading)
@@ -123,6 +135,10 @@ struct ClassifierSettingsPane: View {
             ClassifierSettingsKeyValueRow(
                 label: "classifier.yaml",
                 value: model.classifierConfigPath
+            )
+            ClassifierSettingsKeyValueRow(
+                label: "Validation",
+                value: model.validationStatusLabel
             )
         }
     }
@@ -154,6 +170,128 @@ struct ClassifierSettingsPane: View {
                 .font(.callout)
                 .foregroundStyle(.secondary)
         }
+    }
+
+    private var yamlActionsSection: some View {
+        ClassifierSettingsSection(title: "YAML 操作") {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(spacing: 10) {
+                    Button {
+                        model.openClassifierYaml()
+                    } label: {
+                        Label("Open classifier.yaml", systemImage: "doc.text")
+                    }
+                    .disabled(model.isSaving)
+                    .accessibilityIdentifier("S1-28-open-classifier-yaml")
+
+                    Button {
+                        model.revealClassifierYamlInFinder()
+                    } label: {
+                        Label("Reveal in Finder", systemImage: "folder")
+                    }
+                    .disabled(model.isSaving)
+                    .accessibilityIdentifier("S1-28-reveal-classifier-yaml")
+
+                    Button {
+                        Task {
+                            _ = await model.validateClassifierRules()
+                        }
+                    } label: {
+                        if model.isValidating {
+                            HStack(spacing: 6) {
+                                ProgressView()
+                                    .controlSize(.small)
+                                Text("Validate")
+                            }
+                        } else {
+                            Label("Validate", systemImage: "checkmark.circle")
+                        }
+                    }
+                    .disabled(model.isSaving || model.isValidating)
+                    .accessibilityLabel("Validate classifier rules")
+                    .accessibilityIdentifier("S1-28-validate-classifier-rules")
+
+                    Button {
+                        showingRevertConfirmation = true
+                    } label: {
+                        Label("Revert to last valid", systemImage: "arrow.counterclockwise")
+                    }
+                    .disabled(!model.canRevertToLastValid || model.isSaving || model.isValidating)
+                    .accessibilityIdentifier("S1-28-revert-classifier-rules")
+                }
+
+                if model.isValidating {
+                    ProgressView("Validating...")
+                        .controlSize(.small)
+                        .accessibilityIdentifier("S1-28-classifier-validating")
+                }
+
+                if let error = model.fileActionError {
+                    fileActionErrorView(error)
+                }
+
+                if let error = model.validationError {
+                    validationErrorView(error)
+                }
+            }
+        }
+    }
+
+    private func fileActionErrorView(_ error: ClassifierSettingsFileActionError) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label(error.message, systemImage: "exclamationmark.triangle")
+                .foregroundStyle(.red)
+            Text(error.recovery)
+                .font(.callout)
+                .foregroundStyle(.secondary)
+            HStack(spacing: 10) {
+                Button("Reveal in Finder") {
+                    model.revealClassifierYamlInFinder()
+                }
+                .accessibilityIdentifier("S1-28-file-error-reveal-classifier-yaml")
+                Button("Create default") {
+                    Task {
+                        await model.createDefaultClassifierYaml()
+                    }
+                }
+                .accessibilityIdentifier("S1-28-file-error-create-default-classifier-yaml")
+            }
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.red.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("S1-28-classifier-file-action-error")
+    }
+
+    private func validationErrorView(_ error: ClassifierSettingsValidationError) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label(error.message, systemImage: "exclamationmark.triangle")
+                .foregroundStyle(.red)
+            Text(error.recovery)
+                .font(.callout)
+                .foregroundStyle(.secondary)
+            HStack(spacing: 10) {
+                Button("Open classifier.yaml") {
+                    model.openClassifierYaml()
+                }
+                Button("Reveal in Finder") {
+                    model.revealClassifierYamlInFinder()
+                }
+                .accessibilityIdentifier("S1-28-validation-reveal-classifier-yaml")
+                Button("Create default") {
+                    Task {
+                        await model.createDefaultClassifierYaml()
+                    }
+                }
+                .accessibilityIdentifier("S1-28-validation-create-default-classifier-yaml")
+            }
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.red.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("S1-28-classifier-validation-error")
     }
 
     private var previewSection: some View {

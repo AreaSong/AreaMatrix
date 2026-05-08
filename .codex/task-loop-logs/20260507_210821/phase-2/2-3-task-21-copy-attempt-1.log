@@ -1,0 +1,38 @@
+一、执行结论
+
+已完成 `2-3/task-21` 的 S1-28 page integration wiring 与验证补齐。必需的 `xcodebuild test` 原命令已执行，但当前 Codex sandbox 阻断 `testmanagerd.control` 通信；仓库认可的 `./dev test macos` fallback 已通过，实际 XCTest 断言 `369/369` 通过。
+
+二、执行范围
+
+单任务：`2-3/task-21`
+
+产品/测试改动：
+- [ClassifierSettingsModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ClassifierSettingsModel.swift:54)
+- [ClassifierSettingsPane.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Settings/ClassifierSettingsPane.swift:164)
+- [ClassifierSettingsPageFeatureTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ClassifierSettingsPageFeatureTests.swift:135)
+
+工作树另有 task-loop runtime/progress 记录更新：`.codex/task-loop-runs/.../summary.json`、`tasks/prompts/_shared/progress.json`。未修改 `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`。
+
+三、完成情况
+
+- 已逐项覆盖 S1-28 的 C1-04 配置加载/保存、C1-05 分类预览，并补齐打开/定位/校验/revert 状态 wiring。
+- 页面已有 loading、loaded、load failed、save failed + retry、file action failed、validation failed、preview failed 和 busy state。
+- CoreBridge 路径走真实 `loadConfig` / `updateConfig` / `predictCategory`；测试覆盖真实 CoreBridge，不靠 mock-only 结论。
+- 未新增 control map 之外的 Core 能力。
+- Forbidden Touches：未触碰，`git diff -- core/src` 为空。
+
+四、工程质量
+
+结构保持在现有 SwiftUI + model 模式内，三个 Swift 文件均低于 500 行；未新增依赖；没有生产路径 `try!`、强制解包或硬编码成功态。错误路径通过 mapper 和可见恢复 UI 处理，测试覆盖正常路径、Core 错误、保存回滚、无写入副作用和真实 CoreBridge 读写。
+
+五、验证情况
+
+- `xcodebuild -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' build CODE_SIGNING_ALLOWED=NO`：通过。
+- `xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：构建完成后被本机 sandbox 的 `testmanagerd.control` 通信限制阻断，非编译/断言失败。
+- `./dev test macos`：通过；先复现同一 `xcodebuild test` sandbox block，再用已构建 XCTest bundle fallback，`369` tests passed。
+- 直接 `xcrun xctest .../AreaMatrixTests.xctest`：通过，`369` tests passed。
+
+六、风险与后续
+
+剩余风险：未做真实 Finder/Open UI 手工点测；当前证据来自注入式平台服务测试和真实 CoreBridge 集成测试。下一个任务建议继续 `2-3/task-22`，但在非 sandbox 环境或 CI 上补跑原始 `xcodebuild test` 可消除本地环境残余风险。
+

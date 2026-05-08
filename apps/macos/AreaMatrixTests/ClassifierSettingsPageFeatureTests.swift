@@ -1,6 +1,11 @@
 import XCTest
 @testable import AreaMatrix
 
+private struct ClassifierSettingsNoopAccessibilityAnnouncer: AccessibilityAnnouncing {
+    @MainActor
+    func announce(_ message: String) {}
+}
+
 final class ClassifierSettingsPageFeatureTests: XCTestCase {
     @MainActor
     func testLoadUsesC104ConfigSnapshotForVisibleClassifierSettings() async {
@@ -127,6 +132,83 @@ final class ClassifierSettingsPageFeatureTests: XCTestCase {
     }
 
     @MainActor
+    func testOpenClassifierYamlUsesRepositoryFileOpener() async {
+        let opener = ClassifierSettingsRecordingFileOpener()
+        let model = await loadedModel(
+            updater: ClassifierSettingsRecordingUpdater(result: .success),
+            fileOpener: opener
+        )
+
+        model.openClassifierYaml()
+
+        let expected = ClassifierSettingsRecordingFileOpener.Request(
+            repoPath: "/tmp/repo",
+            relativePath: ".areamatrix/classifier.yaml"
+        )
+        XCTAssertEqual(opener.requests(), [expected])
+        XCTAssertNil(model.fileActionError)
+    }
+
+    @MainActor
+    func testValidateClassifierRulesRequiresPhysicalClassifierYamlBeforeCorePreviewFallback() async throws {
+        let repoURL = try temporaryClassifierSettingsRepo()
+        defer { try? FileManager.default.removeItem(at: repoURL) }
+        let predictor = ClassifierSettingsRecordingPredictor(
+            result: .success(classifierSettingsValidationProbeResult())
+        )
+        let model = await loadedModel(
+            updater: ClassifierSettingsRecordingUpdater(result: .success),
+            predictor: predictor,
+            config: .classifierSettingsFixture(repoPath: repoURL.path)
+        )
+
+        let passed = await model.validateClassifierRules()
+
+        XCTAssertFalse(passed)
+        XCTAssertEqual(model.validationStatusLabel, "Failed")
+        XCTAssertEqual(model.validationError?.message, "分类规则文件不存在")
+        let predictorRequests = await predictor.requests()
+        XCTAssertEqual(predictorRequests, [])
+    }
+
+    @MainActor
+    func testRevertToLastValidIsDisabledUntilAValidatedBackupExists() async throws {
+        let repoURL = try temporaryClassifierSettingsRepo()
+        defer { try? FileManager.default.removeItem(at: repoURL) }
+        let metadataURL = repoURL.appendingPathComponent(".areamatrix", isDirectory: true)
+        try FileManager.default.createDirectory(at: metadataURL, withIntermediateDirectories: true)
+        try "version: 1\n".write(
+            to: metadataURL.appendingPathComponent("classifier.yaml", isDirectory: false),
+            atomically: true,
+            encoding: .utf8
+        )
+        let loader = ClassifierSettingsRecordingLoader(
+            result: .success(.classifierSettingsFixture(repoPath: repoURL.path))
+        )
+        let predictor = ClassifierSettingsRecordingPredictor(
+            result: .success(classifierSettingsValidationProbeResult())
+        )
+        let model = ClassifierSettingsModel(
+            repoPath: repoURL.path,
+            loader: loader,
+            updater: ClassifierSettingsRecordingUpdater(result: .success),
+            predictor: predictor,
+            errorMapper: ClassifierSettingsStaticErrorMapper(),
+            accessibilityAnnouncer: ClassifierSettingsNoopAccessibilityAnnouncer()
+        )
+
+        await model.load()
+        await model.revertToLastValid()
+
+        let loaderPaths = await loader.requestedPaths()
+        let predictorRequests = await predictor.requests()
+        XCTAssertEqual(loaderPaths, [repoURL.path])
+        XCTAssertEqual(predictorRequests, [])
+        XCTAssertFalse(model.canRevertToLastValid)
+        XCTAssertEqual(model.validationState, .idle)
+    }
+
+    @MainActor
     func testDefaultCoreBridgeUpdatesRealClassifierConfigWithoutCreatingClassifierYaml() async throws {
         let repoURL = try temporaryClassifierSettingsRepo()
         defer { try? FileManager.default.removeItem(at: repoURL) }
@@ -193,14 +275,18 @@ final class ClassifierSettingsPageFeatureTests: XCTestCase {
     private func loadedModel(
         updater: ClassifierSettingsRecordingUpdater,
         predictor: any CoreCategoryPredicting = CoreBridge(),
-        config: RepoConfigSnapshot = .classifierSettingsFixture(repoPath: "/tmp/repo")
+        config: RepoConfigSnapshot = .classifierSettingsFixture(repoPath: "/tmp/repo"),
+        fileOpener: any RepositoryFileOpening = NSWorkspaceRepositoryFileOpener(),
+        accessibilityAnnouncer: any AccessibilityAnnouncing = ClassifierSettingsNoopAccessibilityAnnouncer()
     ) async -> ClassifierSettingsModel {
         let model = ClassifierSettingsModel(
             repoPath: config.repoPath,
             loader: ClassifierSettingsRecordingLoader(result: .success(config)),
             updater: updater,
             predictor: predictor,
-            errorMapper: ClassifierSettingsStaticErrorMapper()
+            errorMapper: ClassifierSettingsStaticErrorMapper(),
+            fileOpener: fileOpener,
+            accessibilityAnnouncer: accessibilityAnnouncer
         )
         await model.load()
         return model
@@ -236,6 +322,32 @@ private actor ClassifierSettingsRecordingPredictor: CoreCategoryPredicting {
         case .success(let preview):
             return preview
         case .failure(let error):
+            throw error
+        }
+    }
+
+    func requests() -> [Request] {
+        requestsStorage
+    }
+}
+
+@MainActor
+private final class ClassifierSettingsRecordingFileOpener: RepositoryFileOpening {
+    struct Request: Equatable {
+        var repoPath: String
+        var relativePath: String
+    }
+
+    private let error: Error?
+    private var requestsStorage: [Request] = []
+
+    init(error: Error? = nil) {
+        self.error = error
+    }
+
+    func openFile(repoPath: String, relativePath: String) throws {
+        requestsStorage.append(Request(repoPath: repoPath, relativePath: relativePath))
+        if let error {
             throw error
         }
     }
@@ -318,6 +430,15 @@ private actor ClassifierSettingsStaticErrorMapper: CoreErrorMapping {
             return .classifierSettingsMapping(kind: .internal, userMessage: "保存失败")
         }
     }
+}
+
+private func classifierSettingsValidationProbeResult() -> ClassifyResultSnapshot {
+    ClassifyResultSnapshot(
+        category: "inbox",
+        suggestedName: "AreaMatrixValidationProbe.txt",
+        reason: .`default`,
+        confidence: 0
+    )
 }
 
 private extension CoreErrorMappingSnapshot {
