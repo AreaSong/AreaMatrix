@@ -231,6 +231,71 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
     }
 
     @MainActor
+    func testDefaultCoreBridgeRevealsGeneratedOverviewFromGeneratedRootPath() async throws {
+        let repoURL = try temporaryRepositorySettingsRepo()
+        defer { try? FileManager.default.removeItem(at: repoURL) }
+        let bridge = CoreBridge()
+        try await bridge.initializeEmptyRepository(repoPath: repoURL.path)
+        let generatedURL = repoURL
+            .appendingPathComponent(".areamatrix", isDirectory: true)
+            .appendingPathComponent("generated", isDirectory: true)
+            .appendingPathComponent("root.md", isDirectory: false)
+        let revealer = RepositorySettingsRecordingFileRevealer()
+        let model = RepositorySettingsModel(
+            repoPath: repoURL.path,
+            loader: bridge,
+            updater: bridge,
+            repositoryOpener: bridge,
+            scanSessionReader: bridge,
+            existingRepositoryMetadataReader: SQLiteExistingRepositoryMetadataReader(),
+            generatedOverviewRevealer: revealer,
+            errorMapper: bridge
+        )
+
+        await model.load()
+        model.revealGeneratedOverviewInFinder()
+
+        XCTAssertTrue(FileManager.default.fileExists(atPath: generatedURL.path))
+        XCTAssertEqual(revealer.requests, [RepositorySettingsRecordingFileRevealer.Request(
+            repoPath: repoURL.path,
+            relativePath: RepositorySettingsSummary.generatedOverviewRelativePath
+        )])
+        XCTAssertNil(model.overviewActionError)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: repoURL.appendingPathComponent("README.md").path))
+        XCTAssertFalse(FileManager.default.fileExists(
+            atPath: repoURL.appendingPathComponent("AREAMATRIX.md").path
+        ))
+    }
+
+    @MainActor
+    func testRevealGeneratedOverviewFailureShowsRecoverableError() {
+        let revealer = RepositorySettingsRecordingFileRevealer(
+            result: .failure(RepositoryFileActionError.fileMissing(
+                RepositorySettingsSummary.generatedOverviewRelativePath
+            ))
+        )
+        let model = RepositorySettingsModel(
+            repoPath: "/tmp/repo",
+            loader: RepositorySettingsRecordingLoader(results: []),
+            updater: RepositorySettingsRecordingUpdater(result: .success),
+            generatedOverviewRevealer: revealer,
+            errorMapper: RepositorySettingsStaticErrorMapper()
+        )
+
+        model.revealGeneratedOverviewInFinder()
+
+        XCTAssertEqual(revealer.requests, [RepositorySettingsRecordingFileRevealer.Request(
+            repoPath: "/tmp/repo",
+            relativePath: RepositorySettingsSummary.generatedOverviewRelativePath
+        )])
+        XCTAssertEqual(model.overviewActionError?.message, "Generated overview cannot be shown in Finder.")
+        XCTAssertEqual(
+            model.overviewActionError?.recovery,
+            "Retry after AreaMatrix regenerates .areamatrix/generated/root.md."
+        )
+    }
+
+    @MainActor
     func testMetadataReaderReadsSchemaVersionFromRealInitializedRepositoryWithoutWalSidecars() async throws {
         let repoURL = try temporaryRepositorySettingsRepo()
         defer { try? FileManager.default.removeItem(at: repoURL) }

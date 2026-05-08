@@ -10,7 +10,8 @@ struct RepositorySettingsPane: View {
         repositoryOpener: any CoreEmptyRepositoryOpening = CoreBridge(),
         fileLister: (any CoreFileListing)? = nil,
         scanSessionReader: any CoreScanSessionReading = CoreBridge(),
-        existingRepositoryMetadataReader: any ExistingRepositoryMetadataReading = SQLiteExistingRepositoryMetadataReader(),
+        existingRepositoryMetadataReader: any ExistingRepositoryMetadataReading =
+            SQLiteExistingRepositoryMetadataReader(),
         errorMapper: any CoreErrorMapping = CoreBridge()
     ) {
         _model = StateObject(wrappedValue: RepositorySettingsModel(
@@ -110,6 +111,7 @@ struct RepositorySettingsPane: View {
             VStack(alignment: .leading, spacing: 24) {
                 syncErrorBanner
                 healthErrorBanner
+                overviewActionErrorBanner
 
                 RepositorySettingsSection(title: "路径") {
                     RepositorySettingsKeyValueRow(label: "Repository name", value: summary.repositoryName)
@@ -126,6 +128,10 @@ struct RepositorySettingsPane: View {
                     RepositorySettingsKeyValueRow(label: "Generated path", value: summary.generatedPath)
                     RepositorySettingsKeyValueRow(label: "Root file", value: summary.rootFile)
                     RepositorySettingsKeyValueRow(label: "README.md", value: summary.readmePolicy)
+                    Button("Reveal generated overview") {
+                        model.revealGeneratedOverviewInFinder()
+                    }
+                    .accessibilityIdentifier("S1-27-C1-20-reveal-generated-overview")
                 }
 
                 Text(
@@ -139,6 +145,23 @@ struct RepositorySettingsPane: View {
             .frame(maxWidth: 700, alignment: .leading)
             .padding(.horizontal, 34)
             .padding(.vertical, 28)
+        }
+    }
+
+    @ViewBuilder
+    private var overviewActionErrorBanner: some View {
+        if let error = model.overviewActionError {
+            VStack(alignment: .leading, spacing: 8) {
+                Label(error.message, systemImage: "exclamationmark.triangle")
+                    .foregroundStyle(.orange)
+                Text(error.recovery)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.orange.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
+            .accessibilityElement(children: .combine)
         }
     }
 

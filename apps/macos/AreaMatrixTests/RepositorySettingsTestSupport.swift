@@ -173,6 +173,36 @@ actor RepositorySettingsStaticErrorMapper: CoreErrorMapping {
     func mappedErrors() -> [CoreError] { errors }
 }
 
+enum RepositorySettingsRevealResult {
+    case success
+    case failure(Error)
+}
+
+@MainActor
+final class RepositorySettingsRecordingFileRevealer: RepositoryFileRevealing {
+    struct Request: Equatable {
+        var repoPath: String
+        var relativePath: String
+    }
+
+    private let result: RepositorySettingsRevealResult
+    private(set) var requests: [Request] = []
+
+    init(result: RepositorySettingsRevealResult = .success) {
+        self.result = result
+    }
+
+    func revealFile(repoPath: String, relativePath: String) throws {
+        requests.append(Request(repoPath: repoPath, relativePath: relativePath))
+        switch result {
+        case .success:
+            return
+        case .failure(let error):
+            throw error
+        }
+    }
+}
+
 func temporaryRepositorySettingsRepo() throws -> URL {
     let url = FileManager.default.temporaryDirectory
         .appendingPathComponent("AreaMatrixRepositorySettings-\(UUID().uuidString)", isDirectory: true)

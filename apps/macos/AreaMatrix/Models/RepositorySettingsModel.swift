@@ -11,6 +11,11 @@ struct RepositorySettingsSyncError: Equatable, Sendable {
     var recovery: String
 }
 
+struct RepositorySettingsOverviewActionError: Equatable, Sendable {
+    var message: String
+    var recovery: String
+}
+
 enum RepositorySettingsDatabaseStatus: Equatable, Sendable {
     case ok
     case locked
@@ -57,6 +62,8 @@ struct RepositorySettingsHealthError: Equatable, Sendable {
 }
 
 struct RepositorySettingsSummary: Equatable, Sendable {
+    static let generatedOverviewRelativePath = ".areamatrix/generated/root.md"
+
     var repositoryName: String
     var location: String
     var metadataStatus: String
@@ -73,7 +80,7 @@ struct RepositorySettingsSummary: Equatable, Sendable {
         location = resolvedPath
         metadataStatus = Self.metadataStatus(for: resolvedPath)
         overviewMode = Self.overviewModeLabel(for: config.overviewOutput)
-        generatedPath = ".areamatrix/generated/root.md"
+        generatedPath = Self.generatedOverviewRelativePath
         rootFile = config.overviewOutput == "RootAreaMatrixFile" ? "AREAMATRIX.md" : "Off"
         readmePolicy = "User file, never managed by AreaMatrix"
     }
@@ -109,6 +116,7 @@ final class RepositorySettingsModel: ObservableObject {
     @Published private(set) var healthSummary: RepositorySettingsHealthSummary?
     @Published private(set) var healthError: RepositorySettingsHealthError?
     @Published private(set) var syncError: RepositorySettingsSyncError?
+    @Published private(set) var overviewActionError: RepositorySettingsOverviewActionError?
 
     let repoPath: String
     private let loader: any CoreConfigurationLoading
@@ -117,6 +125,7 @@ final class RepositorySettingsModel: ObservableObject {
     private let fileLister: (any CoreFileListing)?
     private let scanSessionReader: any CoreScanSessionReading
     private let existingRepositoryMetadataReader: any ExistingRepositoryMetadataReading
+    private let generatedOverviewRevealer: any RepositoryFileRevealing
     private let errorMapper: any CoreErrorMapping
 
     init(
@@ -126,7 +135,9 @@ final class RepositorySettingsModel: ObservableObject {
         repositoryOpener: any CoreEmptyRepositoryOpening = CoreBridge(),
         fileLister: (any CoreFileListing)? = nil,
         scanSessionReader: any CoreScanSessionReading = CoreBridge(),
-        existingRepositoryMetadataReader: any ExistingRepositoryMetadataReading = SQLiteExistingRepositoryMetadataReader(),
+        existingRepositoryMetadataReader: any ExistingRepositoryMetadataReading =
+            SQLiteExistingRepositoryMetadataReader(),
+        generatedOverviewRevealer: any RepositoryFileRevealing = NSWorkspaceRepositoryFileRevealer(),
         errorMapper: any CoreErrorMapping = CoreBridge()
     ) {
         self.repoPath = repoPath
@@ -136,6 +147,7 @@ final class RepositorySettingsModel: ObservableObject {
         self.fileLister = fileLister ?? (repositoryOpener as? any CoreFileListing)
         self.scanSessionReader = scanSessionReader
         self.existingRepositoryMetadataReader = existingRepositoryMetadataReader
+        self.generatedOverviewRevealer = generatedOverviewRevealer
         self.errorMapper = errorMapper
     }
 
@@ -158,6 +170,7 @@ final class RepositorySettingsModel: ObservableObject {
         healthSummary = nil
         healthError = nil
         syncError = nil
+        overviewActionError = nil
         do {
             let config = try await loader.loadConfig(repoPath: repoPath)
             let effectiveConfig = config.withRepositoryPath(repoPath)
@@ -176,6 +189,18 @@ final class RepositorySettingsModel: ObservableObject {
         } catch {
             loadedConfig = nil
             loadState = .failed(await loadError(for: error))
+        }
+    }
+
+    func revealGeneratedOverviewInFinder() {
+        do {
+            try generatedOverviewRevealer.revealFile(
+                repoPath: repoPath,
+                relativePath: RepositorySettingsSummary.generatedOverviewRelativePath
+            )
+            overviewActionError = nil
+        } catch {
+            overviewActionError = overviewError(for: error)
         }
     }
 
@@ -325,6 +350,37 @@ final class RepositorySettingsModel: ObservableObject {
             message: error.localizedDescription,
             recovery: "Retry status after the repository can be written."
         )
+    }
+
+    private func overviewError(for error: Error) -> RepositorySettingsOverviewActionError {
+        if let actionError = error as? RepositoryFileActionError {
+            return overviewError(for: actionError)
+        }
+
+        return RepositorySettingsOverviewActionError(
+            message: "Generated overview cannot be shown in Finder.",
+            recovery: "Open the repository folder and check .areamatrix/generated/ permissions before retrying."
+        )
+    }
+
+    private func overviewError(for error: RepositoryFileActionError) -> RepositorySettingsOverviewActionError {
+        switch error {
+        case .fileMissing:
+            return RepositorySettingsOverviewActionError(
+                message: "Generated overview cannot be shown in Finder.",
+                recovery: "Retry after AreaMatrix regenerates .areamatrix/generated/root.md."
+            )
+        case .unsafeRelativePath:
+            return RepositorySettingsOverviewActionError(
+                message: "Generated overview path is not safe to open.",
+                recovery: "Reload repository settings before retrying."
+            )
+        case .openRejected:
+            return RepositorySettingsOverviewActionError(
+                message: "Finder rejected the generated overview request.",
+                recovery: "Open the repository folder and check .areamatrix/generated/ permissions before retrying."
+            )
+        }
     }
 }
 
