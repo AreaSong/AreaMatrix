@@ -6117,14 +6117,34 @@
     "2-3/task-21": {
       "attempts": 2,
       "copy_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260507_210821/phase-2/2-3-task-21-copy-attempt-2.log",
+      "git_branch": "codex/areamatrix-task-loop-20260501_132850",
+      "git_changed_files": [
+        ".codex/task-loop-logs/20260507_210821/phase-2/2-3-task-21-copy-attempt-1.log",
+        ".codex/task-loop-logs/20260507_210821/phase-2/2-3-task-21-copy-attempt-2.log",
+        ".codex/task-loop-logs/20260507_210821/phase-2/2-3-task-21-verify-attempt-1.log",
+        ".codex/task-loop-logs/20260507_210821/phase-2/2-3-task-21-verify-attempt-2.log",
+        ".codex/task-loop-runs/20260507_210821/summary.json",
+        ".codex/task-loop-runs/index.json",
+        "apps/macos/AreaMatrix.xcodeproj/project.pbxproj",
+        "apps/macos/AreaMatrix/Models/ClassifierSettingsModel.swift",
+        "apps/macos/AreaMatrix/Models/ClassifierSettingsRecovery.swift",
+        "apps/macos/AreaMatrix/Views/Settings/ClassifierSettingsPane.swift",
+        "apps/macos/AreaMatrixTests/ClassifierSettingsPageFeatureTests.swift",
+        "apps/macos/AreaMatrixTests/ClassifierSettingsRecoveryTests.swift",
+        "tasks/prompts/_shared/progress.json"
+      ],
+      "git_checkpoint_status": "committed",
+      "git_commit": "d8dff7e54df91c5dc78e87d1f10f486acca24aa3",
+      "git_push_status": "not_requested",
+      "git_remote": "",
       "note": "自动执行验收通过：attempt=2",
       "risk": "High",
       "run_id": "20260507_210821",
       "status": "completed",
-      "updated_at": "2026-05-08T10:55:00.283554+00:00",
+      "updated_at": "2026-05-08T10:55:00.492380+00:00",
       "verify_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260507_210821/phase-2/2-3-task-21-verify-attempt-2.log"
     }
   },
-  "updated_at": "2026-05-08T09:24:59.480926+00:00",
+  "updated_at": "2026-05-08T10:55:00.492382+00:00",
   "version": 1
 }
