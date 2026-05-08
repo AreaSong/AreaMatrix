@@ -20,6 +20,7 @@ final class MainFileListModel: ObservableObject {
     @Published private(set) var diagnosticsState: MainListDiagnosticsState = .idle
     @Published var renameState: MainFileRenameState = .idle
     @Published var deleteState: MainFileDeleteState = .idle
+    @Published var changeCategoryState: MainFileCategoryMoveState = .idle
 
     let repoPath: String
     let isReadOnly: Bool
@@ -28,6 +29,7 @@ final class MainFileListModel: ObservableObject {
     let fileDetailer: any CoreFileDetailing
     let fileRenamer: any CoreFileRenaming
     let fileDeleter: any CoreFileDeleting
+    let fileCategoryMover: any CoreFileCategoryMoving
     private let changeLogLister: any CoreChangeLogListing
     private let externalChangesSyncer: any CoreExternalChangesSyncing
     let errorMapper: any CoreErrorMapping
@@ -43,6 +45,7 @@ final class MainFileListModel: ObservableObject {
         fileDetailer: any CoreFileDetailing,
         fileRenamer: any CoreFileRenaming = CoreBridge(),
         fileDeleter: any CoreFileDeleting = CoreBridge(),
+        fileCategoryMover: any CoreFileCategoryMoving = CoreBridge(),
         changeLogLister: any CoreChangeLogListing = CoreBridge(),
         externalChangesSyncer: any CoreExternalChangesSyncing = CoreBridge(),
         errorMapper: any CoreErrorMapping,
@@ -57,15 +60,16 @@ final class MainFileListModel: ObservableObject {
         self.fileDetailer = fileDetailer
         self.fileRenamer = fileRenamer
         self.fileDeleter = fileDeleter
+        self.fileCategoryMover = fileCategoryMover
         self.changeLogLister = changeLogLister
         self.externalChangesSyncer = externalChangesSyncer
         self.errorMapper = errorMapper
         self.diagnosticsCollector = diagnosticsCollector
     }
 
-    func loadCurrentCategory(_ category: String?) async {
+    func loadCurrentCategory(_ category: String?, focusingOn fileID: Int64? = nil) async {
         currentCategory = category
-        await reloadCurrentCategory()
+        await reloadCurrentCategory(focusingOn: fileID)
     }
 
     func retryCurrentCategory() async { await reloadCurrentCategory() }
@@ -183,33 +187,6 @@ final class MainFileListModel: ObservableObject {
         }
     }
 
-    func beginRename(fileID: Int64? = nil) {
-        guard let fileID = fileID ?? selection.singleFileID,
-              writeActionDisabledReason(fileID: fileID) == nil else { return }
-        renameState = .idle
-        pendingActionDestination = .rename(fileID: fileID)
-    }
-
-    func beginChangeCategory(fileID: Int64? = nil) {
-        guard let fileID = fileID ?? selection.singleFileID,
-              writeActionDisabledReason(fileID: fileID) == nil else { return }
-        pendingActionDestination = .changeCategory(fileID: fileID)
-    }
-
-    func beginDelete(fileID: Int64? = nil) {
-        guard let fileID = fileID ?? selection.singleFileID,
-              writeActionDisabledReason(fileID: fileID) == nil else { return }
-        pendingActionDestination = .delete(fileID: fileID)
-    }
-
-    func clearPendingActionDestination() {
-        if !renameState.isRenaming && !deleteState.isDeleting {
-            pendingActionDestination = nil
-            renameState = .idle
-            deleteState = .idle
-        }
-    }
-
     func handleExternalRename(_ updatedFile: FileEntrySnapshot) {
         files = files.map { file in
             file.id == updatedFile.id ? updatedFile : file
@@ -265,16 +242,18 @@ final class MainFileListModel: ObservableObject {
 
     func clearDiagnosticsState() { diagnosticsState = .idle }
 
-    private func reloadCurrentCategory() async {
+    private func reloadCurrentCategory(focusingOn fileID: Int64? = nil) async {
         loadGeneration += 1
         let generation = loadGeneration
         let filter = FileFilterSnapshot.currentCategory(currentCategory)
 
         isLoading = true
         errorMapping = nil
-        statusBanner = nil
         diagnosticsState = .idle
-        clearDetail()
+        if fileID == nil {
+            statusBanner = nil
+            clearDetail()
+        }
 
         do {
             let loadedFiles = try await fileLister.listFiles(repoPath: repoPath, filter: filter)
@@ -282,13 +261,24 @@ final class MainFileListModel: ObservableObject {
             files = loadedFiles
             errorMapping = nil
             isLoading = false
+            focusLoadedFile(fileID: fileID)
         } catch {
             let mappedError = await mapCoreError(error)
             guard generation == loadGeneration else { return }
             files = []
             errorMapping = mappedError
+            statusBanner = nil
             isLoading = false
         }
+    }
+
+    private func focusLoadedFile(fileID: Int64?) {
+        guard let fileID, let file = files.first(where: { $0.id == fileID }) else { return }
+        selection = .single(file.id)
+        selectedFileDetail = file
+        selectedFileNoteWriteBlock = noteWriteBlock(for: file)
+        detailErrorMapping = nil
+        isDetailLoading = false
     }
 
     private func loadDetail(id: Int64) async {
@@ -467,6 +457,7 @@ final class MainFileListModel: ObservableObject {
         pendingActionDestination = nil
         renameState = .idle
         deleteState = .idle
+        changeCategoryState = .idle
     }
 
     private func resetDetailLog() {

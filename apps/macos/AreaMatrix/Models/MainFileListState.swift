@@ -193,6 +193,8 @@ enum MainListStatusBanner: Equatable, Sendable {
     case unsavedNoteDraftPreserved(fileID: Int64)
     case movedFileToTrash(fileID: Int64)
     case removedFileFromIndex(fileID: Int64)
+    case changedCategory(fileID: Int64, category: String)
+    case changedCategoryTreeRefreshFailed(fileID: Int64, category: String)
 
     var message: String {
         switch self {
@@ -206,6 +208,10 @@ enum MainListStatusBanner: Equatable, Sendable {
             return "Moved to Trash. Metadata retained for traceability."
         case .removedFileFromIndex:
             return "Removed from AreaMatrix index. Original file was not deleted."
+        case .changedCategory(_, let category):
+            return "Category changed to \(category). Tree, list, detail, and change log are refreshed."
+        case .changedCategoryTreeRefreshFailed(_, let category):
+            return "Category changed to \(category). List, detail, and change log are refreshed. Retry to refresh Tree counts."
         }
     }
 
@@ -213,9 +219,9 @@ enum MainListStatusBanner: Equatable, Sendable {
         switch self {
         case .renamedPreservedSelection:
             return "arrow.triangle.2.circlepath"
-        case .removedSelectedFile, .unsavedNoteDraftPreserved:
+        case .removedSelectedFile, .unsavedNoteDraftPreserved, .changedCategoryTreeRefreshFailed:
             return "exclamationmark.triangle"
-        case .movedFileToTrash, .removedFileFromIndex:
+        case .movedFileToTrash, .removedFileFromIndex, .changedCategory:
             return "checkmark.circle"
         }
     }

@@ -97,6 +97,7 @@ enum CoreBridgeBoundary: String, CaseIterable, Equatable, Sendable {
     case importFile = "import_file"
     case deleteFile = "delete_file"
     case renameFile = "rename_file"
+    case previewMoveToCategory = "preview_move_to_category"
     case moveToCategory = "move_to_category"
     case restoreFile = "restore_file"
     case listFiles = "list_files"

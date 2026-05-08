@@ -18,12 +18,15 @@ struct MainRepositoryContentView: View {
     let onCopyPath: (String) -> Void
     let onCopyPaths: ([String]) -> Void
     let onOpenNoteFile: (String) -> Void
+    let treeLister: any CoreRepositoryTreeListing
     let externalCreatedEvent: MainExternalCreatedFileEvent?
     let onExternalCreatedEventHandled: (MainExternalCreatedFileEvent) -> Void
     let importProgressItems: [ImportBatchProgressSnapshot.Item]
     @StateObject var fileListModel: MainFileListModel
-    @State private var selectedSidebarID: String = "inbox"
-    @State private var selectedFileIDs: Set<Int64> = []
+    @State var repositoryTree: RepositoryTreeNodeSnapshot
+    @State var selectedSidebarID: String = "inbox"
+    @State var selectedFileIDs: Set<Int64> = []
+    @State var pendingMovedFileFocusID: Int64?
     @State private var selectedImportProgressIDs: Set<String> = []
     @State private var filterText: String = ""
     @StateObject private var dropPreviewModel: ImportDropPreviewModel
@@ -50,8 +53,16 @@ struct MainRepositoryContentView: View {
         }
         .task(id: selectedSidebarID) {
             guard state == .list else { return }
-            selectedFileIDs = []
-            await fileListModel.loadCurrentCategory(selectedSidebarRow.categoryForFileList)
+            let focusedFileID = pendingMovedFileFocusID
+            if let focusedFileID {
+                selectedFileIDs = [focusedFileID]
+            } else {
+                selectedFileIDs = []
+            }
+            await fileListModel.loadCurrentCategory(selectedSidebarRow.categoryForFileList, focusingOn: focusedFileID)
+            if pendingMovedFileFocusID == focusedFileID {
+                pendingMovedFileFocusID = nil
+            }
         }
         .task(id: externalCreatedEvent?.id) {
             guard let externalCreatedEvent else { return }
@@ -74,17 +85,6 @@ struct MainRepositoryContentView: View {
         .sheet(item: actionDestinationBinding) { destination in
             actionRoutingSheet(destination)
         }
-    }
-
-    private var actionDestinationBinding: Binding<MainFileActionDestination?> {
-        Binding(
-            get: { fileListModel.pendingActionDestination },
-            set: { value in
-                if value == nil {
-                    fileListModel.clearPendingActionDestination()
-                }
-            }
-        )
     }
 
     private var toolbar: some View {
@@ -123,16 +123,13 @@ struct MainRepositoryContentView: View {
 
     private var sidebar: some View {
         List(selection: $selectedSidebarID) {
-            ForEach(opening.tree.sidebarRows) { row in
+            ForEach(repositoryTree.sidebarRows) { row in
                 sidebarRow(row)
                     .tag(row.id)
             }
         }
         .listStyle(.sidebar)
         .frame(minWidth: 180, idealWidth: 220, maxWidth: 260)
-        .onChange(of: opening.tree.sidebarRows) { _, rows in
-            selectedSidebarID = Self.defaultSelectedSidebarID(from: rows)
-        }
     }
 
     private func sidebarRow(_ row: RepositorySidebarRowSnapshot) -> some View {
@@ -156,7 +153,7 @@ struct MainRepositoryContentView: View {
         .accessibilityHint(row.importDropTarget.sidebarHelp)
     }
 
-    private static func defaultSelectedSidebarID(from rows: [RepositorySidebarRowSnapshot]) -> String {
+    static func defaultSelectedSidebarID(from rows: [RepositorySidebarRowSnapshot]) -> String {
         rows.first { $0.node.slug == "inbox" }?.id ?? rows.first?.id ?? "__root__"
     }
 
@@ -168,10 +165,10 @@ struct MainRepositoryContentView: View {
         selectedSidebarRow.displayName
     }
 
-    private var selectedSidebarRow: RepositorySidebarRowSnapshot {
-        opening.tree.sidebarRow(id: selectedSidebarID) ??
-            opening.tree.sidebarRows.first ??
-            RepositorySidebarRowSnapshot(node: opening.tree, depth: 0)
+    var selectedSidebarRow: RepositorySidebarRowSnapshot {
+        repositoryTree.sidebarRow(id: selectedSidebarID) ??
+            repositoryTree.sidebarRows.first ??
+            RepositorySidebarRowSnapshot(node: repositoryTree, depth: 0)
     }
 
     init(
@@ -186,11 +183,13 @@ struct MainRepositoryContentView: View {
         onCopyPath: @escaping (String) -> Void = { _ in },
         onCopyPaths: @escaping ([String]) -> Void = { _ in },
         onOpenNoteFile: @escaping (String) -> Void = { _ in },
+        treeLister: any CoreRepositoryTreeListing = CoreBridge(),
         externalCreatedEvent: MainExternalCreatedFileEvent? = nil,
         onExternalCreatedEventHandled: @escaping (MainExternalCreatedFileEvent) -> Void = { _ in },
         importProgressItems: [ImportBatchProgressSnapshot.Item] = [],
         fileLister: any CoreFileListing = CoreBridge(),
         fileDetailer: any CoreFileDetailing = CoreBridge(),
+        fileCategoryMover: any CoreFileCategoryMoving = CoreBridge(),
         changeLogLister: any CoreChangeLogListing = CoreBridge(),
         externalChangesSyncer: any CoreExternalChangesSyncing = CoreBridge(),
         noteStore: any CoreNoteReadingWriting = CoreBridge(),
@@ -209,6 +208,7 @@ struct MainRepositoryContentView: View {
         self.onCopyPath = onCopyPath
         self.onCopyPaths = onCopyPaths
         self.onOpenNoteFile = onOpenNoteFile
+        self.treeLister = treeLister
         self.externalCreatedEvent = externalCreatedEvent
         self.onExternalCreatedEventHandled = onExternalCreatedEventHandled
         self.importProgressItems = importProgressItems
@@ -225,11 +225,13 @@ struct MainRepositoryContentView: View {
             opening: opening,
             fileLister: fileLister,
             fileDetailer: fileDetailer,
+            fileCategoryMover: fileCategoryMover,
             changeLogLister: changeLogLister,
             externalChangesSyncer: externalChangesSyncer,
             errorMapper: errorMapper,
             diagnosticsCollector: diagnosticsCollector
         ))
+        _repositoryTree = State(initialValue: opening.tree)
         _selectedSidebarID = State(initialValue: Self.defaultSelectedSidebarID(from: opening.tree.sidebarRows))
     }
 
@@ -426,47 +428,6 @@ struct MainRepositoryContentView: View {
 
     private func files(for selection: Set<Int64>) -> [FileEntrySnapshot] {
         visibleFiles.filter { selection.contains($0.id) }
-    }
-
-    private func actionRoutingSheet(_ destination: MainFileActionDestination) -> some View {
-        let file = file(for: destination.fileID)
-        return MainFileActionRoutingSheet(
-            destination: destination,
-            file: file,
-            candidateFiles: fileListModel.files,
-            categoryRows: opening.tree.sidebarRows,
-            renameState: fileListModel.renameState,
-            deleteState: fileListModel.deleteState,
-            isTrashAvailable: OnboardingModel.isSystemTrashAvailable(),
-            onDismiss: fileListModel.clearPendingActionDestination,
-            onRename: { fileID, newName in
-                Task {
-                    await fileListModel.submitRename(fileID: fileID, newName: newName)
-                }
-            },
-            onShowExistingFile: { fileID in
-                selectedFileIDs = [fileID]
-                fileListModel.clearPendingActionDestination()
-                Task {
-                    await fileListModel.selectFiles([fileID])
-                }
-            },
-            onDelete: { fileID, operation in
-                Task {
-                    await fileListModel.submitDelete(fileID: fileID, operation: operation)
-                }
-            },
-            onCollectDiagnostics: {
-                Task {
-                    await fileListModel.collectCurrentListDiagnostics()
-                }
-            }
-        )
-    }
-
-    private func file(for fileID: Int64) -> FileEntrySnapshot? {
-        fileListModel.files.first { $0.id == fileID } ??
-            fileListModel.selectedFileDetail.flatMap { $0.id == fileID ? $0 : nil }
     }
 
     private func currentListErrorPane(_ error: CoreErrorMappingSnapshot) -> some View {

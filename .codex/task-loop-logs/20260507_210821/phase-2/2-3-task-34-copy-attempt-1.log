@@ -1,0 +1,51 @@
+一、执行结论
+
+- 已完成 `2-3/task-34` copy-ready 实现。
+
+二、执行范围
+
+- 单任务：`S1-35 change-category-sheet + C1-24 move-to-category`
+- 修改范围均在允许的 macOS / tests / xcodeproj 路径内。
+- 未触碰 `core/src/**`。
+
+修改文件：
+- `apps/macos/AreaMatrix/Bridge/CoreMoveToCategory.swift`
+- `apps/macos/AreaMatrix/Models/MainFileActionRoutingActions.swift`
+- `apps/macos/AreaMatrix/Models/MainFileCategoryMoveActions.swift`
+- `apps/macos/AreaMatrix/Models/MainFileCategoryMoveState.swift`
+- `apps/macos/AreaMatrix/Views/Main/ChangeCategorySheet.swift`
+- `apps/macos/AreaMatrix/Views/Main/MainFileActionRoutingSheet.swift`
+- `apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift`
+- `apps/macos/AreaMatrix/Models/MainFileListModel.swift`
+- `apps/macos/AreaMatrix/Models/MainFileListState.swift`
+- `apps/macos/AreaMatrix/Models/CoreBridgePlaceholderState.swift`
+- `apps/macos/AreaMatrixTests/ChangeCategoryPageFeatureTests.swift`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+
+三、完成情况
+
+- 已接入真实 `CoreBridge.previewMoveToCategory` / `CoreBridge.moveToCategory`，没有用 mock 或静态状态伪造产品闭环。
+- `ChangeCategorySheet` 现在会触发目标分类 preview、展示目标路径、加载态、移动态、错误映射、诊断入口和确认动作。
+- 成功后更新 list/detail 状态、关闭 sheet、写入状态 banner，并加载该文件 change log。
+- 测试覆盖 preview 不移动文件、submit 刷新 list/detail/change log、Core error mapping、以及真实临时仓库中的 preview + move + change_log 文件系统闭环。
+- `C1-10` 只消费 `C1-24` preview 返回的安全目标名信息；未单独实现相邻能力或相邻页面。
+
+四、工程质量
+
+- 代码按现有 `MainFileListModel` / sheet routing / CoreBridge adapter 模式拆分，未引入新依赖。
+- Swift 生产代码未发现 `try!`、强制解包或 mock-only wiring。
+- 文件长度和函数组织在仓库阈值内；`ChangeCategorySheet` 为 198 行。
+- 高风险边界通过 preview 先行：确认前不移动、不重命名、不删除、不写 DB；真实移动只在用户确认后走 Core C1-24。
+
+五、验证情况
+
+- 已通过：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+- 已通过：`./dev test macos`。其中标准 `xcodebuild test` 被本地 sandbox 的 `testmanagerd` 通信限制阻断，脚本按规则复用已构建 XCTest bundle 执行 `xcrun xctest`，结果 `426 tests, 0 failures`。
+- 已通过：`git diff --check`
+- 未运行：真实 UI 手动点击验证；当前只完成 build/test 层证据。
+
+六、风险与后续
+
+- 剩余风险：Tree 计数和整页多能力闭环仍应由后续 `2-3/task-35` 与 `2-3/task-36` 验收覆盖，尤其是 C1-10 的完整冲突处理与 S1-35 page integration。
+- 建议下一个任务：`2-3/task-35`，补齐 S1-35 中 C1-10 resolve-name-conflict 的页面功能点。
+
