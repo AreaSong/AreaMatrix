@@ -12,6 +12,7 @@ struct GeneralSettingsView: View {
         updater: any CoreConfigurationUpdating = CoreBridge(),
         rootOverviewInspector: any RootOverviewFileInspecting = LocalRootOverviewFileInspector(),
         rootOverviewRevealer: any RepositoryFileRevealing = NSWorkspaceRepositoryFileRevealer(),
+        ignoreRulesManager: any RepositoryIgnoreRulesManaging = NSWorkspaceRepositoryIgnoreRulesManager(),
         errorMapper: any CoreErrorMapping = CoreBridge()
     ) {
         _model = StateObject(wrappedValue: GeneralSettingsModel(
@@ -20,6 +21,7 @@ struct GeneralSettingsView: View {
             updater: updater,
             rootOverviewInspector: rootOverviewInspector,
             rootOverviewRevealer: rootOverviewRevealer,
+            ignoreRulesManager: ignoreRulesManager,
             errorMapper: errorMapper
         ))
         self.onClose = onClose
@@ -60,6 +62,17 @@ struct GeneralSettingsView: View {
                 }
             )
         }
+        .confirmationDialog(
+            "Create default ignore.yaml?",
+            isPresented: ignoreRulesCreateBinding
+        ) {
+            Button("Cancel", role: .cancel, action: model.cancelCreateDefaultIgnoreRules)
+            Button("Create default ignore.yaml") {
+                model.createDefaultIgnoreRulesAndOpen()
+            }
+        } message: {
+            Text("AreaMatrix will only write .areamatrix/ignore.yaml. Existing user files are not moved, renamed, deleted, or overwritten.")
+        }
     }
 
     private var sidebar: some View {
@@ -84,12 +97,7 @@ struct GeneralSettingsView: View {
     }
 
     private var loadingContent: some View {
-        VStack(spacing: 12) {
-            ProgressView()
-            Text("Loading settings...")
-                .font(.headline)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        GeneralSettingsLoadingContent(onClose: onClose)
     }
 
     private func loadingErrorContent(_ error: GeneralSettingsSaveError) -> some View {
@@ -213,9 +221,11 @@ struct GeneralSettingsView: View {
 
     private var ignoreRulesSection: some View {
         SettingsSection(title: "忽略规则") {
-            Button("Open ignore.yaml") {}
-                .disabled(true)
-                .help("Open ignore.yaml belongs to a separate settings capability.")
+            Button("Open ignore.yaml", action: model.openIgnoreRules)
+                .disabled(writesDisabled)
+            Text("Missing ignore.yaml can be recreated only inside .areamatrix/.")
+                .font(.callout)
+                .foregroundStyle(.secondary)
         }
     }
 
@@ -266,7 +276,7 @@ struct GeneralSettingsView: View {
 
     private var writesDisabled: Bool {
         model.isSaving || !model.isLoaded || model.pendingStorageConfirmation != nil ||
-            model.pendingRootOverviewStatus != nil
+            model.pendingRootOverviewStatus != nil || model.pendingIgnoreRulesAlert != nil
     }
 
     private var storageSelection: Binding<GeneralSettingsStorageMode> {
@@ -333,6 +343,33 @@ struct GeneralSettingsView: View {
                 }
             }
         )
+    }
+
+    private var ignoreRulesCreateBinding: Binding<Bool> {
+        Binding(
+            get: { model.pendingIgnoreRulesAlert != nil },
+            set: { isPresented in
+                if !isPresented {
+                    model.cancelCreateDefaultIgnoreRules()
+                }
+            }
+        )
+    }
+}
+
+struct GeneralSettingsLoadingContent: View {
+    let onClose: () -> Void
+
+    var body: some View {
+        VStack(spacing: 12) {
+            ProgressView()
+            Text("Loading settings...")
+                .font(.headline)
+            Button("Close", action: onClose)
+                .keyboardShortcut(.cancelAction)
+                .accessibilityIdentifier("S1-26-loading-close-settings")
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 

@@ -1,0 +1,72 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`2-3/task-14`
+- Task：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-3-detail-settings/task-14-s1-26-page-integration-verify.md`
+- 主要实现：`apps/macos/AreaMatrix/**`
+- 测试：`apps/macos/AreaMatrixTests/**`
+- UDL：`core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：14
+- 未覆盖项数：0
+- 通过项数：14
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：page-feature task 覆盖
+- 结果：通过
+- 证据：task 绑定 `2-3/task-12`、`2-3/task-13`；manifest 声明 S1-26 仅覆盖 C1-04、C1-07。`GeneralSettingsModel` 通过 `loadConfig`/`updateConfig` 接 C1-04，并通过默认 Move/Index-only 确认接 C1-07 的导入默认模式。
+- 涉及文件：`GeneralSettingsModel.swift:234`、`GeneralSettingsModel.swift:248`、`GeneralSettingsModel.swift:362`、`CoreBridge.swift:197`
+
+- 项目：页面状态、入口、退出、错误态、CoreBridge 闭环
+- 结果：通过
+- 证据：主窗口进入 `GeneralSettingsView`，关闭后重新打开 repository 刷新配置；加载态保留 Close；保存失败回滚到上一次真实 settings 并保留 Retry save。
+- 涉及文件：`MainWindow.swift:303`、`GeneralSettingsActions.swift:5`、`GeneralSettingsView.swift:360`、`GeneralSettingsModel.swift:370`
+
+- 项目：mock / fixture / 硬编码状态
+- 结果：通过
+- 证据：生产路径默认依赖 `CoreBridge()`，实际调用 generated bindings；测试 fixture 只存在于 XCTest。相关生产文件未发现 `try!`、强制解包、TODO 或 mock-only wiring。
+- 涉及文件：`GeneralSettingsModel.swift:213`、`CoreBridge.swift:197`、`CoreBridge.swift:201`
+
+- 项目：control map 范围
+- 结果：通过
+- 证据：control map 对 S1-26 只声明 C1-04、C1-07；实现没有新增 control map 外 Core 能力。`Open ignore.yaml` 和 root overview 检查属于 page spec 内的 macOS 平台行为，没有绕过 Core 写未声明业务能力。
+- 涉及文件：`mvp-control-map.md:41`、`RepositoryIgnoreRulesManager.swift:14`、`RootOverviewFileInspector.swift:11`
+
+- 项目：Expected New Paths / Forbidden Touches
+- 结果：通过
+- 证据：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`project.pbxproj` 均已落地；`git status --short -- core/src` 与 `git diff --name-only -- core/src` 均无输出，未触碰 `core/src/**`。
+- 涉及文件：`phase-2.md:2238`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。`GeneralSettingsModel.swift` 412 行、`GeneralSettingsView.swift` 424 行，低于 500 行阈值；状态、风险确认、持久化和平台 IO 拆分清楚。
+- 注释 / rustdoc / 文档同步：通过。本 task 未新增 Rust public API；`core-api.md` 与 `core/area_matrix.udl` 对 `load_config`、`update_config`、`RepoConfig`、`StorageMode`、`OverviewOutput` 保持一致。
+- 错误处理与边界处理：通过。保存失败回滚，root `AREAMATRIX.md` unsafe 状态禁用启用按钮，`ignore.yaml` 缺失只提示创建 `.areamatrix/ignore.yaml`。
+- 测试与验证覆盖：通过。`./dev test macos` 在标准 `xcodebuild test` 被 sandbox 阻断后按 repo-local fallback 执行 `xcrun xctest`，344 个 XCTest 全部通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。生产路径未用 mock/fixture 伪造最终闭环。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+- 结果：失败于本地 sandbox test runner 通信，错误为 `com.apple.testmanagerd.control ... Sandbox restriction`，不是编译错误或 XCTest 断言失败。
+- 已运行：`./dev test macos`
+- 结果：通过；复用已构建 XCTest bundle 执行 `xcrun xctest`，`Executed 344 tests, with 0 failures`。
+- 缺失：无。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。标准 `xcodebuild test` 在当前 sandbox 环境被 testmanagerd 通信限制阻断，但 repo-local validation driver 明确允许此场景使用 `./dev test macos` fallback；fallback 已通过，且实现证据满足 task、manifest、page spec、control map 与工程质量规则。
+
+VERIFY_RESULT: PASS

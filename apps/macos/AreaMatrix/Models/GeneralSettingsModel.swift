@@ -161,6 +161,10 @@ struct GeneralSettingsSaveError: Equatable, Sendable {
     var recovery: String
 }
 
+enum GeneralSettingsIgnoreRulesAlert: Equatable, Sendable {
+    case createDefault
+}
+
 struct GeneralSettingsPendingSave: Equatable, Sendable {
     var config: RepoConfigSnapshot
     var error: GeneralSettingsSaveError
@@ -193,6 +197,7 @@ final class GeneralSettingsModel: ObservableObject {
     @Published private(set) var savedConfig: RepoConfigSnapshot?
     @Published private(set) var pendingStorageConfirmation: GeneralSettingsStorageMode?
     @Published private(set) var pendingRootOverviewStatus: RootOverviewFileStatus?
+    @Published private(set) var pendingIgnoreRulesAlert: GeneralSettingsIgnoreRulesAlert?
     @Published private(set) var saveError: GeneralSettingsSaveError?
     @Published private(set) var isSaving = false
 
@@ -201,6 +206,7 @@ final class GeneralSettingsModel: ObservableObject {
     private let updater: any CoreConfigurationUpdating
     private let rootOverviewInspector: any RootOverviewFileInspecting
     private let rootOverviewRevealer: any RepositoryFileRevealing
+    private let ignoreRulesManager: any RepositoryIgnoreRulesManaging
     private let errorMapper: any CoreErrorMapping
     private var pendingRetry: GeneralSettingsPendingSave?
 
@@ -210,6 +216,7 @@ final class GeneralSettingsModel: ObservableObject {
         updater: any CoreConfigurationUpdating = CoreBridge(),
         rootOverviewInspector: any RootOverviewFileInspecting = LocalRootOverviewFileInspector(),
         rootOverviewRevealer: any RepositoryFileRevealing = NSWorkspaceRepositoryFileRevealer(),
+        ignoreRulesManager: any RepositoryIgnoreRulesManaging = NSWorkspaceRepositoryIgnoreRulesManager(),
         errorMapper: any CoreErrorMapping = CoreBridge()
     ) {
         self.repoPath = repoPath
@@ -217,6 +224,7 @@ final class GeneralSettingsModel: ObservableObject {
         self.updater = updater
         self.rootOverviewInspector = rootOverviewInspector
         self.rootOverviewRevealer = rootOverviewRevealer
+        self.ignoreRulesManager = ignoreRulesManager
         self.errorMapper = errorMapper
     }
 
@@ -295,6 +303,39 @@ final class GeneralSettingsModel: ObservableObject {
             saveError = GeneralSettingsSaveError(
                 message: "AREAMATRIX.md cannot be shown in Finder.",
                 recovery: "Open the repository folder and check file permissions before enabling root overview."
+            )
+        }
+    }
+
+    func openIgnoreRules() {
+        do {
+            try ignoreRulesManager.openIgnoreRules(repoPath: repoPath)
+            saveError = nil
+        } catch RepositoryIgnoreRulesError.ignoreRulesMissing {
+            pendingIgnoreRulesAlert = .createDefault
+            saveError = nil
+        } catch {
+            saveError = GeneralSettingsSaveError(
+                message: "ignore.yaml cannot be opened.",
+                recovery: "Check .areamatrix/ignore.yaml permissions and retry from General settings."
+            )
+        }
+    }
+
+    func cancelCreateDefaultIgnoreRules() {
+        pendingIgnoreRulesAlert = nil
+    }
+
+    func createDefaultIgnoreRulesAndOpen() {
+        pendingIgnoreRulesAlert = nil
+        do {
+            try ignoreRulesManager.createDefaultIgnoreRules(repoPath: repoPath)
+            try ignoreRulesManager.openIgnoreRules(repoPath: repoPath)
+            saveError = nil
+        } catch {
+            saveError = GeneralSettingsSaveError(
+                message: "Default ignore.yaml cannot be created.",
+                recovery: "AreaMatrix only writes .areamatrix/ignore.yaml; check metadata folder permissions and retry."
             )
         }
     }
