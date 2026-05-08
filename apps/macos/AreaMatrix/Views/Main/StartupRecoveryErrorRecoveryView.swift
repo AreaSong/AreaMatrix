@@ -21,11 +21,6 @@ struct StartupRecoveryErrorRecoveryView: View {
                 .font(.headline)
                 .foregroundStyle(tint)
             statusContent
-            if case .failed = state {
-                Button(retryButtonTitle, action: onRetry)
-                    .disabled(retryButtonIsDisabled)
-                    .accessibilityIdentifier("S1-32-C1-16-retry-startup-recovery")
-            }
         }
         .padding(14)
         .frame(maxWidth: 640, alignment: .leading)
@@ -50,16 +45,13 @@ struct StartupRecoveryErrorRecoveryView: View {
                     .foregroundStyle(.secondary)
             }
         case .failed(let mapping):
-            Text(mapping.userMessage)
-            Text(mapping.suggestedAction)
-                .font(.callout)
-                .foregroundStyle(.secondary)
-            DisclosureGroup("Technical Details") {
-                Text(mapping.rawContext)
-                    .font(.system(.caption, design: .monospaced))
-                    .textSelection(.enabled)
-            }
-            .font(.callout)
+            ErrorRecoveryMappedErrorView(
+                mapping: mapping,
+                retryButtonTitle: retryButtonTitle,
+                isRetrying: isRetrying,
+                retryAccessibilityIdentifier: "S1-32-C1-16-retry-startup-recovery",
+                onRetry: onRetry
+            )
         }
     }
 
@@ -117,6 +109,84 @@ struct StartupRecoveryErrorRecoveryView: View {
             return .red
         default:
             return .primary
+        }
+    }
+}
+
+struct ErrorRecoveryMappedErrorView: View {
+    let mapping: CoreErrorMappingSnapshot
+    let retryButtonTitle: String
+    let isRetrying: Bool
+    let retryAccessibilityIdentifier: String
+    let onRetry: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            mappingHeader
+            Text(mapping.userMessage)
+            Text(mappedActionText)
+                .font(.callout)
+                .foregroundStyle(.secondary)
+            technicalDetails
+            Button(retryButtonTitle, action: onRetry)
+                .disabled(isRetrying)
+                .accessibilityIdentifier(retryAccessibilityIdentifier)
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("S1-32-C1-21-error-mapping")
+    }
+
+    private var mappingHeader: some View {
+        HStack(spacing: 8) {
+            Label(mapping.kind.rawValue, systemImage: iconName)
+                .foregroundStyle(tint)
+            Text("Severity: \(mapping.severity.rawValue)")
+                .foregroundStyle(.secondary)
+            Text("Recoverability: \(mapping.recoverability.rawValue)")
+                .foregroundStyle(.secondary)
+        }
+        .font(.callout)
+    }
+
+    private var technicalDetails: some View {
+        DisclosureGroup("Technical Details") {
+            Text(rawContextText)
+                .font(.system(.caption, design: .monospaced))
+                .textSelection(.enabled)
+        }
+        .font(.callout)
+    }
+
+    private var mappedActionText: String {
+        mapping.suggestedAction.isEmpty ? "Retry the failed action or collect diagnostics from the source page." :
+            mapping.suggestedAction
+    }
+
+    private var rawContextText: String {
+        mapping.rawContext.isEmpty ? "No technical context was provided by Core." : mapping.rawContext
+    }
+
+    private var iconName: String {
+        switch mapping.severity {
+        case .low:
+            return "info.circle"
+        case .medium:
+            return "exclamationmark.circle"
+        case .high:
+            return "exclamationmark.triangle"
+        case .critical:
+            return "xmark.octagon"
+        }
+    }
+
+    private var tint: Color {
+        switch mapping.severity {
+        case .low:
+            return .blue
+        case .medium:
+            return .orange
+        case .high, .critical:
+            return .red
         }
     }
 }

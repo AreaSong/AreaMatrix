@@ -27,9 +27,58 @@ final class ErrorRecoveryStartupRecoveryPageFeatureTests: XCTestCase {
         XCTAssertTrue(failedBody.contains("Startup recovery failed"))
         XCTAssertTrue(failedBody.contains("Retry startup recovery"))
         XCTAssertTrue(failedBody.contains("S1-32-C1-16-retry-startup-recovery"))
-        XCTAssertTrue(failedBody.contains("Technical Details"))
+        XCTAssertTrue(failedBody.contains("ErrorRecoveryMappedErrorView"))
         XCTAssertFalse(failedBody.contains("Open repair"))
         XCTAssertFalse(failedBody.contains("Remove from index"))
+    }
+
+    @MainActor
+    func testS132C121MappedErrorViewShowsCoreMappingWithoutHighRiskActions() {
+        let mapping = CoreErrorMappingSnapshot.s132StartupRecoveryMapping(rawContext: "database is locked")
+        let view = ErrorRecoveryMappedErrorView(
+            mapping: mapping,
+            retryButtonTitle: "Retry startup recovery",
+            isRetrying: false,
+            retryAccessibilityIdentifier: "S1-32-C1-21-retry",
+            onRetry: {}
+        )
+        let body = s132MirrorDescription(of: view.body)
+
+        XCTAssertTrue(body.contains("S1-32-C1-21-error-mapping"))
+        XCTAssertTrue(body.contains("Startup recovery could not finish"))
+        XCTAssertTrue(body.contains("Severity: Medium"))
+        XCTAssertTrue(body.contains("Recoverability: Retryable"))
+        XCTAssertTrue(body.contains("database is locked"))
+        XCTAssertTrue(body.contains("S1-32-C1-21-retry"))
+        XCTAssertFalse(body.contains("Open repair"))
+        XCTAssertFalse(body.contains("Remove from index"))
+        XCTAssertFalse(body.contains("Download & retry"))
+    }
+
+    @MainActor
+    func testS132C121MappedErrorViewFallsBackWhenCoreMappingOmitsOptionalText() {
+        let mapping = CoreErrorMappingSnapshot(
+            kind: .internal,
+            userMessage: "AreaMatrix hit an internal error.",
+            severity: .critical,
+            suggestedAction: "",
+            recoverability: .fatal,
+            rawContext: ""
+        )
+        let view = ErrorRecoveryMappedErrorView(
+            mapping: mapping,
+            retryButtonTitle: "Retry startup recovery",
+            isRetrying: false,
+            retryAccessibilityIdentifier: "S1-32-C1-21-retry",
+            onRetry: {}
+        )
+        let body = s132MirrorDescription(of: view.body)
+
+        XCTAssertTrue(body.contains("Internal"))
+        XCTAssertTrue(body.contains("Severity: Critical"))
+        XCTAssertTrue(body.contains("Recoverability: Fatal"))
+        XCTAssertTrue(body.contains("Retry the failed action or collect diagnostics from the source page."))
+        XCTAssertTrue(body.contains("No technical context was provided by Core."))
     }
 
     @MainActor
