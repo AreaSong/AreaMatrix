@@ -33,6 +33,10 @@
 
 发布人执行：
 
+- [ ] Stage 1 alpha 分发前，先更新并通过
+      [stage-1-release-checklist.md](stage-1-release-checklist.md)；若该清单仍有
+      P0/P1、check-all 失败、手工冒烟未跑、性能基线缺失或签名/公证状态不明，
+      不得放行最终集成验收。
 - [ ] `main` 分支所有 PR 已合并
 - [ ] 全部 CI 绿
 - [ ] CHANGELOG `[Unreleased]` 段落内容完整

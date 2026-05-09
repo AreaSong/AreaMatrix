@@ -243,7 +243,12 @@ PR 要全绿才能合并。
 
 ---
 
-## 发布构建（Stage 2 起激活）
+## 发布构建（Stage 1 alpha 起激活）
+
+Stage 1 不做公开发布，但 alpha tester 内部分发仍必须走签名、公证、DMG 和干净 Mac
+首启验证。发布放行状态以 [stage-1-release-checklist.md](stage-1-release-checklist.md)
+为准；该清单存在 P0/P1、手工冒烟 pending、性能基线缺口或签名/公证未知时，不得把
+构建产物标记为可分发。
 
 ### 版本号
 

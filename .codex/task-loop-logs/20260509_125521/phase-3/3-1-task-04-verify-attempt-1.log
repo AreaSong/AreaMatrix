@@ -1,0 +1,70 @@
+一、验收结论
+
+- 通过
+- 说明：本 task 的目标是建立 release checklist 并明确 alpha 是否可分发；当前清单明确结论为“不放行 Stage 1 alpha 分发”，且把 release 阻断项记录为发布门禁，不是伪装通过。
+
+二、验收范围
+
+- 单任务：`3-1/task-04`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-3/3-1-stability-release/task-04-release-checklist.md`
+- 主要验收文件：
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-release-checklist.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/tests/stage1_release_checklist.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/development/release.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/development/build.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/roadmap/stage-1-mvp.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/CHANGELOG.md`
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：0
+- 通过项数：10
+- 不通过项数：0
+- 阻塞项数：0 个 task 完成阻塞；5 个 release 放行阻塞已被正确记录
+
+四、逐项验收结果
+
+- 读取 release/build/Stage 1/CHANGELOG：通过。`stage-1-release-checklist.md:21-29` 明确列出这些证据来源。
+- 发布前检查项对齐：通过。`stage-1-release-checklist.md:42-50` 覆盖 CI/check-all、P0/P1、冒烟、性能、依赖、文档/API、CHANGELOG、版本号。
+- alpha 分发状态：通过。`stage-1-release-checklist.md:56-61` 覆盖签名、公证、DMG、干净 Mac 首启、已知问题、反馈渠道。
+- 每项状态和风险：通过。`stage-1-release-checklist.md:31-36` 定义状态，`42-61` 逐项给出状态和发布风险。
+- 不得放行最终集成验收：通过。`stage-1-release-checklist.md:11-15`、`73-83` 明确不放行规则。
+- 只补发布证据，不改产品实现：通过。当前相关 diff 只涉及 release/build 文档、新增 `core/tests/stage1_release_checklist.rs`、新增 `docs/development/stage-1-release-checklist.md`，未见产品实现变更。
+- Expected New Paths：通过。`core/tests/**`、`docs/development/**` 已落地；`scripts/**`、`apps/macos/AreaMatrixTests/**` 现有范围存在且被验证链路引用。
+- Forbidden Touches：通过。manifest 为 None，未发现违规禁止路径。
+- 文档一致性：通过。`release.md:36-39` 与 `build.md:246-251` 都指向 Stage 1 alpha release checklist；`stage-1-mvp.md:247-305` 的 DMG、签名、公证、干净 Mac 首启要求被 checklist 接住。
+- 测试锁定：通过。`core/tests/stage1_release_checklist.rs:26-142` 锁定 checklist 结论、发布门禁、validation 阻断、CHANGELOG/版本状态和回滚范围；本次 `cargo test --workspace` 中该测试 7 passed。
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。新增 Rust 测试是文档锁定测试，没有产品路径 mock 或一次性通过态。
+- 注释 / rustdoc / 文档同步：通过。该 task 是文档/发布证据任务；release/build/Stage 1/CHANGELOG 的冲突点已解释，未新增 public Rust API。
+- 错误处理与边界处理：通过。release checklist 将 check-all、dependency dry-run、签名、公证、DMG、干净 Mac 首启缺口列为阻断风险。
+- 测试与验证覆盖：通过但 release 不放行。manifest 四条验证均已运行；失败项被记录为 release 阻断。
+- 占位、硬编码、mock-only、一次性实现检查：通过。没有用 mock 伪造 alpha 可分发；清单明确“不放行”。
+
+六、阻塞项
+
+- 未发现导致 `3-1/task-04` 不通过的 task 完成阻塞项。
+- 已正确记录的 release 放行阻塞：
+  - P1-RL-001：真实 Release `.app` 启动到首屏证据缺失，`/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-release-checklist.md:67`
+  - P1-RL-002：M-01..M-04 手工恢复冒烟 pending，`/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-release-checklist.md:68`
+  - P1-RL-003：Developer ID 签名、公证、DMG、干净 Mac 首启证据缺失，`/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-release-checklist.md:69`
+  - P1-RL-004：CHANGELOG / 版本发布切面未完成，`/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-release-checklist.md:70`
+  - P1-RL-005：check-all 未完整通过，依赖 dry-run 无法完成，`/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-release-checklist.md:71`
+
+七、验证情况
+
+- `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`：通过，`doctor: OK`，tasks 637，manifests 637。
+- `./dev check all`：失败并被 checklist 正确阻断。governance、skills、task-loop、prompt doctor、diff check、Rust fmt/clippy/test 均通过；macOS checks 因缺少 `uniffi-bindgen` 失败，退出 127。
+- `cargo update --dry-run`：失败并被 checklist 正确阻断。仓库根目录无 `Cargo.toml`；补充在 `core/` 下执行时，当前环境无法解析 `index.crates.io`。
+- `git diff --check`：通过。
+
+八、最终判定说明
+
+- 本次执行已达到 `3-1/task-04` 验收标准。
+- 当前 Stage 1 alpha 仍不得分发，最终集成验收不得放行；这是 checklist 正确记录的 release 状态，不是本 task 未完成。
+
+
+VERIFY_RESULT: PASS
