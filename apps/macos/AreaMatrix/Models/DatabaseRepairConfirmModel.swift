@@ -29,6 +29,18 @@ enum DatabaseRepairState: Equatable, Sendable {
     }
 }
 
+enum DatabaseStartupRecoveryState: Equatable, Sendable {
+    case idle
+    case checking
+    case completed(RecoveryReportSnapshot?)
+    case failed(CoreErrorMappingSnapshot)
+
+    var isChecking: Bool {
+        if case .checking = self { return true }
+        return false
+    }
+}
+
 @MainActor
 final class DatabaseRepairConfirmModel: ObservableObject {
     let repoPath: String
@@ -37,10 +49,12 @@ final class DatabaseRepairConfirmModel: ObservableObject {
     let lastOpenedAt: Int64?
 
     @Published var isMetadataSafetyConfirmed = false
+    @Published private(set) var startupRecoveryState: DatabaseStartupRecoveryState = .idle
     @Published private(set) var repairState: DatabaseRepairState = .idle
     @Published private(set) var diagnosticsState: MainRepoDiagnosticsState = .idle
 
     private let metadataRepairer: any CoreMetadataRepairing
+    private let startupRecoverer: any CoreStartupRecovering
     private let diagnosticsCollector: any CoreDiagnosticsCollecting
     private let errorMapper: any CoreErrorMapping
 
@@ -50,6 +64,7 @@ final class DatabaseRepairConfirmModel: ObservableObject {
         mapping: CoreErrorMappingSnapshot?,
         lastOpenedAt: Int64?,
         metadataRepairer: any CoreMetadataRepairing,
+        startupRecoverer: any CoreStartupRecovering = CoreBridge(),
         diagnosticsCollector: any CoreDiagnosticsCollecting,
         errorMapper: any CoreErrorMapping
     ) {
@@ -58,20 +73,35 @@ final class DatabaseRepairConfirmModel: ObservableObject {
         initialMapping = mapping
         self.lastOpenedAt = lastOpenedAt
         self.metadataRepairer = metadataRepairer
+        self.startupRecoverer = startupRecoverer
         self.diagnosticsCollector = diagnosticsCollector
         self.errorMapper = errorMapper
     }
 
     var canRunFullRescan: Bool {
-        isMetadataSafetyConfirmed && !repairState.isRunning && !diagnosticsIsBusy && !diagnosticsFailed
+        isMetadataSafetyConfirmed &&
+            !repairState.isRunning &&
+            !startupRecoveryState.isChecking &&
+            !diagnosticsIsBusy &&
+            !diagnosticsFailed
     }
 
     var canExportDiagnostics: Bool {
-        !repairState.isRunning && !diagnosticsIsBusy
+        !repairState.isRunning && !startupRecoveryState.isChecking && !diagnosticsIsBusy
     }
 
     var primaryButtonTitle: String {
         repairState.failure == nil ? "Run Full Rescan" : "Retry Full Rescan"
+    }
+
+    func runStartupRecoveryCheckIfNeeded() async {
+        guard case .idle = startupRecoveryState else { return }
+        await runStartupRecoveryCheck()
+    }
+
+    func retryStartupRecovery() async {
+        guard !startupRecoveryState.isChecking else { return }
+        await runStartupRecoveryCheck()
     }
 
     func runFullRescan() async {
@@ -110,6 +140,17 @@ final class DatabaseRepairConfirmModel: ObservableObject {
             diagnosticsState = .collected(snapshot)
         } catch {
             diagnosticsState = .failed(await mapError(error))
+        }
+    }
+
+    private func runStartupRecoveryCheck() async {
+        startupRecoveryState = .checking
+
+        do {
+            let report = try await startupRecoverer.recoverOnStartup(repoPath: repoPath)
+            startupRecoveryState = .completed(report.hasVisibleDetails ? report : nil)
+        } catch {
+            startupRecoveryState = .failed(await mapError(error))
         }
     }
 

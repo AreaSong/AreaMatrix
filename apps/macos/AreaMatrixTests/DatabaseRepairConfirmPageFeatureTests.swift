@@ -3,6 +3,66 @@ import XCTest
 
 final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
     @MainActor
+    func testS137C116StartupRecoveryRunsRealCoreBridgeBoundaryBeforeRepair() async {
+        let report = RecoveryReportSnapshot(
+            cleanedStagingFiles: 2,
+            revertedStagingDbRows: 1,
+            warnings: ["Kept recoverable staging file"]
+        )
+        let recoverer = S137RecordingStartupRecoverer(result: .success(report))
+        let repairer = S137RecordingMetadataRepairer(result: .success(.s137RepairReportFixture()))
+        let model = DatabaseRepairConfirmModel(
+            repoPath: "/tmp/repo",
+            scanSession: nil,
+            mapping: nil,
+            lastOpenedAt: nil,
+            metadataRepairer: repairer,
+            startupRecoverer: recoverer,
+            diagnosticsCollector: ShellRecordingDiagnosticsCollector(result: .success(.s137DiagnosticsFixture())),
+            errorMapper: S137RepairErrorMapper(mapping: .s137RepairMapping(kind: .db))
+        )
+
+        await model.runStartupRecoveryCheckIfNeeded()
+        let recoveryRequests = await recoverer.requestedRepoPaths()
+        let repairRequests = await repairer.requests()
+
+        XCTAssertEqual(recoveryRequests, ["/tmp/repo"])
+        XCTAssertEqual(model.startupRecoveryState, .completed(report))
+        XCTAssertEqual(repairRequests, [])
+    }
+
+    @MainActor
+    func testS137C116StartupRecoveryFailureMapsErrorAndCanRetry() async {
+        let mapping = CoreErrorMappingSnapshot.s137StartupRecoveryMapping(rawContext: "database locked")
+        let recoverer = S137RecordingStartupRecoverer(results: [
+            .failure(CoreError.Db(message: "database locked")),
+            .success(RecoveryReportSnapshot(cleanedStagingFiles: 0, revertedStagingDbRows: 0, warnings: [])),
+        ])
+        let model = DatabaseRepairConfirmModel(
+            repoPath: "/tmp/repo",
+            scanSession: nil,
+            mapping: nil,
+            lastOpenedAt: nil,
+            metadataRepairer: S137RecordingMetadataRepairer(result: .success(.s137RepairReportFixture())),
+            startupRecoverer: recoverer,
+            diagnosticsCollector: ShellRecordingDiagnosticsCollector(result: .success(.s137DiagnosticsFixture())),
+            errorMapper: S137RepairErrorMapper(mapping: mapping)
+        )
+
+        await model.runStartupRecoveryCheckIfNeeded()
+        XCTAssertEqual(model.startupRecoveryState, .failed(mapping))
+
+        await model.runStartupRecoveryCheckIfNeeded()
+        var recoveryRequests = await recoverer.requestedRepoPaths()
+        XCTAssertEqual(recoveryRequests, ["/tmp/repo"])
+
+        await model.retryStartupRecovery()
+        recoveryRequests = await recoverer.requestedRepoPaths()
+        XCTAssertEqual(recoveryRequests, ["/tmp/repo", "/tmp/repo"])
+        XCTAssertEqual(model.startupRecoveryState, .completed(nil))
+    }
+
+    @MainActor
     func testS137C126RepairRequiresConfirmationAndUsesCoreMetadataRepair() async {
         let report = RepairReportSnapshot(
             scanSessionId: 9,
@@ -128,6 +188,41 @@ final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
     }
 
     @MainActor
+    func testS137C116StartupRecoveryViewShowsReportAndRetryWithoutAdjacentActions() {
+        let checkingView = StartupRecoveryCheckStatusView(
+            state: .checking,
+            onRetry: {}
+        )
+        let completedView = StartupRecoveryCheckStatusView(
+            state: .completed(RecoveryReportSnapshot(
+                cleanedStagingFiles: 1,
+                revertedStagingDbRows: 2,
+                warnings: ["Kept active staging file"]
+            )),
+            onRetry: {}
+        )
+        let failedView = StartupRecoveryCheckStatusView(
+            state: .failed(.s137StartupRecoveryMapping(rawContext: "locked")),
+            onRetry: {}
+        )
+
+        let checkingBody = s137MirrorDescription(of: checkingView.body)
+        let completedBody = s137MirrorDescription(of: completedView.body)
+        let failedBody = s137MirrorDescription(of: failedView.body)
+
+        XCTAssertTrue(checkingBody.contains("Checking startup recovery state..."))
+        XCTAssertTrue(checkingBody.contains("S1-37-C1-16-startup-recovery-checking"))
+        XCTAssertTrue(completedBody.contains("Startup recovery checked"))
+        XCTAssertTrue(completedBody.contains("Kept active staging file"))
+        XCTAssertTrue(completedBody.contains("S1-37-C1-16-startup-recovery-completed"))
+        XCTAssertTrue(failedBody.contains("Startup recovery failed"))
+        XCTAssertTrue(failedBody.contains("Retry startup recovery"))
+        XCTAssertTrue(failedBody.contains("S1-37-C1-16-retry-startup-recovery"))
+        XCTAssertFalse(completedBody.contains("Remove from index"))
+        XCTAssertFalse(failedBody.contains("Download & retry"))
+    }
+
+    @MainActor
     func testS137C126ViewDoesNotExposeAdjacentCoreActionsWhenScanSessionExists() {
         let view = DBRepairConfirmView(
             repoPath: "/tmp/repo",
@@ -155,6 +250,13 @@ final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
         XCTAssertTrue(CoreBridgeBoundary.allCases.contains(.repairMetadata))
         XCTAssertTrue(declaredBoundaries.contains(.repairMetadata))
     }
+
+    func testS137C116CoreBridgeDeclaresStartupRecoveryBoundary() async {
+        let declaredBoundaries = await CoreBridge().declaredBoundaries()
+
+        XCTAssertTrue(CoreBridgeBoundary.allCases.contains(.recoverOnStartup))
+        XCTAssertTrue(declaredBoundaries.contains(.recoverOnStartup))
+    }
 }
 
 struct S137RepairRequest: Equatable, Sendable {
@@ -177,6 +279,43 @@ actor S137RecordingMetadataRepairer: CoreMetadataRepairing {
 
     func requests() -> [S137RepairRequest] {
         recordedRequests
+    }
+}
+
+private enum S137StartupRecoveryResult {
+    case success(RecoveryReportSnapshot)
+    case failure(Error)
+}
+
+private actor S137RecordingStartupRecoverer: CoreStartupRecovering {
+    private var results: [S137StartupRecoveryResult]
+    private var repoPaths: [String] = []
+
+    init(result: S137StartupRecoveryResult) {
+        results = [result]
+    }
+
+    init(results: [S137StartupRecoveryResult]) {
+        self.results = results
+    }
+
+    func recoverOnStartup(repoPath: String) async throws -> RecoveryReportSnapshot {
+        repoPaths.append(repoPath)
+        let result = results.isEmpty ? .success(RecoveryReportSnapshot(
+            cleanedStagingFiles: 0,
+            revertedStagingDbRows: 0,
+            warnings: []
+        )) : results.removeFirst()
+        switch result {
+        case .success(let report):
+            return report
+        case .failure(let error):
+            throw error
+        }
+    }
+
+    func requestedRepoPaths() -> [String] {
+        repoPaths
     }
 }
 
@@ -226,6 +365,17 @@ private extension CoreErrorMappingSnapshot {
             severity: .critical,
             suggestedAction: "Run a full metadata rescan after preserving diagnostics.",
             recoverability: .userActionRequired,
+            rawContext: rawContext
+        )
+    }
+
+    static func s137StartupRecoveryMapping(rawContext: String) -> CoreErrorMappingSnapshot {
+        CoreErrorMappingSnapshot(
+            kind: .db,
+            userMessage: "Startup recovery could not finish",
+            severity: .medium,
+            suggestedAction: "Retry startup recovery before running metadata repair.",
+            recoverability: .retryable,
             rawContext: rawContext
         )
     }

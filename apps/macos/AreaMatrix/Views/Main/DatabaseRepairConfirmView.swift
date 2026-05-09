@@ -28,6 +28,7 @@ struct DBRepairConfirmView: View {
         mapping: CoreErrorMappingSnapshot?,
         lastOpenedAt: Int64? = nil,
         metadataRepairer: any CoreMetadataRepairing = CoreBridge(),
+        startupRecoverer: any CoreStartupRecovering = CoreBridge(),
         diagnosticsCollector: any CoreDiagnosticsCollecting = CoreBridge(),
         errorMapper: any CoreErrorMapping = CoreBridge(),
         onCancel: @escaping () -> Void,
@@ -40,6 +41,7 @@ struct DBRepairConfirmView: View {
             mapping: mapping,
             lastOpenedAt: lastOpenedAt,
             metadataRepairer: metadataRepairer,
+            startupRecoverer: startupRecoverer,
             diagnosticsCollector: diagnosticsCollector,
             errorMapper: errorMapper
         ))
@@ -54,6 +56,7 @@ struct DBRepairConfirmView: View {
                 VStack(alignment: .leading, spacing: 22) {
                     header
                     repositoryContext
+                    startupRecoveryStatus
                     repairPlan
                     diagnosticsStatus
                     repairStatus
@@ -78,8 +81,11 @@ struct DBRepairConfirmView: View {
                     "and paths and usernames are redacted before display."
             )
         }
+        .task {
+            await model.runStartupRecoveryCheckIfNeeded()
+        }
         .accessibilityElement(children: .contain)
-        .accessibilityIdentifier("S1-37-C1-26-db-repair-confirm")
+        .accessibilityIdentifier("S1-37-db-repair-confirm")
     }
 
     private var header: some View {
@@ -126,6 +132,18 @@ struct DBRepairConfirmView: View {
                 .font(.callout)
                 .foregroundStyle(.secondary)
         }
+    }
+
+    @ViewBuilder
+    private var startupRecoveryStatus: some View {
+        StartupRecoveryCheckStatusView(
+            state: model.startupRecoveryState,
+            onRetry: {
+                Task {
+                    await model.retryStartupRecovery()
+                }
+            }
+        )
     }
 
     private var repairPlan: some View {
@@ -277,6 +295,69 @@ struct DBRepairConfirmView: View {
 
         let date = Date(timeIntervalSince1970: TimeInterval(lastOpenedAt))
         return "Last successful open: \(date.formatted(date: .abbreviated, time: .shortened))"
+    }
+}
+
+struct StartupRecoveryCheckStatusView: View {
+    let state: DatabaseStartupRecoveryState
+    let onRetry: () -> Void
+
+    var body: some View {
+        switch state {
+        case .idle, .checking:
+            Label("Checking startup recovery state...", systemImage: "arrow.clockwise.circle")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+                .accessibilityIdentifier("S1-37-C1-16-startup-recovery-checking")
+        case .completed(let report):
+            completedContent(report)
+                .accessibilityIdentifier("S1-37-C1-16-startup-recovery-completed")
+        case .failed(let mapping):
+            failedContent(mapping)
+                .accessibilityIdentifier("S1-37-C1-16-startup-recovery-failed")
+        }
+    }
+
+    private func completedContent(_ report: RecoveryReportSnapshot?) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Label("Startup recovery checked", systemImage: "checkmark.circle")
+                .font(.headline)
+                .foregroundStyle(.green)
+            if let report {
+                Text(report.startupRecoverySummaryText)
+                    .font(.callout)
+                ForEach(report.warnings.prefix(3), id: \.self) { warning in
+                    Text(warning)
+                        .font(.callout)
+                        .foregroundStyle(.orange)
+                }
+            } else {
+                Text("No leftover staging files or staging DB rows required recovery.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private func failedContent(_ mapping: CoreErrorMappingSnapshot) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label("Startup recovery failed", systemImage: "exclamationmark.triangle")
+                .font(.headline)
+                .foregroundStyle(.red)
+            Text(mapping.userMessage)
+                .font(.callout)
+            Text(mapping.suggestedAction)
+                .font(.callout)
+                .foregroundStyle(.secondary)
+            DisclosureGroup("Technical Details") {
+                Text(mapping.rawContext)
+                    .font(.system(.caption, design: .monospaced))
+                    .textSelection(.enabled)
+            }
+            .font(.callout)
+            Button("Retry startup recovery", action: onRetry)
+                .accessibilityIdentifier("S1-37-C1-16-retry-startup-recovery")
+        }
     }
 }
 
