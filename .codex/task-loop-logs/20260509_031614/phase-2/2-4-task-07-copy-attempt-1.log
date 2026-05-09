@@ -1,0 +1,35 @@
+一、执行结论
+
+已完成 `2-4/task-07`。
+
+二、执行范围
+
+单任务：S1-37 `db-repair-confirm` 整页集成验收补齐。
+
+修改文件：
+- [DatabaseRepairConfirmPageIntegrationVerifyTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/DatabaseRepairConfirmPageIntegrationVerifyTests.swift:1)
+- [project.pbxproj](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj:74)
+
+三、完成情况
+
+- 已逐项覆盖 `2-4/task-05` / `2-4/task-06` 的整页闭环证据。
+- 已验证入口 `mainRepoError -> dbRepairConfirm`、诊断导出、确认 full rescan、失败留在 S1-37、取消返回、修复后 `mainLoading -> mainList`。
+- 新增测试使用真实 `CoreBridge` 跑 `recoverOnStartup`、`repairMetadata`、`reindexFromFilesystem` 相关边界，没有新增 control map 外能力。
+- 已断言用户文件不被改写，且不会生成根目录 `AREAMATRIX.md`。
+- Forbidden Touches：未触碰 `core/src/**`。
+
+四、工程质量
+
+代码只新增整页 integration test 和 Xcode test target 引用，没有改产品逻辑或 Core 实现。测试结构按成功路径、失败/取消路径拆分；错误态、退出态、CoreBridge 调用和文件安全边界都有显式断言。未引入 mock-only 通过态；失败路径里的 recording repairer 只用于验证 UI 错误映射与留页行为。
+
+五、验证情况
+
+- `xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：编译/链接通过，但 XCTest runner 启动被本机 sandbox 阻断，报 `testmanagerd.control ... Sandbox restriction`。
+- `./dev test macos`：通过 fallback `xcrun xctest` 复用已构建测试包，结果 `471 tests, 0 failures`。
+- `swiftformat --lint ...`：未运行成功，本机没有 `swiftformat`。
+- 新测试文件已做手动行宽检查，无超过 120 字符的行。
+
+六、风险与后续
+
+剩余风险主要是本机 sandbox 导致 manifest 原始 `xcodebuild test` 不能以正常 XCTest runner 方式完成；当前已有 repo fallback 通过证据。工作树里仍有本次任务外既有脏改动：`.codex/task-loop-runs/20260509_031614/summary.json`、`tasks/prompts/_shared/progress.json`，我未修改也未回滚。
+
