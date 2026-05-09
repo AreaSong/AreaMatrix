@@ -45,7 +45,6 @@ enum ICloudConflictListAccessibilityID {
 
 struct ICloudConflictListView: View {
     @StateObject private var model: ICloudConflictListModel
-    @State private var resolvingConflict: ICloudConflictPairSnapshot?
     let onClose: () -> Void
     let onResolve: (ICloudConflictPairSnapshot) -> Void
     let onCollectDiagnostics: () -> Void
@@ -75,6 +74,20 @@ struct ICloudConflictListView: View {
             if case .notLoaded = model.state {
                 await model.load()
             }
+        }
+        .sheet(item: resolvingRouteBinding) { route in
+            ICloudConflictMinimalSheet(
+                model: ICloudConflictMinimalModel(
+                    repoPath: route.repoPath,
+                    originalVersion: route.originalVersion,
+                    conflictedCopyVersion: route.conflictedCopyVersion
+                ),
+                resolutionCapability: route.resolutionCapability,
+                isTrashAvailable: OnboardingModel.isSystemTrashAvailable(),
+                onCancel: model.closeResolvingConflict,
+                onApply: { _, _, _ in },
+                onCollectDiagnostics: onCollectDiagnostics
+            )
         }
         .accessibilityIdentifier("S1-36-C1-25-icloud-conflict-list")
     }
@@ -207,10 +220,10 @@ struct ICloudConflictListView: View {
     private func rowActions(_ conflict: ICloudConflictPairSnapshot) -> some View {
         HStack(spacing: 8) {
             Button(ICloudConflictListCopy.resolveAction) {
-                resolvingConflict = conflict
+                model.beginResolvingConflict(conflict)
                 onResolve(conflict)
             }
-            .disabled(model.isLoading || resolvingConflict?.id == conflict.id)
+            .disabled(model.isLoading || model.isResolving(conflict))
             .accessibilityIdentifier(ICloudConflictListAccessibilityID.resolve(conflictID: conflict.id))
 
             Button(ICloudConflictListCopy.revealAction) {
@@ -260,5 +273,14 @@ struct ICloudConflictListView: View {
         }
         .padding(.horizontal, 24)
         .padding(.vertical, 14)
+    }
+
+    private var resolvingRouteBinding: Binding<ICloudConflictMinimalRouteContext?> {
+        Binding(
+            get: { model.resolvingRoute },
+            set: { route in
+                if route == nil { model.closeResolvingConflict() }
+            }
+        )
     }
 }

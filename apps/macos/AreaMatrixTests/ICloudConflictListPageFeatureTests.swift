@@ -154,6 +154,55 @@ final class ICloudConflictListPageFeatureTests: XCTestCase {
         )
     }
 
+    @MainActor
+    func testS136ResolveRoutesIntoS125MinimalResolverWithExplicitCoreResolutionBlocker() async {
+        let conflict = ICloudConflictPairSnapshot.s136Fixture()
+        let listModel = ICloudConflictListModel(
+            repoPath: "/tmp/s136-repo",
+            conflictLister: S136RecordingConflictLister(result: .success([conflict])),
+            errorMapper: S136RecordingErrorMapper(mapping: .s136Mapping())
+        )
+
+        await listModel.load()
+        listModel.beginResolvingConflict(conflict)
+
+        guard let route = listModel.resolvingRoute else {
+            return XCTFail("Expected S1-36 Resolve to open S1-25 route context")
+        }
+        XCTAssertEqual(route.conflict, conflict)
+        XCTAssertEqual(route.originalVersion.path, "/tmp/s136-repo/docs/report.pdf")
+        XCTAssertEqual(route.conflictedCopyVersion.path, "/tmp/s136-repo/docs/report (Alice's conflicted copy).pdf")
+        XCTAssertEqual(route.resolutionCapability, .blocked(.missingCoreResolutionEndpoint))
+        XCTAssertTrue(listModel.isResolving(conflict))
+
+        let validator = S136RecordingPathValidator(result: .success(.s136ValidationFixture(repoPath: route.repoPath)))
+        let sheetModel = ICloudConflictMinimalModel(
+            repoPath: route.repoPath,
+            originalVersion: route.originalVersion,
+            conflictedCopyVersion: route.conflictedCopyVersion,
+            pathValidator: validator,
+            errorMapper: S136RecordingErrorMapper(mapping: .s136Mapping(kind: .internal))
+        )
+        await sheetModel.validateRepositoryPath()
+        let sheetBody = s136MirrorDescription(of: ICloudConflictMinimalSheet(
+            model: sheetModel,
+            resolutionCapability: route.resolutionCapability,
+            isTrashAvailable: true,
+            onCancel: {},
+            onApply: { _, _, _ in XCTFail("Blocked S1-25 resolver must not invoke Apply") },
+            onCollectDiagnostics: {}
+        ).body)
+        let validatorRequests = await validator.recordedRequests()
+
+        XCTAssertEqual(validatorRequests, ["/tmp/s136-repo"])
+        XCTAssertTrue(sheetBody.contains("S1-25-core-resolution-blocked"))
+        XCTAssertTrue(sheetBody.contains("Core resolution unavailable"))
+        XCTAssertTrue(sheetBody.contains("Missing Core API: resolve_icloud_conflict or mark_icloud_conflict_resolved"))
+
+        listModel.closeResolvingConflict()
+        XCTAssertNil(listModel.resolvingRoute)
+    }
+
     func testS136C125DefaultCoreBridgeListsRealConflictedCopiesReadOnly() async throws {
         let repoURL = try temporaryS136Repository()
         defer { try? FileManager.default.removeItem(at: repoURL) }
@@ -231,6 +280,24 @@ private actor S136RecordingErrorMapper: CoreErrorMapping {
     func recordedErrors() -> [CoreError] { errors }
 }
 
+private actor S136RecordingPathValidator: CoreRepositoryPathValidating {
+    private let result: Result<RepoPathValidationSnapshot, Error>
+    private var requests: [String] = []
+
+    init(result: Result<RepoPathValidationSnapshot, Error>) {
+        self.result = result
+    }
+
+    func validateRepoPath(repoPath: String) async throws -> RepoPathValidationSnapshot {
+        requests.append(repoPath)
+        return try result.get()
+    }
+
+    func recordedRequests() -> [String] {
+        requests
+    }
+}
+
 private actor S136IntegrationsLoader: CoreConfigurationLoading {
     private let config: RepoConfigSnapshot
 
@@ -289,6 +356,27 @@ private extension RepoConfigSnapshot {
             enableKeywordRules: true,
             fallbackToInbox: true,
             allowReplaceDuringImport: false
+        )
+    }
+}
+
+private extension RepoPathValidationSnapshot {
+    static func s136ValidationFixture(repoPath: String) -> RepoPathValidationSnapshot {
+        RepoPathValidationSnapshot(
+            repoPath: repoPath,
+            exists: true,
+            isDirectory: true,
+            isReadable: true,
+            isWritable: true,
+            isEmpty: false,
+            isInitialized: true,
+            isInsideAreaMatrix: false,
+            isICloudPath: true,
+            hasUnfinishedScanSession: false,
+            availableCapacityBytes: 1_000_000_000,
+            isExternalVolume: false,
+            recommendedMode: .adoptExisting,
+            issues: [.iCloudPath]
         )
     }
 }

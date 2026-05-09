@@ -24,10 +24,48 @@ enum ICloudConflictListRevealState: Equatable, Sendable {
     case failed(String)
 }
 
+struct ICloudConflictMinimalRouteContext: Equatable, Identifiable, Sendable {
+    var repoPath: String
+    var conflict: ICloudConflictPairSnapshot
+
+    var id: String { conflict.id }
+
+    var originalVersion: ICloudConflictVersionSnapshot {
+        ICloudConflictVersionSnapshot(
+            role: .original,
+            path: absolutePath(conflict.originalPath),
+            modifiedAt: conflict.originalModifiedAt,
+            sizeBytes: nil
+        )
+    }
+
+    var conflictedCopyVersion: ICloudConflictVersionSnapshot {
+        ICloudConflictVersionSnapshot(
+            role: .conflictedCopy,
+            path: absolutePath(conflict.conflictedCopyPath),
+            modifiedAt: conflict.conflictedModifiedAt,
+            sizeBytes: nil
+        )
+    }
+
+    var resolutionCapability: ICloudConflictResolutionCapability {
+        .blocked(.missingCoreResolutionEndpoint)
+    }
+
+    private func absolutePath(_ path: String?) -> String? {
+        guard let path, !path.isEmpty else { return nil }
+        if path.hasPrefix("/") { return path }
+        return URL(fileURLWithPath: repoPath, isDirectory: true)
+            .appendingPathComponent(path)
+            .path
+    }
+}
+
 @MainActor
 final class ICloudConflictListModel: ObservableObject {
     @Published private(set) var state: ICloudConflictListState = .notLoaded
     @Published private(set) var revealState: ICloudConflictListRevealState = .idle
+    @Published private(set) var resolvingRoute: ICloudConflictMinimalRouteContext?
 
     let repoPath: String
     private let conflictLister: any CoreICloudConflictListing
@@ -91,6 +129,18 @@ final class ICloudConflictListModel: ObservableObject {
         } catch {
             revealState = .failed("Conflict copy cannot be revealed.")
         }
+    }
+
+    func beginResolvingConflict(_ conflict: ICloudConflictPairSnapshot) {
+        resolvingRoute = ICloudConflictMinimalRouteContext(repoPath: repoPath, conflict: conflict)
+    }
+
+    func closeResolvingConflict() {
+        resolvingRoute = nil
+    }
+
+    func isResolving(_ conflict: ICloudConflictPairSnapshot) -> Bool {
+        resolvingRoute?.id == conflict.id
     }
 
     private func mapError(_ error: Error) async -> CoreErrorMappingSnapshot {
