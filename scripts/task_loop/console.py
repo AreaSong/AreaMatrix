@@ -89,6 +89,7 @@ class ProcessSnapshot:
     runners: list[str]
     repo_codex: list[str]
     host_codex: list[str]
+    unavailable_reason: str = ""
 
 
 @dataclass
@@ -271,21 +272,33 @@ def confirm(cfg: ConsoleConfig, prompt: str) -> bool:
     return answer in {"y", "yes"}
 
 
+def read_ps_lines() -> tuple[list[str], str]:
+    try:
+        proc = subprocess.run(
+            ["ps", "-axo", "pid=,ppid=,stat=,command="],
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+    except OSError as error:
+        reason = error.strerror or str(error)
+        return [], f"ps unavailable: {reason}"
+    if proc.returncode != 0:
+        reason = (proc.stderr or "").strip() or f"exit {proc.returncode}"
+        return [], f"ps unavailable: {reason}"
+    return [line for line in proc.stdout.splitlines() if line.strip()], ""
+
+
 def ps_lines() -> list[str]:
-    proc = subprocess.run(
-        ["ps", "-axo", "pid=,ppid=,stat=,command="],
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.DEVNULL,
-        check=False,
-    )
-    return [line for line in proc.stdout.splitlines() if line.strip()]
+    lines, _ = read_ps_lines()
+    return lines
 
 
-def runner_processes(cfg: ConsoleConfig) -> list[str]:
+def runner_processes_from_lines(cfg: ConsoleConfig, process_lines: Sequence[str]) -> list[str]:
     root = str(cfg.runtime.root_dir)
     lines = []
-    for line in ps_lines():
+    for line in process_lines:
         if "codex exec" in line:
             continue
         if "task-loop" in line and (" run" in line or " resume-" in line) and root in line:
@@ -293,8 +306,16 @@ def runner_processes(cfg: ConsoleConfig) -> list[str]:
     return lines
 
 
+def codex_processes_from_lines(process_lines: Sequence[str]) -> list[str]:
+    return [line for line in process_lines if "codex exec" in line]
+
+
+def runner_processes(cfg: ConsoleConfig) -> list[str]:
+    return runner_processes_from_lines(cfg, ps_lines())
+
+
 def codex_processes() -> list[str]:
-    return [line for line in ps_lines() if "codex exec" in line]
+    return codex_processes_from_lines(ps_lines())
 
 
 def repo_codex_processes(cfg: ConsoleConfig) -> list[str]:
@@ -303,10 +324,14 @@ def repo_codex_processes(cfg: ConsoleConfig) -> list[str]:
 
 
 def process_snapshot(cfg: ConsoleConfig) -> ProcessSnapshot:
+    lines, unavailable_reason = read_ps_lines()
+    codex_lines = codex_processes_from_lines(lines)
+    root = str(cfg.runtime.root_dir)
     return ProcessSnapshot(
-        runners=runner_processes(cfg),
-        repo_codex=repo_codex_processes(cfg),
-        host_codex=codex_processes(),
+        runners=runner_processes_from_lines(cfg, lines),
+        repo_codex=[line for line in codex_lines if root in line],
+        host_codex=codex_lines,
+        unavailable_reason=unavailable_reason,
     )
 
 
@@ -354,6 +379,8 @@ def show_processes(cfg: ConsoleConfig) -> None:
     repo_codex = snapshot.repo_codex
     host_codex = snapshot.host_codex
     print(tr(cfg, "processes.title"))
+    if snapshot.unavailable_reason:
+        print(f"- {snapshot.unavailable_reason}")
     print(tr(cfg, "processes.runner", count=len(runners)))
     print(tr(cfg, "processes.area_codex", count=len(repo_codex)))
     print(tr(cfg, "processes.host_codex", count=len(host_codex)))
@@ -383,6 +410,8 @@ def summarize_process_line(line: str, root: Path) -> str:
 
 
 def process_summary_line(cfg: ConsoleConfig, snapshot: ProcessSnapshot, *, detailed: bool = True) -> str:
+    if snapshot.unavailable_reason:
+        return snapshot.unavailable_reason
     other = [line for line in snapshot.host_codex if line not in snapshot.repo_codex]
     summary = (
         f"runner={len(snapshot.runners)} | "

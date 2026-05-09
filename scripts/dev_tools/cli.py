@@ -66,6 +66,12 @@ def _build_parser() -> argparse.ArgumentParser:
     macos.add_argument("--test-log", help="xcodebuild test log path")
     macos.add_argument("--build-log", help="xcodebuild build-for-testing log path")
     macos.add_argument("--result-bundle-path", help="Optional xcodebuild result bundle path")
+    macos.add_argument(
+        "--only-testing",
+        action="append",
+        default=[],
+        help="Limit XCTest execution to TARGET/CLASS or TARGET/CLASS/METHOD; may be repeated",
+    )
 
     bindings = subparsers.add_parser("bindings", help="Manage generated language bindings")
     bindings_sub = bindings.add_subparsers(dest="bindings_command", required=True)
@@ -225,6 +231,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 test_log=args.test_log,
                 build_log=args.build_log,
                 result_bundle_path=args.result_bundle_path,
+                only_testing=args.only_testing,
             )
         if args.command == "bindings" and args.bindings_command == "update":
             return run_bindings_update(root, args.udl, args.out_dir)

@@ -233,6 +233,16 @@ xcodebuild test \
 `testmanagerd` sandbox restriction 时，才复用同一 DerivedData 中的
 `AreaMatrixTests.xctest`，通过 `xcrun xctest` 直接执行 hostless XCTest
 bundle。普通编译失败、断言失败、链接失败或非沙箱错误仍然按失败处理。
+如果 `xcodebuild test` 已经输出目标 XCTest suite 全部通过，但仅在测试结束后的
+`testmanagerd` 日志收集或分布式通知阶段被本地 sandbox 拦截，`./dev test macos`
+会把该结果视为标准 XCTest 证据通过；这种判定不得掩盖真实构建失败或断言失败。
+
+当仅运行 `AreaMatrixTests/AreaMatrixPerfTests` 时，`./dev test macos` 还会在
+XCTest performance 通过后构建 signed Release `.app`，执行 codesign、自包含链接检查和
+`scripts/dev_tools/macos_launch_probe.swift` 启动探针。若当前本地 sandbox 阻断
+LaunchServices 启动，或 direct executable probe 无法创建可见窗口，命令可以作为本地
+validation 通过，但 release checklist 必须继续记录“真实 `.app` 启动到首屏证据
+BLOCKED”；hostless XCTest fallback 不得替代 release 放行证据。
 
 ---
 

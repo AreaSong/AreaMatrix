@@ -1012,6 +1012,12 @@ fi
         [h.task_loop, "run", "--phase", "phase-0", "--max-tasks", "1"],
         env={
             "ROOT_DIR": str(runner_repo),
+            "PROGRESS_FILE": str(runner_repo / "tasks/prompts/_shared/progress.json"),
+            "LOG_ROOT": str(runner_repo / ".codex/task-loop-logs"),
+            "RUN_SUMMARY_ROOT": str(runner_repo / ".codex/task-loop-runs"),
+            "PROGRESS_BACKUP_ROOT": str(runner_repo / ".codex/task-loop-progress-backups"),
+            "LOCK_DIR": str(runner_repo / ".codex/task-loop-lock"),
+            "CONTROL_DIR": str(runner_repo / ".codex/task-loop-control"),
             "CODEX_BIN": str(fake_codex),
             "RISK_POLICY": "allow",
             "MAX_RETRIES": "1",

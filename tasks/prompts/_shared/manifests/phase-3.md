@@ -84,7 +84,9 @@
 - `scripts/**`
 
 ### Expected New Paths
+- `core/benches/**`
 - `core/tests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 - `apps/macos/AreaMatrixTests/**`
 - `scripts/**`
 - `docs/development/**`
@@ -97,8 +99,8 @@
 
 ### Validation
 - `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`
-- `cargo bench --workspace --no-run`
-- `xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' -only-testing:AreaMatrixTests/AreaMatrixPerfTests CODE_SIGNING_ALLOWED=NO`
+- `cargo bench --manifest-path core/Cargo.toml --workspace --no-run`
+- `./dev test macos --only-testing AreaMatrixTests/AreaMatrixPerfTests`
 
 ## 3-1/task-04
 

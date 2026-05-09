@@ -1,0 +1,50 @@
+一、执行结论
+
+- **未完成**
+- 已修复上次验收指出的越界改动和“启动指标伪通过”问题，但本任务仍不能判定完成：原始必需 validation 里 `cargo bench --workspace --no-run` 与标准 `xcodebuild test ... AreaMatrixPerfTests` 仍失败，且真实“应用启动到首屏”指标仍被当前 sandbox 阻断。
+
+二、执行范围
+
+- 单任务：`3-1/task-03`
+- 修改文件：
+  - [CoreBridgeRepositoryTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/CoreBridgeRepositoryTests.swift:88)
+  - [stage1_performance_baseline.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/stage1_performance_baseline.rs:20)
+  - [stage-1-performance-baseline.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-performance-baseline.md:11)
+  - [cli.py](/Users/as/Ai-Project/project/AreaMatrix/scripts/dev_tools/cli.py)
+  - [macos.py](/Users/as/Ai-Project/project/AreaMatrix/scripts/dev_tools/macos.py:59)
+
+三、完成情况
+
+- Exact Docs / Existing Code 已按任务要求读取并对齐。
+- 已补 Core release perf 测试，覆盖单文件导入、100 文件导入、reindex、Tree/list。
+- 已补 Swift perf 测试，覆盖导入、Tree/list、resident memory。
+- 启动测试现在使用 `XCTClockMetric` + `NSWorkspace.openApplication` 测真实 app launch，但 direct `xcrun xctest` fallback 会跳过该项，避免误报。
+- 文档已改为真实阻断状态，不再声称 release checklist 可通过。
+- `tasks/prompts/**` 和 `progress.json` 当前无 diff；未触碰 Forbidden Touches。
+
+四、工程质量
+
+- 代码没有 mock-only 或硬编码通过态；fallback 明确标记 `AREAMATRIX_XCTEST_FALLBACK=1`，启动指标不会在 hostless XCTest 下伪通过。
+- 测试使用临时目录，不删除、移动、覆盖用户原文件。
+- 文件长度均低于 500 行；Rust 已通过 fmt/clippy。
+- 当前仍存在阻断：真实 app launch 到首屏缺标准 `xcodebuild` / CI / Instruments 证据。
+
+五、验证情况
+
+- 通过：`python3 tasks/prompts/_shared/prompt_pipeline.py doctor`
+- 失败：`cargo bench --workspace --no-run`，仓库根没有 `Cargo.toml`
+- 失败：标准 `xcodebuild test ... AreaMatrixPerfTests`，`testmanagerd.control` sandbox restriction
+- 通过：`cargo bench --manifest-path core/Cargo.toml --workspace --no-run`
+- 通过：`cargo test --manifest-path core/Cargo.toml --release --test stage1_performance_baseline -- --ignored --test-threads=1 --nocapture`
+- 通过：`./dev test macos --only-testing AreaMatrixTests/AreaMatrixPerfTests`，其中启动项按预期 skip，非启动 perf 通过
+- 通过：`cargo fmt --manifest-path core/Cargo.toml --all -- --check`
+- 通过：`cargo clippy --manifest-path core/Cargo.toml --all-targets --all-features -- -D warnings`
+- 通过：`cargo test --manifest-path core/Cargo.toml --workspace`
+- 通过：`PYTHONPYCACHEPREFIX=/private/tmp/areamatrix-pycache python3 -m py_compile scripts/task_loop/*.py scripts/dev_tools/*.py`
+- 阻断：`./task-loop check` / `./dev preflight` 在当前 sandbox 里被 `ps` 权限拒绝
+
+六、风险与后续
+
+- 当前 release checklist 不能勾选性能通过项。
+- 下一个需要处理的不是产品逻辑，而是验证环境/任务体系阻断：要么补根 `Cargo.toml` workspace，要么修正 manifest validation；并在 CI 或非 sandbox 本机补跑标准 `xcodebuild test`，拿到真实启动到首屏数据。
+

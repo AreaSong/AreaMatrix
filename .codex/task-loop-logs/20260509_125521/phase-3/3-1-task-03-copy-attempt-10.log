@@ -1,0 +1,68 @@
+一、执行结论
+
+已完成 `3-1/task-03` repair retry。任务本身已形成 Stage 1 性能基线并通过本地 validation；但真实 Release `.app` 启动到首屏在当前 Codex sandbox 仍是 P1/BLOCKED，因此 Stage 1 release checklist 仍不能放行。
+
+二、执行范围
+
+单任务：`3-1/task-03`
+
+修改/新增范围：
+- `core/benches/stage1_hot_paths.rs`
+- `core/tests/stage1_performance_baseline.rs`
+- `apps/macos/AreaMatrixTests/AreaMatrixPerfTests.swift`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+- `scripts/dev_tools/cli.py`
+- `scripts/dev_tools/macos.py`
+- `scripts/dev_tools/macos_stage1_probe.py`
+- `scripts/dev_tools/macos_launch_probe.swift`
+- `scripts/dev_tools/test_macos_runner.py`
+- `docs/development/stage-1-performance-baseline.md`
+- `docs/development/testing.md`
+- `tasks/prompts/.../task-03-performance-benchmarks.md`
+- `tasks/prompts/_shared/manifests/phase-3.md`
+- `tasks/prompts/_shared/copy-ready/phase-3/3-1-task-03.md`
+- `tasks/prompts/_shared/verify-ready/phase-3/3-1-task-03.md`
+- `tasks/prompts/_shared/progress.json`
+- `.codex/task-loop-logs/...` / `.codex/task-loop-runs/...` task-loop 运行证据
+
+三、完成情况
+
+核对清单 1-6 已完成。性能基线覆盖启动、单文件导入、100 文件批量导入、reindex、Tree/list 响应和内存；每项都记录了数据集、环境、入口、阈值、实测值和 PASS/BLOCKED 结论。
+
+上次失败点已修复：
+- `cargo bench` 改为可在本仓库运行的 `cargo bench --manifest-path core/Cargo.toml --workspace --no-run`
+- 新增独立 Core bench target，不再只有 lib harness
+- Swift perf 测试拆到独立 `AreaMatrixPerfTests.swift`
+- `./dev test macos --only-testing ...` 支持 sandbox fallback，并且不会吞掉真实构建/断言失败
+- Release `.app` build、codesign、`otool`、launch probe 被纳入 macOS perf gate
+
+Forbidden Touches：manifest 为 None，未触碰用户原文件删除/移动/覆盖等高风险边界。
+
+四、工程质量
+
+代码结构清晰，没有产品逻辑重写；本任务只补 benchmark、测试、脚本 runner 和性能证据。Core bench/test 使用真实临时 repo 和真实 Core API；Swift perf 使用真实 `CoreBridge` 与 XCTest。hostless 启动只是明确标注的本地 surrogate，不被当成 release 放行证据。
+
+错误处理方面，macOS runner 区分真实失败、sandbox-only teardown、fallback XCTest、Release `.app` probe BLOCKED；新增 Python 回归测试覆盖这些分支。新增文件无超 120 字符行，Rust fmt/clippy 已通过。
+
+五、验证情况
+
+已通过：
+- `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`
+- `cargo bench --manifest-path core/Cargo.toml --workspace --no-run`
+- `./dev test macos --only-testing AreaMatrixTests/AreaMatrixPerfTests`
+- `cargo test --manifest-path core/Cargo.toml --release --test stage1_performance_baseline -- --ignored --test-threads=1 --nocapture`
+- `cargo test --manifest-path core/Cargo.toml --release --bench stage1_hot_paths -- --ignored --nocapture`
+- `PYTHONPYCACHEPREFIX=/private/tmp/areamatrix-pycache python3 -m py_compile scripts/dev_tools/*.py scripts/task_loop/*.py`
+- `PYTHONPYCACHEPREFIX=/private/tmp/areamatrix-pycache python3 -m unittest scripts.dev_tools.test_macos_runner`
+- `cargo fmt --manifest-path core/Cargo.toml --all -- --check`
+- `cargo clippy --manifest-path core/Cargo.toml --all-targets --all-features -- -D warnings`
+- `cargo test --manifest-path core/Cargo.toml --workspace`
+- `git diff --check`
+- `prompt_pipeline.py status/render/verify --task 3-1/task-03`
+
+关键实测值已写入 `docs/development/stage-1-performance-baseline.md`：Core 1 MiB import 11 ms、100 文件导入 1077 ms、10k reindex 15950 ms、Tree 5 ms、list 702 us；Swift hostless first screen 175.600 ms、100 文件导入 1013.616 ms、10k 内存 133.844 MB。
+
+六、风险与后续
+
+剩余风险只有一个：真实 Release `.app` 启动到首屏在当前 sandbox 下仍被 LaunchServices/windowing 阻断，记录为 P1/BLOCKED。后续 release task 必须在非 Codex sandbox 的 macOS 桌面会话或 CI runner 上补跑真实 `.app` launch 或 Instruments 证据；在补齐前不得勾选 release checklist 的启动性能项。
+

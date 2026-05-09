@@ -1,0 +1,51 @@
+**当前状态：未完成**
+
+这轮已经进入 repair retry，并按要求重新读了 task、共享规则、工程质量规则、编码规范、repo-local validation skill、dependency graph、phase manifest、Exact Docs 和 Existing Code。High 风险已按“静默授权”继续执行，原则是只修复上次验收失败：真实 Release `.app` 启动证据缺失、以及任务范围扩散。
+
+**已做的关键修复**
+
+- 已把 tracked 的范围外改动恢复掉：`tasks/prompts/**` 和 `tasks/prompts/_shared/progress.json` 不再出现在 tracked diff 中。
+- 当前主要改动集中在允许范围：
+  - `core/tests/stage1_performance_baseline.rs`
+  - `apps/macos/AreaMatrixTests/CoreBridgeRepositoryTests.swift`
+  - `scripts/dev_tools/cli.py`
+  - `scripts/dev_tools/macos.py`
+  - `scripts/dev_tools/macos_launch_probe.swift`
+  - `scripts/dev_tools/macos_stage1_probe.py`
+  - `scripts/dev_tools/test_macos_runner.py`
+  - `docs/development/stage-1-performance-baseline.md`
+- `./dev test macos --only-testing ...` 现在不会把真实 `.app` 启动失败降级成绿色 fallback；Release 启动 probe 失败会返回非 0。
+- Swift perf tests 已补 `AreaMatrixPerfTests`，当前覆盖 hostless 启动 surrogate、单文件导入、100 文件导入、Tree/list、memory。
+- Rust perf baseline 集成测试已覆盖 import、100 文件、reindex、Tree/list。
+
+**当前阻塞**
+
+- `./dev test macos --only-testing AreaMatrixTests/AreaMatrixPerfTests` 当前仍失败。
+- 最新失败点不是 XCTest perf 本身，而是真实 Release app 启动 probe：
+  - LaunchServices 启动：`NSCocoaErrorDomain Code=259`
+  - direct executable fallback：进程可启动但 5 秒内没有检测到 visible window，错误类似 `direct executable launch did not expose a visible window within 5.0s`
+- 因此真实 `.app` 启动到首屏仍没有实测值，Stage 1 release checklist 仍不能放行。
+
+**已跑过的验证**
+
+- `PYTHONPYCACHEPREFIX=/private/tmp/areamatrix-pycache python3 -m py_compile scripts/dev_tools/*.py`：通过
+- `python3 -m unittest scripts.dev_tools.test_macos_runner`：之前通过，后续改了 launch probe 后建议重跑
+- `xcrun --sdk macosx swift -frontend -parse scripts/dev_tools/macos_launch_probe.swift`：之前通过，后续改了 launch probe 后建议重跑
+- `./dev test macos --only-testing AreaMatrixTests/AreaMatrixPerfTests`：失败，原因见上
+- `prompt_pipeline doctor`、`cargo bench --no-run`、Rust release perf test 这轮还需要在最终修复后完整重跑
+
+**需要下一步继续做**
+
+1. 继续诊断 `scripts/dev_tools/macos_launch_probe.swift` 的 direct executable 模式为什么没有可见窗口。建议先捕获 child process stdout/stderr、退出码、是否仍存活，再判断是 app crash、bundle context 不完整、还是窗口检测条件问题。
+2. 如果真实 app launch 仍被当前 sandbox 阻断，不能伪造通过；需要让 validation 明确失败，并把 `docs/development/stage-1-performance-baseline.md` 与 `docs/development/testing.md` 同步为 release-blocking。
+3. 最终修复后重跑：
+   - `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`
+   - `cargo bench --manifest-path core/Cargo.toml --workspace --no-run`
+   - `./dev test macos --only-testing AreaMatrixTests/AreaMatrixPerfTests`
+   - 建议补跑 `cargo test --manifest-path core/Cargo.toml --release --test stage1_performance_baseline -- --ignored --test-threads=1 --nocapture`
+
+**额外注意**
+
+- 当前还有 untracked `.codex/task-loop-logs/20260509_125521/` 和 `.codex/task-loop-runs/20260509_125521/`，尝试 `/bin/rm` 返回 `Operation not permitted`。不要为了清理它们去改 `.gitignore`，因为那超出本 task 的 Expected New Paths。
+- `docs/development/testing.md` 仍可能保留旧说法：sandbox 阻断时 validation 可绿色通过。现在策略已经改为 release app probe 失败必须阻断，需要同步文档。
+

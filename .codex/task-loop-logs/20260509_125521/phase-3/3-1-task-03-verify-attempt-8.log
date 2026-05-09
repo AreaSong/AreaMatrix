@@ -1,0 +1,84 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`3-1/task-03`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-3/3-1-stability-release/task-03-performance-benchmarks.md`
+- Manifest：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-3.md`
+- 实际核验路径：`core/tests/**`、`apps/macos/AreaMatrixTests/**`、`scripts/**`、`docs/development/**`
+
+三、完成度摘要
+
+- 已覆盖项数：6
+- 未覆盖项数：0
+- 通过项数：5
+- 不通过项数：1
+- 阻塞项数：2
+
+四、逐项验收结果
+
+- 项目：读取 testing / performance / observability / Stage 1 MVP
+- 结果：通过
+- 证据：4 个 Exact Docs 均已读取；manifest 对应章节列出同一组文档。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-3.md:75`
+
+- 项目：性能基线覆盖启动、单文件导入、100 文件导入、reindex、Tree/list、内存
+- 结果：不通过
+- 证据：基线表覆盖这些项，但真实 Release `.app` 启动到首屏为 `BLOCKED`，无实测启动值，release checklist 不能放行。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-performance-baseline.md:61`
+
+- 项目：每个指标记录环境、入口、阈值、实测和结论
+- 结果：通过
+- 证据：环境表、入口表、指标表已记录；真实 `.app` 启动明确标为 BLOCKED。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-performance-baseline.md:33`
+
+- 项目：Core hot path 与 Swift UI 性能证据
+- 结果：通过
+- 证据：Rust release perf 集成测试覆盖 import、100 文件、reindex、Tree/list；Swift `AreaMatrixPerfTests` 覆盖启动 surrogate、import、batch、Tree/list、memory。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/stage1_performance_baseline.rs:20`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/CoreBridgeRepositoryTests.swift:89`
+
+- 项目：不达标或未测时记录阻断和回退建议
+- 结果：通过
+- 证据：真实 `.app` 启动缺失被记录为 P1，包含重跑环境和回退 profile 建议。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-performance-baseline.md:83`
+
+- 项目：只补测试、脚本或 `docs/development/**` 性能证据
+- 结果：不通过
+- 证据：当前 worktree 还修改了 `tasks/prompts/**` 和 `progress.json`，超出本 task 明确允许的性能证据路径。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/progress.json:6874`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。新增 perf 测试和 runner fallback 结构清楚，文件长度未超过 500 行。
+- 注释 / rustdoc / 文档同步：通过。性能基线文档同步了环境、入口、指标和阻断规则。
+- 错误处理与边界处理：通过。macOS runner 区分真实测试失败和 sandbox-only `testmanagerd` 阻断。
+- 测试与验证覆盖：不通过。local validation 已通过，但真实 Release `.app` 启动证据仍被环境阻断，不能作为 release 放行证据。
+- 占位、硬编码、mock-only、一次性实现检查：通过。未发现 mock-only 伪闭环；hostless fallback 已明确不得替代真实 `.app` release gate。
+
+六、阻塞项
+
+- P1：真实 Release `.app` 启动到首屏证据缺失  
+  说明：Stage 1 最终 MVP 要求启动时间 `< 1.5s`，当前只能证明 hostless `MainWindow + CoreBridge` readiness；真实 `NSWorkspace.openApplication` / Instruments 启动被 LaunchServices sandbox 阻断。  
+  绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-performance-baseline.md:83`  
+  为什么导致不通过：启动指标没有真实 `.app` 实测值，release checklist 不能放行；本次验证输出也显示 `NSCocoaErrorDomain code=259`。
+
+- P1：任务范围扩散到 prompt/progress 文件  
+  说明：task 明确要求“只补测试、脚本或 docs/development/** 下的性能证据”，manifest Expected New Paths 也只允许 `core/tests/**`、`apps/macos/AreaMatrixTests/**`、`scripts/**`、`docs/development/**`；当前 diff 还包含 `tasks/prompts/**` 和 `progress.json`。  
+  绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-3/3-1-stability-release/task-03-performance-benchmarks.md:26`  
+  为什么导致不通过：违反当前 task 边界，不能把范围外 prompt/progress 修改混入本 task 验收通过结论。
+
+七、验证情况
+
+- 已运行：`python3 tasks/prompts/_shared/prompt_pipeline.py doctor`：通过，`doctor: OK`，`tasks: 637`，`manifests: 637`
+- 已运行：`cargo bench --manifest-path core/Cargo.toml --workspace --no-run`：通过，bench profile 编译完成
+- 已运行：`./dev test macos --only-testing AreaMatrixTests/AreaMatrixPerfTests`：命令最终返回 0；5 个 `AreaMatrixPerfTests` 通过，Release build / codesign / otool 通过，但真实 app launch probe 被 sandbox 阻断
+- 补充运行：`cargo test --manifest-path core/Cargo.toml --release --test stage1_performance_baseline -- --ignored --test-threads=1 --nocapture`：通过，4 个 Rust perf baseline 全部 PASS
+- 失败 / 缺失：真实 Release `.app` 启动到首屏实测缺失，当前环境返回 `NSCocoaErrorDomain code=259`
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+
+VERIFY_RESULT: FAIL

@@ -23,7 +23,7 @@ atomic
 3. 每个指标必须写明数据集规模、设备/环境、命令或测试入口、阈值、实测值和通过/不通过结论。
 4. Core hot path 优先使用 `cargo bench` 或集成测试；Swift UI 性能优先使用 XCTest performance 或 Instruments 证据。
 5. 性能不达标时记录阻断项和回退到 Phase 1/2 的修复建议；不得在本任务中顺手重写产品逻辑。
-6. 只补测试、脚本或 `docs/development/**` 下的性能证据。
+6. 只补 benchmark、测试、测试工程引用、脚本或 `docs/development/**` 下的性能证据。
 
 ## 完成标准
 
@@ -36,6 +36,6 @@ atomic
 
 ```bash
 python3 tasks/prompts/_shared/prompt_pipeline.py doctor
-cargo bench --workspace --no-run
-xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' -only-testing:AreaMatrixTests/AreaMatrixPerfTests CODE_SIGNING_ALLOWED=NO
+cargo bench --manifest-path core/Cargo.toml --workspace --no-run
+./dev test macos --only-testing AreaMatrixTests/AreaMatrixPerfTests
 ```
