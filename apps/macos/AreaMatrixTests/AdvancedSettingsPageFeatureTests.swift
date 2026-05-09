@@ -56,8 +56,28 @@ final class AdvancedSettingsPageFeatureTests: XCTestCase {
         model.openMainRepositoryRepair(repoPath: opening.config.repoPath)
         let recoveryRequests = await recoverer.requestedRepoPaths()
 
-        XCTAssertEqual(model.route, .dbRepairConfirm("/tmp/repo", nil, nil))
+        XCTAssertEqual(model.route, .dbRepairConfirm(DatabaseRepairRouteState(repoPath: "/tmp/repo", scanSession: nil, mapping: nil, returnRoute: .settingsGeneral(opening, selectedTab: "advanced"))))
         XCTAssertEqual(recoveryRequests, [])
+    }
+
+    @MainActor
+    func testS137CancelFromAdvancedSettingsReturnsToSourceSettingsPage() async {
+        let opening = RepositoryOpeningResult.shellFixture(repoPath: "/tmp/repo", fileCount: 1)
+        let model = OnboardingModel(
+            settingsReader: ShellStaticSettingsReader(repoPath: nil),
+            helpOpener: ShellNoopWelcomeHelpOpener()
+        )
+        model.route = .settingsGeneral(opening)
+        model.settingsGeneralSelectedTab = "advanced"
+        model.openMainRepositoryRepair(repoPath: opening.config.repoPath)
+        guard case .dbRepairConfirm(let repairRoute) = model.route else {
+            return XCTFail("expected db repair route")
+        }
+
+        model.returnFromDatabaseRepair(repairRoute)
+
+        XCTAssertEqual(model.route, .settingsGeneral(opening))
+        XCTAssertEqual(model.settingsGeneralSelectedTab, "advanced")
     }
 
     @MainActor

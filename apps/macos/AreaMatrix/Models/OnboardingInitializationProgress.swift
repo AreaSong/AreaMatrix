@@ -70,17 +70,6 @@ extension OnboardingModel {
     }
 
     @MainActor
-    func openMainRepositoryRepair(repoPath: String) {
-        let routeMapping: CoreErrorMappingSnapshot?
-        if case .mainRepoError(let errorRepoPath, let mapping) = route, errorRepoPath == repoPath {
-            routeMapping = mapping
-        } else { routeMapping = nil }
-        let mapping = mainRepoRecoveryErrorMapping ?? routeMapping
-        mainRepoRecoveryErrorMapping = nil
-        route = .dbRepairConfirm(repoPath, nil, mapping)
-    }
-
-    @MainActor
     func openInitializedRepository() async {
         guard case .initializationDone(let result) = route else { return }
         initializationOpenErrorMapping = nil
@@ -293,8 +282,13 @@ extension OnboardingModel {
 
             if validation.hasUnfinishedScanSession || validation.issues.contains(.unfinishedScanSession) {
                 latestScanSession = try await scanSessionReader.latestScanSession(repoPath: validation.repoPath)
-                route = .dbRepairConfirm(validation.repoPath, latestScanSession, nil)
-                toastMessage = "仍检测到未完成的扫描，请 Resume 或选择其他资料库。"
+                route = .dbRepairConfirm(DatabaseRepairRouteState(
+                    repoPath: validation.repoPath,
+                    scanSession: latestScanSession,
+                    mapping: nil,
+                    returnRoute: .validatePath
+                ))
+                toastMessage = "仍检测到未完成的扫描，请返回来源页继续处理。"
                 return
             }
 
@@ -493,4 +487,5 @@ extension OnboardingModel {
         }
         routeMainRepositoryError(repoPath: repoPath, mapping: mapping)
     }
+
 }

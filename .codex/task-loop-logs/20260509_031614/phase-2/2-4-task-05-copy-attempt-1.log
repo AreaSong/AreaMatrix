@@ -1,0 +1,43 @@
+一、执行结论
+
+- 已完成：`2-4/task-05` 的 `S1-37 + C1-26 repair-reindex-metadata` 页面功能点已接入真实 CoreBridge 路径并通过任务要求 build。
+
+二、执行范围
+
+- 单任务：只处理 `S1-37` 中 `C1-26`。
+- 修改文件：
+  - [CoreMetadataRepairing.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreMetadataRepairing.swift)
+  - [DatabaseRepairConfirmModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/DatabaseRepairConfirmModel.swift)
+  - [DatabaseRepairConfirmView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/DatabaseRepairConfirmView.swift)
+  - [DatabaseRepairConfirmPageFeatureTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/DatabaseRepairConfirmPageFeatureTests.swift)
+  - [AreaMatrixApp.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/App/AreaMatrixApp.swift)
+  - [MainWindow.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/MainWindow.swift)
+  - [CoreBridgePlaceholderState.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/CoreBridgePlaceholderState.swift)
+  - [project.pbxproj](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj)
+
+三、完成情况
+
+- 核对清单：4/4 完成。
+- 完成标准：3/3 满足。
+- `Run Full Rescan` 必须确认后才可触发，并调用真实 `repairMetadata(repoPath:options:)`，参数固定为 `fullRescan: true`、`preserveDiagnosticsSnapshot: true`。
+- 修复失败会映射 CoreError 并保留重试入口；诊断导出有隐私确认，诊断失败会禁用 full rescan。
+- 未触碰 `core/src/**`；`core/area_matrix.udl` 未修改。
+
+四、工程质量
+
+- 结构拆成 bridge snapshot、页面 model、SwiftUI view 和 page-feature tests，没有把逻辑堆在 View body。
+- 无 mock-only 产品闭环；测试替身只用于 XCTest 注入验证。
+- 未新增依赖。
+- 文件安全边界明确：本次 macOS 层只触发 `.areamatrix/` metadata repair API，不移动、不重命名、不删除、不覆盖用户文件或 `README.md`。
+
+五、验证情况
+
+- 通过：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+- 标准 XCTest：`xcodebuild test ... -only-testing:AreaMatrixTests/DatabaseRepairConfirmPageFeatureTests` 被本机 sandbox 阻断，错误为 `testmanagerd.control ... Sandbox restriction`。
+- 通过兜底：`xcrun xctest -XCTest AreaMatrixTests.DatabaseRepairConfirmPageFeatureTests apps/macos/DerivedData/AreaMatrix/Build/Products/Debug/AreaMatrixTests.xctest`，5 tests, 0 failures。
+- 通过：`git diff --check -- apps/macos/AreaMatrix apps/macos/AreaMatrixTests apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+
+六、风险与后续
+
+- 剩余风险：未做真实 UI 点击截图验证；本轮已完成 build 和 XCTest 行为验证。
+- 建议下一个任务：继续 `2-4/task-06`，覆盖同页剩余 `C1-16` / page integration 范围。

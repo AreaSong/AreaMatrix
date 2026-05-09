@@ -147,8 +147,37 @@ final class AreaMatrixAdoptExistingTests: XCTestCase {
 
         XCTAssertEqual(requestedScanPaths, ["/tmp/repo"])
         XCTAssertEqual(model.latestScanSession, scanSession)
-        XCTAssertEqual(model.route, .dbRepairConfirm("/tmp/repo", scanSession, nil))
+        XCTAssertEqual(model.route, .dbRepairConfirm(DatabaseRepairRouteState(repoPath: "/tmp/repo", scanSession: scanSession, mapping: nil, returnRoute: .validatePath)))
         XCTAssertFalse(model.canContinueFromValidatePath)
+    }
+
+    @MainActor
+    func testCancelRepairFromValidatePathReturnsToSourceValidationPage() async {
+        let validation = RepoPathValidationSnapshot.smokeFixture(
+            repoPath: "/tmp/repo",
+            hasUnfinishedScanSession: true,
+            issues: [.unfinishedScanSession],
+            recommendedMode: nil
+        )
+        let scanSession = ScanSessionSnapshot.adoptFixture()
+        let model = OnboardingModel(
+            settingsReader: SmokeStaticSettingsReader(repoPath: nil),
+            configLoader: SmokeRecordingConfigLoader(result: .success(.smokeFixture(repoPath: "/tmp/repo"))),
+            pathValidator: SmokeRecordingPathValidator(result: .success(validation)),
+            scanSessionReader: SmokeRecordingScanSessionReader(result: .success(scanSession)),
+            helpOpener: SmokeNoopWelcomeHelpOpener()
+        )
+        model.updateRepositoryPath("/tmp/repo")
+        await model.continueFromChoosePath()
+        guard case .dbRepairConfirm(let repairRoute) = model.route else {
+            return XCTFail("expected db repair route")
+        }
+
+        model.returnFromDatabaseRepair(repairRoute)
+
+        XCTAssertEqual(model.route, .validatePath)
+        XCTAssertEqual(model.repositoryPathValidation, validation)
+        XCTAssertEqual(model.latestScanSession, scanSession)
     }
 
     @MainActor
@@ -173,10 +202,10 @@ final class AreaMatrixAdoptExistingTests: XCTestCase {
         XCTAssertEqual(model.repositoryPathValidation, validation)
         XCTAssertNil(model.latestScanSession)
         XCTAssertEqual(model.repositoryPathError, "数据库错误")
-        guard case .dbRepairConfirm(let repoPath, nil, let mapping) = model.route, repoPath == "/tmp/repo" else {
+        guard case .dbRepairConfirm(let repairRoute) = model.route, repairRoute.repoPath == "/tmp/repo", repairRoute.scanSession == nil else {
             return XCTFail("expected db repair route, got \(model.route)")
         }
-        XCTAssertEqual(mapping?.kind, .db)
+        XCTAssertEqual(repairRoute.mapping?.kind, .db)
         XCTAssertFalse(model.canContinueFromValidatePath)
     }
 

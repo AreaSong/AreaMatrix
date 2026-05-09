@@ -106,8 +106,31 @@ final class MainRepoErrorMappingTests: XCTestCase {
 
         model.openMainRepositoryRepair(repoPath: "/tmp/repo")
 
-        XCTAssertEqual(model.route, .dbRepairConfirm("/tmp/repo", nil, mapping))
+        XCTAssertEqual(model.route, .dbRepairConfirm(DatabaseRepairRouteState(repoPath: "/tmp/repo", scanSession: nil, mapping: mapping, returnRoute: .mainRepoError(mapping))))
         XCTAssertNil(model.mainRepoRecoveryErrorMapping)
+    }
+
+    @MainActor
+    func testCancelRepairFromMainRepoErrorReturnsToSourceErrorPage() {
+        let mapping = CoreErrorMappingSnapshot.mainRepoFixture(
+            kind: .db,
+            severity: .critical,
+            recoverability: .fatal,
+            rawContext: "db corrupt"
+        )
+        let model = OnboardingModel(
+            settingsReader: ShellStaticSettingsReader(repoPath: nil),
+            helpOpener: ShellNoopWelcomeHelpOpener()
+        )
+        model.route = .mainRepoError("/tmp/repo", mapping)
+        model.openMainRepositoryRepair(repoPath: "/tmp/repo")
+        guard case .dbRepairConfirm(let repairRoute) = model.route else {
+            return XCTFail("expected db repair route")
+        }
+
+        model.returnFromDatabaseRepair(repairRoute)
+
+        XCTAssertEqual(model.route, .mainRepoError("/tmp/repo", mapping))
     }
 
     @MainActor

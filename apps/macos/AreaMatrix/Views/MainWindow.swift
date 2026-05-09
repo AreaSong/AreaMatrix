@@ -287,22 +287,21 @@ struct MainWindow: View {
                 onCancelDiagnostics: model.cancelMainRepositoryDiagnosticsPrivacyConfirmation,
                 onChooseAnotherFolder: model.showChoosePath
             )
-        case .dbRepairConfirm(let repoPath, let scanSession, let mapping):
+        case .dbRepairConfirm(let repairRoute):
             DBRepairConfirmView(
-                repoPath: repoPath,
-                scanSession: scanSession,
-                mapping: mapping,
-                onResume: {
-                    Task {
-                        await model.resumeInterruptedInitialization(repoPath: repoPath, scanSession: scanSession)
-                    }
+                repoPath: repairRoute.repoPath,
+                scanSession: repairRoute.scanSession,
+                mapping: repairRoute.mapping,
+                lastOpenedAt: model.mainRepoLastOpenedAt,
+                onCancel: {
+                    model.returnFromDatabaseRepair(repairRoute)
                 },
-                onCleanUpAndRetry: {
-                    Task {
-                        await model.cleanUpInterruptedInitialization(repoPath: repoPath)
-                    }
+                onRepairSucceeded: {
+                    await model.retryMainRepositoryFromError(repoPath: repairRoute.repoPath)
                 },
-                onChooseAnotherFolder: model.showChoosePath
+                onOpenRepositoryInFinder: {
+                    model.revealMainRepositoryFolder(repoPath: repairRoute.repoPath)
+                }
             )
         case .settingsRepository:
             SettingsRepositoryReturnView()

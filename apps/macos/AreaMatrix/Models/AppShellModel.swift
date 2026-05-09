@@ -345,7 +345,12 @@ final class OnboardingModel: ObservableObject {
             }
 
             if validation.hasUnfinishedScanSession || validation.issues.contains(.unfinishedScanSession) {
-                route = .dbRepairConfirm(validation.repoPath, latestScanSession, nil)
+                route = .dbRepairConfirm(DatabaseRepairRouteState(
+                    repoPath: validation.repoPath,
+                    scanSession: latestScanSession,
+                    mapping: nil,
+                    returnRoute: .validatePath
+                ))
                 return
             }
 
@@ -475,7 +480,12 @@ final class OnboardingModel: ObservableObject {
 
         switch coreError {
         case .Db:
-            route = .dbRepairConfirm(repoPath, latestScanSession, mapping)
+            route = .dbRepairConfirm(DatabaseRepairRouteState(
+                repoPath: repoPath,
+                scanSession: latestScanSession,
+                mapping: mapping,
+                returnRoute: .validatePath
+            ))
         case .Config, .Internal, .RepoNotInitialized:
             routeMainRepositoryError(repoPath: repoPath, mapping: mapping)
         default:

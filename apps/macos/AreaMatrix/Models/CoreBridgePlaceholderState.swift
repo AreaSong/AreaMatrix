@@ -90,6 +90,7 @@ enum CoreBridgeBoundary: String, CaseIterable, Equatable, Sendable {
     case recoverOnStartup = "recover_on_startup"
     case reindexFromFilesystem = "reindex_from_filesystem"
     case createDiagnosticsSnapshot = "create_diagnostics_snapshot"
+    case repairMetadata = "repair_metadata"
     case getLatestScanSession = "get_latest_scan_session"
     case resumeScanSession = "resume_scan_session"
     case predictCategory = "predict_category"

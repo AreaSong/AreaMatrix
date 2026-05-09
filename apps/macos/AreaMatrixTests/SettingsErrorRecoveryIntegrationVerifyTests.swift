@@ -186,7 +186,7 @@ private func verifyTask31AboutAndRecoveryRoute(_ context: Task31IntegrationConte
     let shell = OnboardingModel(helpOpener: Task31NoopWelcomeHelpOpener())
     shell.route = .mainRepoError(context.repoURL.path, mapping)
     shell.openMainRepositoryRepair(repoPath: context.repoURL.path)
-    XCTAssertEqual(shell.route, .dbRepairConfirm(context.repoURL.path, nil, mapping))
+    XCTAssertEqual(shell.route, .dbRepairConfirm(DatabaseRepairRouteState(repoPath: context.repoURL.path, scanSession: nil, mapping: mapping, returnRoute: .mainRepoError(mapping))))
 }
 
 private struct Task31IntegrationContext {

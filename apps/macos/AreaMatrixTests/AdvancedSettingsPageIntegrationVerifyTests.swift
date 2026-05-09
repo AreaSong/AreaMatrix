@@ -68,7 +68,7 @@ final class AdvancedSettingsPageIntegrationVerifyTests: XCTestCase {
         shell.openMainRepositoryRepair(repoPath: context.repoURL.path)
         let recoveryRequests = await recoverer.requestedRepoPaths()
 
-        XCTAssertEqual(shell.route, .dbRepairConfirm(context.repoURL.path, nil, nil))
+        XCTAssertEqual(shell.route, .dbRepairConfirm(DatabaseRepairRouteState(repoPath: context.repoURL.path, scanSession: nil, mapping: nil, returnRoute: .settingsGeneral(opening, selectedTab: "advanced"))))
         XCTAssertEqual(shell.settingsGeneralSelectedTab, "advanced")
         XCTAssertEqual(recoveryRequests, [])
     }

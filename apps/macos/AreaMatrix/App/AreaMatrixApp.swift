@@ -13,37 +13,6 @@ struct AreaMatrixApp: App {
     }
 }
 
-struct DBRepairConfirmView: View {
-    let repoPath: String
-    let scanSession: ScanSessionSnapshot?
-    let mapping: CoreErrorMappingSnapshot?
-    let onResume: () -> Void
-    let onCleanUpAndRetry: () -> Void
-    let onChooseAnotherFolder: () -> Void
-
-    var body: some View {
-        ContentUnavailableView {
-            Label("Repository metadata needs repair", systemImage: "wrench.and.screwdriver")
-        } description: {
-            Text(mapping?.userMessage ?? "AreaMatrix found incomplete or damaged .areamatrix metadata.")
-            Text(
-                "Repair only affects .areamatrix/ metadata; user files are not moved, renamed, deleted, or overwritten."
-            )
-            if let scanSession {
-                Text("Last scan: \(scanSession.status.rawValue), inserted \(scanSession.inserted).")
-            }
-            Text(repoPath)
-        } actions: {
-            if scanSession != nil {
-                Button("Resume", action: onResume)
-                    .keyboardShortcut(.defaultAction)
-                Button("Clean up and retry", action: onCleanUpAndRetry)
-            }
-            Button("Choose another folder", action: onChooseAnotherFolder)
-        }
-    }
-}
-
 struct ConfirmInitStepView: View {
     let draft: RepositoryInitializationDraft
     let onBack: () -> Void

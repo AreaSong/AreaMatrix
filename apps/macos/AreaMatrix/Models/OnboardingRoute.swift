@@ -12,7 +12,7 @@ extension OnboardingModel {
         case initializationDone(RepositoryInitializationResult)
         case mainLoading(MainLoadingState)
         case mainRepoError(String, CoreErrorMappingSnapshot?)
-        case dbRepairConfirm(String, ScanSessionSnapshot?, CoreErrorMappingSnapshot?)
+        case dbRepairConfirm(DatabaseRepairRouteState)
         case settingsRepository
         case settingsGeneral(RepositoryOpeningResult)
         case importProgress(ImportProgressRouteState)
@@ -40,6 +40,21 @@ extension OnboardingModel {
         case adoptExistingRequested(RepoPathValidationSnapshot, scanSession: ScanSessionSnapshot?)
         case openExistingRepositoryRequested(RepoPathValidationSnapshot)
     }
+}
+
+struct DatabaseRepairRouteState: Equatable, Sendable {
+    var repoPath: String
+    var scanSession: ScanSessionSnapshot?
+    var mapping: CoreErrorMappingSnapshot?
+    var returnRoute: DatabaseRepairReturnRoute
+}
+
+enum DatabaseRepairReturnRoute: Equatable, Sendable {
+    case validatePath
+    case mainLoading(MainLoadingState)
+    case mainRepoError(CoreErrorMappingSnapshot?)
+    case settingsRepository
+    case settingsGeneral(RepositoryOpeningResult, selectedTab: String?)
 }
 
 struct ImportResultRouteState: Equatable, Sendable {

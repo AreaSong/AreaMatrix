@@ -70,6 +70,10 @@
 		0A00000000000000000002E6 /* ICloudConflictListModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002E7 /* ICloudConflictListModel.swift */; };
 		0A00000000000000000002E8 /* ICloudConflictListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002E9 /* ICloudConflictListView.swift */; };
 		0A00000000000000000002EA /* ICloudConflictListPageFeatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002EB /* ICloudConflictListPageFeatureTests.swift */; };
+		0A00000000000000000002EC /* CoreMetadataRepairing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002ED /* CoreMetadataRepairing.swift */; };
+		0A00000000000000000002EF /* DatabaseRepairConfirmModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002F0 /* DatabaseRepairConfirmModel.swift */; };
+		0A00000000000000000002F1 /* DatabaseRepairConfirmView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002F2 /* DatabaseRepairConfirmView.swift */; };
+		0A00000000000000000002F3 /* DatabaseRepairConfirmPageFeatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002F4 /* DatabaseRepairConfirmPageFeatureTests.swift */; };
 		0A0000000000000000000260 /* MainFileListDetailSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000261 /* MainFileListDetailSupport.swift */; };
 		0A0000000000000000000222 /* MainFileListState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000223 /* MainFileListState.swift */; };
 		0A0000000000000000000132 /* MainListFilesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000133 /* MainListFilesTests.swift */; };
@@ -110,6 +114,7 @@
 		0A00000000000000000002B6 /* ErrorRecoveryPageIntegrationVerifyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002B7 /* ErrorRecoveryPageIntegrationVerifyTests.swift */; };
 		0A00000000000000000002B8 /* SettingsErrorRecoveryIntegrationVerifyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002B9 /* SettingsErrorRecoveryIntegrationVerifyTests.swift */; };
 		0A000000000000000000014E /* OnboardingRoute.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000014F /* OnboardingRoute.swift */; };
+		0A00000000000000000002F5 /* OnboardingDatabaseRepairRouting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002F6 /* OnboardingDatabaseRepairRouting.swift */; };
 		0A0000000000000000000150 /* MainLoadingTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000151 /* MainLoadingTestSupport.swift */; };
 		0A0000000000000000000152 /* MainLoadingFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000153 /* MainLoadingFixtures.swift */; };
 		0A0000000000000000000154 /* InitDoneTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000155 /* InitDoneTestSupport.swift */; };
@@ -376,7 +381,12 @@
 		0A00000000000000000002B5 /* ErrorRecoveryStartupRecoveryPageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ErrorRecoveryStartupRecoveryPageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002B7 /* ErrorRecoveryPageIntegrationVerifyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ErrorRecoveryPageIntegrationVerifyTests.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002B9 /* SettingsErrorRecoveryIntegrationVerifyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/SettingsErrorRecoveryIntegrationVerifyTests.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000002ED /* CoreMetadataRepairing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/CoreMetadataRepairing.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000002F0 /* DatabaseRepairConfirmModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/DatabaseRepairConfirmModel.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000002F2 /* DatabaseRepairConfirmView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/DatabaseRepairConfirmView.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000002F4 /* DatabaseRepairConfirmPageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/DatabaseRepairConfirmPageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000014F /* OnboardingRoute.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/OnboardingRoute.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000002F6 /* OnboardingDatabaseRepairRouting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/OnboardingDatabaseRepairRouting.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000151 /* MainLoadingTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/MainLoadingTestSupport.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000153 /* MainLoadingFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/MainLoadingFixtures.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000155 /* InitDoneTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/InitDoneTestSupport.swift; sourceTree = SOURCE_ROOT; };
@@ -585,6 +595,7 @@
 				0A00000000000000000000F1 /* OnboardingIntroStepViews.swift */,
 				0A00000000000000000000F3 /* WindowCloseConfirmationObserver.swift */,
 				0A00000000000000000000F5 /* InitFailedStepView.swift */,
+				0A00000000000000000002F2 /* DatabaseRepairConfirmView.swift */,
 			);
 			name = Views;
 			sourceTree = "<group>";
@@ -602,6 +613,7 @@
 				0A0000000000000000000171 /* CoreImporting.swift */,
 				0A0000000000000000000157 /* CoreExternalChangesSyncing.swift */,
 				0A00000000000000000002E5 /* CoreICloudConflictListing.swift */,
+				0A00000000000000000002ED /* CoreMetadataRepairing.swift */,
 				0A00000000000000000001E3 /* CoreChangeLogListing.swift */,
 				0A0000000000000000000241 /* CoreNoteReadingWriting.swift */,
 				0A000000000000000000001B /* AreaMatrix-Bridging-Header.h */,
@@ -673,6 +685,7 @@
 				0A00000000000000000002D9 /* ICloudConflictMinimalValidation.swift */,
 				0A00000000000000000002E1 /* ICloudConflictMinimalResolution.swift */,
 				0A00000000000000000002E7 /* ICloudConflictListModel.swift */,
+				0A00000000000000000002F0 /* DatabaseRepairConfirmModel.swift */,
 				0A0000000000000000000261 /* MainFileListDetailSupport.swift */,
 				0A0000000000000000000223 /* MainFileListState.swift */,
 				0A0000000000000000000245 /* MainDetailNoteState.swift */,
@@ -682,10 +695,11 @@
 				0A0000000000000000000227 /* MainExternalCreatedFileActions.swift */,
 				0A0000000000000000000135 /* MainListVisibleFileFiltering.swift */,
 				0A0000000000000000000147 /* MainLoadingState.swift */,
-				0A000000000000000000014D /* StartupRecoveryModels.swift */,
-				0A00000000000000000000F7 /* DiagnosticsSnapshotState.swift */,
-				0A000000000000000000015D /* RepositoryErrorPresentation.swift */,
-				0A00000000000000000000A2 /* OnboardingInitializationProgress.swift */,
+					0A000000000000000000014D /* StartupRecoveryModels.swift */,
+					0A00000000000000000000F7 /* DiagnosticsSnapshotState.swift */,
+					0A000000000000000000015D /* RepositoryErrorPresentation.swift */,
+					0A00000000000000000002F6 /* OnboardingDatabaseRepairRouting.swift */,
+					0A00000000000000000000A2 /* OnboardingInitializationProgress.swift */,
 				0A0000000000000000000159 /* MainRepoExternalRemovalActions.swift */,
 				0A0000000000000000000163 /* MainRepoErrorActions.swift */,
 				0A00000000000000000000B2 /* InitializationFailureActions.swift */,
@@ -709,6 +723,7 @@
 				0A0000000000000000000165 /* MainWindowIntegrationVerifyTests.swift */,
 				0A00000000000000000002B5 /* ErrorRecoveryStartupRecoveryPageFeatureTests.swift */,
 				0A00000000000000000002B7 /* ErrorRecoveryPageIntegrationVerifyTests.swift */,
+				0A00000000000000000002F4 /* DatabaseRepairConfirmPageFeatureTests.swift */,
 				0A0000000000000000000020 /* ValidatePathIntegrationTests.swift */,
 				0A00000000000000000000A1 /* InitializingStepIntegrationTests.swift */,
 				0A00000000000000000000B3 /* InitFailedErrorMappingTests.swift */,
@@ -927,6 +942,7 @@
 				0A00000000000000000002D8 /* ICloudConflictMinimalValidation.swift in Sources */,
 				0A00000000000000000002E0 /* ICloudConflictMinimalResolution.swift in Sources */,
 				0A00000000000000000002E6 /* ICloudConflictListModel.swift in Sources */,
+				0A00000000000000000002EF /* DatabaseRepairConfirmModel.swift in Sources */,
 				0A0000000000000000000134 /* MainListVisibleFileFiltering.swift in Sources */,
 				0A0000000000000000000122 /* OnboardingModelInputs.swift in Sources */,
 				0A0000000000000000000126 /* FileDropAdapter.swift in Sources */,
@@ -1004,9 +1020,11 @@
 				0A0000000000000000000144 /* DeleteFileConfirmSheet.swift in Sources */,
 				0A00000000000000000002DA /* ICloudConflictMinimalSheet.swift in Sources */,
 				0A00000000000000000002E8 /* ICloudConflictListView.swift in Sources */,
-				0A0000000000000000000146 /* MainLoadingState.swift in Sources */,
-				0A000000000000000000014C /* StartupRecoveryModels.swift in Sources */,
-				0A0000000000000000000148 /* MainLoadingView.swift in Sources */,
+				0A00000000000000000002F1 /* DatabaseRepairConfirmView.swift in Sources */,
+					0A0000000000000000000146 /* MainLoadingState.swift in Sources */,
+					0A000000000000000000014C /* StartupRecoveryModels.swift in Sources */,
+					0A00000000000000000002F5 /* OnboardingDatabaseRepairRouting.swift in Sources */,
+					0A0000000000000000000148 /* MainLoadingView.swift in Sources */,
 				0A00000000000000000002B2 /* StartupRecoveryErrorRecoveryView.swift in Sources */,
 				0A000000000000000000015C /* RepositoryErrorPresentation.swift in Sources */,
 				0A000000000000000000015E /* RepositoryErrorView.swift in Sources */,
@@ -1032,6 +1050,7 @@
 				0A0000000000000000000170 /* CoreImporting.swift in Sources */,
 				0A0000000000000000000156 /* CoreExternalChangesSyncing.swift in Sources */,
 				0A00000000000000000002E4 /* CoreICloudConflictListing.swift in Sources */,
+				0A00000000000000000002EC /* CoreMetadataRepairing.swift in Sources */,
 				0A00000000000000000001E2 /* CoreChangeLogListing.swift in Sources */,
 				0A0000000000000000000240 /* CoreNoteReadingWriting.swift in Sources */,
 				0A0000000000000000000222 /* MainFileListState.swift in Sources */,
@@ -1101,6 +1120,7 @@
 					0A00000000000000000002DE /* ICloudConflictMinimalPageIntegrationVerifyTests.swift in Sources */,
 					0A00000000000000000002E2 /* ICloudConflictMinimalPageIntegrationTestSupport.swift in Sources */,
 					0A00000000000000000002EA /* ICloudConflictListPageFeatureTests.swift in Sources */,
+					0A00000000000000000002F3 /* DatabaseRepairConfirmPageFeatureTests.swift in Sources */,
 					0A0000000000000000000200 /* DetailMetaPageFeatureTests.swift in Sources */,
 					0A0000000000000000000250 /* DetailMultiListFilesPageFeatureTests.swift in Sources */,
 					0A0000000000000000000252 /* DetailMultiPageIntegrationVerifyTests.swift in Sources */,

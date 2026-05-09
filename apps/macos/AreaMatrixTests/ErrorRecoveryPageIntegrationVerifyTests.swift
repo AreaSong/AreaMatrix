@@ -130,7 +130,7 @@ final class ErrorRecoveryPageIntegrationVerifyTests: XCTestCase {
         XCTAssertEqual(recoveryRequests, ["/tmp/s132-corrupt"])
         XCTAssertEqual(model.route, OnboardingModel.Route.mainRepoError("/tmp/s132-corrupt", mapping))
         model.openMainRepositoryRepair(repoPath: "/tmp/s132-corrupt")
-        XCTAssertEqual(model.route, OnboardingModel.Route.dbRepairConfirm("/tmp/s132-corrupt", nil, mapping))
+        XCTAssertEqual(model.route, OnboardingModel.Route.dbRepairConfirm(DatabaseRepairRouteState(repoPath: "/tmp/s132-corrupt", scanSession: nil, mapping: mapping, returnRoute: .mainRepoError(mapping))))
     }
 }
 

@@ -249,7 +249,9 @@ actor CoreBridge {
     }
 
     func createDiagnosticsSnapshot(repoPath: String) async throws -> DiagnosticsSnapshotSnapshot {
-        DiagnosticsSnapshotSnapshot(coreSnapshot: try createCoreDiagnosticsSnapshot(repoPath: repoPath))
+        try await Task.detached(priority: .userInitiated) {
+            DiagnosticsSnapshotSnapshot(coreSnapshot: try createCoreDiagnosticsSnapshot(repoPath: repoPath))
+        }.value
     }
 
     func latestScanSession() async throws -> Never {
