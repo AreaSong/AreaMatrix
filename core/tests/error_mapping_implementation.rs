@@ -109,9 +109,14 @@ fn error_mapping_implementation_uses_payload_for_declared_kind() {
 fn error_mapping_implementation_high_severity_errors_are_actionable() {
     let cases = [
         (
-            map(ErrorKind::Db, None, None, Some("database is locked")),
-            ErrorSeverity::High,
-            ErrorRecoverability::UserActionRequired,
+            map(
+                ErrorKind::Db,
+                None,
+                None,
+                Some("database disk image is malformed"),
+            ),
+            ErrorSeverity::Critical,
+            ErrorRecoverability::Fatal,
         ),
         (
             map(ErrorKind::RepoNotInitialized, Some("/repo"), None, None),
@@ -139,6 +144,17 @@ fn error_mapping_implementation_high_severity_errors_are_actionable() {
             ErrorRecoverability::Retryable
         ));
     }
+}
+
+#[test]
+fn error_mapping_implementation_db_locked_stays_retryable_without_repair_route() {
+    let mapping = map(ErrorKind::Db, None, None, Some("database is locked"));
+
+    assert_eq!(mapping.kind, ErrorKind::Db);
+    assert_eq!(mapping.severity, ErrorSeverity::Medium);
+    assert_eq!(mapping.recoverability, ErrorRecoverability::Retryable);
+    assert_eq!(mapping.user_message, "数据库暂时被占用");
+    assert!(mapping.suggested_action.contains("重试"));
 }
 
 #[test]

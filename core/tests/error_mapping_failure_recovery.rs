@@ -105,7 +105,7 @@ fn error_mapping_failure_recovery_repeated_mapping_is_idempotent() {
         ErrorKind::Db,
         Some("/ignored"),
         Some("ignored reason"),
-        Some("schema damaged"),
+        Some("database disk image is malformed"),
     );
 
     let first = map_core_error(input.clone());
@@ -113,12 +113,32 @@ fn error_mapping_failure_recovery_repeated_mapping_is_idempotent() {
 
     assert_eq!(first, second);
     assert_eq!(first.kind, ErrorKind::Db);
-    assert_eq!(first.severity, ErrorSeverity::High);
-    assert_eq!(
-        first.recoverability,
-        ErrorRecoverability::UserActionRequired
+    assert_eq!(first.severity, ErrorSeverity::Critical);
+    assert_eq!(first.recoverability, ErrorRecoverability::Fatal);
+    assert_eq!(first.raw_context, "database disk image is malformed");
+}
+
+#[test]
+fn error_mapping_failure_recovery_db_locked_does_not_open_repair_flow() {
+    let locked = map(
+        ErrorKind::Db,
+        None,
+        None,
+        Some("SQLITE_BUSY: database is locked"),
     );
-    assert_eq!(first.raw_context, "schema damaged");
+    let corrupted = map(
+        ErrorKind::Db,
+        None,
+        None,
+        Some("database disk image is malformed"),
+    );
+
+    assert_eq!(locked.kind, ErrorKind::Db);
+    assert_eq!(locked.severity, ErrorSeverity::Medium);
+    assert_eq!(locked.recoverability, ErrorRecoverability::Retryable);
+    assert_eq!(corrupted.kind, ErrorKind::Db);
+    assert_eq!(corrupted.severity, ErrorSeverity::Critical);
+    assert_eq!(corrupted.recoverability, ErrorRecoverability::Fatal);
 }
 
 #[test]

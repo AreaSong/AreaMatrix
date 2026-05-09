@@ -31,10 +31,18 @@ fn error_mapping_validation_maps_every_core_error_to_ui_metadata() {
         (
             CoreError::db("database is locked"),
             ErrorKind::Db,
-            ErrorSeverity::High,
-            ErrorRecoverability::UserActionRequired,
-            "数据库错误",
+            ErrorSeverity::Medium,
+            ErrorRecoverability::Retryable,
+            "数据库暂时被占用",
             "database is locked",
+        ),
+        (
+            CoreError::db("database disk image is malformed"),
+            ErrorKind::Db,
+            ErrorSeverity::Critical,
+            ErrorRecoverability::Fatal,
+            "资料库索引损坏",
+            "database disk image is malformed",
         ),
         (
             CoreError::config("classifier.yaml missing default"),
@@ -147,6 +155,15 @@ fn error_mapping_validation_ffi_input_matches_core_error_mapping() {
             input(ErrorKind::Db, None, None, Some("database is locked")),
         ),
         (
+            CoreError::db("database disk image is malformed"),
+            input(
+                ErrorKind::Db,
+                None,
+                None,
+                Some("database disk image is malformed"),
+            ),
+        ),
+        (
             CoreError::config("bad config"),
             input(ErrorKind::Config, None, Some("bad config"), None),
         ),
@@ -253,7 +270,12 @@ fn error_mapping_validation_uses_kind_not_misleading_payload_text() {
 #[test]
 fn error_mapping_validation_high_severity_errors_are_not_swallowed() {
     let cases = [
-        map_core_error(input(ErrorKind::Db, None, None, Some("database is locked"))),
+        map_core_error(input(
+            ErrorKind::Db,
+            None,
+            None,
+            Some("database disk image is malformed"),
+        )),
         map_core_error(input(
             ErrorKind::RepoNotInitialized,
             Some("/repo"),
@@ -287,4 +309,46 @@ fn error_mapping_validation_high_severity_errors_are_not_swallowed() {
         assert!(!mapping.suggested_action.is_empty());
         assert!(!mapping.raw_context.is_empty());
     }
+}
+
+#[test]
+fn error_mapping_validation_db_locked_and_corrupted_have_distinct_recovery_paths() {
+    let locked = map_core_error(input(
+        ErrorKind::Db,
+        None,
+        None,
+        Some("SQLITE_BUSY: database is locked"),
+    ));
+    assert_eq!(locked.kind, ErrorKind::Db);
+    assert_eq!(locked.user_message, "数据库暂时被占用");
+    assert_eq!(locked.severity, ErrorSeverity::Medium);
+    assert_eq!(locked.recoverability, ErrorRecoverability::Retryable);
+    assert!(locked.suggested_action.contains("重试"));
+
+    let corrupted = map_core_error(input(
+        ErrorKind::Db,
+        None,
+        None,
+        Some("database disk image is malformed"),
+    ));
+    assert_eq!(corrupted.kind, ErrorKind::Db);
+    assert_eq!(corrupted.user_message, "资料库索引损坏");
+    assert_eq!(corrupted.severity, ErrorSeverity::Critical);
+    assert_eq!(corrupted.recoverability, ErrorRecoverability::Fatal);
+    assert!(corrupted.suggested_action.contains("重建索引"));
+}
+
+#[test]
+fn error_mapping_validation_db_corruption_wins_over_busy_marker() {
+    let mapping = map_core_error(input(
+        ErrorKind::Db,
+        None,
+        None,
+        Some("database is locked after database disk image is malformed"),
+    ));
+
+    assert_eq!(mapping.kind, ErrorKind::Db);
+    assert_eq!(mapping.severity, ErrorSeverity::Critical);
+    assert_eq!(mapping.recoverability, ErrorRecoverability::Fatal);
+    assert_eq!(mapping.user_message, "资料库索引损坏");
 }

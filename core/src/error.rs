@@ -111,6 +111,20 @@ static DB_MAPPING: ErrorMappingTemplate = ErrorMappingTemplate {
     recoverability: ErrorRecoverability::UserActionRequired,
 };
 
+static DB_LOCKED_MAPPING: ErrorMappingTemplate = ErrorMappingTemplate {
+    user_message: "数据库暂时被占用",
+    severity: ErrorSeverity::Medium,
+    suggested_action: "请稍后重试；如果仍失败，请导出诊断信息",
+    recoverability: ErrorRecoverability::Retryable,
+};
+
+static DB_CORRUPTED_MAPPING: ErrorMappingTemplate = ErrorMappingTemplate {
+    user_message: "资料库索引损坏",
+    severity: ErrorSeverity::Critical,
+    suggested_action: "请打开修复并重建索引，或从备份恢复",
+    recoverability: ErrorRecoverability::Fatal,
+};
+
 static CONFIG_MAPPING: ErrorMappingTemplate = ErrorMappingTemplate {
     user_message: "配置错误",
     severity: ErrorSeverity::Medium,
@@ -249,6 +263,14 @@ pub enum CoreError {
 }
 
 impl CoreError {
+    fn mapping_template(&self) -> &'static ErrorMappingTemplate {
+        match self {
+            Self::Db { message } if is_db_corrupted_message(message) => &DB_CORRUPTED_MAPPING,
+            Self::Db { message } if is_db_locked_message(message) => &DB_LOCKED_MAPPING,
+            _ => self.kind().mapping_template(),
+        }
+    }
+
     /// Creates an IO error with the raw source message.
     pub fn io(message: impl Into<String>) -> Self {
         Self::Io {
@@ -350,7 +372,7 @@ impl CoreError {
     /// Maps a structured `CoreError` to UI metadata without side effects.
     pub fn to_error_mapping(&self) -> ErrorMapping {
         let kind = self.kind();
-        let template = kind.mapping_template();
+        let template = self.mapping_template();
 
         ErrorMapping {
             kind,
@@ -416,6 +438,41 @@ impl From<rusqlite::Error> for CoreError {
     fn from(error: rusqlite::Error) -> Self {
         Self::db(error.to_string())
     }
+}
+
+fn is_db_locked_message(message: &str) -> bool {
+    let normalized = message.to_ascii_lowercase();
+    let retryable_markers = [
+        "database is locked",
+        "database table is locked",
+        "database is busy",
+        "sqlite_busy",
+    ];
+
+    retryable_markers
+        .iter()
+        .any(|marker| normalized.contains(marker))
+}
+
+fn is_db_corrupted_message(message: &str) -> bool {
+    let normalized = message.to_ascii_lowercase();
+    let repair_markers = [
+        "corrupt",
+        "corrupted",
+        "damaged",
+        "database corrupted",
+        "database disk image is malformed",
+        "file is not a database",
+        "not a database",
+        "schema_version",
+        "no such table",
+        "integrity_check",
+        "malformed",
+    ];
+
+    repair_markers
+        .iter()
+        .any(|marker| normalized.contains(marker))
 }
 
 impl From<serde_json::Error> for CoreError {

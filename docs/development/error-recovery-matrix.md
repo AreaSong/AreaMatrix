@@ -29,7 +29,7 @@
 |---|---|---|---|---|---|
 | repo path | `InvalidPath`、`RepoNotInitialized`、`FileNotFound` | `路径不合法`、`资料库未初始化`、`Folder is missing`、首次启动向导或 main repo error | 重新选择资料库、重新初始化、Reconnect folder、刷新列表 | `ValidatePathErrorMappingSmokeTests.swift`、`MainRepoErrorMappingTests.swift`、troubleshooting 运行时章节 | P1 watch：`RepoNotInitialized` 在 Core mapping 是 High，但 UX blocking 语义是 critical；消费页必须继续覆盖。 |
 | permission | `PermissionDenied` | `无访问权限`、repo blocking 或单文件 toast | 选择其他文件夹、打开系统设置、重试前先修复权限 | R6：`docs/development/troubleshooting.md#r6-写权限被拒`、diagnostics export | 已有 Core/Swift 证据：`error_mapping_failure_recovery_permission_denied_never_becomes_retryable`、`testConfiguredRepoOpenFailureRoutesMappedC121ErrorToMainRepoError`。 |
-| DB | `Db` | DB locked：inline/banner + Retry；DB corrupted：blocking repair | locked 只能 Retry；corrupt 进入 Repair index / Open repo in Finder / Collect diagnostics | D1：`docs/development/troubleshooting.md#d1-sqlite_busy-database-is-locked`、D2/D3、diagnostics export | **P1-ER-001 阻断**：真实 Core mapping 只按 `Db` 输出 High/UserActionRequired，无法区分 locked retryable 与 corrupt fatal。回退到 Phase 1 `C1-21 error-mapping`，再补 Phase 2 `S1-11/S1-32` 真实 Core 消费验收。 |
+| DB | `Db` | DB locked：inline/banner + Retry；DB corrupted：blocking repair | locked 只能 Retry；corrupt 进入 Repair index / Open repo in Finder / Collect diagnostics | D1：`docs/development/troubleshooting.md#d1-sqlite_busy-database-is-locked`、D2/D3、diagnostics export | **P1-ER-001 已关闭**：真实 Core mapping 通过 `Db.message` 区分 locked retryable 与 corrupt fatal；证据见 `error_mapping_validation_db_locked_and_corrupted_have_distinct_recovery_paths`、`error_recovery_matrix_error_mapping_records_db_subsemantic_closure`、`testDefaultCoreBridgeMapsDbLockedAndCorruptedToDistinctRecoveryActions`。 |
 | IO | `Io`、`FileNotFound` | `文件操作失败`、`文件不存在` | Retry、刷新列表、Remove from index、Locate | Console log、Collect diagnostics、troubleshooting R3/T3 | 已有证据：`error_mapping_contract_api_maps_each_error_to_stable_ui_metadata`、`MainFileListDetailSupport` 映射路径。 |
 | iCloud placeholder | `ICloudPlaceholder` | `iCloud 文件未下载`、`iCloud file is not downloaded` | Download & retry、Switch to local repo、Cancel | R4：`docs/development/troubleshooting.md#r4-icloud-文件无法导入`、`mdls`、`brctl download` | P1 watch：Core suggested action 文案偏自动等待，UX 要用户可控 Download & retry；Swift main repo 和 import flow 已有页面证据，后续不得退化为静默下载。 |
 | duplicate | `DuplicateFile` | `文件已存在` | Skip、Overwrite、Keep both、Cancel | import result / change_log / diagnostics | 已有证据：`detect_duplicate_failure_recovery_moved_ask_restores_source_without_final_side_effects`、`detect_duplicate_failure_recovery_overwrite_db_failure_can_be_retried`。 |
@@ -44,7 +44,7 @@ Core `CoreError` variant 覆盖状态：
 | Variant | UX 文案 | 恢复动作 | 诊断入口 | 状态 |
 |---|---|---|---|---|
 | `Io` | `文件操作失败` | Retry | Collect diagnostics | 已覆盖 |
-| `Db` | `数据库错误` | Retry / Repair | integrity check、diagnostics | **P1-ER-001 阻断** |
+| `Db` | DB locked：`数据库暂时被占用`；DB corrupted：`资料库索引损坏` | Retry / Repair | integrity check、diagnostics | 已覆盖：locked 为 `Retryable` + medium；corrupt 为 `Fatal` + critical。 |
 | `Config` | `配置错误` | Open rules / Revert | settings diagnostics | 已覆盖 |
 | `Classify` | `分类失败` | Use inbox / Report | logs | 已覆盖 |
 | `Conflict` | `路径冲突` | Auto-rename / Rename | import details | 已覆盖 |
@@ -60,7 +60,7 @@ Core `CoreError` variant 覆盖状态：
 
 - 未发现没有 Core 来源的 Stage 1 用户错误页面；DB locked/corrupted、磁盘满、EBUSY 属于 `Db`/`Io` 的子语义。
 - 未发现没有 UX 文案的 Core variant；全部 variant 在 `docs/api/error-codes.md` 和 `docs/ux/error-messages.md` 有文案。
-- 语义冲突集中在 `Db` 子语义：locked 可重试、corrupt 阻断，但真实 Core mapping 不能区分。
+- `Db` 子语义已在真实 Core mapping 中区分：locked 可重试、corrupt 阻断并进入 repair。
 
 ## 4. 事务式导入失败路径
 
@@ -80,13 +80,19 @@ Core `CoreError` variant 覆盖状态：
 
 ## 5. 发布阻断清单
 
-### P1-ER-001: DB 子语义缺失
+### P1-ER-001 已关闭: DB 子语义缺失
 
 - 证据：`docs/ux/error-messages.md` 要求 DB locked 使用 Retry，DB corrupted 使用 blocking repair。
-- 现状：`core/src/error.rs` 的 `DB_MAPPING` 对所有 `Db` 返回 High/UserActionRequired。
-- 影响：Swift 若使用真实 Core mapping，`database is locked` 无法稳定进入 inline Retry；测试 fixture 能覆盖页面展示，但不能证明真实 Core 输入闭环。
-- 阻断结论：阻断 Stage 1 release readiness，不得包装成“后续优化”。
-- 回退建议：Phase 1 补 `C1-21 error-mapping` 子分类或 context fields；Phase 2 补 `S1-11 main-repo-error` 与 `S1-32 error-recovery` 的真实 Core DB locked/corrupt 消费测试。
+- 修复：`core/src/error.rs` 保留 `ErrorKind::Db` 和现有 UDL shape，通过 `Db.message`
+  的稳定 SQLite / integrity marker 选择 `DB_LOCKED_MAPPING` 或
+  `DB_CORRUPTED_MAPPING`。
+- 真实 Core 结果：`database is locked` -> medium + `Retryable`；`database disk image is
+  malformed` -> critical + `Fatal`。locked retryable 与 corrupt fatal 已可区分。
+- 验证：`error_mapping_validation_db_locked_and_corrupted_have_distinct_recovery_paths`、
+  `error_recovery_matrix_error_mapping_records_db_subsemantic_closure` 和
+  `testDefaultCoreBridgeMapsDbLockedAndCorruptedToDistinctRecoveryActions`。
+- 残余约束：不得把任意 `Db` 默认当成可重试；未知 DB 错误仍走 high +
+  `UserActionRequired`，避免误导用户执行自动修复。
 
 ### P1 watch: Repo / iCloud 上下文语义
 

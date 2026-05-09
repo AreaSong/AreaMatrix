@@ -1,0 +1,42 @@
+一、执行结论
+
+已完成 `3-1/task-02`。恢复场景证据已落在允许路径内，并修正了回滚说明，避免把 `3-1/task-01` 的 DB 子语义映射和 Swift CoreBridge 测试误算成本任务所有权。
+
+二、执行范围
+
+单任务：`3-1/task-02`
+
+修改文件：
+- [docs/development/recovery-scenarios.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/recovery-scenarios.md:145)
+- [core/tests/recovery_scenarios.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/recovery_scenarios.rs:251)
+
+三、完成情况
+
+核对清单 1-6 均已覆盖：场景清单从 `3-1/task-01` matrix 转成 RS-01..RS-10，覆盖 crash/interruption/staging residue/DB repair/iCloud/permission/import failure/reindex repair，并区分 `Automated`、`Manual smoke`、`Manual evidence pending`。每个场景都有初始状态、触发方式、恢复结果、用户文件不变量和验证方式。M-01..M-04 手工证据仍是 pending，并明确阻断 Stage 1 release readiness。
+
+完成标准已满足任务层面要求：自动化恢复证据可追溯到文档与测试；崩溃/中断、DB 修复、iCloud/权限、staging recovery 均有自动化或手工阻断结论。未触碰 Forbidden Touches。
+
+四、工程质量
+
+只改 `docs/development/**` 和 `core/tests/**`，未修改 Core/Swift 主功能。新增测试锁住回滚范围，防止本任务把 `core/src/error.rs` 或 macOS 产品测试列入自身回滚边界。没有占位、硬编码通过态或 mock-only 产品闭环；手工证据缺失被明确保留为发布阻断，而不是伪装为 PASS。
+
+五、验证情况
+
+已运行并通过：
+- `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`：OK，637 tasks / 637 manifests。
+- `cd core && cargo test --workspace recovery`：通过。
+- `cd core && cargo test --workspace transactional_import`：通过。
+- `cd core && cargo fmt --all -- --check`：通过。
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过。
+- `./dev test macos`：标准 `xcodebuild test` 被本地 `testmanagerd` sandbox restriction 阻断后，按仓库规则 fallback 到 `xcrun xctest`，473 tests，0 failures。
+
+已运行但原始命令形态失败：
+- 仓库根目录 `cargo test --workspace recovery` / `transactional_import`：失败原因是根目录没有 `Cargo.toml`；已用 `core/` 下等价命令补证据。
+- manifest 原始 `xcodebuild test ...`：编译完成，但 test runner 通信被 `com.apple.testmanagerd.control` sandbox restriction 阻断；已用 `./dev test macos` 补同一 XCTest bundle 的执行证据。
+
+六、风险与后续
+
+剩余风险：M-01 到 M-04 真实 macOS/iCloud/TCC/DB repair 手工证据仍是 pending，所以 Stage 1 release readiness 必须保持 blocked，不能写 PASS。
+
+建议下一个任务：进入 `3-1/task-03` 前，保留当前 `recovery-scenarios.md` 的 manual evidence gate 语义，后续 release task 需要采集或汇总 M-01..M-04 证据。工作树里还有本任务开始前已存在的其他未提交变更，我没有回滚或改动它们。
+

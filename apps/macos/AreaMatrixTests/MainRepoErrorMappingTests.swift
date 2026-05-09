@@ -59,6 +59,21 @@ final class MainRepoErrorMappingTests: XCTestCase {
         XCTAssertEqual(presentation.primaryActionTitle, "Retry")
     }
 
+    func testDefaultCoreBridgeMapsDbLockedAndCorruptedToDistinctRecoveryActions() async {
+        let bridge = CoreBridge()
+        let locked = await bridge.mapCoreError(CoreError.Db(message: "database is locked"))
+        let corrupted = await bridge.mapCoreError(CoreError.Db(message: "database disk image is malformed"))
+
+        XCTAssertEqual(locked.kind, .db)
+        XCTAssertEqual(locked.severity, .medium)
+        XCTAssertEqual(locked.recoverability, .retryable)
+        XCTAssertEqual(RepositoryErrorPresentation.mainRepo(mapping: locked).primaryAction, .retry)
+        XCTAssertEqual(corrupted.kind, .db)
+        XCTAssertEqual(corrupted.severity, .critical)
+        XCTAssertEqual(corrupted.recoverability, .fatal)
+        XCTAssertEqual(RepositoryErrorPresentation.mainRepo(mapping: corrupted).primaryAction, .openRepair)
+    }
+
     @MainActor
     func testConfiguredRepoOpenFailureRoutesMappedC121ErrorToMainRepoError() async {
         let error = CoreError.PermissionDenied(path: "/tmp/repo")

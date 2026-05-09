@@ -111,23 +111,20 @@ fn error_recovery_matrix_error_mapping_records_source_docs_and_troubleshooting()
 }
 
 #[test]
-fn error_recovery_matrix_error_mapping_locks_known_db_mapping_blocker() {
+fn error_recovery_matrix_error_mapping_records_db_subsemantic_closure() {
     let locked = CoreError::db("database is locked").to_error_mapping();
+    let corrupted = CoreError::db("database disk image is malformed").to_error_mapping();
 
-    assert_eq!(locked.severity, ErrorSeverity::High);
-    assert_eq!(
-        locked.recoverability,
-        ErrorRecoverability::UserActionRequired
-    );
-    assert_contains(MATRIX, "P1-ER-001");
-    assert_contains(MATRIX, "阻断 Stage 1 release readiness");
-    assert_contains(MATRIX, "无法区分 locked retryable 与 corrupt fatal");
-    assert_contains(ERROR_RS, "static DB_MAPPING");
-    assert_contains(ERROR_RS, "severity: ErrorSeverity::High");
-    assert_contains(
-        ERROR_RS,
-        "recoverability: ErrorRecoverability::UserActionRequired",
-    );
+    assert_eq!(locked.severity, ErrorSeverity::Medium);
+    assert_eq!(locked.recoverability, ErrorRecoverability::Retryable);
+    assert_eq!(corrupted.severity, ErrorSeverity::Critical);
+    assert_eq!(corrupted.recoverability, ErrorRecoverability::Fatal);
+    assert_contains(MATRIX, "P1-ER-001 已关闭");
+    assert_contains(MATRIX, "locked retryable 与 corrupt fatal 已可区分");
+    assert_contains(ERROR_RS, "static DB_LOCKED_MAPPING");
+    assert_contains(ERROR_RS, "static DB_CORRUPTED_MAPPING");
+    assert_contains(ERROR_RS, "is_db_locked_message");
+    assert_contains(ERROR_RS, "is_db_corrupted_message");
     assert_contains(
         MAIN_REPO_SWIFT_TESTS,
         "testRetryableDbErrorUsesInlineRetryCopyInsteadOfRepairCopy",

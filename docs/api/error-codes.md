@@ -111,7 +111,7 @@ impl From<walkdir::Error> for CoreError {
 | Variant | 触发场景 | 自动重试 | UI 处理 | 严重程度 |
 |---|---|---|---|---|
 | `Io { message }` | 文件读写失败、磁盘空间、损坏 | 视情况 | toast「文件操作失败：{}」 | medium |
-| `Db { message }` | SQLite 执行失败、schema 损坏 | 否 | 弹窗：建议从备份恢复或重建索引 | high |
+| `Db { message }` | SQLite locked、busy、schema 损坏、索引损坏 | locked/busy 可重试；损坏不可自动重试 | locked/busy：inline Retry；损坏：blocking repair | medium / critical |
 | `Config { reason }` | classifier.yaml 解析失败、必填字段缺失 | 否 | 弹窗：跳转到设置 → 显示具体字段错误 | medium |
 | `Classify { reason }` | 分类引擎内部错误 | 否 | toast「分类失败」+ 落到 inbox | low |
 | `Conflict { path }` | 路径冲突（应已被 conflict::resolve 解决） | 否 | toast「路径冲突」 | medium |
@@ -158,6 +158,14 @@ catch CoreError.Io(let msg) {
 
 ```rust
 #[test]
+fn db_when_locked() {
+    let mapping = CoreError::Db {
+        message: "database is locked".to_owned(),
+    }.to_error_mapping();
+    assert_eq!(mapping.recoverability, ErrorRecoverability::Retryable);
+}
+
+#[test]
 fn db_when_corrupted() {
     let repo = setup();
     let db_path = repo.path().join(".areamatrix/index.db");
@@ -167,23 +175,31 @@ fn db_when_corrupted() {
 }
 ```
 
-Swift 处理（高严重，必须弹窗）：
+Swift 处理必须区分 locked/busy 与 corrupted。locked/busy 只能 Retry，不进入 repair；
+corrupted 才进入 blocking repair。
 
 ```swift
 catch CoreError.Db(let msg) {
-    await showAlert(
-        title: "数据库错误",
-        message: """
-        AreaMatrix 数据库无法访问。
-        建议：
-        1. 重启应用
-        2. 重建索引（设置 → 高级 → 重建索引）
-        3. 从备份恢复
-
-        详细：\(truncate(msg, 200))
-        """,
-        actions: [.rebuild, .quit]
-    )
+    let mapping = await coreBridge.mapCoreError(error)
+    switch mapping.recoverability {
+    case .retryable:
+        await showInlineRetry(
+            title: "数据库暂时被占用",
+            message: truncate(msg, 200)
+        )
+    case .fatal:
+        await showAlert(
+            title: "资料库索引损坏",
+            message: "你的文件仍在资料库目录中，但索引需要修复。",
+            actions: [.repairIndex, .openFinder, .collectDiagnostics]
+        )
+    default:
+        await showAlert(
+            title: "数据库错误",
+            message: truncate(msg, 200),
+            actions: [.collectDiagnostics, .quit]
+        )
+    }
 }
 ```
 

@@ -1,0 +1,47 @@
+一、执行结论
+
+- 已完成 `3-1/task-02`。
+- 本任务只新增恢复证据文档和测试，没有修改 Core/Swift 主功能实现。
+
+二、执行范围
+
+- 单任务：`3-1/task-02 recovery scenarios`
+- 新增文件：
+  - [docs/development/recovery-scenarios.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/recovery-scenarios.md:1)
+  - [core/tests/recovery_scenarios.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/recovery_scenarios.rs:1)
+- 仅落在 `Expected New Paths`：`docs/development/**`、`core/tests/**`
+- 未触碰 `Forbidden Touches`；manifest 中为 `None`
+- 工作区另有 task-loop 运行态文件修改：`.codex/task-loop-runs/.../summary.json`、`tasks/prompts/_shared/progress.json`，未作为本任务实现文件处理。
+
+三、完成情况
+
+- 核对清单 1-6：完成。恢复场景已覆盖崩溃、中断、staging 残留、DB 修复、iCloud 占位符、权限失败、导入失败、reindex/repair 失败。
+- 每个场景都写明了初始状态、触发方式、预期恢复结果、用户文件不变量、验证方式和发布结论。
+- 手工验证门禁已建立：M-01 到 M-04。
+- P0/P1 缺证据阻断规则已写入；既有 `P1-ER-001` 仍作为 Stage 1 release readiness blocker 保留，未在本任务中越界修复。
+
+四、工程质量
+
+- 文档结构按场景矩阵整理，不是一次性报告；后续可以直接作为发布恢复验收清单维护。
+- Rust 测试把文档与 source docs、capability specs、既有恢复测试、Swift 恢复证据相互锁定。
+- 没有新增 mock-only、硬编码通过态或产品实现分支。
+- 回滚范围清晰：删除上述两个新增文件即可。
+
+五、验证情况
+
+- `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`：PASS，`doctor: OK`，tasks/manifests `637`
+- `cargo test --workspace recovery`：仓库根目录失败，原因是根目录没有 `Cargo.toml`
+- `cd core && cargo test --workspace recovery`：PASS
+- `cargo test --workspace transactional_import`：仓库根目录失败，原因同上
+- `cd core && cargo test --workspace transactional_import`：PASS
+- `cd core && cargo test --workspace recovery_scenarios`：PASS，4 tests
+- `xcodebuild test ...`：失败，exit 65，本机 sandbox 限制 `com.apple.testmanagerd.control`
+- `./dev test macos`：PASS，472 XCTest，0 failures，作为 repo 文档允许的本机替代路径
+- 额外检查：`cargo fmt --all -- --check` PASS；`cargo clippy --all-targets --all-features -- -D warnings` PASS；`git diff --check` PASS
+
+六、风险与后续
+
+- 剩余风险：Stage 1 发布前仍必须补 M-01 到 M-04 的真实手工日志。
+- 剩余阻断：`P1-ER-001` 仍未修复，DB locked 与 DB corrupted 在 Core mapping 上仍共享 `Db` 语义。
+- 建议下一个任务：进入 `3-1/task-03` 前，先确认是否要把 `P1-ER-001` 作为独立修复任务处理，避免 release readiness 被同一 blocker 继续拦住。
+

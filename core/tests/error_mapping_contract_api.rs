@@ -193,10 +193,18 @@ fn error_mapping_contract_api_maps_each_error_to_stable_ui_metadata() {
         (
             CoreError::db("database is locked"),
             ErrorKind::Db,
-            ErrorSeverity::High,
-            ErrorRecoverability::UserActionRequired,
-            "数据库错误",
+            ErrorSeverity::Medium,
+            ErrorRecoverability::Retryable,
+            "数据库暂时被占用",
             "database is locked",
+        ),
+        (
+            CoreError::db("database disk image is malformed"),
+            ErrorKind::Db,
+            ErrorSeverity::Critical,
+            ErrorRecoverability::Fatal,
+            "资料库索引损坏",
+            "database disk image is malformed",
         ),
         (
             CoreError::config("classifier.yaml missing default"),

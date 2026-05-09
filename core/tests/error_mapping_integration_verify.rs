@@ -215,10 +215,18 @@ fn error_mapping_integration_verify_all_core_errors_drive_stable_ui_metadata() {
         (
             CoreError::db("database is locked"),
             ErrorKind::Db,
-            ErrorSeverity::High,
-            ErrorRecoverability::UserActionRequired,
-            "数据库错误",
+            ErrorSeverity::Medium,
+            ErrorRecoverability::Retryable,
+            "数据库暂时被占用",
             "database is locked",
+        ),
+        (
+            CoreError::db("database disk image is malformed"),
+            ErrorKind::Db,
+            ErrorSeverity::Critical,
+            ErrorRecoverability::Fatal,
+            "资料库索引损坏",
+            "database disk image is malformed",
         ),
         (
             CoreError::config("classifier.yaml missing default"),
@@ -319,7 +327,12 @@ fn error_mapping_integration_verify_all_core_errors_drive_stable_ui_metadata() {
 #[test]
 fn error_mapping_integration_verify_consuming_pages_can_route_by_kind_and_severity() {
     let repo_error_cases = [
-        map(ErrorKind::Db, None, None, Some("database is locked")),
+        map(
+            ErrorKind::Db,
+            None,
+            None,
+            Some("database disk image is malformed"),
+        ),
         map(
             ErrorKind::RepoNotInitialized,
             Some("/repo"),
@@ -378,6 +391,21 @@ fn error_mapping_integration_verify_consuming_pages_can_route_by_kind_and_severi
     assert_eq!(icloud.severity, ErrorSeverity::Medium);
     assert_eq!(icloud.recoverability, ErrorRecoverability::Retryable);
     assert_eq!(icloud.raw_context, "iCloud/report.pdf");
+
+    let db_locked = map(ErrorKind::Db, None, None, Some("database is locked"));
+    assert_eq!(db_locked.kind, ErrorKind::Db);
+    assert_eq!(db_locked.severity, ErrorSeverity::Medium);
+    assert_eq!(db_locked.recoverability, ErrorRecoverability::Retryable);
+
+    let db_corrupted = map(
+        ErrorKind::Db,
+        None,
+        None,
+        Some("database disk image is malformed"),
+    );
+    assert_eq!(db_corrupted.kind, ErrorKind::Db);
+    assert_eq!(db_corrupted.severity, ErrorSeverity::Critical);
+    assert_eq!(db_corrupted.recoverability, ErrorRecoverability::Fatal);
 }
 
 #[test]
