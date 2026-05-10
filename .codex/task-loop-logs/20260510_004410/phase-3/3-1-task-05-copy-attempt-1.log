@@ -1,0 +1,69 @@
+一、执行结论
+
+未完成。`3-1/task-05` 仍然不放行 Stage 1 final integration verify。
+
+核心原因：`./dev check all` 仍未完整通过，且 release checklist 仍有 P1 阻断项：真实 `.app` 首屏、M-01..M-04 手工恢复冒烟、Developer ID 签名/公证/DMG/干净 Mac 首启、CHANGELOG/版本发布切面仍缺证据。
+
+二、执行范围
+
+- 单任务：`3-1/task-05`
+- 未触碰 Forbidden Touches：`core/src/**`、`core/area_matrix.udl`、`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrix.xcodeproj/**`
+- 本轮实际改动在允许范围内：
+  - `scripts/dev_tools/build.py`
+  - `scripts/dev_tools/checks.py`
+  - `scripts/dev_tools/test_build_tools.py`
+  - `scripts/task_loop/self_check.py`
+  - `docs/development/build.md`
+  - `docs/development/stage-1-release-checklist.md`
+  - `core/tests/stage1_release_checklist.rs`
+- `.codex/task-loop-*` 与 `tasks/prompts/_shared/progress.json` 是 task-loop 运行状态/证据文件，我未回退。
+
+三、完成情况
+
+- Exact Docs 6/6 已读取并交叉核验。
+- control map 的 Real Core 页面最终验收规则已核对：不能用 mock/fixture/static placeholder 放行。
+- 3-1/task-01..04 证据已核对：已有 error recovery、recovery scenarios、performance、release checklist 证据，但这些证据明确记录 release blockers。
+- 修复了两个验证基础设施问题：
+  - `uniffi-bindgen` 缺失时可用 lockfile 版本 + 本地 Cargo cache 构建临时 fallback。
+  - `task-loop check` 不再被外层 `GIT_CHECKPOINT=off` 或 Python cache sandbox 干扰。
+- 当前 `./dev check all` 新阻断点稳定为：缺少 Rust target `x86_64-apple-darwin`。
+
+四、验证情况
+
+已运行并通过：
+
+- `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`
+- `git diff --check`
+- `python3 -m unittest scripts.dev_tools.test_build_tools`
+- `./task-loop check`
+- `cd core && cargo test --test stage1_release_checklist`
+
+`./dev check all`：失败。
+
+已通过部分：governance、skills、task-loop、prompt doctor、diff check、`cargo fmt --check`、`cargo clippy --all-targets --all-features -- -D warnings`、`cargo test --workspace`。
+
+失败点：
+
+```text
+error: missing Rust target 'x86_64-apple-darwin'.
+install it with: rustup target add x86_64-apple-darwin
+```
+
+当前已安装 target 只有：
+
+```text
+aarch64-apple-darwin
+wasm32-unknown-unknown
+```
+
+五、风险与后续
+
+剩余阻断项不是产品实现可在本任务内补齐的问题。建议下一步先补环境与发布证据：
+
+```bash
+rustup target add x86_64-apple-darwin
+./dev check all
+```
+
+随后在非 sandbox macOS 桌面/CI 环境补真实 `.app` 首屏、手工恢复冒烟、签名、公证、DMG 和干净 Mac 首启证据。当前任务最终判定仍为不通过。`VERIFY_RESULT: FAIL`
+

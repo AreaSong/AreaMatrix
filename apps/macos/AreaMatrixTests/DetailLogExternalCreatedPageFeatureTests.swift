@@ -1,5 +1,5 @@
-import XCTest
 @testable import AreaMatrix
+import XCTest
 
 final class DetailLogExternalCreatedPageFeatureTests: XCTestCase {
     @MainActor
@@ -15,13 +15,13 @@ final class DetailLogExternalCreatedPageFeatureTests: XCTestCase {
         AreaMatrixExternalCreatedFileRelay.publish(
             repoPath: "/tmp/repo",
             relativePath: "docs/external-created.pdf",
-            fsEventID: 7_100
+            fsEventID: 7100
         )
         model.consumePendingExternalCreatedFileSignals()
 
         XCTAssertEqual(
             model.externalCreatedEvent(for: opening),
-            MainExternalCreatedFileEvent(relativePath: "docs/external-created.pdf", fsEventID: 7_100)
+            MainExternalCreatedFileEvent(relativePath: "docs/external-created.pdf", fsEventID: 7100)
         )
         let handledEvent = try XCTUnwrap(model.externalCreatedEvent(for: opening))
         model.finishExternalCreatedFileEvent(handledEvent)
@@ -38,11 +38,11 @@ final class DetailLogExternalCreatedPageFeatureTests: XCTestCase {
         )
         model.route = .mainList(opening)
 
-        AreaMatrixExternalCreatedFileRelay.publish(repoPath: "/tmp/repo", relativePath: "../bad.pdf", fsEventID: 7_101)
+        AreaMatrixExternalCreatedFileRelay.publish(repoPath: "/tmp/repo", relativePath: "../bad.pdf", fsEventID: 7101)
         AreaMatrixExternalCreatedFileRelay.publish(
             repoPath: "/tmp/other-repo",
             relativePath: "docs/other.pdf",
-            fsEventID: 7_102
+            fsEventID: 7102
         )
         model.consumePendingExternalCreatedFileSignals()
 
@@ -56,37 +56,41 @@ final class DetailLogExternalCreatedPageFeatureTests: XCTestCase {
             repoPath: "/tmp/repo",
             absolutePath: "/tmp/repo/docs/external-created.pdf",
             flags: createdFlags,
-            eventID: 7_103
+            eventID: 7103
         )
 
         XCTAssertEqual(signal?.repoPath, "/tmp/repo")
         XCTAssertEqual(signal?.relativePath, "docs/external-created.pdf")
-        XCTAssertEqual(signal?.fsEventID, 7_103)
+        XCTAssertEqual(signal?.fsEventID, 7103)
         XCTAssertNil(MainExternalCreatedFileWatcher.signal(
             repoPath: "/tmp/repo",
             absolutePath: "/tmp/repo/.areamatrix/index.db",
             flags: createdFlags,
-            eventID: 7_104
+            eventID: 7104
         ))
         XCTAssertNil(MainExternalCreatedFileWatcher.signal(
             repoPath: "/tmp/repo",
             absolutePath: "/tmp/repo/docs",
             flags: createdFlags | FSEventStreamEventFlags(kFSEventStreamEventFlagItemIsDir),
-            eventID: 7_105
+            eventID: 7105
         ))
         XCTAssertNil(MainExternalCreatedFileWatcher.signal(
             repoPath: "/tmp/repo",
             absolutePath: "/tmp/other-repo/docs/new.pdf",
             flags: createdFlags,
-            eventID: 7_106
+            eventID: 7106
         ))
     }
 
     @MainActor
     func testS113C117ConsumesRealExternalCreatedEventThenRefreshesListDetailAndLog() async throws {
         let existing = FileEntrySnapshot.detailMetaFixture(id: 22, currentName: "selected.pdf")
-        let created = FileEntrySnapshot.detailMetaFixture(id: 23, currentName: "external-created.pdf", origin: "External")
-        let event = try XCTUnwrap(MainExternalCreatedFileEvent(relativePath: created.path, fsEventID: 7_001))
+        let created = FileEntrySnapshot.detailMetaFixture(
+            id: 23,
+            currentName: "external-created.pdf",
+            origin: "External"
+        )
+        let event = try XCTUnwrap(MainExternalCreatedFileEvent(relativePath: created.path, fsEventID: 7001))
         let entry = ChangeLogEntrySnapshot.detailLogFixture(fileID: created.id, action: "external_modified")
         let lister = DetailLogRecordingLister(results: [.success([entry])])
         let syncer = DetailLogExternalCreatedSyncer(result: .success(.detailCreatedFixture()))
@@ -107,7 +111,7 @@ final class DetailLogExternalCreatedPageFeatureTests: XCTestCase {
         let logRequests = await lister.recordedRequests()
 
         XCTAssertEqual(syncRequests, [
-            DetailLogExternalCreatedRequest(repoPath: "/tmp/repo", relativePath: created.path, fsEventID: 7_001),
+            DetailLogExternalCreatedRequest(repoPath: "/tmp/repo", relativePath: created.path, fsEventID: 7001)
         ])
         XCTAssertEqual(listRequests, [DetailLogExternalCreatedListRequest(
             repoPath: "/tmp/repo",
@@ -115,7 +119,10 @@ final class DetailLogExternalCreatedPageFeatureTests: XCTestCase {
         )])
         XCTAssertEqual(model.selection, .single(created.id))
         XCTAssertEqual(model.selectedFileDetail, created)
-        XCTAssertEqual(model.detailExternalCreateSyncState, .synced(event: event, fileID: created.id, .detailCreatedFixture()))
+        XCTAssertEqual(
+            model.detailExternalCreateSyncState,
+            .synced(event: event, fileID: created.id, .detailCreatedFixture())
+        )
         XCTAssertEqual(logRequests, [DetailLogRequest(repoPath: "/tmp/repo", filter: .detailLog(fileID: created.id))])
         XCTAssertEqual(model.detailLogState, .loaded(fileID: created.id, entries: [entry]))
     }
@@ -123,7 +130,10 @@ final class DetailLogExternalCreatedPageFeatureTests: XCTestCase {
     @MainActor
     func testS113C117MapsCoreFailureWithoutRefreshingLog() async throws {
         let existing = FileEntrySnapshot.detailMetaFixture(id: 24, currentName: "selected.pdf")
-        let event = try XCTUnwrap(MainExternalCreatedFileEvent(relativePath: "docs/icloud-created.pdf", fsEventID: 7_002))
+        let event = try XCTUnwrap(MainExternalCreatedFileEvent(
+            relativePath: "docs/icloud-created.pdf",
+            fsEventID: 7002
+        ))
         let mapping = CoreErrorMappingSnapshot.detailLogExternalCreated(kind: .iCloudPlaceholder)
         let mapper = DetailMetaErrorMapper(mapping: mapping)
         let lister = DetailLogRecordingLister(results: [.success([])])
@@ -153,7 +163,7 @@ final class DetailLogExternalCreatedPageFeatureTests: XCTestCase {
     @MainActor
     func testS113C117TreatsSyncResultErrorsAsFailure() async throws {
         let created = FileEntrySnapshot.detailMetaFixture(id: 25, currentName: "partial.pdf", origin: "External")
-        let event = try XCTUnwrap(MainExternalCreatedFileEvent(relativePath: created.path, fsEventID: 7_003))
+        let event = try XCTUnwrap(MainExternalCreatedFileEvent(relativePath: created.path, fsEventID: 7003))
         let mapping = CoreErrorMappingSnapshot.detailLogExternalCreated(kind: .internal)
         let mapper = DetailMetaErrorMapper(mapping: mapping)
         let lister = DetailLogRecordingLister(results: [.success([])])
@@ -173,7 +183,7 @@ final class DetailLogExternalCreatedPageFeatureTests: XCTestCase {
 
         XCTAssertEqual(model.detailExternalCreateSyncState, .failed(event: event, mapping))
         XCTAssertEqual(logRequests, [])
-        guard case .Internal(let message) = mappedErrors.first else {
+        guard case let .Internal(message) = mappedErrors.first else {
             return XCTFail("expected internal error for partial sync result")
         }
         XCTAssertTrue(message.contains("created event 7003 returned sync errors"))
@@ -203,11 +213,11 @@ final class DetailLogExternalCreatedPageFeatureTests: XCTestCase {
         let result = try await bridge.syncExternalCreated(
             repoPath: repoURL.path,
             relativePath: "docs/external-created.pdf",
-            fsEventID: 8_001
+            fsEventID: 8001
         )
         let files = try await bridge.listFiles(repoPath: repoURL.path, filter: .currentCategory(nil))
         let tree = try await bridge.listTree(repoPath: repoURL.path, locale: "zh-Hans")
-        let detail = try await bridge.getFile(repoPath: repoURL.path, fileID: try XCTUnwrap(files.first?.id))
+        let detail = try await bridge.getFile(repoPath: repoURL.path, fileID: XCTUnwrap(files.first?.id))
         let changes = try await bridge.listChanges(repoPath: repoURL.path, filter: .detailLog(fileID: detail.id))
         let cursor = try await bridge.getFSEventCursor(repoPath: repoURL.path)
 
@@ -218,7 +228,7 @@ final class DetailLogExternalCreatedPageFeatureTests: XCTestCase {
         XCTAssertEqual(tree.totalFileCount, 1)
         XCTAssertEqual(detail.path, "docs/external-created.pdf")
         XCTAssertEqual(changes.map(\.action), ["external_modified"])
-        XCTAssertEqual(cursor, 8_001)
+        XCTAssertEqual(cursor, 8001)
     }
 }
 
@@ -241,7 +251,8 @@ private actor DetailLogExternalCreatedSyncer: CoreExternalChangesSyncing {
         self.result = result
     }
 
-    func syncExternalCreated(repoPath: String, relativePath: String, fsEventID: Int64) async throws -> SyncResultSnapshot {
+    func syncExternalCreated(repoPath: String, relativePath: String,
+                             fsEventID: Int64) async throws -> SyncResultSnapshot {
         createdRequests.append(DetailLogExternalCreatedRequest(
             repoPath: repoPath,
             relativePath: relativePath,
@@ -250,18 +261,25 @@ private actor DetailLogExternalCreatedSyncer: CoreExternalChangesSyncing {
         return try result.get()
     }
 
-    func syncExternalRemoved(repoPath: String, relativePath: String, fsEventID: Int64) async throws -> SyncResultSnapshot {
+    func syncExternalRemoved(repoPath _: String, relativePath _: String,
+                             fsEventID _: Int64) async throws -> SyncResultSnapshot {
         throw CoreError.Internal(message: "external removed is outside S1-13 C1-17")
     }
 
-    func syncExternalRenamed(repoPath: String, relativePath: String, fsEventID: Int64) async throws -> SyncResultSnapshot {
+    func syncExternalRenamed(repoPath _: String, relativePath _: String,
+                             fsEventID _: Int64) async throws -> SyncResultSnapshot {
         throw CoreError.Internal(message: "external renamed is outside S1-13 C1-17")
     }
 
-    func getFSEventCursor(repoPath: String) async throws -> Int64? { nil }
-    func setFSEventCursor(repoPath: String, lastEventID: Int64) async throws {}
+    func getFSEventCursor(repoPath _: String) async throws -> Int64? {
+        nil
+    }
 
-    func recordedCreatedRequests() -> [DetailLogExternalCreatedRequest] { createdRequests }
+    func setFSEventCursor(repoPath _: String, lastEventID _: Int64) async throws {}
+
+    func recordedCreatedRequests() -> [DetailLogExternalCreatedRequest] {
+        createdRequests
+    }
 }
 
 private actor DetailLogExternalCreatedLister: CoreFileListing {
@@ -277,7 +295,9 @@ private actor DetailLogExternalCreatedLister: CoreFileListing {
         return files
     }
 
-    func recordedRequests() -> [DetailLogExternalCreatedListRequest] { requests }
+    func recordedRequests() -> [DetailLogExternalCreatedListRequest] {
+        requests
+    }
 }
 
 private extension SyncResultSnapshot {

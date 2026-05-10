@@ -1,5 +1,5 @@
-import XCTest
 @testable import AreaMatrix
+import XCTest
 
 final class InitFailedErrorMappingTests: XCTestCase {
     @MainActor
@@ -88,7 +88,8 @@ final class InitFailedErrorMappingTests: XCTestCase {
     @MainActor
     func testInitializationDiagnosticsFailureMapsErrorAndStaysOnFailedPage() async {
         let mapping = CoreErrorMappingSnapshot.initFailedPermissionDeniedFixture(rawContext: "/tmp/repo")
-        let collector = InitFailedRecordingDiagnosticsCollector(result: .failure(CoreError.PermissionDenied(path: "/tmp/repo")))
+        let collector =
+            InitFailedRecordingDiagnosticsCollector(result: .failure(CoreError.PermissionDenied(path: "/tmp/repo")))
         let errorMapper = InitFailedRecordingErrorMapper(mapping: mapping)
         let model = OnboardingModel(
             settingsReader: InitFailedStaticSettingsReader(repoPath: nil),
@@ -129,13 +130,17 @@ private actor RetryingRepositoryInitializer: CoreRepositoryInitializing {
         }
     }
 
-    func adoptRequests() -> [String] { adoptPaths }
+    func adoptRequests() -> [String] {
+        adoptPaths
+    }
 }
 
 private struct InitFailedStaticSettingsReader: AppSettingsReading {
     let repoPath: String?
 
-    func configuredRepoPath() -> String? { repoPath }
+    func configuredRepoPath() -> String? {
+        repoPath
+    }
 }
 
 private final class InitFailedRecordingSettingsWriter: AppSettingsWriting {
@@ -162,14 +167,16 @@ private actor InitFailedRecordingDiagnosticsCollector: CoreDiagnosticsCollecting
     func createDiagnosticsSnapshot(repoPath: String) async throws -> DiagnosticsSnapshotSnapshot {
         repoPaths.append(repoPath)
         switch result {
-        case .success(let snapshot):
+        case let .success(snapshot):
             return snapshot
-        case .failure(let error):
+        case let .failure(error):
             throw error
         }
     }
 
-    func requestedRepoPaths() -> [String] { repoPaths }
+    func requestedRepoPaths() -> [String] {
+        repoPaths
+    }
 }
 
 private actor StaticPathValidator: CoreRepositoryPathValidating {
@@ -179,19 +186,19 @@ private actor StaticPathValidator: CoreRepositoryPathValidating {
         self.validation = validation
     }
 
-    func validateRepoPath(repoPath: String) async throws -> RepoPathValidationSnapshot {
+    func validateRepoPath(repoPath _: String) async throws -> RepoPathValidationSnapshot {
         validation
     }
 }
 
 private actor StaticStartupRecoverer: CoreStartupRecovering {
-    func recoverOnStartup(repoPath: String) async throws -> RecoveryReportSnapshot {
+    func recoverOnStartup(repoPath _: String) async throws -> RecoveryReportSnapshot {
         RecoveryReportSnapshot(cleanedStagingFiles: 0, revertedStagingDbRows: 0, warnings: [])
     }
 }
 
 private actor StaticInitFailedScanSessionReader: CoreScanSessionReading {
-    func latestScanSession(repoPath: String) async throws -> ScanSessionSnapshot? {
+    func latestScanSession(repoPath _: String) async throws -> ScanSessionSnapshot? {
         nil
     }
 }

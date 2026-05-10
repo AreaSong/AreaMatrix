@@ -96,9 +96,9 @@ struct InitFailedStepView: View {
             Label("Preparing redacted diagnostics...", systemImage: "arrow.clockwise")
                 .font(.callout)
                 .foregroundStyle(.secondary)
-        case .collected(let snapshot):
+        case let .collected(snapshot):
             collectedDiagnostics(snapshot)
-        case .failed(let mapping):
+        case let .failed(mapping):
             failedDiagnostics(mapping)
         }
     }

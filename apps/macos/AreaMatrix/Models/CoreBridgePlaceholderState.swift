@@ -4,13 +4,13 @@ protocol ExistingRepositoryMetadataReading: Sendable {
     func metadata(repoPath: String) async throws -> ExistingRepositoryMetadataSnapshot
 }
 
-struct ExistingRepositoryMetadataSnapshot: Equatable, Sendable {
+struct ExistingRepositoryMetadataSnapshot: Equatable {
     var schemaVersion: Int64
     var lastOpenedAt: Int64?
-    var configuredRepoPath: String? = nil
+    var configuredRepoPath: String?
 }
 
-struct ConfigLoadFailure: Equatable, Sendable {
+struct ConfigLoadFailure: Equatable {
     var repoPath: String
     var title: String
     var message: String
@@ -40,36 +40,36 @@ struct ConfigLoadFailure: Equatable, Sendable {
 
     private static func map(repoPath: String, coreError: CoreError) -> ConfigLoadFailure {
         switch coreError {
-        case .Config(let reason):
-            return ConfigLoadFailure(
+        case let .Config(reason):
+            ConfigLoadFailure(
                 repoPath: repoPath,
                 title: "Repository settings are invalid",
                 message: "AreaMatrix could not read the saved settings: \(reason)",
                 recoveryAction: "Start setup again or choose a different repository folder."
             )
-        case .PermissionDenied(let path):
-            return ConfigLoadFailure(
+        case let .PermissionDenied(path):
+            ConfigLoadFailure(
                 repoPath: repoPath,
                 title: "Repository settings need permission",
                 message: "AreaMatrix cannot read repository settings at \(path).",
                 recoveryAction: "Grant folder access, then retry opening the repository."
             )
-        case .Io(let message):
-            return ConfigLoadFailure(
+        case let .Io(message):
+            ConfigLoadFailure(
                 repoPath: repoPath,
                 title: "Repository settings are unavailable",
                 message: "File system error while reading settings: \(message)",
                 recoveryAction: "Make sure the folder is available, then retry."
             )
-        case .Db(let message):
-            return ConfigLoadFailure(
+        case let .Db(message):
+            ConfigLoadFailure(
                 repoPath: repoPath,
                 title: "Repository metadata cannot be opened",
                 message: "Database error while reading settings: \(message)",
                 recoveryAction: "Retry opening the repository or start setup again."
             )
         default:
-            return ConfigLoadFailure(
+            ConfigLoadFailure(
                 repoPath: repoPath,
                 title: "Unable to load repository settings",
                 message: coreError.localizedDescription,
@@ -79,7 +79,7 @@ struct ConfigLoadFailure: Equatable, Sendable {
     }
 }
 
-enum CoreBridgeBoundary: String, CaseIterable, Equatable, Sendable {
+enum CoreBridgeBoundary: String, CaseIterable, Equatable {
     case getVersion = "get_version"
     case initLogging = "init_logging"
     case validateRepoPath = "validate_repo_path"
@@ -118,7 +118,7 @@ protocol CoreErrorMapping {
     func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot
 }
 
-enum CoreErrorKindSnapshot: String, Equatable, Sendable {
+enum CoreErrorKindSnapshot: String, Equatable {
     case io = "Io"
     case db = "Db"
     case config = "Config"
@@ -133,21 +133,21 @@ enum CoreErrorKindSnapshot: String, Equatable, Sendable {
     case `internal` = "Internal"
 }
 
-enum CoreErrorSeveritySnapshot: String, Equatable, Sendable {
+enum CoreErrorSeveritySnapshot: String, Equatable {
     case low = "Low"
     case medium = "Medium"
     case high = "High"
     case critical = "Critical"
 }
 
-enum CoreErrorRecoverabilitySnapshot: String, Equatable, Sendable {
+enum CoreErrorRecoverabilitySnapshot: String, Equatable {
     case retryable = "Retryable"
     case userActionRequired = "UserActionRequired"
     case refreshRequired = "RefreshRequired"
     case fatal = "Fatal"
 }
 
-struct CoreErrorMappingSnapshot: Equatable, Sendable {
+struct CoreErrorMappingSnapshot: Equatable {
     var kind: CoreErrorKindSnapshot
     var userMessage: String
     var severity: CoreErrorSeveritySnapshot
@@ -172,37 +172,39 @@ func mapCoreErrorFromCore(_ error: CoreError) -> ErrorMapping {
 }
 
 private extension ErrorMappingInput {
+    // swiftlint:disable:next cyclomatic_complexity
     init(coreError: CoreError) {
         switch coreError {
-        case .Io(let message):
+        case let .Io(message):
             self.init(kind: .io, path: nil, reason: nil, message: message)
-        case .Db(let message):
+        case let .Db(message):
             self.init(kind: .db, path: nil, reason: nil, message: message)
-        case .Config(let reason):
+        case let .Config(reason):
             self.init(kind: .config, path: nil, reason: reason, message: nil)
-        case .Classify(let reason):
+        case let .Classify(reason):
             self.init(kind: .classify, path: nil, reason: reason, message: nil)
-        case .Conflict(let path):
+        case let .Conflict(path):
             self.init(kind: .conflict, path: path, reason: nil, message: nil)
-        case .DuplicateFile(let existingPath):
+        case let .DuplicateFile(existingPath):
             self.init(kind: .duplicateFile, path: existingPath, reason: nil, message: nil)
-        case .FileNotFound(let path):
+        case let .FileNotFound(path):
             self.init(kind: .fileNotFound, path: path, reason: nil, message: nil)
-        case .RepoNotInitialized(let path):
+        case let .RepoNotInitialized(path):
             self.init(kind: .repoNotInitialized, path: path, reason: nil, message: nil)
-        case .InvalidPath(let path):
+        case let .InvalidPath(path):
             self.init(kind: .invalidPath, path: path, reason: nil, message: nil)
-        case .ICloudPlaceholder(let path):
+        case let .ICloudPlaceholder(path):
             self.init(kind: .iCloudPlaceholder, path: path, reason: nil, message: nil)
-        case .PermissionDenied(let path):
+        case let .PermissionDenied(path):
             self.init(kind: .permissionDenied, path: path, reason: nil, message: nil)
-        case .Internal(let message):
-            self.init(kind: .`internal`, path: nil, reason: nil, message: message)
+        case let .Internal(message):
+            self.init(kind: .internal, path: nil, reason: nil, message: message)
         }
     }
 }
 
 private extension CoreErrorKindSnapshot {
+    // swiftlint:disable:next cyclomatic_complexity
     init(coreKind: ErrorKind) {
         switch coreKind {
         case .io: self = .io
@@ -216,7 +218,7 @@ private extension CoreErrorKindSnapshot {
         case .invalidPath: self = .invalidPath
         case .iCloudPlaceholder: self = .iCloudPlaceholder
         case .permissionDenied: self = .permissionDenied
-        case .`internal`: self = .`internal`
+        case .internal: self = .internal
         }
     }
 }
@@ -243,7 +245,7 @@ private extension CoreErrorRecoverabilitySnapshot {
     }
 }
 
-struct CoreBridgePlaceholderState: Equatable, Sendable {
+struct CoreBridgePlaceholderState: Equatable {
     let statusLabel: String
     let generatedBindingsPath: String
     let coreLibraryStatus: String
@@ -261,7 +263,7 @@ struct CoreBridgePlaceholderState: Equatable, Sendable {
     )
 }
 
-enum CoreBridgeError: Error, Equatable, LocalizedError, Sendable {
+enum CoreBridgeError: Error, Equatable, LocalizedError {
     case generatedBindingsUnavailable(
         boundary: CoreBridgeBoundary,
         state: CoreBridgePlaceholderState
@@ -269,8 +271,8 @@ enum CoreBridgeError: Error, Equatable, LocalizedError, Sendable {
 
     var errorDescription: String? {
         switch self {
-        case .generatedBindingsUnavailable(let boundary, let state):
-            return "\(state.statusLabel): \(boundary.rawValue) requires generated UniFFI bindings."
+        case let .generatedBindingsUnavailable(boundary, state):
+            "\(state.statusLabel): \(boundary.rawValue) requires generated UniFFI bindings."
         }
     }
 }
@@ -304,7 +306,7 @@ struct SQLiteExistingRepositoryMetadataReader: ExistingRepositoryMetadataReading
 
     private static let openFlags: [Int32] = [
         SQLITE_OPEN_READONLY,
-        SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE,
+        SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE
     ]
 
     private static func readMetadata(database: OpaquePointer) throws -> ExistingRepositoryMetadataSnapshot {

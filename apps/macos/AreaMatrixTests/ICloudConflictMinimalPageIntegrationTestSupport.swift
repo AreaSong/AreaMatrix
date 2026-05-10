@@ -1,7 +1,7 @@
-import Foundation
 @testable import AreaMatrix
+import Foundation
 
-enum S125OutOfScopeAction: Equatable, Sendable {
+enum S125OutOfScopeAction: Equatable {
     case rename
     case delete
     case removeIndex
@@ -27,27 +27,27 @@ actor S125RecordingMainCore: CoreFileListing,
         filesByID = Dictionary(uniqueKeysWithValues: files.map { ($0.id, $0) })
     }
 
-    func listFiles(repoPath: String, filter: FileFilterSnapshot) async throws -> [FileEntrySnapshot] {
+    func listFiles(repoPath _: String, filter _: FileFilterSnapshot) async throws -> [FileEntrySnapshot] {
         Array(filesByID.values).sorted { $0.id < $1.id }
     }
 
-    func getFile(repoPath: String, fileID: Int64) async throws -> FileEntrySnapshot {
+    func getFile(repoPath _: String, fileID: Int64) async throws -> FileEntrySnapshot {
         guard let file = filesByID[fileID] else {
             throw CoreError.FileNotFound(path: "\(fileID)")
         }
         return file
     }
 
-    func renameFile(repoPath: String, fileID: Int64, newName: String) async throws -> FileEntrySnapshot {
+    func renameFile(repoPath: String, fileID: Int64, newName _: String) async throws -> FileEntrySnapshot {
         outOfScopeActions.append(.rename)
         return try await getFile(repoPath: repoPath, fileID: fileID)
     }
 
-    func deleteFile(repoPath: String, fileID: Int64) async throws {
+    func deleteFile(repoPath _: String, fileID _: Int64) async throws {
         outOfScopeActions.append(.delete)
     }
 
-    func removeIndexEntry(repoPath: String, fileID: Int64) async throws {
+    func removeIndexEntry(repoPath _: String, fileID _: Int64) async throws {
         outOfScopeActions.append(.removeIndex)
     }
 
@@ -72,36 +72,41 @@ actor S125RecordingMainCore: CoreFileListing,
         )
     }
 
-    func moveToCategory(repoPath: String, fileID: Int64, newCategory: String) async throws -> FileEntrySnapshot {
+    func moveToCategory(repoPath: String, fileID: Int64, newCategory _: String) async throws -> FileEntrySnapshot {
         outOfScopeActions.append(.move)
         return try await getFile(repoPath: repoPath, fileID: fileID)
     }
 
-    func listChanges(repoPath: String, filter: ChangeFilterSnapshot) async throws -> [ChangeLogEntrySnapshot] {
+    func listChanges(repoPath _: String, filter: ChangeFilterSnapshot) async throws -> [ChangeLogEntrySnapshot] {
         outOfScopeActions.append(.listChanges)
         return [.s125ConflictResolved(fileID: filter.fileID)]
     }
 
-    func syncExternalCreated(repoPath: String, relativePath: String, fsEventID: Int64) async throws -> SyncResultSnapshot {
+    func syncExternalCreated(repoPath _: String, relativePath _: String,
+                             fsEventID _: Int64) async throws -> SyncResultSnapshot {
         outOfScopeActions.append(.syncExternalChanges)
         return .s125NoopSyncResult()
     }
 
-    func syncExternalRenamed(repoPath: String, relativePath: String, fsEventID: Int64) async throws -> SyncResultSnapshot {
+    func syncExternalRenamed(repoPath _: String, relativePath _: String,
+                             fsEventID _: Int64) async throws -> SyncResultSnapshot {
         outOfScopeActions.append(.syncExternalChanges)
         return .s125NoopSyncResult()
     }
 
-    func syncExternalRemoved(repoPath: String, relativePath: String, fsEventID: Int64) async throws -> SyncResultSnapshot {
+    func syncExternalRemoved(repoPath _: String, relativePath _: String,
+                             fsEventID _: Int64) async throws -> SyncResultSnapshot {
         outOfScopeActions.append(.syncExternalChanges)
         return .s125NoopSyncResult()
     }
 
-    func getFSEventCursor(repoPath: String) async throws -> Int64? { nil }
+    func getFSEventCursor(repoPath _: String) async throws -> Int64? {
+        nil
+    }
 
-    func setFSEventCursor(repoPath: String, lastEventID: Int64) async throws {}
+    func setFSEventCursor(repoPath _: String, lastEventID _: Int64) async throws {}
 
-    func createDiagnosticsSnapshot(repoPath: String) async throws -> DiagnosticsSnapshotSnapshot {
+    func createDiagnosticsSnapshot(repoPath _: String) async throws -> DiagnosticsSnapshotSnapshot {
         outOfScopeActions.append(.diagnostics)
         return DiagnosticsSnapshotSnapshot(snapshotPath: "", createdAt: 0, warnings: [])
     }
@@ -172,9 +177,11 @@ actor S125RecordingErrorMapper: CoreErrorMapping {
 }
 
 actor S125NoopNoteStore: CoreNoteReadingWriting {
-    func readNote(repoPath: String, fileID: Int64) async throws -> String? { nil }
+    func readNote(repoPath _: String, fileID _: Int64) async throws -> String? {
+        nil
+    }
 
-    func writeNote(repoPath: String, fileID: Int64, contentMarkdown: String) async throws {}
+    func writeNote(repoPath _: String, fileID _: Int64, contentMarkdown _: String) async throws {}
 }
 
 extension SyncResultSnapshot {
@@ -191,7 +198,7 @@ extension SyncResultSnapshot {
 
 extension MainDetailLogState {
     var s125LoadedFileID: Int64? {
-        guard case .loaded(let fileID, _) = self else { return nil }
+        guard case let .loaded(fileID, _) = self else { return nil }
         return fileID
     }
 }
@@ -224,7 +231,7 @@ extension RepositoryOpeningResult {
                         displayName: "docs",
                         fileCount: Int64(files.count),
                         children: []
-                    ),
+                    )
                 ]
             ),
             currentCategoryFiles: files

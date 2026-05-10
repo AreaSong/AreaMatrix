@@ -1,5 +1,5 @@
-import XCTest
 @testable import AreaMatrix
+import XCTest
 
 final class MainListIntegrationFilterTests: XCTestCase {
     func testCurrentListFilterMatchesLoadedFileNamesOnly() {
@@ -21,7 +21,7 @@ final class MainListIntegrationFilterTests: XCTestCase {
                 path: "docs/contracts/budget.xlsx",
                 category: "docs",
                 currentName: "budget.xlsx"
-            ),
+            )
         ]
         let row = RepositoryTreeNodeSnapshot.integrationFilterFixtureTree()
             .sidebarRow(id: "docs/contracts")
@@ -52,7 +52,7 @@ final class MainListIntegrationFilterTests: XCTestCase {
                 path: "docs/references/research.md",
                 category: "docs",
                 currentName: "research.md"
-            ),
+            )
         ]
         let row = RepositoryTreeNodeSnapshot.integrationFilterFixtureTree()
             .sidebarRow(id: "docs")
@@ -103,9 +103,9 @@ private extension RepositoryTreeNodeSnapshot {
                             fileCount: 1,
                             depth: 2,
                             children: []
-                        ),
+                        )
                     ]
-                ),
+                )
             ]
         )
     }
@@ -132,5 +132,90 @@ private extension FileEntrySnapshot {
             importedAt: 1_700_000_000 - id,
             updatedAt: 1_700_000_000
         )
+    }
+}
+
+actor MainListRecordingFileLister: CoreFileListing {
+    enum Result {
+        case success([FileEntrySnapshot])
+        case failure(Error)
+    }
+
+    private var results: [Result]
+    private var requests: [FileFilterSnapshot] = []
+
+    init(results: [Result]) {
+        self.results = results
+    }
+
+    func listFiles(repoPath _: String, filter: FileFilterSnapshot) async throws -> [FileEntrySnapshot] {
+        requests.append(filter)
+        guard !results.isEmpty else { return [] }
+
+        switch results.removeFirst() {
+        case let .success(files):
+            return files
+        case let .failure(error):
+            throw error
+        }
+    }
+
+    func recordedRequests() -> [FileFilterSnapshot] {
+        requests
+    }
+}
+
+struct MainListFileDetailRequest: Equatable {
+    var repoPath: String
+    var fileID: Int64
+}
+
+actor MainListRecordingFileDetailer: CoreFileDetailing {
+    enum Result {
+        case success(FileEntrySnapshot)
+        case failure(Error)
+    }
+
+    private var results: [Result]
+    private var requests: [MainListFileDetailRequest] = []
+
+    init(results: [Result]) {
+        self.results = results
+    }
+
+    func getFile(repoPath: String, fileID: Int64) async throws -> FileEntrySnapshot {
+        requests.append(MainListFileDetailRequest(repoPath: repoPath, fileID: fileID))
+        guard !results.isEmpty else {
+            throw CoreError.FileNotFound(path: "\(fileID)")
+        }
+
+        switch results.removeFirst() {
+        case let .success(file):
+            return file
+        case let .failure(error):
+            throw error
+        }
+    }
+
+    func recordedRequests() -> [MainListFileDetailRequest] {
+        requests
+    }
+}
+
+actor MainListRecordingErrorMapper: CoreErrorMapping {
+    private let mapping: CoreErrorMappingSnapshot
+    private var errors: [CoreError] = []
+
+    init(mapping: CoreErrorMappingSnapshot) {
+        self.mapping = mapping
+    }
+
+    func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
+        errors.append(error)
+        return mapping
+    }
+
+    func recordedErrors() -> [CoreError] {
+        errors
     }
 }

@@ -1,5 +1,5 @@
-import XCTest
 @testable import AreaMatrix
+import XCTest
 
 final class DeleteFilePageFeatureTests: XCTestCase {
     @MainActor
@@ -184,7 +184,7 @@ final class DeleteFilePageFeatureTests: XCTestCase {
     }
 }
 
-private enum DeleteRequest: Equatable, Sendable {
+private enum DeleteRequest: Equatable {
     case delete(repoPath: String, fileID: Int64)
     case removeIndex(repoPath: String, fileID: Int64)
 }
@@ -212,7 +212,9 @@ private actor DeleteRecordingDeleter: CoreFileDeleting {
         try removeIndexResult.get()
     }
 
-    func recordedRequests() -> [DeleteRequest] { requests }
+    func recordedRequests() -> [DeleteRequest] {
+        requests
+    }
 }
 
 extension FileEntrySnapshot {

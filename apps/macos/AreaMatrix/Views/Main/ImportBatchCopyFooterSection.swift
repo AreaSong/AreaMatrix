@@ -2,8 +2,8 @@ import SwiftUI
 
 struct ImportBatchCopyFooterSection: View {
     let request: ImportEntryRequest
-    let batchPreviewModel: ImportBatchPreviewModel
-    let batchImportModel: ImportBatchCopyImportModel
+    @ObservedObject var batchPreviewModel: ImportBatchPreviewModel
+    @ObservedObject var batchImportModel: ImportBatchCopyImportModel
     let onCancel: () -> Void
     let onImportProgress: ImportBatchProgressHandler
     let onImportFailed: ImportBatchFailureHandler

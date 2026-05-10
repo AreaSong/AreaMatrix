@@ -1,5 +1,5 @@
-import XCTest
 @testable import AreaMatrix
+import XCTest
 
 final class ValidatePathErrorMappingTests: XCTestCase {
     @MainActor

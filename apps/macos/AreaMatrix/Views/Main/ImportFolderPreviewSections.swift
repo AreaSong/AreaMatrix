@@ -344,8 +344,8 @@ struct ImportFolderFooterSection: View {
             Button("Import Folder") {
                 Task { await importFolder() }
             }
-                .keyboardShortcut(.defaultAction)
-                .disabled(importDisabledReason != nil)
+            .keyboardShortcut(.defaultAction)
+            .disabled(importDisabledReason != nil)
         }
     }
 

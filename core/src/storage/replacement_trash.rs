@@ -97,6 +97,10 @@ impl Drop for ReplacementFileGuard {
 }
 
 pub(super) fn send_to_system_trash(path: &Path) -> CoreResult<()> {
+    if std::env::var_os("AREAMATRIX_TEST_FORCE_USER_TRASH").is_some() {
+        return move_to_user_trash(path);
+    }
+
     match trash::delete(path) {
         Ok(()) => Ok(()),
         Err(error) => {

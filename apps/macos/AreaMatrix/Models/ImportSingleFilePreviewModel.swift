@@ -9,18 +9,20 @@ final class ImportSingleFilePreviewModel: ObservableObject {
     @Published private(set) var importStatus: ImportSingleFileImportStatus = .idle
     @Published private(set) var preflightStatus: ImportSingleFilePreflightStatus = .idle
     @Published private(set) var isICloudDownloading = false
-    @Published var duplicateResolution: ImportSingleFileDuplicateResolutionStrategy = .skip
+    @Published var duplicateResolution: SingleFileDuplicateResolutionStrategy = .skip
     @Published var nameConflictResolution: ImportSingleFileNameConflictResolution = .keepBoth
     @Published private(set) var isReplaceConfirmed = false
-    @Published private(set) var pendingReplaceConfirmation: ImportSingleFileReplaceConfirmationContext?
+    @Published private(set) var pendingReplaceConfirmation: SingleFileReplaceConfirmationContext?
     @Published private(set) var replaceConfirmationErrorMessage: String?
     @Published private(set) var replaceConfirmationDiagnosticsMessage: String?
     @Published var selectedCategory = "inbox" {
         didSet { schedulePreflightForCurrentEdits() }
     }
+
     @Published var suggestedName = "" {
         didSet { schedulePreflightForCurrentEdits() }
     }
+
     @Published var selectedStorageMode: ImportSingleFileStorageMode = .copy
 
     private let predictor: any CoreCategoryPredicting
@@ -152,11 +154,11 @@ extension ImportSingleFilePreviewModel {
             )
             importStatus = .imported(entry)
             return entry
-        } catch CoreError.DuplicateFile(let existingPath) {
+        } catch let CoreError.DuplicateFile(existingPath) {
             applyDuplicateConflict(existingPath: existingPath)
             return nil
         } catch {
-            importStatus = .failed(await mapImportError(error))
+            importStatus = await .failed(mapImportError(error))
             return nil
         }
     }
@@ -232,10 +234,10 @@ private extension ImportSingleFilePreviewModel {
     private func isImportablePreflightResult(_ result: ImportSingleFilePreflightResult) -> Bool {
         switch result.conflict {
         case .none, .duplicate, .name:
-            return true
+            true
         case .invalidFilename, .iCloudPlaceholder, .iCloudDownloadFailed, .corePreviewUnavailable,
              .sourceUnavailable, .error:
-            return false
+            false
         }
     }
 
@@ -287,9 +289,9 @@ private extension ImportSingleFilePreviewModel {
         }
 
         switch coreError {
-        case .Config(let reason):
+        case let .Config(reason):
             return "分类规则无效：\(reason)"
-        case .Classify(let reason):
+        case let .Classify(reason):
             return "无法预览分类：\(reason)"
         default:
             return "无法预览分类"
@@ -327,6 +329,7 @@ private extension ImportSingleFilePreviewModel {
         selectedCategory = request.explicitCategory ?? "inbox"
         suggestedName = sourceURL.lastPathComponent
     }
+
     private func resetDuplicateResolutionForPreflight() {
         duplicateResolution = .skip
     }
@@ -365,7 +368,7 @@ extension ImportSingleFilePreviewModel {
         importStatus = .blocked(message)
     }
 
-    func setPendingReplaceConfirmation(_ context: ImportSingleFileReplaceConfirmationContext?) {
+    func setPendingReplaceConfirmation(_ context: SingleFileReplaceConfirmationContext?) {
         pendingReplaceConfirmation = context
     }
 
@@ -377,7 +380,7 @@ extension ImportSingleFilePreviewModel {
     func collectReplaceConfirmationDiagnostics() {
         replaceConfirmationDiagnosticsMessage = [
             "Diagnostics collected for replace confirmation state.",
-            "No user file contents included.",
+            "No user file contents included."
         ].joined(separator: " ")
     }
 
@@ -407,7 +410,7 @@ extension ImportSingleFilePreviewModel {
 
 private extension ImportEntryRequest {
     var explicitCategory: String? {
-        guard case .category(let slug) = destination else { return nil }
+        guard case let .category(slug) = destination else { return nil }
         return slug
     }
 }

@@ -1,6 +1,6 @@
 import Foundation
 
-struct ImportSingleFileSource: Equatable, Sendable {
+struct ImportSingleFileSource: Equatable {
     var fileName: String
     var sourcePath: String
     var sizeBytes: Int64?
@@ -12,7 +12,7 @@ struct ImportSingleFileSource: Equatable, Sendable {
     }
 }
 
-enum ImportSingleFilePreviewStatus: Equatable, Sendable {
+enum ImportSingleFilePreviewStatus: Equatable {
     case idle
     case loading
     case ready
@@ -27,18 +27,18 @@ enum ImportSingleFilePreviewStatus: Equatable, Sendable {
     var message: String? {
         switch self {
         case .idle:
-            return nil
+            nil
         case .loading:
-            return "正在预览分类..."
+            "正在预览分类..."
         case .ready:
-            return "分类预览完成"
-        case .failed(let message), .unsupported(let message):
-            return message
+            "分类预览完成"
+        case let .failed(message), let .unsupported(message):
+            message
         }
     }
 }
 
-enum ImportSingleFileImportStatus: Equatable, Sendable {
+enum ImportSingleFileImportStatus: Equatable {
     case idle
     case importing(ImportSingleFileStorageMode)
     case imported(FileEntrySnapshot)
@@ -54,27 +54,29 @@ enum ImportSingleFileImportStatus: Equatable, Sendable {
     var message: String? {
         switch self {
         case .idle:
-            return nil
-        case .importing(let mode):
-            return mode.importingMessage
-        case .imported(let entry):
-            return "已导入：\(entry.currentName)"
-        case .failed(let mapping):
-            return mapping.userMessage
-        case .blocked(let message):
-            return message
-        case .skippedDuplicate(let existingPath):
-            return "已跳过重复文件：\(existingPath)"
+            nil
+        case let .importing(mode):
+            mode.importingMessage
+        case let .imported(entry):
+            "已导入：\(entry.currentName)"
+        case let .failed(mapping):
+            mapping.userMessage
+        case let .blocked(message):
+            message
+        case let .skippedDuplicate(existingPath):
+            "已跳过重复文件：\(existingPath)"
         }
     }
 }
 
-enum ImportSingleFileStorageMode: String, CaseIterable, Equatable, Identifiable, Sendable {
+enum ImportSingleFileStorageMode: String, CaseIterable, Codable, Equatable, Identifiable {
     case copy = "Copy"
     case move = "Move"
     case indexOnly = "Index-only"
 
-    var id: String { rawValue }
+    var id: String {
+        rawValue
+    }
 
     init(coreSnapshotValue: String) {
         switch coreSnapshotValue {
@@ -90,34 +92,33 @@ enum ImportSingleFileStorageMode: String, CaseIterable, Equatable, Identifiable,
     var explanation: String {
         switch self {
         case .copy:
-            return "保留原文件，复制到 AreaMatrix 资料库。"
+            "保留原文件，复制到 AreaMatrix 资料库。"
         case .move:
-            return "源文件会从原位置移走，并安全写入 AreaMatrix 资料库。"
+            "源文件会从原位置移走，并安全写入 AreaMatrix 资料库。"
         case .indexOnly:
-            return "不复制，只记录引用路径；源文件移动后会缺失。"
+            "不复制，只记录引用路径；源文件移动后会缺失。"
         }
     }
 
     var importingMessage: String {
         switch self {
         case .copy:
-            return "正在复制导入..."
+            "正在复制导入..."
         case .move:
-            return "正在移动导入..."
+            "正在移动导入..."
         case .indexOnly:
-            return "正在写入索引..."
+            "正在写入索引..."
         }
     }
 
     var importingBlockingMessage: String {
         switch self {
         case .copy:
-            return "正在复制导入"
+            "正在复制导入"
         case .move:
-            return "正在移动导入"
+            "正在移动导入"
         case .indexOnly:
-            return "正在写入索引"
+            "正在写入索引"
         }
     }
-
 }

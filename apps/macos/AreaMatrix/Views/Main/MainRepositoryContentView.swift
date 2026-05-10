@@ -1,7 +1,7 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
-enum MainRepositoryContentState: Equatable, Sendable {
+enum MainRepositoryContentState: Equatable {
     case empty
     case list
 }
@@ -33,9 +33,11 @@ struct MainRepositoryContentView: View {
     @StateObject private var dropPreviewModel: ImportDropPreviewModel
     @StateObject var detailNoteModel: DetailNoteModel
     @State private var tableSortOrder: [KeyPathComparator<FileEntrySnapshot>] = [
-        KeyPathComparator(\FileEntrySnapshot.importedAt, order: .reverse),
+        KeyPathComparator(\FileEntrySnapshot.importedAt, order: .reverse)
     ]
+}
 
+extension MainRepositoryContentView {
     var body: some View {
         VStack(spacing: 0) {
             toolbar
@@ -325,7 +327,7 @@ struct MainRepositoryContentView: View {
             fileTableContent
         }
         .overlay {
-            if !fileListModel.isLoading && visibleFiles.isEmpty && importProgressRows.isEmpty {
+            if !fileListModel.isLoading, visibleFiles.isEmpty, importProgressRows.isEmpty {
                 Text("No files in this category")
                     .foregroundStyle(.secondary)
             }
@@ -381,8 +383,8 @@ struct MainRepositoryContentView: View {
 
     @ViewBuilder
     private var statusBanner: some View {
-            if let banner = fileListModel.statusBanner {
-                HStack(spacing: 10) {
+        if let banner = fileListModel.statusBanner {
+            HStack(spacing: 10) {
                 Label(banner.message, systemImage: banner.systemImage)
                     .font(.callout)
                 Spacer()

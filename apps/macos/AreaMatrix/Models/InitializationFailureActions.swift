@@ -1,6 +1,6 @@
 import Foundation
 
-enum InitializationDiagnosticsState: Equatable, Sendable {
+enum InitializationDiagnosticsState: Equatable {
     case idle
     case confirmingPrivacy
     case collecting
@@ -11,11 +11,10 @@ enum InitializationDiagnosticsState: Equatable, Sendable {
 extension OnboardingModel {
     @MainActor
     func routeInitializationFailure(_ error: Error, repoPath: String) async {
-        let retryDraft: RepositoryInitializationDraft?
-        if case .initializing(let draft) = route {
-            retryDraft = draft
+        let retryDraft: RepositoryInitializationDraft? = if case let .initializing(draft) = route {
+            draft
         } else {
-            retryDraft = nil
+            nil
         }
 
         guard let coreError = error as? CoreError else {
@@ -29,7 +28,7 @@ extension OnboardingModel {
 
     @MainActor
     func retryFailedInitialization() async {
-        guard case .initializationFailed(_, _, let retryDraft?) = route else {
+        guard case let .initializationFailed(_, _, retryDraft?) = route else {
             return
         }
 
@@ -56,18 +55,18 @@ extension OnboardingModel {
 
     @MainActor
     func collectInitializationDiagnostics() async {
-        guard case .initializationFailed(let repoPath, _, _) = route else { return }
+        guard case let .initializationFailed(repoPath, _, _) = route else { return }
 
         initializationDiagnostics = .collecting
         do {
             let snapshot = try await diagnosticsCollector.createDiagnosticsSnapshot(repoPath: repoPath)
-            guard case .initializationFailed(let currentRepoPath, _, _) = route,
+            guard case let .initializationFailed(currentRepoPath, _, _) = route,
                   currentRepoPath == repoPath else { return }
             initializationDiagnostics = .collected(snapshot)
         } catch {
-            guard case .initializationFailed(let currentRepoPath, _, _) = route,
+            guard case let .initializationFailed(currentRepoPath, _, _) = route,
                   currentRepoPath == repoPath else { return }
-            initializationDiagnostics = .failed(await diagnosticsFailureMapping(for: error))
+            initializationDiagnostics = await .failed(diagnosticsFailureMapping(for: error))
         }
     }
 

@@ -1,6 +1,6 @@
+@testable import AreaMatrix
 import Foundation
 import XCTest
-@testable import AreaMatrix
 
 extension ClassifyResultSnapshot {
     static func s117Fixture() -> ClassifyResultSnapshot {
@@ -135,32 +135,33 @@ extension CoreErrorMappingSnapshot {
         )
     }
 
+    // swiftlint:disable:next cyclomatic_complexity
     private static func importErrorMessage(for kind: CoreErrorKindSnapshot) -> String {
         switch kind {
         case .duplicateFile:
-            return "检测到重复文件"
+            "检测到重复文件"
         case .invalidPath:
-            return "路径无效"
+            "路径无效"
         case .permissionDenied:
-            return "无访问权限"
+            "无访问权限"
         case .iCloudPlaceholder:
-            return "iCloud 文件尚未下载"
+            "iCloud 文件尚未下载"
         case .io:
-            return "文件读写失败"
+            "文件读写失败"
         case .db:
-            return "数据库错误"
+            "数据库错误"
         case .fileNotFound:
-            return "文件不存在"
+            "文件不存在"
         case .config:
-            return "配置不可用"
+            "配置不可用"
         case .classify:
-            return "分类失败"
+            "分类失败"
         case .conflict:
-            return "命名冲突未解决"
+            "命名冲突未解决"
         case .repoNotInitialized:
-            return "资料库尚未初始化"
+            "资料库尚未初始化"
         case .internal:
-            return "内部错误"
+            "内部错误"
         }
     }
 }
@@ -169,11 +170,11 @@ extension ImportSingleFileStorageMode {
     var coreStorageMode: String {
         switch self {
         case .copy:
-            return "Copied"
+            "Copied"
         case .move:
-            return "Moved"
+            "Moved"
         case .indexOnly:
-            return "Indexed"
+            "Indexed"
         }
     }
 }
@@ -205,7 +206,7 @@ extension RepositoryOpeningResult {
                         displayName: "finance",
                         fileCount: 0,
                         children: []
-                    ),
+                    )
                 ]
             ),
             currentCategoryFiles: []
@@ -226,11 +227,69 @@ func waitForImportSingleFilePreflightToSettle(
     file: StaticString = #filePath,
     line: UInt = #line
 ) async {
-    for _ in 0..<100 {
+    for _ in 0 ..< 100 {
         if !model.preflightStatus.isChecking {
             return
         }
         await Task.yield()
     }
     XCTFail("Timed out waiting for import preflight to settle", file: file, line: line)
+}
+
+@MainActor
+func importS117Mode(
+    model: ImportSingleFilePreviewModel,
+    request: ImportEntryRequest,
+    mode: ImportSingleFileStorageMode,
+    name: String,
+    storageMode: String
+) async {
+    if mode != .copy {
+        await model.load(request: request)
+    }
+    model.selectedCategory = " finance "
+    model.selectedStorageMode = mode
+    model.suggestedName = " \(name) "
+    await waitForImportSingleFilePreflightToSettle(model)
+    let imported = await model.importSelectedFile()
+    XCTAssertEqual(imported?.storageMode, storageMode)
+}
+
+func s117CoreCapabilityRequest() -> ImportEntryRequest {
+    ImportEntryRequest(
+        repoPath: "/tmp/repo",
+        source: .filePicker,
+        destination: .autoClassify,
+        urls: [URL(fileURLWithPath: "/tmp/合同.pdf")],
+        kind: .singleFile
+    )
+}
+
+func s117CoreCapabilityPrediction() -> ClassifyResultSnapshot {
+    ClassifyResultSnapshot(
+        category: "docs",
+        suggestedName: "2026Q1_合同.pdf",
+        reason: .keyword,
+        confidence: 0.93
+    )
+}
+
+func s117CoreCapabilityImportRequests() -> [S117ImportRequest] {
+    [
+        s117ImportRequest(mode: .copy, filename: "copy.pdf"),
+        s117ImportRequest(mode: .move, filename: "move.pdf"),
+        s117ImportRequest(mode: .indexOnly, filename: "indexed.pdf")
+    ]
+}
+
+func s117ImportRequest(
+    mode: ImportSingleFileStorageMode,
+    filename: String
+) -> S117ImportRequest {
+    S117ImportRequest(
+        mode: mode,
+        overrideCategory: "finance",
+        overrideFilename: filename,
+        duplicateStrategy: .ask
+    )
 }

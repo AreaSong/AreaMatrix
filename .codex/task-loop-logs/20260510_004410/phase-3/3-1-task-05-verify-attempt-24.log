@@ -1,0 +1,87 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`3-1/task-05`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-3/3-1-stability-release/task-05-stage1-integration-verify.md`
+- Manifest：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-3.md:139`
+- Exact Docs / Existing Code / Expected New Paths / Forbidden Touches 均已按本次只读验收范围核查。
+
+三、完成度摘要
+
+- 已覆盖项数：7/7 个核对清单项已验收
+- 未覆盖项数：0
+- 通过项数：3
+- 不通过项数：4
+- 阻塞项数：5 个 P1 release blocker
+
+四、逐项验收结果
+
+- 项目：读取 Stage 1 roadmap、control map、Core/UX/testing/release 文档  
+  结果：通过  
+  证据：Exact Docs 6/6 存在并已读；Stage 1 最终标准包含功能、稳定性、质量、文档、发布工具链要求。涉及 `docs/roadmap/stage-1-mvp.md:256`、`docs/development/release.md:32`、`docs/development/testing.md:272`。
+
+- 项目：按 control map 核对 Real Core 页面  
+  结果：通过  
+  证据：`python3 tasks/prompts/_shared/prompt_pipeline.py audit --pages` 输出 S1-01..S1-37 均为 `OK`，Missing 为 `None`；`CoreBridge().state` 为 `.generatedBindings`，见 `apps/macos/AreaMatrix/Bridge/CoreBridge.swift:157`。涉及 `docs/architecture/mvp-control-map.md:14`。
+
+- 项目：核对 Phase 1 Core 与 Phase 2 UI integration verify  
+  结果：通过但不能放行最终任务  
+  证据：page/core coverage audit 无缺口；`progress.json` 显示 `3-1/task-01` 到 `3-1/task-04` completed，`3-1/task-05` 仍 `in_progress`。涉及 `tasks/prompts/_shared/progress.json:6841`、`:6912`、`:6938`。
+
+- 项目：核对 `3-1/task-01` 到 `3-1/task-04` 稳定/发布证据  
+  结果：不通过  
+  证据：前置 task 产物存在，但 release checklist 明确写“最终集成验收：不放行”，并记录 P1 阻断项。涉及 `docs/development/stage-1-release-checklist.md:11`、`:13`、`:64`。
+
+- 项目：运行最终自动化综合门禁并记录 release 证据  
+  结果：不通过  
+  证据：`./dev check all` 本次退出码 1，失败于 SwiftFormat：`199/224 files require formatting, 3 files skipped`。手工冒烟、性能真实 `.app` 首屏、签名、公证、DMG、干净 Mac 首启仍缺证据。涉及 `docs/development/stage-1-release-checklist.md:42`、`:45`、`:57`。
+
+- 项目：P0/P1 风险关闭状态  
+  结果：不通过  
+  证据：当前仍有 P1-RL-001..005；release checklist 明确任一 P0/P1 未关闭不得放行。涉及 `docs/development/stage-1-release-checklist.md:68`、`:76`。
+
+- 项目：Forbidden Touches  
+  结果：通过  
+  证据：`git diff --name-only -- core/src core/area_matrix.udl apps/macos/AreaMatrix apps/macos/AreaMatrix.xcodeproj` 无输出；同范围 untracked 检查无输出。未发现当前 task 触碰 forbidden paths。
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过。自动化测试覆盖较广，但 `./dev check all` 被 SwiftFormat gate 阻断，代表当前代码风格门禁未满足长期维护标准。
+- 注释 / rustdoc / 文档同步：不通过。发布文档已诚实记录阻断，但 completion standard 要求 release/testing 证据通过；当前文档结论本身是不放行。
+- 错误处理与边界处理：不通过。恢复自动化证据存在，但 M-01..M-04 真实 macOS/iCloud/TCC/DB repair 手工证据仍 pending，不能证明高风险边界。
+- 测试与验证覆盖：不通过。`doctor`、`git diff --check` 通过；`./dev check all` 失败；手工冒烟、签名、公证、DMG、干净 Mac 首启缺失。
+- 占位、硬编码、mock-only、一次性实现检查：通过。未发现 Real Core 页面用 mock-only 冒充最终闭环；但 release 证据缺口仍直接阻断本任务。
+
+六、阻塞项
+
+- P1-RL-001：真实 Release `.app` 启动到首屏证据缺失。  
+  路径：[stage-1-performance-baseline.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-performance-baseline.md:88)。原因：Stage 1 要求启动 `< 1.5s`，当前只有 hostless surrogate，真实 `.app` launch 为 BLOCKED。
+
+- P1-RL-002：M-01..M-04 手工恢复冒烟 pending。  
+  路径：[recovery-scenarios.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/recovery-scenarios.md:92)。原因：import 中断、iCloud placeholder、TCC 权限、DB repair 真实系统边界未采集发布日志。
+
+- P1-RL-003：Developer ID 签名、公证、DMG、干净 Mac 首启证据缺失。  
+  路径：[stage-1-release-checklist.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-release-checklist.md:70)。原因：没有可分发 alpha 包的 Gatekeeper/notary/DMG/clean launch 证据。
+
+- P1-RL-004：CHANGELOG / 版本发布切面未完成。  
+  路径：[stage-1-release-checklist.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-release-checklist.md:71)。原因：`CHANGELOG.md` 仍是 `[Unreleased]`，tag/release notes/build number 未完成。
+
+- P1-RL-005：`./dev check all` 未通过。  
+  路径：[stage-1-release-checklist.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-release-checklist.md:72)；代表性失败文件包括 `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/StartupRecoveryErrorRecoveryView.swift:47`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/DeleteFileConfirmSheet.swift:56`。原因：SwiftFormat 当前失败，产品和测试代码存在格式门禁违规。
+
+七、验证情况
+
+- 已运行：`python3 tasks/prompts/_shared/prompt_pipeline.py doctor`，通过。
+- 已运行：`python3 tasks/prompts/_shared/prompt_pipeline.py audit --pages`，通过，S1 页面和 Core prompt coverage 无缺口。
+- 已运行：`git diff --check`，通过。
+- 已运行：`./dev check all`，失败，退出码 1；失败点为 SwiftFormat。
+- 缺失：真实手工冒烟、Developer ID 签名、公证、DMG checksum/签名/公证、干净 Mac 首启、非 sandbox 真实 `.app` 首屏启动证据。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。核心原因不是缺少文档，而是 release checklist 与实际验证同时证明 Stage 1 仍不可放行；根据“无法证明通过，就判定不通过”，本 task 必须 FAIL。
+
+VERIFY_RESULT: FAIL

@@ -140,19 +140,19 @@ struct MainRepoErrorView: View {
     @ViewBuilder
     private var externalRemovalStatus: some View {
         switch externalRemoval {
-        case .idle(let path):
+        case let .idle(path):
             Text("External removal candidate: \(path)")
                 .font(.callout)
                 .foregroundStyle(.secondary)
-        case .syncing(let path):
+        case let .syncing(path):
             Text("Syncing external removal: \(path)")
                 .font(.callout)
                 .foregroundStyle(.secondary)
-        case .synced(let result):
+        case let .synced(result):
             Text("External removals synced: \(result.detectedDeletes)")
                 .font(.callout)
                 .foregroundStyle(.secondary)
-        case .failed(let mapping):
+        case let .failed(mapping):
             Text("External removal sync failed: \(mapping.userMessage)")
                 .font(.callout)
                 .foregroundStyle(.secondary)
@@ -209,7 +209,7 @@ struct MainRepoErrorView: View {
             Label("Preparing redacted diagnostics...", systemImage: "arrow.clockwise")
                 .font(.callout)
                 .foregroundStyle(.secondary)
-        case .collected(let snapshot):
+        case let .collected(snapshot):
             VStack(alignment: .leading, spacing: 4) {
                 Label("Diagnostics collected", systemImage: "doc.badge.gearshape")
                 Text(snapshot.snapshotPath)
@@ -221,7 +221,7 @@ struct MainRepoErrorView: View {
                         .foregroundStyle(.secondary)
                 }
             }
-        case .failed(let mapping):
+        case let .failed(mapping):
             Text("Diagnostics failed: \(mapping.userMessage)")
                 .font(.callout)
                 .foregroundStyle(.secondary)
@@ -235,11 +235,11 @@ struct MainRepoErrorView: View {
     private var primaryAction: () -> Void {
         switch presentation.primaryAction {
         case .openRepair:
-            return onOpenRepair
+            onOpenRepair
         case .reconnectFolder:
-            return onReconnectFolder
+            onReconnectFolder
         case .retry, .downloadAndRetry:
-            return onRetry
+            onRetry
         }
     }
 

@@ -1,0 +1,42 @@
+一、执行结论
+
+- **未完成**。
+- 原因不是 prompt 缺失，而是 Stage 1 release gate 仍有 P1 阻断，且本轮 `./dev check all` 实际仍失败在 SwiftFormat。由于失败覆盖 `apps/macos/AreaMatrix/**`，该路径是本 task 的 Forbidden Touches，不能在 `3-1/task-05` 内合法修产品 Swift 格式债。
+
+二、执行范围
+
+- 单任务：`3-1/task-05`
+- 本轮未新增产品实现修改。
+- 未触碰 Forbidden Touches；复核命令 `git diff --name-only -- core/src core/area_matrix.udl apps/macos/AreaMatrix apps/macos/AreaMatrix.xcodeproj` 无输出。
+- 当前 worktree 仍有上轮/任务循环留下的允许范围改动与 evidence 文件，主要在 `core/tests/**`、`apps/macos/AreaMatrixTests/**`、`scripts/**`、`docs/development/**`、`.codex/task-loop-*`。
+
+三、完成情况
+
+- Exact Docs 已逐个读取并交叉核对。
+- Real Core 页面未发现用 mock 伪装通过；生产默认注入 `CoreBridge()`，见 [AppShellModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/AppShellModel.swift:89) 和 [MainRepositoryContentView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift:188)。
+- Control map 要求 Real Core 页面不得 mock，见 [mvp-control-map.md](/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:7)。
+- 仍不通过的关键证据：release checklist 明确“不放行”，见 [stage-1-release-checklist.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-release-checklist.md:11)，并列出 P1-RL-001..005，见 [stage-1-release-checklist.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-release-checklist.md:68)。
+
+四、工程质量
+
+- 没有引入 mock-only、硬编码通过态或降低 release gate。
+- 未修改产品 Swift、Core API、UDL 或 Xcode project。
+- 工程质量仍被 Swift style debt 阻断：release checklist 已记录 SwiftFormat `199/224` 和 SwiftLint `239 serious violations`，且产品路径在本 task 禁止触碰，见 [stage-1-release-checklist.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-release-checklist.md:42)。
+
+五、验证情况
+
+- `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`：通过，`tasks: 637`，`manifests: 637`。
+- `git diff --check`：通过。
+- `./dev check all`：失败；governance、skills、task-loop、prompt doctor、diff check、Rust fmt/clippy/test、macOS prerequisite、universal Core build、macOS XCTest 均已推进到 Swift style gate，最终 SwiftFormat 失败。
+- 单独复跑 SwiftFormat：失败，`199/224 files require formatting, 3 files skipped`。
+- 单独复跑 SwiftLint：失败，`239 violations, 239 serious in 226 files`。
+- `PYTHONPYCACHEPREFIX=/private/tmp/areamatrix-pycache python3 -m py_compile scripts/task_loop/*.py scripts/dev_tools/*.py`：通过。
+- `python3 -m unittest scripts.dev_tools.test_build_tools`：通过，9 tests。
+
+六、风险与后续
+
+- 剩余 P1：真实 Release `.app` 首屏启动证据、M-01..M-04 手工恢复冒烟、Developer ID 签名/公证/DMG/干净 Mac 首启、CHANGELOG/tag/build number、SwiftFormat/SwiftLint。
+- 建议下一个任务必须回到 Phase 2 / release-hardening 范围，允许修 `apps/macos/AreaMatrix/**` 和测试 style debt；随后在非 Codex sandbox 的 macOS 桌面会话或 CI runner 补真实 release launch、签名、公证、DMG 和干净机首启证据。
+
+我参考了本地记忆来确认 task-loop repair retry 与 verify 失败回灌语义；本次判定来自当前仓库文件和实际命令输出。
+

@@ -1,0 +1,46 @@
+一、执行结论
+
+- 未完成。
+- 原因：`./dev check all` 仍失败，且失败落在 `apps/macos/AreaMatrix/**` 产品 Swift 文件的 SwiftFormat 违规；这些路径是 `3-1/task-05` 的 `Forbidden Touches`，本任务不能格式化或改产品实现。
+
+二、执行范围
+
+本轮只补了发布门禁证据与锁定测试：
+
+- [stage-1-release-checklist.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-release-checklist.md:42)：记录当前 SwiftFormat `199/224`、SwiftLint `239 serious violations`。
+- [stage1_release_checklist.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/stage1_release_checklist.rs:71)：锁定上述 release blocker 证据。
+
+Forbidden Touches 核对：`git diff --name-only -- core/src core/area_matrix.udl apps/macos/AreaMatrix apps/macos/AreaMatrix.xcodeproj` 无输出，未触碰禁止路径。
+
+三、完成情况
+
+- Exact Docs、manifest、共享规则、工程质量规则、编码规范已读取并交叉核对。
+- Real Core 自动化证据可推进到 macOS XCTest / CoreBridge 集成层。
+- `3-1/task-01` 到 `3-1/task-04` 发布证据仍显示 release 阻断。
+- P1-RL-001..P1-RL-005 仍未关闭：真实 `.app` 首屏、手工恢复冒烟、签名/公证/DMG/干净 Mac、CHANGELOG release 段、check-all 都未满足放行标准。
+- 本任务不能补产品实现，因此最终判定不通过。
+
+四、工程质量
+
+- 没有引入 mock-only、硬编码 PASS 或伪造放行状态；release checklist 明确保持“不放行”。
+- 证据文档现在更精确记录当前 Swift style blocker。
+- 仍存在工程质量阻断：SwiftFormat / SwiftLint 存量违规在产品和测试代码内，需回到 Phase 2 / release-hardening 范围处理。
+
+五、验证情况
+
+通过：
+
+- `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`
+- `git diff --check`
+- `PYTHONPYCACHEPREFIX=/private/tmp/areamatrix-pycache python3 -m py_compile scripts/task_loop/*.py scripts/dev_tools/*.py`
+- `python3 -m unittest scripts.dev_tools.test_build_tools`
+- `cargo test --manifest-path core/Cargo.toml --test stage1_release_checklist`
+
+失败：
+
+- `./dev check all`：已通过 governance、skills、task-loop、prompt doctor、diff、Rust fmt/clippy/test、macOS build/XCTest；最终失败在 SwiftFormat，`199/224 files require formatting, 3 files skipped`。
+- 单独 `swiftlint lint ...`：失败，`239 violations, 239 serious in 226 files`。
+
+六、风险与后续
+
+下一个动作不应继续重试 `3-1/task-05`。需要先开回 Phase 2 / release-hardening 修复 Swift 产品与测试代码 style debt，并补齐真实 release 证据：`.app` 首屏、M-01..M-04 手工恢复、Developer ID 签名、公证、DMG、干净 Mac 首启、CHANGELOG `0.1.0` 段和 release tag/build number。

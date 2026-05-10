@@ -1,5 +1,5 @@
-import XCTest
 @testable import AreaMatrix
+import XCTest
 
 final class DetailLogExternalRemovedPageFeatureTests: XCTestCase {
     @MainActor
@@ -16,13 +16,13 @@ final class DetailLogExternalRemovedPageFeatureTests: XCTestCase {
             kind: .removed,
             repoPath: "/tmp/repo",
             relativePath: "docs/removed.pdf",
-            fsEventID: 10_100
+            fsEventID: 10100
         )
         model.consumePendingExternalCreatedFileSignals()
 
         XCTAssertEqual(
             model.externalCreatedEvent(for: opening),
-            MainExternalCreatedFileEvent(kind: .removed, relativePath: "docs/removed.pdf", fsEventID: 10_100)
+            MainExternalCreatedFileEvent(kind: .removed, relativePath: "docs/removed.pdf", fsEventID: 10100)
         )
         let handledEvent = try XCTUnwrap(model.externalCreatedEvent(for: opening))
         model.finishExternalCreatedFileEvent(handledEvent)
@@ -36,24 +36,24 @@ final class DetailLogExternalRemovedPageFeatureTests: XCTestCase {
             repoPath: "/tmp/repo",
             absolutePath: "/tmp/repo/docs/removed.pdf",
             flags: removedFlags,
-            eventID: 10_101
+            eventID: 10101
         )
 
         XCTAssertEqual(signal?.kind, .removed)
         XCTAssertEqual(signal?.repoPath, "/tmp/repo")
         XCTAssertEqual(signal?.relativePath, "docs/removed.pdf")
-        XCTAssertEqual(signal?.fsEventID, 10_101)
+        XCTAssertEqual(signal?.fsEventID, 10101)
         XCTAssertNil(MainExternalCreatedFileWatcher.signal(
             repoPath: "/tmp/repo",
             absolutePath: "/tmp/repo/.areamatrix/index.db",
             flags: removedFlags,
-            eventID: 10_102
+            eventID: 10102
         ))
         XCTAssertNil(MainExternalCreatedFileWatcher.signal(
             repoPath: "/tmp/repo",
             absolutePath: "/tmp/repo/docs",
             flags: removedFlags | FSEventStreamEventFlags(kFSEventStreamEventFlagItemIsDir),
-            eventID: 10_103
+            eventID: 10103
         ))
     }
 
@@ -64,7 +64,7 @@ final class DetailLogExternalRemovedPageFeatureTests: XCTestCase {
         let event = try XCTUnwrap(MainExternalCreatedFileEvent(
             kind: .removed,
             relativePath: removed.path,
-            fsEventID: 10_001
+            fsEventID: 10001
         ))
         let entry = ChangeLogEntrySnapshot.detailLogFixture(fileID: removed.id, action: "deleted")
         let lister = DetailLogRecordingLister(results: [.success([entry])])
@@ -86,7 +86,7 @@ final class DetailLogExternalRemovedPageFeatureTests: XCTestCase {
         let logRequests = await lister.recordedRequests()
 
         XCTAssertEqual(syncRequests, [
-            DetailLogExternalRemovedRequest(repoPath: "/tmp/repo", relativePath: removed.path, fsEventID: 10_001),
+            DetailLogExternalRemovedRequest(repoPath: "/tmp/repo", relativePath: removed.path, fsEventID: 10001)
         ])
         XCTAssertEqual(listRequests, [DetailLogExternalRemovedListRequest(
             repoPath: "/tmp/repo",
@@ -99,7 +99,10 @@ final class DetailLogExternalRemovedPageFeatureTests: XCTestCase {
         XCTAssertEqual(model.selectedFileDetail, missingRemoved)
         XCTAssertEqual(model.detailErrorMapping?.kind, .fileNotFound)
         XCTAssertEqual(model.statusBanner, .removedSelectedFile(fileID: removed.id))
-        XCTAssertEqual(model.detailExternalCreateSyncState, .synced(event: event, fileID: removed.id, .detailRemovedFixture()))
+        XCTAssertEqual(
+            model.detailExternalCreateSyncState,
+            .synced(event: event, fileID: removed.id, .detailRemovedFixture())
+        )
         XCTAssertEqual(logRequests, [DetailLogRequest(repoPath: "/tmp/repo", filter: .detailLog(fileID: removed.id))])
         XCTAssertEqual(model.detailLogState, .loaded(fileID: removed.id, entries: [entry]))
     }
@@ -110,7 +113,7 @@ final class DetailLogExternalRemovedPageFeatureTests: XCTestCase {
         let event = try XCTUnwrap(MainExternalCreatedFileEvent(
             kind: .removed,
             relativePath: selected.path,
-            fsEventID: 10_002
+            fsEventID: 10002
         ))
         let mapping = CoreErrorMappingSnapshot.detailLogExternalRemoved(kind: .db)
         let mapper = DetailMetaErrorMapper(mapping: mapping)
@@ -142,7 +145,7 @@ final class DetailLogExternalRemovedPageFeatureTests: XCTestCase {
         let event = try XCTUnwrap(MainExternalCreatedFileEvent(
             kind: .removed,
             relativePath: selected.path,
-            fsEventID: 10_003
+            fsEventID: 10003
         ))
         let mapping = CoreErrorMappingSnapshot.detailLogExternalRemoved(kind: .internal)
         let mapper = DetailMetaErrorMapper(mapping: mapping)
@@ -164,7 +167,7 @@ final class DetailLogExternalRemovedPageFeatureTests: XCTestCase {
 
         XCTAssertEqual(model.detailExternalCreateSyncState, .failed(event: event, mapping))
         XCTAssertEqual(logRequests, [])
-        guard case .Internal(let message) = mappedErrors.first else {
+        guard case let .Internal(message) = mappedErrors.first else {
             return XCTFail("expected internal error for missing detected delete")
         }
         XCTAssertTrue(message.contains("removed event 10003 did not report a detected delete"))
@@ -172,7 +175,11 @@ final class DetailLogExternalRemovedPageFeatureTests: XCTestCase {
 
     func testS113C119RejectsInvalidExternalRemovedEventsBeforeCoreBridge() {
         XCTAssertNil(MainExternalCreatedFileEvent(kind: .removed, relativePath: "", fsEventID: 1))
-        XCTAssertNil(MainExternalCreatedFileEvent(kind: .removed, relativePath: "/tmp/repo/docs/gone.pdf", fsEventID: 1))
+        XCTAssertNil(MainExternalCreatedFileEvent(
+            kind: .removed,
+            relativePath: "/tmp/repo/docs/gone.pdf",
+            fsEventID: 1
+        ))
         XCTAssertNil(MainExternalCreatedFileEvent(kind: .removed, relativePath: "../gone.pdf", fsEventID: 1))
         XCTAssertNil(MainExternalCreatedFileEvent(kind: .removed, relativePath: "docs/../gone.pdf", fsEventID: 1))
         XCTAssertNil(MainExternalCreatedFileEvent(kind: .removed, relativePath: "docs/gone.pdf", fsEventID: 0))
@@ -190,7 +197,7 @@ final class DetailLogExternalRemovedPageFeatureTests: XCTestCase {
         let result = try await bridge.syncExternalRemoved(
             repoPath: repoURL.path,
             relativePath: "docs/removed.pdf",
-            fsEventID: 10_012
+            fsEventID: 10012
         )
         let visibleFiles = try await bridge.listFiles(repoPath: repoURL.path, filter: .currentCategory(nil))
         let deletedFiles = try await bridge.listFiles(repoPath: repoURL.path, filter: .detailLogIncludingDeleted())
@@ -203,7 +210,7 @@ final class DetailLogExternalRemovedPageFeatureTests: XCTestCase {
         XCTAssertEqual(Array(changes.map(\.action).prefix(1)), ["deleted"])
         XCTAssertEqual(changes.first?.fileID, removedFile.id)
         XCTAssertTrue(changes.first?.detailSummary.contains("by: external") == true)
-        XCTAssertEqual(cursor, 10_012)
+        XCTAssertEqual(cursor, 10012)
         XCTAssertTrue(FileManager.default.fileExists(atPath: fixture.keeperURL.path))
     }
 
@@ -219,20 +226,24 @@ final class DetailLogExternalRemovedPageFeatureTests: XCTestCase {
             withIntermediateDirectories: true
         )
         try await createAndSyncFixtureFile(
-            repoURL: repoURL,
-            bridge: bridge,
-            url: removedURL,
-            relativePath: "docs/removed.pdf",
-            bytes: "external removed bytes",
-            fsEventID: 10_010
+            DetailLogExternalCreatedFixture(
+                repoURL: repoURL,
+                bridge: bridge,
+                url: removedURL,
+                relativePath: "docs/removed.pdf",
+                bytes: "external removed bytes",
+                fsEventID: 10010
+            )
         )
         try await createAndSyncFixtureFile(
-            repoURL: repoURL,
-            bridge: bridge,
-            url: keeperURL,
-            relativePath: "docs/keeper.pdf",
-            bytes: "keeper bytes",
-            fsEventID: 10_011
+            DetailLogExternalCreatedFixture(
+                repoURL: repoURL,
+                bridge: bridge,
+                url: keeperURL,
+                relativePath: "docs/keeper.pdf",
+                bytes: "keeper bytes",
+                fsEventID: 10011
+            )
         )
         let files = try await bridge.listFiles(
             repoPath: repoURL.path,
@@ -246,21 +257,23 @@ final class DetailLogExternalRemovedPageFeatureTests: XCTestCase {
         )
     }
 
-    private func createAndSyncFixtureFile(
-        repoURL: URL,
-        bridge: CoreBridge,
-        url: URL,
-        relativePath: String,
-        bytes: String,
-        fsEventID: Int64
-    ) async throws {
-        try Data(bytes.utf8).write(to: url)
-        _ = try await bridge.syncExternalCreated(
-            repoPath: repoURL.path,
-            relativePath: relativePath,
-            fsEventID: fsEventID
+    private func createAndSyncFixtureFile(_ fixture: DetailLogExternalCreatedFixture) async throws {
+        try Data(fixture.bytes.utf8).write(to: fixture.url)
+        _ = try await fixture.bridge.syncExternalCreated(
+            repoPath: fixture.repoURL.path,
+            relativePath: fixture.relativePath,
+            fsEventID: fixture.fsEventID
         )
     }
+}
+
+private struct DetailLogExternalCreatedFixture {
+    var repoURL: URL
+    var bridge: CoreBridge
+    var url: URL
+    var relativePath: String
+    var bytes: String
+    var fsEventID: Int64
 }
 
 private struct RealExternalRemovedFixture {
@@ -288,15 +301,18 @@ private actor DetailLogExternalRemovedSyncer: CoreExternalChangesSyncing {
         self.result = result
     }
 
-    func syncExternalCreated(repoPath: String, relativePath: String, fsEventID: Int64) async throws -> SyncResultSnapshot {
+    func syncExternalCreated(repoPath _: String, relativePath _: String,
+                             fsEventID _: Int64) async throws -> SyncResultSnapshot {
         throw CoreError.Internal(message: "external created is outside S1-13 C1-19")
     }
 
-    func syncExternalRenamed(repoPath: String, relativePath: String, fsEventID: Int64) async throws -> SyncResultSnapshot {
+    func syncExternalRenamed(repoPath _: String, relativePath _: String,
+                             fsEventID _: Int64) async throws -> SyncResultSnapshot {
         throw CoreError.Internal(message: "external renamed is outside S1-13 C1-19")
     }
 
-    func syncExternalRemoved(repoPath: String, relativePath: String, fsEventID: Int64) async throws -> SyncResultSnapshot {
+    func syncExternalRemoved(repoPath: String, relativePath: String,
+                             fsEventID: Int64) async throws -> SyncResultSnapshot {
         removedRequests.append(DetailLogExternalRemovedRequest(
             repoPath: repoPath,
             relativePath: relativePath,
@@ -305,10 +321,15 @@ private actor DetailLogExternalRemovedSyncer: CoreExternalChangesSyncing {
         return try result.get()
     }
 
-    func getFSEventCursor(repoPath: String) async throws -> Int64? { nil }
-    func setFSEventCursor(repoPath: String, lastEventID: Int64) async throws {}
+    func getFSEventCursor(repoPath _: String) async throws -> Int64? {
+        nil
+    }
 
-    func recordedRemovedRequests() -> [DetailLogExternalRemovedRequest] { removedRequests }
+    func setFSEventCursor(repoPath _: String, lastEventID _: Int64) async throws {}
+
+    func recordedRemovedRequests() -> [DetailLogExternalRemovedRequest] {
+        removedRequests
+    }
 }
 
 private actor DetailLogExternalRemovedLister: CoreFileListing {
@@ -324,7 +345,9 @@ private actor DetailLogExternalRemovedLister: CoreFileListing {
         return files
     }
 
-    func recordedRequests() -> [DetailLogExternalRemovedListRequest] { requests }
+    func recordedRequests() -> [DetailLogExternalRemovedListRequest] {
+        requests
+    }
 }
 
 private extension FileFilterSnapshot {

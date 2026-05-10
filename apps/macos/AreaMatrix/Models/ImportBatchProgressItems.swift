@@ -18,20 +18,20 @@ extension ImportBatchCopyImportModel {
         for status: ImportBatchCopyImportRowStatus
     ) -> ImportBatchProgressSnapshot.Phase {
         switch status {
-        case .importing(let mode):
-            return mode.importProgressPhase
+        case let .importing(mode):
+            mode.importProgressPhase
         case .imported:
-            return .done
+            .done
         case .error:
-            return .failed
+            .failed
         case .loading, .ready, .duplicate, .nameConflict, .iCloudPlaceholder, .blocked,
              .skippedDuplicate, .skippedICloud:
-            return .pending
+            .pending
         }
     }
 
     private static func progressErrorMessage(for status: ImportBatchCopyImportRowStatus) -> String? {
-        guard case .error(let message) = status else { return nil }
+        guard case let .error(message) = status else { return nil }
         return message
     }
 }
@@ -40,11 +40,11 @@ private extension ImportSingleFileStorageMode {
     var importProgressPhase: ImportBatchProgressSnapshot.Phase {
         switch self {
         case .copy:
-            return .copying
+            .copying
         case .move:
-            return .moving
+            .moving
         case .indexOnly:
-            return .writingIndex
+            .writingIndex
         }
     }
 }

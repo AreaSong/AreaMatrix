@@ -1,6 +1,6 @@
+@testable import AreaMatrix
 import Foundation
 import XCTest
-@testable import AreaMatrix
 
 final class InitDoneEmptyRepositoryTests: XCTestCase {
     @MainActor
@@ -264,7 +264,6 @@ final class InitDoneEmptyRepositoryTests: XCTestCase {
         XCTAssertEqual(result.files, [])
         XCTAssertEqual(result.errorMapping, mapping)
     }
-
 }
 
 private enum EmptyRepositoryOpenResult {
@@ -284,9 +283,9 @@ private actor RecordingEmptyRepositoryOpener: CoreEmptyRepositoryOpening {
     func openEmptyRepository(repoPath: String) async throws -> RepositoryOpeningResult {
         paths.append(repoPath)
         switch result {
-        case .success(let opening):
+        case let .success(opening):
             return opening
-        case .failure(let error):
+        case let .failure(error):
             throw error
         }
     }
@@ -294,15 +293,20 @@ private actor RecordingEmptyRepositoryOpener: CoreEmptyRepositoryOpening {
     func openAdoptedRepository(repoPath: String) async throws -> RepositoryOpeningResult {
         adoptedPaths.append(repoPath)
         switch result {
-        case .success(let opening):
+        case let .success(opening):
             return opening
-        case .failure(let error):
+        case let .failure(error):
             throw error
         }
     }
 
-    func requestedRepoPaths() -> [String] { paths }
-    func requestedAdoptedRepoPaths() -> [String] { adoptedPaths }
+    func requestedRepoPaths() -> [String] {
+        paths
+    }
+
+    func requestedAdoptedRepoPaths() -> [String] {
+        adoptedPaths
+    }
 }
 
 private actor PausingEmptyRepositoryOpener: CoreEmptyRepositoryOpening {
@@ -316,7 +320,7 @@ private actor PausingEmptyRepositoryOpener: CoreEmptyRepositoryOpening {
         self.opening = opening
     }
 
-    func openEmptyRepository(repoPath: String) async throws -> RepositoryOpeningResult {
+    func openEmptyRepository(repoPath _: String) async throws -> RepositoryOpeningResult {
         didStart = true
         resumeStartContinuations()
         await waitForFinishSignal()
@@ -383,7 +387,9 @@ private final class RecordingAccessibilityAnnouncer: AccessibilityAnnouncing {
 private struct InitDoneStaticSettingsReader: AppSettingsReading {
     let repoPath: String?
 
-    func configuredRepoPath() -> String? { repoPath }
+    func configuredRepoPath() -> String? {
+        repoPath
+    }
 }
 
 private struct InitDoneNoopWelcomeHelpOpener: WelcomeHelpOpening {
@@ -401,98 +407,5 @@ private final class InitDoneRecordingErrorMapper: CoreErrorMapping {
     func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
         mappedErrors.append(error)
         return mapping
-    }
-}
-
-private extension RepoConfigSnapshot {
-    static func initDoneFixture(repoPath: String) -> RepoConfigSnapshot {
-        RepoConfigSnapshot(
-            repoPath: repoPath,
-            defaultMode: "Copied",
-            overviewOutput: "GeneratedOnly",
-            aiEnabled: false,
-            locale: "zh-Hans",
-            iCloudWarn: true,
-            enableExtensionRules: true,
-            enableKeywordRules: true,
-            fallbackToInbox: true,
-            allowReplaceDuringImport: false
-        )
-    }
-}
-
-private extension RepositoryOpeningResult {
-    static func initDoneFixture(repoPath: String, fileCount: Int64) -> RepositoryOpeningResult {
-        RepositoryOpeningResult(
-            config: .initDoneFixture(repoPath: repoPath),
-            tree: RepositoryTreeNodeSnapshot(
-                slug: "__root__",
-                displayName: "资料库",
-                fileCount: fileCount,
-                children: []
-            ),
-            currentCategoryFiles: []
-        )
-    }
-}
-
-private extension FileEntrySnapshot {
-    static func initDoneFileFixture(category: String) -> FileEntrySnapshot {
-        FileEntrySnapshot(
-            id: 1,
-            path: "\(category)/report.pdf",
-            originalName: "report.pdf",
-            currentName: "report.pdf",
-            category: category,
-            sizeBytes: 128,
-            hashSha256: "fixture-hash",
-            storageMode: "Copied",
-            origin: "Imported",
-            sourcePath: nil,
-            importedAt: 1_700_000_000,
-            updatedAt: 1_700_000_000
-        )
-    }
-}
-
-private extension CoreErrorMappingSnapshot {
-    static func initDoneConfigFixture(rawContext: String) -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
-            kind: .config,
-            userMessage: "资料库配置不可用",
-            severity: .high,
-            suggestedAction: "请重试打开资料库，或重新选择资料库位置。",
-            recoverability: .retryable,
-            rawContext: rawContext
-        )
-    }
-
-    static func initDoneDbFixture(rawContext: String) -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
-            kind: .db,
-            userMessage: "资料库树不可用",
-            severity: .high,
-            suggestedAction: "请重试打开资料库，或重新选择资料库位置。",
-            recoverability: .retryable,
-            rawContext: rawContext
-        )
-    }
-}
-
-private extension ScanSessionSnapshot {
-    static func adoptCompletedFixture() -> ScanSessionSnapshot {
-        ScanSessionSnapshot(
-            id: 42,
-            kind: .adopt,
-            status: .completed,
-            lastPath: "README.md",
-            inserted: 1,
-            updated: 0,
-            skipped: 0,
-            startedAt: 1_700_000_000,
-            updatedAt: 1_700_000_001,
-            finishedAt: 1_700_000_001,
-            errors: []
-        )
     }
 }

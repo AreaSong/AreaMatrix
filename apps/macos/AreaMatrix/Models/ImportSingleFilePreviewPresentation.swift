@@ -25,10 +25,10 @@ extension ImportSingleFilePreviewModel {
 
     var currentPreflightResult: ImportSingleFilePreflightResult? {
         switch preflightStatus {
-        case .ready(let result), .blocked(let result):
-            return result
+        case let .ready(result), let .blocked(result):
+            result
         case .idle, .checking:
-            return nil
+            nil
         }
     }
 
@@ -74,7 +74,7 @@ extension ImportSingleFilePreviewModel {
     }
 
     var importFailureMapping: CoreErrorMappingSnapshot? {
-        guard case .failed(let mapping) = importStatus else { return nil }
+        guard case let .failed(mapping) = importStatus else { return nil }
         return mapping
     }
 
@@ -139,7 +139,7 @@ private extension ImportSingleFileImportStatus {
     }
 
     var blockingMessage: String? {
-        guard case .importing(let mode) = self else { return nil }
+        guard case let .importing(mode) = self else { return nil }
         return mode.importingBlockingMessage
     }
 }

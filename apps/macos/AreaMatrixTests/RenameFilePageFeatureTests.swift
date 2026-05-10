@@ -1,5 +1,5 @@
-import XCTest
 @testable import AreaMatrix
+import XCTest
 
 final class RenameFilePageFeatureTests: XCTestCase {
     @MainActor
@@ -24,7 +24,7 @@ final class RenameFilePageFeatureTests: XCTestCase {
         let requests = await renamer.recordedRequests()
 
         XCTAssertEqual(requests, [
-            RenameRequest(repoPath: "/tmp/repo", fileID: original.id, newName: "new.pdf"),
+            RenameRequest(repoPath: "/tmp/repo", fileID: original.id, newName: "new.pdf")
         ])
         XCTAssertEqual(model.files, [renamed])
         XCTAssertEqual(model.selection, .single(renamed.id))
@@ -222,7 +222,9 @@ private actor RenameRecordingRenamer: CoreFileRenaming {
         return try result.get()
     }
 
-    func recordedRequests() -> [RenameRequest] { requests }
+    func recordedRequests() -> [RenameRequest] {
+        requests
+    }
 }
 
 private extension FileEntrySnapshot {

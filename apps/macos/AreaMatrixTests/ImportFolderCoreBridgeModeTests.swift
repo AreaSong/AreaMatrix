@@ -1,5 +1,5 @@
-import XCTest
 @testable import AreaMatrix
+import XCTest
 
 final class ImportFolderCoreBridgeModeTests: XCTestCase {
     @MainActor
@@ -47,7 +47,7 @@ final class ImportFolderCoreBridgeModeTests: XCTestCase {
         let bridge = CoreBridge()
 
         try await bridge.initializeEmptyRepository(repoPath: repoURL.path)
-        let entry = try await bridge.importBatchFile(
+        let entry = try await bridge.importBatchFile(request: CoreBatchImportRequest(
             repoPath: repoURL.path,
             sourceURL: sourceURL,
             storageMode: .indexOnly,
@@ -55,7 +55,7 @@ final class ImportFolderCoreBridgeModeTests: XCTestCase {
             suggestedCategory: "docs",
             overrideFilename: "reference-index.pdf",
             duplicateStrategy: .ask
-        )
+        ))
 
         XCTAssertEqual(try Data(contentsOf: sourceURL), sourceBefore)
         XCTAssertEqual(entry.currentName, "reference-index.pdf")

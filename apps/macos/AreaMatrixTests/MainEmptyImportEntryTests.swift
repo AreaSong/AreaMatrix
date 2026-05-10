@@ -1,6 +1,6 @@
+@testable import AreaMatrix
 import Foundation
 import XCTest
-@testable import AreaMatrix
 
 final class MainEmptyImportEntryTests: XCTestCase {
     @MainActor
@@ -9,7 +9,7 @@ final class MainEmptyImportEntryTests: XCTestCase {
         let opening = RepositoryOpeningResult.mainEmptyImportFixture(repoPath: "/tmp/empty-repo")
         let model = OnboardingModel(
             settingsReader: MainEmptyImportStaticSettingsReader(repoPath: nil),
-            accessibilityAnnouncer: MainEmptyImportRecordingAccessibilityAnnouncer(),
+            accessibilityAnnouncer: MainEmptyImportAnnouncer(),
             helpOpener: MainEmptyImportNoopWelcomeHelpOpener(),
             importPicker: MainEmptyImportStaticImportPicker(urls: [importURL])
         )
@@ -29,7 +29,7 @@ final class MainEmptyImportEntryTests: XCTestCase {
         let opening = RepositoryOpeningResult.mainEmptyImportFixture(repoPath: "/tmp/empty-repo")
         let model = OnboardingModel(
             settingsReader: MainEmptyImportStaticSettingsReader(repoPath: nil),
-            accessibilityAnnouncer: MainEmptyImportRecordingAccessibilityAnnouncer(),
+            accessibilityAnnouncer: MainEmptyImportAnnouncer(),
             helpOpener: MainEmptyImportNoopWelcomeHelpOpener()
         )
 
@@ -51,7 +51,7 @@ final class MainEmptyImportEntryTests: XCTestCase {
         let opening = RepositoryOpeningResult.mainEmptyImportFixture(repoPath: "/tmp/empty-repo")
         let model = OnboardingModel(
             settingsReader: MainEmptyImportStaticSettingsReader(repoPath: nil),
-            accessibilityAnnouncer: MainEmptyImportRecordingAccessibilityAnnouncer(),
+            accessibilityAnnouncer: MainEmptyImportAnnouncer(),
             helpOpener: MainEmptyImportNoopWelcomeHelpOpener()
         )
 
@@ -70,7 +70,7 @@ final class MainEmptyImportEntryTests: XCTestCase {
     @MainActor
     func testMainEmptyDropEntryRejectsInvalidItemsWithAccessibleToast() throws {
         let opening = RepositoryOpeningResult.mainEmptyImportFixture(repoPath: "/tmp/empty-repo")
-        let accessibilityAnnouncer = MainEmptyImportRecordingAccessibilityAnnouncer()
+        let accessibilityAnnouncer = MainEmptyImportAnnouncer()
         let remoteURL = try XCTUnwrap(URL(string: "https://example.com/a"))
         let model = OnboardingModel(
             settingsReader: MainEmptyImportStaticSettingsReader(repoPath: nil),
@@ -100,7 +100,9 @@ final class MainEmptyImportEntryTests: XCTestCase {
 private struct MainEmptyImportStaticSettingsReader: AppSettingsReading {
     let repoPath: String?
 
-    func configuredRepoPath() -> String? { repoPath }
+    func configuredRepoPath() -> String? {
+        repoPath
+    }
 }
 
 private struct MainEmptyImportNoopWelcomeHelpOpener: WelcomeHelpOpening {
@@ -111,11 +113,13 @@ private struct MainEmptyImportStaticImportPicker: RepositoryImportPicking {
     let urls: [URL]?
 
     @MainActor
-    func chooseImportURLs() -> [URL]? { urls }
+    func chooseImportURLs() -> [URL]? {
+        urls
+    }
 }
 
 @MainActor
-private final class MainEmptyImportRecordingAccessibilityAnnouncer: AccessibilityAnnouncing {
+private final class MainEmptyImportAnnouncer: AccessibilityAnnouncing {
     private(set) var announcements: [String] = []
 
     func announce(_ message: String) {

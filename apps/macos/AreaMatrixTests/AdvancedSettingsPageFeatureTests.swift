@@ -1,5 +1,5 @@
-import XCTest
 @testable import AreaMatrix
+import XCTest
 
 final class AdvancedSettingsPageFeatureTests: XCTestCase {
     @MainActor
@@ -44,7 +44,7 @@ final class AdvancedSettingsPageFeatureTests: XCTestCase {
     @MainActor
     func testS130RecoveryToolsEntrypointRoutesToRepairConfirmationWithoutRunningRecovery() async {
         let opening = RepositoryOpeningResult.shellFixture(repoPath: "/tmp/repo", fileCount: 1)
-        let recoverer = AdvancedSettingsRecordingStartupRecoverer()
+        let recoverer = AdvancedSettingsStartupRecoverer()
         let model = OnboardingModel(
             settingsReader: ShellStaticSettingsReader(repoPath: nil),
             startupRecoverer: recoverer,
@@ -56,12 +56,20 @@ final class AdvancedSettingsPageFeatureTests: XCTestCase {
         model.openMainRepositoryRepair(repoPath: opening.config.repoPath)
         let recoveryRequests = await recoverer.requestedRepoPaths()
 
-        XCTAssertEqual(model.route, .dbRepairConfirm(DatabaseRepairRouteState(repoPath: "/tmp/repo", scanSession: nil, mapping: nil, returnRoute: .settingsGeneral(opening, selectedTab: "advanced"))))
+        XCTAssertEqual(
+            model.route,
+            .dbRepairConfirm(DatabaseRepairRouteState(
+                repoPath: "/tmp/repo",
+                scanSession: nil,
+                mapping: nil,
+                returnRoute: .settingsGeneral(opening, selectedTab: "advanced")
+            ))
+        )
         XCTAssertEqual(recoveryRequests, [])
     }
 
     @MainActor
-    func testS137CancelFromAdvancedSettingsReturnsToSourceSettingsPage() async {
+    func testS137CancelFromAdvancedSettingsReturnsToSourceSettingsPage() {
         let opening = RepositoryOpeningResult.shellFixture(repoPath: "/tmp/repo", fileCount: 1)
         let model = OnboardingModel(
             settingsReader: ShellStaticSettingsReader(repoPath: nil),
@@ -70,7 +78,7 @@ final class AdvancedSettingsPageFeatureTests: XCTestCase {
         model.route = .settingsGeneral(opening)
         model.settingsGeneralSelectedTab = "advanced"
         model.openMainRepositoryRepair(repoPath: opening.config.repoPath)
-        guard case .dbRepairConfirm(let repairRoute) = model.route else {
+        guard case let .dbRepairConfirm(repairRoute) = model.route else {
             return XCTFail("expected db repair route")
         }
 
@@ -254,7 +262,7 @@ final class AdvancedSettingsPageFeatureTests: XCTestCase {
     private func loadedAdvancedModel(
         updater: AdvancedSettingsRecordingUpdater,
         config: RepoConfigSnapshot = .advancedSettingsFixture(repoPath: "/tmp/repo"),
-        inspector: any RootOverviewFileInspecting = AdvancedSettingsStaticRootOverviewInspector(status: .missing)
+        inspector: any RootOverviewFileInspecting = AdvancedSettingsRootInspector(status: .missing)
     ) async -> AdvancedSettingsModel {
         let model = AdvancedSettingsModel(
             repoPath: config.repoPath,
@@ -284,14 +292,16 @@ private actor AdvancedSettingsRecordingLoader: CoreConfigurationLoading {
     func loadConfig(repoPath: String) async throws -> RepoConfigSnapshot {
         paths.append(repoPath)
         switch result {
-        case .success(let config):
+        case let .success(config):
             return config
-        case .failure(let error):
+        case let .failure(error):
             throw error
         }
     }
 
-    func requestedPaths() -> [String] { paths }
+    func requestedPaths() -> [String] {
+        paths
+    }
 }
 
 private enum AdvancedSettingsUpdateResult {
@@ -317,20 +327,22 @@ private actor AdvancedSettingsRecordingUpdater: CoreConfigurationUpdating {
         switch result {
         case .success:
             return
-        case .failureThenSuccess(let error) where recordedRequests.count == 1:
+        case let .failureThenSuccess(error) where recordedRequests.count == 1:
             throw error
         case .failureThenSuccess:
             return
         }
     }
 
-    func requests() -> [Request] { recordedRequests }
+    func requests() -> [Request] {
+        recordedRequests
+    }
 }
 
-private struct AdvancedSettingsStaticRootOverviewInspector: RootOverviewFileInspecting {
+private struct AdvancedSettingsRootInspector: RootOverviewFileInspecting {
     let status: RootOverviewFileStatus
 
-    func status(repoPath: String) -> RootOverviewFileStatus {
+    func status(repoPath _: String) -> RootOverviewFileStatus {
         status
     }
 }
@@ -339,18 +351,18 @@ private actor AdvancedSettingsStaticErrorMapper: CoreErrorMapping {
     func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
         switch error {
         case .Db:
-            return .advancedSettingsMapping(kind: .db, userMessage: "Database error")
+            .advancedSettingsMapping(kind: .db, userMessage: "Database error")
         case .Config:
-            return .advancedSettingsMapping(kind: .config, userMessage: "Configuration error")
+            .advancedSettingsMapping(kind: .config, userMessage: "Configuration error")
         case .PermissionDenied:
-            return .advancedSettingsMapping(kind: .permissionDenied, userMessage: "Permission denied")
+            .advancedSettingsMapping(kind: .permissionDenied, userMessage: "Permission denied")
         default:
-            return .advancedSettingsMapping(kind: .internal, userMessage: "Save failed")
+            .advancedSettingsMapping(kind: .internal, userMessage: "Save failed")
         }
     }
 }
 
-private actor AdvancedSettingsRecordingStartupRecoverer: CoreStartupRecovering {
+private actor AdvancedSettingsStartupRecoverer: CoreStartupRecovering {
     private var paths: [String] = []
 
     func recoverOnStartup(repoPath: String) async throws -> RecoveryReportSnapshot {

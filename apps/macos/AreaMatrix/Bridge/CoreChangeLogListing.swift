@@ -4,7 +4,7 @@ protocol CoreChangeLogListing: Sendable {
     func listChanges(repoPath: String, filter: ChangeFilterSnapshot) async throws -> [ChangeLogEntrySnapshot]
 }
 
-struct ChangeFilterSnapshot: Equatable, Sendable {
+struct ChangeFilterSnapshot: Equatable {
     var fileID: Int64?
     var category: String?
     var action: String?
@@ -36,7 +36,7 @@ struct ChangeFilterSnapshot: Equatable, Sendable {
     }
 }
 
-struct ChangeLogEntrySnapshot: Equatable, Identifiable, Sendable {
+struct ChangeLogEntrySnapshot: Equatable, Identifiable {
     var id: Int64
     var fileID: Int64?
     var filename: String
@@ -48,25 +48,25 @@ struct ChangeLogEntrySnapshot: Equatable, Identifiable, Sendable {
     var actionDisplayName: String {
         switch action {
         case "imported":
-            return "Imported"
+            "Imported"
         case "adopted":
-            return "Adopted"
+            "Adopted"
         case "renamed":
-            return "Renamed"
+            "Renamed"
         case "moved":
-            return "Moved"
+            "Moved"
         case "edited_note":
-            return "Edited note"
+            "Edited note"
         case "deleted":
-            return "Deleted"
+            "Deleted"
         case "removed_from_index":
-            return "Removed from index"
+            "Removed from index"
         case "restored":
-            return "Restored"
+            "Restored"
         case "external_modified":
-            return "External change"
+            "External change"
         default:
-            return action
+            action
         }
     }
 
@@ -117,7 +117,8 @@ extension ChangeLogEntrySnapshot {
 private enum ChangeLogDetailSummary {
     static func summarize(_ detailJSON: String) -> String {
         guard let data = detailJSON.data(using: .utf8),
-              let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+              let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+        else {
             return "Detail unavailable"
         }
 

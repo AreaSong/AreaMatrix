@@ -1,0 +1,85 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`3-1/task-05`
+- Task 文件：`tasks/prompts/phase-3/3-1-stability-release/task-05-stage1-integration-verify.md`
+- Manifest 章节：`tasks/prompts/_shared/manifests/phase-3.md` 的 `## 3-1/task-05`
+- Exact Docs：6/6 已读取
+- Existing Code：已核对 `core/**`、`apps/macos/**`、`scripts/**`
+- Forbidden Touches：当前 diff 未发现 `core/src/**`、`core/area_matrix.udl`、`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrix.xcodeproj/**` 被修改
+
+三、完成度摘要
+
+- 已覆盖项数：7
+- 未覆盖项数：0
+- 通过项数：3
+- 不通过项数：4
+- 阻塞项数：5
+
+四、逐项验收结果
+
+- 项目：读取 Stage 1 roadmap / control map / Core index / UX index / testing / release 文档
+- 结果：通过
+- 证据：6 个 Exact Docs 均存在并已读取；Stage 1 MVP 最终标准要求 CI 全绿、0 P0/P1、Swift/Rust lint 0 warning、手工冒烟 100%、codesign/notarize/DMG 干净机首启。
+- 涉及文件：`docs/roadmap/stage-1-mvp.md:258`
+
+- 项目：按 control map 核对 Real Core 页面不得 mock-only
+- 结果：通过但不构成发布通过
+- 证据：control map 明确 S1-01..S1-37 大部分为 Real Core，且 `./dev check all` 中 Rust Core integration verify 与 macOS XCTest 大量通过；未发现本轮直接以 mock-only 作为最终闭环证据。
+- 涉及文件：`docs/architecture/mvp-control-map.md:5`
+
+- 项目：核对 Phase 1 Core 与 Phase 2 UI integration verify，尤其 import / recovery / sync / iCloud / DB repair / file actions
+- 结果：通过但有 release gate 缺口
+- 证据：`./dev check all` 已跑过 Rust fmt/clippy/test、universal Core build、macOS XCTest；但最终命令在 SwiftFormat gate 失败，不能判定全量通过。
+- 涉及文件：`core/tests/**`、`apps/macos/AreaMatrixTests/**`
+
+- 项目：核对 `3-1/task-01` 到 `3-1/task-04` 证据
+- 结果：不通过
+- 证据：release checklist 明确当前最终集成验收“不放行”；仍有 P1-RL-001..P1-RL-005。
+- 涉及文件：`docs/development/stage-1-release-checklist.md:11`
+
+- 项目：运行最终自动化综合门禁
+- 结果：不通过
+- 证据：`python3 tasks/prompts/_shared/prompt_pipeline.py doctor` 通过；`git diff --check` 通过；`./dev check all` 失败，失败点为 SwiftFormat：`199/224 files require formatting, 3 files skipped`，并列出大量 `apps/macos/AreaMatrix/**` 产品路径格式错误。
+- 涉及文件：`apps/macos/AreaMatrix/Views/Main/StartupRecoveryErrorRecoveryView.swift`、`apps/macos/AreaMatrix/Views/Main/DeleteFileConfirmSheet.swift`、`apps/macos/AreaMatrix/Views/Onboarding/ValidatePathStepView.swift`
+
+- 项目：手工冒烟、性能基线、release checklist、签名/公证、DMG 干净机首启
+- 结果：不通过
+- 证据：手工 M-01..M-04 均为 pending；真实 Release `.app` 启动到首屏证据 BLOCKED；Developer ID 签名、公证、DMG、干净 Mac 首启均无法验证。
+- 涉及文件：`docs/development/recovery-scenarios.md:57`、`docs/development/stage-1-performance-baseline.md:11`、`docs/development/stage-1-release-checklist.md:57`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git diff --name-only -- core/src core/area_matrix.udl apps/macos/AreaMatrix apps/macos/AreaMatrix.xcodeproj` 无输出。
+- 涉及文件：Forbidden paths 无当前 diff
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过。综合门禁失败，SwiftFormat 指出多处产品 Swift 文件格式问题。
+- 注释 / rustdoc / 文档同步：不通过。release checklist 自身记录文档/API 一致性仍依赖本地和 CI validation，且最终 gate 未过。
+- 错误处理与边界处理：不通过。自动化覆盖较多，但 M-01..M-04 真实系统边界手工证据 pending。
+- 测试与验证覆盖：不通过。`./dev check all` 未通过；真实 `.app` launch、签名、公证、DMG、干净机首启缺证据。
+- 占位、硬编码、mock-only、一次性实现检查：未发现新的 mock-only 放行证据，但当前 release checklist 明确不能放行。
+
+六、阻塞项
+
+- P1-RL-001：真实 Release `.app` 启动到首屏证据缺失。路径：`/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-performance-baseline.md:88`。原因：Stage 1 要求启动时间 `< 1.5s`，当前只有 hostless surrogate，不能替代 release gate。
+- P1-RL-002：M-01..M-04 手工恢复冒烟 pending。路径：`/Users/as/Ai-Project/project/AreaMatrix/docs/development/recovery-scenarios.md:83`。原因：真实 iCloud、TCC、强退恢复、DB repair 未采集发布前证据。
+- P1-RL-003：Developer ID 签名、公证、DMG、干净 Mac 首启证据缺失。路径：`/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-release-checklist.md:70`。原因：alpha 分发链路不可验证。
+- P1-RL-004：CHANGELOG / 版本发布切面未完成。路径：`/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-release-checklist.md:71`。原因：release notes、tag、build number 证据不完整。
+- P1-RL-005：`./dev check all` 未通过。路径：`/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-release-checklist.md:72`。原因：SwiftFormat/SwiftLint style debt 仍阻断综合门禁，且产品 Swift 路径属于本 task Forbidden Touches，不能在本验收任务内修。
+
+七、验证情况
+
+- 已运行：`python3 tasks/prompts/_shared/prompt_pipeline.py doctor`：通过，`doctor: OK`，`tasks: 637`，`manifests: 637`
+- 已运行：`git diff --check`：通过
+- 已运行：`./dev check all`：失败；governance、skills、task-loop、prompt doctor、diff check、Rust fmt/clippy/test、macOS build/test 过程有通过证据，但最终 SwiftFormat lint 失败
+- 缺失：真实 Release `.app` 启动到首屏、M-01..M-04 手工冒烟、Developer ID 签名、公证、DMG、干净 Mac 首启、CHANGELOG 0.1.0 release 切面
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+VERIFY_RESULT: FAIL

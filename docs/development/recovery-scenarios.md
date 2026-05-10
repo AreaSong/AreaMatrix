@@ -62,14 +62,14 @@
 
 ```yaml
 manual_evidence_id: M-01
-manual_evidence_status: pending
+manual_evidence_status: "pending | pass | blocked"
 environment:
   macos_version: "<sw_vers -productVersion>"
   app_build: "<AreaMatrix build or test bundle>"
   repo_path: "<test repo path, redacted if needed>"
 operator: "<name or release role>"
 executed_at: "<ISO-8601 timestamp>"
-result: "pending | pass | fail"
+result: "pending | pass | fail | blocked"
 evidence_paths:
   - "<screenshot, log, sqlite output, checksum output, or diagnostics path>"
 user_file_invariants:
@@ -89,7 +89,25 @@ release_gate: "block_if_missing_or_fail"
   row 或存在可解释 recovery report。
 - 验证方式：记录重启后的 UI 状态、`sqlite3 .areamatrix/index.db` 中 `files.status`
   分布、`.areamatrix/staging` 列表和源目录 checksum。
-- 证据状态：`manual_evidence_id: M-01`；`manual_evidence_status: pending`；M-01 缺失时阻断发布。
+- 证据状态：`manual_evidence_id: M-01`；`manual_evidence_status: pass`；M-01 Copy
+  中断摘要已通过本机 Release local QA build 手工冒烟。
+- 手工证据：
+  - `environment.macos_version: 26.4.1`
+  - `app_build: build/Build/Products/Release/AreaMatrix.app`，Release local QA build，
+    `CODE_SIGNING_ALLOWED=NO`
+  - `repo_path: ~/Desktop/AreaMatrix-QA/slow-repo`
+  - `source_path: ~/Desktop/AreaMatrix-QA/slow-source`
+  - `executed_at: 2026-05-10 21:27 CST`
+  - `result: pass`
+  - 重启后 UI 显示导入结果摘要：`成功 10 · 停止 0 · 失败 0 · 待处理 234`
+  - pending 行原因：`Import not completed before AreaMatrix quit`
+  - 源目录保留 `500` 个 `big-*.bin`
+  - `.areamatrix/staging` 文件数为 `0`
+  - `sqlite3 ... 'PRAGMA integrity_check;'` 返回 `ok`
+  - 点击 `Done` 后 `.areamatrix/import-sessions/current.json` 已清除，命令输出
+    `session cleared`
+- 范围限制：该证据只关闭 Copy 模式的 M-01 未完成摘要恢复；Move 模式中断恢复和自动续跑不在
+  本次证据范围内。
 - 清理：删除测试 repo 和源目录。
 
 ### M-02 iCloud placeholder 下载与重试
@@ -100,7 +118,26 @@ release_gate: "block_if_missing_or_fail"
 - 用户文件不变量：`.icloud` marker 或真实文件不被静默删除；conflicted copy 不被自动合并。
 - 验证方式：记录 `mdls -name kMDItemUbiquitousItemDownloadingStatus`、UI action、retry
   结果、repo 文件和 DB row。
-- 证据状态：`manual_evidence_id: M-02`；`manual_evidence_status: pending`；M-02 缺失时阻断发布。
+- 证据状态：`manual_evidence_id: M-02`；`manual_evidence_status: blocked`；当前没有
+  iCloud placeholder 环境，无法构造真实 iCloud Drive placeholder，不得写成 PASS。
+- 手工证据：
+  - `executed_at: 2026-05-10 21:27 CST`
+  - `result: blocked`
+  - `blocked_reason: no iCloud placeholder environment available`
+  - 阻断处理：保留 release gate blocked；自动化 iCloud placeholder 覆盖不能替代真实 iCloud 手工冒烟。
+- 后续补证模板：
+  - `environment.macos_version: <macOS version>`
+  - `environment.icloud_drive: enabled`
+  - `app_build: <Developer ID notarized app 或明确 local QA app>`
+  - `repo_path: <iCloud Drive 内测试 repo 或源文件路径>`
+  - `source_placeholder_status.before: mdls -name kMDItemUbiquitousItemDownloadingStatus <path>`
+  - `source_placeholder_marker: <.icloud marker 或 Finder 未下载状态截图>`
+  - `ui_action: Download & retry`
+  - `retry_result: pass | fail`
+  - `db_rows: <sqlite query 记录 file/import row>`
+  - `user_file_invariants: placeholder marker、原文件和 conflicted copy 不被删除、不被静默合并、不被覆盖`
+  - `evidence_paths: <截图、命令输出、DB query、checksum>`
+  - `result: pass` 只有在真实 iCloud Drive placeholder 环境完成下载与 retry 后才能填写。
 - 清理：将测试文件移出 iCloud 或删除测试 repo。
 
 ### M-03 macOS 权限 / TCC 失败
@@ -110,7 +147,28 @@ release_gate: "block_if_missing_or_fail"
 - 预期恢复：UI 显示 permission recovery action；恢复权限后 retry 成功。
 - 用户文件不变量：无源文件丢失，无 final 半成品，无错误 active row。
 - 验证方式：记录系统权限设置、`ls -lae`、错误页 action、恢复权限后的 retry 结果。
-- 证据状态：`manual_evidence_id: M-03`；`manual_evidence_status: pending`；M-03 缺失时阻断发布。
+- 证据状态：`manual_evidence_id: M-03`；`manual_evidence_status: pass`；M-03 权限恢复
+  已通过本机 Release local QA build 手工冒烟。
+- 手工证据：
+  - `environment.macos_version: 26.4.1`
+  - `app_build: build/Build/Products/Release/AreaMatrix.app`，Release local QA build，
+    `CODE_SIGNING_ALLOWED=NO`
+  - `repo_path: ~/Desktop/AreaMatrix-QA/permission-repo-20260510_221849`
+  - `evidence_dir: ~/Desktop/AreaMatrix-QA/m03-evidence-20260510_221849`
+  - `executed_at: 2026-05-10 22:21 CST`
+  - `result: pass`
+  - 触发方式：对 QA repo 根目录施加可逆 POSIX 权限阻断，`ls -lae` 显示
+    `d---r-xr-x`，未修改系统 TCC 数据库。
+  - UI 显示 `Repository needs permission`，错误码为 `PermissionDenied`，提示
+    `AreaMatrix no longer has permission to read this folder.`，主恢复 action 为
+    `Reconnect folder`。
+  - 恢复权限并重开同一 repo 后回到主列表，`未分类 11`、`文档 1` 和 `50 files`
+    可加载。
+  - `sqlite3 ... 'PRAGMA integrity_check;'` 返回 `ok`
+  - `README.md` 与 `docs/m03-user-file.txt` 权限阻断前后 checksum diff 行数为 `0`
+  - `.areamatrix/staging` 文件数为 `0`
+  - repo 根目录未生成 `AREAMATRIX.md`
+  - App `UserDefaults` repoPath 已恢复为 `~/Desktop/AreaMatrix-QA/slow-repo`
 - 清理：还原权限。
 
 ### M-04 DB repair / diagnostics
@@ -120,7 +178,23 @@ release_gate: "block_if_missing_or_fail"
 - 预期恢复：诊断快照写入 `.areamatrix/diagnostics/`，repair 完成后列表/Tree 可加载。
 - 用户文件不变量：`README.md` 与用户文件 checksum 不变；不写根目录 `AREAMATRIX.md`。
 - 验证方式：记录 diagnostics 路径、`PRAGMA integrity_check`、Tree/List 状态和 checksum。
-- 证据状态：`manual_evidence_id: M-04`；`manual_evidence_status: pending`；M-04 缺失时阻断发布。
+- 证据状态：`manual_evidence_id: M-04`；`manual_evidence_status: pass`；M-04 DB repair
+  已通过本机 Release local QA build 手工冒烟。
+- 手工证据：
+  - `environment.macos_version: 26.4.1`
+  - `app_build: build/Build/Products/Release/AreaMatrix.app`，Release local QA build，
+    `CODE_SIGNING_ALLOWED=NO`
+  - `repo_path: ~/Desktop/AreaMatrix-QA/db-repair-repo`
+  - `evidence_dir: ~/Desktop/AreaMatrix-QA/m04-evidence-20260510_213637`
+  - `executed_at: 2026-05-10 21:58 CST`
+  - `result: pass`
+  - UI 先显示 `Repository metadata needs repair`，安全确认后执行 `Run Full Rescan`
+  - 修复完成后回到主列表，`未分类 11 files` 可加载
+  - diagnostics snapshot 写入 `.areamatrix/diagnostics/index-1778421523-2695bbce-82b9-4ea6-9b33-ad02eb06f1d8.db`
+  - `sqlite3 ... 'PRAGMA integrity_check;'` 返回 `ok`
+  - `README.md` 与 `docs/m04-user-file.txt` 修复前后 checksum diff 行数为 `0`
+  - repo 根目录未生成 `AREAMATRIX.md`
+  - App `UserDefaults` repoPath 已恢复为 `~/Desktop/AreaMatrix-QA/slow-repo`
 - 清理：删除测试 repo。
 
 ## 4. 发布阻断结论
@@ -134,9 +208,13 @@ release_gate: "block_if_missing_or_fail"
 
 条件阻断项：
 
-- M-01、M-02、M-03、M-04 任何一项缺少发布前手工日志时，Stage 1 发布不通过。
-- 当前 `manual_evidence_status: pending` 表示发布证据未采集完成；不得将 Stage 1
-  release readiness 写成 PASS。
+- M-01 Copy 模式手工日志已采集并通过，但 Move 模式中断恢复和自动续跑不在本次 M-01 证据范围内。
+- M-02 当前为环境 `blocked`，真实 iCloud placeholder 手工冒烟未完成。
+- M-03 权限恢复手工日志已采集并通过；本次使用 local QA repo 的可逆 POSIX 权限阻断模拟失去访问权限，
+  未修改系统 TCC 数据库。
+- M-04 DB repair / diagnostics 手工日志已采集并通过。
+- 当前 `manual_evidence_status: pending` 或 `manual_evidence_status: blocked` 表示发布证据未采集完成；不得将
+  Stage 1 release readiness 写成 PASS。
 - 本文列出的自动化测试任一失败时，Stage 1 发布不通过。
 - 如果 validation 只能跑 dry-run 或只验证 prompt 体系，不能替代上述恢复证据。
 

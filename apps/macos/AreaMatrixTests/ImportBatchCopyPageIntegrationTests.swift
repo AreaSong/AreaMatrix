@@ -1,5 +1,5 @@
-import XCTest
 @testable import AreaMatrix
+import XCTest
 
 final class ImportBatchCopyPageIntegrationTests: XCTestCase {
     @MainActor
@@ -32,7 +32,7 @@ final class ImportBatchCopyPageIntegrationTests: XCTestCase {
                     reason: .keyword,
                     confidence: 0.82
                 )
-            ),
+            )
         ]
         let importer = S118RecordingBatchImporter()
         let model = ImportBatchCopyImportModel(
@@ -53,37 +53,14 @@ final class ImportBatchCopyPageIntegrationTests: XCTestCase {
     func testS118BatchCopyImportFailureKeepsProgressAndMappedErrorVisible() async {
         let invoiceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
         let contractURL = URL(fileURLWithPath: "/tmp/合同.pdf")
-        let request = ImportEntryRequest(
-            repoPath: "/tmp/repo",
-            source: .dropZone,
+        let request = s118BatchRequest(
             destination: .category("finance"),
-            urls: [invoiceURL, contractURL],
-            kind: .multipleItems(2),
-            availableCategories: ["inbox", "docs", "finance"]
+            urls: [invoiceURL, contractURL]
         )
-        let rows = [
-            ImportBatchPreviewRow.ready(
-                url: invoiceURL,
-                prediction: ClassifyResultSnapshot(
-                    category: "finance",
-                    suggestedName: "Invoice_2026Q1.pdf",
-                    reason: .keyword,
-                    confidence: 0.9
-                )
-            ),
-            ImportBatchPreviewRow.ready(
-                url: contractURL,
-                prediction: ClassifyResultSnapshot(
-                    category: "docs",
-                    suggestedName: "2026Q1_合同.pdf",
-                    reason: .keyword,
-                    confidence: 0.82
-                )
-            ),
-        ]
+        let rows = s118ReadyBatchRows(invoiceURL: invoiceURL, contractURL: contractURL)
         let importer = S118SequenceBatchImporter(results: [
             .success(.s117Fixture(currentName: "Invoice_2026Q1.pdf", category: "finance")),
-            .failure(CoreError.PermissionDenied(path: contractURL.path)),
+            .failure(CoreError.PermissionDenied(path: contractURL.path))
         ])
         let errorMapper = S117RecordingErrorMapper()
         let model = ImportBatchCopyImportModel(
@@ -133,7 +110,7 @@ final class ImportBatchCopyPageIntegrationTests: XCTestCase {
             source: .dropZone,
             urls: [
                 URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf"),
-                URL(fileURLWithPath: "/tmp/合同.pdf"),
+                URL(fileURLWithPath: "/tmp/合同.pdf")
             ]
         )
         model.updateImportEntryProgress(progress)
@@ -147,7 +124,7 @@ final class ImportBatchCopyPageIntegrationTests: XCTestCase {
             failed: 0,
             remaining: 1
         )))
-        if case .importProgress(let state) = model.route {
+        if case let .importProgress(state) = model.route {
             XCTAssertEqual(state.titleText, "正在导入 2 个文件")
             XCTAssertEqual(state.toolbarText, "Importing 1 / 2")
         } else {
@@ -176,7 +153,7 @@ final class ImportBatchCopyPageIntegrationTests: XCTestCase {
         model.updateImportEntryProgress(progress)
         model.failImportEntry(progress: progress, mapping: mapping)
 
-        if case .importResult(let result) = model.route {
+        if case let .importResult(result) = model.route {
             XCTAssertEqual(result.resultSummaryText, "Imported 1, failed 1, stopped 0, pending 0.")
             XCTAssertEqual(result.items.map(\.status), [.failed])
         } else {
@@ -204,49 +181,25 @@ final class ImportBatchCopyPageIntegrationTests: XCTestCase {
         model.updateImportEntryProgress(progress)
         model.viewImportProgressDetails()
 
-        if case .importResult(let result) = model.route {
+        if case let .importResult(result) = model.route {
             XCTAssertEqual(result.resultSummaryText, "Imported 1, failed 0, stopped 0, pending 1.")
             XCTAssertEqual(result.currentPath, "finance/合同.pdf")
         } else {
             XCTFail("Expected S1-21 import result route")
         }
     }
+}
 
+final class ImportBatchCopyProgressIntegrationTests: XCTestCase {
     @MainActor
     func testS118BatchImportProgressCanStartBeforeFirstCoreImportCompletes() async {
         let invoiceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
         let contractURL = URL(fileURLWithPath: "/tmp/合同.pdf")
-        let rows = [
-            ImportBatchPreviewRow.ready(
-                url: invoiceURL,
-                prediction: ClassifyResultSnapshot(
-                    category: "finance",
-                    suggestedName: "Invoice_2026Q1.pdf",
-                    reason: .keyword,
-                    confidence: 0.9
-                )
-            ),
-            ImportBatchPreviewRow.ready(
-                url: contractURL,
-                prediction: ClassifyResultSnapshot(
-                    category: "docs",
-                    suggestedName: "2026Q1_合同.pdf",
-                    reason: .keyword,
-                    confidence: 0.82
-                )
-            ),
-        ]
-        let request = ImportEntryRequest(
-            repoPath: "/tmp/repo",
-            source: .dropZone,
-            destination: .autoClassify,
-            urls: [invoiceURL, contractURL],
-            kind: .multipleItems(2),
-            availableCategories: ["inbox", "docs", "finance"]
-        )
+        let rows = s118ReadyBatchRows(invoiceURL: invoiceURL, contractURL: contractURL)
+        let request = s118BatchRequest(urls: [invoiceURL, contractURL])
         let importer = S118SequenceBatchImporter(results: [
             .success(.s117Fixture(currentName: "Invoice_2026Q1.pdf", category: "finance")),
-            .success(.s117Fixture(currentName: "2026Q1_合同.pdf", category: "docs")),
+            .success(.s117Fixture(currentName: "2026Q1_合同.pdf", category: "docs"))
         ])
         let model = ImportBatchCopyImportModel(
             importer: importer,
@@ -287,13 +240,8 @@ final class ImportBatchCopyPageIntegrationTests: XCTestCase {
     func testS118PageIntegrationCoversNameConflictRenameAndReplaceConfirmation() async {
         let invoiceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
         let contractURL = URL(fileURLWithPath: "/tmp/合同.pdf")
-        let request = ImportEntryRequest(
-            repoPath: "/tmp/repo",
-            source: .dropZone,
-            destination: .autoClassify,
+        let request = s118BatchRequest(
             urls: [invoiceURL, contractURL],
-            kind: .multipleItems(2),
-            availableCategories: ["inbox", "docs", "finance"],
             allowReplaceDuringImport: true,
             isTrashAvailable: true
         )
@@ -316,11 +264,11 @@ final class ImportBatchCopyPageIntegrationTests: XCTestCase {
                     confidence: 0.82
                 ),
                 existingPath: "docs/合同.pdf"
-            ),
+            )
         ]
         let importer = S118SequenceBatchImporter(results: [
             .success(.s117Fixture(currentName: "Invoice_2026Q1.pdf", category: "finance")),
-            .success(.s117Fixture(currentName: "合同-renamed.pdf", category: "docs")),
+            .success(.s117Fixture(currentName: "合同-renamed.pdf", category: "docs"))
         ])
         let model = ImportBatchCopyImportModel(
             importer: importer,
@@ -368,10 +316,10 @@ final class ImportBatchCopyPageIntegrationTests: XCTestCase {
                     confidence: 0.9
                 ),
                 existingPath: "finance/Invoice_2026Q1.pdf"
-            ),
+            )
         ]
         let importer = S118SequenceBatchImporter(results: [
-            .success(.s117Fixture(currentName: "Invoice_2026Q1.pdf", category: "finance")),
+            .success(.s117Fixture(currentName: "Invoice_2026Q1.pdf", category: "finance"))
         ])
         let model = ImportBatchCopyImportModel(
             importer: importer,
@@ -397,7 +345,7 @@ final class ImportBatchCopyPageIntegrationTests: XCTestCase {
                 suggestedCategory: "finance",
                 overrideFilename: "Invoice_2026Q1.pdf",
                 duplicateStrategy: .overwrite
-            ),
+            )
         ])
     }
 
@@ -424,7 +372,7 @@ final class ImportBatchCopyPageIntegrationTests: XCTestCase {
                     confidence: 0.9
                 ),
                 existingPath: "finance/Invoice_2026Q1.pdf"
-            ),
+            )
         ]
         let importer = S118RecordingBatchImporter()
         let model = ImportBatchCopyImportModel(
@@ -447,7 +395,7 @@ final class ImportBatchCopyPageIntegrationTests: XCTestCase {
                 suggestedCategory: "finance",
                 overrideFilename: "Invoice_2026Q1.pdf",
                 duplicateStrategy: .keepBoth
-            ),
+            )
         ])
     }
 
@@ -474,7 +422,7 @@ final class ImportBatchCopyPageIntegrationTests: XCTestCase {
                     confidence: 0.82
                 ),
                 existingPath: "docs/合同.pdf"
-            ),
+            )
         ]
         let importer = S118RecordingBatchImporter()
         let model = ImportBatchCopyImportModel(
@@ -498,8 +446,7 @@ final class ImportBatchCopyPageIntegrationTests: XCTestCase {
                 suggestedCategory: "docs",
                 overrideFilename: "合同-renamed.pdf",
                 duplicateStrategy: .keepBoth
-            ),
+            )
         ])
     }
-
 }

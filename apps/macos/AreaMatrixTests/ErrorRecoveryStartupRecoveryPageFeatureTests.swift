@@ -1,7 +1,7 @@
-import XCTest
 @testable import AreaMatrix
+import XCTest
 
-final class ErrorRecoveryStartupRecoveryPageFeatureTests: XCTestCase {
+final class StartupRecoveryPageFeatureTests: XCTestCase {
     @MainActor
     func testS132C116StartupRecoveryViewExposesReportRetryAndTechnicalDetails() {
         let report = RecoveryReportSnapshot(
@@ -100,7 +100,7 @@ final class ErrorRecoveryStartupRecoveryPageFeatureTests: XCTestCase {
         let mapping = CoreErrorMappingSnapshot.s132StartupRecoveryMapping(rawContext: "database is locked")
         let recoverer = MainLoadingRecordingStartupRecoverer(results: [
             .failure(CoreError.Db(message: "database is locked")),
-            .success(RecoveryReportSnapshot(cleanedStagingFiles: 1, revertedStagingDbRows: 2, warnings: [])),
+            .success(RecoveryReportSnapshot(cleanedStagingFiles: 1, revertedStagingDbRows: 2, warnings: []))
         ])
         let opener = MainLoadingPausingRepositoryOpener(
             opening: .mainLoadingFixture(repoPath: "/tmp/repo", fileCount: 1)
@@ -109,7 +109,7 @@ final class ErrorRecoveryStartupRecoveryPageFeatureTests: XCTestCase {
             settingsReader: MainLoadingStaticSettingsReader(repoPath: nil),
             settingsWriter: ShellRecordingSettingsWriter(),
             pathValidator: MainLoadingStaticPathValidator(),
-            initializedPathValidator: MainLoadingStaticInitializedPathValidator(),
+            initializedPathValidator: StaticInitializedPathValidator(),
             emptyRepositoryOpener: opener,
             startupRecoverer: recoverer,
             scanSessionReader: MainLoadingStaticScanSessionReader(result: .success(nil)),
@@ -124,7 +124,7 @@ final class ErrorRecoveryStartupRecoveryPageFeatureTests: XCTestCase {
 
         XCTAssertEqual(openedBeforeRetry, [])
         XCTAssertEqual(requestsBeforeRetry, ["/tmp/repo"])
-        guard case .mainLoading(let failedState) = model.route else {
+        guard case let .mainLoading(failedState) = model.route else {
             return XCTFail("Expected S1-32 startup recovery to stay in main loading")
         }
         XCTAssertEqual(failedState.recoveryErrorMapping, mapping)
@@ -165,12 +165,12 @@ private actor S132StartupRecoveryErrorMapper: CoreErrorMapping {
         self.mapping = mapping
     }
 
-    func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
+    func mapCoreError(_: CoreError) async -> CoreErrorMappingSnapshot {
         mapping
     }
 }
 
-private actor MainLoadingStaticInitializedPathValidator: CoreInitializedRepositoryPathValidating {
+private actor StaticInitializedPathValidator: CoreInitializedRepositoryPathValidating {
     func validateInitializedRepoPath(repoPath: String) async throws -> RepoPathValidationSnapshot {
         .mainLoadingInitializedFixture(repoPath: repoPath)
     }

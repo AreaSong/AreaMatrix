@@ -7,8 +7,50 @@ extension OnboardingModel {
         settingsWriter.saveSuccessfulRepoOpen(repoPath: opening.config.repoPath, openedAt: openedAt)
         mainRepoLastOpenedAt = openedAt
         route = Self.mainRoute(for: opening)
+        routeInterruptedImportSessionIfNeeded(opening: opening)
         consumeQueuedDockImportIfPossible()
         consumePendingExternalCreatedFileSignals()
+    }
+
+    @MainActor
+    private func routeInterruptedImportSessionIfNeeded(opening: RepositoryOpeningResult) {
+        Task { [weak self] in
+            guard let self else { return }
+            let repoPath = opening.config.repoPath
+            guard let session = await importBatchSessionStore.loadSession(repoPath: repoPath),
+                  session.isUnfinishedCopySession
+            else { return }
+
+            guard await shouldRouteInterruptedImportSession(repoPath: repoPath) else { return }
+            await MainActor.run {
+                guard self.currentMainRouteRepoPath == repoPath else { return }
+                self.pendingImportEntry = nil
+                self.route = .importResult(ImportResultRouteState(
+                    sourceOpening: opening,
+                    interruptedSession: session
+                ))
+                self.toastMessage = "检测到上次未完成的批量导入。"
+            }
+        }
+    }
+
+    private func shouldRouteInterruptedImportSession(repoPath: String) async -> Bool {
+        do {
+            _ = try await startupRecoverer.recoverOnStartup(repoPath: repoPath)
+            return true
+        } catch {
+            return false
+        }
+    }
+
+    @MainActor
+    private var currentMainRouteRepoPath: String? {
+        switch route {
+        case let .mainEmpty(opening), let .mainList(opening), let .settingsGeneral(opening):
+            opening.config.repoPath
+        default:
+            nil
+        }
     }
 
     @MainActor
@@ -39,7 +81,7 @@ extension OnboardingModel {
     @MainActor
     func reconnectMainRepositoryFolder(from repoPath: String) async {
         guard !isRetryingMainRepository else { return }
-        guard case .mainRepoError(let currentRepoPath, _) = route, currentRepoPath == repoPath else {
+        guard case let .mainRepoError(currentRepoPath, _) = route, currentRepoPath == repoPath else {
             return
         }
         guard let selectedURL = directoryPicker.chooseDirectory() else { return }
@@ -77,7 +119,7 @@ extension OnboardingModel {
 
     @MainActor
     func requestMainRepositoryDiagnosticsPrivacyConfirmation(repoPath: String) {
-        guard case .mainRepoError(let currentRepoPath, _) = route, currentRepoPath == repoPath else {
+        guard case let .mainRepoError(currentRepoPath, _) = route, currentRepoPath == repoPath else {
             return
         }
 
@@ -93,7 +135,7 @@ extension OnboardingModel {
 
     @MainActor
     func collectMainRepositoryDiagnostics(repoPath: String) async {
-        guard case .mainRepoError(let currentRepoPath, _) = route, currentRepoPath == repoPath else {
+        guard case let .mainRepoError(currentRepoPath, _) = route, currentRepoPath == repoPath else {
             return
         }
         guard case .confirmingPrivacy = mainRepoDiagnostics else {
@@ -103,15 +145,15 @@ extension OnboardingModel {
         mainRepoDiagnostics = .collecting
         do {
             let snapshot = try await diagnosticsCollector.createDiagnosticsSnapshot(repoPath: repoPath)
-            guard case .mainRepoError(let latestRepoPath, _) = route, latestRepoPath == repoPath else {
+            guard case let .mainRepoError(latestRepoPath, _) = route, latestRepoPath == repoPath else {
                 return
             }
             mainRepoDiagnostics = .collected(snapshot)
         } catch {
-            guard case .mainRepoError(let latestRepoPath, _) = route, latestRepoPath == repoPath else {
+            guard case let .mainRepoError(latestRepoPath, _) = route, latestRepoPath == repoPath else {
                 return
             }
-            mainRepoDiagnostics = .failed(await openingFailureMapping(for: error))
+            mainRepoDiagnostics = await .failed(openingFailureMapping(for: error))
         }
     }
 

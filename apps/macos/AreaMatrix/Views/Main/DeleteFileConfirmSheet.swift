@@ -53,9 +53,12 @@ struct DeleteFileConfirmSheet: View {
         } else if let failure = state.failure(for: file.id) {
             failureView(failure, operation: operation)
         } else if operation == .moveToTrash, !isTrashAvailable {
-            Label("Trash is not available. Handle the file in Finder or collect diagnostics.", systemImage: "trash.slash")
-                .font(.caption)
-                .foregroundStyle(.orange)
+            Label(
+                "Trash is not available. Handle the file in Finder or collect diagnostics.",
+                systemImage: "trash.slash"
+            )
+            .font(.caption)
+            .foregroundStyle(.orange)
         }
     }
 

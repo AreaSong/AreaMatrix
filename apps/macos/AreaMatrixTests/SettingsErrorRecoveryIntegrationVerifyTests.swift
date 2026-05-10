@@ -1,7 +1,7 @@
-import XCTest
 @testable import AreaMatrix
+import XCTest
 
-final class SettingsErrorRecoveryIntegrationVerifyTests: XCTestCase {
+final class SettingsRecoveryIntegrationTests: XCTestCase {
     @MainActor
     func testSettingsErrorRecoveryClosureUsesRealCoreForBoundCapabilitiesAndSafeRoutes() async throws {
         let context = try await Task31IntegrationContext.make()
@@ -100,7 +100,10 @@ private func verifyClassifierRepositoryAndOverview(_ context: Task31IntegrationC
     XCTAssertTrue(FileManager.default.fileExists(atPath: context.generatedOverviewURL.path))
     XCTAssertTrue(FileManager.default.fileExists(atPath: context.rootOverviewURL.path))
     XCTAssertEqual(try String(contentsOf: context.readmeURL), "user readme\n")
-    XCTAssertEqual(generatedRevealer.requests.map(\.relativePath), [RepositorySettingsSummary.generatedOverviewRelativePath])
+    XCTAssertEqual(
+        generatedRevealer.requests.map(\.relativePath),
+        [RepositorySettingsSummary.generatedOverviewRelativePath]
+    )
 }
 
 @MainActor
@@ -173,7 +176,7 @@ private func verifyTask31AboutAndRecoveryRoute(_ context: Task31IntegrationConte
 
     XCTAssertEqual(about.versionInfo.schemaVersion, "v1")
     XCTAssertNotEqual(about.versionInfo.coreVersion, "Unknown")
-    if case .collected(let snapshot) = about.diagnosticsState {
+    if case let .collected(snapshot) = about.diagnosticsState {
         let report = try String(contentsOf: URL(fileURLWithPath: snapshot.exportPath)
             .appendingPathComponent("about-diagnostics.txt"))
         XCTAssertTrue(report.contains("User file contents: excluded"))
@@ -186,7 +189,15 @@ private func verifyTask31AboutAndRecoveryRoute(_ context: Task31IntegrationConte
     let shell = OnboardingModel(helpOpener: Task31NoopWelcomeHelpOpener())
     shell.route = .mainRepoError(context.repoURL.path, mapping)
     shell.openMainRepositoryRepair(repoPath: context.repoURL.path)
-    XCTAssertEqual(shell.route, .dbRepairConfirm(DatabaseRepairRouteState(repoPath: context.repoURL.path, scanSession: nil, mapping: mapping, returnRoute: .mainRepoError(mapping))))
+    XCTAssertEqual(
+        shell.route,
+        .dbRepairConfirm(DatabaseRepairRouteState(
+            repoPath: context.repoURL.path,
+            scanSession: nil,
+            mapping: mapping,
+            returnRoute: .mainRepoError(mapping)
+        ))
+    )
 }
 
 private struct Task31IntegrationContext {
@@ -243,7 +254,7 @@ private struct Task31IntegrationContext {
 
 private final class Task31NoopFileRevealer: RepositoryFileRevealing {
     @MainActor
-    func revealFile(repoPath: String, relativePath: String) throws {}
+    func revealFile(repoPath _: String, relativePath _: String) throws {}
 }
 
 private final class Task31RecordingFileRevealer: RepositoryFileRevealing {
@@ -262,21 +273,21 @@ private final class Task31RecordingFileRevealer: RepositoryFileRevealing {
 
 private final class Task31NoopIgnoreRulesManager: RepositoryIgnoreRulesManaging {
     @MainActor
-    func openIgnoreRules(repoPath: String) throws {}
+    func openIgnoreRules(repoPath _: String) throws {}
 
     @MainActor
-    func createDefaultIgnoreRules(repoPath: String) throws {}
+    func createDefaultIgnoreRules(repoPath _: String) throws {}
 }
 
 private struct Task31StaticICloudDetector: ICloudStatusDetecting {
-    func snapshot(repoPath: String, config: RepoConfigSnapshot) async -> IntegrationsICloudSnapshot {
+    func snapshot(repoPath _: String, config _: RepoConfigSnapshot) async -> IntegrationsICloudSnapshot {
         IntegrationsICloudSnapshot(repositoryLocation: .localFolder, iCloudStatus: .unavailable)
     }
 }
 
 private final class Task31NoopFinderOpener: RepositoryFinderOpening {
     @MainActor
-    func openRepositoryInFinder(repoPath: String) throws {}
+    func openRepositoryInFinder(repoPath _: String) throws {}
 }
 
 private struct Task31NoopICloudHelpOpener: ICloudHelpOpening {
@@ -300,7 +311,9 @@ private actor Task31RecordingDiagnosticsCollector: CoreDiagnosticsCollecting {
 private struct Task31StaticAppVersionReader: AppVersionReading {
     let version: String
 
-    func appVersion() -> String { version }
+    func appVersion() -> String {
+        version
+    }
 }
 
 private final class Task31RecordingAdvancedLogsOpener: AdvancedSettingsLogFolderOpening {
@@ -321,15 +334,21 @@ private final class Task31RecordingAdvancedSummaryCopier: AdvancedSettingsDiagno
 
 private struct Task31NoopAboutExternalLinkOpener: AboutExternalLinkOpening {
     @MainActor
-    func open(link: AboutExternalLink) throws -> String { link.urlString }
+    func open(link: AboutExternalLink) throws -> String {
+        link.urlString
+    }
 }
 
 private struct Task31RecordingAboutLogsOpener: AboutLogsOpening {
     @MainActor
-    func logsPath(repoPath: String) -> String { "\(repoPath)/.areamatrix/logs" }
+    func logsPath(repoPath: String) -> String {
+        "\(repoPath)/.areamatrix/logs"
+    }
 
     @MainActor
-    func openLogs(repoPath: String) throws -> String { logsPath(repoPath: repoPath) }
+    func openLogs(repoPath: String) throws -> String {
+        logsPath(repoPath: repoPath)
+    }
 }
 
 private final class Task31RecordingStringCopier: AboutStringCopying {
@@ -343,7 +362,7 @@ private final class Task31RecordingStringCopier: AboutStringCopying {
 
 private struct Task31NoopAboutDiagnosticsRevealer: AboutDiagnosticsRevealing {
     @MainActor
-    func revealDiagnostics(at path: String) throws {}
+    func revealDiagnostics(at _: String) throws {}
 }
 
 private struct Task31NoopWelcomeHelpOpener: WelcomeHelpOpening {
@@ -352,5 +371,5 @@ private struct Task31NoopWelcomeHelpOpener: WelcomeHelpOpening {
 
 private final class Task31NoopAccessibilityAnnouncer: AccessibilityAnnouncing {
     @MainActor
-    func announce(_ message: String) {}
+    func announce(_: String) {}
 }

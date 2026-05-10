@@ -7,9 +7,10 @@ protocol ImportBatchCoreFileLoading: Sendable {
 struct CoreBridgeBatchFileLoader: ImportBatchCoreFileLoading {
     func loadImportPreviewFiles(repoPath: String, categories: Set<String?>) async throws -> [FileEntrySnapshot] {
         let bridge = CoreBridge()
-        return try await ImportBatchCoreFileLoader.load(repoPath: repoPath, categories: categories) { repoPath, filter in
-            try await bridge.listFiles(repoPath: repoPath, filter: filter)
-        }
+        return try await ImportBatchCoreFileLoader
+            .load(repoPath: repoPath, categories: categories) { repoPath, filter in
+                try await bridge.listFiles(repoPath: repoPath, filter: filter)
+            }
     }
 }
 
@@ -64,14 +65,14 @@ struct CoreImportBatchNameConflictPrechecker: ImportBatchNameConflictPrechecking
     ) -> Set<String?> {
         switch destination {
         case .autoClassify:
-            return Set(rows.map { ImportBatchPrecheckTarget.category(for: $0, destination: destination) })
+            Set(rows.map { ImportBatchPrecheckTarget.category(for: $0, destination: destination) })
         case .category, .repositoryRoot:
-            return [ImportBatchPrecheckTarget.category(for: rows.first, destination: destination)]
+            [ImportBatchPrecheckTarget.category(for: rows.first, destination: destination)]
         }
     }
 }
 
-enum ImportBatchDuplicatePrecheckResult: Equatable, Sendable {
+enum ImportBatchDuplicatePrecheckResult: Equatable {
     case duplicate(existingPath: String)
     case nameConflict(existingPath: String)
     case iCloudPlaceholder(path: String)
@@ -79,7 +80,7 @@ enum ImportBatchDuplicatePrecheckResult: Equatable, Sendable {
     case failed(String)
 }
 
-enum ImportBatchNameConflictPrecheckResult: Equatable, Sendable {
+enum ImportBatchNameConflictPrecheckResult: Equatable {
     case conflict(existingPath: String)
     case failed(String)
 }
@@ -94,7 +95,7 @@ struct CoreImportBatchDuplicatePrechecker: ImportBatchDuplicatePrechecking {
     func precheckDuplicates(
         repoPath: String,
         sourceURLs: [URL],
-        destination: ImportBatchDestinationOption
+        destination _: ImportBatchDestinationOption
     ) async -> [String: ImportBatchDuplicatePrecheckResult] {
         let placeholderResults = sourceURLs.reduce(
             into: [String: ImportBatchDuplicatePrecheckResult]()
@@ -146,7 +147,7 @@ enum ImportBatchCoreFileLoader {
         let normalizedCategories = categories.isEmpty ? [nil] : Array(categories)
         var files: [FileEntrySnapshot] = []
         for category in normalizedCategories {
-            files.append(contentsOf: try await loadCategoryFiles(
+            try await files.append(contentsOf: loadCategoryFiles(
                 repoPath: repoPath,
                 category: category,
                 listFiles: listFiles
@@ -204,7 +205,7 @@ enum ImportBatchPrecheckTarget {
         case .autoClassify:
             let category = row?.predictedCategory?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "inbox"
             return category.isEmpty ? "inbox" : category
-        case .category(let slug):
+        case let .category(slug):
             return slug.trimmingCharacters(in: .whitespacesAndNewlines)
         case .repositoryRoot:
             return nil

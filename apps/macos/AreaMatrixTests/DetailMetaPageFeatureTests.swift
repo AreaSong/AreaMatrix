@@ -1,5 +1,5 @@
-import XCTest
 @testable import AreaMatrix
+import XCTest
 
 final class DetailMetaPageFeatureTests: XCTestCase {
     @MainActor
@@ -91,7 +91,7 @@ final class DetailMetaPageFeatureTests: XCTestCase {
         let requests = await lister.recordedRequests()
 
         XCTAssertEqual(requests, [
-            DetailLogRequest(repoPath: "/tmp/repo", filter: .detailLog(fileID: detail.id)),
+            DetailLogRequest(repoPath: "/tmp/repo", filter: .detailLog(fileID: detail.id))
         ])
         XCTAssertEqual(model.detailLogState, .loaded(fileID: detail.id, entries: [entry]))
     }
@@ -122,7 +122,7 @@ final class DetailMetaPageFeatureTests: XCTestCase {
         let oldFile = FileEntrySnapshot.detailMetaFixture(id: 18, currentName: "old.pdf")
         let newFile = FileEntrySnapshot.detailMetaFixture(id: 19, currentName: "new.pdf")
         let lister = DetailLogSuspendedLister(entries: [
-            ChangeLogEntrySnapshot.detailLogFixture(fileID: oldFile.id, action: "imported"),
+            ChangeLogEntrySnapshot.detailLogFixture(fileID: oldFile.id, action: "imported")
         ])
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [oldFile, newFile]),
@@ -204,20 +204,19 @@ final class DetailMetaPageFeatureTests: XCTestCase {
         XCTAssertEqual(model.detailLogDiagnosticsState, .failed(fileID: detail.id, mapping))
         XCTAssertEqual(mappedErrors, [
             CoreError.Db(message: "change log locked"),
-            CoreError.PermissionDenied(path: "/tmp/repo"),
+            CoreError.PermissionDenied(path: "/tmp/repo")
         ])
     }
-
 }
 
 actor DetailMetaNoopLister: CoreFileListing {
-    func listFiles(repoPath: String, filter: FileFilterSnapshot) async throws -> [FileEntrySnapshot] {
+    func listFiles(repoPath _: String, filter _: FileFilterSnapshot) async throws -> [FileEntrySnapshot] {
         []
     }
 }
 
 private actor DetailMetaNoopDetailer: CoreFileDetailing {
-    func getFile(repoPath: String, fileID: Int64) async throws -> FileEntrySnapshot {
+    func getFile(repoPath _: String, fileID: Int64) async throws -> FileEntrySnapshot {
         throw CoreError.FileNotFound(path: "\(fileID)")
     }
 }
@@ -234,11 +233,11 @@ actor DetailMetaImmediateDetailer: CoreFileDetailing {
         self.result = result
     }
 
-    func getFile(repoPath: String, fileID: Int64) async throws -> FileEntrySnapshot {
+    func getFile(repoPath _: String, fileID _: Int64) async throws -> FileEntrySnapshot {
         switch result {
-        case .success(let file):
+        case let .success(file):
             return file
-        case .failure(let error):
+        case let .failure(error):
             throw error
         }
     }
@@ -255,15 +254,15 @@ private actor DetailMetaSuspendedDetailer: CoreFileDetailing {
         self.result = result
     }
 
-    func getFile(repoPath: String, fileID: Int64) async throws -> FileEntrySnapshot {
+    func getFile(repoPath _: String, fileID _: Int64) async throws -> FileEntrySnapshot {
         didReceiveRequest = true
         await withCheckedContinuation { continuation in
             self.continuation = continuation
         }
         switch result {
-        case .success(let file):
+        case let .success(file):
             return file
-        case .failure(let error):
+        case let .failure(error):
             throw error
         }
     }
@@ -289,15 +288,15 @@ private actor DetailMetaSequenceDetailer: CoreFileDetailing {
         self.results = results
     }
 
-    func getFile(repoPath: String, fileID: Int64) async throws -> FileEntrySnapshot {
+    func getFile(repoPath _: String, fileID: Int64) async throws -> FileEntrySnapshot {
         guard !results.isEmpty else {
             throw CoreError.FileNotFound(path: "\(fileID)")
         }
 
         switch results.removeFirst() {
-        case .success(let file):
+        case let .success(file):
             return file
-        case .failure(let error):
+        case let .failure(error):
             throw error
         }
     }
@@ -316,7 +315,9 @@ actor DetailMetaErrorMapper: CoreErrorMapping {
         return mapping
     }
 
-    func recordedErrors() -> [CoreError] { errors }
+    func recordedErrors() -> [CoreError] {
+        errors
+    }
 }
 
 struct DetailLogRequest: Equatable {
@@ -342,14 +343,16 @@ actor DetailLogRecordingLister: CoreChangeLogListing {
         guard !results.isEmpty else { return [] }
 
         switch results.removeFirst() {
-        case .success(let entries):
+        case let .success(entries):
             return entries
-        case .failure(let error):
+        case let .failure(error):
             throw error
         }
     }
 
-    func recordedRequests() -> [DetailLogRequest] { requests }
+    func recordedRequests() -> [DetailLogRequest] {
+        requests
+    }
 }
 
 private actor DetailLogSuspendedLister: CoreChangeLogListing {
@@ -361,7 +364,7 @@ private actor DetailLogSuspendedLister: CoreChangeLogListing {
         self.entries = entries
     }
 
-    func listChanges(repoPath: String, filter: ChangeFilterSnapshot) async throws -> [ChangeLogEntrySnapshot] {
+    func listChanges(repoPath _: String, filter _: ChangeFilterSnapshot) async throws -> [ChangeLogEntrySnapshot] {
         didReceiveRequest = true
         await withCheckedContinuation { continuation in
             self.continuation = continuation
@@ -473,5 +476,4 @@ extension CoreErrorMappingSnapshot {
             rawContext: "S1-13 C1-13 list_changes"
         )
     }
-
 }

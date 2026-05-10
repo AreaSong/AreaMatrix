@@ -1,0 +1,87 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`3-1/task-05`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-3/3-1-stability-release/task-05-stage1-integration-verify.md`
+- Manifest：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-3.md` 的 `## 3-1/task-05`
+- Exact Docs：6 个已读取；Existing Code：`core/**`、`apps/macos/**`、`scripts/**` 已核对；本次未修改文件
+
+三、完成度摘要
+
+- 已覆盖项数：7/7 个核对清单项已验收
+- 未覆盖项数：0
+- 通过项数：3
+- 不通过项数：4
+- 阻塞项数：6
+- Expected New Paths：`core/tests/**`、`apps/macos/AreaMatrixTests/**`、`scripts/**`、`docs/development/**` 均存在
+- Forbidden Touches：未发现违规 diff；`git diff --name-only -- core/src core/area_matrix.udl apps/macos/AreaMatrix apps/macos/AreaMatrix.xcodeproj` 为空
+
+四、逐项验收结果
+
+- 项目：读取 Stage 1 roadmap、control map、Core/UX specs、testing/release 文档
+  结果：通过
+  证据：6 个 Exact Docs 均存在并已读取；release 证据另读 `stage-1-release-checklist.md`、`stage-1-performance-baseline.md`、`recovery-scenarios.md`
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/**`
+
+- 项目：按 control map 核对 Real Core 页面，不得 mock-only 通过
+  结果：通过
+  证据：`prompt_pipeline.py audit --pages` 通过，Stage 1 页面均 `OK`；多处 UI 默认注入真实 `CoreBridge()`，如 `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift:188`
+  涉及文件：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`
+
+- 项目：核对 Phase 1 Core 与 Phase 2 UI integration verify，尤其 import/recovery/sync/iCloud/DB repair/file actions
+  结果：不通过
+  证据：机械覆盖通过，但发布级恢复证据仍 pending；M-01..M-04 缺失时明确阻断发布
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/development/recovery-scenarios.md:92`、`:103`、`:113`、`:123`、`:137`
+
+- 项目：核对 `3-1/task-01` 到 `3-1/task-04` 的 error recovery、recovery scenarios、performance、release checklist 证据
+  结果：不通过
+  证据：release checklist 自身记录 P0/P1、手工冒烟、性能、签名/公证/DMG 等仍不放行
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-release-checklist.md:42`、`:44`、`:46`、`:68`
+
+- 项目：运行最终自动化综合门禁，并记录手工冒烟、性能基线、release checklist、签名/公证、DMG、干净机首启
+  结果：不通过
+  证据：`./dev check all` 失败；真实 `.app` 首屏、手工冒烟、签名/公证、DMG、干净 Mac 首启均缺证据
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-release-checklist.md:42`、`:57`、`:58`、`:59`、`:60`
+
+- 项目：发现 P0/P1 风险时不得放行
+  结果：不通过
+  证据：release checklist 明确列出 P1-RL-001 到 P1-RL-005；存在 P1 时不得放行
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-release-checklist.md:68` 到 `:72`
+
+- 项目：不得触碰 Forbidden Touches
+  结果：通过
+  证据：Forbidden Touches diff 为空；`git diff --check` 通过
+  涉及文件：`core/src/**`、`core/area_matrix.udl`、`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrix.xcodeproj/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过，原因不是本次新增结构问题，而是 `./dev check all` 未通过，无法证明整体可维护发布门禁满足。
+- 注释 / rustdoc / 文档同步：不通过，`CHANGELOG.md` 仍只有 `[Unreleased]`，无 `0.1.0` release 段；见 `/Users/as/Ai-Project/project/AreaMatrix/CHANGELOG.md:10`。
+- 错误处理与边界处理：不通过，M-01..M-04 手工恢复冒烟仍 pending，无法证明 import 中断、iCloud placeholder、TCC、DB repair 的真实发布闭环。
+- 测试与验证覆盖：不通过，`./dev check all` 失败，真实 `.app` 启动到首屏证据缺失。
+- 占位、硬编码、mock-only、一次性实现检查：通过，未发现用 mock-only 或硬编码 PASS 伪造本任务通过；文档反而明确保持 release blocked。
+
+六、阻塞项
+
+- P1-RL-001：真实 Release `.app` 启动到首屏证据缺失。路径：`/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-performance-baseline.md:88`。原因：Stage 1 要求真实首屏 `< 1.5s`，当前只有 hostless readiness，不能替代 release 证据。
+- P1-RL-002：M-01..M-04 手工恢复冒烟 pending。路径：`/Users/as/Ai-Project/project/AreaMatrix/docs/development/recovery-scenarios.md:92`、`:103`、`:113`、`:123`。原因：任一缺失时 Stage 1 发布不通过，见 `:137`。
+- P1-RL-003：Developer ID 签名、公证、DMG、干净 Mac 首启证据缺失。路径：`/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-release-checklist.md:70`。原因：无法证明 alpha 分发物可被真实用户安装和首次打开。
+- P1-RL-004：CHANGELOG / 版本发布切面未完成。路径：`/Users/as/Ai-Project/project/AreaMatrix/CHANGELOG.md:10`、`/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-release-checklist.md:71`。原因：没有 `0.1.0` release notes、tag/build number 证据。
+- P1-RL-005：`./dev check all` 未完整通过。路径：`/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-release-checklist.md:42`、`:72`。原因：SwiftFormat `199/224 files require formatting`，SwiftLint 仍记录 239 个 serious violations。
+- P1-TRACE-001：任务运行态未闭环。路径：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/progress.json:6938` 到 `:6946`。原因：`3-1/task-05` 仍是 `in_progress`，指向的 `verify-attempt-10.log` 不存在，当前日志只有 attempt 1..9。
+
+七、验证情况
+
+- 已运行：`python3 tasks/prompts/_shared/prompt_pipeline.py doctor`：通过，`doctor: OK`，`tasks: 637`，`manifests: 637`
+- 已运行：`python3 tasks/prompts/_shared/prompt_pipeline.py audit --pages`：通过，Stage 1 页面 coverage 均 `OK`
+- 已运行：`git diff --check`：通过，空输出
+- 已运行：`./dev check all`：失败，失败点为 SwiftFormat/SwiftLint style gate；release checklist 已记录失败证据
+- 缺失：真实 `.app` 首屏、M-01..M-04 手工恢复、Developer ID 签名、公证、DMG、干净 Mac 首启、`CHANGELOG` 0.1.0 release 段
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+VERIFY_RESULT: FAIL

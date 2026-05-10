@@ -183,7 +183,9 @@
 		0A00000000000000000001D0 /* ImportBatchCopyImportContinuation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001D1 /* ImportBatchCopyImportContinuation.swift */; };
 		0A00000000000000000001D2 /* ImportProgressCopyQueueRecoveryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001D3 /* ImportProgressCopyQueueRecoveryTests.swift */; };
 		0A000000000000000000018C /* ImportBatchCopyImportModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000018D /* ImportBatchCopyImportModel.swift */; };
+		0A0000000000000000000300 /* ImportBatchCopyImportExecution.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000301 /* ImportBatchCopyImportExecution.swift */; };
 		0A000000000000000000019A /* ImportBatchCopyImportState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000019B /* ImportBatchCopyImportState.swift */; };
+		0A0000000000000000000302 /* ImportBatchCopyImportSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000303 /* ImportBatchCopyImportSession.swift */; };
 		0A000000000000000000019E /* ImportBatchConflictActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000019F /* ImportBatchConflictActions.swift */; };
 		0A00000000000000000001A2 /* ImportBatchNamingActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001A3 /* ImportBatchNamingActions.swift */; };
 		0A00000000000000000001AA /* ImportBatchNamingState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001AB /* ImportBatchNamingState.swift */; };
@@ -461,7 +463,9 @@
 		0A00000000000000000001D1 /* ImportBatchCopyImportContinuation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ImportBatchCopyImportContinuation.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000001D3 /* ImportProgressCopyQueueRecoveryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportProgressCopyQueueRecoveryTests.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000018D /* ImportBatchCopyImportModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ImportBatchCopyImportModel.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000301 /* ImportBatchCopyImportExecution.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ImportBatchCopyImportExecution.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000019B /* ImportBatchCopyImportState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ImportBatchCopyImportState.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000303 /* ImportBatchCopyImportSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ImportBatchCopyImportSession.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000019F /* ImportBatchConflictActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ImportBatchConflictActions.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000001A3 /* ImportBatchNamingActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ImportBatchNamingActions.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000001AB /* ImportBatchNamingState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ImportBatchNamingState.swift; sourceTree = SOURCE_ROOT; };
@@ -663,8 +667,10 @@
 				0A00000000000000000001BD /* ImportFolderScanState.swift */,
 				0A00000000000000000001B5 /* ImportFolderScanner.swift */,
 				0A000000000000000000018D /* ImportBatchCopyImportModel.swift */,
+				0A0000000000000000000301 /* ImportBatchCopyImportExecution.swift */,
 				0A00000000000000000001D1 /* ImportBatchCopyImportContinuation.swift */,
 				0A000000000000000000019B /* ImportBatchCopyImportState.swift */,
+				0A0000000000000000000303 /* ImportBatchCopyImportSession.swift */,
 				0A00000000000000000001CB /* ImportBatchProgressItems.swift */,
 				0A000000000000000000019F /* ImportBatchConflictActions.swift */,
 				0A00000000000000000001A3 /* ImportBatchNamingActions.swift */,
@@ -975,8 +981,10 @@
 				0A00000000000000000001BC /* ImportFolderScanState.swift in Sources */,
 				0A00000000000000000001B4 /* ImportFolderScanner.swift in Sources */,
 				0A000000000000000000018C /* ImportBatchCopyImportModel.swift in Sources */,
+				0A0000000000000000000300 /* ImportBatchCopyImportExecution.swift in Sources */,
 				0A00000000000000000001D0 /* ImportBatchCopyImportContinuation.swift in Sources */,
 				0A000000000000000000019A /* ImportBatchCopyImportState.swift in Sources */,
+				0A0000000000000000000302 /* ImportBatchCopyImportSession.swift in Sources */,
 				0A00000000000000000001CA /* ImportBatchProgressItems.swift in Sources */,
 				0A000000000000000000019E /* ImportBatchConflictActions.swift in Sources */,
 				0A00000000000000000001A2 /* ImportBatchNamingActions.swift in Sources */,
@@ -1179,7 +1187,7 @@
 				AREAMATRIX_CORE_PROFILE = debug;
 				CODE_SIGN_ENTITLEMENTS = "";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 202605101812;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				HEADER_SEARCH_PATHS = (
@@ -1217,7 +1225,7 @@
 				AREAMATRIX_CORE_PROFILE = release;
 				CODE_SIGN_ENTITLEMENTS = "";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 202605101812;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				HEADER_SEARCH_PATHS = (
@@ -1253,7 +1261,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 202605101812;
 				GENERATE_INFOPLIST_FILE = YES;
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1284,7 +1292,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 202605101812;
 				GENERATE_INFOPLIST_FILE = YES;
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",

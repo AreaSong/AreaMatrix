@@ -26,7 +26,7 @@ struct ConfirmInitStepView: View {
     private let createItems = [
         "docs/", "code/", "design/", "finance/", "media/", "inbox/",
         ".areamatrix/index.db", ".areamatrix/ignore.yaml",
-        ".areamatrix/generated/", ".areamatrix/staging/",
+        ".areamatrix/generated/", ".areamatrix/staging/"
     ]
 
     private let adoptItems = [
@@ -35,7 +35,7 @@ struct ConfirmInitStepView: View {
         "创建本地索引数据库",
         "扫描现有文件和文件夹",
         "将已有文件标记为 adopted / indexed",
-        "生成 .areamatrix/generated/root.md",
+        "生成 .areamatrix/generated/root.md"
     ]
 
     private let safetyItems = [
@@ -43,7 +43,7 @@ struct ConfirmInitStepView: View {
         "不重命名已有文件",
         "不删除已有文件",
         "不覆盖已有 README.md",
-        "不修改已有项目目录结构",
+        "不修改已有项目目录结构"
     ]
 
     var body: some View {
@@ -124,8 +124,8 @@ struct ConfirmInitStepView: View {
                 "该路径位于 iCloud 管理范围内，请确认文件已在本机可用。",
                 systemImage: "icloud"
             )
-                .font(.callout)
-                .foregroundStyle(.orange)
+            .font(.callout)
+            .foregroundStyle(.orange)
         }
     }
 
@@ -286,7 +286,7 @@ enum AreaMatrixExternalCreatedFileRelay {
 }
 
 final class AreaMatrixDockOpenAppDelegate: NSObject, NSApplicationDelegate {
-    func application(_ application: NSApplication, open urls: [URL]) {
+    func application(_: NSApplication, open urls: [URL]) {
         AreaMatrixDockOpenRelay.publish(urls)
     }
 

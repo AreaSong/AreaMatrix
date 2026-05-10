@@ -64,7 +64,7 @@ struct MainFileActionRoutingSheet: View {
                 onConfirm: onDelete,
                 onCollectDiagnostics: onCollectDiagnostics
             )
-        case .iCloudConflict(let fileID):
+        case let .iCloudConflict(fileID):
             ICloudConflictMinimalSheet(
                 model: ICloudConflictMinimalModel(
                     repoPath: repoPath,

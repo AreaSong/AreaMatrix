@@ -43,9 +43,9 @@ struct ImportSingleFilePreflightStatusSection: View {
     private var statusStyle: Color {
         switch status {
         case .blocked:
-            return .orange
+            .orange
         case .idle, .checking, .ready:
-            return .secondary
+            .secondary
         }
     }
 }
@@ -107,11 +107,11 @@ struct ImportSingleFileImportStatusSection: View {
     private var statusStyle: Color {
         switch status {
         case .failed, .blocked:
-            return .red
+            .red
         case .imported, .skippedDuplicate:
-            return .green
+            .green
         case .idle, .importing:
-            return .secondary
+            .secondary
         }
     }
 }
@@ -122,7 +122,7 @@ struct ImportSingleFileConflictSection: View {
     let sourceFilename: String?
     let sourcePath: String?
     let replaceOptionVisibility: ImportSingleFileReplaceOptionVisibility
-    @Binding var duplicateResolution: ImportSingleFileDuplicateResolutionStrategy
+    @Binding var duplicateResolution: SingleFileDuplicateResolutionStrategy
     @Binding var nameConflictResolution: ImportSingleFileNameConflictResolution
     let resolvedNameConflictFilename: String
     let resolvedNameConflictPath: String
@@ -161,7 +161,6 @@ struct ImportSingleFileConflictSection: View {
             if case .name = result.conflict {
                 nameConflictResolutionOptions
             }
-
         }
         .accessibilityElement(children: .combine)
     }
@@ -194,7 +193,7 @@ struct ImportSingleFileConflictSection: View {
                 replaceAction
             }
 
-            if case .duplicate(let existingPath) = result.conflict {
+            if case let .duplicate(existingPath) = result.conflict {
                 Button("Show existing file") {
                     onShowExistingFile(existingPath)
                 }
@@ -226,7 +225,7 @@ struct ImportSingleFileConflictSection: View {
 
             nameConflictResolutionDetails
 
-            if case .name(let existingPath) = result.conflict {
+            if case let .name(existingPath) = result.conflict {
                 Button("Show existing file") {
                     onShowExistingFile(existingPath)
                 }
@@ -248,7 +247,7 @@ struct ImportSingleFileConflictSection: View {
                     .font(.caption)
                     .foregroundStyle(.orange)
             }
-        case .renameIncoming(let name):
+        case let .renameIncoming(name):
             TextField("新文件名", text: Binding(
                 get: { name },
                 set: onRenameNameConflictFile
@@ -268,12 +267,12 @@ struct ImportSingleFileConflictSection: View {
         }
     }
 
-    private var duplicateStrategies: [ImportSingleFileDuplicateResolutionStrategy] {
+    private var duplicateStrategies: [SingleFileDuplicateResolutionStrategy] {
         switch replaceOptionVisibility {
         case .hidden:
-            return [.skip, .keepBoth]
+            [.skip, .keepBoth]
         case .enabled, .disabled:
-            return [.skip, .keepBoth, .replace]
+            [.skip, .keepBoth, .replace]
         }
     }
 
@@ -322,7 +321,7 @@ struct ImportSingleFileConflictSection: View {
     @ViewBuilder
     private var conflictDetails: some View {
         switch result.conflict {
-        case .duplicate(let existingPath):
+        case let .duplicate(existingPath):
             VStack(alignment: .leading, spacing: 4) {
                 LabeledContent("已有文件", value: existingPath)
                 if let sourceFilename {
@@ -333,7 +332,7 @@ struct ImportSingleFileConflictSection: View {
                 }
             }
             .font(.caption)
-        case .name(let path):
+        case let .name(path):
             VStack(alignment: .leading, spacing: 4) {
                 LabeledContent("已存在", value: path)
                 if let size = existingFile?.sizeBytes {
@@ -373,16 +372,16 @@ struct ImportSingleFileConflictSection: View {
     private var statusColor: Color {
         switch result.conflict {
         case .none:
-            return .secondary
+            .secondary
         case .invalidFilename, .name, .duplicate, .iCloudPlaceholder, .iCloudDownloadFailed,
              .corePreviewUnavailable, .sourceUnavailable, .error:
-            return .orange
+            .orange
         }
     }
 }
 
 struct ImportSingleFileReplaceConfirmation: Identifiable, Equatable {
-    var context: ImportSingleFileReplaceConfirmationContext
+    var context: SingleFileReplaceConfirmationContext
 
     var id: String {
         context.id

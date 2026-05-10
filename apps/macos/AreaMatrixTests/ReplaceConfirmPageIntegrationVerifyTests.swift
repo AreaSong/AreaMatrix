@@ -1,5 +1,5 @@
-import XCTest
 @testable import AreaMatrix
+import XCTest
 
 final class ReplaceConfirmPageIntegrationVerifyTests: XCTestCase {
     @MainActor
@@ -72,7 +72,7 @@ final class ReplaceConfirmPageIntegrationVerifyTests: XCTestCase {
         )
         model.updateDuplicateStrategy(for: row.id, strategy: .replace)
         let context = try XCTUnwrap(model.beginReplaceConfirmation(for: row.id))
-        let staleContext = ImportSingleFileReplaceConfirmationContext(
+        let staleContext = SingleFileReplaceConfirmationContext(
             existingPath: "finance/stale.pdf",
             incomingPath: context.incomingPath,
             incomingSizeBytes: context.incomingSizeBytes,
@@ -87,20 +87,12 @@ final class ReplaceConfirmPageIntegrationVerifyTests: XCTestCase {
         let blockedOutcome = await model.importReadyFiles(selectedDestination: .autoClassify)
         let requestsAfterFailure = await importer.recordedRequests()
 
-        XCTAssertFalse(acceptedStale)
-        XCTAssertNil(blockedOutcome)
-        XCTAssertEqual(requestsAfterFailure, [])
-        XCTAssertEqual(model.replaceConfirmationErrorMessage, "Replace confirmation context expired")
-        XCTAssertEqual(model.importDisabledReason, "存在 BLOCKED 项，请先完成冲突处理")
-
-        model.collectReplaceConfirmationDiagnostics()
-        XCTAssertEqual(
-            model.replaceConfirmationDiagnosticsMessage,
-            "Diagnostics collected for replace confirmation state. No user file contents included."
+        assertReplaceConfirmationFailure(
+            acceptedStale: acceptedStale,
+            blockedOutcome: blockedOutcome,
+            requestsAfterFailure: requestsAfterFailure,
+            model: model
         )
-        model.retryReplaceConfirmation()
-        XCTAssertNil(model.replaceConfirmationErrorMessage)
-        XCTAssertNil(model.replaceConfirmationDiagnosticsMessage)
 
         XCTAssertTrue(model.applyReplaceConfirmation(
             for: row.id,
@@ -117,22 +109,11 @@ final class ReplaceConfirmPageIntegrationVerifyTests: XCTestCase {
     func testS124FolderReplaceContextFailureStaysRecoverableAndDoesNotOverwrite() async throws {
         let rootURL = URL(fileURLWithPath: "/tmp/client-a")
         let sourceURL = rootURL.appendingPathComponent("name.pdf")
-        let scanner = S119StaticFolderScanner(result: ImportFolderScanResult(
-            rows: [ImportFolderPreviewRow.loading(fileURL: sourceURL, rootURL: rootURL)],
-            folderCount: 0,
-            skippedRules: [],
-            errors: []
-        ))
-        let prechecker = S119StaticConflictPrechecker(results: [
-            sourceURL.path: .nameConflict(existingPath: "docs/name.pdf"),
-        ])
         let importer = S118RecordingBatchImporter()
-        let model = ImportFolderPreviewModel(
-            predictor: S119RecordingPredictor(results: [.success(.s119Prediction(suggestedName: "name.pdf"))]),
-            importer: importer,
-            errorMapper: S117RecordingErrorMapper(),
-            conflictPrechecker: prechecker,
-            scanner: scanner
+        let model = makeFolderReplaceConfirmationModel(
+            rootURL: rootURL,
+            sourceURL: sourceURL,
+            importer: importer
         )
 
         await model.load(request: s119FolderRequest(
@@ -141,7 +122,7 @@ final class ReplaceConfirmPageIntegrationVerifyTests: XCTestCase {
         ))
         model.updateNameConflictResolution(for: sourceURL.path, resolution: .replace(isConfirmed: false))
         let context = try XCTUnwrap(model.beginReplaceConfirmation(for: sourceURL.path))
-        let staleContext = ImportSingleFileReplaceConfirmationContext(
+        let staleContext = SingleFileReplaceConfirmationContext(
             existingPath: "docs/stale.pdf",
             incomingPath: context.incomingPath,
             incomingSizeBytes: context.incomingSizeBytes,
@@ -156,20 +137,12 @@ final class ReplaceConfirmPageIntegrationVerifyTests: XCTestCase {
         let blockedOutcome = await model.importReadyFiles()
         let requestsAfterFailure = await importer.recordedRequests()
 
-        XCTAssertFalse(acceptedStale)
-        XCTAssertNil(blockedOutcome)
-        XCTAssertEqual(requestsAfterFailure, [])
-        XCTAssertEqual(model.replaceConfirmationErrorMessage, "Replace confirmation context expired")
-        XCTAssertEqual(model.importDisabledReason, "存在 BLOCKED 项，请先完成冲突处理")
-
-        model.collectReplaceConfirmationDiagnostics()
-        XCTAssertEqual(
-            model.replaceConfirmationDiagnosticsMessage,
-            "Diagnostics collected for replace confirmation state. No user file contents included."
+        assertReplaceConfirmationFailure(
+            acceptedStale: acceptedStale,
+            blockedOutcome: blockedOutcome,
+            requestsAfterFailure: requestsAfterFailure,
+            model: model
         )
-        model.retryReplaceConfirmation()
-        XCTAssertNil(model.replaceConfirmationErrorMessage)
-        XCTAssertNil(model.replaceConfirmationDiagnosticsMessage)
 
         XCTAssertTrue(model.applyReplaceConfirmation(
             for: sourceURL.path,
@@ -183,9 +156,79 @@ final class ReplaceConfirmPageIntegrationVerifyTests: XCTestCase {
     }
 }
 
+@MainActor
+private func makeFolderReplaceConfirmationModel(
+    rootURL: URL,
+    sourceURL: URL,
+    importer: S118RecordingBatchImporter
+) -> ImportFolderPreviewModel {
+    let scanner = S119StaticFolderScanner(result: ImportFolderScanResult(
+        rows: [ImportFolderPreviewRow.loading(fileURL: sourceURL, rootURL: rootURL)],
+        folderCount: 0,
+        skippedRules: [],
+        errors: []
+    ))
+    let prechecker = S119StaticConflictPrechecker(results: [
+        sourceURL.path: .nameConflict(existingPath: "docs/name.pdf")
+    ])
+    return ImportFolderPreviewModel(
+        predictor: S119RecordingPredictor(results: [.success(.s119Prediction(suggestedName: "name.pdf"))]),
+        importer: importer,
+        errorMapper: S117RecordingErrorMapper(),
+        conflictPrechecker: prechecker,
+        scanner: scanner
+    )
+}
+
+@MainActor
+private func assertReplaceConfirmationFailure(
+    acceptedStale: Bool,
+    blockedOutcome: ImportBatchImportResult?,
+    requestsAfterFailure: [S118BatchImportRequest],
+    model: ImportBatchCopyImportModel
+) {
+    XCTAssertFalse(acceptedStale)
+    XCTAssertNil(blockedOutcome)
+    XCTAssertEqual(requestsAfterFailure, [])
+    XCTAssertEqual(model.replaceConfirmationErrorMessage, "Replace confirmation context expired")
+    XCTAssertEqual(model.importDisabledReason, "存在 BLOCKED 项，请先完成冲突处理")
+
+    model.collectReplaceConfirmationDiagnostics()
+    XCTAssertEqual(
+        model.replaceConfirmationDiagnosticsMessage,
+        "Diagnostics collected for replace confirmation state. No user file contents included."
+    )
+    model.retryReplaceConfirmation()
+    XCTAssertNil(model.replaceConfirmationErrorMessage)
+    XCTAssertNil(model.replaceConfirmationDiagnosticsMessage)
+}
+
+@MainActor
+private func assertReplaceConfirmationFailure(
+    acceptedStale: Bool,
+    blockedOutcome: ImportBatchImportResult?,
+    requestsAfterFailure: [S118BatchImportRequest],
+    model: ImportFolderPreviewModel
+) {
+    XCTAssertFalse(acceptedStale)
+    XCTAssertNil(blockedOutcome)
+    XCTAssertEqual(requestsAfterFailure, [])
+    XCTAssertEqual(model.replaceConfirmationErrorMessage, "Replace confirmation context expired")
+    XCTAssertEqual(model.importDisabledReason, "存在 BLOCKED 项，请先完成冲突处理")
+
+    model.collectReplaceConfirmationDiagnostics()
+    XCTAssertEqual(
+        model.replaceConfirmationDiagnosticsMessage,
+        "Diagnostics collected for replace confirmation state. No user file contents included."
+    )
+    model.retryReplaceConfirmation()
+    XCTAssertNil(model.replaceConfirmationErrorMessage)
+    XCTAssertNil(model.replaceConfirmationDiagnosticsMessage)
+}
+
 private func duplicateResult() -> ImportSingleFilePreflightResult {
     ImportSingleFilePreflightResult(
-        sourceSizeBytes: 912 * 1_024,
+        sourceSizeBytes: 912 * 1024,
         sourceModifiedAt: 1_777_445_400,
         hashSha256: "duplicate-hash",
         targetRelativePath: "docs/source.pdf",
@@ -197,7 +240,7 @@ private func duplicateResult() -> ImportSingleFilePreflightResult {
 
 private func nameConflictResult() -> ImportSingleFilePreflightResult {
     ImportSingleFilePreflightResult(
-        sourceSizeBytes: 912 * 1_024,
+        sourceSizeBytes: 912 * 1024,
         sourceModifiedAt: 1_777_445_400,
         hashSha256: "incoming-hash",
         targetRelativePath: "docs/source.pdf",
@@ -215,7 +258,7 @@ private func existingFile(path: String, hash: String) -> FileEntrySnapshot {
         originalName: (path as NSString).lastPathComponent,
         currentName: (path as NSString).lastPathComponent,
         category: (path as NSString).deletingLastPathComponent,
-        sizeBytes: 860 * 1_024,
+        sizeBytes: 860 * 1024,
         hashSha256: hash,
         storageMode: "Copied",
         origin: "Imported",

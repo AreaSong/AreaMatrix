@@ -1,13 +1,13 @@
 import SwiftUI
 
 struct ReplaceConfirmSheet: View {
-    let context: ImportSingleFileReplaceConfirmationContext
-    var errorMessage: String? = nil
-    var diagnosticsMessage: String? = nil
+    let context: SingleFileReplaceConfirmationContext
+    var errorMessage: String?
+    var diagnosticsMessage: String?
     let onCancel: () -> Void
     let onRetry: () -> Void
     let onCollectDiagnostics: () -> Void
-    let onConfirm: (ImportSingleFileReplaceConfirmationDecision) -> Void
+    let onConfirm: (SingleFileReplaceConfirmationDecision) -> Void
 
     @State private var understandsReplace = false
 

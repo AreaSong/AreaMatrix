@@ -1,9 +1,9 @@
-import XCTest
 @testable import AreaMatrix
+import XCTest
 
 final class ErrorRecoveryPageIntegrationVerifyTests: XCTestCase {
     @MainActor
-    func testS132PageIntegrationConnectsStartupRecoveryMappingEntryExitAndTreeState() async {
+    func testS132PageIntegrationConnectsStartupRecoveryMappingEntryExitAndTreeState() async throws {
         let mapping = CoreErrorMappingSnapshot.s132IntegrationMapping(
             userMessage: "Startup recovery could not finish",
             severity: .medium,
@@ -12,7 +12,7 @@ final class ErrorRecoveryPageIntegrationVerifyTests: XCTestCase {
         )
         let recoverer = MainLoadingRecordingStartupRecoverer(results: [
             .failure(CoreError.Db(message: "database is locked")),
-            .success(RecoveryReportSnapshot(cleanedStagingFiles: 1, revertedStagingDbRows: 1, warnings: [])),
+            .success(RecoveryReportSnapshot(cleanedStagingFiles: 1, revertedStagingDbRows: 1, warnings: []))
         ])
         let opener = MainLoadingPausingRepositoryOpener(
             opening: .mainLoadingFixture(repoPath: "/tmp/s132-repo", fileCount: 1)
@@ -34,58 +34,15 @@ final class ErrorRecoveryPageIntegrationVerifyTests: XCTestCase {
         await model.openExistingRepository(
             RepoPathValidationSnapshot.mainLoadingInitializedFixture(repoPath: "/tmp/s132-repo")
         )
-        guard case .mainLoading(let failedState) = model.route else {
-            return XCTFail("Expected startup recovery failure to remain on S1-32 main loading error recovery")
-        }
-        let failedRecoveryView = StartupRecoveryErrorRecoveryView(
-            state: failedState.startupRecovery ?? .checking,
-            isRetrying: false,
-            onRetry: {}
-        )
-        let failedMainBody = s132IntegrationMirrorDescription(of: MainLoadingView(
-            state: failedState,
-            isRetryingStartupRecovery: false,
-            onCancelOpening: {},
-            onRetryStartupRecovery: {},
-            onRetryTree: {},
-            onRetryOpening: {}
-        ).body)
+        let failedState = try requireS132MainLoadingState(model)
 
         let initialRecoveryRequests = await recoverer.requestedRepoPaths()
         let initialOpenRequests = await opener.requestedConfiguredRepoPaths()
         XCTAssertEqual(initialRecoveryRequests, ["/tmp/s132-repo"])
         XCTAssertEqual(initialOpenRequests, [])
-        XCTAssertEqual(failedState.recoveryErrorMapping, mapping)
-        XCTAssertTrue(failedState.recoveryStatusText?.contains("Startup recovery could not finish") == true)
-        XCTAssertEqual(failedRecoveryView.retryButtonTitle, "Retry startup recovery")
-        XCTAssertFalse(failedRecoveryView.retryButtonIsDisabled)
-        XCTAssertTrue(failedMainBody.contains("Cancel opening"))
-        XCTAssertFalse(RepositoryErrorPresentation.mainRepo(mapping: mapping).primaryAction == .openRepair)
+        assertS132StartupRecoveryFailureState(failedState, mapping: mapping)
 
-        let retryTask = Task {
-            await model.retryMainRepositoryFromError(repoPath: "/tmp/s132-repo")
-        }
-        await opener.waitUntilStarted()
-        let retryingState = await waitForS132IntegrationMainLoadingState(model) { state in
-            state.startupRecovery == .completed(RecoveryReportSnapshot(
-                cleanedStagingFiles: 1,
-                revertedStagingDbRows: 1,
-                warnings: []
-            ))
-        }
-        let retryingRecoveryView = StartupRecoveryErrorRecoveryView(
-            state: retryingState.startupRecovery ?? .checking,
-            isRetrying: true,
-            onRetry: {}
-        )
-
-        let retryRecoveryRequests = await recoverer.requestedRepoPaths()
-        let retryOpenRequests = await opener.requestedConfiguredRepoPaths()
-        XCTAssertEqual(retryRecoveryRequests, ["/tmp/s132-repo", "/tmp/s132-repo"])
-        XCTAssertEqual(retryOpenRequests, ["/tmp/s132-repo"])
-        XCTAssertEqual(retryingState.recoveryVisibleReport?.cleanedStagingFiles, 1)
-        XCTAssertEqual(retryingRecoveryView.retryButtonTitle, "Retrying...")
-        XCTAssertTrue(retryingRecoveryView.retryButtonIsDisabled)
+        let retryTask = await assertS132RetryingState(model: model, opener: opener, recoverer: recoverer)
 
         await opener.finishOpen()
         await retryTask.value
@@ -130,8 +87,94 @@ final class ErrorRecoveryPageIntegrationVerifyTests: XCTestCase {
         XCTAssertEqual(recoveryRequests, ["/tmp/s132-corrupt"])
         XCTAssertEqual(model.route, OnboardingModel.Route.mainRepoError("/tmp/s132-corrupt", mapping))
         model.openMainRepositoryRepair(repoPath: "/tmp/s132-corrupt")
-        XCTAssertEqual(model.route, OnboardingModel.Route.dbRepairConfirm(DatabaseRepairRouteState(repoPath: "/tmp/s132-corrupt", scanSession: nil, mapping: mapping, returnRoute: .mainRepoError(mapping))))
+        XCTAssertEqual(
+            model.route,
+            OnboardingModel.Route.dbRepairConfirm(DatabaseRepairRouteState(
+                repoPath: "/tmp/s132-corrupt",
+                scanSession: nil,
+                mapping: mapping,
+                returnRoute: .mainRepoError(mapping)
+            ))
+        )
     }
+}
+
+@MainActor
+private func assertS132RetryingState(
+    model: OnboardingModel,
+    opener: MainLoadingPausingRepositoryOpener,
+    recoverer: MainLoadingRecordingStartupRecoverer
+) async -> Task<Void, Never> {
+    let retryTask = Task {
+        await model.retryMainRepositoryFromError(repoPath: "/tmp/s132-repo")
+    }
+    await opener.waitUntilStarted()
+    let expectedRecoveryReport = RecoveryReportSnapshot(
+        cleanedStagingFiles: 1,
+        revertedStagingDbRows: 1,
+        warnings: []
+    )
+    let retryingState = await waitForS132IntegrationMainLoadingState(model) { state in
+        state.startupRecovery == .completed(expectedRecoveryReport) &&
+            state.treeLoading?.loadedTree != nil
+    }
+    let retryingRecoveryView = StartupRecoveryErrorRecoveryView(
+        state: retryingState.startupRecovery ?? .checking,
+        isRetrying: true,
+        onRetry: {}
+    )
+
+    let retryRecoveryRequests = await recoverer.requestedRepoPaths()
+    let retryOpenRequests = await opener.requestedConfiguredRepoPaths()
+    XCTAssertEqual(retryRecoveryRequests, ["/tmp/s132-repo", "/tmp/s132-repo"])
+    XCTAssertEqual(retryOpenRequests, ["/tmp/s132-repo"])
+    XCTAssertEqual(retryingState.recoveryVisibleReport?.cleanedStagingFiles, 1)
+    XCTAssertEqual(retryingRecoveryView.retryButtonTitle, "Retrying...")
+    XCTAssertTrue(retryingRecoveryView.retryButtonIsDisabled)
+    return retryTask
+}
+
+@MainActor
+private func requireS132MainLoadingState(
+    _ model: OnboardingModel,
+    file: StaticString = #filePath,
+    line: UInt = #line
+) throws -> MainLoadingState {
+    guard case let .mainLoading(state) = model.route else {
+        XCTFail(
+            "Expected startup recovery failure to remain on S1-32 main loading error recovery",
+            file: file,
+            line: line
+        )
+        throw CoreError.Internal(message: "expected main loading")
+    }
+    return state
+}
+
+private func assertS132StartupRecoveryFailureState(
+    _ state: MainLoadingState,
+    mapping: CoreErrorMappingSnapshot
+) {
+    let recoveryView = StartupRecoveryErrorRecoveryView(
+        state: state.startupRecovery ?? .checking,
+        isRetrying: false,
+        onRetry: {}
+    )
+    let mainBody = s132IntegrationMirrorDescription(of: MainLoadingView(
+        state: state,
+        isRetryingStartupRecovery: false,
+        onCancelOpening: {},
+        onRetryStartupRecovery: {},
+        onRetryTree: {},
+        onRetryOpening: {}
+    ).body)
+
+    XCTAssertEqual(state.recoveryErrorMapping, mapping)
+    XCTAssertTrue(state.recoveryStatusText?.contains("Startup recovery could not finish") == true)
+    XCTAssertEqual(recoveryView.retryButtonTitle, "Retry startup recovery")
+    XCTAssertFalse(recoveryView.retryButtonIsDisabled)
+    XCTAssertTrue(mainBody.contains("Cancel opening"))
+    XCTAssertFalse(RepositoryErrorPresentation.mainRepo(mapping: mapping).primaryAction == .openRepair)
 }
 
 private actor S132IntegrationPathValidator: CoreRepositoryPathValidating {
@@ -153,7 +196,7 @@ private actor S132IntegrationErrorMapper: CoreErrorMapping {
         self.mapping = mapping
     }
 
-    func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
+    func mapCoreError(_: CoreError) async -> CoreErrorMappingSnapshot {
         mapping
     }
 }

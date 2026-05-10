@@ -10,7 +10,9 @@ struct MainWindow: View {
         _model = StateObject(wrappedValue: model)
         importProgressControlState = model.importProgressControlState
     }
+}
 
+extension MainWindow {
     var body: some View {
         ZStack(alignment: .top) {
             content
@@ -70,7 +72,7 @@ struct MainWindow: View {
                 onCancel: model.dismissImportEntry,
                 onSwitchToLocalRepo: model.switchImportEntryToLocalRepository,
                 onImportStarted: model.beginImportEntryProgress,
-                onImportStartedWithRetryContext: model.beginImportEntryProgress,
+                onImportStartedWithRetryContext: importRetryContextHandler(for: request),
                 onImportFailed: model.failImportEntry,
                 onBatchImportProgress: model.updateImportEntryProgress,
                 onBatchImportFailed: model.failImportEntry,
@@ -81,7 +83,8 @@ struct MainWindow: View {
                         await model.finishImportEntry(repoPath: repoPath, entry: entry)
                     }
                 },
-                onShowExistingFile: model.showImportEntryExistingFile
+                onShowExistingFile: model.showImportEntryExistingFile,
+                batchSessionStore: model.importBatchSessionStore
             )
         }
     }
@@ -109,10 +112,33 @@ struct MainWindow: View {
 
     private var activeMainRepositoryPath: String? {
         switch model.route {
-        case .mainEmpty(let opening), .mainList(let opening), .settingsGeneral(let opening):
-            return opening.config.repoPath
+        case let .mainEmpty(opening), let .mainList(opening), let .settingsGeneral(opening):
+            opening.config.repoPath
         default:
-            return nil
+            nil
+        }
+    }
+
+    private func importRetryContextHandler(for request: ImportEntryRequest) -> (
+        String,
+        String,
+        ImportSingleFileStorageMode,
+        String,
+        String,
+        DuplicateStrategy
+    ) -> Void {
+        { currentPath, sourcePath, storageMode, overrideCategory, overrideFilename, duplicateStrategy in
+            model.beginImportEntryProgress(
+                currentPath: currentPath,
+                retryContext: ImportProgressRetryContext(
+                    repoPath: request.repoPath,
+                    sourcePath: sourcePath,
+                    storageMode: storageMode,
+                    overrideCategory: overrideCategory,
+                    overrideFilename: overrideFilename,
+                    duplicateStrategy: ImportProgressDuplicateStrategy(coreStrategy: duplicateStrategy)
+                )
+            )
         }
     }
 
@@ -168,7 +194,7 @@ struct MainWindow: View {
                     }
                 }
             )
-        case .confirmRepositoryInitialization(let draft):
+        case let .confirmRepositoryInitialization(draft):
             ConfirmInitStepView(
                 draft: draft,
                 onBack: model.showValidatePath,
@@ -189,7 +215,7 @@ struct MainWindow: View {
                     }
                 }
             )
-        case .initializing(let draft):
+        case let .initializing(draft):
             InitializingStepView(
                 draft: draft,
                 scanSession: model.initializationScanSession,
@@ -198,7 +224,7 @@ struct MainWindow: View {
                 isCancellationRequested: model.isInitializationCancellationRequested,
                 onCancel: model.requestSetupQuit
             )
-        case .initializationFailed(let repoPath, let mapping, let retryDraft):
+        case let .initializationFailed(repoPath, mapping, retryDraft):
             InitFailedStepView(
                 repoPath: repoPath,
                 mapping: mapping,
@@ -217,14 +243,14 @@ struct MainWindow: View {
                     NSApplication.shared.keyWindow?.close()
                 }
             )
-        case .initializationDone(let result):
+        case let .initializationDone(result):
             InitDoneStepView(
                 result: result,
                 errorMapping: model.initializationOpenErrorMapping,
                 onOpenRepository: { Task { await model.openInitializedRepository() } },
                 onOpenInFinder: model.openInitializedRepositoryInFinder
             )
-        case .mainLoading(let state):
+        case let .mainLoading(state):
             MainLoadingView(
                 state: state,
                 isRetryingStartupRecovery: model.isRetryingMainRepository,
@@ -245,7 +271,7 @@ struct MainWindow: View {
                     }
                 }
             )
-        case .mainRepoError(let repoPath, let mapping):
+        case let .mainRepoError(repoPath, mapping):
             MainRepoErrorView(
                 repoPath: repoPath,
                 mapping: mapping,
@@ -287,7 +313,7 @@ struct MainWindow: View {
                 onCancelDiagnostics: model.cancelMainRepositoryDiagnosticsPrivacyConfirmation,
                 onChooseAnotherFolder: model.showChoosePath
             )
-        case .dbRepairConfirm(let repairRoute):
+        case let .dbRepairConfirm(repairRoute):
             DBRepairConfirmView(
                 repoPath: repairRoute.repoPath,
                 scanSession: repairRoute.scanSession,
@@ -305,7 +331,7 @@ struct MainWindow: View {
             )
         case .settingsRepository:
             SettingsRepositoryReturnView()
-        case .settingsGeneral(let opening):
+        case let .settingsGeneral(opening):
             GeneralSettingsView(
                 repoPath: opening.config.repoPath,
                 selectedTab: Binding(
@@ -324,9 +350,9 @@ struct MainWindow: View {
                     model.openMainRepositoryRepair(repoPath: opening.config.repoPath)
                 }
             )
-        case .importProgress(let state):
+        case let .importProgress(state):
             importProgressContent(state)
-        case .importResult(let state):
+        case let .importResult(state):
             ImportResultView(
                 state: state,
                 onDone: model.finishImportResult,
@@ -341,7 +367,7 @@ struct MainWindow: View {
                 onConfirmExport: model.exportImportResultDetails,
                 onCancelExport: model.cancelImportResultExport
             )
-        case .mainEmpty(let opening):
+        case let .mainEmpty(opening):
             MainRepositoryContentView(
                 opening: opening,
                 state: .empty,
@@ -367,7 +393,7 @@ struct MainWindow: View {
                 externalCreatedEvent: model.externalCreatedEvent(for: opening),
                 onExternalCreatedEventHandled: model.finishExternalCreatedFileEvent
             )
-        case .mainList(let opening):
+        case let .mainList(opening):
             MainRepositoryContentView(
                 opening: opening,
                 state: .list,
@@ -393,7 +419,7 @@ struct MainWindow: View {
                 externalCreatedEvent: model.externalCreatedEvent(for: opening),
                 onExternalCreatedEventHandled: model.finishExternalCreatedFileEvent
             )
-        case .configurationError(let failure):
+        case let .configurationError(failure):
             ConfigurationErrorView(
                 failure: failure,
                 onRetry: {

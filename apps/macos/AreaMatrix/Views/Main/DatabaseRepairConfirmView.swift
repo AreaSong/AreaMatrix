@@ -11,7 +11,7 @@ struct DBRepairConfirmView: View {
         "Back up or preserve the current .areamatrix/ metadata state for diagnostics.",
         "Rescan the repository folder.",
         "Rebuild the local metadata index.",
-        "Reload Tree / List / Detail after repair succeeds.",
+        "Reload Tree / List / Detail after repair succeeds."
     ]
 
     private let willNotDoItems = [
@@ -19,7 +19,7 @@ struct DBRepairConfirmView: View {
         "Rename user files.",
         "Delete user files.",
         "Overwrite an existing README.md.",
-        "Upload diagnostics automatically.",
+        "Upload diagnostics automatically."
     ]
 
     init(
@@ -134,7 +134,6 @@ struct DBRepairConfirmView: View {
         }
     }
 
-    @ViewBuilder
     private var startupRecoveryStatus: some View {
         StartupRecoveryCheckStatusView(
             state: model.startupRecoveryState,
@@ -172,7 +171,7 @@ struct DBRepairConfirmView: View {
             Label("Preparing redacted diagnostics...", systemImage: "arrow.clockwise")
                 .font(.callout)
                 .foregroundStyle(.secondary)
-        case .collected(let snapshot):
+        case let .collected(snapshot):
             VStack(alignment: .leading, spacing: 6) {
                 Label("Diagnostics collected", systemImage: "doc.badge.gearshape")
                     .foregroundStyle(.green)
@@ -186,7 +185,7 @@ struct DBRepairConfirmView: View {
                 }
             }
             .accessibilityIdentifier("S1-37-C1-26-diagnostics-collected")
-        case .failed(let mapping):
+        case let .failed(mapping):
             VStack(alignment: .leading, spacing: 6) {
                 Label("Diagnostics could not be created", systemImage: "exclamationmark.triangle")
                     .foregroundStyle(.red)
@@ -206,10 +205,10 @@ struct DBRepairConfirmView: View {
         switch model.repairState {
         case .idle:
             EmptyView()
-        case .running(let step):
+        case let .running(step):
             RepairProgressView(currentStep: step)
                 .accessibilityIdentifier("S1-37-C1-26-repair-progress")
-        case .succeeded(let report):
+        case let .succeeded(report):
             VStack(alignment: .leading, spacing: 8) {
                 Label("Repair completed", systemImage: "checkmark.circle")
                     .foregroundStyle(.green)
@@ -227,7 +226,7 @@ struct DBRepairConfirmView: View {
                 }
             }
             .accessibilityIdentifier("S1-37-C1-26-repair-succeeded")
-        case .failed(let mapping):
+        case let .failed(mapping):
             VStack(alignment: .leading, spacing: 8) {
                 Label("Repair failed", systemImage: "exclamationmark.triangle")
                     .foregroundStyle(.red)
@@ -309,10 +308,10 @@ struct StartupRecoveryCheckStatusView: View {
                 .font(.callout)
                 .foregroundStyle(.secondary)
                 .accessibilityIdentifier("S1-37-C1-16-startup-recovery-checking")
-        case .completed(let report):
+        case let .completed(report):
             completedContent(report)
                 .accessibilityIdentifier("S1-37-C1-16-startup-recovery-completed")
-        case .failed(let mapping):
+        case let .failed(mapping):
             failedContent(mapping)
                 .accessibilityIdentifier("S1-37-C1-16-startup-recovery-failed")
         }

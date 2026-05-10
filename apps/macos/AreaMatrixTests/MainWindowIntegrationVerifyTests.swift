@@ -1,5 +1,5 @@
-import XCTest
 @testable import AreaMatrix
+import XCTest
 
 final class MainWindowIntegrationVerifyTests: XCTestCase {
     @MainActor
@@ -41,7 +41,7 @@ final class MainWindowIntegrationVerifyTests: XCTestCase {
         await model.bootstrapIfNeeded()
         let openedRepoPaths = await opener.requestedConfiguredRepoPaths()
 
-        guard case .mainLoading(let state) = model.route else {
+        guard case let .mainLoading(state) = model.route else {
             return XCTFail("expected S1-10 main-loading, got \(model.route)")
         }
 
@@ -87,7 +87,7 @@ final class MainWindowIntegrationVerifyTests: XCTestCase {
             .getFile,
             .listTreeJSON,
             .syncExternalChanges,
-            .mapCoreError,
+            .mapCoreError
         ]
 
         XCTAssertEqual(CoreBridge().state, .generatedBindings)
@@ -107,9 +107,9 @@ final class MainWindowIntegrationVerifyTests: XCTestCase {
         )
 
         await model.bootstrapIfNeeded()
-        return MainWindowIntegrationOpenResult(
+        return await MainWindowIntegrationOpenResult(
             route: model.route,
-            openedRepoPaths: await opener.requestedConfiguredRepoPaths(),
+            openedRepoPaths: opener.requestedConfiguredRepoPaths(),
             savedRepoPaths: writer.savedRepoPaths,
             successfulRepoOpenPaths: writer.successfulRepoOpens.map(\.repoPath)
         )

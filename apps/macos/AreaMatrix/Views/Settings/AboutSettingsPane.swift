@@ -119,14 +119,14 @@ struct AboutSettingsPane: View {
     private var actionFeedbackBanner: some View {
         if let feedback = model.actionFeedback {
             switch feedback {
-            case .success(let message):
+            case let .success(message):
                 Label(message, systemImage: "checkmark.circle")
                     .foregroundStyle(.green)
                     .padding(12)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(Color.green.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
                     .accessibilityElement(children: .combine)
-            case .failed(let error):
+            case let .failed(error):
                 AboutSettingsBanner(error: error, tint: .red) {
                     Button("Copy detail") {
                         model.copyActionDetail(error)
@@ -224,7 +224,7 @@ struct AboutSettingsPane: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(Color.blue.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
             .accessibilityElement(children: .combine)
-        case .collected(let snapshot):
+        case let .collected(snapshot):
             VStack(alignment: .leading, spacing: 8) {
                 Label("Diagnostics exported", systemImage: "checkmark.circle")
                     .foregroundStyle(.green)
@@ -246,7 +246,7 @@ struct AboutSettingsPane: View {
             .padding(12)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(Color.green.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
-        case .failed(let error):
+        case let .failed(error):
             AboutSettingsBanner(error: error, tint: .red) {
                 Button("Copy error") {
                     model.copyActionDetail(error)

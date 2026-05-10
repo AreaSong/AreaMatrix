@@ -86,7 +86,7 @@ struct IntegrationsSettingsPane: View {
             loadingContent
         case .loaded:
             loadedContent
-        case .failed(let error):
+        case let .failed(error):
             loadErrorContent(error)
         }
     }
@@ -146,63 +146,80 @@ struct IntegrationsSettingsPane: View {
                     value: "Conflicted copies are shown for review"
                 )
 
-                Text(
-                    "AreaMatrix stores your files in a normal folder. If that folder is in iCloud Drive, " +
-                        "iCloud controls sync timing. AreaMatrix will not delete conflict copies automatically."
-                )
-                .font(.callout)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
+                iCloudDriveDescription
 
                 if summary.shouldShowICloudRiskWarning {
                     iCloudRiskWarning
                 }
 
-                Toggle("Show iCloud warnings", isOn: iCloudWarningsSelection)
-                    .disabled(writesDisabled)
-                    .accessibilityIdentifier("S1-29-C1-04-icloud-warnings")
-
-                HStack(spacing: 10) {
-                    Button {
-                        model.openICloudHelp()
-                    } label: {
-                        Label("Open iCloud help", systemImage: "questionmark.circle")
-                    }
-                    .accessibilityIdentifier("S1-29-open-icloud-help")
-
-                    Button {
-                        isConflictListPresented = true
-                    } label: {
-                        Label(
-                            IntegrationsSettingsConflictListPresentation.reviewConflictsTitle,
-                            systemImage: "exclamationmark.icloud"
-                        )
-                    }
-                    .accessibilityIdentifier(
-                        IntegrationsSettingsConflictListPresentation.reviewConflictsAccessibilityID
-                    )
-
-                    Button {
-                        model.revealRepositoryInFinder()
-                    } label: {
-                        Label("Reveal repository in Finder", systemImage: "folder")
-                    }
-                    .accessibilityIdentifier("S1-29-reveal-repository")
-
-                    if summary.canRetryStatus {
-                        Button {
-                            Task {
-                                await model.load()
-                            }
-                        } label: {
-                            Label("Retry status", systemImage: "arrow.clockwise")
-                        }
-                        .disabled(model.loadState == .loading)
-                        .accessibilityIdentifier("S1-29-card-retry-status")
-                    }
-                }
+                iCloudWarningsToggle
+                iCloudDriveActions(summary)
             }
         }
+    }
+
+    private var iCloudDriveDescription: some View {
+        Text(
+            "AreaMatrix stores your files in a normal folder. If that folder is in iCloud Drive, " +
+                "iCloud controls sync timing. AreaMatrix will not delete conflict copies automatically."
+        )
+        .font(.callout)
+        .foregroundStyle(.secondary)
+        .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private var iCloudWarningsToggle: some View {
+        Toggle("Show iCloud warnings", isOn: iCloudWarningsSelection)
+            .disabled(writesDisabled)
+            .accessibilityIdentifier("S1-29-C1-04-icloud-warnings")
+    }
+
+    private func iCloudDriveActions(_ summary: IntegrationsSettingsSummary) -> some View {
+        HStack(spacing: 10) {
+            iCloudHelpButton
+            reviewConflictsButton
+            revealRepositoryButton
+            if summary.canRetryStatus {
+                retryStatusButton
+            }
+        }
+    }
+
+    private var iCloudHelpButton: some View {
+        Button {
+            model.openICloudHelp()
+        } label: {
+            Label("Open iCloud help", systemImage: "questionmark.circle")
+        }
+        .accessibilityIdentifier("S1-29-open-icloud-help")
+    }
+
+    private var reviewConflictsButton: some View {
+        Button {
+            isConflictListPresented = true
+        } label: {
+            Label(IntegrationConflictListPresentation.reviewConflictsTitle, systemImage: "exclamationmark.icloud")
+        }
+        .accessibilityIdentifier(IntegrationConflictListPresentation.reviewConflictsAccessibilityID)
+    }
+
+    private var revealRepositoryButton: some View {
+        Button {
+            model.revealRepositoryInFinder()
+        } label: {
+            Label("Reveal repository in Finder", systemImage: "folder")
+        }
+        .accessibilityIdentifier("S1-29-reveal-repository")
+    }
+
+    private var retryStatusButton: some View {
+        Button {
+            Task { await model.load() }
+        } label: {
+            Label("Retry status", systemImage: "arrow.clockwise")
+        }
+        .disabled(model.loadState == .loading)
+        .accessibilityIdentifier("S1-29-card-retry-status")
     }
 
     private var iCloudRiskWarning: some View {
@@ -221,10 +238,12 @@ struct IntegrationsSettingsPane: View {
 
     private var externalToolsSection: some View {
         IntegrationsSettingsSection(title: "Finder and other apps") {
-            Text("You can open files directly in Finder. External changes are picked up by file watching when available.")
-                .font(.callout)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
+            Text(
+                "You can open files directly in Finder. External changes are picked up by file watching when available."
+            )
+            .font(.callout)
+            .foregroundStyle(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
         }
     }
 
@@ -232,14 +251,14 @@ struct IntegrationsSettingsPane: View {
     private var feedbackBanner: some View {
         if let feedback = model.actionFeedback {
             switch feedback {
-            case .success(let message):
+            case let .success(message):
                 Label(message, systemImage: "checkmark.circle")
                     .foregroundStyle(.green)
                     .padding(12)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(Color.green.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
                     .accessibilityElement(children: .combine)
-            case .failed(let error):
+            case let .failed(error):
                 IntegrationsSettingsErrorBanner(error: error, tint: .red)
             }
         }

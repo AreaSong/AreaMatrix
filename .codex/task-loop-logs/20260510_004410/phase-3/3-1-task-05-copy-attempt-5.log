@@ -1,0 +1,42 @@
+一、执行结论
+
+未完成。`3-1/task-05` 仍不能放行 Stage 1 alpha / 最终集成验收，因为 `./dev check all` 在 macOS prerequisite gate 阻断，且真实 Release `.app` 首屏启动、M-01..M-04 手工恢复、Developer ID 签名/公证/DMG/干净 Mac 首启、CHANGELOG release 切面仍缺发布证据。
+
+二、执行范围
+
+本轮直接修复了验证证据与脚本门禁，没有补产品实现，也没有触碰 Forbidden Touches。
+
+修改重点：
+- [scripts/dev_tools/checks.py](/Users/as/Ai-Project/project/AreaMatrix/scripts/dev_tools/checks.py)：新增 macOS prerequisites 预检，一次性报告缺失 Rust target、SwiftFormat、SwiftLint，并在 build/test 前阻断。
+- [scripts/dev_tools/test_build_tools.py](/Users/as/Ai-Project/project/AreaMatrix/scripts/dev_tools/test_build_tools.py)：新增回归测试，锁定 prereq gate 和临时 UniFFI 输出目录行为。
+- [docs/development/stage-1-release-checklist.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-release-checklist.md)：同步 `macOS prerequisite check` 证据与当前阻断原因。
+- [core/tests/stage1_release_checklist.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/stage1_release_checklist.rs)：更新 release checklist 证据锁定测试。
+
+三、完成情况
+
+核对清单已完成读取和交叉核验；结果是不放行：
+- Exact Docs 6/6 已读取。
+- Real Core 页面仍不能证明完整 release 放行；当前文档明确不放行。
+- Phase 1 Core / Phase 2 UI 自动化证据大量通过，但 release 级手工/iCloud/TCC/DB repair 证据仍 pending。
+- `3-1/task-01` 到 `3-1/task-04` 证据已核对，release/performance/recovery 均保留阻断。
+- Forbidden Touches：未触碰。`git diff --name-only -- core/src core/area_matrix.udl apps/macos/AreaMatrix apps/macos/AreaMatrix.xcodeproj` 无输出。
+
+四、工程质量
+
+新增逻辑只在开发脚本和测试内，结构清晰，没有新增依赖，没有 mock-only / hardcoded PASS。文档仍保持“不放行”结论，没有把 hostless XCTest、dry-run 或环境阻断包装成 release evidence。
+
+五、验证情况
+
+已运行：
+- `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`：通过，`doctor: OK`，637 tasks / 637 manifests。
+- `PYTHONPYCACHEPREFIX=/private/tmp/areamatrix-pycache python3 -m py_compile ...`：通过。
+- `python3 -m unittest scripts.dev_tools.test_build_tools`：通过，7 tests OK。
+- `cargo test --manifest-path core/Cargo.toml --test stage1_release_checklist`：通过，8 tests OK。
+- `git diff --check`：通过，无输出。
+- `./dev check all`：失败于 macOS checks prerequisite gate。已通过 governance、skills、task-loop、prompt doctor、diff check、Rust fmt、Rust clippy、Rust test；失败原因是缺少 `x86_64-apple-darwin` Rust target、`swiftformat`、`swiftlint`。
+
+六、风险与后续
+
+剩余阻断项仍是 P1 release blocker。下一个动作应在具备完整 macOS 发布工具链的环境补齐：
+`rustup target add x86_64-apple-darwin`、安装 `swiftformat` / `swiftlint`，然后重跑 `./dev check all`；再补真实 `.app` 首屏启动、M-01..M-04 手工恢复、Developer ID 签名/公证/DMG/干净 Mac 首启和 CHANGELOG 0.1.0 release 证据。
+

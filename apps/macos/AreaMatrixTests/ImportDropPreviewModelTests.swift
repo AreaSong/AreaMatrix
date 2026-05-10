@@ -1,9 +1,9 @@
-import XCTest
 @testable import AreaMatrix
+import XCTest
 
 final class ImportDropPreviewModelTests: XCTestCase {
     @MainActor
-    func testAutoClassifyHoverCallsInjectedCoreCategoryPredictor() async throws {
+    func testAutoClassifyHoverCallsInjectedCoreCategoryPredictor() async {
         let sourceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
         let predictor = ImportDropRecordingPredictor(results: [
             .success(ClassifyResultSnapshot(
@@ -11,7 +11,7 @@ final class ImportDropPreviewModelTests: XCTestCase {
                 suggestedName: "Invoice_2026Q1.pdf",
                 reason: .keyword,
                 confidence: 0.9
-            )),
+            ))
         ])
         let model = ImportDropPreviewModel(repoPath: "/tmp/repo", predictor: predictor)
 
@@ -19,7 +19,7 @@ final class ImportDropPreviewModelTests: XCTestCase {
         let requests = await predictor.recordedRequests()
 
         XCTAssertEqual(requests, [
-            ImportDropPredictRequest(repoPath: "/tmp/repo", filename: "Invoice_2026Q1.pdf"),
+            ImportDropPredictRequest(repoPath: "/tmp/repo", filename: "Invoice_2026Q1.pdf")
         ])
         XCTAssertEqual(model.presentation?.destinationLabel, "finance")
         XCTAssertEqual(model.presentation?.predictionLabel, "Classification preview: finance · keyword · 90%")
@@ -52,7 +52,7 @@ final class ImportDropPreviewModelTests: XCTestCase {
                 suggestedName: "Invoice_2026Q1.pdf",
                 reason: .keyword,
                 confidence: 0.9
-            )),
+            ))
         ])
         let model = ImportDropPreviewModel(repoPath: "/tmp/repo", predictor: predictor)
 
@@ -69,7 +69,7 @@ final class ImportDropPreviewModelTests: XCTestCase {
     func testClassifyErrorsMapToHoverWarningWithoutCreatingStaticSuccess() async {
         let sourceURL = URL(fileURLWithPath: "/tmp/bad.pdf")
         let predictor = ImportDropRecordingPredictor(results: [
-            .failure(CoreError.Config(reason: "classifier.yaml line 7")),
+            .failure(CoreError.Config(reason: "classifier.yaml line 7"))
         ])
         let model = ImportDropPreviewModel(repoPath: "/tmp/repo", predictor: predictor)
 
@@ -126,7 +126,9 @@ final class ImportDropPreviewModelTests: XCTestCase {
         XCTAssertEqual(contracts.importDropTarget, .category("finance"))
         XCTAssertEqual(finance.importDropTarget.sidebarHelp, "Import into \"finance\"")
     }
+}
 
+final class ImportDropBatchPreviewTests: XCTestCase {
     @MainActor
     func testBatchPreviewCallsPredictorForEachFileAndUsesRealPredictions() async {
         let invoiceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
@@ -143,7 +145,7 @@ final class ImportDropPreviewModelTests: XCTestCase {
                 suggestedName: "2026Q1_合同.pdf",
                 reason: .keyword,
                 confidence: 0.82
-            )),
+            ))
         ])
         let model = ImportBatchPreviewModel(predictor: predictor)
         let request = ImportEntryRequest(
@@ -160,7 +162,7 @@ final class ImportDropPreviewModelTests: XCTestCase {
 
         XCTAssertEqual(requests, [
             ImportDropPredictRequest(repoPath: "/tmp/repo", filename: "Invoice_2026Q1.pdf"),
-            ImportDropPredictRequest(repoPath: "/tmp/repo", filename: "合同.pdf"),
+            ImportDropPredictRequest(repoPath: "/tmp/repo", filename: "合同.pdf")
         ])
         XCTAssertEqual(model.rows.count, 2)
         XCTAssertEqual(model.rows[0].predictedCategory, "finance")
@@ -177,23 +179,9 @@ final class ImportDropPreviewModelTests: XCTestCase {
         let goodURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
         let duplicateURL = URL(fileURLWithPath: "/tmp/Duplicate.pdf")
         let badURL = URL(fileURLWithPath: "/tmp/Bad.pdf")
-        let predictor = ImportDropRecordingPredictor(results: [
-            .success(ClassifyResultSnapshot(
-                category: "finance",
-                suggestedName: "Invoice_2026Q1.pdf",
-                reason: .keyword,
-                confidence: 0.9
-            )),
-            .success(ClassifyResultSnapshot(
-                category: "finance",
-                suggestedName: "Duplicate.pdf",
-                reason: .extension,
-                confidence: 0.7
-            )),
-            .failure(CoreError.Config(reason: "classifier.yaml line 7")),
-        ])
+        let predictor = ImportDropRecordingPredictor(results: importDropFailurePreviewPredictions())
         let duplicatePrechecker = ImportBatchStaticDuplicatePrechecker(results: [
-            duplicateURL.path: .duplicate(existingPath: "finance/existing.pdf"),
+            duplicateURL.path: .duplicate(existingPath: "finance/existing.pdf")
         ])
         let model = ImportBatchPreviewModel(
             predictor: predictor,
@@ -215,8 +203,8 @@ final class ImportDropPreviewModelTests: XCTestCase {
             ImportBatchDuplicatePrecheckRequest(repoPath: "/tmp/repo", paths: [
                 "/tmp/Invoice_2026Q1.pdf",
                 "/tmp/Duplicate.pdf",
-                "/tmp/Bad.pdf",
-            ]),
+                "/tmp/Bad.pdf"
+            ])
         ])
         XCTAssertEqual(model.successfulPreviewCount, 2)
         XCTAssertEqual(model.failedPreviewCount, 1)
@@ -245,10 +233,10 @@ final class ImportDropPreviewModelTests: XCTestCase {
                 suggestedName: "2026Q1_合同.pdf",
                 reason: .keyword,
                 confidence: 0.82
-            )),
+            ))
         ])
         let duplicatePrechecker = ImportBatchStaticDuplicatePrechecker(results: [
-            invoiceURL.path: .duplicate(existingPath: "finance/existing-invoice.pdf"),
+            invoiceURL.path: .duplicate(existingPath: "finance/existing-invoice.pdf")
         ])
         let previewModel = ImportBatchPreviewModel(
             predictor: predictor,
@@ -283,42 +271,14 @@ final class ImportDropPreviewModelTests: XCTestCase {
 
     @MainActor
     func testBatchPreviewUsesRealCoreMetadataForDuplicateAndNameConflictPrecheck() async throws {
-        let sourceRoot = try makeImportDropTemporaryDirectory(prefix: "batch-precheck-source")
-        defer { try? FileManager.default.removeItem(at: sourceRoot) }
-        let invoiceURL = sourceRoot.appendingPathComponent("Invoice_2026Q1.pdf")
-        let contractURL = sourceRoot.appendingPathComponent("合同.pdf")
-        try Data("same duplicate bytes".utf8).write(to: invoiceURL)
-        try Data("unique contract bytes".utf8).write(to: contractURL)
-        let duplicateHash = try ImportSingleFileHasher.sha256Hex(for: invoiceURL)
-        let duplicateFile = FileEntrySnapshot.s117Fixture(
-            currentName: "existing-invoice.pdf",
-            category: "finance",
-            hashSha256: duplicateHash
-        )
-        let nameConflictFile = FileEntrySnapshot.s117Fixture(
-            currentName: "合同.pdf",
-            category: "docs",
-            hashSha256: "different-contract-hash"
-        )
-        let predictor = ImportDropRecordingPredictor(results: [
-            .success(ClassifyResultSnapshot(
-                category: "finance",
-                suggestedName: "Invoice_2026Q1.pdf",
-                reason: .keyword,
-                confidence: 0.9
-            )),
-            .success(ClassifyResultSnapshot(
-                category: "docs",
-                suggestedName: "合同.pdf",
-                reason: .keyword,
-                confidence: 0.82
-            )),
-        ])
+        let fixture = try makeImportDropMetadataPrecheckFixture()
+        defer { try? FileManager.default.removeItem(at: fixture.sourceRoot) }
+        let predictor = ImportDropRecordingPredictor(results: importDropMetadataPrecheckPredictions())
         let duplicateFileLoader = S118StaticBatchFileLoader(pagesByCategory: [
-            "__all__": [[duplicateFile, nameConflictFile]],
+            "__all__": [[fixture.duplicateFile, fixture.nameConflictFile]]
         ])
         let nameConflictFileLoader = S118StaticBatchFileLoader(pagesByCategory: [
-            "docs": [[nameConflictFile]],
+            "docs": [[fixture.nameConflictFile]]
         ])
         let model = ImportBatchPreviewModel(
             predictor: predictor,
@@ -329,7 +289,7 @@ final class ImportDropPreviewModelTests: XCTestCase {
             repoPath: "/tmp/repo",
             source: .dropZone,
             destination: .autoClassify,
-            urls: [invoiceURL, contractURL],
+            urls: [fixture.invoiceURL, fixture.contractURL],
             kind: .multipleItems(2),
             availableCategories: ["inbox", "docs", "finance"]
         )
@@ -351,7 +311,7 @@ final class ImportDropPreviewModelTests: XCTestCase {
                 importedBefore: nil,
                 limit: 200,
                 offset: 0
-            ),
+            )
         ])
         XCTAssertEqual(nameConflictRequests, [
             FileFilterSnapshot(
@@ -361,7 +321,7 @@ final class ImportDropPreviewModelTests: XCTestCase {
                 importedBefore: nil,
                 limit: 200,
                 offset: 0
-            ),
+            )
         ])
     }
 
@@ -394,11 +354,10 @@ final class ImportDropPreviewModelTests: XCTestCase {
                 sourceURL: duplicateURL,
                 destination: .category("finance"),
                 suggestedCategory: "finance",
-                overrideFilename: "incoming.pdf",
-                duplicateStrategy: .ask
+                overrideFilename: "incoming.pdf"
             )
             XCTFail("Expected import_file to return DuplicateFile for duplicate content")
-        } catch CoreError.DuplicateFile(let existingPath) {
+        } catch let CoreError.DuplicateFile(existingPath) {
             XCTAssertEqual(existingPath, imported.path)
         } catch {
             XCTFail("Expected DuplicateFile, got \(error)")
@@ -407,7 +366,7 @@ final class ImportDropPreviewModelTests: XCTestCase {
     }
 }
 
-private struct ImportDropPredictRequest: Equatable, Sendable {
+private struct ImportDropPredictRequest: Equatable {
     var repoPath: String
     var filename: String
 }
@@ -426,9 +385,9 @@ private actor ImportDropRecordingPredictor: CoreCategoryPredicting {
             throw CoreError.Classify(reason: "missing test result")
         }
         switch results.removeFirst() {
-        case .success(let snapshot):
+        case let .success(snapshot):
             return snapshot
-        case .failure(let error):
+        case let .failure(error):
             throw error
         }
     }
@@ -438,9 +397,17 @@ private actor ImportDropRecordingPredictor: CoreCategoryPredicting {
     }
 }
 
-private struct ImportBatchDuplicatePrecheckRequest: Equatable, Sendable {
+private struct ImportBatchDuplicatePrecheckRequest: Equatable {
     var repoPath: String
     var paths: [String]
+}
+
+private struct ImportDropMetadataPrecheckFixture {
+    let sourceRoot: URL
+    let invoiceURL: URL
+    let contractURL: URL
+    let duplicateFile: FileEntrySnapshot
+    let nameConflictFile: FileEntrySnapshot
 }
 
 private actor ImportBatchStaticDuplicatePrechecker: ImportBatchDuplicatePrechecking {
@@ -454,7 +421,7 @@ private actor ImportBatchStaticDuplicatePrechecker: ImportBatchDuplicatePrecheck
     func precheckDuplicates(
         repoPath: String,
         sourceURLs: [URL],
-        destination: ImportBatchDestinationOption
+        destination _: ImportBatchDestinationOption
     ) async -> [String: ImportBatchDuplicatePrecheckResult] {
         requests.append(ImportBatchDuplicatePrecheckRequest(
             repoPath: repoPath,
@@ -480,4 +447,39 @@ private func makeImportDropTemporaryDirectory(prefix: String) throws -> URL {
         .appendingPathComponent("AreaMatrixImportDropTests-\(prefix)-\(UUID().uuidString)", isDirectory: true)
     try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
     return url
+}
+
+private func importDropFailurePreviewPredictions() -> [Result<ClassifyResultSnapshot, Error>] {
+    [
+        .success(.s118Prediction(category: "finance", suggestedName: "Invoice_2026Q1.pdf")),
+        .success(.s118Prediction(category: "finance", suggestedName: "Duplicate.pdf", confidence: 0.7)),
+        .failure(CoreError.Config(reason: "classifier.yaml line 7"))
+    ]
+}
+
+private func importDropMetadataPrecheckPredictions() -> [Result<ClassifyResultSnapshot, Error>] {
+    [
+        .success(.s118Prediction(category: "finance", suggestedName: "Invoice_2026Q1.pdf")),
+        .success(.s118Prediction(category: "docs", suggestedName: "合同.pdf", confidence: 0.82))
+    ]
+}
+
+private func makeImportDropMetadataPrecheckFixture() throws -> ImportDropMetadataPrecheckFixture {
+    let sourceRoot = try makeImportDropTemporaryDirectory(prefix: "batch-precheck-source")
+    let invoiceURL = sourceRoot.appendingPathComponent("Invoice_2026Q1.pdf")
+    let contractURL = sourceRoot.appendingPathComponent("合同.pdf")
+    try Data("same duplicate bytes".utf8).write(to: invoiceURL)
+    try Data("unique contract bytes".utf8).write(to: contractURL)
+    let duplicateHash = try ImportSingleFileHasher.sha256Hex(for: invoiceURL)
+    return ImportDropMetadataPrecheckFixture(
+        sourceRoot: sourceRoot,
+        invoiceURL: invoiceURL,
+        contractURL: contractURL,
+        duplicateFile: .s117Fixture(
+            currentName: "existing-invoice.pdf",
+            category: "finance",
+            hashSha256: duplicateHash
+        ),
+        nameConflictFile: .s117Fixture(currentName: "合同.pdf", category: "docs", hashSha256: "different-contract-hash")
+    )
 }

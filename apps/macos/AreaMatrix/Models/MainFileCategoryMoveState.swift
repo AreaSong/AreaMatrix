@@ -1,24 +1,28 @@
 import Foundation
 
-struct MainFileCategoryMovePreviewRequest: Equatable, Sendable {
+struct MainFileCategoryMovePreviewRequest: Equatable {
     var fileID: Int64
     var targetCategory: String
 }
 
-enum MainFileCategoryMoveFailureOperation: Equatable, Sendable {
+enum MainFileCategoryMoveFailureOperation: Equatable {
     case preview
     case move
 }
 
-enum MainFileCategoryMoveState: Equatable, Sendable {
+enum MainFileCategoryMoveState: Equatable {
     case idle
     case checking(MainFileCategoryMovePreviewRequest)
     case ready(MainFileCategoryMovePreviewRequest, MoveToCategoryPreviewSnapshot)
     case moving(MainFileCategoryMovePreviewRequest, preview: MoveToCategoryPreviewSnapshot?)
-    case failed(MainFileCategoryMovePreviewRequest, operation: MainFileCategoryMoveFailureOperation, CoreErrorMappingSnapshot)
+    case failed(
+        MainFileCategoryMovePreviewRequest,
+        operation: MainFileCategoryMoveFailureOperation,
+        CoreErrorMappingSnapshot
+    )
 
     func isChecking(_ request: MainFileCategoryMovePreviewRequest) -> Bool {
-        guard case .checking(let currentRequest) = self else { return false }
+        guard case let .checking(currentRequest) = self else { return false }
         return currentRequest == request
     }
 
@@ -27,24 +31,24 @@ enum MainFileCategoryMoveState: Equatable, Sendable {
     }
 
     func isMoving(fileID: Int64) -> Bool {
-        guard case .moving(let request, _) = self else { return false }
+        guard case let .moving(request, _) = self else { return false }
         return request.fileID == fileID
     }
 
     func preview(for request: MainFileCategoryMovePreviewRequest) -> MoveToCategoryPreviewSnapshot? {
         switch self {
-        case .ready(let currentRequest, let preview) where currentRequest == request:
-            return preview
-        case .moving(let currentRequest, let preview) where currentRequest == request:
-            return preview
+        case let .ready(currentRequest, preview) where currentRequest == request:
+            preview
+        case let .moving(currentRequest, preview) where currentRequest == request:
+            preview
         default:
-            return nil
+            nil
         }
     }
 
     func failure(for fileID: Int64, targetCategory: String) -> CoreErrorMappingSnapshot? {
         let request = MainFileCategoryMovePreviewRequest(fileID: fileID, targetCategory: targetCategory)
-        guard case .failed(let currentRequest, _, let mapping) = self,
+        guard case let .failed(currentRequest, _, mapping) = self,
               currentRequest == request else { return nil }
         return mapping
     }
@@ -54,7 +58,7 @@ enum MainFileCategoryMoveState: Equatable, Sendable {
         targetCategory: String
     ) -> MainFileCategoryMoveFailureOperation? {
         let request = MainFileCategoryMovePreviewRequest(fileID: fileID, targetCategory: targetCategory)
-        guard case .failed(let currentRequest, let operation, _) = self,
+        guard case let .failed(currentRequest, operation, _) = self,
               currentRequest == request else { return nil }
         return operation
     }

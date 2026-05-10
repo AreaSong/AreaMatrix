@@ -82,7 +82,9 @@ struct MainRepositoryDetailPane: View {
         self.writeActionDisabledReason = writeActionDisabledReason
         self.noteModel = noteModel
     }
+}
 
+extension MainRepositoryDetailPane {
     var body: some View {
         Group {
             if let selectedImportProgressRow {
@@ -335,7 +337,7 @@ struct MainRepositoryDetailPane: View {
 
     private func applyDetailTabRequest(_ request: MainDetailTabRequest) {
         switch request {
-        case .automatic(let tab):
+        case let .automatic(tab):
             selectedTab = tab
         }
         onDetailTabRequestConsumed(request)
@@ -374,7 +376,8 @@ struct MainRepositoryDetailPane: View {
     }
 
     @ViewBuilder
-    private func removeFromIndexButton(for file: FileEntrySnapshot?, style: DetailRemoveFromIndexButtonStyle) -> some View {
+    private func removeFromIndexButton(for file: FileEntrySnapshot?,
+                                       style: DetailRemoveFromIndexButtonStyle) -> some View {
         if let file, shouldShowRemoveFromIndex(for: file) {
             Button("Remove from Index", role: .destructive) {
                 onBeginDeleteFile(file.id)
@@ -412,14 +415,15 @@ struct MainRepositoryDetailPane: View {
                 .lineLimit(3)
         }
     }
-
 }
 
-struct DetailMetaMetadataRow: Equatable, Identifiable, Sendable {
+struct DetailMetaMetadataRow: Equatable, Identifiable {
     let label: String
     let value: String
 
-    var id: String { label }
+    var id: String {
+        label
+    }
 }
 
 private enum DetailRemoveFromIndexButtonStyle {
@@ -429,9 +433,9 @@ private enum DetailRemoveFromIndexButtonStyle {
     var accessibilityIdentifier: String {
         switch self {
         case .primary:
-            return "S1-12-missing-remove-from-index"
+            "S1-12-missing-remove-from-index"
         case .secondary:
-            return "S1-12-inline-remove-from-index"
+            "S1-12-inline-remove-from-index"
         }
     }
 }
@@ -447,7 +451,7 @@ func detailMetaMetadataRows(for detail: FileEntrySnapshot) -> [DetailMetaMetadat
         DetailMetaMetadataRow(label: "Modified", value: detail.updatedAtDisplay),
         DetailMetaMetadataRow(label: "SHA-256", value: detail.hashSha256),
         DetailMetaMetadataRow(label: "Source", value: detailMetaDisplayValue(detail.sourcePath)),
-        DetailMetaMetadataRow(label: "Status", value: detail.statusDisplay),
+        DetailMetaMetadataRow(label: "Status", value: detail.statusDisplay)
     ]
 }
 

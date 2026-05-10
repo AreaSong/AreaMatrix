@@ -2,7 +2,7 @@ protocol CoreStartupRecovering: Sendable {
     func recoverOnStartup(repoPath: String) async throws -> RecoveryReportSnapshot
 }
 
-struct RecoveryReportSnapshot: Equatable, Sendable {
+struct RecoveryReportSnapshot: Equatable {
     var cleanedStagingFiles: Int64
     var revertedStagingDbRows: Int64
     var warnings: [String]
@@ -18,7 +18,7 @@ struct RecoveryReportSnapshot: Equatable, Sendable {
     }
 }
 
-struct ReindexReportSnapshot: Equatable, Sendable {
+struct ReindexReportSnapshot: Equatable {
     var scanSessionId: Int64?
     var inserted: Int64
     var updated: Int64
@@ -26,7 +26,7 @@ struct ReindexReportSnapshot: Equatable, Sendable {
     var errors: [String]
 }
 
-struct RepositoryInitializationResult: Equatable, Sendable {
+struct RepositoryInitializationResult: Equatable {
     var repoPath: String
     var mode: RepoInitModeSnapshot
     var scanSession: ScanSessionSnapshot?

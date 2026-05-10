@@ -1,0 +1,59 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`3-1/task-05`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-3/3-1-stability-release/task-05-stage1-integration-verify.md`
+- Manifest：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-3.md`
+- Exact Docs：6 个均已读取
+- Existing Code：已核对 `core/**`、`apps/macos/**`、`scripts/**`
+- Forbidden Touches：本轮 diff 未命中 `core/src/**`、`core/area_matrix.udl`、`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrix.xcodeproj/**`
+
+三、完成度摘要
+
+- 已覆盖项数：7/7
+- 未覆盖项数：0
+- 通过项数：2
+- 不通过项数：5
+- 阻塞项数：5
+
+四、逐项验收结果
+
+- 读取 Stage 1 roadmap/control map/Core/UX/testing/release：通过。证据：6 个 Exact Docs 均已读取。
+- Real Core 页面全量核对：不通过。证据链不满足最终放行，`./dev check all` 失败，无法证明所有 Real Core 页面达到可发布闭环。
+- Phase 1 Core 与 Phase 2 UI integration verify：不通过。存在大量 Core/UI 测试文件，但最终综合门禁失败，不能以局部测试存在替代 stage verify。
+- `3-1/task-01` 到 `3-1/task-04` 证据：不通过。`stage-1-release-checklist.md` 明确写“最终集成验收：不放行”，且仍有 P1 阻断。
+- 最终自动化综合门禁与手工/性能/发布证据：不通过。`./dev check all` 失败；手工冒烟、真实 `.app` 首屏、签名、公证、DMG、干净 Mac 首启证据缺失。
+- 发现缺口即判不通过：通过。本次按规则判定 FAIL。
+- Forbidden Touches：通过。`git diff --name-only -- <forbidden paths>` 无输出；未发现违规触碰。
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过。Swift style gate 失败，覆盖产品与测试代码，例如 `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileListState.swift:3`、`:405`、`:492`。
+- 注释 / rustdoc / 文档同步：不通过。发布文档自己记录当前不放行：`/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-release-checklist.md:11`、`:13`。
+- 错误处理与边界处理：不通过。恢复场景 M-01..M-04 仍是 pending，见 `/Users/as/Ai-Project/project/AreaMatrix/docs/development/recovery-scenarios.md:63`、`:92`、`:103`、`:113`、`:123`。
+- 测试与验证覆盖：不通过。`./dev check all` 退出码 1，SwiftFormat 报 `199/224 files require formatting, 3 files skipped`。
+- 占位、硬编码、mock-only、一次性实现检查：不通过。不是发现单个明确 mock-only blocker，而是最终发布闭环证据缺失，无法证明真实闭环可发布。
+
+六、阻塞项
+
+- P1-RL-001：真实 Release `.app` 启动到首屏证据缺失。路径：`/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-performance-baseline.md:88`。原因：Stage 1 要求真实启动 `< 1.5s`，当前仅有 hostless surrogate，真实 `.app` gate 为 BLOCKED。
+- P1-RL-002：手工恢复冒烟 M-01..M-04 pending。路径：`/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-release-checklist.md:69`。原因：真实 macOS/iCloud/TCC/DB repair 边界未采集发布证据。
+- P1-RL-003：签名、公证、DMG、干净 Mac 首启缺证据。路径：`/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-release-checklist.md:57`、`:58`、`:59`、`:60`。原因：alpha 分发物不可验证。
+- P1-RL-004：CHANGELOG / 版本发布切面未完成。路径：`/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-release-checklist.md:49`、`:50`。原因：0.1.0 release 记录、tag、build number 不完整。
+- P1-RL-005：`./dev check all` 未通过。路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileListState.swift:3`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFileMoveImportTests.swift:1`。原因：SwiftFormat 大量格式违规阻断综合门禁。
+
+七、验证情况
+
+- 已运行：`python3 tasks/prompts/_shared/prompt_pipeline.py doctor`：通过，`tasks: 637`、`manifests: 637`。
+- 已运行：`git diff --check`：通过，无输出。
+- 已运行：`./dev check all`：失败，退出码 1；已观察到 governance、skills、task-loop、prompt doctor、diff check、Rust fmt/clippy/test 通过，最终在 SwiftFormat lint 阶段失败。
+- 缺失：手工冒烟、真实 Release `.app` 首屏、Developer ID 签名、公证、DMG、干净 Mac 首启、远端 CI/tag/release 证据。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。核心原因不是单个文档缺失，而是最终发布门禁和工程质量门禁未通过，且仓库内发布清单本身明确写明 Stage 1 alpha 与最终集成验收“不放行”。
+
+VERIFY_RESULT: FAIL

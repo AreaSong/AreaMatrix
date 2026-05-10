@@ -55,7 +55,7 @@ struct MainCurrentListErrorPane: View {
             Label("Preparing diagnostics...", systemImage: "arrow.clockwise")
                 .font(.callout)
                 .foregroundStyle(.secondary)
-        case .collected(let snapshot):
+        case let .collected(snapshot):
             VStack(alignment: .leading, spacing: 4) {
                 Label("Diagnostics collected", systemImage: "doc.badge.gearshape")
                 Text(snapshot.snapshotPath)
@@ -63,7 +63,7 @@ struct MainCurrentListErrorPane: View {
                     .textSelection(.enabled)
             }
             .font(.callout)
-        case .failed(let mapping):
+        case let .failed(mapping):
             VStack(alignment: .leading, spacing: 4) {
                 Label("Diagnostics could not be collected", systemImage: "exclamationmark.triangle")
                 Text(mapping.userMessage)

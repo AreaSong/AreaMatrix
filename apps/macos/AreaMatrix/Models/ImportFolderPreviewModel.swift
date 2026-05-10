@@ -111,7 +111,7 @@ final class ImportFolderPreviewModel: ObservableObject {
     func collectReplaceConfirmationDiagnostics() {
         replaceConfirmationDiagnosticsMessage = [
             "Diagnostics collected for replace confirmation state.",
-            "No user file contents included.",
+            "No user file contents included."
         ].joined(separator: " ")
     }
 
@@ -148,7 +148,7 @@ final class ImportFolderPreviewModel: ObservableObject {
         if isICloudDownloading {
             return "正在下载 iCloud 文件"
         }
-        if rows.contains(where: { $0.status.isImporting }) {
+        if rows.contains(where: \.status.isImporting) {
             return selectedStorageMode.importingBlockingMessage
         }
         if !scanErrors.isEmpty {
@@ -166,11 +166,11 @@ final class ImportFolderPreviewModel: ObservableObject {
     var storageModeRiskMessage: String? {
         switch selectedStorageMode {
         case .copy:
-            return nil
+            nil
         case .move:
-            return "Move 模式会移走源文件夹中的已就绪文件；请确认这些文件要移入资料库。"
+            "Move 模式会移走源文件夹中的已就绪文件；请确认这些文件要移入资料库。"
         case .indexOnly:
-            return "Index-only 不复制文件，只写入索引；源文件移动或删除后会显示缺失。"
+            "Index-only 不复制文件，只写入索引；源文件移动或删除后会显示缺失。"
         }
     }
 
@@ -337,13 +337,13 @@ final class ImportFolderPreviewModel: ObservableObject {
         }
 
         switch coreError {
-        case .Config(let reason):
+        case let .Config(reason):
             return "分类规则无效：\(reason)"
-        case .Classify(let reason):
+        case let .Classify(reason):
             return "无法预览分类：\(reason)"
-        case .PermissionDenied(let path):
+        case let .PermissionDenied(path):
             return "无法读取分类预览路径：\(path)"
-        case .Io(let message):
+        case let .Io(message):
             return "分类预览文件读取失败：\(message)"
         default:
             return "无法完成分类预览"
@@ -367,11 +367,11 @@ extension ImportFolderPreviewModel {
     private func targetCategory(for row: ImportFolderPreviewRow) -> String? {
         switch selectedDestination {
         case .autoClassify:
-            return row.predictedCategory?.trimmingCharacters(in: .whitespacesAndNewlines)
-        case .category(let slug):
-            return slug.trimmingCharacters(in: .whitespacesAndNewlines)
+            row.predictedCategory?.trimmingCharacters(in: .whitespacesAndNewlines)
+        case let .category(slug):
+            slug.trimmingCharacters(in: .whitespacesAndNewlines)
         case .repositoryRoot:
-            return nil
+            nil
         }
     }
 }
@@ -379,12 +379,12 @@ extension ImportFolderPreviewModel {
 private extension ImportFolderPreviewRow {
     func withConflictPrecheck(_ result: ImportFolderConflictPrecheckResult) -> ImportFolderPreviewRow {
         switch result {
-        case .duplicate(let existingPath):
-            return withStatus(.duplicate(existingPath: existingPath, strategy: .skip, isReplaceConfirmed: false))
-        case .nameConflict(let existingPath):
-            return withStatus(.nameConflict(existingPath: existingPath, resolution: .keepBoth))
-        case .blocked(let message):
-            return withStatus(.blocked(message))
+        case let .duplicate(existingPath):
+            withStatus(.duplicate(existingPath: existingPath, strategy: .skip, isReplaceConfirmed: false))
+        case let .nameConflict(existingPath):
+            withStatus(.nameConflict(existingPath: existingPath, resolution: .keepBoth))
+        case let .blocked(message):
+            withStatus(.blocked(message))
         }
     }
 }
@@ -393,16 +393,16 @@ private extension ImportEntryDestination {
     var folderDestinationOption: ImportBatchDestinationOption {
         switch self {
         case .autoClassify:
-            return .autoClassify
-        case .category(let slug):
-            return .category(slug)
+            .autoClassify
+        case let .category(slug):
+            .category(slug)
         case .repositoryRoot:
-            return .repositoryRoot
+            .repositoryRoot
         }
     }
 }
 
-private extension Array where Element == ImportBatchDestinationOption {
+private extension [ImportBatchDestinationOption] {
     func uniqued() -> [ImportBatchDestinationOption] {
         var seen = Set<ImportBatchDestinationOption>()
         return filter { seen.insert($0).inserted }

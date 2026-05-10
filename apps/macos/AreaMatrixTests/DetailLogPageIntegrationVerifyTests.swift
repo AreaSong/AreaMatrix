@@ -1,5 +1,5 @@
-import XCTest
 @testable import AreaMatrix
+import XCTest
 
 final class DetailLogPageIntegrationVerifyTests: XCTestCase {
     @MainActor
@@ -14,7 +14,7 @@ final class DetailLogPageIntegrationVerifyTests: XCTestCase {
         let first = FileEntrySnapshot.detailMetaFixture(id: 70, currentName: "first.pdf")
         let second = FileEntrySnapshot.detailMetaFixture(id: 71, currentName: "second.pdf")
         let lister = DetailLogRecordingLister(results: [
-            .success([.detailLogFixture(fileID: first.id, action: "imported")]),
+            .success([.detailLogFixture(fileID: first.id, action: "imported")])
         ])
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [first, second]),
@@ -50,7 +50,7 @@ final class DetailLogPageIntegrationVerifyTests: XCTestCase {
         let event = try XCTUnwrap(MainExternalCreatedFileEvent(
             kind: .renamed,
             relativePath: selected.path,
-            fsEventID: 12_001
+            fsEventID: 12001
         ))
         let mapping = CoreErrorMappingSnapshot.detailLogDb()
         let model = MainFileListModel(
@@ -113,7 +113,7 @@ final class DetailLogPageIntegrationVerifyTests: XCTestCase {
             fsEventID: event.fsEventID
         )])
         XCTAssertEqual(logRequests, [
-            DetailLogRequest(repoPath: "/tmp/repo", filter: .detailLog(fileID: logFileID)),
+            DetailLogRequest(repoPath: "/tmp/repo", filter: .detailLog(fileID: logFileID))
         ])
         XCTAssertEqual(model.detailLogState, .loaded(fileID: entry.fileID ?? -1, entries: [entry]))
         XCTAssertEqual(model.detailTabRequest, .automatic(.log))
@@ -149,11 +149,11 @@ final class DetailLogPageIntegrationVerifyTests: XCTestCase {
     private func fsEventID(kind: MainExternalSyncEventKind) -> Int64 {
         switch kind {
         case .created:
-            return 11_001
+            11001
         case .renamed:
-            return 11_002
+            11002
         case .removed:
-            return 11_003
+            11003
         }
     }
 
@@ -186,7 +186,7 @@ private enum DetailLogIntegrationSyncResult {
     var snapshot: SyncResultSnapshot {
         switch self {
         case .created:
-            return SyncResultSnapshot(
+            SyncResultSnapshot(
                 detectedCreates: 1,
                 detectedRenames: 0,
                 detectedDeletes: 0,
@@ -194,7 +194,7 @@ private enum DetailLogIntegrationSyncResult {
                 errors: []
             )
         case .renamed:
-            return SyncResultSnapshot(
+            SyncResultSnapshot(
                 detectedCreates: 0,
                 detectedRenames: 1,
                 detectedDeletes: 0,
@@ -202,7 +202,7 @@ private enum DetailLogIntegrationSyncResult {
                 errors: []
             )
         case .removed:
-            return SyncResultSnapshot(
+            SyncResultSnapshot(
                 detectedCreates: 0,
                 detectedRenames: 0,
                 detectedDeletes: 1,
@@ -256,10 +256,15 @@ private actor DetailLogIntegrationSyncer: CoreExternalChangesSyncing {
         try recordAndResolve(kind: .removed, repoPath: repoPath, relativePath: relativePath, fsEventID: fsEventID)
     }
 
-    func getFSEventCursor(repoPath: String) async throws -> Int64? { nil }
-    func setFSEventCursor(repoPath: String, lastEventID: Int64) async throws {}
+    func getFSEventCursor(repoPath _: String) async throws -> Int64? {
+        nil
+    }
 
-    func recordedRequests() -> [DetailLogIntegrationSyncRequest] { requests }
+    func setFSEventCursor(repoPath _: String, lastEventID _: Int64) async throws {}
+
+    func recordedRequests() -> [DetailLogIntegrationSyncRequest] {
+        requests
+    }
 
     private func recordAndResolve(
         kind: MainExternalSyncEventKind,
@@ -284,7 +289,7 @@ private actor DetailLogIntegrationLister: CoreFileListing {
         self.files = files
     }
 
-    func listFiles(repoPath: String, filter: FileFilterSnapshot) async throws -> [FileEntrySnapshot] {
+    func listFiles(repoPath _: String, filter _: FileFilterSnapshot) async throws -> [FileEntrySnapshot] {
         files
     }
 }
@@ -298,15 +303,15 @@ private actor DetailLogIntegrationDetailer: CoreFileDetailing {
         self.results = results
     }
 
-    func getFile(repoPath: String, fileID: Int64) async throws -> FileEntrySnapshot {
+    func getFile(repoPath _: String, fileID: Int64) async throws -> FileEntrySnapshot {
         guard !results.isEmpty else {
             throw CoreError.FileNotFound(path: "\(fileID)")
         }
 
         switch results.removeFirst() {
-        case .success(let file):
+        case let .success(file):
             return file
-        case .failure(let error):
+        case let .failure(error):
             throw error
         }
     }

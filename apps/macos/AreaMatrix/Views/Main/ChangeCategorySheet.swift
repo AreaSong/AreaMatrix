@@ -105,8 +105,8 @@ struct ChangeCategorySheet: View {
             Button(primaryActionTitle(for: file)) {
                 onChangeCategory(file.id, targetCategory)
             }
-                .disabled(actionDisabled(for: file))
-                .keyboardShortcut(.defaultAction)
+            .disabled(actionDisabled(for: file))
+            .keyboardShortcut(.defaultAction)
         }
     }
 

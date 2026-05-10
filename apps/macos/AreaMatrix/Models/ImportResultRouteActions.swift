@@ -1,6 +1,14 @@
 import Foundation
 
 extension ImportResultRouteState {
+    init(
+        sourceOpening: RepositoryOpeningResult,
+        interruptedSession session: ImportBatchSessionSnapshot
+    ) {
+        self.init(sourceOpening: sourceOpening, progress: session.interruptedProgressSnapshot)
+        shouldClearInterruptedSessionOnDone = true
+    }
+
     var retryButtonTitle: String {
         isRetryingFailedItems ? "Retrying..." : "Retry Failed"
     }
@@ -10,7 +18,7 @@ extension ImportResultRouteState {
             "AreaMatrix Import Result",
             summaryText,
             "No user file contents are included.",
-            "",
+            ""
         ]
         lines.append(contentsOf: items.map(exportLine(for:)))
         return lines.joined(separator: "\n")
@@ -22,7 +30,7 @@ extension ImportResultRouteState {
             item.sanitizedTargetPath,
             item.reason,
             "source \(item.sanitizedSourcePath)",
-            item.existingRelativePath.map { "existing \(Self.sanitizedPathDisplay($0))" },
+            item.existingRelativePath.map { "existing \(Self.sanitizedPathDisplay($0))" }
         ].compactMap { $0 }.joined(separator: " | ")
     }
 
@@ -37,7 +45,8 @@ extension ImportResultRouteState {
             items: items,
             isRetryingFailedItems: isRetryingFailedItems,
             changeLog: changeLog,
-            exportState: exportState
+            exportState: exportState,
+            shouldClearInterruptedSessionOnDone: shouldClearInterruptedSessionOnDone
         )
     }
 
@@ -52,7 +61,8 @@ extension ImportResultRouteState {
             items: items,
             isRetryingFailedItems: isRetryingFailedItems,
             changeLog: changeLog,
-            exportState: exportState
+            exportState: exportState,
+            shouldClearInterruptedSessionOnDone: shouldClearInterruptedSessionOnDone
         )
     }
 
@@ -67,7 +77,8 @@ extension ImportResultRouteState {
             items: items,
             isRetryingFailedItems: isRetryingFailedItems,
             changeLog: changeLog,
-            exportState: exportState
+            exportState: exportState,
+            shouldClearInterruptedSessionOnDone: shouldClearInterruptedSessionOnDone
         )
     }
 
@@ -122,7 +133,8 @@ extension ImportResultRouteState {
             items: updatedItems,
             isRetryingFailedItems: isRetryingFailedItems,
             changeLog: changeLog,
-            exportState: exportState
+            exportState: exportState,
+            shouldClearInterruptedSessionOnDone: shouldClearInterruptedSessionOnDone
         )
     }
 }

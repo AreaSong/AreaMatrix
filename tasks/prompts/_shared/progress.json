@@ -6934,6 +6934,11 @@
       "status": "completed",
       "updated_at": "2026-05-09T15:49:21.081920+00:00",
       "verify_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260509_125521/phase-3/3-1-task-04-verify-attempt-1.log"
+    },
+    "3-1/task-05": {
+      "note": "MVP/local QA gate synced: 0.1.0-local-qa complete; external release gates documented/deferred (M-02 iCloud, Developer ID, notarization, signed/notarized DMG, clean Mac, v0.1.0 tag/GitHub Release); not an official Stage 1 alpha release.",
+      "status": "completed",
+      "updated_at": "2026-05-10T17:12:16.796544+00:00"
     }
   },
   "updated_at": "2026-05-09T15:49:21.081924+00:00",

@@ -1,5 +1,5 @@
-import XCTest
 @testable import AreaMatrix
+import XCTest
 
 final class GeneralSettingsPageFeatureTests: XCTestCase {
     @MainActor
@@ -14,7 +14,7 @@ final class GeneralSettingsPageFeatureTests: XCTestCase {
             repoPath: "/tmp/repo",
             loader: loader,
             updater: GeneralSettingsRecordingUpdater(result: .success),
-            rootOverviewInspector: GeneralSettingsStaticRootOverviewInspector(status: .missing),
+            rootOverviewInspector: GeneralRootOverviewInspector(status: .missing),
             errorMapper: GeneralSettingsStaticErrorMapper()
         )
 
@@ -145,7 +145,9 @@ final class GeneralSettingsPageFeatureTests: XCTestCase {
         let revealer = GeneralSettingsRecordingFileRevealer()
         let model = await loadedModel(
             updater: updater,
-            inspector: GeneralSettingsStaticRootOverviewInspector(status: .unsafe("Cannot safely update AREAMATRIX.md")),
+            inspector: GeneralRootOverviewInspector(
+                status: .unsafe("Cannot safely update AREAMATRIX.md")
+            ),
             revealer: revealer
         )
 
@@ -249,7 +251,7 @@ final class GeneralSettingsPageFeatureTests: XCTestCase {
     private func loadedModel(
         updater: GeneralSettingsRecordingUpdater,
         config: RepoConfigSnapshot = .generalSettingsFixture(repoPath: "/tmp/repo"),
-        inspector: any RootOverviewFileInspecting = GeneralSettingsStaticRootOverviewInspector(status: .missing),
+        inspector: any RootOverviewFileInspecting = GeneralRootOverviewInspector(status: .missing),
         revealer: (any RepositoryFileRevealing)? = nil
     ) async -> GeneralSettingsModel {
         let model = GeneralSettingsModel(
@@ -281,14 +283,16 @@ private actor GeneralSettingsRecordingLoader: CoreConfigurationLoading {
     func loadConfig(repoPath: String) async throws -> RepoConfigSnapshot {
         paths.append(repoPath)
         switch result {
-        case .success(let config):
+        case let .success(config):
             return config
-        case .failure(let error):
+        case let .failure(error):
             throw error
         }
     }
 
-    func requestedPaths() -> [String] { paths }
+    func requestedPaths() -> [String] {
+        paths
+    }
 }
 
 private enum GeneralSettingsUpdateResult {
@@ -314,20 +318,22 @@ private actor GeneralSettingsRecordingUpdater: CoreConfigurationUpdating {
         switch result {
         case .success:
             return
-        case .failureThenSuccess(let error) where recordedRequests.count == 1:
+        case let .failureThenSuccess(error) where recordedRequests.count == 1:
             throw error
         case .failureThenSuccess:
             return
         }
     }
 
-    func requests() -> [Request] { recordedRequests }
+    func requests() -> [Request] {
+        recordedRequests
+    }
 }
 
-private struct GeneralSettingsStaticRootOverviewInspector: RootOverviewFileInspecting {
+private struct GeneralRootOverviewInspector: RootOverviewFileInspecting {
     let status: RootOverviewFileStatus
 
-    func status(repoPath: String) -> RootOverviewFileStatus {
+    func status(repoPath _: String) -> RootOverviewFileStatus {
         status
     }
 }
@@ -350,13 +356,13 @@ private actor GeneralSettingsStaticErrorMapper: CoreErrorMapping {
     func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
         switch error {
         case .Db:
-            return .generalSettingsMapping(kind: .db, userMessage: "数据库错误")
+            .generalSettingsMapping(kind: .db, userMessage: "数据库错误")
         case .Config:
-            return .generalSettingsMapping(kind: .config, userMessage: "配置错误")
+            .generalSettingsMapping(kind: .config, userMessage: "配置错误")
         case .PermissionDenied:
-            return .generalSettingsMapping(kind: .permissionDenied, userMessage: "无访问权限")
+            .generalSettingsMapping(kind: .permissionDenied, userMessage: "无访问权限")
         default:
-            return .generalSettingsMapping(kind: .internal, userMessage: "保存失败")
+            .generalSettingsMapping(kind: .internal, userMessage: "保存失败")
         }
     }
 }

@@ -1,11 +1,14 @@
-import XCTest
 @testable import AreaMatrix
+import XCTest
 
 struct ShellStaticSettingsReader: AppSettingsReading {
     let repoPath: String?
     var lastOpenedAtByRepoPath: [String: Int64] = [:]
 
-    func configuredRepoPath() -> String? { repoPath }
+    func configuredRepoPath() -> String? {
+        repoPath
+    }
+
     func lastSuccessfulRepoOpenAt(repoPath: String) -> Int64? {
         lastOpenedAtByRepoPath[repoPath]
     }
@@ -45,14 +48,16 @@ actor ShellRecordingConfigLoader: CoreConfigurationLoading {
     func loadConfig(repoPath: String) async throws -> RepoConfigSnapshot {
         paths.append(repoPath)
         switch result {
-        case .success(let config):
+        case let .success(config):
             return config
-        case .failure(let error):
+        case let .failure(error):
             throw error
         }
     }
 
-    func requestedRepoPaths() -> [String] { paths }
+    func requestedRepoPaths() -> [String] {
+        paths
+    }
 }
 
 actor ShellRecordingRepositoryOpener: CoreEmptyRepositoryOpening {
@@ -74,14 +79,16 @@ actor ShellRecordingRepositoryOpener: CoreEmptyRepositoryOpening {
     func openConfiguredRepository(repoPath: String) async throws -> RepositoryOpeningResult {
         configuredPaths.append(repoPath)
         switch result {
-        case .success(let opening):
+        case let .success(opening):
             return opening
-        case .failure(let error):
+        case let .failure(error):
             throw error
         }
     }
 
-    func requestedConfiguredRepoPaths() -> [String] { configuredPaths }
+    func requestedConfiguredRepoPaths() -> [String] {
+        configuredPaths
+    }
 }
 
 enum ShellRecordingPathValidationResult {
@@ -100,14 +107,16 @@ actor ShellRecordingPathValidator: CoreRepositoryPathValidating {
     func validateRepoPath(repoPath: String) async throws -> RepoPathValidationSnapshot {
         paths.append(repoPath)
         switch result {
-        case .success(let validation):
+        case let .success(validation):
             return validation
-        case .failure(let error):
+        case let .failure(error):
             throw error
         }
     }
 
-    func requestedRepoPaths() -> [String] { paths }
+    func requestedRepoPaths() -> [String] {
+        paths
+    }
 }
 
 actor ShellRecordingInitializedPathValidator: CoreInitializedRepositoryPathValidating {
@@ -121,14 +130,16 @@ actor ShellRecordingInitializedPathValidator: CoreInitializedRepositoryPathValid
     func validateInitializedRepoPath(repoPath: String) async throws -> RepoPathValidationSnapshot {
         paths.append(repoPath)
         switch result {
-        case .success(let validation):
+        case let .success(validation):
             return validation
-        case .failure(let error):
+        case let .failure(error):
             throw error
         }
     }
 
-    func requestedRepoPaths() -> [String] { paths }
+    func requestedRepoPaths() -> [String] {
+        paths
+    }
 }
 
 struct ShellExternalRemovalRequest: Equatable {
@@ -147,54 +158,68 @@ actor ShellRecordingExternalChangesSyncer: CoreExternalChangesSyncing {
         self.result = result
     }
 
-    func syncExternalCreated(repoPath: String, relativePath: String, fsEventID: Int64) async throws -> SyncResultSnapshot {
+    func syncExternalCreated(repoPath: String, relativePath: String,
+                             fsEventID: Int64) async throws -> SyncResultSnapshot {
         createdRequests.append(ShellExternalRemovalRequest(
             repoPath: repoPath,
             relativePath: relativePath,
             fsEventID: fsEventID
         ))
         switch result {
-        case .success(let snapshot):
+        case let .success(snapshot):
             return snapshot
-        case .failure(let error):
+        case let .failure(error):
             throw error
         }
     }
 
-    func syncExternalRenamed(repoPath: String, relativePath: String, fsEventID: Int64) async throws -> SyncResultSnapshot {
+    func syncExternalRenamed(repoPath: String, relativePath: String,
+                             fsEventID: Int64) async throws -> SyncResultSnapshot {
         renamedRequests.append(ShellExternalRemovalRequest(
             repoPath: repoPath,
             relativePath: relativePath,
             fsEventID: fsEventID
         ))
         switch result {
-        case .success(let snapshot):
+        case let .success(snapshot):
             return snapshot
-        case .failure(let error):
+        case let .failure(error):
             throw error
         }
     }
 
-    func syncExternalRemoved(repoPath: String, relativePath: String, fsEventID: Int64) async throws -> SyncResultSnapshot {
+    func syncExternalRemoved(repoPath: String, relativePath: String,
+                             fsEventID: Int64) async throws -> SyncResultSnapshot {
         requests.append(ShellExternalRemovalRequest(
             repoPath: repoPath,
             relativePath: relativePath,
             fsEventID: fsEventID
         ))
         switch result {
-        case .success(let snapshot):
+        case let .success(snapshot):
             return snapshot
-        case .failure(let error):
+        case let .failure(error):
             throw error
         }
     }
 
-    func recordedRequests() -> [ShellExternalRemovalRequest] { requests }
-    func recordedCreatedRequests() -> [ShellExternalRemovalRequest] { createdRequests }
-    func recordedRenamedRequests() -> [ShellExternalRemovalRequest] { renamedRequests }
+    func recordedRequests() -> [ShellExternalRemovalRequest] {
+        requests
+    }
 
-    func getFSEventCursor(repoPath: String) async throws -> Int64? { nil }
-    func setFSEventCursor(repoPath: String, lastEventID: Int64) async throws {}
+    func recordedCreatedRequests() -> [ShellExternalRemovalRequest] {
+        createdRequests
+    }
+
+    func recordedRenamedRequests() -> [ShellExternalRemovalRequest] {
+        renamedRequests
+    }
+
+    func getFSEventCursor(repoPath _: String) async throws -> Int64? {
+        nil
+    }
+
+    func setFSEventCursor(repoPath _: String, lastEventID _: Int64) async throws {}
 }
 
 actor ShellRecordingDiagnosticsCollector: CoreDiagnosticsCollecting {
@@ -210,7 +235,9 @@ actor ShellRecordingDiagnosticsCollector: CoreDiagnosticsCollecting {
         return try result.get()
     }
 
-    func requestedRepoPaths() -> [String] { repoPaths }
+    func requestedRepoPaths() -> [String] {
+        repoPaths
+    }
 }
 
 struct ShellNoopWelcomeHelpOpener: WelcomeHelpOpening { func openWelcomeHelp() throws {} }
@@ -268,12 +295,12 @@ final class ShellRecordingPathCopier: RepositoryPathCopying {
     }
 }
 
-struct ShellStaticExistingRepositoryMetadataReader: ExistingRepositoryMetadataReading {
+struct ShellExistingRepoMetadataReader: ExistingRepositoryMetadataReading {
     let schemaVersion: Int64
     var lastOpenedAt: Int64?
     var configuredRepoPath: String?
 
-    func metadata(repoPath: String) async throws -> ExistingRepositoryMetadataSnapshot {
+    func metadata(repoPath _: String) async throws -> ExistingRepositoryMetadataSnapshot {
         ExistingRepositoryMetadataSnapshot(
             schemaVersion: schemaVersion,
             lastOpenedAt: lastOpenedAt,
@@ -387,7 +414,7 @@ extension RepoPathValidationSnapshot {
 }
 
 actor ShellStaticStartupRecoverer: CoreStartupRecovering {
-    func recoverOnStartup(repoPath: String) async throws -> RecoveryReportSnapshot {
+    func recoverOnStartup(repoPath _: String) async throws -> RecoveryReportSnapshot {
         RecoveryReportSnapshot(cleanedStagingFiles: 0, revertedStagingDbRows: 0, warnings: [])
     }
 }

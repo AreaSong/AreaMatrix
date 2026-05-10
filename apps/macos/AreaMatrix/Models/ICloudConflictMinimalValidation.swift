@@ -1,8 +1,8 @@
 import Combine
 import Foundation
 
-struct ICloudConflictVersionSnapshot: Equatable, Identifiable, Sendable {
-    enum Role: String, Equatable, Sendable {
+struct ICloudConflictVersionSnapshot: Equatable, Identifiable {
+    enum Role: String, Equatable {
         case original
         case conflictedCopy
     }
@@ -12,7 +12,9 @@ struct ICloudConflictVersionSnapshot: Equatable, Identifiable, Sendable {
     var modifiedAt: Int64?
     var sizeBytes: Int64?
 
-    var id: Role { role }
+    var id: Role {
+        role
+    }
 
     var displayName: String {
         guard let path, !path.isEmpty else { return "Unknown file" }
@@ -24,7 +26,7 @@ struct ICloudConflictVersionSnapshot: Equatable, Identifiable, Sendable {
     }
 }
 
-enum ICloudConflictRepositoryValidationState: Equatable, Sendable {
+enum ICloudConflictRepositoryValidationState: Equatable {
     case notChecked
     case checking
     case ready(RepoPathValidationSnapshot, warnings: [String])
@@ -83,7 +85,7 @@ final class ICloudConflictMinimalModel: ObservableObject {
             repositoryValidationState = Self.state(for: validation)
         } catch {
             guard validationGeneration == currentGeneration else { return }
-            repositoryValidationState = .failed(await mapValidationError(error))
+            repositoryValidationState = await .failed(mapValidationError(error))
         }
     }
 

@@ -1,7 +1,7 @@
-import XCTest
 @testable import AreaMatrix
+import XCTest
 
-final class GeneralSettingsPageIntegrationVerifyTests: XCTestCase {
+final class GeneralSettingsIntegrationTests: XCTestCase {
     @MainActor
     func testS126PageIntegrationConnectsAllDeclaredCapabilitiesAndExitsBackToMain() async {
         let initialOpening = RepositoryOpeningResult.s126IntegrationFixture(
@@ -39,25 +39,14 @@ final class GeneralSettingsPageIntegrationVerifyTests: XCTestCase {
 
     @MainActor
     func testS126PageIntegrationCoversConfigMoveOverviewIgnoreRulesAndFailureRecovery() async throws {
-        let repoURL = try makeS126IntegrationTemporaryRepository()
+        let (repoURL, sourceURL) = try makeS126IntegrationRepositoryFixture()
         defer { try? FileManager.default.removeItem(at: repoURL) }
-        try FileManager.default.createDirectory(
-            at: repoURL.appendingPathComponent(".areamatrix", isDirectory: true),
-            withIntermediateDirectories: true
-        )
-        try "readme".write(
-            to: repoURL.appendingPathComponent("README.md"),
-            atomically: true,
-            encoding: .utf8
-        )
-        let sourceURL = repoURL.appendingPathComponent("source.txt")
-        try "source".write(to: sourceURL, atomically: true, encoding: .utf8)
 
         let updater = S126IntegrationUpdater(results: [
             .success,
             .success,
             .failure(CoreError.Config(reason: "locked")),
-            .success,
+            .success
         ])
         let ignoreRulesManager = S126RecordingIgnoreRulesManager(openResult: .missingThenSuccess)
         let model = GeneralSettingsModel(
@@ -89,9 +78,7 @@ final class GeneralSettingsPageIntegrationVerifyTests: XCTestCase {
         XCTAssertEqual(model.draft?.defaultStorageMode, .move)
         XCTAssertEqual(model.draft?.overviewOutput, .rootAreaMatrixFile)
         XCTAssertNil(model.saveError)
-        XCTAssertTrue(FileManager.default.fileExists(atPath: sourceURL.path))
-        XCTAssertFalse(FileManager.default.fileExists(atPath: repoURL.appendingPathComponent("AREAMATRIX.md").path))
-        XCTAssertEqual(try String(contentsOf: repoURL.appendingPathComponent("README.md")), "readme")
+        try assertS126FileBoundaries(repoURL: repoURL, sourceURL: sourceURL)
         XCTAssertEqual(ignoreRulesManager.createdPaths, [repoURL.path])
         XCTAssertEqual(ignoreRulesManager.openedPaths, [repoURL.path, repoURL.path])
 
@@ -125,6 +112,28 @@ final class GeneralSettingsPageIntegrationVerifyTests: XCTestCase {
     }
 }
 
+private func makeS126IntegrationRepositoryFixture() throws -> (repoURL: URL, sourceURL: URL) {
+    let repoURL = try makeS126IntegrationTemporaryRepository()
+    try FileManager.default.createDirectory(
+        at: repoURL.appendingPathComponent(".areamatrix", isDirectory: true),
+        withIntermediateDirectories: true
+    )
+    try "readme".write(
+        to: repoURL.appendingPathComponent("README.md"),
+        atomically: true,
+        encoding: .utf8
+    )
+    let sourceURL = repoURL.appendingPathComponent("source.txt")
+    try "source".write(to: sourceURL, atomically: true, encoding: .utf8)
+    return (repoURL, sourceURL)
+}
+
+private func assertS126FileBoundaries(repoURL: URL, sourceURL: URL) throws {
+    XCTAssertTrue(FileManager.default.fileExists(atPath: sourceURL.path))
+    XCTAssertFalse(FileManager.default.fileExists(atPath: repoURL.appendingPathComponent("AREAMATRIX.md").path))
+    XCTAssertEqual(try String(contentsOf: repoURL.appendingPathComponent("README.md")), "readme")
+}
+
 private enum S126UpdateResult {
     case success
     case failure(Error)
@@ -139,16 +148,18 @@ private actor S126IntegrationUpdater: CoreConfigurationUpdating {
         self.results = results
     }
 
-    func updateConfig(repoPath: String, newConfig: RepoConfigSnapshot) async throws {
+    func updateConfig(repoPath _: String, newConfig: RepoConfigSnapshot) async throws {
         configs.append(newConfig)
         let result = index < results.count ? results[index] : .success
         index += 1
-        if case .failure(let error) = result {
+        if case let .failure(error) = result {
             throw error
         }
     }
 
-    func requests() -> [RepoConfigSnapshot] { configs }
+    func requests() -> [RepoConfigSnapshot] {
+        configs
+    }
 }
 
 private enum S126IgnoreOpenResult {
@@ -188,11 +199,13 @@ private actor S126StaticConfigLoader: CoreConfigurationLoading {
         self.config = config
     }
 
-    func loadConfig(repoPath: String) async throws -> RepoConfigSnapshot { config }
+    func loadConfig(repoPath _: String) async throws -> RepoConfigSnapshot {
+        config
+    }
 }
 
 private actor S126IntegrationErrorMapper: CoreErrorMapping {
-    func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
+    func mapCoreError(_: CoreError) async -> CoreErrorMappingSnapshot {
         CoreErrorMappingSnapshot(
             kind: .config,
             userMessage: "配置错误",
@@ -225,17 +238,19 @@ private actor S126RecordingRepositoryOpener: CoreEmptyRepositoryOpening {
         return opening
     }
 
-    func requestedRepoPaths() -> [String] { repoPaths }
+    func requestedRepoPaths() -> [String] {
+        repoPaths
+    }
 }
 
 @MainActor
 private final class S126NoopFileRevealer: RepositoryFileRevealing {
-    func revealFile(repoPath: String, relativePath: String) throws {}
+    func revealFile(repoPath _: String, relativePath _: String) throws {}
 }
 
 @MainActor
 private final class S126NoopAccessibilityAnnouncer: AccessibilityAnnouncing {
-    func announce(_ message: String) {}
+    func announce(_: String) {}
 }
 
 private extension RepoConfigSnapshot {
@@ -272,11 +287,11 @@ private extension RepositoryOpeningResult {
                 displayName: "资料库",
                 fileCount: 1,
                 children: [
-                    RepositoryTreeNodeSnapshot(slug: "docs", displayName: "docs", fileCount: 1, children: []),
+                    RepositoryTreeNodeSnapshot(slug: "docs", displayName: "docs", fileCount: 1, children: [])
                 ]
             ),
             currentCategoryFiles: [
-                FileEntrySnapshot.s126IntegrationFixture(id: 1, currentName: "source.pdf"),
+                FileEntrySnapshot.s126IntegrationFixture(id: 1, currentName: "source.pdf")
             ]
         )
     }

@@ -112,7 +112,7 @@ struct MainLoadingView: View {
                     TreeSkeletonView()
                 case .loaded:
                     TreeLoadedRowsView(rows: state.treeRows)
-                case .failed(let mapping):
+                case let .failed(mapping):
                     Text(mapping.suggestedAction)
                         .foregroundStyle(.secondary)
                     Button("Retry Tree", action: onRetryTree)
@@ -127,29 +127,34 @@ struct MainLoadingView: View {
     }
 
     private var safetyText: some View {
-        Text("Cancel opening only stops the UI opening flow. AreaMatrix does not move, rename, delete, or overwrite user files.")
-            .font(.callout)
-            .foregroundStyle(.secondary)
-            .frame(maxWidth: 640, alignment: .leading)
+        Text(
+            [
+                "Cancel opening only stops the UI opening flow.",
+                "AreaMatrix does not move, rename, delete, or overwrite user files."
+            ].joined(separator: " ")
+        )
+        .font(.callout)
+        .foregroundStyle(.secondary)
+        .frame(maxWidth: 640, alignment: .leading)
     }
 
     private func treeIcon(for state: MainLoadingTreeState) -> String {
         switch state {
         case .loading:
-            return "sidebar.left"
+            "sidebar.left"
         case .loaded:
-            return "checkmark.circle"
+            "checkmark.circle"
         case .failed:
-            return "exclamationmark.triangle"
+            "exclamationmark.triangle"
         }
     }
 
     private func treeColor(for state: MainLoadingTreeState) -> Color {
         switch state {
         case .failed:
-            return .orange
+            .orange
         default:
-            return .primary
+            .primary
         }
     }
 }
@@ -157,7 +162,7 @@ struct MainLoadingView: View {
 private struct TreeSkeletonView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 7) {
-            ForEach(0..<4, id: \.self) { index in
+            ForEach(0 ..< 4, id: \.self) { index in
                 RoundedRectangle(cornerRadius: 4)
                     .fill(.secondary.opacity(index == 0 ? 0.22 : 0.14))
                     .frame(width: CGFloat(180 - index * 22), height: 10)

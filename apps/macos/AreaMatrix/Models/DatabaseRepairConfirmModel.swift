@@ -1,13 +1,13 @@
 import Combine
 import Foundation
 
-enum DatabaseRepairProgressStep: String, CaseIterable, Equatable, Sendable {
+enum DatabaseRepairProgressStep: String, CaseIterable, Equatable {
     case scanningFiles = "Scanning files"
     case rebuildingIndex = "Rebuilding index"
     case reloadingRepository = "Reloading repository"
 }
 
-enum DatabaseRepairState: Equatable, Sendable {
+enum DatabaseRepairState: Equatable {
     case idle
     case running(DatabaseRepairProgressStep)
     case succeeded(RepairReportSnapshot)
@@ -24,12 +24,12 @@ enum DatabaseRepairState: Equatable, Sendable {
     }
 
     var failure: CoreErrorMappingSnapshot? {
-        if case .failed(let mapping) = self { return mapping }
+        if case let .failed(mapping) = self { return mapping }
         return nil
     }
 }
 
-enum DatabaseStartupRecoveryState: Equatable, Sendable {
+enum DatabaseStartupRecoveryState: Equatable {
     case idle
     case checking
     case completed(RecoveryReportSnapshot?)
@@ -117,7 +117,7 @@ final class DatabaseRepairConfirmModel: ObservableObject {
             )
             repairState = .succeeded(report)
         } catch {
-            repairState = .failed(await mapError(error))
+            repairState = await .failed(mapError(error))
         }
     }
 
@@ -139,7 +139,7 @@ final class DatabaseRepairConfirmModel: ObservableObject {
             let snapshot = try await diagnosticsCollector.createDiagnosticsSnapshot(repoPath: repoPath)
             diagnosticsState = .collected(snapshot)
         } catch {
-            diagnosticsState = .failed(await mapError(error))
+            diagnosticsState = await .failed(mapError(error))
         }
     }
 
@@ -150,7 +150,7 @@ final class DatabaseRepairConfirmModel: ObservableObject {
             let report = try await startupRecoverer.recoverOnStartup(repoPath: repoPath)
             startupRecoveryState = .completed(report.hasVisibleDetails ? report : nil)
         } catch {
-            startupRecoveryState = .failed(await mapError(error))
+            startupRecoveryState = await .failed(mapError(error))
         }
     }
 

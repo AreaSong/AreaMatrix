@@ -1,5 +1,5 @@
-import XCTest
 @testable import AreaMatrix
+import XCTest
 
 final class ImportBatchCopyImportModelTests: XCTestCase {
     func testDefaultCoreBridgeBatchCopyAutoClassifyKeepsSourceAndCreatesRepoCopy() async throws {
@@ -81,28 +81,11 @@ final class ImportBatchCopyImportModelTests: XCTestCase {
         let sourceBefore = try Data(contentsOf: sourceURL)
         let bridge = CoreBridge()
         try await bridge.initializeEmptyRepository(repoPath: repoURL.path)
-        let request = ImportEntryRequest(
-            repoPath: repoURL.path,
-            source: .dropZone,
-            destination: .autoClassify,
-            urls: [sourceURL],
-            kind: .multipleItems(1),
-            availableCategories: ["inbox", "finance"]
-        )
+        let request = s118BatchRequest(repoPath: repoURL.path, urls: [sourceURL])
         let model = ImportBatchCopyImportModel(importer: bridge, errorMapper: bridge)
 
         model.applyPreviewRows(
-            [
-                ImportBatchPreviewRow.ready(
-                    url: sourceURL,
-                    prediction: ClassifyResultSnapshot(
-                        category: "finance",
-                        suggestedName: "invoice-copy.pdf",
-                        reason: .keyword,
-                        confidence: 0.9
-                    )
-                ),
-            ],
+            [s118ReadyBatchRow(url: sourceURL, suggestedName: "invoice-copy.pdf")],
             request: request,
             selectedDestination: .autoClassify
         )
@@ -113,7 +96,7 @@ final class ImportBatchCopyImportModelTests: XCTestCase {
                 targetPath: "finance/invoice-copy.pdf",
                 phase: .pending,
                 errorMessage: nil
-            ),
+            )
         ])
 
         var progressSnapshots: [ImportBatchProgressSnapshot] = []
@@ -123,22 +106,8 @@ final class ImportBatchCopyImportModelTests: XCTestCase {
 
         XCTAssertEqual(try Data(contentsOf: sourceURL), sourceBefore)
         XCTAssertEqual(outcome?.succeededEntries.first?.storageMode, "Copied")
-        XCTAssertEqual(progressSnapshots.first?.items, [
-            ImportBatchProgressSnapshot.Item(
-                sourcePath: sourceURL.path,
-                targetPath: "finance/invoice-copy.pdf",
-                phase: .copying,
-                errorMessage: nil
-            ),
-        ])
-        XCTAssertEqual(progressSnapshots.last?.items, [
-            ImportBatchProgressSnapshot.Item(
-                sourcePath: sourceURL.path,
-                targetPath: "finance/invoice-copy.pdf",
-                phase: .done,
-                errorMessage: nil
-            ),
-        ])
+        XCTAssertEqual(progressSnapshots.first?.items, [s120ProgressItem(sourceURL: sourceURL, phase: .copying)])
+        XCTAssertEqual(progressSnapshots.last?.items, [s120ProgressItem(sourceURL: sourceURL, phase: .done)])
         XCTAssertTrue(FileManager.default.fileExists(
             atPath: repoURL.appendingPathComponent("finance/invoice-copy.pdf").path
         ))
@@ -148,34 +117,8 @@ final class ImportBatchCopyImportModelTests: XCTestCase {
     func testBatchCopyImportUsesRealImporterForEachPreviewedFile() async {
         let invoiceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
         let contractURL = URL(fileURLWithPath: "/tmp/合同.pdf")
-        let rows = [
-            ImportBatchPreviewRow.ready(
-                url: invoiceURL,
-                prediction: ClassifyResultSnapshot(
-                    category: "finance",
-                    suggestedName: "Invoice_2026Q1.pdf",
-                    reason: .keyword,
-                    confidence: 0.9
-                )
-            ),
-            ImportBatchPreviewRow.ready(
-                url: contractURL,
-                prediction: ClassifyResultSnapshot(
-                    category: "docs",
-                    suggestedName: "2026Q1_合同.pdf",
-                    reason: .keyword,
-                    confidence: 0.82
-                )
-            ),
-        ]
-        let request = ImportEntryRequest(
-            repoPath: "/tmp/repo",
-            source: .dropZone,
-            destination: .autoClassify,
-            urls: [invoiceURL, contractURL],
-            kind: .multipleItems(2),
-            availableCategories: ["inbox", "docs", "finance"]
-        )
+        let rows = s118ReadyBatchRows(invoiceURL: invoiceURL, contractURL: contractURL)
+        let request = s118BatchRequest(urls: [invoiceURL, contractURL])
         let importer = S118RecordingBatchImporter()
         let importModel = ImportBatchCopyImportModel(
             importer: importer,
@@ -204,7 +147,7 @@ final class ImportBatchCopyImportModelTests: XCTestCase {
                 suggestedCategory: "docs",
                 overrideFilename: "2026Q1_合同.pdf",
                 duplicateStrategy: .ask
-            ),
+            )
         ])
         XCTAssertEqual(result.succeededEntries.count, 2)
         XCTAssertEqual(result.total, 2)
@@ -226,40 +169,17 @@ final class ImportBatchCopyImportModelTests: XCTestCase {
         let contractURL = URL(fileURLWithPath: "/tmp/合同.pdf")
         let importer = S118SequenceBatchImporter(results: [
             .failure(CoreError.PermissionDenied(path: "/tmp/Invoice_2026Q1.pdf")),
-            .success(.s117Fixture(currentName: "2026Q1_合同.pdf", category: "docs")),
+            .success(.s117Fixture(currentName: "2026Q1_合同.pdf", category: "docs"))
         ])
         let errorMapper = S117RecordingErrorMapper()
         let model = ImportBatchCopyImportModel(
             importer: importer,
             errorMapper: errorMapper
         )
-        let rows = [
-            ImportBatchPreviewRow.ready(
-                url: invoiceURL,
-                prediction: ClassifyResultSnapshot(
-                    category: "finance",
-                    suggestedName: "Invoice_2026Q1.pdf",
-                    reason: .keyword,
-                    confidence: 0.9
-                )
-            ),
-            ImportBatchPreviewRow.ready(
-                url: contractURL,
-                prediction: ClassifyResultSnapshot(
-                    category: "docs",
-                    suggestedName: "2026Q1_合同.pdf",
-                    reason: .keyword,
-                    confidence: 0.82
-                )
-            ),
-        ]
-        let request = ImportEntryRequest(
-            repoPath: "/tmp/repo",
-            source: .dropZone,
+        let rows = s118ReadyBatchRows(invoiceURL: invoiceURL, contractURL: contractURL)
+        let request = s118BatchRequest(
             destination: .category("finance"),
-            urls: [invoiceURL, contractURL],
-            kind: .multipleItems(2),
-            availableCategories: ["inbox", "finance", "docs"]
+            urls: [invoiceURL, contractURL]
         )
         var progressSnapshots: [ImportBatchProgressSnapshot] = []
 
@@ -273,22 +193,9 @@ final class ImportBatchCopyImportModelTests: XCTestCase {
         guard let result = outcome else {
             return XCTFail("Expected batch copy import result")
         }
-        XCTAssertEqual(recordedRequests, [
-            S118BatchImportRequest(
-                destination: .category("finance"),
-                suggestedCategory: "finance",
-                overrideFilename: "Invoice_2026Q1.pdf",
-                duplicateStrategy: .ask
-            ),
-            S118BatchImportRequest(
-                destination: .category("finance"),
-                suggestedCategory: "docs",
-                overrideFilename: "2026Q1_合同.pdf",
-                duplicateStrategy: .ask
-            ),
-        ])
+        XCTAssertEqual(recordedRequests, s118ExpectedCategoryRequests())
         XCTAssertEqual(mappedErrors, [
-            CoreError.PermissionDenied(path: "/tmp/Invoice_2026Q1.pdf"),
+            CoreError.PermissionDenied(path: "/tmp/Invoice_2026Q1.pdf")
         ])
         XCTAssertEqual(result.succeededEntries.count, 1)
         XCTAssertEqual(result.failedCount, 1)
@@ -306,27 +213,98 @@ final class ImportBatchCopyImportModelTests: XCTestCase {
     }
 
     @MainActor
+    func testBatchCopyImportPersistsAndClearsUnfinishedSession() async {
+        let invoiceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
+        let contractURL = URL(fileURLWithPath: "/tmp/合同.pdf")
+        let rows = s118ReadyBatchRows(invoiceURL: invoiceURL, contractURL: contractURL)
+        let request = s118BatchRequest(urls: [invoiceURL, contractURL])
+        let store = RecordingImportBatchSessionStore()
+        let importer = S118RecordingBatchImporter()
+        let model = ImportBatchCopyImportModel(
+            importer: importer,
+            errorMapper: S117RecordingErrorMapper(),
+            sessionStore: store
+        )
+
+        model.applyPreviewRows(rows, request: request, selectedDestination: .autoClassify)
+        _ = await model.importReadyFiles(selectedDestination: .autoClassify)
+        let savedSessions = await store.savedSessions()
+        let clearedRepoPaths = await store.clearedRepoPaths()
+
+        XCTAssertEqual(savedSessions.first?.repoPath, "/tmp/repo")
+        XCTAssertEqual(savedSessions.first?.completed, 0)
+        XCTAssertEqual(savedSessions.first?.total, 2)
+        XCTAssertEqual(savedSessions.last?.completed, 2)
+        XCTAssertEqual(savedSessions.last?.items.map(\.phase), [.done, .done])
+        XCTAssertEqual(clearedRepoPaths, ["/tmp/repo"])
+    }
+
+    @MainActor
+    func testBatchCopyImportKeepsUnfinishedSessionAfterFatalStop() async {
+        let invoiceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
+        let contractURL = URL(fileURLWithPath: "/tmp/合同.pdf")
+        let pendingURL = URL(fileURLWithPath: "/tmp/Pending.pdf")
+        let rows = s118ReadyBatchRows(invoiceURL: invoiceURL, contractURL: contractURL)
+            + [s118ReadyBatchRow(url: pendingURL, suggestedName: "Pending.pdf")]
+        let request = s118BatchRequest(urls: [invoiceURL, contractURL, pendingURL])
+        let store = RecordingImportBatchSessionStore()
+        let importer = S118SequenceBatchImporter(results: [
+            .success(.s117Fixture(currentName: "Invoice_2026Q1.pdf", category: "finance")),
+            .failure(CoreError.Io(message: "staging write failed"))
+        ])
+        let model = ImportBatchCopyImportModel(
+            importer: importer,
+            errorMapper: S120ImportSessionFatalMapper(),
+            sessionStore: store
+        )
+
+        model.applyPreviewRows(rows, request: request, selectedDestination: .autoClassify)
+        let outcome = await model.importReadyFiles(selectedDestination: .autoClassify)
+        let savedSessions = await store.savedSessions()
+        let clearedRepoPaths = await store.clearedRepoPaths()
+
+        XCTAssertEqual(outcome?.fatalRetryContext?.sourcePath, contractURL.path)
+        XCTAssertEqual(savedSessions.last?.completed, 1)
+        XCTAssertEqual(savedSessions.last?.failed, 1)
+        XCTAssertEqual(savedSessions.last?.total, 3)
+        XCTAssertEqual(savedSessions.last?.items.map(\.phase), [.done, .failed, .pending])
+        XCTAssertEqual(clearedRepoPaths, [])
+    }
+
+    @MainActor
+    func testBatchCopyImportClearsSessionWhenFatalFailureConsumesQueue() async {
+        let sourceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
+        let row = s118ReadyBatchRow(url: sourceURL)
+        let request = s118BatchRequest(urls: [sourceURL])
+        let store = RecordingImportBatchSessionStore()
+        let importer = S118SequenceBatchImporter(results: [
+            .failure(CoreError.Io(message: "staging write failed"))
+        ])
+        let model = ImportBatchCopyImportModel(
+            importer: importer,
+            errorMapper: S120ImportSessionFatalMapper(),
+            sessionStore: store
+        )
+
+        model.applyPreviewRows([row], request: request, selectedDestination: .autoClassify)
+        let outcome = await model.importReadyFiles(selectedDestination: .autoClassify)
+        let savedSessions = await store.savedSessions()
+        let clearedRepoPaths = await store.clearedRepoPaths()
+
+        XCTAssertEqual(outcome?.fatalRetryContext?.sourcePath, sourceURL.path)
+        XCTAssertEqual(savedSessions.last?.completed, 0)
+        XCTAssertEqual(savedSessions.last?.failed, 1)
+        XCTAssertEqual(savedSessions.last?.items.map(\.phase), [.failed])
+        XCTAssertEqual(clearedRepoPaths, ["/tmp/repo"])
+    }
+}
+
+final class ImportBatchStorageModeTests: XCTestCase {
+    @MainActor
     func testBatchMoveAndIndexOnlyUseRealCoreImportModes() async {
         let sourceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
-        let rows = [
-            ImportBatchPreviewRow.ready(
-                url: sourceURL,
-                prediction: ClassifyResultSnapshot(
-                    category: "finance",
-                    suggestedName: "Invoice_2026Q1.pdf",
-                    reason: .keyword,
-                    confidence: 0.9
-                )
-            ),
-        ]
-        let request = ImportEntryRequest(
-            repoPath: "/tmp/repo",
-            source: .dropZone,
-            destination: .autoClassify,
-            urls: [sourceURL],
-            kind: .multipleItems(1),
-            availableCategories: ["inbox", "finance"]
-        )
+        let rows = [s118ReadyBatchRow(url: sourceURL)]
+        let request = s118BatchRequest(urls: [sourceURL])
         let importer = S118RecordingBatchImporter()
         let model = ImportBatchCopyImportModel(importer: importer, errorMapper: S117RecordingErrorMapper())
 
@@ -358,7 +336,7 @@ final class ImportBatchCopyImportModelTests: XCTestCase {
                 suggestedCategory: "finance",
                 overrideFilename: "Invoice_2026Q1.pdf",
                 duplicateStrategy: .ask
-            ),
+            )
         ])
     }
 
@@ -366,34 +344,8 @@ final class ImportBatchCopyImportModelTests: XCTestCase {
     func testBatchCopyImportUsesPerRowCategoryOverrideForAutoClassify() async {
         let invoiceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
         let contractURL = URL(fileURLWithPath: "/tmp/合同.pdf")
-        let rows = [
-            ImportBatchPreviewRow.ready(
-                url: invoiceURL,
-                prediction: ClassifyResultSnapshot(
-                    category: "finance",
-                    suggestedName: "Invoice_2026Q1.pdf",
-                    reason: .keyword,
-                    confidence: 0.9
-                )
-            ),
-            ImportBatchPreviewRow.ready(
-                url: contractURL,
-                prediction: ClassifyResultSnapshot(
-                    category: "docs",
-                    suggestedName: "2026Q1_合同.pdf",
-                    reason: .keyword,
-                    confidence: 0.82
-                )
-            ),
-        ]
-        let request = ImportEntryRequest(
-            repoPath: "/tmp/repo",
-            source: .dropZone,
-            destination: .autoClassify,
-            urls: [invoiceURL, contractURL],
-            kind: .multipleItems(2),
-            availableCategories: ["inbox", "docs", "finance", "media"]
-        )
+        let rows = s118ReadyBatchRows(invoiceURL: invoiceURL, contractURL: contractURL)
+        let request = s118BatchRequest(urls: [invoiceURL, contractURL])
         let importer = S118RecordingBatchImporter()
         let model = ImportBatchCopyImportModel(importer: importer, errorMapper: S117RecordingErrorMapper())
 
@@ -417,7 +369,7 @@ final class ImportBatchCopyImportModelTests: XCTestCase {
                 suggestedCategory: "media",
                 overrideFilename: "2026Q1_合同.pdf",
                 duplicateStrategy: .ask
-            ),
+            )
         ])
     }
 
@@ -433,7 +385,7 @@ final class ImportBatchCopyImportModelTests: XCTestCase {
                     reason: .keyword,
                     confidence: 0.9
                 )
-            ),
+            )
         ]
         let request = ImportEntryRequest(
             repoPath: "/tmp/repo",
@@ -459,7 +411,60 @@ final class ImportBatchCopyImportModelTests: XCTestCase {
                 suggestedCategory: "docs",
                 overrideFilename: "Invoice_2026Q1.pdf",
                 duplicateStrategy: .ask
-            ),
+            )
         ])
     }
+}
+
+private actor RecordingImportBatchSessionStore: ImportBatchSessionPersisting {
+    private var saved: [ImportBatchSessionSnapshot] = []
+    private var cleared: [String] = []
+    private var sessionsByRepoPath: [String: ImportBatchSessionSnapshot] = [:]
+
+    func saveSession(_ session: ImportBatchSessionSnapshot) async {
+        saved.append(session)
+        sessionsByRepoPath[session.repoPath] = session
+    }
+
+    func loadSession(repoPath: String) async -> ImportBatchSessionSnapshot? {
+        sessionsByRepoPath[repoPath]
+    }
+
+    func clearSession(repoPath: String) async {
+        cleared.append(repoPath)
+        sessionsByRepoPath[repoPath] = nil
+    }
+
+    func savedSessions() -> [ImportBatchSessionSnapshot] {
+        saved
+    }
+
+    func clearedRepoPaths() -> [String] {
+        cleared
+    }
+}
+
+private actor S120ImportSessionFatalMapper: CoreErrorMapping {
+    func mapCoreError(_: CoreError) async -> CoreErrorMappingSnapshot {
+        CoreErrorMappingSnapshot(
+            kind: .io,
+            userMessage: "文件读写失败",
+            severity: .critical,
+            suggestedAction: "AreaMatrix 会保留已完成项并允许查看未完成结果。",
+            recoverability: .fatal,
+            rawContext: "S1-20 import session fatal"
+        )
+    }
+}
+
+private func s120ProgressItem(
+    sourceURL: URL,
+    phase: ImportBatchProgressSnapshot.Phase
+) -> ImportBatchProgressSnapshot.Item {
+    ImportBatchProgressSnapshot.Item(
+        sourcePath: sourceURL.path,
+        targetPath: "finance/invoice-copy.pdf",
+        phase: phase,
+        errorMessage: nil
+    )
 }

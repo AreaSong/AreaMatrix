@@ -1,5 +1,5 @@
-import XCTest
 @testable import AreaMatrix
+import XCTest
 
 final class ImportSingleFileDuplicateResolutionTests: XCTestCase {
     @MainActor
@@ -46,7 +46,7 @@ final class ImportSingleFileDuplicateResolutionTests: XCTestCase {
 
     @MainActor
     func testS122DuplicateResolutionCasesStayWithinPageFeatureScope() {
-        XCTAssertEqual(ImportSingleFileDuplicateResolutionStrategy.allCases, [.skip, .keepBoth, .replace])
+        XCTAssertEqual(SingleFileDuplicateResolutionStrategy.allCases, [.skip, .keepBoth, .replace])
     }
 
     @MainActor
@@ -103,7 +103,7 @@ final class ImportSingleFileDuplicateResolutionTests: XCTestCase {
         model.updateDuplicateResolution(.replace)
         model.beginReplaceConfirmation()
         let currentContext = try XCTUnwrap(model.pendingReplaceConfirmation)
-        let staleContext = ImportSingleFileReplaceConfirmationContext(
+        let staleContext = SingleFileReplaceConfirmationContext(
             existingPath: "docs/other.pdf",
             incomingPath: currentContext.incomingPath,
             incomingSizeBytes: currentContext.incomingSizeBytes,
@@ -141,7 +141,7 @@ final class ImportSingleFileDuplicateResolutionTests: XCTestCase {
             originalName: "报告.pdf",
             currentName: "报告.pdf",
             category: "docs",
-            sizeBytes: 860 * 1_024,
+            sizeBytes: 860 * 1024,
             hashSha256: "duplicate-hash",
             storageMode: "Copied",
             origin: "Imported",
@@ -154,7 +154,7 @@ final class ImportSingleFileDuplicateResolutionTests: XCTestCase {
             predictor: S117RecordingPredictor(result: .s117Fixture()),
             importer: importer,
             preflight: ImportSingleFileStaticPreflight(result: ImportSingleFilePreflightResult(
-                sourceSizeBytes: 912 * 1_024,
+                sourceSizeBytes: 912 * 1024,
                 sourceModifiedAt: 1_777_445_400,
                 hashSha256: "duplicate-hash",
                 targetRelativePath: "docs/reports/报告.pdf",
@@ -179,7 +179,7 @@ final class ImportSingleFileDuplicateResolutionTests: XCTestCase {
         XCTAssertEqual(context.existingSizeBytes, existingFile.sizeBytes)
         XCTAssertEqual(context.existingModifiedAt, existingFile.updatedAt)
         XCTAssertEqual(context.incomingPath, "/tmp/source.pdf")
-        XCTAssertEqual(context.incomingSizeBytes, 912 * 1_024)
+        XCTAssertEqual(context.incomingSizeBytes, 912 * 1024)
         XCTAssertEqual(context.incomingModifiedAt, 1_777_445_400)
         XCTAssertEqual(context.targetRelativePath, "docs/reports/报告.pdf")
         XCTAssertTrue(context.isTrashAvailable)
@@ -217,7 +217,9 @@ final class ImportSingleFileDuplicateResolutionTests: XCTestCase {
         XCTAssertEqual(hiddenModel.replaceOptionVisibility, .hidden)
         XCTAssertEqual(hiddenModel.duplicateResolution, .skip)
     }
+}
 
+final class ImportSingleFileNameConflictTests: XCTestCase {
     @MainActor
     func testS123NameConflictDefaultsToKeepBothAndUsesCoreKeepBothStrategy() async {
         let importer = S117RecordingImporter()
@@ -322,7 +324,7 @@ final class ImportSingleFileDuplicateResolutionTests: XCTestCase {
         XCTAssertEqual(context.existingPath, existingFile.path)
         XCTAssertEqual(context.existingSizeBytes, existingFile.sizeBytes)
         XCTAssertEqual(context.incomingPath, "/tmp/source.pdf")
-        XCTAssertEqual(context.incomingSizeBytes, 912 * 1_024)
+        XCTAssertEqual(context.incomingSizeBytes, 912 * 1024)
         XCTAssertEqual(context.targetRelativePath, existingFile.path)
 
         model.applyReplaceConfirmation(context.decision(understandsReplace: true))
@@ -340,7 +342,7 @@ final class ImportSingleFileDuplicateResolutionTests: XCTestCase {
                 overrideCategory: "docs",
                 overrideFilename: "source.pdf",
                 duplicateStrategy: .overwrite
-            ),
+            )
         ])
     }
 
@@ -439,57 +441,57 @@ final class ImportSingleFileDuplicateResolutionTests: XCTestCase {
         XCTAssertEqual(hiddenModel.replaceOptionVisibility, .hidden)
         XCTAssertEqual(hiddenModel.nameConflictResolution, .keepBoth)
     }
+}
 
-    private func duplicateResult() -> ImportSingleFilePreflightResult {
-        ImportSingleFilePreflightResult(
-            sourceSizeBytes: 12,
-            hashSha256: "duplicate-hash",
-            targetRelativePath: "docs/source.pdf",
-            conflict: .duplicate(existingPath: "docs/existing.pdf"),
-            keepBothTargetRelativePath: "docs/source_1.pdf"
-        )
-    }
+private func duplicateResult() -> ImportSingleFilePreflightResult {
+    ImportSingleFilePreflightResult(
+        sourceSizeBytes: 12,
+        hashSha256: "duplicate-hash",
+        targetRelativePath: "docs/source.pdf",
+        conflict: .duplicate(existingPath: "docs/existing.pdf"),
+        keepBothTargetRelativePath: "docs/source_1.pdf"
+    )
+}
 
-    private func nameConflictResult() -> ImportSingleFilePreflightResult {
-        ImportSingleFilePreflightResult(
-            sourceSizeBytes: 12,
-            hashSha256: "incoming-hash",
-            targetRelativePath: "docs/source.pdf",
-            conflict: .name(path: "docs/source.pdf"),
-            keepBothTargetRelativePath: "docs/source_1.pdf",
-            existingPaths: ["docs/source.pdf", "docs/source_1.pdf"]
-        )
-    }
+private func nameConflictResult() -> ImportSingleFilePreflightResult {
+    ImportSingleFilePreflightResult(
+        sourceSizeBytes: 12,
+        hashSha256: "incoming-hash",
+        targetRelativePath: "docs/source.pdf",
+        conflict: .name(path: "docs/source.pdf"),
+        keepBothTargetRelativePath: "docs/source_1.pdf",
+        existingPaths: ["docs/source.pdf", "docs/source_1.pdf"]
+    )
+}
 
-    private func nameConflictReplaceExistingFile() -> FileEntrySnapshot {
-        FileEntrySnapshot(
-            id: 125,
-            path: "docs/reports/报告.pdf",
-            originalName: "报告.pdf",
-            currentName: "报告.pdf",
-            category: "docs",
-            sizeBytes: 860 * 1_024,
-            hashSha256: "existing-hash",
-            storageMode: "Copied",
-            origin: "Imported",
-            sourcePath: nil,
-            importedAt: 1_700_000_000,
-            updatedAt: 1_776_660_840
-        )
-    }
+private func nameConflictReplaceExistingFile() -> FileEntrySnapshot {
+    FileEntrySnapshot(
+        id: 125,
+        path: "docs/reports/报告.pdf",
+        originalName: "报告.pdf",
+        currentName: "报告.pdf",
+        category: "docs",
+        sizeBytes: 860 * 1024,
+        hashSha256: "existing-hash",
+        storageMode: "Copied",
+        origin: "Imported",
+        sourcePath: nil,
+        importedAt: 1_700_000_000,
+        updatedAt: 1_776_660_840
+    )
+}
 
-    private func nameConflictReplaceResult(
-        existingFile: FileEntrySnapshot
-    ) -> ImportSingleFilePreflightResult {
-        ImportSingleFilePreflightResult(
-            sourceSizeBytes: 912 * 1_024,
-            sourceModifiedAt: 1_777_445_400,
-            hashSha256: "incoming-hash",
-            targetRelativePath: existingFile.path,
-            conflict: .name(path: existingFile.path),
-            keepBothTargetRelativePath: "docs/reports/报告_1.pdf",
-            existingPaths: [existingFile.path],
-            existingFile: existingFile
-        )
-    }
+private func nameConflictReplaceResult(
+    existingFile: FileEntrySnapshot
+) -> ImportSingleFilePreflightResult {
+    ImportSingleFilePreflightResult(
+        sourceSizeBytes: 912 * 1024,
+        sourceModifiedAt: 1_777_445_400,
+        hashSha256: "incoming-hash",
+        targetRelativePath: existingFile.path,
+        conflict: .name(path: existingFile.path),
+        keepBothTargetRelativePath: "docs/reports/报告_1.pdf",
+        existingPaths: [existingFile.path],
+        existingFile: existingFile
+    )
 }

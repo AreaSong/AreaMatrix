@@ -1,7 +1,7 @@
 import Combine
 import Foundation
 
-enum ImportDropTarget: Equatable, Sendable {
+enum ImportDropTarget: Equatable {
     case autoClassify
     case category(String)
     case repositoryRoot
@@ -9,33 +9,33 @@ enum ImportDropTarget: Equatable, Sendable {
     var entryDestination: ImportEntryDestination {
         switch self {
         case .autoClassify:
-            return .autoClassify
-        case .category(let slug):
-            return .category(slug)
+            .autoClassify
+        case let .category(slug):
+            .category(slug)
         case .repositoryRoot:
-            return .repositoryRoot
+            .repositoryRoot
         }
     }
 
     var explicitLabel: String {
         switch self {
         case .autoClassify:
-            return "Auto classify"
-        case .category(let slug):
-            return slug
+            "Auto classify"
+        case let .category(slug):
+            slug
         case .repositoryRoot:
-            return "repo root"
+            "repo root"
         }
     }
 
     var sidebarHelp: String {
         switch self {
         case .autoClassify:
-            return "Import with automatic classification"
-        case .category(let slug):
-            return "Import into \"\(slug)\""
+            "Import with automatic classification"
+        case let .category(slug):
+            "Import into \"\(slug)\""
         case .repositoryRoot:
-            return "Import into repository root"
+            "Import into repository root"
         }
     }
 
@@ -48,7 +48,7 @@ enum ImportDropTarget: Equatable, Sendable {
     }
 }
 
-struct ImportDropPreviewPresentation: Equatable, Sendable {
+struct ImportDropPreviewPresentation: Equatable {
     var target: ImportDropTarget
     var kind: ImportEntryKind
     var itemCount: Int
@@ -91,14 +91,7 @@ final class ImportDropPreviewModel: ObservableObject {
         let validURLs = Self.validFileURLs(from: urls)
 
         guard let firstURL = validURLs.first else {
-            presentation = ImportDropPreviewPresentation(
-                target: target,
-                kind: .singleFile,
-                itemCount: 0,
-                prediction: nil,
-                warning: "Cannot import this item",
-                isPredicting: false
-            )
+            presentation = emptyPresentation(for: target)
             return
         }
 
@@ -122,23 +115,20 @@ final class ImportDropPreviewModel: ObservableObject {
                 filename: firstURL.lastPathComponent
             )
             guard generation == currentGeneration else { return }
-            presentation = ImportDropPreviewPresentation(
+            presentation = predictedPresentation(
                 target: target,
                 kind: kind,
-                itemCount: validURLs.count,
+                count: validURLs.count,
                 prediction: prediction,
-                warning: warning,
-                isPredicting: false
+                warning: warning
             )
         } catch {
             guard generation == currentGeneration else { return }
-            presentation = ImportDropPreviewPresentation(
+            presentation = failedPredictionPresentation(
                 target: target,
                 kind: kind,
-                itemCount: validURLs.count,
-                prediction: nil,
-                warning: Self.classifyWarning(for: error),
-                isPredicting: false
+                count: validURLs.count,
+                error: error
             )
         }
     }
@@ -154,15 +144,59 @@ final class ImportDropPreviewModel: ObservableObject {
         }
     }
 
+    private func emptyPresentation(for target: ImportDropTarget) -> ImportDropPreviewPresentation {
+        ImportDropPreviewPresentation(
+            target: target,
+            kind: .singleFile,
+            itemCount: 0,
+            prediction: nil,
+            warning: "Cannot import this item",
+            isPredicting: false
+        )
+    }
+
+    private func predictedPresentation(
+        target: ImportDropTarget,
+        kind: ImportEntryKind,
+        count: Int,
+        prediction: ClassifyResultSnapshot,
+        warning: String?
+    ) -> ImportDropPreviewPresentation {
+        ImportDropPreviewPresentation(
+            target: target,
+            kind: kind,
+            itemCount: count,
+            prediction: prediction,
+            warning: warning,
+            isPredicting: false
+        )
+    }
+
+    private func failedPredictionPresentation(
+        target: ImportDropTarget,
+        kind: ImportEntryKind,
+        count: Int,
+        error: Error
+    ) -> ImportDropPreviewPresentation {
+        ImportDropPreviewPresentation(
+            target: target,
+            kind: kind,
+            itemCount: count,
+            prediction: nil,
+            warning: Self.classifyWarning(for: error),
+            isPredicting: false
+        )
+    }
+
     private static func classifyWarning(for error: Error) -> String {
         guard let coreError = error as? CoreError else {
             return "Cannot preview category"
         }
 
         switch coreError {
-        case .Config(let reason):
+        case let .Config(reason):
             return "Classifier settings are invalid: \(reason)"
-        case .Classify(let reason):
+        case let .Classify(reason):
             return "Cannot preview category: \(reason)"
         default:
             return "Cannot preview category"

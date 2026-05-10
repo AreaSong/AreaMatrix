@@ -87,8 +87,8 @@ struct ImportEntrySingleFileImportRunner {
     private func handleCompletedSingleFileImport(
         entry: FileEntrySnapshot?,
         startingPath: String,
-        context: ImportProgressRetryContext?,
-        shouldReportProgress: Bool
+        context _: ImportProgressRetryContext?,
+        shouldReportProgress _: Bool
     ) {
         if let entry {
             onImported(request.repoPath, entry)

@@ -125,6 +125,7 @@ _ACTION_SPECS = (
     ActionSpec("build", command="build", group="tool", label_key="action.build.label", note_key="action.build.note", passthrough=True),
     ActionSpec("test", command="test", group="tool", label_key="action.test.label", note_key="action.test.note", passthrough=True),
     ActionSpec("bindings", command="bindings", group="tool", label_key="action.bindings.label", note_key="action.bindings.note", passthrough=True),
+    ActionSpec("release", command="release", group="tool", label_key="action.release.label", note_key="action.release.note", passthrough=True),
     ActionSpec("changes", command="changes", group="workflow", label_key="action.changes.label", note_key="action.changes.note", passthrough=True),
     ActionSpec("workflow", command="workflow", group="workflow", label_key="action.workflow.label", note_key="action.workflow.note", passthrough=True),
 )
@@ -156,7 +157,11 @@ MENUS = {
         ),
     ),
     "maintenance": MenuSpec("maintenance", "submenu.maintenance.title", ("interrupted-help", "clear-stale", "reset-progress")),
-    "tools": MenuSpec("tools", "submenu.tools.title", ("check", "processes", "workflow-status", "workflow-doctor", "changes-preview", "language-menu", "help")),
+    "tools": MenuSpec(
+        "tools",
+        "submenu.tools.title",
+        ("check", "release", "processes", "workflow-status", "workflow-doctor", "changes-preview", "language-menu", "help"),
+    ),
 }
 
 
@@ -202,6 +207,7 @@ REQUIRED_COMMANDS = (
     "build",
     "test",
     "bindings",
+    "release",
     "changes",
     "workflow",
 )

@@ -70,13 +70,17 @@ final class MainFileListModel: ObservableObject {
         self.errorMapper = errorMapper
         self.diagnosticsCollector = diagnosticsCollector
     }
+}
 
+extension MainFileListModel {
     func loadCurrentCategory(_ category: String?, focusingOn fileID: Int64? = nil) async {
         currentCategory = category
         await reloadCurrentCategory(focusingOn: fileID)
     }
 
-    func retryCurrentCategory() async { await reloadCurrentCategory() }
+    func retryCurrentCategory() async {
+        await reloadCurrentCategory()
+    }
 
     func selectFiles(_ ids: Set<Int64>) async {
         if ids.isEmpty {
@@ -154,7 +158,7 @@ final class MainFileListModel: ObservableObject {
             detailExternalCreateSyncState = .synced(event: event, fileID: fileID, result)
             if let fileID {
                 await loadChangeLog(fileID: fileID)
-                if case .loaded(let loadedFileID, _) = detailLogState, loadedFileID == fileID {
+                if case let .loaded(loadedFileID, _) = detailLogState, loadedFileID == fileID {
                     detailTabRequest = .automatic(.log)
                 }
             }
@@ -165,7 +169,7 @@ final class MainFileListModel: ObservableObject {
     }
 
     func requestDetailLogDiagnosticsPrivacyConfirmation() {
-        guard case .failed(let fileID, _) = detailLogState,
+        guard case let .failed(fileID, _) = detailLogState,
               selection.singleFileID == fileID else { return }
         detailLogDiagnosticsState = .confirmingPrivacy(fileID: fileID)
     }
@@ -176,7 +180,7 @@ final class MainFileListModel: ObservableObject {
     }
 
     func collectDetailLogDiagnostics() async {
-        guard case .confirmingPrivacy(let fileID) = detailLogDiagnosticsState,
+        guard case let .confirmingPrivacy(fileID) = detailLogDiagnosticsState,
               selection.singleFileID == fileID else { return }
 
         detailLogDiagnosticsState = .collecting(fileID: fileID)
@@ -215,9 +219,13 @@ final class MainFileListModel: ObservableObject {
         statusBanner = .removedSelectedFile(fileID: fileID)
     }
 
-    func clearStatusBanner() { statusBanner = nil }
+    func clearStatusBanner() {
+        statusBanner = nil
+    }
 
-    func showUnsavedNoteDraftPreserved(fileID: Int64) { statusBanner = .unsavedNoteDraftPreserved(fileID: fileID) }
+    func showUnsavedNoteDraftPreserved(fileID: Int64) {
+        statusBanner = .unsavedNoteDraftPreserved(fileID: fileID)
+    }
 
     func writeActionDisabledReason(fileID: Int64) -> MainFileWriteActionDisabledReason? {
         if isReadOnly { return .repoReadOnly }
@@ -240,11 +248,14 @@ final class MainFileListModel: ObservableObject {
         guard diagnosticsState != .collecting else { return }
 
         diagnosticsState = .collecting
-        do { diagnosticsState = .collected(try await diagnosticsCollector.createDiagnosticsSnapshot(repoPath: repoPath)) }
-        catch { diagnosticsState = .failed(await mapCoreError(error)) }
+        do {
+            diagnosticsState = try await .collected(diagnosticsCollector.createDiagnosticsSnapshot(repoPath: repoPath))
+        } catch { diagnosticsState = await .failed(mapCoreError(error)) }
     }
 
-    func clearDiagnosticsState() { diagnosticsState = .idle }
+    func clearDiagnosticsState() {
+        diagnosticsState = .idle
+    }
 
     private func reloadCurrentCategory(focusingOn fileID: Int64? = nil) async {
         loadGeneration += 1
@@ -314,11 +325,13 @@ final class MainFileListModel: ObservableObject {
         detailGeneration += 1
         let generation = detailGeneration
         guard let result = await MultiSelectionDetailLoader.refresh(
-            ids: ids,
-            repoPath: repoPath,
-            currentFiles: files,
-            detailer: fileDetailer,
-            errorMapper: errorMapper,
+            request: MultiSelectionDetailRefreshRequest(
+                ids: ids,
+                repoPath: repoPath,
+                currentFiles: files,
+                detailer: fileDetailer,
+                errorMapper: errorMapper
+            ),
             shouldContinue: { [weak self] in
                 self?.canApplyMultiSelectionDetailResult(generation: generation, ids: ids) == true
             }
@@ -355,19 +368,19 @@ final class MainFileListModel: ObservableObject {
     private func syncExternalChange(_ event: MainExternalCreatedFileEvent) async throws -> SyncResultSnapshot {
         switch event.kind {
         case .created:
-            return try await externalChangesSyncer.syncExternalCreated(
+            try await externalChangesSyncer.syncExternalCreated(
                 repoPath: repoPath,
                 relativePath: event.relativePath,
                 fsEventID: event.fsEventID
             )
         case .renamed:
-            return try await externalChangesSyncer.syncExternalRenamed(
+            try await externalChangesSyncer.syncExternalRenamed(
                 repoPath: repoPath,
                 relativePath: event.relativePath,
                 fsEventID: event.fsEventID
             )
         case .removed:
-            return try await externalChangesSyncer.syncExternalRemoved(
+            try await externalChangesSyncer.syncExternalRemoved(
                 repoPath: repoPath,
                 relativePath: event.relativePath,
                 fsEventID: event.fsEventID
@@ -453,15 +466,10 @@ final class MainFileListModel: ObservableObject {
     private func clearDetail() {
         detailGeneration += 1
         selection = .none
-        selectedFileDetail = nil
-        selectedFileNoteWriteBlock = nil
-        detailErrorMapping = nil
+        selectedFileDetail = nil; selectedFileNoteWriteBlock = nil; detailErrorMapping = nil
         isDetailLoading = false
         resetDetailLog()
-        pendingActionDestination = nil
-        renameState = .idle
-        deleteState = .idle
-        changeCategoryState = .idle
+        pendingActionDestination = nil; renameState = .idle; deleteState = .idle; changeCategoryState = .idle
     }
 
     private func resetDetailLog() {
@@ -475,21 +483,11 @@ final class MainFileListModel: ObservableObject {
 
     private func canApplyDetailLogDiagnosticsResult(fileID: Int64) -> Bool {
         guard selection.singleFileID == fileID,
-              case .failed(let failedFileID, _) = detailLogState else { return false }
+              case let .failed(failedFileID, _) = detailLogState else { return false }
         return failedFileID == fileID
     }
 
     private func canApplyMultiSelectionDetailResult(generation: Int, ids: Set<Int64>) -> Bool {
         generation == detailGeneration && selection.multipleFileIDs == ids
     }
-
-    private func validateExternalSyncResult(
-        _ result: SyncResultSnapshot,
-        event: MainExternalCreatedFileEvent
-    ) throws {
-        guard result.errors.isEmpty else { throw CoreError.Internal(
-            message: "\(event.kind.displayName) event \(event.fsEventID) returned sync errors: \(result.errors.joined(separator: "; "))"
-        ) }
-    }
-
 }

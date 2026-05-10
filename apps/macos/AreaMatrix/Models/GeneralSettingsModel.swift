@@ -1,12 +1,14 @@
 import Combine
 import Foundation
 
-enum GeneralSettingsStorageMode: String, CaseIterable, Equatable, Identifiable, Sendable {
+enum GeneralSettingsStorageMode: String, CaseIterable, Equatable, Identifiable {
     case copy
     case move
     case indexOnly
 
-    var id: String { rawValue }
+    var id: String {
+        rawValue
+    }
 
     init(snapshotValue: String) {
         switch snapshotValue {
@@ -22,42 +24,44 @@ enum GeneralSettingsStorageMode: String, CaseIterable, Equatable, Identifiable, 
     var snapshotValue: String {
         switch self {
         case .copy:
-            return "Copied"
+            "Copied"
         case .move:
-            return "Moved"
+            "Moved"
         case .indexOnly:
-            return "Indexed"
+            "Indexed"
         }
     }
 
     var label: String {
         switch self {
         case .copy:
-            return "Copy (recommended)"
+            "Copy (recommended)"
         case .move:
-            return "Move"
+            "Move"
         case .indexOnly:
-            return "Index-only"
+            "Index-only"
         }
     }
 
     var confirmationMessage: String? {
         switch self {
         case .copy:
-            return nil
+            nil
         case .move:
-            return "Imported source files will disappear from their original location after import."
+            "Imported source files will disappear from their original location after import."
         case .indexOnly:
-            return "Moving source files later can make indexed entries missing."
+            "Moving source files later can make indexed entries missing."
         }
     }
 }
 
-enum GeneralSettingsOverviewOutput: String, CaseIterable, Equatable, Identifiable, Sendable {
+enum GeneralSettingsOverviewOutput: String, CaseIterable, Equatable, Identifiable {
     case generatedOnly
     case rootAreaMatrixFile
 
-    var id: String { rawValue }
+    var id: String {
+        rawValue
+    }
 
     init(snapshotValue: String) {
         self = snapshotValue == "RootAreaMatrixFile" ? .rootAreaMatrixFile : .generatedOnly
@@ -66,19 +70,21 @@ enum GeneralSettingsOverviewOutput: String, CaseIterable, Equatable, Identifiabl
     var snapshotValue: String {
         switch self {
         case .generatedOnly:
-            return "GeneratedOnly"
+            "GeneratedOnly"
         case .rootAreaMatrixFile:
-            return "RootAreaMatrixFile"
+            "RootAreaMatrixFile"
         }
     }
 }
 
-enum GeneralSettingsLocale: String, CaseIterable, Equatable, Identifiable, Sendable {
+enum GeneralSettingsLocale: String, CaseIterable, Equatable, Identifiable {
     case system
     case zhCN
     case en
 
-    var id: String { rawValue }
+    var id: String {
+        rawValue
+    }
 
     init(snapshotValue: String) {
         switch snapshotValue.trimmingCharacters(in: .whitespacesAndNewlines) {
@@ -99,34 +105,39 @@ enum GeneralSettingsLocale: String, CaseIterable, Equatable, Identifiable, Senda
     var snapshotValue: String {
         switch self {
         case .system:
-            return "system"
+            "system"
         case .zhCN:
-            return "zh-CN"
+            "zh-CN"
         case .en:
-            return "en"
+            "en"
         }
     }
 
     var label: String {
         switch self {
         case .system:
-            return "system"
+            "system"
         case .zhCN:
-            return "zh-CN"
+            "zh-CN"
         case .en:
-            return "en"
+            "en"
         }
     }
 }
 
-enum GeneralSettingsAppearance: String, CaseIterable, Equatable, Identifiable, Sendable {
+enum GeneralSettingsAppearance: String, CaseIterable, Equatable, Identifiable {
     case system
 
-    var id: String { rawValue }
-    var label: String { "system" }
+    var id: String {
+        rawValue
+    }
+
+    var label: String {
+        "system"
+    }
 }
 
-enum RootOverviewFileStatus: Equatable, Sendable {
+enum RootOverviewFileStatus: Equatable {
     case missing
     case managedBlock
     case userContent
@@ -135,13 +146,16 @@ enum RootOverviewFileStatus: Equatable, Sendable {
     var confirmationDetail: String {
         switch self {
         case .missing:
-            return "A new AREAMATRIX.md will be created at the repository root."
+            "A new AREAMATRIX.md will be created at the repository root."
         case .managedBlock:
-            return "Only the AreaMatrix managed block will be updated."
+            "Only the AreaMatrix managed block will be updated."
         case .userContent:
-            return "AreaMatrix will append a clearly marked managed block to AREAMATRIX.md. Existing content will remain unchanged."
-        case .unsafe(let reason):
-            return reason.isEmpty ? "Cannot safely update AREAMATRIX.md" : reason
+            [
+                "AreaMatrix will append a clearly marked managed block to AREAMATRIX.md.",
+                "Existing content will remain unchanged."
+            ].joined(separator: " ")
+        case let .unsafe(reason):
+            reason.isEmpty ? "Cannot safely update AREAMATRIX.md" : reason
         }
     }
 
@@ -156,21 +170,21 @@ enum RootOverviewFileStatus: Equatable, Sendable {
     }
 }
 
-struct GeneralSettingsSaveError: Equatable, Sendable {
+struct GeneralSettingsSaveError: Equatable {
     var message: String
     var recovery: String
 }
 
-enum GeneralSettingsIgnoreRulesAlert: Equatable, Sendable {
+enum GeneralSettingsIgnoreRulesAlert: Equatable {
     case createDefault
 }
 
-struct GeneralSettingsPendingSave: Equatable, Sendable {
+struct GeneralSettingsPendingSave: Equatable {
     var config: RepoConfigSnapshot
     var error: GeneralSettingsSaveError
 }
 
-struct GeneralSettingsDraft: Equatable, Sendable {
+struct GeneralSettingsDraft: Equatable {
     var defaultStorageMode: GeneralSettingsStorageMode
     var overviewOutput: GeneralSettingsOverviewOutput
     var locale: GeneralSettingsLocale
@@ -186,7 +200,7 @@ struct GeneralSettingsDraft: Equatable, Sendable {
 
 @MainActor
 final class GeneralSettingsModel: ObservableObject {
-    enum LoadState: Equatable, Sendable {
+    enum LoadState: Equatable {
         case loading
         case loaded
         case failed(GeneralSettingsSaveError)
@@ -228,8 +242,13 @@ final class GeneralSettingsModel: ObservableObject {
         self.errorMapper = errorMapper
     }
 
-    var hasRetryableSave: Bool { pendingRetry != nil && !isSaving }
-    var isLoaded: Bool { loadState == .loaded }
+    var hasRetryableSave: Bool {
+        pendingRetry != nil && !isSaving
+    }
+
+    var isLoaded: Bool {
+        loadState == .loaded
+    }
 
     func load() async {
         loadState = .loading
@@ -241,7 +260,7 @@ final class GeneralSettingsModel: ObservableObject {
             draft = GeneralSettingsDraft(config: config)
             loadState = .loaded
         } catch {
-            loadState = .failed(await saveError(for: error))
+            loadState = await .failed(saveError(for: error))
         }
     }
 
@@ -285,7 +304,8 @@ final class GeneralSettingsModel: ObservableObject {
     func confirmRootOverview() async {
         guard pendingRootOverviewStatus?.canEnableRootOverview == true, let savedConfig else { return }
         pendingRootOverviewStatus = nil
-        await persist(updating: savedConfig.withOverviewOutput(GeneralSettingsOverviewOutput.rootAreaMatrixFile.snapshotValue))
+        await persist(updating: savedConfig
+            .withOverviewOutput(GeneralSettingsOverviewOutput.rootAreaMatrixFile.snapshotValue))
     }
 
     func cancelRootOverview() {

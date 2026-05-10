@@ -1,5 +1,5 @@
-import XCTest
 @testable import AreaMatrix
+import XCTest
 
 final class ChangeCategoryPageIntegrationVerifyTests: XCTestCase {
     @MainActor
@@ -24,7 +24,7 @@ final class ChangeCategoryPageIntegrationVerifyTests: XCTestCase {
         }
         let moved = try XCTUnwrap(movedCallback)
         let refreshedTree = try await context.bridge.listTree(repoPath: context.repoURL.path, locale: "zh-Hans")
-        let plan = MainRepositoryContentCategoryMoveRefreshPlan.make(
+        let plan = CategoryMoveRefreshPlan.make(
             movedFile: moved,
             currentSidebarID: "docs",
             currentTree: context.opening.tree,
@@ -51,8 +51,9 @@ final class ChangeCategoryPageIntegrationVerifyTests: XCTestCase {
         await context.model.loadMoveToCategoryPreview(fileID: moving.id, targetCategory: "missing-category")
 
         let request = MainFileCategoryMovePreviewRequest(fileID: moving.id, targetCategory: "missing-category")
-        guard case .failed(let failedRequest, .preview, let mapping) = context.model.changeCategoryState,
-              failedRequest == request else {
+        guard case let .failed(failedRequest, .preview, mapping) = context.model.changeCategoryState,
+              failedRequest == request
+        else {
             return XCTFail("Expected S1-35 preview failure to keep the sheet in recoverable error state")
         }
 
@@ -67,7 +68,7 @@ final class ChangeCategoryPageIntegrationVerifyTests: XCTestCase {
     }
 
     @MainActor
-    func testS135PageIntegrationDetailMetaMenuRoutesToChangeCategorySheet() async throws {
+    func testS135PageIntegrationDetailMetaMenuRoutesToChangeCategorySheet() async {
         let file = FileEntrySnapshot.s135Fixture(id: 249, name: "detail.pdf")
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [file]),
@@ -148,7 +149,7 @@ final class ChangeCategoryPageIntegrationVerifyTests: XCTestCase {
         let mappedErrors = await mapper.recordedErrors()
 
         XCTAssertEqual(moveRequests, [
-            .preview(repoPath: "/tmp/repo", fileID: original.id, targetCategory: "finance"),
+            .preview(repoPath: "/tmp/repo", fileID: original.id, targetCategory: "finance")
         ])
         XCTAssertEqual(mappedErrors, [CoreError.Conflict(path: "finance/contract.pdf")])
         XCTAssertEqual(
@@ -167,23 +168,12 @@ final class ChangeCategoryPageIntegrationVerifyTests: XCTestCase {
         XCTAssertEqual(model.selectedFileDetail, original)
 
         await model.submitRename(fileID: original.id, newName: "contract-renamed.pdf")
-        let renameRequests = await renamer.recordedRequests()
-
-        XCTAssertEqual(renameRequests, [
-            S135RenameRequest(
-                repoPath: "/tmp/repo",
-                fileID: original.id,
-                newName: "contract-renamed.pdf"
-            ),
-        ])
-        XCTAssertEqual(
-            model.pendingActionDestination,
-            .changeCategory(fileID: original.id, initialTargetCategory: "finance")
+        await assertS135ReturnedToChangeCategory(
+            model: model,
+            renamer: renamer,
+            original: original,
+            renamed: renamed
         )
-        XCTAssertEqual(model.renameState, .idle)
-        XCTAssertEqual(model.changeCategoryState, .idle)
-        XCTAssertEqual(model.files, [renamed])
-        XCTAssertEqual(model.selectedFileDetail, renamed)
     }
 
     @MainActor
@@ -216,6 +206,31 @@ final class ChangeCategoryPageIntegrationVerifyTests: XCTestCase {
     }
 }
 
+@MainActor
+private func assertS135ReturnedToChangeCategory(
+    model: MainFileListModel,
+    renamer: S135RecordingRenamer,
+    original: FileEntrySnapshot,
+    renamed: FileEntrySnapshot
+) async {
+    let renameRequests = await renamer.recordedRequests()
+    XCTAssertEqual(renameRequests, [
+        S135RenameRequest(
+            repoPath: "/tmp/repo",
+            fileID: original.id,
+            newName: "contract-renamed.pdf"
+        )
+    ])
+    XCTAssertEqual(
+        model.pendingActionDestination,
+        .changeCategory(fileID: original.id, initialTargetCategory: "finance")
+    )
+    XCTAssertEqual(model.renameState, .idle)
+    XCTAssertEqual(model.changeCategoryState, .idle)
+    XCTAssertEqual(model.files, [renamed])
+    XCTAssertEqual(model.selectedFileDetail, renamed)
+}
+
 private struct S135IntegrationContext {
     let repoURL: URL
     let sourceRootURL: URL
@@ -233,12 +248,12 @@ private struct S135IntegrationContext {
     }
 }
 
-private enum S135MoveRequest: Equatable, Sendable {
+private enum S135MoveRequest: Equatable {
     case preview(repoPath: String, fileID: Int64, targetCategory: String)
     case move(repoPath: String, fileID: Int64, targetCategory: String)
 }
 
-private struct S135RenameRequest: Equatable, Sendable {
+private struct S135RenameRequest: Equatable {
     var repoPath: String
     var fileID: Int64
     var newName: String
@@ -257,7 +272,9 @@ private actor S135RecordingRenamer: CoreFileRenaming {
         return try result.get()
     }
 
-    func recordedRequests() -> [S135RenameRequest] { requests }
+    func recordedRequests() -> [S135RenameRequest] {
+        requests
+    }
 }
 
 private actor S135RecordingMover: CoreFileCategoryMoving {
@@ -287,12 +304,17 @@ private actor S135RecordingMover: CoreFileCategoryMoving {
         return try moveResult.get()
     }
 
-    func recordedRequests() -> [S135MoveRequest] { requests }
+    func recordedRequests() -> [S135MoveRequest] {
+        requests
+    }
 }
 
 private actor S135NoopNoteStore: CoreNoteReadingWriting {
-    func readNote(repoPath: String, fileID: Int64) async throws -> String? { nil }
-    func writeNote(repoPath: String, fileID: Int64, contentMarkdown: String) async throws {}
+    func readNote(repoPath _: String, fileID _: Int64) async throws -> String? {
+        nil
+    }
+
+    func writeNote(repoPath _: String, fileID _: Int64, contentMarkdown _: String) async throws {}
 }
 
 @MainActor
@@ -370,7 +392,7 @@ private func assertS135Preview(
 private func assertS135CompletedMove(
     _ moved: FileEntrySnapshot,
     changes: [ChangeLogEntrySnapshot],
-    plan: MainRepositoryContentCategoryMoveRefreshPlan,
+    plan: CategoryMoveRefreshPlan,
     context: S135IntegrationContext
 ) throws {
     XCTAssertEqual(moved.id, context.movingFile.id)
@@ -434,13 +456,13 @@ private extension RepositoryTreeNodeSnapshot {
                     displayName: "finance",
                     fileCount: financeCount,
                     children: []
-                ),
+                )
             ]
         )
     }
 }
 
-private extension Array where Element == RepositorySidebarRowSnapshot {
+private extension [RepositorySidebarRowSnapshot] {
     static var s135Rows: [RepositorySidebarRowSnapshot] {
         RepositoryTreeNodeSnapshot.s135Tree(docsCount: 1, financeCount: 0).sidebarRows
     }
@@ -468,21 +490,6 @@ private extension CoreErrorMappingSnapshot {
             rawContext: "S1-35 C1-24 preview_move_to_category permission"
         )
     }
-}
-
-private func s135MirrorDescription(of value: Any, depth: Int = 0) -> String {
-    guard depth < 8 else { return "" }
-
-    var lines: [String] = []
-    lines.append(String(describing: type(of: value)))
-    lines.append(String(describing: value))
-    for child in Mirror(reflecting: value).children {
-        if let label = child.label {
-            lines.append(label)
-        }
-        lines.append(s135MirrorDescription(of: child.value, depth: depth + 1))
-    }
-    return lines.joined(separator: "\n")
 }
 
 private func makeS135TemporaryDirectory(prefix: String) throws -> URL {

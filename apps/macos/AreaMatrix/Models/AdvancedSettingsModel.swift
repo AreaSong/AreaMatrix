@@ -1,11 +1,13 @@
 import Combine
 import Foundation
 
-enum AdvancedSettingsOverviewOutput: String, CaseIterable, Equatable, Identifiable, Sendable {
+enum AdvancedSettingsOverviewOutput: String, CaseIterable, Equatable, Identifiable {
     case generatedOnly
     case rootAreaMatrixFile
 
-    var id: String { rawValue }
+    var id: String {
+        rawValue
+    }
 
     init(snapshotValue: String) {
         self = snapshotValue == "RootAreaMatrixFile" ? .rootAreaMatrixFile : .generatedOnly
@@ -14,37 +16,37 @@ enum AdvancedSettingsOverviewOutput: String, CaseIterable, Equatable, Identifiab
     var snapshotValue: String {
         switch self {
         case .generatedOnly:
-            return "GeneratedOnly"
+            "GeneratedOnly"
         case .rootAreaMatrixFile:
-            return "RootAreaMatrixFile"
+            "RootAreaMatrixFile"
         }
     }
 
     var label: String {
         switch self {
         case .generatedOnly:
-            return "Generated only"
+            "Generated only"
         case .rootAreaMatrixFile:
-            return "Root AREAMATRIX.md"
+            "Root AREAMATRIX.md"
         }
     }
 }
 
-enum AdvancedSettingsSaveKind: Equatable, Sendable {
+enum AdvancedSettingsSaveKind: Equatable {
     case overview
     case replace
 
     var message: String {
         switch self {
         case .overview:
-            return "Could not save overview setting"
+            "Could not save overview setting"
         case .replace:
-            return "Could not save advanced setting"
+            "Could not save advanced setting"
         }
     }
 }
 
-struct AdvancedSettingsError: Equatable, Sendable {
+struct AdvancedSettingsError: Equatable {
     var message: String
     var recovery: String
 }
@@ -56,7 +58,7 @@ enum AdvancedSettingsAccessibilityID {
     static let genericRetrySave = "S1-30-retry-save"
 }
 
-struct AdvancedSettingsDraft: Equatable, Sendable {
+struct AdvancedSettingsDraft: Equatable {
     var overviewOutput: AdvancedSettingsOverviewOutput
     var allowReplaceDuringImport: Bool
 
@@ -66,14 +68,14 @@ struct AdvancedSettingsDraft: Equatable, Sendable {
     }
 }
 
-private struct AdvancedSettingsPendingSave: Equatable, Sendable {
+private struct AdvancedSettingsPendingSave: Equatable {
     var config: RepoConfigSnapshot
     var kind: AdvancedSettingsSaveKind
 }
 
 @MainActor
 final class AdvancedSettingsModel: ObservableObject {
-    enum LoadState: Equatable, Sendable {
+    enum LoadState: Equatable {
         case loading
         case loaded
         case failed(AdvancedSettingsError)
@@ -113,9 +115,9 @@ final class AdvancedSettingsModel: ObservableObject {
         appVersionReader: any AppVersionReading = BundleAppVersionReader(),
         coreVersionReader: any CoreVersionReading = CoreBridge(),
         metadataReader: any ExistingRepositoryMetadataReading = SQLiteExistingRepositoryMetadataReader(),
-        logsOpener: any AdvancedSettingsLogFolderOpening = NSWorkspaceAdvancedSettingsLogFolderOpener(),
+        logsOpener: any AdvancedSettingsLogFolderOpening = AdvancedSettingsLogFolderOpener(),
         summaryCopier: any AdvancedSettingsDiagnosticSummaryCopying =
-            NSPasteboardAdvancedSettingsDiagnosticSummaryCopier(),
+            AdvancedSettingsDiagnosticCopier(),
         errorMapper: any CoreErrorMapping = CoreBridge()
     ) {
         self.repoPath = repoPath
@@ -131,8 +133,14 @@ final class AdvancedSettingsModel: ObservableObject {
         self.errorMapper = errorMapper
     }
 
-    var isLoaded: Bool { loadState == .loaded }
-    var hasRetryableSave: Bool { pendingRetry != nil && !isSaving }
+    var isLoaded: Bool {
+        loadState == .loaded
+    }
+
+    var hasRetryableSave: Bool {
+        pendingRetry != nil && !isSaving
+    }
+
     var retrySaveAccessibilityIdentifier: String {
         guard let pendingRetry else { return AdvancedSettingsAccessibilityID.genericRetrySave }
         switch pendingRetry.kind {
@@ -172,7 +180,7 @@ final class AdvancedSettingsModel: ObservableObject {
         } catch {
             savedConfig = nil
             draft = nil
-            loadState = .failed(await mappedError(for: error, fallbackMessage: "Unable to load advanced settings"))
+            loadState = await .failed(mappedError(for: error, fallbackMessage: "Unable to load advanced settings"))
         }
     }
 
@@ -197,7 +205,7 @@ final class AdvancedSettingsModel: ObservableObject {
             let snapshot = try await diagnosticsCollector.createDiagnosticsSnapshot(repoPath: repoPath)
             diagnosticsState = .collected(snapshot)
         } catch {
-            diagnosticsState = .failed(await mappedError(
+            diagnosticsState = await .failed(mappedError(
                 for: error,
                 fallbackMessage: "Diagnostics could not be exported"
             ))
@@ -333,13 +341,13 @@ final class AdvancedSettingsModel: ObservableObject {
         do {
             info.coreVersion = try await coreVersionReader.coreVersion()
         } catch {
-            failures.append(await mappedError(for: error, fallbackMessage: "Core version unavailable"))
+            await failures.append(mappedError(for: error, fallbackMessage: "Core version unavailable"))
         }
 
         do {
             info.repoSchemaVersion = try await metadataReader.metadata(repoPath: repoPath).schemaVersion
         } catch {
-            failures.append(await mappedError(for: error, fallbackMessage: "Repo schema version unavailable"))
+            await failures.append(mappedError(for: error, fallbackMessage: "Repo schema version unavailable"))
         }
 
         versionInfo = info

@@ -1,6 +1,6 @@
+@testable import AreaMatrix
 import Foundation
 import XCTest
-@testable import AreaMatrix
 
 final class ValidatePathRepairRegressionTests: XCTestCase {
     @MainActor
@@ -210,7 +210,7 @@ final class ValidatePathRepairRegressionTests: XCTestCase {
         XCTAssertTrue(ConfirmInitStepRules.canRunPrimaryAction(for: adoptDraft))
         XCTAssertFalse(ConfirmInitStepRules.canRunPrimaryAction(for: staleCreateDraft))
         XCTAssertEqual(ConfirmInitStepRules.footerActions(for: createDraft), [
-            .back, .cancelSetup, .changePath, .primary,
+            .back, .cancelSetup, .changePath, .primary
         ])
         XCTAssertEqual(ConfirmInitStepRules.footerActions(for: staleCreateDraft), [.back, .cancelSetup])
         XCTAssertEqual(
@@ -295,7 +295,9 @@ final class ValidatePathRepairRegressionTests: XCTestCase {
         XCTAssertEqual(model.repositoryPathError, "路径状态已变化，请返回重新校验")
         XCTAssertEqual(model.route, .validatePath)
     }
+}
 
+final class ValidatePathCoreInitializationTests: XCTestCase {
     func testDefaultCoreAdoptExistingPreservesUserFiles() async throws {
         let repoURL = try makeRepairTemporaryAdoptRepoURL()
         defer { try? FileManager.default.removeItem(at: repoURL) }
@@ -320,7 +322,7 @@ final class ValidatePathRepairRegressionTests: XCTestCase {
         let metadataURL = repoURL.appendingPathComponent(".areamatrix", isDirectory: true)
         let expectedMetadataPaths = [
             "index.db", "classifier.yaml", "ignore.yaml", "staging",
-            "archives", "generated", "generated/root.md",
+            "archives", "generated", "generated/root.md"
         ]
 
         for relativePath in expectedMetadataPaths {
@@ -340,7 +342,9 @@ final class ValidatePathRepairRegressionTests: XCTestCase {
         XCTAssertFalse(FileManager.default.fileExists(atPath: repoURL.appendingPathComponent("README.md").path))
         XCTAssertTrue(FileManager.default.fileExists(atPath: metadataURL.appendingPathComponent("index.db").path))
     }
+}
 
+extension ValidatePathRepairRegressionTests {
     @MainActor
     private func makeModel(
         validation: RepoPathValidationSnapshot,
@@ -349,15 +353,19 @@ final class ValidatePathRepairRegressionTests: XCTestCase {
         opener: (any CoreEmptyRepositoryOpening)? = nil
     ) -> OnboardingModel {
         let repositoryOpener: any CoreEmptyRepositoryOpening = opener ??
-            RepairRecordingRepositoryOpener(result: .success(.repairFixture(repoPath: validation.repoPath, fileCount: 1)))
+            RepairRecordingRepositoryOpener(result: .success(.repairFixture(
+                repoPath: validation.repoPath,
+                fileCount: 1
+            )))
         return OnboardingModel(
             settingsReader: RepairStaticSettingsReader(repoPath: settingsRepoPath),
             settingsWriter: writer,
-            configLoader: RepairRecordingConfigLoader(config: .repairFixture(repoPath: settingsRepoPath ?? "/tmp/repo")),
+            configLoader: RepairRecordingConfigLoader(config: .repairFixture(repoPath: settingsRepoPath ??
+                    "/tmp/repo")),
             pathValidator: RepairRecordingPathValidator(validation: validation),
             emptyRepositoryOpener: repositoryOpener,
             startupRecoverer: RepairStaticStartupRecoverer(),
-            existingRepositoryMetadataReader: RepairStaticExistingRepositoryMetadataReader(schemaVersion: 1),
+            existingRepositoryMetadataReader: RepairExistingRepoMetadataReader(schemaVersion: 1),
             helpOpener: RepairNoopWelcomeHelpOpener()
         )
     }

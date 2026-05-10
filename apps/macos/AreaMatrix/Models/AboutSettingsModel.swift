@@ -2,54 +2,56 @@ import AppKit
 import Combine
 import Foundation
 
-enum AboutExternalLink: String, CaseIterable, Equatable, Identifiable, Sendable {
+enum AboutExternalLink: String, CaseIterable, Equatable, Identifiable {
     case github
     case issue
     case discussions
 
-    var id: String { rawValue }
+    var id: String {
+        rawValue
+    }
 
     var title: String {
         switch self {
         case .github:
-            return "GitHub"
+            "GitHub"
         case .issue:
-            return "Issue"
+            "Issue"
         case .discussions:
-            return "Discussions"
+            "Discussions"
         }
     }
 
     var systemImage: String {
         switch self {
         case .github:
-            return "chevron.left.forwardslash.chevron.right"
+            "chevron.left.forwardslash.chevron.right"
         case .issue:
-            return "exclamationmark.bubble"
+            "exclamationmark.bubble"
         case .discussions:
-            return "bubble.left.and.bubble.right"
+            "bubble.left.and.bubble.right"
         }
     }
 
     var urlString: String {
         switch self {
         case .github:
-            return "https://github.com/AreaSong/AreaMatrix"
+            "https://github.com/AreaSong/AreaMatrix"
         case .issue:
-            return "https://github.com/AreaSong/AreaMatrix/issues"
+            "https://github.com/AreaSong/AreaMatrix/issues"
         case .discussions:
-            return "https://github.com/AreaSong/AreaMatrix/discussions"
+            "https://github.com/AreaSong/AreaMatrix/discussions"
         }
     }
 }
 
-struct AboutSettingsError: Equatable, Sendable {
+struct AboutSettingsError: Equatable {
     var message: String
     var recovery: String
     var copyableDetail: String
 }
 
-struct AboutSettingsVersionInfo: Equatable, Sendable {
+struct AboutSettingsVersionInfo: Equatable {
     var appVersion: String
     var coreVersion: String
     var schemaVersion: String
@@ -59,18 +61,18 @@ struct AboutSettingsVersionInfo: Equatable, Sendable {
     )
 }
 
-struct AboutDiagnosticsExportContext: Equatable, Sendable {
+struct AboutDiagnosticsExportContext: Equatable {
     var versionInfo: AboutSettingsVersionInfo
     var versionIssue: String?
 }
 
-struct AboutDiagnosticsExportSnapshot: Equatable, Sendable {
+struct AboutDiagnosticsExportSnapshot: Equatable {
     var exportPath: String
     var createdAt: Int64
     var warnings: [String]
 }
 
-enum AboutSettingsDiagnosticsState: Equatable, Sendable {
+enum AboutSettingsDiagnosticsState: Equatable {
     case idle
     case confirmingPrivacy
     case collecting
@@ -88,9 +90,10 @@ enum AboutSettingsDiagnosticsState: Equatable, Sendable {
     }
 }
 
-enum AboutSettingsActionFeedback: Equatable, Sendable {
+enum AboutSettingsActionFeedback: Equatable {
     case success(String), failed(AboutSettingsError)
 }
+
 protocol AboutExternalLinkOpening {
     @MainActor
     func open(link: AboutExternalLink) throws -> String
@@ -116,6 +119,7 @@ protocol AboutDiagnosticsRevealing {
 protocol AboutDiagnosticsExporting: Sendable {
     func exportDiagnostics(context: AboutDiagnosticsExportContext) async throws -> AboutDiagnosticsExportSnapshot
 }
+
 struct LocalAboutCoreErrorMapper: CoreErrorMapping {
     func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
         CoreErrorMappingSnapshot(
@@ -199,14 +203,14 @@ final class AboutSettingsModel: ObservableObject {
         do {
             info.coreVersion = try await coreVersionReader.coreVersion()
         } catch {
-            failures.append(await mappedError(for: error, fallbackMessage: "Core version unavailable"))
+            await failures.append(mappedError(for: error, fallbackMessage: "Core version unavailable"))
         }
 
         do {
             let metadata = try await metadataReader.metadata(repoPath: repoPath)
             info.schemaVersion = "v\(metadata.schemaVersion)"
         } catch {
-            failures.append(await mappedError(for: error, fallbackMessage: "Schema version unavailable"))
+            await failures.append(mappedError(for: error, fallbackMessage: "Schema version unavailable"))
         }
 
         versionInfo = info
@@ -384,7 +388,8 @@ struct NSWorkspaceAboutLogsOpener: AboutLogsOpening {
         let url = Self.logsURL(repoPath: repoPath)
         var isDirectory: ObjCBool = false
         guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory),
-              isDirectory.boolValue else {
+              isDirectory.boolValue
+        else {
             throw AboutSettingsPlatformError.missingPath(url.path)
         }
         guard NSWorkspace.shared.open(url) else {
@@ -433,11 +438,8 @@ struct LocalAboutDiagnosticsExporter: AboutDiagnosticsExporting {
         let exportURL = try Self.makeExportURL(baseDirectory: baseDirectory, createdAt: createdAt)
         try FileManager.default.createDirectory(at: exportURL, withIntermediateDirectories: true)
         let reportURL = exportURL.appendingPathComponent("about-diagnostics.txt", isDirectory: false)
-        try Self.report(context: context, createdAt: createdAt).write(
-            to: reportURL,
-            atomically: true,
-            encoding: .utf8
-        )
+        try Self.report(context: context, createdAt: createdAt)
+            .write(to: reportURL, atomically: true, encoding: .utf8)
 
         return AboutDiagnosticsExportSnapshot(
             exportPath: exportURL.path,
@@ -479,22 +481,19 @@ struct LocalAboutDiagnosticsExporter: AboutDiagnosticsExporting {
     }
 }
 
-enum AboutSettingsPlatformError: Error, Equatable, LocalizedError, Sendable {
-    case invalidURL(String)
-    case openRejected(String)
-    case missingPath(String)
-    case copyRejected
+enum AboutSettingsPlatformError: Error, Equatable, LocalizedError {
+    case invalidURL(String), openRejected(String), missingPath(String), copyRejected
 
     var errorDescription: String? {
         switch self {
-        case .invalidURL(let value):
-            return "Invalid URL: \(value)"
-        case .openRejected(let value):
-            return "System rejected opening: \(value)"
-        case .missingPath(let path):
-            return "Path is missing: \(path)"
+        case let .invalidURL(value):
+            "Invalid URL: \(value)"
+        case let .openRejected(value):
+            "System rejected opening: \(value)"
+        case let .missingPath(path):
+            "Path is missing: \(path)"
         case .copyRejected:
-            return "Pasteboard rejected the text."
+            "Pasteboard rejected the text."
         }
     }
 }

@@ -186,7 +186,7 @@ private struct SafetyPromiseList: View {
             title: "不覆盖已有文档",
             message: "接管目录时不会覆盖已有 README.md 或用户文件。",
             systemImage: "doc.badge.shield"
-        ),
+        )
     ]
 
     var body: some View {

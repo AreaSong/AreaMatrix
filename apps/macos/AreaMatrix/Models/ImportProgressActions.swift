@@ -3,7 +3,7 @@ import Foundation
 extension OnboardingModel {
     @MainActor
     func retryCurrentImportProgressItem() async {
-        guard case .importProgress(let state) = route else { return }
+        guard case let .importProgress(state) = route else { return }
         guard state.canRetryCurrentItem, let context = state.retryContext else { return }
 
         route = .importProgress(state.withRecoveryCheck(.checking))
@@ -17,56 +17,56 @@ extension OnboardingModel {
 
     @MainActor
     func stopImportProgressAfterCurrentFile() {
-        guard case .importProgress(let state) = route else { return }
+        guard case let .importProgress(state) = route else { return }
         importProgressControlState.requestStopAfterCurrentFile()
         route = .importProgress(state.withStopState(.stopping))
     }
 
     @MainActor
     func viewImportProgressDetails() {
-        guard case .importProgress(let state) = route else { return }
+        guard case let .importProgress(state) = route else { return }
         showImportResult(from: state)
     }
 
     @MainActor
     func stopImportProgressAndViewResults() {
-        guard case .importProgress(let state) = route else { return }
+        guard case let .importProgress(state) = route else { return }
         importProgressControlState.clearQueueContinuation()
         showImportResult(from: state)
     }
 
     @MainActor
     func requestImportProgressDiagnosticsPrivacyConfirmation() {
-        guard case .importProgress(let state) = route, state.isFailed else { return }
+        guard case let .importProgress(state) = route, state.isFailed else { return }
         route = .importProgress(state.withDiagnostics(.confirmingPrivacy))
     }
 
     @MainActor
     func cancelImportProgressDiagnosticsPrivacyConfirmation() {
-        guard case .importProgress(let state) = route else { return }
+        guard case let .importProgress(state) = route else { return }
         guard case .confirmingPrivacy = state.diagnostics else { return }
         route = .importProgress(state.withDiagnostics(.idle))
     }
 
     @MainActor
     func collectImportProgressDiagnostics() async {
-        guard case .importProgress(let state) = route else { return }
+        guard case let .importProgress(state) = route else { return }
         guard case .confirmingPrivacy = state.diagnostics else { return }
 
         route = .importProgress(state.withDiagnostics(.collecting))
         do {
             let snapshot = try await diagnosticsCollector.createDiagnosticsSnapshot(repoPath: state.repoPath)
-            guard case .importProgress(let latestState) = route else { return }
+            guard case let .importProgress(latestState) = route else { return }
             route = .importProgress(latestState.withDiagnostics(.collected(snapshot)))
         } catch {
-            guard case .importProgress(let latestState) = route else { return }
-            route = .importProgress(latestState.withDiagnostics(.failed(await importProgressMapping(for: error))))
+            guard case let .importProgress(latestState) = route else { return }
+            route = await .importProgress(latestState.withDiagnostics(.failed(importProgressMapping(for: error))))
         }
     }
 
     @MainActor
     func openImportProgressRepositoryInFinder() {
-        guard case .importProgress(let state) = route else { return }
+        guard case let .importProgress(state) = route else { return }
         do {
             try finderOpener.openRepositoryInFinder(repoPath: state.repoPath)
             toastMessage = nil
@@ -77,17 +77,18 @@ extension OnboardingModel {
 
     @MainActor
     func checkImportProgressRecoveryIfNeeded() async {
-        guard case .importProgress(let state) = route else { return }
+        guard case let .importProgress(state) = route else { return }
         guard case .checking = state.recoveryCheck else { return }
         guard let context = state.retryContext else { return }
 
         do {
             let report = try await startupRecoverer.recoverOnStartup(repoPath: context.repoPath)
-            guard case .importProgress(let latestState) = route else { return }
-            route = .importProgress(latestState.withRecoveryCheck(.retryAllowed(report.hasVisibleDetails ? report : nil)))
+            guard case let .importProgress(latestState) = route else { return }
+            route = .importProgress(latestState
+                .withRecoveryCheck(.retryAllowed(report.hasVisibleDetails ? report : nil)))
         } catch {
             let mapping = await importProgressMapping(for: error)
-            guard case .importProgress(let latestState) = route else { return }
+            guard case let .importProgress(latestState) = route else { return }
             route = .importProgress(latestState.withRecoveryCheck(.retryBlocked(mapping.userMessage, nil)))
         }
     }
@@ -235,7 +236,12 @@ extension OnboardingModel {
 
     @MainActor
     func finishImportResult() {
-        guard case .importResult(let state) = route else { return }
+        guard case let .importResult(state) = route else { return }
+        if state.shouldClearInterruptedSessionOnDone {
+            Task {
+                await importBatchSessionStore.clearSession(repoPath: state.sourceOpening.config.repoPath)
+            }
+        }
         route = Self.mainRoute(for: state.sourceOpening)
         toastMessage = nil
         consumeQueuedDockImportIfPossible()
@@ -243,13 +249,13 @@ extension OnboardingModel {
 
     @MainActor
     func loadImportResultChangeLog() async {
-        guard case .importResult(let state) = route else { return }
+        guard case let .importResult(state) = route else { return }
         await loadImportResultChangeLog(from: state)
     }
 
     @MainActor
     func retryImportResultFailedItems() async {
-        guard case .importResult(let state) = route, state.canRetryFailedItems else { return }
+        guard case let .importResult(state) = route, state.canRetryFailedItems else { return }
 
         let retryItems = state.items.filter { $0.status == .failed && $0.retryContext?.storageMode == .copy }
         var resultState = state.replacing(isRetryingFailedItems: true)
@@ -290,7 +296,7 @@ extension OnboardingModel {
 
     @MainActor
     func showImportResultExistingFile(itemID: ImportResultRouteState.Item.ID) {
-        guard case .importResult(let state) = route else { return }
+        guard case let .importResult(state) = route else { return }
         guard let item = state.items.first(where: { $0.id == itemID }),
               let relativePath = item.existingRelativePath else { return }
 
@@ -304,20 +310,20 @@ extension OnboardingModel {
 
     @MainActor
     func requestImportResultExportPrivacyConfirmation() {
-        guard case .importResult(let state) = route else { return }
+        guard case let .importResult(state) = route else { return }
         route = .importResult(state.replacing(exportState: .confirmingPrivacy))
     }
 
     @MainActor
     func cancelImportResultExport() {
-        guard case .importResult(let state) = route else { return }
+        guard case let .importResult(state) = route else { return }
         guard case .confirmingPrivacy = state.exportState else { return }
         route = .importResult(state.replacing(exportState: .idle))
     }
 
     @MainActor
     func exportImportResultDetails() {
-        guard case .importResult(let state) = route else { return }
+        guard case let .importResult(state) = route else { return }
 
         do {
             let exportedPath = try importResultExporter.exportDetails(
@@ -341,11 +347,11 @@ extension OnboardingModel {
                 repoPath: state.sourceOpening.config.repoPath,
                 filter: .importResultRecent
             )
-            guard case .importResult(let latestState) = route else { return }
+            guard case let .importResult(latestState) = route else { return }
             route = .importResult(latestState.replacing(changeLog: .loaded(entries)))
         } catch {
             let mapping = await importProgressMapping(for: error)
-            guard case .importResult(let latestState) = route else { return }
+            guard case let .importResult(latestState) = route else { return }
             route = .importResult(latestState.replacing(changeLog: .failed(mapping)))
         }
     }

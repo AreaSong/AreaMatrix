@@ -1,6 +1,6 @@
+@testable import AreaMatrix
 import Foundation
 import XCTest
-@testable import AreaMatrix
 
 final class AreaMatrixAppSmokeTests: XCTestCase {
     func testMainWindowShellCanBeCreated() {
@@ -88,7 +88,7 @@ final class AreaMatrixAdoptExistingTests: XCTestCase {
             pathValidator: SmokeRecordingPathValidator(result: .success(validation)),
             emptyRepositoryOpener: opener,
             startupRecoverer: ShellStaticStartupRecoverer(),
-            existingRepositoryMetadataReader: SmokeStaticExistingRepositoryMetadataReader(schemaVersion: 1),
+            existingRepositoryMetadataReader: SmokeExistingRepoMetadataReader(schemaVersion: 1),
             helpOpener: SmokeNoopWelcomeHelpOpener()
         )
 
@@ -147,7 +147,15 @@ final class AreaMatrixAdoptExistingTests: XCTestCase {
 
         XCTAssertEqual(requestedScanPaths, ["/tmp/repo"])
         XCTAssertEqual(model.latestScanSession, scanSession)
-        XCTAssertEqual(model.route, .dbRepairConfirm(DatabaseRepairRouteState(repoPath: "/tmp/repo", scanSession: scanSession, mapping: nil, returnRoute: .validatePath)))
+        XCTAssertEqual(
+            model.route,
+            .dbRepairConfirm(DatabaseRepairRouteState(
+                repoPath: "/tmp/repo",
+                scanSession: scanSession,
+                mapping: nil,
+                returnRoute: .validatePath
+            ))
+        )
         XCTAssertFalse(model.canContinueFromValidatePath)
     }
 
@@ -169,7 +177,7 @@ final class AreaMatrixAdoptExistingTests: XCTestCase {
         )
         model.updateRepositoryPath("/tmp/repo")
         await model.continueFromChoosePath()
-        guard case .dbRepairConfirm(let repairRoute) = model.route else {
+        guard case let .dbRepairConfirm(repairRoute) = model.route else {
             return XCTFail("expected db repair route")
         }
 
@@ -202,7 +210,9 @@ final class AreaMatrixAdoptExistingTests: XCTestCase {
         XCTAssertEqual(model.repositoryPathValidation, validation)
         XCTAssertNil(model.latestScanSession)
         XCTAssertEqual(model.repositoryPathError, "数据库错误")
-        guard case .dbRepairConfirm(let repairRoute) = model.route, repairRoute.repoPath == "/tmp/repo", repairRoute.scanSession == nil else {
+        guard case let .dbRepairConfirm(repairRoute) = model.route, repairRoute.repoPath == "/tmp/repo",
+              repairRoute.scanSession == nil
+        else {
             return XCTFail("expected db repair route, got \(model.route)")
         }
         XCTAssertEqual(repairRoute.mapping?.kind, .db)
@@ -271,24 +281,28 @@ enum SmokeRecordingConfigResult {
 
 struct SmokeStaticSettingsReader: AppSettingsReading {
     let repoPath: String?
-    func configuredRepoPath() -> String? { repoPath }
+    func configuredRepoPath() -> String? {
+        repoPath
+    }
 }
+
 final class SmokeRecordingSettingsWriter: AppSettingsWriting {
     private(set) var savedRepoPaths: [String] = []
     func saveConfiguredRepoPath(_ repoPath: String) {
         savedRepoPaths.append(repoPath)
     }
 }
+
 actor SmokeRecordingConfigLoader: CoreConfigurationLoading {
     private let result: SmokeRecordingConfigResult
     init(result: SmokeRecordingConfigResult) {
         self.result = result
     }
 
-    func loadConfig(repoPath: String) async throws -> RepoConfigSnapshot {
+    func loadConfig(repoPath _: String) async throws -> RepoConfigSnapshot {
         switch result {
-        case .success(let config):
-            return config
+        case let .success(config):
+            config
         }
     }
 }
@@ -303,11 +317,12 @@ actor SmokeRecordingPathValidator: CoreRepositoryPathValidating {
     init(result: SmokeRecordingPathValidationResult) {
         self.result = result
     }
-    func validateRepoPath(repoPath: String) async throws -> RepoPathValidationSnapshot {
+
+    func validateRepoPath(repoPath _: String) async throws -> RepoPathValidationSnapshot {
         switch result {
-        case .success(let validation):
+        case let .success(validation):
             return validation
-        case .failure(let error):
+        case let .failure(error):
             throw error
         }
     }
@@ -337,27 +352,15 @@ actor SmokeRecordingRepositoryOpener: CoreEmptyRepositoryOpening {
     func openConfiguredRepository(repoPath: String) async throws -> RepositoryOpeningResult {
         paths.append(repoPath)
         switch result {
-        case .success(let opening):
+        case let .success(opening):
             return opening
-        case .failure(let error):
+        case let .failure(error):
             throw error
         }
     }
 
-    func requestedRepoPaths() -> [String] { paths }
-}
-
-final class SmokeRecordingErrorMapper: CoreErrorMapping {
-    private let mapping: CoreErrorMappingSnapshot
-    private(set) var mappedErrors: [CoreError] = []
-
-    init(mapping: CoreErrorMappingSnapshot) {
-        self.mapping = mapping
-    }
-
-    func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
-        mappedErrors.append(error)
-        return mapping
+    func requestedRepoPaths() -> [String] {
+        paths
     }
 }
 
@@ -372,26 +375,30 @@ actor SmokeRecordingScanSessionReader: CoreScanSessionReading {
     init(result: SmokeRecordingScanSessionResult) {
         self.result = result
     }
+
     func latestScanSession(repoPath: String) async throws -> ScanSessionSnapshot? {
         paths.append(repoPath)
         switch result {
-        case .success(let session):
+        case let .success(session):
             return session
-        case .failure(let error):
+        case let .failure(error):
             throw error
         }
     }
-    func requestedRepoPaths() -> [String] { paths }
+
+    func requestedRepoPaths() -> [String] {
+        paths
+    }
 }
 
 struct SmokeNoopWelcomeHelpOpener: WelcomeHelpOpening {
     func openWelcomeHelp() throws {}
 }
 
-struct SmokeStaticExistingRepositoryMetadataReader: ExistingRepositoryMetadataReading {
+struct SmokeExistingRepoMetadataReader: ExistingRepositoryMetadataReading {
     let schemaVersion: Int64
 
-    func metadata(repoPath: String) async throws -> ExistingRepositoryMetadataSnapshot {
+    func metadata(repoPath _: String) async throws -> ExistingRepositoryMetadataSnapshot {
         ExistingRepositoryMetadataSnapshot(schemaVersion: schemaVersion, lastOpenedAt: nil)
     }
 }
@@ -481,30 +488,6 @@ extension ScanSessionSnapshot {
             updatedAt: 1_700_000_120,
             finishedAt: nil,
             errors: []
-        )
-    }
-}
-
-extension CoreErrorMappingSnapshot {
-    static func smokePermissionDeniedFixture(rawContext: String) -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
-            kind: .permissionDenied,
-            userMessage: "无访问权限",
-            severity: .high,
-            suggestedAction: "请在系统设置中授予权限，或选择其他资料库位置",
-            recoverability: .userActionRequired,
-            rawContext: rawContext
-        )
-    }
-
-    static func smokeConfigFixture(rawContext: String) -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
-            kind: .config,
-            userMessage: "资料库 schema 不兼容",
-            severity: .critical,
-            suggestedAction: "请选择其他资料库，或导出诊断信息",
-            recoverability: .fatal,
-            rawContext: rawContext
         )
     }
 }

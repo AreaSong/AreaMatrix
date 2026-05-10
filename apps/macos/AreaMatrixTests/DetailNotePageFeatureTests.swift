@@ -1,6 +1,6 @@
+@testable import AreaMatrix
 import CoreServices
 import XCTest
-@testable import AreaMatrix
 
 final class DetailNotePageFeatureTests: XCTestCase {
     @MainActor
@@ -31,7 +31,10 @@ final class DetailNotePageFeatureTests: XCTestCase {
             fileID: file.id,
             contentMarkdown: "contract notes"
         )])
-        XCTAssertEqual(model.state, .editing(fileID: file.id, content: "contract notes", saveStatus: .saved, writeBlock: nil))
+        XCTAssertEqual(
+            model.state,
+            .editing(fileID: file.id, content: "contract notes", saveStatus: .saved, writeBlock: nil)
+        )
         XCTAssertEqual(marks, [DetailNoteInFlightRequest(repoPath: "/tmp/repo", relativePath: "\(file.path).md")])
         XCTAssertEqual(unmarks, marks)
     }
@@ -66,7 +69,10 @@ final class DetailNotePageFeatureTests: XCTestCase {
         let writes = await noteStore.recordedWriteRequests()
 
         XCTAssertEqual(writes.map(\.contentMarkdown), ["new unsaved draft", "new unsaved draft"])
-        XCTAssertEqual(model.state, .editing(fileID: file.id, content: "new unsaved draft", saveStatus: .saved, writeBlock: nil))
+        XCTAssertEqual(
+            model.state,
+            .editing(fileID: file.id, content: "new unsaved draft", saveStatus: .saved, writeBlock: nil)
+        )
     }
 
     @MainActor
@@ -149,7 +155,7 @@ final class DetailNotePageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS114C114MainListMapsReadOnlyAndMissingWriteBlocks() async {
+    func testS114C114MainListMapsReadOnlyAndMissingWriteBlocks() {
         let available = FileEntrySnapshot.detailMetaFixture(id: 117, currentName: "available.pdf")
         let missing = FileEntrySnapshot.detailMetaFixture(id: 118, currentName: "missing.pdf", availability: .missing)
         let model = MainFileListModel(
@@ -181,7 +187,7 @@ final class DetailNotePageFeatureTests: XCTestCase {
             repoPath: repoPath,
             absolutePath: absolutePath,
             flags: flags,
-            eventID: 9_114
+            eventID: 9114
         )
 
         await InFlightFileChangeTracker.shared.mark(repoPath: repoPath, relativePath: relativePath)
@@ -268,8 +274,13 @@ private actor DetailNoteRecordingStore: CoreNoteReadingWriting {
         try writeResults.removeFirst().get()
     }
 
-    func recordedReadRequests() -> [DetailNoteReadRequest] { reads }
-    func recordedWriteRequests() -> [DetailNoteWriteRequest] { writes }
+    func recordedReadRequests() -> [DetailNoteReadRequest] {
+        reads
+    }
+
+    func recordedWriteRequests() -> [DetailNoteWriteRequest] {
+        writes
+    }
 }
 
 private struct DetailNoteInFlightRequest: Equatable {
@@ -293,8 +304,13 @@ private actor DetailNoteRecordingInFlightTracker: InFlightFileChangeTracking {
         marks.contains(DetailNoteInFlightRequest(repoPath: repoPath, relativePath: relativePath))
     }
 
-    func recordedMarks() -> [DetailNoteInFlightRequest] { marks }
-    func recordedUnmarks() -> [DetailNoteInFlightRequest] { unmarks }
+    func recordedMarks() -> [DetailNoteInFlightRequest] {
+        marks
+    }
+
+    func recordedUnmarks() -> [DetailNoteInFlightRequest] {
+        unmarks
+    }
 }
 
 private extension RepositoryOpeningResult {
@@ -336,7 +352,7 @@ extension CoreErrorMappingSnapshot {
 
 @MainActor
 private func waitForDetailNoteSave(_ model: DetailNoteModel) async {
-    for _ in 0..<200 {
+    for _ in 0 ..< 200 {
         if model.state.saveStatus == .saved || model.state.saveStatus?.failedError != nil {
             return
         }

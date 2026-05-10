@@ -1,5 +1,5 @@
-import XCTest
 @testable import AreaMatrix
+import XCTest
 
 final class DetailMultiPageIntegrationVerifyTests: XCTestCase {
     @MainActor
@@ -47,7 +47,7 @@ final class DetailMultiPageIntegrationVerifyTests: XCTestCase {
         let detailer = S115SequenceDetailer(results: [
             .success(first),
             .success(second),
-            .success(second),
+            .success(second)
         ])
         let model = MainFileListModel(
             opening: .s115Fixture(repoPath: "/tmp/repo", files: [first, second]),
@@ -88,7 +88,7 @@ final class DetailMultiPageIntegrationVerifyTests: XCTestCase {
             fileLister: S115NoopLister(),
             fileDetailer: S115SequenceDetailer(results: [
                 .success(available),
-                .failure(CoreError.FileNotFound(path: stale.path)),
+                .failure(CoreError.FileNotFound(path: stale.path))
             ]),
             errorMapper: S115ErrorMapper(mapping: mapping)
         )
@@ -116,7 +116,7 @@ final class DetailMultiPageIntegrationVerifyTests: XCTestCase {
 }
 
 private actor S115NoopLister: CoreFileListing {
-    func listFiles(repoPath: String, filter: FileFilterSnapshot) async throws -> [FileEntrySnapshot] {
+    func listFiles(repoPath _: String, filter _: FileFilterSnapshot) async throws -> [FileEntrySnapshot] {
         []
     }
 }
@@ -133,15 +133,15 @@ private actor S115SequenceDetailer: CoreFileDetailing {
         self.results = results
     }
 
-    func getFile(repoPath: String, fileID: Int64) async throws -> FileEntrySnapshot {
+    func getFile(repoPath _: String, fileID: Int64) async throws -> FileEntrySnapshot {
         guard !results.isEmpty else {
             throw CoreError.FileNotFound(path: "\(fileID)")
         }
 
         switch results.removeFirst() {
-        case .success(let file):
+        case let .success(file):
             return file
-        case .failure(let error):
+        case let .failure(error):
             throw error
         }
     }
@@ -154,7 +154,7 @@ private actor S115ErrorMapper: CoreErrorMapping {
         self.mapping = mapping
     }
 
-    func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
+    func mapCoreError(_: CoreError) async -> CoreErrorMappingSnapshot {
         mapping
     }
 }
@@ -193,7 +193,7 @@ private extension RepositoryTreeNodeSnapshot {
             displayName: "Repository",
             fileCount: fileCount,
             children: [
-                RepositoryTreeNodeSnapshot(slug: "docs", displayName: "docs", fileCount: fileCount, children: []),
+                RepositoryTreeNodeSnapshot(slug: "docs", displayName: "docs", fileCount: fileCount, children: [])
             ]
         )
     }

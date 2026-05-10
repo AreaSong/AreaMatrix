@@ -1,33 +1,18 @@
-import XCTest
 @testable import AreaMatrix
+import XCTest
 
 final class ImportBatchICloudPageIntegrationTests: XCTestCase {
     @MainActor
     func testS118ICloudPendingRowsDoNotSilentlyImportUnavailableRows() async {
         let localURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
         let cloudURL = URL(fileURLWithPath: "/tmp/iCloudOnly.pdf.icloud")
-        let request = ImportEntryRequest(
-            repoPath: "/tmp/repo",
-            source: .dropZone,
-            destination: .autoClassify,
-            urls: [localURL, cloudURL],
-            kind: .multipleItems(2),
-            availableCategories: ["inbox", "finance"]
-        )
+        let request = s118BatchRequest(urls: [localURL, cloudURL])
         let rows = [
-            ImportBatchPreviewRow.ready(
-                url: localURL,
-                prediction: ClassifyResultSnapshot(
-                    category: "finance",
-                    suggestedName: "Invoice_2026Q1.pdf",
-                    reason: .keyword,
-                    confidence: 0.9
-                )
-            ),
+            s118ReadyBatchRow(url: localURL),
             ImportBatchPreviewRow.iCloudPlaceholder(
                 url: cloudURL,
                 message: "iCloud placeholder 需要下载后才能导入"
-            ),
+            )
         ]
         let importer = S118RecordingBatchImporter()
         let model = ImportBatchCopyImportModel(
@@ -63,7 +48,7 @@ final class ImportBatchICloudPageIntegrationTests: XCTestCase {
                 suggestedCategory: "finance",
                 overrideFilename: "Invoice_2026Q1.pdf",
                 duplicateStrategy: .ask
-            ),
+            )
         ])
     }
 
@@ -71,7 +56,7 @@ final class ImportBatchICloudPageIntegrationTests: XCTestCase {
     func testS118AllICloudPendingStillBlocksImport() {
         let cloudURLs = [
             URL(fileURLWithPath: "/tmp/iCloudOnlyA.pdf.icloud"),
-            URL(fileURLWithPath: "/tmp/iCloudOnlyB.pdf.icloud"),
+            URL(fileURLWithPath: "/tmp/iCloudOnlyB.pdf.icloud")
         ]
         let request = ImportEntryRequest(
             repoPath: "/tmp/repo",

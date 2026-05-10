@@ -10,7 +10,7 @@ struct ImportResultView: View {
     let onConfirmExport: () -> Void
     let onCancelExport: () -> Void
 
-    @State private var filter: ImportResultRouteState.Item.Status?
+    @State private var filter: ImportResultRouteState.ItemStatus?
     @State private var selectedItemID: ImportResultRouteState.Item.ID?
 
     var body: some View {
@@ -22,10 +22,10 @@ struct ImportResultView: View {
                 .accessibilityLabel(state.summaryText)
 
             Picker("Filter", selection: $filter) {
-                Text("All").tag(ImportResultRouteState.Item.Status?.none)
-                Text("Imported").tag(ImportResultRouteState.Item.Status?.some(.imported))
-                Text("Skipped").tag(ImportResultRouteState.Item.Status?.some(.skipped))
-                Text("Failed").tag(ImportResultRouteState.Item.Status?.some(.failed))
+                Text("All").tag(ImportResultRouteState.ItemStatus?.none)
+                Text("Imported").tag(ImportResultRouteState.ItemStatus?.some(.imported))
+                Text("Skipped").tag(ImportResultRouteState.ItemStatus?.some(.skipped))
+                Text("Failed").tag(ImportResultRouteState.ItemStatus?.some(.failed))
             }
             .pickerStyle(.segmented)
             .labelsHidden()
@@ -90,7 +90,12 @@ struct ImportResultView: View {
             Button("Export Details...", action: onConfirmExport)
             Button("Cancel", role: .cancel, action: onCancelExport)
         } message: {
-            Text("The export contains result rows, error codes, and redacted paths. It does not include user file contents or upload data.")
+            Text(
+                [
+                    "The export contains result rows, error codes, and redacted paths.",
+                    "It does not include user file contents or upload data."
+                ].joined(separator: " ")
+            )
         }
         .task(id: state.sourceOpening.config.repoPath) {
             onLoadChangeLog()
@@ -129,11 +134,11 @@ struct ImportResultView: View {
         switch state.exportState {
         case .idle, .confirmingPrivacy:
             EmptyView()
-        case .exported(let path):
+        case let .exported(path):
             Text("Exported details to \(path)")
                 .font(.caption)
                 .foregroundStyle(.secondary)
-        case .failed(let message):
+        case let .failed(message):
             Label(message, systemImage: "exclamationmark.triangle")
                 .font(.caption)
                 .foregroundStyle(.red)
@@ -150,7 +155,6 @@ struct ImportResultView: View {
         return category.isEmpty ? "repo root" : category
     }
 
-    @ViewBuilder
     private var changeLogSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
@@ -175,7 +179,7 @@ struct ImportResultView: View {
                 Text("Loading import log from Core...")
                     .foregroundStyle(.secondary)
             }
-        case .loaded(let entries):
+        case let .loaded(entries):
             if entries.isEmpty {
                 Text("No imported change_log rows returned for this repository.")
                     .foregroundStyle(.secondary)
@@ -200,7 +204,7 @@ struct ImportResultView: View {
                 }
                 .frame(minHeight: 150, idealHeight: 180)
             }
-        case .failed(let mapping):
+        case let .failed(mapping):
             VStack(alignment: .leading, spacing: 4) {
                 Label(mapping.userMessage, systemImage: "exclamationmark.triangle")
                     .foregroundStyle(.red)
@@ -252,15 +256,15 @@ private struct ImportErrorDetailView: View {
     }
 }
 
-private extension ImportResultRouteState.Item.Status {
+private extension ImportResultRouteState.ItemStatus {
     var detailSystemImage: String {
         switch self {
         case .imported:
-            return "checkmark.circle"
+            "checkmark.circle"
         case .skipped, .pending:
-            return "clock"
+            "clock"
         case .failed:
-            return "exclamationmark.triangle"
+            "exclamationmark.triangle"
         }
     }
 }

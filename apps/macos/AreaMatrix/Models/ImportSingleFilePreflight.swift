@@ -10,66 +10,65 @@ protocol ICloudPlaceholderDownloading: Sendable {
     func downloadPlaceholder(at sourceURL: URL) async throws
 }
 
-struct ImportSingleFilePreflightRequest: Equatable, Sendable {
+struct ImportSingleFilePreflightRequest: Equatable {
     var repoPath: String
     var sourceURL: URL
     var category: String
     var targetFilename: String
 }
 
-struct ImportSingleFilePreflightResult: Equatable, Sendable {
+struct ImportSingleFilePreflightResult: Equatable {
     var sourceSizeBytes: Int64?
-    var sourceModifiedAt: Int64? = nil
+    var sourceModifiedAt: Int64?
     var hashSha256: String?
     var targetRelativePath: String
     var conflict: ImportSingleFileConflict
-    var keepBothTargetRelativePath: String? = nil
+    var keepBothTargetRelativePath: String?
     var existingPaths: Set<String> = []
-    var existingFile: FileEntrySnapshot? = nil
+    var existingFile: FileEntrySnapshot?
 
     var statusMessage: String {
         switch conflict {
         case .none:
-            return "hash 预检完成；未发现内容重复。"
-        case .invalidFilename(let message):
-            return message
-        case .name(let path):
-            return "目标目录中已经存在同名文件，但内容不同：\(path)"
-        case .duplicate(let path):
-            return "hash 重复：\(path)"
+            "hash 预检完成；未发现内容重复。"
+        case let .invalidFilename(message):
+            message
+        case let .name(path):
+            "目标目录中已经存在同名文件，但内容不同：\(path)"
+        case let .duplicate(path):
+            "hash 重复：\(path)"
         case .iCloudPlaceholder:
-            return "文件尚未从 iCloud 下载。需要下载后才能导入或计算 hash。"
-        case .iCloudDownloadFailed(_, let reason):
-            return "iCloud 下载失败：\(reason)"
-        case .corePreviewUnavailable(let message):
-            return message
-        case .sourceUnavailable(let message), .error(let message):
-            return message
+            "文件尚未从 iCloud 下载。需要下载后才能导入或计算 hash。"
+        case let .iCloudDownloadFailed(_, reason):
+            "iCloud 下载失败：\(reason)"
+        case let .corePreviewUnavailable(message):
+            message
+        case let .sourceUnavailable(message), let .error(message):
+            message
         }
     }
 
     func importBlockingReason() -> String? {
         switch conflict {
         case .none:
-            return nil
-        case .invalidFilename(let message):
-            return message
+            nil
+        case let .invalidFilename(message):
+            message
         case .name, .duplicate:
-            return ImportSingleFileConflictPage(conflict: conflict)?.blockingReason ?? "请先完成冲突处理"
+            ImportSingleFileConflictPage(conflict: conflict)?.blockingReason ?? "请先完成冲突处理"
         case .iCloudPlaceholder:
-            return "iCloud placeholder 需要下载后才能导入"
+            "iCloud placeholder 需要下载后才能导入"
         case .iCloudDownloadFailed:
-            return "iCloud 下载失败后请重试下载或切换本地资料库"
-        case .corePreviewUnavailable(let message):
-            return message
-        case .sourceUnavailable(let message), .error(let message):
-            return message
+            "iCloud 下载失败后请重试下载或切换本地资料库"
+        case let .corePreviewUnavailable(message):
+            message
+        case let .sourceUnavailable(message), let .error(message):
+            message
         }
     }
-
 }
 
-enum ImportSingleFilePreflightStatus: Equatable, Sendable {
+enum ImportSingleFilePreflightStatus: Equatable {
     case idle
     case checking(String)
     case ready(ImportSingleFilePreflightResult)
@@ -83,27 +82,27 @@ enum ImportSingleFilePreflightStatus: Equatable, Sendable {
     var message: String? {
         switch self {
         case .idle:
-            return nil
-        case .checking(let message):
-            return message
-        case .ready(let result), .blocked(let result):
-            return result.statusMessage
+            nil
+        case let .checking(message):
+            message
+        case let .ready(result), let .blocked(result):
+            result.statusMessage
         }
     }
 
     func importBlockingReason() -> String? {
         switch self {
         case .idle:
-            return "导入预检未开始"
+            "导入预检未开始"
         case .checking:
-            return "Checking duplicate..."
-        case .ready(let result), .blocked(let result):
-            return result.importBlockingReason()
+            "Checking duplicate..."
+        case let .ready(result), let .blocked(result):
+            result.importBlockingReason()
         }
     }
 }
 
-enum ImportSingleFileConflict: Equatable, Sendable {
+enum ImportSingleFileConflict: Equatable {
     case none
     case invalidFilename(String)
     case name(path: String)
@@ -113,10 +112,9 @@ enum ImportSingleFileConflict: Equatable, Sendable {
     case corePreviewUnavailable(String)
     case sourceUnavailable(String)
     case error(String)
-
 }
 
-enum ImportSingleFileConflictPage: Equatable, Sendable {
+enum ImportSingleFileConflictPage: Equatable {
     case duplicate
     case name
 
@@ -135,27 +133,27 @@ enum ImportSingleFileConflictPage: Equatable, Sendable {
     var routeLabel: String {
         switch self {
         case .duplicate:
-            return "S1-22 conflict-duplicate"
+            "S1-22 conflict-duplicate"
         case .name:
-            return "S1-23 conflict-name"
+            "S1-23 conflict-name"
         }
     }
 
     var title: String {
         switch self {
         case .duplicate:
-            return "冲突：内容重复"
+            "冲突：内容重复"
         case .name:
-            return "冲突：目标位置已有同名文件"
+            "冲突：目标位置已有同名文件"
         }
     }
 
     var summary: String {
         switch self {
         case .duplicate:
-            return "资料库中已存在相同内容的文件。请先进入冲突处理区域决定后续策略。"
+            "资料库中已存在相同内容的文件。请先进入冲突处理区域决定后续策略。"
         case .name:
-            return "目标目录中已经存在同名文件，但内容不同。"
+            "目标目录中已经存在同名文件，但内容不同。"
         }
     }
 
@@ -164,13 +162,13 @@ enum ImportSingleFileConflictPage: Equatable, Sendable {
     }
 }
 
-struct ImportSingleFileReplaceConfirmationContext: Equatable, Identifiable, Sendable {
+struct SingleFileReplaceConfirmationContext: Equatable, Identifiable {
     var existingPath: String
-    var existingSizeBytes: Int64? = nil
-    var existingModifiedAt: Int64? = nil
+    var existingSizeBytes: Int64?
+    var existingModifiedAt: Int64?
     var incomingPath: String
     var incomingSizeBytes: Int64?
-    var incomingModifiedAt: Int64? = nil
+    var incomingModifiedAt: Int64?
     var targetRelativePath: String
     var isTrashAvailable: Bool
 
@@ -178,20 +176,20 @@ struct ImportSingleFileReplaceConfirmationContext: Equatable, Identifiable, Send
         "\(existingPath)|\(incomingPath)|\(targetRelativePath)"
     }
 
-    func decision(understandsReplace: Bool) -> ImportSingleFileReplaceConfirmationDecision {
-        ImportSingleFileReplaceConfirmationDecision(
+    func decision(understandsReplace: Bool) -> SingleFileReplaceConfirmationDecision {
+        SingleFileReplaceConfirmationDecision(
             context: self,
             understandsReplace: understandsReplace
         )
     }
 }
 
-struct ImportSingleFileReplaceConfirmationDecision: Equatable, Sendable {
-    var context: ImportSingleFileReplaceConfirmationContext
+struct SingleFileReplaceConfirmationDecision: Equatable {
+    var context: SingleFileReplaceConfirmationContext
     var understandsReplace: Bool
 }
 
-enum ImportSingleFileReplaceOptionVisibility: Equatable, Sendable {
+enum ImportSingleFileReplaceOptionVisibility: Equatable {
     case hidden
     case enabled
     case disabled
@@ -199,22 +197,22 @@ enum ImportSingleFileReplaceOptionVisibility: Equatable, Sendable {
     var label: String {
         switch self {
         case .hidden:
-            return "Replace hidden"
+            "Replace hidden"
         case .enabled:
-            return "Replace available"
+            "Replace available"
         case .disabled:
-            return "Replace requires system Trash"
+            "Replace requires system Trash"
         }
     }
 
     var blockingReason: String {
         switch self {
         case .hidden:
-            return "Replace disabled by advanced settings"
+            "Replace disabled by advanced settings"
         case .enabled:
-            return "Replace 必须先进入二次确认"
+            "Replace 必须先进入二次确认"
         case .disabled:
-            return "Replace requires system Trash"
+            "Replace requires system Trash"
         }
     }
 }
@@ -231,7 +229,8 @@ struct CoreImportSingleFilePreflight: ImportSingleFilePreflighting {
     ) async -> ImportSingleFilePreflightResult {
         do {
             let source = try SourcePreflightSnapshot.inspect(sourceURL: request.sourceURL)
-            if let validationMessage = ImportSingleFileFilenameValidator.validationMessage(for: request.targetFilename) {
+            if let validationMessage = ImportSingleFileFilenameValidator
+                .validationMessage(for: request.targetFilename) {
                 return blockedResult(
                     request: request,
                     sourceSizeBytes: source.sizeBytes,
@@ -355,17 +354,16 @@ struct CoreImportSingleFilePreflight: ImportSingleFilePreflighting {
         }
 
         switch coreError {
-        case .Io(let message), .Db(let message), .Internal(let message):
+        case let .Io(message), let .Db(message), let .Internal(message):
             return message
-        case .Config(let reason), .Classify(let reason):
+        case let .Config(reason), let .Classify(reason):
             return reason
-        case .Conflict(let path), .DuplicateFile(let path), .FileNotFound(let path),
-             .RepoNotInitialized(let path), .InvalidPath(let path), .ICloudPlaceholder(let path),
-             .PermissionDenied(let path):
+        case let .Conflict(path), let .DuplicateFile(path), let .FileNotFound(path),
+             let .RepoNotInitialized(path), let .InvalidPath(path), let .ICloudPlaceholder(path),
+             let .PermissionDenied(path):
             return path
         }
     }
-
 }
 
 enum ImportSingleFileFilenameValidator {
@@ -424,7 +422,7 @@ private struct SourcePreflightSnapshot {
         let values = try sourceURL.resourceValues(forKeys: [
             .fileSizeKey,
             .isRegularFileKey,
-            .contentModificationDateKey,
+            .contentModificationDateKey
         ])
         guard values.isRegularFile == true else {
             throw ImportSingleFilePreflightError(
@@ -461,7 +459,7 @@ enum ImportSingleFilePreflightTarget {
             return true
         }
         guard let values = try? url.resourceValues(forKeys: [
-            .isUbiquitousItemKey, .ubiquitousItemDownloadingStatusKey,
+            .isUbiquitousItemKey, .ubiquitousItemDownloadingStatusKey
         ]) else {
             return false
         }

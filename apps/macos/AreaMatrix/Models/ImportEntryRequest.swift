@@ -1,24 +1,24 @@
 import Foundation
 
-enum ImportEntrySource: Equatable, Sendable {
+enum ImportEntrySource: Equatable {
     case filePicker
     case dropZone
     case dockOpenFile
 }
 
-enum ImportEntryDestination: Equatable, Sendable {
+enum ImportEntryDestination: Equatable {
     case autoClassify
     case category(String)
     case repositoryRoot
 }
 
-enum ImportEntryKind: Equatable, Sendable {
+enum ImportEntryKind: Equatable {
     case singleFile
     case multipleItems(Int)
     case folder
 }
 
-struct ImportEntryRequest: Equatable, Sendable, Identifiable {
+struct ImportEntryRequest: Equatable, Identifiable {
     let id: UUID
     let repoPath: String
     let source: ImportEntrySource
@@ -57,25 +57,24 @@ struct ImportEntryRequest: Equatable, Sendable, Identifiable {
     var sheetTitle: String {
         switch kind {
         case .folder:
-            return "Import folder"
+            "Import folder"
         case .singleFile:
-            return "导入 1 个文件"
-        case .multipleItems(let count):
-            return "导入 \(count) 个文件"
+            "导入 1 个文件"
+        case let .multipleItems(count):
+            "导入 \(count) 个文件"
         }
     }
 
     var destinationLabel: String {
         switch destination {
         case .autoClassify:
-            return "Auto classify"
-        case .category(let slug):
-            return slug
+            "Auto classify"
+        case let .category(slug):
+            slug
         case .repositoryRoot:
-            return "Repo root"
+            "Repo root"
         }
     }
-
 }
 
 extension ImportEntryKind {
@@ -94,11 +93,11 @@ extension ImportEntryKind {
     var dropHoverTitle: String {
         switch self {
         case .folder:
-            return "Drop folder to import recursively"
+            "Drop folder to import recursively"
         case .singleFile:
-            return "Drop files to import"
-        case .multipleItems(let count):
-            return "Drop \(count) files to import"
+            "Drop files to import"
+        case let .multipleItems(count):
+            "Drop \(count) files to import"
         }
     }
 

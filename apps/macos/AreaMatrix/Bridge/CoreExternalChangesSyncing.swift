@@ -1,14 +1,17 @@
 import Foundation
 
 protocol CoreExternalChangesSyncing: Sendable {
-    func syncExternalCreated(repoPath: String, relativePath: String, fsEventID: Int64) async throws -> SyncResultSnapshot
-    func syncExternalRenamed(repoPath: String, relativePath: String, fsEventID: Int64) async throws -> SyncResultSnapshot
-    func syncExternalRemoved(repoPath: String, relativePath: String, fsEventID: Int64) async throws -> SyncResultSnapshot
+    func syncExternalCreated(repoPath: String, relativePath: String, fsEventID: Int64) async throws
+        -> SyncResultSnapshot
+    func syncExternalRenamed(repoPath: String, relativePath: String, fsEventID: Int64) async throws
+        -> SyncResultSnapshot
+    func syncExternalRemoved(repoPath: String, relativePath: String, fsEventID: Int64) async throws
+        -> SyncResultSnapshot
     func getFSEventCursor(repoPath: String) async throws -> Int64?
     func setFSEventCursor(repoPath: String, lastEventID: Int64) async throws
 }
 
-struct SyncResultSnapshot: Equatable, Sendable {
+struct SyncResultSnapshot: Equatable {
     var detectedCreates: Int64
     var detectedRenames: Int64
     var detectedDeletes: Int64
@@ -17,16 +20,34 @@ struct SyncResultSnapshot: Equatable, Sendable {
 }
 
 extension CoreBridge: CoreExternalChangesSyncing {
-    func syncExternalCreated(repoPath: String, relativePath: String, fsEventID: Int64) async throws -> SyncResultSnapshot {
-        try await syncExternalChange(repoPath: repoPath, relativePath: relativePath, kind: .created, fsEventID: fsEventID)
+    func syncExternalCreated(repoPath: String, relativePath: String,
+                             fsEventID: Int64) async throws -> SyncResultSnapshot {
+        try await syncExternalChange(
+            repoPath: repoPath,
+            relativePath: relativePath,
+            kind: .created,
+            fsEventID: fsEventID
+        )
     }
 
-    func syncExternalRenamed(repoPath: String, relativePath: String, fsEventID: Int64) async throws -> SyncResultSnapshot {
-        try await syncExternalChange(repoPath: repoPath, relativePath: relativePath, kind: .renamed, fsEventID: fsEventID)
+    func syncExternalRenamed(repoPath: String, relativePath: String,
+                             fsEventID: Int64) async throws -> SyncResultSnapshot {
+        try await syncExternalChange(
+            repoPath: repoPath,
+            relativePath: relativePath,
+            kind: .renamed,
+            fsEventID: fsEventID
+        )
     }
 
-    func syncExternalRemoved(repoPath: String, relativePath: String, fsEventID: Int64) async throws -> SyncResultSnapshot {
-        try await syncExternalChange(repoPath: repoPath, relativePath: relativePath, kind: .removed, fsEventID: fsEventID)
+    func syncExternalRemoved(repoPath: String, relativePath: String,
+                             fsEventID: Int64) async throws -> SyncResultSnapshot {
+        try await syncExternalChange(
+            repoPath: repoPath,
+            relativePath: relativePath,
+            kind: .removed,
+            fsEventID: fsEventID
+        )
     }
 
     func getFSEventCursor(repoPath: String) async throws -> Int64? {

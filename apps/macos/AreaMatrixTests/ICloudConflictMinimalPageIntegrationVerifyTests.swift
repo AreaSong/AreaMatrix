@@ -1,7 +1,7 @@
-import XCTest
 @testable import AreaMatrix
+import XCTest
 
-final class ICloudConflictMinimalPageIntegrationVerifyTests: XCTestCase {
+final class ICloudConflictMinimalIntegrationTests: XCTestCase {
     private static let declaredCapabilities: Set<String> = ["C1-01", "C1-21"]
 
     func testS125PageIntegrationUsesOnlyDeclaredControlMapCapabilities() {
@@ -31,8 +31,8 @@ final class ICloudConflictMinimalPageIntegrationVerifyTests: XCTestCase {
         XCTAssertNil(model.statusBanner)
 
         model.beginICloudConflictResolution(fileID: conflictFile.id)
-        let body = makeICloudConflictSheetBody(
-            model: await makeReadyICloudConflictModel(),
+        let body = await makeICloudConflictSheetBody(
+            model: makeReadyICloudConflictModel(),
             resolutionState: model.iCloudConflictResolutionState,
             resolutionCapability: productionResolver.iCloudConflictResolutionCapability,
             isTrashAvailable: true
@@ -69,8 +69,8 @@ final class ICloudConflictMinimalPageIntegrationVerifyTests: XCTestCase {
 
         model.beginICloudConflictResolution(fileID: conflictFile.id)
         await model.applyKeepBothICloudConflict(fileID: conflictFile.id)
-        let failedBody = makeICloudConflictSheetBody(
-            model: await makeReadyICloudConflictModel(),
+        let failedBody = await makeICloudConflictSheetBody(
+            model: makeReadyICloudConflictModel(),
             resolutionState: model.iCloudConflictResolutionState,
             resolutionCapability: CoreBridge().iCloudConflictResolutionCapability,
             isTrashAvailable: true
@@ -102,14 +102,17 @@ final class ICloudConflictMinimalPageIntegrationVerifyTests: XCTestCase {
         XCTAssertEqual(ICloudConflictResolutionStrategy.allCases, [
             .keepBoth,
             .keepOriginalOnly,
-            .keepConflictedCopyOnly,
+            .keepConflictedCopyOnly
         ])
         XCTAssertEqual(ICloudConflictResolutionStrategy.allCases.map(\.title), [
             "保留两份（推荐）",
             "仅保留第一份（把另一份移到回收站）",
-            "仅保留第二份（把另一份移到回收站）",
+            "仅保留第二份（把另一份移到回收站）"
         ])
-        XCTAssertEqual(ICloudConflictResolutionStrategy.keepOriginalOnly.actionTitle, "Move other version to Trash and Apply")
+        XCTAssertEqual(
+            ICloudConflictResolutionStrategy.keepOriginalOnly.actionTitle,
+            "Move other version to Trash and Apply"
+        )
         XCTAssertTrue(ICloudConflictResolutionStrategy.keepOriginalOnly.requiresSecondConfirmation)
         XCTAssertTrue(body.contains("Single-version resolution requires system Trash"))
         XCTAssertTrue(body.contains("requires Core support to clear conflict state and write change_log"))

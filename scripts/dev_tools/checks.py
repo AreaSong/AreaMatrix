@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import os
 import re
+import shutil
+import subprocess
 from pathlib import Path
 
 from .build import run_core_build
-from .common import fail, project_root, require_command, run_step
+from .common import fail, project_root, require_command, require_file, run_step
 from .macos import run_macos_tests
 from .skills import SimpleYAMLError, parse_frontmatter, parse_simple_yaml
 
@@ -289,14 +291,77 @@ def _run_core_checks(root: Path) -> int:
     return 0
 
 
+def _swiftformat_lint_args(root: Path) -> list[str | Path]:
+    config = root / "scripts/dev_tools/swiftformat.conf"
+    require_file(config, "SwiftFormat configuration")
+    generated_excludes = "AreaMatrix/Bridge/Generated,AreaMatrix/Bridge/UniFFI"
+    return [
+        "swiftformat",
+        "--lint",
+        ".",
+        "--config",
+        config,
+        "--exclude",
+        generated_excludes,
+        "--cache",
+        "ignore",
+    ]
+
+
+def _swiftlint_lint_args(root: Path) -> list[str | Path]:
+    config = root / "scripts/dev_tools/swiftlint.yml"
+    require_file(config, "SwiftLint configuration")
+    return ["swiftlint", "lint", "--strict", "--config", config, "--force-exclude", ".", "--no-cache"]
+
+
 def _run_swift_checks(root: Path) -> int:
     macos_dir = root / "apps/macos"
     require_command("swiftformat")
     require_command("swiftlint")
-    for argv in [["swiftformat", "--lint", "."], ["swiftlint", "--strict"]]:
+    for argv in [_swiftformat_lint_args(root), _swiftlint_lint_args(root)]:
         proc = run_step(argv, cwd=macos_dir, check=False)
         if proc.returncode != 0:
             return proc.returncode
+    return 0
+
+
+def _missing_macos_rust_targets() -> list[str]:
+    required_targets = ["aarch64-apple-darwin", "x86_64-apple-darwin"]
+    if shutil.which("rustup") is None:
+        return []
+    proc = subprocess.run(
+        ["rustup", "target", "list", "--installed"],
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+    if proc.returncode != 0:
+        print("ERROR: unable to list installed Rust targets.", file=os.sys.stderr)
+        if proc.stderr.strip():
+            print(proc.stderr.strip(), file=os.sys.stderr)
+        return required_targets
+    installed = {line.strip() for line in proc.stdout.splitlines()}
+    return [target for target in required_targets if target not in installed]
+
+
+def _run_macos_prerequisites_check() -> int:
+    failures = FailureCollector()
+    missing_targets = _missing_macos_rust_targets()
+    for target in missing_targets:
+        failures.fail(f"missing Rust target '{target}'; install with: rustup target add {target}")
+
+    for tool in ["swiftformat", "swiftlint"]:
+        if shutil.which(tool) is None:
+            failures.fail(f"missing command '{tool}' in PATH; install it before running macOS checks")
+
+    if failures.count:
+        print(
+            f"macOS prerequisite check: FAILED ({failures.count} issue(s))",
+            file=os.sys.stderr,
+        )
+        return 1
+    print("macOS prerequisite check: OK")
     return 0
 
 
@@ -309,7 +374,11 @@ def _run_macos_checks(root: Path) -> int:
         print(f"    {macos_dir} does not exist yet.")
         return 0
     if macos_project.is_dir():
-        rc = run_core_build(root)
+        rc = _run_macos_prerequisites_check()
+        if rc != 0:
+            return rc
+        out_dir = Path(os.environ.get("AREAMATRIX_CHECK_CORE_OUT_DIR", "/private/tmp/areamatrix-check-all/Bridge/UniFFI"))
+        rc = run_core_build(root, out_dir=out_dir)
         if rc != 0:
             return rc
         rc = run_macos_tests(root)

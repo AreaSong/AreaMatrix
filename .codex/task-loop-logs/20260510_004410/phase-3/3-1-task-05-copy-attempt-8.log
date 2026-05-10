@@ -1,0 +1,59 @@
+一、执行结论：**未完成**
+
+本次修复把发布证据和阻断原因收敛得更明确，但 `3-1/task-05` 仍不能通过。原因不是产品路径继续被 mock，而是 Stage 1 最终发布门禁仍缺真实 release 证据，且 `./dev check all` 仍失败。
+
+二、执行范围
+
+单任务：`3-1/task-05`
+
+修改/新增范围：
+- [stage-1-release-checklist.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-release-checklist.md:11)：明确 Stage 1 alpha 不放行、记录 P1 blockers。
+- [stage-1-performance-baseline.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-performance-baseline.md:11)：更新 hostless Swift perf 指标，同时保留真实 `.app` launch BLOCKED。
+- [build.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/build.md:295)：补 macOS universal build / Swift tooling 缺失排障。
+- [stage1_release_checklist.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/stage1_release_checklist.rs:70)：锁定 release checklist 不得伪装 PASS。
+- `scripts/dev_tools/build.py`、`scripts/dev_tools/checks.py`、`scripts/dev_tools/test_build_tools.py`、`scripts/task_loop/self_check.py`：补工具链前置检查、UniFFI fallback、回归测试和 self-check 稳定性。
+- `.codex/task-loop-*`、`tasks/prompts/_shared/progress.json`：task-loop 运行证据/进度状态有更新。
+
+三、完成情况
+
+核对清单结果：
+- Exact Docs 已读取并交叉核对：通过。
+- Real Core 页面真实 wiring：部分通过；Swift 默认路径使用真实 `CoreBridge()`，但 release 级真实 `.app` 首屏证据仍缺失。
+- Phase 1 Core / Phase 2 UI integration verify：不通过；自动化证据较完整，但 macOS prerequisite gate 和 release 手工证据未闭环。
+- `3-1/task-01` 到 `3-1/task-04` 证据：不通过；[recovery-scenarios.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/recovery-scenarios.md:57) 中 M-01..M-04 仍是 `pending`。
+- 最终自动化综合门禁：不通过；`./dev check all` 失败。
+- 发现缺口时判定不通过：通过。
+- Forbidden Touches：未触碰；`core/src/**`、`core/area_matrix.udl`、`apps/macos/AreaMatrix/**`、Xcode project 均无 diff/status 输出。
+
+完成标准结果：
+- 文档交叉验收已完成。
+- `./dev check all` 未通过。
+- P1 blockers 未关闭：[stage-1-release-checklist.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-release-checklist.md:64) 仍列 P1-RL-001..005。
+- task-loop 当前仍是 stale in-progress：`3-1/task-05 attempt=8`，无活跃 lock，copy/verify log missing for attempt 8。
+
+四、工程质量
+
+当前修复没有补产品实现，也没有触碰禁止路径。新增/调整的是发布证据、开发工具前置检查和回归测试；没有把 mock、fixture、硬编码通过态当作 release PASS。阻断项被明确写成“不放行”，并由 Rust 测试锁住。
+
+五、验证情况
+
+已运行：
+- `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`：通过，`tasks: 637`，`manifests: 637`。
+- `git diff --check`：通过。
+- `PYTHONPYCACHEPREFIX=/private/tmp/areamatrix-pycache python3 -m py_compile scripts/dev_tools/*.py scripts/task_loop/*.py`：通过。
+- `PYTHONPYCACHEPREFIX=/private/tmp/areamatrix-pycache python3 -m unittest scripts.dev_tools.test_build_tools`：通过，7 tests OK。
+- `cd core && cargo test --workspace --test stage1_release_checklist`：通过，8 tests OK。
+- `./dev check all`：失败；governance、skills、task-loop、doctor、diff、Rust fmt/clippy/test 均通过，macOS checks 因缺 `x86_64-apple-darwin`、`swiftformat`、`swiftlint` 失败。
+- `./task-loop status`：stale in-progress，`3-1/task-05` 未闭环。
+
+六、风险与后续
+
+剩余阻断：
+- 真实 Release `.app` 启动到首屏证据缺失。
+- M-01..M-04 手工恢复冒烟 pending。
+- Developer ID 签名、公证、DMG、干净 Mac 首启缺证据。
+- CHANGELOG / tag / release notes 未完成。
+- 当前环境缺 macOS release 工具链依赖，`./dev check all` 无法完整通过。
+- task-loop 运行态仍需恢复或清理 stale attempt。
+
+建议下一个动作：不要继续在 `3-1/task-05` 内补产品实现；先在可联网、Rustup/Homebrew 可写、具备真实 macOS 桌面会话的环境补齐工具链并采集 release/manual 证据，再 resume 当前 stale task 进入下一轮 verify。

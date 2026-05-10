@@ -1,5 +1,5 @@
-import Foundation
 @testable import AreaMatrix
+import Foundation
 
 enum RepositorySettingsLoaderResult {
     case success(RepoConfigSnapshot)
@@ -18,14 +18,16 @@ actor RepositorySettingsRecordingLoader: CoreConfigurationLoading {
         paths.append(repoPath)
         let result = results.isEmpty ? .failure(CoreError.Internal(message: "missing config")) : results.removeFirst()
         switch result {
-        case .success(let config):
+        case let .success(config):
             return config
-        case .failure(let error):
+        case let .failure(error):
             throw error
         }
     }
 
-    func requestedPaths() -> [String] { paths }
+    func requestedPaths() -> [String] {
+        paths
+    }
 }
 
 enum RepositorySettingsUpdateResult {
@@ -51,12 +53,14 @@ actor RepositorySettingsRecordingUpdater: CoreConfigurationUpdating {
         switch result {
         case .success:
             return
-        case .failure(let error):
+        case let .failure(error):
             throw error
         }
     }
 
-    func requests() -> [Request] { recordedRequests }
+    func requests() -> [Request] {
+        recordedRequests
+    }
 }
 
 enum RepositorySettingsMetadataResult {
@@ -64,22 +68,22 @@ enum RepositorySettingsMetadataResult {
     case failure(Error)
 }
 
-actor RepositorySettingsRecordingMetadataReader: ExistingRepositoryMetadataReading {
+actor RepoSettingsMetadataReader: ExistingRepositoryMetadataReading {
     private var results: [RepositorySettingsMetadataResult]
 
     init(results: [RepositorySettingsMetadataResult]) {
         self.results = results
     }
 
-    func metadata(repoPath: String) async throws -> ExistingRepositoryMetadataSnapshot {
+    func metadata(repoPath _: String) async throws -> ExistingRepositoryMetadataSnapshot {
         guard !results.isEmpty else {
             throw CoreError.Internal(message: "missing metadata test result")
         }
 
         switch results.removeFirst() {
-        case .success(let snapshot):
+        case let .success(snapshot):
             return snapshot
-        case .failure(let error):
+        case let .failure(error):
             throw error
         }
     }
@@ -90,30 +94,30 @@ enum RepositorySettingsOpeningResult {
     case failure(Error)
 }
 
-actor RepositorySettingsRecordingRepositoryOpener: CoreEmptyRepositoryOpening {
+actor RepoSettingsRepositoryOpener: CoreEmptyRepositoryOpening {
     private let result: RepositorySettingsOpeningResult
 
     init(result: RepositorySettingsOpeningResult) {
         self.result = result
     }
 
-    func openConfiguredRepository(repoPath: String) async throws -> RepositoryOpeningResult {
+    func openConfiguredRepository(repoPath _: String) async throws -> RepositoryOpeningResult {
         try resolve()
     }
 
-    func openEmptyRepository(repoPath: String) async throws -> RepositoryOpeningResult {
+    func openEmptyRepository(repoPath _: String) async throws -> RepositoryOpeningResult {
         try resolve()
     }
 
-    func openAdoptedRepository(repoPath: String) async throws -> RepositoryOpeningResult {
+    func openAdoptedRepository(repoPath _: String) async throws -> RepositoryOpeningResult {
         try resolve()
     }
 
     private func resolve() throws -> RepositoryOpeningResult {
         switch result {
-        case .success(let opening):
+        case let .success(opening):
             return opening
-        case .failure(let error):
+        case let .failure(error):
             throw error
         }
     }
@@ -124,18 +128,18 @@ enum RepositorySettingsScanSessionResult {
     case failure(Error)
 }
 
-actor RepositorySettingsRecordingScanSessionReader: CoreScanSessionReading {
+actor RepoSettingsScanSessionReader: CoreScanSessionReading {
     private let result: RepositorySettingsScanSessionResult
 
     init(result: RepositorySettingsScanSessionResult) {
         self.result = result
     }
 
-    func latestScanSession(repoPath: String) async throws -> ScanSessionSnapshot? {
+    func latestScanSession(repoPath _: String) async throws -> ScanSessionSnapshot? {
         switch result {
-        case .success(let session):
+        case let .success(session):
             return session
-        case .failure(let error):
+        case let .failure(error):
             throw error
         }
     }
@@ -170,7 +174,9 @@ actor RepositorySettingsStaticErrorMapper: CoreErrorMapping {
         )
     }
 
-    func mappedErrors() -> [CoreError] { errors }
+    func mappedErrors() -> [CoreError] {
+        errors
+    }
 }
 
 enum RepositorySettingsRevealResult {
@@ -197,7 +203,7 @@ final class RepositorySettingsRecordingFileRevealer: RepositoryFileRevealing {
         switch result {
         case .success:
             return
-        case .failure(let error):
+        case let .failure(error):
             throw error
         }
     }

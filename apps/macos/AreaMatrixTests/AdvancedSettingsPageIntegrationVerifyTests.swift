@@ -1,7 +1,7 @@
-import XCTest
 @testable import AreaMatrix
+import XCTest
 
-final class AdvancedSettingsPageIntegrationVerifyTests: XCTestCase {
+final class AdvancedSettingsIntegrationTests: XCTestCase {
     @MainActor
     func testS130PageIntegrationConnectsDeclaredCapabilitiesDiagnosticsLogsAndRecoveryExit() async throws {
         let context = try await makeS130IntegrationContext()
@@ -22,11 +22,7 @@ final class AdvancedSettingsPageIntegrationVerifyTests: XCTestCase {
         XCTAssertTrue(context.model.isReplaceConfirmationPending)
         await context.model.confirmAllowReplaceDuringImport()
 
-        let savedConfig = try await context.bridge.loadConfig(repoPath: context.repoURL.path)
-        let diagnosticsRepoPaths = await context.diagnosticsCollector.requestedRepoPaths()
-        XCTAssertEqual(savedConfig.overviewOutput, "RootAreaMatrixFile")
-        XCTAssertTrue(savedConfig.allowReplaceDuringImport)
-        XCTAssertFalse(FileManager.default.fileExists(atPath: context.rootOverviewURL.path))
+        try await assertS130SavedConfig(context)
 
         _ = try await context.bridge.importIndexedFile(
             repoPath: context.repoURL.path,
@@ -35,26 +31,7 @@ final class AdvancedSettingsPageIntegrationVerifyTests: XCTestCase {
             overrideFilename: "s130-source.txt"
         )
 
-        let rootOverview = try String(contentsOf: context.rootOverviewURL)
-        let generatedOverview = try String(contentsOf: context.generatedOverviewURL)
-        XCTAssertEqual(context.model.draft?.overviewOutput, .rootAreaMatrixFile)
-        XCTAssertEqual(context.model.draft?.allowReplaceDuringImport, true)
-        XCTAssertTrue(rootOverview.contains("AREAMATRIX:BEGIN"))
-        XCTAssertTrue(generatedOverview.contains("AREAMATRIX:BEGIN"))
-        XCTAssertEqual(try String(contentsOf: context.readmeURL), "user readme\n")
-        XCTAssertTrue(FileManager.default.fileExists(atPath: context.sourceURL.path))
-        XCTAssertEqual(context.model.versionInfo.appVersion, "9.8.7 (654)")
-        XCTAssertEqual(context.model.versionInfo.coreVersion, "0.1.0-test")
-        XCTAssertEqual(context.model.versionInfo.repoSchemaVersion, 1)
-        XCTAssertNil(context.model.versionError)
-        XCTAssertEqual(context.model.diagnosticsState, .collected(context.diagnosticsSnapshot))
-        XCTAssertEqual(diagnosticsRepoPaths, [context.repoURL.path])
-        XCTAssertEqual(context.logsOpener.openedRepoPaths, [context.repoURL.path])
-        XCTAssertEqual(context.summaryCopier.copiedSummaries.count, 1)
-        XCTAssertTrue(context.summaryCopier.copiedSummaries[0].contains("App version: 9.8.7 (654)"))
-        XCTAssertTrue(context.summaryCopier.copiedSummaries[0].contains("Core version: 0.1.0-test"))
-        XCTAssertTrue(context.summaryCopier.copiedSummaries[0].contains("Repo schema version: v1"))
-        XCTAssertTrue(context.summaryCopier.copiedSummaries[0].contains("Diagnostics exclude original file contents"))
+        try await assertS130DiagnosticsAndOverview(context)
 
         let opening = RepositoryOpeningResult.shellFixture(repoPath: context.repoURL.path, fileCount: 1)
         let recoverer = S130RecordingStartupRecoverer()
@@ -68,9 +45,7 @@ final class AdvancedSettingsPageIntegrationVerifyTests: XCTestCase {
         shell.openMainRepositoryRepair(repoPath: context.repoURL.path)
         let recoveryRequests = await recoverer.requestedRepoPaths()
 
-        XCTAssertEqual(shell.route, .dbRepairConfirm(DatabaseRepairRouteState(repoPath: context.repoURL.path, scanSession: nil, mapping: nil, returnRoute: .settingsGeneral(opening, selectedTab: "advanced"))))
-        XCTAssertEqual(shell.settingsGeneralSelectedTab, "advanced")
-        XCTAssertEqual(recoveryRequests, [])
+        assertS130RepairExit(shell: shell, opening: opening, context: context, recoveryRequests: recoveryRequests)
     }
 
     @MainActor
@@ -84,7 +59,7 @@ final class AdvancedSettingsPageIntegrationVerifyTests: XCTestCase {
 
         await model.load()
 
-        guard case .failed(let error) = model.loadState else {
+        guard case let .failed(error) = model.loadState else {
             return XCTFail("Expected S1-30 advanced settings load to fail through the error state")
         }
         XCTAssertEqual(error.message, "Unable to load advanced settings")
@@ -123,12 +98,69 @@ final class AdvancedSettingsPageIntegrationVerifyTests: XCTestCase {
         await model.collectDiagnostics()
 
         XCTAssertEqual(model.loadState, .loaded)
-        guard case .failed(let error) = model.diagnosticsState else {
+        guard case let .failed(error) = model.diagnosticsState else {
             return XCTFail("Expected diagnostics failure state")
         }
         XCTAssertEqual(error.message, "Diagnostics could not be exported")
         XCTAssertFalse(error.recovery.isEmpty)
     }
+}
+
+@MainActor
+private func assertS130SavedConfig(_ context: S130IntegrationContext) async throws {
+    let savedConfig = try await context.bridge.loadConfig(repoPath: context.repoURL.path)
+    XCTAssertEqual(savedConfig.overviewOutput, "RootAreaMatrixFile")
+    XCTAssertTrue(savedConfig.allowReplaceDuringImport)
+    XCTAssertFalse(FileManager.default.fileExists(atPath: context.rootOverviewURL.path))
+}
+
+@MainActor
+private func assertS130DiagnosticsAndOverview(_ context: S130IntegrationContext) async throws {
+    let diagnosticsRepoPaths = await context.diagnosticsCollector.requestedRepoPaths()
+    let rootOverview = try String(contentsOf: context.rootOverviewURL)
+    let generatedOverview = try String(contentsOf: context.generatedOverviewURL)
+    XCTAssertEqual(context.model.draft?.overviewOutput, .rootAreaMatrixFile)
+    XCTAssertEqual(context.model.draft?.allowReplaceDuringImport, true)
+    XCTAssertTrue(rootOverview.contains("AREAMATRIX:BEGIN"))
+    XCTAssertTrue(generatedOverview.contains("AREAMATRIX:BEGIN"))
+    XCTAssertEqual(try String(contentsOf: context.readmeURL), "user readme\n")
+    XCTAssertTrue(FileManager.default.fileExists(atPath: context.sourceURL.path))
+    XCTAssertEqual(context.model.versionInfo.appVersion, "9.8.7 (654)")
+    XCTAssertEqual(context.model.versionInfo.coreVersion, "0.1.0-test")
+    XCTAssertEqual(context.model.versionInfo.repoSchemaVersion, 1)
+    XCTAssertNil(context.model.versionError)
+    XCTAssertEqual(context.model.diagnosticsState, .collected(context.diagnosticsSnapshot))
+    XCTAssertEqual(diagnosticsRepoPaths, [context.repoURL.path])
+    XCTAssertEqual(context.logsOpener.openedRepoPaths, [context.repoURL.path])
+    assertS130CopiedSummary(context.summaryCopier.copiedSummaries)
+}
+
+private func assertS130CopiedSummary(_ copiedSummaries: [String]) {
+    XCTAssertEqual(copiedSummaries.count, 1)
+    XCTAssertTrue(copiedSummaries[0].contains("App version: 9.8.7 (654)"))
+    XCTAssertTrue(copiedSummaries[0].contains("Core version: 0.1.0-test"))
+    XCTAssertTrue(copiedSummaries[0].contains("Repo schema version: v1"))
+    XCTAssertTrue(copiedSummaries[0].contains("Diagnostics exclude original file contents"))
+}
+
+@MainActor
+private func assertS130RepairExit(
+    shell: OnboardingModel,
+    opening: RepositoryOpeningResult,
+    context: S130IntegrationContext,
+    recoveryRequests: [String]
+) {
+    XCTAssertEqual(
+        shell.route,
+        .dbRepairConfirm(DatabaseRepairRouteState(
+            repoPath: context.repoURL.path,
+            scanSession: nil,
+            mapping: nil,
+            returnRoute: .settingsGeneral(opening, selectedTab: "advanced")
+        ))
+    )
+    XCTAssertEqual(shell.settingsGeneralSelectedTab, "advanced")
+    XCTAssertEqual(recoveryRequests, [])
 }
 
 private struct S130IntegrationContext {
@@ -157,52 +189,23 @@ private func makeS130IntegrationContext() async throws -> S130IntegrationContext
         }
     }
 
-    let sourceRootURL = try s130TemporaryDirectory()
+    let (sourceRootURL, sourceURL) = try makeS130SourceFixture()
     cleanupURLs.append(sourceRootURL)
-    let sourceURL = sourceRootURL.appendingPathComponent("s130-source.txt")
-    try Data("s130 overview source".utf8).write(to: sourceURL)
 
     let bridge = CoreBridge()
     try await bridge.initializeEmptyRepository(repoPath: repoURL.path)
-    try FileManager.default.createDirectory(
-        at: repoURL
-            .appendingPathComponent(".areamatrix", isDirectory: true)
-            .appendingPathComponent("logs", isDirectory: true),
-        withIntermediateDirectories: true
-    )
-    let readmeURL = repoURL.appendingPathComponent("README.md")
-    try "user readme\n".write(to: readmeURL, atomically: true, encoding: .utf8)
+    let readmeURL = try makeS130RepositoryFiles(repoURL: repoURL)
 
     let diagnosticsSnapshot = DiagnosticsSnapshotSnapshot(
-        snapshotPath: repoURL
-            .appendingPathComponent(".areamatrix", isDirectory: true)
-            .appendingPathComponent("diagnostics", isDirectory: true)
-            .appendingPathComponent("s1-30.zip")
-            .path,
+        snapshotPath: s130DiagnosticsPath(repoURL: repoURL),
         createdAt: 1_778_000_000,
         warnings: ["paths redacted"]
     )
     let diagnosticsCollector = ShellRecordingDiagnosticsCollector(result: .success(diagnosticsSnapshot))
-    let logsOpener = S130RecordingLogsOpener(result: .success(
-        repoURL
-            .appendingPathComponent(".areamatrix", isDirectory: true)
-            .appendingPathComponent("logs", isDirectory: true)
-            .path
-    ))
+    let logsOpener = S130RecordingLogsOpener(result: .success(s130LogsPath(repoURL: repoURL)))
     let summaryCopier = S130RecordingDiagnosticSummaryCopier()
-    let model = AdvancedSettingsModel(
-        repoPath: repoURL.path,
-        loader: bridge,
-        updater: bridge,
-        rootOverviewInspector: LocalRootOverviewFileInspector(),
-        diagnosticsCollector: diagnosticsCollector,
-        appVersionReader: S130StaticAppVersionReader(version: "9.8.7 (654)"),
-        coreVersionReader: S130StaticCoreVersionReader(version: "0.1.0-test"),
-        metadataReader: SQLiteExistingRepositoryMetadataReader(),
-        logsOpener: logsOpener,
-        summaryCopier: summaryCopier,
-        errorMapper: bridge
-    )
+    let model = s130IntegrationModel(repoURL: repoURL, bridge: bridge, diagnosticsCollector: diagnosticsCollector,
+                                     logsOpener: logsOpener, summaryCopier: summaryCopier)
 
     didSucceed = true
     return S130IntegrationContext(
@@ -222,6 +225,59 @@ private func makeS130IntegrationContext() async throws -> S130IntegrationContext
         bridge: bridge,
         model: model
     )
+}
+
+private func makeS130SourceFixture() throws -> (rootURL: URL, sourceURL: URL) {
+    let sourceRootURL = try s130TemporaryDirectory()
+    let sourceURL = sourceRootURL.appendingPathComponent("s130-source.txt")
+    try Data("s130 overview source".utf8).write(to: sourceURL)
+    return (sourceRootURL, sourceURL)
+}
+
+private func makeS130RepositoryFiles(repoURL: URL) throws -> URL {
+    try FileManager.default.createDirectory(at: URL(fileURLWithPath: s130LogsPath(repoURL: repoURL)),
+                                            withIntermediateDirectories: true)
+    let readmeURL = repoURL.appendingPathComponent("README.md")
+    try "user readme\n".write(to: readmeURL, atomically: true, encoding: .utf8)
+    return readmeURL
+}
+
+@MainActor
+private func s130IntegrationModel(
+    repoURL: URL,
+    bridge: CoreBridge,
+    diagnosticsCollector: ShellRecordingDiagnosticsCollector,
+    logsOpener: S130RecordingLogsOpener,
+    summaryCopier: S130RecordingDiagnosticSummaryCopier
+) -> AdvancedSettingsModel {
+    AdvancedSettingsModel(
+        repoPath: repoURL.path,
+        loader: bridge,
+        updater: bridge,
+        rootOverviewInspector: LocalRootOverviewFileInspector(),
+        diagnosticsCollector: diagnosticsCollector,
+        appVersionReader: S130StaticAppVersionReader(version: "9.8.7 (654)"),
+        coreVersionReader: S130StaticCoreVersionReader(version: "0.1.0-test"),
+        metadataReader: SQLiteExistingRepositoryMetadataReader(),
+        logsOpener: logsOpener,
+        summaryCopier: summaryCopier,
+        errorMapper: bridge
+    )
+}
+
+private func s130LogsPath(repoURL: URL) -> String {
+    repoURL
+        .appendingPathComponent(".areamatrix", isDirectory: true)
+        .appendingPathComponent("logs", isDirectory: true)
+        .path
+}
+
+private func s130DiagnosticsPath(repoURL: URL) -> String {
+    repoURL
+        .appendingPathComponent(".areamatrix", isDirectory: true)
+        .appendingPathComponent("diagnostics", isDirectory: true)
+        .appendingPathComponent("s1-30.zip")
+        .path
 }
 
 @MainActor
@@ -260,7 +316,7 @@ private actor S130StaticConfigLoader: CoreConfigurationLoading {
         self.config = config
     }
 
-    func loadConfig(repoPath: String) async throws -> RepoConfigSnapshot {
+    func loadConfig(repoPath _: String) async throws -> RepoConfigSnapshot {
         config
     }
 }
@@ -272,19 +328,19 @@ private actor S130FailingConfigLoader: CoreConfigurationLoading {
         self.error = error
     }
 
-    func loadConfig(repoPath: String) async throws -> RepoConfigSnapshot {
+    func loadConfig(repoPath _: String) async throws -> RepoConfigSnapshot {
         throw error
     }
 }
 
 private actor S130NoopConfigUpdater: CoreConfigurationUpdating {
-    func updateConfig(repoPath: String, newConfig: RepoConfigSnapshot) async throws {}
+    func updateConfig(repoPath _: String, newConfig _: RepoConfigSnapshot) async throws {}
 }
 
 private struct S130StaticRootOverviewInspector: RootOverviewFileInspecting {
     let status: RootOverviewFileStatus
 
-    func status(repoPath: String) -> RootOverviewFileStatus {
+    func status(repoPath _: String) -> RootOverviewFileStatus {
         status
     }
 }
@@ -316,7 +372,7 @@ private actor S130StaticMetadataReader: ExistingRepositoryMetadataReading {
         self.schemaVersion = schemaVersion
     }
 
-    func metadata(repoPath: String) async throws -> ExistingRepositoryMetadataSnapshot {
+    func metadata(repoPath _: String) async throws -> ExistingRepositoryMetadataSnapshot {
         ExistingRepositoryMetadataSnapshot(schemaVersion: schemaVersion, lastOpenedAt: nil)
     }
 }

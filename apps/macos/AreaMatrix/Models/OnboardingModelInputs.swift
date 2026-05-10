@@ -2,6 +2,92 @@ import Foundation
 
 extension OnboardingModel {
     @MainActor
+    func validateSelectedRepositoryPath() async {
+        prepareRepositoryPathValidation()
+        defer { finishRepositoryPathValidation() }
+
+        let normalizedRepoPath = Self.normalizedRepositoryPath(repositoryPathText)
+        let validation: RepoPathValidationSnapshot
+        do {
+            validation = try await pathValidator.validateRepoPath(repoPath: normalizedRepoPath)
+        } catch {
+            repositoryPathValidation = nil
+            await routeValidationFailure(error, repoPath: normalizedRepoPath)
+            return
+        }
+
+        repositoryPathValidation = validation
+        repositoryPathErrorMapping = nil
+
+        do {
+            try await loadValidationContext(for: validation)
+        } catch {
+            await routeValidationFailure(error, repoPath: validation.repoPath)
+            return
+        }
+
+        guard routeToRepairIfNeeded(validation) == false else { return }
+        repositoryPathError = validatePathBlockingMessage(for: validation)
+        repositoryPathErrorMapping = nil
+        if repositoryPathError == nil {
+            acceptContinueRequestedValidation(validation)
+        }
+    }
+
+    @MainActor
+    private func loadValidationContext(for validation: RepoPathValidationSnapshot) async throws {
+        if shouldLoadLatestScanSession(for: validation) {
+            latestScanSession = try await scanSessionReader.latestScanSession(repoPath: validation.repoPath)
+            return
+        }
+        if validation.isInitialized {
+            let metadata = try await existingRepositoryMetadataReader.metadata(repoPath: validation.repoPath)
+            acceptExistingRepositoryMetadata(metadata)
+        }
+    }
+
+    @MainActor
+    private func routeToRepairIfNeeded(_ validation: RepoPathValidationSnapshot) -> Bool {
+        guard validation.hasUnfinishedScanSession || validation.issues.contains(.unfinishedScanSession) else {
+            return false
+        }
+        route = .dbRepairConfirm(DatabaseRepairRouteState(
+            repoPath: validation.repoPath,
+            scanSession: latestScanSession,
+            mapping: nil,
+            returnRoute: .validatePath
+        ))
+        return true
+    }
+
+    @MainActor
+    func routeValidationFailure(_ error: Error, repoPath: String) async {
+        guard let coreError = error as? CoreError else {
+            repositoryPathErrorMapping = nil
+            repositoryPathError = "路径字符串无法解析"
+            return
+        }
+
+        let mapping = await errorMapper.mapCoreError(coreError)
+        repositoryPathErrorMapping = mapping
+        repositoryPathError = mapping.userMessage
+
+        switch coreError {
+        case .Db:
+            route = .dbRepairConfirm(DatabaseRepairRouteState(
+                repoPath: repoPath,
+                scanSession: latestScanSession,
+                mapping: mapping,
+                returnRoute: .validatePath
+            ))
+        case .Config, .Internal, .RepoNotInitialized:
+            routeMainRepositoryError(repoPath: repoPath, mapping: mapping)
+        default:
+            route = .validatePath
+        }
+    }
+
+    @MainActor
     func chooseImportSources(opening: RepositoryOpeningResult) {
         guard let urls = importPicker.chooseImportURLs() else { return }
         startImportEntry(opening: opening, source: .filePicker, urls: urls)
@@ -67,27 +153,15 @@ extension OnboardingModel {
     @MainActor
     func beginImportEntryProgress(
         currentPath: String,
-        sourcePath: String,
-        storageMode: ImportSingleFileStorageMode,
-        overrideCategory: String,
-        overrideFilename: String,
-        duplicateStrategy: DuplicateStrategy
+        retryContext: ImportProgressRetryContext
     ) {
         guard let opening = currentOpeningForImportOrProgress else { return }
         importProgressControlState.reset()
-        let retryContext = ImportProgressRetryContext(
-            repoPath: opening.config.repoPath,
-            sourcePath: sourcePath,
-            storageMode: storageMode,
-            overrideCategory: overrideCategory,
-            overrideFilename: overrideFilename,
-            duplicateStrategy: ImportProgressDuplicateStrategy(coreStrategy: duplicateStrategy)
-        )
         pendingImportEntry = nil
         route = .importProgress(ImportProgressRouteState(
             sourceOpening: opening,
             currentPath: currentPath,
-            storageMode: storageMode,
+            storageMode: retryContext.storageMode,
             retryContext: retryContext,
             isRepositoryFinderAvailable: FileManager.default.fileExists(atPath: opening.config.repoPath)
         ))
@@ -97,13 +171,12 @@ extension OnboardingModel {
     func updateImportEntryProgress(_ progress: ImportBatchProgressSnapshot) {
         guard let opening = currentOpeningForImportOrProgress else { return }
         pendingImportEntry = nil
-        let stopState: ImportProgressStopState
-        if importProgressControlState.didStopAfterCurrentFile {
-            stopState = .stopped
+        let stopState: ImportProgressStopState = if importProgressControlState.didStopAfterCurrentFile {
+            .stopped
         } else if importProgressControlState.isStopAfterCurrentFileRequested {
-            stopState = .stopping
+            .stopping
         } else {
-            stopState = .idle
+            .idle
         }
         let nextState = ImportProgressRouteState(
             sourceOpening: opening,
@@ -197,7 +270,7 @@ extension OnboardingModel {
         retryContext: ImportProgressRetryContext?,
         recoveryCheck: ImportProgressRecoveryCheckState?
     ) {
-        guard case .importProgress(let state) = route else { return }
+        guard case let .importProgress(state) = route else { return }
         guard mapping.recoverability == .fatal else {
             showImportEntryResults(progress)
             return
@@ -272,7 +345,7 @@ extension OnboardingModel {
         destination: ImportEntryDestination
     ) -> [String] {
         var categories = opening.availableImportCategories
-        if case .category(let slug) = destination, !categories.contains(slug) {
+        if case let .category(slug) = destination, !categories.contains(slug) {
             categories.append(slug)
         }
         return categories
@@ -280,19 +353,19 @@ extension OnboardingModel {
 
     private var currentOpeningForImport: RepositoryOpeningResult? {
         switch route {
-        case .mainEmpty(let opening), .mainList(let opening), .settingsGeneral(let opening):
-            return opening
+        case let .mainEmpty(opening), let .mainList(opening), let .settingsGeneral(opening):
+            opening
         default:
-            return nil
+            nil
         }
     }
 
     private var currentOpeningForImportOrProgress: RepositoryOpeningResult? {
         switch route {
-        case .importProgress(let state):
-            return state.sourceOpening
+        case let .importProgress(state):
+            state.sourceOpening
         default:
-            return currentOpeningForImport
+            currentOpeningForImport
         }
     }
 
@@ -324,7 +397,7 @@ extension OnboardingModel {
             (
                 validation.recommendedMode == nil && !validation.isInitialized,
                 "该路径暂时不能作为资料库使用"
-            ),
+            )
         ]
 
         return checks.first { $0.0 }?.1
@@ -359,5 +432,4 @@ extension OnboardingModel {
     static func isSystemTrashAvailable() -> Bool {
         FileManager.default.urls(for: .trashDirectory, in: .userDomainMask).isEmpty == false
     }
-
 }

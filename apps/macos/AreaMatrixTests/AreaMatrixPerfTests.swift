@@ -1,10 +1,10 @@
 import AppKit
+@testable import AreaMatrix
 import CoreGraphics
 import Darwin.Mach
 import Foundation
 import SwiftUI
 import XCTest
-@testable import AreaMatrix
 
 final class AreaMatrixPerfTests: XCTestCase {
     @MainActor
@@ -18,9 +18,9 @@ final class AreaMatrixPerfTests: XCTestCase {
             recordPerfMetric(
                 name: "applicationLaunchToFirstScreen.hostlessFallback.emptyRepo",
                 value: elapsed,
-                threshold: .milliseconds(1_500)
+                threshold: Duration.milliseconds(1500)
             )
-            XCTAssertLessThan(elapsed, .milliseconds(1_500))
+            XCTAssertLessThan(elapsed, Duration.milliseconds(1500))
             return
         }
 
@@ -39,9 +39,9 @@ final class AreaMatrixPerfTests: XCTestCase {
         recordPerfMetric(
             name: "applicationLaunchToFirstScreen.emptyRepo",
             value: elapsed,
-            threshold: .milliseconds(1_500)
+            threshold: Duration.milliseconds(1500)
         )
-        XCTAssertLessThan(elapsed, .milliseconds(1_500))
+        XCTAssertLessThan(elapsed, Duration.milliseconds(1500))
     }
 
     func testSingleFileImportBaselineUnderStage1Threshold() async throws {
@@ -62,13 +62,12 @@ final class AreaMatrixPerfTests: XCTestCase {
                 sourceURL: sourceURL,
                 destination: .category("finance"),
                 suggestedCategory: nil,
-                overrideFilename: "invoice.pdf",
-                duplicateStrategy: .skip
+                overrideFilename: "invoice.pdf"
             )
         }
 
-        recordPerfMetric(name: "importCopiedFile.1MiB", value: elapsed, threshold: .milliseconds(200))
-        XCTAssertLessThan(elapsed, .milliseconds(200))
+        recordPerfMetric(name: "importCopiedFile.1MiB", value: elapsed, threshold: Duration.milliseconds(200))
+        XCTAssertLessThan(elapsed, Duration.milliseconds(200))
     }
 
     func testBatchImportAndListBaselineUnderStage1Threshold() async throws {
@@ -93,8 +92,7 @@ final class AreaMatrixPerfTests: XCTestCase {
                     sourceURL: sourceURL,
                     destination: .category("docs"),
                     suggestedCategory: nil,
-                    overrideFilename: sourceURL.lastPathComponent,
-                    duplicateStrategy: .skip
+                    overrideFilename: sourceURL.lastPathComponent
                 )
             }
             let filter = FileFilterSnapshot.perfCategory("docs", limit: 100)
@@ -102,20 +100,24 @@ final class AreaMatrixPerfTests: XCTestCase {
             XCTAssertEqual(listed.count, 100)
         }
 
-        recordPerfMetric(name: "importCopiedFile.100x4KiB.plusList", value: elapsed, threshold: .milliseconds(5_000))
-        XCTAssertLessThan(elapsed, .milliseconds(5_000))
+        recordPerfMetric(
+            name: "importCopiedFile.100x4KiB.plusList",
+            value: elapsed,
+            threshold: Duration.milliseconds(5000)
+        )
+        XCTAssertLessThan(elapsed, Duration.milliseconds(5000))
     }
 
     func testTreeAndListResponseBaselineUnderStage1Thresholds() async throws {
         let repoURL = try makePerfTemporaryRepoURL("tree-list")
         defer { try? FileManager.default.removeItem(at: repoURL) }
-        try writePerfRepositoryDataset(repoURL, count: 1_000, sizeBytes: 128)
+        try writePerfRepositoryDataset(repoURL, count: 1000, sizeBytes: 128)
         let bridge = CoreBridge()
         try await bridge.adoptExistingRepository(repoPath: repoURL.path)
 
         let treeElapsed = try await measureClock {
             let tree = try await bridge.listTree(repoPath: repoURL.path, locale: "en")
-            XCTAssertEqual(tree.totalFileCount, 1_000)
+            XCTAssertEqual(tree.totalFileCount, 1000)
         }
         let listElapsed = try await measureClock {
             let filter = FileFilterSnapshot.perfCategory("docs", limit: 200)
@@ -123,10 +125,10 @@ final class AreaMatrixPerfTests: XCTestCase {
             XCTAssertEqual(listed.count, 200)
         }
 
-        recordPerfMetric(name: "listTree.1kFiles", value: treeElapsed, threshold: .milliseconds(30))
-        recordPerfMetric(name: "listFiles.200Rows", value: listElapsed, threshold: .milliseconds(5))
-        XCTAssertLessThan(treeElapsed, .milliseconds(30))
-        XCTAssertLessThan(listElapsed, .milliseconds(5))
+        recordPerfMetric(name: "listTree.1kFiles", value: treeElapsed, threshold: Duration.milliseconds(30))
+        recordPerfMetric(name: "listFiles.200Rows", value: listElapsed, threshold: Duration.milliseconds(5))
+        XCTAssertLessThan(treeElapsed, Duration.milliseconds(30))
+        XCTAssertLessThan(listElapsed, Duration.milliseconds(5))
     }
 
     func testMemoryBaselinesUnderStage1Thresholds() async throws {
@@ -144,12 +146,12 @@ final class AreaMatrixPerfTests: XCTestCase {
         _ = try await bridge.openConfiguredRepository(repoPath: idleRepo.path)
         try recordMemoryMetric(name: "memory.idle", thresholdMegabytes: 200)
 
-        try writePerfRepositoryDataset(oneThousandRepo, count: 1_000, sizeBytes: 128)
+        try writePerfRepositoryDataset(oneThousandRepo, count: 1000, sizeBytes: 128)
         try await bridge.adoptExistingRepository(repoPath: oneThousandRepo.path)
         _ = try await bridge.listFiles(repoPath: oneThousandRepo.path, filter: .perfCategory("docs", limit: 200))
         try recordMemoryMetric(name: "memory.1kFiles", thresholdMegabytes: 300)
 
-        try writePerfRepositoryDataset(tenThousandRepo, count: 10_000, sizeBytes: 128)
+        try writePerfRepositoryDataset(tenThousandRepo, count: 10000, sizeBytes: 128)
         try await bridge.adoptExistingRepository(repoPath: tenThousandRepo.path)
         _ = try await bridge.listTree(repoPath: tenThousandRepo.path, locale: "en")
         try recordMemoryMetric(name: "memory.10kFiles", thresholdMegabytes: 500)
@@ -204,13 +206,12 @@ private func launchPerfApplication(repoPath: String) throws -> NSRunningApplicat
 
     let semaphore = DispatchSemaphore(value: 0)
     let applicationBox = ApplicationLaunchBox()
-    NSWorkspace.shared.openApplication(at: try builtAreaMatrixAppURL(), configuration: configuration) {
-        application,
-        error in
-        applicationBox.application = application
-        applicationBox.error = error
-        semaphore.signal()
-    }
+    try NSWorkspace.shared
+        .openApplication(at: builtAreaMatrixAppURL(), configuration: configuration) { application, error in
+            applicationBox.application = application
+            applicationBox.error = error
+            semaphore.signal()
+        }
     guard semaphore.wait(timeout: .now() + 5) == .success else {
         throw AreaMatrixPerfTestError.appLaunchTimedOut
     }
@@ -266,7 +267,7 @@ private func terminateLaunchedApplication(_ application: NSRunningApplication) {
 
     application.terminate()
     let deadline = Date().addingTimeInterval(1)
-    while !application.isTerminated && Date() < deadline {
+    while !application.isTerminated, Date() < deadline {
         RunLoop.current.run(mode: .default, before: Date().addingTimeInterval(0.05))
     }
     if !application.isTerminated {
@@ -277,7 +278,9 @@ private func terminateLaunchedApplication(_ application: NSRunningApplication) {
 private struct PerfTestSettingsReader: AppSettingsReading {
     let repoPath: String?
 
-    func configuredRepoPath() -> String? { repoPath }
+    func configuredRepoPath() -> String? {
+        repoPath
+    }
 }
 
 private struct PerfTestHelpOpener: WelcomeHelpOpening {
@@ -324,9 +327,9 @@ private func writePerfFile(_ url: URL, sizeBytes: Int, seed: Int = 0) throws {
 
 private func recordPerfMetric(name: String, value: Duration, threshold: Duration) {
     let milliseconds = Double(value.components.attoseconds) / 1_000_000_000_000_000
-        + Double(value.components.seconds) * 1_000
+        + Double(value.components.seconds) * 1000
     let thresholdMilliseconds = Double(threshold.components.attoseconds) / 1_000_000_000_000_000
-        + Double(threshold.components.seconds) * 1_000
+        + Double(threshold.components.seconds) * 1000
     let result = value < threshold ? "PASS" : "FAIL"
     print(String(
         format: "STAGE1_PERF name=\"%@\" value_ms=%.3f threshold_ms=%.3f result=%@",

@@ -54,7 +54,7 @@ struct DetailNoteTabView: View {
             emptyState
         case .editing:
             editorState
-        case .failed(_, let error, _):
+        case let .failed(_, error, _):
             noteLoadError(error)
         }
     }
@@ -157,11 +157,11 @@ private struct NoteSaveStatusView: View {
     private var color: Color {
         switch status {
         case .saved:
-            return .secondary
+            .secondary
         case .saving:
-            return .blue
+            .blue
         case .unsaved, .failed:
-            return .orange
+            .orange
         }
     }
 }

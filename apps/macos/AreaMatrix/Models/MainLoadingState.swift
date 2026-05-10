@@ -1,23 +1,23 @@
 import Foundation
 
-enum MainLoadingTreeState: Equatable, Sendable {
+enum MainLoadingTreeState: Equatable {
     case loading
     case loaded(RepositoryTreeNodeSnapshot)
     case failed(CoreErrorMappingSnapshot)
 
     var loadedTree: RepositoryTreeNodeSnapshot? {
-        guard case .loaded(let tree) = self else { return nil }
+        guard case let .loaded(tree) = self else { return nil }
         return tree
     }
 }
 
-enum MainLoadingRecoveryState: Equatable, Sendable {
+enum MainLoadingRecoveryState: Equatable {
     case checking
     case completed(RecoveryReportSnapshot?)
     case failed(CoreErrorMappingSnapshot)
 }
 
-struct MainLoadingState: Equatable, Sendable {
+struct MainLoadingState: Equatable {
     var repoPath: String
     var startupRecovery: MainLoadingRecoveryState?
     var scanSession: ScanSessionSnapshot?
@@ -85,7 +85,7 @@ struct MainLoadingState: Equatable, Sendable {
         switch startupRecovery {
         case .checking:
             return "正在执行启动恢复检查..."
-        case .completed(let report):
+        case let .completed(report):
             guard let report, report.hasVisibleDetails else {
                 return "启动恢复检查完成"
             }
@@ -94,19 +94,19 @@ struct MainLoadingState: Equatable, Sendable {
             启动恢复已完成：清理 \(report.cleanedStagingFiles) 个临时文件，\
             回滚 \(report.revertedStagingDbRows) 条 staging 记录
             """
-        case .failed(let mapping):
+        case let .failed(mapping):
             return "启动恢复失败：\(mapping.userMessage)"
         }
     }
 
     var recoveryVisibleReport: RecoveryReportSnapshot? {
-        guard case .completed(let report) = startupRecovery else { return nil }
+        guard case let .completed(report) = startupRecovery else { return nil }
         guard report?.hasVisibleDetails == true else { return nil }
         return report
     }
 
     var recoveryErrorMapping: CoreErrorMappingSnapshot? {
-        guard case .failed(let mapping) = startupRecovery else { return nil }
+        guard case let .failed(mapping) = startupRecovery else { return nil }
         return mapping
     }
 
@@ -116,9 +116,9 @@ struct MainLoadingState: Equatable, Sendable {
         switch treeLoading {
         case .loading:
             return "正在加载资料库目录..."
-        case .loaded(let tree):
+        case let .loaded(tree):
             return "目录已加载：\(tree.totalFileCount) 个文件"
-        case .failed(let mapping):
+        case let .failed(mapping):
             return "目录加载失败：\(mapping.userMessage)"
         }
     }
@@ -147,7 +147,7 @@ struct MainLoadingState: Equatable, Sendable {
             scanProgressText,
             scanCurrentPathText,
             treeStatusText,
-            repositoryOpeningErrorText,
+            repositoryOpeningErrorText
         ].compactMap { $0 }.joined(separator: "。")
     }
 
@@ -157,16 +157,16 @@ struct MainLoadingState: Equatable, Sendable {
     }
 }
 
-struct MainLoadingScanRefreshResult: Equatable, Sendable {
+struct MainLoadingScanRefreshResult: Equatable {
     var scanSession: ScanSessionSnapshot?
     var scanSessionErrorMapping: CoreErrorMappingSnapshot?
 }
 
-struct MainLoadingTreeRefreshResult: Equatable, Sendable {
+struct MainLoadingTreeRefreshResult: Equatable {
     var treeLoading: MainLoadingTreeState
 }
 
-struct MainLoadingRefreshUpdate: Equatable, Sendable {
+struct MainLoadingRefreshUpdate: Equatable {
     var scanResult: MainLoadingScanRefreshResult?
     var treeResult: MainLoadingTreeRefreshResult?
 }
@@ -181,36 +181,36 @@ private extension ScanSessionKindSnapshot {
     var completedStatusPrefix: String {
         switch self {
         case .adopt:
-            return "接管扫描已完成"
+            "接管扫描已完成"
         case .reindex:
-            return "重新扫描已完成"
+            "重新扫描已完成"
         }
     }
 
     var pausedStatusPrefix: String {
         switch self {
         case .adopt:
-            return "接管扫描已暂停"
+            "接管扫描已暂停"
         case .reindex:
-            return "重新扫描已暂停"
+            "重新扫描已暂停"
         }
     }
 
     var failedStatusPrefix: String {
         switch self {
         case .adopt:
-            return "接管扫描失败"
+            "接管扫描失败"
         case .reindex:
-            return "重新扫描失败"
+            "重新扫描失败"
         }
     }
 
     var interruptedStatusPrefix: String {
         switch self {
         case .adopt:
-            return "接管扫描已中断"
+            "接管扫描已中断"
         case .reindex:
-            return "重新扫描已中断"
+            "重新扫描已中断"
         }
     }
 }

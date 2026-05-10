@@ -258,6 +258,10 @@ impl ReplacementPlan {
         &self.existing.path
     }
 
+    pub(super) fn replaced_updated_at(&self) -> i64 {
+        self.existing.updated_at
+    }
+
     pub(super) fn reason_detail(&self) -> &'static str {
         match self.reason {
             dedup::ReplacementReason::DuplicateHash => "duplicate_overwrite",

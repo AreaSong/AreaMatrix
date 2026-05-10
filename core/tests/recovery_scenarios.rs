@@ -83,6 +83,8 @@ fn recovery_scenarios_cover_stage_one_matrix_and_manual_gates() {
     assert_contains(SCENARIOS, "P1-ER-001");
     assert_contains(SCENARIOS, "Stage 1 发布不通过");
     assert_contains(SCENARIOS, "Manual evidence pending");
+    assert_contains(SCENARIOS, "manual_evidence_status: pass");
+    assert_contains(SCENARIOS, "manual_evidence_status: blocked");
 }
 
 #[test]
@@ -241,11 +243,47 @@ fn recovery_scenarios_manual_evidence_schema_blocks_release_without_claiming_pas
         assert_contains(SCENARIOS, required_field);
     }
 
-    assert_contains(SCENARIOS, "manual_evidence_status: pending");
-    assert_contains(SCENARIOS, "M-01 缺失时阻断发布");
-    assert_contains(SCENARIOS, "M-02 缺失时阻断发布");
-    assert_contains(SCENARIOS, "M-03 缺失时阻断发布");
-    assert_contains(SCENARIOS, "M-04 缺失时阻断发布");
+    assert_contains(
+        SCENARIOS,
+        "manual_evidence_status: \"pending | pass | blocked\"",
+    );
+    assert_contains(SCENARIOS, "manual_evidence_status: pass");
+    assert_contains(SCENARIOS, "manual_evidence_status: blocked");
+    assert_contains(SCENARIOS, "成功 10 · 停止 0 · 失败 0 · 待处理 234");
+    assert_contains(SCENARIOS, "Import not completed before AreaMatrix quit");
+    assert_contains(SCENARIOS, "current.json` 已清除");
+    assert_contains(SCENARIOS, "当前没有");
+    assert_contains(
+        SCENARIOS,
+        "blocked_reason: no iCloud placeholder environment available",
+    );
+    assert_contains(SCENARIOS, "后续补证模板");
+    assert_contains(SCENARIOS, "environment.icloud_drive: enabled");
+    assert_contains(SCENARIOS, "source_placeholder_status.before");
+    assert_contains(
+        SCENARIOS,
+        "result: pass` 只有在真实 iCloud Drive placeholder 环境完成下载与 retry 后才能填写",
+    );
+    assert_contains(SCENARIOS, "M-03 权限恢复");
+    assert_contains(SCENARIOS, "m03-evidence-20260510_221849");
+    assert_contains(SCENARIOS, "d---r-xr-x");
+    assert_contains(SCENARIOS, "Repository needs permission");
+    assert_contains(SCENARIOS, "PermissionDenied");
+    assert_contains(SCENARIOS, "Reconnect folder");
+    assert_contains(SCENARIOS, "未修改系统 TCC 数据库");
+    assert_contains(
+        SCENARIOS,
+        "M-04 DB repair / diagnostics 手工日志已采集并通过",
+    );
+    assert_contains(SCENARIOS, "m04-evidence-20260510_213637");
+    assert_contains(SCENARIOS, "Run Full Rescan");
+    assert_contains(SCENARIOS, "未分类 11 files");
+    assert_contains(
+        SCENARIOS,
+        "index-1778421523-2695bbce-82b9-4ea6-9b33-ad02eb06f1d8.db",
+    );
+    assert_contains(SCENARIOS, "checksum diff 行数为 `0`");
+    assert_contains(SCENARIOS, "repo 根目录未生成 `AREAMATRIX.md`");
 }
 
 #[test]

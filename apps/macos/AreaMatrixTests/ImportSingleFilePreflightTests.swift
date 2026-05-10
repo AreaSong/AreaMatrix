@@ -1,6 +1,6 @@
+@testable import AreaMatrix
 import Foundation
 import XCTest
-@testable import AreaMatrix
 
 final class ImportSingleFilePreflightTests: XCTestCase {
     func testCorePreflightComputesHashAndUsesCoreListFilesWithoutDuplicate() async throws {
@@ -11,15 +11,16 @@ final class ImportSingleFilePreflightTests: XCTestCase {
         let sourceURL = sourceRoot.appendingPathComponent("source.pdf")
         try Data("same bytes".utf8).write(to: sourceURL)
         let fileLoader = ImportSingleFileStaticFileLoader(files: [
-            .s117Fixture(currentName: "other.pdf", category: "docs", hashSha256: "other-hash"),
+            .s117Fixture(currentName: "other.pdf", category: "docs", hashSha256: "other-hash")
         ])
 
-        let result = await CoreImportSingleFilePreflight(fileLoader: fileLoader).preflightSingleFileImport(request: .fixture(
-            repoPath: "/tmp/repo",
-            sourceURL: sourceURL,
-            category: "docs",
-            targetFilename: "source.pdf"
-        ))
+        let result = await CoreImportSingleFilePreflight(fileLoader: fileLoader)
+            .preflightSingleFileImport(request: .fixture(
+                repoPath: "/tmp/repo",
+                sourceURL: sourceURL,
+                category: "docs",
+                targetFilename: "source.pdf"
+            ))
         let loadRequests = await fileLoader.recordedRequests()
 
         XCTAssertEqual(result.sourceSizeBytes, 10)
@@ -39,15 +40,16 @@ final class ImportSingleFilePreflightTests: XCTestCase {
         let duplicateHash = "11507a0e2f5e69d5dfa40a62a1bd7b6ee57e6bcd85c67c9b8431b36fff21c437"
         let fileLoader = ImportSingleFileStaticFileLoader(files: [
             .s117Fixture(currentName: "existing.pdf", category: "docs", hashSha256: duplicateHash),
-            .s117Fixture(currentName: "source.pdf", category: "docs", hashSha256: "name-only"),
+            .s117Fixture(currentName: "source.pdf", category: "docs", hashSha256: "name-only")
         ])
 
-        let actual = await CoreImportSingleFilePreflight(fileLoader: fileLoader).preflightSingleFileImport(request: .fixture(
-            repoPath: "/tmp/repo",
-            sourceURL: sourceURL,
-            category: "docs",
-            targetFilename: "source.pdf"
-        ))
+        let actual = await CoreImportSingleFilePreflight(fileLoader: fileLoader)
+            .preflightSingleFileImport(request: .fixture(
+                repoPath: "/tmp/repo",
+                sourceURL: sourceURL,
+                category: "docs",
+                targetFilename: "source.pdf"
+            ))
 
         XCTAssertEqual(actual.sourceSizeBytes, 3)
         XCTAssertNotNil(actual.sourceModifiedAt)
@@ -72,15 +74,16 @@ final class ImportSingleFilePreflightTests: XCTestCase {
         )
         let fileLoader = ImportSingleFileStaticFileLoader(files: [
             sameName,
-            .s117Fixture(currentName: "source_1.pdf", category: "docs", hashSha256: "other"),
+            .s117Fixture(currentName: "source_1.pdf", category: "docs", hashSha256: "other")
         ])
 
-        let actual = await CoreImportSingleFilePreflight(fileLoader: fileLoader).preflightSingleFileImport(request: .fixture(
-            repoPath: "/tmp/repo",
-            sourceURL: sourceURL,
-            category: "docs",
-            targetFilename: "source.pdf"
-        ))
+        let actual = await CoreImportSingleFilePreflight(fileLoader: fileLoader)
+            .preflightSingleFileImport(request: .fixture(
+                repoPath: "/tmp/repo",
+                sourceURL: sourceURL,
+                category: "docs",
+                targetFilename: "source.pdf"
+            ))
 
         XCTAssertEqual(actual.conflict, .name(path: "docs/source.pdf"))
         XCTAssertEqual(actual.keepBothTargetRelativePath, "docs/source_2.pdf")
@@ -122,12 +125,13 @@ final class ImportSingleFilePreflightTests: XCTestCase {
 
         let fileLoader = ImportSingleFileStaticFileLoader(files: [])
 
-        let result = await CoreImportSingleFilePreflight(fileLoader: fileLoader).preflightSingleFileImport(request: .fixture(
-            repoPath: "/tmp/repo",
-            sourceURL: sourceURL,
-            category: "docs",
-            targetFilename: "source.pdf"
-        ))
+        let result = await CoreImportSingleFilePreflight(fileLoader: fileLoader)
+            .preflightSingleFileImport(request: .fixture(
+                repoPath: "/tmp/repo",
+                sourceURL: sourceURL,
+                category: "docs",
+                targetFilename: "source.pdf"
+            ))
 
         let loadRequests = await fileLoader.recordedRequests()
 
@@ -137,7 +141,7 @@ final class ImportSingleFilePreflightTests: XCTestCase {
     }
 }
 
-private struct ImportSingleFileFileLoadRequest: Equatable, Sendable {
+private struct ImportSingleFileFileLoadRequest: Equatable {
     var repoPath: String
     var categories: Set<String?>
 }

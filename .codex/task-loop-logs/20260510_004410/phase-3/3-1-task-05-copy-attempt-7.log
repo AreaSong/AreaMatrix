@@ -1,0 +1,45 @@
+一、执行结论
+
+- **未完成**
+- 不是产品实现缺口修复失败，而是 Stage 1 release gate 仍缺真实发布证据，且 `./dev check all` 在当前环境仍失败，不能按规则标记通过。
+
+二、执行范围
+
+- 单任务：`3-1/task-05`
+- 本轮修改：
+  - [stage-1-release-checklist.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-release-checklist.md:42)：补充本轮真实 `rustup` / 临时 `RUSTUP_HOME` / Homebrew 安装失败证据。
+  - [build.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/build.md:298)：新增 macOS universal build target 缺失的排障说明。
+  - [stage1_release_checklist.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/stage1_release_checklist.rs:71)：锁定上述 release blocker 证据，防止伪放行。
+
+三、完成情况
+
+- Exact Docs、control map、Core/UX index、testing、release：已读取并交叉核对。
+- Real Core 页面：自动化和 `CoreBridge()` 证据存在，但真实 `.app` launch、签名/公证/DMG、干净 Mac 首启仍缺，不放行。
+- `3-1/task-01` 到 `3-1/task-04`：自动化证据存在；M-01..M-04 手工恢复冒烟仍 pending，不放行。
+- 完成标准：`./dev check all` 未通过，P1-RL-001..005 未关闭。
+- Forbidden Touches：未触碰；检查 `git diff --name-only -- core/src core/area_matrix.udl apps/macos/AreaMatrix apps/macos/AreaMatrix.xcodeproj` 无输出。
+
+四、工程质量
+
+没有补产品实现、没有改 Core API / UDL / macOS 产品代码、没有引入 mock-only 或硬编码通过态。当前改动只是把真实阻断证据写入 release 文档，并用测试锁定“不能把本地 fallback 当 release PASS”。
+
+五、验证情况
+
+通过：
+- `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`
+- `cd core && cargo test --workspace --test stage1_release_checklist`
+- `PYTHONPYCACHEPREFIX=/private/tmp/areamatrix-pycache python3 -m py_compile scripts/dev_tools/*.py scripts/task_loop/*.py`
+- `python3 -m unittest scripts.dev_tools.test_build_tools`
+- `git diff --check`
+- `./dev test macos`：478 tests / 0 failures；标准 `xcodebuild test` 收尾被 sandbox 阻断，`xcrun xctest` fallback 通过。
+
+失败 / 阻断：
+- `./dev check all`：失败在 macOS prerequisite check，缺 `x86_64-apple-darwin`、`swiftformat`、`swiftlint`。
+- `rustup target add x86_64-apple-darwin`：失败。
+- 临时 `RUSTUP_HOME` 安装：因无法解析 `static.rust-lang.org` 失败。
+- `brew install swiftformat swiftlint`：Homebrew 目录/cache 不可写。
+- `cd core && cargo update --dry-run`：无法解析 `index.crates.io`。
+
+六、风险与后续
+
+剩余阻断仍是发布环境与手工 release evidence：真实 Release `.app` 首屏、M-01..M-04 手工恢复、Developer ID 签名、公证、DMG、干净 Mac 首启、release tag / notes。下一个动作应先在可联网且 Rustup/Homebrew 可写的 macOS 环境补齐工具链和发布证据，再重跑 `./dev check all` 与 `3-1/task-05` 验收。

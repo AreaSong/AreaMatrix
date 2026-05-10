@@ -1,6 +1,7 @@
+@testable import AreaMatrix
 import Foundation
 import XCTest
-@testable import AreaMatrix
+
 final class InitializingStepIntegrationTests: XCTestCase {
     @MainActor
     func testAdoptExistingInitializingPollsLatestScanSession() async {
@@ -41,6 +42,7 @@ final class InitializingStepIntegrationTests: XCTestCase {
             recoveryReport: nil
         )))
     }
+
     @MainActor
     func testAdoptExistingFatalErrorRoutesToInitFailed() async {
         let validation = RepoPathValidationSnapshot.initializingAdoptExistingFixture(repoPath: "/tmp/adopt")
@@ -71,6 +73,7 @@ final class InitializingStepIntegrationTests: XCTestCase {
         ))
         XCTAssertEqual(writer.savedRepoPaths, [])
     }
+
     @MainActor
     func testInitializingRunsStartupRecoveryBeforeRepositoryWriteAndShowsReport() async {
         let validation = RepoPathValidationSnapshot.initializingAdoptExistingFixture(repoPath: "/tmp/adopt")
@@ -108,6 +111,7 @@ final class InitializingStepIntegrationTests: XCTestCase {
         )))
         await initializationTask.value
     }
+
     @MainActor
     func testStartupRecoveryErrorRoutesToInitFailedBeforeRepositoryWrite() async {
         let validation = RepoPathValidationSnapshot.initializingAdoptExistingFixture(repoPath: "/tmp/adopt")
@@ -137,6 +141,7 @@ final class InitializingStepIntegrationTests: XCTestCase {
         ))
         XCTAssertEqual(writer.savedRepoPaths, [])
     }
+
     @MainActor
     func testInitializingCancelWaitsForSafePointAndDoesNotSaveRepositoryPath() async {
         let validation = RepoPathValidationSnapshot.initializingAdoptExistingFixture(repoPath: "/tmp/adopt")
@@ -175,6 +180,7 @@ final class InitializingStepIntegrationTests: XCTestCase {
             "初始化已在安全点停止。下次选择同一资料库时，AreaMatrix 会继续或进入恢复。"
         )
     }
+
     @MainActor
     func testResumeInterruptedInitializationUsesScanSessionResumeAndShowsDonePage() async {
         let scanSession = ScanSessionSnapshot.adoptRunningFixture()
@@ -193,7 +199,9 @@ final class InitializingStepIntegrationTests: XCTestCase {
             settingsReader: InitializingStaticSettingsReader(repoPath: nil),
             settingsWriter: writer,
             configLoader: InitializingRecordingConfigLoader(config: .initializingFixture(repoPath: "/tmp/adopt")),
-            pathValidator: InitializingRecordingPathValidator(validation: .initializingAdoptExistingFixture(repoPath: "/tmp/adopt")),
+            pathValidator: InitializingRecordingPathValidator(
+                validation: .initializingAdoptExistingFixture(repoPath: "/tmp/adopt")
+            ),
             repositoryInitializer: PausingRepositoryInitializer(),
             startupRecoverer: StaticStartupRecoverer(),
             scanSessionReader: scanReader,
@@ -222,6 +230,7 @@ final class InitializingStepIntegrationTests: XCTestCase {
             recoveryReport: nil
         )))
     }
+
     @MainActor
     func testCleanUpInterruptedInitializationRunsRecoveryAndReturnsToConfirmInit() async {
         let validation = RepoPathValidationSnapshot.initializingAdoptExistingFixture(repoPath: "/tmp/adopt")
@@ -252,75 +261,92 @@ final class InitializingStepIntegrationTests: XCTestCase {
             scanSession: nil
         )))
     }
+
     @MainActor
     private func waitForInitializationScanSession(on model: OnboardingModel) async {
-        for _ in 0..<100 where model.initializationScanSession == nil {
+        for _ in 0 ..< 100 where model.initializationScanSession == nil {
             try? await Task.sleep(nanoseconds: 10_000_000)
         }
     }
 }
+
 private struct InitializingStaticSettingsReader: AppSettingsReading {
     let repoPath: String?
-    func configuredRepoPath() -> String? { repoPath }
+    func configuredRepoPath() -> String? {
+        repoPath
+    }
 }
+
 private final class InitializingRecordingSettingsWriter: AppSettingsWriting {
     private(set) var savedRepoPaths: [String] = []
     func saveConfiguredRepoPath(_ repoPath: String) {
         savedRepoPaths.append(repoPath)
     }
 }
+
 private actor InitializingRecordingConfigLoader: CoreConfigurationLoading {
     private let config: RepoConfigSnapshot
     init(config: RepoConfigSnapshot) {
         self.config = config
     }
-    func loadConfig(repoPath: String) async throws -> RepoConfigSnapshot {
+
+    func loadConfig(repoPath _: String) async throws -> RepoConfigSnapshot {
         config
     }
 }
+
 private actor InitializingRecordingPathValidator: CoreRepositoryPathValidating {
     private let validation: RepoPathValidationSnapshot
     init(validation: RepoPathValidationSnapshot) {
         self.validation = validation
     }
-    func validateRepoPath(repoPath: String) async throws -> RepoPathValidationSnapshot {
+
+    func validateRepoPath(repoPath _: String) async throws -> RepoPathValidationSnapshot {
         validation
     }
 }
+
 private actor PausingRepositoryInitializer: CoreRepositoryInitializing {
     private var didStart = false
-    func initializeEmptyRepository(repoPath: String) async throws {}
-    func adoptExistingRepository(repoPath: String) async throws {
+    func initializeEmptyRepository(repoPath _: String) async throws {}
+    func adoptExistingRepository(repoPath _: String) async throws {
         didStart = true
         try await Task.sleep(nanoseconds: 500_000_000)
     }
+
     func waitUntilStarted() async {
         while !didStart {
             await Task.yield()
         }
     }
 }
+
 private actor FailingRepositoryInitializer: CoreRepositoryInitializing {
     private let error: Error
     init(error: Error) {
         self.error = error
     }
-    func initializeEmptyRepository(repoPath: String) async throws {
+
+    func initializeEmptyRepository(repoPath _: String) async throws {
         throw error
     }
-    func adoptExistingRepository(repoPath: String) async throws {
+
+    func adoptExistingRepository(repoPath _: String) async throws {
         throw error
     }
 }
+
 private enum StartupRecoveryResult {
     case success(RecoveryReportSnapshot)
     case failure(Error)
 }
+
 private actor StaticStartupRecoverer: CoreStartupRecovering {
-    func recoverOnStartup(repoPath: String) async throws -> RecoveryReportSnapshot {
+    func recoverOnStartup(repoPath _: String) async throws -> RecoveryReportSnapshot {
         RecoveryReportSnapshot(cleanedStagingFiles: 0, revertedStagingDbRows: 0, warnings: [])
     }
 }
+
 private actor RecordingStartupRecoverer: CoreStartupRecovering {
     private let result: StartupRecoveryResult
     private var paths: [String] = []
@@ -328,32 +354,40 @@ private actor RecordingStartupRecoverer: CoreStartupRecovering {
     init(result: StartupRecoveryResult) {
         self.result = result
     }
+
     func recoverOnStartup(repoPath: String) async throws -> RecoveryReportSnapshot {
         paths.append(repoPath)
         didRecover = true
         switch result {
-        case .success(let report):
+        case let .success(report):
             return report
-        case .failure(let error):
+        case let .failure(error):
             throw error
         }
     }
+
     func waitUntilRecovered() async {
         while !didRecover {
             await Task.yield()
         }
     }
-    func requestedRepoPaths() -> [String] { paths }
+
+    func requestedRepoPaths() -> [String] {
+        paths
+    }
 }
+
 private actor StaticScanSessionReader: CoreScanSessionReading {
     private let session: ScanSessionSnapshot?
     init(session: ScanSessionSnapshot?) {
         self.session = session
     }
-    func latestScanSession(repoPath: String) async throws -> ScanSessionSnapshot? {
+
+    func latestScanSession(repoPath _: String) async throws -> ScanSessionSnapshot? {
         session
     }
 }
+
 private actor RecordingResumeScanSessionReader: CoreScanSessionReading {
     private let session: ScanSessionSnapshot
     private let resumeReport: ReindexReportSnapshot
@@ -362,102 +396,38 @@ private actor RecordingResumeScanSessionReader: CoreScanSessionReading {
         self.session = session
         self.resumeReport = resumeReport
     }
-    func latestScanSession(repoPath: String) async throws -> ScanSessionSnapshot? {
+
+    func latestScanSession(repoPath _: String) async throws -> ScanSessionSnapshot? {
         session
     }
+
     func resumeScanSession(repoPath: String, scanSessionId: Int64) async throws -> ReindexReportSnapshot {
         requests.append("\(repoPath):\(scanSessionId)")
         return resumeReport
     }
-    func resumedRequests() -> [String] { requests }
+
+    func resumedRequests() -> [String] {
+        requests
+    }
 }
+
 private struct InitializingNoopWelcomeHelpOpener: WelcomeHelpOpening {
     func openWelcomeHelp() throws {}
 }
+
 private actor InitializingRecordingErrorMapper: CoreErrorMapping {
     private let mapping: CoreErrorMappingSnapshot
     private var errors: [CoreError] = []
     init(mapping: CoreErrorMappingSnapshot) {
         self.mapping = mapping
     }
+
     func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
         errors.append(error)
         return mapping
     }
-    func mappedErrors() -> [CoreError] { errors }
-}
-private extension RepoConfigSnapshot {
-    static func initializingFixture(repoPath: String) -> RepoConfigSnapshot {
-        RepoConfigSnapshot(
-            repoPath: repoPath,
-            defaultMode: "Copied",
-            overviewOutput: "GeneratedOnly",
-            aiEnabled: false,
-            locale: "zh-Hans",
-            iCloudWarn: true,
-            enableExtensionRules: true,
-            enableKeywordRules: true,
-            fallbackToInbox: true,
-            allowReplaceDuringImport: false
-        )
-    }
-}
-private extension RepoPathValidationSnapshot {
-    static func initializingAdoptExistingFixture(repoPath: String) -> RepoPathValidationSnapshot {
-        RepoPathValidationSnapshot(
-            repoPath: repoPath,
-            exists: true,
-            isDirectory: true,
-            isReadable: true,
-            isWritable: true,
-            isEmpty: false,
-            isInitialized: false,
-            isInsideAreaMatrix: false,
-            isICloudPath: false,
-            hasUnfinishedScanSession: false,
-            availableCapacityBytes: 1_073_741_824,
-            isExternalVolume: false,
-            recommendedMode: .adoptExisting,
-            issues: [.nonEmptyDirectory]
-        )
-    }
-}
-private extension ScanSessionSnapshot {
-    static func adoptRunningFixture() -> ScanSessionSnapshot {
-        ScanSessionSnapshot(
-            id: 42,
-            kind: .adopt,
-            status: .running,
-            lastPath: "docs/plan.md",
-            inserted: 11,
-            updated: 2,
-            skipped: 1,
-            startedAt: 1_700_000_000,
-            updatedAt: 1_700_000_010,
-            finishedAt: nil,
-            errors: ["skipped unreadable file: private.tmp"]
-        )
-    }
-}
-private extension CoreErrorMappingSnapshot {
-    static func initializingPermissionDeniedFixture(rawContext: String) -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
-            kind: .permissionDenied,
-            userMessage: "无访问权限",
-            severity: .high,
-            suggestedAction: "请在系统设置中授予权限，或选择其他资料库位置",
-            recoverability: .userActionRequired,
-            rawContext: rawContext
-        )
-    }
-    static func initializingDbFixture(rawContext: String) -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
-            kind: .db,
-            userMessage: "数据库错误",
-            severity: .critical,
-            suggestedAction: "请检查资料库 metadata 后重试",
-            recoverability: .fatal,
-            rawContext: rawContext
-        )
+
+    func mappedErrors() -> [CoreError] {
+        errors
     }
 }

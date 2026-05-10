@@ -1,7 +1,7 @@
-import XCTest
 @testable import AreaMatrix
+import XCTest
 
-final class RepositorySettingsPageIntegrationVerifyTests: XCTestCase {
+final class RepoSettingsPageIntegrationTests: XCTestCase {
     @MainActor
     func testS127PageIntegrationConnectsCoreConfigIndexedCountOverviewAndSafeActions() async throws {
         let context = try await makeRepositorySettingsIntegrationContext()
@@ -68,11 +68,11 @@ final class RepositorySettingsPageIntegrationVerifyTests: XCTestCase {
             pathValidator: validator,
             emptyRepositoryOpener: opener,
             startupRecoverer: ShellStaticStartupRecoverer(),
-            existingRepositoryMetadataReader: ShellStaticExistingRepositoryMetadataReader(
+            existingRepositoryMetadataReader: ShellExistingRepoMetadataReader(
                 schemaVersion: 1,
                 configuredRepoPath: "/tmp/new-repo"
             ),
-            scanSessionReader: RepositorySettingsRecordingScanSessionReader(result: .success(nil)),
+            scanSessionReader: RepoSettingsScanSessionReader(result: .success(nil)),
             accessibilityAnnouncer: S117RecordingAccessibilityAnnouncer(),
             helpOpener: S117NoopWelcomeHelpOpener()
         )
@@ -108,34 +108,81 @@ private struct RepositorySettingsIntegrationContext {
     let model: RepositorySettingsModel
 }
 
+private struct RepositorySettingsIntegrationURLs {
+    let repoURL: URL
+    let sourceRootURL: URL
+    let sourceURL: URL
+    let generatedURL: URL
+}
+
+private struct RepositorySettingsIntegrationDoubles {
+    let finder: ShellRecordingFinderOpener
+    let copier: ShellRecordingPathCopier
+    let generatedRevealer: RepositorySettingsRecordingFileRevealer
+    let diagnostics: ShellRecordingDiagnosticsCollector
+    let announcer: S117RecordingAccessibilityAnnouncer
+}
+
 @MainActor
 private func makeRepositorySettingsIntegrationContext() async throws -> RepositorySettingsIntegrationContext {
-    let repoURL = try temporaryRepositorySettingsRepo()
-    var cleanupURLs = [repoURL]
+    let urls = try makeRepositorySettingsIntegrationURLs()
+    var cleanupURLs = [urls.repoURL, urls.sourceRootURL]
     var didSucceed = false
     defer {
         if !didSucceed {
             cleanupURLs.forEach { try? FileManager.default.removeItem(at: $0) }
         }
     }
-    let sourceRoot = try temporaryRepositorySettingsRepo()
-    cleanupURLs.append(sourceRoot)
 
-    let sourceURL = sourceRoot.appendingPathComponent("indexed.pdf")
-    try Data("indexed bytes".utf8).write(to: sourceURL)
     let bridge = CoreBridge()
-    try await bridge.initializeEmptyRepository(repoPath: repoURL.path)
+    try await bridge.initializeEmptyRepository(repoPath: urls.repoURL.path)
     let imported = try await bridge.importIndexedFile(
-        repoPath: repoURL.path,
-        sourceURL: sourceURL,
+        repoPath: urls.repoURL.path,
+        sourceURL: urls.sourceURL,
         overrideCategory: "docs",
         overrideFilename: "indexed-display.pdf"
     )
+    let diagnosticsSnapshot = makeRepositorySettingsDiagnosticsSnapshot(repoURL: urls.repoURL)
+    let doubles = makeRepositorySettingsIntegrationDoubles(diagnosticsSnapshot: diagnosticsSnapshot)
+    let model = makeRepositorySettingsModel(urls: urls, bridge: bridge, doubles: doubles)
+
+    let context = RepositorySettingsIntegrationContext(
+        repoURL: urls.repoURL,
+        sourceRootURL: urls.sourceRootURL,
+        sourceURL: urls.sourceURL,
+        imported: imported,
+        generatedURL: urls.generatedURL,
+        diagnosticsSnapshot: diagnosticsSnapshot,
+        finder: doubles.finder,
+        copier: doubles.copier,
+        generatedRevealer: doubles.generatedRevealer,
+        diagnostics: doubles.diagnostics,
+        announcer: doubles.announcer,
+        model: model
+    )
+    didSucceed = true
+    return context
+}
+
+private func makeRepositorySettingsIntegrationURLs() throws -> RepositorySettingsIntegrationURLs {
+    let repoURL = try temporaryRepositorySettingsRepo()
+    let sourceRootURL = try temporaryRepositorySettingsRepo()
+    let sourceURL = sourceRootURL.appendingPathComponent("indexed.pdf")
+    try Data("indexed bytes".utf8).write(to: sourceURL)
     let generatedURL = repoURL
         .appendingPathComponent(".areamatrix", isDirectory: true)
         .appendingPathComponent("generated", isDirectory: true)
         .appendingPathComponent("root.md", isDirectory: false)
-    let diagnosticsSnapshot = DiagnosticsSnapshotSnapshot(
+    return RepositorySettingsIntegrationURLs(
+        repoURL: repoURL,
+        sourceRootURL: sourceRootURL,
+        sourceURL: sourceURL,
+        generatedURL: generatedURL
+    )
+}
+
+private func makeRepositorySettingsDiagnosticsSnapshot(repoURL: URL) -> DiagnosticsSnapshotSnapshot {
+    DiagnosticsSnapshotSnapshot(
         snapshotPath: repoURL
             .appendingPathComponent(".areamatrix", isDirectory: true)
             .appendingPathComponent("diagnostics", isDirectory: true)
@@ -144,43 +191,42 @@ private func makeRepositorySettingsIntegrationContext() async throws -> Reposito
         createdAt: 1_778_000_000,
         warnings: []
     )
-    let finder = ShellRecordingFinderOpener()
-    let copier = ShellRecordingPathCopier()
-    let generatedRevealer = RepositorySettingsRecordingFileRevealer()
-    let diagnostics = ShellRecordingDiagnosticsCollector(result: .success(diagnosticsSnapshot))
-    let announcer = S117RecordingAccessibilityAnnouncer()
-    let model = RepositorySettingsModel(
-        repoPath: repoURL.path,
+}
+
+@MainActor
+private func makeRepositorySettingsIntegrationDoubles(
+    diagnosticsSnapshot: DiagnosticsSnapshotSnapshot
+) -> RepositorySettingsIntegrationDoubles {
+    RepositorySettingsIntegrationDoubles(
+        finder: ShellRecordingFinderOpener(),
+        copier: ShellRecordingPathCopier(),
+        generatedRevealer: RepositorySettingsRecordingFileRevealer(),
+        diagnostics: ShellRecordingDiagnosticsCollector(result: .success(diagnosticsSnapshot)),
+        announcer: S117RecordingAccessibilityAnnouncer()
+    )
+}
+
+@MainActor
+private func makeRepositorySettingsModel(
+    urls: RepositorySettingsIntegrationURLs,
+    bridge: CoreBridge,
+    doubles: RepositorySettingsIntegrationDoubles
+) -> RepositorySettingsModel {
+    RepositorySettingsModel(
+        repoPath: urls.repoURL.path,
         loader: bridge,
         updater: bridge,
         repositoryOpener: bridge,
         fileLister: bridge,
         scanSessionReader: bridge,
         existingRepositoryMetadataReader: SQLiteExistingRepositoryMetadataReader(),
-        finderOpener: finder,
-        pathCopier: copier,
-        generatedOverviewRevealer: generatedRevealer,
-        diagnosticsCollector: diagnostics,
+        finderOpener: doubles.finder,
+        pathCopier: doubles.copier,
+        generatedOverviewRevealer: doubles.generatedRevealer,
+        diagnosticsCollector: doubles.diagnostics,
         errorMapper: bridge,
-        accessibilityAnnouncer: announcer
+        accessibilityAnnouncer: doubles.announcer
     )
-
-    let context = RepositorySettingsIntegrationContext(
-        repoURL: repoURL,
-        sourceRootURL: sourceRoot,
-        sourceURL: sourceURL,
-        imported: imported,
-        generatedURL: generatedURL,
-        diagnosticsSnapshot: diagnosticsSnapshot,
-        finder: finder,
-        copier: copier,
-        generatedRevealer: generatedRevealer,
-        diagnostics: diagnostics,
-        announcer: announcer,
-        model: model
-    )
-    didSucceed = true
-    return context
 }
 
 @MainActor
@@ -202,7 +248,9 @@ private func assertRepositorySettingsIntegrationState(
     XCTAssertEqual(context.imported.storageMode, "Indexed")
     XCTAssertEqual(context.imported.sourcePath, context.sourceURL.path)
     XCTAssertTrue(FileManager.default.fileExists(atPath: context.sourceURL.path))
-    XCTAssertFalse(FileManager.default.fileExists(atPath: context.repoURL.appendingPathComponent(context.imported.path).path))
+    XCTAssertFalse(FileManager.default.fileExists(
+        atPath: context.repoURL.appendingPathComponent(context.imported.path).path
+    ))
     XCTAssertTrue(FileManager.default.fileExists(atPath: context.generatedURL.path))
     XCTAssertFalse(FileManager.default.fileExists(atPath: context.repoURL.appendingPathComponent("README.md").path))
     XCTAssertFalse(FileManager.default.fileExists(atPath: context.repoURL.appendingPathComponent("AREAMATRIX.md").path))
@@ -221,8 +269,8 @@ private func assertRepositorySettingsIntegrationState(
     XCTAssertNil(overviewActionError)
     XCTAssertEqual(diagnosticsState, .collected(context.diagnosticsSnapshot))
     XCTAssertEqual(openedRepoPaths, [context.repoURL.path])
-    XCTAssertEqual(copyRequests.map { $0.repoPath }, [context.repoURL.path])
-    XCTAssertEqual(copyRequests.map { $0.relativePath }, [""])
+    XCTAssertEqual(copyRequests.map(\.repoPath), [context.repoURL.path])
+    XCTAssertEqual(copyRequests.map(\.relativePath), [""])
     XCTAssertEqual(generatedRequests, [RepositorySettingsRecordingFileRevealer.Request(
         repoPath: context.repoURL.path,
         relativePath: RepositorySettingsSummary.generatedOverviewRelativePath

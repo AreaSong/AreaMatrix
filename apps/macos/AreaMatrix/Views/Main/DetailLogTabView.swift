@@ -42,9 +42,9 @@ struct DetailLogTabView: View {
         switch detailLogState {
         case .notLoaded, .loading:
             loadingState
-        case .loaded(_, let entries):
+        case let .loaded(_, entries):
             loadedState(entries)
-        case .failed(let fileID, let mapping):
+        case let .failed(fileID, mapping):
             errorState(fileID: fileID, mapping)
         }
     }
@@ -111,7 +111,7 @@ struct DetailLogTabView: View {
         switch diagnosticsState {
         case .idle:
             EmptyView()
-        case .confirmingPrivacy(let stateFileID) where stateFileID == fileID:
+        case let .confirmingPrivacy(stateFileID) where stateFileID == fileID:
             VStack(alignment: .leading, spacing: 6) {
                 Text("Create a redacted diagnostics package for this change log error?")
                     .font(.caption)
@@ -121,11 +121,11 @@ struct DetailLogTabView: View {
                     Button("Cancel", action: onCancelDiagnostics)
                 }
             }
-        case .collecting(let stateFileID) where stateFileID == fileID:
+        case let .collecting(stateFileID) where stateFileID == fileID:
             Label("Preparing redacted diagnostics...", systemImage: "arrow.clockwise")
                 .font(.caption)
                 .foregroundStyle(.secondary)
-        case .collected(let stateFileID, let snapshot) where stateFileID == fileID:
+        case let .collected(stateFileID, snapshot) where stateFileID == fileID:
             VStack(alignment: .leading, spacing: 4) {
                 Label("Diagnostics collected", systemImage: "doc.badge.gearshape")
                 Text(snapshot.snapshotPath)
@@ -133,7 +133,7 @@ struct DetailLogTabView: View {
                     .textSelection(.enabled)
             }
             .font(.caption)
-        case .failed(let stateFileID, let mapping) where stateFileID == fileID:
+        case let .failed(stateFileID, mapping) where stateFileID == fileID:
             VStack(alignment: .leading, spacing: 4) {
                 Label("Diagnostics could not be collected", systemImage: "exclamationmark.triangle")
                 Text(mapping.userMessage)

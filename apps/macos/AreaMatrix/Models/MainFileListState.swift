@@ -1,31 +1,33 @@
 import Foundation
 
-enum DetailPaneTab: String, CaseIterable, Identifiable, Sendable {
+enum DetailPaneTab: String, CaseIterable, Identifiable {
     case meta
     case log
     case note
 
-    var id: String { rawValue }
+    var id: String {
+        rawValue
+    }
 
     var title: String {
         switch self {
         case .meta:
-            return "Meta"
+            "Meta"
         case .log:
-            return "Log"
+            "Log"
         case .note:
-            return "Note"
+            "Note"
         }
     }
 }
 
-enum MainFileSelectionState: Equatable, Sendable {
+enum MainFileSelectionState: Equatable {
     case none
     case single(Int64)
     case multiple(Set<Int64>)
 
     var singleFileID: Int64? {
-        if case .single(let id) = self { return id }
+        if case let .single(id) = self { return id }
         return nil
     }
 
@@ -35,12 +37,12 @@ enum MainFileSelectionState: Equatable, Sendable {
     }
 
     var multipleFileIDs: Set<Int64> {
-        if case .multiple(let ids) = self { return ids }
+        if case let .multiple(ids) = self { return ids }
         return []
     }
 }
 
-enum MainFileActionDestination: Equatable, Sendable {
+enum MainFileActionDestination: Equatable {
     case rename(fileID: Int64)
     case changeCategory(fileID: Int64, initialTargetCategory: String? = nil)
     case delete(fileID: Int64)
@@ -49,43 +51,43 @@ enum MainFileActionDestination: Equatable, Sendable {
     var pageID: String {
         switch self {
         case .rename:
-            return "S1-33"
+            "S1-33"
         case .changeCategory:
-            return "S1-35"
+            "S1-35"
         case .delete:
-            return "S1-34"
+            "S1-34"
         case .iCloudConflict:
-            return "S1-25"
+            "S1-25"
         }
     }
 
     var pageTitle: String {
         switch self {
         case .rename:
-            return "Rename File"
+            "Rename File"
         case .changeCategory:
-            return "Change Category"
+            "Change Category"
         case .delete:
-            return "Move File to Trash?"
+            "Move File to Trash?"
         case .iCloudConflict:
-            return "Resolve iCloud Conflict"
+            "Resolve iCloud Conflict"
         }
     }
 
     var fileID: Int64 {
         switch self {
-        case .rename(let fileID), .changeCategory(let fileID, _), .delete(let fileID), .iCloudConflict(let fileID):
-            return fileID
+        case let .rename(fileID), let .changeCategory(fileID, _), let .delete(fileID), let .iCloudConflict(fileID):
+            fileID
         }
     }
 
     var initialChangeCategoryTarget: String? {
-        guard case .changeCategory(_, let targetCategory) = self else { return nil }
+        guard case let .changeCategory(_, targetCategory) = self else { return nil }
         return targetCategory
     }
 
     func isChangeCategory(fileID expectedFileID: Int64) -> Bool {
-        guard case .changeCategory(let fileID, _) = self else { return false }
+        guard case let .changeCategory(fileID, _) = self else { return false }
         return fileID == expectedFileID
     }
 }
@@ -96,7 +98,7 @@ extension MainFileActionDestination: Identifiable {
     }
 }
 
-enum MainFileDeleteOperation: String, Equatable, Sendable {
+enum MainFileDeleteOperation: String, Equatable {
     case moveToTrash
     case removeFromIndex
 
@@ -113,68 +115,68 @@ enum MainFileDeleteOperation: String, Equatable, Sendable {
     var title: String {
         switch self {
         case .moveToTrash:
-            return "Move File to Trash?"
+            "Move File to Trash?"
         case .removeFromIndex:
-            return "Remove from Index?"
+            "Remove from Index?"
         }
     }
 
     var message: String {
         switch self {
         case .moveToTrash:
-            return "AreaMatrix will move this file to the system Trash and keep a change-log record."
+            "AreaMatrix will move this file to the system Trash and keep a change-log record."
         case .removeFromIndex:
-            return "This removes the AreaMatrix index entry. It does not delete the original file."
+            "This removes the AreaMatrix index entry. It does not delete the original file."
         }
     }
 
     var confirmationText: String {
         switch self {
         case .moveToTrash:
-            return "我理解该文件会被移到系统废纸篓"
+            "我理解该文件会被移到系统废纸篓"
         case .removeFromIndex:
-            return "我理解该条目会从 AreaMatrix 索引中移除"
+            "我理解该条目会从 AreaMatrix 索引中移除"
         }
     }
 
     var actionTitle: String {
         switch self {
         case .moveToTrash:
-            return "Move to Trash"
+            "Move to Trash"
         case .removeFromIndex:
-            return "Remove from Index"
+            "Remove from Index"
         }
     }
 
     var runningTitle: String {
         switch self {
         case .moveToTrash:
-            return "Moving to Trash..."
+            "Moving to Trash..."
         case .removeFromIndex:
-            return "Removing..."
+            "Removing..."
         }
     }
 
     var failureTitle: String {
         switch self {
         case .moveToTrash:
-            return "Move to Trash failed"
+            "Move to Trash failed"
         case .removeFromIndex:
-            return "Remove from Index failed"
+            "Remove from Index failed"
         }
     }
 
     func successBanner(fileID: Int64) -> MainListStatusBanner {
         switch self {
         case .moveToTrash:
-            return .movedFileToTrash(fileID: fileID)
+            .movedFileToTrash(fileID: fileID)
         case .removeFromIndex:
-            return .removedFileFromIndex(fileID: fileID)
+            .removedFileFromIndex(fileID: fileID)
         }
     }
 }
 
-enum MainFileDeleteState: Equatable, Sendable {
+enum MainFileDeleteState: Equatable {
     case idle
     case deleting(fileID: Int64, operation: MainFileDeleteOperation)
     case failed(fileID: Int64, operation: MainFileDeleteOperation, CoreErrorMappingSnapshot)
@@ -185,12 +187,12 @@ enum MainFileDeleteState: Equatable, Sendable {
     }
 
     func isDeleting(fileID: Int64) -> Bool {
-        guard case .deleting(let deletingFileID, _) = self else { return false }
+        guard case let .deleting(deletingFileID, _) = self else { return false }
         return deletingFileID == fileID
     }
 
     func failure(for fileID: Int64) -> CoreErrorMappingSnapshot? {
-        guard case .failed(let failedFileID, _, let mapping) = self,
+        guard case let .failed(failedFileID, _, mapping) = self,
               failedFileID == fileID else { return nil }
         return mapping
     }
@@ -202,7 +204,7 @@ enum MainFileDeleteState: Equatable, Sendable {
     }
 }
 
-enum MainListStatusBanner: Equatable, Sendable {
+enum MainListStatusBanner: Equatable {
     case renamedPreservedSelection(fileID: Int64)
     case removedSelectedFile(fileID: Int64)
     case unsavedNoteDraftPreserved(fileID: Int64)
@@ -215,49 +217,49 @@ enum MainListStatusBanner: Equatable, Sendable {
     var message: String {
         switch self {
         case .renamedPreservedSelection:
-            return "File renamed. The same file remains selected."
+            "File renamed. The same file remains selected."
         case .removedSelectedFile:
-            return "Selected file is missing or was removed outside AreaMatrix."
+            "Selected file is missing or was removed outside AreaMatrix."
         case .unsavedNoteDraftPreserved:
-            return "无法保存笔记。草稿已保留，返回该文件的 Note tab 后可继续重试。"
+            "无法保存笔记。草稿已保留，返回该文件的 Note tab 后可继续重试。"
         case .movedFileToTrash:
-            return "Moved to Trash. Metadata retained for traceability."
+            "Moved to Trash. Metadata retained for traceability."
         case .removedFileFromIndex:
-            return "Removed from AreaMatrix index. Original file was not deleted."
-        case .changedCategory(_, let category):
-            return "Category changed to \(category). Tree, list, detail, and change log are refreshed."
-        case .changedCategoryTreeRefreshFailed(_, let category):
-            return """
+            "Removed from AreaMatrix index. Original file was not deleted."
+        case let .changedCategory(_, category):
+            "Category changed to \(category). Tree, list, detail, and change log are refreshed."
+        case let .changedCategoryTreeRefreshFailed(_, category):
+            """
             Category changed to \(category). List, detail, and change log are refreshed. Retry to refresh Tree counts.
             """
-        case .resolvedICloudConflict(_, let strategy):
-            return strategy.successMessage
+        case let .resolvedICloudConflict(_, strategy):
+            strategy.successMessage
         }
     }
 
     var systemImage: String {
         switch self {
         case .renamedPreservedSelection:
-            return "arrow.triangle.2.circlepath"
+            "arrow.triangle.2.circlepath"
         case .removedSelectedFile, .unsavedNoteDraftPreserved, .changedCategoryTreeRefreshFailed:
-            return "exclamationmark.triangle"
+            "exclamationmark.triangle"
         case .movedFileToTrash, .removedFileFromIndex, .changedCategory, .resolvedICloudConflict:
-            return "checkmark.circle"
+            "checkmark.circle"
         }
     }
 }
 
-enum MainDetailTabRequest: Equatable, Sendable {
+enum MainDetailTabRequest: Equatable {
     case automatic(DetailPaneTab)
 }
 
-enum MainFileWriteActionDisabledReason: String, Equatable, Sendable {
+enum MainFileWriteActionDisabledReason: String, Equatable {
     case repoReadOnly = "Repository is read-only"
     case listLoading = "Current list is loading"
     case importLocked = "This file is locked by an import"
 }
 
-enum MainFileRenameState: Equatable, Sendable {
+enum MainFileRenameState: Equatable {
     case idle
     case renaming(fileID: Int64)
     case returningToChangeCategory(fileID: Int64, targetCategory: String)
@@ -268,33 +270,33 @@ enum MainFileRenameState: Equatable, Sendable {
     var isRenaming: Bool {
         switch self {
         case .renaming, .renamingFromChangeCategory:
-            return true
+            true
         case .idle, .returningToChangeCategory, .failed, .failedFromChangeCategory:
-            return false
+            false
         }
     }
 
     func failure(for fileID: Int64) -> CoreErrorMappingSnapshot? {
         switch self {
-        case .failed(let failedFileID, let mapping) where failedFileID == fileID:
-            return mapping
-        case .failedFromChangeCategory(let failedFileID, _, let mapping) where failedFileID == fileID:
-            return mapping
+        case let .failed(failedFileID, mapping) where failedFileID == fileID:
+            mapping
+        case let .failedFromChangeCategory(failedFileID, _, mapping) where failedFileID == fileID:
+            mapping
         default:
-            return nil
+            nil
         }
     }
 
     func changeCategoryReturnTarget(for fileID: Int64) -> String? {
         switch self {
-        case .returningToChangeCategory(let returningFileID, let targetCategory) where returningFileID == fileID:
-            return targetCategory
-        case .renamingFromChangeCategory(let returningFileID, let targetCategory) where returningFileID == fileID:
-            return targetCategory
-        case .failedFromChangeCategory(let returningFileID, let targetCategory, _) where returningFileID == fileID:
-            return targetCategory
+        case let .returningToChangeCategory(returningFileID, targetCategory) where returningFileID == fileID:
+            targetCategory
+        case let .renamingFromChangeCategory(returningFileID, targetCategory) where returningFileID == fileID:
+            targetCategory
+        case let .failedFromChangeCategory(returningFileID, targetCategory, _) where returningFileID == fileID:
+            targetCategory
         default:
-            return nil
+            nil
         }
     }
 }
@@ -318,14 +320,14 @@ enum MainFileActionCategoryOptions {
     }
 }
 
-enum MainListDiagnosticsState: Equatable, Sendable {
+enum MainListDiagnosticsState: Equatable {
     case idle
     case collecting
     case collected(DiagnosticsSnapshotSnapshot)
     case failed(CoreErrorMappingSnapshot)
 }
 
-enum MainDetailLogState: Equatable, Sendable {
+enum MainDetailLogState: Equatable {
     case notLoaded
     case loading(fileID: Int64)
     case loaded(fileID: Int64, entries: [ChangeLogEntrySnapshot])
@@ -337,7 +339,7 @@ enum MainDetailLogState: Equatable, Sendable {
     }
 }
 
-enum MainDetailLogDiagnosticsState: Equatable, Sendable {
+enum MainDetailLogDiagnosticsState: Equatable {
     case idle
     case confirmingPrivacy(fileID: Int64)
     case collecting(fileID: Int64)
@@ -350,7 +352,7 @@ enum MainDetailLogDiagnosticsState: Equatable, Sendable {
     }
 }
 
-struct MultiSelectionDetailSummary: Equatable, Sendable {
+struct MultiSelectionDetailSummary: Equatable {
     var selectedCount: Int
     var files: [FileEntrySnapshot]
     var unresolvedMetadataCount: Int
@@ -402,7 +404,7 @@ struct MultiSelectionDetailSummary: Equatable, Sendable {
             MultiSelectionSummaryRow(label: "Categories", value: categoriesDisplay),
             MultiSelectionSummaryRow(label: "Storage modes", value: storageModesDisplay),
             MultiSelectionSummaryRow(label: "Earliest imported", value: importedDateDisplay { $0.min() }),
-            MultiSelectionSummaryRow(label: "Latest imported", value: importedDateDisplay { $0.max() }),
+            MultiSelectionSummaryRow(label: "Latest imported", value: importedDateDisplay { $0.max() })
         ]
     }
 
@@ -485,9 +487,11 @@ struct MultiSelectionDetailSummary: Equatable, Sendable {
     }
 }
 
-struct MultiSelectionSummaryRow: Equatable, Identifiable, Sendable {
+struct MultiSelectionSummaryRow: Equatable, Identifiable {
     let label: String
     let value: String
 
-    var id: String { label }
+    var id: String {
+        label
+    }
 }

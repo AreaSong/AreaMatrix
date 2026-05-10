@@ -28,7 +28,7 @@ extension MainFileListModel {
             statusBanner = .renamedPreservedSelection(fileID: renamedFile.id)
             if selection.singleFileID == renamedFile.id {
                 await loadChangeLog(fileID: renamedFile.id)
-                if case .loaded(let loadedFileID, _) = detailLogState, loadedFileID == renamedFile.id {
+                if case let .loaded(loadedFileID, _) = detailLogState, loadedFileID == renamedFile.id {
                     detailTabRequest = .automatic(.log)
                 }
             }

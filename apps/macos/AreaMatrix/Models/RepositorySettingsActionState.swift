@@ -1,16 +1,16 @@
 import Foundation
 
-struct RepositorySettingsPathActionError: Equatable, Sendable {
+struct RepositorySettingsPathActionError: Equatable {
     var message: String
     var recovery: String
 }
 
-struct RepositorySettingsDiagnosticsError: Equatable, Sendable {
+struct RepositorySettingsDiagnosticsError: Equatable {
     var message: String
     var recovery: String
 }
 
-enum RepositorySettingsDiagnosticsState: Equatable, Sendable {
+enum RepositorySettingsDiagnosticsState: Equatable {
     case idle
     case confirmingPrivacy
     case collecting

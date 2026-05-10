@@ -16,11 +16,11 @@ extension CoreEmptyRepositoryOpening {
     }
 }
 
-struct RepositoryOpeningResult: Equatable, Sendable {
+struct RepositoryOpeningResult: Equatable {
     var config: RepoConfigSnapshot
     var tree: RepositoryTreeNodeSnapshot
     var currentCategoryFiles: [FileEntrySnapshot]
-    var currentCategoryListError: CoreErrorMappingSnapshot? = nil
+    var currentCategoryListError: CoreErrorMappingSnapshot?
     var isReadOnly: Bool = false
     var writeLockedFileIDs: Set<Int64> = []
 
@@ -40,12 +40,12 @@ struct RepositoryOpeningResult: Equatable, Sendable {
     }
 }
 
-struct RepositoryCurrentCategoryFilesResult: Equatable, Sendable {
+struct RepositoryCurrentCategoryFilesResult: Equatable {
     var files: [FileEntrySnapshot]
     var errorMapping: CoreErrorMappingSnapshot?
 }
 
-struct RepositoryTreeNodeSnapshot: Equatable, Identifiable, Sendable {
+struct RepositoryTreeNodeSnapshot: Equatable, Identifiable {
     var slug: String
     var displayName: String
     var kind: String
@@ -128,17 +128,25 @@ struct RepositoryTreeNodeSnapshot: Equatable, Identifiable, Sendable {
         "code": 2,
         "design": 3,
         "finance": 4,
-        "media": 5,
+        "media": 5
     ]
 }
 
-struct RepositorySidebarRowSnapshot: Equatable, Identifiable, Sendable {
+struct RepositorySidebarRowSnapshot: Equatable, Identifiable {
     var node: RepositoryTreeNodeSnapshot
     var depth: Int
 
-    var id: String { node.id }
-    var displayName: String { node.displayName }
-    var totalFileCount: Int64 { node.totalFileCount }
+    var id: String {
+        node.id
+    }
+
+    var displayName: String {
+        node.displayName
+    }
+
+    var totalFileCount: Int64 {
+        node.totalFileCount
+    }
 
     var categoryForFileList: String? {
         let path = node.relativePath
@@ -178,7 +186,7 @@ extension CoreBridge: CoreEmptyRepositoryOpening, CoreRepositoryTreeListing {
         repoPath: String,
         fileLoading: CurrentCategoryFileLoading
     ) async throws -> RepositoryOpeningResult {
-        let config = RepoConfigSnapshot(coreConfig: try loadOpeningCoreConfig(repoPath: repoPath))
+        let config = try RepoConfigSnapshot(coreConfig: loadOpeningCoreConfig(repoPath: repoPath))
         let tree = try await listTree(repoPath: repoPath, locale: config.locale)
         let currentCategory = loadOpeningCurrentCategoryFiles(
             repoPath: repoPath,
@@ -247,11 +255,11 @@ private enum CurrentCategoryFileLoading {
     func shouldLoadFiles(for tree: RepositoryTreeNodeSnapshot) -> Bool {
         switch self {
         case .never:
-            return false
+            false
         case .whenTreeIsEmpty:
-            return tree.totalFileCount == 0
+            tree.totalFileCount == 0
         case .always:
-            return true
+            true
         }
     }
 }

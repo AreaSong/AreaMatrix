@@ -1,7 +1,7 @@
 import Foundation
 
 extension OnboardingModel {
-    enum Route: Equatable, Sendable {
+    enum Route: Equatable {
         case loadingConfiguration
         case welcome
         case choosePath
@@ -23,33 +23,33 @@ extension OnboardingModel {
 
         var isSettingsReturnRoute: Bool {
             switch self {
-            case .settingsRepository, .settingsGeneral(_):
-                return true
+            case .settingsRepository, .settingsGeneral:
+                true
             default:
-                return false
+                false
             }
         }
     }
 
-    enum ChoosePathAction: Equatable, Sendable {
+    enum ChoosePathAction: Equatable {
         case continueRequested(RepoPathValidationSnapshot)
     }
 
-    enum ValidatePathAction: Equatable, Sendable {
+    enum ValidatePathAction: Equatable {
         case continueRequested(RepoPathValidationSnapshot)
         case adoptExistingRequested(RepoPathValidationSnapshot, scanSession: ScanSessionSnapshot?)
         case openExistingRepositoryRequested(RepoPathValidationSnapshot)
     }
 }
 
-struct DatabaseRepairRouteState: Equatable, Sendable {
+struct DatabaseRepairRouteState: Equatable {
     var repoPath: String
     var scanSession: ScanSessionSnapshot?
     var mapping: CoreErrorMappingSnapshot?
     var returnRoute: DatabaseRepairReturnRoute
 }
 
-enum DatabaseRepairReturnRoute: Equatable, Sendable {
+enum DatabaseRepairReturnRoute: Equatable {
     case validatePath
     case mainLoading(MainLoadingState)
     case mainRepoError(CoreErrorMappingSnapshot?)
@@ -57,32 +57,32 @@ enum DatabaseRepairReturnRoute: Equatable, Sendable {
     case settingsGeneral(RepositoryOpeningResult, selectedTab: String?)
 }
 
-struct ImportResultRouteState: Equatable, Sendable {
-    enum ChangeLogState: Equatable, Sendable {
+struct ImportResultRouteState: Equatable {
+    enum ChangeLogState: Equatable {
         case notLoaded
         case loading
         case loaded([ChangeLogEntrySnapshot])
         case failed(CoreErrorMappingSnapshot)
     }
 
-    enum ExportState: Equatable, Sendable {
+    enum ExportState: Equatable {
         case idle
         case confirmingPrivacy
         case exported(String)
         case failed(String)
     }
 
-    struct Item: Identifiable, Equatable, Sendable {
-        enum Status: String, Equatable, Hashable, Sendable {
-            case imported = "Imported"
-            case skipped = "Skipped"
-            case failed = "Failed"
-            case pending = "Pending"
-        }
+    enum ItemStatus: String, Equatable, Hashable {
+        case imported = "Imported"
+        case skipped = "Skipped"
+        case failed = "Failed"
+        case pending = "Pending"
+    }
 
+    struct Item: Identifiable, Equatable {
         var sourcePath: String
         var targetPath: String
-        var status: Status
+        var status: ItemStatus
         var reason: String
         var retryContext: ImportProgressRetryContext?
         var existingRelativePath: String?
@@ -114,6 +114,7 @@ struct ImportResultRouteState: Equatable, Sendable {
     var isRetryingFailedItems: Bool
     var changeLog: ChangeLogState
     var exportState: ExportState
+    var shouldClearInterruptedSessionOnDone: Bool
 
     init(sourceOpening: RepositoryOpeningResult, progress: ImportBatchProgressSnapshot) {
         self.sourceOpening = sourceOpening
@@ -125,14 +126,17 @@ struct ImportResultRouteState: Equatable, Sendable {
         isRetryingFailedItems = false
         changeLog = .notLoaded
         exportState = .idle
+        shouldClearInterruptedSessionOnDone = false
         items = Self.resultItems(
             from: progress.items,
             repoPath: sourceOpening.config.repoPath,
             currentPath: progress.currentPath,
-            imported: progress.completed,
-            failed: progress.failed,
-            stopped: progress.skipped,
-            pending: progress.remaining + progress.pending
+            counts: ImportResultCounts(
+                imported: progress.completed,
+                failed: progress.failed,
+                stopped: progress.skipped,
+                pending: progress.remaining + progress.pending
+            )
         )
     }
 
@@ -150,7 +154,8 @@ struct ImportResultRouteState: Equatable, Sendable {
         items: [Item],
         isRetryingFailedItems: Bool = false,
         changeLog: ChangeLogState = .notLoaded,
-        exportState: ExportState = .idle
+        exportState: ExportState = .idle,
+        shouldClearInterruptedSessionOnDone: Bool = false
     ) {
         self.sourceOpening = sourceOpening
         self.imported = imported
@@ -162,6 +167,7 @@ struct ImportResultRouteState: Equatable, Sendable {
         self.isRetryingFailedItems = isRetryingFailedItems
         self.changeLog = changeLog
         self.exportState = exportState
+        self.shouldClearInterruptedSessionOnDone = shouldClearInterruptedSessionOnDone
     }
 
     var summaryText: String {
@@ -180,25 +186,19 @@ struct ImportResultRouteState: Equatable, Sendable {
         from progressItems: [ImportBatchProgressSnapshot.Item],
         repoPath: String,
         currentPath: String,
-        imported: Int,
-        failed: Int,
-        stopped: Int,
-        pending: Int
+        counts: ImportResultCounts
     ) -> [Item] {
         guard !progressItems.isEmpty else {
             return [fallbackItem(
                 currentPath: currentPath,
-                imported: imported,
-                failed: failed,
-                stopped: stopped,
-                pending: pending
+                counts: counts
             )]
         }
         return progressItems.map { item in
             Item(
                 sourcePath: item.sourcePath,
                 targetPath: item.targetPath,
-                status: status(for: item.phase, stopped: stopped),
+                status: status(for: item.phase, stopped: counts.stopped),
                 reason: reason(for: item),
                 retryContext: retryContext(for: item, repoPath: repoPath),
                 existingRelativePath: item.existingRelativePath
@@ -208,16 +208,18 @@ struct ImportResultRouteState: Equatable, Sendable {
 
     private static func fallbackItem(
         currentPath: String,
-        imported: Int,
-        failed: Int,
-        stopped: Int,
-        pending: Int
+        counts: ImportResultCounts
     ) -> Item {
         Item(
             sourcePath: currentPath,
             targetPath: currentPath,
-            status: fallbackStatus(imported: imported, failed: failed, stopped: stopped, pending: pending),
-            reason: fallbackReason(failed: failed, stopped: stopped, pending: pending),
+            status: fallbackStatus(
+                imported: counts.imported,
+                failed: counts.failed,
+                stopped: counts.stopped,
+                pending: counts.pending
+            ),
+            reason: fallbackReason(failed: counts.failed, stopped: counts.stopped, pending: counts.pending),
             retryContext: nil,
             existingRelativePath: nil
         )
@@ -226,16 +228,16 @@ struct ImportResultRouteState: Equatable, Sendable {
     private static func status(
         for phase: ImportBatchProgressSnapshot.Phase,
         stopped: Int
-    ) -> Item.Status {
+    ) -> ItemStatus {
         switch phase {
         case .done:
-            return .imported
+            .imported
         case .failed:
-            return .failed
+            .failed
         case .pending:
-            return stopped > 0 ? .skipped : .pending
+            stopped > 0 ? .skipped : .pending
         case .copying, .moving, .hashing, .classifying, .writingIndex:
-            return .pending
+            .pending
         }
     }
 
@@ -260,7 +262,7 @@ struct ImportResultRouteState: Equatable, Sendable {
         failed: Int,
         stopped: Int,
         pending: Int
-    ) -> Item.Status {
+    ) -> ItemStatus {
         if failed > 0 { return .failed }
         if stopped > 0 { return .skipped }
         if pending > 0 { return .pending }
@@ -305,4 +307,11 @@ struct ImportResultRouteState: Equatable, Sendable {
         let name = (path as NSString).lastPathComponent
         return name.isEmpty ? "redacted path" : ".../\(name)"
     }
+}
+
+private struct ImportResultCounts {
+    var imported: Int
+    var failed: Int
+    var stopped: Int
+    var pending: Int
 }

@@ -1,5 +1,5 @@
-import XCTest
 @testable import AreaMatrix
+import XCTest
 
 final class ImportBatchResultSummaryTests: XCTestCase {
     @MainActor
@@ -19,7 +19,7 @@ final class ImportBatchResultSummaryTests: XCTestCase {
             ImportBatchPreviewRow.failed(
                 url: failedPreviewURL,
                 message: "无法读取分类预览路径：/tmp/unreadable.mov"
-            ),
+            )
         ]
         let importer = S118RecordingBatchImporter()
         let model = ImportBatchCopyImportModel(
@@ -41,7 +41,7 @@ final class ImportBatchResultSummaryTests: XCTestCase {
                 suggestedCategory: "finance",
                 overrideFilename: "Invoice_2026Q1.pdf",
                 duplicateStrategy: .ask
-            ),
+            )
         ])
         XCTAssertEqual(outcome?.succeededEntries.count, 1)
         XCTAssertEqual(outcome?.failedCount, 0)
@@ -76,7 +76,7 @@ final class ImportBatchResultSummaryTests: XCTestCase {
             ImportBatchPreviewRow.iCloudPlaceholder(
                 url: cloudURL,
                 message: "iCloud placeholder 需要下载后才能导入"
-            ),
+            )
         ]
         let model = ImportBatchCopyImportModel(
             importer: S118RecordingBatchImporter(),

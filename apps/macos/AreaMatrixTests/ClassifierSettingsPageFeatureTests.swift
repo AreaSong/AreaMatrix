@@ -1,9 +1,9 @@
-import XCTest
 @testable import AreaMatrix
+import XCTest
 
-private struct ClassifierSettingsNoopAccessibilityAnnouncer: AccessibilityAnnouncing {
+private struct ClassifierNoopAnnouncer: AccessibilityAnnouncing {
     @MainActor
-    func announce(_ message: String) {}
+    func announce(_: String) {}
 }
 
 final class ClassifierSettingsPageFeatureTests: XCTestCase {
@@ -92,7 +92,7 @@ final class ClassifierSettingsPageFeatureTests: XCTestCase {
 
         let requests = await predictor.requests()
         XCTAssertEqual(requests, [
-            ClassifierSettingsRecordingPredictor.Request(repoPath: "/tmp/repo", filename: "Invoice_2026Q1.pdf"),
+            ClassifierSettingsRecordingPredictor.Request(repoPath: "/tmp/repo", filename: "Invoice_2026Q1.pdf")
         ])
         XCTAssertEqual(model.previewResult?.category, "finance")
         XCTAssertEqual(model.previewResult?.suggestedName, "Invoice_2026Q1.pdf")
@@ -123,7 +123,7 @@ final class ClassifierSettingsPageFeatureTests: XCTestCase {
 
         let requests = await predictor.requests()
         XCTAssertEqual(requests, [
-            ClassifierSettingsRecordingPredictor.Request(repoPath: "/tmp/repo", filename: "Bad.pdf"),
+            ClassifierSettingsRecordingPredictor.Request(repoPath: "/tmp/repo", filename: "Bad.pdf")
         ])
         XCTAssertNil(model.previewResult)
         XCTAssertEqual(model.previewError?.message, "无法预览分类：classifier unavailable")
@@ -194,7 +194,7 @@ final class ClassifierSettingsPageFeatureTests: XCTestCase {
             updater: ClassifierSettingsRecordingUpdater(result: .success),
             predictor: predictor,
             errorMapper: ClassifierSettingsStaticErrorMapper(),
-            accessibilityAnnouncer: ClassifierSettingsNoopAccessibilityAnnouncer()
+            accessibilityAnnouncer: ClassifierNoopAnnouncer()
         )
 
         await model.load()
@@ -277,7 +277,7 @@ final class ClassifierSettingsPageFeatureTests: XCTestCase {
         predictor: any CoreCategoryPredicting = CoreBridge(),
         config: RepoConfigSnapshot = .classifierSettingsFixture(repoPath: "/tmp/repo"),
         fileOpener: any RepositoryFileOpening = NSWorkspaceRepositoryFileOpener(),
-        accessibilityAnnouncer: any AccessibilityAnnouncing = ClassifierSettingsNoopAccessibilityAnnouncer()
+        accessibilityAnnouncer: any AccessibilityAnnouncing = ClassifierNoopAnnouncer()
     ) async -> ClassifierSettingsModel {
         let model = ClassifierSettingsModel(
             repoPath: config.repoPath,
@@ -319,9 +319,9 @@ private actor ClassifierSettingsRecordingPredictor: CoreCategoryPredicting {
     func predictCategory(repoPath: String, filename: String) async throws -> ClassifyResultSnapshot {
         requestsStorage.append(Request(repoPath: repoPath, filename: filename))
         switch result {
-        case .success(let preview):
+        case let .success(preview):
             return preview
-        case .failure(let error):
+        case let .failure(error):
             throw error
         }
     }
@@ -368,9 +368,9 @@ private actor ClassifierSettingsRecordingLoader: CoreConfigurationLoading {
     func loadConfig(repoPath: String) async throws -> RepoConfigSnapshot {
         paths.append(repoPath)
         switch result {
-        case .success(let config):
+        case let .success(config):
             return config
-        case .failure(let error):
+        case let .failure(error):
             throw error
         }
     }
@@ -403,7 +403,7 @@ private actor ClassifierSettingsRecordingUpdater: CoreConfigurationUpdating {
         switch result {
         case .success:
             return
-        case .failureThenSuccess(let error) where requestsStorage.count == 1:
+        case let .failureThenSuccess(error) where requestsStorage.count == 1:
             throw error
         case .failureThenSuccess:
             return
@@ -419,15 +419,15 @@ private actor ClassifierSettingsStaticErrorMapper: CoreErrorMapping {
     func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
         switch error {
         case .Db:
-            return .classifierSettingsMapping(kind: .db, userMessage: "数据库错误")
-        case .Config(let reason):
-            return .classifierSettingsMapping(kind: .config, userMessage: "分类规则无效：\(reason)")
-        case .Classify(let reason):
-            return .classifierSettingsMapping(kind: .classify, userMessage: "无法预览分类：\(reason)")
+            .classifierSettingsMapping(kind: .db, userMessage: "数据库错误")
+        case let .Config(reason):
+            .classifierSettingsMapping(kind: .config, userMessage: "分类规则无效：\(reason)")
+        case let .Classify(reason):
+            .classifierSettingsMapping(kind: .classify, userMessage: "无法预览分类：\(reason)")
         case .PermissionDenied:
-            return .classifierSettingsMapping(kind: .permissionDenied, userMessage: "无访问权限")
+            .classifierSettingsMapping(kind: .permissionDenied, userMessage: "无访问权限")
         default:
-            return .classifierSettingsMapping(kind: .internal, userMessage: "保存失败")
+            .classifierSettingsMapping(kind: .internal, userMessage: "保存失败")
         }
     }
 }
@@ -436,7 +436,7 @@ private func classifierSettingsValidationProbeResult() -> ClassifyResultSnapshot
     ClassifyResultSnapshot(
         category: "inbox",
         suggestedName: "AreaMatrixValidationProbe.txt",
-        reason: .`default`,
+        reason: .default,
         confidence: 0
     )
 }

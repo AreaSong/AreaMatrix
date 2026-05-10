@@ -1,6 +1,6 @@
 import Foundation
 
-enum ImportBatchCopyImportRowStatus: Equatable, Sendable {
+enum ImportBatchCopyImportRowStatus: Equatable {
     case loading
     case ready(reasonLabel: String)
     case duplicate(
@@ -20,27 +20,27 @@ enum ImportBatchCopyImportRowStatus: Equatable, Sendable {
     var tag: String {
         switch self {
         case .loading:
-            return "PREVIEW"
+            "PREVIEW"
         case .ready:
-            return "OK"
+            "OK"
         case .duplicate:
-            return "DUP"
+            "DUP"
         case .nameConflict:
-            return "NAME"
+            "NAME"
         case .iCloudPlaceholder:
-            return "ICLOUD"
+            "ICLOUD"
         case .blocked:
-            return "BLOCKED"
+            "BLOCKED"
         case .importing:
-            return "IMPORTING"
+            "IMPORTING"
         case .skippedDuplicate:
-            return "SKIPPED"
+            "SKIPPED"
         case .skippedICloud:
-            return "PENDING"
+            "PENDING"
         case .imported:
-            return "IMPORTED"
+            "IMPORTED"
         case .error:
-            return "ERROR"
+            "ERROR"
         }
     }
 
@@ -48,24 +48,24 @@ enum ImportBatchCopyImportRowStatus: Equatable, Sendable {
         switch self {
         case .loading:
             return "Preparing preview..."
-        case .ready(let reasonLabel), .error(let reasonLabel):
+        case let .ready(reasonLabel), let .error(reasonLabel):
             return reasonLabel
-        case .duplicate(let existingPath, let strategy, let isReplaceConfirmed):
+        case let .duplicate(existingPath, strategy, isReplaceConfirmed):
             if strategy == .replace, isReplaceConfirmed {
                 return "Replace confirmed: \(existingPath)"
             }
             return "\(strategy.title): \(existingPath)"
-        case .nameConflict(let existingPath, let resolution):
+        case let .nameConflict(existingPath, resolution):
             return "\(resolution.title): \(existingPath)"
-        case .iCloudPlaceholder(_, let message):
+        case let .iCloudPlaceholder(_, message):
             return message
-        case .blocked(let message):
+        case let .blocked(message):
             return message
-        case .importing(let mode):
+        case let .importing(mode):
             return mode.importingMessage
-        case .skippedDuplicate(let existingPath):
+        case let .skippedDuplicate(existingPath):
             return "Duplicate skipped: \(existingPath)"
-        case .skippedICloud(let path):
+        case let .skippedICloud(path):
             return "iCloud pending: \(path)"
         case .imported:
             return "已完成导入"
@@ -80,7 +80,7 @@ enum ImportBatchCopyImportRowStatus: Equatable, Sendable {
     }
 }
 
-enum ImportBatchDuplicateResolutionStrategy: String, CaseIterable, Equatable, Sendable {
+enum ImportBatchDuplicateResolutionStrategy: String, CaseIterable, Equatable {
     case skip
     case keepBoth
     case replace
@@ -88,22 +88,22 @@ enum ImportBatchDuplicateResolutionStrategy: String, CaseIterable, Equatable, Se
     var title: String {
         switch self {
         case .skip:
-            return "Skip"
+            "Skip"
         case .keepBoth:
-            return "Keep both"
+            "Keep both"
         case .replace:
-            return "Replace"
+            "Replace"
         }
     }
 
     var duplicateStrategy: DuplicateStrategy {
         switch self {
         case .skip:
-            return .skip
+            .skip
         case .keepBoth:
-            return .keepBoth
+            .keepBoth
         case .replace:
-            return .overwrite
+            .overwrite
         }
     }
 
@@ -112,7 +112,7 @@ enum ImportBatchDuplicateResolutionStrategy: String, CaseIterable, Equatable, Se
     }
 }
 
-enum ImportBatchNameConflictResolution: Hashable, Sendable {
+enum ImportBatchNameConflictResolution: Hashable {
     case keepBoth
     case renameIncoming(String)
     case replace(isConfirmed: Bool)
@@ -120,20 +120,20 @@ enum ImportBatchNameConflictResolution: Hashable, Sendable {
     var title: String {
         switch self {
         case .keepBoth:
-            return "Keep both (auto-number)"
+            "Keep both (auto-number)"
         case .renameIncoming:
-            return "Rename incoming"
-        case .replace(let isConfirmed):
-            return isConfirmed ? "Replace confirmed" : "Replace"
+            "Rename incoming"
+        case let .replace(isConfirmed):
+            isConfirmed ? "Replace confirmed" : "Replace"
         }
     }
 
     var importsIncomingFile: Bool {
         switch self {
         case .keepBoth, .renameIncoming:
-            return true
-        case .replace(let isConfirmed):
-            return isConfirmed
+            true
+        case let .replace(isConfirmed):
+            isConfirmed
         }
     }
 
@@ -143,7 +143,7 @@ enum ImportBatchNameConflictResolution: Hashable, Sendable {
     }
 }
 
-struct ImportBatchCopyImportRow: Identifiable, Equatable, Sendable {
+struct ImportBatchCopyImportRow: Identifiable, Equatable {
     var originalName: String
     var sourcePath: String
     var sourceURL: URL
@@ -153,10 +153,12 @@ struct ImportBatchCopyImportRow: Identifiable, Equatable, Sendable {
     var suggestedName: String
     var status: ImportBatchCopyImportRowStatus
 
-    var id: String { sourcePath }
+    var id: String {
+        sourcePath
+    }
 
     var duplicateResolution: ImportBatchDuplicateResolutionStrategy? {
-        if case .duplicate(_, let strategy, _) = status {
+        if case let .duplicate(_, strategy, _) = status {
             return strategy
         }
         if case .skippedDuplicate = status {
@@ -166,20 +168,20 @@ struct ImportBatchCopyImportRow: Identifiable, Equatable, Sendable {
     }
 
     var nameConflictResolution: ImportBatchNameConflictResolution? {
-        if case .nameConflict(_, let resolution) = status {
+        if case let .nameConflict(_, resolution) = status {
             return resolution
         }
         return nil
     }
 
     var resolvedIncomingName: String {
-        guard case .nameConflict(_, let resolution) = status else {
+        guard case let .nameConflict(_, resolution) = status else {
             return suggestedName
         }
         switch resolution {
         case .keepBoth, .replace:
             return suggestedName
-        case .renameIncoming(let name):
+        case let .renameIncoming(name):
             return name
         }
     }
@@ -187,49 +189,50 @@ struct ImportBatchCopyImportRow: Identifiable, Equatable, Sendable {
     var isConflictReviewRow: Bool {
         switch status {
         case .duplicate, .nameConflict, .iCloudPlaceholder, .blocked, .skippedDuplicate, .skippedICloud:
-            return true
+            true
         case .loading, .ready, .importing, .imported, .error:
-            return false
+            false
         }
     }
 
     var isBlockedForImport: Bool {
         switch status {
         case .blocked:
-            return true
+            true
         case .duplicate(_, .replace, false):
-            return true
+            true
         case .nameConflict(_, .replace(false)):
-            return true
-        case .nameConflict(_, .renameIncoming(let name)):
-            return ImportSingleFileFilenameValidator.validationMessage(for: name) != nil
+            true
+        case let .nameConflict(_, .renameIncoming(name)):
+            ImportSingleFileFilenameValidator.validationMessage(for: name) != nil
         case .loading, .ready, .duplicate, .nameConflict, .iCloudPlaceholder, .importing,
              .skippedDuplicate, .skippedICloud, .imported, .error:
-            return false
+            false
         }
     }
 
     var existingConflictPath: String? {
         switch status {
-        case .duplicate(let existingPath, _, _), .nameConflict(let existingPath, _), .skippedDuplicate(let existingPath):
-            return existingPath
+        case let .duplicate(existingPath, _, _), let .nameConflict(existingPath, _),
+             let .skippedDuplicate(existingPath):
+            existingPath
         case .loading, .ready, .iCloudPlaceholder, .blocked, .importing, .skippedICloud, .imported, .error:
-            return nil
+            nil
         }
     }
 
     var conflictLabel: String {
         switch status {
         case .duplicate, .skippedDuplicate:
-            return "Duplicate content"
+            "Duplicate content"
         case .nameConflict:
-            return "Same name, different content"
+            "Same name, different content"
         case .iCloudPlaceholder, .skippedICloud:
-            return "iCloud placeholder"
+            "iCloud placeholder"
         case .blocked:
-            return "Blocked"
+            "Blocked"
         case .loading, .ready, .importing, .imported, .error:
-            return "-"
+            "-"
         }
     }
 
@@ -253,16 +256,16 @@ struct ImportBatchCopyImportRow: Identifiable, Equatable, Sendable {
     func defaultCategory(for destination: ImportBatchDestinationOption) -> String? {
         switch destination {
         case .autoClassify:
-            return predictedCategory ?? "inbox"
-        case .category(let slug):
-            return slug
+            predictedCategory ?? "inbox"
+        case let .category(slug):
+            slug
         case .repositoryRoot:
-            return nil
+            nil
         }
     }
 }
 
-enum ImportBatchCopyImportStatus: Equatable, Sendable {
+enum ImportBatchCopyImportStatus: Equatable {
     case idle
     case importing(completed: Int, total: Int, failed: Int, currentPath: String)
     case imported(successful: Int, failed: Int)
@@ -277,11 +280,11 @@ enum ImportBatchCopyImportStatus: Equatable, Sendable {
     var message: String? {
         switch self {
         case .idle:
-            return nil
-        case .importing(let completed, let total, let failed, _):
-            return "正在导入：已完成 \(completed)/\(total)，失败 \(failed)"
-        case .imported(let successful, let failed):
-            return "批量导入完成：成功 \(successful)，失败 \(failed)"
+            nil
+        case let .importing(completed, total, failed, _):
+            "正在导入：已完成 \(completed)/\(total)，失败 \(failed)"
+        case let .imported(successful, failed):
+            "批量导入完成：成功 \(successful)，失败 \(failed)"
         }
     }
 }
@@ -290,17 +293,17 @@ extension ImportBatchCopyImportModel {
     var storageModeRiskMessage: String? {
         switch selectedStorageMode {
         case .copy:
-            return nil
+            nil
         case .move:
-            return "Move 模式会移走源文件；请确认批量队列只包含要移入资料库的文件。"
+            "Move 模式会移走源文件；请确认批量队列只包含要移入资料库的文件。"
         case .indexOnly:
-            return "Index-only 不复制文件，只写入索引；源文件移动或删除后会显示缺失。"
+            "Index-only 不复制文件，只写入索引；源文件移动或删除后会显示缺失。"
         }
     }
 }
 
-struct ImportBatchProgressSnapshot: Equatable, Sendable {
-    enum Phase: String, Equatable, Sendable {
+struct ImportBatchProgressSnapshot: Equatable {
+    enum Phase: String, Codable, Equatable {
         case pending = "Pending"
         case copying = "Copying"
         case moving = "Moving"
@@ -311,12 +314,12 @@ struct ImportBatchProgressSnapshot: Equatable, Sendable {
         case failed = "Failed"
     }
 
-    struct Item: Identifiable, Equatable, Sendable {
+    struct Item: Identifiable, Equatable {
         var sourcePath: String
         var targetPath: String
         var phase: Phase
         var errorMessage: String?
-        var existingRelativePath: String? = nil
+        var existingRelativePath: String?
 
         var id: String {
             sourcePath
@@ -333,7 +336,7 @@ struct ImportBatchProgressSnapshot: Equatable, Sendable {
     var items: [Item] = []
 }
 
-struct ImportBatchImportResult: Equatable, Sendable {
+struct ImportBatchImportResult: Equatable {
     var succeededEntries: [FileEntrySnapshot]
     var failedCount: Int
     var previewErrorCount: Int = 0

@@ -69,7 +69,7 @@ extension MainFileListModel {
         pendingActionDestination = nil
         statusBanner = .changedCategory(fileID: movedFile.id, category: movedFile.category)
         await loadChangeLog(fileID: movedFile.id)
-        if case .loaded(let loadedFileID, _) = detailLogState, loadedFileID == movedFile.id {
+        if case let .loaded(loadedFileID, _) = detailLogState, loadedFileID == movedFile.id {
             detailTabRequest = .automatic(.log)
         }
     }

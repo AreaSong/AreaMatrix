@@ -143,7 +143,7 @@ final class MainExternalCreatedFileWatcher: ObservableObject {
     }
 }
 
-struct MainExternalCreatedFileWatcherEvent: Sendable {
+struct MainExternalCreatedFileWatcherEvent {
     let path: String
     let flags: FSEventStreamEventFlags
     let eventID: FSEventStreamEventId
@@ -154,7 +154,7 @@ private let mainExternalCreatedFileWatcherCallback: FSEventStreamCallback = { _,
 
     let pathArray = unsafeBitCast(paths, to: NSArray.self) as? [String] ?? []
     let eventCount = min(count, pathArray.count)
-    let events = (0..<eventCount).map { index in
+    let events = (0 ..< eventCount).map { index in
         MainExternalCreatedFileWatcherEvent(path: pathArray[index], flags: flags[index], eventID: ids[index])
     }
     let watcher = Unmanaged<MainExternalCreatedFileWatcher>.fromOpaque(info).takeUnretainedValue()

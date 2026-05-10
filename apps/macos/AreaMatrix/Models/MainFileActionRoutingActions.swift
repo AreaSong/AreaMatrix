@@ -117,10 +117,10 @@ extension MainFileListModel {
     }
 
     func clearPendingActionDestination() {
-        if !renameState.isRenaming &&
-            !deleteState.isDeleting &&
-            !isMovingCategory &&
-            !iCloudConflictResolutionState.isApplying {
+        if !renameState.isRenaming,
+           !deleteState.isDeleting,
+           !isMovingCategory,
+           !iCloudConflictResolutionState.isApplying {
             pendingActionDestination = nil
             renameState = .idle
             deleteState = .idle

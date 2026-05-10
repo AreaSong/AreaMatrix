@@ -1,6 +1,6 @@
+@testable import AreaMatrix
 import Foundation
 import XCTest
-@testable import AreaMatrix
 
 final class MainEmptyBuildTreeTests: XCTestCase {
     func testDefaultCoreBridgeListsRealEmptyRepositoryTreeForMainEmpty() async throws {
@@ -50,7 +50,7 @@ final class MainEmptyBuildTreeTests: XCTestCase {
         await model.bootstrapIfNeeded()
         let requestedPaths = await opener.requestedConfiguredRepoPaths()
 
-        guard case .mainEmpty(let routedOpening) = model.route else {
+        guard case let .mainEmpty(routedOpening) = model.route else {
             return XCTFail("expected main empty route, got \(model.route)")
         }
 
@@ -82,13 +82,17 @@ private actor BuildTreeRecordingRepositoryOpener: CoreEmptyRepositoryOpening {
         return opening
     }
 
-    func requestedConfiguredRepoPaths() -> [String] { configuredPaths }
+    func requestedConfiguredRepoPaths() -> [String] {
+        configuredPaths
+    }
 }
 
 private struct BuildTreeStaticSettingsReader: AppSettingsReading {
     let repoPath: String?
 
-    func configuredRepoPath() -> String? { repoPath }
+    func configuredRepoPath() -> String? {
+        repoPath
+    }
 }
 
 private struct BuildTreeNoopWelcomeHelpOpener: WelcomeHelpOpening {

@@ -1,5 +1,5 @@
-import XCTest
 @testable import AreaMatrix
+import XCTest
 
 final class ClassifierSettingsRecoveryTests: XCTestCase {
     @MainActor
@@ -27,7 +27,7 @@ final class ClassifierSettingsRecoveryTests: XCTestCase {
             ClassifierSettingsSequencePredictor.Request(
                 repoPath: repoURL.path,
                 filename: "AreaMatrixValidationProbe.txt"
-            ),
+            )
         ])
     }
 
@@ -63,7 +63,7 @@ final class ClassifierSettingsRecoveryTests: XCTestCase {
         try writeClassifier(original, repoURL: repoURL)
         let predictor = ClassifierSettingsSequencePredictor(results: [
             .success(classifierRecoveryProbeResult()),
-            .success(classifierRecoveryProbeResult()),
+            .success(classifierRecoveryProbeResult())
         ])
         let model = await recoveryModel(repoURL: repoURL, predictor: predictor)
 
@@ -86,7 +86,7 @@ final class ClassifierSettingsRecoveryTests: XCTestCase {
         defer { try? FileManager.default.removeItem(at: repoURL) }
         try writeClassifier("version: 1\ndefault: inbox\ncategories: []\n", repoURL: repoURL)
         let predictor = ClassifierSettingsSequencePredictor(results: [
-            .failure(CoreError.Config(reason: "categories[2].slug duplicate at line 47 column 5")),
+            .failure(CoreError.Config(reason: "categories[2].slug duplicate at line 47 column 5"))
         ])
         let model = await recoveryModel(repoURL: repoURL, predictor: predictor)
 
@@ -121,10 +121,10 @@ final class ClassifierSettingsRecoveryTests: XCTestCase {
 
 private struct ClassifierSettingsRecoveryNoopAnnouncer: AccessibilityAnnouncing {
     @MainActor
-    func announce(_ message: String) {}
+    func announce(_: String) {}
 }
 
-private enum ClassifierSettingsSequencePredictorResult {
+private enum ClassifierSequencePredictorResult {
     case success(ClassifyResultSnapshot)
     case failure(Error)
 }
@@ -135,10 +135,10 @@ private actor ClassifierSettingsSequencePredictor: CoreCategoryPredicting {
         var filename: String
     }
 
-    private var results: [ClassifierSettingsSequencePredictorResult]
+    private var results: [ClassifierSequencePredictorResult]
     private var requestsStorage: [Request] = []
 
-    init(results: [ClassifierSettingsSequencePredictorResult]) {
+    init(results: [ClassifierSequencePredictorResult]) {
         self.results = results
     }
 
@@ -146,9 +146,9 @@ private actor ClassifierSettingsSequencePredictor: CoreCategoryPredicting {
         requestsStorage.append(Request(repoPath: repoPath, filename: filename))
         let result = results.isEmpty ? .success(classifierRecoveryProbeResult()) : results.removeFirst()
         switch result {
-        case .success(let value):
+        case let .success(value):
             return value
-        case .failure(let error):
+        case let .failure(error):
             throw error
         }
     }
@@ -165,22 +165,22 @@ private actor ClassifierSettingsRecoveryLoader: CoreConfigurationLoading {
         self.config = config
     }
 
-    func loadConfig(repoPath: String) async throws -> RepoConfigSnapshot {
+    func loadConfig(repoPath _: String) async throws -> RepoConfigSnapshot {
         config
     }
 }
 
 private actor ClassifierSettingsRecoveryUpdater: CoreConfigurationUpdating {
-    func updateConfig(repoPath: String, newConfig: RepoConfigSnapshot) async throws {}
+    func updateConfig(repoPath _: String, newConfig _: RepoConfigSnapshot) async throws {}
 }
 
 private actor ClassifierSettingsRecoveryErrorMapper: CoreErrorMapping {
     func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
         switch error {
-        case .Config(let reason):
-            return .classifierRecoveryMapping(kind: .config, userMessage: "分类规则无效：\(reason)")
+        case let .Config(reason):
+            .classifierRecoveryMapping(kind: .config, userMessage: "分类规则无效：\(reason)")
         default:
-            return .classifierRecoveryMapping(kind: .internal, userMessage: "分类规则校验失败")
+            .classifierRecoveryMapping(kind: .internal, userMessage: "分类规则校验失败")
         }
     }
 }
@@ -222,7 +222,7 @@ private func classifierRecoveryProbeResult() -> ClassifyResultSnapshot {
     ClassifyResultSnapshot(
         category: "inbox",
         suggestedName: "AreaMatrixValidationProbe.txt",
-        reason: .`default`,
+        reason: .default,
         confidence: 0
     )
 }

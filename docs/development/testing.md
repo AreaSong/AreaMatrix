@@ -242,7 +242,10 @@ XCTest performance 通过后构建 signed Release `.app`，执行 codesign、自
 `scripts/dev_tools/macos_launch_probe.swift` 启动探针。若当前本地 sandbox 阻断
 LaunchServices 启动，或 direct executable probe 无法创建可见窗口，命令可以作为本地
 validation 通过，但 release checklist 必须继续记录“真实 `.app` 启动到首屏证据
-BLOCKED”；hostless XCTest fallback 不得替代 release 放行证据。
+BLOCKED”；hostless XCTest fallback 不得替代 release 放行证据。若 release app launch
+probe 正常记录 `applicationLaunchToFirstScreen.realApp` 且低于阈值，则 release checklist
+必须记录真实 `.app` 首屏证据通过，但该证据仍不替代 Developer ID 签名、公证、DMG 或
+干净 Mac 首启。
 
 ---
 
@@ -415,8 +418,8 @@ fn sigkill_during_import_safe() {
 4. cargo llvm-cov --fail-under-lines 70
 5. ./dev build core
 6. xcodebuild test（本地沙箱可用 `./dev test macos` 补执行证据）
-7. swiftformat --lint
-8. swiftlint --strict
+7. cd apps/macos && swiftformat --lint . --config ../../scripts/dev_tools/swiftformat.conf --exclude AreaMatrix/Bridge/Generated,AreaMatrix/Bridge/UniFFI --cache ignore
+8. cd apps/macos && swiftlint lint --strict --config ../../scripts/dev_tools/swiftlint.yml --force-exclude . --no-cache
 
 任一失败 = 不允许合并。
 

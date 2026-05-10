@@ -56,7 +56,7 @@ private enum LocalImportFolderScannerKeys {
         .isHiddenKey,
         .fileSizeKey,
         .isUbiquitousItemKey,
-        .ubiquitousItemDownloadingStatusKey,
+        .ubiquitousItemDownloadingStatusKey
     ]
 }
 
@@ -171,7 +171,7 @@ private struct ImportFolderScanAccumulator {
     }
 
     private mutating func shouldSkipHidden(
-        url: URL,
+        url _: URL,
         values: URLResourceValues,
         enumerator: FileManager.DirectoryEnumerator,
         includeHiddenFiles: Bool
@@ -185,7 +185,7 @@ private struct ImportFolderScanAccumulator {
     }
 
     private mutating func shouldSkipSymlink(
-        url: URL,
+        url _: URL,
         values: URLResourceValues,
         enumerator: FileManager.DirectoryEnumerator,
         followSymlinks: Bool

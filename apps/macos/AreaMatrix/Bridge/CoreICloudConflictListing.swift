@@ -4,21 +4,21 @@ protocol CoreICloudConflictListing: Sendable {
     func listICloudConflicts(repoPath: String) async throws -> [ICloudConflictPairSnapshot]
 }
 
-enum ICloudConflictStatusSnapshot: String, Equatable, Sendable {
+enum ICloudConflictStatusSnapshot: String, Equatable {
     case needsReview = "NeedsReview"
     case resolved = "Resolved"
 
     var displayName: String {
         switch self {
         case .needsReview:
-            return "Needs review"
+            "Needs review"
         case .resolved:
-            return "Resolved"
+            "Resolved"
         }
     }
 }
 
-struct ICloudConflictPairSnapshot: Equatable, Identifiable, Sendable {
+struct ICloudConflictPairSnapshot: Equatable, Identifiable {
     var conflictID: String
     var originalPath: String?
     var conflictedCopyPath: String
@@ -27,7 +27,9 @@ struct ICloudConflictPairSnapshot: Equatable, Identifiable, Sendable {
     var status: ICloudConflictStatusSnapshot
     var uncertaintyReason: String?
 
-    var id: String { conflictID }
+    var id: String {
+        conflictID
+    }
 
     var fileDisplayName: String {
         let path = originalPath ?? conflictedCopyPath

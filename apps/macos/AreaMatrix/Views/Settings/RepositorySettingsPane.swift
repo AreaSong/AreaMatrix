@@ -4,7 +4,9 @@ struct RepositorySettingsPane: View {
     @StateObject private var model: RepositorySettingsModel
     let onChangeRepository: () -> Void
     let onOpenRecoveryTools: () -> Void
+}
 
+extension RepositorySettingsPane {
     init(
         repoPath: String,
         loader: any CoreConfigurationLoading = CoreBridge(),
@@ -104,9 +106,9 @@ struct RepositorySettingsPane: View {
         switch model.loadState {
         case .loading:
             loadingContent
-        case .loaded(let summary):
+        case let .loaded(summary):
             loadedContent(summary)
-        case .failed(let error):
+        case let .failed(error):
             loadErrorContent(error)
         }
     }
@@ -270,7 +272,7 @@ struct RepositorySettingsPane: View {
             .padding(12)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(Color.blue.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
-        case .collected(let snapshot):
+        case let .collected(snapshot):
             VStack(alignment: .leading, spacing: 8) {
                 Label("Diagnostics exported", systemImage: "checkmark.circle")
                     .foregroundStyle(.green)
@@ -283,7 +285,7 @@ struct RepositorySettingsPane: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(Color.green.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
             .accessibilityElement(children: .combine)
-        case .failed(let error):
+        case let .failed(error):
             VStack(alignment: .leading, spacing: 8) {
                 Label(error.message, systemImage: "exclamationmark.triangle")
                     .foregroundStyle(.red)

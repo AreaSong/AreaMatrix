@@ -1,5 +1,5 @@
-import XCTest
 @testable import AreaMatrix
+import XCTest
 
 final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
     @MainActor
@@ -36,7 +36,7 @@ final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
         let mapping = CoreErrorMappingSnapshot.s137StartupRecoveryMapping(rawContext: "database locked")
         let recoverer = S137RecordingStartupRecoverer(results: [
             .failure(CoreError.Db(message: "database locked")),
-            .success(RecoveryReportSnapshot(cleanedStagingFiles: 0, revertedStagingDbRows: 0, warnings: [])),
+            .success(RecoveryReportSnapshot(cleanedStagingFiles: 0, revertedStagingDbRows: 0, warnings: []))
         ])
         let model = DatabaseRepairConfirmModel(
             repoPath: "/tmp/repo",
@@ -96,7 +96,7 @@ final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
             S137RepairRequest(
                 repoPath: "/tmp/repo",
                 options: RepairOptionsSnapshot(fullRescan: true, preserveDiagnosticsSnapshot: true)
-            ),
+            )
         ])
         XCTAssertEqual(model.repairState, .succeeded(report))
     }
@@ -154,7 +154,7 @@ final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
 
         let requestsAfterConfirmation = await diagnosticsCollector.requestedRepoPaths()
         XCTAssertEqual(requestsAfterConfirmation, ["/tmp/repo"])
-        guard case .failed(let mapping) = model.diagnosticsState else {
+        guard case let .failed(mapping) = model.diagnosticsState else {
             return XCTFail("expected diagnostics failure")
         }
         XCTAssertEqual(mapping.kind, .permissionDenied)
@@ -259,7 +259,7 @@ final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
     }
 }
 
-struct S137RepairRequest: Equatable, Sendable {
+struct S137RepairRequest: Equatable {
     var repoPath: String
     var options: RepairOptionsSnapshot
 }
@@ -307,9 +307,9 @@ private actor S137RecordingStartupRecoverer: CoreStartupRecovering {
             warnings: []
         )) : results.removeFirst()
         switch result {
-        case .success(let report):
+        case let .success(report):
             return report
-        case .failure(let error):
+        case let .failure(error):
             throw error
         }
     }
@@ -326,7 +326,7 @@ private actor S137RepairErrorMapper: CoreErrorMapping {
         self.mapping = mapping
     }
 
-    func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
+    func mapCoreError(_: CoreError) async -> CoreErrorMappingSnapshot {
         mapping
     }
 }

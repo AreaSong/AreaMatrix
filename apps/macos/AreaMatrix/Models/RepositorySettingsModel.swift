@@ -1,22 +1,22 @@
 import Combine
 import Foundation
 
-struct RepositorySettingsLoadError: Equatable, Sendable {
+struct RepositorySettingsLoadError: Equatable {
     var message: String
     var recovery: String
 }
 
-struct RepositorySettingsSyncError: Equatable, Sendable {
+struct RepositorySettingsSyncError: Equatable {
     var message: String
     var recovery: String
 }
 
-struct RepositorySettingsOverviewActionError: Equatable, Sendable {
+struct RepositorySettingsOverviewActionError: Equatable {
     var message: String
     var recovery: String
 }
 
-enum RepositorySettingsDatabaseStatus: Equatable, Sendable {
+enum RepositorySettingsDatabaseStatus: Equatable {
     case ok
     case locked
     case needsRecovery
@@ -24,30 +24,30 @@ enum RepositorySettingsDatabaseStatus: Equatable, Sendable {
     var label: String {
         switch self {
         case .ok:
-            return "OK"
+            "OK"
         case .locked:
-            return "Locked"
+            "Locked"
         case .needsRecovery:
-            return "Needs recovery"
+            "Needs recovery"
         }
     }
 }
 
-enum RepositorySettingsWatcherStatus: Equatable, Sendable {
+enum RepositorySettingsWatcherStatus: Equatable {
     case running
     case paused
 
     var label: String {
         switch self {
         case .running:
-            return "Running"
+            "Running"
         case .paused:
-            return "Paused"
+            "Paused"
         }
     }
 }
 
-struct RepositorySettingsHealthSummary: Equatable, Sendable {
+struct RepositorySettingsHealthSummary: Equatable {
     var databaseStatus: RepositorySettingsDatabaseStatus
     var schemaVersion: Int64?
     var filesIndexed: Int64?
@@ -55,13 +55,13 @@ struct RepositorySettingsHealthSummary: Equatable, Sendable {
     var watcherStatus: RepositorySettingsWatcherStatus
 }
 
-struct RepositorySettingsHealthError: Equatable, Sendable {
+struct RepositorySettingsHealthError: Equatable {
     var databaseStatus: RepositorySettingsDatabaseStatus
     var message: String
     var recovery: String
 }
 
-struct RepositorySettingsSummary: Equatable, Sendable {
+struct RepositorySettingsSummary: Equatable {
     static let generatedOverviewRelativePath = ".areamatrix/generated/root.md"
 
     var repositoryName: String
@@ -105,7 +105,7 @@ struct RepositorySettingsSummary: Equatable, Sendable {
 
 @MainActor
 final class RepositorySettingsModel: ObservableObject {
-    enum LoadState: Equatable, Sendable {
+    enum LoadState: Equatable {
         case loading
         case loaded(RepositorySettingsSummary)
         case failed(RepositorySettingsLoadError)
@@ -165,18 +165,20 @@ final class RepositorySettingsModel: ObservableObject {
         self.errorMapper = errorMapper
         self.accessibilityAnnouncer = accessibilityAnnouncer
     }
+}
 
+extension RepositorySettingsModel {
     var isLoading: Bool {
         loadState == .loading
     }
 
     var summary: RepositorySettingsSummary? {
-        guard case .loaded(let summary) = loadState else { return nil }
+        guard case let .loaded(summary) = loadState else { return nil }
         return summary
     }
 
     var loadError: RepositorySettingsLoadError? {
-        guard case .failed(let error) = loadState else { return nil }
+        guard case let .failed(error) = loadState else { return nil }
         return error
     }
 
@@ -206,7 +208,7 @@ final class RepositorySettingsModel: ObservableObject {
             await refreshHealth()
         } catch {
             loadedConfig = nil
-            loadState = .failed(await loadError(for: error))
+            loadState = await .failed(loadError(for: error))
         }
     }
 
@@ -257,7 +259,7 @@ final class RepositorySettingsModel: ObservableObject {
             let snapshot = try await diagnosticsCollector.createDiagnosticsSnapshot(repoPath: repoPath)
             diagnosticsState = .collected(snapshot)
         } catch {
-            diagnosticsState = .failed(await diagnosticsError(for: error))
+            diagnosticsState = await .failed(diagnosticsError(for: error))
         }
     }
 
@@ -327,7 +329,7 @@ final class RepositorySettingsModel: ObservableObject {
         repoPath: String,
         fileLister: any CoreFileListing
     ) async throws -> Int64 {
-        let pageSize: Int64 = 1_000
+        let pageSize: Int64 = 1000
         var offset: Int64 = 0
         var total: Int64 = 0
 
@@ -379,13 +381,13 @@ final class RepositorySettingsModel: ObservableObject {
     private func databaseStatus(for mapping: CoreErrorMappingSnapshot) -> RepositorySettingsDatabaseStatus {
         switch mapping.kind {
         case .permissionDenied:
-            return .locked
+            .locked
         case .db:
-            return mapping.recoverability == .retryable ? .locked : .needsRecovery
+            mapping.recoverability == .retryable ? .locked : .needsRecovery
         case .config, .repoNotInitialized, .internal:
-            return .needsRecovery
+            .needsRecovery
         default:
-            return mapping.recoverability == .retryable ? .locked : .needsRecovery
+            mapping.recoverability == .retryable ? .locked : .needsRecovery
         }
     }
 
@@ -437,17 +439,17 @@ final class RepositorySettingsModel: ObservableObject {
     private func overviewError(for error: RepositoryFileActionError) -> RepositorySettingsOverviewActionError {
         switch error {
         case .fileMissing:
-            return RepositorySettingsOverviewActionError(
+            RepositorySettingsOverviewActionError(
                 message: "Generated overview cannot be shown in Finder.",
                 recovery: "Retry after AreaMatrix regenerates .areamatrix/generated/root.md."
             )
         case .unsafeRelativePath:
-            return RepositorySettingsOverviewActionError(
+            RepositorySettingsOverviewActionError(
                 message: "Generated overview path is not safe to open.",
                 recovery: "Reload repository settings before retrying."
             )
         case .openRejected:
-            return RepositorySettingsOverviewActionError(
+            RepositorySettingsOverviewActionError(
                 message: "Finder rejected the generated overview request.",
                 recovery: "Open the repository folder and check .areamatrix/generated/ permissions before retrying."
             )

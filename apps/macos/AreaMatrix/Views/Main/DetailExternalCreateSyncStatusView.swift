@@ -7,13 +7,16 @@ struct DetailExternalCreateSyncStatusView: View {
         switch state {
         case .idle:
             EmptyView()
-        case .syncing(let event):
-            Label("Syncing external \(event.kind.displayName) file: \(event.relativePath)", systemImage: "arrow.triangle.2.circlepath")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        case .synced(let event, let fileID, let result):
+        case let .syncing(event):
+            Label(
+                "Syncing external \(event.kind.displayName) file: \(event.relativePath)",
+                systemImage: "arrow.triangle.2.circlepath"
+            )
+            .font(.caption)
+            .foregroundStyle(.secondary)
+        case let .synced(event, fileID, result):
             syncedStatus(event: event, fileID: fileID, result: result)
-        case .failed(let event, let mapping):
+        case let .failed(event, mapping):
             failedStatus(event: event, mapping: mapping)
         }
     }

@@ -3,13 +3,13 @@ import Foundation
 
 @MainActor
 final class ClassifierSettingsModel: ObservableObject {
-    enum LoadState: Equatable, Sendable {
+    enum LoadState: Equatable {
         case loading
         case loaded
         case failed(ClassifierSettingsLoadError)
     }
 
-    enum ValidationState: Equatable, Sendable {
+    enum ValidationState: Equatable {
         case idle
         case validating
         case passed
@@ -69,7 +69,9 @@ final class ClassifierSettingsModel: ObservableObject {
         self.finderOpener = finderOpener
         self.accessibilityAnnouncer = accessibilityAnnouncer
     }
+}
 
+extension ClassifierSettingsModel {
     var isLoading: Bool {
         loadState == .loading
     }
@@ -95,7 +97,7 @@ final class ClassifierSettingsModel: ObservableObject {
     }
 
     var validationError: ClassifierSettingsValidationError? {
-        if case .failed(let error) = validationState {
+        if case let .failed(error) = validationState {
             return error
         }
 
@@ -105,13 +107,13 @@ final class ClassifierSettingsModel: ObservableObject {
     var validationStatusLabel: String {
         switch validationState {
         case .idle:
-            return "Not validated"
+            "Not validated"
         case .validating:
-            return "Validating..."
+            "Validating..."
         case .passed:
-            return "Validated"
+            "Validated"
         case .failed:
-            return "Failed"
+            "Failed"
         }
     }
 
@@ -133,7 +135,7 @@ final class ClassifierSettingsModel: ObservableObject {
             savedConfig = nil
             draft = nil
             hasLastValidBackup = false
-            loadState = .failed(await loadError(for: error))
+            loadState = await .failed(loadError(for: error))
         }
     }
 
@@ -288,7 +290,7 @@ final class ClassifierSettingsModel: ObservableObject {
                 filename: Self.validationProbeFilename
             )
         } catch {
-            validationState = .failed(await validationError(for: error))
+            validationState = await .failed(validationError(for: error))
             accessibilityAnnouncer.announce(validationStateAnnouncement)
             return false
         }
@@ -420,9 +422,9 @@ final class ClassifierSettingsModel: ObservableObject {
     private func validationError(for error: Error) async -> ClassifierSettingsValidationError {
         if let coreError = error as? CoreError {
             let mapping = await errorMapper.mapCoreError(coreError)
-            if case .Config(let reason) = coreError {
+            if case let .Config(reason) = coreError {
                 return ClassifierSettingsValidationError(
-                    message: ClassifierSettingsValidationErrorFormatter.message(
+                    message: ClassifierValidationErrorFormatter.message(
                         coreReason: reason,
                         mappedMessage: mapping.userMessage
                     ),
@@ -443,7 +445,7 @@ final class ClassifierSettingsModel: ObservableObject {
     }
 
     private var validationStateAnnouncement: String {
-        if case .failed(let error) = validationState {
+        if case let .failed(error) = validationState {
             return error.message
         }
 

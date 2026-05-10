@@ -130,7 +130,7 @@ private struct ValidatePathChecklist: View {
                 .init("iCloud 路径", "等待 Core 校验", .checking),
                 .init("是否外置卷", "等待卷信息", .checking),
                 .init("已有 AreaMatrix repo", "等待 Core 校验", .checking),
-                .init("非空目录", "等待 Core 校验", .checking),
+                .init("非空目录", "等待 Core 校验", .checking)
             ]
         }
 
@@ -157,7 +157,7 @@ private struct ValidatePathChecklist: View {
                 validation.isInitialized ? "Warning" : "Passed",
                 validation.isInitialized ? .warning : .passed
             ),
-            .init("非空目录", hasNonEmptyDirectory ? "Warning" : "Passed", hasNonEmptyDirectory ? .warning : .passed),
+            .init("非空目录", hasNonEmptyDirectory ? "Warning" : "Passed", hasNonEmptyDirectory ? .warning : .passed)
         ]
     }
 
@@ -179,17 +179,17 @@ private struct ValidatePathChecklist: View {
 
     private func externalVolumeDetail(for validation: RepoPathValidationSnapshot) -> String {
         switch validation.isExternalVolume {
-        case .some(true): return "Warning"
-        case .some(false): return "Passed"
-        case nil: return "检查结果缺失"
+        case .some(true): "Warning"
+        case .some(false): "Passed"
+        case nil: "检查结果缺失"
         }
     }
 
     private func externalVolumeStatus(for validation: RepoPathValidationSnapshot) -> ValidatePathCheckStatus {
         switch validation.isExternalVolume {
-        case .some(true): return .warning
-        case .some(false): return .passed
-        case nil: return .failed
+        case .some(true): .warning
+        case .some(false): .passed
+        case nil: .failed
         }
     }
 }
@@ -264,7 +264,7 @@ private struct ValidatePathNotices: View {
                     "将创建 .areamatrix/ 内部目录。",
                     "将扫描现有文件和文件夹。",
                     "不移动、不重命名、不删除、不覆盖任何已有文件。",
-                    "已有 README.md 和项目目录结构保持原样。",
+                    "已有 README.md 和项目目录结构保持原样。"
                 ])
             }
             if validation?.isICloudPath == true {
@@ -276,7 +276,7 @@ private struct ValidatePathNotices: View {
             if validation?.isExternalVolume == true {
                 ValidatePathNoticeCard(title: "外置卷路径", image: "externaldrive", tint: .orange, lines: [
                     "外置卷可能在断开连接后导致资料库不可用。",
-                    "继续前请确认该卷会保持连接。",
+                    "继续前请确认该卷会保持连接。"
                 ])
             }
             if let session = latestAdoptScanSession {
@@ -295,7 +295,7 @@ private struct ValidatePathNotices: View {
             "AreaMatrix 将打开现有资料库，不会重新初始化或接管。",
             schemaVersionLine,
             lastOpenedLine,
-            "Repo path: \(displayedPath)",
+            "Repo path: \(displayedPath)"
         ]
     }
 
@@ -320,7 +320,7 @@ private struct ValidatePathNotices: View {
         ValidatePathNoticeCard(title: "发现未完成接管扫描", image: "arrow.clockwise.circle", tint: .orange, lines: [
             "状态：\(session.status.rawValue)。",
             "已索引 \(session.inserted) 个，更新 \(session.updated) 个，跳过 \(session.skipped) 个。",
-            "最后位置：\(session.lastPath ?? "尚未记录")。",
+            "最后位置：\(session.lastPath ?? "尚未记录")。"
         ])
     }
 
@@ -328,7 +328,7 @@ private struct ValidatePathNotices: View {
         ValidatePathNoticeCard(title: "路径不可用", image: "exclamationmark.triangle", tint: mapping.severity.tint, lines: [
             mapping.userMessage,
             "建议：\(mapping.suggestedAction)",
-            "严重程度：\(mapping.severity.displayName)；恢复方式：\(mapping.recoverability.displayName)",
+            "严重程度：\(mapping.severity.displayName)；恢复方式：\(mapping.recoverability.displayName)"
         ])
     }
 }
@@ -435,19 +435,19 @@ private struct ValidatePathFooter: View {
 private extension CoreErrorSeveritySnapshot {
     var displayName: String {
         switch self {
-        case .low: return "Low"
-        case .medium: return "Medium"
-        case .high: return "High"
-        case .critical: return "Critical"
+        case .low: "Low"
+        case .medium: "Medium"
+        case .high: "High"
+        case .critical: "Critical"
         }
     }
 
     var tint: Color {
         switch self {
-        case .low: return .yellow
-        case .medium: return .orange
-        case .high: return .red
-        case .critical: return .purple
+        case .low: .yellow
+        case .medium: .orange
+        case .high: .red
+        case .critical: .purple
         }
     }
 }
@@ -455,10 +455,10 @@ private extension CoreErrorSeveritySnapshot {
 private extension CoreErrorRecoverabilitySnapshot {
     var displayName: String {
         switch self {
-        case .retryable: return "Retryable"
-        case .userActionRequired: return "User action required"
-        case .refreshRequired: return "Refresh required"
-        case .fatal: return "Fatal"
+        case .retryable: "Retryable"
+        case .userActionRequired: "User action required"
+        case .refreshRequired: "Refresh required"
+        case .fatal: "Fatal"
         }
     }
 }
@@ -471,28 +471,28 @@ private enum ValidatePathCheckStatus: Equatable {
 
     var text: String {
         switch self {
-        case .checking: return "Checking"
-        case .passed: return "Passed"
-        case .warning: return "Warning"
-        case .failed: return "Failed"
+        case .checking: "Checking"
+        case .passed: "Passed"
+        case .warning: "Warning"
+        case .failed: "Failed"
         }
     }
 
     var systemImage: String {
         switch self {
-        case .checking: return "clock"
-        case .passed: return "checkmark.circle.fill"
-        case .warning: return "exclamationmark.triangle.fill"
-        case .failed: return "xmark.octagon.fill"
+        case .checking: "clock"
+        case .passed: "checkmark.circle.fill"
+        case .warning: "exclamationmark.triangle.fill"
+        case .failed: "xmark.octagon.fill"
         }
     }
 
     var tint: Color {
         switch self {
-        case .checking: return .secondary
-        case .passed: return .green
-        case .warning: return .orange
-        case .failed: return .red
+        case .checking: .secondary
+        case .passed: .green
+        case .warning: .orange
+        case .failed: .red
         }
     }
 }

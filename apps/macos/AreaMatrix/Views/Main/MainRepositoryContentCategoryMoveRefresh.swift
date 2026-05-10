@@ -11,7 +11,7 @@ extension MainRepositoryContentView {
     @MainActor
     func refreshTreeAndFocusMovedFile(_ movedFile: FileEntrySnapshot) async {
         let refreshedTree = await refreshedTreeAfterCategoryMove()
-        let plan = MainRepositoryContentCategoryMoveRefreshPlan.make(
+        let plan = CategoryMoveRefreshPlan.make(
             movedFile: movedFile,
             currentSidebarID: selectedSidebarID,
             currentTree: repositoryTree,
@@ -25,7 +25,10 @@ extension MainRepositoryContentView {
         await fileListModel.loadCurrentCategory(plan.categoryForFileList, focusingOn: movedFile.id)
         selectedFileIDs = [movedFile.id]
         if refreshedTree == nil {
-            fileListModel.statusBanner = .changedCategoryTreeRefreshFailed(fileID: movedFile.id, category: movedFile.category)
+            fileListModel.statusBanner = .changedCategoryTreeRefreshFailed(
+                fileID: movedFile.id,
+                category: movedFile.category
+            )
         } else if fileListModel.errorMapping == nil {
             fileListModel.statusBanner = .changedCategory(fileID: movedFile.id, category: movedFile.category)
         }
@@ -38,10 +41,9 @@ extension MainRepositoryContentView {
             return nil
         }
     }
-
 }
 
-struct MainRepositoryContentCategoryMoveRefreshPlan: Equatable, Sendable {
+struct CategoryMoveRefreshPlan: Equatable {
     var tree: RepositoryTreeNodeSnapshot
     var selectedSidebarID: String
     var focusedFileID: Int64
@@ -52,14 +54,14 @@ struct MainRepositoryContentCategoryMoveRefreshPlan: Equatable, Sendable {
         currentSidebarID: String,
         currentTree: RepositoryTreeNodeSnapshot,
         refreshedTree: RepositoryTreeNodeSnapshot?
-    ) -> MainRepositoryContentCategoryMoveRefreshPlan {
+    ) -> CategoryMoveRefreshPlan {
         let tree = refreshedTree ?? currentTree
         let fallbackSidebarID = sidebarID(forMovedFile: movedFile, in: currentTree) ?? currentSidebarID
         let selectedSidebarID = sidebarID(forMovedFile: movedFile, in: tree) ?? fallbackSidebarID
         let selectedRow = tree.sidebarRow(id: selectedSidebarID) ??
             tree.sidebarRows.first ??
             RepositorySidebarRowSnapshot(node: tree, depth: 0)
-        return MainRepositoryContentCategoryMoveRefreshPlan(
+        return CategoryMoveRefreshPlan(
             tree: tree,
             selectedSidebarID: selectedSidebarID,
             focusedFileID: movedFile.id,
@@ -67,7 +69,8 @@ struct MainRepositoryContentCategoryMoveRefreshPlan: Equatable, Sendable {
         )
     }
 
-    private static func sidebarID(forMovedFile file: FileEntrySnapshot, in tree: RepositoryTreeNodeSnapshot) -> String? {
+    private static func sidebarID(forMovedFile file: FileEntrySnapshot,
+                                  in tree: RepositoryTreeNodeSnapshot) -> String? {
         tree.sidebarRows.first { row in
             row.categoryForFileList == file.category && row.contains(file)
         }?.id ?? tree.sidebarRows.first { row in

@@ -1,11 +1,11 @@
-import XCTest
 @testable import AreaMatrix
+import XCTest
 
 final class IntegrationsSettingsPageFeatureTests: XCTestCase {
     @MainActor
     func testLoadUsesC104ConfigForVisibleICloudIntegrationState() async {
         let loader = IntegrationsSettingsRecordingLoader(results: [
-            .success(.integrationsFixture(repoPath: "/tmp/repo", iCloudWarn: false)),
+            .success(.integrationsFixture(repoPath: "/tmp/repo", iCloudWarn: false))
         ])
         let model = IntegrationsSettingsModel(
             repoPath: "/tmp/repo",
@@ -47,7 +47,7 @@ final class IntegrationsSettingsPageFeatureTests: XCTestCase {
     func testSaveFailureRollsBackAndRetryUsesSameCoreConfig() async {
         let updater = IntegrationsSettingsRecordingUpdater(results: [
             .failure(CoreError.Db(message: "locked")),
-            .success,
+            .success
         ])
         let mapper = IntegrationsSettingsStaticErrorMapper()
         let model = await loadedModel(updater: updater, errorMapper: mapper, iCloudWarn: true)
@@ -71,7 +71,7 @@ final class IntegrationsSettingsPageFeatureTests: XCTestCase {
     @MainActor
     func testLoadFailureUsesCoreErrorMappingAndKeepsRetryAvailable() async {
         let loader = IntegrationsSettingsRecordingLoader(results: [
-            .failure(CoreError.Config(reason: "invalid repo_config")),
+            .failure(CoreError.Config(reason: "invalid repo_config"))
         ])
         let mapper = IntegrationsSettingsStaticErrorMapper()
         let model = IntegrationsSettingsModel(
@@ -97,7 +97,7 @@ final class IntegrationsSettingsPageFeatureTests: XCTestCase {
 
     @MainActor
     func testPlatformActionsStayInMacLayerWithoutConfigWrites() async {
-        let finderOpener = IntegrationsSettingsRecordingFinderOpener()
+        let finderOpener = IntegrationsFinderOpener()
         let helpOpener = IntegrationsSettingsRecordingHelpOpener()
         let updater = IntegrationsSettingsRecordingUpdater(results: [.success])
         let model = await loadedModel(
@@ -157,14 +157,14 @@ final class IntegrationsSettingsPageFeatureTests: XCTestCase {
         let model = IntegrationsSettingsModel(
             repoPath: "/tmp/repo",
             loader: IntegrationsSettingsRecordingLoader(results: [
-                .success(.integrationsFixture(repoPath: "/tmp/stale-repo", iCloudWarn: iCloudWarn)),
+                .success(.integrationsFixture(repoPath: "/tmp/stale-repo", iCloudWarn: iCloudWarn))
             ]),
             updater: updater,
             errorMapper: errorMapper,
             statusDetector: IntegrationsSettingsStaticStatusDetector(
                 snapshot: IntegrationsICloudSnapshot(repositoryLocation: .localFolder, iCloudStatus: .unavailable)
             ),
-            finderOpener: finderOpener ?? IntegrationsSettingsRecordingFinderOpener(),
+            finderOpener: finderOpener ?? IntegrationsFinderOpener(),
             helpOpener: helpOpener ?? IntegrationsSettingsRecordingHelpOpener()
         )
         await model.load()
@@ -189,14 +189,16 @@ private actor IntegrationsSettingsRecordingLoader: CoreConfigurationLoading {
         paths.append(repoPath)
         let result = results.isEmpty ? .failure(CoreError.Internal(message: "missing config")) : results.removeFirst()
         switch result {
-        case .success(let config):
+        case let .success(config):
             return config
-        case .failure(let error):
+        case let .failure(error):
             throw error
         }
     }
 
-    func requestedPaths() -> [String] { paths }
+    func requestedPaths() -> [String] {
+        paths
+    }
 }
 
 private enum IntegrationsSettingsUpdateResult {
@@ -220,18 +222,20 @@ private actor IntegrationsSettingsRecordingUpdater: CoreConfigurationUpdating {
     func updateConfig(repoPath: String, newConfig: RepoConfigSnapshot) async throws {
         recordedRequests.append(Request(repoPath: repoPath, config: newConfig))
         let result = results.isEmpty ? .success : results.removeFirst()
-        if case .failure(let error) = result {
+        if case let .failure(error) = result {
             throw error
         }
     }
 
-    func requests() -> [Request] { recordedRequests }
+    func requests() -> [Request] {
+        recordedRequests
+    }
 }
 
 private struct IntegrationsSettingsStaticStatusDetector: ICloudStatusDetecting {
     let snapshot: IntegrationsICloudSnapshot
 
-    func snapshot(repoPath: String, config: RepoConfigSnapshot) async -> IntegrationsICloudSnapshot {
+    func snapshot(repoPath _: String, config _: RepoConfigSnapshot) async -> IntegrationsICloudSnapshot {
         snapshot
     }
 }
@@ -265,11 +269,13 @@ private actor IntegrationsSettingsStaticErrorMapper: CoreErrorMapping {
         )
     }
 
-    func mappedErrors() -> [CoreError] { errors }
+    func mappedErrors() -> [CoreError] {
+        errors
+    }
 }
 
 @MainActor
-private final class IntegrationsSettingsRecordingFinderOpener: RepositoryFinderOpening {
+private final class IntegrationsFinderOpener: RepositoryFinderOpening {
     private(set) var requests: [String] = []
 
     func openRepositoryInFinder(repoPath: String) throws {

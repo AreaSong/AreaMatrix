@@ -1,7 +1,7 @@
-import Foundation
 @testable import AreaMatrix
+import Foundation
 
-struct S119PredictRequest: Equatable, Sendable {
+struct S119PredictRequest: Equatable {
     var repoPath: String
     var filename: String
 }
@@ -20,9 +20,9 @@ actor S119RecordingPredictor: CoreCategoryPredicting {
             throw CoreError.Classify(reason: "missing test result")
         }
         switch results.removeFirst() {
-        case .success(let snapshot):
+        case let .success(snapshot):
             return snapshot
-        case .failure(let error):
+        case let .failure(error):
             throw error
         }
     }
@@ -46,9 +46,9 @@ actor S119MappedPredictor: CoreCategoryPredicting {
             throw CoreError.Classify(reason: "missing test result")
         }
         switch result {
-        case .success(let snapshot):
+        case let .success(snapshot):
             return snapshot
-        case .failure(let error):
+        case let .failure(error):
             throw error
         }
     }
@@ -61,9 +61,40 @@ actor S119MappedPredictor: CoreCategoryPredicting {
 struct S119StaticFolderScanner: ImportFolderScanning {
     var result: ImportFolderScanResult
 
-    func scanFolder(rootURL: URL, includeHiddenFiles: Bool, followSymlinks: Bool) async -> ImportFolderScanResult {
+    func scanFolder(rootURL _: URL, includeHiddenFiles _: Bool,
+                    followSymlinks _: Bool) async -> ImportFolderScanResult {
         result
     }
+}
+
+func s119StaticScanner(urls: [URL]) -> S119StaticFolderScanner {
+    S119StaticFolderScanner(result: s119FolderScanResult(rows: urls.map { url in
+        ImportFolderPreviewRow.loading(fileURL: url, rootURL: URL(fileURLWithPath: "/tmp/client-a"))
+    }))
+}
+
+func s119ScanErrorScanner(readyURL: URL, cloudURL: URL) -> S119StaticFolderScanner {
+    S119StaticFolderScanner(result: ImportFolderScanResult(
+        rows: s119PlaceholderRows(readyURL: readyURL, cloudURL: cloudURL),
+        folderCount: 0,
+        skippedRules: [],
+        errors: [ImportFolderScanError(path: "/tmp/client-a/private", message: "Permission denied")]
+    ))
+}
+
+func s119CleanPlaceholderScanner(readyURL: URL, cloudURL: URL) -> S119StaticFolderScanner {
+    S119StaticFolderScanner(result: s119FolderScanResult(rows: s119PlaceholderRows(
+        readyURL: readyURL,
+        cloudURL: cloudURL
+    )))
+}
+
+private func s119PlaceholderRows(readyURL: URL, cloudURL: URL) -> [ImportFolderPreviewRow] {
+    [
+        ImportFolderPreviewRow.loading(fileURL: readyURL, rootURL: URL(fileURLWithPath: "/tmp/client-a")),
+        ImportFolderPreviewRow.loading(fileURL: cloudURL, rootURL: URL(fileURLWithPath: "/tmp/client-a"))
+            .withStatus(.iCloudPlaceholder(path: cloudURL.path))
+    ]
 }
 
 actor S119SequenceFolderScanner: ImportFolderScanning {
@@ -73,7 +104,8 @@ actor S119SequenceFolderScanner: ImportFolderScanning {
         self.results = results
     }
 
-    func scanFolder(rootURL: URL, includeHiddenFiles: Bool, followSymlinks: Bool) async -> ImportFolderScanResult {
+    func scanFolder(rootURL _: URL, includeHiddenFiles _: Bool,
+                    followSymlinks _: Bool) async -> ImportFolderScanResult {
         guard !results.isEmpty else {
             return ImportFolderScanResult(rows: [], folderCount: 0, skippedRules: [], errors: [])
         }
@@ -119,7 +151,7 @@ func s119FolderRequest(
     )
 }
 
-struct S119ConflictPrecheckRequest: Equatable, Sendable {
+struct S119ConflictPrecheckRequest: Equatable {
     var repoPath: String
     var rowIDs: [String]
     var destination: ImportBatchDestinationOption
@@ -153,9 +185,9 @@ actor S119StaticConflictPrechecker: ImportFolderConflictPrechecking {
 
 actor S119NoopConflictPrechecker: ImportFolderConflictPrechecking {
     func precheckFolderConflicts(
-        repoPath: String,
-        rows: [ImportFolderPreviewRow],
-        destination: ImportBatchDestinationOption
+        repoPath _: String,
+        rows _: [ImportFolderPreviewRow],
+        destination _: ImportBatchDestinationOption
     ) async -> [String: ImportFolderConflictPrecheckResult] {
         [:]
     }
@@ -166,6 +198,17 @@ func makeImportFolderTemporaryDirectory() throws -> URL {
         .appendingPathComponent("AreaMatrixImportFolderTests-\(UUID().uuidString)", isDirectory: true)
     try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
     return url
+}
+
+func s119LoadingRow(_ fileURL: URL) -> ImportFolderPreviewRow {
+    ImportFolderPreviewRow.loading(
+        fileURL: fileURL,
+        rootURL: URL(fileURLWithPath: "/tmp", isDirectory: true)
+    )
+}
+
+func s119FolderScanResult(rows: [ImportFolderPreviewRow]) -> ImportFolderScanResult {
+    ImportFolderScanResult(rows: rows, folderCount: 0, skippedRules: [], errors: [])
 }
 
 extension ClassifyResultSnapshot {

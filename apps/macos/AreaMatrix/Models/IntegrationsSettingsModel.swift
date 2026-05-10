@@ -2,7 +2,7 @@ import AppKit
 import Combine
 import Foundation
 
-enum IntegrationsRepositoryLocation: Equatable, Sendable {
+enum IntegrationsRepositoryLocation: Equatable {
     case iCloudDrive
     case localFolder
     case unknown
@@ -10,16 +10,16 @@ enum IntegrationsRepositoryLocation: Equatable, Sendable {
     var label: String {
         switch self {
         case .iCloudDrive:
-            return "iCloud Drive"
+            "iCloud Drive"
         case .localFolder:
-            return "Local folder"
+            "Local folder"
         case .unknown:
-            return "Unknown"
+            "Unknown"
         }
     }
 }
 
-enum IntegrationsICloudStatus: Equatable, Sendable {
+enum IntegrationsICloudStatus: Equatable {
     case available
     case unavailable
     case unknown
@@ -27,33 +27,35 @@ enum IntegrationsICloudStatus: Equatable, Sendable {
     var label: String {
         switch self {
         case .available:
-            return "Available"
+            "Available"
         case .unavailable:
-            return "Unavailable"
+            "Unavailable"
         case .unknown:
-            return "Unknown"
+            "Unknown"
         }
     }
 
-    var canRetry: Bool { self == .unknown }
+    var canRetry: Bool {
+        self == .unknown
+    }
 }
 
-struct IntegrationsICloudSnapshot: Equatable, Sendable {
+struct IntegrationsICloudSnapshot: Equatable {
     var repositoryLocation: IntegrationsRepositoryLocation
     var iCloudStatus: IntegrationsICloudStatus
 }
 
-struct IntegrationsSettingsError: Equatable, Sendable {
+struct IntegrationsSettingsError: Equatable {
     var message: String
     var recovery: String
 }
 
-enum IntegrationsSettingsActionFeedback: Equatable, Sendable {
+enum IntegrationsSettingsActionFeedback: Equatable {
     case success(String)
     case failed(IntegrationsSettingsError)
 }
 
-struct IntegrationsSettingsSummary: Equatable, Sendable {
+struct IntegrationsSettingsSummary: Equatable {
     var repositoryLocation: IntegrationsRepositoryLocation
     var iCloudStatus: IntegrationsICloudStatus
     var iCloudWarningsEnabled: Bool
@@ -75,7 +77,7 @@ struct IntegrationsSettingsSummary: Equatable, Sendable {
     }
 }
 
-enum IntegrationsSettingsConflictListPresentation {
+enum IntegrationConflictListPresentation {
     static let reviewConflictsTitle = "Review conflicts"
     static let reviewConflictsAccessibilityID = "S1-36-C1-25-review-conflicts"
 }
@@ -114,16 +116,16 @@ struct LocalICloudStatusDetector: ICloudStatusDetecting {
     }
 }
 
-enum ICloudHelpOpenError: Error, Equatable, LocalizedError, Sendable {
+enum ICloudHelpOpenError: Error, Equatable, LocalizedError {
     case helpURLUnavailable
     case openRejected
 
     var errorDescription: String? {
         switch self {
         case .helpURLUnavailable:
-            return "iCloud help URL is unavailable."
+            "iCloud help URL is unavailable."
         case .openRejected:
-            return "iCloud help could not be opened."
+            "iCloud help could not be opened."
         }
     }
 }
@@ -144,7 +146,7 @@ struct NSWorkspaceICloudHelpOpener: ICloudHelpOpening {
 
 @MainActor
 final class IntegrationsSettingsModel: ObservableObject {
-    enum LoadState: Equatable, Sendable {
+    enum LoadState: Equatable {
         case loading
         case loaded
         case failed(IntegrationsSettingsError)
@@ -185,9 +187,17 @@ final class IntegrationsSettingsModel: ObservableObject {
         self.helpOpener = helpOpener
     }
 
-    var isLoaded: Bool { loadState == .loaded }
-    var hasRetryableSave: Bool { pendingRetry != nil && !isSaving }
-    var canRetryStatus: Bool { summary?.canRetryStatus == true && !isSaving }
+    var isLoaded: Bool {
+        loadState == .loaded
+    }
+
+    var hasRetryableSave: Bool {
+        pendingRetry != nil && !isSaving
+    }
+
+    var canRetryStatus: Bool {
+        summary?.canRetryStatus == true && !isSaving
+    }
 
     func load() async {
         loadState = .loading
@@ -209,7 +219,7 @@ final class IntegrationsSettingsModel: ObservableObject {
         } catch {
             savedConfig = nil
             summary = nil
-            loadState = .failed(await settingsError(for: error, fallbackRecovery: "Retry status"))
+            loadState = await .failed(settingsError(for: error, fallbackRecovery: "Retry status"))
         }
     }
 

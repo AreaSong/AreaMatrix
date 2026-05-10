@@ -1,5 +1,5 @@
-import XCTest
 @testable import AreaMatrix
+import XCTest
 
 final class MainListIntegrationClosureTests: XCTestCase {
     @MainActor
@@ -266,7 +266,7 @@ final class MainListIntegrationClosureTests: XCTestCase {
 }
 
 private actor MainListIntegrationNoopLister: CoreFileListing {
-    func listFiles(repoPath: String, filter: FileFilterSnapshot) async throws -> [FileEntrySnapshot] {
+    func listFiles(repoPath _: String, filter _: FileFilterSnapshot) async throws -> [FileEntrySnapshot] {
         []
     }
 }
@@ -275,7 +275,7 @@ private actor MainListIntegrationSuspendedLister: CoreFileListing {
     private var continuation: CheckedContinuation<Void, Never>?
     private var didReceiveRequest = false
 
-    func listFiles(repoPath: String, filter: FileFilterSnapshot) async throws -> [FileEntrySnapshot] {
+    func listFiles(repoPath _: String, filter _: FileFilterSnapshot) async throws -> [FileEntrySnapshot] {
         didReceiveRequest = true
         await withCheckedContinuation { continuation in
             self.continuation = continuation
@@ -295,38 +295,10 @@ private actor MainListIntegrationSuspendedLister: CoreFileListing {
     }
 }
 
-private actor MainListIntegrationLister: CoreFileListing {
-    enum Result {
-        case success([FileEntrySnapshot])
-        case failure(Error)
-    }
-
-    private var results: [Result]
-    private var requests: [FileFilterSnapshot] = []
-
-    init(results: [Result]) {
-        self.results = results
-    }
-
-    func listFiles(repoPath: String, filter: FileFilterSnapshot) async throws -> [FileEntrySnapshot] {
-        requests.append(filter)
-        guard !results.isEmpty else { return [] }
-
-        switch results.removeFirst() {
-        case .success(let files):
-            return files
-        case .failure(let error):
-            throw error
-        }
-    }
-
-    func recordedRequests() -> [FileFilterSnapshot] { requests }
-}
-
 private actor MainListIntegrationNoopDetailer: CoreFileDetailing {
     private var requests: [Int64] = []
 
-    func getFile(repoPath: String, fileID: Int64) async throws -> FileEntrySnapshot {
+    func getFile(repoPath _: String, fileID: Int64) async throws -> FileEntrySnapshot {
         requests.append(fileID)
         throw CoreError.FileNotFound(path: "\(fileID)")
     }
@@ -349,21 +321,23 @@ private actor MainListIntegrationDetailer: CoreFileDetailing {
         self.results = results
     }
 
-    func getFile(repoPath: String, fileID: Int64) async throws -> FileEntrySnapshot {
+    func getFile(repoPath _: String, fileID: Int64) async throws -> FileEntrySnapshot {
         requests.append(fileID)
         guard !results.isEmpty else {
             throw CoreError.FileNotFound(path: "\(fileID)")
         }
 
         switch results.removeFirst() {
-        case .success(let file):
+        case let .success(file):
             return file
-        case .failure(let error):
+        case let .failure(error):
             throw error
         }
     }
 
-    func recordedRequests() -> [Int64] { requests }
+    func recordedRequests() -> [Int64] {
+        requests
+    }
 }
 
 private actor MainListIntegrationErrorMapper: CoreErrorMapping {
@@ -373,7 +347,7 @@ private actor MainListIntegrationErrorMapper: CoreErrorMapping {
         self.mapping = mapping
     }
 
-    func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
+    func mapCoreError(_: CoreError) async -> CoreErrorMappingSnapshot {
         mapping
     }
 }
@@ -394,14 +368,16 @@ private actor MainListIntegrationDiagnosticsCollector: CoreDiagnosticsCollecting
     func createDiagnosticsSnapshot(repoPath: String) async throws -> DiagnosticsSnapshotSnapshot {
         repoPaths.append(repoPath)
         switch result {
-        case .success(let snapshot):
+        case let .success(snapshot):
             return snapshot
-        case .failure(let error):
+        case let .failure(error):
             throw error
         }
     }
 
-    func recordedRepoPaths() -> [String] { repoPaths }
+    func recordedRepoPaths() -> [String] {
+        repoPaths
+    }
 }
 
 private extension RepositoryOpeningResult {
@@ -453,7 +429,7 @@ private extension RepositoryTreeNodeSnapshot {
                     displayName: "docs",
                     fileCount: 2,
                     children: []
-                ),
+                )
             ]
         )
     }

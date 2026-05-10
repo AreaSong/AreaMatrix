@@ -27,24 +27,19 @@ protocol CoreFileImporting: Sendable {
 }
 
 protocol CoreBatchCopyImporting: Sendable {
-    func importCopiedFile(
-        repoPath: String,
-        sourceURL: URL,
-        destination: ImportEntryDestination,
-        suggestedCategory: String?,
-        overrideFilename: String,
-        duplicateStrategy: DuplicateStrategy
-    ) async throws -> FileEntrySnapshot
+    func importCopiedFile(request: CoreBatchImportRequest) async throws -> FileEntrySnapshot
 
-    func importBatchFile(
-        repoPath: String,
-        sourceURL: URL,
-        storageMode: ImportSingleFileStorageMode,
-        destination: ImportEntryDestination,
-        suggestedCategory: String?,
-        overrideFilename: String,
-        duplicateStrategy: DuplicateStrategy
-    ) async throws -> FileEntrySnapshot
+    func importBatchFile(request: CoreBatchImportRequest) async throws -> FileEntrySnapshot
+}
+
+struct CoreBatchImportRequest {
+    var repoPath: String
+    var sourceURL: URL
+    var storageMode: ImportSingleFileStorageMode
+    var destination: ImportEntryDestination
+    var suggestedCategory: String?
+    var overrideFilename: String
+    var duplicateStrategy: DuplicateStrategy
 }
 
 extension CoreFileImporting {
@@ -102,14 +97,15 @@ extension CoreBatchCopyImporting {
         suggestedCategory: String?,
         overrideFilename: String
     ) async throws -> FileEntrySnapshot {
-        try await importCopiedFile(
+        try await importCopiedFile(request: CoreBatchImportRequest(
             repoPath: repoPath,
             sourceURL: sourceURL,
+            storageMode: .copy,
             destination: destination,
             suggestedCategory: suggestedCategory,
             overrideFilename: overrideFilename,
             duplicateStrategy: .ask
-        )
+        ))
     }
 }
 
@@ -135,80 +131,58 @@ extension CoreBridge: CoreFileImporting, CoreBatchCopyImporting {
         )
     }
 
-    func importCopiedFile(
-        repoPath: String,
-        sourceURL: URL,
-        destination: ImportEntryDestination,
-        suggestedCategory: String?,
-        overrideFilename: String,
-        duplicateStrategy: DuplicateStrategy
-    ) async throws -> FileEntrySnapshot {
+    func importCopiedFile(request: CoreBatchImportRequest) async throws -> FileEntrySnapshot {
         try await importFile(
-            repoPath: repoPath,
-            sourceURL: sourceURL,
+            repoPath: request.repoPath,
+            sourceURL: request.sourceURL,
             options: ImportOptions(
                 mode: .copied,
-                destination: coreImportDestination(for: destination),
-                targetDirectory: coreImportTargetDirectory(for: destination),
+                destination: coreImportDestination(for: request.destination),
+                targetDirectory: coreImportTargetDirectory(for: request.destination),
                 overrideCategory: coreImportCategoryOverride(
-                    for: destination,
-                    suggestedCategory: suggestedCategory
+                    for: request.destination,
+                    suggestedCategory: request.suggestedCategory
                 ),
-                overrideFilename: overrideFilename,
-                duplicateStrategy: duplicateStrategy
+                overrideFilename: request.overrideFilename,
+                duplicateStrategy: request.duplicateStrategy
             )
         )
     }
 
-    func importBatchFile(
-        repoPath: String,
-        sourceURL: URL,
-        storageMode: ImportSingleFileStorageMode,
-        destination: ImportEntryDestination,
-        suggestedCategory: String?,
-        overrideFilename: String,
-        duplicateStrategy: DuplicateStrategy
-    ) async throws -> FileEntrySnapshot {
-        switch storageMode {
+    func importBatchFile(request: CoreBatchImportRequest) async throws -> FileEntrySnapshot {
+        switch request.storageMode {
         case .copy:
-            return try await importCopiedFile(
-                repoPath: repoPath,
-                sourceURL: sourceURL,
-                destination: destination,
-                suggestedCategory: suggestedCategory,
-                overrideFilename: overrideFilename,
-                duplicateStrategy: duplicateStrategy
-            )
+            try await importCopiedFile(request: request)
         case .indexOnly:
-            return try await importFile(
-                repoPath: repoPath,
-                sourceURL: sourceURL,
+            try await importFile(
+                repoPath: request.repoPath,
+                sourceURL: request.sourceURL,
                 options: ImportOptions(
                     mode: .indexed,
-                    destination: coreImportDestination(for: destination),
-                    targetDirectory: coreImportTargetDirectory(for: destination),
+                    destination: coreImportDestination(for: request.destination),
+                    targetDirectory: coreImportTargetDirectory(for: request.destination),
                     overrideCategory: coreImportCategoryOverride(
-                        for: destination,
-                        suggestedCategory: suggestedCategory
+                        for: request.destination,
+                        suggestedCategory: request.suggestedCategory
                     ),
-                    overrideFilename: overrideFilename,
-                    duplicateStrategy: duplicateStrategy
+                    overrideFilename: request.overrideFilename,
+                    duplicateStrategy: request.duplicateStrategy
                 )
             )
         case .move:
-            return try await importFile(
-                repoPath: repoPath,
-                sourceURL: sourceURL,
+            try await importFile(
+                repoPath: request.repoPath,
+                sourceURL: request.sourceURL,
                 options: ImportOptions(
                     mode: .moved,
-                    destination: coreImportDestination(for: destination),
-                    targetDirectory: coreImportTargetDirectory(for: destination),
+                    destination: coreImportDestination(for: request.destination),
+                    targetDirectory: coreImportTargetDirectory(for: request.destination),
                     overrideCategory: coreImportCategoryOverride(
-                        for: destination,
-                        suggestedCategory: suggestedCategory
+                        for: request.destination,
+                        suggestedCategory: request.suggestedCategory
                     ),
-                    overrideFilename: overrideFilename,
-                    duplicateStrategy: duplicateStrategy
+                    overrideFilename: request.overrideFilename,
+                    duplicateStrategy: request.duplicateStrategy
                 )
             )
         }
@@ -271,20 +245,20 @@ extension CoreBridge: CoreFileImporting, CoreBatchCopyImporting {
 private func coreImportDestination(for destination: ImportEntryDestination) -> ImportDestination {
     switch destination {
     case .autoClassify:
-        return .autoClassify
+        .autoClassify
     case .category:
-        return .category
+        .category
     case .repositoryRoot:
-        return .selectedDirectory
+        .selectedDirectory
     }
 }
 
 private func coreImportTargetDirectory(for destination: ImportEntryDestination) -> String? {
     switch destination {
     case .autoClassify, .category:
-        return nil
+        nil
     case .repositoryRoot:
-        return ""
+        ""
     }
 }
 
@@ -294,10 +268,10 @@ private func coreImportCategoryOverride(
 ) -> String? {
     switch destination {
     case .autoClassify:
-        return suggestedCategory
-    case .category(let slug):
-        return slug
+        suggestedCategory
+    case let .category(slug):
+        slug
     case .repositoryRoot:
-        return nil
+        nil
     }
 }

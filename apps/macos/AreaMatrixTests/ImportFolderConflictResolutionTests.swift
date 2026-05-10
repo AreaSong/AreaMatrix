@@ -1,5 +1,5 @@
-import XCTest
 @testable import AreaMatrix
+import XCTest
 
 final class ImportFolderConflictResolutionTests: XCTestCase {
     @MainActor
@@ -49,7 +49,7 @@ final class ImportFolderConflictResolutionTests: XCTestCase {
                 suggestedCategory: "docs",
                 overrideFilename: "renamed-name.pdf",
                 duplicateStrategy: .keepBoth
-            ),
+            )
         ])
         XCTAssertEqual(outcome?.succeededEntries.count, 1)
         XCTAssertEqual(outcome?.skippedDuplicateCount, 1)
@@ -60,17 +60,9 @@ final class ImportFolderConflictResolutionTests: XCTestCase {
     @MainActor
     func testS119FolderReplaceRequiresS124ConfirmationBeforeImport() async throws {
         let duplicateURL = URL(fileURLWithPath: "/tmp/client-a/dup.pdf")
-        let scanner = S119StaticFolderScanner(result: ImportFolderScanResult(
-            rows: [ImportFolderPreviewRow.loading(
-                fileURL: duplicateURL,
-                rootURL: URL(fileURLWithPath: "/tmp/client-a")
-            )],
-            folderCount: 0,
-            skippedRules: [],
-            errors: []
-        ))
+        let scanner = s119StaticScanner(urls: [duplicateURL])
         let prechecker = S119StaticConflictPrechecker(results: [
-            duplicateURL.path: .duplicate(existingPath: "docs/existing-dup.pdf"),
+            duplicateURL.path: .duplicate(existingPath: "docs/existing-dup.pdf")
         ])
         let importer = S118RecordingBatchImporter()
         let model = ImportFolderPreviewModel(
@@ -94,7 +86,7 @@ final class ImportFolderConflictResolutionTests: XCTestCase {
         let blockedOutcome = await model.importReadyFiles()
         XCTAssertNil(blockedOutcome)
 
-        let context: ImportSingleFileReplaceConfirmationContext = try XCTUnwrap(
+        let context: SingleFileReplaceConfirmationContext = try XCTUnwrap(
             model.beginReplaceConfirmation(for: duplicateURL.path)
         )
         model.applyReplaceConfirmation(
@@ -104,17 +96,19 @@ final class ImportFolderConflictResolutionTests: XCTestCase {
         let outcome = await model.importReadyFiles()
         let recordedRequests = await importer.recordedRequests()
 
-        XCTAssertEqual(recordedRequests, [
-            S118BatchImportRequest(
-                destination: .autoClassify,
-                suggestedCategory: "docs",
-                overrideFilename: "ready.pdf",
-                duplicateStrategy: .overwrite
-            ),
-        ])
+        XCTAssertEqual(recordedRequests, [s119FolderOverwriteRequest()])
         XCTAssertEqual(outcome?.succeededEntries.count, 1)
         XCTAssertEqual(model.rows.first?.status.tag, "IMPORTED")
     }
+}
+
+private func s119FolderOverwriteRequest() -> S118BatchImportRequest {
+    S118BatchImportRequest(
+        destination: .autoClassify,
+        suggestedCategory: "docs",
+        overrideFilename: "ready.pdf",
+        duplicateStrategy: .overwrite
+    )
 }
 
 private struct S119FolderConflictFixture {
@@ -131,15 +125,15 @@ private struct S119FolderConflictFixture {
         let blockedURL = rootURL.appendingPathComponent("blocked.pdf")
         var rows = [
             ImportFolderPreviewRow.loading(fileURL: duplicateURL, rootURL: rootURL),
-            ImportFolderPreviewRow.loading(fileURL: nameURL, rootURL: rootURL),
+            ImportFolderPreviewRow.loading(fileURL: nameURL, rootURL: rootURL)
         ]
         var predictions: [String: Result<ClassifyResultSnapshot, Error>] = [
             "dup.pdf": .success(.s119Prediction(category: "docs", suggestedName: "dup.pdf")),
-            "name.pdf": .success(.s119Prediction(category: "docs", suggestedName: "name.pdf")),
+            "name.pdf": .success(.s119Prediction(category: "docs", suggestedName: "name.pdf"))
         ]
         var results: [String: ImportFolderConflictPrecheckResult] = [
             duplicateURL.path: .duplicate(existingPath: "docs/existing-dup.pdf"),
-            nameURL.path: .nameConflict(existingPath: "docs/name.pdf"),
+            nameURL.path: .nameConflict(existingPath: "docs/name.pdf")
         ]
 
         if includeBlocked {

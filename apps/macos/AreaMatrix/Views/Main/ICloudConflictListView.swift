@@ -2,7 +2,9 @@ import SwiftUI
 
 enum ICloudConflictListCopy {
     static let title = "iCloud Conflicts"
-    static let subtitle = "iCloud created conflict copies for these files. AreaMatrix will not delete any version automatically."
+    static let subtitle = """
+    iCloud created conflict copies for these files. AreaMatrix will not delete any version automatically.
+    """
     static let loadingTitle = "Checking iCloud conflicts..."
     static let emptyTitle = "No iCloud conflicts found"
     static let errorTitle = "Unable to list iCloud conflicts"
@@ -119,11 +121,11 @@ struct ICloudConflictListView: View {
         switch model.state {
         case .notLoaded, .loading:
             loadingContent
-        case .loaded(let conflicts) where conflicts.isEmpty:
+        case let .loaded(conflicts) where conflicts.isEmpty:
             emptyContent
-        case .loaded(let conflicts):
+        case let .loaded(conflicts):
             conflictTable(conflicts)
-        case .failed(let mapping):
+        case let .failed(mapping):
             errorContent(mapping)
         }
     }
@@ -238,11 +240,11 @@ struct ICloudConflictListView: View {
         switch model.revealState {
         case .idle:
             EmptyView()
-        case .revealed(let message):
+        case let .revealed(message):
             Label(message, systemImage: "checkmark.circle")
                 .font(.caption)
                 .foregroundStyle(.green)
-        case .failed(let message):
+        case let .failed(message):
             Label(message, systemImage: "exclamationmark.triangle")
                 .font(.caption)
                 .foregroundStyle(.red)

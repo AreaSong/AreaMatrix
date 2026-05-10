@@ -267,6 +267,7 @@ pub(crate) fn rollback_replacing_imported_file(
     repo_path: &Path,
     existing_id: i64,
     original_path: &str,
+    original_updated_at: i64,
     new_file_id: i64,
     deleted_detail: &Value,
 ) -> CoreResult<()> {
@@ -291,10 +292,10 @@ pub(crate) fn rollback_replacing_imported_file(
             "UPDATE files
              SET path = ?2,
                  deleted_at = NULL,
-                 updated_at = strftime('%s', 'now'),
+                 updated_at = ?3,
                  status = 'active'
              WHERE id = ?1 AND status = 'deleted'",
-            params![existing_id, original_path],
+            params![existing_id, original_path, original_updated_at],
         )
         .map_err(|error| CoreError::db(error.to_string()))?;
     if restored != 1 {

@@ -56,9 +56,9 @@ struct RenameFileSheet: View {
             configuration: editingConfiguration,
             isDisabled: state.isRenaming
         )
-            .frame(height: 22)
-            .accessibilityIdentifier("S1-33-new-name")
-            .accessibilityHint(draft.validationMessage ?? "Enter a new file name")
+        .frame(height: 22)
+        .accessibilityIdentifier("S1-33-new-name")
+        .accessibilityHint(draft.validationMessage ?? "Enter a new file name")
     }
 
     private func summaryRows(_ file: FileEntrySnapshot) -> some View {
@@ -144,7 +144,7 @@ struct RenameFileSheet: View {
     }
 }
 
-struct RenameFilenameEditingConfiguration: Equatable, Sendable {
+struct RenameFilenameEditingConfiguration: Equatable {
     let text: String
     let initialSelection: RenameFilenameSelection
     let focusesOnAppear: Bool
@@ -156,7 +156,7 @@ struct RenameFilenameEditingConfiguration: Equatable, Sendable {
     }
 }
 
-struct RenameFilenameSelection: Equatable, Sendable {
+struct RenameFilenameSelection: Equatable {
     let location: Int
     let length: Int
 
@@ -258,8 +258,8 @@ private struct RenameFilenameTextField: NSViewRepresentable {
                 textField.window?.makeFirstResponder(textField)
                 textField.selectText(nil)
                 guard let editor = textField.currentEditor() else { return }
-                editor.selectedRange = self.configuration.initialSelection.nsRange(clampedTo: textField.stringValue)
-                self.didApplyInitialFocus = true
+                editor.selectedRange = configuration.initialSelection.nsRange(clampedTo: textField.stringValue)
+                didApplyInitialFocus = true
             }
         }
     }

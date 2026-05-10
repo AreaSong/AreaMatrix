@@ -1,7 +1,7 @@
 import Combine
 import Foundation
 
-enum MainDetailNoteSaveStatus: Equatable, Sendable {
+enum MainDetailNoteSaveStatus: Equatable {
     case saved
     case unsaved
     case saving
@@ -10,23 +10,23 @@ enum MainDetailNoteSaveStatus: Equatable, Sendable {
     var title: String {
         switch self {
         case .saved:
-            return "Saved"
+            "Saved"
         case .unsaved:
-            return "Unsaved"
+            "Unsaved"
         case .saving:
-            return "Saving..."
+            "Saving..."
         case .failed:
-            return "Unsaved"
+            "Unsaved"
         }
     }
 
     var failedError: CoreErrorMappingSnapshot? {
-        if case .failed(let error) = self { return error }
+        if case let .failed(error) = self { return error }
         return nil
     }
 }
 
-enum MainDetailNoteWriteBlock: Equatable, Sendable {
+enum MainDetailNoteWriteBlock: Equatable {
     case repoReadOnly
     case fileMissing
     case importLocked
@@ -35,18 +35,18 @@ enum MainDetailNoteWriteBlock: Equatable, Sendable {
     var message: String {
         switch self {
         case .repoReadOnly:
-            return "Repository is read-only. Note editing is disabled."
+            "Repository is read-only. Note editing is disabled."
         case .fileMissing:
-            return "文件缺失时暂不能保存笔记"
+            "文件缺失时暂不能保存笔记"
         case .importLocked:
-            return "This file is locked by an import. Note editing is disabled."
+            "This file is locked by an import. Note editing is disabled."
         case .listLoading:
-            return "Current list is loading. Note editing is temporarily disabled."
+            "Current list is loading. Note editing is temporarily disabled."
         }
     }
 }
 
-enum MainDetailNoteState: Equatable, Sendable {
+enum MainDetailNoteState: Equatable {
     case notLoaded
     case loading(fileID: Int64)
     case empty(fileID: Int64, writeBlock: MainDetailNoteWriteBlock?)
@@ -59,21 +59,21 @@ enum MainDetailNoteState: Equatable, Sendable {
     case failed(fileID: Int64, CoreErrorMappingSnapshot, writeBlock: MainDetailNoteWriteBlock?)
 
     var content: String {
-        if case .editing(_, let content, _, _) = self { return content }
+        if case let .editing(_, content, _, _) = self { return content }
         return ""
     }
 
     var saveStatus: MainDetailNoteSaveStatus? {
-        if case .editing(_, _, let saveStatus, _) = self { return saveStatus }
+        if case let .editing(_, _, saveStatus, _) = self { return saveStatus }
         return nil
     }
 
     var writeBlock: MainDetailNoteWriteBlock? {
         switch self {
-        case .empty(_, let block), .editing(_, _, _, let block), .failed(_, _, let block):
-            return block
+        case let .empty(_, block), let .editing(_, _, _, block), let .failed(_, _, block):
+            block
         case .notLoaded, .loading:
-            return nil
+            nil
         }
     }
 }
@@ -108,14 +108,18 @@ final class DetailNoteModel: ObservableObject {
         self.debounceNanoseconds = debounceNanoseconds
     }
 
-    var noteText: String { state.content }
+    var noteText: String {
+        state.content
+    }
 
     var canOpenNoteFile: Bool {
         guard case .editing(_, _, .saved, _) = state else { return false }
         return true
     }
 
-    var editorFocusRequest: Bool { isEditorFocusRequested }
+    var editorFocusRequest: Bool {
+        isEditorFocusRequested
+    }
 
     var noteSidecarRelativePath: String? {
         currentFile.map(Self.sidecarRelativePath)
@@ -175,11 +179,11 @@ final class DetailNoteModel: ObservableObject {
     func updateWriteBlock(_ writeBlock: MainDetailNoteWriteBlock?) {
         currentWriteBlock = writeBlock
         switch state {
-        case .empty(let fileID, _):
+        case let .empty(fileID, _):
             state = .empty(fileID: fileID, writeBlock: writeBlock)
-        case .editing(let fileID, let content, let saveStatus, _):
+        case let .editing(fileID, content, saveStatus, _):
             state = .editing(fileID: fileID, content: content, saveStatus: saveStatus, writeBlock: writeBlock)
-        case .failed(let fileID, let error, _):
+        case let .failed(fileID, error, _):
             state = .failed(fileID: fileID, error, writeBlock: writeBlock)
         case .notLoaded, .loading:
             break
@@ -199,7 +203,7 @@ final class DetailNoteModel: ObservableObject {
 
     func updateDraft(_ content: String) {
         guard let currentFile, currentWriteBlock == nil else { return }
-        guard case .editing(let fileID, let previousContent, _, _) = state, fileID == currentFile.id else { return }
+        guard case let .editing(fileID, previousContent, _, _) = state, fileID == currentFile.id else { return }
         guard content != previousContent else { return }
 
         state = .editing(fileID: fileID, content: content, saveStatus: .unsaved, writeBlock: nil)
@@ -209,7 +213,7 @@ final class DetailNoteModel: ObservableObject {
 
     func retrySave() async {
         guard let currentFile, currentWriteBlock == nil else { return }
-        guard case .editing(let fileID, let content, .failed, _) = state, fileID == currentFile.id else { return }
+        guard case let .editing(fileID, content, .failed, _) = state, fileID == currentFile.id else { return }
         await save(file: currentFile, content: content)
     }
 

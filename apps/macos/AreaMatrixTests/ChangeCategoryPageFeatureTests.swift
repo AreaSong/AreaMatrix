@@ -1,5 +1,5 @@
-import XCTest
 @testable import AreaMatrix
+import XCTest
 
 final class ChangeCategoryPageFeatureTests: XCTestCase {
     @MainActor
@@ -69,7 +69,7 @@ final class ChangeCategoryPageFeatureTests: XCTestCase {
 
         XCTAssertEqual(requests, [
             .preview(repoPath: "/tmp/repo", fileID: original.id, targetCategory: "finance"),
-            .move(repoPath: "/tmp/repo", fileID: original.id, targetCategory: "finance"),
+            .move(repoPath: "/tmp/repo", fileID: original.id, targetCategory: "finance")
         ])
         XCTAssertEqual(model.files, [moved])
         XCTAssertEqual(model.selection, .single(moved.id))
@@ -120,7 +120,7 @@ final class ChangeCategoryPageFeatureTests: XCTestCase {
         XCTAssertEqual(movedCallback, moved)
         XCTAssertEqual(listRequests, [
             FileFilterSnapshot.currentCategory("docs"),
-            FileFilterSnapshot.currentCategory("finance"),
+            FileFilterSnapshot.currentCategory("finance")
         ])
         XCTAssertEqual(model.files, [moved])
         XCTAssertEqual(model.selection, .single(moved.id))
@@ -128,7 +128,7 @@ final class ChangeCategoryPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS135C124ContentRefreshUpdatesTreeAndSwitchesToMovedCategory() async {
+    func testS135C124ContentRefreshUpdatesTreeAndSwitchesToMovedCategory() {
         let moved = FileEntrySnapshot.changeCategoryFixture(
             id: 244,
             path: "finance/contract.pdf",
@@ -136,7 +136,7 @@ final class ChangeCategoryPageFeatureTests: XCTestCase {
             name: "contract.pdf",
             updatedAt: 1_700_000_600
         )
-        let plan = MainRepositoryContentCategoryMoveRefreshPlan.make(
+        let plan = CategoryMoveRefreshPlan.make(
             movedFile: moved,
             currentSidebarID: "docs",
             currentTree: .changeCategoryTree(docsCount: 1, financeCount: 0),
@@ -310,7 +310,7 @@ final class ChangeCategoryPageFeatureTests: XCTestCase {
     }
 }
 
-private enum ChangeCategoryRequest: Equatable, Sendable {
+private enum ChangeCategoryRequest: Equatable {
     case preview(repoPath: String, fileID: Int64, targetCategory: String)
     case move(repoPath: String, fileID: Int64, targetCategory: String)
 }
@@ -342,7 +342,9 @@ private actor ChangeCategoryRecordingMover: CoreFileCategoryMoving {
         return try moveResult.get()
     }
 
-    func recordedRequests() -> [ChangeCategoryRequest] { requests }
+    func recordedRequests() -> [ChangeCategoryRequest] {
+        requests
+    }
 }
 
 private actor ChangeCategoryRecordingLister: CoreFileListing {
@@ -358,19 +360,21 @@ private actor ChangeCategoryRecordingLister: CoreFileListing {
         self.results = results
     }
 
-    func listFiles(repoPath: String, filter: FileFilterSnapshot) async throws -> [FileEntrySnapshot] {
+    func listFiles(repoPath _: String, filter: FileFilterSnapshot) async throws -> [FileEntrySnapshot] {
         requests.append(filter)
         guard !results.isEmpty else { return [] }
 
         switch results.removeFirst() {
-        case .success(let files):
+        case let .success(files):
             return files
-        case .failure(let error):
+        case let .failure(error):
             throw error
         }
     }
 
-    func recordedRequests() -> [FileFilterSnapshot] { requests }
+    func recordedRequests() -> [FileFilterSnapshot] {
+        requests
+    }
 }
 
 private extension FileEntrySnapshot {
@@ -414,7 +418,7 @@ private extension RepositoryTreeNodeSnapshot {
                     displayName: "finance",
                     fileCount: financeCount,
                     children: []
-                ),
+                )
             ]
         )
     }
@@ -454,7 +458,6 @@ private extension CoreErrorMappingSnapshot {
             rawContext: "S1-35 C1-24 preview_move_to_category"
         )
     }
-
 }
 
 private func makeChangeCategoryTemporaryDirectory(prefix: String) throws -> URL {
@@ -462,4 +465,19 @@ private func makeChangeCategoryTemporaryDirectory(prefix: String) throws -> URL 
     let url = FileManager.default.temporaryDirectory.appendingPathComponent(name, isDirectory: true)
     try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
     return url
+}
+
+func s135MirrorDescription(of value: Any, depth: Int = 0) -> String {
+    guard depth < 8 else { return "" }
+
+    var lines: [String] = []
+    lines.append(String(describing: type(of: value)))
+    lines.append(String(describing: value))
+    for child in Mirror(reflecting: value).children {
+        if let label = child.label {
+            lines.append(label)
+        }
+        lines.append(s135MirrorDescription(of: child.value, depth: depth + 1))
+    }
+    return lines.joined(separator: "\n")
 }

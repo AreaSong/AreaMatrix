@@ -19,7 +19,7 @@ protocol AdvancedSettingsDiagnosticSummaryCopying {
     func copyDiagnosticSummary(_ summary: String) throws
 }
 
-struct AdvancedSettingsVersionInfo: Equatable, Sendable {
+struct AdvancedSettingsVersionInfo: Equatable {
     var appVersion: String
     var coreVersion: String
     var repoSchemaVersion: Int64?
@@ -35,7 +35,7 @@ struct AdvancedSettingsVersionInfo: Equatable, Sendable {
     }
 }
 
-enum AdvancedSettingsDiagnosticsState: Equatable, Sendable {
+enum AdvancedSettingsDiagnosticsState: Equatable {
     case idle
     case confirmingPrivacy
     case collecting
@@ -53,7 +53,7 @@ enum AdvancedSettingsDiagnosticsState: Equatable, Sendable {
     }
 }
 
-enum AdvancedSettingsActionFeedback: Equatable, Sendable {
+enum AdvancedSettingsActionFeedback: Equatable {
     case success(String)
     case failed(AdvancedSettingsError)
 }
@@ -71,13 +71,14 @@ struct BundleAppVersionReader: AppVersionReading {
     }
 }
 
-struct NSWorkspaceAdvancedSettingsLogFolderOpener: AdvancedSettingsLogFolderOpening {
+struct AdvancedSettingsLogFolderOpener: AdvancedSettingsLogFolderOpening {
     @MainActor
     func openLogsFolder(repoPath: String) throws -> String {
         let logsURL = Self.logsURL(repoPath: repoPath)
         var isDirectory: ObjCBool = false
         guard FileManager.default.fileExists(atPath: logsURL.path, isDirectory: &isDirectory),
-              isDirectory.boolValue else {
+              isDirectory.boolValue
+        else {
             throw AdvancedSettingsLogFolderError.missing(logsURL.path)
         }
         guard NSWorkspace.shared.open(logsURL) else {
@@ -93,7 +94,7 @@ struct NSWorkspaceAdvancedSettingsLogFolderOpener: AdvancedSettingsLogFolderOpen
     }
 }
 
-struct NSPasteboardAdvancedSettingsDiagnosticSummaryCopier: AdvancedSettingsDiagnosticSummaryCopying {
+struct AdvancedSettingsDiagnosticCopier: AdvancedSettingsDiagnosticSummaryCopying {
     @MainActor
     func copyDiagnosticSummary(_ summary: String) throws {
         NSPasteboard.general.clearContents()
@@ -103,27 +104,27 @@ struct NSPasteboardAdvancedSettingsDiagnosticSummaryCopier: AdvancedSettingsDiag
     }
 }
 
-enum AdvancedSettingsLogFolderError: Error, Equatable, LocalizedError, Sendable {
+enum AdvancedSettingsLogFolderError: Error, Equatable, LocalizedError {
     case missing(String)
     case openRejected(String)
 
     var errorDescription: String? {
         switch self {
-        case .missing(let path):
-            return "Logs folder is missing: \(path)"
-        case .openRejected(let path):
-            return "Finder rejected opening logs folder: \(path)"
+        case let .missing(path):
+            "Logs folder is missing: \(path)"
+        case let .openRejected(path):
+            "Finder rejected opening logs folder: \(path)"
         }
     }
 }
 
-enum AdvancedSettingsDiagnosticSummaryError: Error, Equatable, LocalizedError, Sendable {
+enum AdvancedSettingsDiagnosticSummaryError: Error, Equatable, LocalizedError {
     case copyRejected
 
     var errorDescription: String? {
         switch self {
         case .copyRejected:
-            return "Pasteboard rejected the diagnostic summary."
+            "Pasteboard rejected the diagnostic summary."
         }
     }
 }

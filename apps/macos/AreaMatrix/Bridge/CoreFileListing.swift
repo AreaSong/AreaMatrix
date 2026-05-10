@@ -8,7 +8,7 @@ protocol CoreFileDetailing: Sendable {
     func getFile(repoPath: String, fileID: Int64) async throws -> FileEntrySnapshot
 }
 
-struct FileFilterSnapshot: Equatable, Sendable {
+struct FileFilterSnapshot: Equatable {
     var category: String?
     var includeDeleted: Bool?
     var importedAfter: Int64?
@@ -28,7 +28,7 @@ struct FileFilterSnapshot: Equatable, Sendable {
     }
 }
 
-enum FileAvailabilitySnapshot: String, Equatable, Sendable {
+enum FileAvailabilitySnapshot: String, Equatable {
     case available
     case missing
     case iCloudPlaceholder
@@ -44,7 +44,7 @@ struct LocalFileAvailabilityChecker: FileAvailabilityChecking {
     }
 }
 
-struct FileEntrySnapshot: Equatable, Identifiable, Sendable {
+struct FileEntrySnapshot: Equatable, Identifiable {
     var id: Int64
     var path: String
     var originalName: String
@@ -64,11 +64,11 @@ extension FileEntrySnapshot {
     var statusDisplay: String {
         switch availability {
         case .missing:
-            return "Missing"
+            "Missing"
         case .iCloudPlaceholder:
-            return "iCloud"
+            "iCloud"
         case .available:
-            return storageMode == "Indexed" ? "Index-only" : "OK"
+            storageMode == "Indexed" ? "Index-only" : "OK"
         }
     }
 }
@@ -125,11 +125,11 @@ private extension StorageMode {
     var fileListDisplayName: String {
         switch self {
         case .moved:
-            return "Moved"
+            "Moved"
         case .copied:
-            return "Copied"
+            "Copied"
         case .indexed:
-            return "Indexed"
+            "Indexed"
         }
     }
 }
@@ -138,11 +138,11 @@ private extension FileOrigin {
     var fileListDisplayName: String {
         switch self {
         case .imported:
-            return "Imported"
+            "Imported"
         case .adopted:
-            return "Adopted"
+            "Adopted"
         case .external:
-            return "External"
+            "External"
         }
     }
 }

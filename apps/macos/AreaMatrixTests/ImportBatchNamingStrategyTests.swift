@@ -1,5 +1,5 @@
-import XCTest
 @testable import AreaMatrix
+import XCTest
 
 final class ImportBatchNamingStrategyTests: XCTestCase {
     @MainActor
@@ -19,7 +19,7 @@ final class ImportBatchNamingStrategyTests: XCTestCase {
                     reason: .keyword,
                     confidence: 0.9
                 )
-            ),
+            )
         ]
 
         model.applyPreviewRows(
@@ -42,7 +42,7 @@ final class ImportBatchNamingStrategyTests: XCTestCase {
                 suggestedCategory: "docs",
                 overrideFilename: "Batch-Quarter-Plan-.pdf",
                 duplicateStrategy: .ask
-            ),
+            )
         ])
     }
 }

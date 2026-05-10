@@ -3,41 +3,50 @@ import Foundation
 protocol CoreConfigurationLoading: Sendable {
     func loadConfig(repoPath: String) async throws -> RepoConfigSnapshot
 }
+
 protocol CoreConfigurationUpdating: Sendable {
     func updateConfig(repoPath: String, newConfig: RepoConfigSnapshot) async throws
 }
+
 protocol CoreRepositoryPathValidating: Sendable {
     func validateRepoPath(repoPath: String) async throws -> RepoPathValidationSnapshot
 }
+
 protocol CoreInitializedRepositoryPathValidating: Sendable {
     func validateInitializedRepoPath(repoPath: String) async throws -> RepoPathValidationSnapshot
 }
+
 protocol CoreRepositoryInitializing: Sendable {
     func initializeEmptyRepository(repoPath: String) async throws
     func adoptExistingRepository(repoPath: String) async throws
 }
+
 protocol CoreScanSessionReading: Sendable {
     func latestScanSession(repoPath: String) async throws -> ScanSessionSnapshot?
     func resumeScanSession(repoPath: String, scanSessionId: Int64) async throws -> ReindexReportSnapshot
 }
+
 protocol CoreCategoryPredicting: Sendable {
     func predictCategory(repoPath: String, filename: String) async throws -> ClassifyResultSnapshot
 }
+
 extension CoreScanSessionReading {
-    func resumeScanSession(repoPath: String, scanSessionId: Int64) async throws -> ReindexReportSnapshot {
+    func resumeScanSession(repoPath _: String, scanSessionId _: Int64) async throws -> ReindexReportSnapshot {
         throw CoreError.Internal(message: "scan session resume is unavailable")
     }
 }
-enum RepoInitModeSnapshot: String, Equatable, Sendable {
+
+enum RepoInitModeSnapshot: String, Equatable {
     case createEmpty = "CreateEmpty"
     case adoptExisting = "AdoptExisting"
 }
-enum ScanSessionKindSnapshot: String, Equatable, Sendable {
+
+enum ScanSessionKindSnapshot: String, Equatable {
     case adopt = "Adopt"
     case reindex = "Reindex"
 }
 
-enum ScanSessionStatusSnapshot: String, Equatable, Sendable {
+enum ScanSessionStatusSnapshot: String, Equatable {
     case running = "Running"
     case completed = "Completed"
     case paused = "Paused"
@@ -45,7 +54,7 @@ enum ScanSessionStatusSnapshot: String, Equatable, Sendable {
     case interrupted = "Interrupted"
 }
 
-enum RepoPathIssueSnapshot: String, Equatable, Sendable {
+enum RepoPathIssueSnapshot: String, Equatable {
     case missingPath = "MissingPath"
     case notDirectory = "NotDirectory"
     case notReadable = "NotReadable"
@@ -57,7 +66,7 @@ enum RepoPathIssueSnapshot: String, Equatable, Sendable {
     case unfinishedScanSession = "UnfinishedScanSession"
 }
 
-struct RepoPathValidationSnapshot: Equatable, Sendable {
+struct RepoPathValidationSnapshot: Equatable {
     var repoPath: String
     var exists: Bool
     var isDirectory: Bool
@@ -86,13 +95,13 @@ extension RepoPathValidationSnapshot {
     }
 }
 
-struct RepositoryInitializationDraft: Equatable, Sendable {
+struct RepositoryInitializationDraft: Equatable {
     var validation: RepoPathValidationSnapshot
     var mode: RepoInitModeSnapshot
     var scanSession: ScanSessionSnapshot?
 }
 
-struct ScanSessionSnapshot: Equatable, Sendable {
+struct ScanSessionSnapshot: Equatable {
     var id: Int64
     var kind: ScanSessionKindSnapshot
     var status: ScanSessionStatusSnapshot
@@ -106,7 +115,7 @@ struct ScanSessionSnapshot: Equatable, Sendable {
     var errors: [String]
 }
 
-struct RepoConfigSnapshot: Equatable, Sendable {
+struct RepoConfigSnapshot: Equatable {
     var repoPath: String
     var defaultMode: String
     var overviewOutput: String
@@ -135,7 +144,7 @@ extension RepoConfigSnapshot {
 }
 
 actor CoreBridge {
-    enum BridgeState: Equatable, Sendable {
+    enum BridgeState: Equatable {
         case placeholder
         case generatedBindings
     }
@@ -182,16 +191,16 @@ actor CoreBridge {
         getCoreVersion()
     }
 
-    func initializeLogging(level: String) async throws -> Never {
+    func initializeLogging(level _: String) async throws -> Never {
         try requireGeneratedBindings(for: .initLogging)
     }
 
     func validateRepoPath(repoPath: String) async throws -> RepoPathValidationSnapshot {
-        RepoPathValidationSnapshot(coreValidation: try validateCoreRepoPath(repoPath: repoPath))
+        try RepoPathValidationSnapshot(coreValidation: validateCoreRepoPath(repoPath: repoPath))
     }
 
     func validateInitializedRepoPath(repoPath: String) async throws -> RepoPathValidationSnapshot {
-        RepoPathValidationSnapshot(coreValidation: try validateCoreInitializedRepoPath(repoPath: repoPath))
+        try RepoPathValidationSnapshot(coreValidation: validateCoreInitializedRepoPath(repoPath: repoPath))
     }
 
     func latestScanSession(repoPath: String) async throws -> ScanSessionSnapshot? {
@@ -199,7 +208,7 @@ actor CoreBridge {
     }
 
     func loadConfig(repoPath: String) async throws -> RepoConfigSnapshot {
-        RepoConfigSnapshot(coreConfig: try loadCoreConfig(repoPath: repoPath))
+        try RepoConfigSnapshot(coreConfig: loadCoreConfig(repoPath: repoPath))
     }
 
     func updateConfig(repoPath: String, newConfig: RepoConfigSnapshot) async throws {
@@ -207,8 +216,8 @@ actor CoreBridge {
             repoPath: repoPath,
             newConfig: RepoConfig(
                 repoPath: newConfig.repoPath,
-                defaultMode: try StorageMode(snapshotValue: newConfig.defaultMode),
-                overviewOutput: try OverviewOutput(snapshotValue: newConfig.overviewOutput),
+                defaultMode: StorageMode(snapshotValue: newConfig.defaultMode),
+                overviewOutput: OverviewOutput(snapshotValue: newConfig.overviewOutput),
                 aiEnabled: newConfig.aiEnabled,
                 locale: newConfig.locale,
                 icloudWarn: newConfig.iCloudWarn,
@@ -250,7 +259,7 @@ actor CoreBridge {
 
     func createDiagnosticsSnapshot(repoPath: String) async throws -> DiagnosticsSnapshotSnapshot {
         try await Task.detached(priority: .userInitiated) {
-            DiagnosticsSnapshotSnapshot(coreSnapshot: try createCoreDiagnosticsSnapshot(repoPath: repoPath))
+            try DiagnosticsSnapshotSnapshot(coreSnapshot: createCoreDiagnosticsSnapshot(repoPath: repoPath))
         }.value
     }
 
@@ -259,32 +268,32 @@ actor CoreBridge {
     }
 
     func resumeScanSession(repoPath: String, scanSessionId: Int64) async throws -> ReindexReportSnapshot {
-        ReindexReportSnapshot(coreReport: try resumeCoreScanSession(repoPath: repoPath, scanSessionId: scanSessionId))
+        try ReindexReportSnapshot(coreReport: resumeCoreScanSession(repoPath: repoPath, scanSessionId: scanSessionId))
     }
 
     func predictCategory(repoPath: String, filename: String) async throws -> ClassifyResultSnapshot {
         try await Task.detached(priority: .userInitiated) {
-            ClassifyResultSnapshot(coreResult: try predictCoreCategory(repoPath: repoPath, filename: filename))
+            try ClassifyResultSnapshot(coreResult: predictCoreCategory(repoPath: repoPath, filename: filename))
         }.value
     }
 
-    func importFile(from sourceURL: URL) async throws -> Never {
+    func importFile(from _: URL) async throws -> Never {
         try requireGeneratedBindings(for: .importFile)
     }
 
-    func deleteFile(id: Int64, hard: Bool) async throws -> Never {
+    func deleteFile(id _: Int64, hard _: Bool) async throws -> Never {
         try requireGeneratedBindings(for: .deleteFile)
     }
 
-    func renameFile(id: Int64, newName: String) async throws -> Never {
+    func renameFile(id _: Int64, newName _: String) async throws -> Never {
         try requireGeneratedBindings(for: .renameFile)
     }
 
-    func moveToCategory(id: Int64, category: String) async throws -> Never {
+    func moveToCategory(id _: Int64, category _: String) async throws -> Never {
         try requireGeneratedBindings(for: .moveToCategory)
     }
 
-    func restoreFile(id: Int64) async throws -> Never {
+    func restoreFile(id _: Int64) async throws -> Never {
         try requireGeneratedBindings(for: .restoreFile)
     }
 
@@ -314,11 +323,11 @@ actor CoreBridge {
         }.value
     }
 
-    func readNote(fileID: Int64) async throws -> Never {
+    func readNote(fileID _: Int64) async throws -> Never {
         try requireGeneratedBindings(for: .readNote)
     }
 
-    func writeNote(fileID: Int64, contentMarkdown: String) async throws -> Never {
+    func writeNote(fileID _: Int64, contentMarkdown _: String) async throws -> Never {
         try requireGeneratedBindings(for: .writeNote)
     }
 
@@ -431,11 +440,11 @@ private extension StorageMode {
     var displayName: String {
         switch self {
         case .moved:
-            return "Moved"
+            "Moved"
         case .copied:
-            return "Copied"
+            "Copied"
         case .indexed:
-            return "Indexed"
+            "Indexed"
         }
     }
 }
@@ -455,9 +464,9 @@ private extension OverviewOutput {
     var displayName: String {
         switch self {
         case .generatedOnly:
-            return "GeneratedOnly"
+            "GeneratedOnly"
         case .rootAreaMatrixFile:
-            return "RootAreaMatrixFile"
+            "RootAreaMatrixFile"
         }
     }
 }

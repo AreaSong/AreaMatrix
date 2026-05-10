@@ -37,6 +37,12 @@
       [stage-1-release-checklist.md](stage-1-release-checklist.md)；若该清单仍有
       P0/P1、check-all 失败、手工冒烟未跑、性能基线缺失或签名/公证状态不明，
       不得放行最终集成验收。
+- [ ] `./dev release preflight` 通过，确认本机存在 Developer ID Application
+      signing identity，且 `AC_PASSWORD` notarytool keychain profile 可用；该预检
+      只证明发布凭据可用，不能替代最终 codesign、notarytool submit、stapler、DMG
+      和干净 Mac 首启证据。
+- [ ] 若当前未加入付费 Apple Developer Program，则不得继续执行 Developer ID alpha
+      分发；只能产出 local QA build，并在 checklist / release notes 中保留 P1-RL-003 blocked。
 - [ ] `main` 分支所有 PR 已合并
 - [ ] 全部 CI 绿
 - [ ] CHANGELOG `[Unreleased]` 段落内容完整
@@ -45,6 +51,89 @@
 - [ ] 性能基线无回退
 - [ ] 已升级依赖（`cargo update --dry-run` 检查）
 - [ ] 文档与代码一致（特别是 docs/api/）
+
+---
+
+## 不付费 local QA build
+
+未加入付费 Apple Developer Program 时，项目不能获取 Developer ID Application 证书，也不能完成
+notarytool 公证。此时允许制作 **local QA build** 用于本机或受控测试机验证，但它不是正式 alpha
+分发物，不能关闭 [stage-1-release-checklist.md](stage-1-release-checklist.md) 中的 P1-RL-003。
+
+local QA build 可使用 Xcode 本地构建、ad-hoc signing 或自签名证书验证包结构和启动行为；测试记录
+必须写明以下限制：
+
+- 不是 Developer ID signed app。
+- 没有 notarytool accepted log，也没有 stapler 证据。
+- DMG 若生成，只能标记为 local QA DMG，不得上传为正式 alpha 分发物。
+- 干净 Mac 首启只能证明受控环境行为，不能替代 notarized app 的 Gatekeeper 验证。
+
+恢复正式 alpha 分发的唯一闭环是：加入 Apple Developer Program，取得 Developer ID Application
+证书，配置 `AC_PASSWORD` notarytool profile，随后重新执行 `./dev release preflight`、codesign、
+notarytool submit、stapler、DMG 公证和干净 Mac 首启验证。
+
+`0.1.0-local-qa` 内部测试产物命名规则：
+
+```bash
+APP_PATH="build/Build/Products/Release/AreaMatrix.app"
+hdiutil create \
+  -volname "AreaMatrix 0.1.0 Local QA" \
+  -srcfolder "$APP_PATH" \
+  -ov \
+  -format UDZO \
+  AreaMatrix-0.1.0-local-qa.dmg
+shasum -a 256 AreaMatrix-0.1.0-local-qa.dmg
+```
+
+发布记录必须明确写出 `Signature=adhoc`、`TeamIdentifier=not set`、无 notarytool accepted
+log、无 stapler 证据，并保留 P1-RL-003 blocked。local QA 不创建 `v0.1.0` tag，也不创建
+GitHub Release。
+
+local QA 首启交互 smoke 可以用来证明受控测试机上 `.app` 能打开、窗口能置前并接收基本输入事件。
+该证据必须标记为 **local QA smoke**，不得写成干净 Mac 首启、Gatekeeper 或 notarized app 证据。
+
+```bash
+open -n "/Volumes/AreaMatrix 0.1.0 Local QA/AreaMatrix.app"
+
+osascript <<'APPLESCRIPT'
+tell application "System Events"
+  tell process "AreaMatrix"
+    set frontmost to true
+    set position of window 1 to {60, 50}
+    set size of window 1 to {1500, 980}
+    get {exists window 1, position of window 1, size of window 1, name of window 1}
+  end tell
+end tell
+APPLESCRIPT
+
+cat > /tmp/areamatrix_scroll_down.swift <<'SWIFT'
+import CoreGraphics
+import Foundation
+
+let source = CGEventSource(stateID: .hidSystemState)
+let point = CGPoint(x: 900, y: 610)
+CGEvent(mouseEventSource: source, mouseType: .mouseMoved, mouseCursorPosition: point, mouseButton: .left)?
+    .post(tap: .cghidEventTap)
+Thread.sleep(forTimeInterval: 0.1)
+for _ in 0..<7 {
+    CGEvent(scrollWheelEvent2Source: source, units: .line, wheelCount: 1, wheel1: -6, wheel2: 0, wheel3: 0)?
+        .post(tap: .cghidEventTap)
+    Thread.sleep(forTimeInterval: 0.08)
+}
+print("scroll_probe=posted events=7 point=900,610")
+SWIFT
+xcrun swift /tmp/areamatrix_scroll_down.swift
+```
+
+Developer ID / notarization 后续补证必须至少包含：
+
+- `./dev release preflight` 通过。
+- `security find-identity -v -p codesigning` 中存在 valid Developer ID Application identity。
+- `codesign -dv --verbose=4 "$APP_PATH"` 显示 Developer ID team，而不是 `Signature=adhoc`。
+- `xcrun notarytool submit ... --wait` 返回 accepted，并保存 submission id / log URL。
+- `xcrun stapler staple "$APP_PATH"` 和 `xcrun stapler validate "$APP_PATH"` 通过。
+- DMG 也完成签名、公证、staple / assess，并记录 SHA-256。
+- 干净 Mac 上首次打开通过 Gatekeeper，完成 repo 选择或已配置 repo 首屏加载。
 
 ---
 

@@ -1,6 +1,6 @@
+@testable import AreaMatrix
 import Foundation
 import XCTest
-@testable import AreaMatrix
 
 final class CoreBridgeRepositoryTests: XCTestCase {
     @MainActor
@@ -31,7 +31,7 @@ final class CoreBridgeRepositoryTests: XCTestCase {
             allowReplaceDuringImport: false
         )
 
-        guard case .mainEmpty(let opening) = model.route else {
+        guard case let .mainEmpty(opening) = model.route else {
             return XCTFail("expected main empty route, got \(model.route)")
         }
         XCTAssertEqual(opening.config, expectedConfig)
@@ -92,7 +92,9 @@ private func makeTemporaryRepoURL() throws -> URL {
 private struct CoreBridgeTestSettingsReader: AppSettingsReading {
     let repoPath: String?
 
-    func configuredRepoPath() -> String? { repoPath }
+    func configuredRepoPath() -> String? {
+        repoPath
+    }
 }
 
 private struct CoreBridgeTestHelpOpener: WelcomeHelpOpening {

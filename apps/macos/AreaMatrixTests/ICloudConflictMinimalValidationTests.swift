@@ -1,5 +1,5 @@
-import XCTest
 @testable import AreaMatrix
+import XCTest
 
 final class ICloudConflictMinimalValidationTests: XCTestCase {
     @MainActor
@@ -45,7 +45,7 @@ final class ICloudConflictMinimalValidationTests: XCTestCase {
 
         await model.validateRepositoryPath()
 
-        guard case .blocked(let blockedValidation, let reasons) = model.repositoryValidationState else {
+        guard case let .blocked(blockedValidation, reasons) = model.repositoryValidationState else {
             return XCTFail("expected blocked repository validation")
         }
 
@@ -74,7 +74,7 @@ final class ICloudConflictMinimalValidationTests: XCTestCase {
         await model.validateRepositoryPath()
         let mappedErrors = await errorMapper.recordedErrors()
 
-        guard case .failed(let failure) = model.repositoryValidationState else {
+        guard case let .failed(failure) = model.repositoryValidationState else {
             return XCTFail("expected failed repository validation")
         }
 
@@ -101,7 +101,7 @@ final class ICloudConflictMinimalValidationTests: XCTestCase {
         let mappedErrors = await errorMapper.recordedErrors()
 
         XCTAssertEqual(mappedErrors, [CoreError.Internal(message: "stale conflict context")])
-        guard case .failed(let failure) = model.repositoryValidationState else {
+        guard case let .failed(failure) = model.repositoryValidationState else {
             return XCTFail("expected failed repository validation")
         }
         XCTAssertEqual(failure.kind, .internal)

@@ -1,5 +1,5 @@
-import XCTest
 @testable import AreaMatrix
+import XCTest
 
 final class MainListFilesTests: XCTestCase {
     @MainActor
@@ -35,7 +35,10 @@ final class MainListFilesTests: XCTestCase {
             category: "docs",
             currentName: "research.md"
         )
-        let lister = MainListRecordingFileLister(results: [.failure(CoreError.Db(message: "locked")), .success([docsFile])])
+        let lister = MainListRecordingFileLister(results: [
+            .failure(CoreError.Db(message: "locked")),
+            .success([docsFile])
+        ])
         let mapper = MainListRecordingErrorMapper(mapping: .mainListDbFixture(rawContext: "locked"))
         let model = MainFileListModel(
             opening: .mainListFixture(repoPath: "/tmp/repo", currentCategoryFiles: []),
@@ -50,7 +53,7 @@ final class MainListFilesTests: XCTestCase {
 
         XCTAssertEqual(requests, [
             FileFilterSnapshot.currentCategory("docs"),
-            FileFilterSnapshot.currentCategory("docs"),
+            FileFilterSnapshot.currentCategory("docs")
         ])
         XCTAssertEqual(model.files, [docsFile])
         XCTAssertNil(model.errorMapping)
@@ -63,7 +66,12 @@ final class MainListFilesTests: XCTestCase {
         let model = MainFileListModel(
             opening: .mainListFixture(
                 repoPath: "/tmp/repo",
-                currentCategoryFiles: [.mainListFixture(id: 1, path: "inbox/a.txt", category: "inbox", currentName: "a.txt")]
+                currentCategoryFiles: [.mainListFixture(
+                    id: 1,
+                    path: "inbox/a.txt",
+                    category: "inbox",
+                    currentName: "a.txt"
+                )]
             ),
             fileLister: MainListRecordingFileLister(results: [.failure(CoreError.Db(message: "list db locked"))]),
             fileDetailer: MainListRecordingFileDetailer(results: []),
@@ -119,7 +127,7 @@ final class MainListFilesTests: XCTestCase {
             opening: .mainListFixture(repoPath: "/tmp/repo", currentCategoryFiles: [cached]),
             fileLister: MainListRecordingFileLister(results: []),
             fileDetailer: MainListRecordingFileDetailer(results: [
-                .failure(CoreError.FileNotFound(path: "docs/missing.pdf")),
+                .failure(CoreError.FileNotFound(path: "docs/missing.pdf"))
             ]),
             errorMapper: mapper
         )
@@ -262,85 +270,6 @@ final class MainListFilesTests: XCTestCase {
     }
 }
 
-private actor MainListRecordingFileLister: CoreFileListing {
-    enum Result {
-        case success([FileEntrySnapshot])
-        case failure(Error)
-    }
-
-    private var results: [Result]
-    private var requests: [FileFilterSnapshot] = []
-
-    init(results: [Result]) {
-        self.results = results
-    }
-
-    func listFiles(repoPath: String, filter: FileFilterSnapshot) async throws -> [FileEntrySnapshot] {
-        requests.append(filter)
-        guard !results.isEmpty else { return [] }
-
-        switch results.removeFirst() {
-        case .success(let files):
-            return files
-        case .failure(let error):
-            throw error
-        }
-    }
-
-    func recordedRequests() -> [FileFilterSnapshot] { requests }
-}
-
-private struct MainListFileDetailRequest: Equatable {
-    var repoPath: String
-    var fileID: Int64
-}
-
-private actor MainListRecordingFileDetailer: CoreFileDetailing {
-    enum Result {
-        case success(FileEntrySnapshot)
-        case failure(Error)
-    }
-
-    private var results: [Result]
-    private var requests: [MainListFileDetailRequest] = []
-
-    init(results: [Result]) {
-        self.results = results
-    }
-
-    func getFile(repoPath: String, fileID: Int64) async throws -> FileEntrySnapshot {
-        requests.append(MainListFileDetailRequest(repoPath: repoPath, fileID: fileID))
-        guard !results.isEmpty else {
-            throw CoreError.FileNotFound(path: "\(fileID)")
-        }
-
-        switch results.removeFirst() {
-        case .success(let file):
-            return file
-        case .failure(let error):
-            throw error
-        }
-    }
-
-    func recordedRequests() -> [MainListFileDetailRequest] { requests }
-}
-
-private actor MainListRecordingErrorMapper: CoreErrorMapping {
-    private let mapping: CoreErrorMappingSnapshot
-    private var errors: [CoreError] = []
-
-    init(mapping: CoreErrorMappingSnapshot) {
-        self.mapping = mapping
-    }
-
-    func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
-        errors.append(error)
-        return mapping
-    }
-
-    func recordedErrors() -> [CoreError] { errors }
-}
-
 private extension RepositoryOpeningResult {
     static func mainListFixture(
         repoPath: String,
@@ -392,7 +321,7 @@ private extension RepositoryTreeNodeSnapshot {
                     displayName: "docs",
                     fileCount: 42,
                     children: []
-                ),
+                )
             ]
         )
     }
@@ -434,9 +363,9 @@ private extension RepositoryTreeNodeSnapshot {
                             fileCount: 1,
                             depth: 2,
                             children: []
-                        ),
+                        )
                     ]
-                ),
+                )
             ]
         )
     }

@@ -33,7 +33,10 @@ final class OnboardingModel: ObservableObject {
     @Published private(set) var isICloudRiskAccepted = false
     @Published private(set) var isSetupQuitConfirmationPresented = false
 
-    var canContinueFromChoosePath: Bool { !isValidatingRepositoryPath && repositoryPathError == nil }
+    var canContinueFromChoosePath: Bool {
+        !isValidatingRepositoryPath && repositoryPathError == nil
+    }
+
     var canContinueFromValidatePath: Bool {
         guard !isValidatingRepositoryPath, let validation = repositoryPathValidation else {
             return false
@@ -53,7 +56,11 @@ final class OnboardingModel: ObservableObject {
     var validatePathPrimaryActionTitle: String {
         repositoryPathValidation?.isInitialized == true ? "Open Repository" : "Continue"
     }
-    var validatePathReturnRouteIsSettings: Bool { validatePathReturnRoute.isSettingsReturnRoute }
+
+    var validatePathReturnRouteIsSettings: Bool {
+        validatePathReturnRoute.isSettingsReturnRoute
+    }
+
     let settingsReader: any AppSettingsReading
     let settingsWriter: any AppSettingsWriting
     let pathValidator: any CoreRepositoryPathValidating
@@ -74,6 +81,7 @@ final class OnboardingModel: ObservableObject {
     let fileOpener: any RepositoryFileOpening
     let pathCopier: any RepositoryPathCopying
     let importResultExporter: any ImportResultDetailsExporting
+    let importBatchSessionStore: any ImportBatchSessionPersisting
     let importProgressControlState: ImportProgressControlState
     let accessibilityAnnouncer: any AccessibilityAnnouncing
     let helpOpener: any WelcomeHelpOpening
@@ -86,7 +94,7 @@ final class OnboardingModel: ObservableObject {
     init(
         settingsReader: any AppSettingsReading = UserDefaultsAppSettingsReader(),
         settingsWriter: any AppSettingsWriting = UserDefaultsAppSettingsReader(),
-        configLoader: any CoreConfigurationLoading = CoreBridge(),
+        configLoader _: any CoreConfigurationLoading = CoreBridge(),
         pathValidator: any CoreRepositoryPathValidating = CoreBridge(),
         initializedPathValidator: any CoreInitializedRepositoryPathValidating = CoreBridge(),
         repositoryInitializer: any CoreRepositoryInitializing = CoreBridge(),
@@ -96,7 +104,8 @@ final class OnboardingModel: ObservableObject {
         mainLoadingTreeLister: (any CoreRepositoryTreeListing)? = nil,
         startupRecoverer: any CoreStartupRecovering = CoreBridge(),
         externalChangesSyncer: any CoreExternalChangesSyncing = CoreBridge(),
-        existingRepositoryMetadataReader: any ExistingRepositoryMetadataReading = SQLiteExistingRepositoryMetadataReader(),
+        existingRepositoryMetadataReader: any ExistingRepositoryMetadataReading =
+            SQLiteExistingRepositoryMetadataReader(),
         scanSessionReader: any CoreScanSessionReading = CoreBridge(),
         diagnosticsCollector: any CoreDiagnosticsCollecting = CoreBridge(),
         errorMapper: any CoreErrorMapping = CoreBridge(),
@@ -105,6 +114,7 @@ final class OnboardingModel: ObservableObject {
         fileOpener: any RepositoryFileOpening = NSWorkspaceRepositoryFileOpener(),
         pathCopier: any RepositoryPathCopying = NSPasteboardRepositoryPathCopier(),
         importResultExporter: any ImportResultDetailsExporting = NSSavePanelImportResultDetailsExporter(),
+        importBatchSessionStore: any ImportBatchSessionPersisting = FileImportBatchSessionStore(),
         importProgressControlState: ImportProgressControlState = ImportProgressControlState(),
         accessibilityAnnouncer: any AccessibilityAnnouncing = VoiceOverAccessibilityAnnouncer(),
         helpOpener: any WelcomeHelpOpening = LocalWelcomeHelpOpener(),
@@ -131,19 +141,30 @@ final class OnboardingModel: ObservableObject {
         self.fileOpener = fileOpener
         self.pathCopier = pathCopier
         self.importResultExporter = importResultExporter
+        self.importBatchSessionStore = importBatchSessionStore
         self.importProgressControlState = importProgressControlState
         self.accessibilityAnnouncer = accessibilityAnnouncer
         self.helpOpener = helpOpener
         self.directoryPicker = directoryPicker
         self.importPicker = importPicker
     }
+}
+
+extension OnboardingModel {
     @MainActor func bootstrapIfNeeded() async {
         guard !didBootstrap else { return }
         didBootstrap = true
         await loadConfiguredRepository()
     }
-    @MainActor func retryConfigurationLoad() async { await loadConfiguredRepository() }
-    @MainActor func showWelcome() { route = .welcome; toastMessage = nil }
+
+    @MainActor func retryConfigurationLoad() async {
+        await loadConfiguredRepository()
+    }
+
+    @MainActor func showWelcome() {
+        route = .welcome; toastMessage = nil
+    }
+
     @MainActor
     func showChoosePath() {
         if !validatePathReturnRoute.isSettingsReturnRoute { validatePathReturnRoute = .choosePath }
@@ -152,8 +173,12 @@ final class OnboardingModel: ObservableObject {
         repositoryPathErrorMapping = nil
         repositoryPathError = localRepositoryPathError(for: repositoryPathText)
     }
+
     @MainActor
-    func showValidatePath() { route = .validatePath; toastMessage = nil }
+    func showValidatePath() {
+        route = .validatePath; toastMessage = nil
+    }
+
     @MainActor
     func resetCancelledMainOpening(repoPath: String) {
         repositoryPathText = repoPath
@@ -163,8 +188,16 @@ final class OnboardingModel: ObservableObject {
         initializationOpenErrorMapping = nil
         validatePathAction = nil
     }
+
     @MainActor
-    func returnFromChoosePath() { validatePathReturnRouteIsSettings ? returnFromValidatePath() : showWelcome() }
+    func returnFromChoosePath() {
+        if validatePathReturnRouteIsSettings {
+            returnFromValidatePath()
+        } else {
+            showWelcome()
+        }
+    }
+
     @MainActor
     func beginSettingsRepositoryPathValidation(_ repoPath: String) async {
         validatePathReturnRoute = .settingsRepository
@@ -176,6 +209,7 @@ final class OnboardingModel: ObservableObject {
         isICloudRiskAccepted = false
         await validateSelectedRepositoryPath()
     }
+
     @MainActor
     func beginSettingsRepositoryChange(from opening: RepositoryOpeningResult) {
         validatePathReturnRoute = .settingsGeneral(opening)
@@ -183,18 +217,21 @@ final class OnboardingModel: ObservableObject {
         updateRepositoryPath(opening.config.repoPath)
         showChoosePath()
     }
+
     @MainActor
     func returnFromValidatePath() {
         route = validatePathReturnRoute
         toastMessage = nil
         repositoryPathErrorMapping = nil
     }
+
     @MainActor
     func continueFromWelcome() {
         route = .choosePath
         toastMessage = nil
         repositoryPathError = localRepositoryPathError(for: repositoryPathText)
     }
+
     @MainActor
     func updateRepositoryPath(_ value: String) {
         repositoryPathText = value
@@ -220,12 +257,17 @@ final class OnboardingModel: ObservableObject {
         isICloudRiskAccepted = false
         repositoryPathError = localRepositoryPathError(for: value)
     }
+
     @MainActor
     func chooseRepositoryPath() {
         if let selectedURL = directoryPicker.chooseDirectory() { updateRepositoryPath(selectedURL.path) }
     }
+
     @MainActor
-    func useDefaultRepositoryPath() async { updateRepositoryPath(Self.defaultRepositoryPathDisplay); await continueFromChoosePath() }
+    func useDefaultRepositoryPath() async {
+        updateRepositoryPath(Self.defaultRepositoryPathDisplay); await continueFromChoosePath()
+    }
+
     @MainActor
     func continueFromChoosePath() async {
         guard repositoryPathError == nil else {
@@ -240,10 +282,17 @@ final class OnboardingModel: ObservableObject {
         isICloudRiskAccepted = false
         await validateSelectedRepositoryPath()
     }
+
     @MainActor
-    func retryRepositoryPathValidation() async { validatePathAction = nil; await validateSelectedRepositoryPath() }
+    func retryRepositoryPathValidation() async {
+        validatePathAction = nil; await validateSelectedRepositoryPath()
+    }
+
     @MainActor
-    func updateICloudRiskAccepted(_ isAccepted: Bool) { isICloudRiskAccepted = isAccepted }
+    func updateICloudRiskAccepted(_ isAccepted: Bool) {
+        isICloudRiskAccepted = isAccepted
+    }
+
     @MainActor
     func continueFromValidatePath() async {
         guard canContinueFromValidatePath, let validation = repositoryPathValidation else {
@@ -272,12 +321,17 @@ final class OnboardingModel: ObservableObject {
             }
         }
     }
+
     @MainActor
-    func createEmptyRepositoryFromConfirmInit() async { await initializeRepositoryFromConfirmInit(mode: .createEmpty) }
+    func createEmptyRepositoryFromConfirmInit() async {
+        await initializeRepositoryFromConfirmInit(mode: .createEmpty)
+    }
+
     @MainActor
     func adoptExistingRepositoryFromConfirmInit() async {
         await initializeRepositoryFromConfirmInit(mode: .adoptExisting)
     }
+
     var shouldConfirmSetupExit: Bool {
         if route == .validatePath { return true }
         if case .confirmRepositoryInitialization = route { return true }
@@ -291,7 +345,10 @@ final class OnboardingModel: ObservableObject {
     }
 
     @MainActor
-    func cancelSetupQuit() { isSetupQuitConfirmationPresented = false }
+    func cancelSetupQuit() {
+        isSetupQuitConfirmationPresented = false
+    }
+
     @MainActor
     @discardableResult
     func confirmSetupQuit() -> Bool {
@@ -318,70 +375,8 @@ final class OnboardingModel: ObservableObject {
     }
 
     @MainActor
-    private func validateSelectedRepositoryPath() async {
-        isValidatingRepositoryPath = true
-        choosePathAction = nil
-        latestScanSession = nil
-        existingRepositoryMetadata = nil
-        repositoryPathErrorMapping = nil
-        repositoryPathError = nil
-        defer {
-            isValidatingRepositoryPath = false
-        }
-
-        do {
-            let normalizedPath = Self.normalizedRepositoryPath(repositoryPathText)
-            let validation = try await pathValidator.validateRepoPath(repoPath: normalizedPath)
-            repositoryPathValidation = validation
-            repositoryPathErrorMapping = nil
-
-            if shouldLoadLatestScanSession(for: validation) {
-                do {
-                    latestScanSession = try await scanSessionReader.latestScanSession(repoPath: validation.repoPath)
-                } catch {
-                    await routeValidationFailure(error, repoPath: validation.repoPath)
-                    return
-                }
-            }
-
-            if validation.hasUnfinishedScanSession || validation.issues.contains(.unfinishedScanSession) {
-                route = .dbRepairConfirm(DatabaseRepairRouteState(
-                    repoPath: validation.repoPath,
-                    scanSession: latestScanSession,
-                    mapping: nil,
-                    returnRoute: .validatePath
-                ))
-                return
-            }
-
-            if validation.isInitialized {
-                do {
-                    existingRepositoryMetadata = try await existingRepositoryMetadataReader.metadata(
-                        repoPath: validation.repoPath
-                    )
-                } catch {
-                    await routeValidationFailure(error, repoPath: validation.repoPath)
-                    return
-                }
-            }
-
-            repositoryPathError = validatePathBlockingMessage(for: validation)
-            repositoryPathErrorMapping = nil
-
-            if repositoryPathError != nil {
-                return
-            }
-
-            choosePathAction = .continueRequested(validation)
-        } catch {
-            repositoryPathValidation = nil
-            await routeValidationFailure(error, repoPath: Self.normalizedRepositoryPath(repositoryPathText))
-        }
-    }
-
-    @MainActor
     private func initializeRepositoryFromConfirmInit(mode: RepoInitModeSnapshot) async {
-        guard case .confirmRepositoryInitialization(let draft) = route, draft.mode == mode else { return }
+        guard case let .confirmRepositoryInitialization(draft) = route, draft.mode == mode else { return }
 
         let repoPath = draft.validation.repoPath
         initializationScanSession = draft.scanSession
@@ -467,29 +462,27 @@ final class OnboardingModel: ObservableObject {
     }
 
     @MainActor
-    private func routeValidationFailure(_ error: Error, repoPath: String) async {
-        guard let coreError = error as? CoreError else {
-            repositoryPathErrorMapping = nil
-            repositoryPathError = "路径字符串无法解析"
-            return
-        }
+    func prepareRepositoryPathValidation() {
+        isValidatingRepositoryPath = true
+        choosePathAction = nil
+        latestScanSession = nil
+        existingRepositoryMetadata = nil
+        repositoryPathErrorMapping = nil
+        repositoryPathError = nil
+    }
 
-        let mapping = await errorMapper.mapCoreError(coreError)
-        repositoryPathErrorMapping = mapping
-        repositoryPathError = mapping.userMessage
+    @MainActor
+    func finishRepositoryPathValidation() {
+        isValidatingRepositoryPath = false
+    }
 
-        switch coreError {
-        case .Db:
-            route = .dbRepairConfirm(DatabaseRepairRouteState(
-                repoPath: repoPath,
-                scanSession: latestScanSession,
-                mapping: mapping,
-                returnRoute: .validatePath
-            ))
-        case .Config, .Internal, .RepoNotInitialized:
-            routeMainRepositoryError(repoPath: repoPath, mapping: mapping)
-        default:
-            route = .validatePath
-        }
+    @MainActor
+    func acceptExistingRepositoryMetadata(_ metadata: ExistingRepositoryMetadataSnapshot) {
+        existingRepositoryMetadata = metadata
+    }
+
+    @MainActor
+    func acceptContinueRequestedValidation(_ validation: RepoPathValidationSnapshot) {
+        choosePathAction = .continueRequested(validation)
     }
 }

@@ -1,5 +1,5 @@
-import XCTest
 @testable import AreaMatrix
+import XCTest
 
 final class ImportBatchDuplicateResolutionTests: XCTestCase {
     @MainActor
@@ -8,7 +8,7 @@ final class ImportBatchDuplicateResolutionTests: XCTestCase {
         let contractURL = URL(fileURLWithPath: "/tmp/合同.pdf")
         let importer = S118SequenceBatchImporter(results: [
             .failure(CoreError.DuplicateFile(existingPath: "finance/existing-invoice.pdf")),
-            .success(.s117Fixture(currentName: "2026Q1_合同.pdf", category: "docs")),
+            .success(.s117Fixture(currentName: "2026Q1_合同.pdf", category: "docs"))
         ])
         let errorMapper = S117RecordingErrorMapper()
         let model = ImportBatchCopyImportModel(
@@ -17,7 +17,7 @@ final class ImportBatchDuplicateResolutionTests: XCTestCase {
         )
         let rows = [
             s118PreviewRow(url: invoiceURL, category: "finance", suggestedName: "Invoice_2026Q1.pdf"),
-            s118PreviewRow(url: contractURL, category: "docs", suggestedName: "2026Q1_合同.pdf"),
+            s118PreviewRow(url: contractURL, category: "docs", suggestedName: "2026Q1_合同.pdf")
         ]
         let request = s118BatchRequest(urls: [invoiceURL, contractURL])
         var progressSnapshots: [ImportBatchProgressSnapshot] = []
@@ -35,7 +35,7 @@ final class ImportBatchDuplicateResolutionTests: XCTestCase {
                 suggestedCategory: "finance",
                 overrideFilename: "Invoice_2026Q1.pdf",
                 duplicateStrategy: .ask
-            ),
+            )
         ])
         XCTAssertEqual(mappedErrors, [])
         XCTAssertEqual(outcome?.succeededEntries.count, 0)
@@ -59,7 +59,7 @@ final class ImportBatchDuplicateResolutionTests: XCTestCase {
         let invoiceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
         let importer = S118SequenceBatchImporter(results: [
             .failure(CoreError.DuplicateFile(existingPath: "finance/existing-invoice.pdf")),
-            .success(.s117Fixture(currentName: "Invoice_2026Q1 2.pdf", category: "finance")),
+            .success(.s117Fixture(currentName: "Invoice_2026Q1 2.pdf", category: "finance"))
         ])
         let model = ImportBatchCopyImportModel(
             importer: importer,
@@ -87,7 +87,7 @@ final class ImportBatchDuplicateResolutionTests: XCTestCase {
                 suggestedCategory: "finance",
                 overrideFilename: "Invoice_2026Q1.pdf",
                 duplicateStrategy: .keepBoth
-            ),
+            )
         ])
         XCTAssertEqual(outcome?.succeededEntries.count, 1)
         XCTAssertEqual(outcome?.pendingDuplicateCount, 0)
@@ -100,7 +100,7 @@ final class ImportBatchDuplicateResolutionTests: XCTestCase {
         let contractURL = URL(fileURLWithPath: "/tmp/合同.pdf")
         let importer = S118SequenceBatchImporter(results: [
             .failure(CoreError.DuplicateFile(existingPath: "finance/existing-invoice.pdf")),
-            .success(.s117Fixture(currentName: "2026Q1_合同.pdf", category: "docs")),
+            .success(.s117Fixture(currentName: "2026Q1_合同.pdf", category: "docs"))
         ])
         let model = ImportBatchCopyImportModel(
             importer: importer,
@@ -108,7 +108,7 @@ final class ImportBatchDuplicateResolutionTests: XCTestCase {
         )
         let rows = [
             s118PreviewRow(url: invoiceURL, category: "finance", suggestedName: "Invoice_2026Q1.pdf"),
-            s118PreviewRow(url: contractURL, category: "docs", suggestedName: "2026Q1_合同.pdf"),
+            s118PreviewRow(url: contractURL, category: "docs", suggestedName: "2026Q1_合同.pdf")
         ]
         let request = s118BatchRequest(urls: [invoiceURL, contractURL])
 
@@ -129,7 +129,7 @@ final class ImportBatchDuplicateResolutionTests: XCTestCase {
                 suggestedCategory: "docs",
                 overrideFilename: "2026Q1_合同.pdf",
                 duplicateStrategy: .ask
-            ),
+            )
         ])
         XCTAssertEqual(outcome?.succeededEntries.count, 1)
         XCTAssertEqual(outcome?.total, 1)
@@ -145,7 +145,7 @@ final class ImportBatchDuplicateResolutionTests: XCTestCase {
         let invoiceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
         let importer = S118SequenceBatchImporter(results: [
             .failure(CoreError.DuplicateFile(existingPath: "finance/existing-invoice.pdf")),
-            .success(.s117Fixture(currentName: "Invoice_2026Q1 2.pdf", category: "finance")),
+            .success(.s117Fixture(currentName: "Invoice_2026Q1 2.pdf", category: "finance"))
         ])
         let model = ImportBatchCopyImportModel(
             importer: importer,
@@ -172,7 +172,7 @@ final class ImportBatchDuplicateResolutionTests: XCTestCase {
                 suggestedCategory: "finance",
                 overrideFilename: "Invoice_2026Q1.pdf",
                 duplicateStrategy: .keepBoth
-            ),
+            )
         ])
         XCTAssertEqual(outcome?.succeededEntries.count, 1)
         XCTAssertEqual(outcome?.pendingDuplicateCount, 0)
@@ -195,7 +195,7 @@ final class ImportBatchDuplicateResolutionTests: XCTestCase {
             source: .dropZone,
             urls: [
                 URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf"),
-                URL(fileURLWithPath: "/tmp/合同.pdf"),
+                URL(fileURLWithPath: "/tmp/合同.pdf")
             ]
         )
         model.showImportEntryExistingFile(relativePath: "finance/existing-invoice.pdf")
@@ -221,7 +221,7 @@ final class ImportBatchDuplicateResolutionTests: XCTestCase {
             source: .dropZone,
             urls: [
                 URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf"),
-                URL(fileURLWithPath: "/tmp/合同.pdf"),
+                URL(fileURLWithPath: "/tmp/合同.pdf")
             ]
         )
         model.showImportEntryExistingFile(relativePath: "finance/missing.pdf")
@@ -235,7 +235,7 @@ final class ImportBatchDuplicateResolutionTests: XCTestCase {
         let invoiceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
         let importer = S118SequenceBatchImporter(results: [
             .failure(CoreError.DuplicateFile(existingPath: "finance/existing-invoice.pdf")),
-            .success(.s117Fixture(currentName: "Invoice_2026Q1 2.pdf", category: "finance")),
+            .success(.s117Fixture(currentName: "Invoice_2026Q1 2.pdf", category: "finance"))
         ])
         let model = ImportBatchCopyImportModel(
             importer: importer,
@@ -263,7 +263,7 @@ final class ImportBatchDuplicateResolutionTests: XCTestCase {
                 suggestedCategory: "finance",
                 overrideFilename: "Invoice_2026Q1.pdf",
                 duplicateStrategy: .keepBoth
-            ),
+            )
         ])
         XCTAssertEqual(outcome?.succeededEntries.count, 1)
         XCTAssertEqual(outcome?.pendingDuplicateCount, 0)

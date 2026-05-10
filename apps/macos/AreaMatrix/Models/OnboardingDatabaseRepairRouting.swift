@@ -3,10 +3,10 @@ import Foundation
 extension OnboardingModel {
     @MainActor
     func openMainRepositoryRepair(repoPath: String) {
-        let routeMapping: CoreErrorMappingSnapshot?
-        if case .mainRepoError(let errorRepoPath, let mapping) = route, errorRepoPath == repoPath {
-            routeMapping = mapping
-        } else { routeMapping = nil }
+        let routeMapping: CoreErrorMappingSnapshot? = if case let .mainRepoError(errorRepoPath, mapping) = route,
+                                                         errorRepoPath == repoPath {
+            mapping
+        } else { nil }
         let mapping = mainRepoRecoveryErrorMapping ?? routeMapping
         mainRepoRecoveryErrorMapping = nil
         route = .dbRepairConfirm(DatabaseRepairRouteState(
@@ -22,13 +22,13 @@ extension OnboardingModel {
         switch repairRoute.returnRoute {
         case .validatePath:
             route = .validatePath
-        case .mainLoading(let state):
+        case let .mainLoading(state):
             route = .mainLoading(state)
-        case .mainRepoError(let mapping):
+        case let .mainRepoError(mapping):
             routeMainRepositoryError(repoPath: repairRoute.repoPath, mapping: mapping)
         case .settingsRepository:
             route = .settingsRepository
-        case .settingsGeneral(let opening, let selectedTab):
+        case let .settingsGeneral(opening, selectedTab):
             settingsGeneralSelectedTab = selectedTab
             route = .settingsGeneral(opening)
         }
@@ -36,18 +36,18 @@ extension OnboardingModel {
 
     private func currentDatabaseRepairReturnRoute(repoPath: String) -> DatabaseRepairReturnRoute {
         switch route {
-        case .mainRepoError(let errorRepoPath, let mapping) where errorRepoPath == repoPath:
-            return .mainRepoError(mapping)
-        case .mainLoading(let state) where state.repoPath == repoPath:
-            return .mainLoading(state)
+        case let .mainRepoError(errorRepoPath, mapping) where errorRepoPath == repoPath:
+            .mainRepoError(mapping)
+        case let .mainLoading(state) where state.repoPath == repoPath:
+            .mainLoading(state)
         case .settingsRepository:
-            return .settingsRepository
-        case .settingsGeneral(let opening):
-            return .settingsGeneral(opening, selectedTab: settingsGeneralSelectedTab)
+            .settingsRepository
+        case let .settingsGeneral(opening):
+            .settingsGeneral(opening, selectedTab: settingsGeneralSelectedTab)
         case .validatePath:
-            return .validatePath
+            .validatePath
         default:
-            return .mainRepoError(mainRepoRecoveryErrorMapping)
+            .mainRepoError(mainRepoRecoveryErrorMapping)
         }
     }
 }

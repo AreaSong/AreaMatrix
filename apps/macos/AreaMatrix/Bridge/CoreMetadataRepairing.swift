@@ -4,12 +4,12 @@ protocol CoreMetadataRepairing: Sendable {
     func repairMetadata(repoPath: String, options: RepairOptionsSnapshot) async throws -> RepairReportSnapshot
 }
 
-struct RepairOptionsSnapshot: Equatable, Sendable {
+struct RepairOptionsSnapshot: Equatable {
     var fullRescan: Bool
     var preserveDiagnosticsSnapshot: Bool
 }
 
-struct RepairReportSnapshot: Equatable, Sendable {
+struct RepairReportSnapshot: Equatable {
     var scanSessionId: Int64?
     var diagnosticsSnapshotPath: String?
     var inserted: Int64
@@ -40,7 +40,7 @@ extension CoreBridge: CoreMetadataRepairing {
                 fullRescan: options.fullRescan,
                 preserveDiagnosticsSnapshot: options.preserveDiagnosticsSnapshot
             )
-            return RepairReportSnapshot(coreReport: try repairCoreMetadata(repoPath: repoPath, options: coreOptions))
+            return try RepairReportSnapshot(coreReport: repairCoreMetadata(repoPath: repoPath, options: coreOptions))
         }.value
     }
 }

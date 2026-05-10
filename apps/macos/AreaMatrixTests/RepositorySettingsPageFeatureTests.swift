@@ -1,5 +1,5 @@
-import XCTest
 @testable import AreaMatrix
+import XCTest
 
 final class RepositorySettingsPageFeatureTests: XCTestCase {
     @MainActor
@@ -8,14 +8,14 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
         config.overviewOutput = "RootAreaMatrixFile"
         let loader = RepositorySettingsRecordingLoader(results: [.success(config)])
         let updater = RepositorySettingsRecordingUpdater(result: .success)
-        let metadataReader = RepositorySettingsRecordingMetadataReader(results: [
+        let metadataReader = RepoSettingsMetadataReader(results: [
             .success(ExistingRepositoryMetadataSnapshot(
                 schemaVersion: 1,
                 lastOpenedAt: 1_778_000_000,
                 configuredRepoPath: "/tmp/AreaMatrixRepo"
-            )),
+            ))
         ])
-        let opener = RepositorySettingsRecordingRepositoryOpener(
+        let opener = RepoSettingsRepositoryOpener(
             result: .success(RepositoryOpeningResult.s117Fixture(repoPath: "/tmp/AreaMatrixRepo"))
         )
         let model = RepositorySettingsModel(
@@ -23,7 +23,7 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
             loader: loader,
             updater: updater,
             repositoryOpener: opener,
-            scanSessionReader: RepositorySettingsRecordingScanSessionReader(result: .success(nil)),
+            scanSessionReader: RepoSettingsScanSessionReader(result: .success(nil)),
             existingRepositoryMetadataReader: metadataReader,
             errorMapper: RepositorySettingsStaticErrorMapper()
         )
@@ -52,7 +52,7 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
         second.overviewOutput = "RootAreaMatrixFile"
         let loader = RepositorySettingsRecordingLoader(results: [.success(first), .success(second)])
         let updater = RepositorySettingsRecordingUpdater(result: .success)
-        let metadataReader = RepositorySettingsRecordingMetadataReader(results: [
+        let metadataReader = RepoSettingsMetadataReader(results: [
             .success(ExistingRepositoryMetadataSnapshot(
                 schemaVersion: 1,
                 lastOpenedAt: 1_778_000_000,
@@ -62,9 +62,9 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
                 schemaVersion: 1,
                 lastOpenedAt: 1_778_000_000,
                 configuredRepoPath: "/tmp/repo"
-            )),
+            ))
         ])
-        let opener = RepositorySettingsRecordingRepositoryOpener(
+        let opener = RepoSettingsRepositoryOpener(
             result: .success(RepositoryOpeningResult.s117Fixture(repoPath: "/tmp/repo"))
         )
         let model = RepositorySettingsModel(
@@ -72,7 +72,7 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
             loader: loader,
             updater: updater,
             repositoryOpener: opener,
-            scanSessionReader: RepositorySettingsRecordingScanSessionReader(result: .success(nil)),
+            scanSessionReader: RepoSettingsScanSessionReader(result: .success(nil)),
             existingRepositoryMetadataReader: metadataReader,
             errorMapper: RepositorySettingsStaticErrorMapper()
         )
@@ -92,7 +92,7 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
     @MainActor
     func testLoadFailureUsesCoreErrorMapping() async {
         let loader = RepositorySettingsRecordingLoader(results: [
-            .failure(CoreError.Config(reason: "invalid repo_config")),
+            .failure(CoreError.Config(reason: "invalid repo_config"))
         ])
         let mapper = RepositorySettingsStaticErrorMapper()
         let model = RepositorySettingsModel(
@@ -123,14 +123,14 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
         expected.repoPath = repoURL.path
         let loader = RepositorySettingsRecordingLoader(results: [.success(config)])
         let updater = RepositorySettingsRecordingUpdater(result: .success)
-        let metadataReader = RepositorySettingsRecordingMetadataReader(results: [
+        let metadataReader = RepoSettingsMetadataReader(results: [
             .success(ExistingRepositoryMetadataSnapshot(
                 schemaVersion: 1,
                 lastOpenedAt: 1_778_000_000,
                 configuredRepoPath: repoURL.path
-            )),
+            ))
         ])
-        let opener = RepositorySettingsRecordingRepositoryOpener(
+        let opener = RepoSettingsRepositoryOpener(
             result: .success(RepositoryOpeningResult.s117Fixture(repoPath: repoURL.path))
         )
         let model = RepositorySettingsModel(
@@ -138,7 +138,7 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
             loader: loader,
             updater: updater,
             repositoryOpener: opener,
-            scanSessionReader: RepositorySettingsRecordingScanSessionReader(result: .success(nil)),
+            scanSessionReader: RepoSettingsScanSessionReader(result: .success(nil)),
             existingRepositoryMetadataReader: metadataReader,
             errorMapper: RepositorySettingsStaticErrorMapper()
         )
@@ -165,18 +165,18 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
         try createRepositorySettingsMetadataDatabaseMarker(in: repoURL)
 
         let loader = RepositorySettingsRecordingLoader(results: [
-            .success(.shellFixture(repoPath: "/tmp/stale-repo")),
+            .success(.shellFixture(repoPath: "/tmp/stale-repo"))
         ])
         let updater = RepositorySettingsRecordingUpdater(result: .failure(CoreError.Db(message: "locked")))
         let mapper = RepositorySettingsStaticErrorMapper()
-        let metadataReader = RepositorySettingsRecordingMetadataReader(results: [
+        let metadataReader = RepoSettingsMetadataReader(results: [
             .success(ExistingRepositoryMetadataSnapshot(
                 schemaVersion: 1,
                 lastOpenedAt: 1_778_000_000,
                 configuredRepoPath: repoURL.path
-            )),
+            ))
         ])
-        let opener = RepositorySettingsRecordingRepositoryOpener(
+        let opener = RepoSettingsRepositoryOpener(
             result: .success(RepositoryOpeningResult.s117Fixture(repoPath: repoURL.path))
         )
         let model = RepositorySettingsModel(
@@ -184,7 +184,7 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
             loader: loader,
             updater: updater,
             repositoryOpener: opener,
-            scanSessionReader: RepositorySettingsRecordingScanSessionReader(result: .success(nil)),
+            scanSessionReader: RepoSettingsScanSessionReader(result: .success(nil)),
             existingRepositoryMetadataReader: metadataReader,
             errorMapper: mapper
         )
@@ -294,7 +294,9 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
             "Retry after AreaMatrix regenerates .areamatrix/generated/root.md."
         )
     }
+}
 
+final class RepositorySettingsHealthFeatureTests: XCTestCase {
     @MainActor
     func testMetadataReaderReadsSchemaVersionFromRealInitializedRepositoryWithoutWalSidecars() async throws {
         let repoURL = try temporaryRepositorySettingsRepo()
@@ -397,17 +399,17 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
     @MainActor
     func testHealthFailureMapsDbStatusWithoutDiscardingLoadedConfig() async {
         let loader = RepositorySettingsRecordingLoader(results: [
-            .success(.shellFixture(repoPath: "/tmp/repo")),
+            .success(.shellFixture(repoPath: "/tmp/repo"))
         ])
         let updater = RepositorySettingsRecordingUpdater(result: .success)
-        let metadataReader = RepositorySettingsRecordingMetadataReader(results: [
+        let metadataReader = RepoSettingsMetadataReader(results: [
             .success(ExistingRepositoryMetadataSnapshot(
                 schemaVersion: 1,
                 lastOpenedAt: 1_778_000_000,
                 configuredRepoPath: "/tmp/repo"
-            )),
+            ))
         ])
-        let opener = RepositorySettingsRecordingRepositoryOpener(
+        let opener = RepoSettingsRepositoryOpener(
             result: .failure(CoreError.Db(message: "database is locked"))
         )
         let model = RepositorySettingsModel(
@@ -415,7 +417,7 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
             loader: loader,
             updater: updater,
             repositoryOpener: opener,
-            scanSessionReader: RepositorySettingsRecordingScanSessionReader(result: .success(nil)),
+            scanSessionReader: RepoSettingsScanSessionReader(result: .success(nil)),
             existingRepositoryMetadataReader: metadataReader,
             errorMapper: RepositorySettingsStaticErrorMapper()
         )

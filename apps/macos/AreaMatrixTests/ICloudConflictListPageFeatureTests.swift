@@ -1,5 +1,5 @@
-import XCTest
 @testable import AreaMatrix
+import XCTest
 
 final class ICloudConflictListPageFeatureTests: XCTestCase {
     private static let declaredCapabilities: Set<String> = ["C1-25"]
@@ -145,11 +145,11 @@ final class ICloudConflictListPageFeatureTests: XCTestCase {
 
         XCTAssertEqual(model.summary?.repositoryLocation, .iCloudDrive)
         XCTAssertEqual(
-            IntegrationsSettingsConflictListPresentation.reviewConflictsTitle,
+            IntegrationConflictListPresentation.reviewConflictsTitle,
             "Review conflicts"
         )
         XCTAssertEqual(
-            IntegrationsSettingsConflictListPresentation.reviewConflictsAccessibilityID,
+            IntegrationConflictListPresentation.reviewConflictsAccessibilityID,
             "S1-36-C1-25-review-conflicts"
         )
     }
@@ -238,7 +238,9 @@ private actor S136RecordingConflictLister: CoreICloudConflictListing {
         return try result.get()
     }
 
-    func recordedRequests() -> [String] { requests }
+    func recordedRequests() -> [String] {
+        requests
+    }
 }
 
 @MainActor
@@ -277,7 +279,9 @@ private actor S136RecordingErrorMapper: CoreErrorMapping {
         return mapping
     }
 
-    func recordedErrors() -> [CoreError] { errors }
+    func recordedErrors() -> [CoreError] {
+        errors
+    }
 }
 
 private actor S136RecordingPathValidator: CoreRepositoryPathValidating {
@@ -305,19 +309,19 @@ private actor S136IntegrationsLoader: CoreConfigurationLoading {
         self.config = config
     }
 
-    func loadConfig(repoPath: String) async throws -> RepoConfigSnapshot {
+    func loadConfig(repoPath _: String) async throws -> RepoConfigSnapshot {
         config
     }
 }
 
 private actor S136NoopIntegrationsUpdater: CoreConfigurationUpdating {
-    func updateConfig(repoPath: String, newConfig: RepoConfigSnapshot) async throws {}
+    func updateConfig(repoPath _: String, newConfig _: RepoConfigSnapshot) async throws {}
 }
 
 private struct S136StaticStatusDetector: ICloudStatusDetecting {
     let snapshot: IntegrationsICloudSnapshot
 
-    func snapshot(repoPath: String, config: RepoConfigSnapshot) async -> IntegrationsICloudSnapshot {
+    func snapshot(repoPath _: String, config _: RepoConfigSnapshot) async -> IntegrationsICloudSnapshot {
         snapshot
     }
 }

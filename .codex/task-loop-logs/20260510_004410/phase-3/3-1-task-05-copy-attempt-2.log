@@ -1,0 +1,54 @@
+一、执行结论
+
+- **未完成**
+- 原因：本任务是 Stage 1 最终发布集成门禁。可自动修复的证据链和脚本门禁已收口，但当前环境仍无法满足任务要求的 `./dev check all` 完整通过，也缺真实发布证据，因此不能宣称完成或放行。
+
+二、执行范围
+
+- 单任务：`3-1/task-05`
+- 修改文件：
+  - [scripts/dev_tools/build.py](/Users/as/Ai-Project/project/AreaMatrix/scripts/dev_tools/build.py)
+  - [scripts/dev_tools/test_build_tools.py](/Users/as/Ai-Project/project/AreaMatrix/scripts/dev_tools/test_build_tools.py)
+  - [docs/development/stage-1-release-checklist.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-release-checklist.md)
+  - [docs/development/build.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/build.md)
+  - [core/tests/stage1_release_checklist.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/stage1_release_checklist.rs)
+
+三、完成情况
+
+- 已读取 task、共享规则、切片规则、工程质量规则、编码规范、repo-local skill、dependency graph、phase manifest 和全部 6 个 Exact Docs。
+- 已核对 `3-1/task-05` manifest 边界。
+- 已将 `./dev build core` 的 preflight 顺序修正为先检查 macOS host / Rust targets，再准备 UniFFI bindgen fallback，避免缺 target 时日志误导。
+- 已同步 release checklist：当前真实阻断是缺 `x86_64-apple-darwin` target；`rustup target add x86_64-apple-darwin` 在当前环境失败；`swiftformat` / `swiftlint` 也缺失。
+- 已补测试锁定上述证据。
+- Forbidden Touches 未触碰：`git diff --name-status -- core/src core/area_matrix.udl apps/macos/AreaMatrix apps/macos/AreaMatrix.xcodeproj` 无输出。
+
+四、工程质量
+
+- 未补产品实现，未碰 Core API / UDL / macOS app 实现。
+- 新增逻辑是开发脚本 preflight 与文档证据修正，范围在 Expected New Paths 内。
+- 没有引入 mock-only、硬编码通过态或一次性发布放行。
+- 真实 P1 阻断仍按规则保留为不放行，而不是伪造 PASS。
+
+五、验证情况
+
+已通过：
+
+- `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`
+- `python3 -m unittest scripts.dev_tools.test_build_tools`
+- `cargo test --manifest-path core/Cargo.toml --test stage1_release_checklist`
+- `PYTHONPYCACHEPREFIX=/private/tmp/areamatrix-pycache python3 -m py_compile ...`
+- `git diff --check`
+- `python3 tasks/prompts/_shared/prompt_pipeline.py verify --task 3-1/task-05`
+
+失败 / 阻断：
+
+- `./dev check all` 失败在 macOS checks：缺少 Rust target `x86_64-apple-darwin`。
+- 已尝试 `rustup target add x86_64-apple-darwin`，失败：`component download failed ... cleaning up cached downloads: No such file or directory`。
+- `swiftformat` / `swiftlint` 当前也不在 PATH，补齐 Rust target 后仍需继续跑到 Swift lint gate。
+- 真实 Release `.app` 首屏、M-01..M-04 手工恢复、Developer ID 签名、公证、DMG、干净 Mac 首启仍无发布证据。
+
+六、风险与后续
+
+- 当前最终判定仍是 **不放行 Stage 1 alpha / 不通过最终集成验收**。
+- 下一个必须补齐的不是代码实现，而是发布环境门禁：修复 rustup target 安装、安装 SwiftFormat / SwiftLint，在非 sandbox 桌面会话或 CI 上补跑 `./dev check all`、真实 `.app` launch、手工恢复冒烟、签名/公证/DMG/干净 Mac 首启证据。
+

@@ -1,8 +1,8 @@
+@testable import AreaMatrix
 import Foundation
 import XCTest
-@testable import AreaMatrix
 
-final class DatabaseRepairConfirmPageIntegrationVerifyTests: XCTestCase {
+final class DatabaseRepairIntegrationTests: XCTestCase {
     @MainActor
     func testS137PageIntegrationConnectsDbRepairEntryConfirmedFullRescanAndMainListExit() async throws {
         let context = try await S137IntegrationSuccessContext.make()
@@ -34,7 +34,7 @@ final class DatabaseRepairConfirmPageIntegrationVerifyTests: XCTestCase {
         )
         shell.route = .mainRepoError("/tmp/repo", mapping)
         shell.openMainRepositoryRepair(repoPath: "/tmp/repo")
-        guard case .dbRepairConfirm(let repairRoute) = shell.route else {
+        guard case let .dbRepairConfirm(repairRoute) = shell.route else {
             return XCTFail("Expected S1-37 repair route, got \(shell.route)")
         }
 
@@ -57,7 +57,7 @@ final class DatabaseRepairConfirmPageIntegrationVerifyTests: XCTestCase {
             S137IntegrationRepairRequest(
                 repoPath: "/tmp/repo",
                 options: RepairOptionsSnapshot(fullRescan: true, preserveDiagnosticsSnapshot: true)
-            ),
+            )
         ])
         XCTAssertEqual(repairModel.repairState, .failed(mapping))
         XCTAssertEqual(repairModel.primaryButtonTitle, "Retry Full Rescan")
@@ -71,7 +71,7 @@ final class DatabaseRepairConfirmPageIntegrationVerifyTests: XCTestCase {
     }
 }
 
-private struct S137IntegrationRepairRequest: Equatable, Sendable {
+private struct S137IntegrationRepairRequest: Equatable {
     var repoPath: String
     var options: RepairOptionsSnapshot
 }
@@ -101,7 +101,7 @@ private actor S137IntegrationStaticErrorMapper: CoreErrorMapping {
         self.mapping = mapping
     }
 
-    func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
+    func mapCoreError(_: CoreError) async -> CoreErrorMappingSnapshot {
         mapping
     }
 }
@@ -114,7 +114,7 @@ private struct S137IntegrationSuccessContext {
     let mapping: CoreErrorMappingSnapshot
     let bridge: CoreBridge
     let writer: ShellRecordingSettingsWriter
-    let opener: S137IntegrationPausingCoreRepositoryOpener
+    let opener: S137PausingRepositoryOpener
     let shell: OnboardingModel
 
     @MainActor
@@ -131,7 +131,7 @@ private struct S137IntegrationSuccessContext {
             rawContext: "database corrupted"
         )
         let writer = ShellRecordingSettingsWriter()
-        let opener = S137IntegrationPausingCoreRepositoryOpener(bridge: bridge)
+        let opener = S137PausingRepositoryOpener(bridge: bridge)
         let shell = OnboardingModel(
             settingsReader: ShellStaticSettingsReader(repoPath: nil),
             settingsWriter: writer,
@@ -140,11 +140,11 @@ private struct S137IntegrationSuccessContext {
         )
         shell.route = .mainRepoError(repoURL.path, mapping)
 
-        return S137IntegrationSuccessContext(
+        return try S137IntegrationSuccessContext(
             repoURL: repoURL,
             readmeURL: readmeURL,
             specURL: specURL,
-            beforeRepair: try s137IntegrationUserFileSnapshot([readmeURL, specURL]),
+            beforeRepair: s137IntegrationUserFileSnapshot([readmeURL, specURL]),
             mapping: mapping,
             bridge: bridge,
             writer: writer,
@@ -156,7 +156,7 @@ private struct S137IntegrationSuccessContext {
     @MainActor
     func openRepairRoute() throws -> DatabaseRepairRouteState {
         shell.openMainRepositoryRepair(repoPath: repoURL.path)
-        guard case .dbRepairConfirm(let repairRoute) = shell.route else {
+        guard case let .dbRepairConfirm(repairRoute) = shell.route else {
             throw S137IntegrationFailure.unexpectedRoute("Expected S1-37 repair route, got \(shell.route)")
         }
 
@@ -202,7 +202,7 @@ private struct S137IntegrationSuccessContext {
         await retryTask.value
 
         let openRequests = await opener.requestedConfiguredRepoPaths()
-        guard case .mainList(let opening) = shell.route else {
+        guard case let .mainList(opening) = shell.route else {
             throw S137IntegrationFailure.unexpectedRoute("Expected S1-09 main-list, got \(shell.route)")
         }
         XCTAssertEqual(openRequests, [repoURL.path])
@@ -220,7 +220,7 @@ private struct S137IntegrationSuccessContext {
     private func verifyDiagnosticsExport(_ repairModel: DatabaseRepairConfirmModel) async throws {
         repairModel.requestDiagnosticsExport()
         await repairModel.collectDiagnostics()
-        guard case .collected(let diagnostics) = repairModel.diagnosticsState else {
+        guard case let .collected(diagnostics) = repairModel.diagnosticsState else {
             throw S137IntegrationFailure.unexpectedRoute("Expected diagnostics before repair")
         }
         XCTAssertTrue(diagnostics.snapshotPath.hasPrefix(".areamatrix/diagnostics/index-"))
@@ -233,7 +233,7 @@ private struct S137IntegrationSuccessContext {
         repairModel.isMetadataSafetyConfirmed = true
         XCTAssertTrue(repairModel.canRunFullRescan)
         await repairModel.runFullRescan()
-        guard case .succeeded(let report) = repairModel.repairState else {
+        guard case let .succeeded(report) = repairModel.repairState else {
             throw S137IntegrationFailure.unexpectedRoute("Expected repair success, got \(repairModel.repairState)")
         }
 
@@ -259,7 +259,7 @@ private struct S137IntegrationSuccessContext {
     }
 }
 
-private actor S137IntegrationPausingCoreRepositoryOpener: CoreEmptyRepositoryOpening {
+private actor S137PausingRepositoryOpener: CoreEmptyRepositoryOpening {
     private let bridge: CoreBridge
     private var configuredPaths: [String] = []
     private var didStart = false
@@ -380,6 +380,6 @@ private func s137IntegrationWriteRepoFile(
 
 private func s137IntegrationUserFileSnapshot(_ urls: [URL]) throws -> [S137IntegrationUserFileSnapshot] {
     try urls.map { url in
-        S137IntegrationUserFileSnapshot(path: url.path, data: try Data(contentsOf: url))
+        try S137IntegrationUserFileSnapshot(path: url.path, data: Data(contentsOf: url))
     }
 }

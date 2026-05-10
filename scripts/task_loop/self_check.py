@@ -90,6 +90,7 @@ class Harness:
     ) -> subprocess.CompletedProcess[str]:
         merged = os.environ.copy()
         merged.setdefault("DEV_LANG", "mixed")
+        merged.setdefault("PYTHONPYCACHEPREFIX", str(self.tmp / "python-pycache"))
         if env:
             merged.update(env)
         proc = subprocess.run(
@@ -1019,6 +1020,8 @@ fi
             "LOCK_DIR": str(runner_repo / ".codex/task-loop-lock"),
             "CONTROL_DIR": str(runner_repo / ".codex/task-loop-control"),
             "CODEX_BIN": str(fake_codex),
+            "GIT_CHECKPOINT": "commit",
+            "GIT_BRANCH_POLICY": "auto",
             "RISK_POLICY": "allow",
             "MAX_RETRIES": "1",
         },
@@ -1083,7 +1086,10 @@ def run_check(root_dir: Path) -> int:
             print(f"[task-loop-check] FAIL: {exc}")
             print(f"[task-loop-check] temp dir: {tmp}")
             if keep:
-                print(f"[task-loop-check] kept temp dir: {tmp}")
+                preserved = root / ".codex/task-loop-tmp" / tmp.name
+                preserved.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copytree(tmp, preserved, dirs_exist_ok=True)
+                print(f"[task-loop-check] kept temp dir: {preserved}")
                 return 1
             return 1
         if keep:

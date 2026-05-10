@@ -1,23 +1,25 @@
 import Foundation
 
-enum ImportBatchNamingStrategy: String, CaseIterable, Identifiable, Sendable {
+enum ImportBatchNamingStrategy: String, CaseIterable, Identifiable {
     case suggestedName
     case originalName
     case normalizedCharacters
     case uniformPrefix
 
-    var id: String { rawValue }
+    var id: String {
+        rawValue
+    }
 
     var title: String {
         switch self {
         case .suggestedName:
-            return "使用建议命名"
+            "使用建议命名"
         case .originalName:
-            return "保留原名"
+            "保留原名"
         case .normalizedCharacters:
-            return "仅标准化字符"
+            "仅标准化字符"
         case .uniformPrefix:
-            return "统一前缀"
+            "统一前缀"
         }
     }
 }

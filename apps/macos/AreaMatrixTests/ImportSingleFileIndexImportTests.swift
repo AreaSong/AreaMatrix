@@ -1,5 +1,5 @@
-import XCTest
 @testable import AreaMatrix
+import XCTest
 
 final class ImportSingleFileIndexImportTests: XCTestCase {
     @MainActor
@@ -11,7 +11,7 @@ final class ImportSingleFileIndexImportTests: XCTestCase {
                 suggestedName: "source.pdf",
                 reason: .extension,
                 confidence: 0.7
-            )),
+            ))
         ])
         let indexedEntry = FileEntrySnapshot.indexImportFixture(
             currentName: "indexed.pdf",
@@ -47,7 +47,7 @@ final class ImportSingleFileIndexImportTests: XCTestCase {
                 storageMode: .indexOnly,
                 overrideCategory: "docs",
                 overrideFilename: "indexed.pdf"
-            ),
+            )
         ])
         XCTAssertEqual(model.importStatus, .imported(indexedEntry))
     }
@@ -60,10 +60,10 @@ final class ImportSingleFileIndexImportTests: XCTestCase {
                 suggestedName: "source.pdf",
                 reason: .extension,
                 confidence: 0.7
-            )),
+            ))
         ])
         let importer = IndexImportRecordingImporter(results: [
-            .failure(CoreError.ICloudPlaceholder(path: "/tmp/source.pdf")),
+            .failure(CoreError.ICloudPlaceholder(path: "/tmp/source.pdf"))
         ])
         let errorMapper = IndexImportRecordingErrorMapper()
         let model = ImportSingleFilePreviewModel(
@@ -121,7 +121,7 @@ final class ImportSingleFileIndexImportTests: XCTestCase {
     }
 }
 
-private struct IndexImportRequest: Equatable, Sendable {
+private struct IndexImportRequest: Equatable {
     var repoPath: String
     var sourceURL: URL
     var storageMode: ImportSingleFileStorageMode
@@ -137,15 +137,15 @@ private actor IndexImportRecordingPredictor: CoreCategoryPredicting {
         self.results = results
     }
 
-    func predictCategory(repoPath: String, filename: String) async throws -> ClassifyResultSnapshot {
+    func predictCategory(repoPath _: String, filename _: String) async throws -> ClassifyResultSnapshot {
         guard !results.isEmpty else {
             throw CoreError.Classify(reason: "missing test result")
         }
 
         switch results.removeFirst() {
-        case .success(let snapshot):
+        case let .success(snapshot):
             return snapshot
-        case .failure(let error):
+        case let .failure(error):
             throw error
         }
     }
@@ -166,14 +166,14 @@ private actor IndexImportRecordingImporter: CoreFileImporting {
         overrideFilename: String,
         duplicateStrategy: DuplicateStrategy
     ) async throws -> FileEntrySnapshot {
-        try recordImport(
+        try recordImport(IndexImportRequest(
             repoPath: repoPath,
             sourceURL: sourceURL,
             storageMode: .copy,
             overrideCategory: overrideCategory,
             overrideFilename: overrideFilename,
             duplicateStrategy: duplicateStrategy
-        )
+        ))
     }
 
     func importMovedFile(
@@ -183,14 +183,14 @@ private actor IndexImportRecordingImporter: CoreFileImporting {
         overrideFilename: String,
         duplicateStrategy: DuplicateStrategy
     ) async throws -> FileEntrySnapshot {
-        try recordImport(
+        try recordImport(IndexImportRequest(
             repoPath: repoPath,
             sourceURL: sourceURL,
             storageMode: .move,
             overrideCategory: overrideCategory,
             overrideFilename: overrideFilename,
             duplicateStrategy: duplicateStrategy
-        )
+        ))
     }
 
     func importIndexedFile(
@@ -200,43 +200,29 @@ private actor IndexImportRecordingImporter: CoreFileImporting {
         overrideFilename: String,
         duplicateStrategy: DuplicateStrategy
     ) async throws -> FileEntrySnapshot {
-        try recordImport(
+        try recordImport(IndexImportRequest(
             repoPath: repoPath,
             sourceURL: sourceURL,
             storageMode: .indexOnly,
             overrideCategory: overrideCategory,
             overrideFilename: overrideFilename,
             duplicateStrategy: duplicateStrategy
-        )
+        ))
     }
 
     func recordedRequests() -> [IndexImportRequest] {
         requests
     }
 
-    private func recordImport(
-        repoPath: String,
-        sourceURL: URL,
-        storageMode: ImportSingleFileStorageMode,
-        overrideCategory: String,
-        overrideFilename: String,
-        duplicateStrategy: DuplicateStrategy
-    ) throws -> FileEntrySnapshot {
-        requests.append(IndexImportRequest(
-            repoPath: repoPath,
-            sourceURL: sourceURL,
-            storageMode: storageMode,
-            overrideCategory: overrideCategory,
-            overrideFilename: overrideFilename,
-            duplicateStrategy: duplicateStrategy
-        ))
+    private func recordImport(_ request: IndexImportRequest) throws -> FileEntrySnapshot {
+        requests.append(request)
         guard !results.isEmpty else {
             throw CoreError.Internal(message: "missing import test result")
         }
         switch results.removeFirst() {
-        case .success(let snapshot):
+        case let .success(snapshot):
             return snapshot
-        case .failure(let error):
+        case let .failure(error):
             throw error
         }
     }
@@ -257,21 +243,21 @@ private actor IndexImportRecordingErrorMapper: CoreErrorMapping {
     private func kind(for error: CoreError) -> CoreErrorKindSnapshot {
         switch error {
         case .DuplicateFile:
-            return .duplicateFile
+            .duplicateFile
         case .InvalidPath:
-            return .invalidPath
+            .invalidPath
         case .ICloudPlaceholder:
-            return .iCloudPlaceholder
+            .iCloudPlaceholder
         case .PermissionDenied:
-            return .permissionDenied
+            .permissionDenied
         case .FileNotFound:
-            return .fileNotFound
+            .fileNotFound
         case .Io:
-            return .io
+            .io
         case .Db:
-            return .db
+            .db
         default:
-            return .internal
+            .internal
         }
     }
 }

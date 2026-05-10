@@ -1,5 +1,5 @@
-import XCTest
 @testable import AreaMatrix
+import XCTest
 
 final class MainRepoExternalRemovalTests: XCTestCase {
     @MainActor
@@ -86,10 +86,10 @@ final class MainRepoExternalRemovalTests: XCTestCase {
         await model.confirmMainRepositoryExternalRemoval(repoPath: "/tmp/repo")
         let openedPaths = await opener.requestedConfiguredRepoPaths()
 
-        guard case .failed(let failureMapping) = model.mainRepoExternalRemoval else {
+        guard case let .failed(failureMapping) = model.mainRepoExternalRemoval else {
             return XCTFail("expected failed external removal state")
         }
-        guard case .mainRepoError(let repoPath, let routeMapping) = model.route else {
+        guard case let .mainRepoError(repoPath, routeMapping) = model.route else {
             return XCTFail("expected main repo error, got \(model.route)")
         }
 

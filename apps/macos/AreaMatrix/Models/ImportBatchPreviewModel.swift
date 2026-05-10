@@ -1,7 +1,7 @@
 import Combine
 import Foundation
 
-enum ImportBatchDestinationOption: Hashable, Sendable {
+enum ImportBatchDestinationOption: Hashable {
     case autoClassify
     case category(String)
     case repositoryRoot
@@ -9,27 +9,27 @@ enum ImportBatchDestinationOption: Hashable, Sendable {
     var entryDestination: ImportEntryDestination {
         switch self {
         case .autoClassify:
-            return .autoClassify
-        case .category(let slug):
-            return .category(slug)
+            .autoClassify
+        case let .category(slug):
+            .category(slug)
         case .repositoryRoot:
-            return .repositoryRoot
+            .repositoryRoot
         }
     }
 
     var title: String {
         switch self {
         case .autoClassify:
-            return "自动分类（推荐）"
-        case .category(let slug):
-            return slug
+            "自动分类（推荐）"
+        case let .category(slug):
+            slug
         case .repositoryRoot:
-            return "Repo root"
+            "Repo root"
         }
     }
 }
 
-enum ImportBatchPreviewRowStatus: Equatable, Sendable {
+enum ImportBatchPreviewRowStatus: Equatable {
     case loading
     case ready(reasonLabel: String)
     case duplicate(existingPath: String, reasonLabel: String)
@@ -41,29 +41,29 @@ enum ImportBatchPreviewRowStatus: Equatable, Sendable {
     var tag: String {
         switch self {
         case .loading:
-            return "PREVIEW"
+            "PREVIEW"
         case .ready:
-            return "OK"
+            "OK"
         case .duplicate:
-            return "DUP"
+            "DUP"
         case .nameConflict:
-            return "NAME"
+            "NAME"
         case .iCloudPlaceholder:
-            return "ICLOUD"
+            "ICLOUD"
         case .blocked:
-            return "BLOCKED"
+            "BLOCKED"
         case .error:
-            return "ERROR"
+            "ERROR"
         }
     }
 
     var detail: String? {
         switch self {
         case .loading:
-            return "Preparing preview..."
-        case .ready(let reasonLabel), .duplicate(_, let reasonLabel), .nameConflict(_, let reasonLabel),
-             .iCloudPlaceholder(_, let reasonLabel), .blocked(let reasonLabel), .error(let reasonLabel):
-            return reasonLabel
+            "Preparing preview..."
+        case let .ready(reasonLabel), let .duplicate(_, reasonLabel), let .nameConflict(_, reasonLabel),
+             let .iCloudPlaceholder(_, reasonLabel), let .blocked(reasonLabel), let .error(reasonLabel):
+            reasonLabel
         }
     }
 
@@ -75,9 +75,9 @@ enum ImportBatchPreviewRowStatus: Equatable, Sendable {
     var isPrepared: Bool {
         switch self {
         case .ready, .duplicate, .nameConflict:
-            return true
+            true
         case .loading, .iCloudPlaceholder, .blocked, .error:
-            return false
+            false
         }
     }
 
@@ -88,7 +88,7 @@ enum ImportBatchPreviewRowStatus: Equatable, Sendable {
     }
 }
 
-struct ImportBatchPreviewRow: Identifiable, Equatable, Sendable {
+struct ImportBatchPreviewRow: Identifiable, Equatable {
     var originalName: String
     var sourcePath: String
     var sizeBytes: Int64?
@@ -96,16 +96,18 @@ struct ImportBatchPreviewRow: Identifiable, Equatable, Sendable {
     var suggestedName: String
     var status: ImportBatchPreviewRowStatus
 
-    var id: String { sourcePath }
+    var id: String {
+        sourcePath
+    }
 
     func displayCategory(for destination: ImportBatchDestinationOption) -> String {
         switch destination {
         case .autoClassify:
-            return predictedCategory ?? "未生成"
-        case .category(let slug):
-            return slug
+            predictedCategory ?? "未生成"
+        case let .category(slug):
+            slug
         case .repositoryRoot:
-            return "repo root"
+            "repo root"
         }
     }
 
@@ -184,7 +186,7 @@ struct ImportBatchPreviewRow: Identifiable, Equatable, Sendable {
     }
 }
 
-enum ImportBatchPreviewStatus: Equatable, Sendable {
+enum ImportBatchPreviewStatus: Equatable {
     case idle
     case loading(completed: Int, total: Int)
     case loaded(successful: Int, total: Int, failed: Int)
@@ -198,13 +200,13 @@ enum ImportBatchPreviewStatus: Equatable, Sendable {
     var message: String? {
         switch self {
         case .idle:
-            return nil
-        case .loading(let completed, let total):
-            return total > 0 ? "Preparing preview... \(completed)/\(total)" : "Preparing preview..."
-        case .loaded(let successful, let total, let failed):
-            return loadedMessage(successful: successful, total: total, failed: failed)
-        case .unsupported(let message):
-            return message
+            nil
+        case let .loading(completed, total):
+            total > 0 ? "Preparing preview... \(completed)/\(total)" : "Preparing preview..."
+        case let .loaded(successful, total, failed):
+            loadedMessage(successful: successful, total: total, failed: failed)
+        case let .unsupported(message):
+            message
         }
     }
 
@@ -270,7 +272,7 @@ final class ImportBatchPreviewModel: ObservableObject {
     }
 
     var failedPreviewCount: Int {
-        rows.filter { $0.status.isError }.count
+        rows.filter(\.status.isError).count
     }
 
     var showsRetryPreview: Bool {
@@ -287,11 +289,11 @@ final class ImportBatchPreviewModel: ObservableObject {
     var destinationHelperMessage: String? {
         switch selectedDestination {
         case .autoClassify:
-            return nil
+            nil
         case .category:
-            return "已覆盖自动分类结果；当前任务仍保留每个文件的分类建议作为参考。"
+            "已覆盖自动分类结果；当前任务仍保留每个文件的分类建议作为参考。"
         case .repositoryRoot:
-            return "当前入口保留在资料库根目录；分类建议只作为预览，不会自动写入。"
+            "当前入口保留在资料库根目录；分类建议只作为预览，不会自动写入。"
         }
     }
 
@@ -309,6 +311,7 @@ final class ImportBatchPreviewModel: ObservableObject {
         selectedDestination = request.initialBatchDestination
         rows = request.urls.map(ImportBatchPreviewRow.loading)
         status = .loading(completed: 0, total: request.urls.count)
+        await Task.yield()
         let duplicatePrecheck = await duplicatePrechecker?.precheckDuplicates(
             repoPath: request.repoPath,
             sourceURLs: request.urls,
@@ -316,17 +319,24 @@ final class ImportBatchPreviewModel: ObservableObject {
         ) ?? [:]
 
         var completed = 0
+        var pendingRows = rows
         for (index, url) in request.urls.enumerated() {
-            rows[index] = await previewRow(
+            pendingRows[index] = await previewRow(
                 url: url,
                 request: request,
                 duplicatePrecheck: duplicatePrecheck[url.path]
             )
             guard generation == currentGeneration else { return }
             completed += 1
-            status = .loading(completed: completed, total: request.urls.count)
+            if shouldPublishPreviewProgress(completed: completed, total: request.urls.count) {
+                rows = pendingRows
+                status = .loading(completed: completed, total: request.urls.count)
+                await Task.yield()
+            }
         }
 
+        rows = pendingRows
+        status = .loading(completed: completed, total: request.urls.count)
         await applyNameConflictPrecheck(repoPath: request.repoPath, generation: currentGeneration)
         guard generation == currentGeneration else { return }
         status = .loaded(
@@ -375,12 +385,12 @@ final class ImportBatchPreviewModel: ObservableObject {
         rows = rows.map { row in
             guard let conflict = conflicts[row.id] else { return row }
             switch conflict {
-            case .conflict(let existingPath):
+            case let .conflict(existingPath):
                 return row.withStatus(.nameConflict(
                     existingPath: existingPath,
                     reasonLabel: "Keep both (auto-number): \(existingPath)"
                 ))
-            case .failed(let message):
+            case let .failed(message):
                 return row.withStatus(.error(message))
             }
         }
@@ -392,17 +402,21 @@ final class ImportBatchPreviewModel: ObservableObject {
         duplicatePrecheck: ImportBatchDuplicatePrecheckResult
     ) -> ImportBatchPreviewRow {
         switch duplicatePrecheck {
-        case .duplicate(let existingPath):
-            return .duplicate(url: url, prediction: prediction, existingPath: existingPath)
-        case .nameConflict(let existingPath):
-            return .nameConflict(url: url, prediction: prediction, existingPath: existingPath)
+        case let .duplicate(existingPath):
+            .duplicate(url: url, prediction: prediction, existingPath: existingPath)
+        case let .nameConflict(existingPath):
+            .nameConflict(url: url, prediction: prediction, existingPath: existingPath)
         case .iCloudPlaceholder:
-            return .iCloudPlaceholder(url: url, message: "iCloud placeholder 需要下载后才能导入")
-        case .blocked(let message):
-            return .failed(url: url, message: message)
-        case .failed(let message):
-            return .failed(url: url, message: message)
+            .iCloudPlaceholder(url: url, message: "iCloud placeholder 需要下载后才能导入")
+        case let .blocked(message):
+            .failed(url: url, message: message)
+        case let .failed(message):
+            .failed(url: url, message: message)
         }
+    }
+
+    private func shouldPublishPreviewProgress(completed: Int, total: Int) -> Bool {
+        completed == total || completed == 1 || completed.isMultiple(of: 10)
     }
 
     private static func previewMessage(for error: Error) -> String {
@@ -411,15 +425,15 @@ final class ImportBatchPreviewModel: ObservableObject {
         }
 
         switch coreError {
-        case .Config(let reason):
+        case let .Config(reason):
             return "分类规则无效：\(reason)"
-        case .Classify(let reason):
+        case let .Classify(reason):
             return "无法预览分类：\(reason)"
-        case .PermissionDenied(let path):
+        case let .PermissionDenied(path):
             return "无法读取分类预览路径：\(path)"
-        case .Io(let message):
+        case let .Io(message):
             return "分类预览文件读取失败：\(message)"
-        case .Db(let message):
+        case let .Db(message):
             return "分类预览数据库读取失败：\(message)"
         default:
             return "无法完成分类预览"
@@ -431,9 +445,9 @@ private extension ImportBatchPreviewRow {
     var canRunNameConflictPrecheck: Bool {
         switch status {
         case .ready:
-            return true
+            true
         case .loading, .duplicate, .nameConflict, .iCloudPlaceholder, .blocked, .error:
-            return false
+            false
         }
     }
 
@@ -448,16 +462,16 @@ private extension ImportEntrySource {
     var batchSourceLabel: String {
         switch self {
         case .filePicker:
-            return "Finder 选择"
+            "Finder 选择"
         case .dropZone:
-            return "Finder 拖入"
+            "Finder 拖入"
         case .dockOpenFile:
-            return "Dock 打开"
+            "Dock 打开"
         }
     }
 }
 
-private extension Array where Element == ImportBatchDestinationOption {
+private extension [ImportBatchDestinationOption] {
     func uniqued() -> [ImportBatchDestinationOption] {
         var seen = Set<ImportBatchDestinationOption>()
         return filter { seen.insert($0).inserted }

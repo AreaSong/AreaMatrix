@@ -1,5 +1,5 @@
-import XCTest
 @testable import AreaMatrix
+import XCTest
 
 final class ImportFolderPreviewModelTests: XCTestCase {
     @MainActor
@@ -23,7 +23,7 @@ final class ImportFolderPreviewModelTests: XCTestCase {
                 suggestedName: "2026Q1_合同.pdf",
                 reason: .keyword,
                 confidence: 0.82
-            )),
+            ))
         ])
         let model = ImportFolderPreviewModel(
             predictor: predictor,
@@ -67,7 +67,7 @@ final class ImportFolderPreviewModelTests: XCTestCase {
                 suggestedName: "Report.pdf",
                 reason: .extension,
                 confidence: 0.7
-            )),
+            ))
         ])
         let model = ImportFolderPreviewModel(
             predictor: predictor,
@@ -91,7 +91,7 @@ final class ImportFolderPreviewModelTests: XCTestCase {
         let rootURL = try makeImportFolderTemporaryDirectory()
         try Data("bad".utf8).write(to: rootURL.appendingPathComponent("Bad.pdf"))
         let predictor = S119RecordingPredictor(results: [
-            .failure(CoreError.Config(reason: "classifier.yaml line 7")),
+            .failure(CoreError.Config(reason: "classifier.yaml line 7"))
         ])
         let model = ImportFolderPreviewModel(
             predictor: predictor,
@@ -149,39 +149,23 @@ final class ImportFolderPreviewModelTests: XCTestCase {
         XCTAssertEqual(result.reason, .keyword)
         XCTAssertGreaterThan(result.confidence, 0)
     }
+}
 
+final class ImportFolderPreviewImportTests: XCTestCase {
     @MainActor
     func testS119FolderCopyImportUsesRealImporterForReadyRowsOnly() async {
         let invoiceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
         let cloudURL = URL(fileURLWithPath: "/tmp/iCloudOnly.pdf.icloud")
         let errorURL = URL(fileURLWithPath: "/tmp/unreadable.mov")
-        let scanner = S119StaticFolderScanner(result: ImportFolderScanResult(
-            rows: [
-                ImportFolderPreviewRow.loading(
-                    fileURL: invoiceURL,
-                    rootURL: URL(fileURLWithPath: "/tmp", isDirectory: true)
-                ),
-                ImportFolderPreviewRow.loading(
-                    fileURL: cloudURL,
-                    rootURL: URL(fileURLWithPath: "/tmp", isDirectory: true)
-                ).withStatus(.iCloudPlaceholder(path: cloudURL.path)),
-                ImportFolderPreviewRow.loading(
-                    fileURL: errorURL,
-                    rootURL: URL(fileURLWithPath: "/tmp", isDirectory: true)
-                ).withStatus(.error("无法读取文件属性")),
-            ],
-            folderCount: 0,
-            skippedRules: [],
-            errors: []
-        ))
-        let predictor = S119RecordingPredictor(results: [
-            .success(ClassifyResultSnapshot(
-                category: "finance",
-                suggestedName: "Invoice_2026Q1.pdf",
-                reason: .keyword,
-                confidence: 0.9
-            )),
-        ])
+        let scanner = S119StaticFolderScanner(result: s119FolderScanResult(rows: [
+            s119LoadingRow(invoiceURL),
+            s119LoadingRow(cloudURL).withStatus(.iCloudPlaceholder(path: cloudURL.path)),
+            s119LoadingRow(errorURL).withStatus(.error("无法读取文件属性"))
+        ]))
+        let predictor = S119RecordingPredictor(results: [.success(.s119Prediction(
+            category: "finance",
+            suggestedName: "Invoice_2026Q1.pdf"
+        ))])
         let importer = S118RecordingBatchImporter()
         let model = ImportFolderPreviewModel(
             predictor: predictor,
@@ -204,7 +188,7 @@ final class ImportFolderPreviewModelTests: XCTestCase {
                 suggestedCategory: "finance",
                 overrideFilename: "Invoice_2026Q1.pdf",
                 duplicateStrategy: .ask
-            ),
+            )
         ])
         XCTAssertEqual(outcome?.succeededEntries.count, 1)
         XCTAssertEqual(outcome?.failedCount, 0)
@@ -224,31 +208,16 @@ final class ImportFolderPreviewModelTests: XCTestCase {
     func testS119FolderResultSummaryKeepsPerRowStatusesForFailureAndPendingRows() async {
         let invoiceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
         let cloudURL = URL(fileURLWithPath: "/tmp/iCloudOnly.pdf.icloud")
-        let scanner = S119StaticFolderScanner(result: ImportFolderScanResult(
-            rows: [
-                ImportFolderPreviewRow.loading(
-                    fileURL: invoiceURL,
-                    rootURL: URL(fileURLWithPath: "/tmp", isDirectory: true)
-                ),
-                ImportFolderPreviewRow.loading(
-                    fileURL: cloudURL,
-                    rootURL: URL(fileURLWithPath: "/tmp", isDirectory: true)
-                ).withStatus(.iCloudPlaceholder(path: cloudURL.path)),
-            ],
-            folderCount: 0,
-            skippedRules: [],
-            errors: []
-        ))
-        let predictor = S119RecordingPredictor(results: [
-            .success(ClassifyResultSnapshot(
-                category: "finance",
-                suggestedName: "Invoice_2026Q1.pdf",
-                reason: .keyword,
-                confidence: 0.9
-            )),
-        ])
+        let scanner = S119StaticFolderScanner(result: s119FolderScanResult(rows: [
+            s119LoadingRow(invoiceURL),
+            s119LoadingRow(cloudURL).withStatus(.iCloudPlaceholder(path: cloudURL.path))
+        ]))
+        let predictor = S119RecordingPredictor(results: [.success(.s119Prediction(
+            category: "finance",
+            suggestedName: "Invoice_2026Q1.pdf"
+        ))])
         let importer = S118SequenceBatchImporter(results: [
-            .failure(CoreError.PermissionDenied(path: invoiceURL.path)),
+            .failure(CoreError.PermissionDenied(path: invoiceURL.path))
         ])
         let model = ImportFolderPreviewModel(
             predictor: predictor,
@@ -283,7 +252,7 @@ final class ImportFolderPreviewModelTests: XCTestCase {
                     targetPath: "iCloudOnly.pdf.icloud",
                     phase: .pending,
                     errorMessage: nil
-                ),
+                )
             ]
         ))
     }
@@ -306,10 +275,10 @@ final class ImportFolderPreviewModelTests: XCTestCase {
                 suggestedName: "Invoice_2026Q1.pdf",
                 reason: .keyword,
                 confidence: 0.9
-            )),
+            ))
         ])
         let importer = S118SequenceBatchImporter(results: [
-            .failure(CoreError.PermissionDenied(path: invoiceURL.path)),
+            .failure(CoreError.PermissionDenied(path: invoiceURL.path))
         ])
         let errorMapper = S117RecordingErrorMapper()
         let model = ImportFolderPreviewModel(
@@ -350,7 +319,7 @@ final class ImportFolderPreviewModelTests: XCTestCase {
                 suggestedName: "Invoice_2026Q1.pdf",
                 reason: .keyword,
                 confidence: 0.9
-            )),
+            ))
         ])
         let importer = S118RecordingBatchImporter()
         let model = ImportFolderPreviewModel(
@@ -375,7 +344,7 @@ final class ImportFolderPreviewModelTests: XCTestCase {
                 suggestedCategory: "docs",
                 overrideFilename: "Invoice_2026Q1.pdf",
                 duplicateStrategy: .ask
-            ),
+            )
         ])
     }
 
@@ -397,7 +366,7 @@ final class ImportFolderPreviewModelTests: XCTestCase {
                 suggestedName: "indexed-reference.pdf",
                 reason: .keyword,
                 confidence: 0.9
-            )),
+            ))
         ])
         let importer = S118RecordingBatchImporter()
         let model = ImportFolderPreviewModel(
@@ -420,7 +389,7 @@ final class ImportFolderPreviewModelTests: XCTestCase {
                 suggestedCategory: "finance",
                 overrideFilename: "indexed-reference.pdf",
                 duplicateStrategy: .ask
-            ),
+            )
         ])
         XCTAssertEqual(outcome?.succeededEntries.first?.storageMode, "Indexed")
         XCTAssertEqual(model.rows.first?.status.detail, "已写入索引")
@@ -444,7 +413,7 @@ final class ImportFolderPreviewModelTests: XCTestCase {
                 suggestedName: "move-later.pdf",
                 reason: .extension,
                 confidence: 0.7
-            )),
+            ))
         ])
         let importer = S118RecordingBatchImporter()
         let model = ImportFolderPreviewModel(
@@ -469,8 +438,7 @@ final class ImportFolderPreviewModelTests: XCTestCase {
                 suggestedCategory: "docs",
                 overrideFilename: "move-later.pdf",
                 duplicateStrategy: .ask
-            ),
+            )
         ])
     }
-
 }

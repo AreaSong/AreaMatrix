@@ -1,5 +1,5 @@
-import XCTest
 @testable import AreaMatrix
+import XCTest
 
 final class ImportSingleFileMoveImportTests: XCTestCase {
     @MainActor
@@ -11,7 +11,7 @@ final class ImportSingleFileMoveImportTests: XCTestCase {
                 suggestedName: "source.pdf",
                 reason: .extension,
                 confidence: 0.7
-            )),
+            ))
         ])
         let movedEntry = FileEntrySnapshot.moveImportFixture(
             currentName: "moved.pdf",
@@ -47,7 +47,7 @@ final class ImportSingleFileMoveImportTests: XCTestCase {
                 storageMode: .move,
                 overrideCategory: "docs",
                 overrideFilename: "moved.pdf"
-            ),
+            )
         ])
         XCTAssertEqual(model.importStatus, .imported(movedEntry))
     }
@@ -60,10 +60,10 @@ final class ImportSingleFileMoveImportTests: XCTestCase {
                 suggestedName: "source.pdf",
                 reason: .extension,
                 confidence: 0.7
-            )),
+            ))
         ])
         let importer = MoveImportRecordingImporter(results: [
-            .failure(CoreError.PermissionDenied(path: "/tmp/source.pdf")),
+            .failure(CoreError.PermissionDenied(path: "/tmp/source.pdf"))
         ])
         let errorMapper = MoveImportRecordingErrorMapper()
         let model = ImportSingleFilePreviewModel(
@@ -120,7 +120,7 @@ final class ImportSingleFileMoveImportTests: XCTestCase {
     }
 }
 
-private struct MoveImportRequest: Equatable, Sendable {
+private struct MoveImportRequest: Equatable {
     var repoPath: String
     var sourceURL: URL
     var storageMode: ImportSingleFileStorageMode
@@ -136,15 +136,15 @@ private actor MoveImportRecordingPredictor: CoreCategoryPredicting {
         self.results = results
     }
 
-    func predictCategory(repoPath: String, filename: String) async throws -> ClassifyResultSnapshot {
+    func predictCategory(repoPath _: String, filename _: String) async throws -> ClassifyResultSnapshot {
         guard !results.isEmpty else {
             throw CoreError.Classify(reason: "missing test result")
         }
 
         switch results.removeFirst() {
-        case .success(let snapshot):
+        case let .success(snapshot):
             return snapshot
-        case .failure(let error):
+        case let .failure(error):
             throw error
         }
     }
@@ -165,14 +165,14 @@ private actor MoveImportRecordingImporter: CoreFileImporting {
         overrideFilename: String,
         duplicateStrategy: DuplicateStrategy
     ) async throws -> FileEntrySnapshot {
-        try recordImport(
+        try recordImport(MoveImportRequest(
             repoPath: repoPath,
             sourceURL: sourceURL,
             storageMode: .copy,
             overrideCategory: overrideCategory,
             overrideFilename: overrideFilename,
             duplicateStrategy: duplicateStrategy
-        )
+        ))
     }
 
     func importMovedFile(
@@ -182,14 +182,14 @@ private actor MoveImportRecordingImporter: CoreFileImporting {
         overrideFilename: String,
         duplicateStrategy: DuplicateStrategy
     ) async throws -> FileEntrySnapshot {
-        try recordImport(
+        try recordImport(MoveImportRequest(
             repoPath: repoPath,
             sourceURL: sourceURL,
             storageMode: .move,
             overrideCategory: overrideCategory,
             overrideFilename: overrideFilename,
             duplicateStrategy: duplicateStrategy
-        )
+        ))
     }
 
     func importIndexedFile(
@@ -199,43 +199,29 @@ private actor MoveImportRecordingImporter: CoreFileImporting {
         overrideFilename: String,
         duplicateStrategy: DuplicateStrategy
     ) async throws -> FileEntrySnapshot {
-        try recordImport(
+        try recordImport(MoveImportRequest(
             repoPath: repoPath,
             sourceURL: sourceURL,
             storageMode: .indexOnly,
             overrideCategory: overrideCategory,
             overrideFilename: overrideFilename,
             duplicateStrategy: duplicateStrategy
-        )
+        ))
     }
 
     func recordedRequests() -> [MoveImportRequest] {
         requests
     }
 
-    private func recordImport(
-        repoPath: String,
-        sourceURL: URL,
-        storageMode: ImportSingleFileStorageMode,
-        overrideCategory: String,
-        overrideFilename: String,
-        duplicateStrategy: DuplicateStrategy
-    ) throws -> FileEntrySnapshot {
-        requests.append(MoveImportRequest(
-            repoPath: repoPath,
-            sourceURL: sourceURL,
-            storageMode: storageMode,
-            overrideCategory: overrideCategory,
-            overrideFilename: overrideFilename,
-            duplicateStrategy: duplicateStrategy
-        ))
+    private func recordImport(_ request: MoveImportRequest) throws -> FileEntrySnapshot {
+        requests.append(request)
         guard !results.isEmpty else {
             throw CoreError.Internal(message: "missing import test result")
         }
         switch results.removeFirst() {
-        case .success(let snapshot):
+        case let .success(snapshot):
             return snapshot
-        case .failure(let error):
+        case let .failure(error):
             throw error
         }
     }
@@ -256,19 +242,19 @@ private actor MoveImportRecordingErrorMapper: CoreErrorMapping {
     private func kind(for error: CoreError) -> CoreErrorKindSnapshot {
         switch error {
         case .DuplicateFile:
-            return .duplicateFile
+            .duplicateFile
         case .InvalidPath:
-            return .invalidPath
+            .invalidPath
         case .ICloudPlaceholder:
-            return .iCloudPlaceholder
+            .iCloudPlaceholder
         case .PermissionDenied:
-            return .permissionDenied
+            .permissionDenied
         case .Io:
-            return .io
+            .io
         case .Db:
-            return .db
+            .db
         default:
-            return .internal
+            .internal
         }
     }
 }

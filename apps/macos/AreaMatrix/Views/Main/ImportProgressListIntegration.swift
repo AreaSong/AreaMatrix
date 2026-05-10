@@ -3,7 +3,9 @@ import SwiftUI
 struct ImportProgressListRow: Identifiable, Equatable {
     let item: ImportBatchProgressSnapshot.Item
 
-    var id: String { item.id }
+    var id: String {
+        item.id
+    }
 
     var displayName: String {
         let name = (item.targetPath as NSString).lastPathComponent
@@ -15,10 +17,21 @@ struct ImportProgressListRow: Identifiable, Equatable {
         return directory.isEmpty || directory == "." ? item.targetPath : directory
     }
 
-    var sourcePath: String { item.sourcePath }
-    var targetPath: String { item.targetPath }
-    var phaseText: String { item.phase.rawValue }
-    var errorMessage: String? { item.errorMessage }
+    var sourcePath: String {
+        item.sourcePath
+    }
+
+    var targetPath: String {
+        item.targetPath
+    }
+
+    var phaseText: String {
+        item.phase.rawValue
+    }
+
+    var errorMessage: String? {
+        item.errorMessage
+    }
 }
 
 struct ImportProgressTableView: View {
@@ -94,13 +107,13 @@ private extension ImportProgressListRow {
     var systemImage: String {
         switch item.phase {
         case .done:
-            return "checkmark.circle.fill"
+            "checkmark.circle.fill"
         case .failed:
-            return "exclamationmark.triangle.fill"
+            "exclamationmark.triangle.fill"
         case .pending:
-            return "clock"
+            "clock"
         case .copying, .moving, .hashing, .classifying, .writingIndex:
-            return "arrow.triangle.2.circlepath"
+            "arrow.triangle.2.circlepath"
         }
     }
 }

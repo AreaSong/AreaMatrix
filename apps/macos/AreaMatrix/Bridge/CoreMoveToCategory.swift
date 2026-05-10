@@ -10,7 +10,7 @@ protocol CoreFileCategoryMoving: Sendable {
     func moveToCategory(repoPath: String, fileID: Int64, newCategory: String) async throws -> FileEntrySnapshot
 }
 
-struct MoveToCategoryPreviewSnapshot: Equatable, Sendable {
+struct MoveToCategoryPreviewSnapshot: Equatable {
     var fileID: Int64
     var fromCategory: String
     var toCategory: String
@@ -45,7 +45,7 @@ extension CoreBridge: CoreFileCategoryMoving {
         newCategory: String
     ) async throws -> MoveToCategoryPreviewSnapshot {
         try await Task.detached(priority: .userInitiated) {
-            MoveToCategoryPreviewSnapshot(corePreview: try previewCoreMoveToCategory(
+            try MoveToCategoryPreviewSnapshot(corePreview: previewCoreMoveToCategory(
                 repoPath: repoPath,
                 fileID: fileID,
                 newCategory: newCategory
@@ -77,11 +77,11 @@ private extension StorageMode {
     var moveToCategoryDisplayName: String {
         switch self {
         case .moved:
-            return "Moved"
+            "Moved"
         case .copied:
-            return "Copied"
+            "Copied"
         case .indexed:
-            return "Indexed"
+            "Indexed"
         }
     }
 }

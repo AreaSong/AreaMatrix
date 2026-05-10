@@ -88,15 +88,20 @@ struct ImportBatchConflictSection: View {
     }
 
     private var conflictSummary: String {
-        "\(batchImportModel.duplicateCount) duplicates · \(batchImportModel.nameConflictCount) name conflict · \(batchImportModel.iCloudPlaceholderCount) iCloud · \(batchImportModel.blockedCount) blocked"
+        [
+            "\(batchImportModel.duplicateCount) duplicates",
+            "\(batchImportModel.nameConflictCount) name conflict",
+            "\(batchImportModel.iCloudPlaceholderCount) iCloud",
+            "\(batchImportModel.blockedCount) blocked"
+        ].joined(separator: " · ")
     }
 
     @ViewBuilder
     private func incomingResolutionView(for row: ImportBatchCopyImportRow) -> some View {
         switch row.status {
-        case .nameConflict(_, let resolution):
+        case let .nameConflict(_, resolution):
             switch resolution {
-            case .renameIncoming(let name):
+            case let .renameIncoming(name):
                 TextField("Incoming filename", text: Binding(
                     get: { name },
                     set: { batchImportModel.renameIncomingFile(for: row.id, to: $0) }
@@ -165,7 +170,7 @@ struct ImportBatchConflictSection: View {
     @ViewBuilder
     private func actionView(for row: ImportBatchCopyImportRow) -> some View {
         switch row.status {
-        case .duplicate(let existingPath, let strategy, let isReplaceConfirmed):
+        case let .duplicate(existingPath, strategy, isReplaceConfirmed):
             if strategy == .replace {
                 replaceButton(row: row, isConfirmed: isReplaceConfirmed)
             } else {
@@ -173,11 +178,11 @@ struct ImportBatchConflictSection: View {
                     onShowExistingFile(existingPath)
                 }
                 .disabled(batchImportModel.status.isImporting)
-                    .help(existingPath)
+                .help(existingPath)
             }
-        case .nameConflict(_, let resolution):
+        case let .nameConflict(_, resolution):
             switch resolution {
-            case .replace(let isConfirmed):
+            case let .replace(isConfirmed):
                 replaceButton(row: row, isConfirmed: isConfirmed)
             case .renameIncoming:
                 Text("Rename incoming...")
@@ -226,7 +231,7 @@ struct ImportBatchConflictSection: View {
 
 struct ImportBatchReplaceConfirmation: Identifiable, Equatable {
     var rowID: ImportBatchCopyImportRow.ID
-    var context: ImportSingleFileReplaceConfirmationContext
+    var context: SingleFileReplaceConfirmationContext
 
     var id: String {
         "\(rowID)|\(context.id)"

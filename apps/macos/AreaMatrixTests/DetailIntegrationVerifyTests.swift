@@ -1,5 +1,5 @@
-import XCTest
 @testable import AreaMatrix
+import XCTest
 
 private struct DetailIntegrationContext {
     let repoURL: URL
@@ -23,7 +23,7 @@ final class DetailIntegrationVerifyTests: XCTestCase {
         try await verifyDetailNoteRoundTrip(
             bridge: context.bridge,
             repoURL: context.repoURL,
-            file: try XCTUnwrap(context.model.selectedFileDetail)
+            file: XCTUnwrap(context.model.selectedFileDetail)
         )
         try await verifyExternalSyncEvents(context)
         await verifyMultiSelectionSummary(context)
@@ -67,7 +67,7 @@ final class DetailIntegrationVerifyTests: XCTestCase {
         await context.model.selectFiles([context.primary.id])
         XCTAssertEqual(context.model.selectedFileDetail?.id, context.primary.id)
         XCTAssertEqual(
-            detailMetaMetadataRows(for: try XCTUnwrap(context.model.selectedFileDetail)).value(for: "Status"),
+            try detailMetaMetadataRows(for: XCTUnwrap(context.model.selectedFileDetail)).value(for: "Status"),
             "OK"
         )
 
@@ -113,7 +113,7 @@ final class DetailIntegrationVerifyTests: XCTestCase {
             model: context.model,
             kind: .created,
             relativePath: "docs/external.txt",
-            fsEventID: 23_001,
+            fsEventID: 23001,
             expectedAction: "external_modified"
         )
 
@@ -122,7 +122,7 @@ final class DetailIntegrationVerifyTests: XCTestCase {
             model: context.model,
             kind: .renamed,
             relativePath: "docs/external-renamed.txt",
-            fsEventID: 23_002,
+            fsEventID: 23002,
             expectedAction: "renamed"
         )
 
@@ -131,7 +131,7 @@ final class DetailIntegrationVerifyTests: XCTestCase {
             model: context.model,
             kind: .removed,
             relativePath: "docs/external-renamed.txt",
-            fsEventID: 23_003,
+            fsEventID: 23003,
             expectedAction: "deleted"
         )
     }
@@ -167,12 +167,12 @@ final class DetailIntegrationVerifyTests: XCTestCase {
 
         await model.syncExternalCreated(event)
 
-        guard case .synced(let syncedEvent, let fileID, _) = model.detailExternalCreateSyncState else {
+        guard case let .synced(syncedEvent, fileID, _) = model.detailExternalCreateSyncState else {
             return XCTFail("expected synced state for \(kind.rawValue)")
         }
         XCTAssertEqual(syncedEvent, event)
         XCTAssertNotNil(fileID)
-        assertLoadedLog(model.detailLogState, fileID: try XCTUnwrap(fileID), expectedAction: expectedAction)
+        try assertLoadedLog(model.detailLogState, fileID: XCTUnwrap(fileID), expectedAction: expectedAction)
         XCTAssertEqual(model.detailTabRequest, .automatic(.log))
         model.consumeDetailTabRequest(.automatic(.log))
         XCTAssertNil(model.detailTabRequest)
@@ -183,7 +183,7 @@ final class DetailIntegrationVerifyTests: XCTestCase {
         fileID: Int64,
         expectedAction: String
     ) {
-        guard case .loaded(let loadedFileID, let entries) = state else {
+        guard case let .loaded(loadedFileID, entries) = state else {
             return XCTFail("expected loaded change log")
         }
 
@@ -229,7 +229,7 @@ final class DetailIntegrationVerifyTests: XCTestCase {
 
 @MainActor
 private func waitForDetailIntegrationNoteSave(_ model: DetailNoteModel) async {
-    for _ in 0..<200 {
+    for _ in 0 ..< 200 {
         if model.state.saveStatus == .saved {
             return
         }

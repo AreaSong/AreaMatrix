@@ -83,7 +83,7 @@ struct ICloudConflictMinimalSheet: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-        case .ready(let validation, let warnings):
+        case let .ready(validation, warnings):
             VStack(alignment: .leading, spacing: 5) {
                 statusLabel("Repository path validated", systemImage: "checkmark.circle", color: .green)
                 metadataRow("Repository", validation.repoPath)
@@ -91,7 +91,7 @@ struct ICloudConflictMinimalSheet: View {
                     statusLabel(warning, systemImage: "icloud", color: .orange)
                 }
             }
-        case .blocked(let validation, let reasons):
+        case let .blocked(validation, reasons):
             VStack(alignment: .leading, spacing: 6) {
                 statusLabel("Repository path blocks Apply", systemImage: "exclamationmark.triangle", color: .orange)
                 metadataRow("Repository", validation.repoPath)
@@ -104,7 +104,7 @@ struct ICloudConflictMinimalSheet: View {
                     Task { await model.validateRepositoryPath() }
                 }
             }
-        case .failed(let mapping):
+        case let .failed(mapping):
             mappedErrorStatus(mapping)
         }
     }
@@ -178,7 +178,11 @@ struct ICloudConflictMinimalSheet: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 if !isTrashAvailable {
-                    statusLabel("Single-version resolution requires system Trash", systemImage: "trash.slash", color: .orange)
+                    statusLabel(
+                        "Single-version resolution requires system Trash",
+                        systemImage: "trash.slash",
+                        color: .orange
+                    )
                 } else {
                     Toggle(
                         "我理解另一份冲突副本会被移到系统废纸篓",
@@ -189,11 +193,20 @@ struct ICloudConflictMinimalSheet: View {
             }
         } else {
             VStack(alignment: .leading, spacing: 5) {
-                Text("This action keeps both versions and requires Core support to clear conflict state and write change_log.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                Text(
+                    [
+                        "This action keeps both versions and requires Core support",
+                        "to clear conflict state and write change_log."
+                    ].joined(separator: " ")
+                )
+                .font(.caption)
+                .foregroundStyle(.secondary)
                 if !isTrashAvailable {
-                    statusLabel("Single-version resolution requires system Trash", systemImage: "trash.slash", color: .orange)
+                    statusLabel(
+                        "Single-version resolution requires system Trash",
+                        systemImage: "trash.slash",
+                        color: .orange
+                    )
                 }
             }
         }
@@ -201,7 +214,7 @@ struct ICloudConflictMinimalSheet: View {
 
     @ViewBuilder
     private var resolutionStatus: some View {
-        if case .applying(_, let strategy) = resolutionState {
+        if case let .applying(_, strategy) = resolutionState {
             statusLabel(strategy.runningTitle, systemImage: "arrow.triangle.2.circlepath", color: .secondary)
         } else if let failure = resolutionState.failure(fileID: resolutionFileID) {
             applyFailureView(failure)
@@ -238,9 +251,9 @@ struct ICloudConflictMinimalSheet: View {
             Button(primaryActionTitle, role: selectedStrategy.requiresSecondConfirmation ? .destructive : nil) {
                 submit()
             }
-                .keyboardShortcut(.defaultAction)
-                .buttonStyle(.borderedProminent)
-                .disabled(!canApplySelectedStrategy)
+            .keyboardShortcut(.defaultAction)
+            .buttonStyle(.borderedProminent)
+            .disabled(!canApplySelectedStrategy)
         }
     }
 
@@ -285,9 +298,9 @@ private extension ICloudConflictResolutionState {
     var fileID: Int64? {
         switch self {
         case .idle:
-            return nil
-        case .applying(let fileID, _), .failed(let fileID, _, _):
-            return fileID
+            nil
+        case let .applying(fileID, _), let .failed(fileID, _, _):
+            fileID
         }
     }
 }

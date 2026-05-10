@@ -12,83 +12,115 @@ extension ImportFolderPreviewModel {
         let total = importableRows.count
         let initialPreviewErrorCount = failedCount
         let storageMode = selectedStorageMode
-        var completed = 0
-        var failed = 0
-        var succeededEntries: [FileEntrySnapshot] = []
-        var lastImportedPath = ""
-        var didStopAfterCurrentFile = false
-        var fatalRetryContext: ImportProgressRetryContext?
         clearLastFailureMapping()
-
-        for index in rows.indices where readyRowIDs.contains(rows[index].id) {
-            let cycle = await runFolderImportCycle(
-                at: index,
+        let state = await importReadyFolderRows(
+            input: ImportFolderImportRunInput(
+                readyRowIDs: readyRowIDs,
                 request: request,
                 storageMode: storageMode,
-                completed: completed,
-                failed: failed,
                 total: total
-            )
-            completed = cycle.completed
-            failed = cycle.failed
-            lastImportedPath = cycle.lastImportedPath ?? lastImportedPath
-            if let entry = cycle.entry {
-                succeededEntries.append(entry)
-            }
-            reportProgress(cycle.progress.withItems(progressItems()))
-            if cycle.stoppedForQueue {
-                fatalRetryContext = retryContext(for: rows[index], request: request, storageMode: storageMode)
-                break
-            }
-            if controlState?.isStopAfterCurrentFileRequested == true {
-                controlState?.markStoppedAfterCurrentFile()
-                didStopAfterCurrentFile = true
-                break
-            }
-        }
+            ),
+            controlState: controlState,
+            reportProgress: reportProgress
+        )
 
         return ImportBatchImportResult(
-            succeededEntries: succeededEntries,
-            failedCount: failed,
+            succeededEntries: state.succeededEntries,
+            failedCount: state.failed,
             previewErrorCount: initialPreviewErrorCount,
             total: total,
-            lastImportedPath: lastImportedPath,
+            lastImportedPath: state.lastImportedPath,
             pendingDuplicateCount: 0,
             skippedDuplicateCount: skippedDuplicateCount,
             pendingICloudCount: pendingICloudCount,
-            didStopAfterCurrentFile: didStopAfterCurrentFile,
-            fatalRetryContext: fatalRetryContext
+            didStopAfterCurrentFile: state.didStopAfterCurrentFile,
+            fatalRetryContext: state.fatalRetryContext
         )
     }
 
-    func runFolderImportCycle(
-        at rowIndex: Int,
+    private func importReadyFolderRows(
+        input: ImportFolderImportRunInput,
+        controlState: ImportProgressControlState?,
+        reportProgress: @escaping @MainActor (ImportBatchProgressSnapshot) -> Void
+    ) async -> ImportFolderImportRunState {
+        var state = ImportFolderImportRunState()
+        for index in rows.indices where input.readyRowIDs.contains(rows[index].id) {
+            let cycle = await runFolderImportCycle(
+                input: ImportFolderImportCycleInput(
+                    rowIndex: index,
+                    request: input.request,
+                    storageMode: input.storageMode,
+                    completed: state.completed,
+                    failed: state.failed,
+                    total: input.total
+                )
+            )
+            updateFolderImportRunState(
+                &state,
+                cycle: cycle,
+                rowIndex: index,
+                request: input.request,
+                storageMode: input.storageMode
+            )
+            reportProgress(cycle.progress.withItems(progressItems()))
+            if shouldStopFolderImportRun(&state, controlState: controlState) {
+                break
+            }
+        }
+        return state
+    }
+
+    private func updateFolderImportRunState(
+        _ state: inout ImportFolderImportRunState,
+        cycle: ImportBatchCopyCycleResult,
+        rowIndex: Int,
         request: ImportEntryRequest,
-        storageMode: ImportSingleFileStorageMode,
-        completed: Int,
-        failed: Int,
-        total: Int
-    ) async -> ImportBatchCopyCycleResult {
+        storageMode: ImportSingleFileStorageMode
+    ) {
+        state.completed = cycle.completed
+        state.failed = cycle.failed
+        state.lastImportedPath = cycle.lastImportedPath ?? state.lastImportedPath
+        if let entry = cycle.entry {
+            state.succeededEntries.append(entry)
+        }
+        if cycle.stoppedForQueue {
+            state.fatalRetryContext = retryContext(for: rows[rowIndex], request: request, storageMode: storageMode)
+        }
+    }
+
+    private func shouldStopFolderImportRun(
+        _ state: inout ImportFolderImportRunState,
+        controlState: ImportProgressControlState?
+    ) -> Bool {
+        if state.fatalRetryContext != nil { return true }
+        guard controlState?.isStopAfterCurrentFileRequested == true else { return false }
+        controlState?.markStoppedAfterCurrentFile()
+        state.didStopAfterCurrentFile = true
+        return true
+    }
+
+    func runFolderImportCycle(input: ImportFolderImportCycleInput) async -> ImportBatchCopyCycleResult {
+        let rowIndex = input.rowIndex
         let row = rows[rowIndex]
         let currentPath = targetRelativePath(for: row)
-        updateRowStatus(at: rowIndex, status: .importing(storageMode))
+        updateRowStatus(at: rowIndex, status: .importing(input.storageMode))
 
         do {
-            let entry = try await importer.importBatchFile(
-                repoPath: request.repoPath,
+            let entry = try await importer.importBatchFile(request: CoreBatchImportRequest(
+                repoPath: input.request.repoPath,
                 sourceURL: row.fileURL,
-                storageMode: storageMode,
+                storageMode: input.storageMode,
                 destination: modelDestination,
-                suggestedCategory: suggestedCategory(for: row, request: request),
+                suggestedCategory: suggestedCategory(for: row, request: input.request),
                 overrideFilename: row.resolvedIncomingName,
                 duplicateStrategy: duplicateStrategy(for: row)
-            )
-            updateRowStatus(at: rowIndex, status: .imported(storageMode))
+            ))
+            updateRowStatus(at: rowIndex, status: .imported(input.storageMode))
             return .success(
                 entry: entry,
-                completed: completed + 1,
-                failed: failed,
-                total: total,
+                completed: input.completed + 1,
+                failed: input.failed,
+                total: input.total,
                 currentPath: currentPath
             )
         } catch {
@@ -96,9 +128,9 @@ extension ImportFolderPreviewModel {
             recordLastFailureMapping(mapping)
             updateRowStatus(at: rowIndex, status: .error(mapping.userMessage))
             return .failure(
-                completed: completed,
-                failed: failed + 1,
-                total: total,
+                completed: input.completed,
+                failed: input.failed + 1,
+                total: input.total,
                 currentPath: currentPath,
                 stoppedForQueue: mapping.recoverability == .fatal
             )
@@ -127,14 +159,14 @@ extension ImportFolderPreviewModel {
         return await errorMapper.mapCoreError(CoreError.Internal(message: error.localizedDescription))
     }
 
-    private func suggestedCategory(for row: ImportFolderPreviewRow, request: ImportEntryRequest) -> String? {
+    private func suggestedCategory(for row: ImportFolderPreviewRow, request _: ImportEntryRequest) -> String? {
         switch modelDestination {
         case .autoClassify:
-            return row.predictedCategory
-        case .category(let slug):
-            return slug
+            row.predictedCategory
+        case let .category(slug):
+            slug
         case .repositoryRoot:
-            return nil
+            nil
         }
     }
 
@@ -165,11 +197,11 @@ extension ImportFolderPreviewModel {
     private func retryCategoryValue(for row: ImportFolderPreviewRow) -> String? {
         switch modelDestination {
         case .autoClassify:
-            return row.predictedCategory
-        case .category(let slug):
-            return slug
+            row.predictedCategory
+        case let .category(slug):
+            slug
         case .repositoryRoot:
-            return nil
+            nil
         }
     }
 
@@ -203,20 +235,20 @@ extension ImportFolderPreviewModel {
 
     private func progressPhase(for status: ImportFolderPreviewRowStatus) -> ImportBatchProgressSnapshot.Phase {
         switch status {
-        case .importing(let mode):
-            return mode.folderProgressPhase
+        case let .importing(mode):
+            mode.folderProgressPhase
         case .imported:
-            return .done
+            .done
         case .error:
-            return .failed
+            .failed
         case .loading, .ready, .duplicate, .nameConflict, .iCloudPlaceholder, .blocked,
              .skippedDuplicate, .skippedICloud:
-            return .pending
+            .pending
         }
     }
 
     private func progressErrorMessage(for status: ImportFolderPreviewRowStatus) -> String? {
-        guard case .error(let message) = status else { return nil }
+        guard case let .error(message) = status else { return nil }
         return message
     }
 }
@@ -225,11 +257,11 @@ private extension ImportSingleFileStorageMode {
     var folderProgressPhase: ImportBatchProgressSnapshot.Phase {
         switch self {
         case .copy:
-            return .copying
+            .copying
         case .move:
-            return .moving
+            .moving
         case .indexOnly:
-            return .writingIndex
+            .writingIndex
         }
     }
 }

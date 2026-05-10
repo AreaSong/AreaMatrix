@@ -113,11 +113,11 @@ struct ImportProgressView: View {
             Label("Collecting diagnostics...", systemImage: "doc.badge.gearshape")
                 .font(.caption)
                 .foregroundStyle(.secondary)
-        case .collected(let snapshot):
+        case let .collected(snapshot):
             Label("Diagnostics collected: \(snapshot.snapshotPath)", systemImage: "doc.badge.gearshape")
                 .font(.caption)
                 .foregroundStyle(.secondary)
-        case .failed(let mapping):
+        case let .failed(mapping):
             Label("Diagnostics failed: \(mapping.userMessage)", systemImage: "exclamationmark.triangle")
                 .font(.caption)
                 .foregroundStyle(.red)
@@ -127,11 +127,11 @@ struct ImportProgressView: View {
     private var stopButtonTitle: String {
         switch state.stopState {
         case .idle:
-            return "Stop after current file"
+            "Stop after current file"
         case .stopping:
-            return "Stopping..."
+            "Stopping..."
         case .stopped:
-            return "Stopped"
+            "Stopped"
         }
     }
 
@@ -209,13 +209,13 @@ private struct ImportingListRow: View {
     private var phaseColor: Color {
         switch item.phase {
         case .failed:
-            return .red
+            .red
         case .done:
-            return .green
+            .green
         case .moving:
-            return .orange
+            .orange
         case .copying, .pending, .hashing, .classifying, .writingIndex:
-            return .secondary
+            .secondary
         }
     }
 }

@@ -1,6 +1,6 @@
 import Foundation
 
-enum MainExternalSyncEventKind: String, Equatable, Sendable {
+enum MainExternalSyncEventKind: String, Equatable {
     case created
     case renamed
     case removed
@@ -8,16 +8,16 @@ enum MainExternalSyncEventKind: String, Equatable, Sendable {
     var displayName: String {
         switch self {
         case .created:
-            return "created"
+            "created"
         case .renamed:
-            return "renamed"
+            "renamed"
         case .removed:
-            return "removed"
+            "removed"
         }
     }
 }
 
-struct MainExternalCreatedFileEvent: Equatable, Identifiable, Sendable {
+struct MainExternalCreatedFileEvent: Equatable, Identifiable {
     let kind: MainExternalSyncEventKind
     let relativePath: String
     let fsEventID: Int64
@@ -40,7 +40,7 @@ struct MainExternalCreatedFileEvent: Equatable, Identifiable, Sendable {
     }
 }
 
-struct MainExternalCreatedFileSignal: Equatable, Sendable {
+struct MainExternalCreatedFileSignal: Equatable {
     let kind: MainExternalSyncEventKind
     let repoPath: String
     let relativePath: String
@@ -72,7 +72,7 @@ struct MainExternalCreatedFileSignal: Equatable, Sendable {
     }
 }
 
-struct MainPendingExternalCreatedFileEvent: Equatable, Sendable {
+struct MainPendingExternalCreatedFileEvent: Equatable {
     let repoPath: String
     let event: MainExternalCreatedFileEvent
 
@@ -88,7 +88,7 @@ struct MainPendingExternalCreatedFileEvent: Equatable, Sendable {
     }
 }
 
-enum MainDetailExternalCreateSyncState: Equatable, Sendable {
+enum MainDetailExternalCreateSyncState: Equatable {
     case idle
     case syncing(event: MainExternalCreatedFileEvent)
     case synced(event: MainExternalCreatedFileEvent, fileID: Int64?, SyncResultSnapshot)

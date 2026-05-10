@@ -1,5 +1,5 @@
-import XCTest
 @testable import AreaMatrix
+import XCTest
 
 final class DetailLogExternalRenamedPageFeatureTests: XCTestCase {
     @MainActor
@@ -16,13 +16,13 @@ final class DetailLogExternalRenamedPageFeatureTests: XCTestCase {
             kind: .renamed,
             repoPath: "/tmp/repo",
             relativePath: "docs/renamed.pdf",
-            fsEventID: 9_100
+            fsEventID: 9100
         )
         model.consumePendingExternalCreatedFileSignals()
 
         XCTAssertEqual(
             model.externalCreatedEvent(for: opening),
-            MainExternalCreatedFileEvent(kind: .renamed, relativePath: "docs/renamed.pdf", fsEventID: 9_100)
+            MainExternalCreatedFileEvent(kind: .renamed, relativePath: "docs/renamed.pdf", fsEventID: 9100)
         )
         let handledEvent = try XCTUnwrap(model.externalCreatedEvent(for: opening))
         model.finishExternalCreatedFileEvent(handledEvent)
@@ -36,24 +36,24 @@ final class DetailLogExternalRenamedPageFeatureTests: XCTestCase {
             repoPath: "/tmp/repo",
             absolutePath: "/tmp/repo/docs/renamed.pdf",
             flags: renamedFlags,
-            eventID: 9_101
+            eventID: 9101
         )
 
         XCTAssertEqual(signal?.kind, .renamed)
         XCTAssertEqual(signal?.repoPath, "/tmp/repo")
         XCTAssertEqual(signal?.relativePath, "docs/renamed.pdf")
-        XCTAssertEqual(signal?.fsEventID, 9_101)
+        XCTAssertEqual(signal?.fsEventID, 9101)
         XCTAssertNil(MainExternalCreatedFileWatcher.signal(
             repoPath: "/tmp/repo",
             absolutePath: "/tmp/repo/.areamatrix/index.db",
             flags: renamedFlags,
-            eventID: 9_102
+            eventID: 9102
         ))
         XCTAssertNil(MainExternalCreatedFileWatcher.signal(
             repoPath: "/tmp/repo",
             absolutePath: "/tmp/repo/docs",
             flags: renamedFlags | FSEventStreamEventFlags(kFSEventStreamEventFlagItemIsDir),
-            eventID: 9_103
+            eventID: 9103
         ))
     }
 
@@ -64,7 +64,7 @@ final class DetailLogExternalRenamedPageFeatureTests: XCTestCase {
         let event = try XCTUnwrap(MainExternalCreatedFileEvent(
             kind: .renamed,
             relativePath: renamed.path,
-            fsEventID: 9_001
+            fsEventID: 9001
         ))
         let entry = ChangeLogEntrySnapshot.detailLogFixture(fileID: renamed.id, action: "renamed")
         let lister = DetailLogRecordingLister(results: [.success([entry])])
@@ -86,7 +86,7 @@ final class DetailLogExternalRenamedPageFeatureTests: XCTestCase {
         let logRequests = await lister.recordedRequests()
 
         XCTAssertEqual(syncRequests, [
-            DetailLogExternalRenamedRequest(repoPath: "/tmp/repo", relativePath: renamed.path, fsEventID: 9_001),
+            DetailLogExternalRenamedRequest(repoPath: "/tmp/repo", relativePath: renamed.path, fsEventID: 9001)
         ])
         XCTAssertEqual(listRequests, [DetailLogExternalRenamedListRequest(
             repoPath: "/tmp/repo",
@@ -96,7 +96,10 @@ final class DetailLogExternalRenamedPageFeatureTests: XCTestCase {
         XCTAssertEqual(model.selectedFileDetail, renamed)
         XCTAssertEqual(model.files, [renamed])
         XCTAssertEqual(model.statusBanner, .renamedPreservedSelection(fileID: renamed.id))
-        XCTAssertEqual(model.detailExternalCreateSyncState, .synced(event: event, fileID: renamed.id, .detailRenamedFixture()))
+        XCTAssertEqual(
+            model.detailExternalCreateSyncState,
+            .synced(event: event, fileID: renamed.id, .detailRenamedFixture())
+        )
         XCTAssertEqual(logRequests, [DetailLogRequest(repoPath: "/tmp/repo", filter: .detailLog(fileID: renamed.id))])
         XCTAssertEqual(model.detailLogState, .loaded(fileID: renamed.id, entries: [entry]))
     }
@@ -107,7 +110,7 @@ final class DetailLogExternalRenamedPageFeatureTests: XCTestCase {
         let event = try XCTUnwrap(MainExternalCreatedFileEvent(
             kind: .renamed,
             relativePath: "docs/renamed.pdf",
-            fsEventID: 9_002
+            fsEventID: 9002
         ))
         let mapping = CoreErrorMappingSnapshot.detailLogExternalRenamed(kind: .conflict)
         let mapper = DetailMetaErrorMapper(mapping: mapping)
@@ -141,7 +144,7 @@ final class DetailLogExternalRenamedPageFeatureTests: XCTestCase {
         let event = try XCTUnwrap(MainExternalCreatedFileEvent(
             kind: .renamed,
             relativePath: renamed.path,
-            fsEventID: 9_003
+            fsEventID: 9003
         ))
         let mapping = CoreErrorMappingSnapshot.detailLogExternalRenamed(kind: .internal)
         let mapper = DetailMetaErrorMapper(mapping: mapping)
@@ -162,7 +165,7 @@ final class DetailLogExternalRenamedPageFeatureTests: XCTestCase {
 
         XCTAssertEqual(model.detailExternalCreateSyncState, .failed(event: event, mapping))
         XCTAssertEqual(logRequests, [])
-        guard case .Internal(let message) = mappedErrors.first else {
+        guard case let .Internal(message) = mappedErrors.first else {
             return XCTFail("expected internal error for partial sync result")
         }
         XCTAssertTrue(message.contains("renamed event 9003 returned sync errors"))
@@ -192,7 +195,7 @@ final class DetailLogExternalRenamedPageFeatureTests: XCTestCase {
         _ = try await bridge.syncExternalCreated(
             repoPath: repoURL.path,
             relativePath: "docs/original.pdf",
-            fsEventID: 9_010
+            fsEventID: 9010
         )
         try FileManager.default.moveItem(at: originalURL, to: renamedURL)
         let bytesAfterFinderRename = try Data(contentsOf: renamedURL)
@@ -200,10 +203,10 @@ final class DetailLogExternalRenamedPageFeatureTests: XCTestCase {
         let result = try await bridge.syncExternalRenamed(
             repoPath: repoURL.path,
             relativePath: "docs/renamed.pdf",
-            fsEventID: 9_011
+            fsEventID: 9011
         )
         let files = try await bridge.listFiles(repoPath: repoURL.path, filter: .currentCategory(nil))
-        let detail = try await bridge.getFile(repoPath: repoURL.path, fileID: try XCTUnwrap(files.first?.id))
+        let detail = try await bridge.getFile(repoPath: repoURL.path, fileID: XCTUnwrap(files.first?.id))
         let changes = try await bridge.listChanges(repoPath: repoURL.path, filter: .detailLog(fileID: detail.id))
         let cursor = try await bridge.getFSEventCursor(repoPath: repoURL.path)
 
@@ -214,7 +217,7 @@ final class DetailLogExternalRenamedPageFeatureTests: XCTestCase {
         XCTAssertEqual(detail.currentName, "renamed.pdf")
         XCTAssertEqual(Array(changes.map(\.action).prefix(1)), ["renamed"])
         XCTAssertTrue(changes.first?.detailSummary.contains("to_path: .../renamed.pdf") == true)
-        XCTAssertEqual(cursor, 9_011)
+        XCTAssertEqual(cursor, 9011)
         XCTAssertEqual(try Data(contentsOf: renamedURL), bytesAfterFinderRename)
     }
 }
@@ -238,11 +241,13 @@ private actor DetailLogExternalRenamedSyncer: CoreExternalChangesSyncing {
         self.result = result
     }
 
-    func syncExternalCreated(repoPath: String, relativePath: String, fsEventID: Int64) async throws -> SyncResultSnapshot {
+    func syncExternalCreated(repoPath _: String, relativePath _: String,
+                             fsEventID _: Int64) async throws -> SyncResultSnapshot {
         throw CoreError.Internal(message: "external created is outside S1-13 C1-18")
     }
 
-    func syncExternalRenamed(repoPath: String, relativePath: String, fsEventID: Int64) async throws -> SyncResultSnapshot {
+    func syncExternalRenamed(repoPath: String, relativePath: String,
+                             fsEventID: Int64) async throws -> SyncResultSnapshot {
         renamedRequests.append(DetailLogExternalRenamedRequest(
             repoPath: repoPath,
             relativePath: relativePath,
@@ -251,14 +256,20 @@ private actor DetailLogExternalRenamedSyncer: CoreExternalChangesSyncing {
         return try result.get()
     }
 
-    func syncExternalRemoved(repoPath: String, relativePath: String, fsEventID: Int64) async throws -> SyncResultSnapshot {
+    func syncExternalRemoved(repoPath _: String, relativePath _: String,
+                             fsEventID _: Int64) async throws -> SyncResultSnapshot {
         throw CoreError.Internal(message: "external removed is outside S1-13 C1-18")
     }
 
-    func getFSEventCursor(repoPath: String) async throws -> Int64? { nil }
-    func setFSEventCursor(repoPath: String, lastEventID: Int64) async throws {}
+    func getFSEventCursor(repoPath _: String) async throws -> Int64? {
+        nil
+    }
 
-    func recordedRenamedRequests() -> [DetailLogExternalRenamedRequest] { renamedRequests }
+    func setFSEventCursor(repoPath _: String, lastEventID _: Int64) async throws {}
+
+    func recordedRenamedRequests() -> [DetailLogExternalRenamedRequest] {
+        renamedRequests
+    }
 }
 
 private actor DetailLogExternalRenamedLister: CoreFileListing {
@@ -274,7 +285,9 @@ private actor DetailLogExternalRenamedLister: CoreFileListing {
         return files
     }
 
-    func recordedRequests() -> [DetailLogExternalRenamedListRequest] { requests }
+    func recordedRequests() -> [DetailLogExternalRenamedListRequest] {
+        requests
+    }
 }
 
 private extension SyncResultSnapshot {

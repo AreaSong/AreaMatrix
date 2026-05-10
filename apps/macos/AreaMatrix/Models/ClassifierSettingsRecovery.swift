@@ -1,36 +1,36 @@
 import Foundation
 
-struct ClassifierSettingsLoadError: Equatable, Sendable {
+struct ClassifierSettingsLoadError: Equatable {
     var message: String
     var recovery: String
 }
 
-struct ClassifierSettingsSaveError: Equatable, Sendable {
+struct ClassifierSettingsSaveError: Equatable {
     var message: String
     var recovery: String
 }
 
-struct ClassifierSettingsPreviewError: Equatable, Sendable {
+struct ClassifierSettingsPreviewError: Equatable {
     var message: String
     var recovery: String
 }
 
-struct ClassifierSettingsFileActionError: Equatable, Sendable {
+struct ClassifierSettingsFileActionError: Equatable {
     var message: String
     var recovery: String
 }
 
-struct ClassifierSettingsValidationError: Equatable, Sendable {
+struct ClassifierSettingsValidationError: Equatable {
     var message: String
     var recovery: String
 }
 
-struct ClassifierSettingsPendingSave: Equatable, Sendable {
+struct ClassifierSettingsPendingSave: Equatable {
     var config: RepoConfigSnapshot
     var error: ClassifierSettingsSaveError
 }
 
-struct ClassifierSettingsDraft: Equatable, Sendable {
+struct ClassifierSettingsDraft: Equatable {
     var enableExtensionRules: Bool
     var enableKeywordRules: Bool
     var fallbackToInbox: Bool
@@ -78,7 +78,8 @@ struct FileSystemClassifierRulesManager: ClassifierRulesManaging {
         let classifierURL = try classifierURL(repoPath: repoPath)
         var isDirectory: ObjCBool = false
         guard fileManager.fileExists(atPath: metadataURL.path, isDirectory: &isDirectory),
-              isDirectory.boolValue else {
+              isDirectory.boolValue
+        else {
             throw ClassifierRulesFileError.metadataDirectoryMissing
         }
         guard !fileManager.fileExists(atPath: classifierURL.path) else {
@@ -134,7 +135,7 @@ struct FileSystemClassifierRulesManager: ClassifierRulesManaging {
         return metadataURL.appendingPathComponent("classifier.last-valid.yaml", isDirectory: false)
     }
 
-    // Kept aligned with the Stage 1 Core default until Core exposes a default-classifier writer.
+    /// Kept aligned with the Stage 1 Core default until Core exposes a default-classifier writer.
     private static let defaultClassifierYAML = """
     version: 1
     default: inbox
@@ -167,7 +168,7 @@ struct FileSystemClassifierRulesManager: ClassifierRulesManaging {
     """
 }
 
-enum ClassifierRulesFileError: Error, Equatable, LocalizedError, Sendable {
+enum ClassifierRulesFileError: Error, Equatable, LocalizedError {
     case invalidRepositoryPath
     case metadataDirectoryMissing
     case classifierAlreadyExists
@@ -177,15 +178,15 @@ enum ClassifierRulesFileError: Error, Equatable, LocalizedError, Sendable {
     var errorDescription: String? {
         switch self {
         case .invalidRepositoryPath:
-            return "repository path is empty."
+            "repository path is empty."
         case .metadataDirectoryMissing:
-            return ".areamatrix metadata directory is missing."
+            ".areamatrix metadata directory is missing."
         case .classifierAlreadyExists:
-            return "classifier.yaml already exists."
+            "classifier.yaml already exists."
         case .classifierMissing:
-            return "classifier.yaml is missing."
+            "classifier.yaml is missing."
         case .lastValidBackupMissing:
-            return "last valid classifier backup is missing."
+            "last valid classifier backup is missing."
         }
     }
 }
@@ -216,7 +217,7 @@ extension RepoConfigSnapshot {
     }
 }
 
-enum ClassifierSettingsValidationErrorFormatter {
+enum ClassifierValidationErrorFormatter {
     static func message(coreReason: String, mappedMessage: String) -> String {
         let field = firstField(in: coreReason) ?? firstField(in: mappedMessage)
         let line = firstLine(in: coreReason) ?? firstLine(in: mappedMessage)
@@ -242,9 +243,10 @@ enum ClassifierSettingsValidationErrorFormatter {
             return nil
         }
 
-        let range = NSRange(text.startIndex..<text.endIndex, in: text)
+        let range = NSRange(text.startIndex ..< text.endIndex, in: text)
         guard let match = regex.firstMatch(in: text, range: range),
-              let textRange = Range(match.range(at: group), in: text) else {
+              let textRange = Range(match.range(at: group), in: text)
+        else {
             return nil
         }
 

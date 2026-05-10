@@ -1,14 +1,14 @@
 import Combine
 import Foundation
 
-enum ICloudConflictListState: Equatable, Sendable {
+enum ICloudConflictListState: Equatable {
     case notLoaded
     case loading
     case loaded([ICloudConflictPairSnapshot])
     case failed(CoreErrorMappingSnapshot)
 
     var conflicts: [ICloudConflictPairSnapshot] {
-        guard case .loaded(let conflicts) = self else { return [] }
+        guard case let .loaded(conflicts) = self else { return [] }
         return conflicts
     }
 
@@ -18,17 +18,19 @@ enum ICloudConflictListState: Equatable, Sendable {
     }
 }
 
-enum ICloudConflictListRevealState: Equatable, Sendable {
+enum ICloudConflictListRevealState: Equatable {
     case idle
     case revealed(String)
     case failed(String)
 }
 
-struct ICloudConflictMinimalRouteContext: Equatable, Identifiable, Sendable {
+struct ICloudConflictMinimalRouteContext: Equatable, Identifiable {
     var repoPath: String
     var conflict: ICloudConflictPairSnapshot
 
-    var id: String { conflict.id }
+    var id: String {
+        conflict.id
+    }
 
     var originalVersion: ICloudConflictVersionSnapshot {
         ICloudConflictVersionSnapshot(
@@ -88,8 +90,13 @@ final class ICloudConflictListModel: ObservableObject {
         self.fileRevealer = fileRevealer
     }
 
-    var conflicts: [ICloudConflictPairSnapshot] { state.conflicts }
-    var isLoading: Bool { state.isLoading }
+    var conflicts: [ICloudConflictPairSnapshot] {
+        state.conflicts
+    }
+
+    var isLoading: Bool {
+        state.isLoading
+    }
 
     func load() async {
         loadGeneration += 1
@@ -103,7 +110,7 @@ final class ICloudConflictListModel: ObservableObject {
             state = .loaded(conflicts)
         } catch {
             guard generation == loadGeneration else { return }
-            state = .failed(await mapError(error))
+            state = await .failed(mapError(error))
         }
     }
 

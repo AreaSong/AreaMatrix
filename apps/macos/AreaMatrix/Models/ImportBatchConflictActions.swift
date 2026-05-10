@@ -8,7 +8,7 @@ extension ImportBatchCopyImportModel {
     ) {
         guard canSelectDuplicateStrategy(strategy) else { return }
         guard let row = rows.first(where: { $0.id == rowID }) else { return }
-        guard case .duplicate(let existingPath, _, let isReplaceConfirmed) = row.status else { return }
+        guard case let .duplicate(existingPath, _, isReplaceConfirmed) = row.status else { return }
         setStatus(.duplicate(
             existingPath: existingPath,
             strategy: strategy,
@@ -22,7 +22,7 @@ extension ImportBatchCopyImportModel {
     ) {
         guard canSelectNameConflictResolution(resolution) else { return }
         guard let row = rows.first(where: { $0.id == rowID }) else { return }
-        guard case .nameConflict(let existingPath, _) = row.status else { return }
+        guard case let .nameConflict(existingPath, _) = row.status else { return }
         setStatus(.nameConflict(existingPath: existingPath, resolution: resolution), for: rowID)
     }
 
@@ -31,13 +31,12 @@ extension ImportBatchCopyImportModel {
     }
 
     func beginReplaceConfirmation(for rowID: ImportBatchCopyImportRow.ID)
-        -> ImportSingleFileReplaceConfirmationContext?
-    {
+        -> SingleFileReplaceConfirmationContext? {
         clearReplaceConfirmationRecovery()
         guard let row = rows.first(where: { $0.id == rowID }) else { return nil }
         guard request?.allowReplaceDuringImport == true, request?.isTrashAvailable == true else { return nil }
         guard let existingPath = row.existingConflictPath else { return nil }
-        return ImportSingleFileReplaceConfirmationContext(
+        return SingleFileReplaceConfirmationContext(
             existingPath: existingPath,
             incomingPath: row.sourceURL.path,
             incomingSizeBytes: row.sizeBytes,
@@ -48,7 +47,7 @@ extension ImportBatchCopyImportModel {
 
     func applyReplaceConfirmation(
         for rowID: ImportBatchCopyImportRow.ID,
-        decision: ImportSingleFileReplaceConfirmationDecision
+        decision: SingleFileReplaceConfirmationDecision
     ) -> Bool {
         guard decision.understandsReplace else {
             recordReplaceConfirmationFailure("Replace 需要先勾选二次确认")
@@ -61,13 +60,13 @@ extension ImportBatchCopyImportModel {
         guard let row = rows.first(where: { $0.id == rowID }) else { return false }
 
         switch row.status {
-        case .duplicate(let existingPath, .replace, _):
+        case let .duplicate(existingPath, .replace, _):
             setStatus(.duplicate(
                 existingPath: existingPath,
                 strategy: .replace,
                 isReplaceConfirmed: true
             ), for: rowID)
-        case .nameConflict(let existingPath, .replace):
+        case let .nameConflict(existingPath, .replace):
             setStatus(.nameConflict(
                 existingPath: existingPath,
                 resolution: .replace(isConfirmed: true)
@@ -83,7 +82,7 @@ extension ImportBatchCopyImportModel {
 
     func downloadICloudPlaceholderAndRetry(rowID: ImportBatchCopyImportRow.ID) async -> Bool {
         guard let row = rows.first(where: { $0.id == rowID }) else { return false }
-        guard case .iCloudPlaceholder(let path, _) = row.status else { return false }
+        guard case let .iCloudPlaceholder(path, _) = row.status else { return false }
         isICloudDownloading = true
         defer { isICloudDownloading = false }
 
@@ -112,7 +111,7 @@ extension ImportBatchCopyImportModel {
 
     func markICloudPlaceholderPending(rowID: ImportBatchCopyImportRow.ID) {
         guard let row = rows.first(where: { $0.id == rowID }) else { return }
-        guard case .iCloudPlaceholder(let path, _) = row.status else { return }
+        guard case let .iCloudPlaceholder(path, _) = row.status else { return }
         setStatus(.skippedICloud(path: path), for: rowID)
     }
 
@@ -126,11 +125,11 @@ extension ImportBatchCopyImportModel {
 
     private func currentReplaceConfirmationContext(
         for rowID: ImportBatchCopyImportRow.ID
-    ) -> ImportSingleFileReplaceConfirmationContext? {
+    ) -> SingleFileReplaceConfirmationContext? {
         guard let row = rows.first(where: { $0.id == rowID }) else { return nil }
         guard request?.allowReplaceDuringImport == true, request?.isTrashAvailable == true else { return nil }
         guard let existingPath = row.existingConflictPath else { return nil }
-        return ImportSingleFileReplaceConfirmationContext(
+        return SingleFileReplaceConfirmationContext(
             existingPath: existingPath,
             incomingPath: row.sourceURL.path,
             incomingSizeBytes: row.sizeBytes,
@@ -138,7 +137,6 @@ extension ImportBatchCopyImportModel {
             isTrashAvailable: true
         )
     }
-
 }
 
 struct ImportBatchCopyCycleResult {
@@ -216,4 +214,62 @@ struct ImportBatchCopyCycleResult {
             stoppedForQueue: true
         )
     }
+}
+
+struct ImportBatchCopyCycleInput {
+    var rowIndex: Int
+    var request: ImportEntryRequest
+    var selectedDestination: ImportBatchDestinationOption
+    var completed: Int
+    var failed: Int
+    var total: Int
+}
+
+struct ImportFolderImportCycleInput {
+    var rowIndex: Int
+    var request: ImportEntryRequest
+    var storageMode: ImportSingleFileStorageMode
+    var completed: Int
+    var failed: Int
+    var total: Int
+}
+
+struct ImportBatchRetryContinuation {
+    var request: ImportEntryRequest
+    var retryEntry: FileEntrySnapshot
+    var retryRowIndex: Int?
+    var retryPath: String
+}
+
+struct ImportBatchCopyRunState {
+    var completed = 0
+    var failed = 0
+    var succeededEntries: [FileEntrySnapshot] = []
+    var lastImportedPath = ""
+    var stoppedForDuplicate = false
+    var didStopAfterCurrentFile = false
+    var fatalRetryContext: ImportProgressRetryContext?
+}
+
+struct ImportBatchCopyRunInput {
+    var readyRowIDs: Set<ImportBatchCopyImportRow.ID>
+    var request: ImportEntryRequest
+    var selectedDestination: ImportBatchDestinationOption
+    var total: Int
+}
+
+struct ImportFolderImportRunState {
+    var completed = 0
+    var failed = 0
+    var succeededEntries: [FileEntrySnapshot] = []
+    var lastImportedPath = ""
+    var didStopAfterCurrentFile = false
+    var fatalRetryContext: ImportProgressRetryContext?
+}
+
+struct ImportFolderImportRunInput {
+    var readyRowIDs: Set<ImportFolderPreviewRow.ID>
+    var request: ImportEntryRequest
+    var storageMode: ImportSingleFileStorageMode
+    var total: Int
 }

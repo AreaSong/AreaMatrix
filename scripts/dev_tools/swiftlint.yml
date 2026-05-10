@@ -1,0 +1,23 @@
+disabled_rules:
+  - trailing_comma
+
+excluded:
+  - AreaMatrix/Bridge/Generated
+  - AreaMatrix/Bridge/UniFFI
+
+line_length: 120
+file_length: 500
+function_body_length: 50
+type_body_length: 300
+type_name:
+  min_length: 3
+  max_length: 40
+identifier_name:
+  min_length: 3
+  excluded:
+    - db
+    - en
+    - fd
+    - id
+    - io
+    - ok

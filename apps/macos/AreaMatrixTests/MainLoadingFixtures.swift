@@ -1,5 +1,5 @@
-import Foundation
 @testable import AreaMatrix
+import Foundation
 
 extension RepositoryOpeningResult {
     static func mainLoadingFixture(repoPath: String, fileCount: Int64) -> RepositoryOpeningResult {
@@ -64,6 +64,21 @@ extension RepoConfigSnapshot {
             allowReplaceDuringImport: false
         )
     }
+
+    static func initializingFixture(repoPath: String) -> RepoConfigSnapshot {
+        RepoConfigSnapshot(
+            repoPath: repoPath,
+            defaultMode: "Copied",
+            overviewOutput: "GeneratedOnly",
+            aiEnabled: false,
+            locale: "zh-Hans",
+            iCloudWarn: true,
+            enableExtensionRules: true,
+            enableKeywordRules: true,
+            fallbackToInbox: true,
+            allowReplaceDuringImport: false
+        )
+    }
 }
 
 extension RepoPathValidationSnapshot {
@@ -83,6 +98,25 @@ extension RepoPathValidationSnapshot {
             isExternalVolume: false,
             recommendedMode: nil,
             issues: [.alreadyInitialized]
+        )
+    }
+
+    static func initializingAdoptExistingFixture(repoPath: String) -> RepoPathValidationSnapshot {
+        RepoPathValidationSnapshot(
+            repoPath: repoPath,
+            exists: true,
+            isDirectory: true,
+            isReadable: true,
+            isWritable: true,
+            isEmpty: false,
+            isInitialized: false,
+            isInsideAreaMatrix: false,
+            isICloudPath: false,
+            hasUnfinishedScanSession: false,
+            availableCapacityBytes: 1_073_741_824,
+            isExternalVolume: false,
+            recommendedMode: .adoptExisting,
+            issues: [.nonEmptyDirectory]
         )
     }
 }
@@ -122,6 +156,22 @@ extension ScanSessionSnapshot {
             errors: errors
         )
     }
+
+    static func adoptRunningFixture() -> ScanSessionSnapshot {
+        ScanSessionSnapshot(
+            id: 42,
+            kind: .adopt,
+            status: .running,
+            lastPath: "docs/plan.md",
+            inserted: 11,
+            updated: 2,
+            skipped: 1,
+            startedAt: 1_700_000_000,
+            updatedAt: 1_700_000_010,
+            finishedAt: nil,
+            errors: ["skipped unreadable file: private.tmp"]
+        )
+    }
 }
 
 extension CoreErrorMappingSnapshot {
@@ -132,6 +182,28 @@ extension CoreErrorMappingSnapshot {
             severity: .medium,
             suggestedAction: "资料库打开后可重试扫描状态读取。",
             recoverability: .retryable,
+            rawContext: rawContext
+        )
+    }
+
+    static func initializingPermissionDeniedFixture(rawContext: String) -> CoreErrorMappingSnapshot {
+        CoreErrorMappingSnapshot(
+            kind: .permissionDenied,
+            userMessage: "无访问权限",
+            severity: .high,
+            suggestedAction: "请在系统设置中授予权限，或选择其他资料库位置",
+            recoverability: .userActionRequired,
+            rawContext: rawContext
+        )
+    }
+
+    static func initializingDbFixture(rawContext: String) -> CoreErrorMappingSnapshot {
+        CoreErrorMappingSnapshot(
+            kind: .db,
+            userMessage: "数据库错误",
+            severity: .critical,
+            suggestedAction: "请检查资料库 metadata 后重试",
+            recoverability: .fatal,
             rawContext: rawContext
         )
     }

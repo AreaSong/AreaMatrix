@@ -1,5 +1,5 @@
-import XCTest
 @testable import AreaMatrix
+import XCTest
 
 final class ImportProgressCopyPageFeatureTests: XCTestCase {
     @MainActor
@@ -14,7 +14,7 @@ final class ImportProgressCopyPageFeatureTests: XCTestCase {
         model.route = .mainList(opening)
         model.updateImportEntryProgress(Self.runningProgress)
 
-        guard case .importProgress(let state) = model.route else {
+        guard case let .importProgress(state) = model.route else {
             return XCTFail("Expected S1-20 import progress route")
         }
 
@@ -36,7 +36,7 @@ final class ImportProgressCopyPageFeatureTests: XCTestCase {
         model.updateImportEntryProgress(Self.failedProgress)
         model.failImportEntry(progress: Self.failedProgress, mapping: mapping)
 
-        guard case .importResult(let result) = model.route else {
+        guard case let .importResult(result) = model.route else {
             return XCTFail("Expected S1-21 import result route")
         }
 
@@ -64,18 +64,14 @@ final class ImportProgressCopyPageFeatureTests: XCTestCase {
         model.route = .mainList(opening)
         model.beginImportEntryProgress(
             currentPath: "docs/copied.pdf",
-            sourcePath: context.sourcePath,
-            storageMode: .copy,
-            overrideCategory: context.overrideCategory,
-            overrideFilename: context.overrideFilename,
-            duplicateStrategy: context.duplicateStrategy.coreStrategy
+            retryContext: context
         )
         model.failImportEntry(
             progress: Self.copyFailedProgress,
             mapping: CoreErrorMappingSnapshot.s120FatalImportError(kind: .io)
         )
 
-        guard case .importProgress(let failedBeforeCheck) = model.route else {
+        guard case let .importProgress(failedBeforeCheck) = model.route else {
             return XCTFail("Expected failed copy import progress route")
         }
         XCTAssertFalse(failedBeforeCheck.canRetryCurrentItem)
@@ -84,7 +80,7 @@ final class ImportProgressCopyPageFeatureTests: XCTestCase {
         await model.checkImportProgressRecoveryIfNeeded()
         let recovererPaths = await recoverer.requestedRepoPaths()
 
-        guard case .importProgress(let checkedState) = model.route else {
+        guard case let .importProgress(checkedState) = model.route else {
             return XCTFail("Expected checked copy import progress route")
         }
         XCTAssertEqual(recovererPaths, ["/tmp/repo"])
@@ -104,7 +100,7 @@ final class ImportProgressCopyPageFeatureTests: XCTestCase {
         model.route = .mainList(opening)
         model.beginImportEntryProgress(currentPath: "docs/moved.pdf", storageMode: .move)
 
-        guard case .importProgress(let state) = model.route else {
+        guard case let .importProgress(state) = model.route else {
             return XCTFail("Expected S1-20 import progress route")
         }
 
@@ -115,7 +111,7 @@ final class ImportProgressCopyPageFeatureTests: XCTestCase {
                 targetPath: "docs/moved.pdf",
                 phase: .moving,
                 errorMessage: nil
-            ),
+            )
         ])
     }
 
@@ -139,18 +135,14 @@ final class ImportProgressCopyPageFeatureTests: XCTestCase {
         model.route = .mainList(opening)
         model.beginImportEntryProgress(
             currentPath: "docs/moved.pdf",
-            sourcePath: context.sourcePath,
-            storageMode: .move,
-            overrideCategory: context.overrideCategory,
-            overrideFilename: context.overrideFilename,
-            duplicateStrategy: context.duplicateStrategy.coreStrategy
+            retryContext: context
         )
         model.failImportEntry(
             progress: Self.moveFailedProgress,
             mapping: mapping
         )
 
-        guard case .importProgress(let failedBeforeCheck) = model.route else {
+        guard case let .importProgress(failedBeforeCheck) = model.route else {
             return XCTFail("Expected failed move import progress route")
         }
         XCTAssertFalse(failedBeforeCheck.canRetryCurrentItem)
@@ -159,7 +151,7 @@ final class ImportProgressCopyPageFeatureTests: XCTestCase {
         await model.checkImportProgressRecoveryIfNeeded()
         let recovererPaths = await recoverer.requestedRepoPaths()
 
-        guard case .importProgress(let checkedState) = model.route else {
+        guard case let .importProgress(checkedState) = model.route else {
             return XCTFail("Expected checked move import progress route")
         }
         XCTAssertEqual(recovererPaths, ["/tmp/repo"])
@@ -187,11 +179,7 @@ final class ImportProgressCopyPageFeatureTests: XCTestCase {
         model.route = .mainList(opening)
         model.beginImportEntryProgress(
             currentPath: "docs/moved.pdf",
-            sourcePath: "/tmp/source.pdf",
-            storageMode: .move,
-            overrideCategory: "docs",
-            overrideFilename: "moved.pdf",
-            duplicateStrategy: .ask
+            retryContext: Self.moveRetryContext(sourcePath: "/tmp/source.pdf")
         )
         model.failImportEntry(
             progress: Self.moveFailedProgress,
@@ -209,7 +197,7 @@ final class ImportProgressCopyPageFeatureTests: XCTestCase {
                 overrideCategory: "docs",
                 overrideFilename: "moved.pdf",
                 duplicateStrategy: .ask
-            ),
+            )
         ])
         XCTAssertEqual(model.route, .mainEmpty(opening))
         XCTAssertEqual(model.toastMessage, "已导入：moved.pdf")
@@ -228,7 +216,7 @@ final class ImportProgressCopyPageFeatureTests: XCTestCase {
         model.route = .mainList(opening)
         model.beginImportEntryProgress(currentPath: "docs/indexed.pdf", storageMode: .indexOnly)
 
-        guard case .importProgress(let state) = model.route else {
+        guard case let .importProgress(state) = model.route else {
             return XCTFail("Expected S1-20 import progress route")
         }
 
@@ -239,7 +227,7 @@ final class ImportProgressCopyPageFeatureTests: XCTestCase {
                 targetPath: "docs/indexed.pdf",
                 phase: .writingIndex,
                 errorMessage: nil
-            ),
+            )
         ])
     }
 
@@ -262,18 +250,14 @@ final class ImportProgressCopyPageFeatureTests: XCTestCase {
         model.route = .mainList(opening)
         model.beginImportEntryProgress(
             currentPath: "docs/indexed.pdf",
-            sourcePath: context.sourcePath,
-            storageMode: .indexOnly,
-            overrideCategory: context.overrideCategory,
-            overrideFilename: context.overrideFilename,
-            duplicateStrategy: context.duplicateStrategy.coreStrategy
+            retryContext: context
         )
         model.failImportEntry(
             progress: Self.indexFailedProgress,
             mapping: CoreErrorMappingSnapshot.s120FatalImportError(kind: .fileNotFound)
         )
 
-        guard case .importProgress(let failedBeforeCheck) = model.route else {
+        guard case let .importProgress(failedBeforeCheck) = model.route else {
             return XCTFail("Expected failed index import progress route")
         }
         XCTAssertFalse(failedBeforeCheck.canRetryCurrentItem)
@@ -282,7 +266,7 @@ final class ImportProgressCopyPageFeatureTests: XCTestCase {
         await model.checkImportProgressRecoveryIfNeeded()
         let recovererPaths = await recoverer.requestedRepoPaths()
 
-        guard case .importProgress(let checkedState) = model.route else {
+        guard case let .importProgress(checkedState) = model.route else {
             return XCTFail("Expected checked index import progress route")
         }
         XCTAssertEqual(recovererPaths, ["/tmp/repo"])
@@ -309,11 +293,7 @@ final class ImportProgressCopyPageFeatureTests: XCTestCase {
         model.route = .mainList(opening)
         model.beginImportEntryProgress(
             currentPath: "docs/indexed.pdf",
-            sourcePath: "/tmp/external.pdf",
-            storageMode: .indexOnly,
-            overrideCategory: "docs",
-            overrideFilename: "indexed.pdf",
-            duplicateStrategy: .keepBoth
+            retryContext: Self.indexRetryContext(sourcePath: "/tmp/external.pdf")
         )
         model.failImportEntry(
             progress: Self.indexFailedProgress,
@@ -331,7 +311,7 @@ final class ImportProgressCopyPageFeatureTests: XCTestCase {
                 overrideCategory: "docs",
                 overrideFilename: "indexed.pdf",
                 duplicateStrategy: .keepBoth
-            ),
+            )
         ])
         XCTAssertEqual(model.route, .mainEmpty(opening))
         XCTAssertEqual(model.toastMessage, "已导入：indexed.pdf")
@@ -363,7 +343,7 @@ private extension ImportProgressCopyPageFeatureTests {
                 targetPath: "docs/later.pdf",
                 phase: .pending,
                 errorMessage: nil
-            ),
+            )
         ]
     )
 
@@ -385,7 +365,7 @@ private extension ImportProgressCopyPageFeatureTests {
                 targetPath: "docs/contract.pdf",
                 phase: .failed,
                 errorMessage: "无访问权限"
-            ),
+            )
         ]
     )
 
@@ -401,7 +381,7 @@ private extension ImportProgressCopyPageFeatureTests {
                 targetPath: "docs/copied.pdf",
                 phase: .failed,
                 errorMessage: "文件读写失败"
-            ),
+            )
         ]
     )
 
@@ -417,7 +397,7 @@ private extension ImportProgressCopyPageFeatureTests {
                 targetPath: "docs/moved.pdf",
                 phase: .failed,
                 errorMessage: "文件读写失败"
-            ),
+            )
         ]
     )
 
@@ -433,7 +413,7 @@ private extension ImportProgressCopyPageFeatureTests {
                 targetPath: "docs/indexed.pdf",
                 phase: .failed,
                 errorMessage: "文件不存在"
-            ),
+            )
         ]
     )
 
@@ -472,7 +452,6 @@ private extension ImportProgressCopyPageFeatureTests {
             duplicateStrategy: .keepBoth
         )
     }
-
 }
 
 private extension CoreErrorMappingSnapshot {
@@ -490,11 +469,11 @@ private extension CoreErrorMappingSnapshot {
     static func importProgressFatalMessage(for kind: CoreErrorKindSnapshot) -> String {
         switch kind {
         case .io:
-            return "文件读写失败"
+            "文件读写失败"
         case .fileNotFound:
-            return "文件不存在"
+            "文件不存在"
         default:
-            return "导入队列无法继续"
+            "导入队列无法继续"
         }
     }
 }

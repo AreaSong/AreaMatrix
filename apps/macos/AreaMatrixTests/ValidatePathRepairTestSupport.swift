@@ -1,5 +1,5 @@
-import Foundation
 @testable import AreaMatrix
+import Foundation
 
 func makeRepairTemporaryAdoptRepoURL() throws -> URL {
     let url = FileManager.default.temporaryDirectory
@@ -10,7 +10,9 @@ func makeRepairTemporaryAdoptRepoURL() throws -> URL {
 
 struct RepairStaticSettingsReader: AppSettingsReading {
     let repoPath: String?
-    func configuredRepoPath() -> String? { repoPath }
+    func configuredRepoPath() -> String? {
+        repoPath
+    }
 }
 
 final class RepairRecordingSettingsWriter: AppSettingsWriting {
@@ -25,7 +27,8 @@ actor RepairRecordingConfigLoader: CoreConfigurationLoading {
     init(config: RepoConfigSnapshot) {
         self.config = config
     }
-    func loadConfig(repoPath: String) async throws -> RepoConfigSnapshot {
+
+    func loadConfig(repoPath _: String) async throws -> RepoConfigSnapshot {
         config
     }
 }
@@ -54,14 +57,16 @@ actor RepairRecordingRepositoryOpener: CoreEmptyRepositoryOpening {
     func openConfiguredRepository(repoPath: String) async throws -> RepositoryOpeningResult {
         paths.append(repoPath)
         switch result {
-        case .success(let opening):
+        case let .success(opening):
             return opening
-        case .failure(let error):
+        case let .failure(error):
             throw error
         }
     }
 
-    func requestedRepoPaths() -> [String] { paths }
+    func requestedRepoPaths() -> [String] {
+        paths
+    }
 }
 
 actor RepairRecordingPathValidator: CoreRepositoryPathValidating {
@@ -69,7 +74,8 @@ actor RepairRecordingPathValidator: CoreRepositoryPathValidating {
     init(validation: RepoPathValidationSnapshot) {
         self.validation = validation
     }
-    func validateRepoPath(repoPath: String) async throws -> RepoPathValidationSnapshot {
+
+    func validateRepoPath(repoPath _: String) async throws -> RepoPathValidationSnapshot {
         validation
     }
 }
@@ -81,7 +87,7 @@ actor RepairSequencePathValidator: CoreRepositoryPathValidating {
         self.validations = validations
     }
 
-    func validateRepoPath(repoPath: String) async throws -> RepoPathValidationSnapshot {
+    func validateRepoPath(repoPath _: String) async throws -> RepoPathValidationSnapshot {
         guard !validations.isEmpty else {
             throw CoreError.Config(reason: "missing validation fixture")
         }
@@ -102,8 +108,13 @@ actor RepairRecordingRepositoryInitializer: CoreRepositoryInitializing {
         adoptedPaths.append(repoPath)
     }
 
-    func createdRepoPaths() -> [String] { createdPaths }
-    func adoptedRepoPaths() -> [String] { adoptedPaths }
+    func createdRepoPaths() -> [String] {
+        createdPaths
+    }
+
+    func adoptedRepoPaths() -> [String] {
+        adoptedPaths
+    }
 }
 
 actor RepairPausingRepositoryInitializer: CoreRepositoryInitializing {
@@ -129,19 +140,21 @@ actor RepairPausingRepositoryInitializer: CoreRepositoryInitializing {
         }
     }
 
-    func createdRepoPaths() -> [String] { createdPaths }
+    func createdRepoPaths() -> [String] {
+        createdPaths
+    }
 }
 
 actor RepairStaticStartupRecoverer: CoreStartupRecovering {
-    func recoverOnStartup(repoPath: String) async throws -> RecoveryReportSnapshot {
+    func recoverOnStartup(repoPath _: String) async throws -> RecoveryReportSnapshot {
         RecoveryReportSnapshot(cleanedStagingFiles: 0, revertedStagingDbRows: 0, warnings: [])
     }
 }
 
-struct RepairStaticExistingRepositoryMetadataReader: ExistingRepositoryMetadataReading {
+struct RepairExistingRepoMetadataReader: ExistingRepositoryMetadataReading {
     let schemaVersion: Int64
 
-    func metadata(repoPath: String) async throws -> ExistingRepositoryMetadataSnapshot {
+    func metadata(repoPath _: String) async throws -> ExistingRepositoryMetadataSnapshot {
         ExistingRepositoryMetadataSnapshot(schemaVersion: schemaVersion, lastOpenedAt: nil)
     }
 }

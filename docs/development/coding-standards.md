@@ -122,36 +122,48 @@ pub fn import_file(...) -> CoreResult<FileEntry> { ... }
 
 ### 工具
 
-- SwiftFormat: `swiftformat --lint .`
-- SwiftLint: `swiftlint --strict`
+- SwiftFormat: `cd apps/macos && swiftformat --lint . --config ../../scripts/dev_tools/swiftformat.conf --exclude AreaMatrix/Bridge/Generated,AreaMatrix/Bridge/UniFFI --cache ignore`
+- SwiftLint: `cd apps/macos && swiftlint lint --strict --config ../../scripts/dev_tools/swiftlint.yml --force-exclude . --no-cache`
 
-### `.swiftformat`
+### `scripts/dev_tools/swiftformat.conf`
 
 ```
 --swiftversion 5.9
+--exclude AreaMatrix/Bridge/Generated,AreaMatrix/Bridge/UniFFI
 --indent 4
 --maxwidth 120
---commas inline
---trimwhitespace always
+--trailing-commas never
+--trim-whitespace always
 --ifdef no-indent
 --self remove
 --header strip
+--disable wrapMultilineStatementBraces
 ```
 
-### `.swiftlint.yml`
+### `scripts/dev_tools/swiftlint.yml`
 
 ```yaml
 disabled_rules:
   - trailing_comma
-opt_in_rules:
-  - empty_count
-  - missing_docs
-  - explicit_init
-  - implicit_return
+excluded:
+  - AreaMatrix/Bridge/Generated
+  - AreaMatrix/Bridge/UniFFI
 line_length: 120
 file_length: 500
 function_body_length: 50
 type_body_length: 300
+type_name:
+  min_length: 3
+  max_length: 40
+identifier_name:
+  min_length: 3
+  excluded:
+    - db
+    - en
+    - fd
+    - id
+    - io
+    - ok
 ```
 
 ### 命名
@@ -327,8 +339,8 @@ PR 必须通过：
 - [ ] `cargo clippy -- -D warnings`
 - [ ] `cargo test --workspace`
 - [ ] `cargo llvm-cov --fail-under-lines 70`（核心模块）
-- [ ] `swiftformat --lint .`
-- [ ] `swiftlint --strict`
+- [ ] `cd apps/macos && swiftformat --lint . --config ../../scripts/dev_tools/swiftformat.conf --exclude AreaMatrix/Bridge/Generated,AreaMatrix/Bridge/UniFFI --cache ignore`
+- [ ] `cd apps/macos && swiftlint lint --strict --config ../../scripts/dev_tools/swiftlint.yml --force-exclude . --no-cache`
 - [ ] `xcodebuild test`
 - [ ] commit message 符合 Conventional Commits
 

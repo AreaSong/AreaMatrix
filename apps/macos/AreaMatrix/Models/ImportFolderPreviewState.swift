@@ -4,14 +4,14 @@ protocol ImportFolderScanning: Sendable {
     func scanFolder(rootURL: URL, includeHiddenFiles: Bool, followSymlinks: Bool) async -> ImportFolderScanResult
 }
 
-struct ImportFolderScanResult: Equatable, Sendable {
+struct ImportFolderScanResult: Equatable {
     var rows: [ImportFolderPreviewRow]
     var folderCount: Int
     var skippedRules: [ImportFolderSkippedRule]
     var errors: [ImportFolderScanError]
 }
 
-enum ImportFolderPreviewStatus: Equatable, Sendable {
+enum ImportFolderPreviewStatus: Equatable {
     case idle
     case scanning(path: String)
     case checkingConflicts
@@ -29,24 +29,24 @@ enum ImportFolderPreviewStatus: Equatable, Sendable {
         switch self {
         case .idle:
             return nil
-        case .scanning(let path):
+        case let .scanning(path):
             return "正在预扫描 \(path)"
         case .checkingConflicts:
             return "Checking conflicts..."
-        case .loaded(let ready, let total, let failed):
+        case let .loaded(ready, total, failed):
             if failed == 0 {
                 return "已完成 \(total) 个文件的分类预览"
             }
             return "已完成 \(ready)/\(total) 个文件的分类预览，\(failed) 个失败"
         case .empty:
             return "没有可导入文件"
-        case .failed(let message):
+        case let .failed(message):
             return message
         }
     }
 }
 
-enum ImportFolderPreviewRowStatus: Equatable, Sendable {
+enum ImportFolderPreviewRowStatus: Equatable {
     case loading
     case ready(reasonLabel: String)
     case duplicate(
@@ -66,27 +66,27 @@ enum ImportFolderPreviewRowStatus: Equatable, Sendable {
     var tag: String {
         switch self {
         case .loading:
-            return "PREVIEW"
+            "PREVIEW"
         case .ready:
-            return "OK"
+            "OK"
         case .duplicate:
-            return "DUP"
+            "DUP"
         case .nameConflict:
-            return "NAME"
+            "NAME"
         case .iCloudPlaceholder:
-            return "ICLOUD"
+            "ICLOUD"
         case .blocked:
-            return "BLOCKED"
+            "BLOCKED"
         case .importing:
-            return "IMPORTING"
+            "IMPORTING"
         case .skippedDuplicate:
-            return "SKIPPED"
+            "SKIPPED"
         case .skippedICloud:
-            return "PENDING"
+            "PENDING"
         case .imported:
-            return "IMPORTED"
+            "IMPORTED"
         case .error:
-            return "ERROR"
+            "ERROR"
         }
     }
 
@@ -94,28 +94,28 @@ enum ImportFolderPreviewRowStatus: Equatable, Sendable {
         switch self {
         case .loading:
             return "Preparing preview..."
-        case .ready(let reasonLabel):
+        case let .ready(reasonLabel):
             return reasonLabel
-        case .duplicate(let existingPath, let strategy, let isReplaceConfirmed):
+        case let .duplicate(existingPath, strategy, isReplaceConfirmed):
             if strategy == .replace, isReplaceConfirmed {
                 return "Replace confirmed: \(existingPath)"
             }
             return "\(strategy.title): \(existingPath)"
-        case .nameConflict(let existingPath, let resolution):
+        case let .nameConflict(existingPath, resolution):
             return "\(resolution.title): \(existingPath)"
-        case .iCloudPlaceholder(let path):
+        case let .iCloudPlaceholder(path):
             return "iCloud placeholder 需要下载后才能导入：\(path)"
-        case .blocked(let message):
+        case let .blocked(message):
             return message
-        case .importing(let mode):
+        case let .importing(mode):
             return mode.importingMessage
-        case .skippedDuplicate(let existingPath):
+        case let .skippedDuplicate(existingPath):
             return "Duplicate skipped: \(existingPath)"
-        case .skippedICloud(let path):
+        case let .skippedICloud(path):
             return "iCloud pending: \(path)"
-        case .imported(let mode):
+        case let .imported(mode):
             return mode.folderImportedMessage
-        case .error(let message):
+        case let .error(message):
             return message
         }
     }
@@ -123,13 +123,13 @@ enum ImportFolderPreviewRowStatus: Equatable, Sendable {
     var importsIncomingFile: Bool {
         switch self {
         case .ready:
-            return true
-        case .duplicate(_, let strategy, let isReplaceConfirmed):
-            return strategy == .keepBoth || (strategy == .replace && isReplaceConfirmed)
-        case .nameConflict(_, let resolution):
-            return resolution.importsIncomingFile
+            true
+        case let .duplicate(_, strategy, isReplaceConfirmed):
+            strategy == .keepBoth || (strategy == .replace && isReplaceConfirmed)
+        case let .nameConflict(_, resolution):
+            resolution.importsIncomingFile
         case .loading, .iCloudPlaceholder, .blocked, .importing, .skippedDuplicate, .skippedICloud, .imported, .error:
-            return false
+            false
         }
     }
 
@@ -150,7 +150,7 @@ enum ImportFolderPreviewRowStatus: Equatable, Sendable {
     }
 }
 
-struct ImportFolderPreviewRow: Identifiable, Equatable, Sendable {
+struct ImportFolderPreviewRow: Identifiable, Equatable {
     var fileURL: URL
     var rootURL: URL
     var originalName: String
@@ -160,27 +160,29 @@ struct ImportFolderPreviewRow: Identifiable, Equatable, Sendable {
     var suggestedName: String
     var status: ImportFolderPreviewRowStatus
 
-    var id: String { fileURL.path }
+    var id: String {
+        fileURL.path
+    }
 
     var duplicateResolution: ImportBatchDuplicateResolutionStrategy? {
-        if case .duplicate(_, let strategy, _) = status { return strategy }
+        if case let .duplicate(_, strategy, _) = status { return strategy }
         if case .skippedDuplicate = status { return .skip }
         return nil
     }
 
     var nameConflictResolution: ImportBatchNameConflictResolution? {
-        if case .nameConflict(_, let resolution) = status { return resolution }
+        if case let .nameConflict(_, resolution) = status { return resolution }
         return nil
     }
 
     var resolvedIncomingName: String {
-        guard case .nameConflict(_, let resolution) = status else {
+        guard case let .nameConflict(_, resolution) = status else {
             return suggestedName
         }
         switch resolution {
         case .keepBoth, .replace:
             return suggestedName
-        case .renameIncoming(let name):
+        case let .renameIncoming(name):
             return name
         }
     }
@@ -188,49 +190,50 @@ struct ImportFolderPreviewRow: Identifiable, Equatable, Sendable {
     var isConflictReviewRow: Bool {
         switch status {
         case .duplicate, .nameConflict, .iCloudPlaceholder, .blocked, .skippedDuplicate, .skippedICloud:
-            return true
+            true
         case .loading, .ready, .importing, .imported, .error:
-            return false
+            false
         }
     }
 
     var isBlockedForImport: Bool {
         switch status {
         case .blocked:
-            return true
+            true
         case .duplicate(_, .replace, false):
-            return true
+            true
         case .nameConflict(_, .replace(false)):
-            return true
-        case .nameConflict(_, .renameIncoming(let name)):
-            return ImportSingleFileFilenameValidator.validationMessage(for: name) != nil
+            true
+        case let .nameConflict(_, .renameIncoming(name)):
+            ImportSingleFileFilenameValidator.validationMessage(for: name) != nil
         case .loading, .ready, .duplicate, .nameConflict, .iCloudPlaceholder, .importing,
              .skippedDuplicate, .skippedICloud, .imported, .error:
-            return false
+            false
         }
     }
 
     var existingConflictPath: String? {
         switch status {
-        case .duplicate(let existingPath, _, _), .nameConflict(let existingPath, _), .skippedDuplicate(let existingPath):
-            return existingPath
+        case let .duplicate(existingPath, _, _), let .nameConflict(existingPath, _),
+             let .skippedDuplicate(existingPath):
+            existingPath
         case .loading, .ready, .iCloudPlaceholder, .blocked, .importing, .skippedICloud, .imported, .error:
-            return nil
+            nil
         }
     }
 
     var conflictLabel: String {
         switch status {
         case .duplicate, .skippedDuplicate:
-            return "Duplicate content"
+            "Duplicate content"
         case .nameConflict:
-            return "Same name, different content"
+            "Same name, different content"
         case .iCloudPlaceholder, .skippedICloud:
-            return "iCloud placeholder"
+            "iCloud placeholder"
         case .blocked:
-            return "Blocked"
+            "Blocked"
         case .loading, .ready, .importing, .imported, .error:
-            return "-"
+            "-"
         }
     }
 
@@ -240,7 +243,7 @@ struct ImportFolderPreviewRow: Identifiable, Equatable, Sendable {
             rootURL: rootURL,
             originalName: fileURL.lastPathComponent,
             relativePath: relativePath(for: fileURL, rootURL: rootURL),
-            sizeBytes: Self.sizeBytes(for: fileURL),
+            sizeBytes: sizeBytes(for: fileURL),
             predictedCategory: nil,
             suggestedName: fileURL.lastPathComponent,
             status: .loading
@@ -282,11 +285,11 @@ private extension ImportSingleFileStorageMode {
     var folderImportedMessage: String {
         switch self {
         case .copy:
-            return "已复制导入"
+            "已复制导入"
         case .move:
-            return "已移动导入"
+            "已移动导入"
         case .indexOnly:
-            return "已写入索引"
+            "已写入索引"
         }
     }
 }

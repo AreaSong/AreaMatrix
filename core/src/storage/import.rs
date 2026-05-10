@@ -109,6 +109,7 @@ struct StagedImport {
 struct ReplacementDbRollback {
     existing_id: i64,
     original_path: String,
+    original_updated_at: i64,
     deleted_detail: Value,
 }
 
@@ -117,6 +118,7 @@ impl ReplacementDbRollback {
         Self {
             existing_id: plan.replaced_file_id(),
             original_path: plan.replaced_path().to_owned(),
+            original_updated_at: plan.replaced_updated_at(),
             deleted_detail: plan.deleted_change_detail(),
         }
     }
@@ -126,6 +128,7 @@ impl ReplacementDbRollback {
             repo,
             self.existing_id,
             &self.original_path,
+            self.original_updated_at,
             new_file_id,
             &self.deleted_detail,
         )

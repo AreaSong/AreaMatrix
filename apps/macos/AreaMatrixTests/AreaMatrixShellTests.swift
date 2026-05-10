@@ -1,5 +1,5 @@
-import XCTest
 @testable import AreaMatrix
+import XCTest
 
 final class AreaMatrixShellTests: XCTestCase {
     func testBridgeUsesGeneratedBindings() {
@@ -151,7 +151,7 @@ final class AreaMatrixShellTests: XCTestCase {
         await model.bootstrapIfNeeded()
         let requestedRepoPaths = await opener.requestedConfiguredRepoPaths()
 
-        guard case .mainRepoError(let repoPath, let mapping) = model.route else {
+        guard case let .mainRepoError(repoPath, mapping) = model.route else {
             return XCTFail("expected main repo error")
         }
 
@@ -203,7 +203,10 @@ final class AreaMatrixShellTests: XCTestCase {
         let initializedValidator = ShellRecordingInitializedPathValidator(
             result: .failure(CoreError.RepoNotInitialized(path: "/tmp/repo"))
         )
-        let opener = ShellRecordingRepositoryOpener(result: .success(.shellFixture(repoPath: "/tmp/repo", fileCount: 1)))
+        let opener = ShellRecordingRepositoryOpener(result: .success(.shellFixture(
+            repoPath: "/tmp/repo",
+            fileCount: 1
+        )))
         let model = OnboardingModel(
             settingsReader: ShellStaticSettingsReader(repoPath: nil),
             initializedPathValidator: initializedValidator,
@@ -216,7 +219,7 @@ final class AreaMatrixShellTests: XCTestCase {
         let validatedPaths = await initializedValidator.requestedRepoPaths()
         let openedPaths = await opener.requestedConfiguredRepoPaths()
 
-        guard case .mainRepoError(let repoPath, let mapping) = model.route else {
+        guard case let .mainRepoError(repoPath, mapping) = model.route else {
             return XCTFail("expected main repo error, got \(model.route)")
         }
 
@@ -252,7 +255,9 @@ final class AreaMatrixShellTests: XCTestCase {
         XCTAssertEqual(io.title, "Repository settings are unavailable")
         XCTAssertEqual(db.title, "Repository metadata cannot be opened")
     }
+}
 
+final class AreaMatrixShellValidatePathTests: XCTestCase {
     @MainActor
     func testWelcomeLearnMoreFailureIsNonBlockingToast() {
         let model = OnboardingModel(
@@ -374,7 +379,7 @@ final class AreaMatrixShellTests: XCTestCase {
             pathValidator: ShellRecordingPathValidator(result: .success(validation)),
             emptyRepositoryOpener: opener,
             startupRecoverer: ShellStaticStartupRecoverer(),
-            existingRepositoryMetadataReader: ShellStaticExistingRepositoryMetadataReader(schemaVersion: 1),
+            existingRepositoryMetadataReader: ShellExistingRepoMetadataReader(schemaVersion: 1),
             helpOpener: ShellNoopWelcomeHelpOpener()
         )
 
@@ -413,7 +418,7 @@ final class AreaMatrixShellTests: XCTestCase {
             pathValidator: ShellRecordingPathValidator(result: .success(validation)),
             emptyRepositoryOpener: opener,
             startupRecoverer: ShellStaticStartupRecoverer(),
-            existingRepositoryMetadataReader: ShellStaticExistingRepositoryMetadataReader(schemaVersion: 1),
+            existingRepositoryMetadataReader: ShellExistingRepoMetadataReader(schemaVersion: 1),
             helpOpener: ShellNoopWelcomeHelpOpener()
         )
 
@@ -422,7 +427,7 @@ final class AreaMatrixShellTests: XCTestCase {
         await model.continueFromValidatePath()
         let requestedRepoPaths = await opener.requestedConfiguredRepoPaths()
 
-        guard case .mainRepoError(let repoPath, let mapping) = model.route else {
+        guard case let .mainRepoError(repoPath, mapping) = model.route else {
             return XCTFail("expected main repo error, got \(model.route)")
         }
 
@@ -481,5 +486,4 @@ final class AreaMatrixShellTests: XCTestCase {
         XCTAssertEqual(model.route, .mainRepoError("/tmp/repo", nil))
         XCTAssertNil(model.toastMessage)
     }
-
 }

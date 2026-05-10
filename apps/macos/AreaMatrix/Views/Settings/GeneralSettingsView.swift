@@ -6,7 +6,9 @@ struct GeneralSettingsView: View {
     let onClose: () -> Void
     let onChangeRepository: () -> Void
     let onOpenRepositoryRecovery: () -> Void
+}
 
+extension GeneralSettingsView {
     init(
         repoPath: String,
         selectedTab: Binding<String?> = .constant("general"),
@@ -79,7 +81,12 @@ struct GeneralSettingsView: View {
                 model.createDefaultIgnoreRulesAndOpen()
             }
         } message: {
-            Text("AreaMatrix will only write .areamatrix/ignore.yaml. Existing user files are not moved, renamed, deleted, or overwritten.")
+            Text(
+                """
+                AreaMatrix will only write .areamatrix/ignore.yaml. Existing user files are not moved, renamed, \
+                deleted, or overwritten.
+                """
+            )
         }
     }
 
@@ -132,7 +139,7 @@ struct GeneralSettingsView: View {
         switch model.loadState {
         case .loading:
             loadingContent
-        case .failed(let error):
+        case let .failed(error):
             loadingErrorContent(error)
         case .loaded:
             loadedContent
@@ -215,9 +222,14 @@ struct GeneralSettingsView: View {
                 Text(error.recovery)
                     .font(.callout)
                     .foregroundStyle(.secondary)
-                Text("The UI has been restored to the last saved settings. .areamatrix/generated/ remains the safe default overview output.")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
+                Text(
+                    """
+                    The UI has been restored to the last saved settings. .areamatrix/generated/ remains the safe \
+                    default overview output.
+                    """
+                )
+                .font(.callout)
+                .foregroundStyle(.secondary)
                 if model.hasRetryableSave {
                     Button("Retry save") {
                         Task {
@@ -358,11 +370,11 @@ struct GeneralSettingsView: View {
     private var storageConfirmationTitle: String {
         switch model.pendingStorageConfirmation {
         case .move:
-            return "Use Move as the default?"
+            "Use Move as the default?"
         case .indexOnly:
-            return "Use Index-only as the default?"
+            "Use Index-only as the default?"
         default:
-            return "Confirm default storage mode"
+            "Confirm default storage mode"
         }
     }
 
@@ -445,8 +457,14 @@ private struct RootOverviewConfirmationSheet: View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Enable root AREAMATRIX.md?")
                 .font(.title2.weight(.semibold))
-            Text("AreaMatrix will continue writing generated overviews to .areamatrix/generated/. If AREAMATRIX.md already exists, AreaMatrix will only update its own managed block after you confirm. README.md is never used as an automatic output target.")
-                .fixedSize(horizontal: false, vertical: true)
+            Text(
+                """
+                AreaMatrix will continue writing generated overviews to .areamatrix/generated/. If AREAMATRIX.md \
+                already exists, AreaMatrix will only update its own managed block after you confirm. README.md is \
+                never used as an automatic output target.
+                """
+            )
+            .fixedSize(horizontal: false, vertical: true)
             Text(status.confirmationDetail)
                 .foregroundStyle(status.canEnableRootOverview ? Color.secondary : Color.red)
                 .fixedSize(horizontal: false, vertical: true)

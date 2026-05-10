@@ -39,7 +39,7 @@ struct NSWorkspaceRepositoryIgnoreRulesManager: RepositoryIgnoreRulesManaging {
     }
 }
 
-enum RepositoryIgnoreRulesError: Error, Equatable, LocalizedError, Sendable {
+enum RepositoryIgnoreRulesError: Error, Equatable, LocalizedError {
     case metadataDirectoryMissing
     case metadataPathNotDirectory
     case ignoreRulesMissing
@@ -51,19 +51,19 @@ enum RepositoryIgnoreRulesError: Error, Equatable, LocalizedError, Sendable {
     var errorDescription: String? {
         switch self {
         case .metadataDirectoryMissing:
-            return ".areamatrix metadata folder is missing."
+            ".areamatrix metadata folder is missing."
         case .metadataPathNotDirectory:
-            return ".areamatrix is not a folder."
+            ".areamatrix is not a folder."
         case .ignoreRulesMissing:
-            return ".areamatrix/ignore.yaml is missing."
+            ".areamatrix/ignore.yaml is missing."
         case .ignoreRulesNotRegularFile:
-            return ".areamatrix/ignore.yaml is not a regular file."
+            ".areamatrix/ignore.yaml is not a regular file."
         case .ignoreRulesAlreadyExists:
-            return ".areamatrix/ignore.yaml already exists."
-        case .createRejected(let reason):
-            return "Could not create .areamatrix/ignore.yaml: \(reason)"
+            ".areamatrix/ignore.yaml already exists."
+        case let .createRejected(reason):
+            "Could not create .areamatrix/ignore.yaml: \(reason)"
         case .openRejected:
-            return "The system editor rejected opening ignore.yaml."
+            "The system editor rejected opening ignore.yaml."
         }
     }
 }

@@ -1,5 +1,5 @@
-import XCTest
 @testable import AreaMatrix
+import XCTest
 
 final class DetailMultiListFilesPageFeatureTests: XCTestCase {
     func testS115BuildsMultiSelectionSummaryFromC111AndC112Details() {
@@ -34,7 +34,7 @@ final class DetailMultiListFilesPageFeatureTests: XCTestCase {
         XCTAssertEqual(summary.statisticRows.value(for: "Storage modes"), "Copied, Indexed")
         XCTAssertEqual(summary.fileTypeRows, [
             MultiSelectionSummaryRow(label: "Markdown", value: "1"),
-            MultiSelectionSummaryRow(label: "PDF", value: "1"),
+            MultiSelectionSummaryRow(label: "PDF", value: "1")
         ])
         XCTAssertEqual(summary.warningMessages, ["某些条目的来源路径可能在资料库外"])
     }
@@ -62,7 +62,7 @@ final class DetailMultiListFilesPageFeatureTests: XCTestCase {
         XCTAssertEqual(summary.unresolvedMetadataCount, 1)
         XCTAssertEqual(summary.warningMessages, [
             "部分选中项无法读取元数据",
-            "选中的文件中有 1 个缺失条目",
+            "选中的文件中有 1 个缺失条目"
         ])
     }
 
@@ -74,7 +74,7 @@ final class DetailMultiListFilesPageFeatureTests: XCTestCase {
         let refreshedSecond = FileEntrySnapshot.detailMultiFixture(id: 34, currentName: "second.pdf", sizeBytes: 700)
         let detailer = DetailMultiRecordingDetailer(results: [
             .success(refreshedFirst),
-            .success(refreshedSecond),
+            .success(refreshedSecond)
         ])
         let model = MainFileListModel(
             opening: .detailMultiFixture(repoPath: "/tmp/repo", files: [first, second]),
@@ -89,7 +89,7 @@ final class DetailMultiListFilesPageFeatureTests: XCTestCase {
 
         XCTAssertEqual(requests, [
             DetailMultiFileDetailRequest(repoPath: "/tmp/repo", fileID: first.id),
-            DetailMultiFileDetailRequest(repoPath: "/tmp/repo", fileID: second.id),
+            DetailMultiFileDetailRequest(repoPath: "/tmp/repo", fileID: second.id)
         ])
         XCTAssertEqual(model.selection, .multiple([first.id, second.id]))
         XCTAssertNil(model.selectedFileDetail)
@@ -109,7 +109,7 @@ final class DetailMultiListFilesPageFeatureTests: XCTestCase {
         let mapper = DetailMetaErrorMapper(mapping: mapping)
         let detailer = DetailMultiRecordingDetailer(results: [
             .success(first),
-            .failure(CoreError.FileNotFound(path: second.path)),
+            .failure(CoreError.FileNotFound(path: second.path))
         ])
         let model = MainFileListModel(
             opening: .detailMultiFixture(repoPath: "/tmp/repo", files: [first, second]),
@@ -156,14 +156,16 @@ private actor DetailMultiRecordingDetailer: CoreFileDetailing {
         }
 
         switch results.removeFirst() {
-        case .success(let file):
+        case let .success(file):
             return file
-        case .failure(let error):
+        case let .failure(error):
             throw error
         }
     }
 
-    func recordedRequests() -> [DetailMultiFileDetailRequest] { requests }
+    func recordedRequests() -> [DetailMultiFileDetailRequest] {
+        requests
+    }
 }
 
 private extension RepositoryOpeningResult {

@@ -1,6 +1,6 @@
 import Foundation
 
-enum MainRepoExternalRemovalState: Equatable, Sendable {
+enum MainRepoExternalRemovalState: Equatable {
     case unavailable
     case idle(relativePath: String)
     case syncing(relativePath: String)
@@ -9,10 +9,10 @@ enum MainRepoExternalRemovalState: Equatable, Sendable {
 
     var relativePath: String? {
         switch self {
-        case .idle(let path), .syncing(let path):
-            return path
+        case let .idle(path), let .syncing(path):
+            path
         case .unavailable, .synced, .failed:
-            return nil
+            nil
         }
     }
 }
@@ -55,7 +55,7 @@ extension OnboardingModel {
     }
 
     private static func removedRelativePath(from error: Error, repoPath: String) -> String? {
-        guard case .FileNotFound(let path) = error as? CoreError else { return nil }
+        guard case let .FileNotFound(path) = error as? CoreError else { return nil }
 
         let trimmed = path.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty, !trimmed.hasSuffix("/") else { return nil }
@@ -71,6 +71,6 @@ extension OnboardingModel {
     }
 
     private static var manualExternalRemovalEventID: Int64 {
-        Int64(Date().timeIntervalSince1970 * 1_000)
+        Int64(Date().timeIntervalSince1970 * 1000)
     }
 }

@@ -1,5 +1,5 @@
-import XCTest
 @testable import AreaMatrix
+import XCTest
 
 final class ImportFolderPageIntegrationVerifyTests: XCTestCase {
     @MainActor
@@ -16,7 +16,12 @@ final class ImportFolderPageIntegrationVerifyTests: XCTestCase {
         )
 
         model.route = .mainList(opening)
-        model.startImportEntry(opening: opening, source: .dropZone, urls: [folderURL], destination: .category("finance"))
+        model.startImportEntry(
+            opening: opening,
+            source: .dropZone,
+            urls: [folderURL],
+            destination: .category("finance")
+        )
         XCTAssertEqual(model.pendingImportEntry?.kind, .folder)
         XCTAssertEqual(model.pendingImportEntry?.destination, .category("finance"))
 
@@ -56,18 +61,10 @@ final class ImportFolderPageIntegrationVerifyTests: XCTestCase {
     func testS119PageIntegrationUsesC105C106AndC108WithoutControlMapOutOfScopeCalls() async {
         let copyURL = URL(fileURLWithPath: "/tmp/client-a/invoice.pdf")
         let indexURL = URL(fileURLWithPath: "/tmp/client-a/reference.pdf")
-        let scanner = S119StaticFolderScanner(result: ImportFolderScanResult(
-            rows: [
-                ImportFolderPreviewRow.loading(fileURL: copyURL, rootURL: URL(fileURLWithPath: "/tmp/client-a")),
-                ImportFolderPreviewRow.loading(fileURL: indexURL, rootURL: URL(fileURLWithPath: "/tmp/client-a")),
-            ],
-            folderCount: 0,
-            skippedRules: [],
-            errors: []
-        ))
+        let scanner = s119StaticScanner(urls: [copyURL, indexURL])
         let predictor = S119MappedPredictor(resultsByFilename: [
             "invoice.pdf": .success(.s119Prediction(category: "finance", suggestedName: "invoice-2026.pdf")),
-            "reference.pdf": .success(.s119Prediction(category: "docs", suggestedName: "reference-index.pdf")),
+            "reference.pdf": .success(.s119Prediction(category: "docs", suggestedName: "reference-index.pdf"))
         ])
         let importer = S118RecordingBatchImporter()
         let model = ImportFolderPreviewModel(
@@ -92,52 +89,14 @@ final class ImportFolderPageIntegrationVerifyTests: XCTestCase {
         let importRequests = await importer.recordedRequests()
 
         XCTAssertEqual(Set(predictRequests.map(\.filename)), ["invoice.pdf", "reference.pdf"])
-        XCTAssertEqual(importRequests, [
-            S118BatchImportRequest(
-                storageMode: .copy,
-                destination: .category("docs"),
-                suggestedCategory: "docs",
-                overrideFilename: "invoice-2026.pdf",
-                duplicateStrategy: .ask
-            ),
-            S118BatchImportRequest(
-                storageMode: .copy,
-                destination: .category("docs"),
-                suggestedCategory: "docs",
-                overrideFilename: "reference-index.pdf",
-                duplicateStrategy: .ask
-            ),
-            S118BatchImportRequest(
-                storageMode: .indexOnly,
-                destination: .category("docs"),
-                suggestedCategory: "docs",
-                overrideFilename: "invoice-2026.pdf",
-                duplicateStrategy: .ask
-            ),
-            S118BatchImportRequest(
-                storageMode: .indexOnly,
-                destination: .category("docs"),
-                suggestedCategory: "docs",
-                overrideFilename: "reference-index.pdf",
-                duplicateStrategy: .ask
-            ),
-        ])
+        XCTAssertEqual(importRequests, s119ExpectedCopyAndIndexRequests())
     }
 
     @MainActor
     func testS119ScanErrorsAndICloudPlaceholdersBlockOrSummarizeWithoutSilentImport() async {
         let readyURL = URL(fileURLWithPath: "/tmp/client-a/ready.pdf")
         let cloudURL = URL(fileURLWithPath: "/tmp/client-a/cloud.pdf.icloud")
-        let scanner = S119StaticFolderScanner(result: ImportFolderScanResult(
-            rows: [
-                ImportFolderPreviewRow.loading(fileURL: readyURL, rootURL: URL(fileURLWithPath: "/tmp/client-a")),
-                ImportFolderPreviewRow.loading(fileURL: cloudURL, rootURL: URL(fileURLWithPath: "/tmp/client-a"))
-                    .withStatus(.iCloudPlaceholder(path: cloudURL.path)),
-            ],
-            folderCount: 0,
-            skippedRules: [],
-            errors: [ImportFolderScanError(path: "/tmp/client-a/private", message: "Permission denied")]
-        ))
+        let scanner = s119ScanErrorScanner(readyURL: readyURL, cloudURL: cloudURL)
         let predictor = S119RecordingPredictor(results: [.success(.s119Prediction())])
         let importer = S118RecordingBatchImporter()
         let model = ImportFolderPreviewModel(
@@ -155,16 +114,7 @@ final class ImportFolderPageIntegrationVerifyTests: XCTestCase {
         XCTAssertNil(blockedOutcome)
         XCTAssertEqual(blockedRequests, [])
 
-        let cleanScanner = S119StaticFolderScanner(result: ImportFolderScanResult(
-            rows: [
-                ImportFolderPreviewRow.loading(fileURL: readyURL, rootURL: URL(fileURLWithPath: "/tmp/client-a")),
-                ImportFolderPreviewRow.loading(fileURL: cloudURL, rootURL: URL(fileURLWithPath: "/tmp/client-a"))
-                    .withStatus(.iCloudPlaceholder(path: cloudURL.path)),
-            ],
-            folderCount: 0,
-            skippedRules: [],
-            errors: []
-        ))
+        let cleanScanner = s119CleanPlaceholderScanner(readyURL: readyURL, cloudURL: cloudURL)
         let cleanModel = ImportFolderPreviewModel(
             predictor: S119RecordingPredictor(results: [.success(.s119Prediction())]),
             importer: S118RecordingBatchImporter(),
@@ -189,90 +139,31 @@ final class ImportFolderPageIntegrationVerifyTests: XCTestCase {
             pending: 1
         ))
     }
+}
 
+final class ImportFolderConflictIntegrationTests: XCTestCase {
     @MainActor
     func testS119PageIntegrationConflictReviewCoversDupNameBlockedAndReplaceConfirmation() async throws {
-        let duplicateURL = URL(fileURLWithPath: "/tmp/client-a/dup.pdf")
-        let nameURL = URL(fileURLWithPath: "/tmp/client-a/name.pdf")
-        let blockedURL = URL(fileURLWithPath: "/tmp/client-a/private.pdf")
-        let scanner = S119StaticFolderScanner(result: ImportFolderScanResult(
-            rows: [
-                ImportFolderPreviewRow.loading(fileURL: duplicateURL, rootURL: URL(fileURLWithPath: "/tmp/client-a")),
-                ImportFolderPreviewRow.loading(fileURL: nameURL, rootURL: URL(fileURLWithPath: "/tmp/client-a")),
-                ImportFolderPreviewRow.loading(fileURL: blockedURL, rootURL: URL(fileURLWithPath: "/tmp/client-a")),
-            ],
-            folderCount: 0,
-            skippedRules: [],
-            errors: []
-        ))
-        let predictor = S119MappedPredictor(resultsByFilename: [
-            "dup.pdf": .success(.s119Prediction(category: "docs", suggestedName: "dup.pdf")),
-            "name.pdf": .success(.s119Prediction(category: "docs", suggestedName: "name.pdf")),
-            "private.pdf": .success(.s119Prediction(category: "docs", suggestedName: "private.pdf")),
-        ])
-        let prechecker = S119StaticConflictPrechecker(results: [
-            duplicateURL.path: .duplicate(existingPath: "docs/existing-dup.pdf"),
-            nameURL.path: .nameConflict(existingPath: "docs/name.pdf"),
-            blockedURL.path: .blocked("Conflict precheck failed: permission denied"),
-        ])
-        let importer = S118RecordingBatchImporter()
-        let model = ImportFolderPreviewModel(
-            predictor: predictor,
-            importer: importer,
-            errorMapper: S117RecordingErrorMapper(),
-            conflictPrechecker: prechecker,
-            scanner: scanner
-        )
-        let request = s119FolderRequest(
-            rootURL: URL(fileURLWithPath: "/tmp/client-a"),
-            allowReplaceDuringImport: true
-        )
+        let fixture = makeS119ConflictReviewFixture()
+        let model = fixture.model
 
-        await model.load(request: request)
+        await model.load(request: fixture.request)
 
         XCTAssertEqual(model.rows.map(\.status.tag), ["DUP", "NAME", "BLOCKED"])
         XCTAssertEqual(model.importDisabledReason, "存在 BLOCKED 项，请先完成冲突处理")
-        let initialRequests = await importer.recordedRequests()
+        let initialRequests = await fixture.importer.recordedRequests()
         XCTAssertEqual(initialRequests, [])
 
-        model.setRowStatus(.skippedDuplicate(existingPath: "docs/existing-dup.pdf"), for: duplicateURL.path)
-        model.updateNameConflictResolution(for: nameURL.path, resolution: .replace(isConfirmed: false))
-        model.setRowStatus(.nameConflict(
-            existingPath: "docs/name.pdf",
-            resolution: .replace(isConfirmed: false)
-        ), for: blockedURL.path)
-
+        applyS119InitialConflictResolutions(model: model, fixture: fixture)
         XCTAssertEqual(model.importDisabledReason, "存在 BLOCKED 项，请先完成冲突处理")
-        let nameContext: ImportSingleFileReplaceConfirmationContext = try XCTUnwrap(
-            model.beginReplaceConfirmation(for: nameURL.path)
-        )
-        model.applyReplaceConfirmation(for: nameURL.path, decision: nameContext.decision(understandsReplace: true))
+        try confirmS119Replace(model: model, rowID: fixture.nameURL.path)
         XCTAssertEqual(model.importDisabledReason, "存在 BLOCKED 项，请先完成冲突处理")
 
-        let blockedContext: ImportSingleFileReplaceConfirmationContext = try XCTUnwrap(
-            model.beginReplaceConfirmation(for: blockedURL.path)
-        )
-        model.applyReplaceConfirmation(for: blockedURL.path, decision: blockedContext.decision(understandsReplace: true))
+        try confirmS119Replace(model: model, rowID: fixture.blockedURL.path)
         let outcome = await model.importReadyFiles()
-        let recordedRequests = await importer.recordedRequests()
+        let recordedRequests = await fixture.importer.recordedRequests()
 
-        XCTAssertEqual(recordedRequests, [
-            S118BatchImportRequest(
-                destination: .autoClassify,
-                suggestedCategory: "docs",
-                overrideFilename: "name.pdf",
-                duplicateStrategy: .overwrite
-            ),
-            S118BatchImportRequest(
-                destination: .autoClassify,
-                suggestedCategory: "docs",
-                overrideFilename: "private.pdf",
-                duplicateStrategy: .overwrite
-            ),
-        ])
-        XCTAssertEqual(outcome?.succeededEntries.count, 2)
-        XCTAssertEqual(outcome?.skippedDuplicateCount, 1)
-        XCTAssertEqual(model.rows.map(\.status.tag), ["SKIPPED", "IMPORTED", "IMPORTED"])
+        assertS119ConflictImportResult(outcome: outcome, recordedRequests: recordedRequests, model: model)
     }
 
     @MainActor
@@ -282,7 +173,7 @@ final class ImportFolderPageIntegrationVerifyTests: XCTestCase {
             ImportFolderScanResult(
                 rows: [
                     ImportFolderPreviewRow.loading(fileURL: cloudURL, rootURL: URL(fileURLWithPath: "/tmp/client-a"))
-                        .withStatus(.iCloudPlaceholder(path: cloudURL.path)),
+                        .withStatus(.iCloudPlaceholder(path: cloudURL.path))
                 ],
                 folderCount: 0,
                 skippedRules: [],
@@ -293,12 +184,12 @@ final class ImportFolderPageIntegrationVerifyTests: XCTestCase {
                     ImportFolderPreviewRow.loading(
                         fileURL: URL(fileURLWithPath: "/tmp/client-a/cloud.pdf"),
                         rootURL: URL(fileURLWithPath: "/tmp/client-a")
-                    ),
+                    )
                 ],
                 folderCount: 0,
                 skippedRules: [],
                 errors: []
-            ),
+            )
         ])
         let downloader = S119RecordingICloudDownloader()
         let model = ImportFolderPreviewModel(
@@ -329,77 +220,32 @@ final class ImportFolderPageIntegrationVerifyTests: XCTestCase {
 
     @MainActor
     func testS119FolderFatalImportRoutesToS120PauseWithRetryContextAndPendingRows() async {
-        let firstURL = URL(fileURLWithPath: "/tmp/client-a/first.pdf")
-        let secondURL = URL(fileURLWithPath: "/tmp/client-a/second.pdf")
-        let thirdURL = URL(fileURLWithPath: "/tmp/client-a/third.pdf")
-        let scanner = S119StaticFolderScanner(result: ImportFolderScanResult(
-            rows: [firstURL, secondURL, thirdURL].map {
-                ImportFolderPreviewRow.loading(fileURL: $0, rootURL: URL(fileURLWithPath: "/tmp/client-a"))
-            },
-            folderCount: 0,
-            skippedRules: [],
-            errors: []
-        ))
-        let predictor = S119MappedPredictor(resultsByFilename: [
-            "first.pdf": .success(.s119Prediction(category: "docs", suggestedName: "first.pdf")),
-            "second.pdf": .success(.s119Prediction(category: "docs", suggestedName: "second.pdf")),
-            "third.pdf": .success(.s119Prediction(category: "docs", suggestedName: "third.pdf")),
-        ])
-        let importer = S118SequenceBatchImporter(results: [
-            .success(.s117Fixture(currentName: "first.pdf", category: "docs")),
-            .failure(CoreError.Io(message: "staging write failed")),
-            .success(.s117Fixture(currentName: "third.pdf", category: "docs")),
-        ])
-        let importModel = ImportFolderPreviewModel(
-            predictor: predictor,
-            importer: importer,
-            errorMapper: S120FatalFolderErrorMapper(),
-            conflictPrechecker: S119NoopConflictPrechecker(),
-            scanner: scanner
-        )
-        let opening = RepositoryOpeningResult.s117Fixture(repoPath: "/tmp/repo")
-        let controlState = ImportProgressControlState()
-        let model = OnboardingModel(
-            settingsReader: S117StaticSettingsReader(repoPath: nil),
-            importProgressControlState: controlState,
-            accessibilityAnnouncer: S117RecordingAccessibilityAnnouncer(),
-            helpOpener: S117NoopWelcomeHelpOpener()
-        )
+        let scenario = makeS119FatalFolderImportScenario()
 
-        await importModel.load(request: s119FolderRequest(rootURL: URL(fileURLWithPath: "/tmp/client-a")))
-        model.route = .mainList(opening)
-        let outcome = await importModel.importReadyFiles(controlState: controlState) { progress in
-            model.updateImportEntryProgress(progress)
+        await scenario.importModel.load(request: s119FolderRequest(rootURL: URL(fileURLWithPath: "/tmp/client-a")))
+        scenario.model.route = .mainList(scenario.opening)
+        let outcome = await scenario.importModel.importReadyFiles(controlState: scenario.controlState) { progress in
+            scenario.model.updateImportEntryProgress(progress)
         }
 
-        guard case .importProgress(let progress) = model.route else {
+        guard case let .importProgress(progress) = scenario.model.route else {
             return XCTFail("Expected S1-20 progress route")
         }
-        model.failImportEntry(
+        scenario.model.failImportEntry(
             progress: progress.progressSnapshot,
             mapping: S120FatalFolderErrorMapper.mapping,
             retryContext: outcome?.fatalRetryContext,
             recoveryCheck: .checking
         )
-        controlState.registerQueueContinuation(importModel)
-        let requests = await importer.recordedRequests()
+        scenario.controlState.registerQueueContinuation(scenario.importModel)
+        let requests = await scenario.importer.recordedRequests()
 
         XCTAssertEqual(requests.map(\.overrideFilename), ["first.pdf", "second.pdf"])
-        XCTAssertEqual(outcome?.fatalRetryContext, ImportProgressRetryContext(
-            repoPath: "/tmp/repo",
-            sourcePath: secondURL.path,
-            storageMode: .copy,
-            overrideCategory: "docs",
-            overrideFilename: "second.pdf",
-            duplicateStrategy: .ask
-        ))
-        guard case .importProgress(let pausedState) = model.route else {
+        XCTAssertEqual(outcome?.fatalRetryContext, s119FatalRetryContext(sourcePath: scenario.secondURL.path))
+        guard case let .importProgress(pausedState) = scenario.model.route else {
             return XCTFail("Expected S1-20 fatal pause route")
         }
-        XCTAssertEqual(pausedState.titleText, "导入已暂停")
-        XCTAssertEqual(pausedState.items.map(\.phase), [.done, .failed, .pending])
-        XCTAssertFalse(pausedState.canRetryCurrentItem)
-        XCTAssertEqual(pausedState.retryStatusText, "Checking recovery state...")
+        assertS119FatalPause(pausedState)
     }
 
     @MainActor
@@ -423,13 +269,204 @@ final class ImportFolderPageIntegrationVerifyTests: XCTestCase {
         model.updateImportEntryProgress(progress)
         model.failImportEntry(progress: progress, mapping: mapping)
 
-        if case .importResult(let result) = model.route {
+        if case let .importResult(result) = model.route {
             XCTAssertEqual(result.resultSummaryText, "Imported 1, failed 1, stopped 0, pending 0.")
             XCTAssertEqual(result.items.map(\.status), [.failed])
         } else {
             XCTFail("Expected S1-21 import result route")
         }
     }
+}
+
+@MainActor
+private struct S119ConflictReviewFixture {
+    let duplicateURL: URL
+    let nameURL: URL
+    let blockedURL: URL
+    let importer: S118RecordingBatchImporter
+    let model: ImportFolderPreviewModel
+    let request: ImportEntryRequest
+}
+
+@MainActor
+private func makeS119ConflictReviewFixture() -> S119ConflictReviewFixture {
+    let duplicateURL = URL(fileURLWithPath: "/tmp/client-a/dup.pdf")
+    let nameURL = URL(fileURLWithPath: "/tmp/client-a/name.pdf")
+    let blockedURL = URL(fileURLWithPath: "/tmp/client-a/private.pdf")
+    let scanner = s119StaticScanner(urls: [duplicateURL, nameURL, blockedURL])
+    let prechecker = S119StaticConflictPrechecker(results: [
+        duplicateURL.path: .duplicate(existingPath: "docs/existing-dup.pdf"),
+        nameURL.path: .nameConflict(existingPath: "docs/name.pdf"),
+        blockedURL.path: .blocked("Conflict precheck failed: permission denied")
+    ])
+    let importer = S118RecordingBatchImporter()
+    let model = ImportFolderPreviewModel(
+        predictor: s119ConflictReviewPredictor(),
+        importer: importer,
+        errorMapper: S117RecordingErrorMapper(),
+        conflictPrechecker: prechecker,
+        scanner: scanner
+    )
+    let request = s119FolderRequest(
+        rootURL: URL(fileURLWithPath: "/tmp/client-a"),
+        allowReplaceDuringImport: true
+    )
+    return S119ConflictReviewFixture(
+        duplicateURL: duplicateURL,
+        nameURL: nameURL,
+        blockedURL: blockedURL,
+        importer: importer,
+        model: model,
+        request: request
+    )
+}
+
+private func s119ConflictReviewPredictor() -> S119MappedPredictor {
+    S119MappedPredictor(resultsByFilename: [
+        "dup.pdf": .success(.s119Prediction(category: "docs", suggestedName: "dup.pdf")),
+        "name.pdf": .success(.s119Prediction(category: "docs", suggestedName: "name.pdf")),
+        "private.pdf": .success(.s119Prediction(category: "docs", suggestedName: "private.pdf"))
+    ])
+}
+
+@MainActor
+private func applyS119InitialConflictResolutions(
+    model: ImportFolderPreviewModel,
+    fixture: S119ConflictReviewFixture
+) {
+    model.setRowStatus(.skippedDuplicate(existingPath: "docs/existing-dup.pdf"), for: fixture.duplicateURL.path)
+    model.updateNameConflictResolution(for: fixture.nameURL.path, resolution: .replace(isConfirmed: false))
+    model.setRowStatus(.nameConflict(
+        existingPath: "docs/name.pdf",
+        resolution: .replace(isConfirmed: false)
+    ), for: fixture.blockedURL.path)
+}
+
+@MainActor
+private func confirmS119Replace(model: ImportFolderPreviewModel, rowID: String) throws {
+    let context: SingleFileReplaceConfirmationContext = try XCTUnwrap(
+        model.beginReplaceConfirmation(for: rowID)
+    )
+    model.applyReplaceConfirmation(for: rowID, decision: context.decision(understandsReplace: true))
+}
+
+@MainActor
+private func assertS119ConflictImportResult(
+    outcome: ImportBatchImportResult?,
+    recordedRequests: [S118BatchImportRequest],
+    model: ImportFolderPreviewModel
+) {
+    XCTAssertEqual(recordedRequests, [
+        S118BatchImportRequest(
+            destination: .autoClassify,
+            suggestedCategory: "docs",
+            overrideFilename: "name.pdf",
+            duplicateStrategy: .overwrite
+        ),
+        S118BatchImportRequest(
+            destination: .autoClassify,
+            suggestedCategory: "docs",
+            overrideFilename: "private.pdf",
+            duplicateStrategy: .overwrite
+        )
+    ])
+    XCTAssertEqual(outcome?.succeededEntries.count, 2)
+    XCTAssertEqual(outcome?.skippedDuplicateCount, 1)
+    XCTAssertEqual(model.rows.map(\.status.tag), ["SKIPPED", "IMPORTED", "IMPORTED"])
+}
+
+@MainActor
+private struct S119FatalFolderImportScenario {
+    let secondURL: URL
+    let importer: S118SequenceBatchImporter
+    let importModel: ImportFolderPreviewModel
+    let opening: RepositoryOpeningResult
+    let controlState: ImportProgressControlState
+    let model: OnboardingModel
+}
+
+@MainActor
+private func makeS119FatalFolderImportScenario() -> S119FatalFolderImportScenario {
+    let urls = [
+        URL(fileURLWithPath: "/tmp/client-a/first.pdf"),
+        URL(fileURLWithPath: "/tmp/client-a/second.pdf"),
+        URL(fileURLWithPath: "/tmp/client-a/third.pdf")
+    ]
+    let importer = S118SequenceBatchImporter(results: [
+        .success(.s117Fixture(currentName: "first.pdf", category: "docs")),
+        .failure(CoreError.Io(message: "staging write failed")),
+        .success(.s117Fixture(currentName: "third.pdf", category: "docs"))
+    ])
+    let importModel = ImportFolderPreviewModel(
+        predictor: s119FatalFolderPredictor(),
+        importer: importer,
+        errorMapper: S120FatalFolderErrorMapper(),
+        conflictPrechecker: S119NoopConflictPrechecker(),
+        scanner: s119StaticScanner(urls: urls)
+    )
+    let controlState = ImportProgressControlState()
+    let model = OnboardingModel(
+        settingsReader: S117StaticSettingsReader(repoPath: nil),
+        importProgressControlState: controlState,
+        accessibilityAnnouncer: S117RecordingAccessibilityAnnouncer(),
+        helpOpener: S117NoopWelcomeHelpOpener()
+    )
+    return S119FatalFolderImportScenario(
+        secondURL: urls[1],
+        importer: importer,
+        importModel: importModel,
+        opening: .s117Fixture(repoPath: "/tmp/repo"),
+        controlState: controlState,
+        model: model
+    )
+}
+
+private func s119FatalFolderPredictor() -> S119MappedPredictor {
+    S119MappedPredictor(resultsByFilename: [
+        "first.pdf": .success(.s119Prediction(category: "docs", suggestedName: "first.pdf")),
+        "second.pdf": .success(.s119Prediction(category: "docs", suggestedName: "second.pdf")),
+        "third.pdf": .success(.s119Prediction(category: "docs", suggestedName: "third.pdf"))
+    ])
+}
+
+private func s119ExpectedCopyAndIndexRequests() -> [S118BatchImportRequest] {
+    [
+        s119ExpectedImportRequest(storageMode: .copy, overrideFilename: "invoice-2026.pdf"),
+        s119ExpectedImportRequest(storageMode: .copy, overrideFilename: "reference-index.pdf"),
+        s119ExpectedImportRequest(storageMode: .indexOnly, overrideFilename: "invoice-2026.pdf"),
+        s119ExpectedImportRequest(storageMode: .indexOnly, overrideFilename: "reference-index.pdf")
+    ]
+}
+
+private func s119ExpectedImportRequest(
+    storageMode: ImportSingleFileStorageMode,
+    overrideFilename: String
+) -> S118BatchImportRequest {
+    S118BatchImportRequest(
+        storageMode: storageMode,
+        destination: .category("docs"),
+        suggestedCategory: "docs",
+        overrideFilename: overrideFilename,
+        duplicateStrategy: .ask
+    )
+}
+
+private func s119FatalRetryContext(sourcePath: String) -> ImportProgressRetryContext {
+    ImportProgressRetryContext(
+        repoPath: "/tmp/repo",
+        sourcePath: sourcePath,
+        storageMode: .copy,
+        overrideCategory: "docs",
+        overrideFilename: "second.pdf",
+        duplicateStrategy: .ask
+    )
+}
+
+private func assertS119FatalPause(_ pausedState: ImportProgressRouteState) {
+    XCTAssertEqual(pausedState.titleText, "导入已暂停")
+    XCTAssertEqual(pausedState.items.map(\.phase), [.done, .failed, .pending])
+    XCTAssertFalse(pausedState.canRetryCurrentItem)
+    XCTAssertEqual(pausedState.retryStatusText, "Checking recovery state...")
 }
 
 private struct S120FatalFolderErrorMapper: CoreErrorMapping {
@@ -442,7 +479,7 @@ private struct S120FatalFolderErrorMapper: CoreErrorMapping {
         rawContext: "S1-20 folder fatal import progress"
     )
 
-    func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
+    func mapCoreError(_: CoreError) async -> CoreErrorMappingSnapshot {
         Self.mapping
     }
 }

@@ -1,6 +1,6 @@
 import Foundation
 
-enum ImportProgressDuplicateStrategy: String, Equatable, Sendable {
+enum ImportProgressDuplicateStrategy: String, Equatable {
     case skip
     case overwrite
     case keepBoth
@@ -22,18 +22,18 @@ enum ImportProgressDuplicateStrategy: String, Equatable, Sendable {
     var coreStrategy: DuplicateStrategy {
         switch self {
         case .skip:
-            return .skip
+            .skip
         case .overwrite:
-            return .overwrite
+            .overwrite
         case .keepBoth:
-            return .keepBoth
+            .keepBoth
         case .ask:
-            return .ask
+            .ask
         }
     }
 }
 
-struct ImportProgressRetryContext: Equatable, Sendable {
+struct ImportProgressRetryContext: Equatable {
     var repoPath: String
     var sourcePath: String
     var storageMode: ImportSingleFileStorageMode
@@ -42,14 +42,14 @@ struct ImportProgressRetryContext: Equatable, Sendable {
     var duplicateStrategy: ImportProgressDuplicateStrategy
 }
 
-enum ImportProgressRecoveryCheckState: Equatable, Sendable {
+enum ImportProgressRecoveryCheckState: Equatable {
     case unavailable
     case checking
     case retryAllowed(RecoveryReportSnapshot?)
     case retryBlocked(String, RecoveryReportSnapshot?)
 }
 
-enum ImportProgressDiagnosticsState: Equatable, Sendable {
+enum ImportProgressDiagnosticsState: Equatable {
     case idle
     case confirmingPrivacy
     case collecting
@@ -57,7 +57,7 @@ enum ImportProgressDiagnosticsState: Equatable, Sendable {
     case failed(CoreErrorMappingSnapshot)
 }
 
-enum ImportProgressStopState: Equatable, Sendable {
+enum ImportProgressStopState: Equatable {
     case idle
     case stopping
     case stopped
@@ -110,8 +110,8 @@ final class ImportProgressControlState {
     }
 }
 
-struct ImportProgressRouteState: Equatable, Sendable {
-    enum Status: Equatable, Sendable {
+struct ImportProgressRouteState: Equatable {
+    enum Status: Equatable {
         case running
         case failed(CoreErrorMappingSnapshot)
     }
@@ -151,7 +151,7 @@ struct ImportProgressRouteState: Equatable, Sendable {
                 targetPath: currentPath,
                 phase: .copying,
                 errorMessage: nil
-            ),
+            )
         ]
         retryContext = nil
         recoveryCheck = .unavailable
@@ -181,7 +181,7 @@ struct ImportProgressRouteState: Equatable, Sendable {
                 targetPath: currentPath,
                 phase: storageMode.progressPhase,
                 errorMessage: nil
-            ),
+            )
         ]
         self.retryContext = retryContext
         recoveryCheck = .unavailable
@@ -233,7 +233,7 @@ struct ImportProgressRouteState: Equatable, Sendable {
     }
 
     var errorMapping: CoreErrorMappingSnapshot? {
-        guard case .failed(let mapping) = status else { return nil }
+        guard case let .failed(mapping) = status else { return nil }
         return mapping
     }
 
@@ -344,14 +344,14 @@ struct ImportProgressRouteState: Equatable, Sendable {
     ) -> ImportBatchProgressSnapshot.Phase {
         switch status {
         case .running:
-            return completed > 0 ? .done : .copying
+            completed > 0 ? .done : .copying
         case .failed:
-            return failed > 0 ? .failed : .pending
+            failed > 0 ? .failed : .pending
         }
     }
 
     private static func fallbackErrorMessage(status: Status) -> String? {
-        guard case .failed(let mapping) = status else { return nil }
+        guard case let .failed(mapping) = status else { return nil }
         return mapping.userMessage
     }
 
@@ -409,12 +409,12 @@ extension ImportProgressRouteState {
             return "Retry is unavailable for this item."
         case .checking:
             return "Checking recovery state..."
-        case .retryAllowed(let report):
+        case let .retryAllowed(report):
             guard let report, report.hasVisibleDetails else {
                 return "Recovery state checked. Current item can be retried."
             }
             return "Recovery checked: cleaned \(report.cleanedStagingFiles), reverted \(report.revertedStagingDbRows)."
-        case .retryBlocked(let message, _):
+        case let .retryBlocked(message, _):
             return message
         }
     }
@@ -426,13 +426,13 @@ extension ImportProgressRouteState {
     var recoveryCheckTaskID: String {
         switch recoveryCheck {
         case .checking:
-            return "checking-\(retryContext?.sourcePath ?? currentPath)"
+            "checking-\(retryContext?.sourcePath ?? currentPath)"
         case .unavailable:
-            return "unavailable"
+            "unavailable"
         case .retryAllowed:
-            return "allowed-\(retryContext?.sourcePath ?? currentPath)"
+            "allowed-\(retryContext?.sourcePath ?? currentPath)"
         case .retryBlocked:
-            return "blocked-\(retryContext?.sourcePath ?? currentPath)"
+            "blocked-\(retryContext?.sourcePath ?? currentPath)"
         }
     }
 }
@@ -445,11 +445,11 @@ private extension ImportSingleFileStorageMode {
     var progressPhase: ImportBatchProgressSnapshot.Phase {
         switch self {
         case .move:
-            return .moving
+            .moving
         case .indexOnly:
-            return .writingIndex
+            .writingIndex
         case .copy:
-            return .copying
+            .copying
         }
     }
 }

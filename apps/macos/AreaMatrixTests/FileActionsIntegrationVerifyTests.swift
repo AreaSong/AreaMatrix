@@ -1,5 +1,5 @@
-import XCTest
 @testable import AreaMatrix
+import XCTest
 
 final class FileActionsIntegrationVerifyTests: XCTestCase {
     @MainActor
@@ -51,7 +51,7 @@ final class FileActionsIntegrationVerifyTests: XCTestCase {
         await context.model.submitMoveToCategory(fileID: renamed.id, targetCategory: "finance")
         let moved = try XCTUnwrap(context.model.selectedFileDetail)
         let refreshedTree = try await context.bridge.listTree(repoPath: context.repoURL.path, locale: "zh-Hans")
-        let refreshPlan = MainRepositoryContentCategoryMoveRefreshPlan.make(
+        let refreshPlan = CategoryMoveRefreshPlan.make(
             movedFile: moved,
             currentSidebarID: "docs",
             currentTree: context.opening.tree,
@@ -163,7 +163,7 @@ final class FileActionsIntegrationVerifyTests: XCTestCase {
             .previewMove(fileID: owned.id, targetCategory: "finance"),
             .move(fileID: owned.id, targetCategory: "finance"),
             .removeIndex(fileID: indexed.id),
-            .delete(fileID: trash.id),
+            .delete(fileID: trash.id)
         ])
         XCTAssertTrue(calls.allSatisfy(\.isDeclaredFileActionCapability))
     }
@@ -186,7 +186,7 @@ private struct FileActionsRealCoreContext {
     }
 }
 
-private enum FileActionsCoreCall: Equatable, Sendable {
+private enum FileActionsCoreCall: Equatable {
     case rename(fileID: Int64, newName: String)
     case previewMove(fileID: Int64, targetCategory: String)
     case move(fileID: Int64, targetCategory: String)
@@ -196,7 +196,7 @@ private enum FileActionsCoreCall: Equatable, Sendable {
     var isDeclaredFileActionCapability: Bool {
         switch self {
         case .rename, .delete, .removeIndex, .previewMove, .move:
-            return true
+            true
         }
     }
 }
@@ -215,13 +215,13 @@ private actor FileActionsRecordingCore: CoreFileListing,
         filesByID = Dictionary(uniqueKeysWithValues: files.map { ($0.id, $0) })
     }
 
-    func listFiles(repoPath: String, filter: FileFilterSnapshot) async throws -> [FileEntrySnapshot] {
+    func listFiles(repoPath _: String, filter: FileFilterSnapshot) async throws -> [FileEntrySnapshot] {
         filesByID.values
             .filter { filter.category == nil || $0.category == filter.category }
             .sorted { $0.id < $1.id }
     }
 
-    func getFile(repoPath: String, fileID: Int64) async throws -> FileEntrySnapshot {
+    func getFile(repoPath _: String, fileID: Int64) async throws -> FileEntrySnapshot {
         guard let file = filesByID[fileID] else {
             throw CoreError.FileNotFound(path: "\(fileID)")
         }
@@ -237,12 +237,12 @@ private actor FileActionsRecordingCore: CoreFileListing,
         return file
     }
 
-    func deleteFile(repoPath: String, fileID: Int64) async throws {
+    func deleteFile(repoPath _: String, fileID: Int64) async throws {
         calls.append(.delete(fileID: fileID))
         filesByID.removeValue(forKey: fileID)
     }
 
-    func removeIndexEntry(repoPath: String, fileID: Int64) async throws {
+    func removeIndexEntry(repoPath _: String, fileID: Int64) async throws {
         calls.append(.removeIndex(fileID: fileID))
         filesByID.removeValue(forKey: fileID)
     }
@@ -277,7 +277,7 @@ private actor FileActionsRecordingCore: CoreFileListing,
         return file
     }
 
-    func listChanges(repoPath: String, filter: ChangeFilterSnapshot) async throws -> [ChangeLogEntrySnapshot] {
+    func listChanges(repoPath _: String, filter _: ChangeFilterSnapshot) async throws -> [ChangeLogEntrySnapshot] {
         []
     }
 
@@ -292,7 +292,9 @@ private actor FileActionsRecordingCore: CoreFileListing,
         )
     }
 
-    func recordedActionCalls() -> [FileActionsCoreCall] { calls }
+    func recordedActionCalls() -> [FileActionsCoreCall] {
+        calls
+    }
 }
 
 private extension RepositoryOpeningResult {
@@ -332,7 +334,7 @@ private extension RepositoryTreeNodeSnapshot {
                     displayName: "finance",
                     fileCount: financeCount,
                     children: []
-                ),
+                )
             ]
         )
     }

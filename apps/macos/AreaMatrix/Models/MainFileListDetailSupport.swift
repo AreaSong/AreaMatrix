@@ -1,38 +1,42 @@
 import Foundation
 
-struct MultiSelectionDetailRefreshResult: Equatable, Sendable {
+struct MultiSelectionDetailRefreshResult: Equatable {
     var files: [FileEntrySnapshot]
     var errorMapping: CoreErrorMappingSnapshot?
 }
 
+struct MultiSelectionDetailRefreshRequest {
+    var ids: Set<Int64>
+    var repoPath: String
+    var currentFiles: [FileEntrySnapshot]
+    var detailer: any CoreFileDetailing
+    var errorMapper: any CoreErrorMapping
+}
+
 enum MultiSelectionDetailLoader {
     static func refresh(
-        ids: Set<Int64>,
-        repoPath: String,
-        currentFiles: [FileEntrySnapshot],
-        detailer: any CoreFileDetailing,
-        errorMapper: any CoreErrorMapping,
+        request: MultiSelectionDetailRefreshRequest,
         shouldContinue: @escaping @MainActor () -> Bool
     ) async -> MultiSelectionDetailRefreshResult? {
         var refreshedFiles: [FileEntrySnapshot] = []
         var firstFailure: CoreErrorMappingSnapshot?
 
-        for id in ids.sorted() {
+        for id in request.ids.sorted() {
             do {
-                let loadedFile = try await detailer.getFile(repoPath: repoPath, fileID: id)
+                let loadedFile = try await request.detailer.getFile(repoPath: request.repoPath, fileID: id)
                 guard await shouldContinue() else { return nil }
-                if ids.contains(loadedFile.id) {
+                if request.ids.contains(loadedFile.id) {
                     refreshedFiles.append(loadedFile)
                 }
             } catch {
-                let mappedError = await mapCoreError(error, errorMapper: errorMapper)
+                let mappedError = await mapCoreError(error, errorMapper: request.errorMapper)
                 guard await shouldContinue() else { return nil }
                 firstFailure = firstFailure ?? mappedError
             }
         }
 
         return MultiSelectionDetailRefreshResult(
-            files: mergedFiles(replacing: currentFiles, with: refreshedFiles),
+            files: mergedFiles(replacing: request.currentFiles, with: refreshedFiles),
             errorMapping: firstFailure
         )
     }
@@ -77,7 +81,7 @@ extension MainFileListModel {
     }
 
     func missingDetailSnapshotIfNeeded(_ error: Error, fileID: Int64) -> FileEntrySnapshot? {
-        guard case .FileNotFound(let path) = error as? CoreError else { return nil }
+        guard case let .FileNotFound(path) = error as? CoreError else { return nil }
         return missingSnapshot(fileID: fileID, fallbackPath: path)
     }
 
@@ -97,6 +101,20 @@ extension MainFileListModel {
             return await errorMapper.mapCoreError(coreError)
         }
         return await errorMapper.mapCoreError(CoreError.Internal(message: error.localizedDescription))
+    }
+
+    func validateExternalSyncResult(
+        _ result: SyncResultSnapshot,
+        event: MainExternalCreatedFileEvent
+    ) throws {
+        guard result.errors.isEmpty else {
+            throw CoreError.Internal(
+                message: """
+                \(event.kind.displayName) event \(event.fsEventID) returned sync errors: \(result.errors
+                    .joined(separator: "; "))
+                """
+            )
+        }
     }
 }
 

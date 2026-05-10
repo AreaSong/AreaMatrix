@@ -1,42 +1,44 @@
 import Foundation
 
-enum ImportSingleFileDuplicateResolutionStrategy: String, CaseIterable, Identifiable, Equatable, Sendable {
+enum SingleFileDuplicateResolutionStrategy: String, CaseIterable, Identifiable, Equatable {
     case skip
     case keepBoth
     case replace
 
-    var id: String { rawValue }
+    var id: String {
+        rawValue
+    }
 
     var title: String {
         switch self {
         case .skip:
-            return "跳过导入（推荐）"
+            "跳过导入（推荐）"
         case .keepBoth:
-            return "保留两份（自动编号）"
+            "保留两份（自动编号）"
         case .replace:
-            return "替换已有文件（危险）"
+            "替换已有文件（危险）"
         }
     }
 
     var detail: String {
         switch self {
         case .skip:
-            return "不会创建新文件，保留资料库中的已有条目。"
+            "不会创建新文件，保留资料库中的已有条目。"
         case .keepBoth:
-            return "最终点击 Import 后由 Core 使用 KeepBoth 策略写入。"
+            "最终点击 Import 后由 Core 使用 KeepBoth 策略写入。"
         case .replace:
-            return "必须先完成二次确认；最终点击 Import 后由 Core 安全替换。"
+            "必须先完成二次确认；最终点击 Import 后由 Core 安全替换。"
         }
     }
 
     var coreStrategy: DuplicateStrategy {
         switch self {
         case .skip:
-            return .skip
+            .skip
         case .keepBoth:
-            return .keepBoth
+            .keepBoth
         case .replace:
-            return .overwrite
+            .overwrite
         }
     }
 }
@@ -50,7 +52,7 @@ extension ImportSingleFilePreviewModel {
             )
         }
         if case .name = result.conflict {
-            return resolvedImportRelativePathForNameConflict
+            return resolvedConflictImportPath
         }
         guard case .duplicate = result.conflict else {
             return result.targetRelativePath
@@ -114,7 +116,7 @@ extension ImportSingleFilePreviewModel {
 
     var skippedDuplicateExistingPath: String? {
         guard let result = currentPreflightResult else { return nil }
-        guard case .duplicate(let existingPath) = result.conflict else { return nil }
+        guard case let .duplicate(existingPath) = result.conflict else { return nil }
         return duplicateResolution == .skip ? existingPath : nil
     }
 
@@ -137,7 +139,7 @@ extension ImportSingleFilePreviewModel {
         }
     }
 
-    func updateDuplicateResolution(_ strategy: ImportSingleFileDuplicateResolutionStrategy) {
+    func updateDuplicateResolution(_ strategy: SingleFileDuplicateResolutionStrategy) {
         guard canSelectDuplicateResolution(strategy) else { return }
         duplicateResolution = strategy
         if strategy != .replace {
@@ -173,7 +175,7 @@ extension ImportSingleFilePreviewModel {
         clearReplaceConfirmationRecovery()
     }
 
-    func applyReplaceConfirmation(_ decision: ImportSingleFileReplaceConfirmationDecision) {
+    func applyReplaceConfirmation(_ decision: SingleFileReplaceConfirmationDecision) {
         guard pendingReplaceConfirmation == decision.context else {
             setReplaceConfirmationFailure("Replace confirmation context expired")
             markReplaceConfirmed(false)
@@ -201,21 +203,21 @@ extension ImportSingleFilePreviewModel {
         replaceConfirmationActionTitle
     }
 
-    func canSelectDuplicateResolution(_ strategy: ImportSingleFileDuplicateResolutionStrategy) -> Bool {
+    func canSelectDuplicateResolution(_ strategy: SingleFileDuplicateResolutionStrategy) -> Bool {
         strategy != .replace || replaceOptionVisibility != .hidden
     }
 
-    private func replaceConfirmationContext(incomingPath: String) -> ImportSingleFileReplaceConfirmationContext? {
+    private func replaceConfirmationContext(incomingPath: String) -> SingleFileReplaceConfirmationContext? {
         guard let result = currentPreflightResult else { return nil }
         let existingPath: String
         switch result.conflict {
-        case .duplicate(let path), .name(let path):
+        case let .duplicate(path), let .name(path):
             existingPath = path
         case .none, .invalidFilename, .iCloudPlaceholder, .iCloudDownloadFailed, .corePreviewUnavailable,
              .sourceUnavailable, .error:
             return nil
         }
-        return ImportSingleFileReplaceConfirmationContext(
+        return SingleFileReplaceConfirmationContext(
             existingPath: existingPath,
             existingSizeBytes: result.existingFile?.sizeBytes,
             existingModifiedAt: result.existingFile?.updatedAt,
@@ -246,7 +248,7 @@ enum ImportSingleFileDuplicateKeepBothPreview {
     static func nextAvailablePath(
         preferredPath: String,
         existingPaths: Set<String>,
-        limit: Int = 1_000
+        limit: Int = 1000
     ) -> String? {
         guard existingPaths.contains(preferredPath) else { return preferredPath }
 
@@ -256,7 +258,7 @@ enum ImportSingleFileDuplicateKeepBothPreview {
         let base = filename.deletingPathExtension
         let ext = filename.pathExtension
 
-        for suffix in 1...limit {
+        for suffix in 1 ... limit {
             let candidateName = numberedFilename(base: base, ext: ext, suffix: suffix)
             let candidate = directory.isEmpty ? candidateName : "\(directory)/\(candidateName)"
             if !existingPaths.contains(candidate) {
@@ -275,7 +277,7 @@ enum ImportSingleFileDuplicateKeepBothPreview {
     }
 }
 
-enum ImportSingleFileNameConflictResolution: Hashable, Sendable {
+enum ImportSingleFileNameConflictResolution: Hashable {
     case keepBoth
     case renameIncoming(String)
     case replace
@@ -283,22 +285,22 @@ enum ImportSingleFileNameConflictResolution: Hashable, Sendable {
     var title: String {
         switch self {
         case .keepBoth:
-            return "保留两份（自动编号，推荐）"
+            "保留两份（自动编号，推荐）"
         case .renameIncoming:
-            return "重命名导入文件..."
+            "重命名导入文件..."
         case .replace:
-            return "替换已有文件（危险）"
+            "替换已有文件（危险）"
         }
     }
 
     var detail: String {
         switch self {
         case .keepBoth:
-            return "导入文件会使用自动编号，不覆盖已有文件。"
-        case .renameIncoming(let name):
-            return "导入文件将保存为 \(name)，已有文件保持不变。"
+            "导入文件会使用自动编号，不覆盖已有文件。"
+        case let .renameIncoming(name):
+            "导入文件将保存为 \(name)，已有文件保持不变。"
         case .replace:
-            return "必须先完成二次确认；旧文件会移到系统废纸篓。"
+            "必须先完成二次确认；旧文件会移到系统废纸篓。"
         }
     }
 }
@@ -323,14 +325,14 @@ extension ImportSingleFilePreviewModel {
                 return suggestedName.trimmingCharacters(in: .whitespacesAndNewlines)
             }
             return (path as NSString).lastPathComponent
-        case .renameIncoming(let name):
+        case let .renameIncoming(name):
             return name.trimmingCharacters(in: .whitespacesAndNewlines)
         case .replace:
             return suggestedName.trimmingCharacters(in: .whitespacesAndNewlines)
         }
     }
 
-    var resolvedImportRelativePathForNameConflict: String {
+    var resolvedConflictImportPath: String {
         guard let result = currentPreflightResult else {
             return ImportSingleFilePreflightTarget.relativePath(
                 category: selectedCategory,
@@ -355,7 +357,7 @@ extension ImportSingleFilePreviewModel {
         switch nameConflictResolution {
         case .keepBoth:
             return result.keepBothTargetRelativePath == nil ? "无法生成可用文件名" : nil
-        case .renameIncoming(let name):
+        case let .renameIncoming(name):
             let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
             if let validation = ImportSingleFileFilenameValidator.validationMessage(for: trimmed) {
                 return validation

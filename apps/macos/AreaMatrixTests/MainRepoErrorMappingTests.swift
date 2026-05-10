@@ -1,5 +1,5 @@
-import XCTest
 @testable import AreaMatrix
+import XCTest
 
 final class MainRepoErrorMappingTests: XCTestCase {
     func testMissingPathUsesReconnectFolderCopy() {
@@ -90,7 +90,7 @@ final class MainRepoErrorMappingTests: XCTestCase {
 
         await model.bootstrapIfNeeded()
 
-        guard case .mainRepoError(let repoPath, let routeMapping) = model.route else {
+        guard case let .mainRepoError(repoPath, routeMapping) = model.route else {
             return XCTFail("expected main repo error, got \(model.route)")
         }
 
@@ -121,7 +121,15 @@ final class MainRepoErrorMappingTests: XCTestCase {
 
         model.openMainRepositoryRepair(repoPath: "/tmp/repo")
 
-        XCTAssertEqual(model.route, .dbRepairConfirm(DatabaseRepairRouteState(repoPath: "/tmp/repo", scanSession: nil, mapping: mapping, returnRoute: .mainRepoError(mapping))))
+        XCTAssertEqual(
+            model.route,
+            .dbRepairConfirm(DatabaseRepairRouteState(
+                repoPath: "/tmp/repo",
+                scanSession: nil,
+                mapping: mapping,
+                returnRoute: .mainRepoError(mapping)
+            ))
+        )
         XCTAssertNil(model.mainRepoRecoveryErrorMapping)
     }
 
@@ -139,7 +147,7 @@ final class MainRepoErrorMappingTests: XCTestCase {
         )
         model.route = .mainRepoError("/tmp/repo", mapping)
         model.openMainRepositoryRepair(repoPath: "/tmp/repo")
-        guard case .dbRepairConfirm(let repairRoute) = model.route else {
+        guard case let .dbRepairConfirm(repairRoute) = model.route else {
             return XCTFail("expected db repair route")
         }
 
@@ -159,7 +167,8 @@ final class MainRepoErrorMappingTests: XCTestCase {
         let errorMapper = MainRepoRecordingErrorMapper(mapping: mapping)
         let model = OnboardingModel(
             settingsReader: ShellStaticSettingsReader(repoPath: "/tmp/repo"),
-            emptyRepositoryOpener: ShellRecordingRepositoryOpener(result: .failure(CoreError.Db(message: "db corrupt"))),
+            emptyRepositoryOpener: ShellRecordingRepositoryOpener(result: .failure(CoreError
+                    .Db(message: "db corrupt"))),
             startupRecoverer: ShellStaticStartupRecoverer(),
             errorMapper: errorMapper,
             helpOpener: ShellNoopWelcomeHelpOpener()
@@ -213,7 +222,7 @@ final class MainRepoErrorMappingTests: XCTestCase {
         model.requestMainRepositoryDiagnosticsPrivacyConfirmation(repoPath: "/tmp/repo")
         await model.collectMainRepositoryDiagnostics(repoPath: "/tmp/repo")
 
-        guard case .failed(let mapping) = model.mainRepoDiagnostics else {
+        guard case let .failed(mapping) = model.mainRepoDiagnostics else {
             return XCTFail("expected failed diagnostics state")
         }
 
@@ -258,7 +267,7 @@ final class MainRepoErrorMappingTests: XCTestCase {
             initializedPathValidator: initializedValidator,
             emptyRepositoryOpener: opener,
             startupRecoverer: ShellStaticStartupRecoverer(),
-            existingRepositoryMetadataReader: ShellStaticExistingRepositoryMetadataReader(
+            existingRepositoryMetadataReader: ShellExistingRepoMetadataReader(
                 schemaVersion: 1,
                 configuredRepoPath: "/tmp/repo"
             ),
@@ -293,13 +302,16 @@ final class MainRepoErrorMappingTests: XCTestCase {
         )
         let picker = ShellRecordingDirectoryPicker(selectedURL: URL(fileURLWithPath: selectedPath, isDirectory: true))
         let initializedValidator = ShellRecordingInitializedPathValidator(result: .success(validation))
-        let opener = ShellRecordingRepositoryOpener(result: .success(.shellFixture(repoPath: selectedPath, fileCount: 1)))
+        let opener = ShellRecordingRepositoryOpener(result: .success(.shellFixture(
+            repoPath: selectedPath,
+            fileCount: 1
+        )))
         let model = OnboardingModel(
             settingsReader: ShellStaticSettingsReader(repoPath: nil),
             initializedPathValidator: initializedValidator,
             emptyRepositoryOpener: opener,
             startupRecoverer: ShellStaticStartupRecoverer(),
-            existingRepositoryMetadataReader: ShellStaticExistingRepositoryMetadataReader(
+            existingRepositoryMetadataReader: ShellExistingRepoMetadataReader(
                 schemaVersion: 1,
                 configuredRepoPath: "/tmp/some-other-repo"
             ),

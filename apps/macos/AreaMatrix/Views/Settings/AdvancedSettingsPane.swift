@@ -4,7 +4,9 @@ struct AdvancedSettingsPane: View {
     @StateObject private var model: AdvancedSettingsModel
     @State private var isDangerZoneExpanded = false
     private let onOpenRecoveryTools: () -> Void
+}
 
+extension AdvancedSettingsPane {
     init(
         repoPath: String,
         onOpenRecoveryTools: @escaping () -> Void = {},
@@ -15,9 +17,9 @@ struct AdvancedSettingsPane: View {
         appVersionReader: any AppVersionReading = BundleAppVersionReader(),
         coreVersionReader: any CoreVersionReading = CoreBridge(),
         metadataReader: any ExistingRepositoryMetadataReading = SQLiteExistingRepositoryMetadataReader(),
-        logsOpener: any AdvancedSettingsLogFolderOpening = NSWorkspaceAdvancedSettingsLogFolderOpener(),
+        logsOpener: any AdvancedSettingsLogFolderOpening = AdvancedSettingsLogFolderOpener(),
         summaryCopier: any AdvancedSettingsDiagnosticSummaryCopying =
-            NSPasteboardAdvancedSettingsDiagnosticSummaryCopier(),
+            AdvancedSettingsDiagnosticCopier(),
         errorMapper: any CoreErrorMapping = CoreBridge()
     ) {
         _model = StateObject(wrappedValue: AdvancedSettingsModel(
@@ -133,7 +135,7 @@ struct AdvancedSettingsPane: View {
             loadingContent
         case .loaded:
             loadedContent
-        case .failed(let error):
+        case let .failed(error):
             loadErrorContent(error)
         }
     }
@@ -207,7 +209,7 @@ struct AdvancedSettingsPane: View {
             .padding(12)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(Color.blue.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
-        case .collected(let snapshot):
+        case let .collected(snapshot):
             VStack(alignment: .leading, spacing: 8) {
                 Label("Diagnostics exported", systemImage: "checkmark.circle")
                     .foregroundStyle(.green)
@@ -225,7 +227,7 @@ struct AdvancedSettingsPane: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(Color.green.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
             .accessibilityElement(children: .combine)
-        case .failed(let error):
+        case let .failed(error):
             AdvancedSettingsInlineBanner(error: error, tint: .red)
         }
     }
@@ -234,14 +236,14 @@ struct AdvancedSettingsPane: View {
     private var actionFeedbackBanner: some View {
         if let feedback = model.actionFeedback {
             switch feedback {
-            case .success(let message):
+            case let .success(message):
                 Label(message, systemImage: "checkmark.circle")
                     .foregroundStyle(.green)
                     .padding(12)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(Color.green.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
                     .accessibilityElement(children: .combine)
-            case .failed(let error):
+            case let .failed(error):
                 AdvancedSettingsInlineBanner(error: error, tint: .red)
             }
         }

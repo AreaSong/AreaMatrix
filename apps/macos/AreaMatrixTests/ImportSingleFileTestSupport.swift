@@ -1,5 +1,5 @@
-import Foundation
 @testable import AreaMatrix
+import Foundation
 
 struct ImportSingleFileStaticPreflight: ImportSingleFilePreflighting {
     var result: ImportSingleFilePreflightResult
@@ -16,7 +16,7 @@ struct ImportSingleFileStaticPreflight: ImportSingleFilePreflighting {
     }
 
     func preflightSingleFileImport(
-        request: ImportSingleFilePreflightRequest
+        request _: ImportSingleFilePreflightRequest
     ) async -> ImportSingleFilePreflightResult {
         result
     }
@@ -25,7 +25,7 @@ struct ImportSingleFileStaticPreflight: ImportSingleFilePreflighting {
 struct ImportSingleFileStaticICloudDownloader: ICloudPlaceholderDownloading {
     var error: Error?
 
-    func downloadPlaceholder(at sourceURL: URL) async throws {
+    func downloadPlaceholder(at _: URL) async throws {
         if let error {
             throw error
         }
@@ -40,19 +40,19 @@ struct ImportSingleFileStaticLocalizedError: LocalizedError {
     }
 }
 
-struct S117PredictRequest: Equatable, Sendable {
+struct S117PredictRequest: Equatable {
     var repoPath: String
     var filename: String
 }
 
-struct S117ImportRequest: Equatable, Sendable {
+struct S117ImportRequest: Equatable {
     var mode: ImportSingleFileStorageMode
     var overrideCategory: String
     var overrideFilename: String
     var duplicateStrategy: DuplicateStrategy = .ask
 }
 
-struct S118BatchImportRequest: Equatable, Sendable {
+struct S118BatchImportRequest: Equatable {
     var storageMode: ImportSingleFileStorageMode = .copy
     var destination: ImportEntryDestination
     var suggestedCategory: String?
@@ -82,8 +82,8 @@ actor S117RecordingImporter: CoreFileImporting {
     private var requests: [S117ImportRequest] = []
 
     func importCopiedFile(
-        repoPath: String,
-        sourceURL: URL,
+        repoPath _: String,
+        sourceURL _: URL,
         overrideCategory: String,
         overrideFilename: String,
         duplicateStrategy: DuplicateStrategy
@@ -97,8 +97,8 @@ actor S117RecordingImporter: CoreFileImporting {
     }
 
     func importMovedFile(
-        repoPath: String,
-        sourceURL: URL,
+        repoPath _: String,
+        sourceURL _: URL,
         overrideCategory: String,
         overrideFilename: String,
         duplicateStrategy: DuplicateStrategy
@@ -112,8 +112,8 @@ actor S117RecordingImporter: CoreFileImporting {
     }
 
     func importIndexedFile(
-        repoPath: String,
-        sourceURL: URL,
+        repoPath _: String,
+        sourceURL _: URL,
         overrideCategory: String,
         overrideFilename: String,
         duplicateStrategy: DuplicateStrategy
@@ -158,11 +158,11 @@ actor S117SuspendingImporter: CoreFileImporting {
     }
 
     func importCopiedFile(
-        repoPath: String,
-        sourceURL: URL,
+        repoPath _: String,
+        sourceURL _: URL,
         overrideCategory: String,
         overrideFilename: String,
-        duplicateStrategy: DuplicateStrategy
+        duplicateStrategy _: DuplicateStrategy
     ) async throws -> FileEntrySnapshot {
         await gate.markStarted()
         await gate.waitUntilFinished()
@@ -170,21 +170,21 @@ actor S117SuspendingImporter: CoreFileImporting {
     }
 
     func importMovedFile(
-        repoPath: String,
-        sourceURL: URL,
-        overrideCategory: String,
-        overrideFilename: String,
-        duplicateStrategy: DuplicateStrategy
+        repoPath _: String,
+        sourceURL _: URL,
+        overrideCategory _: String,
+        overrideFilename _: String,
+        duplicateStrategy _: DuplicateStrategy
     ) async throws -> FileEntrySnapshot {
         throw CoreError.Internal(message: "unexpected move import")
     }
 
     func importIndexedFile(
-        repoPath: String,
-        sourceURL: URL,
-        overrideCategory: String,
-        overrideFilename: String,
-        duplicateStrategy: DuplicateStrategy
+        repoPath _: String,
+        sourceURL _: URL,
+        overrideCategory _: String,
+        overrideFilename _: String,
+        duplicateStrategy _: DuplicateStrategy
     ) async throws -> FileEntrySnapshot {
         throw CoreError.Internal(message: "unexpected indexed import")
     }
@@ -235,31 +235,31 @@ actor S117FailingImporter: CoreFileImporting {
     }
 
     func importCopiedFile(
-        repoPath: String,
-        sourceURL: URL,
-        overrideCategory: String,
-        overrideFilename: String,
-        duplicateStrategy: DuplicateStrategy
+        repoPath _: String,
+        sourceURL _: URL,
+        overrideCategory _: String,
+        overrideFilename _: String,
+        duplicateStrategy _: DuplicateStrategy
     ) async throws -> FileEntrySnapshot {
         throw error
     }
 
     func importMovedFile(
-        repoPath: String,
-        sourceURL: URL,
-        overrideCategory: String,
-        overrideFilename: String,
-        duplicateStrategy: DuplicateStrategy
+        repoPath _: String,
+        sourceURL _: URL,
+        overrideCategory _: String,
+        overrideFilename _: String,
+        duplicateStrategy _: DuplicateStrategy
     ) async throws -> FileEntrySnapshot {
         throw error
     }
 
     func importIndexedFile(
-        repoPath: String,
-        sourceURL: URL,
-        overrideCategory: String,
-        overrideFilename: String,
-        duplicateStrategy: DuplicateStrategy
+        repoPath _: String,
+        sourceURL _: URL,
+        overrideCategory _: String,
+        overrideFilename _: String,
+        duplicateStrategy _: DuplicateStrategy
     ) async throws -> FileEntrySnapshot {
         throw error
     }
@@ -268,55 +268,40 @@ actor S117FailingImporter: CoreFileImporting {
 actor S118RecordingBatchImporter: CoreBatchCopyImporting {
     private var requests: [S118BatchImportRequest] = []
 
-    func importCopiedFile(
-        repoPath: String,
-        sourceURL: URL,
-        destination: ImportEntryDestination,
-        suggestedCategory: String?,
-        overrideFilename: String,
-        duplicateStrategy: DuplicateStrategy
-    ) async throws -> FileEntrySnapshot {
-        try await importBatchFile(
-            repoPath: repoPath,
-            sourceURL: sourceURL,
+    func importCopiedFile(request: CoreBatchImportRequest) async throws -> FileEntrySnapshot {
+        try await importBatchFile(request: CoreBatchImportRequest(
+            repoPath: request.repoPath,
+            sourceURL: request.sourceURL,
             storageMode: .copy,
-            destination: destination,
-            suggestedCategory: suggestedCategory,
-            overrideFilename: overrideFilename,
-            duplicateStrategy: duplicateStrategy
-        )
+            destination: request.destination,
+            suggestedCategory: request.suggestedCategory,
+            overrideFilename: request.overrideFilename,
+            duplicateStrategy: request.duplicateStrategy
+        ))
     }
 
-    func importBatchFile(
-        repoPath: String,
-        sourceURL: URL,
-        storageMode: ImportSingleFileStorageMode,
-        destination: ImportEntryDestination,
-        suggestedCategory: String?,
-        overrideFilename: String,
-        duplicateStrategy: DuplicateStrategy
-    ) async throws -> FileEntrySnapshot {
+    func importBatchFile(request: CoreBatchImportRequest) async throws -> FileEntrySnapshot {
         requests.append(S118BatchImportRequest(
-            storageMode: storageMode,
-            destination: destination,
-            suggestedCategory: suggestedCategory,
-            overrideFilename: overrideFilename,
-            duplicateStrategy: duplicateStrategy
+            storageMode: request.storageMode,
+            destination: request.destination,
+            suggestedCategory: request.suggestedCategory,
+            overrideFilename: request.overrideFilename,
+            duplicateStrategy: request.duplicateStrategy
         ))
 
-        let category = switch destination {
+        let category = switch request.destination {
         case .autoClassify:
-            suggestedCategory ?? "inbox"
-        case .category(let slug):
+            request.suggestedCategory ?? "inbox"
+        case let .category(slug):
             slug
         case .repositoryRoot:
             "__root__"
         }
 
         return FileEntrySnapshot.s117Fixture(
-            currentName: overrideFilename,
+            currentName: request.overrideFilename,
             category: category,
-            storageMode: storageMode.coreStorageMode
+            storageMode: request.storageMode.coreStorageMode
         )
     }
 
@@ -333,55 +318,40 @@ actor S118SequenceBatchImporter: CoreBatchCopyImporting {
         self.results = results
     }
 
-    func importCopiedFile(
-        repoPath: String,
-        sourceURL: URL,
-        destination: ImportEntryDestination,
-        suggestedCategory: String?,
-        overrideFilename: String,
-        duplicateStrategy: DuplicateStrategy
-    ) async throws -> FileEntrySnapshot {
+    func importCopiedFile(request: CoreBatchImportRequest) async throws -> FileEntrySnapshot {
         requests.append(S118BatchImportRequest(
             storageMode: .copy,
-            destination: destination,
-            suggestedCategory: suggestedCategory,
-            overrideFilename: overrideFilename,
-            duplicateStrategy: duplicateStrategy
+            destination: request.destination,
+            suggestedCategory: request.suggestedCategory,
+            overrideFilename: request.overrideFilename,
+            duplicateStrategy: request.duplicateStrategy
         ))
         guard !results.isEmpty else {
             throw CoreError.Internal(message: "missing batch import test result")
         }
         switch results.removeFirst() {
-        case .success(let entry):
+        case let .success(entry):
             return entry
-        case .failure(let error):
+        case let .failure(error):
             throw error
         }
     }
 
-    func importBatchFile(
-        repoPath: String,
-        sourceURL: URL,
-        storageMode: ImportSingleFileStorageMode,
-        destination: ImportEntryDestination,
-        suggestedCategory: String?,
-        overrideFilename: String,
-        duplicateStrategy: DuplicateStrategy
-    ) async throws -> FileEntrySnapshot {
+    func importBatchFile(request: CoreBatchImportRequest) async throws -> FileEntrySnapshot {
         requests.append(S118BatchImportRequest(
-            storageMode: storageMode,
-            destination: destination,
-            suggestedCategory: suggestedCategory,
-            overrideFilename: overrideFilename,
-            duplicateStrategy: duplicateStrategy
+            storageMode: request.storageMode,
+            destination: request.destination,
+            suggestedCategory: request.suggestedCategory,
+            overrideFilename: request.overrideFilename,
+            duplicateStrategy: request.duplicateStrategy
         ))
         guard !results.isEmpty else {
             throw CoreError.Internal(message: "missing batch import test result")
         }
         switch results.removeFirst() {
-        case .success(let entry):
+        case let .success(entry):
             return entry
-        case .failure(let error):
+        case let .failure(error):
             throw error
         }
     }
@@ -391,7 +361,7 @@ actor S118SequenceBatchImporter: CoreBatchCopyImporting {
     }
 }
 
-struct S118NameConflictPrecheckRequest: Equatable, Sendable {
+struct S118NameConflictPrecheckRequest: Equatable {
     var repoPath: String
     var rowIDs: [String]
     var destination: ImportBatchDestinationOption
@@ -438,19 +408,19 @@ actor S117RecordingErrorMapper: CoreErrorMapping {
     private func kind(for error: CoreError) -> CoreErrorKindSnapshot {
         switch error {
         case .DuplicateFile:
-            return .duplicateFile
+            .duplicateFile
         case .InvalidPath:
-            return .invalidPath
+            .invalidPath
         case .PermissionDenied:
-            return .permissionDenied
+            .permissionDenied
         case .ICloudPlaceholder:
-            return .iCloudPlaceholder
+            .iCloudPlaceholder
         case .Io:
-            return .io
+            .io
         case .Db:
-            return .db
+            .db
         default:
-            return .internal
+            .internal
         }
     }
 }
@@ -483,15 +453,15 @@ actor S117StaticRepositoryOpener: CoreEmptyRepositoryOpening {
         self.opening = opening
     }
 
-    func openConfiguredRepository(repoPath: String) async throws -> RepositoryOpeningResult {
+    func openConfiguredRepository(repoPath _: String) async throws -> RepositoryOpeningResult {
         opening
     }
 
-    func openEmptyRepository(repoPath: String) async throws -> RepositoryOpeningResult {
+    func openEmptyRepository(repoPath _: String) async throws -> RepositoryOpeningResult {
         opening
     }
 
-    func openAdoptedRepository(repoPath: String) async throws -> RepositoryOpeningResult {
+    func openAdoptedRepository(repoPath _: String) async throws -> RepositoryOpeningResult {
         opening
     }
 }

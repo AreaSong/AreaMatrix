@@ -1,7 +1,7 @@
-import XCTest
 @testable import AreaMatrix
+import XCTest
 
-final class ImportSingleFilePageIntegrationVerifyTests: XCTestCase {
+final class SingleFileImportIntegrationTests: XCTestCase {
     @MainActor
     func testS117EntryCancelAndImportRoutesThroughS120Progress() async {
         let sourceURL = URL(fileURLWithPath: "/tmp/source.pdf")
@@ -58,7 +58,7 @@ final class ImportSingleFilePageIntegrationVerifyTests: XCTestCase {
         model.beginImportEntryProgress(currentPath: "docs/source.pdf")
         model.failImportEntry(currentPath: "docs/source.pdf", mapping: .s117Error(kind: .duplicateFile))
 
-        guard case .importResult(let result) = model.route else {
+        guard case let .importResult(result) = model.route else {
             return XCTFail("Expected S1-21 import result route")
         }
         XCTAssertEqual(result.resultSummaryText, "Imported 0, failed 1, stopped 0, pending 0.")
@@ -121,20 +121,8 @@ final class ImportSingleFilePageIntegrationVerifyTests: XCTestCase {
 
     @MainActor
     func testS117PredictionThenCopyMoveAndIndexOnlyUseTheExpectedCoreCapabilities() async {
-        let sourceURL = URL(fileURLWithPath: "/tmp/合同.pdf")
-        let request = ImportEntryRequest(
-            repoPath: "/tmp/repo",
-            source: .filePicker,
-            destination: .autoClassify,
-            urls: [sourceURL],
-            kind: .singleFile
-        )
-        let predictor = S117RecordingPredictor(result: ClassifyResultSnapshot(
-            category: "docs",
-            suggestedName: "2026Q1_合同.pdf",
-            reason: .keyword,
-            confidence: 0.93
-        ))
+        let request = s117CoreCapabilityRequest()
+        let predictor = S117RecordingPredictor(result: s117CoreCapabilityPrediction())
         let importer = S117RecordingImporter()
         let model = ImportSingleFilePreviewModel(
             predictor: predictor,
@@ -146,40 +134,24 @@ final class ImportSingleFilePageIntegrationVerifyTests: XCTestCase {
         await model.load(request: request)
         let predictRequests = await predictor.recordedRequests()
         XCTAssertEqual(predictRequests, [
-            S117PredictRequest(repoPath: "/tmp/repo", filename: "合同.pdf"),
+            S117PredictRequest(repoPath: "/tmp/repo", filename: "合同.pdf")
         ])
         XCTAssertEqual(model.selectedCategory, "docs")
         XCTAssertEqual(model.suggestedName, "2026Q1_合同.pdf")
         XCTAssertEqual(model.selectedStorageMode, .copy)
 
-        model.selectedCategory = " finance "
-        model.suggestedName = " copy.pdf "
-        await waitForImportSingleFilePreflightToSettle(model)
-        let copied = await model.importSelectedFile()
-        XCTAssertEqual(copied?.storageMode, "Copied")
-
-        await model.load(request: request)
-        model.selectedCategory = " finance "
-        model.selectedStorageMode = .move
-        model.suggestedName = " move.pdf "
-        await waitForImportSingleFilePreflightToSettle(model)
-        let moved = await model.importSelectedFile()
-        XCTAssertEqual(moved?.storageMode, "Moved")
-
-        await model.load(request: request)
-        model.selectedCategory = " finance "
-        model.selectedStorageMode = .indexOnly
-        model.suggestedName = " indexed.pdf "
-        await waitForImportSingleFilePreflightToSettle(model)
-        let indexed = await model.importSelectedFile()
-        XCTAssertEqual(indexed?.storageMode, "Indexed")
+        await importS117Mode(model: model, request: request, mode: .copy, name: "copy.pdf", storageMode: "Copied")
+        await importS117Mode(model: model, request: request, mode: .move, name: "move.pdf", storageMode: "Moved")
+        await importS117Mode(
+            model: model,
+            request: request,
+            mode: .indexOnly,
+            name: "indexed.pdf",
+            storageMode: "Indexed"
+        )
 
         let importRequests = await importer.recordedRequests()
-        XCTAssertEqual(importRequests, [
-            S117ImportRequest(mode: .copy, overrideCategory: "finance", overrideFilename: "copy.pdf", duplicateStrategy: .ask),
-            S117ImportRequest(mode: .move, overrideCategory: "finance", overrideFilename: "move.pdf", duplicateStrategy: .ask),
-            S117ImportRequest(mode: .indexOnly, overrideCategory: "finance", overrideFilename: "indexed.pdf", duplicateStrategy: .ask),
-        ])
+        XCTAssertEqual(importRequests, s117CoreCapabilityImportRequests())
     }
 
     @MainActor
@@ -274,7 +246,9 @@ final class ImportSingleFilePageIntegrationVerifyTests: XCTestCase {
         XCTAssertEqual(hiddenModel.importDisabledReason, "重复文件已跳过")
         XCTAssertEqual(requests, [])
     }
+}
 
+final class SingleFileImportRecoveryIntegrationTests: XCTestCase {
     @MainActor
     func testS117ICloudPlaceholderKeepsSheetBlockedWithDownloadActions() async {
         let result = ImportSingleFilePreflightResult(
@@ -328,7 +302,7 @@ final class ImportSingleFilePageIntegrationVerifyTests: XCTestCase {
         XCTAssertFalse(model.showsRetryPreviewAction)
         XCTAssertNil(model.activeConflictPage)
         XCTAssertEqual(model.importDisabledReason, "iCloud 下载失败后请重试下载或切换本地资料库")
-        guard case .iCloudDownloadFailed(let path, let reason) = model.currentPreflightResult?.conflict else {
+        guard case let .iCloudDownloadFailed(path, reason) = model.currentPreflightResult?.conflict else {
             return XCTFail("Expected iCloud download failure to stay on S1-17 recovery state")
         }
         XCTAssertEqual(path, "/tmp/source.pdf")
@@ -370,7 +344,10 @@ final class ImportSingleFilePageIntegrationVerifyTests: XCTestCase {
             kind: .singleFile
         ))
 
-        XCTAssertEqual(model.currentPreflightResult?.hashSha256, "41cf6794ba4200b839c53531555f0f3998df4cbb01a4d5cb0b94e3ca5e23947d")
+        XCTAssertEqual(
+            model.currentPreflightResult?.hashSha256,
+            "41cf6794ba4200b839c53531555f0f3998df4cbb01a4d5cb0b94e3ca5e23947d"
+        )
         XCTAssertEqual(model.currentPreflightResult?.conflict, .duplicate(existingPath: existing.path))
         XCTAssertEqual(model.currentPreflightResult?.keepBothTargetRelativePath, "docs/source.pdf")
         XCTAssertEqual(model.activeConflictPage, .duplicate)
@@ -469,5 +446,4 @@ final class ImportSingleFilePageIntegrationVerifyTests: XCTestCase {
         XCTAssertFalse(model.showsConflictSection)
         XCTAssertFalse(model.showsRetryPreviewAction)
     }
-
 }

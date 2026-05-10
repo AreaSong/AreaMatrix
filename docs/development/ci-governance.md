@@ -44,8 +44,8 @@ Swift 改动：
 
 ```bash
 ./dev test macos
-swiftlint --strict
-swiftformat --lint .
+cd apps/macos && swiftlint lint --strict --config ../../scripts/dev_tools/swiftlint.yml --force-exclude . --no-cache
+cd apps/macos && swiftformat --lint . --config ../../scripts/dev_tools/swiftformat.conf --exclude AreaMatrix/Bridge/Generated,AreaMatrix/Bridge/UniFFI --cache ignore
 ```
 
 `./dev test macos` 会优先执行标准 `xcodebuild test`。只有本地沙箱阻断

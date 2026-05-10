@@ -60,7 +60,8 @@ struct ImportEntrySheetView: View {
         folderScanner: any ImportFolderScanning = LocalImportFolderScanner(),
         preflight: any ImportSingleFilePreflighting = CoreImportSingleFilePreflight(),
         placeholderDownloader: any ICloudPlaceholderDownloading = LocalICloudPlaceholderDownloader(),
-        errorMapper: any CoreErrorMapping = CoreBridge()
+        errorMapper: any CoreErrorMapping = CoreBridge(),
+        batchSessionStore: any ImportBatchSessionPersisting = FileImportBatchSessionStore()
     ) {
         self.request = request
         self.onCancel = onCancel
@@ -89,6 +90,7 @@ struct ImportEntrySheetView: View {
         _batchImportModel = StateObject(wrappedValue: ImportBatchCopyImportModel(
             importer: batchFileImporter,
             errorMapper: errorMapper,
+            sessionStore: batchSessionStore,
             placeholderDownloader: placeholderDownloader
         ))
         _folderPreviewModel = StateObject(wrappedValue: ImportFolderPreviewModel(
@@ -99,7 +101,9 @@ struct ImportEntrySheetView: View {
             placeholderDownloader: placeholderDownloader
         ))
     }
+}
 
+extension ImportEntrySheetView {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             Text(request.sheetTitle)
@@ -108,7 +112,7 @@ struct ImportEntrySheetView: View {
             switch request.kind {
             case .singleFile:
                 singleFilePreview
-            case .multipleItems(_):
+            case .multipleItems:
                 batchPreview
             case .folder:
                 folderPreview
@@ -122,7 +126,7 @@ struct ImportEntrySheetView: View {
             switch request.kind {
             case .singleFile:
                 await previewModel.load(request: request)
-            case .multipleItems(_):
+            case .multipleItems:
                 await batchPreviewModel.load(request: request)
                 batchImportModel.applyPreviewRows(
                     batchPreviewModel.rows,
@@ -217,7 +221,7 @@ struct ImportEntrySheetView: View {
                         set: { previewModel.updateNameConflictResolution($0) }
                     ),
                     resolvedNameConflictFilename: previewModel.resolvedNameConflictFilename,
-                    resolvedNameConflictPath: previewModel.resolvedImportRelativePathForNameConflict,
+                    resolvedNameConflictPath: previewModel.resolvedConflictImportPath,
                     nameConflictBlockingReason: previewModel.nameConflictResolutionBlockingReason,
                     existingFile: result.existingFile,
                     duplicateReplaceActionTitle: previewModel.duplicateReplaceConfirmationActionTitle,
@@ -451,7 +455,7 @@ struct ImportEntrySheetView: View {
     }
 
     private var batchPreviewStatusStyle: Color {
-        if case .imported(_, let failed) = batchImportModel.status, failed > 0 {
+        if case let .imported(_, failed) = batchImportModel.status, failed > 0 {
             return .orange
         }
         switch batchImportModel.status {
@@ -462,7 +466,7 @@ struct ImportEntrySheetView: View {
         }
 
         switch batchPreviewModel.status {
-        case .loaded(_, _, let failed) where failed > 0:
+        case let .loaded(_, _, failed) where failed > 0:
             return .orange
         case .unsupported:
             return .red
@@ -474,5 +478,4 @@ struct ImportEntrySheetView: View {
     private var primaryFileLabel: String {
         ImportEntrySheetHelper.primaryFileLabel(urls: request.urls)
     }
-
 }

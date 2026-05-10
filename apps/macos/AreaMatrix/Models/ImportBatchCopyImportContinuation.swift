@@ -17,10 +17,12 @@ extension ImportBatchCopyImportModel {
             ?? entry.path
         reportProgress(progressSnapshotAfterRetry(entry: entry, retryPath: retryPath))
         return await importRemainingFiles(
-            request: request,
-            retryEntry: entry,
-            retryRowIndex: retryRowIndex,
-            retryPath: retryPath,
+            continuation: ImportBatchRetryContinuation(
+                request: request,
+                retryEntry: entry,
+                retryRowIndex: retryRowIndex,
+                retryPath: retryPath
+            ),
             controlState: controlState,
             reportProgress: reportProgress
         )
@@ -92,64 +94,57 @@ extension ImportBatchCopyImportModel {
     }
 
     private func importRemainingFiles(
-        request: ImportEntryRequest,
-        retryEntry: FileEntrySnapshot,
-        retryRowIndex: Int?,
-        retryPath: String,
+        continuation: ImportBatchRetryContinuation,
         controlState: ImportProgressControlState,
         reportProgress: @escaping @MainActor (ImportBatchProgressSnapshot) -> Void
     ) async -> ImportBatchImportResult {
         let total = importableRows.count + 1
-        var completed = 1
-        var failed = 0
-        var succeededEntries = [retryEntry]
-        var lastImportedPath = retryPath
-        var didStopAfterCurrentFile = false
+        var state = ImportBatchCopyRunState()
+        state.completed = 1
+        state.succeededEntries = [continuation.retryEntry]
+        state.lastImportedPath = continuation.retryPath
         clearLastFailureMapping()
 
         for index in rows.indices where rows[index].status.isReady {
             let cycle = await runImportCycle(
-                at: index,
-                request: request,
-                selectedDestination: selectedDestination,
-                completed: completed,
-                failed: failed,
-                total: total,
+                input: ImportBatchCopyCycleInput(
+                    rowIndex: index,
+                    request: continuation.request,
+                    selectedDestination: selectedDestination,
+                    completed: state.completed,
+                    failed: state.failed,
+                    total: total
+                ),
                 reportProgress: reportProgress
             )
-            completed = cycle.completed
-            failed = cycle.failed
-            lastImportedPath = cycle.lastImportedPath ?? lastImportedPath
-            if let entry = cycle.entry {
-                succeededEntries.append(entry)
-            }
+            updateContinuationRunState(&state, cycle: cycle)
             reportProgress(cycle.progress.withItems(progressItems()))
             if cycle.stoppedForDuplicate {
-                return continuedImportResult(
-                    entries: succeededEntries,
-                    failed: failed,
-                    total: total,
-                    lastImportedPath: lastImportedPath,
-                    didStopAfterCurrentFile: false
-                )
+                return continuedImportResult(from: state, total: total)
             }
             if controlState.isStopAfterCurrentFileRequested {
                 controlState.markStoppedAfterCurrentFile()
-                didStopAfterCurrentFile = true
-                reportProgress(stoppedProgressSnapshot(currentPath: lastImportedPath))
+                state.didStopAfterCurrentFile = true
+                reportProgress(stoppedProgressSnapshot(currentPath: state.lastImportedPath))
                 break
             }
         }
 
-        markSkippedDuplicates(excluding: retryRowIndex)
-        finishImportedStatus(successful: completed, failed: failed)
-        return continuedImportResult(
-            entries: succeededEntries,
-            failed: failed,
-            total: total,
-            lastImportedPath: lastImportedPath,
-            didStopAfterCurrentFile: didStopAfterCurrentFile
-        )
+        markSkippedDuplicates(excluding: continuation.retryRowIndex)
+        finishImportedStatus(successful: state.completed, failed: state.failed)
+        return continuedImportResult(from: state, total: total)
+    }
+
+    private func updateContinuationRunState(
+        _ state: inout ImportBatchCopyRunState,
+        cycle: ImportBatchCopyCycleResult
+    ) {
+        state.completed = cycle.completed
+        state.failed = cycle.failed
+        state.lastImportedPath = cycle.lastImportedPath ?? state.lastImportedPath
+        if let entry = cycle.entry {
+            state.succeededEntries.append(entry)
+        }
     }
 
     private func progressSnapshotAfterRetry(
@@ -187,6 +182,19 @@ extension ImportBatchCopyImportModel {
         )
     }
 
+    private func continuedImportResult(
+        from state: ImportBatchCopyRunState,
+        total: Int
+    ) -> ImportBatchImportResult {
+        continuedImportResult(
+            entries: state.succeededEntries,
+            failed: state.failed,
+            total: total,
+            lastImportedPath: state.lastImportedPath,
+            didStopAfterCurrentFile: state.didStopAfterCurrentFile
+        )
+    }
+
     private func sourceURL(
         for row: ImportBatchPreviewRow,
         request: ImportEntryRequest
@@ -199,19 +207,86 @@ extension ImportBatchCopyImportModel {
     private func copyStatus(from previewStatus: ImportBatchPreviewRowStatus) -> ImportBatchCopyImportRowStatus {
         switch previewStatus {
         case .loading:
-            return .loading
-        case .ready(let reasonLabel):
-            return .ready(reasonLabel: reasonLabel)
-        case .duplicate(let existingPath, _):
-            return .duplicate(existingPath: existingPath, strategy: .skip, isReplaceConfirmed: false)
-        case .nameConflict(let existingPath, _):
-            return .nameConflict(existingPath: existingPath, resolution: .keepBoth)
-        case .iCloudPlaceholder(let path, let message):
-            return .iCloudPlaceholder(path: path, message: message)
-        case .blocked(let message):
-            return .blocked(message)
-        case .error(let message):
-            return .error(message)
+            .loading
+        case let .ready(reasonLabel):
+            .ready(reasonLabel: reasonLabel)
+        case let .duplicate(existingPath, _):
+            .duplicate(existingPath: existingPath, strategy: .skip, isReplaceConfirmed: false)
+        case let .nameConflict(existingPath, _):
+            .nameConflict(existingPath: existingPath, resolution: .keepBoth)
+        case let .iCloudPlaceholder(path, message):
+            .iCloudPlaceholder(path: path, message: message)
+        case let .blocked(message):
+            .blocked(message)
+        case let .error(message):
+            .error(message)
         }
+    }
+
+    func mapImportError(_ error: Error) async -> CoreErrorMappingSnapshot {
+        if let coreError = error as? CoreError {
+            return await errorMapper.mapCoreError(coreError)
+        }
+        return await errorMapper.mapCoreError(CoreError.Internal(message: error.localizedDescription))
+    }
+
+    func currentDuplicateStrategiesByRowID()
+        -> [ImportBatchCopyImportRow.ID: ImportBatchDuplicateResolutionStrategy] {
+        rows.reduce(into: [:]) { strategies, row in
+            guard let strategy = row.duplicateResolution else { return }
+            strategies[row.id] = strategy
+        }
+    }
+
+    func currentDuplicateStatusesByRowID() -> [ImportBatchCopyImportRow.ID: String] {
+        rows.reduce(into: [:]) { duplicates, row in
+            guard case let .duplicate(existingPath, _, _) = row.status else { return }
+            duplicates[row.id] = existingPath
+        }
+    }
+
+    func currentNameConflictResolutionsByRowID()
+        -> [ImportBatchCopyImportRow.ID: ImportBatchNameConflictResolution] {
+        rows.reduce(into: [:]) { resolutions, row in
+            guard case let .nameConflict(_, resolution) = row.status else { return }
+            resolutions[row.id] = resolution
+        }
+    }
+
+    func restoreDuplicateStatus(
+        for row: ImportBatchCopyImportRow,
+        from duplicateStatuses: [ImportBatchCopyImportRow.ID: String]
+    ) -> ImportBatchCopyImportRow {
+        guard let existingPath = duplicateStatuses[row.id] else { return row }
+        guard case .ready = row.status else { return row }
+        var restoredRow = row
+        restoredRow.status = .duplicate(existingPath: existingPath, strategy: .skip, isReplaceConfirmed: false)
+        return restoredRow
+    }
+
+    func restoreDuplicateStrategy(
+        for row: ImportBatchCopyImportRow,
+        from strategies: [ImportBatchCopyImportRow.ID: ImportBatchDuplicateResolutionStrategy]
+    ) -> ImportBatchCopyImportRow {
+        guard let strategy = strategies[row.id] else { return row }
+        guard case let .duplicate(existingPath, _, isReplaceConfirmed) = row.status else { return row }
+        var restoredRow = row
+        restoredRow.status = .duplicate(
+            existingPath: existingPath,
+            strategy: strategy,
+            isReplaceConfirmed: strategy == .replace ? isReplaceConfirmed : false
+        )
+        return restoredRow
+    }
+
+    func restoreNameConflictResolution(
+        for row: ImportBatchCopyImportRow,
+        from resolutions: [ImportBatchCopyImportRow.ID: ImportBatchNameConflictResolution]
+    ) -> ImportBatchCopyImportRow {
+        guard let resolution = resolutions[row.id] else { return row }
+        guard case let .nameConflict(existingPath, _) = row.status else { return row }
+        var restoredRow = row
+        restoredRow.status = .nameConflict(existingPath: existingPath, resolution: resolution)
+        return restoredRow
     }
 }

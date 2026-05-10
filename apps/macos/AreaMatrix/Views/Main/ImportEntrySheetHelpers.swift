@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct ImportEntrySheetHelper {
+enum ImportEntrySheetHelper {
     static func categoryOptions(
         availableCategories: [String],
         selectedCategory: String,
@@ -42,11 +42,11 @@ extension ImportEntryRequest {
     var initialBatchDestination: ImportBatchDestinationOption {
         switch destination {
         case .autoClassify:
-            return .autoClassify
-        case .category(let slug):
-            return .category(slug)
+            .autoClassify
+        case let .category(slug):
+            .category(slug)
         case .repositoryRoot:
-            return .repositoryRoot
+            .repositoryRoot
         }
     }
 }

@@ -76,7 +76,7 @@ extension ImportBatchCopyImportModel {
             let category = (row.resolvedCategory(for: destination) ?? "inbox")
                 .trimmingCharacters(in: .whitespacesAndNewlines)
             return category.isEmpty ? filename : "\(category)/\(filename)"
-        case .category(let slug):
+        case let .category(slug):
             let category = (row.resolvedCategory(for: destination) ?? slug)
                 .trimmingCharacters(in: .whitespacesAndNewlines)
             return category.isEmpty ? filename : "\(category)/\(filename)"

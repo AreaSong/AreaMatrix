@@ -1,11 +1,11 @@
-import XCTest
 @testable import AreaMatrix
+import XCTest
 
 final class ImportConflictIntegrationVerifyTests: XCTestCase {
     @MainActor
     func testS116ThroughS124ImportConflictLoopUsesRealWiring() async throws {
         XCTAssertEqual(Self.coveredCoreCapabilities, [
-            "C1-05", "C1-06", "C1-07", "C1-08", "C1-09", "C1-10", "C1-13",
+            "C1-05", "C1-06", "C1-07", "C1-08", "C1-09", "C1-10", "C1-13"
         ])
 
         try await verifyHoverAndEntryRouting()
@@ -18,7 +18,7 @@ final class ImportConflictIntegrationVerifyTests: XCTestCase {
 
 private extension ImportConflictIntegrationVerifyTests {
     static let coveredCoreCapabilities: Set<String> = [
-        "C1-05", "C1-06", "C1-07", "C1-08", "C1-09", "C1-10", "C1-13",
+        "C1-05", "C1-06", "C1-07", "C1-08", "C1-09", "C1-10", "C1-13"
     ]
 
     @MainActor
@@ -93,7 +93,7 @@ private extension ImportConflictIntegrationVerifyTests {
 
         XCTAssertEqual(events, [
             "progress-context:docs/source.pdf:Copy",
-            "imported:docs/source.pdf",
+            "imported:docs/source.pdf"
         ])
     }
 
@@ -130,7 +130,7 @@ private extension ImportConflictIntegrationVerifyTests {
                 overrideCategory: "docs",
                 overrideFilename: "source.pdf",
                 duplicateStrategy: .overwrite
-            ),
+            )
         ])
 
         let nameModel = ImportSingleFilePreviewModel(
@@ -172,7 +172,7 @@ private extension ImportConflictIntegrationVerifyTests {
                 url: contractURL,
                 prediction: .s119Prediction(category: "docs", suggestedName: "contract.pdf"),
                 existingPath: "docs/contract.pdf"
-            ),
+            )
         ]
 
         model.applyPreviewRows(
@@ -189,26 +189,16 @@ private extension ImportConflictIntegrationVerifyTests {
         XCTAssertEqual(requestsBeforeConfirmation, [])
 
         let context = try XCTUnwrap(model.beginReplaceConfirmation(for: rows[0].id))
-        XCTAssertTrue(model.applyReplaceConfirmation(for: rows[0].id, decision: context.decision(understandsReplace: true)))
+        XCTAssertTrue(model.applyReplaceConfirmation(
+            for: rows[0].id,
+            decision: context.decision(understandsReplace: true)
+        ))
         model.renameIncomingFile(for: rows[1].id, to: "contract-renamed.pdf")
         let outcome = await model.importReadyFiles(selectedDestination: .autoClassify)
         let requests = await importer.recordedRequests()
 
         XCTAssertEqual(outcome?.succeededEntries.count, 2)
-        XCTAssertEqual(requests, [
-            S118BatchImportRequest(
-                destination: .autoClassify,
-                suggestedCategory: "finance",
-                overrideFilename: "Invoice_2026Q1.pdf",
-                duplicateStrategy: .overwrite
-            ),
-            S118BatchImportRequest(
-                destination: .autoClassify,
-                suggestedCategory: "docs",
-                overrideFilename: "contract-renamed.pdf",
-                duplicateStrategy: .keepBoth
-            ),
-        ])
+        XCTAssertEqual(requests, expectedConflictBatchRequests())
     }
 
     @MainActor
@@ -216,14 +206,11 @@ private extension ImportConflictIntegrationVerifyTests {
         let rootURL = URL(fileURLWithPath: "/tmp/client-a")
         let duplicateURL = rootURL.appendingPathComponent("dup.pdf")
         let importer = S118RecordingBatchImporter()
-        let scanner = S119StaticFolderScanner(result: ImportFolderScanResult(
-            rows: [ImportFolderPreviewRow.loading(fileURL: duplicateURL, rootURL: rootURL)],
-            folderCount: 0,
-            skippedRules: [],
-            errors: []
-        ))
+        let scanner = S119StaticFolderScanner(result: s119FolderScanResult(rows: [
+            ImportFolderPreviewRow.loading(fileURL: duplicateURL, rootURL: rootURL)
+        ]))
         let prechecker = S119StaticConflictPrechecker(results: [
-            duplicateURL.path: .duplicate(existingPath: "docs/existing-dup.pdf"),
+            duplicateURL.path: .duplicate(existingPath: "docs/existing-dup.pdf")
         ])
         let model = ImportFolderPreviewModel(
             predictor: S119RecordingPredictor(results: [.success(.s119Prediction(suggestedName: "dup.pdf"))]),
@@ -256,7 +243,7 @@ private extension ImportConflictIntegrationVerifyTests {
     func verifyProgressResultAndChangeLogRoutes() async throws {
         let opening = RepositoryOpeningResult.s117Fixture(repoPath: "/tmp/repo")
         let lister = Task27ChangeLogLister(results: [.success([
-            ChangeLogEntrySnapshot.task27Fixture(filename: "Invoice_2026Q1.pdf"),
+            ChangeLogEntrySnapshot.task27Fixture(filename: "Invoice_2026Q1.pdf")
         ])])
         let model = OnboardingModel(
             settingsReader: S117StaticSettingsReader(repoPath: nil),
@@ -276,7 +263,7 @@ private extension ImportConflictIntegrationVerifyTests {
 
         model.route = .mainList(opening)
         model.updateImportEntryProgress(progress)
-        guard case .importProgress(let route) = model.route else {
+        guard case let .importProgress(route) = model.route else {
             return XCTFail("Expected S1-20 import progress route")
         }
         XCTAssertEqual(route.resultSummaryText, "Imported 1, failed 1, stopped 1, pending 0.")
@@ -286,14 +273,14 @@ private extension ImportConflictIntegrationVerifyTests {
         let requests = await lister.recordedRequests()
 
         XCTAssertEqual(requests, [Task27ChangeLogRequest(repoPath: "/tmp/repo", filter: .importResultRecent)])
-        guard case .importResult(let result) = model.route else {
+        guard case let .importResult(result) = model.route else {
             return XCTFail("Expected S1-21 import result route")
         }
         XCTAssertEqual(result.resultSummaryText, "Imported 1, failed 1, stopped 1, pending 0.")
         XCTAssertEqual(result.items.map(\.status), [.imported, .failed, .skipped])
         XCTAssertEqual(result.items[2].existingRelativePath, "finance/Invoice_2026Q1.pdf")
         XCTAssertEqual(result.changeLog, .loaded([
-            ChangeLogEntrySnapshot.task27Fixture(filename: "Invoice_2026Q1.pdf"),
+            ChangeLogEntrySnapshot.task27Fixture(filename: "Invoice_2026Q1.pdf")
         ]))
     }
 }
@@ -332,6 +319,23 @@ private func batchRequest(urls: [URL]) -> ImportEntryRequest {
     )
 }
 
+private func expectedConflictBatchRequests() -> [S118BatchImportRequest] {
+    [
+        S118BatchImportRequest(
+            destination: .autoClassify,
+            suggestedCategory: "finance",
+            overrideFilename: "Invoice_2026Q1.pdf",
+            duplicateStrategy: .overwrite
+        ),
+        S118BatchImportRequest(
+            destination: .autoClassify,
+            suggestedCategory: "docs",
+            overrideFilename: "contract-renamed.pdf",
+            duplicateStrategy: .keepBoth
+        )
+    ]
+}
+
 private func progressItems() -> [ImportBatchProgressSnapshot.Item] {
     [
         ImportBatchProgressSnapshot.Item(
@@ -352,7 +356,7 @@ private func progressItems() -> [ImportBatchProgressSnapshot.Item] {
             phase: .pending,
             errorMessage: nil,
             existingRelativePath: "finance/Invoice_2026Q1.pdf"
-        ),
+        )
     ]
 }
 
@@ -378,9 +382,9 @@ private actor Task27ChangeLogLister: CoreChangeLogListing {
         requests.append(Task27ChangeLogRequest(repoPath: repoPath, filter: filter))
         guard !results.isEmpty else { return [] }
         switch results.removeFirst() {
-        case .success(let entries):
+        case let .success(entries):
             return entries
-        case .failure(let error):
+        case let .failure(error):
             throw error
         }
     }

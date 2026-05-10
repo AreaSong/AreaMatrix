@@ -1,6 +1,6 @@
+@testable import AreaMatrix
 import Foundation
 import XCTest
-@testable import AreaMatrix
 
 enum MainLoadingScanSessionResult {
     case success(ScanSessionSnapshot?)
@@ -18,7 +18,7 @@ enum MainLoadingStartupRecoveryResult {
 }
 
 actor MainLoadingStaticStartupRecoverer: CoreStartupRecovering {
-    func recoverOnStartup(repoPath: String) async throws -> RecoveryReportSnapshot {
+    func recoverOnStartup(repoPath _: String) async throws -> RecoveryReportSnapshot {
         RecoveryReportSnapshot(cleanedStagingFiles: 0, revertedStagingDbRows: 0, warnings: [])
     }
 }
@@ -43,9 +43,9 @@ actor MainLoadingRecordingStartupRecoverer: CoreStartupRecovering {
             warnings: []
         )) : results.removeFirst()
         switch result {
-        case .success(let report):
+        case let .success(report):
             return report
-        case .failure(let error):
+        case let .failure(error):
             throw error
         }
     }
@@ -71,9 +71,9 @@ actor MainLoadingPausingStartupRecoverer: CoreStartupRecovering {
         paths.append(repoPath)
         await pauseUntilFinished()
         switch result {
-        case .success(let report):
+        case let .success(report):
             return report
-        case .failure(let error):
+        case let .failure(error):
             throw error
         }
     }
@@ -114,11 +114,11 @@ actor MainLoadingStaticScanSessionReader: CoreScanSessionReading {
         self.result = result
     }
 
-    func latestScanSession(repoPath: String) async throws -> ScanSessionSnapshot? {
+    func latestScanSession(repoPath _: String) async throws -> ScanSessionSnapshot? {
         switch result {
-        case .success(let session):
+        case let .success(session):
             return session
-        case .failure(let error):
+        case let .failure(error):
             throw error
         }
     }
@@ -136,13 +136,14 @@ actor MainLoadingRecordingTreeLister: CoreRepositoryTreeListing {
         self.results = results
     }
 
-    func listTree(repoPath: String, locale: String) async throws -> RepositoryTreeNodeSnapshot {
+    func listTree(repoPath: String, locale _: String) async throws -> RepositoryTreeNodeSnapshot {
         requests.append(repoPath)
-        let result = results.isEmpty ? .failure(CoreError.Internal(message: "missing tree result")) : results.removeFirst()
+        let result = results.isEmpty ? .failure(CoreError.Internal(message: "missing tree result")) : results
+            .removeFirst()
         switch result {
-        case .success(let tree):
+        case let .success(tree):
             return tree
-        case .failure(let error):
+        case let .failure(error):
             throw error
         }
     }
@@ -248,7 +249,7 @@ final class MainLoadingRecordingErrorMapper: CoreErrorMapping {
         self.mapping = mapping
     }
 
-    func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
+    func mapCoreError(_: CoreError) async -> CoreErrorMappingSnapshot {
         mapping
     }
 }
@@ -256,7 +257,9 @@ final class MainLoadingRecordingErrorMapper: CoreErrorMapping {
 struct MainLoadingStaticSettingsReader: AppSettingsReading {
     let repoPath: String?
 
-    func configuredRepoPath() -> String? { repoPath }
+    func configuredRepoPath() -> String? {
+        repoPath
+    }
 }
 
 struct MainLoadingNoopWelcomeHelpOpener: WelcomeHelpOpening {
@@ -270,8 +273,8 @@ func waitForMainLoadingState(
     file: StaticString = #filePath,
     line: UInt = #line
 ) async -> MainLoadingState? {
-    for _ in 0..<100 {
-        if case .mainLoading(let state) = model.route, predicate(state) {
+    for _ in 0 ..< 100 {
+        if case let .mainLoading(state) = model.route, predicate(state) {
             return state
         }
 

@@ -1,5 +1,5 @@
-import XCTest
 @testable import AreaMatrix
+import XCTest
 
 final class ImportResultCopyRetryTests: XCTestCase {
     @MainActor
@@ -24,9 +24,9 @@ final class ImportResultCopyRetryTests: XCTestCase {
                 overrideCategory: "docs",
                 overrideFilename: "failed.pdf",
                 duplicateStrategy: .ask
-            ),
+            )
         ])
-        guard case .importResult(let result) = model.route else {
+        guard case let .importResult(result) = model.route else {
             return XCTFail("Expected S1-21 import result route")
         }
         XCTAssertEqual(result.resultSummaryText, "Imported 2, failed 0, stopped 0, pending 0.")
@@ -51,7 +51,7 @@ final class ImportResultCopyRetryTests: XCTestCase {
         let retryTask = Task { await model.retryImportResultFailedItems() }
         await gate.waitUntilStarted()
 
-        guard case .importProgress(let progress) = model.route else {
+        guard case let .importProgress(progress) = model.route else {
             await gate.finish()
             await retryTask.value
             return XCTFail("Expected S1-20 import progress while retrying failed S1-21 items")
@@ -62,7 +62,7 @@ final class ImportResultCopyRetryTests: XCTestCase {
 
         await gate.finish()
         await retryTask.value
-        guard case .importResult(let result) = model.route else {
+        guard case let .importResult(result) = model.route else {
             return XCTFail("Expected S1-21 import result after retry completes")
         }
         XCTAssertEqual(result.resultSummaryText, "Imported 2, failed 0, stopped 0, pending 0.")
@@ -88,7 +88,7 @@ final class ImportResultCopyRetryTests: XCTestCase {
         let mappedErrors = await errorMapper.recordedErrors()
 
         XCTAssertEqual(mappedErrors, [CoreError.PermissionDenied(path: "/tmp/failed.pdf")])
-        guard case .importResult(let result) = model.route else {
+        guard case let .importResult(result) = model.route else {
             return XCTFail("Expected S1-21 import result route")
         }
         XCTAssertEqual(result.resultSummaryText, "Imported 1, failed 1, stopped 0, pending 0.")
@@ -102,7 +102,7 @@ final class ImportResultCopyRetryTests: XCTestCase {
     func testS121C113LoadsImportChangeLogThroughCoreBridge() async {
         let opening = RepositoryOpeningResult.s117Fixture(repoPath: "/tmp/repo")
         let lister = S121RecordingChangeLogLister(results: [.success([
-            ChangeLogEntrySnapshot.importResultFixture(id: 1, filename: "imported.pdf"),
+            ChangeLogEntrySnapshot.importResultFixture(id: 1, filename: "imported.pdf")
         ])])
         let model = OnboardingModel(
             settingsReader: S117StaticSettingsReader(repoPath: nil),
@@ -117,11 +117,11 @@ final class ImportResultCopyRetryTests: XCTestCase {
         let requests = await lister.recordedRequests()
 
         XCTAssertEqual(requests, [S121ChangeLogRequest(repoPath: "/tmp/repo", filter: .importResultRecent)])
-        guard case .importResult(let result) = model.route else {
+        guard case let .importResult(result) = model.route else {
             return XCTFail("Expected S1-21 import result route")
         }
         XCTAssertEqual(result.changeLog, .loaded([
-            ChangeLogEntrySnapshot.importResultFixture(id: 1, filename: "imported.pdf"),
+            ChangeLogEntrySnapshot.importResultFixture(id: 1, filename: "imported.pdf")
         ]))
     }
 
@@ -144,7 +144,7 @@ final class ImportResultCopyRetryTests: XCTestCase {
         let mappedErrors = await errorMapper.recordedErrors()
 
         XCTAssertEqual(mappedErrors, [CoreError.Db(message: "change log locked")])
-        guard case .importResult(let result) = model.route else {
+        guard case let .importResult(result) = model.route else {
             return XCTFail("Expected S1-21 import result route")
         }
         XCTAssertEqual(result.changeLog, .failed(.s117Error(kind: .db)))
@@ -172,8 +172,9 @@ final class ImportResultCopyRetryTests: XCTestCase {
 
         model.route = .mainList(opening)
         model.showImportEntryResults(Self.skippedDuplicateProgress)
-        guard case .importResult(let result) = model.route,
-              let skippedItem = result.items.first(where: { $0.status == .skipped }) else {
+        guard case let .importResult(result) = model.route,
+              let skippedItem = result.items.first(where: { $0.status == .skipped })
+        else {
             return XCTFail("Expected skipped duplicate result item")
         }
 
@@ -198,7 +199,7 @@ final class ImportResultCopyRetryTests: XCTestCase {
         model.route = .mainList(opening)
         model.showImportEntryResults(Self.failedCopyProgress)
         model.requestImportResultExportPrivacyConfirmation()
-        guard case .importResult(let confirming) = model.route else {
+        guard case let .importResult(confirming) = model.route else {
             return XCTFail("Expected S1-21 import result route")
         }
         XCTAssertEqual(confirming.exportState, .confirmingPrivacy)
@@ -208,7 +209,7 @@ final class ImportResultCopyRetryTests: XCTestCase {
         XCTAssertEqual(exporter.requests.map(\.suggestedFilename), ["AreaMatrix-Import-Result.txt"])
         XCTAssertTrue(exporter.requests.first?.details.contains(".../failed.pdf") == true)
         XCTAssertFalse(exporter.requests.first?.details.contains("/tmp/failed.pdf") == true)
-        guard case .importResult(let result) = model.route else {
+        guard case let .importResult(result) = model.route else {
             return XCTFail("Expected S1-21 import result route")
         }
         XCTAssertEqual(result.exportState, .exported("/tmp/AreaMatrix-Import-Result.txt"))
@@ -229,7 +230,7 @@ private extension ImportResultCopyRetryTests {
                 targetPath: "docs/imported.pdf",
                 phase: .done,
                 errorMessage: nil
-            ),
+            )
         ]
     )
 
@@ -251,7 +252,7 @@ private extension ImportResultCopyRetryTests {
                 targetPath: "docs/failed.pdf",
                 phase: .failed,
                 errorMessage: "无访问权限"
-            ),
+            )
         ]
     )
 
@@ -275,7 +276,7 @@ private extension ImportResultCopyRetryTests {
                 phase: .pending,
                 errorMessage: "Duplicate skipped",
                 existingRelativePath: "docs/existing.pdf"
-            ),
+            )
         ]
     )
 }
@@ -303,9 +304,9 @@ private actor S121RecordingChangeLogLister: CoreChangeLogListing {
         guard !results.isEmpty else { return [] }
 
         switch results.removeFirst() {
-        case .success(let entries):
+        case let .success(entries):
             return entries
-        case .failure(let error):
+        case let .failure(error):
             throw error
         }
     }

@@ -3,7 +3,9 @@ import SwiftUI
 struct ClassifierSettingsPane: View {
     @StateObject private var model: ClassifierSettingsModel
     @State private var showingRevertConfirmation = false
+}
 
+extension ClassifierSettingsPane {
     init(
         repoPath: String,
         loader: any CoreConfigurationLoading = CoreBridge(),
@@ -86,7 +88,7 @@ struct ClassifierSettingsPane: View {
             loadingContent
         case .loaded:
             loadedContent
-        case .failed(let error):
+        case let .failed(error):
             loadErrorContent(error)
         }
     }
@@ -360,7 +362,6 @@ struct ClassifierSettingsPane: View {
         }
     }
 
-    @ViewBuilder
     private func previewErrorView(_ error: ClassifierSettingsPreviewError) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Label(error.message, systemImage: "exclamationmark.triangle")
@@ -384,7 +385,6 @@ struct ClassifierSettingsPane: View {
         .accessibilityIdentifier("S1-28-preview-error")
     }
 
-    @ViewBuilder
     private func previewResultView(_ result: ClassifyResultSnapshot) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("预览结果")

@@ -1,5 +1,5 @@
-import XCTest
 @testable import AreaMatrix
+import XCTest
 
 final class ImportSingleFilePreviewModelTests: XCTestCase {
     @MainActor
@@ -11,7 +11,7 @@ final class ImportSingleFilePreviewModelTests: XCTestCase {
                 suggestedName: "2026Q1_合同_客户A.pdf",
                 reason: .keyword,
                 confidence: 0.93
-            )),
+            ))
         ])
         let request = ImportEntryRequest(
             repoPath: "/tmp/repo",
@@ -31,7 +31,7 @@ final class ImportSingleFilePreviewModelTests: XCTestCase {
         let requests = await predictor.recordedRequests()
 
         XCTAssertEqual(requests, [
-            ImportSingleFilePredictRequest(repoPath: "/tmp/repo", filename: "合同.pdf"),
+            ImportSingleFilePredictRequest(repoPath: "/tmp/repo", filename: "合同.pdf")
         ])
         XCTAssertEqual(model.source?.fileName, "合同.pdf")
         XCTAssertEqual(model.selectedCategory, "docs")
@@ -49,7 +49,7 @@ final class ImportSingleFilePreviewModelTests: XCTestCase {
                 suggestedName: "2026Q1_合同_客户A.pdf",
                 reason: .extension,
                 confidence: 0.8
-            )),
+            ))
         ])
         let request = ImportEntryRequest(
             repoPath: "/tmp/repo",
@@ -76,7 +76,7 @@ final class ImportSingleFilePreviewModelTests: XCTestCase {
     @MainActor
     func testClassificationFailureDoesNotCreateStaticPreviewSuccess() async {
         let predictor = ImportSingleFileRecordingPredictor(results: [
-            .failure(CoreError.Classify(reason: "classifier unavailable")),
+            .failure(CoreError.Classify(reason: "classifier unavailable"))
         ])
         let request = ImportEntryRequest(
             repoPath: "/tmp/repo",
@@ -109,7 +109,7 @@ final class ImportSingleFilePreviewModelTests: XCTestCase {
             destination: .autoClassify,
             urls: [
                 URL(fileURLWithPath: "/tmp/a.pdf"),
-                URL(fileURLWithPath: "/tmp/b.pdf"),
+                URL(fileURLWithPath: "/tmp/b.pdf")
             ],
             kind: .multipleItems(2)
         )
@@ -137,7 +137,7 @@ final class ImportSingleFilePreviewModelTests: XCTestCase {
                 suggestedName: "source.pdf",
                 reason: .extension,
                 confidence: 0.7
-            )),
+            ))
         ])
         let importedEntry = FileEntrySnapshot.importSingleFileFixture(
             currentName: "contract.pdf",
@@ -173,7 +173,7 @@ final class ImportSingleFilePreviewModelTests: XCTestCase {
                 overrideCategory: "legal",
                 overrideFilename: "contract.pdf",
                 duplicateStrategy: .ask
-            ),
+            )
         ])
         XCTAssertEqual(model.importStatus, .imported(importedEntry))
     }
@@ -186,10 +186,10 @@ final class ImportSingleFilePreviewModelTests: XCTestCase {
                 suggestedName: "source.pdf",
                 reason: .extension,
                 confidence: 0.7
-            )),
+            ))
         ])
         let importer = ImportSingleFileRecordingImporter(results: [
-            .failure(CoreError.PermissionDenied(path: "/tmp/source.pdf")),
+            .failure(CoreError.PermissionDenied(path: "/tmp/source.pdf"))
         ])
         let errorMapper = ImportSingleFileRecordingErrorMapper()
         let model = ImportSingleFilePreviewModel(
@@ -303,21 +303,20 @@ final class ImportSingleFilePreviewModelTests: XCTestCase {
         XCTAssertFalse(model.showsRetryPreviewAction)
         XCTAssertNil(model.activeConflictPage)
         XCTAssertEqual(model.importDisabledReason, "iCloud 下载失败后请重试下载或切换本地资料库")
-        guard case .iCloudDownloadFailed(let path, let reason) = model.currentPreflightResult?.conflict else {
+        guard case let .iCloudDownloadFailed(path, reason) = model.currentPreflightResult?.conflict else {
             return XCTFail("Expected iCloud download failure to remain in iCloud recovery state")
         }
         XCTAssertEqual(path, "/tmp/source.pdf")
         XCTAssertEqual(reason, "network offline")
     }
-
 }
 
-private struct ImportSingleFilePredictRequest: Equatable, Sendable {
+private struct ImportSingleFilePredictRequest: Equatable {
     var repoPath: String
     var filename: String
 }
 
-private struct ImportSingleFileImportRequest: Equatable, Sendable {
+private struct ImportSingleFileImportRequest: Equatable {
     var repoPath: String
     var sourceURL: URL
     var storageMode: ImportSingleFileStorageMode
@@ -341,9 +340,9 @@ private actor ImportSingleFileRecordingPredictor: CoreCategoryPredicting {
         }
 
         switch results.removeFirst() {
-        case .success(let snapshot):
+        case let .success(snapshot):
             return snapshot
-        case .failure(let error):
+        case let .failure(error):
             throw error
         }
     }
@@ -368,14 +367,14 @@ private actor ImportSingleFileRecordingImporter: CoreFileImporting {
         overrideFilename: String,
         duplicateStrategy: DuplicateStrategy
     ) async throws -> FileEntrySnapshot {
-        try recordImport(
+        try recordImport(ImportSingleFileImportRequest(
             repoPath: repoPath,
             sourceURL: sourceURL,
             storageMode: .copy,
             overrideCategory: overrideCategory,
             overrideFilename: overrideFilename,
             duplicateStrategy: duplicateStrategy
-        )
+        ))
     }
 
     func importMovedFile(
@@ -385,14 +384,14 @@ private actor ImportSingleFileRecordingImporter: CoreFileImporting {
         overrideFilename: String,
         duplicateStrategy: DuplicateStrategy
     ) async throws -> FileEntrySnapshot {
-        try recordImport(
+        try recordImport(ImportSingleFileImportRequest(
             repoPath: repoPath,
             sourceURL: sourceURL,
             storageMode: .move,
             overrideCategory: overrideCategory,
             overrideFilename: overrideFilename,
             duplicateStrategy: duplicateStrategy
-        )
+        ))
     }
 
     func importIndexedFile(
@@ -402,39 +401,25 @@ private actor ImportSingleFileRecordingImporter: CoreFileImporting {
         overrideFilename: String,
         duplicateStrategy: DuplicateStrategy
     ) async throws -> FileEntrySnapshot {
-        try recordImport(
+        try recordImport(ImportSingleFileImportRequest(
             repoPath: repoPath,
             sourceURL: sourceURL,
             storageMode: .indexOnly,
             overrideCategory: overrideCategory,
             overrideFilename: overrideFilename,
             duplicateStrategy: duplicateStrategy
-        )
+        ))
     }
 
-    private func recordImport(
-        repoPath: String,
-        sourceURL: URL,
-        storageMode: ImportSingleFileStorageMode,
-        overrideCategory: String,
-        overrideFilename: String,
-        duplicateStrategy: DuplicateStrategy
-    ) throws -> FileEntrySnapshot {
-        requests.append(ImportSingleFileImportRequest(
-            repoPath: repoPath,
-            sourceURL: sourceURL,
-            storageMode: storageMode,
-            overrideCategory: overrideCategory,
-            overrideFilename: overrideFilename,
-            duplicateStrategy: duplicateStrategy
-        ))
+    private func recordImport(_ request: ImportSingleFileImportRequest) throws -> FileEntrySnapshot {
+        requests.append(request)
         guard !results.isEmpty else {
             throw CoreError.Internal(message: "missing import test result")
         }
         switch results.removeFirst() {
-        case .success(let snapshot):
+        case let .success(snapshot):
             return snapshot
-        case .failure(let error):
+        case let .failure(error):
             throw error
         }
     }
@@ -459,19 +444,19 @@ private actor ImportSingleFileRecordingErrorMapper: CoreErrorMapping {
     private func kind(for error: CoreError) -> CoreErrorKindSnapshot {
         switch error {
         case .DuplicateFile:
-            return .duplicateFile
+            .duplicateFile
         case .InvalidPath:
-            return .invalidPath
+            .invalidPath
         case .ICloudPlaceholder:
-            return .iCloudPlaceholder
+            .iCloudPlaceholder
         case .PermissionDenied:
-            return .permissionDenied
+            .permissionDenied
         case .Io:
-            return .io
+            .io
         case .Db:
-            return .db
+            .db
         default:
-            return .internal
+            .internal
         }
     }
 }

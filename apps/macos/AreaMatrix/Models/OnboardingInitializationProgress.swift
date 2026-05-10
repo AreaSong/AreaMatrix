@@ -3,7 +3,7 @@ import Foundation
 extension OnboardingModel {
     @MainActor
     func cancelMainOpening() {
-        guard case .mainLoading(let state) = route else { return }
+        guard case let .mainLoading(state) = route else { return }
 
         openingCancellationToken = UUID()
         resetCancelledMainOpening(repoPath: state.repoPath)
@@ -71,7 +71,7 @@ extension OnboardingModel {
 
     @MainActor
     func openInitializedRepository() async {
-        guard case .initializationDone(let result) = route else { return }
+        guard case let .initializationDone(result) = route else { return }
         initializationOpenErrorMapping = nil
         let cancellationToken = UUID()
         openingCancellationToken = cancellationToken
@@ -107,7 +107,7 @@ extension OnboardingModel {
 
     @MainActor
     func openInitializedRepositoryInFinder() async {
-        guard case .initializationDone(let result) = route else { return }
+        guard case let .initializationDone(result) = route else { return }
 
         do {
             try finderOpener.openRepositoryInFinder(repoPath: result.repoPath)
@@ -185,14 +185,14 @@ extension OnboardingModel {
         if seedSession?.kind == .adopt, seedSession?.status == .completed { return nil }
 
         do {
-            return MainLoadingScanRefreshResult(
-                scanSession: try await scanSessionReader.latestScanSession(repoPath: repoPath) ?? seedSession,
+            return try await MainLoadingScanRefreshResult(
+                scanSession: scanSessionReader.latestScanSession(repoPath: repoPath) ?? seedSession,
                 scanSessionErrorMapping: nil
             )
         } catch {
-            return MainLoadingScanRefreshResult(
+            return await MainLoadingScanRefreshResult(
                 scanSession: seedSession,
-                scanSessionErrorMapping: await openingFailureMapping(for: error)
+                scanSessionErrorMapping: openingFailureMapping(for: error)
             )
         }
     }
@@ -207,8 +207,8 @@ extension OnboardingModel {
             let tree = try await mainLoadingTreeLister.listTree(repoPath: repoPath, locale: Self.mainLoadingTreeLocale)
             return MainLoadingTreeRefreshResult(treeLoading: .loaded(tree))
         } catch {
-            return MainLoadingTreeRefreshResult(
-                treeLoading: .failed(await openingFailureMapping(for: error))
+            return await MainLoadingTreeRefreshResult(
+                treeLoading: .failed(openingFailureMapping(for: error))
             )
         }
     }
@@ -220,9 +220,10 @@ extension OnboardingModel {
         update: MainLoadingRefreshUpdate
     ) {
         guard openingCancellationToken == cancellationToken else { return }
-        guard case .mainLoading(let currentState) = route else { return }
+        guard case let .mainLoading(currentState) = route else { return }
         let scanSession = update.scanResult?.scanSession ?? currentState.scanSession
-        let scanSessionErrorMapping = update.scanResult.map(\.scanSessionErrorMapping) ?? currentState.scanSessionErrorMapping
+        let scanSessionErrorMapping = update.scanResult.map(\.scanSessionErrorMapping) ?? currentState
+            .scanSessionErrorMapping
         let treeLoading = update.treeResult?.treeLoading ?? currentState.treeLoading
 
         route = .mainLoading(MainLoadingState(
@@ -237,14 +238,14 @@ extension OnboardingModel {
 
     @MainActor
     func retryMainLoadingTree() async {
-        guard case .mainLoading(var state) = route else { return }
+        guard case var .mainLoading(state) = route else { return }
         guard mainLoadingTreeLister != nil else { return }
 
         state.treeLoading = .loading
         route = .mainLoading(state)
 
         guard let result = await loadMainLoadingTree(repoPath: state.repoPath, shouldLoadTree: true) else { return }
-        guard case .mainLoading(var latestState) = route, latestState.repoPath == state.repoPath else { return }
+        guard case var .mainLoading(latestState) = route, latestState.repoPath == state.repoPath else { return }
 
         latestState.treeLoading = result.treeLoading
         route = .mainLoading(latestState)
@@ -255,12 +256,12 @@ extension OnboardingModel {
         do {
             let report = try await startupRecoverer.recoverOnStartup(repoPath: repoPath)
             guard openingCancellationToken == cancellationToken else { return }
-            guard case .mainLoading(var state) = route, state.repoPath == repoPath else { return }
+            guard case var .mainLoading(state) = route, state.repoPath == repoPath else { return }
             state.startupRecovery = .completed(report.hasVisibleDetails ? report : nil)
             route = .mainLoading(state)
         } catch {
             guard openingCancellationToken == cancellationToken else { return }
-            guard case .mainLoading(var state) = route, state.repoPath == repoPath else { return }
+            guard case var .mainLoading(state) = route, state.repoPath == repoPath else { return }
             let mapping = await openingFailureMapping(for: error)
             state.startupRecovery = .failed(mapping)
             route = .mainLoading(state)
@@ -312,9 +313,9 @@ extension OnboardingModel {
     ) async throws -> RepositoryOpeningResult {
         switch result.mode {
         case .createEmpty:
-            return try await emptyRepositoryOpener.openEmptyRepository(repoPath: result.repoPath)
+            try await emptyRepositoryOpener.openEmptyRepository(repoPath: result.repoPath)
         case .adoptExisting:
-            return try await emptyRepositoryOpener.openAdoptedRepository(repoPath: result.repoPath)
+            try await emptyRepositoryOpener.openAdoptedRepository(repoPath: result.repoPath)
         }
     }
 
@@ -391,7 +392,7 @@ extension OnboardingModel {
     }
 
     private func isInitializingAdoptExisting(repoPath: String) -> Bool {
-        guard case .initializing(let draft) = route else { return false }
+        guard case let .initializing(draft) = route else { return false }
         return draft.mode == .adoptExisting && draft.validation.repoPath == repoPath
     }
 
@@ -479,7 +480,7 @@ extension OnboardingModel {
         mainRepoRecoveryErrorMapping = mapping
         if mapping.usesInlineRepositoryOpeningError {
             var state = MainLoadingState(repoPath: repoPath)
-            if case .mainLoading(let currentState) = route, currentState.repoPath == repoPath {
+            if case let .mainLoading(currentState) = route, currentState.repoPath == repoPath {
                 state = currentState
             }
             route = .mainLoading(state.withRepositoryOpeningError(mapping))
@@ -487,5 +488,4 @@ extension OnboardingModel {
         }
         routeMainRepositoryError(repoPath: repoPath, mapping: mapping)
     }
-
 }

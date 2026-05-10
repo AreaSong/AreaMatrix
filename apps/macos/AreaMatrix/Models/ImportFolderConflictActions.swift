@@ -8,7 +8,7 @@ protocol ImportFolderConflictPrechecking: Sendable {
     ) async -> [String: ImportFolderConflictPrecheckResult]
 }
 
-enum ImportFolderConflictPrecheckResult: Equatable, Sendable {
+enum ImportFolderConflictPrecheckResult: Equatable {
     case duplicate(existingPath: String)
     case nameConflict(existingPath: String)
     case blocked(String)
@@ -82,7 +82,7 @@ enum ImportFolderConflictTarget {
         case .autoClassify:
             let category = row.predictedCategory?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "inbox"
             return category.isEmpty ? "inbox" : category
-        case .category(let slug):
+        case let .category(slug):
             return slug.trimmingCharacters(in: .whitespacesAndNewlines)
         case .repositoryRoot:
             return nil
@@ -98,7 +98,7 @@ extension ImportFolderPreviewModel {
     ) {
         guard canSelectDuplicateStrategy(strategy) else { return }
         guard let row = rows.first(where: { $0.id == rowID }) else { return }
-        guard case .duplicate(let existingPath, _, let isReplaceConfirmed) = row.status else { return }
+        guard case let .duplicate(existingPath, _, isReplaceConfirmed) = row.status else { return }
         setRowStatus(.duplicate(
             existingPath: existingPath,
             strategy: strategy,
@@ -112,7 +112,7 @@ extension ImportFolderPreviewModel {
     ) {
         guard canSelectNameConflictResolution(resolution) else { return }
         guard let row = rows.first(where: { $0.id == rowID }) else { return }
-        guard case .nameConflict(let existingPath, _) = row.status else { return }
+        guard case let .nameConflict(existingPath, _) = row.status else { return }
         setRowStatus(.nameConflict(existingPath: existingPath, resolution: resolution), for: rowID)
     }
 
@@ -122,12 +122,12 @@ extension ImportFolderPreviewModel {
 
     func beginReplaceConfirmation(
         for rowID: ImportFolderPreviewRow.ID
-    ) -> ImportSingleFileReplaceConfirmationContext? {
+    ) -> SingleFileReplaceConfirmationContext? {
         clearReplaceConfirmationRecovery()
         guard let row = rows.first(where: { $0.id == rowID }) else { return nil }
         guard replaceOptionVisibility == .enabled else { return nil }
         guard let existingPath = row.existingConflictPath else { return nil }
-        return ImportSingleFileReplaceConfirmationContext(
+        return SingleFileReplaceConfirmationContext(
             existingPath: existingPath,
             incomingPath: row.fileURL.path,
             incomingSizeBytes: row.sizeBytes,
@@ -138,7 +138,7 @@ extension ImportFolderPreviewModel {
 
     func applyReplaceConfirmation(
         for rowID: ImportFolderPreviewRow.ID,
-        decision: ImportSingleFileReplaceConfirmationDecision
+        decision: SingleFileReplaceConfirmationDecision
     ) -> Bool {
         guard decision.understandsReplace else {
             recordReplaceConfirmationFailure("Replace 需要先勾选二次确认")
@@ -151,13 +151,13 @@ extension ImportFolderPreviewModel {
         guard let row = rows.first(where: { $0.id == rowID }) else { return false }
 
         switch row.status {
-        case .duplicate(let existingPath, .replace, _):
+        case let .duplicate(existingPath, .replace, _):
             setRowStatus(.duplicate(
                 existingPath: existingPath,
                 strategy: .replace,
                 isReplaceConfirmed: true
             ), for: rowID)
-        case .nameConflict(let existingPath, .replace):
+        case let .nameConflict(existingPath, .replace):
             setRowStatus(.nameConflict(
                 existingPath: existingPath,
                 resolution: .replace(isConfirmed: true)
@@ -173,7 +173,7 @@ extension ImportFolderPreviewModel {
 
     func markICloudPlaceholderPending(rowID: ImportFolderPreviewRow.ID) {
         guard let row = rows.first(where: { $0.id == rowID }) else { return }
-        guard case .iCloudPlaceholder(let path) = row.status else { return }
+        guard case let .iCloudPlaceholder(path) = row.status else { return }
         setRowStatus(.skippedICloud(path: path), for: rowID)
     }
 
@@ -187,11 +187,11 @@ extension ImportFolderPreviewModel {
 
     private func currentReplaceConfirmationContext(
         for rowID: ImportFolderPreviewRow.ID
-    ) -> ImportSingleFileReplaceConfirmationContext? {
+    ) -> SingleFileReplaceConfirmationContext? {
         guard let row = rows.first(where: { $0.id == rowID }) else { return nil }
         guard replaceOptionVisibility == .enabled else { return nil }
         guard let existingPath = row.existingConflictPath else { return nil }
-        return ImportSingleFileReplaceConfirmationContext(
+        return SingleFileReplaceConfirmationContext(
             existingPath: existingPath,
             incomingPath: row.fileURL.path,
             incomingSizeBytes: row.sizeBytes,
@@ -199,5 +199,4 @@ extension ImportFolderPreviewModel {
             isTrashAvailable: true
         )
     }
-
 }

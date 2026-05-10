@@ -1,16 +1,23 @@
 use std::{ffi::OsString, fs, path::Path, sync::Mutex};
 
 static HOME_ENV_LOCK: Mutex<()> = Mutex::new(());
+const FORCE_USER_TRASH_ENV: &str = "AREAMATRIX_TEST_FORCE_USER_TRASH";
 
 struct HomeOverride {
     previous: Option<OsString>,
+    previous_force_user_trash: Option<OsString>,
 }
 
 impl HomeOverride {
     fn install(home: &Path) -> Self {
         let previous = std::env::var_os("HOME");
+        let previous_force_user_trash = std::env::var_os(FORCE_USER_TRASH_ENV);
         std::env::set_var("HOME", home);
-        Self { previous }
+        std::env::set_var(FORCE_USER_TRASH_ENV, "1");
+        Self {
+            previous,
+            previous_force_user_trash,
+        }
     }
 }
 
@@ -19,6 +26,10 @@ impl Drop for HomeOverride {
         match &self.previous {
             Some(value) => std::env::set_var("HOME", value),
             None => std::env::remove_var("HOME"),
+        }
+        match &self.previous_force_user_trash {
+            Some(value) => std::env::set_var(FORCE_USER_TRASH_ENV, value),
+            None => std::env::remove_var(FORCE_USER_TRASH_ENV),
         }
     }
 }

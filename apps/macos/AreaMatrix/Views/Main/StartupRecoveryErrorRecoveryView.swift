@@ -36,7 +36,7 @@ struct StartupRecoveryErrorRecoveryView: View {
             Text("AreaMatrix is checking startup recovery before opening the repository.")
                 .font(.callout)
                 .foregroundStyle(.secondary)
-        case .completed(let report):
+        case let .completed(report):
             if let report, report.hasVisibleDetails {
                 recoveryReportContent(report)
             } else {
@@ -44,7 +44,7 @@ struct StartupRecoveryErrorRecoveryView: View {
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }
-        case .failed(let mapping):
+        case let .failed(mapping):
             ErrorRecoveryMappedErrorView(
                 mapping: mapping,
                 retryButtonTitle: retryButtonTitle,
@@ -84,31 +84,31 @@ struct StartupRecoveryErrorRecoveryView: View {
     private var title: String {
         switch state {
         case .checking:
-            return "Startup recovery"
+            "Startup recovery"
         case .completed:
-            return "Startup recovery complete"
+            "Startup recovery complete"
         case .failed:
-            return "Startup recovery failed"
+            "Startup recovery failed"
         }
     }
 
     private var iconName: String {
         switch state {
         case .checking:
-            return "arrow.clockwise.circle"
+            "arrow.clockwise.circle"
         case .completed:
-            return "checkmark.circle"
+            "checkmark.circle"
         case .failed:
-            return "exclamationmark.triangle"
+            "exclamationmark.triangle"
         }
     }
 
     private var tint: Color {
         switch state {
         case .failed:
-            return .red
+            .red
         default:
-            return .primary
+            .primary
         }
     }
 }
@@ -169,24 +169,24 @@ struct ErrorRecoveryMappedErrorView: View {
     private var iconName: String {
         switch mapping.severity {
         case .low:
-            return "info.circle"
+            "info.circle"
         case .medium:
-            return "exclamationmark.circle"
+            "exclamationmark.circle"
         case .high:
-            return "exclamationmark.triangle"
+            "exclamationmark.triangle"
         case .critical:
-            return "xmark.octagon"
+            "xmark.octagon"
         }
     }
 
     private var tint: Color {
         switch mapping.severity {
         case .low:
-            return .blue
+            .blue
         case .medium:
-            return .orange
+            .orange
         case .high, .critical:
-            return .red
+            .red
         }
     }
 }

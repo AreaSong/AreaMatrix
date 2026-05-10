@@ -90,9 +90,9 @@ struct ImportFolderConflictSection: View {
     @ViewBuilder
     private func incomingResolutionView(for row: ImportFolderPreviewRow) -> some View {
         switch row.status {
-        case .nameConflict(_, let resolution):
+        case let .nameConflict(_, resolution):
             switch resolution {
-            case .renameIncoming(let name):
+            case let .renameIncoming(name):
                 TextField("Incoming filename", text: Binding(
                     get: { name },
                     set: { model.renameIncomingFile(for: row.id, to: $0) }
@@ -161,7 +161,7 @@ struct ImportFolderConflictSection: View {
     @ViewBuilder
     private func actionView(for row: ImportFolderPreviewRow) -> some View {
         switch row.status {
-        case .duplicate(let existingPath, let strategy, let isReplaceConfirmed):
+        case let .duplicate(existingPath, strategy, isReplaceConfirmed):
             if strategy == .replace {
                 replaceButton(row: row, isConfirmed: isReplaceConfirmed)
             } else {
@@ -171,9 +171,9 @@ struct ImportFolderConflictSection: View {
                 .disabled(model.rows.contains { $0.status.isImporting })
                 .help(existingPath)
             }
-        case .nameConflict(_, let resolution):
+        case let .nameConflict(_, resolution):
             switch resolution {
-            case .replace(let isConfirmed):
+            case let .replace(isConfirmed):
                 replaceButton(row: row, isConfirmed: isConfirmed)
             case .renameIncoming:
                 Text("Rename incoming...")
@@ -211,7 +211,7 @@ struct ImportFolderConflictSection: View {
 
 struct ImportFolderReplaceConfirmation: Identifiable, Equatable {
     var rowID: ImportFolderPreviewRow.ID
-    var context: ImportSingleFileReplaceConfirmationContext
+    var context: SingleFileReplaceConfirmationContext
 
     var id: String {
         "\(rowID)|\(context.id)"

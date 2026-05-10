@@ -1,5 +1,5 @@
-import XCTest
 @testable import AreaMatrix
+import XCTest
 
 final class GeneralSettingsImportDefaultModeTests: XCTestCase {
     @MainActor
@@ -43,7 +43,7 @@ final class GeneralSettingsImportDefaultModeTests: XCTestCase {
         )
         batchModel.applyPreviewRows(
             [
-                ImportBatchPreviewRow.ready(url: sourceURL, prediction: .s117Fixture()),
+                ImportBatchPreviewRow.ready(url: sourceURL, prediction: .s117Fixture())
             ],
             request: ImportEntryRequest(
                 repoPath: opening.config.repoPath,
@@ -89,11 +89,11 @@ final class GeneralSettingsImportDefaultModeTests: XCTestCase {
 
 @MainActor
 private final class GeneralSettingsImportDefaultAnnouncer: AccessibilityAnnouncing {
-    func announce(_ message: String) {}
+    func announce(_: String) {}
 }
 
 private actor GeneralSettingsImportDefaultErrorMapper: CoreErrorMapping {
-    func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
+    func mapCoreError(_: CoreError) async -> CoreErrorMappingSnapshot {
         CoreErrorMappingSnapshot(
             kind: .internal,
             userMessage: "保存失败",

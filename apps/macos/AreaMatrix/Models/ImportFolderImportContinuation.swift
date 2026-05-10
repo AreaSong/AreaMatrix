@@ -41,12 +41,14 @@ extension ImportFolderPreviewModel: ImportProgressQueueContinuing {
 
         for index in rows.indices where rows[index].status.importsIncomingFile {
             let cycle = await runFolderImportCycle(
-                at: index,
-                request: request,
-                storageMode: selectedStorageMode,
-                completed: completed,
-                failed: failed,
-                total: total
+                input: ImportFolderImportCycleInput(
+                    rowIndex: index,
+                    request: request,
+                    storageMode: selectedStorageMode,
+                    completed: completed,
+                    failed: failed,
+                    total: total
+                )
             )
             completed = cycle.completed
             failed = cycle.failed

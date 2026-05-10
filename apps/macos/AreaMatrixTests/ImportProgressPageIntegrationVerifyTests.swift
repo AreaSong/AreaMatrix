@@ -1,5 +1,5 @@
-import XCTest
 @testable import AreaMatrix
+import XCTest
 
 final class ImportProgressPageIntegrationVerifyTests: XCTestCase {
     @MainActor
@@ -31,7 +31,7 @@ final class ImportProgressPageIntegrationVerifyTests: XCTestCase {
         )
         model.stopImportProgressAndViewResults()
 
-        guard case .importResult(let result) = model.route else {
+        guard case let .importResult(result) = model.route else {
             return XCTFail("Expected S1-21 import result route")
         }
         XCTAssertEqual(result.resultSummaryText, "Imported 1, failed 1, stopped 2, pending 1.")
@@ -65,7 +65,7 @@ private extension ImportProgressPageIntegrationVerifyTests {
                 targetPath: "docs/later.pdf",
                 phase: .pending,
                 errorMessage: nil
-            ),
+            )
         ]
     )
 
@@ -107,7 +107,7 @@ private extension ImportProgressPageIntegrationVerifyTests {
                 targetPath: "docs/pending.pdf",
                 phase: .writingIndex,
                 errorMessage: nil
-            ),
+            )
         ]
     )
 }

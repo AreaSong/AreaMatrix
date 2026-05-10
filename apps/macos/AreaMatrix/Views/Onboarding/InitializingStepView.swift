@@ -221,7 +221,7 @@ struct InitializingStepView: View {
                 .pending("创建 .areamatrix/ 内部目录"),
                 .pending("初始化 index.db"),
                 .pending("创建默认分类与 ignore.yaml"),
-                .pending("写入 .areamatrix/generated/root.md"),
+                .pending("写入 .areamatrix/generated/root.md")
             ]
         }
 
@@ -230,7 +230,7 @@ struct InitializingStepView: View {
             .completed("初始化 index.db", when: scanSession != nil),
             .running("扫描现有文件", when: scanSession?.status == .running),
             .completed("写入索引", when: scanSession?.hasIndexedFiles == true),
-            .completed("生成资料库概览", when: scanSession?.status == .completed),
+            .completed("生成资料库概览", when: scanSession?.status == .completed)
         ]
     }
 }
@@ -349,13 +349,13 @@ struct InitDoneStepView: View {
     private var summaryItems: [String] {
         switch result.mode {
         case .createEmpty:
-            return ["已创建默认分类", "已创建本地索引", "已启用自动概览"]
+            ["已创建默认分类", "已创建本地索引", "已启用自动概览"]
         case .adoptExisting:
-            return [
+            [
                 "已建立本地索引",
                 "已扫描现有文件",
                 "已保留原有目录结构",
-                "已生成内部概览",
+                "已生成内部概览"
             ]
         }
     }

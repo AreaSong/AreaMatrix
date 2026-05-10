@@ -17,9 +17,9 @@ struct AdvancedSettingsRecoveryToolsSection: View {
                 "Startup cleanup and staging recovery stay in the dedicated recovery flow " +
                     "with confirmation before metadata actions."
             )
-                .font(.callout)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
+            .font(.callout)
+            .foregroundStyle(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }

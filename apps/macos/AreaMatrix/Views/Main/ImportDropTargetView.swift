@@ -8,7 +8,6 @@ struct ImportDropTargetModifier: ViewModifier {
     var isEnabled = true
     @State private var isTargeted = false
 
-    @ViewBuilder
     func body(content: Content) -> some View {
         if isEnabled {
             content
@@ -36,11 +35,11 @@ private struct ImportDropDelegate: DropDelegate {
         loadPreview(from: info)
     }
 
-    func dropUpdated(info: DropInfo) -> DropProposal? {
+    func dropUpdated(info _: DropInfo) -> DropProposal? {
         DropProposal(operation: .copy)
     }
 
-    func dropExited(info: DropInfo) {
+    func dropExited(info _: DropInfo) {
         isTargeted = false
         Task { @MainActor in
             dropPreviewModel.clear()
@@ -131,7 +130,7 @@ struct DropZoneOverlay: View {
     private var accessibilityLabel: String {
         var parts = [
             presentation.headline,
-            "导入到：\(presentation.destinationLabel)",
+            "导入到：\(presentation.destinationLabel)"
         ]
         if let warning = presentation.warning {
             parts.append(warning)

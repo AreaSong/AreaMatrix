@@ -2,7 +2,7 @@ import AppKit
 import Foundation
 import UniformTypeIdentifiers
 
-struct AppShellModel: Equatable, Sendable {
+struct AppShellModel: Equatable {
     var statusText = "Onboarding configuration router"
 }
 
@@ -17,11 +17,13 @@ protocol AppSettingsWriting {
 }
 
 extension AppSettingsReading {
-    func lastSuccessfulRepoOpenAt(repoPath: String) -> Int64? { nil }
+    func lastSuccessfulRepoOpenAt(repoPath _: String) -> Int64? {
+        nil
+    }
 }
 
 extension AppSettingsWriting {
-    func saveSuccessfulRepoOpen(repoPath: String, openedAt: Int64) {}
+    func saveSuccessfulRepoOpen(repoPath _: String, openedAt _: Int64) {}
 }
 
 struct UserDefaultsAppSettingsReader: AppSettingsReading {
@@ -246,54 +248,54 @@ struct VoiceOverAccessibilityAnnouncer: AccessibilityAnnouncing {
             notification: .announcementRequested,
             userInfo: [
                 .announcement: message,
-                .priority: NSAccessibilityPriorityLevel.high.rawValue,
+                .priority: NSAccessibilityPriorityLevel.high.rawValue
             ]
         )
     }
 }
 
-enum WelcomeHelpError: Error, Equatable, Sendable {
+enum WelcomeHelpError: Error, Equatable {
     case helpDocumentUnavailable
 }
 
-enum RepositoryFinderOpenError: Error, Equatable, LocalizedError, Sendable {
+enum RepositoryFinderOpenError: Error, Equatable, LocalizedError {
     case repositoryFolderMissing(String)
     case openRejected(String)
 
     var errorDescription: String? {
         switch self {
-        case .repositoryFolderMissing(let path):
-            return "Repository folder is missing: \(path)"
-        case .openRejected(let path):
-            return "Finder rejected opening repository: \(path)"
+        case let .repositoryFolderMissing(path):
+            "Repository folder is missing: \(path)"
+        case let .openRejected(path):
+            "Finder rejected opening repository: \(path)"
         }
     }
 }
 
-enum RepositoryFileActionError: Error, Equatable, LocalizedError, Sendable {
+enum RepositoryFileActionError: Error, Equatable, LocalizedError {
     case unsafeRelativePath(String)
     case fileMissing(String)
     case openRejected(String)
 
     var errorDescription: String? {
         switch self {
-        case .unsafeRelativePath(let path):
-            return "File path is outside this repository: \(path)"
-        case .fileMissing(let path):
-            return "File is missing from this repository: \(path)"
-        case .openRejected(let path):
-            return "File opener rejected this path: \(path)"
+        case let .unsafeRelativePath(path):
+            "File path is outside this repository: \(path)"
+        case let .fileMissing(path):
+            "File is missing from this repository: \(path)"
+        case let .openRejected(path):
+            "File opener rejected this path: \(path)"
         }
     }
 }
 
-enum ImportResultExportError: Error, Equatable, LocalizedError, Sendable {
+enum ImportResultExportError: Error, Equatable, LocalizedError {
     case cancelled
 
     var errorDescription: String? {
         switch self {
         case .cancelled:
-            return "Import result export was cancelled."
+            "Import result export was cancelled."
         }
     }
 }
@@ -304,7 +306,8 @@ private enum RepositoryFilePathResolver {
         guard !components.isEmpty,
               !relativePath.hasPrefix("/"),
               !components.contains(".."),
-              !components.contains(".") else {
+              !components.contains(".")
+        else {
             throw RepositoryFileActionError.unsafeRelativePath(relativePath)
         }
 

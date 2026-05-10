@@ -1,6 +1,6 @@
 import Foundation
 
-enum ClassifyReasonSnapshot: String, Equatable, Sendable {
+enum ClassifyReasonSnapshot: String, Equatable {
     case keyword = "Keyword"
     case `extension` = "Extension"
     case aiPredicted = "AiPredicted"
@@ -9,18 +9,18 @@ enum ClassifyReasonSnapshot: String, Equatable, Sendable {
     var displayLabel: String {
         switch self {
         case .keyword:
-            return "keyword"
-        case .`extension`:
-            return "extension"
+            "keyword"
+        case .extension:
+            "extension"
         case .aiPredicted:
-            return "AI"
-        case .`default`:
-            return "default"
+            "AI"
+        case .default:
+            "default"
         }
     }
 }
 
-struct ClassifyResultSnapshot: Equatable, Sendable {
+struct ClassifyResultSnapshot: Equatable {
     var category: String
     var suggestedName: String
     var reason: ClassifyReasonSnapshot
@@ -45,12 +45,12 @@ private extension ClassifyReasonSnapshot {
         switch coreReason {
         case .keyword:
             self = .keyword
-        case .`extension`:
-            self = .`extension`
+        case .extension:
+            self = .extension
         case .aiPredicted:
             self = .aiPredicted
-        case .`default`:
-            self = .`default`
+        case .default:
+            self = .default
         }
     }
 }
@@ -127,7 +127,7 @@ private struct RepositoryPathEnvironmentSnapshot {
     static func inspect(repoPath: String) -> RepositoryPathEnvironmentSnapshot {
         do {
             let keys: Set<URLResourceKey> = [
-                .volumeAvailableCapacityForImportantUsageKey, .volumeAvailableCapacityKey, .volumeIsInternalKey,
+                .volumeAvailableCapacityForImportantUsageKey, .volumeAvailableCapacityKey, .volumeIsInternalKey
             ]
             let values = try URL(fileURLWithPath: repoPath).resourceValues(forKeys: keys)
             return RepositoryPathEnvironmentSnapshot(

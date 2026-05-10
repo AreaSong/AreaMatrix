@@ -1,38 +1,40 @@
 import Foundation
 
-enum ICloudConflictResolutionStrategy: String, CaseIterable, Equatable, Identifiable, Sendable {
+enum ICloudConflictResolutionStrategy: String, CaseIterable, Equatable, Identifiable {
     case keepBoth
     case keepOriginalOnly
     case keepConflictedCopyOnly
 
-    var id: String { rawValue }
+    var id: String {
+        rawValue
+    }
 
     var title: String {
         switch self {
         case .keepBoth:
-            return "保留两份（推荐）"
+            "保留两份（推荐）"
         case .keepOriginalOnly:
-            return "仅保留第一份（把另一份移到回收站）"
+            "仅保留第一份（把另一份移到回收站）"
         case .keepConflictedCopyOnly:
-            return "仅保留第二份（把另一份移到回收站）"
+            "仅保留第二份（把另一份移到回收站）"
         }
     }
 
     var actionTitle: String {
         switch self {
         case .keepBoth:
-            return "Apply"
+            "Apply"
         case .keepOriginalOnly, .keepConflictedCopyOnly:
-            return "Move other version to Trash and Apply"
+            "Move other version to Trash and Apply"
         }
     }
 
     var runningTitle: String {
         switch self {
         case .keepBoth:
-            return "Applying..."
+            "Applying..."
         case .keepOriginalOnly, .keepConflictedCopyOnly:
-            return "Moving to Trash..."
+            "Moving to Trash..."
         }
     }
 
@@ -43,16 +45,16 @@ enum ICloudConflictResolutionStrategy: String, CaseIterable, Equatable, Identifi
     var successMessage: String {
         switch self {
         case .keepBoth:
-            return "Both iCloud conflict versions kept. Conflict state and change log were refreshed."
+            "Both iCloud conflict versions kept. Conflict state and change log were refreshed."
         case .keepOriginalOnly:
-            return "Original version kept. The other version was handled through Core resolution."
+            "Original version kept. The other version was handled through Core resolution."
         case .keepConflictedCopyOnly:
-            return "Conflicted copy kept. The other version was handled through Core resolution."
+            "Conflicted copy kept. The other version was handled through Core resolution."
         }
     }
 }
 
-enum ICloudConflictResolutionState: Equatable, Sendable {
+enum ICloudConflictResolutionState: Equatable {
     case idle
     case applying(fileID: Int64, strategy: ICloudConflictResolutionStrategy)
     case failed(fileID: Int64, strategy: ICloudConflictResolutionStrategy, CoreErrorMappingSnapshot)
@@ -63,18 +65,18 @@ enum ICloudConflictResolutionState: Equatable, Sendable {
     }
 
     func isApplying(fileID: Int64) -> Bool {
-        guard case .applying(let applyingFileID, _) = self else { return false }
+        guard case let .applying(applyingFileID, _) = self else { return false }
         return applyingFileID == fileID
     }
 
     func failedStrategy(fileID: Int64) -> ICloudConflictResolutionStrategy? {
-        guard case .failed(let failedFileID, let strategy, _) = self,
+        guard case let .failed(failedFileID, strategy, _) = self,
               failedFileID == fileID else { return nil }
         return strategy
     }
 
     func failure(fileID: Int64) -> CoreErrorMappingSnapshot? {
-        guard case .failed(let failedFileID, _, let mapping) = self,
+        guard case let .failed(failedFileID, _, mapping) = self,
               failedFileID == fileID else { return nil }
         return mapping
     }
@@ -89,7 +91,7 @@ enum ICloudConflictResolutionState: Equatable, Sendable {
     }
 }
 
-struct ICloudConflictResolutionBlocker: Equatable, Sendable {
+struct ICloudConflictResolutionBlocker: Equatable {
     var title: String
     var message: String
     var suggestedAction: String
@@ -101,13 +103,18 @@ struct ICloudConflictResolutionBlocker: Equatable, Sendable {
 
     static let missingCoreResolutionEndpoint = ICloudConflictResolutionBlocker(
         title: "Core resolution unavailable",
-        message: "S1-25 can validate the repository and map errors, but the Core resolution endpoint that clears conflict state and writes change_log is not available yet.",
-        suggestedAction: "Keep the conflict unresolved and return after the iCloud conflict resolution capability is implemented.",
+        message: """
+        S1-25 can validate the repository and map errors, but the Core resolution endpoint that clears conflict state \
+        and writes change_log is not available yet.
+        """,
+        suggestedAction: """
+        Keep the conflict unresolved and return after the iCloud conflict resolution capability is implemented.
+        """,
         rawContext: "Missing Core API: resolve_icloud_conflict or mark_icloud_conflict_resolved"
     )
 }
 
-enum ICloudConflictResolutionCapability: Equatable, Sendable {
+enum ICloudConflictResolutionCapability: Equatable {
     case supported
     case blocked(ICloudConflictResolutionBlocker)
 
@@ -117,12 +124,12 @@ enum ICloudConflictResolutionCapability: Equatable, Sendable {
     }
 
     var blocker: ICloudConflictResolutionBlocker? {
-        guard case .blocked(let blocker) = self else { return nil }
+        guard case let .blocked(blocker) = self else { return nil }
         return blocker
     }
 }
 
-struct ICloudConflictResolutionRequest: Equatable, Sendable {
+struct ICloudConflictResolutionRequest: Equatable {
     var repoPath: String
     var fileID: Int64
     var strategy: ICloudConflictResolutionStrategy
@@ -130,7 +137,7 @@ struct ICloudConflictResolutionRequest: Equatable, Sendable {
     var conflictedCopyPath: String?
 }
 
-struct ICloudConflictResolutionResult: Equatable, Sendable {
+struct ICloudConflictResolutionResult: Equatable {
     var focusFileID: Int64?
     var didClearConflictState: Bool
     var didWriteChangeLog: Bool
@@ -148,7 +155,7 @@ extension CoreBridge: ICloudConflictResolving {
         .blocked(.missingCoreResolutionEndpoint)
     }
 
-    func resolveICloudConflict(_ request: ICloudConflictResolutionRequest) async throws
+    func resolveICloudConflict(_: ICloudConflictResolutionRequest) async throws
         -> ICloudConflictResolutionResult {
         throw ICloudConflictResolutionBlocker.missingCoreResolutionEndpoint.coreError
     }

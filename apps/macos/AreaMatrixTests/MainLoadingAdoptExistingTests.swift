@@ -1,5 +1,5 @@
-import XCTest
 @testable import AreaMatrix
+import XCTest
 
 final class MainLoadingAdoptExistingTests: XCTestCase {
     @MainActor
@@ -78,7 +78,7 @@ final class MainLoadingAdoptExistingTests: XCTestCase {
         XCTAssertEqual(openRequests, [])
         XCTAssertEqual(writer.savedRepoPaths, [])
         XCTAssertEqual(recoveryRequests, ["/tmp/repo"])
-        guard case .mainLoading(let state) = model.route else {
+        guard case let .mainLoading(state) = model.route else {
             return XCTFail("expected inline main loading error, got \(model.route)")
         }
         XCTAssertEqual(state.recoveryErrorMapping, mapping)
@@ -109,7 +109,7 @@ final class MainLoadingAdoptExistingTests: XCTestCase {
         XCTAssertEqual(openRequests, ["/tmp/repo"])
         XCTAssertEqual(writer.savedRepoPaths, [])
         XCTAssertEqual(model.mainRepoRecoveryErrorMapping, mapping)
-        guard case .mainLoading(let state) = model.route else {
+        guard case let .mainLoading(state) = model.route else {
             return XCTFail("expected inline main loading error, got \(model.route)")
         }
         XCTAssertEqual(state.repoPath, "/tmp/repo")
@@ -137,7 +137,7 @@ final class MainLoadingAdoptExistingTests: XCTestCase {
         let openRequests = await opener.requestedConfiguredRepoPaths()
         XCTAssertEqual(openRequests, ["/tmp/repo"])
         XCTAssertEqual(model.mainRepoRecoveryErrorMapping, mapping)
-        guard case .mainLoading(let state) = model.route else {
+        guard case let .mainLoading(state) = model.route else {
             return XCTFail("expected inline main loading error, got \(model.route)")
         }
         XCTAssertEqual(state.repoPath, "/tmp/repo")
@@ -178,7 +178,7 @@ final class MainLoadingAdoptExistingTests: XCTestCase {
         let treeRequests = await treeLister.requestedRepoPaths()
         XCTAssertEqual(treeRequests, ["/tmp/repo"])
         XCTAssertEqual(state.treeStatusText, "目录已加载：1 个文件")
-        XCTAssertEqual(state.treeRows.map { $0.id }, ["docs", "docs/contracts"])
+        XCTAssertEqual(state.treeRows.map(\.id), ["docs", "docs/contracts"])
 
         await opener.finishOpen()
         await openTask.value
@@ -192,7 +192,7 @@ final class MainLoadingAdoptExistingTests: XCTestCase {
         )
         let treeLister = MainLoadingRecordingTreeLister(results: [
             .failure(CoreError.Db(message: "tree db locked")),
-            .success(.mainLoadingTreeFixture()),
+            .success(.mainLoadingTreeFixture())
         ])
         let model = OnboardingModel(
             settingsReader: MainLoadingStaticSettingsReader(repoPath: nil),
@@ -223,7 +223,7 @@ final class MainLoadingAdoptExistingTests: XCTestCase {
 
         await model.retryMainLoadingTree()
 
-        guard case .mainLoading(let retriedState) = model.route else {
+        guard case let .mainLoading(retriedState) = model.route else {
             await opener.finishOpen()
             await openTask.value
             return XCTFail("expected main loading after retry, got \(model.route)")
@@ -231,7 +231,7 @@ final class MainLoadingAdoptExistingTests: XCTestCase {
 
         let treeRequests = await treeLister.requestedRepoPaths()
         XCTAssertEqual(treeRequests, ["/tmp/repo", "/tmp/repo"])
-        XCTAssertEqual(retriedState.treeRows.map { $0.id }, ["docs", "docs/contracts"])
+        XCTAssertEqual(retriedState.treeRows.map(\.id), ["docs", "docs/contracts"])
 
         await opener.finishOpen()
         await openTask.value
@@ -252,7 +252,9 @@ final class MainLoadingAdoptExistingTests: XCTestCase {
         XCTAssertGreaterThan(tree.totalFileCount, 0)
         XCTAssertTrue(tree.sidebarRows.contains { $0.id == "docs" })
     }
+}
 
+final class MainLoadingScanSessionTests: XCTestCase {
     @MainActor
     func testInitializedAdoptOpenShowsLatestScanSessionInMainLoading() async {
         let scanSession = ScanSessionSnapshot.mainLoadingAdoptFixture(status: .running)
@@ -306,7 +308,8 @@ final class MainLoadingAdoptExistingTests: XCTestCase {
             settingsReader: MainLoadingStaticSettingsReader(repoPath: nil),
             emptyRepositoryOpener: opener,
             startupRecoverer: MainLoadingStaticStartupRecoverer(),
-            scanSessionReader: MainLoadingStaticScanSessionReader(result: .failure(CoreError.Db(message: "scan db locked"))),
+            scanSessionReader: MainLoadingStaticScanSessionReader(result: .failure(CoreError
+                    .Db(message: "scan db locked"))),
             errorMapper: MainLoadingRecordingErrorMapper(mapping: mapping),
             helpOpener: MainLoadingNoopWelcomeHelpOpener()
         )
@@ -375,7 +378,7 @@ final class MainLoadingAdoptExistingTests: XCTestCase {
     }
 
     @MainActor
-    func testMainLoadingShowsReindexRescanProgressAndFailureStatus() async {
+    func testMainLoadingShowsReindexRescanProgressAndFailureStatus() {
         let runningSession = ScanSessionSnapshot.mainLoadingReindexFixture(status: .running)
         let failedSession = ScanSessionSnapshot.mainLoadingReindexFixture(
             status: .failed,
