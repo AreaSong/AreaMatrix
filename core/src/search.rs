@@ -2,7 +2,13 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::{CoreError, CoreResult, FileEntry};
+use crate::{CoreResult, FileEntry};
+
+mod engine;
+mod parser;
+mod pinyin;
+mod ranking;
+mod repo;
 
 /// Search scope for C2-01 search queries.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
@@ -207,13 +213,11 @@ pub struct SearchResultPage {
 /// cannot be parsed, and `CoreError::Db { message }` when repository search
 /// metadata cannot be read.
 pub fn search_files(
-    _repo_path: String,
-    _query: String,
-    _filter: SearchFilter,
-    _sort: SearchSort,
-    _pagination: SearchPagination,
+    repo_path: String,
+    query: String,
+    filter: SearchFilter,
+    sort: SearchSort,
+    pagination: SearchPagination,
 ) -> CoreResult<SearchResultPage> {
-    Err(CoreError::config(
-        "search_files implementation is owned by C2-01 implementation",
-    ))
+    engine::search_files(repo_path, query, filter, sort, pagination)
 }

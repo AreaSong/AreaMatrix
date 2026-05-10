@@ -72,14 +72,22 @@ fn search_query_files_contract_exposes_signature_inputs_outputs_and_errors() {
     ];
     assert_eq!(documented_errors.len(), 3);
 
-    let not_yet_implemented = search_files(
+    let page = search_files(
         "/tmp/repo".to_owned(),
-        "合同".to_owned(),
+        "kindd:pdf".to_owned(),
         filter,
         SearchSort::NewestImported,
         pagination,
+    )
+    .expect("query parse diagnostics do not need repository IO");
+    assert_eq!(page.query, "kindd:pdf");
+    assert_eq!(page.total_count, 0);
+    assert!(page.results.is_empty());
+    assert_eq!(page.diagnostics[0].kind, SearchDiagnosticKind::UnknownField);
+    assert_eq!(
+        page.diagnostics[0].severity,
+        SearchDiagnosticSeverity::Error
     );
-    assert!(matches!(not_yet_implemented, Err(CoreError::Config { .. })));
 }
 
 #[test]

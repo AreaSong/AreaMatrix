@@ -1,0 +1,41 @@
+一、执行结论
+
+已完成。`4-1/task-02` repair retry 的两个验收阻塞项都已修复。
+
+二、执行范围
+
+单任务：`4-1/task-02` / C2-01 `search_files` Core implementation。
+
+本次 retry 修改：
+- [core/src/search/repo.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/search/repo.rs): 移除未声明的 10,000 候选行 cap；缺失 `index.db` 按 C2-01 合同映射为 `Db`。
+- [core/tests/search_query_files_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/search_query_files_implementation.rs): 新增未初始化 repo 错误映射测试，以及超过旧 10,000 候选边界的 `total_count` / pagination 回归测试。
+
+三、完成情况
+
+- 只实现 C2-01：通过，未实现 C2-02 facets、C2-03 saved search、C2-04 Smart List。
+- 输入、输出、DB/文件系统变化、错误映射：通过；`total_count` 不再被候选读取 cap 静默截断，未初始化 repo 返回已声明的 `Db`。
+- Rust Core 平台无关：通过，未引入 UI / macOS API。
+- 最小测试支撑：通过，新增两项失败摘要对应回归测试。
+- Forbidden Touches：通过，`git status --short -- apps` 无输出，未触碰 `apps/**`。
+
+四、工程质量
+
+结构保持在现有 `search` 模块内，没有引入相邻能力或 mock-only 路径。搜索仍通过只读 SQLite connection 和 `PRAGMA query_only = ON` 读取元数据；本次没有新增 DB 写入、文件系统写入、迁移、reindex 或用户文件操作。
+
+五、验证情况
+
+已运行并通过：
+- `cargo fmt --all -- --check`
+- `cargo test --test search_query_files_implementation`：8 passed
+- `cargo test --test search_query_files_contract_api`：4 passed
+- `cargo clippy --all-targets --all-features -- -D warnings`
+- `./dev check all`：退出码 0
+
+`./dev check all` 中标准 `xcodebuild test` 仍被本地 sandbox 的 `testmanagerd.control` 限制阻断；脚本按仓库规则复用已构建 XCTest bundle 执行 `xcrun xctest`，通过。SwiftFormat / SwiftLint 也通过。
+
+六、风险与后续
+
+剩余风险：大库搜索仍是当前 C2-01 的内存 ranking 实现，语义上已不截断，但后续若进入性能优化，应由独立 search performance / FTS 任务处理，不能塞回本任务。
+
+建议下一个任务：进入 `4-1/task-03` 的 C2-01 failure-edge / validation 方向，继续补齐搜索错误边界与集成验收证据。
+
