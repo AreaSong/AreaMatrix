@@ -93,6 +93,15 @@ namespace area_matrix {
     sequence<FileEntry> list_files(string repo_path, FileFilter filter);
 
     [Throws=CoreError]
+    SearchResultPage search_files(
+        string repo_path,
+        string query,
+        SearchFilter filter,
+        SearchSort sort,
+        SearchPagination pagination
+    );
+
+    [Throws=CoreError]
     FileEntry get_file(string repo_path, i64 file_id);
 
     [Throws=CoreError]
@@ -172,6 +181,57 @@ dictionary FileFilter {
     i64? imported_before;
     i64 limit;
     i64 offset;
+};
+
+dictionary SearchFilter {
+    SearchScope scope;
+    string? current_path;
+    string? category;
+    string? file_kind;
+    sequence<string> tags;
+    i64? imported_after;
+    i64? imported_before;
+    i64? modified_after;
+    i64? modified_before;
+    boolean? include_deleted;
+};
+
+dictionary SearchPagination {
+    i64 limit;
+    i64 offset;
+};
+
+dictionary SearchMatch {
+    SearchMatchField field;
+    SearchMatchKind kind;
+    string snippet;
+    i64? start;
+    i64? end;
+};
+
+dictionary SearchFileResult {
+    FileEntry entry;
+    f32 score;
+    sequence<SearchMatch> matches;
+    string? note_snippet;
+};
+
+dictionary SearchQueryDiagnostic {
+    SearchDiagnosticKind kind;
+    SearchDiagnosticSeverity severity;
+    string message;
+    string? token;
+    i64? start;
+    i64? end;
+    string? suggestion;
+};
+
+dictionary SearchResultPage {
+    string query;
+    i64 total_count;
+    sequence<SearchFileResult> results;
+    sequence<SearchQueryDiagnostic> diagnostics;
+    SearchIndexStatus index_status;
 };
 
 dictionary ChangeFilter {
@@ -331,6 +391,16 @@ enum ScanSessionKind { "Adopt", "Reindex" };
 enum ScanSessionStatus { "Running", "Completed", "Paused", "Failed", "Interrupted" };
 enum DuplicateStrategy { "Skip", "Overwrite", "KeepBoth", "Ask" };
 enum ClassifyReason { "Keyword", "Extension", "AiPredicted", "Default" };
+enum SearchScope { "AllRepo", "CurrentNode" };
+enum SearchSort { "Relevance", "NewestImported", "NewestModified", "NameAsc" };
+enum SearchMatchKind { "Exact", "Fuzzy", "PinyinInitials" };
+enum SearchMatchField { "Name", "Path", "Note", "Category", "ChangeLog" };
+enum SearchDiagnosticKind {
+    "UnclosedQuote", "UnknownField", "InvalidDate",
+    "UnbalancedParentheses", "InvalidOperator"
+};
+enum SearchDiagnosticSeverity { "Info", "Warning", "Error" };
+enum SearchIndexStatus { "Ready", "Indexing", "Unavailable" };
 enum ICloudConflictStatus { "NeedsReview", "Resolved" };
 enum ExternalEventKind { "Created", "Removed", "Modified", "Renamed" };
 enum ErrorKind {
@@ -407,6 +477,7 @@ interface CoreError {
 | `move_to_category(repo, file_id, cat)` | storage | √ | Classify / Conflict / FileNotFound / PermissionDenied / Io / Db |
 | `restore_file(repo, file_id)` | storage | √ | FileNotFound |
 | `list_files(repo, filter)` | query | √ | Db |
+| `search_files(repo, query, filter, sort, pagination)` | search | √ | Db / Config / InvalidPath |
 | `get_file(repo, file_id)` | query | √ | FileNotFound |
 | `list_changes(repo, filter)` | query | √ | Db |
 | `list_tree_json(repo, locale)` | query | √ | RepoNotInitialized / Db / Io |
@@ -437,7 +508,10 @@ interface CoreError {
 
 Stage 2-4 的后续接口先以 capability specs 作为合同来源，不直接落 UDL：
 
-- Stage 2：搜索、标签、Smart List、Undo/Redo、批量操作、导入冲突批量决策、非 AI 标签建议、分类规则编辑，见 [../core/capability-specs/stage-2-experience.md](../core/capability-specs/stage-2-experience.md)。
+- Stage 2：C2-01 `search_files` 已提升为本文与 `core/area_matrix.udl`
+  的稳定合同；其他搜索、标签、Smart List、Undo/Redo、批量操作、导入冲突
+  批量决策、非 AI 标签建议、分类规则编辑仍见
+  [../core/capability-specs/stage-2-experience.md](../core/capability-specs/stage-2-experience.md)。
 - Stage 3：AI 配置、本地模型、远程 provider、AI 建议、AI 日志、语义搜索、隐私规则，见 [../core/capability-specs/stage-3-ai.md](../core/capability-specs/stage-3-ai.md)。
 - Stage 4：iOS/Windows/Linux repo 连接、平台能力、watcher、跨平台导入、同步冲突、缺失恢复、手动重扫，见 [../core/capability-specs/stage-4-multiplatform.md](../core/capability-specs/stage-4-multiplatform.md)。
 
@@ -1064,6 +1138,58 @@ print("got \(recent.count) files")
 ```
 
 按 `imported_at DESC` 排序。`limit > 1000` 自动 clamp。
+
+### `search_files(repoPath, query, filter, sort, pagination) throws -> SearchResultPage`
+
+```swift
+let page = try AreaMatrix.searchFiles(
+    repoPath: repoPath,
+    query: "合同",
+    filter: SearchFilter(
+        scope: .allRepo,
+        currentPath: nil,
+        category: nil,
+        fileKind: nil,
+        tags: [],
+        importedAfter: nil,
+        importedBefore: nil,
+        modifiedAfter: nil,
+        modifiedBefore: nil,
+        includeDeleted: false
+    ),
+    sort: .newestImported,
+    pagination: SearchPagination(limit: 50, offset: 0)
+)
+```
+
+C2-01 的只读搜索入口，服务 `S2-01 search-results`、`S2-04 search-empty`
+和 `S2-05 query-error`。输入包含原始 `query`、搜索范围、过滤条件、排序和分页。
+输出 `SearchResultPage`：
+
+- `query`：回显本次查询，便于 UI 在 debounce 与重试期间保持状态。
+- `total_count`：分页前命中文件总数；为 `0` 且 diagnostics 没有 error 时进入搜索空态。
+- `results`：每个 `SearchFileResult` 包含原有 `FileEntry`、相关性分数、命中字段和可高亮片段。
+- `diagnostics`：结构化 query parse diagnostics，包含 `UnknownField`、`InvalidDate`、
+  `UnclosedQuote`、`UnbalancedParentheses`、`InvalidOperator` 等，供 `S2-05`
+  展示错误 token、位置和安全替换建议。
+- `index_status`：`Ready`、`Indexing` 或 `Unavailable`，供搜索结果页和空态区分
+  正常空结果、索引中、索引不可用。
+
+搜索对象：
+
+- 文件名、相对路径、伴生笔记、分类和 change log。
+- 普通关键词支持大小写不敏感、fuzzy 和 pinyin initials 命中；高级查询字段不走模糊纠错。
+- `SearchFilter` 可以携带当前 Stage 2 UI 状态，但 facet counts 属于 C2-02
+  `list_filter_facets`，保存搜索属于 C2-03，Smart List 执行属于 C2-04。
+
+错误与副作用边界：
+
+- `InvalidPath`：`repoPath` 或 `filter.current_path` 不合法或越过资料库边界。
+- `Config`：query/filter/sort 配置无法解析或字段组合无效。
+- `Db`：搜索索引、文件元数据、笔记或 change log 无法读取。
+- 该 API 只读，不写 DB，不写 `change_log`，不创建或更新 FTS/索引表，不修改标签、分类、
+  笔记、generated overview 或任何用户文件。
+- OCR、文件内容全文、语义搜索和远程 AI 属于 Stage 3，不属于本合同。
 
 ### `get_file(repoPath, fileId) throws -> FileEntry`
 

@@ -1,0 +1,53 @@
+一、执行结论
+
+已完成 `4-1/task-01`。
+
+二、执行范围
+
+单任务：C2-01 `search-query-files` 合同/API。
+
+修改文件：
+- `core/src/search.rs`
+- `core/src/lib.rs`
+- `core/area_matrix.udl`
+- `core/tests/search_query_files_contract_api.rs`
+- `docs/api/core-api.md`
+
+说明：`docs/api/core-api.md` 是本任务 Exact Doc 且是 Core API 合同权威源。本次同步它是为了让 Core API 文档、UDL、Rust 合同和测试一致；未触碰 `apps/**`。
+
+三、完成情况
+
+核对清单：
+- 已读取 C2-01 能力规格、Stage 2 control map、Core API、错误码。
+- 已补齐 `search_files(repo_path, query, filter, sort, pagination) -> SearchResultPage` 的输入、输出、错误码和只读边界。
+- 只补合同、类型、UDL 声明和 API 文档；`search_files` 当前返回受控 `Config` 错误，未实现搜索业务逻辑。
+- 已用合同测试记录页面消费方状态：S2-01 结果、S2-04 空态、S2-05 query diagnostics、索引状态、API failure 可区分。
+
+完成标准：
+- C2-01 Core API 合同已可供后续 implementation task 直接实现。
+- 未引入 control map 之外能力；明确排除 C2-02 facets、C2-03 saved search、C2-04 Smart List、OCR、语义搜索、远程 AI。
+- Forbidden Touches：未触碰 `apps/**`。
+
+四、工程质量
+
+代码结构清晰：新增 `core/src/search.rs` 专管 C2-01 合同，避免继续拉长既有 `api.rs`。新增 public Rust 类型和函数都有 rustdoc；错误边界只使用文档列明的 `Db / Config / InvalidPath`。未引入 mock-only、硬编码成功态或一次性脚本；当前未实现状态是显式错误，不伪装完成业务搜索。
+
+五、验证情况
+
+已运行并通过：
+- `cargo fmt --all -- --check`
+- `cargo clippy --all-targets --all-features -- -D warnings`
+- `cargo test --test search_query_files_contract_api -- --nocapture`：4 passed
+- `cargo test --workspace`
+- `./dev check all`
+
+`./dev check all` 中 `xcodebuild test` 被本机 sandbox 的 `testmanagerd` 访问限制拦截，脚本按仓库规则复用已构建 XCTest bundle 执行 `xcrun xctest`，最终 macOS tests、SwiftFormat、SwiftLint 均通过，命令整体返回 0。
+
+六、风险与后续
+
+剩余风险：本任务只完成合同，不包含真实搜索索引、query parser、FTS 查询或分页实现；后续 implementation task 需要把 `search_files` 接到真实数据路径，并补正常路径、失败路径和边界测试。
+
+建议下一个任务：进入 `4-1/task-02` 的 C2-01 implementation，实现真实只读搜索链路。
+
+另外，工作区仍有非本任务既有脏状态：`tasks/prompts/_shared/progress.json` 和 `.codex/task-loop-runs/20260511_011424/`，我未处理或回滚。
+

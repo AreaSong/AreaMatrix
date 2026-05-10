@@ -20,6 +20,7 @@ mod repo_entries;
 mod repo_init;
 mod repo_path;
 mod repo_scan;
+pub mod search;
 pub mod storage;
 pub mod sync;
 pub mod tree;
@@ -30,3 +31,4 @@ pub use error::{
     map_core_error, CoreError, CoreResult, ErrorKind, ErrorMapping, ErrorMappingInput,
     ErrorRecoverability, ErrorSeverity,
 };
+pub use search::*;

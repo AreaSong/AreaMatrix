@@ -69,6 +69,15 @@ namespace area_matrix {
     sequence<FileEntry> list_files(string repo_path, FileFilter filter);
 
     [Throws=CoreError]
+    SearchResultPage search_files(
+        string repo_path,
+        string query,
+        SearchFilter filter,
+        SearchSort sort,
+        SearchPagination pagination
+    );
+
+    [Throws=CoreError]
     FileEntry get_file(string repo_path, i64 file_id);
 
     [Throws=CoreError]
@@ -148,6 +157,57 @@ dictionary FileFilter {
     i64? imported_before;
     i64 limit;
     i64 offset;
+};
+
+dictionary SearchFilter {
+    SearchScope scope;
+    string? current_path;
+    string? category;
+    string? file_kind;
+    sequence<string> tags;
+    i64? imported_after;
+    i64? imported_before;
+    i64? modified_after;
+    i64? modified_before;
+    boolean? include_deleted;
+};
+
+dictionary SearchPagination {
+    i64 limit;
+    i64 offset;
+};
+
+dictionary SearchMatch {
+    SearchMatchField field;
+    SearchMatchKind kind;
+    string snippet;
+    i64? start;
+    i64? end;
+};
+
+dictionary SearchFileResult {
+    FileEntry entry;
+    f32 score;
+    sequence<SearchMatch> matches;
+    string? note_snippet;
+};
+
+dictionary SearchQueryDiagnostic {
+    SearchDiagnosticKind kind;
+    SearchDiagnosticSeverity severity;
+    string message;
+    string? token;
+    i64? start;
+    i64? end;
+    string? suggestion;
+};
+
+dictionary SearchResultPage {
+    string query;
+    i64 total_count;
+    sequence<SearchFileResult> results;
+    sequence<SearchQueryDiagnostic> diagnostics;
+    SearchIndexStatus index_status;
 };
 
 dictionary ChangeFilter {
@@ -307,6 +367,16 @@ enum ScanSessionKind { "Adopt", "Reindex" };
 enum ScanSessionStatus { "Running", "Completed", "Paused", "Failed", "Interrupted" };
 enum DuplicateStrategy { "Skip", "Overwrite", "KeepBoth", "Ask" };
 enum ClassifyReason { "Keyword", "Extension", "AiPredicted", "Default" };
+enum SearchScope { "AllRepo", "CurrentNode" };
+enum SearchSort { "Relevance", "NewestImported", "NewestModified", "NameAsc" };
+enum SearchMatchKind { "Exact", "Fuzzy", "PinyinInitials" };
+enum SearchMatchField { "Name", "Path", "Note", "Category", "ChangeLog" };
+enum SearchDiagnosticKind {
+    "UnclosedQuote", "UnknownField", "InvalidDate",
+    "UnbalancedParentheses", "InvalidOperator"
+};
+enum SearchDiagnosticSeverity { "Info", "Warning", "Error" };
+enum SearchIndexStatus { "Ready", "Indexing", "Unavailable" };
 enum ICloudConflictStatus { "NeedsReview", "Resolved" };
 enum ExternalEventKind { "Created", "Removed", "Modified", "Renamed" };
 enum ErrorKind {
