@@ -1,0 +1,41 @@
+**一、执行结论**
+已完成 `4-1/task-07`：C2-02 `search-filters` Core 最小闭环已实现，并通过任务要求的 `./dev check all`。
+
+**二、执行范围**
+单任务：只做 C2-02 Core 实现，未做页面接入，未实现 C2-03/C2-04/C2-05。
+
+代码改动：
+- [core/src/search.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/search.rs:352)：`list_filter_facets` 接入真实实现。
+- [core/src/search/facets.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/search/facets.rs:15)：新增 facet 计算实现。
+- [core/src/search/ranking.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/search/ranking.rs:47)：复用 query term 匹配逻辑。
+- [core/tests/search_filters_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/search_filters_implementation.rs:151)：新增 C2-02 行为测试。
+
+`core/area_matrix.udl` 已有 C2-02 contract，本轮无需修改。当前工作树还显示 `.codex/task-loop-runs/.../summary.json` 与 `tasks/prompts/_shared/progress.json` 的任务循环状态变更；这些不是 C2-02 代码实现文件。
+
+**三、完成情况**
+核对清单：
+- 只实现 C2-02：通过。
+- 输入、输出、DB/文件系统变化、错误映射：通过，支持 category、file kind、tags Any/All、date range、storage mode、include deleted、scope/query term。
+- Rust Core 不依赖平台 UI API：通过。
+- 最小测试支撑：通过。
+
+完成标准：
+- C2-02 可通过 Core API/桥接合同验证：通过。
+- 未触碰用户文件安全边界之外行为：通过。
+- Forbidden Touches `apps/**`：未触碰，`git diff --name-status -- apps` 无输出。
+
+**四、工程质量**
+实现走现有 search repo/SQLite 只读查询路径，不写 DB、不写 `change_log`、不创建/删除 tag、不修改用户文件。错误路径覆盖 `Config` 和 `Db`；生产代码没有为通过测试引入 mock-only、硬编码完成态或一次性脚本逻辑。public API rustdoc 已保留在 `list_filter_facets` 合同处。
+
+**五、验证情况**
+已运行：
+- `./dev check all`：整体退出码 0。
+- 覆盖 governance、skills、task-loop、prompt doctor、`git diff --check`、`cargo fmt --all -- --check`、`cargo clippy --all-targets --all-features -- -D warnings`、`cargo test --workspace`、macOS 检查、SwiftFormat、SwiftLint。
+
+说明：
+- `xcodebuild test` 被本地 sandbox/testmanagerd 通信限制拦截；仓库脚本按预期复用已构建 XCTest bundle 执行 `xcrun xctest`，结果通过。
+- SwiftFormat：`0/226 files require formatting`。
+- SwiftLint：`0 violations, 0 serious in 228 files`。
+
+**六、风险与后续**
+剩余风险低：本任务只读 metadata/facet 统计，没有 migration、用户文件写入或平台 UI 接入。回滚也只需撤回上述 4 个 Core/test 文件改动；不涉及用户数据恢复。建议下一个任务进入 `4-1/task-08` 或对应 verify-ready 验收，确认 C2-02 与 manifest/docs/API/UDL/测试三方一致。  

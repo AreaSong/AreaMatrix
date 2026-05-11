@@ -2,9 +2,10 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::{CoreError, CoreResult, FileEntry, StorageMode};
+use crate::{CoreResult, FileEntry, StorageMode};
 
 mod engine;
+mod facets;
 mod parser;
 mod pinyin;
 mod ranking;
@@ -348,7 +349,6 @@ pub fn search_files(
 /// an empty category, invalid file kind, empty tag, or reversed date range.
 /// Returns `CoreError::Db { message }` when repository metadata required for
 /// facet counts cannot be read.
-pub fn list_filter_facets(_repo_path: String, query: SearchFacetQuery) -> CoreResult<SearchFacets> {
-    validation::validate_facet_query(&query)?;
-    Err(CoreError::db("database error"))
+pub fn list_filter_facets(repo_path: String, query: SearchFacetQuery) -> CoreResult<SearchFacets> {
+    facets::list_filter_facets(repo_path, query)
 }

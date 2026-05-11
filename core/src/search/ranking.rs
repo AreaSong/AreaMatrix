@@ -44,6 +44,10 @@ pub(super) fn rank_rows(
     Ok(ranked)
 }
 
+pub(super) fn row_matches_terms(row: &SearchRow, terms: &[QueryTerm]) -> bool {
+    terms.is_empty() || terms.iter().all(|term| match_term(row, term).is_some())
+}
+
 pub(super) fn sort_ranked_rows(rows: &mut [RankedSearchRow], sort: &SearchSort) {
     match sort {
         SearchSort::Relevance => sort_by_relevance(rows),
