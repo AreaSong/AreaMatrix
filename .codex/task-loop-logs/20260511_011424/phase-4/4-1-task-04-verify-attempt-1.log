@@ -1,0 +1,67 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-1/task-04`
+- 对应文件路径：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-04-c2-01-validation.md`
+- Manifest 章节：`tasks/prompts/_shared/manifests/phase-4.md` 的 `## 4-1/task-04`
+- 核验范围：`docs/core/capability-specs/stage-2-experience/C2-01-search-query-files.md`、`docs/architecture/stage-2-control-map.md`、`docs/development/testing.md`、`core/src/**`、`core/area_matrix.udl`、`core/tests/**`
+
+三、完成度摘要
+
+- 已覆盖项数：6/6（4 个核对清单 + 2 个完成标准）
+- 未覆盖项数：0
+- 通过项数：6
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：补齐成功和失败路径测试
+- 结果：通过
+- 证据：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/search_query_files_validation.rs:222` 覆盖成功、空结果、query error；`:308` 覆盖 `InvalidPath`、`Config`、`Db` 失败路径；`./dev check all` 中 C2-01 validation/implementation/failure/contract 测试全部通过。
+- 涉及文件：`core/tests/search_query_files_validation.rs`、`core/tests/search_query_files_implementation.rs`、`core/tests/search_query_files_failure_recovery.rs`
+
+- 项目：Core API / UDL / Rust 实现一致
+- 结果：通过
+- 证据：`core/area_matrix.udl:71` 暴露 `SearchResultPage search_files(...)`；`docs/api/core-api.md:1142` 定义同一 API；`core/src/search.rs:216` 实现同签名 Rust API；`core/tests/search_query_files_validation.rs:355` 用可执行测试锁定 docs/API/UDL/Rust 片段。
+- 涉及文件：`core/area_matrix.udl`、`docs/api/core-api.md`、`core/src/search.rs`
+
+- 项目：不新增业务功能，只补验证与必要 fixture
+- 结果：通过
+- 证据：当前 `git status --short` 只有新增 `core/tests/search_query_files_validation.rs` 以及 task-loop/progress 记录；`core/src/**` 和 `core/area_matrix.udl` 未显示本次 tracked 修改。
+- 涉及文件：`core/tests/search_query_files_validation.rs`
+
+- 项目：记录无法运行的验证及原因
+- 结果：通过
+- 证据：必需命令 `./dev check all` 最终退出码为 0；内部 `xcodebuild test` 因本地 sandbox 的 `testmanagerd.control` 通信限制被阻断后，脚本按 `docs/development/testing.md` 规则复用 XCTest bundle，`xcrun xctest` 通过。
+- 涉及文件：`docs/development/testing.md`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。`core/src/search.rs:195` 明确 C2-01 边界；`core/src/search/engine.rs:19` 到 `:48` 流程清晰：路径校验、请求校验、解析诊断、只读查询、排名分页。
+- 注释 / rustdoc / 文档同步：通过。公共搜索类型和 API 均有 rustdoc，`core/src/search.rs:14` 到 `:215` 覆盖类型、字段、错误与副作用边界；Core API 与 UDL 已对齐。
+- 错误处理与边界处理：通过。`core/src/search/repo.rs:31` 校验 current path，`:174` 使用只读 SQLite 连接和 `PRAGMA query_only = ON`；validation 测试覆盖 `InvalidPath`、`Config`、`Db`。
+- 测试与验证覆盖：通过。`./dev check all` 已通过；C2-01 相关测试包括 contract 4 个、failure recovery 11 个、implementation 8 个、validation 3 个。
+- 占位、硬编码、mock-only、一次性实现检查：通过。搜索走真实 repo metadata、notes、change_log、tags 查询路径；`core/src/search/repo.rs:84` 查询真实 DB 表，validation 快照断言搜索不修改文件、标签、笔记、change log 或 generated 输出。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check all`
+- 通过：governance health、skill health、task-loop check、prompt doctor、`git diff --check`、`cargo fmt --all -- --check`、`cargo clippy --all-targets --all-features -- -D warnings`、`cargo test --workspace`、UniFFI/macOS build、XCTest fallback、SwiftFormat、SwiftLint。
+- 失败：无最终失败；`xcodebuild test` 标准 runner 被本地 sandbox 阻断，但 `./dev check all` 按仓库测试策略 fallback 后通过。
+- 缺失：无必需验证缺失。
+- Forbidden Touches：`git status --short -- apps`、`git diff --name-only -- apps`、`git diff --cached --name-only -- apps` 均无输出，未发现 `apps/**` 违规触碰。
+- Expected New Paths：`core/src/**`、`core/area_matrix.udl`、`core/tests/**` 均存在并被验收；未发现 Missing Expected Paths。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。C2-01 已有足够测试证明可进入 UI 接入，Core API / UDL / Rust 实现一致，验证命令已通过，未发现阻塞项。
+
+VERIFY_RESULT: PASS
