@@ -1,0 +1,42 @@
+一、执行结论
+
+已完成。
+
+二、执行范围
+
+单任务：`4-1/task-08`，仅修改 C2-02 search-filters 相关 Core 路径。
+
+修改文件：
+- `core/src/search.rs`
+- `core/src/search/facets.rs`
+- `core/src/search/validation.rs`
+- `core/tests/search_filters_failure_recovery.rs`
+
+未修改 `apps/**`，未修改 `core/area_matrix.udl`。
+
+三、完成情况
+
+核对清单已覆盖：空仓 facets 返回、非法 category/file kind/tag/date/current path/query、DB 损坏、DB 权限失败、错误码映射到 `Config` / `Db`、无 AI/remote/secret 副作用。C2-02 是只读能力，不涉及写入、移动、删除、导入或同步；测试用 snapshot 证明失败前后用户可见文件、DB 行、staging、generated 状态不变。没有吞错或静默降级，非法输入和 DB 边界都显式返回 `CoreError`。
+
+Forbidden Touches：未触碰 `apps/**`。
+
+四、工程质量
+
+实现保持在现有 search/facet 校验结构内，没有新增抽象层。错误原因从泛化的 `"configuration error"` 收窄为可定位的 `Config` reason，并补充 `list_filter_facets` rustdoc 错误边界。新增测试走真实 `init_repo`、真实 SQLite、真实文件系统临时目录，不是 mock-only 或硬编码通过态。
+
+五、验证情况
+
+已运行并通过：
+- `cd core && cargo test --test search_filters_failure_recovery`
+- `git diff --check`
+- `cd core && cargo fmt --all -- --check`
+- `./dev check all`
+
+`./dev check all` 中 `xcodebuild test` 先被本地 sandbox 的 `testmanagerd` 访问限制阻断，脚本按仓库规则复用已构建 XCTest bundle 执行 `xcrun xctest`，最终通过；SwiftFormat 和 SwiftLint 也通过。
+
+六、风险与后续
+
+剩余风险：无当前任务内阻断项。工作树里仍有执行器已有状态文件变更：`.codex/task-loop-runs/20260511_011424/summary.json`、`tasks/prompts/_shared/progress.json`，我未触碰也未回退。
+
+建议下一个任务：继续 `4-1/task-09` 或按 task-loop 队列进入下一个 pending task。
+

@@ -36,19 +36,23 @@ fn validate_facet_scope(query: &SearchFacetQuery) -> CoreResult<()> {
 
 fn validate_facet_current_path(current_path: Option<&str>) -> CoreResult<()> {
     let Some(current_path) = current_path else {
-        return Err(CoreError::config("configuration error"));
+        return Err(CoreError::config(
+            "current path is required for current-node facets",
+        ));
     };
     if current_path.trim().is_empty() || current_path.starts_with('~') {
-        return Err(CoreError::config("configuration error"));
+        return Err(CoreError::config("current path is invalid"));
     }
     let path = Path::new(current_path);
     if path.is_absolute() {
-        return Err(CoreError::config("configuration error"));
+        return Err(CoreError::config(
+            "current path must be repository-relative",
+        ));
     }
     for component in path.components() {
         match component {
             Component::Normal(part) if part != AREA_MATRIX_DIR => {}
-            _ => return Err(CoreError::config("configuration error")),
+            _ => return Err(CoreError::config("current path escapes repository scope")),
         }
     }
     Ok(())
@@ -56,7 +60,7 @@ fn validate_facet_current_path(current_path: Option<&str>) -> CoreResult<()> {
 
 fn validate_optional_text(value: Option<&str>) -> CoreResult<()> {
     if value.is_some_and(|text| text.trim().is_empty()) {
-        return Err(CoreError::config("configuration error"));
+        return Err(CoreError::config("facet text filters cannot be empty"));
     }
     Ok(())
 }
@@ -71,23 +75,23 @@ fn validate_file_kind(value: Option<&str>) -> CoreResult<()> {
         || kind.contains(':')
         || kind.starts_with('.')
     {
-        return Err(CoreError::config("configuration error"));
+        return Err(CoreError::config("file kind filter is invalid"));
     }
     Ok(())
 }
 
 fn validate_tags(tags: &[String]) -> CoreResult<()> {
     if tags.iter().any(|tag| tag.trim().is_empty()) {
-        return Err(CoreError::config("configuration error"));
+        return Err(CoreError::config("tag filters cannot be empty"));
     }
     Ok(())
 }
 
 fn validate_time_range(after: Option<i64>, before: Option<i64>) -> CoreResult<()> {
     match (after, before) {
-        (Some(after), Some(before)) if after > before => {
-            Err(CoreError::config("configuration error"))
-        }
+        (Some(after), Some(before)) if after > before => Err(CoreError::config(
+            "date range lower bound must not be after upper bound",
+        )),
         _ => Ok(()),
     }
 }

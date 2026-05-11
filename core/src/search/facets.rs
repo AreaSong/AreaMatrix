@@ -19,11 +19,11 @@ pub(super) fn list_filter_facets(
     validate_facet_query(&query)?;
     let parsed = parse_query(query.query.clone());
     if has_error_diagnostic(&parsed.diagnostics) {
-        return Err(CoreError::config("configuration error"));
+        return Err(CoreError::config("facet query contains parser diagnostics"));
     }
 
-    let repo =
-        validated_repo_path(&repo_path).map_err(|_| CoreError::config("configuration error"))?;
+    let repo = validated_repo_path(&repo_path)
+        .map_err(|_| CoreError::config("repository path is invalid for facets"))?;
     let search_filter = facet_query_search_filter(&query);
     let rows = query_rows(&repo, &search_filter)?
         .into_iter()

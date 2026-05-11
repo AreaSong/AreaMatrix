@@ -346,9 +346,11 @@ pub fn search_files(
 /// # Errors
 ///
 /// Returns `CoreError::Config { reason }` when filter state is invalid, such as
-/// an empty category, invalid file kind, empty tag, or reversed date range.
+/// an invalid repository path, missing current-node path, empty category,
+/// invalid file kind, empty tag, parser diagnostic, or reversed date range.
 /// Returns `CoreError::Db { message }` when repository metadata required for
-/// facet counts cannot be read.
+/// facet counts cannot be read, including permission, lock, or schema failures
+/// at the SQLite metadata boundary.
 pub fn list_filter_facets(repo_path: String, query: SearchFacetQuery) -> CoreResult<SearchFacets> {
     facets::list_filter_facets(repo_path, query)
 }
