@@ -182,7 +182,7 @@ fn search_filters_contract_docs_api_udl_and_control_map_stay_aligned() {
     for fragment in [
         "SearchFacets list_filter_facets(string repo_path, SearchFacetQuery query);",
         "| `list_filter_facets(repo, query)` | search | √ | Db / Config |",
-        "C2-01 `search_files` 和 C2-02 `list_filter_facets` 已提升为本文与",
+        "C2-01 `search_files`、C2-02 `list_filter_facets` 和 C2-03 saved search",
         "### `list_filter_facets(repoPath, query) throws -> SearchFacets`",
         "`search_files` 用同一份 filter 刷新真实结果",
         "C2-02 的只读 filter/facet 入口",

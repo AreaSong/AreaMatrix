@@ -10,12 +10,16 @@ pub(super) fn validate_request(
     filter: &SearchFilter,
     pagination: &SearchPagination,
 ) -> CoreResult<()> {
+    validate_filter(filter)?;
+    validate_pagination(pagination)
+}
+
+pub(super) fn validate_filter(filter: &SearchFilter) -> CoreResult<()> {
     validate_optional_text(filter.category.as_deref())?;
     validate_file_kind(filter.file_kind.as_deref())?;
     validate_tags(&filter.tags)?;
     validate_time_range(filter.imported_after, filter.imported_before)?;
-    validate_time_range(filter.modified_after, filter.modified_before)?;
-    validate_pagination(pagination)
+    validate_time_range(filter.modified_after, filter.modified_before)
 }
 
 pub(super) fn validate_facet_query(query: &SearchFacetQuery) -> CoreResult<()> {

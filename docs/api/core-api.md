@@ -105,6 +105,18 @@ namespace area_matrix {
     SearchFacets list_filter_facets(string repo_path, SearchFacetQuery query);
 
     [Throws=CoreError]
+    SavedSearch create_saved_search(string repo_path, CreateSavedSearchRequest request);
+
+    [Throws=CoreError]
+    SavedSearch update_saved_search(string repo_path, UpdateSavedSearchRequest request);
+
+    [Throws=CoreError]
+    void delete_saved_search(string repo_path, i64 saved_search_id);
+
+    [Throws=CoreError]
+    sequence<SavedSearch> list_saved_searches(string repo_path);
+
+    [Throws=CoreError]
     FileEntry get_file(string repo_path, i64 file_id);
 
     [Throws=CoreError]
@@ -287,6 +299,40 @@ dictionary SearchResultPage {
     sequence<SearchFileResult> results;
     sequence<SearchQueryDiagnostic> diagnostics;
     SearchIndexStatus index_status;
+};
+
+dictionary SavedSearchQuery {
+    string query;
+    SearchFilter filter;
+    SearchSort sort;
+};
+
+dictionary CreateSavedSearchRequest {
+    string name;
+    SavedSearchQuery query;
+    string? icon;
+    string? color;
+    boolean pinned;
+};
+
+dictionary UpdateSavedSearchRequest {
+    i64 id;
+    string name;
+    SavedSearchQuery query;
+    string? icon;
+    string? color;
+    boolean pinned;
+};
+
+dictionary SavedSearch {
+    i64 id;
+    string name;
+    SavedSearchQuery query;
+    string? icon;
+    string? color;
+    boolean pinned;
+    i64 created_at;
+    i64 updated_at;
 };
 
 dictionary ChangeFilter {
@@ -535,6 +581,10 @@ interface CoreError {
 | `list_files(repo, filter)` | query | √ | Db |
 | `search_files(repo, query, filter, sort, pagination)` | search | √ | Db / Config / InvalidPath |
 | `list_filter_facets(repo, query)` | search | √ | Db / Config |
+| `create_saved_search(repo, request)` | search | √ | Db / Config |
+| `update_saved_search(repo, request)` | search | √ | Db / Config |
+| `delete_saved_search(repo, saved_search_id)` | search | √ | Db / Config |
+| `list_saved_searches(repo)` | search | √ | Db / Config |
 | `get_file(repo, file_id)` | query | √ | FileNotFound |
 | `list_changes(repo, filter)` | query | √ | Db |
 | `list_tree_json(repo, locale)` | query | √ | RepoNotInitialized / Db / Io |
@@ -565,9 +615,11 @@ interface CoreError {
 
 Stage 2-4 尚未提升的后续接口先以 capability specs 作为合同来源，不直接落 UDL：
 
-- Stage 2：C2-01 `search_files` 和 C2-02 `list_filter_facets` 已提升为本文与
-  `core/area_matrix.udl` 的稳定合同；其他标签、Smart List、Undo/Redo、批量操作、
-  导入冲突批量决策、非 AI 标签建议、分类规则编辑仍见
+- Stage 2：C2-01 `search_files`、C2-02 `list_filter_facets` 和 C2-03 saved search
+  CRUD（`create_saved_search`、`update_saved_search`、`delete_saved_search`、
+  `list_saved_searches`）已提升为本文与 `core/area_matrix.udl` 的稳定合同；
+  其他标签、C2-04 Smart List 执行、Undo/Redo、批量操作、导入冲突批量决策、
+  非 AI 标签建议、分类规则编辑仍见
   [../core/capability-specs/stage-2-experience.md](../core/capability-specs/stage-2-experience.md)。
 - Stage 3：AI 配置、本地模型、远程 provider、AI 建议、AI 日志、语义搜索、隐私规则，见 [../core/capability-specs/stage-3-ai.md](../core/capability-specs/stage-3-ai.md)。
 - Stage 4：iOS/Windows/Linux repo 连接、平台能力、watcher、跨平台导入、同步冲突、缺失恢复、手动重扫，见 [../core/capability-specs/stage-4-multiplatform.md](../core/capability-specs/stage-4-multiplatform.md)。
@@ -1299,6 +1351,122 @@ imported/modified date range、storage mode 和 include deleted。输出 `Search
   C2-04 Smart List execution。
 - 该 API 不修改 files、notes、categories、generated overview、repository metadata
   或任何用户文件；不会移动、删除、重命名文件，也不会触发 AI/语义过滤。
+
+### `create_saved_search(repoPath, request) throws -> SavedSearch`
+
+```swift
+let saved = try AreaMatrix.createSavedSearch(
+    repoPath: repoPath,
+    request: CreateSavedSearchRequest(
+        name: "Reports from 2026",
+        query: SavedSearchQuery(
+            query: "invoice OR receipt",
+            filter: SearchFilter(
+                scope: .allRepo,
+                currentPath: nil,
+                category: nil,
+                fileKind: "pdf",
+                tags: ["finance"],
+                tagMatchMode: .any,
+                importedAfter: nil,
+                importedBefore: nil,
+                modifiedAfter: nil,
+                modifiedBefore: nil,
+                storageMode: nil,
+                includeDeleted: false
+            ),
+            sort: .newestModified
+        ),
+        icon: "magnifyingglass",
+        color: nil,
+        pinned: true
+    )
+)
+```
+
+C2-03 的保存搜索入口，服务 `S2-03 saved-search-sheet`。输入 `CreateSavedSearchRequest`
+包含名称、`SavedSearchQuery`、可选 icon/color 和 sidebar pin 状态。`SavedSearchQuery`
+保存原始 query、完整 `SearchFilter`（含 scope/current path/tags/storage mode/include deleted）
+和 `SearchSort`，因此保存成功后 `S2-06 smart-lists` 可以从返回记录恢复同一搜索条件。
+
+输出 `SavedSearch`：
+
+- `id`：稳定 saved search 标识，供后续 update/delete 和 sidebar selection 使用。
+- `name`：用户可见 Smart List 名称。
+- `query`：可复现搜索的 query/filter/sort/scope 状态。
+- `icon` / `color`：用户选择的显示元数据；不得表达 Stage 3/4 智能能力依赖。
+- `pinned`：sidebar 固定状态。
+- `created_at` / `updated_at`：排序、恢复和编辑 UI 使用的时间戳。
+
+错误与副作用边界：
+
+- `Config`：repoPath 为空、名称为空、名称超过 64 字符、名称重复、query parser
+  diagnostics、filter state 无效、icon/color 元数据无效。
+- `Db`：读取或写入 `saved_searches` 元数据失败。
+- 该 API 只写 saved search 元数据；不写 `change_log`，不移动、复制、删除、重命名、
+  retag、reclassify、reindex 或修改任何文件。
+- 0 结果的有效搜索可以保存；query 无效时必须返回结构化 `Config`，不能写入半成品。
+- 该 API 不执行 Smart List、不返回 `SearchResultPage`、不实现 C2-04 `run_smart_list`。
+- 共享 Smart List、跨端同步、语义/AI Smart List 依赖属于后续阶段，不属于 C2-03。
+
+### `update_saved_search(repoPath, request) throws -> SavedSearch`
+
+更新已有 saved search 元数据，服务 `S2-06 smart-lists` 的 Rename、Duplicate 后编辑、
+Pin、Icon/Color 和 Edit query 保存流程。输入 `UpdateSavedSearchRequest` 在
+`CreateSavedSearchRequest` 的基础上增加 `id`，输出更新后的 `SavedSearch`。
+
+约束：
+
+- `id` 必须为正整数。
+- `name` 校验、query/filter/sort 校验、icon/color 校验与创建入口一致。
+- 名称重复必须失败，不自动覆盖其他 Smart List。
+- `Save changes` 只更新当前 saved search；Duplicate 创建新记录应调用
+  `create_saved_search`，不是复用 update 产生第二条记录。
+- 成功后 UI 可以用返回的 `SavedSearch.query` 刷新当前搜索上下文，但本 API 本身不执行搜索。
+
+错误与副作用边界：
+
+- `Config`：id、repoPath、名称、query/filter/sort 或 display metadata 无效。
+- `Db`：目标 saved search 不存在、名称重复或 metadata 持久化失败。
+- 该 API 不创建/删除标签，不修改分类，不写 `change_log`，不移动、删除、重命名或复制文件。
+- `Cancel` 和 `Reset changes` 不应调用本 API；draft 回滚由 UI/store 层处理。
+
+### `delete_saved_search(repoPath, savedSearchId) throws`
+
+删除一个 saved search 记录，服务 `S2-06 smart-lists` 的删除确认流程。
+
+语义：
+
+- 只删除 `saved_searches` 中的命名查询记录。
+- 必须允许 UI 明确展示：`This only removes the Smart List. Files will not be deleted or moved.`
+- 删除后同名未来可重新创建。
+
+错误与副作用边界：
+
+- `Config`：repoPath 为空或 `savedSearchId <= 0`。
+- `Db`：目标记录不存在或 metadata 删除失败。
+- 该 API 不删除、不移动、不重命名、不 trash、不 retag、不 reclassify、不 reindex 任何文件；
+  即使当前 Smart List 有匹配结果，也不能触碰那些文件。
+- 该 API 不写 `change_log`，因为它不代表文件动作。
+
+### `list_saved_searches(repoPath) throws -> [SavedSearch]`
+
+只读列出 saved search 元数据，服务 `S2-06 smart-lists` sidebar 分组、管理菜单、
+空态/错误态、query 恢复提示和 command-palette 的 C2-04 发现前置数据。
+
+排序：
+
+- pinned first。
+- pinned 内按 pin 时间或 updated_at 倒序。
+- 非 pinned 按名称 A-Z。
+- Stage 2 不支持拖拽排序，也不暴露手动排序字段。
+
+错误与副作用边界：
+
+- `Config`：repoPath 为空。
+- `Db`：saved search metadata 无法读取。
+- 该 API 只读，不执行 Smart List，不计算结果数量，不返回 `SearchResultPage`。
+- Smart List 打开执行属于 C2-04；调用方需要拿到 `SavedSearch.query` 后显式调用搜索执行入口。
 
 ### `get_file(repoPath, fileId) throws -> FileEntry`
 

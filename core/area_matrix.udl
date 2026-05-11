@@ -81,6 +81,18 @@ namespace area_matrix {
     SearchFacets list_filter_facets(string repo_path, SearchFacetQuery query);
 
     [Throws=CoreError]
+    SavedSearch create_saved_search(string repo_path, CreateSavedSearchRequest request);
+
+    [Throws=CoreError]
+    SavedSearch update_saved_search(string repo_path, UpdateSavedSearchRequest request);
+
+    [Throws=CoreError]
+    void delete_saved_search(string repo_path, i64 saved_search_id);
+
+    [Throws=CoreError]
+    sequence<SavedSearch> list_saved_searches(string repo_path);
+
+    [Throws=CoreError]
     FileEntry get_file(string repo_path, i64 file_id);
 
     [Throws=CoreError]
@@ -263,6 +275,40 @@ dictionary SearchResultPage {
     sequence<SearchFileResult> results;
     sequence<SearchQueryDiagnostic> diagnostics;
     SearchIndexStatus index_status;
+};
+
+dictionary SavedSearchQuery {
+    string query;
+    SearchFilter filter;
+    SearchSort sort;
+};
+
+dictionary CreateSavedSearchRequest {
+    string name;
+    SavedSearchQuery query;
+    string? icon;
+    string? color;
+    boolean pinned;
+};
+
+dictionary UpdateSavedSearchRequest {
+    i64 id;
+    string name;
+    SavedSearchQuery query;
+    string? icon;
+    string? color;
+    boolean pinned;
+};
+
+dictionary SavedSearch {
+    i64 id;
+    string name;
+    SavedSearchQuery query;
+    string? icon;
+    string? color;
+    boolean pinned;
+    i64 created_at;
+    i64 updated_at;
 };
 
 dictionary ChangeFilter {
