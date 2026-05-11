@@ -1,0 +1,42 @@
+一、执行结论
+
+已完成 `4-1/task-12`。
+
+二、执行范围
+
+单任务：C2-03 saved-search-crud Core implementation。
+
+本次实现改动文件：
+- `core/src/db/mod.rs`
+- `core/src/db/saved_search.rs`
+- `core/src/search/saved_search.rs`
+- `core/tests/saved_search_contract_api.rs`
+- `core/tests/saved_search_implementation.rs`
+
+`core/area_matrix.udl` 已有 C2-03 合同，未改。未触碰 `apps/**`。
+
+三、完成情况
+
+- 只实现 C2-03：已完成，未实现 C2-04 Smart List execution，也未做页面接入。
+- 输入/输出/DB/错误映射：已完成，新增 `saved_searches` 元数据表，CRUD 返回 `SavedSearch`，重复名/非法 query/filter/display metadata 走 `Config`，缺失行/DB 失败走 `Db`。
+- Rust Core 平台无关：已满足，只用 Rust/Core SQLite 路径，无 UI/macOS API。
+- 最小测试支撑：已补 `core/tests/saved_search_implementation.rs`，覆盖创建、更新、删除、列表排序、重复名、非法 query/scope、缺失行、DB 失败、且不写 `change_log`/不动文件。
+
+四、工程质量
+
+代码结构按现有 `search` + `db` 分层落地：public contract 留在 `core/src/search/saved_search.rs`，SQLite 细节在 `core/src/db/saved_search.rs`。没有 mock-only、硬编码成功态或一次性脚本。新增 public API 仍保留 rustdoc；错误路径显式返回结构化 `CoreError`。删除 Smart List 只删 `saved_searches` 行，不删除、移动、重命名、trash 任何文件。
+
+五、验证情况
+
+已运行并通过：
+- `cargo test --test saved_search_implementation --test saved_search_contract_api`
+- `./dev check all`
+
+`./dev check all` 覆盖并通过：governance、skills、task-loop check、prompt doctor、`git diff --check`、`cargo fmt --all -- --check`、`cargo clippy --all-targets --all-features -- -D warnings`、`cargo test --workspace`、macOS UniFFI/core release build、SwiftFormat、SwiftLint。`xcodebuild test` 被本地 sandbox 的 `testmanagerd` 限制阻断，仓库脚本按既定 fallback 使用 `xcrun xctest` 复用已构建 XCTest bundle，结果通过。
+
+六、风险与后续
+
+剩余风险：真实 UI 消费不在本 task 范围；C2-04 打开/运行 Smart List 仍由后续任务实现。工作区另有 task-loop 状态文件显示为已修改：`.codex/task-loop-runs/20260511_011424/summary.json`、`tasks/prompts/_shared/progress.json`，它们不属于本次 Core 实现改动，我没有回滚。
+
+建议下一个任务：进入 `4-1/task-13`，按 failure-edge/validation 继续补 C2-03 边界验收。
+

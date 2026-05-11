@@ -152,6 +152,15 @@ fn saved_search_contract_validates_without_fake_success() {
 }
 
 #[test]
+fn saved_search_contract_mentions_real_persistence_after_implementation() {
+    assert_contains(SAVED_SEARCH_RS, "db::create_saved_search_row");
+    assert_contains(SAVED_SEARCH_RS, "db::update_saved_search_row");
+    assert_contains(SAVED_SEARCH_RS, "db::delete_saved_search_row");
+    assert_contains(SAVED_SEARCH_RS, "db::list_saved_search_rows");
+    assert!(!SAVED_SEARCH_RS.contains("saved search persistence is not implemented"));
+}
+
+#[test]
 fn saved_search_contract_docs_api_udl_and_control_map_stay_aligned() {
     for fragment in [
         "# C2-03 saved-search-crud",

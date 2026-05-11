@@ -20,6 +20,7 @@ mod move_to_category;
 mod note;
 mod overview;
 mod rename;
+mod saved_search;
 mod scan;
 mod staging_recovery;
 mod sync;
@@ -43,6 +44,10 @@ pub(crate) use overview::{
 };
 pub(crate) use rename::{
     rename_active_file, rename_indexed_display_name, rollback_renamed_active_file,
+};
+pub(crate) use saved_search::{
+    create_saved_search_row, delete_saved_search_row, list_saved_search_rows,
+    update_saved_search_row,
 };
 pub(crate) use scan::*;
 pub(crate) use staging_recovery::{
@@ -152,6 +157,20 @@ CREATE TABLE IF NOT EXISTS repo_config (
   value TEXT NOT NULL,
   updated_at INTEGER NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS saved_searches (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL COLLATE NOCASE UNIQUE,
+  query_json TEXT NOT NULL,
+  icon TEXT,
+  color TEXT,
+  pinned INTEGER NOT NULL DEFAULT 0 CHECK (pinned IN (0, 1)),
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_saved_searches_sidebar
+  ON saved_searches(pinned DESC, updated_at DESC, name COLLATE NOCASE ASC);
 
 INSERT OR IGNORE INTO schema_version (version, applied_at, applied_by)
 VALUES (1, strftime('%s', 'now'), 'area_matrix_core');

@@ -1,13 +1,14 @@
+use std::path::PathBuf;
+
 use serde::{Deserialize, Serialize};
 
-use crate::{CoreError, CoreResult, SearchFilter, SearchSort};
+use crate::{db, CoreError, CoreResult, SearchFilter, SearchSort};
 
-use super::{parser, validation};
+use super::{parser, repo, validation};
 
 const MAX_SAVED_SEARCH_NAME_LEN: usize = 64;
 const MAX_SAVED_SEARCH_ICON_LEN: usize = 64;
 const MAX_SAVED_SEARCH_COLOR_LEN: usize = 64;
-const SAVED_SEARCH_NOT_IMPLEMENTED: &str = "saved search persistence is not implemented";
 
 /// Stable sort and filter payload saved by C2-03 Smart List CRUD.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -96,9 +97,9 @@ pub fn create_saved_search(
     repo_path: String,
     request: CreateSavedSearchRequest,
 ) -> CoreResult<SavedSearch> {
-    validate_saved_search_repo_path(&repo_path)?;
+    let repo = validate_saved_search_repo_path(&repo_path)?;
     validate_create_saved_search_request(&request)?;
-    Err(CoreError::db(SAVED_SEARCH_NOT_IMPLEMENTED))
+    db::create_saved_search_row(&repo, &request)
 }
 
 /// Updates a C2-03 saved search record without executing it.
@@ -121,9 +122,9 @@ pub fn update_saved_search(
     repo_path: String,
     request: UpdateSavedSearchRequest,
 ) -> CoreResult<SavedSearch> {
-    validate_saved_search_repo_path(&repo_path)?;
+    let repo = validate_saved_search_repo_path(&repo_path)?;
     validate_update_saved_search_request(&request)?;
-    Err(CoreError::db(SAVED_SEARCH_NOT_IMPLEMENTED))
+    db::update_saved_search_row(&repo, &request)
 }
 
 /// Deletes one C2-03 saved search record.
@@ -138,9 +139,9 @@ pub fn update_saved_search(
 /// invalid. Returns `CoreError::Db { message }` when the saved search is
 /// missing or metadata deletion cannot be persisted.
 pub fn delete_saved_search(repo_path: String, saved_search_id: i64) -> CoreResult<()> {
-    validate_saved_search_repo_path(&repo_path)?;
+    let repo = validate_saved_search_repo_path(&repo_path)?;
     validate_saved_search_id(saved_search_id)?;
-    Err(CoreError::db(SAVED_SEARCH_NOT_IMPLEMENTED))
+    db::delete_saved_search_row(&repo, saved_search_id)
 }
 
 /// Lists C2-03 saved search metadata for sidebar Smart Lists.
@@ -159,8 +160,8 @@ pub fn delete_saved_search(repo_path: String, saved_search_id: i64) -> CoreResul
 /// Returns `CoreError::Db { message }` when saved-search metadata cannot be
 /// read.
 pub fn list_saved_searches(repo_path: String) -> CoreResult<Vec<SavedSearch>> {
-    validate_saved_search_repo_path(&repo_path)?;
-    Err(CoreError::db(SAVED_SEARCH_NOT_IMPLEMENTED))
+    let repo = validate_saved_search_repo_path(&repo_path)?;
+    db::list_saved_search_rows(&repo)
 }
 
 pub(crate) fn validate_saved_search_id(id: i64) -> CoreResult<()> {
@@ -210,6 +211,8 @@ fn validate_saved_search_query(query: &SavedSearchQuery) -> CoreResult<()> {
             "saved search query contains parser diagnostics",
         ));
     }
+    repo::validate_current_path(&query.filter)
+        .map_err(|_| CoreError::config("saved search filter state is invalid"))?;
     validation::validate_filter(&query.filter)
 }
 
@@ -225,11 +228,11 @@ fn validate_saved_search_optional_text(value: Option<&str>, max_len: usize) -> C
     Ok(())
 }
 
-fn validate_saved_search_repo_path(repo_path: &str) -> CoreResult<()> {
+fn validate_saved_search_repo_path(repo_path: &str) -> CoreResult<PathBuf> {
     if repo_path.trim().is_empty() {
         return Err(CoreError::config(
             "saved search repository path is required",
         ));
     }
-    Ok(())
+    Ok(PathBuf::from(repo_path))
 }
