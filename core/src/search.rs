@@ -9,6 +9,7 @@ mod parser;
 mod pinyin;
 mod ranking;
 mod repo;
+mod validation;
 
 /// Search scope for C2-01 search queries.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]

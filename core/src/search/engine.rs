@@ -6,6 +6,7 @@ use super::{
     parser::{has_error_diagnostic, parse_query},
     ranking::{page_results, rank_rows, sort_ranked_rows},
     repo::{query_rows, validate_current_path, validated_repo_path},
+    validation::validate_request,
 };
 
 pub(super) fn search_files(
@@ -17,6 +18,7 @@ pub(super) fn search_files(
 ) -> CoreResult<SearchResultPage> {
     let repo = validated_repo_path(&repo_path)?;
     validate_current_path(&filter)?;
+    validate_request(&filter, &pagination)?;
 
     let parsed = parse_query(query);
     if has_error_diagnostic(&parsed.diagnostics) {

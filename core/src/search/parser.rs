@@ -13,6 +13,11 @@ pub(super) struct QueryTerm {
     pub(super) value: String,
 }
 
+struct RawToken {
+    text: String,
+    advanced_allowed: bool,
+}
+
 #[derive(Clone, Copy, Eq, PartialEq)]
 pub(super) enum QueryField {
     Kind,
@@ -162,8 +167,12 @@ impl QuoteState {
     }
 }
 
-fn inspect_token(token: &str, diagnostics: &mut Vec<SearchQueryDiagnostic>) {
-    let Some((field, value)) = advanced_token_parts(token) else {
+fn inspect_token(token: &RawToken, diagnostics: &mut Vec<SearchQueryDiagnostic>) {
+    if !token.advanced_allowed {
+        return;
+    }
+
+    let Some((field, value)) = advanced_token_parts(&token.text) else {
         return;
     };
 
@@ -184,14 +193,14 @@ fn inspect_token(token: &str, diagnostics: &mut Vec<SearchQueryDiagnostic>) {
 fn inspect_known_field(
     field: QueryField,
     value: &str,
-    token: &str,
+    token: &RawToken,
     diagnostics: &mut Vec<SearchQueryDiagnostic>,
 ) {
     if value.trim().is_empty() {
         diagnostics.push(diagnostic(
             SearchDiagnosticKind::InvalidOperator,
             "Missing field value",
-            Some(token.to_owned()),
+            Some(token.text.clone()),
             None,
             None,
             None,
@@ -219,19 +228,21 @@ pub(super) fn advanced_token_parts(token: &str) -> Option<(&str, &str)> {
     Some((&token[..index], &token[index + 1..]))
 }
 
-fn parse_token(token: String) -> QueryTerm {
-    if let Some((field, value)) = advanced_token_parts(&token) {
-        if let Some(field) = parse_field(field) {
-            return QueryTerm {
-                field: Some(field),
-                value: value.to_owned(),
-            };
+fn parse_token(token: RawToken) -> QueryTerm {
+    if token.advanced_allowed {
+        if let Some((field, value)) = advanced_token_parts(&token.text) {
+            if let Some(field) = parse_field(field) {
+                return QueryTerm {
+                    field: Some(field),
+                    value: value.to_owned(),
+                };
+            }
         }
     }
 
     QueryTerm {
         field: None,
-        value: token,
+        value: token.text,
     }
 }
 
@@ -310,14 +321,18 @@ pub(super) fn edit_distance(left: &str, right: &str) -> usize {
     costs[right_chars.len()]
 }
 
-fn tokenize(query: &str) -> Vec<String> {
+fn tokenize(query: &str) -> Vec<RawToken> {
     let mut tokens = Vec::new();
     let mut current = String::new();
     let mut in_quote = false;
     let mut escaped = false;
+    let mut advanced_allowed = true;
 
     for character in query.chars() {
         if escaped {
+            if character == ':' {
+                advanced_allowed = false;
+            }
             current.push(character);
             escaped = false;
             continue;
@@ -328,22 +343,30 @@ fn tokenize(query: &str) -> Vec<String> {
         }
         if character == '"' {
             in_quote = !in_quote;
+            advanced_allowed = false;
             continue;
         }
         if character.is_whitespace() && !in_quote {
-            push_token(&mut current, &mut tokens);
+            push_token(&mut current, &mut tokens, &mut advanced_allowed);
         } else {
+            if in_quote {
+                advanced_allowed = false;
+            }
             current.push(character);
         }
     }
-    push_token(&mut current, &mut tokens);
+    push_token(&mut current, &mut tokens, &mut advanced_allowed);
     tokens
 }
 
-fn push_token(current: &mut String, tokens: &mut Vec<String>) {
+fn push_token(current: &mut String, tokens: &mut Vec<RawToken>, advanced_allowed: &mut bool) {
     let token = current.trim();
     if !token.is_empty() {
-        tokens.push(token.to_owned());
+        tokens.push(RawToken {
+            text: token.to_owned(),
+            advanced_allowed: *advanced_allowed,
+        });
     }
     current.clear();
+    *advanced_allowed = true;
 }
