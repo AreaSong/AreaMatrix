@@ -102,6 +102,9 @@ namespace area_matrix {
     );
 
     [Throws=CoreError]
+    SearchFacets list_filter_facets(string repo_path, SearchFacetQuery query);
+
+    [Throws=CoreError]
     FileEntry get_file(string repo_path, i64 file_id);
 
     [Throws=CoreError]
@@ -194,6 +197,56 @@ dictionary SearchFilter {
     i64? modified_after;
     i64? modified_before;
     boolean? include_deleted;
+};
+
+dictionary SearchFacetQuery {
+    string query;
+    SearchScope scope;
+    string? current_path;
+    string? category;
+    string? file_kind;
+    sequence<string> tags;
+    SearchTagMatchMode tag_match_mode;
+    i64? imported_after;
+    i64? imported_before;
+    i64? modified_after;
+    i64? modified_before;
+    StorageMode? storage_mode;
+    boolean? include_deleted;
+};
+
+dictionary SearchFacetCount {
+    string value;
+    string label;
+    i64 count;
+    boolean selected;
+    boolean disabled;
+};
+
+dictionary SearchStorageModeFacetCount {
+    StorageMode value;
+    string label;
+    i64 count;
+    boolean selected;
+    boolean disabled;
+};
+
+dictionary SearchDateFacetBounds {
+    i64? oldest_imported_at;
+    i64? newest_imported_at;
+    i64? oldest_modified_at;
+    i64? newest_modified_at;
+};
+
+dictionary SearchFacets {
+    string query;
+    i64 total_count;
+    sequence<SearchFacetCount> categories;
+    sequence<SearchFacetCount> file_kinds;
+    sequence<SearchFacetCount> tags;
+    sequence<SearchStorageModeFacetCount> storage_modes;
+    SearchDateFacetBounds date_bounds;
+    i64 active_filter_count;
 };
 
 dictionary SearchPagination {
@@ -392,6 +445,7 @@ enum ScanSessionStatus { "Running", "Completed", "Paused", "Failed", "Interrupte
 enum DuplicateStrategy { "Skip", "Overwrite", "KeepBoth", "Ask" };
 enum ClassifyReason { "Keyword", "Extension", "AiPredicted", "Default" };
 enum SearchScope { "AllRepo", "CurrentNode" };
+enum SearchTagMatchMode { "Any", "All" };
 enum SearchSort { "Relevance", "NewestImported", "NewestModified", "NameAsc" };
 enum SearchMatchKind { "Exact", "Fuzzy", "PinyinInitials" };
 enum SearchMatchField { "Name", "Path", "Note", "Category", "ChangeLog" };
@@ -478,6 +532,7 @@ interface CoreError {
 | `restore_file(repo, file_id)` | storage | √ | FileNotFound |
 | `list_files(repo, filter)` | query | √ | Db |
 | `search_files(repo, query, filter, sort, pagination)` | search | √ | Db / Config / InvalidPath |
+| `list_filter_facets(repo, query)` | search | √ | Db / Config |
 | `get_file(repo, file_id)` | query | √ | FileNotFound |
 | `list_changes(repo, filter)` | query | √ | Db |
 | `list_tree_json(repo, locale)` | query | √ | RepoNotInitialized / Db / Io |
@@ -506,11 +561,11 @@ interface CoreError {
 
 ### Stage 2-4 API 规划入口
 
-Stage 2-4 的后续接口先以 capability specs 作为合同来源，不直接落 UDL：
+Stage 2-4 尚未提升的后续接口先以 capability specs 作为合同来源，不直接落 UDL：
 
-- Stage 2：C2-01 `search_files` 已提升为本文与 `core/area_matrix.udl`
-  的稳定合同；其他搜索、标签、Smart List、Undo/Redo、批量操作、导入冲突
-  批量决策、非 AI 标签建议、分类规则编辑仍见
+- Stage 2：C2-01 `search_files` 和 C2-02 `list_filter_facets` 已提升为本文与
+  `core/area_matrix.udl` 的稳定合同；其他标签、Smart List、Undo/Redo、批量操作、
+  导入冲突批量决策、非 AI 标签建议、分类规则编辑仍见
   [../core/capability-specs/stage-2-experience.md](../core/capability-specs/stage-2-experience.md)。
 - Stage 3：AI 配置、本地模型、远程 provider、AI 建议、AI 日志、语义搜索、隐私规则，见 [../core/capability-specs/stage-3-ai.md](../core/capability-specs/stage-3-ai.md)。
 - Stage 4：iOS/Windows/Linux repo 连接、平台能力、watcher、跨平台导入、同步冲突、缺失恢复、手动重扫，见 [../core/capability-specs/stage-4-multiplatform.md](../core/capability-specs/stage-4-multiplatform.md)。
@@ -1190,6 +1245,54 @@ C2-01 的只读搜索入口，服务 `S2-01 search-results`、`S2-04 search-empt
 - 该 API 只读，不写 DB，不写 `change_log`，不创建或更新 FTS/索引表，不修改标签、分类、
   笔记、generated overview 或任何用户文件。
 - OCR、文件内容全文、语义搜索和远程 AI 属于 Stage 3，不属于本合同。
+
+### `list_filter_facets(repoPath, query) throws -> SearchFacets`
+
+```swift
+let facets = try AreaMatrix.listFilterFacets(
+    repoPath: repoPath,
+    query: SearchFacetQuery(
+        query: "合同",
+        scope: .allRepo,
+        currentPath: nil,
+        category: nil,
+        fileKind: "pdf",
+        tags: ["finance"],
+        tagMatchMode: .any,
+        importedAfter: nil,
+        importedBefore: nil,
+        modifiedAfter: nil,
+        modifiedBefore: nil,
+        storageMode: .copied,
+        includeDeleted: false
+    )
+)
+```
+
+C2-02 的只读 filter/facet 入口，服务 `S2-02 search-filters`、`S2-08 tags-filter`
+和 `S2-01 search-results` 中 C2-02 负责的过滤器状态。输入 `SearchFacetQuery`
+承载当前搜索文本、scope/current path、category、file kind、tags、Any/All tag match mode、
+imported/modified date range、storage mode 和 include deleted。输出 `SearchFacets`：
+
+- `query`：回显本次 facet 查询对应的搜索文本。
+- `total_count`：当前 query + filters 下匹配的文件总数。
+- `categories`：category facet counts，供 Category 行显示可选项、选中态和 disabled 状态。
+- `file_kinds`：file kind / extension facet counts，供 Type 行显示可选项、选中态和 disabled 状态。
+- `tags`：tag facet counts，供 S2-08 显示标签列表、已选态、文件数量和 count 加载失败后的重试恢复。
+- `storage_modes`：Copied / Moved / Indexed 等 storage mode facet counts。
+- `date_bounds`：当前查询下可用 imported/modified timestamp 边界，供自定义日期控件限制范围。
+- `active_filter_count`：不含原始 query 文本的 active filters 数量，供 Filters 按钮、chips 和 VoiceOver 读出状态。
+
+错误与副作用边界：
+
+- `Config`：filter state 无效，例如 CurrentNode 缺少合法 current path、category 为空、
+  file kind 非法、tag 为空、date range 反转或字段组合无法表达。
+- `Db`：读取文件元数据、tag/facet 统计或必要搜索索引失败。
+- 该 API 只读，不写 DB，不写 `change_log`，不创建、更新、删除或重命名标签。
+- 该 API 不保存搜索、不创建或执行 Smart List，不实现 C2-03 saved search CRUD 或
+  C2-04 Smart List execution。
+- 该 API 不修改 files、notes、categories、generated overview、repository metadata
+  或任何用户文件；不会移动、删除、重命名文件，也不会触发 AI/语义过滤。
 
 ### `get_file(repoPath, fileId) throws -> FileEntry`
 

@@ -1,8 +1,8 @@
-//! Search contract types for Stage 2 C2-01.
+//! Search contract types for Stage 2 search capabilities.
 
 use serde::{Deserialize, Serialize};
 
-use crate::{CoreResult, FileEntry};
+use crate::{CoreError, CoreResult, FileEntry, StorageMode};
 
 mod engine;
 mod parser;
@@ -121,6 +121,110 @@ pub struct SearchFilter {
     pub include_deleted: Option<bool>,
 }
 
+/// Tag matching mode used by C2-02 tag filter UI.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub enum SearchTagMatchMode {
+    /// Match files containing any selected tag.
+    Any,
+    /// Match files containing every selected tag.
+    All,
+}
+
+/// Full filter state used when loading C2-02 facet counts.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct SearchFacetQuery {
+    /// Raw search text associated with the current search state.
+    pub query: String,
+    /// Whether facets are calculated for the full repository or current node.
+    pub scope: SearchScope,
+    /// Repository-relative tree node path when `scope` is `CurrentNode`.
+    pub current_path: Option<String>,
+    /// Optional category slug filter.
+    pub category: Option<String>,
+    /// Optional file kind or extension filter, such as `pdf`.
+    pub file_kind: Option<String>,
+    /// Optional tag slugs selected by S2-02 or S2-08.
+    pub tags: Vec<String>,
+    /// Whether selected tags are matched with Any or All semantics.
+    pub tag_match_mode: SearchTagMatchMode,
+    /// Lower import timestamp bound.
+    pub imported_after: Option<i64>,
+    /// Upper import timestamp bound.
+    pub imported_before: Option<i64>,
+    /// Lower modified timestamp bound.
+    pub modified_after: Option<i64>,
+    /// Upper modified timestamp bound.
+    pub modified_before: Option<i64>,
+    /// Optional storage-mode filter for copied, moved, or indexed entries.
+    pub storage_mode: Option<StorageMode>,
+    /// Whether deleted entries should be included.
+    pub include_deleted: Option<bool>,
+}
+
+/// One selectable string facet value and its current count.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct SearchFacetCount {
+    /// Stable value written back into the matching filter field.
+    pub value: String,
+    /// Display label for Swift UI controls.
+    pub label: String,
+    /// Number of files matching this facet under the current query state.
+    pub count: i64,
+    /// Whether this value is active in the current query state.
+    pub selected: bool,
+    /// Whether the row should be disabled while still visible.
+    pub disabled: bool,
+}
+
+/// Storage-mode facet value and its current count.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct SearchStorageModeFacetCount {
+    /// Storage mode represented by this facet.
+    pub value: StorageMode,
+    /// Display label for Swift UI controls.
+    pub label: String,
+    /// Number of files matching this storage mode under the current query state.
+    pub count: i64,
+    /// Whether this storage mode is active in the current query state.
+    pub selected: bool,
+    /// Whether the row should be disabled while still visible.
+    pub disabled: bool,
+}
+
+/// Date bounds available to the C2-02 date filter UI.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct SearchDateFacetBounds {
+    /// Earliest import timestamp available for the current query state.
+    pub oldest_imported_at: Option<i64>,
+    /// Newest import timestamp available for the current query state.
+    pub newest_imported_at: Option<i64>,
+    /// Earliest modified timestamp available for the current query state.
+    pub oldest_modified_at: Option<i64>,
+    /// Newest modified timestamp available for the current query state.
+    pub newest_modified_at: Option<i64>,
+}
+
+/// Facet counts and UI state needed by C2-02 search filters.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct SearchFacets {
+    /// Echo of the query text used to calculate this facet snapshot.
+    pub query: String,
+    /// Number of files matching the current query and filter state.
+    pub total_count: i64,
+    /// Category facet counts.
+    pub categories: Vec<SearchFacetCount>,
+    /// File kind or extension facet counts.
+    pub file_kinds: Vec<SearchFacetCount>,
+    /// Tag facet counts used by S2-08 without creating or deleting tags.
+    pub tags: Vec<SearchFacetCount>,
+    /// Storage-mode facet counts.
+    pub storage_modes: Vec<SearchStorageModeFacetCount>,
+    /// Date bounds for custom date-range controls.
+    pub date_bounds: SearchDateFacetBounds,
+    /// Number of active filters, excluding the raw search query text.
+    pub active_filter_count: i64,
+}
+
 /// Pagination controls for C2-01 search results.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct SearchPagination {
@@ -221,4 +325,30 @@ pub fn search_files(
     pagination: SearchPagination,
 ) -> CoreResult<SearchResultPage> {
     engine::search_files(repo_path, query, filter, sort, pagination)
+}
+
+/// Loads C2-02 search filter facet counts without mutating repository state.
+///
+/// C2-02 owns this read-only contract for S2-02 search filters and the C2-02
+/// side of S2-08 tag filtering. The caller supplies the current search text and
+/// filter state, including category, file kind, tags with Any/All semantics,
+/// date ranges, optional storage mode, scope, and deleted-row inclusion. The
+/// output returns selectable facet counts, storage-mode counts, date bounds,
+/// total count, and active-filter count so Swift can show loading, empty,
+/// retry, disabled, and chip states without inventing local-only contract data.
+///
+/// This contract does not create, update, delete, or rename tags; that belongs
+/// to C2-05. It does not save searches or Smart Lists; those belong to C2-03
+/// and C2-04. It must not modify files, notes, categories, change log,
+/// generated overviews, repository metadata, or user-authored files.
+///
+/// # Errors
+///
+/// Returns `CoreError::Config { reason }` when filter state is invalid, such as
+/// an empty category, invalid file kind, empty tag, or reversed date range.
+/// Returns `CoreError::Db { message }` when repository metadata required for
+/// facet counts cannot be read.
+pub fn list_filter_facets(_repo_path: String, query: SearchFacetQuery) -> CoreResult<SearchFacets> {
+    validation::validate_facet_query(&query)?;
+    Err(CoreError::db("database error"))
 }

@@ -78,6 +78,9 @@ namespace area_matrix {
     );
 
     [Throws=CoreError]
+    SearchFacets list_filter_facets(string repo_path, SearchFacetQuery query);
+
+    [Throws=CoreError]
     FileEntry get_file(string repo_path, i64 file_id);
 
     [Throws=CoreError]
@@ -170,6 +173,56 @@ dictionary SearchFilter {
     i64? modified_after;
     i64? modified_before;
     boolean? include_deleted;
+};
+
+dictionary SearchFacetQuery {
+    string query;
+    SearchScope scope;
+    string? current_path;
+    string? category;
+    string? file_kind;
+    sequence<string> tags;
+    SearchTagMatchMode tag_match_mode;
+    i64? imported_after;
+    i64? imported_before;
+    i64? modified_after;
+    i64? modified_before;
+    StorageMode? storage_mode;
+    boolean? include_deleted;
+};
+
+dictionary SearchFacetCount {
+    string value;
+    string label;
+    i64 count;
+    boolean selected;
+    boolean disabled;
+};
+
+dictionary SearchStorageModeFacetCount {
+    StorageMode value;
+    string label;
+    i64 count;
+    boolean selected;
+    boolean disabled;
+};
+
+dictionary SearchDateFacetBounds {
+    i64? oldest_imported_at;
+    i64? newest_imported_at;
+    i64? oldest_modified_at;
+    i64? newest_modified_at;
+};
+
+dictionary SearchFacets {
+    string query;
+    i64 total_count;
+    sequence<SearchFacetCount> categories;
+    sequence<SearchFacetCount> file_kinds;
+    sequence<SearchFacetCount> tags;
+    sequence<SearchStorageModeFacetCount> storage_modes;
+    SearchDateFacetBounds date_bounds;
+    i64 active_filter_count;
 };
 
 dictionary SearchPagination {
@@ -368,6 +421,7 @@ enum ScanSessionStatus { "Running", "Completed", "Paused", "Failed", "Interrupte
 enum DuplicateStrategy { "Skip", "Overwrite", "KeepBoth", "Ask" };
 enum ClassifyReason { "Keyword", "Extension", "AiPredicted", "Default" };
 enum SearchScope { "AllRepo", "CurrentNode" };
+enum SearchTagMatchMode { "Any", "All" };
 enum SearchSort { "Relevance", "NewestImported", "NewestModified", "NameAsc" };
 enum SearchMatchKind { "Exact", "Fuzzy", "PinyinInitials" };
 enum SearchMatchField { "Name", "Path", "Note", "Category", "ChangeLog" };

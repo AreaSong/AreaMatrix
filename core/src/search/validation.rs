@@ -1,4 +1,8 @@
-use crate::{CoreError, CoreResult, SearchFilter, SearchPagination};
+use std::path::{Component, Path};
+
+use crate::{CoreError, CoreResult, SearchFacetQuery, SearchFilter, SearchPagination, SearchScope};
+
+const AREA_MATRIX_DIR: &str = ".areamatrix";
 
 const MAX_LIMIT: i64 = 1000;
 
@@ -12,6 +16,42 @@ pub(super) fn validate_request(
     validate_time_range(filter.imported_after, filter.imported_before)?;
     validate_time_range(filter.modified_after, filter.modified_before)?;
     validate_pagination(pagination)
+}
+
+pub(super) fn validate_facet_query(query: &SearchFacetQuery) -> CoreResult<()> {
+    validate_facet_scope(query)?;
+    validate_optional_text(query.category.as_deref())?;
+    validate_file_kind(query.file_kind.as_deref())?;
+    validate_tags(&query.tags)?;
+    validate_time_range(query.imported_after, query.imported_before)?;
+    validate_time_range(query.modified_after, query.modified_before)
+}
+
+fn validate_facet_scope(query: &SearchFacetQuery) -> CoreResult<()> {
+    match query.scope {
+        SearchScope::AllRepo => Ok(()),
+        SearchScope::CurrentNode => validate_facet_current_path(query.current_path.as_deref()),
+    }
+}
+
+fn validate_facet_current_path(current_path: Option<&str>) -> CoreResult<()> {
+    let Some(current_path) = current_path else {
+        return Err(CoreError::config("configuration error"));
+    };
+    if current_path.trim().is_empty() || current_path.starts_with('~') {
+        return Err(CoreError::config("configuration error"));
+    }
+    let path = Path::new(current_path);
+    if path.is_absolute() {
+        return Err(CoreError::config("configuration error"));
+    }
+    for component in path.components() {
+        match component {
+            Component::Normal(part) if part != AREA_MATRIX_DIR => {}
+            _ => return Err(CoreError::config("configuration error")),
+        }
+    }
+    Ok(())
 }
 
 fn validate_optional_text(value: Option<&str>) -> CoreResult<()> {
