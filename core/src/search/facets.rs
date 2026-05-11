@@ -49,10 +49,12 @@ fn facet_query_search_filter(query: &SearchFacetQuery) -> SearchFilter {
         category: None,
         file_kind: None,
         tags: Vec::new(),
+        tag_match_mode: query.tag_match_mode.clone(),
         imported_after: None,
         imported_before: None,
         modified_after: None,
         modified_before: None,
+        storage_mode: None,
         include_deleted: query.include_deleted,
     }
 }

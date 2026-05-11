@@ -2,7 +2,7 @@ use area_matrix_core::{
     search_files, CoreError, CoreResult, FileEntry, FileOrigin, SearchDiagnosticKind,
     SearchDiagnosticSeverity, SearchFileResult, SearchFilter, SearchIndexStatus, SearchMatch,
     SearchMatchField, SearchMatchKind, SearchPagination, SearchQueryDiagnostic, SearchResultPage,
-    SearchScope, SearchSort, StorageMode,
+    SearchScope, SearchSort, SearchTagMatchMode, StorageMode,
 };
 use pretty_assertions::assert_eq;
 
@@ -48,15 +48,19 @@ fn search_query_files_contract_exposes_signature_inputs_outputs_and_errors() {
         category: Some("docs".to_owned()),
         file_kind: Some("pdf".to_owned()),
         tags: vec!["signed".to_owned()],
+        tag_match_mode: SearchTagMatchMode::All,
         imported_after: Some(100),
         imported_before: Some(200),
         modified_after: Some(120),
         modified_before: Some(220),
+        storage_mode: Some(StorageMode::Copied),
         include_deleted: Some(false),
     };
     assert_eq!(filter.scope, SearchScope::CurrentNode);
     assert_eq!(filter.current_path.as_deref(), Some("docs/contracts"));
     assert_eq!(filter.tags, vec!["signed"]);
+    assert_eq!(filter.tag_match_mode, SearchTagMatchMode::All);
+    assert_eq!(filter.storage_mode, Some(StorageMode::Copied));
 
     let pagination = SearchPagination {
         limit: 50,
@@ -187,6 +191,8 @@ fn search_query_files_contract_docs_api_udl_and_control_map_stay_aligned() {
         "dictionary SearchFilter",
         "SearchScope scope;",
         "sequence<string> tags;",
+        "SearchTagMatchMode tag_match_mode;",
+        "StorageMode? storage_mode;",
         "dictionary SearchResultPage",
         "i64 total_count;",
         "sequence<SearchFileResult> results;",
@@ -235,6 +241,8 @@ fn search_query_files_contract_documents_consumer_states_and_scope_boundaries() 
         "C2-01 owns this read-only contract for S2-01 search results",
         "S2-04 empty",
         "S2-05 query diagnostics",
+        "including tags with Any/All semantics",
+        "optional storage mode",
         "does not include C2-02 facet counts",
         "C2-03 saved search CRUD",
         "C2-04 Smart List execution",
@@ -252,6 +260,8 @@ fn search_query_files_contract_documents_consumer_states_and_scope_boundaries() 
         "Structured query parser diagnostic kind.",
         "Search index readiness surfaced to search result and empty states.",
         "Filters and scope applied to a C2-01 search query.",
+        "Whether selected tags are matched with Any or All semantics.",
+        "Optional storage-mode filter for copied, moved, or indexed entries.",
         "One page of C2-01 search results.",
     ] {
         assert_contains(SEARCH_RS, fragment);

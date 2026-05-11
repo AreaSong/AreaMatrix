@@ -3,7 +3,7 @@ use std::{fs, path::Path};
 use area_matrix_core::{
     init_repo, search_files, write_note, CoreError, CoreResult, OverviewOutput, RepoInitMode,
     RepoInitOptions, SearchDiagnosticKind, SearchFilter, SearchIndexStatus, SearchMatchField,
-    SearchPagination, SearchResultPage, SearchScope, SearchSort,
+    SearchPagination, SearchResultPage, SearchScope, SearchSort, SearchTagMatchMode, StorageMode,
 };
 use pretty_assertions::assert_eq;
 use rusqlite::{params, Connection};
@@ -56,10 +56,12 @@ fn default_filter() -> SearchFilter {
         category: None,
         file_kind: None,
         tags: Vec::new(),
+        tag_match_mode: SearchTagMatchMode::Any,
         imported_after: None,
         imported_before: None,
         modified_after: None,
         modified_before: None,
+        storage_mode: None,
         include_deleted: Some(false),
     }
 }
@@ -397,6 +399,8 @@ fn search_query_files_validation_locks_core_api_udl_and_rust_contract() {
         "dictionary SearchFilter",
         "SearchScope scope;",
         "sequence<string> tags;",
+        "SearchTagMatchMode tag_match_mode;",
+        "StorageMode? storage_mode;",
         "dictionary SearchResultPage",
         "i64 total_count;",
         "sequence<SearchFileResult> results;",
@@ -420,4 +424,53 @@ fn search_query_files_validation_locks_core_api_udl_and_rust_contract() {
         assert_contains(SEARCH_RS, fragment);
     }
     assert_contains(LIB_RS, "pub use search::*;");
+}
+
+#[test]
+fn search_query_files_validation_proves_c2_02_filter_state_refreshes_real_results() {
+    let repo = initialized_repo();
+    let copied = insert_file(repo.path(), "docs/copied-contract.pdf", "docs", 100, 300);
+    let moved = insert_file(repo.path(), "docs/moved-contract.pdf", "docs", 110, 310);
+    open_db(repo.path())
+        .execute(
+            "UPDATE files SET storage_mode = 'moved' WHERE id = ?1",
+            params![moved],
+        )
+        .expect("mark fixture as moved");
+    open_db(repo.path())
+        .execute(
+            "INSERT INTO tags (file_id, tag, added_at)
+             VALUES (?1, 'finance', 100), (?1, 'signed', 100), (?2, 'finance', 100)",
+            params![copied, moved],
+        )
+        .expect("insert tag fixture rows");
+
+    let mut filter = default_filter();
+    filter.tags = vec!["finance".to_owned(), "signed".to_owned()];
+    filter.tag_match_mode = SearchTagMatchMode::All;
+    filter.storage_mode = Some(StorageMode::Copied);
+
+    let all_tags = search_files(
+        path_string(repo.path()),
+        "contract".to_owned(),
+        filter.clone(),
+        SearchSort::NewestImported,
+        first_page(),
+    )
+    .expect("search all tags and copied storage mode");
+    assert_eq!(all_tags.total_count, 1);
+    assert_eq!(all_tags.results[0].entry.id, copied);
+
+    filter.tag_match_mode = SearchTagMatchMode::Any;
+    filter.storage_mode = Some(StorageMode::Moved);
+    let moved_any_tag = search_files(
+        path_string(repo.path()),
+        "contract".to_owned(),
+        filter,
+        SearchSort::NewestImported,
+        first_page(),
+    )
+    .expect("search any tag and moved storage mode");
+    assert_eq!(moved_any_tag.total_count, 1);
+    assert_eq!(moved_any_tag.results[0].entry.id, moved);
 }

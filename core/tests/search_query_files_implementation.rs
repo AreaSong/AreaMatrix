@@ -3,7 +3,7 @@ use std::{fs, path::Path};
 use area_matrix_core::{
     init_repo, search_files, write_note, CoreError, OverviewOutput, RepoInitMode, RepoInitOptions,
     SearchDiagnosticKind, SearchFilter, SearchIndexStatus, SearchMatchField, SearchMatchKind,
-    SearchPagination, SearchScope, SearchSort,
+    SearchPagination, SearchScope, SearchSort, SearchTagMatchMode, StorageMode,
 };
 use pretty_assertions::assert_eq;
 use rusqlite::{params, Connection};
@@ -39,10 +39,12 @@ fn default_filter() -> SearchFilter {
         category: None,
         file_kind: None,
         tags: Vec::new(),
+        tag_match_mode: SearchTagMatchMode::Any,
         imported_after: None,
         imported_before: None,
         modified_after: None,
         modified_before: None,
+        storage_mode: None,
         include_deleted: Some(false),
     }
 }
@@ -54,10 +56,28 @@ fn first_page() -> SearchPagination {
     }
 }
 
+fn insert_copied_file(
+    repo: &Path,
+    relative_path: &str,
+    category: &str,
+    imported_at: i64,
+    updated_at: i64,
+) -> i64 {
+    insert_file(
+        repo,
+        relative_path,
+        category,
+        "copied",
+        imported_at,
+        updated_at,
+    )
+}
+
 fn insert_file(
     repo: &Path,
     relative_path: &str,
     category: &str,
+    storage_mode: &str,
     imported_at: i64,
     updated_at: i64,
 ) -> i64 {
@@ -78,14 +98,15 @@ fn insert_file(
                 imported_at, updated_at, status
              ) VALUES (
                 ?1, ?2, ?2, ?3, 13,
-                ?4, 'copied', 'imported', NULL,
-                ?5, ?6, 'active'
+                ?4, ?5, 'imported', NULL,
+                ?6, ?7, 'active'
              )",
             params![
                 relative_path,
                 current_name,
                 category,
                 format!("{:064x}", relative_path.len()),
+                storage_mode,
                 imported_at,
                 updated_at,
             ],
@@ -165,8 +186,10 @@ fn insert_many_searchable_files(repo: &Path, count: i64) {
 #[test]
 fn search_query_files_implementation_finds_name_path_note_category_and_change_log() {
     let repo = initialized_repo();
-    let contract_id = insert_file(repo.path(), "docs/contracts/client-a.pdf", "docs", 100, 110);
-    let invoice_id = insert_file(repo.path(), "finance/invoice-2026.pdf", "finance", 200, 220);
+    let contract_id =
+        insert_copied_file(repo.path(), "docs/contracts/client-a.pdf", "docs", 100, 110);
+    let invoice_id =
+        insert_copied_file(repo.path(), "finance/invoice-2026.pdf", "finance", 200, 220);
     write_note(
         path_string(repo.path()),
         contract_id,
@@ -240,8 +263,9 @@ fn search_query_files_implementation_finds_name_path_note_category_and_change_lo
 #[test]
 fn search_query_files_implementation_filters_scope_tags_and_advanced_fields() {
     let repo = initialized_repo();
-    let finance_id = insert_file(repo.path(), "finance/report-2026.pdf", "finance", 300, 330);
-    let docs_id = insert_file(repo.path(), "docs/report-2026.md", "docs", 100, 120);
+    let finance_id =
+        insert_copied_file(repo.path(), "finance/report-2026.pdf", "finance", 300, 330);
+    let docs_id = insert_copied_file(repo.path(), "docs/report-2026.md", "docs", 100, 120);
     insert_tag(repo.path(), finance_id, "urgent");
 
     let mut filter = default_filter();
@@ -263,10 +287,95 @@ fn search_query_files_implementation_filters_scope_tags_and_advanced_fields() {
 }
 
 #[test]
+fn search_query_files_implementation_refreshes_results_with_full_c2_02_filter_state() {
+    let repo = initialized_repo();
+    let copied_finance = insert_file(
+        repo.path(),
+        "docs/contracts/copied-contract.pdf",
+        "docs",
+        "copied",
+        100,
+        300,
+    );
+    let copied_signed = insert_file(
+        repo.path(),
+        "docs/contracts/signed-contract.pdf",
+        "docs",
+        "copied",
+        110,
+        310,
+    );
+    let moved_finance = insert_file(
+        repo.path(),
+        "docs/contracts/moved-contract.pdf",
+        "docs",
+        "moved",
+        120,
+        320,
+    );
+    insert_tag(repo.path(), copied_finance, "Finance");
+    insert_tag(repo.path(), copied_finance, "Signed");
+    insert_tag(repo.path(), copied_signed, "Signed");
+    insert_tag(repo.path(), moved_finance, "Finance");
+    insert_tag(repo.path(), moved_finance, "Signed");
+
+    let mut filter = default_filter();
+    filter.scope = SearchScope::CurrentNode;
+    filter.current_path = Some("docs/contracts".to_owned());
+    filter.category = Some("docs".to_owned());
+    filter.file_kind = Some("pdf".to_owned());
+    filter.tags = vec!["finance".to_owned(), "signed".to_owned()];
+    filter.tag_match_mode = SearchTagMatchMode::All;
+    filter.storage_mode = Some(StorageMode::Copied);
+
+    let all_page = search_files(
+        path_string(repo.path()),
+        "contract".to_owned(),
+        filter.clone(),
+        SearchSort::NewestImported,
+        first_page(),
+    )
+    .expect("search with all tag and storage filters");
+    assert_eq!(all_page.total_count, 1);
+    assert_eq!(all_page.results[0].entry.id, copied_finance);
+
+    filter.tag_match_mode = SearchTagMatchMode::Any;
+    let any_page = search_files(
+        path_string(repo.path()),
+        "contract".to_owned(),
+        filter.clone(),
+        SearchSort::NewestImported,
+        first_page(),
+    )
+    .expect("search refreshes after tag match mode changes");
+    assert_eq!(any_page.total_count, 2);
+    assert_eq!(
+        any_page
+            .results
+            .iter()
+            .map(|result| result.entry.id)
+            .collect::<Vec<_>>(),
+        vec![copied_signed, copied_finance]
+    );
+
+    filter.storage_mode = Some(StorageMode::Moved);
+    let moved_page = search_files(
+        path_string(repo.path()),
+        "contract".to_owned(),
+        filter,
+        SearchSort::NewestImported,
+        first_page(),
+    )
+    .expect("search refreshes after storage mode changes");
+    assert_eq!(moved_page.total_count, 1);
+    assert_eq!(moved_page.results[0].entry.id, moved_finance);
+}
+
+#[test]
 fn search_query_files_implementation_sorts_paginates_and_returns_empty_distinctly() {
     let repo = initialized_repo();
-    let older_id = insert_file(repo.path(), "docs/a-report.pdf", "docs", 100, 300);
-    let newer_id = insert_file(repo.path(), "docs/b-report.pdf", "docs", 200, 100);
+    let older_id = insert_copied_file(repo.path(), "docs/a-report.pdf", "docs", 100, 300);
+    let newer_id = insert_copied_file(repo.path(), "docs/b-report.pdf", "docs", 200, 100);
 
     let page = search_files(
         path_string(repo.path()),
@@ -310,7 +419,7 @@ fn search_query_files_implementation_sorts_paginates_and_returns_empty_distinctl
 #[test]
 fn search_query_files_implementation_reports_query_parse_errors_without_db_or_fs_writes() {
     let repo = initialized_repo();
-    let file_id = insert_file(repo.path(), "docs/report.pdf", "docs", 100, 100);
+    let file_id = insert_copied_file(repo.path(), "docs/report.pdf", "docs", 100, 100);
     let before_files = active_file_count(repo.path());
     let before_changes = change_log_count(repo.path());
 
@@ -406,9 +515,9 @@ fn search_query_files_implementation_total_count_is_not_capped_at_previous_candi
 #[test]
 fn search_query_files_implementation_marks_fuzzy_and_initials_matches() {
     let repo = initialized_repo();
-    let fuzzy_id = insert_file(repo.path(), "docs/invoice.pdf", "docs", 100, 100);
-    let initials_id = insert_file(repo.path(), "docs/quarterly-total.pdf", "docs", 110, 110);
-    let pinyin_id = insert_file(repo.path(), "docs/合同-草案.pdf", "docs", 120, 120);
+    let fuzzy_id = insert_copied_file(repo.path(), "docs/invoice.pdf", "docs", 100, 100);
+    let initials_id = insert_copied_file(repo.path(), "docs/quarterly-total.pdf", "docs", 110, 110);
+    let pinyin_id = insert_copied_file(repo.path(), "docs/合同-草案.pdf", "docs", 120, 120);
 
     let fuzzy_page = search_files(
         path_string(repo.path()),

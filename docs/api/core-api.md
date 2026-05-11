@@ -192,10 +192,12 @@ dictionary SearchFilter {
     string? category;
     string? file_kind;
     sequence<string> tags;
+    SearchTagMatchMode tag_match_mode;
     i64? imported_after;
     i64? imported_before;
     i64? modified_after;
     i64? modified_before;
+    StorageMode? storage_mode;
     boolean? include_deleted;
 };
 
@@ -1206,10 +1208,12 @@ let page = try AreaMatrix.searchFiles(
         category: nil,
         fileKind: nil,
         tags: [],
+        tagMatchMode: .any,
         importedAfter: nil,
         importedBefore: nil,
         modifiedAfter: nil,
         modifiedBefore: nil,
+        storageMode: nil,
         includeDeleted: false
     ),
     sort: .newestImported,
@@ -1234,8 +1238,10 @@ C2-01 的只读搜索入口，服务 `S2-01 search-results`、`S2-04 search-empt
 
 - 文件名、相对路径、伴生笔记、分类和 change log。
 - 普通关键词支持大小写不敏感、fuzzy 和 pinyin initials 命中；高级查询字段不走模糊纠错。
-- `SearchFilter` 可以携带当前 Stage 2 UI 状态，但 facet counts 属于 C2-02
-  `list_filter_facets`，保存搜索属于 C2-03，Smart List 执行属于 C2-04。
+- `SearchFilter` 必须携带当前 Stage 2 UI 的 C2-02 过滤状态，包括 tags 的
+  Any/All 匹配模式和 storage mode。`search_files` 用同一份 filter 刷新真实结果，
+  facet counts 仍由 C2-02 `list_filter_facets` 返回；保存搜索属于 C2-03，
+  Smart List 执行属于 C2-04。
 
 错误与副作用边界：
 

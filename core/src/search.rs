@@ -110,6 +110,8 @@ pub struct SearchFilter {
     pub file_kind: Option<String>,
     /// Optional tag slugs carried by the search query contract.
     pub tags: Vec<String>,
+    /// Whether selected tags are matched with Any or All semantics.
+    pub tag_match_mode: SearchTagMatchMode,
     /// Lower import timestamp bound.
     pub imported_after: Option<i64>,
     /// Upper import timestamp bound.
@@ -118,6 +120,8 @@ pub struct SearchFilter {
     pub modified_after: Option<i64>,
     /// Upper modified timestamp bound.
     pub modified_before: Option<i64>,
+    /// Optional storage-mode filter for copied, moved, or indexed entries.
+    pub storage_mode: Option<StorageMode>,
     /// Whether deleted entries should be included.
     pub include_deleted: Option<bool>,
 }
@@ -301,11 +305,14 @@ pub struct SearchResultPage {
 ///
 /// C2-01 owns this read-only contract for S2-01 search results, S2-04 empty
 /// results, and S2-05 query diagnostics. The caller supplies the raw query,
-/// current scope/filter state, sort mode, and pagination. The output echoes the
-/// query, returns a total count, paginated file rows with highlightable match
-/// metadata, parser diagnostics, and search index readiness so pages can
-/// distinguish results, empty state, parse errors, API failures, and indexing
-/// recovery without parsing strings.
+/// current scope/filter state, sort mode, and pagination. Search results accept
+/// the C2-02 portion of that state, including tags with Any/All semantics and
+/// optional storage mode, so filter changes can refresh the real result list
+/// and facet counts from the same state. The output echoes the query, returns a
+/// total count, paginated file rows with highlightable match metadata, parser
+/// diagnostics, and search index readiness so pages can distinguish results,
+/// empty state, parse errors, API failures, and indexing recovery without
+/// parsing strings.
 ///
 /// This contract does not include C2-02 facet counts, C2-03 saved search CRUD,
 /// C2-04 Smart List execution, OCR, semantic search, remote AI, or file content

@@ -4,7 +4,7 @@ use chrono::NaiveDate;
 
 use crate::{
     CoreError, CoreResult, SearchFileResult, SearchFilter, SearchMatch, SearchMatchField,
-    SearchMatchKind, SearchPagination, SearchSort,
+    SearchMatchKind, SearchPagination, SearchSort, SearchTagMatchMode,
 };
 
 use super::{
@@ -31,10 +31,7 @@ pub(super) fn rank_rows(
     let required_tags = normalize_terms(&filter.tags);
     let mut ranked = Vec::new();
     for row in rows {
-        if !required_tags
-            .iter()
-            .all(|tag| value_matches_any(tag, &row.tags))
-        {
+        if !tags_match(&required_tags, &filter.tag_match_mode, &row.tags) {
             continue;
         }
         if let Some(result) = rank_row(row, terms) {
@@ -364,6 +361,20 @@ fn value_matches_any(normalized_needle: &str, values: &[String]) -> bool {
     values
         .iter()
         .any(|value| normalized_text(value).contains(normalized_needle))
+}
+
+fn tags_match(required_tags: &[String], mode: &SearchTagMatchMode, actual_tags: &[String]) -> bool {
+    if required_tags.is_empty() {
+        return true;
+    }
+    match mode {
+        SearchTagMatchMode::Any => required_tags
+            .iter()
+            .any(|tag| value_matches_any(tag, actual_tags)),
+        SearchTagMatchMode::All => required_tags
+            .iter()
+            .all(|tag| value_matches_any(tag, actual_tags)),
+    }
 }
 
 fn normalize_terms(values: &[String]) -> Vec<String> {

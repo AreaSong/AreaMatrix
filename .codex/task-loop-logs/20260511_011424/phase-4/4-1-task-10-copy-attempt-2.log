@@ -1,0 +1,50 @@
+一、执行结论：已完成
+
+本次 repair retry 已修复上次 P0：`SearchFilter` 现在能携带完整 C2-02 过滤状态，`search_files` 可用同一份 filter 刷新真实结果列表，`list_filter_facets` 继续负责 facet counts。`./dev check all` 最终退出码为 0。
+
+二、执行范围
+
+修改文件：
+- `core/area_matrix.udl`
+- `core/src/search.rs`
+- `core/src/search/facets.rs`
+- `core/src/search/ranking.rs`
+- `core/src/search/repo.rs`
+- `core/tests/search_filters_contract_api.rs`
+- `core/tests/search_filters_validation.rs`
+- `core/tests/search_query_files_contract_api.rs`
+- `core/tests/search_query_files_failure_recovery.rs`
+- `core/tests/search_query_files_implementation.rs`
+- `core/tests/search_query_files_validation.rs`
+- `docs/api/core-api.md`
+
+未触碰 `apps/**`；`git diff --name-only -- apps` 为空。工作树里仍有 task-loop 自身生成的 `.codex/...` 和 `progress.json` 脏状态，不属于本次 Core 修复范围。
+
+三、完成情况
+
+核对清单：
+- capability spec / Core API / UDL / Rust / 测试：通过。`SearchFilter` 已补 `tag_match_mode` 与 `storage_mode`，UDL 和 Core API 文档同步。
+- 消费页面需要的状态、错误和副作用：通过。`search_files` 现在支持 Any/All tags 与 storage mode，能满足 S2-02/S2-08 “过滤变化立即刷新真实结果”的依赖。
+- control map 之外能力：通过。未实现保存搜索、Smart List、标签 CRUD、AI/语义搜索等相邻能力。
+- 不触碰 Forbidden Touches：通过。
+
+四、工程质量
+
+代码结构保持在现有 search 模块内：SQL 层处理 `storage_mode`，ranking 层处理 `tag_match_mode`，facets 层继续只读计算 counts。没有新增依赖、mock-only wiring、硬编码通过态或一次性实现。新增/更新测试覆盖了“同一 C2-02 filter 状态同时驱动真实 `search_files` 结果和 `list_filter_facets` facet 状态”的集成证据。
+
+五、验证情况
+
+已通过：
+- `cd core && cargo fmt --all -- --check`
+- `cargo test --test search_query_files_implementation --test search_query_files_validation --test search_query_files_contract_api --test search_filters_validation --test search_filters_contract_api`
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`
+- `cd core && cargo test --workspace`
+- `git diff --check`
+- `./dev check all`
+
+说明：`./dev check all` 中 `xcodebuild test` 仍被本机 sandboxed `testmanagerd` 阻断，但 dev 脚本按 validation-driver 路径复用已构建 XCTest bundle 执行 `xcrun xctest`，macOS 测试通过，最终命令退出码 0。
+
+六、风险与后续
+
+High 风险点已控制在 Core API/UDL/Search 只读查询边界内；回滚方式是回退上述 Core/API/test 文件即可，不涉及用户原文件、DB migration 或 `apps/**`。后续可以进入依赖 C2-02 的 page-feature task/UI 接入验收。
+

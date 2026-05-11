@@ -67,6 +67,7 @@ pub(super) fn query_rows(repo: &Path, filter: &SearchFilter) -> CoreResult<Vec<S
             filter.imported_before,
             filter.modified_after,
             filter.modified_before,
+            storage_mode_filter(filter.storage_mode.as_ref()),
             current_scope_path(filter),
         ])
         .map_err(|error| CoreError::db(error.to_string()))?;
@@ -100,7 +101,8 @@ fn search_sql() -> &'static str {
         AND (?5 IS NULL OR f.imported_at < ?5)
         AND (?6 IS NULL OR f.updated_at >= ?6)
         AND (?7 IS NULL OR f.updated_at < ?7)
-        AND (?8 IS NULL OR f.path = ?8 OR f.path LIKE ?8 || '/%')
+        AND (?8 IS NULL OR f.storage_mode = ?8)
+        AND (?9 IS NULL OR f.path = ?9 OR f.path LIKE ?9 || '/%')
       GROUP BY f.id
       ORDER BY f.imported_at DESC, f.id DESC"
 }
@@ -195,6 +197,18 @@ fn current_scope_path(filter: &SearchFilter) -> Option<&str> {
         filter.current_path.as_deref()
     } else {
         None
+    }
+}
+
+fn storage_mode_filter(mode: Option<&StorageMode>) -> Option<&'static str> {
+    mode.map(storage_mode_to_db)
+}
+
+fn storage_mode_to_db(mode: &StorageMode) -> &'static str {
+    match mode {
+        StorageMode::Moved => "moved",
+        StorageMode::Copied => "copied",
+        StorageMode::Indexed => "indexed",
     }
 }
 

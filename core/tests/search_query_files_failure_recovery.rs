@@ -6,7 +6,7 @@ use std::{
 use area_matrix_core::{
     init_repo, search_files, write_note, CoreError, ErrorKind, OverviewOutput, RepoInitMode,
     RepoInitOptions, SearchDiagnosticKind, SearchFilter, SearchIndexStatus, SearchPagination,
-    SearchScope, SearchSort,
+    SearchScope, SearchSort, SearchTagMatchMode,
 };
 use pretty_assertions::assert_eq;
 use rusqlite::{params, Connection};
@@ -40,10 +40,12 @@ fn default_filter() -> SearchFilter {
         category: None,
         file_kind: None,
         tags: Vec::new(),
+        tag_match_mode: SearchTagMatchMode::Any,
         imported_after: None,
         imported_before: None,
         modified_after: None,
         modified_before: None,
+        storage_mode: None,
         include_deleted: Some(false),
     }
 }
@@ -465,6 +467,8 @@ fn search_query_files_failure_recovery_udl_keeps_declared_error_boundary() {
     }
     for fragment in [
         "This contract does not include C2-02 facet counts",
+        "including tags with Any/All semantics",
+        "optional storage mode",
         "remote AI",
         "must not modify tags, categories, notes, change log",
         "`CoreError::Config { reason }`",

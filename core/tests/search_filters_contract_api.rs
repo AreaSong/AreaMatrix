@@ -159,6 +159,7 @@ fn search_filters_contract_docs_api_udl_and_control_map_stay_aligned() {
 
     for fragment in [
         "SearchFacets list_filter_facets(string repo_path, SearchFacetQuery query);",
+        "dictionary SearchFilter",
         "dictionary SearchFacetQuery",
         "string query;",
         "SearchTagMatchMode tag_match_mode;",
@@ -183,6 +184,7 @@ fn search_filters_contract_docs_api_udl_and_control_map_stay_aligned() {
         "| `list_filter_facets(repo, query)` | search | √ | Db / Config |",
         "C2-01 `search_files` 和 C2-02 `list_filter_facets` 已提升为本文与",
         "### `list_filter_facets(repoPath, query) throws -> SearchFacets`",
+        "`search_files` 用同一份 filter 刷新真实结果",
         "C2-02 的只读 filter/facet 入口",
         "和 `S2-01 search-results` 中 C2-02 负责的过滤器状态。",
         "tags、Any/All tag match mode",
@@ -194,7 +196,7 @@ fn search_filters_contract_docs_api_udl_and_control_map_stay_aligned() {
         "不实现 C2-03 saved search CRUD",
         "C2-04 Smart List execution",
         "不会移动、删除、重命名文件，也不会触发 AI/语义过滤。",
-        "facet counts 属于 C2-02",
+        "facet counts 仍由 C2-02",
         "`list_filter_facets`",
         "保存搜索属于 C2-03",
         "Smart List 执行属于 C2-04",

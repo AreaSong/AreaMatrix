@@ -168,10 +168,12 @@ dictionary SearchFilter {
     string? category;
     string? file_kind;
     sequence<string> tags;
+    SearchTagMatchMode tag_match_mode;
     i64? imported_after;
     i64? imported_before;
     i64? modified_after;
     i64? modified_before;
+    StorageMode? storage_mode;
     boolean? include_deleted;
 };
 
