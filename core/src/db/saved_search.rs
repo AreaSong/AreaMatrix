@@ -9,22 +9,6 @@ use crate::{
 
 use super::open_repo_connection;
 
-const SAVED_SEARCH_SCHEMA: &str = r#"
-CREATE TABLE IF NOT EXISTS saved_searches (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT NOT NULL COLLATE NOCASE UNIQUE,
-  query_json TEXT NOT NULL,
-  icon TEXT,
-  color TEXT,
-  pinned INTEGER NOT NULL DEFAULT 0 CHECK (pinned IN (0, 1)),
-  created_at INTEGER NOT NULL,
-  updated_at INTEGER NOT NULL
-);
-
-CREATE INDEX IF NOT EXISTS idx_saved_searches_sidebar
-  ON saved_searches(pinned DESC, updated_at DESC, name COLLATE NOCASE ASC);
-"#;
-
 pub(crate) fn create_saved_search_row(
     repo_path: &Path,
     request: &CreateSavedSearchRequest,
@@ -154,11 +138,7 @@ fn select_saved_search_by_id(tx: &rusqlite::Transaction<'_>, id: i64) -> CoreRes
 }
 
 fn open_saved_search_connection(repo_path: &Path) -> CoreResult<Connection> {
-    let connection = open_saved_search_read_connection(repo_path)?;
-    connection
-        .execute_batch(SAVED_SEARCH_SCHEMA)
-        .map_err(|error| CoreError::db(error.to_string()))?;
-    Ok(connection)
+    open_saved_search_read_connection(repo_path)
 }
 
 fn open_saved_search_read_connection(repo_path: &Path) -> CoreResult<Connection> {

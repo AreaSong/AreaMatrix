@@ -149,6 +149,19 @@ fn table_count(repo: &Path, table: &str) -> i64 {
         .expect("count table rows")
 }
 
+fn table_exists(repo: &Path, table: &str) -> bool {
+    open_db(repo)
+        .query_row(
+            "SELECT EXISTS(
+                SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?1
+             )",
+            [table],
+            |row| row.get::<_, i64>(0),
+        )
+        .expect("query table existence")
+        == 1
+}
+
 fn directory_entries(path: &Path) -> Vec<PathBuf> {
     let mut entries: Vec<PathBuf> = fs::read_dir(path)
         .expect("read directory")
@@ -388,6 +401,32 @@ fn saved_search_failure_recovery_uninitialized_repo_is_db_error_without_metadata
         b"user readme"
     );
     assert!(!repo.path().join(".areamatrix").exists());
+}
+
+#[test]
+fn saved_search_failure_recovery_missing_table_is_db_error_without_auto_schema_write() {
+    let repo = initialized_repo();
+    fs::write(repo.path().join("README.md"), b"user readme").expect("write user file");
+    open_db(repo.path())
+        .execute_batch(
+            "DROP INDEX IF EXISTS idx_saved_searches_sidebar;
+             DROP TABLE saved_searches;",
+        )
+        .expect("remove saved_searches table fixture");
+    let before_paths = user_visible_paths(repo.path());
+
+    assert_db_error(list_saved_searches(path_string(repo.path())));
+    assert_db_error(create_saved_search(
+        path_string(repo.path()),
+        create_request("Finance PDFs"),
+    ));
+
+    assert!(!table_exists(repo.path(), "saved_searches"));
+    assert_eq!(user_visible_paths(repo.path()), before_paths);
+    assert_eq!(
+        fs::read(repo.path().join("README.md")).expect("read user readme"),
+        b"user readme"
+    );
 }
 
 #[test]
