@@ -1,0 +1,81 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`4-1/task-13`
+- Task：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-13-c2-03-failure-edge.md`
+- 代码范围：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/**`
+- 禁止触碰：`/Users/as/Ai-Project/project/AreaMatrix/apps/**`
+
+三、完成度摘要
+
+- 已覆盖项数：6
+- 未覆盖项数：0
+- 通过项数：5
+- 不通过项数：1
+- 阻塞项数：1
+
+四、逐项验收结果
+
+- 覆盖空态、非法输入、权限、IO/DB 错误和错误码映射
+- 结果：通过
+- 证据：空 repo list 无写入、非法 name/query/scope/id/repoPath、DB corruption、DB permission 测试均存在并通过；`CoreError::Config` / `Db` 映射有 `to_error_mapping()` 断言。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/saved_search_implementation.rs:145`、`:187`、`:280`、`:378`、`:405`
+
+- 失败不留下半成品
+- 结果：通过
+- 证据：create/update/delete 用事务或单语句写入；强制 DB trigger 失败后断言 `saved_searches/files/change_log/staging` 快照不变。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/db/saved_search.rs:28`、`:62`、`:105`；`/Users/as/Ai-Project/project/AreaMatrix/core/tests/saved_search_implementation.rs:331`
+
+- 隐私/AI/远程调用默认关闭、密钥不入日志
+- 结果：通过
+- 证据：C2-03 文档定义无文件系统变化；测试断言 `ai_enabled=false`，且 `.areamatrix/ai`、`remote`、`secrets` 不存在。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-2-experience/C2-03-saved-search-crud.md:24`；`/Users/as/Ai-Project/project/AreaMatrix/core/tests/saved_search_implementation.rs:457`
+
+- 不得吞错或静默降级
+- 结果：通过
+- 证据：入口显式返回 `CoreResult`，校验失败走 `Config`，DB 写入/读取失败走 `Db`；未发现生产代码 `unwrap()` / `expect()` / `panic!()`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/search/saved_search.rs:96`、`:121`、`:141`、`:162`
+
+- 完成标准：失败路径有明确返回、可测试证据和用户文件安全保证
+- 结果：通过
+- 证据：UDL 暴露 C2-03 API；实现只写 `saved_searches`，测试覆盖用户文件不被移动/删除、`change_log` 不写、staging 不变。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:83`；`/Users/as/Ai-Project/project/AreaMatrix/core/tests/saved_search_implementation.rs:220`
+
+- 完成标准：高风险路径具备可回滚或可恢复说明
+- 结果：不通过
+- 证据：代码和测试已有回滚证据，但任务要求验证命令 `./dev check all` 未通过，不能按验收规则判定完成。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-4.md:388`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，`saved_search.rs` 238 行、`db/saved_search.rs` 211 行，未超 500 行；函数拆分清楚。
+- 注释 / rustdoc / 文档同步：通过，public C2-03 API 有 rustdoc 与 `# Errors`；Core API、UDL、control map 对齐。
+- 错误处理与边界处理：通过，未发现生产路径 `unwrap()` / `expect()` / `panic!()`；失败显式返回 `Config` / `Db`。
+- 测试与验证覆盖：不通过，Rust 测试覆盖充足，但 manifest 必跑 `./dev check all` 失败。
+- 占位、硬编码、mock-only、一次性实现检查：通过，实际连接 `db::create_saved_search_row` / `update` / `delete` / `list`，不是 mock-only。
+
+六、阻塞项
+
+- P0：必需验证命令失败，不能视为完成
+- 说明：`./dev check all` 在 macOS checks 阶段失败，脚本明确报 `xcodebuild test failed for a non-sandbox reason`，错误为 Xcode `IDESimulatorFoundation` 插件加载失败，缺少符号 `DVTDownloads.DownloadableAssetType.developerDocumentation`，并提示运行 `xcodebuild -runFirstLaunch`。
+- 绝对路径：`/Users/as/Ai-Project/project/AreaMatrix`
+- 行号：manifest 验证要求在 `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-4.md:388`
+- 为什么导致不通过：验收规则要求必须执行 task manifest 的 validation；该命令非通过状态，且不是可接受的 sandbox fallback。
+
+七、验证情况
+
+- 已运行：`./dev check all`
+- 已通过：governance、skills、task-loop、prompt doctor、git diff check、`cargo fmt --all -- --check`、`cargo clippy --all-targets --all-features -- -D warnings`、`cargo test --workspace`
+- 已通过的相关测试：`saved_search_implementation` 9 tests passed，`saved_search_contract_api` 通过
+- 失败：macOS `xcodebuild test`
+- 缺失：无完整通过的 `./dev check all` 结果；因此缺少最终验收通过证据
+- Forbidden Touches：`git diff --name-only -- apps` 无输出，未发现 `apps/**` 被触碰
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。核心实现和 Rust 证据基本满足 C2-03 failure-edge，但必需验证命令失败，按“无法证明通过，就判定不通过”处理。
+
+VERIFY_RESULT: FAIL

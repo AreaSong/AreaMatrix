@@ -1,0 +1,40 @@
+一、执行结论
+
+- 未完成
+- 原因：C2-03 功能与专项测试已通过，但任务指定验证 `./dev check all` 仍失败，失败点是本机 Xcode 系统插件/PrivateFramework 版本不匹配，不是 C2-03 Rust 源码失败。
+
+二、执行范围
+
+- 单任务：`4-1/task-13`
+- 当前源码改动： [saved_search_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/saved_search_implementation.rs)
+- 本轮未触碰 `apps/**`；`git diff --name-only -- apps` 和 `git status --short -- apps` 均无输出。
+- 工作区另有既有 task-loop 运行状态：`tasks/prompts/_shared/progress.json`、`.codex/task-loop-logs/20260511_225940/`、`.codex/task-loop-runs/20260511_225940/`，我未回退。
+
+三、完成情况
+
+- 空态、非法输入、权限、IO/DB 错误和错误码映射：通过，测试覆盖见 [saved_search_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/saved_search_implementation.rs:187)、[saved_search_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/saved_search_implementation.rs:281)、[saved_search_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/saved_search_implementation.rs:407)。
+- 失败不留下半成品：通过，DB insert/update/delete 失败后 snapshot 不变，见 [saved_search_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/saved_search_implementation.rs:332)。
+- 隐私/AI/远程调用默认关闭、密钥不入日志：通过，见 [saved_search_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/saved_search_implementation.rs:458)。
+- 不吞错或静默降级：通过，API 校验和 DB 错误显式返回，见 [saved_search.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/search/saved_search.rs:96)、[saved_search.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/search/saved_search.rs:141)、[saved_search.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/search/saved_search.rs:162)。
+- Forbidden Touches：未触碰。
+
+四、工程质量
+
+- 结构清晰：API 校验层在 `core/src/search/saved_search.rs`，DB 持久化在 `core/src/db/saved_search.rs`。
+- 错误处理明确：`Config` / `Db` 映射、事务写入、缺失记录、损坏 DB、权限失败均有测试证据。
+- 无占位、硬编码通过、mock-only 或一次性实现。
+- UDL 暴露 create/update/delete/list，见 [area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:83)。
+
+五、验证情况
+
+- `cargo test --manifest-path core/Cargo.toml --test saved_search_contract_api --test saved_search_implementation`：通过，14/14。
+- `./dev check all`：失败，退出 code 70。
+- 已通过阶段：governance、skills、task-loop、prompt doctor、diff check、Rust fmt、clippy、`cargo test --workspace`、UniFFI release build。
+- 失败阶段：macOS `xcodebuild test`，`IDESimulatorFoundation` 加载失败，缺失符号来自 `/Library/Developer/PrivateFrameworks/DVTDownloads.framework`。
+- 已尝试 `xcodebuild -runFirstLaunch`：失败，退出 code 75，输出 `Install Failed: Failed to create install request.`
+- 当前 Xcode：`Xcode 26.4.1 (17E202)`；`com.apple.pkg.XcodeSystemResources` 显示 `26.2.0...`，存在系统级 Xcode 资源版本漂移。
+
+六、风险与后续
+
+- 剩余阻塞：必须修复本机 Xcode system content / PrivateFramework 不匹配后，重新跑 `./dev check all`。
+- 建议下一个动作：在可执行系统级修复的终端环境中重新安装/修复 Xcode command line system content，再重跑本任务验证。当前仓库内没有可安全修改的源码点能修复这个 `xcodebuild` 插件加载问题。

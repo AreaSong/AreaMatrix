@@ -1,0 +1,42 @@
+一、执行结论
+
+- 未完成。
+- C2-03 功能/失败边界证据已满足，但 manifest 必需验证 `./dev check all` 仍失败，按规则不能标记完成。
+
+二、执行范围
+
+- 单任务：`4-1/task-13`
+- 已有任务改动： [core/tests/saved_search_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/saved_search_implementation.rs:188)
+- Task-loop 状态改动：`tasks/prompts/_shared/progress.json`
+- Forbidden Touches：未触碰，`git diff --name-only -- apps` 无输出。
+
+三、完成情况
+
+- 空态：已覆盖，空 repo list 不写入，见 [core/tests/saved_search_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/saved_search_implementation.rs:188)。
+- 非法输入/错误码映射：已覆盖 duplicate、invalid query、invalid scope、空名、超长名、空 repo、非法 id，见 [core/tests/saved_search_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/saved_search_implementation.rs:281)。
+- DB 写失败无半成品：已覆盖 insert/update/delete 触发器失败后 snapshot 不变，见 [core/tests/saved_search_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/saved_search_implementation.rs:331)。
+- DB 损坏/权限失败与用户文件安全：已覆盖，见 [core/tests/saved_search_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/saved_search_implementation.rs:379) 和 [core/tests/saved_search_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/saved_search_implementation.rs:407)。
+- AI/远程/密钥边界：已覆盖 `ai_enabled=false` 且无 `.areamatrix/ai|remote|secrets`，见 [core/tests/saved_search_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/saved_search_implementation.rs:457)。
+
+四、工程质量
+
+- 代码结构仍限定在 C2-03 测试证据；未扩到相邻能力，未改 `apps/**`。
+- 测试文件 497 行，未超过 500 行门禁。
+- 没有引入 mock-only、硬编码通过态或吞错路径。
+- High 风险记录：影响面是 saved-search 元数据与 DB 失败边界；回滚方式是撤回本任务测试改动，不涉及用户文件删除/移动/覆盖。
+
+五、验证情况
+
+- 通过：`cargo fmt --all -- --check`
+- 通过：`cargo test --workspace saved_search -- --nocapture`，C2-03 contract 5 个、implementation 9 个测试通过。
+- 运行但失败：`./dev check all`，退出码 70。
+- `./dev check all` 已通过到：governance、skills、task-loop、prompt doctor、diff check、core fmt/clippy/test、macOS prerequisite、Core 双架构 release build、UniFFI Swift bindings 生成。
+- 失败点：macOS `xcodebuild test`，`IDESimulatorFoundation.framework` 加载失败，缺失 `DVTDownloads.DownloadableAssetType.developerDocumentation` 符号。
+- 环境修复尝试失败：`xcodebuild -checkFirstLaunchStatus` 退出 69；`xcodebuild -runFirstLaunch` 退出 75，输出 `Install Failed: Failed to create install request.`
+- 补跑通过：SwiftFormat `0/226 files require formatting, 3 files skipped`；SwiftLint `0 violations, 0 serious in 228 files`。
+
+六、风险与后续
+
+- 剩余 P0 阻塞不是 C2-03 产品代码，而是本机 Xcode system content / `/Library/Developer/PrivateFrameworks/DVTDownloads.framework` 与当前 Xcode 不匹配。
+- 当前任务不能进入 completed。下一个动作必须先修复 Xcode first-launch/system content 或重装/修复 Xcode 组件，然后重跑 `./dev check all` 和本任务 verify。
+

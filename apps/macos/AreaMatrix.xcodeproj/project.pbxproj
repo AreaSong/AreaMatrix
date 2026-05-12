@@ -925,7 +925,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "set -euo pipefail\nexport MACOSX_DEPLOYMENT_TARGET=\"${MACOSX_DEPLOYMENT_TARGET:-14.0}\"\nif [ \"${CONFIGURATION:-Debug}\" = \"Release\" ]; then\n  cargo build --manifest-path \"${SRCROOT}/../../core/Cargo.toml\" --target aarch64-apple-darwin --release\nelse\n  cargo build --manifest-path \"${SRCROOT}/../../core/Cargo.toml\" --target aarch64-apple-darwin\nfi\n";
+			shellScript = "set -euo pipefail\nexport PATH=\"$HOME/.cargo/bin:/opt/homebrew/bin:/usr/local/bin:$PATH\"\nexport MACOSX_DEPLOYMENT_TARGET=\"${MACOSX_DEPLOYMENT_TARGET:-14.0}\"\nif ! command -v cargo >/dev/null 2>&1; then\n  echo \"error: cargo not found. Install Rust or add cargo to PATH for Xcode Run Script phases.\" >&2\n  exit 127\nfi\nif [ \"${CONFIGURATION:-Debug}\" = \"Release\" ]; then\n  cargo build --manifest-path \"${SRCROOT}/../../core/Cargo.toml\" --target aarch64-apple-darwin --release\nelse\n  cargo build --manifest-path \"${SRCROOT}/../../core/Cargo.toml\" --target aarch64-apple-darwin\nfi\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 

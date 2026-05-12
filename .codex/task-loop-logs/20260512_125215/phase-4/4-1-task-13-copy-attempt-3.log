@@ -1,0 +1,38 @@
+一、执行结论
+
+未完成。C2-03 Core failure-edge 实现和定向测试已通过，但任务要求的 `./dev check all` 仍失败，不能判定完成。
+
+二、执行范围
+
+单任务：`4-1/task-13`
+
+修改文件清单：
+- [core/src/db/saved_search.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/db/saved_search.rs:105)
+- [core/tests/saved_search_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/saved_search_implementation.rs:191)
+
+三、完成情况
+
+核对清单中空态、非法输入、权限/DB 错误、错误码映射、失败无半成品、无 AI/远程/密钥副作用、不得吞错，都有 Core 测试证据覆盖。`delete_saved_search_row` 已进入事务路径，失败会回滚；测试覆盖 create/update/delete 写失败后 snapshot 不变。
+
+Forbidden Touches：未修改 `apps/**`。但当前 Git index 仍残留范围外 staged 项，且当前沙箱无法写 `.git` 清理：`touch .git/codex-write-test` 返回 `Operation not permitted`。工作树按 `HEAD` 对比时，`scripts/**` 和 `tasks/prompts/_shared/progress.json` 已无内容 diff；但 `git status`/cached diff 仍会显示历史 staged 残留。
+
+四、工程质量
+
+Core 代码结构集中在 saved-search DB 事务与 failure-edge 测试，没有 mock-only、硬编码通过态或静默吞错。Public Rust API 的 rustdoc 和错误说明已存在。边界测试覆盖 DB 损坏、权限失败、非法输入、空列表、写入失败回滚、用户文件/staging 不变、AI/remote/secrets 不产生副作用。
+
+五、验证情况
+
+已运行：
+- `cargo test --test saved_search_implementation`：通过，9/9。
+- `./dev check all`：失败。
+  - 已通过部分：governance、skills、task-loop、prompt doctor、diff check、`cargo fmt`、`cargo clippy`、`cargo test --workspace`、UniFFI/core release build。
+  - 失败部分：macOS XCTest gate。`xcodebuild test` 被 `testmanagerd.control` sandbox restriction 阻断，fallback `xcrun xctest` 后 `AreaMatrixPerfTests.testApplicationLaunchToFirstScreenBaselineUnderStage1Threshold` 失败，错误为 `unexpectedFirstScreenRoute`。该失败点在 `apps/macos/**`，不属于本 task 可改范围。
+
+六、风险与后续
+
+剩余阻塞：
+- P0：`./dev check all` 必需验证未通过。
+- P1：Git index 仍有范围外 staged 残留，当前沙箱不能写 `.git` 修复 index。
+
+建议下一个动作：单独开一个允许触碰 `apps/**` / dev runner / Git index 的修复任务，处理 macOS perf route 失败和 staged 证据残留；当前 C2-03 Core 产品改动本身已具备通过证据，但本任务按门禁仍不能标记 completed。
+

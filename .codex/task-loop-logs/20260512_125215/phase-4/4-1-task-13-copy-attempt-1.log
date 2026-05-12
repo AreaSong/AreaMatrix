@@ -1,0 +1,55 @@
+一、执行结论
+
+未完成。C2-03 Core failure-edge 已收口并通过目标 Rust 验证，但任务要求的 `./dev check all` 未全通过，阻塞在 macOS 侧 `AreaMatrixPerfTests.testApplicationLaunchToFirstScreenBaselineUnderStage1Threshold`，错误为 `unexpectedFirstScreenRoute`。该失败位于 `apps/**`，属于本任务 Forbidden Touches，未修改。
+
+二、执行范围
+
+单任务：`4-1/task-13`，仅核验并收口 C2-03 saved-search-crud failure-edge。
+
+任务相关修改文件：
+
+- [core/src/db/saved_search.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/db/saved_search.rs:105)：`delete_saved_search_row` 改为事务执行，删除失败不会留下半成品。
+- [core/tests/saved_search_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/saved_search_implementation.rs:37)：新增/强化空态、非法输入、DB 失败、权限、用户文件安全、无 AI/远程副作用测试。
+
+三、完成情况
+
+核对清单：
+
+- 空态、非法输入、权限、IO/DB 错误和错误码映射：已覆盖，目标测试通过。
+- 写入失败不留下半成品：已覆盖，使用 SQLite trigger 强制 insert/update/delete 失败并比对快照。
+- 隐私/AI/远程调用默认关闭、密钥不入日志：已覆盖，断言 `ai_enabled=false` 且不创建 `.areamatrix/ai`、`remote`、`secrets`。
+- 不吞错、不静默降级：已覆盖，非法输入走 `Config`，DB/缺失/持久化失败走 `Db`。
+
+完成标准：
+
+- C2-03 失败路径有明确返回、可测试证据和用户文件安全保证：已满足。
+- 高风险路径具备可回滚或可恢复说明：Core 层以 DB transaction + 测试快照证明；但仓库总验证仍被 macOS perf 测试阻塞。
+
+Forbidden Touches：未触碰 `apps/**`。只读查看了 `apps/macos/AreaMatrixTests/AreaMatrixPerfTests.swift` 以定位 `./dev check all` 失败来源。
+
+四、工程质量
+
+结构保持在现有 `db::saved_search` 和 `core/tests` 模式内，没有新增抽象、mock-only 路径或硬编码成功态。新增测试直接走真实 Core API、真实 SQLite、真实临时 repo，并比对 `saved_searches`、`files`、`change_log`、`staging` 状态。Public Rust API/UDL 未扩展，既有 rustdoc 合同保持一致。
+
+五、验证情况
+
+已通过：
+
+- `cd core && cargo test --test saved_search_implementation -- --nocapture`：9 passed
+- `cd core && cargo test --test saved_search_contract_api -- --nocapture`：5 passed
+- `cd core && cargo fmt --all -- --check`
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`
+- `cd core && cargo test --workspace`
+- `./dev check all` 中的 governance、skills、task-loop、prompt doctor、diff check、core checks 均通过
+
+失败：
+
+- `./dev check all`：macOS tests 阶段失败，`AreaMatrixTests` 484 tests 中 1 failure：
+  `AreaMatrixPerfTests.testApplicationLaunchToFirstScreenBaselineUnderStage1Threshold` -> `unexpectedFirstScreenRoute`
+
+六、风险与后续
+
+剩余风险：总验证 gate 未通过，不能把 task 标记为 completed。失败点不在 C2-03 Core，也不在本任务允许修改范围内。
+
+建议下一步：先用单独任务处理 macOS perf first-screen route 失败，或确认该失败为环境/既有阻塞后再重新跑 `./dev check all` 和 verify-ready；不要直接推进 `4-1/task-14`。  
+

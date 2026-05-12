@@ -1,0 +1,56 @@
+一、执行结论
+
+未完成。C2-03 failure-edge 本身的 Core 实现/测试证据已通过复核，但 manifest 必需验证 `./dev check all` 仍在 macOS `xcodebuild test` 阶段失败，不能按规则宣称完成。
+
+二、执行范围
+
+单任务：`4-1/task-13`
+
+产品范围内修改文件：
+- `core/tests/saved_search_implementation.rs`
+
+运行状态/evidence 文件：
+- `tasks/prompts/_shared/progress.json`
+- `.codex/task-loop-logs/20260511_225940/`
+- `.codex/task-loop-runs/20260511_225940/`
+
+三、完成情况
+
+核对清单：
+- 空态、非法输入、权限、IO/DB 错误和错误码映射：通过，窄测试覆盖。
+- 失败不留下半成品：通过，create/update/delete DB trigger 失败后 snapshot 不变。
+- 隐私/AI/远程调用默认关闭、密钥不入日志：通过，测试断言 `ai_enabled=false` 且无 `.areamatrix/ai`、`remote`、`secrets`。
+- 不吞错或静默降级：通过，API 返回 `CoreResult`，失败映射到 `Config` / `Db`。
+
+完成标准：
+- C2-03 失败路径有明确返回、可测试证据和用户文件安全保证：通过。
+- 高风险路径具备可回滚或可恢复说明：代码路径只写 `saved_searches` 元数据；失败由 SQLite 事务回滚，测试证明不改用户文件、`files`、`change_log`、staging。
+
+Forbidden Touches：
+- 未触碰 `apps/**`。
+
+四、工程质量
+
+代码结构清晰，现有实现保持 API 校验层与 DB 持久化层分离；本轮未引入 mock-only、硬编码通过态或一次性脚本。测试中的 `expect` 都有明确上下文信息；生产路径未发现为本任务新增的 `unwrap/expect/panic` 问题。
+
+五、验证情况
+
+已运行并通过：
+- `cd core && cargo test --test saved_search_implementation --test saved_search_contract_api`：14 tests passed。
+- `git diff --check -- core/tests/saved_search_implementation.rs`：通过。
+- `./dev check all` 的前置阶段通过：governance、skills、task-loop check、prompt doctor、diff check、cargo fmt、cargo clippy、cargo test、UniFFI/core release build。
+
+失败：
+- `./dev check all` 最终失败于 `xcodebuild test`，exit code 70。
+- 错误：`com.apple.dt.IDESimulatorFoundation` 插件加载失败，`DVTDownloads.framework` 符号不匹配；日志建议运行 `xcodebuild -runFirstLaunch`。
+- 已尝试 `xcodebuild -runFirstLaunch`，失败：`Install Failed: Failed to create install request.`
+
+六、风险与后续
+
+剩余阻塞是本机 Xcode/系统 Developer 内容损坏或未完成初始化，不是 C2-03 Core 代码可在允许路径内修复的问题。建议下一个动作不是改代码，而是修复 Xcode 安装/系统内容后重跑：
+
+```bash
+./dev check all
+```
+
+当前不能标记 `4-1/task-13` completed。  

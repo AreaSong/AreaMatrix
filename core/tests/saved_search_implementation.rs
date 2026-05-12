@@ -1,10 +1,13 @@
-use std::{fs, path::Path};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+};
 
 use area_matrix_core::{
     create_saved_search, delete_saved_search, init_repo, list_saved_searches, update_saved_search,
-    CoreError, CreateSavedSearchRequest, OverviewOutput, RepoInitMode, RepoInitOptions,
-    SavedSearchQuery, SearchFilter, SearchScope, SearchSort, SearchTagMatchMode, StorageMode,
-    UpdateSavedSearchRequest,
+    CoreError, CreateSavedSearchRequest, ErrorKind, ErrorRecoverability, ErrorSeverity,
+    OverviewOutput, RepoInitMode, RepoInitOptions, SavedSearchQuery, SearchFilter, SearchScope,
+    SearchSort, SearchTagMatchMode, StorageMode, UpdateSavedSearchRequest,
 };
 use pretty_assertions::assert_eq;
 use rusqlite::{params, Connection};
@@ -29,6 +32,14 @@ fn initialized_repo() -> tempfile::TempDir {
 
 fn open_db(repo: &Path) -> Connection {
     Connection::open(repo.join(".areamatrix/index.db")).expect("open repository database")
+}
+
+#[derive(Debug, Eq, PartialEq)]
+struct SavedSearchSafetySnapshot {
+    saved_searches: Vec<(i64, String, String)>,
+    files: Vec<(i64, String, String, String)>,
+    change_log_count: i64,
+    staging_entries: Vec<PathBuf>,
 }
 
 fn saved_query() -> SavedSearchQuery {
@@ -84,6 +95,75 @@ fn active_file_count(repo: &Path) -> i64 {
         .expect("count active files")
 }
 
+fn saved_search_snapshot(repo: &Path) -> SavedSearchSafetySnapshot {
+    SavedSearchSafetySnapshot {
+        saved_searches: saved_search_rows(repo),
+        files: file_rows(repo),
+        change_log_count: change_log_count(repo),
+        staging_entries: directory_entries(&repo.join(".areamatrix/staging")),
+    }
+}
+
+fn saved_search_rows(repo: &Path) -> Vec<(i64, String, String)> {
+    let connection = open_db(repo);
+    let mut statement = connection
+        .prepare("SELECT id, name, query_json FROM saved_searches ORDER BY id")
+        .expect("prepare saved search rows query");
+    statement
+        .query_map([], |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)))
+        .expect("query saved search rows")
+        .map(|row| row.expect("read saved search row"))
+        .collect()
+}
+
+fn file_rows(repo: &Path) -> Vec<(i64, String, String, String)> {
+    let connection = open_db(repo);
+    let mut statement = connection
+        .prepare("SELECT id, path, category, status FROM files ORDER BY id")
+        .expect("prepare file rows query");
+    statement
+        .query_map([], |row| {
+            Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?))
+        })
+        .expect("query file rows")
+        .map(|row| row.expect("read file row"))
+        .collect()
+}
+
+fn directory_entries(path: &Path) -> Vec<PathBuf> {
+    if !path.exists() {
+        return Vec::new();
+    }
+    let mut entries: Vec<PathBuf> = fs::read_dir(path)
+        .expect("read directory")
+        .map(|entry| entry.expect("read directory entry").path())
+        .collect();
+    entries.sort();
+    entries
+}
+
+fn assert_config_error<T: std::fmt::Debug>(result: Result<T, CoreError>) {
+    let error = result.expect_err("operation should fail with Config");
+    assert!(matches!(error, CoreError::Config { .. }));
+    let mapping = error.to_error_mapping();
+    assert_eq!(mapping.kind, ErrorKind::Config);
+    assert_eq!(mapping.severity, ErrorSeverity::Medium);
+    assert_eq!(
+        mapping.recoverability,
+        ErrorRecoverability::UserActionRequired
+    );
+}
+
+fn assert_db_error<T: std::fmt::Debug>(result: Result<T, CoreError>) {
+    let error = result.expect_err("operation should fail with Db");
+    assert!(matches!(error, CoreError::Db { .. }));
+    assert_eq!(error.to_error_mapping().kind, ErrorKind::Db);
+}
+
+fn assert_create_config_error(repo: &Path, request: CreateSavedSearchRequest) {
+    assert_config_error(create_saved_search(path_string(repo), request));
+}
+
 fn insert_active_file(repo: &Path) -> i64 {
     let file_path = repo.join("finance/invoice.pdf");
     fs::create_dir_all(file_path.parent().expect("fixture has parent directory"))
@@ -106,6 +186,17 @@ fn insert_active_file(repo: &Path) -> i64 {
         )
         .expect("insert active file row");
     connection.last_insert_rowid()
+}
+
+#[test]
+fn saved_search_implementation_empty_repo_lists_empty_without_writes() {
+    let repo = initialized_repo();
+    let before = saved_search_snapshot(repo.path());
+
+    let listed = list_saved_searches(path_string(repo.path())).expect("list saved searches");
+
+    assert!(listed.is_empty());
+    assert_eq!(saved_search_snapshot(repo.path()), before);
 }
 
 #[test]
@@ -196,22 +287,29 @@ fn saved_search_implementation_rejects_duplicate_names_invalid_query_and_missing
     create_saved_search(path_string(repo.path()), create_request("Finance PDFs"))
         .expect("create saved search");
 
-    let duplicate = create_saved_search(path_string(repo.path()), create_request("finance pdfs"));
-    assert!(matches!(duplicate, Err(CoreError::Config { .. })));
-    assert_eq!(saved_search_count(repo.path()), 1);
+    assert_create_config_error(repo.path(), create_request("finance pdfs"));
 
     let mut invalid_query = create_request("Bad query");
     invalid_query.query.query = "kindd:pdf".to_owned();
-    let invalid = create_saved_search(path_string(repo.path()), invalid_query);
-    assert!(matches!(invalid, Err(CoreError::Config { .. })));
-    assert_eq!(saved_search_count(repo.path()), 1);
+    assert_create_config_error(repo.path(), invalid_query);
 
     let mut invalid_scope = create_request("Bad scope");
     invalid_scope.query.filter.scope = SearchScope::CurrentNode;
     invalid_scope.query.filter.current_path = None;
-    let invalid = create_saved_search(path_string(repo.path()), invalid_scope);
-    assert!(matches!(invalid, Err(CoreError::Config { .. })));
-    assert_eq!(saved_search_count(repo.path()), 1);
+    assert_create_config_error(repo.path(), invalid_scope);
+
+    assert_create_config_error(repo.path(), create_request(" "));
+    let mut invalid_name = create_request("Too long");
+    invalid_name.name = "a".repeat(65);
+    assert_create_config_error(repo.path(), invalid_name);
+
+    let mut invalid_icon = create_request("Invalid icon");
+    invalid_icon.icon = Some(" ".to_owned());
+    assert_create_config_error(repo.path(), invalid_icon);
+
+    let mut invalid_color = create_request("Invalid color");
+    invalid_color.color = Some("a".repeat(65));
+    assert_create_config_error(repo.path(), invalid_color);
 
     let missing_update = update_saved_search(
         path_string(repo.path()),
@@ -224,11 +322,117 @@ fn saved_search_implementation_rejects_duplicate_names_invalid_query_and_missing
             pinned: false,
         },
     );
-    assert!(matches!(missing_update, Err(CoreError::Db { .. })));
+    assert_db_error(missing_update);
 
     let missing_delete = delete_saved_search(path_string(repo.path()), 404);
-    assert!(matches!(missing_delete, Err(CoreError::Db { .. })));
+    assert_db_error(missing_delete);
+    assert_config_error(delete_saved_search(path_string(repo.path()), 0));
+    assert_config_error(list_saved_searches(String::new()));
     assert_eq!(saved_search_count(repo.path()), 1);
+}
+
+#[test]
+fn saved_search_implementation_write_failures_do_not_leave_partial_records() {
+    let repo = initialized_repo();
+    let saved = create_saved_search(path_string(repo.path()), create_request("Finance PDFs"))
+        .expect("create saved search");
+    let before = saved_search_snapshot(repo.path());
+
+    open_db(repo.path())
+        .execute_batch(
+            "CREATE TRIGGER saved_searches_abort_insert
+               BEFORE INSERT ON saved_searches
+               BEGIN
+                 SELECT RAISE(ABORT, 'forced saved_search insert failure');
+               END;
+             CREATE TRIGGER saved_searches_abort_update
+               BEFORE UPDATE ON saved_searches
+               BEGIN
+                 SELECT RAISE(ABORT, 'forced saved_search update failure');
+               END;
+             CREATE TRIGGER saved_searches_abort_delete
+               BEFORE DELETE ON saved_searches
+               BEGIN
+                 SELECT RAISE(ABORT, 'forced saved_search delete failure');
+               END;",
+        )
+        .expect("install saved search failure triggers");
+
+    assert_db_error(create_saved_search(
+        path_string(repo.path()),
+        create_request("Blocked insert"),
+    ));
+    assert_db_error(update_saved_search(
+        path_string(repo.path()),
+        UpdateSavedSearchRequest {
+            id: saved.id,
+            name: "Blocked update".to_owned(),
+            query: saved_query(),
+            icon: Some("folder".to_owned()),
+            color: Some("green".to_owned()),
+            pinned: true,
+        },
+    ));
+    assert_db_error(delete_saved_search(path_string(repo.path()), saved.id));
+
+    assert_eq!(saved_search_snapshot(repo.path()), before);
+}
+
+#[test]
+fn saved_search_implementation_db_corruption_preserves_user_files_and_staging() {
+    let repo = tempfile::tempdir().expect("create corrupted repository directory");
+    let user_file = repo.path().join("finance/invoice.pdf");
+    fs::create_dir_all(user_file.parent().expect("fixture has parent")).expect("create user dir");
+    fs::write(&user_file, b"user file bytes").expect("write user file");
+    let metadata = repo.path().join(".areamatrix");
+    fs::create_dir(&metadata).expect("create metadata directory");
+    fs::create_dir(metadata.join("staging")).expect("create staging directory");
+    fs::create_dir(metadata.join("generated")).expect("create generated directory");
+    fs::write(metadata.join("index.db"), b"not a sqlite database")
+        .expect("write corrupted database fixture");
+
+    assert_db_error(create_saved_search(
+        path_string(repo.path()),
+        create_request("Finance PDFs"),
+    ));
+    assert_db_error(list_saved_searches(path_string(repo.path())));
+
+    assert_eq!(
+        fs::read(&user_file).expect("read user file after failure"),
+        b"user file bytes"
+    );
+    assert!(directory_entries(&metadata.join("staging")).is_empty());
+    assert!(directory_entries(&metadata.join("generated")).is_empty());
+}
+
+#[cfg(unix)]
+#[test]
+fn saved_search_implementation_db_permission_error_is_structured_and_non_mutating() {
+    use std::os::unix::fs::PermissionsExt;
+
+    let repo = initialized_repo();
+    create_saved_search(path_string(repo.path()), create_request("Finance PDFs"))
+        .expect("create saved search");
+    let before = saved_search_snapshot(repo.path());
+    let db_path = repo.path().join(".areamatrix/index.db");
+    let original_permissions = fs::metadata(&db_path)
+        .expect("read database permissions")
+        .permissions();
+    let mut denied_permissions = original_permissions.clone();
+    denied_permissions.set_mode(0o000);
+    fs::set_permissions(&db_path, denied_permissions).expect("remove database permissions");
+
+    if fs::File::open(&db_path).is_ok() {
+        fs::set_permissions(&db_path, original_permissions).expect("restore database permissions");
+        return;
+    }
+
+    let result = list_saved_searches(path_string(repo.path()));
+
+    fs::set_permissions(&db_path, original_permissions).expect("restore database permissions");
+
+    assert_db_error(result);
+    assert_eq!(saved_search_snapshot(repo.path()), before);
 }
 
 #[test]
@@ -254,26 +458,43 @@ fn saved_search_implementation_sorts_pinned_first_then_unpinned_by_name() {
 }
 
 #[test]
-fn saved_search_implementation_propagates_db_failures_as_structured_db_errors() {
+fn saved_search_implementation_has_no_ai_remote_or_secret_side_effects() {
     let repo = initialized_repo();
-    open_db(repo.path())
-        .execute("DROP TABLE saved_searches", [])
-        .expect("drop saved_searches table");
-    open_db(repo.path())
-        .execute(
-            "CREATE TABLE saved_searches (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL,
-                query_json TEXT NOT NULL,
-                pinned INTEGER NOT NULL,
-                created_at INTEGER NOT NULL,
-                updated_at INTEGER NOT NULL
-            )",
+    let before = saved_search_snapshot(repo.path());
+
+    let saved = create_saved_search(path_string(repo.path()), create_request("Finance PDFs"))
+        .expect("create saved search");
+    let mut invalid_query = create_request("Bad query");
+    invalid_query.query.query = "kindd:pdf".to_owned();
+    assert_config_error(create_saved_search(path_string(repo.path()), invalid_query));
+
+    let ai_enabled: String = open_db(repo.path())
+        .query_row(
+            "SELECT value FROM repo_config WHERE key = 'ai_enabled'",
             [],
+            |row| row.get(0),
         )
-        .expect("create incompatible saved_searches table");
+        .expect("read ai_enabled config");
 
-    let result = create_saved_search(path_string(repo.path()), create_request("Finance PDFs"));
-
-    assert!(matches!(result, Err(CoreError::Db { .. })));
+    assert_eq!(ai_enabled, "false");
+    assert!(!repo.path().join(".areamatrix/ai").exists());
+    assert!(!repo.path().join(".areamatrix/remote").exists());
+    assert!(!repo.path().join(".areamatrix/secrets").exists());
+    assert_eq!(saved_search_snapshot(repo.path()).files, before.files);
+    assert_eq!(
+        saved_search_snapshot(repo.path()).change_log_count,
+        before.change_log_count
+    );
+    assert_eq!(
+        saved_search_snapshot(repo.path()).staging_entries,
+        before.staging_entries
+    );
+    assert_eq!(
+        list_saved_searches(path_string(repo.path()))
+            .expect("list saved searches")
+            .iter()
+            .map(|item| item.id)
+            .collect::<Vec<_>>(),
+        vec![saved.id]
+    );
 }

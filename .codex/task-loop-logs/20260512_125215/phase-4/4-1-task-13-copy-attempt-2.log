@@ -1,0 +1,41 @@
+一、执行结论
+
+- 未完成
+- 原因：C2-03 本地实现与局部测试已通过，但 Manifest 必需验证 `./dev check all` 仍失败，不能按规则标记完成。
+
+二、执行范围
+
+- 单任务：`4-1/task-13`
+- 修改文件清单：`core/src/db/saved_search.rs`、`core/tests/saved_search_implementation.rs`
+- 未触碰 `apps/**`；失败点位于 Forbidden Touches 范围内，未越界修改。
+
+三、完成情况
+
+- 空态、非法输入、权限、IO/DB 错误和错误码映射：通过，C2-03 局部测试覆盖并通过。
+- 失败不留下半成品：通过，create/update/delete 失败快照不变，DB corruption 后用户文件、staging、generated 保持安全。
+- 隐私/AI/远程调用：通过，测试确认 `ai_enabled = false`，不创建 `.areamatrix/ai`、`.areamatrix/remote`、`.areamatrix/secrets`。
+- 不吞错、不静默降级：通过，入口返回结构化 `CoreResult`，Config/Db 错误显式传播。
+- Forbidden Touches：通过，本轮没有修改 `apps/**`。
+
+四、工程质量
+
+- C2-03 结构清晰：API 校验、DB 事务、失败测试分层明确。
+- public Rust API 已有 rustdoc 和 `# Errors`。
+- 没发现 mock-only、硬编码成功态或一次性实现。
+- 但总门禁未过，所以工程质量最终判定不能 PASS。
+
+五、验证情况
+
+- 已运行：`cd core && cargo test --test saved_search_implementation --test saved_search_contract_api`
+  - 结果：通过，14 tests passed。
+- 已运行：`./dev check all`
+  - 已通过：governance、skills、task-loop、prompt doctor、`git diff --check`、Rust fmt/clippy/workspace tests。
+  - 失败：macOS XCTest fallback，484 tests 中 1 failure。
+  - 失败点：`apps/macos/AreaMatrixTests/AreaMatrixPerfTests.swift:182`
+  - 错误：`AreaMatrixPerfTests.testApplicationLaunchToFirstScreenBaselineUnderStage1Threshold` 抛出 `unexpectedFirstScreenRoute`。
+
+六、风险与后续
+
+- 剩余阻塞不是 C2-03 saved-search 代码路径，而是 `apps/**` 启动首屏性能测试；当前 task 明确禁止触碰 `apps/**`，所以不能在本任务内修。
+- 下一个动作应切到允许修改 `apps/**` 的任务或单独 repair，定位 `OnboardingModel.bootstrapIfNeeded()` 在 hostless perf fallback 下为什么没有进入 `.mainEmpty`。
+

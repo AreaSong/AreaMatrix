@@ -103,8 +103,11 @@ pub(crate) fn update_saved_search_row(
 }
 
 pub(crate) fn delete_saved_search_row(repo_path: &Path, saved_search_id: i64) -> CoreResult<()> {
-    let connection = open_saved_search_connection(repo_path)?;
-    let changed = connection
+    let mut connection = open_saved_search_connection(repo_path)?;
+    let tx = connection
+        .transaction()
+        .map_err(|error| CoreError::db(error.to_string()))?;
+    let changed = tx
         .execute(
             "DELETE FROM saved_searches WHERE id = ?1",
             params![saved_search_id],
@@ -113,7 +116,8 @@ pub(crate) fn delete_saved_search_row(repo_path: &Path, saved_search_id: i64) ->
     if changed == 0 {
         return Err(CoreError::db("saved search not found"));
     }
-    Ok(())
+    tx.commit()
+        .map_err(|error| CoreError::db(error.to_string()))
 }
 
 pub(crate) fn list_saved_search_rows(repo_path: &Path) -> CoreResult<Vec<SavedSearch>> {

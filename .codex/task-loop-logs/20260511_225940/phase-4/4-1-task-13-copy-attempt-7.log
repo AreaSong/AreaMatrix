@@ -1,0 +1,42 @@
+一、执行结论
+
+- 未完成
+- 原因：`4-1/task-13` 的 C2-03 功能与 targeted/full Rust 验证通过，但 manifest 唯一验证 `./dev check all` 仍失败，验收规则下不能判完成。
+
+二、执行范围
+
+- 单任务：`4-1/task-13`
+- 本轮未修改仓库代码；未触碰 `apps/**`。
+- 当前工作树已有相关改动：`core/tests/saved_search_implementation.rs`，用于补齐 saved search failure-edge 测试证据。
+- 另有 task-loop 运行状态/logs：`.codex/task-loop-logs/20260511_225940/`、`.codex/task-loop-runs/20260511_225940/`、`tasks/prompts/_shared/progress.json`。
+
+三、完成情况
+
+- 空态、非法输入、权限、IO/DB 错误和错误码映射：已覆盖，targeted tests 通过。
+- 失败不留下半成品：已覆盖，insert/update/delete 强制 DB 失败后 snapshot 保持一致。
+- 隐私 / AI / 远程调用默认关闭：已覆盖，测试断言 `ai_enabled=false` 且无 `.areamatrix/ai`、`remote`、`secrets`。
+- 不吞错或静默降级：已覆盖，`Config` / `Db` 明确返回。
+- Forbidden Touches：未触碰 `apps/**`。
+
+四、工程质量
+
+- C2-03 代码结构仍是 API 校验层、DB row 层、UDL 暴露、测试证据分离。
+- 没有新增 mock-only、硬编码通过态或一次性脚本。
+- 本轮没有改 `scripts/**`，因为上次失败点是验证环境/验证脚本层，但当前 task 的 Expected New Paths 只允许 `core/src/**`、`core/area_matrix.udl`、`core/tests/**`。
+
+五、验证情况
+
+- 通过：`cd core && cargo test --test saved_search_contract_api --test saved_search_implementation`，5 + 9 个测试通过。
+- 通过：`cd core && cargo fmt --all -- --check`
+- 通过：`cd core && cargo clippy --all-targets --all-features -- -D warnings`
+- 通过：`cd core && cargo test --workspace --quiet`
+- 失败：`./dev check all`，退出码 70，失败在 macOS `xcodebuild test`。
+- 失败证据：`/var/folders/bv/gtwkyczs3156pj4k13spg_3m0000gn/T/areamatrix-xcode-tests.z1p65fv3/xcodebuild-test.log`
+- 根因证据：`IDESimulatorFoundation` 期望 `/Library/Developer/PrivateFrameworks/DVTDownloads.framework` current version `24431.0.0`，本机实际为 `24224.0.0`，符号缺失。
+- 尝试恢复：`xcodebuild -runFirstLaunch` 失败，输出 `Install Failed: Failed to create install request.`
+
+六、风险与后续
+
+- 剩余阻塞是本机 Xcode / Developer 私有框架状态漂移，不是 C2-03 core 代码失败。
+- 在当前 task 范围内不能通过改 `core/**` 修复 `./dev check all`。
+- 下一步需要先修复本机 Xcode first-launch / Developer framework 安装状态，然后重新跑 `./dev check all`；验证通过前，`4-1/task-13` 仍不能标记 completed。

@@ -1,0 +1,42 @@
+一、执行结论
+
+- 未完成：C2-03 failure-edge 的代码/测试补齐已完成，但任务要求的 `./dev check all` 未全量通过，阻断点是本机 Xcode 插件加载失败，不是 Core / C2-03 测试失败。
+
+二、执行范围
+
+- 单任务：`4-1/task-13`
+- 修改文件：
+  - [core/tests/saved_search_failure_recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/saved_search_failure_recovery.rs:1)
+- 未触碰 `apps/**`。
+- 未修改 `core/area_matrix.udl`、`core/src/**` 或 docs；现有实现已满足行为，本次补齐 failure/recovery 可测试证据。
+- 工作区已有的 `tasks/prompts/_shared/progress.json` 和 `.codex/task-loop-runs/20260511_225940/` 保持未处理、未回滚。
+
+三、完成情况
+
+- 核对清单 1：已覆盖空态、非法输入、重复/缺失行、DB 损坏、DB 权限、DB 写失败、错误码映射。
+- 核对清单 2：已证明失败不留下 saved_search 半成品，不写 `change_log`，不改 active files，不产生 staging/final 用户文件副作用。
+- 核对清单 3：已证明 `ai_enabled=false`，不创建 `.areamatrix/ai`、`.areamatrix/remote`、`.areamatrix/secrets`。
+- 核对清单 4：新增测试要求失败显式返回 `Config` / `Db`，没有吞错或静默降级。
+- Forbidden Touches：未触碰。
+
+四、工程质量
+
+- 新增测试使用真实 temp repo、真实 SQLite、真实 Core API，不是 mock-only。
+- 通过快照比对验证 DB、用户可见文件、staging、generated 输出保持一致。
+- 未新增依赖，未扩大到相邻 C2-04 或 UI。
+- 生产代码无改动，因此无新增 public Rust API / rustdoc 需求。
+
+五、验证情况
+
+- `cd core && cargo test --test saved_search_failure_recovery`：通过，7 passed。
+- `cd core && cargo test --test saved_search_failure_recovery --test saved_search_contract_api --test saved_search_implementation`：通过，17 passed。
+- `cd core && cargo fmt --all -- --check`：通过。
+- `./dev check all`：失败。
+  - 已通过：governance、skills、task-loop、prompt doctor、diff check、core fmt、core clippy、`cargo test --workspace`、双架构 release core build、Swift bindings generation。
+  - 失败点：macOS `xcodebuild test`，日志显示 `IDESimulatorFoundation` 插件加载失败，`DVTDownloads` 缺少符号；命令判定为 non-sandbox reason，并提示运行 `xcodebuild -runFirstLaunch` 或修复/更新 Xcode 内容。
+
+六、风险与后续
+
+- 剩余风险：任务要求的全量 validation 未通过，因此不能标记最终完成。
+- 建议下一个任务：先修复本机 Xcode 环境后重跑 `./dev check all`；通过后再进入 `4-1/task-14`。
+

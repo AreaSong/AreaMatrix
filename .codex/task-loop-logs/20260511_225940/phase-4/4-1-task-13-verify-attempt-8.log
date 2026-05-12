@@ -1,0 +1,70 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`4-1/task-13`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-13-c2-03-failure-edge.md`
+- 验收代码范围：`core/src/**`、`core/area_matrix.udl`、`core/tests/**`
+- 禁止触碰范围：`apps/**`
+
+三、完成度摘要
+
+- 已覆盖项数：7
+- 未覆盖项数：0
+- 通过项数：6
+- 不通过项数：1
+- 阻塞项数：1
+
+四、逐项验收结果
+
+- 空态、非法输入、权限、IO/DB 错误和错误码映射：通过  
+  证据：`list_saved_searches` 空库无写入，非法 name/query/scope/id/repoPath 返回 `Config`，缺失 row/DB 故障返回 `Db`；测试覆盖在 `/Users/as/Ai-Project/project/AreaMatrix/core/tests/saved_search_implementation.rs:188`、`:281`、`:407`。
+
+- 写入/删除失败不留下半成品：通过  
+  证据：create/update/delete 使用事务或单表受控操作，trigger 强制失败后 snapshot 不变；测试在 `/Users/as/Ai-Project/project/AreaMatrix/core/tests/saved_search_implementation.rs:332`。
+
+- 隐私/AI/远程调用默认关闭、密钥不入日志：通过  
+  证据：C2-03 实现仅写 `saved_searches`，测试确认 `ai_enabled=false` 且未创建 `.areamatrix/ai`、`remote`、`secrets`；见 `/Users/as/Ai-Project/project/AreaMatrix/core/tests/saved_search_implementation.rs:458`。
+
+- 不吞错、不静默降级：通过  
+  证据：入口校验显式返回 `CoreError::Config`，DB 写入/读取失败显式返回 `CoreError::Db`；见 `/Users/as/Ai-Project/project/AreaMatrix/core/src/search/saved_search.rs:96`、`:121`、`:141`、`:162`，DB 映射见 `/Users/as/Ai-Project/project/AreaMatrix/core/src/db/saved_search.rs:183`、`:194`。
+
+- C2-03 失败路径有明确返回、可测试证据和用户文件安全保证：通过  
+  证据：UDL 暴露四个 C2-03 API，Rust public API 有 rustdoc 与 `# Errors`，测试确认 delete Smart List 不删除文件、不写 `change_log`；见 `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:83`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/search/saved_search.rs:77`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/saved_search_implementation.rs:221`。
+
+- 高风险路径具备可回滚或可恢复说明：通过  
+  证据：DB 写失败不留 partial row，坏 DB 保留用户文件与 staging/generated，权限失败不改状态；见 `/Users/as/Ai-Project/project/AreaMatrix/core/tests/saved_search_implementation.rs:332`、`:379`、`:407`。
+
+- 必需验证 `./dev check all`：不通过  
+  证据：governance、skills、task-loop、prompt doctor、diff check、core fmt/clippy/test 均已通过；但 macOS `xcodebuild test` 失败，脚本返回 code 70，错误为 `IDESimulatorFoundation` 插件加载失败，提示运行 `xcodebuild -runFirstLaunch`，且脚本判定为 non-sandbox reason。
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。C2-03 入口集中在 `core/src/search/saved_search.rs`，DB 持久化集中在 `core/src/db/saved_search.rs`，职责清晰。
+- 注释 / rustdoc / 文档同步：通过。public Rust API 有 rustdoc，UDL 与 `docs/api/core-api.md` 中 C2-03 API 对齐。
+- 错误处理与边界处理：通过。无吞错；非法输入和 DB 错误结构化返回。
+- 测试与验证覆盖：不通过。C2-03 定向测试通过，但任务指定的 `./dev check all` 未通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。实现连接真实 SQLite `saved_searches`，不是 mock-only。
+
+六、阻塞项
+
+- P0：必需验证命令失败，不能判定 task 完成  
+  说明：任务要求运行 `./dev check all`，该命令最终在 macOS `xcodebuild test` 阶段失败。  
+  绝对路径：`/Users/as/Ai-Project/project/AreaMatrix`  
+  行号：无仓库源文件行号；失败来自命令输出。关键错误为 `xcodebuild test failed for a non-sandbox reason`、`IDESimulatorFoundation` 插件加载失败、`xcodebuild -runFirstLaunch` 提示。  
+  为什么导致不通过：manifest validation 是本任务完成标准的一部分；必需验证未通过时，按验收规则不能视为完成。
+
+七、验证情况
+
+- 已运行：`./dev check all`，失败于 macOS `xcodebuild test`，退出 code 70。
+- 已通过子项：governance、skills、task-loop、prompt doctor、git diff check、`cargo fmt --all -- --check`、`cargo clippy --all-targets --all-features -- -D warnings`、`cargo test --workspace`。
+- 已补跑：`cd core && cargo test --test saved_search_implementation --test saved_search_contract_api`，通过，14 个测试通过。
+- 缺失：没有通过完整 `./dev check all` 的最终绿灯。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+
+VERIFY_RESULT: FAIL
