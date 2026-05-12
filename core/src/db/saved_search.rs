@@ -121,7 +121,7 @@ pub(crate) fn delete_saved_search_row(repo_path: &Path, saved_search_id: i64) ->
 }
 
 pub(crate) fn list_saved_search_rows(repo_path: &Path) -> CoreResult<Vec<SavedSearch>> {
-    let connection = open_repo_connection(repo_path)?;
+    let connection = open_saved_search_read_connection(repo_path)?;
     let mut statement = connection
         .prepare(
             "SELECT id, name, query_json, icon, color, pinned, created_at, updated_at
@@ -154,14 +154,18 @@ fn select_saved_search_by_id(tx: &rusqlite::Transaction<'_>, id: i64) -> CoreRes
 }
 
 fn open_saved_search_connection(repo_path: &Path) -> CoreResult<Connection> {
-    let connection = open_repo_connection(repo_path).map_err(|error| match error {
-        CoreError::Db { .. } => error,
-        other => CoreError::db(other.to_string()),
-    })?;
+    let connection = open_saved_search_read_connection(repo_path)?;
     connection
         .execute_batch(SAVED_SEARCH_SCHEMA)
         .map_err(|error| CoreError::db(error.to_string()))?;
     Ok(connection)
+}
+
+fn open_saved_search_read_connection(repo_path: &Path) -> CoreResult<Connection> {
+    open_repo_connection(repo_path).map_err(|error| match error {
+        CoreError::Db { .. } => error,
+        other => CoreError::db(other.to_string()),
+    })
 }
 
 fn saved_search_from_row(row: &Row<'_>) -> rusqlite::Result<SavedSearch> {
