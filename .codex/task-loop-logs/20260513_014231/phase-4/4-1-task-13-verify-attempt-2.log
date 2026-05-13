@@ -1,0 +1,88 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`4-1/task-13`
+- Task：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-13-c2-03-failure-edge.md`
+- 代码范围：`core/src/**`、`core/area_matrix.udl`、`core/tests/**`
+- 禁止触碰：`apps/**`
+
+三、完成度摘要
+
+- 已覆盖项数：8
+- 未覆盖项数：0
+- 通过项数：7
+- 不通过项数：1
+- 阻塞项数：1
+
+四、逐项验收结果
+
+- 项目：Manifest 路径边界
+- 结果：通过
+- 证据：`core/src/**`、`core/area_matrix.udl`、`core/tests/**` 均已落地；`git status --short apps core ...` 未显示 `apps/**` 或 Core 范围的违规未提交变更。
+- 涉及文件：`tasks/prompts/_shared/manifests/phase-4.md:360`
+
+- 项目：空态、非法输入、权限、IO/DB 错误和错误码映射
+- 结果：通过
+- 证据：空库 list 无副作用；非法 query/filter/id/repoPath/icon 返回 `Config`；缺表、损坏 DB、权限失败返回 `Db` 并映射到稳定错误类型。
+- 涉及文件：`core/tests/saved_search_failure_recovery.rs:240`、`core/tests/saved_search_failure_recovery.rs:252`、`core/tests/saved_search_failure_recovery.rs:407`、`core/tests/saved_search_failure_recovery.rs:433`
+
+- 项目：失败不留下半成品
+- 结果：通过
+- 证据：create/update/delete 使用 DB transaction；插入后/更新后读取失败会 rollback；触发器强制写失败后 snapshot 不变。
+- 涉及文件：`core/src/db/saved_search.rs:16`、`core/src/db/saved_search.rs:50`、`core/tests/saved_search_failure_recovery.rs:307`、`core/tests/saved_search_implementation.rs:335`
+
+- 项目：隐私/AI/远程调用默认关闭、密钥不入日志
+- 结果：通过
+- 证据：C2-03 文档范围不包含 AI/远程；失败路径测试确认 `ai_enabled = false`，且不创建 `.areamatrix/ai`、`remote`、`secrets`。
+- 涉及文件：`docs/api/core-api.md:1406`、`core/tests/saved_search_failure_recovery.rs:484`
+
+- 项目：不得吞错或静默降级
+- 结果：通过
+- 证据：损坏 saved-search metadata 返回 `Db`，缺表不自动重建，重复名称/非法 query 返回结构化错误。
+- 涉及文件：`core/tests/saved_search_failure_recovery.rs:369`、`core/tests/saved_search_failure_recovery.rs:407`、`core/tests/saved_search_failure_recovery.rs:286`
+
+- 项目：完成标准 1，失败路径有明确返回、可测试证据和用户文件安全保证
+- 结果：通过
+- 证据：API rustdoc 明确 `Config` / `Db`，实现只写 `saved_searches` 元数据，不触碰文件；测试覆盖 active file、change_log、staging、用户可见路径不变。
+- 涉及文件：`core/src/search/saved_search.rs:77`、`core/src/search/saved_search.rs:105`、`core/src/search/saved_search.rs:130`
+
+- 项目：完成标准 2，高风险路径具备可回滚或可恢复说明
+- 结果：通过
+- 证据：C2-03 本身无文件系统变化；DB 写路径有事务回滚测试，错误路径可重试且不留下半成品。
+- 涉及文件：`docs/core/capability-specs/stage-2-experience/C2-03-saved-search-crud.md:24`、`core/src/db/saved_search.rs:41`、`core/src/db/saved_search.rs:84`
+
+- 项目：任务要求验证 `./dev check all`
+- 结果：不通过
+- 证据：命令退出码 1；`xcodebuild test` 受本地 sandbox/testmanagerd 阻断后 fallback 到 direct XCTest，最终 `AreaMatrixTests.xctest` 484 tests 中 1 failure。
+- 涉及文件：`apps/macos/AreaMatrixTests/AreaMatrixPerfTests.swift:181`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。C2-03 API、DB 持久化、UDL 暴露分层清楚，走真实 `saved_searches` 表。
+- 注释 / rustdoc / 文档同步：通过。public Rust API 有 rustdoc，`core-api.md`、能力规格、UDL 和 control map 对齐。
+- 错误处理与边界处理：通过。非法输入、DB 失败、缺表、损坏 DB、权限失败均显式返回。
+- 测试与验证覆盖：不通过。C2-03 专项证据充分，但 manifest 唯一验证命令 `./dev check all` 失败。
+- 占位、硬编码、mock-only、一次性实现检查：通过。未发现 mock-only 或硬编码通过态。
+
+六、阻塞项
+
+- P0：任务指定验证命令失败，不能判定完成
+- 说明：`./dev check all` 是 manifest 指定验证，本次实际运行退出码 1。失败点记录为 macOS 性能测试首屏 route 不符合预期，`guard case .mainEmpty = model.route` 抛出 `unexpectedFirstScreenRoute`。
+- 绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/AreaMatrixPerfTests.swift:181`
+- 为什么导致不通过：验收规则要求无法证明通过即不通过；指定验证命令失败时，不能把该 task 标记为完成。
+
+七、验证情况
+
+- 已运行：`./dev check all`
+- 通过：C2-03 Core 实现证据、UDL/API 对齐证据、`saved_search_contract_api`、`saved_search_implementation`、`saved_search_failure_recovery` 相关测试证据
+- 失败：`./dev check all` 整体失败；macOS fallback XCTest 484 tests 中 1 failure
+- 缺失：无未运行项；但必需验证未通过
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+
+VERIFY_RESULT: FAIL

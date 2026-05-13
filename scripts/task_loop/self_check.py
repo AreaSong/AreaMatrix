@@ -982,6 +982,10 @@ def check_runner_git_checkpoint(h: Harness) -> None:
     fake_codex.write_text(
         """#!/usr/bin/env bash
 set -euo pipefail
+if [ -n "${FAKE_CODEX_ARGS_LOG:-}" ]; then
+  mkdir -p "$(dirname "$FAKE_CODEX_ARGS_LOG")"
+  printf '%s\\n' "$*" >> "$FAKE_CODEX_ARGS_LOG"
+fi
 out=""
 while [ "$#" -gt 0 ]; do
   case "$1" in
@@ -1020,6 +1024,7 @@ fi
             "LOCK_DIR": str(runner_repo / ".codex/task-loop-lock"),
             "CONTROL_DIR": str(runner_repo / ".codex/task-loop-control"),
             "CODEX_BIN": str(fake_codex),
+            "FAKE_CODEX_ARGS_LOG": str(h.tmp / "fake-codex-args.log"),
             "GIT_CHECKPOINT": "commit",
             "GIT_BRANCH_POLICY": "auto",
             "RISK_POLICY": "allow",
@@ -1032,6 +1037,11 @@ fi
         lambda data: data["tasks"]["0-1/task-01"]["status"] == "completed" and len(data["tasks"]["0-1/task-01"].get("git_commit", "")) >= 7,  # type: ignore[index]
         "runner git progress",
     )
+    fake_args = (h.tmp / "fake-codex-args.log").read_text(encoding="utf-8")
+    if fake_args.count("-s danger-full-access") != 2:
+        raise CheckFailure(f"runner did not use danger-full-access for both codex exec calls:\n{fake_args}")
+    assert_not_contains(fake_args, "-s read-only", "runner fake codex args no read-only sandbox")
+    assert_not_contains(fake_args, "-s workspace-write", "runner fake codex args no workspace-write sandbox")
     if git_helpers.status_short(runner_repo):
         raise CheckFailure("runner git checkpoint left dirty worktree")
     if not git_helpers.current_branch(runner_repo).startswith("codex/areamatrix-task-loop-"):

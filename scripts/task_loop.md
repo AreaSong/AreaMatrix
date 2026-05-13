@@ -8,8 +8,9 @@
 
 ## 一、执行规则
 
-- copy 阶段：`codex exec` + `workspace-write`，按 `copy-ready` 任务提示执行实现。
-- verify 阶段：`codex exec` + `read-only`，按 `verify-ready` 提示做只读验收。
+- copy 阶段：`codex exec` 默认使用 `danger-full-access`，按 `copy-ready` 任务提示执行实现。
+- verify 阶段：`codex exec` 默认使用 `danger-full-access`，按 `verify-ready` 提示做只读验收；只读约束由 verify prompt 与验收规则保证，不依赖 Codex 沙盒。
+- 默认 sandbox 可通过 `CODEX_EXEC_SANDBOX=read-only|workspace-write|danger-full-access` 或 `--codex-exec-sandbox` 覆盖；当前默认禁用沙盒是为了让 macOS XCTest 正常访问本机 `testmanagerd`。
 - copy / verify 都会读取工程质量规则和编码规范，验收不只看能否运行，也看代码是否可维护、可测试、可长期演进。
 - 验收必须通过（日志里出现 `VERIFY_RESULT: PASS`）才会继续下一任务。
 - 失败则会把功能、验证和工程质量失败摘要注入下一次 copy 提示，继续重试修复。
@@ -29,6 +30,7 @@ Codex CLI：
 - runner 会优先查找 `codex`。
 - 如果普通终端没有 `codex`，会自动尝试 `/Applications/Codex.app/Contents/Resources/codex`。
 - 如果你安装在其他位置，可以显式设置 `CODEX_BIN=/path/to/codex`。
+- runner 默认传 `-s danger-full-access` 给每个子 `codex exec`，避免本机 Xcode/macOS XCTest 被 Codex 沙盒挡住。
 
 Repo-local skills：
 - copy-ready / verify-ready prompt 会写明 `.codex/skills-src/` 与 `.agents/skills/` 的正确路径。

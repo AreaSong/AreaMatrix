@@ -1,0 +1,74 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`4-1/task-13`
+- 对应文件路径：`tasks/prompts/phase-4/4-1-stage2-experience/task-13-c2-03-failure-edge.md`
+- 代码范围：`core/src/**`、`core/area_matrix.udl`、`core/tests/**`
+- 禁止触碰：`apps/**`
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：1
+- 通过项数：4
+- 不通过项数：1
+- 阻塞项数：1
+
+四、逐项验收结果
+
+- 项目：空态、非法输入、权限、IO/DB 错误和错误码映射
+- 结果：通过
+- 证据：`list_saved_searches` 空库无副作用；非法 query/filter/id/repoPath/icon 返回 `Config`；缺表、损坏 DB、权限失败返回 `Db` 并有映射测试。`core/tests/saved_search_failure_recovery.rs:240`、`:252`、`:407`、`:433`、`:456`
+- 涉及文件：`core/src/search/saved_search.rs`、`core/src/db/saved_search.rs`
+
+- 项目：失败不留下半成品
+- 结果：通过
+- 证据：create/update/delete 使用事务；插入后/更新后读取失败会 rollback；写入失败触发器验证 snapshot 不变。`core/src/db/saved_search.rs:16`、`:41`、`:50`、`:84`；`core/tests/saved_search_failure_recovery.rs:307`、`:336`；`core/tests/saved_search_implementation.rs:335`
+- 涉及文件：`core/src/db/saved_search.rs`、`core/tests/saved_search_failure_recovery.rs`
+
+- 项目：隐私/AI/远程调用默认关闭、密钥不入日志
+- 结果：通过
+- 证据：失败路径测试确认 `ai_enabled = false`，且不创建 `.areamatrix/ai`、`remote`、`secrets`。`core/tests/saved_search_failure_recovery.rs:484`
+- 涉及文件：`core/tests/saved_search_failure_recovery.rs`
+
+- 项目：不得吞错或静默降级
+- 结果：通过
+- 证据：损坏 metadata 由 `list_saved_searches` 返回 `Db`，不是静默丢弃；缺表不自动重建；重复名称/非法 query 返回结构化错误。`core/tests/saved_search_failure_recovery.rs:369`、`:407`、`:286`
+- 涉及文件：`core/src/db/saved_search.rs`、`core/tests/saved_search_failure_recovery.rs`
+
+- 项目：任务要求验证 `./dev check all`
+- 结果：不通过
+- 证据：命令退出码 1；Core 侧 fmt/clippy/workspace tests 与 `saved_search_*` 测试均通过，但 macOS 测试中 `AreaMatrixPerfTests.testApplicationLaunchToFirstScreenBaselineUnderStage1Threshold` 失败，错误为 `unexpectedFirstScreenRoute`。失败断言位置：`apps/macos/AreaMatrixTests/AreaMatrixPerfTests.swift:181`
+- 涉及文件：`apps/macos/AreaMatrixTests/AreaMatrixPerfTests.swift`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。C2-03 API 与 DB 持久化分层清楚，Rust API 调用真实 DB 行操作，不是 mock。
+- 注释 / rustdoc / 文档同步：通过。public API 有 rustdoc，UDL 暴露 `create/update/delete/list_saved_searches`，与 Core API 文档和 control map 对齐。
+- 错误处理与边界处理：通过。非法输入走 `Config`，DB/metadata 失败走 `Db`，失败路径有事务回滚证据。
+- 测试与验证覆盖：不通过。C2-03 专项测试通过，但 task 指定的 `./dev check all` 整体失败。
+- 占位、硬编码、mock-only、一次性实现检查：通过。实现落到真实 `saved_searches` 表和真实 Core API。
+
+六、阻塞项
+
+- P0：任务指定验证命令失败，不能判定完成
+- 说明：`./dev check all` 是 manifest 唯一验证命令，本次实际运行退出码 1。失败点为 macOS 性能测试首屏路由不符合预期。
+- 绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/AreaMatrixPerfTests.swift:181`
+- 为什么导致不通过：验收规则要求无法证明通过即不通过；即使 C2-03 Core 证据充分，指定验证命令失败仍不能视为 task 完成。
+
+七、验证情况
+
+- 已运行：`./dev check all`
+- 通过：governance、skills、task-loop check、prompt doctor、git diff --check、`cargo fmt --all -- --check`、`cargo clippy --all-targets --all-features -- -D warnings`、`cargo test --workspace`
+- 通过：`saved_search_contract_api` 5 tests、`saved_search_failure_recovery` 11 tests、`saved_search_implementation` 9 tests
+- 失败：macOS `xcodebuild test` / fallback XCTest，484 tests 中 1 failure
+- 缺失：无；命令已实际运行但失败
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+
+VERIFY_RESULT: FAIL

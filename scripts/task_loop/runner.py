@@ -18,6 +18,7 @@ from . import state
 
 
 PHASES = ("phase-0", "phase-1", "phase-2", "phase-3", "phase-4")
+CODEX_SANDBOX_MODES = {"read-only", "workspace-write", "danger-full-access"}
 
 
 class TaskLoopError(RuntimeError):
@@ -44,6 +45,7 @@ class RuntimeConfig:
     model_reasoning_effort: str = "xhigh"
     codex_bin: str = ""
     codex_bin_resolved: str = ""
+    codex_exec_sandbox: str = "danger-full-access"
     copy_root: Path = Path()
     verify_root: Path = Path()
     progress_file: Path = Path()
@@ -80,6 +82,7 @@ class RuntimeConfig:
         cfg.model = os.environ.get("MODEL", "gpt-5.5")
         cfg.model_reasoning_effort = os.environ.get("MODEL_REASONING_EFFORT", "xhigh")
         cfg.codex_bin = os.environ.get("CODEX_BIN", "")
+        cfg.codex_exec_sandbox = os.environ.get("CODEX_EXEC_SANDBOX", "danger-full-access")
         cfg.copy_root = Path(os.environ.get("COPY_ROOT", root / "tasks/prompts/_shared/copy-ready"))
         cfg.verify_root = Path(os.environ.get("VERIFY_ROOT", root / "tasks/prompts/_shared/verify-ready"))
         cfg.progress_file = Path(os.environ.get("PROGRESS_FILE", root / "tasks/prompts/_shared/progress.json"))
@@ -204,6 +207,8 @@ class TaskLoopRunner:
             raise TaskLoopError("GIT_CHECKPOINT must be off, commit, or push")
         if self.cfg.git_branch_policy not in {"auto", "require-task-branch", "current"}:
             raise TaskLoopError("GIT_BRANCH_POLICY must be auto, require-task-branch, or current")
+        if self.cfg.codex_exec_sandbox not in CODEX_SANDBOX_MODES:
+            raise TaskLoopError("CODEX_EXEC_SANDBOX must be read-only, workspace-write, or danger-full-access")
         if self.cfg.dry_run_result not in {"PASS", "FAIL"}:
             raise TaskLoopError("DRY_RUN_RESULT must be PASS or FAIL")
         for phase in self.cfg.selected_phases():
@@ -378,6 +383,7 @@ class TaskLoopRunner:
                 "model_reasoning_effort": self.cfg.model_reasoning_effort,
                 "dry_run": self.cfg.dry_run,
                 "codex_bin": self.cfg.codex_bin_resolved,
+                "codex_exec_sandbox": self.cfg.codex_exec_sandbox,
                 "risk_gate": self.cfg.risk_gate,
                 "risk_policy": self.cfg.risk_policy,
                 "max_retries": self.cfg.max_retries,
@@ -556,6 +562,7 @@ class TaskLoopRunner:
         log_event("INFO", f"MODEL={self.cfg.model} MODEL_REASONING_EFFORT={self.cfg.model_reasoning_effort}")
         if self.cfg.codex_bin_resolved:
             log_event("INFO", f"CODEX_BIN={self.cfg.codex_bin_resolved}")
+        log_event("INFO", f"CODEX_EXEC_SANDBOX={self.cfg.codex_exec_sandbox}")
         log_event("INFO", f"DRY_RUN={1 if self.cfg.dry_run else 0}")
         if self.cfg.dry_run:
             log_event("INFO", f"DRY_RUN_RESULT={self.cfg.dry_run_result}")
@@ -589,14 +596,15 @@ class TaskLoopRunner:
         log_event(status_name, f"copy_log={copy_log}")
         log_event(status_name, f"verify_log={verify_log}")
 
-    def dry_run_stub(self, prompt_file: Path, output_file: Path, sandbox: str, extra_prompt: str, preview_lines: int, task: TaskFile, attempt: int) -> None:
+    def dry_run_stub(self, prompt_file: Path, output_file: Path, stage: str, extra_prompt: str, preview_lines: int, task: TaskFile, attempt: int) -> None:
         output_file.parent.mkdir(parents=True, exist_ok=True)
         prompt_lines = prompt_file.read_text(encoding="utf-8", errors="replace").splitlines()[:preview_lines]
         lines = [
             "DRY RUN OUTPUT (command not executed)",
             f"label: {task.label}",
             f"phase: {task.phase}",
-            f"sandbox: {sandbox}",
+            f"stage: {stage}",
+            f"sandbox: {self.cfg.codex_exec_sandbox}",
             f"model: {self.cfg.model}",
             f"reasoning_effort: {self.cfg.model_reasoning_effort}",
             f"prompt_file: {prompt_file}",
@@ -607,16 +615,16 @@ class TaskLoopRunner:
             lines.extend(["--- injected_retry_prompt ---", extra_prompt, ""])
         lines.append(f"--- prompt_head ({preview_lines} lines) ---")
         lines.extend(prompt_lines)
-        if sandbox == "read-only":
+        if stage == "verify":
             lines.extend(["", f"VERIFY_RESULT: {self.cfg.dry_run_result}"])
         output_file.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
-    def run_codex(self, prompt_file: Path, output_file: Path, sandbox: str, extra_prompt: str, task: TaskFile, attempt: int) -> None:
+    def run_codex(self, prompt_file: Path, output_file: Path, stage: str, extra_prompt: str, task: TaskFile, attempt: int) -> None:
         output_file.parent.mkdir(parents=True, exist_ok=True)
-        preview_lines = self.cfg.dry_run_verify_preview_lines if sandbox == "read-only" else self.cfg.dry_run_copy_preview_lines
+        preview_lines = self.cfg.dry_run_verify_preview_lines if stage == "verify" else self.cfg.dry_run_copy_preview_lines
         if self.cfg.dry_run:
             log_event("DRY", f"simulating codex exec for {prompt_file} -> {output_file}")
-            self.dry_run_stub(prompt_file, output_file, sandbox, extra_prompt, preview_lines, task, attempt)
+            self.dry_run_stub(prompt_file, output_file, stage, extra_prompt, preview_lines, task, attempt)
             return
         prompt_text = prompt_file.read_text(encoding="utf-8")
         if extra_prompt:
@@ -630,7 +638,7 @@ class TaskLoopRunner:
             f"model_reasoning_effort={self.cfg.model_reasoning_effort}",
             "--full-auto",
             "-s",
-            sandbox,
+            self.cfg.codex_exec_sandbox,
             "--cd",
             str(self.cfg.root_dir),
             "-o",
@@ -772,9 +780,9 @@ class TaskLoopRunner:
             self.mark_progress(task, "in_progress", progress_note, copy_log, verify_log, attempt)
             self.record_task_summary(task, "in_progress", attempt, copy_log, verify_log, progress_note)
             previous_verify_log = self.session_log_root / task.phase / f"{task.task_name}-verify-attempt-{attempt - 1}.log" if attempt > 1 else None
-            self.run_codex(task.copy_file, copy_log, "workspace-write", self.build_copy_context_prompt(task, attempt, previous_verify_log), task, attempt)
+            self.run_codex(task.copy_file, copy_log, "copy", self.build_copy_context_prompt(task, attempt, previous_verify_log), task, attempt)
             log_event("TASK", f"verify prompt -> {verify_log}")
-            self.run_codex(task.verify_file, verify_log, "read-only", self.verify_suffix(), task, attempt)
+            self.run_codex(task.verify_file, verify_log, "verify", self.verify_suffix(), task, attempt)
             if self.is_verify_pass(verify_log):
                 self.mark_progress(task, "completed", f"自动执行验收通过：attempt={attempt}", copy_log, verify_log, attempt)
                 self.done_tasks += 1
@@ -863,6 +871,7 @@ def preview_command(cfg: RuntimeConfig, command: str = "run") -> str:
     env_bits = [
         f"MODEL={cfg.model}",
         f"MODEL_REASONING_EFFORT={cfg.model_reasoning_effort}",
+        f"CODEX_EXEC_SANDBOX={cfg.codex_exec_sandbox}",
         f"GIT_CHECKPOINT={cfg.git_checkpoint}",
         f"MAX_RETRIES={cfg.max_retries}",
         f"PROGRESS_FILE={cfg.progress_file}",
@@ -881,6 +890,8 @@ def apply_run_args(cfg: RuntimeConfig, args: argparse.Namespace) -> RuntimeConfi
         cfg.model_reasoning_effort = args.model_reasoning_effort
     if getattr(args, "codex_bin", None):
         cfg.codex_bin = args.codex_bin
+    if getattr(args, "codex_exec_sandbox", None):
+        cfg.codex_exec_sandbox = args.codex_exec_sandbox
     if getattr(args, "git_checkpoint", None):
         cfg.git_checkpoint = args.git_checkpoint
     if getattr(args, "git_branch_policy", None):
@@ -936,6 +947,7 @@ def add_run_options(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--model", help="Codex model，优先级高于 MODEL")
     parser.add_argument("--model-reasoning-effort", help="Codex reasoning effort，优先级高于 MODEL_REASONING_EFFORT")
     parser.add_argument("--codex-bin", help="Codex CLI 路径，优先级高于 CODEX_BIN")
+    parser.add_argument("--codex-exec-sandbox", choices=sorted(CODEX_SANDBOX_MODES), help="Codex exec sandbox 模式，优先级高于 CODEX_EXEC_SANDBOX")
     parser.add_argument("--git-checkpoint", choices=["off", "commit", "push"], help="Git checkpoint 模式")
     parser.add_argument("--git-branch-policy", choices=["auto", "require-task-branch", "current"], help="Git 分支策略")
     parser.add_argument("--git-push-remote", help="Git push remote")

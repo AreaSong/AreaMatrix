@@ -41,6 +41,13 @@ Color defaults to `always`. Use `./dev --color never` or `NO_COLOR=1 ./dev` for 
 Before starting or resuming, the console blocks duplicate live runners and asks for foreground/background execution, Git mode, task count, and optional stop targets.
 For script work, use `./dev preview` to inspect the command without execution, or `./dev dry-run` to run against temporary progress/log/summary directories.
 
+Child `codex exec` runs default to `CODEX_EXEC_SANDBOX=danger-full-access` for both copy and verify. This keeps the macOS XCTest gate on the normal `xcodebuild test` path instead of triggering local `testmanagerd` sandbox fallback. Override only for diagnostics:
+
+```bash
+CODEX_EXEC_SANDBOX=workspace-write ./task-loop run --max-tasks 1
+CODEX_EXEC_SANDBOX=read-only ./task-loop run --max-tasks 1
+```
+
 | Mode | Command | Use when |
 |---|---|---|
 | Cautious default | `MAX_RETRIES=0 ./task-loop run` | The run should pause at `Mission-Critical` tasks. |
