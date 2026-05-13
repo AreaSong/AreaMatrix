@@ -1,0 +1,74 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`4-1/task-13`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-13-c2-03-failure-edge.md`
+- 代码范围：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/**`
+- 禁止触碰范围：`/Users/as/Ai-Project/project/AreaMatrix/apps/**`
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：1
+- 通过项数：4
+- 不通过项数：1
+- 阻塞项数：1
+
+四、逐项验收结果
+
+- 项目：空态、非法输入、权限、IO/DB 错误和错误码映射
+- 结果：通过
+- 证据：`core/tests/saved_search_failure_recovery.rs` 覆盖 empty repo、invalid query/filter/id/path、duplicate name、malformed metadata、missing table、corrupted DB、permission denied；全量 Rust 测试中 C2-03 相关 `5 + 11 + 9` 个测试通过。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/saved_search_failure_recovery.rs`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/saved_search_implementation.rs`
+
+- 项目：失败不留下半成品
+- 结果：通过
+- 证据：`create/update/delete` 均在 DB transaction 中执行；测试覆盖 insert/update 读回失败 rollback、write trigger abort、missing table 不自动建表、用户文件和 staging 不变。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/db/saved_search.rs`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/saved_search_failure_recovery.rs`
+
+- 项目：隐私/AI/远程调用默认关闭、密钥不入日志
+- 结果：通过
+- 证据：`saved_search_failure_recovery_failures_do_not_enable_ai_or_remote_state` 与 `saved_search_implementation_has_no_ai_remote_or_secret_side_effects` 断言 `ai_enabled=false`，且不创建 `.areamatrix/ai`、`.areamatrix/remote`、`.areamatrix/secrets`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/saved_search_failure_recovery.rs`
+
+- 项目：不得吞错或静默降级
+- 结果：通过
+- 证据：非法输入返回 `CoreError::Config`；DB/metadata 损坏返回 `CoreError::Db`；malformed saved search metadata 测试明确要求不 silent drop。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/search/saved_search.rs`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/db/saved_search.rs`
+
+- 项目：任务要求验证 `./dev check all`
+- 结果：不通过
+- 证据：`./dev check all` 退出码 1；复跑 `./dev test macos` 也退出码 1，真实失败为 `AreaMatrixPerfTests.testApplicationLaunchToFirstScreenBaselineUnderStage1Threshold`，错误 `unexpectedFirstScreenRoute`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/AreaMatrixPerfTests.swift:181`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。C2-03 API 在 `search/saved_search.rs`，DB 持久化在 `db/saved_search.rs`，职责清晰。
+- 注释 / rustdoc / 文档同步：通过。public Rust API 有 rustdoc；`core-api.md`、UDL、control map 与测试锁定一致。
+- 错误处理与边界处理：通过。未发现 C2-03 生产文件中 `unwrap()` / `expect()` / `panic!()` / `todo!()` / `unimplemented!()`。
+- 测试与验证覆盖：不通过。C2-03 定向测试通过，但 manifest 要求的 `./dev check all` 未通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。实际调用 `db::create_saved_search_row`、`update_saved_search_row`、`delete_saved_search_row`、`list_saved_search_rows`，不是空壳或 mock-only。
+
+六、阻塞项
+
+- P1：必需验证命令失败
+- 说明：任务 manifest 明确要求 `./dev check all`。该命令完成 Rust、prompt、governance 等检查后，在 macOS XCTest 阶段失败；`xcodebuild test` 先受本地 `testmanagerd` sandbox 限制，脚本 fallback 到 `xcrun xctest` 后仍复现 1 个真实测试失败。
+- 绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/AreaMatrixPerfTests.swift:181`
+- 为什么导致不通过：验收规则要求必需验证通过；当前验证失败，不能证明仓库状态满足 task 完成门禁。
+
+七、验证情况
+
+- 已运行：`./dev check all`
+- 通过：governance、skills、task-loop check、prompt doctor、git diff --check、`cargo fmt --all -- --check`、`cargo clippy --all-targets --all-features -- -D warnings`、`cargo test --workspace`
+- 通过：C2-03 相关 Rust 测试 `saved_search_contract_api` 5 个、`saved_search_failure_recovery` 11 个、`saved_search_implementation` 9 个
+- 失败：`./dev check all` 最终失败；`AreaMatrixPerfTests.testApplicationLaunchToFirstScreenBaselineUnderStage1Threshold` 报 `unexpectedFirstScreenRoute`
+- 补充复验：`./dev test macos` 单独复跑，同样失败于该 XCTest
+- 缺失：无成功的 manifest 级 `./dev check all` 通过证据
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+VERIFY_RESULT: FAIL
