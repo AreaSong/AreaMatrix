@@ -3,8 +3,8 @@
   "runs": [
     {
       "completed": 1,
-      "exit_code": null,
-      "finished_at": "",
+      "exit_code": 0,
+      "finished_at": "2026-05-13T12:53:35.916924+00:00",
       "phases": [
         "phase-0",
         "phase-1",
@@ -16,10 +16,10 @@
       "run_id": "20260513_200928",
       "start_from": "4-1/task-13",
       "started_at": "2026-05-13T12:09:28.497561+00:00",
-      "status": "running",
+      "status": "completed",
       "stop_after": "",
       "summary_file": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-runs/20260513_200928/summary.json",
-      "updated_at": "2026-05-13T12:53:35.690970+00:00"
+      "updated_at": "2026-05-13T12:53:35.917271+00:00"
     },
     {
       "completed": 12,
@@ -710,6 +710,6 @@
       "updated_at": "2026-05-02T00:54:49.413976+00:00"
     }
   ],
-  "updated_at": "2026-05-13T12:53:35.690989+00:00",
+  "updated_at": "2026-05-13T12:53:35.917280+00:00",
   "version": 1
 }
