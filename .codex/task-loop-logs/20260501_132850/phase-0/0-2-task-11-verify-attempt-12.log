@@ -1,0 +1,56 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`0-2/task-11`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-0/0-2-engineering-foundation/task-11-macos-bridge-placeholder.md`
+- 实际覆盖：`apps/macos/AreaMatrix/Bridge/**`、`apps/macos/AreaMatrix/Models/**`、`apps/macos/AreaMatrix.xcodeproj/project.pbxproj`、`core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：14
+- 未覆盖项数：0
+- 通过项数：14
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 创建 CoreBridge 占位层：通过  
+  证据：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift:3` 定义 `CoreBridge` actor；`project.pbxproj:13`、`:35`、`:236` 已加入构建源。
+- Bridge 方法只声明后续接入边界：通过  
+  证据：`CoreBridge.swift:32` 统一抛 `generatedBindingsUnavailable`；`:36-134` 仅声明各 Core API 边界，不调用真实 UniFFI。
+- 不得用 mock 通过后续真实闭环验收：通过  
+  证据：`CoreBridgePlaceholderState.swift:41-46` 明确 Phase 0 未链接 UniFFI/static library；`:49-60` 失败路径显式暴露，不返回 mock 成功数据。
+- Expected New Paths：通过  
+  证据：`Bridge/`、`Models/` 均存在；当前仓库 manifest 还要求 `project.pbxproj`，该文件也已更新。
+- Forbidden Touches：通过  
+  证据：`git diff --name-only -- core/src` 无输出。
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。Swift 文件均低于 500 行，方法短小，`CoreBridgeBoundary` 与 `core/area_matrix.udl:2-76` 的 UDL 函数边界一致。
+- 注释 / rustdoc / 文档同步：通过。当前为 Swift 占位层，无新增 Rust public API；占位状态通过代码结构和错误文案可识别。
+- 错误处理与边界处理：通过。占位调用不会静默成功，统一抛 `CoreBridgeError.generatedBindingsUnavailable`。
+- 测试与验证覆盖：通过 task gate。Manifest 要求的 build 已通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。存在占位，但这是本 task 明确目标；没有把占位伪装成真实闭环成功。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`xcodebuild -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' build CODE_SIGNING_ALLOWED=NO`：通过，输出 `** BUILD SUCCEEDED **`。
+- 扩展运行：`xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：失败于当前沙箱无法连接 `testmanagerd.control`，不是编译错误；该命令不属于本 task manifest gate。
+- 未运行：`swiftlint`、`swiftformat`；当前环境未安装对应命令。
+
+八、最终判定说明
+
+- 本次执行已达到 `0-2/task-11` 验收标准。
+- 记录一个 manifest 漂移：用户提示中的 Expected New Paths 为 2 项，但仓库当前 `phase-0.md` 实际为 3 项，额外包含 `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`；本次按仓库当前 manifest 验收，3 项均已落地。
+
+
+VERIFY_RESULT: PASS

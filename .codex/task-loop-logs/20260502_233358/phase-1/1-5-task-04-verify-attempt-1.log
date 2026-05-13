@@ -1,0 +1,53 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`1-5/task-04`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-1/1-5-file-actions-repair/task-04-c1-22-validation.md`
+- 核验范围：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/**`
+- 禁止范围：`/Users/as/Ai-Project/project/AreaMatrix/apps/**`
+
+三、完成度摘要
+
+- 已覆盖项数：12
+- 未覆盖项数：0
+- 通过项数：12
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 只处理 C1-22 validation 范围：通过。`rename_file` API/UDL 对齐，未发现 `apps/**` 触碰；证据：`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:45`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:310`、`git status --short -- apps` 为空。
+- Exact Docs 已按 SSOT 核验：通过。C1-22 要求 safe rename、Indexed 仅改显示名、不覆盖、概览再生成、不触碰 README；证据：`/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-22-rename-file.md:28`、`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:717`、`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:48`。
+- 未实现相邻 C1 能力或 UI 页面：通过。实现只暴露 `rename_file`，复用 C1-10 编号和触发 C1-20 概览均为 C1-22 文档要求；未触碰 `apps/**`。
+- Rust 测试已补齐：通过。新增 `rename_file_validation` 覆盖成功、非法名、缺失 id、同名 no-op；证据：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/rename_file_validation.rs:138`、`:211`、`:258`。
+- 成功路径和关键错误路径：通过。成功路径覆盖 DB、FS、list/get、change_log、overview、README 保留；错误路径覆盖 InvalidPath、FileNotFound、PermissionDenied、Db/rollback、Conflict 编号耗尽由同过滤测试族覆盖。
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。`api.rs` 只做 public API 转发，实际逻辑在 `storage/rename.rs`，DB 原子更新在 `db/rename.rs`；生产实现没有无关 UI/macOS 依赖。
+- 注释 / rustdoc / 文档同步：通过。public `rename_file` 有合同和 `# Errors`；Core API 与 UDL 签名一致。
+- 错误处理与边界处理：通过。空名/非法名走 `InvalidPath`，缺失 active row 走 `FileNotFound`，DB 事务失败和 overview 失败有 rollback 证据。
+- 测试与验证覆盖：通过。manifest 三条命令全部通过，并按 validation-driver 额外跑了完整 `cargo test --workspace`。
+- 占位、硬编码、mock-only、一次性实现检查：通过。测试走真实 `init_repo`、`import_file`、SQLite、文件系统和 generated overview，不是 mock-only。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`cd core && cargo fmt --all -- --check`：通过。
+- 已运行：`cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过。
+- 已运行：`cd core && cargo test --workspace rename_file`：通过，`rename_file_*` 过滤命中 17 个测试全部通过。
+- 已运行：`cd core && cargo test --workspace`：通过。
+- 已运行：`git diff --check`：通过。
+- 缺失验证：无。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。当前仍有 task-loop evidence 与 `core/tests/rename_file_validation.rs` 处于工作区未提交状态，但这不影响只读验收对当前文件内容、范围和验证结果的判定；后续 checkpoint/提交时应纳入对应 task 范围。
+
+VERIFY_RESULT: PASS

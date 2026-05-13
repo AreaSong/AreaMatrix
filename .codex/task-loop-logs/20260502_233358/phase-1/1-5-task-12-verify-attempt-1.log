@@ -1,0 +1,66 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`phase-1 / 1-5/task-12`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-1/1-5-file-actions-repair/task-12-c1-24-implementation.md`
+- 代码范围：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/**`
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：0
+- 通过项数：10
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 只处理 C1-24 implementation 范围：通过  
+  证据：`move_to_category` 从 `api` 委托到 `storage`，再进入 `db` 更新；新增实现集中在 `/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/move_to_category.rs:14` 和 `/Users/as/Ai-Project/project/AreaMatrix/core/src/db/move_to_category.rs:10`。未触碰 `apps/**`。
+
+- Exact Docs 已读取并以 SSOT 交叉核验：通过  
+  证据：C1-24 规格要求更新 `files.category/files.path/updated_at`、写入 `change_log.moved`、repo-owned 文件移动、Indexed 只改元数据，见 `/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-24-move-to-category.md:23`。Core API 与 UDL 均暴露 `move_to_category`，见 `/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:809`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:52`。
+
+- 不实现相邻 C1 能力或 UI 页面：通过  
+  证据：`git status --short -- apps` 无输出；实现未新增 UI 文件。C1-10 仅作为安全同名编号策略复用，符合 control map 中 S1-35 同时依赖 C1-24/C1-10 的声明，见 `/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:50`。
+
+- 最小真实路径：通过  
+  证据：`move_to_category` 校验分类、读取 active row、区分 Copied/Moved 与 Indexed；repo-owned 文件执行真实文件移动，Indexed 仅更新 DB 元数据，见 `/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/move_to_category.rs:21`、`:28`、`:61`、`:85`。
+
+- 分层方向：通过  
+  证据：`api.rs` 只暴露公共入口并委托 `storage`；`storage` 处理文件系统与回滚；`db` 处理事务更新和 change log，见 `/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:421`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/db/move_to_category.rs:52`。
+
+- Expected New Paths：通过  
+  证据：`core/src/**`、`core/area_matrix.udl`、`core/tests/**` 均存在；新增 `core/src/storage/move_to_category.rs`、`core/src/db/move_to_category.rs`、`core/tests/move_to_category_implementation.rs`。
+
+- Forbidden Touches：通过  
+  证据：`git status --short -- apps` 无输出。
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。新增实现分为 storage orchestration 与 DB transaction 两层，未堆入 public API 文件。
+- 注释 / rustdoc / 文档同步：通过。public API 有 C1-24 rustdoc 和 `# Errors`，见 `/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:388`。
+- 错误处理与边界处理：通过。未知分类返回 `Classify`，同名目标安全编号，不覆盖；DB/change_log 失败会回滚文件与 note sidecar，见 `/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/move_to_category.rs:65`。
+- 测试与验证覆盖：通过。实现测试覆盖 repo-owned move、同名冲突、Indexed 元数据、未知分类无副作用、DB log 失败回滚。
+- 占位、硬编码、mock-only、一次性实现检查：通过。测试走真实 tempdir、SQLite、文件移动和 Core API，不是 mock-only。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`cd core && cargo fmt --all -- --check`：通过
+- 已运行：`cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过
+- 已运行：`cd core && cargo test --workspace move_to_category`：通过，目标 8 个测试通过
+- 已运行：`cd core && cargo test --workspace`：通过
+- 未运行：无
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。C1-24 implementation 有真实 Core 路径、真实文件系统与 DB 证据、任务验证通过，未发现越界实现或 Forbidden Touches。
+
+VERIFY_RESULT: PASS

@@ -1,0 +1,58 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`2-1/task-09`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-1-first-launch-main/task-09-s1-04-page-integration-verify.md`
+- 代码范围：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+- Forbidden Touches：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：0
+- 通过项数：10
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- Exact Docs 与 control map：通过。`S1-04` 声明 C1-02/C1-03、Real Core、`init_repo`；page audit 显示 `S1-04` feature tasks 为 `2-1/task-07`, `2-1/task-08`，page verify 为 `2-1/task-09`，Missing/Extra 均为 None。
+- C1-02 空目录初始化：通过。`CoreBridge.initializeEmptyRepository` 使用 `initRepo(... mode: .createEmpty, createDefaultCategories: true, overviewOutput: .generatedOnly)`，测试覆盖真实 `.areamatrix/index.db` 创建且不创建 `README.md`。
+- C1-03 非空目录接管：通过。`CoreBridge.adoptExistingRepository` 使用 `mode: .adoptExisting`，测试覆盖保留已有 `README.md`、不创建默认分类目录、写入 `.areamatrix/index.db`。
+- 页面状态 / 入口 / 退出 / 错误态：通过。`ConfirmInitStepView` 展示 create/adopt 两套文案、安全承诺、Cancel Setup 确认；`OnboardingModel` 点击主按钮后先切 `S1-05 initializing`，再重校验，失败回错误页。
+- CoreBridge 调用闭环：通过。`MainWindow` 将 `Create Repository` / `Adopt Folder` 分别接到 model，再到 `CoreBridge`，没有绕过 UniFFI 直接调用。
+- mock / fixture / 硬编码：通过。生产路径未用 fixture 伪造 S1-04；`fixture` 只出现在测试。遗留 `CoreBridgePlaceholderState` 不是本页执行路径，S1-04 相关 init/validate/error mapping 已走 generated bindings。
+- 未新增 control map 外功能：通过。S1-04 仅覆盖 C1-02/C1-03，page audit 无 Extra。
+- Expected New Paths：通过。`apps/macos/AreaMatrix/**` 与 `apps/macos/AreaMatrixTests/**` 均已落地并纳入 Xcode project。
+- Forbidden Touches：通过。`git diff --name-only -- core/src` 无输出。
+- 范围状态：通过。当前产品代码 diff 在 `apps/macos/AreaMatrix/App/AreaMatrixApp.swift`、`Models/AppShellModel.swift`、`Views/MainWindow.swift`、`apps/macos/AreaMatrixTests/ValidatePathIntegrationTests.swift`；另有 task-loop 本地 `progress.json` in_progress 状态，不作为产品实现范围。
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。状态流集中在 `OnboardingModel`，视图只做展示和交互，Core 调用集中在 `CoreBridge`。
+- 注释 / rustdoc / 文档同步：通过。本任务未新增 Rust public API；`core/area_matrix.udl` 与 Core API 中 `init_repo`、`RepoInitOptions`、`RepoInitMode` 对齐。
+- 错误处理与边界处理：通过。主按钮前重跑 `validateRepoPath`；路径状态变化会返回 validate-path；初始化错误经 `mapCoreError` 进入错误页。
+- 测试与验证覆盖：通过。覆盖 create empty、adopt existing、取消不保存、状态变化阻断、初始化中 handoff、README 保留。
+- 占位、硬编码、mock-only、一次性实现检查：通过。生产闭环走真实 generated bindings；测试 fixture 未进入生产路径。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`python3 tasks/prompts/_shared/prompt_pipeline.py status`，通过，当前 first task 为 `2-1/task-09`。
+- 已运行：`python3 tasks/prompts/_shared/prompt_pipeline.py audit --pages`，通过，`S1-04` Missing/Extra 均为 None。
+- 已运行：`git diff --check -- apps/macos/AreaMatrix apps/macos/AreaMatrixTests core/area_matrix.udl core/src`，通过。
+- 已运行：`xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`，构建完成后被本地沙箱阻断，错误为 `testmanagerd.control ... Sandbox restriction`。
+- 已运行：`bash scripts/check-macos-tests.sh`，通过；脚本按仓库规则复现 sandbox block 后执行 `xcrun xctest`，44 tests，0 failures。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。标准 `xcodebuild test` 在当前沙箱无法完成测试 runner 通信，但仓库 testing/CI 文档允许该场景用 `scripts/check-macos-tests.sh` 补证据，且补证据测试全量通过；远端 CI 仍应继续跑标准 `xcodebuild test` 作为合并门禁。
+
+
+VERIFY_RESULT: PASS

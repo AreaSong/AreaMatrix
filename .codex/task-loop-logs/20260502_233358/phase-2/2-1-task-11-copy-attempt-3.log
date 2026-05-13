@@ -1,0 +1,44 @@
+一、执行结论
+
+- 已完成本次 repair retry 的直接阻塞修复。
+
+二、执行范围
+
+- 单任务：`2-1/task-11`
+- 修改范围：
+  - `apps/macos/AreaMatrix/Models/AppShellModel.swift`
+  - `apps/macos/AreaMatrix/Views/MainWindow.swift`
+  - `apps/macos/AreaMatrix/Views/Onboarding/InitializingStepView.swift`
+  - `apps/macos/AreaMatrixTests/InitializingStepIntegrationTests.swift`
+  - `tasks/prompts/_shared/manifests/phase-2.md`
+  - 沿用上次已存在的 `project.pbxproj` 和 S1-05 相关新增 Swift 文件。
+
+三、完成情况
+
+- C1-03 adopt fatal error：已从 `.mainRepoError` 改为 `.initializationFailed`，对应 S1-06 init-failed route。
+- S1-06 错误信息：保留 `CoreErrorMappingSnapshot` 的错误代码、恢复建议、recoverability、raw context，并显示用户原文件未被移动/重命名/删除/覆盖。
+- Manifest 漂移：`2-1/task-11` 的 `Existing Code` 与 `Expected New Paths` 已补入 `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`。
+- Forbidden Touches：未触碰 `core/src/**`，`git diff -- core/src` 无输出。
+
+四、工程质量
+
+- 只修复上次验收失败的 fatal route 与 manifest 范围漂移。
+- 没有新增 mock-only、fixture-only 或硬编码成功路径。
+- 新增回归测试覆盖 adopt-existing 初始化失败进入 init-failed。
+- 未新增依赖；`swiftlint` / `swiftformat` 本机不可用，未运行。
+
+五、验证情况
+
+- `xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：通过，`BUILD SUCCEEDED`。
+- `bash scripts/check-macos-tests.sh`：标准 `xcodebuild test` 被本地 sandbox `testmanagerd` 阻断；脚本 fallback 到 `xcrun xctest`，47 tests，0 failures。
+- `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`：通过。
+- `python3 tasks/prompts/_shared/prompt_pipeline.py status`：通过。
+- `python3 tasks/prompts/_shared/prompt_pipeline.py render --task 2-1/task-11`：通过，manifest 计数已显示现有代码 3 项、预期新增路径 3 项。
+- `python3 tasks/prompts/_shared/prompt_pipeline.py verify --task 2-1/task-11`：verify prompt 可正常生成。
+- `git diff --check`：通过。
+- `git diff -- core/src`：通过，无 forbidden touch。
+
+六、风险与后续
+
+- 剩余风险：标准 `xcodebuild test` 仍受当前本地 sandbox 限制，只能用仓库 fallback 证明测试通过。
+- 建议下一个任务：进入 `2-1/task-11` verify-ready 只读验收；验收 PASS 后再推进 `2-1/task-12`。

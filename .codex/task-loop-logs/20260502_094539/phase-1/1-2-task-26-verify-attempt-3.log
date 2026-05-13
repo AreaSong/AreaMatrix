@@ -1,0 +1,52 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`1-2/task-26`
+- 对应文件路径：`tasks/prompts/phase-1/1-2-import-classify/task-26-c1-10-implementation.md`
+- 核验范围：`core/src/**`、`core/area_matrix.udl`、`core/tests/**`
+- 禁止触碰：`apps/**`，当前 `git diff --name-only -- apps` 为空
+
+三、完成度摘要
+
+- 已覆盖项数：14
+- 未覆盖项数：0
+- 通过项数：14
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 只处理 C1-10 implementation 范围：通过。证据：实现集中在 `core/src/storage/import.rs`、`destination.rs`、`dedup.rs`、`rename.rs`、`safe_move.rs`、`db/import.rs`，未新增 UI 或 `apps/**` 变更。
+- Exact Docs 按 SSOT 核验：通过。C1-10 spec 要求同名不同内容默认自动编号、DB/FS/返回值一致、Replace 不走默认覆盖；实现与测试均覆盖这些点。
+- 不实现相邻 C1 能力或 UI 页面：通过。未新增相邻 API/UDL/UI；`DuplicateStrategy::Overwrite` 仅作为 C1-10 Replace 明确路径复用，未变成默认覆盖分支。
+- 最小真实路径：通过。`import_file` 对同名冲突走 `resolve_final_path` 自动编号；`rename_file` 走 `resolve_rename_path`；失败时清理 staging/回滚文件与 DB。
+- layered design：通过。API 层委托 storage，storage 通过 db 模块持久化；Core 无 macOS UI 依赖。
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。冲突命名、替换归档、安全移动、DB promote/rollback 分层清楚。
+- 注释 / rustdoc / 文档同步：通过。`import_file` / `rename_file` public API 有 rustdoc，UDL 与 `docs/api/core-api.md` 对齐。
+- 错误处理与边界处理：通过。覆盖 `Conflict`、`InvalidPath`、`FileNotFound`、`Db` 回滚；生产路径未发现 `unwrap()` / `expect()` / `panic!()`。
+- 测试与验证覆盖：通过。覆盖自动编号、手动 rename、Replace、DB 失败回滚、冲突耗尽、raced final 防覆盖。
+- 占位、硬编码、mock-only、一次性实现检查：通过。测试使用真实临时 repo、SQLite、文件系统和 change_log，不是 mock-only。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- `cd core && cargo fmt --all -- --check`：通过
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过
+- `cd core && cargo test --workspace resolve_name_conflict`：通过，匹配测试全部通过
+- `cd core && cargo test --workspace`：通过，按 validation-driver 对 `core/**` 补跑完整 workspace 测试
+- `git diff --check`：通过
+- 缺失验证：无
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。当前仓库状态足以把 `1-2/task-26` 判定为完成。  
+VERIFY_RESULT: PASS

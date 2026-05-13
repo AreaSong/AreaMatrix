@@ -1,0 +1,57 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`phase-1` / `1-2/task-17`
+- Task 文件：[task-17-c1-08-failure-recovery.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-1/1-2-import-classify/task-17-c1-08-failure-recovery.md:1)
+- 代码范围：`core/src/**`、`core/area_matrix.udl`、`core/tests/**`
+- 禁止范围：`apps/**`
+
+三、完成度摘要
+
+- 已覆盖项数：7
+- 未覆盖项数：0
+- 通过项数：7
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 只处理 C1-08 failure-recovery：通过。Indexed 分支独立处理，`StorageMode::Indexed` 直接走 `import_indexed_file`，不进入 copy/move staging 落位流程。证据：[import.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/import.rs:24)、[import.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/import.rs:129)
+- Exact Docs 以 SSOT 读取并对齐：通过。C1-08 要求 Indexed 不复制/不移动源文件、保留 `source_path`、写 `change_log.imported`，实现与测试均覆盖。证据：[C1-08-import-index-file.md](/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-08-import-index-file.md:23)、[transactional-import.md](/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/transactional-import.md:23)
+- 不实现相邻 C1 能力或 UI 页面：通过。`git status --short apps` 无输出；未触碰 `apps/**`。重复 hash 仍返回 `DuplicateFile`，未扩展到 C1-09/C1-10 的完整冲突策略。
+- 覆盖失败、回滚、重复执行、权限错误路径：通过。新增 failure-recovery 测试覆盖 DB rollback、失败后重试、重复同源、iCloud marker、metadata internal source、permission denied。证据：[import_index_file_failure_recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/import_index_file_failure_recovery.rs:114)
+- 不删除、覆盖或移动未确认用户文件：通过。Indexed 写入 active DB 行与 change_log 在同一事务内完成，失败 rollback；测试断言源文件保持可读且无 staging/final 副本。证据：[db/import.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/db/import.rs:90)、[import_index_file_failure_recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/import_index_file_failure_recovery.rs:126)
+- C1-08 failure-recovery 目标有证据证明：通过。`import_index_file` 定向测试 17 个通过，完整 workspace 测试通过。
+- 没有扩展到未绑定能力：通过。UDL/API 仅保持既有 `import_file`、`ImportOptions`、`StorageMode::Indexed` 合同，没有新增 UI 或相邻能力入口。证据：[area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:37)
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。Indexed 的 DB 写入集中到 `insert_active_indexed_import`，事务边界清晰；相关生产文件均低于 500 行。
+- 注释 / rustdoc / 文档同步：通过。public API 已有 C1-08 行为和错误 rustdoc；UDL 与 core-api 对齐。证据：[api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:215)
+- 错误处理与边界处理：通过。`FileNotFound`、`PermissionDenied`、`ICloudPlaceholder`、`Db`、`InvalidPath` 路径有显式映射和测试。证据：[validate.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/validate.rs:9)、[hash.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/hash.rs:95)
+- 测试与验证覆盖：通过。manifest 三条命令通过，并按 validation-driver 补跑完整 `cargo test --workspace`。
+- 占位、硬编码、mock-only、一次性实现检查：通过。未发现当前 task 范围内 mock-only 或硬编码通过态；`rg` 检查 `core/src` 未发现 `unwrap()` / `expect()` / `panic!()` 生产路径。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- `cd core && cargo fmt --all -- --check`：通过
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过
+- `cd core && cargo test --workspace import_index_file`：通过，`import_index_file` 相关 17 个测试通过
+- `cd core && cargo test --workspace`：通过，完整 Rust workspace 测试通过
+- `git diff --check`：通过
+- `git status --short apps`：无输出，未触碰 Forbidden Touches
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+
+
+VERIFY_RESULT: PASS

@@ -1,0 +1,57 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`1-2/task-26`
+- 对应文件路径：`tasks/prompts/phase-1/1-2-import-classify/task-26-c1-10-implementation.md`、`core/src/**`、`core/area_matrix.udl`、`core/tests/**`
+- Forbidden Touches：`apps/**` 未发现变更
+
+三、完成度摘要
+
+- 已覆盖项数：8
+- 未覆盖项数：1
+- 通过项数：7
+- 不通过项数：1
+- 阻塞项数：1
+
+四、逐项验收结果
+
+- 范围控制：通过。Task 绑定 C1-10，manifest 仅允许 `core/src/**`、`core/area_matrix.udl`、`core/tests/**`；`git status --short -- apps`、`git diff --name-only -- apps`、`git ls-files --others --exclude-standard -- apps` 均无输出。
+- Exact Docs：通过。已读取 manifest 指定 5 个文档；C1-10 SSOT 要求 S1-23/S1-24、`import_file`/`rename_file`、DB/FS/change_log 一致。
+- 默认同名不同内容自动编号：通过。`dedup::resolve_numbered_path` 会从原名到 `_1.._999` 搜索安全文件名，测试覆盖 import 生成 `finance/same_1.pdf`。
+- 手动 rename 同名冲突自动编号：通过。`rename_file` 使用 `dedup::resolve_rename_path`，测试覆盖 rename 到 `same_1.pdf` 并写 `change_log`。
+- Conflict exhaustion：通过。新增测试覆盖 import/rename 编号耗尽返回 `CoreError::Conflict` 且无 staging/DB/final 文件副作用。
+- API/UDL 对齐：通过。`core/area_matrix.udl` 暴露 `import_file`、`rename_file`、`ImportOptions.override_filename`、`DuplicateStrategy`、`FileEntry.current_name`、`CoreError.Conflict`。
+- Replace / S1-24 路径：不通过。SSOT 要求同名冲突支持 Replace 二次确认后的策略路径，但当前实现只按 hash duplicate 进入 `Overwrite` 分支；同名不同 hash 即使传 `DuplicateStrategy::Overwrite` 也会走新文件自动编号路径，无法证明 S1-24 replace-confirm 的 C1-10 Core 路径可用。
+- 验证命令：通过。manifest 三条命令均通过，并额外运行 validation-driver 要求的完整 `cargo test --workspace`。
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过。默认自动编号路径结构清晰，但 Replace 语义被绑定在 hash duplicate 检测上，未覆盖 C1-10 的 same-name replacement 分支。
+- 注释 / rustdoc / 文档同步：通过。`api.rs` 已说明 C1-10 行为和错误边界。
+- 错误处理与边界处理：部分通过。Conflict exhaustion、DB failure rollback、staging cleanup 有测试；同名 Replace 后果缺少真实路径。
+- 测试与验证覆盖：不通过。`resolve_name_conflict_*` 测试覆盖默认编号和 exhaustion，但没有覆盖“同名不同 hash + Replace 二次确认策略”的导入替换行为。
+- 占位、硬编码、mock-only、一次性实现检查：通过。未发现 mock-only 或硬编码通过态。
+
+六、阻塞项
+
+- P1：同名不同 hash 的 Replace 路径缺失，C1-10 不能证明完成。
+  - 说明：`docs/core/capability-specs/stage-1-mvp/C1-10-resolve-name-conflict.md:30-45` 要求默认自动编号、不默认覆盖，并要求 Replace 路径经过 S1-24；`docs/ux/dedup-conflict.md:67-115` 明确重名不同内容有 Replace 选项且必须写 change_log。当前 `core/src/storage/import.rs:133-139` 只通过 `find_active_file_by_hash` 产生 duplicate resolution；`core/src/storage/destination.rs:32-46` 只有 `DuplicateResolution::Overwrite(existing)` 才进入 replacement；`core/src/storage/dedup.rs:18-24` 在没有同 hash existing 时直接 `NoDuplicate`，随后 `core/src/storage/dedup.rs:74-88` 自动编号。因此 same-name different-content 的 Replace 无实现证据。
+  - 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/import.rs:133`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/destination.rs:32`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/dedup.rs:18`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/resolve_name_conflict_implementation.rs:97`
+
+七、验证情况
+
+- 已运行：`cd core && cargo fmt --all -- --check`，通过。
+- 已运行：`cd core && cargo clippy --all-targets --all-features -- -D warnings`，通过。
+- 已运行：`cd core && cargo test --workspace resolve_name_conflict`，通过，11 个匹配测试通过。
+- 已运行：`cd core && cargo test --workspace`，通过，完整 workspace 测试通过。
+- 缺失：同名不同 hash + explicit Replace / S1-24 confirmed strategy 的实现和测试证据。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。原因不是格式、clippy 或现有测试失败，而是 C1-10 SSOT 中 Replace/S1-24 的同名冲突语义缺少真实 Core 路径与测试证明。
+
+
+VERIFY_RESULT: FAIL

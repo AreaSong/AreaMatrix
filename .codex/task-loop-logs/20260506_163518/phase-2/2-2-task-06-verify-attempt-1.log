@@ -1,0 +1,78 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`2-2/task-06`
+- Task：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-2-import-conflict/task-06-s1-17-page-integration-verify.md`
+- 代码范围：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`apps/macos/AreaMatrix.xcodeproj/project.pbxproj`、`core/area_matrix.udl`
+- 禁止范围：`core/src/**`
+
+三、完成度摘要
+
+- 已覆盖项数：6（4 项核对清单 + 2 项完成标准）
+- 未覆盖项数：0
+- 通过项数：2
+- 不通过项数：4
+- 阻塞项数：2
+
+四、逐项验收结果
+
+- 项目：逐项验收本页所有 page-feature task 是否完成
+- 结果：不通过
+- 证据：S1-17 的 C1-05/C1-06/C1-07/C1-08 任务与测试文件已存在，但默认真实 preflight 仍因 `preview_import` 未接入而阻断；测试也把该缺口记录为阻塞证据。
+- 涉及文件：[ImportSingleFilePageIntegrationVerifyTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFilePageIntegrationVerifyTests.swift:291)、[ImportSingleFilePreflight.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreflight.swift:271)
+
+- 项目：页面状态、入口、退出、错误态和 CoreBridge 调用完整闭环
+- 结果：不通过
+- 证据：入口、Cancel、Import、Switch local、S1-20 路由有代码；Copy/Move/Index 通过 `CoreBridge.importFile` 进入真实 Core。但 S1-17 spec 要求 preview/hash/conflict precheck 完成后才能 Import，当前默认 preflight 调 `previewImport` 后直接阻断，页面不能形成完整可导入闭环。
+- 涉及文件：[S1-17-import-single-sheet.md](/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-17-import-single-sheet.md:72)、[CoreImporting.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreImporting.swift:72)、[ImportEntrySheetView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportEntrySheetView.swift:167)
+
+- 项目：移除无法通过最终验收的 mock、fixture 或硬编码状态
+- 结果：通过
+- 证据：生产路径没有用静态成功态伪装 preview；缺失的 Core preview 被显式转成阻断消息，不会放行 Import。测试中的 static preflight/fixture 仅为测试替身。
+- 涉及文件：[ImportSingleFilePreflight.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreflight.swift:256)
+
+- 项目：不新增 control map 外功能
+- 结果：通过
+- 证据：control map 中 S1-17 只声明 C1-05/C1-06/C1-07/C1-08；当前实现集中在分类预览、Copy/Move/Index 导入、冲突/iCloud/Replace gating，没有发现本页引入 control map 外 Core 能力。
+- 涉及文件：[mvp-control-map.md](/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:31)
+
+- 项目：S1-17 页面可按 page spec 和 control map 完整验收
+- 结果：不通过
+- 证据：API 文档明确 `preview_import` 是 S1-17 所需缺口，且不得被 UI 静态 mock 掩盖；`core/area_matrix.udl` 只有 `predict_category` 和 `import_file`，没有 `preview_import`。
+- 涉及文件：[core-api.md](/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:428)、[core-api.md](/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:434)、[area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:40)
+
+- 项目：页面声明的所有 Core 能力已真实接入或有明确阻塞证据
+- 结果：不通过
+- 证据：C1-06/C1-07/C1-08 的 `import_file` 模式桥接存在；C1-05 的分类预测存在。但 S1-17 需要的 preview/hash/conflict precheck 仍只有明确阻塞证据，不能证明页面真实闭环完成。
+- 涉及文件：[ImportSingleFilePreviewModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreviewModel.swift:236)、[ImportSingleFilePreviewModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreviewModel.swift:315)
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过。导入路径拆分清楚，但真实默认路径卡在未实现的 `preview_import`，数据流不能完成。
+- 注释 / rustdoc / 文档同步：通过。文档明确记录 API 缺口，代码也显式暴露阻断。
+- 错误处理与边界处理：不通过。iCloud、Replace、来源不可读等 UI gating 有处理，但核心 hash/conflict preview 不能真实执行。
+- 测试与验证覆盖：不通过。必需 `xcodebuild test` 未通过；测试 runner 因 `testmanagerd` sandbox restriction 失败。
+- 占位、硬编码、mock-only、一次性实现检查：通过。未发现生产代码用 mock-only 成功态放行最终 Import。
+
+六、阻塞项
+
+- P0：S1-17 缺少真实 `preview_import` / ImportPreview Core 接入。说明：page spec 要求 preview/hash/conflict precheck 完成后才能启用 Import；当前 UDL 未暴露 `preview_import`，默认 preflight 只能返回 “Core preview_import 尚未在 UDL / generated bindings 中接入”。绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:40`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreflight.swift:271`。原因：导致 S1-17 无法按 page spec/control map 完整验收。
+- P1：必需验证命令失败。说明：`xcodebuild test ...` 返回 exit 65，错误为无法与 `com.apple.testmanagerd.control` 建立通信，`Sandbox restriction`。绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj:559`。原因：验收要求的测试没有通过，不能作为完成证据。
+
+七、验证情况
+
+- 已运行：`xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+- 通过：无
+- 失败：上述命令 exit 65；构建到 `AreaMatrixTests.xctest` 后，测试 runner 因 `testmanagerd` sandbox 通信限制失败
+- 缺失：没有可用的完整 XCTest PASS 证据
+- Expected New Paths：3/3 已存在
+- Forbidden Touches：`git status --short -- core/src` 无输出，未发现 `core/src/**` 被触碰
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+
+VERIFY_RESULT: FAIL

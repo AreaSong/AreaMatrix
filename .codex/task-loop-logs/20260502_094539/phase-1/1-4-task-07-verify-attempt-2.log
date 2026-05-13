@@ -1,0 +1,76 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`1-4/task-07`
+- Task 文件：[/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-1/1-4-recovery-sync-overview/task-07-c1-17-implementation.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-1/1-4-recovery-sync-overview/task-07-c1-17-implementation.md:1)
+- 核验范围：`docs/**` SSOT、`core/src/**`、`core/area_matrix.udl`、`core/tests/**`
+- 禁止触碰：`apps/**`，未发现修改
+
+三、完成度摘要
+
+- 已覆盖项数：5/5 核对清单，2/2 完成标准，3/3 Expected New Paths，3/3 manifest 验证命令
+- 未覆盖项数：0
+- 通过项数：13
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 C1-17 implementation 范围
+- 结果：通过
+- 证据：实现集中在 [core/src/sync/mod.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/sync/mod.rs:39)，只处理 `ExternalEventKind::Created`，其他事件不实现相邻 C1-18/C1-19 行为；`detected_renames/deletes/modifies` 保持 0。
+- 涉及文件：`core/src/sync/mod.rs`
+
+- 项目：Exact Docs 作为 SSOT
+- 结果：通过
+- 证据：UDL 暴露 `sync_external_changes`、cursor API、`ExternalEvent`、`SyncResult`，与 `docs/api/core-api.md` 对齐，见 [core/area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:73)。
+- 涉及文件：`docs/core/capability-specs/stage-1-mvp/C1-17-sync-external-created.md`、`docs/api/core-api.md`、`core/area_matrix.udl`
+
+- 项目：最小真实路径
+- 结果：通过
+- 证据：新增文件会读 metadata/hash，插入 `files.origin = external`、`storage_mode = indexed`，并写 `change_log.action = external_modified`，见 [core/src/db/sync.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/db/sync.rs:60)。
+- 涉及文件：`core/src/db/sync.rs`
+
+- 项目：list/tree/detail/log 可见
+- 结果：通过
+- 证据：实现测试覆盖 `list_files`、`get_file`、`list_tree_json`、`list_changes`，见 [core/tests/sync_external_created_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/sync_external_created_implementation.rs:88)。
+- 涉及文件：`core/tests/sync_external_created_implementation.rs`
+
+- 项目：cursor 批次成功后推进
+- 结果：通过
+- 证据：批次先完成 plan，再在同一 DB transaction 中插入 rows 与 cursor；失败测试确认 good file 与 cursor 均回滚，见 [core/src/db/sync.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/db/sync.rs:19)、[core/tests/sync_external_created_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/sync_external_created_implementation.rs:180)。
+- 涉及文件：`core/src/db/sync.rs`、`core/tests/sync_external_created_implementation.rs`
+
+- 项目：Expected New Paths
+- 结果：通过
+- 证据：`core/src/**`、`core/area_matrix.udl`、`core/tests/**` 均已落地；新增 `core/src/db/sync.rs` 与 `core/tests/sync_external_created_implementation.rs` 存在。
+- 涉及文件：`core/src/**`、`core/area_matrix.udl`、`core/tests/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。sync planning、path normalization、DB transaction 分层清楚；Core 层无 macOS 专属 API。
+- 注释 / rustdoc / 文档同步：通过。公开 API 有 rustdoc，UDL 与 Core API 文档对齐。
+- 错误处理与边界处理：通过。覆盖 invalid path、iCloud marker、missing file rollback、duplicate event idempotency、internal/generated skip。
+- 测试与验证覆盖：通过。manifest 窄测试 10 个相关测试通过，并补跑全 workspace 测试通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。实现走真实 FS metadata/hash、SQLite rows、change_log、cursor，无 mock-only 路径。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`cd core && cargo fmt --all -- --check`，通过
+- 已运行：`cd core && cargo clippy --all-targets --all-features -- -D warnings`，通过
+- 已运行：`cd core && cargo test --workspace sync_external_created`，通过，相关 10 个测试通过
+- 已运行：`cd core && cargo test --workspace`，通过
+- 失败：无
+- 缺失：未运行远端 CI；本次为本地只读单任务验收，已运行本地 Core 等价验证
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+VERIFY_RESULT: PASS

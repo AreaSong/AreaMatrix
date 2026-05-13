@@ -1,0 +1,45 @@
+一、执行结论
+
+- 未完成：`0-2/task-11` 的 Bridge placeholder 实现和 manifest build 均通过，但 validation-driver 要求的 `xcodebuild test` 仍被当前沙箱环境阻塞，不能判定验收通过。
+
+二、执行范围
+
+- 单任务：`0-2/task-11`
+- 当前 task 相关实现文件：
+  - [CoreBridge.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift:3)
+  - [CoreBridgePlaceholderState.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/CoreBridgePlaceholderState.swift:3)
+  - [AppShellModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/AppShellModel.swift:1)
+  - [project.pbxproj](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj:13)
+  - [phase-0.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-0.md:354)
+
+三、完成情况
+
+- 创建 CoreBridge 占位层：通过。
+- Bridge 方法只声明后续接入边界：通过，统一抛 `generatedBindingsUnavailable`。
+- 不得用 mock 通过后续真实闭环验收：通过，占位状态明确写出 UniFFI bindings/static library 未链接。
+- Bridge 编译通过：通过，manifest 指定 `xcodebuild ... build` 返回 `** BUILD SUCCEEDED **`。
+- 占位状态可识别：通过，`statusLabel = "CoreBridge placeholder"`。
+- Forbidden Touches：未触碰，`git diff --name-status -- core/src` 与 cached 检查均为空。
+
+四、工程质量
+
+- 结构清晰，没有引入后续业务闭环、mock-only wiring 或静态假数据。
+- 无新增 Rust public API，无 rustdoc 需求；无新增依赖。
+- `rg "import area_matrix|AreaMatrix\\.|try!|fatalError|TODO|FIXME|print\\(" apps/macos/AreaMatrix` 无命中。
+- `swiftlint`、`swiftformat` 当前环境未安装，无法运行。
+
+五、验证情况
+
+- 通过：`xcodebuild -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' build CODE_SIGNING_ALLOWED=NO`
+- 通过：`xcodebuild build-for-testing ... CODE_SIGNING_ALLOWED=NO`
+- 通过：`xcrun xctest apps/macos/DerivedData/AreaMatrix/Build/Products/Debug/AreaMatrixTests.xctest`，1 个 XCTest 通过。
+- 失败：`xcodebuild test ... CODE_SIGNING_ALLOWED=NO`，exit 65，错误是 `com.apple.testmanagerd.control ... Sandbox restriction`。
+- 通过：`python3 tasks/prompts/_shared/prompt_pipeline.py doctor`
+- 通过：`python3 tasks/prompts/_shared/prompt_pipeline.py status`
+- 通过：`git diff --check`
+
+六、风险与后续
+
+- 剩余阻塞不是当前 Swift 代码失败，而是当前执行沙箱无法访问 Apple testmanagerd；在非受限 macOS/Xcode 环境补跑同一条 `xcodebuild test` 后，才能让 validation-driver 判 PASS。
+- 下一个任务仍建议先不要推进，先在可访问 `testmanagerd` 的环境补齐 `xcodebuild test` 证据；否则 task-loop 会继续卡在同一个验收点。
+

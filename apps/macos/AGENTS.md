@@ -25,5 +25,9 @@ macOS 改动后优先运行：
 
 ```bash
 xcodebuild -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' build CODE_SIGNING_ALLOWED=NO
-xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO
+./dev test macos
 ```
+
+`./dev test macos` 会先执行标准 `xcodebuild test`；只有明确遇到
+本地 `testmanagerd` sandbox 通信限制时，才用 `xcrun xctest` 执行同一 XCTest
+bundle。普通编译、链接或断言失败仍然算失败。

@@ -1,0 +1,52 @@
+**一、执行结论**
+已完成。
+
+本轮 repair retry 已修复上次验收 P0：S1-18 的 C1-09 不再通过 `list_files` / C1-11 扫描 hash 做重复预检，而是走当前文档允许的 `import_file` + `DuplicateFile(existing_path)` 真实 Core 闭环。
+
+**二、执行范围**
+单任务：`2-2/task-09`
+
+本轮关键修复文件：
+- [ImportBatchPreviewModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportBatchPreviewModel.swift:262)：批量预览只保留 C1-05 分类预览，不再调用重复 precheck / list files。
+- [ImportBatchCopyImportModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportBatchCopyImportModel.swift:228)：批量导入通过 `import_file` 传递 `DuplicateStrategy`，并在 `DuplicateFile` 后映射为 DUP 冲突。
+- [ImportBatchCopyImportState.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportBatchCopyImportState.swift:56)：DUP 默认 `Skip`，可切换 `Keep both` 并映射到 Core `DuplicateStrategy`。
+- [ImportEntrySheetView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportEntrySheetView.swift:44)：移除 batch duplicate prechecker 注入，冲突区仍显示真实 Core 检出的 DUP。
+- [ImportDropPreviewModelTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportDropPreviewModelTests.swift:209)：真实 CoreBridge 测试改为验证 `import_file` 返回 `DuplicateFile`。
+- [ImportBatchDuplicateResolutionTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportBatchDuplicateResolutionTests.swift:6)：覆盖 Core 检出 DUP、默认 Skip、Keep both retry、preview reapply 后保持策略。
+
+**三、完成情况**
+核对清单结果：
+- 只处理 S1-18 + C1-09：通过。
+- 已读取 S1-18、MVP control map、Core API、C1-09 capability spec：通过。
+- 只接入 C1-09 对应 CoreBridge / 状态 / 错误映射：通过，已移除 S1-18 对 C1-11 `list_files` 的消费。
+- 未实现相邻页面：通过。
+
+完成标准结果：
+- S1-18 中 C1-09 用户可见功能可触发和验收：通过，`DuplicateFile` 会显示 DUP 冲突表，默认 Skip，可改 Keep both。
+- 无 mock / fixture / 静态状态伪造生产闭环：通过，生产入口仍是 `CoreBridge()` + `import_file`。
+- 未触碰 control map 外能力：通过，`rg` 复核 S1-18 相关路径无 batch duplicate precheck / `listFiles` 调用残留。
+- Forbidden Touches：未触碰，`git diff --name-only -- core/src` 无输出。
+
+**四、工程质量**
+代码结构清晰，重复处理集中在批量导入状态机，预览和导入职责重新分开。错误处理显式：`DuplicateFile` 单独进入 DUP 状态，其他 Core 错误仍走 error mapper。
+
+未新增依赖；未改 Rust public API；无新增 rustdoc 需求。没有占位、硬编码通过态或 mock-only 生产逻辑。
+
+**五、验证情况**
+已运行并通过：
+- `xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：通过，`** BUILD SUCCEEDED **`。
+- `./dev test macos`：通过。标准 `xcodebuild test` 被本地 `testmanagerd` sandbox 通信限制阻断，脚本按 repo 规则复用 XCTest bundle，`195 tests, 0 failures`。
+- `python3 tasks/prompts/_shared/prompt_pipeline.py verify --task 2-2/task-09`：已生成 verify-ready prompt，确认验收入口和 manifest 边界。
+
+未运行：
+- `swiftformat --lint .`
+- `swiftlint --strict`
+
+原因：本 task manifest 未要求；本轮按 validation-driver 对 `apps/macos/**` 的必需 build/test 门禁执行。
+
+**六、风险与后续**
+剩余风险：未做 macOS 真机 UI 手工交互验证；当前证据覆盖 build、单测和真实 Core duplicate error 路径。
+
+回滚思路：回退上述 `apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**` 和 `project.pbxproj` 中本 task 相关改动即可；未涉及 `core/src/**`。
+
+建议下一个任务：`2-2/task-10`，做 S1-18 page integration verify，统一检查 C1-05、C1-06、C1-09 在整页上的覆盖。  

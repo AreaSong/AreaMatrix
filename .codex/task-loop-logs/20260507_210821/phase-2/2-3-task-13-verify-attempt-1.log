@@ -1,0 +1,97 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`2-3/task-13`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-3-detail-settings/task-13-s1-26-c1-07-import-move-file.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-26-settings-general.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-07-import-move-file.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：6
+- 未覆盖项数：1
+- 通过项数：6
+- 不通过项数：1
+- 阻塞项数：1
+
+四、逐项验收结果
+
+- 项目：只处理 S1-26 页面中的 C1-07 功能点
+- 结果：通过
+- 证据：实现集中在通用设置默认存储模式，`GeneralSettingsStorageMode.move` 映射 `"Moved"`，未发现本 task 修改或实现相邻页面功能。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/GeneralSettingsModel.swift:4`
+
+- 项目：读取页面规格、MVP control map、Core API 和 C1-07 能力规格
+- 结果：通过
+- 证据：已逐个读取 4 个 Exact Docs；control map 声明 S1-26 绑定 C1-04、C1-07，Core 接入为 Real Core。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:41`
+
+- 项目：只接入 C1-07 对应 CoreBridge / 状态 / 错误映射
+- 结果：通过
+- 证据：设置页通过 `CoreConfigurationLoading` / `CoreConfigurationUpdating` 读写 `RepoConfigSnapshot.defaultMode`，`CoreBridge.updateConfig` 转换到 UniFFI `StorageMode.moved`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift:201`
+
+- 项目：不顺手实现相邻页面
+- 结果：通过
+- 证据：未见 S1-27..S1-35 页面范围扩散；`core/src/**` 未出现在 git 状态修改中。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Settings/GeneralSettingsView.swift:214`
+
+- 项目：S1-26 中 C1-07 用户可见功能可被触发和验收
+- 结果：不通过
+- 证据：设置页能选择 Move 并保存为 `"Moved"`，但 S1-26 文档明确“设置只影响之后的默认行为”和“导入时仍可在 ImportSheet 临时更改”。当前导入入口没有携带 `opening.config.defaultMode`；`ImportEntryRequest` 没有默认存储模式字段；单文件、批量、文件夹导入模型仍默认或重置为 `.copy`，所以无法证明设置后的 Move 默认会影响之后的 ImportSheet。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/OnboardingModelInputs.swift:24`
+
+- 项目：没有使用 mock、fixture 或静态状态伪造真实 Core 闭环
+- 结果：通过
+- 证据：新增测试包含真实 `CoreBridge` 初始化资料库并保存 `defaultMode = "Moved"`，不是只看 mock updater。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/GeneralSettingsPageFeatureTests.swift:212`
+
+- 项目：未触碰 control map 之外 Core 能力
+- 结果：通过
+- 证据：UDL 与 Core API 中 C1-07 所需 `StorageMode.Moved` / `import_file` 已存在；未修改 `core/src/**`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:296`
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过，设置保存结构清晰，但后续默认行为没有贯通到导入入口，数据流在 `RepoConfigSnapshot.defaultMode -> ImportEntryRequest -> Import*Model.selectedStorageMode` 断开。
+- 注释 / rustdoc / 文档同步：通过，本 task 未新增 public Rust API；文档与 UDL 已读且未发现本 task 需要改文档。
+- 错误处理与边界处理：通过，Move 默认保存前有风险确认，保存失败回滚到上一个真实 settings 值。
+- 测试与验证覆盖：不通过，已有测试覆盖保存 `Moved` 和不立即移动外部文件，但缺少“后续 ImportSheet 默认选中 Move”的回归证据。
+- 占位、硬编码、mock-only、一次性实现检查：不通过，导入模型仍硬编码 `.copy` 默认值，导致 S1-26 默认存储模式没有真实影响后续导入默认行为。
+
+六、阻塞项
+
+- P0：Move 默认设置未被后续 ImportSheet 消费，C1-07 用户可见闭环断开
+  - 说明：S1-26 文档要求默认存储模式影响之后的默认行为，并允许在 ImportSheet 临时更改；当前只保存了 settings store，没有把 `opening.config.defaultMode` 传入导入请求或导入模型。
+  - 绝对路径与行号：
+    - `/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-26-settings-general.md:14`
+    - `/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-26-settings-general.md:41`
+    - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/OnboardingModelInputs.swift:24`
+    - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportEntryRequest.swift:21`
+    - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreviewModel.swift:326`
+    - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportBatchCopyImportModel.swift:7`
+    - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportFolderPreviewModel.swift:18`
+  - 为什么导致不通过：保存 `Moved` 不能证明 C1-07 的 S1-26 页面功能完成；后续导入默认仍为 Copy，用户设置的默认 Move 没有真实产品效果。
+
+七、验证情况
+
+- 已运行：
+  - `xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：通过，`BUILD SUCCEEDED`
+  - `./dev test macos`：通过；标准 `xcodebuild test` 被本地 sandbox 的 `testmanagerd` 通信限制阻断后，脚本按 repo 规则复用已构建 XCTest bundle，`xcrun xctest` 通过，340 tests、0 failures
+- 失败：无产品编译或测试失败
+- 缺失：缺少证明 S1-26 `defaultMode = Moved` 会让后续 ImportSheet 默认选中 Move 并调用 C1-07 move import 路径的测试或实现证据
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+
+VERIFY_RESULT: FAIL

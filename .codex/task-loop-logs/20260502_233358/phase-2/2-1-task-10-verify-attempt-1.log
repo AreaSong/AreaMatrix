@@ -1,0 +1,72 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`2-1/task-10`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-1-first-launch-main/task-10-s1-05-c1-02-init-empty-repo.md`
+- 核验代码：
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/App/AreaMatrixApp.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/AppShellModel.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ValidatePathIntegrationTests.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 S1-05 页面中的 C1-02 功能点
+- 结果：通过
+- 证据：`InitializingStepView` 只针对 `draft.mode == .createEmpty` 展示空库初始化文案和步骤；同页 C1-03/C1-16 未在本次 diff 中扩展。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/App/AreaMatrixApp.swift:114`
+
+- 项目：读取页面规格、MVP control map、Core API 和 C1-02 能力规格
+- 结果：通过
+- 证据：S1-05 要求初始化页显示路径、执行状态和步骤；control map 将 S1-05 绑定 `C1-02, C1-03, C1-16` 且 `C1-02` API 为 `init_repo`；Core API/UDL 均声明 `init_repo(repo_path, RepoInitOptions)`；C1-02 规格要求创建 `.areamatrix` metadata、DB、默认规则和 generated overview。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-05-initializing.md:20`，`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:20`，`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:541`，`/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-02-init-empty-repo.md:47`
+
+- 项目：只接入 C1-02 对应 CoreBridge / 状态 / 错误映射
+- 结果：通过
+- 证据：确认页触发后先进入 `.initializing(draft)`，随后调用 `initializeEmptyRepository`；`CoreBridge.initializeEmptyRepository` 使用真实 `initRepo`，参数为 `mode: .createEmpty`、`createDefaultCategories: true`、`overviewOutput: .generatedOnly`；错误会经 `routeInitializationFailure` 映射为结构化 Core error 展示路径。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/AppShellModel.swift:331`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift:325`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/UniFFI/area_matrix.swift:4284`
+
+- 项目：不顺手实现相邻页面
+- 结果：通过
+- 证据：当前变更只在初始化页展示与 C1-02 测试上落地；`git diff --name-only -- core/src apps/macos/AreaMatrix apps/macos/AreaMatrixTests core/area_matrix.udl` 仅显示 `AreaMatrixApp.swift` 与 `ValidatePathIntegrationTests.swift`，未扩展到相邻页面实现。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/App/AreaMatrixApp.swift:137`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。状态流清晰：确认页 -> `.initializing` -> CoreBridge `initRepo` -> 成功进入 main loading，失败走结构化错误路由。
+- 注释 / rustdoc / 文档同步：通过。本 task 未新增 public Rust API；UDL 与 Core API 中 `init_repo`、`RepoInitOptions`、`RepoInitMode.CreateEmpty` 对齐。
+- 错误处理与边界处理：通过。Swift 生产路径未发现 `try!`、强制解包或 View body 内 IO；初始化前会重新校验路径状态，状态漂移时阻断写入。
+- 测试与验证覆盖：通过。新增/现有测试覆盖初始化页切换、真实 CoreBridge 空库初始化 metadata、重复初始化失败、README 不被创建/覆盖。
+- 占位、硬编码、mock-only、一次性实现检查：通过。生产链路走真实 UniFFI `initRepo`；测试中 fixture/recording initializer 仅用于模型状态验证，并有真实 CoreBridge 文件系统测试兜底。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+- 结果：通过，输出 `** BUILD SUCCEEDED **`
+
+- 已运行：`xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+- 结果：环境阻断，测试 bundle 已构建，但 test runner 阶段因 `com.apple.testmanagerd.control` sandbox restriction 失败。
+
+- 已运行：`bash scripts/check-macos-tests.sh`
+- 结果：通过。脚本确认标准 `xcodebuild test` 被本地 sandbox 阻断后，复用 XCTest bundle 通过 `xcrun xctest` 执行，45 tests passed，0 failures。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+VERIFY_RESULT: PASS

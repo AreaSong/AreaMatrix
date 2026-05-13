@@ -1,0 +1,87 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`0-1/task-01`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-0/0-1-执行体系/task-01-治理入口.md`
+- Manifest：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-0.md`
+- 已按要求读取 task、共享规则、切片规则、工程质量规则、编码规范、repo-local validation-driver、依赖图、phase manifest、`## 0-1/task-01` 和全部 Exact Docs。
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：0
+- 通过项数：8
+- 不通过项数：2
+- 阻塞项数：1
+
+四、逐项验收结果
+
+- Exact Docs 存在并已读取：通过  
+  证据：`README.zh-CN.md`、`docs/README.md`、`docs/roadmap/stage-1-mvp.md`、`docs/development/coding-standards.md` 均存在并已读取。
+
+- Expected New Paths：通过  
+  证据：8/8 均存在：`AGENTS.md`、`.ai-governance/README.md`、`.ai-governance/core/agent-principles.md`、`.ai-governance/project/areamatrix-rules.md`、`.ai-governance/workflows/prompt-task-runtime.md`、`.codex/README.md`、`.codex/references/index.md`、`.codex/templates/prompt-task-template.md`。
+
+- Forbidden Touches：通过  
+  证据：`git status --short -- core apps .cursor .agent .agents` 无输出。`core/AGENTS.md` 与 `apps/macos/AGENTS.md` 当前存在但非空、已跟踪，未发现本次工作区改动。
+
+- 根 `AGENTS.md` 入口顺序 / SSOT / 高风险 / 验证要求：通过  
+  证据：`/Users/as/Ai-Project/project/AreaMatrix/AGENTS.md:9`、`:15`、`:31`、`:52`。
+
+- `.ai-governance/` 统一源事实与三类规则覆盖：通过  
+  证据：`/Users/as/Ai-Project/project/AreaMatrix/.ai-governance/README.md:1`、`:11`、`:18`；三份规则文件均存在。
+
+- `.codex/` 只承载 Codex 适配材料：不通过  
+  证据：`.codex/README.md` 明确说不是权威来源，但仍引用已缺失的治理检查入口和源事实：`/Users/as/Ai-Project/project/AreaMatrix/.codex/README.md:20`、`:30`。
+
+- 不创建空的 `core/AGENTS.md` 或 `apps/macos/AGENTS.md`：通过  
+  证据：两者当前非空，分别 33 行和 29 行。
+
+- 完成标准：新协作入口说明先读哪里、高风险、如何验证：通过  
+  证据：`/Users/as/Ai-Project/project/AreaMatrix/AGENTS.md:9`、`:31`、`:52`。
+
+- 完成标准：治理材料与现有 `docs/` 无明显冲突：不通过  
+  证据：`.codex/references/index.md` 和 validation-driver 仍引用 `CODE_REVIEW.md`、`docs/development/dependency-policy.md`、`docs/development/ci-governance.md`，但这些文件当前缺失；同时 `scripts/check-governance.sh` 也缺失。
+
+- Manifest 验证命令：通过  
+  证据：`python3 tasks/prompts/_shared/prompt_pipeline.py doctor` 返回 `doctor: OK`。
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。当前 task 是治理文档入口，无产品代码实现；8 个预期路径结构清楚。
+- 注释 / rustdoc / 文档同步：不通过。`.codex` 与 validation-driver 对治理文件和检查脚本的引用已失效。
+- 错误处理与边界处理：通过。当前 task 不涉及运行时代码或用户文件写路径；高风险边界在 `AGENTS.md` 和 `.ai-governance` 中有声明。
+- 测试与验证覆盖：不通过。`doctor` 通过，但 validation-driver 当前引用的治理检查脚本缺失，`bash scripts/check-governance.sh` 无法执行。
+- 占位、硬编码、mock-only、一次性实现检查：通过。未发现产品闭环伪实现；`prompt-task-template.md` 的占位属于模板职责。
+
+六、阻塞项
+
+- P1：Codex / validation-driver 治理引用不可执行  
+  说明：`.codex` 和 repo-local validation-driver 仍要求读取或运行已缺失的治理文件与脚本，导致治理材料和现有仓库状态存在明显冲突，不能判定 task 完成。  
+  绝对路径与行号：  
+  `/Users/as/Ai-Project/project/AreaMatrix/.codex/README.md:20`  
+  `/Users/as/Ai-Project/project/AreaMatrix/.codex/README.md:30`  
+  `/Users/as/Ai-Project/project/AreaMatrix/.codex/references/index.md:19`  
+  `/Users/as/Ai-Project/project/AreaMatrix/.codex/references/index.md:20`  
+  `/Users/as/Ai-Project/project/AreaMatrix/.codex/references/index.md:21`  
+  `/Users/as/Ai-Project/project/AreaMatrix/.codex/skills-src/areamatrix-validation-driver/SKILL.md:15`  
+  `/Users/as/Ai-Project/project/AreaMatrix/.codex/skills-src/areamatrix-validation-driver/SKILL.md:16`  
+  `/Users/as/Ai-Project/project/AreaMatrix/.codex/skills-src/areamatrix-validation-driver/SKILL.md:17`  
+  缺失目标：`/Users/as/Ai-Project/project/AreaMatrix/CODE_REVIEW.md`、`/Users/as/Ai-Project/project/AreaMatrix/docs/development/dependency-policy.md`、`/Users/as/Ai-Project/project/AreaMatrix/docs/development/ci-governance.md`、`/Users/as/Ai-Project/project/AreaMatrix/scripts/check-governance.sh`。  
+  为什么导致不通过：完成标准要求治理材料与现有 `docs/` 无明显冲突；validation-driver 也要求不能在 review / dependency / CI / Git evidence blockers 未解决时报告 PASS。
+
+七、验证情况
+
+- 已运行：`python3 tasks/prompts/_shared/prompt_pipeline.py doctor`：通过，输出 `doctor: OK`。
+- 已运行：`bash scripts/check-skills.sh`：通过，输出 `skill health: OK (6 skill(s))`。
+- 已运行：`bash scripts/check-governance.sh`：失败，`scripts/check-governance.sh: No such file or directory`。
+- 缺失：治理检查入口及其引用的部分治理源文件当前不存在。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+
+VERIFY_RESULT: FAIL

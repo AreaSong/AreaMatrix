@@ -1,0 +1,37 @@
+一、执行结论
+
+- 已完成。
+
+二、执行范围
+
+- 单任务：`2-2/task-25`
+- 本次修复文件：
+  - [ImportEntrySingleFileFooter.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportEntrySingleFileFooter.swift:18)
+  - [ImportSingleFileDuplicateResolutionTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFileDuplicateResolutionTests.swift:300)
+
+三、完成情况
+
+- 核对清单：已按 S1-24 + C1-10 修复 name conflict Replace 主按钮路径。
+- 完成标准：同名冲突选择 Replace 后，底部主按钮会先打开 S1-24 确认，不再直接调用 Core overwrite；确认后才允许导入传 `.overwrite`。
+- Forbidden Touches：未触碰 `core/src/**`；检查 `git status --short core/src`、`git diff --name-only -- core/src`、`git ls-files --others --exclude-standard -- core/src` 均无输出。
+- Control map 外能力：未新增相邻页面或 Core 能力；duplicate 路径只是沿用同一个 gate，未扩展 C1-09 行为。
+
+四、工程质量
+
+- 代码结构：把底部主按钮的 Replace 确认门禁集中到 `ImportEntrySingleFilePrimaryActionGate`，避免 duplicate/name 两条路径再次分叉。
+- 错误与边界：未确认 Replace 时不进入 `importSelectedFile()`，不会触发 importer，也不会产生文件覆盖副作用。
+- 占位/mock：产品路径没有 mock；测试里使用 recording importer 只用于证明确认前没有 Core 调用。
+- 注释/rustdoc/文档：本次未改 Rust public API、UDL 或文档，无需 rustdoc。
+
+五、验证情况
+
+- 通过：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+- 通过：`./dev test macos`；标准 `xcodebuild test` 被本地 `testmanagerd` sandbox 阻断，脚本 fallback 到 `xcrun xctest`，274 tests，0 failures。
+- 通过：`git diff --check`
+- 未运行：SwiftFormat / SwiftLint；当前环境 `swiftformat`、`swiftlint` 命令不存在。
+
+六、风险与后续
+
+- 剩余风险：未做真实 macOS UI 点击冒烟；当前证据覆盖模型状态、底部主按钮 gate、build 和 XCTest。
+- 建议下一个任务：进入 `2-2/task-25` verify-ready 验收；通过后再推进 `2-2/task-26`。
+

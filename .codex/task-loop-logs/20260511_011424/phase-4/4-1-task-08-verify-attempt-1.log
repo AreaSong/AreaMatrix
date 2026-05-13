@@ -1,0 +1,70 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-1/task-08`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-08-c2-02-failure-edge.md`
+- 实际验收路径：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/**`
+
+三、完成度摘要
+
+- 已覆盖项数：9
+- 未覆盖项数：0
+- 通过项数：9
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：空态、非法输入、权限、IO/DB 错误和错误码映射
+- 结果：通过
+- 证据：空库返回空 facets 且无写入；非法 category/file kind/tag/date/current path/query/repo path 均返回 `Config`；DB 损坏和 DB 权限失败返回 `Db` 并映射到 `ErrorKind::Db`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/search_filters_failure_recovery.rs:194`、`:206`、`:226`、`:263`、`:294`
+
+- 项目：失败不留下半成品
+- 结果：通过
+- 证据：C2-02 文档声明无 DB 写入、无文件系统变化；实现用只读 SQLite 连接和 `PRAGMA query_only = ON`；DB 损坏测试证明用户文件保留、staging/generated 不产生半成品。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-2-experience/C2-02-search-filters.md:21`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/search/repo.rs:174`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/search_filters_failure_recovery.rs:263`
+
+- 项目：隐私/AI/远程调用默认关闭、密钥不入日志
+- 结果：通过
+- 证据：C2-02 明确语义 filter 和 AI filter 属于 Stage 3；Core API 声明不会触发 AI/语义过滤；测试确认不会创建 `.areamatrix/ai`、`.areamatrix/remote`、`.areamatrix/secrets`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-2-experience/C2-02-search-filters.md:40`、`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:1291`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/search_filters_failure_recovery.rs:323`
+
+- 项目：不得吞错或静默降级
+- 结果：通过
+- 证据：实现先验证 query/filter，parser diagnostic 返回 `Config`，DB 打开/prepare/query/row 失败均返回 `Db`；未发现将失败伪装为空结果的路径。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/search/facets.rs:15`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/search/validation.rs:21`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/search/repo.rs:56`
+
+- 项目：Expected New Paths / Forbidden Touches
+- 结果：通过
+- 证据：`core/src/**`、`core/area_matrix.udl`、`core/tests/**` 均已落地；`git status --short apps` 无输出，未发现 `apps/**` 违规触碰。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/search.rs`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/search_filters_failure_recovery.rs`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。C2-02 拆在 `search/facets.rs`、`search/validation.rs`、`search/repo.rs`，职责清晰。
+- 注释 / rustdoc / 文档同步：通过。`list_filter_facets` public API 有 rustdoc，UDL/API/spec/control map 对齐。
+- 错误处理与边界处理：通过。失败路径显式返回 `Config` / `Db`，未发现吞错或静默降级。
+- 测试与验证覆盖：通过。新增 failure recovery 测试覆盖空态、非法输入、DB 损坏、权限、AI/remote/secret 副作用。
+- 占位、硬编码、mock-only、一次性实现检查：通过。facet 查询走真实 repo metadata、SQLite 只读查询和真实 Core API。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check all`
+- 通过：governance、skills、task-loop check、prompt doctor、git diff --check、`cargo fmt --all -- --check`、`cargo clippy --all-targets --all-features -- -D warnings`、`cargo test --workspace`
+- 通过：`search_filters_failure_recovery` 5 项测试全部通过
+- 通过：macOS 检查中 `xcodebuild test` 被本地 sandboxed `testmanagerd` 阻断后，脚本按仓库规则复用 built XCTest bundle，`xcrun xctest` 通过；SwiftFormat 0/226 需格式化，SwiftLint 0 violations
+- 缺失：未发现必需验证缺失；命令最终退出码 0
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS

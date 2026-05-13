@@ -33,5 +33,5 @@ atomic
 ## 验证
 
 ```bash
-./scripts/check-all.sh
+./dev check all
 ```

@@ -1,0 +1,40 @@
+一、执行结论：已完成。
+
+二、执行范围：
+- Core 实现：`delete_file` / `remove_index_entry` 从 API 接到真实 storage/db 路径。
+- 新增实现与测试：
+  - [core/src/storage/delete.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/delete.rs:18)
+  - [core/src/db/delete.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/db/delete.rs:10)
+  - [core/tests/delete_remove_index_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/delete_remove_index_implementation.rs:143)
+- 修改：
+  - [core/src/api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:324)
+  - [core/src/db/mod.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/db/mod.rs:88)
+  - [core/src/storage/mod.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/mod.rs:1)
+  - [core/src/storage/replacement_trash.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/replacement_trash.rs:99)
+  - [docs/modules/change-log.md](/Users/as/Ai-Project/project/AreaMatrix/docs/modules/change-log.md:19) 同步了 Exact Doc drift：补齐 `removed_from_index`。
+
+三、完成情况：
+- C1-23 implementation 范围：完成。
+- `delete_file`：仅允许 `Copied/Moved` active row，走系统 Trash，DB 标记 `deleted`，写 `change_log.action = deleted`。
+- `remove_index_entry`：仅移除 Indexed / Adopted / External 类索引可见性，不碰外部源文件，写 `removed_from_index`。
+- 未实现相邻 C1 能力或 UI。
+- `apps/**` 未触碰；`git diff --name-only -- apps` 为空。
+- 工作区中 `.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json` 仍是既有脏文件，我没有处理它们。
+
+四、工程质量：
+- 删除路径有归档 guard：DB 失败会恢复 repo-owned 文件，Trash 失败会回滚 metadata。
+- Remove from Index 不执行文件 IO、Trash、iCloud 下载或永久删除。
+- 新增测试覆盖 Trash 证据、DB 状态、change_log、note 保留、错误操作无副作用、DB 失败回滚。
+- 无新增依赖，无 mock-only / hardcoded pass / 一次性脚本实现。
+
+五、验证情况：
+- `cd core && cargo fmt --all -- --check`：通过。
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过。
+- `cd core && cargo test --workspace delete_remove_index`：通过。
+- 追加复核：`cargo test --test delete_remove_index_contract_api` 3 passed；`cargo test --test delete_remove_index_implementation` 4 passed。
+- `git diff --check`：通过。
+
+六、风险与后续：
+- 剩余风险：未做 macOS UI 消费验证，因为本 task 不绑定 UI 且 `apps/**` forbidden。
+- 建议下一个任务：继续 `1-5/task-08`，按 manifest 做 C1-23 failure/edge 或后续验证切片。
+

@@ -1,0 +1,84 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`2-1/task-18`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-1-first-launch-main/task-18-first-launch-integration-verify.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：9
+- 未覆盖项数：0
+- 通过项数：9
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：Expected New Paths 落地
+- 结果：通过
+- 证据：`apps/macos/AreaMatrix`、`apps/macos/AreaMatrixTests`、`apps/macos/AreaMatrix.xcodeproj/project.pbxproj` 均存在并已纳入工程。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git status --short -- core/src` 无输出；未发现 `core/src/**` 被触碰。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+- 项目：本闭环页面与能力覆盖
+- 结果：通过
+- 证据：control map 明确 S1-01 到 S1-07 分别绑定 C1-04、C1-01、C1-03、C1-21、C1-02、C1-16；`progress.json` 显示 `2-1/task-01` 到 `2-1/task-17` 均为 `completed`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md`
+
+- 项目：真实 Core wiring
+- 结果：通过
+- 证据：`CoreBridge` 对 task 绑定能力走生成绑定：`validateRepoPath`、`loadConfig`、`initRepo`、`mapCoreError`、`createDiagnosticsSnapshot`、`resumeScanSession`；打开完成页走 `load_config + list_tree_json`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift`
+
+- 项目：用户路径走通
+- 结果：通过
+- 证据：`MainWindow` 串起 welcome、choose-path、validate-path、confirm-init、initializing、init-failed、init-done、main-loading；`OnboardingModel` 在写入前重新校验路径，初始化成功后保存 repo path 并进入完成页。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/MainWindow.swift`
+
+- 项目：mock / placeholder 检查
+- 结果：通过
+- 证据：first-launch 生产路径未使用 mock-only 闭环；fixture/helper 仅存在于 XCTest。`CoreBridgePlaceholderState` 仍存在，但本 task 绑定能力已由 generated bindings 消费，不作为通过态伪装。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift`
+
+- 项目：不得新增未列页面或 Core 能力
+- 结果：通过
+- 证据：实现范围集中在 onboarding/main shell、bridge snapshot、tests 和 xcodeproj；未发现新增 control map 外能力消费。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。View 只做展示与交互，Core 调用集中在 `OnboardingModel` / `CoreBridge`，符合 macOS 层边界。
+- 注释 / rustdoc / 文档同步：通过。本任务未改 Core public API；UDL 与 docs 中 task 绑定 API 对齐。
+- 错误处理与边界处理：通过。权限、DB、Config、初始化失败、诊断失败、打开失败均走 `CoreError` 映射；取消初始化等待安全点，不删除用户原文件。
+- 测试与验证覆盖：通过。`scripts/check-macos-tests.sh` fallback 执行同一 XCTest bundle，65 tests / 0 failures。
+- 占位、硬编码、mock-only、一次性实现检查：通过。真实临时 repo 测试覆盖 empty init、adopt existing、load config、tree open、README 不覆盖。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+- 结果：失败，退出码 65；失败原因为当前沙盒无法访问 `com.apple.testmanagerd.control`，日志明确包含 `Sandbox restriction`。构建与 test bundle 链接已完成，未显示编译或断言失败。
+- 已运行：`bash scripts/check-macos-tests.sh`
+- 结果：通过。脚本先复现 `xcodebuild test` sandbox 阻断，再按 repo-local validation-driver 规则用 `xcrun xctest` 执行已构建的 `AreaMatrixTests.xctest`；65 tests 全部通过。
+- 缺失：无。原始 `xcodebuild test` 在当前环境不能直接完成，但已有 repo 认可的 sandbox fallback 证据。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。first-launch 闭环可按用户路径走通，失败/恢复路径有明确证据，未发现 mock-only 闭环、Forbidden Touches 或越界能力。
+
+VERIFY_RESULT: PASS

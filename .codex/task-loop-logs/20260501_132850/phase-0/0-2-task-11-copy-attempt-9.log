@@ -1,0 +1,42 @@
+一、执行结论
+
+- 未完成（BLOCKED）
+- 代码层面的 `CoreBridge` placeholder 已补齐；阻塞仍是 required `xcodebuild test` 在当前沙箱无法访问 `com.apple.testmanagerd.control`，不能按 validation-driver 判 PASS。
+
+二、执行范围
+
+- 单任务：`0-2/task-11`
+- 本轮修改：
+  - [CoreBridge.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift:3)：补回只读 placeholder 诊断面 `state` / `coreAvailability()`，同时保留所有真实 Core 边界统一抛 `generatedBindingsUnavailable`。
+  - [progress.json](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/progress.json:323)：将 `0-2/task-11` 记录为 `blocked`，说明 build/xctest 通过但 required `xcodebuild test` 被沙箱阻断。
+- 未触碰 `core/src/**`。
+
+三、完成情况
+
+- 创建 CoreBridge 占位层：通过。
+- Bridge 方法只声明后续接入边界：通过，所有 Core API 边界返回 `Never` 并显式抛错。
+- 不得用 mock 通过后续真实闭环验收：通过，当前只是可识别 placeholder，不返回真实业务数据。
+- Bridge 编译通过：通过。
+- 占位状态在任务汇报中可识别：通过，`CoreBridgePlaceholderState.statusLabel = "CoreBridge placeholder"`。
+
+四、工程质量
+
+- 结构清晰：Bridge、placeholder state、shell model 分离。
+- 错误处理：占位调用显式失败，不静默吞错。
+- 无新增依赖、无新增 Rust public API。
+- 仍存在验证阻塞：required `xcodebuild test` 未通过，不能标记 completed。
+
+五、验证情况
+
+- 通过：`xcodebuild -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' build CODE_SIGNING_ALLOWED=NO`
+- 失败：`xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`，exit code 65，原因是 `com.apple.testmanagerd.control` sandbox restriction。
+- 通过（补充证据）：`xcrun xctest apps/macos/DerivedData/AreaMatrix/Build/Products/Debug/AreaMatrix.app/Contents/PlugIns/AreaMatrixTests.xctest`，1 个测试通过。
+- 通过：`git diff --check`
+- 通过：`python3 tasks/prompts/_shared/prompt_pipeline.py doctor`
+- `swiftlint` / `swiftformat` 未运行：当前环境未找到对应命令。
+
+六、风险与后续
+
+- `.codex/**` 当前也被沙箱拒绝写入：`touch .codex/__write_test__` 返回 `Operation not permitted`，所以 attempt-9 copy/verify 日志和 run summary 无法落盘；[summary.json](/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-runs/20260501_132850/summary.json:880) 仍显示 `in_progress`。
+- 下一步应在非当前受限沙箱环境重跑 required `xcodebuild test`，并恢复 `.codex` task-loop evidence 写入；通过后再标记 `0-2/task-11` completed。
+

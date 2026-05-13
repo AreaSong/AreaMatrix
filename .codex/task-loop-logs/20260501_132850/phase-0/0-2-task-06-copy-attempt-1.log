@@ -1,0 +1,37 @@
+一、执行结论
+
+已完成 `0-2/task-06`。
+
+二、执行范围
+
+单任务执行，仅修改 [scripts/build-core.sh](/Users/as/Ai-Project/project/AreaMatrix/scripts/build-core.sh:10)。
+
+三、完成情况
+
+- 核对清单 1：脚本存在，并保留可执行位。
+- 核对清单 2：脚本只封装 Core 构建、universal staticlib 合并、Swift bindings 生成及其前置检查。
+- 核对清单 3：补齐 `fail`、命令检查、Core 输入文件检查、Rust target 检查、产物检查，失败输出为可读错误。
+- Forbidden Touches：未触碰 `core/src/**`、`apps/macos/AreaMatrix/**`。
+
+四、工程质量
+
+脚本结构保持小函数拆分：`fail`、`require_command`、`require_file`、`require_rust_target`。没有新增依赖、mock、硬编码通过态或无关业务逻辑。未改 Rust/Swift public API，因此无 rustdoc 或文档同步需求。
+
+五、验证情况
+
+已运行并通过：
+
+```bash
+bash -n scripts/build-core.sh
+git diff --check -- scripts/build-core.sh
+git diff --name-only -- core/src apps/macos/AreaMatrix
+```
+
+最后一条无输出，确认未改 forbidden paths。未运行完整 `scripts/build-core.sh`，因为本 task 的完成标准是 `bash -n`，且实际执行会生成 macOS bridge 产物，不属于本次允许修改路径。
+
+六、风险与后续
+
+剩余风险：未验证真实 macOS universal build 和 UniFFI bindgen 运行结果，仅完成脚本语法和可维护性检查。建议下一个任务进入 `0-2/task-07`：`update-bindings` 脚本。
+
+当前工作树另有 `.codex/task-loop-runs/20260501_132850/summary.json` 和 `tasks/prompts/_shared/progress.json` 已处于 modified 状态；本轮没有编辑它们。
+

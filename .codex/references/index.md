@@ -37,7 +37,7 @@ Codex 在 AreaMatrix 中处理任务时，按以下顺序定位上下文：
 - Skills：`bash scripts/check-skills.sh`
 - Governance：`bash scripts/check-governance.sh`
 - Prompt runner：`python3 tasks/prompts/_shared/prompt_pipeline.py doctor`
-- Task loop full check：`bash scripts/check-task-loop.sh`
-- Task loop：`bash scripts/run_area_matrix_task_pipeline.sh --status`
-- Task loop reset：`bash scripts/run_area_matrix_task_pipeline.sh --reset-progress`
+- Task loop full check：`./task-loop check`
+- Task loop：`./task-loop status`
+- Task loop reset：`./task-loop reset-progress`
 - Task loop Git：默认 `GIT_CHECKPOINT=commit`，上传时显式 `GIT_CHECKPOINT=push`

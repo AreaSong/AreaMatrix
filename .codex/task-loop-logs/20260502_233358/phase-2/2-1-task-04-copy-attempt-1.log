@@ -1,0 +1,41 @@
+**一、执行结论**
+
+已完成 `2-1/task-04: S1-03 + C1-03 adopt-existing-repo`。
+
+**二、执行范围**
+
+修改文件：
+- [CoreBridge.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift:15)
+- [AppShellModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/AppShellModel.swift:160)
+- [MainWindow.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/MainWindow.swift:63)
+- [AreaMatrixApp.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/App/AreaMatrixApp.swift:13)
+- [AreaMatrixAppSmokeTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/App/AreaMatrixAppSmokeTests.swift:12)
+
+工作区原本已有的 `.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json` 仍保持未处理，未纳入本次实现。
+
+**三、完成情况**
+
+- 只处理了 `S1-03` 页面中的 `C1-03`：通过 `get_latest_scan_session` 读取未完成 adopt scan session，并把 adopt-existing Continue 记录成专门 action。
+- 未调用 `init_repo`，没有在 S1-03 创建 `.areamatrix/` 或写用户目录。
+- S1-03 UI 现在会展示接管已有目录承诺，并在发现未完成 adopt scan 时展示 scan session 状态。
+- 未实现同页的 `C1-01` / `C1-21` 之外新增能力，也未实现相邻页面。
+- `Forbidden Touches`: 未触碰 `core/src/**`，范围检查无输出。
+
+**四、工程质量**
+
+生产代码走真实 `CoreBridge`，没有 mock-only 或静态伪闭环；测试里使用 recording doubles 只验证状态机和错误路径。错误处理显式区分路径校验错误与 scan session 读取失败；所有修改文件仍低于 500 行，未新增依赖，未做用户文件移动、删除、覆盖或重命名。
+
+**五、验证情况**
+
+通过：
+- `git diff --check`
+- `git diff --name-only -- core/src`
+- `xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+- `bash scripts/check-macos-tests.sh`：标准 `xcodebuild test` 被本地沙箱 `testmanagerd.control` 阻断后，脚本按仓库策略 fallback 到 `xcrun xctest`，24 个测试全部通过。
+
+标准 `xcodebuild test` 单独运行失败原因是当前环境沙箱限制，不是编译或断言失败。
+
+**六、风险与后续**
+
+剩余风险：未做真实 UI 手工交互截图；本任务也不负责真正执行 adopt 初始化，`init_repo(mode: AdoptExisting)` 留给 `2-1/task-08` / 后续页面任务。建议下一个任务继续执行 `2-1/task-05` 或按队列进入 S1-03 page integration verify。 
+

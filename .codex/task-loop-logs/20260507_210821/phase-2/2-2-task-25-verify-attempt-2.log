@@ -1,0 +1,73 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`2-2/task-25`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-2-import-conflict/task-25-s1-24-c1-10-resolve-name-conflict.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-24-replace-confirm.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-10-resolve-name-conflict.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：0
+- 通过项数：9
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 S1-24 页面中的 C1-10 功能点
+- 结果：通过
+- 证据：`S1-24` control map 绑定 `C1-09, C1-10`，本任务只核验 `C1-10`；实现集中在单文件导入同名冲突 replace confirmation，未实现相邻页面或新 Core 能力。
+- 涉及文件：`ImportSingleFileDuplicateResolution.swift`、`ImportSingleFileSheetSections.swift`、`ImportEntrySingleFileFooter.swift`
+
+- 项目：读取页面规格、MVP control map、Core API 和 C1-10 能力规格
+- 结果：通过
+- 证据：已逐项读取 Exact Docs；`S1-24` 要求 Replace 二次确认且 sheet 不直接导入；`C1-10` 要求 Replace 必须经过 S1-24；control map 标记 Real Core。
+- 涉及文件：四份 Exact Docs
+
+- 项目：只接入 C1-10 对应 CoreBridge / 状态 / 错误映射
+- 结果：通过
+- 证据：最终导入通过 `CoreFileImporting` / `CoreBridge.importFile` 传递 `DuplicateStrategy.overwrite`；确认 sheet 只设置确认状态，不直接移动、删除、覆盖或写 DB。
+- 涉及文件：`CoreImporting.swift`、`ImportSingleFileDuplicateResolution.swift`
+
+- 项目：不顺手实现相邻页面
+- 结果：通过
+- 证据：`git diff --name-only -- core/src/**` 为空；业务改动限于 `apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`，未改 `core/src/**`。
+- 涉及文件：git diff 输出
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。确认 gate、状态更新、最终 Core 调用分离清楚；文件行数均低于 500。
+- 注释 / rustdoc / 文档同步：通过。本任务未新增 Rust public API；Swift 改动不需要额外文档同步。
+- 错误处理与边界处理：通过。覆盖 context expired、未勾选确认、Trash 不可用、setting hidden；失败留在 sheet 并提供 Retry / Diagnostics 状态。
+- 测试与验证覆盖：通过。`ImportSingleFileDuplicateResolutionTests.swift` 覆盖 C1-10 name conflict Replace 需 S1-24 确认、确认前无导入副作用、确认后 `.overwrite` 交给 Core importer。
+- 占位、硬编码、mock-only、一次性实现检查：通过。生产路径默认使用 `CoreBridge()`；测试 double 仅用于 XCTest 记录 Core 请求，不作为产品闭环。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+- 结果：通过，`BUILD SUCCEEDED`
+- 已运行：`./dev test macos`
+- 结果：通过。标准 `xcodebuild test` 受本地 `testmanagerd` sandbox 限制，脚本按 repo 规则复用同一 XCTest bundle 执行 `xcrun xctest`，最终 274 tests，0 failures。
+- 已运行：`git diff --check -- <task touched files>`
+- 结果：通过，无 whitespace error。
+- 缺失：未缺失必需验证。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+

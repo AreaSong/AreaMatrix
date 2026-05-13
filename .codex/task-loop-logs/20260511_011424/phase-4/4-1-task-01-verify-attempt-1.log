@@ -1,0 +1,70 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-1/task-01`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-01-c2-01-contract-api.md`
+- 验收文件：`docs/core/capability-specs/stage-2-experience/C2-01-search-query-files.md`、`docs/architecture/stage-2-control-map.md`、`docs/api/core-api.md`、`docs/api/error-codes.md`、`core/area_matrix.udl`、`core/src/lib.rs`、`core/src/search.rs`、`core/tests/search_query_files_contract_api.rs`
+
+三、完成度摘要
+
+- 已覆盖项数：11
+- 未覆盖项数：0
+- 通过项数：11
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：C2-01 能力规格、control map、Core API、错误码读取与一致性
+- 结果：通过
+- 证据：能力规格定义 `search_files(repo_path, query, filter, sort, pagination) -> SearchResultPage`、输入输出和 `Db/Config/InvalidPath`；control map 只绑定 S2-01/S2-04/S2-05 的 C2-01 搜索状态。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-2-experience/C2-01-search-query-files.md:11`、`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-2-control-map.md:9`
+
+- 项目：API / UDL / Rust 合同落地
+- 结果：通过
+- 证据：Core API 文档、UDL、Rust 类型均包含 `SearchFilter`、`SearchPagination`、`SearchResultPage`、diagnostics、index status 和 `search_files`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:1142`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:72`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/search.rs:92`
+
+- 项目：不实现相邻能力
+- 结果：通过
+- 证据：Rust 合同明确排除 C2-02 facet counts、C2-03 saved search、C2-04 Smart List、OCR、semantic search、remote AI；函数当前只保留 implementation task 接手的错误返回。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/search.rs:198`
+
+- 项目：页面消费方状态
+- 结果：通过
+- 证据：`SearchResultPage` 提供 `query`、`total_count`、`results`、`diagnostics`、`index_status`，足以区分结果、0 结果、query parse error、API failure、索引不可用。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:1169`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/search.rs:173`
+
+- 项目：Expected New Paths / Forbidden Touches
+- 结果：通过
+- 证据：`core/src/search.rs`、`core/area_matrix.udl`、`core/tests/search_query_files_contract_api.rs` 已落地；`git diff --name-only -- apps` 和 `git status --short -- apps` 无输出。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/search.rs:1`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/search_query_files_contract_api.rs:1`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。合同类型集中在 `core/src/search.rs`，`lib.rs` 仅增加模块和 re-export。
+- 注释 / rustdoc / 文档同步：通过。新增 public 类型和函数均有 rustdoc，Core API 与 UDL 对齐。
+- 错误处理与边界处理：通过。合同声明 `InvalidPath`、`Config`、`Db`，并明确只读边界。
+- 测试与验证覆盖：通过。新增 contract tests 覆盖签名、类型、docs/UDL/control map 对齐和页面状态。
+- 占位、硬编码、mock-only、一次性实现检查：通过。本任务是 contract-api，未实现业务逻辑符合 task 范围；没有用 mock 伪装真实搜索闭环。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check all`
+- 通过：governance、skills、task-loop、prompt doctor、`git diff --check`、`cargo fmt --all -- --check`、`cargo clippy --all-targets --all-features -- -D warnings`、`cargo test --workspace`、UniFFI Swift binding 生成、SwiftFormat、SwiftLint。
+- 说明：`xcodebuild test` 遇到本地 `testmanagerd` sandbox 限制后，`./dev` 按现有 fallback 复用已构建 XCTest bundle，`xcrun xctest` 通过；整体命令退出码为 0。
+- 缺失：无。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+
+VERIFY_RESULT: PASS

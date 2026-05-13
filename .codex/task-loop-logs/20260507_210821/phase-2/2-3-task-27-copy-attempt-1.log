@@ -1,0 +1,50 @@
+一、执行结论
+
+已完成 `2-3/task-27`。
+
+二、执行范围
+
+单任务：S1-31 settings-about UI-only。修改文件清单：
+
+- [AboutSettingsModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/AboutSettingsModel.swift:1)
+- [AboutSettingsPane.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Settings/AboutSettingsPane.swift:1)
+- [GeneralSettingsView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Settings/GeneralSettingsView.swift:99)
+- [AboutSettingsPageFeatureTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/AboutSettingsPageFeatureTests.swift:1)
+- [project.pbxproj](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj:192)
+
+当前工作区另有既有脏改动 `.codex/task-loop-runs/20260507_210821/summary.json` 和 `tasks/prompts/_shared/progress.json`，未纳入本任务改动。
+
+三、完成情况
+
+核对清单全部通过：只实现 S1-31 关于页；已按页面规格和 `mvp-control-map` 确认本页无独立 Core 能力；未新增临时 Core API、UDL 或 mock 后端；未实现相邻设置页功能。
+
+完成标准通过：`Settings > 关于` 已接入侧栏并渲染 `AboutSettingsPane`；页面覆盖版本、许可证、GitHub/Issue/Discussions 链接、诊断导出、日志打开、复制与失败恢复路径。没有引入未声明的 Core 能力依赖，只复用现有 `get_version` / diagnostics / metadata reader 路径。
+
+Forbidden Touches：未触碰 `core/src/**`；`core/area_matrix.udl` 也未修改。
+
+四、工程质量
+
+代码按 model/view 拆分，平台能力通过协议注入，SwiftUI 视图不直接做 Core 写操作。诊断导出有隐私确认，不自动上传；外链、日志、复制、诊断失败都有显式可恢复错误和可复制 detail。未新增依赖，未新增 Rust public API，因此无 rustdoc 同步需求。测试覆盖版本读取、schema 失败、诊断隐私确认、外链/日志失败恢复；不存在占位、硬编码通过态或 mock-only 生产链路。
+
+五、验证情况
+
+已运行并通过：
+
+```bash
+xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO
+```
+
+结果：`BUILD SUCCEEDED`。
+
+```bash
+./dev test macos
+```
+
+结果：标准 `xcodebuild test` 在本机 `testmanagerd` sandbox 通信处被阻断，仓库脚本按规则复用已构建 XCTest bundle 执行 `xcrun xctest`，最终 `397 tests, 0 failures`。
+
+六、风险与后续
+
+剩余风险：未做真实窗口手工交互/VoiceOver 运行态验收；当前证据覆盖 build、单元/集成测试和路径边界。回滚方式是移除本次新增的 About model/view/test，并从 Xcode 工程和设置侧栏撤回对应注册。
+
+建议下一个任务：生成并执行 `2-3/task-27` 的 verify-ready 验收；通过后再进入队列下一个任务。
+

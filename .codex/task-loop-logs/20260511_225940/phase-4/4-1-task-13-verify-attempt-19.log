@@ -1,0 +1,57 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`4-1/task-13`
+- 对应文件路径：`tasks/prompts/phase-4/4-1-stage2-experience/task-13-c2-03-failure-edge.md`
+- 实际核验范围：`core/src/**`、`core/area_matrix.udl`、`core/tests/**`
+- 禁止触碰范围：`apps/**`，当前未见 `apps/**` 状态变更
+
+三、完成度摘要
+
+- 已覆盖项数：9
+- 未覆盖项数：0
+- 通过项数：8
+- 不通过项数：1
+- 阻塞项数：1
+
+四、逐项验收结果
+
+- 核对清单 1：通过。空态、非法输入、权限/DB 失败、错误码映射均有测试证据：`saved_search_implementation_empty_repo_lists_empty_without_writes`、`rejects_duplicate_names_invalid_query_and_missing_rows`、`db_permission_error_is_structured_and_non_mutating`、`db_corruption_preserves_user_files_and_staging`。
+- 核对清单 2：通过。C2-03 不移动/删除/导入用户文件；写失败通过事务和触发器测试证明不留下半成品，见 `/Users/as/Ai-Project/project/AreaMatrix/core/tests/saved_search_implementation.rs:334`。
+- 核对清单 3：通过。C2-03 不涉及远程 AI；测试证明 `ai_enabled=false` 且未创建 `.areamatrix/ai`、`remote`、`secrets`，见 `/Users/as/Ai-Project/project/AreaMatrix/core/tests/saved_search_implementation.rs:460`。
+- 核对清单 4：通过。实现返回 `CoreResult`，`create/update/delete/list` 失败路径显式映射为 `Config` 或 `Db`，未见吞错或静默降级，见 `/Users/as/Ai-Project/project/AreaMatrix/core/src/db/saved_search.rs:28`。
+- 完成标准 1：通过。C2-03 失败路径有明确返回和测试证据，用户文件安全由 tests 断言 files/change_log/staging 不变。
+- 完成标准 2：通过。高风险路径以 DB transaction 和非用户文件副作用边界处理；write failure/corruption/permission 测试覆盖可重试和非破坏性语义。
+- Manifest `Expected New Paths`：通过。`core/src/**`、`core/area_matrix.udl`、`core/tests/**` 均有 C2-03 落地。
+- Manifest `Forbidden Touches`：通过。`git status --short -- core apps core/area_matrix.udl` 仅显示 `core/src/db/saved_search.rs`、`core/tests/saved_search_implementation.rs` 修改。
+- Manifest `Validation`：不通过。`./dev check all` 退出码 70，失败在 macOS `xcodebuild test`，不是完整通过。
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。C2-03 API 层、DB 层、UDL、测试分层清楚。
+- 注释 / rustdoc / 文档同步：通过。public API 有 rustdoc；contract 测试校验 docs/API/UDL/control map 一致。
+- 错误处理与边界处理：通过。事务覆盖 create/update/delete；DB 写失败、DB 损坏、权限失败、非法输入均有结构化返回。
+- 测试与验证覆盖：不通过。C2-03 定向测试通过，但 manifest 要求的 `./dev check all` 未通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。实现连接真实 SQLite 表和事务，不是 mock-only。
+
+六、阻塞项
+
+- P0：必需验证命令未通过。说明：manifest 明确要求 `./dev check all`，实际执行失败在 `xcodebuild test`，报 `IDESimulatorFoundation` 插件加载失败和 `Symbol not found`，并提示运行 `xcodebuild -runFirstLaunch`。绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-4.md:388`。为什么导致不通过：验收规则要求必需验证通过或明确环境阻断；当前命令是失败结果，不能视为 task 完成。
+
+七、验证情况
+
+- 已运行：`./dev check all`：失败，退出码 70；governance、skills、task-loop、prompt doctor、diff check、cargo fmt、cargo clippy、cargo test 均已进入并通过，最终 macOS `xcodebuild test` 失败。
+- 已运行：`cargo test --test saved_search_contract_api -- --nocapture`：通过，5 passed。
+- 已运行：`cargo test --test saved_search_implementation -- --nocapture`：通过，9 passed。
+- 失败：`xcodebuild test`，Xcode required plugin load failure，非 sandbox 原因。
+- 缺失：无成功的完整 `./dev check all` 证据。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。C2-03 代码与定向测试证据基本满足 failure-edge 要求，但 manifest 指定的总验证未通过，按“无法证明通过就判定不通过”处理。
+
+
+VERIFY_RESULT: FAIL

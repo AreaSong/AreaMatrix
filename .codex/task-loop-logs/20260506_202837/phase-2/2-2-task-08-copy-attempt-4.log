@@ -1,0 +1,45 @@
+一、执行结论
+
+- 已完成
+
+二、执行范围
+
+- 单任务：`2-2/task-08`
+- 修改文件清单：
+[ImportEntrySheetView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportEntrySheetView.swift), [ImportBatchCopyFooterSection.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportBatchCopyFooterSection.swift), [ImportProgressRouteState.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportProgressRouteState.swift), [ImportProgressView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportProgressView.swift), [OnboardingModelInputs.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/OnboardingModelInputs.swift), [MainWindow.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/MainWindow.swift)
+[ImportBatchCopyImportModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportBatchCopyImportModel.swift), [CoreImporting.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreImporting.swift), [ImportEntryRequest.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportEntryRequest.swift), [ImportDropPreviewModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportDropPreviewModel.swift)
+[ImportBatchCopyImportModelTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportBatchCopyImportModelTests.swift), [ImportBatchCopyPageIntegrationTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportBatchCopyPageIntegrationTests.swift), [ImportSingleFilePageIntegrationVerifyTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFilePageIntegrationVerifyTests.swift), [ImportSingleFileTestFixtures.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFileTestFixtures.swift), [ImportSingleFileTestSupport.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFileTestSupport.swift), [ImportSingleFileMoveImportTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFileMoveImportTests.swift), [ImportSingleFileIndexImportTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFileIndexImportTests.swift)
+[project.pbxproj](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj)
+
+三、完成情况
+
+- 核对清单 1：通过。只处理 `S1-18` 的 `C1-06` batch copy import。
+- 核对清单 2：通过。已按要求读取 `S1-18`、control map、Core API、`C1-06` spec，并据此修正实现。
+- 核对清单 3：通过。只接入 `C1-06` 对应的 `CoreBridge / status / error mapping`，未补做 `C1-05`、`C1-09`。
+- 核对清单 4：通过。未顺手实现相邻页面；`S1-21` 结果页仍留给后续任务。
+- 完成标准 1：通过。`S1-18` 成功批量导入后现在会刷新资料库并回到主窗口；部分失败会停在 `S1-20` 的失败态并保留可返回语义。
+- 完成标准 2：通过。生产路径仍是 `CoreBridge -> AreaMatrix.import_file(mode: Copied)`，没有 mock 成功态伪造闭环。
+- 完成标准 3：通过。未触碰 control map 之外的 Core 能力。
+- Forbidden Touches：未触碰 `core/src/**`；只读核对了 `core/area_matrix.udl`，未修改。
+
+四、工程质量
+
+- 代码结构与逻辑：满足。把 batch footer/import 协调拆到 [ImportBatchCopyFooterSection.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportBatchCopyFooterSection.swift)，把 batch page integration 回归测试拆到 [ImportBatchCopyPageIntegrationTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportBatchCopyPageIntegrationTests.swift)，避免主文件超 500 行。
+- 注释 / rustdoc / 文档同步：本任务仅 Swift/UI 与测试调整，无新增 Rust public API；行为已对齐 `S1-18` 成功退出与 `S1-20` progress 语义。
+- 错误处理与边界处理：满足。批量部分失败不再假装成功关闭 sheet，而是进入可见失败态；权限错误映射不再落回静态 `"Import failed"`。
+- 占位、硬编码、mock-only、一次性实现：未发现生产路径占位。测试夹具里的错误文案已收敛到真实映射契约，不再用静态成功/失败文案冒充。
+
+五、验证情况
+
+- 已运行：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+- 结果：通过，`BUILD SUCCEEDED`
+- 已运行：`./dev test macos`
+- 结果：通过
+- 细节：脚本内的 `xcodebuild test` 仍被本地 `testmanagerd` sandbox 限制拦住；随后按仓库既定 fallback 复用同一 XCTest bundle 执行 `xcrun xctest`，最终 `187` 个测试全部通过，`0` 失败
+- 失败项：无
+- 无法运行项：无额外缺失；仅存在本机 `xcodebuild test` 的已知 sandbox 限制，但 `./dev test macos` 已完成等价验证并通过
+
+六、风险与后续
+
+- 剩余风险：`S1-21 import-result` 的完整结果页、失败项重试、skip/result 明细仍属于后续任务；本任务只把 `S1-18 + C1-06` 的可触发闭环和失败停留语义补齐。
+- 建议下一个任务：`2-2/task-09`，继续补 `S1-18` 的 `C1-09 detect-duplicate`。

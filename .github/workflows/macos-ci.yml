@@ -7,9 +7,17 @@ on:
     branches: [main]
 
 jobs:
+  prompt-doctor:
+    name: prompt doctor
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 tasks/prompts/_shared/prompt_pipeline.py doctor
+
   build:
     name: Xcode build & test
     runs-on: macos-14
+    needs: prompt-doctor
     steps:
       - uses: actions/checkout@v4
 
@@ -41,13 +49,9 @@ jobs:
         if: steps.macos_project.outputs.present == 'true'
         run: cargo install uniffi-bindgen --locked --version 0.28.3
 
-      - name: Install xcbeautify
-        if: steps.macos_project.outputs.present == 'true'
-        run: brew install xcbeautify
-
       - name: Build core (Rust → universal staticlib + Swift bindings)
         if: steps.macos_project.outputs.present == 'true'
-        run: ./scripts/build-core.sh
+        run: ./dev build core
 
       - name: Resolve Swift package dependencies
         if: steps.macos_project.outputs.present == 'true'
@@ -58,14 +62,7 @@ jobs:
 
       - name: Build & test
         if: steps.macos_project.outputs.present == 'true'
-        run: |
-          xcodebuild test \
-            -project apps/macos/AreaMatrix.xcodeproj \
-            -scheme AreaMatrix \
-            -destination 'platform=macOS,arch=arm64' \
-            -resultBundlePath TestResults.xcresult \
-            CODE_SIGNING_ALLOWED=NO \
-            | xcbeautify --quiet
+        run: ./dev test macos --destination 'platform=macOS,arch=arm64' --result-bundle-path TestResults.xcresult
 
       - uses: actions/upload-artifact@v4
         if: always() && steps.macos_project.outputs.present == 'true'
@@ -76,6 +73,7 @@ jobs:
   swiftlint:
     name: SwiftLint
     runs-on: macos-14
+    needs: prompt-doctor
     steps:
       - uses: actions/checkout@v4
       - name: Check macOS sources
@@ -98,6 +96,7 @@ jobs:
   swiftformat:
     name: SwiftFormat lint
     runs-on: macos-14
+    needs: prompt-doctor
     steps:
       - uses: actions/checkout@v4
       - name: Check macOS sources

@@ -1,0 +1,41 @@
+一、执行结论
+
+- 已完成。
+
+二、执行范围
+
+- 单任务：`2-1/task-25`
+- 修改范围限定在 `Expected New Paths`。
+- 主要改动：
+  - [MainFileListModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileListModel.swift:46)：移除 S1-09 对 diagnostics / external sync 的依赖，只保留 C1-11/C1-12/C1-15 范围内的列表、详情、状态 banner。
+  - [MainRepositoryContentView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift:276)：移除 `Collect Diagnostics...` / `Retry sync`，错误态只保留当前列表 Retry 和技术详情。
+  - [MainFileActionRoutingSheet.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainFileActionRoutingSheet.swift:3)：把右键 Rename / Change Category / Delete 从说明性占位文案改为对应确认页入口形态，不执行 C1-22/C1-23/C1-24 写操作。
+  - 删除 `apps/macos/AreaMatrix/Bridge/CoreExternalSync.swift`，并从 Xcode project 移除引用。
+  - [MainListIntegrationClosureTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/MainListIntegrationClosureTests.swift:31)：调整回归测试，覆盖单选动作入口、多选隐藏单文件动作、外部 rename/removal 的 S1-09 内部状态。
+
+三、完成情况
+
+- page-feature task 覆盖：通过，C1-11/C1-12/C1-15 的真实 CoreBridge 路径仍保留。
+- 页面状态、入口、退出、错误态闭环：通过，S1-09 不再消费 C1-19/C1-21。
+- mock / fixture / 硬编码状态清理：通过，移除了上次验收点名的 route placeholder 文案。
+- 不新增 control map 外功能：通过，扫描 S1-09 相关文件无 `sync_external_changes`、`create_diagnostics_snapshot`、`CoreExternalSync` 残留。
+- Forbidden Touches：未触碰，`git status --short -- core/src` 无输出。
+
+四、工程质量
+
+- 代码结构保持在 macOS 层，未绕过 `CoreBridge`，未触碰 Rust Core。
+- 没有新增依赖。
+- 删除/移动/改分类的真实写操作没有在本 task 中实现，避免越界到 S1-33/S1-34/S1-35 的后续任务。
+- 文件长度仍在编码规范阈值内；本轮无 public Rust API / rustdoc 需求。
+
+五、验证情况
+
+- `xcodebuild -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' build CODE_SIGNING_ALLOWED=NO`：通过。
+- `xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：失败，原因是本地 sandbox 阻止 `testmanagerd.control` 通信，不是断言失败。
+- `./dev test macos`：通过；按 repo-local validation driver 复用同一 XCTest bundle，`94 tests, 0 failures`。
+- 边界扫描：通过，无上次失败关键词残留。
+
+六、风险与后续
+
+- 剩余风险：S1-33/S1-34/S1-35 的真实确认与写操作仍应由 `2-3` 对应 file action tasks 完成；本 task 只做 S1-09 入口 wiring。
+- 建议下一个任务：进入对应 file action 页面任务前，先验收 S1-09 verify-ready。

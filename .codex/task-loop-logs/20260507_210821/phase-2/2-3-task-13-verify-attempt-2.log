@@ -1,0 +1,75 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`phase-2` / `2-3/task-13`
+- Task：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-3-detail-settings/task-13-s1-26-c1-07-import-move-file.md`
+- 代码范围：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+- 禁止路径：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：0
+- 通过项数：10
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 S1-26 页面中的 C1-07 功能点  
+  结果：通过  
+  证据：设置页提供默认存储模式 radio，`Move` 进入风险确认后才保存；`Open ignore.yaml` 仍禁用并标注属于独立能力，未顺手实现。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Settings/GeneralSettingsView.swift:38`、`:185`、`:214`
+
+- 项目：读取页面规格、control map、Core API、C1-07 能力规格  
+  结果：通过  
+  证据：S1-26 要求 Move 默认值确认；control map 将 S1-26 绑定 `C1-04, C1-07` 且 Real Core；Core API/UDL 暴露 `load_config`、`update_config`、`StorageMode.Moved`、`ImportOptions.mode`。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:578`、`:590`、`:779`；`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:17`、`:20`、`:135`、`:296`
+
+- 项目：只接入 C1-07 对应状态和真实 CoreBridge，不用静态状态伪造  
+  结果：通过  
+  证据：`GeneralSettingsModel` 从 `loadConfig` 建 draft，确认 Move 后通过 `updateConfig(defaultMode: "Moved")` 持久化；`CoreBridge` 将 `"Moved"` 转成 UniFFI `StorageMode.moved`。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/GeneralSettingsModel.swift:226`、`:240`、`:252`、`:321`；`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift:197`、`:201`、`:402`
+
+- 项目：不顺手实现相邻页面  
+  结果：通过  
+  证据：导入相关改动只传递 S1-26 保存后的 `defaultStorageMode`，让后续 ImportSheet 默认值生效；未新增导入页新 Core 能力。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/OnboardingModelInputs.swift:24`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportEntryRequest.swift:21`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreviewModel.swift:326`
+
+- 项目：Expected New Paths 落地  
+  结果：通过  
+  证据：`GeneralSettingsModel/View` 已纳入 app target，`GeneralSettingsPageFeatureTests` 与 `GeneralSettingsImportDefaultModeTests` 已纳入 test target。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj:167`、`:171`、`:172`、`:908`
+
+- 项目：Forbidden Touches  
+  结果：通过  
+  证据：`git status --short -- core/src` 输出为空，未发现 `core/src/**` 被触碰。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。Settings 模型、View、导入默认值传递职责清楚；相关文件均低于 500 行。
+- 注释 / rustdoc / 文档同步：通过。本任务未新增 Rust public API；UDL、Core API、UX/control map 与 Swift 接入一致。
+- 错误处理与边界处理：通过。保存失败回滚到上一个 `savedConfig`，保留 `Retry save`，CoreError 通过 mapper 转成用户可恢复错误。
+- 测试与验证覆盖：通过。覆盖 Move 需确认、确认后写 `"Moved"`、真实 CoreBridge 持久化、外部源文件不被设置页移动、后续导入 sheet 默认 Move。
+- 占位、硬编码、mock-only、一次性实现检查：通过。生产路径默认使用 `CoreBridge()`，测试替身仅用于单元验证；真实 CoreBridge 回读测试已覆盖。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：通过，最终输出 `BUILD SUCCEEDED`。
+- 已运行：`./dev test macos`：通过。内部 `xcodebuild test` 因本地 sandbox 的 `testmanagerd` 通信限制被阻断，脚本按既定规则复用已构建 XCTest bundle；`xcrun xctest` 通过，341 tests，0 failures。
+- 失败：无最终失败。
+- 缺失：无必需验证缺失。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS

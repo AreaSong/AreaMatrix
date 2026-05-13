@@ -1,0 +1,61 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`4-1/task-13`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-13-c2-03-failure-edge.md`
+- Manifest 章节：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-4.md:360`
+- 核验代码：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/**`
+
+三、完成度摘要
+
+- 已覆盖项数：9
+- 未覆盖项数：0
+- 通过项数：8
+- 不通过项数：1
+- 阻塞项数：1
+- Missing Expected Paths：0
+
+四、逐项验收结果
+
+- 核对清单 1：通过。空态、非法输入、DB/权限失败、错误码映射均有测试证据；见 `core/tests/saved_search_implementation.rs:188`、`:281`、`:331`、`:405`。
+- 核对清单 2：通过。C2-03 只写 `saved_searches`，不移动/删除用户文件；失败触发器测试验证无半成品，见 `core/tests/saved_search_implementation.rs:331`、`:379`。
+- 核对清单 3：通过。C2-03 不涉及 AI/远程调用，测试验证 `ai_enabled=false` 且无 `.areamatrix/ai|remote|secrets`，见 `core/tests/saved_search_implementation.rs:457`。
+- 核对清单 4：通过。实现返回 `Config` / `Db`，未看到吞错静默成功路径；见 `core/src/search/saved_search.rs:167`、`core/src/db/saved_search.rs:183`。
+- 完成标准 1：通过。失败路径有明确返回、测试证据和用户文件安全保证；见 `core/src/search/saved_search.rs:89`、`core/tests/saved_search_implementation.rs:331`。
+- 完成标准 2：通过。高风险 DB/文件安全边界有事务或原子语义与恢复文档支撑；见 `docs/architecture/transactional-import.md:9`、`:42`、`:634`。
+- Expected New Paths：通过。`core/src/search/saved_search.rs`、`core/src/db/saved_search.rs`、`core/area_matrix.udl`、`core/tests/saved_search_*.rs` 均存在。
+- Forbidden Touches：通过。`git diff --name-only -- apps` 无输出，未发现 `apps/**` 被触碰。
+- Validation：不通过。任务要求 `./dev check all`，实际命令在 macOS `xcodebuild test` 阶段失败，退出码 70。
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。C2-03 API 层、DB 层、UDL、测试分层清晰；核心文件均低于 500 行。
+- 注释 / rustdoc / 文档同步：通过。公开 Rust 类型和 API 有 rustdoc；UDL/API/能力规格/control map 有合同测试对齐。
+- 错误处理与边界处理：通过。非法名称、非法 query、重复名、缺失记录、DB 写失败、DB 损坏和权限错误均返回结构化错误。
+- 测试与验证覆盖：不通过。Rust 测试已通过，但 manifest 要求的 `./dev check all` 未通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。实现连接真实 SQLite `saved_searches`，未发现 mock-only 或硬编码通过态。
+
+六、阻塞项
+
+- P0：必需验证命令失败，不能标记完成。
+  - 说明：`./dev check all` 在 `xcodebuild test` 阶段失败，脚本报告 `xcodebuild test failed for a non-sandbox reason`。
+  - 证据：命令输出显示 `IDESimulatorFoundation.framework` 插件加载失败，缺失符号 `developerDocumentation`，并提示运行 `xcodebuild -runFirstLaunch` 或修复 Xcode/system content。
+  - 绝对路径：`/Applications/Xcode.app/Contents/Frameworks/IDESimulatorFoundation.framework`
+  - 行号：不适用，属于本机 Xcode 工具链验证失败。
+  - 为什么导致不通过：task manifest 明确要求 `./dev check all`；必需验证未通过时不能视为完成。
+
+七、验证情况
+
+- 已运行：`./dev check all`
+- 已通过：governance、skills、task-loop check、prompt doctor、git diff check、`cargo fmt --all -- --check`、`cargo clippy --all-targets --all-features -- -D warnings`、`cargo test --workspace`
+- C2-03 相关测试通过：`saved_search_contract_api` 4 个测试通过；`saved_search_implementation` 9 个测试通过。
+- 失败：macOS `xcodebuild test`，Xcode 插件加载失败，非 sandbox 原因。
+- 缺失：完整 `./dev check all` 通过证据缺失。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+VERIFY_RESULT: FAIL

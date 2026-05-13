@@ -1,0 +1,45 @@
+**一、执行结论**
+
+未完成。C2-03 core 失败边界已实现并通过定向/Rust 验证，但任务要求的 `./dev check all` 最终未全绿，卡在 `apps/**` 的 macOS 性能测试：`AreaMatrixPerfTests.testApplicationLaunchToFirstScreenBaselineUnderStage1Threshold`，错误为 `unexpectedFirstScreenRoute`。本任务禁止触碰 `apps/**`，所以没有越界修复。
+
+**二、执行范围**
+
+单任务：`4-1/task-13`。
+
+修改文件：
+- [core/src/db/saved_search.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/db/saved_search.rs:140)：移除 saved search CRUD 入口的自动建表，缺失 `saved_searches` schema 时返回结构化 `Db`。
+- [core/tests/saved_search_failure_recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/saved_search_failure_recovery.rs:152)：新增缺表检测辅助与缺表不自动写 schema 的回归测试。
+
+未触碰 `apps/**`。`core/area_matrix.udl` 无需修改，现有合同已对齐。
+
+**三、完成情况**
+
+核对清单：
+- 空态、非法输入、权限、IO/DB 错误和错误码映射：已覆盖。
+- 写入失败不留下半成品：已覆盖，新增缺表场景证明不会自动创建 `saved_searches` 表。
+- 隐私/AI/远程调用默认关闭、密钥不入日志：已有并通过 `saved_search_*_no_ai_remote_or_secret_side_effects` 相关测试。
+- 不吞错、不静默降级：已覆盖，缺失/损坏 metadata 明确返回 `Db`。
+
+完成标准：
+- C2-03 失败路径有明确返回、可测试证据和用户文件安全保证：已满足。
+- 高风险路径具备回滚/恢复说明：代码层通过事务和测试证明；变更回滚只需回退上述 2 个 core 文件。
+
+**四、工程质量**
+
+结构保持简单，没有新增抽象、mock-only wiring 或硬编码通过态。失败路径仍走真实 SQLite / Core API / 错误映射链路。新增测试使用临时 repo，断言 DB schema 不被偷偷补写、用户可见 `README.md` 不变。
+
+**五、验证情况**
+
+已通过：
+- `cargo fmt --all -- --check`
+- `cargo test --workspace saved_search -- --nocapture`
+- `cargo test --workspace --test saved_search_contract_api --test saved_search_implementation --test saved_search_failure_recovery`：25 个 C2-03 测试通过。
+- `./dev check all` 中的 governance、skills、task-loop、prompt doctor、diff check、core fmt、core clippy、`cargo test --workspace` 均通过。
+
+失败：
+- `./dev check all` 最终失败在 macOS 测试；fallback `xcrun xctest` 执行 484 个测试，1 个失败：`AreaMatrixPerfTests.testApplicationLaunchToFirstScreenBaselineUnderStage1Threshold`，`unexpectedFirstScreenRoute`。
+
+**六、风险与后续**
+
+剩余风险是官方全量门禁未通过，但失败位于禁止触碰的 `apps/**`，和本次 C2-03 core 修改不在同一边界。建议先单独处理或确认该 macOS perf test，再进入 `4-1/task-14`。
+

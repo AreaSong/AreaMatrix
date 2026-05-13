@@ -1,0 +1,36 @@
+一、执行结论：已完成。
+
+二、执行范围：
+- 单任务：`2-3/task-21`
+- 产品改动文件：
+  - [ClassifierSettingsModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ClassifierSettingsModel.swift:85)
+  - [ClassifierSettingsRecovery.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ClassifierSettingsRecovery.swift:45)
+  - [ClassifierSettingsPane.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Settings/ClassifierSettingsPane.swift:32)
+  - [ClassifierSettingsPageFeatureTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ClassifierSettingsPageFeatureTests.swift:153)
+  - [ClassifierSettingsRecoveryTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ClassifierSettingsRecoveryTests.swift:6)
+  - [project.pbxproj](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj:181)
+- 当前工作树另有 task-loop 运行态文件和日志变更，本次产品修复未依赖它们。
+
+三、完成情况：
+- page-feature 覆盖：`2-3/task-19` / `2-3/task-20` 对应 C1-04 / C1-05，整页集成只做 S1-28 wiring。
+- 页面闭环：补齐 `Open classifier.yaml` 失败后的 `Create default`，`Validate` 真实调用 `predictCategory`，成功后写 last-valid backup，`Revert to last valid` 现在有确认框并恢复 backup 后重新校验。
+- 错误态：缺失文件、打开失败、校验失败都给可见恢复路径；校验错误会保留 field 和 line。
+- mock / fixture / 硬编码通过态：生产路径仍走 `CoreBridge`；默认 YAML 只用于 S1-28 明确要求的 `Create default`，并在创建后走真实 Core 校验，不作为通过态。
+- Forbidden Touches：`git diff --name-only -- core/src` 为空，未触碰 `core/src/**`；也未修改 `core/area_matrix.udl`。
+
+四、工程质量：
+- 结构：文件 IO 被收敛到 `ClassifierRulesManaging` / `FileSystemClassifierRulesManager`，View 只做交互；关键文件均低于 500 行。
+- 错误处理：Create default 不覆盖已有 `classifier.yaml`；无 backup 时 Revert 禁用；backup 恢复失败会进入可见 validation error。
+- 测试覆盖：新增覆盖 Create default、拒绝覆盖已有规则、last-valid backup 保存与恢复、错误 field/line 展示。
+- 依赖：未新增依赖；无 Rust public API，因此无 rustdoc 变更需求。
+
+五、验证情况：
+- `xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：失败，原因是本地 sandbox 阻断 `com.apple.testmanagerd.control` 通信；构建/链接已完成后测试 runner 无法通信。
+- `./dev test macos`：通过。标准 `xcodebuild test` 同样遇到 sandbox 后，仓库脚本按规则使用 `xcrun xctest`，`373 tests` 全通过。
+- `xcodebuild -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' build CODE_SIGNING_ALLOWED=NO`：通过，`BUILD SUCCEEDED`。
+
+六、风险与后续：
+- 剩余风险：当前环境无法完成原生 `xcodebuild test` 的 testmanagerd 通信；已用仓库认可 fallback 覆盖单元测试，但未做真人 UI 点击验证。
+- 回滚：回滚上述 Swift / test / pbxproj 文件即可；未做 DB schema、Core 源码或用户文件迁移。
+- 建议下一个任务：先跑 `2-3/task-21` verify-ready；通过后再进入 `2-3/task-22`。
+

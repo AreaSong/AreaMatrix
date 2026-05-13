@@ -1,0 +1,25 @@
+id: v-template
+kind: template-reference
+title: AreaMatrix workflow template reference
+lifecycle_status: template-reference
+depends_on: []
+live_queue: ""
+middle_layers: required
+discussion:
+  required: false
+  status: template-reference
+  reason: Managed golden reference for workflow templates; it is not a real product version.
+gate: template-reference-only
+promotion: preview-only
+local_queue:
+  phase: phase-template
+  batch: template-1
+  batch_slug: template-reference
+  start_task: 1
+promotion_preview:
+  target_queue: tasks/prompts
+  phase: phase-5
+  batch: 5-1
+  batch_slug: template-reference
+  start_task: 1
+archive_policy: not-applicable

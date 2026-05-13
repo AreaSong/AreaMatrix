@@ -25,7 +25,7 @@ Use this skill when the change touches enterprise governance surfaces or when a 
 1. Identify whether the change affects review, security, dependencies, CI, ownership, release, or task-loop evidence.
 2. Load the governance map before editing adapters, templates, skills, or prompt rules.
 3. Apply the review/security/CI checklist before reporting PASS.
-4. Run `bash scripts/check-governance.sh` after governance changes.
+4. Run `./dev check governance` after governance changes.
 
 ## Guardrails
 

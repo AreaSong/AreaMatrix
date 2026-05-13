@@ -1,0 +1,55 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`1-3/task-07`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-1/1-3-query-detail/task-07-c1-12-validation.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/db/import.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/tests/get_file_detail_validation.rs`
+
+三、完成度摘要
+
+- 已覆盖项数：5/5 核对清单，2/2 完成标准，4/4 Exact Docs，3/3 Expected New Paths
+- 未覆盖项数：0
+- 通过项数：5
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 只处理 C1-12 validation 范围：通过。task 绑定 C1-12，`get_file` 实现只读详情查询，未扩展 Quick Look/OCR/日志/笔记聚合；证据：`core/src/api.rs:329-350`。
+- 读取 Exact Docs 并以文档为 SSOT：通过。manifest 指定 4 个 Exact Docs；C1-12 文档要求 `get_file(repo_path, file_id) -> FileEntry`、无写入、错误码 `FileNotFound`/`RepoNotInitialized`/`Db`；证据：`tasks/prompts/_shared/manifests/phase-1.md:1733-1737`、`docs/core/capability-specs/stage-1-mvp/C1-12-get-file-detail.md:8-39`。
+- 不实现相邻 C1 能力或 UI 页面：通过。`git diff -- apps` 为空；control map 中 C1-12 消费仅为 S1-09/S1-12/S1-15 的 `get_file` 相关真实 Core；证据：`docs/architecture/mvp-control-map.md:24-30`。
+- 补齐 Rust 测试：通过。`core/tests/get_file_detail_validation.rs` 已覆盖成功详情、未初始化 repo、缺失 id、deleted/staging 不可见、DB 查询失败；证据：`core/tests/get_file_detail_validation.rs:102-179`。
+- 验证成功路径和关键错误路径：通过。`get_active_file_by_id` 仅查询 `status = 'active'`，SQLite 查询失败映射 `Db`，无 active row 映射 `FileNotFound`；证据：`core/src/db/import.rs:67-81`。
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。public API 保持薄封装，DB 查询职责集中在 `db::get_active_file_by_id`，没有为 validation 引入额外抽象。
+- 注释 / rustdoc / 文档同步：通过。`get_file` public API 有 rustdoc、错误说明和相邻能力边界说明；UDL 暴露 `FileEntry get_file(string repo_path, i64 file_id);`，与 Core API 文档一致。
+- 错误处理与边界处理：通过。覆盖 `RepoNotInitialized`、`FileNotFound`、`Db`；deleted/staging 不对 detail 消费者可见。
+- 测试与验证覆盖：通过。manifest 3 条命令全部通过，并按 validation-driver 对 `core/**` 补跑完整 `cargo test --workspace`。
+- 占位、硬编码、mock-only、一次性实现检查：通过。测试走 `init_repo`、`import_file`、SQLite metadata 真实路径，不是 mock-only 或静态通过态。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`cd core && cargo fmt --all -- --check`：通过。
+- 已运行：`cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过。
+- 已运行：`cd core && cargo test --workspace get_file_detail`：通过；`get_file_detail_*` 共 11 个相关测试通过。
+- 已运行：`cd core && cargo test --workspace`：通过；完整 workspace 测试通过。
+- 未运行：macOS app 验证；本 task 禁止触碰 `apps/**`，且 `git diff -- apps` 为空，不属于本次验收必需项。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。C1-12 validation 有真实 Rust 测试、文档/API/UDL/实现一致性证据、关键错误路径证据和只读验证命令通过证据，可以视为完成。
+
+VERIFY_RESULT: PASS

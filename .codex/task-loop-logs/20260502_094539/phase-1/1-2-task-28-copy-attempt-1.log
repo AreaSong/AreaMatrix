@@ -1,0 +1,42 @@
+一、执行结论
+
+已完成 `1-2/task-28`。
+
+二、执行范围
+
+单任务：C1-10 `resolve-name-conflict validation`。  
+修改文件清单：新增 [resolve_name_conflict_validation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/resolve_name_conflict_validation.rs:1)。
+
+未触碰 `apps/**`。`core/area_matrix.udl` 和 `core/src/**` 未改动。
+
+三、完成情况
+
+- 核对清单：已按 manifest 读取 Exact Docs，以 C1-10 文档为 SSOT；未实现相邻 C1 能力或 UI 页面；补齐 Rust validation 测试；覆盖成功路径和关键错误路径。
+- 完成标准：C1-10 自动命名冲突解决、DB/FS/返回值一致性、非法文件名、编号耗尽 `Conflict` 均有测试证据。
+- Forbidden Touches：未触碰。
+
+四、工程质量
+
+新增测试使用 `tempfile` 隔离文件 IO，直接断言文件系统、SQLite `files` / `change_log`、API 返回值三者一致。没有新增依赖、没有 mock-only 或硬编码通过态，没有 public API 变化，因此无需 rustdoc / UDL / Core API 同步。
+
+五、验证情况
+
+已运行并通过：
+
+```bash
+cd core && cargo fmt --all -- --check
+cd core && cargo clippy --all-targets --all-features -- -D warnings
+cd core && cargo test --workspace resolve_name_conflict
+cd core && cargo test --workspace
+git diff --check
+```
+
+失败：无。  
+无法运行：无。
+
+六、风险与后续
+
+剩余风险：当前只完成 Core validation；macOS UI 的 S1-23 / S1-24 消费链路不在本 task 范围。工作区里已有未由本任务产生的脏文件：`.codex/task-loop-runs/20260502_094539/summary.json`、`tasks/prompts/_shared/progress.json`，我未改动它们。
+
+建议下一个任务：按队列继续 `1-2/task-29`。
+

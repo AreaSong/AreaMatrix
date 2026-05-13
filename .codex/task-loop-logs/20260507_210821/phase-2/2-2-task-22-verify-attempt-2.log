@@ -1,0 +1,82 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`2-2/task-22`
+- Task：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-2-import-conflict/task-22-s1-22-c1-09-detect-duplicate.md`
+- Manifest：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-2.md:1643`
+- 实际检查：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`apps/macos/AreaMatrix.xcodeproj/project.pbxproj`、`core/area_matrix.udl`
+- Forbidden Touches：`core/src/**`，未发现变更
+
+三、完成度摘要
+
+- 已覆盖项数：9
+- 未覆盖项数：3
+- 通过项数：7
+- 不通过项数：3
+- 阻塞项数：3
+
+四、逐项验收结果
+
+- 只处理 S1-22 页面中的 C1-09 功能点
+  - 结果：不通过
+  - 证据：`S1-22` 在 control map 中只允许 `C1-09 / import_file / DuplicateFile`，但实现用 Swift 侧 hash + `CoreBridge.listFiles` 扫描 `files` 判断重复，接入了 `C1-11 list_files` 能力。
+  - 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreflightCorePreview.swift:35`、`:53`、`:90`
+
+- 读取页面规格、MVP control map、Core API 和 C1-09 能力规格
+  - 结果：通过
+  - 证据：已核对 `S1-22` 页面规格、`mvp-control-map`、`core-api`、`C1-09` 能力规格。
+  - 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-22-conflict-duplicate.md:1`、`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:37`、`/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-09-detect-duplicate.md:1`
+
+- 只接入 C1-09 对应 CoreBridge / 状态 / 错误映射
+  - 结果：不通过
+  - 证据：真实 `import_file` 抛 `DuplicateFile` 时，当前模型进入 `failed(.duplicateFile)`，不是进入 S1-22 duplicate conflict 页面；测试也明确锁定该行为。
+  - 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreviewModel.swift:258`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFilePageIntegrationVerifyTests.swift:230`
+
+- 不顺手实现相邻页面
+  - 结果：通过
+  - 证据：未发现 S1-24 替换确认页面在本 task 中被完整接入。
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过。重复检测主逻辑绕过 C1-09 `import_file`，改为 Swift fallback + `listFiles`，边界不符合 page-feature task。
+- 注释 / rustdoc / 文档同步：不通过。Core API 文档把 `preview_import` 标为缺口，并说明缺口不得被 UI 静态替代掩盖；当前实现和测试承认使用 “Swift fallback when preview_import binding is missing”。
+- 错误处理与边界处理：不通过。`DuplicateFile` 真实错误路径被当作普通失败映射，没有转成 S1-22 可决策冲突状态。
+- 测试与验证覆盖：通过验证命令，但测试覆盖的是当前 fallback 行为，不能证明 C1-09 合同闭环正确。
+- 占位、硬编码、mock-only、一次性实现检查：不通过。生产代码不是 mock-only，但使用了未在 C1-09/control map 内声明的 fallback 闭环；Replace 也被固定隐藏。
+
+六、阻塞项
+
+- P0：真实 C1-09 `DuplicateFile` 没有触发 S1-22 冲突处理
+  - 说明：C1-09 规格要求输出 `DuplicateFile { existing_path }`，并要求 UI 得到 existing path；Core API 示例也把 `DuplicateFile` 用于展示重复处理。但当前 `importSelectedFile()` catch 后只设置 `.failed(...)`。
+  - 路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreviewModel.swift:258`
+  - 测试证据：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFilePageIntegrationVerifyTests.swift:230`
+  - 为什么导致不通过：真实 Core 闭环不能把 duplicate 只当失败态；用户不可在真实 `import_file` duplicate 输出后完成 S1-22 决策。
+
+- P0：S1-22 任务越界接入 `C1-11 list_files`
+  - 说明：control map 对 `S1-22` 只声明 `C1-09 / import_file`，本 task 也要求 control map 之外能力为 None。当前预检读取全量 file list 后用 hash 比对重复。
+  - 路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreflightCorePreview.swift:90`
+  - 为什么导致不通过：page-feature task 不能用未绑定 Core 能力补齐真实闭环。
+
+- P1：S1-22 / C1-09 的 Replace / Overwrite 条件未按规格落地
+  - 说明：S1-22 规格要求 `allowReplaceDuringImport=true` 且 Trash 可用时显示 Replace 并进入二次确认；C1-09 规格要求 Overwrite 必须有二次确认 UI 才能接入。当前策略只包含 skip / keepBoth，fallback 结果固定 `.hidden`，测试还断言即使 Core reports visibility 也保持不可用。
+  - 路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportSingleFileSheetSections.swift:249`
+  - 相关路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreflightCorePreview.swift:63`
+  - 为什么导致不通过：Exact Docs 中 S1-22 的 C1-09 用户可见功能未完整满足。
+
+七、验证情况
+
+- 已运行：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+  - 结果：通过，`BUILD SUCCEEDED`
+- 已运行：`./dev test macos`
+  - 结果：通过；标准 `xcodebuild test` 被本地 sandboxed `testmanagerd` 通信阻断后，脚本按规则复用已构建 XCTest bundle，`xcrun xctest` 通过，263 tests / 0 failures。
+- 缺失：无必需命令缺失。
+- 注意：验证通过只能证明可编译和现有测试通过，不能覆盖上述合同边界阻塞。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+
+VERIFY_RESULT: FAIL

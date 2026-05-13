@@ -1,0 +1,39 @@
+一、执行结论
+
+- 已完成。
+
+二、执行范围
+
+- 单任务：`1-4/task-09`
+- 修改文件：[sync_external_created_validation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/sync_external_created_validation.rs:1)
+- 未触碰 `apps/**`。
+- 工作区里已有的 `.codex/task-loop-runs/20260502_094539/summary.json` 和 `tasks/prompts/_shared/progress.json` 仍是既有脏状态，我没有修改它们。
+
+三、完成情况
+
+- 核对清单：5/5 完成。
+- 完成标准：C1-17 validation 目标已有测试证据；未扩展到 C1-18/C1-19 或 UI 页面。
+- 新增 validation 覆盖：成功同步到 list/tree/detail/log/cursor、跳过 `.areamatrix/` 与 generated overview、绝对路径越界、负 event id、非 `Created` 事件不推进 cursor。
+- Forbidden Touches：未触碰。
+
+四、工程质量
+
+- 代码结构：仅新增任务范围内 Rust 集成测试，复用真实 `init_repo`、SQLite、文件系统和公开 Core API。
+- 注释 / rustdoc / 文档同步：本次没有新增 public API，无需 rustdoc；未改文档、API 或 UDL。
+- 错误与边界：覆盖 `InvalidPath`、cursor 不推进、无 DB/log/file rows 的失败后状态。
+- 无占位、硬编码通过态、mock-only 或一次性脚本实现。
+
+五、验证情况
+
+- `cd core && cargo fmt --all -- --check`：通过。
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过。
+- `cd core && cargo test --workspace sync_external_created`：通过，C1-17 相关 18 个测试通过。
+- `cd core && cargo test --workspace`：通过，完整 core 测试通过。
+- 无无法运行项。
+
+六、风险与后续
+
+- 剩余风险：未做 macOS watcher / UI 消费验证，因本 task 绑定范围是 Core C1-17 validation，不包含 `apps/**`。
+- 回滚思路：删除新增的 `core/tests/sync_external_created_validation.rs` 即可回退本次改动。
+- 建议下一个任务：`1-4/task-10`，C1-17 integration verify。  
+

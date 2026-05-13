@@ -1,0 +1,37 @@
+一、执行结论：已完成。
+
+二、执行范围：单任务 `1-1/task-11`。修改文件：
+- [core/src/api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:137)
+- [core/src/lib.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/lib.rs:15)
+- [core/src/repo_init.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/repo_init.rs:40)
+- [core/src/repo_scan.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/repo_scan.rs:38)
+- [core/src/db/mod.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/db/mod.rs:11)
+- [core/src/db/scan.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/db/scan.rs:28)
+- [core/tests/adopt_existing_repo_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/adopt_existing_repo_implementation.rs:34)
+
+三、完成情况：
+- C1-03 implementation 范围已实现：`AdoptExisting` 初始化、真实文件扫描、`files.origin = Adopted`、`storage_mode = Indexed`、scan session 创建/查询/恢复。
+- Exact Docs 已按 SSOT 执行：非空目录接管不移动、不重命名、不删除、不覆盖用户文件；只创建 `.areamatrix/**`；`README.md` 作为普通文件索引；`AREAMATRIX.md`、`.areamatrix/generated/`、默认忽略项跳过。
+- 未实现相邻 UI 或其他 C1 能力；`Reindex` session resume 保持非本任务范围。
+- `core/area_matrix.udl` 未改，因为 task-10 已对齐本任务需要的 API 合同。
+- Forbidden Touches：未触碰 `apps/**`。
+
+四、工程质量：
+- 代码拆为 repo init、repo scan、DB scan helper，避免把扫描/SQLite 状态机堆进单文件函数。
+- 新增路径没有生产 `unwrap/expect/panic`；错误通过 `CoreError` 传播，失败 scan 会落 `Failed` session 和 `errors_json`。
+- 测试覆盖正常接管、用户文件不变、README 索引、generated/AREAMATRIX 跳过、completed resume 空报告、interrupted resume 幂等补扫。
+- 未引入新依赖，未使用 mock-only 或硬编码通过态。
+
+五、验证情况：
+- `cd core && cargo fmt --all -- --check`：通过
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过
+- `cd core && cargo test --workspace adopt_existing_repo`：通过
+- 额外补跑 `cd core && cargo test --workspace init_empty_repo`：通过
+- 额外补跑 `cd core && cargo test --workspace`：通过
+- `git diff --check`：通过
+
+六、风险与后续：
+- 工作区已有非本轮改动：`.codex/task-loop-runs/20260501_132850/summary.json`、`tasks/prompts/_shared/progress.json`，本轮未处理。
+- 剩余风险主要在下一任务范围：`1-1/task-12` 应继续补强 failure/recovery 语义，例如更细的 scan 中断、失败重试和恢复证据。
+- 建议下一个任务：`1-1/task-12`。
+

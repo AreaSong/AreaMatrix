@@ -1,0 +1,43 @@
+一、执行结论
+
+已完成 `2-3/task-20`。
+
+二、执行范围
+
+单任务：`S1-28 settings-classifier + C1-05 classify-preview`
+
+本次实现改动：
+- [ClassifierSettingsModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ClassifierSettingsModel.swift)
+- [ClassifierSettingsPane.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Settings/ClassifierSettingsPane.swift)
+- [ClassifierSettingsPageFeatureTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ClassifierSettingsPageFeatureTests.swift)
+
+范围备注：当前 worktree 另有 `.codex/task-loop-runs/.../summary.json` 与 `tasks/prompts/_shared/progress.json` 的既有 task-loop 记录改动，时间早于本次实现；我未编辑它们。
+
+三、完成情况
+
+- 只处理 S1-28 中 C1-05：已完成，新增“分类预览”输入、Preview 按钮、结果/错误显示。
+- 已读取并交叉核对 UX 页面、control map、Core API、C1-05 capability spec。
+- 只接入 C1-05：通过 `CoreCategoryPredicting.predictCategory`、`ClassifyResultSnapshot` 和 `CoreErrorMapping`；未实现同页其他能力。
+- 未顺手实现相邻页面。
+- Forbidden Touches：未触碰 `core/src/**`；`core/area_matrix.udl` 仅读取未修改。
+
+四、工程质量
+
+状态流放在 `ClassifierSettingsModel`，SwiftUI view 只负责展示和触发动作；没有在 View body 做 IO。Preview 使用 generation guard，避免旧请求或旧错误回写到新输入。错误路径通过 Core error mapping 显示，并保留 `Retry preview` 恢复入口。
+
+测试覆盖了 injected predictor 成功路径、CoreError 失败路径、真实 `CoreBridge` 读取 `.areamatrix/classifier.yaml` 的闭环，并验证 preview 不改写 classifier.yaml、不创建 README/AREAMATRIX.md。无新增依赖，无 Rust public API，无需 rustdoc 或 docs/UDL 同步。
+
+五、验证情况
+
+已运行：
+- `xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：通过。
+- `./dev test macos`：通过；标准 `xcodebuild test` 被本地 `testmanagerd` sandbox 阻断后，脚本复用同一 XCTest bundle 执行 `xcrun xctest`，366 tests，0 failures。
+- `git diff --check -- <本次 3 个文件>`：通过。
+
+无法运行：
+- `swiftformat` / `swiftlint`：本机未安装，`command -v swiftformat` 与 `command -v swiftlint` 均未找到。
+
+六、风险与后续
+
+剩余风险：未做手工 UI 点击或截图验证；当前证据来自 build、model/page-feature tests 和真实 CoreBridge XCTest。建议下一个任务进入 `2-3/task-21`，做 S1-28 page integration verify，统一验收 C1-04 + C1-05 在整页上的覆盖。
+

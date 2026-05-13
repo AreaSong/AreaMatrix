@@ -1,0 +1,66 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`2-3/task-20`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-3-detail-settings/task-20-s1-28-c1-05-classify-preview.md`
+- 实际覆盖：`S1-28 settings-classifier` 中的 `C1-05 predict_category / classify-preview`
+
+三、完成度摘要
+
+- 已覆盖项数：12
+- 未覆盖项数：0
+- 通过项数：12
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 只处理 S1-28 页面中的 C1-05 功能点：通过  
+  证据：本轮 diff 只在 `ClassifierSettingsModel` / `ClassifierSettingsPane` / `ClassifierSettingsPageFeatureTests` 增加分类预览状态、按钮、结果和测试；未新增 import、move、preview_import 等相邻能力调用。
+
+- 读取页面规格、control map、Core API、C1-05 能力规格：通过  
+  证据：S1-28 声明 `settings-classifier` 绑定 `C1-04, C1-05`；本 task 只覆盖 `C1-05`。Core API 和 UDL 都声明 `predict_category(repo_path, filename) -> ClassifyResult`。
+
+- 只接入 C1-05 对应 CoreBridge / 状态 / 错误映射：通过  
+  证据：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ClassifierSettingsModel.swift:56` 注入 `CoreCategoryPredicting`，`:147` 调用 `predictor.predictCategory(...)`，`:243` 映射 Core 错误为预览错误；`CoreBridge.swift:259` 走真实 `predictCoreCategory`。
+
+- 不顺手实现相邻页面：通过  
+  证据：`git status --short -- core/src apps/macos/AreaMatrix apps/macos/AreaMatrixTests apps/macos/AreaMatrix.xcodeproj/project.pbxproj core/area_matrix.udl` 只显示 3 个 S1-28 相关 Swift 文件改动。
+
+- 用户可见功能可触发和验收：通过  
+  证据：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Settings/ClassifierSettingsPane.swift:159` 增加分类预览区，`:168` 触发 `model.previewClassification()`，`:250` 展示 category / suggestedName / reason / confidence。
+
+- 没有 mock、fixture 或静态状态伪造真实 Core 闭环：通过  
+  证据：生产默认依赖是 `CoreBridge()`；测试中既有注入替身，也有 `testDefaultCoreBridgePreviewReadsRealClassifierYamlWithoutWritingFiles` 使用真实 Core 初始化 repo 并读取真实 `classifier.yaml`。
+
+- 未触碰 control map 之外 Core 能力：通过  
+  证据：`core/src/**` 无改动；本轮新增 C1-05 预览只经过 `predict_category`，没有修改 UDL 或 Rust Core。
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。`ClassifierSettingsModel.swift` 290 行，`ClassifierSettingsPane.swift` 350 行，新增逻辑拆在模型状态、预览 UI、错误展示中。
+- 注释 / rustdoc / 文档同步：通过。本 task 未新增 public Rust API；`core/area_matrix.udl:41` 与 `docs/api/core-api.md` 中 `predict_category` 合同一致。
+- 错误处理与边界处理：通过。空文件名不触发请求；保存中、预览中禁用重复操作；`previewGeneration` 防止旧异步结果覆盖新状态；Core `Config/Classify` 错误映射到可见恢复文案。
+- 测试与验证覆盖：通过。新增测试覆盖注入 predictor 成功、Core 错误映射、真实 CoreBridge 读取 classifier.yaml 且不写用户根文件。
+- 占位、硬编码、mock-only、一次性实现检查：通过。生产路径未使用 mock；替身仅限 XCTest；真实 CoreBridge 测试证明非静态闭环。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：通过，输出 `** BUILD SUCCEEDED **`。
+- 已运行：`xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：失败于本地 sandbox 的 `com.apple.testmanagerd.control` 通信限制，不是编译或断言失败。
+- 已运行：`./dev test macos`：通过；标准 test 被 sandbox 阻断后按仓库规则复用 XCTest bundle，`xcrun xctest` 通过，366 tests、0 failures。
+- Forbidden Touches：`core/src/**` 无改动。
+- Expected New Paths：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`apps/macos/AreaMatrix.xcodeproj/project.pbxproj` 均已落地且工程引用存在。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS

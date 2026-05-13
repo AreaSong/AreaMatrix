@@ -1,0 +1,40 @@
+一、执行结论
+
+已完成 `2-1/task-06` repair retry。
+
+二、执行范围
+
+单任务：S1-03 validate-path page integration verify。  
+修改文件：
+
+- [AppShellModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/AppShellModel.swift)
+- [MainWindow.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/MainWindow.swift)
+- [AreaMatrixApp.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/App/AreaMatrixApp.swift)
+- [CoreBridge.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift)
+- [CoreBridgePlaceholderState.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/CoreBridgePlaceholderState.swift)
+- [AreaMatrixAppSmokeTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/App/AreaMatrixAppSmokeTests.swift)
+- [AreaMatrixShellTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/AreaMatrixShellTests.swift)
+
+三、完成情况
+
+- page-feature 覆盖：通过，S1-03 的 C1-01 / C1-03 / C1-21 均走真实 CoreBridge/错误映射路径。
+- 页面闭环：通过。`CreateEmpty` / `AdoptExisting` 进入 S1-04；已初始化 repo 的 `Open Repository` 保存选择并进入 S1-10 loading；Config/Internal/RepoNotInitialized 进入 S1-11；unfinished scan / DB 错误进入 S1-37。
+- mock / fixture / 硬编码状态：生产路径未发现 mock-only 或 spinner-only handoff；测试 fixture 仅用于 XCTest。
+- control map 外能力：未新增 S1-03 control map 外 Core 能力。
+- Forbidden Touches：未触碰，`git status --short -- core/src` 无输出。
+
+四、工程质量
+
+代码仍在文件 500 行以内，`awk` 行长检查无超过 120 字符行，`git diff --check` 通过。错误分流基于 `CoreError` 结构化 case，不用字符串 contains；既有 repo 打开只保存 repo 选择并进入 S1-10，不删除、移动、重命名或覆盖用户文件。
+
+五、验证情况
+
+- `xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：build 完成，测试阶段被本地 sandbox 阻断 `com.apple.testmanagerd.control`，退出码 65。
+- `bash scripts/check-macos-tests.sh`：通过；同样检测到 xcodebuild sandbox block 后复用 XCTest bundle，`xcrun xctest` 执行 32 tests，0 failures。
+- `git diff --check`：通过。
+- `swiftformat` / `swiftlint`：当前环境未安装，无法运行。
+
+六、风险与后续
+
+剩余风险：S1-10 后续进入 S1-08/S1-09 的真实列表/空态加载仍属于后续 S1-10 / main page task，本任务只负责 S1-03 的出口 wiring。建议下一个任务继续执行 `2-1/task-07`，进入 S1-04 confirm-init。工作区另有既有 task-loop evidence/progress 脏状态，未纳入本次产品代码修复结论。
+

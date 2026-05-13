@@ -1,0 +1,17 @@
+一、执行结论：已完成。
+
+二、执行范围：单任务 `1-4/task-02`，仅处理 C1-16 `recover_on_startup` implementation。当前 task 相关文件为 [api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:155)、[lib.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/lib.rs:16)、[db/mod.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/db/mod.rs:20)、[staging_recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/db/staging_recovery.rs:1)、[recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/recovery.rs:23)、[recover_on_startup_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/recover_on_startup_implementation.rs:145)。本次 repair 重点改的是 `recovery.rs` 和 implementation 测试。
+
+三、完成情况：已修复上次 P0。`recover_on_startup` 现在会先用 `symlink_metadata` 验证 `.areamatrix/staging` 是真实目录；若 staging 根是 symlink 或非目录，直接返回 `CoreError::Io`，不删除目标目录内容、不回滚 row。嵌套 staging row 也会逐级拒绝 symlink 父目录，只清理可判定安全的 staging file 或 symlink entry。未实现相邻 C1 能力，未实现 UI。`git status --short apps` 为空，未触碰 `apps/**`。
+
+四、工程质量：结构保持在 Core 内部，API -> recovery -> DB helper，依赖方向符合 layered design。没有 mock、硬编码通过态或一次性脚本逻辑。错误路径显式返回 `CoreError` 或 report warning；新增测试覆盖 staging 根目录 symlink、嵌套 symlink parent、active 文件保留、orphan staging file、missing row、idempotent、未初始化 repo。
+
+五、验证情况：全部通过。
+
+- `cd core && cargo fmt --all -- --check`：通过
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过
+- `cd core && cargo test --workspace recover_on_startup`：通过，C1-16 contract 3 个 + implementation 8 个相关测试通过
+- `cd core && cargo test --workspace`：通过，完整 core workspace 测试通过
+
+六、风险与后续：剩余风险仅限更强对抗性的并发 TOCTOU 文件系统竞态；当前任务范围内的静态 symlink/canonical boundary 已有自动测试证据。建议下一个任务进入 `1-4/task-03: C1-16 failure-recovery`。
+

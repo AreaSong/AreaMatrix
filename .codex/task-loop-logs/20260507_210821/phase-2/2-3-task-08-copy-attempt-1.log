@@ -1,0 +1,16 @@
+一、执行结论：已完成。
+
+二、执行范围：单任务 `2-3/task-08`，只实现 S1-15 detail-multi 中由 C1-11 list-files 支撑的多选文件详情功能。修改范围在 `apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`apps/macos/AreaMatrix.xcodeproj/project.pbxproj` 内；`core/src/**` 未触碰。当前工作区另有既有脏文件 `.codex/task-loop-runs/20260507_210821/summary.json` 和 `tasks/prompts/_shared/progress.json`，未纳入本任务交付、也未回滚。
+
+三、完成情况：已把多选文件详情从占位文案改成真实列表数据汇总，包含选中数量、分类、大小、导入时间、文件类型、缺失/索引模式警告，并接入真实路径复制动作。未实现 C1-12 或相邻页面能力；多选下 `Show in Finder` 保持禁用，避免越界实现单文件动作。
+
+四、工程质量：没有 mock-only、fixture-only 或静态伪造闭环；路径复制通过现有 platform service 和真实 repo path resolver 处理。新增了 `DetailMultiListFilesPageFeatureTests.swift`，并扩展 shell 测试覆盖多路径复制和可访问性公告。`git diff --check` 通过，新增关键文件长度在规则阈值内。
+
+五、验证情况：
+
+- `xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：通过。
+- `./dev test macos`：通过。标准 `xcodebuild test` 被本地 sandbox 的 `testmanagerd` 阻断，脚本按仓库规则 fallback 到已构建 XCTest bundle；`xcrun xctest` 通过，324 tests，0 failures。
+- `git diff --check`：通过。
+- `git diff --name-only -- core/src`：无输出，确认未触碰 forbidden path。
+
+六、风险与后续：残余风险是没有做真实 GUI 点击截图验证，只完成 build 和 XCTest 级别验证。建议下一个任务继续按 phase manifest 执行 `2-3/task-09` 或对应的 S1-15 其他 capability task。  

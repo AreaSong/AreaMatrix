@@ -1,0 +1,37 @@
+一、执行结论
+
+- 未完成
+
+二、执行范围
+
+- 单任务：`0-1/task-01`
+- 成功修改文件清单：无
+- 我没有改动 `core/**`、`apps/**`、`.cursor/**`、`.agent/**` 内容；`.agents/**` 的违规仍然存在于当前 `HEAD`。
+
+三、完成情况
+
+- 8 个 `Expected New Paths` 均存在。
+- `core/AGENTS.md` 与 `apps/macos/AGENTS.md` 当前非空，分别为 34 行和 29 行。
+- 阻塞项仍是 Forbidden Touches：当前 `HEAD` 仍显示 `A .agents/skills/areamatrix-enterprise-governance`。
+- 尝试删除该 symlink：失败，`Operation not permitted`。
+- 尝试用 Git plumbing 从提交树移除该 tracked symlink：失败，无法创建临时 index / `.git/index.lock`，`Operation not permitted`。
+
+四、工程质量
+
+- 治理文档主线仍清晰，本 task 不涉及产品代码、Rust public API、mock 或硬编码闭环。
+- 但工程边界仍不合格：Forbidden Touches 违规没有被实际修掉。
+- `check-skills` 通过是因为 symlink 仍在当前工作区存在，不能作为 Forbidden Touches 修复证据。
+
+五、验证情况
+
+- `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`：通过，`doctor: OK`，`tasks: 637`，`manifests: 637`。
+- `bash scripts/check-governance.sh`：通过，`governance health: OK`。
+- `bash scripts/check-skills.sh`：通过，`skill health: OK (6 skill(s))`。
+- `git diff --check -- AGENTS.md .ai-governance .codex/README.md .codex/references/index.md .codex/templates/prompt-task-template.md`：通过，无输出。
+- Forbidden Touches 核查：失败，`git diff-tree ... -- .agents` 仍输出 `A .agents/skills/areamatrix-enterprise-governance`。
+
+六、风险与后续
+
+- 剩余风险：当前 sandbox 不允许删除该 symlink，也不允许写 Git index，因此本轮无法完成 repair。
+- 下一步建议：在具备 `.agents` 与 `.git` 写权限的环境里，从当前 task 的 Git evidence 中移除 `.agents/skills/areamatrix-enterprise-governance`，或把 enterprise governance skill 整体移动到允许触碰 `.agents/**` 的后续 task 中，再重新跑本 task 验收。
+

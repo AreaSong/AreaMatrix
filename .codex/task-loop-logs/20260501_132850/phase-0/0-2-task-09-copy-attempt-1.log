@@ -1,0 +1,40 @@
+一、执行结论
+
+- 已完成，但有环境性说明：当前 checkout 中 `0-2/task-09` 允许路径已存在，本轮未改文件；原始 manifest 命令在 Codex 沙箱下被 DerivedData 写权限阻断，已用 `/private/tmp` DerivedData + Swift compiler `-disable-sandbox` 验证项目本身可构建。
+
+二、执行范围
+
+- 单任务：`0-2/task-09`
+- 修改文件清单：无
+- 已确认存在：
+  - [AreaMatrix.xcodeproj](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj:1)
+  - [AreaMatrix.xcscheme](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/xcshareddata/xcschemes/AreaMatrix.xcscheme:1)
+  - [apps/macos/AGENTS.md](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AGENTS.md:1)
+
+三、完成情况
+
+- 创建可打开的 Xcode project 空壳：通过 `xcodebuild -list -project apps/macos/AreaMatrix.xcodeproj` 验证，能列出 `AreaMatrix` target 和 scheme。
+- 不实现页面业务：本轮未新增或修改任何 Swift 业务页面。
+- 为后续 SwiftUI 页面预留结构：project 已包含 macOS app/scheme 结构；局部 `AGENTS.md` 已约束 macOS 层边界。
+- Forbidden Touches：未触碰，`core/src/storage/**`、`core/src/db/**`、`core/src/classify/**` diff 为空。
+
+四、工程质量
+
+- 未新增依赖、未引入 mock-only 闭环、未修改 Core API / UDL / Swift bridge。
+- 代码结构未被本轮改动；当前任务仅确认工程壳与 scheme 可被 Xcode 读取。
+- 当前工作树已有两处既有修改：`.codex/task-loop-runs/20260501_132850/summary.json`、`tasks/prompts/_shared/progress.json`，本轮未触碰。
+
+五、验证情况
+
+- 通过：`xcodebuild -list -project apps/macos/AreaMatrix.xcodeproj`
+- 失败：manifest 原始命令因沙箱无法写默认 DerivedData：
+  - `Couldn't create workspace arena folder ... DerivedData ... Operation not permitted`
+- 失败：改用 `/private/tmp` DerivedData 后，Swift macro plugin 被当前 Codex 沙箱阻断：
+  - `sandbox-exec: sandbox_apply: Operation not permitted`
+- 通过：等价构建命令加 `/private/tmp` DerivedData 和 `OTHER_SWIFT_FLAGS=-disable-sandbox` 后 `BUILD SUCCEEDED`
+
+六、风险与后续
+
+- 剩余风险：原始 manifest 命令在当前 Codex 沙箱下不能无参数通过；需要在正常 macOS 用户环境补跑原始命令，或由验证器接受当前沙箱的明确阻断原因。
+- 建议下一个任务：进入 `0-2/task-10`，或先跑 verify-ready 对 `0-2/task-09` 做只读验收。
+

@@ -1,0 +1,38 @@
+交接摘要如下，基于当前 workspace 状态继续即可，不要从头重做。
+
+当前任务是 AreaMatrix `2-2/task-10` repair retry 6，目标只修上次验收失败的 3 类问题：S1-18 缺逐项分类调整、Trash 不可用时误禁用整个冲突策略 Picker、标准 `xcodebuild test` 证据缺失。已按要求读取 task、共享规则、切片规则、工程质量规则、编码规范、validation-driver skill、dependency graph、phase manifest、Exact Docs、Existing Code。约束是只能改 `apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`apps/macos/AreaMatrix.xcodeproj/project.pbxproj`，禁止触碰 `core/src/**`。High risk 已有静默授权，仍需报告风险、验证和回滚。
+
+已实现的修复：
+- 增加了 per-row category override。
+  - `ImportBatchCopyImportState.swift` 给 row 增加 `categoryOverride`。
+  - `ImportBatchPreviewModel.swift` 重新预览时保留已有 override。
+  - `ImportBatchCopyImportModel.swift` 导入时优先使用 row override，否则回退到批量 destination；`suggestedCategory` 也优先使用 override。
+  - `ImportEntrySheetView.swift` 在展开批量列表行里加入分类 Picker。
+  - `ImportEntrySheetHelpers.swift` 放了分类选项和 initial batch destination helper。
+- 修复 Trash 不可用时 Replace 行为。
+  - `ImportBatchConflictSection.swift` 不再禁用整个 Picker。
+  - `ImportBatchConflictActions.swift` / `ImportBatchNamingActions.swift` 增加 guard，Trash 不可用时禁止切到 `.replace`，但允许 Skip / Keep both / Rename incoming。
+- 增加测试。
+  - `ImportBatchCopyImportModelTests.swift` 覆盖 per-row override 导入和 reapply 后保留 override。
+  - `ImportBatchCopyPageIntegrationTests.swift` 增加了 Trash 不可用时 keep both / rename incoming 仍可选的测试。
+
+当前未收口点：
+- `apps/macos/AreaMatrix/Views/Main/ImportEntrySheetView.swift` 最新大约 514 行，超过 500 行规则。需要继续拆出一点代码，建议把 `batchCategoryBinding` / `batchCategoryPicker` 或行内分类选择器拆到 helper/subview，目标让该文件低于 500 行。
+- `ImportBatchCopyPageIntegrationTests.swift` 可能大约 585 行，虽然是测试文件，但工程质量规则也写了“单文件尽量不超过 500 行”。建议把新加的 Trash tests 移到已有的 `ImportBatchDuplicateResolutionTests.swift` 或新建更小的 test file。若新建 test file，需要确认 Xcode project 是否自动包含或更新 `project.pbxproj`。
+- 还需要重新跑 fallback 验证 `./dev test macos`。标准 `xcodebuild test` 已跑到编译通过并进入测试启动阶段，但因为 sandbox 无法连接 `com.apple.testmanagerd.control`，exit 65。
+
+最近验证状态：
+- `xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：最近一次编译通过，进入 “Testing started” 后失败，错误是 test runner / `com.apple.testmanagerd.control` sandbox 通信失败，exit code 65。不是代码编译错误。
+- 需要补跑：`./dev test macos`。
+- 需要补跑：`git status --short -- core/src` 确认 Forbidden Touches 仍无输出。
+
+继续建议步骤：
+1. 先用 `wc -l` 看 `ImportEntrySheetView.swift` 和相关测试文件行数。
+2. 小范围拆分超长文件，保持只在 Expected New Paths 内。
+3. 运行 `xcodebuild test ...`，预期仍可能因 sandbox exit 65，但要确认无编译错误。
+4. 运行 `./dev test macos`，拿 fallback XCTest 证据。
+5. 运行 `git status --short -- core/src`。
+6. 最终报告按任务要求六段输出：执行结论、执行范围、完成情况、工程质量、验证情况、风险与后续。
+
+注意：当前 worktree 是 prior retries 的 dirty 状态叠加，不要 revert 未确认来源的改动。只继续修本次验收失败相关问题。
+

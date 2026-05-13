@@ -1,0 +1,27 @@
+一、执行结论：未完成。
+
+原因：`./dev check all` 通过，但只读验收发现 C2-02 合同无法证明可作为后续 UI 的真实 Core 依赖。SSOT 要求 C2-02 支持 `category / tags / date range / storage mode / include deleted` 并输出“过滤后的搜索结果和 facet counts”：[C2-02-search-filters.md](/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-2-experience/C2-02-search-filters.md:15)。但 `SearchFilter` 不包含 `storage_mode` 和 `tag_match_mode`：[core-api.md](/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:189)，而 `SearchFacetQuery` 包含这两个字段：[core-api.md](/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:202)。Rust 也一致：`SearchFilter` 缺字段，[SearchFacetQuery](/Users/as/Ai-Project/project/AreaMatrix/core/src/search.rs:136) 才有完整 C2-02 状态。结果是 `list_filter_facets` 可算 facets，但 `search_files` 无法表达同一套 C2-02 filter state，尤其是 storage mode 和 tag Any/All。
+
+二、执行范围：单任务 `4-1/task-10`。修改文件清单：无。我没有修改产品实现、测试、文档或 `apps/**`。工作树仍显示既有运行状态文件修改：`.codex/task-loop-runs/20260511_011424/summary.json`、`tasks/prompts/_shared/progress.json`。
+
+三、完成情况：
+- 核对 capability spec、Core API、UDL、Rust、tests：不通过，API/UDL/Rust filter state 不一致。
+- 消费页面状态/错误/副作用：部分通过。facets 的加载、失败、只读和无标签状态有测试；但 S2-02/S2-08 要求 filter 变化即时刷新搜索结果，当前 `search_files` 不能完整承载同一 filter state。
+- Control map 之外能力：未发现 C2-03/C2-04/C2-05 写能力被实现到 C2-02；`list_filter_facets` 保持只读。
+- Forbidden Touches：未触碰 `apps/**`。
+- 完成标准：不满足。后续 UI 接入应被阻塞，直到 `search_files` 与 C2-02 filter state 对齐，或 SSOT 明确拆分“facets state”和“result filter state”。
+
+四、工程质量：
+- `list_filter_facets` 本身结构清晰，覆盖组合筛选、错误映射、无 DB/FS 写入。
+- `core/src/search*` 生产路径未发现 `unwrap/expect/panic/TODO`。
+- 阻塞点是合同完整性，不是单次命令失败：测试锁住了 `list_filter_facets`，但没有证明 `search_files` 能用同一套 C2-02 状态刷新结果。
+
+五、验证情况：
+- 已运行：`./dev check all`，退出码 0。
+- 通过项：governance、skills、task-loop、prompt doctor、`git diff --check`、`cargo fmt --all -- --check`、`cargo clippy --all-targets --all-features -- -D warnings`、`cargo test --workspace`、SwiftFormat、SwiftLint。
+- macOS：`xcodebuild test` 被本地 sandbox 的 `testmanagerd` 通信限制阻断；脚本按仓库规则复用已构建 XCTest bundle，`xcrun xctest` 通过。
+
+六、风险与后续：
+- 剩余风险：若直接进入 S2-02/S2-08 UI，UI 可能拿到正确 facet counts，却无法用同一 filter state 驱动结果列表。
+- 建议下一个任务：先修复 C2-02 Core 合同漂移，补齐 `search_files` 的 C2-02 filter state 或同步文档/UDL/Rust/tests 的边界定义，再重新执行 `4-1/task-10` 验收。
+

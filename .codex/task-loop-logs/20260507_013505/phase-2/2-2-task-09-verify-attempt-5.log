@@ -1,0 +1,75 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`2-2/task-09`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-2-import-conflict/task-09-s1-18-c1-09-detect-duplicate.md`
+- 重点代码：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+- Forbidden Touches：`core/src/**`
+
+三、完成度摘要
+
+- 已覆盖项数：8
+- 未覆盖项数：2
+- 通过项数：8
+- 不通过项数：2
+- 阻塞项数：2
+
+四、逐项验收结果
+
+- 项目：读取页面规格、control map、Core API、C1-09 能力规格  
+  结果：通过  
+  证据：四份 Exact Docs 均存在并已读取；S1-18 绑定 `C1-05, C1-06, C1-09`，本 task 目标为 C1-09。
+
+- 项目：Expected New Paths 落地  
+  结果：通过  
+  证据：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`project.pbxproj` 均有相关文件或变更。
+
+- 项目：Forbidden Touches  
+  结果：通过  
+  证据：`git diff --name-only -- core/src` 无输出，未发现 `core/src/**` 被修改。
+
+- 项目：S1-18 中 C1-09 用户可见功能  
+  结果：不通过  
+  证据：批量 preview 只调用 `predictCategory`，未在 preview/precheck 阶段检测 duplicate；重复只在用户点击 Import 后由 `import_file` 抛 `DuplicateFile` 再显示。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportBatchPreviewModel.swift:262`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportBatchCopyImportModel.swift:117`
+
+- 项目：不实现相邻页面  
+  结果：不通过  
+  证据：本 task 改动了单文件 preflight 的 hash 逻辑，属于 S1-17/S1-22 既有链路，不是 S1-18 page-feature 的必要落点。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreflightCorePreview.swift:37`
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过，重复检测发生在 import 执行中，不是 S1-18 文档要求的 preview/conflict precheck；若前序行已成功导入，后续重复才暴露，无法证明“导入前逐项处理”闭环。
+- 注释 / rustdoc / 文档同步：通过，当前 Swift 改动不要求 rustdoc，未发现必须同步的 API/UDL 改动。
+- 错误处理与边界处理：部分通过，`CoreError.DuplicateFile` 能映射为 `DUP` 行，但检测时机不符合 S1-18 高风险导入前门禁。
+- 测试与验证覆盖：通过命令，但不足以抵消功能阻塞；新增测试覆盖 fake importer 的 DuplicateFile 映射和 KeepBoth 重试。
+- 占位、硬编码、mock-only、一次性实现检查：不通过，生产路径不是 mock，但验收缺少真实 batch preview/precheck 闭环。
+
+六、阻塞项
+
+- P0：C1-09 duplicate detection 没有在 S1-18 preview/conflict precheck 阶段完成  
+  说明：S1-18 要求展示预计重复数量，并在 sheet 内完成冲突处理；当前 `duplicateCount` 只有在点击 Import 后、Core 抛 `DuplicateFile` 后才变为非 0。  
+  路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportBatchPreviewModel.swift:262`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportEntrySheetView.swift:266`  
+  为什么导致不通过：无法证明用户能在导入写入前看到并处理重复项，违反 S1-18 与真实闭环验收要求。
+
+- P1：任务范围触碰相邻单文件 preflight 链路  
+  说明：`ImportSingleFilePreflightCorePreview` 改为使用新 `ImportFileHasher`，影响 S1-17/S1-22 单文件预检路径。  
+  路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreflightCorePreview.swift:37`  
+  为什么导致不通过：task checklist 明确只处理 S1-18 页面中的 C1-09，不顺手实现相邻页面。
+
+七、验证情况
+
+- 已运行：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：通过，`BUILD SUCCEEDED`。
+- 已运行：`./dev test macos`：通过；标准 `xcodebuild test` 被本地 `testmanagerd` sandbox 阻断，脚本按仓库规则复用 XCTest bundle，`195 tests, 0 failures`。
+- 已运行：`git diff --check -- apps/macos/AreaMatrix apps/macos/AreaMatrixTests apps/macos/AreaMatrix.xcodeproj/project.pbxproj core/area_matrix.udl core/src`：通过。
+- 缺失：未证明 S1-18 在 Import 前完成 duplicate precheck 并展示预计重复数量。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+
+VERIFY_RESULT: FAIL

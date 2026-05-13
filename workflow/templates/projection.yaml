@@ -1,0 +1,23 @@
+version: v*
+status: blocked
+kind: result-projection
+source: tasks/prompts/_shared/progress.json
+tasks:
+  - semantic_id: v*-feature-id/docs-contract
+    live_label: 5-1/task-01
+    feature: v*-feature-id
+    task_key: docs-contract
+    status: draft
+    verify: missing
+    checkpoint: missing
+    trace_ok: false
+    trace:
+      promotion_mapping: workflow/versions/v*/promotion/promotion.yaml
+      queue_candidate: workflow/versions/v*/queue/v*-feature-id/queue.yaml
+      draft_id: workflow/versions/v*/drafts/v*-feature-id/docs-contract.copy.md
+      plan_item: workflow/versions/v*/plans/v*-feature-id.plan.md
+      change_id: workflow/versions/v*/changes/change.yaml
+      middle_layer_entry: workflow/versions/v*/middle-layer/v*-feature-id.yaml
+      docs_discussion: workflow/versions/v*/discussion/docs-discussion.md
+      exact_docs:
+        - docs/README.md

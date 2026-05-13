@@ -13,7 +13,7 @@
 
 | UX | 页面 | Core 能力 | Core API | DB 表 | 文件系统 | 错误态 | Prompt | Core 接入 |
 |---|---|---|---|---|---|---|---|---|
-| S1-01 | welcome | C1-04 | `load_config` | `repo_config` | app config | Config | `2-1/task-01` | Preview 可 mock |
+| S1-01 | welcome | C1-04 | `load_config` | `repo_config` | app config | Config | `2-1/task-01` | Real Core（config routing） |
 | S1-02 | choose-path | C1-01 | `validate_repo_path` | none | selected path stat | InvalidPath, PermissionDenied | `2-1/task-02` | Real Core |
 | S1-03 | validate-path | C1-01, C1-03, C1-21 | `validate_repo_path`, `get_latest_scan_session` | `scan_sessions` | `.areamatrix/` probe | InvalidPath, PermissionDenied, ICloudPlaceholder | `2-1/task-03`, `2-1/task-04`, `2-1/task-05`, `2-1/task-06` | Real Core |
 | S1-04 | confirm-init | C1-02, C1-03 | `init_repo` | `schema_version`, `repo_config`, `scan_sessions` | `.areamatrix/**` | Config, PermissionDenied | `2-1/task-07`, `2-1/task-08`, `2-1/task-09` | Real Core |
@@ -23,7 +23,7 @@
 | S1-08 | main-empty | C1-11, C1-15 | `list_files`, `list_tree_json` | `files` | repo tree read | RepoNotInitialized, Db | `2-1/task-19`, `2-1/task-20`, `2-1/task-21` | Real Core |
 | S1-09 | main-list | C1-11, C1-12, C1-15 | `list_files`, `get_file`, `list_tree_json` | `files` | file paths | Db, FileNotFound | `2-1/task-22`, `2-1/task-23`, `2-1/task-24`, `2-1/task-25` | Real Core |
 | S1-10 | main-loading | C1-03, C1-15, C1-16 | `get_latest_scan_session`, `resume_scan_session`, `list_tree_json` | `scan_sessions` | scan path | Db, Io | `2-1/task-26`, `2-1/task-27`, `2-1/task-28`, `2-1/task-29` | Real Core |
-| S1-11 | main-repo-error | C1-01, C1-19, C1-21 | `validate_repo_path`, `sync_external_changes` | `files` | missing path checks | RepoNotInitialized, Db, PermissionDenied | `2-1/task-30`, `2-1/task-31`, `2-1/task-32`, `2-1/task-33` | Real Core |
+| S1-11 | main-repo-error | C1-01, C1-19, C1-21 | `validate_initialized_repo_path`, `sync_external_changes` | `files` | missing path checks | RepoNotInitialized, Db, PermissionDenied | `2-1/task-30`, `2-1/task-31`, `2-1/task-32`, `2-1/task-33` | Real Core |
 | S1-12 | detail-meta | C1-12 | `get_file` | `files` | target file metadata | FileNotFound | `2-3/task-01` | Real Core |
 | S1-13 | detail-log | C1-13, C1-17, C1-18, C1-19 | `list_changes`, `sync_external_changes` | `change_log` | event paths | Db | `2-3/task-02`, `2-3/task-03`, `2-3/task-04`, `2-3/task-05`, `2-3/task-06` | Real Core |
 | S1-14 | detail-note | C1-14 | `read_note`, `write_note` | `notes`, `change_log` | sidecar `.md` | FileNotFound, Io | `2-3/task-07` | Real Core |
@@ -37,7 +37,7 @@
 | S1-22 | conflict-duplicate | C1-09 | `import_file` | `files` | hash source + target | DuplicateFile | `2-2/task-22` | Real Core |
 | S1-23 | conflict-name | C1-10 | `import_file`, `rename_file` | `files`, `change_log` | conflict rename | Conflict, InvalidPath | `2-2/task-23` | Real Core |
 | S1-24 | replace-confirm | C1-09, C1-10 | `import_file`, `delete_file` | `files`, `change_log` | Trash / overwrite target | DuplicateFile, Conflict, Io | `2-2/task-24`, `2-2/task-25`, `2-2/task-26` | Real Core |
-| S1-25 | icloud-conflict-min | C1-01, C1-21 | `validate_repo_path`, `import_file` | none | iCloud placeholder probe | ICloudPlaceholder | `2-4/task-01`, `2-4/task-02`, `2-4/task-03` | Real Core |
+| S1-25 | icloud-conflict-min | C1-01, C1-21 | `validate_repo_path`, `map_core_error` | none | iCloud placeholder probe | ICloudPlaceholder, Internal | `2-4/task-01`, `2-4/task-02`, `2-4/task-03` | Real Core |
 | S1-26 | settings-general | C1-04, C1-07 | `load_config`, `update_config` | `repo_config` | app config | Config | `2-3/task-12`, `2-3/task-13`, `2-3/task-14` | Real Core |
 | S1-27 | settings-repository | C1-04, C1-08, C1-20 | `load_config`, `update_config` | `repo_config` | overview output path | Config, PermissionDenied | `2-3/task-15`, `2-3/task-16`, `2-3/task-17`, `2-3/task-18` | Real Core |
 | S1-28 | settings-classifier | C1-04, C1-05 | `load_config`, `predict_category` | `repo_config` | classifier.yaml | Config, Classify | `2-3/task-19`, `2-3/task-20`, `2-3/task-21` | Real Core |
@@ -47,7 +47,7 @@
 | S1-32 | error-recovery | C1-16, C1-21 | `recover_on_startup`, error mapping | `files`, `scan_sessions` | staging cleanup | Db, Io, Internal | `2-3/task-28`, `2-3/task-29`, `2-3/task-30` | Real Core |
 | S1-33 | file-rename-sheet | C1-22 | `rename_file` | `files`, `change_log` | safe rename or index-only metadata | InvalidPath, Conflict, PermissionDenied | `2-3/task-32` | Real Core |
 | S1-34 | file-delete-confirm | C1-23 | `delete_file`, `remove_index_entry` | `files`, `change_log` | Trash or index-only removal | FileNotFound, PermissionDenied, Io | `2-3/task-33` | Real Core |
-| S1-35 | change-category-sheet | C1-24, C1-10 | `move_to_category` | `files`, `change_log` | safe move or index-only metadata | Classify, Conflict, PermissionDenied | `2-3/task-34`, `2-3/task-35`, `2-3/task-36` | Real Core |
+| S1-35 | change-category-sheet | C1-24, C1-10 | `preview_move_to_category`, `move_to_category` | `files`, `change_log` | safe preview, safe move or index-only metadata | Classify, Conflict, PermissionDenied | `2-3/task-34`, `2-3/task-35`, `2-3/task-36` | Real Core |
 | S1-36 | icloud-conflict-list | C1-25 | `list_icloud_conflicts` | conflict state, change_log | read conflicted copies only | ICloudPlaceholder, Io | `2-4/task-04` | Real Core |
 | S1-37 | db-repair-confirm | C1-26, C1-16 | `repair_metadata`, `reindex_from_filesystem` | `scan_sessions`, `files` | metadata repair only | Db, PermissionDenied, Io | `2-4/task-05`, `2-4/task-06`, `2-4/task-07` | Real Core |
 

@@ -1,0 +1,79 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`2-3/task-37`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-3-detail-settings/task-37-file-actions-integration-verify.md`
+- 覆盖代码：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：9
+- 未覆盖项数：0
+- 通过项数：9
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：Manifest / Exact Docs / Existing Code 覆盖
+- 结果：通过
+- 证据：9 个 Exact Docs 均存在并已读取；`core/area_matrix.udl` 已声明 `rename_file`、`delete_file`、`remove_index_entry`、`preview_move_to_category`、`move_to_category`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-2.md`
+
+- 项目：只做已完成页面和能力之间的 wiring/验收补齐
+- 结果：通过
+- 证据：`CoreFileRenaming`、`CoreFileDeleting`、`CoreFileCategoryMoving` 通过 `CoreBridge` 调用真实 UniFFI 函数；没有新增 control map 之外能力。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreFileRenaming.swift:7`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreFileDeleting.swift:8`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreMoveToCategory.swift:41`
+
+- 项目：本闭环页面 atomic / page integration 状态
+- 结果：通过
+- 证据：`progress.json` 显示 `2-3/task-32` 到 `2-3/task-36` 均为 `completed`；其中 `2-3/task-36` 是 S1-35 page integration verify。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/progress.json`
+
+- 项目：真实用户路径走通
+- 结果：通过
+- 证据：集成测试覆盖 rename -> move category -> remove index；验证真实文件存在/不存在、change_log、源文件不被误删。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/FileActionsIntegrationVerifyTests.swift:6`
+
+- 项目：移除无法通过最终验收的 mock
+- 结果：通过
+- 证据：生产路径通过 `MainRepositoryContentView` 路由到 model，再到真实 CoreBridge；测试中的 recording core 仅用于调用边界断言，不是产品路径。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentActionRouting.swift:15`
+
+- 项目：Expected New Paths
+- 结果：通过
+- 证据：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`project.pbxproj` 均有落地，pbxproj 已引用新增源文件与测试文件。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git diff --name-only -- core/src` 无输出，未触碰 `core/src/**`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。Bridge、model action、sheet routing、tests 分层清楚。
+- 注释 / rustdoc / 文档同步：通过。本任务未新增 Rust public API；UDL 与 Core API 已对齐。
+- 错误处理与边界处理：通过。失败会保留 sheet 并映射 Core error；delete/remove-index 区分 repo-owned 与 index-only/missing。
+- 测试与验证覆盖：通过。`./dev test macos` 最终执行 437 tests，0 failures。
+- 占位、硬编码、mock-only、一次性实现检查：通过。生产路径未发现 mock-only 闭环。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+- 结果：失败于本机 sandbox/testmanagerd 通信限制，错误为 `Connection init failed at lookup with error 159 - Sandbox restriction`，不是产品断言失败。
+- 已运行：`./dev test macos`
+- 结果：通过。该 repo-local validation gate 先复现同一 `xcodebuild test` sandbox block，再按 validation-driver 允许的 fallback 复用已构建 XCTest bundle；`xcrun xctest` 执行 437 tests，0 failures。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。直接 `xcodebuild test` 在当前 sandbox 环境被 testmanagerd 阻断，但 repo-local validation-driver 规定的 macOS 测试 gate 已完成并通过，且文件、文档、wiring、Forbidden Touches 与工程质量均有证据支撑。
+
+VERIFY_RESULT: PASS

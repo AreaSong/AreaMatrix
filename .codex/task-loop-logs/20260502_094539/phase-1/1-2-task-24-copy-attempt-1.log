@@ -1,0 +1,19 @@
+一、执行结论：已完成。
+
+二、执行范围：单任务 `1-2/task-24`。  
+新增文件：[detect_duplicate_integration_verify.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/detect_duplicate_integration_verify.rs:1)。未修改产品实现、UDL、文档或 `apps/**`。工作区原有的 `.codex/task-loop-runs/.../summary.json` 与 `progress.json` 脏状态未触碰。
+
+三、完成情况：C1-09 integration-verify 已补齐证据。新增测试交叉检查 C1-09 capability spec、control map、Core API、UDL、`api.rs` 注释、S1-22/S1-24 消费页面；真实链路覆盖 `Skip`/`Ask` 返回 `DuplicateFile(existing_path)`、`KeepBoth` 同 hash 双 active entry、`Overwrite` 仅显式策略下替换并写入 deleted/imported change log。未扩展到 C1-10 或 UI 实现，未触碰 Forbidden Touches。
+
+四、工程质量：测试走真实 `init_repo -> import_file -> list_files -> SQLite` 路径，不是 mock、空壳或硬编码通过态。新增代码仅为集成测试，无新增依赖，无 public Rust API，因此不需要 rustdoc。错误与边界证据覆盖无 staging 残留、DB active/deleted 状态、change_log 顺序和源文件保留。
+
+五、验证情况：
+
+- `cd core && cargo fmt --all -- --check`：初次发现新增文件格式差异，运行 `cargo fmt --all` 后重跑通过。
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过。
+- `cd core && cargo test --workspace detect_duplicate`：通过，包含新增 `detect_duplicate_integration_verify` 3 个测试。
+- `cd core && cargo test --workspace`：通过。
+- `git diff --check`：通过。
+
+六、风险与后续：未验证 macOS UI 二次确认交互，因为当前 task 禁止触碰 `apps/**`，该部分应由后续 `2-2` 页面任务覆盖。建议下一个任务继续执行 `1-2/task-25`，进入 C1-10 resolve-name-conflict 合同/API 范围。
+

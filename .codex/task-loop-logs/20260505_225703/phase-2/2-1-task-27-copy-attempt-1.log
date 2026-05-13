@@ -1,0 +1,43 @@
+一、执行结论
+
+已完成。`2-1/task-27` 的 copy-ready 实现与本地验证已完成；task-loop 状态文件当前仍记录为 `in_progress`，应等 verify-ready 通过后再由 runner 标记 completed。
+
+二、执行范围
+
+单任务：`S1-10 main-loading + C1-15 build-tree`。
+
+修改文件：
+- `apps/macos/AreaMatrix/Models/AppShellModel.swift`
+- `apps/macos/AreaMatrix/Models/MainLoadingState.swift`
+- `apps/macos/AreaMatrix/Models/OnboardingInitializationProgress.swift`
+- `apps/macos/AreaMatrix/Views/Main/MainLoadingView.swift`
+- `apps/macos/AreaMatrix/Views/MainWindow.swift`
+- `apps/macos/AreaMatrixTests/MainLoadingAdoptExistingTests.swift`
+- task-loop 自动状态文件：`.codex/task-loop-runs/20260505_225703/summary.json`、`tasks/prompts/_shared/progress.json`
+
+三、完成情况
+
+- 核对清单：已只处理 S1-10 中 C1-15 的 Tree loading；已读取页面规格、control map、Core API、C1-15 规格；只接入 `CoreBridge`/状态/错误映射；未实现相邻页面。
+- 完成标准：S1-10 打开资料库时会触发真实 `listTree(repoPath:locale:)`，显示 loading / loaded / failed / retry；生产路径没有 mock、fixture 或静态伪造；未接入 control map 外能力。
+- Forbidden Touches：未触碰 `core/src/**`。`core/area_matrix.udl` 和 `apps/macos/AreaMatrix.xcodeproj/project.pbxproj` 也没有 diff。
+
+四、工程质量
+
+代码结构按现有 `OnboardingModel`、`MainLoadingState`、`MainLoadingView` 模式扩展；Tree 读取和 scan session 刷新拆成独立异步结果，错误统一走现有 `openingFailureMapping`。生产代码没有新增依赖、没有 `try!`、没有强制解包、没有绕过 `CoreBridge` 直接调 UniFFI。测试覆盖了加载中触发 C1-15、失败映射与 retry、以及默认 `CoreBridge` 真实资料库 Tree 读取。
+
+残余维护风险：`AppShellModel.swift`、`OnboardingInitializationProgress.swift`、`MainLoadingAdoptExistingTests.swift` 接近 500 行阈值，但本任务未扩大范围做拆文件重构。
+
+五、验证情况
+
+已运行并通过：
+- `git diff --check`
+- `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`：`doctor: OK`
+- `xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：`BUILD SUCCEEDED`
+- `./dev test macos`：标准 `xcodebuild test` 被本地 sandbox 的 `testmanagerd` 通信限制挡住，脚本按仓库规则改用 `xcrun xctest`，最终 105 tests / 0 failures。
+
+六、风险与后续
+
+High 风险边界已控制：本改动只读 Core Tree，不删除、移动、覆盖用户文件，不改 DB schema，不改 Rust Core。回滚方式是回退上述 Swift/测试改动和 task-loop 状态记录，无迁移或数据回滚需求。
+
+建议下一步先跑 `2-1/task-27` 的 verify-ready 只读验收；通过后再进入 `2-1/task-28`。  
+

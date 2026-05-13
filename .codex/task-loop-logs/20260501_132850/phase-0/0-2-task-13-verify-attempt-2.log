@@ -1,0 +1,65 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`0-2/task-13`
+- 对应文件路径：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-0/0-2-engineering-foundation/task-13-foundation-integration-verify.md`
+- 已按要求读取 task、共享规则、切片规则、工程质量规则、编码规范、repo-local validation-driver、依赖图、phase manifest、`## 0-2/task-13`、4 个 Exact Docs、现有 `core/**` / `apps/macos/**` / `scripts/**`。
+
+三、完成度摘要
+
+- 已覆盖项数：9
+- 未覆盖项数：0
+- 通过项数：9
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- Exact Docs：通过。4/4 存在并已读取：`docs/architecture/overview.md`、`docs/development/build.md`、`docs/development/testing.md`、`docs/ux/README.md`。
+- Expected New Paths：通过。4/4 已落地：`core/tests/**`、`apps/macos/AreaMatrixTests/**`、`scripts/**`、`docs/development/**`。
+- Forbidden Touches：通过。`git ls-files -m -o --exclude-standard -- core/src core/Cargo.toml core/area_matrix.udl apps/macos/AreaMatrix apps/macos/AreaMatrix.xcodeproj` 无输出。
+- core crate 底座：通过。`core/tests/smoke.rs` 与 `validate_repo_path_contract.rs` 存在；`cargo fmt`、`clippy`、`cargo test --workspace` 通过。
+- 脚本底座：通过。`bash -n` 覆盖 `scripts/*.sh` 通过；Python 脚本 py_compile 在 `/private/tmp` pycache 前缀下通过。
+- CI 底座：通过。`core-ci.yml`、`macos-ci.yml`、`governance-ci.yml` 存在，Ruby YAML parse 全部 OK；`check-governance`、`check-skills` 通过。
+- macOS shell：通过。`xcodebuild build` 成功；标准 `xcodebuild test` 被本地 sandbox 的 `testmanagerd.control` 阻断，`scripts/check-macos-tests.sh` 按文档 fallback 到 `xcrun xctest`，3 个 XCTest 通过。
+- 未提前实现 C1/S1 闭环：通过。`core/src/api.rs` 的业务 API 仍返回 `not_implemented()`，`CoreBridge` 是 placeholder，`MainWindow` 仅为 App shell。
+- 无法运行命令记录：通过。`docs/development/testing.md:213` 与 `docs/development/ci-governance.md:51` 记录了本地 sandbox 下 `xcodebuild test` fallback 规则。
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。Phase 0 shell 保持轻量，未把后续 C1/S1 业务塞入当前 task。
+- 注释 / rustdoc / 文档同步：通过。Core public API 有基础 rustdoc；本地 XCTest fallback 已同步到 testing 与 CI governance 文档。
+- 错误处理与边界处理：通过。Core 未实现业务写路径；Swift bridge 对未生成 bindings 显式抛出 unavailable 错误。
+- 测试与验证覆盖：通过。doctor、cargo fmt、clippy、cargo test、脚本语法、macOS build、XCTest fallback、governance/skill/task-loop 逻辑均有执行证据。
+- 占位、硬编码、mock-only、一次性实现检查：通过。当前 placeholder 明确标注 Phase 0，不伪装真实闭环；未发现用 mock 通过 C1/S1 真实验收。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- `PYTHONDONTWRITEBYTECODE=1 python3 tasks/prompts/_shared/prompt_pipeline.py doctor`：通过，`doctor: OK`，tasks/manifests 均为 637。
+- `find scripts -maxdepth 1 -name '*.sh' -print0 | xargs -0 -n 1 bash -n`：通过。
+- `PYTHONPYCACHEPREFIX=/private/tmp/areamatrix-pycache python3 -m py_compile scripts/task_loop_git.py scripts/task_loop_state.py`：通过。
+- `git diff --check`：通过。
+- `cargo fmt --all -- --check`：通过。
+- `cargo clippy --all-targets --all-features -- -D warnings`：通过。
+- `cargo test --workspace`：通过，3 个 Rust 集成测试通过。
+- `bash scripts/check-macos-tests.sh`：通过；标准 `xcodebuild test` 被 sandbox 阻断，fallback `xcrun xctest` 3 个 XCTest 通过。
+- `xcodebuild ... build`：通过，`** BUILD SUCCEEDED **`。
+- `bash scripts/check-governance.sh`：通过。
+- `bash scripts/check-skills.sh`：通过。
+- `PYTHONPYCACHEPREFIX=/private/tmp/areamatrix-pycache bash scripts/check-task-loop.sh`：通过。
+- `ruby -e 'require "yaml"...' .github/workflows/*.yml`：通过。
+- 未运行：`./scripts/build-core.sh`，原因是该脚本会生成 staticlib 与 UniFFI Swift bindings，验收模式不运行会写入生成产物的 codegen/build 命令；已用语法检查、Cargo 验证、CI workflow 检查和 macOS shell build/test 替代当前 task 要求的只读证据。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。底座足以进入 Phase 1；doctor、cargo smoke、脚本语法检查均有证据；未发现 Forbidden Touches 或提前实现 C1/S1 业务闭环。
+
+
+VERIFY_RESULT: PASS

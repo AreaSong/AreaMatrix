@@ -1,0 +1,105 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`2-4/task-07`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-4-sync-overview/task-07-s1-37-page-integration-verify.md`
+- Manifest 章节：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-2.md`
+- 代码范围：
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：11
+- 未覆盖项数：0
+- 通过项数：11
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：Exact Docs 逐项读取与存在性
+- 结果：通过
+- 证据：5 个 Exact Docs 均存在并已读取；S1-37 page spec 要求 DB repair confirm、diagnostics、full rescan、Cancel/成功/失败路径；control map 声明 `S1-37` 仅绑定 `C1-26, C1-16`。
+- 涉及文件：`S1-37-db-repair-confirm.md`、`mvp-control-map.md`、`core-api.md`、`C1-26-repair-reindex-metadata.md`、`C1-16-recover-on-startup.md`
+
+- 项目：Expected New Paths 落地
+- 结果：通过
+- 证据：`DatabaseRepairConfirmView.swift`、`DatabaseRepairConfirmModel.swift`、`CoreMetadataRepairing.swift`、`DatabaseRepairConfirmPageFeatureTests.swift`、`DatabaseRepairConfirmPageIntegrationVerifyTests.swift` 均存在；`project.pbxproj` 已引用相关 source/test。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git diff --name-only -- core/src ...` 未显示 `core/src/**`；当前变更仅在允许的 macOS app/test/xcodeproj 范围内。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+- 项目：本页所有 page-feature task 覆盖
+- 结果：通过
+- 证据：manifest 中 `2-4/task-05` 覆盖 `C1-26`，`2-4/task-06` 覆盖 `C1-16`，`2-4/task-07` 依赖二者；测试同时覆盖 repair metadata 与 startup recovery。
+- 涉及文件：`DatabaseRepairConfirmPageFeatureTests.swift`、`DatabaseRepairConfirmPageIntegrationVerifyTests.swift`
+
+- 项目：页面状态、入口、退出、错误态、CoreBridge 闭环
+- 结果：通过
+- 证据：入口从 `mainRepoError` 进入 `.dbRepairConfirm`；Cancel 返回来源错误页；成功后进入 main loading 并回到 main list；失败留在 repair 页面并可 Finder/诊断；`CoreBridge.repairMetadata` 和 `CoreBridge.recoverOnStartup` 通过 UniFFI 调真实 Core。
+- 涉及文件：`OnboardingDatabaseRepairRouting.swift`、`MainWindow.swift`、`DatabaseRepairConfirmModel.swift`、`CoreMetadataRepairing.swift`
+
+- 项目：mock / fixture / 硬编码状态
+- 结果：通过
+- 证据：生产路径默认注入 `CoreBridge()`；测试替身仅在 XCTest 中使用。集成测试使用真实 `CoreBridge` 初始化临时 repo、创建诊断、执行 repair、再 `listFiles` 验证索引。
+- 涉及文件：`DatabaseRepairConfirmView.swift`、`DatabaseRepairConfirmPageIntegrationVerifyTests.swift`
+
+- 项目：不新增 control map 外能力
+- 结果：通过
+- 证据：页面只暴露 `repairMetadata`、diagnostics、`recoverOnStartup`、Finder reveal/route exit；未发现 rename/delete/import/remove-index 等相邻能力入口。
+- 涉及文件：`DatabaseRepairConfirmView.swift`、`DatabaseRepairConfirmPageFeatureTests.swift`
+
+- 项目：C1-26 真实接入
+- 结果：通过
+- 证据：`runFullRescan()` 要求确认后调用 `repairMetadata(repoPath, fullRescan: true, preserveDiagnosticsSnapshot: true)`；集成测试断言用户 `README.md` 与 `docs/spec.txt` 内容不变、`AREAMATRIX.md` 不被创建、`files` 中以 Indexed/External 重新出现。
+- 涉及文件：`DatabaseRepairConfirmModel.swift`、`DatabaseRepairConfirmPageIntegrationVerifyTests.swift`
+
+- 项目：C1-16 真实接入
+- 结果：通过
+- 证据：页面打开后 `runStartupRecoveryCheckIfNeeded()` 调用 `recoverOnStartup(repoPath:)`，失败可 retry，成功 report 驱动 UI 展示。
+- 涉及文件：`DatabaseRepairConfirmModel.swift`、`StartupRecoveryModels.swift`、`DatabaseRepairConfirmView.swift`
+
+- 项目：UDL / Core API 对齐
+- 结果：通过
+- 证据：`core/area_matrix.udl` 声明 `recover_on_startup`、`reindex_from_filesystem`、`create_diagnostics_snapshot`、`repair_metadata` 及 `RepairOptions` / `RepairReport`；`docs/api/core-api.md` 对应段落一致。
+- 涉及文件：`core/area_matrix.udl`、`docs/api/core-api.md`
+
+- 项目：任务验证
+- 结果：通过
+- 证据：直接 `xcodebuild test` 编译成功但测试 runner 被本地 sandbox 的 `com.apple.testmanagerd.control` 阻断；随后按 repo-local validation-driver 运行 `./dev test macos`，复用 XCTest bundle，471 tests 全部通过。
+- 涉及文件：`apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。View / Model / CoreBridge 协议分层清楚，SwiftUI View 不直接调用 UniFFI。
+- 注释 / rustdoc / 文档同步：通过。本任务未新增 Rust public API；Swift 命名与现有结构一致，文档与 UDL/API 对齐。
+- 错误处理与边界处理：通过。repair / diagnostics / startup recovery 错误均映射为 `CoreErrorMappingSnapshot`；失败路径保留 retry、diagnostics、Finder 入口。
+- 测试与验证覆盖：通过。覆盖未确认禁止 repair、diagnostics privacy、repair 失败、startup recovery retry、真实 Core repair 后 Tree/List reload。
+- 占位、硬编码、mock-only、一次性实现检查：通过。生产路径使用真实 `CoreBridge`；测试 fixture 未进入生产实现。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+- 结果：失败于本地 sandbox 的 `testmanagerd` 通信限制，错误为 `Connection init failed at lookup with error 159 - Sandbox restriction`；编译阶段已完成。
+- 已运行：`./dev test macos`
+- 结果：通过；先复现同一 `xcodebuild test` sandbox 阻断，再按 repo-local fallback 执行 `xcrun xctest`，471 tests，0 failures。
+- 缺失：无必需验证缺失。
+- 备注：当前 `apps/macos/AreaMatrixTests/DatabaseRepairConfirmPageIntegrationVerifyTests.swift` 在 git 状态中仍为 untracked，`project.pbxproj` 为 modified；这不影响本次只读验收的工作区功能判定，但后续 checkpoint/commit 必须纳入。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+VERIFY_RESULT: PASS

@@ -1,0 +1,74 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`2-3/task-09`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-3-detail-settings/task-09-s1-15-c1-12-get-file-detail.md`
+- 验收代码范围：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+- 只读确认：未修改文件
+
+三、完成度摘要
+
+- 已覆盖项数：8
+- 未覆盖项数：0
+- 通过项数：8
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 S1-15 页面中的 C1-12 功能点
+- 结果：通过
+- 证据：`MainFileListModel.selectFiles` 在多选时进入 `.multiple`，清空单文件 detail/note/log，并调用 `loadMultiSelectionDetails`；`MultiSelectionDetailLoader.refresh` 对选中 id 逐个调用 `CoreFileDetailing.getFile`。
+- 涉及文件：`apps/macos/AreaMatrix/Models/MainFileListModel.swift:65`、`apps/macos/AreaMatrix/Models/MainFileListDetailSupport.swift:9`
+
+- 项目：读取并对齐页面规格、control map、Core API、C1-12 能力规格
+- 结果：通过
+- 证据：S1-15 要求多选只读摘要；control map 声明 S1-15 使用 C1-11/C1-12；C1-12 与 API/UDL 均为 `get_file(repo_path, file_id) -> FileEntry`。
+- 涉及文件：`docs/ux/page-specs/stage-1-mvp/S1-15-detail-multi.md`、`docs/architecture/mvp-control-map.md`、`docs/api/core-api.md`、`core/area_matrix.udl:71`
+
+- 项目：只接入 C1-12 对应 CoreBridge / 状态 / 错误映射
+- 结果：通过
+- 证据：`CoreBridge.getFile` 调用生成绑定 `getFile(repoPath:fileId:)`；多选刷新失败经 `errorMapper.mapCoreError` 映射，UI 保留摘要并显示 warning/retry。
+- 涉及文件：`apps/macos/AreaMatrix/Bridge/CoreBridge.swift:293`、`apps/macos/AreaMatrix/Models/MainFileListDetailSupport.swift:27`、`apps/macos/AreaMatrix/Views/Main/MainRepositoryDetailPane.swift:120`
+
+- 项目：不顺手实现相邻页面或 control map 外能力
+- 结果：通过
+- 证据：本次 diff 未触碰 `core/src/**`；Swift 搜索未发现本 task 新接入 rename/delete/import/move/write 等写能力；多选页仍禁用 Show in Finder，仅保留 Copy Paths 和 Retry Metadata。
+- 涉及文件：`apps/macos/AreaMatrix/Views/Main/MainRepositoryDetailPane.swift:164`
+
+- 项目：Expected New Paths
+- 结果：通过
+- 证据：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`project.pbxproj` 均存在；`MainFileListDetailSupport.swift` 已加入 Xcode Sources。
+- 涉及文件：`apps/macos/AreaMatrix.xcodeproj/project.pbxproj:50`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git status --short -- core/src` 无输出；`git diff --name-only -- core/src` 无输出。
+- 涉及文件：`core/src/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。多选刷新逻辑拆到 `MultiSelectionDetailLoader`，`MainFileListModel.swift` 496 行，未超过 500 行阈值。
+- 注释 / rustdoc / 文档同步：通过。本 task 未新增 public Rust API；Core API 与 UDL 已存在并一致。
+- 错误处理与边界处理：通过。`getFile` 失败走结构化 `CoreError` 映射；多选失败保留可用摘要，不触发写操作。
+- 测试与验证覆盖：通过。新增/更新测试覆盖多选调用 `getFile`、部分失败映射、摘要保留。
+- 占位、硬编码、mock-only、一次性实现检查：通过。生产路径通过 `CoreBridge`/`CoreFileDetailing` 调真实 `get_file` 绑定；测试替身只用于验证调用与错误路径。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：通过，`BUILD SUCCEEDED`
+- 已运行：`./dev test macos`：通过。标准 `xcodebuild test` 被本地 `testmanagerd` sandbox 限制阻断后，脚本按 repo 规则复用已构建 XCTest bundle 执行 `xcrun xctest`，325 tests，0 failures。
+- 失败：无产品编译或测试失败；仅有本地 CoreSimulator/FSEvents/testmanagerd sandbox 警告。
+- 缺失：未做人工 macOS 真机交互验证；本 task 的 manifest 只要求 build，validation-driver 补充的 macOS 单测已执行。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+VERIFY_RESULT: PASS

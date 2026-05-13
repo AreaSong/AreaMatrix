@@ -1,0 +1,29 @@
+version: v-template
+feature: template-execution-contract
+status: ready
+kind: queue-candidate
+promotion_gate: explicit-only
+live_queue_blocked: true
+tasks:
+  - id: template-execution-contract/queue-candidate
+    depends_on:
+      - template-docs-contract
+    draft_copy: workflow/versions/v-template/drafts/template-execution-contract/queue-candidate.copy.md
+    draft_verify: workflow/versions/v-template/drafts/template-execution-contract/queue-candidate.verify.md
+    validation:
+      - ./dev workflow queue --version v-template doctor
+  - id: template-execution-contract/promotion-preview
+    depends_on:
+      - template-docs-contract
+    draft_copy: workflow/versions/v-template/drafts/template-execution-contract/promotion-preview.copy.md
+    draft_verify: workflow/versions/v-template/drafts/template-execution-contract/promotion-preview.verify.md
+    validation:
+      - ./dev workflow promote --version v-template apply --preview
+  - id: template-execution-contract/projection-closeout
+    depends_on:
+      - template-docs-contract
+    draft_copy: workflow/versions/v-template/drafts/template-execution-contract/projection-closeout.copy.md
+    draft_verify: workflow/versions/v-template/drafts/template-execution-contract/projection-closeout.verify.md
+    validation:
+      - ./dev workflow project --version v-template doctor
+      - ./dev workflow closeout --version v-template doctor

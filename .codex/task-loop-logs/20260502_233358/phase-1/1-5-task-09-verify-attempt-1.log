@@ -1,0 +1,52 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`1-5/task-09`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-1/1-5-file-actions-repair/task-09-c1-23-validation.md`
+- 核验范围：`core/src/**`、`core/area_matrix.udl`、`core/tests/**`
+- 禁止触碰范围：`apps/**`
+
+三、完成度摘要
+
+- 已覆盖项数：14
+- 未覆盖项数：0
+- 通过项数：14
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 只处理 C1-23 validation 范围：通过。当前新增 core 证据仅为 `core/tests/delete_remove_index_validation.rs`，`apps/**` 无 diff、无未跟踪文件。
+- Exact Docs 作为 SSOT：通过。C1-23 文档定义 `delete_file` / `remove_index_entry`、Trash / index-only 边界、错误码和验收标准；API 文档与 control map 同步声明 S1-34 Real Core。
+- 不实现相邻 C1 能力或 UI 页面：通过。`git diff --name-status -- core/src core/area_matrix.udl core/tests` 无已有 core 代码变更，未跟踪项只有 C1-23 validation 测试。
+- 补齐 Rust 测试：通过。`core/tests/delete_remove_index_validation.rs` 覆盖 delete、remove index、错误路径。
+- 验证成功路径和关键错误路径：通过。测试覆盖 Trash soft-delete、外部源文件不删除、note/README/其他文件保留、FileNotFound、PermissionDenied、DB/metadata 一致性。
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。`core/src/storage/delete.rs` 将 repo-owned delete、index-only remove、DB 更新与 Trash 边界拆分清楚。
+- 注释 / rustdoc / 文档同步：通过。`core/src/api.rs` 对 public API 写明 C1-23 边界和 `# Errors`；`core/area_matrix.udl` 暴露 `delete_file` 与 `remove_index_entry`。
+- 错误处理与边界处理：通过。实现通过 `CoreResult` / `CoreError` 返回错误，无生产路径 `unwrap()`；DB 更新在事务中写 status 与 change_log。
+- 测试与验证覆盖：通过。manifest 三条验证全部通过，并补跑 `cd core && cargo test --workspace` 通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。验证走真实 `init_repo`、`import_file`、SQLite metadata、文件系统与临时 Trash，不是 mock-only。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- `cd core && cargo fmt --all -- --check`：通过。
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过。
+- `cd core && cargo test --workspace delete_remove_index`：通过，C1-23 相关 15 个测试通过。
+- `cd core && cargo test --workspace`：通过，全 core workspace 测试通过。
+- 未运行：macOS app 验证未运行，原因是本 task 禁止触碰 `apps/**`，且验收范围为 Core C1-23 validation。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准，可视为 `1-5/task-09` 完成。
+
+VERIFY_RESULT: PASS

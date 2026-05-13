@@ -1,0 +1,75 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`2-3/task-14`
+- Task 文件：`tasks/prompts/phase-2/2-3-detail-settings/task-14-s1-26-page-integration-verify.md`
+- 主要代码：`apps/macos/AreaMatrix/Models/GeneralSettingsModel.swift`、`apps/macos/AreaMatrix/Views/Settings/GeneralSettingsView.swift`、`apps/macos/AreaMatrix/App/RepositoryIgnoreRulesManager.swift`
+- 测试：`apps/macos/AreaMatrixTests/GeneralSettingsPageFeatureTests.swift`、`GeneralSettingsImportDefaultModeTests.swift`、`GeneralSettingsPageIntegrationVerifyTests.swift`
+
+三、完成度摘要
+
+- 已覆盖项数：6（4 个核对项 + 2 个完成标准均已检查）
+- 未覆盖项数：0（验收范围已检查）
+- 通过项数：4
+- 不通过项数：2
+- 阻塞项数：1
+
+四、逐项验收结果
+
+- 本页所有 page-feature task 是否完成  
+  结果：通过  
+  证据：`S1-26` 在 control map 中声明 `C1-04, C1-07`，对应 `2-3/task-12/13/14`；测试覆盖配置加载/保存、Move 默认值确认、后续导入默认模式传递。
+
+- 页面状态、入口、退出、错误态和 CoreBridge 调用是否完整闭环  
+  结果：不通过  
+  证据：入口和主路径退出存在，`MainWindow.swift:303-310` 关闭后刷新回主页面；`CoreBridge.swift:197-217` 真实调用 `loadConfig/updateConfig`。但加载态 `GeneralSettingsView.swift:99-106` 只有进度和 `Loading settings...`，没有关闭 Settings 的控件；页面规格 `S1-26-settings-general.md:80` 明确要求加载态保留关闭 Settings。
+
+- 移除无法通过最终验收的 mock、fixture 或硬编码状态  
+  结果：通过  
+  证据：生产默认依赖是 `CoreBridge()`，测试 fixture 只在 XCTest 内；`GeneralSettingsModel.swift:213-220` 默认 loader/updater/errorMapper 均走真实桥接。
+
+- 不新增 control map 外功能  
+  结果：通过  
+  证据：control map `S1-26` 只声明 `C1-04, C1-07`；实现只保存 config 默认值、overview、locale，并处理 page spec 内的 ignore.yaml/root overview 平台行为，未引入额外 Core 能力。
+
+- 完成标准：S1-26 可按 page spec 和 control map 完整验收  
+  结果：不通过  
+  证据：加载态退出缺口导致 page spec 不能完整验收。
+
+- 完成标准：页面声明的所有 Core 能力真实接入或有明确阻塞证据  
+  结果：通过  
+  证据：`C1-04` 通过 `loadConfig/updateConfig` 接入；`C1-07` 在 S1-26 中体现为 Move 默认导入策略，保存到真实 repo config 并传递到后续 import sheet。
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过。主要结构清晰，但 loading state 没有复用 footer 或提供关闭控件，状态闭环不完整。
+- 注释 / rustdoc / 文档同步：通过。本 task 未改 Rust public API；`core/area_matrix.udl` 与 Core API 中 `load_config/update_config/import_file` 对齐。
+- 错误处理与边界处理：通过。保存失败回滚到上次真实 settings，root overview 不写文件，ignore.yaml 只允许写 `.areamatrix/ignore.yaml`。
+- 测试与验证覆盖：不通过。`./dev test macos` 最终 343 tests passed，但现有 `GeneralSettings*Tests.swift` 未覆盖 loading state 保留关闭 Settings。
+- 占位、硬编码、mock-only、一次性实现检查：通过。未发现生产路径 mock-only 闭环；测试 fixture 未被当作产品实现。
+
+六、阻塞项
+
+- P1：加载态缺少关闭 Settings 出口  
+  说明：页面规格要求读取 settings 时显示 `Loading settings...`，禁用写入控件但保留关闭 Settings；当前 loading UI 没有 Close 按钮或等价退出动作。  
+  绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Settings/GeneralSettingsView.swift:99`  
+  规格证据：`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-26-settings-general.md:80`  
+  为什么导致不通过：task checklist 要求页面状态、入口、退出、错误态闭环；加载态退出缺失使 S1-26 无法按 page spec 完整验收。
+
+七、验证情况
+
+- 已运行：`xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+  结果：失败/环境阻断，code 65；错误为 `com.apple.testmanagerd.control` sandbox restriction。
+- 已运行：`./dev test macos`
+  结果：通过；标准 xcodebuild test 同样被 sandbox 阻断后，按 repo-local validation-driver 复用已构建 XCTest bundle，`xcrun xctest` 执行 343 tests，0 failures。
+- Forbidden Touches：`git diff --name-only -- core/src` 无输出，未发现 `core/src/**` 被触碰。
+- Expected New Paths：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`apps/macos/AreaMatrix.xcodeproj/project.pbxproj` 均存在，项目文件包含 S1-26 相关源码和测试引用。
+- 缺失：缺少 loading state 关闭 Settings 的实现/测试证据。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+VERIFY_RESULT: FAIL

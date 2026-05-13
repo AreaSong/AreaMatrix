@@ -1,0 +1,46 @@
+一、执行结论
+
+- 已完成。
+- 说明：S1-17 已完成整页 wiring 和验收补齐；`preview_import` 仍是 Core/UDL 缺口，但现在会作为明确阻塞证据呈现，不再用本地 mock / 硬编码状态伪装通过。
+
+二、执行范围
+
+- 单任务：`2-2/task-06`
+- 修改范围：仅 `apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+- 关键文件：
+  - [ImportSingleFilePreflight.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreflight.swift:198)
+  - [ImportSingleFilePreviewModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreviewModel.swift:189)
+  - [ImportEntrySheetView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportEntrySheetView.swift:57)
+  - [ImportSingleFileSheetSections.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportSingleFileSheetSections.swift:149)
+  - [OnboardingModelInputs.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/OnboardingModelInputs.swift:47)
+  - [ImportSingleFilePageIntegrationVerifyTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFilePageIntegrationVerifyTests.swift:4)
+
+三、完成情况
+
+- page-feature 覆盖：通过，测试覆盖 C1-05 prediction、C1-06 Copy、C1-07 Move、C1-08 Index-only。
+- 页面闭环：通过，Import 会先进入 S1-20 progress route，再在 Core import 完成后更新完成态。
+- mock / fixture / 硬编码状态：通过，生产默认 preflight 不再本地假装 Core preview 完成；Replace 改为二次确认 sheet。
+- control map 外功能：未新增。
+- Forbidden Touches：未触碰，`git diff --name-only -- core/src` 无输出。
+
+四、工程质量
+
+- 结构清晰：预检、导入、Replace 确认、progress route 分开建模。
+- 错误与边界：处理来源消失、不可读、iCloud placeholder、Core preview 缺口、导入失败映射。
+- 占位风险：`preview_import` 未实现仍是明确阻塞，不作为完成态。
+- 未新增依赖；未修改 Rust Core；未改文档或 UDL。
+
+五、验证情况
+
+- 已运行：`xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+  - 结果：失败，原因是本地 `com.apple.testmanagerd.control` sandbox restriction；build 已通过，非编译/断言失败。
+- 已运行：`./dev test macos`
+  - 结果：通过。标准 `xcodebuild test` 被 sandbox 拦截后，按仓库规则复用 XCTest bundle；`xcrun xctest` 通过，171 tests，0 failures。
+- 未运行：`swiftformat` / `swiftlint`
+  - 原因：当前 shell 未找到对应命令；manifest 本次要求的验证是 `xcodebuild test`。
+
+六、风险与后续
+
+- 剩余风险：真正的 preview/hash/conflict precheck 仍需要后续 Core/UDL `preview_import` 合同实现；当前 S1-17 会阻塞导入并展示该证据。
+- 建议下一个任务：补 `preview_import` 的 Core API / UDL / Rust 实现与 Swift generated binding，再让 S1-17 默认 preflight 从阻塞态变成真实预检闭环。
+

@@ -1,0 +1,54 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`2-2/task-06`
+- 任务与 manifest：[task-06-s1-17-page-integration-verify.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-2-import-conflict/task-06-s1-17-page-integration-verify.md:1)，[phase-2.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-2.md:1169)
+- SSOT 文档：[S1-17-import-single-sheet.md](/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-17-import-single-sheet.md:1)，[mvp-control-map.md](/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:19)，[core-api.md](/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:1)，[core/area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:40)
+- 实际实现与测试：[ImportEntrySheetView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportEntrySheetView.swift:14)，[ImportSingleFilePreviewModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreviewModel.swift:155)，[ImportSingleFilePreflight.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreflight.swift:259)，[ImportSingleFilePreflightCorePreview.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreflightCorePreview.swift:29)，[CoreImporting.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreImporting.swift:76)，[OnboardingModelInputs.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/OnboardingModelInputs.swift:4)，[MainWindow.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/MainWindow.swift:54)，[ImportSingleFilePageIntegrationVerifyTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFilePageIntegrationVerifyTests.swift:6)，[project.pbxproj](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj:75)
+
+三、完成度摘要
+
+- 已覆盖项数：8
+- 未覆盖项数：0
+- 通过项数：8
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 页面 feature 覆盖：通过。`C1-05/C1-06/C1-07/C1-08` 均被 S1-17 真实消费；`predict_category` / `import_file` 与 UDL 对齐，Copy/Move/Index-only 三种模式均有真实调用与测试证据。[core/area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:40)，[CoreBridge.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift:259)，[CoreImporting.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreImporting.swift:76)，[ImportSingleFilePreviewModelTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFilePreviewModelTests.swift:132)，[ImportSingleFileMoveImportTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFileMoveImportTests.swift:95)，[ImportSingleFileIndexImportTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFileIndexImportTests.swift:95)
+- 页面入口、退出、成功、失败闭环：通过。picker/drop/dock 三入口已接入；Cancel 只关闭 sheet；`Switch to local repo...` 返回选库流程；Import 进入 `S1-20 import-progress`；成功后回主仓库页；失败停留 progress 错误态。[OnboardingModelInputs.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/OnboardingModelInputs.swift:4)，[MainWindow.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/MainWindow.swift:54)，[ImportSingleFilePageIntegrationVerifyTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFilePageIntegrationVerifyTests.swift:6)
+- 页面状态与错误态：通过。分类预览、非法文件名、同名冲突、重复冲突、iCloud placeholder、下载失败、retry preview、Replace 二次确认、Import disabled reason 都已显式建模并有测试。[ImportSingleFilePreflight.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreflight.swift:28)，[ImportSingleFileSheetSections.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportSingleFileSheetSections.swift:53)，[ImportSingleFilePreviewModelState.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreviewModelState.swift:69)，[ImportSingleFilePageIntegrationVerifyTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFilePageIntegrationVerifyTests.swift:250)
+- preview/hash/conflict precheck 真实性：通过。虽无独立 `preview_import` UDL，但 Swift 平台层已按页面规格实现真实 adapter，用 `listFiles + sha256 + target path validation` 完成预检，不是口头约定或静态占位。[S1-17-import-single-sheet.md](/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-17-import-single-sheet.md:83)，[ImportSingleFilePreflightCorePreview.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreflightCorePreview.swift:29)，[ImportSingleFilePageIntegrationVerifyTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFilePageIntegrationVerifyTests.swift:395)，[ImportSingleFilePreflightTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFilePreflightTests.swift:6)
+- mock / fixture / 硬编码状态清理：通过。生产默认路径注入的是 `CoreBridge` / `CoreImportSingleFilePreflight` / `CoreFileImporting`，fixture 仅位于 `AreaMatrixTests/**`，未见 mock-only 闭环。[ImportEntrySheetView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportEntrySheetView.swift:21)，[ImportSingleFilePreviewModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreviewModel.swift:33)，[project.pbxproj](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj:81)
+- control map 越界检查：通过。当前页仍只围绕 `C1-05/C1-06/C1-07/C1-08` 和规格声明的跳转页工作，未新增 control map 之外能力。[mvp-control-map.md](/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:19)，[S1-17-import-single-sheet.md](/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-17-import-single-sheet.md:13)
+- Expected New Paths：通过。`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`apps/macos/AreaMatrix.xcodeproj/project.pbxproj` 均已落地并纳入工程。[project.pbxproj](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj:75)
+- Forbidden Touches：通过。`git diff --name-only -- core/src` 结果为空，未发现本任务对 `core/src/**` 的越界修改证据。
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。视图、页面状态机、预检 adapter、Core import bridge 分层清晰，视图未直接绕过 `CoreBridge` 调 UniFFI。[ImportEntrySheetView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportEntrySheetView.swift:33)，[ImportSingleFilePreviewModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreviewModel.swift:239)，[ImportSingleFilePreflightCorePreview.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreflightCorePreview.swift:22)，[CoreImporting.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreImporting.swift:128)
+- 注释 / rustdoc / 文档同步：通过。本任务未新增 public Rust API；`core-api.md` 与 [core/area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:40) 中 `predict_category` / `import_file` 保持一致，未见文档漂移。
+- 错误处理与边界处理：通过。生产路径通过 `do/try/catch` 与 `mapCoreError` 显式传播失败，覆盖 invalid filename、permission、duplicate、iCloud、source unavailable 等边界。[ImportSingleFilePreviewModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreviewModel.swift:160)，[ImportSingleFilePreviewModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreviewModel.swift:250)，[ImportSingleFilePreflight.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreflight.swift:269)
+- 测试与验证覆盖：通过。page integration、preflight、copy/move/index import、以及整套 macOS 门禁均有实跑证据。
+- 占位、硬编码、mock-only、一次性实现检查：通过。默认产品路径走真实 `predict_category`、真实 `import_file`、真实 repo preflight fallback；未见测试专用分支伪装完成态。[CoreBridge.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift:259)，[CoreImporting.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreImporting.swift:128)，[ImportSingleFilePreflightCorePreview.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreflightCorePreview.swift:57)
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`，通过。
+- 已运行：`xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`，失败；失败原因是本地 `testmanagerd.control` sandbox restriction，属于环境级 runner 通信问题，不是断言失败。
+- 已运行：`./dev test macos`，通过。脚本按 repo-local validation-driver 规则在检测到上述 sandbox 阻塞后回退到 `xcrun xctest`，最终 `180 tests, 0 failures`。
+- 未运行：手工 UI 视觉走查；当前以 build、测试和代码审阅作为验收证据，不构成阻塞。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。S1-17 页面已能按 page spec 与 control map 完成整页闭环验收，`C1-05/C1-06/C1-07/C1-08` 均有真实接入与验证证据，`Expected New Paths` 已落地，`Forbidden Touches` 未违规。
+
+VERIFY_RESULT: PASS

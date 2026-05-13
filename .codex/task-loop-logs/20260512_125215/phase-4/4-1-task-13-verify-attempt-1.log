@@ -1,0 +1,89 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`4-1/task-13`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-13-c2-03-failure-edge.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/search/saved_search.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/db/saved_search.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/tests/saved_search_implementation.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/tests/saved_search_contract_api.rs`
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：0
+- 通过项数：9
+- 不通过项数：1
+- 阻塞项数：1
+
+四、逐项验收结果
+
+- 覆盖空态、非法输入、权限、IO/DB 错误和错误码映射
+  - 结果：通过
+  - 证据：空列表测试在 `core/tests/saved_search_implementation.rs:191`；重复名、非法 query、非法 scope、空名、超长名、非法 icon/color、缺失行、空 repo path 在 `:284-331`；DB corruption 在 `:381-406`；权限错误在 `:408-435`；错误映射断言在 `:145-161`。
+  - 涉及文件：`core/src/search/saved_search.rs:195-237`、`core/tests/saved_search_implementation.rs`
+
+- 失败不留下半成品
+  - 结果：通过
+  - 证据：create/update/delete 使用事务，见 `core/src/db/saved_search.rs:28-60`、`:62-102`、`:105-120`；强制触发 insert/update/delete 失败后 snapshot 不变，见 `core/tests/saved_search_implementation.rs:334-379`。
+  - 涉及文件：`core/src/db/saved_search.rs`、`core/tests/saved_search_implementation.rs`
+
+- 隐私/AI/远程调用默认关闭、密钥不入日志
+  - 结果：通过
+  - 证据：测试确认 `ai_enabled = false`，且不创建 `.areamatrix/ai`、`.areamatrix/remote`、`.areamatrix/secrets`，见 `core/tests/saved_search_implementation.rs:460-500`。
+  - 涉及文件：`core/tests/saved_search_implementation.rs`
+
+- 不吞错、不静默降级
+  - 结果：通过
+  - 证据：API 显式返回 `CoreResult`，校验失败返回 `Config`，DB 持久化失败返回 `Db`；没有在生产路径发现 `unwrap()` / `expect()` / `panic!()` / `TODO`。
+  - 涉及文件：`core/src/search/saved_search.rs:96-164`、`core/src/db/saved_search.rs:187-205`
+
+- Expected New Paths
+  - 结果：通过
+  - 证据：`core/src/**`、`core/area_matrix.udl`、`core/tests/**` 均已落地；UDL 暴露四个 saved search API 和 DTO，见 `core/area_matrix.udl:83-93`、`:280-312`。
+  - 涉及文件：`core/src/**`、`core/area_matrix.udl`、`core/tests/**`
+
+- Forbidden Touches
+  - 结果：通过
+  - 证据：`git diff --name-only -- apps core core/area_matrix.udl core/tests` 只显示 `core/src/db/saved_search.rs`、`core/tests/saved_search_implementation.rs`，未触碰 `apps/**`。
+  - 涉及文件：无违规路径
+
+- Manifest Validation：`./dev check all`
+  - 结果：不通过
+  - 证据：命令退出码 1；`AreaMatrixPerfTests.testApplicationLaunchToFirstScreenBaselineUnderStage1Threshold` 失败，错误为 `unexpectedFirstScreenRoute`，位置 `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/AreaMatrixPerfTests.swift:182`。
+  - 涉及文件：`apps/macos/AreaMatrixTests/AreaMatrixPerfTests.swift`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。CRUD 边界拆在 search API 与 db row 层，事务边界清晰。
+- 注释 / rustdoc / 文档同步：通过。public Rust API 有 rustdoc 与 `# Errors`，UDL 和 `docs/api/core-api.md` 对齐。
+- 错误处理与边界处理：通过。非法输入、重复名、DB 写失败、DB corruption、权限错误都有结构化返回与测试。
+- 测试与验证覆盖：不通过。C2-03 局部 Rust 测试通过，但 manifest 指定的 `./dev check all` 失败。
+- 占位、硬编码、mock-only、一次性实现检查：通过。实现连接真实 SQLite 表和真实 API/UDL，没有 mock-only 完成证据。
+
+六、阻塞项
+
+- P1：必需验证命令 `./dev check all` 失败
+  - 说明：验收要求明确指定 `./dev check all`。该命令在 macOS XCTest fallback 后仍有 1 个真实测试失败，不能判定 task 完成。
+  - 绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/AreaMatrixPerfTests.swift:182`
+  - 为什么导致不通过：共享规则要求 validation 失败或缺失不得宣称完成；本次总门禁没有 PASS 证据。
+
+七、验证情况
+
+- 已运行：`./dev check all`
+  - 通过：governance、skills、task-loop、prompt doctor、`git diff --check`、Rust `cargo fmt --all -- --check`、Rust `cargo clippy --all-targets --all-features -- -D warnings`、Rust `cargo test --workspace`
+  - 失败：macOS XCTest，484 tests 中 1 failure
+- 已运行：`cargo test --test saved_search_implementation --test saved_search_contract_api`
+  - 通过：14 tests passed
+- 缺失：`./dev check all` 的最终 PASS 证据缺失
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+
+VERIFY_RESULT: FAIL

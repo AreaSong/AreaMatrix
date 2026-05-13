@@ -1,0 +1,63 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`2-2/task-24`
+- Task：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-2-import-conflict/task-24-s1-24-c1-09-detect-duplicate.md`
+- 核验范围：`docs/ux/page-specs/stage-1-mvp/S1-24-replace-confirm.md`、`docs/architecture/mvp-control-map.md`、`docs/api/core-api.md`、`docs/core/capability-specs/stage-1-mvp/C1-09-detect-duplicate.md`、`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：12
+- 未覆盖项数：0
+- 通过项数：8
+- 不通过项数：4
+- 阻塞项数：2
+
+四、逐项验收结果
+
+- 项目：S1-24 中 C1-09 用户可见功能
+- 结果：通过
+- 证据：[ReplaceConfirmSheet.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ReplaceConfirmSheet.swift:3) 提供二次确认 sheet；[ImportSingleFileDuplicateResolution.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFileDuplicateResolution.swift:176) 校验确认上下文与勾选状态；[CoreImporting.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreImporting.swift:267) 最终调用真实 `AreaMatrix.importFile`。
+- 涉及文件：`apps/macos/AreaMatrix/**`
+
+- 项目：不使用 mock/fixture/static 伪造生产闭环
+- 结果：通过
+- 证据：生产默认入口使用 `CoreBridge()`，预检通过 [ImportBatchDuplicatePrecheck.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportBatchDuplicatePrecheck.swift:7) 调 `listFiles`，最终导入通过真实 CoreBridge；mock/recording importer 仅出现在测试。
+- 涉及文件：`apps/macos/AreaMatrix/**`
+
+- 项目：只处理当前 C1-09，不实现同页 C1-10
+- 结果：不通过
+- 证据：本次 diff 同时改动 name-conflict replace 标题/禁用状态和测试断言，触及 C1-10/S1-23 路径，例如 [ImportSingleFileDuplicateResolution.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFileDuplicateResolution.swift:200)、[ImportSingleFileSheetSections.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportSingleFileSheetSections.swift:303)、[ImportSingleFileDuplicateResolutionTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFileDuplicateResolutionTests.swift:269)。
+- 涉及文件：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`
+
+- 项目：Expected New Paths / Forbidden Touches
+- 结果：通过
+- 证据：`apps/macos/AreaMatrix`、`apps/macos/AreaMatrixTests`、`apps/macos/AreaMatrix.xcodeproj/project.pbxproj` 均存在；`git diff --name-only -- core/src` 无输出，未发现 `core/src/**` 违规触碰。
+- 涉及文件：manifest 约束路径
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过。`ImportEntrySheetView.swift` 当前 505 行，超过 Swift 单文件 500 行上限，见 [ImportEntrySheetView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportEntrySheetView.swift:505)。
+- 注释 / rustdoc / 文档同步：通过。未新增 Rust public API；`core/area_matrix.udl` 与 `docs/api/core-api.md` 中 `DuplicateStrategy` / `DuplicateFile` / `import_file` 一致。
+- 错误处理与边界处理：通过。确认上下文过期、未勾选确认、Trash 不可用均有显式状态或禁用路径。
+- 测试与验证覆盖：通过。新增/相关测试覆盖重复检测、二次确认、Trash 禁用、无确认不触发 importer、Core duplicate summary。
+- 占位、硬编码、mock-only、一次性实现检查：通过。生产路径未发现 mock-only 闭环。
+
+六、阻塞项
+
+- P1：任务范围越界到 C1-10/name-conflict。当前 task 明确只验 S1-24 + C1-09，但改动影响 name-conflict replace 行为与测试，C1-10 应由 `2-2/task-25` 覆盖。证据：[ImportSingleFileDuplicateResolution.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFileDuplicateResolution.swift:200)、[ImportSingleFileSheetSections.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportSingleFileSheetSections.swift:303)、[ImportSingleFileDuplicateResolutionTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFileDuplicateResolutionTests.swift:269)。
+- P1：Swift 文件长度违反编码规范。`ImportEntrySheetView.swift` 当前 505 行，超过 `docs/development/coding-standards.md` 的单文件 500 行上限，不能按工程质量门禁判定完成。证据：[ImportEntrySheetView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportEntrySheetView.swift:505)。
+
+七、验证情况
+
+- 已运行：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：通过，`** BUILD SUCCEEDED **`。
+- 已运行：`./dev test macos`：通过；标准 `xcodebuild test` 被本地 `testmanagerd` sandbox 阻断后，脚本按仓库策略复用 XCTest bundle，最终 `272 tests, 0 failures`。
+- 缺失：未做 UI 手工交互验收；本次只读验收未启动应用。
+
+八、最终判定说明
+
+- C1-09 的核心用户路径有实现和验证证据，但本次执行存在任务范围越界与编码规范阻塞项，尚未达到验收标准，不能视为完成。
+VERIFY_RESULT: FAIL

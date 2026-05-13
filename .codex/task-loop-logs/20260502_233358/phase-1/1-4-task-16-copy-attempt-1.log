@@ -1,0 +1,28 @@
+一、执行结论：已完成。
+
+二、执行范围：单任务 `1-4/task-16`，仅处理 C1-19 contract-api。修改文件：
+- [core/src/api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:484)：补充 `ExternalEventKind::Removed` 的输入、输出、错误码、副作用边界 rustdoc。
+- [core/src/domain.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/domain.rs:134)：校准 `Removed` 与 `detected_deletes` 的合同说明。
+- [core/tests/sync_external_removed_contract_api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/sync_external_removed_contract_api.rs:1)：新增 C1-19 contract/API/UDL/Exact Docs 对齐测试。
+
+三、完成情况：
+- 核对清单 1-5：已完成。
+- 完成标准：C1-19 contract-api 有测试证据；未扩展到相邻 C1 能力或 UI。
+- `core/area_matrix.udl`：未修改，因为现有 `sync_external_changes`、`ExternalEventKind::Removed`、`SyncResult.detected_deletes` 已对齐；新增测试覆盖了 UDL 对齐。
+- Forbidden Touches：未触碰 `apps/**`。
+
+四、工程质量：
+- 代码结构保持在既有 sync contract 文档和 domain 类型说明中，没有新增依赖、mock-only、占位逻辑或一次性脚本。
+- 错误与边界明确覆盖 `FileNotFound` / `Db` / `Io`、只读确认路径缺失、不得删除/移动/覆盖用户文件。
+- 残余风险：`core/src/api.rs` 本身已超过 500 行，本次只做 task-scoped contract 补充，未做越界拆分。
+
+五、验证情况：
+- `cd core && cargo fmt --all -- --check`：通过。
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过。
+- `cd core && cargo test --workspace sync_external_removed`：通过，新增 3 个 C1-19 contract 测试通过。
+- 额外 `git diff --check`：通过。
+
+六、风险与后续：
+- 本任务是 contract-api，不实现真实 removed sync 行为；实际 DB 软删除、change_log 写入、cursor 等真实路径应由下一个任务 `1-4/task-17` 完成。
+- 工作区仍有执行前已存在的脏文件：`.codex/task-loop-runs/20260502_233358/summary.json`、`tasks/prompts/_shared/progress.json`，我未修改它们。
+

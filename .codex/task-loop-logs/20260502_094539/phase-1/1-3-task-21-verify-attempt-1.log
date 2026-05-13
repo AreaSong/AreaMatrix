@@ -1,0 +1,53 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`1-3/task-21`
+- 对应文件路径：`tasks/prompts/phase-1/1-3-query-detail/task-21-c1-15-integration-verify.md`、`core/src/**`、`core/area_matrix.udl`、`core/tests/**`
+- 禁止触碰路径：`apps/**`
+
+三、完成度摘要
+
+- 已覆盖项数：12
+- 未覆盖项数：0
+- 通过项数：12
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：C1-15 integration-verify 范围；结果：通过；证据：task 明确只验 API / UDL / Rust 实现 / 测试 / UX 消费一致性，见 [task-21](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-1/1-3-query-detail/task-21-c1-15-integration-verify.md:10)。涉及文件：task、manifest、Core 实现。
+- 项目：Exact Docs 读取与 SSOT；结果：通过；证据：manifest 6 个 Exact Docs 均存在并已读取，见 [phase-1.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-1.md:2171)。C1-15 规定 `list_tree_json(repo_path, locale) -> string`、无写入、空树/稳定排序/Swift JSON schema，见 [C1-15](/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-15-build-tree.md:11)。
+- 项目：API / UDL / Rust 实现一致性；结果：通过；证据：UDL 暴露 `string list_tree_json(string repo_path, string locale);`，见 [area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:64)；Rust public API 有 rustdoc 和错误边界，见 [api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:376)；实现走 `db::ensure_initialized_readable`、`WalkDir`、`serde_json::to_string`，见 [tree/mod.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/tree/mod.rs:96)。
+- 项目：Capability / control map / UX 消费交叉检查；结果：通过；证据：control map 声明 S1-08/S1-09/S1-10 都消费 `list_tree_json` 且为 Real Core，见 [mvp-control-map.md](/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:23)；S1-08/S1-09 数据依赖包含 Core `list_tree_json`，见 [S1-08](/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-08-main-empty.md:87) 和 [S1-09](/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-09-main-list.md:91)。
+- 项目：无 mock / 空壳 / 伪完成；结果：通过；证据：实现读取真实 repo 文件树和分类配置，不写 generated overview；integration verify 测试覆盖文档/API/UDL/消费者、空树、稳定输出、只读边界、RepoNotInitialized/Db 错误，见 [build_tree_integration_verify.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/build_tree_integration_verify.rs:117)。
+- 项目：Expected New Paths 与 Forbidden Touches；结果：通过；证据：`core/src/**`、`core/area_matrix.udl`、`core/tests/**` 均已存在；`git status --short -- apps` 无输出，未发现 `apps/**` 被触碰。
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。`core/src/tree/mod.rs` 412 行、`core/src/api.rs` 457 行，均低于 500 行；核心逻辑拆分为 build、walk、children、ignore、error mapping。
+- 注释 / rustdoc / 文档同步：通过。public API 有 rustdoc 和 `# Errors` 说明；UDL、Core API、capability spec 和 control map 已由测试锁定。
+- 错误处理与边界处理：通过。生产路径未发现 `unwrap()` / `expect()` / `panic!()`；错误归一到 C1-15 声明的 `RepoNotInitialized` / `Db` / `Io`。
+- 测试与验证覆盖：通过。覆盖空 repo、默认分类、稳定排序/path key、Swift-compatible JSON、只读边界、generated overview 忽略、DB/Io 错误。
+- 占位、硬编码、mock-only、一次性实现检查：通过。实现连接真实 DB 初始化检查与文件系统遍历，不是静态 fixture 或 mock-only wiring。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`cd core && cargo fmt --all -- --check`：通过。
+- 已运行：`cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过。
+- 已运行：`cd core && cargo test --workspace build_tree`：通过，C1-15 相关 16 个测试通过。
+- 已运行：`cd core && cargo test --workspace`：通过，完整 Core workspace 测试通过。
+- 已运行：`git diff --check`：通过。
+- 未运行：macOS app build/test，原因是本 task 的 Forbidden Touches 为 `apps/**`，当前验收只覆盖 C1-15 Core integration verify；UI 实现闭环由后续 page-feature / page integration verify 覆盖。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。C1-15 的 API、UDL、Rust 实现、测试和 UX 消费声明均有文件与命令证据支撑，未扩展到未绑定能力，未触碰 `apps/**`。
+
+VERIFY_RESULT: PASS

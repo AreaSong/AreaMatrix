@@ -1,0 +1,45 @@
+**一、执行结论**
+
+已完成 `1-1/task-12`。
+
+**二、执行范围**
+
+单任务：C1-03 `AdoptExisting` failure-recovery。
+
+修改文件：
+- [repo_scan.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/repo_scan.rs:67)
+- [adopt_existing_repo_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/adopt_existing_repo_implementation.rs:190)
+
+未触碰 `apps/**`。`core/area_matrix.udl` 已与当前 API/文档一致，未改。
+
+**三、完成情况**
+
+- 只处理 C1-03 failure-recovery：完成。
+- Exact Docs 已读取并按 SSOT 实现：完成。
+- 未实现相邻 C1 能力或 UI 页面：完成。
+- 覆盖失败、回滚、重复执行、权限错误路径：完成。
+- 未删除、覆盖、移动用户文件：测试已证明 README 和普通文件内容保持不变。
+
+核心变化：adopt 扫描现在遇到文件级权限/IO/DB 失败时，会把 `scan_sessions` 标记为 `Failed`，记录失败路径和错误，保留 `last_path`，让 `resume_scan_session` 能在权限修复后从上次成功点继续。
+
+**四、工程质量**
+
+代码仍在 `core/src/**` 内，逻辑集中在 scan session 状态转换，没有 mock-only、硬编码通过态或一次性脚本。新增测试使用 `tempfile` 临时目录验证文件安全边界。`core/src/repo_scan.rs` 无 `unwrap/expect/panic/TODO` 生产路径。
+
+仓库中已有的 `.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json` 是本次开始前已存在的 dirty 状态，本次未修改。
+
+**五、验证情况**
+
+已通过：
+- `cd core && cargo fmt --all -- --check`
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`
+- `cd core && cargo test --workspace adopt_existing_repo`
+- 额外补跑：`cd core && cargo test --workspace`
+- 额外边界检查：`git diff --check`
+
+**六、风险与后续**
+
+残余风险：无当前 task 阻断项；本任务无 UI 绑定，因此未做 macOS UI 验证。
+
+建议下一个任务：继续 `1-1/task-13`。
+

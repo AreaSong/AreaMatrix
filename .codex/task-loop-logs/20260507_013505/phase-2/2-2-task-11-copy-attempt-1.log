@@ -1,0 +1,38 @@
+一、执行结论
+
+已完成 `2-2/task-11`。S1-19 文件夹导入 sheet 现在接入 C1-05 分类预览：递归预扫描文件夹后，对可处理文件逐个调用真实 `CoreBridge.predictCategory`，展示预测分类、建议名称、状态与错误；未实现 C1-06/C1-08 导入执行，`Import Folder` 仍按后续任务禁用。
+
+二、执行范围
+
+修改文件：
+- [ImportFolderPreviewModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportFolderPreviewModel.swift)
+- [ImportFolderScanner.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportFolderScanner.swift)
+- [ImportFolderPreviewSections.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportFolderPreviewSections.swift)
+- [ImportEntrySheetView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportEntrySheetView.swift)
+- [ImportFolderPreviewModelTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportFolderPreviewModelTests.swift)
+- [project.pbxproj](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj)
+
+未触碰 `core/src/**`。当前 `git status` 里另有既有脏改 `.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json`，本次未作为实现范围处理。
+
+三、完成情况
+
+核对清单：4/4 完成。只处理 S1-19 + C1-05；已按 UX 页面、control map、Core API、C1-05 spec 对齐；Core 调用走 `CoreCategoryPredicting/CoreBridge.predictCategory`；没有实现相邻页面或同页 C1-06/C1-08。
+
+完成标准：3/3 满足。用户可触发文件夹分类预览；没有 mock-only 或静态成功态伪造真实闭环；未触碰 control map 外能力。
+
+四、工程质量
+
+结构上拆成 scanner、model、UI section 和 tests；scanner 只读文件元数据，默认跳过 `.areamatrix/`、`.git/`、`.DS_Store`、`node_modules/`、隐藏文件和符号链接，iCloud placeholder 不调用分类器。错误按行展示，Core `Config/Classify/PermissionDenied/Io` 有可见映射。未新增依赖，未写 Core/UDL，未引入 `try!`、强制转换、`fatalError`、`TODO` 或 `print`。`git diff --check` 通过。
+
+五、验证情况
+
+已运行：
+- `xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：通过，`BUILD SUCCEEDED`。
+- `./dev test macos`：通过。内部标准 `xcodebuild test` 被本地 `testmanagerd` sandbox 通信限制阻断，脚本按仓库规则复用已构建 XCTest bundle，最终 `xcrun xctest` 执行 219 tests，0 failures。
+- 定向 `xcrun xctest -XCTest AreaMatrixTests.ImportFolderPreviewModelTests ...`：通过，5 tests，0 failures。
+
+六、风险与后续
+
+剩余风险：未做真实 UI 手工交互截图或端到端拖入文件夹验证；当前证据覆盖 build、全量 macOS XCTest、C1-05 CoreBridge 真实预测与边界测试。回滚方式是撤回上述 macOS app、测试和 Xcode project 改动。
+
+建议下一个任务进入同页后续能力：C1-06/C1-08 的导入执行、冲突处理或 page integration verify。

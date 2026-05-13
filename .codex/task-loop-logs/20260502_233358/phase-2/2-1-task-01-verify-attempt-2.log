@@ -1,0 +1,62 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`2-1/task-01`
+- Task 文件：[task-01-s1-01-c1-04-load-update-config.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-1-first-launch-main/task-01-s1-01-c1-04-load-update-config.md)
+- 代码范围：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`core/area_matrix.udl`
+- 禁止触碰：`core/src/**`
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：0
+- 通过项数：10
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+| 项目 | 结果 | 证据 | 涉及文件 |
+|---|---|---|---|
+| 只处理 S1-01 中 C1-04 | 通过 | 页面路由只消费 welcome/config-load 状态，未实现相邻页面 | [MainWindow.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/MainWindow.swift:31) |
+| 读取页面规格、control map、Core API、C1-04 | 通过 | S1-01 绑定 C1-04 `load_config`，control map 标为 Real Core | [mvp-control-map.md](/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:16) |
+| 只接入 C1-04 CoreBridge / 状态 / 错误映射 | 通过 | `OnboardingModel` 通过 `configLoader.loadConfig(repoPath:)` 进入默认 `CoreBridge` | [AppShellModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/AppShellModel.swift:193) |
+| 不顺手实现相邻页面 | 通过 | `Continue` 仅记录 action，没有 S1-02 页面实现 | [AppShellModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/AppShellModel.swift:174) |
+| C1-04 用户可见功能可触发 | 通过 | 有 repo path 时进入真实 `loadConfig`，成功后显示 `repositoryReady` | [AppShellModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/AppShellModel.swift:202) |
+| 无 mock/fixture 伪造最终闭环 | 通过 | 默认路径测试覆盖 `CoreBridge()` 真实 `load_config`，并断言不创建 `.areamatrix` | [AreaMatrixShellTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/AreaMatrixShellTests.swift:47) |
+| 未触碰 control map 之外 Core 能力 | 通过 | UI 层未消费其他 Core 能力；`updateConfig` 未被 S1-01 调用 | [CoreBridge.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift:93) |
+| UDL / Core API 对齐 | 通过 | `core/area_matrix.udl` 暴露 `load_config` / `update_config`，Core API 文档定义一致 | [area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:17) |
+| Expected New Paths | 通过 | `apps/macos/AreaMatrix/**` 与 `apps/macos/AreaMatrixTests/**` 均已落地 | [AreaMatrixShellTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/AreaMatrixShellTests.swift:1) |
+| Forbidden Touches | 通过 | `git diff --name-only -- core/src` 无输出 | `core/src/**` |
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。`CoreBridge` 负责 UniFFI 调用与 config snapshot 映射，`OnboardingModel` 负责路由状态，View 只渲染状态。
+- 注释 / rustdoc / 文档同步：通过。Exact Docs、control map、C1-04 页面消费边界与实现一致。
+- 错误处理与边界处理：通过。`Config`、`PermissionDenied`、`Io`、`Db` 有显式配置读取错误映射。
+- 测试与验证覆盖：通过。覆盖无 repo path、真实 CoreBridge 成功、真实 CoreError、错误映射、Learn more 非阻断。
+- 占位、硬编码、mock-only、一次性实现检查：通过。最终默认路径不是 fixture；fixture 仅用于单元隔离测试。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：通过，`BUILD SUCCEEDED`。
+- 已运行：`xcodebuild test ... CODE_SIGNING_ALLOWED=NO`：失败，原因是当前 sandbox 无法连接 `com.apple.testmanagerd.control`，不是断言失败。
+- 已运行：`xcrun xctest ...AreaMatrixTests.xctest`：通过，10 tests，0 failures。
+- 已运行：`bash scripts/check-macos-tests.sh`：通过，识别 testmanagerd sandbox 后 fallback 到 `xcrun xctest`，10 tests，0 failures。
+- 已运行：`python3 tasks/prompts/_shared/prompt_pipeline.py doctor`：通过。
+- 已运行：`python3 tasks/prompts/_shared/prompt_pipeline.py audit --pages`：通过，S1-01 expected/covered 均为 C1-04，missing/extra 为 None。
+- 已运行：`git diff --check`：通过。
+- 已运行：`git diff --name-only -- core/src`：通过，无输出。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。标准 `xcodebuild test` 被本地 sandbox 阻断，但 repo-local 验证脚本已用直接 XCTest 执行补足断言证据；manifest 指定 build 已通过，真实 C1-04 CoreBridge 闭环可证明。
+
+VERIFY_RESULT: PASS

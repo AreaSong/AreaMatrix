@@ -1,0 +1,53 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`1-2/task-08`
+- 对应文件路径：`tasks/prompts/phase-1/1-2-import-classify/task-08-c1-06-validation.md`
+- 核验范围：`core/src/**`、`core/area_matrix.udl`、`core/tests/**`
+- 禁止触碰：`apps/**`
+
+三、完成度摘要
+
+- 已覆盖项数：5/5 核对清单，2/2 完成标准
+- 未覆盖项数：0
+- 通过项数：7
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 只处理 C1-06 validation 范围：通过。实现入口限定 `StorageMode::Copied`，非 Copy 模式返回 `CoreError::Internal`，未实现 C1-07/C1-08 行为。证据：`core/src/storage/import.rs:77`、`core/tests/import_copy_file_implementation.rs:212`
+- Exact Docs 已读取并按 SSOT 核对：通过。C1-06、control map、Core API、testing 文档均与 `import_file`、UDL、测试对齐。证据：`core/tests/import_copy_file_contract.rs:91`
+- 不实现相邻 C1 能力或 UI 页面：通过。`git diff --name-only -- apps` 无输出；`apps/**` 未触碰。相邻能力仍由后续 API/任务负责。证据：`core/src/api.rs:202`
+- 补齐 Rust 测试：通过。新增/存在 `core/tests/import_copy_file_validation.rs`，覆盖成功、metadata source、metadata destination、duplicate skip。证据：`core/tests/import_copy_file_validation.rs:142`
+- 验证成功路径和关键错误路径：通过。成功路径验证源文件保留、active 文件、DB row、change_log、staging 清空；错误路径验证 InvalidPath、DuplicateFile、PermissionDenied、DB promotion rollback。证据：`core/tests/import_copy_file_validation.rs:143`、`core/tests/import_copy_file_failure_recovery.rs:106`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。copy import 拆分为 prepare/stage/duplicate/destination/promote/guards，主流程清晰；相关文件均低于 500 行。
+- 注释 / rustdoc / 文档同步：通过。public API 有 C1-06 rustdoc 与 `# Errors`；UDL 暴露 `import_file`、`ImportOptions`、`FileEntry`、错误枚举。
+- 错误处理与边界处理：通过。生产路径未发现 `unwrap()`/`expect()`/`panic!()`；staging row、final file、created directory 均有 guard 回滚。
+- 测试与验证覆盖：通过。manifest 三条验证全部通过，并补跑 `cargo test --workspace` 通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。未发现 mock-only 或硬编码通过态；测试走真实 tempdir、SQLite、文件系统路径。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- `cd core && cargo fmt --all -- --check`：通过
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过
+- `cd core && cargo test --workspace import_copy_file`：通过，19 个匹配测试通过
+- `cd core && cargo test --workspace`：通过，117 个测试通过
+- Forbidden Touches：`apps/**` 无变更
+- Expected New Paths：`core/src`、`core/area_matrix.udl`、`core/tests` 均存在；`core/tests/import_copy_file_validation.rs` 存在
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS

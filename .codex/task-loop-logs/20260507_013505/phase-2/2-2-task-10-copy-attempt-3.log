@@ -1,0 +1,44 @@
+一、执行结论
+
+已完成。`2-2/task-10` 的 S1-18 page integration repair 已修复上次验收失败点，并完成 macOS 侧验证。
+
+二、执行范围
+
+单任务：`2-2/task-10`
+
+业务修改均在 `Expected New Paths` 内，主要包括：
+- `apps/macos/AreaMatrix/Models/ImportBatchCopyImportModel.swift`
+- `apps/macos/AreaMatrix/Models/ImportBatchCopyImportState.swift`
+- `apps/macos/AreaMatrix/Models/ImportBatchDuplicatePrecheck.swift`
+- `apps/macos/AreaMatrix/Views/Main/ImportBatchConflictSection.swift`
+- `apps/macos/AreaMatrix/Views/Main/ImportBatchCopyFooterSection.swift`
+- `apps/macos/AreaMatrix/Views/Main/ImportEntrySheetView.swift`
+- `apps/macos/AreaMatrix/Views/Main/ImportProgressView.swift`
+- `apps/macos/AreaMatrix/Models/ImportProgressRouteState.swift`
+- 新增批量命名与 helper/test 文件，并更新 `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+
+`.codex/task-loop-*` 与 `tasks/prompts/_shared/progress.json` 仍有自动执行器运行痕迹；未作为产品实现改动处理。
+
+三、完成情况
+
+- page-feature task 覆盖：已补齐 S1-18 的 C1-05 / C1-06 / C1-09 页面闭环证据。
+- 页面状态、入口、退出、错误态、CoreBridge 调用闭环：已修复 iCloud pending、duplicate skip、progress/result summary 路由。
+- mock / fixture / 硬编码状态：已移除 `Download & retry` 的纯文案阻塞行为，改为调用真实 placeholder downloader 后重试 preview。
+- control map 边界：S1-18 批量预检不再用 `listFiles` 越界消费 C1-11；duplicate 由真实 `import_file` 错误回流处理。
+- Forbidden Touches：未触碰 `core/src/**`；`git diff --name-only -- core/src` 无输出。
+
+四、工程质量
+
+结构上把批量命名、冲突动作、结果摘要拆到独立模型/视图 helper，关键文件长度保持在 500 行以内。错误与边界路径覆盖了部分 iCloud 可继续导入、全部 iCloud 禁用、下载失败保留重试、skipped duplicate / pending iCloud 进入结果摘要、命名策略进入 importer request。未新增依赖，未改 Rust public API，因此无 rustdoc/doc-sync 额外要求。
+
+五、验证情况
+
+已运行：
+- `xcodebuild -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' build CODE_SIGNING_ALLOWED=NO`：通过，`BUILD SUCCEEDED`
+- `xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：失败，exit 65；原因是当前 sandbox 无法连接 `com.apple.testmanagerd.control`
+- `./dev test macos`：通过；先复现同一 `testmanagerd` sandbox block，再用 repo 认可的 `xcrun xctest` fallback 执行同一 XCTest bundle，`205 tests, 0 failures`
+
+六、风险与后续
+
+剩余风险：原始 `xcodebuild test` 在当前环境仍被 macOS sandbox 阻塞，无法直接得到 Xcode test runner 的通过状态；但编译通过，且 `./dev test macos` 的 fallback 已跑完 XCTest。建议下一个任务进入 `2-2/task-10` 的 verify-ready 只读验收，确认 task + manifest + 实际文件三者一致。
+

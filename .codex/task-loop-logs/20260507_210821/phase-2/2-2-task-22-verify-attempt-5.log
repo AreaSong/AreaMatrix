@@ -1,0 +1,97 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`2-2/task-22`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-2-import-conflict/task-22-s1-22-c1-09-detect-duplicate.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-22-conflict-duplicate.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-09-detect-duplicate.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：3
+- 未覆盖项数：2
+- 通过项数：6
+- 不通过项数：2
+- 阻塞项数：1
+
+四、逐项验收结果
+
+- 项目：只处理 S1-22 页面中的 C1-09 功能点
+- 结果：通过
+- 证据：实现集中在单文件导入重复冲突 UI、duplicate strategy、Replace 确认入口；未发现 `core/src/**` 修改。
+- 涉及文件：`apps/macos/AreaMatrix/Models/ImportSingleFileDuplicateResolution.swift`、`apps/macos/AreaMatrix/Views/Main/ImportSingleFileSheetSections.swift`
+
+- 项目：读取页面规格、control map、Core API、C1-09 能力规格
+- 结果：通过
+- 证据：已逐个读取 4 个 Exact Docs；control map 声明 `S1-22 -> C1-09 -> import_file -> DuplicateFile -> Real Core`。
+- 涉及文件：上述 4 个 docs
+
+- 项目：只接入 C1-09 对应 CoreBridge / 状态 / 错误映射
+- 结果：不通过
+- 证据：`CoreBridge` 的 `import_file` 接入存在，`DuplicateFile` 错误会进入 S1-22；但真实 `CoreImportSingleFilePreflight` 不做 hash 重复检测，`hashSha256` 始终为 nil，且测试明确固化 “preflight does not use list_files / returns no conflict before import”。这不满足 S1-22 的“hash 计算中显示 Checking duplicate，确认 hash 重复后渲染冲突区”。
+- 涉及文件：`apps/macos/AreaMatrix/Models/ImportSingleFilePreflight.swift:207`、`apps/macos/AreaMatrix/Models/ImportSingleFilePreflight.swift:253`、`apps/macos/AreaMatrixTests/ImportSingleFilePreflightTests.swift:6`
+
+- 项目：不顺手实现相邻页面
+- 结果：通过
+- 证据：Replace 仅进入二次确认 sheet；S1-24 真实替换闭环不是本 task 的完成证据。manifest 也单独存在 `2-2/task-24`。
+- 涉及文件：`apps/macos/AreaMatrix/Views/Main/ImportReplaceConfirmSheet.swift`
+
+- 项目：S1-22 中 C1-09 用户可见功能可触发和验收
+- 结果：不通过
+- 证据：只有 import 失败后才补出 duplicate conflict；用户无法在最终 Import 前通过真实 preflight 看到重复冲突并选择策略。Skip 默认路径在已有 duplicate result 下可用，但真实入口没有按页面规格提前产生 duplicate result。
+- 涉及文件：`apps/macos/AreaMatrix/Models/ImportSingleFilePreviewModel.swift:156`、`apps/macos/AreaMatrixTests/ImportSingleFilePageIntegrationVerifyTests.swift:373`
+
+- 项目：没有 mock / fixture / 静态状态伪造真实 Core 闭环
+- 结果：部分通过
+- 证据：存在真实 `CoreBridge.import_file` duplicate error 集成测试；但多数 S1-22 UI 策略测试使用 static preflight fixture，且真实 preflight 的重复检测缺口仍未闭合。
+- 涉及文件：`apps/macos/AreaMatrixTests/ImportSingleFileDuplicateResolutionTests.swift`、`apps/macos/AreaMatrixTests/ImportSingleFilePageIntegrationVerifyTests.swift:338`
+
+- 项目：Expected New Paths
+- 结果：通过
+- 证据：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`apps/macos/AreaMatrix.xcodeproj/project.pbxproj` 均有实际落地；project.pbxproj 已引用新增 Swift/test 文件。
+- 涉及文件：`apps/macos/AreaMatrix.xcodeproj/project.pbxproj:94`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git status --short core/src`、`git diff --name-only -- core/src`、`git ls-files --others --exclude-standard -- core/src` 均无输出。
+- 涉及文件：`core/src/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过，真实 preflight 与页面规格的数据流断开，重复冲突不是在 hash 预检阶段进入 S1-22。
+- 注释 / rustdoc / 文档同步：通过，当前 Swift 生产代码未发现明显 TODO/强制解包/`try!`。
+- 错误处理与边界处理：不通过，duplicate detection 的关键边界被推迟到 Import 写入尝试后，不满足“确认前不写文件”和冲突区提前决策的 UX 语义。
+- 测试与验证覆盖：不通过，测试通过但包含反向断言：`CoreImportSingleFilePreflight` 不在 import 前检测 duplicate。
+- 占位、硬编码、mock-only、一次性实现检查：不通过，S1-22 策略 UI 有 fixture 覆盖，但真实 Core preflight 闭环未完成。
+
+六、阻塞项
+
+- P0：S1-22 的真实 duplicate preflight 未实现
+  - 说明：S1-22 文档要求 hash 计算中显示 `Checking duplicate...`，确认重复后渲染 duplicate conflict 区，用户再选择 Skip / Keep both / Replace。当前 `CoreImportSingleFilePreflight` 只检查源文件和文件名，不计算 hash、不查询已有 file hash、不返回 duplicate；真实重复只在点击 Import 后由 `import_file(... duplicateStrategy: .ask)` 抛 `DuplicateFile` 才补成冲突状态。
+  - 绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreflight.swift:207`
+  - 绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreflight.swift:253`
+  - 绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFilePreflightTests.swift:6`
+  - 为什么导致不通过：这使 S1-22 不能在写入前被真实 Core 预检触发和验收，违反页面规格、C1-09 验收标准和真实闭环规则。
+
+七、验证情况
+
+- 已运行：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+- 结果：通过，`** BUILD SUCCEEDED **`
+- 已运行：`./dev test macos`
+- 结果：通过；标准 `xcodebuild test` 被本地 `testmanagerd` sandbox 阻断后，脚本按规则复用 XCTest bundle，`xcrun xctest` 通过，263 tests，0 failures。
+- 缺失：未运行 SwiftFormat / SwiftLint；本 task manifest 未列出，但 CI/governance 层仍需后续补证。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+
+VERIFY_RESULT: FAIL

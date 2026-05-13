@@ -1,0 +1,45 @@
+一、执行结论
+
+- 已完成：`2-2/task-25` repair retry 已修复并复验通过。
+
+二、执行范围
+
+- 单任务：`2-2/task-25`
+- 本轮功能修复文件：
+  - [ImportSingleFilePreviewModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreviewModel.swift:127)
+  - [ImportSingleFileDuplicateResolutionTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFileDuplicateResolutionTests.swift:301)
+- 任务当前相关改动还包括上轮已存在的 S1-24 UI wiring 文件：`ImportSingleFileDuplicateResolution.swift`、`ImportEntrySingleFileFooter.swift`、`ImportSingleFileSheetSections.swift`。
+- 工作树中仍有 task-loop runtime/progress/log 变更；这些在本轮修复前已存在，未作为功能范围扩展处理。
+
+三、完成情况
+
+- 只处理 S1-24 页面中的 C1-10：通过。补强 name conflict Replace 的 S1-24 二次确认路径。
+- 读取页面规格、control map、Core API、C1-10 能力规格：已完成。
+- 只接入 C1-10 对应 CoreBridge / 状态 / 错误映射：通过。确认后才允许 `.overwrite` 进入 Core importer。
+- 不顺手实现相邻页面：通过。
+- Forbidden Touches：未触碰，`git diff --name-only -- core/src/**` 为空。
+
+四、工程质量
+
+- 修复了一个可绕过点：即使绕过 footer 直接调用 `importSelectedFile()`，未确认 Replace 现在也会阻断，不会把 `.overwrite` 交给 Core。
+- footer 仍负责把主按钮从 Import 转到确认 sheet；模型层现在也有硬门禁。
+- 新增测试覆盖：确认前无导入副作用、主按钮先打开 S1-24、确认后才使用 `.overwrite`、直接模型导入不能绕过确认。
+- 无新增依赖、无 mock-only 产品路径、无 Core API / UDL / Rust public API 变更。
+- 相关 Swift 文件均低于 500 行；`git diff --check` 通过。
+
+五、验证情况
+
+- 通过：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+  - 结果：`BUILD SUCCEEDED`
+- 通过：`./dev test macos`
+  - 标准 `xcodebuild test` 被本地 `testmanagerd` sandbox 限制阻断；脚本按仓库规则复用同一 XCTest bundle 执行 `xcrun xctest`。
+  - 结果：275 tests，0 failures。
+- 通过：`git diff --check -- apps/macos/AreaMatrix apps/macos/AreaMatrixTests apps/macos/AreaMatrix.xcodeproj/project.pbxproj core/area_matrix.udl`
+- 已生成验收 prompt：`python3 tasks/prompts/_shared/prompt_pipeline.py verify --task 2-2/task-25`
+- 未运行：`swiftlint`、`swiftformat`，当前环境找不到这两个命令。
+
+六、风险与后续
+
+- 剩余风险：未做真实 UI 手工点击冒烟；当前证据来自 build、XCTest 和代码交叉验收。
+- 回滚方式：回滚本次 Swift 模型与测试改动即可恢复到上轮状态。
+- 建议下一个任务：继续 `2-2/task-26` 或当前 task 的 verify-ready 只读验收。

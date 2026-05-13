@@ -1,0 +1,62 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`0-2/task-11`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-0/0-2-engineering-foundation/task-11-macos-bridge-placeholder.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/CoreBridgePlaceholderState.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/AppShellModel.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：9
+- 未覆盖项数：0
+- 通过项数：8
+- 不通过项数：1
+- 阻塞项数：1
+
+四、逐项验收结果
+
+- 创建 CoreBridge 占位层：通过。`CoreBridge` actor 已存在，见 `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift:3`。
+- Bridge 方法只声明后续接入边界：通过。UDL 的 25 个函数边界与 `CoreBridgeBoundary` 对齐，方法统一进入 `requireGeneratedBindings` 并抛出 unavailable，见 `CoreBridge.swift:20`、`CoreBridge.swift:24`、`CoreBridgePlaceholderState.swift:3`。
+- 不得用 mock 通过后续真实闭环验收：通过。未发现 mock/fixture/静态成功态；占位调用返回 `Never` 并显式失败，见 `CoreBridgePlaceholderState.swift:49`。
+- Bridge 编译通过：通过。manifest build 本次 `BUILD SUCCEEDED`，且 `AreaMatrix.SwiftFileList` 已包含 `CoreBridge.swift`、`AppShellModel.swift`、`CoreBridgePlaceholderState.swift`，见 `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/DerivedData/AreaMatrix/Build/Intermediates.noindex/AreaMatrix.build/Debug/AreaMatrix.build/Objects-normal/arm64/AreaMatrix.SwiftFileList:3`。
+- 占位状态在任务汇报中可识别：通过。执行日志明确写出 placeholder 状态，见 `/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260501_132850/phase-0/0-2-task-11-copy-attempt-2.log:20`。
+- Expected New Paths：通过。`Bridge/CoreBridge.swift`、`Models/AppShellModel.swift`、`Models/CoreBridgePlaceholderState.swift` 均已落地。
+- Forbidden Touches：通过。`git status --short -- core/src` 无输出，未触碰 `core/src/**`。
+- Xcode target membership：通过。`project.pbxproj` 已把 Bridge/Models 三个文件加入 Sources，见 `project.pbxproj:13`、`project.pbxproj:113`、`project.pbxproj:236`。
+- validation-driver macOS test：不通过。`xcodebuild test ...` 失败，错误为 `com.apple.testmanagerd.control` sandbox restriction，无法证明测试通过。
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。Bridge、状态模型、shell model 分层清楚；单文件均小于 500 行。
+- 注释 / rustdoc / 文档同步：通过。未新增 Rust public API；Swift 边界名称与 `core/area_matrix.udl`、`docs/api/core-api.md` 对齐。
+- 错误处理与边界处理：通过。占位调用显式抛 `CoreBridgeError.generatedBindingsUnavailable`，没有静默吞错。
+- 测试与验证覆盖：不通过。manifest build 通过，但 validation-driver 对 `apps/macos/**` 要求的 test 在当前环境失败，无法证明测试闭环。
+- 占位、硬编码、mock-only、一次性实现检查：通过。当前是显式 placeholder，不伪装真实 UniFFI 闭环。
+
+六、阻塞项
+
+- P1：macOS test runner 验证未通过。
+  说明：`xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO` 退出码 65，错误为无法与 `com.apple.testmanagerd.control` 建联，`Sandbox restriction`。
+  绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj:236`
+  为什么导致不通过：repo-local validation-driver 对 `apps/macos/**` 要求 build + test；当前无法证明 test 通过，按“无法证明通过即不通过”处理。
+
+七、验证情况
+
+- 已运行并通过：`xcodebuild -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' build CODE_SIGNING_ALLOWED=NO`
+- 已运行并通过：`plutil -lint apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+- 已运行并通过：`git diff --check -- apps/macos/AreaMatrix.xcodeproj/project.pbxproj apps/macos/AreaMatrix/Bridge/CoreBridge.swift apps/macos/AreaMatrix/Models/AppShellModel.swift apps/macos/AreaMatrix/Models/CoreBridgePlaceholderState.swift`
+- 已运行并失败：`xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+- 未运行：`swiftformat --lint .`、`swiftlint --strict`，当前环境 `command -v swiftformat` / `command -v swiftlint` 无结果。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。代码与 manifest checklist 基本满足，但 validation-driver 要求的 macOS test 未能通过，验证证据不完整。
+

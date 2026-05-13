@@ -1,0 +1,52 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`2-2/task-10`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-2-import-conflict/task-10-s1-18-page-integration-verify.md`
+- 重点代码：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：6
+- 未覆盖项数：2
+- 通过项数：6
+- 不通过项数：2
+- 阻塞项数：2
+
+四、逐项验收结果
+
+- 依赖 page-feature 覆盖：通过。C1-05 走 `CoreBridge.predictCategory`，C1-06 走 `CoreBridge.importFile`，C1-09 有 hash/listFiles 预检与 `DuplicateFile` 导入兜底证据。涉及 `CoreBridge.swift:259`、`CoreImporting.swift:195`、`ImportBatchDuplicatePrecheck.swift:87`。
+- 页面入口 / 退出 / 进度闭环：通过。多文件入口创建 `.multipleItems` sheet，Cancel 关闭 sheet，Import 进入 S1-20 progress。涉及 `OnboardingModelInputs.swift:24`、`MainWindow.swift:54`、`ImportBatchCopyFooterSection.swift:40`。
+- 冲突表动作闭环：不通过。page spec 要求 `Show existing file` 是冲突表 Action，但当前按钮 action 为空，不能证明动作可用。涉及 `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportBatchConflictSection.swift:171`。
+- Page spec 完整验收：不通过。S1-18 要求冲突表逐项动作、Move/Index-only 风险态可验收；当前 Move/Index-only 被实现为不可导入提示，且冲突动作存在空实现。涉及 `S1-18-import-batch-sheet.md:63`、`:90`、`:143` 与 `ImportBatchCopyImportModel.swift:45`。
+- Expected New Paths：通过。`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`apps/macos/AreaMatrix.xcodeproj/project.pbxproj` 均存在并有对应改动。
+- Forbidden Touches：通过。`git diff --name-only -- core/src` 无输出，未发现 `core/src/**` 被触碰。
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过，存在用户可见按钮空实现，页面动作链路不可维护。
+- 注释 / rustdoc / 文档同步：通过，当前任务主要为 Swift UI/模型集成，未新增 public Rust API。
+- 错误处理与边界处理：部分通过，Core 错误映射、DuplicateFile、iCloud pending 有处理；但 `Show existing file` 无错误处理或行为。
+- 测试与验证覆盖：部分通过，`./dev test macos` 通过 206 tests；但测试通过不能覆盖空 action 的真实页面动作缺口。
+- 占位、硬编码、mock-only、一次性实现检查：不通过，`Button("Show existing file") {}` 属于用户可见空壳动作。
+
+六、阻塞项
+
+- P0：冲突表 `Show existing file` 是空实现。说明：S1-18 page spec 明确要求该 Action，当前点击不会打开、定位或反馈 existing file，页面闭环不可验收。路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportBatchConflictSection.swift:171`。
+- P1：S1-18 page spec 的完整页面行为未闭合。说明：文档要求 Move/Index-only 风险态、冲突表逐项动作和结果路径可验收；当前 Move/Index-only 直接阻断导入，且冲突动作未完整实现，因此不能声称“按 page spec 和 control map 完整验收”。路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportBatchCopyImportModel.swift:45`。
+
+七、验证情况
+
+- 已运行：`xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+  - 结果：失败，原因为本地 sandbox 无法连接 `testmanagerd.control`，非测试断言失败。
+- 已运行：`./dev test macos`
+  - 结果：通过。标准 `xcodebuild test` 被 sandbox 阻断后，按 repo-local validation-driver fallback 到同一 XCTest bundle，`xcrun xctest` 执行 206 tests，0 failures。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。测试门禁有可接受 fallback 通过证据，但页面仍存在用户可见空壳动作和 page spec 闭环缺口。
+
+VERIFY_RESULT: FAIL

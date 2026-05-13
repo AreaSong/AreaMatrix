@@ -1,0 +1,33 @@
+# V-TEMPLATE Copy-ready Draft: template-docs-contract/docs-baseline
+
+你现在进入 AreaMatrix v-template 草稿任务执行模式。
+
+## 工作边界
+- Source change: `workflow/versions/v-template/changes/template-contracts.yaml`
+- Feature: `template-docs-contract`
+- Module: `workflow-template`
+- Task: `docs-baseline` - Validate Exact Docs baseline and drift checks for the template reference.
+- Risk: `Low`
+- 是否允许修改文件：`是，但仅限本 v-template 草稿任务直接要求的 docs/API/UDL/实现/测试；不得接入 live v1 task-loop queue`
+
+## Exact Docs
+- `workflow/architecture.md`
+- `workflow/pipeline.md`
+
+## 必须同步检查
+- `workflow/templates/README.md`
+
+## 风险边界
+- Does not define product behavior.
+- Does not write live tasks/prompts.
+- Docs drift must block downstream template gates.
+
+## 执行要求
+- 先读取 Source change、Exact Docs、Sync Targets，再决定实现范围。
+- 若涉及 Core API，必须保持 `docs/api/core-api.md` 与 `core/area_matrix.udl` 一致。
+- 不得移动、删除、覆盖用户原文件；不得把 v-template 草稿直接写入 `tasks/prompts/**`。
+- 完成后记录实际改动、验证命令、风险处理和未覆盖项。
+
+## 建议验证
+- ./dev workflow baseline --version v-template doctor
+- ./dev workflow doctor

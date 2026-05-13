@@ -8,6 +8,7 @@
 
 ## Core API
 
+- `preview_move_to_category(repo_path, file_id, new_category) -> MoveToCategoryPreview`
 - `move_to_category(repo_path, file_id, new_category) -> FileEntry`
 
 ## 输入
@@ -18,7 +19,9 @@
 
 ## 输出
 
-- 更新后的 `FileEntry`。
+- `MoveToCategoryPreview`：确认前的最终路径、最终名称、是否自动编号、是否
+  Index-only、确认后是否会移动 repo-owned 文件。
+- `FileEntry`：确认改分类后更新的文件条目。
 
 ## DB 变化
 
@@ -42,7 +45,8 @@
 
 ## 验收标准
 
-- 移动前能预览最终路径。
+- 移动前能通过 `preview_move_to_category` 预览最终路径，且 preview 不移动文件、
+  不重命名、不删除、不创建分类目录、不写 DB。
 - 目标同名不会覆盖目标文件。
 - 成功后 Tree/List/Detail 可通过 Core 查询看到新位置。
 

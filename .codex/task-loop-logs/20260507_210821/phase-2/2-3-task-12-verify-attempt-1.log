@@ -1,0 +1,90 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`2-3/task-12`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-3-detail-settings/task-12-s1-26-c1-04-load-update-config.md`
+- 关键实现文件：
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/GeneralSettingsModel.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Settings/GeneralSettingsView.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/GeneralSettingsPageFeatureTests.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：0
+- 通过项数：8
+- 不通过项数：2
+- 阻塞项数：2
+
+四、逐项验收结果
+
+- 项目：只处理 S1-26 页面中的 C1-04 功能点
+- 结果：通过
+- 证据：S1-26 对应 C1-04 在 control map 中为 `load_config/update_config`；实现集中在 General settings、CoreBridge 配置读写和 settings route，未修改 `core/src/**`
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:41`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/GeneralSettingsModel.swift:196`
+
+- 项目：读取页面规格、MVP control map、Core API 和 C1-04 能力规格
+- 结果：通过
+- 证据：Exact Docs 4 个均存在并已读取；Core API/UDL 暴露 `load_config`、`update_config`、`RepoConfig`
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:578`，`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:17`
+
+- 项目：只接入 C1-04 对应 CoreBridge / 状态 / 错误映射
+- 结果：不通过
+- 证据：`system` 与 `zh-CN` 在状态映射中都持久化为 `zh-Hans`，导致 UX 要求的 `system / zh-CN / en` 三态无法真实 round-trip；选择 system 后重新加载会变成 zh-CN
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-26-settings-general.md:61`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/GeneralSettingsModel.swift:94`
+
+- 项目：不顺手实现相邻页面
+- 结果：通过
+- 证据：未发现 S1-27/S1-28 等相邻 settings 页面实现落地；S1-26 的 C1-07 后续由 `2-3/task-13` 覆盖
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-2.md:2193`
+
+- 项目：Expected New Paths
+- 结果：通过
+- 证据：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`project.pbxproj` 均已落地
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/GeneralSettingsPageFeatureTests.swift:1`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git diff --name-status -- core/src` 无输出，未触碰 `core/src/**`
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过。`GeneralSettingsLocale.system` 与 `.zhCN` 合并到同一持久化值，破坏用户可见配置状态。
+- 注释 / rustdoc / 文档同步：不通过。实现与 S1-26 文档的 `uiLocale=system` 默认状态和三态语言选项不一致。
+- 错误处理与边界处理：不通过。`Cannot safely update AREAMATRIX.md` 场景缺少文档要求的 `Reveal in Finder` 恢复入口。
+- 测试与验证覆盖：不通过。build/test 命令通过，但测试没有覆盖 system locale round-trip，也没有覆盖 unsafe root overview 的 Reveal 行为。
+- 占位、硬编码、mock-only、一次性实现检查：通过。存在真实 `CoreBridge` 初始化、更新、重新读取配置测试，不是纯 mock-only 闭环。
+
+六、阻塞项
+
+- P1：语言 `system` 选项无法真实保存和恢复
+  - 说明：UX 明确要求语言为 `system / zh-CN / en`，默认 `uiLocale=system`；当前 `.system` 和 `.zhCN` 都写入 `zh-Hans`，读取 `zh-Hans` 又显示为 `.zhCN`，用户选择 system 后不会保持 system。
+  - 绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/GeneralSettingsModel.swift:94`
+  - 为什么导致不通过：C1-04 的 locale 配置读写闭环不符合 S1-26 用户可见功能标准。
+
+- P1：unsafe root AREAMATRIX.md 场景缺少 `Reveal in Finder`
+  - 说明：页面规格要求无法安全判断或权限异常时显示 `Cannot safely update AREAMATRIX.md` 和 `Reveal in Finder`；当前 sheet 只显示错误文本并禁用 Enable 按钮。
+  - 绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Settings/GeneralSettingsView.swift:360`
+  - 为什么导致不通过：高风险 overview 输出配置缺少文档要求的可恢复错误操作，不能算完整 C1-04 settings 闭环。
+
+七、验证情况
+
+- 已运行：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+- 结果：通过，`** BUILD SUCCEEDED **`
+
+- 已运行：`./dev test macos`
+- 结果：通过。标准 `xcodebuild test` 被本地 `testmanagerd` sandbox 通信限制阻断；脚本按 repo 规则复用已构建 XCTest bundle，`xcrun xctest` 通过，336 tests，0 failures。
+
+- 缺失：未发现覆盖 `system` locale round-trip 和 unsafe root overview `Reveal in Finder` 的测试证据。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+
+VERIFY_RESULT: FAIL

@@ -1,0 +1,77 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`2-3/task-21`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-3-detail-settings/task-21-s1-28-page-integration-verify.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ClassifierSettingsModel.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ClassifierSettingsRecovery.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Settings/ClassifierSettingsPane.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ClassifierSettingsPageFeatureTests.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ClassifierSettingsRecoveryTests.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：14
+- 未覆盖项数：0
+- 通过项数：14
+- 不通过项数：0
+- 阻塞项数：0
+- Missing Expected Paths：0
+- Forbidden Touches：未发现 `core/src/**` 工作区改动
+
+四、逐项验收结果
+
+- 项目：page-feature task 覆盖完整性
+- 结果：通过
+- 证据：manifest 中 S1-28 绑定 `2-3/task-19` 覆盖 C1-04、`2-3/task-20` 覆盖 C1-05、`2-3/task-21` 负责整页集成；control map 明确 S1-28 只绑定 C1-04/C1-05。
+- 涉及文件：`tasks/prompts/_shared/manifests/phase-2.md:2370`、`:2399`、`:2428`，`docs/architecture/mvp-control-map.md:43`
+
+- 项目：页面状态、入口、退出、错误态、CoreBridge 调用闭环
+- 结果：通过
+- 证据：页面默认注入 `CoreBridge`，加载配置、保存开关、分类预览均走真实 bridge；Open/Reveal/Create default/Validate/Revert 与错误恢复路径均存在。
+- 涉及文件：`ClassifierSettingsPane.swift:7`、`:175`、`:240`、`:267`、`:297`；`ClassifierSettingsModel.swift:118`、`:140`、`:180`、`:199`、`:270`、`:320`；`CoreBridge.swift:197`、`:201`、`:259`
+
+- 项目：mock、fixture、硬编码通过态检查
+- 结果：通过
+- 证据：生产路径未发现 mock-only 成功态；测试 fixture 限定在 `AreaMatrixTests`。真实 CoreBridge 测试覆盖了 update_config 不写 classifier.yaml、predict_category 只读 classifier.yaml。
+- 涉及文件：`ClassifierSettingsPageFeatureTests.swift:212`、`:244`
+
+- 项目：control map 外功能检查
+- 结果：通过
+- 证据：页面实现集中在 C1-04 配置开关与 C1-05 分类预览/校验消费；未发现 Export / Import 或内置规则编辑器入口。
+- 涉及文件：`docs/ux/page-specs/stage-1-mvp/S1-28-settings-classifier.md:56`、`:57`、`:93`；`ClassifierSettingsPane.swift:146`、`:175`、`:297`
+
+- 项目：Expected New Paths
+- 结果：通过
+- 证据：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`apps/macos/AreaMatrix.xcodeproj/project.pbxproj` 均存在，pbxproj 已纳入 S1-28 相关源码和测试。
+- 涉及文件：`project.pbxproj:181`、`:184`、`:841`、`:956`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。`ClassifierSettingsModel.swift` 467 行、`ClassifierSettingsPane.swift` 488 行，低于 500 行；状态、文件操作、Core 调用和恢复逻辑拆分清楚。
+- 注释 / rustdoc / 文档同步：通过。当前为 Swift UI/model 改动，无新增 Rust public API；注释集中在默认 classifier 同步约束处。
+- 错误处理与边界处理：通过。保存失败会回滚 UI 并提供 `Retry save`；打开失败显示 `无法打开分类规则文件` 并提供 Reveal/Create default；校验失败保留字段和行号。
+- 测试与验证覆盖：通过。S1-28 专项测试覆盖加载、保存、失败回滚、预览失败、打开 YAML、缺失文件、真实 CoreBridge、Create default、Revert、行号字段错误。
+- 占位、硬编码、mock-only、一次性实现检查：通过。测试替身只存在于测试文件；生产默认走 `CoreBridge` 和文件系统服务。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`xcodebuild -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' build CODE_SIGNING_ALLOWED=NO`：通过，`** BUILD SUCCEEDED **`
+- 已运行：`xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：直接执行失败，失败原因是本地 sandbox 无法访问 `testmanagerd.control`
+- 已运行：`./dev test macos`：通过；该 repo-local gate 先复现同一 sandbox 限制，再按 validation-driver 允许的 fallback 执行 `xcrun xctest`，结果 `373 tests, 0 failures`
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。直接 `xcodebuild test` 被当前沙箱环境阻断，但 repo-local validation-driver 对该类 `testmanagerd` sandbox 错误允许 `./dev test macos` fallback，且 fallback 测试全量通过。
+
+VERIFY_RESULT: PASS

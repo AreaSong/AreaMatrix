@@ -1,0 +1,73 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`1-1/task-14`
+- 对应文件路径：`tasks/prompts/phase-1/1-1-repo-config/task-14-c1-03-integration-verify.md`
+- 核验范围：`docs/**` 指定 7 个 Exact Docs、`core/src/**`、`core/area_matrix.udl`、`core/tests/**`
+- 禁止触碰范围：`apps/**`
+
+三、完成度摘要
+
+- 已覆盖项数：18
+- 未覆盖项数：0
+- 通过项数：18
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：C1-03 integration-verify 范围
+- 结果：通过
+- 证据：task 明确绑定 C1-03 API / UDL / Rust / 测试 / UX 消费一致性；实现集中在 `init_repo(AdoptExisting)`、`get_latest_scan_session`、`resume_scan_session`
+- 涉及文件：`task-14...md:10`、`core/src/api.rs:71`、`core/src/api.rs:137`、`core/src/api.rs:154`
+
+- 项目：Docs / control map / UX 消费一致性
+- 结果：通过
+- 证据：C1-03 文档声明 3 个 Core API、Adopt scan session、`files.origin = Adopted`；control map 绑定 S1-03/S1-04/S1-05/S1-10 为 Real Core
+- 涉及文件：`C1-03-adopt-existing-repo.md:10`、`C1-03-adopt-existing-repo.md:21`、`mvp-control-map.md:18`
+
+- 项目：UDL / Core API 对齐
+- 结果：通过
+- 证据：UDL 暴露 `init_repo`、`get_latest_scan_session`、`resume_scan_session`、`RepoInitOptions`、`ScanSession`、`FileOrigin.Adopted`
+- 涉及文件：`core/area_matrix.udl:13`、`core/area_matrix.udl:28`、`core/area_matrix.udl:91`、`core/area_matrix.udl:214`
+
+- 项目：Rust 真实实现
+- 结果：通过
+- 证据：`AdoptExisting` 分支创建 metadata 后启动 adopt scan；scan 写入 `scan_sessions`，upsert adopted files，跳过 `.areamatrix/generated/` 和 `AREAMATRIX.md`
+- 涉及文件：`core/src/repo_init.rs:40`、`core/src/repo_init.rs:99`、`core/src/repo_scan.rs:38`、`core/src/db/scan.rs:100`
+
+- 项目：Expected New Paths / Forbidden Touches
+- 结果：通过
+- 证据：`core/src/**`、`core/area_matrix.udl`、`core/tests/**` 均存在；`git diff --name-only -- apps` 无输出
+- 涉及文件：`core/src/api.rs`、`core/area_matrix.udl`、`core/tests/adopt_existing_repo_implementation.rs`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。C1-03 路径拆分为 `repo_init`、`repo_scan`、`db/scan`，关键文件均低于 500 行。
+- 注释 / rustdoc / 文档同步：通过。public API 有 rustdoc 和 `# Errors`，API 文档与 UDL 对齐。
+- 错误处理与边界处理：通过。生产路径未发现 C1-03 相关 `unwrap()` / `panic!()`；权限、未知 session、RootAreaMatrixFile 越界均有测试。
+- 测试与验证覆盖：通过。覆盖 contract、implementation、validation、权限失败、resume、README 保留、AREAMATRIX 跳过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。C1-03 入口不是 `not_implemented()`；相邻未实现 API 属于其他能力，不阻断本 task。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`cd core && cargo fmt --all -- --check`，通过。
+- 已运行：`cd core && cargo clippy --all-targets --all-features -- -D warnings`，通过。
+- 已运行：`cd core && cargo test --workspace adopt_existing_repo`，通过，16 个 adopt_existing_repo 相关测试通过。
+- 已运行：`cd core && cargo test --workspace`，通过，60 个 Rust 测试通过。
+- 已运行：`python3 tasks/prompts/_shared/prompt_pipeline.py doctor`，通过，`doctor: OK`。
+- 已运行：`git diff --check`，通过。
+- 未运行：macOS `xcodebuild`，原因是 `apps/**` 是 Forbidden Touches 且本 task 只验 C1-03 Core integration。
+- 备注：工作区已有 `tasks/prompts/_shared/progress.json` 修改，但它不属于本 task 证据，也未触碰 `apps/**`。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+VERIFY_RESULT: PASS

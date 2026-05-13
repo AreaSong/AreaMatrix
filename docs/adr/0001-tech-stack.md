@@ -100,7 +100,7 @@ AreaMatrix 是一个本地优先的资料管理桌面应用，首发目标是 ma
 ### 负面 / 代价
 
 - **跨语言调试复杂度**：Rust ↔ Swift 出错时栈跟踪不连贯，要工具配合
-- **构建链复杂**：build-core.sh + UniFFI binding gen + Xcode 集成，CI 配置多
+- **构建链复杂**：`./dev build core` + UniFFI binding gen + Xcode 集成，CI 配置多
 - **学习成本**：开发者既要懂 Rust 又要懂 SwiftUI（招人范围窄）
 - **FFI 边界设计需谨慎**：传值贵 → 需要批量 API、避免高频小调用
 - **每加一个平台**仍要写整套 Shell（不是真"零成本"跨端）

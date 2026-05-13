@@ -1,0 +1,78 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`1-3/task-16`
+- 对应文件路径：
+  - [task-16-c1-14-validation.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-1/1-3-query-detail/task-16-c1-14-validation.md:1)
+  - [C1-14-read-write-note.md](/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-14-read-write-note.md:1)
+  - [mvp-control-map.md](/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:29)
+  - [core-api.md](/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:91)
+  - [area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:67)
+  - [api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:390)
+  - [note.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/note.rs:14)
+  - [note.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/db/note.rs:10)
+  - [read_write_note_validation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/read_write_note_validation.rs:131)
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：0
+- 通过项数：10
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 C1-14 validation 范围
+- 结果：通过
+- 证据：实现集中在 `read_note/write_note`，未触碰 `apps/**`；control map 只绑定 S1-14 + C1-14。
+- 涉及文件：[mvp-control-map.md](/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:29)、[api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:390)
+
+- 项目：Exact Docs 以文档为 SSOT
+- 结果：通过
+- 证据：C1-14 要求 `notes` upsert、伴生 `.md`、`edited_note`、失败不破坏旧内容；API/UDL 与文档一致。
+- 涉及文件：[C1-14-read-write-note.md](/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-14-read-write-note.md:24)、[core-api.md](/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:783)
+
+- 项目：不实现相邻 C1 能力或 UI 页面
+- 结果：通过
+- 证据：`git status --short -- apps` 无输出；实现没有进入 macOS/UI。
+- 涉及文件：[area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:67)
+
+- 项目：补齐 Rust 测试
+- 结果：通过
+- 证据：存在 `read_write_note_contract_api`、`implementation`、`failure_recovery`、`validation` 测试；validation 覆盖空读、成功写、一致性、FileNotFound、未确认 sidecar、DB/sidecar 不一致、change_log 失败回滚。
+- 涉及文件：[read_write_note_validation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/read_write_note_validation.rs:131)、[read_write_note_failure_recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/read_write_note_failure_recovery.rs:145)
+
+- 项目：验证成功路径和关键错误路径
+- 结果：通过
+- 证据：`cargo test --workspace read_write_note` 中 C1-14 相关 18 个测试通过；全量 `cargo test --workspace` 通过。
+- 涉及文件：[read_write_note_validation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/read_write_note_validation.rs:162)
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，`note.rs` 拆分路径校验、sidecar 校验、原子写、rollback；文件 231 行，未超过 500 行。
+- 注释 / rustdoc / 文档同步：通过，public API 有 rustdoc 和 `# Errors`，UDL/API 文档同步。
+- 错误处理与边界处理：通过，生产路径未见 `unwrap()`/`expect()`/`panic!()`；错误显式映射为 `FileNotFound`、`PermissionDenied`、`Io`、`Db`。
+- 测试与验证覆盖：通过，成功路径、关键失败路径、rollback 与一致性均有测试。
+- 占位、硬编码、mock-only、一次性实现检查：通过，代码连接真实 SQLite、真实文件系统 sidecar 与真实 change_log，不是 mock-only。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`cd core && cargo fmt --all -- --check`：通过
+- 已运行：`cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过
+- 已运行：`cd core && cargo test --workspace read_write_note`：通过
+- 已运行：`cd core && cargo test --workspace`：通过
+- 未运行：macOS `xcodebuild` / SwiftLint / SwiftFormat；本任务禁止触碰 `apps/**`，且 forbidden touch 检查为空。
+- 注意：当前 `core/tests/read_write_note_validation.rs` 在 git 状态中为 untracked；本次按当前 workspace 文件和测试证据验收通过，合并或 checkpoint 前需纳入追踪。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+VERIFY_RESULT: PASS

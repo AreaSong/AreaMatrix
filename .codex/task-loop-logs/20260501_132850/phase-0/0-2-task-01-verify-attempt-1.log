@@ -1,0 +1,84 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`0-2/task-01`
+- 对应文件路径：
+  - [task-01-core-crate-metadata.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-0/0-2-engineering-foundation/task-01-core-crate-metadata.md:1)
+  - [phase-0.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-0.md:81)
+  - [core/Cargo.toml](/Users/as/Ai-Project/project/AreaMatrix/core/Cargo.toml:1)
+  - [core/AGENTS.md](/Users/as/Ai-Project/project/AreaMatrix/core/AGENTS.md:1)
+
+三、完成度摘要
+
+- 已覆盖项数：12
+- 未覆盖项数：0
+- 通过项数：10
+- 不通过项数：2
+- 阻塞项数：1
+
+四、逐项验收结果
+
+- 创建最小 Cargo package/workspace 元数据
+  - 结果：通过
+  - 证据：[core/Cargo.toml](/Users/as/Ai-Project/project/AreaMatrix/core/Cargo.toml:1) 定义 package/lib/dependencies；`cd core && cargo metadata --no-deps` 退出码 0。
+  - 涉及文件：`core/Cargo.toml`
+
+- 依赖版本与技术栈文档一致
+  - 结果：通过
+  - 证据：[tech-stack.md](/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/tech-stack.md:161) 与 [build.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/build.md:102) 中的版本约束，与 [core/Cargo.toml](/Users/as/Ai-Project/project/AreaMatrix/core/Cargo.toml:13) 主要版本一致。
+  - 涉及文件：`core/Cargo.toml`
+
+- 不创建业务模块实现
+  - 结果：不通过
+  - 证据：manifest 仅允许 `core/Cargo.toml`、`core/AGENTS.md`，并把 `core/src/lib.rs`、`core/src/**` 放在下一任务 `0-2/task-02`；但当前实际存在 [core/src/lib.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/lib.rs:8) 的模块导出、[core/src/api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:36) 的公开 API 占位、[core/area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:1) 的 UniFFI API。`git show --name-status 7a55770 -- core/Cargo.toml core/AGENTS.md core/src/lib.rs core/src/api.rs` 显示 metadata 与 `core/src/**` 同批加入，不能证明本 task 保持原子边界。
+  - 涉及文件：`core/src/lib.rs`、`core/src/api.rs`、`core/area_matrix.udl`
+
+- `Expected New Paths`
+  - 结果：通过
+  - 证据：`core/Cargo.toml`、`core/AGENTS.md` 均存在。
+  - 涉及文件：`core/Cargo.toml`、`core/AGENTS.md`
+
+- `Forbidden Touches`
+  - 结果：通过
+  - 证据：`git diff --name-only -- apps` 与 `git ls-files --others --exclude-standard apps` 无输出；当前未发现 `apps/**` 未提交改动。
+  - 涉及文件：`apps/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过。当前单任务边界被 `core/src/**`、UDL、tests 等后续产物打穿，不能按 `0-2/task-01` 的两个 Expected New Paths 判定为原子完成。
+- 注释 / rustdoc / 文档同步：通过。`core/Cargo.toml` 与 `core/AGENTS.md` 本身没有发现当前 task 范围内的文档缺口。
+- 错误处理与边界处理：不通过。公开 API 占位统一返回 `CoreError::Internal`，虽然可能属于后续任务，但在本 task 验收中构成越界占位证据。
+- 测试与验证覆盖：通过。manifest 验证和 validation-driver 要求的 core 检查均已运行并通过。
+- 占位、硬编码、mock-only、一次性实现检查：不通过。[core/src/api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:9) 存在 `not_implemented()` 占位 API，超出本 task 的 metadata 范围。
+
+六、阻塞项
+
+- P0：任务边界被 Core API / UDL / module skeleton 打穿
+  - 说明：`0-2/task-01` 的 manifest 只允许新增 `core/Cargo.toml` 和 `core/AGENTS.md`，而 `core/src/**` 明确属于后续 `0-2/task-02`。当前仓库无法证明 metadata task 没有夹带 Core API/module 产物。
+  - 绝对路径与行号：
+    - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-0.md:94`
+    - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-0.md:120`
+    - `/Users/as/Ai-Project/project/AreaMatrix/core/src/lib.rs:8`
+    - `/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:36`
+    - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:1`
+  - 为什么导致不通过：直接违反 checklist “不创建业务模块实现” 与 completion standard “没有提前实现产品逻辑”；validation 通过不能覆盖 scope blocker。
+
+七、验证情况
+
+- 已运行并通过：
+  - `cd core && cargo metadata --no-deps`
+  - `cd core && cargo fmt --all -- --check`
+  - `cd core && cargo clippy --all-targets --all-features -- -D warnings`
+  - `cd core && cargo test --workspace`，结果 6 tests passed
+- 失败：无命令失败
+- 缺失：无必需命令缺失
+- 备注：`cargo metadata` 输出了建议显式指定 `--format-version` 的 warning，不影响该命令退出状态。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。核心原因不是 Cargo 元数据不可读，而是当前 task 不能证明保持 `0-2/task-01` 的原子边界，且存在超出 Expected New Paths 的 Core API/module/UDL 产物证据。
+
+VERIFY_RESULT: FAIL

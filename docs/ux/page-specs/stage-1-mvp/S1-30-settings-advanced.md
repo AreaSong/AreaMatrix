@@ -28,6 +28,7 @@
 - 显示 Core version、App version、repo schema version。
 - 提供恢复工具入口，但不直接执行恢复。
 - 提供危险区折叠说明。
+- 配置 generated overview 输出策略，默认 `GeneratedOnly`。
 - 配置 `Allow replace during import`，默认关闭。
 
 ## 布局与内容
@@ -54,7 +55,20 @@
 - 危险导入选项：
   - `Allow replace during import` toggle，默认 `Off`
   - 说明：`When enabled, ImportSheet may show Replace for duplicate or name conflicts. Replace still requires Trash and a second confirmation.`
+- 概览输出选项：
+  - `Generated overview output` segmented control：`Generated only` / `Root AREAMATRIX.md`
+  - 当前默认：`Generated only`
+  - 说明：`Generated only writes under .areamatrix/generated/.`
+    `Root AREAMATRIX.md` adds a managed marker block to the repository root file.
+    `README.md` is never managed.
 - Stage 1 默认不放直接执行按钮；只放入口到专门恢复页面和危险能力开关。
+
+开启 Root AREAMATRIX.md 的确认 sheet：
+
+- 标题：`Enable root AREAMATRIX.md?`
+- 说明：`AreaMatrix may create or update AREAMATRIX.md at the repository root on the next overview regeneration.`
+  Existing content outside the managed marker block is preserved. `README.md` is never modified.
+- 按钮：`Cancel`、主按钮 `Enable root file`
 
 开启 Replace 的确认 sheet：
 
@@ -68,6 +82,12 @@
 - 打开日志目录失败时显示可恢复错误。
 - 危险区默认折叠。
 - 默认状态：`allowReplaceDuringImport=false`，因此 ImportSheet 的 `replaceOptionVisibility=hidden`。
+- 默认状态：`overviewOutput=GeneratedOnly`，因此 Core 只维护 `.areamatrix/generated/`。
+- 开启 `Root AREAMATRIX.md` 必须先弹确认；取消后 segmented control 回到 `Generated only`。
+- 保存 `RootAreaMatrixFile` 成功后只持久化配置，根 `AREAMATRIX.md` 由下一次 C1-20 overview regeneration 创建或更新。
+- 关闭 Root AREAMATRIX.md 不删除既有 `AREAMATRIX.md`，也不回滚用户内容；之后的 regeneration 只更新 `.areamatrix/generated/`。
+- 保存 overview 输出策略失败时回滚到上一个已保存值，显示 `Could not save overview setting` 和 `Retry save`。
+- 本页不得提供任何 `README.md` 生成、覆盖、同步或模板入口。
 - 开启 `Allow replace during import` 必须先弹确认；取消后 toggle 回到 Off。
 - 开启后仍要求具体冲突页检查 Trash 可用性和二次确认；Trash 不可用时 `replaceOptionVisibility=disabled`。
 - 关闭 `Allow replace during import` 不需要确认，并立即让新打开的 ImportSheet 隐藏 Replace。
@@ -85,13 +105,16 @@
 3. 点击 `Copy diagnostic summary` 复制脱敏摘要。
 4. 点击 `Open logs folder` 用 Finder 打开日志目录。
 5. 展开 Danger zone 只显示说明和恢复工具入口。
-6. 打开 `Allow replace during import` 时先弹确认；确认后保存 settings，保存成功才显示为 On。
-7. 关闭 `Allow replace during import` 时直接保存为 Off；已打开的 ImportSheet 不 retroactively 执行 Replace，下一次冲突预检按新设置隐藏 Replace。
-8. 点击 `Open recovery tools...` 进入 `S1-32 error-recovery` 对应入口。
+6. 选择 `Root AREAMATRIX.md` 时先弹确认；确认后调用 `update_config` 保存 `overviewOutput=RootAreaMatrixFile`，保存成功才显示为已开启。
+7. 选择 `Generated only` 时直接保存 `overviewOutput=GeneratedOnly`；已存在的根 `AREAMATRIX.md` 不删除，下一次 regeneration 不再更新它。
+8. 打开 `Allow replace during import` 时先弹确认；确认后保存 settings，保存成功才显示为 On。
+9. 关闭 `Allow replace during import` 时直接保存为 Off；已打开的 ImportSheet 不 retroactively 执行 Replace，下一次冲突预检按新设置隐藏 Replace。
+10. 点击 `Open recovery tools...` 进入 `S1-32 error-recovery` 对应入口。
 
 ## 可访问性
 
 - Danger zone 默认折叠状态要可读，展开/折叠可通过键盘操作。
+- `Generated overview output` 的当前模式、根文件风险和 `README.md` 不受管理必须和控件关联。
 - `Allow replace during import` 的后果和默认关闭状态必须和 toggle 关联。
 - 诊断导出隐私确认需要读出“不包含用户文件内容、不自动上传、路径和用户名会脱敏”。
 
@@ -103,6 +126,7 @@
 - Recent error store。
 - Finder reveal。
 - Recovery route。
+- `overviewOutput` settings value。
 - `allowReplaceDuringImport` settings value。
 - settings save state and last saved snapshot。
 
@@ -111,6 +135,9 @@
 - 用户能导出诊断包并知道不包含原文件内容。
 - 版本信息清楚显示。
 - Danger zone 默认折叠且无直接破坏性按钮。
+- `Generated overview output` 默认 `Generated only`，只写 `.areamatrix/generated/`。
+- 开启 `Root AREAMATRIX.md` 前必须确认，保存失败会回滚 UI。
+- 页面明确 `README.md` 不是 generated overview 输出，不会被 AreaMatrix 覆盖。
 - `Allow replace during import` 默认 Off，开启前必须确认。
 - Replace 开关保存失败会回滚 UI，不让 ImportSheet 显示与实际设置不一致的 Replace 状态。
 - 恢复工具入口不会绕过确认流程。

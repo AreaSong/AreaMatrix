@@ -1,0 +1,61 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`2-1/task-16`
+- 对应文件路径：
+- `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-1-first-launch-main/task-16-s1-07-c1-03-adopt-existing-repo.md`
+- `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`
+- `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`
+- `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+- `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：12
+- 未覆盖项数：0
+- 通过项数：12
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- Exact Docs：通过。4 个文档均已读取；S1-07 要求展示 repoPath、接管摘要、Open Repository / Finder，C1-03 要求接管不改用户文件，control map 标记 S1-07 为 Real Core。
+- Existing Code：通过。已读取 `apps/macos/AreaMatrix/**` 与 `core/area_matrix.udl`；UDL 包含 `init_repo`、`load_config`、`list_tree_json`、`get_latest_scan_session`、`resume_scan_session`、`AdoptExisting`。
+- Expected New Paths：通过。`apps/macos/AreaMatrix`、`apps/macos/AreaMatrixTests`、`apps/macos/AreaMatrix.xcodeproj/project.pbxproj` 均存在，测试文件也已纳入 Xcode test target。
+- Forbidden Touches：通过。`git diff --name-only -- core/src` 无输出，未触碰 `/Users/as/Ai-Project/project/AreaMatrix/core/src/**`。
+- Checklist 1：通过。实现集中在 S1-07 init-done 的 adopt 完成打开路径与摘要展示。
+- Checklist 2：通过。页面规格、control map、Core API、C1-03 能力规格均已交叉检查。
+- Checklist 3：通过。生产路径通过 `CoreBridge` 调用真实 `initRepo(.adoptExisting)`、`loadConfig`、`listTreeJson`；没有新增相邻 Core 功能。
+- Checklist 4：通过。未实现相邻页面；成功后进入现有 main-loading / repository-ready 路由。
+- 完成标准 1：通过。`InitDoneStepView` 展示接管摘要“已保留原有目录结构”，`Open Repository` 可触发 adopted repo 打开路径。
+- 完成标准 2：通过。生产实现未用 mock/fixture/static 状态伪造；测试中另有真实临时 repo 接管 + open 证据。
+- 完成标准 3：通过。未发现 control map 之外 Core 能力接入。
+- Validation：通过。manifest build 命令通过；macOS 测试门禁通过。
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。打开逻辑拆到 `CoreRepositoryOpening.swift`，S1-07 视图、model 状态、Finder 平台能力边界清晰。
+- 注释 / rustdoc / 文档同步：通过。本任务未新增 Rust public API；Swift 代码无低价值注释，文档合同与实现路径一致。
+- 错误处理与边界处理：通过。Open Repository 失败回到 done 页并显示 inline retry error；Finder 失败为非阻断错误；接管路径仍由 Core 管理用户文件安全。
+- 测试与验证覆盖：通过。覆盖 adopted open 成功、tree/config 失败、Finder 非阻断失败、真实临时 repo 接管后打开。
+- 占位、硬编码、mock-only、一次性实现检查：通过。测试 fixture 只用于单元替身；生产路径走真实 CoreBridge / UniFFI 绑定。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：通过，输出 `** BUILD SUCCEEDED **`。
+- 已运行：`bash scripts/check-macos-tests.sh`：通过。标准 `xcodebuild test` 被本地 `testmanagerd` sandbox 限制阻断后，脚本按规则复用已构建 XCTest bundle，`xcrun xctest` 执行 61 个测试，0 failures。
+- 失败：无产品验证失败。
+- 缺失：无必需验证缺失；未做手工 UI 点击，但已有 model/view 级测试和真实 Core 临时 repo 验证覆盖当前任务闭环。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS

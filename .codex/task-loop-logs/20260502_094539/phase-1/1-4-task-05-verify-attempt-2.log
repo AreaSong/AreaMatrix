@@ -1,0 +1,66 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`phase-1 / 1-4/task-05`
+- Task 文件：[task-05-c1-16-integration-verify.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-1/1-4-recovery-sync-overview/task-05-c1-16-integration-verify.md:1)
+- 核心实现：[recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/recovery.rs:29)、[staging_recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/db/staging_recovery.rs:14)、[api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:134)
+- UDL：[area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:23)
+- 测试：[recover_on_startup_integration_verify.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/recover_on_startup_integration_verify.rs:149)
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：0
+- 通过项数：10
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 C1-16 integration-verify 范围
+- 结果：通过
+- 证据：实现入口只落在 `recover_on_startup`，相邻 `reindex_from_filesystem` 等仍未实现，未扩展到 UI 或其他能力；`apps/**` 无修改。
+- 涉及文件：[api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:155)、[recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/recovery.rs:29)
+
+- 项目：Exact Docs 以文档为 SSOT
+- 结果：通过
+- 证据：C1-16 文档定义 API、输出、DB/FS 行为和验收标准；control map 绑定 S1-05/S1-10/S1-32 的 C1-16 消费；UDL/Core API 字段一致。
+- 涉及文件：[C1-16-recover-on-startup.md](/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-16-recover-on-startup.md:10)、[mvp-control-map.md](/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:20)、[core-api.md](/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:523)
+
+- 项目：Expected New Paths / Forbidden Touches
+- 结果：通过
+- 证据：`core/src/**`、`core/area_matrix.udl`、`core/tests/**` 均存在；`git status --short -- apps` 无输出，未触碰 `apps/**`。
+- 涉及文件：[phase-1.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-1.md:2342)
+
+- 项目：无 mock / 空壳伪完成
+- 结果：通过
+- 证据：真实读取 SQLite staging rows，清理 `.areamatrix/staging/` 安全文件，保护 active staging-like path，覆盖 DB 失败、权限失败、symlink、moved source 恢复等路径。
+- 涉及文件：[recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/recovery.rs:37)、[recover_on_startup_failure_recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/recover_on_startup_failure_recovery.rs:122)
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过；恢复流程拆为 row recovery、moved recovery、orphan cleanup、path safety helper，未见单次脚本化实现。
+- 注释 / rustdoc / 文档同步：通过；public API 有 rustdoc，UDL `RecoveryReport` 字段与 Core API 对齐。
+- 错误处理与边界处理：通过；覆盖 `RepoNotInitialized`、`Db`、`PermissionDenied`、unsafe staging path、protected active path、moved source conflict。
+- 测试与验证覆盖：通过；contract / implementation / failure / validation / integration verify 均存在并执行。
+- 占位、硬编码、mock-only、一次性实现检查：通过；当前 C1-16 路径不是 mock-only，测试走真实 FS + SQLite。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- `cd core && cargo fmt --all -- --check`：通过
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过
+- `cd core && cargo test --workspace recover_on_startup`：通过，C1-16 相关 25 个测试通过
+- `cd core && cargo test --workspace`：通过，补跑 validation-driver 要求的 Rust Core 宽测
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS

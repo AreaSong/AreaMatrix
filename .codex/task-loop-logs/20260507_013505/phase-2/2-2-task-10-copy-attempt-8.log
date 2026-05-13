@@ -1,0 +1,42 @@
+一、执行结论
+
+- 已完成
+
+二、执行范围
+
+- 单任务：`2-2/task-10`
+- 本次 repair retry 只修复上次验收失败项：撤回 `docs/core/capability-specs/stage-1-mvp/C1-09-detect-duplicate.md` 的越界 diff。
+- 当前产品实现改动仍落在 `Expected New Paths`：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`apps/macos/AreaMatrix.xcodeproj/project.pbxproj`。
+- `core/src/**` 未触碰：`git diff --quiet -- core/src` 返回 `0`。
+
+三、完成情况
+
+- page-feature 覆盖：通过。S1-18 的 C1-05/C1-06/C1-09 均有页面消费与测试证据。
+- 页面闭环：通过。入口在 [MainWindow.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/MainWindow.swift:54)，Cancel 清空 sheet，Import 路由到 S1-20 progress，失败映射进入 failed state。
+- mock / fixture / 硬编码：通过。生产默认注入 `CoreBridge()`、`CoreImportBatchDuplicatePrechecker()`、`CoreImportBatchNameConflictPrechecker()`，测试 fixture 未进入生产默认路径。
+- control map 边界：通过。未接入 S1-18 control map 之外的 Move / Index-only 真实导入，只显示风险并阻断。
+- Forbidden Touches：未触碰。
+
+四、工程质量
+
+- 结构清晰：批量预览、导入、重复/重名冲突、iCloud 和命名策略拆在独立模型/视图中。
+- 错误与边界：覆盖 `DuplicateFile`、permission failure、iCloud pending、Replace 未确认、Trash 不可用、Move/Index-only 阻断。
+- 文档同步：本次已撤回不在 manifest 允许范围内的 C1-09 docs 改动，修复了上次 P1 scope blocker。
+- 未新增依赖；未新增 Rust public API。
+
+五、验证情况
+
+- 已运行 `xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+  - 结果：环境性失败；构建进入测试阶段后被本地 sandbox 阻断，错误为 `com.apple.testmanagerd.control ... Sandbox restriction`。
+- 已运行 `./dev test macos`
+  - 结果：通过；脚本识别同一 sandbox 阻断后复用 XCTest bundle，`xcrun xctest` 执行 213 tests，0 failures。
+- 已运行 `python3 tasks/prompts/_shared/prompt_pipeline.py verify --task 2-2/task-10`
+  - 结果：通过生成 verify-ready prompt。
+- 已运行 scope 检查：
+  - `C1-09-detect-duplicate.md` 无 diff。
+  - `core/src/**` 无 diff。
+
+六、风险与后续
+
+- 剩余风险：标准 `xcodebuild test` 在当前 sandbox 环境不能完成 XCTest runner 通信；repo-local fallback 已给出等价本地测试证据。
+- 建议下一个任务：进入 `2-2/task-10` 的只读 verify-ready 验收。

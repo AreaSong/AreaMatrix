@@ -1,0 +1,51 @@
+一、执行结论
+
+已完成 `2-2/task-20`。
+
+二、执行范围
+
+实现范围限定在 S1-21 import-result 的 C1-13 `list_changes` 页面功能，没有触碰 `core/src/**`，也没有修改 `core/area_matrix.udl`。
+
+修改文件：
+- `apps/macos/AreaMatrix/Bridge/CoreChangeLogListing.swift`
+- `apps/macos/AreaMatrix/Bridge/CoreBridge.swift`
+- `apps/macos/AreaMatrix/Models/AppShellModel.swift`
+- `apps/macos/AreaMatrix/Models/OnboardingRoute.swift`
+- `apps/macos/AreaMatrix/Models/ImportProgressActions.swift`
+- `apps/macos/AreaMatrix/Models/ImportResultRouteActions.swift`
+- `apps/macos/AreaMatrix/Views/Main/ImportResultView.swift`
+- `apps/macos/AreaMatrix/Views/MainWindow.swift`
+- `apps/macos/AreaMatrixTests/ImportResultCopyRetryTests.swift`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+
+工作树中另有既有 dirty 文件 `.codex/task-loop-runs/20260507_151946/summary.json` 和 `tasks/prompts/_shared/progress.json`，未纳入本任务代码范围。
+
+三、完成情况
+
+- 核对清单：已读取 task、共享规则、切片规则、工程质量规则、编码规范、repo-local skill、依赖图、phase manifest、Exact Docs、Existing Code。
+- C1-13 接入：新增 `CoreChangeLogListing`，通过 `CoreBridge` 调用真实 `listChanges(repoPath:filter:)`，没有 mock-only 闭环。
+- S1-21 页面：新增 Core change log 区块、加载态、空态、错误态、Refresh 触发入口。
+- 错误映射：`list_changes` 失败会走现有 Core error mapping 并内联展示。
+- 隐私边界：`detail_json` 中路径类字段展示为脱敏文件名形式。
+- 边界修正：移除了重试失败项后自动刷新 change log 的隐式调用，避免把 C1-13 挂进 C1-06 retry 动作。
+- Forbidden Touches：未触碰 `core/src/**`。
+
+四、工程质量
+
+代码保持在 macOS 层和 CoreBridge 边界内，状态、Bridge 协议、UI 展示和测试分层清楚；没有新增依赖、没有 Swift `try!` 或强制解包、没有硬编码成功态。新增测试覆盖成功加载、失败映射、路径脱敏，并保留原 C1-06 retry 行为不被 C1-13 干扰。
+
+五、验证情况
+
+通过：
+- `xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+- `xcrun xctest -XCTest AreaMatrixTests.ImportResultCopyRetryTests ...`：5 tests，0 failures
+- `./dev test macos`：标准 `xcodebuild test` 被本机 `testmanagerd` sandbox 限制拦截后，脚本 fallback 到同一 XCTest bundle，259 tests，0 failures
+- `git diff --check`
+
+无法运行：
+- `swiftformat --version`、`swiftlint version`：本机未找到对应命令。
+
+六、风险与后续
+
+剩余风险：未做真实 UI 手工点击验证；当前证据覆盖 build、状态流、CoreBridge 调用、错误映射和单元测试。建议下一个任务进入 `2-2/task-21`，做 S1-21 页面 integration verify，统一验收 C1-06 + C1-13 的整页闭环。
+

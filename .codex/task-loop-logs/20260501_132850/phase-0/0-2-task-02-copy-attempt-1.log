@@ -1,0 +1,27 @@
+一、执行结论：已完成。
+
+二、执行范围：单任务 `0-2/task-02`。本轮未产生新的代码 diff；当前已存在并被 Git 跟踪的 [core/src/lib.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/lib.rs) 与 [core/src](/Users/as/Ai-Project/project/AreaMatrix/core/src) 已满足本任务要求。未触碰 `apps/**`。工作树中已有的 `.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json` 变更不是本轮造成的。
+
+三、完成情况：
+- `api/domain/error/config/db/classify/storage/overview/tree/sync` 模块声明已存在。
+- `db/storage/classify` 当前只有模块骨架，没有 DB、storage、classify 业务逻辑。
+- `api/domain/error` 只有边界、占位类型和 smoke 可用代码；不作为后续真实能力闭环证据。
+- Forbidden Touches：未触碰。
+
+四、工程质量：
+- 结构符合 layered design：Core 层模块边界集中在 Rust core，不依赖 macOS/UI。
+- public Rust 类型和 API 有 rustdoc；没有新增依赖。
+- `rg` 检查未发现 `core/src` 中存在 SQLite、文件 IO、hash、walkdir 等业务实现调用。
+- 当前存在占位 API 返回 `CoreError::Internal`，这是骨架任务允许的占位边界；后续能力 task 不能把它当真实实现。
+
+五、验证情况：
+- `cd core && cargo test --workspace`：通过，6 个集成测试通过。
+- `cd core && cargo fmt --all -- --check`：通过。
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过。
+- `git status --short -- core/src apps` 和 `git diff --stat -- core/src apps`：无输出，确认本轮未触碰 forbidden 范围。
+
+六、风险与后续：
+- High 风险已记录：本任务处在 Core 边界层，但本轮没有用户文件、DB、staging、UDL 或 Swift bridge 变更，回滚上没有新增 diff 需要撤销。
+- 残余风险：仓库中已经存在 `core/area_matrix.udl`、`build.rs`、`resources`、`tests` 等后续 task 产物；本轮按边界保留，未回退。
+- 建议下一个任务：先用 verify-ready 严格验收 `0-2/task-02`，通过后进入 `0-2/task-03`。
+

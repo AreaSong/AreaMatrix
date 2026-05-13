@@ -1,0 +1,74 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`2-1/task-13`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-1-first-launch-main/task-13-s1-05-page-integration-verify.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：18
+- 未覆盖项数：0
+- 通过项数：18
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：page-feature task 覆盖
+- 结果：通过
+- 证据：`2-1/task-10/11/12` 分别覆盖 `C1-02/C1-03/C1-16`；control map 中 S1-05 也只声明这三个能力。
+- 涉及文件：`docs/architecture/mvp-control-map.md`
+
+- 项目：页面闭环
+- 结果：通过
+- 证据：确认页进入 `.initializing`；成功进入 `.initializationDone`；fatal error 进入 `.initializationFailed`；unfinished scan 进入 resume / cleanup 流程。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/AppShellModel.swift:342`
+
+- 项目：真实 CoreBridge 接入
+- 结果：通过
+- 证据：生产默认依赖 `CoreBridge()`，实际调用 `initRepo`、`recoverOnStartup`、`getLatestScanSession`、`resumeScanSession`；fixture 仅在 XCTest。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift:325`
+
+- 项目：Expected New Paths / Forbidden Touches
+- 结果：通过
+- 证据：`apps/macos/AreaMatrix/**` 与 `apps/macos/AreaMatrixTests/**` 已落地；`git diff --name-only -- core/src` 无输出。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/InitializingStepIntegrationTests.swift:4`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，相关 Swift 文件当前均未超过 500 行，S1-05 状态流拆到 `OnboardingInitializationProgress.swift`。
+- 注释 / rustdoc / 文档同步：通过，未新增 public Rust API；`core/area_matrix.udl` 与 Core API 文档对齐。
+- 错误处理与边界处理：通过，fatal、recovery error、scan warning、cancel safe-point 都有代码与测试证据。
+- 测试与验证覆盖：通过，fallback XCTest 52 tests / 0 failures。
+- 占位、硬编码、mock-only、一次性实现检查：通过，生产路径未发现 mock-only 闭环。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+- 结果：失败，退出码 65；失败点是本地沙箱无法访问 `com.apple.testmanagerd.control`，不是编译或断言失败。
+
+- 已运行：`bash scripts/check-macos-tests.sh`
+- 结果：通过；脚本识别上述 sandbox block 后复用同一 XCTest bundle 执行 `xcrun xctest`，52 tests / 0 failures。
+
+- 已运行：`git diff --check`
+- 结果：通过。
+
+- 未运行：`swiftlint --strict`、`swiftformat --lint .`
+- 原因：当前环境 `command -v swiftlint` 与 `command -v swiftformat` 均无输出，工具不可用。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。原始 `xcodebuild test` 被本地 sandbox 阻断，但仓库文档认可的 macOS 测试 fallback 已通过，当前代码、文档、manifest 和测试证据足以判定 `2-1/task-13` 完成。
+
+VERIFY_RESULT: PASS

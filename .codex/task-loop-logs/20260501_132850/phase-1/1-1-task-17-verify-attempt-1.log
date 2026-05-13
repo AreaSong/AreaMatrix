@@ -1,0 +1,98 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`1-1/task-17`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-1/1-1-repo-config/task-17-c1-04-failure-recovery.md`
+- 核验范围：`core/src/**`、`core/area_matrix.udl`、`core/tests/**`
+- 禁止范围：`apps/**`
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：0
+- 通过项数：10
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：C1-04 failure-recovery 范围限定  
+  结果：通过  
+  证据：实际改动只在 `core/tests/load_update_config_contract.rs`；`git diff --name-only -- core/src core/area_matrix.udl core/tests apps` 仅显示该测试文件。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/load_update_config_contract.rs`
+
+- 项目：Exact Docs 已按 SSOT 读取并对齐  
+  结果：通过  
+  证据：C1-04 文档要求缺 DB 返回默认值、失败不损坏旧配置、配置项可读写；Core API 要求 `update_config` 事务回滚且不写 README/AREAMATRIX/classifier。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-04-load-update-config.md:44`、`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:479`
+
+- 项目：未实现相邻 C1 能力或 UI 页面  
+  结果：通过  
+  证据：未触碰 `apps/**`；测试只覆盖 `load_config` / `update_config`。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/load_update_config_contract.rs:68`
+
+- 项目：失败、回滚、重复执行、权限错误路径  
+  结果：通过  
+  证据：覆盖 Config 校验失败、SQLite 中途写失败回滚、重复 update 不重复插行、DB/metadata 权限失败且旧配置仍可读。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/load_update_config_contract.rs:196`、`:227`、`:257`、`:317`、`:339`
+
+- 项目：不得删除、覆盖或移动未确认用户文件  
+  结果：通过  
+  证据：测试显式创建 `README.md` 和 `AREAMATRIX.md`，`update_config` 后内容保持不变。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/load_update_config_contract.rs:276`
+
+- 项目：Expected New Paths  
+  结果：通过  
+  证据：`core/src/`、`core/area_matrix.udl`、`core/tests/` 均存在；`core/tests/load_update_config_contract.rs` 已落地。Missing Expected Paths = 0。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:16`
+
+- 项目：Forbidden Touches  
+  结果：通过  
+  证据：`git status --short -- apps` 和 `git diff --name-only -- apps` 均无输出。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps`
+
+- 项目：UDL / Rust API / 文档一致性  
+  结果：通过  
+  证据：UDL 暴露 `load_config` / `update_config` 和完整 `RepoConfig`；Rust API 入口委托真实 DB 实现。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:16`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:105`
+
+- 项目：真实业务路径  
+  结果：通过  
+  证据：`update_config` 先校验 payload，再检查 metadata/DB 可写，通过 SQLite transaction upsert 并 commit；失败返回错误。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/db/mod.rs:154`
+
+- 项目：验证命令  
+  结果：通过  
+  证据：manifest 三条命令均已运行并通过；额外补跑 full workspace test、doctor、diff check。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/load_update_config_contract.rs:128`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。API 层薄封装，DB 层集中处理事务、payload 校验和权限预检；未引入不必要抽象。证据：`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:96`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/db/mod.rs:154`
+- 注释 / rustdoc / 文档同步：通过。public API 有 rustdoc 和 `# Errors`；测试直接 include capability spec、control map、Core API、error codes、UDL 做同步断言。证据：`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:96`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/load_update_config_contract.rs:77`
+- 错误处理与边界处理：通过。Config、Db、PermissionDenied、回滚、重复执行、用户文件保护均有真实路径测试。证据：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/load_update_config_contract.rs:196`
+- 测试与验证覆盖：通过。`load_update_config` 过滤测试 14 个通过；全 workspace 74 个测试通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。测试使用 `tempfile` 临时 repo 和真实 SQLite；未发现生产路径 `unwrap()` / `expect()` / `panic!()`。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- `cd core && cargo fmt --all -- --check`：通过
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过
+- `cd core && cargo test --workspace load_update_config`：通过，14 passed
+- `cd core && cargo test --workspace`：通过，74 passed
+- `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`：通过，doctor OK
+- `git diff --check`：通过
+- 缺失验证：无
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。C1-04 的 failure-recovery 目标有文档、Rust/UDL、测试和命令输出证据支撑，且未扩展到未绑定能力或 `apps/**`。
+
+VERIFY_RESULT: PASS

@@ -1,0 +1,31 @@
+一、执行结论：已完成。
+
+二、执行范围：单任务 `2-4/task-08`。本次改动：
+- [ICloudConflictListModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ICloudConflictListModel.swift)
+- [ICloudConflictListView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ICloudConflictListView.swift)
+- [ICloudConflictListPageFeatureTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ICloudConflictListPageFeatureTests.swift)
+
+工作树里还存在 task-loop 状态文件改动：`.codex/task-loop-runs/20260509_031614/summary.json`、`tasks/prompts/_shared/progress.json`。它们在本轮开始前已经是 dirty，我未回滚或纳入产品改动。
+
+三、完成情况：
+- 核对清单 1：通过。只补 S1-36 到 S1-25 的既有页面 wiring 和验收证据。
+- 核对清单 2：通过。`2-4/task-01..07` 在 progress/run summary 中均为 completed。
+- 核对清单 3：通过。S1-36 `Resolve...` 不再只停留在反馈文案，会打开 S1-25 sheet；S1-25 仍明确展示缺失 Core resolution endpoint 的 blocker，不伪造 Apply 成功。
+- 核对清单 4：通过。未新增未列出的页面或 Core 能力。
+- 完成标准：通过。冲突列表可进入单项 resolver；DB repair 路径已有现有集成验收覆盖成功/失败/取消/不动用户文件。
+- Forbidden Touches：未触碰 `core/src/**`。
+
+四、工程质量：
+- 代码结构保持现有 MVVM/SwiftUI 模式：model 持有 route context，view 通过 sheet 呈现。
+- 无新增依赖、无 Core API/UDL 改动、无用户文件删除/移动/覆盖逻辑。
+- 新测试覆盖 S1-36 `Resolve...` 到 S1-25 blocker 的闭环，避免 mock-only 成功态。
+
+五、验证情况：
+- `git diff --check`：通过。
+- `python3 tasks/prompts/_shared/prompt_pipeline.py verify --task 2-4/task-08`：通过生成 verify-ready prompt。
+- `xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：标准入口被本机 `testmanagerd` sandbox restriction 阻断。
+- `./dev test macos`：通过。脚本复用同一 XCTest bundle fallback，`472 tests, 0 failures`。
+
+六、风险与后续：
+- 剩余产品风险：S1-25 的真实冲突 resolution Core endpoint 仍未实现，当前是明确 blocker，不是完成态伪装。
+- 建议下一个任务：继续 `phase-3`，即依赖图中的 Stage 1 稳定与发布闭环。

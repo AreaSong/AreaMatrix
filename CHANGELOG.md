@@ -10,6 +10,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- 生成 `0.1.0-local-qa` 内部测试产物：ad-hoc signed `AreaMatrix.app`、
+  `AreaMatrix-0.1.0-local-qa.dmg` 和 SHA-256 checksum。
+- 补充 iCloud placeholder、Developer ID / notarization 后续补证模板，并记录同机 local QA
+  首启交互 smoke。
+
+### Changed
+- `release-notes-0.1.0.md` 调整为 `0.1.0-local-qa` 内部测试说明，不再暗示正式 alpha 发布。
+
+### Deprecated
+- N/A
+
+### Removed
+- N/A
+
+### Fixed
+- 拆分批量导入执行和 session persistence 代码，关闭 SwiftLint `file_length` 工程门禁。
+
+### Security
+- N/A
+
+---
+
+## [0.1.0] - 2026-05-10
+
+### Added
 - 项目文档体系完整产出（README 双语 / docs / .github 模板 / CI 工作流配置）
 - PolyForm Noncommercial 1.0.0 许可证 + COMMERCIAL_LICENSE.md 商业授权窗口
 - 10 篇 ADR 固化关键架构决策
@@ -32,6 +57,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 - N/A
+
+### Known Issues
+- Stage 1 alpha 分发仍需补齐 M-02 iCloud placeholder 真实环境手工冒烟；M-01 Copy
+  中断恢复、M-03 权限恢复和 M-04 DB repair 已在 local QA Release build 手工通过。
+- M-03 本轮使用 local QA repo 的可逆 POSIX 权限阻断模拟失去访问权限，未修改系统
+  TCC 数据库；如需发布机 TCC 数据库级证据，应在后续真实分发环境补测。
+- 当前未加入付费 Apple Developer Program；自签名、ad-hoc signed `.app` 或 local QA DMG
+  不能替代 Developer ID 签名、公证、DMG、干净 Mac 首启和 `v0.1.0` tag。
+- 同机 local QA 首启交互 smoke 不能替代干净 Mac 首启、Gatekeeper 或 notarized app 验证。
 
 ---
 

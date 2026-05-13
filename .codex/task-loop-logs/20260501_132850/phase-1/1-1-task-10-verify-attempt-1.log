@@ -1,0 +1,75 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`1-1/task-10`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-1/1-1-repo-config/task-10-c1-03-contract-api.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/tests/adopt_existing_repo_contract.rs`
+
+三、完成度摘要
+
+- 已覆盖项数：5
+- 未覆盖项数：0
+- 通过项数：5
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 C1-03 的 contract-api 范围
+- 结果：通过
+- 证据：新增/变更集中在 `core/src/api.rs` 的 C1-03 API 合同说明和 `core/tests/adopt_existing_repo_contract.rs`；`apps/**` 无 diff。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:71`，`/Users/as/Ai-Project/project/AreaMatrix/core/tests/adopt_existing_repo_contract.rs:22`
+
+- 项目：读取 manifest 中 Exact Docs 并以文档为 SSOT
+- 结果：通过
+- 证据：C1-03 spec、control map、Core API、error codes 均已对照；测试用 `include_str!` 锁定这些文档。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/adopt_existing_repo_contract.rs:8`
+
+- 项目：不实现相邻 C1 能力或 UI 页面
+- 结果：通过
+- 证据：无 `apps/**` 改动；测试仅验证 C1-03 contract-api 消费页面声明和 C1-03 API/UDL 合同。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/adopt_existing_repo_contract.rs:162`
+
+- 项目：更新或校准 Core API / UDL 合同意图
+- 结果：通过
+- 证据：UDL 已包含 `init_repo`、`get_latest_scan_session`、`resume_scan_session`、`ScanSession`、`RepoInitMode.AdoptExisting`、`FileOrigin.Adopted`；新增 contract test 对 Core API 文档和 UDL 同步校验。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:28`，`/Users/as/Ai-Project/project/AreaMatrix/core/tests/adopt_existing_repo_contract.rs:107`
+
+- 项目：明确输入、输出、错误码和副作用边界
+- 结果：通过
+- 证据：输入为 `repo_path` 和 `RepoInitOptions`；输出覆盖 `ScanSession`、`ReindexReport`、`FileEntry.origin = Adopted`；错误码覆盖 C1-03 文档列出的 5 类；副作用边界覆盖只写 `.areamatrix/**`、不触碰用户文件、跳过 generated overview。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:71`，`/Users/as/Ai-Project/project/AreaMatrix/core/tests/adopt_existing_repo_contract.rs:89`，`/Users/as/Ai-Project/project/AreaMatrix/core/tests/adopt_existing_repo_contract.rs:140`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，当前 task 是 contract-api；未引入复杂业务逻辑或相邻实现。
+- 注释 / rustdoc / 文档同步：通过，`api.rs` 对 C1-03 adopt、scan session、resume、错误和副作用边界有 rustdoc。
+- 错误处理与边界处理：通过，合同层明确 `PermissionDenied`、`InvalidPath`、`Io`、`Db`、`Config`；真实行为实现留给后续 `1-1/task-11`。
+- 测试与验证覆盖：通过，新增 contract test 覆盖 API 签名、输入输出、错误码、UDL、control map 消费和副作用边界。
+- 占位、硬编码、mock-only、一次性实现检查：通过，当前任务只验 contract-api，不把 `not_implemented()` 声称为 C1-03 真实实现；后续 implementation task 仍需补齐真实接管扫描。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`cd core && cargo fmt --all -- --check`：通过
+- 已运行：`cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过
+- 已运行：`cd core && cargo test --workspace adopt_existing_repo`：通过，7 个 C1-03 contract tests 通过
+- 已运行：`cd core && cargo test --workspace`：通过，完整 core 测试通过
+- 失败：无
+- 缺失：无
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+
+VERIFY_RESULT: PASS

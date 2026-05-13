@@ -1,0 +1,106 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`3-1/task-05`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-3/3-1-stability-release/task-05-stage1-integration-verify.md`
+- Manifest 章节：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-3.md`
+- Exact Docs：6/6 已读取
+- Existing Code：`core/**`、`apps/macos/**`、`scripts/**`
+- Expected New Paths：4/4 路径组已存在，Missing Expected Paths = 0
+- Forbidden Touches：4/4 已检查，未发现 tracked diff
+
+三、完成度摘要
+
+- 已覆盖项数：7/7
+- 未覆盖项数：0
+- 通过项数：2
+- 不通过项数：5
+- 阻塞项数：5
+
+四、逐项验收结果
+
+- 项目：读取 Stage 1 roadmap、control map、Core/UX index、testing、release
+  - 结果：通过
+  - 证据：Exact Docs 6/6 存在并已读取；Manifest 指定文档见 [phase-3.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-3.md:144)
+  - 涉及文件：`docs/roadmap/stage-1-mvp.md`、`docs/development/release.md`、`docs/development/testing.md`、`docs/architecture/mvp-control-map.md`、`docs/core/capability-specs/stage-1-mvp.md`、`docs/ux/page-specs/stage-1-mvp.md`
+
+- 项目：按 control map 核对 Real Core 页面
+  - 结果：不通过
+  - 证据：control map 要求 Real Core 页面最终不得用 mock/fixture/静态占位通过，且 S1-01..S1-37 多数为 Real Core；代码中大量页面确实通过 `CoreBridge()` 注入真实接口，但 `./dev check all` 未完整通过，无法证明当前 macOS UI 集成门禁全量成立
+  - 涉及文件：[mvp-control-map.md](/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:7)、`apps/macos/AreaMatrix/**`
+
+- 项目：核对 Phase 1 Core 与 Phase 2 UI integration verify
+  - 结果：不通过
+  - 证据：Rust fmt / clippy / workspace tests 在 `./dev check all` 中通过；但 macOS checks 因缺少 `x86_64-apple-darwin` target 停止，无法证明 Phase 2 UI 当前门禁完成
+  - 涉及文件：`core/tests/**`、`apps/macos/AreaMatrixTests/**`
+
+- 项目：核对 `3-1/task-01` 到 `3-1/task-04` 证据
+  - 结果：不通过
+  - 证据：release checklist 明确写“最终集成验收：不放行”；recovery scenarios 明确 M-01..M-04 手工证据 pending；performance baseline 明确真实 `.app` 首屏 launch 证据 P1/BLOCKED
+  - 涉及文件：[stage-1-release-checklist.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-release-checklist.md:11)、[stage-1-performance-baseline.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-performance-baseline.md:11)、[recovery-scenarios.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/recovery-scenarios.md:57)
+
+- 项目：运行最终自动化综合门禁并记录 release 证据
+  - 结果：不通过
+  - 证据：`python3 tasks/prompts/_shared/prompt_pipeline.py doctor` 通过；`git diff --check` 通过；`./dev check all` 失败，停止于 macOS checks：missing Rust target `x86_64-apple-darwin`
+  - 涉及文件：[task-05-stage1-integration-verify.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-3/3-1-stability-release/task-05-stage1-integration-verify.md:31)
+
+- 项目：P0/P1 风险门禁
+  - 结果：不通过
+  - 证据：当前 release checklist 列出 P1-RL-001..005，且放行规则明确任一 P0/P1、check-all 失败、手工冒烟 pending、签名/公证/DMG 缺失均不得放行
+  - 涉及文件：[stage-1-release-checklist.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-release-checklist.md:63)
+
+- 项目：Forbidden Touches
+  - 结果：通过
+  - 证据：`git status --short -- core/src core/area_matrix.udl apps/macos/AreaMatrix apps/macos/AreaMatrix.xcodeproj` 无输出；`git diff --name-only -- ...` 无输出
+  - 涉及文件：`core/src/**`、`core/area_matrix.udl`、`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrix.xcodeproj/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，当前未发现 Forbidden product paths 被修改；Core 与 Swift 代码路径已有大量真实 `CoreBridge()` 接入证据。
+- 注释 / rustdoc / 文档同步：不通过，release 文档自身记录当前不放行，CHANGELOG / release 切面仍未完成。
+- 错误处理与边界处理：不通过，M-01..M-04 真实 macOS / iCloud / TCC / DB repair 手工证据仍为 pending。
+- 测试与验证覆盖：不通过，`./dev check all` 失败，真实 `.app` 首屏 release gate、签名、公证、DMG、干净机首启缺证据。
+- 占位、硬编码、mock-only、一次性实现检查：通过，本轮未发现以 mock-only 冒充最终 Real Core 闭环的直接证据；但 release gate 缺证据仍阻断最终验收。
+
+六、阻塞项
+
+- P1-RL-001：真实 Release `.app` 启动到首屏证据缺失
+  - 说明：Stage 1 要求启动时间 `< 1.5s`，当前只有 hostless surrogate，真实 `.app` launch 仍 BLOCKED。
+  - 位置：[stage-1-performance-baseline.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-performance-baseline.md:88)
+  - 为什么导致不通过：性能基线缺最终 release 证据，不能证明可发布。
+
+- P1-RL-002：M-01..M-04 手工恢复冒烟 pending
+  - 说明：import 中断、iCloud placeholder、TCC 权限、DB repair 真实手工证据未采集。
+  - 位置：[recovery-scenarios.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/recovery-scenarios.md:83)
+  - 为什么导致不通过：高风险用户文件 / DB / iCloud 边界缺真实系统证据。
+
+- P1-RL-003：Developer ID 签名、公证、DMG、干净 Mac 首启证据缺失
+  - 说明：release checklist 明确签名、公证、DMG、干净机首启均无法验证。
+  - 位置：[stage-1-release-checklist.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-release-checklist.md:67)
+  - 为什么导致不通过：alpha 分发物不可验证，不能放行最终集成验收。
+
+- P1-RL-004：CHANGELOG / 版本发布切面未完成
+  - 说明：`CHANGELOG.md` 尚无 `[0.1.0] - YYYY-MM-DD` release 段落，版本/tag/release notes 未闭合。
+  - 位置：[stage-1-release-checklist.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-release-checklist.md:70)
+  - 为什么导致不通过：发布可追溯性和 tester 已知问题说明不完整。
+
+- P1-RL-005：`./dev check all` 未完整通过
+  - 说明：本次实际运行失败于 macOS checks：missing Rust target `x86_64-apple-darwin`。
+  - 位置：[stage-1-release-checklist.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-release-checklist.md:71)
+  - 为什么导致不通过：task 完成标准要求 `./dev check all` 通过；当前必需验证命令失败。
+
+七、验证情况
+
+- 已运行：`python3 tasks/prompts/_shared/prompt_pipeline.py doctor`：通过，输出 `doctor: OK`，`tasks: 637`，`manifests: 637`，`high risk tasks: 633`。
+- 已运行：`git diff --check`：通过，无输出。
+- 已运行：`./dev check all`：失败。已通过 governance、skills、task-loop、prompt doctor、diff check、Rust fmt、Rust clippy、Rust workspace tests；失败于 macOS checks，缺少 Rust target `x86_64-apple-darwin`。
+- 已运行：Forbidden Touches diff/status 检查：通过，无 forbidden tracked diff。
+- 缺失：手工冒烟 M-01..M-04、真实 Release `.app` 首屏、Developer ID 签名、公证、DMG、干净 Mac 首启、完整 release evidence。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+VERIFY_RESULT: FAIL

@@ -1,0 +1,77 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`1-5/task-23`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-1/1-5-file-actions-repair/task-23-c1-26-failure-recovery.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/repair.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/repo_scan.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/db/scan.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/domain.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/tests/repair_reindex_metadata_failure_recovery.rs`
+
+三、完成度摘要
+
+- 已覆盖项数：18
+- 未覆盖项数：0
+- 通过项数：18
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 C1-26 failure-recovery 范围
+- 结果：通过
+- 证据：task 只绑定 C1-26；control map 将 C1-26 限定为 `repair_metadata` / `reindex_from_filesystem` metadata repair。实际改动集中在 core repair/reindex/scan/test，`git status --short -- apps core` 未显示 `apps/**` 触碰，只显示 `core/tests/repair_reindex_metadata_failure_recovery.rs` 这个 Expected New Path。
+- 涉及文件：`task-23-c1-26-failure-recovery.md:1`，`docs/architecture/mvp-control-map.md:52`，`core/tests/repair_reindex_metadata_failure_recovery.rs:33`
+
+- 项目：Exact Docs 以文档为 SSOT
+- 结果：通过
+- 证据：已读取 5 个 Exact Docs。C1 spec 要求 API、`.areamatrix/` metadata-only、不移动/删除/覆盖用户文件、失败保留诊断；Core API 文档要求诊断快照、repair、reindex、错误边界和 Tree/List reload。
+- 涉及文件：`docs/core/capability-specs/stage-1-mvp/C1-26-repair-reindex-metadata.md:11`，`docs/api/core-api.md:697`，`docs/api/core-api.md:728`
+
+- 项目：不实现相邻 C1 能力或 UI 页面
+- 结果：通过
+- 证据：未发现 `apps/**` 修改；C1-26 仅在 Rust API、UDL、domain、repair/reindex 与测试中落地。control map 中 C1-26 位于 `C1-22..C1-26` 范围内，无越界 UI 实现。
+- 涉及文件：`docs/architecture/mvp-control-map.md:62`，`core/src/api.rs:190`
+
+- 项目：覆盖失败、回滚、重复执行或权限错误路径
+- 结果：通过
+- 证据：测试覆盖 repeated reindex idempotent、corrupt DB repair 失败后保留 diagnostics snapshot、permission denied 后记录 failed reindex session 并可 resume；实现中 scan 失败会 mark failed session，每个文件 upsert 在 DB transaction 内提交。
+- 涉及文件：`core/tests/repair_reindex_metadata_failure_recovery.rs:33`，`core/tests/repair_reindex_metadata_failure_recovery.rs:68`，`core/tests/repair_reindex_metadata_failure_recovery.rs:96`，`core/src/repo_scan.rs:187`，`core/src/db/scan.rs:173`
+
+- 项目：不得删除、覆盖或移动未确认用户文件
+- 结果：通过
+- 证据：repair 只创建 `.areamatrix/diagnostics` 并用 `create_new` 写诊断快照；reindex 跳过 `.areamatrix/`、`AREAMATRIX.md`、`.areamatrix/generated/`，没有删除、重命名、覆盖用户文件路径。测试对 README、用户文档做 before/after snapshot。
+- 涉及文件：`core/src/repair.rs:31`，`core/src/repair.rs:171`，`core/src/repo_scan.rs:365`，`core/tests/repair_reindex_metadata_failure_recovery.rs:87`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。`repair.rs` 将 diagnostics、metadata health、repair report 分层；`repo_scan.rs` 将 scan plan、upsert、failed session 分开，未见一次性脚本化实现。
+- 注释 / rustdoc / 文档同步：通过。public API 有 rustdoc 和 `# Errors`，UDL 与 Core API 文档签名一致。
+- 错误处理与边界处理：通过。`Db`、`PermissionDenied`、`Io`、`Internal` 路径有显式映射；失败 scan 会记录 failed session，diagnostics snapshot 不被清空。
+- 测试与验证覆盖：通过。manifest 3 条验证通过，另补跑 `cargo test --workspace` 通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。测试使用真实 temp repo、真实 `init_repo`、真实 DB/FS 路径，未发现 mock-only 闭环。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`cd core && cargo fmt --all -- --check`：通过
+- 已运行：`cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过
+- 已运行：`cd core && cargo test --workspace repair_reindex_metadata`：通过，C1-26 contract / implementation / failure-recovery 共 10 个相关测试通过
+- 已运行：`cd core && cargo test --workspace`：通过
+- 缺失：无必需验证缺失；`apps/**` 未触碰，macOS app 验证不属于本 task 范围。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS

@@ -1,0 +1,65 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`2-3/task-30`
+- 对应文件路径：`tasks/prompts/phase-2/2-3-detail-settings/task-30-s1-32-page-integration-verify.md`
+- 关键实现：`apps/macos/AreaMatrix/Models/StartupRecoveryModels.swift`、`apps/macos/AreaMatrix/Views/Main/StartupRecoveryErrorRecoveryView.swift`、`apps/macos/AreaMatrix/Models/OnboardingInitializationProgress.swift`、`apps/macos/AreaMatrix/Views/Main/MainLoadingView.swift`
+- 关键测试：`apps/macos/AreaMatrixTests/ErrorRecoveryStartupRecoveryPageFeatureTests.swift`、`apps/macos/AreaMatrixTests/ErrorRecoveryPageIntegrationVerifyTests.swift`
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：page-feature task 覆盖
+- 结果：通过
+- 证据：manifest 中 S1-32 仅声明 `C1-16, C1-21`；代码已接 `recoverOnStartup` 和 `mapCoreError`，并有 `ErrorRecoveryStartupRecoveryPageFeatureTests` 与 `ErrorRecoveryPageIntegrationVerifyTests` 覆盖。
+- 涉及文件：`docs/architecture/mvp-control-map.md`、`StartupRecoveryModels.swift`、`CoreBridgePlaceholderState.swift`
+
+- 项目：页面状态、入口、退出、错误态、CoreBridge 闭环
+- 结果：通过
+- 证据：`openExistingRepository` 先进入 `.mainLoading(... startupRecovery: .checking)`，随后调用 `recoverMainOpeningResidue`；失败映射后停留 inline error 或转入 repo error/repair；重试成功后进入 main list。
+- 涉及文件：`OnboardingInitializationProgress.swift`、`MainLoadingView.swift`、`MainWindow.swift`
+
+- 项目：mock、fixture、硬编码状态检查
+- 结果：通过
+- 证据：生产默认依赖为 `CoreBridge()`；`recoverOnStartup(repoPath:)` 调用生成绑定，`mapCoreError` 调用 Core 结构化映射。测试内 fixture 未进入生产路径。
+- 涉及文件：`StartupRecoveryModels.swift`、`CoreBridge.swift`、`CoreBridgePlaceholderState.swift`
+
+- 项目：control map 越界检查
+- 结果：通过
+- 证据：S1-32 只消费 `C1-16` 和 `C1-21`，未发现新增 control map 外能力；`core/src/**` 当前未被修改。
+- 涉及文件：`mvp-control-map.md`、`core/area_matrix.udl`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。状态、CoreBridge 协议、View 展示、路由动作分层清楚。
+- 注释 / rustdoc / 文档同步：通过。本任务未新增 Rust public API；UDL/API 文档已声明 `recover_on_startup` 与 `map_core_error`。
+- 错误处理与边界处理：通过。CoreError 经结构化映射，不依赖字符串 contains；高风险 DB repair 只路由到 S1-37，不在 S1-32 直接修复。
+- 测试与验证覆盖：通过。S1-32 feature 与 integration 测试已加入 Xcode project。
+- 占位、硬编码、mock-only、一次性实现检查：通过。未发现生产路径 mock-only 闭环。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+- 结果：构建完成，但测试启动被本地 sandbox 的 `testmanagerd.control` 通信限制阻断，退出码 65。
+- 已运行：`./dev test macos`
+- 结果：通过。该命令按 repo-local validation-driver 先运行标准 xcodebuild test，确认是本地 sandbox 阻断后复用同一 XCTest bundle；最终 `Executed 406 tests, with 0 failures`。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS

@@ -1,0 +1,79 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`2-4/task-03`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-4-sync-overview/task-03-s1-25-page-integration-verify.md`
+- 覆盖文件：
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：4/4 核对清单，2/2 完成标准
+- 未覆盖项数：0
+- 通过项数：6
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：所有 page-feature task 覆盖
+- 结果：通过
+- 证据：`2-4/task-01` 覆盖 C1-01，`2-4/task-02` 覆盖 C1-21；integration test 明确声明 S1-25 只含 `C1-01`, `C1-21`
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ICloudConflictMinimalPageIntegrationVerifyTests.swift:5`
+
+- 项目：页面状态、入口、退出、错误态、CoreBridge 调用闭环
+- 结果：通过
+- 证据：Detail 入口 `Resolve iCloud Conflict...` 存在；Cancel 清空 sheet；C1-01 调 `validateRepoPath`；C1-21 调 `mapCoreError`
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryDetailPane.swift:314`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ICloudConflictMinimalValidation.swift:75`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift:189`
+
+- 项目：mock、fixture、硬编码状态检查
+- 结果：通过
+- 证据：生产 CoreBridge 对缺失的 iCloud resolution endpoint 明确返回 blocker，Apply 禁用；没有用 delete/remove/import/Swift IO 伪装解决冲突
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ICloudConflictMinimalResolution.swift:146`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ICloudConflictMinimalSheet.swift:247`
+
+- 项目：不新增 control map 外能力
+- 结果：通过
+- 证据：测试确认不包含 C1-23/C1-25，且 Apply blocker 路径不调用 rename/delete/removeIndex/move/sync 等越界动作
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ICloudConflictMinimalPageIntegrationVerifyTests.swift:7`
+
+- 项目：Expected New Paths
+- 结果：通过
+- 证据：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`project.pbxproj` 均已存在并参与构建
+- 涉及文件：上述 manifest 路径
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git status --short -- core/src` 无输出，未发现 `core/src/**` 变更
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，S1-25 拆分为 validation、resolution state、sheet、routing action，未把 resolution 伪装成已实现。
+- 注释 / rustdoc / 文档同步：通过，本任务未新增 Rust public API；UDL 与 Core API 中 C1-01/C1-21 入口一致。
+- 错误处理与边界处理：通过，CoreError 统一经 `mapCoreError` 映射；缺失 resolution endpoint 作为结构化 blocker 留在 sheet。
+- 测试与验证覆盖：通过，`./dev test macos` fallback 后 449 tests passed。
+- 占位、硬编码、mock-only、一次性实现检查：通过，硬编码 blocker 是文档要求的明确阻塞证据，不是伪完成路径。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+- 结果：失败，原因是本地 sandbox 阻止 `testmanagerd.control` 通信，非编译或断言失败。
+- 已运行：`./dev test macos`
+- 结果：通过；该命令按 repo-local validation-driver 在确认 testmanagerd sandbox block 后复用已构建 XCTest bundle，`449 tests, 0 failures`。
+- 缺失：无。直接 `xcodebuild test` 的环境限制已由仓库认可的 macOS test fallback 覆盖。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS

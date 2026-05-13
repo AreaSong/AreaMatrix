@@ -1,0 +1,41 @@
+一、执行结论
+
+已完成。
+
+二、执行范围
+
+单任务：`1-3/task-18`，仅处理 C1-15 `build-tree` 的 contract-api 范围。
+
+修改文件：
+- [api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:376)：补齐 `list_tree_json` 的 public API 合同说明，明确输入、JSON 输出、稳定 path key / sibling ordering、副作用边界、错误边界和 Stage 2 排除范围。
+- [build_tree_contract_api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/build_tree_contract_api.rs:1)：新增 C1-15 contract API 测试，交叉锁定 capability spec、control map、Core API、UDL、error-codes 和 Rust API 注释。
+
+三、完成情况
+
+核对清单已满足：
+- 只处理 C1-15 contract-api。
+- 已读取 manifest 的 Exact Docs，并按 docs 作为 SSOT。
+- 未实现相邻 C1 能力、未做 UI 页面。
+- UDL 现有 `string list_tree_json(string repo_path, string locale);` 已与 Core API 对齐，新增测试锁定该合同。
+- 输入、输出、错误码、副作用边界已在 Rust API 注释和 contract 测试中明确。
+
+Forbidden Touches：未触碰 `apps/**`。当前工作区已有 `.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json` 脏状态，不是本次改动范围。
+
+四、工程质量
+
+代码结构清晰，没有新增抽象、依赖、mock-only wiring 或一次性实现。新增测试只做 contract-api 证据，不提前进入 task-19 的 tree 实现。新增 public API rustdoc 覆盖错误与副作用边界。
+
+五、验证情况
+
+已通过：
+- `cd core && cargo fmt --all -- --check`
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`
+- `cd core && cargo test --workspace build_tree`：新增 3 个 `build_tree` contract 测试通过
+- 额外补跑：`cd core && cargo test --workspace` 全 workspace 通过
+- `git diff --check` 通过
+- Forbidden check：`git status --short | rg "^.. apps/"` 无结果
+
+六、风险与后续
+
+剩余风险：这是 contract-api 任务，不是完整 C1-15 tree 实现；当前任务只锁定合同意图和测试证据。建议下一个任务执行 `1-3/task-19`，按 `docs/modules/tree-scan.md` 实现真实 recursive tree JSON、稳定排序、path key、文件计数和 locale display name。
+

@@ -30,13 +30,13 @@ Symptoms:
 Action:
 
 ```bash
-bash scripts/run_area_matrix_task_pipeline.sh --status
-bash scripts/run_area_matrix_task_pipeline.sh --resume-failed
+./task-loop status
+./task-loop resume-failed
 ```
 
 If the failure is conceptual rather than transient, inspect the task file, manifest section, copy log, and verify log before resuming.
 
-Use `bash scripts/check-task-loop.sh` if the failure looks like runner state corruption rather than task implementation failure.
+Use `./task-loop check` if the failure looks like runner state corruption rather than task implementation failure.
 
 ## Risk Gate Blocked
 
@@ -47,7 +47,7 @@ Symptoms:
 
 Action options:
 
-- Continue with explicit approval: `RISK_POLICY=allow START_FROM=<label> bash scripts/run_area_matrix_task_pipeline.sh`
+- Continue with explicit approval: `RISK_POLICY=allow START_FROM=<label> ./task-loop run`
 - Keep blocked and report: use when the user has not authorized Mission-Critical execution.
 - Skip only if the user requested skip semantics: `RISK_POLICY=skip`.
 
@@ -59,27 +59,27 @@ Symptoms:
 
 - `prompt_pipeline.py status` and expected queue position disagree
 - a task is recorded `in_progress` after an interrupted process
-- `bash scripts/run_area_matrix_task_pipeline.sh --status` reports `stale_in_progress`
+- `./task-loop status` reports `stale_in_progress`
 
 Action:
 
-1. Run `bash scripts/run_area_matrix_task_pipeline.sh --status`.
+1. Run `./task-loop status`.
 2. Check whether `lock_alive` is `yes`; if so, do not start a second runner.
 3. Inspect `progress.json` entry and the latest copy/verify logs for the affected task.
-4. Prefer `bash scripts/run_area_matrix_task_pipeline.sh --resume-stale` over manual JSON edits.
-5. If the user wants a clean restart, use `bash scripts/run_area_matrix_task_pipeline.sh --reset-progress`; it backs up progress and preserves logs.
+4. Prefer `./task-loop resume-stale` over manual JSON edits.
+5. If the user wants a clean restart, use `./task-loop reset-progress`; it backs up progress and preserves logs.
 
 Manual progress edits are allowed only when the user explicitly asks for state repair.
 
 If the stale entry is only an interrupted `in_progress` record and the user does not want to resume it, use:
 
 ```bash
-bash scripts/run_area_matrix_task_pipeline.sh --clear-stale
+./task-loop clear-stale
 ```
 
 This removes only stale `in_progress` entries and must not touch `completed`, `failed`, or `blocked`.
 
-If stale behavior itself looks wrong, run `bash scripts/check-task-loop.sh`; it validates stale detection and resume behavior against temporary progress files.
+If stale behavior itself looks wrong, run `./task-loop check`; it validates stale detection and resume behavior against temporary progress files.
 
 ## Git Checkpoint Failure
 
@@ -87,7 +87,7 @@ Symptoms:
 
 - verify passed but the runner stops before the next task
 - progress or summary records `git_checkpoint_status=git_diff_check_failed` or `git_push_failed`
-- output references `scripts/task_loop_git.py`
+- output references `scripts/task_loop/git.py`
 
 Action:
 

@@ -1,0 +1,57 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`2-3/task-23`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-3-detail-settings/task-23-s1-30-c1-04-load-update-config.md`
+- 关键实现：`apps/macos/AreaMatrix/Models/AdvancedSettingsModel.swift`、`apps/macos/AreaMatrix/Views/Settings/AdvancedSettingsPane.swift`、`apps/macos/AreaMatrix/Views/Settings/GeneralSettingsView.swift`、`apps/macos/AreaMatrixTests/AdvancedSettingsPageFeatureTests.swift`、`apps/macos/AreaMatrix.xcodeproj/project.pbxproj`、`core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：12
+- 未覆盖项数：0
+- 通过项数：12
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 只处理 S1-30 页面中的 C1-04 功能点：通过。实现集中在高级设置的 `overviewOutput` 与 `allowReplaceDuringImport`，未在 S1-30 当前实现中调用 `recoverOnStartup`、`reindexFromFilesystem` 等 C1-16/C1-20 能力。
+- 读取页面规格、control map、Core API、C1-04：通过。Exact Docs 4 个均存在并已读取。
+- 只接入 C1-04 CoreBridge / 状态 / 错误映射：通过。`AdvancedSettingsModel.load()` 调 `loadConfig`，保存调 `updateConfig`，错误经 `CoreErrorMapping` 映射；见 `AdvancedSettingsModel.swift:118`、`:204`、`:222`。
+- 不实现相邻页面：通过。只在 Settings sidebar 增加 `advanced` tab 并挂载 `AdvancedSettingsPane`；见 `GeneralSettingsView.swift:96`、`:117`。
+- 用户可见功能可触发和验收：通过。Danger zone 内有 segmented control 与 toggle，带确认与 retry；见 `AdvancedSettingsPane.swift:174`、`:193`、`:217`。
+- 无 mock / fixture / 静态状态伪造真实闭环：通过。生产默认注入 `CoreBridge()`；测试中另有真实 CoreBridge 持久化验证，见 `AdvancedSettingsPageFeatureTests.swift:110`。
+- 未触碰 control map 外能力：通过。当前 task 未触碰 `core/src/**`，也未新增其它 Core 能力消费。
+- Expected New Paths：通过。`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`project.pbxproj` 均已落地。
+- Forbidden Touches：通过。`git diff --name-only -- core/src` 为空。
+- UDL / Core API 对齐：通过。`core/area_matrix.udl:17`、`:20`、`:101`、`:111`、`:304` 定义了 `load_config`、`update_config`、`RepoConfig.allow_replace_during_import` 和 `OverviewOutput`。
+- Xcode 工程纳入：通过。`project.pbxproj` 已把 model、pane、tests 加入 Sources。
+- 验证命令：通过。manifest build 通过，macOS test gate 通过。
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。model / view / test 分层清楚，新增文件均小于 500 行。
+- 注释 / rustdoc / 文档同步：通过。本 task 未新增 Rust public API；UDL 与 Core API 现有合同一致。
+- 错误处理与边界处理：通过。保存失败会恢复 last saved draft、显示错误、保留 retry；Root AREAMATRIX.md 与 Replace 开启前均有确认。
+- 测试与验证覆盖：通过。覆盖 load、确认、取消、失败回滚、retry、真实 CoreBridge 持久化与不创建 root files。
+- 占位、硬编码、mock-only、一次性实现检查：通过。mock 仅限测试注入，生产路径走真实 `CoreBridge` generated bindings。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：通过，`BUILD SUCCEEDED`。
+- 已运行：`./dev test macos`：通过。标准 `xcodebuild test` 被本地 sandbox 的 `testmanagerd` 通信限制阻断后，仓库脚本按规则复用 XCTest bundle，`xcrun xctest` 执行 384 tests，0 failures。
+- 已运行：`git diff --check -- <task files>`：通过。
+- 已检查：`swiftformat` / `swiftlint` 当前 PATH 未找到，未运行；本 task 已用 build、test、line count、禁用模式搜索与 diff check 覆盖本地验收，CI 仍需后续远端补跑。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准，可以视为 `2-3/task-23` 完成。
+
+VERIFY_RESULT: PASS

@@ -1,0 +1,55 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`2-3/task-16`
+- 代码路径：`apps/macos/AreaMatrix/Models/RepositorySettingsModel.swift`
+- 代码路径：`apps/macos/AreaMatrix/Views/Settings/RepositorySettingsPane.swift`
+- 代码路径：`apps/macos/AreaMatrix/Models/CoreBridgePlaceholderState.swift`
+- 代码路径：`apps/macos/AreaMatrixTests/RepositorySettingsPageFeatureTests.swift`
+- 工程文件：`apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+
+三、完成度摘要
+
+- 已覆盖项数：6
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：2
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 只处理 S1-27 页面中的 C1-08 功能点：通过；证据：改动集中在 repository settings 页、health summary 和 indexed import 断言。
+- 读取页面规格、MVP control map、Core API 和 C1-08 能力规格：通过；证据：已按 task/manifest 逐项读取并对照 `S1-27` / `C1-08` / control map。
+- 只接入 C1-08 对应的 CoreBridge / 状态 / 错误映射，不实现本页面其他 Core 功能点：通过；证据：生产改动主要是 repository health/metadata 状态和对应测试支撑。
+- 不顺手实现相邻页面：通过；证据：未见 `S1-26`、`S1-28` 等相邻页功能扩展。
+- S1-27 中 C1-08 对应的用户可见功能可被触发和验收：不通过；证据：`xcrun xctest` 在 `RepositorySettingsPageFeatureTests` 里有 9 个失败，尤其 `apps/macos/AreaMatrixTests/RepositorySettingsPageFeatureTests.swift:223-226`, `261-263`, `308-313`，真实 CoreBridge 预期的 `.ok`、`schemaVersion`、`filesIndexed` 没拿到。
+- 没有使用 mock、fixture 或静态状态伪造真实 Core 闭环：不通过；证据：虽然有真实 CoreBridge 测试，但真实 bundle 的健康摘要路径没闭环，不能证明最终验收。
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过，`RepositorySettingsModel.load()` / `refreshHealth()` 的真实健康读取路径在 bundle 里没闭环，结果回落到 `.needsRecovery`。
+- 注释 / rustdoc / 文档同步：通过，这次没有新增 public Rust API，也没有 docs drift 证据。
+- 错误处理与边界处理：不通过，健康读取失败时直接降级到 needsRecovery，默认 init/import 场景没有证明可恢复健康摘要。
+- 测试与验证覆盖：不通过，`xcodebuild build` 通过，但 `xcodebuild test` 被 test runner sandbox 断开，fallback 的 `xcrun xctest` 仍在 `RepositorySettingsPageFeatureTests` 暴露 9 个失败。
+- 占位、硬编码、mock-only、一次性实现检查：不通过，生产代码不是 mock-only，但真实 bundle 没通过，不能算完成。
+
+六、阻塞项
+
+- P0 `apps/macos/AreaMatrix/Models/RepositorySettingsModel.swift:179-216` / `apps/macos/AreaMatrix/Models/CoreBridgePlaceholderState.swift:275-301`：settings 页面健康摘要依赖的真实 metadata 读取路径在实际 bundle 中不成立；对应失败证据见 `apps/macos/AreaMatrixTests/RepositorySettingsPageFeatureTests.swift:223-226`, `261-263`, `308-313`。
+- P1 `apps/macos/AreaMatrixTests/RepositorySettingsPageFeatureTests.swift:1-536`：文件共 536 行，超过仓库 500 行上限。
+
+七、验证情况
+
+- `xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：通过
+- `xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：失败，test runner / testmanagerd 通信被 sandbox 断开
+- `xcrun xctest /Users/as/Ai-Project/project/AreaMatrix/apps/macos/DerivedData/AreaMatrix/Build/Products/Debug/AreaMatrixTests.xctest`：失败，`RepositorySettingsPageFeatureTests` 9 个失败
+- `wc -l apps/macos/AreaMatrixTests/RepositorySettingsPageFeatureTests.swift ...`：`RepositorySettingsPageFeatureTests.swift` 为 536 行，超标
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+
+VERIFY_RESULT: FAIL

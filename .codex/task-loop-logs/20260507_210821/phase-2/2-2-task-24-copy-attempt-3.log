@@ -1,0 +1,57 @@
+一、执行结论
+
+已完成。已按 2-2/task-24 repair retry 修复上次验收失败的两个阻塞项：C1-10/name-conflict 越界改动已收回，`ImportEntrySheetView.swift` 已降到 500 行，满足编码规范 `≤ 500`。
+
+二、执行范围
+
+单任务：`2-2/task-24`
+
+修改文件清单：
+- `apps/macos/AreaMatrix/Models/ImportSingleFileDuplicateResolution.swift`
+- `apps/macos/AreaMatrix/Models/ImportSingleFilePreflight.swift`
+- `apps/macos/AreaMatrix/Models/ImportSingleFilePreviewModel.swift`
+- `apps/macos/AreaMatrix/Views/Main/ImportEntrySheetView.swift`
+- `apps/macos/AreaMatrix/Views/Main/ImportSingleFileSheetSections.swift`
+- `apps/macos/AreaMatrix/Views/Main/ReplaceConfirmSheet.swift`
+- `apps/macos/AreaMatrixTests/ImportSingleFileDuplicateResolutionTests.swift`
+- `apps/macos/AreaMatrixTests/ImportSingleFilePreflightTests.swift`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+
+三、完成情况
+
+核对清单：
+- 只处理 S1-24 中 C1-09：通过。保留 duplicate replace confirmation 状态，不再给 name-conflict/C1-10 增加动态 `Replace confirmed` 标题或禁用逻辑。
+- 已读取页面规格、control map、Core API、C1-09 能力规格：通过。
+- 只接入 C1-09 对应状态和错误恢复：通过。
+- 未顺手实现相邻页面：通过。
+
+完成标准：
+- S1-24 中 C1-09 用户可见功能可触发：通过。
+- 未使用 mock/fixture/static 伪造生产闭环：通过，生产路径仍走 `CoreBridge` / `importFile`。
+- 未触碰 control map 之外能力：通过，本次 retry 已移除上次验收指出的 C1-10 UI/test 越界点。
+- Forbidden Touches：未触碰，`git diff --name-only -- core/src` 无输出。
+
+四、工程质量
+
+- `ImportEntrySheetView.swift` 当前 500 行，满足 `docs/development/coding-standards.md` 单文件 `≤ 500`。
+- `ReplaceConfirmSheet.swift` 独立承载二次确认 UI，保留错误、Retry、Diagnostics、Trash 不可用、确认复选框禁用路径。
+- 未新增 Rust public API，无 rustdoc 同步需求。
+- 未发现 `try!`、`print()`、生产强制解包；`git diff --check` 通过。
+- 未新增依赖。
+
+五、验证情况
+
+已运行并通过：
+- `git diff --check`
+- `xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：`** BUILD SUCCEEDED **`
+- `./dev test macos`：标准 `xcodebuild test` 被本地 `testmanagerd` sandbox 阻断后，脚本按仓库策略复用 XCTest bundle，`xcrun xctest` 通过；`272 tests, 0 failures`
+
+未运行：
+- UI 手工交互验收未运行，本次只完成 build/test 级验证。
+
+六、风险与后续
+
+剩余风险：未做真实 App 手工点击验证；另外工作树里有 task-loop 的 `summary.json` / `progress.json` evidence 变更，产品实现改动仍在 manifest 的 Expected New Paths 内。
+
+建议下一个任务：进入 `2-2/task-24` verify-ready 只读验收；若通过，再继续 `2-2/task-25` 覆盖 S1-24 的 C1-10。
+

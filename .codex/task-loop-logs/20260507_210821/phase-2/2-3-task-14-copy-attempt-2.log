@@ -1,0 +1,41 @@
+一、执行结论
+
+已完成。上次验收失败的加载态缺少退出口已修复，并补了回归测试证据。
+
+二、执行范围
+
+单任务：`2-3/task-14`
+
+修改文件清单：
+- [GeneralSettingsView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Settings/GeneralSettingsView.swift:99)：加载态改为 `GeneralSettingsLoadingContent`，保留 `Close` 退出。
+- [GeneralSettingsPageIntegrationVerifyTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/GeneralSettingsPageIntegrationVerifyTests.swift:111)：新增 loading state 关闭 Settings 覆盖。
+- [GeneralSettingsModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/GeneralSettingsModel.swift:310)：保留 S1-26 ignore.yaml 错误/创建闭环。
+- [RepositoryIgnoreRulesManager.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/App/RepositoryIgnoreRulesManager.swift:13)：平台层打开/创建 `.areamatrix/ignore.yaml`。
+- [project.pbxproj](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj:170)：纳入新增源码和测试。
+
+三、完成情况
+
+- page-feature task 覆盖：通过，S1-26 仍只覆盖 `C1-04, C1-07`。
+- 页面状态、入口、退出、错误态、CoreBridge 闭环：通过，loading / failed / loaded 均有退出路径。
+- mock、fixture、硬编码状态：通过，生产默认依赖仍走真实 `CoreBridge()` 和平台层 manager；测试 fixture 只在 XCTest 内。
+- control map 外功能：未新增。
+- Forbidden Touches：未触碰，`git diff --name-only -- core/src` 无输出。
+
+四、工程质量
+
+代码结构保持在 macOS 层边界内，SwiftUI view 不直接做文件 IO；ignore.yaml 文件操作封装到平台服务。新增文件均低于 500 行，`git diff --check` 通过。未新增依赖，未改 Rust public API，因此无 rustdoc/UDL 更新需求。错误路径覆盖了缺失 ignore.yaml、创建失败、打开失败、保存失败回滚与 retry。
+
+五、验证情况
+
+已运行：
+- `xcodebuild -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' build CODE_SIGNING_ALLOWED=NO`：通过。
+- `./dev test macos`：通过。标准 `xcodebuild test` 在本地 sandbox 下被 `com.apple.testmanagerd.control` 阻断后，按 repo-local validation-driver 复用同一 XCTest bundle，`344 tests, 0 failures`。
+- `git diff --check`：通过。
+- `git diff --name-only -- core/src`：无输出。
+
+六、风险与后续
+
+剩余风险：当前环境无法让标准 `xcodebuild test` 完整通过 testmanagerd 通信阶段，需由 CI 或非 sandbox 本机补跑原生命令确认；本地等价 XCTest bundle 已通过。
+
+建议下一个动作：重新跑 `2-3/task-14` 的 verify-ready 验收，通过后再进入下一个队列任务。
+

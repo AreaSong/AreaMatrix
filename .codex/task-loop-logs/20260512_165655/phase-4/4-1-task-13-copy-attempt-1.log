@@ -1,0 +1,45 @@
+一、执行结论
+
+未完成。  
+C2-03 Core failure-edge 实现与 Core 级验证已通过，但必需验证 `./dev check all` 在 macOS XCTest 阶段失败，不能声明整任务完成。
+
+二、执行范围
+
+单任务：`4-1/task-13`
+
+修改文件：
+- [saved_search.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/db/saved_search.rs)
+- [saved_search_failure_recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/saved_search_failure_recovery.rs)
+
+未触碰 `apps/**`。当前工作树里另有 task-loop 运行态文件变动：`tasks/prompts/_shared/progress.json`、`.codex/task-loop-runs/20260512_165655/`，我未回滚。
+
+三、完成情况
+
+核对清单已在 Core 层覆盖：空态、非法输入、权限/DB 错误、错误码映射、回滚恢复、无 AI/远程/密钥副作用、失败不静默吞掉。  
+新增测试证明 create/update 后读失败会事务回滚，不留下 partial row；未初始化 repo、损坏 DB、权限拒绝均保留用户文件。
+
+四、工程质量
+
+代码改动很小：将 saved-search 读取连接统一到 `open_saved_search_read_connection`，保证非 DB open 错误按 C2-03 文档映射为 `Db`。  
+新增测试不走 mock-only，不硬编码通过态，覆盖真实 SQLite、文件系统快照、错误映射和恢复重试。未新增 public Rust API，因此无新增 rustdoc 需求。
+
+五、验证情况
+
+已通过：
+- `cd core && cargo test --test saved_search_failure_recovery`
+- `cd core && cargo fmt --all -- --check`
+- `cd core && cargo test --test saved_search_implementation --test saved_search_contract_api`
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`
+- `cd core && cargo test --workspace`
+
+失败：
+- `./dev check all`
+- 失败点在 macOS XCTest：`AreaMatrixPerfTests.testApplicationLaunchToFirstScreenBaselineUnderStage1Threshold`
+- 复现错误：`unexpectedFirstScreenRoute`
+- 相关位置：`apps/macos/AreaMatrixTests/AreaMatrixPerfTests.swift:182`
+- `apps/**` 是本任务 Forbidden Touches，所以本任务未修该失败。
+
+六、风险与后续
+
+剩余阻断是 macOS perf/first-screen 测试失败，不在本 task 允许修改范围内。建议下一个动作先单独处理或豁免该 macOS 验证阻断，再进入后续 task；否则 task-loop 的严格门禁仍会把本任务判为未完成。
+

@@ -1,0 +1,64 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`2-2/task-06`
+- Task 文件：`tasks/prompts/phase-2/2-2-import-conflict/task-06-s1-17-page-integration-verify.md`
+- 审核路径：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`apps/macos/AreaMatrix.xcodeproj/project.pbxproj`、`core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：14
+- 未覆盖项数：0
+- 通过项数：13
+- 不通过项数：1
+- 阻塞项数：3
+
+四、逐项验收结果
+
+- 页面功能任务覆盖：通过。`C1-05/C1-06/C1-07/C1-08` 都有对应真实消费与测试证据；见 [ImportSingleFilePreviewModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreviewModel.swift:259)、[ImportSingleFilePreflight.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreflight.swift:267)、[ImportSingleFilePageIntegrationVerifyTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFilePageIntegrationVerifyTests.swift:126)、[ImportSingleFileMoveImportTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFileMoveImportTests.swift:95)、[ImportSingleFileIndexImportTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFileIndexImportTests.swift:95)。
+- 页面入口 / 退出 / 错误态 / CoreBridge 闭环：通过。入口、取消、切本地 repo、进入进度页、失败停留进度页、成功回主窗口都已接线；见 [OnboardingModelInputs.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/OnboardingModelInputs.swift:11)、[MainWindow.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/MainWindow.swift:54)、[ImportProgressView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportProgressView.swift:3)、[ImportSingleFilePageIntegrationVerifyTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFilePageIntegrationVerifyTests.swift:6)。
+- mock / fixture / 硬编码完成态检查：通过。生产路径使用 `CoreBridge`、`CoreImportSingleFilePreflight`、真实 `import_file` 与真实 repo 测试；不是 mock-only 闭环。`preview_import` 尚未进 UDL，但当前 Swift 平台层 preflight 是 page spec/API gap 明示的替代路径，不是静态假实现；见 [ImportSingleFilePreflight.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreflight.swift:340)、[ImportSingleFilePreflightTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFilePreflightTests.swift:6)。
+- control map 范围检查：通过。当前实现围绕 `S1-17` 的分类预览、Copy / Move / Index-only、冲突预检、iCloud placeholder、Replace 二次确认、进入 `S1-20` 进度页展开，未发现额外产品功能。
+- Expected New Paths：通过。新增/修改均落在 `apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`apps/macos/AreaMatrix.xcodeproj/project.pbxproj`；`project.pbxproj` 已纳入相关源文件与测试文件。
+- Forbidden Touches：通过。未发现 `core/src/**` 改动；`git diff --cached -- core/src` 为空，`core/area_matrix.udl` 也未变更。
+- 完成标准 1：功能闭环通过。S1-17 的 page spec 核心要求已覆盖：默认 Copy、分类/命名可编辑、Cancel 不写文件、冲突与 Replace 路径可见、iCloud placeholder 不静默跳过、Import 进入 `S1-20`。
+- 完成标准 2：Core 能力接入通过。`C1-05` 真实分类预览，`C1-06/07/08` 都有真实 CoreBridge 导入测试与页面消费证据；见 [ImportSingleFilePreviewModelTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFilePreviewModelTests.swift:351)、[ImportSingleFileMoveImportTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFileMoveImportTests.swift:95)、[ImportSingleFileIndexImportTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFileIndexImportTests.swift:95)。
+- 工程质量总门禁：不通过。存在明确 Swift 文件/函数长度超限，违反编码规范与工程质量门禁，不能判定完成。
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过。`ImportSingleFilePreflight.swift` 554 行、`ImportSingleFilePreviewModel.swift` 542 行、`ImportSingleFileTestSupport.swift` 513 行，超过单文件 500 行上限；且 [ImportSingleFilePreflight.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreflight.swift:341) 的 `previewSingleFileImport` 明显超过单函数 50 行门槛。对应规范见 [coding-standards.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/coding-standards.md:13) 与 [coding-standards.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/coding-standards.md:152)。
+- 注释 / rustdoc / 文档同步：通过。当前任务未新增 public Rust API；Swift 侧无需额外 rustdoc；`core/area_matrix.udl` 未被越界修改，文档与实现未发现新的 SSOT 漂移。
+- 错误处理与边界处理：通过。非法文件名、同名冲突、重复 hash、iCloud placeholder、下载失败、源文件消失、权限问题、Replace 二次确认等都有显式处理；见 [ImportSingleFilePreviewModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreviewModel.swift:237)、[ImportSingleFilePreflight.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreflight.swift:36)。
+- 测试与验证覆盖：通过。`xcodebuild test` 受本地 `testmanagerd` sandbox 限制失败，但这是 repo 文档允许的 fallback 场景；`./dev test macos` 最终通过，180 tests / 0 failures；`xcodebuild build` 通过。`swiftlint`、`swiftformat` 未运行，原因是当前环境缺少命令。
+- 占位、硬编码、mock-only、一次性实现检查：通过。生产路径未发现用 mock-only wiring 伪造通过态；相关 fixture 仅在 XCTest 中使用。
+
+六、阻塞项
+
+- `P1 工程质量门禁：ImportSingleFilePreflight.swift`。文件总长 554 行，且 [ImportSingleFilePreflight.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreflight.swift:341) 的 `previewSingleFileImport` 超出 50 行门槛；违反 [coding-standards.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/coding-standards.md:13) 与 [engineering-quality-rules.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/engineering-quality-rules.md:46)，因此不能通过最终验收。
+- `P1 工程质量门禁：ImportSingleFilePreviewModel.swift`。文件总长 542 行，超过单文件 500 行上限；路径：[ImportSingleFilePreviewModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreviewModel.swift:1)。这是长期维护性阻塞，不是可后续优化项。
+- `P1 工程质量门禁：ImportSingleFileTestSupport.swift`。文件总长 513 行，超过单文件 500 行上限；路径：[ImportSingleFileTestSupport.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFileTestSupport.swift:1)。测试支持文件同样受 Swift `file_length` 规则约束，不能按通过处理。
+
+七、验证情况
+
+- 已运行：`xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+- 结果：失败
+- 失败原因：`com.apple.testmanagerd.control` 被本地 sandbox 拦截，属于 repo 文档明确记录的 `xcodebuild test` 本地受限场景
+- 已运行：`./dev test macos`
+- 结果：通过
+- 证据：脚本识别到 `xcodebuild test` 的 sandbox block 后，复用已构建的 XCTest bundle 走 `xcrun xctest`；最终 `180 tests, 0 failures`
+- 已运行：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+- 结果：通过
+- 未运行：`swiftlint --strict apps/macos/AreaMatrix apps/macos/AreaMatrixTests`，当前环境缺少 `swiftlint`
+- 未运行：`swiftformat --lint apps/macos/AreaMatrix apps/macos/AreaMatrixTests`，当前环境缺少 `swiftformat`
+
+八、最终判定说明
+
+- 本次执行在功能闭环、真实 Core 接线、错误态和测试证据上已经达到较高完成度。
+- 但当前实现仍然明确违反仓库编码规范中的 Swift 文件/函数长度门禁，属于工程质量阻塞项。
+- 因此，本次执行尚未达到验收标准，不能视为完成。
+
+VERIFY_RESULT: FAIL

@@ -1,0 +1,54 @@
+一、执行结论：**未完成**
+
+原因很具体：`./dev check all` 已完整复跑到 macOS gate，前面的 governance / skills / task-loop / prompt doctor / diff / Rust fmt / clippy / test / Core universal build / XCTest 均推进通过，但最终仍失败在 SwiftFormat：
+
+- `199/224 files require formatting, 3 files skipped`
+- 单独复跑 SwiftLint 仍是 `239 violations, 239 serious in 226 files`
+
+这些问题大量落在 Forbidden Touches：`apps/macos/AreaMatrix/**` 和 `apps/macos/AreaMatrix.xcodeproj/**`，而本任务 manifest 明确禁止触碰这些路径（[phase-3.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-3.md:163)）。因此不能在 `3-1/task-05` 里直接修产品 Swift 代码来伪造通过。
+
+二、执行范围
+
+- 单任务：`3-1/task-05`
+- 本轮未新增修改文件。
+- 当前工作区已有上轮 retry 遗留改动；我没有回退，也没有扩大到 Forbidden Touches。
+- Forbidden Touches 检查：`git status --short -- core/src core/area_matrix.udl apps/macos/AreaMatrix apps/macos/AreaMatrix.xcodeproj` 无输出。
+
+三、完成情况
+
+核对清单结果：
+
+1. Exact Docs 6/6 已读取：通过。
+2. Real Core 页面不得 mock：未通过，最终 release gate 不放行，且 control map 要求 Real Core 最终不得用 mock/fixture/静态占位通过（[mvp-control-map.md](/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:7)）。
+3. Phase 1 Core / Phase 2 UI integration verify：未通过，`./dev check all` 未完整通过。
+4. `3-1/task-01` 到 `3-1/task-04` 证据：未通过，M-01..M-04 手工恢复证据仍 pending（[recovery-scenarios.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/recovery-scenarios.md:92)）。
+5. 自动化综合门禁和发布证据：未通过，SwiftFormat/SwiftLint、真实 `.app` 启动、签名、公证、DMG、干净 Mac 首启仍阻断。
+6. 发现 P0/P1 或验证缺失即不放行：通过，当前正确判定为不通过。
+7. 未触碰 Forbidden Touches：通过。
+
+完成标准结果：
+
+- 文档交叉验收：已做，但 release checklist 仍明确不放行（[stage-1-release-checklist.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-release-checklist.md:11)）。
+- `./dev check all`：失败。
+- P0/P1：未关闭，P1-RL-001..005 仍存在（[stage-1-release-checklist.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-release-checklist.md:68)）。
+- Forbidden Touches：未触碰。
+
+四、工程质量
+
+代码结构本轮未改。工程质量门禁当前不通过，阻塞点是 Swift style gate 和 release 证据缺口，不是 Rust Core 或 prompt 体系。没有新增占位、硬编码、mock-only 或一次性实现；但也不能把 hostless XCTest fallback 当作真实 Release `.app` 首屏证据（[stage-1-performance-baseline.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-performance-baseline.md:24)）。
+
+五、验证情况
+
+已运行：
+
+- `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`：通过，`doctor: OK`，`tasks: 637`，`manifests: 637`。
+- `./dev check all`：失败，最终失败在 SwiftFormat。
+- `git diff --check`：通过，无输出。
+- 单独复跑 SwiftFormat：失败，`199/224 files require formatting, 3 files skipped`。
+- 单独复跑 SwiftLint：失败，`239 violations, 239 serious in 226 files`。
+
+六、风险与后续
+
+剩余风险：Stage 1 alpha 仍不能放行；真实 Release `.app` 首屏、M-01..M-04 手工恢复、Developer ID 签名、公证、DMG、干净 Mac 首启、0.1.0 CHANGELOG / tag / release notes 都还缺发布证据。
+
+建议下一个任务：不要继续在 `3-1/task-05` 内 retry。应回退到允许修改 `apps/macos/AreaMatrix/**` 和 Xcode project 的 Phase 2 / release-hardening 范围，先治理 SwiftFormat/SwiftLint 存量债，再回到 `3-1/task-05` 复跑最终 stage verify。

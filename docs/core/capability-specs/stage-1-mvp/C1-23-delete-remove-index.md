@@ -8,14 +8,15 @@
 
 ## Core API
 
-- `delete_file(repo_path, file_id, hard=false)`
-- 计划新增：`remove_index_entry(repo_path, file_id)` 或 `delete_file(..., mode=RemoveIndex)`
+- `delete_file(repo_path, file_id)`
+- `remove_index_entry(repo_path, file_id)`
 
 ## 输入
 
 - `repo_path`
 - `file_id`
-- 删除模式：Move to Trash 或 Remove from Index。
+- `delete_file`：Move to Trash，仅用于 Copy / Move 等 repo-owned active 条目。
+- `remove_index_entry`：Remove from Index，仅移除 Indexed / Missing 等索引条目。
 
 ## 输出
 
@@ -23,7 +24,8 @@
 
 ## DB 变化
 
-- `files.status = deleted` 或移除 indexed/missing 记录。
+- `delete_file` 将对应 repo-owned active row 标记为 `files.status = deleted`。
+- `remove_index_entry` 移除 indexed/missing 记录或使其不再出现在 list/detail 索引中。
 - 写入 `change_log.deleted` 或 `change_log.removed_from_index`。
 
 ## 文件系统变化

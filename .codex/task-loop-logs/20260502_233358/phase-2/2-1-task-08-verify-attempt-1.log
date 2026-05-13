@@ -1,0 +1,61 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`2-1/task-08`
+- Task 文件：[task-08-s1-04-c1-03-adopt-existing-repo.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-1-first-launch-main/task-08-s1-04-c1-03-adopt-existing-repo.md:1)
+- 实际覆盖文件：
+  - [AreaMatrixApp.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/App/AreaMatrixApp.swift:169)
+  - [CoreBridge.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift:15)
+  - [AppShellModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/AppShellModel.swift:203)
+  - [MainWindow.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/MainWindow.swift:100)
+  - [ValidatePathIntegrationTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ValidatePathIntegrationTests.swift:136)
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：0
+- 通过项数：10
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 只处理 S1-04 页面中的 C1-03 功能点：通过。证据：S1-04 control map 绑定 C1-02/C1-03，本 task 只新增 Adopt Existing 入口；未接入 control map 外能力。涉及 [mvp-control-map.md](/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:19)、[CoreBridge.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift:333)。
+- 已读取页面规格、control map、Core API、C1-03 spec：通过。证据：S1-04 要求 Adopt Folder，Core API 要求 `init_repo(... AdoptExisting)`，C1-03 要求接管扫描和不改用户文件。涉及 [S1-04-confirm-init.md](/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-04-confirm-init.md:46)、[core-api.md](/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:541)、[C1-03-adopt-existing-repo.md](/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-03-adopt-existing-repo.md:12)。
+- 只接入 C1-03 CoreBridge / 状态 / 错误映射：通过。证据：`adoptExistingRepository` 调用 `initRepo`，mode 为 `.adoptExisting`，`overviewOutput` 为 `.generatedOnly`；确认页点击前重新校验，失败走 `routeInitializationFailure`。涉及 [CoreBridge.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift:333)、[AppShellModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/AppShellModel.swift:330)。
+- 不顺手实现相邻页面：通过。证据：diff 仅在 S1-04 confirm-init 调用链和相关测试内；`core/src/**` 无 diff。
+- 用户可见功能可触发和验收：通过。证据：`Adopt Folder` 按钮接入 `onAdoptExisting`，MainWindow 调用 `adoptExistingRepositoryFromConfirmInit`。涉及 [AreaMatrixApp.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/App/AreaMatrixApp.swift:280)、[MainWindow.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/MainWindow.swift:110)。
+- 无 mock / fixture / 静态状态伪造真实 Core 闭环：通过。证据：生产路径经 `CoreBridge` 调 generated UniFFI `initRepo`；测试中另有真实 CoreBridge 接管 README 保留验证。涉及 [Generated area_matrix.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/Generated/area_matrix.swift:4284)、[ValidatePathIntegrationTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ValidatePathIntegrationTests.swift:167)。
+- Expected New Paths：通过。`apps/macos/AreaMatrix/**` 与 `apps/macos/AreaMatrixTests/**` 均已落地。
+- Forbidden Touches：通过。`git diff --name-only -- core/src` 无输出。
+- UDL / Core API 对齐：通过。`core/area_matrix.udl` 含 `init_repo`、`RepoInitOptions`、`RepoInitMode.AdoptExisting`。涉及 [area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:13)。
+- 高风险文件安全边界：通过。测试验证接管不会覆盖 README、不创建默认分类目录。涉及 [ValidatePathIntegrationTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ValidatePathIntegrationTests.swift:171)。
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。采用 `CoreRepositoryInitializing` 抽象同一初始化入口，`createEmpty` 与 `adoptExisting` 共用校验与路由逻辑；触及文件均未超过 500 行。
+- 注释 / rustdoc / 文档同步：通过。未新增 Rust public API；API/UDL/生成绑定已有 C1-03 合同。
+- 错误处理与边界处理：通过。点击确认后先重新 `validateRepoPath`，mode 不匹配或已初始化会返回校验页；Core 错误映射到 repo error route。
+- 测试与验证覆盖：通过。覆盖 UI handoff、真实 CoreBridge 接管、README 保留、build 与 test。
+- 占位、硬编码、mock-only、一次性实现检查：通过。生产路径没有 mock-only；测试 doubles 只用于单测记录调用。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：通过，`BUILD SUCCEEDED`。
+- 已运行：`xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：失败于本机沙箱 `com.apple.testmanagerd.control`，未进入断言失败。
+- 已运行：`bash scripts/check-macos-tests.sh`：通过；标准 test 被同一 sandbox 错误阻断后，fallback `xcrun xctest` 执行 41 tests，0 failures。
+- 已运行：`git diff --check -- apps/macos/AreaMatrix apps/macos/AreaMatrixTests core/area_matrix.udl core/src`：通过，无输出。
+- 未运行：SwiftLint / SwiftFormat；本机 `command -v swiftlint`、`command -v swiftformat` 无输出，且本 task manifest 未列为必跑验证。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS

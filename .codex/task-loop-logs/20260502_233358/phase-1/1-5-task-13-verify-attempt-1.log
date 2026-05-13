@@ -1,0 +1,57 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`phase-1 / 1-5/task-13`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-1/1-5-file-actions-repair/task-13-c1-24-failure-recovery.md`
+- 核验范围：`core/src/**`、`core/area_matrix.udl`、`core/tests/**`
+- 禁止触碰范围：`apps/**`
+
+三、完成度摘要
+
+- 已覆盖项数：9
+- 未覆盖项数：0
+- 通过项数：9
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 只处理 C1-24 failure-recovery：通过。实现集中在 `core/src/storage/move_to_category.rs`，测试集中在 `core/tests/move_to_category_failure_recovery.rs`，未触碰 UI 或相邻 Core 能力。
+- Exact Docs 已读取并作为 SSOT：通过。C1-24 要求 Copy/Move 安全移动、Indexed 只改 metadata、不覆盖目标、错误包含 Classify/Conflict/FileNotFound/PermissionDenied/Io/Db，见 `/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-24-move-to-category.md:23`。
+- 不实现相邻 C1 能力或 UI 页面：通过。`rg` 范围检查仅命中 `move_to_category` 及测试 setup 用的 `import_file/init_repo`，`git status -- apps` 无输出。
+- 覆盖失败、回滚、重复执行、权限错误路径：通过。重复执行测试在 `core/tests/move_to_category_failure_recovery.rs:73`；缺失文件在 `:99`；目标分类路径冲突在 `:127`；权限错误在 `:163`。
+- 不删除、覆盖或移动未确认用户文件：通过。实现使用 `resolve_rename_path` 安全编号和 `move_recoverable_file` 非覆盖移动；DB 失败时回滚文件与 note sidecar，见 `core/src/storage/move_to_category.rs:47`、`:61`、`:73`、`:147`。
+- C1-24 failure-recovery 目标可证明：通过。定向测试 `cargo test --workspace move_to_category` 通过，相关 12 个 C1-24 测试通过。
+- 没有扩展到未绑定能力：通过。Forbidden `apps/**` 无修改；变更状态仅显示 `core/src/storage/move_to_category.rs` 和新增 `core/tests/move_to_category_failure_recovery.rs`。
+- Expected New Paths 落地：通过。`core/src/**`、`core/area_matrix.udl`、`core/tests/**` 均存在，`core/tests/move_to_category_failure_recovery.rs` 已落地。
+- Forbidden Touches：通过。`git status --short -- apps` 与 `git diff --name-status -- apps` 均无输出。
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。入口 `api.rs -> storage::move_to_category -> db::move_*_to_category` 清晰；repo-owned 与 Indexed 分支分离，DB 更新与 change log 在事务内执行，见 `core/src/db/move_to_category.rs:44`。
+- 注释 / rustdoc / 文档同步：通过。public API 有 rustdoc 和 `# Errors`，见 `core/src/api.rs:388`；UDL 暴露 `move_to_category`，见 `core/area_matrix.udl:51`；Core API 文档一致，见 `docs/api/core-api.md:809`。
+- 错误处理与边界处理：通过。目标分类先校验，未知分类抛 `Classify`；目标文件路径冲突抛 `Conflict`；权限和 IO 经 `map_io_error` 映射；DB 失败回滚 FS。
+- 测试与验证覆盖：通过。失败恢复测试覆盖重复调用、缺失 repo-owned 文件、目标分类路径冲突、权限拒绝；实现测试还覆盖 DB log 失败回滚与 Indexed metadata-only。
+- 占位、硬编码、mock-only、一次性实现检查：通过。测试使用真实 tempdir、SQLite、Core API、文件系统路径；未发现 mock-only 或静态通过态。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`cd core && cargo fmt --all -- --check`：通过。
+- 已运行：`cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过。
+- 已运行：`cd core && cargo test --workspace move_to_category`：通过，C1-24 contract/implementation/failure-recovery 相关 12 tests passed。
+- 已运行：`cd core && cargo test --workspace`：通过，workspace 与 doc-tests 均 exit 0。
+- 已运行：`git diff --check -- core/src/storage/move_to_category.rs core/tests/move_to_category_failure_recovery.rs core/area_matrix.udl`：通过。
+- 缺失：无本 task 必需本地验证缺失。远端 CI / Git checkpoint 不属于本次只读 verify-ready 本地命令范围。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。C1-24 move-to-category 的 failure-recovery 范围有实现、测试和命令证据支撑，未发现 Forbidden Touches、范围扩散、mock-only、硬编码或工程质量阻塞。
+
+VERIFY_RESULT: PASS

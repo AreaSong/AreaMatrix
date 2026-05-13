@@ -1,0 +1,42 @@
+一、执行结论
+
+- 未完成。当前 `3-1/task-05` 仍不能判定通过。
+
+二、执行范围
+
+- 单任务：`3-1/task-05`
+- 本轮未新增文件修改；我只做了读取、核对和验证命令。
+- 当前工作树已有前序 retry 改动，集中在 `apps/macos/AreaMatrixTests/**`、`core/tests/stage1_release_checklist.rs`、`docs/development/**`、`scripts/**` 和 task-loop evidence 文件；未触碰 Forbidden Touches。
+
+三、完成情况
+
+- 核对清单：7/7 已覆盖，但 5 项不通过。
+- 完成标准：4/4 已覆盖，但 3 项不通过。
+- Forbidden Touches：通过。`git diff --name-status -- core/src core/area_matrix.udl apps/macos/AreaMatrix apps/macos/AreaMatrix.xcodeproj` 无输出。
+- 主要阻塞：
+  - P1-RL-001：真实 Release `.app` 启动到首屏仍缺证据，[stage-1-performance-baseline.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-performance-baseline.md:88)。
+  - P1-RL-002：M-01..M-04 手工恢复冒烟仍是 pending，[recovery-scenarios.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/recovery-scenarios.md:83)。
+  - P1-RL-003：Developer ID 签名、公证、DMG、干净 Mac 首启缺证据，[stage-1-release-checklist.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-release-checklist.md:57)。
+  - P1-RL-004：`CHANGELOG.md` 仍只有 `[Unreleased]`，无 `0.1.0` release 段，[CHANGELOG.md](/Users/as/Ai-Project/project/AreaMatrix/CHANGELOG.md:10)。
+  - P1-RL-005：`./dev check all` 仍失败于 SwiftFormat；SwiftLint 单跑也失败 239 serious violations，[stage-1-release-checklist.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-release-checklist.md:42)。
+  - P1-INT-001：iCloud conflict resolution 生产路径仍声明缺 Core resolution endpoint，[ICloudConflictMinimalResolution.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ICloudConflictMinimalResolution.swift:102)。
+
+四、工程质量
+
+- 代码结构与逻辑：不通过，Swift style gate 未过。
+- 注释 / rustdoc / 文档同步：不通过，release checklist 已记录不放行，但 CHANGELOG release 切面仍未完成。
+- 错误处理与边界处理：不通过，真实 iCloud / TCC / DB repair / import interruption 手工证据缺失。
+- mock / placeholder / 一次性实现：未发现用 mock 假装整体通过，但 iCloud conflict resolution 明确是 blocked capability，不能放行最终 Stage 1 integration verify。
+
+五、验证情况
+
+- `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`：通过，`doctor: OK`，`tasks: 637`，`manifests: 637`。
+- `./dev check all`：失败。前置 governance、skills、task-loop、prompt doctor、diff、Rust fmt/clippy/test、macOS prerequisite、universal Core build 已执行；最终失败点是 SwiftFormat：`199/224 files require formatting, 3 files skipped`。
+- `swiftlint lint --strict ... --reporter summary`：失败，`239 violations, 239 serious in 226 files`。
+- `git diff --check`：通过。
+- verify prompt 生成：通过，`prompt_pipeline.py verify --task 3-1/task-05` 可生成只读验收 prompt。
+
+六、风险与后续
+
+当前不能把 `3-1/task-05` 标记 completed。下一步应先开一个明确允许触碰 `apps/macos/AreaMatrix/**` 的 Phase 2 / release-hardening 修复任务，处理 SwiftFormat/SwiftLint 和 iCloud conflict resolution；同时在非 Codex sandbox 的 macOS 发布环境补齐真实 `.app` launch、M-01..M-04、Developer ID 签名/公证/DMG/干净机首启证据。`3-1/task-05` 之后再重跑最终验收。
+

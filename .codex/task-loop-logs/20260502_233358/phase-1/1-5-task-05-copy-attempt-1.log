@@ -1,0 +1,37 @@
+一、执行结论
+
+已完成 `1-5/task-05`。
+
+二、执行范围
+
+修改文件：
+- [core/src/storage/rename.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/rename.rs:47)
+- [core/tests/rename_file_contract_api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/rename_file_contract_api.rs:103)
+- [core/tests/rename_file_integration_verify.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/rename_file_integration_verify.rs:170)
+
+未触碰 `apps/**`。当前工作区还有执行前已存在的 `.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json` 修改，我未处理它们。
+
+三、完成情况
+
+- 补齐 C1-22 integration-verify 测试，覆盖 Exact Docs、Core API、UDL、control map、S1-33 消费页面和真实 Rust wiring。
+- 修复 repo-owned rename 后 note sidecar 未随文件重命名导致 `read_note` 失败的问题；现在 note sidecar 与主文件一起安全迁移，并在 DB / overview 失败时一起回滚。
+- Indexed rename 仍保持 index-only：只更新 metadata，不移动外部源文件。
+- 无 mock、空壳、硬编码通过态；未扩展到相邻 C1 能力或 UI 实现。
+
+四、工程质量
+
+代码结构保持在当前 storage rename 模块内；新增逻辑使用 `NoteSidecarPlan` 和 rollback guard 复用现有安全移动语义。错误路径显式处理：sidecar 缺失/不一致、目标 sidecar 冲突、DB 失败、overview 失败都会返回错误或回滚。未新增依赖，未新增 public API。
+
+五、验证情况
+
+通过：
+- `cd core && cargo fmt --all -- --check`
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`
+- `cd core && cargo test --workspace rename_file`
+- 额外：`git diff --check`
+
+`cargo test --workspace rename_file` 中 C1-22 相关测试全部通过：contract 7、failure recovery 4、implementation 3、integration verify 4、validation 3。
+
+六、风险与后续
+
+剩余风险：未验证 macOS S1-33 UI 真实交互，因为 `apps/**` 是本 task Forbidden Touches。建议下一个任务继续 `1-5/task-06`。

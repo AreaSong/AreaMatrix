@@ -1,0 +1,50 @@
+一、执行结论
+
+已完成。未修改产品实现，也未新增/修改任务文件。
+
+二、执行范围
+
+单任务：`0-2/task-13 foundation integration verify`
+
+修改文件清单：无。当前 `git status` 只有执行前已存在的：
+- `.codex/task-loop-runs/20260501_132850/summary.json`
+- `tasks/prompts/_shared/progress.json`
+
+三、完成情况
+
+核对清单：
+- core crate：通过 `cargo fmt`、`cargo clippy`、`cargo test --workspace`。
+- 脚本：通过 `bash -n scripts/*.sh`、Python `py_compile`、`bash scripts/check-task-loop.sh`。
+- CI：`bash scripts/check-governance.sh` 通过，core/macos/governance workflow 已存在并可被 governance check 覆盖。
+- macOS shell：`xcodebuild build ... CODE_SIGNING_ALLOWED=NO` 通过。
+- 未提前实现 C1/S1：确认 core API 仍是 `not_implemented()` 骨架，Swift `CoreBridge` 仍是 placeholder，未发现真实文件 IO/DB/导入/同步闭环。
+- Forbidden Touches：未触碰。`core/src/**`、`core/Cargo.toml`、`core/area_matrix.udl`、`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrix.xcodeproj/**` 均无 diff。
+
+四、工程质量
+
+代码结构仍是 Phase 0 foundation：Rust core 有 UDL/API/domain/error/test 骨架，macOS 有 shell、placeholder bridge 和 test target。未加入占位伪装真实闭环的 mock-only 成功路径；现有 placeholder 都显式抛错或返回未实现，不会冒充 C1/S1 完成。
+
+五、验证情况
+
+已通过：
+- `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`：OK，637 tasks / 637 manifests。
+- `cd core && cargo test --workspace`：OK，3 个集成测试通过。
+- `cd core && cargo fmt --all -- --check`：OK。
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`：OK。
+- `bash -n scripts/*.sh`：OK。
+- `PYTHONPYCACHEPREFIX=/private/tmp/areamatrix-pycache python3 -m py_compile ...`：OK。
+- `bash scripts/check-governance.sh`：OK。
+- `bash scripts/check-skills.sh`：OK。
+- `PYTHONPYCACHEPREFIX=/private/tmp/areamatrix-pycache bash scripts/check-task-loop.sh`：OK。
+- `xcodebuild ... build CODE_SIGNING_ALLOWED=NO`：OK。
+- `git diff --check`：OK。
+
+失败/无法运行：
+- `./scripts/build-core.sh`：失败，缺少 `uniffi-bindgen`。
+- `xcodebuild ... test CODE_SIGNING_ALLOWED=NO`：build 阶段完成，但 test runner 因 sandbox restriction 无法连接 `com.apple.testmanagerd.control`，退出 code 65。
+- `swiftformat --lint .`、`swiftlint --strict`：未运行，当前环境缺少 `swiftformat` 和 `swiftlint`。
+
+六、风险与后续
+
+剩余风险主要是环境型：本地无法完成 UniFFI bindings 生成、SwiftLint/SwiftFormat、Xcode test runner。源码与脚本底座已足以进入 Phase 1 Rust Core 任务；macOS test 需要在非沙箱或具备 testmanagerd 权限的本机/CI 中补跑。建议下一个任务进入 Phase 1 的 `1-1/task-01`，同时在 CI 或完整本机环境补装 `uniffi-bindgen`、`swiftformat`、`swiftlint` 后跑全量 macOS/test gate。
+

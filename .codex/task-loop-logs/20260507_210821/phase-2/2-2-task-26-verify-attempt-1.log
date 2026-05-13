@@ -1,0 +1,95 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`2-2/task-26`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-2-import-conflict/task-26-s1-24-page-integration-verify.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：9
+- 未覆盖项数：0
+- 通过项数：9
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：Exact Docs / task / manifest 读取
+- 结果：通过
+- 证据：5 个 Exact Docs 均存在并已读取；manifest `2-2/task-26` 与 prompt 中的 docs、Existing Code、Expected New Paths、Forbidden Touches 一致。
+- 涉及文件：`tasks/prompts/_shared/manifests/phase-2.md`
+
+- 项目：page-feature task 覆盖
+- 结果：通过
+- 证据：依赖任务 `2-2/task-24` 覆盖 S1-24 + C1-09，`2-2/task-25` 覆盖 S1-24 + C1-10；control map 中 S1-24 也只声明 C1-09、C1-10。
+- 涉及文件：`tasks/prompts/phase-2/2-2-import-conflict/task-24-s1-24-c1-09-detect-duplicate.md`，`task-25-s1-24-c1-10-resolve-name-conflict.md`，`docs/architecture/mvp-control-map.md`
+
+- 项目：页面状态、入口、退出闭环
+- 结果：通过
+- 证据：`ImportEntrySheetView` 对单文件、批量、文件夹三类入口挂载 `ReplaceConfirmSheet`；确认后只返回来源 ImportSheet 并标记 `Replace confirmed`，最终导入仍由底部 Import 触发。
+- 涉及文件：`apps/macos/AreaMatrix/Views/Main/ImportEntrySheetView.swift`，`ImportEntrySingleFileFooter.swift`
+
+- 项目：CoreBridge / Core 能力接入
+- 结果：通过
+- 证据：最终提交通过 `CoreBridge` 包装的 `import_file`，并传入 `.overwrite`；UDL 暴露 `import_file`、`delete_file`、`DuplicateStrategy.Overwrite`，符合 S1-24 数据依赖。
+- 涉及文件：`apps/macos/AreaMatrix/Bridge/CoreImporting.swift`，`core/area_matrix.udl`
+
+- 项目：错误态与恢复
+- 结果：通过
+- 证据：上下文过期、未勾选确认、Trash 不可用均阻断 Replace；失败态提供 Retry / Cancel / Collect Diagnostics，且诊断不包含用户文件内容。
+- 涉及文件：`apps/macos/AreaMatrix/Views/Main/ReplaceConfirmSheet.swift`，`apps/macos/AreaMatrix/Models/ImportBatchConflictActions.swift`，`apps/macos/AreaMatrix/Models/ImportFolderConflictActions.swift`
+
+- 项目：mock / fixture / 硬编码状态
+- 结果：通过
+- 证据：生产路径使用注入的 `CoreBridge` / importer 协议并在默认构造中绑定真实 CoreBridge；fixture 仅出现在测试中。未发现生产路径 mock-only 闭环。
+- 涉及文件：`apps/macos/AreaMatrix/Views/Main/ImportEntrySheetView.swift`，`apps/macos/AreaMatrix/Bridge/CoreImporting.swift`
+
+- 项目：不新增 control map 外能力
+- 结果：通过
+- 证据：实现范围围绕 S1-24 的 C1-09/C1-10 replace 确认，没有新增 control map 外 Core 能力。
+- 涉及文件：`docs/architecture/mvp-control-map.md`
+
+- 项目：Expected New Paths / Forbidden Touches
+- 结果：通过
+- 证据：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`project.pbxproj` 均有对应实现或引用；`git status -- core/src` 无输出，未触碰禁止路径。
+- 涉及文件：`apps/macos/AreaMatrix.xcodeproj/project.pbxproj`，`core/src/**`
+
+- 项目：验证命令
+- 结果：通过
+- 证据：原始 `xcodebuild test` 已运行但被本地 sandbox 的 `testmanagerd.control` 通信限制阻断；按 repo-local validation-driver 运行 `./dev test macos` 后复用已构建 XCTest bundle，278 tests 通过，其中 `ReplaceConfirmPageIntegrationVerifyTests` 3 tests 通过。
+- 涉及文件：`apps/macos/AreaMatrixTests/ReplaceConfirmPageIntegrationVerifyTests.swift`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。确认 sheet、入口 glue、单文件/批量/文件夹状态逻辑分层清楚，未把文件 IO 放入 View。
+- 注释 / rustdoc / 文档同步：通过。当前任务未新增 public Rust API；实现与 UX spec、control map、UDL 对齐。
+- 错误处理与边界处理：通过。确认前不导入、不移动、不覆盖；上下文过期和 Trash 不可用均阻断。
+- 测试与验证覆盖：通过。`ReplaceConfirmPageIntegrationVerifyTests` 覆盖 C1-09/C1-10、失败可恢复、确认前不 overwrite、确认后 `.overwrite`。
+- 占位、硬编码、mock-only、一次性实现检查：通过。生产路径未发现 mock-only；测试 fixture 不作为产品闭环。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+- 结果：环境阻断，exit 65；错误为 `testmanagerd.control` sandbox restriction，非编译或断言失败。
+- 已运行：`./dev test macos`
+- 结果：通过；`xcrun xctest` fallback 后 278 tests，0 failures。
+- 失败：无产品测试失败。
+- 缺失：无当前 task 必需验证缺失。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS

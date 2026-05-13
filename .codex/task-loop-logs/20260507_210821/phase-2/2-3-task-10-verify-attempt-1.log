@@ -1,0 +1,80 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`2-3/task-10`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-3-detail-settings/task-10-s1-15-page-integration-verify.md`
+- 对应实现：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`core/area_matrix.udl`
+- Forbidden Touches：`core/src/**`
+
+三、完成度摘要
+
+- 已覆盖项数：9
+- 未覆盖项数：0
+- 通过项数：9
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：本页所有 page-feature task 覆盖
+- 结果：通过
+- 证据：task 绑定 `C1-11, C1-12`，control map 声明 `S1-15 | detail-multi | C1-11, C1-12 | list_files, get_file | Real Core`；task-10 依赖 `2-3/task-08`, `2-3/task-09`。
+- 涉及文件：`tasks/prompts/_shared/manifests/phase-2.md:2096`、`docs/architecture/mvp-control-map.md:30`
+
+- 项目：页面入口、退出、状态、错误态闭环
+- 结果：通过
+- 证据：多选入口来自 table selection；多选走 `.multiple` 并刷新详情；清空选择 `clearDetail()` 退出；单选回到 `.single`；详情面板在多选时走 `multiSelectionDetailPane`，错误态显示 inline warning 并保留 Retry。
+- 涉及文件：`apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift:61`、`apps/macos/AreaMatrix/Models/MainFileListModel.swift:65`、`apps/macos/AreaMatrix/Views/Main/MainRepositoryDetailPane.swift:75`
+
+- 项目：CoreBridge 调用真实接入
+- 结果：通过
+- 证据：`CoreBridge` 实现 `listFiles` 调用 `listCoreFiles`，`getFile` 调用 `getCoreFile`；UDL 暴露 `list_files` 和 `get_file`。
+- 涉及文件：`apps/macos/AreaMatrix/Bridge/CoreBridge.swift:285`、`apps/macos/AreaMatrix/Bridge/CoreBridge.swift:293`、`core/area_matrix.udl:69`
+
+- 项目：移除 mock、fixture、硬编码状态
+- 结果：通过
+- 证据：生产路径未发现 S1-15 mock-only wiring；测试 fixture 仅在 `AreaMatrixTests` 中。真实集成测试创建临时 repo，通过 `CoreBridge` adopt/list/get 走真实 Core。
+- 涉及文件：`apps/macos/AreaMatrixTests/DetailMultiPageIntegrationVerifyTests.swift:6`
+
+- 项目：不新增 control map 外功能
+- 结果：通过
+- 证据：多选详情只提供禁用的 Show in Finder、Copy Paths、Retry Metadata；Rename / Change Category / Delete 仅单选路径可触发，多选 `begin*` 不产生 action destination。
+- 涉及文件：`apps/macos/AreaMatrix/Views/Main/MainRepositoryDetailPane.swift:164`、`apps/macos/AreaMatrix/Models/MainFileListModel.swift:178`
+
+- 项目：Expected New Paths
+- 结果：通过
+- 证据：`apps/macos/AreaMatrix` 存在，`apps/macos/AreaMatrixTests` 存在，`project.pbxproj` 存在且纳入 `DetailMultiPageIntegrationVerifyTests.swift`。
+- 涉及文件：`apps/macos/AreaMatrix.xcodeproj/project.pbxproj:54`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git diff --name-only -- core/src` 输出为空；scoped status 未显示 `core/src/**` 改动。
+- 涉及文件：`core/src/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，S1-15 状态机拆在 `MainFileListModel`、summary 拆在 `MainFileListState`、视图拆在 `MainRepositoryDetailPane`，文件长度均未超过 500 行。
+- 注释 / rustdoc / 文档同步：通过，本任务未新增 public Rust API；UDL、Core API、capability specs 与 control map 对齐。
+- 错误处理与边界处理：通过，C1-12 局部失败会 map error、保留可用统计和 Copy Paths；多选不暴露批量写操作。
+- 测试与验证覆盖：通过，`./dev test macos` 最终执行 328 tests，0 failures。
+- 占位、硬编码、mock-only、一次性实现检查：通过，生产路径使用 `CoreBridge` 真实生成绑定；测试 fixture 未进入生产闭环。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+- 结果：失败，退出码 65；失败原因是本机 sandbox 阻断 `com.apple.testmanagerd.control`，不是断言失败或编译失败。
+- 已运行：`./dev test macos`
+- 结果：通过；该命令按 repo-local validation-driver 规则确认 `xcodebuild test` 为 testmanagerd sandbox 阻断后，复用已构建 XCTest bundle 运行 `xcrun xctest`，328 tests 全部通过。
+- 缺失：无必需验证缺失。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+VERIFY_RESULT: PASS

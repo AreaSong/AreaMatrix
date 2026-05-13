@@ -1,0 +1,38 @@
+一、执行结论：已完成。
+
+二、执行范围：单任务 `2-2/task-01`，只改了 manifest 允许的 macOS app / tests / Xcode project 路径。未触碰 `core/src/**`。
+
+修改文件清单：
+- [CoreBridge.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift)
+- [CoreBridgeSnapshots.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridgeSnapshots.swift)
+- [ImportEntryRequest.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportEntryRequest.swift)
+- [OnboardingModelInputs.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/OnboardingModelInputs.swift)
+- [ImportDropPreviewModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportDropPreviewModel.swift)
+- [FileDropAdapter.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/FileDropAdapter.swift)
+- [MainRepositoryContentView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift)
+- [ImportDropTargetView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportDropTargetView.swift)
+- [MainWindow.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/MainWindow.swift)
+- [MainEmptyImportEntryTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/MainEmptyImportEntryTests.swift)
+- [ImportDropPreviewModelTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportDropPreviewModelTests.swift)
+- [project.pbxproj](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj)
+
+三、完成情况：
+- 核对清单 1-4：通过。只处理 `S1-16 + C1-05`，读取并对齐 UX 页面、control map、Core API、C1-05 spec；只接入 `predict_category` 分类预览，没有实现相邻导入写入能力。
+- 完成标准：通过。拖拽 hover 可显示真实 Core 分类预览；Sidebar/Root drop target 会覆盖目标；无效 item 和分类错误有 warning；没有用 mock/静态状态伪造产品闭环。
+- Forbidden Touches：未触碰 `core/src/**`。
+
+四、工程质量：
+- 结构：把 hover 预览状态放入 `ImportDropPreviewModel`，把 drop delegate/overlay 拆到 `ImportDropTargetView`，`MainRepositoryContentView` 降到 491 行。
+- 错误与边界：处理无有效 file URL、部分无效 item、`Config` / `Classify` 错误、过期 async preview 回写。
+- 文档同步：本任务无需改文档或 UDL；现有 `core/area_matrix.udl` 已有 `predict_category`。
+- 未引入新依赖；未做用户文件删除/移动/覆盖。
+
+五、验证情况：
+- `xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：通过。
+- `./dev test macos`：通过。标准 `xcodebuild test` 被本地 `testmanagerd` sandbox 限制阻断，脚本按仓库规则复用已构建 XCTest bundle 运行 `xcrun xctest`，142 tests，0 failures。
+- `git diff --check`：通过。
+- `swiftformat` / `swiftlint`：未运行，当前 PATH 中没有这两个命令。
+
+六、风险与后续：
+- 剩余风险：未做真实拖拽手工 UI 冒烟；已用 build、XCTest、真实临时 repo 的 `CoreBridge.predictCategory` 覆盖核心闭环。
+- 建议下一个任务：按队列进入 `2-2/task-02`。

@@ -1,0 +1,40 @@
+一、执行结论
+
+已完成 `1-2/task-06`。
+
+二、执行范围
+
+修改范围仅在 `Expected New Paths` 内：
+
+- [core/src/api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:217)：`import_file` 接入真实 storage 实现。
+- [core/src/storage/import.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/import.rs:19)：实现 C1-06 Copy-only 导入路径。
+- [core/src/storage/hash.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/hash.rs:1)、[core/src/storage/validate.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/validate.rs:1)：补复制哈希、路径/文件名校验。
+- [core/src/db/import.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/db/import.rs:10)：补 staging row、promote active、change_log 写入和回滚清理 helper。
+- [core/tests/import_copy_file_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/import_copy_file_implementation.rs:83)：新增实现级集成测试。
+
+未触碰 `apps/**`。`core/area_matrix.udl` 未修改，因为现有 UDL 已与 C1-06 合同一致。
+
+三、完成情况
+
+核对清单均完成：只处理 C1-06 Copy implementation；按 Exact Docs 实现源文件保留、staging、hash、DB `files` active row、`change_log imported`；未实现 C1-07 move、C1-08 index、C1-09 duplicate 决策、C1-10 keep-both/name-conflict 自动改名。重复 hash 当前返回 `DuplicateFile`，同名目标返回 `Conflict`，避免覆盖。
+
+四、工程质量
+
+实现不是 mock/占位：真实复制文件、计算 SHA256、写 SQLite、写 change_log，并用 guard 做失败清理。新增模块拆分后文件长度保持在规范线内；没有新增依赖；生产路径没有新增 `unwrap()` / `expect()` / `panic!()`。
+
+五、验证情况
+
+全部通过：
+
+```bash
+cd core && cargo fmt --all -- --check
+cd core && cargo clippy --all-targets --all-features -- -D warnings
+cd core && cargo test --workspace import_copy_file
+cd core && cargo test --workspace
+git diff --check
+```
+
+六、风险与后续
+
+剩余风险：崩溃级别的 orphan final file/recovery 仍属于后续 C1-16 recovery 范围；C1-09/C1-10 需要继续补 duplicate strategy 与 keep-both/name-conflict 语义。当前工作区里仍有本任务开始前已存在的 `.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json` 脏改动，我未触碰。
+

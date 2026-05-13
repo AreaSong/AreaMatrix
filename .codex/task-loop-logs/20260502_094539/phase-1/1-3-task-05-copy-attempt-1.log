@@ -1,0 +1,14 @@
+一、执行结论：已完成 `1-3/task-05` contract-api。
+
+二、执行范围：单任务。修改了 [api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs) 和新增 [get_file_detail_contract_api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/get_file_detail_contract_api.rs)。`core/area_matrix.udl` 已核对，现有 `get_file(string repo_path, i64 file_id)` 合同已匹配，未修改。未触碰 `apps/**`。
+
+三、完成情况：C1-12 范围内完成了 `get_file` 的 public Rust contract 说明，明确输入、输出、错误码、只读副作用边界，以及不包含 Quick Look/OCR/log/note 聚合等相邻能力。新增 3 个 `get_file_detail` contract 测试，锁定 capability spec、control map、Core API 文档、UDL、error-codes 和 Rust rustdoc 一致性。
+
+四、工程质量：没有新增依赖，没有 mock-only wiring，也没有实现相邻 C1 或 UI。此 task 是 contract-api，因此 `get_file` 的 DB 读取实现仍按切片留给 `1-3/task-06 implementation`，本次不宣称运行时详情查询已完成。
+
+五、验证情况：  
+- `cd core && cargo fmt --all -- --check`：通过。首次发现格式差异，已用 `cargo fmt --all` 修正后复跑通过。  
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过。  
+- `cd core && cargo test --workspace get_file_detail`：通过，3 个新增测试执行通过。
+
+六、风险与后续：剩余风险是实际 `get_file` 仍未接入 DB 查询，这是后续 `1-3/task-06` 的明确范围。建议下一个任务执行 `1-3/task-06 get-file-detail implementation`。工作区原本已有 `.codex/task-loop-runs/20260502_094539/summary.json` 和 `tasks/prompts/_shared/progress.json` 脏改动，我未触碰。  

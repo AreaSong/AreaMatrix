@@ -1,0 +1,32 @@
+一、执行结论：已完成。
+
+二、执行范围：单任务 `1-2/task-01`，只改了允许范围：
+- [core/src/api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:176)
+- [core/src/classify/mod.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/classify/mod.rs:59)
+- [core/tests/classify_preview_contract.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/classify_preview_contract.rs:68)
+
+三、完成情况：
+- 已实现 `predict_category(repo_path, filename) -> ClassifyResult` 的真实只读分类预览。
+- 支持 keyword 优先于 extension、大小写/CJK/NFKC 归一、默认 `inbox` 回退、`Config` 错误边界。
+- `core/area_matrix.udl` 未修改，因为现有 UDL 已与 `docs/api/core-api.md` 的 C1-05 合同一致。
+- 未实现相邻 C1 能力、未实现 UI 页面、未触碰 `apps/**`。
+
+四、工程质量：
+- `classify` 实现保持单文件 342 行，未超 500 行；公共 API 已补 rustdoc 和 `# Errors`。
+- 生产代码没有新增 `unwrap()` / `expect()` / `panic!()`，错误路径显式返回 `CoreError::Config`。
+- 无 mock-only、硬编码通过态或一次性脚本；测试覆盖文档/UDL/control map 对齐、正常路径、失败路径和无文件/DB 写副作用。
+- 没有新增依赖。
+
+五、验证情况：
+- `cd core && cargo fmt --all -- --check`：通过
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过
+- `cd core && cargo test --workspace classify_preview`：通过，9 个目标测试通过
+- 额外补跑 `cd core && cargo test --workspace`：通过，全部现有测试通过
+- `git diff --check -- core/src/api.rs core/src/classify/mod.rs core/tests/classify_preview_contract.rs`：通过
+- 失败：无
+- 无法运行：无
+
+六、风险与后续：
+- 剩余风险：本任务只完成 C1-05 contract-api 范围，尚未做后续 import/duplicate/conflict 能力，也未接 macOS UI。
+- 工作区原本已有未处理改动：`.codex/task-loop-runs/20260501_132850/summary.json`、`tasks/prompts/_shared/progress.json`，我未触碰。
+- 建议下一个任务：继续 `1-2/task-02`。

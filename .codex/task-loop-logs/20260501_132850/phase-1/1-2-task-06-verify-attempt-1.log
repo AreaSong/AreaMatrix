@@ -1,0 +1,57 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`1-2/task-06`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-1/1-2-import-classify/task-06-c1-06-implementation.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/tests/**`
+
+三、完成度摘要
+
+- 已覆盖项数：15
+- 未覆盖项数：0
+- 通过项数：15
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 只处理 C1-06 implementation 范围：通过。`import_file` 明确只接受 `StorageMode::Copied`，非 copy 模式返回错误，未实现 C1-07/C1-08；证据：`/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/import.rs:77`、`:82`，测试 `/Users/as/Ai-Project/project/AreaMatrix/core/tests/import_copy_file_implementation.rs:212`。
+- Exact Docs 以文档为 SSOT：通过。manifest 的 6 个 Exact Docs 均存在并已读取；证据：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-1.md:778`。
+- 不实现相邻 C1 能力或 UI 页面：通过。`apps/**` 无 diff；C1-09/C1-10 的 duplicate/name conflict 只返回边界错误，不扩展实现；证据：`/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/import.rs:104`、`:121`、`:256`。
+- 最小真实路径：通过。路径为 API -> storage -> staging copy/hash -> DB staging -> final file -> promote active + change_log；证据：`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:217`，`/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/import.rs:24`，`/Users/as/Ai-Project/project/AreaMatrix/core/src/db/import.rs:59`、`:90`。
+- 分层方向：通过。public API 调 storage，storage 调 db/classify，未见 UI/macOS 反向依赖。
+- C1-06 完成标准：通过。成功路径证明源文件不变、目标文件存在、`files` active、`change_log` imported；证据：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/import_copy_file_implementation.rs:83`、`:94`、`:104`、`:113`、`:122`。
+- Expected New Paths：通过。`core/src/**`、`core/area_matrix.udl`、`core/tests/**` 均存在并落地；UDL 暴露 `import_file` 和 `ImportOptions`；证据：`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:37`、`:38`。
+- Forbidden Touches：通过。`git diff --name-only -- apps` 无输出，`apps/**` 未被触碰。
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。实现拆分为 prepare/stage/duplicate/destination/promote/guards，未见单函数堆叠。
+- 注释 / rustdoc / 文档同步：通过。public `import_file` 有 rustdoc 和 `# Errors`；UDL 与 Core API 签名一致。
+- 错误处理与边界处理：通过。覆盖 invalid path、duplicate、conflict、permission/iCloud 映射、staging/final/db guard 清理；证据：`/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/validate.rs:9`、`:13`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/import.rs:328`、`:404`、`:433`。
+- 测试与验证覆盖：通过。正常路径、duplicate、name conflict、invalid filename、非 copy 越界均有测试。
+- 占位、硬编码、mock-only、一次性实现检查：通过。C1-06 主路径接真实文件系统、SQLite 和 change_log；未用 mock-only 闭环。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- `cd core && cargo fmt --all -- --check`：通过。
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过。
+- `cd core && cargo test --workspace import_copy_file`：通过，11 个匹配测试通过。
+- `cd core && cargo test --workspace`：通过，113 个测试通过。
+- 缺失：无；macOS app 验证不在本 task 范围且 `apps/**` 为 Forbidden Touches。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS

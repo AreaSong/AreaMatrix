@@ -18,6 +18,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -46,6 +47,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -74,6 +76,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -102,6 +105,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -130,6 +134,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -160,6 +165,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -188,6 +194,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -216,6 +223,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -245,6 +253,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -273,6 +282,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -295,10 +305,12 @@
 - `docs/core/capability-specs/stage-1-mvp/C1-03-adopt-existing-repo.md`
 
 ### Existing Code
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 - `apps/macos/AreaMatrix/**`
 - `core/area_matrix.udl`
 
 ### Expected New Paths
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
 
@@ -329,6 +341,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -359,6 +372,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -387,6 +401,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -415,6 +430,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -443,6 +459,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -472,6 +489,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -511,6 +529,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -539,6 +558,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -567,6 +587,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -596,6 +617,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -624,6 +646,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -652,6 +675,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -680,6 +704,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -710,6 +735,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -738,6 +764,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -766,6 +793,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -794,6 +822,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -824,6 +853,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -852,6 +882,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -880,6 +911,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -908,6 +940,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -938,6 +971,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -976,6 +1010,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -1004,6 +1039,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -1032,6 +1068,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -1060,6 +1097,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -1088,6 +1126,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -1116,6 +1155,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -1147,6 +1187,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -1175,6 +1216,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -1203,6 +1245,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -1231,6 +1274,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -1261,6 +1305,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -1289,6 +1334,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -1317,6 +1363,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -1345,6 +1392,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -1375,6 +1423,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -1403,6 +1452,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -1431,6 +1481,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -1459,6 +1510,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -1489,6 +1541,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -1517,6 +1570,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -1545,6 +1599,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -1574,6 +1629,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -1602,6 +1658,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -1630,6 +1687,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -1658,6 +1716,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -1686,6 +1745,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -1715,6 +1775,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -1757,6 +1818,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -1785,6 +1847,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -1813,6 +1876,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -1841,6 +1905,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -1869,6 +1934,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -1897,6 +1963,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -1928,6 +1995,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -1956,6 +2024,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -1984,6 +2053,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -2012,6 +2082,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -2041,6 +2112,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -2078,6 +2150,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -2106,6 +2179,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -2134,6 +2208,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -2163,6 +2238,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -2191,6 +2267,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -2219,6 +2296,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -2247,6 +2325,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -2277,6 +2356,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -2305,6 +2385,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -2333,6 +2414,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -2362,6 +2444,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -2390,6 +2473,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -2418,6 +2502,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -2446,6 +2531,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -2474,6 +2560,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -2504,6 +2591,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -2531,6 +2619,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -2559,6 +2648,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -2587,6 +2677,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -2616,6 +2707,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -2656,6 +2748,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -2684,6 +2777,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -2712,6 +2806,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -2740,6 +2835,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -2768,6 +2864,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -2797,6 +2894,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -2830,6 +2928,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -2858,6 +2957,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -2886,6 +2986,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -2915,6 +3016,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -2943,6 +3045,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -2971,6 +3074,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -2999,6 +3103,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -3028,6 +3133,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`
@@ -3062,6 +3168,7 @@
 ### Expected New Paths
 - `apps/macos/AreaMatrix/**`
 - `apps/macos/AreaMatrixTests/**`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
 
 ### Forbidden Touches
 - `core/src/**`

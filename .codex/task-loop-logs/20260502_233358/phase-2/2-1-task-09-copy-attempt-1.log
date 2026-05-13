@@ -1,0 +1,40 @@
+一、执行结论
+
+已完成 `2-1/task-09`。
+
+二、执行范围
+
+单任务：S1-04 confirm-init page integration verify。
+
+修改文件：
+- [AreaMatrixApp.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/App/AreaMatrixApp.swift:209)
+- [ValidatePathIntegrationTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ValidatePathIntegrationTests.swift:167)
+
+工作区另有既有修改：`.codex/task-loop-runs/20260502_233358/summary.json`、`tasks/prompts/_shared/progress.json`，本次未触碰。
+
+三、完成情况
+
+- page-feature task 覆盖：C1-02 create empty 与 C1-03 adopt existing 均已有真实 `CoreBridge` 接入，并补了 S1-04 整页规则测试。
+- 页面闭环：确认页现在显示 inline error，并禁用主按钮；点击主按钮前仍会重新 `validateRepoPath`，路径状态变化时不会调用 init/adopt，也不会保存 repo 配置。
+- mock / fixture / 硬编码：未新增 mock-only 闭环；新增测试 fixture 只用于 XCTest。
+- Forbidden Touches：未触碰 `core/src/**`；`core/area_matrix.udl` 只读核对。
+
+四、工程质量
+
+代码结构保持小范围：新增 `ConfirmInitStepRules` 集中表达 S1-04 主按钮安全门禁，视图只负责展示和交互。错误态覆盖模式不匹配、路径状态变化、权限变化、已初始化、未完成扫描、环境检查缺失。未新增依赖、未改 public Rust API、无需 rustdoc / 文档同步。
+
+五、验证情况
+
+已运行：
+- `git diff --check`：通过。
+- `xcodebuild -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' build CODE_SIGNING_ALLOWED=NO`：通过。
+- `xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：已运行，构建完成后被本地沙箱阻断在 `com.apple.testmanagerd.control`。
+- `bash scripts/check-macos-tests.sh`：通过；脚本按仓库规则 fallback 到 `xcrun xctest`，43 tests passed。
+
+未运行：
+- `swiftformat --lint .`、`swiftlint --strict`：当前环境找不到 `swiftformat` / `swiftlint` 可执行文件。
+
+六、风险与后续
+
+残余风险：本地沙箱无法完成标准 `xcodebuild test` runner 通信，CI 或非沙箱环境仍需跑原始 manifest 命令。建议下一个任务按 manifest 进入 `2-1/task-10`（S1-05 + C1-02 initializing）。
+

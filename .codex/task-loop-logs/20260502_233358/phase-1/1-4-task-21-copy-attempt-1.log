@@ -1,0 +1,29 @@
+一、执行结论：已完成 `1-4/task-21` 的 C1-20 `contract-api` 范围。
+
+二、执行范围：
+- 修改 [core/src/api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:89)：补齐 `init_repo`、`update_config`、`import_file` 对 C1-20 overview policy、触发点、副作用边界的 rustdoc。
+- 新增 [core/tests/overview_generated_contract_api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/overview_generated_contract_api.rs:1)：6 条 contract-api 测试，覆盖 Exact Docs、control map、Core API、UDL、错误码、init 输出策略、`update_config` 不触碰 `README.md`。
+- 未触碰 `apps/**`。
+
+三、完成情况：
+- 只处理 C1-20 contract-api：通过。
+- Exact Docs 作为 SSOT：通过。
+- 未实现相邻 C1 能力或 UI：通过。
+- Core API / UDL 合同意图校准：通过，未新增 UDL 接口，复用现有 `OverviewOutput`。
+- 输入、输出、错误码、副作用边界：通过测试和 rustdoc 固化。
+
+四、工程质量：
+- 没有新增依赖，没有 mock-only 或硬编码通过态。
+- 测试文件 219 行，函数拆分后保持可读；public API 已补充 rustdoc。
+- 当前任务是 contract-api，完整 overview regeneration 实现仍属于 `1-4/task-22`。
+
+五、验证情况：
+- `cd core && cargo fmt --all -- --check`：通过。
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过。
+- `cd core && cargo test --workspace overview_generated`：通过，C1-20 新增 6 条测试全部通过。
+- `git diff --check`：通过。
+
+六、风险与后续：
+- 剩余风险：工作区存在我未改动的既有变更 `.codex/task-loop-runs/20260502_233358/summary.json` 和 `tasks/prompts/_shared/progress.json`。
+- 建议下一个任务：`1-4/task-22`，实现真实 overview regeneration 路径。
+

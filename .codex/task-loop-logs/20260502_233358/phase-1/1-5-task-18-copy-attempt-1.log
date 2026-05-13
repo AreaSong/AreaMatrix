@@ -1,0 +1,29 @@
+一、执行结论：已完成 `1-5/task-18`。
+
+二、执行范围：单任务，仅修改 Expected New Paths 内文件：
+- [icloud_conflicts.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/icloud_conflicts.rs:37)：列表扫描前增加 repo 路径 `.icloud` 占位符只读 preflight。
+- [list_icloud_conflicts_failure_recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/list_icloud_conflicts_failure_recovery.rs:69)：新增 C1-25 failure-recovery 测试，覆盖重复扫描、placeholder 失败后重试、repo placeholder 路径、权限失败后恢复重试。
+
+三、完成情况：
+- C1-25 failure-recovery 范围完成；未实现相邻 C1 能力或 UI。
+- 只读边界保持：不删除、不移动、不重命名、不覆盖、不合并、不下载用户文件。
+- `core/area_matrix.udl` 已与 Exact Docs 对齐，无需改动。
+- `apps/**` 未触碰。
+- 工作区原本已有 `.codex/task-loop-runs/20260502_233358/summary.json`、`tasks/prompts/_shared/progress.json` 脏改动，本次未触碰。
+
+四、工程质量：
+- 新逻辑是单行只读 preflight，没有新增依赖、mock-only、硬编码通过态或一次性脚本。
+- 测试使用 temp repo，验证 DB `files` / `change_log` 不变、文件字节不变、失败后可重试。
+- 权限测试在当前 Unix 环境实际执行并通过。
+
+五、验证情况：
+- `cd core && cargo fmt --all -- --check`：通过
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过
+- `cd core && cargo test --workspace list_icloud_conflicts`：通过，C1-25 相关 13 个测试通过
+- 额外补跑 `cd core && cargo test --workspace`：通过
+- `git diff --check`：通过
+
+六、风险与后续：
+- 剩余风险：未跑 macOS UI / Swift 消费层，因本 task 无绑定 UX 页面且 Forbidden Touches 禁止触碰 `apps/**`。
+- 建议下一个任务：`1-5/task-19`。
+

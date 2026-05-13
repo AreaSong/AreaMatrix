@@ -1,0 +1,71 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`4-1/task-13`
+- Task：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-13-c2-03-failure-edge.md`
+- Manifest：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-4.md`
+- 实现范围：`core/src/**`、`core/area_matrix.udl`、`core/tests/**`
+- 禁止触碰：`apps/**`
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：1
+- 阻塞项数：1
+
+四、逐项验收结果
+
+- 项目：空态、非法输入、权限、IO/DB 错误和错误码映射
+- 结果：通过
+- 证据：`list_saved_searches` 空态测试在 `core/tests/saved_search_implementation.rs:188`；非法输入和错误映射在 `:281`；DB 权限错误在 `:407`；`CoreError` 结构化映射在 `core/src/error.rs:226`、`:340`。
+- 涉及文件：`core/tests/saved_search_implementation.rs`、`core/src/error.rs`
+
+- 项目：失败不留下半成品
+- 结果：通过
+- 证据：create/update 使用 transaction：`core/src/db/saved_search.rs:32`、`:57`、`:66`、`:100`；强制 insert/update/delete 失败后 snapshot 不变测试在 `core/tests/saved_search_implementation.rs:332`。
+- 涉及文件：`core/src/db/saved_search.rs`、`core/tests/saved_search_implementation.rs`
+
+- 项目：隐私/AI/远程调用默认关闭、密钥不入日志
+- 结果：通过
+- 证据：C2-03 文档声明只写 saved_search 元数据、不涉及 AI/远程：`docs/api/core-api.md:1406`、`:1410`；测试确认 `ai_enabled=false` 且无 `.areamatrix/ai|remote|secrets` 副作用：`core/tests/saved_search_implementation.rs:458`。
+- 涉及文件：`docs/api/core-api.md`、`core/tests/saved_search_implementation.rs`
+
+- 项目：不得吞错或静默降级
+- 结果：通过
+- 证据：API 明确返回 `Config`/`Db`：`core/src/search/saved_search.rs:89`、`:115`、`:136`、`:157`；DB 写入错误显式映射：`core/src/db/saved_search.rs:183`、`:194`；生产路径未发现 `unwrap/expect/panic`。
+- 涉及文件：`core/src/search/saved_search.rs`、`core/src/db/saved_search.rs`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。C2-03 API 在 `core/src/search/saved_search.rs`，DB 持久化在 `core/src/db/saved_search.rs`，UDL 暴露在 `core/area_matrix.udl:84`、`:87`、`:90`、`:93`。
+- 注释 / rustdoc / 文档同步：通过。public API 有 rustdoc 和 `# Errors`：`core/src/search/saved_search.rs:77`、`:105`、`:130`、`:147`；Core API 与 capability spec 对齐：`docs/api/core-api.md:1387`、`:1412`、`:1434`、`:1452`。
+- 错误处理与边界处理：通过。非法输入、重复名、missing row、DB corruption、permission denied 均有测试证据。
+- 测试与验证覆盖：不通过。C2-03 相关 Rust 测试通过，但 manifest 指定的 `./dev check all` 最终失败。
+- 占位、硬编码、mock-only、一次性实现检查：通过。实现调用真实 DB row 函数，未发现 `unimplemented`、`todo!`、生产 panic 或 mock-only wiring。
+
+六、阻塞项
+
+- P0：Manifest 指定验证命令失败
+- 说明：任务文件要求运行 `./dev check all`，manifest 也要求同一命令；本次实际运行该命令失败，不能判定任务完成。
+- 绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-13-c2-03-failure-edge.md:36`
+- 绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-4.md:389`
+- 失败摘要：`./dev check all` 在 macOS checks 的 `xcodebuild test` 阶段退出 code 70；错误为 Xcode `IDESimulatorFoundation` 插件加载失败，提示 `Symbol not found ... DVTDownloads`，并建议运行 `xcodebuild -runFirstLaunch`。
+- 为什么导致不通过：验收规则要求无法用命令输出证明通过则判定不通过；manifest 唯一验证命令未通过，不能视为完成。
+
+七、验证情况
+
+- 已运行：`./dev check all`
+- 已通过部分：governance health、skill health、task-loop check、prompt doctor、git diff --check、cargo fmt、cargo clippy、cargo test --workspace；其中 `saved_search_contract_api` 5 tests 通过，`saved_search_implementation` 9 tests 通过。
+- 失败部分：macOS checks 的 `xcodebuild test` 失败，属于非 sandbox 原因的 Xcode 插件加载失败。
+- 缺失：没有完整通过的 `./dev check all` 最终证据。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+
+VERIFY_RESULT: FAIL

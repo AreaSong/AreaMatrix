@@ -1,0 +1,44 @@
+一、执行结论
+
+已完成。上次验收的两个 P1 已修复：`Rename first` 成功后会回到 S1-35，并保留原目标分类；`PermissionDenied` 失败态现在提供权限恢复入口。
+
+二、执行范围
+
+单任务：`2-3/task-36`
+
+主要修改：
+- [MainFileListState.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileListState.swift:43)：为 `.changeCategory` 保留 `initialTargetCategory`，并增加从 rename 返回 S1-35 的状态。
+- [MainFileRenameActions.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileRenameActions.swift:4)：rename 成功后按返回目标重新打开 S1-35。
+- [ChangeCategorySheet.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ChangeCategorySheet.swift:3)：权限错误显示 `Open folder permissions`，`Rename first` 传递目标分类。
+- [MainWindow.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/MainWindow.swift:365)：权限恢复入口接到现有 repository folder reveal。
+- [ChangeCategoryPageIntegrationVerifyTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ChangeCategoryPageIntegrationVerifyTests.swift:4)：补齐 S1-35 整页集成、rename 回返、权限恢复测试。
+- `project.pbxproj`：注册新增 integration verify 测试文件。
+
+三、完成情况
+
+- page-feature 覆盖：通过，S1-35 仍只覆盖 C1-24、C1-10。
+- 页面状态/入口/退出/错误态/CoreBridge 闭环：通过。
+- mock / fixture / 硬编码状态清理：通过，生产路径无 mock-only wiring。
+- 不新增 control map 外功能：通过，权限恢复使用既有打开仓库位置能力，不新增 Core 能力。
+- Forbidden Touches：未触碰，`git diff --name-only -- core/src` 为空。
+
+四、工程质量
+
+代码结构保持在现有 MainFile action routing 模式内，没有新增依赖。错误路径保留 Core error mapping，`PermissionDenied` 和 conflict 分支都有显式 UI 恢复动作。测试文件已拆分，关键 touched 文件均低于 500 行；新增/触碰范围无超过 120 字符行。未改 Rust public API，无 rustdoc 需求。
+
+五、验证情况
+
+已运行：
+- `xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：通过。
+- `xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：失败，原因是本地 sandbox 阻断 `com.apple.testmanagerd.control`，不是编译或断言失败。
+- `./dev test macos`：通过；脚本识别同一 sandbox 限制后用 `xcrun xctest` 执行同一 XCTest bundle，434 tests，0 failures。
+- `git diff --check`：通过。
+- scope 检查：`core/src/**` 无 diff。
+
+未运行：
+- SwiftFormat / SwiftLint：当前 PATH 未发现 `swiftformat` / `swiftlint` 可执行文件。
+
+六、风险与后续
+
+剩余风险：没有 macOS 手工 UI 点击证据；当前证据来自代码审查、build 和 XCTest。建议下一步进入 `2-3/task-36` 的 verify-ready 验收，若通过再继续后续任务。
+

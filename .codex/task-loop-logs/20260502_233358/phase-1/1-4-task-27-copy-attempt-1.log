@@ -1,0 +1,39 @@
+**一、执行结论**
+
+已完成 `1-4/task-27: C1-21 error-mapping implementation`。
+
+**二、执行范围**
+
+单任务，仅修改：
+
+- [core/src/error.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/error.rs:93)：把错误映射拆成稳定 `ErrorMappingTemplate`，`to_error_mapping()` 只按 `ErrorKind` 取模板并保留原始 payload。
+- [core/tests/error_mapping_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/error_mapping_implementation.rs:1)：新增 implementation 级测试，覆盖按 kind 分支、payload 选择、fallback、high/critical 严重度和确定性。
+
+`core/area_matrix.udl` 已与 Exact Docs 对齐，本轮无需修改。`apps/**` 未触碰。
+
+**三、完成情况**
+
+核对清单全部完成：只处理 C1-21；已读取 task、共享规则、Exact Docs、Existing Code、manifest；未实现相邻能力或 UI；保持 Core 层无文件系统/DB/日志副作用的错误映射路径。
+
+完成标准满足：`map_core_error(ErrorMappingInput) -> ErrorMapping` 和 `CoreError::to_error_mapping()` 有实现与测试证据；没有扩展到未绑定能力。
+
+**四、工程质量**
+
+代码结构从长 match 收敛为模板映射，公共 API rustdoc 保持存在。错误映射按结构化 variant/payload 分支，不依赖字符串 contains；缺失 payload 有稳定 fallback。未新增依赖、无 mock-only、无硬编码通过态、无用户文件/DB/UDL/Swift 侧改动。
+
+**五、验证情况**
+
+已通过：
+
+- `cd core && cargo fmt --all -- --check`
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`
+- `cd core && cargo test --workspace error_mapping`：contract 5 个 + implementation 5 个 error_mapping 测试通过
+- 额外加宽：`cd core && cargo test --workspace` 全部通过
+
+无法运行项：无。
+
+**六、风险与后续**
+
+剩余风险低：本轮仅调整 Core 错误映射结构与测试，不改 UDL、DB、文件系统或 macOS app。回滚方式是回退 [core/src/error.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/error.rs:93) 并删除 [core/tests/error_mapping_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/error_mapping_implementation.rs:1)。
+
+当前工作区另有既存脏状态：`.codex/task-loop-runs/20260502_233358/summary.json`、`tasks/prompts/_shared/progress.json`，不属于本任务改动。建议下一步先跑 `1-4/task-27` verify-ready，通过后再进入 `1-4/task-28`。  

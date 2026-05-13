@@ -1,0 +1,42 @@
+一、执行结论
+
+- 已完成。
+
+二、执行范围
+
+- 单任务：`phase-2 / 2-1/task-04`
+- 修改范围仅限 `apps/macos/AreaMatrix/**`
+- 主要文件：
+  - `apps/macos/AreaMatrix/Bridge/CoreBridge.swift`
+  - `apps/macos/AreaMatrix/Models/AppShellModel.swift`
+  - `apps/macos/AreaMatrix/Views/MainWindow.swift`
+  - `apps/macos/AreaMatrix/App/AreaMatrixApp.swift`
+  - `apps/macos/AreaMatrix/App/AreaMatrixAppSmokeTests.swift`
+
+三、完成情况
+
+- 已补上 C1-03 的真实 `CoreBridge` adopt 入口：`adoptExistingRepo(repoPath:)` 现在调用真实 UniFFI `initRepo`，并使用 `RepoInitOptions(mode: .adoptExisting, createDefaultCategories: false, overviewOutput: .generatedOnly)`。
+- S1-03 的 adopt Continue 现在有用户可见后续动作：进入确认初始化 handoff 视图，而不是只写内部 action。
+- 测试补齐真实临时非空目录证据：验证 Core 返回 `.adoptExisting`，执行 adopt 后只创建 `.areamatrix/`，不改写已有 `README.md` 和用户文件。
+- 未触碰 `Forbidden Touches`：`git diff --name-only -- core/src` 为空。
+
+四、工程质量
+
+- 代码结构已拆在 `CoreBridge`、`AppShellModel`、`MainWindow` 和测试层，未引入 mock-only 闭环。
+- 没有新增 Rust public API，因此无 rustdoc 变更需求。
+- 错误处理已覆盖 scan session 读取失败、adopt Core 调用失败、不可继续状态等路径。
+- 文件长度检查后 `AppShellModel.swift` 保持在 500 行以内。
+
+五、验证情况
+
+- 通过：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+- 标准 `xcodebuild test` 仍被本地 sandbox 的 `testmanagerd.control` 限制阻断。
+- 通过：`bash scripts/check-macos-tests.sh`，fallback 到 `xcrun xctest`，结果 `26 tests, 0 failures`。
+- 通过：`git diff --check`
+- 通过：`git diff --name-only -- core/src`
+
+六、风险与后续
+
+- 剩余风险：本轮完成的是 S1-03 + C1-03 handoff 与真实 Core adopt 闭环；完整 S1-04 确认初始化页面仍应由对应后续 task 负责。
+- 建议下一步：运行 `2-1/task-04` 的 verify-ready 验收，通过后再推进 `2-1/task-05`。
+

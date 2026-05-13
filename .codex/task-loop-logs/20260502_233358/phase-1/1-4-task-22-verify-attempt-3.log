@@ -1,0 +1,71 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`1-4/task-22`
+- 对应路径：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-1/1-4-recovery-sync-overview/task-22-c1-20-implementation.md`
+- 实际验收文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/**`
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：0
+- 通过项数：10
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 C1-20 implementation 范围
+- 结果：通过
+- 证据：变更集中在 Core overview 生成、DB overview 查询、import/rename/sync 触发接入和 C1-20 测试；`git status --short -- apps` 无输出。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/overview/mod.rs:39`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/import.rs:216`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/sync/mod.rs:92`
+
+- 项目：Exact Docs 以文档为 SSOT
+- 结果：通过
+- 证据：C1-20 文档要求默认写 `.areamatrix/generated/`、可选 `AREAMATRIX.md`、不覆盖 `README.md`；实现与测试均覆盖。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-20-overview-generated.md:20`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/overview_generated_implementation.rs:132`
+
+- 项目：Expected New Paths 落地
+- 结果：通过
+- 证据：`core/src/**`、`core/area_matrix.udl`、`core/tests/**` 均存在；新增 `core/src/db/overview.rs`、`core/tests/overview_generated_implementation.rs` 已落地。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/db/overview.rs:30`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/overview_generated_implementation.rs:1`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git status --short -- apps` 无输出，未发现 `apps/**` 被触碰。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/**`
+
+- 项目：完成标准
+- 结果：通过
+- 证据：`init_repo` 初始化生成 root overview，`import_file` 成功后生成 root/node overview，`update_config` 只持久化策略且不触碰 README，RootAreaMatrixFile 仅在配置启用后维护 `AREAMATRIX.md`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/repo_init.rs:125`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/overview/mod.rs:59`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/overview_generated_implementation.rs:151`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。overview 生成与 DB 查询分层清楚，Core 层无 macOS 依赖；`core/src/overview/mod.rs` 456 行，未超过 500 行。
+- 注释 / rustdoc / 文档同步：通过。公共 API rustdoc 已描述 C1-20 的 overview policy、触发和副作用边界；UDL 中 `OverviewOutput` 与 Core API 对齐。
+- 错误处理与边界处理：通过。overview 写入错误返回 `CoreError`；import 在 overview 失败时保留 rollback guard，测试覆盖 copy/move/indexed/overwrite 回滚。
+- 测试与验证覆盖：通过。`overview_generated` 筛选测试 16 个通过，补跑全量 `cargo test --workspace` 通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。实现读取真实 SQLite `files` / `change_log` / `repo_config`，写真实 `.areamatrix/generated/` 和可选 `AREAMATRIX.md`，不是 mock-only。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`cd core && cargo fmt --all -- --check`：通过
+- 已运行：`cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过
+- 已运行：`cd core && cargo test --workspace overview_generated`：通过，C1-20 contract 6 个 + implementation 10 个通过
+- 已运行：`cd core && cargo test --workspace`：通过
+- 已运行：`git diff --check -- core apps`：通过
+- 缺失：无
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。C1-20 overview-generated implementation 有真实 Core 路径、文件系统与 DB 证据、禁止触碰边界证据和验证命令证据，当前仓库状态可以判定该 task 完成。
+
+VERIFY_RESULT: PASS

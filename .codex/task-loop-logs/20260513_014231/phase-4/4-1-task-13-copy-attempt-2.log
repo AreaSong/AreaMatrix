@@ -1,0 +1,49 @@
+一、执行结论
+
+- 未完成
+- 原因：本任务唯一验证命令 `./dev check all` 仍失败，不能按规则判定完成。
+
+二、执行范围
+
+- 单任务：`4-1/task-13`
+- 本轮未修改 `core/src/**`、`core/area_matrix.udl`、`core/tests/**`
+- 未触碰 `apps/**`
+- 当前工作树里已有 `tasks/prompts/_shared/progress.json` 和 `.codex/task-loop-*` 变更，我未回滚、未纳入本次修复
+
+三、完成情况
+
+- C2-03 功能证据：通过。`saved_search_contract_api` 5 tests、`saved_search_failure_recovery` 11 tests、`saved_search_implementation` 9 tests 全部通过。
+- 回滚/半成品证据：通过。现有测试覆盖 insert/update 失败回滚、写入失败不留部分记录、损坏 DB/权限失败不改用户文件。
+- 隐私/AI/远程调用：通过。现有失败测试覆盖不启用 AI、不创建 remote/secrets 状态。
+- 禁止吞错：通过。损坏 metadata、缺表、重复名称、非法输入均返回结构化错误。
+- Forbidden Touches：未触碰。
+
+四、工程质量
+
+C2-03 现有实现结构清楚：`core/src/search/saved_search.rs` 做 API/输入校验，`core/src/db/saved_search.rs` 做真实 SQLite 持久化和事务处理，不是 mock-only 或硬编码通过态。public Rust API 已有 rustdoc，错误路径走 `CoreError::Config` / `CoreError::Db`。
+
+五、验证情况
+
+已运行：
+
+- `cargo fmt --manifest-path core/Cargo.toml --all -- --check`：通过
+- `cargo test --manifest-path core/Cargo.toml --test saved_search_contract_api --test saved_search_implementation --test saved_search_failure_recovery`：通过，25 tests 全绿
+- `./dev check all`：失败
+
+`./dev check all` 中已通过：
+
+- governance、skills、task-loop check、prompt doctor、git diff --check
+- core `cargo fmt`、`cargo clippy --all-targets --all-features -- -D warnings`
+- core `cargo test --workspace`
+- macOS 构建和大多数 XCTest
+
+失败点：
+
+- `apps/macos/AreaMatrixTests/AreaMatrixPerfTests.swift:182`
+- 单测：`AreaMatrixPerfTests/testApplicationLaunchToFirstScreenBaselineUnderStage1Threshold`
+- 错误：`unexpectedFirstScreenRoute`
+- 复跑单测仍失败；`CoreBridgeRepositoryTests/testOnboardingLoadsConfiguredRepoThroughDefaultCoreBridge` 单独复跑通过，说明真实 CoreBridge 打开空仓库能进入 `.mainEmpty`，失败更像 macOS hostless fallback 首屏路由测试问题，而不是 C2-03/Core saved search 问题。
+
+六、风险与后续
+
+剩余阻塞是 `apps/**` 内 macOS 测试失败，但本任务 manifest 明确 `Forbidden Touches: apps/**`，所以我不能在本次 `4-1/task-13` repair retry 中修改它。建议下一个动作是开一个允许触碰 `apps/macos/**` 的修复任务，专门处理 `AreaMatrixPerfTests` 的 hostless fallback 路由断言。

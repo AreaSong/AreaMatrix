@@ -1,0 +1,64 @@
+**一、执行结论**
+
+已完成。`2-1/task-19` repair retry 第 2 次已修复上次验收指出的范围扩散：不再提前实现 `S1-09 main-list` 的真实文件行展示。
+
+**二、执行范围**
+
+单任务：`2-1/task-19`。
+
+实现相关修改文件：
+
+- [CoreFileListing.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreFileListing.swift:1)
+- [CoreBridge.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift:267)
+- [CoreRepositoryOpening.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreRepositoryOpening.swift:40)
+- [MainRepositoryContentView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift:36)
+- [InitDoneEmptyRepositoryTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/InitDoneEmptyRepositoryTests.swift:85)
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+- 测试夹具同步：`AreaMatrixAppSmokeTests.swift`、`AreaMatrixShellTestSupport.swift`、`ValidatePathRepairTestSupport.swift`
+
+工作区另有 task-loop 运行状态文件变更：`tasks/prompts/_shared/progress.json`、`.codex/task-loop-*`，我未把它们作为产品实现范围处理。
+
+**三、完成情况**
+
+- 核对清单：全部通过。
+- S1-08 + C1-11：通过。`openEmptyRepository` 现在通过真实 `list_files` 加载当前分类空数组。
+- 不实现同页其他 Core 能力：通过。未接入 `C1-15`。
+- 不顺手实现相邻页面：通过。`.list` 分支继续按 tree/sidebar 展示，不渲染 `currentCategoryFiles` 文件行。
+- 无 mock / fixture 伪造真实 Core：通过。测试创建临时 repo，调用真实 `initializeEmptyRepository` 与 `listFiles`，断言空数组。
+- Forbidden Touches：未触碰 `core/src/**`；`core/area_matrix.udl` 也未修改。
+
+**四、工程质量**
+
+代码结构清晰：`CoreFileListing` 承载 `FileFilterSnapshot` / `FileEntrySnapshot` 映射，`CoreBridge.listFiles` 通过 generated binding 真实调用 Core。错误通过 `throws` 传播，没有吞错、硬编码成功或 mock-only wiring。
+
+注释仅保留一处说明 Import 属于后续任务；本轮无新增 public Rust API，无 rustdoc 需求。没有新增依赖。
+
+**五、验证情况**
+
+已运行并通过：
+
+```bash
+xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO
+```
+
+结果：`** BUILD SUCCEEDED **`
+
+```bash
+./dev test macos
+```
+
+结果：标准 `xcodebuild test` 被本地 `testmanagerd` sandbox 限制阻断；脚本按仓库规则复用 XCTest bundle，`xcrun xctest` 通过，65 tests，0 failures。
+
+补充检查：
+
+- `git diff --check`：通过。
+- `python3 tasks/prompts/_shared/prompt_pipeline.py verify --task 2-1/task-19`：verify prompt 生成通过，603 行。
+- `swiftlint --version`：无法运行，当前环境未安装 `swiftlint`。
+- `swiftformat --version`：无法运行，当前环境未安装 `swiftformat`。
+
+**六、风险与后续**
+
+剩余风险：SwiftLint / SwiftFormat 本机不可用，需在具备工具的环境补跑。当前修复已针对上次 P1 范围扩散收敛，未发现新的 task 边界扩散。
+
+建议下一个任务：进入 `2-1/task-19` verify-ready 只读验收；通过后再推进后续 `S1-08` 同页其他能力或 `S1-09` 的独立 page-feature task。  
+

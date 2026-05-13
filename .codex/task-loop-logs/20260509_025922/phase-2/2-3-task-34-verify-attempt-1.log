@@ -1,0 +1,102 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`2-3/task-34`
+- 对应文件路径：
+- `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-3-detail-settings/task-34-s1-35-c1-24-move-to-category.md`
+- `/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-35-change-category-sheet.md`
+- `/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-24-move-to-category.md`
+- `/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md`
+- `/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md`
+- `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+- `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`
+- `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`
+- `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：0
+- 通过项数：10
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 S1-35 页面中的 C1-24 功能点
+- 结果：通过
+- 证据：实现集中在 `ChangeCategorySheet`、`MainFileCategoryMove*`、`CoreMoveToCategory` 与 routing/refresh，未实现相邻页面；S1-35 入口来自 main-list context menu。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ChangeCategorySheet.swift:3`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift:409`
+
+- 项目：读取并对齐页面规格、control map、Core API、C1-24 能力规格
+- 结果：通过
+- 证据：S1-35 要求 preview、safe move、Index-only、change_log、Tree/List/Detail 刷新；control map 将 S1-35 绑定 `C1-24, C1-10`，本 task 只覆盖 `C1-24`；Core API/UDL 均有 `preview_move_to_category` 与 `move_to_category`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:50`，`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:57`
+
+- 项目：只接入 C1-24 对应 CoreBridge / 状态 / 错误映射
+- 结果：通过
+- 证据：`CoreFileCategoryMoving` 只暴露 preview/move；`CoreBridge` 默认实现调用 UniFFI 生成函数；状态机包含 checking/ready/moving/failed，失败通过 `mapCoreError` 映射。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreMoveToCategory.swift:41`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileCategoryMoveActions.swift:13`
+
+- 项目：不顺手实现相邻页面
+- 结果：通过
+- 证据：未新增 S1-33/S1-34 实现逻辑，只通过现有 routing sheet 挂接 S1-35。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainFileActionRoutingSheet.swift:31`
+
+- 项目：S1-35 中 C1-24 用户可见功能可触发和验收
+- 结果：通过
+- 证据：用户可从 `Change Category...` 打开 sheet，选择目标分类触发 preview，点击 `Change Category` 执行 move；成功后刷新 Tree/List/Detail/change log。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ChangeCategorySheet.swift:49`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentCategoryMoveRefresh.swift:12`
+
+- 项目：没有 mock、fixture 或静态状态伪造真实 Core 闭环
+- 结果：通过
+- 证据：生产默认依赖为 `CoreBridge()`；测试中的 recording mover/fixtures 只在 `AreaMatrixTests` 使用；真实 CoreBridge 测试覆盖 import -> preview -> move -> get_file -> list_changes。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileListModel.swift:48`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ChangeCategoryPageFeatureTests.swift:185`
+
+- 项目：未触碰 control map 之外 Core 能力
+- 结果：通过
+- 证据：只新增/接入 C1-24 preview/move；`C1-10` 未在本 task 中扩展实现，符合 secondary capability 状态。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreMoveToCategory.swift:3`
+
+- 项目：Expected New Paths 已落地
+- 结果：通过
+- 证据：`apps/macos/AreaMatrix/**` 有实现文件，`apps/macos/AreaMatrixTests/**` 有 `ChangeCategoryPageFeatureTests.swift`，project.pbxproj 已加入 build file/source refs。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj:56`
+
+- 项目：Forbidden Touches 未违规
+- 结果：通过
+- 证据：`git status --short -- core/src` 无输出；`git diff --name-only -- core/src ...` 未列出 `core/src/**`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+- 项目：任务验证命令
+- 结果：通过
+- 证据：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO` 结束为 `** BUILD SUCCEEDED **`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，Core bridge、状态、sheet、routing、refresh 拆分清楚，未把逻辑堆进单个大文件。
+- 注释 / rustdoc / 文档同步：通过，本 task 为 Swift internal app code；Core API 文档与 UDL 已一致。
+- 错误处理与边界处理：通过，preview/move 失败进入 `failed` 状态并映射 Core error；moving 防重复提交；Cancel 不触发写入。
+- 测试与验证覆盖：通过，覆盖 preview 不移动、submit 刷新、Tree/List/Detail/change_log、失败映射、真实 CoreBridge copied file move。
+- 占位、硬编码、mock-only、一次性实现检查：通过，生产路径走 `CoreBridge` + UniFFI；recording fakes 仅存在于测试。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：通过，`** BUILD SUCCEEDED **`。
+- 已运行：`./dev test macos`：通过；标准 `xcodebuild test` 被本地 `testmanagerd` sandbox 限制阻断后，脚本按 repo-local 策略复用已构建 XCTest bundle，`xcrun xctest` 通过；总计 `428 tests, 0 failures`。
+- 失败：无产品验证失败；只有本地 sandbox 对 `testmanagerd.control` 的环境限制，已由脚本允许路径处理。
+- 缺失：未做人工 macOS 真机交互截图验收；当前证据为代码审计、build、XCTest 与真实 CoreBridge 集成测试。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS

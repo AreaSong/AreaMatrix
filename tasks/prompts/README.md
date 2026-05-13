@@ -20,7 +20,9 @@ Manifest：[./_shared/manifests/](./_shared/manifests/)
 6. 执行与验收都必须应用 `engineering-quality-rules.md` 和 `docs/development/coding-standards.md`。
 7. 任务完成后用 `render --mode verify` 或 `verify` 生成只读验收 prompt。
 8. 需要批量复制时，用 `export --phase` 或 `export --all` 把 copy-ready / verify-ready prompt 导出为静态文件。
-9. Runner 只负责 prompt 生成、进度和状态管理；自动闭环由 `scripts/run_area_matrix_task_pipeline.sh` 调用 `codex exec`。
+9. Runner 只负责 prompt 生成、进度和状态管理；自动闭环由 `./task-loop run` 调用 `codex exec`。
+10. 当前 637 个任务是 `v1-mvp` live queue；大型新增需求先进入 `workflow/versions/v*/` 规划链路，通过 workflow doctor、changes、plans、drafts、queue 和 promotion preview 检查，不直接改 live queue。
+11. 新 v* 版本在生成执行 / 检查 prompt 之前，必须先完成 `workflow/versions/v*/discussion/` 的 docs 讨论与中间层讨论门禁；`v-template` 只是模板验收实例，v1 继续在本目录 live 执行，完成后再归档到 workflow。
 
 ## Runner
 
@@ -87,9 +89,9 @@ python3 tasks/prompts/_shared/prompt_pipeline.py mark --task 0-1/task-01 --statu
 
 进度写入本地文件 `tasks/prompts/_shared/progress.json`，默认不提交。`next` 和 `status` 会读取这个文件来判断下一个可执行任务。
 
-## 自动化执行脚本（可选）
+## 自动化执行 Runner（可选）
 
-仓库提供 `scripts/run_area_matrix_task_pipeline.sh`，可将 copy-ready + verify-ready 做成闭环执行：
+仓库提供 `./task-loop run`，可将 copy-ready + verify-ready 做成闭环执行：
 
 1. 读取 copy-ready 并调用 `codex exec` 执行。
 2. 再读取 verify-ready 进行只读验收。
@@ -130,7 +132,7 @@ RISK_POLICY=pause
 基本用法（全量执行）：
 
 ```bash
-MAX_RETRIES=0 bash scripts/run_area_matrix_task_pipeline.sh
+MAX_RETRIES=0 ./task-loop run
 ```
 
 全静默执行：
@@ -138,7 +140,7 @@ MAX_RETRIES=0 bash scripts/run_area_matrix_task_pipeline.sh
 ```bash
 RISK_POLICY=allow \
   MAX_RETRIES=0 \
-  bash scripts/run_area_matrix_task_pipeline.sh
+  ./task-loop run
 ```
 
 只执行某个起点和阶段，便于试跑：
@@ -146,7 +148,7 @@ RISK_POLICY=allow \
 ```bash
 MAX_RETRIES=0 \
   START_FROM=phase-1/1-1-task-01 \
-  bash scripts/run_area_matrix_task_pipeline.sh --phase phase-1 --max-tasks 5
+  ./task-loop run --phase phase-1 --max-tasks 5
 ```
 
 Dry-run（预演，不改文件）：
@@ -155,18 +157,93 @@ Dry-run（预演，不改文件）：
 DRY_RUN=1 \
   MAX_RETRIES=1 \
   DRY_RUN_RESULT=PASS \
-  bash scripts/run_area_matrix_task_pipeline.sh --phase phase-1 --max-tasks 1
+  ./task-loop run --phase phase-1 --max-tasks 1
 ```
 
-脚本会在 `.codex/task-loop-logs/<timestamp>/<phase>/` 写入每次执行和验收日志。
+Python runner 会在 `.codex/task-loop-logs/<timestamp>/<phase>/` 写入每次执行和验收日志。
 进度统一写入 `tasks/prompts/_shared/progress.json`，因此 `next` 和 `status` 会直接反映自动执行结果。
 
 查看或恢复：
 
 ```bash
-bash scripts/run_area_matrix_task_pipeline.sh --status
-bash scripts/run_area_matrix_task_pipeline.sh --resume-failed
+./dev
+./dev --once
+./dev status
+./dev status --verbose
+./dev processes
+./task-loop status
+./task-loop resume-failed
 ```
+
+`./dev` 是 AreaMatrix Dev Console 总控入口，默认展示局势诊断首页，而不是把所有 task-loop 命令平铺在首页。首页只回答：现在安全吗、为什么、下一步按什么顺序做、v1 live queue 与 workflow 规划层当前处在哪。当前 live queue 来自 `tasks/prompts/**`；`workflow/` 是后续版本和大型变更的规划生命周期，不直接修改 live queue。首页主要入口是 `1 recommended guide`、`2 lifecycle map`、`3 live queue details`、`4 tools`、`? shortcuts`、`h help`、`q quit`；`1` 只展示行动链，不自动执行命令；危险操作只在 `live queue -> maintenance/danger`。直接按 Enter 只看完整状态，不启动任务；输入 `?` 查看全部快捷键。`./dev --once` 渲染一次首页后退出，便于截图或脚本检查。语言优先级是 `./dev --lang mixed|zh|en` > `DEV_LANG=mixed|zh|en` > `.codex/dev-console/config.json` > `mixed`；交互模式输入 `lang` 会保存本仓库本地偏好，该目录已被 `.gitignore` 忽略。`./dev` 壳层文案由 `scripts/task_loop/locales/{mixed,zh,en}.json` 管理，动作结构由 `scripts/task_loop/actions.py` 统一登记，命令、路径、环境变量、task label 和底层 runner / workflow 透传输出不翻译。颜色可用 `./dev --color never` 或 `NO_COLOR=1` 关闭；完整进程命令用 `./dev processes` 查看。旧版长输出保留在 `./dev status --verbose`。
+
+## Workflow 与版本化变更
+
+`workflow/` 是大功能 / 版本 / 重构 / 优化的生命周期系统；`tasks/prompts/**` 是已批准、可执行、可验收的小任务队列；`./task-loop` 只执行 tasks，不做需求决策。
+
+- `workflow/versions/v1-mvp/` 记录当前 637-task live queue，v1 完成后再归档，不移动现有 `tasks/prompts/**`。
+- `workflow/versions/v-template/` 是模板验收实例，用来证明 templates、schema、doctor、promotion preview、projection、closeout/audit 的全链路，不是真实后续版本。
+- 真实新版本使用 `workflow/versions/vN/`，在 promotion apply 前仍不得绕过 v1 live gate。
+
+版本工作流入口：
+
+```bash
+./dev workflow doctor
+./dev workflow status
+./dev workflow check-template
+./dev workflow plan
+./dev workflow queue
+./dev workflow promote --version v-template preview
+```
+
+模板验收实例 changes / drafts 入口：
+
+```bash
+./dev changes doctor
+./dev changes preview
+./dev changes generate
+./dev changes generate --feature template-docs-contract
+```
+
+`generate` 默认只把 manifest / copy-ready / verify-ready 草稿打印到终端，不落盘。显式写入时使用：
+
+```bash
+./dev changes generate --write
+./dev changes generate --write --out-dir /tmp/areamatrix-template-drafts
+./dev changes generate --write --force
+```
+
+默认写入位置是 `workflow/versions/v-template/drafts/`，并按 feature 分组，例如：
+
+```text
+workflow/versions/v-template/drafts/template-docs-contract/manifest.md
+workflow/versions/v-template/drafts/template-docs-contract/docs-baseline.copy.md
+workflow/versions/v-template/drafts/template-docs-contract/docs-baseline.verify.md
+```
+
+Promotion 预演会把 workflow 语义任务映射成未来 live runner 可识别的数字 task label，但不会写入 live queue：
+
+```bash
+./dev workflow promote --version v-template preview
+./dev workflow promote --version v-template --feature template-docs-contract --preview
+./dev workflow promote --version v-template --write --out-dir /tmp/areamatrix-template-promotion
+```
+
+`v-template` 是模板验收实例，`apply --write` 必须被硬门禁拦住。即使使用 promotion preview `--write`，也只写 promotion review artifact，不修改 `tasks/prompts/**`、不修改 `progress.json`、不启动 `./task-loop`。
+
+这些文件只是 review artifact，不是正式 v1 live queue。它们不会修改 `tasks/prompts/**`、不会更新 `progress.json`，也不会启动或影响 `./task-loop`。后续若要创建真实产品版本，需要单独 `./dev workflow init --version vN`、讨论、计划和验收。
+
+真实版本从 0 开始时使用：
+
+```bash
+./dev workflow init --version v2
+./dev workflow init --version v2 --write
+./dev workflow discuss --version v2 doctor
+```
+
+discussion gate 通过后，再进入 baseline / middle-layer / changes / plans /
+drafts / queue / promotion preview。真实版本在 explicit approve + apply gate
+通过前仍不得写入 live `tasks/prompts/**`。
 
 ## Phase 概览
 

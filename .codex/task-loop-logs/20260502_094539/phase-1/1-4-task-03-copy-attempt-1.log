@@ -1,0 +1,41 @@
+一、执行结论
+
+已完成 `1-4/task-03`。
+
+二、执行范围
+
+单任务：C1-16 `recover_on_startup` failure-recovery。  
+新增文件：[recover_on_startup_failure_recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/recover_on_startup_failure_recovery.rs:1)
+
+未触碰 `apps/**`。现有工作区里的 `.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json` 是执行前已有改动，我没有回滚或修改。
+
+三、完成情况
+
+- 只处理 C1-16：通过新增 failure-edge 集成测试完成。
+- Exact Docs 已读取并按 SSOT 核对：C1-16 spec、control map、Core API、error-codes、transactional-import。
+- 未实现相邻 C1 能力或 UI 页面。
+- 覆盖失败/回滚/重复执行/权限错误路径：
+  - protected active staging path 不被误删。
+  - `../` 路径穿越 staging row 不触碰最终用户文件。
+  - DB 删除 staging row 失败后可重试恢复。
+  - staging 目录权限拒绝后保留 retryable 状态。
+- 未删除、覆盖、移动真实用户文件；测试全部使用 `tempfile` 临时目录。
+
+四、工程质量
+
+只新增测试，不新增 public Rust API、依赖、UDL 或产品代码。测试走真实 `init_repo`、SQLite、`.areamatrix/staging/` 文件系统路径和 `recover_on_startup` API，不是 mock-only 或硬编码通过态。
+
+五、验证情况
+
+已运行并通过：
+
+- `cd core && cargo fmt --all -- --check`
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`
+- `cd core && cargo test --workspace recover_on_startup`
+- `git diff --check`
+
+六、风险与后续
+
+残余风险：无当前 task 阻断项；macOS UI 消费不在本任务范围。  
+建议下一个任务：`1-4/task-04`，做 C1-16 validation 收口。
+

@@ -1,0 +1,58 @@
+一、执行结论
+
+已完成 `1-4/task-07`：C1-17 `sync_external_created` implementation。
+
+二、执行范围
+
+单任务：只处理 C1-17。
+
+修改文件清单：
+
+- `core/src/api.rs`
+- `core/src/db/mod.rs`
+- `core/src/db/sync.rs`
+- `core/src/sync/mod.rs`
+- `core/tests/sync_external_created_implementation.rs`
+
+未触碰 `apps/**`。`core/area_matrix.udl` 已与现有 contract 对齐，本次无需修改。
+
+三、完成情况
+
+核对清单全部满足：
+
+- 只实现 C1-17 Created 事件路径。
+- 已读取 task、共享规则、manifest、Exact Docs、Existing Code。
+- 未实现 removed / modified / renamed 等相邻 C1 能力。
+- 实现真实 Core 路径：读取文件 metadata/hash，写入 `files(origin=external, storage_mode=indexed)`，写 `change_log(imported, by=external)`，成功批次推进 `fs_event_cursor`。
+- 保持 Core 内平台无关，不引入 macOS/FSEvents 依赖。
+
+完成标准满足：
+
+- C1-17 有实现与测试证据。
+- 没有扩展到未绑定能力。
+- Forbidden Touches：未触碰。
+
+四、工程质量
+
+实现采用“先规划、后事务提交”：任何路径、iCloud placeholder、metadata/hash 失败都会在写 DB 前失败，不推进 cursor。DB 写入、change_log 和 cursor 更新在同一事务内完成，避免半批次状态。
+
+覆盖了成功路径、跳过 `.areamatrix/` / root `AREAMATRIX.md`、保留并索引 `README.md`、批次失败回滚、路径逃逸、iCloud placeholder、重复 Created 事件幂等、cursor API 不改用户文件。没有 mock-only、硬编码通过态或一次性脚本化实现。
+
+五、验证情况
+
+已运行并通过：
+
+- `cd core && cargo fmt --all -- --check`
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`
+- `cd core && cargo test --workspace sync_external_created`
+- `cd core && cargo test --workspace`
+- `git diff --check`
+
+六、风险与后续
+
+剩余风险：C1-17 当前刻意不处理 removed / modified / renamed；混合批次遇到这些 out-of-scope 事件时不会推进 cursor，避免吞掉后续 C1-18/C1-19 应处理的事件。
+
+建议下一个任务：继续 `1-4/task-08`，处理 C1-17 failure / edge 范围或按 manifest 进入下一片。
+
+备注：工作树里 `.codex/task-loop-runs/20260502_094539/summary.json` 和 `tasks/prompts/_shared/progress.json` 在开始前已是脏状态，本次没有把它们纳入实现范围。
+

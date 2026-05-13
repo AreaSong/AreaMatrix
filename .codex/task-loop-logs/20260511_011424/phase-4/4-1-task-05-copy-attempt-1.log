@@ -1,0 +1,37 @@
+一、执行结论
+
+未完成。C2-01 的主搜索闭环可用，但不能严格证明“消费页面需要的状态均已覆盖”，因此我不能把它判定为后续 S2-01 / S2-04 / S2-05 page-feature task 的完整真实 Core 依赖。
+
+二、执行范围
+
+单任务：`4-1/task-05`。本轮未修改产品实现、测试或文档；未触碰 `apps/**`。工作树仍只有开始前已存在的运行状态变更：`.codex/task-loop-runs/20260511_011424/summary.json`、`tasks/prompts/_shared/progress.json`。
+
+三、完成情况
+
+通过项：
+- Capability spec、Core API、UDL、Rust API、测试基本对齐：`search_files(repo_path, query, filter, sort, pagination) -> SearchResultPage` 已在 [core-api.md](/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:1142)、[area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:72)、[search.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/search.rs:216) 落地。
+- 实现覆盖 name/path/note/category/change_log 搜索，且 read-only SQLite 打开使用 `SQLITE_OPEN_READ_ONLY` 和 `PRAGMA query_only = ON`：[repo.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/search/repo.rs:56)、[repo.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/search/repo.rs:174)。
+- Query parse error 会返回 diagnostics，不执行 DB 查询路径：[engine.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/search/engine.rs:23)。
+- 测试覆盖 contract / implementation / failure recovery / validation，`./dev check all` 中相关 `search_query_files_*` 测试全部通过。
+
+阻塞项：
+- `SearchIndexStatus` 在 API/UDL 中声明了 `Ready / Indexing / Unavailable`，Core API 明确说它用于区分正常空结果、索引中、索引不可用：[core-api.md](/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:1175)。
+- UX 也要求 `Search API 失败、索引不可用、加载中、0 结果、查询错误` 等状态可区分：[S2-01-search-results.md](/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-2-experience/S2-01-search-results.md:96)、[S2-01-search-results.md](/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-2-experience/S2-01-search-results.md:141)、[S2-04-search-empty.md](/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-2-experience/S2-04-search-empty.md:72)。
+- 但 Rust 实现当前所有返回路径都硬编码 `SearchIndexStatus::Ready`：[engine.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/search/engine.rs:30)、[engine.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/search/engine.rs:47)。现有测试也只证明 `Ready`，没有真实 `Indexing` / `Unavailable` 状态来源或测试证据。
+
+四、工程质量
+
+搜索实现结构总体清晰，读路径、parser、ranking、repo 查询、validation 分层明确；没有发现写 DB、改标签、改分类、改用户文件、远程 AI、OCR 或 Smart List / facet counts 越界实现。阻塞点是 `index_status` 的状态合同目前像占位字段：字段存在，但非 `Ready` 状态不可由真实 Core 路径产生。
+
+五、验证情况
+
+已运行：
+- `./dev check all`：通过。
+- 其中包括 governance、skills、task-loop check、prompt doctor、git diff check、Rust fmt/clippy/test、macOS build/test、SwiftFormat、SwiftLint。
+- macOS `xcodebuild test` 遇到本地 `testmanagerd` sandbox 限制，脚本按仓库既定策略复用已构建 XCTest bundle 执行 `xcrun xctest`，通过。
+
+六、风险与后续
+
+剩余风险：如果现在让 S2-01 / S2-04 UI 接入 C2-01，搜索结果、空结果、query error、API failure 可以走真实 Core，但 indexing / index unavailable 两类页面状态缺少真实 Core 证据。
+
+建议下一个动作：先修复 C2-01 的 `SearchIndexStatus` 真实状态来源和测试，或明确同步文档/API：当前 metadata-only 搜索没有 indexing/unavailable 语义。修完后重新执行 `4-1/task-05` 验收。

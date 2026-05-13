@@ -1,0 +1,73 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`1-2/task-29`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-1/1-2-import-classify/task-29-c1-10-integration-verify.md`
+- 验收代码路径：`core/src/**`、`core/area_matrix.udl`、`core/tests/**`
+- 禁止触碰路径：`apps/**`
+
+三、完成度摘要
+
+- 已覆盖项数：5
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：1
+- 阻塞项数：2
+
+四、逐项验收结果
+
+- 项目：C1-10 范围控制
+- 结果：通过
+- 证据：只发现 `core/tests/resolve_name_conflict_integration_verify.rs` 为当前 core/test 新增；`git diff --name-only -- apps` 为空，未触碰 `apps/**`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/resolve_name_conflict_integration_verify.rs`
+
+- 项目：Exact Docs / capability / control map / UX 消费一致性
+- 结果：通过
+- 证据：C1-10 绑定 S1-23、S1-24；API 为 `import_file` / `rename_file`；control map 中 S1-23 消费 C1-10，S1-24 消费 C1-09/C1-10；integration test 覆盖 docs/control map/API/UDL fragment 对齐。
+- 涉及文件：`docs/core/capability-specs/stage-1-mvp/C1-10-resolve-name-conflict.md`、`docs/architecture/mvp-control-map.md`、`docs/api/core-api.md`、`core/area_matrix.udl`
+
+- 项目：真实 Rust / UDL / DB / 文件系统链路
+- 结果：通过
+- 证据：`import_file` 默认同名不同内容自动编号；`rename_file` 手动重命名冲突自动编号；`Overwrite` 仅显式策略触发，并写 deleted/imported change_log；测试覆盖 DB、文件系统、Trash、staging residue。
+- 涉及文件：`core/src/api.rs`、`core/src/storage/import.rs`、`core/src/storage/rename.rs`、`core/src/storage/destination.rs`、`core/src/db/import.rs`
+
+- 项目：无 mock / 空壳伪完成
+- 结果：通过
+- 证据：C1-10 相关 `import_file` 与 `rename_file` 连接真实 storage/db/fs 路径；相邻未实现 API 如 `delete_file` 不属于当前 C1-10 阻断范围。
+- 涉及文件：`core/src/api.rs`
+
+- 项目：工程质量门禁
+- 结果：不通过
+- 证据：相关实现文件超过编码规范的单文件 500 行限制；Core 路径含 macOS 专属 Trash API 分支，违反 core-local 平台无关约束。
+- 涉及文件：`core/src/storage/import.rs`、`core/src/storage/destination.rs`、`core/AGENTS.md`
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过。`/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/import.rs:504` 与 `/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/destination.rs:565` 超过 `docs/development/coding-standards.md:13` 的单文件 500 行限制。
+- 注释 / rustdoc / 文档同步：通过。C1-10 public API rustdoc 说明默认不覆盖、编号命名、显式 Overwrite 与 S1-24 关系；UDL 与 API 文档字段匹配。
+- 错误处理与边界处理：不通过。`/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/destination.rs:482` 到 `:490` 在 Core 中直接使用 `trash::macos` / `DeleteMethod::NsFileManager`，与 `/Users/as/Ai-Project/project/AreaMatrix/core/AGENTS.md:7` 的 Core 平台无关约束冲突。
+- 测试与验证覆盖：通过。manifest 三条验证均通过，并额外跑了 `cargo test --workspace`，全部通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。未发现 C1-10 相关 mock-only 或空壳路径。
+
+六、阻塞项
+
+- P1：C1-10 相关实现文件超过编码规范单文件长度限制。`/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/import.rs:504`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/destination.rs:565`。原因：编码规范要求单文件 ≤ 500 行；工程质量规则要求验收时阻断违反编码规范的实现。
+- P1：Core 层引入 macOS 专属 Trash API 分支。`/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/destination.rs:482`。原因：`core/AGENTS.md:7` 要求 Core 平台无关，不依赖 macOS 专属 API；当前 replace/trash 路径属于 C1-10 高风险用户文件路径。
+
+七、验证情况
+
+- 已运行：`cd core && cargo fmt --all -- --check`：通过
+- 已运行：`cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过
+- 已运行：`cd core && cargo test --workspace resolve_name_conflict`：通过，C1-10 相关 28 个过滤测试通过
+- 已运行：`cd core && cargo test --workspace`：通过，完整 workspace 测试通过
+- 失败：无命令失败
+- 缺失：无必需命令缺失
+
+八、最终判定说明
+
+- 功能链路和验证命令已达到较高可信度，但工程质量与 core-local 架构约束存在阻塞项。本次执行尚未达到验收标准，不能视为完成。
+
+VERIFY_RESULT: FAIL

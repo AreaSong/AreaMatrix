@@ -1,0 +1,47 @@
+一、执行结论
+
+- 已完成
+
+二、执行范围
+
+- 单任务：`2-2/task-08`
+- 本轮实际修改：
+  - [ImportEntrySheetView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportEntrySheetView.swift:159)
+- 本 task 交付相关文件：
+  - [CoreImporting.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreImporting.swift:29)
+  - [ImportBatchCopyImportModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportBatchCopyImportModel.swift:108)
+  - [ImportBatchCopyFooterSection.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportBatchCopyFooterSection.swift:3)
+  - [ImportBatchCopyImportModelTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportBatchCopyImportModelTests.swift:4)
+  - [ImportBatchCopyPageIntegrationTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportBatchCopyPageIntegrationTests.swift:4)
+  - [project.pbxproj](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj:90)
+
+三、完成情况
+
+- 核对清单：通过。只处理 `S1-18 + C1-06`，批量页 Import 现在逐项调用真实 `CoreBridge -> import_file(mode: .copied)`；没有实现 Move、Index-only、重复/同名冲突、Replace、iCloud 下载或相邻页面。
+- 完成标准：通过。用户可在 S1-18 批量 sheet 触发 Copy 导入；生产默认注入是 `CoreBridge()`，不是 mock/fixture/static 状态。
+- Forbidden Touches：未触碰 `core/src/**`；`core/area_matrix.udl` 只读核对，未修改。
+- 额外收敛：移除了产品界面里的任务边界说明文本，并在导入中禁用批量目标切换，避免导入状态被用户中途改写。
+
+四、工程质量
+
+- 结构：新增批量 copy import model 负责状态、逐项导入、进度和错误映射；footer 只负责按钮触发；CoreBridge 只增加 batch copy 的 `ImportOptions` 映射。
+- 错误处理：逐项失败会映射为 `CoreErrorMappingSnapshot` 并保留在对应行，不伪造成功。
+- 文件安全：Copy 模式保留源文件；真实 CoreBridge 测试验证了源文件内容不变、repo 目标文件存在、DB list 可查。
+- 依赖：未新增依赖。
+- 注释 / rustdoc / 文档同步：未新增 public Rust API，未改 docs/UDL；Swift 代码无不必要注释。
+
+五、验证情况
+
+- 已运行并通过：
+  - `xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：`BUILD SUCCEEDED`
+  - `./dev test macos`：标准 `xcodebuild test` 被本地 `testmanagerd` sandbox restriction 阻断后，按仓库脚本回退到 `xcrun xctest`，最终 `189 tests, 0 failures`
+- 已尝试但无法运行：
+  - `swiftlint --strict`：本机未安装 `swiftlint`
+  - `swiftformat --lint .`：本机未安装 `swiftformat`
+
+六、风险与后续
+
+- 剩余风险：SwiftLint/SwiftFormat 未能执行，原因是本机缺命令；task-loop 的 `.codex/**` 与 `progress.json` 仍有既存脏状态，我没有触碰，因为不在本任务 `Expected New Paths`。
+- 回滚思路：仅回滚本 task 的 macOS app、tests、xcodeproj 改动即可；不涉及用户文件、DB migration 或 `core/src/**`。
+- 建议下一个任务：进入 `2-2/task-09` 或对 `2-2/task-08` 跑 verify-ready 验收收口。
+

@@ -1,0 +1,39 @@
+一、执行结论
+
+已完成 `1-3/task-09` 的 C1-13 `list-change-log` contract-api 范围。
+
+二、执行范围
+
+修改文件：
+
+- [core/src/api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:354)：补齐 `list_changes` 的 public Rust API 合同说明，明确输入、排序、错误码、无副作用和 Stage 2 延后边界。
+- [core/src/domain.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/domain.rs:241)：校准 `ChangeFilter` / `ChangeLogEntry` 字段 rustdoc。
+- [core/tests/list_change_log_contract_api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/list_change_log_contract_api.rs:1)：新增 C1-13 合同测试，交叉锁定 capability spec、control map、Core API、UDL、error codes、Rust API。
+
+未触碰 `apps/**`。`core/area_matrix.udl` 已与 docs/api 当前合同一致，本任务未改动。
+
+三、完成情况
+
+- 核对清单：5 项均完成。
+- 完成标准：C1-13 contract-api 有测试证据；未扩展到相邻 C1 能力或 UI 页面。
+- Forbidden Touches：未触碰。
+- 注意：`list_changes` 的真实 DB 查询实现仍属于下一片 `1-3/task-10 implementation`，本任务没有提前实现后续范围。
+
+四、工程质量
+
+代码结构保持小范围、无新增依赖、无 mock-only、无硬编码通过态、无一次性脚本。新增 public API 说明覆盖 `# Errors`、副作用边界和 Stage 2 延后范围。
+
+五、验证情况
+
+已通过：
+
+```bash
+cd core && cargo fmt --all -- --check
+cd core && cargo clippy --all-targets --all-features -- -D warnings
+cd core && cargo test --workspace list_change_log
+```
+
+六、风险与后续
+
+剩余风险是运行时查询路径尚未实现，这是 `1-3/task-10` 的明确范围。工作区里还有执行前已存在的脏文件：`.codex/task-loop-runs/20260502_094539/summary.json` 和 `tasks/prompts/_shared/progress.json`，本次未处理它们。
+

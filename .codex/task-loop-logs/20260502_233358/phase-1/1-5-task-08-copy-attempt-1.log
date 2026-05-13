@@ -1,0 +1,31 @@
+一、执行结论：已完成。
+
+二、执行范围：单任务 `1-5/task-08`，只新增了 [delete_remove_index_failure_recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/delete_remove_index_failure_recovery.rs:1)。未修改 `core/src/**`、`core/area_matrix.udl`、docs 或 `apps/**`；`apps/**` 经 `git status --short -- apps` 确认为空。
+
+三、完成情况：
+- 只处理 C1-23 failure-recovery：通过新增 5 个失败/恢复测试覆盖。
+- Exact Docs 已逐项读取并按 SSOT 执行。
+- 未实现相邻 C1 能力或 UI 页面。
+- 覆盖 DB 失败回滚、重复执行、repo 文件缺失、外部 indexed 源缺失、remove-index 不触碰源文件。
+- 未删除、覆盖或移动真实用户文件；测试均使用临时目录和临时 HOME Trash。
+
+四、工程质量：
+- 新增的是真实集成测试，不是 mock-only、硬编码通过态或一次性脚本。
+- 未新增依赖。
+- 测试直接验证 FS、DB、change_log、notes、Trash、archive cleanup 等证据。
+- 现有 production 实现已满足本轮 failure-recovery 断言，因此未改业务代码。
+
+五、验证情况：
+- `cd core && cargo fmt --all -- --check`：通过
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过
+- `cd core && cargo test --workspace delete_remove_index`：通过，新增 failure-recovery 5/5 通过
+- 额外 `cd core && cargo test --workspace`：通过
+- `git diff --check`：通过
+- 无无法运行项
+
+六、风险与后续：
+- 剩余风险：未覆盖真实 Finder/系统 UI 层面的 Trash 交互，只验证了 Core 临时 HOME Trash 路径和 DB/FS 一致性。
+- 建议下一个任务：继续 `1-5/task-09`。
+
+注意：工作区已有的 `.codex/task-loop-runs/20260502_233358/summary.json` 和 `tasks/prompts/_shared/progress.json` 是本轮开始前已存在的脏状态，我没有改动它们。
+

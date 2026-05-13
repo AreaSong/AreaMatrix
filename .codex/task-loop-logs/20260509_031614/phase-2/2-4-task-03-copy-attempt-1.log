@@ -1,0 +1,38 @@
+一、执行结论
+
+已完成。
+
+二、执行范围
+
+单任务：`2-4/task-03`，只补 S1-25 整页集成验收证据。
+
+修改文件：
+- [ICloudConflictMinimalPageIntegrationVerifyTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ICloudConflictMinimalPageIntegrationVerifyTests.swift:4)
+- [project.pbxproj](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj:63)
+
+工作区里还显示 `.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json` 为已修改状态；这两个是任务运行状态文件，本次没有把它们纳入实现范围。
+
+三、完成情况
+
+核对清单已完成：新增 S1-25 page integration 测试，覆盖 `C1-01 validateRepoPath`、`C1-21 mapCoreError`、入口按钮、pending destination、取消退出、keep-both 退出、错误映射、Retry 文案和 Trash 越界边界。测试同时断言 S1-25 只声明 `C1-01/C1-21`，不把 `C1-23/C1-25` 或删除/移动类能力塞进当前页闭环。
+
+完成标准已满足：当前 S1-25 可按 page spec + control map 对 `C1-01/C1-21` 做完整验收；页面声明的 Core 能力均有真实 `CoreBridgeBoundary` 证据。未触碰 `Forbidden Touches`：没有修改 `core/src/**`。
+
+四、工程质量
+
+本次没有改生产 Swift 或 Rust 逻辑，只补可维护的 XCTest 集成证据，并把测试 helper 拆出，文件 437 行，单个测试函数保持短小。无新增依赖，无 public Rust API，无需 rustdoc；测试替身只用于记录越界调用，不作为产品 mock-only 闭环。
+
+高风险说明：S1-25 涉及 iCloud conflict / Trash 文件安全边界，但本次没有执行、实现或扩大任何用户文件删除、移动、覆盖行为。回滚方式是删除新增测试文件并移除 `project.pbxproj` 中对应 test target 引用。
+
+五、验证情况
+
+已运行：
+- `xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+  - 结果：退出 65，被本机沙箱 `com.apple.testmanagerd.control` 通信限制拦截；编译阶段已通过，失败点是测试 runner 通信，不是断言失败。
+- `./dev test macos --keep-derived-data`
+  - 结果：通过。脚本检测到同一 sandbox block 后复用构建产物执行 `xcrun xctest`，完整 `446 tests, 0 failures`。
+
+六、风险与后续
+
+剩余风险：S1-25 当前只按 control map 接入 `C1-01/C1-21`；单版本 Trash 写入、change log 或冲突真实写入语义没有在当前 control map 中声明，本任务没有越界实现。后续应由对应声明了写入/Trash/日志能力的 task 覆盖。
+

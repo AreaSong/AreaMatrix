@@ -1,0 +1,197 @@
+"""Regression tests for developer build helpers."""
+
+from __future__ import annotations
+
+import tempfile
+import unittest
+from pathlib import Path
+from unittest.mock import patch
+
+from scripts.dev_tools import build, checks
+
+
+class BuildToolsTest(unittest.TestCase):
+    def test_locked_uniffi_version_reads_core_lockfile(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            core_dir = Path(tmp)
+            (core_dir / "Cargo.lock").write_text(
+                "\n".join(
+                    [
+                        "[[package]]",
+                        'name = "other"',
+                        'version = "1.0.0"',
+                        "",
+                        "[[package]]",
+                        'name = "uniffi"',
+                        'version = "0.28.3"',
+                    ]
+                ),
+                encoding="utf-8",
+            )
+
+            self.assertEqual(build._locked_uniffi_version(core_dir), "0.28.3")
+
+    def test_uniffi_command_prefers_configured_binary(self) -> None:
+        with patch.dict("os.environ", {"UNIFFI_BINDGEN": "/tmp/custom-uniffi-bindgen"}):
+            self.assertEqual(
+                build._uniffi_bindgen_command(Path("/tmp/core")),
+                ["/tmp/custom-uniffi-bindgen"],
+            )
+
+    def test_wrapper_crate_calls_uniffi_cli_entrypoint(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            wrapper_dir = Path(tmp) / "wrapper"
+            uniffi_source = Path(tmp) / "uniffi-0.28.3"
+
+            build._write_uniffi_wrapper_crate(wrapper_dir, uniffi_source)
+
+            self.assertIn('features = ["cli"]', (wrapper_dir / "Cargo.toml").read_text(encoding="utf-8"))
+            self.assertIn("uniffi_bindgen_main", (wrapper_dir / "src/main.rs").read_text(encoding="utf-8"))
+
+    def test_root_udl_uses_synthetic_bindgen_crate(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            core_dir = Path(tmp) / "core"
+            core_dir.mkdir()
+            (core_dir / "Cargo.toml").write_text(
+                "\n".join(
+                    [
+                        "[package]",
+                        'name = "area_matrix_core"',
+                        'version = "0.1.0"',
+                    ]
+                ),
+                encoding="utf-8",
+            )
+            udl = core_dir / "area_matrix.udl"
+            udl.write_text("namespace area_matrix {}\n", encoding="utf-8")
+            tool_root = Path(tmp) / "uniffi-tool"
+
+            with patch.dict("os.environ", {"AREAMATRIX_UNIFFI_BINDGEN_TOOL_ROOT": str(tool_root)}):
+                bindgen_udl = build._prepare_udl_bindgen_crate(core_dir)
+
+            self.assertEqual(bindgen_udl, tool_root / "udl-crate/src/area_matrix.udl")
+            self.assertTrue(bindgen_udl.is_symlink())
+            self.assertEqual(bindgen_udl.readlink(), udl)
+            manifest = (tool_root / "udl-crate/Cargo.toml").read_text(encoding="utf-8")
+            self.assertIn('name = "area_matrix_core"', manifest)
+
+    def test_check_all_core_build_uses_temp_generated_output(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "apps/macos/AreaMatrix.xcodeproj").mkdir(parents=True)
+
+            calls: list[Path] = []
+
+            def fake_core_build(_root: Path, *, out_dir: Path) -> int:
+                calls.append(out_dir)
+                return 7
+
+            with (
+                patch.dict("os.environ", {}, clear=True),
+                patch("scripts.dev_tools.checks._run_macos_prerequisites_check", return_value=0),
+                patch("scripts.dev_tools.checks.run_core_build", fake_core_build),
+            ):
+                self.assertEqual(checks._run_macos_checks(root), 7)
+
+            self.assertEqual(calls, [Path("/private/tmp/areamatrix-check-all/Bridge/UniFFI")])
+
+    def test_macos_checks_stop_at_prerequisites_before_build(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "apps/macos/AreaMatrix.xcodeproj").mkdir(parents=True)
+
+            with (
+                patch("scripts.dev_tools.checks._run_macos_prerequisites_check", return_value=9),
+                patch("scripts.dev_tools.checks.run_core_build") as core_build,
+                patch("scripts.dev_tools.checks.run_macos_tests") as macos_tests,
+            ):
+                self.assertEqual(checks._run_macos_checks(root), 9)
+
+            core_build.assert_not_called()
+            macos_tests.assert_not_called()
+
+    def test_macos_prerequisites_reports_all_missing_tools(self) -> None:
+        completed = type(
+            "Completed",
+            (),
+            {"returncode": 0, "stdout": "aarch64-apple-darwin\n", "stderr": ""},
+        )()
+
+        def fake_which(command: str) -> str | None:
+            if command == "rustup":
+                return "/usr/bin/rustup"
+            return None
+
+        with (
+            patch("scripts.dev_tools.checks.shutil.which", side_effect=fake_which),
+            patch("scripts.dev_tools.checks.subprocess.run", return_value=completed),
+            ):
+                self.assertEqual(checks._run_macos_prerequisites_check(), 1)
+
+    def test_swift_checks_use_repo_dev_tool_configs(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            config_dir = root / "scripts/dev_tools"
+            config_dir.mkdir(parents=True)
+            (config_dir / "swiftformat.conf").write_text("--swiftversion 5.9\n", encoding="utf-8")
+            (config_dir / "swiftlint.yml").write_text("disabled_rules: []\n", encoding="utf-8")
+
+            self.assertEqual(
+                checks._swiftformat_lint_args(root),
+                [
+                    "swiftformat",
+                    "--lint",
+                    ".",
+                    "--config",
+                    config_dir / "swiftformat.conf",
+                    "--exclude",
+                    "AreaMatrix/Bridge/Generated,AreaMatrix/Bridge/UniFFI",
+                    "--cache",
+                    "ignore",
+                ],
+            )
+            self.assertEqual(
+                checks._swiftlint_lint_args(root),
+                [
+                    "swiftlint",
+                    "lint",
+                    "--strict",
+                    "--config",
+                    config_dir / "swiftlint.yml",
+                    "--force-exclude",
+                    ".",
+                    "--no-cache",
+                ],
+            )
+
+    def test_core_build_checks_required_targets_before_bindgen_fallback(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            core_dir = root / "core"
+            core_dir.mkdir()
+            (core_dir / "Cargo.toml").write_text("[package]\nname = \"area_matrix_core\"\n", encoding="utf-8")
+            (core_dir / "area_matrix.udl").write_text("namespace area_matrix {}\n", encoding="utf-8")
+            (core_dir / "build.rs").write_text("fn main() {}\n", encoding="utf-8")
+
+            calls: list[str] = []
+
+            def require_target(target: str) -> None:
+                calls.append(target)
+                if target == "x86_64-apple-darwin":
+                    raise SystemExit(1)
+
+            with (
+                patch("scripts.dev_tools.build.require_command"),
+                patch("scripts.dev_tools.build._host_triple", return_value="aarch64-apple-darwin"),
+                patch("scripts.dev_tools.build._require_rust_target", side_effect=require_target),
+                patch("scripts.dev_tools.build._uniffi_bindgen_command") as bindgen,
+            ):
+                with self.assertRaises(SystemExit):
+                    build.run_core_build(root, out_dir=Path("/tmp/generated"))
+
+            self.assertEqual(calls, ["aarch64-apple-darwin", "x86_64-apple-darwin"])
+            bindgen.assert_not_called()
+
+
+if __name__ == "__main__":
+    unittest.main()

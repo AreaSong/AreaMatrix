@@ -1,0 +1,25 @@
+version: v*
+status: draft
+allow_changes: false
+exact_docs:
+  - docs/README.md
+decisions:
+  - id: docs-scope
+    status: open
+    summary: Confirm the exact docs scope before writing changes YAML.
+open_questions:
+  - id: docs-scope
+    status: open
+    question: Which docs sections are the source of truth for this version?
+blockers:
+  - id: discussion-not-approved
+    status: open
+    summary: Discussion has not approved changes generation yet.
+risk_boundaries:
+  - Do not write live tasks/prompts from discussion.
+next_layers:
+  changes: blocked
+  plans: blocked
+  drafts: blocked
+  queue: blocked
+  promotion: blocked

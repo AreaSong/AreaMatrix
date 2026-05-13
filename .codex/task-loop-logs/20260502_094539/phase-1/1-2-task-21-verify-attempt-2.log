@@ -1,0 +1,53 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`1-2/task-21`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-1/1-2-import-classify/task-21-c1-09-implementation.md`
+- 实际验收文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/**`
+
+三、完成度摘要
+
+- 已覆盖项数：15
+- 未覆盖项数：0
+- 通过项数：15
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- C1-09 implementation 范围：通过。证据：`import_file` 只在 duplicate hash 路径上接入 `Skip` / `Ask` / `KeepBoth` / `Overwrite`，见 `/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/import.rs:31`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/dedup.rs:14`。
+- Exact Docs SSOT：通过。证据：文档要求 `DuplicateFile { existing_path }`、读取 `files.hash_sha256`、KeepBoth 双 active row、Overwrite 安全替换/软删除；代码与 UDL 对齐，见 `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:230`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:241`。
+- 未扩展到相邻 C1/UI：通过。证据：`apps/**` 无 staged/unstaged diff；同名不同内容冲突仍返回 `CoreError::Conflict`，未在本 task 偷做 C1-10，见 `/Users/as/Ai-Project/project/AreaMatrix/core/tests/detect_duplicate_implementation.rs:201`。
+- 最小真实路径：通过。证据：真实 hash、DB active 查重、staging/final guard、change_log、rollback 都走生产路径，见 `/Users/as/Ai-Project/project/AreaMatrix/core/src/db/import.rs:28`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/import.rs:442`。
+- layered design：通过。证据：API 只委托 storage，storage 调 db/hash/destination，未引入 macOS/UI 依赖，见 `/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:250`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/mod.rs:3`。
+- Expected New Paths：通过。`core/src/**`、`core/area_matrix.udl`、`core/tests/**` 均存在并有 C1-09 证据。
+- Forbidden Touches：通过。`git diff --name-status -- apps` 与 cached apps diff 均为空。
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。文件均低于 500 行；duplicate/destination/import/db 分层清晰。
+- 注释 / rustdoc / 文档同步：通过。`import_file` public API 有 C1-09 rustdoc 与 Errors 说明，见 `/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:226`。
+- 错误处理与边界处理：通过。生产路径未发现 `unwrap()` / `expect()` / `panic!()`；Skip/Ask 无副作用，Overwrite 有 DB 失败 rollback 测试。
+- 测试与验证覆盖：通过。覆盖 Skip、Ask、KeepBoth、Overwrite、rollback、同名不同内容不越界。
+- 占位、硬编码、mock-only、一次性实现检查：通过。验收证据来自真实 FS + SQLite + change_log 流程，不是 mock-only。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`cd core && cargo fmt --all -- --check`：通过
+- 已运行：`cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过
+- 已运行：`cd core && cargo test --workspace detect_duplicate`：通过，8 个 C1-09 相关测试通过
+- 已运行：`cd core && cargo test --workspace`：通过，154 个测试通过
+- 未运行：无
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。注意：工作区仍有 task-loop runtime/progress 本地状态文件处于 dirty，但它们不是 C1-09 产品实现路径；本次代码验收未发现阻塞。
+
+VERIFY_RESULT: PASS

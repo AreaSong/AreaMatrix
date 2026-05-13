@@ -1,0 +1,33 @@
+version: v-template
+status: blocked
+kind: promotion-approval
+approved: false
+gate_message: promotion blocked: v-template is a template reference and cannot apply to live tasks/prompts/**
+mode: approval-only
+writes_live_queue: false
+tasks:
+  - semantic_id: template-docs-contract/docs-baseline
+    live_label: 5-1/task-01
+    task_file: tasks/prompts/phase-5/5-1-template-reference/task-01-docs-baseline.md
+    copy_ready: tasks/prompts/_shared/copy-ready/phase-5/5-1-task-01.md
+    verify_ready: tasks/prompts/_shared/verify-ready/phase-5/5-1-task-01.md
+  - semantic_id: template-docs-contract/discussion-gate
+    live_label: 5-1/task-02
+    task_file: tasks/prompts/phase-5/5-1-template-reference/task-02-discussion-gate.md
+    copy_ready: tasks/prompts/_shared/copy-ready/phase-5/5-1-task-02.md
+    verify_ready: tasks/prompts/_shared/verify-ready/phase-5/5-1-task-02.md
+  - semantic_id: template-execution-contract/queue-candidate
+    live_label: 5-1/task-03
+    task_file: tasks/prompts/phase-5/5-1-template-reference/task-03-queue-candidate.md
+    copy_ready: tasks/prompts/_shared/copy-ready/phase-5/5-1-task-03.md
+    verify_ready: tasks/prompts/_shared/verify-ready/phase-5/5-1-task-03.md
+  - semantic_id: template-execution-contract/promotion-preview
+    live_label: 5-1/task-04
+    task_file: tasks/prompts/phase-5/5-1-template-reference/task-04-promotion-preview.md
+    copy_ready: tasks/prompts/_shared/copy-ready/phase-5/5-1-task-04.md
+    verify_ready: tasks/prompts/_shared/verify-ready/phase-5/5-1-task-04.md
+  - semantic_id: template-execution-contract/projection-closeout
+    live_label: 5-1/task-05
+    task_file: tasks/prompts/phase-5/5-1-template-reference/task-05-projection-closeout.md
+    copy_ready: tasks/prompts/_shared/copy-ready/phase-5/5-1-task-05.md
+    verify_ready: tasks/prompts/_shared/verify-ready/phase-5/5-1-task-05.md

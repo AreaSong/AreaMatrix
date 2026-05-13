@@ -1,0 +1,44 @@
+**一、执行结论**
+
+已完成 `1-5/task-06`。本次只处理 C1-23 delete/remove-index 的 contract-api 边界，没有实现后续真实 Trash / metadata mutation 逻辑。
+
+**二、执行范围**
+
+修改文件：
+
+- [core/area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:43)
+- [core/src/api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:305)
+- [core/tests/delete_remove_index_contract_api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/delete_remove_index_contract_api.rs:1)
+- [docs/api/core-api.md](/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:66)
+- [docs/api/error-codes.md](/Users/as/Ai-Project/project/AreaMatrix/docs/api/error-codes.md:267)
+- [docs/core/capability-specs/stage-1-mvp/C1-23-delete-remove-index.md](/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-23-delete-remove-index.md:10)
+
+`.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json` 是开始前已有脏文件，我未处理。
+
+**三、完成情况**
+
+- C1-23 范围：通过，未实现相邻 C1 能力或 UI。
+- Exact Docs：已读取并以 C1-23 spec 校准 Core API / UDL。
+- Core API / UDL：已将旧 `delete_file(..., hard)` 改为明确的 `delete_file(repo_path, file_id)`，并新增 `remove_index_entry(repo_path, file_id)`。
+- 输入 / 输出 / 错误码 / 副作用：已在 Core API 文档和 Rust public API rustdoc 中明确。
+- Forbidden Touches：未触碰 `apps/**`。
+
+**四、工程质量**
+
+新增 contract 测试锁定 docs、UDL、Rust API 和 control map 对齐；未引入 mock-only、硬编码成功态或一次性实现。错误边界覆盖 `FileNotFound`、`PermissionDenied`、`Io`、`Db`、`Internal`。
+
+注意：`core/src/api.rs` 既有文件长度已超过 500 行，本次没有做跨文件拆分，避免扩大 task scope。
+
+**五、验证情况**
+
+已通过：
+
+- `cd core && cargo fmt --all -- --check`
+- `cd core && cargo test --workspace delete_remove_index`
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`
+- `git diff --check`
+
+**六、风险与后续**
+
+剩余风险：真实 Trash 行为、metadata transaction、失败回滚、notes/tags 保留和 `removed_from_index` 持久化还未实现，按 manifest 应进入 `1-5/task-07`。另有 `docs/modules/storage.md` 仍保留旧 `hard` 示例，但该文件不在本 task Exact Docs / Expected New Paths 范围内，本次未扩展修改。
+

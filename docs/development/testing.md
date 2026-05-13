@@ -210,6 +210,43 @@ func testDebouncesWithin200ms() async throws {
 }
 ```
 
+### 本地沙箱 XCTest 执行
+
+macOS 单元测试的标准入口仍然是 `xcodebuild test`：
+
+```bash
+xcodebuild test \
+  -project apps/macos/AreaMatrix.xcodeproj \
+  -scheme AreaMatrix \
+  -destination 'platform=macOS,arch=arm64' \
+  CODE_SIGNING_ALLOWED=NO
+```
+
+部分受限本地执行器无法访问 `com.apple.testmanagerd.control`，会在测试 runner
+通信阶段失败。此时使用：
+
+```bash
+./dev test macos
+```
+
+该脚本先运行标准 `xcodebuild test`。只有失败日志明确指向
+`testmanagerd` sandbox restriction 时，才复用同一 DerivedData 中的
+`AreaMatrixTests.xctest`，通过 `xcrun xctest` 直接执行 hostless XCTest
+bundle。普通编译失败、断言失败、链接失败或非沙箱错误仍然按失败处理。
+如果 `xcodebuild test` 已经输出目标 XCTest suite 全部通过，但仅在测试结束后的
+`testmanagerd` 日志收集或分布式通知阶段被本地 sandbox 拦截，`./dev test macos`
+会把该结果视为标准 XCTest 证据通过；这种判定不得掩盖真实构建失败或断言失败。
+
+当仅运行 `AreaMatrixTests/AreaMatrixPerfTests` 时，`./dev test macos` 还会在
+XCTest performance 通过后构建 signed Release `.app`，执行 codesign、自包含链接检查和
+`scripts/dev_tools/macos_launch_probe.swift` 启动探针。若当前本地 sandbox 阻断
+LaunchServices 启动，或 direct executable probe 无法创建可见窗口，命令可以作为本地
+validation 通过，但 release checklist 必须继续记录“真实 `.app` 启动到首屏证据
+BLOCKED”；hostless XCTest fallback 不得替代 release 放行证据。若 release app launch
+probe 正常记录 `applicationLaunchToFirstScreen.realApp` 且低于阈值，则 release checklist
+必须记录真实 `.app` 首屏证据通过，但该证据仍不替代 Developer ID 签名、公证、DMG 或
+干净 Mac 首启。
+
 ---
 
 ## 集成测试
@@ -379,10 +416,10 @@ fn sigkill_during_import_safe() {
 2. cargo clippy -- -D warnings
 3. cargo test --workspace
 4. cargo llvm-cov --fail-under-lines 70
-5. ./scripts/build-core.sh
-6. xcodebuild test
-7. swiftformat --lint
-8. swiftlint --strict
+5. ./dev build core
+6. xcodebuild test（本地沙箱可用 `./dev test macos` 补执行证据）
+7. cd apps/macos && swiftformat --lint . --config ../../scripts/dev_tools/swiftformat.conf --exclude AreaMatrix/Bridge/Generated,AreaMatrix/Bridge/UniFFI --cache ignore
+8. cd apps/macos && swiftlint lint --strict --config ../../scripts/dev_tools/swiftlint.yml --force-exclude . --no-cache
 
 任一失败 = 不允许合并。
 

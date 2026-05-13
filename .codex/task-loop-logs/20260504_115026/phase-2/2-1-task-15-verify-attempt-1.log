@@ -1,0 +1,81 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`2-1/task-15`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-1-first-launch-main/task-15-s1-07-c1-02-init-empty-repo.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：1
+- 通过项数：10
+- 不通过项数：1
+- 阻塞项数：1
+
+四、逐项验收结果
+
+- 项目：只处理 S1-07 页面中的 C1-02 功能点
+- 结果：通过
+- 证据：task 绑定 S1-07 + C1-02；control map 中 S1-07 声明 C1-02、C1-03，本任务代码仅新增空库打开边界，C1-03 adopt 打开路径未在本任务完成。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-1-first-launch-main/task-15-s1-07-c1-02-init-empty-repo.md:16`，`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:22`
+
+- 项目：读取并对齐页面规格、control map、Core API、C1-02 能力规格
+- 结果：通过
+- 证据：S1-07 要求完成页展示 repoPath 和 Open Repository；C1-02 要求 `init_repo(CreateEmpty)` 后可由 `load_config` / `list_tree_json` 读取。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-07-init-done.md:56`，`/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-02-init-empty-repo.md:12`
+
+- 项目：CoreBridge / 状态 / 错误映射真实接入
+- 结果：通过
+- 证据：`initializeEmptyRepository` 调用真实 `initRepo(mode: .createEmpty)`；`openEmptyRepository` 调用真实 `loadConfig` 和 `listTreeJson`；Open Repository 失败会回到 done 页并设置 inline error mapping。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift:325`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreRepositoryOpening.swift:7`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/OnboardingInitializationProgress.swift:40`
+
+- 项目：不顺手实现相邻页面 / control map 之外能力
+- 结果：通过
+- 证据：工作区变更集中在 macOS onboarding、CoreBridge 包装和测试；`core/src/**` 无 diff；UDL 与 C1-02 所需 API 已存在。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:14`，`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:17`，`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:78`
+
+- 项目：Expected New Paths / Forbidden Touches
+- 结果：通过
+- 证据：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`project.pbxproj` 均存在；`git status --short -- core/src` 无输出。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-2.md:430`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，新增 `CoreEmptyRepositoryOpening` 边界清晰，OnboardingModel 注入 opener，未绕过 CoreBridge。
+- 注释 / rustdoc / 文档同步：通过，本任务未新增 public Rust API；Swift 新增代码不依赖说明性废注释。
+- 错误处理与边界处理：通过，`openInitializedRepository` 捕获错误并映射为 inline retry error。
+- 测试与验证覆盖：不通过，manifest build 已通过，但 validation-driver 对 `apps/macos/**` 要求 `xcodebuild test`；该命令因 sandbox 无法建立 test runner 通信失败，测试未真正完成。
+- 占位、硬编码、mock-only、一次性实现检查：通过，生产路径调用真实 Core；mock/fixture 仅出现在测试替身中，另有真实 CoreBridge 临时目录测试用例，但该测试未能在当前环境执行完成。
+
+六、阻塞项
+
+- P1：macOS test 验证被 sandbox 阻断，无法证明高风险 UI/CoreBridge 闭环测试通过  
+  说明：`xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO` 退出码 65，错误为 `Failed to establish communication with the test runner`，底层原因包含 `testmanagerd.control ... Sandbox restriction`。validation-driver 要求 `apps/macos/**` 变更运行 build 与 test；当前只证明 build 通过，未证明测试通过。  
+  绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/.codex/skills-src/areamatrix-validation-driver/references/validation-matrix.md:47`  
+  为什么导致不通过：验收规则要求无法用测试或命令输出证明通过则判定不通过；当前 High 风险 macOS app 变更缺少可完成的 test 证据。
+
+七、验证情况
+
+- 已运行并通过：
+  - `xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+  - 结果：`** BUILD SUCCEEDED **`
+
+- 已运行但失败：
+  - `xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+  - 结果：失败，退出码 65；测试 runner 通信被 sandbox 阻断。
+
+- 缺失：
+  - macOS unit test 实际执行完成证据。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+VERIFY_RESULT: FAIL

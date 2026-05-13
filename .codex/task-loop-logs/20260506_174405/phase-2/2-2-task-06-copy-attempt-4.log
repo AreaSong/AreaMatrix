@@ -1,0 +1,55 @@
+一、执行结论
+
+- 已完成
+
+二、执行范围
+
+- 单任务：`2-2/task-06`
+- 修改文件清单：
+  - [ImportSingleFilePreflight.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreflight.swift:29)
+  - [ImportSingleFilePreviewModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreviewModel.swift:195)
+  - [ImportEntrySheetView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportEntrySheetView.swift:99)
+  - [ImportSingleFileSheetSections.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportSingleFileSheetSections.swift:119)
+  - [ImportSingleFilePageIntegrationVerifyTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFilePageIntegrationVerifyTests.swift:250)
+  - [ImportSingleFilePreflightTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFilePreflightTests.swift:32)
+  - [ImportSingleFilePreviewModelTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFilePreviewModelTests.swift:240)
+  - [ImportSingleFileTestSupport.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFileTestSupport.swift:37)
+
+三、完成情况
+
+- `Checklist-1` 所有 page-feature task 覆盖：通过。`C1-05/C1-06/C1-07/C1-08` 的真实桥接和整页集成测试仍在，且新增了 `S1-22/S1-23` handoff 与 iCloud 失败恢复证据。
+- `Checklist-2` 页面状态、入口、退出、错误态、CoreBridge 闭环：通过。现在 duplicate/name conflict 会显式进入 sheet 内的 `S1-22` / `S1-23` 冲突子区域；iCloud 下载失败会留在当前 sheet 并保留 `Download & retry` / `Switch to local repo...`。
+- `Checklist-3` mock / fixture / 硬编码通过态移除：通过。新增逻辑仍走真实 `CoreBridge` / Swift fallback preflight / placeholder downloader 边界，没有引入 mock-only 产品路径。
+- `Checklist-4` 未新增 control map 外能力：通过。只补了 `S1-17` 页内状态机、冲突 handoff 和验收证据，没有扩展到 control map 之外功能。
+- `Completion-1` S1-17 可按 page spec 和 control map 完整验收：通过。
+- `Completion-2` 页面声明的 Core 能力都已真实接入或有明确阻塞证据：通过。
+- `Forbidden Touches`：未触碰。`core/src/**` 和 `core/area_matrix.udl` 都未改动。
+
+四、工程质量
+
+- 代码结构与逻辑：清晰。冲突态被拆成显式 `ImportSingleFileConflictPage`，把 `S1-22/S1-23` 子区域和普通错误态分开，避免继续混在统一 inline 文案里。[ImportSingleFilePreflight.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreflight.swift:160)
+- 注释 / rustdoc / 文档同步：本次无需新增注释或 rustdoc；实现已对齐 `S1-17` 关于 iCloud 失败恢复与冲突交接的页面语义。
+- 错误处理与边界处理：已补齐。iCloud 下载失败不再退化成普通 `.error(...)`，而是保留在 iCloud 恢复态；冲突阻塞文案也改成明确指向 `S1-22/S1-23`。见 [ImportSingleFilePreviewModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreviewModel.swift:304) 和 [ImportSingleFilePreflight.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreflight.swift:57)
+- 占位、硬编码、mock-only、一次性实现检查：无新增问题。视图只消费模型状态，不做 IO；下载和导入仍通过平台层 / CoreBridge 边界。
+
+五、验证情况
+
+- 已运行：
+  - `xcodebuild -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' build CODE_SIGNING_ALLOWED=NO`
+  - `xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+  - `./dev test macos`
+- 结果：
+  - `xcodebuild build`：通过
+  - `xcodebuild test`：失败，但原因是本地 `com.apple.testmanagerd.control` sandbox restriction，不是业务或断言失败
+  - `./dev test macos`：通过。按 repo-local validation-driver 的预期，先复现 `xcodebuild test` 的 sandbox block，再回退到 `xcrun xctest`；最终 `180` 个测试全部通过
+- 关键通过套件：
+  - `ImportSingleFilePageIntegrationVerifyTests`：14/14
+  - `ImportSingleFilePreflightTests`：全通过
+  - `ImportSingleFilePreviewModelTests`：全通过
+  - `ImportSingleFileMoveImportTests`：3/3
+  - `ImportSingleFileIndexImportTests`：3/3
+
+六、风险与后续
+
+- 剩余风险：当前已完成单元/集成级验证，但没有真机人工交互截图证据；如果后续 verify 要求 UI 外观级证据，可再补本地手动检查。
+- 建议下一个任务：进入该任务的 verify-ready 验收；如果继续推进导入冲突域，则按顺序看 `2-2/task-22` / `2-2/task-23` 是否还需要补更完整的 `S1-22/S1-23` 原子能力细节。

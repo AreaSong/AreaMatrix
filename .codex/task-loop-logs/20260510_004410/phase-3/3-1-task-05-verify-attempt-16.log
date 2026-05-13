@@ -1,0 +1,74 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`3-1/task-05`
+- Task 文件：[task-05-stage1-integration-verify.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-3/3-1-stability-release/task-05-stage1-integration-verify.md:1)
+- Manifest：[phase-3.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-3.md:139)
+- 已读取并核对 6 个 Exact Docs、`core/**`、`apps/macos/**`、`scripts/**`、Expected New Paths 与 Forbidden Touches。
+
+三、完成度摘要
+
+- 已覆盖项数：14/14
+- 未覆盖项数：0
+- 通过项数：6
+- 不通过项数：8
+- 阻塞项数：6 个 P1
+
+四、逐项验收结果
+
+- 项目：读取 Stage 1 roadmap / control map / Core / UX / testing / release  
+  结果：通过。证据：6 个 Exact Docs 均存在并已读取；control map 明确 Real Core 最终不得 mock 通过。涉及文件：[mvp-control-map.md](/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:5)
+
+- 项目：按 control map 全量核对 Real Core 页面  
+  结果：不通过。证据：S1-01..S1-37 大量页面声明 Real Core，但最终 release checklist 明确“不放行”；iCloud conflict resolution 生产路径仍是 blocked capability。涉及文件：[stage-1-release-checklist.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-release-checklist.md:11)、[ICloudConflictMinimalResolution.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ICloudConflictMinimalResolution.swift:102)
+
+- 项目：Phase 1 Core 与 Phase 2 UI integration verify  
+  结果：不通过。证据：Core/UI integration verify 测试文件存在，但真实 macOS / iCloud / TCC / DB repair 手工证据仍 pending。涉及文件：[recovery-scenarios.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/recovery-scenarios.md:57)
+
+- 项目：核对 `3-1/task-01` 到 `3-1/task-04` 证据  
+  结果：不通过。证据：error matrix 有自动化证据，但 recovery manual M-01..M-04 pending；performance 与 release checklist 均保留 release 阻断。涉及文件：[stage-1-performance-baseline.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-performance-baseline.md:88)
+
+- 项目：最终自动化综合门禁与发布证据  
+  结果：不通过。证据：`./dev check all` 当前失败于 SwiftFormat：`199/224 files require formatting, 3 files skipped`；SwiftLint 单跑也失败：`239 violations, 239 serious in 226 files`。涉及文件：[stage-1-release-checklist.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-release-checklist.md:42)
+
+- 项目：P0/P1 风险处理  
+  结果：不通过。证据：P1-RL-001..P1-RL-005 仍在当前 release checklist 中。涉及文件：[stage-1-release-checklist.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-release-checklist.md:64)
+
+- 项目：Forbidden Touches  
+  结果：通过。证据：`git diff --name-status -- core/src core/area_matrix.udl apps/macos/AreaMatrix apps/macos/AreaMatrix.xcodeproj` 无输出。
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过，SwiftFormat 与 SwiftLint gate 均失败，违反编码规范。
+- 注释 / rustdoc / 文档同步：不通过，release checklist 如实写明不放行，但 `CHANGELOG.md` 仍只有 `[Unreleased]`。
+- 错误处理与边界处理：不通过，真实 iCloud、TCC、DB repair、import interruption 手工证据缺失。
+- 测试与验证覆盖：不通过，自动化大量通过，但 `./dev check all` 未通过，发布级手工/签名/DMG 证据缺失。
+- 占位、硬编码、mock-only、一次性实现检查：不通过，未发现用 mock 冒充整体通过，但 iCloud conflict resolution 仍是明确 blocked endpoint。
+
+六、阻塞项
+
+- P1-RL-001：真实 Release `.app` 启动到首屏证据缺失。路径：[stage-1-performance-baseline.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-performance-baseline.md:88)。原因：Stage 1 要求 `< 1.5s`，当前真实 `.app` launch 被 sandbox 阻断，不能替代 release gate。
+- P1-RL-002：M-01..M-04 手工恢复冒烟 pending。路径：[recovery-scenarios.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/recovery-scenarios.md:137)。原因：真实 macOS / iCloud / TCC / DB repair 缺发布前日志即阻断。
+- P1-RL-003：Developer ID 签名、公证、DMG、干净 Mac 首启证据缺失。路径：[stage-1-release-checklist.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-release-checklist.md:57)。原因：没有可验证 alpha 分发物。
+- P1-RL-004：CHANGELOG / 版本发布切面未完成。路径：[CHANGELOG.md](/Users/as/Ai-Project/project/AreaMatrix/CHANGELOG.md:10)。原因：尚无 `[0.1.0] - YYYY-MM-DD` release 段落。
+- P1-RL-005：`./dev check all` 未完整通过。路径：[stage-1-release-checklist.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-release-checklist.md:72)。原因：SwiftFormat/SwiftLint 仍有存量严重违规。
+- P1-INT-001：iCloud conflict resolution 生产路径仍声明缺 Core endpoint。路径：[ICloudConflictMinimalResolution.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ICloudConflictMinimalResolution.swift:147)。原因：最终 Stage 1 Real Core 闭环不能靠 blocked resolver 放行。
+
+七、验证情况
+
+- `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`：通过，`doctor: OK`，`tasks: 637`，`manifests: 637`。
+- `./dev check all`：失败，最终失败点为 SwiftFormat。
+- `git diff --check`：通过，无输出。
+- 额外质量确认：`swiftlint lint --strict ... --reporter summary` 失败，239 serious violations。
+- Expected New Paths：已存在，`core/tests` 120 个文件、`apps/macos/AreaMatrixTests` 85 个文件、`scripts` 35 个文件、`docs/development` 15 个文件。
+- Forbidden Touches：未发现当前 diff 触碰 `core/src/**`、`core/area_matrix.udl`、`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrix.xcodeproj/**`。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。当前仓库明确记录 Stage 1 alpha 与最终集成验收“不放行”，且必需验证命令 `./dev check all` 当前失败。
+
+
+VERIFY_RESULT: FAIL

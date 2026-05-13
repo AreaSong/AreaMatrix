@@ -1,0 +1,32 @@
+一、执行结论：已完成。
+
+二、执行范围：单任务 `2-2/task-27`。  
+修改文件清单：
+- [ImportConflictIntegrationVerifyTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportConflictIntegrationVerifyTests.swift)
+- [project.pbxproj](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj)
+
+三、完成情况：
+- 已补 task-27 集成验收测试，覆盖 S1-16 到 S1-24 的 import/conflict 用户路径。
+- 覆盖 C1-05、C1-06、C1-07、C1-08、C1-09、C1-10、C1-13。
+- 验证了 hover 分类、单文件导入、批量导入、文件夹导入、重复/同名冲突、Replace 二次确认、S1-20 进度、S1-21 结果、C1-13 change log 加载。
+- 未新增未列出的页面或 Core 能力。
+- 未触碰 Forbidden Touches：`core/src/**` 未修改。
+- 未修改产品实现；只补测试证据和 Xcode project 接入。
+
+四、工程质量：
+- 新增测试文件 359 行，低于 500 行阈值。
+- 测试通过 helper 拆分，避免一个大方法堆叠。
+- 没有新增依赖、mock-only 产品路径或硬编码产品通过态；测试 double 仅用于测试记录协议调用。
+- 高风险边界没有执行真实用户文件删除、移动、覆盖；测试使用 `/tmp` URL 和记录型 importer。
+
+五、验证情况：
+- `git diff --check`：通过。
+- `xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：编译/链接通过，但执行阶段被本地 `testmanagerd.control` sandbox 限制阻断。
+- `./dev test macos`：通过；按仓库规则 fallback 到 `xcrun xctest`，279 tests，0 failures。
+- `xcodebuild -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' build CODE_SIGNING_ALLOWED=NO`：通过。
+
+六、风险与后续：
+- 剩余风险：没有做真实 UI 手动点击，只完成模型/路由/协议层闭环测试。
+- 回滚方式：删除新增测试文件，并移除 `project.pbxproj` 中对应 PBXBuildFile、PBXFileReference、Tests group、Sources entry。
+- 工作树里 `.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json` 是任务开始前已有脏改动，本次未处理。
+

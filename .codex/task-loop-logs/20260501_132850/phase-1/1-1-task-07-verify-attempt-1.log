@@ -1,0 +1,62 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`phase-1 / 1-1/task-07`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-1/1-1-repo-config/task-07-c1-02-failure-recovery.md`
+- 核验代码：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/**`
+- 禁止触碰范围：`/Users/as/Ai-Project/project/AreaMatrix/apps/**`
+
+三、完成度摘要
+
+- 已覆盖项数：5
+- 未覆盖项数：0
+- 通过项数：5
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 只处理 C1-02 failure-recovery 范围：通过  
+  证据：`init_repo` 仅接受 `RepoInitMode::CreateEmpty`，`AdoptExisting` 返回 `CoreError::Config`；未实现 UI 或相邻 C1 能力。涉及 `/Users/as/Ai-Project/project/AreaMatrix/core/src/repo_init.rs:27`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:84`。
+
+- Exact Docs 已按 SSOT 核对：通过  
+  证据：实际 API / UDL 包含 `init_repo`、`RepoInitOptions`、`RepoInitMode`、`OverviewOutput`；实现创建 `.areamatrix`、DB、默认规则和 generated overview。涉及 `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:13`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:91`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/repo_init.rs:51`。
+
+- 不实现相邻 C1 能力或 UI 页面：通过  
+  证据：`apps/**` 无 git 状态输出；相邻 API 仍为未实现占位，没有扩展本 task 范围。涉及 `/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:101`。
+
+- 覆盖失败、回滚、重复执行或权限错误路径：通过  
+  证据：预检拒绝非空、已初始化、未完成 scan、不可写路径；失败时调用 rollback；测试覆盖非空目录、重复初始化、stale init 清理、权限错误。涉及 `/Users/as/Ai-Project/project/AreaMatrix/core/src/repo_init.rs:80`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/repo_init.rs:294`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/init_empty_repo_implementation.rs:117`、`:133`、`:149`、`:188`。
+
+- 不删除、覆盖或移动未确认用户文件：通过  
+  证据：初始化使用 `.areamatrix.init-*` 临时目录和 `create_new` 写文件；非空目录和隐藏用户内容测试确认文件保留；`README.md` 不创建也不覆盖。涉及 `/Users/as/Ai-Project/project/AreaMatrix/core/src/repo_init.rs:239`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/init_empty_repo_implementation.rs:98`、`:117`、`:239`。
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。初始化、预检、stale cleanup、rollback 拆分清楚，文件长度与函数长度未触发规范阻断。
+- 注释 / rustdoc / 文档同步：通过。public API 有 rustdoc 和 `# Errors`；UDL 与 Core API 当前 C1-02 合同一致。
+- 错误处理与边界处理：通过。生产路径未发现 `unwrap()` / `expect()` / `panic!()`；权限、重复初始化、非空目录、内部临时状态清理均有显式错误或测试证据。
+- 测试与验证覆盖：通过。`core/tests/init_empty_repo_implementation.rs` 覆盖成功路径、失败路径、重复执行、权限错误、用户文件保护和 retry recovery。
+- 占位、硬编码、mock-only、一次性实现检查：通过。C1-02 使用真实 FS、SQLite、UDL/API 路径；未用 mock-only 或静态通过态替代产品实现。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`cd core && cargo fmt --all -- --check`：通过
+- 已运行：`cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过
+- 已运行：`cd core && cargo test --workspace init_empty_repo`：通过，16 个匹配测试通过
+- 已运行：`cd core && cargo test --workspace`：通过，37 个测试通过
+- Forbidden Touches：`git status --short apps` 和 `git diff --name-only -- apps` 均无输出
+- 缺失验证：无
+
+八、最终判定说明
+
+- 本次执行已达到验收标准，可以视为 `1-1/task-07` 完成。
+
+VERIFY_RESULT: PASS

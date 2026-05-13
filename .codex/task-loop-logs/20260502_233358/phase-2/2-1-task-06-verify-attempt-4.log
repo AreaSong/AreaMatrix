@@ -1,0 +1,96 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`2-1/task-06`
+- Task 文件：[task-06-s1-03-page-integration-verify.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-1-first-launch-main/task-06-s1-03-page-integration-verify.md:1)
+- Manifest 章节：[phase-2.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-2.md:143)
+- 主要实现：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：6
+- 未覆盖项数：0
+- 通过项数：3
+- 不通过项数：3
+- 阻塞项数：4
+
+四、逐项验收结果
+
+- 项目：所有 page-feature task 覆盖
+- 结果：不通过
+- 证据：`2-1/task-03/04/05` 均存在，且 C1-01/C1-03/C1-21 有 Swift 调用链；但 C1-03 的已存在 repo 分支和 Settings 来源闭环未按 S1-03 完成。
+- 涉及文件：[AppShellModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/AppShellModel.swift:280)、[AreaMatrixApp.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/App/AreaMatrixApp.swift:112)
+
+- 项目：页面状态、入口、退出、错误态、CoreBridge 调用闭环
+- 结果：不通过
+- 证据：`validate_repo_path`、`get_latest_scan_session`、`map_core_error` 已接 CoreBridge；但 Settings 来源下 `Open Repository` 会先保存新路径，且 Escape/关闭确认不返回 Settings 来源页。
+- 涉及文件：[S1-03-validate-path.md](/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-03-validate-path.md:89)、[AppShellModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/AppShellModel.swift:309)
+
+- 项目：移除 mock、fixture、硬编码状态
+- 结果：通过
+- 证据：生产路径的 S1-03 主链路调用生成 UniFFI 边界；fixture 主要在测试中。未发现用 fixture 伪造 C1-01/C1-21 的最终闭环。
+- 涉及文件：[CoreBridge.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift:286)、[CoreBridgePlaceholderState.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/CoreBridgePlaceholderState.swift:163)
+
+- 项目：不新增 control map 外功能
+- 结果：通过
+- 证据：S1-03 control map 只声明 C1-01/C1-03/C1-21，当前页面实现也围绕路径校验、接管提示、错误映射。
+- 涉及文件：[mvp-control-map.md](/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:18)
+
+- 项目：Expected New Paths / Forbidden Touches
+- 结果：通过
+- 证据：`apps/macos/AreaMatrix` 与 `apps/macos/AreaMatrixTests` 均存在；`git status --short -- core/src` 和 `git diff --name-only -- core/src` 无输出，未发现 `core/src/**` 被触碰。
+- 涉及文件：[phase-2.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-2.md:160)
+
+- 项目：完成标准
+- 结果：不通过
+- 证据：S1-03 不能按 page spec 完整验收；已存在完整 repo 和 Settings 来源路径仍存在阻断。
+- 涉及文件：[S1-03-validate-path.md](/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-03-validate-path.md:73)
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过。`ValidatePathStepView` 放在 App 入口文件且类型体约 337 行，超过 SwiftUI 视图建议拆分线；也不符合 S1-03 建议的 Onboarding 组件拆分。
+- 注释 / rustdoc / 文档同步：通过。`core-api.md` 与 `core/area_matrix.udl` 均包含 `validate_repo_path`、`get_latest_scan_session`、`map_core_error`。
+- 错误处理与边界处理：不通过。Settings 来源下会提前写入新 repo path；已初始化 repo 会叠加显示接管提示。
+- 测试与验证覆盖：不通过。fallback XCTest 33 项通过，但缺少“已初始化 repo 同时带 NonEmptyDirectory”与“Settings 来源 Open/Close 不提前修改当前 repo”的回归测试。
+- 占位、硬编码、mock-only、一次性实现检查：通过。未发现 S1-03 用 mock-only 伪造真实 Core 调用。
+
+六、阻塞项
+
+- P0：已存在完整 repo 可能同时显示“将接管已有目录”
+  - 说明：S1-03 要求已存在完整 repo 分支“不显示新建/接管说明”；Core 对已初始化非空目录会加入 `NonEmptyDirectory` 与 `AlreadyInitialized`，而 UI 只要看到 `NonEmptyDirectory` 就展示接管卡片。
+  - 路径：[S1-03-validate-path.md](/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-03-validate-path.md:73)、[repo_path.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/repo_path.rs:105)、[AreaMatrixApp.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/App/AreaMatrixApp.swift:143)
+  - 为什么导致不通过：真实 Core 结果会触发错误页面语义，破坏已存在 repo 分支验收。
+
+- P0：Settings 换库流程会在新 repo 成功打开前修改当前 repo
+  - 说明：S1-03 明确 Settings 来源中新 repo 成功打开前不修改当前 repo；当前 `openExistingRepository` 无条件 `saveConfiguredRepoPath` 后才进入 loading。
+  - 路径：[S1-03-validate-path.md](/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-03-validate-path.md:89)、[AppShellModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/AppShellModel.swift:309)
+  - 为什么导致不通过：这是用户配置写入边界，失败打开时会污染当前 repo 选择。
+
+- P1：Settings 来源下关闭窗口 / Escape 退出路径不完整
+  - 说明：页面要求关闭或 Escape 确认后退出向导或返回 Settings 来源页；当前确认后固定回 welcome，并在 UI 层关闭窗口。
+  - 路径：[S1-03-validate-path.md](/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-03-validate-path.md:88)、[MainWindow.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/MainWindow.swift:31)、[AppShellModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/AppShellModel.swift:327)
+  - 为什么导致不通过：退出/返回路径不是完整页面闭环。
+
+- P1：S1-03 View 结构超过长期维护阈值
+  - 说明：`ValidatePathStepView` 约 337 行，超过 SwiftLint `type_body_length: 300` 和 SwiftUI 视图超过 200 行应拆分的规范。
+  - 路径：[AreaMatrixApp.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/App/AreaMatrixApp.swift:13)、[coding-standards.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/coding-standards.md:151)
+  - 为什么导致不通过：工程质量规则要求明显编码规范问题不能判完成。
+
+七、验证情况
+
+- 已运行：`xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+  - 结果：失败，退出码 65；构建阶段完成，但测试 runner 被本地 sandbox 阻断：`com.apple.testmanagerd.control ... Sandbox restriction`。
+- 已运行：`bash scripts/check-macos-tests.sh`
+  - 结果：通过；先复现 xcodebuild 的 testmanagerd sandbox 阻断，再用 `xcrun xctest` 运行同一 XCTest bundle，33 tests passed。
+- 缺失：未覆盖上述 P0/P1 场景的回归测试；未跑 SwiftLint/SwiftFormat，因 manifest 只要求 xcodebuild test。
+
+八、最终判定说明
+
+本次执行尚未达到验收标准，不能视为完成。
+
+
+
+VERIFY_RESULT: FAIL

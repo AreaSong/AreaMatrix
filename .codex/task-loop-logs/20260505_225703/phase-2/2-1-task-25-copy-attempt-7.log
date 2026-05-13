@@ -1,0 +1,41 @@
+一、执行结论
+
+- 已完成
+
+二、执行范围
+
+- 单任务：`2-1/task-25`
+- 修改范围：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+- 额外按 repair 授权修复文档漂移：`docs/core/capability-specs/stage-1-mvp/C1-12-get-file-detail.md`
+- 未触碰 `core/src/**`
+
+三、完成情况
+
+- page-feature 覆盖：通过，S1-09 的 `C1-11/C1-12/C1-15` 仍由 `2-1/task-22/23/24` 覆盖，page audit 显示 S1-09 `Missing=None`、`Extra=None`。
+- 页面闭环：补齐 S1-09 右键退出流，`Rename...` 进入 `S1-33`、`Delete...` 进入 `S1-34`、`Change Category...` 进入 `S1-35`，并拆成 `RenameFileSheet`、`DeleteFileConfirmSheet`、`ChangeCategorySheet`。
+- mock/硬编码：移除了上次失败指出的“后续 dedicated flow 处理”式占位说明；S1-35 分类候选从 C1-15 tree/sidebar rows 派生，不再写固定示例列表。
+- 文档同步：`C1-12-get-file-detail.md` 已补 `S1-09 main-list`，对齐 control map。
+- Forbidden Touches：未触碰 `core/src/**`。
+
+四、工程质量
+
+- 视图已拆分，新增 action sheet 文件均低于 200 行；`MainRepositoryContentView.swift` 和 `MainFileListModel.swift` 低于 500 行。
+- 没有新增依赖。
+- 写操作按钮保持禁用，不在本任务提前执行 C1-22/C1-23/C1-24 的真实写 Core 能力，避免越过 S1-33/S1-34/S1-35 后续任务边界。
+- 错误态、诊断、写操作禁用、外部 rename/remove、多选、页面 routing 都有测试覆盖。
+
+五、验证情况
+
+- `xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：已运行，构建完成后被本机 `com.apple.testmanagerd.control` sandbox restriction 阻断，退出 65。
+- `./dev test macos`：通过；复现同类 sandbox 阻断后使用仓库定义 fallback `xcrun xctest`，99 tests，0 failures。
+- `xcodebuild ... build CODE_SIGNING_ALLOWED=NO`：通过，`BUILD SUCCEEDED`。
+- `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`：通过。
+- `python3 tasks/prompts/_shared/prompt_pipeline.py audit --pages`：通过，S1-09 OK。
+- `git diff --check`：通过。
+- `swiftformat` / `swiftlint`：未运行，当前 PATH 下未找到对应命令。
+
+六、风险与后续
+
+- 残余风险：本地标准 `xcodebuild test` 仍受 testmanagerd 沙箱限制，已用仓库认可 fallback 补足 XCTest 证据；未做真实 UI 手动点击验收。
+- 建议下一个任务：进入 `2-1/task-25` verify-ready 只读验收；后续真实文件写操作由 S1-33/S1-34/S1-35 对应 `2-3` 任务接管。
+

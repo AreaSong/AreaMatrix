@@ -1,0 +1,42 @@
+一、执行结论
+
+已完成。
+
+二、执行范围
+
+单任务：`1-4/task-22`，范围保持在 C1-20 implementation。
+
+修改文件清单：
+- [core/src/storage/import.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/import.rs:40)
+- [core/src/storage/import_target.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/import_target.rs:1)
+- [core/src/storage/mod.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/mod.rs:1)
+- [core/src/db/import.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/db/import.rs:265)
+- [core/src/db/mod.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/db/mod.rs:1)
+- [core/tests/overview_generated_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/overview_generated_implementation.rs:106)
+
+三、完成情况
+
+核对清单全部完成。修复点集中在 C1-20 的 overview regeneration 失败边界：`import_file` 现在只有在 overview 成功后才解除 DB / final file / replacement guard；overview 失败时会回滚 active row、change log、最终文件，并恢复 moved source 或 replaced file。新增测试覆盖 copy、move、indexed、overwrite 四类失败证据。
+
+完成标准满足：C1-20 implementation 有测试和命令证据；未实现相邻 C1 能力或 UI 页面。Forbidden Touches 未触碰，`git diff --name-only -- apps` 为空。
+
+四、工程质量
+
+代码结构已收敛：把导入目标解析拆到 `import_target.rs`，`import.rs` 保持 488 行，未超过 500 行建议阈值。新增逻辑没有 public Rust API，因此不需要新增 rustdoc；错误路径显式传播，不吞错，不使用 mock-only、硬编码通过态或一次性分支。
+
+五、验证情况
+
+已通过：
+- `cd core && cargo fmt --all -- --check`
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`
+- `cd core && cargo test --workspace overview_generated`
+- `cd core && cargo test --workspace`
+- `git diff --check -- core/src core/area_matrix.udl core/tests`
+
+无法运行：无必需验证缺失。macOS app 验证不属于本 task，且 `apps/**` 未触碰。
+
+六、风险与后续
+
+剩余风险：未发现当前 task 阻塞项。当前修复覆盖了上次验收指出的 DB / 文件系统一致性证据缺口。
+
+建议下一个任务：按 phase-1 顺序继续 `1-4/task-23`。

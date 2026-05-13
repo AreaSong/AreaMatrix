@@ -1,0 +1,85 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`4-1/task-13`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-13-c2-03-failure-edge.md`
+- 核对范围：`core/src/**`、`core/area_matrix.udl`、`core/tests/**`
+- 禁止触碰范围：`apps/**`
+
+三、完成度摘要
+
+- 已覆盖项数：8
+- 未覆盖项数：0
+- 通过项数：8
+- 不通过项数：1
+- 阻塞项数：1
+
+四、逐项验收结果
+
+- 项目：空态、非法输入、权限、IO/DB 错误和错误码映射
+- 结果：通过
+- 证据：`core/tests/saved_search_implementation.rs:187` 覆盖空态只读；`:281` 覆盖重复名称、非法 query、非法 scope、空 repoPath、缺失 row；`:407` 覆盖 DB 权限错误；`:379` 覆盖 DB 损坏；`core/src/search/saved_search.rs:167`、`:195`、`:208` 显式返回 `Config`；`core/src/db/saved_search.rs:183`、`:194` 映射 DB/唯一约束错误。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/search/saved_search.rs`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/db/saved_search.rs`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/saved_search_implementation.rs`
+
+- 项目：失败不留下半成品
+- 结果：通过
+- 证据：`core/src/db/saved_search.rs:28`、`:62` 使用事务写 create/update；`:105` delete 为单条 DB 原子操作；`core/tests/saved_search_implementation.rs:331` 用触发器强制 insert/update/delete 失败并断言 snapshot 不变。
+- 涉及文件：同上
+
+- 项目：隐私/AI/远程调用默认关闭、密钥不入日志
+- 结果：通过
+- 证据：C2-03 文档声明文件系统变化为无，错误码仅 `Db`/`Config`；`core/tests/saved_search_implementation.rs:457` 断言 `ai_enabled=false`，且不创建 `.areamatrix/ai`、`remote`、`secrets`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-2-experience/C2-03-saved-search-crud.md`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/saved_search_implementation.rs`
+
+- 项目：不得吞错或静默降级
+- 结果：通过
+- 证据：`core/src/search/saved_search.rs:100`、`:125`、`:142`、`:163` 均通过 `?` 返回错误；DB 层 `map_err` 显式转换为 `CoreError::Db` 或 `CoreError::Config`，未发现吞错。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/search/saved_search.rs`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/db/saved_search.rs`
+
+- 项目：Expected New Paths
+- 结果：通过
+- 证据：`core/src/search/saved_search.rs`、`core/src/db/saved_search.rs`、`core/area_matrix.udl`、`core/tests/saved_search_contract_api.rs`、`core/tests/saved_search_implementation.rs` 均存在并落地。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git diff --name-only -- apps core ...` 仅返回 `core/tests/saved_search_implementation.rs`，未出现 `apps/**`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps`
+
+- 项目：Manifest 验证命令
+- 结果：不通过
+- 证据：`./dev check all` 退出码 70；Core 侧 fmt/clippy/workspace tests 已通过，但 macOS `xcodebuild test` 因 Xcode 插件 `IDESimulatorFoundation` 加载失败而失败。
+- 涉及文件：`/Applications/Xcode.app/Contents/Frameworks/IDESimulatorFoundation.framework/IDESimulatorFoundation`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，C2-03 API、校验、DB 持久化分层清晰，UDL 与 Core API 已对齐。
+- 注释 / rustdoc / 文档同步：通过，public Rust API 有 rustdoc 和 `# Errors`；`docs/api/core-api.md:1355` 到 `:1469` 与 UDL `core/area_matrix.udl:83` 到 `:93`、`:280` 到 `:312` 对齐。
+- 错误处理与边界处理：通过，非法输入、重复名、DB 写失败、DB 损坏、权限错误均有结构化返回与测试。
+- 测试与验证覆盖：不通过，定向 C2-03 测试通过，但 manifest 要求的 `./dev check all` 未整体通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过，实际连接 DB 表 `saved_searches`，未发现 mock-only 或假通过路径。
+
+六、阻塞项
+
+- P0：Manifest 必需验证命令失败
+- 说明：`./dev check all` 是本任务 manifest 指定验证，当前执行失败，不能判定 task 完成。
+- 绝对路径：`/Applications/Xcode.app/Contents/Frameworks/IDESimulatorFoundation.framework/IDESimulatorFoundation`
+- 行号：不适用，来自命令输出
+- 为什么导致不通过：验收规则要求无法用命令输出证明通过则判定不通过；当前 macOS test gate 未通过，整体 validation 不闭合。
+
+七、验证情况
+
+- 已运行：`./dev check all`，失败，退出码 70。
+- 已通过：governance、skills、task-loop check、prompt doctor、git diff check、`cargo fmt --all -- --check`、`cargo clippy --all-targets --all-features -- -D warnings`、`cargo test --workspace`。
+- 已运行：`cd core && cargo test --test saved_search_contract_api --test saved_search_implementation`，通过，5 + 9 个测试全部通过。
+- 失败：macOS `xcodebuild test`，错误为 Xcode required plugin 加载失败，提示可尝试 `xcodebuild -runFirstLaunch`。
+- 缺失：无未运行项；但 manifest 验证未通过。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。产品代码与 C2-03 failure-edge 证据基本闭合，但必需验证命令失败，因此最终判定为不通过。
+
+VERIFY_RESULT: FAIL

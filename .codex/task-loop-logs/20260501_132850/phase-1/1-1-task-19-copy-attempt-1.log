@@ -1,0 +1,45 @@
+**一、执行结论**
+
+已完成 `1-1/task-19`。
+
+我补齐了 C1-04 `load_config` / `update_config` 对设置页真实消费的配置字段：`enable_extension_rules`、`enable_keyword_rules`、`fallback_to_inbox`、`allow_replace_during_import`。这些字段只进入 `RepoConfig` / UDL / SQLite `repo_config` 读写，不实现分类、导入、Replace 或 UI 行为。
+
+**二、执行范围**
+
+单任务：`1-1/task-19`
+
+修改范围：
+- Core API / 实现：`core/area_matrix.udl`、`core/src/domain.rs`、`core/src/config.rs`、`core/src/db/mod.rs`
+- 测试：新增 `core/tests/load_update_config_integration_verify.rs`，并更新相关 C1-04 / init 配置测试
+- 文档同步：`docs/api/core-api.md`、`docs/core/capability-specs/stage-1-mvp/C1-04-load-update-config.md`、`docs/architecture/ffi-design.md`
+
+未触碰 `apps/**`。工作区中 `.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json` 是开始前已有脏文件，我未回退或处理。
+
+**三、完成情况**
+
+核对清单通过：
+- 只处理 C1-04 配置读写。
+- 已按 Exact Docs 交叉核对 C1-04、control map、Core API、S1-26/S1-27/S1-28/S1-30。
+- 未实现相邻 C1 能力或 UI 页面。
+- 新增 integration verify 测试覆盖 API / UDL / Rust / UX 消费一致性。
+- 无 mock-only、空壳或硬编码通过态；测试使用真实 tempfile repo、SQLite、`init_repo`、`load_config`、`update_config`。
+
+**四、工程质量**
+
+结构保持简单：新增字段沿现有 `RepoConfig -> default_repo_config -> repo_config upsert/read -> UDL` 路径落地，没有引入新抽象或新依赖。错误处理沿用现有事务和 `CoreError` 路径；失败测试验证旧配置与用户可见文件保持不变。
+
+**五、验证情况**
+
+已通过：
+- `cd core && cargo fmt --all -- --check`
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`
+- `cd core && cargo test --workspace load_update_config`
+- 额外补跑：`cd core && cargo test --workspace`
+- 额外补跑：`git diff --check`
+
+**六、风险与后续**
+
+剩余风险：未做 macOS UI 消费验证，因为本 task 禁止触碰 `apps/**`，这里只证明 Core C1-04 能提供设置页所需字段和真实持久化语义。
+
+建议下一个任务：继续 `1-2/task-01`，进入 C1-05 classify-preview contract-api。
+

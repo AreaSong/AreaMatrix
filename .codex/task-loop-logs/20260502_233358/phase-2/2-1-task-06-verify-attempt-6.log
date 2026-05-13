@@ -1,0 +1,56 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`2-1/task-06`
+- Task：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-1-first-launch-main/task-06-s1-03-page-integration-verify.md`
+- 覆盖：`S1-03 validate-path`，`C1-01` / `C1-03` / `C1-21`
+- 代码范围：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：11
+- 未覆盖项数：0
+- 通过项数：8
+- 不通过项数：3
+- 阻塞项数：2
+
+四、逐项验收结果
+
+- Exact Docs：通过。6/6 已读取，S1-03 明确要求路径检查、iCloud、外置卷、已有 repo、非空目录与错误/修复路径。
+- Existing Code：通过。已读取 macOS app、tests、`core/area_matrix.udl`。
+- Expected New Paths：通过。`apps/macos/AreaMatrix/**` 与 `apps/macos/AreaMatrixTests/**` 均已存在。
+- Forbidden Touches：通过。`git status --short -- core/src`、`git diff --name-only -- core/src`、`git ls-files --others --exclude-standard core/src` 均为空。
+- Page-feature 覆盖：基本通过。`CoreBridge.validateRepoPath`、`latestScanSession`、`mapCoreError` 已接真实 UniFFI；测试覆盖非空接管、iCloud 确认、不可写、错误映射、已有 repo 分支。
+- 页面闭环：不通过。容量/外置卷检查失败时被降级为 `Unavailable` warning，`canContinueFromValidatePath` 不阻断；这不满足 S1-03 “检查结果缺失按加载态或错误态处理”。
+- mock / fixture / hardcoded：通过。生产 S1-03 主路径未发现 mock-only 通过态；fixture 仅在 tests 中使用。
+- control map 越界：通过。当前页面仍只消费 S1-03 声明的 `C1-01, C1-03, C1-21`。
+- 完成标准 1：不通过。由于容量/外置卷缺失结果仍可继续，S1-03 不能按 page spec 完整验收。
+- 完成标准 2：通过。页面声明的 Core 能力已有真实接入证据或本页 handoff 证据。
+- Validation：不通过。manifest 指定 `xcodebuild test ...` 返回 code 65。
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。相关生产 Swift 文件均未超过 500 行；S1-03 view/model/bridge 分层清楚。
+- 注释 / rustdoc / 文档同步：通过。UDL 与 `docs/api/core-api.md` 的 S1-03 相关 API 对齐。
+- 错误处理与边界处理：不通过。`RepositoryPathEnvironmentSnapshot.inspect` 捕获失败后返回 nil，UI 展示 `Unavailable`，但 model 未把缺失检查结果转为 loading/error 或阻断继续。
+- 测试与验证覆盖：不通过。build 通过，但必需 test 未完成；且未发现 `availableCapacityBytes == nil` / `isExternalVolume == nil` 的阻断测试。
+- 占位、硬编码、mock-only、一次性实现检查：通过。S1-03 主链路不是 mock-only。
+
+六、阻塞项
+
+- P0 必需验证命令未通过。说明：`xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO` 返回 code 65，错误为无法与 `testmanagerd.control` 建立通信，`Sandbox restriction`。任务要求见 `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-2.md:171` 与 `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-1-first-launch-main/task-06-s1-03-page-integration-verify.md:35`。
+- P1 检查结果缺失仍可继续。说明：S1-03 spec 要求检查结果缺失按加载态或错误态处理，`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-03-validate-path.md:78`；但 `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift:191` 到 `:204` 将容量/外置卷读取失败吞成 nil，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Onboarding/ValidatePathStepView.swift:164` 到 `:177` 只显示 `Unavailable` warning，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/AppShellModel.swift:121` 到 `:134` 和 `:413` 到 `:444` 未阻断继续。
+
+七、验证情况
+
+- 已运行：`xcodebuild -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' build CODE_SIGNING_ALLOWED=NO`：通过，`** BUILD SUCCEEDED **`。
+- 已运行：`xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：失败，code 65，sandbox 阻止 test runner 通信。
+- 缺失：成功执行的 `xcodebuild test` 结果；容量/外置卷缺失结果的回归测试。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+VERIFY_RESULT: FAIL

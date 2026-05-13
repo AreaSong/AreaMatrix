@@ -105,7 +105,7 @@ pub enum ScanSessionStatus {
 pub enum DuplicateStrategy {
     /// Do not import the duplicate.
     Skip,
-    /// Replace the existing entry when allowed by later storage logic.
+    /// Replace the existing active entry after the UI has confirmed the danger.
     Overwrite,
     /// Keep both files with conflict-free naming.
     KeepBoth,
@@ -131,7 +131,7 @@ pub enum ClassifyReason {
 pub enum ExternalEventKind {
     /// A path was created.
     Created,
-    /// A path was removed.
+    /// A path was externally removed and should be reflected as a soft delete in metadata.
     Removed,
     /// A path was modified.
     Modified,
@@ -154,6 +154,14 @@ pub struct RepoConfig {
     pub locale: String,
     /// Whether iCloud warnings are shown.
     pub icloud_warn: bool,
+    /// Whether extension-based classifier rules are enabled.
+    pub enable_extension_rules: bool,
+    /// Whether keyword-based classifier rules are enabled.
+    pub enable_keyword_rules: bool,
+    /// Whether files without a classifier match fall back to the inbox category.
+    pub fallback_to_inbox: bool,
+    /// Whether import flows may expose the dangerous replace option.
+    pub allow_replace_during_import: bool,
 }
 
 /// Options used when initializing a repository.
@@ -237,11 +245,11 @@ pub struct ChangeFilter {
     pub file_id: Option<i64>,
     /// Optional category slug.
     pub category: Option<String>,
-    /// Optional action string.
+    /// Optional exact action string such as `imported`, `renamed`, or `external_modified`.
     pub action: Option<String>,
-    /// Lower timestamp bound.
+    /// Lower `occurred_at` timestamp bound, inclusive.
     pub since: Option<i64>,
-    /// Upper timestamp bound.
+    /// Upper `occurred_at` timestamp bound, exclusive.
     pub until: Option<i64>,
     /// Maximum number of rows to return.
     pub limit: i64,
@@ -254,7 +262,11 @@ pub struct ChangeFilter {
 pub struct FileEntry {
     /// Stable database identifier.
     pub id: i64,
-    /// Repository-relative path.
+    /// Path displayed for this entry.
+    ///
+    /// Repository-owned, adopted, and external reindex rows use a
+    /// repository-relative path. Imported indexed rows point at the external
+    /// source path and also preserve the same value in `source_path`.
     pub path: String,
     /// Original source filename.
     pub original_name: String,
@@ -278,6 +290,59 @@ pub struct FileEntry {
     pub updated_at: i64,
 }
 
+/// Read-only preview for a C1-24 category move.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct MoveToCategoryPreview {
+    /// Stable database identifier for the active file.
+    pub file_id: i64,
+    /// Current category slug before confirmation.
+    pub from_category: String,
+    /// Target category slug requested by the caller.
+    pub to_category: String,
+    /// Current entry path before confirmation.
+    pub current_path: String,
+    /// Final path that `move_to_category` will use if the user confirms.
+    pub target_path: String,
+    /// Final file name that `move_to_category` will use if the user confirms.
+    pub target_name: String,
+    /// Storage behavior for this entry.
+    pub storage_mode: StorageMode,
+    /// Whether confirmation only changes metadata and never moves an external file.
+    pub index_only: bool,
+    /// Whether C1-10 conflict-free numbering changed the final file name.
+    pub name_conflict_resolved: bool,
+    /// Whether confirmation will physically move a repo-owned file.
+    pub will_move_file: bool,
+}
+
+/// Lifecycle state for an iCloud conflicted copy pair.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub enum ICloudConflictStatus {
+    /// The pair still needs explicit user review before any resolution action.
+    NeedsReview,
+    /// The pair was marked resolved by a later resolution flow.
+    Resolved,
+}
+
+/// Read-only iCloud conflicted copy pair returned to Swift.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct ICloudConflictPair {
+    /// Stable identifier for later single-item resolution.
+    pub conflict_id: String,
+    /// Repository-relative original path when it can be identified.
+    pub original_path: Option<String>,
+    /// Repository-relative conflicted copy path.
+    pub conflicted_copy_path: String,
+    /// Original file modification timestamp when available.
+    pub original_modified_at: Option<i64>,
+    /// Conflicted copy modification timestamp.
+    pub conflicted_modified_at: i64,
+    /// Current user-visible conflict state.
+    pub status: ICloudConflictStatus,
+    /// Reason shown when pairing is uncertain and needs user review.
+    pub uncertainty_reason: Option<String>,
+}
+
 /// A user-visible change-log entry.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ChangeLogEntry {
@@ -291,7 +356,7 @@ pub struct ChangeLogEntry {
     pub category: String,
     /// Action string.
     pub action: String,
-    /// JSON detail payload.
+    /// JSON detail payload that callers may parse for action-specific metadata.
     pub detail_json: String,
     /// Unix timestamp for the event.
     pub occurred_at: i64,
@@ -333,6 +398,43 @@ pub struct ReindexReport {
     /// Number of skipped files.
     pub skipped: i64,
     /// Human-readable errors.
+    pub errors: Vec<String>,
+}
+
+/// Options for C1-26 metadata repair.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct RepairOptions {
+    /// Whether repair should run a full filesystem rescan after diagnostics.
+    pub full_rescan: bool,
+    /// Whether repair should preserve the damaged metadata state before mutation.
+    pub preserve_diagnostics_snapshot: bool,
+}
+
+/// Reference to an AreaMatrix-owned diagnostics snapshot.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct DiagnosticsSnapshot {
+    /// Repository-relative path under `.areamatrix/` where the snapshot was written.
+    pub snapshot_path: String,
+    /// Unix timestamp for snapshot creation.
+    pub created_at: i64,
+    /// Human-readable warnings about partial or skipped diagnostics.
+    pub warnings: Vec<String>,
+}
+
+/// Metadata repair summary returned to Swift.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct RepairReport {
+    /// Optional scan session identifier used by a full repair rescan.
+    pub scan_session_id: Option<i64>,
+    /// Optional diagnostics snapshot path preserved before repair mutation.
+    pub diagnostics_snapshot_path: Option<String>,
+    /// Number of metadata rows inserted by the repair pass.
+    pub inserted: i64,
+    /// Number of metadata rows updated by the repair pass.
+    pub updated: i64,
+    /// Number of filesystem entries skipped by the repair pass.
+    pub skipped: i64,
+    /// Human-readable errors that did not delete user files or clear diagnostics.
     pub errors: Vec<String>,
 }
 
@@ -381,7 +483,7 @@ pub struct SyncResult {
     pub detected_creates: i64,
     /// Number of renames detected.
     pub detected_renames: i64,
-    /// Number of deletes detected.
+    /// Number of removed paths reflected as deleted metadata rows.
     pub detected_deletes: i64,
     /// Number of modifications detected.
     pub detected_modifies: i64,

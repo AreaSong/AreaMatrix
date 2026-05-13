@@ -1,0 +1,68 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`2-3/task-08`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-3-detail-settings/task-08-s1-15-c1-11-list-files.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：17
+- 未覆盖项数：0
+- 通过项数：17
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 S1-15 页面中的 C1-11 功能点
+- 结果：通过
+- 证据：task 明确绑定 S1-15 + C1-11；实现中多选详情基于 `MultiSelectionDetailSummary(selection:files:)` 从当前 list 已加载文件生成摘要，没有发起 `get_file`；测试覆盖多选不调用 C1-12 `getFile`。
+- 涉及文件：`apps/macos/AreaMatrix/Models/MainFileListState.swift:162`、`apps/macos/AreaMatrix/Views/Main/MainRepositoryContentNoteDrafts.swift:17`、`apps/macos/AreaMatrixTests/DetailMultiListFilesPageFeatureTests.swift:69`
+
+- 项目：读取页面规格、MVP control map、Core API 和 C1-11 能力规格
+- 结果：通过
+- 证据：S1-15 要求多选摘要、只读动作、Copy Paths；control map 将 S1-15 绑定 C1-11/C1-12 且本 task 为 `2-3/task-08`；Core API/UDL 均存在 `list_files(repo_path, filter)`；C1-11 声明无 DB/文件系统写入。
+- 涉及文件：`docs/ux/page-specs/stage-1-mvp/S1-15-detail-multi.md:23`、`docs/architecture/mvp-control-map.md:30`、`docs/api/core-api.md:92`、`docs/core/capability-specs/stage-1-mvp/C1-11-list-files.md:10`
+
+- 项目：只接入 C1-11 对应 CoreBridge / 状态 / 错误映射，不实现同页其他 Core 功能点
+- 结果：通过
+- 证据：`CoreBridge.listFiles` 调真实 UniFFI `listFiles`；`MainFileListModel.loadCurrentCategory` 用 `fileLister.listFiles` 加载当前列表并映射错误；多选只消费已加载列表状态，未新增 C1-12 行为。
+- 涉及文件：`apps/macos/AreaMatrix/Bridge/CoreBridge.swift:285`、`apps/macos/AreaMatrix/Bridge/CoreBridge.swift:363`、`apps/macos/AreaMatrix/Models/MainFileListModel.swift:253`
+
+- 项目：不顺手实现相邻页面
+- 结果：通过
+- 证据：多选页面仅显示摘要、禁用 Show in Finder、Copy Paths；未在多选页暴露 Rename / Change Category / Delete 等批量写操作。
+- 涉及文件：`apps/macos/AreaMatrix/Views/Main/MainRepositoryDetailPane.swift:93`、`apps/macos/AreaMatrix/Views/Main/MainRepositoryDetailPane.swift:158`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。摘要模型、详情视图、系统动作分层清楚；关键文件均低于 500 行。
+- 注释 / rustdoc / 文档同步：通过。本 task 未新增 public Rust API；UDL 与 Core API 已存在 `list_files` 合同。
+- 错误处理与边界处理：通过。list 错误走 `mapCoreError`；Copy Paths 失败会 toast 并 VoiceOver 宣告。
+- 测试与验证覆盖：通过。新增 `DetailMultiListFilesPageFeatureTests` 覆盖摘要、部分 metadata 缺失、多选不调用 `getFile`；`./dev test macos` 324 tests 0 failures。
+- 占位、硬编码、mock-only、一次性实现检查：通过。生产路径未发现 mock/static 伪闭环；测试 fixture 仅用于 XCTest。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`，通过，输出 `BUILD SUCCEEDED`。
+- 已运行：`./dev test macos`，通过。标准 `xcodebuild test` 因本地 `testmanagerd` sandbox 限制被 driver 识别阻断，随后复用已构建 XCTest bundle 执行 `xcrun xctest`，324 tests，0 failures。
+- Forbidden Touches：`git status --short -- core/src ...` 未显示 `core/src/**` 修改。
+- 缺失验证：无。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS

@@ -1,0 +1,37 @@
+**一、执行结论**
+
+已完成。
+
+**二、执行范围**
+
+单任务：`2-3/task-26`。
+
+修改文件：
+- [AdvancedSettingsPageIntegrationVerifyTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/AdvancedSettingsPageIntegrationVerifyTests.swift:1)
+- [project.pbxproj](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj:192)
+
+未触碰 `core/src/**`。工作区里已有的 `.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json` 仍是未相关改动，我没有处理。
+
+**三、完成情况**
+
+- 逐项验收 page-feature task：新增 integration verify 覆盖 `C1-04` 配置读写、`C1-20` overview 输出策略、`C1-16` 恢复工具入口。
+- 页面状态/入口/退出/错误态/CoreBridge：新增测试覆盖真实 `CoreBridge` 初始化、`loadConfig/updateConfig`、下一次 import 触发 root/generated overview、README 不被触碰、advanced tab 恢复入口只路由到恢复页且不直接执行 recovery。
+- mock/fixture/硬编码：未改生产代码；测试 double 只用于错误态与“不得直接执行 recovery”的断言。
+- control map 之外功能：未新增。
+
+**四、工程质量**
+
+新增测试文件 171 行，结构集中在 S1-30 integration 证据，没有引入生产抽象或依赖。高风险边界覆盖了 root `AREAMATRIX.md` 只在确认配置后由下一次 overview regeneration 创建、`README.md` 保持原样、source 文件未被移动删除，以及 recovery 入口不绕过专页确认。
+
+**五、验证情况**
+
+- `xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+  - 编译/链接完成。
+  - 测试运行被本机 sandbox 阻断：`testmanagerd.control ... Sandbox restriction`。
+- 按仓库规则使用同一已构建 XCTest bundle fallback：
+  - `xcrun xctest apps/macos/DerivedData/AreaMatrix/Build/Products/Debug/AreaMatrixTests.xctest`
+  - 通过：`391 tests, 0 failures`。
+
+**六、风险与后续**
+
+剩余风险是当前 sandbox 无法让 `xcodebuild test` 完整接管 test runner；CI 或非沙箱本机仍应补跑同一条 manifest 命令。建议下一个任务继续执行 `2-3/task-27`。

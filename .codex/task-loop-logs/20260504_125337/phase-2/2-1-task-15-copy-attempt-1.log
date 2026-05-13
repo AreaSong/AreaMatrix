@@ -1,0 +1,25 @@
+一、执行结论：已完成。
+
+二、执行范围：单任务 `2-1/task-15`，只覆盖 S1-07 中 C1-02 init-empty-repo。任务相关文件包括：
+
+- [CoreRepositoryOpening.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreRepositoryOpening.swift:3)
+- [AppShellModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/AppShellModel.swift:46)
+- [OnboardingInitializationProgress.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/OnboardingInitializationProgress.swift:40)
+- [MainWindow.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/MainWindow.swift:163)
+- [InitializingStepView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Onboarding/InitializingStepView.swift:238)
+- [InitDoneEmptyRepositoryTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/InitDoneEmptyRepositoryTests.swift:5)
+- [project.pbxproj](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj:23)
+
+三、完成情况：S1-07 的 `Open Repository` 已接真实 C1-02 Core 闭环：`load_config` + `list_tree_json`，成功进入 repository ready，失败回到完成页并显示 inline retry error。未实现 C1-03 接管完成逻辑，未实现相邻页面。`core/src/**`、`core/area_matrix.udl`、UniFFI generated 代码均未触碰。
+
+四、工程质量：没有新增依赖；没有 mock-only 或静态状态伪造最终闭环。错误路径通过 `CoreError` 映射到 inline retry；测试覆盖成功路径、失败路径、真实 CoreBridge 初始化后打开空库，并验证未覆盖用户 `README.md`。
+
+五、验证情况：
+
+- 通过：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+- 通过：`bash scripts/check-macos-tests.sh`，标准 `xcodebuild test` 被本地 `testmanagerd` sandbox 阻断后，脚本按规则 fallback 到 `xcrun xctest`，57 tests passed。
+- 通过：`git diff --check`
+- 未运行：`swiftformat` / `swiftlint`，当前环境未找到对应可执行文件。
+
+六、风险与后续：剩余风险是未做真实 UI 手工点击验证；下一任务应继续 `2-1/task-16`，补 S1-07 中 C1-03 adopt-existing-repo 的同页另一能力。当前工作区还存在我未处理的 out-of-scope dirty files（`.codex/**`、`apps/macos/AGENTS.md` 等），未计入本任务范围。
+

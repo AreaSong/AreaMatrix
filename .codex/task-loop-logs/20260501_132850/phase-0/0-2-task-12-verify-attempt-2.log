@@ -1,0 +1,70 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`0-2/task-12`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-0/0-2-engineering-foundation/task-12-macos-test-target.md`
+- 代码范围：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/**`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`
+
+三、完成度摘要
+
+- 已覆盖项数：7
+- 未覆盖项数：0
+- 通过项数：7
+- 不通过项数：0
+- 阻塞项数：0
+- 环境限制：1，`xcodebuild test` 在当前 Codex 沙箱被 `testmanagerd.control` 权限限制拦截，已明确记录；补充 `xcrun xctest` 证明测试 bundle 内 3 个测试可执行且通过。
+
+四、逐项验收结果
+
+- 创建最小测试 target  
+  结果：通过  
+  证据：`AreaMatrixTests` target 存在，productType 为 `com.apple.product-type.bundle.unit-test`，并被 project targets 引用：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj:168`、`:216`。scheme TestAction 引用 `AreaMatrixTests.xctest`：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/xcshareddata/xcschemes/AreaMatrix.xcscheme:31`。
+
+- 测试只验证 app shell/bridge 可加载  
+  结果：通过  
+  证据：`AreaMatrixShellTests` 只断言 `CoreBridge` placeholder 状态与 `AppShellModel` 状态文案：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/AreaMatrixShellTests.swift:4`。该测试已接入 target sources：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj:253`。
+
+- 不伪造页面闭环通过  
+  结果：通过  
+  证据：测试只覆盖 `MainWindow` 类型创建、bridge placeholder 与 shell status，没有导入、文件、DB、页面业务闭环断言：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/App/AreaMatrixAppSmokeTests.swift:4`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/AreaMatrixShellTests.swift:5`。
+
+- Expected New Paths  
+  结果：通过  
+  证据：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/AreaMatrixShellTests.swift` 存在且被 `git ls-files` 追踪。
+
+- Forbidden Touches  
+  结果：通过  
+  证据：`git status --short core/src apps/macos/AreaMatrixTests apps/macos/AreaMatrix.xcodeproj/project.pbxproj` 只显示 `M apps/macos/AreaMatrix.xcodeproj/project.pbxproj`，没有 `core/src/**` 改动。
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。测试 target 配置清晰，测试文件 13 行，单测粒度小。
+- 注释 / rustdoc / 文档同步：通过。当前是 Swift 测试空壳，不涉及 public Rust API；无无意义注释。
+- 错误处理与边界处理：通过。测试不触碰用户文件、DB、Core 写路径或真实业务闭环。
+- 测试与验证覆盖：通过但有环境限制。`xcrun xctest apps/macos/DerivedData/AreaMatrix/Build/Products/Debug/AreaMatrixTests.xctest` 执行 3 个测试，0 failures。
+- 占位、硬编码、mock-only、一次性实现检查：通过。当前 Phase 0 明确允许 shell/bridge placeholder；测试没有把 placeholder 当真实产品闭环通过。
+
+六、阻塞项
+
+- 未发现实现阻塞项。
+- 环境限制已记录：manifest 指定的 `xcodebuild test ...` 在当前 Codex 沙箱失败，错误为无法连接 `com.apple.testmanagerd.control`，底层原因 `Sandbox restriction`。该限制不指向当前 task 实现错误；测试 bundle 已通过直接 XCTest 执行验证。
+
+七、验证情况
+
+- 已运行：`xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`  
+  结果：失败，退出码 65；构建进入 app/test bundle 阶段，但 test runner 通信被沙箱限制拦截。
+- 已运行：`xcrun xctest apps/macos/DerivedData/AreaMatrix/Build/Products/Debug/AreaMatrixTests.xctest`  
+  结果：通过，执行 3 个测试，0 failures。
+- 已运行：`git diff --check`  
+  结果：通过，无输出。
+- 已运行：测试文件强制解包 / `try!` / TODO / 空断言扫描  
+  结果：通过，无匹配。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准：最小 macOS test target 已存在，shell/bridge 测试已接入并可执行，未触碰 `core/src/**`，且 `xcodebuild test` 的失败原因已明确记录为当前沙箱环境限制。
+
+VERIFY_RESULT: PASS

@@ -1,0 +1,47 @@
+一、执行结论
+
+已完成。
+
+二、执行范围
+
+单任务：`1-4/task-05`，只处理 C1-16 recover-on-startup integration-verify。
+
+修改文件：
+- `core/src/recovery.rs`
+- `core/src/db/staging_recovery.rs`
+- `core/src/storage/safe_move.rs`
+- `core/tests/recover_on_startup_implementation.rs`
+- `core/tests/recover_on_startup_validation.rs`
+- `core/tests/recover_on_startup_integration_verify.rs`
+
+三、完成情况
+
+已修复上次 P0：Move 导入崩溃残留不再被当作普通 orphan staging 文件删除。
+
+现在行为是：
+- DB staging row 为 `StorageMode::Moved` 且有 `source_path` 时，startup recovery 会尝试把 staging 文件恢复回原 source path。
+- 如果原 source path 已存在或无法证明安全，则保留 staging 文件和 DB row，并返回 warning，不覆盖、不删除用户文件。
+- 无 DB row 的 unknown / move-like orphan staging 文件保留并 warning。
+- 只有可判定为 Copy 临时产物的 `copy-import-*` orphan staging 文件会被清理。
+- `apps/**` 未触碰，`core/area_matrix.udl` 未改。
+
+四、工程质量
+
+代码路径仍连接真实 DB/FS，不是 mock 或硬编码。错误路径覆盖了 moved row restore、source path conflict、pre-DB-row residue 保留、symlink/unsafe parent、DB error retryable state。未新增依赖，public API/UDL 未变更。
+
+五、验证情况
+
+已通过：
+- `cd core && cargo fmt --all -- --check`
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`
+- `cd core && cargo test --workspace recover_on_startup`
+- `cd core && cargo test --workspace`
+- `git diff --check`
+- Forbidden Touches 检查：`git status --short -- apps`、`git diff --name-only -- apps`、`git ls-files --others --exclude-standard -- apps` 均无输出
+
+六、风险与后续
+
+剩余风险：无阻塞项。对于崩溃发生在 Move staging DB row 写入前的旧残留，因没有 source_path 证据，当前策略是保留并 warning，而不是自动恢复或删除；这是文件安全优先的保守处理。
+
+建议下一个任务：进入 verify-ready 验收 `1-4/task-05`。
+

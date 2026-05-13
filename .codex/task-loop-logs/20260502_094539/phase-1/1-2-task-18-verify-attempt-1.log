@@ -1,0 +1,57 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`1-2/task-18`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-1/1-2-import-classify/task-18-c1-08-validation.md`
+- 验收代码范围：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/**`
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：0
+- 通过项数：10
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 只处理 C1-08 validation 范围：通过。证据：`core/tests/import_index_file_validation.rs` 只围绕 `StorageMode::Indexed`、indexed source、DB row、change_log、missing source、InvalidPath、DuplicateFile 验证。
+- Exact Docs 已读取并作为 SSOT：通过。证据：C1-08 规格定义 `Indexed`、`source_path`、`change_log.imported`、不复制不移动、错误码和验收标准；control map 声明 C1-08 消费页为 Real Core。
+- 未实现相邻 C1 能力或 UI：通过。证据：`git status --short -- apps` 无输出；当前 task 产物未触碰 `apps/**`。
+- Rust 测试已补齐：通过。证据：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/import_index_file_validation.rs` 存在并被 `cargo test --workspace import_index_file` 执行。
+- 成功路径和关键错误路径：通过。证据：成功不复制/不移动源文件见 `core/tests/import_index_file_validation.rs:162`；missing source、metadata internal、metadata destination、duplicate、deleted external source 分别见 `:201`、`:216`、`:236`、`:255`、`:290`。
+- C1-08 Rust 实现与 SSOT 一致：通过。证据：indexed 分支见 `core/src/storage/import.rs:24`、`:129`；active indexed DB + `change_log.imported` 事务见 `core/src/db/import.rs:90`、`:123`。
+- UDL/API 一致：通过。证据：`core/area_matrix.udl:38`、`:116`、`:144`、`:218` 与 `docs/api/core-api.md:61`、`:140`、`:168`、`:242` 对齐。
+- Expected New Paths：通过。证据：`core/src`、`core/area_matrix.udl`、`core/tests`、`core/tests/import_index_file_validation.rs` 均存在。
+- Forbidden Touches：通过。证据：`apps/**` 无工作区变更。
+- 完成标准：通过。C1-08 validation 目标有本地测试和代码证据；未扩展到未绑定 UI 或相邻能力。
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。`import_file` 将 indexed 分支显式分流，避免和 copied/moved staging 逻辑混淆；相关文件均低于 500 行。
+- 注释 / rustdoc / 文档同步：通过。`api.rs:195` 起说明 C1-06/C1-07/C1-08 边界，`# Errors` 覆盖关键错误；UDL 与 Core API 文档同步。
+- 错误处理与边界处理：通过。源文件缺失、权限、iCloud marker、`.areamatrix` 内部路径、DB 回滚、duplicate 均有错误路径证据。
+- 测试与验证覆盖：通过。`import_index_file` 过滤测试 23 个通过，完整 `cargo test --workspace` 169 个测试通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。测试走真实 `init_repo`、真实 SQLite、真实文件系统与 `import_file` 路径；未发现 mock-only 闭环。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- `cd core && cargo fmt --all -- --check`：通过。
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过。
+- `cd core && cargo test --workspace import_index_file`：通过，23 个匹配测试通过。
+- `cd core && cargo test --workspace`：通过，169 个 workspace 测试通过。
+- `git diff --check`：通过。
+- 未运行：远端 CI；本次为本地只读单任务验收，无法触发远端 workflow。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准，可以视为 `1-2/task-18` 完成。
+
+VERIFY_RESULT: PASS

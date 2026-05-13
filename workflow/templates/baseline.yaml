@@ -1,0 +1,10 @@
+version: v*
+status: ready
+docs:
+  - file: docs/README.md
+    line_start: 1
+    line_end: 1
+    heading: ""
+    excerpt: ""
+    sha256: ""
+    source: discussion:exact_docs

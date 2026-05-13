@@ -1,0 +1,78 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`1-2/task-24`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-1/1-2-import-classify/task-24-c1-09-integration-verify.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/tests/**`
+
+三、完成度摘要
+
+- 已覆盖项数：11
+- 未覆盖项数：1
+- 通过项数：10
+- 不通过项数：1
+- 阻塞项数：1
+
+四、逐项验收结果
+
+- 项目：只处理 C1-09 integration-verify 范围
+- 结果：通过
+- 证据：实现集中在 `import_file`、重复 hash 检测、`DuplicateStrategy`、`DuplicateFile` 与 detect duplicate 测试；`git status --short apps` 无输出。
+- 涉及文件：`core/src/**`、`core/area_matrix.udl`、`core/tests/**`
+
+- 项目：Exact Docs 作为 SSOT
+- 结果：通过
+- 证据：已读取 C1-09、control map、Core API、S1-22、S1-24；control map 将 S1-22 绑定 C1-09，S1-24 绑定 C1-09/C1-10。
+- 涉及文件：`docs/core/capability-specs/stage-1-mvp/C1-09-detect-duplicate.md` 等
+
+- 项目：API / UDL / Rust / 测试一致性
+- 结果：不通过
+- 证据：UDL 和 Rust 暴露了 `DuplicateStrategy` / `DuplicateFile`，主路径测试通过；但 `StorageMode::Indexed + DuplicateStrategy::Overwrite` 对已有 repo-owned 重复文件只做 DB metadata replacement，未安全归档旧物理文件。
+- 涉及文件：`core/src/storage/import.rs`、`core/src/storage/destination.rs`、`core/src/db/import.rs`
+
+- 项目：无 mock / 空壳伪完成
+- 结果：通过
+- 证据：C1-09 主路径连接真实 DB、文件系统、hash、change_log；未发现 mock-only 通过态。
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过。`import_indexed_file` 的 overwrite 分支进入 metadata-only 替换，和 repo-owned 旧文件的文件系统状态不一致。
+- 注释 / rustdoc / 文档同步：不通过。`api.rs` 文档声明 overwrite 会安全归档旧 repo-owned 文件，但 indexed overwrite 分支没有执行该行为。
+- 错误处理与边界处理：不通过。该分支没有拒绝不支持的组合，也没有 archive/rollback 旧物理文件。
+- 测试与验证覆盖：不通过。验证命令通过，但没有覆盖 indexed overwrite 替换 repo-owned duplicate 的场景。
+- 占位、硬编码、mock-only、一次性实现检查：通过。未发现相关伪完成模式。
+
+六、阻塞项
+
+- P0：Indexed Overwrite 会软删除 DB 旧行但不移动旧物理文件
+  - 说明：C1-09 要求 `Overwrite` 走安全替换或 Trash 语义；S1-24 说明旧文件应进入 Trash，最终导入通过 `import_file(... duplicate_strategy=Overwrite)` 或等价命令完成。但当前 indexed import 的 overwrite 分支直接调用 `ReplacementPlan::metadata_only(existing)`，随后只执行 DB soft delete 和新增 indexed row。若 existing 是 `Copied` / `Moved` 的 repo-owned 文件，旧文件仍留在原路径，DB 却把旧行 path 改成 `.areamatrix/trash/...` 并标为 deleted，造成文件系统与 DB 不一致。
+  - 绝对路径与行号：
+    - [C1-09-detect-duplicate.md](/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-09-detect-duplicate.md:30)
+    - [S1-24-replace-confirm.md](/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-24-replace-confirm.md:54)
+    - [import.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/import.rs:141)
+    - [import.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/import.rs:245)
+    - [destination.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/destination.rs:176)
+    - [db/import.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/db/import.rs:151)
+  - 为什么导致不通过：这是 C1-09 `Overwrite` 的真实业务路径缺口，不是相邻 UI 能力问题；会让危险替换在一种合法 option 组合下产生不可证明安全的状态。
+
+七、验证情况
+
+- 已运行：`cd core && cargo fmt --all -- --check`，通过。
+- 已运行：`cd core && cargo clippy --all-targets --all-features -- -D warnings`，通过。
+- 已运行：`cd core && cargo test --workspace detect_duplicate`，通过，18 个 detect_duplicate 相关测试通过。
+- 已运行：`cd core && cargo test --workspace`，通过，191 个测试通过。
+- 缺失：没有覆盖 `StorageMode::Indexed + DuplicateStrategy::Overwrite` 替换已有 repo-owned duplicate 的测试；代码审查证明该路径未安全归档旧文件。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+
+
+
+VERIFY_RESULT: FAIL

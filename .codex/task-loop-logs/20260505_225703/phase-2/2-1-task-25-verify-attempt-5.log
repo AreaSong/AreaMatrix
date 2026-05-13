@@ -1,0 +1,84 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`2-1/task-25`
+- 对应文件路径：`tasks/prompts/phase-2/2-1-first-launch-main/task-25-s1-09-page-integration-verify.md`
+- 核验范围：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`apps/macos/AreaMatrix.xcodeproj/project.pbxproj`、`core/area_matrix.udl`
+- Forbidden Touches：`core/src/**`
+
+三、完成度摘要
+
+- 已覆盖项数：8
+- 未覆盖项数：3
+- 通过项数：5
+- 不通过项数：3
+- 阻塞项数：4
+
+四、逐项验收结果
+
+- 项目：page-feature task 覆盖 `2-1/task-22/23/24`
+- 结果：通过
+- 证据：task 与 manifest 都声明 S1-09 覆盖 `C1-11, C1-12, C1-15`，代码中存在 list/detail/tree 对应实现。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-2.md`
+
+- 项目：C1-11 `list_files` 真实接入
+- 结果：通过
+- 证据：`CoreBridge.listFiles` 调用生成绑定 `listFiles`，`MainFileListModel.reloadCurrentCategory` 使用 `FileFilterSnapshot.currentCategory` 触发当前分类加载。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift:273`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileListModel.swift:186`
+
+- 项目：C1-12 `get_file` 真实接入
+- 结果：通过
+- 证据：`CoreBridge.getFile` 调用生成绑定 `getFile`，单选通过 `MainFileListModel.loadDetail` 拉取真实详情并映射错误。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift:281`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileListModel.swift:211`
+
+- 项目：C1-15 `list_tree_json` 真实接入
+- 结果：通过
+- 证据：`CoreBridge.listTreeJSON` 调用生成绑定 `listTreeJson`，`CoreRepositoryOpening.listTree` 解码 JSON 并供 sidebar 使用。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift:293`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreRepositoryOpening.swift:185`
+
+- 项目：页面状态、入口、退出、错误态闭环
+- 结果：不通过
+- 证据：S1-09 page spec 要求 DB locked 时提供 `Retry` / `Collect Diagnostics...`，当前 inline error 只有 `Retry` 和 `Technical Details`；同时单文件写操作未按 repo read-only、List loading、导入锁定状态禁用。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift:342`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift:296`
+
+- 项目：mock / fixture / 硬编码状态
+- 结果：不通过
+- 证据：右键进入的 `Change Category` sheet 硬编码 `inbox/docs/media` 和 `No conflict at target location`，且主按钮固定 disabled；这属于可见硬编码/占位状态，不能作为最终整页闭环通过。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainFileActionRoutingSheet.swift:73`
+
+- 项目：Expected New Paths / Forbidden Touches
+- 结果：不通过
+- 证据：`core/src/**` 未发现改动；但当前工作树存在 `docs/core/capability-specs/stage-1-mvp/C1-12-get-file-detail.md` 改动，超出本 task manifest 的 Expected New Paths。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-12-get-file-detail.md:5`
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过，S1-09 核心 list/detail/tree 分层清楚，但错误态和写操作禁用状态没有完整建模。
+- 注释 / rustdoc / 文档同步：不通过，当前存在 docs 路径范围漂移，不属于本 task Expected New Paths。
+- 错误处理与边界处理：不通过，DB locked 缺 `Collect Diagnostics...`，写操作缺 read-only/loading/import-lock 边界。
+- 测试与验证覆盖：通过但有环境 caveat，`./dev test macos` fallback 跑完 94 tests、0 failures。
+- 占位、硬编码、mock-only、一次性实现检查：不通过，`MainFileActionRoutingSheet` 仍有硬编码分类和静态冲突状态。
+
+六、阻塞项
+
+- P0：S1-09 DB locked 错误态不完整。`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift:342` 只提供 `Retry` 和技术细节，缺少 page spec 要求的 `Collect Diagnostics...`，导致页面错误态闭环不能按 S1-09 完整验收。
+- P0：写操作禁用规则缺失。`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift:296` 和 `MainFileListModel.swift:142` 未按 repo read-only、List loading、导入队列锁定禁用 Rename / Change Category / Delete，违反 S1-09 状态规则。
+- P1：可见硬编码/占位状态残留。`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainFileActionRoutingSheet.swift:73` 硬编码分类和静态 no-conflict 文案，不能作为最终整页闭环证据。
+- P1：任务范围漂移。`/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-12-get-file-detail.md:5` 有改动，但本 task Expected New Paths 不包含 docs 路径。
+
+七、验证情况
+
+- 已运行：`xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+- 结果：失败，`xctest` 无法连接 `com.apple.testmanagerd.control`，错误明确为 sandbox restriction。
+- 已运行：`./dev test macos`
+- 结果：通过；先复现同一 testmanagerd sandbox block，然后按 repo-local validation-driver fallback 使用 `xcrun xctest`，94 tests、0 failures。
+- 缺失：未进行真实 UI 手动交互验收；本次只读验收未修改文件。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。核心 C1-11/C1-12/C1-15 接入已有证据，但 S1-09 page spec 的错误态、写操作边界、硬编码清理和 manifest 范围门禁仍有阻塞项。
+
+VERIFY_RESULT: FAIL

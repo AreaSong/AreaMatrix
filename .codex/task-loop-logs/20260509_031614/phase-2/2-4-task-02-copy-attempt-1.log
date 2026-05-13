@@ -1,0 +1,47 @@
+一、执行结论
+
+已完成 `2-4/task-02: S1-25 + C1-21 error-mapping`。
+
+二、执行范围
+
+单任务。修改文件：
+
+- [ICloudConflictMinimalValidation.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ICloudConflictMinimalValidation.swift:27)
+- [ICloudConflictMinimalSheet.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ICloudConflictMinimalSheet.swift:94)
+- [MainFileActionRoutingSheet.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainFileActionRoutingSheet.swift:11)
+- [MainRepositoryContentActionRouting.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentActionRouting.swift:24)
+- [ICloudConflictMinimalValidationTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ICloudConflictMinimalValidationTests.swift:59)
+
+三、完成情况
+
+核对清单：已只处理 S1-25 中 C1-21 错误映射；已读取页面规格、control map、Core API、C1-21 规格；只接入 `CoreErrorMapping` 到 S1-25 repo validation 失败路径；未实现相邻页面或同页其他能力。
+
+完成标准：S1-25 的 Core validation 失败现在会触发 C1-21 映射并展示 `kind/userMessage/severity/recoverability/suggestedAction/rawContext`，有 `S1-25-C1-21-error-mapping` 可验收标识；没有 mock-only 闭环；未触碰 control map 之外能力。
+
+Forbidden Touches：未触碰 `core/src/**`，未修改 `core/area_matrix.udl`。
+
+四、工程质量
+
+结构上复用现有 `CoreErrorMapping` / `CoreErrorMappingSnapshot`，移除了 S1-25 里手写 `CoreError` 文案分支，避免字符串或 UI 层自定义主分支映射。错误路径显式处理：CoreError 走真实 C1-21 mapper，非 Core error 包装为 `CoreError.Internal` 后再映射。无新增依赖、无用户文件移动/删除/覆盖、无临时文件或低价值报告。
+
+五、验证情况
+
+已运行并通过：
+
+```bash
+xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO
+```
+
+额外运行：
+
+```bash
+./dev test macos
+```
+
+标准 `xcodebuild test` 被本地 `testmanagerd` sandbox 限制阻断，脚本按仓库规则复用已构建 XCTest bundle 执行 `xcrun xctest`，最终通过：443 tests，0 failures。
+
+六、风险与后续
+
+剩余风险：未做真实 UI 手工点击验证；本轮覆盖 build 和 XCTest。Xcode 输出中仍有既有 Swift 6 Sendable warnings，非本任务新增阻断。
+
+建议下一个任务：继续 `2-4/task-03`。

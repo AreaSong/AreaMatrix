@@ -1,0 +1,65 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`2-2/task-17`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-2-import-conflict/task-17-s1-20-c1-08-import-index-file.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 S1-20 页面中的 C1-08 功能点
+- 结果：通过
+- 证据：S1-20 的 Index-only 进度态映射为 `Writing index`，重试仅允许 `.move` 与 `.indexOnly`；本 task 的 C1-08 相关断言集中在 `testS120C108...`
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportProgressRouteState.swift:380`
+
+- 项目：读取页面规格、control map、Core API、C1-08 能力规格
+- 结果：通过
+- 证据：文档定义 S1-20 绑定 C1-06/C1-07/C1-08，当前 task 只验 C1-08；Core API/UDL 均包含 `import_file`、`ImportOptions.mode`、`StorageMode.Indexed`
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:68`
+
+- 项目：只接入 C1-08 对应 CoreBridge / 状态 / 错误映射
+- 结果：通过
+- 证据：`CoreBridge.importIndexedFile` 使用 `ImportOptions(mode: .indexed)` 调 `AreaMatrix.importFile`；S1-20 retry path 对 `.indexOnly` 调 `importProgressImporter.importIndexedFile`
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreImporting.swift:246`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportProgressActions.swift:91`
+
+- 项目：不顺手实现相邻页面
+- 结果：通过
+- 证据：当前相关 diff 仅在 ImportProgress 状态、动作、视图和测试；未触碰 `core/src/**`
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportProgressCopyPageFeatureTests.swift:174`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，状态、动作、CoreBridge 分层清楚，视图未直接调用 UniFFI。
+- 注释 / rustdoc / 文档同步：通过，本次为 Swift UI/CoreBridge 接入，无新增 public Rust API；UDL 与 Core API 已对齐。
+- 错误处理与边界处理：通过，失败路径经 `mapCoreError`，retry 前先 `recoverOnStartup` 检查，`Retry current item` 在未允许前禁用。
+- 测试与验证覆盖：通过，新增/扩展 S1-20 C1-08 进度、失败 recovery check、retry importer 调用测试。
+- 占位、硬编码、mock-only、一次性实现检查：通过，生产路径默认依赖 `CoreBridge()`，最终调用生成绑定 `AreaMatrix.importFile`；测试替身仅用于断言调用参数。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：通过，`BUILD SUCCEEDED`
+- 已运行：`./dev test macos`：通过；标准 `xcodebuild test` 被本地 `testmanagerd` sandbox 限制阻断后，脚本按规则用同一 XCTest bundle 执行 `xcrun xctest`，245 tests passed
+- 缺失：无必需验证缺失
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+VERIFY_RESULT: PASS

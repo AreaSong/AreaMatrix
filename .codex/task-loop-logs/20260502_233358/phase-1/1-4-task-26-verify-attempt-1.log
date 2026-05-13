@@ -1,0 +1,56 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`1-4/task-26`
+- Task 文件：[task-26-c1-21-contract-api.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-1/1-4-recovery-sync-overview/task-26-c1-21-contract-api.md:1)
+- Manifest 章节：[phase-1.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-1.md:2992)
+- 实际涉及文件：`core/src/error.rs`、`core/area_matrix.udl`、`core/tests/error_mapping_contract_api.rs`
+- Forbidden Touches：`apps/**`，本次 `git status` 未发现 `apps/**` 变更
+
+三、完成度摘要
+
+- 已覆盖项数：16
+- 未覆盖项数：0
+- 通过项数：12
+- 不通过项数：4
+- 阻塞项数：2
+
+四、逐项验收结果
+
+- 只处理 C1-21 contract-api 范围：通过。实际产品改动集中在 `core/src/error.rs`、`core/area_matrix.udl`、`core/tests/error_mapping_contract_api.rs`。
+- 读取 Exact Docs 并以文档为 SSOT：通过。已读取 manifest 指定 4 个 Exact Docs。
+- 不实现相邻 C1 能力或 UI 页面：通过。未发现 `apps/**` 修改，也未发现相邻 C1 能力实现扩展。
+- 更新或校准 Core API / UDL 合同意图：不通过。Exact Doc 要求 `CoreError` 输入包含原始 `path/reason/message`，但实际 Rust/UDL 除 `DuplicateFile` 外没有 payload。
+- 明确输入、输出、错误码和副作用边界：不通过。`core/src/error.rs` 只有说明性注释，没有可被 Swift 稳定消费的 severity、user copy、suggested action、recoverability 合同 artifact。
+- C1-21 contract-api 目标可用证据证明：不通过。测试通过只能证明文档片段存在和 enum 可构造，不能证明每个错误可映射为用户可理解消息。
+- 没有扩展到未绑定能力：通过。
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过。核心合同只靠注释表达，缺少可执行或类型化合同来承载 C1-21 输出。
+- 注释 / rustdoc / 文档同步：不通过。`docs/api/error-codes.md` 的完整定义要求多数 variant 携带 payload，但 [core/src/error.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/error.rs:17) 与 [core/area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:237) 未对齐。
+- 错误处理与边界处理：不通过。文档要求原始 path、reason 或 message 输入，实际错误多数只保留 variant，Swift 侧无法从合同中取得必要上下文。
+- 测试与验证覆盖：不通过。`cargo test --workspace error_mapping` 通过 3 个测试，但 [error_mapping_contract_api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/error_mapping_contract_api.rs:127) 主要检查文档字符串，没有验证真实映射输出。
+- 占位、硬编码、mock-only、一次性实现检查：不通过。当前更接近 contract 注释和文档片段守卫，未形成可用合同证据。
+
+六、阻塞项
+
+- P0：`CoreError` 合同缺少文档要求的原始 payload。C1-21 要求输入包含 `CoreError variant` 以及原始 `path/reason/message`，[C1-21-error-mapping.md](/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-21-error-mapping.md:16)；`error-codes.md` 也定义了 `Io(String)`、`Db(String)`、`Config { reason }`、`FileNotFound { path }` 等 payload，[error-codes.md](/Users/as/Ai-Project/project/AreaMatrix/docs/api/error-codes.md:27)。实际 [core/src/error.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/error.rs:17) 和 [core/area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:237) 除 `DuplicateFile(existing_path)` 外都没有 payload，导致 Swift 无法可靠映射具体用户消息。
+- P1：错误映射输出合同没有落地。C1-21 输出要求“错误类型、用户文案、严重程度和建议动作”，[C1-21-error-mapping.md](/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-21-error-mapping.md:21)；Core API 文档还点名 `severity`、`suggested_action`、`recoverability`，[core-api.md](/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:329)。实际 `core/src` / UDL 中没有对应类型、字段或函数，测试只断言文档包含这些词，不能证明 contract-api 可用。
+
+七、验证情况
+
+- 已运行：`cd core && cargo fmt --all -- --check`，通过。
+- 已运行：`cd core && cargo clippy --all-targets --all-features -- -D warnings`，通过。
+- 已运行：`cd core && cargo test --workspace error_mapping`，通过，3 个 `error_mapping` 测试通过。
+- 已补充运行：`cd core && cargo test --workspace`，通过。
+- 缺失：没有能证明每个 `CoreError` variant 携带必要上下文并可映射为用户可理解消息 / severity / suggested action 的测试或合同 artifact。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。验证命令通过，但 task 的核心 contract-api 证据不足，且 Exact Docs 与 Rust/UDL 实际合同存在关键漂移。
+
+VERIFY_RESULT: FAIL

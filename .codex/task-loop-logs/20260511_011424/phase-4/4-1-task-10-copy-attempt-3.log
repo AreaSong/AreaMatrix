@@ -1,0 +1,44 @@
+一、执行结论
+
+- 已完成
+
+二、执行范围
+
+- 单任务：`4-1/task-10`
+- 本轮 repair 只修复上次验收失败的工程质量问题：`core/tests/search_filters_validation.rs` 超过 500 行。
+- 修改文件：
+  - [search_filters_validation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/search_filters_validation.rs:1)：保留 4 个 C2-02 integration verify 测试入口。
+  - [search_filters_validation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/support/search_filters_validation.rs:1)：新增测试专用 support helper，承载 fixture / 断言工具。
+
+三、完成情况
+
+- 核对清单 1：通过。C2-02 capability spec、Core API、UDL、Rust 实现和测试已由现有 C2-02 测试继续锁定。
+- 核对清单 2：通过。消费页面需要的状态、错误、只读副作用边界仍由 validation 测试覆盖。
+- 核对清单 3：通过。本轮没有新增产品能力，没有实现 control map 之外能力。
+- 核对清单 4：通过。本轮为 repair retry，按授权只补充/重构 `core/tests/**` 验收证据；未改产品实现。
+- 完成标准：通过。C2-02 可作为后续 page-feature task 的真实 Core 依赖。
+- Forbidden Touches：未触碰，`git diff --name-only -- apps` 为空。
+
+四、工程质量
+
+- 代码结构：通过。超限测试文件拆为测试入口 + support helper。
+- 文件长度：通过，`core/tests/search_filters_validation.rs` 109 行，`core/tests/support/search_filters_validation.rs` 466 行，均低于 500 行门禁。
+- 注释 / rustdoc / 文档同步：本轮未改 public API 或文档，无需新增 rustdoc。
+- 错误处理与边界：未改生产路径；测试仍覆盖 Config / Db 错误、无写入、只读副作用。
+- 占位 / 硬编码 / mock-only：未引入。
+
+五、验证情况
+
+- `cargo fmt --all -- --check`：通过。
+- `cargo test --test search_filters_validation`：通过，4/4。
+- `cargo test --test search_filters_contract_api --test search_filters_implementation --test search_filters_failure_recovery --test search_filters_validation`：通过，16/16。
+- `cargo clippy --all-targets --all-features -- -D warnings`：通过。
+- `./dev check all`：通过，退出码 0。包含 governance、skills、task-loop、prompt doctor、diff check、Rust fmt/clippy/test、macOS checks、SwiftFormat、SwiftLint。
+- macOS 标准 `xcodebuild test` 仍被本地 sandbox 的 `com.apple.testmanagerd.control` 限制阻断；脚本按仓库规则 fallback 到已构建 XCTest bundle，`xcrun xctest` 通过，484 个 XCTest 0 失败。
+
+六、风险与后续
+
+- 剩余风险：无当前 task 阻塞项。
+- 当前工作树仍有 task-loop 前序尝试留下的其他脏文件；本轮没有回退这些既有改动。
+- 建议下一个任务：进入 `4-1/task-10` verify-ready 只读验收，验收通过后再推进依赖它的 `4-1/task-11`。
+

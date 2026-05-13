@@ -1,0 +1,55 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`1-5/task-20`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-1/1-5-file-actions-repair/task-20-c1-25-integration-verify.md`
+- 验收文件：`core/src/**`、`core/area_matrix.udl`、`core/tests/**`
+- 禁止触碰：`apps/**`
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：0
+- 通过项数：10
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- C1-25 范围：通过。Task 明确只验 `list_icloud_conflicts` integration-verify；实现未扩展 UI 或相邻 C1。
+- Exact Docs / SSOT：通过。已核对 C1-25 spec、control map、Core API、S1-36、S1-25。
+- API / UDL：通过。`list_icloud_conflicts(repo_path)`、`ICloudConflictPair`、`ICloudConflictStatus` 在 `docs/api/core-api.md` 与 `core/area_matrix.udl` 对齐。
+- Rust 实现：通过。`core/src/api.rs` 调用真实 `core/src/icloud_conflicts.rs`，实现为只读扫描、跳过 `.areamatrix`、不 follow symlink、placeholder 返回结构化错误。
+- UX 消费一致性：通过。S1-36 在 control map 中绑定 C1-25；S1-25 的其他能力不纳入当前 Core task 阻断。
+- Expected New Paths：通过。`core/src/**`、`core/area_matrix.udl` 已存在，`core/tests/list_icloud_conflicts_integration_verify.rs` 已落地。
+- Forbidden Touches：通过。`git status --short -- apps` 无输出。
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。实现拆在 `core/src/icloud_conflicts.rs`，API 层仅转发。
+- 注释 / rustdoc / 文档同步：通过。public API 与 domain 类型有 rustdoc，API/UDL/docs 互相对齐。
+- 错误处理与边界处理：通过。覆盖 placeholder、permission denied、missing repo、uncertain pair、只读边界。
+- 测试与验证覆盖：通过。contract、implementation、failure、validation、integration verify 相关测试均被 `list_icloud_conflicts` 过滤测试覆盖；另已补跑完整 workspace。
+- mock / 空壳 / 一次性实现：通过。测试使用临时真实 repo、文件系统快照和 DB 计数证明无文件/DB副作用。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- `cd core && cargo fmt --all -- --check`：通过
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过
+- `cd core && cargo test --workspace list_icloud_conflicts`：通过
+- `cd core && cargo test --workspace`：通过
+- `git diff --check`：通过
+- 缺失：无
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。当前工作区仍有 task-loop runtime 文件和 `progress.json` 的未提交运行状态，以及未跟踪的 `core/tests/list_icloud_conflicts_integration_verify.rs`；它们不触碰 `apps/**`，且本次只读验收未修改文件。
+
+VERIFY_RESULT: PASS

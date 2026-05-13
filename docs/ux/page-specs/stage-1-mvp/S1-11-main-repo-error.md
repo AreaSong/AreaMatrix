@@ -86,6 +86,7 @@
 ## 数据与依赖
 
 - Core repo open error。
+- C1-01 `validate_initialized_repo_path`，用于 Retry / Reconnect 时确认路径仍是已初始化 repo。
 - Last known repo path and last successful open time。
 - Recovery route mapping。
 - iCloud placeholder handler。

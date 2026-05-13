@@ -1,0 +1,43 @@
+一、执行结论
+
+已完成。`2-3/task-37` 只补集成验收证据，没有改产品实现，也没有触碰 `core/src/**`。
+
+二、执行范围
+
+修改文件：
+- [FileActionsIntegrationVerifyTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/FileActionsIntegrationVerifyTests.swift)
+- [project.pbxproj](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj)
+
+仍存在非本任务脏文件，未处理：
+- `.codex/task-loop-runs/20260509_031614/summary.json`
+- `tasks/prompts/_shared/progress.json`
+
+三、完成情况
+
+核对清单结果：
+- 已补 file-actions 闭环集成验收：S1-33 rename、S1-35 preview/move category、S1-34 remove index 走真实 `CoreBridge` 临时 repo。
+- 已证明 action wiring 只调用 control map 声明的 API：`renameFile`、`previewMoveToCategory`、`moveToCategory`、`removeIndexEntry`、`deleteFile`。
+- 没有新增页面或 Core 能力。
+- 没有引入 mock-only 产品路径；测试 double 只用于记录 API 调用边界，真实闭环用临时目录和真实 Core。
+
+完成标准：
+- 用户路径可走通：rename -> move preview -> move -> remove index，并刷新 selection/list/tree 状态。
+- 失败项：无产品 blocker；直接 `xcodebuild test` 在本地沙箱被 `testmanagerd.control` 通信限制拦截，已由 repo 认可 fallback 验证通过。
+- Forbidden Touches：未触碰 `core/src/**`。
+
+四、工程质量
+
+新增测试按 helper 拆分，避免把闭环断言堆在单个长函数里。测试只写临时目录并清理，remove-index 明确断言外部源文件内容未变；move preview 明确断言 preview 不产生文件系统副作用。未新增依赖、未新增 public Rust API，因此无 rustdoc 同步需求。
+
+五、验证情况
+
+已运行：
+- `xcodebuild -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' build CODE_SIGNING_ALLOWED=NO`：通过，`BUILD SUCCEEDED`。
+- `./dev test macos`：通过；其中 `xcodebuild test` 被本机 `testmanagerd.control` sandbox restriction 拦截，脚本复用同一 XCTest bundle 执行 `xcrun xctest`，结果 `437 tests, 0 failures`。
+- `git diff --check`：通过。
+- `command -v swiftformat` / `command -v swiftlint`：当前环境未安装，无法运行格式/lint 工具。
+
+六、风险与后续
+
+剩余风险：未做真实 macOS UI 手工操作验证；系统 Trash 的真实删除副作用没有在本集成测试里重复触发，避免测试污染用户环境，相关 Core 语义由既有 C1-23 Core/页面测试覆盖，本任务验证 macOS wiring。建议下一步进入 `2-3/task-37` verify-ready 验收或继续后续 task-loop。
+

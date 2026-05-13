@@ -1,0 +1,26 @@
+一、执行结论：**已完成本任务的性能基线落地；但 Stage 1 release checklist 当前 BLOCKED，不允许发布。**
+
+二、执行范围：单任务 `3-1/task-03`。修改文件：
+- [core/tests/stage1_performance_baseline.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/stage1_performance_baseline.rs)
+- [apps/macos/AreaMatrixTests/CoreBridgeRepositoryTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/CoreBridgeRepositoryTests.swift)
+- [docs/development/stage-1-performance-baseline.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-performance-baseline.md)
+
+三、完成情况：已补 Rust ignored perf baseline、Swift `AreaMatrixPerfTests`、Stage 1 性能证据文档。覆盖启动、单文件导入、100 文件批量导入、reindex、Tree/list、内存发布门禁；其中 Core 1MiB import 超过 30ms 阈值，内存仍需 Instruments/Xcode memory gauge 实测，均按 P1 阻断 release。未触碰 `Forbidden Touches`，主动改动均在 `Expected New Paths` 内。当前工作树另有 task-loop 运行态文件 `progress.json` 和 `.codex/task-loop-runs/...`，未作为本任务产物处理。
+
+四、工程质量：没有重写产品逻辑，只新增可重复性能测试入口和证据文档。测试走真实 Core/Swift bridge 路径、临时目录数据集和显式阈值，不是 mock-only 或硬编码通过态。失败项被记录为 release blocker，没有把未测指标默认判通过。
+
+五、验证情况：
+- PASS：`python3 tasks/prompts/_shared/prompt_pipeline.py doctor`
+- PASS：`cargo fmt --manifest-path core/Cargo.toml --all -- --check`
+- PASS：`cargo clippy --manifest-path core/Cargo.toml --all-targets --all-features -- -D warnings`
+- PASS：`cargo test --manifest-path core/Cargo.toml --workspace`
+- PASS：`cargo bench --manifest-path core/Cargo.toml --workspace --no-run`
+- PASS：`xcodebuild build-for-testing ... AreaMatrixPerfTests`
+- PASS：`xcrun xctest -XCTest AreaMatrixTests.AreaMatrixPerfTests ...`
+- PASS：`git diff --check`
+- FAIL：`cargo test --manifest-path core/Cargo.toml --test stage1_performance_baseline -- --ignored --test-threads=1 --nocapture`，Core 1MiB import 实测 54ms，阈值 30ms。
+- FAIL：原 manifest 命令 `cargo bench --workspace --no-run`，仓库根没有 `Cargo.toml`。
+- FAIL：原 `xcodebuild test ...` 在当前 sandbox 被 `testmanagerd` 通信限制阻断；同一测试 bundle 用 `xcrun xctest` 可通过。
+
+六、风险与后续：下一步应回到 Phase 1/2 的 Core import hot path 做性能修复，并在非 sandbox GUI 环境补跑标准 `xcodebuild test` 与 Instruments/Xcode memory gauge。发布清单在 Core import 和内存基线补齐前必须保持阻断。
+

@@ -32,6 +32,9 @@ namespace area_matrix {
     RepoPathValidation validate_repo_path(string repo_path);
 
     [Throws=CoreError]
+    RepoPathValidation validate_initialized_repo_path(string repo_path);
+
+    [Throws=CoreError]
     void init_repo(string repo_path, RepoInitOptions options);
 
     [Throws=CoreError]
@@ -45,6 +48,12 @@ namespace area_matrix {
 
     [Throws=CoreError]
     ReindexReport reindex_from_filesystem(string repo_path);
+
+    [Throws=CoreError]
+    DiagnosticsSnapshot create_diagnostics_snapshot(string repo_path);
+
+    [Throws=CoreError]
+    RepairReport repair_metadata(string repo_path, RepairOptions options);
 
     [Throws=CoreError]
     ScanSession? get_latest_scan_session(string repo_path);
@@ -61,10 +70,18 @@ namespace area_matrix {
     );
 
     [Throws=CoreError]
-    void delete_file(string repo_path, i64 file_id, boolean hard);
+    void delete_file(string repo_path, i64 file_id);
+
+    [Throws=CoreError]
+    void remove_index_entry(string repo_path, i64 file_id);
 
     [Throws=CoreError]
     FileEntry rename_file(string repo_path, i64 file_id, string new_name);
+
+    [Throws=CoreError]
+    MoveToCategoryPreview preview_move_to_category(
+        string repo_path, i64 file_id, string new_category
+    );
 
     [Throws=CoreError]
     FileEntry move_to_category(string repo_path, i64 file_id, string new_category);
@@ -76,6 +93,30 @@ namespace area_matrix {
     sequence<FileEntry> list_files(string repo_path, FileFilter filter);
 
     [Throws=CoreError]
+    SearchResultPage search_files(
+        string repo_path,
+        string query,
+        SearchFilter filter,
+        SearchSort sort,
+        SearchPagination pagination
+    );
+
+    [Throws=CoreError]
+    SearchFacets list_filter_facets(string repo_path, SearchFacetQuery query);
+
+    [Throws=CoreError]
+    SavedSearch create_saved_search(string repo_path, CreateSavedSearchRequest request);
+
+    [Throws=CoreError]
+    SavedSearch update_saved_search(string repo_path, UpdateSavedSearchRequest request);
+
+    [Throws=CoreError]
+    void delete_saved_search(string repo_path, i64 saved_search_id);
+
+    [Throws=CoreError]
+    sequence<SavedSearch> list_saved_searches(string repo_path);
+
+    [Throws=CoreError]
     FileEntry get_file(string repo_path, i64 file_id);
 
     [Throws=CoreError]
@@ -83,6 +124,9 @@ namespace area_matrix {
 
     [Throws=CoreError]
     string list_tree_json(string repo_path, string locale);
+
+    [Throws=CoreError]
+    sequence<ICloudConflictPair> list_icloud_conflicts(string repo_path);
 
     [Throws=CoreError]
     string? read_note(string repo_path, i64 file_id);
@@ -98,6 +142,8 @@ namespace area_matrix {
 
     [Throws=CoreError]
     void set_fs_event_cursor(string repo_path, i64 last_event_id);
+
+    ErrorMapping map_core_error(ErrorMappingInput input);
 };
 
 dictionary RepoConfig {
@@ -107,6 +153,10 @@ dictionary RepoConfig {
     boolean ai_enabled;
     string locale;
     boolean icloud_warn;
+    boolean enable_extension_rules;
+    boolean enable_keyword_rules;
+    boolean fallback_to_inbox;
+    boolean allow_replace_during_import;
 };
 
 dictionary RepoInitOptions {
@@ -148,6 +198,143 @@ dictionary FileFilter {
     i64 offset;
 };
 
+dictionary SearchFilter {
+    SearchScope scope;
+    string? current_path;
+    string? category;
+    string? file_kind;
+    sequence<string> tags;
+    SearchTagMatchMode tag_match_mode;
+    i64? imported_after;
+    i64? imported_before;
+    i64? modified_after;
+    i64? modified_before;
+    StorageMode? storage_mode;
+    boolean? include_deleted;
+};
+
+dictionary SearchFacetQuery {
+    string query;
+    SearchScope scope;
+    string? current_path;
+    string? category;
+    string? file_kind;
+    sequence<string> tags;
+    SearchTagMatchMode tag_match_mode;
+    i64? imported_after;
+    i64? imported_before;
+    i64? modified_after;
+    i64? modified_before;
+    StorageMode? storage_mode;
+    boolean? include_deleted;
+};
+
+dictionary SearchFacetCount {
+    string value;
+    string label;
+    i64 count;
+    boolean selected;
+    boolean disabled;
+};
+
+dictionary SearchStorageModeFacetCount {
+    StorageMode value;
+    string label;
+    i64 count;
+    boolean selected;
+    boolean disabled;
+};
+
+dictionary SearchDateFacetBounds {
+    i64? oldest_imported_at;
+    i64? newest_imported_at;
+    i64? oldest_modified_at;
+    i64? newest_modified_at;
+};
+
+dictionary SearchFacets {
+    string query;
+    i64 total_count;
+    sequence<SearchFacetCount> categories;
+    sequence<SearchFacetCount> file_kinds;
+    sequence<SearchFacetCount> tags;
+    sequence<SearchStorageModeFacetCount> storage_modes;
+    SearchDateFacetBounds date_bounds;
+    i64 active_filter_count;
+};
+
+dictionary SearchPagination {
+    i64 limit;
+    i64 offset;
+};
+
+dictionary SearchMatch {
+    SearchMatchField field;
+    SearchMatchKind kind;
+    string snippet;
+    i64? start;
+    i64? end;
+};
+
+dictionary SearchFileResult {
+    FileEntry entry;
+    f32 score;
+    sequence<SearchMatch> matches;
+    string? note_snippet;
+};
+
+dictionary SearchQueryDiagnostic {
+    SearchDiagnosticKind kind;
+    SearchDiagnosticSeverity severity;
+    string message;
+    string? token;
+    i64? start;
+    i64? end;
+    string? suggestion;
+};
+
+dictionary SearchResultPage {
+    string query;
+    i64 total_count;
+    sequence<SearchFileResult> results;
+    sequence<SearchQueryDiagnostic> diagnostics;
+    SearchIndexStatus index_status;
+};
+
+dictionary SavedSearchQuery {
+    string query;
+    SearchFilter filter;
+    SearchSort sort;
+};
+
+dictionary CreateSavedSearchRequest {
+    string name;
+    SavedSearchQuery query;
+    string? icon;
+    string? color;
+    boolean pinned;
+};
+
+dictionary UpdateSavedSearchRequest {
+    i64 id;
+    string name;
+    SavedSearchQuery query;
+    string? icon;
+    string? color;
+    boolean pinned;
+};
+
+dictionary SavedSearch {
+    i64 id;
+    string name;
+    SavedSearchQuery query;
+    string? icon;
+    string? color;
+    boolean pinned;
+    i64 created_at;
+    i64 updated_at;
+};
+
 dictionary ChangeFilter {
     i64? file_id;
     string? category;
@@ -171,6 +358,29 @@ dictionary FileEntry {
     string? source_path;
     i64 imported_at;
     i64 updated_at;
+};
+
+dictionary MoveToCategoryPreview {
+    i64 file_id;
+    string from_category;
+    string to_category;
+    string current_path;
+    string target_path;
+    string target_name;
+    StorageMode storage_mode;
+    boolean index_only;
+    boolean name_conflict_resolved;
+    boolean will_move_file;
+};
+
+dictionary ICloudConflictPair {
+    string conflict_id;
+    string? original_path;
+    string conflicted_copy_path;
+    i64? original_modified_at;
+    i64 conflicted_modified_at;
+    ICloudConflictStatus status;
+    string? uncertainty_reason;
 };
 
 dictionary ChangeLogEntry {
@@ -198,6 +408,26 @@ dictionary RecoveryReport {
 
 dictionary ReindexReport {
     i64? scan_session_id;
+    i64 inserted;
+    i64 updated;
+    i64 skipped;
+    sequence<string> errors;
+};
+
+dictionary RepairOptions {
+    boolean full_rescan;
+    boolean preserve_diagnostics_snapshot;
+};
+
+dictionary DiagnosticsSnapshot {
+    string snapshot_path;
+    i64 created_at;
+    sequence<string> warnings;
+};
+
+dictionary RepairReport {
+    i64? scan_session_id;
+    string? diagnostics_snapshot_path;
     i64 inserted;
     i64 updated;
     i64 skipped;
@@ -232,6 +462,22 @@ dictionary SyncResult {
     sequence<string> errors;
 };
 
+dictionary ErrorMappingInput {
+    ErrorKind kind;
+    string? path;
+    string? reason;
+    string? message;
+};
+
+dictionary ErrorMapping {
+    ErrorKind kind;
+    string user_message;
+    ErrorSeverity severity;
+    string suggested_action;
+    ErrorRecoverability recoverability;
+    string raw_context;
+};
+
 enum StorageMode { "Moved", "Copied", "Indexed" };
 enum FileOrigin { "Imported", "Adopted", "External" };
 enum RepoInitMode { "CreateEmpty", "AdoptExisting" };
@@ -246,13 +492,43 @@ enum ScanSessionKind { "Adopt", "Reindex" };
 enum ScanSessionStatus { "Running", "Completed", "Paused", "Failed", "Interrupted" };
 enum DuplicateStrategy { "Skip", "Overwrite", "KeepBoth", "Ask" };
 enum ClassifyReason { "Keyword", "Extension", "AiPredicted", "Default" };
+enum SearchScope { "AllRepo", "CurrentNode" };
+enum SearchTagMatchMode { "Any", "All" };
+enum SearchSort { "Relevance", "NewestImported", "NewestModified", "NameAsc" };
+enum SearchMatchKind { "Exact", "Fuzzy", "PinyinInitials" };
+enum SearchMatchField { "Name", "Path", "Note", "Category", "ChangeLog" };
+enum SearchDiagnosticKind {
+    "UnclosedQuote", "UnknownField", "InvalidDate",
+    "UnbalancedParentheses", "InvalidOperator"
+};
+enum SearchDiagnosticSeverity { "Info", "Warning", "Error" };
+enum SearchIndexStatus { "Ready", "Indexing", "Unavailable" };
+enum ICloudConflictStatus { "NeedsReview", "Resolved" };
 enum ExternalEventKind { "Created", "Removed", "Modified", "Renamed" };
+enum ErrorKind {
+    "Io", "Db", "Config", "Classify", "Conflict", "DuplicateFile",
+    "FileNotFound", "RepoNotInitialized", "InvalidPath",
+    "ICloudPlaceholder", "PermissionDenied", "Internal"
+};
+enum ErrorSeverity { "Low", "Medium", "High", "Critical" };
+enum ErrorRecoverability {
+    "Retryable", "UserActionRequired", "RefreshRequired", "Fatal"
+};
 
 [Error]
-enum CoreError {
-    "Io", "Db", "Config", "Classify", "Conflict",
-    "DuplicateFile", "FileNotFound", "RepoNotInitialized",
-    "InvalidPath", "ICloudPlaceholder", "PermissionDenied", "Internal"
+interface CoreError {
+    Io(string message);
+    Db(string message);
+    Config(string reason);
+    Classify(string reason);
+    Conflict(string path);
+    DuplicateFile(string existing_path);
+    FileNotFound(string path);
+    RepoNotInitialized(string path);
+    InvalidPath(string path);
+    ICloudPlaceholder(string path);
+    PermissionDenied(string path);
+    Internal(string message);
 };
 ```
 
@@ -283,24 +559,36 @@ enum CoreError {
 |---|---|---|---|
 | `get_version()` | meta | × | — |
 | `init_logging(level)` | meta | √ | Config |
-| `validate_repo_path(repo)` | repo | √ | InvalidPath / PermissionDenied / ICloudPlaceholder / RepoNotInitialized |
+| `validate_repo_path(repo)` | repo | √ | InvalidPath / PermissionDenied / ICloudPlaceholder |
+| `validate_initialized_repo_path(repo)` | repo | √ | InvalidPath / PermissionDenied / ICloudPlaceholder / RepoNotInitialized |
 | `init_repo(path, options)` | repo | √ | Io / Config / PermissionDenied |
-| `load_config(repo)` | repo | √ | Io / Config |
-| `update_config(repo, cfg)` | repo | √ | Io |
+| `load_config(repo)` | repo | √ | Config / PermissionDenied / Io / Db |
+| `update_config(repo, cfg)` | repo | √ | Config / PermissionDenied / Io / Db |
 | `recover_on_startup(repo)` | repo | √ | Db |
 | `reindex_from_filesystem(repo)` | repo | √ | Io / Db |
+| `create_diagnostics_snapshot(repo)` | repo | √ | Db / PermissionDenied / Io / Internal |
+| `repair_metadata(repo, options)` | repo | √ | Db / PermissionDenied / Io / Internal |
 | `get_latest_scan_session(repo)` | repo | √ | Db |
 | `resume_scan_session(repo, id)` | repo | √ | Io / Db |
-| `predict_category(repo, name)` | classify | √ | Config |
+| `predict_category(repo, name)` | classify | √ | Config / Classify |
 | `import_file(repo, src, options)` | storage | √ | Io / Db / DuplicateFile / InvalidPath |
-| `delete_file(repo, file_id, hard)` | storage | √ | Io / Db / FileNotFound |
-| `rename_file(repo, file_id, new_name)` | storage | √ | Io / InvalidPath |
-| `move_to_category(repo, file_id, cat)` | storage | √ | Classify / Io |
+| `delete_file(repo, file_id)` | storage | √ | Io / Db / FileNotFound / PermissionDenied / Internal |
+| `remove_index_entry(repo, file_id)` | storage | √ | Db / FileNotFound / PermissionDenied / Internal |
+| `rename_file(repo, file_id, new_name)` | storage | √ | Io / Db / Config / InvalidPath / Conflict / FileNotFound / PermissionDenied |
+| `preview_move_to_category(repo, file_id, cat)` | storage | √ | Classify / Conflict / FileNotFound / PermissionDenied / Io / Db |
+| `move_to_category(repo, file_id, cat)` | storage | √ | Classify / Conflict / FileNotFound / PermissionDenied / Io / Db |
 | `restore_file(repo, file_id)` | storage | √ | FileNotFound |
 | `list_files(repo, filter)` | query | √ | Db |
+| `search_files(repo, query, filter, sort, pagination)` | search | √ | Db / Config / InvalidPath |
+| `list_filter_facets(repo, query)` | search | √ | Db / Config |
+| `create_saved_search(repo, request)` | search | √ | Db / Config |
+| `update_saved_search(repo, request)` | search | √ | Db / Config |
+| `delete_saved_search(repo, saved_search_id)` | search | √ | Db / Config |
+| `list_saved_searches(repo)` | search | √ | Db / Config |
 | `get_file(repo, file_id)` | query | √ | FileNotFound |
 | `list_changes(repo, filter)` | query | √ | Db |
-| `list_tree_json(repo, locale)` | query | √ | Io |
+| `list_tree_json(repo, locale)` | query | √ | RepoNotInitialized / Db / Io |
+| `list_icloud_conflicts(repo)` | query | √ | ICloudPlaceholder / PermissionDenied / Io / Db |
 | `read_note(repo, file_id)` | note | √ | Io |
 | `write_note(repo, file_id, content)` | note | √ | Io |
 | `sync_external_changes(repo, events)` | sync | √ | Db |
@@ -318,15 +606,21 @@ enum CoreError {
 | `preview_import(repo_path, source_path, options) -> ImportPreview` | S1-16, S1-17, S1-18, S1-19, S1-22, S1-23 | C1-05, C1-09, C1-10 | 在导入前返回分类建议、目标路径、重复 hash、同名冲突和 iCloud 状态 | `predict_category` 只能给分类，`import_file` 会直接产生副作用 |
 | 导入进度 / 队列语义 | S1-18, S1-19, S1-20, S1-21 | C1-06, C1-07, C1-08 | 支撑多文件/文件夹导入的逐项状态、取消和结果摘要 | Stage 1 可先由 Swift 队列包装多次 `import_file`，Core 暂不提供流式回调 |
 | 详情聚合 DTO | S1-12, S1-13, S1-14 | C1-12, C1-13, C1-14 | 一次拿到文件元数据、日志和笔记，降低 UI 调用编排 | Stage 1 先用 `get_file` + `list_changes` + `read_note` 组合 |
-| 错误映射元数据 | S1-03, S1-06, S1-11, S1-25, S1-32 | C1-21 | 每个错误返回 severity、suggested_action、recoverability，避免 UI 解析字符串 | Stage 1 先在 Swift `AppError` 包装层集中映射 |
+| 已初始化 repo 元数据摘要 | S1-03, S1-11 | C1-01, C1-21 | 已存在完整 repo 分支需要展示 `schema_version` 和 last opened，用于区分可打开、需修复和不可兼容状态 | S1-03 先用 macOS app 的只读 metadata inspector 读取 `.areamatrix/index.db` 中的 `schema_version`，last opened 无记录时显示未记录；不得伪造静态值。S1-11 仍需要后续 Core summary API 提升 |
+| 错误映射元数据 | S1-03, S1-06, S1-11, S1-25, S1-32 | C1-21 | 每个错误返回 severity、suggested_action、recoverability，避免 UI 解析字符串 | `map_core_error` 返回 Core 侧稳定映射元数据，Swift `AppError` 包装层只负责本地化与展示编排 |
 
 这些缺口不得被 UI 静态 mock 掩盖。若某个 UI 任务进入真实闭环验收，而所需缺口尚未实现或没有明确替代路径，验收应判定不通过。
 
 ### Stage 2-4 API 规划入口
 
-Stage 2-4 的后续接口先以 capability specs 作为合同来源，不直接落 UDL：
+Stage 2-4 尚未提升的后续接口先以 capability specs 作为合同来源，不直接落 UDL：
 
-- Stage 2：搜索、标签、Smart List、Undo/Redo、批量操作、导入冲突批量决策、非 AI 标签建议、分类规则编辑，见 [../core/capability-specs/stage-2-experience.md](../core/capability-specs/stage-2-experience.md)。
+- Stage 2：C2-01 `search_files`、C2-02 `list_filter_facets` 和 C2-03 saved search
+  CRUD（`create_saved_search`、`update_saved_search`、`delete_saved_search`、
+  `list_saved_searches`）已提升为本文与 `core/area_matrix.udl` 的稳定合同；
+  其他标签、C2-04 Smart List 执行、Undo/Redo、批量操作、导入冲突批量决策、
+  非 AI 标签建议、分类规则编辑仍见
+  [../core/capability-specs/stage-2-experience.md](../core/capability-specs/stage-2-experience.md)。
 - Stage 3：AI 配置、本地模型、远程 provider、AI 建议、AI 日志、语义搜索、隐私规则，见 [../core/capability-specs/stage-3-ai.md](../core/capability-specs/stage-3-ai.md)。
 - Stage 4：iOS/Windows/Linux repo 连接、平台能力、watcher、跨平台导入、同步冲突、缺失恢复、手动重扫，见 [../core/capability-specs/stage-4-multiplatform.md](../core/capability-specs/stage-4-multiplatform.md)。
 
@@ -398,7 +692,8 @@ case nil:
 - `InvalidPath`：路径为空、不是可接受的文件系统路径、或位于 `.areamatrix/` 内部。
 - `PermissionDenied`：无法读取目录 metadata、列出目录内容或确认写权限。
 - `ICloudPlaceholder`：候选路径或关键 metadata 仍是未下载的 iCloud 占位符。
-- `RepoNotInitialized`：调用方要求已初始化语义时，候选目录没有 `.areamatrix/` 元数据。
+- `RepoNotInitialized`：不由本入口返回；调用方要求已初始化语义时使用
+  `validate_initialized_repo_path`。
 
 副作用边界：
 
@@ -406,6 +701,25 @@ case nil:
 - 不创建、不删除、不移动、不重命名、不覆盖任何文件。
 - 不触发 iCloud 占位符下载。
 - 不执行 `init_repo`，非空目录只返回 `AdoptExisting` 推荐和结构化风险。
+
+### `validate_initialized_repo_path(repoPath: String) throws -> RepoPathValidation`
+
+```swift
+let validation = try AreaMatrix.validateInitializedRepoPath(repoPath: lastKnownRepoPath)
+if validation.isInitialized {
+    await reopenRepository()
+}
+```
+
+用于主窗口打开既有 repo、Retry、Reconnect folder 等调用方已经要求“这是一个已初始化资料库”的场景。
+它复用 `validate_repo_path` 的只读检查，不创建 `.areamatrix/`，也不接管非空目录。
+
+错误：
+
+- `RepoNotInitialized`：候选目录存在且可检查，但没有 `.areamatrix/` 元数据。
+- `InvalidPath`：路径为空、不是可接受的文件系统路径、或位于 `.areamatrix/` 内部。
+- `PermissionDenied`：无法读取目录 metadata、列出目录内容或确认写权限。
+- `ICloudPlaceholder`：候选路径或关键 metadata 仍是未下载的 iCloud 占位符。
 
 ### `init_repo(repoPath: String, options: RepoInitOptions) throws`
 
@@ -452,7 +766,9 @@ print("default mode: \(cfg.defaultMode)")
 print("locale: \(cfg.locale)")
 ```
 
-文件不存在时返回默认值（不抛错）。
+`.areamatrix/index.db` 不存在时返回默认值（不抛错），且不创建 metadata、
+配置文件或生成文件。metadata 存在但无法读取、解码或打开时，按
+`Config`、`PermissionDenied`、`Io`、`Db` 传播。
 
 ### `update_config(repoPath: String, newConfig: RepoConfig) throws`
 
@@ -464,7 +780,22 @@ cfg.locale = "zh-Hans"
 try AreaMatrix.updateConfig(repoPath: repoPath, newConfig: cfg)
 ```
 
-原子写入（先写 tmp 再 rename）。
+通过 SQLite 事务更新 `repo_config` 中的
+`repo_path`、`default_mode`、`overview_output`、`ai_enabled`、`locale`、
+`icloud_warn`、`enable_extension_rules`、`enable_keyword_rules`、
+`fallback_to_inbox`、`allow_replace_during_import`，并为每个键刷新
+`updated_at`。该调用不写 tmp 文件、不
+rename，也不创建或更新 `README.md`、`AREAMATRIX.md` 或
+`.areamatrix/classifier.yaml`。
+
+`enable_extension_rules`、`enable_keyword_rules` 与 `fallback_to_inbox`
+支撑 `S1-28` 分类规则开关；`allow_replace_during_import` 支撑 `S1-30`
+危险导入选项的默认关闭策略。它们只保存设置状态，不执行分类、导入或
+替换行为。
+
+`newConfig.repoPath` 必须等于 `repoPath`，`locale` 不能为空。任一校验、
+权限、IO 或 DB 持久化失败时，事务回滚，旧配置保持可读；主要错误码为
+`Config`、`PermissionDenied`、`Io`、`Db`。
 
 ### `recover_on_startup(repoPath: String) throws -> RecoveryReport`
 
@@ -504,6 +835,90 @@ print("inserted: \(report.inserted), updated: \(report.updated), skipped: \(repo
 - 首次接管扫描由 `init_repo(mode=.adoptExisting)` 的内部流程触发，写入 `FileEntry.origin = .adopted`。
 - `README.md` 作为普通用户文件索引；`AREAMATRIX.md` 与 `.areamatrix/generated/` 始终跳过。
 
+错误与副作用边界：
+
+- `Db`：scan session、`files` metadata 或诊断状态读写失败。
+- `PermissionDenied`：资料库文件、目录 metadata 或 `.areamatrix/` 写入被阻断。
+- `Io`：文件系统遍历、metadata 读取或 hash 计算失败。
+- `Internal`：重建过程发现无法恢复的一致性不变量破坏。
+- 只允许写 `.areamatrix/index.db` 与 scan session metadata。
+- 不移动、不重命名、不删除、不覆盖、不 Trash 用户文件。
+- 不覆盖 `README.md`，不触发 iCloud placeholder 下载，不上传诊断。
+
+### `create_diagnostics_snapshot(repoPath: String) throws -> DiagnosticsSnapshot`
+
+```swift
+let snapshot = try await Task.detached(priority: .userInitiated) {
+    try AreaMatrix.createDiagnosticsSnapshot(repoPath: repoPath)
+}.value
+print(snapshot.snapshotPath)
+```
+
+C1-26 的只创建诊断入口。调用方在用户确认修复后、任何 metadata 修复前调用，
+用于保留损坏 DB 或 repair context 的 AreaMatrix-owned 引用。返回的
+`snapshot_path` 必须位于 `.areamatrix/` 内，Swift 只展示引用，不解析用户文件。
+
+输入：
+
+- `repoPath`：已初始化资料库根目录。
+
+输出：
+
+- `DiagnosticsSnapshot.snapshot_path`：仓库相对路径，指向 `.areamatrix/` 下的诊断快照。
+- `DiagnosticsSnapshot.created_at`：Unix 秒级时间戳。
+- `DiagnosticsSnapshot.warnings`：无法完整采集但未破坏用户文件的诊断说明。
+
+错误与副作用边界：
+
+- `Db`：损坏 metadata 无法以诊断模式打开或读取。
+- `PermissionDenied`：无法写入 `.areamatrix/` 诊断位置。
+- `Io`：复制或读取诊断材料失败。
+- `Internal`：诊断快照路径不在 `.areamatrix/` 内等不变量失败。
+- 不修改 `files`、`scan_sessions` 或用户文件。
+- 不写 `AREAMATRIX.md`、`README.md` 或 `.areamatrix/generated/`。
+- 云端备份恢复和自动上传诊断不属于 Stage 1。
+
+### `repair_metadata(repoPath: String, options: RepairOptions) throws -> RepairReport`
+
+```swift
+let report = try await Task.detached(priority: .userInitiated) {
+    try AreaMatrix.repairMetadata(
+        repoPath: repoPath,
+        options: RepairOptions(
+            fullRescan: true,
+            preserveDiagnosticsSnapshot: true
+        )
+    )
+}.value
+```
+
+C1-26 的用户确认后 metadata repair 入口。`RepairOptions.full_rescan = true`
+表示执行全量 filesystem rescan 并返回 `scan_session_id`；`false` 只允许执行
+metadata 层可恢复修复。`preserve_diagnostics_snapshot = true` 时，修复前必须先
+保留诊断快照，并在 `RepairReport.diagnostics_snapshot_path` 返回引用。
+
+输入：
+
+- `repoPath`：已初始化资料库根目录。
+- `RepairOptions.full_rescan`：是否执行全量重建。
+- `RepairOptions.preserve_diagnostics_snapshot`：是否先保留损坏状态诊断引用。
+
+输出：
+
+- `RepairReport.scan_session_id`：全量重建对应的 scan session，非全扫可为空。
+- `RepairReport.diagnostics_snapshot_path`：修复前保留的诊断快照引用，可为空。
+- `inserted` / `updated` / `skipped` / `errors`：与 metadata 修复或全扫相关的结构化摘要。
+
+错误与副作用边界：
+
+- `Db`：SQLite 损坏、schema 读取、metadata upsert 或 scan session 持久化失败。
+- `PermissionDenied`：`.areamatrix/` 诊断、DB 或 metadata 写入被阻断。
+- `Io`：文件系统遍历、诊断材料复制或 metadata 读取失败。
+- `Internal`：修复后 DB/FS 一致性检查无法满足。
+- 修复只处理 `.areamatrix/` metadata；不移动、不重命名、不删除、不覆盖用户文件。
+- 修复失败不得删除用户文件，也不得清空已生成的诊断信息。
+- 成功后 Tree/List 可通过 `list_tree_json` / `list_files` 重新加载。
+
 ### `get_latest_scan_session(repoPath: String) throws -> ScanSession?`
 
 返回最近一次未完成或刚完成的接管 / 重建扫描，用于首次启动向导恢复状态。
@@ -531,7 +946,14 @@ importSheet.suggestedCategory = result.category
 importSheet.confidence = result.confidence
 ```
 
-无 IO 副作用，仅返回预测。UI 在拖入时调用以填充 ImportSheet。
+无写入副作用：只读取 `.areamatrix/classifier.yaml`，不创建、不移动、
+不删除文件，也不写 DB。UI 在拖入时调用以填充 ImportSheet。
+
+错误：
+
+- `Config`：`repoPath` / `filename` 为空，或 `classifier.yaml` 的 YAML 语法、
+  schema、default category、slug、extension、keyword 无效。
+- `Classify`：classifier 规则源无法作为文件读取，分类引擎无法产生可用预览。
 
 ---
 
@@ -588,16 +1010,15 @@ func importDroppedFile(_ url: URL) async {
 | `SelectedDirectory` | `target_directory` 必填 | 放入用户显式 drop 的目录，不再自动分类 |
 | `Category` | `override_category` 必填 | 放入指定系统分类目录，必要时创建 `<slug>/` |
 
-### `delete_file(repoPath, fileId, hard) throws`
+### `delete_file(repoPath, fileId) throws`
 
 ```swift
-func deleteFile(_ entry: FileEntry, hard: Bool = false) async {
+func deleteFile(_ entry: FileEntry) async {
     do {
         try await Task.detached {
             try AreaMatrix.deleteFile(
                 repoPath: repoPath,
-                fileId: entry.id,
-                hard: hard
+                fileId: entry.id
             )
         }.value
         appState.removeFile(id: entry.id)
@@ -610,8 +1031,67 @@ func deleteFile(_ entry: FileEntry, hard: Bool = false) async {
 }
 ```
 
-`hard=false`：移到废纸篓 + DB 软删除。
-`hard=true`：物理删除 + DB 软删除。
+`delete_file` 是用户确认后的 repo-owned 删除入口：仅用于 `Copied` / `Moved`
+等 AreaMatrix 管理的 active 条目。成功时 Core 必须把目标文件移入系统 Trash，
+将对应 metadata 标记为 `files.status = deleted`，刷新 `deleted_at` / `updated_at`，
+并写入 `change_log.action = deleted`。
+
+副作用边界：
+
+- 不提供永久删除参数，不直接物理删除目标文件。
+- 不删除、移动、重命名或覆盖任何其他用户文件。
+- 不清空 notes / tags 等关联 metadata。
+- Indexed、Adopted、External 或 Missing 条目的索引移除必须使用
+  `remove_index_entry`。
+
+错误：
+
+- `FileNotFound`：`fileId` 对应的 active row 不存在，或 repo-owned 文件已消失。
+- `PermissionDenied`：系统 Trash、目标文件或 metadata 写入被权限阻断。
+- `Io`：Trash 或文件系统操作失败。
+- `Db`：SQLite 查询、软删除或 change log 写入失败。
+- `Internal`：Trash 适配或状态转换出现未预期错误。
+
+### `remove_index_entry(repoPath, fileId) throws`
+
+```swift
+func removeIndexEntry(_ entry: FileEntry) async {
+    do {
+        try await Task.detached {
+            try AreaMatrix.removeIndexEntry(
+                repoPath: repoPath,
+                fileId: entry.id
+            )
+        }.value
+        appState.removeFile(id: entry.id)
+    } catch CoreError.FileNotFound(let path) {
+        appState.removeFile(id: entry.id)
+        print("index entry already gone: \(path)")
+    } catch {
+        await showAlert("移除索引失败：\(error.localizedDescription)")
+    }
+}
+```
+
+`remove_index_entry` 是 index-only 删除入口：用于 Indexed / Adopted / External
+或 Missing metadata，不移动、不删除、不重命名、不覆盖、不 Trash 外部源文件。
+成功时 Core 只更新 metadata，使该条目不再出现在默认 list/detail 中，并写入
+`change_log.action = removed_from_index`。
+
+副作用边界：
+
+- 不触碰外部源文件，即使 `files.source_path` 指向的文件存在。
+- 不触发 iCloud placeholder 下载。
+- 不删除 notes / tags 等关联 metadata，除非后续恢复/清理 task 明确扩展。
+- 不替代 Finder/FSEvents 外部删除同步；外部 removed 仍属于
+  `sync_external_changes`。
+
+错误：
+
+- `FileNotFound`：`fileId` 对应的 removable active row 不存在。
+- `PermissionDenied`：metadata 写入被权限阻断。
+- `Db`：SQLite 查询、索引移除或 change log 写入失败。
+- `Internal`：状态转换出现未预期错误。
 
 ### `rename_file(repoPath, fileId, newName) throws -> FileEntry`
 
@@ -626,7 +1106,78 @@ let updated = try await Task.detached {
 appState.replaceFile(updated)
 ```
 
-仅改文件名，不改分类。文件名包含禁用字符（`/ \\ : * ? " < > |`）会抛 `InvalidPath`。
+`newName` 是文件名而不是路径，使用与 `ImportOptions.override_filename` 相同的校验边界。
+空名、路径分隔符、metadata 内部路径或禁用字符（`/ \\ : * ? " < > |`）会抛
+`InvalidPath`。
+
+副作用边界：
+
+- Copy / Move 等 repo-owned 文件只在当前目录内执行安全 rename，更新
+  `files.path`、`files.current_name`、`updated_at`，并写入 `change_log.action =
+  renamed`。
+- Indexed 文件只更新 `files.current_name` 和 change log，保留 `files.path`、
+  `files.source_path`，且不移动、重命名或覆盖外部源文件。
+- 成功 rename 不改变 `file_id`、category、tags、notes、hash、storage mode、origin
+  或 source path。
+- 同目录同名时复用 C1-10 的安全编号策略，不覆盖已有文件；只有编号耗尽或竞态无法
+  解析时抛 `Conflict`。
+- Copy / Move rename 成功后触发 C1-20 generated overview 再生成；默认只写
+  `.areamatrix/generated/**`，仅当配置显式允许时维护根目录 `AREAMATRIX.md`，
+  不触碰用户 `README.md`。Indexed display-name rename 不触发文件系统 rename，也不
+  触碰外部源文件。
+
+错误：
+
+- `InvalidPath`：`repoPath` 或 `newName` 为空、不安全，或命中 metadata 内部路径。
+- `FileNotFound`：`fileId` 对应的 active row 不存在，或 repo-owned 文件已消失。
+- `Conflict`：安全目标名无法解析。
+- `PermissionDenied`：文件系统 rename 或 metadata 写入被权限阻断。
+- `Io`：文件系统读写失败。
+- `Db`：SQLite 查询、更新或 change log 写入失败。
+- `Config`：generated overview 输出配置无效。
+
+### `preview_move_to_category(repoPath, fileId, newCategory) throws -> MoveToCategoryPreview`
+
+```swift
+let preview = try await Task.detached {
+    try AreaMatrix.previewMoveToCategory(
+        repoPath: repoPath,
+        fileId: entry.id,
+        newCategory: "finance"
+    )
+}.value
+targetPathLabel = preview.targetPath
+```
+
+`preview_move_to_category` 是 C1-24 的确认前目标路径解析入口。输入与
+`move_to_category` 相同，输出 `MoveToCategoryPreview`，包含原分类、目标分类、
+当前路径、确认后最终路径、最终文件名、storage mode、是否 Index-only、是否因
+C1-10 自动编号改名、确认后是否会移动 repo-owned 文件。
+
+该函数只允许读取 classifier、DB 和文件系统状态。它必须复用
+`move_to_category` 的目标路径解析、同名编号、repo-owned / Indexed 分流和
+错误映射，但不得创建分类目录、移动文件、重命名文件、删除文件、更新
+`files` 或写入 `change_log`。S1-35 的 `Cancel` 和目标分类下拉预检必须使用此
+类无副作用路径，不能用会写入的 `move_to_category` 代替 preview。
+
+副作用边界：
+
+- Copy / Move 等 repo-owned 文件返回确认后将使用的 repository-relative
+  `target_path` 和 `target_name`；目标分类目录尚不存在时也只计算路径，不创建目录。
+- 同名目标按 C1-10 安全编号策略解析，`name_conflict_resolved = true` 时 UI 必须
+  展示最终名称，不得假设原文件名会被保留。
+- Indexed 文件返回原 `path` / `current_name`，`index_only = true` 且
+  `will_move_file = false`；不得移动、重命名或覆盖外部源文件。
+- 目标分类等于当前分类时返回当前路径，`will_move_file = false`，由 UI 禁用确认按钮。
+
+错误：
+
+- `Classify`：目标分类不存在或 classifier 规则不可用。
+- `FileNotFound`：`fileId` 对应的 active row 不存在，或 repo-owned 文件已消失。
+- `Conflict`：目标分类路径不是目录、note sidecar 冲突，或安全目标名无法解析。
+- `PermissionDenied`：文件系统或 metadata inspection 被权限阻断。
+- `Io`：文件系统读取、路径存在性检查或 note sidecar 读取失败。
+- `Db`：SQLite 查询失败。
 
 ### `move_to_category(repoPath, fileId, newCategory) throws -> FileEntry`
 
@@ -640,7 +1191,31 @@ let moved = try await Task.detached {
 }.value
 ```
 
-`new_category` 必须在 `classifier.yaml` 中存在，否则抛 `Classify`。
+`move_to_category` 是 C1-24 的单文件改分类入口。输入是初始化后的
+`repoPath`、active `fileId` 和目标分类 slug `newCategory`；输出是同一个
+`file_id` 更新后的 `FileEntry`。`newCategory` 必须存在于
+`.areamatrix/classifier.yaml` 或内置默认 classifier，否则抛 `Classify`，Core
+不得隐式创建新分类。
+
+副作用边界：
+
+- Copy / Move 等 repo-owned 文件移动到目标分类目录，更新 `files.category`、
+  `files.path`、`updated_at`，并写入 `change_log.action = moved`。
+- 目标分类目录不存在时可创建该分类目录；同名目标按 C1-10 安全编号策略解析，
+  不覆盖已有文件，编号耗尽或竞态无法解析时抛 `Conflict`。
+- Indexed 文件只更新 `files.category`、`updated_at` 和 `change_log.moved`，
+  保留 `files.path` / `files.source_path`，不移动、重命名或覆盖外部源文件。
+- 成功改分类不改变 `file_id`、`original_name`、`current_name`、hash、storage
+  mode、origin、source path、tags 或 notes。
+
+错误：
+
+- `Classify`：目标分类不存在或 classifier 规则不可用。
+- `FileNotFound`：`fileId` 对应的 active row 不存在，或 repo-owned 文件已消失。
+- `Conflict`：目标同名安全路径无法解析。
+- `PermissionDenied`：文件系统移动或 metadata 写入被权限阻断。
+- `Io`：文件系统读写失败。
+- `Db`：SQLite 查询、更新或 change log 写入失败。
 
 ### `restore_file(repoPath, fileId) throws -> FileEntry`
 
@@ -672,6 +1247,226 @@ print("got \(recent.count) files")
 ```
 
 按 `imported_at DESC` 排序。`limit > 1000` 自动 clamp。
+
+### `search_files(repoPath, query, filter, sort, pagination) throws -> SearchResultPage`
+
+```swift
+let page = try AreaMatrix.searchFiles(
+    repoPath: repoPath,
+    query: "合同",
+    filter: SearchFilter(
+        scope: .allRepo,
+        currentPath: nil,
+        category: nil,
+        fileKind: nil,
+        tags: [],
+        tagMatchMode: .any,
+        importedAfter: nil,
+        importedBefore: nil,
+        modifiedAfter: nil,
+        modifiedBefore: nil,
+        storageMode: nil,
+        includeDeleted: false
+    ),
+    sort: .newestImported,
+    pagination: SearchPagination(limit: 50, offset: 0)
+)
+```
+
+C2-01 的只读搜索入口，服务 `S2-01 search-results`、`S2-04 search-empty`
+和 `S2-05 query-error`。输入包含原始 `query`、搜索范围、过滤条件、排序和分页。
+输出 `SearchResultPage`：
+
+- `query`：回显本次查询，便于 UI 在 debounce 与重试期间保持状态。
+- `total_count`：分页前命中文件总数；为 `0` 且 diagnostics 没有 error 时进入搜索空态。
+- `results`：每个 `SearchFileResult` 包含原有 `FileEntry`、相关性分数、命中字段和可高亮片段。
+- `diagnostics`：结构化 query parse diagnostics，包含 `UnknownField`、`InvalidDate`、
+  `UnclosedQuote`、`UnbalancedParentheses`、`InvalidOperator` 等，供 `S2-05`
+  展示错误 token、位置和安全替换建议。
+- `index_status`：`Ready`、`Indexing` 或 `Unavailable`，供搜索结果页和空态区分
+  正常空结果、索引中、索引不可用。
+
+搜索对象：
+
+- 文件名、相对路径、伴生笔记、分类和 change log。
+- 普通关键词支持大小写不敏感、fuzzy 和 pinyin initials 命中；高级查询字段不走模糊纠错。
+- `SearchFilter` 必须携带当前 Stage 2 UI 的 C2-02 过滤状态，包括 tags 的
+  Any/All 匹配模式和 storage mode。`search_files` 用同一份 filter 刷新真实结果，
+  facet counts 仍由 C2-02 `list_filter_facets` 返回；保存搜索属于 C2-03，
+  Smart List 执行属于 C2-04。
+
+错误与副作用边界：
+
+- `InvalidPath`：`repoPath` 或 `filter.current_path` 不合法或越过资料库边界。
+- `Config`：query/filter/sort 配置无法解析或字段组合无效。
+- `Db`：搜索索引、文件元数据、笔记或 change log 无法读取。
+- 该 API 只读，不写 DB，不写 `change_log`，不创建或更新 FTS/索引表，不修改标签、分类、
+  笔记、generated overview 或任何用户文件。
+- OCR、文件内容全文、语义搜索和远程 AI 属于 Stage 3，不属于本合同。
+
+### `list_filter_facets(repoPath, query) throws -> SearchFacets`
+
+```swift
+let facets = try AreaMatrix.listFilterFacets(
+    repoPath: repoPath,
+    query: SearchFacetQuery(
+        query: "合同",
+        scope: .allRepo,
+        currentPath: nil,
+        category: nil,
+        fileKind: "pdf",
+        tags: ["finance"],
+        tagMatchMode: .any,
+        importedAfter: nil,
+        importedBefore: nil,
+        modifiedAfter: nil,
+        modifiedBefore: nil,
+        storageMode: .copied,
+        includeDeleted: false
+    )
+)
+```
+
+C2-02 的只读 filter/facet 入口，服务 `S2-02 search-filters`、`S2-08 tags-filter`
+和 `S2-01 search-results` 中 C2-02 负责的过滤器状态。输入 `SearchFacetQuery`
+承载当前搜索文本、scope/current path、category、file kind、tags、Any/All tag match mode、
+imported/modified date range、storage mode 和 include deleted。输出 `SearchFacets`：
+
+- `query`：回显本次 facet 查询对应的搜索文本。
+- `total_count`：当前 query + filters 下匹配的文件总数。
+- `categories`：category facet counts，供 Category 行显示可选项、选中态和 disabled 状态。
+- `file_kinds`：file kind / extension facet counts，供 Type 行显示可选项、选中态和 disabled 状态。
+- `tags`：tag facet counts，供 S2-08 显示标签列表、已选态、文件数量和 count 加载失败后的重试恢复。
+- `storage_modes`：Copied / Moved / Indexed 等 storage mode facet counts。
+- `date_bounds`：当前查询下可用 imported/modified timestamp 边界，供自定义日期控件限制范围。
+- `active_filter_count`：不含原始 query 文本的 active filters 数量，供 Filters 按钮、chips 和 VoiceOver 读出状态。
+
+错误与副作用边界：
+
+- `Config`：filter state 无效，例如 CurrentNode 缺少合法 current path、category 为空、
+  file kind 非法、tag 为空、date range 反转或字段组合无法表达。
+- `Db`：读取文件元数据、tag/facet 统计或必要搜索索引失败。
+- 该 API 只读，不写 DB，不写 `change_log`，不创建、更新、删除或重命名标签。
+- 该 API 不保存搜索、不创建或执行 Smart List，不实现 C2-03 saved search CRUD 或
+  C2-04 Smart List execution。
+- 该 API 不修改 files、notes、categories、generated overview、repository metadata
+  或任何用户文件；不会移动、删除、重命名文件，也不会触发 AI/语义过滤。
+
+### `create_saved_search(repoPath, request) throws -> SavedSearch`
+
+```swift
+let saved = try AreaMatrix.createSavedSearch(
+    repoPath: repoPath,
+    request: CreateSavedSearchRequest(
+        name: "Reports from 2026",
+        query: SavedSearchQuery(
+            query: "invoice OR receipt",
+            filter: SearchFilter(
+                scope: .allRepo,
+                currentPath: nil,
+                category: nil,
+                fileKind: "pdf",
+                tags: ["finance"],
+                tagMatchMode: .any,
+                importedAfter: nil,
+                importedBefore: nil,
+                modifiedAfter: nil,
+                modifiedBefore: nil,
+                storageMode: nil,
+                includeDeleted: false
+            ),
+            sort: .newestModified
+        ),
+        icon: "magnifyingglass",
+        color: nil,
+        pinned: true
+    )
+)
+```
+
+C2-03 的保存搜索入口，服务 `S2-03 saved-search-sheet`。输入 `CreateSavedSearchRequest`
+包含名称、`SavedSearchQuery`、可选 icon/color 和 sidebar pin 状态。`SavedSearchQuery`
+保存原始 query、完整 `SearchFilter`（含 scope/current path/tags/storage mode/include deleted）
+和 `SearchSort`，因此保存成功后 `S2-06 smart-lists` 可以从返回记录恢复同一搜索条件。
+
+输出 `SavedSearch`：
+
+- `id`：稳定 saved search 标识，供后续 update/delete 和 sidebar selection 使用。
+- `name`：用户可见 Smart List 名称。
+- `query`：可复现搜索的 query/filter/sort/scope 状态。
+- `icon` / `color`：用户选择的显示元数据；不得表达 Stage 3/4 智能能力依赖。
+- `pinned`：sidebar 固定状态。
+- `created_at` / `updated_at`：排序、恢复和编辑 UI 使用的时间戳。
+
+错误与副作用边界：
+
+- `Config`：repoPath 为空、名称为空、名称超过 64 字符、名称重复、query parser
+  diagnostics、filter state 无效、icon/color 元数据无效。
+- `Db`：读取或写入 `saved_searches` 元数据失败。
+- 该 API 只写 saved search 元数据；不写 `change_log`，不移动、复制、删除、重命名、
+  retag、reclassify、reindex 或修改任何文件。
+- 0 结果的有效搜索可以保存；query 无效时必须返回结构化 `Config`，不能写入半成品。
+- 该 API 不执行 Smart List、不返回 `SearchResultPage`、不实现 C2-04 `run_smart_list`。
+- 共享 Smart List、跨端同步、语义/AI Smart List 依赖属于后续阶段，不属于 C2-03。
+
+### `update_saved_search(repoPath, request) throws -> SavedSearch`
+
+更新已有 saved search 元数据，服务 `S2-06 smart-lists` 的 Rename、Duplicate 后编辑、
+Pin、Icon/Color 和 Edit query 保存流程。输入 `UpdateSavedSearchRequest` 在
+`CreateSavedSearchRequest` 的基础上增加 `id`，输出更新后的 `SavedSearch`。
+
+约束：
+
+- `id` 必须为正整数。
+- `name` 校验、query/filter/sort 校验、icon/color 校验与创建入口一致。
+- 名称重复必须失败，不自动覆盖其他 Smart List。
+- `Save changes` 只更新当前 saved search；Duplicate 创建新记录应调用
+  `create_saved_search`，不是复用 update 产生第二条记录。
+- 成功后 UI 可以用返回的 `SavedSearch.query` 刷新当前搜索上下文，但本 API 本身不执行搜索。
+
+错误与副作用边界：
+
+- `Config`：id、repoPath、名称、query/filter/sort 或 display metadata 无效。
+- `Db`：目标 saved search 不存在、名称重复或 metadata 持久化失败。
+- 该 API 不创建/删除标签，不修改分类，不写 `change_log`，不移动、删除、重命名或复制文件。
+- `Cancel` 和 `Reset changes` 不应调用本 API；draft 回滚由 UI/store 层处理。
+
+### `delete_saved_search(repoPath, savedSearchId) throws`
+
+删除一个 saved search 记录，服务 `S2-06 smart-lists` 的删除确认流程。
+
+语义：
+
+- 只删除 `saved_searches` 中的命名查询记录。
+- 必须允许 UI 明确展示：`This only removes the Smart List. Files will not be deleted or moved.`
+- 删除后同名未来可重新创建。
+
+错误与副作用边界：
+
+- `Config`：repoPath 为空或 `savedSearchId <= 0`。
+- `Db`：目标记录不存在或 metadata 删除失败。
+- 该 API 不删除、不移动、不重命名、不 trash、不 retag、不 reclassify、不 reindex 任何文件；
+  即使当前 Smart List 有匹配结果，也不能触碰那些文件。
+- 该 API 不写 `change_log`，因为它不代表文件动作。
+
+### `list_saved_searches(repoPath) throws -> [SavedSearch]`
+
+只读列出 saved search 元数据，服务 `S2-06 smart-lists` sidebar 分组、管理菜单、
+空态/错误态、query 恢复提示和 command-palette 的 C2-04 发现前置数据。
+
+排序：
+
+- pinned first。
+- pinned 内按 pin 时间或 updated_at 倒序。
+- 非 pinned 按名称 A-Z。
+- Stage 2 不支持拖拽排序，也不暴露手动排序字段。
+
+错误与副作用边界：
+
+- `Config`：repoPath 为空。
+- `Db`：saved search metadata 无法读取。
+- 该 API 只读，不执行 Smart List，不计算结果数量，不返回 `SearchResultPage`。
+- Smart List 打开执行属于 C2-04；调用方需要拿到 `SavedSearch.query` 后显式调用搜索执行入口。
 
 ### `get_file(repoPath, fileId) throws -> FileEntry`
 
@@ -715,7 +1510,78 @@ let tree = try decoder.decode(TreeNode.self, from: json.data(using: .utf8)!)
 sidebar.update(tree)
 ```
 
-返回 JSON 字符串而非 `TreeNode`，避免大 sequence 跨 FFI 多次拷贝。详见 [../modules/tree-scan.md](../modules/tree-scan.md)。
+输入：
+
+- `repoPath`：已初始化的资料库根目录。
+- `locale`：显示名 locale，例如 `zh-Hans` 或 `en`；未知 locale 可回退到稳定 slug。
+
+输出为 Swift 可解码的 `TreeNode` JSON 字符串，而非跨 FFI 返回
+`TreeNode` 对象，避免大 sequence 多次拷贝。JSON 根节点和所有子节点使用同一
+schema：
+
+```json
+{
+  "slug": "__root__",
+  "display_name": "资料库",
+  "kind": "RepositoryRoot",
+  "relative_path": "",
+  "file_count": 0,
+  "size_bytes": 0,
+  "depth": 0,
+  "children": []
+}
+```
+
+`relative_path` 是稳定 path key；同级 `children` 必须稳定排序。`kind` 取值
+为 `RepositoryRoot`、`SystemCategory`、`UserFolder` 或 `Subdir`，字段名保持
+snake_case 以配合 Swift `JSONDecoder.KeyDecodingStrategy.convertFromSnakeCase`。
+
+错误码边界：
+
+- `RepoNotInitialized`：资料库 metadata 缺失。
+- `Db`：树构建需要读取 SQLite metadata 时失败。
+- `Io`：资料库目录、文件路径、文件 metadata 或分类配置无法读取。
+
+副作用边界：该 API 只读取资料库文件路径和分类配置，不写 DB，不创建 generated
+overview，不移动、重命名、删除或修改用户文件。虚拟智能列表、搜索结果树和
+Stage 2 tree projection 不属于本接口。详见 [../modules/tree-scan.md](../modules/tree-scan.md)。
+
+### `list_icloud_conflicts(repoPath) throws -> [ICloudConflictPair]`
+
+```swift
+let conflicts = try await Task.detached(priority: .userInitiated) {
+    try AreaMatrix.listIcloudConflicts(repoPath: repoPath)
+}.value
+let needsReview = conflicts.filter { $0.status == .needsReview }
+```
+
+`list_icloud_conflicts` 是 C1-25 的只读 iCloud conflicted copy 列表入口，
+用于 S1-36。输入是已初始化的资料库根路径；输出按冲突副本返回
+`ICloudConflictPair`：
+
+- `conflict_id`：稳定冲突 ID，供后续单项 resolve 入口使用。
+- `original_path` / `original_modified_at`：可识别时返回原始版本路径和修改时间。
+- `conflicted_copy_path` / `conflicted_modified_at`：冲突副本路径和修改时间。
+- `status`：当前状态；识别不确定或需要用户决策时必须为 `NeedsReview`。
+- `uncertainty_reason`：原始版本无法确定、多个候选或 metadata 不完整时的结构化原因。
+
+副作用边界：
+
+- 只扫描 iCloud conflicted copy 和可选 conflict state metadata。
+- 不删除、不移动、不重命名、不覆盖、不合并任何原始文件或冲突副本。
+- 不触发 iCloud placeholder 下载；下载协调属于平台层。
+- 不写 `files` 记录；后续 `mark_icloud_conflict_resolved` 这类单项 resolve
+  入口必须显式由用户确认，不能藏在列表查询中。
+
+错误：
+
+- `ICloudPlaceholder`：关键 metadata 或冲突副本仍是未下载占位符。
+- `PermissionDenied`：资料库、冲突副本或 conflict state metadata 无法检查。
+- `Io`：文件系统扫描、metadata 读取或路径解析失败。
+- `Db`：可选 conflict state metadata 读取失败。
+
+空态返回空数组。加载失败必须通过结构化 `CoreError` 抛出；识别不确定的
+冲突仍返回条目，但 `status = NeedsReview`。
 
 ---
 
@@ -862,9 +1728,14 @@ public actor CoreBridge {
 
 - `import_file`（hash 大文件）
 - `reindex_from_filesystem`（全扫）
+- `create_diagnostics_snapshot`（可能复制损坏 metadata）
+- `repair_metadata`（可能创建诊断并全扫）
 - `resume_scan_session`（可能继续全扫）
 - `recover_on_startup`（启动时）
 - `list_tree_json`（大库）
+- `list_icloud_conflicts`（扫描 iCloud conflicted copy）
+- `preview_move_to_category`（目标路径和同名冲突预检）
+- `move_to_category`（可能移动 repo-owned 文件）
 - `sync_external_changes`（批量事件）
 
 下列函数轻量，可同步调（< 5ms）：
@@ -877,6 +1748,13 @@ public actor CoreBridge {
 - 单条 `list_files`（limit ≤ 50）
 
 ### 错误处理统一规约
+
+Core 对 C1-21 暴露 `map_core_error(input: ErrorMappingInput) -> ErrorMapping`。
+输入用 `ErrorKind` 加原始 `path` / `reason` / `message` 表示同一个
+`CoreError` payload；输出固定包含 `kind`、`user_message`、`severity`、
+`suggested_action`、`recoverability` 和 `raw_context`。该函数无文件系统、
+数据库、日志或状态副作用，Swift `AppError` 只能基于这些结构化字段编排
+本地化和展示，不得用字符串 contains 做主分支判断。
 
 ```swift
 extension CoreError {

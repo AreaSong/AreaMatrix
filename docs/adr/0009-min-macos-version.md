@@ -36,7 +36,7 @@
 ```
 
 ```rust
-// build-core.sh: MACOSX_DEPLOYMENT_TARGET=14.0
+// ./dev build core: MACOSX_DEPLOYMENT_TARGET=14.0
 ```
 
 不向 macOS 13 及以下提供构建。Stage 2 公开发布后，**每年 WWDC 后**（即 macOS 17 发布时）评估是否提升至 macOS 15 / 16。

@@ -1,0 +1,44 @@
+一、执行结论
+
+- 未完成
+- 原因：本次唯一剩余 blocker 仍是 manifest 必需验证 `./dev check all` 未通过；失败点不是 C2-03 代码，而是本机 Xcode 系统组件不一致导致 `xcodebuild test` 无法加载插件。
+
+二、执行范围
+
+- 单任务：`4-1/task-13`
+- 本轮未修改 repo 文件。
+- 当前工作区仍有上轮遗留变更：
+  - `core/tests/saved_search_implementation.rs`
+  - `tasks/prompts/_shared/progress.json`
+- 未触碰 `apps/**`，未修改 `scripts/dev_tools/**` 去绕过门禁。
+
+三、完成情况
+
+- 空态、非法输入、权限、IO/DB 错误和错误码映射：通过，相关 Rust 测试通过。
+- 写入失败不留下半成品：通过，DB 触发器失败测试证明 snapshot 不变。
+- 隐私 / AI / 远程调用默认关闭、密钥不入日志：通过，测试和源码检索均有证据。
+- 不吞错、不静默降级：通过，生产 saved-search 源码未命中 `unwrap/expect/panic/todo/unimplemented/let _` 或日志输出。
+- Forbidden Touches：未触碰 `apps/**`。
+
+四、验证情况
+
+- `cd core && cargo fmt --all -- --check`：通过。
+- `cd core && cargo test --test saved_search_contract_api --test saved_search_implementation`：通过，`5 + 9` 个测试全部 ok。
+- `./dev check all`：失败。前置 governance、skills、task-loop、prompt doctor、diff check、core fmt/clippy/test、UniFFI/core release build 均已跑到通过；最终失败于 macOS `xcodebuild test`，退出码 `70`。
+- `./dev test macos`：失败，同一 `IDESimulatorFoundation` 插件加载错误。
+- `xcodebuild -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' build CODE_SIGNING_ALLOWED=NO`：失败，同一插件加载错误。
+- `xcodebuild -runFirstLaunch` 和 `xcodebuild -runFirstLaunch -checkForNewerComponents`：失败，退出码 `75`，`Install Failed: Failed to create install request.`
+
+五、阻塞证据
+
+- 当前 Xcode：`Xcode 26.4.1`，`DTXcode 2641`。
+- `/Applications/Xcode.app/Contents/Frameworks/IDESimulatorFoundation.framework`：`DTXcode 2641`。
+- `/Library/Developer/PrivateFrameworks/DVTDownloads.framework`：`DTXcode 2620`。
+- `xcodebuild` 报错核心是 `IDESimulatorFoundation` 期望新版 `DVTDownloads` symbol，但实际加载到旧版 `/Library/Developer/PrivateFrameworks/DVTDownloads.framework`。
+- 当前环境禁止 `sudo`，无法修复 `/Library/Developer` 下的全局 Xcode private framework。
+
+六、风险与后续
+
+- C2-03 功能侧没有发现新的任务内缺口。
+- 剩余风险是本机 Xcode/Simulator 系统组件状态坏，导致必需验证无法完成；按仓库 validation-driver 规则，不能判定 PASS。
+- 下一个动作应先在本机完成 Xcode first launch / system components 修复或重装 Xcode 后，重新跑 `./dev check all`。

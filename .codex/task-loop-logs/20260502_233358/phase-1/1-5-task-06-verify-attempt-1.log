@@ -1,0 +1,79 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`1-5/task-06`
+- Task：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-1/1-5-file-actions-repair/task-06-c1-23-contract-api.md`
+- Exact Docs：
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-23-delete-remove-index.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/api/error-codes.md`
+- 实际核验文件：
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/tests/delete_remove_index_contract_api.rs`
+
+三、完成度摘要
+
+- 已覆盖项数：15
+- 未覆盖项数：0
+- 通过项数：15
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 C1-23 contract-api 范围
+  - 结果：通过
+  - 证据：`delete_file` / `remove_index_entry` 仅在 Core API、UDL 和 contract-api 测试中落地；`git diff --name-only -- apps` 无输出。
+  - 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:305`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:43`
+
+- 项目：Exact Docs 以文档为 SSOT
+  - 结果：通过
+  - 证据：能力规格定义 API、输入、输出、DB/FS 副作用和错误码；control map 将 C1-23 绑定到 S1-34；Core API 文档定义签名、错误和副作用边界。
+  - 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-23-delete-remove-index.md:11`、`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:49`、`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:683`
+
+- 项目：不实现相邻 C1 能力或 UI 页面
+  - 结果：通过
+  - 证据：改动状态仅显示 `core/area_matrix.udl`、`core/src/api.rs`、`core/tests/delete_remove_index_contract_api.rs`；`apps/**` 未被触碰。
+  - 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:324`
+
+- 项目：更新或校准 Core API / UDL 合同意图
+  - 结果：通过
+  - 证据：UDL 移除 `boolean hard`，新增 `remove_index_entry(repo_path, file_id)`；Rust public API 与 UDL 签名一致。
+  - 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:43`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:324`
+
+- 项目：明确输入、输出、错误码和副作用边界
+  - 结果：通过
+  - 证据：Rustdoc 明确 Trash、软删除、`removed_from_index`、禁止永久删除、禁止触碰外部源文件、错误码；测试覆盖 docs/API/UDL/control map 对齐。
+  - 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:305`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/delete_remove_index_contract_api.rs:107`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。当前为 contract-api task，公共入口集中在既有 `api.rs` 模式，未引入相邻功能或 UI wiring。
+- 注释 / rustdoc / 文档同步：通过。新增 public API 有 rustdoc 和 `# Errors` 说明，UDL 与 Core API 文档一致。
+- 错误处理与边界处理：通过。合同层列出 `FileNotFound`、`PermissionDenied`、`Io`、`Db`、`Internal`，并明确 Trash / index-only 副作用边界。
+- 测试与验证覆盖：通过。新增 `delete_remove_index_contract_api` 覆盖签名、文档、UDL、control map、错误和副作用边界。
+- 占位、硬编码、mock-only、一次性实现检查：通过。`delete_file` / `remove_index_entry` 仍为 `not_implemented()`，但本 task 类型是 contract-api，未把它当作 runtime 删除行为证据；真实实现应由后续 `1-5/task-07` 覆盖。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`cd core && cargo fmt --all -- --check`：通过
+- 已运行：`cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过
+- 已运行：`cd core && cargo test --workspace delete_remove_index`：通过，3 个 `delete_remove_index` contract-api 测试通过
+- 已运行：`cd core && cargo test --workspace`：通过
+- 已运行：`git diff --check -- core/area_matrix.udl core/src/api.rs`：通过
+- 缺失：无必需验证缺失
+
+八、最终判定说明
+
+- 本次执行已达到 `1-5/task-06` contract-api 验收标准。注意：这不是 C1-23 runtime 行为验收，实际 Trash / DB / index-only 删除闭环仍应由后续 implementation、failure-recovery、validation task 证明。
+
+VERIFY_RESULT: PASS

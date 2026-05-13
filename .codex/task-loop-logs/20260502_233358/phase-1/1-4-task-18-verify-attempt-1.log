@@ -1,0 +1,56 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`1-4/task-18`
+- Task 文件：[task-18-c1-19-failure-recovery.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-1/1-4-recovery-sync-overview/task-18-c1-19-failure-recovery.md:1)
+- 覆盖路径：`core/src/**`、`core/area_matrix.udl`、`core/tests/**`
+- 禁止触碰：`apps/**`，未发现修改
+
+三、完成度摘要
+
+- 已覆盖项数：7/7
+- 未覆盖项数：0
+- 通过项数：7
+- 不通过项数：0
+- 阻塞项数：0
+- Manifest 路径检查：Exact Docs 5/5 存在并已读；Expected New Paths 3/3 已落地；Forbidden Touches 0 项违规
+
+四、逐项验收结果
+
+- 只处理 C1-19 failure-recovery：通过。`Removed` 分支只进入删除同步计划与 DB 软删除，证据见 [sync/mod.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/sync/mod.rs:76) 和 [sync/mod.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/sync/mod.rs:223)。
+- Exact Docs 以 SSOT 核验：通过。C1-19 要求 `status=deleted`、`change_log.deleted`、只读确认路径缺失、不删除其他文件，证据见 [C1-19-sync-external-removed.md](/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-19-sync-external-removed.md:21)。
+- 不实现相邻 C1 能力或 UI 页面：通过。当前新增/变更证据集中在 `core/tests/sync_external_removed_failure_recovery.rs`，`apps/**` 无 diff、无 staged diff、无 untracked 文件。
+- 覆盖失败、回滚、重复执行或权限错误路径：通过。批处理失败重放、DB 失败回滚、重复事件 no-op、权限拒绝均有测试，证据见 [sync_external_removed_failure_recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/sync_external_removed_failure_recovery.rs:151)、[sync_external_removed_failure_recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/sync_external_removed_failure_recovery.rs:196)、[sync_external_removed_failure_recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/sync_external_removed_failure_recovery.rs:223)、[sync_external_removed_failure_recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/sync_external_removed_failure_recovery.rs:248)。
+- 不删除、覆盖或移动未确认用户文件：通过。实现只确认目标路径缺失并更新 DB；测试验证 unrelated `keeper.pdf` 保留，证据见 [sync/mod.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/sync/mod.rs:420) 和 [sync_external_removed_failure_recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/sync_external_removed_failure_recovery.rs:189)。
+- C1-19 failure-recovery 目标可证明：通过。DB 事务批处理在失败时不提交 status/log/cursor，证据见 [db/sync.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/db/sync.rs:44) 和 [db/sync.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/db/sync.rs:193)。
+- 没有扩展到未绑定能力：通过。`core/area_matrix.udl` 仅暴露既定 `sync_external_changes`、`ExternalEvent`、`SyncResult`、`ExternalEventKind::Removed` 合同，证据见 [area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:73)。
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。Removed 计划、路径解析、DB apply 分层清楚；`core/src/sync/mod.rs` 447 行、`core/src/db/sync.rs` 231 行，未超过单文件 500 行门槛。
+- 注释 / rustdoc / 文档同步：通过。public API 明确 C1-19 行为、错误和禁止副作用，证据见 [api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:484)。
+- 错误处理与边界处理：通过。现有路径返回 `Io` 且不改状态，权限错误保留元数据与 cursor，DB change_log 失败回滚。
+- 测试与验证覆盖：通过。目标测试 13 条相关用例通过，完整 workspace 测试也通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。实现走真实 FS metadata、SQLite transaction、`list_files/get_file/list_changes/get_fs_event_cursor` 路径，无 mock-only 闭环。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`cd core && cargo fmt --all -- --check`：通过。
+- 已运行：`cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过。
+- 已运行：`cd core && cargo test --workspace sync_external_removed`：通过；C1-19 contract 3、failure-recovery 4、implementation 6 均通过。
+- 已运行：`cd core && cargo test --workspace`：通过；完整 workspace 与 doctest 通过。
+- 缺失：无。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。当前仅有 `core/tests/sync_external_removed_failure_recovery.rs` 是 Expected New Paths 内新增测试文件；功能验收和验证均可证明通过，后续 checkpoint 时应纳入任务提交。
+
+
+VERIFY_RESULT: PASS

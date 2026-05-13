@@ -14,7 +14,7 @@
 
 1. 阅读 [项目文档导航](docs/README.md) 了解整体架构
 2. 浏览 [docs/adr/](docs/adr/) 了解关键决策的来龙去脉，避免重复讨论已定结论
-3. 在 [Issues](https://github.com/AreaSong/AreaMatrix/issues) 搜索是否有人已经提过相同需求/问题
+3. 在 [Issues](https://github.com/<your-org>/AreaMatrix/issues) 搜索是否有人已经提过相同需求/问题
 4. 涉及工程治理、CI、安全或依赖时，先读 [CODE_REVIEW.md](CODE_REVIEW.md) 和 `docs/development/`
 
 ## 贡献的几种方式
@@ -58,7 +58,7 @@ flowchart LR
 ```bash
 git clone https://github.com/<your-org>/AreaMatrix.git
 cd AreaMatrix
-./scripts/build-core.sh
+./dev build core
 open apps/macos/AreaMatrix.xcodeproj
 ```
 

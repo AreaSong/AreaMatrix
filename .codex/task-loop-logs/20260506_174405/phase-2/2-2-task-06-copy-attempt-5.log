@@ -1,0 +1,50 @@
+**一、执行结论**
+- 已完成。
+
+**二、执行范围**
+- 单任务：`2-2/task-06`
+- 修改文件清单：
+- [ImportSingleFilePreflight.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreflight.swift)
+- [ImportSingleFilePreviewModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreviewModel.swift)
+- [ImportSingleFilePreflightCorePreview.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreflightCorePreview.swift)
+- [ImportSingleFilePreviewModelState.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreviewModelState.swift)
+- [ImportSingleFileTestSupport.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFileTestSupport.swift)
+- [ImportSingleFileTestFixtures.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFileTestFixtures.swift)
+- [project.pbxproj](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj)
+
+**三、完成情况**
+- 核对清单 1：通过。S1-17 绑定的 `C1-05/C1-06/C1-07/C1-08` 页面闭环和相关测试仍完整保留。
+- 核对清单 2：通过。页面入口、退出、错误态、冲突预检和 CoreBridge 调用链未改语义，只做结构性拆分。
+- 核对清单 3：通过。未引入新的 mock、fixture-only 或硬编码通过态；生产路径仍走真实 Swift 平台层 + CoreBridge。
+- 核对清单 4：通过。未新增 control map 之外功能。
+- 完成标准 1：通过。S1-17 整页仍可按 page spec / control map 验收。
+- 完成标准 2：通过。页面声明的 Core 能力仍是实接入；无新增阻塞。
+- `Forbidden Touches`：未触碰。`core/src/**` 与 `core/area_matrix.udl` diff 为空。
+
+**四、工程质量**
+- 代码结构已收敛到规范内：把 preflight fallback、preview model 状态类型、测试 fixtures 拆到独立文件，避免继续堆在单文件里。
+- 原阻塞已修复：`ImportSingleFilePreflight.swift` 现为 `430` 行，`ImportSingleFilePreviewModel.swift` `456` 行，`ImportSingleFileTestSupport.swift` `332` 行，均低于 `file_length 500`。
+- `ImportSingleFilePreviewModel` 主类型体已缩小为属性 + `init`，其余逻辑拆到扩展，避免 `type_body_length` 再次踩线。
+- `previewSingleFileImport` 的超长实现已抽到新文件中的辅助上下文，不再是单个超长函数。
+- 注释 / rustdoc / 文档同步：本任务未新增 public Rust API，也未改 UDL / docs；无新漂移。
+- 错误处理与边界处理保持完整：iCloud placeholder、非法文件名、同名冲突、重复 hash、下载失败、Replace 二次确认等路径未降级。
+- 占位、硬编码、mock-only、一次性实现：未发现。
+
+**五、验证情况**
+- 已运行：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+- 结果：通过
+- 已运行：`xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+- 结果：失败
+- 失败原因：本地 `com.apple.testmanagerd.control` sandbox restriction；属于仓库文档允许的本地阻塞场景
+- 已运行：`./dev test macos`
+- 结果：通过
+- 证据：脚本先执行 `xcodebuild test`，识别到相同 sandbox block 后回退到 `xcrun xctest`；最终 `180 tests, 0 failures`
+- 未运行：`swiftlint --strict ...`
+- 原因：当前环境缺少 `swiftlint`
+- 未运行：`swiftformat --lint ...`
+- 原因：当前环境缺少 `swiftformat`
+
+**六、风险与后续**
+- 剩余风险：原始 `xcodebuild test` 在当前沙箱环境仍无法直接完成；若后续需要该命令的原生成功证据，需要在可访问 `testmanagerd` 的非沙箱环境补跑。
+- 回滚思路：本次仅是 Swift 侧结构拆分和 Xcode wiring，无数据、无 UDL、无 `core/src/**` 变更；按上述 7 个文件精确回退即可。
+- 建议下一个任务：`2-2/task-07`。

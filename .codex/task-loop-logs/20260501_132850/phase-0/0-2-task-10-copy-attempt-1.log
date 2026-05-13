@@ -1,0 +1,37 @@
+一、执行结论
+
+已完成。按本 task 的允许边界完成了 SwiftUI App entry 与根视图空壳整理，未接入 Core。
+
+二、执行范围
+
+修改文件：
+- [AreaMatrixApp.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/App/AreaMatrixApp.swift:3)
+- [MainWindow.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/MainWindow.swift:3)
+
+三、完成情况
+
+- 创建/整理 SwiftUI App entry：已完成，`AreaMatrixApp` 使用 `WindowGroup` 承载根视图。
+- 根视图占位：已完成，`MainWindow` 只展示 `ContentUnavailableView` 空壳状态。
+- 不接入真实 Core：已满足，未引用 `CoreBridge`、UniFFI、Rust Core 或真实业务状态。
+- Forbidden Touches：未触碰 `core/src/**`。
+
+四、工程质量
+
+结构保持最小：App entry + 单一根视图，无新增依赖、无 IO、无 Core 调用、无 mock-only 伪装闭环。`MainWindow` 已移除对 `Models/AppShellModel.swift` 的依赖，避免当前 task 越界到未授权路径。无新增注释或 rustdoc 需求。
+
+五、验证情况
+
+已运行：
+- `xcodebuild -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' build CODE_SIGNING_ALLOWED=NO`：通过，`BUILD SUCCEEDED`。
+- `xcrun swiftc -typecheck -parse-as-library -target arm64-apple-macos14.0 -module-cache-path /private/tmp/areamatrix-swift-module-cache apps/macos/AreaMatrix/App/AreaMatrixApp.swift apps/macos/AreaMatrix/Views/MainWindow.swift`：通过。
+- `git diff --check`：通过。
+
+额外运行但未通过：
+- `xcodebuild test ...`：失败，原因是当前 scheme 未配置 test action：`Scheme AreaMatrix is not currently configured for the test action.` 这不是本 task manifest 的必需验证命令。
+
+六、风险与后续
+
+残余风险：当前 Xcode target 的 Sources 仍只引用 `AreaMatrix.xcodeproj/Shell/AreaMatrixShellApp.swift`，没有把 `App/` 和 `Views/` 文件加入 target。因为本 task 明确只允许修改 `Expected New Paths`，我没有改 `project.pbxproj`。建议后续任务在 manifest 允许触碰 Xcode project 时补齐 target wiring。工作树里已有 `.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json` 的既有脏改动，我未修改这些文件。
+
+建议下一个任务：继续 `0-2/task-11`，但如果 verify-ready 要求 SwiftUI entry 由 Xcode target 真实编译，需要先调整对应 task/manifest 允许修改 `apps/macos/AreaMatrix.xcodeproj/**`。
+

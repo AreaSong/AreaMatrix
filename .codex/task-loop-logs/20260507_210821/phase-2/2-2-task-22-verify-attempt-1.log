@@ -1,0 +1,93 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`2-2/task-22`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-2-import-conflict/task-22-s1-22-c1-09-detect-duplicate.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-22-conflict-duplicate.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-09-detect-duplicate.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：12
+- 未覆盖项数：0
+- 通过项数：6
+- 不通过项数：6
+- 阻塞项数：3
+
+四、逐项验收结果
+
+- 项目：只处理 S1-22 页面中的 C1-09 功能点
+- 结果：不通过
+- 证据：实现和测试同时接入了 `S1-23 conflict-name` 与 `S1-24 replace-confirm`，超出 task 文件第 21、23、24 行限定。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreflight.swift:160`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportSingleFileSheetSections.swift:263`
+
+- 项目：读取页面规格、MVP control map、Core API 和 C1-09 能力规格
+- 结果：通过
+- 证据：Exact Docs 均存在并已读取；control map 明确 `S1-22 -> C1-09 -> import_file -> Real Core`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:37`
+
+- 项目：只接入 C1-09 对应的 CoreBridge / 状态 / 错误映射
+- 结果：不通过
+- 证据：S1-22 预检用 `listFiles` 按当前分类过滤后比对 hash，会漏掉其他分类中的同 hash 文件；Core 的真实 C1-09 是全库 active hash 查重。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreflightCorePreview.swift:39`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreflightCorePreview.swift:118`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/db/import.rs:28`
+
+- 项目：不顺手实现相邻页面
+- 结果：不通过
+- 证据：实现包含 name conflict 路由和 replace confirm sheet。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreflight.swift:181`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportEntrySheetView.swift:153`
+
+- 项目：Expected New Paths / Forbidden Touches
+- 结果：通过
+- 证据：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`project.pbxproj` 均有落地；`git diff --name-only -- core/src` 为空。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj:94`
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过，S1-22 预检语义与 Core 全库 duplicate 语义不一致。
+- 注释 / rustdoc / 文档同步：通过，未发现本 task 需要新增 public Rust API 或 UDL 文档。
+- 错误处理与边界处理：不通过，跨分类重复文件无法进入 S1-22 冲突处理区。
+- 测试与验证覆盖：不通过，现有测试覆盖同分类重复，但未覆盖跨分类同 hash 漏检。
+- 占位、硬编码、mock-only、一次性实现检查：通过，生产路径使用真实 SHA256 与 `CoreBridge.listFiles`，不是静态 mock；但链路语义仍不完整。
+
+六、阻塞项
+
+- P0：跨分类同 hash 重复文件无法触发 S1-22
+  - 说明：`loadImportPreviewFiles` 使用当前 `category` 构造 `FileFilterSnapshot`，而 `list_files` 会按 category 过滤；Core C1-09 的真实查重是 `find_active_file_by_hash` 全库 active hash 查重。结果是同 hash 文件在其他分类时，S1-22 用户可见冲突区不会出现。
+  - 绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreflightCorePreview.swift:107`
+  - 绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/core/src/db/mod.rs:223`
+  - 绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/core/src/db/import.rs:28`
+  - 为什么导致不通过：完成标准要求 S1-22 中 C1-09 用户可见功能可被触发和验收，目前不能可靠触发。
+
+- P0：实现越过本 task 边界进入 S1-23 / S1-24
+  - 说明：task 只允许 S1-22 + C1-09，但当前改动包含 `S1-23 conflict-name` 和 `S1-24 replace-confirm` 路由、文案、sheet 与测试断言。
+  - 绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreflight.swift:160`
+  - 绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportSingleFileSheetSections.swift:263`
+  - 为什么导致不通过：违反 task checklist 的“只处理 S1-22 / 不顺手实现相邻页面”。
+
+- P1：触碰文件存在编码规范超限
+  - 说明：当前已触碰文件 `ImportEntrySheetView.swift` 为 508 行，测试文件 `ImportSingleFilePreviewModelTests.swift` 为 567 行，超过单文件 500 行阈值。
+  - 绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportEntrySheetView.swift:508`
+  - 绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFilePreviewModelTests.swift:567`
+  - 为什么导致不通过：工程质量规则要求验收不能忽略明显编码规范阻塞。
+
+七、验证情况
+
+- 已运行：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+- 结果：通过，`** BUILD SUCCEEDED **`
+- 已运行：`./dev test macos`
+- 结果：通过；其中 `xcodebuild test` 因本地 sandbox `testmanagerd` 通信受限失败，脚本按既定规则复用已构建 XCTest bundle，`xcrun xctest` 执行 262 tests，0 failures。
+- 缺失：未运行 formatter/codegen/修复命令，因为本次是只读验收。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+VERIFY_RESULT: FAIL

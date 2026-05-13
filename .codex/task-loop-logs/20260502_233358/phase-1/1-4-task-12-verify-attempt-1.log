@@ -1,0 +1,75 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`phase-1` / `1-4/task-12`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-1/1-4-recovery-sync-overview/task-12-c1-18-implementation.md`
+- 核验文件：`core/src/**`、`core/area_matrix.udl`、`core/tests/**`
+- 禁止触碰：`apps/**`
+
+三、完成度摘要
+
+- 已覆盖项数：12
+- 未覆盖项数：0
+- 通过项数：12
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：C1-18 implementation 范围  
+  结果：通过  
+  证据：实现只新增/扩展 `ExternalEventKind::Renamed` 分支，`Removed` / `Modified` 仍保持 out-of-scope；未实现 UI 或相邻能力。  
+  涉及文件：[core/src/sync/mod.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/sync/mod.rs:64)
+
+- 项目：Exact Docs 对齐  
+  结果：通过  
+  证据：C1-18 要求更新 `files.path/current_name/updated_at`、写入 `change_log.renamed`、只读确认新路径存在且不主动重命名用户文件；实现和测试均覆盖。  
+  涉及文件：[C1-18-sync-external-renamed.md](/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-18-sync-external-renamed.md:23)
+
+- 项目：真实最小路径  
+  结果：通过  
+  证据：实现通过新路径 metadata/hash 查找唯一 active DB 候选，事务内更新 `files` 并插入 `renamed` change log。  
+  涉及文件：[core/src/sync/mod.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/sync/mod.rs:154)、[core/src/db/sync.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/db/sync.rs:156)
+
+- 项目：API / UDL 一致  
+  结果：通过  
+  证据：`sync_external_changes`、`ExternalEventKind::Renamed`、`SyncResult.detected_renames` 均在 Rust public API 与 UDL 中存在。  
+  涉及文件：[core/src/api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:474)、[core/area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:73)
+
+- 项目：Expected New Paths  
+  结果：通过  
+  证据：`core/src/**`、`core/area_matrix.udl`、`core/tests/**` 均存在；新增 implementation 测试已落在 `core/tests/**`。  
+  涉及文件：[core/tests/sync_external_renamed_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/sync_external_renamed_implementation.rs:132)
+
+- 项目：Forbidden Touches  
+  结果：通过  
+  证据：`git diff --name-only -- apps` 无输出；`apps/**` 未被修改。
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。同步规划和 DB apply 分层清楚，Core 不依赖 macOS API。
+- 注释 / rustdoc / 文档同步：通过。public API 与 domain 类型有 rustdoc，UDL 与 docs/api 对齐。
+- 错误处理与边界处理：通过。覆盖 `FileNotFound`、`Conflict`、`Db`、`Io` 及路径/权限等边界；DB 和 cursor 同事务回滚。
+- 测试与验证覆盖：通过。覆盖成功、幂等 replay、未配对、跨分类 scope、change_log 失败回滚。
+- 占位、硬编码、mock-only、一次性实现检查：通过。测试走真实 temp repo、真实文件系统 rename、真实 SQLite metadata。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- `cd core && cargo fmt --all -- --check`：通过
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过
+- `cd core && cargo test --workspace sync_external_renamed`：通过，C1-18 contract/API 3 个测试 + implementation 5 个测试通过
+- `cd core && cargo test --workspace`：通过，完整 workspace 测试通过
+- `git diff --check -- core/src core/tests core/area_matrix.udl apps`：通过
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。C1-18 implementation 有真实 Rust/DB/API/UDL/test 证据，未触碰 `apps/**`，未扩展到未绑定能力。
+
+VERIFY_RESULT: PASS

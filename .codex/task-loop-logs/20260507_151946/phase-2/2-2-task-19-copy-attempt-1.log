@@ -1,0 +1,40 @@
+一、执行结论
+
+已完成 `2-2/task-19`。
+
+二、执行范围
+
+修改文件：
+- `apps/macos/AreaMatrix/Models/OnboardingRoute.swift`
+- `apps/macos/AreaMatrix/Models/ImportProgressActions.swift`
+- `apps/macos/AreaMatrix/Models/ImportResultRouteActions.swift`
+- `apps/macos/AreaMatrix/Views/Main/ImportResultView.swift`
+- `apps/macos/AreaMatrix/Views/MainWindow.swift`
+- `apps/macos/AreaMatrixTests/ImportResultCopyRetryTests.swift`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+
+未触碰 `core/src/**`。工作区中原有的 `.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json` 仍是外部运行状态改动，我没有修改它们。
+
+三、完成情况
+
+- 只处理了 `S1-21 import-result` 中的 `C1-06 import-copy-file`。
+- 结果页失败项现在会生成 copy retry context，并通过现有 `CoreFileImporting` / `CoreBridge` 抽象重新调用 `importCopiedFile`。
+- `Retry Failed` 会触发真实 copy import 路径；成功后更新结果摘要和行状态，失败后通过 `CoreErrorMapping` 更新错误原因。
+- 未实现 `C1-13 list_changes`、`Export Details`、`Show existing file` 等同页其他能力，保留给 `2-2/task-20` / page integration verify。
+
+四、工程质量
+
+代码结构保持在现有 `OnboardingModel` / route state / SwiftUI view 模式内，没有引入新依赖、mock-only 闭环或静态成功态。视图只触发 action，不直接做文件 IO；错误路径显式映射并保留可重试失败项。新增测试覆盖 retry 成功和 retry 失败两条路径。
+
+五、验证情况
+
+已运行：
+- `xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：通过。
+- `./dev test macos`：标准 `xcodebuild test` 被本地 `testmanagerd` sandbox 限制阻断；脚本按仓库规则改用同一 XCTest bundle 执行，`xcrun xctest` 通过，256 tests，0 failures。
+- `git diff --check`：通过。
+- `git diff --name-only -- core/src`：无输出，确认未触碰 Forbidden Touches。
+
+六、风险与后续
+
+剩余风险主要是 `S1-21` 的 `C1-13` 结果详情 / change log 能力尚未接入，这是下一个任务 `2-2/task-20` 的范围。标准 `xcodebuild test` 在当前沙箱环境仍会被 `testmanagerd` 阻断，但仓库 fallback 测试已通过。
+

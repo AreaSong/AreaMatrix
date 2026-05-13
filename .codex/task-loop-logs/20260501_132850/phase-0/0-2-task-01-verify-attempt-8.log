@@ -1,0 +1,59 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`0-2/task-01`
+- Task：[task-01-core-crate-metadata.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-0/0-2-engineering-foundation/task-01-core-crate-metadata.md:1)
+- Manifest：[phase-0.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-0.md:81)
+- 实际文件：[core/Cargo.toml](/Users/as/Ai-Project/project/AreaMatrix/core/Cargo.toml:1)、[core/AGENTS.md](/Users/as/Ai-Project/project/AreaMatrix/core/AGENTS.md:1)
+
+三、完成度摘要
+
+- 已覆盖项数：9
+- 未覆盖项数：0
+- 通过项数：7
+- 不通过项数：2
+- 阻塞项数：1
+
+四、逐项验收结果
+
+- 创建最小 Cargo package/workspace 元数据：通过。`core/Cargo.toml` 存在，声明 `package`、`workspace`、`lib`，且 `cargo metadata --no-deps` 可读取。
+- 依赖版本与技术栈文档一致：通过。`core/Cargo.toml` 依赖与 [tech-stack.md](/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/tech-stack.md:157) / [build.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/build.md:86) 当前内容一致。
+- 不创建业务模块实现：通过。当前 `core/src` 仅剩 [lib.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/lib.rs:1)，内容只是 crate 级文档，无业务模块声明。
+- 完成标准 `core/Cargo.toml` 可被 cargo 读取：通过。`cd core && cargo metadata --no-deps` 退出码 0。
+- 完成标准“没有提前实现产品逻辑”：通过。当前文件系统未发现 Core 业务模块实现。
+- `Expected New Paths` 落地：通过。`core/Cargo.toml`、`core/AGENTS.md` 均存在。
+- `Forbidden Touches apps/**`：通过。`git diff --name-only -- apps` 结果为 0。
+- Manifest 边界与工程质量：不通过。当前 diff 删除/修改大量 `Expected New Paths` 之外的 tracked Core 文件，属于 task scope 扩散。
+- Git / 可回溯状态：不通过。工作区还包含 `docs/**`、`.codex/**`、`tasks/prompts/_shared/progress.json` 的当前变更，不足以证明本 task 只改了 manifest 允许路径。
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过。当前 `Cargo.toml` 本身清晰，但删除 `core/area_matrix.udl`、`core/build.rs`、`core/src/api.rs` 等既有 tracked 文件超出本 task 边界。
+- 注释 / rustdoc / 文档同步：不通过。`docs/architecture/tech-stack.md` 与 `docs/development/build.md` 被修改，但本 task 的 `Expected New Paths` 未允许修改 docs。
+- 错误处理与边界处理：通过。当前无业务逻辑，无 `unwrap()` / `panic!()` 生产路径。
+- 测试与验证覆盖：通过。manifest 验证与 validation-driver 要求的 Rust core checks 均已运行通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。未发现 mock-only 或硬编码业务实现；失败原因是范围违规，不是实现空壳。
+
+六、阻塞项
+
+- P0：任务范围扩散并删除既有 tracked Core 文件。说明：Manifest 只允许 `core/Cargo.toml` 和 `core/AGENTS.md`，但当前 `git diff --name-status -- core` 显示删除 `core/area_matrix.udl`、`core/build.rs`、`core/resources/classifier.yaml`、多个 `core/src/**` 模块和 `core/tests/**` 文件，并修改 `core/src/lib.rs`。路径：`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:1` 等删除文件；`/Users/as/Ai-Project/project/AreaMatrix/core/src/lib.rs:1`。这违反 audit / engineering / code review 的 task scope 边界，因此不能判定完成。
+
+七、验证情况
+
+- 已运行：`cd core && cargo metadata --no-deps`：通过，有 `--format-version` warning，但退出码 0。
+- 已运行：`cd core && cargo fmt --all -- --check`：通过。
+- 已运行：`cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过。
+- 已运行：`cd core && cargo test --workspace`：通过，0 tests。
+- 已运行：`python3 tasks/prompts/_shared/prompt_pipeline.py doctor`：通过。
+- 已运行辅助检查：`python3 tasks/prompts/_shared/prompt_pipeline.py status`、`git diff/status`、`find core/src`。
+- 未运行：macOS / Xcode 验证，原因是本 task 禁止触碰 `apps/**`，不属于当前验收范围。
+- 失败命令：无。验收失败来自 scope / 工程质量证据，不是命令失败。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。虽然 `core/Cargo.toml` 本身可被 Cargo 读取，且当前没有业务模块实现，但工作区存在大量超出 `0-2/task-01` Manifest 边界的删除和修改，无法按“只完成 Core crate 元数据”验收通过。
+
+VERIFY_RESULT: FAIL

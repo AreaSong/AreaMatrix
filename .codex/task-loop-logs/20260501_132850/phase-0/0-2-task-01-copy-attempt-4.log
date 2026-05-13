@@ -1,0 +1,52 @@
+**一、执行结论**
+
+已完成。
+
+**二、执行范围**
+
+单任务：`0-2/task-01`
+
+修改文件：
+- [core/Cargo.toml](/Users/as/Ai-Project/project/AreaMatrix/core/Cargo.toml:1)
+- [core/AGENTS.md](/Users/as/Ai-Project/project/AreaMatrix/core/AGENTS.md:1)
+
+**三、完成情况**
+
+核对清单：
+- 创建最小 Cargo package/workspace 元数据：通过。`cargo metadata` 现在返回 `area_matrix_core` package，`workspace_members` 非空。
+- 依赖版本与技术栈文档一致：通过。保留 `uniffi 0.28`、`rusqlite 0.31`、`serde 1`、`sha2 0.10` 等文档版本。
+- 不创建业务模块实现：通过。本次未修改 `core/src/**`、`build.rs`、`area_matrix.udl`、`resources/**` 或 `tests/**`。
+
+完成标准：
+- `core/Cargo.toml` 可被 cargo 读取：通过。
+- 没有提前实现产品逻辑：通过，本次只修 Cargo 元数据和本地 AGENTS 约束。
+
+Forbidden Touches：
+- 未触碰 `apps/**`。`git status --short -- core apps` 仅显示 `core/AGENTS.md`、`core/Cargo.toml`。
+
+**四、工程质量**
+
+`core/Cargo.toml` 已恢复为真实 `[package]` + `[lib]` + `[workspace] resolver = "2"`，不再用空 virtual workspace 规避真实 Rust target。`rlib` 作为测试/开发链接产物保留，产品构建产物仍包含文档要求的 `staticlib` 和 `cdylib`。
+
+`core/AGENTS.md` 已同步说明：metadata task 不得新增业务实现，也不得把 Cargo 改成空 workspace。未新增 public Rust API，不涉及 rustdoc、业务错误处理、mock-only 或硬编码通过态。
+
+**五、验证情况**
+
+已运行并通过：
+- `cd core && cargo metadata --no-deps`
+- `cd core && cargo fmt --all -- --check`
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`
+- `cd core && cargo test --workspace`：集成测试 6 个通过。
+- `git diff --check -- core/Cargo.toml core/AGENTS.md`
+
+失败项：无。  
+无法运行项：无。
+
+**六、风险与后续**
+
+剩余风险：`cargo metadata --no-deps` 会提示建议显式加 `--format-version`，但这是 Cargo 兼容性 warning，manifest 指定命令本身已 exit 0 且返回非空 package。现有 `core/src/**` 中的后续 task placeholder 不属于本 task 修复范围，本次只保证它们重新被 Cargo 识别并纳入 fmt/clippy/test。
+
+回滚思路：还原 [core/Cargo.toml](/Users/as/Ai-Project/project/AreaMatrix/core/Cargo.toml:1) 和 [core/AGENTS.md](/Users/as/Ai-Project/project/AreaMatrix/core/AGENTS.md:1) 两个文件即可。
+
+建议下一个任务：`0-2/task-02`，前提是本 task 的只读 verify-ready 记录 PASS。
+

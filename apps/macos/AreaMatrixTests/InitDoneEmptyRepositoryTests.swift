@@ -1,0 +1,411 @@
+@testable import AreaMatrix
+import Foundation
+import XCTest
+
+final class InitDoneEmptyRepositoryTests: XCTestCase {
+    @MainActor
+    func testOpenRepositoryFromInitDoneUsesC102CoreOpenBoundary() async {
+        let opening = RepositoryOpeningResult.initDoneFixture(repoPath: "/tmp/empty-repo", fileCount: 0)
+        let opener = RecordingEmptyRepositoryOpener(result: .success(opening))
+        let model = OnboardingModel(
+            settingsReader: InitDoneStaticSettingsReader(repoPath: nil),
+            emptyRepositoryOpener: opener,
+            startupRecoverer: ShellStaticStartupRecoverer(),
+            helpOpener: InitDoneNoopWelcomeHelpOpener()
+        )
+
+        model.route = .initializationDone(RepositoryInitializationResult(
+            repoPath: "/tmp/empty-repo",
+            mode: .createEmpty,
+            scanSession: nil,
+            recoveryReport: nil
+        ))
+        await model.openInitializedRepository()
+
+        let requestedRepoPaths = await opener.requestedRepoPaths()
+        XCTAssertEqual(requestedRepoPaths, ["/tmp/empty-repo"])
+        XCTAssertNil(model.initializationOpenErrorMapping)
+        XCTAssertEqual(model.route, .mainEmpty(opening))
+    }
+
+    @MainActor
+    func testOpenRepositoryFailureReturnsToDonePageWithInlineRetryError() async {
+        let error = CoreError.Config(reason: "tree json unavailable")
+        let mapping = CoreErrorMappingSnapshot.initDoneConfigFixture(rawContext: "tree json unavailable")
+        let opener = RecordingEmptyRepositoryOpener(result: .failure(error))
+        let errorMapper = InitDoneRecordingErrorMapper(mapping: mapping)
+        let result = RepositoryInitializationResult(
+            repoPath: "/tmp/empty-repo",
+            mode: .createEmpty,
+            scanSession: nil,
+            recoveryReport: nil
+        )
+        let model = OnboardingModel(
+            settingsReader: InitDoneStaticSettingsReader(repoPath: nil),
+            emptyRepositoryOpener: opener,
+            startupRecoverer: ShellStaticStartupRecoverer(),
+            errorMapper: errorMapper,
+            helpOpener: InitDoneNoopWelcomeHelpOpener()
+        )
+
+        model.route = .initializationDone(result)
+        await model.openInitializedRepository()
+
+        XCTAssertEqual(model.route, .initializationDone(result))
+        XCTAssertEqual(model.initializationOpenErrorMapping, mapping)
+        XCTAssertEqual(errorMapper.mappedErrors, [error])
+    }
+
+    @MainActor
+    func testOpenRepositoryShowsMainLoadingUntilCoreOpenCompletes() async {
+        let opening = RepositoryOpeningResult.initDoneFixture(repoPath: "/tmp/empty-repo", fileCount: 0)
+        let opener = PausingEmptyRepositoryOpener(opening: opening)
+        let model = OnboardingModel(
+            settingsReader: InitDoneStaticSettingsReader(repoPath: nil),
+            emptyRepositoryOpener: opener,
+            startupRecoverer: ShellStaticStartupRecoverer(),
+            helpOpener: InitDoneNoopWelcomeHelpOpener()
+        )
+
+        model.route = .initializationDone(RepositoryInitializationResult(
+            repoPath: "/tmp/empty-repo",
+            mode: .createEmpty,
+            scanSession: nil,
+            recoveryReport: nil
+        ))
+        let openTask = Task {
+            await model.openInitializedRepository()
+        }
+
+        await opener.waitUntilStarted()
+
+        XCTAssertEqual(model.route, .mainLoading(MainLoadingState(
+            repoPath: "/tmp/empty-repo",
+            startupRecovery: .completed(nil)
+        )))
+        await opener.finishOpen()
+        await openTask.value
+        XCTAssertEqual(model.route, .mainEmpty(opening))
+    }
+
+    func testDefaultCoreBridgeOpensRealEmptyRepositoryThroughLoadConfigAndTree() async throws {
+        let repoURL = try makeInitDoneTemporaryRepositoryURL()
+        defer { try? FileManager.default.removeItem(at: repoURL) }
+
+        let bridge = CoreBridge()
+        try await bridge.initializeEmptyRepository(repoPath: repoURL.path)
+        let listedFiles = try await bridge.listFiles(repoPath: repoURL.path, filter: .currentCategory("inbox"))
+        let opening = try await bridge.openEmptyRepository(repoPath: repoURL.path)
+
+        XCTAssertEqual(opening.config.repoPath, repoURL.path)
+        XCTAssertEqual(opening.config.locale, "zh-Hans")
+        XCTAssertTrue(opening.isEmpty)
+        XCTAssertEqual(opening.tree.totalFileCount, 0)
+        XCTAssertEqual(listedFiles, [])
+        XCTAssertEqual(opening.currentCategoryFiles, [])
+        XCTAssertTrue(FileManager.default.fileExists(atPath: repoURL.appendingPathComponent(".areamatrix").path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: repoURL.appendingPathComponent("README.md").path))
+    }
+
+    @MainActor
+    func testOpenRepositoryFromAdoptDoneUsesC103CoreOpenBoundary() async {
+        let opening = RepositoryOpeningResult.initDoneFixture(repoPath: "/tmp/adopted-repo", fileCount: 1)
+        let opener = RecordingEmptyRepositoryOpener(result: .success(opening))
+        let model = OnboardingModel(
+            settingsReader: InitDoneStaticSettingsReader(repoPath: nil),
+            emptyRepositoryOpener: opener,
+            startupRecoverer: ShellStaticStartupRecoverer(),
+            helpOpener: InitDoneNoopWelcomeHelpOpener()
+        )
+
+        model.route = .initializationDone(RepositoryInitializationResult(
+            repoPath: "/tmp/adopted-repo",
+            mode: .adoptExisting,
+            scanSession: ScanSessionSnapshot.adoptCompletedFixture(),
+            recoveryReport: nil
+        ))
+        await model.openInitializedRepository()
+
+        let opened = await opener.requestedAdoptedRepoPaths()
+        XCTAssertEqual(opened, ["/tmp/adopted-repo"])
+        XCTAssertNil(model.initializationOpenErrorMapping)
+        XCTAssertEqual(model.route, .mainList(opening))
+    }
+
+    @MainActor
+    func testAdoptOpenFailureReturnsToDonePageWithInlineRetryError() async {
+        let error = CoreError.Db(message: "tree unavailable")
+        let mapping = CoreErrorMappingSnapshot.initDoneDbFixture(rawContext: "tree unavailable")
+        let opener = RecordingEmptyRepositoryOpener(result: .failure(error))
+        let errorMapper = InitDoneRecordingErrorMapper(mapping: mapping)
+        let result = RepositoryInitializationResult(
+            repoPath: "/tmp/adopted-repo",
+            mode: .adoptExisting,
+            scanSession: ScanSessionSnapshot.adoptCompletedFixture(),
+            recoveryReport: nil
+        )
+        let model = OnboardingModel(
+            settingsReader: InitDoneStaticSettingsReader(repoPath: nil),
+            emptyRepositoryOpener: opener,
+            startupRecoverer: ShellStaticStartupRecoverer(),
+            errorMapper: errorMapper,
+            helpOpener: InitDoneNoopWelcomeHelpOpener()
+        )
+
+        model.route = .initializationDone(result)
+        await model.openInitializedRepository()
+
+        XCTAssertEqual(model.route, .initializationDone(result))
+        XCTAssertEqual(model.initializationOpenErrorMapping, mapping)
+        XCTAssertEqual(errorMapper.mappedErrors, [error])
+    }
+
+    @MainActor
+    func testOpenInitDoneRepositoryInFinderReportsNonBlockingFailure() async {
+        let finderOpener = RecordingFinderOpener(result: .failure(.openRejected("/tmp/adopted-repo")))
+        let accessibilityAnnouncer = RecordingAccessibilityAnnouncer()
+        let result = RepositoryInitializationResult(
+            repoPath: "/tmp/adopted-repo",
+            mode: .adoptExisting,
+            scanSession: ScanSessionSnapshot.adoptCompletedFixture(),
+            recoveryReport: nil
+        )
+        let model = OnboardingModel(
+            settingsReader: InitDoneStaticSettingsReader(repoPath: nil),
+            finderOpener: finderOpener,
+            accessibilityAnnouncer: accessibilityAnnouncer,
+            helpOpener: InitDoneNoopWelcomeHelpOpener()
+        )
+
+        model.route = .initializationDone(result)
+        await model.openInitializedRepositoryInFinder()
+        guard let message = model.toastMessage else {
+            return XCTFail("expected Finder failure toast")
+        }
+
+        XCTAssertEqual(finderOpener.openedRepoPaths, ["/tmp/adopted-repo"])
+        XCTAssertEqual(model.route, .initializationDone(result))
+        XCTAssertTrue(message.contains("无法在 Finder 中打开资料库"))
+        XCTAssertEqual(accessibilityAnnouncer.announcements, [message])
+    }
+
+    func testDefaultCoreBridgeOpensRealAdoptedRepositoryThroughLoadConfigAndTree() async throws {
+        let repoURL = try makeInitDoneTemporaryRepositoryURL()
+        defer { try? FileManager.default.removeItem(at: repoURL) }
+
+        let readmeURL = repoURL.appendingPathComponent("README.md")
+        try "# User project\n".write(to: readmeURL, atomically: true, encoding: .utf8)
+
+        let bridge = CoreBridge()
+        try await bridge.adoptExistingRepository(repoPath: repoURL.path)
+        let opening = try await bridge.openAdoptedRepository(repoPath: repoURL.path)
+
+        XCTAssertEqual(opening.config.repoPath, repoURL.path)
+        XCTAssertEqual(opening.config.locale, "zh-Hans")
+        XCTAssertFalse(opening.isEmpty)
+        XCTAssertGreaterThan(opening.tree.totalFileCount, 0)
+        XCTAssertEqual(try String(contentsOf: readmeURL, encoding: .utf8), "# User project\n")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: repoURL.appendingPathComponent(".areamatrix").path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: repoURL.appendingPathComponent("AREAMATRIX.md").path))
+    }
+
+    func testDefaultCoreBridgeReopensConfiguredEmptyRepositoryThroughTreeAndCurrentCategoryList() async throws {
+        let repoURL = try makeInitDoneTemporaryRepositoryURL()
+        defer { try? FileManager.default.removeItem(at: repoURL) }
+
+        let bridge = CoreBridge()
+        try await bridge.initializeEmptyRepository(repoPath: repoURL.path)
+        let opening = try await bridge.openConfiguredRepository(repoPath: repoURL.path)
+
+        XCTAssertTrue(opening.isEmpty)
+        XCTAssertEqual(opening.tree.sidebarNodes.map(\.slug), ["inbox", "docs", "code", "design", "finance", "media"])
+        XCTAssertEqual(opening.currentCategoryFiles, [])
+    }
+
+    func testOpeningResultIsNotEmptyWhenTreeCountAndCurrentCategoryListDisagree() {
+        let staleTree = RepositoryTreeNodeSnapshot(
+            slug: "__root__",
+            displayName: "资料库",
+            kind: "RepositoryRoot",
+            relativePath: "",
+            fileCount: 0,
+            depth: 0,
+            children: []
+        )
+        let opening = RepositoryOpeningResult(
+            config: .initDoneFixture(repoPath: "/tmp/repo"),
+            tree: staleTree,
+            currentCategoryFiles: [.initDoneFileFixture(category: "inbox")]
+        )
+
+        XCTAssertFalse(opening.isEmpty)
+    }
+
+    func testCurrentCategoryListFailureStaysInlineInsteadOfFailingRepositoryOpen() {
+        let tree = RepositoryTreeNodeSnapshot(
+            slug: "__root__",
+            displayName: "资料库",
+            kind: "RepositoryRoot",
+            relativePath: "",
+            fileCount: 0,
+            depth: 0,
+            children: []
+        )
+        let mapping = CoreErrorMappingSnapshot.initDoneDbFixture(rawContext: "list db locked")
+
+        let result = loadOpeningCurrentCategoryFiles(
+            repoPath: "/tmp/repo",
+            tree: tree,
+            shouldLoad: true,
+            listFiles: { _, _ in throw CoreError.Db(message: "list db locked") },
+            mapError: { _ in mapping }
+        )
+
+        XCTAssertEqual(result.files, [])
+        XCTAssertEqual(result.errorMapping, mapping)
+    }
+}
+
+private enum EmptyRepositoryOpenResult {
+    case success(RepositoryOpeningResult)
+    case failure(Error)
+}
+
+private actor RecordingEmptyRepositoryOpener: CoreEmptyRepositoryOpening {
+    private let result: EmptyRepositoryOpenResult
+    private var paths: [String] = []
+    private var adoptedPaths: [String] = []
+
+    init(result: EmptyRepositoryOpenResult) {
+        self.result = result
+    }
+
+    func openEmptyRepository(repoPath: String) async throws -> RepositoryOpeningResult {
+        paths.append(repoPath)
+        switch result {
+        case let .success(opening):
+            return opening
+        case let .failure(error):
+            throw error
+        }
+    }
+
+    func openAdoptedRepository(repoPath: String) async throws -> RepositoryOpeningResult {
+        adoptedPaths.append(repoPath)
+        switch result {
+        case let .success(opening):
+            return opening
+        case let .failure(error):
+            throw error
+        }
+    }
+
+    func requestedRepoPaths() -> [String] {
+        paths
+    }
+
+    func requestedAdoptedRepoPaths() -> [String] {
+        adoptedPaths
+    }
+}
+
+private actor PausingEmptyRepositoryOpener: CoreEmptyRepositoryOpening {
+    private let opening: RepositoryOpeningResult
+    private var didStart = false
+    private var didFinish = false
+    private var startContinuations: [CheckedContinuation<Void, Never>] = []
+    private var finishContinuation: CheckedContinuation<Void, Never>?
+
+    init(opening: RepositoryOpeningResult) {
+        self.opening = opening
+    }
+
+    func openEmptyRepository(repoPath _: String) async throws -> RepositoryOpeningResult {
+        didStart = true
+        resumeStartContinuations()
+        await waitForFinishSignal()
+        return opening
+    }
+
+    func openAdoptedRepository(repoPath: String) async throws -> RepositoryOpeningResult {
+        try await openEmptyRepository(repoPath: repoPath)
+    }
+
+    func waitUntilStarted() async {
+        guard !didStart else { return }
+
+        await withCheckedContinuation { continuation in
+            startContinuations.append(continuation)
+        }
+    }
+
+    func finishOpen() {
+        didFinish = true
+        finishContinuation?.resume()
+        finishContinuation = nil
+    }
+
+    private func waitForFinishSignal() async {
+        guard !didFinish else { return }
+
+        await withCheckedContinuation { continuation in
+            finishContinuation = continuation
+        }
+    }
+
+    private func resumeStartContinuations() {
+        let continuations = startContinuations
+        startContinuations.removeAll()
+        continuations.forEach { $0.resume() }
+    }
+}
+
+private final class RecordingFinderOpener: RepositoryFinderOpening {
+    private let result: Result<Void, RepositoryFinderOpenError>
+    private(set) var openedRepoPaths: [String] = []
+
+    init(result: Result<Void, RepositoryFinderOpenError>) {
+        self.result = result
+    }
+
+    @MainActor
+    func openRepositoryInFinder(repoPath: String) throws {
+        openedRepoPaths.append(repoPath)
+        try result.get()
+    }
+}
+
+@MainActor
+private final class RecordingAccessibilityAnnouncer: AccessibilityAnnouncing {
+    private(set) var announcements: [String] = []
+
+    func announce(_ message: String) {
+        announcements.append(message)
+    }
+}
+
+private struct InitDoneStaticSettingsReader: AppSettingsReading {
+    let repoPath: String?
+
+    func configuredRepoPath() -> String? {
+        repoPath
+    }
+}
+
+private struct InitDoneNoopWelcomeHelpOpener: WelcomeHelpOpening {
+    func openWelcomeHelp() throws {}
+}
+
+private final class InitDoneRecordingErrorMapper: CoreErrorMapping {
+    private let mapping: CoreErrorMappingSnapshot
+    private(set) var mappedErrors: [CoreError] = []
+
+    init(mapping: CoreErrorMappingSnapshot) {
+        self.mapping = mapping
+    }
+
+    func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
+        mappedErrors.append(error)
+        return mapping
+    }
+}

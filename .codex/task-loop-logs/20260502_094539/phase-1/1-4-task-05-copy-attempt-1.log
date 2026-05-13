@@ -1,0 +1,39 @@
+**一、执行结论**
+已完成。
+
+**二、执行范围**
+单任务：`1-4/task-05`，仅补 C1-16 `recover_on_startup` 的 integration-verify 证据。
+
+修改文件：
+- 新增 [recover_on_startup_integration_verify.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/recover_on_startup_integration_verify.rs:1)
+
+未触碰 `apps/**`。工作区原本已有 `.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json` 脏状态，本次未修改它们。
+
+**三、完成情况**
+核对清单：
+- 只处理 C1-16：通过
+- Exact Docs 已按 manifest 读取并作为 SSOT：通过
+- 未实现相邻 C1 能力或 UI 页面：通过
+- capability / control map / S1-05、S1-10、S1-32 消费页面已交叉检查：通过
+- 无 mock、空壳或硬编码通过态：通过
+
+完成标准：
+- C1-16 integration-verify 目标已有测试证据证明：通过
+- 没有扩展到未绑定能力：通过
+
+**四、工程质量**
+新增测试覆盖文档/UDL/API/Rust 入口一致性、真实 SQLite + 文件系统 recovery、用户文件不被删除、warning/report 可供 S1-32 消费、未初始化与 DB 错误边界。无新增依赖，无产品实现改动，无一次性脚本化逻辑。
+
+**五、验证情况**
+已运行并通过：
+- `cd core && cargo fmt --all -- --check`
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`
+- `cd core && cargo test --workspace recover_on_startup`
+- 额外加严：`cd core && cargo test --workspace`
+- `git diff --check`
+
+无法运行项：无。
+
+**六、风险与后续**
+剩余风险：当前 task 范围内无已知阻断。建议下一个动作是对 `1-4/task-05` 跑 verify-ready 只读验收；通过后再进入 `1-4/task-06`。
+

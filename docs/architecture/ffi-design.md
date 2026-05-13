@@ -28,7 +28,7 @@ flowchart LR
     XcodeProject -->|build| App[AreaMatrix.app]
 ```
 
-构建脚本：`scripts/build-core.sh`，详见 [../development/build.md](../development/build.md)。
+构建脚本：`./dev build core`，详见 [../development/build.md](../development/build.md)。
 
 ---
 
@@ -190,9 +190,14 @@ dictionary ChangeLogEntry {
 dictionary RepoConfig {
   string repo_path;
   StorageMode default_mode;
+  OverviewOutput overview_output;
   boolean ai_enabled;
-  string locale;  // "zh-CN" | "en"
+  string locale;  // "zh-Hans" | "en"
   boolean icloud_warn;
+  boolean enable_extension_rules;
+  boolean enable_keyword_rules;
+  boolean fallback_to_inbox;
+  boolean allow_replace_during_import;
 };
 
 dictionary ExternalEvent {
@@ -541,7 +546,7 @@ Rust 实现把 tracing 输出到 OSLog 或 stdout（开发期）。
 
 ### binding 查看
 
-每次 `build-core.sh` 后，看 `apps/macos/AreaMatrix/Bridge/Generated/area_matrix.swift` 确认生成的 API 符合预期。
+每次 `./dev build core` 后，看 `apps/macos/AreaMatrix/Bridge/Generated/area_matrix.swift` 确认生成的 API 符合预期。
 
 ---
 

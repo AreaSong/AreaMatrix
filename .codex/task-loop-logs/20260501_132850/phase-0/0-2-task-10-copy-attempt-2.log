@@ -1,0 +1,45 @@
+一、执行结论
+
+- 已完成
+
+二、执行范围
+
+- 单任务：`0-2/task-10`
+- 修改：
+  - [AreaMatrixApp.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/App/AreaMatrixApp.swift:1)
+  - [MainWindow.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/MainWindow.swift:1)
+  - [AreaMatrixAppSmokeTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/App/AreaMatrixAppSmokeTests.swift:1)
+  - [project.pbxproj](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj:10)
+  - [AreaMatrix.xcscheme](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/xcshareddata/xcschemes/AreaMatrix.xcscheme:31)
+
+三、完成情况
+
+- SwiftUI App entry 与根视图占位：已完成，`AreaMatrix` target Sources 现在编译 `AreaMatrixApp.swift` 和 `MainWindow.swift`。
+- 只呈现空壳状态：已完成，`MainWindow` 只展示 `ContentUnavailableView` 空壳。
+- 不接入真实 Core：已完成，未调用 `CoreBridge` / UniFFI / Rust Core。
+- Forbidden Touches：未触碰，`core/src/**` diff 与 untracked 检查均为空。
+
+四、工程质量
+
+- 结构清晰：App entry、root view、smoke test 分离，旧 AppKit shell 保留但不再参与 target Sources。
+- 为修复上次 P1 验证阻塞，补了最小 XCTest target；不接入业务逻辑。
+- 未新增依赖；无 `try!`、强制解包、View body IO。
+- 高风险影响限于 Xcode project/scheme 元数据；回滚可直接 revert 上述 5 个文件。
+
+五、验证情况
+
+- 通过：`xcodebuild -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' build CODE_SIGNING_ALLOWED=NO`
+- 通过：`xcodebuild build-for-testing ... CODE_SIGNING_ALLOWED=NO`
+- 通过：`xcrun xctest .../AreaMatrixTests.xctest`，1 test passed。
+- 通过：`python3 tasks/prompts/_shared/prompt_pipeline.py doctor`
+- 通过：`git diff --check`
+- 通过：`plutil -lint apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+- 通过：`xmllint --noout .../AreaMatrix.xcscheme`
+- 受环境阻塞：`xcodebuild test ...` 已进入 2-target test flow，但 Codex 沙箱限制 `testmanagerd.control` 通信，报 `Sandbox restriction`。
+- 无法运行：`swiftlint --strict`、`swiftformat --lint .`，当前环境未安装命令。
+
+六、风险与后续
+
+- 剩余风险：完整 `xcodebuild test` 需要在非沙箱本机 Xcode 环境补跑。
+- 下一个任务建议：继续 `0-2/task-11`，但先确认是否接受本次为了修复验证阻塞提前补入的最小 test target 作为后续测试骨架基础。
+

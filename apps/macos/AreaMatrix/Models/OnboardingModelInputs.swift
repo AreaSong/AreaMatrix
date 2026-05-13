@@ -1,0 +1,435 @@
+import Foundation
+
+extension OnboardingModel {
+    @MainActor
+    func validateSelectedRepositoryPath() async {
+        prepareRepositoryPathValidation()
+        defer { finishRepositoryPathValidation() }
+
+        let normalizedRepoPath = Self.normalizedRepositoryPath(repositoryPathText)
+        let validation: RepoPathValidationSnapshot
+        do {
+            validation = try await pathValidator.validateRepoPath(repoPath: normalizedRepoPath)
+        } catch {
+            repositoryPathValidation = nil
+            await routeValidationFailure(error, repoPath: normalizedRepoPath)
+            return
+        }
+
+        repositoryPathValidation = validation
+        repositoryPathErrorMapping = nil
+
+        do {
+            try await loadValidationContext(for: validation)
+        } catch {
+            await routeValidationFailure(error, repoPath: validation.repoPath)
+            return
+        }
+
+        guard routeToRepairIfNeeded(validation) == false else { return }
+        repositoryPathError = validatePathBlockingMessage(for: validation)
+        repositoryPathErrorMapping = nil
+        if repositoryPathError == nil {
+            acceptContinueRequestedValidation(validation)
+        }
+    }
+
+    @MainActor
+    private func loadValidationContext(for validation: RepoPathValidationSnapshot) async throws {
+        if shouldLoadLatestScanSession(for: validation) {
+            latestScanSession = try await scanSessionReader.latestScanSession(repoPath: validation.repoPath)
+            return
+        }
+        if validation.isInitialized {
+            let metadata = try await existingRepositoryMetadataReader.metadata(repoPath: validation.repoPath)
+            acceptExistingRepositoryMetadata(metadata)
+        }
+    }
+
+    @MainActor
+    private func routeToRepairIfNeeded(_ validation: RepoPathValidationSnapshot) -> Bool {
+        guard validation.hasUnfinishedScanSession || validation.issues.contains(.unfinishedScanSession) else {
+            return false
+        }
+        route = .dbRepairConfirm(DatabaseRepairRouteState(
+            repoPath: validation.repoPath,
+            scanSession: latestScanSession,
+            mapping: nil,
+            returnRoute: .validatePath
+        ))
+        return true
+    }
+
+    @MainActor
+    func routeValidationFailure(_ error: Error, repoPath: String) async {
+        guard let coreError = error as? CoreError else {
+            repositoryPathErrorMapping = nil
+            repositoryPathError = "路径字符串无法解析"
+            return
+        }
+
+        let mapping = await errorMapper.mapCoreError(coreError)
+        repositoryPathErrorMapping = mapping
+        repositoryPathError = mapping.userMessage
+
+        switch coreError {
+        case .Db:
+            route = .dbRepairConfirm(DatabaseRepairRouteState(
+                repoPath: repoPath,
+                scanSession: latestScanSession,
+                mapping: mapping,
+                returnRoute: .validatePath
+            ))
+        case .Config, .Internal, .RepoNotInitialized:
+            routeMainRepositoryError(repoPath: repoPath, mapping: mapping)
+        default:
+            route = .validatePath
+        }
+    }
+
+    @MainActor
+    func chooseImportSources(opening: RepositoryOpeningResult) {
+        guard let urls = importPicker.chooseImportURLs() else { return }
+        startImportEntry(opening: opening, source: .filePicker, urls: urls)
+    }
+
+    @MainActor
+    func startImportEntry(
+        opening: RepositoryOpeningResult,
+        source: ImportEntrySource,
+        urls: [URL],
+        destination: ImportEntryDestination = .autoClassify
+    ) {
+        let fileURLs = Self.validFileURLs(from: urls)
+        guard !fileURLs.isEmpty else {
+            toastMessage = "Cannot import these items"
+            accessibilityAnnouncer.announce("Cannot import these items")
+            return
+        }
+
+        pendingImportEntry = ImportEntryRequest(
+            repoPath: opening.config.repoPath,
+            source: source,
+            destination: destination,
+            urls: fileURLs,
+            kind: ImportEntryKind.resolved(for: fileURLs),
+            availableCategories: resolvedImportCategories(opening: opening, destination: destination),
+            defaultStorageMode: ImportSingleFileStorageMode(coreSnapshotValue: opening.config.defaultMode),
+            allowReplaceDuringImport: opening.config.allowReplaceDuringImport,
+            isTrashAvailable: Self.isSystemTrashAvailable()
+        )
+        toastMessage = nil
+    }
+
+    @MainActor
+    func dismissImportEntry() {
+        pendingImportEntry = nil
+        consumeQueuedDockImportIfPossible()
+    }
+
+    @MainActor
+    func switchImportEntryToLocalRepository() {
+        pendingImportEntry = nil
+        showChoosePath()
+    }
+
+    @MainActor
+    func beginImportEntryProgress(currentPath: String) {
+        beginImportEntryProgress(currentPath: currentPath, storageMode: .copy)
+    }
+
+    @MainActor
+    func beginImportEntryProgress(currentPath: String, storageMode: ImportSingleFileStorageMode) {
+        guard let opening = currentOpeningForImportOrProgress else { return }
+        importProgressControlState.reset()
+        pendingImportEntry = nil
+        route = .importProgress(ImportProgressRouteState(
+            sourceOpening: opening,
+            currentPath: currentPath,
+            storageMode: storageMode
+        ))
+    }
+
+    @MainActor
+    func beginImportEntryProgress(
+        currentPath: String,
+        retryContext: ImportProgressRetryContext
+    ) {
+        guard let opening = currentOpeningForImportOrProgress else { return }
+        importProgressControlState.reset()
+        pendingImportEntry = nil
+        route = .importProgress(ImportProgressRouteState(
+            sourceOpening: opening,
+            currentPath: currentPath,
+            storageMode: retryContext.storageMode,
+            retryContext: retryContext,
+            isRepositoryFinderAvailable: FileManager.default.fileExists(atPath: opening.config.repoPath)
+        ))
+    }
+
+    @MainActor
+    func updateImportEntryProgress(_ progress: ImportBatchProgressSnapshot) {
+        guard let opening = currentOpeningForImportOrProgress else { return }
+        pendingImportEntry = nil
+        let stopState: ImportProgressStopState = if importProgressControlState.didStopAfterCurrentFile {
+            .stopped
+        } else if importProgressControlState.isStopAfterCurrentFileRequested {
+            .stopping
+        } else {
+            .idle
+        }
+        let nextState = ImportProgressRouteState(
+            sourceOpening: opening,
+            currentPath: progress.currentPath,
+            status: .running,
+            completed: progress.completed,
+            failed: progress.failed,
+            remaining: progress.remaining,
+            skipped: progress.skipped,
+            pending: progress.pending,
+            items: progress.items,
+            stopState: stopState
+        )
+        route = .importProgress(nextState)
+        if importProgressControlState.didStopAfterCurrentFile {
+            showImportResult(from: nextState)
+        }
+    }
+
+    @MainActor
+    func showImportEntryResults(_ progress: ImportBatchProgressSnapshot) {
+        guard let opening = currentOpeningForImportOrProgress else { return }
+        pendingImportEntry = nil
+        importProgressControlState.clearQueueContinuation()
+        toastMessage = nil
+        route = .importResult(ImportResultRouteState(sourceOpening: opening, progress: progress))
+    }
+
+    @MainActor
+    func failImportEntry(currentPath: String, mapping: CoreErrorMappingSnapshot) {
+        failImportEntry(
+            progress: ImportBatchProgressSnapshot(
+                completed: 0,
+                failed: 1,
+                total: 1,
+                remaining: 0,
+                currentPath: currentPath
+            ),
+            mapping: mapping
+        )
+    }
+
+    @MainActor
+    func failImportEntry(progress: ImportBatchProgressSnapshot, mapping: CoreErrorMappingSnapshot) {
+        failImportEntry(progress: progress, mapping: mapping, retryContext: nil)
+    }
+
+    @MainActor
+    func failImportEntry(
+        progress: ImportBatchProgressSnapshot,
+        mapping: CoreErrorMappingSnapshot,
+        retryContext: ImportProgressRetryContext?,
+        recoveryCheck: ImportProgressRecoveryCheckState
+    ) {
+        applyImportEntryFailure(
+            progress: progress,
+            mapping: mapping,
+            retryContext: retryContext,
+            recoveryCheck: recoveryCheck
+        )
+    }
+
+    @MainActor
+    func failImportEntry(
+        progress: ImportBatchProgressSnapshot,
+        mapping: CoreErrorMappingSnapshot,
+        retryContext: ImportProgressRetryContext?,
+        recoveryCheck: ImportProgressRecoveryCheckState?
+    ) {
+        applyImportEntryFailure(
+            progress: progress,
+            mapping: mapping,
+            retryContext: retryContext,
+            recoveryCheck: recoveryCheck
+        )
+    }
+
+    @MainActor
+    func failImportEntry(
+        progress: ImportBatchProgressSnapshot,
+        mapping: CoreErrorMappingSnapshot,
+        retryContext: ImportProgressRetryContext?
+    ) {
+        applyImportEntryFailure(progress: progress, mapping: mapping, retryContext: retryContext, recoveryCheck: nil)
+    }
+
+    @MainActor
+    private func applyImportEntryFailure(
+        progress: ImportBatchProgressSnapshot,
+        mapping: CoreErrorMappingSnapshot,
+        retryContext: ImportProgressRetryContext?,
+        recoveryCheck: ImportProgressRecoveryCheckState?
+    ) {
+        guard case let .importProgress(state) = route else { return }
+        guard mapping.recoverability == .fatal else {
+            showImportEntryResults(progress)
+            return
+        }
+        route = .importProgress(ImportProgressRouteState(
+            sourceOpening: state.sourceOpening,
+            currentPath: progress.currentPath,
+            status: .failed(mapping),
+            completed: progress.completed,
+            failed: progress.failed,
+            remaining: progress.remaining,
+            skipped: progress.skipped,
+            pending: progress.pending,
+            items: progress.items,
+            retryContext: retryContext ?? state.retryContext,
+            recoveryCheck: recoveryCheck,
+            diagnostics: state.diagnostics,
+            stopState: state.stopState,
+            isRepositoryFinderAvailable: state.isRepositoryFinderAvailable
+        ))
+    }
+
+    @MainActor
+    func showImportEntryExistingFile(relativePath: String) {
+        guard let request = pendingImportEntry else { return }
+        do {
+            try fileRevealer.revealFile(repoPath: request.repoPath, relativePath: relativePath)
+            toastMessage = nil
+        } catch {
+            toastMessage = "Existing file cannot be shown in Finder."
+        }
+    }
+
+    @MainActor
+    func finishImportEntry(repoPath: String, entry: FileEntrySnapshot) async {
+        do {
+            let opening = try await emptyRepositoryOpener.openConfiguredRepository(repoPath: repoPath)
+            finishSuccessfulRepositoryOpen(opening)
+            toastMessage = "已导入：\(entry.currentName)"
+            accessibilityAnnouncer.announce("已导入：\(entry.currentName)")
+        } catch {
+            await routeMainOpeningFailure(error, repoPath: repoPath)
+        }
+    }
+
+    @MainActor
+    func handleDockOpenFiles(_ urls: [URL]) {
+        let fileURLs = Self.validFileURLs(from: urls)
+        guard !fileURLs.isEmpty else { return }
+        queuedDockImportBatches.append(fileURLs)
+        consumeQueuedDockImportIfPossible()
+    }
+
+    @MainActor
+    func consumePendingDockOpenRequests() {
+        for urls in AreaMatrixDockOpenRelay.takePendingBatches() {
+            handleDockOpenFiles(urls)
+        }
+    }
+
+    @MainActor
+    func consumeQueuedDockImportIfPossible() {
+        guard pendingImportEntry == nil else { return }
+        guard let opening = currentOpeningForImport else { return }
+        guard queuedDockImportBatches.isEmpty == false else { return }
+        let urls = queuedDockImportBatches.removeFirst()
+        startImportEntry(opening: opening, source: .dockOpenFile, urls: urls)
+    }
+
+    private func resolvedImportCategories(
+        opening: RepositoryOpeningResult,
+        destination: ImportEntryDestination
+    ) -> [String] {
+        var categories = opening.availableImportCategories
+        if case let .category(slug) = destination, !categories.contains(slug) {
+            categories.append(slug)
+        }
+        return categories
+    }
+
+    private var currentOpeningForImport: RepositoryOpeningResult? {
+        switch route {
+        case let .mainEmpty(opening), let .mainList(opening), let .settingsGeneral(opening):
+            opening
+        default:
+            nil
+        }
+    }
+
+    private var currentOpeningForImportOrProgress: RepositoryOpeningResult? {
+        switch route {
+        case let .importProgress(state):
+            state.sourceOpening
+        default:
+            currentOpeningForImport
+        }
+    }
+
+    func validatePathBlockingMessage(for validation: RepoPathValidationSnapshot) -> String? {
+        let checks: [(Bool, String)] = [
+            (
+                validation.isInsideAreaMatrix || validation.issues.contains(.insideAreaMatrix),
+                "请选择资料库根目录，而不是 .areamatrix 内部目录"
+            ),
+            (
+                !validation.exists || validation.issues.contains(.missingPath),
+                "路径不存在，请选择已存在的文件夹"
+            ),
+            (!validation.isDirectory || validation.issues.contains(.notDirectory), "请选择文件夹路径"),
+            (
+                !validation.isReadable || validation.issues.contains(.notReadable),
+                "AreaMatrix 没有读取该位置的权限"
+            ),
+            (
+                !validation.isWritable || validation.issues.contains(.notWritable),
+                "AreaMatrix 没有写入该位置的权限"
+            ),
+            (validation.hasInsufficientAvailableCapacity, "可用空间不足，请释放空间或选择其他路径"),
+            (validation.hasMissingEnvironmentChecks, "路径环境检查缺失，请重试或选择其他路径"),
+            (
+                validation.hasUnfinishedScanSession || validation.issues.contains(.unfinishedScanSession),
+                "该资料库存在未完成的扫描记录，请先进入修复流程"
+            ),
+            (
+                validation.recommendedMode == nil && !validation.isInitialized,
+                "该路径暂时不能作为资料库使用"
+            )
+        ]
+
+        return checks.first { $0.0 }?.1
+    }
+
+    func localRepositoryPathError(for value: String) -> String? {
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if trimmed.isEmpty { return "请输入资料库路径" }
+        if trimmed.contains("\0") { return "路径字符串无法解析" }
+        if Self.pathContainsAreaMatrixComponent(trimmed) {
+            return "请选择资料库根目录，而不是 .areamatrix 内部目录"
+        }
+        return nil
+    }
+
+    static func normalizedRepositoryPath(_ value: String) -> String {
+        (value.trimmingCharacters(in: .whitespacesAndNewlines) as NSString).expandingTildeInPath
+    }
+
+    static func pathContainsAreaMatrixComponent(_ value: String) -> Bool {
+        let normalized = normalizedRepositoryPath(value)
+        return normalized.split(separator: "/", omittingEmptySubsequences: true).contains(".areamatrix")
+    }
+
+    static func validFileURLs(from urls: [URL]) -> [URL] {
+        urls.filter { url in
+            url.isFileURL && !url.path.isEmpty
+        }
+    }
+
+    static func isSystemTrashAvailable() -> Bool {
+        FileManager.default.urls(for: .trashDirectory, in: .userDomainMask).isEmpty == false
+    }
+}

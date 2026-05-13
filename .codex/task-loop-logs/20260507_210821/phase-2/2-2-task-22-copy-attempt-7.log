@@ -1,0 +1,45 @@
+一、执行结论
+
+- 已完成：`2-2/task-22` repair retry 已把上次两个 P0 阻塞收口。
+
+二、执行范围
+
+- 单任务：S1-22 + C1-09 detect-duplicate
+- 修改范围仅在 Expected New Paths：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+- 关键修改：
+  - [ImportSingleFilePreviewModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreviewModel.swift:145)
+  - [ImportSingleFilePreflight.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreflight.swift:242)
+  - [ImportSingleFileDuplicateResolution.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFileDuplicateResolution.swift:3)
+  - [ImportSingleFileSheetSections.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportSingleFileSheetSections.swift:148)
+  - [ImportEntrySingleFileFooter.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportEntrySingleFileFooter.swift:1)
+  - [ImportSingleFileDuplicateResolutionTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFileDuplicateResolutionTests.swift:4)
+  - 以及相关单文件导入模型/测试/Xcode project wiring。
+
+三、完成情况
+
+- 核对清单：通过。S1-22 只处理 C1-09 duplicate conflict；没有接入同页其他 Core 能力；没有顺手实现相邻页面。
+- 完成标准：通过。重复冲突由真实 `import_file(... duplicateStrategy: .ask)` 返回 `CoreError.DuplicateFile` 后触发，不再用 `list_files` 做 Swift 侧预查。
+- 上次 P0-1 已修复：单文件路径不再调用 `CoreBridge.listFiles` / `list_files`。
+- 上次 P0-2 已修复：移除了单文件 replace-confirm / `.overwrite` / `.replace` 路径；S1-22 只保留 `skip` 和 `keepBoth`。
+- Forbidden Touches：未触碰 `core/src/**`。
+
+四、工程质量
+
+- 结构清晰：duplicate resolution 独立为单文件模型扩展，UI 只呈现 S1-22 的 Skip / Keep both。
+- 错误处理：`DuplicateFile` 显式映射为 duplicate conflict；其他 Core error 仍走错误映射。
+- 没有 mock-only 或硬编码通过态：真实 Core 集成测试覆盖 `DuplicateFile` 触发 UI、Skip 不写入、Keep both 使用 Core strategy。
+- 未新增 public Rust API，无 rustdoc 变更需求；未改文档源事实。
+
+五、验证情况
+
+- 通过：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+  - 结果：`BUILD SUCCEEDED`
+- 通过：`./dev test macos`
+  - `xcodebuild test` 被本机 sandbox 的 `testmanagerd` 通信限制挡住。
+  - 脚本 fallback 到 `xcrun xctest` 后通过：261 tests，0 failures。
+
+六、风险与后续
+
+- 剩余风险：S1-24 replace-confirm 仍应由独立 task 覆盖；本任务已避免接入该页面行为。
+- 建议下一个任务：继续按队列进入 S1-23 或 S1-24 对应 task，不在 S1-22 内扩展。
+

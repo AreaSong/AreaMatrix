@@ -1,0 +1,59 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`0-1/task-02`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-0/0-1-执行体系/task-02-prompt-runner.md`
+- Manifest 章节：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-0.md` 的 `## 0-1/task-02`
+- 说明：当前仓库 manifest 实际包含 `tasks/prompts/_shared/prompt_pipeline_lib/**`，因此 Expected New Paths 为 12 项，不是 prompt 顶部旧计数的 11 项。
+
+三、完成度摘要
+
+- 已覆盖项数：9
+- 未覆盖项数：0
+- 通过项数：9
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- `doctor` 校验：通过。证据：`doctor: OK`，输出 `tasks: 637`、`manifests: 637`、`high risk tasks: 633`；实现入口在 `prompt_pipeline_lib/doctor.py` 中校验 Exact Docs、Expected New Paths、风险标记、章节和依赖图。
+- `plan --all` 依赖排序：通过。证据：输出从 `0-1/task-01` 到 `0-1/task-02`，随后进入 `0-2/task-01`；`ordered_labels()` 递归先访问依赖再追加任务。
+- `render --task 0-1/task-01`：通过。证据：输出包含共享规则、任务切片规则、工程质量规则、任务正文、Manifest、执行要求和验证命令，可直接复制到新一轮执行。
+- `status`：通过。证据：输出任务库概览 `tasks: 637`，按 phase/risk/progress 汇总，并显示 `first task: 0-1/task-02`。
+- Runner 不写产品代码、不调用 `codex exec`：通过。证据：`rg` 未发现 `codex exec`、`subprocess`、`Popen`、`os.system`、`shell=True`；`git diff --name-only -- core apps` 和 `git status --short core apps` 均为空。
+- Expected New Paths：通过。证据：manifest 当前列出的 `tasks/prompts/README.md`、共享规则、依赖图、phase-0..4 manifest、`prompt_pipeline.py`、`prompt_pipeline_lib/` 和 `tasks/prompts/phase-*/**` 均存在；phase task 文件统计为 637 个。
+- Forbidden Touches：通过。证据：`core/**`、`apps/**` 无变更。
+- 完成标准：通过。证据：`doctor / plan / render / status` 四条必需命令均 exit 0。
+- 输出可复制性：通过。证据：`render` 输出完整 copy-ready prompt，包含工作目录、读取顺序、规则内嵌、task 正文、manifest 和完成后报告格式。
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。证据：原单文件 runner 已拆为 `prompt_pipeline_lib` 模块；各 Python 文件均未超过 500 行，入口 `prompt_pipeline.py` 仅委托 `commands.main()`。
+- 注释 / rustdoc / 文档同步：通过。证据：本任务不涉及 Rust public API；manifest 已同步加入 `tasks/prompts/_shared/prompt_pipeline_lib/**`。
+- 错误处理与边界处理：通过。证据：doctor 对缺失文档、manifest mismatch、依赖环、Expected New Paths 越界、风险标记等均返回错误；render/status 在 doctor 失败时直接退出。
+- 测试与验证覆盖：通过。证据：四条 task 要求验证均已运行并通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。证据：runner 扫描实际 task/manifest 文件，输出由当前文件内容生成；未发现 product code mock 或 `codex exec` 自动执行调用。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行并通过：
+  - `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`
+  - `python3 tasks/prompts/_shared/prompt_pipeline.py plan --all`
+  - `python3 tasks/prompts/_shared/prompt_pipeline.py render --task 0-1/task-01`
+  - `python3 tasks/prompts/_shared/prompt_pipeline.py status`
+- 必需验证失败：无。
+- 缺失验证：无。
+- 补充检查：`python3 -m compileall -q ...` 因当前 sandbox 禁止写入 `/Users/as/Library/Caches/com.apple.python/...` 失败；这不是 task manifest 要求验证，且四条 runner 命令已完成 Python 导入与实际运行验证。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS

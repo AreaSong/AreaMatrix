@@ -1,0 +1,84 @@
+id: template-execution-contract-middle-layer
+version: v-template
+feature_id: template-execution-contract
+module: workflow-template
+status: ready
+docs_refs:
+  - file: workflow/pipeline.md
+    line_start: 282
+    line_end: 386
+    heading: queue candidates
+    excerpt: dry-run 预览候选队列进入 live `tasks/prompts/**` 的结果。
+  - file: workflow/pipeline.md
+    line_start: 448
+    line_end: 496
+    heading: result projection
+    excerpt: 把 task-loop 结果回写到 workflow 视角。
+insertions:
+  - target: workflow template execution gate contract
+    reason: Prove queue, promotion preview, projection, and closeout stay traceable and preview-first.
+    before: A template queue could be mistaken for a live execution queue.
+    after: Promotion apply write is hard blocked and closeout requires evidence.
+links:
+  - feature: template-docs-contract
+    relationship: depends-on
+    reason: Execution artifacts must preserve the Exact Docs trace.
+code_impacts:
+  existing:
+    - workflow/pipeline.md
+    - tasks/prompts/README.md
+    - scripts/dev_tools/workflow.py
+    - scripts/dev_tools/promotion.py
+    - scripts/dev_tools/workflow_projection.py
+  expected:
+    - workflow/versions/v-template/queue/template-execution-contract/queue.yaml
+    - workflow/versions/v-template/promotion/promotion.yaml
+    - workflow/versions/v-template/projection/projection.yaml
+    - workflow/versions/v-template/closeout/closeout.yaml
+  tests:
+    - scripts/dev_tools/workflow.py
+    - scripts/dev_tools/promotion.py
+    - scripts/dev_tools/workflow_projection.py
+dependencies:
+  features:
+    - template-docs-contract
+  docs:
+    - workflow/pipeline.md
+  code:
+    - scripts/dev_tools/workflow.py
+    - scripts/dev_tools/promotion.py
+  tasks:
+    - template-docs-contract/docs-baseline
+    - template-docs-contract/discussion-gate
+slice_plan:
+  - id: queue-candidate
+    purpose: Prove version-local queue candidates trace back to drafts and plans.
+    inputs:
+      - workflow/versions/v-template/drafts/template-execution-contract/manifest.md
+    outputs:
+      - workflow/versions/v-template/queue/template-execution-contract/queue.yaml
+    acceptance:
+      - ./dev workflow queue --version v-template doctor
+  - id: promotion-preview
+    purpose: Prove promotion preview renders live file mappings without writing them.
+    inputs:
+      - workflow/versions/v-template/queue/template-execution-contract/queue.yaml
+    outputs:
+      - workflow/versions/v-template/promotion/promotion.yaml
+    acceptance:
+      - ./dev workflow promote --version v-template apply --preview
+  - id: projection-closeout
+    purpose: Prove projection and closeout stay evidence-based instead of task-existence-based.
+    inputs:
+      - workflow/versions/v-template/promotion/promotion.yaml
+      - tasks/prompts/_shared/progress.json
+    outputs:
+      - workflow/versions/v-template/projection/projection.yaml
+      - workflow/versions/v-template/closeout/closeout.yaml
+    acceptance:
+      - ./dev workflow project --version v-template doctor
+      - ./dev workflow closeout --version v-template doctor
+risk_boundaries:
+  - Promotion preview does not write live tasks/prompts.
+  - Promotion apply write is blocked for v-template.
+  - Closeout cannot claim done without verify and checkpoint evidence.

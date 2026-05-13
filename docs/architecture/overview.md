@@ -205,9 +205,14 @@ AreaMatrix/                            # Git 仓库
 │       ├── Views/                     # SwiftUI views
 │       └── Resources/
 │
-├── scripts/                           # 构建脚本
-│   ├── build-core.sh
-│   └── update-bindings.sh
+├── scripts/
+│   ├── dev_tools/                     # ./dev check/build/test/bindings/changes
+│   └── task_loop/                     # ./task-loop runner
+│
+├── workflow/
+│   └── versions/                      # prompt workflow version tracking
+│       ├── v1-mvp/                    # current 637-task queue archive placeholder
+│       └── v2/changes/                # future feature change YAML, preview only
 │
 └── docs/                              # 项目文档（本目录）
 ```

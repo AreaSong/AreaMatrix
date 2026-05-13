@@ -1,0 +1,34 @@
+一、执行结论
+
+已完成。
+
+二、执行范围
+
+- 单任务：`2-3/task-31`
+- 修改文件：
+  - [SettingsErrorRecoveryIntegrationVerifyTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/SettingsErrorRecoveryIntegrationVerifyTests.swift)
+  - [project.pbxproj](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj)
+- 另有启动前已存在的 runtime 脏文件：`.codex/task-loop-runs/20260507_210821/summary.json`、`tasks/prompts/_shared/progress.json`，未作为本次产品改动处理。
+
+三、完成情况
+
+- 已补 settings-error-recovery 闭环集成验证测试，覆盖 S1-26 至 S1-32 与 C1-04/C1-05/C1-07/C1-08/C1-16/C1-20/C1-21 的真实 CoreBridge 路径。
+- 测试验证了配置保存、默认导入模式、分类预览、indexed import、overview 生成策略、README 不覆盖、iCloud warn 配置、高级设置确认、startup recovery、About 诊断脱敏、错误映射到修复路由。
+- 未新增未列出的页面或 Core 能力。
+- 未触碰 `Forbidden Touches`：没有修改 `core/src/**`。
+
+四、工程质量
+
+新增内容是测试证据补齐，没有改产品实现；测试使用真实 `CoreBridge` 走绑定 Core 能力，只对 Finder/help/clipboard/log opener 这类系统 UI 副作用使用 no-op/recording test double。没有 mock-only 伪装业务闭环，也没有硬编码通过态或一次性脚本化实现。
+
+五、验证情况
+
+- `xcodebuild build-for-testing -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：通过。
+- `xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：编译完成后被本地 `com.apple.testmanagerd.control` sandbox restriction 阻断。
+- `./dev test macos`：通过；标准 `xcodebuild test` 被同一 sandbox 限制阻断后，按仓库规则用 `xcrun xctest` 跑同一 XCTest bundle，`407 tests, 0 failures`，其中新增 `SettingsErrorRecoveryIntegrationVerifyTests` 通过。
+- `git diff --check`：通过。
+
+六、风险与后续
+
+剩余风险：标准 `xcodebuild test` 在当前沙箱不能直接完成 runner 通信，但仓库认可的 macOS fallback 已完成全量 XCTest。建议下一个任务继续执行队列中的 `2-3/task-32`。
+

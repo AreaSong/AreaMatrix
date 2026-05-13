@@ -1,0 +1,47 @@
+一、执行结论：**未完成 / 不放行**
+
+本轮只能把 release gate 证据收敛得更准确，不能判定 `3-1/task-05` 通过。核心阻断仍是 `./dev check all` 未通过，以及真实 Release `.app` 首屏、手工恢复冒烟、签名/公证/DMG/干净 Mac 首启证据缺失。
+
+二、执行范围
+
+本轮实际改动：
+- [stage-1-performance-baseline.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-performance-baseline.md:15)：同步本轮 `./dev test macos` 的实际 perf / memory 数值，继续保留真实 `.app` launch 为 `BLOCKED`。
+- [stage1_release_checklist.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/stage1_release_checklist.rs:70)：更新文档锁定测试，防止把 hostless/XCTest fallback 当成 release 放行证据。
+
+当前工作树中还存在前序 retry 已留下的 task-loop 证据、`scripts/dev_tools/build.py`、`scripts/dev_tools/checks.py`、`docs/development/build.md` 等 dirty 文件；我没有回滚这些已有变更。Forbidden Touches 检查无输出，未触碰 `core/src/**`、`core/area_matrix.udl`、`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrix.xcodeproj/**`。
+
+三、完成情况
+
+核对清单结果：
+- Exact Docs / roadmap / control map / Core / UX / testing / release：通过，已读取。
+- Real Core 页面闭环：不通过。自动化和 CoreBridge 证据存在，但不能替代 release app、签名、公证、干净机首启。
+- Phase 1 Core 与 Phase 2 UI integration verify：不通过。自动化覆盖较充分，但 M-01..M-04 手工恢复证据仍 pending。
+- `3-1/task-01` 到 `3-1/task-04` 证据：不通过。release checklist 仍记录 P1-RL-001..005。
+- 最终综合门禁：不通过。`./dev check all` 在 macOS prerequisite gate 失败。
+- P0/P1 风险：不通过。仍有 P1 release 阻断项。
+- Forbidden Touches：通过。
+
+四、工程质量
+
+没有补产品实现，没有引入 mock-only 或硬编码通过态。脚本侧已把 macOS 前置条件失败显式化：缺 `x86_64-apple-darwin`、`swiftformat`、`swiftlint` 时提前失败，避免后续构建写入 Xcode 生成目录或产生误导证据。release 文档继续保持“不放行”，没有用 fallback 伪装 PASS。
+
+五、验证情况
+
+已通过：
+- `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`：OK，637 tasks / 637 manifests。
+- `git diff --check`：通过。
+- `PYTHONPYCACHEPREFIX=/private/tmp/areamatrix-pycache python3 -m py_compile scripts/dev_tools/*.py scripts/task_loop/*.py`：通过。
+- `python3 -m unittest scripts.dev_tools.test_build_tools scripts.dev_tools.test_macos_runner`：17 tests 通过。
+- `cd core && cargo test --workspace --test stage1_release_checklist`：8 tests 通过.
+- `./dev test macos`：本地 validation 通过；标准 `xcodebuild test` 执行 478 tests / 0 failures，但收尾被 sandbox `testmanagerd` 阻断，随后 `xcrun xctest` 复跑通过。
+
+失败 / 阻断：
+- `./dev check all`：失败。governance、skills、task-loop、prompt doctor、diff check、Rust fmt/clippy/test 均通过；macOS checks 失败，缺 `x86_64-apple-darwin` Rust target、`swiftformat`、`swiftlint`。
+- `cd core && cargo update --dry-run`：失败，当前环境无法解析 `index.crates.io`。
+- 真实 Release `.app` 首屏、Developer ID 签名、公证、DMG、干净 Mac 首启：未取得证据。
+
+六、风险与后续
+
+建议下一个动作不是继续改产品代码，而是在具备完整 macOS release 工具链和网络的环境补齐：
+`x86_64-apple-darwin`、SwiftFormat、SwiftLint、crates.io 访问、真实 `.app` launch、M-01..M-04 手工恢复、签名/公证/DMG/干净机首启。补齐后重跑 `./dev check all` 和本 task verify。当前任务最终判定仍为：**未完成**。
+

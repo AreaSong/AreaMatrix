@@ -1,0 +1,58 @@
+一、执行结论
+
+已完成 `2-3/task-07: S1-14 + C1-14 read-write-note`。
+
+二、执行范围
+
+实现范围限定在 macOS 侧 `S1-14 detail-note` 的 `C1-14 read_note/write_note` 功能点。未修改 `core/src/**`，`core/area_matrix.udl` 只读取核对，未变更。
+
+实现改动文件：
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+- `apps/macos/AreaMatrix/App/InFlightFileChangeTracker.swift`
+- `apps/macos/AreaMatrix/App/MainExternalCreatedFileWatcher.swift`
+- `apps/macos/AreaMatrix/Bridge/CoreNoteReadingWriting.swift`
+- `apps/macos/AreaMatrix/Models/MainDetailNoteActions.swift`
+- `apps/macos/AreaMatrix/Models/MainDetailNoteState.swift`
+- `apps/macos/AreaMatrix/Models/MainFileListModel.swift`
+- `apps/macos/AreaMatrix/Models/MainFileListState.swift`
+- `apps/macos/AreaMatrix/Views/Main/DetailNoteTabView.swift`
+- `apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift`
+- `apps/macos/AreaMatrix/Views/Main/MainRepositoryDetailPane.swift`
+- `apps/macos/AreaMatrix/Views/MainWindow.swift`
+- `apps/macos/AreaMatrixTests/DetailNotePageFeatureTests.swift`
+
+另有 task-loop 状态文件 `.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json` 处于 dirty 状态，是运行状态记录，不属于产品实现改动。
+
+三、完成情况
+
+核对清单全部满足：
+- 只处理 `S1-14` 中的 `C1-14`。
+- 已读取并交叉核对 UX 页面规格、MVP control map、Core API、C1-14 capability spec、UDL。
+- macOS UI 通过 `CoreBridge` 接入真实 `readNote/writeNote` generated binding。
+- 未实现相邻页面或 control map 之外能力。
+
+完成标准全部满足：
+- Note tab 可加载、创建、编辑、debounce 自动保存、显示 `Saved/Saving/Unsaved`、保存失败保留草稿并可 Retry。
+- 只读 repo、文件缺失、导入锁定、列表加载中会阻止写入。
+- note sidecar 写入通过 `InFlightFileChangeTracker` 标记，避免 watcher 回流。
+- 没有用 mock、fixture 或静态状态伪造生产闭环；测试中的 fake 只用于单元验证。
+- Forbidden Touches：未触碰 `core/src/**`。
+
+四、工程质量
+
+代码按现有 macOS 架构拆分为 bridge、state/action、view 和 watcher 抑制；新增文件均低于 500 行，原有 `MainFileListModel` 与 `MainRepositoryContentView` 维持在 500 行上限内。错误路径显式处理：读取失败映射 inline error，写入失败保留最新草稿，Retry 不重新读取覆盖内容。未新增依赖，未新增 Rust public API，因此无 rustdoc 变更需求。
+
+五、验证情况
+
+已运行并通过：
+- `xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：通过，`BUILD SUCCEEDED`。
+- `./dev test macos`：通过。`xcodebuild test` 被本地 `testmanagerd` sandbox 阻断后，脚本 fallback 到 `xcrun xctest`，最终 `319 tests, 0 failures`。
+- `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`：通过，`doctor: OK`。
+- `git diff --check`：通过。
+
+六、风险与后续
+
+剩余风险：未做真实 macOS 图形界面人工点击验收；当前证据覆盖 build、单元/集成测试和真实 Core 临时仓库读写。回滚方式是 revert 上述 macOS 文件与 project 文件改动；Core 实现和 DB schema 未变更。
+
+建议下一个任务：先执行 `2-3/task-07` 的 verify-ready 验收，通过后进入 `2-3/task-08`。
+

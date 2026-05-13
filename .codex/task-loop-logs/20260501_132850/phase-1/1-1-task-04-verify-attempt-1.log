@@ -1,0 +1,57 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`1-1/task-04`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-1/1-1-repo-config/task-04-c1-01-integration-verify.md`
+- 核验文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/**`
+
+三、完成度摘要
+
+- 已覆盖项数：7
+- 未覆盖项数：1
+- 通过项数：6
+- 不通过项数：1
+- 阻塞项数：1
+
+四、逐项验收结果
+
+- 只处理 C1-01 范围：通过。证据：实现集中在 `validate_repo_path`，未触碰 `apps/**`。
+- Exact Docs 逐项读取并作为 SSOT：通过。7 个文档均存在并已核验。
+- 不实现相邻 C1 能力或 UI 页面：通过。相邻 API 仍为未实现占位，当前 C1-01 有真实实现。
+- 交叉检查 capability、control map 和消费页面：不通过。`docs/api/core-api.md:401` 与 `docs/architecture/mvp-control-map.md:26` 要求 `RepoNotInitialized` 语义，但 `core/src/repo_path.rs` 没有任何返回该错误的路径。
+- 确认无 mock/空壳伪完成：通过。C1-01 主路径不是 mock；测试覆盖真实临时目录、权限、metadata、SQLite scan session。
+- C1-01 integration-verify 目标有证据证明：不通过。核心验证通过，但缺少 `RepoNotInitialized` 行为证据。
+- 没有扩展到未绑定能力：通过。`git status --short -- apps` 和 `git diff --name-only -- apps` 均为空。
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过，原因是文档声明的 `RepoNotInitialized` 错误语义未接入实际控制流。
+- 注释 / rustdoc / 文档同步：不通过，`core/src/api.rs:39-42` 注释声明可能返回 `RepoNotInitialized`，但实现无法触发。
+- 错误处理与边界处理：不通过，S1-11 的 repo 未初始化错误路径缺真实实现。
+- 测试与验证覆盖：不通过，测试只证明 `CoreError::RepoNotInitialized` 枚举存在，没有覆盖行为路径。
+- 占位、硬编码、mock-only、一次性实现检查：通过，未发现 C1-01 主实现 mock-only。
+
+六、阻塞项
+
+- P1：`RepoNotInitialized` 合同未落地  
+  说明：SSOT 要求 `validate_repo_path` 支持 repo 未初始化语义，control map 中 S1-11 也把 `validate_repo_path` 绑定到 `RepoNotInitialized` 错误态；当前实现对无 `.areamatrix/` 的非空目录返回 `AdoptExisting`，没有“调用方要求已初始化语义”的入口或分支。  
+  绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/core/src/repo_path.rs:24`  
+  相关证据：`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:401`、`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:26`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:39`  
+  为什么导致不通过：消费页 S1-11 的 C1-01 错误恢复链路无法由当前 API / Rust 实现 / 测试证明。
+
+七、验证情况
+
+- 已运行并通过：`cd core && cargo fmt --all -- --check`
+- 已运行并通过：`cd core && cargo clippy --all-targets --all-features -- -D warnings`
+- 已运行并通过：`cd core && cargo test --workspace validate_repo_path`，17 个相关测试通过
+- 已补充运行并通过：`cd core && cargo test --workspace`，18 个测试通过
+- 缺失：`RepoNotInitialized` 行为测试与实现路径
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+
+VERIFY_RESULT: FAIL

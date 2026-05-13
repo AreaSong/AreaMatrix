@@ -1,0 +1,28 @@
+一、执行结论：已完成。
+
+二、执行范围：单任务。修改文件：
+- [CoreBridge.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift)
+- [CoreBridgePlaceholderState.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/CoreBridgePlaceholderState.swift)
+
+三、完成情况：
+- 创建 CoreBridge 占位层：已完成。
+- Bridge 方法只声明后续接入边界：已完成，所有真实 Core API 边界都只抛出 `generatedBindingsUnavailable`，不返回假数据。
+- 不得用 mock 通过后续真实闭环验收：已满足，没有 mock、fixture、硬编码成功态。
+- Forbidden Touches：未触碰 `core/src/**`。
+
+四、工程质量：
+- 结构清晰：`CoreBridge` 负责边界入口，`CoreBridgePlaceholderState` 负责占位状态、UDL 边界枚举和错误类型。
+- 注释 / rustdoc / 文档同步：未新增 public Rust API，不需要 rustdoc；未改文档。
+- 错误处理：占位调用显式失败，避免静默吞错或伪造闭环。
+- 残余风险：当前 `apps/macos/AreaMatrix.xcodeproj` 没有把 `Bridge/`、`Models/` 文件纳入 Sources；manifest 不允许修改 xcodeproj，所以用独立 `swiftc -typecheck` 补充证明 Bridge/Models 自身可编译。
+
+五、验证情况：
+- 通过：`xcrun swiftc -typecheck -target arm64-apple-macosx14.0 -module-cache-path /private/tmp/areamatrix-swift-module-cache apps/macos/AreaMatrix/Models/CoreBridgePlaceholderState.swift apps/macos/AreaMatrix/Bridge/CoreBridge.swift`
+- 通过：`xcodebuild -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' build CODE_SIGNING_ALLOWED=NO`
+- 通过：`git diff --check`
+- 失败但非本 task manifest 必需项：`xcodebuild test ...` 被沙箱阻断，错误是无法连接 `com.apple.testmanagerd.control` / CoreSimulator 相关服务。
+
+六、风险与后续：
+- 剩余风险是 Xcode target membership 仍未接入 Bridge/Models。
+- 建议下一个任务：`0-2/task-12`，按 manifest 补测试目标；若后续验收要求 Xcode build 真正编译 Bridge/Models，需要在对应允许范围内更新 xcodeproj。
+

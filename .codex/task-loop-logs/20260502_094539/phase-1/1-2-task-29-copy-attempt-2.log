@@ -1,0 +1,47 @@
+**一、执行结论**
+
+已完成 `1-2/task-29` repair retry。上次验收的两个工程质量阻塞已修复：`import.rs` / `destination.rs` 均低于 500 行，Core 中已移除 `trash::macos` / `NsFileManager` 等 macOS 专属 Trash API 依赖。
+
+**二、执行范围**
+
+单任务：`1-2/task-29`，只处理 C1-10 integration-verify 的工程质量失败。
+
+修改文件：
+- [core/src/storage/mod.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/mod.rs)
+- [core/src/storage/destination.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/destination.rs)
+- [core/src/storage/import.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/import.rs)
+- [core/src/storage/replacement_trash.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/replacement_trash.rs)
+- [core/src/storage/staging_row.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/staging_row.rs)
+- [core/tests/resolve_name_conflict_integration_verify.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/resolve_name_conflict_integration_verify.rs)
+
+未触碰 `apps/**`。
+
+**三、完成情况**
+
+核对清单全部满足：范围仍限 C1-10；未改相邻 C1 能力或 UI；Exact Docs / capability / control map / S1-23 / S1-24 一致性由 integration test 覆盖；无 mock、空壳或硬编码通过态。
+
+工程质量修复点：
+- 将 replacement Trash 归档守卫拆到 `replacement_trash.rs`。
+- 将 DB staging rollback guard 拆到 `staging_row.rs`。
+- `import.rs` 477 行，`destination.rs` 398 行，新增模块均低于 500 行。
+- Core 使用跨平台 `trash::delete`，失败时回退到用户 Trash 目录，不再直接依赖 macOS 专属 API。
+- 新增 integration test 断言相关 storage 文件行数和平台无关边界。
+
+**四、验证情况**
+
+已通过：
+- `cd core && cargo fmt --all -- --check`
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`
+- `cd core && cargo test --workspace resolve_name_conflict`：29 个 C1-10 过滤测试通过
+- `cd core && cargo test --workspace`
+- `git diff --check`
+- `rg` 检查 `core/src` / `core/area_matrix.udl`：无 `trash::macos`、`NsFileManager`、`target_os = "macos"` 等命中
+
+失败：无。无法运行：无。
+
+**五、风险与后续**
+
+剩余风险：当前工作区仍有 task-loop 运行状态文件和日志处于 dirty/untracked 状态，我未清理这些非产品实现文件。产品修复范围只在 `core/**`。
+
+建议下一步：进入 `1-2/task-29` verify-ready 验收；若通过，再推进依赖链下一个任务 `1-3/task-01`。
+

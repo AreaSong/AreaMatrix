@@ -1,0 +1,54 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`2-3/task-19`
+- 对应文件路径：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-3-detail-settings/task-19-s1-28-c1-04-load-update-config.md`
+
+三、完成度摘要
+
+- 已覆盖项数：7
+- 未覆盖项数：0
+- 通过项数：7
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 1. 只处理 S1-28 页面中的 C1-04 功能点：通过。当前实现只给设置页加了 classifier tab，并用独立 model/pane 处理 `load_config/update_config`，没有接入 `predict_category` 或其它页面动作。证据：[`GeneralSettingsView.swift`](file:///Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Settings/GeneralSettingsView.swift:86), [`ClassifierSettingsPane.swift`](file:///Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Settings/ClassifierSettingsPane.swift:3), [`ClassifierSettingsModel.swift`](file:///Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ClassifierSettingsModel.swift:31), [`project.pbxproj`](file:///Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj:181)
+- 2. 读取页面规格、MVP control map、Core API 和 C1-04 能力规格：通过。文档和 UDL 已按任务要求交叉读取，且边界一致。证据：[`task-19`](file:///Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-3-detail-settings/task-19-s1-28-c1-04-load-update-config.md:12), [`phase-2.md`](file:///Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-2.md:2375), [`S1-28-settings-classifier.md`](file:///Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-28-settings-classifier.md:23), [`mvp-control-map.md`](file:///Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:41), [`core-api.md`](file:///Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:578), [`C1-04-load-update-config.md`](file:///Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-04-load-update-config.md:1), [`area_matrix.udl`](file:///Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:17)
+- 3. 只接入 C1-04 对应的 CoreBridge / 状态 / 错误映射：通过。`ClassifierSettingsModel` 只通过 `CoreConfigurationLoading/CoreConfigurationUpdating/CoreErrorMapping` 做真实 load/save 和错误映射，保存失败会回滚到上次已保存值并提供 retry。证据：[`ClassifierSettingsModel.swift`](file:///Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ClassifierSettingsModel.swift:83), [`CoreBridge.swift`](file:///Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift:197)
+- 4. 不顺手实现相邻页面：通过。未碰 `core/src/**`，也没有把 classifier 以外的 settings/page feature 一起塞进来。证据：`git diff --name-only -- core/src` 为空，且 [`GeneralSettingsView.swift`](file:///Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Settings/GeneralSettingsView.swift:86) 只新增 classifier 分支。
+- 5. S1-28 中 C1-04 对应的用户可见功能可被触发和验收：通过。侧栏可切到分类规则页，页面能显示 `classifier.yaml` 路径和三个开关，并通过 toggle 触发真实保存。证据：[`GeneralSettingsView.swift`](file:///Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Settings/GeneralSettingsView.swift:86), [`ClassifierSettingsPane.swift`](file:///Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Settings/ClassifierSettingsPane.swift:118), [`ClassifierSettingsPageFeatureTests.swift`](file:///Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ClassifierSettingsPageFeatureTests.swift:6)
+- 6. 没有使用 mock、fixture 或静态状态伪造真实 Core 闭环：通过。生产路径默认走 `CoreBridge()`；真实桥接测试验证更新后再 load 能读回变更，且不会写 `classifier.yaml`、`README.md`、`AREAMATRIX.md`。证据：[`ClassifierSettingsModel.swift`](file:///Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ClassifierSettingsModel.swift:52), [`ClassifierSettingsPageFeatureTests.swift`](file:///Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ClassifierSettingsPageFeatureTests.swift:73)
+- 7. 未触碰 control map 之外的 Core 能力：通过。这里只涉及 `load_config`、`update_config` 和 error mapping，没有扩到别的 Core 能力。证据：[`area_matrix.udl`](file:///Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:17), [`mvp-control-map.md`](file:///Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:43), [`ClassifierSettingsModel.swift`](file:///Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ClassifierSettingsModel.swift:83)
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。model / view / tests 三层分开，职责单一，文件都在可维护范围内。
+- 注释 / rustdoc / 文档同步：通过。此任务未新增 Rust public API；页面规格、control map、Core API 和 C1-04 能力 spec 已对齐。
+- 错误处理与边界处理：通过。load/save 都走显式 `do/catch`，失败会回滚到 last saved values；按 C1-04 约束不写 `classifier.yaml`、`README.md` 或 `AREAMATRIX.md`。
+- 测试与验证覆盖：通过。`xcodebuild build` 通过；标准 `xcodebuild test` 被本地 `testmanagerd` 沙箱阻断后，`./dev test macos` 自动回退到 `xcrun xctest`，最终 363/363 通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。生产 UI 走真实 CoreBridge，不是静态成功态；mock 只在测试里做断言辅助。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：
+  - `xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：通过
+  - `xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO -only-testing:AreaMatrixTests/ClassifierSettingsPageFeatureTests`：失败，原因是本地 `testmanagerd` 沙箱阻断
+  - `./dev test macos`：通过，脚本回退到直接 `xctest`，最终 363/363 通过
+- 未运行：无
+- 失败：仅标准 `xcodebuild test`，属于环境阻断，不是产品失败
+- 缺失：无
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS

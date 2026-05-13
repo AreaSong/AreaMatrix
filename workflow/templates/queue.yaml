@@ -1,0 +1,13 @@
+version: v*
+feature: v*-feature-id
+status: ready
+kind: queue-candidate
+promotion_gate: explicit-only
+live_queue_blocked: true
+tasks:
+  - id: v*-feature-id/docs-contract
+    depends_on: []
+    draft_copy: workflow/versions/v*/drafts/v*-feature-id/docs-contract.copy.md
+    draft_verify: workflow/versions/v*/drafts/v*-feature-id/docs-contract.verify.md
+    validation:
+      - ./dev workflow doctor

@@ -8,6 +8,9 @@ namespace area_matrix {
     RepoPathValidation validate_repo_path(string repo_path);
 
     [Throws=CoreError]
+    RepoPathValidation validate_initialized_repo_path(string repo_path);
+
+    [Throws=CoreError]
     void init_repo(string repo_path, RepoInitOptions options);
 
     [Throws=CoreError]
@@ -21,6 +24,12 @@ namespace area_matrix {
 
     [Throws=CoreError]
     ReindexReport reindex_from_filesystem(string repo_path);
+
+    [Throws=CoreError]
+    DiagnosticsSnapshot create_diagnostics_snapshot(string repo_path);
+
+    [Throws=CoreError]
+    RepairReport repair_metadata(string repo_path, RepairOptions options);
 
     [Throws=CoreError]
     ScanSession? get_latest_scan_session(string repo_path);
@@ -37,10 +46,18 @@ namespace area_matrix {
     );
 
     [Throws=CoreError]
-    void delete_file(string repo_path, i64 file_id, boolean hard);
+    void delete_file(string repo_path, i64 file_id);
+
+    [Throws=CoreError]
+    void remove_index_entry(string repo_path, i64 file_id);
 
     [Throws=CoreError]
     FileEntry rename_file(string repo_path, i64 file_id, string new_name);
+
+    [Throws=CoreError]
+    MoveToCategoryPreview preview_move_to_category(
+        string repo_path, i64 file_id, string new_category
+    );
 
     [Throws=CoreError]
     FileEntry move_to_category(string repo_path, i64 file_id, string new_category);
@@ -52,6 +69,30 @@ namespace area_matrix {
     sequence<FileEntry> list_files(string repo_path, FileFilter filter);
 
     [Throws=CoreError]
+    SearchResultPage search_files(
+        string repo_path,
+        string query,
+        SearchFilter filter,
+        SearchSort sort,
+        SearchPagination pagination
+    );
+
+    [Throws=CoreError]
+    SearchFacets list_filter_facets(string repo_path, SearchFacetQuery query);
+
+    [Throws=CoreError]
+    SavedSearch create_saved_search(string repo_path, CreateSavedSearchRequest request);
+
+    [Throws=CoreError]
+    SavedSearch update_saved_search(string repo_path, UpdateSavedSearchRequest request);
+
+    [Throws=CoreError]
+    void delete_saved_search(string repo_path, i64 saved_search_id);
+
+    [Throws=CoreError]
+    sequence<SavedSearch> list_saved_searches(string repo_path);
+
+    [Throws=CoreError]
     FileEntry get_file(string repo_path, i64 file_id);
 
     [Throws=CoreError]
@@ -59,6 +100,9 @@ namespace area_matrix {
 
     [Throws=CoreError]
     string list_tree_json(string repo_path, string locale);
+
+    [Throws=CoreError]
+    sequence<ICloudConflictPair> list_icloud_conflicts(string repo_path);
 
     [Throws=CoreError]
     string? read_note(string repo_path, i64 file_id);
@@ -74,6 +118,8 @@ namespace area_matrix {
 
     [Throws=CoreError]
     void set_fs_event_cursor(string repo_path, i64 last_event_id);
+
+    ErrorMapping map_core_error(ErrorMappingInput input);
 };
 
 dictionary RepoConfig {
@@ -83,6 +129,10 @@ dictionary RepoConfig {
     boolean ai_enabled;
     string locale;
     boolean icloud_warn;
+    boolean enable_extension_rules;
+    boolean enable_keyword_rules;
+    boolean fallback_to_inbox;
+    boolean allow_replace_during_import;
 };
 
 dictionary RepoInitOptions {
@@ -124,6 +174,143 @@ dictionary FileFilter {
     i64 offset;
 };
 
+dictionary SearchFilter {
+    SearchScope scope;
+    string? current_path;
+    string? category;
+    string? file_kind;
+    sequence<string> tags;
+    SearchTagMatchMode tag_match_mode;
+    i64? imported_after;
+    i64? imported_before;
+    i64? modified_after;
+    i64? modified_before;
+    StorageMode? storage_mode;
+    boolean? include_deleted;
+};
+
+dictionary SearchFacetQuery {
+    string query;
+    SearchScope scope;
+    string? current_path;
+    string? category;
+    string? file_kind;
+    sequence<string> tags;
+    SearchTagMatchMode tag_match_mode;
+    i64? imported_after;
+    i64? imported_before;
+    i64? modified_after;
+    i64? modified_before;
+    StorageMode? storage_mode;
+    boolean? include_deleted;
+};
+
+dictionary SearchFacetCount {
+    string value;
+    string label;
+    i64 count;
+    boolean selected;
+    boolean disabled;
+};
+
+dictionary SearchStorageModeFacetCount {
+    StorageMode value;
+    string label;
+    i64 count;
+    boolean selected;
+    boolean disabled;
+};
+
+dictionary SearchDateFacetBounds {
+    i64? oldest_imported_at;
+    i64? newest_imported_at;
+    i64? oldest_modified_at;
+    i64? newest_modified_at;
+};
+
+dictionary SearchFacets {
+    string query;
+    i64 total_count;
+    sequence<SearchFacetCount> categories;
+    sequence<SearchFacetCount> file_kinds;
+    sequence<SearchFacetCount> tags;
+    sequence<SearchStorageModeFacetCount> storage_modes;
+    SearchDateFacetBounds date_bounds;
+    i64 active_filter_count;
+};
+
+dictionary SearchPagination {
+    i64 limit;
+    i64 offset;
+};
+
+dictionary SearchMatch {
+    SearchMatchField field;
+    SearchMatchKind kind;
+    string snippet;
+    i64? start;
+    i64? end;
+};
+
+dictionary SearchFileResult {
+    FileEntry entry;
+    f32 score;
+    sequence<SearchMatch> matches;
+    string? note_snippet;
+};
+
+dictionary SearchQueryDiagnostic {
+    SearchDiagnosticKind kind;
+    SearchDiagnosticSeverity severity;
+    string message;
+    string? token;
+    i64? start;
+    i64? end;
+    string? suggestion;
+};
+
+dictionary SearchResultPage {
+    string query;
+    i64 total_count;
+    sequence<SearchFileResult> results;
+    sequence<SearchQueryDiagnostic> diagnostics;
+    SearchIndexStatus index_status;
+};
+
+dictionary SavedSearchQuery {
+    string query;
+    SearchFilter filter;
+    SearchSort sort;
+};
+
+dictionary CreateSavedSearchRequest {
+    string name;
+    SavedSearchQuery query;
+    string? icon;
+    string? color;
+    boolean pinned;
+};
+
+dictionary UpdateSavedSearchRequest {
+    i64 id;
+    string name;
+    SavedSearchQuery query;
+    string? icon;
+    string? color;
+    boolean pinned;
+};
+
+dictionary SavedSearch {
+    i64 id;
+    string name;
+    SavedSearchQuery query;
+    string? icon;
+    string? color;
+    boolean pinned;
+    i64 created_at;
+    i64 updated_at;
+};
+
 dictionary ChangeFilter {
     i64? file_id;
     string? category;
@@ -147,6 +334,29 @@ dictionary FileEntry {
     string? source_path;
     i64 imported_at;
     i64 updated_at;
+};
+
+dictionary MoveToCategoryPreview {
+    i64 file_id;
+    string from_category;
+    string to_category;
+    string current_path;
+    string target_path;
+    string target_name;
+    StorageMode storage_mode;
+    boolean index_only;
+    boolean name_conflict_resolved;
+    boolean will_move_file;
+};
+
+dictionary ICloudConflictPair {
+    string conflict_id;
+    string? original_path;
+    string conflicted_copy_path;
+    i64? original_modified_at;
+    i64 conflicted_modified_at;
+    ICloudConflictStatus status;
+    string? uncertainty_reason;
 };
 
 dictionary ChangeLogEntry {
@@ -174,6 +384,26 @@ dictionary RecoveryReport {
 
 dictionary ReindexReport {
     i64? scan_session_id;
+    i64 inserted;
+    i64 updated;
+    i64 skipped;
+    sequence<string> errors;
+};
+
+dictionary RepairOptions {
+    boolean full_rescan;
+    boolean preserve_diagnostics_snapshot;
+};
+
+dictionary DiagnosticsSnapshot {
+    string snapshot_path;
+    i64 created_at;
+    sequence<string> warnings;
+};
+
+dictionary RepairReport {
+    i64? scan_session_id;
+    string? diagnostics_snapshot_path;
     i64 inserted;
     i64 updated;
     i64 skipped;
@@ -208,6 +438,22 @@ dictionary SyncResult {
     sequence<string> errors;
 };
 
+dictionary ErrorMappingInput {
+    ErrorKind kind;
+    string? path;
+    string? reason;
+    string? message;
+};
+
+dictionary ErrorMapping {
+    ErrorKind kind;
+    string user_message;
+    ErrorSeverity severity;
+    string suggested_action;
+    ErrorRecoverability recoverability;
+    string raw_context;
+};
+
 enum StorageMode { "Moved", "Copied", "Indexed" };
 enum FileOrigin { "Imported", "Adopted", "External" };
 enum RepoInitMode { "CreateEmpty", "AdoptExisting" };
@@ -222,11 +468,43 @@ enum ScanSessionKind { "Adopt", "Reindex" };
 enum ScanSessionStatus { "Running", "Completed", "Paused", "Failed", "Interrupted" };
 enum DuplicateStrategy { "Skip", "Overwrite", "KeepBoth", "Ask" };
 enum ClassifyReason { "Keyword", "Extension", "AiPredicted", "Default" };
+enum SearchScope { "AllRepo", "CurrentNode" };
+enum SearchTagMatchMode { "Any", "All" };
+enum SearchSort { "Relevance", "NewestImported", "NewestModified", "NameAsc" };
+enum SearchMatchKind { "Exact", "Fuzzy", "PinyinInitials" };
+enum SearchMatchField { "Name", "Path", "Note", "Category", "ChangeLog" };
+enum SearchDiagnosticKind {
+    "UnclosedQuote", "UnknownField", "InvalidDate",
+    "UnbalancedParentheses", "InvalidOperator"
+};
+enum SearchDiagnosticSeverity { "Info", "Warning", "Error" };
+enum SearchIndexStatus { "Ready", "Indexing", "Unavailable" };
+enum ICloudConflictStatus { "NeedsReview", "Resolved" };
 enum ExternalEventKind { "Created", "Removed", "Modified", "Renamed" };
+enum ErrorKind {
+    "Io", "Db", "Config", "Classify", "Conflict", "DuplicateFile",
+    "FileNotFound", "RepoNotInitialized", "InvalidPath",
+    "ICloudPlaceholder", "PermissionDenied", "Internal"
+};
+enum ErrorSeverity { "Low", "Medium", "High", "Critical" };
+enum ErrorRecoverability {
+    "Retryable", "UserActionRequired", "RefreshRequired", "Fatal"
+};
 
 [Error]
-enum CoreError {
-    "Io", "Db", "Config", "Classify", "Conflict",
-    "DuplicateFile", "FileNotFound", "RepoNotInitialized",
-    "InvalidPath", "ICloudPlaceholder", "PermissionDenied", "Internal"
+// C1-21 error-mapping contract: Swift maps these structured cases instead of
+// branching on localized strings or string-contains checks.
+interface CoreError {
+    Io(string message);
+    Db(string message);
+    Config(string reason);
+    Classify(string reason);
+    Conflict(string path);
+    DuplicateFile(string existing_path);
+    FileNotFound(string path);
+    RepoNotInitialized(string path);
+    InvalidPath(string path);
+    ICloudPlaceholder(string path);
+    PermissionDenied(string path);
+    Internal(string message);
 };

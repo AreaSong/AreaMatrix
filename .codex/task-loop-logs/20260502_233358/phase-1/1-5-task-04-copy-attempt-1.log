@@ -1,0 +1,17 @@
+一、执行结论：已完成。
+
+二、执行范围：单任务 `1-5/task-04`。本次只新增 [rename_file_validation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/rename_file_validation.rs:1)，未修改生产代码、UDL 或 `apps/**`。工作区里仍有此前已有的 `.codex/task-loop-runs/20260502_233358/summary.json`、`tasks/prompts/_shared/progress.json` 本地改动，我没有触碰或回退它们。
+
+三、完成情况：已按 C1-22 只补 validation 范围，读取并对齐 Exact Docs、UX 消费上下文、control map、Core API 与现有 Rust/UDL。新增 3 个验证测试，覆盖成功 rename 后的 public query / DB / FS / generated overview 一致性、非法名与缺失 id 无副作用、同名 no-op 不写 DB/FS。未实现相邻 C1 能力或 UI 页面；未触碰 Forbidden Touches。
+
+四、工程质量：测试使用真实 `init_repo`、`import_file`、`rename_file`、`get_file`、`list_files`、`list_changes` 路径和临时目录，不是 mock-only 或硬编码通过态。文件安全证据包含 README 不被改写、staging 为空、SQLite integrity / foreign key 检查、旧文件不存在/新文件存在、错误路径保持原文件和 DB 行不变。无新增依赖。
+
+五、验证情况：全部通过。
+
+- `cd core && cargo fmt --all -- --check`
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`
+- `cd core && cargo test --workspace rename_file`
+- 额外按 validation-driver 扩展：`cd core && cargo test --workspace`
+
+六、风险与后续：剩余风险是 macOS S1-33 UI 消费未在本 core-validation task 中验证，属于后续页面任务范围。建议下一个任务继续 `1-5/task-05`，做 C1-22 integration verify。
+

@@ -1,0 +1,45 @@
+**一、执行结论**
+已完成 `2-3/task-16` 修复重试。
+
+**二、执行范围**
+本任务产品改动集中在：
+- [RepositorySettingsModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/RepositorySettingsModel.swift)
+- [RepositorySettingsPane.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Settings/RepositorySettingsPane.swift)
+- [CoreBridgePlaceholderState.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/CoreBridgePlaceholderState.swift)
+- [RepositorySettingsPageFeatureTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/RepositorySettingsPageFeatureTests.swift)
+- [RepositorySettingsTestSupport.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/RepositorySettingsTestSupport.swift)
+- [project.pbxproj](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj)
+
+工作树里还存在 task-loop 运行记录/进度文件变更：`.codex/task-loop-runs/...`、`.codex/task-loop-logs/...`、`tasks/prompts/_shared/progress.json`。这些不是产品实现文件。
+
+**三、完成情况**
+核对清单全部通过：只处理 `S1-27 + C1-08`，已对照页面规格、control map、Core API、C1-08 能力规格；没有实现相邻页面，也没有新增 C1-04/C1-20 的功能闭环。
+
+完成标准全部通过：S1-27 现在能通过真实 CoreBridge 读取 metadata/schema 和 indexed file count；indexed import 后 `Files indexed = 1` 的真实 bundle 测试已通过；没有用 mock-only、fixture-only 或硬编码成功态伪造闭环。
+
+Forbidden Touches：未触碰 `core/src/**`，`git diff --name-only -- core/src` 为空。
+
+**四、工程质量**
+修复了上次 P0：SQLite metadata reader 现在会在只读打开失败后重试完整 metadata 读取路径，覆盖 WAL sidecar 缺失时的真实 bundle 场景，不再错误降级到 `.needsRecovery`。
+
+修复了上次 P1：`RepositorySettingsPageFeatureTests.swift` 拆分后为 367 行，`RepositorySettingsTestSupport.swift` 为 194 行，均低于 500 行。
+
+错误路径已显式处理：DB/权限等 CoreError 会映射为 `Locked` 或 `Needs recovery`，并保留可读恢复建议。没有新增依赖，没有新增 public Rust API，也没有文档漂移需要同步。
+
+**五、验证情况**
+已通过：
+- `xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+- `./dev test macos --destination 'platform=macOS,arch=arm64'`：标准 `xcodebuild test` 被本地 `testmanagerd` 沙箱限制阻断后，按仓库规则 fallback 到 `xcrun xctest`，最终 `354 tests, 0 failures`
+- `git diff --check`
+- `wc -l` 复核相关 Swift 文件长度
+
+未运行：
+- `swiftlint --strict`、`swiftformat --lint .`：当前环境未安装 `swiftlint` / `swiftformat`。
+
+**六、风险与后续**
+剩余风险：本地沙箱仍会阻断标准 `xcodebuild test` 的 testmanagerd 通信，但仓库认可的 `./dev test macos` fallback 已通过；CI 环境仍应跑标准 macOS workflow。
+
+回滚思路：本次无 schema/migration/用户文件迁移；如需回滚， revert 上述产品文件和 xcodeproj 即可。测试中的 indexed import 使用临时目录，并验证源文件仍存在、资料库内没有最终文件副本、`README.md`/`AREAMATRIX.md` 未被创建。
+
+建议下一个任务：继续队列里的 `2-3/task-17`（S1-27 + C1-20 overview-generated）。
+

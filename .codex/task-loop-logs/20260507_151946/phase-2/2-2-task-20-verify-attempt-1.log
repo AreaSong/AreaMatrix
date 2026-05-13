@@ -1,0 +1,75 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`2-2/task-20`
+- Task 文件：`tasks/prompts/phase-2/2-2-import-conflict/task-20-s1-21-c1-13-list-change-log.md`
+- 核验范围：`docs/ux/page-specs/stage-1-mvp/S1-21-import-result.md`、`docs/architecture/mvp-control-map.md`、`docs/api/core-api.md`、`docs/core/capability-specs/stage-1-mvp/C1-13-list-change-log.md`、`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：0
+- 通过项数：10
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 S1-21 页面中的 C1-13 功能点
+- 结果：通过
+- 证据：`ImportResultView` 仅新增 Core change log 区块与刷新触发；Retry/Done 仍沿用既有 S1-21 状态。`CoreChangeLogListing` 只封装 `list_changes`。
+- 涉及文件：`apps/macos/AreaMatrix/Views/Main/ImportResultView.swift:44`、`apps/macos/AreaMatrix/Bridge/CoreChangeLogListing.swift:3`
+
+- 项目：读取页面规格、control map、Core API、C1-13 能力规格并交叉核验
+- 结果：通过
+- 证据：S1-21 control map 声明 `C1-06, C1-13`，本 task 只消费 C1-13 的 `list_changes(repo_path, filter)`；UDL 存在 `ChangeFilter` 和 `ChangeLogEntry`。
+- 涉及文件：`core/area_matrix.udl:74`、`core/area_matrix.udl:153`、`core/area_matrix.udl:201`
+
+- 项目：只接入 C1-13 对应 CoreBridge / 状态 / 错误映射
+- 结果：通过
+- 证据：生产默认注入 `CoreBridge()`，`CoreBridge: CoreChangeLogListing` 内部调用生成的 `listChanges`；失败路径映射为 inline `CoreErrorMappingSnapshot`。
+- 涉及文件：`apps/macos/AreaMatrix/Models/AppShellModel.swift:62`、`apps/macos/AreaMatrix/Bridge/CoreChangeLogListing.swift:71`、`apps/macos/AreaMatrix/Models/ImportProgressActions.swift:264`
+
+- 项目：不顺手实现相邻页面 / control map 外能力
+- 结果：通过
+- 证据：本次 diff 集中于 S1-21 import result、bridge、测试和 xcodeproj；未修改 `core/src/**`，未新增相邻页面入口。
+- 涉及文件：`apps/macos/AreaMatrix/Views/MainWindow.swift:285`
+
+- 项目：S1-21 中 C1-13 用户可见功能可触发和验收
+- 结果：通过
+- 证据：页面出现 `Core change log`、自动 load、`Refresh` 按钮、loaded/empty/failed 状态；测试覆盖成功加载、错误映射、路径脱敏。
+- 涉及文件：`apps/macos/AreaMatrix/Views/Main/ImportResultView.swift:84`、`apps/macos/AreaMatrixTests/ImportResultCopyRetryTests.swift:68`
+
+- 项目：没有 mock、fixture 或静态状态伪造真实 Core 闭环
+- 结果：通过
+- 证据：生产路径通过 `CoreBridge()` 到 UniFFI `listChanges`；测试 fake 只存在于 XCTest。`importResultRecent` 是查询过滤器，不是静态结果。
+- 涉及文件：`apps/macos/AreaMatrix/Bridge/CoreChangeLogListing.swift:16`、`apps/macos/AreaMatrix/Bridge/CoreChangeLogListing.swift:142`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。新增 bridge protocol、route state、view section 分层清楚；相关文件均低于 500 行。
+- 注释 / rustdoc / 文档同步：通过。未新增 Rust public API；Swift 逻辑自解释，无低价值注释。
+- 错误处理与边界处理：通过。`list_changes` 失败会进入 `.failed(mapping)`，路径详情通过 `lastPathComponent` 脱敏。
+- 测试与验证覆盖：通过。新增/现有 macOS 测试覆盖成功、失败、脱敏；全量 macOS 测试通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。未发现生产 mock-only；测试 fixture 限定在 `AreaMatrixTests`。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：通过，`BUILD SUCCEEDED`
+- 已运行：`./dev test macos`：通过。标准 `xcodebuild test` 被本地 `testmanagerd` sandbox 限制阻断，脚本按 validation-driver 规则复用已构建 XCTest bundle，`xcrun xctest` 通过，259 tests，0 failures
+- 已检查：`git diff --name-only -- core/src`：无输出，未触碰 Forbidden Touches
+- 未运行：Rust core fmt/clippy/test；本 task 未修改 `core/src/**`，manifest validation 指定 macOS build
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+
+VERIFY_RESULT: PASS

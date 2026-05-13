@@ -1,0 +1,101 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`4-1/task-13`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-13-c2-03-failure-edge.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/search/saved_search.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/db/saved_search.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/tests/saved_search_failure_recovery.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/tests/saved_search_implementation.rs`
+
+三、完成度摘要
+
+- 已覆盖项数：9
+- 未覆盖项数：0
+- 通过项数：8
+- 不通过项数：1
+- 阻塞项数：1
+
+四、逐项验收结果
+
+- 项目：空态、非法输入、权限、IO/DB 错误和错误码映射  
+  结果：通过  
+  证据：`core/tests/saved_search_failure_recovery.rs:226` 空态无副作用；`:239` 非法输入为 `Config` 且快照不变；`:393` DB 损坏映射 fatal；`:415` 权限失败为结构化错误且不变。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/saved_search_failure_recovery.rs`
+
+- 项目：失败不留下半成品  
+  结果：通过  
+  证据：`core/src/db/saved_search.rs:32-58` create 事务内 insert/select/commit；`:66-101` update 事务；`:106-120` delete 事务。测试 `core/tests/saved_search_failure_recovery.rs:293-320`、`:322-354` 证明 post-insert/post-update 读取失败会回滚；`core/tests/saved_search_implementation.rs:334-379` 证明 insert/update/delete 写失败后快照不变。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/db/saved_search.rs`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/saved_search_failure_recovery.rs`
+
+- 项目：隐私 / AI / 远程调用默认关闭、密钥不入日志  
+  结果：通过  
+  证据：`core/tests/saved_search_failure_recovery.rs:445-466` 断言失败路径不启用 `ai_enabled`，不创建 `.areamatrix/ai`、`remote`、`secrets`。C2-03 文档也限定共享、跨端同步、语义/AI Smart List 不属于本任务。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/saved_search_failure_recovery.rs`、`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md`
+
+- 项目：不得吞错或静默降级  
+  结果：通过  
+  证据：`core/src/search/saved_search.rs:195-217` 对名称、query、filter 显式返回 `Config`；`core/src/db/saved_search.rs:191-210` 对唯一约束和 DB 错误显式映射；`core/tests/saved_search_failure_recovery.rs:356-373` 证明 malformed metadata 返回 `Db`，不是静默丢弃。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/search/saved_search.rs`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/db/saved_search.rs`
+
+- 项目：C2-03 失败路径明确返回、可测试证据和用户文件安全保证  
+  结果：通过  
+  证据：`docs/core/capability-specs/stage-2-experience/C2-03-saved-search-crud.md:24-36` 定义文件系统变化为无、重复名称/非法 query/保存失败需结构化错误；`core/tests/saved_search_failure_recovery.rs:99-107` 快照包含 saved_searches/files/change_log/staging/generated/user_visible_paths，后续失败测试均对比快照。  
+  涉及文件：上述 docs 与测试文件
+
+- 项目：高风险路径可回滚或可恢复说明  
+  结果：通过  
+  证据：DB 写入路径使用事务；`core/src/error.rs:265-270` 对 DB locked/corrupted 映射不同恢复语义，`:443-475` 定义 retryable/fatal 检测。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/error.rs`
+
+- 项目：Expected New Paths 落地  
+  结果：通过  
+  证据：`core/src/**` 有实现，`core/area_matrix.udl:83-93` 暴露四个 saved search API，`core/tests/saved_search_failure_recovery.rs` 已存在。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+
+- 项目：Forbidden Touches  
+  结果：通过  
+  证据：`git status --short apps` 无输出，未发现 `apps/**` 被修改。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/**`
+
+- 项目：Manifest 验证命令 `./dev check all`  
+  结果：不通过  
+  证据：命令退出码 1。Rust fmt/clippy/workspace tests 已通过，但 macOS XCTest 汇总 `AreaMatrixTests.xctest` 执行 484 tests，1 failure；失败用例为 `AreaMatrixPerfTests.testApplicationLaunchToFirstScreenBaselineUnderStage1Threshold`，错误 `unexpectedFirstScreenRoute`。  
+  涉及文件：验证命令整体门禁
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。saved search 校验在 `core/src/search/saved_search.rs`，DB 持久化在 `core/src/db/saved_search.rs`，职责清楚。
+- 注释 / rustdoc / 文档同步：通过。public Rust 类型和 API 有 rustdoc；Core API、UDL、capability spec 与 control map 对齐。
+- 错误处理与边界处理：通过。无静默吞错；非法输入为 `Config`，DB/损坏/权限路径为结构化错误并有映射。
+- 测试与验证覆盖：不通过。C2-03 窄测试通过，但 manifest 要求的 `./dev check all` 失败。
+- 占位、硬编码、mock-only、一次性实现检查：通过。实现连接真实 SQLite metadata 表与事务，不是 mock-only。
+
+六、阻塞项
+
+- P0：Manifest 必需验证命令失败  
+  说明：`./dev check all` 是本 task manifest 唯一验证命令，当前退出码 1。失败点在 macOS 测试 `AreaMatrixPerfTests.testApplicationLaunchToFirstScreenBaselineUnderStage1Threshold`，错误为 `unexpectedFirstScreenRoute`。按验收规则，验证失败不能判定 task 完成。  
+  绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/AreaMatrixPerfTests.swift`  
+  行号：182  
+  为什么导致不通过：必需验证命令未通过，且不是环境完全无法运行的 BLOCKED；XCTest 实际执行并产生断言失败。
+
+七、验证情况
+
+- 已运行：`./dev check all`  
+  结果：失败。已通过 governance、skills、task-loop、prompt doctor、diff check、`cargo fmt --all -- --check`、`cargo clippy --all-targets --all-features -- -D warnings`、`cargo test --workspace`；失败于 macOS XCTest 1 个用例。
+
+- 已运行：`cd core && cargo test --workspace saved_search_ -- --nocapture`  
+  结果：通过。`saved_search_contract_api` 5 passed，`saved_search_failure_recovery` 10 passed，`saved_search_implementation` 9 passed。
+
+- 缺失：无。必需命令已运行，但未通过。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+
+VERIFY_RESULT: FAIL

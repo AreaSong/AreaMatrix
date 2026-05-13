@@ -1,0 +1,86 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`phase-1 / 1-1/task-08`
+- 对应文件路径：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-1/1-1-repo-config/task-08-c1-02-validation.md`
+- 实际验收范围：`core/src/**`、`core/area_matrix.udl`、`core/tests/**`
+
+三、完成度摘要
+
+- 已覆盖项数：8
+- 未覆盖项数：0
+- 通过项数：8
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 C1-02 validation 范围  
+  结果：通过  
+  证据：task 绑定 C1-02；当前产品改动只在 `core/tests/init_empty_repo_implementation.rs`，未触碰 UI 或相邻 C1 实现。  
+  涉及文件：`task-08-c1-02-validation.md:20`、`core/tests/init_empty_repo_implementation.rs:133`
+
+- 项目：Exact Docs 已读取并作为 SSOT  
+  结果：通过  
+  证据：C1-02 要求 `init_repo(CreateEmpty)`、DB/config/rules/generated overview、重复初始化错误、不覆盖 `README.md`；实现与测试均围绕这些行为验收。  
+  涉及文件：`C1-02-init-empty-repo.md:12`、`C1-02-init-empty-repo.md:49`、`core-api.md:434`
+
+- 项目：不实现相邻 C1 能力或 UI 页面  
+  结果：通过  
+  证据：`git status --short apps` 无输出；`git diff --name-only` 未包含 `apps/**`。  
+  涉及文件：`phase-1.md:248`
+
+- 项目：补齐 Rust 测试  
+  结果：通过  
+  证据：新增/补强 `AdoptExisting` 拒绝、`.areamatrix` 内部路径拒绝、非可恢复 stale init 内容保留等关键测试。  
+  涉及文件：`core/tests/init_empty_repo_implementation.rs:133`、`core/tests/init_empty_repo_implementation.rs:145`、`core/tests/init_empty_repo_implementation.rs:194`
+
+- 项目：验证成功路径和关键错误路径  
+  结果：通过  
+  证据：成功路径覆盖 metadata/db/config/rules/generated overview、`load_config`、`list_files`、`list_tree_json`；错误路径覆盖非空目录、重复初始化、内部路径、权限、不可恢复 stale 状态。  
+  涉及文件：`core/tests/init_empty_repo_implementation.rs:35`、`core/tests/init_empty_repo_implementation.rs:117`、`core/tests/init_empty_repo_implementation.rs:156`、`core/tests/init_empty_repo_implementation.rs:230`
+
+- 项目：Expected New Paths 落地  
+  结果：通过  
+  证据：`core/src/**`、`core/area_matrix.udl`、`core/tests/**` 均存在；`rg --files core/src core/tests` 已确认。  
+  涉及文件：`phase-1.md:243`
+
+- 项目：Forbidden Touches  
+  结果：通过  
+  证据：`apps/**` 无 modified/untracked 状态。  
+  涉及文件：`phase-1.md:248`
+
+- 项目：验证命令  
+  结果：通过  
+  证据：manifest 3 条命令全部通过，并按 validation-driver 额外运行 `cargo test --workspace`。  
+  涉及文件：`phase-1.md:254`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。`init_repo` 通过 preflight、临时 init dir、最终 rename、rollback 分段实现，未发现单次脚本化或 mock-only。
+- 注释 / rustdoc / 文档同步：通过。C1-02 public API 有 rustdoc 和 `# Errors`；UDL 与 `docs/api/core-api.md` 中 `init_repo` / `RepoInitOptions` 一致。
+- 错误处理与边界处理：通过。生产路径未发现 `unwrap()` / `expect()` / `panic!()`；错误映射到 `Config`、`InvalidPath`、`PermissionDenied`、`Io`、`Db`。
+- 测试与验证覆盖：通过。成功路径、重复初始化、非空目录、权限、内部路径、stale init recovery / preserve 均有测试。
+- 占位、硬编码、mock-only、一次性实现检查：通过。C1-02 走真实文件系统、SQLite、配置读取和 tree JSON 路径；未用 dry-run 或 fixture-only 代替产品实现。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`cd core && cargo fmt --all -- --check`，通过。
+- 已运行：`cd core && cargo clippy --all-targets --all-features -- -D warnings`，通过。
+- 已运行：`cd core && cargo test --workspace init_empty_repo`，通过，19 个 init_empty_repo 相关测试通过。
+- 已运行：`cd core && cargo test --workspace`，通过，全部 40 个集成测试通过。
+- 已运行：`git diff --check`，通过。
+- 未运行：远端 CI；当前为本地单任务验收，已运行本地等价 Rust core 验证。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS

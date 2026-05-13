@@ -1,0 +1,54 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`1-4/task-23`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-1/1-4-recovery-sync-overview/task-23-c1-20-failure-recovery.md`
+- 核验范围：`docs/core/capability-specs/stage-1-mvp/C1-20-overview-generated.md`、`docs/architecture/mvp-control-map.md`、`docs/api/core-api.md`、`docs/api/error-codes.md`、`docs/architecture/transactional-import.md`、`core/src/**`、`core/area_matrix.udl`、`core/tests/**`
+
+三、完成度摘要
+
+- 已覆盖项数：7
+- 未覆盖项数：0
+- 通过项数：7
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 只处理 C1-20 failure-recovery 范围：通过。证据：实现集中在 generated overview 触发与失败回滚，`import_file` 成功后调用 overview regeneration，未扩展 UI 或相邻 C1 能力。涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/import.rs:55`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/overview/mod.rs:39`
+- Exact Docs 作为 SSOT：通过。证据：C1-20 文档要求 `.areamatrix/generated/*.md`、可选 `AREAMATRIX.md`、不覆盖 `README.md`，实现和测试均围绕这些边界。涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-20-overview-generated.md:20`
+- 不实现相邻 C1 或 UI 页面：通过。证据：`apps/**` 无变更；UDL 仍只暴露既有 `init_repo`、`import_file`、`update_config` 与 `OverviewOutput`。涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:13`
+- 覆盖失败、回滚、重复执行、权限错误路径：通过。证据：新增 failure-recovery 测试覆盖 generated blocker 清除后重试、root `AREAMATRIX.md` 冲突回滚、权限拒绝保持状态干净。涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/overview_generated_failure_recovery.rs:112`
+- 不删除、覆盖或移动未确认用户文件：通过。证据：`README.md` 保留断言、root blocker 保留断言、失败后无 final 半成品和无 DB/change_log 残留。涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/overview_generated_failure_recovery.rs:129`
+- C1-20 failure-recovery 目标可证明：通过。证据：`DbStagingRowGuard`、`FinalFileGuard` 与 replacement rollback 在 overview regeneration 失败时清理新行、新 final 文件并恢复替换状态。涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/import.rs:216`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/staging_row.rs:25`
+- 没有扩展到未绑定能力：通过。证据：未触碰 `apps/**`，也未新增非 C1-20 API。
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。`overview` 负责生成与原子替换，`storage/import` 只在成功导入后触发 regeneration，并通过 guard 处理失败回滚；文件长度低于 500 行。
+- 注释 / rustdoc / 文档同步：通过。Public API 有 C1-20 side-effect 与 error rustdoc；UDL 与 Core API 中 `OverviewOutput` 字段一致。
+- 错误处理与边界处理：通过。`PermissionDenied`、`Io`、`Config` 类错误由真实文件系统失败路径触发；失败后不留下 active row、change log、staging 或 final 半成品。
+- 测试与验证覆盖：通过。`overview_generated` 定向测试 19 个通过；完整 `cargo test --workspace` 通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。测试使用真实 tempdir、真实 Core API、真实文件系统与 SQLite 路径，未发现 mock-only 闭环。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`cd core && cargo fmt --all -- --check`：通过。
+- 已运行：`cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过。
+- 已运行：`cd core && cargo test --workspace overview_generated`：通过，C1-20 相关 19 个测试通过。
+- 已运行：`cd core && cargo test --workspace`：通过。
+- Forbidden Touches：`git status --short apps` 无输出，未发现 `apps/**` 违规触碰。
+- Expected New Paths：`core/src/**`、`core/area_matrix.udl`、`core/tests/**` 均存在；`core/tests/overview_generated_failure_recovery.rs` 当前在工作区存在但尚未被 git 跟踪，后续 checkpoint 需纳入。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS

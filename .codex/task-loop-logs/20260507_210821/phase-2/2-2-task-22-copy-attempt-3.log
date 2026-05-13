@@ -1,0 +1,51 @@
+一、执行结论
+
+已完成 `2-2/task-22` 修复重试。
+
+二、执行范围
+
+单任务：`S1-22 conflict-duplicate + C1-09 detect-duplicate`。产品改动只落在 `apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`apps/macos/AreaMatrix.xcodeproj/project.pbxproj`。
+
+主要修改文件：
+- [ImportSingleFilePreflightCorePreview.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreflightCorePreview.swift)
+- [ImportSingleFilePreviewModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreviewModel.swift)
+- [ImportSingleFileDuplicateResolution.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFileDuplicateResolution.swift)
+- [ImportSingleFilePreviewPresentation.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreviewPresentation.swift)
+- [ImportEntrySheetView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportEntrySheetView.swift)
+- [ImportEntrySingleFileFooter.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportEntrySingleFileFooter.swift)
+- [ImportSingleFileSheetSections.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportSingleFileSheetSections.swift)
+- 相关单测与 Xcode project 文件
+
+另有 task-loop 状态文件/日志仍在 worktree 中：`tasks/prompts/_shared/progress.json`、`.codex/task-loop-logs/**`、`.codex/task-loop-runs/**`，这是执行器状态，不作为产品功能改动范围。
+
+三、完成情况
+
+核对清单：
+- 只处理 S1-22 页面中的 C1-09 功能点：通过。移除了单文件 duplicate preflight 里的 Swift hash + `listFiles` fallback。
+- 已读取并交叉核对页面规格、MVP control map、Core API、C1-09 能力规格：通过。
+- 只接入 C1-09 对应 CoreBridge / 状态 / 错误映射：通过。真实 `import_file` 抛 `DuplicateFile(existing_path)` 后进入 S1-22 duplicate conflict 状态，不再作为普通失败。
+- 不顺手实现相邻页面：通过。Replace 只打开现有二次确认 sheet 并在确认后以 `.overwrite` 调用 Core，不扩展 S1-24 独立页面能力。
+
+完成标准：
+- S1-22 中 C1-09 用户可见功能可触发：通过，覆盖 Skip / Keep Both / Replace 可见性与二次确认。
+- 没有 mock、fixture 或静态状态伪造真实 Core 闭环：通过，真实 duplicate 入口来自 `import_file` 的 `DuplicateFile`。
+- 未触碰 control map 之外 Core 能力：通过，目标生产文件中无 `listFiles/list_files` fallback。
+- Forbidden Touches：未触碰 `core/src/**`，`git diff -- core/src` 为空。
+
+四、工程质量
+
+代码结构已收敛：把单文件导入状态展示和 footer 行为拆到小文件，关键 Swift 文件均低于 500 行。错误路径显式处理：`DuplicateFile` 转冲突态，非 duplicate Core 错误仍走 error mapper；Replace 必须二次确认后才使用 `.overwrite`。没有新增依赖，没有新增 Rust public API，无需 rustdoc 或文档同步。
+
+五、验证情况
+
+已运行并通过：
+- `xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+  - 结果：`BUILD SUCCEEDED`
+- `./dev test macos`
+  - 标准 `xcodebuild test` 被本地 sandbox 通知限制阻断后，脚本按规则 fallback 到 `xcrun xctest`
+  - 结果：`262 tests / 0 failures`
+
+六、风险与后续
+
+剩余风险：`preview_import` 仍是 Core API 文档中的 Stage 1 缺口；当前 S1-22 的真实闭环依赖 `import_file(.ask)` 返回 `DuplicateFile` 后再由 UI 决策 Skip / KeepBoth / Overwrite。建议下一个任务继续按队列进入 `2-2/task-23`，不要把 name conflict 合并进本任务。
+

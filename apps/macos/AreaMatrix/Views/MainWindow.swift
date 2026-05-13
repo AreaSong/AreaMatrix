@@ -1,14 +1,489 @@
+import AppKit
 import SwiftUI
 
 struct MainWindow: View {
-    @State private var model = AppShellModel()
+    @StateObject private var model: OnboardingModel
+    @StateObject private var externalCreatedFileWatcher = MainExternalCreatedFileWatcher()
+    private let importProgressControlState: ImportProgressControlState
 
+    init(model: OnboardingModel = OnboardingModel()) {
+        _model = StateObject(wrappedValue: model)
+        importProgressControlState = model.importProgressControlState
+    }
+}
+
+extension MainWindow {
     var body: some View {
-        ContentUnavailableView {
-            Label("AreaMatrix", systemImage: "tray")
-        } description: {
-            Text(model.statusText)
+        ZStack(alignment: .top) {
+            content
+
+            if let toastMessage = model.toastMessage {
+                Text(toastMessage)
+                    .font(.callout)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
+                    .padding(.top, 18)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+            }
         }
-        .frame(minWidth: 720, minHeight: 480)
+        .frame(minWidth: 760, minHeight: 520)
+        .background(WindowCloseConfirmationObserver(
+            shouldConfirm: { model.shouldConfirmSetupExit },
+            onAttemptClose: model.requestSetupQuit
+        ))
+        .onExitCommand(perform: model.requestSetupQuit)
+        .confirmationDialog(
+            setupQuitConfirmationTitle,
+            isPresented: Binding(
+                get: { model.isSetupQuitConfirmationPresented },
+                set: { if !$0 { model.cancelSetupQuit() } }
+            )
+        ) {
+            Button(setupQuitConfirmationActionTitle, role: .destructive) {
+                if model.confirmSetupQuit() {
+                    NSApplication.shared.keyWindow?.close()
+                }
+            }
+            Button("Cancel", role: .cancel, action: model.cancelSetupQuit)
+        } message: {
+            Text(setupQuitConfirmationMessage)
+        }
+        .task {
+            await model.bootstrapIfNeeded()
+            model.consumePendingDockOpenRequests()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: AreaMatrixDockOpenRelay.notification)) { _ in
+            model.consumePendingDockOpenRequests()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: AreaMatrixExternalCreatedFileRelay.notification)) { _ in
+            model.consumePendingExternalCreatedFileSignals()
+        }
+        .task(id: activeMainRepositoryPath) {
+            if let activeMainRepositoryPath {
+                externalCreatedFileWatcher.start(repoPath: activeMainRepositoryPath)
+            } else {
+                externalCreatedFileWatcher.stop()
+            }
+        }
+        .sheet(item: $model.pendingImportEntry) { request in
+            ImportEntrySheetView(
+                request: request,
+                onCancel: model.dismissImportEntry,
+                onSwitchToLocalRepo: model.switchImportEntryToLocalRepository,
+                onImportStarted: model.beginImportEntryProgress,
+                onImportStartedWithRetryContext: importRetryContextHandler(for: request),
+                onImportFailed: model.failImportEntry,
+                onBatchImportProgress: model.updateImportEntryProgress,
+                onBatchImportFailed: model.failImportEntry,
+                onBatchImportResults: model.showImportEntryResults,
+                importProgressControlState: importProgressControlState,
+                onImported: { repoPath, entry in
+                    Task {
+                        await model.finishImportEntry(repoPath: repoPath, entry: entry)
+                    }
+                },
+                onShowExistingFile: model.showImportEntryExistingFile,
+                batchSessionStore: model.importBatchSessionStore
+            )
+        }
+    }
+
+    private var isConfirmingInitializationCancel: Bool {
+        if case .initializing = model.route { return true }
+        return false
+    }
+
+    private var setupQuitConfirmationTitle: String {
+        isConfirmingInitializationCancel ? "退出初始化？" : "Quit setup?"
+    }
+
+    private var setupQuitConfirmationActionTitle: String {
+        isConfirmingInitializationCancel ? "Stop at Safe Point" : "Quit"
+    }
+
+    private var setupQuitConfirmationMessage: String {
+        if isConfirmingInitializationCancel {
+            return "AreaMatrix 会在当前 Core 操作到达安全点后停止；不会删除用户原文件。"
+        }
+
+        return "AreaMatrix will not create .areamatrix/ or save this repository selection."
+    }
+
+    private var activeMainRepositoryPath: String? {
+        switch model.route {
+        case let .mainEmpty(opening), let .mainList(opening), let .settingsGeneral(opening):
+            opening.config.repoPath
+        default:
+            nil
+        }
+    }
+
+    private func importRetryContextHandler(for request: ImportEntryRequest) -> (
+        String,
+        String,
+        ImportSingleFileStorageMode,
+        String,
+        String,
+        DuplicateStrategy
+    ) -> Void {
+        { currentPath, sourcePath, storageMode, overrideCategory, overrideFilename, duplicateStrategy in
+            model.beginImportEntryProgress(
+                currentPath: currentPath,
+                retryContext: ImportProgressRetryContext(
+                    repoPath: request.repoPath,
+                    sourcePath: sourcePath,
+                    storageMode: storageMode,
+                    overrideCategory: overrideCategory,
+                    overrideFilename: overrideFilename,
+                    duplicateStrategy: ImportProgressDuplicateStrategy(coreStrategy: duplicateStrategy)
+                )
+            )
+        }
+    }
+
+    @ViewBuilder
+    private var content: some View {
+        switch model.route {
+        case .loadingConfiguration:
+            LoadingConfigurationView()
+        case .welcome:
+            WelcomeStepView(
+                onContinue: model.continueFromWelcome,
+                onLearnMore: model.openLearnMore
+            )
+        case .choosePath:
+            ChoosePathStepView(
+                pathText: Binding(
+                    get: { model.repositoryPathText },
+                    set: { model.updateRepositoryPath($0) }
+                ),
+                errorMessage: model.repositoryPathError,
+                isValidating: model.isValidatingRepositoryPath,
+                canContinue: model.canContinueFromChoosePath,
+                onBack: model.returnFromChoosePath,
+                onChoose: model.chooseRepositoryPath,
+                onUseDefault: { Task { await model.useDefaultRepositoryPath() } },
+                onContinue: { Task { await model.continueFromChoosePath() } }
+            )
+        case .validatePath:
+            ValidatePathStepView(
+                pathText: model.repositoryPathText,
+                validation: model.repositoryPathValidation,
+                existingRepositoryMetadata: model.existingRepositoryMetadata,
+                latestScanSession: model.latestScanSession,
+                errorMessage: model.repositoryPathError,
+                errorMapping: model.repositoryPathErrorMapping,
+                isValidating: model.isValidatingRepositoryPath,
+                isICloudRiskAccepted: model.isICloudRiskAccepted,
+                canContinue: model.canContinueFromValidatePath,
+                primaryActionTitle: model.validatePathPrimaryActionTitle,
+                showsCancel: model.validatePathReturnRouteIsSettings,
+                onBack: model.returnFromValidatePath,
+                onCancel: model.returnFromValidatePath,
+                onChangePath: model.showChoosePath,
+                onRetry: {
+                    Task {
+                        await model.retryRepositoryPathValidation()
+                    }
+                },
+                onICloudRiskAcceptedChanged: model.updateICloudRiskAccepted,
+                onContinue: {
+                    Task {
+                        await model.continueFromValidatePath()
+                    }
+                }
+            )
+        case let .confirmRepositoryInitialization(draft):
+            ConfirmInitStepView(
+                draft: draft,
+                onBack: model.showValidatePath,
+                onChangePath: model.showChoosePath,
+                onCreateEmpty: {
+                    Task {
+                        await model.createEmptyRepositoryFromConfirmInit()
+                    }
+                },
+                onAdoptExisting: {
+                    Task {
+                        await model.adoptExistingRepositoryFromConfirmInit()
+                    }
+                },
+                onCancelSetup: {
+                    if model.confirmSetupQuit() {
+                        NSApplication.shared.keyWindow?.close()
+                    }
+                }
+            )
+        case let .initializing(draft):
+            InitializingStepView(
+                draft: draft,
+                scanSession: model.initializationScanSession,
+                recoveryReport: model.initializationRecoveryReport,
+                progressWarning: model.initializationProgressWarning,
+                isCancellationRequested: model.isInitializationCancellationRequested,
+                onCancel: model.requestSetupQuit
+            )
+        case let .initializationFailed(repoPath, mapping, retryDraft):
+            InitFailedStepView(
+                repoPath: repoPath,
+                mapping: mapping,
+                diagnostics: model.initializationDiagnostics,
+                canRetry: retryDraft != nil,
+                onChangePath: model.showChoosePath,
+                onRetry: {
+                    Task {
+                        await model.retryFailedInitialization()
+                    }
+                },
+                onCollectDiagnostics: {
+                    await model.collectInitializationDiagnostics()
+                },
+                onQuit: {
+                    NSApplication.shared.keyWindow?.close()
+                }
+            )
+        case let .initializationDone(result):
+            InitDoneStepView(
+                result: result,
+                errorMapping: model.initializationOpenErrorMapping,
+                onOpenRepository: { Task { await model.openInitializedRepository() } },
+                onOpenInFinder: model.openInitializedRepositoryInFinder
+            )
+        case let .mainLoading(state):
+            MainLoadingView(
+                state: state,
+                isRetryingStartupRecovery: model.isRetryingMainRepository,
+                onCancelOpening: model.cancelMainOpening,
+                onRetryStartupRecovery: {
+                    Task {
+                        await model.retryMainRepositoryFromError(repoPath: state.repoPath)
+                    }
+                },
+                onRetryTree: {
+                    Task {
+                        await model.retryMainLoadingTree()
+                    }
+                },
+                onRetryOpening: {
+                    Task {
+                        await model.retryMainRepositoryFromError(repoPath: state.repoPath)
+                    }
+                }
+            )
+        case let .mainRepoError(repoPath, mapping):
+            MainRepoErrorView(
+                repoPath: repoPath,
+                mapping: mapping,
+                validation: model.mainRepoRecoveryValidation,
+                isRetrying: model.isRetryingMainRepository,
+                retryErrorMapping: model.mainRepoRecoveryErrorMapping,
+                externalRemoval: model.mainRepoExternalRemoval,
+                diagnostics: model.mainRepoDiagnostics,
+                lastOpenedAt: model.mainRepoLastOpenedAt,
+                onRetry: {
+                    Task {
+                        await model.retryMainRepositoryFromError(repoPath: repoPath)
+                    }
+                },
+                onReconnectFolder: {
+                    Task {
+                        await model.reconnectMainRepositoryFolder(from: repoPath)
+                    }
+                },
+                onOpenRepair: {
+                    model.openMainRepositoryRepair(repoPath: repoPath)
+                },
+                onConfirmExternalRemoval: {
+                    Task {
+                        await model.confirmMainRepositoryExternalRemoval(repoPath: repoPath)
+                    }
+                },
+                onRevealFolder: {
+                    model.revealMainRepositoryFolder(repoPath: repoPath)
+                },
+                onRequestDiagnostics: {
+                    model.requestMainRepositoryDiagnosticsPrivacyConfirmation(repoPath: repoPath)
+                },
+                onConfirmDiagnostics: {
+                    Task {
+                        await model.collectMainRepositoryDiagnostics(repoPath: repoPath)
+                    }
+                },
+                onCancelDiagnostics: model.cancelMainRepositoryDiagnosticsPrivacyConfirmation,
+                onChooseAnotherFolder: model.showChoosePath
+            )
+        case let .dbRepairConfirm(repairRoute):
+            DBRepairConfirmView(
+                repoPath: repairRoute.repoPath,
+                scanSession: repairRoute.scanSession,
+                mapping: repairRoute.mapping,
+                lastOpenedAt: model.mainRepoLastOpenedAt,
+                onCancel: {
+                    model.returnFromDatabaseRepair(repairRoute)
+                },
+                onRepairSucceeded: {
+                    await model.retryMainRepositoryFromError(repoPath: repairRoute.repoPath)
+                },
+                onOpenRepositoryInFinder: {
+                    model.revealMainRepositoryFolder(repoPath: repairRoute.repoPath)
+                }
+            )
+        case .settingsRepository:
+            SettingsRepositoryReturnView()
+        case let .settingsGeneral(opening):
+            GeneralSettingsView(
+                repoPath: opening.config.repoPath,
+                selectedTab: Binding(
+                    get: { model.settingsGeneralSelectedTab },
+                    set: { model.settingsGeneralSelectedTab = $0 }
+                ),
+                onClose: {
+                    Task {
+                        await model.refreshAfterGeneralSettings(opening: opening)
+                    }
+                },
+                onChangeRepository: {
+                    model.beginSettingsRepositoryChange(from: opening)
+                },
+                onOpenRepositoryRecovery: {
+                    model.openMainRepositoryRepair(repoPath: opening.config.repoPath)
+                }
+            )
+        case let .importProgress(state):
+            importProgressContent(state)
+        case let .importResult(state):
+            ImportResultView(
+                state: state,
+                onDone: model.finishImportResult,
+                onRetryFailed: {
+                    Task { await model.retryImportResultFailedItems() }
+                },
+                onLoadChangeLog: {
+                    Task { await model.loadImportResultChangeLog() }
+                },
+                onShowExistingFile: model.showImportResultExistingFile,
+                onRequestExport: model.requestImportResultExportPrivacyConfirmation,
+                onConfirmExport: model.exportImportResultDetails,
+                onCancelExport: model.cancelImportResultExport
+            )
+        case let .mainEmpty(opening):
+            MainRepositoryContentView(
+                opening: opening,
+                state: .empty,
+                onImport: { model.chooseImportSources(opening: opening) },
+                onDropImport: { urls, destination in
+                    model.startImportEntry(
+                        opening: opening,
+                        source: .dropZone,
+                        urls: urls,
+                        destination: destination
+                    )
+                },
+                onOpenSettings: { model.showGeneralSettings(opening: opening) },
+                onRetryCurrentList: { Task { await model.retryConfigurationLoad() } },
+                onCollectDiagnostics: { await model.collectMainListDiagnostics(opening: opening) },
+                onShowInFinder: { model.showMainListFileInFinder(opening: opening, relativePath: $0) },
+                onCopyPath: { model.copyMainListPath(opening: opening, relativePath: $0) },
+                onCopyPaths: { model.copyMainListPaths(opening: opening, relativePaths: $0) },
+                onOpenNoteFile: { model.openMainListFile(opening: opening, relativePath: $0) },
+                onOpenChangeCategoryPermissionRecovery: {
+                    model.revealMainRepositoryFolder(repoPath: opening.config.repoPath)
+                },
+                externalCreatedEvent: model.externalCreatedEvent(for: opening),
+                onExternalCreatedEventHandled: model.finishExternalCreatedFileEvent
+            )
+        case let .mainList(opening):
+            MainRepositoryContentView(
+                opening: opening,
+                state: .list,
+                onImport: { model.chooseImportSources(opening: opening) },
+                onDropImport: { urls, destination in
+                    model.startImportEntry(
+                        opening: opening,
+                        source: .dropZone,
+                        urls: urls,
+                        destination: destination
+                    )
+                },
+                onOpenSettings: { model.showGeneralSettings(opening: opening) },
+                onRetryCurrentList: { Task { await model.retryConfigurationLoad() } },
+                onCollectDiagnostics: { await model.collectMainListDiagnostics(opening: opening) },
+                onShowInFinder: { model.showMainListFileInFinder(opening: opening, relativePath: $0) },
+                onCopyPath: { model.copyMainListPath(opening: opening, relativePath: $0) },
+                onCopyPaths: { model.copyMainListPaths(opening: opening, relativePaths: $0) },
+                onOpenNoteFile: { model.openMainListFile(opening: opening, relativePath: $0) },
+                onOpenChangeCategoryPermissionRecovery: {
+                    model.revealMainRepositoryFolder(repoPath: opening.config.repoPath)
+                },
+                externalCreatedEvent: model.externalCreatedEvent(for: opening),
+                onExternalCreatedEventHandled: model.finishExternalCreatedFileEvent
+            )
+        case let .configurationError(failure):
+            ConfigurationErrorView(
+                failure: failure,
+                onRetry: {
+                    Task {
+                        await model.retryConfigurationLoad()
+                    }
+                },
+                onStartSetup: model.showWelcome
+            )
+        }
+    }
+
+    private func importProgressContent(_ state: ImportProgressRouteState) -> some View {
+        ZStack(alignment: .trailing) {
+            MainRepositoryContentView(
+                opening: state.sourceOpening.importProgressReadOnlyOpening,
+                state: .list,
+                onImport: {},
+                onDropImport: { _, _ in },
+                onOpenSettings: { model.showGeneralSettings(opening: state.sourceOpening) },
+                onRetryCurrentList: { Task { await model.retryConfigurationLoad() } },
+                onCollectDiagnostics: { await model.collectMainListDiagnostics(opening: state.sourceOpening) },
+                onShowInFinder: { model.showMainListFileInFinder(opening: state.sourceOpening, relativePath: $0) },
+                onCopyPath: { model.copyMainListPath(opening: state.sourceOpening, relativePath: $0) },
+                onCopyPaths: { model.copyMainListPaths(opening: state.sourceOpening, relativePaths: $0) },
+                onOpenNoteFile: { model.openMainListFile(opening: state.sourceOpening, relativePath: $0) },
+                onOpenChangeCategoryPermissionRecovery: {
+                    model.revealMainRepositoryFolder(repoPath: state.sourceOpening.config.repoPath)
+                },
+                externalCreatedEvent: model.externalCreatedEvent(for: state.sourceOpening),
+                onExternalCreatedEventHandled: model.finishExternalCreatedFileEvent,
+                importProgressItems: state.items
+            )
+            ImportProgressView(
+                state: state,
+                onStopAfterCurrentFile: model.stopImportProgressAfterCurrentFile,
+                onViewDetails: model.viewImportProgressDetails,
+                onRetryCurrentItem: {
+                    Task { await model.retryCurrentImportProgressItem() }
+                },
+                onStopAndViewResults: model.stopImportProgressAndViewResults,
+                onRequestDiagnostics: model.requestImportProgressDiagnosticsPrivacyConfirmation,
+                onConfirmDiagnostics: {
+                    Task { await model.collectImportProgressDiagnostics() }
+                },
+                onCancelDiagnostics: model.cancelImportProgressDiagnosticsPrivacyConfirmation,
+                onOpenRepositoryInFinder: model.openImportProgressRepositoryInFinder
+            )
+            .frame(width: 380)
+            .background(.regularMaterial)
+            .overlay(alignment: .leading) {
+                Divider()
+            }
+        }
+        .task(id: state.recoveryCheckTaskID) {
+            await model.checkImportProgressRecoveryIfNeeded()
+        }
+    }
+}
+
+private extension RepositoryOpeningResult {
+    var importProgressReadOnlyOpening: RepositoryOpeningResult {
+        var opening = self
+        opening.isReadOnly = true
+        return opening
     }
 }

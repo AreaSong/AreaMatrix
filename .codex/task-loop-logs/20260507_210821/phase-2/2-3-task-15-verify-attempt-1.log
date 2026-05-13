@@ -1,0 +1,72 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`2-3/task-15`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-3-detail-settings/task-15-s1-27-c1-04-load-update-config.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/RepositorySettingsModel.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Settings/RepositorySettingsPane.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/RepositorySettingsPageFeatureTests.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：8
+- 未覆盖项数：1
+- 通过项数：8
+- 不通过项数：1
+- 阻塞项数：1
+
+四、逐项验收结果
+
+- 项目：只处理 S1-27 页面中的 C1-04 功能点  
+  结果：通过  
+  证据：新增实现集中在 `RepositorySettingsModel` / `RepositorySettingsPane`，未发现接入 C1-08/C1-20 的 Core 调用；`core/src/**` 无变更。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/RepositorySettingsModel.swift:48`
+
+- 项目：读取页面规格、MVP control map、Core API 和 C1-04 能力规格  
+  结果：通过  
+  证据：Exact Docs 均存在并已核对；manifest `2-3/task-15` 指向 4 个 Exact Docs。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-2.md:2257`
+
+- 项目：只接入 C1-04 对应 CoreBridge / 状态 / 错误映射  
+  结果：不通过  
+  证据：control map 对 S1-27 声明 Core API 为 `load_config`, `update_config`；C1-04 能力规格也声明两者。但 `RepositorySettingsModel` 只依赖 `CoreConfigurationLoading` 并只调用 `loadConfig`，未接入 `CoreConfigurationUpdating` / `updateConfig`，无法验收 C1-04 的 update 侧闭环。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:42`、`/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-04-load-update-config.md:14`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/RepositorySettingsModel.swift:48`
+
+- 项目：不顺手实现相邻页面  
+  结果：通过  
+  证据：只在 Settings 容器中接入 repository tab，未实现相邻页面的新 Core 功能。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Settings/GeneralSettingsView.swift:90`
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过，原因是 C1-04 update 路径缺失导致能力闭环不完整。
+- 注释 / rustdoc / 文档同步：通过，当前为 Swift UI/model 改动，无新增 public Rust API；UDL 与 Core API 保持 `load_config/update_config` 对齐。
+- 错误处理与边界处理：部分通过，`loadConfig` 失败会走 `CoreErrorMapping`，但 update 失败路径不存在。
+- 测试与验证覆盖：部分通过，build/test 通过；但测试只覆盖 load/retry/error mapping，没有覆盖 S1-27 的 `updateConfig` 用户动作或失败回滚。
+- 占位、硬编码、mock-only、一次性实现检查：部分通过，生产路径默认使用 `CoreBridge`；但缺少 update 闭环证据，不能判真实完成。
+
+六、阻塞项
+
+- P0：S1-27 的 C1-04 update_config 闭环缺失  
+  说明：任务标题和能力规格是 `load-update-config`，control map 对 S1-27 明确列出 `load_config` 与 `update_config`。当前实现只加载配置并展示摘要，没有任何 S1-27 用户动作触发 `updateConfig`，也没有对应状态、错误映射或测试。  
+  绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/RepositorySettingsModel.swift:48`  
+  为什么导致不通过：C1-04 的一半 API 合同无法在 S1-27 页面中触发和验收，违反 task checklist 与 completion standard。
+
+七、验证情况
+
+- 已运行：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：通过，`BUILD SUCCEEDED`。
+- 已运行：`./dev test macos`：通过；标准 `xcodebuild test` 被本地 `testmanagerd` sandbox 限制阻断后，脚本按 repo 规则复用 XCTest bundle，`xcrun xctest` 通过，348 tests passed。
+- 缺失：未运行 SwiftLint / SwiftFormat；当前已有功能阻塞项，不能因 build/test 通过判 PASS。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+
+
+VERIFY_RESULT: FAIL

@@ -1,0 +1,30 @@
+一、执行结论：未完成。
+
+二、执行范围：
+- 单任务：`0-1/task-01`
+- 已按要求重读 task、共享规则、切片规则、工程质量规则、编码规范、repo-local skill 入口、依赖图、phase manifest、`0-1/task-01` 章节和 4 个 Exact Docs。
+- 已在可写路径内回退上一轮越界治理内容：`docs/README.md`、`CONTRIBUTING.md`、`SECURITY.md`、`.github/*`、`tasks/prompts/_shared/engineering-quality-rules.md` 等已恢复到上一提交语义；新增的 `CODE_REVIEW.md`、`docs/development/ci-governance.md`、`docs/development/dependency-policy.md`、`scripts/check-governance.sh`、`.github/workflows/governance-ci.yml` 等在工作区已删除。
+
+三、未完成阻塞：
+- `.git/index` 不可写：`git rm` 失败，报 `Unable to create ... .git/index.lock: Operation not permitted`，所以不能 stage / commit 修复，也不能清理 staged evidence blob。
+- `.agents/**` 不可写：删除 `.agents/skills/areamatrix-enterprise-governance` 失败，报 `Operation not permitted`。Forbidden Touches 仍未修复。
+- `.codex/**` 不可写：`apply_patch`、`perl -pi`、直接 Python 写 `.codex/README.md` 均失败，无法删除 `.codex/skills-src/areamatrix-enterprise-governance/**`，也无法回退 `.codex/README.md`、`.codex/references/index.md` 和相关 skill 文件中的越界引用。
+- staged whitespace 仍未修复：`git diff --cached --check` 仍失败，旧 staged `.codex/task-loop-logs/...copy-attempt-1.log` 里 trailing whitespace 无法通过当前权限更新 index。
+
+四、完成情况：
+- 根 `AGENTS.md`：通过，内容已满足入口顺序、SSOT、高风险边界和验证要求。
+- `.ai-governance/`：工作区内容已恢复为轻量治理入口。
+- `.codex/` 权威边界：未通过，因 `.codex/**` 不可写，上一轮越界 skill / enterprise governance 引用仍残留。
+- Forbidden Touches：未通过，`.agents/skills/areamatrix-enterprise-governance` 仍存在且无法删除。
+- Scope boundary：未通过，`.codex/skills-src/areamatrix-enterprise-governance/**` 等上一轮越界内容仍存在。
+
+五、验证情况：
+- `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`：通过，`doctor: OK`，`tasks: 637`，`manifests: 637`，`high risk tasks: 633`。
+- `git diff --check`：通过。
+- `git diff --cached --check`：失败，仍是 staged task-loop log trailing whitespace。
+- 未运行额外 governance / skills 检查：本次 retry 目标是移除上一轮越界治理/skill 扩散，且 `.codex`/`.agents` 权限阻塞尚未解除。
+
+六、风险与后续：
+- 当前工作区是部分修复状态，不能标记 completed。
+- 下一步必须在允许写 `.git`、`.codex`、`.agents` 的环境中完成：删除 forbidden symlink 和 enterprise skill 目录，回退 `.codex` 相关文件，清理 staged log whitespace，重新运行 `doctor`、`git diff --check`、`git diff --cached --check` 后再进入只读验收。
+

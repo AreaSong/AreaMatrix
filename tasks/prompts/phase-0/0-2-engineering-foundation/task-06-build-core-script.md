@@ -28,5 +28,5 @@ build-core 脚本。
 ## 验证
 
 ```bash
-bash -n scripts/build-core.sh
+python3 -m py_compile scripts/dev_tools/*.py
 ```

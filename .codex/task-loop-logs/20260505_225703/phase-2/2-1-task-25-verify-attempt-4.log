@@ -1,0 +1,74 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`2-1/task-25`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-1-first-launch-main/task-25-s1-09-page-integration-verify.md`
+- 实际验收文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：0
+- 通过项数：2
+- 不通过项数：2
+- 阻塞项数：2
+
+四、逐项验收结果
+
+- 项目：逐项验收本页所有 page-feature task 是否完成
+- 结果：通过
+- 证据：S1-09 的 C1-11/C1-12/C1-15 均存在 Swift 模型与测试覆盖；`CoreBridge.listFiles`、`getFile`、`listTreeJSON` 分别调用真实 UniFFI Core。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift:273`、`:281`、`:293`
+
+- 项目：页面状态、入口、退出、错误态和 CoreBridge 调用是否闭环
+- 结果：不通过
+- 证据：列表、详情、Tree 有真实 CoreBridge 调用，但页面错误态额外接入 `syncExternalChanges` 和 `createDiagnosticsSnapshot`，这些不在 S1-09 control map 的 C1-11/C1-12/C1-15 范围内。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileListModel.swift:211`、`:227`
+
+- 项目：移除无法通过最终验收的 mock、fixture 或硬编码状态
+- 结果：不通过
+- 证据：右键 Rename / Change Category / Delete 进入的是说明性占位 sheet，文本写明“route opened / handled by file action task”，不是 page spec 要求的对应确认页入口闭环。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainFileActionRoutingSheet.swift:44`
+
+- 项目：不新增本页未在 control map 中声明的功能
+- 结果：不通过
+- 证据：S1-09 control map 只声明 C1-11、C1-12、C1-15；当前实现新增并消费外部同步能力 `syncExternalChanges`，属于 C1-19 范围。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreExternalSync.swift:1`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift:307`
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过，原因是当前 S1-09 页面集成把 C1-19/C1-26 类能力混入 C1-11/C1-12/C1-15 验收范围。
+- 注释 / rustdoc / 文档同步：不通过，代码行为与 `mvp-control-map.md` 的 S1-09 能力边界不一致。
+- 错误处理与边界处理：部分通过，DB/FileNotFound inline error 有映射与 Retry；但 Diagnostics / external sync 能力越界。
+- 测试与验证覆盖：通过但不能覆盖边界问题；`./dev test macos` 最终 97 tests passed。
+- 占位、硬编码、mock-only、一次性实现检查：不通过，`MainFileActionRoutingSheet` 是当前可见占位路由。
+
+六、阻塞项
+
+- P0：S1-09 消费 control map 外 Core 能力  
+  说明：S1-09 期望能力只有 C1-11、C1-12、C1-15，但当前页面模型接入 `syncExternalChanges`，属于 C1-19；同时列表错误态接入 diagnostics，不在本 task 绑定范围。  
+  路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileListModel.swift:211`、`:227`  
+  为什么导致不通过：违反 task checklist “不新增本页未在 control map 中声明的功能”。
+
+- P1：右键动作入口仍是占位 sheet  
+  说明：Rename / Change Category / Delete 打开的是说明性 sheet，而不是对应 S1-33/S1-34/S1-35 确认页闭环。  
+  路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainFileActionRoutingSheet.swift:47`  
+  为什么导致不通过：S1-09 page spec 要求这些动作进入对应确认页，当前证据仍是占位路由。
+
+七、验证情况
+
+- 已运行：`xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+- 结果：失败，原因是本地 sandbox 阻止 `testmanagerd.control` 通信，不是断言失败。
+- 已运行：`./dev test macos`
+- 结果：通过；按 repo-local validation-driver 复用 XCTest bundle，97 tests passed。
+- Forbidden Touches：`git status --short -- core/src` 无输出，未发现 `core/src/**` 被触碰。
+- Expected New Paths：三个路径均存在并有实现或项目引用。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+
+VERIFY_RESULT: FAIL

@@ -1,0 +1,51 @@
+一、执行结论
+
+- 已完成。
+- 原始 `xcodebuild test` 在本地 sandbox 的 `testmanagerd` 通信层失败；代码构建已完成，仓库 fallback `./dev test macos` 通过 97 个 XCTest，0 failures。
+
+二、执行范围
+
+- 单任务：`2-1/task-25`
+- 修改范围限定在 `Expected New Paths`：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+- 主要改动：
+  - 接通 S1-09 右键出口：`Rename...` / `Change Category...` / `Delete...` 打开对应路由 sheet，不直接执行写操作。
+  - 接通 `Show in Finder` / `Copy Path` 到 macOS 平台服务，并加 repo-relative path 安全校验。
+  - 给 list error 和 sync partial failure 增加 `Collect Diagnostics...` 闭环。
+  - 将 `syncExternalChanges` 接到真实 CoreBridge / UniFFI 绑定，补充外部变更同步快照类型。
+  - 文件状态改为从本地文件可用性检查器推导 `Missing` / `iCloud` / `Index-only` / `OK`，不再只靠静态展示状态。
+  - 补充 S1-09 integration closure、系统动作、状态显示、external sync、diagnostics 相关测试。
+
+三、完成情况
+
+- page-feature task 覆盖：通过，C1-11 / C1-12 / C1-15 的 list/detail/tree 入口已在主页面闭环中消费。
+- 页面状态、入口、退出、错误态和 CoreBridge 调用：通过，右键出口、系统动作、诊断入口、list/detail/tree 调用均已串联。
+- mock / fixture / 硬编码状态清理：通过，生产路径改为真实 CoreBridge 与本地文件状态检查；测试 fixture 仅保留在测试内。
+- control map 外功能：未新增；rename/delete/change category 只做路由 sheet，不实现相邻能力的写操作。
+- Forbidden Touches：未触碰，`git diff -- core/src` 无输出。
+
+四、工程质量
+
+- 代码结构清晰，拆出了 `MainRepositoryDetailPane`、`MainFileActionRoutingSheet`、`CoreExternalSync` 和可注入平台服务。
+- 没有新增依赖；没有用户文件删除、移动、覆盖或 DB schema 变更。
+- 错误处理已显式化：Finder/copy 失败给 toast，diagnostics 失败映射 Core error，sync partial failure 走 non-blocking banner。
+- 文件长度检查通过：新增/修改的非生成 Swift 文件未超过 500 行；`git diff --check` 通过。
+- 已存在的 out-of-scope dirty 文件包括 `docs/core/.../C1-12-get-file-detail.md`、`tasks/prompts/_shared/progress.json`、`.codex/task-loop-runs/.../summary.json`，本次未继续扩大这些范围。
+
+五、验证情况
+
+- `xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+  - 失败：退出 65，原因是 `com.apple.testmanagerd.control` sandbox restriction，测试 runner 通信失败。
+- `./dev test macos`
+  - 通过：复现 sandbox block 后使用 `xcrun xctest` 直接执行 built XCTest bundle，`97 tests, 0 failures`。
+- `git diff --check`
+  - 通过。
+- `git diff -- core/src`
+  - 无输出，确认未触碰 Forbidden Touches。
+- `swiftlint --strict` / `swiftformat --lint .`
+  - 无法运行：当前环境 `command not found`。
+
+六、风险与后续
+
+- 剩余环境风险：标准 `xcodebuild test` 在当前 sandbox 不能完成 test runner 通信，需要在非受限 macOS/Xcode 环境补跑。
+- 产品边界风险：本任务只完成 S1-09 页面集成 wiring；完整 live FSEvents watcher 流和后续 rename/delete/change-category 写能力仍应由对应后续 task 覆盖。
+- 建议下一个任务：进入 `2-1/task-25` 的只读 verify-ready 验收。

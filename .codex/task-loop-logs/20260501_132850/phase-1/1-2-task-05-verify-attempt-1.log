@@ -1,0 +1,56 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`1-2/task-05`
+- Task：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-1/1-2-import-classify/task-05-c1-06-contract-api.md`
+- 实际验收：`core/src/**`、`core/area_matrix.udl`、`core/tests/**`
+- Forbidden Touches：`apps/**`
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：0
+- 通过项数：10
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- C1-06 contract-api 范围：通过。Task 限定 contract-api，`import_file` 的真实 copy 实现由后续 `1-2/task-06` 承接；本次只验 API/UDL/合同意图。
+- Exact Docs：通过。已读取 C1-06 spec、control map、Core API、error codes；C1-06 明确输入、输出、DB/FS 副作用与错误码。
+- Core API / UDL：通过。`core/area_matrix.udl:37` 暴露 `import_file`，`core/area_matrix.udl:116` 定义 `ImportOptions`，`core/area_matrix.udl:144` 定义 `FileEntry`。
+- Rust contract：通过。`core/src/api.rs:193` 到 `core/src/api.rs:223` 有 C1-06 rustdoc、错误边界和副作用说明；`core/src/domain.rs:207` 到 `core/src/domain.rs:222` 对齐输入结构。
+- 测试落地：通过。`core/tests/import_copy_file_contract.rs:22` 到 `core/tests/import_copy_file_contract.rs:203` 覆盖签名、输入、输出、docs/UDL/control map、错误码、副作用和相邻能力隔离。
+- Expected New Paths：通过。`core/src/**`、`core/area_matrix.udl`、`core/tests/**` 均已落地，Missing Expected Paths = 0。
+- Forbidden Touches：通过。`git diff --name-only -- apps` 无输出，未发现 `apps/**` 被触碰。
+- 未绑定能力扩展：通过。测试明确保持 `Copied` 与 `Moved` / `Indexed` 分离，未实现 C1-07/C1-08 或 UI 页面。
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。改动集中在合同层，未引入额外抽象或跨模块行为。
+- 注释 / rustdoc / 文档同步：通过。`import_file` public API 有 `# Errors` 和副作用说明，docs、UDL、测试互相校验。
+- 错误处理与边界处理：通过。合同列明 `InvalidPath`、`DuplicateFile`、`ICloudPlaceholder`、`PermissionDenied`、`Io`、`Db`。
+- 测试与验证覆盖：通过。manifest 窄测试和 workspace 测试均通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过，仅限 contract-api 范围。`import_file` 当前仍返回 `not_implemented()`，不能作为 C1-06 runtime 实现证据，但不阻断本 contract-api task。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- `cd core && cargo fmt --all -- --check`：通过。
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过。
+- `cd core && cargo test --workspace import_copy_file`：通过，6 个 `import_copy_file_contract` 测试通过。
+- `cd core && cargo test --workspace`：通过，108 个测试通过。
+- 缺失验证：无。
+
+八、最终判定说明
+
+- 本次执行已达到 `1-2/task-05` 的 contract-api 验收标准。实际文件复制、DB 写入、staging rollback 等运行时闭环仍属于后续 `1-2/task-06` / `1-2/task-07`，不得用本次 PASS 替代 implementation 验收。
+
+
+VERIFY_RESULT: PASS

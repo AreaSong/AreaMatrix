@@ -11,11 +11,24 @@ pub mod config;
 pub mod db;
 pub mod domain;
 pub mod error;
+mod icloud_conflicts;
+mod note;
 pub mod overview;
+mod recovery;
+mod repair;
+mod repo_entries;
+mod repo_init;
+mod repo_path;
+mod repo_scan;
+pub mod search;
 pub mod storage;
 pub mod sync;
 pub mod tree;
 
 pub use api::*;
 pub use domain::*;
-pub use error::{CoreError, CoreResult};
+pub use error::{
+    map_core_error, CoreError, CoreResult, ErrorKind, ErrorMapping, ErrorMappingInput,
+    ErrorRecoverability, ErrorSeverity,
+};
+pub use search::*;

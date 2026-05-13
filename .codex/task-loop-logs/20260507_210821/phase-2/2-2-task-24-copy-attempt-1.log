@@ -1,0 +1,52 @@
+一、执行结论
+
+已完成 `2-2/task-24`。
+
+二、执行范围
+
+单任务：仅实现 `S1-24-replace-confirm` 中由 `C1-09 detect-duplicate` 支撑的重复文件替换确认功能。
+
+修改文件：
+- `apps/macos/AreaMatrix/Models/ImportSingleFilePreflight.swift`
+- `apps/macos/AreaMatrix/Models/ImportSingleFileDuplicateResolution.swift`
+- `apps/macos/AreaMatrix/Views/Main/ImportSingleFileSheetSections.swift`
+- `apps/macos/AreaMatrix/Views/Main/ReplaceConfirmSheet.swift`
+- `apps/macos/AreaMatrixTests/ImportSingleFilePreflightTests.swift`
+- `apps/macos/AreaMatrixTests/ImportSingleFileDuplicateResolutionTests.swift`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+
+工作树里另外还有既有运行状态变更：`.codex/task-loop-runs/20260507_210821/summary.json`、`tasks/prompts/_shared/progress.json`，未作为本任务产品实现处理。
+
+三、完成情况
+
+核对清单全部满足：只处理 `S1-24 + C1-09`；已按页面规格、MVP control map、Core API、C1-09 能力规格实现；只接入重复检测后的确认状态与错误/边界展示；没有实现 `C1-10` 或相邻页面。
+
+完成标准满足：重复检测触发后，S1-24 用户可见替换确认页展示真实 Core preflight/duplicate 信息，包括被替换文件、新文件、大小、修改时间、目标路径、废纸篓可用性和确认开关。确认前不会触发实际导入或覆盖操作。未使用 mock、fixture 或静态状态伪造闭环。
+
+Forbidden Touches：未触碰 `core/src/**`，`git diff --name-only -- core/src` 为空。
+
+四、工程质量
+
+结构上把 `ReplaceConfirmSheet` 从原 section 文件拆出，避免继续推高单文件复杂度；相关 Swift 文件均低于 500 行。新增逻辑只传递真实 preflight/duplicate 元数据，没有新增 Core API、Rust public API 或依赖，因此无需 rustdoc/依赖说明。
+
+错误与边界处理覆盖了缺失 metadata、Trash 不可用、用户未确认等路径；Replace 按钮在确认开关未勾选或 Trash 不可用时禁用。没有占位、硬编码通过态、mock-only wiring 或一次性脚本化实现。
+
+五、验证情况
+
+已通过：
+- `xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+  - 结果：`** BUILD SUCCEEDED **`
+  - 过程中有本机 CoreSimulator/FSEvents 权限类 warning，但 macOS build 成功。
+- `./dev test macos`
+  - 标准 `xcodebuild test` 被本地 sandbox 的 `testmanagerd.control` 通信限制阻断。
+  - repo 工具按设计 fallback 到已构建 XCTest bundle：`xcrun xctest` 通过。
+  - 结果：271 tests，0 failures。
+- `git diff --check`
+  - 通过，无空白错误。
+
+六、风险与后续
+
+剩余风险：本任务只完成 `C1-09` 的重复检测确认 UI 闭环，最终替换执行仍属于现有导入流程和后续/其他能力覆盖范围；`C1-10` 未在本任务中实现，符合切片边界。
+
+建议下一个任务进入同页剩余能力或 page integration verify，检查 `S1-24` 中 `C1-09 + C1-10` 的整页覆盖关系。
+

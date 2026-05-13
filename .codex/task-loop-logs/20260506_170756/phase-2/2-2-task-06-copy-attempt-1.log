@@ -1,0 +1,36 @@
+一、执行结论
+
+已完成当前 `2-2/task-06` integration verify。S1-17 的页面 wiring、Copy/Move/Index CoreBridge 调用、入口/退出、错误态、iCloud placeholder、Replace 二次确认和测试证据已补齐/核验。`preview_import` 仍是 Core API 文档中明确记录的 Stage 1 缺口；当前实现把它作为阻塞证据暴露，未用 mock 或硬编码成功态绕过预检。
+
+二、执行范围
+
+单任务：`2-2/task-06`。当前任务范围内涉及：
+
+- [ImportSingleFilePreviewModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreviewModel.swift)
+- [ImportSingleFilePreflight.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreflight.swift)
+- [ImportEntrySheetView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportEntrySheetView.swift)
+- [ImportSingleFileSheetSections.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportSingleFileSheetSections.swift)
+- [ImportProgressRouteState.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportProgressRouteState.swift)
+- [ImportSingleFilePageIntegrationVerifyTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFilePageIntegrationVerifyTests.swift)
+- [ImportSingleFilePreflightTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFilePreflightTests.swift)
+- [project.pbxproj](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj)
+
+三、完成情况
+
+核对清单均有证据：page-feature 覆盖 C1-05/C1-06/C1-07/C1-08；S1-17 可从导入入口进入 sheet，Cancel 不写文件，Import 进入 S1-20 route；Copy/Move/Index 都走 `CoreFileImporting`/`CoreBridge.import_file`；错误态、iCloud placeholder、Replace 可见性均有测试。未新增 control map 之外能力，只做了 S1-17 到 S1-20 的最小退出 routing。
+
+Forbidden Touches：未触碰 `core/src/**`，`core/area_matrix.udl` 也未修改。
+
+四、工程质量
+
+结构上把预检、sheet section、导入状态和 route 状态拆开，避免把 IO 或 Core 调用塞进 SwiftUI body。生产路径没有静态成功态；`preview_import` 缺口会阻塞导入并展示明确原因。测试 stub 仅存在于 XCTest 支持文件，不作为产品闭环。
+
+五、验证情况
+
+- `xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：构建/链接完成，但 XCTest runner 被本机 sandbox 的 `testmanagerd.control` 限制阻断，退出 65。
+- `./dev test macos`：识别同一 sandbox 阻断后复用已构建 XCTest bundle，`xcrun xctest` 通过。结果：171 tests，0 failures。
+
+六、风险与后续
+
+剩余风险：`preview_import` 仍未进入 Core API/UDL/generated bindings，所以真实无冲突预检闭环当前会被阻塞，不能静默导入。建议下一个任务应补 Core 侧 `preview_import` 合同/UDL/实现后，再让 S1-17 默认 preflight 从阻塞态变成真实 OK/DUP/NAME 结果。
+

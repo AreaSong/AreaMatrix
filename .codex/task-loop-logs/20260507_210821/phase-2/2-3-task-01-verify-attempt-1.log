@@ -1,0 +1,77 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`2-3/task-01`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-3-detail-settings/task-01-s1-12-c1-12-get-file-detail.md`
+- 代码范围：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：6
+- 未覆盖项数：1
+- 通过项数：6
+- 不通过项数：1
+- 阻塞项数：1
+
+四、逐项验收结果
+
+- 项目：读取 task、共享规则、切片规则、工程质量规则、编码规范、validation-driver、依赖图、phase manifest，并定位 `## 2-3/task-01`
+- 结果：通过
+- 证据：manifest 明确 Exact Docs 4 个、Existing Code 2 项、Expected New Paths 3 项、Forbidden Touches 1 项。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-2.md:1832`
+
+- 项目：Exact Docs 与 control map 对齐
+- 结果：通过
+- 证据：S1-12 绑定 detail-meta；control map 绑定 `S1-12 -> C1-12 -> get_file`，Real Core。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:27`
+
+- 项目：C1-12 Core API / UDL 存在
+- 结果：通过
+- 证据：`core/area_matrix.udl` 暴露 `FileEntry get_file(string repo_path, i64 file_id)`；Core API 文档同样定义 `get_file(repoPath, fileId) -> FileEntry`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:72`
+
+- 项目：Swift 侧真实 CoreBridge wiring
+- 结果：通过
+- 证据：`CoreBridge.getFile` 通过 `getCoreFile` 调用生成绑定 `getFile(repoPath:fileId:)`，并返回 `FileEntrySnapshot`；`MainFileListModel.selectFile` 会触发 `fileDetailer.getFile`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift:293`
+
+- 项目：Expected New Paths / Forbidden Touches
+- 结果：通过
+- 证据：`apps/macos/AreaMatrixTests/DetailMetaPageFeatureTests.swift` 已存在，`project.pbxproj` 已加入测试源；`git diff --name-only -- core/src/**` 为空，未触碰 forbidden `core/src/**`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj:50`
+
+- 项目：S1-12 中 C1-12 对应用户可见功能完整性
+- 结果：不通过
+- 证据：S1-12 Meta 字段要求包含 `Source`、`Status`，并要求所有字段有标签和值；当前 `MainRepositoryDetailPane.metadataRows` 只渲染 `Category / Path / Size / Storage / Origin / Imported / Modified / SHA-256`，未渲染 `sourcePath` 和 `statusDisplay`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-12-detail-meta.md:41`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryDetailPane.swift:123`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，`MainFileListModel` 通过注入的 `CoreFileDetailing` 加载详情，状态流清晰，文件长度未超过 500 行。
+- 注释 / rustdoc / 文档同步：通过，本任务未新增 public Rust API；UDL 与 Core API 对 C1-12 一致。
+- 错误处理与边界处理：通过，`CoreError` 会经 `CoreErrorMapping` 转为 detail inline error，失败时保留 cached summary。
+- 测试与验证覆盖：通过，新增 `DetailMetaPageFeatureTests` 覆盖缓存立即显示与 `FileNotFound` 映射；`./dev test macos` 最终 281 tests 全通过。
+- 占位、硬编码、mock-only、一次性实现检查：不通过，生产实现不是 mock-only，但用户可见 Meta 字段缺失，无法证明 C1-12 的 `FileEntry.sourcePath` 与状态展示闭环完整。
+
+六、阻塞项
+
+- P1：S1-12 C1-12 Meta 字段未完整落地
+- 说明：C1-12 返回的 `FileEntry` 包含 `source_path`，Swift snapshot 也已有 `sourcePath` 与 `statusDisplay`，但 S1-12 detail meta UI 没有展示 `Source` 和 `Status`。这导致页面规格中的 Meta 字段与“所有字段有标签和值”无法验收。
+- 绝对路径与行号：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryDetailPane.swift:123`
+- 为什么导致不通过：task 完成标准要求 S1-12 中 C1-12 对应的用户可见功能可被触发和验收；当前只能证明部分 metadata 展示，不能证明完整 C1-12 detail-meta 用户可见闭环。
+
+七、验证情况
+
+- 已运行：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+- 结果：通过，输出 `** BUILD SUCCEEDED **`
+- 已运行：`./dev test macos`
+- 结果：通过；标准 `xcodebuild test` 子步骤被本地 `testmanagerd` sandbox 阻断，脚本按 repo-local validation-driver 规则复用已构建 XCTest bundle，`xcrun xctest` 执行 281 tests，0 failures。
+- 缺失：未运行 SwiftFormat / SwiftLint；本次按 manifest 与 validation-driver 选择了 build + macOS test，且当前已有产品验收阻塞项。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+VERIFY_RESULT: FAIL

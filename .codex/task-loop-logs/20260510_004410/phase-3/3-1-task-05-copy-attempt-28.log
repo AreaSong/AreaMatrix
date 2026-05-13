@@ -1,0 +1,42 @@
+一、执行结论
+
+- **未完成**
+- 原因：`./dev check all` 仍失败，且失败需要修改 `apps/macos/AreaMatrix/**` 产品 Swift 文件才能关闭；该路径是 `3-1/task-05` 的 Forbidden Touches。本任务不能把发布门禁改成 PASS。
+
+二、执行范围
+
+本轮只补了允许路径内的证据同步：
+
+- [stage-1-release-checklist.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-release-checklist.md:42)：更新本轮 `./dev check all` 时间与失败证据。
+- [stage1_release_checklist.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/stage1_release_checklist.rs:1)：同步锁定测试中的证据时间。
+
+Forbidden Touches 检查无输出：未触碰 `core/src/**`、`core/area_matrix.udl`、`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrix.xcodeproj/**`。
+
+三、完成情况
+
+- Stage 1 Exact Docs、control map、Core/UX index、testing、release：已读取并交叉核对。
+- `audit --pages`：Stage 1 `S1-01` 到 `S1-37` 覆盖均为 OK，Core capability coverage 无缺失。
+- `3-1/task-01` 到 `3-1/task-04` 证据：自动化证据存在，但 release 仍被 P1 阻断。
+- Release blockers 仍存在：真实 `.app` 首屏启动、M-01..M-04 手工恢复冒烟、Developer ID 签名、公证、DMG、干净 Mac 首启、CHANGELOG / release notes、Swift style gate。
+
+四、工程质量
+
+- 未引入 mock-only、硬编码通过态或一次性放行逻辑。
+- 没有改产品实现，也没有把 release checklist 伪改为通过。
+- 当前工程质量仍不达标：SwiftFormat `199/224 files require formatting`，SwiftLint `239 violations, 239 serious in 226 files`。
+
+五、验证情况
+
+- `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`：通过。
+- `python3 tasks/prompts/_shared/prompt_pipeline.py audit --pages`：通过。
+- `./dev check all`：失败；前置 governance、skills、task-loop、doctor、diff check、Rust fmt/clippy/test、macOS prerequisite、universal Core build、XCTest 已通过，失败点是 SwiftFormat。
+- `git diff --check`：通过。
+- `cargo fmt --all -- --check`：通过。
+- `cargo test --workspace --test stage1_release_checklist`：通过。
+- 单独 SwiftLint 复核：失败，239 serious violations。
+
+六、风险与后续
+
+- 本任务不能继续修到 PASS，因为必须回到 Phase 2 / release-hardening 范围修 `apps/macos/AreaMatrix/**` 产品 Swift style debt，并补真实发布环境证据。
+- 建议下一个任务：创建或回退到明确允许触碰 Swift 产品路径的 release-hardening / Phase 2 repair task，先关闭 SwiftFormat/SwiftLint，再在非 Codex sandbox 的 macOS 桌面或 CI runner 补真实 `.app` launch、签名、公证、DMG、干净机首启证据。
+

@@ -1,0 +1,81 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`2-1/task-22`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-1-first-launch-main/task-22-s1-09-c1-11-list-files.md`
+- 代码范围：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+- 禁止触碰范围：`core/src/**`
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：0
+- 通过项数：10
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 S1-09 页面中的 C1-11 功能点
+- 结果：通过
+- 证据：S1-09 在 control map 中绑定 `C1-11, C1-12, C1-15`，当前实现新增的是 `listFiles` 列表加载链路；`getFile` 仍未实现，`listTreeJSON` 是既有依赖，未把 C1-12/C1-15 新功能塞进本 task。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileListModel.swift:40`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift:267`
+
+- 项目：读取页面规格、MVP control map、Core API 和 C1-11 能力规格
+- 结果：通过
+- 证据：已逐项核对 `S1-09-main-list.md`、`mvp-control-map.md`、`core-api.md`、`C1-11-list-files.md`；`core-api.md` 与 `core/area_matrix.udl` 均声明 `list_files(repo_path, FileFilter) -> FileEntry[]`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:92`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:69`
+
+- 项目：只接入 C1-11 对应 CoreBridge / 状态 / 错误映射
+- 结果：通过
+- 证据：`MainFileListModel` 使用 `FileFilterSnapshot.currentCategory` 调 `CoreFileListing.listFiles`，失败时通过 `CoreErrorMapping` 映射为 inline error；测试覆盖分类加载、重试保持 filter、DB error inline。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileListModel.swift:37`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/MainListFilesTests.swift:6`
+
+- 项目：不顺手实现相邻页面
+- 结果：通过
+- 证据：本轮新增/修改集中在主列表视图、列表模型、测试和 Xcode 工程引用；`core/src/**` diff 为空，未新增相邻页面功能。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift:196`
+
+- 项目：S1-09 中 C1-11 用户可见功能可触发和验收
+- 结果：通过
+- 证据：选中 sidebar category 后 `.task(id: selectedCategory)` 触发 `loadCurrentCategory`，结果渲染到 `Table` 的 Name / Category / Size / Modified / Imported / Status 列。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift:34`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift:196`
+
+- 项目：没有 mock、fixture 或静态状态伪造真实 Core 闭环
+- 结果：通过
+- 证据：生产默认依赖是 `CoreBridge()`；`CoreBridge.listFiles` 调 UniFFI 生成绑定的真实 `listFiles`，测试中的 recording lister 只用于单元测试。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift:126`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift:345`
+
+- 项目：Expected New Paths 落地
+- 结果：通过
+- 证据：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`apps/macos/AreaMatrix.xcodeproj/project.pbxproj` 均存在；工程文件已纳入 `MainFileListModel.swift` 与 `MainListFilesTests.swift`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj:46`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。列表加载状态集中在 `MainFileListModel`，视图负责展示和交互触发，未在 View body 内直接做 IO。
+- 注释 / rustdoc / 文档同步：通过。本 task 未新增 public Rust API；Swift 代码逻辑自解释，未添加低价值注释；Core API/UDL 已对齐。
+- 错误处理与边界处理：通过。`CoreError` 走 `mapCoreError`，非 Core error 包装为 `Internal`，列表失败保留 inline error 和 Retry。
+- 测试与验证覆盖：通过。新增 `MainListFilesTests` 覆盖加载、重试、错误映射；本地 macOS test gate 通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。生产路径接 `CoreBridge` 真实 `list_files`，未发现 `try!`、`print()`、`TODO` 或生产 mock-only 分支。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+- 结果：通过，`** BUILD SUCCEEDED **`
+- 已运行：`./dev test macos`
+- 结果：通过。标准 `xcodebuild test` 被本地 `testmanagerd` sandbox 限制阻断后，脚本按 repo 规则复用已构建 XCTest bundle；`xcrun xctest` 通过，77 tests，0 failures。
+- 缺失：未做真实人工 UI 冒烟；当前 task manifest 未要求。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。C1-11 在 S1-09 主列表中已有真实 CoreBridge 调用、用户可见列表渲染、错误映射和测试/构建证据，可视为当前单任务完成。
+
+VERIFY_RESULT: PASS

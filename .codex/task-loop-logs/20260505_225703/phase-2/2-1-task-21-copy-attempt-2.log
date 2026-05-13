@@ -1,0 +1,41 @@
+一、执行结论
+
+已完成。`2-1/task-21` 上次失败的 S1-08 Import / drag entry 已修复：Import 不再是 no-op，drop zone 不再固定返回 `false`。
+
+二、执行范围
+
+单任务：`2-1/task-21`
+
+本轮主要修改：
+- [MainWindow.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/MainWindow.swift:50)
+- [MainRepositoryContentView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift:46)
+- [OnboardingModelInputs.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/OnboardingModelInputs.swift:5)
+- [ImportEntryRequest.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportEntryRequest.swift:1)
+- [FileDropAdapter.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/FileDropAdapter.swift:1)
+- [ImportEntrySheetView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportEntrySheetView.swift:1)
+- [MainEmptyImportEntryTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/MainEmptyImportEntryTests.swift:1)
+- [project.pbxproj](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj:40)
+
+三、完成情况
+
+- page-feature 覆盖：保持 C1-11 / C1-15 真实 CoreBridge 闭环。
+- 页面入口：Import 按钮现在打开文件选择并创建 `pendingImportEntry`。
+- 拖拽入口：List 空态 drop zone 接收 file URL provider，解析后进入 import entry；无效项显示可访问 toast，不创建 session。
+- mock / 硬编码：移除了上次指出的 no-op Import 和固定拒绝 drop。
+- control map 外能力：未接入 import Core 能力；仅做 S1-08 入口 wiring，后续导入细节仍归 S1-16/S1-17+ 任务。
+- Forbidden Touches：未触碰 `core/src/**`。
+
+四、工程质量
+
+代码按职责拆分到 model input、drop adapter、sheet view 和 request model；没有新增依赖，没有 public Rust API，未改文档/UDL/Core。新增测试覆盖 Import button、无效 drop、file URL decoding。相关文件长度已控制在仓库阈值内，`git diff --check` 通过。
+
+五、验证情况
+
+- `xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：失败，退出码 65；原因是本机 sandbox 阻断 `com.apple.testmanagerd.control`，build 已进入测试阶段。
+- `./dev test macos`：通过；复现同一 sandbox 限制后使用已构建 XCTest bundle，73 tests，0 failures。
+- `xcodebuild -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' build CODE_SIGNING_ALLOWED=NO`：通过。
+
+六、风险与后续
+
+剩余风险是当前环境不能让标准 `xcodebuild test` 自身返回 0，需要在非 sandbox 的本机或 CI 重跑确认。建议下一个动作是进入 `2-1/task-21` 的只读 verify-ready 验收；若通过，再继续 `2-1/task-22`。
+

@@ -1,0 +1,38 @@
+一、执行结论
+
+- 已完成：`1-4/task-01` 的 C1-16 `recover_on_startup` contract-api 范围已收口。
+
+二、执行范围
+
+- 单任务：`1-4/task-01`
+- 修改文件：
+  - [core/src/api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:134)：补齐 `recover_on_startup` 的输入、输出、错误码、副作用和相邻能力边界 rustdoc。
+  - [core/tests/recover_on_startup_contract_api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/recover_on_startup_contract_api.rs:19)：新增 contract tests，锁定 C1-16 spec、control map、Core API、error codes、UDL 和 Rust public API 对齐。
+- `core/area_matrix.udl` 已读取校准，现有 `RecoveryReport recover_on_startup(string repo_path);` 与 `RecoveryReport` 字段已满足本任务，无需改动。
+
+三、完成情况
+
+- 核对清单：5/5 完成。
+- 完成标准：C1-16 contract-api 有测试证据；未扩展到 UI 或相邻 C1 能力。
+- Forbidden Touches：未触碰 `apps/**`。
+- 说明：运行时实现仍留给 `1-4/task-02`，本任务没有把 `not_implemented()` 当作真实闭环完成。
+
+四、工程质量
+
+- 代码结构清晰，没有新增依赖，没有 mock-only 或一次性脚本。
+- 新增 public API 合同说明覆盖 `RepoNotInitialized`、`Db`、`Io`、`PermissionDenied`。
+- 文件安全边界已写入合同：只允许 `.areamatrix/staging/` 安全清理，不得删除最终目录用户文件。
+- 当前工作区另有进入前已存在的 `.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json` 变更，本次未纳入修改范围。
+
+五、验证情况
+
+- `cd core && cargo fmt --all -- --check`：通过。
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过。
+- `cd core && cargo test --workspace recover_on_startup`：通过，新增 3 个 contract tests 通过。
+- 额外补跑 `cd core && cargo test --workspace`：通过。
+- 额外补跑 `git diff --check`：通过。
+
+六、风险与后续
+
+- 剩余风险：C1-16 实际 startup recovery 清理逻辑尚未实现，这是下一任务范围。
+- 建议下一个任务：`1-4/task-02: C1-16 recover-on-startup implementation`。  

@@ -1,0 +1,57 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`2-2/task-06`
+- 任务与 manifest：[task-06-s1-17-page-integration-verify.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-2-import-conflict/task-06-s1-17-page-integration-verify.md:1)、[phase-2.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-2.md:1169)
+- Exact Docs：已逐项读取 `S1-17`、control map、`core-api`、`C1-05..08`
+- 实际文件：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、[project.pbxproj](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj:1)、[core/area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:1)
+
+三、完成度摘要
+
+- 已覆盖项数：8
+- 未覆盖项数：0
+- 通过项数：5
+- 不通过项数：3
+- 阻塞项数：3
+
+四、逐项验收结果
+
+- `task + manifest + Exact Docs + Existing Code` 逐项覆盖：通过。证据是 task、共享规则、切片规则、工程质量规则、编码规范、repo-local validation-driver、依赖图、manifest 章节、7 个 Exact Docs、`apps/macos/AreaMatrix/**` 与 `core/area_matrix.udl` 均已读取核对。
+- `Expected New Paths` / `Forbidden Touches`：通过。`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`apps/macos/AreaMatrix.xcodeproj/project.pbxproj` 已落地；`git diff --name-only` 未见 `core/src/**`，`core/area_matrix.udl` 未改动。
+- `C1-05 classify-preview` 真实接入：通过。[ImportSingleFilePreviewModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreviewModel.swift:266) 真实调用 `predictCategory`；[ImportSingleFilePreflight.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreflight.swift:286) 真实做 hash / duplicate / same-name 预检；相关 XCTest 通过。
+- `C1-06 / C1-07 / C1-08` 真实接入：通过。[CoreImporting.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreImporting.swift:76) 已把 Copy / Move / Index-only 映射到真实 `AreaMatrix.importFile(...)`；real-core XCTest 通过。
+- 页面入口完整性：不通过。`S1-17` 文档要求支持 drop、File -> Import、Dock 图标导入单文件；当前实现只看得到 `.filePicker` / `.dropZone` 两类入口，未发现 Dock open-file 入口处理。
+- 页面内“建议分类可修改”：不通过。当前下拉选项只来自“当前值 / 预测值 / inbox”，没有真实资料库分类列表，无法证明用户能按 page spec 修改到任意有效分类。
+- 页面退出 / 错误态 / 闭环：不通过。点击 `Import` 后先关闭 sheet 并切到 `.importProgress`，再异步执行真正导入；成功后仍停在 `importProgress`，失败时没有失败回调把错误带回 UI；`ImportProgressView` 的 `View details` 为空实现，`Stop after current file` 永久 disabled，不能构成文档要求的完整闭环。
+- 验证执行：通过。直接 `xcodebuild test ...` 因本地 `testmanagerd` 沙箱限制失败；按仓库测试规则回退执行 `./dev test macos`，最终 hostless `xcrun xctest` 通过，`175` 个测试 `0` 失败。
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过。导入开始、导入成功、导入失败的路由拆分不完整，真实失败路径在 UI 上丢失。
+- 注释 / rustdoc / 文档同步：不通过。`S1-17` 对 Dock 入口、分类修改能力的文档要求与当前实现不一致。
+- 错误处理与边界处理：不通过。iCloud placeholder / Replace / 非法文件名处理基本到位，但真正 `import_file` 失败后的用户可见错误流没有闭环。
+- 测试与验证覆盖：不通过。测试命令执行到了，但现有测试没有阻止 Dock 入口缺失、分类下拉范围不足、导入后 route 闭环不完整这类验收级问题。
+- 占位、硬编码、mock-only、一次性实现检查：不通过。[ImportProgressView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportProgressView.swift:22) 仍有空按钮实现和硬编码禁用态，不能作为最终闭环页面通过。
+
+六、阻塞项
+
+- `P0 导入结果闭环丢失`：`Import` 先切走页面再执行真实导入，失败结果没有任何上抛到主路由的回调；成功后也没有按单文件成功场景回到主窗口 toast。证据：[ImportEntrySheetView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportEntrySheetView.swift:190)、[OnboardingModelInputs.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/OnboardingModelInputs.swift:48)、[ImportProgressView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportProgressView.swift:22)、[S1-17-import-single-sheet.md](/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-17-import-single-sheet.md:21)、[S1-20-import-progress.md](/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-20-import-progress.md:20)。为什么导致不通过：task checklist 明确要求入口、退出、错误态和 CoreBridge 调用能串成完整页面闭环；当前真实导入失败无法形成用户可见闭环。
+- `P1 建议分类不可按页面规格真实修改`：分类下拉只提供当前值、预测值和 `inbox`，没有真实资料库分类集合。证据：[ImportEntrySheetView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportEntrySheetView.swift:136)、[ImportEntrySheetView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportEntrySheetView.swift:214)、[S1-17-import-single-sheet.md](/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-17-import-single-sheet.md:25)、[S1-17-import-single-sheet.md](/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-17-import-single-sheet.md:92)。为什么导致不通过：完成标准要求页面可按 page spec 完整验收；当前无法证明用户能把建议分类改成任意有效目标分类。
+- `P1 Dock 单文件入口缺失`：页面规格把 Dock 图标导入单文件列为入口，但当前 App 只暴露窗口和 `filePicker` / `dropZone` 两类来源，未发现 Dock open-file 处理。证据：[AreaMatrixApp.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/App/AreaMatrixApp.swift:4)、[ImportEntryRequest.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportEntryRequest.swift:3)、[S1-17-import-single-sheet.md](/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-17-import-single-sheet.md:20)。为什么导致不通过：task checklist 要求检查页面入口是否完整；当前至少缺一个文档明示入口。
+
+七、验证情况
+
+- 已运行：`xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+- 结果：失败。原因是本地 `com.apple.testmanagerd.control` 沙箱限制，不是断言失败。
+- 已运行：`./dev test macos`
+- 结果：通过。脚本按仓库规则在 `xcodebuild test` 被 `testmanagerd` 沙箱阻断后，回退到 hostless `xcrun xctest`；`175` tests passed, `0` failures。
+- 缺失：未见能覆盖 Dock 入口、分类下拉真实范围、导入后 route 完整闭环的验收证据。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+
+VERIFY_RESULT: FAIL

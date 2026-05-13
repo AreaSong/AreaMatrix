@@ -1,0 +1,35 @@
+一、执行结论：已完成。
+
+二、执行范围：单任务 `1-5/task-11`。修改了：
+
+- [docs/api/core-api.md](/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:346)：同步 C1-24 Core API 合同漂移，补齐错误码、输入输出、副作用边界和 `Task.detached` 调用提示。
+- [core/src/api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:388)：补齐 `move_to_category` public rustdoc，明确 C1-24 合同、错误与 Indexed/repo-owned 边界。
+- [move_to_category_contract_api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/move_to_category_contract_api.rs:1)：新增 contract 测试，交叉锁定 capability spec、control map、Core API、UDL、error codes 和 Rust API 文档。
+
+三、完成情况：
+
+- C1-24 contract-api 范围：完成。
+- 未实现相邻 C1 能力或 UI 页面。
+- `core/area_matrix.udl` 已有正确签名，本次用测试锁定，未改动。
+- 未触碰 `apps/**`。
+- 说明：`move_to_category` 真实移动实现仍保留在 task-12 范围，本次不把 contract-api 伪装成完整产品闭环。
+
+四、工程质量：
+
+- 新增测试不走 mock-only 成功态，只验证合同面和文档/UDL/API 对齐。
+- 错误码覆盖 `Classify / Conflict / FileNotFound / PermissionDenied / Io / Db`。
+- C1-24 副作用边界已写清：repo-owned 移动、Indexed metadata-only、不覆盖、不隐式创建未声明分类。
+- 工作区已有的 `.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json` 在我开始前就是修改态，未作为本任务改动处理。
+
+五、验证情况：
+
+- `cd core && cargo fmt --all -- --check`：通过。
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过。
+- `cd core && cargo test --workspace move_to_category`：通过；新增 3 个 `move_to_category_contract_*` 测试全部通过。
+- `git diff --check`：通过。
+
+六、风险与后续：
+
+- 剩余风险：C1-24 运行时实现尚未完成，这是下一步 `1-5/task-12` 的范围。
+- 建议下一个任务：执行 `1-5/task-12: C1-24 move-to-category implementation`。
+

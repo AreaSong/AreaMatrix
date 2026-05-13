@@ -1,0 +1,39 @@
+一、执行结论
+
+已完成：上次 P0 的测试源未接入 target 已修复。`xcodebuild test` 在当前 Codex 沙盒仍因 `testmanagerd.control` sandbox restriction 退出 65，但测试 bundle 已编译成功，且补跑 `xcrun xctest` 执行 3 个测试全部通过。
+
+二、执行范围
+
+单任务：`0-2/task-12`
+
+修改文件：
+- [project.pbxproj](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj:16)
+
+说明：为修复上次验收 P0，必须修改 Xcode 工程元数据，把已存在的 [AreaMatrixShellTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/AreaMatrixShellTests.swift:4) 接入 `AreaMatrixTests` target source phase。未改 Core、页面或业务逻辑。
+
+三、完成情况
+
+- 创建最小测试 target：已存在并保持。
+- 测试只验证 app shell/bridge 可加载：已接入 target，`AreaMatrixShellTests.swift` 现在在 test target sources 中：[project.pbxproj](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj:258)。
+- 不伪造页面闭环通过：满足；测试只断言 placeholder bridge 和 Phase 0 shell 状态。
+- Forbidden Touches：未触碰。`git diff --name-only -- core/src`、`git diff --cached --name-only -- core/src`、`git ls-files -o --exclude-standard core/src` 均无输出。
+
+四、工程质量
+
+结构清晰：只增加 Xcode fileRef/buildFile/source entry，没有新增依赖、mock-only wiring 或一次性脚本。  
+注释 / rustdoc / 文档同步：不涉及 Rust public API 或文档变更。  
+错误与边界：不触碰用户文件、DB、Core API、UDL、Swift bridge 真实实现或生成产物。  
+范围风险：`project.pbxproj` 不在 manifest 的 Expected New Paths 内，但这是修复上次验收 P0 的必要工程接线；回滚就是删除新增的 `AreaMatrixShellTests.swift` fileRef/buildFile/source entry。
+
+五、验证情况
+
+- `xcodebuild -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' build CODE_SIGNING_ALLOWED=NO`：通过，`** BUILD SUCCEEDED **`。
+- `xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：失败，退出 65；失败点是沙盒无法连接 `com.apple.testmanagerd.control`。但输出中已出现 `SwiftCompile ... AreaMatrixShellTests.swift`，证明测试文件已进入 target 编译。
+- `xcrun xctest apps/macos/DerivedData/AreaMatrix/Build/Products/Debug/AreaMatrixTests.xctest`：通过，执行 3 个测试，0 failures。
+- `git diff --check`：通过。
+
+六、风险与后续
+
+剩余风险：manifest 指定的 `xcodebuild test` 在当前沙盒不能完成 test runner 通信，需要在非沙盒本机终端或 CI 再补跑一次作为最终 Xcode runner 证据。  
+建议下一个任务：补跑非沙盒 `xcodebuild test` 后再进入 `0-2/task-13` foundation integration verify。
+

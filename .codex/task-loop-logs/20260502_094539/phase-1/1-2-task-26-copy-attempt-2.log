@@ -1,0 +1,45 @@
+**一、执行结论**
+已完成。
+
+**二、执行范围**
+单任务：`1-2/task-26`，只修复 C1-10 implementation 的上次验收失败项。
+
+修改文件：
+- [core/src/db/import.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/db/import.rs)
+- [core/src/db/mod.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/db/mod.rs)
+- [core/src/storage/dedup.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/dedup.rs)
+- [core/src/storage/destination.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/destination.rs)
+- [core/src/storage/import.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/import.rs)
+- [core/tests/resolve_name_conflict_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/resolve_name_conflict_implementation.rs)
+
+**三、完成情况**
+- C1-10 implementation 范围：通过。
+- Exact Docs 以 SSOT 执行：通过。
+- 未实现相邻 C1 能力或 UI 页面：通过。
+- 最小真实路径：已补齐 `DuplicateStrategy::Overwrite` 下同名不同 hash 的 Replace 路径。
+- 分层方向：DB 查询在 `db`，决策在 `storage/import`，文件替换仍复用现有 replacement plan。
+
+Forbidden Touches：未触碰 `apps/**`。
+
+**四、工程质量**
+- 新增 `find_active_file_by_path`，让同名 Replace 能定位 active DB row。
+- `ReplacementReason` 区分 `duplicate_overwrite` 与 `name_conflict_replace`，change_log 可追溯。
+- 新增测试覆盖 Replace 成功、旧文件归档、DB/FS/change_log 一致，以及 DB 失败时原文件恢复、staging 清空。
+- 无新增依赖；无 mock-only、硬编码通过态或一次性实现。
+- `core/src/storage/import.rs` 保持 500 行，未突破编码规范的文件长度偏好。
+
+**五、验证情况**
+已运行并通过：
+- `cd core && cargo fmt --all -- --check`
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`
+- `cd core && cargo test --workspace resolve_name_conflict`
+- `cd core && cargo test --workspace`
+- `git diff --check`
+- `git status/diff/ls-files` 范围核查：`apps/**` 无输出
+
+未运行：无必需项未运行。
+
+**六、风险与后续**
+剩余风险：Core 以 `DuplicateStrategy::Overwrite` 作为 S1-24 已二次确认的输入信号；UI 确认状态本身不在本 task 范围内。
+
+建议下一个任务：`1-2/task-27: C1-10 resolve-name-conflict failure-recovery`。当前工作区还存在 task-loop 运行状态文件变更和日志文件，我没有把它们纳入本次代码修复范围。  

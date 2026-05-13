@@ -1,0 +1,41 @@
+一、执行结论
+
+- 未完成。
+- S1-07 功能闭环和 macOS 验证已通过，但最终仍不能判 PASS：`.codex/task-loop-*` 旧运行证据仍在 Expected New Paths 之外，且当前环境拒绝写入/删除，导致范围门禁未能完全关闭。
+
+二、执行范围
+
+- 单任务：`2-1/task-17`
+- 保留的任务实现范围：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+- 已回收：`docs/**`、`tasks/prompts/**`、`progress.json` 的 out-of-scope diff 已清干净。
+- 仍阻塞：`.codex/task-loop-runs/.../summary.json` 修改、`.codex/task-loop-logs/.../2-1-task-17-*attempt-*.log` 未跟踪日志，删除/写入/xattr 清理均返回 `Operation not permitted`。
+
+三、完成情况
+
+- page-feature 覆盖：通过，S1-07 仅覆盖 C1-02、C1-03。
+- 页面闭环：通过，Open Repository 进入 `mainLoading`，再通过真实 `CoreBridge` 的 `load_config` / `list_tree_json` 路由到 `mainEmpty` 或 `mainList`。
+- 错误态：通过，打开失败回到完成页 inline retry error；Finder 失败写 toast 并 VoiceOver announcement。
+- mock / fixture / 硬编码：通过，生产路径走 CoreBridge；fixture 只在测试内。
+- Forbidden Touches：未触碰，`git status --short -- core/src` 无输出。
+- 范围门禁：不通过，仅因 `.codex` evidence 目录权限阻塞无法清理。
+
+四、工程质量
+
+- 代码结构清晰：opening result、tree snapshot、主窗口路由和 Finder announcement 都拆在现有 macOS 层。
+- 错误处理覆盖：Core open failure、Finder failure、真实 empty/adopt repo open 都有测试。
+- 无新增依赖；未改 `core/src/**`。
+- `swiftlint` / `swiftformat` 未运行：当前环境未找到这两个命令。
+
+五、验证情况
+
+- 通过：`xcodebuild ... build CODE_SIGNING_ALLOWED=NO`，结果 `BUILD SUCCEEDED`。
+- 通过：`bash scripts/check-macos-tests.sh`；标准 `xcodebuild test` 被本地 `testmanagerd` 沙箱阻断后，脚本按规则 fallback 到 `xcrun xctest`，62 tests，0 failures。
+- 通过：`python3 tasks/prompts/_shared/prompt_pipeline.py doctor`，637 tasks / 637 manifests。
+- 通过：`git diff --check`。
+- 失败：清理 `.codex/task-loop-*`，`rm`、写入、`xattr -d` 均为 `Operation not permitted`。
+
+六、风险与后续
+
+- 剩余风险：不是 S1-07 产品功能风险，而是 task-loop evidence 目录权限导致的验收范围风险。
+- 下一个动作：先解除或迁移 `.codex/task-loop-*` 的权限/归档策略，再重新只读验收 `2-1/task-17`；不建议直接推进下一个 task。
+

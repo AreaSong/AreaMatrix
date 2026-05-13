@@ -1,0 +1,44 @@
+一、执行结论
+
+- 已完成
+
+二、执行范围
+
+- 单任务：`2-1/task-25`
+- 修改文件：
+  - `apps/macos/AreaMatrix/Models/MainListVisibleFileFiltering.swift`
+  - `apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift`
+  - `apps/macos/AreaMatrixTests/MainListIntegrationFilterTests.swift`
+  - `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+
+三、完成情况
+
+- 已逐项核对 S1-09 的 C1-11 / C1-12 / C1-15：页面已有真实 `CoreBridge` 调用链路：`listFiles`、`getFile`、`listTree`。
+- 补齐 S1-09 page spec 缺口：`Filter current list` 现在只过滤当前已加载列表中的文件名，不做跨资料库搜索，也不新增 Core 能力。
+- 补齐表格排序 wiring：默认 `importedAt desc`，列头排序可用。
+- 新增测试覆盖当前列表过滤边界。
+- Forbidden Touches：未触碰 `core/src/**`。
+
+四、工程质量
+
+- 过滤逻辑拆到 `MainListVisibleFileFiltering`，视图只负责绑定和展示，未引入 mock-only 或硬编码通过态。
+- 未新增依赖。
+- 未修改 Core API / UDL / Rust 实现。
+- 新增测试文件独立放置，避免继续推高已有 `MainListFilesTests.swift` 文件长度。
+
+五、验证情况
+
+- 已运行：`xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+  - 结果：构建通过，但测试 runner 被本地 sandbox 阻断：`com.apple.testmanagerd.control ... Sandbox restriction`。
+- 已运行：`./dev test macos`
+  - 结果：通过。脚本按仓库规则复用同一 XCTest bundle 执行，`86 tests, 0 failures`。
+- 已运行：`xcodebuild -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' build CODE_SIGNING_ALLOWED=NO`
+  - 结果：通过。
+- 已运行：`git diff --check`
+  - 结果：通过。
+
+六、风险与后续
+
+- 剩余风险：未做真实 UI 手工交互截图验证；本轮已完成 build + XCTest 级验证。
+- 建议下一个任务：进入 `2-1/task-26`，继续按 manifest 顺序处理 S1-10 main-loading。
+

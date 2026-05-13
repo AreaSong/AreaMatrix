@@ -1,0 +1,40 @@
+一、执行结论
+
+- 已完成：`2-3/task-25` 的 S1-30 + C1-20 overview-generated 页面功能证据已补齐。
+
+二、执行范围
+
+- 单任务：`2-3/task-25`
+- 修改文件：
+  - [AdvancedSettingsModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/AdvancedSettingsModel.swift)
+  - [AdvancedSettingsPane.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Settings/AdvancedSettingsPane.swift)
+  - [AdvancedSettingsPageFeatureTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/AdvancedSettingsPageFeatureTests.swift)
+- 未触碰 `core/src/**`，也未改 `core/area_matrix.udl`。
+- 工作区另有既存修改：`.codex/task-loop-runs/.../summary.json`、`tasks/prompts/_shared/progress.json`，本次未纳入任务改动。
+
+三、完成情况
+
+- S1-30 中 C1-20 只处理 generated overview 输出策略。
+- `Generated overview output` 控件从 `S1-30-C1-04-*` 更正为 `S1-30-C1-20-*` 证据标识。
+- overview 保存失败的 retry 标识按失败类型区分：C1-20 overview 与 C1-04 replace 不再混淆。
+- 新增真实 CoreBridge 测试：高级设置保存 `RootAreaMatrixFile` 后不立即写根文件；下一次真实 `importIndexedFile` 触发 overview regeneration 后创建/更新 `AREAMATRIX.md`，且 `README.md` 保持原内容。
+- Forbidden Touches：未触碰。
+
+四、工程质量
+
+- 没有新增依赖、mock-only 闭环或硬编码通过态。
+- 错误路径覆盖了 overview 保存失败回滚与 retry。
+- 高风险点控制在 UI 配置和测试证据：不直接实现 Core 写入、不移动/删除/覆盖用户文件。
+- 回滚方式：还原上述 3 个文件即可，Core 数据和 UDL 未变更。
+
+五、验证情况
+
+- `xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：通过，`BUILD SUCCEEDED`。
+- `xcodebuild test ... -only-testing:AreaMatrixTests/AdvancedSettingsPageFeatureTests`：构建/链接完成，但本地 sandbox 阻断 `com.apple.testmanagerd.control`。
+- 按仓库规则改用同一 XCTest bundle：`xcrun xctest -XCTest AreaMatrixTests.AdvancedSettingsPageFeatureTests ...`：通过，10 tests / 0 failures。
+
+六、风险与后续
+
+- 剩余风险：未做完整 macOS 全量测试；本任务已完成 manifest build 和 C1-20 定向测试。
+- 建议下一个任务：进入 `2-3/task-26`，做 S1-30 page integration verify，统一验 C1-04 / C1-16 / C1-20 覆盖。
+

@@ -1,0 +1,88 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`3-1/task-05`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-3/3-1-stability-release/task-05-stage1-integration-verify.md`
+- Manifest：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-3.md` 的 `## 3-1/task-05`
+- Exact Docs：6 个均已读取
+- Existing Code：已核对 `core/**`、`apps/macos/**`、`scripts/**` 的结构、关键真实 Core wiring、测试与发布证据
+
+三、完成度摘要
+
+- 已覆盖项数：7
+- 未覆盖项数：0
+- 通过项数：3
+- 不通过项数：4
+- 阻塞项数：6
+
+四、逐项验收结果
+
+- 项目：读取 Stage 1 roadmap、control map、Core index、UX index、testing、release  
+  结果：通过  
+  证据：6 个 Exact Docs 均存在并已读取；control map 有 37 个页面行，其中 35 个 Real Core、2 个 Preview。  
+  涉及文件：`docs/roadmap/stage-1-mvp.md`、`docs/architecture/mvp-control-map.md`、`docs/core/capability-specs/stage-1-mvp.md`、`docs/ux/page-specs/stage-1-mvp.md`、`docs/development/testing.md`、`docs/development/release.md`
+
+- 项目：按 control map 核对 Real Core 页面  
+  结果：不通过  
+  证据：Swift 默认 wiring 大量使用真实 `CoreBridge()`，例如 `ImportEntrySheetView.swift:55`、`MainRepositoryContentView.swift:188`、`DatabaseRepairConfirmView.swift:30`；但最终 release 证据仍显示真实 `.app` launch、手工冒烟、签名/公证/DMG 缺失，不能证明整体真实闭环可发布。  
+  涉及文件：`apps/macos/AreaMatrix/**`、`docs/development/stage-1-release-checklist.md:11`
+
+- 项目：核对 Phase 1 Core 与 Phase 2 UI integration verify  
+  结果：不通过  
+  证据：Core integration verify 文件存在，macOS integration verify 测试文件也存在；`./dev check all` 中 Rust core tests 通过，但 macOS prerequisite gate 失败，且 release checklist 明确 macOS XCTest 不能替代 `./dev check all`、真实 `.app` launch、签名/公证或干净 Mac 首启。  
+  涉及文件：`core/tests/**`、`apps/macos/AreaMatrixTests/**`、`docs/development/stage-1-release-checklist.md:42`
+
+- 项目：核对 `3-1/task-01` 到 `3-1/task-04` 证据  
+  结果：不通过  
+  证据：`recovery-scenarios.md` 明确 M-01、M-02、M-03、M-04 手工证据仍为 `manual_evidence_status: pending`，任一缺少发布前手工日志则 Stage 1 发布不通过。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/development/recovery-scenarios.md:57`
+
+- 项目：运行最终自动化综合门禁  
+  结果：不通过  
+  证据：`python3 tasks/prompts/_shared/prompt_pipeline.py doctor` 通过；`git diff --check` 通过；`./dev check all` 失败，缺 `x86_64-apple-darwin` Rust target、`swiftformat`、`swiftlint`。  
+  涉及文件：命令输出、`docs/development/stage-1-release-checklist.md:72`
+
+- 项目：发现缺口时必须判定不通过  
+  结果：通过  
+  证据：当前存在 P1 release blockers、验证失败和手工证据缺失，本报告已按规则判定不通过。  
+  涉及文件：`docs/development/stage-1-release-checklist.md:64`
+
+- 项目：Forbidden Touches  
+  结果：通过  
+  证据：`git diff --name-only -- core/src core/area_matrix.udl apps/macos/AreaMatrix apps/macos/AreaMatrix.xcodeproj` 无输出；`git status --short` 对这些 Forbidden Touches 也无输出。  
+  涉及文件：`core/src/**`、`core/area_matrix.udl`、`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrix.xcodeproj/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过。真实 Core wiring 和测试结构存在，但最终发布门禁未闭环，任务不能视为长期可交付完成。
+- 注释 / rustdoc / 文档同步：不通过。release/performance 文档已同步阻断事实，但这些文档本身证明当前“不放行”。
+- 错误处理与边界处理：不通过。自动化 recovery 证据存在，但真实 macOS/iCloud/TCC/DB repair 手工证据仍 pending。
+- 测试与验证覆盖：不通过。`./dev check all` 失败；真实 `.app` 启动到首屏、签名、公证、DMG、干净 Mac 首启缺证据。
+- 占位、硬编码、mock-only、一次性实现检查：未发现默认产品路径用 mock-only 伪装通过；但当前 hostless XCTest fallback 不能替代真实 release gate。
+
+六、阻塞项
+
+- P1-RL-001：真实 Release `.app` 启动到首屏证据缺失。路径：`/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-performance-baseline.md:88`。原因：Stage 1 最终标准要求启动 `< 1.5s`，当前真实 `.app` launch 为 BLOCKED。
+- P1-RL-002：M-01..M-04 手工恢复冒烟 pending。路径：`/Users/as/Ai-Project/project/AreaMatrix/docs/development/recovery-scenarios.md:137`。原因：import 中断、iCloud placeholder、TCC 权限、DB repair 缺发布前真实手工日志。
+- P1-RL-003：Developer ID 签名、公证、DMG、干净 Mac 首启证据缺失。路径：`/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-release-checklist.md:70`。原因：无可验证 alpha 分发物，Gatekeeper/首次启动风险未关闭。
+- P1-RL-004：CHANGELOG / 版本发布切面未完成。路径：`/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-release-checklist.md:71`、`/Users/as/Ai-Project/project/AreaMatrix/CHANGELOG.md:10`。原因：仍停留在 `[Unreleased]`，无 0.1.0 release 段落、tag、release notes 证据。
+- P1-RL-005：`./dev check all` 未完整通过。路径：`/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-release-checklist.md:72`。原因：缺 `x86_64-apple-darwin`、`swiftformat`、`swiftlint`。
+- P1-TRACE-001：任务运行态未闭环。路径：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/progress.json:6938`。原因：当前 `3-1/task-05` 仍是 `in_progress`，summary/progress 指向 `verify-attempt-7.log`，但当前日志目录只有 attempt 1..6，不能作为 completed evidence。
+
+七、验证情况
+
+- 已运行：`python3 tasks/prompts/_shared/prompt_pipeline.py doctor`：通过，`doctor: OK`
+- 已运行：`./dev check all`：失败，macOS prerequisite check 缺 `x86_64-apple-darwin`、`swiftformat`、`swiftlint`
+- 已运行：`git diff --check`：通过，无输出
+- 已运行：Expected New Paths 存在性检查：通过，`core/tests`、`apps/macos/AreaMatrixTests`、`scripts`、`docs/development` 均存在
+- 已运行：Forbidden Touches diff/status 检查：通过，无输出
+- 缺失：真实 `.app` launch 到首屏、M-01..M-04 手工冒烟、Developer ID 签名、公证、DMG、干净 Mac 首启、release tag / release notes、完整 check-all 通过证据
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+
+VERIFY_RESULT: FAIL

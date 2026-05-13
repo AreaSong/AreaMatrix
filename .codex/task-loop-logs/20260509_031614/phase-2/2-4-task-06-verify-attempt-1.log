@@ -1,0 +1,88 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`2-4/task-06`
+- Task 文件：`tasks/prompts/phase-2/2-4-sync-overview/task-06-s1-37-c1-16-recover-on-startup.md`
+- 主要实现路径：
+  - [DatabaseRepairConfirmModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/DatabaseRepairConfirmModel.swift:52)
+  - [DatabaseRepairConfirmView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/DatabaseRepairConfirmView.swift:84)
+  - [StartupRecoveryModels.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/StartupRecoveryModels.swift:36)
+  - [DatabaseRepairConfirmPageFeatureTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/DatabaseRepairConfirmPageFeatureTests.swift:6)
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：0
+- 通过项数：10
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 S1-37 页面中的 C1-16 功能点  
+  结果：通过  
+  证据：本轮产品 diff 只在 S1-37 DB repair confirm 模型/视图中加入 startup recovery 状态、触发与展示；未实现相邻页面。  
+  涉及文件：[DatabaseRepairConfirmModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/DatabaseRepairConfirmModel.swift:52)、[DatabaseRepairConfirmView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/DatabaseRepairConfirmView.swift:137)
+
+- 项目：读取页面规格、control map、Core API、C1-16 能力规格  
+  结果：通过  
+  证据：S1-37 声明 DB repair confirm；control map 将 S1-37 绑定 `C1-26, C1-16`；C1-16/API/UDL 均定义 `recover_on_startup(repo_path) -> RecoveryReport`。  
+  涉及文件：`docs/ux/.../S1-37-db-repair-confirm.md`、`docs/architecture/mvp-control-map.md`、`docs/api/core-api.md`、`core/area_matrix.udl`
+
+- 项目：只接入 C1-16 CoreBridge / 状态 / 错误映射  
+  结果：通过  
+  证据：`runStartupRecoveryCheck` 调用 `startupRecoverer.recoverOnStartup(repoPath:)`，失败经 `mapError` 转为 `CoreErrorMappingSnapshot`；CoreBridge 扩展通过 `Task.detached` 调用 UniFFI `recoverOnStartup`。  
+  涉及文件：[DatabaseRepairConfirmModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/DatabaseRepairConfirmModel.swift:146)、[StartupRecoveryModels.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/StartupRecoveryModels.swift:36)
+
+- 项目：S1-37 中 C1-16 用户可见功能可触发和验收  
+  结果：通过  
+  证据：页面 `.task` 自动触发 startup recovery check；失败态提供 `Retry startup recovery`；完成态展示 cleanup/reverted/warnings。  
+  涉及文件：[DatabaseRepairConfirmView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/DatabaseRepairConfirmView.swift:84)
+
+- 项目：没有 mock / fixture / 静态状态伪造真实 Core 闭环  
+  结果：通过  
+  证据：生产默认依赖为 `CoreBridge()`；fixture 仅存在于 XCTest。  
+  涉及文件：[DatabaseRepairConfirmView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/DatabaseRepairConfirmView.swift:30)、[DatabaseRepairConfirmPageFeatureTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/DatabaseRepairConfirmPageFeatureTests.swift:290)
+
+- 项目：未触碰 control map 之外 Core 能力  
+  结果：通过  
+  证据：新增验收只覆盖 `recover_on_startup`，未新增 `core/src/**` 改动；C1-26 既有 full rescan 路径属于同页其他 task。  
+  涉及文件：[core/area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:23)
+
+- 项目：Expected New Paths  
+  结果：通过  
+  证据：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`apps/macos/AreaMatrix.xcodeproj/project.pbxproj` 均存在；测试文件已在 project 中登记。  
+  涉及文件：[project.pbxproj](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj:74)
+
+- 项目：Forbidden Touches  
+  结果：通过  
+  证据：`git status --short -- apps/macos core/area_matrix.udl core/src` 未显示 `core/src/**` 修改。  
+  涉及文件：`core/src/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。模型负责状态和 Core 调用，视图负责展示，CoreBridge 包装真实 UniFFI 调用。
+- 注释 / rustdoc / 文档同步：通过。本任务未新增 public Rust API；UDL/Core API 已有 C1-16 合同。
+- 错误处理与边界处理：通过。CoreError 通过 mapper 进入 UI；运行中禁用 full rescan/diagnostics，失败可 retry。
+- 测试与验证覆盖：通过。新增测试覆盖成功、失败、retry、无相邻动作、CoreBridge boundary。
+- 占位、硬编码、mock-only、一次性实现检查：通过。生产路径未发现 mock-only 或静态完成态。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：通过，`BUILD SUCCEEDED`
+- 已运行：`./dev test macos`：通过。标准 `xcodebuild test` 子步骤被本地 sandbox 的 `testmanagerd` 通信限制阻断；脚本按仓库规则复用同一 XCTest bundle，通过 `xcrun xctest` 执行，469 tests，0 failures。
+- 失败：无产品失败；仅有本地 sandbox 通知/日志采集限制。
+- 缺失：未做人工 UI 点击验证；当前 task 要求的 build 和 repo-local macOS test gate 已覆盖。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS

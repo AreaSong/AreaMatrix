@@ -1,0 +1,55 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`1-3/task-14`
+- 路径：`core/src/**`、`core/area_matrix.udl`、`core/tests/**`
+- 禁止触碰：`apps/**`
+
+三、完成度摘要
+
+- 已覆盖项数：7
+- 未覆盖项数：0
+- 通过项数：7
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- C1-14 implementation 范围：通过。实现集中在 `read_note` / `write_note`，未扩展 UI 或相邻 C1。
+- Exact Docs 作为 SSOT：通过。C1-14 明确要求 `notes`、`edited_note`、sidecar `.md` 一致性和失败不破坏旧内容：[C1-14-read-write-note.md](/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-14-read-write-note.md:22)。
+- 不实现相邻能力或 UI：通过。`apps/**` 当前无 git status / diff 输出；Control Map 只绑定 S1-14 + C1-14：[mvp-control-map.md](/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:29)。
+- 最小真实路径：通过。`write_note` 写 sidecar 后在 DB 事务内 upsert note + 插入 `edited_note`，失败会回滚 sidecar：[note.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/note.rs:30)、[db/note.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/db/note.rs:22)。
+- layered design：通过。public API 只委托 core note 模块，DB 细节在 `db/note.rs`，未引入 macOS 依赖：[api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:390)。
+- completion standard 1：通过。UDL/API 签名存在，测试证明无笔记返回 nil、写入后一致、失败不破坏旧内容：[area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:67)、[read_write_note_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/read_write_note_implementation.rs:120)。
+- completion standard 2：通过。未发现未绑定能力实现或 `apps/**` 触碰。
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。模块拆分清楚，函数长度和嵌套未见明显违规。
+- 注释 / rustdoc / 文档同步：通过。public API 有 rustdoc 和 Errors 说明，Core API 与 UDL 对齐。
+- 错误处理与边界处理：通过。覆盖 FileNotFound、PermissionDenied、Io、Db；拒绝未跟踪 sidecar 覆盖，并检测 DB/sidecar 不一致。
+- 测试与验证覆盖：通过。`read_write_note` 过滤测试覆盖 3 个 contract + 5 个 implementation 测试。
+- 占位、硬编码、mock-only、一次性实现检查：通过。测试使用真实 temp repo、SQLite、文件系统 sidecar，不是 mock-only。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`cd core && cargo fmt --all -- --check`：通过。
+- 已运行：`cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过。
+- 已运行：`cd core && cargo test --workspace read_write_note`：通过，8 个相关测试通过。
+- 已运行：`cd core && cargo test --workspace`：通过。
+- 已运行：`git status --short -- apps && git diff --name-only -- apps`：无输出。
+- 缺失：无必需验证缺失。macOS UI 消费链路不属于本 core implementation task。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS
+

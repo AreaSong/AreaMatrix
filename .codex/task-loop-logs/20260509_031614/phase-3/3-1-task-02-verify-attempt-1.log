@@ -1,0 +1,70 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`3-1/task-02`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-3/3-1-stability-release/task-02-recovery-scenarios.md`
+- 主要验收文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/development/recovery-scenarios.md`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/recovery_scenarios.rs`
+
+三、完成度摘要
+
+- 已覆盖项数：6/6
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：2
+- 阻塞项数：2
+
+四、逐项验收结果
+
+- 读取 testing / troubleshooting / transactional import / recovery 规格  
+  结果：通过。证据：Exact Docs 已存在并读取；recovery 场景文档也交叉引用了这些源事实。涉及文件：[recovery-scenarios.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/recovery-scenarios.md:14)
+
+- 从 `3-1/task-01` 矩阵转成恢复场景  
+  结果：通过。证据：RS-01 到 RS-10 覆盖自动化、手工和 Missing evidence。涉及文件：[recovery-scenarios.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/recovery-scenarios.md:42)
+
+- 覆盖崩溃、中断、staging、DB 修复、iCloud、权限、导入失败、reindex/repair 失败  
+  结果：通过。证据：场景总表逐项覆盖上述域。涉及文件：[recovery-scenarios.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/recovery-scenarios.md:44)
+
+- 每个场景说明初始状态、触发、预期恢复、不变量、验证方式  
+  结果：通过。证据：总表列齐这些列。涉及文件：[recovery-scenarios.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/recovery-scenarios.md:42)
+
+- 无法自动化场景的手工清单和 P0/P1 证据门禁  
+  结果：不通过。证据：M-01 到 M-04 只有清单，没有发布前真实手工日志；文档明确“缺少发布前手工日志时，Stage 1 发布不通过”。涉及文件：[recovery-scenarios.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/recovery-scenarios.md:57)、[recovery-scenarios.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/recovery-scenarios.md:108)
+
+- 只补测试、脚本或 `docs/development/**`，不改 Core/Swift 主功能  
+  结果：不通过。主要新增落点在允许范围内，但当前工作区还有 task-loop runtime 状态改动：`.codex/task-loop-runs/.../summary.json`、`tasks/prompts/_shared/progress.json`，不属于本 task 的交付证据范围；需在收口时与任务实现变更区分。
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。`core/tests/recovery_scenarios.rs` 只做证据索引，且链接到已有真实 failure recovery 测试。
+- 注释 / rustdoc / 文档同步：通过。新增文档有 Related，测试不新增 public API。
+- 错误处理与边界处理：不通过。`P1-ER-001` 仍证明真实 Core `Db` mapping 无法区分 locked retry 与 corrupted repair。
+- 测试与验证覆盖：不通过。自动化测试通过，但真实 macOS/iCloud/TCC 手工日志缺失，且文档自身声明该缺口阻断发布。
+- 占位、硬编码、mock-only、一次性实现检查：不通过。Swift 侧可用 fixture 覆盖页面展示，但 `CoreError::Db("database is locked")` 仍映射为 `UserActionRequired`，不能证明真实 Core 输入闭环。
+
+六、阻塞项
+
+- P1-ER-001：DB locked 与 DB corrupted 真实 Core mapping 不可区分  
+  绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/docs/development/error-recovery-matrix.md:83`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/error.rs:107`  
+  说明：`DB_MAPPING` 对所有 `Db` 都是 `High/UserActionRequired`，文档要求 locked 可 Retry、corrupted 进入 blocking repair；这会误导恢复路径，导致不通过。
+
+- P1-MANUAL-EVIDENCE：M-01/M-02/M-03/M-04 缺少真实发布前手工日志  
+  绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/docs/development/recovery-scenarios.md:59`、`/Users/as/Ai-Project/project/AreaMatrix/docs/development/recovery-scenarios.md:106`  
+  说明：清单存在，但真实 macOS 强退、iCloud placeholder、TCC 权限、DB repair 手工记录未落地；文档明确缺失时 Stage 1 发布不通过。
+
+七、验证情况
+
+- 已运行并通过：`python3 tasks/prompts/_shared/prompt_pipeline.py doctor`，结果 `doctor: OK`，tasks/manifests 均为 637。
+- 已运行但原始命令失败：`cargo test --workspace recovery`、`cargo test --workspace transactional_import` 在仓库根目录失败，原因是根目录没有 `Cargo.toml`。
+- 已补跑并通过：`cd core && cargo test --workspace recovery`、`cd core && cargo test --workspace transactional_import`。
+- 已运行但失败：原始 `xcodebuild test ...` exit 65，原因是本地 sandbox 无法连接 `com.apple.testmanagerd.control`。
+- 已补跑并通过：`./dev test macos`，复用同一 XCTest bundle，`472 tests, 0 failures`。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。核心原因不是场景清单缺失，而是清单和矩阵已经明确暴露 P1 发布阻断，且真实手工恢复证据仍缺失。
+
+
+VERIFY_RESULT: FAIL

@@ -1,0 +1,72 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`4-1/task-10`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-10-c2-02-integration-verify.md`
+- 文档范围：manifest `## 4-1/task-10` 下 6 个 `Exact Docs`
+- 代码范围：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/**`
+- 禁止触碰范围：`/Users/as/Ai-Project/project/AreaMatrix/apps/**`
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：0
+- 通过项数：9
+- 不通过项数：1
+- 阻塞项数：1
+
+四、逐项验收结果
+
+- 项目：交叉检查 capability spec、Core API、UDL、Rust 实现和测试
+- 结果：通过
+- 证据：`C2-02` spec 定义 `search_files(...)` 与 `list_filter_facets(repo_path, query) -> SearchFacets`，输入含 category、tags、date range、storage mode、include deleted，错误码为 `Db` / `Config`。UDL 已暴露 `list_filter_facets` 和 `SearchFacetQuery` / `SearchFacets`；Rust 已实现 `list_filter_facets`；测试覆盖合同、实现、失败恢复、集成验证。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-2-experience/C2-02-search-filters.md:8`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:80`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/search.rs:338`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/search_filters_validation.rs:469`
+
+- 项目：消费页面需要的状态、错误和副作用覆盖
+- 结果：通过
+- 证据：S2-02 需要 filter 聚合加载、日期非法、Reset 不清空 query、Smart List draft；S2-08 需要 Any/All、tag count、无标签/加载失败、不得改标签。实现返回 categories、file_kinds、tags、storage_modes、date_bounds、active_filter_count，并将非法 filter/query 映射为 `Config`、DB 读取失败映射为 `Db`，查询路径为只读 SQLite。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-2-experience/S2-02-search-filters.md:63`、`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-2-experience/S2-08-tags-filter.md:61`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/search/facets.rs:33`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/search/repo.rs:184`
+
+- 项目：确认没有实现 control map 之外能力
+- 结果：通过
+- 证据：control map 对 S2-01/S2-02/S2-08 声明 C2-02 只读 filter/facet/tag filter；实现没有新增 Smart List CRUD、tag CRUD、AI/semantic filter、文件移动/删除/重命名。`git diff --name-only -- apps` 为空。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-2-control-map.md:9`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/search.rs:348`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/search/repo.rs:85`
+
+- 项目：只读验收，不修改文件
+- 结果：通过
+- 证据：本轮未执行编辑；只运行读取、grep、diff、验证命令。当前已有脏工作树保持为待验收状态，未回退也未修补。
+- 涉及文件：工作树现状包含 `core/**`、`docs/api/core-api.md`、task-loop evidence；`apps/**` 无 diff。
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过。核心实现拆分在 `search/facets.rs`、`search/repo.rs`、`search/ranking.rs`，结构清楚；但 `core/tests/search_filters_validation.rs` 共 561 行，违反编码规范“单文件 ≤ 500 行”。
+- 注释 / rustdoc / 文档同步：通过。`search.rs` public API 有 rustdoc，Core API、UDL、能力规格和 control map 有对应测试锁定。
+- 错误处理与边界处理：通过。生产路径未发现 `unwrap()` / `expect()` / `panic!()`；非法 filter/query 返回 `Config`，DB 读取失败返回 `Db`；SQLite 使用 read-only 和 `PRAGMA query_only`。
+- 测试与验证覆盖：通过。`search_filters_*` 覆盖 contract、real facets、Any/All、storage mode、include deleted、无写入、DB/Config 错误，以及 `search_files` 消费同一 C2-02 filter state。
+- 占位、硬编码、mock-only、一次性实现检查：通过。实现读取真实 repo SQLite metadata、真实 tags/change_log/notes/file rows；未发现 mock-only 或静态成功态。
+
+六、阻塞项
+
+- P1：`search_filters_validation.rs` 超过单文件长度门禁
+- 说明：编码规范要求单文件 ≤ 500 行；当前文件到第 561 行。工程质量规则要求 coding-standard blocker 未解决时不得报告 PASS。
+- 绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/search_filters_validation.rs:561`
+- 规则证据：`/Users/as/Ai-Project/project/AreaMatrix/docs/development/coding-standards.md:13`、`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/engineering-quality-rules.md:47`、`/Users/as/Ai-Project/project/AreaMatrix/.codex/skills-src/areamatrix-validation-driver/SKILL.md:40`
+- 为什么导致不通过：本 task 是 High 风险 Core integration verify，验收门禁包含编码规范和工程质量；即使功能和验证命令通过，存在明确 coding-standard blocker 时不能判定完成。
+
+七、验证情况
+
+- 已运行：`./dev check all`
+- 通过：governance health、skill health、task-loop check、prompt doctor、`git diff --check`、`cargo fmt --all -- --check`、`cargo clippy --all-targets --all-features -- -D warnings`、`cargo test --workspace`、SwiftFormat、SwiftLint。
+- 通过：C2-02 相关 Rust 测试包括 `search_filters_contract_api.rs`、`search_filters_implementation.rs`、`search_filters_failure_recovery.rs`、`search_filters_validation.rs`。
+- 环境性失败并已按仓库规则 fallback：标准 `xcodebuild test` 被本地 sandbox 的 `com.apple.testmanagerd.control` 通信限制阻断；脚本复用已构建 XCTest bundle 执行 `xcrun xctest` 并通过，最终 `./dev check all` 退出码为 0。
+- 缺失：无必需命令缺失。
+
+八、最终判定说明
+
+- C2-02 的 API、UDL、Rust 实现、真实数据路径、错误边界、只读副作用边界和测试证据已经能证明功能闭环可作为后续 page-feature task 的真实 Core 依赖。
+- 但本次执行尚未达到完整验收标准，原因是工程质量门禁存在 P1 阻塞项；不能视为完成，后续 UI 接入不应基于该 task 的 completed 状态推进。
+
+VERIFY_RESULT: FAIL

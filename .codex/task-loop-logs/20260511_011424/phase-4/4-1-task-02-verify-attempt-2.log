@@ -1,0 +1,76 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-1/task-02`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-02-c2-01-implementation.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/search.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/search/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/tests/search_query_files_*`
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：0
+- 通过项数：10
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只实现 C2-01，不顺手实现同阶段其他能力  
+  结果：通过  
+  证据：`search_files` 只落在 C2-01 搜索合同；rustdoc 明确排除 C2-02 facet、C2-03 saved search、C2-04 Smart List、OCR、语义搜索和远程 AI。`rg` 未发现新增 `list_filter_facets` / saved search / Smart List API。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/search.rs:194`
+
+- 项目：输入、输出、DB/文件系统变化和错误映射  
+  结果：通过  
+  证据：UDL 暴露 `search_files(repo_path, query, filter, sort, pagination) -> SearchResultPage`；Rust 类型覆盖 `SearchFilter`、`SearchPagination`、`SearchResultPage`、diagnostics；实现使用只读 SQLite 连接和 `PRAGMA query_only = ON`，无 DB/文件写入；错误路径覆盖 `InvalidPath`、`Config`、`Db`。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:72`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/search.rs:98`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/search/repo.rs:174`
+
+- 项目：保持 Rust Core 不依赖平台 UI API  
+  结果：通过  
+  证据：实现集中在 Rust Core 搜索模块，依赖 std/rusqlite/chrono 等 Core 侧能力；`git status --short -- apps` 为空。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/search/engine.rs:1`
+
+- 项目：最小测试支撑，不做页面接入  
+  结果：通过  
+  证据：新增/现有测试覆盖 contract、真实 SQLite 搜索、名称/路径/笔记/分类/change log、空结果、query diagnostics、只读边界、invalid path、分页和 fuzzy/pinyin；未改 `apps/**`。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/search_query_files_implementation.rs:165`
+
+- 项目：Expected New Paths 与 Forbidden Touches  
+  结果：通过  
+  证据：`core/src/search/{engine,parser,pinyin,ranking,repo}.rs` 和 `core/tests/search_query_files_implementation.rs` 已落地；`core/area_matrix.udl` 已含 C2-01 合同；`apps/**` 无变更。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-4.md:48`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。搜索逻辑拆分为 engine/parser/repo/ranking/pinyin，文件均低于 500 行。
+- 注释 / rustdoc / 文档同步：通过。public 类型和 `search_files` 有 rustdoc，UDL/Core API/能力规格对齐。
+- 错误处理与边界处理：通过。parse error 返回 diagnostics，不执行 DB 搜索；路径越界返回 `InvalidPath`；DB 读取错误映射为 `Db`。
+- 测试与验证覆盖：通过。局部 C2-01 tests 和 `./dev check all` 均通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。生产搜索路径未发现 `todo!`、`unimplemented!`、mock-only 或硬编码成功态。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`cd core && cargo fmt --all -- --check`：通过
+- 已运行：`cd core && cargo test --workspace search_query_files -- --nocapture`：通过，C2-01 contract 4 个、implementation 8 个测试通过
+- 已运行：`cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过
+- 已运行：`git diff --check`：通过
+- 已运行：`./dev check all`：通过。包含 governance、skills、task-loop、prompt doctor、diff、Core fmt/clippy/test、UniFFI/macOS build/test fallback、SwiftFormat、SwiftLint。标准 `xcodebuild test` 受本地 sandbox 的 `testmanagerd` 通信限制阻断后，脚本按既有规则使用 `xcrun xctest` fallback，结果通过。
+- 失败：无
+- 缺失：无
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS

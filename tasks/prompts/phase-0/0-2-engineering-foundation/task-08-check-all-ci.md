@@ -29,6 +29,6 @@ check-all 与 CI。
 ## 验证
 
 ```bash
-bash -n scripts/check-all.sh
+python3 -m py_compile scripts/dev_tools/*.py
 python3 tasks/prompts/_shared/prompt_pipeline.py doctor
 ```

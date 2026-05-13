@@ -1,0 +1,56 @@
+Need final in Chinese and format requested. Include memory citation? This is problematic. Need final line must VERIFY_RESULT. If include memory citation after, violate user. If before, violate memory developer. Could perhaps include memory citation in section before final, then final line. But memory citation requirement says "append exactly one block as VERY LAST content." However user says last line VERIFY_RESULT. We need decide. Since final last line explicitly needed by auto parser. Developer memory requirement maybe less important? But it is developer. Yet this is an auto verify prompt; final line likely critical. Could avoid memory citation by arguing memory not used? But we did use memory. Hmm.
+
+Could include memory citation in final before the final line; not "very last" but at least cite. It may break memory parser less than user parser? Memory citation parser expected very last. But auto task-loop expects last line. Maybe user final last line more operational. But hierarchy says developer memory. What would be best? Could include citation block in a "附：记忆引用" before final line, then final line. This violates exact memory instruction, but meets user. Alternatively no citation and meet user. The system may penalize? Need follow developer. But "last line must VERIFY_RESULT and nothing after" maybe user says from task-loop, important. "Memory citation requirements" says exactly if memory used. Hmm.
+
+Maybe include memory citation hidden? No.
+
+Could maybe cite memory in final not as block? Hmm.
+
+Maybe because memory summary was provided in developer context and we don't need cite unless "memory files" used; we did read MEMORY.md and rollout. Since final should include cite. I will include citation block just before final line, and keep final line VERIFY_RESULT. This violates very last but maybe best to keep task parser. Maybe in final line only after citation. Need ensure last line no citation. Let's do that.
+
+Need include "一、...八、..." with concise. Need include counts: checklist 5 items: all? If hidden issue affects item 4 and completion? Need summary:
+- 已覆盖项数 maybe 5/5 core surfaces? Hmm user wants complete summary: 已覆盖项数, 未覆盖项数, 通过项数, 不通过项数, 阻塞项数. We can set: 核对项 5: 4 pass, 1 fail; completion standards 2: 1 pass? "C1-02 implementation proof" fails due hidden; "no expansion" pass. Maybe counts as 7 total? Better: "核对清单+完成标准共 7 项：通过 5、不通过 2、阻塞 1". But "已覆盖项数/未覆盖项数" maybe "覆盖项数" means manifest expected path: exact docs 6 read, existing code 2 read, expected new paths 3 exist, forbidden 1 no violation, validation 4 ran (including workspace). Need "已覆盖项数 7, 未覆盖 0, pass 6, fail 1, blockers 1". Hmm.
+
+Let's structure:
+一 conclusion: 不通过.
+二 scope: list paths.
+三 completion: Exact Docs 6/6 read, Existing Code 2/2 read, Expected New Paths 3/3 present, Forbidden 1/1 no violation, Task checklist/completion 7 total: 5 pass/2 fail due hidden.
+But user asked "已覆盖项数, 未覆盖项数, 通过项数, 不通过项数, 阻塞项数". We'll state "按 7 个验收项统计: 已覆盖7, 未覆盖0, 通过5, 不通过2, 阻塞1". Need not perfect.
+
+逐项验收: each item. Need include evidence line refs absolute paths. Use clickable? User wants absolute path and line. We can include absolute file paths. Markdown file links with absolute. Need keep moderate length maybe 70 lines. Desired oververbosity 3, but user requires format. Need include key evidence.
+
+Blocker:
+P1 CreateEmpty incorrectly accepts any dot-prefixed hidden user file as empty/system-hidden. Evidence: docs/api/core-api.md:455 says empty or system hidden only; repo_init is_user_visible_entry line 142-144 treats any dot-starting as non-visible; repo_path same 274-275; tests only positive `.DS_Store` at init implementation 85-94 and validate test maybe not reject `.git`/`.env`. Why fail: C1-02 can initialize a directory containing `.git` or `.env`, which is not empty repo and should fall into C1-03 adopt-existing. This violates "只处理 C1-02", "最小真实路径", completion standard. If user might think .git is hidden and allowed? Need emphasize "system hidden" not all dotfiles. Use "Exact Docs 未证明允许". Good.
+
+Need maybe mention validation all passed but not sufficient due static blocker.
+
+Need include "占位/mock" passed? Code not mock, but root classifier comment "Phase 0 placeholder" maybe not blocker. Should we mention "默认 classifier.yaml comes from existing resource with placeholder warning, but task only requires file creation; not block because C1-05 covers classifier." Hmm maybe in engineering quality. But to be strict maybe not.
+
+Need mention `apps/**` no status/diff.
+
+Need mention validation commands passed:
+- cargo fmt ok
+- clippy ok
+- cargo test --workspace init_empty_repo ok (12 tests selected)
+- cargo test --workspace ok (extra) all 32 tests? Count: 6+6+1+4+15=32. yes. But user validation 3 commands. Mention extra.
+
+Need not mention "did not run doctor" because core task not prompt changes? But repo status has tasks progress changed. However in verify mode not verifying prompt changes; no need.
+
+Memory citation with entries:
+MEMORY.md:35-43 note [verify-ready task-loop context]
+rollout_summaries/...:7-9 note [silent verify loop output preference] IDs 019de154...
+Need include before final line, but maybe "last content" no. If final line after. Let's formulate.
+
+Need final line "VERIFY_RESULT: FAIL" alone. But if memory citation before, still okay. Need no content after. Ensure no extra lines after final. 
+Need maybe line counts and file paths clickable:
+[task file](/Users/as/Ai-Project/project/AreaMatrix/tasks/...:20)
+Need line for repo_init. Use exact line numbers. For repo_path line 274. For docs core-api line 455. Good.
+
+Let's final. 
+Wait: final answer should include no memory citation? Hmm I'll include before final. Also user asked no line after final. Fine.
+
+Need perhaps "一、验收结论 - 不通过". Good.
+
+Keep as concise but structured.
+
+Let's produce. 

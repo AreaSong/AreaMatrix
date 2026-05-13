@@ -1,0 +1,69 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`3-1/task-03`
+- 对应文件路径：`tasks/prompts/phase-3/3-1-stability-release/task-03-performance-benchmarks.md`
+- 主要验收文件：`docs/development/stage-1-performance-baseline.md`、`core/tests/stage1_performance_baseline.rs`、`apps/macos/AreaMatrixTests/CoreBridgeRepositoryTests.swift`、`scripts/dev_tools/macos.py`
+
+三、完成度摘要
+
+- 已覆盖项数：5
+- 未覆盖项数：1
+- 通过项数：4
+- 不通过项数：2
+- 阻塞项数：2
+
+四、逐项验收结果
+
+- 读取 testing、performance、observability、Stage 1 MVP 清单：通过  
+  证据：4 个 Exact Docs 均已读取，且存在。
+
+- 性能基线覆盖启动、单文件导入、100 文件批量导入、reindex、Tree/list、内存：不通过  
+  证据：`docs/development/stage-1-performance-baseline.md:61` 到 `docs/development/stage-1-performance-baseline.md:73` 已列指标；但真实 `.app` 启动到首屏标记为 `BLOCKED`。
+
+- 每个指标写明数据集、环境、入口、阈值、实测值、结论：通过  
+  证据：环境在 `docs/development/stage-1-performance-baseline.md:32`，指标表在 `docs/development/stage-1-performance-baseline.md:61`。
+
+- Core hot path / Swift UI 性能入口：部分通过  
+  证据：Rust release perf 通过；Swift `AreaMatrixPerfTests` 5 项通过。但真实 `.app` launch 仍未取得标准 XCTest/Instruments 证据。
+
+- 性能不达标或未测时记录阻断项和回退建议：通过  
+  证据：`docs/development/stage-1-performance-baseline.md:77` 到 `docs/development/stage-1-performance-baseline.md:97` 明确 P1 阻断与回退建议。
+
+- 只补测试、脚本或 `docs/development/**` 下性能证据：不通过  
+  证据：当前 dirty diff 包含 `tasks/prompts/**`、`tasks/prompts/_shared/progress.json` 等超出本 task 允许范围的修改。
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，Rust/Swift 测试代码连接真实 CoreBridge 和 core API，不是静态结果。
+- 注释 / rustdoc / 文档同步：通过，性能基线文档有环境、入口、阈值、实测与阻断说明。
+- 错误处理与边界处理：不通过，`scripts/dev_tools/macos.py:168` 到 `scripts/dev_tools/macos.py:171` 将真实 `.app` launch probe 的 sandbox BLOCKED 转成退出码 0，验证命令表面通过但 release gate 仍未满足。
+- 测试与验证覆盖：不通过，真实 `.app` 启动到首屏缺标准 XCTest performance 或 Instruments 证据。
+- 占位、硬编码、mock-only、一次性实现检查：不通过，hostless fallback 明确不能等同真实 `.app` launch，文档自己也声明不能冒充 release 证据。
+
+六、阻塞项
+
+- P1：真实 `.app` 启动到首屏缺 release 证据  
+  绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-performance-baseline.md:20`  
+  说明：任务完成标准要求覆盖启动指标；当前真实 `.app` 启动项为 `BLOCKED`，且文档声明必须在 CI 或非 sandbox 本机用标准 XCTest performance / Instruments 复测后才能放行。
+
+- P1：验证脚本把真实 app launch BLOCKED 转成命令成功  
+  绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/scripts/dev_tools/macos.py:168`  
+  说明：`./dev test macos --only-testing AreaMatrixTests/AreaMatrixPerfTests` 退出码为 0，但输出包含 `Stage 1 real .app launch probe: BLOCKED by local LaunchServices sandbox.`；这不能证明 release 启动指标通过。
+
+七、验证情况
+
+- 已运行：`python3 tasks/prompts/_shared/prompt_pipeline.py doctor`：通过，`doctor: OK`
+- 已运行：`cargo bench --manifest-path core/Cargo.toml --workspace --no-run`：通过
+- 已运行：`./dev test macos --only-testing AreaMatrixTests/AreaMatrixPerfTests`：命令退出 0；5 个 hostless/direct XCTest perf case 通过，但标准 `xcodebuild test` 被 `testmanagerd` sandbox restriction 阻断，真实 Release `.app` launch probe 被 LaunchServices sandbox 阻断
+- 额外运行：`cargo test --manifest-path core/Cargo.toml --release --test stage1_performance_baseline -- --ignored --test-threads=1 --nocapture`：通过，4 项 Rust release perf 均 PASS
+- 缺失：真实 `.app` 启动到首屏的标准 XCTest performance 或 Instruments 证据
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。核心原因不是 Core/hostless 指标失败，而是 Stage 1 release checklist 所需的真实 `.app` 启动性能证据仍处于 P1 阻断状态，且存在超出当前 task 允许范围的 prompt/progress 修改。
+
+VERIFY_RESULT: FAIL

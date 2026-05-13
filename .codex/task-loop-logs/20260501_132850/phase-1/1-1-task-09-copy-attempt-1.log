@@ -1,0 +1,35 @@
+一、执行结论
+
+已完成 `1-1/task-09`。
+
+二、执行范围
+
+单任务：C1-02 `init-empty-repo` integration-verify。  
+修改文件：新增 [init_empty_repo_integration_verify.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/init_empty_repo_integration_verify.rs:1)。
+
+三、完成情况
+
+核对清单已覆盖：只处理 C1-02；读取并交叉检查 Exact Docs、control map、Core API、UDL、UX 消费页；未实现相邻 C1 能力或 UI 页面；新增测试证明不是 mock/空壳。  
+完成标准已满足：C1-02 的 API / UDL / Rust 实现 / 测试 / UX 消费一致性有测试证据。  
+Forbidden Touches：未触碰 `apps/**`。
+
+四、工程质量
+
+新增的是 integration-verify 测试，不改产品实现、不新增依赖。测试读取 docs/control map/UDL 作为 SSOT，并通过真实 `init_repo`、`load_config`、`list_files`、`list_tree_json` 验证空库初始化、默认分类树、DB/metadata 产物和 README 不覆盖边界。无 mock-only、硬编码通过态或一次性脚本实现。
+
+五、验证情况
+
+全部通过：
+
+- `cd core && cargo fmt --all -- --check`
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`
+- `cd core && cargo test --workspace init_empty_repo`：23 个匹配测试通过
+- 额外补跑 `cd core && cargo test --workspace`：44 个测试通过
+- 额外补跑 `git diff --check`
+
+六、风险与后续
+
+剩余风险：macOS UI 真实消费未在本 task 验证，因 `apps/**` 禁止触碰且 Phase 2 才覆盖；S1-08 的 C1-11/C1-15 也不属于当前 C1-02 阻断范围。  
+建议下一个任务：`1-1/task-10`，进入 C1-03 adopt-existing-repo contract/API。
+
+备注：工作区里已有的 `.codex/task-loop-runs/20260501_132850/summary.json` 和 `tasks/prompts/_shared/progress.json` 脏改动保持未动。

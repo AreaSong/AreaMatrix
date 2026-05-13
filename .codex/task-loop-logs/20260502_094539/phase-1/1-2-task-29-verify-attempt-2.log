@@ -1,0 +1,56 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`1-2/task-29`
+- Task：[task-29-c1-10-integration-verify.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-1/1-2-import-classify/task-29-c1-10-integration-verify.md:1)
+- Manifest：[phase-1.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-1.md:1507)
+- 核验路径：`core/src/**`、`core/area_matrix.udl`、`core/tests/**`
+- 禁止触碰：`apps/**`
+
+三、完成度摘要
+
+- 已覆盖项数：14
+- 未覆盖项数：0
+- 通过项数：14
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 只处理 C1-10 范围：通过。Task 明确限定 API / UDL / Rust / 测试 / UX 消费一致性；实现集中在 `core/src/storage/*` 与 C1-10 测试。
+- Exact Docs 读取并按 SSOT 核验：通过。C1-10 要求同名不同 hash 不覆盖、DB/FS/UI 结果一致、Replace 必须经 S1-24；见 [C1-10 spec](/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-10-resolve-name-conflict.md:41)。
+- 未实现相邻 UI 页面：通过。`git status --short -- apps` 无输出。
+- capability/control map/消费页面交叉检查：通过。S1-23 绑定 C1-10，S1-24 绑定 C1-09/C1-10；见 [mvp-control-map.md](/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:38)。
+- 无 mock/空壳：通过。默认同名导入会落真实文件、DB row、change_log；Replace 使用显式 `DuplicateStrategy::Overwrite`，并写 deleted/imported 日志。
+- Expected New Paths：通过。`core/src`、`core/area_matrix.udl`、`core/tests` 均存在。
+- Forbidden Touches：通过。未发现 `apps/**` 变更。
+- 三条 manifest 验证：通过。
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。`import_file` 分为准备、staging、重复/同名解析、文件提交、DB promote；见 [import.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/import.rs:20)。
+- 注释 / rustdoc / 文档同步：通过。public API 对 C1-10、错误和 Replace 边界有 rustdoc；见 [api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:238)。
+- 错误处理与边界处理：通过。冲突耗尽返回 `Conflict`，非法名返回 `InvalidPath`，DB 失败有 rollback guard；见 [rename.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/rename.rs:35)。
+- 测试与验证覆盖：通过。C1-10 覆盖 contract、implementation、failure-recovery、validation、integration verify。
+- 占位、硬编码、mock-only、一次性实现检查：通过。测试实际读写临时 repo、DB、文件系统和 Trash 模拟，不是静态 mock。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- `cd core && cargo fmt --all -- --check`：通过。
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过。
+- `cd core && cargo test --workspace resolve_name_conflict`：通过，C1-10 相关测试全绿。
+- 额外按 repo-local validation-driver 补跑 `cd core && cargo test --workspace`：通过，workspace 测试全绿。
+- 缺失验证：无本 task 必需验证缺失。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。C1-10 的 API / UDL / Rust 实现 / 测试 / UX 消费一致性均有证据支撑，且未扩展到 `apps/**` 或未绑定能力。
+
+VERIFY_RESULT: PASS

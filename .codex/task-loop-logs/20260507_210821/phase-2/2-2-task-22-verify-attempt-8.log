@@ -1,0 +1,85 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`2-2/task-22`
+- Task 文件：`tasks/prompts/phase-2/2-2-import-conflict/task-22-s1-22-c1-09-detect-duplicate.md`
+- 代码范围：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`apps/macos/AreaMatrix.xcodeproj/project.pbxproj`、`core/area_matrix.udl`
+- 禁止触碰：`core/src/**`
+
+三、完成度摘要
+
+- 已覆盖项数：15
+- 未覆盖项数：0
+- 通过项数：15
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 S1-22 页面中的 C1-09 功能点
+- 结果：通过
+- 证据：control map 指定 `S1-22 -> C1-09 -> import_file -> Real Core`；实现只把 `.duplicate` 映射为 `S1-22 conflict-duplicate`，`.name` 不进入当前页面。
+- 涉及文件：`docs/architecture/mvp-control-map.md:37`、`apps/macos/AreaMatrix/Models/ImportSingleFilePreflight.swift:116`
+
+- 项目：读取页面规格、control map、Core API、C1-09 能力规格
+- 结果：通过
+- 证据：S1-22 要求默认 Skip、Keep both 预览、Replace 条件显示；C1-09 要求同 hash 默认 Skip、KeepBoth 真实导入、Overwrite 二次确认。
+- 涉及文件：`docs/ux/page-specs/stage-1-mvp/S1-22-conflict-duplicate.md:67`、`docs/core/capability-specs/stage-1-mvp/C1-09-detect-duplicate.md:41`
+
+- 项目：只接入 C1-09 对应 CoreBridge / 状态 / 错误映射
+- 结果：通过
+- 证据：单文件预检计算 SHA256，并通过 `CoreBridgeBatchFileLoader -> CoreBridge.listFiles` 读取真实 Core 文件列表；最终导入通过 `CoreBridge.importFile` 传入 `DuplicateStrategy`。
+- 涉及文件：`apps/macos/AreaMatrix/Models/ImportSingleFilePreflight.swift:227`、`apps/macos/AreaMatrix/Models/ImportBatchDuplicatePrecheck.swift:7`、`apps/macos/AreaMatrix/Bridge/CoreImporting.swift:267`
+
+- 项目：不顺手实现相邻页面
+- 结果：通过
+- 证据：当前模型仅暴露 duplicate conflict page；Replace 只在选择后进入二次确认流程，S1-24 自身另有 `2-2/task-24` 覆盖。
+- 涉及文件：`apps/macos/AreaMatrix/Models/ImportSingleFilePreflight.swift:116`、`tasks/prompts/phase-2/2-2-import-conflict/task-24-s1-24-c1-09-detect-duplicate.md:1`
+
+- 项目：S1-22 中 C1-09 用户可见功能可触发和验收
+- 结果：通过
+- 证据：UI 渲染标题、说明、已有文件、当前文件、Skip / KeepBoth / Replace 策略、Show existing file；footer 的 Import/Continue 触发对应模型动作。
+- 涉及文件：`apps/macos/AreaMatrix/Views/Main/ImportSingleFileSheetSections.swift:119`、`apps/macos/AreaMatrix/Views/Main/ImportEntrySingleFileFooter.swift:9`
+
+- 项目：无 mock / fixture / 静态状态伪造真实 Core 闭环
+- 结果：通过
+- 证据：真实 Core 集成测试初始化 repo、导入 existing、用真实预检发现 duplicate，Skip 不写文件，KeepBoth 真实写入编号副本。
+- 涉及文件：`apps/macos/AreaMatrixTests/ImportSingleFilePageIntegrationVerifyTests.swift:339`、`apps/macos/AreaMatrixTests/ImportSingleFilePageIntegrationVerifyTests.swift:389`
+
+- 项目：Expected New Paths 落地
+- 结果：通过
+- 证据：`apps/macos/AreaMatrix`、`apps/macos/AreaMatrixTests`、`apps/macos/AreaMatrix.xcodeproj/project.pbxproj` 均存在；project 已收录新 Swift / XCTest 文件。
+- 涉及文件：`apps/macos/AreaMatrix.xcodeproj/project.pbxproj:94`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git diff --name-only -- core/src` 输出为空，未触碰 `core/src/**`。
+- 涉及文件：`core/src/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。预检、重复策略、UI section、footer action 分层清楚，未把业务 IO 写进 SwiftUI body。
+- 注释 / rustdoc / 文档同步：通过。当前为 Swift app 层接入，无新增 public Rust API；Core API / UDL 已有 `DuplicateStrategy`、`DuplicateFile(existing_path)`。
+- 错误处理与边界处理：通过。覆盖 hash 计算中、Skip、KeepBoth、Replace hidden/enabled/disabled、Trash 不可用、DuplicateFile fallback。
+- 测试与验证覆盖：通过。真实 Core 集成路径和模型路径均有 XCTest 覆盖。
+- 占位、硬编码、mock-only、一次性实现检查：通过。测试中有 fixture，但产品路径默认使用 `CoreBridge` 和真实 Core bindings，不以 fixture 作为最终闭环。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：通过，`** BUILD SUCCEEDED **`。
+- 已运行：`./dev test macos`：通过。标准 `xcodebuild test` 被本地 `testmanagerd` sandbox 限制阻断，脚本按 repo 规则复用同一 XCTest bundle 执行 `xcrun xctest`，最终 263 tests，0 failures。
+- 未运行：`swiftlint --strict`、`swiftformat --lint .`：当前环境未安装这两个命令；本 task manifest 与 repo-local validation-driver 的必需验证已完成。
+- 失败：无产品验证失败；仅有本地 Xcode sandbox 通信限制，已由 `./dev test macos` 规则化 fallback 覆盖。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS

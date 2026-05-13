@@ -1,0 +1,60 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`1-4/task-14`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-1/1-4-recovery-sync-overview/task-14-c1-18-validation.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-18-sync-external-renamed.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/sync/mod.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/db/sync.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/tests/sync_external_renamed_validation.rs`
+
+三、完成度摘要
+
+- 已覆盖项数：5
+- 未覆盖项数：0
+- 通过项数：5
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 只处理 C1-18 validation 范围：通过。实现只在 `sync_external_changes` 的 `ExternalEventKind::Renamed` 分支处理 rename；`Removed/Modified` 不推进 cursor，不声明完成。证据：`/Users/as/Ai-Project/project/AreaMatrix/core/src/sync/mod.rs:64`、`:71`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/sync_external_renamed_validation.rs:236`。
+- Exact Docs 已读取并作为 SSOT：通过。C1-18 要求更新 `files.path/current_name/updated_at`、写入 `change_log.renamed`、只读确认新路径。证据：`/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-18-sync-external-renamed.md:21`、`:26`。
+- 不实现相邻 C1 能力或 UI 页面：通过。`apps/**` 无 diff、无 untracked；当前验收未触碰 UI。证据：`git diff --name-only -- apps` 输出为空。
+- 补齐 Rust 测试：通过。新增 `core/tests/sync_external_renamed_validation.rs`，覆盖成功路径、列表/详情/log/tree/cursor 证据。证据：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/sync_external_renamed_validation.rs:124`。
+- 验证成功路径和关键错误路径：通过。成功路径、missing target、ambiguous conflict、未实现事件 scope boundary 均有测试；已有 failure 测试覆盖 DB rollback / permission denied。证据：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/sync_external_renamed_validation.rs:175`、`:199`、`:236`；`/Users/as/Ai-Project/project/AreaMatrix/core/tests/sync_external_renamed_failure_recovery.rs:193`。
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。rename plan 与 DB apply 分层清楚，事务更新在 `apply_external_sync_batch` 内完成。证据：`/Users/as/Ai-Project/project/AreaMatrix/core/src/sync/mod.rs:154`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/db/sync.rs:38`。
+- 注释 / rustdoc / 文档同步：通过。public API rustdoc 写明 C1-18 的 side effect、禁止文件操作、错误。证据：`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:474`。
+- 错误处理与边界处理：通过。missing target -> `FileNotFound`，ambiguous/cross-category -> `Conflict`，DB 更新与 change log 同事务。证据：`/Users/as/Ai-Project/project/AreaMatrix/core/src/sync/mod.rs:162`、`:182`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/db/sync.rs:156`。
+- 测试与验证覆盖：通过。manifest 三条命令均通过，且按 validation-driver 补跑 `cargo test --workspace` 通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。测试使用真实 temp repo、真实文件 rename、真实 SQLite change_log/list/detail/tree 路径；未发现 mock-only 闭环。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行并通过：`cd core && cargo fmt --all -- --check`
+- 已运行并通过：`cd core && cargo clippy --all-targets --all-features -- -D warnings`
+- 已运行并通过：`cd core && cargo test --workspace sync_external_renamed`，C1-18 相关 15 个测试通过。
+- 已补充运行并通过：`cd core && cargo test --workspace`
+- 已运行并通过：`git diff --check`
+- Forbidden Touches 检查：`apps/**` 无修改、无未跟踪文件。
+- Expected New Paths 检查：`core/src/**`、`core/area_matrix.udl`、`core/tests/**` 均存在；`core/tests/sync_external_renamed_validation.rs` 已落地。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS

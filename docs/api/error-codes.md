@@ -35,10 +35,10 @@ pub type CoreResult<T> = Result<T, CoreError>;
 #[derive(Error, Debug)]
 pub enum CoreError {
     #[error("io error: {0}")]
-    Io(String),
+    Io { message: String },
 
     #[error("db error: {0}")]
-    Db(String),
+    Db { message: String },
 
     #[error("config error: {reason}")]
     Config { reason: String },
@@ -80,14 +80,14 @@ impl From<std::io::Error> for CoreError {
             std::io::ErrorKind::PermissionDenied => {
                 CoreError::PermissionDenied { path: e.to_string() }
             }
-            _ => CoreError::Io(e.to_string()),
+            _ => CoreError::Io { message: e.to_string() },
         }
     }
 }
 
 impl From<rusqlite::Error> for CoreError {
     fn from(e: rusqlite::Error) -> Self {
-        CoreError::Db(e.to_string())
+        CoreError::Db { message: e.to_string() }
     }
 }
 
@@ -99,7 +99,7 @@ impl From<serde_json::Error> for CoreError {
 
 impl From<walkdir::Error> for CoreError {
     fn from(e: walkdir::Error) -> Self {
-        CoreError::Io(e.to_string())
+        CoreError::Io { message: e.to_string() }
     }
 }
 ```
@@ -110,8 +110,8 @@ impl From<walkdir::Error> for CoreError {
 
 | Variant | 触发场景 | 自动重试 | UI 处理 | 严重程度 |
 |---|---|---|---|---|
-| `Io(msg)` | 文件读写失败、磁盘空间、损坏 | 视情况 | toast「文件操作失败：{}」 | medium |
-| `Db(msg)` | SQLite 执行失败、schema 损坏 | 否 | 弹窗：建议从备份恢复或重建索引 | high |
+| `Io { message }` | 文件读写失败、磁盘空间、损坏 | 视情况 | toast「文件操作失败：{}」 | medium |
+| `Db { message }` | SQLite locked、busy、schema 损坏、索引损坏 | locked/busy 可重试；损坏不可自动重试 | locked/busy：inline Retry；损坏：blocking repair | medium / critical |
 | `Config { reason }` | classifier.yaml 解析失败、必填字段缺失 | 否 | 弹窗：跳转到设置 → 显示具体字段错误 | medium |
 | `Classify { reason }` | 分类引擎内部错误 | 否 | toast「分类失败」+ 落到 inbox | low |
 | `Conflict { path }` | 路径冲突（应已被 conflict::resolve 解决） | 否 | toast「路径冲突」 | medium |
@@ -134,14 +134,14 @@ impl From<walkdir::Error> for CoreError {
 fn io_when_disk_full() {
     let mock = mock_disk_full_writer();
     let r = import_file(&repo, &src, opts);
-    assert!(matches!(r, Err(CoreError::Io(_))));
+    assert!(matches!(r, Err(CoreError::Io { .. })));
 }
 
 #[test]
 fn io_when_source_corrupt() {
     let bad_src = create_unreadable_file();
     let r = import_file(&repo, &bad_src, opts);
-    assert!(matches!(r, Err(CoreError::Io(_)) | Err(CoreError::FileNotFound { .. })));
+    assert!(matches!(r, Err(CoreError::Io { .. }) | Err(CoreError::FileNotFound { .. })));
 }
 ```
 
@@ -158,32 +158,48 @@ catch CoreError.Io(let msg) {
 
 ```rust
 #[test]
+fn db_when_locked() {
+    let mapping = CoreError::Db {
+        message: "database is locked".to_owned(),
+    }.to_error_mapping();
+    assert_eq!(mapping.recoverability, ErrorRecoverability::Retryable);
+}
+
+#[test]
 fn db_when_corrupted() {
     let repo = setup();
     let db_path = repo.path().join(".areamatrix/index.db");
     std::fs::write(&db_path, b"not-a-sqlite-file").unwrap();
     let r = list_files(&repo.path(), FileFilter::default());
-    assert!(matches!(r, Err(CoreError::Db(_))));
+    assert!(matches!(r, Err(CoreError::Db { .. })));
 }
 ```
 
-Swift 处理（高严重，必须弹窗）：
+Swift 处理必须区分 locked/busy 与 corrupted。locked/busy 只能 Retry，不进入 repair；
+corrupted 才进入 blocking repair。
 
 ```swift
 catch CoreError.Db(let msg) {
-    await showAlert(
-        title: "数据库错误",
-        message: """
-        AreaMatrix 数据库无法访问。
-        建议：
-        1. 重启应用
-        2. 重建索引（设置 → 高级 → 重建索引）
-        3. 从备份恢复
-
-        详细：\(truncate(msg, 200))
-        """,
-        actions: [.rebuild, .quit]
-    )
+    let mapping = await coreBridge.mapCoreError(error)
+    switch mapping.recoverability {
+    case .retryable:
+        await showInlineRetry(
+            title: "数据库暂时被占用",
+            message: truncate(msg, 200)
+        )
+    case .fatal:
+        await showAlert(
+            title: "资料库索引损坏",
+            message: "你的文件仍在资料库目录中，但索引需要修复。",
+            actions: [.repairIndex, .openFinder, .collectDiagnostics]
+        )
+    default:
+        await showAlert(
+            title: "数据库错误",
+            message: truncate(msg, 200),
+            actions: [.collectDiagnostics, .quit]
+        )
+    }
 }
 ```
 
@@ -264,7 +280,7 @@ fn file_not_found_after_external_delete() {
     let repo = setup();
     let entry = import_simple(&repo);
     std::fs::remove_file(repo.path().join(&entry.path)).unwrap();
-    let r = delete_file(&repo.path(), entry.id, true);
+    let r = delete_file(&repo.path(), entry.id);
     assert!(matches!(r, Err(CoreError::FileNotFound { .. }) | Ok(_)));
 }
 ```
@@ -347,7 +363,7 @@ fn permission_denied_readonly_repo() {
     let repo = setup();
     set_readonly(repo.path()).unwrap();
     let r = import_file(&repo.path(), &src, opts);
-    assert!(matches!(r, Err(CoreError::PermissionDenied { .. }) | Err(CoreError::Io(_))));
+    assert!(matches!(r, Err(CoreError::PermissionDenied { .. }) | Err(CoreError::Io { .. })));
 }
 ```
 

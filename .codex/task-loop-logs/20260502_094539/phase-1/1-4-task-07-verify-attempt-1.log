@@ -1,0 +1,81 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`1-4/task-07`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-1/1-4-recovery-sync-overview/task-07-c1-17-implementation.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/tests/**`
+
+三、完成度摘要
+
+- 已覆盖项数：7
+- 未覆盖项数：0
+- 通过项数：6
+- 不通过项数：1
+- 阻塞项数：1
+
+四、逐项验收结果
+
+- 只处理 C1-17 implementation 范围
+  - 结果：通过
+  - 证据：实现集中在 `core/src/sync/mod.rs`、`core/src/db/sync.rs`、`core/src/api.rs`，未发现 `apps/**` 修改。
+  - 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/sync/mod.rs`
+
+- 读取 Exact Docs 并以文档为 SSOT
+  - 结果：不通过
+  - 证据：SSOT 要求写入 `change_log.external_modified` 或更具体动作；实际 DB 写入 `action = 'imported'`，测试也断言 `imported`。
+  - 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-17-sync-external-created.md:26`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/db/sync.rs:89`
+
+- 不实现相邻 C1 能力或 UI 页面
+  - 结果：通过
+  - 证据：非 Created 事件被跳过，`detected_renames/deletes/modifies` 保持 0；`apps/**` 无变更。
+  - 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/sync/mod.rs:48`
+
+- 实现该能力的最小真实路径
+  - 结果：通过
+  - 证据：Created 事件读取 metadata/hash，插入 `files.origin = external`，推进 cursor，覆盖 list/detail/tree 测试。
+  - 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/sync/mod.rs:97`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/db/sync.rs:60`
+
+- 保持依赖方向符合 layered design
+  - 结果：通过
+  - 证据：Core 实现不依赖 macOS/FSEvents API，平台层职责仍留在文档声明的 app 层。
+  - 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/sync/mod.rs:1`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，sync planning 与 DB batch persistence 已拆分，文件长度未超 500 行。
+- 注释 / rustdoc / 文档同步：不通过，文档要求 external change log action，但实现和测试同步到了错误动作 `imported`。
+- 错误处理与边界处理：通过，覆盖 missing file rollback、invalid path、iCloud marker、skip internal/generated、cursor batch success。
+- 测试与验证覆盖：不通过，测试存在，但把错误行为固化为 `changes[0].action == "imported"`。
+- 占位、硬编码、mock-only、一次性实现检查：通过，未发现 mock-only 或静态通过态。
+
+六、阻塞项
+
+- P0：C1-17 change_log 动作与 SSOT 不一致
+  - 说明：C1-17 明确要求写入 `change_log.external_modified` 或更具体动作；实现却插入 `imported`，导致 detail-log 消费方无法按外部变更语义查询和展示。
+  - 绝对路径与行号：
+    - `/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-17-sync-external-created.md:26`
+    - `/Users/as/Ai-Project/project/AreaMatrix/core/src/db/sync.rs:89`
+    - `/Users/as/Ai-Project/project/AreaMatrix/core/tests/sync_external_created_implementation.rs:133`
+  - 为什么导致不通过：这是文档有、代码有、但语义不一致；验收规则要求文档为 SSOT，无法用通过测试替代语义正确性。
+
+七、验证情况
+
+- 已运行并通过：`cd core && cargo fmt --all -- --check`
+- 已运行并通过：`cd core && cargo clippy --all-targets --all-features -- -D warnings`
+- 已运行并通过：`cd core && cargo test --workspace sync_external_created`
+- 已运行并通过：`cd core && cargo test --workspace`
+- 缺失：无必需命令缺失
+- Forbidden Touches：`git status --short apps` 无输出，未发现 `apps/**` 被触碰
+- Expected New Paths：`core/src/**`、`core/area_matrix.udl`、`core/tests/**` 均存在对应实现或测试证据
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。虽然验证命令全部通过，但实现违反 C1-17 的 change_log SSOT，且测试把错误动作固化为通过条件。
+
+VERIFY_RESULT: FAIL

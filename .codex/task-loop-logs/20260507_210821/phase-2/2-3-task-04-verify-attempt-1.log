@@ -1,0 +1,87 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`2-3/task-04`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-3-detail-settings/task-04-s1-13-c1-18-sync-external-renamed.md`
+- 主要实现范围：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`
+- 测试范围：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`
+- 工程文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+- 禁止触碰范围：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：0
+- 通过项数：10
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 S1-13 页面中的 C1-18 功能点  
+  结果：通过  
+  证据：S1-13 control map 绑定 `C1-18` 与 `sync_external_changes`，当前实现只新增 `.renamed` 外部同步分支，并通过 Log tab 刷新 change log。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:28`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileListModel.swift:306`
+
+- 项目：读取页面规格、control map、Core API 和 C1-18 能力规格  
+  结果：通过  
+  证据：S1-13 要求外部重命名后出现日志，C1-18 要求 `detected_renames`、`change_log.renamed`、不主动重命名用户文件。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-13-detail-log.md:87`，`/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-18-sync-external-renamed.md:19`
+
+- 项目：接入 C1-18 CoreBridge / 状态 / 错误映射  
+  结果：通过  
+  证据：`CoreExternalChangesSyncing.syncExternalRenamed` 调用真实 `syncExternalChanges(... kind: .renamed ...)`；model 成功后刷新列表、详情、Log，失败走 Core error mapping。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreExternalChangesSyncing.swift:24`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileListModel.swift:116`
+
+- 项目：不顺手实现相邻页面 / control map 外能力  
+  结果：通过  
+  证据：未触碰 `core/src/**`，Swift 变更集中在外部 rename 事件 relay、watcher、CoreBridge、detail log 状态与测试；未新增 control map 外 Core API。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:90`
+
+- 项目：用户可见功能可触发和验收  
+  结果：通过  
+  证据：FSEvents renamed flag 生成 `.renamed` signal，主窗口消费 pending event，Detail Log tab 展示同步状态与 change log。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/App/MainExternalCreatedFileWatcher.swift:95`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/DetailLogTabView.swift:32`
+
+- 项目：没有 mock-only / fixture-only 伪闭环  
+  结果：通过  
+  证据：测试包含真实 `CoreBridge` 仓库闭环：创建 repo、写入文件、Core sync created、Finder-style move、Core sync renamed、再验证 list/detail/change log/cursor。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/DetailLogExternalRenamedPageFeatureTests.swift:179`
+
+- 项目：Expected New Paths  
+  结果：通过  
+  证据：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`project.pbxproj` 均已落地，测试文件已加入 Xcode test target。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj:54`
+
+- 项目：Forbidden Touches  
+  结果：通过  
+  证据：`git status --short -- core/src` 无输出，`git diff --name-only -- core/src` 无输出。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。CoreBridge 分支、watcher signal、model refresh、Log UI 展示路径清楚；相关文件未超过 500 行。
+- 注释 / rustdoc / 文档同步：通过。本 task 未改 Core API/UDL；现有 Core C1-18 rustdoc 明确 old/new path、只读确认、不改用户文件。
+- 错误处理与边界处理：通过。无效 relative path / event id 被拒绝；Core error 与 sync result errors 进入失败状态，不刷新伪成功日志。
+- 测试与验证覆盖：通过。build 通过，macOS XCTest 303 个测试通过，包含 C1-18 真实 CoreBridge 闭环。
+- 占位、硬编码、mock-only、一次性实现检查：通过。生产路径调用真实 `syncExternalChanges` 和 `listChanges`，未发现 mock-only 产品闭环。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：通过，`** BUILD SUCCEEDED **`。
+- 已运行：`./dev test macos`：通过。标准 `xcodebuild test` 被本地 `testmanagerd` sandbox 阻断，脚本按仓库规则复用同一 XCTest bundle 执行 `xcrun xctest`；303 tests，0 failures。
+- 已运行：`git diff --check -- apps/macos/AreaMatrix apps/macos/AreaMatrixTests apps/macos/AreaMatrix.xcodeproj/project.pbxproj`：通过。
+- 未运行：`swiftlint --strict`、`swiftformat --lint .`，当前 PATH 未找到 `swiftlint` / `swiftformat`。此为合并前工具环境缺口，不构成本 task 功能闭环阻塞。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。当前仍有未提交和未跟踪 task 相关变更，合并或 task-loop checkpoint 前需要纳入正常 Git evidence，但不阻断本次单任务验收结论。
+
+VERIFY_RESULT: PASS

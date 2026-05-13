@@ -1,0 +1,94 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`2-4/task-05`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-4-sync-overview/task-05-s1-37-c1-26-repair-reindex-metadata.md`
+- 代码范围：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`、`/Users/as/Ai-Project/project/AreaMatrix.xcodeproj/project.pbxproj`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+- 禁止范围：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+三、完成度摘要
+
+- 已覆盖项数：9
+- 未覆盖项数：3
+- 通过项数：9
+- 不通过项数：3
+- 阻塞项数：2
+
+四、逐项验收结果
+
+- 项目：读取 task、共享规则、切片规则、工程质量规则、编码规范、validation-driver、dependency graph、phase manifest、Exact Docs
+- 结果：通过
+- 证据：`2-4/task-05` manifest 章节存在；4 个 Exact Docs 均存在并已读取，包含 S1-37、mvp-control-map、core-api、C1-26 spec。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-2.md:3059`
+
+- 项目：Expected New Paths 落地
+- 结果：通过
+- 证据：新增/修改位于 `apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`apps/macos/AreaMatrix.xcodeproj/project.pbxproj`；project 已包含新增 Swift 与测试源。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj:73`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git diff -- core/src` 无输出；`core/src/**` 未被修改。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+- 项目：S1-37 中 C1-26 用户可见功能
+- 结果：通过
+- 证据：页面提供确认复选框、`Run Full Rescan`、诊断导出、成功/失败反馈；模型在确认后调用 `repairMetadata(fullRescan: true, preserveDiagnosticsSnapshot: true)`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/DatabaseRepairConfirmModel.swift:77`
+
+- 项目：真实 CoreBridge 闭环
+- 结果：通过
+- 证据：生产默认依赖为 `CoreBridge()`，`CoreMetadataRepairing` 通过 UniFFI `repairMetadata`，并用 `Task.detached` 执行 repair。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreMetadataRepairing.swift:36`
+
+- 项目：只处理 S1-37 页面中的 C1-26，不接入同页其他 Core 功能点
+- 结果：不通过
+- 证据：S1-37 新视图仍暴露 `Resume`、`Clean up and retry`，并在 MainWindow 接线到 `resumeInterruptedInitialization` / `cleanUpInterruptedInitialization`。这属于 S1-37 的 C1-16 同页 secondary capability，当前 task 明确只覆盖 C1-26。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/DatabaseRepairConfirmView.swift:249`
+
+- 项目：C1-26 diagnostics 长任务调用规范
+- 结果：不通过
+- 证据：Core API 要求 `create_diagnostics_snapshot` 等长任务在 Swift 侧用 `Task.detached`；当前 `CoreBridge.createDiagnosticsSnapshot` 直接调用 `createCoreDiagnosticsSnapshot`，没有 detached。S1-37 的 `Export diagnostics...` 依赖这条路径。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift:251`
+
+- 项目：Cancel 返回来源错误页
+- 结果：不通过
+- 证据：S1-37 规格要求 Cancel 返回来源错误页；当前 `mapping == nil` 时直接 `showChoosePath()`，无法证明从 settings/error-recovery 来源返回原错误页。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/MainWindow.swift:296`
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过。C1-26 主模型结构清晰，但 S1-37 页面混入 C1-16 的 resume/cleanup 操作，违反 page-feature task 边界。
+- 注释 / rustdoc / 文档同步：通过。当前为 Swift UI/模型接入，无新增 public Rust API；文档读取与 UDL/API 名称一致。
+- 错误处理与边界处理：不通过。repair 失败会映射错误，但 diagnostics snapshot 调用未满足 Core API 的 detached 长任务规范。
+- 测试与验证覆盖：通过但不足以覆盖边界。新增测试覆盖确认前不运行、repair 失败、diagnostics 失败、无 scanSession 时不显示相邻动作；但没有覆盖有 scanSession 时不得暴露 C1-16 动作。
+- 占位、硬编码、mock-only、一次性实现检查：通过。生产默认走 `CoreBridge()`；测试 fake 仅用于单元验证，不是产品闭环。
+
+六、阻塞项
+
+- P0：当前 page-feature task 越界接入 C1-16 操作
+  说明：本 task 只允许处理 S1-37 + C1-26；实际页面在存在 `scanSession` 时显示并接线 `Resume` / `Clean up and retry`，对应同页 C1-16，应由 `2-4/task-06` 或 page integration verify 覆盖。
+  绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/DatabaseRepairConfirmView.swift:249`
+  为什么导致不通过：违反 task 核对清单第 3 项和 page-feature task 只验一个 `S* + C*` 的切片规则。
+
+- P1：C1-26 diagnostics snapshot 路径未按 API 要求 detached
+  说明：`CoreBridge.createDiagnosticsSnapshot` 直接同步调用 UniFFI wrapper，未使用 `Task.detached`；而 `docs/api/core-api.md` 将 `create_diagnostics_snapshot` 列为必须 detached 的长任务。
+  绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift:251`
+  为什么导致不通过：S1-37 的 diagnostics 导出属于 C1-26 高风险元数据修复链路，当前实现无法证明满足 Core API 的线程/长任务调用规范。
+
+七、验证情况
+
+- 已运行：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+- 结果：通过，输出包含 `** BUILD SUCCEEDED **`。
+- 已运行：`./dev test macos`
+- 结果：通过。`xcodebuild test` 先被本地 `testmanagerd` sandbox 限制阻断，脚本随后按策略复用已构建 XCTest bundle；`xcrun xctest` 通过，461 tests，0 failures。
+- 缺失：未做 UI 手工交互验证；本次已有代码边界阻塞，不能因 build/test 通过判定 task 完成。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。主要原因不是构建或测试失败，而是 page-feature 范围越界接入 C1-16，以及 C1-26 diagnostics snapshot 调用路径未满足 Core API 长任务规范。
+
+VERIFY_RESULT: FAIL

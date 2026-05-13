@@ -1,0 +1,41 @@
+一、执行结论
+
+已完成 `2-1/task-15`。
+
+二、执行范围
+
+单任务：`S1-07 init-done + C1-02 init-empty-repo`。
+
+修改文件：
+- `apps/macos/AreaMatrix/Bridge/CoreRepositoryOpening.swift`
+- `apps/macos/AreaMatrix/Bridge/CoreBridge.swift`
+- `apps/macos/AreaMatrix/Models/AppShellModel.swift`
+- `apps/macos/AreaMatrix/Models/OnboardingInitializationProgress.swift`
+- `apps/macos/AreaMatrix/Views/MainWindow.swift`
+- `apps/macos/AreaMatrix/Views/Onboarding/InitializingStepView.swift`
+- `apps/macos/AreaMatrixTests/InitDoneEmptyRepositoryTests.swift`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+
+三、完成情况
+
+- 核对清单：已只处理 S1-07 中 C1-02 的空库打开闭环。
+- Core 接入：`Open Repository` 先进入 `mainLoading`，再通过真实 `CoreBridge` 调用 `load_config` + `list_tree_json`。
+- 错误映射：打开失败会回到完成页，显示 inline error，并保留 retry 入口。
+- 未实现 C1-03 接管完成页闭环，未实现 S1-08/S1-09 主窗口页面。
+- Forbidden Touches：未触碰 `core/src/**`，未修改 `core/area_matrix.udl`。
+
+四、工程质量
+
+结构保持清晰：新增 `CoreEmptyRepositoryOpening` 作为 C1-02 专用边界，没有让 View 直接调用 UniFFI。没有新增依赖、mock-only 生产路径、硬编码成功态或一次性脚本。新增测试覆盖成功、失败 inline retry、以及真实 Core 空库 `init_repo -> load_config -> list_tree_json` 闭环。
+
+五、验证情况
+
+- 通过：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+- 通过：`bash scripts/check-macos-tests.sh`，标准 `xcodebuild test` 被本地 `testmanagerd` sandbox 阻断后，脚本 fallback 到 `xcrun xctest`，57 tests passed。
+- 通过：`git diff --check`
+- 未运行：`swiftlint --strict`、`swiftformat --lint .`，当前环境未安装对应命令。
+
+六、风险与后续
+
+剩余风险：未做真实 UI 手工点击验证；`Open in Finder` 和 C1-03 接管完成页能力仍属后续 task。建议下一个任务继续 `2-1/task-16`，补 S1-07 的 C1-03 分支。工作区里还有既有脏文件 `.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json`，我未修改或回滚。 
+

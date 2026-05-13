@@ -1,0 +1,39 @@
+一、执行结论
+
+- 未完成
+- 原因：`./dev check all` 仍失败，失败点是 Swift style gate，且主要覆盖 `apps/macos/AreaMatrix/**` 产品代码；该路径属于本任务 Forbidden Touches，不能在 `3-1/task-05` 内修。
+
+二、执行范围
+
+- 单任务：`3-1/task-05`
+- 本轮直接修改：
+  - [stage-1-release-checklist.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-release-checklist.md:42)
+  - [stage1_release_checklist.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/stage1_release_checklist.rs:71)
+- 未触碰 Forbidden Touches：`git diff --name-only -- core/src core/area_matrix.udl apps/macos/AreaMatrix apps/macos/AreaMatrix.xcodeproj` 无输出。
+
+三、完成情况
+
+- Exact Docs 已读取并交叉核对。
+- Real Core / Phase 1 Core / Phase 2 UI 自动化证据大量存在，XCTest 已跑到通过阶段，但最终 release gate 不能放行。
+- `3-1/task-01` 到 `3-1/task-04` 证据仍显示发布阻断：真实 `.app` 首屏、M-01..M-04 手工恢复冒烟、签名/公证/DMG/干净 Mac 首启、CHANGELOG/tag/build 证据缺失。
+- 发现缺口后按规则保持 FAIL，没有把 release readiness 写成 PASS。
+
+四、工程质量
+
+- 本轮只更新发布证据时间戳和对应锁定测试，不补产品实现。
+- 未引入 mock-only、硬编码通过态或绕过 release gate。
+- 剩余工程质量阻断是存量 SwiftFormat/SwiftLint 违规，涉及产品与测试代码；产品部分必须回到 Phase 2 / release-hardening 范围修。
+
+五、验证情况
+
+- 通过：`python3 tasks/prompts/_shared/prompt_pipeline.py doctor`
+- 通过：`git diff --check`
+- 通过：`cargo test --manifest-path core/Cargo.toml --test stage1_release_checklist`，8 tests passed
+- 通过：`PYTHONPYCACHEPREFIX=/private/tmp/areamatrix-pycache python3 -m py_compile scripts/dev_tools/*.py scripts/task_loop/*.py`
+- 通过：`PYTHONPYCACHEPREFIX=/private/tmp/areamatrix-pycache python3 -m unittest scripts.dev_tools.test_build_tools`，9 tests passed
+- 失败：`./dev check all`，SwiftFormat `199/224 files require formatting, 3 files skipped`
+- 失败：SwiftLint 单独复核 `239 violations, 239 serious in 226 files`
+
+六、风险与后续
+
+当前任务不能标记 completed。下一个应回到 Phase 2 / release-hardening：修复 `apps/macos/AreaMatrix/**` 和测试代码的 SwiftFormat/SwiftLint debt，然后补齐 M-01..M-04 手工冒烟、真实 Release `.app` 首屏、Developer ID 签名、公证、DMG、干净 Mac 首启、CHANGELOG/tag/release 证据。

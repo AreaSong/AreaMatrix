@@ -1,0 +1,32 @@
+一、执行结论：已完成。
+
+二、执行范围：单任务 `2-1/task-34`。本次只补验收证据，没有改产品实现。
+
+修改文件：
+- [MainWindowIntegrationVerifyTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/MainWindowIntegrationVerifyTests.swift)
+- [project.pbxproj](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj)
+
+三、完成情况：
+- 核对清单 1：通过。新增 task-34 总体验收测试，覆盖 S1-08/S1-09 成功路由、S1-10 retryable DB inline loading、S1-11 critical repo error。
+- 核对清单 2：通过。`2-1/task-19` 到 `2-1/task-33` 在 `progress.json` 中均为 completed。
+- 核对清单 3：通过。未发现需要移除的 main-window mock-only 产品路径；新增测试明确检查 `CoreBridge().state == .generatedBindings` 和绑定 Core boundary。
+- 核对清单 4：通过。未新增未列出的页面或 Core 能力。
+- Forbidden Touches：未触碰 `core/src/**`。
+
+四、工程质量：
+- 代码结构：新增测试文件 195 行，集中在 task-34 integration verify，不改生产逻辑。
+- 错误处理：测试覆盖 retryable DB 保留在 `mainLoading` inline、permission denied 进入 `mainRepoError`。
+- 占位 / 硬编码 / mock-only：产品路径未新增 mock；测试 doubles 仅用于 XCTest 验证路由和边界。
+- 现有工作树另有 `.codex/task-loop-runs/.../summary.json`、`tasks/prompts/_shared/progress.json` 修改，开始前已存在，本次未处理。
+
+五、验证情况：
+- `xcodebuild test ... CODE_SIGNING_ALLOWED=NO`：构建完成，但测试 runner 被本地 sandbox 阻断，错误为 `com.apple.testmanagerd.control` sandbox restriction。
+- `./dev test macos`：通过；fallback `xcrun xctest` 执行 `135 tests, 0 failures`。
+- `xcodebuild ... build CODE_SIGNING_ALLOWED=NO`：通过，`BUILD SUCCEEDED`。
+- `git diff --check`：通过。
+- `swiftformat` / `swiftlint`：当前环境未安装，无法运行。
+
+六、风险与后续：
+- 剩余风险：未做真实 GUI 手工冒烟；本次以模型路由、CoreBridge 边界和 XCTest 作为闭环证据。
+- 建议下一个任务：进入 `2-2/task-01`，开始 import-conflict 闭环。
+

@@ -1,0 +1,57 @@
+一、执行结论
+
+已完成 `1-5/task-23`。
+
+二、执行范围
+
+单任务：C1-26 repair-reindex-metadata failure-recovery。
+
+修改文件清单：
+
+- [repair_reindex_metadata_failure_recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/repair_reindex_metadata_failure_recovery.rs)
+
+未触碰 `apps/**`。工作区中原本已有的 `.codex/task-loop-runs/20260502_233358/summary.json` 和 `tasks/prompts/_shared/progress.json` 仍是既有脏改动，我未修改它们。
+
+三、完成情况
+
+核对清单结果：
+
+- 只处理 C1-26 failure-recovery：通过。
+- 已读取 Exact Docs，并以 C1-26 spec、Core API、error codes、transactional-import 为 SSOT：通过。
+- 未实现相邻 C1 能力或 UI 页面：通过。
+- 覆盖失败、重复执行、权限错误与恢复路径：通过。
+- 未删除、覆盖或移动未确认用户文件：通过，测试中显式快照验证用户文件内容不变。
+
+完成标准：
+
+- C1-26 failure-recovery 目标已有测试证据：通过。
+- 没有扩展到未绑定能力：通过。
+
+四、工程质量
+
+新增测试覆盖：
+
+- 重复 `reindex_from_filesystem` 幂等，不重复插入 metadata。
+- `repair_metadata` 在 DB 损坏失败时保留 `.areamatrix/diagnostics/` 快照，并保持 `README.md` 不变。
+- reindex 权限失败记录 `Failed` scan session，恢复权限后可 `resume_scan_session`，用户文件保持不变。
+
+无新增依赖、无 mock-only、无硬编码通过态；测试 helper 已拆分，文件 216 行，结构在当前规范阈值内。无 public Rust API 变化，因此无需补 rustdoc 或同步 UDL/docs。
+
+五、验证情况
+
+已运行且通过：
+
+- `cd core && cargo fmt --all -- --check`
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`
+- `cd core && cargo test --workspace repair_reindex_metadata`
+- `git diff --check`
+
+无法运行项：无。
+
+六、风险与后续
+
+剩余风险：权限失败测试是 `#[cfg(unix)]`，若运行环境拥有绕过权限位的能力，测试会按仓库既有模式提前恢复权限并返回；当前本机已真实执行到该测试并通过。
+
+回滚思路：删除新增测试文件即可回滚本次改动；生产代码未变。
+
+建议下一个任务：`1-5/task-24`，继续 C1-26 validation。

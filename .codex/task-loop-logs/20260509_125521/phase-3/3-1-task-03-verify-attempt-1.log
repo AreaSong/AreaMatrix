@@ -1,0 +1,92 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`3-1/task-03`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-3/3-1-stability-release/task-03-performance-benchmarks.md`
+- Manifest 章节：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-3.md:70`
+- 主要证据文件：
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-performance-baseline.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/tests/stage1_performance_baseline.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/CoreBridgeRepositoryTests.swift`
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：0
+- 通过项数：5
+- 不通过项数：5
+- 阻塞项数：4
+
+四、逐项验收结果
+
+- 读取 testing / performance / observability / Stage 1 MVP：通过  
+  证据：4 个 Exact Docs 均存在并已读取；manifest 列表见 `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-3.md:75`
+
+- 性能基线覆盖启动、单文件、100 文件、reindex、Tree/list、内存：不通过  
+  证据：基线文件明确写“当前基线结论：不允许 release”，且内存 Not measured：`/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-performance-baseline.md:11`、`:61`
+
+- 每个指标写明数据集、环境、入口、阈值、实测、结论：不通过  
+  证据：内存三项只有阈值和手工入口，没有实测值：`/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-performance-baseline.md:61`
+
+- Core hot path / Swift UI 性能证据：不通过  
+  证据：Core ignored perf test 存在，但 `import_file 1 MiB copied` 实测 50ms > 30ms 并失败；Swift perf 类存在于 `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/CoreBridgeRepositoryTests.swift:85`，但标准 manifest `xcodebuild test` 本轮失败于 `testmanagerd` sandbox。
+
+- 不达标时记录阻断项和 Phase 1/2 修复建议：通过  
+  证据：`/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-performance-baseline.md:69`、`:78`
+
+- 只补测试、脚本或 `docs/development/**` 性能证据：通过  
+  证据：实际性能证据落在 `core/tests/**`、`apps/macos/AreaMatrixTests/**`、`docs/development/**`；Forbidden Touches 为 None。
+
+- 完成标准：Stage 1 MVP 性能基线覆盖 release checklist：不通过  
+  证据：内存未测，且基线文件声明阻断 release：`/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-performance-baseline.md:17`
+
+- 完成标准：每个性能指标有可重复入口或手工方法：通过  
+  证据：入口表列出 doctor、Rust perf、Swift perf、内存手工方法：`/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-performance-baseline.md:36`
+
+- 完成标准：P0/P1 回退或未测指标阻断 release checklist：通过  
+  证据：规则明确任一 P0/P1 FAIL 或 Not measured 时 release 性能勾选保持未勾选：`/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-performance-baseline.md:106`
+
+- 完成标准：Validation 全部运行：不通过  
+  证据：`cargo bench --workspace --no-run` 失败；`xcodebuild test ... AreaMatrixPerfTests` 失败。
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过，性能测试入口存在，但基线仍包含 P1 性能失败。
+- 注释 / rustdoc / 文档同步：通过，基线文档同步记录阈值、实测、阻断项和 release 规则。
+- 错误处理与边界处理：通过，本任务未重写产品逻辑；不达标项有明确修复建议。
+- 测试与验证覆盖：不通过，Rust perf baseline 当前失败，标准 Swift perf validation 当前失败，内存缺实测。
+- 占位、硬编码、mock-only、一次性实现检查：不通过，`testReindexAndMemoryManualBaselineHasReleaseBlockingEvidence` 只验证手工内存阈值文本，不提供真实 Instruments / memory gauge 实测，见 `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/CoreBridgeRepositoryTests.swift:203`
+
+六、阻塞项
+
+- P1：Core 1 MiB copied import 超阈值  
+  路径：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/stage1_performance_baseline.rs:41`  
+  说明：本轮实测 `STAGE1_PERF name="import_file 1 MiB copied" value_ms=50 threshold_ms=30 result=FAIL`，违反 `/Users/as/Ai-Project/project/AreaMatrix/docs/development/performance.md:24`。
+
+- P1：内存指标未测  
+  路径：`/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-performance-baseline.md:61`  
+  说明：idle、1k、10k 文件库内存均为 `Not measured`，违反 Stage 1 内存稳定要求 `/Users/as/Ai-Project/project/AreaMatrix/docs/roadmap/stage-1-mvp.md:286`。
+
+- P2：manifest Rust bench 命令在仓库根不可运行  
+  路径：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-3/3-1-stability-release/task-03-performance-benchmarks.md:39`  
+  说明：本轮执行失败：`could not find Cargo.toml in /Users/as/Ai-Project/project/AreaMatrix or any parent directory`。
+
+- P2：标准 Swift perf validation 当前环境失败  
+  路径：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-3/3-1-stability-release/task-03-performance-benchmarks.md:40`  
+  说明：本轮 `xcodebuild test` 失败于 `com.apple.testmanagerd.control` sandbox restriction，不能作为 PASS 证据。
+
+七、验证情况
+
+- 已运行：`python3 tasks/prompts/_shared/prompt_pipeline.py doctor`：通过，`doctor: OK`
+- 已运行：`cargo bench --workspace --no-run`：失败，仓库根缺少 `Cargo.toml`
+- 已运行：`xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' -only-testing:AreaMatrixTests/AreaMatrixPerfTests CODE_SIGNING_ALLOWED=NO`：失败，`testmanagerd` sandbox restriction
+- 补充运行：`cargo test --manifest-path core/Cargo.toml --test stage1_performance_baseline -- --ignored --test-threads=1 --nocapture`：失败，3 passed / 1 failed
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+
+VERIFY_RESULT: FAIL

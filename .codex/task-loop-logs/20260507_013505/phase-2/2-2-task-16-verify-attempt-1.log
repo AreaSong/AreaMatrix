@@ -1,0 +1,83 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`2-2/task-16`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-2-import-conflict/task-16-s1-20-c1-07-import-move-file.md`
+- 主要实现路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`
+- 测试路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`
+- UDL：`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+- Forbidden Touches：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+三、完成度摘要
+
+- 已覆盖项数：3
+- 未覆盖项数：2
+- 通过项数：5
+- 不通过项数：3
+- 阻塞项数：2
+
+四、逐项验收结果
+
+- 项目：读取 task、共享规则、切片规则、工程质量规则、编码规范、validation-driver、依赖图、phase manifest、Exact Docs
+- 结果：通过
+- 证据：Exact Docs 4 个均存在并已读取；manifest `2-2/task-16` 章节与 task 声明一致。
+- 涉及文件：`tasks/prompts/_shared/manifests/phase-2.md`、4 个 Exact Docs
+
+- 项目：Expected New Paths 落地
+- 结果：通过
+- 证据：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`apps/macos/AreaMatrix.xcodeproj/project.pbxproj` 均存在。
+- 涉及文件：对应 manifest 路径
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git diff --name-only -- core/src` 输出为空，未发现本轮 diff 触碰 `core/src/**`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+- 项目：S1-20 + C1-07 用户可见功能
+- 结果：不通过
+- 证据：当前 task-16 diff 只把单文件 move 的进度初始行显示为 `.moving`，见 `ImportProgressRouteState.swift:38`、`:55` 和 `ImportProgressView.swift:99`；但 S1-20 文档要求本页支持 `Stop after current file`、fatal error 面板、Retry、Stop and view results、Collect Diagnostics 等可验收路径，当前 `ImportProgressView.swift:52` 只有 `View details` 和失败后的 `Back to repository`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportProgressView.swift`
+
+- 项目：真实 Core 闭环
+- 结果：部分通过
+- 证据：单文件 move 已通过 `ImportEntrySheetView.swift:386` 触发 `onImportStarted(... selectedStorageMode)`，`CoreImporting.swift:225` 使用 `ImportOptions(mode: .moved)` 调真实 `import_file`；已有 `ImportSingleFileMoveImportTests.swift:95` 验证真实 CoreBridge move 后源路径不存在、最终路径存在。但 task-16 对 S1-20 页面的新增测试只验证 `.moving` 静态进度状态，未验证 S1-20 页面上的 C1-07 move 失败/恢复/停止路径。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreImporting.swift`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportProgressCopyPageFeatureTests.swift`
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过。实现范围过窄，只新增 move phase 展示，未形成 S1-20 对 C1-07 的页面级可验收闭环。
+- 注释 / rustdoc / 文档同步：通过。未新增 public Rust API；无明显无效注释或文档漂移。
+- 错误处理与边界处理：不通过。S1-20 文档要求 fatal import error、staging recovery check、retry eligibility 和诊断路径；当前页面没有对应状态或动作。
+- 测试与验证覆盖：不通过。build 和 macOS 测试通过，但新增 task-16 测试仅断言 `.moving` 行状态，未覆盖 move 失败、retry、stop/result、diagnostics 或 staging recovery 语义。
+- 占位、硬编码、mock-only、一次性实现检查：不通过。新增 page-feature 测试使用 route state 构造验证进度行，不能证明 S1-20 中 C1-07 的用户可见真实 Core 闭环已可触发和验收。
+
+六、阻塞项
+
+- P0：S1-20 C1-07 页面功能未达到文档定义的可验收闭环  
+  说明：`ImportProgressView` 未提供 `Stop after current file`、`Retry current item`、`Stop and view results`、`Collect Diagnostics...`、`Open repository in Finder` 等 S1-20 必需交互，也没有 staging recovery check / retry eligibility 状态。  
+  绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportProgressView.swift:52`  
+  为什么导致不通过：task 完成标准要求 “S1-20 中 C1-07 对应的用户可见功能可被触发和验收”；当前只能显示 Moving，不能验收 move 失败后的安全恢复和结果路径。
+
+- P1：新增测试不足以证明 High 风险 move import 页面闭环  
+  说明：`testS120C107SingleMoveProgressShowsMovingPhase` 只验证 route state 中单个 item 的 `.moving` phase；未覆盖真实 Core move 错误映射、源文件安全、staging recovery、fatal panel、retry/stop/diagnostics。  
+  绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportProgressCopyPageFeatureTests.swift:49`  
+  为什么导致不通过：C1-07 是用户原文件移动能力，属于高风险边界；工程质量规则要求关键失败路径、边界条件和恢复证据，当前证据不足。
+
+七、验证情况
+
+- 已运行：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`
+- 结果：通过，`BUILD SUCCEEDED`
+- 已运行：`./dev test macos`
+- 结果：通过。标准 `xcodebuild test` 被本地 `testmanagerd` sandbox 通信限制阻断后，脚本按 repo 规则复用已构建 XCTest bundle 执行 `xcrun xctest`，239 tests、0 failures。
+- 已运行：`git diff --check -- <task-16 touched files>`
+- 结果：通过，无 whitespace error。
+- 缺失：未发现能证明 S1-20 C1-07 fatal/retry/stop/diagnostics/staging recovery 页面闭环的测试或交互证据。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+
+VERIFY_RESULT: FAIL

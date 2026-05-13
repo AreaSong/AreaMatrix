@@ -1,0 +1,60 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`3-1/task-05`
+- Task：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-3/3-1-stability-release/task-05-stage1-integration-verify.md`
+- Manifest：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-3.md`
+- Exact Docs：6/6 已读取
+- Existing Code：`core/**`、`apps/macos/**`、`scripts/**`
+- Missing Expected Paths：0
+- Forbidden Touches：未发现 dirty 修改
+
+三、完成度摘要
+
+- 已覆盖项数：7/7
+- 未覆盖项数：0
+- 通过项数：2
+- 不通过项数：5
+- 阻塞项数：5
+
+四、逐项验收结果
+
+- 读取 Stage 1 roadmap / control map / Core / UX / testing / release：通过。证据：6 个 Exact Docs 均存在并已读取。
+- Real Core 页面闭环核对：不通过。自动化测试和 CoreBridge 证据存在，但最终 release checklist 明确说明这些证据不能替代 `./dev check all`、真实 `.app` launch、签名/公证或干净机首启，见 [stage-1-release-checklist.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-release-checklist.md:43)。
+- Phase 1 Core 与 Phase 2 UI integration verify：不通过。已有大量 core/macOS integration verify 测试，但发布级恢复手工证据 M-01..M-04 仍 pending，见 [recovery-scenarios.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/recovery-scenarios.md:137)。
+- `3-1/task-01` 到 `3-1/task-04` 证据：不通过。release checklist 自身结论为“不放行”，且列出 P1-RL-001..005，见 [stage-1-release-checklist.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-release-checklist.md:64)。
+- 最终自动化综合门禁与手工/性能/release/signing/DMG：不通过。`./dev check all` 失败；手工冒烟、真实 app 首屏、签名、公证、DMG、干净 Mac 首启均缺 release 证据。
+- P0/P1 风险处理：不通过。当前仍有 P1 release 阻断项，见 [stage-1-release-checklist.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-release-checklist.md:68)。
+- Forbidden Touches：通过。`git status --short -- core/src core/area_matrix.udl apps/macos/AreaMatrix apps/macos/AreaMatrix.xcodeproj` 无输出。
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过。不是因当前发现结构性代码问题，而是 mission-critical release gate 未通过，不能判定长期可发布。
+- 注释 / rustdoc / 文档同步：不通过。release 文档已如实记录阻断，但 `CHANGELOG.md` 仍未切出 `0.1.0` release 段落，见 [stage-1-release-checklist.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-release-checklist.md:49)。
+- 错误处理与边界处理：不通过。自动化恢复证据存在，但真实 macOS/iCloud/TCC/DB repair 手工证据仍 pending，见 [recovery-scenarios.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/recovery-scenarios.md:83)。
+- 测试与验证覆盖：不通过。`./dev check all` 未完整通过，且真实 release app launch 被阻断，见 [stage-1-performance-baseline.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-performance-baseline.md:88)。
+- 占位、硬编码、mock-only、一次性实现检查：不通过。未发现可直接归因于 mock-only 的产品闭环阻断，但现有 hostless fallback 明确不能替代真实 `.app` release gate，见 [stage-1-performance-baseline.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-performance-baseline.md:135)。
+
+六、阻塞项
+
+- P1-RL-001：真实 Release `.app` 启动到首屏证据缺失。路径：[stage-1-release-checklist.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-release-checklist.md:68)。导致不通过：Stage 1 要求启动 `< 1.5s` 的真实 release 证据。
+- P1-RL-002：M-01..M-04 手工恢复冒烟 pending。路径：[stage-1-release-checklist.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-release-checklist.md:69)。导致不通过：真实 iCloud/TCC/DB repair/中断恢复未验证。
+- P1-RL-003：Developer ID 签名、公证、DMG、干净 Mac 首启证据缺失。路径：[stage-1-release-checklist.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-release-checklist.md:70)。导致不通过：无法证明 alpha 分发物可安装启动。
+- P1-RL-004：CHANGELOG / 版本发布切面未完成。路径：[stage-1-release-checklist.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-release-checklist.md:71)。导致不通过：release notes、版本和已知问题不可追溯。
+- P1-RL-005：`./dev check all` 未完整通过。路径：[stage-1-release-checklist.md](/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-release-checklist.md:72)。本次复跑同样失败：缺 `x86_64-apple-darwin` Rust target、`swiftformat`、`swiftlint`。
+
+七、验证情况
+
+- 已运行 `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`：通过，`doctor: OK`，637 tasks / 637 manifests。
+- 已运行 `git diff --check`：通过，无输出。
+- 已运行 `./dev check all`：失败。governance、skills、task-loop、prompt doctor、diff check、Rust fmt/clippy/test 通过；macOS prerequisite check 失败，缺 `x86_64-apple-darwin`、`swiftformat`、`swiftlint`。
+- 缺失证据：手工冒烟、真实 Release `.app` 首屏、签名、公证、DMG、干净 Mac 首启、远端 CI / PR 或 tag 证据。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+
+VERIFY_RESULT: FAIL

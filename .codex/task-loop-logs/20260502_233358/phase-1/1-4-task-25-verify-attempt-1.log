@@ -1,0 +1,70 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`1-4/task-25`
+- 对应文件路径：`tasks/prompts/phase-1/1-4-recovery-sync-overview/task-25-c1-20-integration-verify.md`
+- 验收范围限定：C1-20 `overview-generated` 的 API / UDL / Rust 实现 / 测试 / UX 消费一致性；未扩展到 `apps/**` 或相邻 C1 能力实现。
+
+三、完成度摘要
+
+- 已覆盖项数：15
+- 未覆盖项数：0
+- 通过项数：15
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 C1-20 integration-verify 范围  
+  结果：通过  
+  证据：实现集中在 `OverviewOutput`、`init_repo`、`update_config`、`import_file` 后 overview regeneration；未修改 `apps/**`。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/overview/mod.rs`
+
+- 项目：Exact Docs 以文档为 SSOT  
+  结果：通过  
+  证据：C1-20 文档要求默认写 `.areamatrix/generated/`、`AREAMATRIX.md` 仅显式配置、不得覆盖 `README.md`；Core API/UDL 与此一致。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-20-overview-generated.md:22`
+
+- 项目：不实现相邻 C1 能力或 UI 页面  
+  结果：通过  
+  证据：`git diff --name-only -- apps` 为空；`apps/**` 未触碰。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/**`
+
+- 项目：交叉检查 capability、control map 和消费页面  
+  结果：通过  
+  证据：control map 声明 `S1-27` / `S1-30` 消费 C1-20；页面规格要求展示/保存 overview output，Core 通过 `load_config/update_config` 与下一次 regeneration 满足。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:42`
+
+- 项目：确认无 mock/空壳伪完成  
+  结果：通过  
+  证据：测试执行真实临时 repo、SQLite、文件写入、README 保留、策略切换和失败回滚，不是 mock-only。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/overview_generated_integration_verify.rs:171`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。`core/src/overview/mod.rs` 458 行，未超过 500 行；regeneration、root marker merge、atomic rollback 分层清楚。
+- 注释 / rustdoc / 文档同步：通过。`OverviewOutput`、`init_repo`、`update_config`、`import_file` 均有 C1-20 边界说明。
+- 错误处理与边界处理：通过。root `AREAMATRIX.md` 目录/符号链接/权限错误、generated 输出失败、DB/FS 回滚均有测试覆盖。
+- 测试与验证覆盖：通过。manifest 三条验证全部通过，并按 validation-driver 补跑 `cargo test --workspace` 通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。未发现 C1-20 相关生产路径 mock 或空壳；`api.rs` 中相邻未实现 API 不属于本 task 阻断范围。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`cd core && cargo fmt --all -- --check`：通过
+- 已运行：`cd core && cargo clippy --all-targets --all-features -- -D warnings`：通过
+- 已运行：`cd core && cargo test --workspace overview_generated`：通过，C1-20 相关 26 个测试通过
+- 已运行：`cd core && cargo test --workspace`：通过
+- 缺失：无
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS

@@ -1,0 +1,50 @@
+一、执行结论
+
+已完成 `1-2/task-05`。本次只完成 C1-06 `import-copy-file` 的 contract-api 边界，没有实现 C1-06 的真实复制流程，也没有扩展到 C1-07/C1-08 或 UI。
+
+二、执行范围
+
+修改文件：
+
+- [api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:193)：补齐 `import_file` 的 C1-06 copied-mode 合同、错误码、失败副作用边界 rustdoc。
+- [import_copy_file_contract.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/import_copy_file_contract.rs:22)：新增合同测试，覆盖签名、输入、输出、UDL/Core API 对齐、control map 消费页面、错误码和副作用边界。
+
+`core/area_matrix.udl` 已读取核对，现有签名和类型已与本任务合同匹配，未改。`apps/**` 未触碰。
+
+三、完成情况
+
+核对清单：
+
+- 只处理 C1-06 contract-api：通过。
+- Exact Docs 已逐个读取并作为 SSOT：通过。
+- 未实现相邻 C1 能力或 UI 页面：通过。
+- Core API / UDL 合同意图已校准：通过，UDL 无需改动。
+- 输入、输出、错误码、副作用边界已明确：通过。
+
+完成标准：
+
+- C1-06 contract-api 有测试证据：通过。
+- 没有扩展到未绑定能力：通过。
+
+四、工程质量
+
+新增 public API 文档包含 `# Errors`，明确 copy import 的用户文件安全边界。新增测试不是 mock-only 或硬编码通过态，只验证本 contract task 应验证的合同面；真实复制、DB 写入、change_log 写入仍保留给 `1-2/task-06 implementation`，未在本任务越界实现。未新增依赖。
+
+五、验证情况
+
+已运行并通过：
+
+- `cd core && cargo fmt --all -- --check`
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`
+- `cd core && cargo test --workspace import_copy_file`：6 个 `import_copy_file` 合同测试通过。
+- 额外加跑 `cd core && cargo test --workspace`：108 个测试通过。
+- 额外加跑 `git diff --check`：通过。
+
+六、风险与后续
+
+剩余风险：C1-06 的真实文件复制、staging、DB `files`、`change_log` 一致性还未实现，这是下一任务边界，不应在本 contract-api task 中宣称完成。
+
+建议下一个任务：`1-2/task-06: C1-06 import-copy-file implementation`。
+
+备注：工作区里 `.codex/task-loop-runs/20260501_132850/summary.json` 和 `tasks/prompts/_shared/progress.json` 在本次修改前已是 dirty，本次没有编辑它们。
+

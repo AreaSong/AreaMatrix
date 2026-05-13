@@ -1,0 +1,86 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`3-1/task-05`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-3/3-1-stability-release/task-05-stage1-integration-verify.md`
+- Manifest 章节：`tasks/prompts/_shared/manifests/phase-3.md` 的 `## 3-1/task-05`
+- Exact Docs：6/6 已读取
+- Existing Code：覆盖 `core/**`、`apps/macos/**`、`scripts/**` 的目录、关键证据、mock/placeholder 搜索与综合验证
+
+三、完成度摘要
+
+- 已覆盖项数：7/7 个 task checklist 已验收
+- 未覆盖项数：0
+- 通过项数：3
+- 不通过项数：4
+- 阻塞项数：5 个 P1 release blocker
+
+四、逐项验收结果
+
+- 读取 roadmap / control map / Core / UX / testing / release 文档
+  - 结果：通过
+  - 证据：6 个 Exact Docs 均存在并已读取
+  - 涉及文件：`docs/roadmap/stage-1-mvp.md`、`docs/development/release.md`、`docs/development/testing.md`、`docs/architecture/mvp-control-map.md`、`docs/core/capability-specs/stage-1-mvp.md`、`docs/ux/page-specs/stage-1-mvp.md`
+
+- Real Core 页面不得用 mock/fixture/static placeholder 通过
+  - 结果：通过但不构成最终放行
+  - 证据：`./dev check all` 中 Rust Core tests 与大量 macOS XCTest/page integration tests 执行通过到后续 style gate；搜索未发现明显产品级 mock-only 闭环作为当前主阻断
+  - 涉及文件：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`core/tests/**`
+
+- Phase 1 Core 与 Phase 2 UI integration verify
+  - 结果：不通过
+  - 证据：虽然 Core 与 XCTest 大量通过，但最终 `./dev check all` 失败，不能满足 task 完成标准
+  - 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-release-checklist.md:42`
+
+- `3-1/task-01` 到 `3-1/task-04` 证据
+  - 结果：不通过
+  - 证据：recovery/performance/release 证据文件存在，但 release checklist 明确写当前“不放行”，且 P1 blocker 未关闭
+  - 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-release-checklist.md:11`
+
+- 最终自动化综合门禁、手工冒烟、性能基线、release checklist、签名/公证、DMG、干净机首启
+  - 结果：不通过
+  - 证据：本次实际运行 `./dev check all` 退出码 1，失败点为 SwiftFormat；手工冒烟、签名、公证、DMG、干净 Mac 首启仍无通过证据
+  - 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-release-checklist.md:57`
+
+- P0/P1 风险
+  - 结果：不通过
+  - 证据：当前仍有 P1-RL-001..P1-RL-005
+  - 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-release-checklist.md:68`
+
+- Forbidden Touches
+  - 结果：通过
+  - 证据：`git diff --name-only -- core/src core/area_matrix.udl apps/macos/AreaMatrix apps/macos/AreaMatrix.xcodeproj` 无输出
+  - 涉及文件：`core/src/**`、`core/area_matrix.udl`、`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrix.xcodeproj/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过，`./dev check all` 未通过，不能证明长期维护门禁满足。
+- 注释 / rustdoc / 文档同步：不通过，release checklist 明确记录 CHANGELOG、版本发布切面未完成。
+- 错误处理与边界处理：不通过，恢复场景 M-01..M-04 真实手工证据仍 pending。
+- 测试与验证覆盖：不通过，`./dev check all` 失败；真实 Release `.app` 启动到首屏、签名、公证、DMG、干净 Mac 首启缺证据。
+- 占位、硬编码、mock-only、一次性实现检查：未发现当前主阻断来自 mock-only 产品闭环；但 release gate 未过，不能判定完成。
+
+六、阻塞项
+
+- P1-RL-001：真实 Release `.app` 启动到首屏证据缺失。`/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-performance-baseline.md:88`。Stage 1 要求 `< 1.5s`，当前只有 hostless surrogate，不能替代真实 release gate。
+- P1-RL-002：M-01..M-04 手工恢复冒烟均为 pending。`/Users/as/Ai-Project/project/AreaMatrix/docs/development/recovery-scenarios.md:83`、`:95`、`:106`、`:116`。真实 iCloud、TCC、强退恢复、DB repair 未完成。
+- P1-RL-003：Developer ID 签名、公证、DMG、干净 Mac 首启证据缺失。`/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-release-checklist.md:57`。
+- P1-RL-004：CHANGELOG / 版本发布切面未完成。`/Users/as/Ai-Project/project/AreaMatrix/CHANGELOG.md:10` 仍是 `[Unreleased]`，没有 `0.1.0` 发布段。
+- P1-RL-005：`./dev check all` 未完整通过。实际运行失败于 SwiftFormat，示例包括 `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/StartupRecoveryErrorRecoveryView.swift:47`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/DeleteFileConfirmSheet.swift:56`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Onboarding/ValidatePathStepView.swift:133`。
+
+七、验证情况
+
+- 已运行：`python3 tasks/prompts/_shared/prompt_pipeline.py doctor`，通过，`doctor: OK`，tasks/manifests 均为 637。
+- 已运行：`git diff --check`，通过，无输出。
+- 已运行：`./dev check all`，失败，退出码 1；governance、skills、task-loop、prompt doctor、diff check、Rust fmt/clippy/test、macOS build/XCTest 前段均推进到后续 gate，但 SwiftFormat 报 `199/224 files require formatting, 3 files skipped` 并导致整体失败。
+- 已运行：Forbidden Touches diff 检查，通过，无 Forbidden Touches diff。
+- 缺失：真实 `.app` 启动到首屏、手工冒烟 M-01..M-04、Developer ID 签名、公证、DMG、干净 Mac 首启、完整 release notes / 0.1.0 CHANGELOG 证据。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。核心原因不是单个测试缺口，而是最终发布门禁明确失败：`./dev check all` 未通过，且 release checklist 自身仍记录多个 P1 阻断项。
+
+VERIFY_RESULT: FAIL

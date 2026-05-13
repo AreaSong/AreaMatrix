@@ -1,0 +1,35 @@
+一、执行结论：已完成。
+
+二、执行范围：单任务 `2-3/task-30`。修改文件：
+
+- [ErrorRecoveryPageIntegrationVerifyTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ErrorRecoveryPageIntegrationVerifyTests.swift:1)
+- [project.pbxproj](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj:85)
+
+三、完成情况：
+
+- 已补齐 S1-32 整页 integration verify 测试，覆盖 `C1-16 recover_on_startup` + `C1-21 error-mapping` 的页面闭环。
+- 验证了启动恢复失败会停留在错误恢复状态，不继续打开 repo；Retry 会重新触发 recovery，成功后进入 main list 并加载 tree。
+- 验证了 retrying 状态禁用重复点击。
+- 验证了 fatal DB mapping 只路由到 `dbRepairConfirm`，不在 S1-32 直接执行修复。
+- 未新增 control map 之外能力。
+- 未触碰 Forbidden Touches：`core/src/**` 未改。
+
+四、工程质量：
+
+- 新增内容是 XCTest 集成验收证据，没有改动生产逻辑。
+- 测试直接驱动 `OnboardingModel` 状态机和现有 CoreBridge-facing 协议，不用 mock-only 成功路径伪造产品实现。
+- 无新增依赖；无用户文件删除、移动、覆盖风险。
+- 工作区已有 `.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json` 改动，我未修改或回滚。
+
+五、验证情况：
+
+- `xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：编译通过，但本地 `com.apple.testmanagerd.control` sandbox restriction 阻断标准 test runner 通信。
+- `xcrun xctest -XCTest ErrorRecoveryPageIntegrationVerifyTests .../AreaMatrixTests.xctest`：通过，2 tests / 0 failures。
+- `./dev test macos`：通过；标准 `xcodebuild test` 被同一 sandbox 限制阻断后，复用同一 XCTest bundle fallback，406 tests / 0 failures。
+- `git diff --check`：通过。
+
+六、风险与后续：
+
+- 剩余风险：当前环境无法让标准 `xcodebuild test` 直接完成 testmanagerd 通信，只能使用仓库认可的 `./dev test macos` fallback 证据。
+- 建议下一个任务：继续 `2-3/task-31` settings/error-recovery integration verify。
+

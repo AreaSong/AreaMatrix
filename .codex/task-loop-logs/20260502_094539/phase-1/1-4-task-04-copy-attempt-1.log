@@ -1,0 +1,39 @@
+一、执行结论
+
+已完成 `1-4/task-04`。
+
+二、执行范围
+
+单任务：C1-16 `recover_on_startup` validation。  
+修改文件：新增 [recover_on_startup_validation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/recover_on_startup_validation.rs:1)。
+
+未触碰 `apps/**`。`core/src/**` 和 `core/area_matrix.udl` 已核对，未发现本 task 需要改生产代码或 UDL。
+
+三、完成情况
+
+- 核对清单 1-5：通过。只补 C1-16 validation 测试；已读取 Exact Docs；未实现相邻 C1 或 UI；新增 Rust 测试覆盖成功路径和关键错误路径。
+- 完成标准：通过。新增测试证明 `RecoveryReport`、staging 文件清理、staging DB row 回滚、用户 active 文件保留、未初始化 repo、DB 损坏时保留 retryable staging。
+- Forbidden Touches：未触碰。
+
+四、工程质量
+
+新增测试使用真实临时 repo、真实 SQLite、真实 `.areamatrix/staging` 文件，不是 mock-only 或硬编码通过态。没有新增依赖；没有生产路径 `unwrap/expect/panic` 变更；没有文档、API、UDL 漂移修补需求。
+
+五、验证情况
+
+全部通过：
+
+```bash
+cd core && cargo fmt --all -- --check
+cd core && cargo clippy --all-targets --all-features -- -D warnings
+cd core && cargo test --workspace recover_on_startup
+cd core && cargo test --workspace
+```
+
+另外检查 `git diff --name-only -- apps` 为空。注意：进入实现前工作区已有 `.codex/task-loop-runs/20260502_094539/summary.json` 和 `tasks/prompts/_shared/progress.json` 脏状态；我没有把它们纳入本次实现范围。
+
+六、风险与后续
+
+剩余风险：未发现 C1-16 validation 阻塞项。  
+建议下一个任务：按 manifest 继续 `1-4/task-05`。
+

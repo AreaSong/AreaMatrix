@@ -1,0 +1,84 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`2-2/task-05`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-2-import-conflict/task-05-s1-17-c1-08-import-index-file.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreImporting.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreviewModel.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportEntrySheetView.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFileIndexImportTests.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+
+三、完成度摘要
+
+- 已覆盖项数：12
+- 未覆盖项数：0
+- 通过项数：12
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 S1-17 页面中的 C1-08 功能点
+- 结果：通过
+- 证据：task 范围绑定 S1-17 + C1-08；实现仅新增 `Index-only` 存储模式分支和 indexed import 调用，没有扩展到相邻页面。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-2/2-2-import-conflict/task-05-s1-17-c1-08-import-index-file.md:10`；`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreviewModel.swift:68`
+
+- 项目：读取并对齐页面规格、control map、Core API、C1-08 能力规格
+- 结果：通过
+- 证据：S1-17 明确包含 `Copy / Move / Index-only`；control map 标记 S1-17 消费 C1-08 且为 Real Core；C1-08 要求 `ImportOptions.mode = Indexed`、保留 source_path、不复制不移动源文件。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-1-mvp/S1-17-import-single-sheet.md:52`；`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:32`；`/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-1-mvp/C1-08-import-index-file.md:13`
+
+- 项目：只接入 C1-08 对应 CoreBridge / 状态 / 错误映射
+- 结果：通过
+- 证据：`importIndexedFile` 通过 `CoreBridge.importFile(... mode: .indexed ...)` 调真实 UniFFI `AreaMatrix.importFile`；模型的 `.indexOnly` 分支只调用 indexed importer；错误进入 `mapImportError`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreImporting.swift:57`；`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreviewModel.swift:261`
+
+- 项目：不顺手实现相邻页面
+- 结果：通过
+- 证据：变更集中于 S1-17 sheet/model/bridge/test/project；`git diff --stat` 显示仅 5 个已跟踪文件变更，另有 `ImportSingleFileIndexImportTests.swift` 新增。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportSingleFilePreviewModel.swift:68`
+
+- 项目：S1-17 中 C1-08 用户可见功能可触发和验收
+- 结果：通过
+- 证据：UI `Picker` 遍历 `ImportSingleFileStorageMode.allCases`，包含 `Index-only`；Import 按当前 selected mode 触发 indexed import；测试验证 edited category/name 被传入 indexed importer。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportSingleFileSheetSections.swift:8`；`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFileIndexImportTests.swift:6`
+
+- 项目：没有 mock / fixture / 静态状态伪造真实 Core 闭环
+- 结果：通过
+- 证据：测试包含真实 `CoreBridge` 闭环，初始化临时 repo 后调用 `importIndexedFile`，断言 `storageMode == Indexed`、`sourcePath` 保留、源文件内容不变、repo 内未产生最终副本。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFileIndexImportTests.swift:92`
+
+- 项目：未触碰 control map 之外 Core 能力
+- 结果：通过
+- 证据：control map 允许 S1-17 消费 C1-08；本 task 未改 `core/src/**`，`git diff --name-only -- core/src` 无输出。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:32`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，`CoreFileImporting` 扩展为 copy/move/index 三个明确入口，模型通过 enum 分支选择导入模式，结构清晰。
+- 注释 / rustdoc / 文档同步：通过，本轮未新增 public Rust API；Swift 变更无需额外解释性注释，文档与 UDL 已有 Indexed / import_file 合同。
+- 错误处理与边界处理：通过，indexed import 失败走 CoreError 映射；测试覆盖 `ICloudPlaceholder` 失败不伪造成功。
+- 测试与验证覆盖：通过，新增 index-only 单元/集成测试，并运行 build 与 macOS test gate。
+- 占位、硬编码、mock-only、一次性实现检查：通过，存在真实 CoreBridge indexed import 测试；mock 仅用于模型分支测试，不作为闭环证据。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`xcodebuild build -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO`：通过，`BUILD SUCCEEDED`。
+- 已运行：`./dev test macos`：通过。标准 `xcodebuild test` 被本地 `testmanagerd` sandbox restriction 阻断后，脚本按仓库规则复用同一已构建 XCTest bundle 执行 `xcrun xctest`，156 tests，0 failures。
+- 失败：无产品验证失败。
+- 缺失：未做手工 UI 点击验收；当前任务要求的命令和本地 macOS 测试 gate 已覆盖。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS

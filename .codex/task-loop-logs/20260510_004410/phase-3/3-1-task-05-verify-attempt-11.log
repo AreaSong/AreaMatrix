@@ -1,0 +1,100 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`3-1/task-05`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-3/3-1-stability-release/task-05-stage1-integration-verify.md`
+- Manifest 章节：`tasks/prompts/_shared/manifests/phase-3.md` 中 `## 3-1/task-05`
+- Exact Docs：6/6 已读取
+- Existing Code：已检查 `core/**`、`apps/macos/**`、`scripts/**`
+
+三、完成度摘要
+
+- 已覆盖项数：7/7
+- 未覆盖项数：0
+- 通过项数：3
+- 不通过项数：4
+- 阻塞项数：5 个 P1 release blocker
+
+四、逐项验收结果
+
+- 项目：读取 Stage 1 roadmap、control map、Core/UX index、testing、release 文档
+- 结果：通过
+- 证据：6 个 Exact Docs 均存在并已读取
+- 涉及文件：`docs/roadmap/stage-1-mvp.md`、`docs/development/release.md`、`docs/development/testing.md`、`docs/architecture/mvp-control-map.md`、`docs/core/capability-specs/stage-1-mvp.md`、`docs/ux/page-specs/stage-1-mvp.md`
+
+- 项目：Real Core 页面不得用 mock/fixture/static 占位通过
+- 结果：通过
+- 证据：control map 标明 Real Core 页面与能力；macOS XCTest 已执行并覆盖大量 `CoreBridge()` 真实 Core 集成测试；`CoreBridge().state` 为 `generatedBindings`
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/mvp-control-map.md:16`
+
+- 项目：Phase 1 Core 与 Phase 2 UI integration verify
+- 结果：通过
+- 证据：`./dev check all` 中 Rust workspace tests 与 macOS XCTest 均执行通过；覆盖 import、recovery、sync、iCloud、DB repair、file actions 的 integration verify 测试
+- 涉及文件：`core/tests/**`、`apps/macos/AreaMatrixTests/**`
+
+- 项目：核对 `3-1/task-01` 到 `3-1/task-04` 证据
+- 结果：不通过
+- 证据：恢复场景手工证据 M-01..M-04 仍为 pending；release readiness 明确不得写成 PASS
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/development/recovery-scenarios.md:57`
+
+- 项目：最终自动化综合门禁与发布证据
+- 结果：不通过
+- 证据：`./dev check all` 本次实际退出码 1，SwiftFormat gate 失败：`199/224 files require formatting, 3 files skipped`
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-release-checklist.md:42`
+
+- 项目：P0/P1 风险与发布阻断
+- 结果：不通过
+- 证据：release checklist 当前结论为“不放行”；真实 `.app` 首屏、手工恢复冒烟、Developer ID 签名、公证、DMG、干净 Mac 首启、CHANGELOG/版本发布面、check-all 均未满足
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-release-checklist.md:11`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git diff --name-only -- core/src core/area_matrix.udl apps/macos/AreaMatrix apps/macos/AreaMatrix.xcodeproj` 无输出
+- 涉及文件：`core/src/**`、`core/area_matrix.udl`、`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrix.xcodeproj/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过，`./dev check all` 在 SwiftFormat gate 失败，无法满足 coding-standard 门禁。
+- 注释 / rustdoc / 文档同步：不通过，release checklist 自身记录 `CHANGELOG`、版本发布面、已知问题列表仍未完成。
+- 错误处理与边界处理：不通过，恢复场景 M-01..M-04 真实 macOS/iCloud/TCC/DB repair 手工证据 pending。
+- 测试与验证覆盖：不通过，`doctor` 与 `git diff --check` 通过，但 `./dev check all` 失败；真实 `.app` 启动、签名、公证、DMG、干净机首启证据缺失。
+- 占位、硬编码、mock-only、一次性实现检查：未发现 Real Core 页面以 mock-only 作为最终闭环通过的直接证据；但 release 级真实闭环证据缺失，不能判定完成。
+
+六、阻塞项
+
+- P1-RL-001：真实 Release `.app` 启动到首屏证据缺失  
+  说明：Stage 1 要求启动 `< 1.5s`，当前只有 hostless surrogate，真实 `.app` launch 被 sandbox 阻断。  
+  路径：`/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-performance-baseline.md:88`
+
+- P1-RL-002：M-01..M-04 手工恢复冒烟 pending  
+  说明：import 中断、iCloud placeholder、TCC 权限、DB repair 均缺真实发布机手工日志。  
+  路径：`/Users/as/Ai-Project/project/AreaMatrix/docs/development/recovery-scenarios.md:83`
+
+- P1-RL-003：签名、公证、DMG、干净 Mac 首启证据缺失  
+  说明：未提供 Developer ID codesign、notarytool/stapler、DMG checksum、公证日志、干净机首启记录。  
+  路径：`/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-release-checklist.md:57`
+
+- P1-RL-004：CHANGELOG / 版本发布切面未完成  
+  说明：`CHANGELOG.md` 仍未切出 `0.1.0` release 段落，release notes/tag/build number 证据不足。  
+  路径：`/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-release-checklist.md:71`
+
+- P1-RL-005：`./dev check all` 未通过  
+  说明：本次实跑在 SwiftFormat lint gate 失败，不能满足 task 完成标准要求。  
+  路径：`/Users/as/Ai-Project/project/AreaMatrix/docs/development/stage-1-release-checklist.md:72`
+
+七、验证情况
+
+- 已运行：`python3 tasks/prompts/_shared/prompt_pipeline.py doctor`：通过，`doctor: OK`，tasks/manifests 均为 637。
+- 已运行：`git diff --check`：通过，无输出。
+- 已运行：`./dev check all`：失败，退出码 1；通过了 governance、skills、task-loop、prompt doctor、diff check、Rust fmt/clippy/test、macOS XCTest，失败于 SwiftFormat：`199/224 files require formatting, 3 files skipped`。
+- 已检查：Expected New Paths 4/4 已存在：`core/tests/**`、`apps/macos/AreaMatrixTests/**`、`scripts/**`、`docs/development/**`。
+- 已检查：Forbidden Touches 未发现当前 diff 修改。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。核心原因不是单个测试缺失，而是最终发布门禁仍明确不放行：`./dev check all` 未通过，P1 release blocker 未关闭，手工冒烟、真实 `.app` 性能、签名、公证、DMG 和干净 Mac 首启证据缺失。
+
+VERIFY_RESULT: FAIL
