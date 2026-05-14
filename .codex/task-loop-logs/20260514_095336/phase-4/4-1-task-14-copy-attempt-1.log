@@ -1,0 +1,44 @@
+一、执行结论
+
+已完成。`4-1/task-14` 已为 C2-03 saved-search-crud 补齐 validation 级测试证据。
+
+二、执行范围
+
+- 单任务：`4-1/task-14`
+- 修改文件：
+  - [core/tests/saved_search_validation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/saved_search_validation.rs)
+- 未触碰 `apps/**`
+- 未修改 `core/src/**` 或 `core/area_matrix.udl`
+
+三、完成情况
+
+核对清单：
+- 成功 / 失败路径测试：已补齐，覆盖 CRUD 成功、重复名、非法 query、非法 filter、非法 id、缺失记录、DB 写失败。
+- Core API / UDL / Rust 一致性：已用测试锁定 `docs/api/core-api.md`、`core/area_matrix.udl`、Rust re-export、Rust 实现和 DB schema 关键片段。
+- 不新增业务功能：满足，仅新增测试。
+- 无法运行验证：无；必需验证已完成。
+
+完成标准：
+- C2-03 进入 UI 接入的测试证据：已补充。
+- Validation 命令：`./dev check all` 通过。
+
+四、工程质量
+
+新增测试使用真实 `init_repo`、真实 SQLite metadata、真实 Core API 调用，不是 mock-only 或硬编码通过。测试同时断言 saved search 操作不会改动文件、`change_log`、tags、notes、staging、generated 输出和用户可见路径。没有新增依赖；测试文件 464 行，符合当前编码规范阈值。
+
+五、验证情况
+
+已运行并通过：
+- `cargo test --test saved_search_validation`：3 passed
+- `cargo fmt --all -- --check`
+- `cargo clippy --all-targets --all-features -- -D warnings`
+- `cargo test --workspace`
+- `./dev check all`
+
+`./dev check all` 结果：通过。期间标准 `xcodebuild test` 命中本地 sandbox 的 `testmanagerd` 通信限制，但脚本按仓库规则复用已构建 XCTest bundle，`xcrun xctest` 通过；SwiftFormat 和 SwiftLint 也通过。
+
+六、风险与后续
+
+剩余风险：无当前任务阻断项。工作树里仍有执行器已有的 `tasks/prompts/_shared/progress.json` 修改和 `.codex/task-loop-runs/20260514_095336/` 未跟踪目录，我没有触碰它们。
+
+建议下一个任务：进入 `4-1/task-15`，即 C2-03 integration verify。
