@@ -14,6 +14,19 @@ from .macos import run_macos_tests
 from .skills import SimpleYAMLError, parse_frontmatter, parse_simple_yaml
 
 
+CAPABILITY_TEST_PREFIXES = {
+    "C2-01": ("search_query_files",),
+    "C2-02": ("search_filters",),
+    "C2-03": ("saved_search",),
+}
+
+CAPABILITY_KEYWORDS = {
+    "C2-01": "search query files",
+    "C2-02": "search filters",
+    "C2-03": "saved search",
+}
+
+
 class FailureCollector:
     def __init__(self) -> None:
         self.count = 0
@@ -265,6 +278,142 @@ def run_task_loop_check(root: Path | None = None) -> int:
 def run_diff_check(root: Path | None = None) -> int:
     root = (root or project_root()).resolve()
     return run_step(["git", "diff", "--check"], cwd=root, check=False).returncode
+
+
+def _task_path(root: Path, label: str) -> Path:
+    match = re.fullmatch(r"(\d+-\d+)/task-(\d+)", label)
+    if not match:
+        fail(f"task label must look like '4-1/task-15', got {label!r}.")
+    batch, number = match.groups()
+    matches = sorted((root / "tasks/prompts").glob(f"phase-*/{batch}-*/task-{number}-*.md"))
+    if not matches:
+        fail(f"task prompt not found for {label}.")
+    if len(matches) > 1:
+        choices = ", ".join(path.relative_to(root).as_posix() for path in matches)
+        fail(f"task label {label} matched multiple prompts: {choices}.")
+    return matches[0]
+
+
+def _task_text(root: Path, label: str) -> str:
+    return _task_path(root, label).read_text(encoding="utf-8", errors="replace")
+
+
+def _task_contains(text: str, pattern: str) -> bool:
+    return re.search(pattern, text, flags=re.IGNORECASE) is not None
+
+
+def _task_capabilities(text: str) -> list[str]:
+    return sorted(set(re.findall(r"\bC[1-4]-\d{2}\b", text)))
+
+
+def _is_stage_closeout_task(text: str) -> bool:
+    return _task_contains(text, r"stage[- ]\d+.*integration[- ]verify|阶段.*验收")
+
+
+def _is_page_task(text: str) -> bool:
+    return _task_contains(text, r"\bS(?:[1-3]-\d{2}|4-[A-Z]+-\d{2})\b|page[- ]integration|UX 页面")
+
+
+def _is_core_task(text: str) -> bool:
+    return bool(_task_capabilities(text)) and not _is_page_task(text)
+
+
+def _run_common_task_checks(root: Path) -> int:
+    for label, func in [
+        ("prompt doctor", lambda: run_prompts_check(root)),
+        ("diff check", lambda: run_diff_check(root)),
+    ]:
+        print()
+        print(f"==> ./dev check task: {label}", flush=True)
+        rc = func()
+        if rc != 0:
+            return rc
+    return 0
+
+
+def _run_core_task_checks(root: Path, text: str) -> int:
+    core_dir = root / "core"
+    require_command("cargo")
+    for argv in [
+        ["cargo", "fmt", "--all", "--", "--check"],
+        ["cargo", "clippy", "--all-targets", "--all-features", "--", "-D", "warnings"],
+    ]:
+        proc = run_step(argv, cwd=core_dir, check=False)
+        if proc.returncode != 0:
+            return proc.returncode
+
+    commands = _core_task_test_commands(text)
+    if not commands:
+        print()
+        print("==> ./dev check task: no targeted Core tests mapped; using cargo test --workspace", flush=True)
+        commands = [["cargo", "test", "--workspace"]]
+    for argv in commands:
+        proc = run_step(argv, cwd=core_dir, check=False)
+        if proc.returncode != 0:
+            return proc.returncode
+    return 0
+
+
+def _core_task_test_commands(text: str) -> list[list[str]]:
+    commands: list[list[str]] = []
+    lowered = text.lower()
+    for capability in _task_capabilities(text):
+        for prefix in CAPABILITY_TEST_PREFIXES.get(capability, ()):
+            commands.append(["cargo", "test", "--workspace", prefix, "--", "--nocapture"])
+    for capability, keyword in CAPABILITY_KEYWORDS.items():
+        if capability not in text and keyword in lowered:
+            for prefix in CAPABILITY_TEST_PREFIXES.get(capability, ()):
+                commands.append(["cargo", "test", "--workspace", prefix, "--", "--nocapture"])
+    return _unique_commands(commands)
+
+
+def _unique_commands(commands: list[list[str]]) -> list[list[str]]:
+    result: list[list[str]] = []
+    seen: set[tuple[str, ...]] = set()
+    for command in commands:
+        key = tuple(command)
+        if key not in seen:
+            result.append(command)
+            seen.add(key)
+    return result
+
+
+def _run_page_task_checks(root: Path) -> int:
+    proc = run_step(
+        [
+            "xcodebuild",
+            "-project",
+            "apps/macos/AreaMatrix.xcodeproj",
+            "-scheme",
+            "AreaMatrix",
+            "-destination",
+            "platform=macOS,arch=arm64",
+            "build",
+            "CODE_SIGNING_ALLOWED=NO",
+        ],
+        cwd=root,
+        check=False,
+    )
+    return proc.returncode
+
+
+def run_task_check(label: str, root: Path | None = None) -> int:
+    root = (root or project_root()).resolve()
+    text = _task_text(root, label)
+    rc = _run_common_task_checks(root)
+    if rc != 0:
+        return rc
+    if _is_stage_closeout_task(text):
+        print()
+        print(f"==> ./dev check task {label}: stage closeout uses ./dev check all", flush=True)
+        return run_all_check(root)
+    if _is_page_task(text):
+        return _run_page_task_checks(root)
+    if _is_core_task(text):
+        return _run_core_task_checks(root, text)
+    print()
+    print(f"==> ./dev check task {label}: prompt/diff checks only", flush=True)
+    return 0
 
 
 def run_quick_check(root: Path | None = None) -> int:

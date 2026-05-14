@@ -192,6 +192,30 @@ class BuildToolsTest(unittest.TestCase):
             self.assertEqual(calls, ["aarch64-apple-darwin", "x86_64-apple-darwin"])
             bindgen.assert_not_called()
 
+    def test_task_check_path_resolves_phase_task_label(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            task = root / "tasks/prompts/phase-4/4-1-stage2-experience/task-15-c2-03-integration-verify.md"
+            task.parent.mkdir(parents=True)
+            task.write_text("# 4-1/task-15\n", encoding="utf-8")
+
+            self.assertEqual(checks._task_path(root, "4-1/task-15"), task)
+
+    def test_task_check_maps_c2_03_to_saved_search_tests(self) -> None:
+        text = "Core ability C2-03 saved-search-crud"
+
+        self.assertEqual(
+            checks._core_task_test_commands(text),
+            [["cargo", "test", "--workspace", "saved_search", "--", "--nocapture"]],
+        )
+
+    def test_task_check_detects_stage_closeout_without_core_integration_false_positive(self) -> None:
+        core_integration = "# 4-1/task-15: C2-03 integration-verify\n- 阶段：Stage 2 Experience\n"
+        stage_closeout = "# 4-1/task-143: stage-2-experience integration verify\n"
+
+        self.assertFalse(checks._is_stage_closeout_task(core_integration))
+        self.assertTrue(checks._is_stage_closeout_task(stage_closeout))
+
 
 if __name__ == "__main__":
     unittest.main()

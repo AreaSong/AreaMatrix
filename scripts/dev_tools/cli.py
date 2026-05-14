@@ -15,6 +15,7 @@ from .checks import (
     run_prompts_check,
     run_quick_check,
     run_skills_check,
+    run_task_check,
     run_task_loop_check,
 )
 from .common import ToolError, print_error, project_root
@@ -42,7 +43,8 @@ def _build_parser() -> argparse.ArgumentParser:
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     check = subparsers.add_parser("check", help="Run repo health checks")
-    check.add_argument("target", nargs="?", choices=["governance", "skills", "task-loop", "prompts", "diff", "all"])
+    check.add_argument("target", nargs="?", choices=["governance", "skills", "task-loop", "prompts", "diff", "all", "task"])
+    check.add_argument("task_label", nargs="?", help="Task label for './dev check task', for example 4-1/task-15")
 
     build = subparsers.add_parser("build", help="Build developer artifacts")
     build_sub = build.add_subparsers(dest="build_target", required=True)
@@ -216,6 +218,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         if args.command == "check":
             if args.target is None:
                 return run_quick_check(root)
+            if args.task_label and args.target != "task":
+                parser.error("task_label is only valid with './dev check task <label>'")
             if args.target == "governance":
                 return run_governance_check(root)
             if args.target == "skills":
@@ -228,6 +232,10 @@ def main(argv: Sequence[str] | None = None) -> int:
                 return run_diff_check(root)
             if args.target == "all":
                 return run_all_check(root)
+            if args.target == "task":
+                if not args.task_label:
+                    parser.error("'./dev check task' requires a task label")
+                return run_task_check(args.task_label, root)
         if args.command == "build" and args.build_target == "core":
             return run_core_build(root, profile=args.profile, out_dir=args.out_dir, deployment_target=args.deployment_target)
         if args.command == "test" and args.test_target == "macos":

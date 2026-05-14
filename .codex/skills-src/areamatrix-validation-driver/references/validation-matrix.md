@@ -30,6 +30,23 @@ DRY_RUN=1 DRY_RUN_RESULT=PASS MAX_RETRIES=1 ./task-loop run --phase phase-1 --ma
 DRY_RUN=1 RISK_GATE=high RISK_POLICY=pause ./task-loop run --phase phase-1 --max-tasks 1
 ```
 
+## Prompt Task Gates
+
+Phase 4 prompt tasks should not default every atomic task to `./dev check all`.
+Use layered gates:
+
+- Atomic Core task: `./dev check task <label>`.
+- Core capability integration verify: `./dev check task <label>`.
+- Page feature or page integration task: `./dev check task <label>`.
+- Stage/foundation closeout or release task: `./dev check all`.
+
+`./dev check task <label>` always runs prompt doctor and diff checks, then chooses
+the smallest repo-local implementation gate for that task. It may run targeted
+Rust tests, a macOS build, or `./dev check all` for stage closeout. Agents may
+run additional targeted tests when the task or observed changes need more
+evidence, but the manifest should reserve `./dev check all` for integration or
+release boundaries.
+
 ## Rust Core
 
 Required for `core/**`:

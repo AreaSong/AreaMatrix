@@ -4,6 +4,7 @@ from pathlib import Path
 
 from .contracts import validate_granularity
 from .coverage import validate_core_task_coverage, validate_page_contract_coverage
+from .contracts import task_detail_kind
 from .paths import (
     AUDIT_RULES,
     CODING_STANDARDS,
@@ -258,6 +259,7 @@ def validate_task_manifest(task: TaskFile, entry: ManifestEntry) -> list[str]:
     append_exact_doc_errors(errors, task.label, entry)
     append_expected_path_errors(errors, task.label, entry)
     append_risk_errors(errors, task.label, entry)
+    append_validation_strategy_errors(errors, task, entry)
     append_section_errors(errors, task.label, entry)
     errors.extend(validate_granularity(task, entry))
     return errors
@@ -278,6 +280,22 @@ def append_expected_path_errors(errors: list[str], label: str, entry: ManifestEn
 def append_risk_errors(errors: list[str], label: str, entry: ManifestEntry) -> None:
     if looks_high_risk(entry) and entry.risk not in {"High", "Mission-Critical"}:
         errors.append(f"{label}: high-risk-looking task is not marked High/Mission-Critical")
+
+
+def append_validation_strategy_errors(errors: list[str], task: TaskFile, entry: ManifestEntry) -> None:
+    if task.phase != "phase-4":
+        return
+    validation = entry.validation
+    detail_kind = task_detail_kind(task, entry)
+    if detail_kind in {"stage-verify", "foundation-verify"}:
+        if "./dev check all" not in validation:
+            errors.append(f"{task.label}: phase-4 stage/foundation verify must keep './dev check all'")
+        return
+    expected = f"./dev check task {task.label}"
+    if expected not in validation:
+        errors.append(f"{task.label}: phase-4 task validation must use '{expected}'")
+    if "./dev check all" in validation:
+        errors.append(f"{task.label}: phase-4 non-stage task must not require './dev check all'")
 
 
 def append_section_errors(errors: list[str], label: str, entry: ManifestEntry) -> None:

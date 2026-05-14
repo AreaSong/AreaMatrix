@@ -33,5 +33,5 @@ integration
 ## 验证
 
 ```bash
-./dev check all
+./dev check task 4-1/task-70
 ```
