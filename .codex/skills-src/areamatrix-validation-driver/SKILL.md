@@ -7,6 +7,8 @@ description: "Use when Codex needs to choose, run, or report the smallest suffic
 
 Use this skill when the question is how to prove a change safely.
 
+Trigger it for validation selection, final evidence reports, blocked checks, prompt / skill / governance changes, Rust core, macOS app, docs-only, mixed changes, or any task where passing commands still needs engineering-quality evidence.
+
 ## Read first
 
 1. [AGENTS.md](../../../AGENTS.md)
@@ -23,6 +25,9 @@ Use this skill when the question is how to prove a change safely.
 
 - [references/validation-matrix.md](references/validation-matrix.md): path-to-command validation mapping.
 - [references/report-format.md](references/report-format.md): required validation report structure.
+- [../areamatrix-doc-sync/SKILL.md](../areamatrix-doc-sync/SKILL.md): source-of-truth and drift checks when docs, APIs, UDL, prompts, or Codex materials change.
+- [../areamatrix-file-safety/SKILL.md](../areamatrix-file-safety/SKILL.md): additional evidence for user-file, DB, staging, recovery, reindex, FSEvents, or iCloud risks.
+- [../areamatrix-enterprise-governance/SKILL.md](../areamatrix-enterprise-governance/SKILL.md): review, security, dependency, CI, and ownership gates.
 
 ## Workflow
 
@@ -39,3 +44,4 @@ Use this skill when the question is how to prove a change safely.
 - Do not let a passing dry-run replace real execution evidence.
 - Do not report PASS when coding-standard or engineering-quality blockers remain.
 - Do not report PASS when review, dependency, security, CI, or Git evidence blockers remain.
+- Do not make validation larger than needed by default; widen with a concrete risk, manifest, cross-layer change, or prior failure reason.

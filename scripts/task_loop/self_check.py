@@ -1035,6 +1035,7 @@ while [ "$#" -gt 0 ]; do
 done
 input="$(cat)"
 mkdir -p "$(dirname "$out")"
+sleep "${FAKE_CODEX_SLEEP_SECONDS:-0}"
 if printf '%s' "$input" | grep -q 'VERIFY_RESULT'; then
   printf '验收通过\\nVERIFY_RESULT: PASS\\n' > "$out"
 else
@@ -1044,7 +1045,7 @@ fi
         encoding="utf-8",
     )
     fake_codex.chmod(0o755)
-    h.run(
+    result = h.run(
         [h.task_loop, "run", "--phase", "phase-0", "--max-tasks", "1"],
         env={
             "ROOT_DIR": str(runner_repo),
@@ -1060,8 +1061,14 @@ fi
             "GIT_BRANCH_POLICY": "auto",
             "RISK_POLICY": "allow",
             "MAX_RETRIES": "1",
+            "ACTIVITY_HEARTBEAT_SECONDS": "1",
+            "FAKE_CODEX_SLEEP_SECONDS": "2",
         },
     )
+    assert_contains(result.stdout, "[ACTIVE]", "runner prints live activity heartbeat")
+    assert_contains(result.stdout, "elapsed=", "runner heartbeat elapsed")
+    assert_contains(result.stdout, "command=", "runner heartbeat command")
+    assert_contains(result.stdout, "log_state=", "runner heartbeat log state")
     progress = runner_repo / "tasks/prompts/_shared/progress.json"
     assert_json(
         progress,

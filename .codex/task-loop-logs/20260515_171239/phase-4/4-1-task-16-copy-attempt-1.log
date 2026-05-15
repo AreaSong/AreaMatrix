@@ -1,0 +1,45 @@
+一、执行结论
+
+- 已完成。
+- 本次无需修改文件：现有 C2-04 `run_smart_list` Core API / UDL / Rust 合同与 task、manifest、Exact Docs 已对齐。
+
+二、执行范围
+
+- 单任务：`4-1/task-16`
+- 修改文件清单：无
+- 未触碰 `apps/**`
+- 当前工作树有非本任务既有改动，我未修改这些文件，也未触碰 `core/**`。
+
+三、完成情况
+
+- 已读取 C2-04 能力规格、Stage 2 control map、Core API、错误码。
+- 已确认 API 名称、输入、输出、错误码、隐私/副作用边界一致：`run_smart_list(repo_path, saved_search_id, pagination) -> SearchResultPage`，错误边界为 `Db` / `Config` / `FileNotFound`。
+- 已确认只保留合同/API/UDL/测试合同，不提前实现 `4-1/task-17` 的业务查询闭环。
+- 页面消费方状态已在合同测试中覆盖：`S2-06 smart-lists` 和 `S2-15 command-palette` 可从合同得到结果页、空态、diagnostics、index status 和 API error 所需状态。
+- Forbidden Touches：未触碰。
+
+四、工程质量
+
+- 代码结构清晰：C2-04 合同集中在 `core/src/search/saved_search.rs`，UDL 与 `docs/api/core-api.md` 对齐。
+- rustdoc 已说明只读边界、消费页面、错误条件和不得触碰文件/标签/分类/change_log 的限制。
+- 当前是 contract-api task，`run_smart_list` 仍不实现业务查询，避免越界到 implementation task。
+- 未引入占位通过态、mock-only wiring 或一次性脚本改动。
+
+五、验证情况
+
+- 已运行：`./dev check task 4-1/task-16`
+- 通过项包括：
+  - `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`
+  - `git diff --check`
+  - `cargo fmt --all -- --check`
+  - `cargo clippy --all-targets --all-features -- -D warnings`
+  - `cargo test --workspace smart_list -- --nocapture`
+- 关键测试：`core/tests/smart_list_contract_api.rs` 3 个测试全部通过。
+- 失败项：无
+- 无法运行项：无
+
+六、风险与后续
+
+- 剩余风险：真实 Smart List 查询执行尚未实现，这是下一任务边界，不属于本 contract-api task。
+- 建议下一个任务：`4-1/task-17`，实现 C2-04 smart-lists 最小 Core 行为闭环。
+

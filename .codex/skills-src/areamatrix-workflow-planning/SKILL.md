@@ -7,6 +7,8 @@ description: "Use when Codex needs to plan AreaMatrix v* workflow versions, disc
 
 Use this skill before turning a large feature, version, refactor, or optimization into executable prompts.
 
+Trigger it for new `v*` versions, discussion gate decisions, workflow templates, Exact Docs scope, middle-layer handoff, `changes/`, `plans/`, `drafts/`, queue candidates, promotion preview, or any request to create future prompt tasks before they enter the live queue.
+
 ## Read first
 
 1. [AGENTS.md](../../../AGENTS.md)
@@ -19,6 +21,8 @@ Use this skill before turning a large feature, version, refactor, or optimizatio
 
 - [references/discussion-gate.md](references/discussion-gate.md): required discussion files and approval checks.
 - [references/version-lifecycle.md](references/version-lifecycle.md): v* lifecycle from docs to promotion preview.
+- [../areamatrix-doc-sync/SKILL.md](../areamatrix-doc-sync/SKILL.md): source-of-truth alignment for docs and planning artifacts.
+- [../areamatrix-task-loop/SKILL.md](../areamatrix-task-loop/SKILL.md): live execution begins only after approved promotion into `tasks/prompts/**`.
 
 ## Workflow
 
@@ -37,3 +41,4 @@ Use this skill before turning a large feature, version, refactor, or optimizatio
 - Do not use workflow docs as the product source of truth; product behavior remains in `docs/`.
 - Do not bypass the discussion gate for new versions just because a change YAML can be written.
 - Keep this skill focused on planning and gates; use `areamatrix-doc-sync` for drift checks.
+- Do not reuse global live task labels for future versions; keep version-local numbering until an explicit promotion mapping exists.

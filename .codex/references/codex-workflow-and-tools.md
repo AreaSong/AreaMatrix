@@ -80,6 +80,8 @@ codex exec -m gpt-5.5 \
 
 优先使用官方 OpenAI 文档：
 
+- OpenAI Docs MCP: https://developers.openai.com/learn/docs-mcp
+
 - Codex docs home: https://developers.openai.com/codex
 - Codex workflows: https://developers.openai.com/codex/workflows
 - Codex CLI reference: https://developers.openai.com/codex/cli/reference
@@ -133,6 +135,15 @@ codex mcp list
 ```
 
 `openaiDeveloperDocs` 是只读文档 MCP，用于从 Codex 中查 OpenAI developer docs；它不是业务 API 调用凭证，也不替代仓库文档。
+
+### OpenAI Docs MCP 使用规则
+
+- 涉及 OpenAI、Codex、model、API、SDK、hooks、MCP、skills、plugins、Computer Use 或其他 OpenAI 运行层能力时，优先使用 `openaiDeveloperDocs` 查询官方文档。
+- 如果当前 Codex 环境无法使用 `openaiDeveloperDocs`，只能退到 OpenAI 官方域名，例如 `developers.openai.com` 或 `platform.openai.com`；不要用第三方文章或旧记忆替代官方来源。
+- 回答“最新”“当前默认”“是否支持”“地区/价格/功能状态”等易变化问题前，必须重新核对官方文档，并在需要固化到仓库时标注核对日期和来源链接。
+- OpenAI 官方文档只裁定 OpenAI / Codex 运行层能力和限制，不裁定 AreaMatrix 产品行为。AreaMatrix 产品、架构、API、UX 和开发规范仍以 `docs/**` 为源事实，AI 协作规则仍以 `.ai-governance/**` 为源事实。
+- 不在仓库文档中写死易过期的模型、价格、地区、配额或 release 阶段；如果为了追踪当下状态必须记录，必须使用“截至 YYYY-MM-DD 核对”措辞并附官方来源。
+- OpenAI Docs MCP 是 documentation-only 的只读文档入口，不是 API key、auth token 或产品运行凭证；仓库不得保存个人 token、auth 配置或全局 `~/.codex/**` 内容。
 
 ## Codex 原生命令入口
 
@@ -263,7 +274,7 @@ openaiDeveloperDocs  https://developers.openai.com/mcp
 
 使用原则：
 
-- OpenAI 相关问题优先查 `openaiDeveloperDocs` 或官方域名。
+- OpenAI / Codex 相关问题优先查 `openaiDeveloperDocs`；不可用时仅退到 OpenAI 官方域名。
 - 第三方库/API 优先用 Context7 查官方文档。
 - GitHub repo 架构梳理可以用 DeepWiki。
 - 本机时间转换用 time MCP。
@@ -378,12 +389,15 @@ notify = [
 - 当前 release 行为以官方 Hooks 页面为准；schema `main` 分支可能包含尚未发布字段。
 - 只有 `type: "command"` handler 会运行；`prompt`、`agent` 会被解析但跳过，`async: true` command hook 也会被跳过。
 - 如果给 AreaMatrix 增加 hooks，优先考虑只读检查，例如防止 live runner 重复启动、提示 dirty worktree 会挡 checkpoint、或在 session start 打印当前 `./dev status` 摘要。
+- P1 repo-local hooks guardrail 的具体设计见 [hooks guardrail runbook](hooks-guardrail-runbook.md)。当前结论是先保留 runbook，不新增 `.codex/hooks.json`；未来如启用，必须只读、需 `/hooks` review / trust，并提供禁用和回滚路径。
 
 ## Computer Use
 
 Computer Use 允许 Codex 读取屏幕、点击、输入、滚动和操作本机 app UI。它需要 macOS 的 Screen Recording 和 Accessibility 权限。
 
 官方当前说明：Computer Use 在 Codex app 中面向 macOS 可用，发布初期不包含欧洲经济区、英国和瑞士。它需要先安装 Computer Use plugin，并在 macOS 授权 Screen Recording 与 Accessibility。Codex 还会对具体 app 使用请求进行审批，文件读写和 shell 仍受当前 thread 的 sandbox / approval 设置约束。
+
+AreaMatrix 的 macOS UI smoke 细则见 [Computer Use macOS UI smoke runbook](computer-use-macos-ui-smoke-runbook.md)。它只补真实窗口、点击、输入、菜单、截图或状态检查证据，不替代 Rust tests、`xcodebuild`、SwiftLint / SwiftFormat、prompt verify 或 docs / UDL / Core API 核对。
 
 适合场景：
 
@@ -403,6 +417,21 @@ AreaMatrix 中的合理落点：
 - macOS app task 完成后，用 Computer Use 进行 smoke UI check。
 - 与 `xcodebuild`、SwiftLint、SwiftFormat、Rust tests 搭配，而不是替代它们。
 - 通过 screenshots 或操作记录补充验收证据。
+- 密码、系统权限、隐私授权、支付、真实用户文件删除 / 移动 / 覆盖确认必须人工介入；Computer Use 不点击批准。
+
+## Subagents
+
+Subagents 是 Codex 的并行 agent workflow。官方当前说明：Codex 可以 spawn specialized agents 并行探索、处理或分析；Codex 只在明确要求 subagents / parallel agent work 时 spawn；内置 agent 包括 `default`、`worker`、`explorer`；subagents 继承当前 sandbox policy。官方还建议从 read-heavy work 起步，parallel write-heavy workflow 需要谨慎处理冲突和协调成本。
+
+AreaMatrix 的落点见 [Codex subagent boundaries runbook](subagent-boundaries-runbook.md)，源规则见 [Subagent Boundaries](../../.ai-governance/workflows/subagent-boundaries.md)。
+
+AreaMatrix 当前采用：
+
+- explicit-only：用户或当前任务明确要求时才用 subagent。
+- 只读探索可并行：独立问题、明确读取范围、禁止写入、返回 evidence。
+- 写入实现可谨慎并行：必须先定义 owner 和 disjoint write set。
+- live runner 禁区：不让 subagent 修改 progress、logs、run summaries、checkpoint、branch、commit、stash、reset 或 clean；不把同一 live task 拆给多个 writer。
+- 主 agent 负责最终整合、diff 复核、验证和结论；subagent 输出不能直接等价于 PASS、checkpoint 成功或 merge-ready。
 
 ## Browser Use 与 Chrome
 
@@ -481,6 +510,22 @@ RISK_POLICY=allow MAX_RETRIES=0 ./task-loop run
 
 不要在已有 live runner 时启动第二个 runner。
 
+### P0 主线保护
+
+AreaMatrix v1 live execution 的唯一主线是：
+
+```text
+AGENTS.md / .ai-governance
+-> workflow/ planning gate
+-> tasks/prompts/** live queue
+-> ./dev / ./task-loop
+-> repo-local skills
+```
+
+`tasks/backlog/**` 是规划记录和可复制提示词暂存区，不进入 `./task-loop`，不写 `tasks/prompts/_shared/progress.json`，也不替代 `workflow/` 的 planning gate。Codex Automations、Cloud、Worktrees、Vibe-Skills、SDK、app-server、remote-control 目前只能作为候选能力、参考资料或未来评估项；v1 live queue 阶段不得接管 `tasks/prompts/**`、`./dev`、`./task-loop`、progress、checkpoint 或 repo-local skill 主线。
+
+因此，任何优化都不得新增第二套 runner、progress、queue 或 promotion 机制。需要接入外部能力时，先经过 [.ai-governance 外部能力接入门禁](../../.ai-governance/workflows/external-capability-admission.md) 与 `workflow/` gate，并说明 source of truth、触发条件、验证方式、owner，以及是否影响 live 主线。
+
 ## AreaMatrix 对比矩阵
 
 本节把 OpenAI / Codex 官方能力版图对照到 AreaMatrix 当前项目体系。状态含义：
@@ -511,7 +556,7 @@ RISK_POLICY=allow MAX_RETRIES=0 ./task-loop run
 | Computer Use | computer-use plugin / MCP 已启用 | 部分已有 | 能力启用，但尚未纳入 macOS UI 验收 runbook | 建议补 | 为 SwiftUI 页面和交互提供真实 UI smoke 证据 | 不替代 `xcodebuild`；密码、权限、隐私需人工确认 | P1 |
 | Hooks | Codex hooks feature enabled；AreaMatrix 无 repo-local `.codex/hooks.json` | 缺失-建议补 | 当前靠人工记忆检查 live runner、dirty worktree、危险路径 | 建议补只读 hooks | 在 session start / pre-tool 提醒重复 runner、checkpoint 风险、危险边界 | hooks 是 guardrail，不是完整 enforcement boundary；不自动修改文件 | P1 |
 | Plugin hooks | `plugin_hooks` disabled / under development | 暂不接入 | 官方和本机都显示仍在开发中 | 不补 | 等成熟后再评估 | 不依赖其做关键门禁 | P4 |
-| Subagents | Codex multi-agent feature enabled；项目无固定 subagent 协议 | 部分已有 | 可用于读/审计/验证，但并行写同一 live task 风险高 | 建议补边界 | 加速大范围只读审计、日志归因、分模块验证 | 写入任务必须拆分 disjoint write set，不能碰同一 live task | P2 |
+| Subagents | Codex multi-agent feature enabled；已有边界 runbook | 已有边界 | 可用于读/审计/验证；并行写必须有 owner 和 disjoint write set | 不补主结构 | 加速大范围只读审计、日志归因、分模块验证 | 不碰 live runner / progress / checkpoint；不把同一 live task 拆给多个 writer | P2 |
 | Automations | Codex app automations 官方存在；项目用 `./task-loop` | 暂不接入 | v1 live queue 已有稳定 runner，接入 automations 会增加状态源 | 不补主线 | 未来可做提醒或周期性健康检查 | 不创建第二套进度源 | P4 |
 | Codex Cloud | `codex cloud` CLI 存在；AreaMatrix 当前本地 live runner | 暂不接入 | 当前需要保护本地 worktree、progress、checkpoint | 暂不接 | 未来可做离线 PR / review 实验 | 不绕过 `workflow/` gate 和 local validation | P4 |
 | Worktrees | 官方存在；AreaMatrix 直接跑当前 checkout | 暂不接入 | 当前 live runner 持有 lock，worktree 并行会放大状态复杂度 | 暂不接 | 未来可隔离 vN 规划或 spike | 不移动/归档 v1 live queue | P4 |
@@ -546,12 +591,12 @@ RISK_POLICY=allow MAX_RETRIES=0 ./task-loop run
 | 优先级 | 工作包 | 要做什么 | 吸收来源 | 交付物 | 完成口径 |
 |---|---|---|---|---|---|
 | P0 | 主线保护 | 明确当前 `./dev + ./task-loop + tasks/prompts/**` 仍是唯一 live execution 主线 | Codex 官方 workflow / AreaMatrix 当前体系 | 文档规则和 backlog 任务边界 | 不新增第二 runner，不让 Vibe/Codex Automations/Cloud 接管 live queue |
-| P0 | 外部能力接入门禁 | 定义 Vibe-Skills 或其他外部 skills 的 admission gate | Vibe-Skills custom skill governance、Codex migrate/customization docs | rules / docs 中的接入判定表 | 目录存在不等于启用；必须说明 source of truth、触发条件、验证和 owner |
+| P0 | 外部能力接入门禁 | 定义 Vibe-Skills 或其他外部 skills 的 admission gate | Vibe-Skills custom skill governance、Codex migrate/customization docs | [外部能力接入门禁](../../.ai-governance/workflows/external-capability-admission.md) | 目录存在不等于启用；外部 runtime 不得成为 AreaMatrix canonical runtime；必须说明 source of truth、触发条件、验证和 owner |
 | P1 | OpenAI Docs MCP 规则 | 固化“涉及 OpenAI/Codex/API/model 最新判断时优先查官方 MCP” | Codex 官方 docs、openaiDeveloperDocs MCP | `.ai-governance` 或 `.codex/references` 规则补充 | 以后不靠旧记忆声称最新 |
-| P1 | repo-local 只读 hooks | 设计只读 hooks guardrail，先提示 live runner、dirty worktree、危险路径和验证缺口 | Codex hooks | `.codex/hooks.json` 方案或 runbook | hooks 只提醒或阻断明显风险，不自动修改文件 |
-| P1 | Computer Use UI smoke | 为 macOS SwiftUI 任务补真实 UI smoke 路径 | Codex Computer Use | macOS UI smoke runbook / skill 补充 | UI 任务除命令验证外有窗口、点击、截图或操作证据 |
+| P1 | repo-local 只读 hooks | 设计只读 hooks guardrail，先提示 live runner、dirty worktree、危险路径和验证缺口 | Codex hooks | [hooks guardrail runbook](hooks-guardrail-runbook.md)；未来再评估 `.codex/hooks.json` | hooks 只提醒或阻断明显风险，不自动修改文件 |
+| P1 | Computer Use UI smoke | 为 macOS SwiftUI 任务补真实 UI smoke 路径 | Codex Computer Use | [Computer Use macOS UI smoke runbook](computer-use-macos-ui-smoke-runbook.md) | UI 任务除命令验证外有窗口、点击、截图或操作证据 |
 | P1 | AreaMatrix skills 强化 | 强化现有 7 个 repo-local skills 的触发和边界 | AreaMatrix 当前 skills | skills-src / index / validation matrix 的小步补强 | 不新增重复 skill；先复用现有 skill owner |
-| P2 | Subagent 边界 | 定义并行 agent 的使用边界、ownership 和禁止区 | Codex Subagents、Vibe subagent patterns | subagent runbook / skill 规则 | 只读审计可并行；写入必须拆分 disjoint write set |
+| P2 | Subagent 边界 | 定义并行 agent 的使用边界、ownership 和禁止区 | Codex Subagents、Vibe subagent patterns | [subagent boundaries runbook](subagent-boundaries-runbook.md) / `.ai-governance` 规则 | 只读审计可并行；写入必须拆分 disjoint write set |
 | P2 | Vibe-Skills 横向能力筛选 | 从 Vibe-Skills 中筛选调试、TDD、验证、审查、安全、架构、文档类能力 | Vibe-Skills bundled skills | 候选吸收矩阵 | 每个候选标注吸收/不吸收/参考、原因和落点 |
 | P2 | 官方变更刷新 | 建立 Codex changelog / feature maturity 的刷新习惯 | Codex Releases / Feature Maturity | 轻量刷新步骤 | 每次更新“最新 Codex 工作流”前重新打开官方文档 |
 | P3 | Browser / Chrome 场景化 | 只为 docs preview、localhost、登录态网页建立使用边界 | Codex Browser / Chrome plugin | 场景说明 | 不把 Browser/Chrome 当 macOS app 主验收 |
@@ -560,15 +605,14 @@ RISK_POLICY=allow MAX_RETRIES=0 ./task-loop run
 
 ### Vibe-Skills 吸收原则
 
-`/Users/as/Ai-Project/project/Vibe-Skills` 当前定位为外部候选能力池和治理参考，不是 AreaMatrix 的 canonical runtime。AreaMatrix 不直接启用 `vibe` 接管主流程，也不把 Vibe-Skills 的目录结构原样并入 `tasks/prompts/**`。
+`/Users/as/Ai-Project/project/Vibe-Skills` 当前定位为外部候选能力池和治理参考，不是 AreaMatrix 的 canonical runtime。AreaMatrix 不直接启用 `vibe` 接管主流程，也不把 Vibe-Skills 的目录结构原样并入 `tasks/prompts/**`。具体判断以 [.ai-governance 外部能力接入门禁](../../.ai-governance/workflows/external-capability-admission.md) 为准。
 
-| 判定项 | 吸收 | 暂不吸收 | 只参考 |
-|---|---|---|---|
-| 能补 AreaMatrix 当前缺口 | 是，例如系统调试、TDD、验证完成前检查、code/security review | 否，如果现有 skill 已覆盖且只是换名字 | 可作为 wording / checklist 灵感 |
-| 与 AreaMatrix 主线关系 | 必须服务 `./dev`、`./task-loop`、`.ai-governance` 或 repo-local skills | 不能创建第二套 live queue 或第二 runtime | 可作为外部治理案例 |
-| 触发方式 | 明确关键词、任务类型、风险边界 | 目录存在即自动生效 | 手工阅读、选择性蒸馏 |
-| 验证方式 | 能落到本仓库检查命令、runbook 或验收证据 | 无法证明效果，只增加流程文字 | 暂存为候选 |
-| source of truth | `docs/`、`.ai-governance/`、现有 AreaMatrix skill owner | Vibe-Skills 反客为主 | Vibe-Skills 作为参考来源 |
+| 结论 | 适用条件 | AreaMatrix 落点 |
+|---|---|---|
+| 吸收 | 能补明确缺口、不重复现有 owner、可验证、不改变 live 主线 | `.ai-governance/**`、`.codex/references/**`、`.codex/skills-src/**` 或经批准的 `workflow/**` |
+| 暂缓 | 有潜在价值，但 owner、触发、验证或安全边界未闭合 | `tasks/backlog/**` 候选记录 |
+| 只参考 | 主要提供 wording、taxonomy、case、checklist 或上游设计启发 | `.codex/references/**` 或 backlog note |
+| 拒绝 | 与主线冲突、重复率过高、需要第二 runtime / supervisor、无法说明 source of truth 或危及用户文件安全 | 可在 backlog 记录拒绝原因，但不安装、不链接、不触发 |
 
 ## 推荐演进方向
 

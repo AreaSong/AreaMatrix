@@ -9,6 +9,8 @@ import shlex
 import shutil
 import subprocess
 import sys
+import threading
+import time
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
@@ -73,6 +75,7 @@ class RuntimeConfig:
     dry_run_verify_preview_lines: int = 40
     dry_run_result: str = "PASS"
     dry_run_max_attempts: int = 10
+    activity_heartbeat_seconds: int = 30
     run_id: str = ""
 
     @classmethod
@@ -109,6 +112,7 @@ class RuntimeConfig:
         cfg.dry_run_verify_preview_lines = int(os.environ.get("DRY_RUN_VERIFY_PREVIEW_LINES", "40"))
         cfg.dry_run_result = os.environ.get("DRY_RUN_RESULT", "PASS")
         cfg.dry_run_max_attempts = int(os.environ.get("DRY_RUN_MAX_ATTEMPTS", "10"))
+        cfg.activity_heartbeat_seconds = int(os.environ.get("ACTIVITY_HEARTBEAT_SECONDS", "30"))
         cfg.run_id = os.environ.get("RUN_ID", "")
         return cfg
 
@@ -216,6 +220,8 @@ class TaskLoopRunner:
             raise TaskLoopError("CODEX_EXEC_SANDBOX must be read-only, workspace-write, or danger-full-access")
         if self.cfg.dry_run_result not in {"PASS", "FAIL"}:
             raise TaskLoopError("DRY_RUN_RESULT must be PASS or FAIL")
+        if self.cfg.activity_heartbeat_seconds < 1:
+            raise TaskLoopError("ACTIVITY_HEARTBEAT_SECONDS must be >= 1")
         for phase in self.cfg.selected_phases():
             if phase not in PHASES:
                 raise TaskLoopError(f"invalid phase: {phase}")
@@ -572,6 +578,7 @@ class TaskLoopRunner:
         log_event("INFO", f"DRY_RUN={1 if self.cfg.dry_run else 0}")
         if self.cfg.dry_run:
             log_event("INFO", f"DRY_RUN_RESULT={self.cfg.dry_run_result}")
+        log_event("INFO", f"ACTIVITY_HEARTBEAT_SECONDS={self.cfg.activity_heartbeat_seconds}")
         log_event("INFO", f"ROOT_DIR={self.cfg.root_dir}")
         log_event("INFO", f"COPY_ROOT={self.cfg.copy_root}")
         log_event("INFO", f"VERIFY_ROOT={self.cfg.verify_root}")
@@ -671,9 +678,38 @@ class TaskLoopRunner:
         log_event("EXEC", f"command={command_text}")
         log_event("EXEC", f"output_log={output_file}")
         proc = subprocess.Popen(command, stdin=subprocess.PIPE, text=True)
+        start_monotonic = time.monotonic()
         state.write_lock_activity(self.cfg.lock_dir, {"status": "running", "pid": proc.pid})
+        log_event(
+            "ACTIVE",
+            (
+                f"stage={stage} task={task.label} attempt={attempt} pid={proc.pid} "
+                f"elapsed=0s log_state={state.log_file_status(str(output_file))}"
+            ),
+        )
+        communicate_error: list[BaseException] = []
+
+        def communicate_with_child() -> None:
+            try:
+                proc.communicate(prompt_text)
+            except BaseException as exc:  # pragma: no cover - defensive handoff from worker thread
+                communicate_error.append(exc)
+
+        worker = threading.Thread(target=communicate_with_child, daemon=True)
+        worker.start()
         try:
-            proc.communicate(prompt_text)
+            while worker.is_alive():
+                elapsed = state.human_duration(time.monotonic() - start_monotonic)
+                log_event(
+                    "ACTIVE",
+                    (
+                        f"stage={stage} task={task.label} attempt={attempt} pid={proc.pid} "
+                        f"elapsed={elapsed} log_state={state.log_file_status(str(output_file))} "
+                        f"command={command_text}"
+                    ),
+                )
+                time.sleep(self.cfg.activity_heartbeat_seconds)
+            worker.join()
         finally:
             state.write_lock_activity(
                 self.cfg.lock_dir,
@@ -683,6 +719,8 @@ class TaskLoopRunner:
                     "returncode": proc.returncode,
                 },
             )
+        if communicate_error:
+            raise TaskLoopError(f"codex exec communication failed for {prompt_file}: {communicate_error[0]}", 1)
         if proc.returncode != 0:
             raise TaskLoopError(f"codex exec failed for {prompt_file}: exit={proc.returncode}", proc.returncode)
 

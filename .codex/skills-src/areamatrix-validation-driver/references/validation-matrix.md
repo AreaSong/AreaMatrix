@@ -82,6 +82,13 @@ failures, or link failures still fail the validation.
 
 If Xcode is unavailable, report it as blocked with exact command and error.
 
+For SwiftUI page or interaction tasks, add Computer Use UI smoke evidence when
+the task needs a real window, click, menu, input, screenshot, or visible state
+check. Follow `.codex/references/computer-use-macos-ui-smoke-runbook.md`.
+This evidence is supplemental and does not replace `xcodebuild`, `./dev test
+macos`, SwiftLint / SwiftFormat, Rust tests, prompt verify, or docs / UDL / Core
+API checks.
+
 ## Docs Only
 
 Docs-only changes do not need code tests by default. Still run targeted checks when the docs affect executable surfaces:

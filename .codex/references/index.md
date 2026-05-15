@@ -11,6 +11,11 @@ Codex 在 AreaMatrix 中处理任务时，按以下顺序定位上下文：
 ## 常用文档
 
 - Codex 工作流与工具：`.codex/references/codex-workflow-and-tools.md`
+- Codex hooks guardrail runbook：`.codex/references/hooks-guardrail-runbook.md`
+- Codex subagent boundaries runbook：`.codex/references/subagent-boundaries-runbook.md`
+- Computer Use macOS UI smoke runbook：`.codex/references/computer-use-macos-ui-smoke-runbook.md`
+- Vibe-Skills 横向能力筛选矩阵：`.codex/references/vibe-skills-capability-screening.md`
+- 外部能力接入门禁：`.ai-governance/workflows/external-capability-admission.md`
 - 架构总览：`docs/architecture/overview.md`
 - 技术栈：`docs/architecture/tech-stack.md`
 - Core API：`docs/api/core-api.md`
@@ -32,6 +37,7 @@ Codex 在 AreaMatrix 中处理任务时，按以下顺序定位上下文：
 - `areamatrix-validation-driver`：按改动范围选择最小充分验证集。
 - `areamatrix-doc-sync`：检查 docs / API / UDL / prompt manifest 漂移。
 - `areamatrix-file-safety`：用户文件、`.areamatrix/` 元数据与恢复边界。
+- `areamatrix-workflow-planning`：v* 版本 planning gate、middle-layer handoff 和 prompt 生成前门禁。
 
 ## Health Checks
 

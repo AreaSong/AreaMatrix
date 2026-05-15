@@ -7,6 +7,8 @@ description: "Use when Codex needs to review or update AreaMatrix enterprise gov
 
 Use this skill when the change touches enterprise governance surfaces or when a review needs governance-level gates beyond a single task.
 
+Trigger it for `CODE_REVIEW.md`, `SECURITY.md`, dependency policy, CI workflows, CODEOWNERS, PR / issue templates, release or branch governance, external capability admission, security / privacy review, supply-chain review, or claims that a task-loop checkpoint is ready to merge.
+
 ## Read first
 
 1. [AGENTS.md](../../../AGENTS.md)
@@ -19,6 +21,9 @@ Use this skill when the change touches enterprise governance surfaces or when a 
 
 - [references/governance-map.md](references/governance-map.md): source-of-truth map for enterprise governance files.
 - [references/review-security-ci.md](references/review-security-ci.md): review, security, dependency, and CI gates.
+- [../areamatrix-validation-driver/SKILL.md](../areamatrix-validation-driver/SKILL.md): choose local checks after governance changes.
+- [../areamatrix-git-checkpoint/SKILL.md](../areamatrix-git-checkpoint/SKILL.md): PASS checkpoint is evidence, not merge approval.
+- [../areamatrix-doc-sync/SKILL.md](../areamatrix-doc-sync/SKILL.md): keep governance adapters and Codex runtime materials aligned with source rules.
 
 ## Workflow
 
@@ -34,3 +39,4 @@ Use this skill when the change touches enterprise governance surfaces or when a 
 - Do not weaken CI path coverage without explicit approval.
 - Do not approve task-loop PASS commits as merge-ready without review and CI evidence.
 - Do not introduce dependencies without license and supply-chain review.
+- Do not let external skills, plugins, MCPs, automations, Cloud, Worktrees, or Vibe-Skills bypass the external capability admission gate.

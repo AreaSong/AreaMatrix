@@ -7,6 +7,8 @@ description: "Use when Codex touches AreaMatrix file safety boundaries such as a
 
 Use this skill for any task that can affect user files, repository metadata, or filesystem recovery behavior.
 
+Trigger it for non-empty folder adoption, import, staging recovery, DB metadata, migrations, rollback, reindex, FSEvents, iCloud placeholders, duplicate hash conflict handling, generated overview output, `.areamatrix/` deletion / repair, or any command that may delete, move, rename, overwrite, or download user-controlled files.
+
 ## Read first
 
 1. [AGENTS.md](../../../AGENTS.md)
@@ -27,6 +29,8 @@ Use this skill for any task that can affect user files, repository metadata, or 
 
 - [references/risk-scenarios.md](references/risk-scenarios.md): Mission-Critical scenarios and required preflight.
 - [references/acceptance-checklist.md](references/acceptance-checklist.md): filesystem, DB, rollback, and forbidden-touch evidence.
+- [../areamatrix-doc-sync/SKILL.md](../areamatrix-doc-sync/SKILL.md): source docs and Core API / UDL alignment for safety behavior.
+- [../areamatrix-validation-driver/SKILL.md](../areamatrix-validation-driver/SKILL.md): validation selection for safety-sensitive changes.
 
 ## Workflow
 
@@ -40,3 +44,4 @@ Use this skill for any task that can affect user files, repository metadata, or 
 - Do not use broad deletes or rewrites under user-controlled paths.
 - Do not make iCloud placeholder downloads or FSEvents backflow implicit side effects.
 - Do not write root `AREAMATRIX.md` or any user-visible file unless the task and docs explicitly require it.
+- Do not let automation, Computer Use, hooks, or task-loop risk bypass approve destructive actions against real user files.
