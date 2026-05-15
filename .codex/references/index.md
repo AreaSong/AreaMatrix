@@ -10,6 +10,7 @@ Codex 在 AreaMatrix 中处理任务时，按以下顺序定位上下文：
 
 ## 常用文档
 
+- Codex 工作流与工具：`.codex/references/codex-workflow-and-tools.md`
 - 架构总览：`docs/architecture/overview.md`
 - 技术栈：`docs/architecture/tech-stack.md`
 - Core API：`docs/api/core-api.md`
@@ -34,8 +35,8 @@ Codex 在 AreaMatrix 中处理任务时，按以下顺序定位上下文：
 
 ## Health Checks
 
-- Skills：`bash scripts/check-skills.sh`
-- Governance：`bash scripts/check-governance.sh`
+- Skills：`./dev check skills`
+- Governance：`./dev check governance`
 - Prompt runner：`python3 tasks/prompts/_shared/prompt_pipeline.py doctor`
 - Task loop full check：`./task-loop check`
 - Task loop：`./task-loop status`
