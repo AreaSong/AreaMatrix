@@ -47,6 +47,8 @@
 
 ## Prompt Packages
 
+- [Codex Operating Layer Inventory](codex-operating-layer-inventory.md)
 - [Codex Native / AreaMatrix / Vibe-Skills 基础治理](prompts/codex-native-area-vibe-optimization/)
 - [Vibe-Skills 横向能力吸收](prompts/vibe-skills-absorption/)
 - [Dev Backlog Tooling](prompts/dev-backlog-tooling/)
+- [Codex Operating Layer Closeout](prompts/codex-operating-layer-closeout/)
