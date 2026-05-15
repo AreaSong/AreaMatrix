@@ -153,6 +153,14 @@ ls -l "$EVIDENCE_DIR/repair-confirm-bottom-visible-attempt.png
     ————————————————————
 每完成一次就发送一次邮箱，例如完成、检验未完成、通过
     ————————————————————
+
+脚本优化、每次测试都需要把环境归位最初始？
+
+​    ————————————————————
+
+在页面有一个小窗口可以看进度
+    ————————————————————
+
 添加一个状态，就是中途执行了一半了之后，突然卡住了，例如出现了 ERROR:Selected model is at capacity. Please try a different model. 然后就再次重启，而并非直接死掉当前对话，然后邮箱会同步发送该进度
     ————————————————————
 中途执行一半，又重启了之后
@@ -197,6 +205,7 @@ ls -l "$EVIDENCE_DIR/repair-confirm-bottom-visible-attempt.png
       "verify_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260507_013505/phase-2/2-2-task-16-verify-attempt-2.log"
     },
     
+
     就只能是：    "2-2/task-08": {
       "attempts": 1,
       "copy_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260507_011233/phase-2/2-2-task-08-copy-attempt-1.log",
