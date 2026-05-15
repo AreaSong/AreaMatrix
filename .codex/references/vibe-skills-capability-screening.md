@@ -34,14 +34,14 @@ AGENTS.md / .ai-governance
 
 | 候选能力 | 用途 | 与 AreaMatrix 现有能力关系 | 建议结论 | 后续落点 |
 |---|---|---|---|---|
-| `systematic-debugging` | 失败、Bug、测试破裂、集成异常的根因调查 | 与 AGENTS 调试原则、`areamatrix-validation-driver`、task-loop 失败归因互补 | 吸收到 `.ai-governance` / `.codex/references` 规则 | 后续补调试 runbook 或 validation-driver reference |
+| `systematic-debugging` | 失败、Bug、测试破裂、集成异常的根因调查 | 与 AGENTS 调试原则、`areamatrix-validation-driver`、task-loop 失败归因互补 | 吸收到 `.ai-governance` / `.codex/references` 规则 | 已落到 `.codex/references/debugging-failure-attribution-runbook.md`、治理原则和现有 owner skill |
 | `tdd-guide` | 行为变更的 RED / GREEN / REFACTOR 测试优先方法 | 与 `docs/development/testing.md`、prompt 质量门禁部分重叠，但“生产代码前必须先失败测试”不适合作为全局硬规则 | 只作为参考 | 作为行为变更任务的可选开发姿势，不进默认门禁 |
-| `verification-before-completion` | 完成声明前必须有新鲜验证证据 | 与 AGENTS 完成门禁、`areamatrix-validation-driver` 高度一致 | 吸收到 `.ai-governance` / `.codex/references` 规则 | 后续补 completion evidence checklist |
-| `code-reviewer` | Review findings first，优先 correctness / regression risk | 与 `CODE_REVIEW.md`、`areamatrix-enterprise-governance` 重叠且互补 | 吸收为 AreaMatrix repo-local skill 补强 | 补强 enterprise-governance 的 review posture，不新增同义 skill |
-| `security-threat-model` | 明确 threat model 任务中的资产、边界、攻击路径和缓解措施 | 与 `SECURITY.md`、`areamatrix-file-safety`、`areamatrix-enterprise-governance` 互补 | 吸收为 AreaMatrix repo-local skill 补强 | 补强安全/文件边界 skill；仅 explicit threat-model 触发 |
+| `verification-before-completion` | 完成声明前必须有新鲜验证证据 | 与 AGENTS 完成门禁、`areamatrix-validation-driver` 高度一致 | 吸收到 `.ai-governance` / `.codex/references` 规则 | 已落到 `.codex/references/completion-evidence-checklist.md`、治理原则和 validation-driver 报告规则 |
+| `code-reviewer` | Review findings first，优先 correctness / regression risk | 与 `CODE_REVIEW.md`、`areamatrix-enterprise-governance` 重叠且互补 | 吸收为 AreaMatrix repo-local skill 补强 | 已落到 `CODE_REVIEW.md`、`.codex/references/review-and-threat-model-runbook.md` 和 enterprise-governance review posture；不新增同义 skill |
+| `security-threat-model` | 明确 threat model 任务中的资产、边界、攻击路径和缓解措施 | 与 `SECURITY.md`、`areamatrix-file-safety`、`areamatrix-enterprise-governance` 互补 | 吸收为 AreaMatrix repo-local skill 补强 | 已落到 `SECURITY.md`、`.codex/references/review-and-threat-model-runbook.md` 和 file-safety / enterprise-governance；仅 explicit 或高风险边界触发 |
 | `architecture-patterns` | Clean / Hexagonal / DDD 等后端架构模式参考 | AreaMatrix 架构以 `docs/architecture/**` 为源事实；上游偏通用后端和 Python 示例 | 只作为参考 | 架构讨论时作词汇和 checklist 参考，不改架构源事实 |
 | `docs-review` | 文档 diff 的风格、清晰度、可读性 review | 与 `areamatrix-doc-sync` 互补，但上游绑定 Metabase style guide，不适合直接套用 | 只作为参考 | 保留“编号化、可行动 feedback”格式启发 |
-| `writing-plans` | 把已批准需求转成含精确路径和验证命令的实施计划 | 与 `areamatrix-workflow-planning`、backlog prompt 包、task-label workflow 高度契合 | 吸收为 AreaMatrix repo-local skill 补强 | 补强 workflow-planning 的 handoff-safe plan 要求 |
+| `writing-plans` | 把已批准需求转成含精确路径和验证命令的实施计划 | 与 `areamatrix-workflow-planning`、backlog prompt 包、task-label workflow 高度契合 | 吸收为 AreaMatrix repo-local skill 补强 | 已落到 `areamatrix-workflow-planning`、`.codex/references/planning-handoff-runbook.md`、workflow templates 和 backlog prompt 包 |
 | `subagent-driven-development` | 独立任务的 fresh subagent + spec review + quality review | 已由 `.ai-governance/workflows/subagent-boundaries.md` 和 subagent runbook 局部吸收；上游“每任务 fresh subagent / 自动 commit”不适合默认主线 | 吸收到 `.ai-governance` / `.codex/references` 规则 | 保留 explicit-only、write set、spec-before-quality；拒绝 Vibe runtime 化 |
 
 ## 候选记录
@@ -53,7 +53,7 @@ AGENTS.md / .ai-governance
 - 现有关系: AreaMatrix 已要求原因不明 Bug 先复现和收证；`areamatrix-validation-driver` 负责选择验证，task-loop 失败还需要区分 copy / verify / checkpoint / runner gate。
 - 建议结论: 吸收到 `.ai-governance` / `.codex/references` 规则。
 - 理由: “no fixes before root-cause investigation”和多组件边界证据收集能补强当前失败归因质量；不需要新增同义 skill，也不能变成外部 runtime。
-- 后续落点: `.ai-governance/core/agent-principles.md` 的调试规则、`.codex/references/debugging-runbook.md` 或 `areamatrix-validation-driver` reference。
+- 后续落点: 已落到 `.ai-governance/core/agent-principles.md` 的调试规则、`.codex/references/debugging-failure-attribution-runbook.md`、`areamatrix-task-loop` 和 `areamatrix-validation-driver` references。
 
 ### `tdd-guide`
 
@@ -71,7 +71,7 @@ AGENTS.md / .ai-governance
 - 现有关系: 与 AGENTS 的“没有验证，不宣称已完成”、`.ai-governance` 完成门禁和 `areamatrix-validation-driver` 完全同向。
 - 建议结论: 吸收到 `.ai-governance` / `.codex/references` 规则。
 - 理由: 它不是新能力，而是 completion claim 的证据纪律；可直接补强 AreaMatrix 的汇报与验收口径。
-- 后续落点: `.ai-governance/core/agent-principles.md`、`.codex/references/codex-workflow-and-tools.md`、`areamatrix-validation-driver/references/validation-matrix.md`。
+- 后续落点: 已落到 `.ai-governance/core/agent-principles.md`、`.ai-governance/workflows/prompt-task-runtime.md`、`.codex/references/completion-evidence-checklist.md`、`areamatrix-validation-driver/references/report-format.md` 和 `validation-matrix.md`。
 
 ### `code-reviewer`
 
@@ -80,7 +80,7 @@ AGENTS.md / .ai-governance
 - 现有关系: AreaMatrix 已有 `CODE_REVIEW.md` 和 `areamatrix-enterprise-governance`；上游内容更像 review posture，而不是独立 owner。
 - 建议结论: 吸收为 AreaMatrix repo-local skill 补强。
 - 理由: 可加强“review findings first”的输出纪律，但重复创建 `code-reviewer` skill 会和 enterprise-governance 分裂。
-- 后续落点: `areamatrix-enterprise-governance` 的触发说明、`CODE_REVIEW.md` 的评审输出格式或 `.codex/references` review runbook。
+- 后续落点: 已落到 `CODE_REVIEW.md` 的评审输出格式、`.codex/references/review-and-threat-model-runbook.md` 和 `areamatrix-enterprise-governance` 的 review posture；不新增同义 skill。
 
 ### `security-threat-model`
 
@@ -89,7 +89,7 @@ AGENTS.md / .ai-governance
 - 现有关系: AreaMatrix 已有高风险边界、`SECURITY.md`、文件安全 skill 和 enterprise governance；但缺少 explicit threat modeling 的 repo-local 操作姿势。
 - 建议结论: 吸收为 AreaMatrix repo-local skill 补强。
 - 理由: AreaMatrix 涉及用户文件、DB、staging、隐私和远程调用，威胁建模有长期价值；但必须 explicit-only，不能替代普通 code review，也不能在上下文缺失时跳过用户确认。
-- 后续落点: `areamatrix-file-safety` 和 `areamatrix-enterprise-governance` 的安全 review references；若未来反复出现 threat-model 任务，再评估新建专门 repo-local skill。
+- 后续落点: 已落到 `SECURITY.md` 的威胁建模触发与清单、`.codex/references/review-and-threat-model-runbook.md`、`areamatrix-file-safety` 和 `areamatrix-enterprise-governance` 的安全 review references；当前不新增专门 repo-local skill。
 
 ### `architecture-patterns`
 
@@ -116,7 +116,7 @@ AGENTS.md / .ai-governance
 - 现有关系: 与 `areamatrix-workflow-planning`、`workflow/` planning gate、backlog prompt 包和 task-label workflow 完全同向。
 - 建议结论: 吸收为 AreaMatrix repo-local skill 补强。
 - 理由: “exact file paths + executable verification steps + handoff-safe”能直接提升 AreaMatrix planning artifact 质量；无需新增同义 skill。
-- 后续落点: `areamatrix-workflow-planning` 的计划输出要求、`tasks/backlog/**/prompts` 模板、`.codex/references` planning runbook。
+- 后续落点: 已落到 `areamatrix-workflow-planning` 的计划输出要求、`.codex/references/planning-handoff-runbook.md`、`workflow/templates/**` 和 `tasks/backlog/**/prompts` 模板；不新增 `writing-plans` 同义 skill。
 
 ### `subagent-driven-development`
 

@@ -12,6 +12,14 @@ Every validation decision must also apply:
 
 Validation is not complete when commands pass but the implementation is a placeholder, hardcoded success path, mock-only path, or one-off script.
 
+When a validation command fails, use `.codex/references/debugging-failure-attribution-runbook.md` before fixing. First decide whether the command itself is the failing layer, or whether it is exposing a copy, verify, runner, Git checkpoint, docs / API / UDL / manifest drift, or file-safety problem.
+
+Before claiming a task is done, fixed, passing, commit-ready, merge-ready, or deliverable, apply `.codex/references/completion-evidence-checklist.md`.
+
+Completion evidence must name what changed, why it changed, which commands ran, whether those results are fresh after the final change, which checks did not run and why, remaining risks, and review / security / dependency / CI / Git evidence blocker state. Old logs, prior memories, dry-runs, screenshots, mock-only paths, fixture-only paths, hardcoded success, and agent self-reports are not completion evidence.
+
+If required validation cannot run, or any review, security, dependency, CI, or Git evidence blocker remains, report `BLOCKED` or `NOT-READY` instead of `PASS`.
+
 ## Prompt And Task Runtime
 
 | Changed paths | Required checks |

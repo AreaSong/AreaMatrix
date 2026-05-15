@@ -5,6 +5,8 @@ Use these gates when reviewing enterprise governance impact.
 ## Review Gate
 
 - `CODE_REVIEW.md` applies to all PRs.
+- Review output is findings first. List actionable bugs, regressions, missing tests, security / privacy / user-file risks before summary.
+- Findings should include severity, file / line evidence, impact, and the smallest useful fix or validation request.
 - High and Mission-Critical changes need explicit risk, validation, and rollback notes.
 - Task-loop PASS commits need verify log, progress, summary, Git checkpoint, review, and CI evidence.
 
@@ -13,6 +15,8 @@ Use these gates when reviewing enterprise governance impact.
 - Private vulnerability reports must use GitHub Security Advisory.
 - Public issues must not contain exploit details or sensitive local data.
 - User files, paths, logs, DB, staging, iCloud, and AI/network boundaries require privacy review.
+- Threat modeling is explicit-only or high-risk-boundary triggered. It does not replace normal code review, tests, CI, or file-safety acceptance.
+- Threat models must cover assets, trust boundaries, entry points, attacker capabilities, abuse paths, mitigations, and residual risk.
 
 ## Dependency Gate
 

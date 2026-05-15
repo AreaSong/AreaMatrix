@@ -2,6 +2,20 @@
 
 Use this reference when the task loop stops, retries, or reports stale state.
 
+For unknown failures, start with the shared [debugging and failure attribution runbook](../../../references/debugging-failure-attribution-runbook.md). Do not collapse copy, verify, validation, runner, checkpoint, docs drift, and file-safety failures into one bucket.
+
+## Attribution Fields
+
+Inspect these fields before choosing a recovery command:
+
+1. `./dev status --verbose`: current operator view, latest task, latest verify excerpt, runner process and recovery hint.
+2. `./task-loop status`: progress counts, lock state, stale detection, latest log directory.
+3. `tasks/prompts/_shared/progress.json`: `status`, `note`, `attempts`, `risk`, `run_id`, `copy_log`, `verify_log`, `git_checkpoint_status`, `git_push_status`, `git_branch`, `git_commit`, `git_changed_files`.
+4. `.codex/task-loop-runs/index.json`: latest `run_id`, `status`, `summary_file`, `completed`, `retries`, `exit_code`.
+5. `.codex/task-loop-runs/<run_id>/summary.json`: run-level `status`, `exit_code`, `note`, `totals`, risk policy, Git mode, and per-task logs.
+6. `*-copy-attempt-<n>.log` and `*-verify-attempt-<n>.log`: stage-specific evidence.
+7. `git status --short` and `git diff --check`: dirty worktree evidence when verify passed but checkpoint failed.
+
 ## Verify Failed
 
 Symptoms:

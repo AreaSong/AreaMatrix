@@ -11,6 +11,10 @@ Codex 在 AreaMatrix 中处理任务时，按以下顺序定位上下文：
 ## 常用文档
 
 - Codex 工作流与工具：`.codex/references/codex-workflow-and-tools.md`
+- Completion evidence checklist：`.codex/references/completion-evidence-checklist.md`
+- Debugging / failure attribution runbook：`.codex/references/debugging-failure-attribution-runbook.md`
+- Planning handoff runbook：`.codex/references/planning-handoff-runbook.md`
+- Review and threat model runbook：`.codex/references/review-and-threat-model-runbook.md`
 - Codex hooks guardrail runbook：`.codex/references/hooks-guardrail-runbook.md`
 - Codex subagent boundaries runbook：`.codex/references/subagent-boundaries-runbook.md`
 - Computer Use macOS UI smoke runbook：`.codex/references/computer-use-macos-ui-smoke-runbook.md`

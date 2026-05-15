@@ -32,6 +32,13 @@ AreaMatrix/
 - staging recovery 必须保证失败不污染最终目录。
 - FSEvents 与 iCloud 处理必须考虑重复事件、延迟、占位符和外部改动。
 - 自动概览默认写入 `.areamatrix/generated/`，不得默认覆盖 `README.md`。
+- 远程 AI 调用、用户数据离开本机、日志或错误上报暴露敏感路径 / 内容时，必须说明隐私影响、明示同意、数据最小化和回滚 / 关闭路径。
+
+## 安全重点
+
+- 用户原文件、`.areamatrix/` 元数据、DB、staging 临时区、索引、日志、配置和 AI 请求 / 响应内容是默认保护资产。
+- 文件系统与 DB、一阶段 staging 与最终目录、FSEvents / iCloud 外部事件、本机与远程 AI / 网络服务之间都是默认信任边界。
+- 命中高风险边界的设计或 review 必须说明 abuse path、缓解措施和 residual risk，不能只写“已考虑安全”。
 
 ## 分层约束
 
@@ -46,4 +53,3 @@ AreaMatrix/
 - Rust：`cargo fmt`、`cargo clippy`、`cargo test`
 - Swift：`xcodebuild test`、SwiftFormat、SwiftLint
 - 发布前：按 `docs/development/testing.md` 的手工冒烟清单验证。
-

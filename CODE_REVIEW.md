@@ -39,6 +39,20 @@ Code review 不是只看代码风格。评审必须确认：
 - dry-run、mock-only、fixture-only 或截图被当成真实闭环证据。
 - Git checkpoint 混入旧改动，或者 PASS task 没有可追溯 progress/log/summary/commit 证据。
 
+## 评审输出格式
+
+评审报告必须 findings first：先列可行动问题，再写简短总结或正向说明。没有问题时也要明确写出“未发现阻断性问题”，并说明剩余风险或未验证项。
+
+每条 finding 应包含：
+
+- **Severity**：`P0` 阻断 / `P1` 高风险 / `P2` 中风险 / `P3` 建议。
+- **位置**：具体文件和行号；无法给行号时说明证据来源。
+- **问题**：说明实际错误、回归风险、缺失测试、安全 / 隐私 / 用户文件风险，而不是只给风格偏好。
+- **影响**：说明用户、数据、文件系统、DB、staging、FSEvents/iCloud、远程 AI 或 CI 合并门禁会受到什么影响。
+- **建议**：给出最小可执行修复方向或需要补充的验证。
+
+优先级顺序是 correctness、regression risk、missing tests、security / privacy / user-file risk、maintainability。纯风格意见不得压过可证明的行为风险。
+
 ## 评审清单
 
 评审者按以下顺序看：

@@ -89,6 +89,17 @@ P1.4 owner 范围：
   - `writing-plans`: 吸收为 AreaMatrix repo-local skill 补强。
   - `subagent-driven-development`: 吸收到 `.ai-governance` / `.codex/references` 规则；不吸收其默认 runtime 化执行方式。
 
+## P2.3: Writing Plans / Planning Handoff 吸收记录
+
+- Upstream source: `/Users/as/Ai-Project/project/Vibe-Skills/bundled/skills/writing-plans/SKILL.md` 或 `core/skills/writing-plans/instruction.md`。
+- AreaMatrix gap: planning / backlog prompt 需要更稳定地写出目标、非目标、精确路径、source of truth、owner / landing、执行顺序、验证命令和 blocked / rollback 口径。
+- Dedup with: 不新增 `writing-plans` 同义 repo-local skill；owner 是 `.codex/skills-src/areamatrix-workflow-planning/SKILL.md`。
+- Local source of truth: `workflow/**` lifecycle 与 `tasks/backlog/**` backlog 边界；产品语义仍以 `docs/**` 为准。
+- Live mainline impact: 无。backlog prompt 不进入 `tasks/prompts/**`，不写 `tasks/prompts/_shared/progress.json`，不创建 checkpoint 或 runner state。
+- Landing: `.codex/references/planning-handoff-runbook.md`、`workflow/templates/**`、`.codex/skills-src/areamatrix-workflow-planning/**`、`tasks/backlog/**` prompt 包说明。
+- Verification: `./dev check skills`、`./dev check governance`、prompt doctor、`./dev workflow doctor`、路径级 diff check。
+- Decision: 吸收 handoff-safe planning 字段和 copy-ready / verify-ready 分离方法；拒绝 Vibe 的 dedicated worktree、执行 skill handoff、自动 commit 或外部 runtime 语义。
+
 | 优先级 | 项 | 当前处理 |
 |---|---|---|
 | P3 | Browser / Chrome 场景化 | 只记录使用边界，不作为 macOS app 主验收 |
@@ -100,6 +111,8 @@ P1.4 owner 范围：
 可执行提示词放在 [prompts/codex-native-area-vibe-optimization/](prompts/codex-native-area-vibe-optimization/)。
 
 该 prompt 包只供新对话手工复制使用，不接入 `tasks/prompts/**`，不由 `./task-loop` 自动执行。
+
+第二批能力吸收提示词放在 [prompts/vibe-skills-absorption/](prompts/vibe-skills-absorption/)，用于把已筛选出的横向能力继续转成 AreaMatrix 自有 runbook、checklist 或 repo-local skill 补强。
 
 ## 验证
 

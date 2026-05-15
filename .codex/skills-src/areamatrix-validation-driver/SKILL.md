@@ -25,6 +25,8 @@ Trigger it for validation selection, final evidence reports, blocked checks, pro
 
 - [references/validation-matrix.md](references/validation-matrix.md): path-to-command validation mapping.
 - [references/report-format.md](references/report-format.md): required validation report structure.
+- [../../references/completion-evidence-checklist.md](../../references/completion-evidence-checklist.md): evidence checklist before claiming done, fixed, passing, merge-ready, or deliverable.
+- [../../references/debugging-failure-attribution-runbook.md](../../references/debugging-failure-attribution-runbook.md): decide whether a failure belongs to validation or another task-loop / drift / safety layer.
 - [../areamatrix-doc-sync/SKILL.md](../areamatrix-doc-sync/SKILL.md): source-of-truth and drift checks when docs, APIs, UDL, prompts, or Codex materials change.
 - [../areamatrix-file-safety/SKILL.md](../areamatrix-file-safety/SKILL.md): additional evidence for user-file, DB, staging, recovery, reindex, FSEvents, or iCloud risks.
 - [../areamatrix-enterprise-governance/SKILL.md](../areamatrix-enterprise-governance/SKILL.md): review, security, dependency, CI, and ownership gates.
@@ -34,7 +36,8 @@ Trigger it for validation selection, final evidence reports, blocked checks, pro
 1. Start from changed paths and task manifest `Validation`, not from a fixed largest command set.
 2. Choose the smallest sufficient checks, widening only for cross-layer or high-risk changes.
 3. Load the validation matrix before choosing commands.
-4. Use the report format when handing off results.
+4. When a command fails, classify whether it is a validation-command failure or evidence of copy / verify / runner / checkpoint / drift / file-safety failure before recommending a fix.
+5. Use the report format when handing off results.
 
 ## Guardrails
 
@@ -42,6 +45,7 @@ Trigger it for validation selection, final evidence reports, blocked checks, pro
 - Do not claim completion without executed validation or an explicit blocked reason.
 - Do not skip `doctor` after prompt, manifest, skill, or automation workflow changes.
 - Do not let a passing dry-run replace real execution evidence.
+- Do not call validation fresh unless it was rerun after the final relevant change in this workspace.
 - Do not report PASS when coding-standard or engineering-quality blockers remain.
 - Do not report PASS when review, dependency, security, CI, or Git evidence blockers remain.
 - Do not make validation larger than needed by default; widen with a concrete risk, manifest, cross-layer change, or prior failure reason.

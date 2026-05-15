@@ -21,6 +21,7 @@ Trigger it for questions about `./task-loop`, `./dev` runner actions, copy-ready
 
 - [references/runbook.md](references/runbook.md): execution modes, start points, logs, and progress state.
 - [references/failure-recovery.md](references/failure-recovery.md): failed verify, blocked tasks, stale progress, and legacy state recovery.
+- [../../references/debugging-failure-attribution-runbook.md](../../references/debugging-failure-attribution-runbook.md): shared copy / verify / validation / runner / checkpoint failure attribution order.
 - [../areamatrix-git-checkpoint/SKILL.md](../areamatrix-git-checkpoint/SKILL.md): Git checkpoint policy for PASS tasks.
 - [../areamatrix-validation-driver/SKILL.md](../areamatrix-validation-driver/SKILL.md): choose checks when runner or prompt infrastructure changed.
 - [../areamatrix-workflow-planning/SKILL.md](../areamatrix-workflow-planning/SKILL.md): keep future v* planning outside the live queue until promoted.
@@ -34,6 +35,7 @@ Trigger it for questions about `./task-loop`, `./dev` runner actions, copy-ready
 5. Load the Git checkpoint skill before changing commit or push behavior.
 6. Load the runbook before recommending a live command.
 7. Load failure recovery before changing progress or restarting from a failed task.
+8. Load the debugging / failure attribution runbook before deciding whether a stop belongs to copy, verify, validation, runner, checkpoint, docs drift, or file safety.
 
 ## Guardrails
 

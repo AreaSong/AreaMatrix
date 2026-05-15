@@ -31,6 +31,14 @@
 - Change：跨文件、跨层或需要设计取舍，先计划再执行。
 - Mission-Critical：涉及用户文件安全、DB/migration、staging recovery、FSEvents/iCloud、隐私或 Core API 破坏性变化，必须先确认。
 
+## 调试与失败归因
+
+- 原因不明的失败先复现、收证、分层归因、提出单一可证伪假设，再修复。
+- 不把 copy、verify、validation command、runner、Git checkpoint、docs/API/UDL/prompt 漂移或文件安全边界混成一个笼统的“失败”。
+- task-loop 失败先看 `./dev status --verbose`、`./task-loop status`、`tasks/prompts/_shared/progress.json`、run summary、copy / verify logs，再决定归因层。
+- 失败跨越多组件时，先检查组件边界的输入、输出、配置和状态传播；不要直接在最深层症状处补丁。
+- 调试和归因参考 `.codex/references/debugging-failure-attribution-runbook.md`；具体 owner 仍由 repo-local skills 分担。
+
 ## 编码习惯
 
 - 遵循 KISS、YAGNI、高内聚低耦合。
@@ -43,3 +51,13 @@
 - 没有验证，不宣称完成。
 - 检查失败时先修复；无法修复或无法运行时，明确说明阻塞原因。
 - 发现文档与代码冲突时，记录冲突来源，并优先让代码回到文档定义的行为。
+- 声称完成、修复、通过、可提交、可合并或可交付前，必须提供完成证据清单：改了什么、为什么这样改、跑了哪些验证、验证是否为本轮新鲜结果、哪些检查没跑及具体原因、剩余风险。
+- Dry-run 只能证明 runner、prompt 生成、风险门禁或日志链路，不能替代真实产品实现、真实业务闭环或真实验证命令。
+- Review、security、dependency、CI 或 Git evidence 存在 blocker 时，即使命令局部通过，也不能报告 `PASS`；必须降级为 `BLOCKED` 或 `NOT-READY`，并说明阻断层与补齐方式。
+
+## Review 与安全分析
+
+- Code review 输出必须 findings first：先列 correctness、regression risk、missing tests、security / privacy / user-file risk，再写摘要；没有 finding 时也要说明剩余风险或未验证项。
+- 普通 review 中发现明显安全风险时，作为 review finding 处理，并说明是否需要升级为 explicit threat model。
+- Threat model 只在用户 / 任务明确要求，或命中用户文件、DB、staging、reindex、FSEvents / iCloud、隐私、远程 AI 调用等高风险边界时触发。
+- Threat model 必须覆盖资产、信任边界、入口、攻击能力、abuse path、缓解措施和 residual risk；它不能替代普通 review、验证或 CI。

@@ -38,6 +38,8 @@
 日常操作优先使用根目录 `./dev` 进入交互控制台；它封装 status、runner/codex 进程快照、后台继续、stale/failed 恢复、优雅收尾和健康检查，避免操作员记忆长命令。
 控制台启动/继续前必须阻止重复 live runner；默认 Git checkpoint 为本地 `commit`，任务数为无限，前台/后台由操作员当次选择。
 
+task-loop 报错时必须先做失败归因：区分 copy log、verify log、validation command、runner state、Git checkpoint、docs / API / UDL / prompt 漂移和文件安全边界。查看顺序和报告格式见 [Debugging and failure attribution runbook](../../.codex/references/debugging-failure-attribution-runbook.md)。
+
 ## Hooks Guardrail
 
 Codex hooks 可以作为 repo-local guardrail，用于提醒或阻断明显风险，但不能替代 prompt task runtime 本身。
@@ -78,3 +80,5 @@ Codex subagents 可以用于当前任务内的并行协作，但不能替代 pro
 - 无法证明通过的项目默认不通过。
 - 代码结构、错误处理、注释、测试或真实闭环不达标时，默认不通过。
 - `mark` 只记录人工进度，不能替代验收结论。
+- 完成声明必须带本轮新鲜验证证据；dry-run、旧日志、agent 自述或局部截图不能替代真实执行结果。
+- Review、security、dependency、CI 或 Git evidence blocker 未清零时，verify 结论应写为 `BLOCKED` 或 `NOT-READY`，不得为了继续队列而保留 `PASS`。
