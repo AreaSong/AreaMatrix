@@ -1,6 +1,8 @@
 {
   "action.bindings.label": "bindings",
   "action.bindings.note": "生成或检查 UniFFI bridge 输出",
+  "action.backlog.label": "backlog",
+  "action.backlog.note": "只读浏览 backlog prompt package",
   "action.build.label": "build",
   "action.build.note": "运行工程构建入口",
   "action.changes-preview.label": "changes preview",
@@ -208,6 +210,8 @@
     "  ./dev workflow plan --version v-template",
     "  ./dev workflow queue --version v-template",
     "  ./dev workflow promote --version v-template --preview",
+    "  ./dev backlog list",
+    "  ./dev backlog show <package>",
     "",
     "Live queue：",
     "  ./dev status",

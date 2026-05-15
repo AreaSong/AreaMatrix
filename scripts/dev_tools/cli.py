@@ -6,6 +6,7 @@ import argparse
 from pathlib import Path
 from typing import Sequence
 
+from .backlog import run_backlog_command
 from .build import run_bindings_update, run_core_build
 from .changes import run_changes_doctor, run_changes_generate, run_changes_preview
 from .checks import (
@@ -106,6 +107,14 @@ def _build_parser() -> argparse.ArgumentParser:
     changes_generate.add_argument("--write", action="store_true", help="Write draft files instead of printing a preview")
     changes_generate.add_argument("--out-dir", help="Draft output directory; defaults to workflow/versions/<version>/drafts")
     changes_generate.add_argument("--force", action="store_true", help="Allow overwriting existing draft files when --write is used")
+
+    backlog = subparsers.add_parser("backlog", help="Browse backlog prompt packages without touching the live queue")
+    backlog_sub = backlog.add_subparsers(dest="backlog_command", required=True)
+    backlog_sub.add_parser("list", help="List backlog prompt packages")
+    backlog_show = backlog_sub.add_parser("show", help="Print a backlog package README or one prompt")
+    backlog_show.add_argument("package", help="Backlog package slug under tasks/backlog/prompts")
+    backlog_show.add_argument("--task", type=int, help="1-based task number inside the package")
+    backlog_show.add_argument("--mode", choices=["copy", "verify"], help="Prompt mode to print when --task is provided")
 
     workflow = subparsers.add_parser("workflow", help="Manage versioned workflow templates, plans, and queue candidates")
     workflow_sub = workflow.add_subparsers(dest="workflow_command", required=True)
@@ -261,6 +270,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             return run_changes_preview(root, args)
         if args.command == "changes" and args.changes_command == "generate":
             return run_changes_generate(root, args)
+        if args.command == "backlog":
+            return run_backlog_command(root, args)
         if args.command == "workflow" and args.workflow_command == "doctor":
             return run_workflow_doctor(root, args)
         if args.command == "workflow" and args.workflow_command == "status":

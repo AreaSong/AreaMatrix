@@ -114,6 +114,8 @@ P1.4 owner 范围：
 
 第二批能力吸收提示词放在 [prompts/vibe-skills-absorption/](prompts/vibe-skills-absorption/)，用于把已筛选出的横向能力继续转成 AreaMatrix 自有 runbook、checklist 或 repo-local skill 补强。
 
+第三批 backlog 工具化提示词放在 [prompts/dev-backlog-tooling/](prompts/dev-backlog-tooling/)，用于实现只读的 `./dev backlog list/show` 浏览入口。该工具只能打印 backlog prompt package，不执行 prompt，不写 live queue、progress、runner state 或 checkpoint。
+
 ## 验证
 
 本任务当前是规划记录，修改后至少运行：
