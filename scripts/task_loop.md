@@ -119,6 +119,12 @@ NO_COLOR=1 ./dev
 ./dev status --verbose
 ```
 
+当 runner 正在执行 copy 或 verify 子步骤时，`./task-loop status` 和
+`./dev status --verbose` 会显示 live activity：当前阶段、task label、
+attempt、子进程 PID、完整 `codex exec` 命令、输出日志路径、日志是否已创建、
+以及该子步骤已经运行多久。若长时间没有日志文件或日志没有更新，可优先从这些
+字段判断是验证命令慢，还是 `codex exec` 子进程本身没有推进。
+
 ### 1) 全量执行
 
 ```bash

@@ -2,7 +2,9 @@ use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
 
-use crate::{db, CoreError, CoreResult, SearchFilter, SearchSort};
+use crate::{
+    db, CoreError, CoreResult, SearchFilter, SearchPagination, SearchResultPage, SearchSort,
+};
 
 use super::{parser, repo, validation};
 
@@ -164,6 +166,38 @@ pub fn list_saved_searches(repo_path: String) -> CoreResult<Vec<SavedSearch>> {
     db::list_saved_search_rows(&repo)
 }
 
+/// Runs one C2-04 Smart List and returns its search result page.
+///
+/// C2-04 owns this read-only contract for S2-06 Smart List selection and
+/// S2-15 command-palette Smart List navigation. The caller supplies a saved
+/// search id and pagination; Core loads the saved `query`, `filter`, and `sort`
+/// state, then returns the same [`SearchResultPage`] shape as `search_files` so
+/// consumers can render results, empty state, query diagnostics, index status,
+/// and API errors without inventing local-only state.
+///
+/// Implementations must only read saved-search metadata and repository search
+/// rows. Running a Smart List must not rename, move, delete, trash, retag,
+/// reclassify, reindex, duplicate, write `change_log`, update generated
+/// overviews, call AI/semantic search, or modify user files.
+///
+/// # Errors
+///
+/// Returns `CoreError::Config { reason }` when the repository path, saved
+/// search id, or pagination is invalid. Returns `CoreError::Db { message }`
+/// when saved-search metadata or search rows cannot be read. Returns
+/// `CoreError::FileNotFound { path }` when the saved search id has no matching
+/// row.
+pub fn run_smart_list(
+    repo_path: String,
+    saved_search_id: i64,
+    pagination: SearchPagination,
+) -> CoreResult<SearchResultPage> {
+    validate_saved_search_repo_path(&repo_path)?;
+    validate_saved_search_id(saved_search_id)?;
+    validate_smart_list_pagination(&pagination)?;
+    Err(CoreError::db("smart list execution is not implemented"))
+}
+
 pub(crate) fn validate_saved_search_id(id: i64) -> CoreResult<()> {
     if id <= 0 {
         return Err(CoreError::config(
@@ -235,4 +269,11 @@ fn validate_saved_search_repo_path(repo_path: &str) -> CoreResult<PathBuf> {
         ));
     }
     Ok(PathBuf::from(repo_path))
+}
+
+fn validate_smart_list_pagination(pagination: &SearchPagination) -> CoreResult<()> {
+    if pagination.limit <= 0 || pagination.limit > 1000 || pagination.offset < 0 {
+        return Err(CoreError::config("smart list pagination is invalid"));
+    }
+    Ok(())
 }

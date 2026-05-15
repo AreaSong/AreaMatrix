@@ -9,7 +9,7 @@
 
 - `list_saved_searches`
 - `search_files`
-- 计划新增：`run_smart_list(repo_path, saved_search_id) -> SearchResultPage`
+- 计划新增：`run_smart_list(repo_path, saved_search_id, pagination) -> SearchResultPage`
 
 ## 输入
 
@@ -30,6 +30,7 @@
 ## 错误码
 
 - `Db`
+- `Config`
 - `FileNotFound`
 
 ## 验收标准

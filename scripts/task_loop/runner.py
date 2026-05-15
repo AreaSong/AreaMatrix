@@ -5,11 +5,12 @@ from __future__ import annotations
 import argparse
 import os
 import re
+import shlex
 import shutil
 import subprocess
 import sys
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Sequence
 
@@ -134,6 +135,10 @@ def log_event(level: str, message: str) -> None:
     print(f"[ {timestamp()} ] [{level}] {message}")
 
 
+def utc_now() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
 def task_name_to_label(task_name: str) -> str:
     batch = task_name.rsplit("-task-", 1)[0]
     number = task_name.rsplit("-task-", 1)[1]
@@ -238,6 +243,7 @@ class TaskLoopRunner:
         (self.cfg.lock_dir / "operation").write_text(f"{operation}\n", encoding="utf-8")
         (self.cfg.lock_dir / "started_at").write_text(datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ") + "\n", encoding="utf-8")
         (self.cfg.lock_dir / "command").write_text(f"{self.original_command}\n", encoding="utf-8")
+        state.clear_lock_activity(self.cfg.lock_dir)
 
     def release_lock(self) -> None:
         if not self.lock_acquired:
@@ -645,7 +651,38 @@ class TaskLoopRunner:
             str(output_file),
             "-",
         ]
-        proc = subprocess.run(command, input=prompt_text, text=True, check=False)
+        command_text = shlex.join([str(part) for part in command])
+        state.write_lock_activity(
+            self.cfg.lock_dir,
+            {
+                "status": "starting",
+                "stage": stage,
+                "task_label": task.label,
+                "task_name": task.task_name,
+                "attempt": attempt,
+                "prompt_file": str(prompt_file),
+                "output_file": str(output_file),
+                "command": command_text,
+                "started_at": utc_now(),
+                "pid": "",
+            },
+        )
+        log_event("EXEC", f"stage={stage} task={task.label} attempt={attempt}")
+        log_event("EXEC", f"command={command_text}")
+        log_event("EXEC", f"output_log={output_file}")
+        proc = subprocess.Popen(command, stdin=subprocess.PIPE, text=True)
+        state.write_lock_activity(self.cfg.lock_dir, {"status": "running", "pid": proc.pid})
+        try:
+            proc.communicate(prompt_text)
+        finally:
+            state.write_lock_activity(
+                self.cfg.lock_dir,
+                {
+                    "status": "finished",
+                    "finished_at": utc_now(),
+                    "returncode": proc.returncode,
+                },
+            )
         if proc.returncode != 0:
             raise TaskLoopError(f"codex exec failed for {prompt_file}: exit={proc.returncode}", proc.returncode)
 

@@ -18,13 +18,17 @@ CAPABILITY_TEST_PREFIXES = {
     "C2-01": ("search_query_files",),
     "C2-02": ("search_filters",),
     "C2-03": ("saved_search",),
+    "C2-04": ("smart_list",),
 }
 
 CAPABILITY_KEYWORDS = {
-    "C2-01": "search query files",
-    "C2-02": "search filters",
-    "C2-03": "saved search",
+    "C2-01": ("search query files",),
+    "C2-02": ("search filters",),
+    "C2-03": ("saved search",),
+    "C2-04": ("smart list", "smart-list", "smart-lists"),
 }
+
+ALLOW_FULL_TASK_FALLBACK_ENV = "AREAMATRIX_TASK_CHECK_FULL_FALLBACK"
 
 
 class FailureCollector:
@@ -345,8 +349,30 @@ def _run_core_task_checks(root: Path, text: str) -> int:
     commands = _core_task_test_commands(text)
     if not commands:
         print()
-        print("==> ./dev check task: no targeted Core tests mapped; using cargo test --workspace", flush=True)
-        commands = [["cargo", "test", "--workspace"]]
+        if os.environ.get(ALLOW_FULL_TASK_FALLBACK_ENV) == "1":
+            print(
+                "==> ./dev check task: no targeted Core tests mapped; "
+                f"{ALLOW_FULL_TASK_FALLBACK_ENV}=1 so using cargo test --workspace",
+                flush=True,
+            )
+            commands = [["cargo", "test", "--workspace"]]
+        else:
+            capabilities = ", ".join(_task_capabilities(text)) or "unknown"
+            print(
+                "ERROR: ./dev check task found no targeted Core tests mapped "
+                f"for capabilities: {capabilities}.",
+                file=os.sys.stderr,
+            )
+            print(
+                "ERROR: add CAPABILITY_TEST_PREFIXES coverage in scripts/dev_tools/checks.py, "
+                "or run ./dev check core/all explicitly when a broad gate is intended.",
+                file=os.sys.stderr,
+            )
+            print(
+                f"ERROR: set {ALLOW_FULL_TASK_FALLBACK_ENV}=1 only for an explicit emergency full fallback.",
+                file=os.sys.stderr,
+            )
+            return 2
     for argv in commands:
         proc = run_step(argv, cwd=core_dir, check=False)
         if proc.returncode != 0:
@@ -360,8 +386,8 @@ def _core_task_test_commands(text: str) -> list[list[str]]:
     for capability in _task_capabilities(text):
         for prefix in CAPABILITY_TEST_PREFIXES.get(capability, ()):
             commands.append(["cargo", "test", "--workspace", prefix, "--", "--nocapture"])
-    for capability, keyword in CAPABILITY_KEYWORDS.items():
-        if capability not in text and keyword in lowered:
+    for capability, keywords in CAPABILITY_KEYWORDS.items():
+        if capability not in text and any(keyword in lowered for keyword in keywords):
             for prefix in CAPABILITY_TEST_PREFIXES.get(capability, ()):
                 commands.append(["cargo", "test", "--workspace", prefix, "--", "--nocapture"])
     return _unique_commands(commands)

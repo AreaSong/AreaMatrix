@@ -481,6 +481,95 @@ RISK_POLICY=allow MAX_RETRIES=0 ./task-loop run
 
 不要在已有 live runner 时启动第二个 runner。
 
+## AreaMatrix 对比矩阵
+
+本节把 OpenAI / Codex 官方能力版图对照到 AreaMatrix 当前项目体系。状态含义：
+
+- `已有`：当前项目已有稳定对应物，短期不需要另起一套。
+- `部分已有`：已有基础，但缺制度化规则、runbook 或边界。
+- `缺失-建议补`：当前缺口会影响稳定性、证据链或人工负担，建议纳入近期治理。
+- `暂不接入`：官方有能力，但当前 v1 live queue 阶段不适合接入主线。
+- `仅记录`：只作为官方能力跟踪或未来选项。
+
+| 官方能力 / 工作层面 | AreaMatrix 当前对应物 | 当前状态 | 为什么是这个状态 | 是否建议补 | 补了满足什么 | 风险与边界 | 优先级 |
+|---|---|---|---|---|---|---|---|
+| AGENTS.md / project instructions | 根 `AGENTS.md`、局部规则读取顺序 | 已有 | 已定义入口顺序、源事实、高风险边界和验证要求 | 不补主结构 | 继续稳定 Codex 行为边界 | 不把 `.codex/` 当产品语义源事实 | P0 保持 |
+| Rules / governance | `.ai-governance/`、工程质量规则、file-safety、validation-driver | 已有 | 已覆盖 Quick / Change / Mission-Critical、Forbidden Touches、验证门禁 | 不补主结构 | 继续保证文档驱动和风险分级 | 高风险任务仍需显式说明影响、验证、回滚 | P0 保持 |
+| Docs as source of truth | `docs/`、`docs/api/core-api.md`、capability specs、UX specs | 已有 | 项目已明确产品、架构、API、UX 的权威来源 | 不补主结构 | 避免 Codex runtime 文档反客为主 | 代码与 docs 冲突时先按 SSOT 查证 | P0 保持 |
+| Workflow / large feature lifecycle | `workflow/`、discussion gate、middle-layer、changes、plans、drafts、queue、promotion preview | 已有 | 已区分规划层和 live queue，v1 live-running 时 dependent versions 不得 promote | 不补主结构 | 保障新 v* 不绕过讨论和规划门禁 | 不从 `workflow/` 直接写 `tasks/prompts/**` | P0 保持 |
+| Live task queue | `tasks/prompts/**`、637-task v1-mvp queue、manifest、copy-ready / verify-ready | 已有 | 当前 265/637 完成，`4-1/task-16` 正在跑 | 不补主结构 | 继续作为唯一 live 执行面 | 不启动第二个 live runner | P0 保持 |
+| Non-interactive CLI | `codex exec` 由 `./task-loop` 调用 | 已有 | task-loop 已用 `gpt-5.5`、`xhigh`、`danger-full-access` 执行 copy / verify | 不补主结构 | 保持自动闭环能力 | `codex exec` 真实配置以启动参数和 header 为准 | P0 保持 |
+| Dev console / local operator UX | `./dev`、`./dev status`、`./dev processes`、`./dev check ...` | 已有 | 已封装状态、进程、恢复、健康检查，避免记忆长命令 | 小幅优化即可 | 降低操作失误和状态误读 | 当前 live runner + dirty worktree 时不能继续启动 | P0 保持 |
+| Task-loop closed repair loop | `./task-loop run`、verify fail retry、summary、progress、lock | 已有 | 已实现 copy -> verify -> retry -> PASS -> checkpoint | 不补主结构 | 支撑长队列静默推进 | checkpoint 失败后不得继续下一 task | P0 保持 |
+| Git checkpoint | `GIT_CHECKPOINT=commit|push|off`、git-checkpoint skill、summary evidence | 已有 | PASS task 默认本地 commit，push 显式 opt-in | 不补主结构 | 保留可回溯证据链 | dirty worktree 会挡 checkpoint，不能混入既有改动 | P0 保持 |
+| Validation matrix | validation-driver、`./dev check task`、Rust/macOS/docs/prompt gates | 已有 | 已按改动路径选择最小充分验证集 | 不补主结构 | 防止每个 task 都跑过宽或过窄验证 | macOS test fallback 只适用于明确 sandbox 限制 | P0 保持 |
+| Repo-local Skills | `.codex/skills-src/**`、`.agents/skills/**` | 已有 | 已有 7 个 AreaMatrix skills，且 `./dev check skills` 通过 | 继续强化内容 | 把重复治理知识固化为可复用视角 | skill 语义变更先同步 `.ai-governance/` | P1 持续 |
+| OpenAI Docs MCP | `openaiDeveloperDocs` MCP 已启用 | 部分已有 | 工具已启用，但使用规则还未成为所有 OpenAI/Codex 判断的硬习惯 | 建议补规则 | 涉及 OpenAI/Codex/API/model 时默认先查官方 | 不把 OpenAI docs 用作 AreaMatrix 产品 SSOT | P1 |
+| Context7 / DeepWiki / time MCP | `context7`、`mcp-deepwiki`、`mcp-server-time` | 部分已有 | 工具已启用，但按场景选用的规则还可更清晰 | 建议补轻规则 | 第三方库、外部 repo、时间查询不靠记忆 | 外部资料不能覆盖本仓库 docs | P2 |
+| Browser Use | Browser plugin、in-app browser feature | 部分已有 | 能力启用，但 AreaMatrix 是 macOS 原生 app，不是主验收面 | 不急补 | 用于 docs preview、localhost、file URL 验证 | 不替代 macOS app 测试 | P3 |
+| Chrome | Chrome plugin、chrome-devtools MCP | 部分已有 | 能力启用，适合登录态或真实 Chrome profile | 暂不制度化 | 需要 cookies、扩展或远程认证时可用 | 不处理敏感账号/支付自动化 | P3 |
+| Computer Use | computer-use plugin / MCP 已启用 | 部分已有 | 能力启用，但尚未纳入 macOS UI 验收 runbook | 建议补 | 为 SwiftUI 页面和交互提供真实 UI smoke 证据 | 不替代 `xcodebuild`；密码、权限、隐私需人工确认 | P1 |
+| Hooks | Codex hooks feature enabled；AreaMatrix 无 repo-local `.codex/hooks.json` | 缺失-建议补 | 当前靠人工记忆检查 live runner、dirty worktree、危险路径 | 建议补只读 hooks | 在 session start / pre-tool 提醒重复 runner、checkpoint 风险、危险边界 | hooks 是 guardrail，不是完整 enforcement boundary；不自动修改文件 | P1 |
+| Plugin hooks | `plugin_hooks` disabled / under development | 暂不接入 | 官方和本机都显示仍在开发中 | 不补 | 等成熟后再评估 | 不依赖其做关键门禁 | P4 |
+| Subagents | Codex multi-agent feature enabled；项目无固定 subagent 协议 | 部分已有 | 可用于读/审计/验证，但并行写同一 live task 风险高 | 建议补边界 | 加速大范围只读审计、日志归因、分模块验证 | 写入任务必须拆分 disjoint write set，不能碰同一 live task | P2 |
+| Automations | Codex app automations 官方存在；项目用 `./task-loop` | 暂不接入 | v1 live queue 已有稳定 runner，接入 automations 会增加状态源 | 不补主线 | 未来可做提醒或周期性健康检查 | 不创建第二套进度源 | P4 |
+| Codex Cloud | `codex cloud` CLI 存在；AreaMatrix 当前本地 live runner | 暂不接入 | 当前需要保护本地 worktree、progress、checkpoint | 暂不接 | 未来可做离线 PR / review 实验 | 不绕过 `workflow/` gate 和 local validation | P4 |
+| Worktrees | 官方存在；AreaMatrix 直接跑当前 checkout | 暂不接入 | 当前 live runner 持有 lock，worktree 并行会放大状态复杂度 | 暂不接 | 未来可隔离 vN 规划或 spike | 不移动/归档 v1 live queue | P4 |
+| Local Environments | 官方存在；AreaMatrix 用本机 dev tools | 仅记录 | 当前项目依赖 macOS/Xcode、本机状态和 task-loop | 不补 | 未来 Cloud/remote 执行前再设计 | 不把环境初始化写成破坏性脚本 | P4 |
+| GitHub Action | 官方存在；项目已有本地 `./dev check ...` 和 CI 治理 | 暂不接入 | 当前主要问题是 live queue 收口，不是 GitHub 触发 Codex | 暂不接 | 未来用于 PR review / repair bot | 不让 GitHub Action 修改 live progress | P4 |
+| IDE Extension / Web | 官方存在；项目主路径是 Codex app / CLI / local runner | 仅记录 | 对当前自动闭环不是必要入口 | 不补 | 作为个人使用入口即可 | 不作为验收证据源 | P4 |
+| Slack / Linear integrations | 官方存在；项目未使用 | 仅记录 | 与当前本地开发闭环无直接关系 | 不补 | 未来团队协作时再接 | 不把外部 issue 状态当 task truth | P5 |
+| Codex SDK / app-server / remote-control / exec-server | 官方/CLI 存在，多为实验或嵌入能力 | 仅记录 | 当前不需要自己嵌入 Codex runtime | 不补 | 未来平台化 `./dev` 或外部 dashboard 时再评估 | 不接入 v1 live runner 主线 | P5 |
+| Security / administration / access tokens | 官方存在；项目不保存凭证 | 部分已有 | 本机 config 有 auth/MCP，但仓库规则禁止存密钥 | 只补提醒 | 明确凭证不进 repo，不在 `.codex/` 写 token | 任何远程/企业配置先确认 | P2 |
+| Changelog / Feature Maturity | 官方存在；文档已列入口 | 部分已有 | 已记录要查，但尚无固定刷新节奏 | 建议补轻流程 | 每次声称“最新”前打开官方目录核对 | 不把旧记忆当最新事实 | P2 |
+| Image generation | feature enabled，项目当前非视觉资产主线 | 仅记录 | AreaMatrix 当前以原生 UI 和 docs 为主 | 不补 | 未来需要营销/图示/bitmap asset 时再用 | 不替代 UI 实现或截图验证 | P5 |
+| Documents / Spreadsheets / Presentations plugins | 已启用 | 仅记录 | 对当前代码任务不是主线 | 不补 | 需要交付办公文档时可用 | 不生成低价值报告文件 | P5 |
+| LaTeX / Tectonic plugin | bundled marketplace 存在但未启用 | 仅记录 | 当前没有 LaTeX 工作负载 | 不补 | 未来排版需求再启用 | 不为无需求开启插件 | P5 |
+
+### 优先级建议
+
+| 优先级 | 建议动作 | 为什么现在做 | 不做会怎样 |
+|---|---|---|---|
+| P0 | 保护当前 `./task-loop` 主线，不启动第二 runner | 当前已有 live lock，且 dirty worktree 会挡 checkpoint | 状态源冲突，可能让 PASS task 无法 checkpoint |
+| P1 | 增加 repo-local 只读 hooks guardrail | 当前依赖人工记住 runner / dirty worktree / 危险路径边界 | 容易重复启动、误碰高风险路径或错过 checkpoint 风险 |
+| P1 | 制定 Computer Use macOS UI smoke runbook | Phase 2/4 页面任务需要真实 UI 证据 | 验收仍偏命令层，缺少交互和窗口状态证据 |
+| P1 | 固化 OpenAI Docs MCP 使用规则 | 官方 Codex / model / API 更新快 | 容易用过期记忆判断“最新” |
+| P2 | 定义 Subagent 使用边界 | 大范围审计可以并行，但写入冲突风险高 | 并行 agent 可能互相覆盖或重复工作 |
+| P2 | 增加 Changelog / Feature Maturity 刷新流程 | Codex 能力变化快 | 文档会逐渐落后官网 |
+| P4 | 暂缓 Automations / Cloud / Worktrees / GitHub Action 接主线 | v1 live queue 仍在跑，本地 runner 已能闭环 | 过早接入会多一个状态系统 |
+| P5 | 暂缓 SDK / app-server / remote-control / Slack / Linear | 当前不是平台化 Codex runtime 的阶段 | 增加复杂度但不提高当前验收质量 |
+
+### 短期任务清单
+
+短期优化记录在 [../../tasks/backlog/codex-native-area-vibe-optimization.md](../../tasks/backlog/codex-native-area-vibe-optimization.md)。该 backlog 不是 `tasks/prompts/**` live queue，不由 `./task-loop` 自动执行。
+
+| 优先级 | 工作包 | 要做什么 | 吸收来源 | 交付物 | 完成口径 |
+|---|---|---|---|---|---|
+| P0 | 主线保护 | 明确当前 `./dev + ./task-loop + tasks/prompts/**` 仍是唯一 live execution 主线 | Codex 官方 workflow / AreaMatrix 当前体系 | 文档规则和 backlog 任务边界 | 不新增第二 runner，不让 Vibe/Codex Automations/Cloud 接管 live queue |
+| P0 | 外部能力接入门禁 | 定义 Vibe-Skills 或其他外部 skills 的 admission gate | Vibe-Skills custom skill governance、Codex migrate/customization docs | rules / docs 中的接入判定表 | 目录存在不等于启用；必须说明 source of truth、触发条件、验证和 owner |
+| P1 | OpenAI Docs MCP 规则 | 固化“涉及 OpenAI/Codex/API/model 最新判断时优先查官方 MCP” | Codex 官方 docs、openaiDeveloperDocs MCP | `.ai-governance` 或 `.codex/references` 规则补充 | 以后不靠旧记忆声称最新 |
+| P1 | repo-local 只读 hooks | 设计只读 hooks guardrail，先提示 live runner、dirty worktree、危险路径和验证缺口 | Codex hooks | `.codex/hooks.json` 方案或 runbook | hooks 只提醒或阻断明显风险，不自动修改文件 |
+| P1 | Computer Use UI smoke | 为 macOS SwiftUI 任务补真实 UI smoke 路径 | Codex Computer Use | macOS UI smoke runbook / skill 补充 | UI 任务除命令验证外有窗口、点击、截图或操作证据 |
+| P1 | AreaMatrix skills 强化 | 强化现有 7 个 repo-local skills 的触发和边界 | AreaMatrix 当前 skills | skills-src / index / validation matrix 的小步补强 | 不新增重复 skill；先复用现有 skill owner |
+| P2 | Subagent 边界 | 定义并行 agent 的使用边界、ownership 和禁止区 | Codex Subagents、Vibe subagent patterns | subagent runbook / skill 规则 | 只读审计可并行；写入必须拆分 disjoint write set |
+| P2 | Vibe-Skills 横向能力筛选 | 从 Vibe-Skills 中筛选调试、TDD、验证、审查、安全、架构、文档类能力 | Vibe-Skills bundled skills | 候选吸收矩阵 | 每个候选标注吸收/不吸收/参考、原因和落点 |
+| P2 | 官方变更刷新 | 建立 Codex changelog / feature maturity 的刷新习惯 | Codex Releases / Feature Maturity | 轻量刷新步骤 | 每次更新“最新 Codex 工作流”前重新打开官方文档 |
+| P3 | Browser / Chrome 场景化 | 只为 docs preview、localhost、登录态网页建立使用边界 | Codex Browser / Chrome plugin | 场景说明 | 不把 Browser/Chrome 当 macOS app 主验收 |
+| P4 | Automations / Cloud / Worktrees 评估 | 暂缓接入主线，只记录未来评估条件 | Codex Automations / Cloud / Worktrees | future evaluation note | v1 live queue 完成前不新增状态源 |
+| P5 | SDK / app-server / remote-control | 仅记录，不进入近期实现 | Codex SDK / app-server / remote-control | 无近期交付 | 等需要平台化 Codex runtime 时再设计 |
+
+### Vibe-Skills 吸收原则
+
+`/Users/as/Ai-Project/project/Vibe-Skills` 当前定位为外部候选能力池和治理参考，不是 AreaMatrix 的 canonical runtime。AreaMatrix 不直接启用 `vibe` 接管主流程，也不把 Vibe-Skills 的目录结构原样并入 `tasks/prompts/**`。
+
+| 判定项 | 吸收 | 暂不吸收 | 只参考 |
+|---|---|---|---|
+| 能补 AreaMatrix 当前缺口 | 是，例如系统调试、TDD、验证完成前检查、code/security review | 否，如果现有 skill 已覆盖且只是换名字 | 可作为 wording / checklist 灵感 |
+| 与 AreaMatrix 主线关系 | 必须服务 `./dev`、`./task-loop`、`.ai-governance` 或 repo-local skills | 不能创建第二套 live queue 或第二 runtime | 可作为外部治理案例 |
+| 触发方式 | 明确关键词、任务类型、风险边界 | 目录存在即自动生效 | 手工阅读、选择性蒸馏 |
+| 验证方式 | 能落到本仓库检查命令、runbook 或验收证据 | 无法证明效果，只增加流程文字 | 暂存为候选 |
+| source of truth | `docs/`、`.ai-governance/`、现有 AreaMatrix skill owner | Vibe-Skills 反客为主 | Vibe-Skills 作为参考来源 |
+
 ## 推荐演进方向
 
 短期：

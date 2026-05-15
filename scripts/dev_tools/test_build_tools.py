@@ -209,6 +209,55 @@ class BuildToolsTest(unittest.TestCase):
             [["cargo", "test", "--workspace", "saved_search", "--", "--nocapture"]],
         )
 
+    def test_task_check_maps_c2_04_to_smart_list_tests(self) -> None:
+        text = "Core ability C2-04 smart-lists"
+
+        self.assertEqual(
+            checks._core_task_test_commands(text),
+            [["cargo", "test", "--workspace", "smart_list", "--", "--nocapture"]],
+        )
+
+    def test_core_task_check_fails_when_no_targeted_tests_are_mapped(self) -> None:
+        text = "Core ability C4-99 imaginary capability"
+
+        with (
+            patch("scripts.dev_tools.checks.require_command"),
+            patch.dict("os.environ", {}, clear=True),
+            patch("scripts.dev_tools.checks.run_step") as run_step,
+        ):
+            run_step.return_value.returncode = 0
+
+            self.assertEqual(checks._run_core_task_checks(Path("/tmp/repo"), text), 2)
+
+        self.assertEqual(
+            [call.args[0] for call in run_step.call_args_list],
+            [
+                ["cargo", "fmt", "--all", "--", "--check"],
+                ["cargo", "clippy", "--all-targets", "--all-features", "--", "-D", "warnings"],
+            ],
+        )
+
+    def test_core_task_check_allows_explicit_full_fallback(self) -> None:
+        text = "Core ability C4-99 imaginary capability"
+
+        with (
+            patch("scripts.dev_tools.checks.require_command"),
+            patch.dict("os.environ", {checks.ALLOW_FULL_TASK_FALLBACK_ENV: "1"}, clear=True),
+            patch("scripts.dev_tools.checks.run_step") as run_step,
+        ):
+            run_step.return_value.returncode = 0
+
+            self.assertEqual(checks._run_core_task_checks(Path("/tmp/repo"), text), 0)
+
+        self.assertEqual(
+            [call.args[0] for call in run_step.call_args_list],
+            [
+                ["cargo", "fmt", "--all", "--", "--check"],
+                ["cargo", "clippy", "--all-targets", "--all-features", "--", "-D", "warnings"],
+                ["cargo", "test", "--workspace"],
+            ],
+        )
+
     def test_task_check_detects_stage_closeout_without_core_integration_false_positive(self) -> None:
         core_integration = "# 4-1/task-15: C2-03 integration-verify\n- 阶段：Stage 2 Experience\n"
         stage_closeout = "# 4-1/task-143: stage-2-experience integration verify\n"

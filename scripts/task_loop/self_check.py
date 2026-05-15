@@ -182,6 +182,26 @@ def write_live_lock(lock_dir: Path, run_id: str, operation: str = "run") -> None
     (lock_dir / "started_at").write_text("now\n", encoding="utf-8")
 
 
+def write_live_activity(lock_dir: Path, tmp: Path) -> None:
+    output_file = tmp / "live-activity.log"
+    output_file.write_text("running\n", encoding="utf-8")
+    state.write_lock_activity(
+        lock_dir,
+        {
+            "status": "running",
+            "stage": "copy",
+            "task_label": "0-1/task-01",
+            "task_name": "0-1-task-01",
+            "attempt": 1,
+            "pid": os.getpid(),
+            "prompt_file": str(tmp / "copy.md"),
+            "output_file": str(output_file),
+            "command": "codex exec -m gpt-5.5 --full-auto -",
+            "started_at": state.utc_now(),
+        },
+    )
+
+
 def check_static(h: Harness) -> None:
     log("static checks")
     files = sorted((h.root / "scripts/task_loop").glob("*.py")) + sorted((h.root / "scripts/dev_tools").glob("*.py"))
@@ -574,6 +594,17 @@ def check_real_status(h: Harness) -> None:
     assert_contains(dev_verbose, "进程快照", "dev verbose process snapshot")
     preflight = h.dev_run("dev-preflight", ["preflight"]).stdout
     assert_contains(preflight, "Preflight", "dev preflight header")
+
+    status_root = h.tmp / "status-live-activity"
+    write_live_lock(status_root / "lock", "status-live-activity")
+    write_live_activity(status_root / "lock", status_root)
+    write_json(status_root / "progress.json", {"version": 1, "tasks": {}})
+    live_status = h.task_loop_run("status-live-activity", ["status"]).stdout
+    assert_contains(live_status, "live_activity: copy task=0-1/task-01 attempt=1 status=running", "live activity headline")
+    assert_contains(live_status, "live_activity_elapsed:", "live activity elapsed")
+    assert_contains(live_status, "live_activity_pid:", "live activity pid")
+    assert_contains(live_status, "live_activity_log_state: exists", "live activity log state")
+    assert_contains(live_status, "live_activity_command: codex exec -m gpt-5.5 --full-auto -", "live activity command")
 
 
 def check_dev_home(h: Harness) -> None:

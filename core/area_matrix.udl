@@ -93,6 +93,13 @@ namespace area_matrix {
     sequence<SavedSearch> list_saved_searches(string repo_path);
 
     [Throws=CoreError]
+    SearchResultPage run_smart_list(
+        string repo_path,
+        i64 saved_search_id,
+        SearchPagination pagination
+    );
+
+    [Throws=CoreError]
     FileEntry get_file(string repo_path, i64 file_id);
 
     [Throws=CoreError]

@@ -47,6 +47,12 @@ run additional targeted tests when the task or observed changes need more
 evidence, but the manifest should reserve `./dev check all` for integration or
 release boundaries.
 
+Atomic Core tasks without a targeted test mapping must fail with a mapping error
+instead of silently falling back to `cargo test --workspace`. Add the missing
+mapping in `scripts/dev_tools/checks.py`, run an explicit `./dev check core` or
+`./dev check all` for a broad gate, or set `AREAMATRIX_TASK_CHECK_FULL_FALLBACK=1`
+only when an emergency full fallback is intentionally chosen.
+
 ## Rust Core
 
 Required for `core/**`:

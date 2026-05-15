@@ -253,7 +253,7 @@ fn saved_search_contract_documents_consumer_state_and_scope_boundaries() {
     }
 
     for fragment in [
-        "计划新增：`run_smart_list(repo_path, saved_search_id) -> SearchResultPage`",
+        "计划新增：`run_smart_list(repo_path, saved_search_id, pagination) -> SearchResultPage`",
         "打开 Smart List 只运行查询，不改变文件。",
     ] {
         assert_contains(C2_04_SPEC, fragment);

@@ -1,10 +1,11 @@
 use std::{fs, path::Path};
 
 use area_matrix_core::{
-    create_saved_search, delete_saved_search, init_repo, list_saved_searches, update_saved_search,
-    CoreError, CoreResult, CreateSavedSearchRequest, ErrorKind, ErrorRecoverability, ErrorSeverity,
-    OverviewOutput, RepoInitMode, RepoInitOptions, SavedSearch, SavedSearchQuery, SearchFilter,
-    SearchScope, SearchSort, SearchTagMatchMode, StorageMode, UpdateSavedSearchRequest,
+    create_saved_search, delete_saved_search, init_repo, list_saved_searches, run_smart_list,
+    update_saved_search, CoreError, CoreResult, CreateSavedSearchRequest, ErrorKind,
+    ErrorRecoverability, ErrorSeverity, OverviewOutput, RepoInitMode, RepoInitOptions, SavedSearch,
+    SavedSearchQuery, SearchFilter, SearchPagination, SearchResultPage, SearchScope, SearchSort,
+    SearchTagMatchMode, StorageMode, UpdateSavedSearchRequest,
 };
 use pretty_assertions::assert_eq;
 use rusqlite::{params, Connection};
@@ -355,11 +356,13 @@ fn saved_search_validation_locks_core_api_udl_rust_and_docs_alignment() {
     fn assert_update(_: fn(String, UpdateSavedSearchRequest) -> CoreResult<SavedSearch>) {}
     fn assert_delete(_: fn(String, i64) -> CoreResult<()>) {}
     fn assert_list(_: fn(String) -> CoreResult<Vec<SavedSearch>>) {}
+    fn assert_run(_: fn(String, i64, SearchPagination) -> CoreResult<SearchResultPage>) {}
 
     assert_create(create_saved_search);
     assert_update(update_saved_search);
     assert_delete(delete_saved_search);
     assert_list(list_saved_searches);
+    assert_run(run_smart_list);
 
     for fragment in [
         "# C2-03 saved-search-crud",
@@ -390,6 +393,8 @@ fn saved_search_validation_locks_core_api_udl_rust_and_docs_alignment() {
         "SavedSearch update_saved_search(string repo_path, UpdateSavedSearchRequest request);",
         "void delete_saved_search(string repo_path, i64 saved_search_id);",
         "sequence<SavedSearch> list_saved_searches(string repo_path);",
+        "SearchResultPage run_smart_list(",
+        "SearchPagination pagination",
         "dictionary SavedSearchQuery",
         "string query;",
         "SearchFilter filter;",
@@ -416,6 +421,7 @@ fn saved_search_validation_locks_core_api_udl_rust_and_docs_alignment() {
         "delete_saved_search",
         "list_saved_searches",
         "update_saved_search",
+        "run_smart_list",
         "CreateSavedSearchRequest",
         "SavedSearchQuery",
         "UpdateSavedSearchRequest",
