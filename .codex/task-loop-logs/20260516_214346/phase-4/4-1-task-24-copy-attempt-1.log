@@ -1,0 +1,52 @@
+一、执行结论
+
+- 已完成
+
+二、执行范围
+
+- 单任务：`4-1/task-24`
+- 本轮未修改 core 文件；现有验证文件已满足任务要求：
+  - `core/tests/tag_crud_contract_api.rs`
+  - `core/tests/tag_crud_implementation.rs`
+  - `core/tests/tag_crud_failure_recovery.rs`
+  - `core/src/tags.rs`
+  - `core/src/db/tags.rs`
+  - `core/area_matrix.udl`
+
+三、完成情况
+
+- 成功/失败路径测试：已覆盖，targeted tests 共 `20` 个通过。
+- Core API / UDL / Rust 一致性：`tag_crud_contract_api` 已覆盖文档、UDL、Rust 签名和错误码对齐。
+- 未新增业务功能：本轮无代码改动。
+- Forbidden Touches：未触碰 `apps/**`；`git diff --name-only -- core apps` 为空。
+
+四、工程质量
+
+- 代码结构清晰：C2-05 API 层、DB tags 层、contract / implementation / failure recovery 测试分层明确。
+- 注释 / rustdoc：现有 public C2-05 API 有 rustdoc 和 `# Errors` 说明；本轮未新增 public API。
+- 错误与边界：测试覆盖 invalid path、missing/deleted file、DB/table failure、change_log rollback、permission/corrupted DB、无用户文件副作用。
+- 未发现 mock-only、硬编码通过态或一次性脚本实现。
+
+五、验证情况
+
+已运行并通过：
+
+```bash
+./dev check task 4-1/task-24
+```
+
+结果摘要：
+
+- `prompt doctor`: OK，`637` tasks / `637` manifests
+- `git diff --check`: OK
+- `cargo test --test tag_crud_contract_api -- --nocapture`: 4 passed
+- `cargo test --test tag_crud_failure_recovery -- --nocapture`: 10 passed
+- `cargo test --test tag_crud_implementation -- --nocapture`: 6 passed
+
+未运行宽门禁：按任务要求，验证边界以上述 task validation 为上限，未升级到 `cargo test --workspace` / clippy / full check。
+
+六、风险与后续
+
+- 剩余风险：工作区已有 `.codex/task-loop-runs/20260516_214346/summary.json` 和 `tasks/prompts/_shared/progress.json` 改动，不是本轮 core 修改；我未触碰。
+- 建议下一个任务：继续 `4-1/task-25`，即 C2-05 integration verify。
+
