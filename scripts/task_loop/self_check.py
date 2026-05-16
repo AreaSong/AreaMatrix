@@ -1111,7 +1111,7 @@ fi
     assert_contains(result.stdout, "current task | stage=copy | task=0-1/task-01", "runner live task status line")
     assert_contains(result.stdout, "  live log:", "runner live log section")
     assert_contains(result.stdout, "    state:", "runner live log state")
-    assert_contains(result.stdout, "current command | heartbeat=1s | elapsed=", "runner live command status line")
+    assert_contains(result.stdout, "current command | heartbeat=1s | command_elapsed=", "runner live command status line")
     assert_contains(result.stdout, " | command=", "runner live command text")
     progress = runner_repo / "tasks/prompts/_shared/progress.json"
     assert_json(

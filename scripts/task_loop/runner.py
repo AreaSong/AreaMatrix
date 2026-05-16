@@ -76,6 +76,7 @@ class RuntimeConfig:
     dry_run_result: str = "PASS"
     dry_run_max_attempts: int = 10
     activity_heartbeat_seconds: int = 30
+    no_output_notice_seconds: int = 120
     run_id: str = ""
 
     @classmethod
@@ -100,7 +101,7 @@ class RuntimeConfig:
         cfg.git_branch_policy = os.environ.get("GIT_BRANCH_POLICY", "auto")
         cfg.git_push_remote = os.environ.get("GIT_PUSH_REMOTE", "origin")
         cfg.git_push_set_upstream = os.environ.get("GIT_PUSH_SET_UPSTREAM", "1") == "1"
-        cfg.max_retries = int(os.environ.get("MAX_RETRIES", "0"))
+        cfg.max_retries = int(os.environ.get("MAX_RETRIES", "1"))
         cfg.max_tasks = int(os.environ.get("MAX_TASKS", "0"))
         cfg.start_from = normalize_task_ref(os.environ.get("START_FROM", ""))
         cfg.stop_after = normalize_task_ref(os.environ.get("STOP_AFTER", ""))
@@ -113,6 +114,7 @@ class RuntimeConfig:
         cfg.dry_run_result = os.environ.get("DRY_RUN_RESULT", "PASS")
         cfg.dry_run_max_attempts = int(os.environ.get("DRY_RUN_MAX_ATTEMPTS", "10"))
         cfg.activity_heartbeat_seconds = int(os.environ.get("ACTIVITY_HEARTBEAT_SECONDS", "30"))
+        cfg.no_output_notice_seconds = int(os.environ.get("NO_OUTPUT_NOTICE_SECONDS", "120"))
         cfg.run_id = os.environ.get("RUN_ID", "")
         return cfg
 
@@ -150,7 +152,9 @@ def log_live_snapshot(
     prompt_file: Path,
     output_file: Path,
     heartbeat_seconds: int,
+    command_elapsed: str,
     command_text: str,
+    no_output_notice: str = "",
 ) -> None:
     log_event("RUN", title)
     print(
@@ -161,8 +165,10 @@ def log_live_snapshot(
     print(f"    prompt: {prompt_file}", flush=True)
     print(f"    output: {output_file}", flush=True)
     print(f"    state: {state.log_file_status(str(output_file))}", flush=True)
+    if no_output_notice:
+        print(f"    note: {no_output_notice}", flush=True)
     print(
-        f"  current command | heartbeat={heartbeat_seconds}s | elapsed={elapsed} | command={command_text}",
+        f"  current command | heartbeat={heartbeat_seconds}s | command_elapsed={command_elapsed} | command={command_text}",
         flush=True,
     )
 
@@ -250,6 +256,8 @@ class TaskLoopRunner:
             raise TaskLoopError("DRY_RUN_RESULT must be PASS or FAIL")
         if self.cfg.activity_heartbeat_seconds < 1:
             raise TaskLoopError("ACTIVITY_HEARTBEAT_SECONDS must be >= 1")
+        if self.cfg.no_output_notice_seconds < 1:
+            raise TaskLoopError("NO_OUTPUT_NOTICE_SECONDS must be >= 1")
         for phase in self.cfg.selected_phases():
             if phase not in PHASES:
                 raise TaskLoopError(f"invalid phase: {phase}")
@@ -607,6 +615,7 @@ class TaskLoopRunner:
         if self.cfg.dry_run:
             log_event("INFO", f"DRY_RUN_RESULT={self.cfg.dry_run_result}")
         log_event("INFO", f"ACTIVITY_HEARTBEAT_SECONDS={self.cfg.activity_heartbeat_seconds}")
+        log_event("INFO", f"NO_OUTPUT_NOTICE_SECONDS={self.cfg.no_output_notice_seconds}")
         log_event("INFO", f"ROOT_DIR={self.cfg.root_dir}")
         log_event("INFO", f"COPY_ROOT={self.cfg.copy_root}")
         log_event("INFO", f"VERIFY_ROOT={self.cfg.verify_root}")
@@ -712,6 +721,7 @@ class TaskLoopRunner:
             prompt_file=prompt_file,
             output_file=output_file,
             heartbeat_seconds=self.cfg.activity_heartbeat_seconds,
+            command_elapsed="0s",
             command_text=command_text,
         )
         proc = subprocess.Popen(command, stdin=subprocess.PIPE, text=True)
@@ -727,6 +737,7 @@ class TaskLoopRunner:
             prompt_file=prompt_file,
             output_file=output_file,
             heartbeat_seconds=self.cfg.activity_heartbeat_seconds,
+            command_elapsed="0s",
             command_text=command_text,
         )
         communicate_error: list[BaseException] = []
@@ -745,6 +756,13 @@ class TaskLoopRunner:
                 if not worker.is_alive():
                     break
                 elapsed = state.human_duration(time.monotonic() - start_monotonic)
+                log_state = state.log_file_status(str(output_file))
+                no_output_notice = ""
+                if log_state == "missing" and time.monotonic() - start_monotonic >= self.cfg.no_output_notice_seconds:
+                    no_output_notice = (
+                        "codex exec child is running but has not written the output log yet; "
+                        "this is a no-output wait, not proof that validation commands are progressing."
+                    )
                 log_live_snapshot(
                     title="live activity heartbeat",
                     stage=stage,
@@ -755,7 +773,9 @@ class TaskLoopRunner:
                     prompt_file=prompt_file,
                     output_file=output_file,
                     heartbeat_seconds=self.cfg.activity_heartbeat_seconds,
+                    command_elapsed=elapsed,
                     command_text=command_text,
+                    no_output_notice=no_output_notice,
                 )
             worker.join()
         finally:

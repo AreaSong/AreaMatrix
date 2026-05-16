@@ -49,11 +49,21 @@ Use layered gates:
 - Stage/foundation closeout or release task: `./dev check all`.
 
 `./dev check task <label>` always runs prompt doctor and diff checks, then chooses
-the smallest repo-local implementation gate for that task. It may run targeted
-Rust tests, a macOS build, or `./dev check all` for stage closeout. Agents may
-run additional targeted tests when the task or observed changes need more
-evidence, but the manifest should reserve `./dev check all` for integration or
-release boundaries.
+the smallest repo-local implementation gate for that task:
+
+- Atomic Core task: targeted Rust test binaries only, such as
+  `cargo test --test <target> -- --nocapture`.
+- Core capability integration verify: targeted Rust test binaries plus the Core
+  quality gate (`cargo fmt --all -- --check` and
+  `cargo clippy --all-targets --all-features -- -D warnings`).
+- Mission-Critical file-safety, DB, staging, recovery, sync, import, migration,
+  reindex, or user-file boundary: widen to the Core quality gate.
+- Page feature or page integration task: macOS build gate.
+- Stage/foundation closeout or release task: `./dev check all`.
+
+Agents may run additional targeted tests when the task or observed changes need
+more evidence, but the manifest should reserve `./dev check all` for integration
+or release boundaries.
 
 Atomic Core tasks without a targeted test mapping must fail with a mapping error
 instead of silently falling back to `cargo test --workspace`. Add the missing

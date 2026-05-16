@@ -132,24 +132,26 @@ RISK_POLICY=pause
 基本用法（全量执行）：
 
 ```bash
-MAX_RETRIES=0 ./task-loop run
+MAX_RETRIES=1 ./task-loop run
 ```
 
 全静默执行：
 
 ```bash
 RISK_POLICY=allow \
-  MAX_RETRIES=0 \
+  MAX_RETRIES=1 \
   ./task-loop run
 ```
 
 只执行某个起点和阶段，便于试跑：
 
 ```bash
-MAX_RETRIES=0 \
+MAX_RETRIES=1 \
   START_FROM=phase-1/1-1-task-01 \
   ./task-loop run --phase phase-1 --max-tasks 5
 ```
+
+`MAX_RETRIES=0` 仍表示无限重试，只在明确要长期无人值守时显式使用；普通任务默认一次 repair retry 后停下。
 
 Dry-run（预演，不改文件）：
 

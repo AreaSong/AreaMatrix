@@ -304,6 +304,7 @@ def print_verify_body(entry: ManifestEntry, ctx: PromptContext) -> None:
     print_verify_principles()
     print_verify_checks()
     print_verify_runtime_evidence_note()
+    print_verify_fast_full_gate_note()
     print_verify_output_format()
     print_verify_forbidden()
 
@@ -409,9 +410,21 @@ def print_verify_runtime_evidence_note() -> None:
     print("## Task-loop 收口证据时序")
     print()
     print("- 当 verify-ready 由 `./task-loop` 调用时，本验收发生在 runner 写入 `completed` progress、summary 和 Git checkpoint 之前。")
+    print("- 完整任务流程是：copy-ready 实现 -> task-scoped check 验证实现证据 -> verify-ready 只读验收 -> `VERIFY_RESULT: PASS` 后 runner 才写 completed progress、summary 和 Git checkpoint。")
     print("- 不得仅因为 `progress.json` 仍是 `in_progress`、新增文件尚未 `git add`、或 `git_checkpoint_status` 尚未写入而判定不通过。")
     print("- 这些 runner 收口证据会在本验收输出 `VERIFY_RESULT: PASS` 后由 task-loop 继续写入；若收口失败，应归因到 runner checkpoint 阶段。")
     print("- 仍需严格阻断与本 task 无关、危险或无法解释的脏改动，以及 Forbidden Touches、验证失败、代码质量、安全、隐私、依赖、CI 或 review blocker。")
+    print()
+
+
+def print_verify_fast_full_gate_note() -> None:
+    print("## Task-scoped 验证分层")
+    print()
+    print("- 普通 atomic Core task 的完成门禁是 `./dev check task <label>`，默认只跑 prompt doctor、diff check 和该能力映射的精确 Rust test target。")
+    print("- Core capability integration verify 会在精确 Rust test target 之外加跑 Core quality gate：`cargo fmt --all -- --check` 和 `cargo clippy --all-targets --all-features -- -D warnings`。")
+    print("- Mission-Critical 且触碰用户文件、DB、staging、recovery、sync、import、migration、reindex 等边界时，`./dev check task <label>` 会升级到 Core quality gate。")
+    print("- Stage/foundation closeout、release 或 manifest 显式要求 broad gate 时才使用 `./dev check all`。非 stage task 不应把 `./dev check all` 当默认验收命令。")
+    print("- 若 Core task 没有 targeted test mapping，应判定为验证映射缺口；不要静默退回 `cargo test --workspace`，除非人工显式设置 emergency fallback。")
     print()
 
 

@@ -682,7 +682,7 @@ def recommended_action(cfg: ConsoleConfig, snapshot: DashboardSnapshot) -> tuple
         return tr(cfg, "action.continue_blocked"), "RISK_POLICY=allow START_FROM=<label> ./task-loop run"
     if snapshot.lifecycle.promotion_blockers:
         return tr(cfg, "action.review_workflow"), "./dev workflow status"
-    return tr(cfg, "action.continue_queue"), "RISK_POLICY=allow MAX_RETRIES=0 ./task-loop run"
+    return tr(cfg, "action.continue_queue"), "RISK_POLICY=allow MAX_RETRIES=1 ./task-loop run"
 
 
 def blocker_lines(cfg: ConsoleConfig, snapshot: DashboardSnapshot) -> list[str]:
@@ -1030,7 +1030,7 @@ def choose_stop_target(cfg: ConsoleConfig) -> tuple[str, str]:
 def base_env(cfg: ConsoleConfig, git_mode: str) -> tuple[dict[str, str], list[str]]:
     values = {
         "RISK_POLICY": "allow",
-        "MAX_RETRIES": "0",
+        "MAX_RETRIES": env_value("MAX_RETRIES", "1"),
         "GIT_CHECKPOINT": git_mode,
         "CODEX_EXEC_SANDBOX": env_value("CODEX_EXEC_SANDBOX", cfg.runtime.codex_exec_sandbox),
         "PROGRESS_FILE": str(cfg.runtime.progress_file),
@@ -1119,7 +1119,7 @@ def run_temp_dry_run(cfg: ConsoleConfig) -> int:
                 "GIT_CHECKPOINT": "off",
                 "CODEX_EXEC_SANDBOX": env_value("CODEX_EXEC_SANDBOX", cfg.runtime.codex_exec_sandbox),
                 "RISK_POLICY": "allow",
-                "MAX_RETRIES": "0",
+                "MAX_RETRIES": env_value("MAX_RETRIES", "1"),
                 "DRY_RUN_RESULT": env_value("DRY_RUN_RESULT", "PASS"),
             }
         )

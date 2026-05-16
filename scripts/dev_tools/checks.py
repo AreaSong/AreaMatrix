@@ -6,6 +6,7 @@ import os
 import re
 import shutil
 import subprocess
+from dataclasses import dataclass
 from pathlib import Path
 
 from .build import run_core_build
@@ -48,6 +49,47 @@ CAPABILITY_KEYWORDS = {
 }
 
 ALLOW_FULL_TASK_FALLBACK_ENV = "AREAMATRIX_TASK_CHECK_FULL_FALLBACK"
+
+FILE_SAFETY_GATE_KEYWORDS = (
+    "adopt",
+    "database",
+    "delete",
+    "db",
+    "fsevents",
+    "icloud",
+    "import",
+    "migration",
+    "move",
+    "recovery",
+    "reindex",
+    "rename",
+    "rollback",
+    "staging",
+    "sync",
+    "transactional",
+    "trash",
+    "user file",
+    "用户文件",
+    "删除",
+    "回滚",
+    "恢复",
+    "接管",
+    "移动",
+    "迁移",
+    "导入",
+    "同步",
+)
+
+
+@dataclass(frozen=True)
+class TaskManifestEntry:
+    raw: str
+    risk: str
+    exact_docs: tuple[str, ...]
+    existing_code: tuple[str, ...]
+    expected_new_paths: tuple[str, ...]
+    forbidden_touches: tuple[str, ...]
+    validation: tuple[str, ...]
 
 
 class FailureCollector:
@@ -321,6 +363,60 @@ def _task_text(root: Path, label: str) -> str:
     return _task_path(root, label).read_text(encoding="utf-8", errors="replace")
 
 
+def _task_manifest_entry(root: Path, label: str) -> TaskManifestEntry:
+    phase = label.split("-", 1)[0]
+    path = root / "tasks/prompts/_shared/manifests" / f"phase-{phase}.md"
+    if not path.is_file():
+        return TaskManifestEntry("", "Unspecified", (), (), (), (), ())
+    text = _read(path)
+    match = re.search(rf"(?ms)^## {re.escape(label)}\n(?P<body>.*?)(?=^## |\Z)", text)
+    if not match:
+        return TaskManifestEntry("", "Unspecified", (), (), (), (), ())
+    raw = match.group(0).strip()
+    sections = _manifest_sections(match.group("body"))
+    return TaskManifestEntry(
+        raw=raw,
+        risk=_first_section_item(sections, "Risk Level", "Unspecified"),
+        exact_docs=tuple(sections.get("Exact Docs", ())),
+        existing_code=tuple(sections.get("Existing Code", ())),
+        expected_new_paths=tuple(sections.get("Expected New Paths", ())),
+        forbidden_touches=tuple(sections.get("Forbidden Touches", ())),
+        validation=tuple(sections.get("Validation", ())),
+    )
+
+
+def _manifest_sections(body: str) -> dict[str, list[str]]:
+    sections: dict[str, list[str]] = {}
+    current = ""
+    for line in body.splitlines():
+        heading = re.match(r"^###\s+(.+?)\s*$", line)
+        if heading:
+            current = heading.group(1)
+            sections.setdefault(current, [])
+            continue
+        if not current:
+            continue
+        value = _manifest_list_item(line)
+        if value:
+            sections[current].append(value)
+    return sections
+
+
+def _manifest_list_item(line: str) -> str:
+    match = re.match(r"^\s*-\s+(.*?)\s*$", line)
+    if not match:
+        return ""
+    value = match.group(1).strip()
+    if value.startswith("`") and value.endswith("`"):
+        return value[1:-1]
+    return value
+
+
+def _first_section_item(sections: dict[str, list[str]], key: str, default: str) -> str:
+    values = sections.get(key, [])
+    return values[0] if values else default
+
+
 def _task_contains(text: str, pattern: str) -> bool:
     return re.search(pattern, text, flags=re.IGNORECASE) is not None
 
@@ -341,6 +437,39 @@ def _is_core_task(text: str) -> bool:
     return bool(_task_capabilities(text)) and not _is_page_task(text)
 
 
+def _is_core_integration_task(text: str) -> bool:
+    return _task_contains(text, r"\bC[1-4]-\d{2}\b.*integration[- ]verify|Core 步骤：能力集成验收")
+
+
+def _needs_core_quality_gate(text: str, entry: TaskManifestEntry) -> bool:
+    if _is_core_integration_task(text):
+        return True
+    if entry.risk == "Mission-Critical" and _touches_file_safety_boundary(text, entry):
+        return True
+    if _manifest_requests_core_quality_gate(entry):
+        return True
+    return False
+
+
+def _touches_file_safety_boundary(text: str, entry: TaskManifestEntry) -> bool:
+    haystack = " ".join(
+        [
+            text,
+            entry.raw,
+            " ".join(entry.exact_docs),
+            " ".join(entry.existing_code),
+            " ".join(entry.expected_new_paths),
+            " ".join(entry.forbidden_touches),
+        ]
+    ).lower()
+    return any(keyword in haystack for keyword in FILE_SAFETY_GATE_KEYWORDS)
+
+
+def _manifest_requests_core_quality_gate(entry: TaskManifestEntry) -> bool:
+    validation = "\n".join(entry.validation).lower()
+    return "cargo clippy" in validation or "cargo fmt" in validation or "./dev check all" in validation
+
+
 def _run_common_task_checks(root: Path) -> int:
     for label, func in [
         ("prompt doctor", lambda: run_prompts_check(root)),
@@ -354,16 +483,23 @@ def _run_common_task_checks(root: Path) -> int:
     return 0
 
 
-def _run_core_task_checks(root: Path, text: str) -> int:
+def _run_core_task_checks(root: Path, text: str, entry: TaskManifestEntry | None = None) -> int:
     core_dir = root / "core"
     require_command("cargo")
-    for argv in [
-        ["cargo", "fmt", "--all", "--", "--check"],
-        ["cargo", "clippy", "--all-targets", "--all-features", "--", "-D", "warnings"],
-    ]:
-        proc = run_step(argv, cwd=core_dir, check=False)
-        if proc.returncode != 0:
-            return proc.returncode
+    entry = entry or TaskManifestEntry("", "Unspecified", (), (), (), (), ())
+    if _needs_core_quality_gate(text, entry):
+        print()
+        print("==> ./dev check task: widened Core quality gate (fmt + clippy)", flush=True)
+        for argv in [
+            ["cargo", "fmt", "--all", "--", "--check"],
+            ["cargo", "clippy", "--all-targets", "--all-features", "--", "-D", "warnings"],
+        ]:
+            proc = run_step(argv, cwd=core_dir, check=False)
+            if proc.returncode != 0:
+                return proc.returncode
+    else:
+        print()
+        print("==> ./dev check task: fast Core gate (targeted tests only)", flush=True)
 
     commands = _core_task_test_commands(text, root)
     if not commands:
@@ -488,6 +624,7 @@ def _run_page_task_checks(root: Path) -> int:
 def run_task_check(label: str, root: Path | None = None) -> int:
     root = (root or project_root()).resolve()
     text = _task_text(root, label)
+    entry = _task_manifest_entry(root, label)
     rc = _run_common_task_checks(root)
     if rc != 0:
         return rc
@@ -498,7 +635,7 @@ def run_task_check(label: str, root: Path | None = None) -> int:
     if _is_page_task(text):
         return _run_page_task_checks(root)
     if _is_core_task(text):
-        return _run_core_task_checks(root, text)
+        return _run_core_task_checks(root, text, entry)
     print()
     print(f"==> ./dev check task {label}: prompt/diff checks only", flush=True)
     return 0

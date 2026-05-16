@@ -45,7 +45,10 @@ Repo-local skills：
 正式执行前工作区必须干净。若当前在 `main`，runner 会自动创建 `codex/areamatrix-task-loop-<run_id>` 分支；dry-run 永远不会真实 commit 或 push。
 
 默认重试：
-- `MAX_RETRIES=0`（`0` 表示无限重试）
+- `MAX_RETRIES=1`
+
+`MAX_RETRIES=0` 仍表示无限重试，只应在明确要长期无人值守时显式设置；日常
+task-loop 默认会在一次 repair retry 后停下，避免小任务长时间空转。
 
 默认风险门禁：
 - `RISK_GATE=mission-critical`
@@ -127,19 +130,19 @@ PID 和耗时；中段 `live log` 纵向列出 prompt、输出日志路径和日
 `./task-loop status` 和
 `./dev status --verbose` 也会显示同一份 live activity。若屏幕上长时间只看到
 日志状态为 `missing` 或日志更新时间不变化，可判断是 `codex exec` 子进程本身没有
-推进，而不是验证命令正在正常输出。
+产生日志；这是一种 no-output wait，不代表验证命令正在正常输出。
 
 ### 1) 全量执行
 
 ```bash
-MAX_RETRIES=0 ./task-loop run
+MAX_RETRIES=1 ./task-loop run
 ```
 
 全静默执行（包括 Mission-Critical task）：
 
 ```bash
 RISK_POLICY=allow \
-MAX_RETRIES=0 \
+MAX_RETRIES=1 \
 ./task-loop run
 ```
 
@@ -148,7 +151,7 @@ MAX_RETRIES=0 \
 ```bash
 GIT_CHECKPOINT=off \
 RISK_POLICY=allow \
-MAX_RETRIES=0 \
+MAX_RETRIES=1 \
 ./task-loop run
 ```
 
@@ -157,14 +160,14 @@ MAX_RETRIES=0 \
 ```bash
 GIT_CHECKPOINT=push \
 RISK_POLICY=allow \
-MAX_RETRIES=0 \
+MAX_RETRIES=1 \
 ./task-loop run
 ```
 
 ### 2) 从指定任务开始
 
 ```bash
-MAX_RETRIES=0 \
+MAX_RETRIES=1 \
 START_FROM=phase-1/1-1-task-01 \
 ./task-loop run --phase phase-1 --max-tasks 5
 ```
@@ -174,7 +177,7 @@ START_FROM=phase-1/1-1-task-01 \
 ### 3) 只跑某个 phase
 
 ```bash
-MAX_RETRIES=0 ./task-loop run --phase phase-1 --max-tasks 20
+MAX_RETRIES=1 ./task-loop run --phase phase-1 --max-tasks 20
 ```
 
 > 注意：`--phase` 可重复，形成子集，如 `--phase phase-1 --phase phase-2`。

@@ -265,10 +265,7 @@ class BuildToolsTest(unittest.TestCase):
 
         self.assertEqual(
             [call.args[0] for call in run_step.call_args_list],
-            [
-                ["cargo", "fmt", "--all", "--", "--check"],
-                ["cargo", "clippy", "--all-targets", "--all-features", "--", "-D", "warnings"],
-            ],
+            [],
         )
 
     def test_core_task_check_allows_explicit_full_fallback(self) -> None:
@@ -285,12 +282,102 @@ class BuildToolsTest(unittest.TestCase):
 
         self.assertEqual(
             [call.args[0] for call in run_step.call_args_list],
+            [["cargo", "test", "--workspace"]],
+        )
+
+    def test_atomic_core_task_check_runs_only_targeted_tests(self) -> None:
+        text = "Core ability C2-04 smart-lists"
+
+        with (
+            patch("scripts.dev_tools.checks.require_command"),
+            patch("scripts.dev_tools.checks.run_step") as run_step,
+        ):
+            run_step.return_value.returncode = 0
+
+            self.assertEqual(checks._run_core_task_checks(Path("/tmp/repo"), text), 0)
+
+        self.assertEqual(
+            [call.args[0] for call in run_step.call_args_list],
+            [
+                ["cargo", "test", "--test", "smart_list_contract_api", "--", "--nocapture"],
+                ["cargo", "test", "--test", "smart_list_implementation", "--", "--nocapture"],
+                ["cargo", "test", "--test", "smart_list_failure_recovery", "--", "--nocapture"],
+            ],
+        )
+
+    def test_core_integration_task_check_adds_quality_gate(self) -> None:
+        text = "Core ability C2-04 integration-verify smart-lists"
+
+        with (
+            patch("scripts.dev_tools.checks.require_command"),
+            patch("scripts.dev_tools.checks.run_step") as run_step,
+        ):
+            run_step.return_value.returncode = 0
+
+            self.assertEqual(checks._run_core_task_checks(Path("/tmp/repo"), text), 0)
+
+        self.assertEqual(
+            [call.args[0] for call in run_step.call_args_list][:2],
             [
                 ["cargo", "fmt", "--all", "--", "--check"],
                 ["cargo", "clippy", "--all-targets", "--all-features", "--", "-D", "warnings"],
-                ["cargo", "test", "--workspace"],
             ],
         )
+
+    def test_mission_critical_file_safety_task_check_adds_quality_gate(self) -> None:
+        text = "Core ability C2-04 smart-lists"
+        entry = checks.TaskManifestEntry(
+            raw="### Exact Docs\n- docs/architecture/transactional-import.md",
+            risk="Mission-Critical",
+            exact_docs=("docs/architecture/transactional-import.md",),
+            existing_code=("core/src/**",),
+            expected_new_paths=("core/tests/**",),
+            forbidden_touches=("apps/**",),
+            validation=("./dev check task 4-1/task-18",),
+        )
+
+        with (
+            patch("scripts.dev_tools.checks.require_command"),
+            patch("scripts.dev_tools.checks.run_step") as run_step,
+        ):
+            run_step.return_value.returncode = 0
+
+            self.assertEqual(checks._run_core_task_checks(Path("/tmp/repo"), text, entry), 0)
+
+        self.assertEqual(
+            [call.args[0] for call in run_step.call_args_list][:2],
+            [
+                ["cargo", "fmt", "--all", "--", "--check"],
+                ["cargo", "clippy", "--all-targets", "--all-features", "--", "-D", "warnings"],
+            ],
+        )
+
+    def test_task_manifest_entry_reads_phase_manifest(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            manifest = root / "tasks/prompts/_shared/manifests/phase-4.md"
+            manifest.parent.mkdir(parents=True)
+            manifest.write_text(
+                "\n".join(
+                    [
+                        "## 4-1/task-18",
+                        "",
+                        "### Risk Level",
+                        "- `High`",
+                        "",
+                        "### Validation",
+                        "- ./dev check task 4-1/task-18",
+                        "",
+                        "## 4-1/task-19",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+
+            entry = checks._task_manifest_entry(root, "4-1/task-18")
+
+            self.assertEqual(entry.risk, "High")
+            self.assertEqual(entry.validation, ("./dev check task 4-1/task-18",))
 
     def test_task_check_detects_stage_closeout_without_core_integration_false_positive(self) -> None:
         core_integration = "# 4-1/task-15: C2-03 integration-verify\n- 阶段：Stage 2 Experience\n"
@@ -310,6 +397,12 @@ class BuildToolsTest(unittest.TestCase):
         self.assertIn("git add", suffix)
         self.assertIn("GIT_CHECKPOINT=commit", suffix)
         self.assertIn("runner checkpoint 阶段", suffix)
+
+    def test_runner_defaults_to_single_repair_retry(self) -> None:
+        with patch.dict("os.environ", {}, clear=True):
+            cfg = RuntimeConfig.from_env()
+
+        self.assertEqual(cfg.max_retries, 1)
 
 
 if __name__ == "__main__":
