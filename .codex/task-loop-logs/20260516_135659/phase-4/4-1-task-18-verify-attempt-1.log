@@ -1,0 +1,68 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`4-1/task-18`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-18-c2-04-failure-edge.md`
+- 主要验收文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/search/saved_search.rs`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/db/saved_search.rs`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/smart_list_*.rs`
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：0
+- 阻塞项数：2
+
+四、逐项验收结果
+
+- 覆盖空态、非法输入、权限、IO/DB 错误和错误码映射  
+  结果：通过  
+  证据：`core/tests/smart_list_failure_recovery.rs:293` 覆盖空态；`:315` 覆盖非法输入；`:376`、`:408`、`:443`、`:477` 覆盖 malformed metadata、DB/search metadata、corrupted DB、permission denied；`:276`、`:286`、`:360` 校验 `Config/Db/FileNotFound` 映射。
+
+- 失败不留下半成品  
+  结果：通过  
+  证据：`core/tests/smart_list_failure_recovery.rs:161` snapshot 包含 saved searches、files、change_log、tags、notes、staging、generated、user file bytes；`:272` 断言失败前后不变；`:408`、`:443` 验证 DB 损坏时用户文件与 staging/generated 不被污染。
+
+- 隐私/AI/远程默认关闭、密钥不入日志  
+  结果：通过  
+  证据：`core/src/search/saved_search.rs:178` 明确禁止 AI/semantic/reindex/change_log/user file 副作用；`core/tests/smart_list_failure_recovery.rs:511` 验证不创建 `.areamatrix/ai`、`.areamatrix/remote`、`.areamatrix/secrets`。
+
+- 不吞错或静默降级  
+  结果：通过  
+  证据：`core/src/db/saved_search.rs:132` missing id 映射 `FileNotFound`；`:181` malformed JSON 通过 rusqlite conversion failure 进入 `Db`；`core/src/search/saved_search.rs:195` 到 `:200` 在执行搜索前显式校验 repo、id、pagination、saved query state。
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过。核心实现结构清晰，但新增测试文件 `core/tests/smart_list_failure_recovery.rs` 为 531 行，超过 `docs/development/coding-standards.md` 单文件 ≤ 500 行阈值。
+- 注释 / rustdoc / 文档同步：通过。`run_smart_list` rustdoc 在 `core/src/search/saved_search.rs:169` 起说明副作用边界和错误；UDL 在 `core/area_matrix.udl:95` 暴露接口；Core API 在 `docs/api/core-api.md:1480` 起对齐合同。
+- 错误处理与边界处理：通过。失败路径均返回结构化 `CoreError`，未发现生产路径吞错或静默降级。
+- 测试与验证覆盖：通过。`./dev check task 4-1/task-18` 已通过，包含 doctor、diff check、fmt、clippy、三个 smart list 测试。
+- 占位、硬编码、mock-only、一次性实现检查：通过。实现走真实 DB saved search + `search_files` 查询路径，不是 mock-only。
+
+六、阻塞项
+
+- P1：新增失败恢复测试文件超过编码规范文件长度阈值  
+  说明：`core/tests/smart_list_failure_recovery.rs` 当前 531 行，超过编码规范“单文件 ≤ 500 行”的工程质量门禁。该问题不影响当前行为测试通过，但违反本次验收必须检查的长期维护标准。  
+  绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/smart_list_failure_recovery.rs:1`  
+  为什么导致不通过：工程质量规则要求严重编码规范问题不能判定完成。
+
+- P1：新增测试文件尚未纳入 Git evidence  
+  说明：`git status --short -- apps core/area_matrix.udl core/src core/tests` 输出 `?? core/tests/smart_list_failure_recovery.rs`。验证命令会运行该文件，但当前仓库状态仍缺少可追溯的 tracked evidence。  
+  绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/smart_list_failure_recovery.rs:1`  
+  为什么导致不通过：engineering-quality 和 validation-driver 要求 Git evidence 不缺失；未跟踪文件不能作为完成态证据闭环。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-18`，通过。
+- 通过内容：prompt doctor OK；`git diff --check` 通过；`cargo fmt --all -- --check` 通过；`cargo clippy --all-targets --all-features -- -D warnings` 通过；`smart_list_contract_api` 3/3 通过；`smart_list_implementation` 4/4 通过；`smart_list_failure_recovery` 8/8 通过。
+- 额外只读检查：`wc -l` 显示 `core/tests/smart_list_failure_recovery.rs` 531 行；`git status` 显示该文件未跟踪。
+- 缺失：Git evidence 闭环缺失；新增测试文件长度未满足编码规范阈值。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。功能和失败路径证据充分，但工程质量与 Git evidence 仍有阻塞项。
+
+VERIFY_RESULT: FAIL

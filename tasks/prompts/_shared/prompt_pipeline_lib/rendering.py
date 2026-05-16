@@ -303,6 +303,7 @@ def print_verify_body(entry: ManifestEntry, ctx: PromptContext) -> None:
     print_shared_docs(include_validation=True)
     print_verify_principles()
     print_verify_checks()
+    print_verify_runtime_evidence_note()
     print_verify_output_format()
     print_verify_forbidden()
 
@@ -401,6 +402,16 @@ def print_verify_checks() -> None:
     print()
     for item in verify_checks():
         print(item)
+    print()
+
+
+def print_verify_runtime_evidence_note() -> None:
+    print("## Task-loop 收口证据时序")
+    print()
+    print("- 当 verify-ready 由 `./task-loop` 调用时，本验收发生在 runner 写入 `completed` progress、summary 和 Git checkpoint 之前。")
+    print("- 不得仅因为 `progress.json` 仍是 `in_progress`、新增文件尚未 `git add`、或 `git_checkpoint_status` 尚未写入而判定不通过。")
+    print("- 这些 runner 收口证据会在本验收输出 `VERIFY_RESULT: PASS` 后由 task-loop 继续写入；若收口失败，应归因到 runner checkpoint 阶段。")
+    print("- 仍需严格阻断与本 task 无关、危险或无法解释的脏改动，以及 Forbidden Touches、验证失败、代码质量、安全、隐私、依赖、CI 或 review blocker。")
     print()
 
 

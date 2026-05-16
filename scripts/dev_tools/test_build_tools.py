@@ -8,6 +8,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from scripts.dev_tools import build, checks
+from scripts.task_loop.runner import RuntimeConfig, TaskLoopRunner
 
 
 class BuildToolsTest(unittest.TestCase):
@@ -206,7 +207,12 @@ class BuildToolsTest(unittest.TestCase):
 
         self.assertEqual(
             checks._core_task_test_commands(text),
-            [["cargo", "test", "--workspace", "saved_search", "--", "--nocapture"]],
+            [
+                ["cargo", "test", "--test", "saved_search_contract_api", "--", "--nocapture"],
+                ["cargo", "test", "--test", "saved_search_implementation", "--", "--nocapture"],
+                ["cargo", "test", "--test", "saved_search_failure_recovery", "--", "--nocapture"],
+                ["cargo", "test", "--test", "saved_search_validation", "--", "--nocapture"],
+            ],
         )
 
     def test_task_check_maps_c2_04_to_smart_list_tests(self) -> None:
@@ -214,8 +220,36 @@ class BuildToolsTest(unittest.TestCase):
 
         self.assertEqual(
             checks._core_task_test_commands(text),
-            [["cargo", "test", "--workspace", "smart_list", "--", "--nocapture"]],
+            [
+                ["cargo", "test", "--test", "smart_list_contract_api", "--", "--nocapture"],
+                ["cargo", "test", "--test", "smart_list_implementation", "--", "--nocapture"],
+                ["cargo", "test", "--test", "smart_list_failure_recovery", "--", "--nocapture"],
+            ],
         )
+
+    def test_task_check_discovers_capability_tests_from_spec_slug(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            spec_dir = root / "docs/core/capability-specs/stage-2-experience"
+            tests_dir = root / "core/tests"
+            spec_dir.mkdir(parents=True)
+            tests_dir.mkdir(parents=True)
+            (spec_dir / "C2-05-tag-crud.md").write_text("# C2-05 tag-crud\n", encoding="utf-8")
+            for name in [
+                "tag_crud_contract_api.rs",
+                "tag_crud_implementation.rs",
+                "tag_crud_failure_recovery.rs",
+            ]:
+                (tests_dir / name).write_text("// test\n", encoding="utf-8")
+
+            self.assertEqual(
+                checks._core_task_test_commands("Core ability C2-05 tag-crud", root),
+                [
+                    ["cargo", "test", "--test", "tag_crud_contract_api", "--", "--nocapture"],
+                    ["cargo", "test", "--test", "tag_crud_failure_recovery", "--", "--nocapture"],
+                    ["cargo", "test", "--test", "tag_crud_implementation", "--", "--nocapture"],
+                ],
+            )
 
     def test_core_task_check_fails_when_no_targeted_tests_are_mapped(self) -> None:
         text = "Core ability C4-99 imaginary capability"
@@ -264,6 +298,18 @@ class BuildToolsTest(unittest.TestCase):
 
         self.assertFalse(checks._is_stage_closeout_task(core_integration))
         self.assertTrue(checks._is_stage_closeout_task(stage_closeout))
+
+    def test_verify_suffix_defers_runner_checkpoint_evidence(self) -> None:
+        cfg = RuntimeConfig(root_dir=Path("/tmp/areamatrix"))
+        cfg.git_checkpoint = "commit"
+
+        suffix = TaskLoopRunner(cfg).verify_suffix()
+
+        self.assertIn("runner 写入 completed progress 和 Git checkpoint 之前", suffix)
+        self.assertIn("progress.json", suffix)
+        self.assertIn("git add", suffix)
+        self.assertIn("GIT_CHECKPOINT=commit", suffix)
+        self.assertIn("runner checkpoint 阶段", suffix)
 
 
 if __name__ == "__main__":

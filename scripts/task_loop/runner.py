@@ -814,9 +814,16 @@ class TaskLoopRunner:
         return "\n\n".join(parts)
 
     def verify_suffix(self) -> str:
-        return """自动任务循环输出要求：
+        return f"""自动任务循环输出要求：
 - 保留简明验收报告，尤其是不通过时的失败摘要、阻塞项、文件路径和验证缺口。
 - 工程质量不达标时必须写清楚质量阻塞点，供下一轮“全部全面修复”使用。
+- 当前验收发生在 runner 写入 completed progress 和 Git checkpoint 之前；不要因为 `progress.json`
+  仍是 `in_progress`、新增文件尚未被 `git add`、或 `git_checkpoint_status` 尚未写入而判定不通过。
+- 你仍需检查当前工作区是否有与本 task 无关、危险或无法解释的脏改动；真实功能、验证命令、
+  Forbidden Touches、代码质量、安全/隐私/依赖/CI/review blocker 仍必须按规则严格阻断。
+- 若本轮验收输出 `VERIFY_RESULT: PASS`，runner 随后会按 `GIT_CHECKPOINT={self.cfg.git_checkpoint}` 执行
+  progress / summary / Git checkpoint 收口；若该收口失败，应归因给 runner checkpoint 阶段，而不是本
+  verify 阶段。
 - 最后一行必须单独输出 VERIFY_RESULT: PASS 或 VERIFY_RESULT: FAIL。
 - 不要在最后一行之后输出任何内容。"""
 

@@ -14,11 +14,30 @@ from .macos import run_macos_tests
 from .skills import SimpleYAMLError, parse_frontmatter, parse_simple_yaml
 
 
-CAPABILITY_TEST_PREFIXES = {
-    "C2-01": ("search_query_files",),
-    "C2-02": ("search_filters",),
-    "C2-03": ("saved_search",),
-    "C2-04": ("smart_list",),
+CAPABILITY_TEST_TARGETS = {
+    "C2-01": (
+        "search_query_files_contract_api",
+        "search_query_files_implementation",
+        "search_query_files_failure_recovery",
+        "search_query_files_validation",
+    ),
+    "C2-02": (
+        "search_filters_contract_api",
+        "search_filters_implementation",
+        "search_filters_failure_recovery",
+        "search_filters_validation",
+    ),
+    "C2-03": (
+        "saved_search_contract_api",
+        "saved_search_implementation",
+        "saved_search_failure_recovery",
+        "saved_search_validation",
+    ),
+    "C2-04": (
+        "smart_list_contract_api",
+        "smart_list_implementation",
+        "smart_list_failure_recovery",
+    ),
 }
 
 CAPABILITY_KEYWORDS = {
@@ -346,7 +365,7 @@ def _run_core_task_checks(root: Path, text: str) -> int:
         if proc.returncode != 0:
             return proc.returncode
 
-    commands = _core_task_test_commands(text)
+    commands = _core_task_test_commands(text, root)
     if not commands:
         print()
         if os.environ.get(ALLOW_FULL_TASK_FALLBACK_ENV) == "1":
@@ -364,7 +383,7 @@ def _run_core_task_checks(root: Path, text: str) -> int:
                 file=os.sys.stderr,
             )
             print(
-                "ERROR: add CAPABILITY_TEST_PREFIXES coverage in scripts/dev_tools/checks.py, "
+                "ERROR: add CAPABILITY_TEST_TARGETS coverage in scripts/dev_tools/checks.py, "
                 "or run ./dev check core/all explicitly when a broad gate is intended.",
                 file=os.sys.stderr,
             )
@@ -380,17 +399,50 @@ def _run_core_task_checks(root: Path, text: str) -> int:
     return 0
 
 
-def _core_task_test_commands(text: str) -> list[list[str]]:
+def _core_task_test_commands(text: str, root: Path | None = None) -> list[list[str]]:
     commands: list[list[str]] = []
     lowered = text.lower()
     for capability in _task_capabilities(text):
-        for prefix in CAPABILITY_TEST_PREFIXES.get(capability, ()):
-            commands.append(["cargo", "test", "--workspace", prefix, "--", "--nocapture"])
+        for target in _capability_test_targets(capability, root):
+            commands.append(["cargo", "test", "--test", target, "--", "--nocapture"])
     for capability, keywords in CAPABILITY_KEYWORDS.items():
         if capability not in text and any(keyword in lowered for keyword in keywords):
-            for prefix in CAPABILITY_TEST_PREFIXES.get(capability, ()):
-                commands.append(["cargo", "test", "--workspace", prefix, "--", "--nocapture"])
+            for target in _capability_test_targets(capability, root):
+                commands.append(["cargo", "test", "--test", target, "--", "--nocapture"])
     return _unique_commands(commands)
+
+
+def _capability_test_targets(capability: str, root: Path | None) -> tuple[str, ...]:
+    targets = list(CAPABILITY_TEST_TARGETS.get(capability, ()))
+    if root is not None:
+        targets.extend(_discover_capability_test_targets(root, capability))
+    return tuple(_unique_strings(targets))
+
+
+def _discover_capability_test_targets(root: Path, capability: str) -> list[str]:
+    tests_dir = root / "core/tests"
+    if not tests_dir.is_dir():
+        return []
+    targets: list[str] = []
+    for prefix in _capability_test_prefixes(root, capability):
+        for path in sorted(tests_dir.glob(f"{prefix}_*.rs")):
+            if path.is_file():
+                targets.append(path.stem)
+    return _unique_strings(targets)
+
+
+def _capability_test_prefixes(root: Path, capability: str) -> list[str]:
+    prefixes: list[str] = []
+    for path in sorted((root / "docs/core/capability-specs").glob(f"**/{capability}-*.md")):
+        slug = path.stem.removeprefix(f"{capability}-")
+        prefix = _slug_to_test_prefix(slug)
+        if prefix:
+            prefixes.append(prefix)
+    return _unique_strings(prefixes)
+
+
+def _slug_to_test_prefix(slug: str) -> str:
+    return re.sub(r"[^a-zA-Z0-9]+", "_", slug).strip("_").lower()
 
 
 def _unique_commands(commands: list[list[str]]) -> list[list[str]]:
@@ -401,6 +453,16 @@ def _unique_commands(commands: list[list[str]]) -> list[list[str]]:
         if key not in seen:
             result.append(command)
             seen.add(key)
+    return result
+
+
+def _unique_strings(values: list[str]) -> list[str]:
+    result: list[str] = []
+    seen: set[str] = set()
+    for value in values:
+        if value not in seen:
+            result.append(value)
+            seen.add(value)
     return result
 
 
