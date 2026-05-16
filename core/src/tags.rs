@@ -1,4 +1,4 @@
-//! C2-05 tag CRUD contract types and validation.
+//! C2-05 tag CRUD contract behavior and types.
 
 use std::path::{Component, PathBuf};
 
@@ -45,8 +45,9 @@ pub struct TagSet {
 ///
 /// C2-05 owns this single-file tag mutation contract for S2-07. The operation
 /// is idempotent for duplicate tags, must write only tag metadata and a
-/// change-log entry once implemented, and must never rename, move, delete,
-/// trash, reclassify, reindex, or edit notes or generated overview files.
+/// change-log entry with `kind = tag_added` when the relation changes, and
+/// must never rename, move, delete, trash, reclassify, reindex, or edit notes
+/// or generated overview files.
 ///
 /// # Errors
 ///
@@ -57,9 +58,9 @@ pub struct TagSet {
 pub fn add_tag(repo_path: String, file_id: i64, tag: String) -> CoreResult<TagSet> {
     let repo = validate_tag_repo_path(&repo_path)?;
     validate_file_id(file_id)?;
-    validate_tag_value(&tag)?;
+    let normalized = normalize_tag_value(&tag)?;
     db::ensure_initialized(&repo).map_err(normalize_tag_metadata_error)?;
-    Err(CoreError::db("tag CRUD persistence is not implemented"))
+    db::add_tag_row(&repo, file_id, &normalized)
 }
 
 /// Removes one tag relation from an active file and returns the refreshed tag set.
@@ -67,6 +68,7 @@ pub fn add_tag(repo_path: String, file_id: i64, tag: String) -> CoreResult<TagSe
 /// S2-07 chip deletion uses this contract to remove only the relation between
 /// the current file and the tag. It does not delete the tag definition from the
 /// repository registry and must not affect other files that carry the same tag.
+/// The change-log detail uses `kind = tag_removed` when the relation changes.
 ///
 /// # Errors
 ///
@@ -77,9 +79,9 @@ pub fn add_tag(repo_path: String, file_id: i64, tag: String) -> CoreResult<TagSe
 pub fn remove_tag(repo_path: String, file_id: i64, tag: String) -> CoreResult<TagSet> {
     let repo = validate_tag_repo_path(&repo_path)?;
     validate_file_id(file_id)?;
-    validate_tag_value(&tag)?;
+    let normalized = normalize_tag_value(&tag)?;
     db::ensure_initialized(&repo).map_err(normalize_tag_metadata_error)?;
-    Err(CoreError::db("tag CRUD persistence is not implemented"))
+    db::remove_tag_row(&repo, file_id, &normalized)
 }
 
 /// Lists the tag registry and the selected file tag state without mutating metadata.
@@ -99,7 +101,7 @@ pub fn list_tags(repo_path: String, file_id: i64) -> CoreResult<TagSet> {
     let repo = validate_tag_repo_path(&repo_path)?;
     validate_file_id(file_id)?;
     db::ensure_initialized(&repo).map_err(normalize_tag_metadata_error)?;
-    Err(CoreError::db("tag CRUD persistence is not implemented"))
+    db::list_tag_set(&repo, file_id)
 }
 
 fn validate_tag_repo_path(repo_path: &str) -> CoreResult<PathBuf> {
@@ -120,7 +122,7 @@ fn validate_file_id(file_id: i64) -> CoreResult<()> {
     Ok(())
 }
 
-fn validate_tag_value(tag: &str) -> CoreResult<()> {
+fn normalize_tag_value(tag: &str) -> CoreResult<String> {
     let trimmed = tag.trim();
     if trimmed.is_empty()
         || trimmed.chars().count() > MAX_TAG_LEN
@@ -131,7 +133,7 @@ fn validate_tag_value(tag: &str) -> CoreResult<()> {
     {
         return Err(CoreError::invalid_path("tag name is invalid"));
     }
-    Ok(())
+    Ok(trimmed.to_lowercase())
 }
 
 fn normalize_tag_metadata_error(error: CoreError) -> CoreError {

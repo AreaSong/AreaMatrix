@@ -202,7 +202,11 @@ fn tag_crud_contract_documents_consumer_state_and_scope_boundaries() {
         "must never rename, move, delete",
         "does not delete the tag definition",
         "must not create, update, remove, rename, or suggest tags",
-        "tag CRUD persistence is not implemented",
+        "db::add_tag_row",
+        "db::remove_tag_row",
+        "db::list_tag_set",
+        "tag_added",
+        "tag_removed",
     ] {
         assert_contains(TAGS_RS, fragment);
     }
