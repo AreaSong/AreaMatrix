@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 from scripts.dev_tools import build, checks
 from scripts.task_loop import console
-from scripts.task_loop.runner import RuntimeConfig, TaskLoopRunner
+from scripts.task_loop.runner import RuntimeConfig, TaskFile, TaskLoopRunner
 
 
 class BuildToolsTest(unittest.TestCase):
@@ -398,6 +398,38 @@ class BuildToolsTest(unittest.TestCase):
         self.assertIn("git add", suffix)
         self.assertIn("GIT_CHECKPOINT=commit", suffix)
         self.assertIn("runner checkpoint 阶段", suffix)
+
+    def test_retry_prompt_keeps_task_validation_upper_bound(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            verify_log = root / "verify.log"
+            verify_log.write_text(
+                "验证失败：缺少 targeted C2-03 failure test 证据。\nVERIFY_RESULT: FAIL\n",
+                encoding="utf-8",
+            )
+            task = TaskFile(
+                phase="phase-4",
+                task_name="4-1-task-13",
+                label="4-1/task-13",
+                copy_file=root / "copy.md",
+                verify_file=root / "verify.md",
+                risk="High",
+            )
+
+            prompt = TaskLoopRunner(RuntimeConfig(root_dir=root)).build_copy_retry_prompt(task, 2, verify_log)
+
+        self.assertIn("仍以当前 task manifest 的 `Validation` 为上限", prompt)
+        self.assertIn("不要因为 retry、证据不足、上一次 verify 失败或 `core/**` 改动", prompt)
+        self.assertIn("重新执行当前 task manifest `Validation`", prompt)
+        self.assertNotIn("全部全面修复", prompt)
+
+    def test_verify_suffix_keeps_retry_validation_scoped(self) -> None:
+        suffix = TaskLoopRunner(RuntimeConfig(root_dir=Path("/tmp/areamatrix"))).verify_suffix()
+
+        self.assertIn("验证边界不随 retry 次数变化", suffix)
+        self.assertIn("当前 task manifest 的 `Validation` 为上限", suffix)
+        self.assertIn("除非当前 task manifest 明确要求宽门禁", suffix)
+        self.assertNotIn("全部全面修复", suffix)
 
     def test_runner_defaults_to_single_repair_retry(self) -> None:
         with patch.dict("os.environ", {}, clear=True):

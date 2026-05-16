@@ -810,12 +810,15 @@ class TaskLoopRunner:
         feedback = self.extract_verify_feedback(verify_log)
         return f"""你正在对同一个任务进行 repair retry（修复重试，第 {attempt} 次尝试）。任务标签：{task.label}（文件：{task.task_name}.md）。
 本次重试只允许修复上一次验收失败问题，不要改写任务目标外的范围。
-本次重试必须同时修复功能失败、验收证据失败和工程质量失败；重新读取工程质量规则与编码规范。
-以下是上一次验收日志里的失败摘要（请直接按这些问题“全部全面修复”）：
+本次重试必须同时修复本 task 范围内的功能失败、验收证据失败和工程质量失败；重新读取工程质量规则与编码规范。
+本次重试不会改变验证等级：仍以当前 task manifest 的 `Validation` 为上限。
+除非当前 task manifest 明确列出 `./dev check all`、`./dev check core` 或 `cargo test --workspace`，否则不要因为 retry、证据不足、上一次 verify 失败或 `core/**` 改动而升级到这些宽门禁。
+若上一次验收日志声称 manifest 要求更宽门禁，必须先回到当前 task manifest 核对；以 manifest 原文为准。
+以下是上一次验收日志里的失败摘要（请只修复这些本 task 范围内的问题）：
 
 {feedback}
 
-修复完成后，重新完整执行本任务实现，再进入该任务验收。"""
+修复完成后，重新执行当前 task manifest `Validation` 中列出的检查，再进入该任务验收。"""
 
     def build_silent_approval_prompt(self, task: TaskFile) -> str:
         if self.cfg.risk_policy != "allow":
@@ -836,7 +839,10 @@ class TaskLoopRunner:
     def verify_suffix(self) -> str:
         return f"""自动任务循环输出要求：
 - 保留简明验收报告，尤其是不通过时的失败摘要、阻塞项、文件路径和验证缺口。
-- 工程质量不达标时必须写清楚质量阻塞点，供下一轮“全部全面修复”使用。
+- 工程质量不达标时必须写清楚本 task 范围内的质量阻塞点，供下一轮 repair retry 精准修复。
+- 验证边界不随 retry 次数变化；普通 task 的 retry 仍以当前 task manifest 的 `Validation` 为上限。
+- 除非当前 task manifest 明确要求宽门禁，否则不要把失败、证据不足或 `core/**` 改动解释成必须运行
+  `./dev check all`、`./dev check core` 或 `cargo test --workspace`。
 - 当前验收发生在 runner 写入 completed progress 和 Git checkpoint 之前；不要因为 `progress.json`
   仍是 `in_progress`、新增文件尚未被 `git add`、或 `git_checkpoint_status` 尚未写入而判定不通过。
 - 你仍需检查当前工作区是否有与本 task 无关、危险或无法解释的脏改动；真实功能、验证命令、
@@ -952,7 +958,7 @@ class TaskLoopRunner:
                 return
             self.retry_total += 1
             log_event("RETRY", f"{task.label} failed verify, entering repair retry...")
-            self.record_task_summary(task, "retrying", attempt, copy_log, verify_log, "验收失败，下一轮全部全面修复")
+            self.record_task_summary(task, "retrying", attempt, copy_log, verify_log, "验收失败，下一轮按本 task Validation 上限精准修复")
             self.print_task_progress("RETRY", task, attempt, copy_log, verify_log)
             if self.cfg.max_retries > 0 and attempt >= self.cfg.max_retries:
                 self.mark_progress(task, "failed", f"达到最大重试次数：MAX_RETRIES={self.cfg.max_retries}", copy_log, verify_log, attempt)

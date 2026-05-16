@@ -15,6 +15,7 @@ from scripts.dev_tools.checks import run_skills_check
 from scripts.dev_tools.discussion import discussion_artifacts, validate_discussion_artifacts
 from scripts.dev_tools.changes import write_artifacts
 from scripts.dev_tools.workflow_init import init_artifacts
+from scripts.task_loop.runner import RuntimeConfig, TaskFile, TaskLoopRunner
 
 from . import git as git_helpers
 from .actions import ACTIONS, COMMAND_ALIASES, MENUS, SHORTCUT_ALIASES, validate_actions
@@ -31,6 +32,8 @@ class CheckFailure(RuntimeError):
 PHASE4_STAGE_CLOSEOUT_LABELS = {"4-1/task-143", "4-2/task-79", "4-3/task-165"}
 COPY_READY_FULL_GATE_BOUNDARY = "不得自行升级到 `cargo test --workspace`"
 COPY_READY_NO_WORKSPACE_FALLBACK = "不要用 `cargo test --workspace` 兜底"
+RETRY_VALIDATION_UPPER_BOUND = "仍以当前 task manifest 的 `Validation` 为上限"
+RETRY_NO_BROAD_GATE_ESCALATION = "不要因为 retry、证据不足、上一次 verify 失败或 `core/**` 改动"
 
 
 def log(message: str) -> None:
@@ -261,6 +264,29 @@ def check_static(h: Harness) -> None:
     if saved_lang_mode(pref_root) != "zh":
         raise CheckFailure("dev config did not persist zh language mode")
     assert_exists(config_path(pref_root), "dev console local config")
+    check_retry_validation_boundary(h)
+
+
+def check_retry_validation_boundary(h: Harness) -> None:
+    log("retry validation boundary")
+    verify_log = h.tmp / "retry-verify.log"
+    verify_log.write_text("验证失败：缺少 targeted test 证据。\nVERIFY_RESULT: FAIL\n", encoding="utf-8")
+    task = TaskFile(
+        phase="phase-4",
+        task_name="4-1-task-13",
+        label="4-1/task-13",
+        copy_file=h.tmp / "copy.md",
+        verify_file=h.tmp / "verify.md",
+        risk="High",
+    )
+    runner = TaskLoopRunner(RuntimeConfig(root_dir=h.root))
+    retry_prompt = runner.build_copy_retry_prompt(task, 2, verify_log)
+    verify_suffix = runner.verify_suffix()
+    for text, label in [(retry_prompt, "copy retry prompt"), (verify_suffix, "verify suffix")]:
+        assert_contains(text, RETRY_VALIDATION_UPPER_BOUND, label)
+        assert_contains(text, "当前 task manifest", label)
+        assert_not_contains(text, "全部全面修复", label)
+    assert_contains(retry_prompt, RETRY_NO_BROAD_GATE_ESCALATION, "copy retry prompt no broad gate escalation")
 
 
 def check_repo_health(h: Harness) -> None:
