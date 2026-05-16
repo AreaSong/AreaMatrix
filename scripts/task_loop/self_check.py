@@ -29,6 +29,8 @@ class CheckFailure(RuntimeError):
 
 
 PHASE4_STAGE_CLOSEOUT_LABELS = {"4-1/task-143", "4-2/task-79", "4-3/task-165"}
+COPY_READY_FULL_GATE_BOUNDARY = "不得自行升级到 `cargo test --workspace`"
+COPY_READY_NO_WORKSPACE_FALLBACK = "不要用 `cargo test --workspace` 兜底"
 
 
 def log(message: str) -> None:
@@ -274,6 +276,12 @@ def check_exported_prompt_validation_strategy(h: Harness) -> None:
     for root in [h.root / "tasks/prompts/_shared/copy-ready", h.root / "tasks/prompts/_shared/verify-ready"]:
         phase4_dir = root / "phase-4"
         for path in sorted(phase4_dir.glob("*.md")):
+            text = path.read_text(encoding="utf-8")
+            if root.name == "copy-ready":
+                if COPY_READY_FULL_GATE_BOUNDARY not in text:
+                    raise CheckFailure(f"copy-ready prompt lost full-gate boundary: {path.relative_to(h.root)}")
+                if COPY_READY_NO_WORKSPACE_FALLBACK not in text:
+                    raise CheckFailure(f"copy-ready prompt lost no-workspace-fallback rule: {path.relative_to(h.root)}")
             label = export_label(path)
             validation = exported_validation_block(path)
             if not validation:

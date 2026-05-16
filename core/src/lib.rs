@@ -23,6 +23,7 @@ mod repo_scan;
 pub mod search;
 pub mod storage;
 pub mod sync;
+mod tags;
 pub mod tree;
 
 pub use api::*;
@@ -32,3 +33,4 @@ pub use error::{
     ErrorRecoverability, ErrorSeverity,
 };
 pub use search::*;
+pub use tags::{add_tag, list_tags, remove_tag, TagRecord, TagSet};

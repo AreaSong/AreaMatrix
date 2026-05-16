@@ -100,6 +100,15 @@ namespace area_matrix {
     );
 
     [Throws=CoreError]
+    TagSet add_tag(string repo_path, i64 file_id, string tag);
+
+    [Throws=CoreError]
+    TagSet remove_tag(string repo_path, i64 file_id, string tag);
+
+    [Throws=CoreError]
+    TagSet list_tags(string repo_path, i64 file_id);
+
+    [Throws=CoreError]
     FileEntry get_file(string repo_path, i64 file_id);
 
     [Throws=CoreError]
@@ -315,6 +324,23 @@ dictionary SavedSearch {
     string? color;
     boolean pinned;
     i64 created_at;
+    i64 updated_at;
+};
+
+dictionary TagRecord {
+    string value;
+    string label;
+    i64 file_count;
+    boolean selected;
+    boolean disabled;
+    i64 updated_at;
+};
+
+dictionary TagSet {
+    i64 file_id;
+    sequence<TagRecord> file_tags;
+    sequence<TagRecord> available_tags;
+    sequence<TagRecord> recent_tags;
     i64 updated_at;
 };
 
