@@ -7416,14 +7416,25 @@
     "4-1/task-21": {
       "attempts": 1,
       "copy_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260516_181736/phase-4/4-1-task-21-copy-attempt-1.log",
+      "git_branch": "codex/areamatrix-task-loop-20260501_132850",
+      "git_changed_files": [
+        ".codex/task-loop-logs/20260516_181736/",
+        ".codex/task-loop-runs/20260516_181736/",
+        ".codex/task-loop-runs/index.json",
+        "tasks/prompts/_shared/progress.json"
+      ],
+      "git_checkpoint_status": "committed",
+      "git_commit": "52758cf0b30260983b6093f8c91af0fbef7d6334",
+      "git_push_status": "not_requested",
+      "git_remote": "",
       "note": "自动执行验收通过：attempt=1",
       "risk": "High",
       "run_id": "20260516_181736",
       "status": "completed",
-      "updated_at": "2026-05-16T10:38:06.070610+00:00",
+      "updated_at": "2026-05-16T10:38:06.296659+00:00",
       "verify_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260516_181736/phase-4/4-1-task-21-verify-attempt-1.log"
     }
   },
-  "updated_at": "2026-05-16T10:05:13.896707+00:00",
+  "updated_at": "2026-05-16T10:38:06.296662+00:00",
   "version": 1
 }
