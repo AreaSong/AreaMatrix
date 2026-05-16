@@ -46,7 +46,7 @@ pub(crate) use rename::{
     rename_active_file, rename_indexed_display_name, rollback_renamed_active_file,
 };
 pub(crate) use saved_search::{
-    create_saved_search_row, delete_saved_search_row, list_saved_search_rows,
+    create_saved_search_row, delete_saved_search_row, get_saved_search_row, list_saved_search_rows,
     update_saved_search_row,
 };
 pub(crate) use scan::*;

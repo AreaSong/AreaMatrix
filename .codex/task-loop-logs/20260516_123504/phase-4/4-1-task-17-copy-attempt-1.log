@@ -1,0 +1,46 @@
+一、执行结论
+
+已完成 `4-1/task-17`。
+
+二、执行范围
+
+单任务：C2-04 smart-lists Core implementation。
+
+修改 / 新增文件：
+- `core/src/search/saved_search.rs`
+- `core/src/db/saved_search.rs`
+- `core/src/db/mod.rs`
+- `core/tests/smart_list_implementation.rs`（当前为新增未跟踪文件，已被验证命令编译运行）
+
+未触碰 `apps/**`。`core/area_matrix.udl` 已与文档一致，本任务未改。
+
+三、完成情况
+
+- 只实现 C2-04：通过。`run_smart_list` 只做 Smart List 执行，没有实现相邻 C2 能力。
+- 输入 / 输出 / DB / 文件系统 / 错误映射：通过。输入为 saved search id + pagination，输出复用 `SearchResultPage`；DB 只读取 `saved_searches` 与 search 查询数据；缺失 id 映射 `FileNotFound`，非法输入映射 `Config`，DB 读失败走 `Db`。
+- Rust Core 不依赖平台 UI API：通过。
+- 最小测试支撑：通过。覆盖真实查询分页、缺失 saved search、失效 query diagnostics、失效 filter，且断言不写用户文件和相关 metadata。
+
+四、工程质量
+
+实现复用已有 `search_files` 真实路径，没有 mock、硬编码通过态或一次性脚本逻辑。新增 DB helper 是按 id 只读读取 saved search，`run_smart_list` public API 已有 rustdoc 和错误说明。错误路径显式处理，快照测试覆盖不写文件、不写 change_log、不改 saved search rows 等安全边界。
+
+五、验证情况
+
+已运行并通过：
+- `cargo fmt --manifest-path core/Cargo.toml --all`
+- `./dev check task 4-1/task-17`
+
+`./dev check task 4-1/task-17` 内部证据：
+- `prompt_pipeline.py doctor`: OK，tasks/manifests 均为 637
+- `git diff --check`: OK
+- `cargo fmt --all -- --check`: OK
+- `cargo clippy --all-targets --all-features -- -D warnings`: OK
+- `cargo test --workspace smart_list -- --nocapture`: OK，`smart_list_contract_api` 3 个测试通过，`smart_list_implementation` 4 个测试通过
+
+六、风险与后续
+
+剩余风险：未做 macOS UI 接入，这符合本任务“不做页面接入”的边界。当前工作区存在大量本任务外的既有改动，我没有回退或触碰它们。
+
+建议下一个任务：继续 `4-1/task-18`，按队列应是 C2-04 failure-edge / validation 相关闭环。
+

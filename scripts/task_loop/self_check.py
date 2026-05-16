@@ -28,6 +28,9 @@ class CheckFailure(RuntimeError):
     pass
 
 
+PHASE4_STAGE_CLOSEOUT_LABELS = {"4-1/task-143", "4-2/task-79", "4-3/task-165"}
+
+
 def log(message: str) -> None:
     print(f"[task-loop-check] {message}")
 
@@ -70,6 +73,24 @@ def assert_not_exists(path: Path, label: str) -> None:
 def assert_exists(path: Path, label: str) -> None:
     if not path.exists():
         raise CheckFailure(f"missing path for {label}: {path}")
+
+
+def export_label(path: Path) -> str:
+    batch, number = path.stem.rsplit("-task-", 1)
+    return f"{batch}/task-{number}"
+
+
+def exported_validation_block(path: Path) -> str:
+    text = path.read_text(encoding="utf-8")
+    marker = "## 任务要求的验证"
+    start = text.find(marker)
+    if start < 0:
+        return ""
+    fence_start = text.find("```bash", start)
+    if fence_start < 0:
+        return text[start : start + 400]
+    fence_end = text.find("```", fence_start + len("```bash"))
+    return text[fence_start:fence_end] if fence_end >= 0 else text[fence_start : fence_start + 400]
 
 
 class Harness:
@@ -245,6 +266,27 @@ def check_repo_health(h: Harness) -> None:
     if run_skills_check(h.root) != 0:
         raise CheckFailure("skill health failed")
     h.run([h.python, "tasks/prompts/_shared/prompt_pipeline.py", "doctor"])
+    check_exported_prompt_validation_strategy(h)
+
+
+def check_exported_prompt_validation_strategy(h: Harness) -> None:
+    log("exported prompt validation strategy")
+    for root in [h.root / "tasks/prompts/_shared/copy-ready", h.root / "tasks/prompts/_shared/verify-ready"]:
+        phase4_dir = root / "phase-4"
+        for path in sorted(phase4_dir.glob("*.md")):
+            label = export_label(path)
+            validation = exported_validation_block(path)
+            if not validation:
+                raise CheckFailure(f"missing exported validation block: {path.relative_to(h.root)}")
+            if label in PHASE4_STAGE_CLOSEOUT_LABELS:
+                if "./dev check all" not in validation:
+                    raise CheckFailure(f"phase-4 closeout prompt lost broad validation: {path.relative_to(h.root)}")
+                continue
+            expected = f"./dev check task {label}"
+            if expected not in validation:
+                raise CheckFailure(f"phase-4 exported prompt missing task validation {expected}: {path.relative_to(h.root)}")
+            if "./dev check all" in validation:
+                raise CheckFailure(f"phase-4 exported prompt uses broad validation for atomic task: {path.relative_to(h.root)}")
 
 
 def check_template_changes(h: Harness) -> None:

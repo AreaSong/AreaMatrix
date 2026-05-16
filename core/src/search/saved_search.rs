@@ -192,10 +192,18 @@ pub fn run_smart_list(
     saved_search_id: i64,
     pagination: SearchPagination,
 ) -> CoreResult<SearchResultPage> {
-    validate_saved_search_repo_path(&repo_path)?;
+    let repo = validate_saved_search_repo_path(&repo_path)?;
     validate_saved_search_id(saved_search_id)?;
     validate_smart_list_pagination(&pagination)?;
-    Err(CoreError::db("smart list execution is not implemented"))
+    let saved = db::get_saved_search_row(&repo, saved_search_id)?;
+    validate_smart_list_query_state(&saved.query)?;
+    super::search_files(
+        repo_path,
+        saved.query.query,
+        saved.query.filter,
+        saved.query.sort,
+        pagination,
+    )
 }
 
 pub(crate) fn validate_saved_search_id(id: i64) -> CoreResult<()> {
@@ -245,6 +253,12 @@ fn validate_saved_search_query(query: &SavedSearchQuery) -> CoreResult<()> {
             "saved search query contains parser diagnostics",
         ));
     }
+    repo::validate_current_path(&query.filter)
+        .map_err(|_| CoreError::config("saved search filter state is invalid"))?;
+    validation::validate_filter(&query.filter)
+}
+
+fn validate_smart_list_query_state(query: &SavedSearchQuery) -> CoreResult<()> {
     repo::validate_current_path(&query.filter)
         .map_err(|_| CoreError::config("saved search filter state is invalid"))?;
     validation::validate_filter(&query.filter)
