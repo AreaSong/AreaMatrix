@@ -24,6 +24,7 @@ Trigger it for `GIT_CHECKPOINT`, branch policy, dirty worktree preflight, PASS-t
 
 - [references/checkpoint-policy.md](references/checkpoint-policy.md): branch, commit, push, dirty worktree, and recovery policy.
 - [references/review-checklist.md](references/review-checklist.md): PASS-time diff review and commit evidence checklist.
+- [../../references/codex-automations-cloud-worktrees-gate.md](../../references/codex-automations-cloud-worktrees-gate.md): Cloud diff apply, Automation background runs, and Worktree isolation must not bypass PASS-time checkpoint policy.
 
 ## Workflow
 

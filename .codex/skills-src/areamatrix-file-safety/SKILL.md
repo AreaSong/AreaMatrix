@@ -29,6 +29,8 @@ Trigger it for non-empty folder adoption, import, staging recovery, DB metadata,
 
 - [references/risk-scenarios.md](references/risk-scenarios.md): Mission-Critical scenarios and required preflight.
 - [references/acceptance-checklist.md](references/acceptance-checklist.md): filesystem, DB, rollback, and forbidden-touch evidence.
+- [../../references/codex-automations-cloud-worktrees-gate.md](../../references/codex-automations-cloud-worktrees-gate.md): route Automation / Cloud / Worktree proposals through file-safety when user files, privacy, remote calls, credentials, or destructive actions are involved.
+- [../../references/ui-evidence-tool-templates.md](../../references/ui-evidence-tool-templates.md): UI / GUI / browser evidence boundaries for real user files, privacy, remote websites, and high-impact UI actions.
 - [../areamatrix-doc-sync/SKILL.md](../areamatrix-doc-sync/SKILL.md): source docs and Core API / UDL alignment for safety behavior.
 - [../areamatrix-validation-driver/SKILL.md](../areamatrix-validation-driver/SKILL.md): validation selection for safety-sensitive changes.
 

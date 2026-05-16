@@ -22,6 +22,7 @@ Trigger it for questions about `./task-loop`, `./dev` runner actions, copy-ready
 - [references/runbook.md](references/runbook.md): execution modes, start points, logs, and progress state.
 - [references/failure-recovery.md](references/failure-recovery.md): failed verify, blocked tasks, stale progress, and legacy state recovery.
 - [../../references/debugging-failure-attribution-runbook.md](../../references/debugging-failure-attribution-runbook.md): shared copy / verify / validation / runner / checkpoint failure attribution order.
+- [../../references/codex-automations-cloud-worktrees-gate.md](../../references/codex-automations-cloud-worktrees-gate.md): why Automations / Cloud / Worktrees must not become a second task-loop runner or state surface.
 - [../areamatrix-git-checkpoint/SKILL.md](../areamatrix-git-checkpoint/SKILL.md): Git checkpoint policy for PASS tasks.
 - [../areamatrix-validation-driver/SKILL.md](../areamatrix-validation-driver/SKILL.md): choose checks when runner or prompt infrastructure changed.
 - [../areamatrix-workflow-planning/SKILL.md](../areamatrix-workflow-planning/SKILL.md): keep future v* planning outside the live queue until promoted.

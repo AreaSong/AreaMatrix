@@ -12,17 +12,19 @@ Trigger it for new `v*` versions, discussion gate decisions, workflow templates,
 ## Read first
 
 1. [AGENTS.md](../../../AGENTS.md)
-2. [workflow/AGENTS.md](../../../workflow/AGENTS.md)
-3. [workflow/README.md](../../../workflow/README.md)
-4. [workflow/templates/README.md](../../../workflow/templates/README.md)
-5. [tasks/backlog/README.md](../../../tasks/backlog/README.md) when backlog prompt packages are involved.
-6. [tasks/prompts/README.md](../../../tasks/prompts/README.md) when prompt drafts or live queue boundaries are involved.
+2. [.ai-governance/workflows/external-capability-admission.md](../../../.ai-governance/workflows/external-capability-admission.md) when external Codex capabilities, Vibe-Skills, plugins, MCP, Cloud, Automations, Worktrees, or new runtimes are involved.
+3. [workflow/AGENTS.md](../../../workflow/AGENTS.md)
+4. [workflow/README.md](../../../workflow/README.md)
+5. [workflow/templates/README.md](../../../workflow/templates/README.md)
+6. [tasks/backlog/README.md](../../../tasks/backlog/README.md) when backlog prompt packages are involved.
+7. [tasks/prompts/README.md](../../../tasks/prompts/README.md) when prompt drafts or live queue boundaries are involved.
 
 ## References
 
 - [references/discussion-gate.md](references/discussion-gate.md): required discussion files and approval checks.
 - [references/version-lifecycle.md](references/version-lifecycle.md): v* lifecycle from docs to promotion preview.
 - [../../references/planning-handoff-runbook.md](../../references/planning-handoff-runbook.md): handoff-safe planning fields, copy-ready / verify-ready split, and backlog boundary.
+- [../../references/codex-automations-cloud-worktrees-gate.md](../../references/codex-automations-cloud-worktrees-gate.md): Automations / Cloud / Worktrees trigger conditions, forbidden writes, owners, and validation.
 - [../areamatrix-doc-sync/SKILL.md](../areamatrix-doc-sync/SKILL.md): source-of-truth alignment for docs and planning artifacts.
 - [../areamatrix-task-loop/SKILL.md](../areamatrix-task-loop/SKILL.md): live execution begins only after approved promotion into `tasks/prompts/**`.
 

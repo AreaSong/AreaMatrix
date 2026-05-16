@@ -31,7 +31,7 @@ live 执行 -> tasks/prompts/** + ./task-loop
 | 能力 | 默认结论 | 接入前必须证明 |
 |---|---|---|
 | Vibe-Skills | 候选能力池和治理参考 | 过 `.ai-governance/workflows/external-capability-admission.md`；明确缺口、去重、owner、触发、验证；不得引入 Vibe runtime |
-| hooks | 只读 guardrail 候选 | 只提醒或阻断明显风险；不写文件、不启动/停止 runner、不 commit/push/reset/clean/stash；需要 `/hooks` review / trust |
+| hooks | warn-only / read-only guardrail 候选 | 只提醒、补充上下文或做只读检查；不 block/deny/continue，不写文件、不启动/停止 runner、不 commit/push/reset/clean/stash；需要 `/hooks` review / trust |
 | subagents | explicit-only | 只读探索可并行；写入必须有 disjoint write set、owner、允许/禁止路径和主 agent 复核 |
 | Computer Use | macOS UI smoke 补证 | 只补真实窗口/点击/截图证据；不替代 `xcodebuild`、Rust tests、prompt verify；不点密码、系统权限、隐私或真实用户文件破坏性确认 |
 | Automations / Cloud / Worktrees / SDK / app-server / remote-control | 暂不接管 v1 主线 | 不创建第二套 runner、progress、queue、checkpoint 或 state；如要影响主线，先走 workflow planning gate 和人工确认 |

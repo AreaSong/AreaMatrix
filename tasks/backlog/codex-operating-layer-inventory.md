@@ -34,6 +34,7 @@
 | Hooks guardrail runbook | `.codex/references/hooks-guardrail-runbook.md`，受 `.ai-governance/workflows/prompt-task-runtime.md` 约束 | `areamatrix-enterprise-governance` | 已吸收为 runbook；未启用 repo hook | 否；不得替代 verify / CI / checkpoint |
 | Subagent boundaries runbook | `.codex/references/subagent-boundaries-runbook.md`，受 `.ai-governance/workflows/subagent-boundaries.md` 约束 | `areamatrix-workflow-planning` | 已吸收 OpenAI subagent 规则；Vibe taxonomy 只参考 | 否；explicit-only，不接管主线 |
 | Computer Use macOS UI smoke runbook | `.codex/references/computer-use-macos-ui-smoke-runbook.md`，受 docs / validation gate 约束 | `areamatrix-validation-driver` | 已吸收为 UI smoke 补证方法 | 否；只补 UI 证据，不替代命令门禁 |
+| Browser / Chrome / Computer Use UI evidence templates | `.codex/references/ui-evidence-tool-templates.md`，受 validation / file-safety gate 约束 | `areamatrix-validation-driver` + `areamatrix-file-safety` | 已吸收为 UI / GUI / web 补证模板 | 否；不启动 UI 自动化，不替代命令门禁，不保存真实用户数据或截图 |
 | Vibe-Skills capability screening | `.codex/references/vibe-skills-capability-screening.md`，受 admission gate 约束 | `areamatrix-workflow-planning` | 候选筛选记录；部分方法已吸收 | 否；Vibe runtime 不进入主线 |
 | Codex references index | `.codex/references/index.md` | `areamatrix-doc-sync` | 导航索引 | 否；只提升可发现性 |
 
@@ -76,6 +77,7 @@
 | OpenAI Docs MCP / official docs rule | 已吸收 | `.ai-governance/core/agent-principles.md`、`.codex/references/codex-workflow-and-tools.md` | 只影响 OpenAI / Codex 信息核对 |
 | Hooks | 已吸收为 runbook，未启用 hook | `.codex/references/hooks-guardrail-runbook.md` | 无；不得替代验收 |
 | Computer Use | 已吸收为 macOS UI smoke 补证 | `.codex/references/computer-use-macos-ui-smoke-runbook.md` | 无；只补 UI 证据 |
+| Browser / Chrome / Computer Use templates | 已吸收为 UI / GUI / web 补证模板 | `.codex/references/ui-evidence-tool-templates.md` | 无；不替代命令门禁，不进入默认主线 |
 | Subagents | 已吸收 explicit-only / write-set 边界 | `.ai-governance/workflows/subagent-boundaries.md`、`.codex/references/subagent-boundaries-runbook.md` | 无；不接管 runner / progress / checkpoint |
 | `systematic-debugging` | 已吸收方法价值 | `.codex/references/debugging-failure-attribution-runbook.md` | 影响失败归因纪律 |
 | `verification-before-completion` | 已吸收方法价值 | `.codex/references/completion-evidence-checklist.md` | 影响完成声明纪律 |

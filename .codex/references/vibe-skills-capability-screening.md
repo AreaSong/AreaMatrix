@@ -16,7 +16,7 @@ AGENTS.md / .ai-governance
 -> repo-local skills
 ```
 
-- 专业垂直 skills 暂不进入默认工作流，例如科研、金融、法律、图像、视频、ML、数据库或云平台类 skill。未来只有在具体任务明确需要时，才按 `.ai-governance/workflows/external-capability-admission.md` 单项评估。
+- 专业垂直 skills 暂不进入默认工作流，例如科研、金融、法律、图像、视频、ML、数据库或云平台类 skill。未来只有在具体任务明确需要时，才按 `.ai-governance/workflows/external-capability-admission.md` 单项评估；可执行触发矩阵见 [Vibe Professional Skill Trigger Matrix](vibe-professional-skill-trigger-matrix.md)。
 - 本轮只吸收可复用、可验证、可去冗余的方法价值；不吸收外部 runtime、命令语义、目录布局、自动编排器或工作区记忆机制。
 
 ## 读取证据
@@ -131,7 +131,7 @@ AGENTS.md / .ai-governance
 
 - 不吸收 `vibe`、`vibe-upgrade`、canonical-entry、`.vibeskills/**` artifacts、VCO stage state machine、Vibe memory plane 或 specialist router。
 - 不吸收 Vibe 的全量 bundled skills catalog。
-- 不吸收专业垂直 skills 到默认 AreaMatrix workflow。后续若出现具体任务，例如科研数据分析、视频处理、图像生成、云平台部署、数据库专项接入，必须单独走 external capability admission gate。
+- 不吸收专业垂直 skills 到默认 AreaMatrix workflow。后续若出现具体任务，例如科研数据分析、视频处理、图像生成、云平台部署、数据库专项接入，必须按 [Vibe Professional Skill Trigger Matrix](vibe-professional-skill-trigger-matrix.md) 先判定类别、owner 和触发证据，再单独走 external capability admission gate。
 - 不允许 Vibe-Skills 通过 catalog 体量获得 source-of-truth 地位；AreaMatrix 的产品、架构、API、UX、AI 治理和 live queue 源事实不变。
 
 ## 最小验证

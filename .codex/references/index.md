@@ -18,8 +18,11 @@ Codex 在 AreaMatrix 中处理任务时，按以下顺序定位上下文：
 - Review and threat model runbook：`.codex/references/review-and-threat-model-runbook.md`
 - Codex hooks guardrail runbook：`.codex/references/hooks-guardrail-runbook.md`
 - Codex subagent boundaries runbook：`.codex/references/subagent-boundaries-runbook.md`
+- Codex Automations / Cloud / Worktrees gate：`.codex/references/codex-automations-cloud-worktrees-gate.md`
 - Computer Use macOS UI smoke runbook：`.codex/references/computer-use-macos-ui-smoke-runbook.md`
+- Browser / Chrome / Computer Use UI evidence templates：`.codex/references/ui-evidence-tool-templates.md`
 - Vibe-Skills 横向能力筛选矩阵：`.codex/references/vibe-skills-capability-screening.md`
+- Vibe 专业 skill 触发矩阵：`.codex/references/vibe-professional-skill-trigger-matrix.md`
 - Codex 工作层 inventory：`tasks/backlog/codex-operating-layer-inventory.md`
 - 外部能力接入门禁：`.ai-governance/workflows/external-capability-admission.md`
 - 架构总览：`docs/architecture/overview.md`

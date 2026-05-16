@@ -72,6 +72,19 @@
 5. 如果要影响 `./dev`、`./task-loop`、progress、checkpoint 或用户文件安全，按高风险变更处理，先说明影响、风险、验证和回滚，再等待明确确认。
 6. Subagent pattern 只能作为当前任务内的并行协作方式或候选 role taxonomy；不得变成默认隐式执行器、第二 runner 或绕过主 agent 复核的验收机制。具体边界见 [Subagent Boundaries](subagent-boundaries.md)。
 
+## Codex Automations / Cloud / Worktrees Gate
+
+Codex Automations、Codex Cloud 和 Codex App Worktrees 都属于外部执行能力。三者即使由 OpenAI 官方提供，也必须先通过本 admission gate，不能凭能力存在直接进入 AreaMatrix 主线。
+
+| 能力 | AreaMatrix 当前结论 | 允许触发条件 | 禁止写入 / 禁止替代 |
+|---|---|---|---|
+| Automations | Trigger-based only | 只允许提醒、周期性只读检查、状态汇报或人工 triage 候选；创建或更新 automation 必须另行明确确认 | 不写 `tasks/prompts/**`、`tasks/prompts/_shared/progress.json`、task-loop logs、run summaries、runner lock、Git checkpoint 状态；不启动、停止、恢复或替代 `./task-loop` |
+| Cloud | Defer | 仅作为未来隔离执行、review 或 PR 候选；启用前必须有 local environment、凭证、隐私、网络、diff apply、local validation 和 checkpoint 方案 | 不作为 AreaMatrix canonical runtime；不直接 `codex apply` 到主 checkout；不写 live queue、progress、logs 或 checkpoint |
+| Worktrees | Defer | 仅作为隔离实验、并行独立 spike 或未来版本规划候选 | 不作为 live queue 默认执行环境；不绕过 `workflow/**` planning gate、promotion gate 或 live task label；不写主线 progress、logs 或 checkpoint |
+| 第二 runner / 第二 state surface | Reject | 无 | 任何会把 automation、cloud 或 worktree 变成第二套 runner、progress、queue、checkpoint、promotion 或 `./task-loop` 替代品的设计直接失败 |
+
+Automations 是无人值守后台运行能力，必须按默认 sandbox 和当前组织策略评估；local mode 可以直接修改正在编辑的文件，因此 AreaMatrix 默认只允许非写入候选。Cloud 会改变执行环境，必须先证明依赖安装、凭证处理、隐私边界、网络策略、diff 应用和本地 checkpoint 可控。Worktrees 只能提供隔离，不提供 AreaMatrix 任务语义；它不得重新解释 `workflow/**` gate 或抢占 `tasks/prompts/**` live label。
+
 ## 最小验证
 
 外部能力 admission gate 或相关索引变更至少运行：

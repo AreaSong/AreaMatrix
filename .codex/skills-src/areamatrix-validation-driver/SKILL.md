@@ -26,6 +26,7 @@ Trigger it for validation selection, final evidence reports, blocked checks, pro
 - [references/validation-matrix.md](references/validation-matrix.md): path-to-command validation mapping.
 - [references/report-format.md](references/report-format.md): required validation report structure.
 - [../../references/completion-evidence-checklist.md](../../references/completion-evidence-checklist.md): evidence checklist before claiming done, fixed, passing, merge-ready, or deliverable.
+- [../../references/ui-evidence-tool-templates.md](../../references/ui-evidence-tool-templates.md): Browser / Chrome / Computer Use trigger conditions, forbidden actions, and UI evidence format.
 - [../../references/debugging-failure-attribution-runbook.md](../../references/debugging-failure-attribution-runbook.md): decide whether a failure belongs to validation or another task-loop / drift / safety layer.
 - [../areamatrix-doc-sync/SKILL.md](../areamatrix-doc-sync/SKILL.md): source-of-truth and drift checks when docs, APIs, UDL, prompts, or Codex materials change.
 - [../areamatrix-file-safety/SKILL.md](../areamatrix-file-safety/SKILL.md): additional evidence for user-file, DB, staging, recovery, reindex, FSEvents, or iCloud risks.

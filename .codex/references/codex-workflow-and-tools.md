@@ -388,7 +388,7 @@ notify = [
 - 不适合把核心验收唯一地压在 hooks 上；官方说明 `PreToolUse` 是 guardrail，不是完整 enforcement boundary，且当前不能拦截所有 shell 路径、`WebSearch` 或其他非 shell / 非 MCP 工具。
 - 当前 release 行为以官方 Hooks 页面为准；schema `main` 分支可能包含尚未发布字段。
 - 只有 `type: "command"` handler 会运行；`prompt`、`agent` 会被解析但跳过，`async: true` command hook 也会被跳过。
-- 如果给 AreaMatrix 增加 hooks，优先考虑只读检查，例如防止 live runner 重复启动、提示 dirty worktree 会挡 checkpoint、或在 session start 打印当前 `./dev status` 摘要。
+- AreaMatrix 当前默认工作层只允许 warn-only / read-only hooks：可以提醒重复 runner、dirty worktree、危险边界或验证缺口，但不使用 block / deny / continue，不自动改文件或改变审批结果。
 - P1 repo-local hooks guardrail 的具体设计见 [hooks guardrail runbook](hooks-guardrail-runbook.md)。当前结论是先保留 runbook，不新增 `.codex/hooks.json`；未来如启用，必须只读、需 `/hooks` review / trust，并提供禁用和回滚路径。
 
 ## Computer Use
@@ -526,6 +526,8 @@ AGENTS.md / .ai-governance
 
 因此，任何优化都不得新增第二套 runner、progress、queue 或 promotion 机制。需要接入外部能力时，先经过 [.ai-governance 外部能力接入门禁](../../.ai-governance/workflows/external-capability-admission.md) 与 `workflow/` gate，并说明 source of truth、触发条件、验证方式、owner，以及是否影响 live 主线。
 
+Automations / Cloud / Worktrees 的细化门禁见 [Codex Automations / Cloud / Worktrees Gate](codex-automations-cloud-worktrees-gate.md)。当前结论是：Automations 只允许提醒、周期性只读检查和状态汇报候选；Cloud 只作为未来隔离执行候选；Worktrees 只作为隔离实验或并行独立任务候选。三者都不得写 `tasks/prompts/**`、progress、task-loop logs、run summaries、runner lock、checkpoint 或替代 `./task-loop`。
+
 ## AreaMatrix 对比矩阵
 
 本节把 OpenAI / Codex 官方能力版图对照到 AreaMatrix 当前项目体系。状态含义：
@@ -554,12 +556,12 @@ AGENTS.md / .ai-governance
 | Browser Use | Browser plugin、in-app browser feature | 部分已有 | 能力启用，但 AreaMatrix 是 macOS 原生 app，不是主验收面 | 不急补 | 用于 docs preview、localhost、file URL 验证 | 不替代 macOS app 测试 | P3 |
 | Chrome | Chrome plugin、chrome-devtools MCP | 部分已有 | 能力启用，适合登录态或真实 Chrome profile | 暂不制度化 | 需要 cookies、扩展或远程认证时可用 | 不处理敏感账号/支付自动化 | P3 |
 | Computer Use | computer-use plugin / MCP 已启用 | 部分已有 | 能力启用，但尚未纳入 macOS UI 验收 runbook | 建议补 | 为 SwiftUI 页面和交互提供真实 UI smoke 证据 | 不替代 `xcodebuild`；密码、权限、隐私需人工确认 | P1 |
-| Hooks | Codex hooks feature enabled；AreaMatrix 无 repo-local `.codex/hooks.json` | 缺失-建议补 | 当前靠人工记忆检查 live runner、dirty worktree、危险路径 | 建议补只读 hooks | 在 session start / pre-tool 提醒重复 runner、checkpoint 风险、危险边界 | hooks 是 guardrail，不是完整 enforcement boundary；不自动修改文件 | P1 |
+| Hooks | Codex hooks feature enabled；AreaMatrix 无 repo-local `.codex/hooks.json` | 缺失-建议补 | 当前靠人工记忆检查 live runner、dirty worktree、危险路径 | 建议补 warn-only / read-only hooks | 在 session start / pre-tool 提醒重复 runner、checkpoint 风险、危险边界 | hooks 是 guardrail，不是完整 enforcement boundary；不自动修改文件，不 block / deny / continue | P1 |
 | Plugin hooks | `plugin_hooks` disabled / under development | 暂不接入 | 官方和本机都显示仍在开发中 | 不补 | 等成熟后再评估 | 不依赖其做关键门禁 | P4 |
 | Subagents | Codex multi-agent feature enabled；已有边界 runbook | 已有边界 | 可用于读/审计/验证；并行写必须有 owner 和 disjoint write set | 不补主结构 | 加速大范围只读审计、日志归因、分模块验证 | 不碰 live runner / progress / checkpoint；不把同一 live task 拆给多个 writer | P2 |
-| Automations | Codex app automations 官方存在；项目用 `./task-loop` | 暂不接入 | v1 live queue 已有稳定 runner，接入 automations 会增加状态源 | 不补主线 | 未来可做提醒或周期性健康检查 | 不创建第二套进度源 | P4 |
-| Codex Cloud | `codex cloud` CLI 存在；AreaMatrix 当前本地 live runner | 暂不接入 | 当前需要保护本地 worktree、progress、checkpoint | 暂不接 | 未来可做离线 PR / review 实验 | 不绕过 `workflow/` gate 和 local validation | P4 |
-| Worktrees | 官方存在；AreaMatrix 直接跑当前 checkout | 暂不接入 | 当前 live runner 持有 lock，worktree 并行会放大状态复杂度 | 暂不接 | 未来可隔离 vN 规划或 spike | 不移动/归档 v1 live queue | P4 |
+| Automations | Codex app automations 官方存在；项目用 `./task-loop` | Trigger-based only | 官方 automations 是后台无人值守，local mode 可能修改正在编辑的文件；v1 live queue 已有稳定 runner | 不补主线 | 未来可做提醒、周期性只读检查或状态汇报候选 | 不写 repo state；不创建第二套进度源；不替代 `./task-loop` | P4 |
+| Codex Cloud | `codex cloud` CLI 存在；AreaMatrix 当前本地 live runner | 暂缓 | Cloud 会改变执行环境，需要 local env、凭证、隐私、网络、diff apply 和 checkpoint 方案 | 暂不接 | 未来可做隔离 review / PR 实验 | 不作为 canonical runtime；不绕过 `workflow/` gate 和 local validation | P4 |
+| Worktrees | 官方存在；AreaMatrix 直接跑当前 checkout | 暂缓 | Worktree 只能隔离文件变更，不能定义 AreaMatrix task 语义；并行会放大状态复杂度 | 暂不接 | 未来可隔离 vN 规划、spike 或独立并行任务 | 不作为 live queue 默认执行环境；不抢占 live task label | P4 |
 | Local Environments | 官方存在；AreaMatrix 用本机 dev tools | 仅记录 | 当前项目依赖 macOS/Xcode、本机状态和 task-loop | 不补 | 未来 Cloud/remote 执行前再设计 | 不把环境初始化写成破坏性脚本 | P4 |
 | GitHub Action | 官方存在；项目已有本地 `./dev check ...` 和 CI 治理 | 暂不接入 | 当前主要问题是 live queue 收口，不是 GitHub 触发 Codex | 暂不接 | 未来用于 PR review / repair bot | 不让 GitHub Action 修改 live progress | P4 |
 | IDE Extension / Web | 官方存在；项目主路径是 Codex app / CLI / local runner | 仅记录 | 对当前自动闭环不是必要入口 | 不补 | 作为个人使用入口即可 | 不作为验收证据源 | P4 |
@@ -576,12 +578,12 @@ AGENTS.md / .ai-governance
 | 优先级 | 建议动作 | 为什么现在做 | 不做会怎样 |
 |---|---|---|---|
 | P0 | 保护当前 `./task-loop` 主线，不启动第二 runner | 当前已有 live lock，且 dirty worktree 会挡 checkpoint | 状态源冲突，可能让 PASS task 无法 checkpoint |
-| P1 | 增加 repo-local 只读 hooks guardrail | 当前依赖人工记住 runner / dirty worktree / 危险路径边界 | 容易重复启动、误碰高风险路径或错过 checkpoint 风险 |
+| P1 | 增加 repo-local warn-only / read-only hooks guardrail | 当前依赖人工记住 runner / dirty worktree / 危险路径边界 | 容易重复启动、误碰高风险路径或错过 checkpoint 风险 |
 | P1 | 制定 Computer Use macOS UI smoke runbook | Phase 2/4 页面任务需要真实 UI 证据 | 验收仍偏命令层，缺少交互和窗口状态证据 |
 | P1 | 固化 OpenAI Docs MCP 使用规则 | 官方 Codex / model / API 更新快 | 容易用过期记忆判断“最新” |
 | P2 | 定义 Subagent 使用边界 | 大范围审计可以并行，但写入冲突风险高 | 并行 agent 可能互相覆盖或重复工作 |
 | P2 | 增加 Changelog / Feature Maturity 刷新流程 | Codex 能力变化快 | 文档会逐渐落后官网 |
-| P4 | 暂缓 Automations / Cloud / Worktrees / GitHub Action 接主线 | v1 live queue 仍在跑，本地 runner 已能闭环 | 过早接入会多一个状态系统 |
+| P4 | 暂缓 Automations / Cloud / Worktrees / GitHub Action 接主线 | v1 live queue 仍在跑，本地 runner 已能闭环 | 过早接入会多一个状态系统；Automations 仅允许非写入提醒 / 检查 / 汇报候选 |
 | P5 | 暂缓 SDK / app-server / remote-control / Slack / Linear | 当前不是平台化 Codex runtime 的阶段 | 增加复杂度但不提高当前验收质量 |
 
 ### 短期任务清单
@@ -593,14 +595,14 @@ AGENTS.md / .ai-governance
 | P0 | 主线保护 | 明确当前 `./dev + ./task-loop + tasks/prompts/**` 仍是唯一 live execution 主线 | Codex 官方 workflow / AreaMatrix 当前体系 | 文档规则和 backlog 任务边界 | 不新增第二 runner，不让 Vibe/Codex Automations/Cloud 接管 live queue |
 | P0 | 外部能力接入门禁 | 定义 Vibe-Skills 或其他外部 skills 的 admission gate | Vibe-Skills custom skill governance、Codex migrate/customization docs | [外部能力接入门禁](../../.ai-governance/workflows/external-capability-admission.md) | 目录存在不等于启用；外部 runtime 不得成为 AreaMatrix canonical runtime；必须说明 source of truth、触发条件、验证和 owner |
 | P1 | OpenAI Docs MCP 规则 | 固化“涉及 OpenAI/Codex/API/model 最新判断时优先查官方 MCP” | Codex 官方 docs、openaiDeveloperDocs MCP | `.ai-governance` 或 `.codex/references` 规则补充 | 以后不靠旧记忆声称最新 |
-| P1 | repo-local 只读 hooks | 设计只读 hooks guardrail，先提示 live runner、dirty worktree、危险路径和验证缺口 | Codex hooks | [hooks guardrail runbook](hooks-guardrail-runbook.md)；未来再评估 `.codex/hooks.json` | hooks 只提醒或阻断明显风险，不自动修改文件 |
+| P1 | repo-local warn-only / read-only hooks | 设计只读 hooks guardrail，先提示 live runner、dirty worktree、危险路径和验证缺口 | Codex hooks | [hooks guardrail runbook](hooks-guardrail-runbook.md)；未来再评估 `.codex/hooks.json` | hooks 只提醒或补充上下文，不自动修改文件，不 block / deny / continue |
 | P1 | Computer Use UI smoke | 为 macOS SwiftUI 任务补真实 UI smoke 路径 | Codex Computer Use | [Computer Use macOS UI smoke runbook](computer-use-macos-ui-smoke-runbook.md) | UI 任务除命令验证外有窗口、点击、截图或操作证据 |
 | P1 | AreaMatrix skills 强化 | 强化现有 7 个 repo-local skills 的触发和边界 | AreaMatrix 当前 skills | skills-src / index / validation matrix 的小步补强 | 不新增重复 skill；先复用现有 skill owner |
 | P2 | Subagent 边界 | 定义并行 agent 的使用边界、ownership 和禁止区 | Codex Subagents、Vibe subagent patterns | [subagent boundaries runbook](subagent-boundaries-runbook.md) / `.ai-governance` 规则 | 只读审计可并行；写入必须拆分 disjoint write set |
 | P2 | Vibe-Skills 横向能力筛选 | 从 Vibe-Skills 中筛选调试、TDD、验证、审查、安全、架构、文档类能力 | Vibe-Skills bundled skills | 候选吸收矩阵 | 每个候选标注吸收/不吸收/参考、原因和落点 |
 | P2 | 官方变更刷新 | 建立 Codex changelog / feature maturity 的刷新习惯 | Codex Releases / Feature Maturity | 轻量刷新步骤 | 每次更新“最新 Codex 工作流”前重新打开官方文档 |
 | P3 | Browser / Chrome 场景化 | 只为 docs preview、localhost、登录态网页建立使用边界 | Codex Browser / Chrome plugin | 场景说明 | 不把 Browser/Chrome 当 macOS app 主验收 |
-| P4 | Automations / Cloud / Worktrees 评估 | 暂缓接入主线，只记录未来评估条件 | Codex Automations / Cloud / Worktrees | future evaluation note | v1 live queue 完成前不新增状态源 |
+| P4 | Automations / Cloud / Worktrees gate | 暂缓接入主线，只记录未来评估条件和禁写边界 | Codex Automations / Cloud / Worktrees | [Automations / Cloud / Worktrees gate](codex-automations-cloud-worktrees-gate.md) | v1 live queue 完成前不新增状态源；三者先过 external admission |
 | P5 | SDK / app-server / remote-control | 仅记录，不进入近期实现 | Codex SDK / app-server / remote-control | 无近期交付 | 等需要平台化 Codex runtime 时再设计 |
 
 ### Vibe-Skills 吸收原则
@@ -625,7 +627,7 @@ AGENTS.md / .ai-governance
 
 中期：
 
-- 给 AreaMatrix 增加 repo-local hooks，但先只做只读提示和安全检查。
+- 给 AreaMatrix 增加 repo-local hooks，但先只做 warn-only / read-only 提示和安全检查。
 - 为 macOS UI task 增加 Computer Use 验收 runbook。
 - 将常用 task-loop 操作固化为更明确的 `./dev` guide。
 - 继续让 repo-local skills 承担治理知识，避免把规则散落在 prompt 里。
@@ -633,6 +635,7 @@ AGENTS.md / .ai-governance
 高风险边界：
 
 - 不用 hooks 自动修改用户文件。
+- 不用 hooks 自动启动/停止 runner、控制 Git、block / deny / continue 或替代 verify-ready。
 - 不用 Computer Use 自动处理密码、支付、系统权限、隐私授权。
 - 不在 v1 live queue 未完成前移动、重命名或归档 `tasks/prompts/**`。
 - 不把 `.codex/` 文档当作产品行为源事实。
