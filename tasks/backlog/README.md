@@ -52,3 +52,4 @@
 - [Vibe-Skills 横向能力吸收](prompts/vibe-skills-absorption/)
 - [Dev Backlog Tooling](prompts/dev-backlog-tooling/)
 - [Codex Operating Layer Closeout](prompts/codex-operating-layer-closeout/)
+- [Codex Advanced Non-invasive Layer](prompts/codex-advanced-noninvasive-layer/)

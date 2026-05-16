@@ -155,6 +155,8 @@ P1.4 owner 范围：
 
 第四批总收口提示词放在 [prompts/codex-operating-layer-closeout/](prompts/codex-operating-layer-closeout/)，用于盘点现有工作层、回归核对 source-of-truth / execution / state / skill owner 边界、沉淀短操作手册，并给出下一阶段路线。该 prompt 包不新增能力，不直接进入产品实现或 live queue。
 
+第五批高级非侵入提示词放在 [prompts/codex-advanced-noninvasive-layer/](prompts/codex-advanced-noninvasive-layer/)，用于把 hooks、Browser / Chrome / Computer Use、Automations / Cloud / Worktrees、Vibe 专业领域 skills 全部补成有判断、有门禁、有触发条件的状态。该 prompt 包不默认启用 hooks、automation、cloud、worktree 或 Vibe runtime，也不写 live queue。
+
 ## 验证
 
 本任务当前是规划记录，修改后至少运行：
