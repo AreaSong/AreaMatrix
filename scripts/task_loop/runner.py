@@ -139,6 +139,34 @@ def log_event(level: str, message: str) -> None:
     print(f"[ {timestamp()} ] [{level}] {message}")
 
 
+def log_live_snapshot(
+    *,
+    title: str,
+    stage: str,
+    task: "TaskFile",
+    attempt: int,
+    pid: int | str,
+    elapsed: str,
+    prompt_file: Path,
+    output_file: Path,
+    heartbeat_seconds: int,
+    command_text: str,
+) -> None:
+    log_event("RUN", title)
+    print(
+        f"  current task | stage={stage} | task={task.label} | attempt={attempt} | pid={pid} | elapsed={elapsed}",
+        flush=True,
+    )
+    print("  live log:", flush=True)
+    print(f"    prompt: {prompt_file}", flush=True)
+    print(f"    output: {output_file}", flush=True)
+    print(f"    state: {state.log_file_status(str(output_file))}", flush=True)
+    print(
+        f"  current command | heartbeat={heartbeat_seconds}s | elapsed={elapsed} | command={command_text}",
+        flush=True,
+    )
+
+
 def utc_now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
@@ -674,18 +702,32 @@ class TaskLoopRunner:
                 "pid": "",
             },
         )
-        log_event("EXEC", f"stage={stage} task={task.label} attempt={attempt}")
-        log_event("EXEC", f"command={command_text}")
-        log_event("EXEC", f"output_log={output_file}")
+        log_live_snapshot(
+            title="live activity started",
+            stage=stage,
+            task=task,
+            attempt=attempt,
+            pid="starting",
+            elapsed="0s",
+            prompt_file=prompt_file,
+            output_file=output_file,
+            heartbeat_seconds=self.cfg.activity_heartbeat_seconds,
+            command_text=command_text,
+        )
         proc = subprocess.Popen(command, stdin=subprocess.PIPE, text=True)
         start_monotonic = time.monotonic()
         state.write_lock_activity(self.cfg.lock_dir, {"status": "running", "pid": proc.pid})
-        log_event(
-            "ACTIVE",
-            (
-                f"stage={stage} task={task.label} attempt={attempt} pid={proc.pid} "
-                f"elapsed=0s log_state={state.log_file_status(str(output_file))}"
-            ),
+        log_live_snapshot(
+            title="live activity running",
+            stage=stage,
+            task=task,
+            attempt=attempt,
+            pid=proc.pid,
+            elapsed="0s",
+            prompt_file=prompt_file,
+            output_file=output_file,
+            heartbeat_seconds=self.cfg.activity_heartbeat_seconds,
+            command_text=command_text,
         )
         communicate_error: list[BaseException] = []
 
@@ -699,16 +741,22 @@ class TaskLoopRunner:
         worker.start()
         try:
             while worker.is_alive():
-                elapsed = state.human_duration(time.monotonic() - start_monotonic)
-                log_event(
-                    "ACTIVE",
-                    (
-                        f"stage={stage} task={task.label} attempt={attempt} pid={proc.pid} "
-                        f"elapsed={elapsed} log_state={state.log_file_status(str(output_file))} "
-                        f"command={command_text}"
-                    ),
-                )
                 time.sleep(self.cfg.activity_heartbeat_seconds)
+                if not worker.is_alive():
+                    break
+                elapsed = state.human_duration(time.monotonic() - start_monotonic)
+                log_live_snapshot(
+                    title="live activity heartbeat",
+                    stage=stage,
+                    task=task,
+                    attempt=attempt,
+                    pid=proc.pid,
+                    elapsed=elapsed,
+                    prompt_file=prompt_file,
+                    output_file=output_file,
+                    heartbeat_seconds=self.cfg.activity_heartbeat_seconds,
+                    command_text=command_text,
+                )
             worker.join()
         finally:
             state.write_lock_activity(

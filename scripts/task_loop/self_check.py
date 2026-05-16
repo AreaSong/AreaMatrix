@@ -1065,10 +1065,12 @@ fi
             "FAKE_CODEX_SLEEP_SECONDS": "2",
         },
     )
-    assert_contains(result.stdout, "[ACTIVE]", "runner prints live activity heartbeat")
-    assert_contains(result.stdout, "elapsed=", "runner heartbeat elapsed")
-    assert_contains(result.stdout, "command=", "runner heartbeat command")
-    assert_contains(result.stdout, "log_state=", "runner heartbeat log state")
+    assert_contains(result.stdout, "live activity heartbeat", "runner prints live activity heartbeat")
+    assert_contains(result.stdout, "current task | stage=copy | task=0-1/task-01", "runner live task status line")
+    assert_contains(result.stdout, "  live log:", "runner live log section")
+    assert_contains(result.stdout, "    state:", "runner live log state")
+    assert_contains(result.stdout, "current command | heartbeat=1s | elapsed=", "runner live command status line")
+    assert_contains(result.stdout, " | command=", "runner live command text")
     progress = runner_repo / "tasks/prompts/_shared/progress.json"
     assert_json(
         progress,
