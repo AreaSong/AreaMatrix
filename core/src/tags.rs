@@ -60,7 +60,7 @@ pub fn add_tag(repo_path: String, file_id: i64, tag: String) -> CoreResult<TagSe
     validate_file_id(file_id)?;
     let normalized = normalize_tag_value(&tag)?;
     db::ensure_initialized(&repo).map_err(normalize_tag_metadata_error)?;
-    db::add_tag_row(&repo, file_id, &normalized)
+    db::add_tag_row(&repo, file_id, &normalized).map_err(normalize_tag_metadata_error)
 }
 
 /// Removes one tag relation from an active file and returns the refreshed tag set.
@@ -81,7 +81,7 @@ pub fn remove_tag(repo_path: String, file_id: i64, tag: String) -> CoreResult<Ta
     validate_file_id(file_id)?;
     let normalized = normalize_tag_value(&tag)?;
     db::ensure_initialized(&repo).map_err(normalize_tag_metadata_error)?;
-    db::remove_tag_row(&repo, file_id, &normalized)
+    db::remove_tag_row(&repo, file_id, &normalized).map_err(normalize_tag_metadata_error)
 }
 
 /// Lists the tag registry and the selected file tag state without mutating metadata.
@@ -101,7 +101,7 @@ pub fn list_tags(repo_path: String, file_id: i64) -> CoreResult<TagSet> {
     let repo = validate_tag_repo_path(&repo_path)?;
     validate_file_id(file_id)?;
     db::ensure_initialized(&repo).map_err(normalize_tag_metadata_error)?;
-    db::list_tag_set(&repo, file_id)
+    db::list_tag_set(&repo, file_id).map_err(normalize_tag_metadata_error)
 }
 
 fn validate_tag_repo_path(repo_path: &str) -> CoreResult<PathBuf> {
@@ -139,6 +139,8 @@ fn normalize_tag_value(tag: &str) -> CoreResult<String> {
 fn normalize_tag_metadata_error(error: CoreError) -> CoreError {
     match error {
         CoreError::RepoNotInitialized { .. } => CoreError::db("tag metadata is unavailable"),
+        CoreError::PermissionDenied { .. } => CoreError::db("tag metadata permission denied"),
+        CoreError::Io { .. } => CoreError::db("tag metadata io unavailable"),
         other => other,
     }
 }
