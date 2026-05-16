@@ -113,6 +113,14 @@
     "  4) 20 个",
     "  5) 自定义 N"
   ],
+  "choose.max_retries.lines": [
+    "",
+    "失败重试策略：",
+    "  1) 1 次 repair retry（默认）",
+    "  2) 2 次 repair retry",
+    "  3) 无限，直到 PASS",
+    "  4) 自定义 N"
+  ],
   "choose.stop.lines": [
     "",
     "停止点：",

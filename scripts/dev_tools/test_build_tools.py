@@ -8,6 +8,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from scripts.dev_tools import build, checks
+from scripts.task_loop import console
 from scripts.task_loop.runner import RuntimeConfig, TaskLoopRunner
 
 
@@ -403,6 +404,28 @@ class BuildToolsTest(unittest.TestCase):
             cfg = RuntimeConfig.from_env()
 
         self.assertEqual(cfg.max_retries, 1)
+
+    def test_dev_console_wizard_can_select_infinite_repair_retries(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            cfg = console.ConsoleConfig(
+                runtime=RuntimeConfig(root_dir=root),
+                task_loop_bin=root / "task-loop",
+                pipeline=root / "tasks/prompts/_shared/prompt_pipeline.py",
+                console_log_root=root / ".codex/task-loop-console",
+            )
+
+            with (
+                patch.dict("os.environ", {}, clear=True),
+                patch("sys.stdin.isatty", return_value=True),
+                patch("builtins.input", side_effect=["2", "1", "1", "3", "1"]),
+            ):
+                command = console.build_runner_command(cfg, "run", [])
+
+        self.assertEqual(command.execution_mode, "foreground")
+        self.assertEqual(command.env["MAX_RETRIES"], "0")
+        self.assertIn("MAX_RETRIES=0", command.env_bits)
+        self.assertNotIn("--max-tasks", command.argv)
 
 
 if __name__ == "__main__":

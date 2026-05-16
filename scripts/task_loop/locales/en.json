@@ -113,6 +113,14 @@
     "  4) 20 tasks",
     "  5) Custom N"
   ],
+  "choose.max_retries.lines": [
+    "",
+    "Failure retry strategy:",
+    "  1) 1 repair retry (default)",
+    "  2) 2 repair retries",
+    "  3) Infinite, until PASS",
+    "  4) Custom N"
+  ],
   "choose.stop.lines": [
     "",
     "Stop target:",
