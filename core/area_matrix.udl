@@ -109,6 +109,11 @@ namespace area_matrix {
     TagSet list_tags(string repo_path, i64 file_id);
 
     [Throws=CoreError]
+    BatchMutationReport batch_add_tags(
+        string repo_path, sequence<i64> file_ids, sequence<string> tags
+    );
+
+    [Throws=CoreError]
     FileEntry get_file(string repo_path, i64 file_id);
 
     [Throws=CoreError]
@@ -344,6 +349,23 @@ dictionary TagSet {
     i64 updated_at;
 };
 
+dictionary BatchMutationItemResult {
+    i64 file_id;
+    string tag;
+    BatchMutationStatus status;
+    string? error;
+};
+
+dictionary BatchMutationReport {
+    i64 requested_file_count;
+    i64 requested_tag_count;
+    i64 added_count;
+    i64 skipped_count;
+    i64 failed_count;
+    sequence<BatchMutationItemResult> item_results;
+    string? undo_token;
+};
+
 dictionary ChangeFilter {
     i64? file_id;
     string? category;
@@ -514,6 +536,7 @@ enum SearchDiagnosticSeverity { "Info", "Warning", "Error" };
 enum SearchIndexStatus { "Ready", "Indexing", "Unavailable" };
 enum ICloudConflictStatus { "NeedsReview", "Resolved" };
 enum ExternalEventKind { "Created", "Removed", "Modified", "Renamed" };
+enum BatchMutationStatus { "Added", "AlreadyHadTag", "Failed" };
 enum ErrorKind {
     "Io", "Db", "Config", "Classify", "Conflict", "DuplicateFile",
     "FileNotFound", "RepoNotInitialized", "InvalidPath",

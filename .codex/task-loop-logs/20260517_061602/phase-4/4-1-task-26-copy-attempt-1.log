@@ -1,0 +1,59 @@
+一、执行结论
+
+已完成。C2-06 `batch_add_tags` 的 Core API / UDL 合同已补齐，本地 task 验证通过。
+
+二、执行范围
+
+单任务：`4-1/task-26`
+
+修改文件：
+- [core/src/tags.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/tags.rs:44)
+- [core/src/lib.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/lib.rs:35)
+- [core/area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:112)
+- [core/tests/batch_add_tags_contract_api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/batch_add_tags_contract_api.rs:1)
+- [docs/api/core-api.md](/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:1658)
+
+三、完成情况
+
+核对清单：
+- 已读取 C2-06 能力规格、Stage 2 control map、Core API、错误码。
+- 已对齐 API 名称、输入、输出、错误码、隐私/副作用边界。
+- 只补 C2-06 合同、UDL 声明、Rust public 类型/API 和合同测试；未实现批量 DB 写入。
+- 已记录消费方状态：S2-09 可获得 added/skipped/failed 明细，S2-10 可获得 `undo_token`。
+
+完成标准：
+- C2-06 合同可供后续 implementation task 直接实现。
+- 未引入 control map 之外页面能力。
+- 未触碰 Forbidden Touches：`apps/**` 无改动。
+
+四、工程质量
+
+- 新增 `BatchMutationReport`、`BatchMutationItemResult`、`BatchMutationStatus`，结构清晰，字段覆盖成功、跳过、失败明细和 undo token。
+- 新增 public Rust API 已有 rustdoc 和 `# Errors`。
+- 当前 contract API 不假成功：输入校验后返回明确 `Db` 未实现持久化错误，等待 C2-06 implementation task 接真实 `tags` / `change_log` / undo action 写入。
+- 无新增依赖，无 mock-only 成功路径，无用户文件、DB migration、`apps/**` 或真实文件系统破坏性操作。
+
+五、验证情况
+
+已运行：
+- `cargo fmt --all`：通过，用于格式化。
+- `./dev check task 4-1/task-26`：通过。
+  - `prompt doctor`: OK，637 tasks / 637 manifests。
+  - `git diff --check`: 通过。
+  - `cargo test --test batch_add_tags_contract_api -- --nocapture`: 4 passed。
+
+曾失败：
+- 首次 targeted test 因测试文本断言跨 rustdoc 换行不稳定失败；已改为稳定短片段断言并重新跑全量 task 验证通过。
+
+无法运行：
+- 无。未运行宽门禁/全量 CI，因为本 atomic Core task 的 validation 上限是 `./dev check task 4-1/task-26`。
+
+六、风险与后续
+
+剩余风险：
+- 真实批量写入、部分失败恢复、undo action 持久化仍属于后续 C2-06 implementation / failure / validation task。
+- CI、人工 review、Git checkpoint 未在本轮执行，按当前任务范围不作为本地完成前置。
+
+建议下一个任务：
+- `4-1/task-27`：实现 C2-06 batch-add-tags 的真实 DB mutation、change_log 和 undo action 写入。
+

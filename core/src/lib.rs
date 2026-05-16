@@ -33,4 +33,7 @@ pub use error::{
     ErrorRecoverability, ErrorSeverity,
 };
 pub use search::*;
-pub use tags::{add_tag, list_tags, remove_tag, TagRecord, TagSet};
+pub use tags::{
+    add_tag, batch_add_tags, list_tags, remove_tag, BatchMutationItemResult, BatchMutationReport,
+    BatchMutationStatus, TagRecord, TagSet,
+};
