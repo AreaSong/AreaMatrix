@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 use crate::{classify, db, CoreError, CoreResult, FileEntry, StorageMode};
 
 mod apply;
+mod fs_move;
 mod path_plan;
 mod plan;
 mod token;

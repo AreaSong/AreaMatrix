@@ -413,7 +413,7 @@ fn db_entry(repo: &Path, file_id: i64) -> CoreResult<Option<FileEntry>> {
 fn category_distribution(items: &[BatchCategoryPlanItem]) -> Vec<CategoryDistributionItem> {
     let mut counts: BTreeMap<String, i64> = BTreeMap::new();
     for item in items {
-        if let Some(category) = item.from_category() {
+        if let Some(category) = item.source_category() {
             *counts.entry(category.to_owned()).or_default() += 1;
         }
     }
@@ -424,7 +424,7 @@ fn category_distribution(items: &[BatchCategoryPlanItem]) -> Vec<CategoryDistrib
 }
 
 impl BatchCategoryPlanItem {
-    fn from_category(&self) -> Option<&str> {
+    fn source_category(&self) -> Option<&str> {
         match self {
             Self::WillMove(change) | Self::MetadataOnly(change) | Self::Unchanged(change) => {
                 Some(&change.entry.category)

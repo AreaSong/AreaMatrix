@@ -1,7 +1,4 @@
-use std::{
-    fs,
-    path::{Path, PathBuf},
-};
+use std::path::Path;
 
 use serde_json::{json, Value};
 
@@ -10,7 +7,13 @@ use crate::{
     CoreResult, FileEntry,
 };
 
-use super::plan::{BatchCategoryPlan, BatchCategoryPlanItem, PlannedCategoryChange};
+use super::{
+    fs_move::{
+        move_checked_file, move_recoverable_file, AppliedFsMove, CategoryDirectoryGuard,
+        MoveRollbackGuard,
+    },
+    plan::{BatchCategoryPlan, BatchCategoryPlanItem, PlannedCategoryChange},
+};
 
 pub(super) fn apply_batch_category_plan(
     repo: &Path,
@@ -19,7 +22,7 @@ pub(super) fn apply_batch_category_plan(
     let (report, mut fs_moves) = crate::db::with_batch_category_transaction(repo, |tx| {
         let mut report = BatchCategoryExecution::new(&plan);
         for item in plan.items {
-            report.push(apply_item(tx, item));
+            report.push(apply_item(tx, item)?);
         }
         if report.has_successful_write() {
             report.undo_token = Some(crate::db::insert_batch_category_undo_action_in_tx(
@@ -117,14 +120,14 @@ struct AppliedBatchCategoryItem {
 }
 
 fn apply_item(
-    connection: &rusqlite::Connection,
+    tx: &mut rusqlite::Transaction<'_>,
     item: BatchCategoryPlanItem,
-) -> AppliedBatchCategoryItem {
+) -> CoreResult<AppliedBatchCategoryItem> {
     match item {
-        BatchCategoryPlanItem::WillMove(change) => apply_change(connection, change, false),
-        BatchCategoryPlanItem::MetadataOnly(change) => apply_change(connection, change, true),
-        BatchCategoryPlanItem::Unchanged(change) => unchanged_result(change),
-        BatchCategoryPlanItem::Skipped(change) => AppliedBatchCategoryItem {
+        BatchCategoryPlanItem::WillMove(change) => apply_change(tx, change, false),
+        BatchCategoryPlanItem::MetadataOnly(change) => apply_change(tx, change, true),
+        BatchCategoryPlanItem::Unchanged(change) => Ok(unchanged_result(change)),
+        BatchCategoryPlanItem::Skipped(change) => Ok(AppliedBatchCategoryItem {
             report: BatchCategoryChangeItemResult {
                 file_id: change.file_id,
                 from_category: None,
@@ -136,8 +139,8 @@ fn apply_item(
             updated_file: None,
             undo_item: None,
             fs_move: None,
-        },
-        BatchCategoryPlanItem::Blocked(change) => AppliedBatchCategoryItem {
+        }),
+        BatchCategoryPlanItem::Blocked(change) => Ok(AppliedBatchCategoryItem {
             report: BatchCategoryChangeItemResult {
                 file_id: change.file_id,
                 from_category: change.from_category,
@@ -149,46 +152,87 @@ fn apply_item(
             updated_file: None,
             undo_item: None,
             fs_move: None,
-        },
+        }),
     }
 }
 
 fn apply_change(
-    connection: &rusqlite::Connection,
+    tx: &mut rusqlite::Transaction<'_>,
     change: PlannedCategoryChange,
     metadata_only: bool,
+) -> CoreResult<AppliedBatchCategoryItem> {
+    let savepoint = tx
+        .savepoint()
+        .map_err(|error| CoreError::db(error.to_string()))?;
+    match try_apply_change(&savepoint, &change, metadata_only) {
+        Ok((updated, undo_item, fs_move)) => match savepoint.commit() {
+            Ok(()) => Ok(successful_change_result(
+                change,
+                metadata_only,
+                updated,
+                undo_item,
+                fs_move,
+            )),
+            Err(error) => {
+                drop(fs_move);
+                Ok(failed_change_result(
+                    change,
+                    CoreError::db(error.to_string()),
+                ))
+            }
+        },
+        Err(error) => {
+            let failure = failed_change_result(change, error);
+            savepoint
+                .finish()
+                .map_err(|error| CoreError::db(error.to_string()))?;
+            Ok(failure)
+        }
+    }
+}
+
+fn successful_change_result(
+    change: PlannedCategoryChange,
+    metadata_only: bool,
+    updated: FileEntry,
+    undo_item: crate::db::BatchCategoryUndoItem,
+    fs_move: Option<AppliedFsMove>,
 ) -> AppliedBatchCategoryItem {
-    match try_apply_change(connection, &change, metadata_only) {
-        Ok((updated, undo_item, fs_move)) => AppliedBatchCategoryItem {
-            report: BatchCategoryChangeItemResult {
-                file_id: change.entry.id,
-                from_category: Some(change.entry.category),
-                to_category: change.target_category,
-                final_path: Some(updated.path.clone()),
-                status: if metadata_only {
-                    BatchCategoryResultStatus::MetadataUpdated
-                } else {
-                    BatchCategoryResultStatus::Moved
-                },
-                error: None,
+    AppliedBatchCategoryItem {
+        report: BatchCategoryChangeItemResult {
+            file_id: change.entry.id,
+            from_category: Some(change.entry.category),
+            to_category: change.target_category,
+            final_path: Some(updated.path.clone()),
+            status: if metadata_only {
+                BatchCategoryResultStatus::MetadataUpdated
+            } else {
+                BatchCategoryResultStatus::Moved
             },
-            updated_file: Some(updated),
-            undo_item: Some(undo_item),
-            fs_move,
+            error: None,
         },
-        Err(error) => AppliedBatchCategoryItem {
-            report: BatchCategoryChangeItemResult {
-                file_id: change.entry.id,
-                from_category: Some(change.entry.category),
-                to_category: change.target_category,
-                final_path: Some(change.final_relative_path),
-                status: BatchCategoryResultStatus::Failed,
-                error: Some(batch_category_failure_message(error)),
-            },
-            updated_file: None,
-            undo_item: None,
-            fs_move: None,
+        updated_file: Some(updated),
+        undo_item: Some(undo_item),
+        fs_move,
+    }
+}
+
+fn failed_change_result(
+    change: PlannedCategoryChange,
+    error: CoreError,
+) -> AppliedBatchCategoryItem {
+    AppliedBatchCategoryItem {
+        report: BatchCategoryChangeItemResult {
+            file_id: change.entry.id,
+            from_category: Some(change.entry.category),
+            to_category: change.target_category,
+            final_path: Some(change.final_relative_path),
+            status: BatchCategoryResultStatus::Failed,
+            error: Some(batch_category_failure_message(error)),
         },
+        updated_file: None,
+        undo_item: None,
+        fs_move: None,
     }
 }
 
@@ -307,162 +351,6 @@ fn rollback_filesystem_move(
         note_guard.rollback()?;
     }
     file_guard.rollback()
-}
-
-struct CategoryDirectoryGuard {
-    path: PathBuf,
-    created: bool,
-    armed: bool,
-}
-
-impl CategoryDirectoryGuard {
-    fn ensure(path: PathBuf) -> CoreResult<Self> {
-        if path.try_exists().map_err(map_io_error)? {
-            if path.is_dir() {
-                return Ok(Self {
-                    path,
-                    created: false,
-                    armed: false,
-                });
-            }
-            return Err(CoreError::conflict("path conflict"));
-        }
-        fs::create_dir(&path).map_err(map_io_error)?;
-        Ok(Self {
-            path,
-            created: true,
-            armed: true,
-        })
-    }
-
-    fn disarm(&mut self) {
-        self.armed = false;
-    }
-
-    fn rollback(&mut self) {
-        if self.armed && self.created {
-            let _cleanup_result = fs::remove_dir(&self.path);
-        }
-        self.armed = false;
-    }
-}
-
-impl Drop for CategoryDirectoryGuard {
-    fn drop(&mut self) {
-        self.rollback();
-    }
-}
-
-struct AppliedFsMove {
-    note_guard: Option<MoveRollbackGuard>,
-    file_guard: MoveRollbackGuard,
-    directory_guard: CategoryDirectoryGuard,
-}
-
-impl AppliedFsMove {
-    fn disarm(&mut self) {
-        if let Some(note_guard) = self.note_guard.as_mut() {
-            note_guard.disarm();
-        }
-        self.file_guard.disarm();
-        self.directory_guard.disarm();
-    }
-}
-
-impl Drop for AppliedFsMove {
-    fn drop(&mut self) {
-        if let Some(note_guard) = self.note_guard.as_mut() {
-            let _rollback_result = note_guard.rollback();
-        }
-        let _rollback_result = self.file_guard.rollback();
-        self.directory_guard.rollback();
-    }
-}
-
-struct MoveRollbackGuard {
-    current_path: PathBuf,
-    original_path: PathBuf,
-    armed: bool,
-}
-
-impl MoveRollbackGuard {
-    fn new(current_path: PathBuf, original_path: PathBuf) -> Self {
-        Self {
-            current_path,
-            original_path,
-            armed: true,
-        }
-    }
-
-    fn disarm(&mut self) {
-        self.armed = false;
-    }
-
-    fn rollback(&mut self) -> CoreResult<()> {
-        if self.armed && self.current_path.exists() && !self.original_path.exists() {
-            move_recoverable_file(&self.current_path, &self.original_path)?;
-        }
-        self.armed = false;
-        Ok(())
-    }
-}
-
-impl Drop for MoveRollbackGuard {
-    fn drop(&mut self) {
-        if self.armed && self.current_path.exists() && !self.original_path.exists() {
-            let _restore_result = move_recoverable_file(&self.current_path, &self.original_path);
-        }
-    }
-}
-
-fn move_recoverable_file(current_path: &Path, destination: &Path) -> CoreResult<()> {
-    move_checked_file(current_path, destination)
-}
-
-fn move_checked_file(current_path: &Path, destination: &Path) -> CoreResult<()> {
-    if !current_path.try_exists().map_err(map_io_error)? {
-        return Err(CoreError::file_not_found(
-            current_path.display().to_string(),
-        ));
-    }
-    if destination.try_exists().map_err(map_io_error)? {
-        return Err(CoreError::conflict(destination.display().to_string()));
-    }
-    move_file_no_replace(current_path, destination)
-}
-
-fn move_file_no_replace(current_path: &Path, destination: &Path) -> CoreResult<()> {
-    match fs::hard_link(current_path, destination) {
-        Ok(()) => {}
-        Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {
-            return Err(CoreError::conflict(destination.display().to_string()));
-        }
-        Err(_) => copy_to_new_destination(current_path, destination)?,
-    }
-    fs::remove_file(current_path).map_err(|error| {
-        let _cleanup_result = fs::remove_file(destination);
-        map_io_error(error)
-    })
-}
-
-fn copy_to_new_destination(current_path: &Path, destination: &Path) -> CoreResult<()> {
-    let expected_size = current_path.metadata().map_err(map_io_error)?.len();
-    let copied_size = fs::copy(current_path, destination).map_err(map_io_error)?;
-    if copied_size != expected_size {
-        let _cleanup_result = fs::remove_file(destination);
-        return Err(CoreError::io("io error"));
-    }
-    Ok(())
-}
-
-fn map_io_error(error: std::io::Error) -> CoreError {
-    match error.kind() {
-        std::io::ErrorKind::AlreadyExists => CoreError::conflict("path conflict"),
-        std::io::ErrorKind::NotFound => CoreError::file_not_found("missing file"),
-        std::io::ErrorKind::PermissionDenied => CoreError::permission_denied("permission denied"),
-        std::io::ErrorKind::InvalidInput => CoreError::invalid_path("invalid path"),
-        _ => CoreError::io("io error"),
-    }
 }
 
 fn storage_mode_detail(mode: &crate::StorageMode) -> &'static str {
