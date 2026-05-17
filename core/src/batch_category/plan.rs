@@ -12,7 +12,10 @@ use crate::{
 
 use super::{
     path_plan::resolve_repo_owned_target,
-    path_plan::{ensure_repo_owned_file, plan_note_sidecar, preview_category_directory},
+    path_plan::{
+        ensure_category_directory_writable, ensure_repo_owned_file, plan_note_sidecar,
+        preview_category_directory,
+    },
     token,
 };
 
@@ -350,6 +353,9 @@ fn plan_repo_owned_move(
             CoreError::invalid_path("invalid path"),
         ));
     }
+    if let Err(error) = ensure_category_directory_writable(target_directory) {
+        return Ok(blocked_from_entry(entry, target_category, error));
+    }
 
     let planned = match resolve_repo_owned_target(repo, target_directory, &entry) {
         Ok(target) => target,
@@ -381,7 +387,7 @@ fn metadata_only_change(entry: &FileEntry, target_category: &str) -> PlannedCate
         final_name: entry.current_name.clone(),
         current_path: PathBuf::from(&entry.path),
         final_path: PathBuf::from(&entry.path),
-        index_only: true,
+        index_only: matches!(entry.storage_mode, StorageMode::Indexed),
         will_move_file: false,
         note_sidecar: None,
     }

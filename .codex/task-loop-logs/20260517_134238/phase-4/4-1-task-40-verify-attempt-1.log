@@ -1,0 +1,65 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`4-1/task-40`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-40-c2-08-integration-verify.md`
+- 代码范围：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/**`
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：1
+- 通过项数：3
+- 不通过项数：1
+- 阻塞项数：1
+
+四、逐项验收结果
+
+- 交叉检查 capability spec、Core API、UDL、Rust 实现和测试  
+  结果：不通过  
+  证据：API/UDL/Rust 函数与测试均存在，但 Rust preview 对 `index_only` 的语义与文档不一致。`docs/api/core-api.md:1854-1855` 区分 Indexed 文件和 `moveRepoOwnedFiles=false` 的 repo-owned metadata-only；`core/src/batch_category/plan.rs:312-316` 把两种情况合并为 `MetadataOnly`，`core/src/batch_category/plan.rs:376-385` 又无条件写 `index_only: true`。
+
+- 消费页面需要的状态、错误和副作用覆盖  
+  结果：不通过  
+  证据：S2-12 需要区分“3 index-only records will update only”和移动选项关闭时的 repo-owned metadata-only 状态，见 `docs/ux/page-specs/stage-2-experience/S2-12-batch-change-category.md:45-52`、`:77`、`:99-101`。当前 Core 会把移动选项关闭的 repo-owned 文件也标成 `index_only=true`，会误导 UI 状态与 VoiceOver 文案。
+
+- 未实现 control map 之外能力  
+  结果：通过  
+  证据：Control map 仅声明 S2-12 使用 `C2-08, C2-07`，当前 Core API 只新增/暴露 `preview_batch_move_to_category`、`batch_move_to_category` 与 undo token 消费状态，未发现 AI、规则编辑、删除、重命名、保存搜索等越界实现。
+
+- Expected New Paths / Forbidden Touches  
+  结果：通过  
+  证据：`core/src/**`、`core/area_matrix.udl`、`core/tests/**` 均已落地；`git status --short -- apps` 无输出，未发现 `apps/**` 被触碰。
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过，核心逻辑结构清晰，但 `metadata_only_change()` 把 UI 语义字段 `index_only` 写死为 true，属于合同语义错误。
+- 注释 / rustdoc / 文档同步：通过，public API 有 rustdoc，Core API 与 UDL 结构字段同步。
+- 错误处理与边界处理：通过，已有 stale preview、Conflict、FileNotFound、PermissionDenied、Io、Db、rollback/undo failure 测试证据。
+- 测试与验证覆盖：不通过，`./dev check task 4-1/task-40` 通过，但现有测试没有断言 `move_repo_owned_files=false` 时 repo-owned metadata-only 行必须 `index_only=false`。
+- 占位、硬编码、mock-only、一次性实现检查：通过，未发现 mock-only 或空壳闭环。
+
+六、阻塞项
+
+- P0：C2-08 preview `index_only` 状态语义错误，阻塞 S2-12 UI 接入  
+  说明：文档要求 Indexed 文件才始终 `index_only=true`；`moveRepoOwnedFiles=false` 时 repo-owned 文件只是 metadata-only，不等于 Index-only。当前实现把两者都标成 `index_only=true`，会导致页面错误展示 Index-only 数量、错误 VoiceOver 状态，并破坏“用户能区分只改分类和移动文件”的验收要求。  
+  绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/core/src/batch_category/plan.rs:312`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/batch_category/plan.rs:384`  
+  为什么导致不通过：该 task 的完成标准是 C2-08 可作为后续 page-feature task 的真实 Core 依赖；当前 preview 状态不能可靠支撑 S2-12。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-40`
+- 通过：prompt doctor、git diff check、`cargo fmt --all -- --check`、`cargo clippy --all-targets --all-features -- -D warnings`、`batch_change_category_contract_api`、`batch_change_category_failure_recovery`、`batch_change_category_implementation`、`batch_change_category_rollback_safety`、`batch_change_category_validation`
+- 失败：无命令失败
+- 缺失：缺少覆盖 repo-owned + `move_repo_owned_files=false` 时 preview `index_only=false` 的测试断言
+- 工作区状态：仅发现 task-loop 运行痕迹和 progress/summary/log 脏改动；未发现 `apps/**` forbidden touch。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。虽然任务验证命令通过，但 C2-08 preview 合同存在 UI 消费状态语义阻塞，不能作为后续 S2-12 page-feature task 的真实 Core 依赖。
+
+
+VERIFY_RESULT: FAIL

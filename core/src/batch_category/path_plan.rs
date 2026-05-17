@@ -1,6 +1,7 @@
 use std::{
     ffi::OsStr,
     fs,
+    fs::Metadata,
     path::{Component, Path, PathBuf},
 };
 
@@ -45,6 +46,16 @@ pub(super) fn preview_category_directory(repo: &Path, category: &str) -> CoreRes
         return Err(CoreError::conflict("path conflict"));
     }
     Ok(path)
+}
+
+pub(super) fn ensure_category_directory_writable(path: &Path) -> CoreResult<()> {
+    if path_exists(path)? {
+        return ensure_directory_writable(path);
+    }
+    let parent = path
+        .parent()
+        .ok_or_else(|| CoreError::invalid_path("invalid path"))?;
+    ensure_directory_writable(parent)
 }
 
 pub(super) fn plan_note_sidecar(
@@ -144,4 +155,28 @@ fn sidecar_path_for_file(file_path: &Path) -> CoreResult<PathBuf> {
 
 fn path_exists(path: &Path) -> CoreResult<bool> {
     path.try_exists().map_err(map_io_error)
+}
+
+fn ensure_directory_writable(path: &Path) -> CoreResult<()> {
+    let metadata = fs::metadata(path).map_err(map_io_error)?;
+    if !metadata.is_dir() {
+        return Err(CoreError::conflict(path.display().to_string()));
+    }
+    if metadata_allows_write(&metadata) {
+        Ok(())
+    } else {
+        Err(CoreError::permission_denied(path.display().to_string()))
+    }
+}
+
+#[cfg(unix)]
+fn metadata_allows_write(metadata: &Metadata) -> bool {
+    use std::os::unix::fs::PermissionsExt;
+
+    metadata.permissions().mode() & 0o222 != 0
+}
+
+#[cfg(not(unix))]
+fn metadata_allows_write(metadata: &Metadata) -> bool {
+    !metadata.permissions().readonly()
 }

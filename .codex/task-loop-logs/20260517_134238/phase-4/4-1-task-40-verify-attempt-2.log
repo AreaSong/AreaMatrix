@@ -1,0 +1,75 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`4-1/task-40`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-40-c2-08-integration-verify.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-2-experience/C2-08-batch-change-category.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-2-control-map.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-2-experience/S2-12-batch-change-category.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/tests/**`
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：1
+- 通过项数：3
+- 不通过项数：1
+- 阻塞项数：1
+
+四、逐项验收结果
+
+- 项目：交叉检查 capability spec、Core API、UDL、Rust 实现和测试。
+- 结果：不通过
+- 证据：API/UDL/Rust/test 已存在并可编译验证；但 preview 实现未覆盖目标目录/父目录可写性 dry-run 阻断，见阻塞项。
+- 涉及文件：`core/src/batch_category/path_plan.rs`、`core/src/batch_category/plan.rs`、`core/tests/batch_change_category_*.rs`
+
+- 项目：确认消费页面需要的状态、错误和副作用均已覆盖。
+- 结果：不通过
+- 证据：S2-12 明确要求“移动选项开启时必须检查目标目录可写和冲突”，且目标目录不可写/权限不足时禁用 Apply；当前 preview 只检查路径存在、目录形态、目标名冲突和文件 metadata，未证明可写。
+- 涉及文件：`docs/ux/page-specs/stage-2-experience/S2-12-batch-change-category.md:76`、`docs/api/core-api.md:1843`、`core/src/batch_category/path_plan.rs:39`
+
+- 项目：确认没有实现 control map 之外的能力。
+- 结果：通过
+- 证据：control map 中 S2-12 仅声明 C2-08/C2-07；实现集中在 batch category Core API、change log 和 undo token，没有发现 classifier rule editing、AI、delete、rename、saved search、reindex、generated overview 或 apps 侧实现。
+- 涉及文件：`docs/architecture/stage-2-control-map.md:20`、`docs/api/core-api.md:1910`
+
+- 项目：不得修改文件；只记录验收证据和阻塞项。
+- 结果：通过
+- 证据：本轮验收未修改文件。当前工作区已有脏改动为 runner/前序 copy 产生：`core/src/batch_category/plan.rs`、`core/tests/batch_change_category_validation.rs`、`.codex/task-loop-runs/.../summary.json`、`tasks/prompts/_shared/progress.json`；未发现 `apps/**` 修改。
+- 涉及文件：`git status --short`、`git diff -- apps`
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过，证据：核心实现拆分为 `batch_category.rs`、`plan.rs`、`apply.rs`、`path_plan.rs`、`fs_move.rs`，结构基本清晰；但 preview 缺少目标可写性检查，导致 Apply 启用状态不能完全代表 UX/Core API 的安全前置条件。
+- 注释 / rustdoc / 文档同步：通过，证据：public API 有 rustdoc，Core API 与 UDL 包含 `preview_batch_move_to_category` / `batch_move_to_category` 及 report/status 类型。
+- 错误处理与边界处理：不通过，证据：Classify、Conflict、FileNotFound、PermissionDenied、Io、Db 均有测试，但目标目录不可写/父目录不可创建这类 preview 阻断未被实现和测试覆盖。
+- 测试与验证覆盖：不通过，证据：`./dev check task 4-1/task-40` 通过，但 targeted tests 未覆盖目标目录不可写 dry-run 阻断；另 `core/tests/batch_change_category_validation.rs` 为 559 行，超过编码规范单文件 500 行建议，属于维护风险。
+- 占位、硬编码、mock-only、一次性实现检查：通过，证据：实现走真实 DB、文件系统移动、change_log、undo_actions 和 targeted integration tests，未发现 mock-only 闭环。
+
+六、阻塞项
+
+- P0：C2-08 preview 未检查目标目录可写性，无法满足 S2-12 Apply 安全前置条件。
+  - 说明：S2-12 要求移动选项开启时必须检查目标目录可写和冲突，且目标目录不可写、权限不足或只读文件时禁用 Apply。Core API 也要求 preview 的 blocked_count 覆盖权限不足、目标目录不可写等阻断项。当前 `preview_category_directory` 只判断目标路径是否存在、是否为目录；不存在时直接返回目标路径，没有验证父目录可写或目标目录可创建，也没有对应 targeted test。
+  - 绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/core/src/batch_category/path_plan.rs:39`
+  - 文档证据：`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-2-experience/S2-12-batch-change-category.md:76`、`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-2-experience/S2-12-batch-change-category.md:79`、`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:1843`
+  - 为什么导致不通过：Apply 可以在未证明目标目录可写的 preview 后启用，违背“执行前必须有目标路径和冲突预览”以及消费页面的错误/禁用态合同，不能作为后续 page-feature task 的真实 Core 依赖。
+
+七、验证情况
+
+- 跑了哪些验证：`./dev check task 4-1/task-40`
+- 哪些通过：`prompt_pipeline.py doctor`、`git diff --check`、`cargo fmt --all -- --check`、`cargo clippy --all-targets --all-features -- -D warnings`、`cargo test --test batch_change_category_contract_api`、`batch_change_category_failure_recovery`、`batch_change_category_implementation`、`batch_change_category_rollback_safety`、`batch_change_category_validation` 全部通过。
+- 哪些失败：命令层面无失败。
+- 哪些缺失：缺少目标目录/父目录不可写时 preview 返回 blocked 或 PermissionDenied 且不启用 Apply 的实现与测试证据。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+
+VERIFY_RESULT: FAIL
