@@ -3,13 +3,14 @@
 use std::path::PathBuf;
 
 use crate::{
-    batch_category, batch_delete, classify, db, icloud_conflicts, note, recovery, repair,
-    repo_init, repo_path, repo_scan, storage, sync, tree, BatchCategoryChangeReport,
-    BatchCategoryPreviewReport, BatchDeleteMode, BatchDeletePreviewReport, BatchDeleteReport,
-    ChangeFilter, ChangeLogEntry, ClassifyResult, CoreError, CoreResult, DiagnosticsSnapshot,
-    ExternalEvent, FileEntry, FileFilter, ICloudConflictPair, ImportOptions, MoveToCategoryPreview,
-    RecoveryReport, ReindexReport, RepairOptions, RepairReport, RepoConfig, RepoInitOptions,
-    RepoPathValidation, ScanSession, SyncResult,
+    batch_category, batch_delete, batch_rename as batch_rename_mod, classify, db, icloud_conflicts,
+    note, recovery, repair, repo_init, repo_path, repo_scan, storage, sync, tree,
+    BatchCategoryChangeReport, BatchCategoryPreviewReport, BatchDeleteMode,
+    BatchDeletePreviewReport, BatchDeleteReport, BatchRenamePreviewReport, BatchRenameReport,
+    BatchRenameRule, ChangeFilter, ChangeLogEntry, ClassifyResult, CoreError, CoreResult,
+    DiagnosticsSnapshot, ExternalEvent, FileEntry, FileFilter, ICloudConflictPair, ImportOptions,
+    MoveToCategoryPreview, RecoveryReport, ReindexReport, RepairOptions, RepairReport, RepoConfig,
+    RepoInitOptions, RepoPathValidation, ScanSession, SyncResult,
 };
 
 fn not_implemented<T>() -> CoreResult<T> {
@@ -627,6 +628,61 @@ pub fn batch_delete_to_trash(
     preview_token: String,
 ) -> CoreResult<BatchDeleteReport> {
     batch_delete::batch_delete_to_trash(repo_path, file_ids, delete_mode, preview_token)
+}
+
+/// Previews a C2-10 batch rename operation without side effects.
+///
+/// S2-14 uses this contract to display each selected row's original name,
+/// generated new name, blocking status, index-only display-name behavior,
+/// conflicts, and whether Apply can be enabled. `file_ids` order represents
+/// the current list order and is part of the preview state for sequence naming.
+/// The preview must not rename files, update metadata, write change log, create
+/// undo actions, change extensions, delete or Trash files, or touch `apps/**`.
+///
+/// # Errors
+///
+/// Returns `CoreError::InvalidPath { path }` for invalid repo paths or rename
+/// rules, `CoreError::FileNotFound { path }` for empty selections or invalid
+/// file ids, `CoreError::Conflict { path }` when a conflict cannot be returned
+/// as row state, `CoreError::PermissionDenied { path }` for blocked metadata or
+/// filesystem inspection, `CoreError::Io { message }` for preview filesystem
+/// failures, and `CoreError::Db { message }` for metadata reads.
+pub fn preview_batch_rename(
+    repo_path: String,
+    file_ids: Vec<i64>,
+    rule: BatchRenameRule,
+) -> CoreResult<BatchRenamePreviewReport> {
+    batch_rename_mod::preview_batch_rename(repo_path, file_ids, rule)
+}
+
+/// Applies a previously previewed C2-10 batch rename operation.
+///
+/// `preview_token` must come from the last C2-10 preview for the same
+/// selection order, rename rule, and inspected file state. Successful rows
+/// rename repository-owned files or update index-only display names, update
+/// metadata, write change-log rows, and return a C2-07 undo token when Undo can
+/// reverse the operation.
+///
+/// This operation is limited to C2-10. It must not implement AI naming, change
+/// file extensions, overwrite existing files, delete or Trash files,
+/// recategorize files, retag files, save searches, reindex, call AI/network
+/// providers, or touch `apps/**`.
+///
+/// # Errors
+///
+/// Returns `CoreError::InvalidPath { path }` for invalid repo paths or rename
+/// rules, `CoreError::Conflict { path }` for stale previews or unsafe target
+/// conflicts, `CoreError::FileNotFound { path }` for invalid selections,
+/// `CoreError::PermissionDenied { path }` for blocked filesystem or metadata
+/// writes, `CoreError::Io { message }` for rename failures, and
+/// `CoreError::Db { message }` for metadata, change-log, or undo writes.
+pub fn batch_rename(
+    repo_path: String,
+    file_ids: Vec<i64>,
+    rule: BatchRenameRule,
+    preview_token: String,
+) -> CoreResult<BatchRenameReport> {
+    batch_rename_mod::batch_rename(repo_path, file_ids, rule, preview_token)
 }
 
 /// Restores a deleted file entry.

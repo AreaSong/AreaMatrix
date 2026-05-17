@@ -8,6 +8,7 @@ uniffi::include_scaffolding!("area_matrix");
 pub mod api;
 mod batch_category;
 mod batch_delete;
+mod batch_rename;
 pub mod classify;
 pub mod config;
 pub mod db;
@@ -39,6 +40,11 @@ pub use batch_delete::{
     batch_delete_to_trash, preview_batch_delete, BatchDeleteItemResult, BatchDeleteMode,
     BatchDeletePreviewItem, BatchDeletePreviewReport, BatchDeletePreviewStatus, BatchDeleteReport,
     BatchDeleteResultStatus,
+};
+pub use batch_rename::{
+    batch_rename, preview_batch_rename, BatchRenameConflict, BatchRenameDateSource,
+    BatchRenameItemResult, BatchRenameMode, BatchRenamePreviewItem, BatchRenamePreviewReport,
+    BatchRenamePreviewStatus, BatchRenameReport, BatchRenameResultStatus, BatchRenameRule,
 };
 pub use domain::*;
 pub use error::{

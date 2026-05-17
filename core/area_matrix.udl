@@ -95,6 +95,21 @@ namespace area_matrix {
     );
 
     [Throws=CoreError]
+    BatchRenamePreviewReport preview_batch_rename(
+        string repo_path,
+        sequence<i64> file_ids,
+        BatchRenameRule rule
+    );
+
+    [Throws=CoreError]
+    BatchRenameReport batch_rename(
+        string repo_path,
+        sequence<i64> file_ids,
+        BatchRenameRule rule,
+        string preview_token
+    );
+
+    [Throws=CoreError]
     FileEntry restore_file(string repo_path, i64 file_id);
 
     [Throws=CoreError]
@@ -508,6 +523,75 @@ dictionary BatchDeleteReport {
     string? undo_token;
 };
 
+dictionary BatchRenameRule {
+    BatchRenameMode mode;
+    string? prefix;
+    BatchRenameDateSource? date_source;
+    string? date_format;
+    string? separator;
+    i64? start_number;
+    i64? padding;
+    string? find;
+    string? replacement;
+    boolean case_sensitive;
+};
+
+dictionary BatchRenameConflict {
+    i64 file_id;
+    i64? conflicting_file_id;
+    string? conflict_path;
+    string reason;
+};
+
+dictionary BatchRenamePreviewItem {
+    i64 file_id;
+    string? current_path;
+    string? original_name;
+    string? new_name;
+    string? target_path;
+    StorageMode? storage_mode;
+    boolean index_only;
+    boolean will_rename_file;
+    BatchRenamePreviewStatus status;
+    string? reason;
+};
+
+dictionary BatchRenamePreviewReport {
+    i64 requested_file_count;
+    BatchRenameRule rule;
+    string preview_token;
+    i64 will_rename_count;
+    i64 display_only_count;
+    i64 unchanged_count;
+    i64 blocked_count;
+    i64 conflict_count;
+    sequence<BatchRenamePreviewItem> items;
+    sequence<BatchRenameConflict> conflicts;
+    boolean can_apply;
+    string? apply_blocked_reason;
+};
+
+dictionary BatchRenameItemResult {
+    i64 file_id;
+    string? original_name;
+    string? final_name;
+    string? final_path;
+    BatchRenameResultStatus status;
+    string? error;
+};
+
+dictionary BatchRenameReport {
+    i64 requested_file_count;
+    i64 renamed_count;
+    i64 display_name_updated_count;
+    i64 unchanged_count;
+    i64 skipped_count;
+    i64 failed_count;
+    sequence<BatchRenameItemResult> item_results;
+    sequence<FileEntry> updated_files;
+    string? undo_token;
+};
+
 dictionary UndoActionRecord {
     string action_id;
     string kind;
@@ -706,6 +790,13 @@ enum BatchCategoryResultStatus { "Moved", "MetadataUpdated", "Unchanged", "Skipp
 enum BatchDeleteMode { "MoveToTrash", "RemoveFromIndex" };
 enum BatchDeletePreviewStatus { "WillMoveToTrash", "IndexOnly", "Missing", "Skipped", "Blocked" };
 enum BatchDeleteResultStatus { "MovedToTrash", "RemovedFromIndex", "Skipped", "Failed" };
+enum BatchRenameMode { "Prefix", "DatePrefix", "KeepBaseSequence", "ReplaceText" };
+enum BatchRenameDateSource { "Imported", "Modified", "Today" };
+enum BatchRenamePreviewStatus {
+    "Ok", "Error", "NameConflict", "Missing", "ReadOnly",
+    "DisplayOnly", "Unchanged", "ExternalChange"
+};
+enum BatchRenameResultStatus { "Renamed", "DisplayNameUpdated", "Unchanged", "Skipped", "Failed" };
 enum UndoActionStatus { "Pending", "Executed", "Expired", "Blocked" };
 enum ErrorKind {
     "Io", "Db", "Config", "Classify", "Conflict", "DuplicateFile",
