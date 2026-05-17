@@ -25,6 +25,7 @@ pub mod storage;
 pub mod sync;
 mod tags;
 pub mod tree;
+pub mod undo;
 
 pub use api::*;
 pub use domain::*;
@@ -36,4 +37,7 @@ pub use search::*;
 pub use tags::{
     add_tag, batch_add_tags, list_tags, remove_tag, BatchMutationItemResult, BatchMutationReport,
     BatchMutationStatus, TagRecord, TagSet,
+};
+pub use undo::{
+    list_undo_actions, undo_action, UndoActionRecord, UndoActionResult, UndoActionStatus,
 };

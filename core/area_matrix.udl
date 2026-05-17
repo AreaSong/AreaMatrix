@@ -114,6 +114,12 @@ namespace area_matrix {
     );
 
     [Throws=CoreError]
+    sequence<UndoActionRecord> list_undo_actions(string repo_path);
+
+    [Throws=CoreError]
+    UndoActionResult undo_action(string repo_path, string action_id);
+
+    [Throws=CoreError]
     FileEntry get_file(string repo_path, i64 file_id);
 
     [Throws=CoreError]
@@ -366,6 +372,28 @@ dictionary BatchMutationReport {
     string? undo_token;
 };
 
+dictionary UndoActionRecord {
+    string action_id;
+    string kind;
+    string summary;
+    i64 affected_count;
+    sequence<string> affected_file_names;
+    UndoActionStatus status;
+    boolean can_undo;
+    string? disabled_reason;
+    i64 created_at;
+    i64 updated_at;
+};
+
+dictionary UndoActionResult {
+    string action_id;
+    UndoActionStatus status;
+    string summary;
+    i64 affected_count;
+    sequence<string> refresh_targets;
+    i64 completed_at;
+};
+
 dictionary ChangeFilter {
     i64? file_id;
     string? category;
@@ -537,6 +565,7 @@ enum SearchIndexStatus { "Ready", "Indexing", "Unavailable" };
 enum ICloudConflictStatus { "NeedsReview", "Resolved" };
 enum ExternalEventKind { "Created", "Removed", "Modified", "Renamed" };
 enum BatchMutationStatus { "Added", "AlreadyHadTag", "Failed" };
+enum UndoActionStatus { "Pending", "Executed", "Expired", "Blocked" };
 enum ErrorKind {
     "Io", "Db", "Config", "Classify", "Conflict", "DuplicateFile",
     "FileNotFound", "RepoNotInitialized", "InvalidPath",
