@@ -476,6 +476,72 @@
     "4-1/task-40": {
       "attempts": 3,
       "copy_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260517_134238/phase-4/4-1-task-40-copy-attempt-3.log",
+      "git": {
+        "attempts": 3,
+        "branch": "codex/areamatrix-task-loop-20260501_132850",
+        "changed_files": [
+          ".codex/task-loop-logs/20260517_134238/phase-4/4-1-task-40-copy-attempt-1.log",
+          ".codex/task-loop-logs/20260517_134238/phase-4/4-1-task-40-copy-attempt-2.log",
+          ".codex/task-loop-logs/20260517_134238/phase-4/4-1-task-40-copy-attempt-3.log",
+          ".codex/task-loop-logs/20260517_134238/phase-4/4-1-task-40-verify-attempt-1.log",
+          ".codex/task-loop-logs/20260517_134238/phase-4/4-1-task-40-verify-attempt-2.log",
+          ".codex/task-loop-logs/20260517_134238/phase-4/4-1-task-40-verify-attempt-3.log",
+          ".codex/task-loop-runs/20260517_134238/summary.json",
+          ".codex/task-loop-runs/index.json",
+          "core/src/batch_category/path_plan.rs",
+          "core/src/batch_category/plan.rs",
+          "core/tests/batch_change_category_preview_safety.rs",
+          "tasks/prompts/_shared/progress.json"
+        ],
+        "commit": "a02abd23f65c35ddf2532ebd5833541419236b9e",
+        "copy_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260517_134238/phase-4/4-1-task-40-copy-attempt-3.log",
+        "diff_name_status": [
+          "M\t.codex/task-loop-runs/20260517_134238/summary.json",
+          "M\t.codex/task-loop-runs/index.json",
+          "M\tcore/src/batch_category/path_plan.rs",
+          "M\tcore/src/batch_category/plan.rs",
+          "M\ttasks/prompts/_shared/progress.json"
+        ],
+        "label": "4-1/task-40",
+        "mode": "commit",
+        "phase": "phase-4",
+        "push_status": "not_requested",
+        "remote": "",
+        "run_id": "20260517_134238",
+        "staged_name_status": [
+          "A\t.codex/task-loop-logs/20260517_134238/phase-4/4-1-task-40-copy-attempt-1.log",
+          "A\t.codex/task-loop-logs/20260517_134238/phase-4/4-1-task-40-copy-attempt-2.log",
+          "A\t.codex/task-loop-logs/20260517_134238/phase-4/4-1-task-40-copy-attempt-3.log",
+          "A\t.codex/task-loop-logs/20260517_134238/phase-4/4-1-task-40-verify-attempt-1.log",
+          "A\t.codex/task-loop-logs/20260517_134238/phase-4/4-1-task-40-verify-attempt-2.log",
+          "A\t.codex/task-loop-logs/20260517_134238/phase-4/4-1-task-40-verify-attempt-3.log",
+          "M\t.codex/task-loop-runs/20260517_134238/summary.json",
+          "M\t.codex/task-loop-runs/index.json",
+          "M\tcore/src/batch_category/path_plan.rs",
+          "M\tcore/src/batch_category/plan.rs",
+          "A\tcore/tests/batch_change_category_preview_safety.rs",
+          "M\ttasks/prompts/_shared/progress.json"
+        ],
+        "status": "committed",
+        "status_short": [
+          " M .codex/task-loop-runs/20260517_134238/summary.json",
+          " M .codex/task-loop-runs/index.json",
+          " M core/src/batch_category/path_plan.rs",
+          " M core/src/batch_category/plan.rs",
+          " M tasks/prompts/_shared/progress.json",
+          "?? .codex/task-loop-logs/20260517_134238/phase-4/4-1-task-40-copy-attempt-1.log",
+          "?? .codex/task-loop-logs/20260517_134238/phase-4/4-1-task-40-copy-attempt-2.log",
+          "?? .codex/task-loop-logs/20260517_134238/phase-4/4-1-task-40-copy-attempt-3.log",
+          "?? .codex/task-loop-logs/20260517_134238/phase-4/4-1-task-40-verify-attempt-1.log",
+          "?? .codex/task-loop-logs/20260517_134238/phase-4/4-1-task-40-verify-attempt-2.log",
+          "?? .codex/task-loop-logs/20260517_134238/phase-4/4-1-task-40-verify-attempt-3.log",
+          "?? core/tests/batch_change_category_preview_safety.rs"
+        ],
+        "summary_file": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-runs/20260517_134238/summary.json",
+        "task_name": "4-1-task-40",
+        "updated_at": "2026-05-17T10:53:43.935784+00:00",
+        "verify_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260517_134238/phase-4/4-1-task-40-verify-attempt-3.log"
+      },
       "note": "自动执行验收通过",
       "phase": "phase-4",
       "risk": "Mission-Critical",
@@ -490,7 +556,7 @@
     "retries": 4,
     "task_count": 637
   },
-  "updated_at": "2026-05-17T10:53:43.747543+00:00",
+  "updated_at": "2026-05-17T10:53:43.939822+00:00",
   "verify_root": "/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/verify-ready",
   "version": 1
 }
