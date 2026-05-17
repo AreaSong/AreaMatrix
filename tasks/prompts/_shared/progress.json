@@ -7557,14 +7557,34 @@
     "4-1/task-27": {
       "attempts": 2,
       "copy_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260517_061602/phase-4/4-1-task-27-copy-attempt-2.log",
+      "git_branch": "codex/areamatrix-task-loop-20260501_132850",
+      "git_changed_files": [
+        ".codex/task-loop-logs/20260517_061602/phase-4/4-1-task-27-copy-attempt-1.log",
+        ".codex/task-loop-logs/20260517_061602/phase-4/4-1-task-27-copy-attempt-2.log",
+        ".codex/task-loop-logs/20260517_061602/phase-4/4-1-task-27-verify-attempt-1.log",
+        ".codex/task-loop-logs/20260517_061602/phase-4/4-1-task-27-verify-attempt-2.log",
+        ".codex/task-loop-runs/20260517_061602/summary.json",
+        ".codex/task-loop-runs/index.json",
+        "core/src/db/mod.rs",
+        "core/src/db/tags.rs",
+        "core/src/tags.rs",
+        "core/tests/batch_add_tags_contract_api.rs",
+        "core/tests/batch_add_tags_implementation.rs",
+        "docs/architecture/data-model.md",
+        "tasks/prompts/_shared/progress.json"
+      ],
+      "git_checkpoint_status": "committed",
+      "git_commit": "b760b3064ae6587c9e18ebe84a232af2a787eb5d",
+      "git_push_status": "not_requested",
+      "git_remote": "",
       "note": "自动执行验收通过：attempt=2",
       "risk": "High",
       "run_id": "20260517_061602",
       "status": "completed",
-      "updated_at": "2026-05-17T00:05:03.355697+00:00",
+      "updated_at": "2026-05-17T00:05:03.556625+00:00",
       "verify_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260517_061602/phase-4/4-1-task-27-verify-attempt-2.log"
     }
   },
-  "updated_at": "2026-05-16T22:58:31.363855+00:00",
+  "updated_at": "2026-05-17T00:05:03.556628+00:00",
   "version": 1
 }
