@@ -1,6 +1,6 @@
 //! File storage operations.
 
-mod dedup;
+pub(crate) mod dedup;
 mod delete;
 mod destination;
 mod hash;

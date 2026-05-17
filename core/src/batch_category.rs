@@ -1,10 +1,15 @@
-//! C2-08 batch category change contract types and entry points.
+//! C2-08 batch category change types and entry points.
 
 use std::path::{Component, PathBuf};
 
 use serde::{Deserialize, Serialize};
 
-use crate::{CoreError, CoreResult, FileEntry, StorageMode};
+use crate::{classify, db, CoreError, CoreResult, FileEntry, StorageMode};
+
+mod apply;
+mod path_plan;
+mod plan;
+mod token;
 
 const AREA_MATRIX_DIR: &str = ".areamatrix";
 
@@ -158,37 +163,42 @@ pub struct BatchCategoryChangeReport {
 /// # Errors
 ///
 /// Returns `CoreError::Classify { reason }` for missing or invalid target
-/// categories, `CoreError::FileNotFound { path }` for an empty or invalid
-/// selection, and `CoreError::Db { message }` while the contract exists before
-/// the C2-08 implementation task connects repository metadata.
+/// categories, `CoreError::FileNotFound { path }` for an empty selection or
+/// invalid ids, `CoreError::PermissionDenied { path }` for blocked metadata or
+/// filesystem inspection, `CoreError::Io { message }` for preview filesystem
+/// failures, and `CoreError::Db { message }` for metadata reads.
 pub fn preview_batch_move_to_category(
     repo_path: String,
     file_ids: Vec<i64>,
     target_category: String,
     move_repo_owned_files: bool,
 ) -> CoreResult<BatchCategoryPreviewReport> {
-    validate_batch_category_request(&repo_path, &file_ids, &target_category)?;
-    let _move_repo_owned_files = move_repo_owned_files;
-    Err(CoreError::db(
-        "batch category preview implementation is pending",
-    ))
+    let repo = prepare_batch_category_request(&repo_path, &file_ids, &target_category)?;
+    let normalized_ids = normalize_batch_category_file_ids(&file_ids)?;
+    let plan = plan::build_batch_category_plan(
+        &repo,
+        &normalized_ids,
+        target_category.trim(),
+        move_repo_owned_files,
+    )?;
+    Ok(plan.into_preview_report())
 }
 
 /// Applies a C2-08 batch category change that was previously previewed.
 ///
 /// `preview_token` must come from [`preview_batch_move_to_category`] for the
-/// same selection, target category, move option, and inspected state. The later
-/// implementation task owns the real DB, filesystem, rollback, change-log, and
-/// undo-action behavior; this contract entry point currently exposes the
-/// stable FFI shape without returning fake success.
+/// same selection, target category, move option, and inspected state. Successful
+/// rows update repository metadata, optionally move repo-owned files, write
+/// `change_log`, and create one C2-07 undo action for all changed rows.
 ///
 /// # Errors
 ///
 /// Returns `CoreError::Classify { reason }` for missing or invalid target
-/// categories, `CoreError::FileNotFound { path }` for an empty or invalid
-/// selection, `CoreError::Conflict { path }` when Apply is not bound to a
-/// preview token, and `CoreError::Db { message }` until the C2-08
-/// implementation task connects repository metadata and file operations.
+/// categories, `CoreError::FileNotFound { path }` for an empty selection or
+/// invalid ids, `CoreError::Conflict { path }` when Apply is not bound to the
+/// current preview state, `CoreError::PermissionDenied { path }` for blocked
+/// writes, `CoreError::Io { message }` for file moves, and `CoreError::Db {
+/// message }` for metadata, change-log, or undo writes.
 pub fn batch_move_to_category(
     repo_path: String,
     file_ids: Vec<i64>,
@@ -196,15 +206,30 @@ pub fn batch_move_to_category(
     move_repo_owned_files: bool,
     preview_token: String,
 ) -> CoreResult<BatchCategoryChangeReport> {
-    validate_batch_category_request(&repo_path, &file_ids, &target_category)?;
     if preview_token.trim().is_empty() {
         return Err(CoreError::conflict("missing batch category preview"));
     }
-    let _move_repo_owned_files = move_repo_owned_files;
-    Err(CoreError::db("batch category implementation is pending"))
+    let repo = prepare_batch_category_request(&repo_path, &file_ids, &target_category)?;
+    let normalized_ids = normalize_batch_category_file_ids(&file_ids)?;
+    let plan = plan::build_batch_category_plan(
+        &repo,
+        &normalized_ids,
+        target_category.trim(),
+        move_repo_owned_files,
+    )?;
+    if plan.preview_token != preview_token {
+        return Err(CoreError::conflict("stale batch category preview"));
+    }
+    if !plan.can_apply() {
+        return Err(CoreError::conflict(
+            plan.apply_blocked_reason()
+                .unwrap_or_else(|| "batch category preview cannot be applied".to_owned()),
+        ));
+    }
+    apply::apply_batch_category_plan(&repo, plan)
 }
 
-fn validate_batch_category_request(
+fn prepare_batch_category_request(
     repo_path: &str,
     file_ids: &[i64],
     target_category: &str,
@@ -213,6 +238,8 @@ fn validate_batch_category_request(
         .map_err(|_| CoreError::db("batch category metadata is unavailable"))?;
     normalize_batch_category_file_ids(file_ids)?;
     validate_target_category(target_category)?;
+    db::ensure_initialized(&repo).map_err(normalize_batch_category_metadata_error)?;
+    classify::ensure_category_exists(&repo, target_category.trim())?;
     Ok(repo)
 }
 
@@ -254,6 +281,19 @@ fn validate_target_category(target_category: &str) -> CoreResult<()> {
         return Err(CoreError::classify("target category is invalid"));
     }
     Ok(())
+}
+
+fn normalize_batch_category_metadata_error(error: CoreError) -> CoreError {
+    match error {
+        CoreError::RepoNotInitialized { .. } => {
+            CoreError::db("batch category metadata is unavailable")
+        }
+        CoreError::PermissionDenied { .. } => {
+            CoreError::permission_denied("batch category metadata permission denied")
+        }
+        CoreError::Io { .. } => CoreError::io("batch category metadata io unavailable"),
+        other => other,
+    }
 }
 
 fn is_area_matrix_component(component: Component<'_>) -> bool {

@@ -6,19 +6,22 @@ use serde_json::{json, Value};
 
 use crate::{CoreError, CoreResult};
 
-mod fs_ops;
-use fs_ops::{map_io_error, move_checked_path, repo_relative_path, FileMoveRollbackGuard};
+use super::batch_file_actions::{
+    batch_file_state_block_reason, execute_restore_batch_file_state, parse_restore_batch_file_state,
+};
+use super::fs_ops::{map_io_error, move_checked_path, repo_relative_path, FileMoveRollbackGuard};
 
 pub(super) const RENAME_FILES_KIND: &str = "rename_files";
 pub(super) const MOVE_FILES_KIND: &str = "move_files";
 pub(super) const CHANGE_CATEGORY_KIND: &str = "change_category";
+pub(super) const BATCH_CHANGE_CATEGORY_KIND: &str = "batch_change_category";
 pub(super) const TRASH_DELETE_KIND: &str = "trash_delete";
 
 pub(super) struct FileUndoExecution {
     pub(super) summary: String,
     pub(super) affected_count: i64,
     pub(super) refresh_targets: Vec<String>,
-    guards: Vec<FileMoveRollbackGuard>,
+    pub(super) guards: Vec<FileMoveRollbackGuard>,
 }
 
 impl FileUndoExecution {
@@ -53,17 +56,21 @@ struct RestoreDeletedFileInverse {
     restore_category: String,
 }
 
-struct FileDbState {
-    path: String,
-    current_name: String,
-    category: String,
-    status: String,
+pub(super) struct FileDbState {
+    pub(super) path: String,
+    pub(super) current_name: String,
+    pub(super) category: String,
+    pub(super) status: String,
 }
 
 pub(super) fn is_file_action_kind(kind: &str) -> bool {
     matches!(
         kind,
-        RENAME_FILES_KIND | MOVE_FILES_KIND | CHANGE_CATEGORY_KIND | TRASH_DELETE_KIND
+        RENAME_FILES_KIND
+            | MOVE_FILES_KIND
+            | CHANGE_CATEGORY_KIND
+            | BATCH_CHANGE_CATEGORY_KIND
+            | TRASH_DELETE_KIND
     )
 }
 
@@ -76,6 +83,10 @@ pub(super) fn pending_file_block_reason(
         Some("restore_file_state") => {
             let inverse = parse_restore_file_state(inverse)?;
             file_state_block_reason(connection, repo, &inverse)
+        }
+        Some("restore_batch_file_state") => {
+            let inverse = parse_restore_batch_file_state(inverse)?;
+            batch_file_state_block_reason(connection, repo, &inverse)
         }
         Some("restore_deleted_file") => {
             let inverse = parse_restore_deleted_file(inverse)?;
@@ -98,6 +109,10 @@ pub(super) fn execute_file_action(
         Some("restore_file_state") => {
             let inverse = parse_restore_file_state(&inverse)?;
             execute_restore_file_state(tx, repo, kind, &inverse, action_id, completed_at)
+        }
+        Some("restore_batch_file_state") => {
+            let inverse = parse_restore_batch_file_state(&inverse)?;
+            execute_restore_batch_file_state(tx, repo, kind, &inverse, action_id, completed_at)
         }
         Some("restore_deleted_file") => {
             let inverse = parse_restore_deleted_file(&inverse)?;
@@ -226,7 +241,7 @@ fn deleted_file_block_reason(
     Ok(None)
 }
 
-fn filesystem_restore_block_reason(
+pub(super) fn filesystem_restore_block_reason(
     repo: &Path,
     expected_relative: &str,
     restore_relative: &str,
@@ -329,7 +344,7 @@ fn update_deleted_file_state(
     ensure_single_row_changed(changed, inverse.file_id)
 }
 
-fn insert_file_undo_change(
+pub(super) fn insert_file_undo_change(
     tx: &rusqlite::Transaction<'_>,
     kind: &str,
     file_id: i64,
@@ -339,7 +354,7 @@ fn insert_file_undo_change(
 ) -> CoreResult<()> {
     let action = match kind {
         RENAME_FILES_KIND => "renamed",
-        MOVE_FILES_KIND | CHANGE_CATEGORY_KIND => "moved",
+        MOVE_FILES_KIND | CHANGE_CATEGORY_KIND | BATCH_CHANGE_CATEGORY_KIND => "moved",
         TRASH_DELETE_KIND => "restored",
         _ => return Err(CoreError::conflict("Unsupported undo action kind")),
     };
@@ -390,7 +405,7 @@ fn active_state_matches(state: &FileDbState, inverse: &RestoreFileStateInverse) 
         && state.category == inverse.expected_category
 }
 
-fn load_file_state(
+pub(super) fn load_file_state(
     connection: &rusqlite::Connection,
     file_id: i64,
 ) -> CoreResult<Option<FileDbState>> {
@@ -413,7 +428,7 @@ fn load_file_state(
         .map_err(|error| CoreError::db(error.to_string()))
 }
 
-fn ensure_single_row_changed(changed: usize, file_id: i64) -> CoreResult<()> {
+pub(super) fn ensure_single_row_changed(changed: usize, file_id: i64) -> CoreResult<()> {
     if changed == 1 {
         Ok(())
     } else {
@@ -421,7 +436,7 @@ fn ensure_single_row_changed(changed: usize, file_id: i64) -> CoreResult<()> {
     }
 }
 
-fn file_refresh_targets(kind: &str) -> Vec<String> {
+pub(super) fn file_refresh_targets(kind: &str) -> Vec<String> {
     let mut targets = vec![
         "files".to_owned(),
         "undo_actions".to_owned(),

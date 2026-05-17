@@ -59,7 +59,7 @@ pub(super) fn resolve_final_path(
     }
 }
 
-pub(super) fn resolve_rename_path(
+pub(crate) fn resolve_rename_path(
     directory: &Path,
     filename: &str,
     current_path: &Path,
@@ -79,7 +79,7 @@ pub(super) fn resolve_rename_path(
     Err(CoreError::conflict("path conflict"))
 }
 
-pub(super) fn is_repo_owned(entry: &FileEntry) -> bool {
+pub(crate) fn is_repo_owned(entry: &FileEntry) -> bool {
     matches!(entry.storage_mode, StorageMode::Copied | StorageMode::Moved)
 }
 

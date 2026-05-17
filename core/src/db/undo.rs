@@ -9,13 +9,19 @@ use crate::{CoreError, CoreResult, UndoActionRecord, UndoActionResult, UndoActio
 use super::open_repo_connection;
 
 mod actions;
+mod batch_file_actions;
 mod file_actions;
+#[path = "undo/file_actions/fs_ops.rs"]
+mod fs_ops;
 pub(crate) use actions::{
     delete_undo_action, insert_delete_undo_action, insert_move_undo_action,
     insert_rename_undo_action, load_active_file_undo_snapshot, update_delete_undo_trash_path,
     FileUndoTarget,
 };
-use file_actions::{CHANGE_CATEGORY_KIND, MOVE_FILES_KIND, RENAME_FILES_KIND, TRASH_DELETE_KIND};
+use file_actions::{
+    BATCH_CHANGE_CATEGORY_KIND, CHANGE_CATEGORY_KIND, MOVE_FILES_KIND, RENAME_FILES_KIND,
+    TRASH_DELETE_KIND,
+};
 
 const UNDO_ACTION_LIMIT: i64 = 100;
 const BATCH_ADD_TAGS_KIND: &str = "batch_add_tags";
@@ -248,6 +254,10 @@ fn display_summary(kind: &str, summary: &UndoSummary) -> String {
         RENAME_FILES_KIND => "Renamed 1 file.".to_owned(),
         MOVE_FILES_KIND => "Moved 1 file.".to_owned(),
         CHANGE_CATEGORY_KIND => "Changed category for 1 file.".to_owned(),
+        BATCH_CHANGE_CATEGORY_KIND => {
+            let count = summary.affected_count.unwrap_or(0);
+            format!("Changed category for {count} file(s).")
+        }
         TRASH_DELETE_KIND => "Moved 1 file to Trash.".to_owned(),
         _ => format!("Undo action: {kind}"),
     }

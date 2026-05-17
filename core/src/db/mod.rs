@@ -37,7 +37,10 @@ pub(crate) use import::{
     NewImportRow, ReplacementImportRow,
 };
 pub(crate) use move_to_category::{
+    batch_update_category_metadata_only_in_tx, batch_update_category_repo_owned_in_tx,
+    insert_batch_category_undo_action_in_tx, load_batch_category_active_file,
     move_indexed_file_to_category, move_repo_owned_file_to_category,
+    with_batch_category_transaction, BatchCategoryUndoItem,
 };
 pub(crate) use note::{read_note_content, upsert_note_and_log};
 pub(crate) use overview::{

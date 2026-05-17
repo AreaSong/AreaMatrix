@@ -318,14 +318,15 @@ fn batch_change_category_contract_documents_consumer_state_and_scope_boundaries(
     }
 
     for fragment in [
-        "C2-08 batch category change contract",
+        "C2-08 batch category change types and entry points",
         "BatchCategoryPreviewReport",
         "BatchCategoryChangeReport",
         "preview_batch_move_to_category",
         "batch_move_to_category",
         "side-effect free",
-        "without returning fake success",
-        "batch category implementation is pending",
+        "build_batch_category_plan",
+        "apply_batch_category_plan",
+        "stale batch category preview",
     ] {
         assert_contains(BATCH_CATEGORY_RS, fragment);
     }
