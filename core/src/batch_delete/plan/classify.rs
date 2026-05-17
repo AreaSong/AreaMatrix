@@ -57,7 +57,7 @@ pub(super) fn preview_trash_available() -> CoreResult<bool> {
     };
     let trash_dir = PathBuf::from(home).join(".Trash");
     if path_exists(&trash_dir)? {
-        return Ok(true);
+        return path_is_writable_dir(&trash_dir);
     }
     let Some(parent) = trash_dir.parent() else {
         return Ok(false);

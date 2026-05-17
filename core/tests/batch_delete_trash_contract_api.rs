@@ -162,7 +162,7 @@ fn batch_delete_contract_exposes_signatures_inputs_outputs_and_errors() {
 fn batch_delete_contract_validates_inputs_without_fake_success() {
     assert!(matches!(
         preview_batch_delete(String::new(), vec![1], BatchDeleteMode::MoveToTrash),
-        Err(CoreError::Db { .. })
+        Err(CoreError::PermissionDenied { .. })
     ));
     assert!(matches!(
         preview_batch_delete(

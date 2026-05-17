@@ -1,0 +1,88 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-1/task-43`
+- 对应文件路径：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-43-c2-09-failure-edge.md`
+- 核验范围：`core/src/**`、`core/area_matrix.udl`、`core/tests/**`
+- Forbidden Touches：`apps/**`
+
+三、完成度摘要
+
+- 已覆盖项数：8
+- 未覆盖项数：0
+- 通过项数：8
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：空态、非法输入、权限、IO/DB 错误和错误码映射
+- 结果：通过
+- 证据：空/非法输入映射在 `batch_delete_trash_failure_recovery.rs:139`；Trash 不可写权限边界在 `:183`；DB item failure 在 `:228`；API 文档错误码覆盖 `docs/api/core-api.md:2097`
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/batch_delete_trash_failure_recovery.rs`
+
+- 项目：失败不留下半成品
+- 结果：通过
+- 证据：Undo 写入失败会 rollback Trash 和 index 回滚项，见 `core/src/batch_delete/apply.rs:78`、`:92`；混合 Trash + missing metadata 回滚测试见 `core/tests/batch_delete_trash_failure_recovery.rs:270`
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/batch_delete/apply.rs`
+
+- 项目：隐私/AI/远程调用默认关闭、密钥不入日志
+- 结果：通过
+- 证据：C2-09 文档明确“不触发 AI/网络”，见 `docs/api/core-api.md:2094`；实现只读 DB/FS/Trash 路径，未发现 AI、network、secret logging 调用。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/batch_delete.rs`
+
+- 项目：不得吞错或静默降级
+- 结果：通过
+- 证据：preview token stale 返回 `Conflict`，见 `core/src/batch_delete.rs:204`；per-item 失败写入 `Failed` 和 error，见 `core/src/batch_delete/apply.rs:281`；相关测试见 `core/tests/batch_delete_trash_implementation.rs:407`、`:448`
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/batch_delete.rs`
+
+- 项目：C2-09 失败路径有明确返回、可测试证据和用户文件安全保证
+- 结果：通过
+- 证据：`preview_batch_delete` / `batch_delete_to_trash` UDL 已落地，见 `core/area_matrix.udl:83`、`:90`；failure-recovery 测试 4 个场景全部通过。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+
+- 项目：高风险路径具备可回滚或可恢复说明
+- 结果：通过
+- 证据：API 文档要求 undo action 失败必须恢复 Trash 和 metadata，见 `docs/api/core-api.md:2086`；实现和测试均覆盖该回滚。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md`
+
+- 项目：Expected New Paths
+- 结果：通过
+- 证据：`core/src/**`、`core/area_matrix.udl`、`core/tests/**` 均有真实实现/测试落地。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/batch_delete_trash_failure_recovery.rs`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git diff --name-only -- apps` 无输出，未触碰 `apps/**`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，C2-09 拆分为 contract、plan、inspect、token、apply、DB rollback，职责清楚。
+- 注释 / rustdoc / 文档同步：通过，public API 有 rustdoc；Core API、UDL、capability spec、control map 对齐。
+- 错误处理与边界处理：通过，未发现生产路径 `unwrap()` / `expect()` / `panic!()`；失败通过 `CoreError` 或 item result 显式返回。
+- 测试与验证覆盖：通过，覆盖 contract、implementation、failure-recovery。
+- 占位、硬编码、mock-only、一次性实现检查：通过，测试使用 temp repo / test Trash，实际走 DB、FS、Trash 和 undo 路径。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-43`
+- 通过：prompt doctor、`git diff --check`、`cargo fmt --all -- --check`、`cargo clippy --all-targets --all-features -- -D warnings`
+- 通过：`cargo test --test batch_delete_trash_contract_api -- --nocapture`，4 passed
+- 通过：`cargo test --test batch_delete_trash_failure_recovery -- --nocapture`，4 passed
+- 通过：`cargo test --test batch_delete_trash_implementation -- --nocapture`，6 passed
+- 失败：无
+- 缺失：无
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS

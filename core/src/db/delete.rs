@@ -166,6 +166,39 @@ pub(crate) fn rollback_deleted_repo_owned_file(
         .map_err(|error| CoreError::db(error.to_string()))
 }
 
+pub(crate) fn rollback_removed_index_entry_row(
+    repo_path: &Path,
+    file_id: i64,
+    detail: &Value,
+) -> CoreResult<()> {
+    let detail_json = detail_json(detail)?;
+    let mut connection = open_repo_connection(repo_path)?;
+    let tx = connection
+        .transaction()
+        .map_err(|error| CoreError::db(error.to_string()))?;
+    let changed = tx
+        .execute(
+            "UPDATE files
+             SET deleted_at = NULL,
+                 updated_at = strftime('%s', 'now'),
+                 status = 'active'
+             WHERE id = ?1 AND status = 'deleted'",
+            params![file_id],
+        )
+        .map_err(|error| CoreError::db(error.to_string()))?;
+    if changed != 1 {
+        return Err(CoreError::db("database error"));
+    }
+    tx.execute(
+        "DELETE FROM change_log
+         WHERE file_id = ?1 AND action = 'removed_from_index' AND detail_json = ?2",
+        params![file_id, detail_json],
+    )
+    .map_err(|error| CoreError::db(error.to_string()))?;
+    tx.commit()
+        .map_err(|error| CoreError::db(error.to_string()))
+}
+
 fn update_file_status_and_log(
     repo_path: &Path,
     file_id: i64,

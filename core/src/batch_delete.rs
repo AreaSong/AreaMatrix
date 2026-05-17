@@ -214,8 +214,7 @@ pub fn batch_delete_to_trash(
 }
 
 fn prepare_batch_delete_request(repo_path: &str, file_ids: &[i64]) -> CoreResult<PathBuf> {
-    let repo = validate_batch_delete_repo_path(repo_path)
-        .map_err(|_| CoreError::db("batch delete metadata is unavailable"))?;
+    let repo = validate_batch_delete_repo_path(repo_path)?;
     normalize_batch_delete_file_ids(file_ids)?;
     db::ensure_initialized(&repo).map_err(normalize_batch_delete_metadata_error)?;
     Ok(repo)

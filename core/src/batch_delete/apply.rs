@@ -30,6 +30,7 @@ struct BatchDeleteExecution {
     report: BatchDeleteReport,
     undo_items: Vec<db::BatchDeleteUndoItem>,
     trash_rollbacks: Vec<TrashRollbackItem>,
+    index_rollbacks: Vec<IndexRollbackItem>,
 }
 
 impl BatchDeleteExecution {
@@ -48,6 +49,7 @@ impl BatchDeleteExecution {
             },
             undo_items: Vec::new(),
             trash_rollbacks: Vec::new(),
+            index_rollbacks: Vec::new(),
         }
     }
 
@@ -67,6 +69,9 @@ impl BatchDeleteExecution {
         if let Some(rollback_item) = applied.trash_rollback {
             self.trash_rollbacks.push(rollback_item);
         }
+        if let Some(rollback_item) = applied.index_rollback {
+            self.index_rollbacks.push(rollback_item);
+        }
         self.report.item_results.push(applied.result);
     }
 
@@ -77,16 +82,23 @@ impl BatchDeleteExecution {
         match db::insert_batch_delete_undo_action(repo, &self.undo_items) {
             Ok(token) => self.report.undo_token = Some(token),
             Err(error) => {
-                let rollback_error = self.rollback_trash_deletes(repo).err();
+                let rollback_error = self.rollback_after_undo_failure(repo).err();
                 return Err(rollback_error.unwrap_or(error));
             }
         }
         Ok(())
     }
 
-    fn rollback_trash_deletes(&mut self, repo: &Path) -> CoreResult<()> {
+    fn rollback_after_undo_failure(&mut self, repo: &Path) -> CoreResult<()> {
         let mut first_error = None;
         while let Some(item) = self.trash_rollbacks.pop() {
+            if let Err(error) = item.rollback(repo) {
+                if first_error.is_none() {
+                    first_error = Some(error);
+                }
+            }
+        }
+        while let Some(item) = self.index_rollbacks.pop() {
             if let Err(error) = item.rollback(repo) {
                 if first_error.is_none() {
                     first_error = Some(error);
@@ -109,28 +121,31 @@ struct AppliedBatchDeleteItem {
     refresh: bool,
     undo_item: Option<db::BatchDeleteUndoItem>,
     trash_rollback: Option<TrashRollbackItem>,
+    index_rollback: Option<IndexRollbackItem>,
 }
 
 fn apply_batch_delete_item(repo: &Path, item: BatchDeletePlanItem) -> AppliedBatchDeleteItem {
     match item {
         BatchDeletePlanItem::MoveToTrash(item) => match apply_move_to_trash(repo, item) {
-            Ok((file_id, path, undo_item, rollback_item)) => applied_success(
-                file_id,
-                path,
+            Ok(outcome) => applied_success(
+                outcome.file_id,
+                outcome.final_path,
                 BatchDeleteResultStatus::MovedToTrash,
-                Some(undo_item),
-                Some(rollback_item),
+                Some(outcome.undo_item),
+                Some(outcome.rollback_item),
+                None,
             ),
             Err((file_id, path, error)) => applied_failure(file_id, path, error),
         },
         BatchDeletePlanItem::RemoveFromIndex(item) | BatchDeletePlanItem::Missing(item) => {
             match apply_remove_from_index(repo, item) {
-                Ok((file_id, path)) => applied_success(
-                    file_id,
-                    path,
+                Ok(outcome) => applied_success(
+                    outcome.file_id,
+                    outcome.final_path,
                     BatchDeleteResultStatus::RemovedFromIndex,
                     None,
                     None,
+                    Some(outcome.rollback_item),
                 ),
                 Err((file_id, path, error)) => applied_failure(file_id, path, error),
             }
@@ -145,6 +160,7 @@ fn apply_batch_delete_item(repo: &Path, item: BatchDeletePlanItem) -> AppliedBat
             refresh: false,
             undo_item: None,
             trash_rollback: None,
+            index_rollback: None,
         },
         BatchDeletePlanItem::Blocked(item) => AppliedBatchDeleteItem {
             result: BatchDeleteItemResult {
@@ -156,6 +172,7 @@ fn apply_batch_delete_item(repo: &Path, item: BatchDeletePlanItem) -> AppliedBat
             refresh: false,
             undo_item: None,
             trash_rollback: None,
+            index_rollback: None,
         },
     }
 }
@@ -163,15 +180,7 @@ fn apply_batch_delete_item(repo: &Path, item: BatchDeletePlanItem) -> AppliedBat
 fn apply_move_to_trash(
     repo: &Path,
     item: PlannedBatchDeleteItem,
-) -> Result<
-    (
-        i64,
-        Option<String>,
-        db::BatchDeleteUndoItem,
-        TrashRollbackItem,
-    ),
-    (i64, Option<String>, CoreError),
-> {
+) -> Result<TrashDeleteOutcome, (i64, Option<String>, CoreError)> {
     let file_id = item.entry.id;
     let final_path = Some(item.entry.path.clone());
     let archive_path = delete_archive_path(repo, &item.current_path)
@@ -222,18 +231,27 @@ fn apply_move_to_trash(
         restore_category: item.entry.category,
     };
     guard.disarm();
-    Ok((file_id, final_path, undo_item, rollback_item))
+    Ok(TrashDeleteOutcome {
+        file_id,
+        final_path,
+        undo_item,
+        rollback_item,
+    })
 }
 
 fn apply_remove_from_index(
     repo: &Path,
     item: PlannedBatchDeleteItem,
-) -> Result<(i64, Option<String>), (i64, Option<String>, CoreError)> {
+) -> Result<IndexDeleteOutcome, (i64, Option<String>, CoreError)> {
     let file_id = item.entry.id;
     let final_path = Some(item.entry.path.clone());
     let detail = remove_index_detail(&item.entry, item.current_path.exists());
     match db::remove_batch_delete_index_entry_row(repo, file_id, &detail) {
-        Ok(()) => Ok((file_id, final_path)),
+        Ok(()) => Ok(IndexDeleteOutcome {
+            file_id,
+            final_path,
+            rollback_item: IndexRollbackItem { file_id, detail },
+        }),
         Err(error) => Err((file_id, final_path, error)),
     }
 }
@@ -244,6 +262,7 @@ fn applied_success(
     status: BatchDeleteResultStatus,
     undo_item: Option<db::BatchDeleteUndoItem>,
     trash_rollback: Option<TrashRollbackItem>,
+    index_rollback: Option<IndexRollbackItem>,
 ) -> AppliedBatchDeleteItem {
     AppliedBatchDeleteItem {
         result: BatchDeleteItemResult {
@@ -255,6 +274,7 @@ fn applied_success(
         refresh: true,
         undo_item,
         trash_rollback,
+        index_rollback,
     }
 }
 
@@ -273,6 +293,7 @@ fn applied_failure(
         refresh: false,
         undo_item: None,
         trash_rollback: None,
+        index_rollback: None,
     }
 }
 
@@ -291,6 +312,30 @@ impl TrashRollbackItem {
         }
         db::rollback_deleted_repo_owned_file(repo, self.file_id, &self.detail, None)
     }
+}
+
+struct TrashDeleteOutcome {
+    file_id: i64,
+    final_path: Option<String>,
+    undo_item: db::BatchDeleteUndoItem,
+    rollback_item: TrashRollbackItem,
+}
+
+struct IndexRollbackItem {
+    file_id: i64,
+    detail: Value,
+}
+
+impl IndexRollbackItem {
+    fn rollback(self, repo: &Path) -> CoreResult<()> {
+        db::rollback_removed_index_entry_row(repo, self.file_id, &self.detail)
+    }
+}
+
+struct IndexDeleteOutcome {
+    file_id: i64,
+    final_path: Option<String>,
+    rollback_item: IndexRollbackItem,
 }
 
 fn delete_archive_path(repo: &Path, target_path: &Path) -> CoreResult<PathBuf> {
