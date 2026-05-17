@@ -7,7 +7,8 @@
 
 ## Core API
 
-- 计划新增：`preview_batch_move_to_category`、`batch_move_to_category`
+- `preview_batch_move_to_category(repo_path, file_ids, target_category, move_repo_owned_files) -> BatchCategoryPreviewReport`
+- `batch_move_to_category(repo_path, file_ids, target_category, move_repo_owned_files, preview_token) -> BatchCategoryChangeReport`
 
 ## 输入
 
@@ -31,6 +32,7 @@
 
 - `Conflict`
 - `Classify`
+- `FileNotFound`
 - `PermissionDenied`
 - `Io`
 - `Db`

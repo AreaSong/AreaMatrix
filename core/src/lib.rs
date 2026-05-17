@@ -6,6 +6,7 @@
 uniffi::include_scaffolding!("area_matrix");
 
 pub mod api;
+mod batch_category;
 pub mod classify;
 pub mod config;
 pub mod db;
@@ -28,6 +29,11 @@ pub mod tree;
 pub mod undo;
 
 pub use api::*;
+pub use batch_category::{
+    batch_move_to_category, preview_batch_move_to_category, BatchCategoryChangeItemResult,
+    BatchCategoryChangeReport, BatchCategoryPreviewItem, BatchCategoryPreviewReport,
+    BatchCategoryPreviewStatus, BatchCategoryResultStatus, CategoryDistributionItem,
+};
 pub use domain::*;
 pub use error::{
     map_core_error, CoreError, CoreResult, ErrorKind, ErrorMapping, ErrorMappingInput,

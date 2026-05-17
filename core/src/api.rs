@@ -3,11 +3,12 @@
 use std::path::PathBuf;
 
 use crate::{
-    classify, db, icloud_conflicts, note, recovery, repair, repo_init, repo_path, repo_scan,
-    storage, sync, tree, ChangeFilter, ChangeLogEntry, ClassifyResult, CoreError, CoreResult,
-    DiagnosticsSnapshot, ExternalEvent, FileEntry, FileFilter, ICloudConflictPair, ImportOptions,
-    MoveToCategoryPreview, RecoveryReport, ReindexReport, RepairOptions, RepairReport, RepoConfig,
-    RepoInitOptions, RepoPathValidation, ScanSession, SyncResult,
+    batch_category, classify, db, icloud_conflicts, note, recovery, repair, repo_init, repo_path,
+    repo_scan, storage, sync, tree, BatchCategoryChangeReport, BatchCategoryPreviewReport,
+    ChangeFilter, ChangeLogEntry, ClassifyResult, CoreError, CoreResult, DiagnosticsSnapshot,
+    ExternalEvent, FileEntry, FileFilter, ICloudConflictPair, ImportOptions, MoveToCategoryPreview,
+    RecoveryReport, ReindexReport, RepairOptions, RepairReport, RepoConfig, RepoInitOptions,
+    RepoPathValidation, ScanSession, SyncResult,
 };
 
 fn not_implemented<T>() -> CoreResult<T> {
@@ -505,6 +506,77 @@ pub fn move_to_category(
     new_category: String,
 ) -> CoreResult<FileEntry> {
     storage::move_to_category(repo_path, file_id, new_category)
+}
+
+/// Previews a C2-08 batch category change for S2-12 without side effects.
+///
+/// The report gives Swift enough state to show selected-file category
+/// distribution, per-file target paths, metadata-only rows, skipped rows,
+/// blocked rows, and whether Apply can be enabled. `move_repo_owned_files`
+/// controls whether repository-owned `Copied` and `Moved` files are planned as
+/// filesystem moves; Indexed rows must remain metadata-only either way.
+///
+/// This preview must not create category folders, move files, update `files`,
+/// write `change_log`, create undo actions, update generated overviews, call AI
+/// providers, or touch user file contents.
+///
+/// # Errors
+///
+/// Returns `CoreError::Classify { reason }` for invalid target categories,
+/// `CoreError::FileNotFound { path }` for empty or invalid selections,
+/// `CoreError::PermissionDenied { path }` for blocked metadata or filesystem
+/// inspection, `CoreError::Io { message }` for preview filesystem failures,
+/// and `CoreError::Db { message }` for metadata reads.
+pub fn preview_batch_move_to_category(
+    repo_path: String,
+    file_ids: Vec<i64>,
+    target_category: String,
+    move_repo_owned_files: bool,
+) -> CoreResult<BatchCategoryPreviewReport> {
+    batch_category::preview_batch_move_to_category(
+        repo_path,
+        file_ids,
+        target_category,
+        move_repo_owned_files,
+    )
+}
+
+/// Applies a previously previewed C2-08 batch category change.
+///
+/// `preview_token` binds Apply to the latest preview for the same selection,
+/// target category, move option, and inspected state. Successful rows update
+/// `files.category`, optionally update `files.path` for repository-owned
+/// files, write `change_log`, and create a C2-07 undo action token. Partial
+/// failures must be represented per item rather than silently treated as
+/// success.
+///
+/// The operation is limited to C2-08. It must not create new categories,
+/// implement classifier rule editing, delete or trash files, rename unrelated
+/// files, save searches, retag files, call AI/network providers, or touch
+/// `apps/**`.
+///
+/// # Errors
+///
+/// Returns `CoreError::Classify { reason }` for invalid target categories,
+/// `CoreError::Conflict { path }` for stale previews or unsafe target
+/// conflicts, `CoreError::FileNotFound { path }` for invalid selections,
+/// `CoreError::PermissionDenied { path }` for blocked filesystem or metadata
+/// writes, `CoreError::Io { message }` for file moves, and
+/// `CoreError::Db { message }` for metadata, change-log, or undo writes.
+pub fn batch_move_to_category(
+    repo_path: String,
+    file_ids: Vec<i64>,
+    target_category: String,
+    move_repo_owned_files: bool,
+    preview_token: String,
+) -> CoreResult<BatchCategoryChangeReport> {
+    batch_category::batch_move_to_category(
+        repo_path,
+        file_ids,
+        target_category,
+        move_repo_owned_files,
+        preview_token,
+    )
 }
 
 /// Restores a deleted file entry.

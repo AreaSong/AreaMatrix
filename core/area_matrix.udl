@@ -63,6 +63,23 @@ namespace area_matrix {
     FileEntry move_to_category(string repo_path, i64 file_id, string new_category);
 
     [Throws=CoreError]
+    BatchCategoryPreviewReport preview_batch_move_to_category(
+        string repo_path,
+        sequence<i64> file_ids,
+        string target_category,
+        boolean move_repo_owned_files
+    );
+
+    [Throws=CoreError]
+    BatchCategoryChangeReport batch_move_to_category(
+        string repo_path,
+        sequence<i64> file_ids,
+        string target_category,
+        boolean move_repo_owned_files,
+        string preview_token
+    );
+
+    [Throws=CoreError]
     FileEntry restore_file(string repo_path, i64 file_id);
 
     [Throws=CoreError]
@@ -372,6 +389,63 @@ dictionary BatchMutationReport {
     string? undo_token;
 };
 
+dictionary CategoryDistributionItem {
+    string category;
+    i64 count;
+};
+
+dictionary BatchCategoryPreviewItem {
+    i64 file_id;
+    string? from_category;
+    string to_category;
+    string? current_path;
+    string? target_path;
+    string? target_name;
+    StorageMode? storage_mode;
+    boolean index_only;
+    boolean will_move_file;
+    BatchCategoryPreviewStatus status;
+    string? reason;
+};
+
+dictionary BatchCategoryPreviewReport {
+    i64 requested_file_count;
+    string target_category;
+    boolean move_repo_owned_files;
+    string preview_token;
+    sequence<CategoryDistributionItem> category_distribution;
+    i64 will_move_count;
+    i64 metadata_only_count;
+    i64 unchanged_count;
+    i64 skipped_count;
+    i64 blocked_count;
+    sequence<BatchCategoryPreviewItem> items;
+    boolean can_apply;
+    string? apply_blocked_reason;
+};
+
+dictionary BatchCategoryChangeItemResult {
+    i64 file_id;
+    string? from_category;
+    string to_category;
+    string? final_path;
+    BatchCategoryResultStatus status;
+    string? error;
+};
+
+dictionary BatchCategoryChangeReport {
+    i64 requested_file_count;
+    string target_category;
+    i64 moved_count;
+    i64 metadata_only_count;
+    i64 unchanged_count;
+    i64 skipped_count;
+    i64 failed_count;
+    sequence<BatchCategoryChangeItemResult> item_results;
+    sequence<FileEntry> updated_files;
+    string? undo_token;
+};
+
 dictionary UndoActionRecord {
     string action_id;
     string kind;
@@ -565,6 +639,8 @@ enum SearchIndexStatus { "Ready", "Indexing", "Unavailable" };
 enum ICloudConflictStatus { "NeedsReview", "Resolved" };
 enum ExternalEventKind { "Created", "Removed", "Modified", "Renamed" };
 enum BatchMutationStatus { "Added", "AlreadyHadTag", "Failed" };
+enum BatchCategoryPreviewStatus { "WillMove", "MetadataOnly", "Unchanged", "Skipped", "Blocked" };
+enum BatchCategoryResultStatus { "Moved", "MetadataUpdated", "Unchanged", "Skipped", "Failed" };
 enum UndoActionStatus { "Pending", "Executed", "Expired", "Blocked" };
 enum ErrorKind {
     "Io", "Db", "Config", "Classify", "Conflict", "DuplicateFile",
