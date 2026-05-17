@@ -114,7 +114,8 @@ namespace area_matrix {
     BatchDeleteReport batch_delete_to_trash(
         string repo_path,
         sequence<i64> file_ids,
-        BatchDeleteMode delete_mode
+        BatchDeleteMode delete_mode,
+        string preview_token
     );
 
     [Throws=CoreError]
@@ -499,6 +500,7 @@ dictionary BatchDeletePreviewItem {
 dictionary BatchDeletePreviewReport {
     i64 requested_file_count;
     BatchDeleteMode delete_mode;
+    string preview_token;
     boolean trash_available;
     boolean undo_available;
     i64 will_trash_count;
@@ -817,7 +819,7 @@ interface CoreError {
 | `preview_batch_move_to_category(repo, file_ids, category, move)` | storage | √ | Classify / Conflict / FileNotFound / PermissionDenied / Io / Db |
 | `batch_move_to_category(repo, file_ids, category, move, preview_token)` | storage | √ | Classify / Conflict / FileNotFound / PermissionDenied / Io / Db |
 | `preview_batch_delete(repo, file_ids, delete_mode)` | storage | √ | PermissionDenied / FileNotFound / Io / Db |
-| `batch_delete_to_trash(repo, file_ids, delete_mode)` | storage | √ | PermissionDenied / FileNotFound / Io / Db |
+| `batch_delete_to_trash(repo, file_ids, delete_mode, preview_token)` | storage | √ | PermissionDenied / FileNotFound / Io / Db |
 | `list_undo_actions(repo)` | undo | √ | Db / Io |
 | `undo_action(repo, action_id)` | undo | √ | Conflict / FileNotFound / PermissionDenied / Db / Io |
 | `get_file(repo, file_id)` | query | √ | FileNotFound |
@@ -2015,6 +2017,8 @@ C2-09 的只读批量删除预览入口，服务 `S2-13 batch-delete-confirm`。
 
 - `requested_file_count`：去重后的选中文件数，供 sheet 标题和影响摘要使用。
 - `delete_mode`：回显本次预览模式，避免 UI 混淆 Trash 删除和 index-only 移除。
+- `preview_token`：绑定本次选择集、模式、Trash 可用性和已检查文件状态的确认令牌；执行
+  API 必须带回该值。
 - `trash_available`：系统 Trash 是否可用于 repo-owned 删除；为 `false` 时 UI 必须禁用
   `Move to Trash`，不得提供永久删除替代。
 - `undo_available`：本次可处理项是否能创建 C2-07 undo action；为 `false` 时 S2-13
@@ -2044,21 +2048,22 @@ C2-09 的只读批量删除预览入口，服务 `S2-13 batch-delete-confirm`。
 - `Io`：Trash 可用性、文件系统 metadata 或路径检查失败。
 - `Db`：SQLite 查询、file row、Trash/undo 预检状态读取失败。
 
-### `batch_delete_to_trash(repoPath, fileIds, deleteMode) throws -> BatchDeleteReport`
+### `batch_delete_to_trash(repoPath, fileIds, deleteMode, previewToken) throws -> BatchDeleteReport`
 
 ```swift
 let report = try AreaMatrix.batchDeleteToTrash(
     repoPath: repoPath,
     fileIds: selectedFileIds,
-    deleteMode: preview.deleteMode
+    deleteMode: preview.deleteMode,
+    previewToken: preview.previewToken
 )
 undoToast.present(token: report.undoToken)
 ```
 
 C2-09 的批量删除执行入口，服务 `S2-13 batch-delete-confirm` 的
 `Move to Trash` / `Remove from index`，并向 `S2-10 undo-toast` / C2-07 提供可撤销操作状态。
-输入必须与用户刚确认的 preview 状态一致；如果选择集、模式或 inspected state 变化，
-Core 必须拒绝不安全写入并让 UI 重新 Preview。
+输入必须带回用户刚确认的 `preview_token`，并与 preview 状态一致；如果选择集、模式、
+Trash 可用性或 inspected state 变化，Core 必须拒绝不安全写入并让 UI 重新 Preview。
 
 输出 `BatchDeleteReport`：
 
@@ -2078,6 +2083,9 @@ Core 必须拒绝不安全写入并让 UI 重新 Preview。
 - `MoveToTrash` 只能处理 AreaMatrix 管理的 `Copied` / `Moved` active 条目。成功时 Core
   把目标文件移入系统 Trash，软删除 `files` row，写 `change_log.action = deleted`，
   并进入 C2-07 undo action。
+- `MoveToTrash` 如果已经移动文件和软删除 metadata，但批量 undo action 写入失败，Core
+  必须把已处理项从 Trash 恢复到原 repo 路径并回滚对应 `files` / `change_log` 变更，
+  然后返回 `Db` 或回滚失败对应的 `Io` / `Db` 错误；不得留下无 undo token 的已删除状态。
 - `RemoveFromIndex` 只能处理 Indexed / Adopted / External 或 Missing metadata。成功时
   只更新 metadata，使该条目不再出现在默认 list/detail 中，并写
   `change_log.action = removed_from_index`；不得移动、删除、重命名、覆盖或 Trash 外部源文件。

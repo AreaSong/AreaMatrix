@@ -1,10 +1,18 @@
 //! C2-09 batch delete to Trash contract types and entry points.
 
-use std::path::{Component, PathBuf};
+use std::{
+    ffi::OsStr,
+    path::{Component, Path, PathBuf},
+};
 
 use serde::{Deserialize, Serialize};
 
-use crate::{CoreError, CoreResult, StorageMode};
+use crate::{db, CoreError, CoreResult, StorageMode};
+
+mod apply;
+mod inspect;
+mod plan;
+mod token;
 
 const AREA_MATRIX_DIR: &str = ".areamatrix";
 
@@ -75,6 +83,8 @@ pub struct BatchDeletePreviewReport {
     pub requested_file_count: i64,
     /// Delete mode selected for this preview.
     pub delete_mode: BatchDeleteMode,
+    /// Token that binds Apply to this preview request and inspected state.
+    pub preview_token: String,
     /// Whether the system Trash is available for repository-owned rows.
     pub trash_available: bool,
     /// Whether successful rows can create a C2-07 undo action.
@@ -153,14 +163,16 @@ pub fn preview_batch_delete(
     file_ids: Vec<i64>,
     delete_mode: BatchDeleteMode,
 ) -> CoreResult<BatchDeletePreviewReport> {
-    prepare_batch_delete_request(&repo_path, &file_ids, &delete_mode)?;
-    Err(CoreError::db(
-        "batch delete preview metadata is unavailable",
-    ))
+    let repo = prepare_batch_delete_request(&repo_path, &file_ids)?;
+    let normalized_ids = normalize_batch_delete_file_ids(&file_ids)?;
+    let plan = plan::BatchDeletePlan::build(&repo, normalized_ids, delete_mode)?;
+    Ok(plan.into_preview_report())
 }
 
 /// Applies C2-09 batch deletion for rows approved by S2-13.
 ///
+/// `preview_token` must come from [`preview_batch_delete`] for the same
+/// selection, delete mode, Trash availability, and inspected file state.
 /// `BatchDeleteMode::MoveToTrash` is limited to repository-owned files that can
 /// be moved to the system Trash. `BatchDeleteMode::RemoveFromIndex` is limited
 /// to index-only or missing rows and must never delete, move, rename, overwrite,
@@ -172,26 +184,41 @@ pub fn preview_batch_delete(
 /// # Errors
 ///
 /// Returns `CoreError::FileNotFound { path }` for an empty selection or invalid
-/// ids, `CoreError::PermissionDenied { path }` when Trash or metadata writes
-/// are blocked, `CoreError::Io { message }` for Trash or filesystem failures,
-/// and `CoreError::Db { message }` for metadata, change-log, or undo writes.
+/// ids, `CoreError::Conflict { path }` when Apply is not bound to the current
+/// preview state, `CoreError::PermissionDenied { path }` when Trash or metadata
+/// writes are blocked, `CoreError::Io { message }` for Trash or filesystem
+/// failures, and `CoreError::Db { message }` for metadata, change-log, or undo
+/// writes.
 pub fn batch_delete_to_trash(
     repo_path: String,
     file_ids: Vec<i64>,
     delete_mode: BatchDeleteMode,
+    preview_token: String,
 ) -> CoreResult<BatchDeleteReport> {
-    prepare_batch_delete_request(&repo_path, &file_ids, &delete_mode)?;
-    Err(CoreError::db("batch delete metadata is unavailable"))
+    if preview_token.trim().is_empty() {
+        return Err(CoreError::conflict("missing batch delete preview"));
+    }
+    let repo = prepare_batch_delete_request(&repo_path, &file_ids)?;
+    let normalized_ids = normalize_batch_delete_file_ids(&file_ids)?;
+    let plan = plan::BatchDeletePlan::build(&repo, normalized_ids, delete_mode)?;
+    if plan.preview_token != preview_token {
+        return Err(CoreError::conflict("stale batch delete preview"));
+    }
+    if !plan.can_apply() {
+        return Err(CoreError::conflict(
+            plan.apply_blocked_reason()
+                .unwrap_or_else(|| "batch delete preview cannot be applied".to_owned()),
+        ));
+    }
+    apply::apply_batch_delete_plan(&repo, plan)
 }
 
-fn prepare_batch_delete_request(
-    repo_path: &str,
-    file_ids: &[i64],
-    _delete_mode: &BatchDeleteMode,
-) -> CoreResult<Vec<i64>> {
-    validate_batch_delete_repo_path(repo_path)
+fn prepare_batch_delete_request(repo_path: &str, file_ids: &[i64]) -> CoreResult<PathBuf> {
+    let repo = validate_batch_delete_repo_path(repo_path)
         .map_err(|_| CoreError::db("batch delete metadata is unavailable"))?;
-    normalize_batch_delete_file_ids(file_ids)
+    normalize_batch_delete_file_ids(file_ids)?;
+    db::ensure_initialized(&repo).map_err(normalize_batch_delete_metadata_error)?;
+    Ok(repo)
 }
 
 fn validate_batch_delete_repo_path(repo_path: &str) -> CoreResult<PathBuf> {
@@ -219,6 +246,52 @@ fn normalize_batch_delete_file_ids(file_ids: &[i64]) -> CoreResult<Vec<i64>> {
         return Err(CoreError::file_not_found("file:empty"));
     }
     Ok(normalized)
+}
+
+fn normalize_batch_delete_metadata_error(error: CoreError) -> CoreError {
+    match error {
+        CoreError::RepoNotInitialized { .. } => {
+            CoreError::db("batch delete metadata is unavailable")
+        }
+        CoreError::PermissionDenied { .. } => {
+            CoreError::permission_denied("batch delete metadata permission denied")
+        }
+        CoreError::Io { .. } => CoreError::io("batch delete metadata io unavailable"),
+        other => other,
+    }
+}
+
+fn repo_relative_file_path(repo: &Path, relative_path: &str) -> CoreResult<PathBuf> {
+    let relative = Path::new(relative_path);
+    validate_repo_relative_path(relative)?;
+    Ok(repo.join(relative))
+}
+
+fn validate_repo_relative_path(path: &Path) -> CoreResult<()> {
+    if path.is_absolute() || path.as_os_str().is_empty() {
+        return Err(CoreError::invalid_path("invalid path"));
+    }
+    for component in path.components() {
+        let Component::Normal(part) = component else {
+            return Err(CoreError::invalid_path("invalid path"));
+        };
+        if part == OsStr::new(AREA_MATRIX_DIR) {
+            return Err(CoreError::invalid_path("invalid path"));
+        }
+    }
+    Ok(())
+}
+
+fn error_message(error: CoreError) -> String {
+    match error {
+        CoreError::Conflict { path } => format!("Conflict: {path}"),
+        CoreError::FileNotFound { path } => format!("FileNotFound: {path}"),
+        CoreError::PermissionDenied { path } => format!("PermissionDenied: {path}"),
+        CoreError::Io { message } => format!("Io: {message}"),
+        CoreError::Db { message } => format!("Db: {message}"),
+        CoreError::InvalidPath { path } => format!("InvalidPath: {path}"),
+        other => other.to_string(),
+    }
 }
 
 fn is_area_matrix_component(component: Component<'_>) -> bool {

@@ -28,7 +28,9 @@ mod tags;
 mod undo;
 pub(crate) use change_log::list_changes;
 pub(crate) use delete::{
-    remove_index_entry_row, rollback_deleted_repo_owned_file, soft_delete_repo_owned_file,
+    insert_batch_delete_undo_action, remove_batch_delete_index_entry_row, remove_index_entry_row,
+    rollback_deleted_repo_owned_file, soft_delete_batch_repo_owned_file,
+    soft_delete_repo_owned_file, BatchDeleteUndoItem,
 };
 pub(crate) use import::{
     delete_file_row, find_active_file_by_hash, find_active_file_by_path, get_active_file_by_id,

@@ -99,7 +99,7 @@ CREATE TABLE IF NOT EXISTS change_log (
   file_id INTEGER,
   action TEXT NOT NULL CHECK (action IN (
     'imported','adopted','renamed','moved','edited_note',
-    'deleted','restored','external_modified'
+    'deleted','removed_from_index','restored','external_modified'
   )),
   detail_json TEXT NOT NULL,
   occurred_at INTEGER NOT NULL,

@@ -31,7 +31,10 @@ fn batch_delete_contract_exposes_signatures_inputs_outputs_and_errors() {
         _: fn(String, Vec<i64>, BatchDeleteMode) -> CoreResult<BatchDeletePreviewReport>,
     ) {
     }
-    fn assert_apply(_: fn(String, Vec<i64>, BatchDeleteMode) -> CoreResult<BatchDeleteReport>) {}
+    fn assert_apply(
+        _: fn(String, Vec<i64>, BatchDeleteMode, String) -> CoreResult<BatchDeleteReport>,
+    ) {
+    }
 
     assert_preview(preview_batch_delete);
     assert_apply(batch_delete_to_trash);
@@ -39,6 +42,7 @@ fn batch_delete_contract_exposes_signatures_inputs_outputs_and_errors() {
     let preview = BatchDeletePreviewReport {
         requested_file_count: 4,
         delete_mode: BatchDeleteMode::MoveToTrash,
+        preview_token: "preview:batch-delete:42".to_owned(),
         trash_available: true,
         undo_available: true,
         will_trash_count: 2,
@@ -180,7 +184,8 @@ fn batch_delete_contract_validates_inputs_without_fake_success() {
         batch_delete_to_trash(
             "/tmp/repo".to_owned(),
             vec![1, 1],
-            BatchDeleteMode::RemoveFromIndex
+            BatchDeleteMode::RemoveFromIndex,
+            "preview:batch-delete:42".to_owned()
         ),
         Err(CoreError::Db { .. })
     ));
@@ -223,6 +228,18 @@ fn batch_delete_contract_docs_api_udl_and_control_map_stay_aligned() {
         "sequence<i64> file_ids",
         "BatchDeleteMode delete_mode",
         "BatchDeleteReport batch_delete_to_trash(",
+        "string preview_token",
+        "dictionary BatchDeletePreviewReport",
+        "string preview_token",
+    ] {
+        assert_contains(UDL, fragment);
+    }
+
+    for fragment in [
+        "BatchDeletePreviewReport preview_batch_delete(",
+        "sequence<i64> file_ids",
+        "BatchDeleteMode delete_mode",
+        "BatchDeleteReport batch_delete_to_trash(",
         "dictionary BatchDeletePreviewItem",
         "StorageMode? storage_mode;",
         "BatchDeleteMode delete_mode;",
@@ -254,9 +271,10 @@ fn batch_delete_contract_docs_api_udl_and_control_map_stay_aligned() {
 
     for fragment in [
         "| `preview_batch_delete(repo, file_ids, delete_mode)` | storage | √ | PermissionDenied / FileNotFound / Io / Db |",
-        "| `batch_delete_to_trash(repo, file_ids, delete_mode)` | storage | √ | PermissionDenied / FileNotFound / Io / Db |",
+        "| `batch_delete_to_trash(repo, file_ids, delete_mode, preview_token)` | storage | √ | PermissionDenied / FileNotFound / Io / Db |",
         "### `preview_batch_delete(repoPath, fileIds, deleteMode) throws -> BatchDeletePreviewReport`",
-        "### `batch_delete_to_trash(repoPath, fileIds, deleteMode) throws -> BatchDeleteReport`",
+        "### `batch_delete_to_trash(repoPath, fileIds, deleteMode, previewToken) throws -> BatchDeleteReport`",
+        "`preview_token`",
         "`S2-13 batch-delete-confirm`",
         "`S2-10 undo-toast`",
         "`MoveToTrash`",

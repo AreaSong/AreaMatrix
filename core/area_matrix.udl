@@ -90,7 +90,8 @@ namespace area_matrix {
     BatchDeleteReport batch_delete_to_trash(
         string repo_path,
         sequence<i64> file_ids,
-        BatchDeleteMode delete_mode
+        BatchDeleteMode delete_mode,
+        string preview_token
     );
 
     [Throws=CoreError]
@@ -475,6 +476,7 @@ dictionary BatchDeletePreviewItem {
 dictionary BatchDeletePreviewReport {
     i64 requested_file_count;
     BatchDeleteMode delete_mode;
+    string preview_token;
     boolean trash_available;
     boolean undo_available;
     i64 will_trash_count;

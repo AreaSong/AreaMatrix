@@ -258,8 +258,17 @@ fn display_summary(kind: &str, summary: &UndoSummary) -> String {
             let count = summary.affected_count.unwrap_or(0);
             format!("Changed category for {count} file(s).")
         }
-        TRASH_DELETE_KIND => "Moved 1 file to Trash.".to_owned(),
+        TRASH_DELETE_KIND => trash_delete_summary(summary),
         _ => format!("Undo action: {kind}"),
+    }
+}
+
+fn trash_delete_summary(summary: &UndoSummary) -> String {
+    let count = summary.affected_count.unwrap_or(1);
+    if count == 1 {
+        "Moved 1 file to Trash.".to_owned()
+    } else {
+        format!("Moved {count} files to Trash.")
     }
 }
 

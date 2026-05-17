@@ -7,7 +7,9 @@ use serde_json::{json, Value};
 use crate::{CoreError, CoreResult};
 
 use super::batch_file_actions::{
-    batch_file_state_block_reason, execute_restore_batch_file_state, parse_restore_batch_file_state,
+    batch_deleted_file_block_reason, batch_file_state_block_reason,
+    execute_restore_batch_deleted_files, execute_restore_batch_file_state,
+    parse_restore_batch_deleted_files, parse_restore_batch_file_state,
 };
 use super::fs_ops::{map_io_error, move_checked_path, repo_relative_path, FileMoveRollbackGuard};
 
@@ -88,6 +90,10 @@ pub(super) fn pending_file_block_reason(
             let inverse = parse_restore_batch_file_state(inverse)?;
             batch_file_state_block_reason(connection, repo, &inverse)
         }
+        Some("restore_batch_deleted_files") => {
+            let inverse = parse_restore_batch_deleted_files(inverse)?;
+            batch_deleted_file_block_reason(connection, repo, &inverse)
+        }
         Some("restore_deleted_file") => {
             let inverse = parse_restore_deleted_file(inverse)?;
             deleted_file_block_reason(connection, repo, &inverse)
@@ -113,6 +119,10 @@ pub(super) fn execute_file_action(
         Some("restore_batch_file_state") => {
             let inverse = parse_restore_batch_file_state(&inverse)?;
             execute_restore_batch_file_state(tx, repo, kind, &inverse, action_id, completed_at)
+        }
+        Some("restore_batch_deleted_files") => {
+            let inverse = parse_restore_batch_deleted_files(&inverse)?;
+            execute_restore_batch_deleted_files(tx, repo, kind, &inverse, action_id, completed_at)
         }
         Some("restore_deleted_file") => {
             let inverse = parse_restore_deleted_file(&inverse)?;

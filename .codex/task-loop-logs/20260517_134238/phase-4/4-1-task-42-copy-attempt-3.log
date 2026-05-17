@@ -1,0 +1,26 @@
+一、执行结论：已完成。
+
+二、执行范围：单任务 `4-1/task-42`。修改范围保持在允许的 Core 路径内：`core/src/**`、`core/area_matrix.udl`、`core/tests/**`。已确认 `docs/**` 越界 diff 清空，`apps/**` 未触碰。
+
+三、完成情况：
+- C2-09 only：未实现相邻 C* 能力。
+- preview token：已绑定文件 inspected state，包括 same-path 内容变化，执行时会返回 `Conflict`。
+- undo 写入失败：不再塞入 `file_id: 0` 的 synthetic failed item，改为按合同传播 `CoreError::Db`。
+- 测试补齐：新增 same-path content drift、undo action 写入失败两个高风险用例。
+- Forbidden Touches：`git diff --name-only -- docs apps` 无输出。
+
+四、工程质量：
+代码仍是 Rust Core 实现，不依赖 SwiftUI/AppKit。错误处理显式传播，未引入 mock-only、硬编码通过态或一次性实现。测试中的 `expect` 都是带说明的 fixture/assertion 用法；生产路径未新增 `unwrap/expect/panic`。
+
+五、验证情况：
+已运行 `./dev check task 4-1/task-42`，通过：
+- `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`
+- `git diff --check`
+- `cargo test --test batch_delete_trash_contract_api -- --nocapture`：4 passed
+- `cargo test --test batch_delete_trash_implementation -- --nocapture`：6 passed
+
+未运行宽门禁；这是按当前 manifest 的 Validation 上限执行。
+
+六、风险与后续：
+剩余风险是当前 undo 写入失败会按合同返回 `Db`，但文件和 metadata 已完成写入，属于上次验收要求的合同修复；更强的事务级文件系统/DB 全回滚如果需要，应放到后续 failure-edge 或 integration verify。建议下一个任务进入 `4-1/task-43`，继续覆盖 C2-09 failure-edge。 
+

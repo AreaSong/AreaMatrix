@@ -604,6 +604,8 @@ pub fn preview_batch_delete(
 
 /// Applies C2-09 batch deletion for the mode confirmed by S2-13.
 ///
+/// `preview_token` must come from the last confirmed C2-09 preview for the
+/// same selection, delete mode, Trash availability, and inspected file state.
 /// `MoveToTrash` handles only repository-owned files and must never perform
 /// permanent deletion. `RemoveFromIndex` handles index-only or missing rows
 /// without touching external source files. Successful writes report per-item
@@ -613,15 +615,18 @@ pub fn preview_batch_delete(
 /// # Errors
 ///
 /// Returns `CoreError::FileNotFound { path }` for empty selections or invalid
-/// ids, `CoreError::PermissionDenied { path }` when Trash or metadata writes
-/// are blocked, `CoreError::Io { message }` for Trash or filesystem failures,
-/// and `CoreError::Db { message }` for metadata, change-log, or undo writes.
+/// ids, `CoreError::Conflict { path }` when Apply is not bound to the current
+/// preview state, `CoreError::PermissionDenied { path }` when Trash or metadata
+/// writes are blocked, `CoreError::Io { message }` for Trash or filesystem
+/// failures, and `CoreError::Db { message }` for metadata, change-log, or undo
+/// writes.
 pub fn batch_delete_to_trash(
     repo_path: String,
     file_ids: Vec<i64>,
     delete_mode: BatchDeleteMode,
+    preview_token: String,
 ) -> CoreResult<BatchDeleteReport> {
-    batch_delete::batch_delete_to_trash(repo_path, file_ids, delete_mode)
+    batch_delete::batch_delete_to_trash(repo_path, file_ids, delete_mode, preview_token)
 }
 
 /// Restores a deleted file entry.
