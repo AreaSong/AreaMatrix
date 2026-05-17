@@ -72,7 +72,11 @@ fn insert_active_file(repo: &Path, relative_path: &str) -> i64 {
                 ?3, 'copied', 'imported', NULL,
                 100, 100, 'active'
              )",
-            params![relative_path, current_name, format!("{:064x}", relative_path.len())],
+            params![
+                relative_path,
+                current_name,
+                format!("{:064x}", relative_path.len())
+            ],
         )
         .expect("insert active file row");
     connection.last_insert_rowid()
@@ -208,7 +212,10 @@ fn assert_db_error<T: std::fmt::Debug>(result: Result<T, CoreError>) {
     assert!(matches!(error, CoreError::Db { .. }));
     let mapping = error.to_error_mapping();
     assert_eq!(mapping.kind, ErrorKind::Db);
-    assert_eq!(mapping.recoverability, ErrorRecoverability::UserActionRequired);
+    assert_eq!(
+        mapping.recoverability,
+        ErrorRecoverability::UserActionRequired
+    );
 }
 
 #[test]
@@ -238,7 +245,9 @@ fn batch_add_tags_validation_covers_success_skip_failure_and_undo_scope() {
     assert_eq!(report.item_results.len(), 6);
     assert_item_statuses(&report, first_id, second_id);
 
-    let token = report.undo_token.expect("added relations create undo token");
+    let token = report
+        .undo_token
+        .expect("added relations create undo token");
     assert_eq!(tag_rows(repo.path()).len(), 4);
     assert_eq!(change_log_rows(repo.path()).len(), 3);
     assert_eq!(undo_action_rows(repo.path()).len(), 1);
@@ -259,11 +268,19 @@ fn batch_add_tags_validation_covers_failure_paths_without_side_effects() {
         vec!["urgent".to_owned()],
     ));
     assert!(matches!(
-        batch_add_tags(path_string(repo.path()), Vec::new(), vec!["urgent".to_owned()]),
+        batch_add_tags(
+            path_string(repo.path()),
+            Vec::new(),
+            vec!["urgent".to_owned()]
+        ),
         Err(CoreError::FileNotFound { .. })
     ));
     assert!(matches!(
-        batch_add_tags(path_string(repo.path()), vec![file_id], vec!["bad/tag".to_owned()]),
+        batch_add_tags(
+            path_string(repo.path()),
+            vec![file_id],
+            vec!["bad/tag".to_owned()]
+        ),
         Err(CoreError::Db { .. })
     ));
 

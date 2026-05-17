@@ -1,0 +1,19 @@
+一、执行结论：已完成。
+
+二、执行范围：单任务 `4-1/task-30`。本轮只修复上次验收指出的 rustfmt 阻塞，修改文件为 [core/tests/batch_add_tags_validation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/batch_add_tags_validation.rs:72)。未触碰 `apps/**`；`git diff --name-only -- apps` 无输出。工作区里仍有既有 task-loop runtime/progress/log 文件变更，不属于本轮产品实现改动。
+
+三、完成情况：核对清单通过。C2-06 的 capability spec、Core API、UDL、Rust 实现和测试已被 task gate 覆盖；S2-09 需要的 Added / Already had tag / Failed、partial failure、undo token、change_log 副作用由现有测试验证；未实现 control map 之外能力。
+
+四、工程质量：本轮是 rustfmt 机械格式修复，没有新增抽象、依赖、mock-only、硬编码或业务路径。错误处理、边界处理、rustdoc/文档同步保持现状；本次改动解决了工程质量门禁中的格式阻塞。
+
+五、验证情况：已重新运行 `./dev check task 4-1/task-30`，通过。关键结果：
+- `prompt_pipeline.py doctor`: OK，tasks 637 / manifests 637
+- `git diff --check`: 通过
+- `cargo fmt --all -- --check`: 通过
+- `cargo clippy --all-targets --all-features -- -D warnings`: 通过
+- `batch_add_tags_contract_api`: 4 passed
+- `batch_add_tags_failure_recovery`: 7 passed
+- `batch_add_tags_implementation`: 4 passed
+- `batch_add_tags_validation`: 4 passed
+
+六、风险与后续：当前 task 的阻塞项已解除，C2-06 可作为后续 page-feature task 的真实 Core 依赖。建议下一个任务继续进入 `4-1/task-31`，按 manifest 继续执行。  
