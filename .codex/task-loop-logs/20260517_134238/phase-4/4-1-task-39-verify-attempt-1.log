@@ -1,0 +1,79 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-1/task-39`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-39-c2-08-validation.md`
+- 主要涉及路径：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/**`
+
+三、完成度摘要
+
+- 已覆盖项数：11
+- 未覆盖项数：0
+- 通过项数：11
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：补齐测试，覆盖成功和失败路径
+- 结果：通过
+- 证据：`core/tests/batch_change_category_validation.rs` 覆盖 UI 可见成功态、部分失败显式报告、失败路径不变更状态；`./dev check task 4-1/task-39` 还跑过既有 contract、failure、implementation、rollback safety 测试。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/batch_change_category_validation.rs`
+
+- 项目：Core API / UDL / Rust 实现一致
+- 结果：通过
+- 证据：`core/area_matrix.udl` 暴露 `preview_batch_move_to_category` 和 `batch_move_to_category`；`core/src/api.rs` 同名 public API 委托到 `batch_category`；`docs/api/core-api.md` 与 UDL 的 report/status 字段一致；validation 测试包含 API/UDL/Rust 文本对齐断言。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/batch_category.rs`
+
+- 项目：不新增业务功能，只补验证与必要测试 fixture
+- 结果：通过
+- 证据：当前 `git diff --name-only -- core/src core/area_matrix.udl core/tests` 只显示新增测试文件；未发现生产 Core 代码或 UDL 在本轮 diff 中变化。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/batch_change_category_validation.rs`
+
+- 项目：记录无法运行的验证及原因
+- 结果：通过
+- 证据：必需验证命令已运行且通过，无无法运行项。
+- 涉及文件：不适用
+
+- 项目：Expected New Paths
+- 结果：通过
+- 证据：`core/src/**`、`core/area_matrix.udl` 已存在；`core/tests/**` 下已落地 `batch_change_category_validation.rs`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/batch_change_category_validation.rs`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git status --short -- apps` 无输出，未触碰 `apps/**`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。C2-08 仍由 `batch_category` 模块分层处理 preview、plan、apply、token 和 fs move；未发现为 validation task 新增一次性生产逻辑。
+- 注释 / rustdoc / 文档同步：通过。public API 有 rustdoc，UDL、Core API 文档和 Rust 导出一致。
+- 错误处理与边界处理：通过。生产 C2-08 代码未检出 `unwrap()`、`expect()`、`panic!()`、`TODO`、`todo!()`、`unimplemented!()`；测试覆盖 stale preview、空选择、非法分类、部分失败和不变更状态。
+- 测试与验证覆盖：通过。task-scoped 命令精确跑 C2-08 相关测试，共 21 个测试通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。测试走真实 Core API、SQLite fixture、文件系统路径、change log 和 undo action，不是 mock-only 闭环。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-39`
+- 通过：`prompt doctor` OK，`git diff --check` OK。
+- 通过：`cargo test --test batch_change_category_contract_api -- --nocapture`，4 passed。
+- 通过：`cargo test --test batch_change_category_failure_recovery -- --nocapture`，6 passed。
+- 通过：`cargo test --test batch_change_category_implementation -- --nocapture`，3 passed。
+- 通过：`cargo test --test batch_change_category_rollback_safety -- --nocapture`，4 passed。
+- 通过：`cargo test --test batch_change_category_validation -- --nocapture`，4 passed。
+- 失败：无。
+- 缺失：无必需验证缺失。未运行 `./dev check all` 或 workspace 全量测试，因为 manifest 只要求 `./dev check task 4-1/task-39`，且本任务是普通 atomic Core validation。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。当前工作区仍有 task-loop summary/progress 和 copy log 类运行痕迹，以及本 task 的新增测试文件；按本 verify 时序，这些不构成本 task 不通过原因，后续 progress / summary / Git checkpoint 应由 runner 在 PASS 后收口。
+
+VERIFY_RESULT: PASS
