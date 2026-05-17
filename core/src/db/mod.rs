@@ -25,6 +25,7 @@ mod scan;
 mod staging_recovery;
 mod sync;
 mod tags;
+mod undo;
 pub(crate) use change_log::list_changes;
 pub(crate) use delete::{
     remove_index_entry_row, rollback_deleted_repo_owned_file, soft_delete_repo_owned_file,
@@ -56,6 +57,9 @@ pub(crate) use staging_recovery::{
 };
 pub(crate) use sync::*;
 pub(crate) use tags::{add_tag_row, batch_add_tags_rows, list_tag_set, remove_tag_row};
+pub(crate) use undo::{
+    execute_undo_action_row, list_undo_action_rows, update_delete_undo_trash_path,
+};
 
 const AREA_MATRIX_DIR: &str = ".areamatrix";
 const INDEX_DB_FILE: &str = "index.db";

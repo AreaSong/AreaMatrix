@@ -1,8 +1,12 @@
 //! C2-07 undo action log contract types and entry points.
 
+use std::path::{Component, PathBuf};
+
 use serde::{Deserialize, Serialize};
 
-use crate::{CoreError, CoreResult};
+use crate::{db, CoreError, CoreResult};
+
+const AREA_MATRIX_DIR: &str = ".areamatrix";
 
 /// Lifecycle state for an undo action.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
@@ -73,10 +77,9 @@ pub struct UndoActionResult {
 /// Later implementation may also surface `CoreError::Io { message }` for
 /// metadata summary material that cannot be decoded.
 pub fn list_undo_actions(repo_path: String) -> CoreResult<Vec<UndoActionRecord>> {
-    if repo_path.trim().is_empty() {
-        return Err(CoreError::db("undo metadata is unavailable"));
-    }
-    Err(CoreError::db("undo action listing is not implemented"))
+    let repo = validate_undo_repo_path(&repo_path)?;
+    db::ensure_initialized(&repo).map_err(normalize_undo_metadata_error)?;
+    db::list_undo_action_rows(&repo).map_err(normalize_undo_metadata_error)
 }
 
 /// Executes one C2-07 undo action.
@@ -96,11 +99,35 @@ pub fn list_undo_actions(repo_path: String) -> CoreResult<Vec<UndoActionRecord>>
 /// filesystem failures. Failed undo must not corrupt the current repository
 /// state or partially mark an action as executed.
 pub fn undo_action(repo_path: String, action_id: String) -> CoreResult<UndoActionResult> {
-    if action_id.trim().is_empty() {
+    let repo = validate_undo_repo_path(&repo_path)?;
+    let normalized_action_id = action_id.trim();
+    if normalized_action_id.is_empty() {
         return Err(CoreError::file_not_found("undo action is required"));
     }
+    db::ensure_initialized(&repo).map_err(normalize_undo_metadata_error)?;
+    db::execute_undo_action_row(&repo, normalized_action_id).map_err(normalize_undo_metadata_error)
+}
+
+fn validate_undo_repo_path(repo_path: &str) -> CoreResult<PathBuf> {
     if repo_path.trim().is_empty() {
         return Err(CoreError::db("undo metadata is unavailable"));
     }
-    Err(CoreError::db("undo action execution is not implemented"))
+    let repo = PathBuf::from(repo_path);
+    if repo.components().any(is_area_matrix_component) {
+        return Err(CoreError::db("undo metadata is unavailable"));
+    }
+    Ok(repo)
+}
+
+fn normalize_undo_metadata_error(error: CoreError) -> CoreError {
+    match error {
+        CoreError::RepoNotInitialized { .. } => CoreError::db("undo metadata is unavailable"),
+        CoreError::PermissionDenied { .. } => CoreError::permission_denied("permission denied"),
+        CoreError::Io { .. } => CoreError::io("undo metadata io unavailable"),
+        other => other,
+    }
+}
+
+fn is_area_matrix_component(component: Component<'_>) -> bool {
+    component.as_os_str() == AREA_MATRIX_DIR
 }

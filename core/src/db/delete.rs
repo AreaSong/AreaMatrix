@@ -5,13 +5,13 @@ use serde_json::Value;
 
 use crate::{CoreError, CoreResult};
 
-use super::open_repo_connection;
+use super::{open_repo_connection, undo};
 
 pub(crate) fn soft_delete_repo_owned_file(
     repo_path: &Path,
     file_id: i64,
     detail: &Value,
-) -> CoreResult<()> {
+) -> CoreResult<String> {
     update_file_status_and_log(repo_path, file_id, "deleted", repo_owned_clause(), detail)
 }
 
@@ -27,12 +27,14 @@ pub(crate) fn remove_index_entry_row(
         index_entry_clause(),
         detail,
     )
+    .map(|_| ())
 }
 
 pub(crate) fn rollback_deleted_repo_owned_file(
     repo_path: &Path,
     file_id: i64,
     detail: &Value,
+    undo_token: Option<&str>,
 ) -> CoreResult<()> {
     let detail_json = detail_json(detail)?;
     let mut connection = open_repo_connection(repo_path)?;
@@ -58,6 +60,9 @@ pub(crate) fn rollback_deleted_repo_owned_file(
         params![file_id, detail_json],
     )
     .map_err(|error| CoreError::db(error.to_string()))?;
+    if let Some(token) = undo_token {
+        undo::delete_undo_action(&tx, token)?;
+    }
     tx.commit()
         .map_err(|error| CoreError::db(error.to_string()))
 }
@@ -68,12 +73,14 @@ fn update_file_status_and_log(
     action: &str,
     row_clause: &str,
     detail: &Value,
-) -> CoreResult<()> {
+) -> CoreResult<String> {
     let detail_json = detail_json(detail)?;
     let mut connection = open_repo_connection(repo_path)?;
     let tx = connection
         .transaction()
         .map_err(|error| CoreError::db(error.to_string()))?;
+    let before = undo::load_active_file_undo_snapshot(&tx, file_id)?;
+    let occurred_at = chrono::Utc::now().timestamp();
     let update_sql = format!(
         "UPDATE files
          SET deleted_at = strftime('%s', 'now'),
@@ -93,8 +100,19 @@ fn update_file_status_and_log(
         params![file_id, action, detail_json],
     )
     .map_err(|error| CoreError::db(error.to_string()))?;
+    let undo_token = if action == "deleted" {
+        Some(undo::insert_delete_undo_action(
+            &tx,
+            file_id,
+            &before,
+            occurred_at,
+        )?)
+    } else {
+        None
+    };
     tx.commit()
-        .map_err(|error| CoreError::db(error.to_string()))
+        .map_err(|error| CoreError::db(error.to_string()))?;
+    Ok(undo_token.unwrap_or_default())
 }
 
 fn repo_owned_clause() -> &'static str {

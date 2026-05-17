@@ -96,13 +96,13 @@ impl Drop for ReplacementFileGuard {
     }
 }
 
-pub(super) fn send_to_system_trash(path: &Path) -> CoreResult<()> {
+pub(super) fn send_to_system_trash(path: &Path) -> CoreResult<Option<PathBuf>> {
     if std::env::var_os("AREAMATRIX_TEST_FORCE_USER_TRASH").is_some() {
         return move_to_user_trash(path);
     }
 
     match trash::delete(path) {
-        Ok(()) => Ok(()),
+        Ok(()) => Ok(None),
         Err(error) => {
             tracing::warn!(
                 path = %path.display(),
@@ -114,13 +114,14 @@ pub(super) fn send_to_system_trash(path: &Path) -> CoreResult<()> {
     }
 }
 
-fn move_to_user_trash(path: &Path) -> CoreResult<()> {
+fn move_to_user_trash(path: &Path) -> CoreResult<Option<PathBuf>> {
     let home = std::env::var_os("HOME").ok_or_else(|| CoreError::io("io error"))?;
     let trash_dir = PathBuf::from(home).join(".Trash");
     fs::create_dir_all(&trash_dir).map_err(hash::map_io_error)?;
     let filename = filename_from_path(path)?;
     let destination = unique_trash_destination(&trash_dir, &filename)?;
-    move_recoverable_file(path, &destination)
+    move_recoverable_file(path, &destination)?;
+    Ok(Some(destination))
 }
 
 fn unique_trash_destination(trash_dir: &Path, filename: &str) -> CoreResult<PathBuf> {

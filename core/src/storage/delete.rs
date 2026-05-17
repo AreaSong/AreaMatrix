@@ -27,11 +27,17 @@ pub(crate) fn delete_file(repo_path: String, file_id: i64) -> CoreResult<()> {
     let detail = delete_detail(&entry);
     let mut guard = DeleteArchiveGuard::archive(target_path, archive_path)?;
 
-    db::soft_delete_repo_owned_file(&repo, entry.id, &detail)?;
-    if let Err(error) = send_to_system_trash(guard.archived_path()) {
-        guard.rollback()?;
-        db::rollback_deleted_repo_owned_file(&repo, entry.id, &detail)?;
-        return Err(error);
+    let undo_token = db::soft_delete_repo_owned_file(&repo, entry.id, &detail)?;
+    let trash_path = match send_to_system_trash(guard.archived_path()) {
+        Ok(trash_path) => trash_path,
+        Err(error) => {
+            guard.rollback()?;
+            db::rollback_deleted_repo_owned_file(&repo, entry.id, &detail, Some(&undo_token))?;
+            return Err(error);
+        }
+    };
+    if let Some(trash_path) = trash_path {
+        db::update_delete_undo_trash_path(&repo, &undo_token, &trash_path)?;
     }
 
     guard.disarm();

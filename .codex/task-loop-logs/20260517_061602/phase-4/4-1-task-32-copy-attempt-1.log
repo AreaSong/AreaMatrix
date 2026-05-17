@@ -1,0 +1,44 @@
+一、执行结论
+
+已完成 `4-1/task-32`。
+
+二、执行范围
+
+单任务：C2-07 `undo-action-log` Core implementation。  
+修改文件：
+
+- [core/src/undo.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/undo.rs)
+- [core/src/db/mod.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/db/mod.rs)
+- [core/src/db/undo.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/db/undo.rs)
+- [core/tests/undo_action_log_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/undo_action_log_implementation.rs)
+
+三、完成情况
+
+- 只实现 C2-07：已满足。仅支持当前已存在的 `batch_add_tags -> remove_tags` undo 闭环，未提前实现批量移动、删除、重命名、改分类、Redo。
+- 输入/输出/DB/错误映射：已满足。`list_undo_actions` 读取 `undo_actions`；`undo_action` 事务内执行 pending action、写反向 `change_log`、标记 `executed`。
+- Rust Core 不依赖平台 UI API：已满足。
+- 最小测试支撑：已新增 targeted implementation 测试。
+- Forbidden Touches：未触碰 `apps/**`。
+
+四、工程质量
+
+代码结构按 `core/src/undo.rs` 公开入口 + `core/src/db/undo.rs` DB 行为拆分；失败路径显式返回 `FileNotFound`、`Conflict`、`Db` 等，不做 mock-only、不硬编码通过态。Undo 执行在单个 SQLite transaction 内完成；外部变化导致 tag relation 不存在时阻断，且不把 action 标记为 `executed`。
+
+五、验证情况
+
+已运行并通过：
+
+```bash
+cargo test --test undo_action_log_contract_api -- --nocapture
+cargo test --test undo_action_log_implementation -- --nocapture
+./dev check task 4-1/task-32
+```
+
+`./dev check task 4-1/task-32` 覆盖：prompt doctor、git diff check、targeted Rust tests，全部通过。
+
+六、风险与后续
+
+剩余风险：当前最小闭环只覆盖现有可生成 undo action 的 `batch_add_tags`。后续 C2-08/C2-09/C2-10 等能力生成各自 undo action 后，再分别补对应 inverse 执行逻辑。建议下一个任务继续 `4-1/task-33`。
+
+另外，工作区里已有 `.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json` 的 task-loop 状态改动，我没有触碰或回退它们。
+

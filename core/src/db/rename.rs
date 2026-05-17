@@ -5,7 +5,7 @@ use serde_json::Value;
 
 use crate::{CoreError, CoreResult};
 
-use super::open_repo_connection;
+use super::{open_repo_connection, undo};
 
 pub(crate) fn rename_active_file(
     repo_path: &Path,
@@ -19,6 +19,8 @@ pub(crate) fn rename_active_file(
     let tx = connection
         .transaction()
         .map_err(|error| CoreError::db(error.to_string()))?;
+    let before = undo::load_active_file_undo_snapshot(&tx, file_id)?;
+    let occurred_at = chrono::Utc::now().timestamp();
     let changed = tx
         .execute(
             "UPDATE files
@@ -33,6 +35,15 @@ pub(crate) fn rename_active_file(
         return Err(CoreError::db("database error"));
     }
     insert_renamed_change(&tx, file_id, &detail_json)?;
+    undo::insert_rename_undo_action(
+        &tx,
+        file_id,
+        &before,
+        final_path,
+        final_name,
+        false,
+        occurred_at,
+    )?;
     tx.commit()
         .map_err(|error| CoreError::db(error.to_string()))
 }
@@ -48,6 +59,8 @@ pub(crate) fn rename_indexed_display_name(
     let tx = connection
         .transaction()
         .map_err(|error| CoreError::db(error.to_string()))?;
+    let before = undo::load_active_file_undo_snapshot(&tx, file_id)?;
+    let occurred_at = chrono::Utc::now().timestamp();
     let changed = tx
         .execute(
             "UPDATE files
@@ -61,6 +74,15 @@ pub(crate) fn rename_indexed_display_name(
         return Err(CoreError::db("database error"));
     }
     insert_renamed_change(&tx, file_id, &detail_json)?;
+    undo::insert_rename_undo_action(
+        &tx,
+        file_id,
+        &before,
+        &before.path,
+        final_name,
+        true,
+        occurred_at,
+    )?;
     tx.commit()
         .map_err(|error| CoreError::db(error.to_string()))
 }

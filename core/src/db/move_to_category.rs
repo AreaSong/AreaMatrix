@@ -5,7 +5,7 @@ use serde_json::Value;
 
 use crate::{CoreError, CoreResult};
 
-use super::open_repo_connection;
+use super::{open_repo_connection, undo};
 
 pub(crate) fn move_repo_owned_file_to_category(
     repo_path: &Path,
@@ -54,6 +54,8 @@ fn update_file_category_and_log(
     let tx = connection
         .transaction()
         .map_err(|error| CoreError::db(error.to_string()))?;
+    let before = undo::load_active_file_undo_snapshot(&tx, file_id)?;
+    let occurred_at = chrono::Utc::now().timestamp();
     let update_sql = update_sql(final_location.is_some(), row_clause);
     let changed = match final_location {
         Some((final_path, final_name)) => tx.execute(
@@ -72,6 +74,20 @@ fn update_file_category_and_log(
         params![file_id, detail_json],
     )
     .map_err(|error| CoreError::db(error.to_string()))?;
+    let (final_path, final_name, index_only) = match final_location {
+        Some((path, name)) => (path, name, false),
+        None => (before.path.as_str(), before.current_name.as_str(), true),
+    };
+    undo::insert_move_undo_action(
+        &tx,
+        file_id,
+        &before,
+        final_path,
+        final_name,
+        new_category,
+        index_only,
+        occurred_at,
+    )?;
     tx.commit()
         .map_err(|error| CoreError::db(error.to_string()))
 }
