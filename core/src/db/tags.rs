@@ -40,6 +40,7 @@ pub(crate) fn batch_add_tags_rows(
     let mut tx = connection
         .transaction()
         .map_err(|error| CoreError::db(error.to_string()))?;
+    ensure_batch_tag_metadata_ready(&tx)?;
 
     let occurred_at = chrono::Utc::now().timestamp();
     let mut report = BatchTagMutation::new(file_ids.len(), tags.len());
@@ -205,6 +206,20 @@ fn delete_tag_relation(
         )
         .map(|changed| changed == 1)
         .map_err(|error| CoreError::db(error.to_string()))
+}
+
+fn ensure_batch_tag_metadata_ready(connection: &rusqlite::Connection) -> CoreResult<()> {
+    for statement in [
+        "SELECT file_id, tag, added_at FROM tags LIMIT 0",
+        "SELECT file_id, action, detail_json, occurred_at FROM change_log LIMIT 0",
+        "SELECT token, kind, summary_json, inverse_json, status FROM undo_actions LIMIT 0",
+    ] {
+        connection
+            .prepare(statement)
+            .map(|_| ())
+            .map_err(|error| CoreError::db(error.to_string()))?;
+    }
+    Ok(())
 }
 
 fn mutate_batch_tag_item(
