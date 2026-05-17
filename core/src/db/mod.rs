@@ -50,7 +50,10 @@ pub(crate) use overview::{
     OverviewChangeRow, OverviewFileRow, OverviewNodeSummary,
 };
 pub(crate) use rename::{
-    rename_active_file, rename_indexed_display_name, rollback_renamed_active_file,
+    batch_update_rename_indexed_in_tx, batch_update_rename_repo_owned_in_tx,
+    insert_batch_rename_undo_action_in_tx, load_batch_rename_active_file, rename_active_file,
+    rename_indexed_display_name, rollback_renamed_active_file, with_batch_rename_transaction,
+    BatchRenameUndoItem,
 };
 pub(crate) use saved_search::{
     create_saved_search_row, delete_saved_search_row, get_saved_search_row, list_saved_search_rows,

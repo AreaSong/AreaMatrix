@@ -414,7 +414,8 @@ fn batch_rename_contract_documents_consumer_state_and_scope_boundaries() {
         "preview_batch_rename",
         "batch_rename",
         "without mutating files or metadata",
-        "implementation is pending",
+        "build_batch_rename_plan",
+        "apply_batch_rename_plan",
         "must not change extensions",
     ] {
         assert_contains(BATCH_RENAME_RS, fragment);

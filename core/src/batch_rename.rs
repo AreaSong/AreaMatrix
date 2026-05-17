@@ -6,6 +6,13 @@ use serde::{Deserialize, Serialize};
 
 use crate::{db, CoreError, CoreResult, FileEntry, StorageMode};
 
+mod apply;
+mod plan;
+mod plan_name;
+mod plan_path;
+mod plan_types;
+mod token;
+
 const AREA_MATRIX_DIR: &str = ".areamatrix";
 
 /// Batch rename strategy selected by S2-14 before previewing C2-10.
@@ -220,10 +227,10 @@ pub fn preview_batch_rename(
     file_ids: Vec<i64>,
     rule: BatchRenameRule,
 ) -> CoreResult<BatchRenamePreviewReport> {
-    let _repo = prepare_batch_rename_request(&repo_path, &file_ids, &rule)?;
-    Err(CoreError::db(
-        "batch rename preview implementation is pending",
-    ))
+    let repo = prepare_batch_rename_request(&repo_path, &file_ids, &rule)?;
+    let normalized_ids = normalize_batch_rename_file_ids(&file_ids)?;
+    let plan = plan::build_batch_rename_plan(&repo, &normalized_ids, rule)?;
+    Ok(plan.into_preview_report())
 }
 
 /// Applies a C2-10 batch rename that was previously previewed.
@@ -253,8 +260,19 @@ pub fn batch_rename(
     if preview_token.trim().is_empty() {
         return Err(CoreError::conflict("missing batch rename preview"));
     }
-    let _repo = prepare_batch_rename_request(&repo_path, &file_ids, &rule)?;
-    Err(CoreError::db("batch rename implementation is pending"))
+    let repo = prepare_batch_rename_request(&repo_path, &file_ids, &rule)?;
+    let normalized_ids = normalize_batch_rename_file_ids(&file_ids)?;
+    let plan = plan::build_batch_rename_plan(&repo, &normalized_ids, rule)?;
+    if plan.preview_token != preview_token {
+        return Err(CoreError::conflict("stale batch rename preview"));
+    }
+    if !plan.can_apply() {
+        return Err(CoreError::conflict(
+            plan.apply_blocked_reason()
+                .unwrap_or_else(|| "batch rename preview cannot be applied".to_owned()),
+        ));
+    }
+    apply::apply_batch_rename_plan(&repo, plan)
 }
 
 fn prepare_batch_rename_request(
@@ -300,6 +318,7 @@ fn validate_batch_rename_rule(rule: &BatchRenameRule) -> CoreResult<()> {
     match rule.mode {
         BatchRenameMode::Prefix => validate_optional_name_part(rule.prefix.as_deref()),
         BatchRenameMode::DatePrefix => {
+            require_date_source(rule.date_source.as_ref(), "date source is required")?;
             require_text(rule.date_format.as_deref(), "date format is required")?;
             validate_optional_name_part(rule.separator.as_deref())
         }
@@ -336,9 +355,16 @@ fn require_non_negative(value: Option<i64>, reason: &str) -> CoreResult<()> {
     Ok(())
 }
 
+fn require_date_source(value: Option<&BatchRenameDateSource>, reason: &str) -> CoreResult<()> {
+    if value.is_none() {
+        return Err(CoreError::invalid_path(reason));
+    }
+    Ok(())
+}
+
 fn validate_optional_name_part(value: Option<&str>) -> CoreResult<()> {
     if let Some(value) = value {
-        if value.contains('/') || value.contains('\\') || value.contains('\0') {
+        if value.chars().any(is_invalid_filename_part_character) {
             return Err(CoreError::invalid_path(
                 "rename rule contains invalid filename text",
             ));
@@ -362,4 +388,12 @@ fn normalize_batch_rename_metadata_error(error: CoreError) -> CoreError {
 
 fn is_area_matrix_component(component: Component<'_>) -> bool {
     component.as_os_str() == AREA_MATRIX_DIR
+}
+
+fn is_invalid_filename_part_character(character: char) -> bool {
+    character.is_control()
+        || matches!(
+            character,
+            '/' | '\\' | ':' | '*' | '?' | '"' | '<' | '>' | '|' | '\0'
+        )
 }
