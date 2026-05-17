@@ -1,0 +1,47 @@
+一、执行结论
+
+已完成。C2-07 可作为后续 page-feature task 的真实 Core 依赖。
+
+二、执行范围
+
+单任务：`4-1/task-35`。  
+修改文件清单：`core/tests/undo_action_log_validation.rs`，仅修复 clippy 指出的测试代码 `explicit_auto_deref`。未修改产品实现，未触碰 `apps/**`。工作树中另有 task-loop 状态文件已处于修改状态：`.codex/task-loop-runs/20260517_134238/summary.json`、`tasks/prompts/_shared/progress.json`。
+
+三、完成情况
+
+核对结果：
+
+- capability spec / Core API / UDL / Rust / tests：已交叉核验并由 targeted tests 覆盖。
+- 消费页面所需状态、错误、副作用：C2-07 提供 `Pending / Executed / Expired / Blocked`、`can_undo`、`disabled_reason`、`refresh_targets`、失败不标记成功、外部变更 blocked、Trash restore 检查等证据。
+- control map 之外能力：未发现 C2-07 实现 Redo、AI、远程同步或相邻批量能力执行入口；Redo 仍归 C2-18。
+- Forbidden Touches：未触碰 `apps/**`。
+
+四、工程质量
+
+代码结构维持现状，只做 test-only lint 修复。C2-07 现有实现包含 Rust public API rustdoc、显式错误映射、事务边界、文件动作 rollback guard、外部变化 blocked 语义和本地临时目录测试证据。未发现 mock-only、硬编码通过态或一次性脚本化实现。
+
+五、验证情况
+
+已运行：
+
+```bash
+./dev check task 4-1/task-35
+```
+
+结果：通过。
+
+关键子项：
+
+- `prompt_pipeline.py doctor`: OK，637 tasks / 637 manifests
+- `git diff --check`: 通过
+- `cargo fmt --all -- --check`: 通过
+- `cargo clippy --all-targets --all-features -- -D warnings`: 通过
+- `cargo test --test undo_action_log_contract_api -- --nocapture`: 4 passed
+- `cargo test --test undo_action_log_failure_recovery -- --nocapture`: 8 passed
+- `cargo test --test undo_action_log_implementation -- --nocapture`: 9 passed
+- `cargo test --test undo_action_log_validation -- --nocapture`: 5 passed
+
+六、风险与后续
+
+剩余风险：本 task 是 Core integration verify，未验收 macOS UI 接入；后续 S2 页面任务仍需验证 Swift UI / CoreBridge 消费。建议下一个任务继续执行依赖 C2-07 的 page-feature task，例如 `4-1/task-113` 或按 runner 队列继续。
+

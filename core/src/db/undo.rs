@@ -248,7 +248,7 @@ fn display_summary(kind: &str, summary: &UndoSummary) -> String {
         RENAME_FILES_KIND => "Renamed 1 file.".to_owned(),
         MOVE_FILES_KIND => "Moved 1 file.".to_owned(),
         CHANGE_CATEGORY_KIND => "Changed category for 1 file.".to_owned(),
-        TRASH_DELETE_KIND => "Deleted 1 file.".to_owned(),
+        TRASH_DELETE_KIND => "Moved 1 file to Trash.".to_owned(),
         _ => format!("Undo action: {kind}"),
     }
 }

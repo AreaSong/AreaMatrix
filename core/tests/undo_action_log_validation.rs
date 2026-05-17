@@ -192,8 +192,8 @@ fn assert_api_and_udl_alignment() {
         "sequence<string> refresh_targets;",
         "enum UndoActionStatus { \"Pending\", \"Executed\", \"Expired\", \"Blocked\" };",
     ] {
-        assert_contains(CORE_API, *fragment);
-        assert_contains(UDL, *fragment);
+        assert_contains(CORE_API, fragment);
+        assert_contains(UDL, fragment);
     }
 }
 
@@ -331,9 +331,12 @@ fn assert_delete_action_points_to_test_trash(repo: &Path, token: &str, trash_dir
         .expect("delete undo stores trash path")
         .to_owned();
     assert!(trash_path.starts_with(&path_string(trash_dir)));
-    assert_eq!(
-        list_undo_actions(path_string(repo)).expect("list actions")[0].kind,
-        "trash_delete"
+    let actions = list_undo_actions(path_string(repo)).expect("list actions");
+    assert_eq!(actions[0].kind, "trash_delete");
+    assert_eq!(actions[0].summary, "Moved 1 file to Trash.");
+    assert!(
+        !actions[0].summary.contains("Deleted"),
+        "S2-10 requires Trash delete summaries to avoid Deleted wording"
     );
     trash_path
 }
