@@ -13,6 +13,7 @@ mod file_actions;
 pub(crate) use actions::{
     delete_undo_action, insert_delete_undo_action, insert_move_undo_action,
     insert_rename_undo_action, load_active_file_undo_snapshot, update_delete_undo_trash_path,
+    FileUndoTarget,
 };
 use file_actions::{CHANGE_CATEGORY_KIND, MOVE_FILES_KIND, RENAME_FILES_KIND, TRASH_DELETE_KIND};
 
@@ -84,7 +85,7 @@ fn execute_batch_tag_action(
         remove_tag_relation(tx, relation)?;
         insert_undo_change(tx, relation, row.token.as_str(), completed_at)?;
     }
-    mark_action_status(&tx, row.token.as_str(), "executed", completed_at)?;
+    mark_action_status(tx, row.token.as_str(), "executed", completed_at)?;
 
     Ok(UndoActionResult {
         action_id: row.token.clone(),

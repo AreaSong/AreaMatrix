@@ -212,11 +212,15 @@ fn deleted_file_block_reason(
     let Some(trash_path) = inverse.trash_path.as_deref() else {
         return Ok(Some("Trash restore location unavailable".to_owned()));
     };
-    if !Path::new(trash_path).try_exists().map_err(map_io_error)? {
+    let trash_path = Path::new(trash_path);
+    if !path_exists(trash_path)? {
         return Ok(Some("Trash item no longer exists".to_owned()));
     }
+    if !trash_path.metadata().map_err(map_io_error)?.is_file() {
+        return Ok(Some("Trash item changed".to_owned()));
+    }
     let restore_path = repo_relative_path(repo, &inverse.restore_path)?;
-    if restore_path.try_exists().map_err(map_io_error)? {
+    if path_exists(&restore_path)? {
         return Ok(Some("Original path is occupied".to_owned()));
     }
     Ok(None)
@@ -229,16 +233,23 @@ fn filesystem_restore_block_reason(
 ) -> CoreResult<Option<String>> {
     let expected_path = repo_relative_path(repo, expected_relative)?;
     let restore_path = repo_relative_path(repo, restore_relative)?;
-    if !expected_path.try_exists().map_err(map_io_error)? {
+    if !path_exists(&expected_path)? {
         return Ok(Some("File no longer exists".to_owned()));
+    }
+    if !expected_path.metadata().map_err(map_io_error)?.is_file() {
+        return Ok(Some("File changed after action".to_owned()));
     }
     if expected_path == restore_path {
         return Ok(None);
     }
-    if restore_path.try_exists().map_err(map_io_error)? {
+    if path_exists(&restore_path)? {
         return Ok(Some("Original path is occupied".to_owned()));
     }
     Ok(None)
+}
+
+fn path_exists(path: &Path) -> CoreResult<bool> {
+    path.try_exists().map_err(map_io_error)
 }
 
 fn move_active_paths(

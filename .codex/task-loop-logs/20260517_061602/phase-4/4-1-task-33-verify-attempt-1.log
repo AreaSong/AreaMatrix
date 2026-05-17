@@ -1,0 +1,81 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-1/task-33`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-33-c2-07-failure-edge.md`
+- 实际核验范围：`core/src/**`、`core/area_matrix.udl`、`core/tests/**`
+
+三、完成度摘要
+
+- 已覆盖项数：6
+- 未覆盖项数：0
+- 通过项数：6
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 空态、非法输入、权限、IO/DB 错误和错误码映射
+  - 结果：通过
+  - 证据：`core/tests/undo_action_log_failure_recovery.rs:241` 覆盖空栈只读；`:252` 覆盖空 `action_id`、metadata 内部路径、missing action；`:289`、`:320` 覆盖 DB 读写错误；`:351`、`:377` 覆盖 IO/Trash 异常；`:406` 覆盖权限错误映射。
+  - 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/undo_action_log_failure_recovery.rs`
+
+- 失败不留下半成品
+  - 结果：通过
+  - 证据：`core/src/db/undo.rs:38` 使用事务执行；`core/src/db/undo/file_actions.rs:125`、`:157` 在 DB 更新失败时回滚文件移动；`core/src/db/undo/file_actions/fs_ops.rs:11` 定义 rollback guard；测试在 `:320`、`:351`、`:377` 用 snapshot 证明 DB、undo status、用户可见路径保持一致。
+  - 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/db/undo.rs`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/db/undo/file_actions.rs`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/undo_action_log_failure_recovery.rs`
+
+- 隐私 / AI / 远程调用
+  - 结果：通过
+  - 证据：`core/tests/undo_action_log_failure_recovery.rs:441` 证明 undo 不启用 AI、不改 `ai_enabled=false`、不写 staging、不改用户可见路径；源码搜索未发现 C2-07 undo 路径接入网络/provider/secret。
+  - 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/undo_action_log_failure_recovery.rs`
+
+- 不吞错、不静默降级
+  - 结果：通过
+  - 证据：`core/src/undo.rs:92` 明确 public API 错误返回；`core/src/db/undo.rs:317` missing/pending 状态显式返回 `FileNotFound`；`:349`、`:366` 对不安全 undo 返回 `FileNotFound` 或 `Conflict`；`fs_ops.rs:69` 把 IO error 映射到结构化 `CoreError`。
+  - 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/undo.rs`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/db/undo.rs`
+
+- C2-07 失败路径有明确返回、可测试证据和用户文件安全保证
+  - 结果：通过
+  - 证据：`core/area_matrix.udl:117`、`:120` 暴露 `list_undo_actions` / `undo_action`；`core/area_matrix.udl:375`、`:388` 定义返回 DTO；`docs/api/core-api.md:1800` 明确错误与副作用边界；验证命令通过 failure recovery 和 implementation 测试。
+  - 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`、`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md`
+
+- 高风险路径具备可回滚或可恢复说明
+  - 结果：通过
+  - 证据：`core/src/db/undo/file_actions.rs:179` 在 list 阶段给出 blocked reason；`:255`、`:267` 对文件恢复路径使用 checked move；`core/tests/undo_action_log_implementation.rs:434` 覆盖外部变化后不可撤销显示；failure tests 证明失败后 action 仍 pending 可重试。
+  - 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/db/undo/file_actions.rs`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/undo_action_log_implementation.rs`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。Undo API、DB metadata、file action rollback 分层清楚，未发现单次脚本化实现。
+- 注释 / rustdoc / 文档同步：通过。`core/src/undo.rs:66` 和 `:85` 有 public API rustdoc 与 `# Errors`；UDL、Core API、capability spec 对齐。
+- 错误处理与边界处理：通过。未发现生产路径 `unwrap()` / `expect()` / `panic!()`；错误通过 `CoreError` 传播。
+- 测试与验证覆盖：通过。新增 `core/tests/undo_action_log_failure_recovery.rs` 覆盖本 task failure-edge；既有 contract / implementation 测试同步通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。测试走真实 repo tempdir、SQLite、文件系统和 Trash fallback，不是 mock-only。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-33`
+  - `prompt_pipeline.py doctor`：通过，637 tasks / 637 manifests
+  - `git diff --check`：通过
+  - `cargo fmt --all -- --check`：通过
+  - `cargo clippy --all-targets --all-features -- -D warnings`：通过
+  - `cargo test --test undo_action_log_contract_api -- --nocapture`：4 passed
+  - `cargo test --test undo_action_log_failure_recovery -- --nocapture`：8 passed
+  - `cargo test --test undo_action_log_implementation -- --nocapture`：9 passed
+- Forbidden Touches：通过，`git status --short --untracked-files=all -- apps` 无输出，未触碰 `apps/**`。
+- Expected New Paths：通过，`core/src/**`、`core/area_matrix.udl`、`core/tests/**` 均存在并有本 task 证据。
+- 缺失验证：无。未运行 `./dev check all`，因为本 task manifest 只要求 `./dev check task 4-1/task-33`，且普通 task 不应放大到全仓门禁。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS

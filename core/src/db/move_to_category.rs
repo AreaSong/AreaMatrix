@@ -82,10 +82,12 @@ fn update_file_category_and_log(
         &tx,
         file_id,
         &before,
-        final_path,
-        final_name,
-        new_category,
-        index_only,
+        undo::FileUndoTarget {
+            path: final_path,
+            name: final_name,
+            category: new_category,
+            index_only,
+        },
         occurred_at,
     )?;
     tx.commit()

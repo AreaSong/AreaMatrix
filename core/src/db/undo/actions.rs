@@ -26,10 +26,17 @@ pub(crate) struct FileUndoSnapshot {
     pub(crate) category: String,
 }
 
-struct ExpectedFileState<'a> {
-    path: &'a str,
-    name: &'a str,
-    category: &'a str,
+pub(crate) struct FileUndoTarget<'a> {
+    pub(crate) path: &'a str,
+    pub(crate) name: &'a str,
+    pub(crate) category: &'a str,
+    pub(crate) index_only: bool,
+}
+
+struct FileUndoOperation<'a> {
+    token_prefix: &'a str,
+    kind: &'a str,
+    operation: &'a str,
 }
 
 pub(crate) fn load_active_file_undo_snapshot(
@@ -66,17 +73,19 @@ pub(crate) fn insert_rename_undo_action(
 ) -> CoreResult<String> {
     insert_file_state_undo_action(
         tx,
-        "rename-files",
-        RENAME_FILES_KIND,
-        "rename",
         file_id,
         before,
-        ExpectedFileState {
+        FileUndoOperation {
+            token_prefix: "rename-files",
+            kind: RENAME_FILES_KIND,
+            operation: "rename",
+        },
+        FileUndoTarget {
             path: final_path,
             name: final_name,
             category: &before.category,
+            index_only,
         },
-        index_only,
         occurred_at,
     )
 }
@@ -85,30 +94,24 @@ pub(crate) fn insert_move_undo_action(
     tx: &rusqlite::Transaction<'_>,
     file_id: i64,
     before: &FileUndoSnapshot,
-    final_path: &str,
-    final_name: &str,
-    final_category: &str,
-    index_only: bool,
+    target: FileUndoTarget<'_>,
     occurred_at: i64,
 ) -> CoreResult<String> {
-    let (token_prefix, kind, operation) = if index_only {
+    let (token_prefix, kind, operation) = if target.index_only {
         ("change-category", CHANGE_CATEGORY_KIND, "change_category")
     } else {
         ("move-files", MOVE_FILES_KIND, "move")
     };
     insert_file_state_undo_action(
         tx,
-        token_prefix,
-        kind,
-        operation,
         file_id,
         before,
-        ExpectedFileState {
-            path: final_path,
-            name: final_name,
-            category: final_category,
+        FileUndoOperation {
+            token_prefix,
+            kind,
+            operation,
         },
-        index_only,
+        target,
         occurred_at,
     )
 }
@@ -198,38 +201,35 @@ pub(crate) fn delete_undo_action(
 
 fn insert_file_state_undo_action(
     tx: &rusqlite::Transaction<'_>,
-    token_prefix: &str,
-    kind: &str,
-    operation: &str,
     file_id: i64,
     before: &FileUndoSnapshot,
-    expected: ExpectedFileState<'_>,
-    index_only: bool,
+    operation: FileUndoOperation<'_>,
+    expected: FileUndoTarget<'_>,
     occurred_at: i64,
 ) -> CoreResult<String> {
     let summary = json!({
-        "kind": kind,
-        "operation": operation,
+        "kind": operation.kind,
+        "operation": operation.operation,
         "affected_count": 1,
         "affected_file_names": [before.current_name.as_str()],
     });
     let inverse = json!({
         "kind": "restore_file_state",
         "file_id": file_id,
-        "operation": operation,
+        "operation": operation.operation,
         "expected_path": expected.path,
         "expected_name": expected.name,
         "expected_category": expected.category,
         "restore_path": before.path,
         "restore_name": before.current_name,
         "restore_category": before.category,
-        "index_only": index_only,
+        "index_only": expected.index_only,
     });
     insert_file_undo_action(
         tx,
         FileUndoAction {
-            token_prefix,
-            kind,
+            token_prefix: operation.token_prefix,
+            kind: operation.kind,
             summary,
             inverse,
             occurred_at,
