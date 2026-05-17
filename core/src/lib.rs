@@ -7,6 +7,7 @@ uniffi::include_scaffolding!("area_matrix");
 
 pub mod api;
 mod batch_category;
+mod batch_delete;
 pub mod classify;
 pub mod config;
 pub mod db;
@@ -33,6 +34,11 @@ pub use batch_category::{
     batch_move_to_category, preview_batch_move_to_category, BatchCategoryChangeItemResult,
     BatchCategoryChangeReport, BatchCategoryPreviewItem, BatchCategoryPreviewReport,
     BatchCategoryPreviewStatus, BatchCategoryResultStatus, CategoryDistributionItem,
+};
+pub use batch_delete::{
+    batch_delete_to_trash, preview_batch_delete, BatchDeleteItemResult, BatchDeleteMode,
+    BatchDeletePreviewItem, BatchDeletePreviewReport, BatchDeletePreviewStatus, BatchDeleteReport,
+    BatchDeleteResultStatus,
 };
 pub use domain::*;
 pub use error::{

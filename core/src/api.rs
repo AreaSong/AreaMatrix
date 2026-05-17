@@ -3,8 +3,9 @@
 use std::path::PathBuf;
 
 use crate::{
-    batch_category, classify, db, icloud_conflicts, note, recovery, repair, repo_init, repo_path,
-    repo_scan, storage, sync, tree, BatchCategoryChangeReport, BatchCategoryPreviewReport,
+    batch_category, batch_delete, classify, db, icloud_conflicts, note, recovery, repair,
+    repo_init, repo_path, repo_scan, storage, sync, tree, BatchCategoryChangeReport,
+    BatchCategoryPreviewReport, BatchDeleteMode, BatchDeletePreviewReport, BatchDeleteReport,
     ChangeFilter, ChangeLogEntry, ClassifyResult, CoreError, CoreResult, DiagnosticsSnapshot,
     ExternalEvent, FileEntry, FileFilter, ICloudConflictPair, ImportOptions, MoveToCategoryPreview,
     RecoveryReport, ReindexReport, RepairOptions, RepairReport, RepoConfig, RepoInitOptions,
@@ -577,6 +578,50 @@ pub fn batch_move_to_category(
         move_repo_owned_files,
         preview_token,
     )
+}
+
+/// Previews a C2-09 batch delete operation without side effects.
+///
+/// S2-13 uses this contract to display selected-file impact before enabling a
+/// destructive button: repository-owned rows that can move to Trash,
+/// index-only or missing rows that can be removed from metadata, blocked rows,
+/// Trash availability, and Undo availability. The preview must not move files,
+/// remove index rows, write metadata, create undo actions, or touch `apps/**`.
+///
+/// # Errors
+///
+/// Returns `CoreError::FileNotFound { path }` for empty selections or invalid
+/// file ids, `CoreError::PermissionDenied { path }` when Trash or metadata
+/// inspection is blocked, `CoreError::Io { message }` for filesystem preview
+/// failures, and `CoreError::Db { message }` for metadata reads.
+pub fn preview_batch_delete(
+    repo_path: String,
+    file_ids: Vec<i64>,
+    delete_mode: BatchDeleteMode,
+) -> CoreResult<BatchDeletePreviewReport> {
+    batch_delete::preview_batch_delete(repo_path, file_ids, delete_mode)
+}
+
+/// Applies C2-09 batch deletion for the mode confirmed by S2-13.
+///
+/// `MoveToTrash` handles only repository-owned files and must never perform
+/// permanent deletion. `RemoveFromIndex` handles index-only or missing rows
+/// without touching external source files. Successful writes report per-item
+/// status, update metadata/change log, and return an Undo token when C2-07 can
+/// reverse the operation.
+///
+/// # Errors
+///
+/// Returns `CoreError::FileNotFound { path }` for empty selections or invalid
+/// ids, `CoreError::PermissionDenied { path }` when Trash or metadata writes
+/// are blocked, `CoreError::Io { message }` for Trash or filesystem failures,
+/// and `CoreError::Db { message }` for metadata, change-log, or undo writes.
+pub fn batch_delete_to_trash(
+    repo_path: String,
+    file_ids: Vec<i64>,
+    delete_mode: BatchDeleteMode,
+) -> CoreResult<BatchDeleteReport> {
+    batch_delete::batch_delete_to_trash(repo_path, file_ids, delete_mode)
 }
 
 /// Restores a deleted file entry.

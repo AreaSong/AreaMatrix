@@ -80,6 +80,20 @@ namespace area_matrix {
     );
 
     [Throws=CoreError]
+    BatchDeletePreviewReport preview_batch_delete(
+        string repo_path,
+        sequence<i64> file_ids,
+        BatchDeleteMode delete_mode
+    );
+
+    [Throws=CoreError]
+    BatchDeleteReport batch_delete_to_trash(
+        string repo_path,
+        sequence<i64> file_ids,
+        BatchDeleteMode delete_mode
+    );
+
+    [Throws=CoreError]
     FileEntry restore_file(string repo_path, i64 file_id);
 
     [Throws=CoreError]
@@ -446,6 +460,52 @@ dictionary BatchCategoryChangeReport {
     string? undo_token;
 };
 
+dictionary BatchDeletePreviewItem {
+    i64 file_id;
+    string? current_path;
+    string? current_name;
+    StorageMode? storage_mode;
+    BatchDeleteMode delete_mode;
+    boolean will_move_to_trash;
+    boolean will_remove_index;
+    BatchDeletePreviewStatus status;
+    string? reason;
+};
+
+dictionary BatchDeletePreviewReport {
+    i64 requested_file_count;
+    BatchDeleteMode delete_mode;
+    boolean trash_available;
+    boolean undo_available;
+    i64 will_trash_count;
+    i64 index_only_count;
+    i64 missing_count;
+    i64 skipped_count;
+    i64 blocked_count;
+    sequence<BatchDeletePreviewItem> items;
+    boolean can_apply;
+    string? apply_blocked_reason;
+};
+
+dictionary BatchDeleteItemResult {
+    i64 file_id;
+    string? final_path;
+    BatchDeleteResultStatus status;
+    string? error;
+};
+
+dictionary BatchDeleteReport {
+    i64 requested_file_count;
+    BatchDeleteMode delete_mode;
+    i64 moved_to_trash_count;
+    i64 removed_from_index_count;
+    i64 skipped_count;
+    i64 failed_count;
+    sequence<BatchDeleteItemResult> item_results;
+    sequence<i64> affected_file_ids;
+    string? undo_token;
+};
+
 dictionary UndoActionRecord {
     string action_id;
     string kind;
@@ -641,6 +701,9 @@ enum ExternalEventKind { "Created", "Removed", "Modified", "Renamed" };
 enum BatchMutationStatus { "Added", "AlreadyHadTag", "Failed" };
 enum BatchCategoryPreviewStatus { "WillMove", "MetadataOnly", "Unchanged", "Skipped", "Blocked" };
 enum BatchCategoryResultStatus { "Moved", "MetadataUpdated", "Unchanged", "Skipped", "Failed" };
+enum BatchDeleteMode { "MoveToTrash", "RemoveFromIndex" };
+enum BatchDeletePreviewStatus { "WillMoveToTrash", "IndexOnly", "Missing", "Skipped", "Blocked" };
+enum BatchDeleteResultStatus { "MovedToTrash", "RemovedFromIndex", "Skipped", "Failed" };
 enum UndoActionStatus { "Pending", "Executed", "Expired", "Blocked" };
 enum ErrorKind {
     "Io", "Db", "Config", "Classify", "Conflict", "DuplicateFile",

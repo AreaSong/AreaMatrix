@@ -1,0 +1,45 @@
+一、执行结论
+
+- 已完成：`4-1/task-41: C2-09 contract-api`
+
+二、执行范围
+
+- 单任务：C2-09 batch-delete-trash 合同/API
+- 修改文件：
+  - `core/src/batch_delete.rs`
+  - `core/src/api.rs`
+  - `core/src/lib.rs`
+  - `core/area_matrix.udl`
+  - `core/tests/batch_delete_trash_contract_api.rs`
+  - `docs/api/core-api.md`
+
+三、完成情况
+
+- 已读取 C2-09 能力规格、Stage 2 control map、Core API、错误码，并交叉读取 S2-13 / S2-10 消费页面。
+- 已新增 `preview_batch_delete`、`batch_delete_to_trash` 合同、UDL 类型、Rust public API、contract test。
+- 合同覆盖预览报告、执行报告、`undo_token`、Trash 可用性、Undo 可用性、逐项状态、失败原因、`affected_file_ids`。
+- 未实现业务逻辑；当前只提供合同和输入边界，避免提前完成 task-42 implementation。
+- 未触碰 `apps/**`。
+
+四、工程质量
+
+- 新增 public Rust 类型和函数都有 rustdoc，明确 `MoveToTrash` / `RemoveFromIndex`、永久删除禁区、外部源文件禁区和错误码。
+- 没有新增依赖，没有 mock-only UI wiring，没有硬编码成功态。
+- `docs/api/core-api.md` 虽不在 Manifest `Expected New Paths`，但它是本 task 的 Exact Doc 且是 Core API SSOT；我按文档缺口同步了它。建议后续修正 manifest 生成边界，把 Core API 文档列入此类 contract task 的允许改动路径。
+
+五、验证情况
+
+- 已运行：`cargo fmt --all`，通过。
+- 已运行：`cargo test --test batch_delete_trash_contract_api -- --nocapture`，通过，4/4。
+- 已运行：`./dev check task 4-1/task-41`，通过：
+  - `prompt doctor`: OK
+  - `git diff --check`: OK
+  - targeted test `batch_delete_trash_contract_api`: 4/4 通过
+- 未运行全量 `cargo test --workspace` / `./dev check all`，因为本 task 明确要求普通 atomic Core task 只跑 `./dev check task 4-1/task-41`。
+
+六、风险与后续
+
+- 剩余风险：C2-09 目前仍是合同/API 层，真实 Trash、DB、change log、undo action 写入需由后续 implementation/failure/validation task 完成。
+- 工作区中 `.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json` 是执行前已有运行状态改动，我未修改或回退。
+- 建议下一个任务：`4-1/task-42`，实现 C2-09 batch-delete-trash 真实业务逻辑。
+
