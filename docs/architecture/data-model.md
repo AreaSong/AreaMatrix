@@ -127,6 +127,20 @@ CREATE TABLE IF NOT EXISTS tags (
 
 CREATE INDEX IF NOT EXISTS idx_tags_tag ON tags(tag);
 
+CREATE TABLE IF NOT EXISTS undo_actions (
+  token TEXT PRIMARY KEY,
+  kind TEXT NOT NULL,
+  summary_json TEXT NOT NULL,
+  inverse_json TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending'
+    CHECK (status IN ('pending', 'executed', 'expired', 'blocked')),
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_undo_actions_status_time
+  ON undo_actions(status, created_at DESC);
+
 CREATE TABLE IF NOT EXISTS fs_event_cursor (
   id INTEGER PRIMARY KEY CHECK (id = 1),
   last_event_id INTEGER NOT NULL,
@@ -203,6 +217,15 @@ erDiagram
         int file_id PK_FK
         string tag PK
         int added_at
+    }
+    undo_actions {
+        string token PK
+        string kind
+        string summary_json
+        string inverse_json
+        string status
+        int created_at
+        int updated_at
     }
     fs_event_cursor {
         int id PK
@@ -438,6 +461,32 @@ SELECT f.id, f.path, f.current_name, f.category
  WHERE t.tag = ? AND f.status = 'active'
  ORDER BY t.added_at DESC
  LIMIT ?;
+```
+
+### undo_actions: INSERT
+
+```sql
+INSERT INTO undo_actions (
+  token, kind, summary_json, inverse_json, status, created_at, updated_at
+) VALUES (?, ?, ?, ?, 'pending', ?, ?);
+```
+
+### undo_actions: SELECT pending
+
+```sql
+SELECT token, kind, summary_json, inverse_json, status, created_at, updated_at
+  FROM undo_actions
+ WHERE status = 'pending'
+ ORDER BY created_at DESC
+ LIMIT ?;
+```
+
+### undo_actions: MARK
+
+```sql
+UPDATE undo_actions
+   SET status = ?, updated_at = ?
+ WHERE token = ? AND status = 'pending';
 ```
 
 ### fs_event_cursor: 读

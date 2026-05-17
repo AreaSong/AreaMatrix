@@ -55,7 +55,7 @@ pub(crate) use staging_recovery::{
     delete_staging_file_row, list_protected_staging_paths, list_staging_file_rows, StagingFileRow,
 };
 pub(crate) use sync::*;
-pub(crate) use tags::{add_tag_row, list_tag_set, remove_tag_row};
+pub(crate) use tags::{add_tag_row, batch_add_tags_rows, list_tag_set, remove_tag_row};
 
 const AREA_MATRIX_DIR: &str = ".areamatrix";
 const INDEX_DB_FILE: &str = "index.db";
@@ -128,6 +128,20 @@ CREATE TABLE IF NOT EXISTS tags (
 );
 
 CREATE INDEX IF NOT EXISTS idx_tags_tag ON tags(tag);
+
+CREATE TABLE IF NOT EXISTS undo_actions (
+  token TEXT PRIMARY KEY,
+  kind TEXT NOT NULL,
+  summary_json TEXT NOT NULL,
+  inverse_json TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending'
+    CHECK (status IN ('pending', 'executed', 'expired', 'blocked')),
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_undo_actions_status_time
+  ON undo_actions(status, created_at DESC);
 
 CREATE TABLE IF NOT EXISTS fs_event_cursor (
   id INTEGER PRIMARY KEY CHECK (id = 1),

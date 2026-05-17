@@ -12,6 +12,7 @@ const BATCH_ADD_TAGS_PAGE: &str =
 const UNDO_TOAST_PAGE: &str =
     include_str!("../../docs/ux/page-specs/stage-2-experience/S2-10-undo-toast.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
+const DATA_MODEL: &str = include_str!("../../docs/architecture/data-model.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const TAGS_RS: &str = include_str!("../src/tags.rs");
 const UDL: &str = include_str!("../area_matrix.udl");
@@ -183,6 +184,21 @@ fn batch_add_tags_contract_docs_api_udl_and_control_map_stay_aligned() {
     ] {
         assert_contains(CORE_API, fragment);
     }
+
+    for fragment in [
+        "CREATE TABLE IF NOT EXISTS undo_actions",
+        "token TEXT PRIMARY KEY",
+        "kind TEXT NOT NULL",
+        "summary_json TEXT NOT NULL",
+        "inverse_json TEXT NOT NULL",
+        "CHECK (status IN ('pending', 'executed', 'expired', 'blocked'))",
+        "CREATE INDEX IF NOT EXISTS idx_undo_actions_status_time",
+        "### undo_actions: INSERT",
+        "### undo_actions: SELECT pending",
+        "### undo_actions: MARK",
+    ] {
+        assert_contains(DATA_MODEL, fragment);
+    }
 }
 
 #[test]
@@ -218,7 +234,6 @@ fn batch_add_tags_contract_documents_consumer_state_and_scope_boundaries() {
         "S2-10 consumes the returned undo token",
         "already-present",
         "failed item counts",
-        "stops before DB mutation",
         "real writes to `tags`, `change_log`, and the C2-07 undo action",
         "must never move, rename, delete, trash",
     ] {

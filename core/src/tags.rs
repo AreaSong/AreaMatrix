@@ -147,27 +147,26 @@ pub fn list_tags(repo_path: String, file_id: i64) -> CoreResult<TagSet> {
     db::list_tag_set(&repo, file_id).map_err(normalize_tag_metadata_error)
 }
 
-/// Defines the C2-06 batch tag mutation contract without performing batch writes yet.
+/// Adds normalized tags to multiple active files and returns a mutation report.
+///
+/// C2-06 batch tag mutation contract.
 ///
 /// S2-09 uses this API to add one or more normalized tags to a multi-selection
-/// and S2-10 consumes the returned undo token when a later implementation
-/// persists undo metadata. The report shape carries added, already-present, and
-/// failed item counts so UI can render partial failure summaries without
-/// treating skipped or failed files as successful writes.
+/// and S2-10 consumes the returned undo token after successful writes. The
+/// report shape carries added, already-present, and failed item counts so UI
+/// can render partial failure summaries without treating skipped or failed
+/// files as successful writes.
 ///
-/// This contract intentionally stops before DB mutation in the contract/API
-/// task. The C2-06 implementation task must replace the final persistence
-/// boundary with real writes to `tags`, `change_log`, and the C2-07 undo action
-/// store. The contract must never move, rename, delete, trash, reclassify,
-/// reindex, edit notes, update generated overviews, call AI/network providers,
-/// or touch user file contents.
+/// The implementation performs real writes to `tags`, `change_log`, and the C2-07 undo action
+/// store. It must never move, rename, delete, trash, reclassify, reindex, edit notes, update
+/// generated overviews, call AI/network providers, or touch user file contents.
 ///
 /// # Errors
 ///
 /// Returns `CoreError::FileNotFound { path }` when no valid target file id is
 /// supplied. Returns `CoreError::Db { message }` when repository tag metadata is
 /// unavailable, tag input cannot be normalized for the batch contract, or the
-/// C2-06 persistence task has not yet connected real batch writes.
+/// batch mutation cannot be persisted.
 pub fn batch_add_tags(
     repo_path: String,
     file_ids: Vec<i64>,
@@ -178,19 +177,8 @@ pub fn batch_add_tags(
     let normalized_file_ids = normalize_batch_file_ids(&file_ids)?;
     let normalized_tags = normalize_batch_tags(&tags)?;
     db::ensure_initialized(&repo).map_err(normalize_tag_metadata_error)?;
-
-    let _contract_shape = BatchMutationReport {
-        requested_file_count: normalized_file_ids.len() as i64,
-        requested_tag_count: normalized_tags.len() as i64,
-        added_count: 0,
-        skipped_count: 0,
-        failed_count: 0,
-        item_results: Vec::new(),
-        undo_token: None,
-    };
-    Err(CoreError::db(
-        "batch tag mutation persistence is defined by C2-06 implementation task",
-    ))
+    db::batch_add_tags_rows(&repo, &normalized_file_ids, &normalized_tags)
+        .map_err(normalize_tag_metadata_error)
 }
 
 fn validate_tag_repo_path(repo_path: &str) -> CoreResult<PathBuf> {
