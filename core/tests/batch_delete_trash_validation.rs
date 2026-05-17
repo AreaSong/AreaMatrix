@@ -1,5 +1,8 @@
 use std::{fs, path::Path};
 
+#[cfg(unix)]
+use std::os::unix::fs::PermissionsExt;
+
 use area_matrix_core::{
     batch_delete_to_trash, list_changes, list_files, list_undo_actions, preview_batch_delete,
     BatchDeleteMode, BatchDeletePreviewReport, BatchDeletePreviewStatus, BatchDeleteReport,
@@ -134,6 +137,70 @@ fn batch_delete_trash_validation_partial_failure_and_skips_are_explicit() {
         assert_eq!(
             fs::read(&second_source).expect("read second source"),
             b"second indexed"
+        );
+        assert_eq!(fs::read_dir(trash_dir).expect("read trash").count(), 0);
+    });
+}
+
+#[cfg(unix)]
+#[test]
+fn batch_delete_trash_validation_readonly_repo_owned_file_is_blocked() {
+    with_test_system_trash(|trash_dir| {
+        let repo = initialized_repo();
+        let entry = import_fixture(
+            repo.path(),
+            "readonly.pdf",
+            b"readonly bytes",
+            StorageMode::Copied,
+        );
+        let repo_file = repo.path().join(&entry.path);
+        let mut readonly = fs::metadata(&repo_file)
+            .expect("read imported file permissions")
+            .permissions();
+        readonly.set_mode(0o444);
+        fs::set_permissions(&repo_file, readonly).expect("make imported file read-only");
+
+        let before_preview = snapshot(repo.path());
+        let preview = preview_batch_delete(
+            path_string(repo.path()),
+            vec![entry.id],
+            BatchDeleteMode::MoveToTrash,
+        )
+        .expect("preview read-only repo-owned batch delete");
+
+        let mut restored = fs::metadata(&repo_file)
+            .expect("read read-only permissions for restore")
+            .permissions();
+        restored.set_mode(0o644);
+        fs::set_permissions(&repo_file, restored).expect("restore file permissions");
+
+        assert_eq!(snapshot(repo.path()), before_preview);
+        assert!(!preview.can_apply);
+        assert!(preview.trash_available);
+        assert!(!preview.undo_available);
+        assert_eq!(preview.will_trash_count, 0);
+        assert_eq!(preview.blocked_count, 1);
+        assert_eq!(preview.items[0].status, BatchDeletePreviewStatus::Blocked);
+        assert!(!preview.items[0].will_move_to_trash);
+        assert!(preview.items[0]
+            .reason
+            .as_deref()
+            .expect("read-only blocked reason")
+            .contains("Read-only"));
+
+        let error = batch_delete_to_trash(
+            path_string(repo.path()),
+            vec![entry.id],
+            preview.delete_mode,
+            preview.preview_token,
+        )
+        .expect_err("read-only-only selection cannot be applied");
+
+        assert!(matches!(error, CoreError::Conflict { .. }));
+        assert_eq!(file_status(repo.path(), entry.id), "active");
+        assert_eq!(
+            fs::read(&repo_file).expect("read restored read-only file"),
+            b"readonly bytes"
         );
         assert_eq!(fs::read_dir(trash_dir).expect("read trash").count(), 0);
     });

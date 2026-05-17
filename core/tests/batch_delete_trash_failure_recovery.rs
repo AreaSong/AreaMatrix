@@ -286,21 +286,22 @@ fn batch_delete_failure_recovery_rolls_back_mixed_metadata_when_undo_write_fails
         .expect("import file that will be missing before apply");
         fs::remove_file(repo.path().join(&missing.path)).expect("simulate missing repo file");
 
-        let preview = preview_batch_delete(
+        let skipped_preview = preview_batch_delete(
             path_string(repo.path()),
             vec![keep.id, missing.id],
             BatchDeleteMode::MoveToTrash,
         )
-        .expect("preview mixed trash and missing metadata removal");
-        assert_eq!(preview.will_trash_count, 1);
-        assert_eq!(preview.missing_count, 1);
+        .expect("preview mixed trash and skipped missing metadata removal");
+        assert_eq!(skipped_preview.will_trash_count, 1);
+        assert_eq!(skipped_preview.missing_count, 0);
+        assert_eq!(skipped_preview.skipped_count, 1);
         install_batch_trash_undo_failure(repo.path());
 
         let error = batch_delete_to_trash(
             path_string(repo.path()),
             vec![keep.id, missing.id],
             BatchDeleteMode::MoveToTrash,
-            preview.preview_token,
+            skipped_preview.preview_token,
         )
         .expect_err("undo action write failure must abort the batch");
 

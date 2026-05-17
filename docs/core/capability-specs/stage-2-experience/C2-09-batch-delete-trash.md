@@ -32,12 +32,14 @@
 
 - `PermissionDenied`
 - `FileNotFound`
+- `Conflict`
 - `Io`
 - `Db`
 
 ## 验收标准
 
 - Trash 不可用时禁用删除。
+- blocked 项默认 excluded；存在可处理项时可继续处理其余项。
 - 删除前必须确认影响。
 - 失败项不被当作成功删除。
 

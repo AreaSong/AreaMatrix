@@ -166,7 +166,7 @@ fn apply_batch_delete_item(repo: &Path, item: BatchDeletePlanItem) -> AppliedBat
             result: BatchDeleteItemResult {
                 file_id: item.file_id,
                 final_path: item.current_path,
-                status: BatchDeleteResultStatus::Failed,
+                status: BatchDeleteResultStatus::Skipped,
                 error: Some(item.reason),
             },
             refresh: false,

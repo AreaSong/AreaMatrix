@@ -335,19 +335,24 @@ fn batch_delete_trash_implementation_remove_index_only_touches_metadata() {
         )
         .expect("preview wrong mode for index-only entries");
 
-        assert!(skipped_preview.can_apply);
+        assert!(!skipped_preview.can_apply);
         assert_eq!(skipped_preview.will_trash_count, 0);
         assert_eq!(skipped_preview.index_only_count, 0);
-        assert_eq!(skipped_preview.missing_count, 1);
-        assert_eq!(skipped_preview.skipped_count, 1);
+        assert_eq!(skipped_preview.missing_count, 0);
+        assert_eq!(skipped_preview.skipped_count, 2);
         assert_eq!(
             skipped_preview.items[0].status,
             BatchDeletePreviewStatus::Skipped
         );
         assert_eq!(
             skipped_preview.items[1].status,
-            BatchDeletePreviewStatus::Missing
+            BatchDeletePreviewStatus::Skipped
         );
+        assert!(skipped_preview.items[1]
+            .reason
+            .as_deref()
+            .expect("missing row skipped reason")
+            .contains("RemoveFromIndex"));
 
         let preview = preview_batch_delete(
             path_string(repo.path()),
@@ -401,6 +406,87 @@ fn batch_delete_trash_implementation_remove_index_only_touches_metadata() {
                 .len(),
             0
         );
+    });
+}
+
+#[test]
+fn batch_delete_trash_implementation_excludes_blocked_items_and_moves_available_files() {
+    with_test_system_trash(|trash_dir| {
+        let repo = initialized_repo();
+        let (_available_root, available_source) = source_file("available.pdf", b"available bytes");
+        let available = import_file(
+            path_string(repo.path()),
+            path_string(&available_source),
+            import_options(StorageMode::Copied, "available.pdf"),
+        )
+        .expect("import file available for Trash");
+        let blocked_id = adopt_file(repo.path(), "finance/blocked-directory.pdf");
+        fs::remove_file(repo.path().join("finance/blocked-directory.pdf"))
+            .expect("replace adopted file with directory");
+        fs::create_dir(repo.path().join("finance/blocked-directory.pdf"))
+            .expect("create blocked directory at file path");
+
+        let preview = preview_batch_delete(
+            path_string(repo.path()),
+            vec![available.id, blocked_id],
+            BatchDeleteMode::MoveToTrash,
+        )
+        .expect("preview mixed available and blocked delete");
+
+        assert!(preview.can_apply);
+        assert_eq!(preview.will_trash_count, 1);
+        assert_eq!(preview.blocked_count, 1);
+        assert_eq!(preview.apply_blocked_reason, None);
+        assert_eq!(
+            preview.items[0].status,
+            BatchDeletePreviewStatus::WillMoveToTrash
+        );
+        assert_eq!(preview.items[1].status, BatchDeletePreviewStatus::Blocked);
+
+        let report = batch_delete_to_trash(
+            path_string(repo.path()),
+            vec![available.id, blocked_id],
+            BatchDeleteMode::MoveToTrash,
+            preview.preview_token,
+        )
+        .expect("apply moves available files and excludes blocked rows");
+
+        assert_eq!(report.moved_to_trash_count, 1);
+        assert_eq!(report.removed_from_index_count, 0);
+        assert_eq!(report.skipped_count, 1);
+        assert_eq!(report.failed_count, 0);
+        assert_eq!(report.affected_file_ids, vec![available.id]);
+        assert_eq!(
+            report.item_results[0].status,
+            BatchDeleteResultStatus::MovedToTrash
+        );
+        assert_eq!(
+            report.item_results[1].status,
+            BatchDeleteResultStatus::Skipped
+        );
+        assert!(report.item_results[1]
+            .error
+            .as_deref()
+            .expect("blocked reason is preserved")
+            .contains("FileNotFound"));
+        assert!(report.undo_token.is_some());
+
+        assert!(!repo.path().join(&available.path).exists());
+        assert_eq!(
+            fs::read(trash_dir.join("available.pdf")).expect("read moved Trash file"),
+            b"available bytes"
+        );
+        assert_eq!(file_status(repo.path(), available.id), "deleted");
+        assert_eq!(file_status(repo.path(), blocked_id), "active");
+        assert!(
+            repo.path().join("finance/blocked-directory.pdf").is_dir(),
+            "blocked item is left unchanged"
+        );
+        let deleted_changes = change_actions(repo.path())
+            .into_iter()
+            .filter(|(_, action, _)| action == "deleted")
+            .collect::<Vec<_>>();
+        assert_eq!(deleted_changes.len(), 1);
     });
 }
 

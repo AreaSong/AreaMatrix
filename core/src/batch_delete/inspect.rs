@@ -32,6 +32,10 @@ impl InspectedPathState {
         Self::Missing
     }
 
+    pub(super) fn is_readonly_file(&self) -> bool {
+        matches!(self, Self::File { readonly: true, .. })
+    }
+
     pub(super) fn feed_preview_token(&self, hasher: &mut Sha256) {
         match self {
             Self::File {

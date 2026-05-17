@@ -121,16 +121,10 @@ impl BatchDeletePlan {
     }
 
     pub(super) fn can_apply(&self) -> bool {
-        self.blocked_count() == 0 && self.items.iter().any(BatchDeletePlanItem::is_applicable)
+        self.items.iter().any(BatchDeletePlanItem::is_applicable)
     }
 
     pub(super) fn apply_blocked_reason(&self) -> Option<String> {
-        if self.blocked_count() > 0 {
-            return Some(format!(
-                "{} item(s) must be resolved before Apply",
-                self.blocked_count()
-            ));
-        }
         if !self.items.iter().any(BatchDeletePlanItem::is_applicable) {
             return Some("No selected files can be deleted in this mode".to_owned());
         }

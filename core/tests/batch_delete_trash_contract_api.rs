@@ -150,12 +150,13 @@ fn batch_delete_contract_exposes_signatures_inputs_outputs_and_errors() {
     assert_eq!(report.undo_token.as_deref(), Some("undo:trash-delete:42"));
 
     let documented_errors = [
+        CoreError::conflict("stale preview"),
         CoreError::permission_denied("trash unavailable"),
         CoreError::file_not_found("missing file"),
         CoreError::io("trash failed"),
         CoreError::db("metadata failed"),
     ];
-    assert_eq!(documented_errors.len(), 4);
+    assert_eq!(documented_errors.len(), 5);
 }
 
 #[test]
@@ -207,6 +208,7 @@ fn batch_delete_contract_docs_api_udl_and_control_map_stay_aligned() {
         "不提供永久删除。",
         "- `PermissionDenied`",
         "- `FileNotFound`",
+        "- `Conflict`",
         "- `Io`",
         "- `Db`",
         "Trash 不可用时禁用删除。",
@@ -270,8 +272,8 @@ fn batch_delete_contract_docs_api_udl_and_control_map_stay_aligned() {
     }
 
     for fragment in [
-        "| `preview_batch_delete(repo, file_ids, delete_mode)` | storage | √ | PermissionDenied / FileNotFound / Io / Db |",
-        "| `batch_delete_to_trash(repo, file_ids, delete_mode, preview_token)` | storage | √ | PermissionDenied / FileNotFound / Io / Db |",
+        "| `preview_batch_delete(repo, file_ids, delete_mode)` | storage | √ | PermissionDenied / FileNotFound / Conflict / Io / Db |",
+        "| `batch_delete_to_trash(repo, file_ids, delete_mode, preview_token)` | storage | √ | PermissionDenied / FileNotFound / Conflict / Io / Db |",
         "### `preview_batch_delete(repoPath, fileIds, deleteMode) throws -> BatchDeletePreviewReport`",
         "### `batch_delete_to_trash(repoPath, fileIds, deleteMode, previewToken) throws -> BatchDeleteReport`",
         "`preview_token`",
@@ -345,7 +347,7 @@ fn batch_delete_contract_documents_consumer_state_and_scope_boundaries() {
         assert_contains(API_RS, fragment);
     }
 
-    for error_name in ["PermissionDenied", "FileNotFound", "Io", "Db"] {
+    for error_name in ["PermissionDenied", "FileNotFound", "Conflict", "Io", "Db"] {
         assert_contains(ERROR_CODES, error_name);
         assert_contains(CAPABILITY_SPEC, error_name);
         assert_contains(UDL, error_name);

@@ -1,0 +1,68 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`4-1/task-45`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-45-c2-09-integration-verify.md`
+- 核验范围：`docs/core/capability-specs/stage-2-experience/C2-09-batch-delete-trash.md`、`docs/architecture/stage-2-control-map.md`、`docs/api/core-api.md`、`docs/ux/page-specs/stage-2-experience/S2-13-batch-delete-confirm.md`、`core/src/**`、`core/area_matrix.udl`、`core/tests/**`
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：0
+- 通过项数：3
+- 不通过项数：1
+- 阻塞项数：1
+
+四、逐项验收结果
+
+- 项目：交叉检查 capability spec、Core API、UDL、Rust 实现和测试
+- 结果：不通过
+- 证据：Core API 明确 `MoveToTrash` 只处理 repo-owned，`RemoveFromIndex` 处理 Indexed / Adopted / External 或 Missing metadata：`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:2013`、`:2014`、`:2086`、`:2092`。但实现中 `MetadataOnlyMissing` 无视 `delete_mode`，直接返回可执行 `Missing` 项：`/Users/as/Ai-Project/project/AreaMatrix/core/src/batch_delete/plan/classify.rs:45`。测试还锁定了 `MoveToTrash` 模式下 missing 记录 `can_apply == true`：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/batch_delete_trash_implementation.rs:331`、`:338`、`:341`。
+- 涉及文件：`core/src/batch_delete/plan/classify.rs`、`core/tests/batch_delete_trash_implementation.rs`、`docs/api/core-api.md`
+
+- 项目：确认消费页面需要的状态、错误和副作用均已覆盖
+- 结果：不通过
+- 证据：S2-13 规定 `Move to Trash` 只处理可移动到 Trash 的 repo-managed 文件，`Remove from index` 只处理 Index-only / 缺失记录：`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-2-experience/S2-13-batch-delete-confirm.md:95`、`:96`。当前 Core 预览会让 missing 记录在 `MoveToTrash` 模式下成为可执行项，UI 无法安全区分 destructive 主按钮与 metadata-only 按钮。
+- 涉及文件：`docs/ux/page-specs/stage-2-experience/S2-13-batch-delete-confirm.md`、`core/src/batch_delete/plan/classify.rs`
+
+- 项目：确认没有实现 control map 之外的能力
+- 结果：通过
+- 证据：control map 中 S2-13 绑定 `C2-09, C2-07`，当前实现面集中在 C2-09 batch delete 与 C2-07 undo token/action 消费，没有发现 tags/search/reindex/overview/AI 等越界能力实现。
+- 涉及文件：`docs/architecture/stage-2-control-map.md`、`core/src/batch_delete.rs`、`core/src/db/delete.rs`
+
+- 项目：不得修改文件；只记录验收证据和阻塞项
+- 结果：通过
+- 证据：本轮验收只运行只读读取、`git status`、`rg`、`nl`、`./dev check task 4-1/task-45`，未执行 formatter 修复或文件写入命令。`apps/**` 无 diff，Forbidden Touches 未命中。
+- 涉及文件：`apps/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过。核心结构有 preview/apply/token/inspect 拆分，但 missing 记录的模式分流逻辑与 API/UX 合同不一致。
+- 注释 / rustdoc / 文档同步：通过。公开 API 有 rustdoc，UDL/Core API 类型字段基本对齐。
+- 错误处理与边界处理：不通过。`MoveToTrash` 模式下 missing metadata 被当作可应用项，会造成错误副作用边界。
+- 测试与验证覆盖：不通过。验证命令通过，但现有测试把不符合文档的 `MoveToTrash + Missing => can_apply` 行为固化了。
+- 占位、硬编码、mock-only、一次性实现检查：通过。未发现 mock-only 或硬编码通过态。
+
+六、阻塞项
+
+- P0：`MoveToTrash` 模式错误允许 missing metadata 执行 index removal
+  - 说明：文档要求 `MoveToTrash` 只处理 repo-owned 文件进入 Trash，missing metadata 应通过 `RemoveFromIndex` 处理；实现却在 `MetadataOnlyMissing` 分支直接返回可执行 `Missing`，不检查 `delete_mode`。
+  - 绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/core/src/batch_delete/plan/classify.rs:45`
+  - 为什么导致不通过：S2-13 的两个按钮语义会被 Core 混淆，后续 UI 接入无法把 C2-09 当作真实可靠依赖。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-45`
+- 通过：prompt doctor、git diff --check、`cargo fmt --all -- --check`、`cargo clippy --all-targets --all-features -- -D warnings`
+- 通过：`batch_delete_trash_contract_api` 4 passed，`batch_delete_trash_failure_recovery` 4 passed，`batch_delete_trash_implementation` 7 passed，`batch_delete_trash_validation` 5 passed
+- 失败：无命令失败
+- 缺失：验证命令未覆盖上述 UX/API 模式语义冲突，且现有测试固化了错误行为
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。C2-09 目前不能作为后续 S2-13 page-feature task 的真实 Core 依赖。
+
+VERIFY_RESULT: FAIL

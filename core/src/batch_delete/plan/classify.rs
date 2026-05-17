@@ -42,11 +42,9 @@ pub(super) fn plan_batch_delete_item(
             delete_mode,
             "Index-only entries are removed from metadata only",
         ),
-        EntryDeleteClass::MetadataOnlyMissing => Ok(BatchDeletePlanItem::Missing(planned_item(
-            entry,
-            current_path,
-            InspectedPathState::missing(),
-        ))),
+        EntryDeleteClass::MetadataOnlyMissing => {
+            missing_metadata_plan_item(entry, current_path, delete_mode)
+        }
         EntryDeleteClass::Blocked { error, state } => Ok(blocked_from_entry(entry, state, error)),
     }
 }
@@ -72,6 +70,13 @@ fn repo_owned_plan_item(
     trash_available: bool,
 ) -> CoreResult<BatchDeletePlanItem> {
     let inspected_state = inspect_current_file_state(&current_path)?;
+    if inspected_state.is_readonly_file() {
+        return Ok(blocked_from_entry(
+            entry,
+            Some(inspected_state),
+            CoreError::permission_denied("Read-only file cannot be moved to Trash"),
+        ));
+    }
     match delete_mode {
         BatchDeleteMode::MoveToTrash if trash_available => Ok(BatchDeletePlanItem::MoveToTrash(
             planned_item(entry, current_path, inspected_state),
@@ -109,6 +114,26 @@ fn index_only_plan_item(
                 inspected_state,
             )))
         }
+    }
+}
+
+fn missing_metadata_plan_item(
+    entry: FileEntry,
+    current_path: PathBuf,
+    delete_mode: &BatchDeleteMode,
+) -> CoreResult<BatchDeletePlanItem> {
+    let inspected_state = InspectedPathState::missing();
+    match delete_mode {
+        BatchDeleteMode::MoveToTrash => Ok(skipped_from_entry(
+            entry,
+            Some(inspected_state),
+            "Missing metadata must use RemoveFromIndex",
+        )),
+        BatchDeleteMode::RemoveFromIndex => Ok(BatchDeletePlanItem::Missing(planned_item(
+            entry,
+            current_path,
+            inspected_state,
+        ))),
     }
 }
 
