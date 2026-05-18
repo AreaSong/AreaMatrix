@@ -1,7 +1,7 @@
 use area_matrix_core::{
-    preview_classifier_rule_impact, ClassifierRule, CoreError, CoreResult, RuleImpactConflict,
-    RuleImpactConflictKind, RuleImpactMatchReason, RuleImpactReport, RuleImpactSample,
-    RuleImpactStatus,
+    preview_classifier_rule_impact, ClassifierImpactPreviewMode, ClassifierImpactPreviewRequest,
+    ClassifierRule, CoreError, CoreResult, RuleImpactConflict, RuleImpactConflictKind,
+    RuleImpactMatchReason, RuleImpactReport, RuleImpactSample, RuleImpactStatus,
 };
 use pretty_assertions::assert_eq;
 
@@ -34,14 +34,26 @@ fn valid_rule() -> ClassifierRule {
     }
 }
 
+fn valid_request() -> ClassifierImpactPreviewRequest {
+    ClassifierImpactPreviewRequest {
+        mode: ClassifierImpactPreviewMode::RuleDraft,
+        rule: valid_rule(),
+        move_files: false,
+        replacement_category: None,
+    }
+}
+
 #[test]
 fn classifier_impact_preview_contract_exposes_signature_inputs_outputs_and_errors() {
-    fn assert_preview(_: fn(String, ClassifierRule) -> CoreResult<RuleImpactReport>) {}
+    fn assert_preview(
+        _: fn(String, ClassifierImpactPreviewRequest) -> CoreResult<RuleImpactReport>,
+    ) {
+    }
     assert_preview(preview_classifier_rule_impact);
 
-    let rule = valid_rule();
+    let request = valid_request();
     let report = RuleImpactReport {
-        rule: rule.clone(),
+        request: request.clone(),
         affected_file_count: 24,
         will_update_count: 18,
         already_correct_count: 4,
@@ -85,7 +97,7 @@ fn classifier_impact_preview_contract_exposes_signature_inputs_outputs_and_error
         apply_blocked_reason: Some("resolve conflicts and needs review rows".to_owned()),
     };
 
-    assert_eq!(report.rule, rule);
+    assert_eq!(report.request, request);
     assert_eq!(report.affected_file_count, 24);
     assert_eq!(report.will_update_count, 18);
     assert_eq!(report.already_correct_count, 4);
@@ -111,48 +123,48 @@ fn classifier_impact_preview_contract_exposes_signature_inputs_outputs_and_error
 #[test]
 fn classifier_impact_preview_contract_validates_inputs_without_fake_success() {
     assert!(matches!(
-        preview_classifier_rule_impact(String::new(), valid_rule()),
+        preview_classifier_rule_impact(String::new(), valid_request()),
         Err(CoreError::Config { .. })
     ));
 
-    let mut invalid_category = valid_rule();
-    invalid_category.target_category = "Bad Category".to_owned();
+    let mut invalid_category = valid_request();
+    invalid_category.rule.target_category = "Bad Category".to_owned();
     assert!(matches!(
         preview_classifier_rule_impact("/tmp/repo".to_owned(), invalid_category),
         Err(CoreError::Config { .. })
     ));
 
-    let mut empty_basis = valid_rule();
-    empty_basis.keywords.clear();
-    empty_basis.extensions.clear();
+    let mut empty_basis = valid_request();
+    empty_basis.rule.keywords.clear();
+    empty_basis.rule.extensions.clear();
     assert!(matches!(
         preview_classifier_rule_impact("/tmp/repo".to_owned(), empty_basis),
         Err(CoreError::Config { .. })
     ));
 
-    let mut dotted_extension = valid_rule();
-    dotted_extension.extensions = vec![".pdf".to_owned()];
+    let mut dotted_extension = valid_request();
+    dotted_extension.rule.extensions = vec![".pdf".to_owned()];
     assert!(matches!(
         preview_classifier_rule_impact("/tmp/repo".to_owned(), dotted_extension),
         Err(CoreError::Config { .. })
     ));
 
-    let mut duplicate_keyword = valid_rule();
-    duplicate_keyword.keywords = vec!["invoice".to_owned(), "invoice".to_owned()];
+    let mut duplicate_keyword = valid_request();
+    duplicate_keyword.rule.keywords = vec!["invoice".to_owned(), "invoice".to_owned()];
     assert!(matches!(
         preview_classifier_rule_impact("/tmp/repo".to_owned(), duplicate_keyword),
         Err(CoreError::Config { .. })
     ));
 
-    let mut invalid_priority = valid_rule();
-    invalid_priority.priority = 1001;
+    let mut invalid_priority = valid_request();
+    invalid_priority.rule.priority = 1001;
     assert!(matches!(
         preview_classifier_rule_impact("/tmp/repo".to_owned(), invalid_priority),
         Err(CoreError::Config { .. })
     ));
 
     assert!(matches!(
-        preview_classifier_rule_impact("/tmp/repo".to_owned(), valid_rule()),
+        preview_classifier_rule_impact("/tmp/repo".to_owned(), valid_request()),
         Err(CoreError::Db { .. })
     ));
 }
@@ -162,9 +174,9 @@ fn classifier_impact_preview_contract_docs_api_udl_and_control_map_stay_aligned(
     for fragment in [
         "# C2-14 classifier-impact-preview",
         "- S2-18 classifier-impact-preview",
-        "计划新增：`preview_classifier_rule_impact(repo_path, rule) -> RuleImpactReport`",
-        "分类规则草稿。",
-        "受影响文件数量、样例、冲突、needs review。",
+        "计划新增：`preview_classifier_rule_impact(repo_path, request) -> RuleImpactReport`",
+        "规则草稿、删除 keyword、删除 extension 或删除 category 的显式预览请求。",
+        "受影响文件数量、样例、冲突、needs review、replacement 缺失状态。",
         "无写入。",
         "- `Config`",
         "- `Db`",
@@ -184,14 +196,17 @@ fn classifier_impact_preview_contract_docs_api_udl_and_control_map_stay_aligned(
     }
 
     for fragment in [
-        "RuleImpactReport preview_classifier_rule_impact(string repo_path, ClassifierRule rule);",
+        "RuleImpactReport preview_classifier_rule_impact(",
+        "ClassifierImpactPreviewRequest request",
+        "dictionary ClassifierImpactPreviewRequest",
+        "boolean move_files;",
         "dictionary RuleImpactSample",
         "sequence<RuleImpactMatchReason> match_reasons;",
         "RuleImpactStatus status;",
         "dictionary RuleImpactConflict",
         "RuleImpactConflictKind kind;",
         "dictionary RuleImpactReport",
-        "ClassifierRule rule;",
+        "ClassifierImpactPreviewRequest request;",
         "i64 affected_file_count;",
         "i64 will_update_count;",
         "i64 already_correct_count;",
@@ -205,6 +220,11 @@ fn classifier_impact_preview_contract_docs_api_udl_and_control_map_stay_aligned(
         "enum RuleImpactMatchReason",
         "\"Keyword\"",
         "\"Extension\"",
+        "\"Category\"",
+        "enum ClassifierImpactPreviewMode",
+        "\"RemoveKeyword\"",
+        "\"RemoveExtension\"",
+        "\"RemoveCategory\"",
         "enum RuleImpactStatus",
         "\"WillUpdate\"",
         "\"AlreadyCorrect\"",
@@ -223,8 +243,8 @@ fn classifier_impact_preview_contract_docs_api_udl_and_control_map_stay_aligned(
     }
 
     for fragment in [
-        "| `preview_classifier_rule_impact(repo, rule)` | classify | √ | Config / Db |",
-        "### `preview_classifier_rule_impact(repoPath, rule) throws -> RuleImpactReport`",
+        "| `preview_classifier_rule_impact(repo, request)` | classify | √ | Config / Db |",
+        "### `preview_classifier_rule_impact(repoPath, request) throws -> RuleImpactReport`",
         "C2-14 的分类规则影响预览入口",
         "`S2-18 classifier-impact-preview`",
         "`affected_file_count`",
@@ -232,8 +252,11 @@ fn classifier_impact_preview_contract_docs_api_udl_and_control_map_stay_aligned(
         "`already_correct_count`",
         "`needs_review_count`",
         "`conflict_count`",
+        "`move_files`",
         "`warning_required`",
         "`can_apply`",
+        "删除 keyword、extension 或 category",
+        "没有 `replacement_category` 时必须返回 `can_apply = false`",
         "只读读取 classifier 配置和文件 metadata",
         "不得保存规则、重分类、移动、重命名、删除、Trash、导入、reindex",
         "不实现 C2-13 rule save、C2-15 rule CRUD、后续 apply 行为",
@@ -261,6 +284,8 @@ fn classifier_impact_preview_contract_documents_consumer_state_and_scope_boundar
         "Index-only 文件只允许更新分类记录",
         "只保存规则不会修改现有文件或分类。",
         "dry-run 失败时不允许 Apply",
+        "删除 extension/keyword/category 的预览不会移动、删除或重命名历史文件。",
+        "删除 category 并 Apply 到现有文件时必须选择 replacement category。",
     ] {
         assert_contains(CLASSIFIER_IMPACT_PAGE, fragment);
     }
@@ -271,6 +296,7 @@ fn classifier_impact_preview_contract_documents_consumer_state_and_scope_boundar
         "RuleImpactSample",
         "RuleImpactConflict",
         "preview_classifier_rule_impact",
+        "ClassifierImpactPreviewRequest",
         "must not save",
         "apply category changes",
         "move files",
@@ -284,6 +310,7 @@ fn classifier_impact_preview_contract_documents_consumer_state_and_scope_boundar
     for fragment in [
         "pub fn preview_classifier_rule_impact(",
         "RuleImpactReport",
+        "ClassifierImpactPreviewRequest",
         "S2-18",
         "must not save the rule",
         "apply it to existing files",

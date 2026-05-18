@@ -1,9 +1,9 @@
 use std::{fs, path::Path};
 
 use area_matrix_core::{
-    init_repo, preview_classifier_rule_impact, ClassifierRule, CoreError, CoreResult,
-    OverviewOutput, RepoInitMode, RepoInitOptions, RuleImpactConflictKind, RuleImpactReport,
-    RuleImpactStatus,
+    init_repo, preview_classifier_rule_impact, ClassifierImpactPreviewMode,
+    ClassifierImpactPreviewRequest, ClassifierRule, CoreError, CoreResult, OverviewOutput,
+    RepoInitMode, RepoInitOptions, RuleImpactConflictKind, RuleImpactReport, RuleImpactStatus,
 };
 use pretty_assertions::assert_eq;
 use rusqlite::{params, Connection};
@@ -58,6 +58,15 @@ fn rule() -> ClassifierRule {
     }
 }
 
+fn request() -> ClassifierImpactPreviewRequest {
+    ClassifierImpactPreviewRequest {
+        mode: ClassifierImpactPreviewMode::RuleDraft,
+        rule: rule(),
+        move_files: true,
+        replacement_category: None,
+    }
+}
+
 fn open_db(repo: &Path) -> Connection {
     Connection::open(repo.join(".areamatrix/index.db")).expect("open repository database")
 }
@@ -66,8 +75,7 @@ fn insert_repo_file(repo: &Path, relative_path: &str, category: &str) -> i64 {
     let file_path = repo.join(relative_path);
     fs::create_dir_all(file_path.parent().expect("fixture path has parent"))
         .expect("create fixture parent");
-    fs::write(&file_path, b"classifier impact validation fixture")
-        .expect("write fixture file");
+    fs::write(&file_path, b"classifier impact validation fixture").expect("write fixture file");
     insert_file_row(repo, relative_path, relative_path, category, "copied", None)
 }
 
@@ -194,12 +202,16 @@ fn sample_status(report: &RuleImpactReport, file_id: i64) -> RuleImpactStatus {
 
 #[test]
 fn classifier_impact_preview_validation_locks_api_udl_and_rust_contract() {
-    fn assert_signature(_: fn(String, ClassifierRule) -> CoreResult<RuleImpactReport>) {}
+    fn assert_signature(
+        _: fn(String, ClassifierImpactPreviewRequest) -> CoreResult<RuleImpactReport>,
+    ) {
+    }
     assert_signature(preview_classifier_rule_impact);
 
     for fragment in [
-        "preview_classifier_rule_impact(repo_path, rule) -> RuleImpactReport",
-        "受影响文件数量、样例、冲突、needs review。",
+        "preview_classifier_rule_impact(repo_path, request) -> RuleImpactReport",
+        "规则草稿、删除 keyword、删除 extension 或删除 category 的显式预览请求。",
+        "受影响文件数量、样例、冲突、needs review、replacement 缺失状态。",
         "仅预览不改变文件分类。",
         "影响量超过阈值必须提示。",
         "冲突或 needs review 时不能直接批量应用。",
@@ -214,8 +226,12 @@ fn classifier_impact_preview_validation_locks_api_udl_and_rust_contract() {
     assert_contains(TESTING_DOC, "`core/classify` | ≥ 90%");
 
     for fragment in [
-        "RuleImpactReport preview_classifier_rule_impact(string repo_path, ClassifierRule rule);",
+        "RuleImpactReport preview_classifier_rule_impact(",
+        "ClassifierImpactPreviewRequest request",
+        "dictionary ClassifierImpactPreviewRequest",
+        "boolean move_files;",
         "dictionary RuleImpactReport",
+        "ClassifierImpactPreviewRequest request;",
         "i64 affected_file_count;",
         "i64 will_update_count;",
         "i64 needs_review_count;",
@@ -226,6 +242,9 @@ fn classifier_impact_preview_validation_locks_api_udl_and_rust_contract() {
         "string? apply_blocked_reason;",
         "enum RuleImpactStatus",
         "\"IndexOnly\"",
+        "enum ClassifierImpactPreviewMode",
+        "\"RemoveCategory\"",
+        "\"Category\"",
         "enum RuleImpactConflictKind",
         "\"NameConflict\"",
     ] {
@@ -235,6 +254,7 @@ fn classifier_impact_preview_validation_locks_api_udl_and_rust_contract() {
 
     for fragment in [
         "Previews C2-14 classifier rule impact for S2-18.",
+        "explicit preview request",
         "must not save the rule",
         "move files",
         "write undo/change-log state",
@@ -245,7 +265,10 @@ fn classifier_impact_preview_validation_locks_api_udl_and_rust_contract() {
     }
 
     assert_contains(LIB_RS, "preview_classifier_rule_impact");
-    assert_contains(CLASSIFIER_IMPACT_RS, "pub fn preview_classifier_rule_impact(");
+    assert_contains(
+        CLASSIFIER_IMPACT_RS,
+        "pub fn preview_classifier_rule_impact(",
+    );
 }
 
 #[test]
@@ -256,8 +279,8 @@ fn classifier_impact_preview_validation_success_is_read_only_and_warns_when_broa
     }
     let before = snapshot(repo.path());
 
-    let report =
-        preview_classifier_rule_impact(path_string(repo.path()), rule()).expect("preview impact");
+    let report = preview_classifier_rule_impact(path_string(repo.path()), request())
+        .expect("preview impact");
 
     assert_eq!(report.affected_file_count, 21);
     assert_eq!(report.will_update_count, 21);
@@ -289,8 +312,8 @@ fn classifier_impact_preview_validation_review_and_conflicts_block_direct_apply(
     .expect("write conflicting target");
     let before = snapshot(repo.path());
 
-    let report =
-        preview_classifier_rule_impact(path_string(repo.path()), rule()).expect("preview impact");
+    let report = preview_classifier_rule_impact(path_string(repo.path()), request())
+        .expect("preview impact");
 
     assert_eq!(report.affected_file_count, 2);
     assert_eq!(report.will_update_count, 0);
@@ -318,8 +341,8 @@ fn classifier_impact_preview_validation_failure_paths_return_config_or_db_withou
     insert_repo_file(repo.path(), "docs/clientz.pdf", "docs");
     let before = snapshot(repo.path());
 
-    let mut invalid_target = rule();
-    invalid_target.target_category = "unknown".to_owned();
+    let mut invalid_target = request();
+    invalid_target.rule.target_category = "unknown".to_owned();
     assert!(matches!(
         preview_classifier_rule_impact(path_string(repo.path()), invalid_target),
         Err(CoreError::Config { .. })
@@ -331,7 +354,7 @@ fn classifier_impact_preview_validation_failure_paths_return_config_or_db_withou
     )
     .expect("corrupt index database");
     assert!(matches!(
-        preview_classifier_rule_impact(path_string(repo.path()), rule()),
+        preview_classifier_rule_impact(path_string(repo.path()), request()),
         Err(CoreError::Db { .. })
     ));
     assert_eq!(user_visible_paths(repo.path()), before.user_visible_paths);

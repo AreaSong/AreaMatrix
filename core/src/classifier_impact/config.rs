@@ -8,6 +8,8 @@ use serde::Deserialize;
 
 use crate::{ClassifierRule, CoreError, CoreResult};
 
+use super::{ClassifierImpactPreviewMode, ClassifierImpactPreviewRequest};
+
 const AREA_MATRIX_DIR: &str = ".areamatrix";
 const CLASSIFIER_FILE: &str = "classifier.yaml";
 const MAX_CATEGORY_SLUG_LEN: usize = 32;
@@ -48,12 +50,10 @@ pub(super) struct CategoryConfig {
 
 pub(super) fn validate_impact_request(
     repo_path: &str,
-    rule: &ClassifierRule,
+    request: &ClassifierImpactPreviewRequest,
 ) -> CoreResult<PathBuf> {
     let repo = validate_repo_path(repo_path)?;
-    validate_target_category(&rule.target_category)?;
-    validate_rule_basis(rule)?;
-    validate_priority(rule.priority)?;
+    validate_request_shape(request)?;
     ensure_impact_repo_initialized(&repo)?;
     Ok(repo)
 }
@@ -82,6 +82,20 @@ pub(super) fn ensure_target_category_exists(
             "classifier impact target category does not exist",
         ))
     }
+}
+
+pub(super) fn ensure_replacement_category_exists(
+    config: &ClassifierConfig,
+    source_category: &str,
+    replacement_category: &str,
+) -> CoreResult<()> {
+    if source_category == replacement_category {
+        return Err(CoreError::config(
+            "classifier impact replacement category must differ",
+        ));
+    }
+    ensure_target_category_exists(config, replacement_category)
+        .map_err(|_| CoreError::config("classifier impact replacement category does not exist"))
 }
 
 fn validate_repo_path(repo_path: &str) -> CoreResult<PathBuf> {
@@ -189,7 +203,66 @@ fn validate_category_values(
     Ok(())
 }
 
-fn validate_target_category(category: &str) -> CoreResult<()> {
+fn validate_request_shape(request: &ClassifierImpactPreviewRequest) -> CoreResult<()> {
+    validate_target_category(&request.rule.target_category)?;
+    validate_priority(request.rule.priority)?;
+    match request.mode {
+        ClassifierImpactPreviewMode::RuleDraft => {
+            validate_rule_basis(&request.rule)?;
+            reject_replacement_for_rule_basis(request)
+        }
+        ClassifierImpactPreviewMode::RemoveKeyword => {
+            validate_single_keyword_request(request)?;
+            reject_replacement_for_rule_basis(request)
+        }
+        ClassifierImpactPreviewMode::RemoveExtension => {
+            validate_single_extension_request(request)?;
+            reject_replacement_for_rule_basis(request)
+        }
+        ClassifierImpactPreviewMode::RemoveCategory => validate_remove_category_request(request),
+    }
+}
+
+fn validate_single_keyword_request(request: &ClassifierImpactPreviewRequest) -> CoreResult<()> {
+    if request.rule.keywords.len() != 1 || !request.rule.extensions.is_empty() {
+        return Err(CoreError::config(
+            "classifier impact remove keyword request is invalid",
+        ));
+    }
+    validate_keyword(&request.rule.keywords[0])
+}
+
+fn validate_single_extension_request(request: &ClassifierImpactPreviewRequest) -> CoreResult<()> {
+    if request.rule.extensions.len() != 1 || !request.rule.keywords.is_empty() {
+        return Err(CoreError::config(
+            "classifier impact remove extension request is invalid",
+        ));
+    }
+    validate_extension(&request.rule.extensions[0])
+}
+
+fn validate_remove_category_request(request: &ClassifierImpactPreviewRequest) -> CoreResult<()> {
+    if !request.rule.keywords.is_empty() || !request.rule.extensions.is_empty() {
+        return Err(CoreError::config(
+            "classifier impact remove category request is invalid",
+        ));
+    }
+    if let Some(replacement) = request.replacement_category.as_deref() {
+        validate_target_category(replacement)?;
+    }
+    Ok(())
+}
+
+fn reject_replacement_for_rule_basis(request: &ClassifierImpactPreviewRequest) -> CoreResult<()> {
+    if request.replacement_category.is_some() {
+        return Err(CoreError::config(
+            "classifier impact replacement category is only valid for category removal",
+        ));
+    }
+    Ok(())
+}
+
+pub(super) fn validate_target_category(category: &str) -> CoreResult<()> {
     if !is_valid_category_slug(category) {
         return Err(CoreError::config(
             "classifier impact target category is invalid",
@@ -198,7 +271,7 @@ fn validate_target_category(category: &str) -> CoreResult<()> {
     Ok(())
 }
 
-fn validate_rule_basis(rule: &ClassifierRule) -> CoreResult<()> {
+pub(super) fn validate_rule_basis(rule: &ClassifierRule) -> CoreResult<()> {
     let mut has_basis = false;
     for keyword in &rule.keywords {
         validate_keyword(keyword)?;
@@ -220,7 +293,7 @@ fn validate_rule_basis(rule: &ClassifierRule) -> CoreResult<()> {
     )
 }
 
-fn validate_keyword(keyword: &str) -> CoreResult<()> {
+pub(super) fn validate_keyword(keyword: &str) -> CoreResult<()> {
     let trimmed = keyword.trim();
     if trimmed.is_empty()
         || trimmed != keyword
@@ -232,7 +305,7 @@ fn validate_keyword(keyword: &str) -> CoreResult<()> {
     Ok(())
 }
 
-fn validate_extension(extension: &str) -> CoreResult<()> {
+pub(super) fn validate_extension(extension: &str) -> CoreResult<()> {
     if extension.is_empty()
         || extension.chars().count() > MAX_EXTENSION_LEN
         || extension.starts_with('.')

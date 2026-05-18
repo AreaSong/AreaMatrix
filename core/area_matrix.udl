@@ -122,7 +122,10 @@ namespace area_matrix {
     ClassifierRule save_classifier_rule(string repo_path, ClassifierRule rule);
 
     [Throws=CoreError]
-    RuleImpactReport preview_classifier_rule_impact(string repo_path, ClassifierRule rule);
+    RuleImpactReport preview_classifier_rule_impact(
+        string repo_path,
+        ClassifierImpactPreviewRequest request
+    );
 
     [Throws=CoreError]
     FileEntry restore_file(string repo_path, i64 file_id);
@@ -667,6 +670,13 @@ dictionary ClassifierRule {
     boolean preview_confirmed;
 };
 
+dictionary ClassifierImpactPreviewRequest {
+    ClassifierImpactPreviewMode mode;
+    ClassifierRule rule;
+    boolean move_files;
+    string? replacement_category;
+};
+
 dictionary RuleImpactSample {
     i64 file_id;
     string path;
@@ -686,7 +696,7 @@ dictionary RuleImpactConflict {
 };
 
 dictionary RuleImpactReport {
-    ClassifierRule rule;
+    ClassifierImpactPreviewRequest request;
     i64 affected_file_count;
     i64 will_update_count;
     i64 already_correct_count;
@@ -919,7 +929,10 @@ enum BatchRenamePreviewStatus {
     "DisplayOnly", "Unchanged", "ExternalChange"
 };
 enum BatchRenameResultStatus { "Renamed", "DisplayNameUpdated", "Unchanged", "Skipped", "Failed" };
-enum RuleImpactMatchReason { "Keyword", "Extension" };
+enum ClassifierImpactPreviewMode {
+    "RuleDraft", "RemoveKeyword", "RemoveExtension", "RemoveCategory"
+};
+enum RuleImpactMatchReason { "Keyword", "Extension", "Category" };
 enum RuleImpactStatus {
     "WillUpdate", "AlreadyCorrect", "NeedsReview",
     "Conflict", "Missing", "IndexOnly"

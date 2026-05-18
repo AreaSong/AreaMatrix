@@ -8,10 +8,11 @@ use crate::{
     repo_init, repo_path, repo_scan, storage, sync, tree, BatchCategoryChangeReport,
     BatchCategoryPreviewReport, BatchDeleteMode, BatchDeletePreviewReport, BatchDeleteReport,
     BatchRenamePreviewReport, BatchRenameReport, BatchRenameRule, ChangeFilter, ChangeLogEntry,
-    ClassifierCorrectionResult, ClassifierRule, ClassifyResult, CoreError, CoreResult,
-    DiagnosticsSnapshot, ExternalEvent, FileEntry, FileFilter, ICloudConflictPair, ImportOptions,
-    MoveToCategoryPreview, RecoveryReport, ReindexReport, RepairOptions, RepairReport, RepoConfig,
-    RepoInitOptions, RepoPathValidation, RuleImpactReport, ScanSession, SyncResult,
+    ClassifierCorrectionResult, ClassifierImpactPreviewRequest, ClassifierRule, ClassifyResult,
+    CoreError, CoreResult, DiagnosticsSnapshot, ExternalEvent, FileEntry, FileFilter,
+    ICloudConflictPair, ImportOptions, MoveToCategoryPreview, RecoveryReport, ReindexReport,
+    RepairOptions, RepairReport, RepoConfig, RepoInitOptions, RepoPathValidation, RuleImpactReport,
+    ScanSession, SyncResult,
 };
 
 fn not_implemented<T>() -> CoreResult<T> {
@@ -739,7 +740,7 @@ pub fn save_classifier_rule(repo_path: String, rule: ClassifierRule) -> CoreResu
 
 /// Previews C2-14 classifier rule impact for S2-18.
 ///
-/// The contract accepts one classifier rule draft and returns counts, sample
+/// The contract accepts one explicit preview request and returns counts, sample
 /// rows, conflicts, needs-review state, broad-impact warning state, and direct
 /// apply availability. It is read-only: it may inspect classifier config and
 /// file metadata, but it must not save the rule, apply it to existing files,
@@ -747,14 +748,15 @@ pub fn save_classifier_rule(repo_path: String, rule: ClassifierRule) -> CoreResu
 ///
 /// # Errors
 ///
-/// Returns `CoreError::Config { reason }` for invalid repository paths or
-/// invalid classifier rule drafts. Returns `CoreError::Db { message }` when
-/// classifier impact metadata cannot be read.
+/// Returns `CoreError::Config { reason }` for invalid repository paths,
+/// invalid classifier rule drafts, invalid delete requests, or invalid
+/// replacement categories. Returns `CoreError::Db { message }` when classifier
+/// impact metadata cannot be read.
 pub fn preview_classifier_rule_impact(
     repo_path: String,
-    rule: ClassifierRule,
+    request: ClassifierImpactPreviewRequest,
 ) -> CoreResult<RuleImpactReport> {
-    classifier_impact::preview_classifier_rule_impact(repo_path, rule)
+    classifier_impact::preview_classifier_rule_impact(repo_path, request)
 }
 
 /// Restores a deleted file entry.

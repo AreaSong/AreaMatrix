@@ -1,0 +1,72 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`4-1/task-70`
+- 对应文件路径：`tasks/prompts/phase-4/4-1-stage2-experience/task-70-c2-14-integration-verify.md`
+- 覆盖范围：C2-14 capability spec、Stage 2 control map、Core API、UDL、Rust Core 实现、C2-14 tests、Forbidden Touches
+
+三、完成度摘要
+
+- 已覆盖项数：12
+- 未覆盖项数：0
+- 通过项数：11
+- 不通过项数：1
+- 阻塞项数：1
+
+四、逐项验收结果
+
+- 项目：capability spec、Core API、UDL、Rust 实现和测试交叉检查  
+  结果：通过  
+  证据：`preview_classifier_rule_impact(repo_path, request) -> RuleImpactReport` 已在 `docs/api/core-api.md:2636`、`core/area_matrix.udl:125`、`core/src/api.rs:755`、`core/src/classifier_impact.rs:47` 落地；测试覆盖 `classifier_impact_preview_*` 四组。
+  涉及文件：`docs/core/capability-specs/stage-2-experience/C2-14-classifier-impact-preview.md`、`docs/api/core-api.md`、`core/area_matrix.udl`、`core/src/classifier_impact.rs`、`core/tests/**`
+
+- 项目：消费页面需要的状态、错误和副作用覆盖  
+  结果：通过  
+  证据：S2-18 需要 Move preference、warning、conflict、Missing、Index-only、replacement 缺失等状态；Core API 在 `docs/api/core-api.md:2671` 到 `2688` 描述并由 UDL `core/area_matrix.udl:673` 到 `712` 表达；实现保持只读读取 DB/config，`core/src/classifier_impact/db.rs:10` 使用 read-only DB。
+  涉及文件：`docs/ux/page-specs/stage-2-experience/S2-18-classifier-impact-preview.md`、`core/src/classifier_impact.rs`
+
+- 项目：没有实现 control map 之外能力  
+  结果：通过  
+  证据：control map 将 S2-18 绑定到 C2-14，见 `docs/architecture/stage-2-control-map.md:26`；Core API 明确不保存规则、不 apply、不写 undo/change_log、不实现 C2-13/C2-15，见 `docs/api/core-api.md:2697` 到 `2700`；代码搜索未发现 C2-14 实现中的写文件、DB 写入或网络调用。
+  涉及文件：`docs/architecture/stage-2-control-map.md`、`docs/api/core-api.md`、`core/src/classifier_impact.rs`
+
+- 项目：Forbidden Touches  
+  结果：通过  
+  证据：`git status --short -- apps` 无输出，未发现 `apps/**` 被触碰。
+  涉及文件：`apps/**`
+
+- 项目：工程质量门禁  
+  结果：不通过  
+  证据：`core/tests/classifier_impact_preview_implementation.rs` 当前 595 行，超过 `docs/development/coding-standards.md:13` 的单文件 500 行阈值；验证命令通过不能替代编码规范门禁。
+  涉及文件：`core/tests/classifier_impact_preview_implementation.rs`
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过，`core/tests/classifier_impact_preview_implementation.rs` 595 行，超过单文件阈值。
+- 注释 / rustdoc / 文档同步：通过，public API 和类型有 rustdoc，Core API / UDL / capability spec 已对齐。
+- 错误处理与边界处理：通过，Config / Db 错误、invalid request、metadata unreadable、missing/index-only/conflict 均有路径。
+- 测试与验证覆盖：通过，task gate 已运行并通过 4 个 C2-14 test binary。
+- 占位、硬编码、mock-only、一次性实现检查：通过，当前实现连接 classifier config、DB metadata、matcher 和路径 dry-run，不是 mock-only。
+
+六、阻塞项
+
+- P1 工程质量阻塞：C2-14 implementation test 文件超过编码规范单文件阈值  
+  说明：`docs/development/coding-standards.md:13` 要求单文件不超过 500 行；当前 `core/tests/classifier_impact_preview_implementation.rs` 为 595 行。  
+  绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/classifier_impact_preview_implementation.rs:1`  
+  为什么导致不通过：本 task 是 High 风险 Core integration verify，验收规则要求工程质量不能只看命令通过；该文件应拆分或抽出共享 fixture 后再复验。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-70`
+- 通过：prompt doctor、git diff check、cargo fmt、cargo clippy、`classifier_impact_preview_contract_api` 4 passed、`classifier_impact_preview_failure_recovery` 6 passed、`classifier_impact_preview_implementation` 8 passed、`classifier_impact_preview_validation` 4 passed
+- 失败：无命令失败
+- 缺失：未运行远端 CI；本次 manifest 只要求 task-local gate，远端 CI 不作为本轮 verify 的直接命令缺失
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。功能链路和验证命令已通过，但工程质量仍有 P1 阻塞项，C2-14 不能在当前状态下判定为完成。
+
+VERIFY_RESULT: FAIL

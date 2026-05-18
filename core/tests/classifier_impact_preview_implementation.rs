@@ -1,195 +1,20 @@
-use std::{fs, path::Path};
+use std::fs;
 
 use area_matrix_core::{
-    init_repo, preview_classifier_rule_impact, ClassifierRule, CoreError, OverviewOutput,
-    RepoInitMode, RepoInitOptions, RuleImpactConflictKind, RuleImpactMatchReason, RuleImpactStatus,
+    preview_classifier_rule_impact, CoreError, RuleImpactConflictKind, RuleImpactMatchReason,
+    RuleImpactStatus,
 };
 use pretty_assertions::assert_eq;
-use rusqlite::{params, Connection};
 
-#[derive(Debug, Eq, PartialEq)]
-struct ImpactSnapshot {
-    classifier_yaml: String,
-    file_rows: Vec<(i64, String, String, String)>,
-    change_log_count: i64,
-    notes_count: i64,
-    tags_count: i64,
-    undo_count: i64,
-    generated_paths: Vec<String>,
-    user_visible_paths: Vec<String>,
-}
+#[path = "support/classifier_impact_preview.rs"]
+mod classifier_impact_preview_support;
 
-fn path_string(path: &Path) -> String {
-    path.to_string_lossy().into_owned()
-}
-
-fn initialized_repo() -> tempfile::TempDir {
-    let repo = tempfile::tempdir().expect("create temporary repository");
-    init_repo(
-        path_string(repo.path()),
-        RepoInitOptions {
-            mode: RepoInitMode::CreateEmpty,
-            create_default_categories: false,
-            overview_output: OverviewOutput::GeneratedOnly,
-        },
-    )
-    .expect("initialize repository");
-    repo
-}
-
-fn open_db(repo: &Path) -> Connection {
-    Connection::open(repo.join(".areamatrix/index.db")).expect("open repository database")
-}
-
-fn rule() -> ClassifierRule {
-    ClassifierRule {
-        target_category: "finance".to_owned(),
-        keywords: vec!["clientx".to_owned(), "合同x".to_owned()],
-        extensions: vec!["csv".to_owned()],
-        priority: 20,
-        preview_confirmed: false,
-    }
-}
-
-fn insert_repo_file(repo: &Path, relative_path: &str, category: &str) -> i64 {
-    let file_path = repo.join(relative_path);
-    fs::create_dir_all(file_path.parent().expect("fixture path has parent"))
-        .expect("create fixture parent");
-    fs::write(&file_path, b"classifier impact fixture").expect("write fixture file");
-    insert_file_row(repo, relative_path, relative_path, category, "copied", None)
-}
-
-fn insert_indexed_file(repo: &Path, source_path: &Path, category: &str) -> i64 {
-    fs::write(source_path, b"classifier impact indexed fixture").expect("write indexed source");
-    let source = path_string(source_path);
-    insert_file_row(repo, &source, &source, category, "indexed", Some(&source))
-}
-
-fn insert_file_row(
-    repo: &Path,
-    path: &str,
-    name_path: &str,
-    category: &str,
-    storage_mode: &str,
-    source_path: Option<&str>,
-) -> i64 {
-    let current_name = name_path
-        .rsplit('/')
-        .next()
-        .expect("fixture path includes filename");
-    let connection = open_db(repo);
-    connection
-        .execute(
-            "INSERT INTO files (
-                path, original_name, current_name, category, size_bytes,
-                hash_sha256, storage_mode, origin, source_path,
-                imported_at, updated_at, status
-             ) VALUES (
-                ?1, ?2, ?2, ?3, 26,
-                ?4, ?5, 'imported', ?6,
-                100, 100, 'active'
-             )",
-            params![
-                path,
-                current_name,
-                category,
-                format!("{:064x}", path.len()),
-                storage_mode,
-                source_path,
-            ],
-        )
-        .expect("insert active file row");
-    connection.last_insert_rowid()
-}
-
-fn snapshot(repo: &Path) -> ImpactSnapshot {
-    ImpactSnapshot {
-        classifier_yaml: fs::read_to_string(repo.join(".areamatrix/classifier.yaml"))
-            .expect("read classifier yaml"),
-        file_rows: file_rows(repo),
-        change_log_count: table_count(repo, "change_log"),
-        notes_count: table_count(repo, "notes"),
-        tags_count: table_count(repo, "tags"),
-        undo_count: table_count(repo, "undo_actions"),
-        generated_paths: generated_paths(repo),
-        user_visible_paths: user_visible_paths(repo),
-    }
-}
-
-fn file_rows(repo: &Path) -> Vec<(i64, String, String, String)> {
-    let connection = open_db(repo);
-    let mut statement = connection
-        .prepare("SELECT id, path, category, status FROM files ORDER BY id")
-        .expect("prepare file rows query");
-    statement
-        .query_map([], |row| {
-            Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?))
-        })
-        .expect("query file rows")
-        .map(|row| row.expect("read file row"))
-        .collect()
-}
-
-fn table_count(repo: &Path, table: &str) -> i64 {
-    let query = format!("SELECT COUNT(*) FROM {table}");
-    open_db(repo)
-        .query_row(&query, [], |row| row.get(0))
-        .expect("count metadata rows")
-}
-
-fn generated_paths(repo: &Path) -> Vec<String> {
-    let generated = repo.join(".areamatrix/generated");
-    let mut paths: Vec<String> = fs::read_dir(generated)
-        .expect("read generated directory")
-        .map(|entry| {
-            entry
-                .expect("read generated entry")
-                .path()
-                .strip_prefix(repo)
-                .expect("generated path remains inside repo")
-                .to_string_lossy()
-                .into_owned()
-        })
-        .collect();
-    paths.sort();
-    paths
-}
-
-fn user_visible_paths(repo: &Path) -> Vec<String> {
-    let mut paths = Vec::new();
-    collect_user_visible_paths(repo, repo, &mut paths);
-    paths.sort();
-    paths
-}
-
-fn collect_user_visible_paths(repo: &Path, current: &Path, paths: &mut Vec<String>) {
-    for entry in fs::read_dir(current).expect("read repository directory") {
-        let entry = entry.expect("read repository entry");
-        let path = entry.path();
-        let relative = path
-            .strip_prefix(repo)
-            .expect("path remains inside repo")
-            .to_string_lossy()
-            .into_owned();
-        if relative == ".areamatrix" || relative.starts_with(".areamatrix/") {
-            continue;
-        }
-        paths.push(relative);
-        if path.is_dir() {
-            collect_user_visible_paths(repo, &path, paths);
-        }
-    }
-}
-
-fn sample_status(report: &area_matrix_core::RuleImpactReport, file_id: i64) -> RuleImpactStatus {
-    report
-        .samples
-        .iter()
-        .find(|sample| sample.file_id == file_id)
-        .expect("sample exists")
-        .status
-        .clone()
-}
+use classifier_impact_preview_support::{
+    initialized_repo, insert_indexed_file, insert_repo_file, path_string, remove_category_request,
+    remove_extension_request, remove_keyword_request, request, request_without_move, sample,
+    sample_status, snapshot, write_classifier_with_finance_rules,
+    write_classifier_with_priority_overlap,
+};
 
 #[test]
 fn classifier_impact_preview_implementation_reads_metadata_and_has_no_side_effects() {
@@ -201,10 +26,10 @@ fn classifier_impact_preview_implementation_reads_metadata_and_has_no_side_effec
     insert_repo_file(repo.path(), "docs/readme.txt", "docs");
     let before = snapshot(repo.path());
 
-    let report =
-        preview_classifier_rule_impact(path_string(repo.path()), rule()).expect("preview impact");
+    let report = preview_classifier_rule_impact(path_string(repo.path()), request())
+        .expect("preview impact");
 
-    assert_eq!(report.rule, rule());
+    assert_eq!(report.request, request());
     assert_eq!(report.affected_file_count, 4);
     assert_eq!(report.will_update_count, 3);
     assert_eq!(report.already_correct_count, 1);
@@ -245,6 +70,27 @@ fn classifier_impact_preview_implementation_reads_metadata_and_has_no_side_effec
 }
 
 #[test]
+fn classifier_impact_preview_implementation_uses_full_matcher_priority_for_rule_draft() {
+    let repo = initialized_repo();
+    write_classifier_with_priority_overlap(repo.path());
+    let protected_id = insert_repo_file(repo.path(), "docs/clientx-report.txt", "docs");
+    let before = snapshot(repo.path());
+
+    let report = preview_classifier_rule_impact(path_string(repo.path()), request_without_move())
+        .expect("preview priority-aware impact");
+
+    assert_eq!(report.affected_file_count, 1);
+    assert_eq!(report.will_update_count, 0);
+    assert_eq!(report.already_correct_count, 1);
+    assert_eq!(report.conflict_count, 0);
+    let sample = sample(&report, protected_id);
+    assert_eq!(sample.new_category, "docs");
+    assert_eq!(sample.status, RuleImpactStatus::AlreadyCorrect);
+    assert_eq!(sample.match_reasons, vec![RuleImpactMatchReason::Keyword]);
+    assert_eq!(snapshot(repo.path()), before);
+}
+
+#[test]
 fn classifier_impact_preview_implementation_surfaces_missing_index_only_and_conflicts() {
     let repo = initialized_repo();
     let indexed_root = tempfile::tempdir().expect("create indexed source root");
@@ -264,8 +110,8 @@ fn classifier_impact_preview_implementation_surfaces_missing_index_only_and_conf
     .expect("write conflicting target");
     let before = snapshot(repo.path());
 
-    let report =
-        preview_classifier_rule_impact(path_string(repo.path()), rule()).expect("preview impact");
+    let report = preview_classifier_rule_impact(path_string(repo.path()), request())
+        .expect("preview impact");
 
     assert_eq!(report.affected_file_count, 3);
     assert_eq!(report.will_update_count, 0);
@@ -297,14 +143,56 @@ fn classifier_impact_preview_implementation_surfaces_missing_index_only_and_conf
 }
 
 #[test]
+fn classifier_impact_preview_implementation_honors_move_preference_for_conflict_dry_run() {
+    let repo = initialized_repo();
+    let conflict_id = insert_repo_file(repo.path(), "docs/clientx-conflict.txt", "docs");
+    fs::create_dir_all(repo.path().join("finance")).expect("create finance dir");
+    fs::write(
+        repo.path().join("finance/clientx-conflict.txt"),
+        b"existing target",
+    )
+    .expect("write conflicting target");
+    let before = snapshot(repo.path());
+
+    let metadata_only =
+        preview_classifier_rule_impact(path_string(repo.path()), request_without_move())
+            .expect("preview without move conflict dry-run");
+
+    assert_eq!(metadata_only.affected_file_count, 1);
+    assert_eq!(metadata_only.will_update_count, 1);
+    assert_eq!(metadata_only.conflict_count, 0);
+    assert!(metadata_only.can_apply);
+    assert_eq!(
+        sample_status(&metadata_only, conflict_id),
+        RuleImpactStatus::WillUpdate
+    );
+
+    let move_aware = preview_classifier_rule_impact(path_string(repo.path()), request())
+        .expect("preview with move conflict dry-run");
+
+    assert_eq!(move_aware.affected_file_count, 1);
+    assert_eq!(move_aware.will_update_count, 0);
+    assert_eq!(move_aware.conflict_count, 1);
+    assert!(!move_aware.can_apply);
+    assert_eq!(
+        sample_status(&move_aware, conflict_id),
+        RuleImpactStatus::Conflict
+    );
+    assert!(move_aware.conflicts.iter().any(|conflict| conflict.kind
+        == RuleImpactConflictKind::NameConflict
+        && conflict.conflicting_path.as_deref() == Some("finance/clientx-conflict.txt")));
+    assert_eq!(snapshot(repo.path()), before);
+}
+
+#[test]
 fn classifier_impact_preview_implementation_warns_for_broad_rules_and_limits_samples() {
     let repo = initialized_repo();
     for index in 0..25 {
         insert_repo_file(repo.path(), &format!("docs/clientx-{index:02}.txt"), "docs");
     }
 
-    let report =
-        preview_classifier_rule_impact(path_string(repo.path()), rule()).expect("preview impact");
+    let report = preview_classifier_rule_impact(path_string(repo.path()), request())
+        .expect("preview impact");
 
     assert_eq!(report.affected_file_count, 25);
     assert_eq!(report.will_update_count, 25);
@@ -324,13 +212,94 @@ fn classifier_impact_preview_implementation_rejects_invalid_config_and_metadata(
     .expect("write invalid classifier config");
 
     assert!(matches!(
-        preview_classifier_rule_impact(path_string(repo.path()), rule()),
+        preview_classifier_rule_impact(path_string(repo.path()), request()),
         Err(CoreError::Config { .. })
     ));
 
     let plain_dir = tempfile::tempdir().expect("create plain directory");
     assert!(matches!(
-        preview_classifier_rule_impact(path_string(plain_dir.path()), rule()),
+        preview_classifier_rule_impact(path_string(plain_dir.path()), request()),
         Err(CoreError::Db { .. })
     ));
+}
+
+#[test]
+fn classifier_impact_preview_implementation_previews_removed_keyword_and_extension() {
+    let repo = initialized_repo();
+    write_classifier_with_finance_rules(repo.path());
+    let keyword_id = insert_repo_file(repo.path(), "finance/clientx-paid.txt", "finance");
+    let extension_id = insert_repo_file(repo.path(), "finance/archive.csv", "finance");
+    let both_id = insert_repo_file(repo.path(), "finance/合同x.csv", "finance");
+    let before = snapshot(repo.path());
+
+    let keyword_report =
+        preview_classifier_rule_impact(path_string(repo.path()), remove_keyword_request("clientx"))
+            .expect("preview keyword removal");
+
+    assert_eq!(keyword_report.affected_file_count, 1);
+    assert_eq!(keyword_report.will_update_count, 1);
+    assert_eq!(keyword_report.samples[0].file_id, keyword_id);
+    assert_eq!(keyword_report.samples[0].new_category, "docs");
+    assert_eq!(
+        keyword_report.samples[0].match_reasons,
+        vec![RuleImpactMatchReason::Keyword]
+    );
+
+    let extension_report =
+        preview_classifier_rule_impact(path_string(repo.path()), remove_extension_request("csv"))
+            .expect("preview extension removal");
+
+    assert_eq!(extension_report.affected_file_count, 2);
+    assert_eq!(extension_report.will_update_count, 1);
+    assert_eq!(extension_report.already_correct_count, 1);
+    let extension_sample = sample(&extension_report, extension_id);
+    assert_eq!(extension_sample.new_category, "inbox");
+    assert_eq!(
+        extension_sample.match_reasons,
+        vec![RuleImpactMatchReason::Extension]
+    );
+    assert_eq!(
+        sample_status(&extension_report, both_id),
+        RuleImpactStatus::AlreadyCorrect
+    );
+    assert_eq!(snapshot(repo.path()), before);
+}
+
+#[test]
+fn classifier_impact_preview_implementation_previews_category_removal_replacement_gate() {
+    let repo = initialized_repo();
+    write_classifier_with_finance_rules(repo.path());
+    let replaced_id = insert_repo_file(repo.path(), "finance/clientx-paid.txt", "finance");
+    insert_repo_file(repo.path(), "docs/readme.txt", "docs");
+    let before = snapshot(repo.path());
+
+    let missing_replacement =
+        preview_classifier_rule_impact(path_string(repo.path()), remove_category_request(None))
+            .expect("preview category removal without replacement");
+
+    assert_eq!(missing_replacement.affected_file_count, 1);
+    assert_eq!(missing_replacement.will_update_count, 0);
+    assert_eq!(missing_replacement.needs_review_count, 1);
+    assert!(!missing_replacement.can_apply);
+    assert_eq!(
+        missing_replacement.apply_blocked_reason.as_deref(),
+        Some("replacement category is required before Apply")
+    );
+    assert_eq!(
+        missing_replacement.samples[0].match_reasons,
+        vec![RuleImpactMatchReason::Category]
+    );
+
+    let with_replacement = preview_classifier_rule_impact(
+        path_string(repo.path()),
+        remove_category_request(Some("docs")),
+    )
+    .expect("preview category removal with replacement");
+
+    assert_eq!(with_replacement.affected_file_count, 1);
+    assert_eq!(with_replacement.will_update_count, 1);
+    assert!(with_replacement.can_apply);
+    assert_eq!(with_replacement.samples[0].file_id, replaced_id);
+    assert_eq!(with_replacement.samples[0].new_category, "docs");
+    assert_eq!(snapshot(repo.path()), before);
 }

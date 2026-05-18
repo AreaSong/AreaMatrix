@@ -1,9 +1,9 @@
 use std::{fs, path::Path};
 
 use area_matrix_core::{
-    init_repo, map_core_error, preview_classifier_rule_impact, ClassifierRule, CoreError,
-    ErrorKind, ErrorMappingInput, ErrorRecoverability, OverviewOutput, RepoInitMode,
-    RepoInitOptions,
+    init_repo, map_core_error, preview_classifier_rule_impact, ClassifierImpactPreviewMode,
+    ClassifierImpactPreviewRequest, ClassifierRule, CoreError, ErrorKind, ErrorMappingInput,
+    ErrorRecoverability, OverviewOutput, RepoInitMode, RepoInitOptions,
 };
 use pretty_assertions::assert_eq;
 use rusqlite::{params, Connection};
@@ -42,6 +42,15 @@ fn rule() -> ClassifierRule {
         extensions: vec!["pdf".to_owned()],
         priority: 0,
         preview_confirmed: false,
+    }
+}
+
+fn request() -> ClassifierImpactPreviewRequest {
+    ClassifierImpactPreviewRequest {
+        mode: ClassifierImpactPreviewMode::RuleDraft,
+        rule: rule(),
+        move_files: true,
+        replacement_category: None,
     }
 }
 
@@ -156,7 +165,7 @@ fn classifier_impact_failure_edge_empty_repo_is_read_only_empty_state() {
     let repo = initialized_repo();
     let before = snapshot(repo.path());
 
-    let report = preview_classifier_rule_impact(path_string(repo.path()), rule())
+    let report = preview_classifier_rule_impact(path_string(repo.path()), request())
         .expect("empty impact preview should succeed");
 
     assert_eq!(report.affected_file_count, 0);
@@ -178,25 +187,25 @@ fn classifier_impact_failure_edge_invalid_inputs_return_config_without_mutation(
     insert_file_row(repo.path(), "docs/clientx.pdf", "docs");
     let before = snapshot(repo.path());
 
-    assert_config_error(preview_classifier_rule_impact(String::new(), rule()));
+    assert_config_error(preview_classifier_rule_impact(String::new(), request()));
 
-    let mut bad_category = rule();
-    bad_category.target_category = "bad category".to_owned();
+    let mut bad_category = request();
+    bad_category.rule.target_category = "bad category".to_owned();
     assert_config_error(preview_classifier_rule_impact(
         path_string(repo.path()),
         bad_category,
     ));
 
-    let mut empty_basis = rule();
-    empty_basis.keywords.clear();
-    empty_basis.extensions.clear();
+    let mut empty_basis = request();
+    empty_basis.rule.keywords.clear();
+    empty_basis.rule.extensions.clear();
     assert_config_error(preview_classifier_rule_impact(
         path_string(repo.path()),
         empty_basis,
     ));
 
-    let mut dotted_extension = rule();
-    dotted_extension.extensions = vec![".pdf".to_owned()];
+    let mut dotted_extension = request();
+    dotted_extension.rule.extensions = vec![".pdf".to_owned()];
     assert_config_error(preview_classifier_rule_impact(
         path_string(repo.path()),
         dotted_extension,
@@ -218,7 +227,7 @@ fn classifier_impact_failure_edge_db_errors_do_not_write_or_create_half_products
 
     assert_db_error(preview_classifier_rule_impact(
         path_string(repo.path()),
-        rule(),
+        request(),
     ));
 
     assert_eq!(
@@ -236,8 +245,8 @@ fn classifier_impact_failure_edge_db_errors_do_not_write_or_create_half_products
 #[test]
 fn classifier_impact_failure_edge_unreadable_metadata_path_is_db_error_without_mutation() {
     let repo = initialized_repo();
-    let mut invalid_path_rule = rule();
-    invalid_path_rule.keywords = vec!["secret".to_owned()];
+    let mut invalid_path_rule = request();
+    invalid_path_rule.rule.keywords = vec!["secret".to_owned()];
     insert_file_row(repo.path(), "docs/secret.pdf", "docs");
     open_db(repo.path())
         .execute(
