@@ -720,19 +720,18 @@ pub fn correct_file_category(
 ///
 /// This contract does not create categories, model compound AND rules, preview
 /// impact, apply the rule to historical files, reclassify or move files, call
-/// AI/network providers, or touch `apps/**`. Until C2-13 implementation lands,
-/// the Rust entry point validates the request and returns `Config` instead of
-/// faking a successful save.
+/// AI/network providers, or touch `apps/**`. Successful saves atomically update
+/// the repository classifier configuration for future classification only.
 ///
 /// # Errors
 ///
 /// Returns `CoreError::Config { reason }` for invalid repository paths, target
 /// categories, empty rule basis, duplicate/invalid keywords, dotted or invalid
 /// extensions, out-of-range priority, malformed classifier configuration, or a
-/// duplicate/over-broad rule that the UI must resolve. The implementation task
-/// adds `CoreError::PermissionDenied { path }` for blocked metadata writes and
-/// `CoreError::Io { message }` for atomic classifier configuration write
-/// failures.
+/// duplicate/over-broad rule that the UI must resolve. Returns
+/// `CoreError::PermissionDenied { path }` for blocked metadata writes and
+/// `CoreError::Io { message }` for classifier configuration read or atomic
+/// write failures.
 pub fn save_classifier_rule(repo_path: String, rule: ClassifierRule) -> CoreResult<ClassifierRule> {
     classifier_rules::save_classifier_rule(repo_path, rule)
 }

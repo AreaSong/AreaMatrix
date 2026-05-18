@@ -52,7 +52,7 @@ fn classifier_rule_save_contract_exposes_signature_inputs_outputs_and_errors() {
 }
 
 #[test]
-fn classifier_rule_save_contract_validates_inputs_without_fake_success() {
+fn classifier_rule_save_contract_validates_inputs_without_metadata_writes() {
     assert!(matches!(
         save_classifier_rule(String::new(), valid_rule()),
         Err(CoreError::Config { .. })
@@ -199,12 +199,14 @@ fn classifier_rule_save_contract_documents_consumer_state_and_scope_boundaries()
     }
 
     for fragment in [
-        "C2-13 classifier rule save contract types and boundary",
+        "C2-13 classifier rule save types and persistence",
         "ClassifierRule",
         "save_classifier_rule",
         "does not model path, source-folder, enabled flags, compound AND rules",
-        "validates the request shape",
-        "fails instead of returning a fabricated saved rule",
+        "Saves one C2-13 classifier rule request",
+        "appends independent keyword and extension basis values",
+        "does not",
+        "reclassify, move, rename, delete, preview impact",
         "CoreError::Config",
         "CoreError::PermissionDenied",
         "CoreError::Io",
