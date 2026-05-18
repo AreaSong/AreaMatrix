@@ -6,16 +6,19 @@ use serde::{Deserialize, Serialize};
 
 use crate::{CoreError, CoreResult};
 
+mod config;
+
 const AREA_MATRIX_DIR: &str = ".areamatrix";
 const MAX_RULE_ID_LEN: usize = 64;
 const MAX_CATEGORY_SLUG_LEN: usize = 32;
-const MAX_DISPLAY_NAME_LEN: usize = 64;
+const MAX_DISPLAY_NAME_LEN: usize = 32;
 const MAX_DESCRIPTION_LEN: usize = 200;
 const MAX_EXTENSION_LEN: usize = 16;
 const MAX_KEYWORD_LEN: usize = 32;
 const MAX_NAMING_TEMPLATE_LEN: usize = 200;
 const MIN_PRIORITY: i64 = -1000;
 const MAX_PRIORITY: i64 = 1000;
+const ALLOWED_NAMING_TEMPLATE_FIELDS: [&str; 5] = ["original", "stem", "ext", "date", "slug"];
 
 /// One classifier editor row for S2-19.
 ///
@@ -103,10 +106,9 @@ pub struct ClassifierRuleDeleteRequest {
 /// for blocked classifier metadata reads, and `CoreError::Io { message }` for
 /// classifier config read failures.
 pub fn list_classifier_rules(repo_path: String) -> CoreResult<ClassifierRuleEditorSnapshot> {
-    let _repo = validate_editor_repo_path(&repo_path)?;
-    Err(CoreError::config(
-        "classifier rule editor implementation pending",
-    ))
+    let repo = validate_editor_repo_path(&repo_path)?;
+    let classifier_config = config::read_classifier_config(&repo)?;
+    Ok(config::snapshot_from_config(&classifier_config, None, None))
 }
 
 /// Updates one C2-15 classifier rule editor row.
@@ -127,10 +129,16 @@ pub fn update_classifier_rule(
     repo_path: String,
     request: ClassifierRuleUpdate,
 ) -> CoreResult<ClassifierRuleEditorSnapshot> {
-    let _repo = validate_editor_repo_path(&repo_path)?;
+    let repo = validate_editor_repo_path(&repo_path)?;
     validate_update_request(&request)?;
-    Err(CoreError::config(
-        "classifier rule editor implementation pending",
+    let mut classifier_config = config::read_classifier_config(&repo)?;
+    let updated_rule_id = config::apply_update(&mut classifier_config, &request)?;
+    config::validate_classifier_config(&classifier_config)?;
+    config::write_classifier_config_atomically(&repo, &classifier_config)?;
+    Ok(config::snapshot_from_config(
+        &classifier_config,
+        Some(updated_rule_id),
+        None,
     ))
 }
 
@@ -152,10 +160,16 @@ pub fn delete_classifier_rule(
     repo_path: String,
     request: ClassifierRuleDeleteRequest,
 ) -> CoreResult<ClassifierRuleEditorSnapshot> {
-    let _repo = validate_editor_repo_path(&repo_path)?;
+    let repo = validate_editor_repo_path(&repo_path)?;
     validate_delete_request(&request)?;
-    Err(CoreError::config(
-        "classifier rule editor implementation pending",
+    let mut classifier_config = config::read_classifier_config(&repo)?;
+    let updated_rule_id = config::apply_delete(&mut classifier_config, &request)?;
+    config::validate_classifier_config(&classifier_config)?;
+    config::write_classifier_config_atomically(&repo, &classifier_config)?;
+    Ok(config::snapshot_from_config(
+        &classifier_config,
+        Some(updated_rule_id),
+        None,
     ))
 }
 
@@ -269,6 +283,39 @@ fn validate_naming_template(template: Option<&str>) -> CoreResult<()> {
     if template.is_some_and(|value| {
         value.contains('\0') || value.chars().count() > MAX_NAMING_TEMPLATE_LEN
     }) {
+        return Err(CoreError::config(
+            "classifier rule naming template is invalid",
+        ));
+    }
+    if let Some(value) = template {
+        validate_naming_template_fields(value)?;
+    }
+    Ok(())
+}
+
+fn validate_naming_template_fields(template: &str) -> CoreResult<()> {
+    let mut remaining = template;
+    while let Some(start) = remaining.find('{') {
+        if remaining[..start].contains('}') {
+            return Err(CoreError::config(
+                "classifier rule naming template is invalid",
+            ));
+        }
+        let after_start = &remaining[start + 1..];
+        let Some(end) = after_start.find('}') else {
+            return Err(CoreError::config(
+                "classifier rule naming template is invalid",
+            ));
+        };
+        let field = &after_start[..end];
+        if !ALLOWED_NAMING_TEMPLATE_FIELDS.contains(&field) {
+            return Err(CoreError::config(
+                "classifier rule naming template is invalid",
+            ));
+        }
+        remaining = &after_start[end + 1..];
+    }
+    if remaining.contains('}') {
         return Err(CoreError::config(
             "classifier rule naming template is invalid",
         ));
