@@ -10,6 +10,7 @@ mod batch_category;
 mod batch_delete;
 mod batch_rename;
 mod classifier_correction;
+mod classifier_impact;
 mod classifier_rules;
 pub mod classify;
 mod command_index;
@@ -51,6 +52,10 @@ pub use batch_rename::{
 };
 pub use classifier_correction::{
     correct_file_category, ClassifierCorrectionResult, ClassifierRuleDraft,
+};
+pub use classifier_impact::{
+    preview_classifier_rule_impact, RuleImpactConflict, RuleImpactConflictKind,
+    RuleImpactMatchReason, RuleImpactReport, RuleImpactSample, RuleImpactStatus,
 };
 pub use classifier_rules::{save_classifier_rule, ClassifierRule};
 pub use command_index::{

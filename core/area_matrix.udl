@@ -122,6 +122,9 @@ namespace area_matrix {
     ClassifierRule save_classifier_rule(string repo_path, ClassifierRule rule);
 
     [Throws=CoreError]
+    RuleImpactReport preview_classifier_rule_impact(string repo_path, ClassifierRule rule);
+
+    [Throws=CoreError]
     FileEntry restore_file(string repo_path, i64 file_id);
 
     [Throws=CoreError]
@@ -664,6 +667,41 @@ dictionary ClassifierRule {
     boolean preview_confirmed;
 };
 
+dictionary RuleImpactSample {
+    i64 file_id;
+    string path;
+    string current_category;
+    string new_category;
+    sequence<RuleImpactMatchReason> match_reasons;
+    RuleImpactStatus status;
+    string? reason;
+};
+
+dictionary RuleImpactConflict {
+    i64 file_id;
+    string? path;
+    string? conflicting_path;
+    RuleImpactConflictKind kind;
+    string reason;
+};
+
+dictionary RuleImpactReport {
+    ClassifierRule rule;
+    i64 affected_file_count;
+    i64 will_update_count;
+    i64 already_correct_count;
+    i64 needs_review_count;
+    i64 conflict_count;
+    i64 sample_limit;
+    sequence<RuleImpactSample> samples;
+    sequence<RuleImpactConflict> conflicts;
+    boolean needs_review;
+    boolean warning_required;
+    string? warning;
+    boolean can_apply;
+    string? apply_blocked_reason;
+};
+
 dictionary UndoActionRecord {
     string action_id;
     string kind;
@@ -881,6 +919,12 @@ enum BatchRenamePreviewStatus {
     "DisplayOnly", "Unchanged", "ExternalChange"
 };
 enum BatchRenameResultStatus { "Renamed", "DisplayNameUpdated", "Unchanged", "Skipped", "Failed" };
+enum RuleImpactMatchReason { "Keyword", "Extension" };
+enum RuleImpactStatus {
+    "WillUpdate", "AlreadyCorrect", "NeedsReview",
+    "Conflict", "Missing", "IndexOnly"
+};
+enum RuleImpactConflictKind { "NameConflict", "MissingFile", "UnsupportedStorage", "RuleConflict" };
 enum UndoActionStatus { "Pending", "Executed", "Expired", "Blocked" };
 enum ErrorKind {
     "Io", "Db", "Config", "Classify", "Conflict", "DuplicateFile",

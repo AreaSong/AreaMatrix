@@ -4,14 +4,14 @@ use std::path::PathBuf;
 
 use crate::{
     batch_category, batch_delete, batch_rename as batch_rename_mod, classifier_correction,
-    classifier_rules, classify, db, icloud_conflicts, note, recovery, repair, repo_init, repo_path,
-    repo_scan, storage, sync, tree, BatchCategoryChangeReport, BatchCategoryPreviewReport,
-    BatchDeleteMode, BatchDeletePreviewReport, BatchDeleteReport, BatchRenamePreviewReport,
-    BatchRenameReport, BatchRenameRule, ChangeFilter, ChangeLogEntry, ClassifierCorrectionResult,
-    ClassifierRule, ClassifyResult, CoreError, CoreResult, DiagnosticsSnapshot, ExternalEvent,
-    FileEntry, FileFilter, ICloudConflictPair, ImportOptions, MoveToCategoryPreview,
-    RecoveryReport, ReindexReport, RepairOptions, RepairReport, RepoConfig, RepoInitOptions,
-    RepoPathValidation, ScanSession, SyncResult,
+    classifier_impact, classifier_rules, classify, db, icloud_conflicts, note, recovery, repair,
+    repo_init, repo_path, repo_scan, storage, sync, tree, BatchCategoryChangeReport,
+    BatchCategoryPreviewReport, BatchDeleteMode, BatchDeletePreviewReport, BatchDeleteReport,
+    BatchRenamePreviewReport, BatchRenameReport, BatchRenameRule, ChangeFilter, ChangeLogEntry,
+    ClassifierCorrectionResult, ClassifierRule, ClassifyResult, CoreError, CoreResult,
+    DiagnosticsSnapshot, ExternalEvent, FileEntry, FileFilter, ICloudConflictPair, ImportOptions,
+    MoveToCategoryPreview, RecoveryReport, ReindexReport, RepairOptions, RepairReport, RepoConfig,
+    RepoInitOptions, RepoPathValidation, RuleImpactReport, ScanSession, SyncResult,
 };
 
 fn not_implemented<T>() -> CoreResult<T> {
@@ -735,6 +735,26 @@ pub fn correct_file_category(
 /// write failures.
 pub fn save_classifier_rule(repo_path: String, rule: ClassifierRule) -> CoreResult<ClassifierRule> {
     classifier_rules::save_classifier_rule(repo_path, rule)
+}
+
+/// Previews C2-14 classifier rule impact for S2-18.
+///
+/// The contract accepts one classifier rule draft and returns counts, sample
+/// rows, conflicts, needs-review state, broad-impact warning state, and direct
+/// apply availability. It is read-only: it may inspect classifier config and
+/// file metadata, but it must not save the rule, apply it to existing files,
+/// move files, write undo/change-log state, or implement C2-15 rule editing.
+///
+/// # Errors
+///
+/// Returns `CoreError::Config { reason }` for invalid repository paths or
+/// invalid classifier rule drafts. Returns `CoreError::Db { message }` when
+/// classifier impact metadata cannot be read.
+pub fn preview_classifier_rule_impact(
+    repo_path: String,
+    rule: ClassifierRule,
+) -> CoreResult<RuleImpactReport> {
+    classifier_impact::preview_classifier_rule_impact(repo_path, rule)
 }
 
 /// Restores a deleted file entry.
