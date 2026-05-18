@@ -1,17 +1,22 @@
 //! C2-14 classifier rule impact-preview contract types and boundary.
 
-use std::path::{Component, PathBuf};
+use std::{io, path::PathBuf};
 
 use serde::{Deserialize, Serialize};
 
-use crate::{ClassifierRule, CoreError, CoreResult};
+use crate::{ClassifierRule, CoreResult, FileEntry, StorageMode};
 
-const AREA_MATRIX_DIR: &str = ".areamatrix";
-const MAX_CATEGORY_SLUG_LEN: usize = 32;
-const MAX_EXTENSION_LEN: usize = 16;
-const MAX_KEYWORD_LEN: usize = 32;
-const MIN_PRIORITY: i64 = -1000;
-const MAX_PRIORITY: i64 = 1000;
+mod config;
+mod db;
+mod matcher;
+mod path;
+
+use config::{ensure_target_category_exists, read_classifier_config, validate_impact_request};
+use matcher::match_reasons;
+use path::{relative_repo_path, repo_relative_file_path};
+
+const SAMPLE_LIMIT: usize = 50;
+const BROAD_IMPACT_WARNING_THRESHOLD: i64 = 20;
 
 /// Why an existing file is included in a classifier rule impact preview.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
@@ -123,136 +128,272 @@ pub struct RuleImpactReport {
 ///
 /// C2-14 owns the read-only contract for S2-18. The function accepts the same
 /// [`ClassifierRule`] draft used by rule save, validates the contract shape,
-/// and returns a [`RuleImpactReport`] once the implementation task connects the
-/// repository classifier matcher and file metadata reads. It must not save
-/// classifier rules, apply category changes, move files, create categories,
-/// write undo actions, call AI/network providers, or touch app-layer code.
+/// and returns a [`RuleImpactReport`] from repository classifier matcher and
+/// active file metadata. It must not save classifier rules, apply category changes,
+/// move files, create categories, write undo actions, call AI/network providers,
+/// or touch app-layer code.
 ///
 /// # Errors
 ///
-/// Returns `CoreError::Config { reason }` for invalid repository paths or rule
-/// drafts. Returns `CoreError::Db { message }` when classifier impact metadata
-/// cannot be read.
+/// Returns `CoreError::Config { reason }` for invalid repository paths, invalid
+/// classifier config, or invalid rule drafts. Returns `CoreError::Db { message
+/// }` when classifier impact metadata cannot be read.
 pub fn preview_classifier_rule_impact(
     repo_path: String,
     rule: ClassifierRule,
 ) -> CoreResult<RuleImpactReport> {
-    validate_impact_request(&repo_path, &rule)?;
-    Err(CoreError::db("classifier impact metadata is unavailable"))
-}
-
-fn validate_impact_request(repo_path: &str, rule: &ClassifierRule) -> CoreResult<()> {
-    validate_repo_path(repo_path)?;
-    validate_target_category(&rule.target_category)?;
-    validate_rule_basis(rule)?;
-    validate_priority(rule.priority)
-}
-
-fn validate_repo_path(repo_path: &str) -> CoreResult<PathBuf> {
-    if repo_path.trim().is_empty() {
-        return Err(CoreError::config(
-            "classifier impact repository path is required",
-        ));
-    }
-    let repo = PathBuf::from(repo_path);
-    if repo.components().any(is_area_matrix_component) {
-        return Err(CoreError::config(
-            "classifier impact repository path is invalid",
-        ));
-    }
-    Ok(repo)
-}
-
-fn validate_target_category(category: &str) -> CoreResult<()> {
-    if !is_valid_category_slug(category) {
-        return Err(CoreError::config(
-            "classifier impact target category is invalid",
-        ));
-    }
-    Ok(())
-}
-
-fn validate_rule_basis(rule: &ClassifierRule) -> CoreResult<()> {
-    let mut has_basis = false;
-    for keyword in &rule.keywords {
-        validate_keyword(keyword)?;
-        has_basis = true;
-    }
-    for extension in &rule.extensions {
-        validate_extension(extension)?;
-        has_basis = true;
-    }
-    if !has_basis {
-        return Err(CoreError::config(
-            "classifier impact rule basis is required",
-        ));
-    }
-    ensure_unique(&rule.keywords, "classifier impact keywords must be unique")?;
-    ensure_unique(
-        &rule.extensions,
-        "classifier impact extensions must be unique",
-    )
-}
-
-fn validate_keyword(keyword: &str) -> CoreResult<()> {
-    let trimmed = keyword.trim();
-    if trimmed.is_empty()
-        || trimmed != keyword
-        || trimmed.chars().count() > MAX_KEYWORD_LEN
-        || contains_forbidden_rule_character(trimmed)
-    {
-        return Err(CoreError::config("classifier impact keyword is invalid"));
-    }
-    Ok(())
-}
-
-fn validate_extension(extension: &str) -> CoreResult<()> {
-    if extension.is_empty()
-        || extension.chars().count() > MAX_EXTENSION_LEN
-        || extension.starts_with('.')
-        || !extension
-            .chars()
-            .all(|character| character.is_ascii_lowercase() || character.is_ascii_digit())
-    {
-        return Err(CoreError::config("classifier impact extension is invalid"));
-    }
-    Ok(())
-}
-
-fn validate_priority(priority: i64) -> CoreResult<()> {
-    if (MIN_PRIORITY..=MAX_PRIORITY).contains(&priority) {
-        Ok(())
-    } else {
-        Err(CoreError::config("classifier impact priority is invalid"))
-    }
-}
-
-fn ensure_unique(values: &[String], message: &str) -> CoreResult<()> {
-    let mut seen = std::collections::HashSet::new();
-    for value in values {
-        if !seen.insert(value.as_str()) {
-            return Err(CoreError::config(message));
+    let repo = validate_impact_request(&repo_path, &rule)?;
+    let config = read_classifier_config(&repo)?;
+    ensure_target_category_exists(&config, &rule.target_category)?;
+    let files = db::list_active_files(&repo)?;
+    let mut builder = ReportBuilder::new(rule);
+    for file in files {
+        if let Some(item) = preview_file(&repo, &config, &builder.rule, file)? {
+            builder.push(item);
         }
     }
-    Ok(())
+    Ok(builder.finish())
 }
 
-fn is_valid_category_slug(category: &str) -> bool {
-    let mut chars = category.chars();
-    match chars.next() {
-        Some(first) if first.is_ascii_lowercase() => {}
-        _ => return false,
+struct ReportBuilder {
+    rule: ClassifierRule,
+    affected_file_count: i64,
+    will_update_count: i64,
+    already_correct_count: i64,
+    needs_review_count: i64,
+    samples: Vec<RuleImpactSample>,
+    conflicts: Vec<RuleImpactConflict>,
+}
+
+impl ReportBuilder {
+    fn new(rule: ClassifierRule) -> Self {
+        Self {
+            rule,
+            affected_file_count: 0,
+            will_update_count: 0,
+            already_correct_count: 0,
+            needs_review_count: 0,
+            samples: Vec::new(),
+            conflicts: Vec::new(),
+        }
     }
-    category.chars().count() <= MAX_CATEGORY_SLUG_LEN
-        && chars.all(|ch| ch.is_ascii_lowercase() || ch.is_ascii_digit() || ch == '_' || ch == '-')
+
+    fn push(&mut self, item: ImpactItem) {
+        self.affected_file_count += 1;
+        match item.sample.status {
+            RuleImpactStatus::WillUpdate => self.will_update_count += 1,
+            RuleImpactStatus::AlreadyCorrect => self.already_correct_count += 1,
+            RuleImpactStatus::NeedsReview | RuleImpactStatus::IndexOnly => {
+                self.needs_review_count += 1;
+            }
+            RuleImpactStatus::Conflict | RuleImpactStatus::Missing => {}
+        }
+        if self.samples.len() < SAMPLE_LIMIT {
+            self.samples.push(item.sample);
+        }
+        self.conflicts.extend(item.conflicts);
+    }
+
+    fn finish(self) -> RuleImpactReport {
+        let conflict_count = self.conflicts.len() as i64;
+        let warning_required = self.affected_file_count > BROAD_IMPACT_WARNING_THRESHOLD;
+        let apply_blocked_reason = apply_blocked_reason(
+            self.will_update_count,
+            self.needs_review_count,
+            conflict_count,
+        );
+        RuleImpactReport {
+            rule: self.rule,
+            affected_file_count: self.affected_file_count,
+            will_update_count: self.will_update_count,
+            already_correct_count: self.already_correct_count,
+            needs_review_count: self.needs_review_count,
+            conflict_count,
+            sample_limit: SAMPLE_LIMIT as i64,
+            samples: self.samples,
+            conflicts: self.conflicts,
+            needs_review: self.needs_review_count > 0,
+            warning_required,
+            warning: warning_required.then(|| {
+                format!(
+                    "Rule affects {} existing files; review before applying.",
+                    self.affected_file_count
+                )
+            }),
+            can_apply: apply_blocked_reason.is_none(),
+            apply_blocked_reason,
+        }
+    }
 }
 
-fn contains_forbidden_rule_character(value: &str) -> bool {
-    value
-        .chars()
-        .any(|character| matches!(character, '/' | '\\' | ':' | '\0' | '\n' | '\r' | '\t'))
+struct ImpactItem {
+    sample: RuleImpactSample,
+    conflicts: Vec<RuleImpactConflict>,
 }
 
-fn is_area_matrix_component(component: Component<'_>) -> bool {
-    component.as_os_str() == AREA_MATRIX_DIR
+fn preview_file(
+    repo: &std::path::Path,
+    config: &config::ClassifierConfig,
+    rule: &ClassifierRule,
+    entry: FileEntry,
+) -> CoreResult<Option<ImpactItem>> {
+    let match_reasons = match_reasons(rule, &entry.current_name);
+    if match_reasons.is_empty() {
+        return Ok(None);
+    }
+    let mut conflicts = Vec::new();
+    let (status, reason) = status_for(repo, config, rule, &entry, &match_reasons, &mut conflicts)?;
+    let sample = RuleImpactSample {
+        file_id: entry.id,
+        path: entry.path.clone(),
+        current_category: entry.category.clone(),
+        new_category: rule.target_category.clone(),
+        match_reasons,
+        status,
+        reason,
+    };
+    Ok(Some(ImpactItem { sample, conflicts }))
+}
+
+fn status_for(
+    repo: &std::path::Path,
+    config: &config::ClassifierConfig,
+    rule: &ClassifierRule,
+    entry: &FileEntry,
+    match_reasons: &[RuleImpactMatchReason],
+    conflicts: &mut Vec<RuleImpactConflict>,
+) -> CoreResult<(RuleImpactStatus, Option<String>)> {
+    if !backing_file_is_present(repo, entry)? {
+        conflicts.push(conflict(
+            entry,
+            None,
+            RuleImpactConflictKind::MissingFile,
+            "backing file is missing",
+        ));
+        return Ok((
+            RuleImpactStatus::Missing,
+            Some("backing file is missing".to_owned()),
+        ));
+    }
+    if has_rule_conflict(config, rule, match_reasons) {
+        conflicts.push(conflict(
+            entry,
+            None,
+            RuleImpactConflictKind::RuleConflict,
+            "existing classifier rule would also match",
+        ));
+        return Ok((RuleImpactStatus::Conflict, Some("rule conflict".to_owned())));
+    }
+    if entry.category == rule.target_category {
+        return Ok((RuleImpactStatus::AlreadyCorrect, None));
+    }
+    if matches!(entry.storage_mode, StorageMode::Indexed) {
+        return Ok((
+            RuleImpactStatus::IndexOnly,
+            Some("index-only file requires metadata-only review".to_owned()),
+        ));
+    }
+    if let Some(path) = target_path_conflict(repo, entry, &rule.target_category)? {
+        conflicts.push(conflict(
+            entry,
+            Some(path),
+            RuleImpactConflictKind::NameConflict,
+            "target path already exists",
+        ));
+        return Ok((
+            RuleImpactStatus::Conflict,
+            Some("target path already exists".to_owned()),
+        ));
+    }
+    Ok((RuleImpactStatus::WillUpdate, None))
+}
+
+fn has_rule_conflict(
+    config: &config::ClassifierConfig,
+    rule: &ClassifierRule,
+    match_reasons: &[RuleImpactMatchReason],
+) -> bool {
+    config
+        .categories
+        .iter()
+        .filter(|category| category.slug != rule.target_category)
+        .any(|category| {
+            (match_reasons.contains(&RuleImpactMatchReason::Keyword)
+                && intersects(&category.keywords, &rule.keywords))
+                || (match_reasons.contains(&RuleImpactMatchReason::Extension)
+                    && intersects(&category.extensions, &rule.extensions))
+        })
+}
+
+fn intersects(left: &[String], right: &[String]) -> bool {
+    left.iter()
+        .any(|value| right.iter().any(|other| other == value))
+}
+
+fn backing_file_is_present(repo: &std::path::Path, entry: &FileEntry) -> CoreResult<bool> {
+    let path = if matches!(entry.storage_mode, StorageMode::Indexed) {
+        PathBuf::from(entry.source_path.as_deref().unwrap_or(&entry.path))
+    } else {
+        repo_relative_file_path(repo, &entry.path)?
+    };
+    Ok(path
+        .metadata()
+        .map(|metadata| metadata.is_file())
+        .unwrap_or(false))
+}
+
+fn target_path_conflict(
+    repo: &std::path::Path,
+    entry: &FileEntry,
+    target_category: &str,
+) -> CoreResult<Option<String>> {
+    let current_path = repo_relative_file_path(repo, &entry.path)?;
+    let target_path = repo.join(target_category).join(&entry.current_name);
+    if target_path == current_path {
+        return Ok(None);
+    }
+    match target_path.metadata() {
+        Ok(_) => relative_repo_path(repo, &target_path).map(Some),
+        Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(None),
+        Err(_) => relative_repo_path(repo, &target_path).map(Some),
+    }
+}
+
+fn conflict(
+    entry: &FileEntry,
+    conflicting_path: Option<String>,
+    kind: RuleImpactConflictKind,
+    reason: &str,
+) -> RuleImpactConflict {
+    RuleImpactConflict {
+        file_id: entry.id,
+        path: Some(entry.path.clone()),
+        conflicting_path,
+        kind,
+        reason: reason.to_owned(),
+    }
+}
+
+fn apply_blocked_reason(
+    will_update_count: i64,
+    needs_review_count: i64,
+    conflict_count: i64,
+) -> Option<String> {
+    if conflict_count > 0 && needs_review_count > 0 {
+        return Some("resolve conflicts and needs review rows".to_owned());
+    }
+    if conflict_count > 0 {
+        return Some(format!(
+            "{conflict_count} conflict(s) must be resolved before Apply"
+        ));
+    }
+    if needs_review_count > 0 {
+        return Some(format!(
+            "{needs_review_count} item(s) need review before Apply"
+        ));
+    }
+    if will_update_count == 0 {
+        return Some("No matched files need category changes".to_owned());
+    }
+    None
 }
