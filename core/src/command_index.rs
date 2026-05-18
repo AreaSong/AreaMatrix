@@ -6,6 +6,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::{CoreError, CoreResult};
 
+mod registry;
+
 const AREA_MATRIX_DIR: &str = ".areamatrix";
 
 /// Current command-palette context supplied by the app layer.
@@ -144,8 +146,25 @@ pub fn list_command_targets(
     repo_path: String,
     context: CommandIndexContext,
 ) -> CoreResult<CommandIndex> {
-    validate_command_index_request(&repo_path, &context)?;
-    Err(CoreError::db("command index metadata is not available"))
+    let repo = validate_command_index_request(&repo_path, &context)?;
+    let query = registry::normalized_query(context.query.as_deref());
+    let selected_count = registry::selected_active_count(&repo, &context)?;
+
+    Ok(CommandIndex {
+        commands: registry::filter_targets(registry::command_targets(), query.as_deref()),
+        navigation_targets: registry::filter_targets(
+            registry::navigation_targets(),
+            query.as_deref(),
+        ),
+        current_selection_targets: registry::filter_targets(
+            registry::current_selection_targets(context.selected_file_ids.len(), selected_count),
+            query.as_deref(),
+        ),
+        recent_targets: Vec::new(),
+        smart_lists: registry::smart_list_targets(&repo, query.as_deref())?,
+        file_candidates: registry::file_candidate_targets(&repo, &context, query.as_deref())?,
+        generated_at: chrono::Utc::now().timestamp(),
+    })
 }
 
 fn validate_command_index_request(

@@ -14,6 +14,7 @@ use crate::{
 };
 
 mod change_log;
+mod command_index;
 mod delete;
 mod import;
 mod move_to_category;
@@ -27,6 +28,9 @@ mod sync;
 mod tags;
 mod undo;
 pub(crate) use change_log::list_changes;
+pub(crate) use command_index::{
+    count_active_command_selection_files, list_command_file_candidate_rows,
+};
 pub(crate) use delete::{
     insert_batch_delete_undo_action, remove_batch_delete_index_entry_row, remove_index_entry_row,
     rollback_deleted_repo_owned_file, rollback_removed_index_entry_row,
