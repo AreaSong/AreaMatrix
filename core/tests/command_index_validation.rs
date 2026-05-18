@@ -2,9 +2,9 @@ use std::{fs, path::Path};
 
 use area_matrix_core::{
     create_saved_search, init_repo, list_command_targets, CommandIndex, CommandIndexContext,
-    CommandTarget, CommandTargetAction, CoreError, CoreResult, CreateSavedSearchRequest,
-    ErrorKind, OverviewOutput, RepoInitMode, RepoInitOptions, SavedSearchQuery, SearchFilter,
-    SearchScope, SearchSort, SearchTagMatchMode,
+    CommandTarget, CommandTargetAction, CoreError, CoreResult, CreateSavedSearchRequest, ErrorKind,
+    OverviewOutput, RepoInitMode, RepoInitOptions, SavedSearchQuery, SearchFilter, SearchScope,
+    SearchSort, SearchTagMatchMode,
 };
 use pretty_assertions::assert_eq;
 use rusqlite::{params, Connection};
@@ -96,8 +96,11 @@ fn insert_active_file(repo: &Path, relative_path: &str, category: &str, updated_
     let file_path = repo.join(relative_path);
     fs::create_dir_all(file_path.parent().expect("fixture has parent directory"))
         .expect("create fixture directory");
-    fs::write(&file_path, format!("command index fixture for {relative_path}"))
-        .expect("write fixture file");
+    fs::write(
+        &file_path,
+        format!("command index fixture for {relative_path}"),
+    )
+    .expect("write fixture file");
     let current_name = relative_path
         .rsplit('/')
         .next()
@@ -250,8 +253,11 @@ fn command_index_validation_covers_ui_ready_success_without_side_effects() {
     let selected_id = insert_active_file(repo.path(), "finance/report.pdf", "finance", 200);
     insert_active_file(repo.path(), "finance/invoice.txt", "finance", 100);
     insert_active_file(repo.path(), "docs/report-notes.md", "docs", 300);
-    let saved = create_saved_search(path_string(repo.path()), create_request("Report Review", true))
-        .expect("create saved search fixture");
+    let saved = create_saved_search(
+        path_string(repo.path()),
+        create_request("Report Review", true),
+    )
+    .expect("create saved search fixture");
     let before = snapshot(repo.path());
 
     let index = list_command_targets(
@@ -267,7 +273,10 @@ fn command_index_validation_covers_ui_ready_success_without_side_effects() {
 
     assert!(index.generated_at > 0);
     assert!(index.recent_targets.is_empty());
-    assert!(index.commands.iter().all(|target| matches_query(target, "report")));
+    assert!(index
+        .commands
+        .iter()
+        .all(|target| matches_query(target, "report")));
     assert_eq!(
         index
             .smart_lists
@@ -407,8 +416,21 @@ fn command_index_validation_locks_core_api_udl_rust_and_docs_alignment() {
     assert_contains(COMMAND_INDEX_RS, "pub fn list_command_targets(");
     assert_contains(COMMAND_INDEX_RS, "CoreError::Db");
     assert_contains(COMMAND_INDEX_RS, "must never execute destructive actions");
+    assert_contains(COMMAND_INDEX_RS, "registry::recent_targets");
+    assert_contains(COMMAND_INDEX_REGISTRY_RS, "command.redo-latest-action");
+    assert_contains(COMMAND_INDEX_REGISTRY_RS, "command.review-import-conflicts");
+    assert_contains(COMMAND_INDEX_REGISTRY_RS, "command.review-tag-suggestions");
+    assert_contains(COMMAND_INDEX_REGISTRY_RS, "command.open-classifier-rules");
+    assert_contains(
+        COMMAND_INDEX_REGISTRY_RS,
+        "command.preview-classifier-rule-impact",
+    );
+    assert_contains(COMMAND_INDEX_REGISTRY_RS, "command.apply-classifier-rule");
     assert_contains(COMMAND_INDEX_REGISTRY_RS, "selection.delete");
-    assert_contains(COMMAND_INDEX_REGISTRY_RS, "CommandTargetAction::OpenConfirmation");
+    assert_contains(
+        COMMAND_INDEX_REGISTRY_RS,
+        "CommandTargetAction::OpenConfirmation",
+    );
 }
 
 fn matches_query(target: &CommandTarget, query: &str) -> bool {

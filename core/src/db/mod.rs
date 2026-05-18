@@ -30,6 +30,7 @@ mod undo;
 pub(crate) use change_log::list_changes;
 pub(crate) use command_index::{
     count_active_command_selection_files, list_command_file_candidate_rows,
+    list_recent_command_rows,
 };
 pub(crate) use delete::{
     insert_batch_delete_undo_action, remove_batch_delete_index_entry_row, remove_index_entry_row,

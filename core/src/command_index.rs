@@ -160,7 +160,12 @@ pub fn list_command_targets(
             registry::current_selection_targets(context.selected_file_ids.len(), selected_count),
             query.as_deref(),
         ),
-        recent_targets: Vec::new(),
+        recent_targets: registry::recent_targets(
+            &repo,
+            &context,
+            selected_count,
+            query.as_deref(),
+        )?,
         smart_lists: registry::smart_list_targets(&repo, query.as_deref())?,
         file_candidates: registry::file_candidate_targets(&repo, &context, query.as_deref())?,
         generated_at: chrono::Utc::now().timestamp(),

@@ -13,6 +13,7 @@ use rusqlite::{params, Connection};
 struct CommandIndexSnapshot {
     files: Vec<(i64, String, String, String, i64)>,
     saved_searches: Vec<(i64, String, String)>,
+    recent_commands: Vec<(String, i64, i64)>,
     change_log_count: i64,
     undo_action_count: i64,
     tag_count: i64,
@@ -137,10 +138,28 @@ fn insert_deleted_file(repo: &Path) -> i64 {
     connection.last_insert_rowid()
 }
 
+fn insert_recent_commands(repo: &Path, rows: &[(&str, i64, i64)]) {
+    let payload = rows
+        .iter()
+        .map(|(target_id, used_at, use_count)| {
+            format!(r#"{{"target_id":"{target_id}","used_at":{used_at},"use_count":{use_count}}}"#)
+        })
+        .collect::<Vec<_>>()
+        .join(",");
+    open_db(repo)
+        .execute(
+            "INSERT OR REPLACE INTO repo_config (key, value, updated_at)
+             VALUES ('recent_commands', ?1, strftime('%s', 'now'))",
+            [format!("[{payload}]")],
+        )
+        .expect("insert recent command metadata");
+}
+
 fn snapshot(repo: &Path) -> CommandIndexSnapshot {
     CommandIndexSnapshot {
         files: file_rows(repo),
         saved_searches: saved_search_rows(repo),
+        recent_commands: recent_command_rows(repo),
         change_log_count: table_count(repo, "change_log"),
         undo_action_count: table_count(repo, "undo_actions"),
         tag_count: table_count(repo, "tags"),
@@ -180,6 +199,18 @@ fn saved_search_rows(repo: &Path) -> Vec<(i64, String, String)> {
         .expect("query saved search rows")
         .map(|row| row.expect("read saved search row"))
         .collect()
+}
+
+fn recent_command_rows(repo: &Path) -> Vec<(String, i64, i64)> {
+    let connection = open_db(repo);
+    let value = connection
+        .query_row(
+            "SELECT value FROM repo_config WHERE key = 'recent_commands'",
+            [],
+            |row| row.get::<_, String>(0),
+        )
+        .unwrap_or_default();
+    vec![("recent_commands".to_owned(), value.len() as i64, 1)]
 }
 
 fn table_count(repo: &Path, table: &str) -> i64 {
@@ -333,6 +364,41 @@ fn command_index_implementation_lists_contextual_targets_without_side_effects() 
     assert_eq!(file.kind, CommandTargetKind::FileCandidate);
     assert_eq!(file.action, CommandTargetAction::FocusFile);
     assert!(!file.requires_confirmation);
+    assert_eq!(snapshot(repo.path()), before);
+}
+
+#[test]
+fn command_index_implementation_reads_recent_metadata_without_writing_history() {
+    let repo = initialized_repo();
+    insert_recent_commands(
+        repo.path(),
+        &[
+            ("nav.settings", 300, 4),
+            ("command.import-files", 200, 2),
+            ("command.missing", 100, 9),
+        ],
+    );
+    let before = snapshot(repo.path());
+
+    let index = list_command_targets(path_string(repo.path()), default_context())
+        .expect("list command targets with recent metadata");
+
+    assert_eq!(
+        index
+            .recent_targets
+            .iter()
+            .map(|target| (target.id.as_str(), target.route.as_deref()))
+            .collect::<Vec<_>>(),
+        vec![
+            ("recent:nav.settings", Some("settings")),
+            ("recent:command.import-files", Some("import")),
+        ]
+    );
+    assert!(index
+        .recent_targets
+        .iter()
+        .all(|target| target.group == CommandTargetGroup::Recent
+            && target.kind == CommandTargetKind::RecentCommand));
     assert_eq!(snapshot(repo.path()), before);
 }
 

@@ -1,11 +1,11 @@
-use std::path::PathBuf;
+use std::path::Path;
 
 use crate::{db, CommandIndexContext, CoreError, CoreResult, SavedSearch};
 
 use super::{CommandTarget, CommandTargetAction, CommandTargetGroup, CommandTargetKind};
 
 pub(super) fn selected_active_count(
-    repo: &PathBuf,
+    repo: &Path,
     context: &CommandIndexContext,
 ) -> CoreResult<usize> {
     let count = db::count_active_command_selection_files(repo, &context.selected_file_ids)?;
@@ -13,6 +13,12 @@ pub(super) fn selected_active_count(
 }
 
 pub(super) fn command_targets() -> Vec<CommandTarget> {
+    let mut targets = base_command_targets();
+    targets.extend(stage2_command_targets());
+    targets
+}
+
+fn base_command_targets() -> Vec<CommandTarget> {
     vec![
         target(
             "command.import-files",
@@ -53,6 +59,71 @@ pub(super) fn command_targets() -> Vec<CommandTarget> {
             CommandTargetAction::Navigate,
             Some("help"),
         ),
+    ]
+}
+
+fn stage2_command_targets() -> Vec<CommandTarget> {
+    vec![
+        target(
+            "command.redo-latest-action",
+            "Redo latest action",
+            "Open redo queue",
+            CommandTargetGroup::Commands,
+            CommandTargetKind::Command,
+            CommandTargetAction::Navigate,
+            Some("S2-22"),
+        )
+        .disabled("Redo stack is unavailable."),
+        target(
+            "command.review-import-conflicts",
+            "Review import conflicts",
+            "Open import conflict review",
+            CommandTargetGroup::Commands,
+            CommandTargetKind::Command,
+            CommandTargetAction::OpenConfirmation,
+            Some("S2-21"),
+        )
+        .with_confirmation(),
+        target(
+            "command.review-tag-suggestions",
+            "Review tag suggestions",
+            "Open tag suggestions",
+            CommandTargetGroup::Commands,
+            CommandTargetKind::Command,
+            CommandTargetAction::Navigate,
+            Some("S2-23"),
+        ),
+        target(
+            "command.open-classifier-rules",
+            "Open classifier rules...",
+            "Open classifier rule editor",
+            CommandTargetGroup::Commands,
+            CommandTargetKind::Command,
+            CommandTargetAction::Navigate,
+            Some("S2-19"),
+        ),
+        target(
+            "command.preview-classifier-rule-impact",
+            "Preview classifier rule impact...",
+            "Open classifier rule impact preview",
+            CommandTargetGroup::Commands,
+            CommandTargetKind::Command,
+            CommandTargetAction::OpenConfirmation,
+            Some("S2-18"),
+        )
+        .with_confirmation()
+        .disabled("Open classifier rules first."),
+        target(
+            "command.apply-classifier-rule",
+            "Apply classifier rule...",
+            "Open classifier rule impact preview before applying",
+            CommandTargetGroup::Commands,
+            CommandTargetKind::Command,
+            CommandTargetAction::OpenConfirmation,
+            Some("S2-18"),
+        )
+        .with_confirmation()
+        .disabled("Open classifier rules first."),
     ]
 }
 
@@ -135,7 +206,7 @@ pub(super) fn current_selection_targets(
 }
 
 pub(super) fn smart_list_targets(
-    repo: &PathBuf,
+    repo: &Path,
     query: Option<&str>,
 ) -> CoreResult<Vec<CommandTarget>> {
     let targets = db::list_saved_search_rows(repo)?
@@ -146,7 +217,7 @@ pub(super) fn smart_list_targets(
 }
 
 pub(super) fn file_candidate_targets(
-    repo: &PathBuf,
+    repo: &Path,
     context: &CommandIndexContext,
     query: Option<&str>,
 ) -> CoreResult<Vec<CommandTarget>> {
@@ -176,6 +247,21 @@ pub(super) fn file_candidate_targets(
             target
         })
         .collect())
+}
+
+pub(super) fn recent_targets(
+    repo: &Path,
+    context: &CommandIndexContext,
+    selected_count: usize,
+    query: Option<&str>,
+) -> CoreResult<Vec<CommandTarget>> {
+    let targets = target_catalog(context.selected_file_ids.len(), selected_count);
+    let rows = db::list_recent_command_rows(repo, 8)?;
+    let recent = rows
+        .into_iter()
+        .filter_map(|row| recent_target(&targets, &row.target_id))
+        .collect();
+    Ok(filter_targets(recent, query))
 }
 
 pub(super) fn filter_targets(
@@ -211,6 +297,22 @@ fn smart_list_target(saved: SavedSearch) -> CommandTarget {
     target.saved_search_id = Some(saved.id);
     target.shortcut = saved.pinned.then(|| "Cmd+4".to_owned());
     target
+}
+
+fn target_catalog(requested_count: usize, active_count: usize) -> Vec<CommandTarget> {
+    let mut targets = command_targets();
+    targets.extend(navigation_targets());
+    targets.extend(current_selection_targets(requested_count, active_count));
+    targets
+}
+
+fn recent_target(targets: &[CommandTarget], target_id: &str) -> Option<CommandTarget> {
+    let source = targets.iter().find(|target| target.id == target_id)?;
+    let mut target = source.clone();
+    target.id = format!("recent:{target_id}");
+    target.group = CommandTargetGroup::Recent;
+    target.kind = CommandTargetKind::RecentCommand;
+    Some(target)
 }
 
 fn file_candidate_limit(query: Option<&str>) -> i64 {
@@ -349,11 +451,25 @@ impl SelectionCommandState {
 
 trait CommandTargetExt {
     fn with_shortcut(self, shortcut: &str) -> Self;
+    fn with_confirmation(self) -> Self;
+    fn disabled(self, reason: &str) -> Self;
 }
 
 impl CommandTargetExt for CommandTarget {
     fn with_shortcut(mut self, shortcut: &str) -> Self {
         self.shortcut = Some(shortcut.to_owned());
+        self
+    }
+
+    fn with_confirmation(mut self) -> Self {
+        self.requires_confirmation = true;
+        self
+    }
+
+    fn disabled(mut self, reason: &str) -> Self {
+        self.disabled = true;
+        self.disabled_reason = Some(reason.to_owned());
+        self.subtitle = Some(reason.to_owned());
         self
     }
 }

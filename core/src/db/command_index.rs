@@ -1,6 +1,7 @@
 use std::path::Path;
 
-use rusqlite::{params, Connection, Row};
+use rusqlite::{params, Connection, OptionalExtension, Row};
+use serde::Deserialize;
 
 use crate::{CoreError, CoreResult};
 
@@ -14,6 +15,14 @@ pub(crate) struct CommandFileCandidateRow {
     pub(crate) current_name: String,
     pub(crate) category: String,
     pub(crate) updated_at: i64,
+}
+
+/// Read-only recent-command metadata used by C2-11.
+#[derive(Clone, Debug, Eq, PartialEq, Deserialize)]
+pub(crate) struct RecentCommandRow {
+    pub(crate) target_id: String,
+    pub(crate) used_at: i64,
+    pub(crate) use_count: i64,
 }
 
 pub(crate) fn count_active_command_selection_files(
@@ -77,6 +86,38 @@ pub(crate) fn list_command_file_candidate_rows(
 
     rows.collect::<Result<Vec<_>, _>>()
         .map_err(|error| CoreError::db(error.to_string()))
+}
+
+pub(crate) fn list_recent_command_rows(
+    repo_path: &Path,
+    limit: i64,
+) -> CoreResult<Vec<RecentCommandRow>> {
+    let connection = open_command_index_connection(repo_path)?;
+    let limit = usize::try_from(limit.clamp(0, 20))
+        .map_err(|_| CoreError::db("command index recent limit is invalid"))?;
+    let Some(json) = connection
+        .query_row(
+            "SELECT value FROM repo_config WHERE key = 'recent_commands'",
+            [],
+            |row| row.get::<_, String>(0),
+        )
+        .optional()
+        .map_err(|error| CoreError::db(error.to_string()))?
+    else {
+        return Ok(Vec::new());
+    };
+
+    let mut rows: Vec<RecentCommandRow> =
+        serde_json::from_str(&json).map_err(|error| CoreError::db(error.to_string()))?;
+    rows.sort_by(|left, right| {
+        right
+            .used_at
+            .cmp(&left.used_at)
+            .then_with(|| right.use_count.cmp(&left.use_count))
+            .then_with(|| left.target_id.cmp(&right.target_id))
+    });
+    rows.truncate(limit);
+    Ok(rows)
 }
 
 fn open_command_index_connection(repo_path: &Path) -> CoreResult<Connection> {

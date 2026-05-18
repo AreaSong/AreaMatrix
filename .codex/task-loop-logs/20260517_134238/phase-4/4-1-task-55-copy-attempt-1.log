@@ -1,0 +1,55 @@
+一、执行结论
+
+已完成。C2-11 `command-index` 已通过本 task 的集成验收，可作为后续 S2-15 page-feature task 的真实 Core 依赖。
+
+二、执行范围
+
+单任务：`4-1/task-55`
+
+本轮修改文件：
+- [registry.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/command_index/registry.rs:1)：将内部 helper 参数从 `&PathBuf` 改为 `&Path`，修复 clippy `ptr_arg`，无行为变化。
+- [command_index_validation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/command_index_validation.rs:1)：仅 rustfmt 格式化。
+
+既有未处理脏状态：
+- `.codex/task-loop-runs/20260517_134238/summary.json`
+- `tasks/prompts/_shared/progress.json`
+
+三、完成情况
+
+核对结果：通过。已交叉检查 C2-11 capability spec、Stage 2 control map、Core API、UDL、Rust 实现和测试。`list_command_targets` 是只读索引入口，不执行命令；危险 selection 命令使用 `OpenConfirmation` 并带确认边界；Smart List 只返回 `RunSmartList` 目标，实际执行仍归 C2-04。
+
+消费页面状态、错误和副作用：通过。测试覆盖 UI-ready 成功态、无选择/失效选择禁用态、`Db` 失败、无写入快照、用户文件不变、`.areamatrix/staging` / `generated` 不被污染。
+
+Control map 越界：未发现。Stage 3/4 智能化、OCR、多端命令未注册；未触碰 `apps/**`，`git diff -- apps` 无输出。
+
+四、工程质量
+
+代码结构清晰，无 mock-only、硬编码通过态或一次性脚本。`list_command_targets` 已有 rustdoc 和错误边界说明；本轮未新增依赖。唯一产品代码改动是 clippy 建议的内部参数类型收窄，不改变 C2-11 行为。
+
+五、验证情况
+
+已运行并通过：
+
+```bash
+./dev check task 4-1/task-55
+```
+
+实际覆盖：
+- `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`：OK，637 tasks / 637 manifests。
+- `git diff --check`：通过。
+- `cargo fmt --all -- --check`：通过。
+- `cargo clippy --all-targets --all-features -- -D warnings`：通过。
+- `command_index_contract_api`：4 passed。
+- `command_index_failure_recovery`：7 passed。
+- `command_index_implementation`：4 passed。
+- `command_index_validation`：4 passed。
+
+未运行 `cargo test --workspace` / `./dev check all`，原因是本 task manifest 指定验证为 `./dev check task 4-1/task-55`，且该命令已按 Core integration verify 包含 fmt、clippy 和 targeted tests。
+
+六、风险与后续
+
+剩余风险：未做 macOS UI 真机验证，因本 task 禁止触碰 `apps/**`，S2-15 的真实 UI 接入应由后续 page-feature task 验证。Core 当前不写 recent-command 历史，符合 Core API 的只读副作用边界；UI task 仍需确认 Recent commands storage 的 app-layer 接入。
+
+回滚思路：如需回退本轮变更，只需还原 `core/src/command_index/registry.rs` 和 `core/tests/command_index_validation.rs` 两处 diff。
+
+建议下一个任务：继续 `4-1/task-56`。  

@@ -1,0 +1,72 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-1/task-55`
+- Task 文件：[/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-55-c2-11-integration-verify.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-55-c2-11-integration-verify.md:1)
+- Manifest：[/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-4.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-4.md:1606)
+- Core 实现：[/Users/as/Ai-Project/project/AreaMatrix/core/src/command_index.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/command_index.rs:145)、[/Users/as/Ai-Project/project/AreaMatrix/core/src/command_index/registry.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/command_index/registry.rs:15)、[/Users/as/Ai-Project/project/AreaMatrix/core/src/db/command_index.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/db/command_index.rs:28)
+- UDL：[/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:150)
+- 测试：[/Users/as/Ai-Project/project/AreaMatrix/core/tests/command_index_integration_verify.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/command_index_integration_verify.rs:150)
+
+三、完成度摘要
+
+- 已覆盖项数：6
+- 未覆盖项数：0
+- 通过项数：6
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：交叉检查 capability spec、Core API、UDL、Rust 实现和测试
+- 结果：通过
+- 证据：C2-11 spec 定义 `list_command_targets(repo_path) -> CommandIndex`、输入 selection context、输出 command/recent/smart list/file candidates、错误 `Db`；Core API 与 UDL 均存在同名接口和 `CommandIndex*` 类型；Rust `list_command_targets` 返回真实 registry、recent、smart list、file candidates；targeted tests 全部通过。
+- 涉及文件：[/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-2-experience/C2-11-command-index.md](/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-2-experience/C2-11-command-index.md:7)、[/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md](/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:1892)、[/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:391)、[/Users/as/Ai-Project/project/AreaMatrix/core/src/command_index.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/command_index.rs:145)
+
+- 项目：确认消费页面需要的状态、错误和副作用均已覆盖
+- 结果：通过
+- 证据：S2-15 要求 command/navigation/current selection/recent、危险命令确认入口、禁用原因、recent command；实现返回分组 targets、disabled reason、requires_confirmation，并只读读取 recent metadata；测试覆盖 recent metadata 不写回、S2-15 command entries、危险命令确认边界。
+- 涉及文件：[/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-2-experience/S2-15-command-palette.md](/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-2-experience/S2-15-command-palette.md:23)、[/Users/as/Ai-Project/project/AreaMatrix/core/src/command_index/registry.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/command_index/registry.rs:65)、[/Users/as/Ai-Project/project/AreaMatrix/core/tests/command_index_integration_verify.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/command_index_integration_verify.rs:186)
+
+- 项目：确认没有实现 control map 之外的能力
+- 结果：通过
+- 证据：control map 声明 S2-15 只消费 C2-04、C2-11；本实现只返回 command index 元数据与路由/action boundary，不执行 redo、导入冲突处理、tag suggestion、classifier apply、文件移动/删除/重命名或 AI/网络能力。
+- 涉及文件：[/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-2-control-map.md](/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-2-control-map.md:23)、[/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md](/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:1922)、[/Users/as/Ai-Project/project/AreaMatrix/core/src/command_index.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/command_index.rs:135)
+
+- 项目：Expected New Paths 与 Forbidden Touches
+- 结果：通过
+- 证据：`core/src/**`、`core/area_matrix.udl`、`core/tests/**` 均已落地；`git diff -- apps` 和 `git ls-files --others --exclude-standard apps` 均无输出，未发现 `apps/**` 违规触碰。
+- 涉及文件：[/Users/as/Ai-Project/project/AreaMatrix/core/tests/command_index_integration_verify.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/command_index_integration_verify.rs:1)
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，`command_index.rs` 负责 public contract 与输入校验，`registry.rs` 负责 target 构建/过滤，`db/command_index.rs` 负责只读 DB 查询，结构清晰。
+- 注释 / rustdoc / 文档同步：通过，public Rust 类型和 API 有 rustdoc；Core API、UDL、capability spec、control map 均有对应证据。
+- 错误处理与边界处理：通过，输入非法、DB 不可用、未初始化 repo、损坏 DB、权限失败均映射为 `CoreError::Db` 并有测试覆盖。
+- 测试与验证覆盖：通过，`./dev check task 4-1/task-55` 已新鲜执行并通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过，测试经真实 temp repo、SQLite metadata、saved search、recent metadata 和文件候选路径验证；未发现 mock-only 或硬编码通过态。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-55`
+- 通过：`prompt doctor`、`git diff --check`、`cargo fmt --all -- --check`、`cargo clippy --all-targets --all-features -- -D warnings`
+- 通过：`cargo test --test command_index_contract_api -- --nocapture`，4 passed
+- 通过：`cargo test --test command_index_failure_recovery -- --nocapture`，7 passed
+- 通过：`cargo test --test command_index_implementation -- --nocapture`，5 passed
+- 通过：`cargo test --test command_index_integration_verify -- --nocapture`，2 passed
+- 通过：`cargo test --test command_index_validation -- --nocapture`，4 passed
+- 失败：无
+- 缺失：未运行远端 CI；本次为单任务本地只读验收，远端 CI 属于后续合并门禁。runner progress / Git checkpoint 仍处于 verify 后收口前状态，不作为本 verify 阶段阻塞。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。C2-11 可以作为后续 S2-15 page-feature task 的真实 Core 依赖。
+
+VERIFY_RESULT: PASS
