@@ -221,6 +221,18 @@ namespace area_matrix {
     sequence<ICloudConflictPair> list_icloud_conflicts(string repo_path);
 
     [Throws=CoreError]
+    ICloudConflictPreviewReport preview_conflict_versions(
+        string repo_path, string conflict_id
+    );
+
+    [Throws=CoreError]
+    ICloudConflictResolveReport resolve_icloud_conflict(
+        string repo_path,
+        string conflict_id,
+        ICloudConflictResolution resolution
+    );
+
+    [Throws=CoreError]
     string? read_note(string repo_path, i64 file_id);
 
     [Throws=CoreError]
@@ -850,6 +862,47 @@ dictionary ICloudConflictPair {
     string? uncertainty_reason;
 };
 
+dictionary ICloudConflictVersionMetadata {
+    string version_id;
+    ICloudConflictVersionRole role;
+    string path;
+    i64? modified_at;
+    i64? size_bytes;
+    string? hash_sha256;
+    string? preview_summary;
+    ICloudConflictPreviewStatus preview_status;
+};
+
+dictionary ICloudConflictResolutionOption {
+    ICloudConflictResolution resolution;
+    boolean destructive;
+    boolean requires_trash;
+    boolean enabled;
+    string? disabled_reason;
+};
+
+dictionary ICloudConflictPreviewReport {
+    string conflict_id;
+    sequence<ICloudConflictVersionMetadata> versions;
+    ICloudConflictResolution default_resolution;
+    sequence<ICloudConflictResolutionOption> resolution_options;
+    boolean metadata_complete;
+    boolean trash_available;
+    boolean can_keep_both;
+    boolean can_resolve_destructive;
+    string? blocked_reason;
+};
+
+dictionary ICloudConflictResolveReport {
+    string conflict_id;
+    ICloudConflictResolution resolution;
+    ICloudConflictStatus status;
+    sequence<string> kept_paths;
+    sequence<string> trashed_paths;
+    string? undo_token;
+    string change_log_action;
+};
+
 dictionary ChangeLogEntry {
     i64 id;
     i64? file_id;
@@ -983,6 +1036,9 @@ enum CommandTargetAction {
     "FocusFile", "OpenSearch", "LowRiskAction"
 };
 enum ICloudConflictStatus { "NeedsReview", "Resolved" };
+enum ICloudConflictVersionRole { "Original", "ConflictedCopy" };
+enum ICloudConflictPreviewStatus { "Available", "MetadataOnly", "Unavailable" };
+enum ICloudConflictResolution { "KeepBoth", "KeepOriginal", "KeepConflictedCopy" };
 enum ExternalEventKind { "Created", "Removed", "Modified", "Renamed" };
 enum BatchMutationStatus { "Added", "AlreadyHadTag", "Failed" };
 enum BatchCategoryPreviewStatus { "WillMove", "MetadataOnly", "Unchanged", "Skipped", "Blocked" };

@@ -12,7 +12,8 @@ use crate::{
     ClassifierImpactPreviewRequest, ClassifierRule, ClassifierRuleCreateRequest,
     ClassifierRuleDeleteRequest, ClassifierRuleEditorSnapshot, ClassifierRuleUpdate,
     ClassifyResult, CoreError, CoreResult, DiagnosticsSnapshot, ExternalEvent, FileEntry,
-    FileFilter, ICloudConflictPair, ImportOptions, MoveToCategoryPreview, RecoveryReport,
+    FileFilter, ICloudConflictPair, ICloudConflictPreviewReport, ICloudConflictResolution,
+    ICloudConflictResolveReport, ImportOptions, MoveToCategoryPreview, RecoveryReport,
     ReindexReport, RepairOptions, RepairReport, RepoConfig, RepoInitOptions, RepoPathValidation,
     RuleImpactReport, ScanSession, SyncResult,
 };
@@ -966,6 +967,67 @@ pub fn list_tree_json(repo_path: String, locale: String) -> CoreResult<String> {
 /// `CoreError::Db { message }` for optional conflict-state reads.
 pub fn list_icloud_conflicts(repo_path: String) -> CoreResult<Vec<ICloudConflictPair>> {
     icloud_conflicts::list_icloud_conflicts(repo_path)
+}
+
+/// Previews C2-16 iCloud conflict versions without resolving the conflict.
+///
+/// S2-20 uses this contract after selecting one conflict id from
+/// [`list_icloud_conflicts`]. The preview returns version metadata, optional
+/// Core-computed preview summaries, the safe default resolution, and per-choice
+/// enablement for Keep both, Keep original, and Keep conflicted copy.
+/// Destructive choices must be disabled when metadata is incomplete, Trash is
+/// unavailable, the repository is read-only, or a version is still an iCloud
+/// placeholder.
+///
+/// This API is a contract entry point for the later implementation task. It
+/// must remain read-only: it must not mark conflicts resolved, move files to
+/// Trash, write change log entries, create undo actions, trigger iCloud
+/// downloads, or touch `apps/**`.
+///
+/// # Errors
+///
+/// Returns `CoreError::ICloudPlaceholder { path }` when required metadata or a
+/// conflict version is still an iCloud placeholder, `CoreError::PermissionDenied
+/// { path }` when version metadata or conflict state cannot be inspected,
+/// `CoreError::Conflict { path }` when the conflict id is stale or cannot be
+/// bound safely, `CoreError::Io { message }` for filesystem preview failures,
+/// and `CoreError::Db { message }` for conflict-state metadata reads.
+pub fn preview_conflict_versions(
+    _repo_path: String,
+    _conflict_id: String,
+) -> CoreResult<ICloudConflictPreviewReport> {
+    not_implemented()
+}
+
+/// Resolves one C2-16 iCloud conflict after explicit user confirmation.
+///
+/// `resolution` is limited to the previewed C2-16 choices. `KeepBoth` must keep
+/// every version and only mark the conflict resolved or acknowledged. `KeepOriginal`
+/// and `KeepConflictedCopy` may move only the unkept paired version to system
+/// Trash after the UI completed destructive confirmation. A successful write
+/// records conflict state and change log metadata, and returns an undo token
+/// when Trash-based undo is available.
+///
+/// This contract does not replace import-conflict handling, batch delete,
+/// generic sync conflicts, QuickLook rendering, platform download coordination,
+/// or any page ability outside S2-20 / S1-36 consumption.
+///
+/// # Errors
+///
+/// Returns `CoreError::ICloudPlaceholder { path }` when a required version is
+/// still unavailable, `CoreError::PermissionDenied { path }` for Trash,
+/// metadata, or conflict-state write failures, `CoreError::Conflict { path }`
+/// when the conflict changed since preview or the requested resolution is no
+/// longer safe, `CoreError::Io { message }` for Trash or rollback failures, and
+/// `CoreError::Db { message }` for conflict state, change log, or undo writes.
+/// On any failure the conflict must remain unresolved and no version may be
+/// silently deleted.
+pub fn resolve_icloud_conflict(
+    _repo_path: String,
+    _conflict_id: String,
+    _resolution: ICloudConflictResolution,
+) -> CoreResult<ICloudConflictResolveReport> {
+    not_implemented()
 }
 
 /// Reads the markdown note associated with one active file entry.

@@ -245,6 +245,18 @@ namespace area_matrix {
     sequence<ICloudConflictPair> list_icloud_conflicts(string repo_path);
 
     [Throws=CoreError]
+    ICloudConflictPreviewReport preview_conflict_versions(
+        string repo_path, string conflict_id
+    );
+
+    [Throws=CoreError]
+    ICloudConflictResolveReport resolve_icloud_conflict(
+        string repo_path,
+        string conflict_id,
+        ICloudConflictResolution resolution
+    );
+
+    [Throws=CoreError]
     string? read_note(string repo_path, i64 file_id);
 
     [Throws=CoreError]
@@ -874,6 +886,47 @@ dictionary ICloudConflictPair {
     string? uncertainty_reason;
 };
 
+dictionary ICloudConflictVersionMetadata {
+    string version_id;
+    ICloudConflictVersionRole role;
+    string path;
+    i64? modified_at;
+    i64? size_bytes;
+    string? hash_sha256;
+    string? preview_summary;
+    ICloudConflictPreviewStatus preview_status;
+};
+
+dictionary ICloudConflictResolutionOption {
+    ICloudConflictResolution resolution;
+    boolean destructive;
+    boolean requires_trash;
+    boolean enabled;
+    string? disabled_reason;
+};
+
+dictionary ICloudConflictPreviewReport {
+    string conflict_id;
+    sequence<ICloudConflictVersionMetadata> versions;
+    ICloudConflictResolution default_resolution;
+    sequence<ICloudConflictResolutionOption> resolution_options;
+    boolean metadata_complete;
+    boolean trash_available;
+    boolean can_keep_both;
+    boolean can_resolve_destructive;
+    string? blocked_reason;
+};
+
+dictionary ICloudConflictResolveReport {
+    string conflict_id;
+    ICloudConflictResolution resolution;
+    ICloudConflictStatus status;
+    sequence<string> kept_paths;
+    sequence<string> trashed_paths;
+    string? undo_token;
+    string change_log_action;
+};
+
 dictionary ChangeLogEntry {
     i64 id;
     i64? file_id;
@@ -1007,6 +1060,9 @@ enum CommandTargetAction {
     "FocusFile", "OpenSearch", "LowRiskAction"
 };
 enum ICloudConflictStatus { "NeedsReview", "Resolved" };
+enum ICloudConflictVersionRole { "Original", "ConflictedCopy" };
+enum ICloudConflictPreviewStatus { "Available", "MetadataOnly", "Unavailable" };
+enum ICloudConflictResolution { "KeepBoth", "KeepOriginal", "KeepConflictedCopy" };
 enum ExternalEventKind { "Created", "Removed", "Modified", "Renamed" };
 enum BatchMutationStatus { "Added", "AlreadyHadTag", "Failed" };
 enum BatchCategoryPreviewStatus { "WillMove", "MetadataOnly", "Unchanged", "Skipped", "Blocked" };
@@ -1136,6 +1192,8 @@ interface CoreError {
 | `list_changes(repo, filter)` | query | √ | Db |
 | `list_tree_json(repo, locale)` | query | √ | RepoNotInitialized / Db / Io |
 | `list_icloud_conflicts(repo)` | query | √ | ICloudPlaceholder / PermissionDenied / Io / Db |
+| `preview_conflict_versions(repo, conflict_id)` | conflict | √ | ICloudPlaceholder / PermissionDenied / Conflict / Io / Db |
+| `resolve_icloud_conflict(repo, conflict_id, resolution)` | conflict | √ | ICloudPlaceholder / PermissionDenied / Conflict / Io / Db |
 | `read_note(repo, file_id)` | note | √ | Io |
 | `write_note(repo, file_id, content)` | note | √ | Io |
 | `sync_external_changes(repo, events)` | sync | √ | Db |
@@ -3177,6 +3235,112 @@ let needsReview = conflicts.filter { $0.status == .needsReview }
 
 空态返回空数组。加载失败必须通过结构化 `CoreError` 抛出；识别不确定的
 冲突仍返回条目，但 `status = NeedsReview`。
+
+### `preview_conflict_versions(repoPath, conflictId) throws -> ICloudConflictPreviewReport`
+
+```swift
+let preview = try await Task.detached(priority: .userInitiated) {
+    try AreaMatrix.previewConflictVersions(
+        repoPath: repoPath,
+        conflictId: conflict.conflictId
+    )
+}.value
+let defaultChoice = preview.defaultResolution // .keepBoth
+```
+
+`preview_conflict_versions` 是 C2-16 的 iCloud 冲突可视化预览入口，
+用于 S2-20 在用户明确进入单个冲突后展示版本 metadata、预览摘要和按钮
+可用性。输入是已初始化资料库根路径和 `list_icloud_conflicts` 返回的
+`conflict_id`；输出为 `ICloudConflictPreviewReport`：
+
+- `conflict_id`：回显稳定冲突 ID，供 Resolve 绑定同一冲突。
+- `versions`：每个版本的 metadata 和预览摘要，字段包括 `version_id`、
+  `role`、`path`、`modified_at`、`size_bytes`、`hash_sha256`、
+  `preview_summary` 和 `preview_status`。
+- `default_resolution`：必须为 `KeepBoth`，让 UI 默认保留所有版本。
+- `resolution_options`：每个选择的 destructive、Trash 依赖、启用状态和
+  禁用原因。
+- `metadata_complete`：metadata 是否足以启用 destructive 选择。
+- `trash_available`：系统 Trash 是否可用于 Keep original / Keep conflicted copy。
+- `can_keep_both`：Keep both 是否可直接提交。
+- `can_resolve_destructive`：是否允许启用会丢弃某个版本的选择。
+- `blocked_reason`：整体阻断原因，供错误摘要和 VoiceOver 使用。
+
+副作用边界：
+
+- 只读取 conflict state、版本 metadata、可安全读取的 hash 或摘要。
+- 不标记 resolved，不写 `files`、`change_log` 或 `undo_actions`。
+- 不删除、不移动、不重命名、不覆盖、不合并任何版本，不写 Trash。
+- 不触发 iCloud placeholder 下载；下载协调属于平台层。
+- 不实现 QuickLook UI 渲染、import conflict 批量决策或 Stage 4 云盘 SDK 集成。
+
+错误：
+
+- `ICloudPlaceholder`：关键 metadata 或任一必需版本仍是未下载占位符。
+- `PermissionDenied`：资料库、版本 metadata、Trash preflight 或 conflict state
+  无法检查。
+- `Conflict`：`conflict_id` 已过期、无法安全绑定或当前版本集合已变化。
+- `Io`：文件系统 metadata、hash 或预览摘要读取失败。
+- `Db`：可选 conflict state metadata 读取失败。
+
+S2-20 可以从本合同得到两个或多个版本的 metadata、metadata-only / preview
+可用性、默认 Keep both、Trash 不可用时的按钮禁用原因，以及 destructive
+二次确认所需的“另一版本会进入 Trash”边界。S2-20 不能从本合同得到
+QuickLook 视图对象、平台 iCloud 下载进度、Undo 执行结果或跨设备同步冲突处理。
+
+### `resolve_icloud_conflict(repoPath, conflictId, resolution) throws -> ICloudConflictResolveReport`
+
+```swift
+let report = try await Task.detached(priority: .userInitiated) {
+    try AreaMatrix.resolveIcloudConflict(
+        repoPath: repoPath,
+        conflictId: conflict.conflictId,
+        resolution: .keepBoth
+    )
+}.value
+```
+
+`resolve_icloud_conflict` 是 C2-16 的单项解决入口，只能在用户完成 S2-20
+确认后调用。`resolution` 取值：
+
+- `KeepBoth`：保留所有版本，只把冲突状态写为 resolved / acknowledged。
+- `KeepOriginal`：保留原始版本，将 conflicted copy 移到系统 Trash。
+- `KeepConflictedCopy`：保留 conflicted copy，将原始版本移到系统 Trash。
+
+输出 `ICloudConflictResolveReport`：
+
+- `conflict_id`：已解决冲突 ID。
+- `resolution`：实际应用的用户选择。
+- `status`：最终冲突状态，成功时为 `Resolved`。
+- `kept_paths`：仍保留的版本路径。
+- `trashed_paths`：移入 Trash 的版本路径；`KeepBoth` 时为空。
+- `undo_token`：Trash 相关解决可撤销时返回。
+- `change_log_action`：本次写入的 change-log action。
+
+副作用边界：
+
+- `KeepBoth` 不移动、不删除、不覆盖任何版本，只写 conflict state 和 change log。
+- `KeepOriginal` / `KeepConflictedCopy` 只能把未保留版本移到系统 Trash，
+  不提供永久删除，不清空 Trash，不删除外部无关文件。
+- 成功后写 conflict state、change log，并在 Trash 操作可撤销时写 undo action。
+- 任一阶段失败必须保持 conflict unresolved；不得清除 Needs Review，也不得把
+  失败项当作成功。
+- 不实现导入冲突批量策略、通用 batch delete、平台 QuickLook、iCloud 下载触发
+  或 Stage 4 云盘 SDK 集成。
+
+错误：
+
+- `ICloudPlaceholder`：必需版本仍是未下载占位符。
+- `PermissionDenied`：Trash、目标文件、metadata 或 conflict state 写入被阻断。
+- `Conflict`：preview 后版本集合或 conflict state 已变化，或 requested
+  resolution 不再安全。
+- `Io`：Trash、文件系统移动或失败回滚出错。
+- `Db`：conflict state、change log 或 undo action 写入失败。
+
+S2-20 可以从本合同得到成功后应移除 Needs Review 的状态、保留/Trash 路径、
+Undo toast token 和失败时继续保持 unresolved 的判断依据。本合同没有引入
+control map 之外的页面能力；S1-36 仍只消费 `list_icloud_conflicts`，S2-20
+消费 preview / resolve。
 
 ---
 

@@ -1,0 +1,97 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-1/task-76`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-76-c2-16-contract-api.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/domain.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/tests/icloud_conflict_visual_contract_api.rs`
+
+三、完成度摘要
+
+- 已覆盖项数：9
+- 未覆盖项数：0
+- 通过项数：9
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：读取 C2-16 能力规格、control map、Core API、错误码
+- 结果：通过
+- 证据：C2-16 规格定义 `list_icloud_conflicts`、计划新增 `preview_conflict_versions` / `resolve_icloud_conflict`；control map 将 S2-20 绑定到 C2-16；Core API 与错误码均已包含对应合同与错误边界。
+- 涉及文件：`docs/core/capability-specs/stage-2-experience/C2-16-icloud-conflict-visual.md`、`docs/architecture/stage-2-control-map.md`、`docs/api/core-api.md`、`docs/api/error-codes.md`
+
+- 项目：API 名称、输入、输出、错误码、权限/隐私边界一致
+- 结果：通过
+- 证据：`core/src/api.rs:995`、`core/src/api.rs:1025` 暴露两个 C2-16 函数；`core/src/domain.rs:346` 起定义版本、预览、解决报告类型；`core/area_matrix.udl:224`、`core/area_matrix.udl:229`、`core/area_matrix.udl:865` 起同步桥接声明；错误边界包含 `ICloudPlaceholder / PermissionDenied / Conflict / Io / Db`。
+- 涉及文件：`core/src/api.rs`、`core/src/domain.rs`、`core/area_matrix.udl`
+
+- 项目：只补合同、类型、桥接声明或文档缺口，不实现相邻能力
+- 结果：通过
+- 证据：`preview_conflict_versions` 与 `resolve_icloud_conflict` 当前返回 `not_implemented()`，未提前实现 Trash、QuickLook、云盘 SDK、批量导入冲突或相邻页面能力；测试中 `icloud_conflict_visual_contract_has_no_fake_success_before_implementation` 明确防止假成功。
+- 涉及文件：`core/src/api.rs`、`core/tests/icloud_conflict_visual_contract_api.rs`
+
+- 项目：页面消费方能从合同得到所需状态
+- 结果：通过
+- 证据：合同提供版本 metadata、preview status、默认 `KeepBoth`、Trash 可用性、destructive enablement、blocked reason、resolve 后 kept/trashed paths、undo token 和 change log action；S1-36 仍只消费 `list_icloud_conflicts`，S2-20 消费 preview / resolve。
+- 涉及文件：`docs/api/core-api.md`、`docs/ux/page-specs/stage-2-experience/S2-20-icloud-conflict-visual.md`、`docs/ux/page-specs/stage-1-mvp/S1-36-icloud-conflict-list.md`
+
+- 项目：Expected New Paths 落地
+- 结果：通过
+- 证据：`core/src/**`、`core/area_matrix.udl`、`core/tests/**` 均已有本 task 对应合同或测试；`./dev check task` 实际执行了 `cargo test --test icloud_conflict_visual_contract_api`。
+- 涉及文件：`core/src/api.rs`、`core/src/domain.rs`、`core/area_matrix.udl`、`core/tests/icloud_conflict_visual_contract_api.rs`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git status --short -- apps` 无输出，未触碰 `apps/**`。
+- 涉及文件：`apps/**`
+
+- 项目：完成标准 1，C2-16 Core API 合同可被 implementation task 直接实现
+- 结果：通过
+- 证据：Rust API、domain types、UDL、Core API 文档和合同测试已对齐。
+- 涉及文件：`core/src/api.rs`、`core/src/domain.rs`、`core/area_matrix.udl`、`docs/api/core-api.md`
+
+- 项目：完成标准 2，未引入 control map 外页面能力
+- 结果：通过
+- 证据：合同消费范围限定为 S2-20 preview / resolve，S1-36 继续使用已有 list；测试检查相邻 scope 字符串未进入 API 合同。
+- 涉及文件：`docs/architecture/stage-2-control-map.md`、`core/tests/icloud_conflict_visual_contract_api.rs`
+
+- 项目：任务验证命令
+- 结果：通过
+- 证据：`./dev check task 4-1/task-76` 通过。
+- 涉及文件：repo-local validation driver / dev check
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。新增内容集中在 API 合同、domain 类型、UDL 和合同测试，没有跨层实现或相邻能力扩散。
+- 注释 / rustdoc / 文档同步：通过。新增 public Rust API 与 public 类型有 rustdoc，Core API 文档与 UDL 字段同步。
+- 错误处理与边界处理：通过。合同声明了 iCloud placeholder、权限、冲突、IO、DB 错误；失败保持 unresolved、不直接删除、Trash 边界均写入合同。
+- 测试与验证覆盖：通过。合同测试覆盖签名、输入输出类型、文档/API/UDL/control map 对齐、消费页面状态和无假成功。
+- 占位、硬编码、mock-only、一次性实现检查：通过。当前 task 明确是 contract-api，不实现业务逻辑；占位返回错误且测试防止被误判为真实闭环。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 跑了哪些验证：`./dev check task 4-1/task-76`
+- 哪些通过：
+  - `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`：通过，`tasks: 637`、`manifests: 637`
+  - `git diff --check`：通过
+  - `cargo test --test icloud_conflict_visual_contract_api -- --nocapture`：通过，4 passed
+- 哪些失败：无
+- 哪些缺失：未运行 `./dev check all`、`./dev check core` 或 `cargo test --workspace`；当前 manifest 和 validation-driver 对普通 atomic Core task 的验证上限是 `./dev check task 4-1/task-76`，本次已执行并通过。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS
