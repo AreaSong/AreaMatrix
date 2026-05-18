@@ -1,0 +1,70 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-1/task-73`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-73-c2-15-failure-edge.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/classifier_rule_editor.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/classifier_rule_editor/config.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/tests/classifier_rule_editor_failure_recovery.rs`
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：空态、非法输入、权限、IO/DB 错误和错误码映射
+- 结果：通过
+- 证据：`list_classifier_rules` / `update_classifier_rule` / `delete_classifier_rule` 显式返回 `Config`、`PermissionDenied`、`Io`；failure test 覆盖空 repo、非法 repo path、非法 rule_id/slug/template、未 preview、classifier 文件变目录、权限拒绝与 `map_core_error` 映射。
+- 涉及文件：`core/src/classifier_rule_editor.rs:108`、`core/src/classifier_rule_editor.rs:128`、`core/src/classifier_rule_editor.rs:159`、`core/tests/classifier_rule_editor_failure_recovery.rs:179`
+
+- 项目：失败不留下半成品
+- 结果：通过
+- 证据：原子写入使用 temp file + rename + directory sync，失败清理 temp；sync 失败时恢复旧 classifier。测试断言失败后 classifier、DB、metadata、用户可见文件不变，且无 `.classifier.yaml.*.tmp` 残留。
+- 涉及文件：`core/src/classifier_rule_editor/config.rs:157`、`core/src/classifier_rule_editor/config.rs:381`、`core/tests/classifier_rule_editor_failure_recovery.rs:126`
+
+- 项目：隐私/AI/远程调用默认关闭、密钥不入日志
+- 结果：通过
+- 证据：实现只在 Core classifier config 路径内读写；API rustdoc 明确不调用 AI/network providers。测试检查无 `.areamatrix/ai`、`ai.log`、`network.log`，并扫描实现中不含 `reqwest`、`api_key`、`authorization`、`std::env::var`、`tracing::`、`log::`。
+- 涉及文件：`core/src/api.rs:770`、`core/tests/classifier_rule_editor_failure_recovery.rs:327`
+
+- 项目：不得吞错或静默降级
+- 结果：通过
+- 证据：验证路径断言错误 kind 与 raw context 可观察；实现将读写权限、IO、Config schema 错误映射为显式 `CoreError`，没有用静默降级伪造成功。
+- 涉及文件：`core/tests/classifier_rule_editor_failure_recovery.rs:139`、`core/src/classifier_rule_editor/config.rs:416`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，C2-15 实现集中在 `classifier_rule_editor`，API/UDL/test 对齐，未扩大到 `apps/**`。
+- 注释 / rustdoc / 文档同步：通过，public API 有 rustdoc，Core API、UDL、capability spec、control map 有合同测试锁定。
+- 错误处理与边界处理：通过，关键失败路径显式返回错误并保留旧配置。
+- 测试与验证覆盖：通过，manifest 验证命令已运行并通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过，测试走真实 temp repo、真实 classifier.yaml、真实 Core API，不是 mock-only。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-73`
+- 通过：`prompt_pipeline.py doctor`，`git diff --check`，`cargo test --test classifier_rule_editor_contract_api -- --nocapture`，`cargo test --test classifier_rule_editor_failure_recovery -- --nocapture`，`cargo test --test classifier_rule_editor_implementation -- --nocapture`
+- 失败：无
+- 缺失：未运行 `./dev check all` / `cargo test --workspace` / clippy；本 task manifest 要求的上限是 `./dev check task 4-1/task-73`，当前不要求宽门禁。
+- Forbidden Touches：`git status --short -- apps` 无输出，未发现 `apps/**` 违规触碰。
+- 工作区状态：存在 runner/progress 相关文件和本 task 新增测试文件；按验收规则，这不构成本 verify 阶段阻断。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS

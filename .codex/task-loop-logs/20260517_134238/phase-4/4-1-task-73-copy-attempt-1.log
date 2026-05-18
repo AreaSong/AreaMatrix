@@ -1,0 +1,40 @@
+一、执行结论
+
+已完成。
+
+二、执行范围
+
+单任务：`4-1/task-73`，仅补齐 C2-15 failure-edge 测试证据。
+
+修改文件清单：
+- [classifier_rule_editor_failure_recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/classifier_rule_editor_failure_recovery.rs:1)
+
+三、完成情况
+
+- 覆盖空态：新增空 repo 下 `list_classifier_rules` 只读返回并不改 `.areamatrix` / 用户文件。
+- 覆盖非法输入：空 repo path、`.areamatrix` 内部路径、空 rule id、非法 slug、重复 keyword、非法 naming template、未 preview、缺 replacement、删除默认分类均返回 `Config`，且快照不变。
+- 覆盖权限、IO 和错误码映射：classifier path 为目录返回 `Io`；只读 metadata 目录返回 `PermissionDenied`；`Config / PermissionDenied / Io` 均通过 `map_core_error` 验证结构化映射。
+- 失败不留半成品：所有失败测试都校验 classifier payload、DB payload、metadata entries、用户可见文件以及 `.classifier.yaml.*.tmp` 临时文件。
+- 隐私 / AI / 远程调用：测试确认不创建 `.areamatrix/ai*` / network 产物，并扫描 C2-15 源码不含 `reqwest`、URL、api key、env token、日志调用等远程/密钥路径。
+- Forbidden Touches：未触碰 `apps/**`。
+
+四、工程质量
+
+新增内容是 focused integration test，没有改生产 API、UDL 或业务实现；现有 C2-15 实现已由本轮 task gate 覆盖。测试 helper 只用于隔离快照与断言，没有 mock-only 成功路径或硬编码产品通过态。注释 / rustdoc 不需要同步，因为未新增 public Rust API。
+
+五、验证情况
+
+已运行并通过：
+- `rustfmt --edition 2021 core/tests/classifier_rule_editor_failure_recovery.rs`
+- `cargo test --test classifier_rule_editor_failure_recovery -- --nocapture`：6 passed
+- `./dev check task 4-1/task-73`：`doctor: OK`，`git diff --check` 通过，targeted Core tests 通过：
+  - `classifier_rule_editor_contract_api`：4 passed
+  - `classifier_rule_editor_failure_recovery`：6 passed
+  - `classifier_rule_editor_implementation`：6 passed
+
+未运行全量 `cargo test --workspace` / clippy / `./dev check all`，因为本 task 明确要求验证上限为 `./dev check task 4-1/task-73`。
+
+六、风险与后续
+
+剩余风险：工作区已有两个非本轮改动的 task-loop 状态文件处于 modified：`.codex/task-loop-runs/20260517_134238/summary.json`、`tasks/prompts/_shared/progress.json`。本轮未修改它们。建议下一个任务继续执行依赖链上的 `4-1/task-74`。回滚本轮改动只需移除新增测试文件，不涉及用户文件或生产数据。
+
