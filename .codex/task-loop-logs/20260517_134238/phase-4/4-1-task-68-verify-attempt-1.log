@@ -1,0 +1,72 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-1/task-68`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-68-c2-14-failure-edge.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/classifier_impact.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/tests/classifier_impact_preview_failure_recovery.rs`
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：空态、非法输入、权限、IO/DB 错误和错误码映射
+- 结果：通过
+- 证据：空 repo 返回 0 影响且 `can_apply=false`；非法输入返回 `CoreError::Config`；DB/metadata 失败返回 `CoreError::Db`；权限映射保持 `PermissionDenied` 且需要用户动作。
+- 涉及文件：`core/tests/classifier_impact_preview_failure_recovery.rs:154`、`:175`、`:208`、`:237`、`:259`
+
+- 项目：失败不留下半成品
+- 结果：通过
+- 证据：C2-14 文档定义为只读 dry-run；实现只读打开 DB；测试对比 classifier.yaml、files、change_log、undo_actions 和用户可见路径快照，DB 损坏和 metadata path 错误后均无变化。
+- 涉及文件：`core/src/classifier_impact/db.rs:10`、`core/tests/classifier_impact_preview_failure_recovery.rs:84`、`:209`
+
+- 项目：隐私/AI/远程调用默认关闭、密钥不入日志
+- 结果：通过
+- 证据：实现注释明确不得调用 AI/network；测试扫描禁止 `reqwest`、`https://`、`api_key`、`token`、`tracing::` 等远程/日志敏感路径。
+- 涉及文件：`core/src/classifier_impact.rs:127`、`core/tests/classifier_impact_preview_failure_recovery.rs:275`
+
+- 项目：不得吞错或静默降级
+- 结果：通过
+- 证据：`metadata()` 非 NotFound 错误现在映射为 `CoreError::Db`，不再 `unwrap_or(false)` 或把权限/IO 问题伪装成缺失。
+- 涉及文件：`core/src/classifier_impact.rs:333`、`:346`、`:363`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。C2-14 实现拆分为 config/db/matcher/path，小函数边界清楚，主文件 407 行，未超过 500 行。
+- 注释 / rustdoc / 文档同步：通过。public API 与类型有 rustdoc；Core API、UDL、capability spec、control map 已由 contract test 对齐。
+- 错误处理与边界处理：通过。Config/Db 显式返回，metadata IO 错误不静默降级。
+- 测试与验证覆盖：通过。新增 failure-recovery 测试覆盖空态、非法输入、DB 损坏、非法 metadata path、权限映射、隐私/远程副作用。
+- 占位、硬编码、mock-only、一次性实现检查：通过。实现连接真实 SQLite metadata、真实 repo 文件状态和真实 classifier config；未发现 mock-only 或硬编码通过态。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-68`
+- 通过：
+  - `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`：OK，637 tasks / 637 manifests
+  - `git diff --check`：通过
+  - `cargo test --test classifier_impact_preview_contract_api -- --nocapture`：4 passed
+  - `cargo test --test classifier_impact_preview_failure_recovery -- --nocapture`：6 passed
+  - `cargo test --test classifier_impact_preview_implementation -- --nocapture`：4 passed
+- 失败：无
+- 缺失：无。按 manifest 要求，本 task 只要求 `./dev check task 4-1/task-68`；未升级到 `./dev check all`。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。`Expected New Paths` 已落地到 `core/src/**`、`core/area_matrix.udl`、`core/tests/**`；`apps/**` 无脏改动，未触碰 Forbidden Touches。当前新增文件未 `git add`、progress/summary 仍处于 runner 收口前状态，不作为本 verify 阶段阻断。
+
+VERIFY_RESULT: PASS

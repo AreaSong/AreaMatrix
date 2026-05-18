@@ -336,10 +336,11 @@ fn backing_file_is_present(repo: &std::path::Path, entry: &FileEntry) -> CoreRes
     } else {
         repo_relative_file_path(repo, &entry.path)?
     };
-    Ok(path
-        .metadata()
-        .map(|metadata| metadata.is_file())
-        .unwrap_or(false))
+    match path.metadata() {
+        Ok(metadata) => Ok(metadata.is_file()),
+        Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(false),
+        Err(error) => Err(map_impact_metadata_error(error)),
+    }
 }
 
 fn target_path_conflict(
@@ -355,8 +356,15 @@ fn target_path_conflict(
     match target_path.metadata() {
         Ok(_) => relative_repo_path(repo, &target_path).map(Some),
         Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(None),
-        Err(_) => relative_repo_path(repo, &target_path).map(Some),
+        Err(error) => Err(map_impact_metadata_error(error)),
     }
+}
+
+fn map_impact_metadata_error(error: io::Error) -> crate::CoreError {
+    crate::CoreError::db(format!(
+        "classifier impact metadata is unavailable: {}",
+        error.kind()
+    ))
 }
 
 fn conflict(
