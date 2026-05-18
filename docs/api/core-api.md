@@ -257,6 +257,19 @@ namespace area_matrix {
     );
 
     [Throws=CoreError]
+    ImportConflictBatchPreviewReport preview_import_conflict_batch(
+        string repo_path,
+        ImportConflictBatchPreviewRequest request
+    );
+
+    [Throws=CoreError]
+    ImportConflictBatchApplyReport apply_import_conflict_batch(
+        string repo_path,
+        ImportConflictBatchApplyRequest request,
+        string preview_token
+    );
+
+    [Throws=CoreError]
     string? read_note(string repo_path, i64 file_id);
 
     [Throws=CoreError]
@@ -927,6 +940,91 @@ dictionary ICloudConflictResolveReport {
     string change_log_action;
 };
 
+dictionary ImportConflictBatchPreviewRequest {
+    string import_session_id;
+    sequence<string> conflict_ids;
+    ImportConflictBatchStrategy duplicate_strategy;
+    ImportConflictBatchStrategy same_name_strategy;
+    boolean apply_to_all_similar_conflicts;
+};
+
+dictionary ImportConflictBatchPreviewItem {
+    string conflict_id;
+    ImportConflictBatchConflictType conflict_type;
+    i64? existing_file_id;
+    string? existing_path;
+    string incoming_path;
+    string? target_path;
+    ImportConflictBatchStrategy selected_strategy;
+    ImportConflictBatchPreviewStatus status;
+    boolean will_replace;
+    boolean will_keep_both;
+    boolean will_skip;
+    boolean will_ask_per_item;
+    boolean index_only;
+    string risk_summary;
+    string? reason;
+};
+
+dictionary ImportConflictBatchPreviewReport {
+    string import_session_id;
+    string preview_token;
+    boolean apply_to_all_similar_conflicts;
+    i64 requested_conflict_count;
+    i64 duplicate_conflict_count;
+    i64 same_name_conflict_count;
+    i64 included_count;
+    i64 pending_count;
+    i64 blocked_count;
+    i64 replace_count;
+    i64 skip_count;
+    i64 keep_both_count;
+    i64 ask_per_item_count;
+    boolean trash_available;
+    boolean undo_available;
+    boolean can_apply;
+    string? apply_blocked_reason;
+    boolean replace_confirmation_required;
+    string? replace_confirmation_summary;
+    sequence<ImportConflictBatchPreviewItem> items;
+};
+
+dictionary ImportConflictBatchApplyRequest {
+    string import_session_id;
+    sequence<string> conflict_ids;
+    ImportConflictBatchStrategy duplicate_strategy;
+    ImportConflictBatchStrategy same_name_strategy;
+    boolean apply_to_all_similar_conflicts;
+    boolean replace_confirmed;
+};
+
+dictionary ImportConflictBatchItemResult {
+    string conflict_id;
+    ImportConflictBatchConflictType conflict_type;
+    ImportConflictBatchStrategy applied_strategy;
+    ImportConflictBatchResultStatus status;
+    i64? file_id;
+    string? final_path;
+    string? error;
+};
+
+dictionary ImportConflictBatchApplyReport {
+    string import_session_id;
+    i64 requested_conflict_count;
+    i64 resolved_count;
+    i64 skipped_count;
+    i64 kept_both_count;
+    i64 replaced_count;
+    i64 queued_for_per_item_count;
+    i64 pending_count;
+    i64 failed_count;
+    sequence<ImportConflictBatchItemResult> item_results;
+    sequence<i64> affected_file_ids;
+    string? undo_token;
+    sequence<string> change_log_actions;
+    string? failure_summary;
+};
+
 dictionary ChangeLogEntry {
     i64 id;
     i64? file_id;
@@ -1063,6 +1161,14 @@ enum ICloudConflictStatus { "NeedsReview", "Resolved" };
 enum ICloudConflictVersionRole { "Original", "ConflictedCopy" };
 enum ICloudConflictPreviewStatus { "Available", "MetadataOnly", "Unavailable" };
 enum ICloudConflictResolution { "KeepBoth", "KeepOriginal", "KeepConflictedCopy" };
+enum ImportConflictBatchConflictType { "DuplicateHash", "SameNameDifferentContent" };
+enum ImportConflictBatchStrategy { "Skip", "KeepBoth", "Replace", "AskPerItem" };
+enum ImportConflictBatchPreviewStatus {
+    "Ready", "Pending", "NeedsConfirmation", "Blocked", "Failed"
+};
+enum ImportConflictBatchResultStatus {
+    "Skipped", "KeptBoth", "Replaced", "QueuedForPerItem", "Pending", "Failed"
+};
 enum ExternalEventKind { "Created", "Removed", "Modified", "Renamed" };
 enum BatchMutationStatus { "Added", "AlreadyHadTag", "Failed" };
 enum BatchCategoryPreviewStatus { "WillMove", "MetadataOnly", "Unchanged", "Skipped", "Blocked" };
@@ -1090,7 +1196,7 @@ enum UndoActionStatus { "Pending", "Executed", "Expired", "Blocked" };
 enum ErrorKind {
     "Io", "Db", "Config", "Classify", "Conflict", "DuplicateFile",
     "FileNotFound", "RepoNotInitialized", "InvalidPath",
-    "ICloudPlaceholder", "PermissionDenied", "Internal"
+    "ICloudPlaceholder", "StagingRecoveryRequired", "PermissionDenied", "Internal"
 };
 enum ErrorSeverity { "Low", "Medium", "High", "Critical" };
 enum ErrorRecoverability {
@@ -1109,6 +1215,7 @@ interface CoreError {
     RepoNotInitialized(string path);
     InvalidPath(string path);
     ICloudPlaceholder(string path);
+    StagingRecoveryRequired(string path);
     PermissionDenied(string path);
     Internal(string message);
 };
@@ -1194,6 +1301,8 @@ interface CoreError {
 | `list_icloud_conflicts(repo)` | query | √ | ICloudPlaceholder / PermissionDenied / Io / Db |
 | `preview_conflict_versions(repo, conflict_id)` | conflict | √ | ICloudPlaceholder / PermissionDenied / Conflict / Io / Db |
 | `resolve_icloud_conflict(repo, conflict_id, resolution)` | conflict | √ | ICloudPlaceholder / PermissionDenied / Conflict / Io / Db |
+| `preview_import_conflict_batch(repo, request)` | conflict | √ | Conflict / FileNotFound / PermissionDenied / StagingRecoveryRequired / Io / Db |
+| `apply_import_conflict_batch(repo, request, preview_token)` | conflict | √ | Conflict / FileNotFound / PermissionDenied / StagingRecoveryRequired / Io / Db |
 | `read_note(repo, file_id)` | note | √ | Io |
 | `write_note(repo, file_id, content)` | note | √ | Io |
 | `sync_external_changes(repo, events)` | sync | √ | Db |
@@ -3341,6 +3450,120 @@ S2-20 可以从本合同得到成功后应移除 Needs Review 的状态、保留
 Undo toast token 和失败时继续保持 unresolved 的判断依据。本合同没有引入
 control map 之外的页面能力；S1-36 仍只消费 `list_icloud_conflicts`，S2-20
 消费 preview / resolve。
+
+### `preview_import_conflict_batch(repoPath, request) throws -> ImportConflictBatchPreviewReport`
+
+```swift
+let preview = try AreaMatrix.previewImportConflictBatch(
+    repoPath: repoPath,
+    request: request
+)
+applyButton.isEnabled = preview.canApply && !preview.replaceConfirmationRequired
+```
+
+`preview_import_conflict_batch` 是 C2-17 的只读批量导入冲突预览入口，
+服务 `S2-21 import-conflict-batch`。输入 `ImportConflictBatchPreviewRequest`
+包含：
+
+- `import_session_id`：当前批量导入 staging session。
+- `conflict_ids`：当前选择或作用域中的冲突项；为空必须返回 `FileNotFound`。
+- `duplicate_strategy`：hash duplicate 行策略，默认应为 `Skip`。
+- `same_name_strategy`：same-name different-content 行策略，默认应为 `KeepBoth`。
+- `apply_to_all_similar_conflicts`：开启时按 conflict type 覆盖当前 session 内同类冲突；
+  关闭时只覆盖 `conflict_ids` 对应行，未选行保持 pending。
+
+输出 `ImportConflictBatchPreviewReport`：
+
+- `preview_token`：绑定 session、scope、strategy、Trash 可用性和 inspected staging state。
+- `duplicate_conflict_count` / `same_name_conflict_count`：分组数量。
+- `included_count` / `pending_count` / `blocked_count`：当前作用域与阻断摘要。
+- `replace_count` / `skip_count` / `keep_both_count` / `ask_per_item_count`：
+  当前策略影响数量。
+- `trash_available` / `undo_available`：Replace 和成功写入后 Undo 是否可用。
+- `can_apply` / `apply_blocked_reason`：Apply 按钮状态和禁用原因。
+- `replace_confirmation_required` / `replace_confirmation_summary`：Replace 二次确认状态。
+- `items`：逐冲突预览行，包含 conflict type、existing/incoming/target path、选中策略、
+  `Ready` / `Pending` / `NeedsConfirmation` / `Blocked` / `Failed` 状态、Index-only 阻断、
+  risk summary 和原因文本。
+
+副作用边界：
+
+- 只读检查 import session、staging conflict rows、目标路径、hash/name conflict、Trash
+  和 Undo 可用性。
+- 不写 import session 决策，不 promote staging 文件，不移动、删除、Trash、覆盖或替换已有文件。
+- 不写 `files`、`change_log`、`undo_actions`，不清空 staging，不 reindex，不更新 generated
+  overview，不触发 iCloud 下载，不调用 AI/网络。
+- Index-only 目标必须在 preview 中阻断 Replace；不得通过二次确认绕过。
+- Ask-per-item 只作为输出状态和后续路由依据；本接口不打开 S1-22/S1-23/S1-24，也不执行逐项策略。
+
+错误：
+
+- `FileNotFound`：`import_session_id` 为空、`conflict_ids` 为空，或指定 session/conflict 已不存在。
+- `Conflict`：策略组合无法安全预览、作用域与当前 staging state 无法绑定。
+- `PermissionDenied`：metadata、staging、Trash 或目标路径 inspection 被权限阻断。
+- `StagingRecoveryRequired`：存在未恢复的 staging residue 或 import session 状态不一致，必须先恢复。
+- `Io`：staging 文件、目标路径、Trash preflight 或 metadata inspection 失败。
+- `Db`：import session、conflict row、file row、Trash/undo 预检状态读取失败。
+
+### `apply_import_conflict_batch(repoPath, request, previewToken) throws -> ImportConflictBatchApplyReport`
+
+```swift
+let report = try AreaMatrix.applyImportConflictBatch(
+    repoPath: repoPath,
+    request: confirmedRequest,
+    previewToken: preview.previewToken
+)
+undoToast.present(token: report.undoToken)
+```
+
+`apply_import_conflict_batch` 是 C2-17 的执行入口，只能在 S2-21 完成 preview 和必要
+Replace 二次确认后调用。输入 `ImportConflictBatchApplyRequest` 与 preview request 对齐，
+并额外包含 `replace_confirmed`；当任一策略为 `Replace` 且该字段为 false 时必须返回
+`Conflict`，不得写入任何状态。
+
+输出 `ImportConflictBatchApplyReport`：
+
+- `resolved_count`、`skipped_count`、`kept_both_count`、`replaced_count`、
+  `queued_for_per_item_count`、`pending_count`、`failed_count`：执行摘要。
+- `item_results`：逐冲突结果，`status` 为 `Skipped`、`KeptBoth`、`Replaced`、
+  `QueuedForPerItem`、`Pending` 或 `Failed`，并携带 file id、final path 和错误摘要。
+- `affected_file_ids`：成功写入或需要刷新状态的 file ids。
+- `undo_token`：成功写入可撤销 replace / import 决策后返回；没有可撤销写入时为 `nil`。
+- `change_log_actions`：成功行写入的 action 名称。
+- `failure_summary`：部分失败后的恢复摘要，供 S2-21 `Retry failed` / `Ask per item` 使用。
+
+副作用边界：
+
+- `Skip` 对 hash duplicate 不导入重复内容，不删除、不移动、不覆盖已有文件；保持可追踪结果。
+- `KeepBoth` 为 incoming 文件生成安全新名称并继续导入，不覆盖已有文件。
+- `Replace` 必须在 `replace_confirmed = true` 且 Trash / recovery 可用时执行；旧文件必须进入
+  Trash 或可恢复路径，写 change log 和 undo action。
+- `AskPerItem` 不执行批量策略，只把当前作用域行保留为逐项处理队列状态。
+- 未勾选或不在当前作用域的行保持 staging unresolved，不写 change log，不进入 Undo stack。
+- 任一失败必须保留 staged 文件和冲突状态；不得清除 pending/unresolved，不得把失败项当成功。
+- 不实现 iCloud conflict、Stage 4 sync conflict、通用 batch delete/rename/category、classifier rule、
+  tag、search、AI 或 macOS UI 能力。
+
+错误：
+
+- `FileNotFound`：session/conflict 为空、非法或已不存在。
+- `Conflict`：`preview_token` 缺失/过期，scope、strategy、Trash 可用性或 inspected staging state
+  已变化，或 Replace 缺少二次确认。
+- `PermissionDenied`：staging、Trash、目标文件、metadata、change log 或 undo 写入被权限阻断。
+- `StagingRecoveryRequired`：Apply 前发现 staging residue 或 import session 状态需要恢复。
+- `Io`：staging promote、Trash、文件系统写入或 rollback 失败。
+- `Db`：import session 决策、`files`、`change_log` 或 `undo_actions` 写入失败。
+
+页面消费状态：
+
+- S2-21 可以从 preview 合同得到冲突分组、默认安全策略、全量/选中作用域、pending 行、
+  Replace 数量、blocked 数量、Index-only 禁止 Replace、Trash/Undo 可用性、二次确认文案、
+  Apply/Ask-per-item 是否可用和 VoiceOver 所需状态文本。
+- S2-21 可以从执行报告得到成功/失败/跳过/替换/保留两份/pending/逐项队列摘要、刷新用
+  `affected_file_ids`、`undo_token`、change log action 和失败恢复摘要。
+- S2-10 / C2-07 只消费 `undo_token` 和后续 `list_undo_actions` / `undo_action` 状态。
+- Ask-per-item 后续进入 S1-22 / S1-23 / S1-24 的路由由对应页面任务处理；本合同不新增
+  control map 之外的页面能力。
 
 ---
 

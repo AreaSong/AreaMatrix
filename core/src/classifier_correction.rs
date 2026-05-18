@@ -342,7 +342,8 @@ fn normalize_contract_error(error: CoreError) -> CoreError {
         CoreError::Classify { .. }
         | CoreError::Conflict { .. }
         | CoreError::Io { .. }
-        | CoreError::Db { .. } => error,
+        | CoreError::Db { .. }
+        | CoreError::StagingRecoveryRequired { .. } => error,
         CoreError::Config { .. } => CoreError::classify("classification error"),
         CoreError::DuplicateFile { .. } => CoreError::conflict("path conflict"),
         CoreError::RepoNotInitialized { .. } | CoreError::Internal { .. } => {

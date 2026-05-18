@@ -20,6 +20,7 @@ pub mod db;
 pub mod domain;
 pub mod error;
 mod icloud_conflicts;
+mod import_conflict_batch;
 mod note;
 pub mod overview;
 mod recovery;
@@ -73,6 +74,13 @@ pub use domain::*;
 pub use error::{
     map_core_error, CoreError, CoreResult, ErrorKind, ErrorMapping, ErrorMappingInput,
     ErrorRecoverability, ErrorSeverity,
+};
+pub use import_conflict_batch::{
+    apply_import_conflict_batch, preview_import_conflict_batch, ImportConflictBatchApplyReport,
+    ImportConflictBatchApplyRequest, ImportConflictBatchConflictType,
+    ImportConflictBatchItemResult, ImportConflictBatchPreviewItem,
+    ImportConflictBatchPreviewReport, ImportConflictBatchPreviewRequest,
+    ImportConflictBatchPreviewStatus, ImportConflictBatchResultStatus, ImportConflictBatchStrategy,
 };
 pub use search::*;
 pub use tags::{

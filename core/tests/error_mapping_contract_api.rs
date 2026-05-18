@@ -42,10 +42,11 @@ fn error_mapping_contract_api_exposes_structured_core_error_variants() {
         CoreError::repo_not_initialized("repository not initialized"),
         CoreError::invalid_path("invalid path"),
         CoreError::icloud_placeholder("icloud placeholder"),
+        CoreError::staging_recovery_required("staging needs recovery"),
         CoreError::permission_denied("permission denied"),
         CoreError::internal("internal error"),
     ];
-    assert_eq!(documented_variants.len(), 12);
+    assert_eq!(documented_variants.len(), 13);
 }
 
 #[test]
@@ -105,6 +106,7 @@ fn error_mapping_contract_api_docs_control_map_and_udl_stay_aligned() {
         "enum ErrorRecoverability",
         "interface CoreError",
         "DuplicateFile(string existing_path);",
+        "StagingRecoveryRequired(string path);",
     ] {
         assert_contains(CORE_API, fragment);
     }
@@ -128,6 +130,7 @@ fn error_mapping_contract_api_docs_control_map_and_udl_stay_aligned() {
         "RepoNotInitialized(string path);",
         "InvalidPath(string path);",
         "ICloudPlaceholder(string path);",
+        "StagingRecoveryRequired(string path);",
         "PermissionDenied(string path);",
         "Internal(string message);",
     ] {
@@ -148,6 +151,7 @@ fn error_mapping_contract_api_documents_severity_actions_and_side_effects() {
         "| `RepoNotInitialized { path }` |",
         "| `InvalidPath { path }` |",
         "| `ICloudPlaceholder { path }` |",
+        "| `StagingRecoveryRequired { path }` |",
         "| `PermissionDenied { path }` |",
         "| `Internal { message }` |",
         "| low | toast 3s 自动消失 |",
@@ -271,6 +275,14 @@ fn error_mapping_contract_api_maps_each_error_to_stable_ui_metadata() {
             ErrorRecoverability::Retryable,
             "iCloud 文件未下载",
             "iCloud/report.pdf",
+        ),
+        (
+            CoreError::staging_recovery_required(".areamatrix/staging"),
+            ErrorKind::StagingRecoveryRequired,
+            ErrorSeverity::High,
+            ErrorRecoverability::UserActionRequired,
+            "导入暂存需要恢复",
+            ".areamatrix/staging",
         ),
         (
             CoreError::permission_denied("/repo"),

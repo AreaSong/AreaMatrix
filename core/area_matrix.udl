@@ -233,6 +233,19 @@ namespace area_matrix {
     );
 
     [Throws=CoreError]
+    ImportConflictBatchPreviewReport preview_import_conflict_batch(
+        string repo_path,
+        ImportConflictBatchPreviewRequest request
+    );
+
+    [Throws=CoreError]
+    ImportConflictBatchApplyReport apply_import_conflict_batch(
+        string repo_path,
+        ImportConflictBatchApplyRequest request,
+        string preview_token
+    );
+
+    [Throws=CoreError]
     string? read_note(string repo_path, i64 file_id);
 
     [Throws=CoreError]
@@ -903,6 +916,91 @@ dictionary ICloudConflictResolveReport {
     string change_log_action;
 };
 
+dictionary ImportConflictBatchPreviewRequest {
+    string import_session_id;
+    sequence<string> conflict_ids;
+    ImportConflictBatchStrategy duplicate_strategy;
+    ImportConflictBatchStrategy same_name_strategy;
+    boolean apply_to_all_similar_conflicts;
+};
+
+dictionary ImportConflictBatchPreviewItem {
+    string conflict_id;
+    ImportConflictBatchConflictType conflict_type;
+    i64? existing_file_id;
+    string? existing_path;
+    string incoming_path;
+    string? target_path;
+    ImportConflictBatchStrategy selected_strategy;
+    ImportConflictBatchPreviewStatus status;
+    boolean will_replace;
+    boolean will_keep_both;
+    boolean will_skip;
+    boolean will_ask_per_item;
+    boolean index_only;
+    string risk_summary;
+    string? reason;
+};
+
+dictionary ImportConflictBatchPreviewReport {
+    string import_session_id;
+    string preview_token;
+    boolean apply_to_all_similar_conflicts;
+    i64 requested_conflict_count;
+    i64 duplicate_conflict_count;
+    i64 same_name_conflict_count;
+    i64 included_count;
+    i64 pending_count;
+    i64 blocked_count;
+    i64 replace_count;
+    i64 skip_count;
+    i64 keep_both_count;
+    i64 ask_per_item_count;
+    boolean trash_available;
+    boolean undo_available;
+    boolean can_apply;
+    string? apply_blocked_reason;
+    boolean replace_confirmation_required;
+    string? replace_confirmation_summary;
+    sequence<ImportConflictBatchPreviewItem> items;
+};
+
+dictionary ImportConflictBatchApplyRequest {
+    string import_session_id;
+    sequence<string> conflict_ids;
+    ImportConflictBatchStrategy duplicate_strategy;
+    ImportConflictBatchStrategy same_name_strategy;
+    boolean apply_to_all_similar_conflicts;
+    boolean replace_confirmed;
+};
+
+dictionary ImportConflictBatchItemResult {
+    string conflict_id;
+    ImportConflictBatchConflictType conflict_type;
+    ImportConflictBatchStrategy applied_strategy;
+    ImportConflictBatchResultStatus status;
+    i64? file_id;
+    string? final_path;
+    string? error;
+};
+
+dictionary ImportConflictBatchApplyReport {
+    string import_session_id;
+    i64 requested_conflict_count;
+    i64 resolved_count;
+    i64 skipped_count;
+    i64 kept_both_count;
+    i64 replaced_count;
+    i64 queued_for_per_item_count;
+    i64 pending_count;
+    i64 failed_count;
+    sequence<ImportConflictBatchItemResult> item_results;
+    sequence<i64> affected_file_ids;
+    string? undo_token;
+    sequence<string> change_log_actions;
+    string? failure_summary;
+};
+
 dictionary ChangeLogEntry {
     i64 id;
     i64? file_id;
@@ -1039,6 +1137,14 @@ enum ICloudConflictStatus { "NeedsReview", "Resolved" };
 enum ICloudConflictVersionRole { "Original", "ConflictedCopy" };
 enum ICloudConflictPreviewStatus { "Available", "MetadataOnly", "Unavailable" };
 enum ICloudConflictResolution { "KeepBoth", "KeepOriginal", "KeepConflictedCopy" };
+enum ImportConflictBatchConflictType { "DuplicateHash", "SameNameDifferentContent" };
+enum ImportConflictBatchStrategy { "Skip", "KeepBoth", "Replace", "AskPerItem" };
+enum ImportConflictBatchPreviewStatus {
+    "Ready", "Pending", "NeedsConfirmation", "Blocked", "Failed"
+};
+enum ImportConflictBatchResultStatus {
+    "Skipped", "KeptBoth", "Replaced", "QueuedForPerItem", "Pending", "Failed"
+};
 enum ExternalEventKind { "Created", "Removed", "Modified", "Renamed" };
 enum BatchMutationStatus { "Added", "AlreadyHadTag", "Failed" };
 enum BatchCategoryPreviewStatus { "WillMove", "MetadataOnly", "Unchanged", "Skipped", "Blocked" };
@@ -1066,7 +1172,7 @@ enum UndoActionStatus { "Pending", "Executed", "Expired", "Blocked" };
 enum ErrorKind {
     "Io", "Db", "Config", "Classify", "Conflict", "DuplicateFile",
     "FileNotFound", "RepoNotInitialized", "InvalidPath",
-    "ICloudPlaceholder", "PermissionDenied", "Internal"
+    "ICloudPlaceholder", "StagingRecoveryRequired", "PermissionDenied", "Internal"
 };
 enum ErrorSeverity { "Low", "Medium", "High", "Critical" };
 enum ErrorRecoverability {
@@ -1087,6 +1193,7 @@ interface CoreError {
     RepoNotInitialized(string path);
     InvalidPath(string path);
     ICloudPlaceholder(string path);
+    StagingRecoveryRequired(string path);
     PermissionDenied(string path);
     Internal(string message);
 };

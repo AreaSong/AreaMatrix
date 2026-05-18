@@ -5,17 +5,18 @@ use std::path::PathBuf;
 use crate::{
     batch_category, batch_delete, batch_rename as batch_rename_mod, classifier_correction,
     classifier_impact, classifier_rule_editor, classifier_rules, classify, db, icloud_conflicts,
-    note, recovery, repair, repo_init, repo_path, repo_scan, storage, sync, tree,
-    BatchCategoryChangeReport, BatchCategoryPreviewReport, BatchDeleteMode,
+    import_conflict_batch, note, recovery, repair, repo_init, repo_path, repo_scan, storage, sync,
+    tree, BatchCategoryChangeReport, BatchCategoryPreviewReport, BatchDeleteMode,
     BatchDeletePreviewReport, BatchDeleteReport, BatchRenamePreviewReport, BatchRenameReport,
     BatchRenameRule, ChangeFilter, ChangeLogEntry, ClassifierCorrectionResult,
     ClassifierImpactPreviewRequest, ClassifierRule, ClassifierRuleCreateRequest,
     ClassifierRuleDeleteRequest, ClassifierRuleEditorSnapshot, ClassifierRuleUpdate,
     ClassifyResult, CoreError, CoreResult, DiagnosticsSnapshot, ExternalEvent, FileEntry,
     FileFilter, ICloudConflictPair, ICloudConflictPreviewReport, ICloudConflictResolution,
-    ICloudConflictResolveReport, ImportOptions, MoveToCategoryPreview, RecoveryReport,
-    ReindexReport, RepairOptions, RepairReport, RepoConfig, RepoInitOptions, RepoPathValidation,
-    RuleImpactReport, ScanSession, SyncResult,
+    ICloudConflictResolveReport, ImportConflictBatchApplyReport, ImportConflictBatchApplyRequest,
+    ImportConflictBatchPreviewReport, ImportConflictBatchPreviewRequest, ImportOptions,
+    MoveToCategoryPreview, RecoveryReport, ReindexReport, RepairOptions, RepairReport, RepoConfig,
+    RepoInitOptions, RepoPathValidation, RuleImpactReport, ScanSession, SyncResult,
 };
 
 fn not_implemented<T>() -> CoreResult<T> {
@@ -1028,6 +1029,65 @@ pub fn resolve_icloud_conflict(
     resolution: ICloudConflictResolution,
 ) -> CoreResult<ICloudConflictResolveReport> {
     icloud_conflicts::resolve_icloud_conflict(repo_path, conflict_id, resolution)
+}
+
+/// Previews C2-17 import conflict batch decisions without mutating staging or files.
+///
+/// S2-21 uses this contract after a batch import session has accumulated hash
+/// duplicate or same-name different-content conflicts. The preview returns row
+/// status, selected strategy, Replace risk, Trash/undo availability, pending
+/// rows, and the `preview_token` required by [`apply_import_conflict_batch`].
+/// Default-safe strategies are `Skip` for duplicate hashes and `KeepBoth` for
+/// same-name different-content conflicts.
+///
+/// This contract is read-only. It must not write import session decisions,
+/// promote staged files, move files to Trash, replace existing files, write
+/// change log rows, create undo actions, trigger iCloud downloads, call AI or
+/// network providers, or touch `apps/**`.
+///
+/// # Errors
+///
+/// Returns `CoreError::FileNotFound { path }` for empty import sessions or
+/// conflict selections, `CoreError::PermissionDenied { path }` for blocked
+/// metadata or staging inspection, `CoreError::StagingRecoveryRequired { path }`
+/// when unresolved staging residue must be repaired first, `CoreError::Io {
+/// message }` for filesystem preview failures, and `CoreError::Db { message }`
+/// for import-session metadata reads.
+pub fn preview_import_conflict_batch(
+    repo_path: String,
+    request: ImportConflictBatchPreviewRequest,
+) -> CoreResult<ImportConflictBatchPreviewReport> {
+    import_conflict_batch::preview_import_conflict_batch(repo_path, request)
+}
+
+/// Applies C2-17 import conflict batch decisions after explicit confirmation.
+///
+/// `preview_token` must come from [`preview_import_conflict_batch`] for the same
+/// import session, conflict scope, strategies, Trash availability, and inspected
+/// staging state. Replace rows require S2-21's second-confirmation sheet before
+/// any write is allowed. Failed rows must keep staged files and unresolved
+/// conflict state so the user can retry or route them to per-item handling.
+///
+/// This contract does not implement iCloud conflict resolution, generic sync
+/// conflicts, classifier rule changes, batch delete/rename/category actions,
+/// or any page ability outside S2-21 / C2-07 consumption.
+///
+/// # Errors
+///
+/// Returns `CoreError::FileNotFound { path }` for empty import sessions or
+/// conflict selections, `CoreError::Conflict { path }` for missing/stale
+/// preview tokens or missing Replace confirmation, `CoreError::PermissionDenied
+/// { path }` for blocked staging, Trash, metadata, change-log, or undo writes,
+/// `CoreError::StagingRecoveryRequired { path }` when recovery must run before
+/// Apply, `CoreError::Io { message }` for filesystem or rollback failures, and
+/// `CoreError::Db { message }` for import-session, file, change-log, or undo
+/// writes.
+pub fn apply_import_conflict_batch(
+    repo_path: String,
+    request: ImportConflictBatchApplyRequest,
+    preview_token: String,
+) -> CoreResult<ImportConflictBatchApplyReport> {
+    import_conflict_batch::apply_import_conflict_batch(repo_path, request, preview_token)
 }
 
 /// Reads the markdown note associated with one active file entry.
