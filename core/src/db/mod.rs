@@ -16,6 +16,7 @@ use crate::{
 mod change_log;
 mod command_index;
 mod delete;
+mod icloud_conflicts;
 mod import;
 mod move_to_category;
 mod note;
@@ -36,6 +37,9 @@ pub(crate) use delete::{
     insert_batch_delete_undo_action, remove_batch_delete_index_entry_row, remove_index_entry_row,
     rollback_deleted_repo_owned_file, rollback_removed_index_entry_row,
     soft_delete_batch_repo_owned_file, soft_delete_repo_owned_file, BatchDeleteUndoItem,
+};
+pub(crate) use icloud_conflicts::{
+    list_icloud_conflict_statuses, record_icloud_conflict_resolution,
 };
 pub(crate) use import::{
     delete_file_row, find_active_file_by_hash, find_active_file_by_path, get_active_file_by_id,

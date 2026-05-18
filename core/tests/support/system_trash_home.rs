@@ -35,7 +35,9 @@ impl Drop for HomeOverride {
 }
 
 pub(crate) fn with_test_system_trash<R>(run: impl FnOnce(&Path) -> R) -> R {
-    let _guard = HOME_ENV_LOCK.lock().expect("lock HOME override");
+    let _guard = HOME_ENV_LOCK
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
     let home = tempfile::tempdir().expect("create temporary HOME");
     let trash_dir = home.path().join(".Trash");
     fs::create_dir(&trash_dir).expect("create temporary system Trash");

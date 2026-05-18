@@ -118,7 +118,7 @@ fn icloud_conflict_visual_contract_has_no_fake_success_before_implementation() {
             "/tmp/repo".to_owned(),
             "docs/report.pdf::conflicted-copy".to_owned()
         ),
-        Err(CoreError::Internal { .. })
+        Err(CoreError::Db { .. })
     ));
     assert!(matches!(
         resolve_icloud_conflict(
@@ -126,7 +126,7 @@ fn icloud_conflict_visual_contract_has_no_fake_success_before_implementation() {
             "docs/report.pdf::conflicted-copy".to_owned(),
             ICloudConflictResolution::KeepBoth
         ),
-        Err(CoreError::Internal { .. })
+        Err(CoreError::Db { .. })
     ));
 }
 

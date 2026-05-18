@@ -77,6 +77,12 @@ pub(crate) fn execute_undo_action_row(
         });
     }
 
+    if row.kind == "icloud_conflict_resolution" {
+        return Err(CoreError::conflict(
+            "iCloud conflict resolution undo requires manual review",
+        ));
+    }
+
     Err(CoreError::conflict("Unsupported undo action kind"))
 }
 
@@ -259,6 +265,7 @@ fn display_summary(kind: &str, summary: &UndoSummary) -> String {
             format!("Changed category for {count} file(s).")
         }
         TRASH_DELETE_KIND => trash_delete_summary(summary),
+        "icloud_conflict_resolution" => "Resolved 1 iCloud conflict.".to_owned(),
         _ => format!("Undo action: {kind}"),
     }
 }

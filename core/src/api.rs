@@ -993,10 +993,10 @@ pub fn list_icloud_conflicts(repo_path: String) -> CoreResult<Vec<ICloudConflict
 /// bound safely, `CoreError::Io { message }` for filesystem preview failures,
 /// and `CoreError::Db { message }` for conflict-state metadata reads.
 pub fn preview_conflict_versions(
-    _repo_path: String,
-    _conflict_id: String,
+    repo_path: String,
+    conflict_id: String,
 ) -> CoreResult<ICloudConflictPreviewReport> {
-    not_implemented()
+    icloud_conflicts::preview_conflict_versions(repo_path, conflict_id)
 }
 
 /// Resolves one C2-16 iCloud conflict after explicit user confirmation.
@@ -1023,11 +1023,11 @@ pub fn preview_conflict_versions(
 /// On any failure the conflict must remain unresolved and no version may be
 /// silently deleted.
 pub fn resolve_icloud_conflict(
-    _repo_path: String,
-    _conflict_id: String,
-    _resolution: ICloudConflictResolution,
+    repo_path: String,
+    conflict_id: String,
+    resolution: ICloudConflictResolution,
 ) -> CoreResult<ICloudConflictResolveReport> {
-    not_implemented()
+    icloud_conflicts::resolve_icloud_conflict(repo_path, conflict_id, resolution)
 }
 
 /// Reads the markdown note associated with one active file entry.
