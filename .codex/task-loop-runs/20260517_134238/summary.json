@@ -1449,6 +1449,66 @@
     "4-1/task-52": {
       "attempts": 1,
       "copy_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260517_134238/phase-4/4-1-task-52-copy-attempt-1.log",
+      "git": {
+        "attempts": 1,
+        "branch": "codex/areamatrix-task-loop-20260501_132850",
+        "changed_files": [
+          ".codex/task-loop-logs/20260517_134238/phase-4/4-1-task-52-copy-attempt-1.log",
+          ".codex/task-loop-logs/20260517_134238/phase-4/4-1-task-52-verify-attempt-1.log",
+          ".codex/task-loop-runs/20260517_134238/summary.json",
+          ".codex/task-loop-runs/index.json",
+          "core/src/command_index.rs",
+          "core/src/command_index/",
+          "core/src/db/command_index.rs",
+          "core/src/db/mod.rs",
+          "core/tests/command_index_implementation.rs",
+          "tasks/prompts/_shared/progress.json"
+        ],
+        "commit": "500ae777bff60d04ec62b86b088f418ffbe51eb9",
+        "copy_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260517_134238/phase-4/4-1-task-52-copy-attempt-1.log",
+        "diff_name_status": [
+          "M\t.codex/task-loop-runs/20260517_134238/summary.json",
+          "M\t.codex/task-loop-runs/index.json",
+          "M\tcore/src/command_index.rs",
+          "M\tcore/src/db/mod.rs",
+          "M\ttasks/prompts/_shared/progress.json"
+        ],
+        "label": "4-1/task-52",
+        "mode": "commit",
+        "phase": "phase-4",
+        "push_status": "not_requested",
+        "remote": "",
+        "run_id": "20260517_134238",
+        "staged_name_status": [
+          "A\t.codex/task-loop-logs/20260517_134238/phase-4/4-1-task-52-copy-attempt-1.log",
+          "A\t.codex/task-loop-logs/20260517_134238/phase-4/4-1-task-52-verify-attempt-1.log",
+          "M\t.codex/task-loop-runs/20260517_134238/summary.json",
+          "M\t.codex/task-loop-runs/index.json",
+          "M\tcore/src/command_index.rs",
+          "A\tcore/src/command_index/registry.rs",
+          "A\tcore/src/db/command_index.rs",
+          "M\tcore/src/db/mod.rs",
+          "A\tcore/tests/command_index_implementation.rs",
+          "M\ttasks/prompts/_shared/progress.json"
+        ],
+        "status": "committed",
+        "status_short": [
+          " M .codex/task-loop-runs/20260517_134238/summary.json",
+          " M .codex/task-loop-runs/index.json",
+          " M core/src/command_index.rs",
+          " M core/src/db/mod.rs",
+          " M tasks/prompts/_shared/progress.json",
+          "?? .codex/task-loop-logs/20260517_134238/phase-4/4-1-task-52-copy-attempt-1.log",
+          "?? .codex/task-loop-logs/20260517_134238/phase-4/4-1-task-52-verify-attempt-1.log",
+          "?? core/src/command_index/",
+          "?? core/src/db/command_index.rs",
+          "?? core/tests/command_index_implementation.rs"
+        ],
+        "summary_file": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-runs/20260517_134238/summary.json",
+        "task_name": "4-1-task-52",
+        "updated_at": "2026-05-18T05:34:10.083522+00:00",
+        "verify_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260517_134238/phase-4/4-1-task-52-verify-attempt-1.log"
+      },
       "note": "自动执行验收通过",
       "phase": "phase-4",
       "risk": "High",
@@ -1463,7 +1523,7 @@
     "retries": 11,
     "task_count": 637
   },
-  "updated_at": "2026-05-18T05:34:09.901167+00:00",
+  "updated_at": "2026-05-18T05:34:10.087845+00:00",
   "verify_root": "/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/verify-ready",
   "version": 1
 }
