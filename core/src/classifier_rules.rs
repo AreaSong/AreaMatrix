@@ -377,11 +377,13 @@ fn write_classifier_config_atomically(path: &Path, config: &ClassifierConfig) ->
         .ok_or_else(|| CoreError::config("classifier config path is invalid"))?;
     let temp_path = temporary_classifier_path(path)?;
     let result = write_temp_file(&temp_path, &content).and_then(|()| rename_temp(&temp_path, path));
-    if result.is_err() {
-        let _cleanup_result = fs::remove_file(&temp_path);
+    match result {
+        Ok(()) => sync_directory(parent),
+        Err(error) => {
+            cleanup_temp_file(&temp_path)?;
+            Err(error)
+        }
     }
-    let _sync_result = sync_directory(parent);
-    result
 }
 
 fn temporary_classifier_path(path: &Path) -> CoreResult<PathBuf> {
@@ -406,6 +408,14 @@ fn write_temp_file(path: &Path, content: &str) -> CoreResult<()> {
 
 fn rename_temp(temp_path: &Path, final_path: &Path) -> CoreResult<()> {
     fs::rename(temp_path, final_path).map_err(map_write_io_error)
+}
+
+fn cleanup_temp_file(path: &Path) -> CoreResult<()> {
+    match fs::remove_file(path) {
+        Ok(()) => Ok(()),
+        Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(()),
+        Err(error) => Err(map_write_io_error(error)),
+    }
 }
 
 fn sync_directory(path: &Path) -> CoreResult<()> {
