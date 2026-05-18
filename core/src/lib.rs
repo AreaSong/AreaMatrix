@@ -11,6 +11,7 @@ mod batch_delete;
 mod batch_rename;
 mod classifier_correction;
 mod classifier_impact;
+mod classifier_rule_editor;
 mod classifier_rules;
 pub mod classify;
 mod command_index;
@@ -57,6 +58,11 @@ pub use classifier_impact::{
     preview_classifier_rule_impact, ClassifierImpactPreviewMode, ClassifierImpactPreviewRequest,
     RuleImpactConflict, RuleImpactConflictKind, RuleImpactMatchReason, RuleImpactReport,
     RuleImpactSample, RuleImpactStatus,
+};
+pub use classifier_rule_editor::{
+    delete_classifier_rule, list_classifier_rules, update_classifier_rule,
+    ClassifierRuleDeleteRequest, ClassifierRuleEditorSnapshot, ClassifierRuleRecord,
+    ClassifierRuleUpdate,
 };
 pub use classifier_rules::{save_classifier_rule, ClassifierRule};
 pub use command_index::{

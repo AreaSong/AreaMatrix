@@ -1,0 +1,76 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-1/task-71`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-71-c2-15-contract-api.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/classifier_rule_editor.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/lib.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/tests/classifier_rule_editor_contract_api.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md`
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：读取 C2-15 能力规格、Stage 2 control map、Core API 和错误码
+- 结果：通过
+- 证据：C2-15 规格定义 `list_classifier_rules`、`update_classifier_rule`、`delete_classifier_rule`、输入/输出、`.areamatrix/classifier.yaml` 原子更新和 `Config / PermissionDenied / Io`；control map 将 S2-19 绑定到 C2-15 rule CRUD；Core API 与 UDL 均有对应函数和字典声明。
+- 涉及文件：`docs/core/capability-specs/stage-2-experience/C2-15-classifier-rule-editor.md:1`，`docs/architecture/stage-2-control-map.md:27`，`docs/api/core-api.md:154`，`core/area_matrix.udl:131`
+
+- 项目：确认 API 名称、输入、输出、错误码、权限/隐私边界一致
+- 结果：通过
+- 证据：Rust API 暴露三组函数，输入类型为 `ClassifierRuleUpdate` / `ClassifierRuleDeleteRequest`，输出为 `ClassifierRuleEditorSnapshot`；文档明确只读/原子写 classifier 配置，不移动、删除、重命名历史文件，不调用 AI/network providers。
+- 涉及文件：`core/src/classifier_rule_editor.rs:20`，`core/src/api.rs:763`，`docs/api/core-api.md:2776`
+
+- 项目：只补合同、类型、桥接声明或文档缺口，不实现相邻能力
+- 结果：通过
+- 证据：新增模块当前只做合同类型、入口函数和输入校验，成功业务路径返回 `classifier rule editor implementation pending`，未实现 C2-13、C2-14、历史文件 apply、AI、插件规则或 app 层能力；`git status` 未发现 `apps/**` 改动。
+- 涉及文件：`core/src/classifier_rule_editor.rs:105`，`core/src/classifier_rule_editor.rs:126`，`core/src/classifier_rule_editor.rs:151`
+
+- 项目：记录当前页面消费方是否能从合同中得到所需状态
+- 结果：通过
+- 证据：Core API 文档逐项记录 S2-19 可从合同得到列表、字段初值、默认分类保护、dirty/revert 基线、保存/删除后快照、warning 和错误状态；同时明确不能从本合同得到历史影响量、Undo、Trash、AI 或插件规则状态。
+- 涉及文件：`docs/api/core-api.md:2811`，`docs/api/core-api.md:2867`，`docs/api/core-api.md:2912`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，新增合同模块职责集中，类型、入口函数和校验函数分离，未把相邻业务能力塞入当前 task。
+- 注释 / rustdoc / 文档同步：通过，公开 Rust 类型和 API 均有 rustdoc，Core API 文档、UDL、Rust re-export 和合同测试同步。
+- 错误处理与边界处理：通过，合同入口返回 `CoreResult`，输入非法路径、slug、extension、keyword、priority 等走 `CoreError::Config`，无 `unwrap()` / `panic!()` 生产路径。
+- 测试与验证覆盖：通过，`core/tests/classifier_rule_editor_contract_api.rs` 覆盖签名、输入/输出类型、错误码、Core API / UDL / control map 对齐和页面消费边界。
+- 占位、硬编码、mock-only、一次性实现检查：通过，本任务是 contract-api，不要求业务实现；当前 pending 错误没有伪造成功路径，也没有 mock-only 成功闭环。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 跑了哪些验证：
+  - `./dev check task 4-1/task-71`
+- 哪些通过：
+  - `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`：通过，`tasks: 637`，`manifests: 637`
+  - `git diff --check`：通过
+  - `cargo test --test classifier_rule_editor_contract_api -- --nocapture`：通过，4 个测试全部通过
+- 哪些失败：
+  - 无
+- 哪些缺失：
+  - 无。按 validation-driver，本普通 atomic Core task 的 manifest 验证上限是 `./dev check task 4-1/task-71`，不需要扩大到 `./dev check all` 或 `cargo test --workspace`。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。当前交付的是 C2-15 contract-api 合同层，不是业务 implementation 闭环；后续 implementation task 仍需实现真实读写 classifier 配置、备份/恢复和持久化行为。
+
+VERIFY_RESULT: PASS

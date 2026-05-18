@@ -4,15 +4,16 @@ use std::path::PathBuf;
 
 use crate::{
     batch_category, batch_delete, batch_rename as batch_rename_mod, classifier_correction,
-    classifier_impact, classifier_rules, classify, db, icloud_conflicts, note, recovery, repair,
-    repo_init, repo_path, repo_scan, storage, sync, tree, BatchCategoryChangeReport,
-    BatchCategoryPreviewReport, BatchDeleteMode, BatchDeletePreviewReport, BatchDeleteReport,
-    BatchRenamePreviewReport, BatchRenameReport, BatchRenameRule, ChangeFilter, ChangeLogEntry,
-    ClassifierCorrectionResult, ClassifierImpactPreviewRequest, ClassifierRule, ClassifyResult,
-    CoreError, CoreResult, DiagnosticsSnapshot, ExternalEvent, FileEntry, FileFilter,
-    ICloudConflictPair, ImportOptions, MoveToCategoryPreview, RecoveryReport, ReindexReport,
-    RepairOptions, RepairReport, RepoConfig, RepoInitOptions, RepoPathValidation, RuleImpactReport,
-    ScanSession, SyncResult,
+    classifier_impact, classifier_rule_editor, classifier_rules, classify, db, icloud_conflicts,
+    note, recovery, repair, repo_init, repo_path, repo_scan, storage, sync, tree,
+    BatchCategoryChangeReport, BatchCategoryPreviewReport, BatchDeleteMode,
+    BatchDeletePreviewReport, BatchDeleteReport, BatchRenamePreviewReport, BatchRenameReport,
+    BatchRenameRule, ChangeFilter, ChangeLogEntry, ClassifierCorrectionResult,
+    ClassifierImpactPreviewRequest, ClassifierRule, ClassifierRuleDeleteRequest,
+    ClassifierRuleEditorSnapshot, ClassifierRuleUpdate, ClassifyResult, CoreError, CoreResult,
+    DiagnosticsSnapshot, ExternalEvent, FileEntry, FileFilter, ICloudConflictPair, ImportOptions,
+    MoveToCategoryPreview, RecoveryReport, ReindexReport, RepairOptions, RepairReport, RepoConfig,
+    RepoInitOptions, RepoPathValidation, RuleImpactReport, ScanSession, SyncResult,
 };
 
 fn not_implemented<T>() -> CoreResult<T> {
@@ -757,6 +758,71 @@ pub fn preview_classifier_rule_impact(
     request: ClassifierImpactPreviewRequest,
 ) -> CoreResult<RuleImpactReport> {
     classifier_impact::preview_classifier_rule_impact(repo_path, request)
+}
+
+/// Lists C2-15 classifier rule editor state for S2-19.
+///
+/// S2-19 uses this contract to load current classifier categories, matcher
+/// values, priority, naming template, and default-category state. The returned
+/// snapshot is sufficient for loading, empty, dirty, validation, save/revert,
+/// and delete-disabled UI states without reading YAML in the app layer.
+///
+/// This contract does not preview rule impact, save rules, delete categories,
+/// reclassify or move existing files, open YAML, call AI/network providers, or
+/// touch `apps/**`.
+///
+/// # Errors
+///
+/// Returns `CoreError::Config { reason }` for invalid repository paths or
+/// malformed classifier configuration, `CoreError::PermissionDenied { path }`
+/// for blocked classifier metadata reads, and `CoreError::Io { message }` for
+/// classifier config read failures.
+pub fn list_classifier_rules(repo_path: String) -> CoreResult<ClassifierRuleEditorSnapshot> {
+    classifier_rule_editor::list_classifier_rules(repo_path)
+}
+
+/// Updates one C2-15 classifier editor row for future classification.
+///
+/// The update request carries one stable `rule_id` plus replacement slug,
+/// display metadata, extensions, keywords, priority, and naming template. A
+/// successful implementation may atomically update `.areamatrix/classifier.yaml`
+/// or equivalent classifier metadata only. It must not move, delete, rename,
+/// reindex, retag, write notes, update generated overviews, write undo state,
+/// or apply classifier changes to historical files.
+///
+/// # Errors
+///
+/// Returns `CoreError::Config { reason }` for invalid ids, row content,
+/// duplicate slugs or matcher values, missing impact preview confirmation, or
+/// malformed classifier configuration. Returns `CoreError::PermissionDenied {
+/// path }` for blocked classifier metadata writes and `CoreError::Io {
+/// message }` for read, backup, atomic write, or restore failures.
+pub fn update_classifier_rule(
+    repo_path: String,
+    request: ClassifierRuleUpdate,
+) -> CoreResult<ClassifierRuleEditorSnapshot> {
+    classifier_rule_editor::update_classifier_rule(repo_path, request)
+}
+
+/// Deletes one C2-15 classifier editor row after explicit impact confirmation.
+///
+/// Delete removes only classifier configuration state. It must reject deletion
+/// of the default category, the final category, and unpreviewed category/value
+/// removals. Existing files are not moved, deleted, renamed, trashed, or
+/// reclassified by this contract.
+///
+/// # Errors
+///
+/// Returns `CoreError::Config { reason }` for invalid ids, protected category
+/// deletion, missing replacement state, missing impact preview confirmation, or
+/// malformed classifier configuration. Returns `CoreError::PermissionDenied {
+/// path }` for blocked classifier metadata writes and `CoreError::Io {
+/// message }` for read, backup, atomic write, or restore failures.
+pub fn delete_classifier_rule(
+    repo_path: String,
+    request: ClassifierRuleDeleteRequest,
+) -> CoreResult<ClassifierRuleEditorSnapshot> {
+    classifier_rule_editor::delete_classifier_rule(repo_path, request)
 }
 
 /// Restores a deleted file entry.

@@ -128,6 +128,21 @@ namespace area_matrix {
     );
 
     [Throws=CoreError]
+    ClassifierRuleEditorSnapshot list_classifier_rules(string repo_path);
+
+    [Throws=CoreError]
+    ClassifierRuleEditorSnapshot update_classifier_rule(
+        string repo_path,
+        ClassifierRuleUpdate request
+    );
+
+    [Throws=CoreError]
+    ClassifierRuleEditorSnapshot delete_classifier_rule(
+        string repo_path,
+        ClassifierRuleDeleteRequest request
+    );
+
+    [Throws=CoreError]
     FileEntry restore_file(string repo_path, i64 file_id);
 
     [Throws=CoreError]
@@ -667,6 +682,43 @@ dictionary ClassifierRule {
     sequence<string> keywords;
     sequence<string> extensions;
     i64 priority;
+    boolean preview_confirmed;
+};
+
+dictionary ClassifierRuleRecord {
+    string rule_id;
+    string slug;
+    string display_name;
+    string description;
+    sequence<string> extensions;
+    sequence<string> keywords;
+    i64 priority;
+    string? naming_template;
+    boolean is_default;
+};
+
+dictionary ClassifierRuleEditorSnapshot {
+    sequence<ClassifierRuleRecord> rules;
+    string default_rule_id;
+    string? updated_rule_id;
+    string? warning;
+};
+
+dictionary ClassifierRuleUpdate {
+    string rule_id;
+    string slug;
+    string display_name;
+    string description;
+    sequence<string> extensions;
+    sequence<string> keywords;
+    i64 priority;
+    string? naming_template;
+    boolean preview_confirmed;
+};
+
+dictionary ClassifierRuleDeleteRequest {
+    string rule_id;
+    string? replacement_category;
     boolean preview_confirmed;
 };
 
