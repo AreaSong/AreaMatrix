@@ -1,0 +1,85 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`4-1/task-65`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-65-c2-13-integration-verify.md`
+- 覆盖：C2-13 capability spec、Stage 2 control map、Core API、UDL、`core/src/**`、`core/tests/**`
+- 只读验收：未修改文件
+
+三、完成度摘要
+
+- 已覆盖项数：7
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：3
+- 阻塞项数：2
+
+四、逐项验收结果
+
+- 项目：交叉检查 capability spec、Core API、UDL、Rust 实现和测试  
+  结果：不通过  
+  证据：`save_classifier_rule(repoPath, rule)` API/UDL 只接收 `repo_path + ClassifierRule`，但文档要求“过宽规则尚未完成必要预览确认”才报错；当前实现没有任何 preview confirmation 输入，且无条件拒绝 extension-only 规则。  
+  涉及文件：`docs/api/core-api.md:2523`、`core/area_matrix.udl:122`、`core/src/classifier_rules.rs:256`
+
+- 项目：确认消费页面需要的状态、错误和副作用均已覆盖  
+  结果：不通过  
+  证据：S2-17 要求只选扩展名或过宽规则必须先进入 S2-18，确认后可 `Save rule only`；S2-18 也要求从 S2-17 点击 `Save rule only` 写入规则配置且不更新现有文件。当前 C2-13 无法表达“已预览确认”，因此不能作为该 UI 回流的真实 Core 依赖。  
+  涉及文件：`docs/ux/page-specs/stage-2-experience/S2-17-classifier-save-rule.md:80`、`docs/ux/page-specs/stage-2-experience/S2-17-classifier-save-rule.md:86`、`docs/ux/page-specs/stage-2-experience/S2-18-classifier-impact-preview.md:74`、`docs/ux/page-specs/stage-2-experience/S2-18-classifier-impact-preview.md:120`
+
+- 项目：确认没有实现 control map 之外的能力  
+  结果：通过  
+  证据：control map 中 S2-17 仅绑定 C2-13；实现范围集中在 classifier rule save，未看到实现 C2-14 impact preview、C2-15 rule CRUD、AI 自动生成或历史文件批量应用。  
+  涉及文件：`docs/architecture/stage-2-control-map.md:25`、`core/src/classifier_rules.rs:74`
+
+- 项目：不得修改文件，只记录验收证据和阻塞项  
+  结果：通过  
+  证据：本轮只读读取与运行验证命令，未执行 formatter/codegen/修复命令。
+
+- 项目：Expected New Paths 落地  
+  结果：通过  
+  证据：`core/src/classifier_rules.rs`、`core/area_matrix.udl`、`core/tests/classifier_rule_save_contract_api.rs`、`core/tests/classifier_rule_save_implementation.rs`、`core/tests/classifier_rule_save_failure_recovery.rs`、`core/tests/classifier_rule_save_validation.rs` 均存在。
+
+- 项目：Forbidden Touches  
+  结果：通过  
+  证据：`git status --short -- core core/area_matrix.udl core/tests apps ...` 输出未显示 `apps/**` 修改；当前脏改动仅为 task-loop evidence：`.codex/task-loop-runs/.../summary.json`、`tasks/prompts/_shared/progress.json`、copy 日志。
+
+- 项目：任务验证命令  
+  结果：不通过  
+  证据：`./dev check task 4-1/task-65` exit 1；`doctor: OK`，`git diff --check` 通过，但 `cargo fmt --all -- --check` 失败。  
+  涉及文件：`core/tests/classifier_rule_save_validation.rs:144`
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过，C2-13 缺少 preview-confirmed 保存路径，无法满足 S2-17/S2-18 的真实消费闭环。
+- 注释 / rustdoc / 文档同步：不通过，文档同步暴露出 API/UDL 与 UX 回流语义缺口。
+- 错误处理与边界处理：不通过，`Config` 能表达“未预览需确认”，但无法表达“已预览可保存”。
+- 测试与验证覆盖：不通过，必需验证命令失败，且测试当前锁定了 extension-only 永远拒绝的行为。
+- 占位、硬编码、mock-only、一次性实现检查：通过，未发现 mock-only 或硬编码通过态；问题是合同语义不完整和验证失败。
+
+六、阻塞项
+
+- P0：C2-13 无法支持 S2-17/S2-18 预览确认后的 `Save rule only`  
+  说明：API/UDL 只有 `repo_path + ClassifierRule`，Rust 实现对 keyword 为空且 extensions 非空的规则直接返回 `Config`，没有 preview token、confirmation flag 或等价状态。  
+  绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/core/src/classifier_rules.rs:256`  
+  为什么导致不通过：S2-17 明确要求只选扩展名规则预览确认后可以保存；当前 Core 不能作为后续 page-feature task 的真实依赖。
+
+- P1：必需验证命令失败  
+  说明：`./dev check task 4-1/task-65` 在 `cargo fmt --all -- --check` 阶段失败。  
+  绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/classifier_rule_save_validation.rs:144`  
+  为什么导致不通过：任务 manifest 要求该命令通过；验收规则明确验证失败不能判定完成。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-65`
+- 通过：prompt doctor、git diff check
+- 失败：`cargo fmt --all -- --check`
+- 缺失：clippy 未执行，因为 task check 在 fmt 失败后停止；未运行额外宽门禁，因为 manifest 只要求 `./dev check task 4-1/task-65`
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。C2-13 当前不能作为后续 S2-17 page-feature task 的真实 Core 依赖，且必需验证命令失败。
+
+VERIFY_RESULT: FAIL

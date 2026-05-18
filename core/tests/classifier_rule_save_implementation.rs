@@ -20,6 +20,8 @@ struct ClassifierConfig {
 struct CategoryConfig {
     slug: String,
     #[serde(default)]
+    extensions: Vec<String>,
+    #[serde(default)]
     keywords: Vec<String>,
     #[serde(default)]
     priority: i64,
@@ -73,6 +75,7 @@ fn keyword_rule() -> ClassifierRule {
         keywords: vec!["clienta".to_owned(), "合同x".to_owned()],
         extensions: Vec::new(),
         priority: 25,
+        preview_confirmed: false,
     }
 }
 
@@ -162,6 +165,7 @@ fn classifier_rule_save_implementation_rejects_duplicate_rule_without_writing() 
         keywords: vec!["invoice".to_owned()],
         extensions: Vec::new(),
         priority: 10,
+        preview_confirmed: false,
     };
 
     let result = save_classifier_rule(path_string(repo.path()), duplicate);
@@ -179,12 +183,40 @@ fn classifier_rule_save_implementation_rejects_extension_only_rule_until_preview
         keywords: Vec::new(),
         extensions: vec!["pdf".to_owned()],
         priority: 0,
+        preview_confirmed: false,
     };
 
     let result = save_classifier_rule(path_string(repo.path()), broad);
 
     assert!(matches!(result, Err(CoreError::Config { .. })));
     assert_eq!(snapshot(repo.path()), before);
+}
+
+#[test]
+fn classifier_rule_save_implementation_allows_confirmed_extension_only_rule() {
+    let repo = initialized_repo();
+    fs::write(repo.path().join("README.md"), b"user readme").expect("write user file");
+    let before = snapshot(repo.path());
+    let confirmed = ClassifierRule {
+        target_category: "finance".to_owned(),
+        keywords: Vec::new(),
+        extensions: vec!["csv".to_owned()],
+        priority: 15,
+        preview_confirmed: true,
+    };
+
+    let saved =
+        save_classifier_rule(path_string(repo.path()), confirmed.clone()).expect("save rule");
+
+    assert_eq!(saved, confirmed);
+    let config = read_classifier(repo.path());
+    let finance = category(&config, "finance");
+    assert!(finance
+        .extensions
+        .iter()
+        .any(|extension| extension == "csv"));
+    assert_eq!(finance.priority, 15);
+    assert_eq!(user_visible_files(repo.path()), before.user_visible_files);
 }
 
 #[test]

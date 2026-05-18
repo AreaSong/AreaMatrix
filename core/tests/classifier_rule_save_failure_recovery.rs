@@ -45,6 +45,7 @@ fn keyword_rule(keyword: &str) -> ClassifierRule {
         keywords: vec![keyword.to_owned()],
         extensions: Vec::new(),
         priority: 20,
+        preview_confirmed: false,
     }
 }
 
@@ -174,24 +175,28 @@ fn classifier_rule_save_failure_recovery_empty_and_invalid_inputs_are_config_wit
             keywords: Vec::new(),
             extensions: Vec::new(),
             priority: 0,
+            preview_confirmed: false,
         },
         ClassifierRule {
             target_category: "Finance".to_owned(),
             keywords: vec!["newkw".to_owned()],
             extensions: Vec::new(),
             priority: 0,
+            preview_confirmed: false,
         },
         ClassifierRule {
             target_category: "finance".to_owned(),
             keywords: vec!["newkw".to_owned()],
             extensions: vec![".pdf".to_owned()],
             priority: 0,
+            preview_confirmed: false,
         },
         ClassifierRule {
             target_category: "finance".to_owned(),
             keywords: vec!["newkw".to_owned()],
             extensions: Vec::new(),
             priority: 1001,
+            preview_confirmed: false,
         },
     ] {
         let error = save_classifier_rule(path_string(repo.path()), rule)
@@ -214,18 +219,21 @@ fn classifier_rule_save_failure_recovery_unknown_duplicate_broad_and_schema_fail
             keywords: vec!["newkw".to_owned()],
             extensions: Vec::new(),
             priority: 0,
+            preview_confirmed: false,
         },
         ClassifierRule {
             target_category: "finance".to_owned(),
             keywords: vec!["invoice".to_owned()],
             extensions: Vec::new(),
             priority: 0,
+            preview_confirmed: false,
         },
         ClassifierRule {
             target_category: "finance".to_owned(),
             keywords: Vec::new(),
             extensions: vec!["pdf".to_owned()],
             priority: 0,
+            preview_confirmed: false,
         },
     ];
     for rule in cases {

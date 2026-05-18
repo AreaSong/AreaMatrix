@@ -55,10 +55,10 @@ struct CategoryConfig {
 /// Classifier rule payload shared by S2-17, S2-18, and C2-13.
 ///
 /// The shape maps directly to the supported `classifier.yaml` fields for one
-/// target category: `keywords`, `extensions`, and `priority`. It intentionally
-/// does not model path, source-folder, enabled flags, compound AND rules, or
-/// history-application state because those are outside the Stage 2 save-rule
-/// contract.
+/// target category: `keywords`, `extensions`, `priority`, and preview
+/// confirmation state. It intentionally does not model path, source-folder,
+/// enabled flags, compound AND rules, or history-application state because
+/// those are outside the Stage 2 save-rule contract.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct ClassifierRule {
     /// Existing classifier category slug that receives the selected rule basis.
@@ -69,6 +69,8 @@ pub struct ClassifierRule {
     pub extensions: Vec<String>,
     /// Classifier priority for the target category.
     pub priority: i64,
+    /// True after S2-17/S2-18 has confirmed the required impact preview.
+    pub preview_confirmed: bool,
 }
 
 /// Saves one C2-13 classifier rule request.
@@ -82,7 +84,8 @@ pub struct ClassifierRule {
 ///
 /// Returns `CoreError::Config { reason }` for invalid repository paths, target
 /// categories, rule basis, priority values, malformed classifier config,
-/// duplicate rules, or over-broad extension-only rules that still need preview.
+/// duplicate rules, or over-broad extension-only rules that still need preview
+/// confirmation.
 /// Returns `CoreError::PermissionDenied { path }` for blocked classifier config
 /// writes and `CoreError::Io { message }` for read or atomic write failures.
 pub fn save_classifier_rule(repo_path: String, rule: ClassifierRule) -> CoreResult<ClassifierRule> {
@@ -254,7 +257,10 @@ fn reject_duplicate_rule(category: &CategoryConfig, rule: &ClassifierRule) -> Co
 }
 
 fn reject_unpreviewed_broad_rule(rule: &ClassifierRule) -> CoreResult<()> {
-    if rule.keywords.is_empty() && rule.extensions.len() >= MIN_BROAD_EXTENSION_COUNT {
+    if rule.keywords.is_empty()
+        && rule.extensions.len() >= MIN_BROAD_EXTENSION_COUNT
+        && !rule.preview_confirmed
+    {
         return Err(CoreError::config(
             "classifier rule impact preview is required",
         ));

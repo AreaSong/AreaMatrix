@@ -715,8 +715,9 @@ pub fn correct_file_category(
 /// S2-17 uses this contract after the user chooses keyword and extension
 /// basis values from a classifier-correction draft. The input rule maps only to
 /// supported classifier configuration fields: target category, independent
-/// keyword matches, independent extension matches, and priority. Extensions
-/// must be lowercase values without a leading dot.
+/// keyword matches, independent extension matches, priority, and whether the
+/// required impact preview has already been confirmed. Extensions must be
+/// lowercase values without a leading dot.
 ///
 /// This contract does not create categories, model compound AND rules, preview
 /// impact, apply the rule to historical files, reclassify or move files, call
@@ -728,7 +729,7 @@ pub fn correct_file_category(
 /// Returns `CoreError::Config { reason }` for invalid repository paths, target
 /// categories, empty rule basis, duplicate/invalid keywords, dotted or invalid
 /// extensions, out-of-range priority, malformed classifier configuration, or a
-/// duplicate/over-broad rule that the UI must resolve. Returns
+/// duplicate/over-broad rule that still lacks preview confirmation. Returns
 /// `CoreError::PermissionDenied { path }` for blocked metadata writes and
 /// `CoreError::Io { message }` for classifier configuration read or atomic
 /// write failures.

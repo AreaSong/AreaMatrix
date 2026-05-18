@@ -661,6 +661,7 @@ dictionary ClassifierRule {
     sequence<string> keywords;
     sequence<string> extensions;
     i64 priority;
+    boolean preview_confirmed;
 };
 
 dictionary UndoActionRecord {

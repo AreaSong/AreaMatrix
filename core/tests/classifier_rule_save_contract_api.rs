@@ -29,6 +29,7 @@ fn valid_rule() -> ClassifierRule {
         keywords: vec!["合同".to_owned(), "invoice".to_owned()],
         extensions: vec!["pdf".to_owned()],
         priority: 0,
+        preview_confirmed: false,
     }
 }
 
@@ -42,6 +43,7 @@ fn classifier_rule_save_contract_exposes_signature_inputs_outputs_and_errors() {
     assert_eq!(rule.keywords, vec!["合同".to_owned(), "invoice".to_owned()]);
     assert_eq!(rule.extensions, vec!["pdf".to_owned()]);
     assert_eq!(rule.priority, 0);
+    assert!(!rule.preview_confirmed);
 
     let documented_errors = [
         CoreError::config("invalid classifier rule"),
@@ -106,7 +108,7 @@ fn classifier_rule_save_contract_docs_api_udl_and_control_map_stay_aligned() {
         "# C2-13 classifier-rule-save",
         "- S2-17 classifier-save-rule",
         "计划新增：`save_classifier_rule(repo_path, rule) -> ClassifierRule`",
-        "关键词、扩展名、目标分类、优先级。",
+        "关键词、扩展名、目标分类、优先级、是否已完成必要影响预览确认。",
         "保存后的规则。",
         "可写入 classifier metadata 或 `.areamatrix/classifier.yaml` 对应结构。",
         "原子更新 classifier 配置。",
@@ -114,6 +116,7 @@ fn classifier_rule_save_contract_docs_api_udl_and_control_map_stay_aligned() {
         "- `PermissionDenied`",
         "- `Io`",
         "过宽规则必须 warning 或阻止。",
+        "预览确认后可只保存规则配置。",
         "重复规则有结构化反馈。",
         "保存前不应用到历史文件。",
         "AI 自动生成规则属于 Stage 3+。",
@@ -137,6 +140,7 @@ fn classifier_rule_save_contract_docs_api_udl_and_control_map_stay_aligned() {
         "sequence<string> keywords;",
         "sequence<string> extensions;",
         "i64 priority;",
+        "boolean preview_confirmed;",
     ] {
         assert_contains(CORE_API, fragment);
         assert_contains(UDL, fragment);
@@ -151,9 +155,11 @@ fn classifier_rule_save_contract_docs_api_udl_and_control_map_stay_aligned() {
         "`keywords`",
         "`extensions`",
         "`priority`",
+        "`preview_confirmed`",
         "不是 keyword AND extension 复合规则",
         "只允许原子更新 classifier 配置",
         "保存规则只影响未来分类",
+        "`Save rule only` 回流",
         "不实现 C2-14 impact preview、C2-15 rule CRUD",
         "本合同不新增 control map 之外的页面能力。",
     ] {
@@ -172,6 +178,7 @@ fn classifier_rule_save_contract_documents_consumer_state_and_scope_boundaries()
         "扩展名 UI 可显示 `.pdf`，写入 `classifier.yaml` 时必须保存为无点小写 `pdf`。",
         "Priority 字段默认 `0`，范围 `-1000..1000`，越大越优先。",
         "多个关键词和扩展名是追加到目标分类的独立匹配值，不是 `keyword AND extension` 复合规则。",
+        "用户必须 Preview impact 并确认 `Save rule only` 或 `Save and apply`。",
         "保存规则只影响未来分类；是否重分类现有文件由影响预览页决定。",
         "本页不得引入 `path`、`source_folder` 或独立 rule `enabled` 字段",
         "Save rule 不重分类现有文件。",
@@ -183,6 +190,7 @@ fn classifier_rule_save_contract_documents_consumer_state_and_scope_boundaries()
         "从 S2-16 / S2-17 进入时：`Save rule only`",
         "| S2-17 classifier-save-rule | `Save rule only` | 保存规则配置，不重分类现有文件，返回来源上下文。 |",
         "从 S2-16 / S2-17 点击 `Save rule only` 写入规则配置并返回；不更新现有文件分类。",
+        "`Save rule only` 在冲突存在时仍可用，因为它只影响未来导入。",
     ] {
         assert_contains(CLASSIFIER_IMPACT_PAGE, fragment);
     }
@@ -202,7 +210,10 @@ fn classifier_rule_save_contract_documents_consumer_state_and_scope_boundaries()
         "C2-13 classifier rule save types and persistence",
         "ClassifierRule",
         "save_classifier_rule",
-        "does not model path, source-folder, enabled flags, compound AND rules",
+        "does not model path, source-folder",
+        "enabled flags, compound AND rules",
+        "pub preview_confirmed: bool",
+        "impact preview is required",
         "Saves one C2-13 classifier rule request",
         "appends independent keyword and extension basis values",
         "does not",
@@ -216,7 +227,9 @@ fn classifier_rule_save_contract_documents_consumer_state_and_scope_boundaries()
 
     for fragment in [
         "S2-17 uses this contract",
-        "must be lowercase values without a leading dot",
+        "Extensions must be",
+        "lowercase values without a leading dot",
+        "preview has already been confirmed",
         "does not create categories",
         "model compound AND rules",
         "apply the rule to historical files",

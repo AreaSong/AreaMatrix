@@ -28,6 +28,8 @@ struct ClassifierConfig {
 struct CategoryConfig {
     slug: String,
     #[serde(default)]
+    extensions: Vec<String>,
+    #[serde(default)]
     keywords: Vec<String>,
     #[serde(default)]
     priority: i64,
@@ -77,6 +79,17 @@ fn save_rule(keyword: &str) -> ClassifierRule {
         keywords: vec![keyword.to_owned()],
         extensions: Vec::new(),
         priority: 30,
+        preview_confirmed: false,
+    }
+}
+
+fn confirmed_extension_rule(extension: &str) -> ClassifierRule {
+    ClassifierRule {
+        target_category: "finance".to_owned(),
+        keywords: Vec::new(),
+        extensions: vec![extension.to_owned()],
+        priority: 12,
+        preview_confirmed: true,
     }
 }
 
@@ -144,7 +157,9 @@ fn file_rows(repo: &Path) -> Vec<(i64, String, String, String)> {
         .prepare("SELECT id, path, category, status FROM files ORDER BY id")
         .expect("prepare file rows query");
     statement
-        .query_map([], |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?)))
+        .query_map([], |row| {
+            Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?))
+        })
         .expect("query file rows")
         .map(|row| row.expect("read file row"))
         .collect()
@@ -256,6 +271,40 @@ fn classifier_rule_save_validation_persists_rule_for_future_classification_only(
 }
 
 #[test]
+fn classifier_rule_save_validation_supports_confirmed_save_rule_only_roundtrip() {
+    let repo = initialized_repo();
+    insert_active_file(repo.path(), "docs/archive.csv", "docs");
+    let before = snapshot(repo.path());
+
+    let saved = save_classifier_rule(path_string(repo.path()), confirmed_extension_rule("csv"))
+        .expect("save confirmed extension-only rule");
+
+    assert_eq!(saved, confirmed_extension_rule("csv"));
+    let config = read_classifier(repo.path());
+    let finance = category(&config, "finance");
+    assert!(finance
+        .extensions
+        .iter()
+        .any(|extension| extension == "csv"));
+    assert_eq!(finance.priority, 12);
+
+    let future = predict_category(path_string(repo.path()), "future.csv".to_owned())
+        .expect("confirmed extension rule participates in future classification");
+    assert_eq!(future.category, "finance");
+    assert_eq!(future.reason, ClassifyReason::Extension);
+
+    let after = snapshot(repo.path());
+    assert_ne!(after.classifier_yaml, before.classifier_yaml);
+    assert_eq!(after.file_rows, before.file_rows);
+    assert_eq!(after.user_visible_paths, before.user_visible_paths);
+    assert_eq!(after.generated_paths, before.generated_paths);
+    assert_eq!(after.change_log_count, before.change_log_count);
+    assert_eq!(after.notes_count, before.notes_count);
+    assert_eq!(after.tags_count, before.tags_count);
+    assert_eq!(after.undo_count, before.undo_count);
+}
+
+#[test]
 fn classifier_rule_save_validation_rejects_failures_without_writing_rule_or_side_effects() {
     let repo = initialized_repo();
     insert_active_file(repo.path(), "docs/clientx-old.txt", "docs");
@@ -267,30 +316,35 @@ fn classifier_rule_save_validation_rejects_failures_without_writing_rule_or_side
             keywords: Vec::new(),
             extensions: Vec::new(),
             priority: 0,
+            preview_confirmed: false,
         },
         ClassifierRule {
             target_category: "finance".to_owned(),
             keywords: vec!["invoice".to_owned()],
             extensions: Vec::new(),
             priority: 0,
+            preview_confirmed: false,
         },
         ClassifierRule {
             target_category: "finance".to_owned(),
             keywords: Vec::new(),
             extensions: vec!["pdf".to_owned()],
             priority: 0,
+            preview_confirmed: false,
         },
         ClassifierRule {
             target_category: "missing".to_owned(),
             keywords: vec!["clientx".to_owned()],
             extensions: Vec::new(),
             priority: 0,
+            preview_confirmed: false,
         },
         ClassifierRule {
             target_category: "finance".to_owned(),
             keywords: vec!["clientx".to_owned()],
             extensions: vec![".pdf".to_owned()],
             priority: 0,
+            preview_confirmed: false,
         },
     ];
 
@@ -319,13 +373,14 @@ fn assert_capability_and_control_map_alignment() {
         "# C2-13 classifier-rule-save",
         "- S2-17 classifier-save-rule",
         "计划新增：`save_classifier_rule(repo_path, rule) -> ClassifierRule`",
-        "关键词、扩展名、目标分类、优先级。",
+        "关键词、扩展名、目标分类、优先级、是否已完成必要影响预览确认。",
         "保存后的规则。",
         "原子更新 classifier 配置。",
         "- `Config`",
         "- `PermissionDenied`",
         "- `Io`",
         "过宽规则必须 warning 或阻止。",
+        "预览确认后可只保存规则配置。",
         "重复规则有结构化反馈。",
         "保存前不应用到历史文件。",
     ] {
@@ -349,6 +404,7 @@ fn assert_core_api_and_udl_alignment() {
         "sequence<string> keywords;",
         "sequence<string> extensions;",
         "i64 priority;",
+        "boolean preview_confirmed;",
     ] {
         assert_contains(CORE_API, fragment);
         assert_contains(UDL, fragment);
@@ -360,6 +416,7 @@ fn assert_core_api_and_udl_alignment() {
         "不是 keyword AND extension 复合规则",
         "只允许原子更新 classifier 配置",
         "保存规则只影响未来分类",
+        "`Save rule only` 回流",
         "不实现 C2-14 impact preview、C2-15 rule CRUD",
         "Config",
         "PermissionDenied",
@@ -380,9 +437,12 @@ fn assert_rust_contract_alignment() {
 
     for fragment in [
         "Classifier rule payload shared by S2-17, S2-18, and C2-13",
-        "does not model path, source-folder, enabled flags, compound AND rules",
+        "does not model path, source-folder",
+        "enabled flags, compound AND rules",
         "Saves one C2-13 classifier rule request",
         "existing classifier category in `.areamatrix/classifier.yaml`",
+        "pub preview_confirmed: bool",
+        "impact preview is required",
         "reclassify, move, rename, delete, preview impact",
         "write_classifier_config_atomically",
         "reject_duplicate_rule",

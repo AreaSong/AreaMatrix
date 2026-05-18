@@ -1,0 +1,70 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-1/task-65`
+- Task：[/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-65-c2-13-integration-verify.md:1](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-65-c2-13-integration-verify.md:1)
+- Manifest：[/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-4.md:1900](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-4.md:1900)
+- Core：`core/src/**`、`core/area_matrix.udl`、`core/tests/**`
+- Forbidden Touches：`apps/**`
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：交叉检查 capability spec、Core API、UDL、Rust 实现和测试
+- 结果：通过
+- 证据：C2-13 spec 定义 `save_classifier_rule(repo_path, rule) -> ClassifierRule`、输入/输出/错误和原子更新要求；Core API 同步记录 `save_classifier_rule` 合同；UDL 暴露 `ClassifierRule save_classifier_rule(...)` 和 `ClassifierRule` 字段；Rust API 转发到真实实现；validation 测试锁定 docs/API/UDL/Rust 对齐。
+- 涉及文件：[/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-2-experience/C2-13-classifier-rule-save.md:7](/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-2-experience/C2-13-classifier-rule-save.md:7)、[/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:2524](/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:2524)、[/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:121](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:121)、[/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:713](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:713)、[/Users/as/Ai-Project/project/AreaMatrix/core/tests/classifier_rule_save_validation.rs:360](/Users/as/Ai-Project/project/AreaMatrix/core/tests/classifier_rule_save_validation.rs:360)
+
+- 项目：确认消费页面需要的状态、错误和副作用均已覆盖
+- 结果：通过
+- 证据：S2-17 要求保存到 classifier 配置、重复/过宽/无效时禁用或报错、只选扩展名必须预览后保存、保存不重分类历史文件；实现校验 target/category/basis/priority，拒绝重复和未预览 extension-only 规则，原子写 `.areamatrix/classifier.yaml`，返回保存后的 `ClassifierRule`。
+- 涉及文件：[/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-2-experience/S2-17-classifier-save-rule.md:71](/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-2-experience/S2-17-classifier-save-rule.md:71)、[/Users/as/Ai-Project/project/AreaMatrix/core/src/classifier_rules.rs:91](/Users/as/Ai-Project/project/AreaMatrix/core/src/classifier_rules.rs:91)、[/Users/as/Ai-Project/project/AreaMatrix/core/src/classifier_rules.rs:242](/Users/as/Ai-Project/project/AreaMatrix/core/src/classifier_rules.rs:242)、[/Users/as/Ai-Project/project/AreaMatrix/core/src/classifier_rules.rs:378](/Users/as/Ai-Project/project/AreaMatrix/core/src/classifier_rules.rs:378)
+
+- 项目：确认没有实现 control map 之外的能力
+- 结果：通过
+- 证据：control map 仅将 S2-17 绑定到 C2-13 `save rule` / classifier config，S2-18 impact preview 和 S2-19 rule CRUD 分别属于 C2-14/C2-15；Core API 明确不实现 impact preview、rule CRUD、AI 自动生成规则或批量应用历史文件；测试校验不写 notes/tags/undo/generated，不改历史 files。
+- 涉及文件：[/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-2-control-map.md:25](/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-2-control-map.md:25)、[/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:2554](/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:2554)、[/Users/as/Ai-Project/project/AreaMatrix/core/tests/classifier_rule_save_validation.rs:237](/Users/as/Ai-Project/project/AreaMatrix/core/tests/classifier_rule_save_validation.rs:237)
+
+- 项目：不得修改文件；只记录验收证据和阻塞项
+- 结果：通过
+- 证据：本轮只读验收未执行任何写入/修复；`git diff --name-only -- apps` 和 `git status --short -- apps` 均无输出，未触碰 Forbidden Touches `apps/**`。
+- 涉及文件：[/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-4.md:1920](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-4.md:1920)
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。`core/src/classifier_rules.rs` 444 行，职责集中；请求校验、重复检测、过宽规则阻断、配置校验、原子写入拆分清楚。
+- 注释 / rustdoc / 文档同步：通过。`ClassifierRule` 和 `save_classifier_rule` 有 rustdoc 与 `# Errors`，Core API、UDL、capability spec、control map 已同步。
+- 错误处理与边界处理：通过。覆盖 `Config`、`PermissionDenied`、`Io`；失败路径保持原配置、不留下 temp 文件、不写用户可见文件。
+- 测试与验证覆盖：通过。正常保存、重复规则、未预览 extension-only、确认后保存、schema 错误、权限错误、历史文件不重分类、无 AI/network/user-file 副作用均有测试。
+- 占位、硬编码、mock-only、一次性实现检查：通过。实现读取并写入真实 `.areamatrix/classifier.yaml`，并通过 `predict_category` 证明未来分类真实生效。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-65`
+- 通过：`prompt doctor` OK，637 tasks / 637 manifests；`git diff --check` 通过；`cargo fmt --all -- --check` 通过；`cargo clippy --all-targets --all-features -- -D warnings` 通过。
+- 通过：`cargo test --test classifier_rule_save_contract_api -- --nocapture`，4 passed。
+- 通过：`cargo test --test classifier_rule_save_failure_recovery -- --nocapture`，6 passed。
+- 通过：`cargo test --test classifier_rule_save_implementation -- --nocapture`，6 passed。
+- 通过：`cargo test --test classifier_rule_save_validation -- --nocapture`，4 passed。
+- 失败：无。
+- 缺失：无。未扩大运行 `./dev check all`，因为 manifest 与 validation-driver 对 core integration verify 的要求是 `./dev check task 4-1/task-65`。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。C2-13 可以作为后续 S2-17 page-feature task 的真实 Core 依赖；后续 UI 接入不因本 Core 能力阻塞。
+
+VERIFY_RESULT: PASS
