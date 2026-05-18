@@ -110,6 +110,15 @@ namespace area_matrix {
     );
 
     [Throws=CoreError]
+    ClassifierCorrectionResult correct_file_category(
+        string repo_path,
+        i64 file_id,
+        string category,
+        boolean move_file,
+        boolean remember
+    );
+
+    [Throws=CoreError]
     FileEntry restore_file(string repo_path, i64 file_id);
 
     [Throws=CoreError]
@@ -626,6 +635,22 @@ dictionary BatchRenameReport {
     sequence<BatchRenameItemResult> item_results;
     sequence<FileEntry> updated_files;
     string? undo_token;
+};
+
+dictionary ClassifierRuleDraft {
+    i64 source_file_id;
+    string target_category;
+    sequence<string> keyword_candidates;
+    sequence<string> extension_candidates;
+    i64 priority;
+};
+
+dictionary ClassifierCorrectionResult {
+    FileEntry updated_file;
+    ClassifierRuleDraft? rule_draft;
+    boolean move_file_requested;
+    boolean remember_requested;
+    boolean rule_confirmation_required;
 };
 
 dictionary UndoActionRecord {

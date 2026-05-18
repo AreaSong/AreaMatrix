@@ -6,15 +6,15 @@
 
 ## Core API
 
-- 计划新增：`correct_file_category(repo_path, file_id, category, remember) -> FileEntry`
+- 计划新增：`correct_file_category(repo_path, file_id, category, move_file, remember) -> ClassifierCorrectionResult`
 
 ## 输入
 
-- file_id、目标分类、是否记住规则。
+- file_id、目标分类、是否移动 repo-managed 文件、是否记住规则。
 
 ## 输出
 
-- 更新后的 FileEntry 和可选规则草稿。
+- 更新后的 FileEntry、可选规则草稿、移动/记住规则请求状态、是否仍需规则确认。
 
 ## DB 变化
 

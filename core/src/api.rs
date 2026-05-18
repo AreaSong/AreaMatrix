@@ -3,14 +3,15 @@
 use std::path::PathBuf;
 
 use crate::{
-    batch_category, batch_delete, batch_rename as batch_rename_mod, classify, db, icloud_conflicts,
-    note, recovery, repair, repo_init, repo_path, repo_scan, storage, sync, tree,
-    BatchCategoryChangeReport, BatchCategoryPreviewReport, BatchDeleteMode,
+    batch_category, batch_delete, batch_rename as batch_rename_mod, classifier_correction,
+    classify, db, icloud_conflicts, note, recovery, repair, repo_init, repo_path, repo_scan,
+    storage, sync, tree, BatchCategoryChangeReport, BatchCategoryPreviewReport, BatchDeleteMode,
     BatchDeletePreviewReport, BatchDeleteReport, BatchRenamePreviewReport, BatchRenameReport,
-    BatchRenameRule, ChangeFilter, ChangeLogEntry, ClassifyResult, CoreError, CoreResult,
-    DiagnosticsSnapshot, ExternalEvent, FileEntry, FileFilter, ICloudConflictPair, ImportOptions,
-    MoveToCategoryPreview, RecoveryReport, ReindexReport, RepairOptions, RepairReport, RepoConfig,
-    RepoInitOptions, RepoPathValidation, ScanSession, SyncResult,
+    BatchRenameRule, ChangeFilter, ChangeLogEntry, ClassifierCorrectionResult, ClassifyResult,
+    CoreError, CoreResult, DiagnosticsSnapshot, ExternalEvent, FileEntry, FileFilter,
+    ICloudConflictPair, ImportOptions, MoveToCategoryPreview, RecoveryReport, ReindexReport,
+    RepairOptions, RepairReport, RepoConfig, RepoInitOptions, RepoPathValidation, ScanSession,
+    SyncResult,
 };
 
 fn not_implemented<T>() -> CoreResult<T> {
@@ -683,6 +684,30 @@ pub fn batch_rename(
     preview_token: String,
 ) -> CoreResult<BatchRenameReport> {
     batch_rename_mod::batch_rename(repo_path, file_ids, rule, preview_token)
+}
+
+/// Applies one C2-12 classifier correction for S2-16.
+///
+/// The correction changes one active file's category and optionally moves a
+/// repo-managed file when `move_file` is true. `remember` only asks Core to
+/// return a rule draft handoff for S2-17/S2-18; this entry point must not save
+/// classifier rules, preview broad rule impact, create categories, call AI or
+/// network providers, or implement adjacent C2-13/C2-14/C2-15 behavior.
+///
+/// # Errors
+///
+/// Returns `CoreError::Classify { reason }` when the target category is invalid
+/// or unavailable, `CoreError::Conflict { path }` when a safe target path
+/// cannot be resolved, `CoreError::Io { message }` for file moves, and
+/// `CoreError::Db { message }` for metadata or change-log failures.
+pub fn correct_file_category(
+    repo_path: String,
+    file_id: i64,
+    category: String,
+    move_file: bool,
+    remember: bool,
+) -> CoreResult<ClassifierCorrectionResult> {
+    classifier_correction::correct_file_category(repo_path, file_id, category, move_file, remember)
 }
 
 /// Restores a deleted file entry.

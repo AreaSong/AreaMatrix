@@ -9,6 +9,7 @@ pub mod api;
 mod batch_category;
 mod batch_delete;
 mod batch_rename;
+mod classifier_correction;
 pub mod classify;
 mod command_index;
 pub mod config;
@@ -46,6 +47,9 @@ pub use batch_rename::{
     batch_rename, preview_batch_rename, BatchRenameConflict, BatchRenameDateSource,
     BatchRenameItemResult, BatchRenameMode, BatchRenamePreviewItem, BatchRenamePreviewReport,
     BatchRenamePreviewStatus, BatchRenameReport, BatchRenameResultStatus, BatchRenameRule,
+};
+pub use classifier_correction::{
+    correct_file_category, ClassifierCorrectionResult, ClassifierRuleDraft,
 };
 pub use command_index::{
     list_command_targets, CommandIndex, CommandIndexContext, CommandTarget, CommandTargetAction,
