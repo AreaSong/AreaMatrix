@@ -1,0 +1,48 @@
+一、执行结论
+
+已完成。
+
+二、执行范围
+
+单任务：`4-1/task-69`
+
+修改文件清单：
+- 新增 [classifier_impact_preview_validation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/classifier_impact_preview_validation.rs:1)
+
+工作区原本已有 `.codex/task-loop-runs/20260517_134238/summary.json` 和 `tasks/prompts/_shared/progress.json` 修改，我未触碰。
+
+三、完成情况
+
+核对清单已满足：
+- 补齐 C2-14 validation 测试，覆盖 API/UDL/Rust 合同、成功预览、过宽 warning、Index-only、路径冲突、Config/Db 失败路径。
+- 测试用 `include_str!` 锁定 `docs/api/core-api.md`、`core/area_matrix.udl`、`core/src/api.rs`、`core/src/classifier_impact.rs` 对齐。
+- 未新增业务功能，只新增测试 fixture 与断言。
+- 验证已运行并通过。
+
+未触碰 `apps/**`。
+
+四、工程质量
+
+新增测试结构清晰，没有 mock-only 或硬编码通过态；测试走真实 `init_repo`、SQLite metadata、真实 classifier preview API。失败路径验证了 preview 不改 classifier、用户可见文件、change_log、notes、tags、undo_actions。
+
+五、验证情况
+
+已运行：
+
+```bash
+./dev check task 4-1/task-69
+```
+
+结果通过：
+- `prompt_pipeline.py doctor`: OK
+- `git diff --check`: OK
+- `cargo test --test classifier_impact_preview_contract_api`: 4 passed
+- `cargo test --test classifier_impact_preview_failure_recovery`: 6 passed
+- `cargo test --test classifier_impact_preview_implementation`: 4 passed
+- `cargo test --test classifier_impact_preview_validation`: 4 passed
+
+六、风险与后续
+
+剩余风险：未运行全量 `cargo test --workspace` / clippy，原因是本 task 明确要求普通 atomic Core task 只运行 `./dev check task 4-1/task-69`，不得自行升级宽门禁。
+
+建议下一个任务：进入 `4-1/task-70` 的 C2-14 integration verify，继续检查 UI 消费上下文与 Core 合同闭环。  
