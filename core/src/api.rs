@@ -4,14 +4,14 @@ use std::path::PathBuf;
 
 use crate::{
     batch_category, batch_delete, batch_rename as batch_rename_mod, classifier_correction,
-    classify, db, icloud_conflicts, note, recovery, repair, repo_init, repo_path, repo_scan,
-    storage, sync, tree, BatchCategoryChangeReport, BatchCategoryPreviewReport, BatchDeleteMode,
-    BatchDeletePreviewReport, BatchDeleteReport, BatchRenamePreviewReport, BatchRenameReport,
-    BatchRenameRule, ChangeFilter, ChangeLogEntry, ClassifierCorrectionResult, ClassifyResult,
-    CoreError, CoreResult, DiagnosticsSnapshot, ExternalEvent, FileEntry, FileFilter,
-    ICloudConflictPair, ImportOptions, MoveToCategoryPreview, RecoveryReport, ReindexReport,
-    RepairOptions, RepairReport, RepoConfig, RepoInitOptions, RepoPathValidation, ScanSession,
-    SyncResult,
+    classifier_rules, classify, db, icloud_conflicts, note, recovery, repair, repo_init, repo_path,
+    repo_scan, storage, sync, tree, BatchCategoryChangeReport, BatchCategoryPreviewReport,
+    BatchDeleteMode, BatchDeletePreviewReport, BatchDeleteReport, BatchRenamePreviewReport,
+    BatchRenameReport, BatchRenameRule, ChangeFilter, ChangeLogEntry, ClassifierCorrectionResult,
+    ClassifierRule, ClassifyResult, CoreError, CoreResult, DiagnosticsSnapshot, ExternalEvent,
+    FileEntry, FileFilter, ICloudConflictPair, ImportOptions, MoveToCategoryPreview,
+    RecoveryReport, ReindexReport, RepairOptions, RepairReport, RepoConfig, RepoInitOptions,
+    RepoPathValidation, ScanSession, SyncResult,
 };
 
 fn not_implemented<T>() -> CoreResult<T> {
@@ -708,6 +708,33 @@ pub fn correct_file_category(
     remember: bool,
 ) -> CoreResult<ClassifierCorrectionResult> {
     classifier_correction::correct_file_category(repo_path, file_id, category, move_file, remember)
+}
+
+/// Saves one C2-13 classifier rule for future classification.
+///
+/// S2-17 uses this contract after the user chooses keyword and extension
+/// basis values from a classifier-correction draft. The input rule maps only to
+/// supported classifier configuration fields: target category, independent
+/// keyword matches, independent extension matches, and priority. Extensions
+/// must be lowercase values without a leading dot.
+///
+/// This contract does not create categories, model compound AND rules, preview
+/// impact, apply the rule to historical files, reclassify or move files, call
+/// AI/network providers, or touch `apps/**`. Until C2-13 implementation lands,
+/// the Rust entry point validates the request and returns `Config` instead of
+/// faking a successful save.
+///
+/// # Errors
+///
+/// Returns `CoreError::Config { reason }` for invalid repository paths, target
+/// categories, empty rule basis, duplicate/invalid keywords, dotted or invalid
+/// extensions, out-of-range priority, malformed classifier configuration, or a
+/// duplicate/over-broad rule that the UI must resolve. The implementation task
+/// adds `CoreError::PermissionDenied { path }` for blocked metadata writes and
+/// `CoreError::Io { message }` for atomic classifier configuration write
+/// failures.
+pub fn save_classifier_rule(repo_path: String, rule: ClassifierRule) -> CoreResult<ClassifierRule> {
+    classifier_rules::save_classifier_rule(repo_path, rule)
 }
 
 /// Restores a deleted file entry.

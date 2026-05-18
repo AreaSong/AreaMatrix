@@ -119,6 +119,9 @@ namespace area_matrix {
     );
 
     [Throws=CoreError]
+    ClassifierRule save_classifier_rule(string repo_path, ClassifierRule rule);
+
+    [Throws=CoreError]
     FileEntry restore_file(string repo_path, i64 file_id);
 
     [Throws=CoreError]
@@ -651,6 +654,13 @@ dictionary ClassifierCorrectionResult {
     boolean move_file_requested;
     boolean remember_requested;
     boolean rule_confirmation_required;
+};
+
+dictionary ClassifierRule {
+    string target_category;
+    sequence<string> keywords;
+    sequence<string> extensions;
+    i64 priority;
 };
 
 dictionary UndoActionRecord {
