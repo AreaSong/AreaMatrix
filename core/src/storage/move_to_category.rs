@@ -62,6 +62,28 @@ pub(crate) fn move_to_category(
     }
 }
 
+pub(crate) fn correct_repo_owned_file_category(
+    repo_path: String,
+    file_id: i64,
+    new_category: String,
+) -> CoreResult<FileEntry> {
+    let repo = validate_repo_path(&repo_path)?;
+    db::ensure_initialized(&repo)?;
+    classify::ensure_category_exists(&repo, &new_category)?;
+
+    let entry = db::get_active_file_by_id(&repo, file_id)?;
+    if entry.category == new_category {
+        return validate_same_category_entry(&repo, entry);
+    }
+
+    match entry.storage_mode {
+        StorageMode::Moved | StorageMode::Copied => {
+            move_repo_owned_file_without_undo(&repo, entry, &new_category)
+        }
+        StorageMode::Indexed => Err(CoreError::invalid_path("invalid path")),
+    }
+}
+
 fn move_repo_owned_file(
     repo: &Path,
     entry: FileEntry,
@@ -88,6 +110,51 @@ fn move_repo_owned_file(
     let mut note_guard = move_note_sidecar(note_sidecar, &mut file_guard)?;
 
     if let Err(error) = db::move_repo_owned_file_to_category(
+        repo,
+        entry.id,
+        &target.final_relative_path,
+        &target.final_name,
+        new_category,
+        &detail,
+    ) {
+        rollback_filesystem_move(&mut file_guard, &mut note_guard)?;
+        return Err(error);
+    }
+
+    file_guard.disarm();
+    if let Some(note_guard) = note_guard.as_mut() {
+        note_guard.disarm();
+    }
+    target_directory.disarm();
+    db::get_active_file_by_id(repo, entry.id)
+}
+
+fn move_repo_owned_file_without_undo(
+    repo: &Path,
+    entry: FileEntry,
+    new_category: &str,
+) -> CoreResult<FileEntry> {
+    if !dedup::is_repo_owned(&entry) {
+        return Err(CoreError::invalid_path("invalid path"));
+    }
+
+    let mut target_directory = CategoryDirectoryGuard::ensure(repo, new_category)?;
+    let target = resolve_repo_owned_target(repo, &entry, target_directory.path())?;
+    let detail = move_detail(
+        &entry,
+        new_category,
+        &target.final_relative_path,
+        &target.final_name,
+        false,
+    );
+    let note_sidecar =
+        NoteSidecarPlan::from_move(repo, entry.id, &target.current_path, &target.final_path)?;
+
+    move_recoverable_file(&target.current_path, &target.final_path)?;
+    let mut file_guard = MoveRollbackGuard::new(target.final_path.clone(), target.current_path);
+    let mut note_guard = move_note_sidecar(note_sidecar, &mut file_guard)?;
+
+    if let Err(error) = db::correct_repo_owned_file_category(
         repo,
         entry.id,
         &target.final_relative_path,

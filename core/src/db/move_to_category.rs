@@ -27,6 +27,25 @@ pub(crate) fn move_repo_owned_file_to_category(
     )
 }
 
+pub(crate) fn correct_repo_owned_file_category(
+    repo_path: &Path,
+    file_id: i64,
+    final_path: &str,
+    final_name: &str,
+    new_category: &str,
+    detail: &Value,
+) -> CoreResult<()> {
+    update_file_category_and_log(
+        repo_path,
+        file_id,
+        Some((final_path, final_name)),
+        new_category,
+        "storage_mode IN ('copied', 'moved')",
+        detail,
+        false,
+    )
+}
+
 pub(crate) fn move_indexed_file_to_category(
     repo_path: &Path,
     file_id: i64,
@@ -41,6 +60,23 @@ pub(crate) fn move_indexed_file_to_category(
         "storage_mode = 'indexed'",
         detail,
         true,
+    )
+}
+
+pub(crate) fn correct_file_category_metadata_only(
+    repo_path: &Path,
+    file_id: i64,
+    new_category: &str,
+    detail: &Value,
+) -> CoreResult<()> {
+    update_file_category_and_log(
+        repo_path,
+        file_id,
+        None,
+        new_category,
+        "status = 'active'",
+        detail,
+        false,
     )
 }
 

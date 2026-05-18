@@ -45,6 +45,7 @@ pub(crate) use import::{
 };
 pub(crate) use move_to_category::{
     batch_update_category_metadata_only_in_tx, batch_update_category_repo_owned_in_tx,
+    correct_file_category_metadata_only, correct_repo_owned_file_category,
     insert_batch_category_undo_action_in_tx, load_batch_category_active_file,
     move_indexed_file_to_category, move_repo_owned_file_to_category,
     with_batch_category_transaction, BatchCategoryUndoItem,
