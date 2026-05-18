@@ -1,0 +1,46 @@
+一、执行结论
+
+未完成。C2-10 的 API / UDL / Rust 实现 / 目标测试证据基本能证明能力链路存在，但任务指定验证 `./dev check task 4-1/task-50` 未通过，因此不能标记完成，后续 UI 接入应继续阻塞到格式门禁修复并重跑通过。
+
+二、执行范围
+
+- 单任务：`4-1/task-50`
+- 修改文件清单：无，本轮未修改文件
+- Forbidden Touches：未触碰 `apps/**`
+- 工作树已有非本轮修改：`.codex/task-loop-runs/20260517_134238/summary.json`、`tasks/prompts/_shared/progress.json`
+
+三、完成情况
+
+- capability spec / Core API / UDL / Rust / tests 交叉检查：有证据，`preview_batch_rename`、`batch_rename`、`BatchRenameRule`、preview/report/status 类型在 `docs/api/core-api.md` 与 `core/area_matrix.udl` 对齐，Rust 在 `core/src/batch_rename*`、`core/src/api.rs`、`core/src/lib.rs` 暴露。
+- S2-14 消费状态、错误、副作用：有覆盖证据，包含 `Ok`、`Error`、`NameConflict`、`Missing`、`ReadOnly`、`DisplayOnly`、`Unchanged`、`ExternalChange`，preview token stale 校验、index-only、change_log、undo token、partial failure 和 rollback 测试。
+- control map 之外能力：未发现 C2-10 实现 AI 命名、删除/Trash、分类、tag、saved search、reindex、网络/远程 AI 等越界能力。
+- 完成标准：未满足，因为最终 task 验证失败。
+
+四、工程质量
+
+实现结构按 `batch_rename.rs`、`plan.rs`、`plan_name.rs`、`plan_path.rs`、`apply.rs`、`token.rs` 拆分，错误处理和 rollback 边界有测试覆盖；public API 有 rustdoc。未发现 mock-only、硬编码通过态或一次性脚本实现。
+
+阻塞项是 rustfmt：`cargo fmt --all -- --check` 要求格式化 [core/tests/batch_rename_preview_validation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/batch_rename_preview_validation.rs:205) 和 [core/tests/batch_rename_preview_validation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/batch_rename_preview_validation.rs:309)。
+
+五、验证情况
+
+已运行：
+
+```bash
+./dev check task 4-1/task-50
+```
+
+结果：失败。`prompt doctor` 通过，`git diff --check` 通过，失败在 `cargo fmt --all -- --check`。
+
+补充运行：
+
+```bash
+cd core && cargo test --test batch_rename_preview_contract_api --test batch_rename_preview_implementation --test batch_rename_preview_failure_recovery --test batch_rename_preview_validation -- --nocapture
+```
+
+结果：通过，合计 19 个 C2-10 目标测试通过。
+
+六、风险与后续
+
+剩余风险：格式门禁未过，不能作为 task PASS / merge-ready 证据。建议下一个动作是在当前 task 范围内格式化 `core/tests/batch_rename_preview_validation.rs`，然后重跑 `./dev check task 4-1/task-50`。本轮因任务要求“不得修改文件”，没有直接修复。
+

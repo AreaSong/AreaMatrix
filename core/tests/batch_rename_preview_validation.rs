@@ -205,7 +205,11 @@ fn batch_rename_validation_failure_paths_are_explicit_and_side_effect_free() {
     let before_failures = snapshot(repo.path());
 
     assert!(matches!(
-        preview_batch_rename(path_string(repo.path()), Vec::new(), prefix_rule("ProjectA_")),
+        preview_batch_rename(
+            path_string(repo.path()),
+            Vec::new(),
+            prefix_rule("ProjectA_")
+        ),
         Err(CoreError::FileNotFound { .. })
     ));
     assert!(matches!(
@@ -237,6 +241,13 @@ fn batch_rename_validation_failure_paths_are_explicit_and_side_effect_free() {
     assert_eq!(snapshot(repo.path()), before_failures);
     assert!(!blocked_preview.can_apply);
     assert_eq!(blocked_preview.blocked_count, 2);
+    assert_eq!(blocked_preview.conflict_count, 1);
+    assert_eq!(blocked_preview.conflicts.len(), 1);
+    assert_eq!(blocked_preview.conflicts[0].file_id, repo_owned.id);
+    assert_eq!(
+        blocked_preview.conflicts[0].conflict_path.as_deref(),
+        Some("finance/ProjectA_report.pdf")
+    );
     assert_eq!(
         blocked_preview
             .items
@@ -309,11 +320,7 @@ fn batch_rename_validation_locks_core_api_udl_and_rust_alignment() {
     ] {
         assert_contains(CONTROL_MAP, fragment);
     }
-    for fragment in [
-        "`core/tests/`",
-        "重命名（合法名 / 非法名）",
-        "集成测试",
-    ] {
+    for fragment in ["`core/tests/`", "重命名（合法名 / 非法名）", "集成测试"] {
         assert_contains(TESTING_DOC, fragment);
     }
 

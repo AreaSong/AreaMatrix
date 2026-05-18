@@ -34,7 +34,8 @@ pub(super) fn build_batch_rename_plan(
     for (index, file_id) in file_ids.iter().enumerate() {
         items.push(plan_item(repo, *file_id, index, sequence_width, &rule)?);
     }
-    let conflicts = mark_batch_target_conflicts(&mut items);
+    let mut conflicts = collect_existing_target_conflicts(&items);
+    conflicts.extend(mark_batch_target_conflicts(&mut items));
     let preview_token = token::preview_token(file_ids, &rule, &items);
     Ok(BatchRenamePlan {
         requested_file_count: file_ids.len() as i64,
@@ -220,6 +221,13 @@ fn mark_batch_target_conflicts(items: &mut [BatchRenamePlanItem]) -> Vec<BatchRe
     conflicts
 }
 
+fn collect_existing_target_conflicts(items: &[BatchRenamePlanItem]) -> Vec<BatchRenameConflict> {
+    items
+        .iter()
+        .filter_map(BatchRenamePlanItem::existing_target_conflict)
+        .collect()
+}
+
 impl BatchRenamePlanItem {
     fn repo_owned_target(&self) -> Option<(i64, &str)> {
         match self {
@@ -246,6 +254,21 @@ impl BatchRenamePlanItem {
             status: BatchRenamePreviewStatus::NameConflict,
             reason,
         });
+    }
+
+    fn existing_target_conflict(&self) -> Option<BatchRenameConflict> {
+        let Self::Blocked(change) = self else {
+            return None;
+        };
+        if change.status != BatchRenamePreviewStatus::NameConflict {
+            return None;
+        }
+        Some(BatchRenameConflict {
+            file_id: change.file_id,
+            conflicting_file_id: None,
+            conflict_path: change.target_path.clone(),
+            reason: change.reason.clone(),
+        })
     }
 }
 

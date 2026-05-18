@@ -216,7 +216,13 @@ fn batch_rename_preview_blocks_conflicts_missing_and_invalid_names() {
 
     assert!(!preview.can_apply);
     assert_eq!(preview.blocked_count, 2);
-    assert_eq!(preview.conflict_count, 0);
+    assert_eq!(preview.conflict_count, 1);
+    assert_eq!(preview.conflicts.len(), 1);
+    assert_eq!(preview.conflicts[0].file_id, first.id);
+    assert_eq!(
+        preview.conflicts[0].conflict_path.as_deref(),
+        Some("finance/ProjectA_report.pdf")
+    );
     assert_eq!(
         preview
             .items
