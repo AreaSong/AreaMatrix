@@ -1,0 +1,75 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-1/task-64`
+- 验收对象：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-64-c2-13-validation.md`
+- 核验范围：`core/src/**`、`core/area_matrix.udl`、`core/tests/**`
+- Forbidden Touches：`apps/**`，未发现改动
+
+三、完成度摘要
+
+- 已覆盖项数：6
+- 未覆盖项数：0
+- 通过项数：6
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：补齐成功和失败路径测试
+- 结果：通过
+- 证据：`core/tests/classifier_rule_save_validation.rs:223` 覆盖保存成功、未来分类生效、历史文件不重分类；`core/tests/classifier_rule_save_validation.rs:259` 覆盖空规则、重复规则、过宽 extension-only、未知分类、非法扩展名等失败路径。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/classifier_rule_save_validation.rs`
+
+- 项目：Core API / UDL / Rust 实现一致
+- 结果：通过
+- 证据：UDL 暴露 `save_classifier_rule` 于 `core/area_matrix.udl:121`；Rust API 转发于 `core/src/api.rs:735`；核心实现于 `core/src/classifier_rules.rs:88`；一致性测试在 `core/tests/classifier_rule_save_validation.rs:307`。
+- 涉及文件：`core/area_matrix.udl`、`core/src/api.rs`、`core/src/classifier_rules.rs`
+
+- 项目：不新增业务功能，只补验证与必要 fixture
+- 结果：通过
+- 证据：本 task 新增路径为 `core/tests/classifier_rule_save_validation.rs`；`git status` 未显示 `apps/**` 改动；核心功能已由既有 `classifier_rules.rs` 提供。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/classifier_rule_save_validation.rs`
+
+- 项目：记录无法运行的验证及原因
+- 结果：通过
+- 证据：必需验证 `./dev check task 4-1/task-64` 已运行并通过，无 task 范围内未运行的必需验证。
+- 涉及文件：manifest validation
+
+- 项目：C2-13 有足够测试证明可进入 UI 接入
+- 结果：通过
+- 证据：task-scoped gate 运行 4 个 test binary，合计 18 个测试通过，覆盖 contract、implementation、failure recovery、validation。
+- 涉及文件：`core/tests/classifier_rule_save_*.rs`
+
+- 项目：Validation 命令通过或失败原因明确记录
+- 结果：通过
+- 证据：`./dev check task 4-1/task-64` exit 0；doctor OK、`git diff --check` 通过、targeted Rust tests 全部通过。
+- 涉及文件：`./dev` task gate
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。`core/src/classifier_rules.rs:88` 入口清晰拆分到校验、重复规则、过宽规则、原子写入等 helper；文件 438 行，未超过 500 行阈值。
+- 注释 / rustdoc / 文档同步：通过。`core/src/classifier_rules.rs:55` 和 `core/src/classifier_rules.rs:74` 有 public 类型与 API rustdoc；`docs/api/core-api.md:2523`、UDL、Rust 实现一致。
+- 错误处理与边界处理：通过。`Config / PermissionDenied / Io` 映射存在，失败路径测试覆盖不写入、不留临时文件、用户文件不变。
+- 测试与验证覆盖：通过。成功、失败、文档/UDL/Rust 对齐、无副作用均有测试；manifest 指定验证通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。测试走真实 `init_repo`、真实 DB、真实 `.areamatrix/classifier.yaml`，未发现 mock-only 或硬编码通过态。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-64`
+- 通过：prompt doctor、`git diff --check`、`classifier_rule_save_contract_api` 4/4、`classifier_rule_save_failure_recovery` 6/6、`classifier_rule_save_implementation` 5/5、`classifier_rule_save_validation` 3/3
+- 失败：无
+- 缺失：无 task manifest 范围内缺失；`./dev check all` / `cargo test --workspace` 非本 ordinary atomic task 要求，未扩大运行
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。`progress.json` / `summary.json` 仍处于 runner verify 前 in-progress 时序，不作为本 verify 阶段不通过依据；若后续 checkpoint 收口失败，应归因到 runner checkpoint 阶段。
+
+VERIFY_RESULT: PASS
