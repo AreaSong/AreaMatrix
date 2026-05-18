@@ -9,11 +9,12 @@ use crate::{
     BatchCategoryChangeReport, BatchCategoryPreviewReport, BatchDeleteMode,
     BatchDeletePreviewReport, BatchDeleteReport, BatchRenamePreviewReport, BatchRenameReport,
     BatchRenameRule, ChangeFilter, ChangeLogEntry, ClassifierCorrectionResult,
-    ClassifierImpactPreviewRequest, ClassifierRule, ClassifierRuleDeleteRequest,
-    ClassifierRuleEditorSnapshot, ClassifierRuleUpdate, ClassifyResult, CoreError, CoreResult,
-    DiagnosticsSnapshot, ExternalEvent, FileEntry, FileFilter, ICloudConflictPair, ImportOptions,
-    MoveToCategoryPreview, RecoveryReport, ReindexReport, RepairOptions, RepairReport, RepoConfig,
-    RepoInitOptions, RepoPathValidation, RuleImpactReport, ScanSession, SyncResult,
+    ClassifierImpactPreviewRequest, ClassifierRule, ClassifierRuleCreateRequest,
+    ClassifierRuleDeleteRequest, ClassifierRuleEditorSnapshot, ClassifierRuleUpdate,
+    ClassifyResult, CoreError, CoreResult, DiagnosticsSnapshot, ExternalEvent, FileEntry,
+    FileFilter, ICloudConflictPair, ImportOptions, MoveToCategoryPreview, RecoveryReport,
+    ReindexReport, RepairOptions, RepairReport, RepoConfig, RepoInitOptions, RepoPathValidation,
+    RuleImpactReport, ScanSession, SyncResult,
 };
 
 fn not_implemented<T>() -> CoreResult<T> {
@@ -779,6 +780,29 @@ pub fn preview_classifier_rule_impact(
 /// classifier config read failures.
 pub fn list_classifier_rules(repo_path: String) -> CoreResult<ClassifierRuleEditorSnapshot> {
     classifier_rule_editor::list_classifier_rules(repo_path)
+}
+
+/// Creates one C2-15 classifier editor row for future classification.
+///
+/// The create request carries a new slug, display metadata, extensions,
+/// keywords, priority, and naming template. A successful implementation may
+/// atomically update `.areamatrix/classifier.yaml` or equivalent classifier
+/// metadata only. It must not move, delete, rename, reindex, retag, write
+/// notes, update generated overviews, write undo state, or apply classifier
+/// changes to historical files.
+///
+/// # Errors
+///
+/// Returns `CoreError::Config { reason }` for invalid row content, duplicate
+/// slugs or matcher values, or malformed classifier configuration. Returns
+/// `CoreError::PermissionDenied { path }` for blocked classifier metadata
+/// writes and `CoreError::Io { message }` for read, backup, atomic write, or
+/// restore failures.
+pub fn create_classifier_rule(
+    repo_path: String,
+    request: ClassifierRuleCreateRequest,
+) -> CoreResult<ClassifierRuleEditorSnapshot> {
+    classifier_rule_editor::create_classifier_rule(repo_path, request)
 }
 
 /// Updates one C2-15 classifier editor row for future classification.

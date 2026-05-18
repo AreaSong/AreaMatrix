@@ -6,15 +6,15 @@
 
 ## Core API
 
-- 计划新增：`list_classifier_rules`、`update_classifier_rule`、`delete_classifier_rule`
+- 计划新增：`list_classifier_rules`、`create_classifier_rule`、`update_classifier_rule`、`delete_classifier_rule`
 
 ## 输入
 
-- 规则 ID 和规则内容。
+- 新建规则内容、规则 ID 和更新/删除请求。
 
 ## 输出
 
-- 规则列表或更新结果。
+- 规则列表或创建/更新/删除结果。
 
 ## DB 变化
 

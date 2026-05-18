@@ -5,8 +5,8 @@ use std::{
 };
 
 use area_matrix_core::{
-    init_repo, ClassifierRuleDeleteRequest, ClassifierRuleUpdate, OverviewOutput, RepoInitMode,
-    RepoInitOptions,
+    init_repo, ClassifierRuleCreateRequest, ClassifierRuleDeleteRequest, ClassifierRuleUpdate,
+    OverviewOutput, RepoInitMode, RepoInitOptions,
 };
 use pretty_assertions::assert_eq;
 use rusqlite::{params, Connection};
@@ -84,6 +84,18 @@ pub(crate) fn update_request() -> ClassifierRuleUpdate {
         priority: 30,
         naming_template: Some("{stem}-{date}".to_owned()),
         preview_confirmed: true,
+    }
+}
+
+pub(crate) fn create_request() -> ClassifierRuleCreateRequest {
+    ClassifierRuleCreateRequest {
+        slug: "tax".to_owned(),
+        display_name: "Tax".to_owned(),
+        description: "Tax documents".to_owned(),
+        extensions: vec!["pdf".to_owned()],
+        keywords: vec!["tax".to_owned()],
+        priority: 20,
+        naming_template: Some("{stem}".to_owned()),
     }
 }
 

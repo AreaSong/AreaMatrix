@@ -20,6 +20,16 @@ const MIN_PRIORITY: i64 = -1000;
 const MAX_PRIORITY: i64 = 1000;
 const ALLOWED_NAMING_TEMPLATE_FIELDS: [&str; 5] = ["original", "stem", "ext", "date", "slug"];
 
+struct RuleContent<'a> {
+    slug: &'a str,
+    display_name: &'a str,
+    description: &'a str,
+    keywords: &'a [String],
+    extensions: &'a [String],
+    priority: i64,
+    naming_template: Option<&'a str>,
+}
+
 /// One classifier editor row for S2-19.
 ///
 /// `rule_id` is the stable id of the currently persisted classifier category.
@@ -57,6 +67,25 @@ pub struct ClassifierRuleEditorSnapshot {
     pub updated_rule_id: Option<String>,
     /// Save/delete warning shown by S2-19 when impact preview is still required.
     pub warning: Option<String>,
+}
+
+/// Create payload for one classifier editor row.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub struct ClassifierRuleCreateRequest {
+    /// New classifier category slug.
+    pub slug: String,
+    /// New display name.
+    pub display_name: String,
+    /// New description.
+    pub description: String,
+    /// New extension matcher values without leading dots.
+    pub extensions: Vec<String>,
+    /// New keyword matcher values.
+    pub keywords: Vec<String>,
+    /// New classifier priority.
+    pub priority: i64,
+    /// New naming template, if any.
+    pub naming_template: Option<String>,
 }
 
 /// Update payload for one classifier editor row.
@@ -109,6 +138,37 @@ pub fn list_classifier_rules(repo_path: String) -> CoreResult<ClassifierRuleEdit
     let repo = validate_editor_repo_path(&repo_path)?;
     let classifier_config = config::read_classifier_config(&repo)?;
     Ok(config::snapshot_from_config(&classifier_config, None, None))
+}
+
+/// Creates one C2-15 classifier rule editor row.
+///
+/// The create request appends one classifier category for future
+/// classification. It must atomically write classifier configuration only; it
+/// must not move, delete, rename, reindex, retag, write notes, update generated
+/// overviews, or apply rules to history.
+///
+/// # Errors
+///
+/// Returns `CoreError::Config { reason }` for invalid rule content, duplicate
+/// rows, or malformed classifier configuration. Returns
+/// `CoreError::PermissionDenied { path }` for blocked classifier metadata
+/// writes and `CoreError::Io { message }` for read, backup, atomic write, or
+/// restore failures.
+pub fn create_classifier_rule(
+    repo_path: String,
+    request: ClassifierRuleCreateRequest,
+) -> CoreResult<ClassifierRuleEditorSnapshot> {
+    let repo = validate_editor_repo_path(&repo_path)?;
+    validate_create_request(&request)?;
+    let mut classifier_config = config::read_classifier_config(&repo)?;
+    let updated_rule_id = config::apply_create(&mut classifier_config, &request)?;
+    config::validate_classifier_config(&classifier_config)?;
+    config::write_classifier_config_atomically(&repo, &classifier_config)?;
+    Ok(config::snapshot_from_config(
+        &classifier_config,
+        Some(updated_rule_id),
+        None,
+    ))
 }
 
 /// Updates one C2-15 classifier rule editor row.
@@ -188,14 +248,29 @@ fn validate_editor_repo_path(repo_path: &str) -> CoreResult<PathBuf> {
     Ok(repo)
 }
 
+fn validate_create_request(request: &ClassifierRuleCreateRequest) -> CoreResult<()> {
+    validate_rule_content(RuleContent {
+        slug: &request.slug,
+        display_name: &request.display_name,
+        description: &request.description,
+        keywords: &request.keywords,
+        extensions: &request.extensions,
+        priority: request.priority,
+        naming_template: request.naming_template.as_deref(),
+    })
+}
+
 fn validate_update_request(request: &ClassifierRuleUpdate) -> CoreResult<()> {
     validate_rule_id(&request.rule_id)?;
-    validate_category_slug(&request.slug)?;
-    validate_display_name(&request.display_name)?;
-    validate_description(&request.description)?;
-    validate_rule_basis(&request.keywords, &request.extensions)?;
-    validate_priority(request.priority)?;
-    validate_naming_template(request.naming_template.as_deref())
+    validate_rule_content(RuleContent {
+        slug: &request.slug,
+        display_name: &request.display_name,
+        description: &request.description,
+        keywords: &request.keywords,
+        extensions: &request.extensions,
+        priority: request.priority,
+        naming_template: request.naming_template.as_deref(),
+    })
 }
 
 fn validate_delete_request(request: &ClassifierRuleDeleteRequest) -> CoreResult<()> {
@@ -211,6 +286,15 @@ fn validate_rule_id(rule_id: &str) -> CoreResult<()> {
         return Err(CoreError::config("classifier rule id is invalid"));
     }
     Ok(())
+}
+
+fn validate_rule_content(content: RuleContent<'_>) -> CoreResult<()> {
+    validate_category_slug(content.slug)?;
+    validate_display_name(content.display_name)?;
+    validate_description(content.description)?;
+    validate_rule_basis(content.keywords, content.extensions)?;
+    validate_priority(content.priority)?;
+    validate_naming_template(content.naming_template)
 }
 
 fn validate_category_slug(slug: &str) -> CoreResult<()> {

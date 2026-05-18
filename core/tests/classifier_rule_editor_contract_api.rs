@@ -1,7 +1,7 @@
 use area_matrix_core::{
-    delete_classifier_rule, list_classifier_rules, update_classifier_rule,
-    ClassifierRuleDeleteRequest, ClassifierRuleEditorSnapshot, ClassifierRuleRecord,
-    ClassifierRuleUpdate, CoreError, CoreResult,
+    create_classifier_rule, delete_classifier_rule, list_classifier_rules, update_classifier_rule,
+    ClassifierRuleCreateRequest, ClassifierRuleDeleteRequest, ClassifierRuleEditorSnapshot,
+    ClassifierRuleRecord, ClassifierRuleUpdate, CoreError, CoreResult,
 };
 use pretty_assertions::assert_eq;
 
@@ -38,6 +38,18 @@ fn update_request() -> ClassifierRuleUpdate {
     }
 }
 
+fn create_request() -> ClassifierRuleCreateRequest {
+    ClassifierRuleCreateRequest {
+        slug: "tax".to_owned(),
+        display_name: "Tax".to_owned(),
+        description: "Tax documents".to_owned(),
+        extensions: vec!["pdf".to_owned()],
+        keywords: vec!["tax".to_owned()],
+        priority: 20,
+        naming_template: Some("{stem}".to_owned()),
+    }
+}
+
 fn delete_request() -> ClassifierRuleDeleteRequest {
     ClassifierRuleDeleteRequest {
         rule_id: "finance".to_owned(),
@@ -49,6 +61,10 @@ fn delete_request() -> ClassifierRuleDeleteRequest {
 #[test]
 fn classifier_rule_editor_contract_exposes_signatures_inputs_outputs_and_errors() {
     fn assert_list(_: fn(String) -> CoreResult<ClassifierRuleEditorSnapshot>) {}
+    fn assert_create(
+        _: fn(String, ClassifierRuleCreateRequest) -> CoreResult<ClassifierRuleEditorSnapshot>,
+    ) {
+    }
     fn assert_update(
         _: fn(String, ClassifierRuleUpdate) -> CoreResult<ClassifierRuleEditorSnapshot>,
     ) {
@@ -58,6 +74,7 @@ fn classifier_rule_editor_contract_exposes_signatures_inputs_outputs_and_errors(
     ) {
     }
     assert_list(list_classifier_rules);
+    assert_create(create_classifier_rule);
     assert_update(update_classifier_rule);
     assert_delete(delete_classifier_rule);
 
@@ -84,6 +101,10 @@ fn classifier_rule_editor_contract_exposes_signatures_inputs_outputs_and_errors(
     assert_eq!(snapshot.rules[0].keywords, vec!["invoice"]);
     assert_eq!(snapshot.default_rule_id, "inbox");
     assert_eq!(snapshot.updated_rule_id.as_deref(), Some("finance"));
+
+    let create = create_request();
+    assert_eq!(create.slug, "tax");
+    assert_eq!(create.priority, 20);
 
     let update = update_request();
     assert_eq!(update.rule_id, "finance");
@@ -145,6 +166,17 @@ fn classifier_rule_editor_contract_validates_inputs_without_fake_success_or_side
         Err(CoreError::Config { .. })
     ));
 
+    let mut invalid_create = create_request();
+    invalid_create.slug = "Bad Category".to_owned();
+    assert!(matches!(
+        create_classifier_rule("/tmp/repo".to_owned(), invalid_create),
+        Err(CoreError::Config { .. })
+    ));
+
+    assert!(matches!(
+        create_classifier_rule("/tmp/repo".to_owned(), create_request()),
+        Err(CoreError::Config { .. })
+    ));
     assert!(matches!(
         update_classifier_rule("/tmp/repo".to_owned(), update_request()),
         Err(CoreError::Config { .. })
@@ -160,9 +192,9 @@ fn classifier_rule_editor_contract_docs_api_udl_and_control_map_stay_aligned() {
     for fragment in [
         "# C2-15 classifier-rule-editor",
         "- S2-19 classifier-rule-editor",
-        "计划新增：`list_classifier_rules`、`update_classifier_rule`、`delete_classifier_rule`",
-        "规则 ID 和规则内容。",
-        "规则列表或更新结果。",
+        "计划新增：`list_classifier_rules`、`create_classifier_rule`、`update_classifier_rule`、`delete_classifier_rule`",
+        "新建规则内容、规则 ID 和更新/删除请求。",
+        "规则列表或创建/更新/删除结果。",
         "更新分类规则配置。",
         "原子更新 `.areamatrix/classifier.yaml` 或等价配置。",
         "- `Config`",
@@ -185,6 +217,8 @@ fn classifier_rule_editor_contract_docs_api_udl_and_control_map_stay_aligned() {
 
     for fragment in [
         "ClassifierRuleEditorSnapshot list_classifier_rules(string repo_path);",
+        "ClassifierRuleEditorSnapshot create_classifier_rule(",
+        "ClassifierRuleCreateRequest request",
         "ClassifierRuleEditorSnapshot update_classifier_rule(",
         "ClassifierRuleUpdate request",
         "ClassifierRuleEditorSnapshot delete_classifier_rule(",
@@ -202,6 +236,7 @@ fn classifier_rule_editor_contract_docs_api_udl_and_control_map_stay_aligned() {
         "sequence<ClassifierRuleRecord> rules;",
         "string default_rule_id;",
         "string? updated_rule_id;",
+        "dictionary ClassifierRuleCreateRequest",
         "dictionary ClassifierRuleUpdate",
         "boolean preview_confirmed;",
         "dictionary ClassifierRuleDeleteRequest",
@@ -213,9 +248,11 @@ fn classifier_rule_editor_contract_docs_api_udl_and_control_map_stay_aligned() {
 
     for fragment in [
         "| `list_classifier_rules(repo)` | classify | √ | Config / PermissionDenied / Io |",
+        "| `create_classifier_rule(repo, request)` | classify | √ | Config / PermissionDenied / Io |",
         "| `update_classifier_rule(repo, request)` | classify | √ | Config / PermissionDenied / Io |",
         "| `delete_classifier_rule(repo, request)` | classify | √ | Config / PermissionDenied / Io |",
         "### `list_classifier_rules(repoPath) throws -> ClassifierRuleEditorSnapshot`",
+        "### `create_classifier_rule(repoPath, request) throws -> ClassifierRuleEditorSnapshot`",
         "### `update_classifier_rule(repoPath, request) throws -> ClassifierRuleEditorSnapshot`",
         "### `delete_classifier_rule(repoPath, request) throws -> ClassifierRuleEditorSnapshot`",
         "C2-15 的分类规则编辑器入口",
@@ -249,9 +286,11 @@ fn classifier_rule_editor_contract_documents_consumer_state_and_scope_boundaries
         "C2-15 classifier rule editor contract types and entry points",
         "ClassifierRuleRecord",
         "ClassifierRuleEditorSnapshot",
+        "ClassifierRuleCreateRequest",
         "ClassifierRuleUpdate",
         "ClassifierRuleDeleteRequest",
         "list_classifier_rules",
+        "create_classifier_rule",
         "update_classifier_rule",
         "delete_classifier_rule",
         "must not move, delete, rename",
@@ -264,6 +303,7 @@ fn classifier_rule_editor_contract_documents_consumer_state_and_scope_boundaries
 
     for fragment in [
         "Lists C2-15 classifier rule editor state for S2-19",
+        "Creates one C2-15 classifier editor row",
         "Updates one C2-15 classifier editor row",
         "Deletes one C2-15 classifier editor row",
         "must not move, delete, rename",

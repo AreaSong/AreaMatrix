@@ -131,6 +131,12 @@ namespace area_matrix {
     ClassifierRuleEditorSnapshot list_classifier_rules(string repo_path);
 
     [Throws=CoreError]
+    ClassifierRuleEditorSnapshot create_classifier_rule(
+        string repo_path,
+        ClassifierRuleCreateRequest request
+    );
+
+    [Throws=CoreError]
     ClassifierRuleEditorSnapshot update_classifier_rule(
         string repo_path,
         ClassifierRuleUpdate request
@@ -702,6 +708,16 @@ dictionary ClassifierRuleEditorSnapshot {
     string default_rule_id;
     string? updated_rule_id;
     string? warning;
+};
+
+dictionary ClassifierRuleCreateRequest {
+    string slug;
+    string display_name;
+    string description;
+    sequence<string> extensions;
+    sequence<string> keywords;
+    i64 priority;
+    string? naming_template;
 };
 
 dictionary ClassifierRuleUpdate {

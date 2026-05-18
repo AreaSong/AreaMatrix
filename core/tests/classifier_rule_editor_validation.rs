@@ -1,7 +1,8 @@
 use area_matrix_core::{
-    delete_classifier_rule, list_classifier_rules, predict_category, update_classifier_rule,
-    ClassifierRuleDeleteRequest, ClassifierRuleEditorSnapshot, ClassifierRuleRecord,
-    ClassifierRuleUpdate, ClassifyReason, CoreError, CoreResult,
+    create_classifier_rule, delete_classifier_rule, list_classifier_rules, predict_category,
+    update_classifier_rule, ClassifierRuleCreateRequest, ClassifierRuleDeleteRequest,
+    ClassifierRuleEditorSnapshot, ClassifierRuleRecord, ClassifierRuleUpdate, ClassifyReason,
+    CoreError, CoreResult,
 };
 use pretty_assertions::assert_eq;
 
@@ -9,8 +10,8 @@ use pretty_assertions::assert_eq;
 mod classifier_rule_editor_validation_support;
 
 use classifier_rule_editor_validation_support::{
-    assert_contains, assert_no_classifier_temp_files, category, delete_request, initialized_repo,
-    insert_active_file, path_string, read_classifier, snapshot, update_request,
+    assert_contains, assert_no_classifier_temp_files, category, create_request, delete_request,
+    initialized_repo, insert_active_file, path_string, read_classifier, snapshot, update_request,
 };
 
 const CAPABILITY_SPEC: &str = include_str!(
@@ -31,6 +32,10 @@ const LIB_RS: &str = include_str!("../src/lib.rs");
 #[test]
 fn classifier_rule_editor_validation_locks_api_udl_and_rust_contract() {
     fn assert_list(_: fn(String) -> CoreResult<ClassifierRuleEditorSnapshot>) {}
+    fn assert_create(
+        _: fn(String, ClassifierRuleCreateRequest) -> CoreResult<ClassifierRuleEditorSnapshot>,
+    ) {
+    }
     fn assert_update(
         _: fn(String, ClassifierRuleUpdate) -> CoreResult<ClassifierRuleEditorSnapshot>,
     ) {
@@ -40,6 +45,7 @@ fn classifier_rule_editor_validation_locks_api_udl_and_rust_contract() {
     ) {
     }
     assert_list(list_classifier_rules);
+    assert_create(create_classifier_rule);
     assert_update(update_classifier_rule);
     assert_delete(delete_classifier_rule);
 
@@ -60,9 +66,9 @@ fn classifier_rule_editor_validation_locks_api_udl_and_rust_contract() {
     for fragment in [
         "# C2-15 classifier-rule-editor",
         "- S2-19 classifier-rule-editor",
-        "计划新增：`list_classifier_rules`、`update_classifier_rule`、`delete_classifier_rule`",
-        "规则 ID 和规则内容。",
-        "规则列表或更新结果。",
+        "计划新增：`list_classifier_rules`、`create_classifier_rule`、`update_classifier_rule`、`delete_classifier_rule`",
+        "新建规则内容、规则 ID 和更新/删除请求。",
+        "规则列表或创建/更新/删除结果。",
         "更新分类规则配置。",
         "原子更新 `.areamatrix/classifier.yaml` 或等价配置。",
         "删除规则不自动移动历史文件。",
@@ -91,6 +97,8 @@ fn classifier_rule_editor_validation_locks_api_udl_and_rust_contract() {
 
     for fragment in [
         "ClassifierRuleEditorSnapshot list_classifier_rules(string repo_path);",
+        "ClassifierRuleEditorSnapshot create_classifier_rule(",
+        "ClassifierRuleCreateRequest request",
         "ClassifierRuleEditorSnapshot update_classifier_rule(",
         "ClassifierRuleUpdate request",
         "ClassifierRuleEditorSnapshot delete_classifier_rule(",
@@ -108,6 +116,7 @@ fn classifier_rule_editor_validation_locks_api_udl_and_rust_contract() {
         "sequence<ClassifierRuleRecord> rules;",
         "string default_rule_id;",
         "string? updated_rule_id;",
+        "dictionary ClassifierRuleCreateRequest",
         "dictionary ClassifierRuleUpdate",
         "boolean preview_confirmed;",
         "dictionary ClassifierRuleDeleteRequest",
@@ -120,6 +129,8 @@ fn classifier_rule_editor_validation_locks_api_udl_and_rust_contract() {
     for fragment in [
         "C2-15 的分类规则编辑器入口",
         "`S2-19 classifier-rule-editor`",
+        "### `create_classifier_rule(repoPath, request) throws -> ClassifierRuleEditorSnapshot`",
+        "| `create_classifier_rule(repo, request)` | classify | √ | Config / PermissionDenied / Io |",
         "只允许原子更新 classifier 配置",
         "删除规则不自动移动、删除、重命名或重分类历史文件",
         "不实现 C2-13 rule save、C2-14 impact preview、复杂脚本规则、插件规则或 Stage 3 AI 规则",
@@ -141,8 +152,8 @@ fn classifier_rule_editor_validation_locks_api_udl_and_rust_contract() {
     }
 
     for fragment in [
-        "delete_classifier_rule, list_classifier_rules, update_classifier_rule",
-        "ClassifierRuleDeleteRequest, ClassifierRuleEditorSnapshot, ClassifierRuleRecord",
+        "create_classifier_rule, delete_classifier_rule, list_classifier_rules, update_classifier_rule",
+        "ClassifierRuleCreateRequest, ClassifierRuleDeleteRequest, ClassifierRuleEditorSnapshot",
         "ClassifierRuleUpdate",
     ] {
         assert_contains(LIB_RS, fragment);
@@ -150,9 +161,11 @@ fn classifier_rule_editor_validation_locks_api_udl_and_rust_contract() {
 
     for fragment in [
         "Lists C2-15 classifier rule editor state for S2-19.",
+        "Creates one C2-15 classifier editor row for future classification.",
         "Updates one C2-15 classifier editor row for future classification.",
         "Deletes one C2-15 classifier editor row after explicit impact confirmation.",
         "classifier_rule_editor::list_classifier_rules(repo_path)",
+        "classifier_rule_editor::create_classifier_rule(repo_path, request)",
         "classifier_rule_editor::update_classifier_rule(repo_path, request)",
         "classifier_rule_editor::delete_classifier_rule(repo_path, request)",
     ] {
@@ -163,9 +176,11 @@ fn classifier_rule_editor_validation_locks_api_udl_and_rust_contract() {
         "C2-15 classifier rule editor contract types and entry points",
         "pub struct ClassifierRuleRecord",
         "pub struct ClassifierRuleEditorSnapshot",
+        "pub struct ClassifierRuleCreateRequest",
         "pub struct ClassifierRuleUpdate",
         "pub struct ClassifierRuleDeleteRequest",
         "pub fn list_classifier_rules(",
+        "pub fn create_classifier_rule(",
         "pub fn update_classifier_rule(",
         "pub fn delete_classifier_rule(",
         "must not move, delete, rename",
@@ -179,6 +194,7 @@ fn classifier_rule_editor_validation_locks_api_udl_and_rust_contract() {
     for fragment in [
         "read_classifier_config",
         "snapshot_from_config",
+        "apply_create",
         "apply_update",
         "apply_delete",
         "reject_unpreviewed_impactful_update",
@@ -187,6 +203,70 @@ fn classifier_rule_editor_validation_locks_api_udl_and_rust_contract() {
     ] {
         assert_contains(CLASSIFIER_RULE_EDITOR_CONFIG_RS, fragment);
     }
+}
+
+#[test]
+fn classifier_rule_editor_validation_create_is_snapshot_ready_and_future_only() {
+    let repo = initialized_repo();
+    let existing_file_id = insert_active_file(repo.path(), "finance/legacy-invoice.pdf", "finance");
+    let before = snapshot(repo.path());
+
+    let saved = create_classifier_rule(path_string(repo.path()), create_request())
+        .expect("create classifier rule");
+
+    assert_eq!(saved.default_rule_id, "inbox");
+    assert_eq!(saved.updated_rule_id.as_deref(), Some("tax"));
+    assert_eq!(saved.warning, None);
+    assert!(saved.rules.iter().any(|rule| {
+        rule.rule_id == "tax"
+            && rule.slug == "tax"
+            && rule.display_name == "Tax"
+            && rule.description == "Tax documents"
+            && rule.extensions == vec!["pdf".to_owned()]
+            && rule.keywords == vec!["tax".to_owned()]
+            && rule.priority == 20
+            && rule.naming_template.as_deref() == Some("{stem}")
+            && !rule.is_default
+    }));
+
+    let config = read_classifier(repo.path());
+    assert_eq!(config.default, "inbox");
+    let tax = category(&config, "tax");
+    assert_eq!(tax.display_name.get("en").map(String::as_str), Some("Tax"));
+    assert_eq!(
+        tax.description.get("en").map(String::as_str),
+        Some("Tax documents")
+    );
+    assert_eq!(tax.extensions, vec!["pdf"]);
+    assert_eq!(tax.keywords, vec!["tax"]);
+    assert_eq!(tax.priority, 20);
+    assert_eq!(tax.naming_template.as_deref(), Some("{stem}"));
+
+    let future = predict_category(path_string(repo.path()), "tax.pdf".to_owned())
+        .expect("created rule participates in future classification");
+    assert_eq!(future.category, "tax");
+    assert_eq!(future.reason, ClassifyReason::Keyword);
+
+    let after = snapshot(repo.path());
+    assert_ne!(after.classifier_yaml, before.classifier_yaml);
+    assert_eq!(
+        after.file_rows,
+        vec![(
+            existing_file_id,
+            "finance/legacy-invoice.pdf".to_owned(),
+            "finance".to_owned(),
+            "active".to_owned()
+        )]
+    );
+    assert_eq!(after.file_rows, before.file_rows);
+    assert_eq!(after.user_visible_files, before.user_visible_files);
+    assert_eq!(after.generated_paths, before.generated_paths);
+    assert_eq!(after.change_log_count, before.change_log_count);
+    assert_eq!(after.notes_count, before.notes_count);
+    assert_eq!(after.tags_count, before.tags_count);
+    assert_eq!(after.undo_count, before.undo_count);
+    assert_eq!(after.saved_search_count, before.saved_search_count);
+    assert_no_classifier_temp_files(repo.path());
 }
 
 #[test]
@@ -325,6 +405,22 @@ fn classifier_rule_editor_validation_failures_keep_old_config_and_side_effects_c
     let repo = initialized_repo();
     insert_active_file(repo.path(), "finance/legacy-invoice.pdf", "finance");
     let before = snapshot(repo.path());
+
+    let mut duplicate_create = create_request();
+    duplicate_create.slug = "docs".to_owned();
+    assert!(matches!(
+        create_classifier_rule(path_string(repo.path()), duplicate_create),
+        Err(CoreError::Config { .. })
+    ));
+    assert_eq!(snapshot(repo.path()), before);
+
+    let mut invalid_create_template = create_request();
+    invalid_create_template.naming_template = Some("{unsupported}".to_owned());
+    assert!(matches!(
+        create_classifier_rule(path_string(repo.path()), invalid_create_template),
+        Err(CoreError::Config { .. })
+    ));
+    assert_eq!(snapshot(repo.path()), before);
 
     let mut duplicate_slug = update_request();
     duplicate_slug.slug = "docs".to_owned();

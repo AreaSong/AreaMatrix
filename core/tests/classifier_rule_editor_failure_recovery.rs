@@ -5,10 +5,10 @@ use std::{
 };
 
 use area_matrix_core::{
-    delete_classifier_rule, init_repo, list_classifier_rules, map_core_error,
-    update_classifier_rule, ClassifierRuleDeleteRequest, ClassifierRuleUpdate, CoreError,
-    ErrorKind, ErrorMappingInput, ErrorRecoverability, OverviewOutput, RepoInitMode,
-    RepoInitOptions,
+    create_classifier_rule, delete_classifier_rule, init_repo, list_classifier_rules,
+    map_core_error, update_classifier_rule, ClassifierRuleCreateRequest,
+    ClassifierRuleDeleteRequest, ClassifierRuleUpdate, CoreError, ErrorKind, ErrorMappingInput,
+    ErrorRecoverability, OverviewOutput, RepoInitMode, RepoInitOptions,
 };
 use pretty_assertions::assert_eq;
 
@@ -57,6 +57,18 @@ fn update_request() -> ClassifierRuleUpdate {
         priority: 30,
         naming_template: Some("{stem}-{date}".to_owned()),
         preview_confirmed: true,
+    }
+}
+
+fn create_request() -> ClassifierRuleCreateRequest {
+    ClassifierRuleCreateRequest {
+        slug: "tax".to_owned(),
+        display_name: "Tax".to_owned(),
+        description: "Tax documents".to_owned(),
+        extensions: vec!["pdf".to_owned()],
+        keywords: vec!["tax".to_owned()],
+        priority: 20,
+        naming_template: Some("{stem}".to_owned()),
     }
 }
 
@@ -203,6 +215,20 @@ fn classifier_rule_editor_failure_edge_invalid_inputs_are_config_without_writes(
         ErrorKind::Config,
     );
 
+    let mut invalid_create = create_request();
+    invalid_create.slug = "Bad Category".to_owned();
+    assert_error_kind(
+        create_classifier_rule(path_string(repo.path()), invalid_create),
+        ErrorKind::Config,
+    );
+
+    let mut duplicate_create_keyword = create_request();
+    duplicate_create_keyword.keywords = vec!["tax".to_owned(), "tax".to_owned()];
+    assert_error_kind(
+        create_classifier_rule(path_string(repo.path()), duplicate_create_keyword),
+        ErrorKind::Config,
+    );
+
     let mut empty_id = update_request();
     empty_id.rule_id.clear();
     assert_error_kind(
@@ -274,6 +300,10 @@ fn classifier_rule_editor_failure_edge_classifier_directory_is_io_without_half_p
         ErrorKind::Io,
     );
     assert_error_kind(
+        create_classifier_rule(path_string(repo.path()), create_request()),
+        ErrorKind::Io,
+    );
+    assert_error_kind(
         update_classifier_rule(path_string(repo.path()), update_request()),
         ErrorKind::Io,
     );
@@ -329,8 +359,8 @@ fn classifier_rule_editor_failure_edge_no_ai_network_or_user_file_side_effects()
     fs::write(repo.path().join("README.md"), b"user readme").expect("write user file");
     let before_user_files = user_visible_files(repo.path());
 
-    update_classifier_rule(path_string(repo.path()), update_request())
-        .expect("update classifier rule");
+    create_classifier_rule(path_string(repo.path()), create_request())
+        .expect("create classifier rule");
 
     assert_eq!(user_visible_files(repo.path()), before_user_files);
     assert!(!repo.path().join(".areamatrix/ai").exists());
@@ -396,7 +426,7 @@ fn classifier_rule_editor_failure_edge_permission_denied_keeps_old_config() {
     }
     let before = snapshot(repo.path());
 
-    let result = update_classifier_rule(path_string(repo.path()), update_request());
+    let result = create_classifier_rule(path_string(repo.path()), create_request());
 
     fs::set_permissions(&metadata_dir, original_permissions).expect("restore metadata permissions");
 

@@ -5,9 +5,10 @@ use std::{
 };
 
 use area_matrix_core::{
-    delete_classifier_rule, init_repo, list_classifier_rules, predict_category,
-    update_classifier_rule, ClassifierRuleDeleteRequest, ClassifierRuleUpdate, ClassifyReason,
-    CoreError, OverviewOutput, RepoInitMode, RepoInitOptions,
+    create_classifier_rule, delete_classifier_rule, init_repo, list_classifier_rules,
+    predict_category, update_classifier_rule, ClassifierRuleCreateRequest,
+    ClassifierRuleDeleteRequest, ClassifierRuleUpdate, ClassifyReason, CoreError, OverviewOutput,
+    RepoInitMode, RepoInitOptions,
 };
 use pretty_assertions::assert_eq;
 use serde::Deserialize;
@@ -87,6 +88,18 @@ fn update_request() -> ClassifierRuleUpdate {
         priority: 30,
         naming_template: Some("{stem}-{date}".to_owned()),
         preview_confirmed: true,
+    }
+}
+
+fn create_request() -> ClassifierRuleCreateRequest {
+    ClassifierRuleCreateRequest {
+        slug: "tax".to_owned(),
+        display_name: "Tax".to_owned(),
+        description: "Tax documents".to_owned(),
+        extensions: vec!["pdf".to_owned()],
+        keywords: vec!["tax".to_owned()],
+        priority: 20,
+        naming_template: Some("{stem}".to_owned()),
     }
 }
 
@@ -185,6 +198,53 @@ fn classifier_rule_editor_implementation_lists_persisted_classifier_rows() {
         .rules
         .iter()
         .any(|rule| rule.rule_id == "inbox" && rule.is_default));
+}
+
+#[test]
+fn classifier_rule_editor_implementation_creates_rule_for_future_classification_only() {
+    let repo = initialized_repo();
+    fs::write(repo.path().join("README.md"), b"user readme").expect("write user file");
+    let before = snapshot(repo.path());
+
+    let saved = create_classifier_rule(path_string(repo.path()), create_request())
+        .expect("create classifier rule");
+
+    assert_eq!(saved.updated_rule_id.as_deref(), Some("tax"));
+    assert_eq!(saved.warning, None);
+    assert!(saved.rules.iter().any(|rule| {
+        rule.rule_id == "tax"
+            && rule.display_name == "Tax"
+            && rule.description == "Tax documents"
+            && rule.extensions == ["pdf"]
+            && rule.keywords == ["tax"]
+            && rule.priority == 20
+            && rule.naming_template.as_deref() == Some("{stem}")
+            && !rule.is_default
+    }));
+
+    let config = read_classifier(repo.path());
+    assert_eq!(config.default, "inbox");
+    let tax = category(&config, "tax");
+    assert_eq!(tax.display_name.get("en").map(String::as_str), Some("Tax"));
+    assert_eq!(
+        tax.description.get("en").map(String::as_str),
+        Some("Tax documents")
+    );
+    assert_eq!(tax.extensions, vec!["pdf"]);
+    assert_eq!(tax.keywords, vec!["tax"]);
+    assert_eq!(tax.priority, 20);
+    assert_eq!(tax.naming_template.as_deref(), Some("{stem}"));
+
+    let predicted = predict_category(path_string(repo.path()), "tax.pdf".to_owned())
+        .expect("new rule participates in future classification");
+    assert_eq!(predicted.category, "tax");
+    assert_eq!(predicted.reason, ClassifyReason::Keyword);
+    assert_eq!(user_visible_files(repo.path()), before.user_visible_files);
+    assert_no_classifier_temp_files(repo.path());
+    assert_ne!(
+        fs::read_to_string(classifier_path(repo.path())).expect("read classifier yaml"),
+        before.classifier_yaml
+    );
 }
 
 #[test]

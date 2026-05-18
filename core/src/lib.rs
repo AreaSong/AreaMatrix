@@ -60,9 +60,9 @@ pub use classifier_impact::{
     RuleImpactSample, RuleImpactStatus,
 };
 pub use classifier_rule_editor::{
-    delete_classifier_rule, list_classifier_rules, update_classifier_rule,
-    ClassifierRuleDeleteRequest, ClassifierRuleEditorSnapshot, ClassifierRuleRecord,
-    ClassifierRuleUpdate,
+    create_classifier_rule, delete_classifier_rule, list_classifier_rules, update_classifier_rule,
+    ClassifierRuleCreateRequest, ClassifierRuleDeleteRequest, ClassifierRuleEditorSnapshot,
+    ClassifierRuleRecord, ClassifierRuleUpdate,
 };
 pub use classifier_rules::{save_classifier_rule, ClassifierRule};
 pub use command_index::{

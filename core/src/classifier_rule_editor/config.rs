@@ -13,8 +13,9 @@ use crate::{db, CoreError, CoreResult};
 
 use super::{
     validate_category_slug, validate_description, validate_display_name, validate_extension,
-    validate_keyword, validate_naming_template, validate_priority, ClassifierRuleDeleteRequest,
-    ClassifierRuleEditorSnapshot, ClassifierRuleRecord, ClassifierRuleUpdate, AREA_MATRIX_DIR,
+    validate_keyword, validate_naming_template, validate_priority, ClassifierRuleCreateRequest,
+    ClassifierRuleDeleteRequest, ClassifierRuleEditorSnapshot, ClassifierRuleRecord,
+    ClassifierRuleUpdate, AREA_MATRIX_DIR,
 };
 
 const CLASSIFIER_FILE: &str = "classifier.yaml";
@@ -79,6 +80,16 @@ pub(super) fn snapshot_from_config(
         updated_rule_id,
         warning,
     }
+}
+
+pub(super) fn apply_create(
+    config: &mut ClassifierConfig,
+    request: &ClassifierRuleCreateRequest,
+) -> CoreResult<String> {
+    reject_duplicate_new_slug(config, &request.slug)?;
+    let category = category_from_create_request(request)?;
+    config.categories.push(category);
+    Ok(request.slug.clone())
 }
 
 pub(super) fn apply_update(
@@ -276,6 +287,36 @@ fn find_category_index(config: &ClassifierConfig, rule_id: &str) -> CoreResult<u
         .iter()
         .position(|category| category.slug == rule_id)
         .ok_or_else(|| CoreError::config("classifier rule id does not exist"))
+}
+
+fn category_from_create_request(
+    request: &ClassifierRuleCreateRequest,
+) -> CoreResult<CategoryConfig> {
+    let mut display_name = BTreeMap::new();
+    let mut description = BTreeMap::new();
+    set_display_name(&mut display_name, &request.display_name)?;
+    set_description(&mut description, &request.description)?;
+    Ok(CategoryConfig {
+        slug: request.slug.clone(),
+        display_name,
+        description,
+        extensions: request.extensions.clone(),
+        keywords: request.keywords.clone(),
+        priority: request.priority as i32,
+        naming_template: normalized_template(request.naming_template.as_deref()),
+    })
+}
+
+fn reject_duplicate_new_slug(config: &ClassifierConfig, slug: &str) -> CoreResult<()> {
+    if config
+        .categories
+        .iter()
+        .any(|category| category.slug == slug)
+    {
+        Err(CoreError::config("classifier rule slug already exists"))
+    } else {
+        Ok(())
+    }
 }
 
 fn reject_duplicate_slug(
