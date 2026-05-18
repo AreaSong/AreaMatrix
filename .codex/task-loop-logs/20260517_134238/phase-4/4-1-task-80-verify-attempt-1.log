@@ -1,0 +1,70 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-1/task-80`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-80-c2-16-integration-verify.md`
+- 文档：`C2-16-icloud-conflict-visual.md`、`stage-2-control-map.md`、`core-api.md`、`S2-20-icloud-conflict-visual.md`
+- 代码：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+- 测试：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/icloud_conflict_visual_*`
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：交叉检查 capability spec、Core API、UDL、Rust 实现和测试
+- 结果：通过
+- 证据：`preview_conflict_versions` / `resolve_icloud_conflict` 已在 `docs/api/core-api.md`、`core/area_matrix.udl`、`core/src/api.rs`、`core/src/domain.rs`、`core/src/icloud_conflicts.rs` 对齐；`core/tests/icloud_conflict_visual_validation.rs` 覆盖 API/UDL/Rust 对齐。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/domain.rs`
+
+- 项目：确认消费页面需要的状态、错误和副作用均已覆盖
+- 结果：通过
+- 证据：S2-20 需要 metadata、默认 Keep both、Trash 禁用、失败保持 unresolved、change_log、Undo token；实现覆盖 preview 只读、Keep both 不移动文件、Keep left/right 进 Trash、DB 失败 rollback。相关测试 24 条全部通过。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-2-experience/S2-20-icloud-conflict-visual.md`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/icloud_conflicts/preview.rs`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/icloud_conflicts/resolve.rs`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/icloud_conflict_visual_failure_recovery.rs`
+
+- 项目：确认没有实现 control map 之外的能力
+- 结果：通过
+- 证据：control map 对 S2-20 声明为 `C2-16, C1-25`；C2-16 实现只含 conflict preview/resolve，不包含 import conflict batch、AI provider、remote provider、Cloud SDK 等越界能力。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-2-control-map.md`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/icloud_conflict_visual_contract_api.rs`
+
+- 项目：不得修改文件，只记录验收证据和阻塞项
+- 结果：通过
+- 证据：本轮未编辑文件；验收后 `git status --short` 仅显示既有 task-loop 状态/日志脏改动，`git diff --name-only -- apps` 为空，未触碰 Forbidden Touches `apps/**`。
+- 涉及文件：无本轮修改
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，`icloud_conflicts` 已拆为 `paths.rs`、`preview.rs`、`resolve.rs`、`types.rs`，职责清晰。
+- 注释 / rustdoc / 文档同步：通过，public API 和 domain 类型有 rustdoc，Core API 与 UDL 对齐。
+- 错误处理与边界处理：通过，覆盖 `ICloudPlaceholder`、`PermissionDenied`、`Conflict`、`Io`、`Db`；DB 失败时 destructive resolution rollback 并保持 unresolved。
+- 测试与验证覆盖：通过，manifest 验证命令已运行并通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过，测试使用真实临时 repo、真实 DB、真实文件树与测试 Trash，不是 mock-only 闭环。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-80`
+- 通过：`prompt doctor`、`git diff --check`、`cargo fmt --all -- --check`、`cargo clippy --all-targets --all-features -- -D warnings`
+- 通过：`cargo test --test icloud_conflict_visual_contract_api -- --nocapture`，4 passed
+- 通过：`cargo test --test icloud_conflict_visual_failure_recovery -- --nocapture`，10 passed
+- 通过：`cargo test --test icloud_conflict_visual_implementation -- --nocapture`，3 passed
+- 通过：`cargo test --test icloud_conflict_visual_validation -- --nocapture`，7 passed
+- 失败：无
+- 缺失：无
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。C2-16 可以作为后续 S2-20 page-feature task 的真实 Core 依赖。
+
+VERIFY_RESULT: PASS
