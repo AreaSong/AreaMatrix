@@ -178,9 +178,17 @@ fn validate_command_index_request(
     if repo.components().any(is_area_matrix_component) {
         return Err(CoreError::db("command index repository path is invalid"));
     }
+    validate_query(context.query.as_deref())?;
     validate_selection_ids(&context.selected_file_ids)?;
     validate_current_path(context.current_path.as_deref())?;
     Ok(repo)
+}
+
+fn validate_query(query: Option<&str>) -> CoreResult<()> {
+    if query.is_some_and(|value| value.contains('\0')) {
+        return Err(CoreError::db("command index query is invalid"));
+    }
+    Ok(())
 }
 
 fn validate_selection_ids(file_ids: &[i64]) -> CoreResult<()> {
@@ -198,7 +206,9 @@ fn validate_current_path(path: Option<&str>) -> CoreResult<()> {
         return Err(CoreError::db("command index current path is invalid"));
     }
     let candidate = PathBuf::from(path);
-    if candidate.components().any(is_forbidden_relative_component) {
+    if candidate.components().any(|component| {
+        is_forbidden_relative_component(component) || is_area_matrix_component(component)
+    }) {
         return Err(CoreError::db("command index current path is invalid"));
     }
     Ok(())
