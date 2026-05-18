@@ -16,7 +16,7 @@ const CONFLICTED_COPY_MARKER: &str = "conflicted copy";
 
 pub(super) fn validate_repo_path(repo_path: &str) -> CoreResult<PathBuf> {
     if repo_path.trim().is_empty() {
-        return Err(CoreError::io("io error"));
+        return Err(CoreError::invalid_path("invalid path"));
     }
     let repo = PathBuf::from(repo_path);
     if has_icloud_placeholder_component(&repo) {

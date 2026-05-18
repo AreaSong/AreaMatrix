@@ -5,8 +5,9 @@ use std::{
 };
 
 use area_matrix_core::{
-    init_repo, preview_conflict_versions, resolve_icloud_conflict, CoreError,
-    ICloudConflictResolution, OverviewOutput, RepoInitMode, RepoInitOptions,
+    init_repo, load_config, map_core_error, preview_conflict_versions, resolve_icloud_conflict,
+    CoreError, ErrorKind, ErrorMappingInput, ErrorRecoverability, ICloudConflictResolution,
+    OverviewOutput, RepoInitMode, RepoInitOptions,
 };
 use pretty_assertions::assert_eq;
 use rusqlite::Connection;
@@ -85,6 +86,31 @@ fn undo_action_count(repo: &Path) -> i64 {
         .expect("count undo action rows")
 }
 
+fn config_keys_like(repo: &Path, pattern: &str) -> Vec<String> {
+    let connection = open_db(repo);
+    let mut statement = connection
+        .prepare("SELECT key FROM repo_config WHERE key LIKE ?1 ORDER BY key")
+        .expect("prepare config key query");
+    statement
+        .query_map([pattern], |row| row.get(0))
+        .expect("query config keys")
+        .map(|row| row.expect("read config key"))
+        .collect()
+}
+
+fn conflict_resolution_change_count(repo: &Path) -> i64 {
+    open_db(repo)
+        .query_row(
+            "SELECT COUNT(*)
+             FROM change_log
+             WHERE action = 'external_modified'
+               AND json_extract(detail_json, '$.kind') = 'icloud_conflict_resolved'",
+            [],
+            |row| row.get(0),
+        )
+        .expect("count conflict resolution rows")
+}
+
 fn install_icloud_resolution_log_failure(repo: &Path) {
     open_db(repo)
         .execute_batch(
@@ -97,6 +123,86 @@ fn install_icloud_resolution_log_failure(repo: &Path) {
              END;",
         )
         .expect("install conflict resolution log failure trigger");
+}
+
+#[test]
+fn icloud_conflict_visual_failure_edge_empty_repo_path_is_invalid_without_side_effects() {
+    let preview = preview_conflict_versions(
+        "   ".to_owned(),
+        "docs/report (Alice's conflicted copy).pdf".to_owned(),
+    );
+    let resolve = resolve_icloud_conflict(
+        "".to_owned(),
+        "docs/report (Alice's conflicted copy).pdf".to_owned(),
+        ICloudConflictResolution::KeepBoth,
+    );
+
+    assert!(matches!(preview, Err(CoreError::InvalidPath { .. })));
+    assert!(matches!(resolve, Err(CoreError::InvalidPath { .. })));
+}
+
+#[test]
+fn icloud_conflict_visual_failure_edge_empty_state_is_read_only_and_returns_stale_conflict() {
+    let repo = initialized_repo();
+    let before = snapshot_tree(repo.path());
+
+    let preview = preview_conflict_versions(
+        path_string(repo.path()),
+        "docs/report (Alice's conflicted copy).pdf".to_owned(),
+    );
+    let resolve = resolve_icloud_conflict(
+        path_string(repo.path()),
+        "docs/report (Alice's conflicted copy).pdf".to_owned(),
+        ICloudConflictResolution::KeepBoth,
+    );
+
+    assert!(matches!(preview, Err(CoreError::Conflict { .. })));
+    assert!(matches!(resolve, Err(CoreError::Conflict { .. })));
+    assert_eq!(snapshot_tree(repo.path()), before);
+    assert_eq!(change_log_count(repo.path()), 0);
+    assert_eq!(undo_action_count(repo.path()), 0);
+}
+
+#[test]
+fn icloud_conflict_visual_failure_edge_invalid_conflict_id_is_rejected_without_side_effects() {
+    with_test_system_trash(|_trash_dir| {
+        let repo = initialized_repo();
+        write_repo_file(repo.path(), "docs/report.pdf", b"original");
+        write_repo_file(
+            repo.path(),
+            "docs/report (Alice's conflicted copy).pdf",
+            b"conflicted",
+        );
+        let before = snapshot_tree(repo.path());
+
+        for invalid_id in [
+            "",
+            "../outside.pdf",
+            ".areamatrix/index.db",
+            "/tmp/outside.pdf",
+        ] {
+            let preview =
+                preview_conflict_versions(path_string(repo.path()), invalid_id.to_owned());
+            let resolve = resolve_icloud_conflict(
+                path_string(repo.path()),
+                invalid_id.to_owned(),
+                ICloudConflictResolution::KeepOriginal,
+            );
+
+            assert!(
+                matches!(preview, Err(CoreError::Conflict { .. })),
+                "preview should reject invalid id {invalid_id:?}"
+            );
+            assert!(
+                matches!(resolve, Err(CoreError::Conflict { .. })),
+                "resolve should reject invalid id {invalid_id:?}"
+            );
+        }
+
+        assert_eq!(snapshot_tree(repo.path()), before);
+        assert_eq!(change_log_count(repo.path()), 0);
+        assert_eq!(undo_action_count(repo.path()), 0);
+    });
 }
 
 #[test]
@@ -124,6 +230,43 @@ fn icloud_conflict_visual_failure_edge_rejects_placeholder_without_side_effects(
         assert!(matches!(preview, Err(CoreError::ICloudPlaceholder { .. })));
         assert!(matches!(resolve, Err(CoreError::ICloudPlaceholder { .. })));
         assert_eq!(snapshot_tree(repo.path()), before);
+        assert_eq!(change_log_count(repo.path()), 0);
+        assert_eq!(undo_action_count(repo.path()), 0);
+    });
+}
+
+#[test]
+fn icloud_conflict_visual_failure_edge_missing_original_blocks_destructive_choice() {
+    with_test_system_trash(|_trash_dir| {
+        let repo = initialized_repo();
+        let conflicted = write_repo_file(
+            repo.path(),
+            "docs/report (Alice's conflicted copy).pdf",
+            b"conflicted",
+        );
+        let before = snapshot_tree(repo.path());
+
+        let preview = preview_conflict_versions(
+            path_string(repo.path()),
+            "docs/report (Alice's conflicted copy).pdf".to_owned(),
+        )
+        .expect("preview incomplete conflict");
+        let result = resolve_icloud_conflict(
+            path_string(repo.path()),
+            "docs/report (Alice's conflicted copy).pdf".to_owned(),
+            ICloudConflictResolution::KeepOriginal,
+        );
+
+        assert!(!preview.metadata_complete);
+        assert!(preview.can_keep_both);
+        assert!(!preview.can_resolve_destructive);
+        assert!(matches!(result, Err(CoreError::Conflict { .. })));
+        assert_eq!(snapshot_tree(repo.path()), before);
+        assert_eq!(
+            fs::read(conflicted)
+                .expect("conflicted copy remains after blocked destructive resolve"),
+            b"conflicted"
+        );
         assert_eq!(change_log_count(repo.path()), 0);
         assert_eq!(undo_action_count(repo.path()), 0);
     });
@@ -160,6 +303,49 @@ fn icloud_conflict_visual_failure_edge_destructive_resolution_rolls_back_db_fail
             .exists());
         assert_eq!(change_log_count(repo.path()), before_change_count);
         assert_eq!(undo_action_count(repo.path()), before_undo_count);
+    });
+}
+
+#[test]
+fn icloud_conflict_visual_failure_edge_failed_destructive_retry_can_keep_both() {
+    with_test_system_trash(|_trash_dir| {
+        let repo = initialized_repo();
+        let original = write_repo_file(repo.path(), "docs/report.pdf", b"original");
+        let conflicted = write_repo_file(
+            repo.path(),
+            "docs/report (Alice's conflicted copy).pdf",
+            b"conflicted",
+        );
+        install_icloud_resolution_log_failure(repo.path());
+
+        let failed = resolve_icloud_conflict(
+            path_string(repo.path()),
+            "docs/report (Alice's conflicted copy).pdf".to_owned(),
+            ICloudConflictResolution::KeepOriginal,
+        );
+        assert!(matches!(failed, Err(CoreError::Db { .. })));
+
+        open_db(repo.path())
+            .execute("DROP TRIGGER fail_icloud_resolution_log", [])
+            .expect("remove forced log failure trigger");
+        let retry = resolve_icloud_conflict(
+            path_string(repo.path()),
+            "docs/report (Alice's conflicted copy).pdf".to_owned(),
+            ICloudConflictResolution::KeepBoth,
+        )
+        .expect("retry can keep both after rollback");
+
+        assert_eq!(retry.trashed_paths, Vec::<String>::new());
+        assert_eq!(
+            fs::read(original).expect("read original after retry"),
+            b"original"
+        );
+        assert_eq!(
+            fs::read(conflicted).expect("read conflicted after retry"),
+            b"conflicted"
+        );
+        assert_eq!(conflict_resolution_change_count(repo.path()), 1);
+        assert_eq!(undo_action_count(repo.path()), 0);
     });
 }
 
@@ -201,4 +387,53 @@ fn icloud_conflict_visual_failure_edge_trash_unavailable_blocks_destructive_choi
     assert!(matches!(result, Err(CoreError::Conflict { .. })));
     assert_eq!(change_log_count(repo.path()), 0);
     assert_eq!(undo_action_count(repo.path()), 0);
+}
+
+#[test]
+fn icloud_conflict_visual_failure_edge_error_mapping_keeps_retry_and_user_action_boundaries() {
+    let icloud = map_core_error(ErrorMappingInput {
+        kind: ErrorKind::ICloudPlaceholder,
+        path: Some("docs/report (Alice's conflicted copy).pdf.icloud".to_owned()),
+        reason: Some("permission denied".to_owned()),
+        message: Some("database is locked".to_owned()),
+    });
+    let permission = map_core_error(ErrorMappingInput {
+        kind: ErrorKind::PermissionDenied,
+        path: Some("/restricted/repo/docs/report.pdf".to_owned()),
+        reason: Some("icloud placeholder can retry".to_owned()),
+        message: Some("database is locked".to_owned()),
+    });
+    let db = map_core_error(ErrorMappingInput {
+        kind: ErrorKind::Db,
+        path: Some("/ignored".to_owned()),
+        reason: Some("ignored".to_owned()),
+        message: Some("forced icloud resolution log failure".to_owned()),
+    });
+
+    assert_eq!(icloud.kind, ErrorKind::ICloudPlaceholder);
+    assert_eq!(icloud.recoverability, ErrorRecoverability::Retryable);
+    assert_eq!(permission.kind, ErrorKind::PermissionDenied);
+    assert_eq!(
+        permission.recoverability,
+        ErrorRecoverability::UserActionRequired
+    );
+    assert_eq!(db.kind, ErrorKind::Db);
+    assert_eq!(db.recoverability, ErrorRecoverability::UserActionRequired);
+}
+
+#[test]
+fn icloud_conflict_visual_failure_edge_does_not_enable_ai_or_remote_privacy_paths() {
+    let repo = initialized_repo();
+    let config = load_config(path_string(repo.path())).expect("load repository config");
+
+    let preview = preview_conflict_versions(
+        path_string(repo.path()),
+        "docs/report (Alice's conflicted copy).pdf".to_owned(),
+    );
+
+    assert!(matches!(preview, Err(CoreError::Conflict { .. })));
+    assert!(!config.ai_enabled);
+
+    assert!(config_keys_like(repo.path(), "%api_key%").is_empty());
+    assert!(config_keys_like(repo.path(), "%token%").is_empty());
 }

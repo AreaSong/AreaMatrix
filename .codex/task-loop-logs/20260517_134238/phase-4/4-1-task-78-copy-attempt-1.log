@@ -1,0 +1,35 @@
+一、执行结论
+
+已完成。
+
+二、执行范围
+
+单任务：`4-1/task-78`，只修改了 Core 允许范围：
+
+- [paths.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/icloud_conflicts/paths.rs:17)：空 `repo_path` 从 `Io` 改为明确的 `InvalidPath`。
+- [icloud_conflict_visual_failure_recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/icloud_conflict_visual_failure_recovery.rs:128)：补齐 C2-16 failure-edge 测试证据。
+
+三、完成情况
+
+核对清单已覆盖：空态、非法输入、iCloud placeholder、Trash 不可用、DB 写失败回滚、错误映射、AI/远程隐私默认关闭。破坏性 resolve 失败后会验证原始版本和 conflicted copy 仍存在、change_log/undo 无半成品，并可重试 KeepBoth。
+
+Forbidden Touches：未触碰 `apps/**`。工作树里原本已有 `.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json` 改动，我未修改它们。
+
+四、工程质量
+
+实现没有新增依赖、mock-only、硬编码通过态或一次性脚本逻辑。测试使用临时 repo 和测试 HOME/Trash，验证 DB 与文件系统状态一致；错误路径显式返回，不吞错、不静默降级。未改 UDL/API 文档，因为现有合同已覆盖 C2-16 API。
+
+五、验证情况
+
+已通过：
+
+- `cargo test --test icloud_conflict_visual_failure_recovery -- --nocapture`：10 passed。
+- `./dev check task 4-1/task-78`：通过；包含 `doctor: OK`、`git diff --check`、`cargo fmt --all -- --check`、`cargo clippy --all-targets --all-features -- -D warnings`、以及 C2-16 三个目标测试：
+  - `icloud_conflict_visual_contract_api`：4 passed
+  - `icloud_conflict_visual_failure_recovery`：10 passed
+  - `icloud_conflict_visual_implementation`：3 passed
+
+六、风险与后续
+
+剩余风险：未做真实 macOS iCloud placeholder/系统 Trash 手工交互验证，本任务范围只完成 Core 临时目录自动化证据。建议下一个任务继续执行 `4-1/task-79`。
+
