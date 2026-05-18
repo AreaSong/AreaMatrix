@@ -1,0 +1,47 @@
+一、执行结论
+
+已完成。
+
+二、执行范围
+
+单任务：`4-1/task-54`。  
+新增文件：[command_index_validation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/command_index_validation.rs:1)
+
+未修改 `apps/**`。工作树里原本已有的 `.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json` 改动我没有触碰。
+
+三、完成情况
+
+- 成功路径：新增测试覆盖 C2-11 命令索引、Smart List、文件候选、只读无副作用。
+- 失败路径：新增测试覆盖空 repo path、非法 selection、非法 current path、NUL query、未初始化 repo，均映射为 `Db` 且不写入用户文件或 `.areamatrix`。
+- API / UDL / Rust 一致性：新增测试锁定 `list_command_targets` 签名、UDL 字段、Core API 文档、Rust re-export 与实现边界。
+- 未新增业务功能，只新增验证测试 fixture。
+- Forbidden Touches：未触碰。
+
+四、工程质量
+
+新增测试保持在 `core/tests/**`，没有改生产实现、UDL 或 API。测试覆盖成功、失败、确认边界和只读副作用边界，没有 mock-only、硬编码通过态或一次性脚本。未新增依赖。
+
+五、验证情况
+
+已运行：
+
+```bash
+./dev check task 4-1/task-54
+```
+
+结果通过。实际包含：
+
+- `prompt_pipeline.py doctor`：OK
+- `git diff --check`：OK
+- `cargo test --test command_index_contract_api -- --nocapture`：4 passed
+- `cargo test --test command_index_failure_recovery -- --nocapture`：7 passed
+- `cargo test --test command_index_implementation -- --nocapture`：4 passed
+- `cargo test --test command_index_validation -- --nocapture`：4 passed
+
+无无法运行项。
+
+六、风险与后续
+
+剩余风险：本 task 只证明 Core C2-11 可进入 UI 接入，不证明 S2-15 页面已接入。  
+建议下一个任务：继续 `4-1/task-55`，做 C2-11 integration verify。
+
