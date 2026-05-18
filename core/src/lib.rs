@@ -10,6 +10,7 @@ mod batch_category;
 mod batch_delete;
 mod batch_rename;
 pub mod classify;
+mod command_index;
 pub mod config;
 pub mod db;
 pub mod domain;
@@ -45,6 +46,10 @@ pub use batch_rename::{
     batch_rename, preview_batch_rename, BatchRenameConflict, BatchRenameDateSource,
     BatchRenameItemResult, BatchRenameMode, BatchRenamePreviewItem, BatchRenamePreviewReport,
     BatchRenamePreviewStatus, BatchRenameReport, BatchRenameResultStatus, BatchRenameRule,
+};
+pub use command_index::{
+    list_command_targets, CommandIndex, CommandIndexContext, CommandTarget, CommandTargetAction,
+    CommandTargetGroup, CommandTargetKind,
 };
 pub use domain::*;
 pub use error::{

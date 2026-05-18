@@ -1,0 +1,11 @@
+一、执行结论：已完成。
+
+二、执行范围：单任务 `4-1/task-51`。修改了 [core/src/command_index.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/command_index.rs:11)、[core/src/lib.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/lib.rs:10)、[core/area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:149)、[core/tests/command_index_contract_api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/command_index_contract_api.rs:24)，并同步修复 Exact Docs 漂移：[docs/api/core-api.md](/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:1892)。工作树里另有 task-loop 状态文件此前已变更，未纳入本任务产品改动。
+
+三、完成情况：C2-11 已补 `list_command_targets(repo_path, context) -> CommandIndex` 的 Rust 类型、UDL 声明、Core API 文档和 contract test。合同覆盖 grouped commands、navigation、current selection、recent、Smart Lists、file candidates、disabled reason、shortcut、`requires_confirmation`。未触碰 `apps/**`。
+
+四、工程质量：新增 public Rust API/type 均有 rustdoc；有效请求当前返回 `Db`，不伪造成功闭环，真实 metadata 读取留给 `4-1/task-52` implementation。无新增依赖，无 mock-only 成功路径，无文件系统/用户文件/AI 网络副作用。
+
+五、验证情况：已运行并通过 `cd core && cargo fmt --all -- --check`、`cd core && cargo test --test command_index_contract_api -- --nocapture`、`./dev check task 4-1/task-51`。最终 task check 证据：`doctor: OK`，`git diff --check` 通过，targeted test `command_index_contract_api` 4/4 通过。
+
+六、风险与后续：剩余风险是 C2-11 目前仍是合同/API 层，尚未实现 command registry metadata、recent command、Smart List/file candidate 真实读取。建议下一个任务执行 `4-1/task-52`。  

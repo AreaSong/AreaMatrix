@@ -147,6 +147,9 @@ namespace area_matrix {
     );
 
     [Throws=CoreError]
+    CommandIndex list_command_targets(string repo_path, CommandIndexContext context);
+
+    [Throws=CoreError]
     TagSet add_tag(string repo_path, i64 file_id, string tag);
 
     [Throws=CoreError]
@@ -383,6 +386,39 @@ dictionary SavedSearch {
     boolean pinned;
     i64 created_at;
     i64 updated_at;
+};
+
+dictionary CommandIndexContext {
+    string? query;
+    sequence<i64> selected_file_ids;
+    string? current_path;
+    boolean include_file_candidates;
+};
+
+dictionary CommandTarget {
+    string id;
+    string title;
+    string? subtitle;
+    CommandTargetGroup group;
+    CommandTargetKind kind;
+    CommandTargetAction action;
+    string? route;
+    string? shortcut;
+    boolean disabled;
+    string? disabled_reason;
+    boolean requires_confirmation;
+    i64? file_id;
+    i64? saved_search_id;
+};
+
+dictionary CommandIndex {
+    sequence<CommandTarget> commands;
+    sequence<CommandTarget> navigation_targets;
+    sequence<CommandTarget> current_selection_targets;
+    sequence<CommandTarget> recent_targets;
+    sequence<CommandTarget> smart_lists;
+    sequence<CommandTarget> file_candidates;
+    i64 generated_at;
 };
 
 dictionary TagRecord {
@@ -782,6 +818,18 @@ enum SearchDiagnosticKind {
 };
 enum SearchDiagnosticSeverity { "Info", "Warning", "Error" };
 enum SearchIndexStatus { "Ready", "Indexing", "Unavailable" };
+enum CommandTargetGroup {
+    "Commands", "Navigation", "CurrentSelection",
+    "Recent", "SmartLists", "FileCandidates"
+};
+enum CommandTargetKind {
+    "Command", "Navigation", "SmartList",
+    "FileCandidate", "RecentCommand"
+};
+enum CommandTargetAction {
+    "Navigate", "OpenSheet", "OpenConfirmation", "RunSmartList",
+    "FocusFile", "OpenSearch", "LowRiskAction"
+};
 enum ICloudConflictStatus { "NeedsReview", "Resolved" };
 enum ExternalEventKind { "Created", "Removed", "Modified", "Renamed" };
 enum BatchMutationStatus { "Added", "AlreadyHadTag", "Failed" };
