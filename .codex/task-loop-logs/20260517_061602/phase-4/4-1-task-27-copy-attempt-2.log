@@ -1,0 +1,52 @@
+一、执行结论
+
+已完成。`4-1/task-27` 的 retry 阻塞项已修复，并按 manifest 上限重新跑过验证。
+
+二、执行范围
+
+单任务：`4-1/task-27`，仅修复 C2-06。
+
+本次修复改动：
+- [core/src/db/tags.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/db/tags.rs)
+- [core/tests/batch_add_tags_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/batch_add_tags_implementation.rs)
+- [core/tests/batch_add_tags_contract_api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/batch_add_tags_contract_api.rs)
+- [docs/architecture/data-model.md](/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/data-model.md)
+
+三、完成情况
+
+- 只实现 C2-06：通过，未做页面接入，未实现相邻 C* 能力。
+- 输入、输出、DB/文件系统变化和错误映射：通过，批量项现在可返回 `Added`、`AlreadyHadTag`、`Failed`，并统计 `failed_count`。
+- Rust Core 不依赖平台 UI API：通过。
+- 最小测试支撑：通过，新增覆盖缺失目标 `Failed` item，以及单项 DB 写入失败 savepoint 回滚。
+- Forbidden Touches：未触碰 `apps/**`，`git diff --name-only -- apps` 无输出。
+
+四、工程质量
+
+实现从“全量预校验后整体失败”改为每个 file/tag 对独立 savepoint 尝试：单项失败进入 `BatchMutationReport.item_results`，成功项仍写入 `tags`、`change_log` 和 `undo_actions`。失败项不会进入 undo 反向操作，也不会被显示为成功。
+
+已补 `docs/architecture/data-model.md` 中的 `undo_actions` schema、索引和 CRUD 片段，并在 contract 测试中锁定文档一致性。没有新增依赖、mock-only、硬编码通过态或一次性脚本逻辑。
+
+五、验证情况
+
+已运行并通过：
+
+```bash
+./dev check task 4-1/task-27
+```
+
+关键结果：
+- `prompt doctor`: OK
+- `git diff --check`: OK
+- `cargo test --test batch_add_tags_contract_api -- --nocapture`: 4 passed
+- `cargo test --test batch_add_tags_implementation -- --nocapture`: 4 passed
+
+额外只读核对：
+- `cargo fmt --all -- --check`: 通过
+- `git diff --name-only -- apps`: 无输出
+
+未运行宽门禁：按当前 manifest，验证上限是 `./dev check task 4-1/task-27`，未升级到 `cargo test --workspace`、`./dev check core` 或 `./dev check all`。
+
+六、风险与后续
+
+剩余风险：C2-07 的真实 undo 执行仍属于后续能力，不在本 task 范围内；本次只保证 C2-06 能生成 undo action。建议下一个任务进入 `4-1/task-28`，按队列继续 C2-06 后续 failure-edge / validation 边界。
+

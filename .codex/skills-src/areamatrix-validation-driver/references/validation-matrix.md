@@ -12,6 +12,14 @@ Every validation decision must also apply:
 
 Validation is not complete when commands pass but the implementation is a placeholder, hardcoded success path, mock-only path, or one-off script.
 
+When a validation command fails, use `.codex/references/debugging-failure-attribution-runbook.md` before fixing. First decide whether the command itself is the failing layer, or whether it is exposing a copy, verify, runner, Git checkpoint, docs / API / UDL / manifest drift, or file-safety problem.
+
+Before claiming a task is done, fixed, passing, commit-ready, merge-ready, or deliverable, apply `.codex/references/completion-evidence-checklist.md`.
+
+Completion evidence must name what changed, why it changed, which commands ran, whether those results are fresh after the final change, which checks did not run and why, remaining risks, and review / security / dependency / CI / Git evidence blocker state. Old logs, prior memories, dry-runs, screenshots, mock-only paths, fixture-only paths, hardcoded success, and agent self-reports are not completion evidence.
+
+If required validation cannot run, or any review, security, dependency, CI, or Git evidence blocker remains, report `BLOCKED` or `NOT-READY` instead of `PASS`.
+
 ## Prompt And Task Runtime
 
 | Changed paths | Required checks |
@@ -29,6 +37,47 @@ Dry-run examples:
 DRY_RUN=1 DRY_RUN_RESULT=PASS MAX_RETRIES=1 ./task-loop run --phase phase-1 --max-tasks 1
 DRY_RUN=1 RISK_GATE=high RISK_POLICY=pause ./task-loop run --phase phase-1 --max-tasks 1
 ```
+
+## Prompt Task Gates
+
+Phase 4 prompt tasks should not default every atomic task to `./dev check all`.
+Use layered gates:
+
+- Atomic Core task: `./dev check task <label>`.
+- Core capability integration verify: `./dev check task <label>`.
+- Page feature or page integration task: `./dev check task <label>`.
+- Stage/foundation closeout or release task: `./dev check all`.
+
+`./dev check task <label>` always runs prompt doctor and diff checks, then chooses
+the smallest repo-local implementation gate for that task:
+
+- Atomic Core task: targeted Rust test binaries only, such as
+  `cargo test --test <target> -- --nocapture`.
+- Core capability integration verify: targeted Rust test binaries plus the Core
+  quality gate (`cargo fmt --all -- --check` and
+  `cargo clippy --all-targets --all-features -- -D warnings`).
+- Mission-Critical file-safety, DB, staging, recovery, sync, import, migration,
+  reindex, or user-file boundary: widen to the Core quality gate.
+- Page feature or page integration task: macOS build gate.
+- Stage/foundation closeout or release task: `./dev check all`.
+
+Agents may run additional targeted tests when the task or observed changes need
+more evidence, but the manifest should reserve `./dev check all` for integration
+or release boundaries.
+
+Atomic Core tasks without a targeted test mapping must fail with a mapping error
+instead of silently falling back to `cargo test --workspace`. Add the missing
+mapping in `scripts/dev_tools/checks.py`, run an explicit `./dev check core` or
+`./dev check all` for a broad gate, or set `AREAMATRIX_TASK_CHECK_FULL_FALLBACK=1`
+only when an emergency full fallback is intentionally chosen.
+
+During copy-ready execution, the task manifest `Validation` is the upper bound
+for ordinary atomic tasks. Do not turn a normal `./dev check task <label>` into
+`cargo test --workspace`, `cargo clippy --all-targets --all-features`,
+`./dev check core`, or `./dev check all` just because files under `core/**`
+changed. The path-based Rust Core row below is for broad manual gates,
+integration / release boundaries, or explicit escalation, not the default for
+every Core prompt task.
 
 ## Rust Core
 
@@ -58,6 +107,13 @@ bundle through `xcrun xctest`. Non-sandbox failures, assertion failures, build
 failures, or link failures still fail the validation.
 
 If Xcode is unavailable, report it as blocked with exact command and error.
+
+For SwiftUI page or interaction tasks, add Computer Use UI smoke evidence when
+the task needs a real window, click, menu, input, screenshot, or visible state
+check. Follow `.codex/references/computer-use-macos-ui-smoke-runbook.md`.
+This evidence is supplemental and does not replace `xcodebuild`, `./dev test
+macos`, SwiftLint / SwiftFormat, Rust tests, prompt verify, or docs / UDL / Core
+API checks.
 
 ## Docs Only
 

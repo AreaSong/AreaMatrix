@@ -1,0 +1,94 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-1/task-38`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-38-c2-08-failure-edge.md`
+- 实现范围：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/**`
+
+三、完成度摘要
+
+- 已覆盖项数：9
+- 未覆盖项数：0
+- 通过项数：9
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：Exact Docs / Manifest 边界
+- 结果：通过
+- 证据：manifest 明确 6 个 Exact Docs、Existing Code、Expected New Paths、Forbidden Touches 和验证命令；均已读取核验。Forbidden Touches `apps/**` 未出现在 `git diff --name-only -- apps`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-4.md:1106`
+
+- 项目：C2-08 API / UDL 合同
+- 结果：通过
+- 证据：UDL 暴露 `preview_batch_move_to_category` 与 `batch_move_to_category`，并包含 preview/report/result status DTO；与 Core API 文档的 C2-08 合同一致。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:66`、`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:1815`
+
+- 项目：空态、非法输入、权限、IO/DB 错误和错误码映射
+- 结果：通过
+- 证据：实现校验空 selection、非法 id、非法 target category、缺失 preview token；测试覆盖 Db、FileNotFound、Classify、Conflict、PermissionDenied、Io 映射。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/batch_category.rs:210`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/batch_change_category_failure_recovery.rs:20`
+
+- 项目：写入 / 移动失败不留下半成品
+- 结果：通过
+- 证据：执行路径使用 batch transaction、item savepoint、filesystem rollback guard；测试覆盖 item DB failure、undo failure、stale preview，断言文件、sidecar、DB、staging/generated 和用户可见路径回到安全状态。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/batch_category/apply.rs:22`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/batch_category/fs_move.rs:52`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/batch_change_category_rollback_safety.rs:20`
+
+- 项目：隐私 / AI / 远程调用默认关闭
+- 结果：通过
+- 证据：实现未引入 AI / network / secrets 路径；测试断言 `.areamatrix/ai`、`.areamatrix/remote`、`.areamatrix/secrets` 不存在，`ai_enabled` 为 false，README、staging、generated 不被触碰。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/batch_change_category_rollback_safety.rs:154`
+
+- 项目：不得吞错或静默降级
+- 结果：通过
+- 证据：preview 对缺失/不可处理项返回 Skipped 或 Blocked；apply 对失败项返回 Failed 和 error，不把失败显示成成功。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/batch_category/plan.rs:191`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/batch_category/apply.rs:220`
+
+- 项目：完成标准 1，失败路径明确返回、可测试证据、用户文件安全保证
+- 结果：通过
+- 证据：Core API 文档列出 C2-08 错误码；测试覆盖失败返回和 snapshot/user-visible path 不变。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:1859`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/support/batch_category_failure.rs:134`
+
+- 项目：完成标准 2，高风险路径可回滚或可恢复
+- 结果：通过
+- 证据：repo-owned 文件、note sidecar、目标目录均有 rollback guard；DB undo failure 时整体回滚，stale preview 阻止 partial writes。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/batch_category/fs_move.rs:68`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/batch_change_category_rollback_safety.rs:78`
+
+- 项目：Expected New Paths
+- 结果：通过
+- 证据：`core/src/**`、`core/area_matrix.udl`、`core/tests/**` 均已落地 C2-08 failure-edge 实现和测试。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/batch_category.rs:1`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/batch_change_category_failure_recovery.rs:1`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。C2-08 拆分为 API 入口、plan、apply、path_plan、fs_move，职责清晰。
+- 注释 / rustdoc / 文档同步：通过。public API 与 DTO 有 rustdoc，Core API / UDL / capability spec 对齐。
+- 错误处理与边界处理：通过。没有用吞错通过业务路径；失败返回结构化 `CoreError` 或 per-item Failed。
+- 测试与验证覆盖：通过。manifest 验证命令已运行并通过，覆盖 contract、implementation、failure recovery、rollback safety。
+- 占位、硬编码、mock-only、一次性实现检查：通过。实现连接真实 DB、文件系统、change_log、undo action；测试用 fixture 仅用于构造临时 repo。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-38`
+- 通过：`prompt_pipeline.py doctor`，`git diff --check`，`cargo fmt --all -- --check`，`cargo clippy --all-targets --all-features -- -D warnings`
+- 通过：`cargo test --test batch_change_category_contract_api -- --nocapture`，4 passed
+- 通过：`cargo test --test batch_change_category_failure_recovery -- --nocapture`，6 passed
+- 通过：`cargo test --test batch_change_category_implementation -- --nocapture`，3 passed
+- 通过：`cargo test --test batch_change_category_rollback_safety -- --nocapture`，4 passed
+- 失败：无
+- 缺失：无
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。当前工作区有 task-loop summary/progress/log 与本 task 相关 Core/test 改动；`apps/**` 未被触碰，未发现危险或无法解释的越界脏改动。runner 的 completed progress / Git checkpoint 可在本 verify PASS 后继续收口，不作为本验收阻断。
+
+
+VERIFY_RESULT: PASS

@@ -1,0 +1,74 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-1/task-37`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-37-c2-08-implementation.md`
+- 实际验收路径：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/**`
+
+三、完成度摘要
+
+- 已覆盖项数：17
+- 未覆盖项数：0
+- 通过项数：17
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只实现 C2-08，不顺手实现其他 C* 能力
+- 结果：通过
+- 证据：新增/变更集中在 `batch_category`、DB move/undo 支撑、UDL/API/test；`git status --short -- apps` 无输出。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/batch_category.rs:155`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:511`
+
+- 项目：输入、输出、DB/文件系统变化、错误映射
+- 结果：通过
+- 证据：API/UDL 暴露 preview/apply、report、preview_token、undo_token；实现含去重 file_ids、target category 校验、stale preview 冲突、Indexed metadata-only、repo-owned move、change_log、undo action。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:65`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/batch_category.rs:170`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/db/move_to_category.rs:61`
+
+- 项目：Rust Core 不依赖平台 UI API
+- 结果：通过
+- 证据：实现位于 Core Rust 模块，未触碰 `apps/**`，无 Swift/UI 依赖。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/lib.rs:9`
+
+- 项目：最小测试支撑，不做页面接入
+- 结果：通过
+- 证据：`batch_change_category_contract_api` 4 个测试通过，`batch_change_category_implementation` 3 个测试通过；无 `apps/**` 变更。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/batch_change_category_contract_api.rs:30`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/batch_change_category_implementation.rs:130`
+
+- 项目：Expected New Paths
+- 结果：通过
+- 证据：`core/src/**`、`core/area_matrix.udl`、`core/tests/**` 均已落地；新增 `core/src/batch_category/` 与 `core/tests/batch_change_category_implementation.rs`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/batch_category/plan.rs:74`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/batch_change_category_implementation.rs:1`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git status --short -- apps`、`git diff --name-only -- apps`、`git ls-files --others --exclude-standard -- apps` 均无输出。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，preview plan、apply、path plan、token 拆分清楚；主文件均低于 500 行。
+- 注释 / rustdoc / 文档同步：通过，public API 和 report 类型有 rustdoc，API/UDL/core-api 文档一致。
+- 错误处理与边界处理：通过，stale preview 返回 Conflict，Indexed 不移动源文件，FS move 有 rollback guard，失败项写入 per-item error。
+- 测试与验证覆盖：通过，覆盖合同、UDL/API 对齐、repo-owned move、Indexed metadata-only、stale preview、undo restore。
+- 占位、硬编码、mock-only、一次性实现检查：通过，未发现 `unwrap()`、`expect()`、`panic!()`、TODO、mock/fixture-only 生产路径；测试使用 fixture 属测试范围内。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-37`
+- 通过：prompt doctor OK；`git diff --check` OK；`cargo test --test batch_change_category_contract_api -- --nocapture` 4 passed；`cargo test --test batch_change_category_implementation -- --nocapture` 3 passed。
+- 失败：无
+- 缺失：无。未额外运行 `./dev check all` / `./dev check core`，因为本 atomic Core task 的 manifest 验证上限是 `./dev check task 4-1/task-37`。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。当前工作区仍有 runner 进度/summary/log 与本 task Core 改动处于未收口状态，但按本 verify 阶段规则不构成本 task 失败；若后续 Git checkpoint 失败，应归因到 runner checkpoint 阶段。
+
+VERIFY_RESULT: PASS

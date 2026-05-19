@@ -1,0 +1,42 @@
+一、执行结论
+
+已完成。
+
+二、执行范围
+
+单任务 `4-1/task-58`。只新增了 [classifier_correction_failure_recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/classifier_correction_failure_recovery.rs)，未触碰 `apps/**`。`core/area_matrix.udl` 与现有 C2-12 API 已对齐，未改。
+
+三、完成情况
+
+补齐 C2-12 failure-edge 测试证据，覆盖：
+
+- 空 repo、非法 `file_id`、空/非法 category：返回明确错误且不改 DB/文件。
+- 未知分类：映射 `Classify`，不产生副作用。
+- repo-owned 文件缺失：映射 `Io`，不写 change log。
+- 目标同名冲突：安全编号为 `same_1.pdf`，不覆盖已有 `same.pdf`。
+- DB/change_log 写失败：已移动文件回滚到原路径，DB 保持原状态。
+- 权限失败：映射到 C2-12 文档允许的 `Io`，原文件和 metadata 保持不变。
+
+Forbidden Touches：未触碰。
+
+四、工程质量
+
+新增文件 352 行，未超过 500 行文件上限；把 failure-recovery 独立成新测试文件，避免继续堆大已有 implementation 测试。没有新增依赖，没有 mock-only 或硬编码通过态；测试直接走真实 `init_repo`、`import_file`、`correct_file_category`、SQLite 和文件系统路径。
+
+五、验证情况
+
+已通过：
+
+- `cargo fmt --manifest-path core/Cargo.toml --check`
+- `cd core && cargo test --test classifier_correction_failure_recovery -- --nocapture`：6/6 通过
+- `./dev check task 4-1/task-58`：通过
+  - prompt doctor OK
+  - diff check OK
+  - `classifier_correction_contract_api`：4/4 通过
+  - `classifier_correction_failure_recovery`：6/6 通过
+  - `classifier_correction_implementation`：9/9 通过
+
+六、风险与后续
+
+剩余风险：工作区已有两个非本轮改动 `.codex/task-loop-runs/20260517_134238/summary.json`、`tasks/prompts/_shared/progress.json`，我未触碰。建议下一个任务继续 `4-1/task-59`，做 C2-12 validation 证据收口。
+

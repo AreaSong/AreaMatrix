@@ -7,6 +7,8 @@ description: "Use when Codex touches AreaMatrix file safety boundaries such as a
 
 Use this skill for any task that can affect user files, repository metadata, or filesystem recovery behavior.
 
+Trigger it for non-empty folder adoption, import, staging recovery, DB metadata, migrations, rollback, reindex, FSEvents, iCloud placeholders, duplicate hash conflict handling, generated overview output, privacy-sensitive local data handling, remote AI calls involving user content, `.areamatrix/` deletion / repair, or any command that may delete, move, rename, overwrite, or download user-controlled files.
+
 ## Read first
 
 1. [AGENTS.md](../../../AGENTS.md)
@@ -27,16 +29,24 @@ Use this skill for any task that can affect user files, repository metadata, or 
 
 - [references/risk-scenarios.md](references/risk-scenarios.md): Mission-Critical scenarios and required preflight.
 - [references/acceptance-checklist.md](references/acceptance-checklist.md): filesystem, DB, rollback, and forbidden-touch evidence.
+- [../../references/codex-automations-cloud-worktrees-gate.md](../../references/codex-automations-cloud-worktrees-gate.md): route Automation / Cloud / Worktree proposals through file-safety when user files, privacy, remote calls, credentials, or destructive actions are involved.
+- [../../references/ui-evidence-tool-templates.md](../../references/ui-evidence-tool-templates.md): UI / GUI / browser evidence boundaries for real user files, privacy, remote websites, and high-impact UI actions.
+- [../areamatrix-doc-sync/SKILL.md](../areamatrix-doc-sync/SKILL.md): source docs and Core API / UDL alignment for safety behavior.
+- [../areamatrix-validation-driver/SKILL.md](../areamatrix-validation-driver/SKILL.md): validation selection for safety-sensitive changes.
 
 ## Workflow
 
 1. Classify the task as Mission-Critical if it touches user files, DB schema, staging recovery, reindex, FSEvents/iCloud, or destructive repair.
 2. Before implementation, state impact, risk, validation, and rollback.
 3. Load risk scenarios before changing behavior near user files or `.areamatrix/`.
-4. Use the acceptance checklist before declaring the task done.
+4. If the task explicitly asks for threat modeling, or the file-safety change exposes a new high-risk boundary, include assets, trust boundaries, entry points, attacker capabilities, abuse paths, mitigations, and residual risk.
+5. Use the acceptance checklist before declaring the task done.
 
 ## Guardrails
 
 - Do not use broad deletes or rewrites under user-controlled paths.
 - Do not make iCloud placeholder downloads or FSEvents backflow implicit side effects.
 - Do not write root `AREAMATRIX.md` or any user-visible file unless the task and docs explicitly require it.
+- Do not let automation, Computer Use, hooks, or task-loop risk bypass approve destructive actions against real user files.
+- Do not treat file-safety review as full enterprise security approval; merge readiness still belongs to `areamatrix-enterprise-governance`.
+- Do not run broad threat modeling for ordinary low-risk changes unless explicitly requested.

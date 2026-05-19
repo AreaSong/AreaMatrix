@@ -9,10 +9,10 @@ Templates define the reusable shape for future `workflow/versions/v*/` instances
 - `middle-layer.example.yaml`: feature-level implementation intent ledger shape.
 - `baseline.yaml`: docs baseline and drift-check shape.
 - `change.example.yaml`: structured feature change source with docs ledger fields.
-- `plan.md`: human-readable docs-change ledger output.
+- `plan.md`: human-readable docs-change ledger output plus handoff-safe goal, non-goals, owner / landing, exact paths, validation commands, and blocked / rollback wording.
 - `queue.yaml`: machine-readable queue candidate shape.
 - `queue.md`: human-readable queue candidate review.
-- `drafts.md`: manifest / copy / verify draft package shape.
+- `drafts.md`: manifest / copy-ready / verify-ready draft package shape; implementation and read-only acceptance stay separate.
 - `promotion.yaml`: machine-readable promotion preview shape.
 - `promotion.md`: human-readable promotion preview shape.
 - `approval.yaml`: explicit promotion approval ledger shape.
@@ -36,3 +36,7 @@ Run the full template reference gate with:
 Pipeline artifact `status` values are limited to `draft`, `ready`, `blocked`,
 `deferred`, `promoted`, `done`, and `superseded`. Version lifecycle state uses
 `lifecycle_status` so it does not collide with artifact status.
+
+Planning handoff artifacts are not live queue artifacts. They must name their
+source of truth, exact file paths, owner / landing, validation commands, and
+rollback / blocked behavior before they can become queue candidates.

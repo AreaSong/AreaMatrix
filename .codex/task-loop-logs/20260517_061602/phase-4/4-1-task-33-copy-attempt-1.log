@@ -1,0 +1,59 @@
+一、执行结论
+
+已完成 `4-1/task-33: C2-07 failure-edge`。
+
+二、执行范围
+
+单任务执行，仅改动允许范围内文件：
+
+- `core/src/db/undo/file_actions.rs`
+- `core/src/db/undo/actions.rs`
+- `core/src/db/undo.rs`
+- `core/src/db/move_to_category.rs`
+- `core/tests/undo_action_log_failure_recovery.rs`
+
+未触碰 `apps/**`。`core/area_matrix.udl` 已与现有 C2-07 合同一致，本轮未改。
+
+三、完成情况
+
+核对清单结果：
+
+- 空态、非法输入、权限、IO/DB 错误和错误码映射：已用新增 failure-recovery 测试覆盖。
+- 写入、移动、删除、undo 恢复失败不留下半成品：已覆盖 DB 回滚、文件动作 IO 冲突、Trash restore 失败、action 不误标 `Executed`。
+- 隐私/AI/远程调用：已证明 undo/tag metadata 路径不启用 AI，`ai_enabled=false` 保持不变，不产生 staging 残留。
+- 未使用吞错或静默降级：失败均返回结构化 `CoreError`，blocked 状态可见。
+
+完成标准结果：
+
+- C2-07 失败路径已有明确返回、测试证据和用户文件安全保证。
+- 高风险路径通过临时目录测试证明可重试、可回滚或保持当前状态不被破坏。
+
+四、工程质量
+
+代码结构保持在现有 undo 模块内，顺手修掉了当前 C2-07 helper 被正式门禁暴露出的 clippy 参数过多问题：新增 `FileUndoTarget` 收拢文件型 undo 目标状态，未改变外部 API/UDL。
+
+没有新增依赖，没有 mock-only、硬编码通过态或一次性脚本逻辑。新增测试文件 475 行，核心生产文件仍低于 500 行。
+
+五、验证情况
+
+已通过：
+
+```bash
+./dev check task 4-1/task-33
+```
+
+该命令实际完成：
+
+- prompt doctor：OK，637 tasks / 637 manifests
+- git diff check：通过
+- `cargo fmt --all -- --check`：通过
+- `cargo clippy --all-targets --all-features -- -D warnings`：通过
+- `cargo test --test undo_action_log_contract_api -- --nocapture`：4 passed
+- `cargo test --test undo_action_log_failure_recovery -- --nocapture`：8 passed
+- `cargo test --test undo_action_log_implementation -- --nocapture`：9 passed
+
+六、风险与后续
+
+剩余风险：真实 macOS TCC/Trash 权限由平台层最终集成验证补证；本轮 Core 测试使用临时目录和测试 HOME，不触碰真实用户文件。
+
+工作树里另有 `.codex/task-loop-runs/20260517_061602/summary.json` 和 `tasks/prompts/_shared/progress.json` 的既有状态改动，我未回退、也未把它们纳入本任务代码改动。建议下一个任务继续按队列进入 `4-1/task-34`。

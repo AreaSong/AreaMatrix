@@ -1,0 +1,66 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`4-1/task-30`
+- 对应文件路径：`tasks/prompts/phase-4/4-1-stage2-experience/task-30-c2-06-integration-verify.md`
+- 验收对象：C2-06 `batch_add_tags` Core API / UDL / Rust 实现 / tests / S2-09 消费上下文
+
+三、完成度摘要
+
+- 已覆盖项数：8
+- 未覆盖项数：0
+- 通过项数：7
+- 不通过项数：1
+- 阻塞项数：1
+
+四、逐项验收结果
+
+- 项目：交叉检查 capability spec、Core API、UDL、Rust 实现和测试
+- 结果：不通过
+- 证据：合同、UDL、Rust 实现和测试均已落地；但 `./dev check task 4-1/task-30` 在 `cargo fmt --all -- --check` 失败，不能判定完成。
+- 涉及文件：[C2-06-batch-add-tags.md](/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-2-experience/C2-06-batch-add-tags.md:10)、[core-api.md](/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:1658)、[area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:112)、[tags.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/tags.rs:170)、[db/tags.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/db/tags.rs:34)、[batch_add_tags_validation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/batch_add_tags_validation.rs:75)
+
+- 项目：确认消费页面需要的状态、错误和副作用均已覆盖
+- 结果：通过
+- 证据：S2-09 要求 Added / Already had tag / Failed、partial failure、Undo toast、change_log；Core report 提供 `added_count`、`skipped_count`、`failed_count`、`item_results`、`undo_token`，DB 层写 `tags`、`change_log`、`undo_actions`。
+- 涉及文件：[S2-09-batch-add-tags.md](/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-2-experience/S2-09-batch-add-tags.md:58)、[tags.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/tags.rs:150)、[db/tags.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/db/tags.rs:341)
+
+- 项目：确认没有实现 control map 之外的能力
+- 结果：通过
+- 证据：Control map 声明 S2-09 为 C2-06 + C2-07；当前 Core 实现只做 batch tag mutation，并仅创建 undo action token/record，不执行 undo/redo、批量改分类、删除、重命名、AI 标签建议或文件系统变更。
+- 涉及文件：[stage-2-control-map.md](/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-2-control-map.md:17)、[tags.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/tags.rs:160)
+
+- 项目：不得修改文件，只记录验收证据和阻塞项
+- 结果：通过
+- 证据：本轮未修改文件；`git status --short` 仅显示 task-loop runtime 文件已有状态，`git diff --name-only -- apps` 无输出。
+- 涉及文件：无 `apps/**` diff
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，`batch_add_tags` 负责输入归一化和 repo 校验，DB 层用 transaction + item savepoint 处理部分失败。
+- 注释 / rustdoc / 文档同步：通过，public 类型和 API 有 rustdoc，Core API 与 UDL 有对应合同。
+- 错误处理与边界处理：通过，空 file ids / 非法 tag / metadata 缺失 / missing target / undo failure 均有错误或回滚路径。
+- 测试与验证覆盖：不通过，必需验证命令失败于 rustfmt，未继续到 clippy 和后续 task gate。
+- 占位、硬编码、mock-only、一次性实现检查：通过，现有证据指向真实 SQLite metadata 写入、change_log 和 undo_actions，不是 mock-only。
+
+六、阻塞项
+
+- P0 验证门禁失败：`cargo fmt --all -- --check` 未通过
+- 说明：`./dev check task 4-1/task-30` 在 Core quality gate 的格式检查阶段退出 1。失败 diff 指向 [batch_add_tags_validation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/batch_add_tags_validation.rs:75)、[batch_add_tags_validation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/batch_add_tags_validation.rs:211)、[batch_add_tags_validation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/batch_add_tags_validation.rs:241)、[batch_add_tags_validation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/batch_add_tags_validation.rs:262)、[batch_add_tags_validation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/batch_add_tags_validation.rs:266)
+- 为什么导致不通过：本 task 的 manifest 验证命令失败，且工程质量规则明确 validation 失败不能报告 PASS。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-30`
+- 通过：prompt doctor；`git diff --check`
+- 失败：`cargo fmt --all -- --check`
+- 缺失：clippy 与后续 task gate 未执行，因为命令在 fmt 阶段失败退出。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+
+VERIFY_RESULT: FAIL

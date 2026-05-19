@@ -1,0 +1,78 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-1/task-45`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-45-c2-09-integration-verify.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-2-experience/C2-09-batch-delete-trash.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-2-control-map.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-2-experience/S2-13-batch-delete-confirm.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/tests/**`
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：交叉检查 capability spec、Core API、UDL、Rust 实现和测试
+- 结果：通过
+- 证据：C2-09 文档声明 `preview_batch_delete`、`batch_delete_to_trash`，输出预览报告、执行报告、undo token，Trash 删除、index-only/missing metadata removal 和错误码均已覆盖。UDL 暴露 `BatchDeletePreviewReport preview_batch_delete(...)`、`BatchDeleteReport batch_delete_to_trash(...)`、`BatchDeleteMode`、preview/result status。Rust API 有同名入口并委托 `batch_delete` 模块。测试 `batch_delete_trash_contract_api`、`failure_recovery`、`implementation`、`validation` 共 20 个用例通过。
+- 涉及文件：`docs/core/.../C2-09-batch-delete-trash.md`、`docs/api/core-api.md`、`core/area_matrix.udl`、`core/src/batch_delete.rs`、`core/tests/batch_delete_trash_*.rs`
+
+- 项目：确认消费页面需要的状态、错误和副作用均已覆盖
+- 结果：通过
+- 证据：S2-13 需要 Trash 可用性、Undo 可用性、blocked/skipped/failed、index-only/missing、部分失败和恢复路径。实现提供 `trash_available`、`undo_available`、`can_apply`、`blocked_count`、逐项 preview/result、`undo_token`；`MoveToTrash + missing metadata` 已修正为 skipped，`RemoveFromIndex` 才处理 missing/index-only。测试覆盖 Trash 成功、index-only 不触源文件、blocked 继续处理可用项、preview state/content drift 拒绝、undo 写入失败回滚。
+- 涉及文件：`docs/ux/page-specs/stage-2-experience/S2-13-batch-delete-confirm.md`、`core/src/batch_delete/plan/classify.rs`、`core/src/batch_delete/apply.rs`、`core/tests/batch_delete_trash_implementation.rs`
+
+- 项目：确认没有实现 control map 之外的能力
+- 结果：通过
+- 证据：control map 中 S2-13 绑定 `C2-09, C2-07`。当前实现集中在 C2-09 batch delete 和 C2-07 undo action/token 消费，没有发现 tags/search/reindex/overview/AI 或 `apps/**` 页面能力实现。
+- 涉及文件：`docs/architecture/stage-2-control-map.md`、`core/src/batch_delete.rs`、`core/src/db/delete.rs`、`core/src/db/undo/**`
+
+- 项目：不得修改文件；只记录验收证据和阻塞项
+- 结果：通过
+- 证据：本轮只读验收未执行文件写入或修复命令；仅运行读取、搜索、`git status`、`git diff --check` 和 manifest 指定验证。`git status --short -- apps` 无输出，未触碰 Forbidden Touches。
+- 涉及文件：`apps/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，C2-09 拆分为 `batch_delete.rs`、`plan`、`classify`、`inspect`、`token`、`apply`，preview/apply/rollback 边界清楚。
+- 注释 / rustdoc / 文档同步：通过，公开 Rust API 有 rustdoc 和 `# Errors`；Core API 与 UDL 字段、枚举、错误码对齐。
+- 错误处理与边界处理：通过，空选择/非法 id、stale preview、权限/只读、Trash 不可用、DB 失败、Undo 写入失败回滚均有实现和测试证据。
+- 测试与验证覆盖：通过，`./dev check task 4-1/task-45` 已通过，包含 doctor、diff check、fmt、clippy 和 4 个 C2-09 精确测试 target。
+- 占位、硬编码、mock-only、一次性实现检查：通过，未发现 mock-only、硬编码通过态或占位实现；测试验证真实 DB、文件移动、Trash 回滚和 undo action。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-45`
+- 通过：`python3 tasks/prompts/_shared/prompt_pipeline.py doctor`
+- 通过：`git diff --check`
+- 通过：`cargo fmt --all -- --check`
+- 通过：`cargo clippy --all-targets --all-features -- -D warnings`
+- 通过：`cargo test --test batch_delete_trash_contract_api -- --nocapture`，4 passed
+- 通过：`cargo test --test batch_delete_trash_failure_recovery -- --nocapture`，4 passed
+- 通过：`cargo test --test batch_delete_trash_implementation -- --nocapture`，7 passed
+- 通过：`cargo test --test batch_delete_trash_validation -- --nocapture`，5 passed
+- 失败：无
+- 缺失：无必需验证缺失
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。C2-09 可以作为后续 S2-13 page-feature task 的真实 Core 依赖。
+
+VERIFY_RESULT: PASS

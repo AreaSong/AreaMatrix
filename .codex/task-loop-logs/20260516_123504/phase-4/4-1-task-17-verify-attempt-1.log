@@ -1,0 +1,78 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-1/task-17`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-17-c2-04-implementation.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/search/saved_search.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/db/saved_search.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/db/mod.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/tests/smart_list_implementation.rs`
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只实现 C2-04，不顺手实现同阶段其他 C* 能力
+- 结果：通过
+- 证据：实际改动集中在 `run_smart_list` 读取 saved search 并复用搜索执行；`rg` 未发现 `apps/**` 触碰，`git status --short -- apps core...` 仅显示 Core 路径和 smart list 测试。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/search/saved_search.rs:190`
+
+- 项目：按能力规格落实输入、输出、DB/文件系统变化和错误映射
+- 结果：通过
+- 证据：UDL 暴露 `run_smart_list(repo_path, saved_search_id, SearchPagination) -> SearchResultPage`；实现校验 repo/id/pagination，读取 `saved_searches`，缺失 ID 映射 `FileNotFound`，再调用 `search_files` 返回真实 `SearchResultPage`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:95`，`/Users/as/Ai-Project/project/AreaMatrix/core/src/search/saved_search.rs:195`，`/Users/as/Ai-Project/project/AreaMatrix/core/src/db/saved_search.rs:132`
+
+- 项目：保持 Rust Core 不依赖平台 UI API
+- 结果：通过
+- 证据：相关 Core 文件只使用 Rust、serde、rusqlite 和内部模块；未发现 SwiftUI/AppKit/CoreBridge 等平台 UI 依赖。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/search/saved_search.rs:1`，`/Users/as/Ai-Project/project/AreaMatrix/core/src/db/saved_search.rs:1`
+
+- 项目：必要时补最小测试支撑，但不做页面接入
+- 结果：通过
+- 证据：新增 `core/tests/smart_list_implementation.rs` 覆盖真实查询结果页、缺失 ID、诊断、无写副作用；`apps/**` 未修改。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/smart_list_implementation.rs:255`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，`run_smart_list` 保持薄 orchestration：校验输入、读取 DB、复用 `search_files`，没有重复搜索逻辑。
+- 注释 / rustdoc / 文档同步：通过，public API 有 rustdoc 和 `# Errors`；docs 与 UDL 已声明同一 API。
+- 错误处理与边界处理：通过，Config/FileNotFound/Db 路径均有实现或测试证据，无生产 `unwrap()` / `panic!()`。
+- 测试与验证覆盖：通过，指定验证 `./dev check task 4-1/task-17` 通过，smart_list 合同测试 3 个、实现测试 4 个通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过，旧的 “not implemented” 已替换为真实 DB + search 路径，测试验证无 metadata/user file 写副作用。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 跑了哪些验证：
+  - `./dev check task 4-1/task-17`
+- 哪些通过：
+  - prompt doctor：OK，tasks 637，manifests 637，high risk tasks 633
+  - `git diff --check`：通过
+  - `cargo fmt --all -- --check`：通过
+  - `cargo clippy --all-targets --all-features -- -D warnings`：通过
+  - `cargo test --workspace smart_list -- --nocapture`：通过；`smart_list_contract_api` 3/3，通过；`smart_list_implementation` 4/4，通过
+- 哪些失败：
+  - 无
+- 哪些缺失：
+  - 未运行 macOS UI 验证；本 task 禁止页面接入且 `apps/**` 未触碰，不属于本次验收必要项。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+
+VERIFY_RESULT: PASS

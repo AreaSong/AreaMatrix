@@ -1,0 +1,32 @@
+一、执行结论：已完成。
+
+二、执行范围：单任务 `4-1/task-72` 的 repair retry，仅修复上次验收指出的 C2-15 写入失败恢复语义。  
+本轮修改文件：
+- [config.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/classifier_rule_editor/config.rs:157)
+- [classifier_rule_editor_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/classifier_rule_editor_implementation.rs:300)
+
+三、完成情况：
+- C2-15 范围内修复：`write_classifier_config_atomically` 现在在替换前读取旧 `classifier.yaml`，若替换后目录 sync 失败，会用独立 restore temp 原子恢复旧配置，再返回原始错误。
+- 补充测试：新增 `classifier_rule_editor_implementation_restores_old_config_when_final_sync_fails`，稳定模拟最终 sync 失败，并断言旧 classifier 仍为活动版本、无 temp 残留。
+- 未触碰 `apps/**`；`core/area_matrix.udl` 未改；未实现 C2-13/C2-14 或其他相邻能力。
+
+四、工程质量：
+- 代码结构保持在既有 `classifier_rule_editor/config.rs` 内，未新增依赖、未引入平台 UI API。
+- 错误路径显式传播：写入、rename、restore、cleanup、sync 都走 `CoreResult`。
+- 有一处 WHY 注释解释为什么 sync 失败后必须恢复旧配置。
+- 未使用占位、硬编码通过态、mock-only wiring 或一次性脚本逻辑。
+
+五、验证情况：
+- 已运行并通过：`./dev check task 4-1/task-72`
+- 该命令内通过：
+  - `prompt_pipeline.py doctor`
+  - `git diff --check`
+  - `cargo test --test classifier_rule_editor_contract_api -- --nocapture`：4 passed
+  - `cargo test --test classifier_rule_editor_implementation -- --nocapture`：6 passed
+- 未运行宽门禁；当前 manifest 的验证上限就是 `./dev check task 4-1/task-72`。
+
+六、风险与后续：
+- 本次阻塞项已修复：写入失败后旧 classifier 配置保持活动版本已有测试证据。
+- 剩余风险：本轮未做全 workspace clippy/test，按 task manifest 未升级验证。
+- 建议下一个任务：进入 `4-1/task-73` 的 C2-15 failure-edge 验收/补边界。
+

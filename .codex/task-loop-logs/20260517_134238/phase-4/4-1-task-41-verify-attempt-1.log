@@ -1,0 +1,77 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-1/task-41`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-41-c2-09-contract-api.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-4.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-2-experience/C2-09-batch-delete-trash.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-2-control-map.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/api/error-codes.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/lib.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/batch_delete.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/tests/batch_delete_trash_contract_api.rs`
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：读取 C2-09 能力规格、Stage 2 control map、Core API 和错误码
+- 结果：通过
+- 证据：C2-09 规格声明 `preview_batch_delete`、`batch_delete_to_trash`、输入 `file_ids/delete mode`、输出预览/执行报告/undo token、错误码 `PermissionDenied/FileNotFound/Io/Db`；control map 仅声明 S2-13 + C2-07；Core API 和 UDL 已补齐同名合同。
+- 涉及文件：`C2-09-batch-delete-trash.md`、`stage-2-control-map.md`、`core-api.md`、`error-codes.md`、`core/area_matrix.udl`
+
+- 项目：确认 API 名称、输入、输出、错误码、权限/隐私边界一致
+- 结果：通过
+- 证据：`core/area_matrix.udl` 声明 `preview_batch_delete(repo_path, file_ids, delete_mode)` 与 `batch_delete_to_trash(repo_path, file_ids, delete_mode)`；`core/src/batch_delete.rs` 定义 `BatchDeletePreviewReport`、`BatchDeleteReport`、逐项状态和错误边界；测试覆盖 docs/API/UDL/contract 对齐。
+- 涉及文件：`core/area_matrix.udl`、`core/src/batch_delete.rs`、`core/tests/batch_delete_trash_contract_api.rs`
+
+- 项目：只补合同、类型、桥接声明或文档缺口，不实现相邻能力
+- 结果：通过
+- 证据：新增实现停留在合同类型、UniFFI 声明、API wrapper 和合同测试；入口对真实请求返回显式错误，没有实现 Trash 移动、index removal、Undo 执行、redo、批量重命名或页面能力。
+- 涉及文件：`core/src/batch_delete.rs`、`core/src/api.rs`、`core/src/lib.rs`
+
+- 项目：记录页面消费方是否能从合同中得到所需状态
+- 结果：通过
+- 证据：`docs/api/core-api.md` 明确 S2-13 可从 preview 得到数量、Trash/Undo 可用性、逐项状态、Apply 禁用原因，从执行报告得到成功/失败/跳过摘要、`affected_file_ids` 和 `undo_token`；S2-10/C2-07 只消费 undo token。
+- 涉及文件：`docs/api/core-api.md`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，`core/src/batch_delete.rs` 独立承载 C2-09 合同，`api.rs` 仅做 public wrapper，`lib.rs` 仅声明和 re-export。
+- 注释 / rustdoc / 文档同步：通过，新增 public Rust 类型和函数均有 rustdoc；Core API、UDL、能力规格和测试保持同名合同。
+- 错误处理与边界处理：通过，合同入口不伪造成功；空选择、非法 id 有错误路径；文档明确禁止永久删除、外部源文件删除、AI/网络、iCloud placeholder 下载。
+- 测试与验证覆盖：通过，`./dev check task 4-1/task-41` 已通过，包含 prompt doctor、diff check 和精确 Rust 测试。
+- 占位、硬编码、mock-only、一次性实现检查：通过，本任务是 contract-api，不要求业务实现；当前没有 mock 成功态或硬编码完成态，后续 implementation task 仍需实现真实 Trash/index/undo 行为。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 跑了哪些验证：`./dev check task 4-1/task-41`
+- 哪些通过：
+  - `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`：通过，`tasks: 637`、`manifests: 637`、`high risk tasks: 633`
+  - `git diff --check`：通过，无 whitespace/error 输出
+  - `cargo test --test batch_delete_trash_contract_api -- --nocapture`：通过，4 tests passed
+- 哪些失败：无
+- 哪些缺失：未运行 `./dev check all` / `./dev check core`，本 task manifest 只要求 `./dev check task 4-1/task-41`，普通 atomic Core task 不扩大到宽门禁。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。C2-09 的 Core API / UDL / Rust 合同与文档已对齐，可交给后续 implementation task 直接实现；合同未引入 control map 之外的页面能力，且未触碰 `apps/**`。
+
+VERIFY_RESULT: PASS

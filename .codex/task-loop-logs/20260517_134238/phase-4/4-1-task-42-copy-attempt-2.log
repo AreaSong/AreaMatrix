@@ -1,0 +1,26 @@
+一、执行结论：已完成。
+
+二、执行范围：单任务 `4-1/task-42`。本次 retry 直接修复/新增了 C2-09 相关 Core、UDL、测试和 Exact Docs：`core/src/batch_delete.rs`、`core/src/batch_delete/plan.rs`、`core/src/batch_delete/inspect.rs`、`core/src/batch_delete/token.rs`、`core/src/api.rs`、`core/area_matrix.udl`、`core/tests/batch_delete_trash_contract_api.rs`、`core/tests/batch_delete_trash_implementation.rs`、`docs/api/core-api.md`、`docs/architecture/data-model.md`、`docs/core/capability-specs/stage-2-experience/C2-09-batch-delete-trash.md`。
+
+三、完成情况：
+- C2-09 only：通过。未做页面接入，未实现相邻 C* 能力。
+- 输入/输出/DB/FS/错误映射：通过。`preview_batch_delete` 现在返回 `preview_token`；`batch_delete_to_trash` 必须携带 token，且选择集、mode、Trash availability 或 inspected state 漂移时返回 `Conflict` 拒绝写入。
+- 权限/IO inspection：通过。去掉 `unwrap_or(false)` 误判路径，显式映射 `PermissionDenied` / `Io`。
+- Docs drift：通过。`data-model.md` 的 `change_log.action` 枚举已补 `removed_from_index`。
+- Forbidden Touches：通过。`git diff --name-only -- apps` 无输出，未触碰 `apps/**`。
+
+四、工程质量：
+- 结构清晰：补了 `batch_delete/inspect.rs` 和 `batch_delete/token.rs`，`plan.rs` 拆回 498 行，未超过本仓库阈值。
+- rustdoc / 文档同步：公共 Core API 注释、Core API 文档、UDL、capability spec 已同步。
+- 错误与边界：覆盖 stale preview 拒绝、permission inspection、Trash/index-only 正常路径。
+- 未新增依赖；未引入 mock-only、硬编码通过态或一次性脚本逻辑。
+
+五、验证情况：
+- 已运行并通过：`./dev check task 4-1/task-42`
+- 该 gate 内通过：`prompt doctor`、`git diff --check`、`cargo test --test batch_delete_trash_contract_api -- --nocapture`、`cargo test --test batch_delete_trash_implementation -- --nocapture`
+- 实现测试结果：8 个 C2-09 targeted tests 全部通过。
+- 未运行宽门禁：按当前 task manifest 上限，没有升级到 `cargo test --workspace`、`./dev check core` 或 `./dev check all`。
+
+六、风险与后续：
+- 剩余风险：Core API / UDL 增加 `preview_token` 参数，后续页面接入任务必须按新合同传入 token。
+- 建议下一个动作：进入 `4-1/task-42` verify-ready 验收；验收 PASS 后继续 `4-1/task-43`。

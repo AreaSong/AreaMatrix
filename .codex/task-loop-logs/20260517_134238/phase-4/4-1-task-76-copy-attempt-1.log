@@ -1,0 +1,54 @@
+一、执行结论
+
+已完成。
+
+二、执行范围
+
+单任务：`4-1/task-76`
+
+修改文件：
+- `core/src/domain.rs`
+- `core/src/api.rs`
+- `core/area_matrix.udl`
+- `core/tests/icloud_conflict_visual_contract_api.rs`
+- `docs/api/core-api.md`
+
+三、完成情况
+
+核对清单全部完成：
+- 已读取 C2-16 spec、Stage 2 control map、Core API、错误码。
+- 已补齐 `preview_conflict_versions` / `resolve_icloud_conflict` 的 API 名称、输入、输出、错误码、权限/隐私边界。
+- 只补合同、类型、UDL 桥接声明和 Core API 文档；未实现真实预览、Trash 移动或相邻能力。
+- 已记录消费方边界：S1-36 继续只消费 `list_icloud_conflicts`；S2-20 可从新合同得到版本 metadata、默认 Keep both、Trash 禁用原因、resolve 报告和失败保持 unresolved 的状态。
+
+完成标准：满足。C2-16 合同已可供后续 implementation task 直接实现，未引入 control map 之外的页面能力。
+
+Forbidden Touches：未触碰 `apps/**`。
+
+四、工程质量
+
+新增 public Rust 类型和 API 都有 rustdoc，错误边界写入 `# Errors`。当前函数是合同入口，返回现有 `not_implemented()`，测试明确断言“不伪造成功”，避免把合同任务包装成真实业务闭环。
+
+无新增依赖，无 mock-only 成功路径，无硬编码通过态。`docs/api/core-api.md` 与 `core/area_matrix.udl` 已同步。
+
+五、验证情况
+
+已运行并通过：
+- `cargo fmt`
+- `./dev check task 4-1/task-76`
+
+`./dev check task` 实际执行：
+- prompt doctor：OK
+- git diff --check：OK
+- targeted Rust test：`cargo test --test icloud_conflict_visual_contract_api -- --nocapture`，4 passed
+
+未运行：
+- 未运行全量 `cargo test --workspace` / clippy / `./dev check all`，因为本 atomic Core task 的 manifest 验证上限是 `./dev check task 4-1/task-76`。
+
+六、风险与后续
+
+剩余风险：真实 C2-16 实现仍未完成，包括读取版本 metadata/hash/preview、Trash preflight、resolve 写 conflict state/change_log/undo、失败回滚。当前任务只完成合同/API。
+
+建议下一个任务：进入 `4-1/task-77`，实现 C2-16 的真实 Core 逻辑，并继续保持失败时 unresolved、不自动删除、Trash 不可用禁用 destructive resolution 的边界。
+
+备注：工作区还有既有变更 `.codex/task-loop-runs/20260517_134238/summary.json` 和 `tasks/prompts/_shared/progress.json`，不属于我本次改动范围，未回退。

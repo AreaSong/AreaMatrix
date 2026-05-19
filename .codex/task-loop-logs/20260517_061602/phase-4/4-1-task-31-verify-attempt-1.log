@@ -1,0 +1,80 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-1/task-31`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-31-c2-07-contract-api.md`
+- Manifest 章节：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-4.md:893`
+- 实际涉及文件：
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/undo.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/lib.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/tests/undo_action_log_contract_api.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md`
+
+三、完成度摘要
+
+- 已覆盖项数：17
+- 未覆盖项数：0
+- 通过项数：17
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：读取 C2-07 能力规格、control map、Core API、错误码
+- 结果：通过
+- 证据：C2-07 规格定义 API 为 `list_undo_actions`、`undo_action(repo_path, action_id)`，错误码为 `Conflict/FileNotFound/PermissionDenied/Db/Io`；control map 将 C2-07 绑定到 `S2-10`、`S2-11`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-2-experience/C2-07-undo-action-log.md:8`、`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-2-control-map.md:18`
+
+- 项目：API 名称、输入、输出、错误码、隐私/权限边界一致
+- 结果：通过
+- 证据：Core API 文档、UDL、Rust public API 三者均包含 `list_undo_actions(repo_path)` 与 `undo_action(repo_path, action_id)`；输出包含 `UndoActionRecord`、`UndoActionResult`、`UndoActionStatus`；错误边界在文档与 rustdoc 中一致。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:1737`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:117`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/undo.rs:62`
+
+- 项目：只补合同、类型、桥接声明或文档缺口，不实现相邻能力
+- 结果：通过
+- 证据：`undo.rs` 只暴露合同类型和入口，当前入口返回明确错误，不执行 Redo、批量分类、删除、重命名、跨端 Undo 等相邻能力。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/undo.rs:75`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/undo.rs:98`
+
+- 项目：页面消费方是否能从合同中得到所需状态
+- 结果：通过
+- 证据：`UndoActionRecord` 提供 `status/can_undo/disabled_reason/affected_file_names`，满足 toast 和 history 的可用、阻塞、过期、影响范围展示；`UndoActionResult.refresh_targets` 支撑执行后刷新。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/undo.rs:20`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/undo.rs:45`
+
+- 项目：Expected New Paths
+- 结果：通过
+- 证据：`core/src/**`、`core/area_matrix.udl`、`core/tests/**` 均已落地 C2-07 合同。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/undo.rs:1`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:117`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/undo_action_log_contract_api.rs:1`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git diff --name-status -- apps` 无输出，未触碰 `apps/**`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，C2-07 单独放在 `core/src/undo.rs`，`lib.rs` 只做模块导出。
+- 注释 / rustdoc / 文档同步：通过，新增 public 类型和函数均有 rustdoc，Core API 与 UDL 同步。
+- 错误处理与边界处理：通过，合同入口不返回假成功；空 `action_id` 映射 `FileNotFound`，未实现路径返回显式 `Db`。
+- 测试与验证覆盖：通过，新增 `core/tests/undo_action_log_contract_api.rs` 覆盖签名、输出、错误、文档/UDL/control map 对齐和消费方状态。
+- 占位、硬编码、mock-only、一次性实现检查：通过，本 task 是合同/API 任务，未伪造业务成功，也未实现相邻能力。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-31`
+- 通过：`prompt doctor` OK；`git diff --check` OK；`cargo test --test undo_action_log_contract_api -- --nocapture` 通过，4 passed / 0 failed。
+- 失败：无。
+- 缺失：无。按 manifest 与 validation-driver，本 atomic Core task 不扩大到 `./dev check all` 或 `cargo test --workspace`。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。C2-07 的 Core API 合同已能支撑后续 implementation task 直接实现，且未引入 control map 之外的页面能力。
+
+VERIFY_RESULT: PASS

@@ -15,6 +15,7 @@ from scripts.dev_tools.checks import run_skills_check
 from scripts.dev_tools.discussion import discussion_artifacts, validate_discussion_artifacts
 from scripts.dev_tools.changes import write_artifacts
 from scripts.dev_tools.workflow_init import init_artifacts
+from scripts.task_loop.runner import RuntimeConfig, TaskFile, TaskLoopRunner
 
 from . import git as git_helpers
 from .actions import ACTIONS, COMMAND_ALIASES, MENUS, SHORTCUT_ALIASES, validate_actions
@@ -26,6 +27,13 @@ from . import state
 
 class CheckFailure(RuntimeError):
     pass
+
+
+PHASE4_STAGE_CLOSEOUT_LABELS = {"4-1/task-143", "4-2/task-79", "4-3/task-165"}
+COPY_READY_FULL_GATE_BOUNDARY = "不得自行升级到 `cargo test --workspace`"
+COPY_READY_NO_WORKSPACE_FALLBACK = "不要用 `cargo test --workspace` 兜底"
+RETRY_VALIDATION_UPPER_BOUND = "仍以当前 task manifest 的 `Validation` 为上限"
+RETRY_NO_BROAD_GATE_ESCALATION = "不要因为 retry、证据不足、上一次 verify 失败或 `core/**` 改动"
 
 
 def log(message: str) -> None:
@@ -70,6 +78,24 @@ def assert_not_exists(path: Path, label: str) -> None:
 def assert_exists(path: Path, label: str) -> None:
     if not path.exists():
         raise CheckFailure(f"missing path for {label}: {path}")
+
+
+def export_label(path: Path) -> str:
+    batch, number = path.stem.rsplit("-task-", 1)
+    return f"{batch}/task-{number}"
+
+
+def exported_validation_block(path: Path) -> str:
+    text = path.read_text(encoding="utf-8")
+    marker = "## 任务要求的验证"
+    start = text.find(marker)
+    if start < 0:
+        return ""
+    fence_start = text.find("```bash", start)
+    if fence_start < 0:
+        return text[start : start + 400]
+    fence_end = text.find("```", fence_start + len("```bash"))
+    return text[fence_start:fence_end] if fence_end >= 0 else text[fence_start : fence_start + 400]
 
 
 class Harness:
@@ -182,6 +208,31 @@ def write_live_lock(lock_dir: Path, run_id: str, operation: str = "run") -> None
     (lock_dir / "started_at").write_text("now\n", encoding="utf-8")
 
 
+def write_live_activity(lock_dir: Path, tmp: Path) -> None:
+    output_file = tmp / "live-activity.log"
+    output_file.write_text("running\n", encoding="utf-8")
+    state.write_lock_activity(
+        lock_dir,
+        {
+            "status": "running",
+            "stage": "copy",
+            "task_label": "0-1/task-01",
+            "task_name": "0-1-task-01",
+            "attempt": 1,
+            "pid": os.getpid(),
+            "prompt_file": str(tmp / "copy.md"),
+            "output_file": str(output_file),
+            "no_output_elapsed_seconds": 3,
+            "no_output_timeout_seconds": 900,
+            "child_restart": 1,
+            "child_restart_limit": 2,
+            "restart_delay_seconds": 300,
+            "command": "codex exec -m gpt-5.5 --full-auto -",
+            "started_at": state.utc_now(),
+        },
+    )
+
+
 def check_static(h: Harness) -> None:
     log("static checks")
     files = sorted((h.root / "scripts/task_loop").glob("*.py")) + sorted((h.root / "scripts/dev_tools").glob("*.py"))
@@ -218,6 +269,29 @@ def check_static(h: Harness) -> None:
     if saved_lang_mode(pref_root) != "zh":
         raise CheckFailure("dev config did not persist zh language mode")
     assert_exists(config_path(pref_root), "dev console local config")
+    check_retry_validation_boundary(h)
+
+
+def check_retry_validation_boundary(h: Harness) -> None:
+    log("retry validation boundary")
+    verify_log = h.tmp / "retry-verify.log"
+    verify_log.write_text("验证失败：缺少 targeted test 证据。\nVERIFY_RESULT: FAIL\n", encoding="utf-8")
+    task = TaskFile(
+        phase="phase-4",
+        task_name="4-1-task-13",
+        label="4-1/task-13",
+        copy_file=h.tmp / "copy.md",
+        verify_file=h.tmp / "verify.md",
+        risk="High",
+    )
+    runner = TaskLoopRunner(RuntimeConfig(root_dir=h.root))
+    retry_prompt = runner.build_copy_retry_prompt(task, 2, verify_log)
+    verify_suffix = runner.verify_suffix()
+    for text, label in [(retry_prompt, "copy retry prompt"), (verify_suffix, "verify suffix")]:
+        assert_contains(text, RETRY_VALIDATION_UPPER_BOUND, label)
+        assert_contains(text, "当前 task manifest", label)
+        assert_not_contains(text, "全部全面修复", label)
+    assert_contains(retry_prompt, RETRY_NO_BROAD_GATE_ESCALATION, "copy retry prompt no broad gate escalation")
 
 
 def check_repo_health(h: Harness) -> None:
@@ -225,6 +299,33 @@ def check_repo_health(h: Harness) -> None:
     if run_skills_check(h.root) != 0:
         raise CheckFailure("skill health failed")
     h.run([h.python, "tasks/prompts/_shared/prompt_pipeline.py", "doctor"])
+    check_exported_prompt_validation_strategy(h)
+
+
+def check_exported_prompt_validation_strategy(h: Harness) -> None:
+    log("exported prompt validation strategy")
+    for root in [h.root / "tasks/prompts/_shared/copy-ready", h.root / "tasks/prompts/_shared/verify-ready"]:
+        phase4_dir = root / "phase-4"
+        for path in sorted(phase4_dir.glob("*.md")):
+            text = path.read_text(encoding="utf-8")
+            if root.name == "copy-ready":
+                if COPY_READY_FULL_GATE_BOUNDARY not in text:
+                    raise CheckFailure(f"copy-ready prompt lost full-gate boundary: {path.relative_to(h.root)}")
+                if COPY_READY_NO_WORKSPACE_FALLBACK not in text:
+                    raise CheckFailure(f"copy-ready prompt lost no-workspace-fallback rule: {path.relative_to(h.root)}")
+            label = export_label(path)
+            validation = exported_validation_block(path)
+            if not validation:
+                raise CheckFailure(f"missing exported validation block: {path.relative_to(h.root)}")
+            if label in PHASE4_STAGE_CLOSEOUT_LABELS:
+                if "./dev check all" not in validation:
+                    raise CheckFailure(f"phase-4 closeout prompt lost broad validation: {path.relative_to(h.root)}")
+                continue
+            expected = f"./dev check task {label}"
+            if expected not in validation:
+                raise CheckFailure(f"phase-4 exported prompt missing task validation {expected}: {path.relative_to(h.root)}")
+            if "./dev check all" in validation:
+                raise CheckFailure(f"phase-4 exported prompt uses broad validation for atomic task: {path.relative_to(h.root)}")
 
 
 def check_template_changes(h: Harness) -> None:
@@ -574,6 +675,21 @@ def check_real_status(h: Harness) -> None:
     assert_contains(dev_verbose, "进程快照", "dev verbose process snapshot")
     preflight = h.dev_run("dev-preflight", ["preflight"]).stdout
     assert_contains(preflight, "Preflight", "dev preflight header")
+
+    status_root = h.tmp / "status-live-activity"
+    write_live_lock(status_root / "lock", "status-live-activity")
+    write_live_activity(status_root / "lock", status_root)
+    write_json(status_root / "progress.json", {"version": 1, "tasks": {}})
+    live_status = h.task_loop_run("status-live-activity", ["status"]).stdout
+    assert_contains(live_status, "live_activity: copy task=0-1/task-01 attempt=1 status=running", "live activity headline")
+    assert_contains(live_status, "live_activity_elapsed:", "live activity elapsed")
+    assert_contains(live_status, "live_activity_pid:", "live activity pid")
+    assert_contains(live_status, "live_activity_log_state: exists", "live activity log state")
+    assert_contains(live_status, "live_activity_no_output_elapsed: 3s", "live activity no-output elapsed")
+    assert_contains(live_status, "live_activity_no_output_timeout: 15m00s", "live activity no-output timeout")
+    assert_contains(live_status, "live_activity_child_restart: 1/2", "live activity child restart")
+    assert_contains(live_status, "live_activity_restart_delay: 5m00s", "live activity restart delay")
+    assert_contains(live_status, "live_activity_command: codex exec -m gpt-5.5 --full-auto -", "live activity command")
 
 
 def check_dev_home(h: Harness) -> None:
@@ -1004,6 +1120,7 @@ while [ "$#" -gt 0 ]; do
 done
 input="$(cat)"
 mkdir -p "$(dirname "$out")"
+sleep "${FAKE_CODEX_SLEEP_SECONDS:-0}"
 if printf '%s' "$input" | grep -q 'VERIFY_RESULT'; then
   printf '验收通过\\nVERIFY_RESULT: PASS\\n' > "$out"
 else
@@ -1013,7 +1130,7 @@ fi
         encoding="utf-8",
     )
     fake_codex.chmod(0o755)
-    h.run(
+    result = h.run(
         [h.task_loop, "run", "--phase", "phase-0", "--max-tasks", "1"],
         env={
             "ROOT_DIR": str(runner_repo),
@@ -1029,8 +1146,16 @@ fi
             "GIT_BRANCH_POLICY": "auto",
             "RISK_POLICY": "allow",
             "MAX_RETRIES": "1",
+            "ACTIVITY_HEARTBEAT_SECONDS": "1",
+            "FAKE_CODEX_SLEEP_SECONDS": "2",
         },
     )
+    assert_contains(result.stdout, "live activity heartbeat", "runner prints live activity heartbeat")
+    assert_contains(result.stdout, "current task | stage=copy | task=0-1/task-01", "runner live task status line")
+    assert_contains(result.stdout, "  live log:", "runner live log section")
+    assert_contains(result.stdout, "    state:", "runner live log state")
+    assert_contains(result.stdout, "current command | heartbeat=1s | command_elapsed=", "runner live command status line")
+    assert_contains(result.stdout, " | command=", "runner live command text")
     progress = runner_repo / "tasks/prompts/_shared/progress.json"
     assert_json(
         progress,
@@ -1046,6 +1171,95 @@ fi
         raise CheckFailure("runner git checkpoint left dirty worktree")
     if not git_helpers.current_branch(runner_repo).startswith("codex/areamatrix-task-loop-"):
         raise CheckFailure("runner did not auto-create task branch")
+
+
+def check_runner_no_output_timeout(h: Harness) -> None:
+    log("runner codex no-output timeout restarts child")
+    runner_repo = h.tmp / "runner-no-output"
+    init_temp_git_repo(runner_repo)
+    add_prompt_fixture(runner_repo, ["0-1/task-01"])
+    subprocess.run(["git", "add", "."], cwd=runner_repo, check=True)
+    subprocess.run(["git", "commit", "-q", "-m", "add prompt fixtures"], cwd=runner_repo, check=True)
+    fake_codex = h.tmp / "fake-codex-no-output"
+    fake_codex.write_text(
+        """#!/usr/bin/env bash
+set -euo pipefail
+out=""
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    -o)
+      out="$2"
+      shift 2
+      ;;
+    --cd)
+      cd "$2"
+      shift 2
+      ;;
+    *)
+      shift
+      ;;
+  esac
+done
+input="$(cat)"
+counter="${FAKE_CODEX_COUNTER}"
+count=0
+if [ -f "$counter" ]; then
+  count="$(cat "$counter")"
+fi
+count=$((count + 1))
+printf '%s\n' "$count" > "$counter"
+if [ "$count" = "1" ]; then
+  sleep 30
+fi
+mkdir -p "$(dirname "$out")"
+if printf '%s' "$input" | grep -q 'VERIFY_RESULT'; then
+  printf '验收通过 after restart\nVERIFY_RESULT: PASS\n' > "$out"
+else
+  printf 'copy ok after restart\n' > "$out"
+fi
+""",
+        encoding="utf-8",
+    )
+    fake_codex.chmod(0o755)
+    result = h.run(
+        [h.task_loop, "run", "--phase", "phase-0", "--max-tasks", "1"],
+        env={
+            "ROOT_DIR": str(runner_repo),
+            "PROGRESS_FILE": str(runner_repo / "tasks/prompts/_shared/progress.json"),
+            "LOG_ROOT": str(runner_repo / ".codex/task-loop-logs"),
+            "RUN_SUMMARY_ROOT": str(runner_repo / ".codex/task-loop-runs"),
+            "PROGRESS_BACKUP_ROOT": str(runner_repo / ".codex/task-loop-progress-backups"),
+            "LOCK_DIR": str(runner_repo / ".codex/task-loop-lock"),
+            "CONTROL_DIR": str(runner_repo / ".codex/task-loop-control"),
+            "CODEX_BIN": str(fake_codex),
+            "GIT_CHECKPOINT": "off",
+            "RISK_POLICY": "allow",
+            "MAX_RETRIES": "1",
+            "ACTIVITY_HEARTBEAT_SECONDS": "1",
+            "NO_OUTPUT_NOTICE_SECONDS": "1",
+            "NO_OUTPUT_TIMEOUT_SECONDS": "2",
+            "NO_OUTPUT_RESTART_DELAY_SECONDS": "1",
+            "NO_OUTPUT_RESTART_LIMIT": "1",
+            "FAKE_CODEX_COUNTER": str(h.tmp / "fake-codex-no-output-counter"),
+        },
+        check=False,
+    )
+    if result.returncode != 0:
+        raise CheckFailure(
+            f"runner no-output timeout restart returned {result.returncode}, expected 0\n"
+            f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
+        )
+    combined = result.stdout + result.stderr
+    assert_contains(combined, "live activity no-output timeout", "no-output timeout heartbeat")
+    assert_contains(combined, "codex exec no-output timeout; restart copy task=0-1/task-01", "no-output restart event")
+    progress = runner_repo / "tasks/prompts/_shared/progress.json"
+    assert_json(
+        progress,
+        lambda data: data["tasks"]["0-1/task-01"]["status"] == "completed",  # type: ignore[index]
+        "no-output timeout restart progress",
+    )
+    if (runner_repo / ".codex/task-loop-lock").exists():
+        raise CheckFailure("runner no-output timeout restart left live lock")
 
 
 def check_git_ignore(h: Harness) -> None:
@@ -1091,6 +1305,7 @@ def run_check(root_dir: Path) -> int:
             check_runner_core(harness)
             check_git_helpers(harness)
             check_runner_git_checkpoint(harness)
+            check_runner_no_output_timeout(harness)
             check_git_ignore(harness)
         except CheckFailure as exc:
             print(f"[task-loop-check] FAIL: {exc}")

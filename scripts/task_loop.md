@@ -42,10 +42,21 @@ Repo-local skills：
 - `GIT_PUSH_REMOTE=origin`
 - `GIT_PUSH_SET_UPSTREAM=1`
 
+无输出 watchdog：
+- `NO_OUTPUT_NOTICE_SECONDS=120`
+- `NO_OUTPUT_TIMEOUT_SECONDS=900`
+- `NO_OUTPUT_RESTART_DELAY_SECONDS=300`
+- `NO_OUTPUT_RESTART_LIMIT=2`
+
+runner 会在 `codex exec` 子进程活着但目标 copy / verify 日志长时间不存在或不再增长时持续显示 no-output 状态。超过 `NO_OUTPUT_TIMEOUT_SECONDS` 后，runner 会先终止该子进程，等待 `NO_OUTPUT_RESTART_DELAY_SECONDS`，然后为同一个 copy / verify 步骤重新启动一个新的 `codex exec`。超过 `NO_OUTPUT_RESTART_LIMIT` 仍无输出时，才把当前 task 标记为失败；`NO_OUTPUT_TIMEOUT_SECONDS=0` 可临时禁用这个超时。
+
 正式执行前工作区必须干净。若当前在 `main`，runner 会自动创建 `codex/areamatrix-task-loop-<run_id>` 分支；dry-run 永远不会真实 commit 或 push。
 
 默认重试：
-- `MAX_RETRIES=0`（`0` 表示无限重试）
+- `MAX_RETRIES=1`
+
+`MAX_RETRIES=0` 仍表示无限重试，只应在明确要长期无人值守时显式设置；日常
+task-loop 默认会在一次 repair retry 后停下，避免小任务长时间空转。
 
 默认风险门禁：
 - `RISK_GATE=mission-critical`
@@ -119,17 +130,31 @@ NO_COLOR=1 ./dev
 ./dev status --verbose
 ```
 
+当 runner 正在执行 copy 或 verify 子步骤时，前台日志会按从上到下三段显示 live
+activity：上段 `current task` 是横向状态条，放当前阶段、task label、attempt、
+PID 和耗时；中段 `live log` 纵向列出 prompt、输出日志路径和日志状态；下段
+`current command` 也是横向状态条，放心跳间隔、命令耗时和完整 `codex exec`
+命令。后续心跳仍按这个从上到下的结构刷新，避免把长命令重复塞进单行日志。
+`./task-loop status` 和
+`./dev status --verbose` 也会显示同一份 live activity。若屏幕上长时间只看到
+日志状态为 `missing` 或日志更新时间不变化，可判断是 `codex exec` 子进程本身没有
+产生日志；这是一种 no-output wait，不代表验证命令正在正常输出。默认超过
+`NO_OUTPUT_TIMEOUT_SECONDS=900` 后 runner 会终止该子进程，等待
+`NO_OUTPUT_RESTART_DELAY_SECONDS=300`，再重开同一步骤的 `codex exec`；连续超过
+`NO_OUTPUT_RESTART_LIMIT=2` 次仍无输出，才把任务留在失败/可恢复状态，避免一条
+copy / verify 卡住整条队列。
+
 ### 1) 全量执行
 
 ```bash
-MAX_RETRIES=0 ./task-loop run
+MAX_RETRIES=1 ./task-loop run
 ```
 
 全静默执行（包括 Mission-Critical task）：
 
 ```bash
 RISK_POLICY=allow \
-MAX_RETRIES=0 \
+MAX_RETRIES=1 \
 ./task-loop run
 ```
 
@@ -138,7 +163,7 @@ MAX_RETRIES=0 \
 ```bash
 GIT_CHECKPOINT=off \
 RISK_POLICY=allow \
-MAX_RETRIES=0 \
+MAX_RETRIES=1 \
 ./task-loop run
 ```
 
@@ -147,14 +172,14 @@ MAX_RETRIES=0 \
 ```bash
 GIT_CHECKPOINT=push \
 RISK_POLICY=allow \
-MAX_RETRIES=0 \
+MAX_RETRIES=1 \
 ./task-loop run
 ```
 
 ### 2) 从指定任务开始
 
 ```bash
-MAX_RETRIES=0 \
+MAX_RETRIES=1 \
 START_FROM=phase-1/1-1-task-01 \
 ./task-loop run --phase phase-1 --max-tasks 5
 ```
@@ -164,7 +189,7 @@ START_FROM=phase-1/1-1-task-01 \
 ### 3) 只跑某个 phase
 
 ```bash
-MAX_RETRIES=0 ./task-loop run --phase phase-1 --max-tasks 20
+MAX_RETRIES=1 ./task-loop run --phase phase-1 --max-tasks 20
 ```
 
 > 注意：`--phase` 可重复，形成子集，如 `--phase phase-1 --phase phase-2`。

@@ -1,0 +1,38 @@
+一、执行结论
+
+- 已完成：`4-1/task-45` 的 read-only blocked 漏洞已修复，本轮 manifest 验证通过。
+
+二、执行范围
+
+- 单任务：`4-1/task-45`
+- 本轮修改文件：
+  - [core/src/batch_delete/inspect.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/batch_delete/inspect.rs:35)
+  - [core/src/batch_delete/plan/classify.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/batch_delete/plan/classify.rs:74)
+  - [core/tests/batch_delete_trash_validation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/batch_delete_trash_validation.rs:147)
+
+三、完成情况
+
+- 已把 repo-owned 只读文件从 `MoveToTrash` 改为 `Blocked`，原因包含 `Read-only`，对齐 S2-13 / Core API 的 blocked/excluded 语义。
+- 新增 targeted 回归测试，证明 read-only 文件 preview 不可 apply、不创建 undo、不移动到 Trash、DB 仍 active、文件内容不变。
+- 未实现 control map 之外能力；C2-07 仍只通过 undo token 消费。
+- Forbidden Touches：未触碰 `apps/**`，`git status --short -- apps` 无输出。
+
+四、工程质量
+
+- 逻辑集中在既有分类路径，没有新增抽象或 mock-only 分支。
+- 复用已采集的 `readonly` metadata；错误以现有 `CoreError::PermissionDenied` 和 preview reason 暴露。
+- 未新增 public API，无需 rustdoc / UDL / Core API 改动。
+- 当前工作树还保留上轮 retry 已有脏改动和 task-loop 日志；本轮未回滚或扩大这些变更。
+
+五、验证情况
+
+- 已运行：`./dev check task 4-1/task-45`
+- 结果：通过。
+- 关键证据：`doctor: OK`；`git diff --check` 通过；`cargo fmt --all -- --check` 通过；`cargo clippy --all-targets --all-features -- -D warnings` 通过；C2-09 targeted tests 全部通过：contract 4、failure 4、implementation 7、validation 5。
+- 新增用例 `batch_delete_trash_validation_readonly_repo_owned_file_is_blocked` 已通过。
+
+六、风险与后续
+
+- 剩余风险：未跑 `./dev check all` / CI，因为当前 manifest 上限是 `./dev check task 4-1/task-45`。
+- 建议下一个任务：进入 verify-ready 验收本 task；通过后再继续依赖它的 `4-1/task-118` UI page-feature。
+

@@ -14,8 +14,9 @@ mod saved_search;
 mod validation;
 
 pub use saved_search::{
-    create_saved_search, delete_saved_search, list_saved_searches, update_saved_search,
-    CreateSavedSearchRequest, SavedSearch, SavedSearchQuery, UpdateSavedSearchRequest,
+    create_saved_search, delete_saved_search, list_saved_searches, run_smart_list,
+    update_saved_search, CreateSavedSearchRequest, SavedSearch, SavedSearchQuery,
+    UpdateSavedSearchRequest,
 };
 
 /// Search scope for C2-01 search queries.

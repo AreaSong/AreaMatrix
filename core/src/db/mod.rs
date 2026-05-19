@@ -14,8 +14,11 @@ use crate::{
 };
 
 mod change_log;
+mod command_index;
 mod delete;
+mod icloud_conflicts;
 mod import;
+mod import_conflicts;
 mod move_to_category;
 mod note;
 mod overview;
@@ -24,18 +27,42 @@ mod saved_search;
 mod scan;
 mod staging_recovery;
 mod sync;
+mod tags;
+mod undo;
 pub(crate) use change_log::list_changes;
+pub(crate) use command_index::{
+    count_active_command_selection_files, list_command_file_candidate_rows,
+    list_recent_command_rows,
+};
 pub(crate) use delete::{
-    remove_index_entry_row, rollback_deleted_repo_owned_file, soft_delete_repo_owned_file,
+    insert_batch_delete_undo_action, remove_batch_delete_index_entry_row, remove_index_entry_row,
+    rollback_deleted_repo_owned_file, rollback_removed_index_entry_row,
+    soft_delete_batch_repo_owned_file, soft_delete_repo_owned_file, BatchDeleteUndoItem,
+};
+pub(crate) use icloud_conflicts::{
+    list_icloud_conflict_statuses, record_icloud_conflict_resolution,
 };
 pub(crate) use import::{
-    delete_file_row, find_active_file_by_hash, find_active_file_by_path, get_active_file_by_id,
-    insert_active_indexed_import, insert_import_staging, insert_replacing_active_indexed_import,
-    promote_imported_file, promote_replacing_imported_file, rollback_replacing_imported_file,
-    NewImportRow, ReplacementImportRow,
+    delete_file_row, file_entry_from_row, find_active_file_by_hash, find_active_file_by_path,
+    get_active_file_by_id, insert_active_indexed_import, insert_import_staging,
+    insert_replacing_active_indexed_import, promote_imported_file, promote_replacing_imported_file,
+    rollback_replacing_imported_file, NewImportRow, ReplacementImportRow,
+};
+pub(crate) use import_conflicts::{
+    ensure_import_conflict_schema, get_import_session_status, get_staging_file_snapshot,
+    insert_import_conflict_undo_action, list_import_conflicts_for_session,
+    mark_import_conflict_failed, preflight_import_conflict_undo_action,
+    queue_import_conflict_for_per_item, resolve_import_conflict_item,
+    rollback_import_conflict_decision, rollback_import_conflict_keep_both,
+    rollback_import_conflict_replace, ImportConflictApplyItem, ImportConflictKind,
+    ImportConflictReplacement, ImportConflictRow, ImportConflictStatus,
 };
 pub(crate) use move_to_category::{
+    batch_update_category_metadata_only_in_tx, batch_update_category_repo_owned_in_tx,
+    correct_file_category_metadata_only, correct_repo_owned_file_category,
+    insert_batch_category_undo_action_in_tx, load_batch_category_active_file,
     move_indexed_file_to_category, move_repo_owned_file_to_category,
+    with_batch_category_transaction, BatchCategoryUndoItem,
 };
 pub(crate) use note::{read_note_content, upsert_note_and_log};
 pub(crate) use overview::{
@@ -43,10 +70,13 @@ pub(crate) use overview::{
     OverviewChangeRow, OverviewFileRow, OverviewNodeSummary,
 };
 pub(crate) use rename::{
-    rename_active_file, rename_indexed_display_name, rollback_renamed_active_file,
+    batch_update_rename_indexed_in_tx, batch_update_rename_repo_owned_in_tx,
+    insert_batch_rename_undo_action_in_tx, load_batch_rename_active_file, rename_active_file,
+    rename_indexed_display_name, rollback_renamed_active_file, with_batch_rename_transaction,
+    BatchRenameUndoItem,
 };
 pub(crate) use saved_search::{
-    create_saved_search_row, delete_saved_search_row, list_saved_search_rows,
+    create_saved_search_row, delete_saved_search_row, get_saved_search_row, list_saved_search_rows,
     update_saved_search_row,
 };
 pub(crate) use scan::*;
@@ -54,6 +84,10 @@ pub(crate) use staging_recovery::{
     delete_staging_file_row, list_protected_staging_paths, list_staging_file_rows, StagingFileRow,
 };
 pub(crate) use sync::*;
+pub(crate) use tags::{add_tag_row, batch_add_tags_rows, list_tag_set, remove_tag_row};
+pub(crate) use undo::{
+    execute_undo_action_row, list_undo_action_rows, update_delete_undo_trash_path,
+};
 
 const AREA_MATRIX_DIR: &str = ".areamatrix";
 const INDEX_DB_FILE: &str = "index.db";
@@ -126,6 +160,20 @@ CREATE TABLE IF NOT EXISTS tags (
 );
 
 CREATE INDEX IF NOT EXISTS idx_tags_tag ON tags(tag);
+
+CREATE TABLE IF NOT EXISTS undo_actions (
+  token TEXT PRIMARY KEY,
+  kind TEXT NOT NULL,
+  summary_json TEXT NOT NULL,
+  inverse_json TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending'
+    CHECK (status IN ('pending', 'executed', 'expired', 'blocked')),
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_undo_actions_status_time
+  ON undo_actions(status, created_at DESC);
 
 CREATE TABLE IF NOT EXISTS fs_event_cursor (
   id INTEGER PRIMARY KEY CHECK (id = 1),
@@ -502,7 +550,7 @@ fn path_exists(path: &Path) -> CoreResult<bool> {
     })
 }
 
-fn storage_mode_to_db(mode: &StorageMode) -> &'static str {
+pub(super) fn storage_mode_to_db(mode: &StorageMode) -> &'static str {
     match mode {
         StorageMode::Moved => "moved",
         StorageMode::Copied => "copied",

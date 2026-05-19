@@ -42,6 +42,7 @@
 - `RepoNotInitialized`
 - `InvalidPath`
 - `ICloudPlaceholder`
+- `StagingRecoveryRequired`
 - `PermissionDenied`
 - `Internal`
 

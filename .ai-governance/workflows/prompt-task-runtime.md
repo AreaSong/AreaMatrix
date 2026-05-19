@@ -38,6 +38,30 @@
 日常操作优先使用根目录 `./dev` 进入交互控制台；它封装 status、runner/codex 进程快照、后台继续、stale/failed 恢复、优雅收尾和健康检查，避免操作员记忆长命令。
 控制台启动/继续前必须阻止重复 live runner；默认 Git checkpoint 为本地 `commit`，任务数为无限，前台/后台由操作员当次选择。
 
+task-loop 报错时必须先做失败归因：区分 copy log、verify log、validation command、runner state、Git checkpoint、docs / API / UDL / prompt 漂移和文件安全边界。查看顺序和报告格式见 [Debugging and failure attribution runbook](../../.codex/references/debugging-failure-attribution-runbook.md)。
+
+## Hooks Guardrail
+
+Codex hooks 可以作为 repo-local guardrail，用于提醒或阻断明显风险，但不能替代 prompt task runtime 本身。
+
+- hooks 只负责轻量只读检查、通知或明显风险阻断；不得自动修改文件、启动 runner、停止 runner、提交、推送、reset、clean 或 stash。
+- hooks 不构成完整 enforcement boundary；任务完成仍以 copy-ready / verify-ready、`VERIFY_RESULT: PASS`、验证命令、Git checkpoint 和 review/CI 证据为准。
+- hooks 不得绕过 Mission-Critical 流程。命中用户文件、DB migration、staging、FSEvents/iCloud、隐私、UDL / Core API 破坏性变化时，仍必须先说明影响、风险、验证和回滚，再等待明确确认。
+- hooks 不依赖 `plugin_hooks`；当前只考虑 Codex stable hooks。
+- repo-local hooks 方案和未来启用步骤见 [Codex hooks guardrail runbook](../../.codex/references/hooks-guardrail-runbook.md)。
+
+## Subagent Boundaries
+
+Codex subagents 可以用于当前任务内的并行协作，但不能替代 prompt task runtime 本身。
+
+- 只读探索可以并行，前提是问题独立、范围明确、禁止写入、输出可由主 agent 复核。
+- 写入实现必须先拆分 disjoint write set，并为每个 worker 指定 owner、允许路径、禁止路径、验证命令和交付格式。
+- live runner 运行时，不把同一 live task 拆给多个 writer；subagent 不得修改 progress、logs、run summaries、checkpoint、branch、commit、stash、reset 或 clean。
+- Subagent 不得绕过 Mission-Critical 流程。命中用户文件、DB migration、staging、FSEvents/iCloud、隐私、UDL / Core API 破坏性变化时，仍必须先说明影响、风险、验证和回滚，再等待明确确认。
+- 主 agent 始终负责整合、diff 复核、最终验证和最终结论；subagent 输出只能作为证据输入。
+
+详细规则见 [Subagent Boundaries](subagent-boundaries.md) 和 [Codex subagent boundaries runbook](../../.codex/references/subagent-boundaries-runbook.md)。
+
 ## 任务边界
 
 - `Exact Docs`：必须阅读且必须存在的文档。
@@ -56,3 +80,5 @@
 - 无法证明通过的项目默认不通过。
 - 代码结构、错误处理、注释、测试或真实闭环不达标时，默认不通过。
 - `mark` 只记录人工进度，不能替代验收结论。
+- 完成声明必须带本轮新鲜验证证据；dry-run、旧日志、agent 自述或局部截图不能替代真实执行结果。
+- Review、security、dependency、CI 或 Git evidence blocker 未清零时，verify 结论应写为 `BLOCKED` 或 `NOT-READY`，不得为了继续队列而保留 `PASS`。

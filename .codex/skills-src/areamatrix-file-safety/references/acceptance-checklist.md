@@ -43,3 +43,12 @@ Prefer automated tests with temporary directories. If manual evidence is require
 - cleanup performed
 
 Missing evidence means the task is not accepted.
+
+## Threat Model Evidence
+
+Required only for explicit threat-model tasks or new high-risk boundaries:
+
+- Assets, trust boundaries, entry points, attacker capabilities, abuse paths, mitigations, and residual risk are present.
+- User files, DB, staging, FSEvents / iCloud, privacy, and remote AI calls were considered when in scope.
+- Existing controls are separated from proposed controls.
+- Ordinary code review, tests, CI, and file-safety validation still have their own evidence.

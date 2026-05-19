@@ -28,6 +28,8 @@ pub enum ErrorKind {
     InvalidPath,
     /// iCloud placeholder has not been downloaded.
     ICloudPlaceholder,
+    /// Import staging state must be recovered before continuing.
+    StagingRecoveryRequired,
     /// Filesystem permission is insufficient.
     PermissionDenied,
     /// Unexpected internal failure.
@@ -181,6 +183,13 @@ static ICLOUD_PLACEHOLDER_MAPPING: ErrorMappingTemplate = ErrorMappingTemplate {
     recoverability: ErrorRecoverability::Retryable,
 };
 
+static STAGING_RECOVERY_REQUIRED_MAPPING: ErrorMappingTemplate = ErrorMappingTemplate {
+    user_message: "导入暂存需要恢复",
+    severity: ErrorSeverity::High,
+    suggested_action: "请先运行导入恢复后再重试当前操作",
+    recoverability: ErrorRecoverability::UserActionRequired,
+};
+
 static PERMISSION_DENIED_MAPPING: ErrorMappingTemplate = ErrorMappingTemplate {
     user_message: "无访问权限",
     severity: ErrorSeverity::High,
@@ -208,6 +217,7 @@ impl ErrorKind {
             Self::RepoNotInitialized => &REPO_NOT_INITIALIZED_MAPPING,
             Self::InvalidPath => &INVALID_PATH_MAPPING,
             Self::ICloudPlaceholder => &ICLOUD_PLACEHOLDER_MAPPING,
+            Self::StagingRecoveryRequired => &STAGING_RECOVERY_REQUIRED_MAPPING,
             Self::PermissionDenied => &PERMISSION_DENIED_MAPPING,
             Self::Internal => &INTERNAL_MAPPING,
         }
@@ -254,6 +264,9 @@ pub enum CoreError {
     /// iCloud placeholder has not been downloaded.
     #[error("iCloud placeholder not downloaded: {path}")]
     ICloudPlaceholder { path: String },
+    /// Import staging state must be recovered before continuing.
+    #[error("staging recovery required: {path}")]
+    StagingRecoveryRequired { path: String },
     /// Filesystem permission is insufficient.
     #[error("permission denied: {path}")]
     PermissionDenied { path: String },
@@ -324,6 +337,11 @@ impl CoreError {
         Self::ICloudPlaceholder { path: path.into() }
     }
 
+    /// Creates a staging-recovery-required error with the blocked path.
+    pub fn staging_recovery_required(path: impl Into<String>) -> Self {
+        Self::StagingRecoveryRequired { path: path.into() }
+    }
+
     /// Creates a permission error with the blocked path.
     pub fn permission_denied(path: impl Into<String>) -> Self {
         Self::PermissionDenied { path: path.into() }
@@ -349,6 +367,7 @@ impl CoreError {
             Self::RepoNotInitialized { .. } => ErrorKind::RepoNotInitialized,
             Self::InvalidPath { .. } => ErrorKind::InvalidPath,
             Self::ICloudPlaceholder { .. } => ErrorKind::ICloudPlaceholder,
+            Self::StagingRecoveryRequired { .. } => ErrorKind::StagingRecoveryRequired,
             Self::PermissionDenied { .. } => ErrorKind::PermissionDenied,
             Self::Internal { .. } => ErrorKind::Internal,
         }
@@ -364,6 +383,7 @@ impl CoreError {
             | Self::RepoNotInitialized { path }
             | Self::InvalidPath { path }
             | Self::ICloudPlaceholder { path }
+            | Self::StagingRecoveryRequired { path }
             | Self::PermissionDenied { path } => path,
             Self::DuplicateFile { existing_path } => existing_path,
         }
@@ -408,6 +428,7 @@ impl ErrorMappingInput {
             ErrorKind::RepoNotInitialized => CoreError::RepoNotInitialized { path },
             ErrorKind::InvalidPath => CoreError::InvalidPath { path },
             ErrorKind::ICloudPlaceholder => CoreError::ICloudPlaceholder { path },
+            ErrorKind::StagingRecoveryRequired => CoreError::StagingRecoveryRequired { path },
             ErrorKind::PermissionDenied => CoreError::PermissionDenied { path },
             ErrorKind::Internal => CoreError::Internal { message },
         }

@@ -128,6 +128,7 @@ _ACTION_SPECS = (
     ActionSpec("release", command="release", group="tool", label_key="action.release.label", note_key="action.release.note", passthrough=True),
     ActionSpec("changes", command="changes", group="workflow", label_key="action.changes.label", note_key="action.changes.note", passthrough=True),
     ActionSpec("workflow", command="workflow", group="workflow", label_key="action.workflow.label", note_key="action.workflow.note", passthrough=True),
+    ActionSpec("backlog", command="backlog", group="workflow", label_key="action.backlog.label", note_key="action.backlog.note", passthrough=True),
 )
 
 ACTIONS = {spec.id: spec for spec in _ACTION_SPECS}
@@ -210,6 +211,7 @@ REQUIRED_COMMANDS = (
     "release",
     "changes",
     "workflow",
+    "backlog",
 )
 
 

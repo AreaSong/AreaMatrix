@@ -1,0 +1,74 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`4-1/task-70`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-70-c2-14-integration-verify.md`
+- Core 范围：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/**`
+- Exact Docs：C2-14 capability spec、Stage 2 control map、Core API、S2-18 page spec
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：0
+- 通过项数：2
+- 不通过项数：2
+- 阻塞项数：2
+
+四、逐项验收结果
+
+- 项目：交叉检查 capability spec、Core API、UDL、Rust 实现和测试
+- 结果：不通过
+- 证据：接口形状已落地，`preview_classifier_rule_impact(repo_path, request)`、`ClassifierImpactPreviewRequest`、`RuleImpactReport` 在 Core API/UDL/Rust/test 中均存在；但 RuleDraft 预览没有复用完整 classifier matcher 优先级语义。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/classifier_impact.rs`
+
+- 项目：确认消费页面需要的状态、错误和副作用均已覆盖
+- 结果：不通过
+- 证据：S2-18 要求 Move checkbox、Move 冲突 dry-run、关闭 Move 后重新 dry-run；当前 `ClassifierImpactPreviewRequest` 无 move preference 字段，Rust 逻辑无条件执行目标路径冲突检查，UI 无法表达 Move on/off 状态。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-2-experience/S2-18-classifier-impact-preview.md`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/classifier_impact.rs`
+
+- 项目：确认没有实现 control map 之外的能力
+- 结果：通过
+- 证据：control map 仅声明 S2-18 -> C2-14；实现未触碰 `apps/**`，未实现 C2-13 save、C2-15 rule CRUD、apply/Undo。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-2-control-map.md:26`
+
+- 项目：不得修改文件；只记录验收证据和阻塞项
+- 结果：通过
+- 证据：本轮验收只读执行；`git status --short apps` 无输出，`Forbidden Touches apps/**` 未被触碰。
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过，RuleDraft 新分类计算和 Move 状态建模不满足长期可维护的真实闭环；另 `core/src/classifier_impact.rs` 为 510 行，略超 500 行软阈值。
+- 注释 / rustdoc / 文档同步：不通过，public API 有 rustdoc，Core API/UDL 形状同步，但与 S2-18 Move 消费状态不完整。
+- 错误处理与边界处理：不通过，`can_apply` 可能基于错误的新分类/路径冲突状态给出误导性结果。
+- 测试与验证覆盖：不通过，验证命令通过，但缺少“已有更高优先级规则影响 RuleDraft 结果”和“Move on/off 冲突差异”的测试。
+- 占位、硬编码、mock-only、一次性实现检查：通过，未发现 mock-only 或硬编码通过态；实现读取真实 classifier config 与 DB metadata。
+
+六、阻塞项
+
+- P0：RuleDraft 预览没有复用完整 classifier matcher 优先级语义
+  说明：`docs/api/classifier-yaml.md:185` 定义多命中按 priority、keyword 长度、分类顺序裁决，`core/src/classify/mod.rs:304` 也按全部 keyword hit 计算优先级；但 `core/src/classifier_impact.rs:323` 对 RuleDraft 直接把 `new_category` 设为目标分类，`core/src/classifier_impact.rs:413` 的冲突判断只检查相同 keyword/extension 是否存在于其他分类。可构造场景：已有高优先级 keyword 规则会让文件继续留在原分类，但 C2-14 会错误报告 `WillUpdate` 到新目标分类。该问题会误导 S2-18 的影响数量、表格新分类和 Apply 可用性，导致不能作为真实 Core 依赖。
+
+- P1：S2-18 Move preference 无法传入 Core preview
+  说明：S2-18 要求 Move checkbox、Move 开启时做路径冲突 dry-run，并允许关闭 Move 后重新 dry-run；见 `docs/ux/page-specs/stage-2-experience/S2-18-classifier-impact-preview.md:63`、`:94`、`:141`。当前 `core/area_matrix.udl:673` 的 `ClassifierImpactPreviewRequest` 只有 `mode/rule/replacement_category`，没有 move preference；`core/src/classifier_impact.rs:398` 无条件执行 `target_path_conflict`。这会让 metadata-only apply 场景也被移动路径冲突阻断，消费页面所需状态不完整。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-70`
+- 通过：`prompt doctor`、`git diff --check`、`cargo fmt --all -- --check`、`cargo clippy --all-targets --all-features -- -D warnings`
+- 通过：`classifier_impact_preview_contract_api` 4 passed
+- 通过：`classifier_impact_preview_failure_recovery` 6 passed
+- 通过：`classifier_impact_preview_implementation` 6 passed
+- 通过：`classifier_impact_preview_validation` 4 passed
+- 失败：无命令失败
+- 缺失：缺少覆盖上述两个语义阻塞点的测试与实现证据
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。C2-14 目前不能作为后续 S2-18 page-feature task 的真实 Core 依赖，需阻塞后续 UI 接入。
+
+
+
+VERIFY_RESULT: FAIL

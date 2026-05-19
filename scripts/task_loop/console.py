@@ -356,6 +356,14 @@ def print_status_compact(cfg: ConsoleConfig) -> None:
         "- lock_pid:",
         "- lock_run_id:",
         "- lock_command:",
+        "- live_activity:",
+        "- live_activity_started_at:",
+        "- live_activity_elapsed:",
+        "- live_activity_pid:",
+        "- live_activity_prompt:",
+        "- live_activity_log:",
+        "- live_activity_log_state:",
+        "- live_activity_command:",
         "- drain_requested:",
         "- latest_log_dir:",
         "- completed:",
@@ -674,7 +682,7 @@ def recommended_action(cfg: ConsoleConfig, snapshot: DashboardSnapshot) -> tuple
         return tr(cfg, "action.continue_blocked"), "RISK_POLICY=allow START_FROM=<label> ./task-loop run"
     if snapshot.lifecycle.promotion_blockers:
         return tr(cfg, "action.review_workflow"), "./dev workflow status"
-    return tr(cfg, "action.continue_queue"), "RISK_POLICY=allow MAX_RETRIES=0 ./task-loop run"
+    return tr(cfg, "action.continue_queue"), "RISK_POLICY=allow MAX_RETRIES=1 ./task-loop run"
 
 
 def blocker_lines(cfg: ConsoleConfig, snapshot: DashboardSnapshot) -> list[str]:
@@ -1005,6 +1013,24 @@ def choose_max_tasks(cfg: ConsoleConfig) -> str:
     return "0"
 
 
+def choose_max_retries(cfg: ConsoleConfig) -> str:
+    value = env_value("MAX_RETRIES")
+    if value:
+        return value
+    if not sys.stdin.isatty():
+        return "1"
+    print("\n".join(tr_lines(cfg, "choose.max_retries.lines")))
+    answer = input(tr(cfg, "prompt.selection")).strip().lower()
+    if answer == "2":
+        return "2"
+    if answer in {"3", "0", "infinite", "forever"}:
+        return "0"
+    if answer == "4":
+        custom = input(tr(cfg, "prompt.custom_n")).strip()
+        return custom if custom.isdigit() else "1"
+    return "1"
+
+
 def choose_stop_target(cfg: ConsoleConfig) -> tuple[str, str]:
     phase = env_value("PHASE")
     stop_after = env_value("STOP_AFTER")
@@ -1019,10 +1045,10 @@ def choose_stop_target(cfg: ConsoleConfig) -> tuple[str, str]:
     return "", ""
 
 
-def base_env(cfg: ConsoleConfig, git_mode: str) -> tuple[dict[str, str], list[str]]:
+def base_env(cfg: ConsoleConfig, git_mode: str, max_retries: str | None = None) -> tuple[dict[str, str], list[str]]:
     values = {
         "RISK_POLICY": "allow",
-        "MAX_RETRIES": "0",
+        "MAX_RETRIES": max_retries if max_retries is not None else env_value("MAX_RETRIES", "1"),
         "GIT_CHECKPOINT": git_mode,
         "CODEX_EXEC_SANDBOX": env_value("CODEX_EXEC_SANDBOX", cfg.runtime.codex_exec_sandbox),
         "PROGRESS_FILE": str(cfg.runtime.progress_file),
@@ -1042,8 +1068,9 @@ def build_runner_command(cfg: ConsoleConfig, subcommand: str, extra_args: Sequen
     execution_mode = choose_execution_mode(cfg)
     git_mode = choose_git_mode(cfg)
     max_tasks = choose_max_tasks(cfg)
+    max_retries = choose_max_retries(cfg)
     phase, stop_after = choose_stop_target(cfg)
-    env, env_bits = base_env(cfg, git_mode)
+    env, env_bits = base_env(cfg, git_mode, max_retries)
     argv = [str(cfg.task_loop_bin), subcommand]
     if env_value("DRY_RUN", "0") == "1":
         argv.append("--dry-run")
@@ -1111,7 +1138,7 @@ def run_temp_dry_run(cfg: ConsoleConfig) -> int:
                 "GIT_CHECKPOINT": "off",
                 "CODEX_EXEC_SANDBOX": env_value("CODEX_EXEC_SANDBOX", cfg.runtime.codex_exec_sandbox),
                 "RISK_POLICY": "allow",
-                "MAX_RETRIES": "0",
+                "MAX_RETRIES": env_value("MAX_RETRIES", "1"),
                 "DRY_RUN_RESULT": env_value("DRY_RUN_RESULT", "PASS"),
             }
         )

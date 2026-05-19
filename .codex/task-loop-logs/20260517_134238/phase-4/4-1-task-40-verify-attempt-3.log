@@ -1,0 +1,81 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-1/task-40`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-40-c2-08-integration-verify.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-2-experience/C2-08-batch-change-category.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-2-control-map.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-2-experience/S2-12-batch-change-category.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/batch_category*`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/tests/batch_change_category_*`
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：交叉检查 capability spec、Core API、UDL、Rust 实现和测试
+- 结果：通过
+- 证据：C2-08 spec 定义 preview/apply API、预览报告、执行报告、undo token、`files.category/path`、change log、undo action；`docs/api/core-api.md` 与 `core/area_matrix.udl` 均暴露 `preview_batch_move_to_category`、`batch_move_to_category`、`BatchCategoryPreviewReport`、`BatchCategoryChangeReport` 和状态 enum；Rust 入口在 `core/src/batch_category.rs` 与 `core/src/api.rs`；测试覆盖 contract / implementation / failure / rollback / validation / preview safety。
+- 涉及文件：上述 C2-08 docs、UDL、`core/src/batch_category*`、`core/tests/batch_change_category_*`
+
+- 项目：确认消费页面需要的状态、错误和副作用均已覆盖
+- 结果：通过
+- 证据：S2-12 需要选中文件数、分类分布、目标分类、移动选项、影响数量、Apply 启用状态、失败原因、Undo 和 change log；实现提供 `category_distribution`、`will_move_count`、`metadata_only_count`、`skipped_count`、`blocked_count`、`can_apply`、`apply_blocked_reason`、`updated_files`、`undo_token`。错误覆盖 `Classify / Conflict / FileNotFound / PermissionDenied / Io / Db`，测试覆盖 stale preview、Index-only 不移动、部分失败摘要、权限不可写 preview block、undo 恢复。
+- 涉及文件：`docs/ux/page-specs/stage-2-experience/S2-12-batch-change-category.md`、`core/src/batch_category/*.rs`、`core/tests/batch_change_category_*.rs`
+
+- 项目：确认没有实现 control map 之外的能力
+- 结果：通过
+- 证据：control map 中 S2-12 绑定 `C2-08, C2-07`；本 task 只验 C2-08，C2-07 仅消费 `undo_token`。代码注释和测试均限定不创建新分类、不保存 classifier rule、不删除/Trash/rename 非目标文件、不保存搜索、不 reindex、不更新 generated overview、不触发 AI/网络。
+- 涉及文件：`docs/architecture/stage-2-control-map.md`、`docs/api/core-api.md`、`core/src/api.rs`、`core/src/batch_category.rs`
+
+- 项目：不得修改文件，只记录验收证据和阻塞项
+- 结果：通过
+- 证据：本轮验收未修改文件。`git status --short apps` 无输出，未发现 `apps/**` forbidden touches。当前脏改动集中在 `core/src/batch_category/path_plan.rs`、`core/src/batch_category/plan.rs`、未跟踪 `core/tests/batch_change_category_preview_safety.rs`，均属于 Expected New Paths；task-loop 的 progress/log/summary 属于 runner 收口上下文，不作为本 verify 阶段阻断。
+- 涉及文件：`core/src/**`、`core/tests/**`、`apps/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，`batch_category` 拆分为入口、plan、path_plan、apply、fs_move、token；文件行数均小于 500。
+- 注释 / rustdoc / 文档同步：通过，public API 和类型有 rustdoc，Core API、UDL、capability spec、UX 页面和测试互相锁定。
+- 错误处理与边界处理：通过，生产路径未检出 `unwrap/expect/panic!`；preview 不写入，Apply 使用 preview token、事务/savepoint、rollback guard 和 per-item 失败摘要。
+- 测试与验证覆盖：通过，manifest 验证命令完整通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过，测试通过真实 temp repo、SQLite、文件移动、change_log、undo、权限和 rollback 路径验证，不是 mock-only。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-40`
+- 通过：
+  - `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`
+  - `git diff --check`
+  - `cargo fmt --all -- --check`
+  - `cargo clippy --all-targets --all-features -- -D warnings`
+  - `cargo test --test batch_change_category_contract_api -- --nocapture`
+  - `cargo test --test batch_change_category_failure_recovery -- --nocapture`
+  - `cargo test --test batch_change_category_implementation -- --nocapture`
+  - `cargo test --test batch_change_category_preview_safety -- --nocapture`
+  - `cargo test --test batch_change_category_rollback_safety -- --nocapture`
+  - `cargo test --test batch_change_category_validation -- --nocapture`
+- 失败：无
+- 缺失：无
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。C2-08 可以作为后续 S2-12 page-feature task 的真实 Core 依赖。
+
+VERIFY_RESULT: PASS

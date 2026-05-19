@@ -64,6 +64,9 @@ pub enum CoreError {
     #[error("iCloud placeholder not downloaded: {path}")]
     ICloudPlaceholder { path: String },
 
+    #[error("staging recovery required: {path}")]
+    StagingRecoveryRequired { path: String },
+
     #[error("permission denied: {path}")]
     PermissionDenied { path: String },
 
@@ -120,6 +123,7 @@ impl From<walkdir::Error> for CoreError {
 | `RepoNotInitialized { path }` | 资料库目录未 init | 否 | 触发首次启动向导 | high |
 | `InvalidPath { path }` | 路径含非法字符、空、超长 | 否 | toast「路径不合法」+ 让用户改名 | low |
 | `ICloudPlaceholder { path }` | 操作占位符文件 | 自动重试 | 静默触发下载 + retry | medium |
+| `StagingRecoveryRequired { path }` | 导入 staging 残留或 session 状态不一致 | 否 | blocking repair：先运行导入恢复 | high |
 | `PermissionDenied { path }` | 资料库不可写、SQLite 文件锁定 | 否 | 弹窗：解释权限问题 + 链接帮助 | high |
 | `Internal { message }` | Rust panic / unwrap 兜底 | 否 | 弹窗「应用内部错误」+ 提交日志 | critical |
 
@@ -500,6 +504,7 @@ public enum AppError: Error, LocalizedError {
     case repoNotInitialized(path: String)
     case invalidPath(path: String)
     case icloudPlaceholder(path: String)
+    case stagingRecoveryRequired(path: String)
     case permissionDenied(path: String)
     case internalError(message: String)
 
@@ -515,6 +520,7 @@ public enum AppError: Error, LocalizedError {
         case .repoNotInitialized(let p): return String(localized: "core.uninitialized.\(p)")
         case .invalidPath(let p): return String(localized: "core.invalid.\(p)")
         case .icloudPlaceholder(let p): return String(localized: "core.icloud.\(p)")
+        case .stagingRecoveryRequired(let p): return String(localized: "core.staging_recovery.\(p)")
         case .permissionDenied(let p): return String(localized: "core.perm.\(p)")
         case .internalError(let m): return String(localized: "core.internal.\(m)")
         }
@@ -534,6 +540,7 @@ extension CoreError {
         case .RepoNotInitialized(let p): return .repoNotInitialized(path: p)
         case .InvalidPath(let p): return .invalidPath(path: p)
         case .ICloudPlaceholder(let p): return .icloudPlaceholder(path: p)
+        case .StagingRecoveryRequired(let p): return .stagingRecoveryRequired(path: p)
         case .PermissionDenied(let p): return .permissionDenied(path: p)
         case .Internal(let m): return .internalError(message: m)
         }
@@ -694,6 +701,7 @@ flowchart TB
 | `RepoNotInitialized` | `repo_not_initialized_when_no_db` |
 | `InvalidPath` | `invalid_path_with_slash`, `invalid_path_too_long`, `invalid_path_empty` |
 | `ICloudPlaceholder` | `icloud_placeholder_when_undownloaded` |
+| `StagingRecoveryRequired` | `staging_recovery_required_when_import_session_dirty` |
 | `PermissionDenied` | `permission_denied_readonly_repo` |
 | `Internal` | `internal_when_panic_caught` |
 

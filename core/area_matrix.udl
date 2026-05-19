@@ -63,6 +63,92 @@ namespace area_matrix {
     FileEntry move_to_category(string repo_path, i64 file_id, string new_category);
 
     [Throws=CoreError]
+    BatchCategoryPreviewReport preview_batch_move_to_category(
+        string repo_path,
+        sequence<i64> file_ids,
+        string target_category,
+        boolean move_repo_owned_files
+    );
+
+    [Throws=CoreError]
+    BatchCategoryChangeReport batch_move_to_category(
+        string repo_path,
+        sequence<i64> file_ids,
+        string target_category,
+        boolean move_repo_owned_files,
+        string preview_token
+    );
+
+    [Throws=CoreError]
+    BatchDeletePreviewReport preview_batch_delete(
+        string repo_path,
+        sequence<i64> file_ids,
+        BatchDeleteMode delete_mode
+    );
+
+    [Throws=CoreError]
+    BatchDeleteReport batch_delete_to_trash(
+        string repo_path,
+        sequence<i64> file_ids,
+        BatchDeleteMode delete_mode,
+        string preview_token
+    );
+
+    [Throws=CoreError]
+    BatchRenamePreviewReport preview_batch_rename(
+        string repo_path,
+        sequence<i64> file_ids,
+        BatchRenameRule rule
+    );
+
+    [Throws=CoreError]
+    BatchRenameReport batch_rename(
+        string repo_path,
+        sequence<i64> file_ids,
+        BatchRenameRule rule,
+        string preview_token
+    );
+
+    [Throws=CoreError]
+    ClassifierCorrectionResult correct_file_category(
+        string repo_path,
+        i64 file_id,
+        string category,
+        boolean move_file,
+        boolean remember
+    );
+
+    [Throws=CoreError]
+    ClassifierRule save_classifier_rule(string repo_path, ClassifierRule rule);
+
+    [Throws=CoreError]
+    RuleImpactReport preview_classifier_rule_impact(
+        string repo_path,
+        ClassifierImpactPreviewRequest request
+    );
+
+    [Throws=CoreError]
+    ClassifierRuleEditorSnapshot list_classifier_rules(string repo_path);
+
+    [Throws=CoreError]
+    ClassifierRuleEditorSnapshot create_classifier_rule(
+        string repo_path,
+        ClassifierRuleCreateRequest request
+    );
+
+    [Throws=CoreError]
+    ClassifierRuleEditorSnapshot update_classifier_rule(
+        string repo_path,
+        ClassifierRuleUpdate request
+    );
+
+    [Throws=CoreError]
+    ClassifierRuleEditorSnapshot delete_classifier_rule(
+        string repo_path,
+        ClassifierRuleDeleteRequest request
+    );
+
+    [Throws=CoreError]
     FileEntry restore_file(string repo_path, i64 file_id);
 
     [Throws=CoreError]
@@ -93,6 +179,36 @@ namespace area_matrix {
     sequence<SavedSearch> list_saved_searches(string repo_path);
 
     [Throws=CoreError]
+    SearchResultPage run_smart_list(
+        string repo_path,
+        i64 saved_search_id,
+        SearchPagination pagination
+    );
+
+    [Throws=CoreError]
+    CommandIndex list_command_targets(string repo_path, CommandIndexContext context);
+
+    [Throws=CoreError]
+    TagSet add_tag(string repo_path, i64 file_id, string tag);
+
+    [Throws=CoreError]
+    TagSet remove_tag(string repo_path, i64 file_id, string tag);
+
+    [Throws=CoreError]
+    TagSet list_tags(string repo_path, i64 file_id);
+
+    [Throws=CoreError]
+    BatchMutationReport batch_add_tags(
+        string repo_path, sequence<i64> file_ids, sequence<string> tags
+    );
+
+    [Throws=CoreError]
+    sequence<UndoActionRecord> list_undo_actions(string repo_path);
+
+    [Throws=CoreError]
+    UndoActionResult undo_action(string repo_path, string action_id);
+
+    [Throws=CoreError]
     FileEntry get_file(string repo_path, i64 file_id);
 
     [Throws=CoreError]
@@ -103,6 +219,31 @@ namespace area_matrix {
 
     [Throws=CoreError]
     sequence<ICloudConflictPair> list_icloud_conflicts(string repo_path);
+
+    [Throws=CoreError]
+    ICloudConflictPreviewReport preview_conflict_versions(
+        string repo_path, string conflict_id
+    );
+
+    [Throws=CoreError]
+    ICloudConflictResolveReport resolve_icloud_conflict(
+        string repo_path,
+        string conflict_id,
+        ICloudConflictResolution resolution
+    );
+
+    [Throws=CoreError]
+    ImportConflictBatchPreviewReport preview_import_conflict_batch(
+        string repo_path,
+        ImportConflictBatchPreviewRequest request
+    );
+
+    [Throws=CoreError]
+    ImportConflictBatchApplyReport apply_import_conflict_batch(
+        string repo_path,
+        ImportConflictBatchApplyRequest request,
+        string preview_token
+    );
 
     [Throws=CoreError]
     string? read_note(string repo_path, i64 file_id);
@@ -311,6 +452,381 @@ dictionary SavedSearch {
     i64 updated_at;
 };
 
+dictionary CommandIndexContext {
+    string? query;
+    sequence<i64> selected_file_ids;
+    string? current_path;
+    boolean include_file_candidates;
+};
+
+dictionary CommandTarget {
+    string id;
+    string title;
+    string? subtitle;
+    CommandTargetGroup group;
+    CommandTargetKind kind;
+    CommandTargetAction action;
+    string? route;
+    string? shortcut;
+    boolean disabled;
+    string? disabled_reason;
+    boolean requires_confirmation;
+    i64? file_id;
+    i64? saved_search_id;
+};
+
+dictionary CommandIndex {
+    sequence<CommandTarget> commands;
+    sequence<CommandTarget> navigation_targets;
+    sequence<CommandTarget> current_selection_targets;
+    sequence<CommandTarget> recent_targets;
+    sequence<CommandTarget> smart_lists;
+    sequence<CommandTarget> file_candidates;
+    i64 generated_at;
+};
+
+dictionary TagRecord {
+    string value;
+    string label;
+    i64 file_count;
+    boolean selected;
+    boolean disabled;
+    i64 updated_at;
+};
+
+dictionary TagSet {
+    i64 file_id;
+    sequence<TagRecord> file_tags;
+    sequence<TagRecord> available_tags;
+    sequence<TagRecord> recent_tags;
+    i64 updated_at;
+};
+
+dictionary BatchMutationItemResult {
+    i64 file_id;
+    string tag;
+    BatchMutationStatus status;
+    string? error;
+};
+
+dictionary BatchMutationReport {
+    i64 requested_file_count;
+    i64 requested_tag_count;
+    i64 added_count;
+    i64 skipped_count;
+    i64 failed_count;
+    sequence<BatchMutationItemResult> item_results;
+    string? undo_token;
+};
+
+dictionary CategoryDistributionItem {
+    string category;
+    i64 count;
+};
+
+dictionary BatchCategoryPreviewItem {
+    i64 file_id;
+    string? from_category;
+    string to_category;
+    string? current_path;
+    string? target_path;
+    string? target_name;
+    StorageMode? storage_mode;
+    boolean index_only;
+    boolean will_move_file;
+    BatchCategoryPreviewStatus status;
+    string? reason;
+};
+
+dictionary BatchCategoryPreviewReport {
+    i64 requested_file_count;
+    string target_category;
+    boolean move_repo_owned_files;
+    string preview_token;
+    sequence<CategoryDistributionItem> category_distribution;
+    i64 will_move_count;
+    i64 metadata_only_count;
+    i64 unchanged_count;
+    i64 skipped_count;
+    i64 blocked_count;
+    sequence<BatchCategoryPreviewItem> items;
+    boolean can_apply;
+    string? apply_blocked_reason;
+};
+
+dictionary BatchCategoryChangeItemResult {
+    i64 file_id;
+    string? from_category;
+    string to_category;
+    string? final_path;
+    BatchCategoryResultStatus status;
+    string? error;
+};
+
+dictionary BatchCategoryChangeReport {
+    i64 requested_file_count;
+    string target_category;
+    i64 moved_count;
+    i64 metadata_only_count;
+    i64 unchanged_count;
+    i64 skipped_count;
+    i64 failed_count;
+    sequence<BatchCategoryChangeItemResult> item_results;
+    sequence<FileEntry> updated_files;
+    string? undo_token;
+};
+
+dictionary BatchDeletePreviewItem {
+    i64 file_id;
+    string? current_path;
+    string? current_name;
+    StorageMode? storage_mode;
+    BatchDeleteMode delete_mode;
+    boolean will_move_to_trash;
+    boolean will_remove_index;
+    BatchDeletePreviewStatus status;
+    string? reason;
+};
+
+dictionary BatchDeletePreviewReport {
+    i64 requested_file_count;
+    BatchDeleteMode delete_mode;
+    string preview_token;
+    boolean trash_available;
+    boolean undo_available;
+    i64 will_trash_count;
+    i64 index_only_count;
+    i64 missing_count;
+    i64 skipped_count;
+    i64 blocked_count;
+    sequence<BatchDeletePreviewItem> items;
+    boolean can_apply;
+    string? apply_blocked_reason;
+};
+
+dictionary BatchDeleteItemResult {
+    i64 file_id;
+    string? final_path;
+    BatchDeleteResultStatus status;
+    string? error;
+};
+
+dictionary BatchDeleteReport {
+    i64 requested_file_count;
+    BatchDeleteMode delete_mode;
+    i64 moved_to_trash_count;
+    i64 removed_from_index_count;
+    i64 skipped_count;
+    i64 failed_count;
+    sequence<BatchDeleteItemResult> item_results;
+    sequence<i64> affected_file_ids;
+    string? undo_token;
+};
+
+dictionary BatchRenameRule {
+    BatchRenameMode mode;
+    string? prefix;
+    BatchRenameDateSource? date_source;
+    string? date_format;
+    string? separator;
+    i64? start_number;
+    i64? padding;
+    string? find;
+    string? replacement;
+    boolean case_sensitive;
+};
+
+dictionary BatchRenameConflict {
+    i64 file_id;
+    i64? conflicting_file_id;
+    string? conflict_path;
+    string reason;
+};
+
+dictionary BatchRenamePreviewItem {
+    i64 file_id;
+    string? current_path;
+    string? original_name;
+    string? new_name;
+    string? target_path;
+    StorageMode? storage_mode;
+    boolean index_only;
+    boolean will_rename_file;
+    BatchRenamePreviewStatus status;
+    string? reason;
+};
+
+dictionary BatchRenamePreviewReport {
+    i64 requested_file_count;
+    BatchRenameRule rule;
+    string preview_token;
+    i64 will_rename_count;
+    i64 display_only_count;
+    i64 unchanged_count;
+    i64 blocked_count;
+    i64 conflict_count;
+    sequence<BatchRenamePreviewItem> items;
+    sequence<BatchRenameConflict> conflicts;
+    boolean can_apply;
+    string? apply_blocked_reason;
+};
+
+dictionary BatchRenameItemResult {
+    i64 file_id;
+    string? original_name;
+    string? final_name;
+    string? final_path;
+    BatchRenameResultStatus status;
+    string? error;
+};
+
+dictionary BatchRenameReport {
+    i64 requested_file_count;
+    i64 renamed_count;
+    i64 display_name_updated_count;
+    i64 unchanged_count;
+    i64 skipped_count;
+    i64 failed_count;
+    sequence<BatchRenameItemResult> item_results;
+    sequence<FileEntry> updated_files;
+    string? undo_token;
+};
+
+dictionary ClassifierRuleDraft {
+    i64 source_file_id;
+    string target_category;
+    sequence<string> keyword_candidates;
+    sequence<string> extension_candidates;
+    i64 priority;
+};
+
+dictionary ClassifierCorrectionResult {
+    FileEntry updated_file;
+    ClassifierRuleDraft? rule_draft;
+    boolean move_file_requested;
+    boolean remember_requested;
+    boolean rule_confirmation_required;
+};
+
+dictionary ClassifierRule {
+    string target_category;
+    sequence<string> keywords;
+    sequence<string> extensions;
+    i64 priority;
+    boolean preview_confirmed;
+};
+
+dictionary ClassifierRuleRecord {
+    string rule_id;
+    string slug;
+    string display_name;
+    string description;
+    sequence<string> extensions;
+    sequence<string> keywords;
+    i64 priority;
+    string? naming_template;
+    boolean is_default;
+};
+
+dictionary ClassifierRuleEditorSnapshot {
+    sequence<ClassifierRuleRecord> rules;
+    string default_rule_id;
+    string? updated_rule_id;
+    string? warning;
+};
+
+dictionary ClassifierRuleCreateRequest {
+    string slug;
+    string display_name;
+    string description;
+    sequence<string> extensions;
+    sequence<string> keywords;
+    i64 priority;
+    string? naming_template;
+};
+
+dictionary ClassifierRuleUpdate {
+    string rule_id;
+    string slug;
+    string display_name;
+    string description;
+    sequence<string> extensions;
+    sequence<string> keywords;
+    i64 priority;
+    string? naming_template;
+    boolean preview_confirmed;
+};
+
+dictionary ClassifierRuleDeleteRequest {
+    string rule_id;
+    string? replacement_category;
+    boolean preview_confirmed;
+};
+
+dictionary ClassifierImpactPreviewRequest {
+    ClassifierImpactPreviewMode mode;
+    ClassifierRule rule;
+    boolean move_files;
+    string? replacement_category;
+};
+
+dictionary RuleImpactSample {
+    i64 file_id;
+    string path;
+    string current_category;
+    string new_category;
+    sequence<RuleImpactMatchReason> match_reasons;
+    RuleImpactStatus status;
+    string? reason;
+};
+
+dictionary RuleImpactConflict {
+    i64 file_id;
+    string? path;
+    string? conflicting_path;
+    RuleImpactConflictKind kind;
+    string reason;
+};
+
+dictionary RuleImpactReport {
+    ClassifierImpactPreviewRequest request;
+    i64 affected_file_count;
+    i64 will_update_count;
+    i64 already_correct_count;
+    i64 needs_review_count;
+    i64 conflict_count;
+    i64 sample_limit;
+    sequence<RuleImpactSample> samples;
+    sequence<RuleImpactConflict> conflicts;
+    boolean needs_review;
+    boolean warning_required;
+    string? warning;
+    boolean can_apply;
+    string? apply_blocked_reason;
+};
+
+dictionary UndoActionRecord {
+    string action_id;
+    string kind;
+    string summary;
+    i64 affected_count;
+    sequence<string> affected_file_names;
+    UndoActionStatus status;
+    boolean can_undo;
+    string? disabled_reason;
+    i64 created_at;
+    i64 updated_at;
+};
+
+dictionary UndoActionResult {
+    string action_id;
+    UndoActionStatus status;
+    string summary;
+    i64 affected_count;
+    sequence<string> refresh_targets;
+    i64 completed_at;
+};
+
 dictionary ChangeFilter {
     i64? file_id;
     string? category;
@@ -357,6 +873,132 @@ dictionary ICloudConflictPair {
     i64 conflicted_modified_at;
     ICloudConflictStatus status;
     string? uncertainty_reason;
+};
+
+dictionary ICloudConflictVersionMetadata {
+    string version_id;
+    ICloudConflictVersionRole role;
+    string path;
+    i64? modified_at;
+    i64? size_bytes;
+    string? hash_sha256;
+    string? preview_summary;
+    ICloudConflictPreviewStatus preview_status;
+};
+
+dictionary ICloudConflictResolutionOption {
+    ICloudConflictResolution resolution;
+    boolean destructive;
+    boolean requires_trash;
+    boolean enabled;
+    string? disabled_reason;
+};
+
+dictionary ICloudConflictPreviewReport {
+    string conflict_id;
+    sequence<ICloudConflictVersionMetadata> versions;
+    ICloudConflictResolution default_resolution;
+    sequence<ICloudConflictResolutionOption> resolution_options;
+    boolean metadata_complete;
+    boolean trash_available;
+    boolean can_keep_both;
+    boolean can_resolve_destructive;
+    string? blocked_reason;
+};
+
+dictionary ICloudConflictResolveReport {
+    string conflict_id;
+    ICloudConflictResolution resolution;
+    ICloudConflictStatus status;
+    sequence<string> kept_paths;
+    sequence<string> trashed_paths;
+    string? undo_token;
+    string change_log_action;
+};
+
+dictionary ImportConflictBatchPreviewRequest {
+    string import_session_id;
+    sequence<string> conflict_ids;
+    ImportConflictBatchStrategy duplicate_strategy;
+    ImportConflictBatchStrategy same_name_strategy;
+    boolean apply_to_all_similar_conflicts;
+};
+
+dictionary ImportConflictBatchPreviewItem {
+    string conflict_id;
+    ImportConflictBatchConflictType conflict_type;
+    i64? existing_file_id;
+    string? existing_path;
+    string incoming_path;
+    string? target_path;
+    ImportConflictBatchStrategy selected_strategy;
+    ImportConflictBatchPreviewStatus status;
+    boolean will_replace;
+    boolean will_keep_both;
+    boolean will_skip;
+    boolean will_ask_per_item;
+    boolean index_only;
+    string risk_summary;
+    string? reason;
+};
+
+dictionary ImportConflictBatchPreviewReport {
+    string import_session_id;
+    string preview_token;
+    boolean apply_to_all_similar_conflicts;
+    i64 requested_conflict_count;
+    i64 duplicate_conflict_count;
+    i64 same_name_conflict_count;
+    i64 included_count;
+    i64 pending_count;
+    i64 blocked_count;
+    i64 replace_count;
+    i64 skip_count;
+    i64 keep_both_count;
+    i64 ask_per_item_count;
+    boolean trash_available;
+    boolean undo_available;
+    boolean can_apply;
+    string? apply_blocked_reason;
+    boolean replace_confirmation_required;
+    string? replace_confirmation_summary;
+    sequence<ImportConflictBatchPreviewItem> items;
+};
+
+dictionary ImportConflictBatchApplyRequest {
+    string import_session_id;
+    sequence<string> conflict_ids;
+    ImportConflictBatchStrategy duplicate_strategy;
+    ImportConflictBatchStrategy same_name_strategy;
+    boolean apply_to_all_similar_conflicts;
+    boolean replace_confirmed;
+};
+
+dictionary ImportConflictBatchItemResult {
+    string conflict_id;
+    ImportConflictBatchConflictType conflict_type;
+    ImportConflictBatchStrategy applied_strategy;
+    ImportConflictBatchResultStatus status;
+    i64? file_id;
+    string? final_path;
+    string? error;
+};
+
+dictionary ImportConflictBatchApplyReport {
+    string import_session_id;
+    i64 requested_conflict_count;
+    i64 resolved_count;
+    i64 skipped_count;
+    i64 kept_both_count;
+    i64 replaced_count;
+    i64 queued_for_per_item_count;
+    i64 pending_count;
+    i64 failed_count;
+    sequence<ImportConflictBatchItemResult> item_results;
+    sequence<i64> affected_file_ids;
+    string? undo_token;
+    sequence<string> change_log_actions;
+    string? failure_summary;
 };
 
 dictionary ChangeLogEntry {
@@ -479,12 +1121,58 @@ enum SearchDiagnosticKind {
 };
 enum SearchDiagnosticSeverity { "Info", "Warning", "Error" };
 enum SearchIndexStatus { "Ready", "Indexing", "Unavailable" };
+enum CommandTargetGroup {
+    "Commands", "Navigation", "CurrentSelection",
+    "Recent", "SmartLists", "FileCandidates"
+};
+enum CommandTargetKind {
+    "Command", "Navigation", "SmartList",
+    "FileCandidate", "RecentCommand"
+};
+enum CommandTargetAction {
+    "Navigate", "OpenSheet", "OpenConfirmation", "RunSmartList",
+    "FocusFile", "OpenSearch", "LowRiskAction"
+};
 enum ICloudConflictStatus { "NeedsReview", "Resolved" };
+enum ICloudConflictVersionRole { "Original", "ConflictedCopy" };
+enum ICloudConflictPreviewStatus { "Available", "MetadataOnly", "Unavailable" };
+enum ICloudConflictResolution { "KeepBoth", "KeepOriginal", "KeepConflictedCopy" };
+enum ImportConflictBatchConflictType { "DuplicateHash", "SameNameDifferentContent" };
+enum ImportConflictBatchStrategy { "Skip", "KeepBoth", "Replace", "AskPerItem" };
+enum ImportConflictBatchPreviewStatus {
+    "Ready", "Pending", "NeedsConfirmation", "Blocked", "Failed"
+};
+enum ImportConflictBatchResultStatus {
+    "Skipped", "KeptBoth", "Replaced", "QueuedForPerItem", "Pending", "Failed"
+};
 enum ExternalEventKind { "Created", "Removed", "Modified", "Renamed" };
+enum BatchMutationStatus { "Added", "AlreadyHadTag", "Failed" };
+enum BatchCategoryPreviewStatus { "WillMove", "MetadataOnly", "Unchanged", "Skipped", "Blocked" };
+enum BatchCategoryResultStatus { "Moved", "MetadataUpdated", "Unchanged", "Skipped", "Failed" };
+enum BatchDeleteMode { "MoveToTrash", "RemoveFromIndex" };
+enum BatchDeletePreviewStatus { "WillMoveToTrash", "IndexOnly", "Missing", "Skipped", "Blocked" };
+enum BatchDeleteResultStatus { "MovedToTrash", "RemovedFromIndex", "Skipped", "Failed" };
+enum BatchRenameMode { "Prefix", "DatePrefix", "KeepBaseSequence", "ReplaceText" };
+enum BatchRenameDateSource { "Imported", "Modified", "Today" };
+enum BatchRenamePreviewStatus {
+    "Ok", "Error", "NameConflict", "Missing", "ReadOnly",
+    "DisplayOnly", "Unchanged", "ExternalChange"
+};
+enum BatchRenameResultStatus { "Renamed", "DisplayNameUpdated", "Unchanged", "Skipped", "Failed" };
+enum ClassifierImpactPreviewMode {
+    "RuleDraft", "RemoveKeyword", "RemoveExtension", "RemoveCategory"
+};
+enum RuleImpactMatchReason { "Keyword", "Extension", "Category" };
+enum RuleImpactStatus {
+    "WillUpdate", "AlreadyCorrect", "NeedsReview",
+    "Conflict", "Missing", "IndexOnly"
+};
+enum RuleImpactConflictKind { "NameConflict", "MissingFile", "UnsupportedStorage", "RuleConflict" };
+enum UndoActionStatus { "Pending", "Executed", "Expired", "Blocked" };
 enum ErrorKind {
     "Io", "Db", "Config", "Classify", "Conflict", "DuplicateFile",
     "FileNotFound", "RepoNotInitialized", "InvalidPath",
-    "ICloudPlaceholder", "PermissionDenied", "Internal"
+    "ICloudPlaceholder", "StagingRecoveryRequired", "PermissionDenied", "Internal"
 };
 enum ErrorSeverity { "Low", "Medium", "High", "Critical" };
 enum ErrorRecoverability {
@@ -505,6 +1193,7 @@ interface CoreError {
     RepoNotInitialized(string path);
     InvalidPath(string path);
     ICloudPlaceholder(string path);
+    StagingRecoveryRequired(string path);
     PermissionDenied(string path);
     Internal(string message);
 };

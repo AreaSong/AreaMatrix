@@ -1,0 +1,74 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-1/task-63`
+- Task 文件：[/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-63-c2-13-failure-edge.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-63-c2-13-failure-edge.md:1)
+- 实际验收文件：[/Users/as/Ai-Project/project/AreaMatrix/core/src/classifier_rules.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/classifier_rules.rs:88)、[/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:713)、[/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:121)、[/Users/as/Ai-Project/project/AreaMatrix/core/tests/classifier_rule_save_failure_recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/classifier_rule_save_failure_recovery.rs:165)
+
+三、完成度摘要
+
+- 已覆盖项数：6（核对清单 4 + 完成标准 2）
+- 未覆盖项数：0
+- 通过项数：6
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：空态、非法输入、权限、IO/DB 错误和错误码映射
+  结果：通过
+  证据：空 rule、非法 category、dotted extension、priority 越界均返回 `Config`；classifier path 为目录返回 `Io`；只读 metadata 返回 `PermissionDenied`；错误映射通过 `to_error_mapping` 与 `map_core_error` 校验。C2-13 文档错误码为 `Config` / `PermissionDenied` / `Io`，当前实现不写 DB，DB 错误不作为 C2-13 必需错误码。
+  涉及文件：[/Users/as/Ai-Project/project/AreaMatrix/core/src/classifier_rules.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/classifier_rules.rs:102)、[/Users/as/Ai-Project/project/AreaMatrix/core/tests/classifier_rule_save_failure_recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/classifier_rule_save_failure_recovery.rs:165)
+
+- 项目：失败不留下半成品
+  结果：通过
+  证据：实现使用临时文件写入、`rename` 原子替换，失败时清理 `.classifier.yaml.*.tmp`；测试断言失败后 classifier 原文、metadata entries、用户可见文件保持不变且无临时文件残留。
+  涉及文件：[/Users/as/Ai-Project/project/AreaMatrix/core/src/classifier_rules.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/classifier_rules.rs:372)、[/Users/as/Ai-Project/project/AreaMatrix/core/tests/classifier_rule_save_failure_recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/classifier_rule_save_failure_recovery.rs:141)
+
+- 项目：隐私 / AI / 远程调用
+  结果：通过
+  证据：API rustdoc 明确不调用 AI/network providers；测试保存规则后确认未创建 `.areamatrix/ai`、`ai.log`、`network.log` 或 generated ai 目录，且用户文件未变。
+  涉及文件：[/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:721)、[/Users/as/Ai-Project/project/AreaMatrix/core/tests/classifier_rule_save_failure_recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/classifier_rule_save_failure_recovery.rs:290)
+
+- 项目：不得吞错或静默降级
+  结果：通过
+  证据：读写、权限、schema、重复规则、过宽规则均显式返回 `CoreError`；未发现生产路径吞错、mock-only 或硬编码通过态。
+  涉及文件：[/Users/as/Ai-Project/project/AreaMatrix/core/src/classifier_rules.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/classifier_rules.rs:239)
+
+- 项目：C2-13 失败路径有明确返回、可测试证据和用户文件安全保证
+  结果：通过
+  证据：targeted tests 覆盖 contract、implementation、failure-recovery；用户可见文件 snapshot 在失败与成功保存规则后均保持不变。
+  涉及文件：[/Users/as/Ai-Project/project/AreaMatrix/core/tests/classifier_rule_save_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/classifier_rule_save_implementation.rs:133)
+
+- 项目：高风险路径具备可回滚或可恢复说明
+  结果：通过
+  证据：原子写入流程、失败清理、权限失败保留原配置均有实现和测试证据；Expected New Paths 已落地，Forbidden Touches `apps/**` 未触碰。
+  涉及文件：[/Users/as/Ai-Project/project/AreaMatrix/core/tests/classifier_rule_save_failure_recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/classifier_rule_save_failure_recovery.rs:313)
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，`save_classifier_rule` 主流程短，校验、读写、重复/过宽规则、错误映射拆分清楚。
+- 注释 / rustdoc / 文档同步：通过，public `ClassifierRule` 和 `save_classifier_rule` 有 rustdoc；UDL/API/docs 对齐。
+- 错误处理与边界处理：通过，生产路径未发现 `unwrap()` / `expect()` / `panic!()`；失败显式返回。
+- 测试与验证覆盖：通过，manifest 验证已新鲜运行，15 个 targeted tests 全部通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过，连接真实 `classifier.yaml`、真实 repo 初始化和真实文件系统 snapshot。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-63`
+- 通过：`prompt doctor` OK；`git diff --check` OK；`cargo test --test classifier_rule_save_contract_api` 4 passed；`cargo test --test classifier_rule_save_failure_recovery` 6 passed；`cargo test --test classifier_rule_save_implementation` 5 passed。
+- 失败：无。
+- 缺失：无必需验证缺失。未扩大到 `./dev check all`，因为本 task manifest 要求的是普通 Phase 4 atomic Core gate：`./dev check task 4-1/task-63`。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS

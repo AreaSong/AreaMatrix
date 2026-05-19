@@ -1,0 +1,100 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`4-1/task-82`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-82-c2-17-implementation.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/import_conflict_batch.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/import_conflict_batch/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/db/import_conflicts.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/db/import_conflicts/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/tests/import_conflict_batch_*.rs`
+
+三、完成度摘要
+
+- 已覆盖项数：6
+- 未覆盖项数：2
+- 通过项数：4
+- 不通过项数：2
+- 阻塞项数：2
+
+四、逐项验收结果
+
+- 项目：只实现 C2-17，不顺手实现同阶段其他 C* 能力
+- 结果：通过
+- 证据：实现集中在 `import_conflict_batch`、Core API/UDL、DB import conflict 支撑；`apps/**` 无 diff，`rg` 未发现 app 侧消费。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/import_conflict_batch.rs:1`
+
+- 项目：按能力规格落实输入、输出、DB/文件系统变化和错误映射
+- 结果：不通过
+- 证据：API/UDL 和主 happy path 已落地，但 `docs/architecture/data-model.md` 的完整 schema 未包含实现新增的 `import_sessions` / `import_conflicts` 表；实现却在 `ensure_import_conflict_schema` 中创建这两张表，DB 模型源事实与代码漂移。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/db/import_conflicts.rs:54`、`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/data-model.md:55`
+
+- 项目：保持 Rust Core 不依赖平台 UI API
+- 结果：通过
+- 证据：相关实现为 Rust Core + SQLite + 文件系统路径处理，未引用 Swift/AppKit/SwiftUI/macOS UI API。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/import_conflict_batch.rs:7`
+
+- 项目：必要时补最小测试支撑，但不做页面接入
+- 结果：不通过
+- 证据：`core/tests/import_conflict_batch_implementation.rs` 只有 1 个真实实现测试，仅覆盖 Skip + KeepBoth；Replace、AskPerItem、部分失败后保留 staged 文件和冲突状态没有真实执行测试，只在 contract 文本断言中出现。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/import_conflict_batch_implementation.rs:183`
+
+- 项目：C2-17 的核心行为可被测试或桥接调用验证
+- 结果：不通过
+- 证据：`./dev check task 4-1/task-82` 通过，但 targeted tests 只跑 4 个 contract test + 1 个 implementation happy path；未证明 `Replace` 二次确认后的可恢复路径、`AskPerItem` 队列状态、失败保留 staged 文件与 unresolved 冲突状态。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/import_conflict_batch_implementation.rs:183`
+
+- 项目：未触碰用户文件安全边界之外行为
+- 结果：不通过
+- 证据：未发现 `apps/**` forbidden touch；但 Replace 是 C2-17 中最高风险用户文件路径，当前缺少真实测试证据证明旧文件进入可恢复路径、失败回滚和 staged 保留。高风险边界缺证据按规则不通过。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/import_conflict_batch/apply.rs:210`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，拆分为 `plan`、`apply`、`path`、`token`，单文件均未超过 500 行。
+- 注释 / rustdoc / 文档同步：不通过，public API 有 rustdoc，但 DB schema 文档未同步 `import_sessions` / `import_conflicts`。
+- 错误处理与边界处理：不通过，实现有错误映射和回滚逻辑，但 Replace/失败保留 staged 的高风险路径缺少验证证据。
+- 测试与验证覆盖：不通过，指定验证命令通过，但测试覆盖不足以证明 C2-17 完成标准。
+- 占位、硬编码、mock-only、一次性实现检查：通过，未发现原来的 pending stub 或 mock-only 闭环；实现连接真实 DB/FS 路径。
+
+六、阻塞项
+
+- P1：DB schema 源事实与实现漂移
+  - 说明：实现新增 `import_sessions` / `import_conflicts` 两张表，但 `docs/architecture/data-model.md` 的完整 schema 未声明这些表。
+  - 绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/core/src/db/import_conflicts.rs:54`
+  - 绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/data-model.md:55`
+  - 为什么导致不通过：本 task Exact Docs 包含 data-model，文档是 SSOT；DB 行为未能与架构数据模型交叉证明一致。
+
+- P1：高风险文件系统策略缺少真实实现测试
+  - 说明：implementation test 只覆盖 Skip + KeepBoth；未覆盖 Replace、AskPerItem、失败后 staged 文件和冲突状态保留。
+  - 绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/import_conflict_batch_implementation.rs:183`
+  - 绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-2-experience/C2-17-import-conflict-batch.md:39`
+  - 为什么导致不通过：C2-17 验收标准明确要求失败时保留 staged 文件和冲突状态、不覆盖用户文件；高风险用户文件边界没有测试证据不能判定完成。
+
+七、验证情况
+
+- 跑了哪些验证：
+  - `./dev check task 4-1/task-82`
+- 哪些通过：
+  - `prompt doctor`: OK，tasks 637，manifests 637
+  - `git diff --check`: 通过
+  - `cargo test --test import_conflict_batch_contract_api -- --nocapture`: 4 passed
+  - `cargo test --test import_conflict_batch_implementation -- --nocapture`: 1 passed
+- 哪些失败：
+  - 命令层无失败
+- 哪些缺失：
+  - 缺少 Replace 成功与回滚/可恢复路径测试
+  - 缺少 AskPerItem 状态队列测试
+  - 缺少失败后 staged 文件保留、冲突状态不清除测试
+  - 缺少 data-model 与新增 DB schema 的同步证据
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。虽然 task-scoped 验证命令通过，但当前证据不足以证明 High 风险 C2-17 的完整 DB/文件系统行为和失败安全边界。
+
+VERIFY_RESULT: FAIL

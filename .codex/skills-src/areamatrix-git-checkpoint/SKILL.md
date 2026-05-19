@@ -7,6 +7,8 @@ description: "Use when Codex needs to review, commit, push, or recover AreaMatri
 
 Use this skill when a task-loop run needs Git checkpoint policy, commit review, push handling, or recovery from Git checkpoint failures.
 
+Trigger it for `GIT_CHECKPOINT`, branch policy, dirty worktree preflight, PASS-time commit / push, checkpoint evidence, `git_diff_check_failed`, `git_push_failed`, local-ahead recovery, or whether a task-loop checkpoint is merge-ready.
+
 ## Read first
 
 1. [AGENTS.md](../../../AGENTS.md)
@@ -14,12 +16,15 @@ Use this skill when a task-loop run needs Git checkpoint policy, commit review, 
 3. [docs/development/ci-governance.md](../../../docs/development/ci-governance.md)
 4. [scripts/task_loop.md](../../../scripts/task_loop.md)
 5. [areamatrix-task-loop](../areamatrix-task-loop/SKILL.md)
-6. [references/checkpoint-policy.md](references/checkpoint-policy.md)
+6. [areamatrix-validation-driver](../areamatrix-validation-driver/SKILL.md)
+7. [areamatrix-enterprise-governance](../areamatrix-enterprise-governance/SKILL.md)
+8. [references/checkpoint-policy.md](references/checkpoint-policy.md)
 
 ## References
 
 - [references/checkpoint-policy.md](references/checkpoint-policy.md): branch, commit, push, dirty worktree, and recovery policy.
 - [references/review-checklist.md](references/review-checklist.md): PASS-time diff review and commit evidence checklist.
+- [../../references/codex-automations-cloud-worktrees-gate.md](../../references/codex-automations-cloud-worktrees-gate.md): Cloud diff apply, Automation background runs, and Worktree isolation must not bypass PASS-time checkpoint policy.
 
 ## Workflow
 
@@ -37,3 +42,4 @@ Use this skill when a task-loop run needs Git checkpoint policy, commit review, 
 - Do not continue to the next task after a Git checkpoint failure.
 - Do not treat dry-run Git output as a real commit or upload.
 - Do not treat a PASS checkpoint as merge-ready without CI and review evidence.
+- Do not include unrelated pre-existing dirty worktree changes in a task-loop checkpoint; preserve or separate them first.

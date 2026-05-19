@@ -130,7 +130,7 @@ fn restore_staged_source_or_keep_recoverable(current_path: &Path, source: &Path)
     let _restore_result = move_recoverable_file(current_path, source);
 }
 
-pub(super) fn move_recoverable_file(current_path: &Path, source: &Path) -> CoreResult<()> {
+pub(crate) fn move_recoverable_file(current_path: &Path, source: &Path) -> CoreResult<()> {
     move_file_no_replace(current_path, source)
 }
 

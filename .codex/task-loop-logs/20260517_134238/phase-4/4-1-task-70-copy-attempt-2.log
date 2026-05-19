@@ -1,0 +1,43 @@
+一、执行结论
+
+已完成。`4-1/task-70` 的两项失败都已修复：格式/质量门禁通过，C2-14 现在能表达 S2-18 需要的删除 keyword、extension、category 影响预览和 replacement category 缺失禁用 Apply。
+
+二、执行范围
+
+单任务：`4-1/task-70`。
+
+修改范围：
+- `core/src/**`
+- `core/area_matrix.udl`
+- `core/tests/**`
+- 为修复源事实漂移，同步了 `docs/api/core-api.md` 和 `docs/core/capability-specs/stage-2-experience/C2-14-classifier-impact-preview.md`
+
+未触碰 `apps/**`。工作树里已有 task-loop 的 `.codex/...` 和 `progress.json` 变更仍存在，但不是本次产品修复范围。
+
+三、完成情况
+
+核对清单：
+- capability spec、Core API、UDL、Rust 实现、测试：通过。
+- S2-18 需要的状态、错误和副作用：通过，覆盖删除 keyword/extension/category、replacement 缺失、Index-only、Missing、Name conflict、warning、can_apply。
+- control map 之外能力：未实现保存、apply、Undo、C2-15 CRUD 或 app 接入。
+- Forbidden Touches：未触碰 `apps/**`。
+
+四、工程质量
+
+新增 `ClassifierImpactPreviewRequest` / `ClassifierImpactPreviewMode`，让 C2-14 合同显式区分 `RuleDraft`、`RemoveKeyword`、`RemoveExtension`、`RemoveCategory`。实现保持只读，只读取 classifier 配置和 DB metadata，不写 `classifier.yaml`、不改文件分类、不移动/删除/重命名用户文件、不写 change_log/undo。
+
+没有新增依赖；public Rust 类型已带 rustdoc；没有 mock-only 或硬编码通过态。
+
+五、验证情况
+
+已运行并通过：
+- `cd core && cargo check --tests`
+- `cd core && cargo test --test classifier_impact_preview_implementation -- --nocapture`
+- `cd core && cargo test --test classifier_impact_preview_contract_api --test classifier_impact_preview_validation --test classifier_impact_preview_failure_recovery -- --nocapture`
+- `./dev check task 4-1/task-70`
+
+最终 manifest 验证通过内容包括：prompt doctor、`git diff --check`、`cargo fmt --all -- --check`、`cargo clippy --all-targets --all-features -- -D warnings`、以及 C2-14 四个 targeted test binary。
+
+六、风险与后续
+
+剩余风险：这是 Core 合同和实现已完成，Swift/UI 尚未接入；后续页面任务需要按新的 request 合同调用。建议下一个任务继续执行依赖它的 S2-18 page-feature 接入任务。  

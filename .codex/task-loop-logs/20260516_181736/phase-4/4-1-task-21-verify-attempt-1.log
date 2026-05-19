@@ -1,0 +1,78 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-1/task-21`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-21-c2-05-contract-api.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/tags.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/tests/tag_crud_contract_api.rs`
+
+三、完成度摘要
+
+- 已覆盖项数：6
+- 未覆盖项数：0
+- 通过项数：6
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：读取 C2-05 能力规格、control map、Core API、错误码
+- 结果：通过
+- 证据：Exact Docs 均存在并已核验；C2-05 定义 `add_tag` / `remove_tag` / `list_tags`，服务 S2-07/S2-08，错误码为 `FileNotFound` / `Db` / `InvalidPath`
+- 涉及文件：`docs/core/capability-specs/stage-2-experience/C2-05-tag-crud.md`、`docs/architecture/stage-2-control-map.md`、`docs/api/core-api.md`、`docs/api/error-codes.md`
+
+- 项目：API 名称、输入、输出、错误码、权限/隐私边界一致
+- 结果：通过
+- 证据：UDL 暴露 `TagSet add_tag(string repo_path, i64 file_id, string tag)`、`remove_tag`、`list_tags`；`TagRecord` / `TagSet` 字段覆盖当前标签、候选标签、最近标签、选中/禁用/count/更新时间；Core API 说明不移动、不删除、不改分类、不触碰用户文件、不触发 AI/网络
+- 涉及文件：`core/area_matrix.udl`、`core/src/tags.rs`、`docs/api/core-api.md`
+
+- 项目：只补合同、类型、桥接声明或文档缺口，不实现相邻能力
+- 结果：通过
+- 证据：`core/src/tags.rs` 只提供合同类型、输入校验和明确的未实现持久化错误；未实现 C2-06 批量标签、C2-07 Undo、C2-19 非 AI 建议或 Stage 3 AI 自动标签
+- 涉及文件：`core/src/tags.rs`
+
+- 项目：当前页面消费方是否能从合同得到所需状态
+- 结果：通过
+- 证据：S2-07 可从 `TagSet.file_tags`、`available_tags`、`recent_tags`、`selected`、`disabled` 得到 chip、候选、空态、已添加状态；S2-08 可复用 `available_tags` 作为 tag registry，scope 下 count/selected facet 仍由 C2-02 负责，未越界
+- 涉及文件：`docs/ux/page-specs/stage-2-experience/S2-07-tags-add.md`、`docs/ux/page-specs/stage-2-experience/S2-08-tags-filter.md`、`docs/api/core-api.md`
+
+- 项目：Expected New Paths
+- 结果：通过
+- 证据：`core/src/**`、`core/area_matrix.udl`、`core/tests/**` 均已有 task 对应落点；`core/tests/tag_crud_contract_api.rs` 覆盖 docs/API/UDL/control map 对齐
+- 涉及文件：`core/src/tags.rs`、`core/area_matrix.udl`、`core/tests/tag_crud_contract_api.rs`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git status --short -- apps core docs tasks scripts .codex .agents` 未显示 `apps/**` 脏改动；当前仅有 task-loop progress/logs，按本验收时序不作为功能失败依据
+- 涉及文件：`apps/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，`tags.rs` 结构小而清晰，合同类型、API 函数和校验函数分离。
+- 注释 / rustdoc / 文档同步：通过，新增 public Rust 类型和函数均有 rustdoc，Core API 与 UDL 同步。
+- 错误处理与边界处理：通过，空 repo、`.areamatrix` 内路径、非法 tag、无效 file id 均显式返回结构化错误；未伪造成功路径。
+- 测试与验证覆盖：通过，`tag_crud_contract_api` 覆盖签名、类型、输入校验、docs/API/UDL/control map 和消费状态边界。
+- 占位、硬编码、mock-only、一次性实现检查：通过，当前是 contract-api task；未实现持久化时明确返回 `Db`，没有 mock 成功或静态通过态。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-21`
+- 通过：`prompt doctor`、`git diff --check`、`cargo test --test tag_crud_contract_api -- --nocapture`
+- 测试结果：4 passed，0 failed
+- 失败：无
+- 缺失：无；本 task manifest 只要求 `./dev check task 4-1/task-21`
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS

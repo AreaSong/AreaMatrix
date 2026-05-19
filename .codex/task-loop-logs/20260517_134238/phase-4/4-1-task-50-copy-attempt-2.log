@@ -1,0 +1,40 @@
+一、执行结论
+
+已完成。C2-10 现在可以作为后续 S2-14 page-feature task 的真实 Core 依赖。
+
+二、执行范围
+
+单任务：`4-1/task-50` repair retry。  
+修改文件清单：
+
+- [plan.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/batch_rename/plan.rs:37)
+- [batch_rename_preview_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/batch_rename_preview_implementation.rs:219)
+- [batch_rename_preview_validation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/batch_rename_preview_validation.rs:244)
+
+三、完成情况
+
+核对清单均已满足：API/UDL/Rust/测试链路保留，目标目录已有文件冲突现在会进入 `conflicts` 和 `conflict_count`；消费页面需要的 `NAME` 状态、冲突摘要和 VoiceOver 证据有测试覆盖；未实现 control map 之外能力。
+
+Forbidden Touches：未触碰 `apps/**`，`git diff --name-only -- apps` 无输出。
+
+四、工程质量
+
+实现保持在 C2-10 范围内：只把已阻塞的 `NameConflict` 行提取成 `BatchRenameConflict`，没有改变重命名执行、副作用、Undo、AI、删除、分类或 reindex 行为。测试同步覆盖目标目录已有文件冲突的 `conflict_count == 1`、`conflicts.len() == 1` 和冲突路径。
+
+不存在 mock-only、硬编码通过态或一次性脚本化实现。`cargo fmt` 对测试文件做了少量格式化。
+
+五、验证情况
+
+已通过：
+
+- `./dev check task 4-1/task-50`
+- 该命令内完成：prompt doctor OK、`git diff --check`、`cargo fmt --all -- --check`、`cargo clippy --all-targets --all-features -- -D warnings`
+- targeted tests 全部通过：`batch_rename_preview_contract_api` 5/5、`batch_rename_preview_failure_recovery` 6/6、`batch_rename_preview_implementation` 5/5、`batch_rename_preview_validation` 3/3
+
+说明：我先在 repo 根误跑了一次 `cargo fmt --all`，因根目录没有 `Cargo.toml` 失败；随后在 `core/` 正确执行 `cargo fmt --all` 成功，最终 manifest 验证命令已完整通过。
+
+六、风险与后续
+
+剩余风险：工作区里仍有 task-loop 运行证据和进度文件的既有脏状态（`.codex/task-loop-runs/.../summary.json`、`tasks/prompts/_shared/progress.json`、task-loop logs），不是本次产品修复文件；我未清理或回退。  
+建议下一个任务：进入 `4-1/task-51`，或先跑该 task 的 verify-ready 验收确认 runner 状态落盘。
+

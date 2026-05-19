@@ -1,0 +1,65 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-1/task-84`
+- 对应文件路径：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-84-c2-17-validation.md`
+- 核验范围：`core/src/**`、`core/area_matrix.udl`、`core/tests/**`
+- 禁止触碰范围：`apps/**`
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：补齐测试，覆盖成功和失败路径
+- 结果：通过
+- 证据：`core/tests/import_conflict_batch_validation.rs:28` 覆盖默认 Skip + KeepBoth preview/apply 成功路径；`:76` 覆盖 index-only Replace 阻断且不变更文件；现有 targeted gate 还运行了 failure、file-safety、implementation 测试共 20 条。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/import_conflict_batch_validation.rs`
+
+- 项目：Core API / UDL / Rust 实现一致
+- 结果：通过
+- 证据：`docs/api/core-api.md:259`、`core/area_matrix.udl:236`、`core/src/api.rs:1056` 均声明 `preview_import_conflict_batch`；`docs/api/core-api.md:265`、`core/area_matrix.udl:242`、`core/src/api.rs:1085` 均声明 `apply_import_conflict_batch`；类型字段在 UDL `:919`、`:945`、`:968`、`:987` 与 Rust `core/src/import_conflict_batch.rs:71`、`:121`、`:166`、`:202` 对齐。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs`
+
+- 项目：不新增业务功能，只补验证与必要 fixture
+- 结果：通过
+- 证据：工作区新增路径仅有 `core/tests/import_conflict_batch_validation.rs`；`git diff --name-only` 显示其他脏改动为 task-loop `summary.json`、`progress.json` 和 copy log，属于 runner 状态；未发现 `apps/**` 改动。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/import_conflict_batch_validation.rs`
+
+- 项目：记录无法运行的验证及原因
+- 结果：通过
+- 证据：必需验证 `./dev check task 4-1/task-84` 已运行并通过；本轮没有必需验证无法运行。未额外运行 `cargo fmt/clippy/workspace test`，因为该 atomic task manifest 只要求 task-scoped gate，validation-driver 明确普通 Phase 4 atomic Core task 不默认扩大到 broad gate。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/.codex/skills-src/areamatrix-validation-driver/SKILL.md`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，C2-17 入口在 `core/src/api.rs:1056`、`:1085`，业务实现拆分到 `import_conflict_batch.rs`、`plan.rs`、`apply.rs`、`apply/replace.rs`，未发现单次脚本化实现。
+- 注释 / rustdoc / 文档同步：通过，public API 与核心结构有 rustdoc，API 文档、UDL、Rust 类型和测试合同均有对齐证据。
+- 错误处理与边界处理：通过，空 scope、stale token、missing staging、index-only replace、undo/write failure、replace rollback 均有测试覆盖。
+- 测试与验证覆盖：通过，`./dev check task 4-1/task-84` fresh PASS。
+- 占位、硬编码、mock-only、一次性实现检查：通过，测试通过真实 temp repo、DB、staging 文件与文件系统状态断言验证，不是 mock-only。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 跑了哪些验证：`./dev check task 4-1/task-84`
+- 哪些通过：prompt doctor OK；`git diff --check` OK；targeted Rust tests 全部通过：`import_conflict_batch_contract_api` 4/4、`failure_recovery` 6/6、`file_safety` 5/5、`implementation` 2/2、`validation` 3/3。
+- 哪些失败：无。
+- 哪些缺失：无必需验证缺失；broad Core gate 非本 task manifest 要求。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。C2-17 有足够测试证明可进入后续 UI 接入，且 validation 命令已通过。
+
+VERIFY_RESULT: PASS

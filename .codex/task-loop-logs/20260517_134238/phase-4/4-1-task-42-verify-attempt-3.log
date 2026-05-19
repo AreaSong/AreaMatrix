@@ -1,0 +1,89 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`4-1/task-42`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-42-c2-09-implementation.md`
+- 代码范围：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/**`
+- 禁止范围：`/Users/as/Ai-Project/project/AreaMatrix/apps/**`
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：0
+- 通过项数：6
+- 不通过项数：4
+- 阻塞项数：4
+
+四、逐项验收结果
+
+- 项目：只实现 C2-09，不做页面接入  
+  结果：通过  
+  证据：diff 只涉及 `core/**`、`core/tests/**` 和 runner 状态文件；`git diff -- apps` 无输出。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/batch_delete.rs`
+
+- 项目：按能力规格落实输入、输出、DB/文件系统变化和错误映射  
+  结果：不通过  
+  证据：Rust/UDL 执行 API 增加 `preview_token`，但 Exact Docs 的 `docs/api/core-api.md` 中 `batch_delete_to_trash` 仍是三参数合同，未声明 `preview_token`。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:90`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/batch_delete.rs:192`、`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:113`
+
+- 项目：DB / 文件系统变化符合 SSOT  
+  结果：不通过  
+  证据：实现写 `change_log.action = removed_from_index`，但 Exact Docs 的 data model `change_log` CHECK 枚举没有 `removed_from_index`。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/db/delete.rs:66`、`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/data-model.md:100`
+
+- 项目：保持 Rust Core 不依赖平台 UI API  
+  结果：通过  
+  证据：实现位于 Rust Core 和 storage/db 层，未触碰 SwiftUI / AppKit UI 层。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/batch_delete.rs:1`
+
+- 项目：必要测试支撑  
+  结果：通过但不足以消除阻塞  
+  证据：`./dev check task 4-1/task-42` 跑通 contract 与 implementation 测试，共 10 个测试通过。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/batch_delete_trash_implementation.rs`
+
+- 项目：高风险文件安全  
+  结果：不通过  
+  证据：undo 写入失败发生在文件已移动到 Trash、DB 已软删除之后；函数返回 `Db` 错误而不是回滚或返回可追踪报告，测试还固定了这种无 undo 的破坏性状态。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/batch_delete/apply.rs:21`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/batch_delete/apply.rs:68`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/batch_delete_trash_implementation.rs:506`
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过。`core/src/batch_delete/plan.rs` 578 行，超过编码规范单文件 500 行阈值。
+- 注释 / rustdoc / 文档同步：不通过。Rust/UDL 与 `docs/api/core-api.md` 的 C2-09 API 合同不同步。
+- 错误处理与边界处理：不通过。undo action 写入失败后留下已删除文件和 deleted DB 状态，缺少回滚或可追踪成功报告。
+- 测试与验证覆盖：不通过。验证命令通过，但测试把 unsafe undo-write failure 状态当作期望行为，不能作为高风险文件安全通过证据。
+- 占位、硬编码、mock-only、一次性实现检查：通过。未发现 mock-only 或静态通过态。
+
+六、阻塞项
+
+- P0：Core API / UDL / Rust 合同漂移  
+  说明：`batch_delete_to_trash` 实现与 UDL 需要 `preview_token`，但 Exact Docs 的 Core API 不声明该参数，preview report 文档也不声明 `preview_token`。这会导致后续桥接和 UI 按 SSOT 调用时合同不一致。  
+  位置：`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:90`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/batch_delete.rs:192`、`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:113`
+
+- P0：data model 与实现的 `removed_from_index` action 不一致  
+  说明：实现和 Core API 使用 `removed_from_index`，但 `docs/architecture/data-model.md` 的 `change_log.action` CHECK 枚举没有该值。文档是 SSOT，当前无法证明 DB 合同一致。  
+  位置：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/data-model.md:100`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/db/delete.rs:66`
+
+- P0：undo 写入失败后留下已执行删除且无 undo token  
+  说明：`apply_batch_delete_plan` 先逐项移动文件和软删除 DB，再插入 batch undo；undo 插入失败时直接返回 `Db` 错误，文件已进入 Trash、DB 已 `deleted`、且无 undo action。这违反高风险文件操作的回滚 / 可追踪要求。  
+  位置：`/Users/as/Ai-Project/project/AreaMatrix/core/src/batch_delete/apply.rs:21`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/batch_delete/apply.rs:68`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/batch_delete_trash_implementation.rs:514`
+
+- P1：新增生产文件超过编码规范阈值  
+  说明：`core/src/batch_delete/plan.rs` 为 578 行，超过 `docs/development/coding-standards.md` 的单文件 500 行阈值。  
+  位置：`/Users/as/Ai-Project/project/AreaMatrix/core/src/batch_delete/plan.rs:1`
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-42`
+- 通过：`prompt doctor`、`git diff --check`、`cargo test --test batch_delete_trash_contract_api -- --nocapture`、`cargo test --test batch_delete_trash_implementation -- --nocapture`
+- 失败：命令层无失败
+- 缺失：缺少 Core API / UDL / data-model 同步证据；缺少 undo 写入失败时的安全回滚或可追踪执行报告证据
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+
+VERIFY_RESULT: FAIL

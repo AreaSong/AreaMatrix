@@ -1,0 +1,47 @@
+一、执行结论
+
+已完成。
+
+二、执行范围
+
+单任务：`4-1/task-83`，未触碰 `apps/**`。
+
+修改文件：
+- `core/src/import_conflict_batch/apply.rs`
+- `core/tests/import_conflict_batch_failure_recovery.rs`
+- `core/tests/classifier_rule_editor_failure_recovery.rs`
+- `core/tests/classifier_rule_save_failure_recovery.rs`
+
+三、完成情况
+
+核对清单已覆盖：空 scope / 缺失 conflict、staging residue、stale preview token、IO/权限失败、DB 失败、错误码映射、失败后 staged 文件保留、失败状态无法持久化时不吞错。
+
+C2-17 apply 现在在单项失败后如果无法写入 `failed` 状态，会返回明确 `CoreError`，并回滚此前本次 batch 已成功的行，避免留下不可证明的半完成态。
+
+四、工程质量
+
+实现保持在现有 C2-17 apply 流程内，没有新增跨模块抽象。错误路径不再 silent warn 后继续返回报告；可持久化失败仍返回 per-item `Failed` 报告，不可持久化失败则返回错误并回滚。新增测试使用 temp repo，不操作真实用户文件。
+
+两个 classifier 测试文件只补齐 `ErrorKind::StagingRecoveryRequired` 的 exhaustive match，用于通过本任务 Mission-Critical clippy 全 target 门禁。
+
+五、验证情况
+
+已运行并通过：
+- `cd core && cargo test --test import_conflict_batch_failure_recovery -- --nocapture`
+- `./dev check task 4-1/task-83`
+
+最终 `./dev check task 4-1/task-83` 通过了：
+- prompt doctor
+- git diff check
+- `cargo fmt --all -- --check`
+- `cargo clippy --all-targets --all-features -- -D warnings`
+- `import_conflict_batch_contract_api`
+- `import_conflict_batch_failure_recovery`
+- `import_conflict_batch_file_safety`
+- `import_conflict_batch_implementation`
+
+六、风险与后续
+
+剩余风险：未做 macOS UI 验证，因为本 task 绑定 Core 能力且 Forbidden Touches 禁止 `apps/**`。工作树里已有非本任务改动 `.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json`，我未触碰。
+
+建议下一个任务：进入 `4-1/task-84` 做 C2-17 validation / integration 相关验收。

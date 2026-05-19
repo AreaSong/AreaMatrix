@@ -57,6 +57,14 @@ def read_text(path: Path) -> str:
         return ""
 
 
+def read_json_file(path: Path) -> dict[str, Any]:
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
 def pid_alive(pid_text: str) -> bool:
     if not pid_text.isdigit():
         return False
@@ -76,8 +84,70 @@ def lock_info(lock_dir: Path) -> dict[str, Any]:
         "operation": read_text(lock_dir / "operation"),
         "started_at": read_text(lock_dir / "started_at"),
         "command": read_text(lock_dir / "command"),
+        "activity": read_json_file(lock_dir / "activity.json"),
         "alive": pid_alive(pid_text),
     }
+
+
+def write_lock_activity(lock_dir: Path, values: dict[str, Any]) -> None:
+    if not lock_dir.is_dir():
+        return
+    current = read_json_file(lock_dir / "activity.json")
+    current.update(values)
+    current["updated_at"] = utc_now()
+    write_json(lock_dir / "activity.json", current)
+
+
+def clear_lock_activity(lock_dir: Path) -> None:
+    try:
+        (lock_dir / "activity.json").unlink()
+    except OSError:
+        pass
+
+
+def parse_time(value: Any) -> datetime | None:
+    if not isinstance(value, str) or not value:
+        return None
+    normalized = value.replace("Z", "+00:00")
+    try:
+        parsed = datetime.fromisoformat(normalized)
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
+
+
+def human_duration(seconds: float) -> str:
+    total = max(0, int(seconds))
+    hours, rem = divmod(total, 3600)
+    minutes, secs = divmod(rem, 60)
+    if hours:
+        return f"{hours}h{minutes:02d}m{secs:02d}s"
+    if minutes:
+        return f"{minutes}m{secs:02d}s"
+    return f"{secs}s"
+
+
+def elapsed_since(value: Any) -> str:
+    parsed = parse_time(value)
+    if not parsed:
+        return "unknown"
+    return human_duration((datetime.now(timezone.utc) - parsed).total_seconds())
+
+
+def log_file_status(path_value: Any) -> str:
+    if not isinstance(path_value, str) or not path_value:
+        return "unknown"
+    path = Path(path_value)
+    if not path.exists():
+        return "missing"
+    try:
+        stat = path.stat()
+    except OSError:
+        return "unreadable"
+    age = human_duration(datetime.now().timestamp() - stat.st_mtime)
+    return f"exists size={stat.st_size}B updated_ago={age}"
 
 
 def verify_result(path_value: Any) -> str:
@@ -248,6 +318,47 @@ def status_fragment(progress_file: Path, lock_dir: Path, log_root: Path, drain_r
         )
         if lock["command"]:
             lines.append(f"- lock_command: {lock['command']}")
+        activity = lock.get("activity")
+        if isinstance(activity, dict) and activity:
+            stage = activity.get("stage") or "unknown"
+            label = activity.get("task_label") or "unknown"
+            attempt = activity.get("attempt") or "unknown"
+            status = activity.get("status") or "unknown"
+            started_at = activity.get("started_at") or "unknown"
+            lines.extend(
+                [
+                    f"- live_activity: {stage} task={label} attempt={attempt} status={status}",
+                    f"- live_activity_started_at: {started_at}",
+                    f"- live_activity_elapsed: {elapsed_since(started_at)}",
+                ]
+            )
+            if activity.get("pid"):
+                pid = str(activity.get("pid"))
+                lines.append(f"- live_activity_pid: {pid} alive={'yes' if pid_alive(pid) else 'no'}")
+            if activity.get("prompt_file"):
+                lines.append(f"- live_activity_prompt: {activity['prompt_file']}")
+            if activity.get("output_file"):
+                output_file = activity["output_file"]
+                lines.append(f"- live_activity_log: {output_file}")
+                lines.append(f"- live_activity_log_state: {log_file_status(output_file)}")
+            if activity.get("no_output_elapsed_seconds") is not None:
+                lines.append(
+                    f"- live_activity_no_output_elapsed: {human_duration(float(activity['no_output_elapsed_seconds']))}"
+                )
+            if activity.get("no_output_timeout_seconds") is not None:
+                timeout_seconds = float(activity["no_output_timeout_seconds"])
+                timeout = "disabled" if timeout_seconds <= 0 else human_duration(timeout_seconds)
+                lines.append(f"- live_activity_no_output_timeout: {timeout}")
+            if activity.get("child_restart") is not None and activity.get("child_restart_limit") is not None:
+                lines.append(
+                    f"- live_activity_child_restart: {activity['child_restart']}/{activity['child_restart_limit']}"
+                )
+            if activity.get("restart_delay_seconds") is not None:
+                lines.append(
+                    f"- live_activity_restart_delay: {human_duration(float(activity['restart_delay_seconds']))}"
+                )
+            if activity.get("command"):
+                lines.append(f"- live_activity_command: {activity['command']}")
 
     drain = read_control_file(drain_request_file)
     lines.append(f"- drain_requested: {'yes' if drain else 'no'}")
@@ -402,4 +513,3 @@ def finalize_summary(
     totals["retries"] = retries
     write_json(summary_file, data)
     update_index(run_summary_root, summary_file)
-

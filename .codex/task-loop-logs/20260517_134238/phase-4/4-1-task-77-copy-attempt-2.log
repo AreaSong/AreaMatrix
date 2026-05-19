@@ -1,0 +1,47 @@
+一、执行结论
+
+已完成。上一轮唯一阻塞项 `core/src/icloud_conflicts.rs` 超过 500 行已修复。
+
+二、执行范围
+
+单任务：`4-1/task-77`
+
+本次 retry 主要改动：
+- `core/src/icloud_conflicts.rs`
+- `core/src/icloud_conflicts/paths.rs`
+- `core/src/icloud_conflicts/preview.rs`
+- `core/src/icloud_conflicts/resolve.rs`
+- `core/src/icloud_conflicts/types.rs`
+
+工作树中还保留上一轮 C2-16 实现相关改动：`core/src/api.rs`、`core/src/db/mod.rs`、`core/src/db/undo.rs`、`core/src/db/icloud_conflicts.rs`、`core/tests/**` 等。
+
+三、完成情况
+
+- 只实现 C2-16：通过，本次只做 C2-16 实现拆分，没有接入页面或相邻能力。
+- 输入、输出、DB/FS、错误映射：保持上一轮已通过行为，拆分未改变 API 语义。
+- Rust Core 不依赖平台 UI API：通过，未触碰 Swift/UI。
+- 最小测试支撑：通过，目标 contract / failure / implementation 测试均通过。
+- Forbidden Touches：未触碰 `apps/**`。
+- 文件长度阻塞：已修复，当前 `core/src/icloud_conflicts*` 最大文件 322 行，低于 500 行阈值。
+
+四、工程质量
+
+代码已从单个 763 行文件拆为入口、路径绑定、preview、resolve、内部类型模块，职责更清楚。未引入 mock-only、硬编码通过态或一次性脚本逻辑；生产路径没有新增 `unwrap()` / `panic!()` / `TODO`。public API 的 rustdoc 保留在入口函数处。
+
+五、验证情况
+
+已运行并通过：
+- `cargo fmt --all`
+- `./dev check task 4-1/task-77`
+  - `prompt_pipeline.py doctor`: OK
+  - `git diff --check`: OK
+  - `cargo test --test icloud_conflict_visual_contract_api -- --nocapture`: 4/4 passed
+  - `cargo test --test icloud_conflict_visual_failure_recovery -- --nocapture`: 3/3 passed
+  - `cargo test --test icloud_conflict_visual_implementation -- --nocapture`: 3/3 passed
+
+未运行 `./dev check core` / `./dev check all` / `cargo test --workspace`，因为当前 task manifest 明确验证上限是 `./dev check task 4-1/task-77`。
+
+六、风险与后续
+
+剩余风险：宽门禁未跑，但这是 manifest 边界要求；当前单任务验证已覆盖本 task 的目标证据。建议下一步进入 `4-1/task-77` verify-ready 验收，若通过再继续 `4-1/task-78`。
+

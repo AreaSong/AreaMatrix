@@ -6,12 +6,90 @@ import os
 import re
 import shutil
 import subprocess
+from dataclasses import dataclass
 from pathlib import Path
 
 from .build import run_core_build
 from .common import fail, project_root, require_command, require_file, run_step
 from .macos import run_macos_tests
 from .skills import SimpleYAMLError, parse_frontmatter, parse_simple_yaml
+
+
+CAPABILITY_TEST_TARGETS = {
+    "C2-01": (
+        "search_query_files_contract_api",
+        "search_query_files_implementation",
+        "search_query_files_failure_recovery",
+        "search_query_files_validation",
+    ),
+    "C2-02": (
+        "search_filters_contract_api",
+        "search_filters_implementation",
+        "search_filters_failure_recovery",
+        "search_filters_validation",
+    ),
+    "C2-03": (
+        "saved_search_contract_api",
+        "saved_search_implementation",
+        "saved_search_failure_recovery",
+        "saved_search_validation",
+    ),
+    "C2-04": (
+        "smart_list_contract_api",
+        "smart_list_implementation",
+        "smart_list_failure_recovery",
+    ),
+}
+
+CAPABILITY_KEYWORDS = {
+    "C2-01": ("search query files",),
+    "C2-02": ("search filters",),
+    "C2-03": ("saved search",),
+    "C2-04": ("smart list", "smart-list", "smart-lists"),
+}
+
+ALLOW_FULL_TASK_FALLBACK_ENV = "AREAMATRIX_TASK_CHECK_FULL_FALLBACK"
+
+FILE_SAFETY_GATE_KEYWORDS = (
+    "adopt",
+    "database",
+    "delete",
+    "db",
+    "fsevents",
+    "icloud",
+    "import",
+    "migration",
+    "move",
+    "recovery",
+    "reindex",
+    "rename",
+    "rollback",
+    "staging",
+    "sync",
+    "transactional",
+    "trash",
+    "user file",
+    "用户文件",
+    "删除",
+    "回滚",
+    "恢复",
+    "接管",
+    "移动",
+    "迁移",
+    "导入",
+    "同步",
+)
+
+
+@dataclass(frozen=True)
+class TaskManifestEntry:
+    raw: str
+    risk: str
+    exact_docs: tuple[str, ...]
+    existing_code: tuple[str, ...]
+    expected_new_paths: tuple[str, ...]
+    forbidden_touches: tuple[str, ...]
+    validation: tuple[str, ...]
 
 
 class FailureCollector:
@@ -265,6 +343,302 @@ def run_task_loop_check(root: Path | None = None) -> int:
 def run_diff_check(root: Path | None = None) -> int:
     root = (root or project_root()).resolve()
     return run_step(["git", "diff", "--check"], cwd=root, check=False).returncode
+
+
+def _task_path(root: Path, label: str) -> Path:
+    match = re.fullmatch(r"(\d+-\d+)/task-(\d+)", label)
+    if not match:
+        fail(f"task label must look like '4-1/task-15', got {label!r}.")
+    batch, number = match.groups()
+    matches = sorted((root / "tasks/prompts").glob(f"phase-*/{batch}-*/task-{number}-*.md"))
+    if not matches:
+        fail(f"task prompt not found for {label}.")
+    if len(matches) > 1:
+        choices = ", ".join(path.relative_to(root).as_posix() for path in matches)
+        fail(f"task label {label} matched multiple prompts: {choices}.")
+    return matches[0]
+
+
+def _task_text(root: Path, label: str) -> str:
+    return _task_path(root, label).read_text(encoding="utf-8", errors="replace")
+
+
+def _task_manifest_entry(root: Path, label: str) -> TaskManifestEntry:
+    phase = label.split("-", 1)[0]
+    path = root / "tasks/prompts/_shared/manifests" / f"phase-{phase}.md"
+    if not path.is_file():
+        return TaskManifestEntry("", "Unspecified", (), (), (), (), ())
+    text = _read(path)
+    match = re.search(rf"(?ms)^## {re.escape(label)}\n(?P<body>.*?)(?=^## |\Z)", text)
+    if not match:
+        return TaskManifestEntry("", "Unspecified", (), (), (), (), ())
+    raw = match.group(0).strip()
+    sections = _manifest_sections(match.group("body"))
+    return TaskManifestEntry(
+        raw=raw,
+        risk=_first_section_item(sections, "Risk Level", "Unspecified"),
+        exact_docs=tuple(sections.get("Exact Docs", ())),
+        existing_code=tuple(sections.get("Existing Code", ())),
+        expected_new_paths=tuple(sections.get("Expected New Paths", ())),
+        forbidden_touches=tuple(sections.get("Forbidden Touches", ())),
+        validation=tuple(sections.get("Validation", ())),
+    )
+
+
+def _manifest_sections(body: str) -> dict[str, list[str]]:
+    sections: dict[str, list[str]] = {}
+    current = ""
+    for line in body.splitlines():
+        heading = re.match(r"^###\s+(.+?)\s*$", line)
+        if heading:
+            current = heading.group(1)
+            sections.setdefault(current, [])
+            continue
+        if not current:
+            continue
+        value = _manifest_list_item(line)
+        if value:
+            sections[current].append(value)
+    return sections
+
+
+def _manifest_list_item(line: str) -> str:
+    match = re.match(r"^\s*-\s+(.*?)\s*$", line)
+    if not match:
+        return ""
+    value = match.group(1).strip()
+    if value.startswith("`") and value.endswith("`"):
+        return value[1:-1]
+    return value
+
+
+def _first_section_item(sections: dict[str, list[str]], key: str, default: str) -> str:
+    values = sections.get(key, [])
+    return values[0] if values else default
+
+
+def _task_contains(text: str, pattern: str) -> bool:
+    return re.search(pattern, text, flags=re.IGNORECASE) is not None
+
+
+def _task_capabilities(text: str) -> list[str]:
+    return sorted(set(re.findall(r"\bC[1-4]-\d{2}\b", text)))
+
+
+def _is_stage_closeout_task(text: str) -> bool:
+    return _task_contains(text, r"stage[- ]\d+.*integration[- ]verify|阶段.*验收")
+
+
+def _is_page_task(text: str) -> bool:
+    return _task_contains(text, r"\bS(?:[1-3]-\d{2}|4-[A-Z]+-\d{2})\b|page[- ]integration|UX 页面")
+
+
+def _is_core_task(text: str) -> bool:
+    return bool(_task_capabilities(text)) and not _is_page_task(text)
+
+
+def _is_core_integration_task(text: str) -> bool:
+    return _task_contains(text, r"\bC[1-4]-\d{2}\b.*integration[- ]verify|Core 步骤：能力集成验收")
+
+
+def _needs_core_quality_gate(text: str, entry: TaskManifestEntry) -> bool:
+    if _is_core_integration_task(text):
+        return True
+    if entry.risk == "Mission-Critical" and _touches_file_safety_boundary(text, entry):
+        return True
+    if _manifest_requests_core_quality_gate(entry):
+        return True
+    return False
+
+
+def _touches_file_safety_boundary(text: str, entry: TaskManifestEntry) -> bool:
+    haystack = " ".join(
+        [
+            text,
+            entry.raw,
+            " ".join(entry.exact_docs),
+            " ".join(entry.existing_code),
+            " ".join(entry.expected_new_paths),
+            " ".join(entry.forbidden_touches),
+        ]
+    ).lower()
+    return any(keyword in haystack for keyword in FILE_SAFETY_GATE_KEYWORDS)
+
+
+def _manifest_requests_core_quality_gate(entry: TaskManifestEntry) -> bool:
+    validation = "\n".join(entry.validation).lower()
+    return "cargo clippy" in validation or "cargo fmt" in validation or "./dev check all" in validation
+
+
+def _run_common_task_checks(root: Path) -> int:
+    for label, func in [
+        ("prompt doctor", lambda: run_prompts_check(root)),
+        ("diff check", lambda: run_diff_check(root)),
+    ]:
+        print()
+        print(f"==> ./dev check task: {label}", flush=True)
+        rc = func()
+        if rc != 0:
+            return rc
+    return 0
+
+
+def _run_core_task_checks(root: Path, text: str, entry: TaskManifestEntry | None = None) -> int:
+    core_dir = root / "core"
+    require_command("cargo")
+    entry = entry or TaskManifestEntry("", "Unspecified", (), (), (), (), ())
+    if _needs_core_quality_gate(text, entry):
+        print()
+        print("==> ./dev check task: widened Core quality gate (fmt + clippy)", flush=True)
+        for argv in [
+            ["cargo", "fmt", "--all", "--", "--check"],
+            ["cargo", "clippy", "--all-targets", "--all-features", "--", "-D", "warnings"],
+        ]:
+            proc = run_step(argv, cwd=core_dir, check=False)
+            if proc.returncode != 0:
+                return proc.returncode
+    else:
+        print()
+        print("==> ./dev check task: fast Core gate (targeted tests only)", flush=True)
+
+    commands = _core_task_test_commands(text, root)
+    if not commands:
+        print()
+        if os.environ.get(ALLOW_FULL_TASK_FALLBACK_ENV) == "1":
+            print(
+                "==> ./dev check task: no targeted Core tests mapped; "
+                f"{ALLOW_FULL_TASK_FALLBACK_ENV}=1 so using cargo test --workspace",
+                flush=True,
+            )
+            commands = [["cargo", "test", "--workspace"]]
+        else:
+            capabilities = ", ".join(_task_capabilities(text)) or "unknown"
+            print(
+                "ERROR: ./dev check task found no targeted Core tests mapped "
+                f"for capabilities: {capabilities}.",
+                file=os.sys.stderr,
+            )
+            print(
+                "ERROR: add CAPABILITY_TEST_TARGETS coverage in scripts/dev_tools/checks.py, "
+                "or run ./dev check core/all explicitly when a broad gate is intended.",
+                file=os.sys.stderr,
+            )
+            print(
+                f"ERROR: set {ALLOW_FULL_TASK_FALLBACK_ENV}=1 only for an explicit emergency full fallback.",
+                file=os.sys.stderr,
+            )
+            return 2
+    for argv in commands:
+        proc = run_step(argv, cwd=core_dir, check=False)
+        if proc.returncode != 0:
+            return proc.returncode
+    return 0
+
+
+def _core_task_test_commands(text: str, root: Path | None = None) -> list[list[str]]:
+    commands: list[list[str]] = []
+    lowered = text.lower()
+    for capability in _task_capabilities(text):
+        for target in _capability_test_targets(capability, root):
+            commands.append(["cargo", "test", "--test", target, "--", "--nocapture"])
+    for capability, keywords in CAPABILITY_KEYWORDS.items():
+        if capability not in text and any(keyword in lowered for keyword in keywords):
+            for target in _capability_test_targets(capability, root):
+                commands.append(["cargo", "test", "--test", target, "--", "--nocapture"])
+    return _unique_commands(commands)
+
+
+def _capability_test_targets(capability: str, root: Path | None) -> tuple[str, ...]:
+    targets = list(CAPABILITY_TEST_TARGETS.get(capability, ()))
+    if root is not None:
+        targets.extend(_discover_capability_test_targets(root, capability))
+    return tuple(_unique_strings(targets))
+
+
+def _discover_capability_test_targets(root: Path, capability: str) -> list[str]:
+    tests_dir = root / "core/tests"
+    if not tests_dir.is_dir():
+        return []
+    targets: list[str] = []
+    for prefix in _capability_test_prefixes(root, capability):
+        for path in sorted(tests_dir.glob(f"{prefix}_*.rs")):
+            if path.is_file():
+                targets.append(path.stem)
+    return _unique_strings(targets)
+
+
+def _capability_test_prefixes(root: Path, capability: str) -> list[str]:
+    prefixes: list[str] = []
+    for path in sorted((root / "docs/core/capability-specs").glob(f"**/{capability}-*.md")):
+        slug = path.stem.removeprefix(f"{capability}-")
+        prefix = _slug_to_test_prefix(slug)
+        if prefix:
+            prefixes.append(prefix)
+    return _unique_strings(prefixes)
+
+
+def _slug_to_test_prefix(slug: str) -> str:
+    return re.sub(r"[^a-zA-Z0-9]+", "_", slug).strip("_").lower()
+
+
+def _unique_commands(commands: list[list[str]]) -> list[list[str]]:
+    result: list[list[str]] = []
+    seen: set[tuple[str, ...]] = set()
+    for command in commands:
+        key = tuple(command)
+        if key not in seen:
+            result.append(command)
+            seen.add(key)
+    return result
+
+
+def _unique_strings(values: list[str]) -> list[str]:
+    result: list[str] = []
+    seen: set[str] = set()
+    for value in values:
+        if value not in seen:
+            result.append(value)
+            seen.add(value)
+    return result
+
+
+def _run_page_task_checks(root: Path) -> int:
+    proc = run_step(
+        [
+            "xcodebuild",
+            "-project",
+            "apps/macos/AreaMatrix.xcodeproj",
+            "-scheme",
+            "AreaMatrix",
+            "-destination",
+            "platform=macOS,arch=arm64",
+            "build",
+            "CODE_SIGNING_ALLOWED=NO",
+        ],
+        cwd=root,
+        check=False,
+    )
+    return proc.returncode
+
+
+def run_task_check(label: str, root: Path | None = None) -> int:
+    root = (root or project_root()).resolve()
+    text = _task_text(root, label)
+    entry = _task_manifest_entry(root, label)
+    rc = _run_common_task_checks(root)
+    if rc != 0:
+        return rc
+    if _is_stage_closeout_task(text):
+        print()
+        print(f"==> ./dev check task {label}: stage closeout uses ./dev check all", flush=True)
+        return run_all_check(root)
+    if _is_page_task(text):
+        return _run_page_task_checks(root)
+    if _is_core_task(text):
+        return _run_core_task_checks(root, text, entry)
+    print()
+    print(f"==> ./dev check task {label}: prompt/diff checks only", flush=True)
+    return 0
 
 
 def run_quick_check(root: Path | None = None) -> int:

@@ -1,0 +1,51 @@
+一、执行结论
+
+已完成。
+
+二、执行范围
+
+单任务：`4-1/task-82`，只修复上次验收指出的 C2-17 分批 apply 后无法继续处理剩余 pending conflicts 的问题。
+
+修改文件清单：
+- `core/src/import_conflict_batch.rs`
+- `core/src/import_conflict_batch/plan.rs`
+- `core/src/import_conflict_batch/token.rs`
+- `core/src/import_conflict_batch/apply.rs`
+- `core/tests/import_conflict_batch_implementation.rs`
+
+三、完成情况
+
+核对清单：
+- 只实现 C2-17：通过，未扩展相邻 C* 能力。
+- 输入、输出、DB/文件系统变化和错误映射：通过，`build_plan` 现在只对 included 且 pending 的行读取 staging snapshot，已 resolved / out-of-scope 行不会误触发 `StagingRecoveryRequired`。
+- Rust Core 不依赖平台 UI API：通过。
+- 最小测试支撑：通过，新增“部分 apply 后继续 preview/apply 同 session 剩余 pending 行”的回归测试。
+
+完成标准：
+- C2-17 核心行为可测试验证：通过。
+- 未触碰用户文件安全边界之外行为：通过。
+- Forbidden Touches：未触碰 `apps/**`，`git status --short -- apps` 无输出。
+
+四、工程质量
+
+代码结构保持在现有 C2-17 模块内：`PlannedImportConflict.staging` 改为可选，只在真实可执行行加载；`apply_item` 对非 actionable 行直接返回 pending，避免 resolved 行进入 apply 分支。没有新增依赖、mock-only、硬编码成功态或一次性脚本逻辑。错误路径仍通过 `CoreError::staging_recovery_required`、`Conflict`、DB/IO 结果显式传播。
+
+五、验证情况
+
+已运行：
+- `cargo test --manifest-path core/Cargo.toml --test import_conflict_batch_implementation -- --nocapture`：2 passed。
+- `cargo fmt --manifest-path core/Cargo.toml`：已执行。
+- `./dev check task 4-1/task-82`：通过。
+  - prompt doctor OK
+  - `git diff --check` OK
+  - `cargo test --test import_conflict_batch_contract_api -- --nocapture`：4 passed
+  - `cargo test --test import_conflict_batch_file_safety -- --nocapture`：3 passed
+  - `cargo test --test import_conflict_batch_implementation -- --nocapture`：2 passed
+
+未运行宽门禁：按当前 task manifest，上限是 `./dev check task 4-1/task-82`，未升级到 `cargo test --workspace` / `./dev check core` / `./dev check all`。
+
+六、风险与后续
+
+剩余风险：本轮只覆盖上次验收失败点；仓库里还有本轮开始前已存在的未提交 C2-17 相关变更，我没有回退或扩大处理。
+
+建议下一步：进入 `4-1/task-82` verify-ready 只读验收；验收通过后再继续下一个 task。

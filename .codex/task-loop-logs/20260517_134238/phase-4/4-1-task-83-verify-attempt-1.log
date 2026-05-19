@@ -1,0 +1,85 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-1/task-83`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-83-c2-17-failure-edge.md`
+- 对应实现：`/Users/as/Ai-Project/project/AreaMatrix/core/src/import_conflict_batch.rs`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/import_conflict_batch/**`
+- 对应测试：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/import_conflict_batch_failure_recovery.rs`
+
+三、完成度摘要
+
+- 已覆盖项数：6/6
+- 未覆盖项数：0
+- 通过项数：6
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 空态、非法输入、权限、IO/DB 错误和错误码映射
+  - 结果：通过
+  - 证据：空 `conflict_ids`、缺失 conflict 返回 `FileNotFound`，staging residue 返回 `StagingRecoveryRequired` 并映射为 `UserActionRequired`，IO/权限失败返回 item-level `Failed`，DB failure-state 持久化失败返回 `Db`。
+  - 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/import_conflict_batch_failure_recovery.rs:20`、`:73`、`:163`、`:232`
+
+- 失败不留下半成品
+  - 结果：通过
+  - 证据：失败后 staged 文件仍在 `.areamatrix/staging/*`，existing file 仍为 active；批内后续 DB 错误会回滚前面成功项。
+  - 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/import_conflict_batch/apply.rs:27`、`:124`、`:228`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/import_conflict_batch_failure_recovery.rs:289`
+
+- 隐私 / AI / 远程调用
+  - 结果：通过
+  - 证据：C2-17 文档与 API 明确本能力不调用 AI/网络；preview rustdoc 明确不得触发 iCloud 下载或 AI/network providers。
+  - 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:3491`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/import_conflict_batch.rs:248`
+
+- 不吞错或静默降级
+  - 结果：通过
+  - 证据：`mark_failed` 持久化失败状态失败时直接传播错误；`apply_plan` 会回滚已成功项并返回错误，不再只 warn 后继续。
+  - 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/import_conflict_batch/apply.rs:27`、`:430`
+
+- 失败路径有明确返回、可测试证据和用户文件安全保证
+  - 结果：通过
+  - 证据：public API rustdoc 列出 `FileNotFound`、`Conflict`、`PermissionDenied`、`StagingRecoveryRequired`、`Io`、`Db`；failure-recovery 测试 6 项全部通过。
+  - 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/import_conflict_batch.rs:257`、`:287`
+
+- 高风险路径具备可回滚或可恢复说明
+  - 结果：通过
+  - 证据：Replace 先归档 existing，再失败回滚 staging 和 archived file；成功项也登记 rollback 以便批内后续失败时恢复。
+  - 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/import_conflict_batch/apply/replace.rs:13`、`:120`、`:180`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。preview / plan / apply / replace 分层清楚，未发现单次脚本化实现。
+- 注释 / rustdoc / 文档同步：通过。public API 有 rustdoc 和 `# Errors`；Core API、UDL、capability spec 与 control map 对齐。
+- 错误处理与边界处理：通过。stale token、Replace 二次确认、staging recovery、DB/IO failure 都显式处理。
+- 测试与验证覆盖：通过。新增 `import_conflict_batch_failure_recovery.rs` 覆盖本 task 失败边界。
+- 占位、硬编码、mock-only、一次性实现检查：通过。测试走真实 temp repo、SQLite、staging 文件路径和 Core API。
+
+六、阻塞项
+
+- 未发现阻塞项。
+- Forbidden Touches 检查：`git diff --name-only -- apps` 无输出，未触碰 `apps/**`。
+- 工作区中存在 task-loop summary/progress/log 记录，以及两个 classifier failure-recovery 测试 helper 的 `StagingRecoveryRequired` exhaustive mapping 小改动；未触碰 Forbidden Touches，未作为 C2-17 通过证据。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-83`
+- 通过内容：
+  - `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`：OK，637 tasks / 637 manifests
+  - `git diff --check`：通过
+  - `cargo fmt --all -- --check`：通过
+  - `cargo clippy --all-targets --all-features -- -D warnings`：通过
+  - `cargo test --test import_conflict_batch_contract_api -- --nocapture`：4 passed
+  - `cargo test --test import_conflict_batch_failure_recovery -- --nocapture`：6 passed
+  - `cargo test --test import_conflict_batch_file_safety -- --nocapture`：5 passed
+  - `cargo test --test import_conflict_batch_implementation -- --nocapture`：2 passed
+- 失败：无
+- 缺失：无
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS

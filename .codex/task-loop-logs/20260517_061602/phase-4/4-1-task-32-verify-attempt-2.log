@@ -1,0 +1,71 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-1/task-32`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-32-c2-07-implementation.md`
+- 实际验收路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/tests/**`
+- Forbidden Touches：`/Users/as/Ai-Project/project/AreaMatrix/apps/**`
+
+三、完成度摘要
+
+- 已覆盖项数：11
+- 未覆盖项数：0
+- 通过项数：11
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只实现 C2-07，不顺手实现同阶段其他 C* 能力
+- 结果：通过
+- 证据：实现集中在 `list_undo_actions` / `undo_action`、undo action DB 行、反向 change log、batch tag / rename / move / delete / category undo；未触碰 `apps/**`，未实现页面接入或 C2-18 redo。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/undo.rs:79`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/db/undo.rs:31`
+
+- 项目：按能力规格落实输入、输出、DB/文件系统变化和错误映射
+- 结果：通过
+- 证据：UDL 暴露 `list_undo_actions` 与 `undo_action`，Rust 返回 `UndoActionRecord` / `UndoActionResult`；DB 写入/读取 `undo_actions`，执行后写反向 `change_log`；外部变化会显示 `Blocked` / `disabled_reason`；错误覆盖 `Conflict`、`FileNotFound`、`PermissionDenied`、`Db`、`Io`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:117`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/db/undo.rs:185`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/db/undo/file_actions.rs:179`
+
+- 项目：保持 Rust Core 不依赖平台 UI API
+- 结果：通过
+- 证据：实现位于 Rust core DB/storage/undo 模块，未发现 SwiftUI/AppKit/UI 依赖；`apps/**` 当前无脏改动。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/undo.rs:1`
+
+- 项目：补最小测试支撑，不做页面接入
+- 结果：通过
+- 证据：新增 `undo_action_log_implementation` 覆盖 pending list、batch tag undo、外部变化阻断、rename/move/category/delete undo、重复/缺失 action；contract test 锁定 docs/API/UDL/control map 对齐。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/undo_action_log_implementation.rs:220`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/undo_action_log_contract_api.rs:103`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。`core/src/db/undo.rs` 拆出 `actions`、`file_actions`、`fs_ops`，事务边界集中在 `execute_undo_action_row`，文件操作带 rollback guard。
+- 注释 / rustdoc / 文档同步：通过。新增 public API 有 rustdoc；Core API、UDL、能力规格、control map 被 contract test 交叉锁定。
+- 错误处理与边界处理：通过。生产路径未发现 `unwrap()` / `expect()` / `panic!()`；外部 metadata/文件变化阻断 undo，失败不标记 executed。
+- 测试与验证覆盖：通过。manifest 验证命令已执行并通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。测试走真实 SQLite、真实文件移动/恢复和真实 undo action metadata；未发现 mock-only 闭环。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-32`
+- 结果：通过，exit 0
+- 关键证据：
+  - `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`：OK，tasks 637，manifests 637
+  - `git diff --check`：通过，无 whitespace 错误
+  - `cargo test --test undo_action_log_contract_api -- --nocapture`：4 passed
+  - `cargo test --test undo_action_log_implementation -- --nocapture`：9 passed
+- 未运行：`./dev check all`、`./dev check core`、workspace 全量 `cargo test`。原因：本任务是普通 atomic Core task，manifest 与 validation-driver 指定的验收上限是 `./dev check task 4-1/task-32`。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+VERIFY_RESULT: PASS

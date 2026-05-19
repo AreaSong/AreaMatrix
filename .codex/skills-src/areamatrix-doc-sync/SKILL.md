@@ -7,6 +7,8 @@ description: "Use when Codex needs to keep AreaMatrix docs, Core API, UDL, promp
 
 Use this skill when a change may create drift between product docs, architecture docs, APIs, prompts, or user-facing README files.
 
+Trigger it for changes to `docs/**`, Core API, `core/area_matrix.udl`, prompt manifests, task source docs, README navigation, `.codex` references, repo-local skill navigation, or any generated / adapter text that may drift from the source of truth.
+
 ## Read first
 
 1. [AGENTS.md](../../../AGENTS.md)
@@ -18,6 +20,9 @@ Use this skill when a change may create drift between product docs, architecture
 
 - [references/source-map.md](references/source-map.md): source-of-truth layering and update targets.
 - [references/drift-checklist.md](references/drift-checklist.md): drift checks for docs, API, UDL, manifest, README, and `.codex`.
+- [../areamatrix-file-safety/SKILL.md](../areamatrix-file-safety/SKILL.md): file-safety invariants when docs or prompts mention user files, metadata, import, recovery, reindex, FSEvents, or iCloud.
+- [../areamatrix-workflow-planning/SKILL.md](../areamatrix-workflow-planning/SKILL.md): v* workflow docs are planning artifacts until promoted.
+- [../areamatrix-validation-driver/SKILL.md](../areamatrix-validation-driver/SKILL.md): choose checks after drift fixes.
 
 ## Workflow
 
@@ -30,3 +35,4 @@ Use this skill when a change may create drift between product docs, architecture
 - Do not resolve drift by editing only generated or adapter text.
 - Do not make `.codex/` the authority for product behavior.
 - Do not broaden task scope while syncing docs.
+- Do not change product semantics in `.codex/skills-src/**`, `.agents/skills/**`, `.codex/references/**`, or `tasks/backlog/**`; update `docs/**` or `.ai-governance/**` first when the source rule itself changes.

@@ -1,0 +1,61 @@
+一、执行结论
+
+已完成。C2-08 `batch-change-category` 可以作为后续 S2-12 page-feature task 的真实 Core 依赖；未发现需要阻塞 UI 接入的问题。
+
+二、执行范围
+
+单任务：`4-1/task-40`，只读验收 C2-08。
+
+修改文件清单：无。本轮未修改 `apps/**`、`core/**`、`docs/**` 或 task/manifest 文件；工作树中仍有进入前已存在的运行态脏文件：`.codex/task-loop-runs/20260517_134238/summary.json`、`tasks/prompts/_shared/progress.json`。
+
+三、完成情况
+
+核对清单结果：
+
+- capability spec、Core API、UDL、Rust 实现和测试已交叉核验。C2-08 spec 定义 preview/apply、DB/FS 变化、错误码和验收标准；Core API 细化了 preview token、状态、错误、副作用边界和页面消费状态；UDL 暴露同名函数、report 字典和状态枚举。
+- S2-12 需要的状态已覆盖：选中文件数、分类分布、目标分类、移动选项、will move / metadata-only / unchanged / skipped / blocked、`can_apply`、禁用原因、执行结果、`updated_files`、`undo_token`。
+- 错误与副作用已覆盖：preview 只读；apply 校验最新 token；repo-owned 可移动，Indexed metadata-only；写 `change_log` 和 undo action；partial failure 有逐项结果。
+- 未实现 control map 之外能力：C2-08 明确不创建新分类、不保存 classifier rule、不做 AI 批量重分类、不删除/Trash/rename、不 reindex、不触发网络；S2-10/C2-07 只消费 `undo_token`，不是本 task 扩展范围。
+- Forbidden Touches：未触碰 `apps/**`。
+
+关键证据：  
+[capability spec](/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-2-experience/C2-08-batch-change-category.md:10)  
+[Core API](/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:1815)  
+[control map](/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-2-control-map.md:20)  
+[S2-12 UX](/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-2-experience/S2-12-batch-change-category.md:23)  
+[Rust entry points](/Users/as/Ai-Project/project/AreaMatrix/core/src/batch_category.rs:156)  
+[apply implementation](/Users/as/Ai-Project/project/AreaMatrix/core/src/batch_category/apply.rs:18)  
+[validation tests](/Users/as/Ai-Project/project/AreaMatrix/core/tests/batch_change_category_validation.rs:100)
+
+四、工程质量
+
+代码结构与逻辑清晰：C2-08 拆成 request/plan/token/apply/fs move/path plan/DB update，避免单个函数承载完整流程。public Rust API 有 rustdoc 和 `# Errors` 说明。
+
+错误处理与边界处理有证据：空选择、非法 id、缺失分类、stale preview、权限、IO、sidecar、DB/change_log/undo failure 都有测试；文件移动和 DB 写入有 rollback guard / savepoint 覆盖。
+
+未发现占位、硬编码通过、mock-only 或一次性实现。注意：仓库中有既有文件超过 500 行阈值，例如 `core/src/api.rs`，但本轮 C2-08 专属模块和测试未因此出现新的阻断。
+
+五、验证情况
+
+已运行并通过：
+
+```bash
+./dev check task 4-1/task-40
+```
+
+该命令实际执行：
+
+- `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`：通过，637 tasks / 637 manifests。
+- `git diff --check`：通过。
+- `cargo fmt --all -- --check`：通过。
+- `cargo clippy --all-targets --all-features -- -D warnings`：通过。
+- targeted tests：`batch_change_category_contract_api`、`failure_recovery`、`implementation`、`rollback_safety`、`validation` 全部通过，共 21 tests。
+
+未运行：未额外运行 `cargo test --workspace` 或 `./dev check all`，因为 manifest 验证上限是 `./dev check task 4-1/task-40`，且该命令已经按 core integration verify 自动包含 fmt、clippy 和 C2-08 targeted tests。
+
+六、风险与后续
+
+剩余风险：未做 macOS UI 真机接入验证，因为本 task 只验 Core C2-08；S2-12 页面实现与 CoreBridge 调用仍应由后续 page-feature / page integration task 验收。
+
+建议下一个任务：继续 `4-1/task-41`，进入 C2-09 contract/api。
+

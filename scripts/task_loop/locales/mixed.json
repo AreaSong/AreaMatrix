@@ -1,6 +1,8 @@
 {
   "action.bindings.label": "bindings",
   "action.bindings.note": "生成或检查 UniFFI bridge 输出",
+  "action.backlog.label": "backlog",
+  "action.backlog.note": "只读浏览 backlog prompt package",
   "action.build.label": "build",
   "action.build.note": "运行工程构建入口",
   "action.changes-preview.label": "changes preview",
@@ -111,6 +113,14 @@
     "  4) 20 个",
     "  5) 自定义 N"
   ],
+  "choose.max_retries.lines": [
+    "",
+    "失败重试策略：",
+    "  1) 1 次 repair retry（默认）",
+    "  2) 2 次 repair retry",
+    "  3) 无限，直到 PASS",
+    "  4) 自定义 N"
+  ],
   "choose.stop.lines": [
     "",
     "停止点：",
@@ -150,7 +160,7 @@
   "dirty_continue.line2": "先确认改动归属：git status --short",
   "dirty_continue.line3": "可以手动 commit 或 stash 保存现场；这不代表 task completed。",
   "dirty_continue.line4": "只有 verify PASS 后，task-loop 才会进入下一个任务。",
-  "dirty_continue.run": "处理后继续：RISK_POLICY=allow MAX_RETRIES=0 ./task-loop run",
+  "dirty_continue.run": "处理后继续：RISK_POLICY=allow MAX_RETRIES=1 ./task-loop run",
   "dirty_continue.stale": "处理后继续：./dev resume-stale",
   "drain.no_runner": "当前没有 live runner，无法请求优雅收尾。",
   "dry_run.done": "\n临时 dry-run 完成，真实 progress/logs 未修改。",
@@ -174,7 +184,7 @@
   "guide.step.resume_failed": "./dev resume-failed",
   "guide.step.resume_stale": "./dev resume-stale",
   "guide.step.review_blocked": "./dev status --verbose",
-  "guide.step.run_queue": "RISK_POLICY=allow MAX_RETRIES=0 ./task-loop run",
+  "guide.step.run_queue": "RISK_POLICY=allow MAX_RETRIES=1 ./task-loop run",
   "guide.step.save_worktree": "确认这些改动属于当前任务；手动 commit 或 stash 保存现场",
   "guide.step.status": "./dev status",
   "guide.step.wait_drain": "等待当前 task 完成 verify/checkpoint 后停止",
@@ -208,6 +218,8 @@
     "  ./dev workflow plan --version v-template",
     "  ./dev workflow queue --version v-template",
     "  ./dev workflow promote --version v-template --preview",
+    "  ./dev backlog list",
+    "  ./dev backlog show <package>",
     "",
     "Live queue：",
     "  ./dev status",
@@ -305,7 +317,7 @@
     "",
     "2. 如果当前任务已经中断成 stale：",
     "   ./dev resume-stale",
-    "   或者：RISK_POLICY=allow MAX_RETRIES=0 ./task-loop resume-stale",
+    "   或者：RISK_POLICY=allow MAX_RETRIES=1 ./task-loop resume-stale",
     "",
     "3. 如果 verify 已失败：",
     "   ./dev resume-failed",
@@ -319,7 +331,7 @@
     "   不要手工 mark completed；只有 verify PASS 后 task-loop 才能进入下一个任务。",
     "",
     "6. 要继续跑直至完成当前队列：",
-    "   RISK_POLICY=allow MAX_RETRIES=0 ./task-loop run"
+    "   RISK_POLICY=allow MAX_RETRIES=1 ./task-loop run"
   ],
   "reset.confirm": "请输入 RESET 确认：",
   "reset.warning": "高风险操作：这会备份并清空 progress.json，从 0 开始。",

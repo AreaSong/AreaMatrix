@@ -1,0 +1,96 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-1/task-82`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-82-c2-17-implementation.md`
+- 实际验收文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/**`
+- Forbidden Touches：`/Users/as/Ai-Project/project/AreaMatrix/apps/**`
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：0
+- 通过项数：10
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只实现 C2-17，不顺手实现同阶段其他 C* 能力
+- 结果：通过
+- 证据：实现集中在 `import_conflict_batch`、DB import conflict helper、targeted tests；`apply` 文档明确不实现 iCloud conflict、sync conflict、classifier、tag、search、AI 或 macOS UI 能力。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/import_conflict_batch.rs:248`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/import_conflict_batch.rs:278`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:1071`
+
+- 项目：按能力规格落实输入、输出、DB/文件系统变化和错误映射
+- 结果：通过
+- 证据：UDL/Core API 暴露 preview/apply request/report；实现包含 session/conflict 校验、preview token、DB session/conflict 状态、files/change_log/undo_actions 写入、staging promote、KeepBoth、Skip、Replace、AskPerItem 和错误映射。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:235`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:919`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/db/import_conflicts.rs:54`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/import_conflict_batch/apply.rs:17`
+
+- 项目：保持 Rust Core 不依赖平台 UI API
+- 结果：通过
+- 证据：实现只使用 Rust std、rusqlite、serde/json、uuid、sha2、core-local storage/db；未触碰 SwiftUI/AppKit/FSEvents/macOS UI。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/import_conflict_batch.rs:3`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/import_conflict_batch/apply/replace.rs:1`
+
+- 项目：必要时补最小测试支撑，但不做页面接入
+- 结果：通过
+- 证据：新增/更新 Core tests 覆盖 contract、implementation、file safety；`git status --short -- apps` 无输出，未做页面接入。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/import_conflict_batch_contract_api.rs:53`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/import_conflict_batch_implementation.rs:16`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/import_conflict_batch_file_safety.rs:19`
+
+- 项目：C2-17 核心行为可被测试或桥接调用验证
+- 结果：通过
+- 证据：`./dev check task 4-1/task-82` 运行并通过 3 个 targeted Rust test binaries，共 11 个测试。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/import_conflict_batch_implementation.rs:17`
+
+- 项目：未触碰用户文件安全边界之外的行为
+- 结果：通过
+- 证据：preview 不写状态；Apply 对 Skip 保持 staging，KeepBoth 生成安全新名，Replace 要二次确认并使用 recoverable storage；失败测试证明 staged 文件和原文件可保留/恢复。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/import_conflict_batch/plan.rs:174`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/import_conflict_batch/apply/replace.rs:13`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/import_conflict_batch_file_safety.rs:93`
+
+- 项目：Expected New Paths 落地
+- 结果：通过
+- 证据：`core/src/**`、`core/area_matrix.udl`、`core/tests/**` 均存在 C2-17 对应实现/桥接/测试。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/import_conflict_batch.rs:1`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:235`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/import_conflict_batch_file_safety.rs:1`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git status --short -- apps` 无输出，未发现 `apps/**` 被修改。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/**`
+
+- 项目：验证命令
+- 结果：通过
+- 证据：`./dev check task 4-1/task-82` exit 0；包含 prompt doctor、`git diff --check`、`cargo test --test import_conflict_batch_contract_api`、`cargo test --test import_conflict_batch_file_safety`、`cargo test --test import_conflict_batch_implementation`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/scripts/dev_tools/checks.py`
+
+- 项目：工作区风险
+- 结果：通过
+- 证据：脏改动集中在 C2-17 Core/test 和 task-loop evidence/progress；未发现 Forbidden Touches 或危险无关 `apps/**` 改动。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。C2-17 被拆成 contract entry、plan、apply、replace、path、token、DB status helper，数据流和错误流可追踪。
+- 注释 / rustdoc / 文档同步：通过。新增 public API/type 有 rustdoc，Core API 与 UDL 对齐。
+- 错误处理与边界处理：通过。生产路径未发现 `unwrap()` / `expect()` / `panic!()`；Replace 缺确认、stale token、staging 缺失、DB/undo 失败均有返回或回滚证据。
+- 测试与验证覆盖：通过。targeted tests 覆盖 contract、默认策略、局部 pending、AskPerItem、Replace 确认、失败回滚、undo preflight/late failure。
+- 占位、硬编码、mock-only、一次性实现检查：通过。实现连接真实 sqlite/filesystem/temp repo 路径，测试不是只断言静态 mock。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-82`，通过。
+- 已运行：`cargo fmt --all -- --check`，通过。
+- 通过：prompt doctor、diff check、C2-17 contract/file-safety/implementation targeted tests、rustfmt check。
+- 失败：无。
+- 缺失：未运行 `./dev check all`、`./dev check core`、`cargo test --workspace`、clippy；按 validation-driver，本普通 atomic Core task 的 manifest 验证上限是 `./dev check task 4-1/task-82`，宽门禁不作为本 task 必需条件。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。C2-17 的最小 Core implementation 闭环已具备 API/UDL/Rust/test 证据，未触碰 `apps/**`，未发现足以阻断本 task 的工程质量、安全边界或验证缺口。
+
+VERIFY_RESULT: PASS

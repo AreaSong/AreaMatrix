@@ -1,0 +1,24 @@
+一、执行结论：已完成。`4-1/task-80` 只读验收通过，C2-16 可作为后续 S2-20 page-feature task 的真实 Core 依赖。
+
+二、执行范围：单任务验收。修改文件清单：无。未触碰 `apps/**`。工作树中仍有既存 task-loop 运行文件脏改动：`.codex/task-loop-runs/20260517_134238/summary.json`、`tasks/prompts/_shared/progress.json`，本轮未改产品实现。
+
+三、完成情况：
+- capability spec / Core API / UDL / Rust / 测试已交叉核验。C2-16 spec 定义 `preview_conflict_versions`、`resolve_icloud_conflict`、Trash 边界和错误码；Core API 与 UDL 已对齐；Rust 真实实现位于 [core/src/icloud_conflicts.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/icloud_conflicts.rs:64)。
+- S2-20 需要的 metadata、默认 Keep both、Trash 禁用、失败 unresolved、change_log、Undo token/blocked undo 等状态有 Core 合同和测试证据。
+- Control map 仅声明 S2-20 消费 `C2-16, C1-25`，本 task 只验 C2-16；未发现实现 control map 之外能力。
+- Forbidden Touches：未触碰 `apps/**`。
+
+四、工程质量：
+- 结构清晰：C2-16 拆在 `icloud_conflicts/{paths,preview,resolve,types}.rs`，API 层有 rustdoc 和错误说明。
+- 错误/边界已覆盖：placeholder、invalid conflict id、metadata 不完整、Trash 不可用、DB 写入失败回滚、失败后可 retry。
+- 未发现 mock-only、硬编码通过态或一次性脚本化实现；测试走真实临时 repo、SQLite、文件和 Trash 路径。
+
+五、验证情况：
+- 已运行：`./dev check task 4-1/task-80`，通过。
+- 覆盖内容：prompt doctor OK；`git diff --check` 通过；`cargo fmt --all -- --check` 通过；`cargo clippy --all-targets --all-features -- -D warnings` 通过；C2-16 targeted tests 共 24 个通过。
+- 未运行：未额外升级到 `./dev check all`，因为 manifest 指定验证就是 `./dev check task 4-1/task-80`，且该命令已自动包含本 Mission-Critical Core gate 所需的 fmt/clippy 与 targeted tests。
+
+六、风险与后续：
+- 剩余风险：未做 macOS UI 实机交互验证，因为本 task 是 Core integration verify，且 `apps/**` 禁止触碰。
+- 建议下一个任务：继续进入依赖本任务的 S2-20 页面功能接入 task，例如 `4-1/task-131`。
+

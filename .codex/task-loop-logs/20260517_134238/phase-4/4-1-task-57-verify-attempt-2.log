@@ -1,0 +1,98 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`4-1/task-57`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-57-c2-12-implementation.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/classifier_correction.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/db/move_to_category.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/db/mod.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/tests/classifier_correction_implementation.rs`
+
+三、完成度摘要
+
+- 已覆盖项数：11
+- 未覆盖项数：0
+- 通过项数：9
+- 不通过项数：2
+- 阻塞项数：1
+
+四、逐项验收结果
+
+- 项目：Exact Docs / manifest / task 三方核对
+- 结果：通过
+- 证据：已读取 C2-12 spec、stage-2 control map、Core API、error codes、data model；manifest `4-1/task-57` 要求 `core/src/**`、`core/area_matrix.udl`、`core/tests/**`。
+- 涉及文件：`docs/core/capability-specs/stage-2-experience/C2-12-classifier-correction.md`、`tasks/prompts/_shared/manifests/phase-4.md`
+
+- 项目：API / UDL / Rust 入口落地
+- 结果：通过
+- 证据：`core/area_matrix.udl` 暴露 `correct_file_category` 和 `ClassifierCorrectionResult`；`core/src/api.rs` 转发到 `classifier_correction::correct_file_category`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:113`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:703`
+
+- 项目：只实现 C2-12，不顺手实现同阶段其他 C* 能力
+- 结果：不通过
+- 证据：C2-12 文档只声明 DB 变化为更新文件分类与写 change log，Core API 副作用边界也只列 `files.category/path/updated_at` 与 `change_log`；但实现通过 `correct_file_category_metadata_only(..., insert_undo: true)` 和 repo-owned move 路径写入 `undo_actions`，实际扩展到 C2-07 undo action log 语义。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-2-experience/C2-12-classifier-correction.md:19`、`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:2486`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/db/move_to_category.rs:47`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/db/move_to_category.rs:208`
+
+- 项目：按能力规格落实输入、输出、DB/文件系统变化和错误映射
+- 结果：不通过
+- 证据：输入、输出、移动、metadata-only、错误映射均有实现和测试；但额外写 `undo_actions` 不在 C2-12 DB 变化规格内，导致 DB 副作用不完全按能力规格收敛。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/classifier_correction.rs:82`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/db/move_to_category.rs:213`
+
+- 项目：Rust Core 不依赖平台 UI API
+- 结果：通过
+- 证据：实现位于 Rust Core，未发现 AppKit/SwiftUI/UIKit/Cocoa/NS 等平台 UI API 引用。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/classifier_correction.rs:1`
+
+- 项目：最小测试支撑且不做页面接入
+- 结果：通过
+- 证据：新增 `core/tests/classifier_correction_implementation.rs` 覆盖移动、metadata-only、adopted/indexed 不移动、未知分类、DB rollback、missing file、unsafe path；`git status` 未显示 `apps/**` 修改。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/classifier_correction_implementation.rs:143`
+
+- 项目：Expected New Paths
+- 结果：通过
+- 证据：`core/src/**` 有实现，`core/area_matrix.udl` 已存在并暴露合同，`core/tests/**` 有新增实现测试。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/classifier_correction.rs:64`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git diff --name-only -- apps ':(glob)apps/**'` 无输出；`git status --short` 未显示 `apps/**`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/**`
+
+- 项目：任务要求验证
+- 结果：通过
+- 证据：`./dev check task 4-1/task-57` exit 0；doctor OK，`git diff --check` OK，`classifier_correction_contract_api` 4 passed，`classifier_correction_implementation` 8 passed。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/scripts/dev_tools/checks.py:486`
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过，主要结构清晰，但写入 `undo_actions` 的副作用越过 C2-12 当前能力边界。
+- 注释 / rustdoc / 文档同步：通过，新增 public Rust API 和结果类型有 rustdoc，API/UDL 文档存在。
+- 错误处理与边界处理：通过，`Classify` / `Conflict` / `Io` / `Db` 映射有实现和测试覆盖。
+- 测试与验证覆盖：不通过，缺少“C2-12 不写 undo_actions / 不暴露 C2-07 行为”的负向测试。
+- 占位、硬编码、mock-only、一次性实现检查：通过，未发现空壳、mock-only 或硬编码通过态。
+
+六、阻塞项
+
+- P1：C2-12 implementation 额外写入 `undo_actions`，越过当前能力 DB 副作用边界。
+  说明：C2-12 spec 和 Core API 副作用边界只要求更新 `files` 与写 `change_log`，control map 的 S2-16 也只绑定 C2-12；当前实现复用 move/category DB helper 时会创建 undo action，实际引入 C2-07 语义，但 `ClassifierCorrectionResult` 又没有 undo token 合同。
+  绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/core/src/db/move_to_category.rs:47`
+  绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/core/src/db/move_to_category.rs:208`
+  为什么导致不通过：违反“只实现 C2-12”和“按能力规格落实 DB 变化”的验收项，且缺少对应负向测试证明该副作用被刻意纳入合同。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-57`
+- 通过：prompt doctor、diff check、`cargo test --test classifier_correction_contract_api -- --nocapture`、`cargo test --test classifier_correction_implementation -- --nocapture`
+- 失败：无命令失败
+- 缺失：缺少针对 `undo_actions` 不应被 C2-12 写入的语义验证；未运行 broad gate，因为本 task manifest 只要求 task-scoped validation。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+
+VERIFY_RESULT: FAIL

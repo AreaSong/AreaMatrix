@@ -5,11 +5,15 @@ from __future__ import annotations
 import argparse
 import os
 import re
+import signal
+import shlex
 import shutil
 import subprocess
 import sys
+import threading
+import time
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Sequence
 
@@ -25,6 +29,14 @@ class TaskLoopError(RuntimeError):
     def __init__(self, message: str, code: int = 1) -> None:
         super().__init__(message)
         self.code = code
+
+
+class CodexNoOutputTimeout(TaskLoopError):
+    pass
+
+
+class CodexNoOutputTimeoutLimit(TaskLoopError):
+    pass
 
 
 @dataclass
@@ -72,6 +84,11 @@ class RuntimeConfig:
     dry_run_verify_preview_lines: int = 40
     dry_run_result: str = "PASS"
     dry_run_max_attempts: int = 10
+    activity_heartbeat_seconds: int = 30
+    no_output_notice_seconds: int = 120
+    no_output_timeout_seconds: int = 900
+    no_output_restart_delay_seconds: int = 300
+    no_output_restart_limit: int = 2
     run_id: str = ""
 
     @classmethod
@@ -96,7 +113,7 @@ class RuntimeConfig:
         cfg.git_branch_policy = os.environ.get("GIT_BRANCH_POLICY", "auto")
         cfg.git_push_remote = os.environ.get("GIT_PUSH_REMOTE", "origin")
         cfg.git_push_set_upstream = os.environ.get("GIT_PUSH_SET_UPSTREAM", "1") == "1"
-        cfg.max_retries = int(os.environ.get("MAX_RETRIES", "0"))
+        cfg.max_retries = int(os.environ.get("MAX_RETRIES", "1"))
         cfg.max_tasks = int(os.environ.get("MAX_TASKS", "0"))
         cfg.start_from = normalize_task_ref(os.environ.get("START_FROM", ""))
         cfg.stop_after = normalize_task_ref(os.environ.get("STOP_AFTER", ""))
@@ -108,6 +125,11 @@ class RuntimeConfig:
         cfg.dry_run_verify_preview_lines = int(os.environ.get("DRY_RUN_VERIFY_PREVIEW_LINES", "40"))
         cfg.dry_run_result = os.environ.get("DRY_RUN_RESULT", "PASS")
         cfg.dry_run_max_attempts = int(os.environ.get("DRY_RUN_MAX_ATTEMPTS", "10"))
+        cfg.activity_heartbeat_seconds = int(os.environ.get("ACTIVITY_HEARTBEAT_SECONDS", "30"))
+        cfg.no_output_notice_seconds = int(os.environ.get("NO_OUTPUT_NOTICE_SECONDS", "120"))
+        cfg.no_output_timeout_seconds = int(os.environ.get("NO_OUTPUT_TIMEOUT_SECONDS", "900"))
+        cfg.no_output_restart_delay_seconds = int(os.environ.get("NO_OUTPUT_RESTART_DELAY_SECONDS", "300"))
+        cfg.no_output_restart_limit = int(os.environ.get("NO_OUTPUT_RESTART_LIMIT", "2"))
         cfg.run_id = os.environ.get("RUN_ID", "")
         return cfg
 
@@ -132,6 +154,42 @@ def timestamp() -> str:
 
 def log_event(level: str, message: str) -> None:
     print(f"[ {timestamp()} ] [{level}] {message}")
+
+
+def log_live_snapshot(
+    *,
+    title: str,
+    stage: str,
+    task: "TaskFile",
+    attempt: int,
+    pid: int | str,
+    elapsed: str,
+    prompt_file: Path,
+    output_file: Path,
+    heartbeat_seconds: int,
+    command_elapsed: str,
+    command_text: str,
+    no_output_notice: str = "",
+) -> None:
+    log_event("RUN", title)
+    print(
+        f"  current task | stage={stage} | task={task.label} | attempt={attempt} | pid={pid} | elapsed={elapsed}",
+        flush=True,
+    )
+    print("  live log:", flush=True)
+    print(f"    prompt: {prompt_file}", flush=True)
+    print(f"    output: {output_file}", flush=True)
+    print(f"    state: {state.log_file_status(str(output_file))}", flush=True)
+    if no_output_notice:
+        print(f"    note: {no_output_notice}", flush=True)
+    print(
+        f"  current command | heartbeat={heartbeat_seconds}s | command_elapsed={command_elapsed} | command={command_text}",
+        flush=True,
+    )
+
+
+def utc_now() -> str:
+    return datetime.now(timezone.utc).isoformat()
 
 
 def task_name_to_label(task_name: str) -> str:
@@ -211,6 +269,16 @@ class TaskLoopRunner:
             raise TaskLoopError("CODEX_EXEC_SANDBOX must be read-only, workspace-write, or danger-full-access")
         if self.cfg.dry_run_result not in {"PASS", "FAIL"}:
             raise TaskLoopError("DRY_RUN_RESULT must be PASS or FAIL")
+        if self.cfg.activity_heartbeat_seconds < 1:
+            raise TaskLoopError("ACTIVITY_HEARTBEAT_SECONDS must be >= 1")
+        if self.cfg.no_output_notice_seconds < 1:
+            raise TaskLoopError("NO_OUTPUT_NOTICE_SECONDS must be >= 1")
+        if self.cfg.no_output_timeout_seconds < 0:
+            raise TaskLoopError("NO_OUTPUT_TIMEOUT_SECONDS must be >= 0")
+        if self.cfg.no_output_restart_delay_seconds < 0:
+            raise TaskLoopError("NO_OUTPUT_RESTART_DELAY_SECONDS must be >= 0")
+        if self.cfg.no_output_restart_limit < 0:
+            raise TaskLoopError("NO_OUTPUT_RESTART_LIMIT must be >= 0")
         for phase in self.cfg.selected_phases():
             if phase not in PHASES:
                 raise TaskLoopError(f"invalid phase: {phase}")
@@ -238,6 +306,7 @@ class TaskLoopRunner:
         (self.cfg.lock_dir / "operation").write_text(f"{operation}\n", encoding="utf-8")
         (self.cfg.lock_dir / "started_at").write_text(datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ") + "\n", encoding="utf-8")
         (self.cfg.lock_dir / "command").write_text(f"{self.original_command}\n", encoding="utf-8")
+        state.clear_lock_activity(self.cfg.lock_dir)
 
     def release_lock(self) -> None:
         if not self.lock_acquired:
@@ -566,6 +635,11 @@ class TaskLoopRunner:
         log_event("INFO", f"DRY_RUN={1 if self.cfg.dry_run else 0}")
         if self.cfg.dry_run:
             log_event("INFO", f"DRY_RUN_RESULT={self.cfg.dry_run_result}")
+        log_event("INFO", f"ACTIVITY_HEARTBEAT_SECONDS={self.cfg.activity_heartbeat_seconds}")
+        log_event("INFO", f"NO_OUTPUT_NOTICE_SECONDS={self.cfg.no_output_notice_seconds}")
+        log_event("INFO", f"NO_OUTPUT_TIMEOUT_SECONDS={self.cfg.no_output_timeout_seconds}")
+        log_event("INFO", f"NO_OUTPUT_RESTART_DELAY_SECONDS={self.cfg.no_output_restart_delay_seconds}")
+        log_event("INFO", f"NO_OUTPUT_RESTART_LIMIT={self.cfg.no_output_restart_limit}")
         log_event("INFO", f"ROOT_DIR={self.cfg.root_dir}")
         log_event("INFO", f"COPY_ROOT={self.cfg.copy_root}")
         log_event("INFO", f"VERIFY_ROOT={self.cfg.verify_root}")
@@ -645,7 +719,214 @@ class TaskLoopRunner:
             str(output_file),
             "-",
         ]
-        proc = subprocess.run(command, input=prompt_text, text=True, check=False)
+        command_text = shlex.join([str(part) for part in command])
+        restarts = 0
+        while True:
+            try:
+                self.run_codex_child(
+                    command,
+                    command_text,
+                    prompt_text,
+                    prompt_file,
+                    output_file,
+                    stage,
+                    task,
+                    attempt,
+                    restart_index=restarts,
+                )
+                return
+            except CodexNoOutputTimeout as exc:
+                if restarts >= self.cfg.no_output_restart_limit:
+                    raise CodexNoOutputTimeoutLimit(
+                        f"{exc}; restart limit reached ({self.cfg.no_output_restart_limit})",
+                        124,
+                    ) from exc
+                restarts += 1
+                delay = self.cfg.no_output_restart_delay_seconds
+                log_event(
+                    "WARN",
+                    f"codex exec no-output timeout; restart {stage} task={task.label} "
+                    f"attempt={attempt} child_restart={restarts}/{self.cfg.no_output_restart_limit} "
+                    f"after {state.human_duration(delay)}",
+                )
+                state.write_lock_activity(
+                    self.cfg.lock_dir,
+                    {
+                        "status": "restart_wait",
+                        "child_restart": restarts,
+                        "child_restart_limit": self.cfg.no_output_restart_limit,
+                        "restart_delay_seconds": delay,
+                    },
+                )
+                sleep_with_drain_notice(delay)
+
+    def run_codex_child(
+        self,
+        command: list[str],
+        command_text: str,
+        prompt_text: str,
+        prompt_file: Path,
+        output_file: Path,
+        stage: str,
+        task: TaskFile,
+        attempt: int,
+        *,
+        restart_index: int,
+    ) -> None:
+        state.write_lock_activity(
+            self.cfg.lock_dir,
+            {
+                "status": "starting",
+                "stage": stage,
+                "task_label": task.label,
+                "task_name": task.task_name,
+                "attempt": attempt,
+                "prompt_file": str(prompt_file),
+                "output_file": str(output_file),
+                "command": command_text,
+                "started_at": utc_now(),
+                "child_restart": restart_index,
+                "child_restart_limit": self.cfg.no_output_restart_limit,
+                "pid": "",
+            },
+        )
+        log_live_snapshot(
+            title="live activity started",
+            stage=stage,
+            task=task,
+            attempt=attempt,
+            pid=f"starting restart={restart_index}",
+            elapsed="0s",
+            prompt_file=prompt_file,
+            output_file=output_file,
+            heartbeat_seconds=self.cfg.activity_heartbeat_seconds,
+            command_elapsed="0s",
+            command_text=command_text,
+        )
+        proc = subprocess.Popen(command, stdin=subprocess.PIPE, text=True, start_new_session=True)
+        start_monotonic = time.monotonic()
+        last_output_signature = output_file_signature(output_file)
+        last_output_change_monotonic = start_monotonic
+        state.write_lock_activity(self.cfg.lock_dir, {"status": "running", "pid": proc.pid, "child_restart": restart_index})
+        log_live_snapshot(
+            title="live activity running",
+            stage=stage,
+            task=task,
+            attempt=attempt,
+            pid=proc.pid,
+            elapsed="0s",
+            prompt_file=prompt_file,
+            output_file=output_file,
+            heartbeat_seconds=self.cfg.activity_heartbeat_seconds,
+            command_elapsed="0s",
+            command_text=command_text,
+        )
+        communicate_error: list[BaseException] = []
+        timeout_error = ""
+
+        def communicate_with_child() -> None:
+            try:
+                proc.communicate(prompt_text)
+            except BaseException as exc:  # pragma: no cover - defensive handoff from worker thread
+                communicate_error.append(exc)
+
+        worker = threading.Thread(target=communicate_with_child, daemon=True)
+        worker.start()
+        try:
+            while worker.is_alive():
+                time.sleep(self.cfg.activity_heartbeat_seconds)
+                if not worker.is_alive():
+                    break
+                now = time.monotonic()
+                current_signature = output_file_signature(output_file)
+                if current_signature != last_output_signature:
+                    last_output_signature = current_signature
+                    last_output_change_monotonic = now
+                no_output_elapsed_seconds = int(now - last_output_change_monotonic)
+                elapsed = state.human_duration(now - start_monotonic)
+                log_state = state.log_file_status(str(output_file))
+                no_output_notice = ""
+                if no_output_elapsed_seconds >= self.cfg.no_output_notice_seconds:
+                    no_output_notice = (
+                        "codex exec child is running but has not written the output log yet; "
+                        "this is a no-output wait, not proof that validation commands are progressing."
+                    )
+                state.write_lock_activity(
+                    self.cfg.lock_dir,
+                    {
+                        "status": "running",
+                        "log_state": log_state,
+                        "no_output_elapsed_seconds": no_output_elapsed_seconds,
+                        "no_output_timeout_seconds": self.cfg.no_output_timeout_seconds,
+                        "child_restart": restart_index,
+                        "child_restart_limit": self.cfg.no_output_restart_limit,
+                    },
+                )
+                if (
+                    self.cfg.no_output_timeout_seconds > 0
+                    and no_output_elapsed_seconds >= self.cfg.no_output_timeout_seconds
+                ):
+                    timeout_error = (
+                        f"codex exec no-output timeout for {stage} {task.label} attempt={attempt}: "
+                        f"no output log progress for {state.human_duration(no_output_elapsed_seconds)} "
+                        f"(timeout={state.human_duration(self.cfg.no_output_timeout_seconds)}; "
+                        f"log_state={log_state})"
+                    )
+                    state.write_lock_activity(
+                        self.cfg.lock_dir,
+                        {
+                            "status": "no_output_timeout",
+                            "no_output_elapsed_seconds": no_output_elapsed_seconds,
+                            "no_output_timeout_seconds": self.cfg.no_output_timeout_seconds,
+                            "child_restart": restart_index,
+                            "child_restart_limit": self.cfg.no_output_restart_limit,
+                            "log_state": log_state,
+                        },
+                    )
+                    log_live_snapshot(
+                        title="live activity no-output timeout",
+                        stage=stage,
+                        task=task,
+                        attempt=attempt,
+                        pid=proc.pid,
+                        elapsed=elapsed,
+                        prompt_file=prompt_file,
+                        output_file=output_file,
+                        heartbeat_seconds=self.cfg.activity_heartbeat_seconds,
+                        command_elapsed=elapsed,
+                        command_text=command_text,
+                        no_output_notice=timeout_error,
+                    )
+                    terminate_child(proc, worker)
+                    break
+                log_live_snapshot(
+                    title="live activity heartbeat",
+                    stage=stage,
+                    task=task,
+                    attempt=attempt,
+                    pid=proc.pid,
+                    elapsed=elapsed,
+                    prompt_file=prompt_file,
+                    output_file=output_file,
+                    heartbeat_seconds=self.cfg.activity_heartbeat_seconds,
+                    command_elapsed=elapsed,
+                    command_text=command_text,
+                    no_output_notice=no_output_notice,
+                )
+            worker.join(timeout=5)
+        finally:
+            state.write_lock_activity(
+                self.cfg.lock_dir,
+                {
+                    "status": "no_output_timeout" if timeout_error else "finished",
+                    "finished_at": utc_now(),
+                    "returncode": proc.returncode,
+                },
+            )
+        if timeout_error:
+            raise CodexNoOutputTimeout(timeout_error, 124)
+        if communicate_error:
+            raise TaskLoopError(f"codex exec communication failed for {prompt_file}: {communicate_error[0]}", 1)
         if proc.returncode != 0:
             raise TaskLoopError(f"codex exec failed for {prompt_file}: exit={proc.returncode}", proc.returncode)
 
@@ -667,12 +948,15 @@ class TaskLoopRunner:
         feedback = self.extract_verify_feedback(verify_log)
         return f"""你正在对同一个任务进行 repair retry（修复重试，第 {attempt} 次尝试）。任务标签：{task.label}（文件：{task.task_name}.md）。
 本次重试只允许修复上一次验收失败问题，不要改写任务目标外的范围。
-本次重试必须同时修复功能失败、验收证据失败和工程质量失败；重新读取工程质量规则与编码规范。
-以下是上一次验收日志里的失败摘要（请直接按这些问题“全部全面修复”）：
+本次重试必须同时修复本 task 范围内的功能失败、验收证据失败和工程质量失败；重新读取工程质量规则与编码规范。
+本次重试不会改变验证等级：仍以当前 task manifest 的 `Validation` 为上限。
+除非当前 task manifest 明确列出 `./dev check all`、`./dev check core` 或 `cargo test --workspace`，否则不要因为 retry、证据不足、上一次 verify 失败或 `core/**` 改动而升级到这些宽门禁。
+若上一次验收日志声称 manifest 要求更宽门禁，必须先回到当前 task manifest 核对；以 manifest 原文为准。
+以下是上一次验收日志里的失败摘要（请只修复这些本 task 范围内的问题）：
 
 {feedback}
 
-修复完成后，重新完整执行本任务实现，再进入该任务验收。"""
+修复完成后，重新执行当前 task manifest `Validation` 中列出的检查，再进入该任务验收。"""
 
     def build_silent_approval_prompt(self, task: TaskFile) -> str:
         if self.cfg.risk_policy != "allow":
@@ -691,9 +975,19 @@ class TaskLoopRunner:
         return "\n\n".join(parts)
 
     def verify_suffix(self) -> str:
-        return """自动任务循环输出要求：
+        return f"""自动任务循环输出要求：
 - 保留简明验收报告，尤其是不通过时的失败摘要、阻塞项、文件路径和验证缺口。
-- 工程质量不达标时必须写清楚质量阻塞点，供下一轮“全部全面修复”使用。
+- 工程质量不达标时必须写清楚本 task 范围内的质量阻塞点，供下一轮 repair retry 精准修复。
+- 验证边界不随 retry 次数变化；普通 task 的 retry 仍以当前 task manifest 的 `Validation` 为上限。
+- 除非当前 task manifest 明确要求宽门禁，否则不要把失败、证据不足或 `core/**` 改动解释成必须运行
+  `./dev check all`、`./dev check core` 或 `cargo test --workspace`。
+- 当前验收发生在 runner 写入 completed progress 和 Git checkpoint 之前；不要因为 `progress.json`
+  仍是 `in_progress`、新增文件尚未被 `git add`、或 `git_checkpoint_status` 尚未写入而判定不通过。
+- 你仍需检查当前工作区是否有与本 task 无关、危险或无法解释的脏改动；真实功能、验证命令、
+  Forbidden Touches、代码质量、安全/隐私/依赖/CI/review blocker 仍必须按规则严格阻断。
+- 若本轮验收输出 `VERIFY_RESULT: PASS`，runner 随后会按 `GIT_CHECKPOINT={self.cfg.git_checkpoint}` 执行
+  progress / summary / Git checkpoint 收口；若该收口失败，应归因给 runner checkpoint 阶段，而不是本
+  verify 阶段。
 - 最后一行必须单独输出 VERIFY_RESULT: PASS 或 VERIFY_RESULT: FAIL。
 - 不要在最后一行之后输出任何内容。"""
 
@@ -780,9 +1074,15 @@ class TaskLoopRunner:
             self.mark_progress(task, "in_progress", progress_note, copy_log, verify_log, attempt)
             self.record_task_summary(task, "in_progress", attempt, copy_log, verify_log, progress_note)
             previous_verify_log = self.session_log_root / task.phase / f"{task.task_name}-verify-attempt-{attempt - 1}.log" if attempt > 1 else None
-            self.run_codex(task.copy_file, copy_log, "copy", self.build_copy_context_prompt(task, attempt, previous_verify_log), task, attempt)
-            log_event("TASK", f"verify prompt -> {verify_log}")
-            self.run_codex(task.verify_file, verify_log, "verify", self.verify_suffix(), task, attempt)
+            try:
+                self.run_codex(task.copy_file, copy_log, "copy", self.build_copy_context_prompt(task, attempt, previous_verify_log), task, attempt)
+                log_event("TASK", f"verify prompt -> {verify_log}")
+                self.run_codex(task.verify_file, verify_log, "verify", self.verify_suffix(), task, attempt)
+            except CodexNoOutputTimeoutLimit as exc:
+                note = f"codex exec no-output timeout：{exc}"
+                self.mark_progress(task, "failed", note, copy_log, verify_log, attempt)
+                self.record_task_summary(task, "failed", attempt, copy_log, verify_log, note)
+                raise
             if self.is_verify_pass(verify_log):
                 self.mark_progress(task, "completed", f"自动执行验收通过：attempt={attempt}", copy_log, verify_log, attempt)
                 self.done_tasks += 1
@@ -802,7 +1102,7 @@ class TaskLoopRunner:
                 return
             self.retry_total += 1
             log_event("RETRY", f"{task.label} failed verify, entering repair retry...")
-            self.record_task_summary(task, "retrying", attempt, copy_log, verify_log, "验收失败，下一轮全部全面修复")
+            self.record_task_summary(task, "retrying", attempt, copy_log, verify_log, "验收失败，下一轮按本 task Validation 上限精准修复")
             self.print_task_progress("RETRY", task, attempt, copy_log, verify_log)
             if self.cfg.max_retries > 0 and attempt >= self.cfg.max_retries:
                 self.mark_progress(task, "failed", f"达到最大重试次数：MAX_RETRIES={self.cfg.max_retries}", copy_log, verify_log, attempt)
@@ -818,6 +1118,44 @@ def json_dumps(value: object) -> str:
     import json
 
     return json.dumps(value, ensure_ascii=False, sort_keys=True)
+
+
+def output_file_signature(path: Path) -> tuple[str, int, int]:
+    try:
+        stat = path.stat()
+    except FileNotFoundError:
+        return ("missing", 0, 0)
+    except OSError:
+        return ("unreadable", 0, 0)
+    return ("exists", stat.st_mtime_ns, stat.st_size)
+
+
+def terminate_child(proc: subprocess.Popen[str], worker: threading.Thread) -> None:
+    if proc.poll() is None:
+        terminate_process_group(proc, signal.SIGTERM)
+    worker.join(timeout=5)
+    if worker.is_alive() and proc.poll() is None:
+        terminate_process_group(proc, signal.SIGKILL)
+    worker.join(timeout=5)
+
+
+def terminate_process_group(proc: subprocess.Popen[str], sig: signal.Signals) -> None:
+    try:
+        os.killpg(proc.pid, sig)
+    except OSError:
+        try:
+            if sig == signal.SIGTERM:
+                proc.terminate()
+            else:
+                proc.kill()
+        except OSError:
+            pass
+
+
+def sleep_with_drain_notice(seconds: int) -> None:
+    deadline = time.monotonic() + seconds
+    while time.monotonic() < deadline:
+        time.sleep(min(5, max(0, deadline - time.monotonic())))
 
 
 def print_loop_status(cfg: RuntimeConfig) -> None:

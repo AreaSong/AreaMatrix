@@ -1,0 +1,87 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`4-1/task-42`
+- 对应文件路径：`tasks/prompts/phase-4/4-1-stage2-experience/task-42-c2-09-implementation.md`
+- 核验范围：`docs/core/capability-specs/stage-2-experience/C2-09-batch-delete-trash.md`、`docs/architecture/stage-2-control-map.md`、`docs/api/core-api.md`、`docs/api/error-codes.md`、`docs/architecture/data-model.md`、`core/src/**`、`core/area_matrix.udl`、`core/tests/**`
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：0
+- 通过项数：7
+- 不通过项数：3
+- 阻塞项数：3
+
+四、逐项验收结果
+
+- 项目：Manifest / Exact Docs / Existing Code 读取与路径落地
+- 结果：通过
+- 证据：5 个 Exact Docs 均存在；`core/src/batch_delete.rs`、`core/src/batch_delete/**`、`core/tests/batch_delete_trash_implementation.rs` 已落地
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-4.md`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git diff --name-only -- apps` 无输出；当前脏改动未触碰 `apps/**`
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/**`
+
+- 项目：只实现 C2-09，不顺手实现其他能力
+- 结果：通过
+- 证据：实现集中在 `batch_delete`、Trash、undo 支撑与测试；未发现 macOS 页面接入
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/batch_delete.rs`
+
+- 项目：输入、输出、DB/文件系统变化和错误映射
+- 结果：不通过
+- 证据：Core API 要求 Apply 输入与刚确认的 preview state 一致，状态变化必须拒绝写入；当前 `batch_delete_to_trash` 只重新 build plan 后直接 apply，没有 preview state/token/snapshot 校验
+- 涉及文件：[core-api.md](/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:2060)、[batch_delete.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/batch_delete.rs:184)
+
+- 项目：Rust Core 不依赖平台 UI API
+- 结果：通过
+- 证据：改动位于 Rust Core，未引入 SwiftUI/AppKit/FSEvents UI 依赖
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+- 项目：最小测试支撑、不做页面接入
+- 结果：不通过
+- 证据：已有 happy path 和 index-only 测试通过，但缺少 preview 后状态变化拒绝、权限/IO inspection 错误映射等高风险测试
+- 涉及文件：[batch_delete_trash_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/batch_delete_trash_implementation.rs:173)
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，`batch_delete` 拆成 contract / plan / apply，结构可读。
+- 注释 / rustdoc / 文档同步：不通过，`data-model.md` 的 `change_log.action` 枚举未包含实现写入的 `removed_from_index`。
+- 错误处理与边界处理：不通过，权限/IO inspection 被当成 `false`，可能误判为 missing/index-only。
+- 测试与验证覆盖：不通过，`./dev check task 4-1/task-42` 通过，但测试未覆盖上述阻塞风险。
+- 占位、硬编码、mock-only、一次性实现检查：通过，未发现 mock-only 或硬编码通过态。
+
+六、阻塞项
+
+- P0：Apply 缺少 preview-state 一致性校验  
+  说明：文档要求选择集、模式或 inspected state 变化时拒绝不安全写入并重新 Preview；当前实现没有 preview token 或状态快照，`batch_delete_to_trash` 重新读取当前状态后直接执行。  
+  绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/core/src/batch_delete.rs:184`  
+  为什么导致不通过：这是 C2-09 destructive action 的确认边界，用户确认后的状态漂移不能被静默执行。
+
+- P1：权限/IO inspection 错误映射不完整  
+  说明：`path.metadata()` / `try_exists()` 失败被 `unwrap_or(false)` 吞掉，会把权限或 IO 问题误判为 missing/index-only，而文档要求映射到 `PermissionDenied` / `Io`。  
+  绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/core/src/batch_delete/plan.rs:369`  
+  为什么导致不通过：高风险文件操作不能把检查失败当作可删除或可移除索引状态。
+
+- P1：Exact Docs 与实现/DB schema 漂移  
+  说明：实现和 Core API 使用 `change_log.action = removed_from_index`，但 `docs/architecture/data-model.md` 的 `change_log` CHECK 枚举仍只有 `deleted/restored/external_modified` 等，未包含 `removed_from_index`。  
+  绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/data-model.md:100`  
+  为什么导致不通过：Exact Docs 是 SSOT，当前实现与数据模型文档不一致。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-42`
+- 通过：`prompt doctor`、`git diff --check`、`cargo test --test batch_delete_trash_contract_api -- --nocapture`、`cargo test --test batch_delete_trash_implementation -- --nocapture`
+- 失败：无命令失败
+- 缺失：未见覆盖 preview-state 漂移拒绝、权限/IO inspection 错误映射、data-model 文档一致性的测试或证据
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+
+VERIFY_RESULT: FAIL

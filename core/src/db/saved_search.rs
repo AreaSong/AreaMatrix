@@ -9,6 +9,11 @@ use crate::{
 
 use super::open_repo_connection;
 
+const SELECT_SAVED_SEARCH_BY_ID: &str = "SELECT id, name, query_json, icon, color, pinned,
+                                                created_at, updated_at
+                                           FROM saved_searches
+                                          WHERE id = ?1";
+
 pub(crate) fn create_saved_search_row(
     repo_path: &Path,
     request: &CreateSavedSearchRequest,
@@ -124,11 +129,22 @@ pub(crate) fn list_saved_search_rows(repo_path: &Path) -> CoreResult<Vec<SavedSe
         .map_err(|error| CoreError::db(error.to_string()))
 }
 
+pub(crate) fn get_saved_search_row(repo_path: &Path, id: i64) -> CoreResult<SavedSearch> {
+    let connection = open_saved_search_read_connection(repo_path)?;
+    connection
+        .query_row(
+            SELECT_SAVED_SEARCH_BY_ID,
+            params![id],
+            saved_search_from_row,
+        )
+        .optional()
+        .map_err(|error| CoreError::db(error.to_string()))?
+        .ok_or_else(|| CoreError::file_not_found(format!("saved_search:{id}")))
+}
+
 fn select_saved_search_by_id(tx: &rusqlite::Transaction<'_>, id: i64) -> CoreResult<SavedSearch> {
     tx.query_row(
-        "SELECT id, name, query_json, icon, color, pinned, created_at, updated_at
-           FROM saved_searches
-          WHERE id = ?1",
+        SELECT_SAVED_SEARCH_BY_ID,
         params![id],
         saved_search_from_row,
     )

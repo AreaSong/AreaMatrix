@@ -1,0 +1,34 @@
+一、执行结论：已完成。
+
+二、执行范围：单任务 `4-1/task-43`。修改文件：
+- `core/src/batch_delete.rs`
+- `core/src/batch_delete/apply.rs`
+- `core/src/batch_delete/plan/classify.rs`
+- `core/src/db/delete.rs`
+- `core/src/db/mod.rs`
+- `core/tests/batch_delete_trash_contract_api.rs`
+- `core/tests/batch_delete_trash_failure_recovery.rs`（新增）
+
+三、完成情况：
+- 空态、非法输入、权限、IO/DB 错误和错误码映射：已补测试覆盖，空 repo path 保持 `PermissionDenied`，空/非法 id 保持 `FileNotFound`，未初始化 metadata 保持 `Db`。
+- 写入/移动/删除失败不留下半成品：已补混合批量删除回滚，undo action 写入失败时同时回滚 Trash 项和 metadata-only / missing 项。
+- 隐私/AI/远程调用：C2-09 Core 路径没有 AI/网络调用，没有新增日志密钥路径。
+- 不吞错/不静默降级：DB item 失败进入 per-item `Failed`，批量 undo 写入失败直接返回错误并回滚。
+- Forbidden Touches：未触碰 `apps/**`。
+
+四、工程质量：
+- 代码结构改成命名 outcome / rollback item，避免复杂 tuple 返回，也通过 clippy。
+- 没有新增依赖、mock-only、硬编码通过态或一次性脚本。
+- 新增 failure-recovery 测试用临时 repo 和临时 Trash，覆盖用户文件安全、外部源文件不被触碰、Trash 不可用、DB/undo 失败回滚。
+
+五、验证情况：
+- `cargo test --test batch_delete_trash_contract_api -- --nocapture`：通过，4 tests。
+- `cargo test --test batch_delete_trash_failure_recovery -- --nocapture`：通过，4 tests。
+- `cargo test --test batch_delete_trash_implementation -- --nocapture`：通过，6 tests。
+- `./dev check task 4-1/task-43`：通过。包含 `prompt doctor`、`git diff --check`、`cargo fmt --all -- --check`、`cargo clippy --all-targets --all-features -- -D warnings`，以及上述三个 targeted Rust test targets。
+
+六、风险与后续：
+- 剩余风险：未运行全 workspace 测试，符合本 task manifest 的验证上限。
+- 工作区里原本已有 `.codex/task-loop-runs/20260517_134238/summary.json` 和 `tasks/prompts/_shared/progress.json` 修改，我未回滚。
+- 建议下一个任务：`4-1/task-44`，为 C2-09 做 validation 补齐。
+

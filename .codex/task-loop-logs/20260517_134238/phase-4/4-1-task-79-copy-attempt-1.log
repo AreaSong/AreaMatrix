@@ -1,0 +1,13 @@
+一、执行结论：已完成。
+
+二、执行范围：单任务 `4-1/task-79`。新增 [core/tests/icloud_conflict_visual_validation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/icloud_conflict_visual_validation.rs:1)，未修改 `core/src/**` 或 `core/area_matrix.udl`，未触碰 `apps/**`。工作树里原本已有的 `.codex/task-loop-runs/20260517_134238/summary.json`、`tasks/prompts/_shared/progress.json` 仍是未处理的既有改动，我没有改它们。
+
+三、完成情况：已补 C2-16 validation 测试，覆盖 preview 成功只读、KeepBoth 不移动版本、destructive resolution 走临时系统 Trash + blocked undo、DB 写入失败回滚并保持 `NeedsReview`、metadata 不完整时阻断 destructive resolution，以及 Core API / UDL / Rust 合同一致性。没有新增业务功能，没有新增依赖。
+
+四、工程质量：测试用真实 `init_repo`、真实临时文件、真实 SQLite 表和测试隔离 Trash，不是 mock-only 或硬编码通过态。测试函数已拆分为小粒度用例，错误路径和文件安全边界都有断言；本次没有新增 public Rust API，所以不涉及 rustdoc 同步。
+
+五、验证情况：已运行 `./dev check task 4-1/task-79`，通过。实际包含 `doctor: OK`、`git diff --check`、以及 targeted Rust tests：
+`icloud_conflict_visual_contract_api` 4 passed，`icloud_conflict_visual_failure_recovery` 10 passed，`icloud_conflict_visual_implementation` 3 passed，`icloud_conflict_visual_validation` 7 passed。没有无法运行的验证项；按本 task 要求没有升级到 `cargo test --workspace` / `./dev check core` / `./dev check all`。
+
+六、风险与后续：剩余风险是远端 CI 和 Git checkpoint 未在本轮执行，合并前仍需由任务循环或 CI 补齐。建议下一个任务进入 `4-1/task-80` 的 C2-16 integration-verify，只读验收当前 C2-16 是否可作为后续 S2-20 UI 接入依赖。
+

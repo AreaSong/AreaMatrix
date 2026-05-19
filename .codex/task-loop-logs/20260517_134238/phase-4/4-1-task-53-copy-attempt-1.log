@@ -1,0 +1,44 @@
+一、执行结论
+
+已完成。
+
+二、执行范围
+
+单任务：`4-1/task-53` / C2-11 `command-index` failure-edge。
+
+修改文件：
+- [command_index.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/command_index.rs:181)：补齐 query NUL、`.areamatrix` 内部 current_path 的非法输入校验，继续统一返回 `CoreError::Db`。
+- [command_index_failure_recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/command_index_failure_recovery.rs:216)：新增 C2-11 failure/recovery 测试目标。
+
+三、完成情况
+
+核对清单已覆盖：
+- 空态：空 repo 返回基础命令/导航，Smart List、文件候选、recent 为空且无写入。
+- 非法输入：空 repo path、`.areamatrix` path、非法 selection id、越界/current_path、NUL query 均返回 `Db`，且快照不变。
+- 权限 / IO / DB：权限拒绝、未初始化 repo、损坏 DB、缺表 DB 失败均返回结构化 `Db`。
+- 半成品与用户文件安全：失败后用户文件 bytes 不变，staging/generated 快照不被新增污染。
+- 隐私/AI/远程：断言不会创建 `.areamatrix/ai`、`remote`、`secrets`，不会写 root `AREAMATRIX.md` / `README.md`。
+- 吞错：失败路径均断言 `Err(CoreError::Db)`，未静默降级。
+
+Forbidden Touches：未触碰 `apps/**`。
+
+四、工程质量
+
+实现保持在 C2-11 边界内，没有引入新依赖、mock-only、硬编码通过态或一次性脚本。新增测试通过真实 Core API、SQLite metadata、文件系统 fixture 和失败前后快照证明只读/回滚边界。
+
+五、验证情况
+
+已运行：
+- `cargo fmt --all`
+- `./dev check task 4-1/task-53`
+
+`./dev check task 4-1/task-53` 通过，实际包含：
+- prompt doctor：OK，637 tasks / 637 manifests
+- `git diff --check`：通过
+- `cargo test --test command_index_contract_api -- --nocapture`：4 passed
+- `cargo test --test command_index_failure_recovery -- --nocapture`：7 passed
+- `cargo test --test command_index_implementation -- --nocapture`：4 passed
+
+六、风险与后续
+
+残余风险：当前工作树仍有本任务外既有修改 `.codex/task-loop-runs/20260517_134238/summary.json` 和 `tasks/prompts/_shared/progress.json`，我未处理它们。建议下一个任务按队列进入 `4-1/task-54`。  

@@ -1,0 +1,44 @@
+一、执行结论
+
+已完成。`4-1/task-85` 只读验收通过，C2-17 可以作为后续 S2-21 page-feature task 的真实 Core 依赖。
+
+二、执行范围
+
+- 单任务：`4-1/task-85`
+- 修改文件清单：无
+- Forbidden Touches：未触碰 `apps/**`
+- 工作树状态：验收前后仍有既有改动 `.codex/task-loop-runs/20260517_134238/summary.json`、`tasks/prompts/_shared/progress.json`，本轮未修改它们。
+
+三、完成情况
+
+- capability spec / Core API / UDL / Rust / 测试：通过交叉核验。UDL 已暴露 `preview_import_conflict_batch`、`apply_import_conflict_batch` 及 C2-17 字典/枚举；Rust API 转发到 `import_conflict_batch` 实现；测试覆盖合同、实现、失败恢复、文件安全、validation。
+- 消费页面状态、错误和副作用：已覆盖 S2-21 所需的默认 `Skip` / `KeepBoth`、`Replace` 二次确认、`Pending`、`Blocked`、`Failed`、结果摘要、`undo_token`、`change_log_actions`、staging 保留和 rollback。
+- control map 之外能力：未发现 C2-17 实现 iCloud conflict、Stage 4 sync conflict、通用 batch delete/rename/category、classifier、tag、search、AI 或 macOS UI 能力。
+- 完成标准：满足。无法证明项未发现。
+
+四、工程质量
+
+整体结构能支撑当前验收：真实 DB/staging/file path 流程已打通，错误路径显式返回，Replace 走可恢复路径和 undo preflight。没有发现 mock-only、硬编码通过态或一次性脚本化实现。
+
+残余维护风险：`core/src/import_conflict_batch/apply.rs` 当前 542 行，超过编码规范建议的单文件 500 行上限；不阻断本 task 验收，但后续可拆分以降低维护成本。
+
+五、验证情况
+
+已运行并通过：
+
+```bash
+./dev check task 4-1/task-85
+```
+
+该命令实际执行并通过：
+
+- prompt doctor：OK，637 tasks / 637 manifests
+- git diff check：通过
+- `cargo fmt --all -- --check`：通过
+- `cargo clippy --all-targets --all-features -- -D warnings`：通过
+- targeted tests：5 个 test binary，共 20 个测试全部通过
+
+六、风险与后续
+
+剩余风险：未运行远端 CI；本轮按 manifest 上限只运行 task 指定验证。建议下一个任务按 manifest 队列进入 `4-1/task-86`。  
+

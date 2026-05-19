@@ -1,0 +1,42 @@
+一、执行结论
+
+已完成 `4-1/task-46`。
+
+二、执行范围
+
+单任务：C2-10 `batch-rename-preview` contract/API。  
+修改/新增文件：
+
+- [core/src/batch_rename.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/batch_rename.rs)
+- [core/src/api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs)
+- [core/src/lib.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/lib.rs)
+- [core/area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl)
+- [core/tests/batch_rename_preview_contract_api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/batch_rename_preview_contract_api.rs)
+- [docs/api/core-api.md](/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md)
+- [docs/core/capability-specs/stage-2-experience/C2-10-batch-rename-preview.md](/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-2-experience/C2-10-batch-rename-preview.md)
+
+三、完成情况
+
+核对清单全部完成：已读取 C2-10 规格、Stage 2 control map、Core API、错误码、S2-14/S2-10 消费上下文；API 名称、输入、输出、错误码和隐私/权限边界已对齐；只补合同、类型、UDL、API 文档和合同测试，未实现后续业务逻辑；页面消费方可从合同得到逐行 original/new name、冲突、DISPLAY_ONLY、UNCHANGED、阻塞原因、Apply 可用性、执行报告、`updated_files` 和 `undo_token`。
+
+完成标准满足：C2-10 Core API 合同可供后续 implementation task 实现；没有引入 control map 之外的页面能力。未触碰 `apps/**`。
+
+四、工程质量
+
+新增 Rust public API/类型都有 rustdoc 和 `# Errors` 说明。当前实现保持合同层边界：输入校验后返回 pending `Db` 错误，不返回假成功、不做 mock-only 闭环、不执行真实 rename。错误边界覆盖 `InvalidPath / Conflict / FileNotFound / PermissionDenied / Io / Db`；`FileNotFound` 已同步补入 C2-10 能力规格，修正 Exact Docs 漂移。
+
+五、验证情况
+
+已运行并通过：
+
+```bash
+cargo fmt --all
+cargo test --test batch_rename_preview_contract_api -- --nocapture
+./dev check task 4-1/task-46
+```
+
+`./dev check task 4-1/task-46` 结果：`doctor: OK`，`git diff --check` 通过，目标测试 `batch_rename_preview_contract_api` 5/5 通过。未运行更宽的 `cargo test --workspace` / clippy / `./dev check all`，因为本 atomic Core task 的 manifest 上限是 `./dev check task 4-1/task-46`。
+
+六、风险与后续
+
+剩余风险：本任务只完成合同层，真实 batch rename 文件系统/DB/change_log/undo 行为仍由后续 `4-1/task-47` implementation、failure-edge、validation 和 integration verify 覆盖。工作树中原有 `.codex/task-loop-runs/.../summary.json` 与 `tasks/prompts/_shared/progress.json` 仍是既有运行状态改动，我没有修改或回滚。建议下一个任务执行 `4-1/task-47`。  

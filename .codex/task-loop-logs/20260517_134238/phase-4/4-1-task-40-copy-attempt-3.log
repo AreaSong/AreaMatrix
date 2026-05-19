@@ -1,0 +1,43 @@
+一、执行结论
+
+已完成。C2-08 preview 现在会在 repo-owned 文件移动 dry-run 阶段检查目标分类目录或待创建目录的父目录是否可写；不可写时返回 `Blocked` preview 行并禁用 Apply，不创建目录、不移动文件、不写 DB。
+
+二、执行范围
+
+单任务：`4-1/task-40`
+
+修改文件：
+- [path_plan.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/batch_category/path_plan.rs)：新增无副作用的目标目录/父目录可写性检查。
+- [plan.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/batch_category/plan.rs)：在 repo-owned move 规划前把不可写目标转成 blocked preview item；保留前序 `index_only` 修正。
+- [batch_change_category_preview_safety.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/batch_change_category_preview_safety.rs)：新增 preview safety 回归测试。
+
+未触碰 `apps/**`，`git diff -- apps` 为空。工作区仍有 task-loop 的 summary/progress/log 脏项，未作为本轮产品实现改动处理。
+
+三、完成情况
+
+- capability spec / Core API / UDL / Rust / tests：通过 targeted contract 与 validation 测试交叉锁定。
+- 消费页面状态、错误、副作用：已覆盖 S2-12 要求的目标目录不可写/权限不足禁用 Apply；preview 无写副作用。
+- control map 之外能力：未实现新分类创建、AI、delete、rename、reindex、generated overview 或 apps 侧能力。
+- 完成标准：C2-08 现在可作为后续 page-feature task 的真实 Core 依赖。
+
+四、工程质量
+
+代码仍按现有 `batch_category` 分层：路径预检在 `path_plan.rs`，规划状态在 `plan.rs`，测试独立放入 preview safety target。未新增 public API，无需新增 rustdoc；无新增依赖。错误路径显式映射为 `PermissionDenied` / `Conflict`，没有 mock-only、硬编码通过态或一次性实现。原先 559 行的 validation 测试文件已降到 499 行，符合单文件 500 行建议。
+
+五、验证情况
+
+已运行并通过：
+
+- `cargo test --test batch_change_category_preview_safety -- --nocapture`：3 passed
+- `cargo test --test batch_change_category_validation -- --nocapture`：4 passed
+- `./dev check task 4-1/task-40`：通过
+  - `prompt_pipeline.py doctor`：OK
+  - `git diff --check`：OK
+  - `cargo fmt --all -- --check`：OK
+  - `cargo clippy --all-targets --all-features -- -D warnings`：OK
+  - C2-08 targeted tests：contract 4/4、failure recovery 6/6、implementation 3/3、preview safety 3/3、rollback safety 4/4、validation 4/4
+
+六、风险与后续
+
+剩余风险：本地验证已覆盖 Rust Core 与文件权限 dry-run，但远端 CI/Git checkpoint 证据仍取决于 task-loop 后续流程。回滚方式是撤销 `core/src/batch_category/path_plan.rs`、`core/src/batch_category/plan.rs` 和新增 preview safety 测试文件。建议下一个任务进入 `4-1/task-41`，或先跑 verify-ready 对 `4-1/task-40` 做只读验收闭环。
+

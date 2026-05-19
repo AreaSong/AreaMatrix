@@ -7,6 +7,8 @@ description: "Use when Codex needs to review or update AreaMatrix enterprise gov
 
 Use this skill when the change touches enterprise governance surfaces or when a review needs governance-level gates beyond a single task.
 
+Trigger it for `CODE_REVIEW.md`, `SECURITY.md`, dependency policy, CI workflows, CODEOWNERS, PR / issue templates, release or branch governance, external capability admission, code review output rules, security / privacy review, supply-chain review, or claims that a task-loop checkpoint is ready to merge.
+
 ## Read first
 
 1. [AGENTS.md](../../../AGENTS.md)
@@ -19,13 +21,18 @@ Use this skill when the change touches enterprise governance surfaces or when a 
 
 - [references/governance-map.md](references/governance-map.md): source-of-truth map for enterprise governance files.
 - [references/review-security-ci.md](references/review-security-ci.md): review, security, dependency, and CI gates.
+- [../areamatrix-validation-driver/SKILL.md](../areamatrix-validation-driver/SKILL.md): choose local checks after governance changes.
+- [../areamatrix-git-checkpoint/SKILL.md](../areamatrix-git-checkpoint/SKILL.md): PASS checkpoint is evidence, not merge approval.
+- [../areamatrix-doc-sync/SKILL.md](../areamatrix-doc-sync/SKILL.md): keep governance adapters and Codex runtime materials aligned with source rules.
 
 ## Workflow
 
 1. Identify whether the change affects review, security, dependencies, CI, ownership, release, or task-loop evidence.
 2. Load the governance map before editing adapters, templates, skills, or prompt rules.
-3. Apply the review/security/CI checklist before reporting PASS.
-4. Run `./dev check governance` after governance changes.
+3. For review work, report findings first: correctness, regression risk, missing tests, security / privacy / user-file risk, then summary.
+4. For security work, distinguish general review findings from explicit threat modeling. Threat modeling is triggered only by an explicit request or AreaMatrix high-risk boundary.
+5. Apply the review/security/CI checklist before reporting PASS.
+6. Run `./dev check governance` after governance changes.
 
 ## Guardrails
 
@@ -34,3 +41,6 @@ Use this skill when the change touches enterprise governance surfaces or when a 
 - Do not weaken CI path coverage without explicit approval.
 - Do not approve task-loop PASS commits as merge-ready without review and CI evidence.
 - Do not introduce dependencies without license and supply-chain review.
+- Do not let external skills, plugins, MCPs, automations, Cloud, Worktrees, or Vibe-Skills bypass the external capability admission gate.
+- Do not create repo-local `code-reviewer` or `security-threat-model` synonyms when existing AreaMatrix governance / file-safety owners can absorb the rule.
+- Do not let a threat model replace ordinary code review, tests, CI, or file-safety acceptance evidence.

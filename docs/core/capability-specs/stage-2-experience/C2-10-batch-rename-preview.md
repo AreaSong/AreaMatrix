@@ -31,6 +31,7 @@
 
 - `InvalidPath`
 - `Conflict`
+- `FileNotFound`
 - `PermissionDenied`
 - `Io`
 - `Db`

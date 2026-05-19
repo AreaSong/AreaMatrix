@@ -1,0 +1,37 @@
+一、执行结论
+
+- 未完成。
+- 原因：`./dev check task 4-1/task-70` 失败，卡在 `cargo fmt --all -- --check`。按规则不能宣称 C2-14 已可作为后续 UI 接入的真实 Core 依赖。
+
+二、执行范围
+
+- 单任务：`4-1/task-70`
+- 修改文件清单：无。本轮按只读验收执行，没有修改产品实现、测试或 `apps/**`。
+- 备注：工作树开始前已有 `.codex/task-loop-runs/.../summary.json` 与 `tasks/prompts/_shared/progress.json` 本地变更，我未触碰或回滚。
+
+三、完成情况
+
+- 核对 1：capability spec、Core API、UDL、Rust 实现和测试已交叉检查；发现验证门禁失败。
+- 核对 2：S2-18 主要消费状态已覆盖：影响数量、样例、冲突、Index-only、Missing、warning、can_apply / blocked reason。另有边界疑点：S2-18 描述了删除 keyword / extension / category 的影响预览，但 C2-14 API 当前只接收 `ClassifierRule` 草稿，未能证明删除预览语义已被 Core 合同覆盖。
+- 核对 3：未发现 Core 实现保存规则、apply、Undo、C2-15 编辑或 app 接入等 control map 外能力。
+- 核对 4：未修改文件。
+- Forbidden Touches：未触碰 `apps/**`。
+
+四、工程质量
+
+- Rust 结构整体清晰：`core/src/api.rs` 暴露入口，`core/src/classifier_impact.rs` 负责只读预览，DB 查询使用 read-only 连接。
+- 关键 side effect 边界有测试快照覆盖，未发现 mock-only 或硬编码通过态。
+- 工程质量阻塞：格式化不合规，位置在 [classifier_impact_preview_validation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/classifier_impact_preview_validation.rs:69) 和 [classifier_impact_preview_validation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/classifier_impact_preview_validation.rs:248)。
+- 文档/合同风险：S2-18 删除预览需求见 [S2-18-classifier-impact-preview.md](/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-2-experience/S2-18-classifier-impact-preview.md:40)，但 Core API 当前入口是 [core-api.md](/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:2623) / [area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:125)。
+
+五、验证情况
+
+- 已运行：`./dev check task 4-1/task-70`
+- 通过：`prompt_pipeline.py doctor`，显示 `637` tasks / `637` manifests / `633` high risk tasks；`git diff --check` 通过。
+- 失败：`cargo fmt --all -- --check`，指出 `core/tests/classifier_impact_preview_validation.rs` 两处需要 rustfmt。
+- 未运行完成：clippy 和后续 targeted tests 因 fmt 失败未继续执行。
+
+六、风险与后续
+
+- 剩余风险：C2-14 后续 UI 接入被阻塞，至少需要先修复 rustfmt；删除预览语义还需要明确是扩展 C2-14 合同，还是在 C2-15 / S2-19 页面任务中划清边界。
+- 建议下一个任务：先对 `core/tests/classifier_impact_preview_validation.rs` 执行格式化修复并重跑 `./dev check task 4-1/task-70`；随后处理 S2-18 删除预览与 C2-14 API 的源事实边界。  

@@ -1,0 +1,45 @@
+一、执行结论
+
+已完成。
+
+二、执行范围
+
+单任务：`4-1/task-63`，只改动允许范围：
+
+- [classifier_rules.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/classifier_rules.rs:377)
+- [classifier_rule_save_failure_recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/classifier_rule_save_failure_recovery.rs:1)
+
+未触碰 `apps/**`。工作树里已有的 `.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json` 是既有运行状态变更，我未修改或回滚。
+
+三、完成情况
+
+核对清单均已覆盖：
+
+- 空态、非法输入、权限、IO/DB 错误和错误码映射：新增 6 个 C2-13 failure recovery 测试覆盖。
+- 写入失败不留半成品：测试断言原始 `classifier.yaml` 保持、用户可见文件不变、无 `.classifier.yaml.*.tmp` 残留。
+- 隐私/AI/远程调用：C2-13 不接收密钥、不调用 AI/network；测试断言未创建 AI/network 相关 artifact。
+- 不吞错：原子写入失败时临时文件清理错误会显式返回，成功 rename 后目录 sync 错误也会传播。
+
+四、工程质量
+
+实现保持在现有 `classifier_rules` 模块内，没有引入新依赖、mock-only、硬编码通过态或相邻能力。新增测试是针对真实 API 的集成测试，覆盖配置校验、权限、IO、DB、用户文件安全和隐私边界。
+
+五、验证情况
+
+已通过：
+
+- `cd core && cargo fmt --all`
+- `cd core && cargo fmt --all -- --check`
+- `cd core && cargo test --test classifier_rule_save_failure_recovery -- --nocapture`：6 passed
+- `./dev check task 4-1/task-63`：通过
+  - prompt doctor OK
+  - diff check OK
+  - `classifier_rule_save_contract_api`：4 passed
+  - `classifier_rule_save_failure_recovery`：6 passed
+  - `classifier_rule_save_implementation`：5 passed
+
+未运行全量 `cargo test --workspace` / clippy / `./dev check all`，因为本 task 明确要求普通 atomic Core task 只运行 `./dev check task 4-1/task-63`。
+
+六、风险与后续
+
+剩余风险：权限测试在 Unix 下会先探测当前环境是否真的能产生 `PermissionDenied`，若运行用户权限绕过目录写权限则会安全跳过该断言路径；本次环境中该测试已实际通过。建议下一个任务按队列继续 `4-1/task-64`，做 C2-13 validation 收口。  

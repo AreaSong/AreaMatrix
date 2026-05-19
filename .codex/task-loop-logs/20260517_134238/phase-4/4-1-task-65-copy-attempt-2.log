@@ -1,0 +1,13 @@
+已完成 `4-1/task-65` repair retry。
+
+本轮修复了两个阻塞点：给 C2-13 `ClassifierRule` 合同补上 `preview_confirmed`，让 S2-17/S2-18 预览确认后的 `Save rule only` 可以真实保存 extension-only 规则；同时保留未预览时的过宽规则阻止逻辑。同步更新了 Core API 文档、UDL、Rust 实现和 C2-13 相关测试。未触碰 `apps/**`。
+
+验证已通过：
+
+```bash
+./dev check task 4-1/task-65
+```
+
+结果包括：prompt doctor OK、git diff check OK、`cargo fmt --all -- --check` OK、`cargo clippy --all-targets --all-features -- -D warnings` OK，且 `classifier_rule_save_contract_api`、`failure_recovery`、`implementation`、`validation` 四个 targeted test binaries 全部通过。
+
+当前剩余风险：这只证明 C2-13 Core 能力可作为后续 S2-17/S2-18 UI 接入依赖，不包含 SwiftUI 页面实现或真实 UI 验证；下一步建议继续队列进入依赖它的 page-feature task。工作树里原本已有的 task-loop evidence/progress 脏改动仍保留，我没有回退。  

@@ -3,11 +3,20 @@
 use std::path::PathBuf;
 
 use crate::{
-    classify, db, icloud_conflicts, note, recovery, repair, repo_init, repo_path, repo_scan,
-    storage, sync, tree, ChangeFilter, ChangeLogEntry, ClassifyResult, CoreError, CoreResult,
-    DiagnosticsSnapshot, ExternalEvent, FileEntry, FileFilter, ICloudConflictPair, ImportOptions,
+    batch_category, batch_delete, batch_rename as batch_rename_mod, classifier_correction,
+    classifier_impact, classifier_rule_editor, classifier_rules, classify, db, icloud_conflicts,
+    import_conflict_batch, note, recovery, repair, repo_init, repo_path, repo_scan, storage, sync,
+    tree, BatchCategoryChangeReport, BatchCategoryPreviewReport, BatchDeleteMode,
+    BatchDeletePreviewReport, BatchDeleteReport, BatchRenamePreviewReport, BatchRenameReport,
+    BatchRenameRule, ChangeFilter, ChangeLogEntry, ClassifierCorrectionResult,
+    ClassifierImpactPreviewRequest, ClassifierRule, ClassifierRuleCreateRequest,
+    ClassifierRuleDeleteRequest, ClassifierRuleEditorSnapshot, ClassifierRuleUpdate,
+    ClassifyResult, CoreError, CoreResult, DiagnosticsSnapshot, ExternalEvent, FileEntry,
+    FileFilter, ICloudConflictPair, ICloudConflictPreviewReport, ICloudConflictResolution,
+    ICloudConflictResolveReport, ImportConflictBatchApplyReport, ImportConflictBatchApplyRequest,
+    ImportConflictBatchPreviewReport, ImportConflictBatchPreviewRequest, ImportOptions,
     MoveToCategoryPreview, RecoveryReport, ReindexReport, RepairOptions, RepairReport, RepoConfig,
-    RepoInitOptions, RepoPathValidation, ScanSession, SyncResult,
+    RepoInitOptions, RepoPathValidation, RuleImpactReport, ScanSession, SyncResult,
 };
 
 fn not_implemented<T>() -> CoreResult<T> {
@@ -507,6 +516,341 @@ pub fn move_to_category(
     storage::move_to_category(repo_path, file_id, new_category)
 }
 
+/// Previews a C2-08 batch category change for S2-12 without side effects.
+///
+/// The report gives Swift enough state to show selected-file category
+/// distribution, per-file target paths, metadata-only rows, skipped rows,
+/// blocked rows, and whether Apply can be enabled. `move_repo_owned_files`
+/// controls whether repository-owned `Copied` and `Moved` files are planned as
+/// filesystem moves; Indexed rows must remain metadata-only either way.
+///
+/// This preview must not create category folders, move files, update `files`,
+/// write `change_log`, create undo actions, update generated overviews, call AI
+/// providers, or touch user file contents.
+///
+/// # Errors
+///
+/// Returns `CoreError::Classify { reason }` for invalid target categories,
+/// `CoreError::FileNotFound { path }` for empty or invalid selections,
+/// `CoreError::PermissionDenied { path }` for blocked metadata or filesystem
+/// inspection, `CoreError::Io { message }` for preview filesystem failures,
+/// and `CoreError::Db { message }` for metadata reads.
+pub fn preview_batch_move_to_category(
+    repo_path: String,
+    file_ids: Vec<i64>,
+    target_category: String,
+    move_repo_owned_files: bool,
+) -> CoreResult<BatchCategoryPreviewReport> {
+    batch_category::preview_batch_move_to_category(
+        repo_path,
+        file_ids,
+        target_category,
+        move_repo_owned_files,
+    )
+}
+
+/// Applies a previously previewed C2-08 batch category change.
+///
+/// `preview_token` binds Apply to the latest preview for the same selection,
+/// target category, move option, and inspected state. Successful rows update
+/// `files.category`, optionally update `files.path` for repository-owned
+/// files, write `change_log`, and create a C2-07 undo action token. Partial
+/// failures must be represented per item rather than silently treated as
+/// success.
+///
+/// The operation is limited to C2-08. It must not create new categories,
+/// implement classifier rule editing, delete or trash files, rename unrelated
+/// files, save searches, retag files, call AI/network providers, or touch
+/// `apps/**`.
+///
+/// # Errors
+///
+/// Returns `CoreError::Classify { reason }` for invalid target categories,
+/// `CoreError::Conflict { path }` for stale previews or unsafe target
+/// conflicts, `CoreError::FileNotFound { path }` for invalid selections,
+/// `CoreError::PermissionDenied { path }` for blocked filesystem or metadata
+/// writes, `CoreError::Io { message }` for file moves, and
+/// `CoreError::Db { message }` for metadata, change-log, or undo writes.
+pub fn batch_move_to_category(
+    repo_path: String,
+    file_ids: Vec<i64>,
+    target_category: String,
+    move_repo_owned_files: bool,
+    preview_token: String,
+) -> CoreResult<BatchCategoryChangeReport> {
+    batch_category::batch_move_to_category(
+        repo_path,
+        file_ids,
+        target_category,
+        move_repo_owned_files,
+        preview_token,
+    )
+}
+
+/// Previews a C2-09 batch delete operation without side effects.
+///
+/// S2-13 uses this contract to display selected-file impact before enabling a
+/// destructive button: repository-owned rows that can move to Trash,
+/// index-only or missing rows that can be removed from metadata, blocked rows,
+/// Trash availability, and Undo availability. The preview must not move files,
+/// remove index rows, write metadata, create undo actions, or touch `apps/**`.
+///
+/// # Errors
+///
+/// Returns `CoreError::FileNotFound { path }` for empty selections or invalid
+/// file ids, `CoreError::PermissionDenied { path }` when Trash or metadata
+/// inspection is blocked, `CoreError::Io { message }` for filesystem preview
+/// failures, and `CoreError::Db { message }` for metadata reads.
+pub fn preview_batch_delete(
+    repo_path: String,
+    file_ids: Vec<i64>,
+    delete_mode: BatchDeleteMode,
+) -> CoreResult<BatchDeletePreviewReport> {
+    batch_delete::preview_batch_delete(repo_path, file_ids, delete_mode)
+}
+
+/// Applies C2-09 batch deletion for the mode confirmed by S2-13.
+///
+/// `preview_token` must come from the last confirmed C2-09 preview for the
+/// same selection, delete mode, Trash availability, and inspected file state.
+/// `MoveToTrash` handles only repository-owned files and must never perform
+/// permanent deletion. `RemoveFromIndex` handles index-only or missing rows
+/// without touching external source files. Successful writes report per-item
+/// status, update metadata/change log, and return an Undo token when C2-07 can
+/// reverse the operation.
+///
+/// # Errors
+///
+/// Returns `CoreError::FileNotFound { path }` for empty selections or invalid
+/// ids, `CoreError::Conflict { path }` when Apply is not bound to the current
+/// preview state, `CoreError::PermissionDenied { path }` when Trash or metadata
+/// writes are blocked, `CoreError::Io { message }` for Trash or filesystem
+/// failures, and `CoreError::Db { message }` for metadata, change-log, or undo
+/// writes.
+pub fn batch_delete_to_trash(
+    repo_path: String,
+    file_ids: Vec<i64>,
+    delete_mode: BatchDeleteMode,
+    preview_token: String,
+) -> CoreResult<BatchDeleteReport> {
+    batch_delete::batch_delete_to_trash(repo_path, file_ids, delete_mode, preview_token)
+}
+
+/// Previews a C2-10 batch rename operation without side effects.
+///
+/// S2-14 uses this contract to display each selected row's original name,
+/// generated new name, blocking status, index-only display-name behavior,
+/// conflicts, and whether Apply can be enabled. `file_ids` order represents
+/// the current list order and is part of the preview state for sequence naming.
+/// The preview must not rename files, update metadata, write change log, create
+/// undo actions, change extensions, delete or Trash files, or touch `apps/**`.
+///
+/// # Errors
+///
+/// Returns `CoreError::InvalidPath { path }` for invalid repo paths or rename
+/// rules, `CoreError::FileNotFound { path }` for empty selections or invalid
+/// file ids, `CoreError::Conflict { path }` when a conflict cannot be returned
+/// as row state, `CoreError::PermissionDenied { path }` for blocked metadata or
+/// filesystem inspection, `CoreError::Io { message }` for preview filesystem
+/// failures, and `CoreError::Db { message }` for metadata reads.
+pub fn preview_batch_rename(
+    repo_path: String,
+    file_ids: Vec<i64>,
+    rule: BatchRenameRule,
+) -> CoreResult<BatchRenamePreviewReport> {
+    batch_rename_mod::preview_batch_rename(repo_path, file_ids, rule)
+}
+
+/// Applies a previously previewed C2-10 batch rename operation.
+///
+/// `preview_token` must come from the last C2-10 preview for the same
+/// selection order, rename rule, and inspected file state. Successful rows
+/// rename repository-owned files or update index-only display names, update
+/// metadata, write change-log rows, and return a C2-07 undo token when Undo can
+/// reverse the operation.
+///
+/// This operation is limited to C2-10. It must not implement AI naming, change
+/// file extensions, overwrite existing files, delete or Trash files,
+/// recategorize files, retag files, save searches, reindex, call AI/network
+/// providers, or touch `apps/**`.
+///
+/// # Errors
+///
+/// Returns `CoreError::InvalidPath { path }` for invalid repo paths or rename
+/// rules, `CoreError::Conflict { path }` for stale previews or unsafe target
+/// conflicts, `CoreError::FileNotFound { path }` for invalid selections,
+/// `CoreError::PermissionDenied { path }` for blocked filesystem or metadata
+/// writes, `CoreError::Io { message }` for rename failures, and
+/// `CoreError::Db { message }` for metadata, change-log, or undo writes.
+pub fn batch_rename(
+    repo_path: String,
+    file_ids: Vec<i64>,
+    rule: BatchRenameRule,
+    preview_token: String,
+) -> CoreResult<BatchRenameReport> {
+    batch_rename_mod::batch_rename(repo_path, file_ids, rule, preview_token)
+}
+
+/// Applies one C2-12 classifier correction for S2-16.
+///
+/// The correction changes one active file's category and optionally moves a
+/// repo-managed file when `move_file` is true. `remember` only asks Core to
+/// return a rule draft handoff for S2-17/S2-18; this entry point must not save
+/// classifier rules, preview broad rule impact, create categories, call AI or
+/// network providers, or implement adjacent C2-13/C2-14/C2-15 behavior.
+///
+/// # Errors
+///
+/// Returns `CoreError::Classify { reason }` when the target category is invalid
+/// or unavailable, `CoreError::Conflict { path }` when a safe target path
+/// cannot be resolved, `CoreError::Io { message }` for file moves, and
+/// `CoreError::Db { message }` for metadata or change-log failures.
+pub fn correct_file_category(
+    repo_path: String,
+    file_id: i64,
+    category: String,
+    move_file: bool,
+    remember: bool,
+) -> CoreResult<ClassifierCorrectionResult> {
+    classifier_correction::correct_file_category(repo_path, file_id, category, move_file, remember)
+}
+
+/// Saves one C2-13 classifier rule for future classification.
+///
+/// S2-17 uses this contract after the user chooses keyword and extension
+/// basis values from a classifier-correction draft. The input rule maps only to
+/// supported classifier configuration fields: target category, independent
+/// keyword matches, independent extension matches, priority, and whether the
+/// required impact preview has already been confirmed. Extensions must be
+/// lowercase values without a leading dot.
+///
+/// This contract does not create categories, model compound AND rules, preview
+/// impact, apply the rule to historical files, reclassify or move files, call
+/// AI/network providers, or touch `apps/**`. Successful saves atomically update
+/// the repository classifier configuration for future classification only.
+///
+/// # Errors
+///
+/// Returns `CoreError::Config { reason }` for invalid repository paths, target
+/// categories, empty rule basis, duplicate/invalid keywords, dotted or invalid
+/// extensions, out-of-range priority, malformed classifier configuration, or a
+/// duplicate/over-broad rule that still lacks preview confirmation. Returns
+/// `CoreError::PermissionDenied { path }` for blocked metadata writes and
+/// `CoreError::Io { message }` for classifier configuration read or atomic
+/// write failures.
+pub fn save_classifier_rule(repo_path: String, rule: ClassifierRule) -> CoreResult<ClassifierRule> {
+    classifier_rules::save_classifier_rule(repo_path, rule)
+}
+
+/// Previews C2-14 classifier rule impact for S2-18.
+///
+/// The contract accepts one explicit preview request and returns counts, sample
+/// rows, conflicts, needs-review state, broad-impact warning state, and direct
+/// apply availability. It is read-only: it may inspect classifier config and
+/// file metadata, but it must not save the rule, apply it to existing files,
+/// move files, write undo/change-log state, or implement C2-15 rule editing.
+///
+/// # Errors
+///
+/// Returns `CoreError::Config { reason }` for invalid repository paths,
+/// invalid classifier rule drafts, invalid delete requests, or invalid
+/// replacement categories. Returns `CoreError::Db { message }` when classifier
+/// impact metadata cannot be read.
+pub fn preview_classifier_rule_impact(
+    repo_path: String,
+    request: ClassifierImpactPreviewRequest,
+) -> CoreResult<RuleImpactReport> {
+    classifier_impact::preview_classifier_rule_impact(repo_path, request)
+}
+
+/// Lists C2-15 classifier rule editor state for S2-19.
+///
+/// S2-19 uses this contract to load current classifier categories, matcher
+/// values, priority, naming template, and default-category state. The returned
+/// snapshot is sufficient for loading, empty, dirty, validation, save/revert,
+/// and delete-disabled UI states without reading YAML in the app layer.
+///
+/// This contract does not preview rule impact, save rules, delete categories,
+/// reclassify or move existing files, open YAML, call AI/network providers, or
+/// touch `apps/**`.
+///
+/// # Errors
+///
+/// Returns `CoreError::Config { reason }` for invalid repository paths or
+/// malformed classifier configuration, `CoreError::PermissionDenied { path }`
+/// for blocked classifier metadata reads, and `CoreError::Io { message }` for
+/// classifier config read failures.
+pub fn list_classifier_rules(repo_path: String) -> CoreResult<ClassifierRuleEditorSnapshot> {
+    classifier_rule_editor::list_classifier_rules(repo_path)
+}
+
+/// Creates one C2-15 classifier editor row for future classification.
+///
+/// The create request carries a new slug, display metadata, extensions,
+/// keywords, priority, and naming template. A successful implementation may
+/// atomically update `.areamatrix/classifier.yaml` or equivalent classifier
+/// metadata only. It must not move, delete, rename, reindex, retag, write
+/// notes, update generated overviews, write undo state, or apply classifier
+/// changes to historical files.
+///
+/// # Errors
+///
+/// Returns `CoreError::Config { reason }` for invalid row content, duplicate
+/// slugs or matcher values, or malformed classifier configuration. Returns
+/// `CoreError::PermissionDenied { path }` for blocked classifier metadata
+/// writes and `CoreError::Io { message }` for read, backup, atomic write, or
+/// restore failures.
+pub fn create_classifier_rule(
+    repo_path: String,
+    request: ClassifierRuleCreateRequest,
+) -> CoreResult<ClassifierRuleEditorSnapshot> {
+    classifier_rule_editor::create_classifier_rule(repo_path, request)
+}
+
+/// Updates one C2-15 classifier editor row for future classification.
+///
+/// The update request carries one stable `rule_id` plus replacement slug,
+/// display metadata, extensions, keywords, priority, and naming template. A
+/// successful implementation may atomically update `.areamatrix/classifier.yaml`
+/// or equivalent classifier metadata only. It must not move, delete, rename,
+/// reindex, retag, write notes, update generated overviews, write undo state,
+/// or apply classifier changes to historical files.
+///
+/// # Errors
+///
+/// Returns `CoreError::Config { reason }` for invalid ids, row content,
+/// duplicate slugs or matcher values, missing impact preview confirmation, or
+/// malformed classifier configuration. Returns `CoreError::PermissionDenied {
+/// path }` for blocked classifier metadata writes and `CoreError::Io {
+/// message }` for read, backup, atomic write, or restore failures.
+pub fn update_classifier_rule(
+    repo_path: String,
+    request: ClassifierRuleUpdate,
+) -> CoreResult<ClassifierRuleEditorSnapshot> {
+    classifier_rule_editor::update_classifier_rule(repo_path, request)
+}
+
+/// Deletes one C2-15 classifier editor row after explicit impact confirmation.
+///
+/// Delete removes only classifier configuration state. It must reject deletion
+/// of the default category, the final category, and unpreviewed category/value
+/// removals. Existing files are not moved, deleted, renamed, trashed, or
+/// reclassified by this contract.
+///
+/// # Errors
+///
+/// Returns `CoreError::Config { reason }` for invalid ids, protected category
+/// deletion, missing replacement state, missing impact preview confirmation, or
+/// malformed classifier configuration. Returns `CoreError::PermissionDenied {
+/// path }` for blocked classifier metadata writes and `CoreError::Io {
+/// message }` for read, backup, atomic write, or restore failures.
+pub fn delete_classifier_rule(
+    repo_path: String,
+    request: ClassifierRuleDeleteRequest,
+) -> CoreResult<ClassifierRuleEditorSnapshot> {
+    classifier_rule_editor::delete_classifier_rule(repo_path, request)
+}
+
 /// Restores a deleted file entry.
 pub fn restore_file(_repo_path: String, _file_id: i64) -> CoreResult<FileEntry> {
     not_implemented()
@@ -624,6 +968,126 @@ pub fn list_tree_json(repo_path: String, locale: String) -> CoreResult<String> {
 /// `CoreError::Db { message }` for optional conflict-state reads.
 pub fn list_icloud_conflicts(repo_path: String) -> CoreResult<Vec<ICloudConflictPair>> {
     icloud_conflicts::list_icloud_conflicts(repo_path)
+}
+
+/// Previews C2-16 iCloud conflict versions without resolving the conflict.
+///
+/// S2-20 uses this contract after selecting one conflict id from
+/// [`list_icloud_conflicts`]. The preview returns version metadata, optional
+/// Core-computed preview summaries, the safe default resolution, and per-choice
+/// enablement for Keep both, Keep original, and Keep conflicted copy.
+/// Destructive choices must be disabled when metadata is incomplete, Trash is
+/// unavailable, the repository is read-only, or a version is still an iCloud
+/// placeholder.
+///
+/// This API is a contract entry point for the later implementation task. It
+/// must remain read-only: it must not mark conflicts resolved, move files to
+/// Trash, write change log entries, create undo actions, trigger iCloud
+/// downloads, or touch `apps/**`.
+///
+/// # Errors
+///
+/// Returns `CoreError::ICloudPlaceholder { path }` when required metadata or a
+/// conflict version is still an iCloud placeholder, `CoreError::PermissionDenied
+/// { path }` when version metadata or conflict state cannot be inspected,
+/// `CoreError::Conflict { path }` when the conflict id is stale or cannot be
+/// bound safely, `CoreError::Io { message }` for filesystem preview failures,
+/// and `CoreError::Db { message }` for conflict-state metadata reads.
+pub fn preview_conflict_versions(
+    repo_path: String,
+    conflict_id: String,
+) -> CoreResult<ICloudConflictPreviewReport> {
+    icloud_conflicts::preview_conflict_versions(repo_path, conflict_id)
+}
+
+/// Resolves one C2-16 iCloud conflict after explicit user confirmation.
+///
+/// `resolution` is limited to the previewed C2-16 choices. `KeepBoth` must keep
+/// every version and only mark the conflict resolved or acknowledged. `KeepOriginal`
+/// and `KeepConflictedCopy` may move only the unkept paired version to system
+/// Trash after the UI completed destructive confirmation. A successful write
+/// records conflict state and change log metadata, and returns an undo token
+/// when Trash-based undo is available.
+///
+/// This contract does not replace import-conflict handling, batch delete,
+/// generic sync conflicts, QuickLook rendering, platform download coordination,
+/// or any page ability outside S2-20 / S1-36 consumption.
+///
+/// # Errors
+///
+/// Returns `CoreError::ICloudPlaceholder { path }` when a required version is
+/// still unavailable, `CoreError::PermissionDenied { path }` for Trash,
+/// metadata, or conflict-state write failures, `CoreError::Conflict { path }`
+/// when the conflict changed since preview or the requested resolution is no
+/// longer safe, `CoreError::Io { message }` for Trash or rollback failures, and
+/// `CoreError::Db { message }` for conflict state, change log, or undo writes.
+/// On any failure the conflict must remain unresolved and no version may be
+/// silently deleted.
+pub fn resolve_icloud_conflict(
+    repo_path: String,
+    conflict_id: String,
+    resolution: ICloudConflictResolution,
+) -> CoreResult<ICloudConflictResolveReport> {
+    icloud_conflicts::resolve_icloud_conflict(repo_path, conflict_id, resolution)
+}
+
+/// Previews C2-17 import conflict batch decisions without mutating staging or files.
+///
+/// S2-21 uses this contract after a batch import session has accumulated hash
+/// duplicate or same-name different-content conflicts. The preview returns row
+/// status, selected strategy, Replace risk, Trash/undo availability, pending
+/// rows, and the `preview_token` required by [`apply_import_conflict_batch`].
+/// Default-safe strategies are `Skip` for duplicate hashes and `KeepBoth` for
+/// same-name different-content conflicts.
+///
+/// This contract is read-only. It must not write import session decisions,
+/// promote staged files, move files to Trash, replace existing files, write
+/// change log rows, create undo actions, trigger iCloud downloads, call AI or
+/// network providers, or touch `apps/**`.
+///
+/// # Errors
+///
+/// Returns `CoreError::FileNotFound { path }` for empty import sessions or
+/// conflict selections, `CoreError::PermissionDenied { path }` for blocked
+/// metadata or staging inspection, `CoreError::StagingRecoveryRequired { path }`
+/// when unresolved staging residue must be repaired first, `CoreError::Io {
+/// message }` for filesystem preview failures, and `CoreError::Db { message }`
+/// for import-session metadata reads.
+pub fn preview_import_conflict_batch(
+    repo_path: String,
+    request: ImportConflictBatchPreviewRequest,
+) -> CoreResult<ImportConflictBatchPreviewReport> {
+    import_conflict_batch::preview_import_conflict_batch(repo_path, request)
+}
+
+/// Applies C2-17 import conflict batch decisions after explicit confirmation.
+///
+/// `preview_token` must come from [`preview_import_conflict_batch`] for the same
+/// import session, conflict scope, strategies, Trash availability, and inspected
+/// staging state. Replace rows require S2-21's second-confirmation sheet before
+/// any write is allowed. Failed rows must keep staged files and unresolved
+/// conflict state so the user can retry or route them to per-item handling.
+///
+/// This contract does not implement iCloud conflict resolution, generic sync
+/// conflicts, classifier rule changes, batch delete/rename/category actions,
+/// or any page ability outside S2-21 / C2-07 consumption.
+///
+/// # Errors
+///
+/// Returns `CoreError::FileNotFound { path }` for empty import sessions or
+/// conflict selections, `CoreError::Conflict { path }` for missing/stale
+/// preview tokens or missing Replace confirmation, `CoreError::PermissionDenied
+/// { path }` for blocked staging, Trash, metadata, change-log, or undo writes,
+/// `CoreError::StagingRecoveryRequired { path }` when recovery must run before
+/// Apply, `CoreError::Io { message }` for filesystem or rollback failures, and
+/// `CoreError::Db { message }` for import-session, file, change-log, or undo
+/// writes.
+pub fn apply_import_conflict_batch(
+    repo_path: String,
+    request: ImportConflictBatchApplyRequest,
+    preview_token: String,
+) -> CoreResult<ImportConflictBatchApplyReport> {
+    import_conflict_batch::apply_import_conflict_batch(repo_path, request, preview_token)
 }
 
 /// Reads the markdown note associated with one active file entry.

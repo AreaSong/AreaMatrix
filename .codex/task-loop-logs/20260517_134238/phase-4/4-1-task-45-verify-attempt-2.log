@@ -1,0 +1,69 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`4-1/task-45`
+- 对应文件路径：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-45-c2-09-integration-verify.md`
+- 核查范围：Exact Docs、`core/src/**`、`core/area_matrix.udl`、`core/tests/**`
+- Forbidden Touches：`apps/**`
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：1
+- 通过项数：3
+- 不通过项数：1
+- 阻塞项数：1
+
+四、逐项验收结果
+
+- 项目：交叉检查 capability spec、Core API、UDL、Rust 实现和测试
+- 结果：不通过
+- 证据：API/UDL/测试存在，`./dev check task 4-1/task-45` 通过；但实现未覆盖文档要求的只读文件 blocked 状态。`S2-13` 要求只读文件列为 blocked，Core API 也把只读计入 `blocked_count`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-2-experience/S2-13-batch-delete-confirm.md:51`、`:84`；`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:2030`
+
+- 项目：确认消费页面需要的状态、错误和副作用均已覆盖
+- 结果：不通过
+- 证据：`core/src/batch_delete/inspect.rs:96-99` 已读取 `readonly`，但 `core/src/batch_delete/plan/classify.rs:125-135` 对 repo-owned 文件只按 File/Missing/Other/Err 分类，`core/src/batch_delete/plan/classify.rs:74-78` 直接把普通 File 变成 `MoveToTrash`，没有把 readonly 转成 `Blocked`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/batch_delete/inspect.rs:96`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/batch_delete/plan/classify.rs:74`
+
+- 项目：确认没有实现 control map 之外的能力
+- 结果：通过
+- 证据：control map 中 `S2-13` 绑定 `C2-09, C2-07`；本 task 实现集中在 C2-09 batch delete，C2-07 仅通过 `undo_token`/`undo_actions` 消费，不新增页面能力。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-2-control-map.md:21`
+
+- 项目：不得修改文件，只记录验收证据和阻塞项
+- 结果：通过
+- 证据：本轮验收未修改文件；当前已有脏改动集中在 C2-09 相关 core/docs/tests 和 task-loop evidence，`git status --short -- apps` 无输出，未触碰 `apps/**`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过，核心分类逻辑未把已检查出的 readonly 状态转成业务 blocked 状态。
+- 注释 / rustdoc / 文档同步：通过，public API 有 rustdoc，Core API/UDL/C2-09 文档主体已对齐。
+- 错误处理与边界处理：不通过，Read-only 边界未按 UX/Core API 暴露为 blocked/excluded。
+- 测试与验证覆盖：不通过，现有测试覆盖 Trash 不可用、blocked directory、permission、preview drift、rollback，但未发现 read-only blocked 覆盖。
+- 占位、硬编码、mock-only、一次性实现检查：通过，未发现 mock-only 或硬编码通过态；阻塞点是边界遗漏。
+
+六、阻塞项
+
+- P0：Read-only 文件未作为 blocked/excluded 暴露
+  说明：`S2-13` 明确要求文件预览显示 `Read-only`，且“只读、权限不足、外部已变化或 Trash 不可用的文件列为 blocked，默认不处理”。当前实现读取了 readonly 元数据，但分类逻辑没有使用该字段，repo-owned 只读文件会被规划为 `MoveToTrash`。
+  绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/core/src/batch_delete/plan/classify.rs:74`
+  文档证据：`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-2-experience/S2-13-batch-delete-confirm.md:84`
+  为什么导致不通过：消费页面需要用 Core preview 区分 Read-only blocked 行，否则后续 UI 无法可靠展示 processed/excluded/blocked 数量和禁用/排除语义，C2-09 不能作为真实 UI 依赖。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-45`
+- 通过：prompt doctor、`git diff --check`、`cargo fmt --all -- --check`、`cargo clippy --all-targets --all-features -- -D warnings`、4 个 C2-09 targeted test binaries，合计 19 个测试通过。
+- 失败：无命令失败。
+- 缺失：验证命令没有覆盖 read-only blocked 场景；因此命令通过不能覆盖本次文档一致性阻塞。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。C2-09 暂不能作为后续 `S2-13` page-feature task 的真实 Core 依赖，需先补齐 read-only blocked/excluded 语义及对应测试。
+
+VERIFY_RESULT: FAIL

@@ -1,0 +1,65 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-1/task-54`
+- Task 文件：[task-54-c2-11-validation.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-54-c2-11-validation.md:21)
+- Manifest 章节：[phase-4.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-4.md:1578)
+- 主要代码 / 测试：[command_index.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/command_index.rs:127)、[area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:150)、[command_index_validation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/command_index_validation.rs:247)
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：0
+- 通过项数：10
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：补齐成功 / 失败路径测试
+- 结果：通过
+- 证据：新增 `command_index_validation` 覆盖 UI-ready 成功路径、确认边界、失败输入和无写入快照；验证命令实际运行 4 个 validation tests 全通过。
+- 涉及文件：[command_index_validation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/command_index_validation.rs:247)
+
+- 项目：Core API / UDL / Rust 一致
+- 结果：通过
+- 证据：Core API、UDL、Rust 均为 `list_command_targets(repo_path, context) -> CommandIndex`，字段包含 commands、selection targets、recent、smart lists、file candidates、generated_at。
+- 涉及文件：[core-api.md](/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:1892)、[area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:391)、[command_index.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/command_index.rs:145)
+
+- 项目：不新增业务功能
+- 结果：通过
+- 证据：工作区本 task 范围内仅新增 `core/tests/command_index_validation.rs`；`core/src/**`、`core/area_matrix.udl` 当前无本轮业务实现 diff。
+- 涉及文件：[command_index_validation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/command_index_validation.rs:1)
+
+- 项目：Expected New Paths / Forbidden Touches
+- 结果：通过
+- 证据：`core/tests/**` 已落地；`git status --short apps core/src core/area_matrix.udl core/tests` 仅显示 `?? core/tests/command_index_validation.rs`；`git diff -- apps` 无输出。
+- 涉及文件：[phase-4.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-4.md:1592)
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。实现入口保持在 `list_command_targets`，registry/db 分层清晰，没有把执行动作塞进索引 API。
+- 注释 / rustdoc / 文档同步：通过。public Rust 类型与 API 有 rustdoc；Core API、UDL、能力规格、control map 有对应证据。
+- 错误处理与边界处理：通过。非法 repo path、非法 selection、非法 current_path、NUL query、未初始化 repo 均映射 `Db` 并验证无写入。
+- 测试与验证覆盖：通过。`./dev check task 4-1/task-54` 通过，包含 contract / failure / implementation / validation 四个 targeted test binaries。
+- 占位、硬编码、mock-only、一次性实现检查：通过。测试调用真实 `init_repo`、SQLite metadata、`list_command_targets`，不是 mock-only 闭环。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-54`
+- 通过：`prompt doctor`、`git diff --check`、`command_index_contract_api` 4 tests、`command_index_failure_recovery` 7 tests、`command_index_implementation` 4 tests、`command_index_validation` 4 tests。
+- 失败：无。
+- 缺失：无必需验证缺失；未运行 `./dev check all` / broad Core gate，因为当前 manifest 只要求 task-level validation。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。C2-11 已有足够测试证明可进入 UI 接入；manifest validation 已通过；未发现 Forbidden Touches、验证缺口或工程质量阻塞。
+VERIFY_RESULT: PASS
+

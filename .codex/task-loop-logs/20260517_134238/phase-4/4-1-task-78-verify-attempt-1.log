@@ -1,0 +1,76 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-1/task-78`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-78-c2-16-failure-edge.md`
+- 实际验收范围：`core/src/**`、`core/area_matrix.udl`、`core/tests/**`
+- Forbidden Touches：`apps/**` 未发现 diff
+
+三、完成度摘要
+
+- 已覆盖项数：6
+- 未覆盖项数：0
+- 通过项数：6
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：空态、非法输入、权限、IO/DB 错误和错误码映射
+- 结果：通过
+- 证据：空 repo path 返回 `InvalidPath`；非法 conflict id 返回 `Conflict`；placeholder 返回 `ICloudPlaceholder`；Trash/metadata 通过 `map_io_error` 映射权限/IO；DB 失败测试强制 `change_log` 写入失败并返回 `Db`。见 [paths.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/icloud_conflicts/paths.rs:17)、[paths.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/icloud_conflicts/paths.rs:144)、[icloud_conflict_visual_failure_recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/icloud_conflict_visual_failure_recovery.rs:128)、[icloud_conflict_visual_failure_recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/icloud_conflict_visual_failure_recovery.rs:392)
+- 涉及文件：`core/src/icloud_conflicts/paths.rs`、`core/tests/icloud_conflict_visual_failure_recovery.rs`
+
+- 项目：失败不留下半成品
+- 结果：通过
+- 证据：destructive resolve 先移入 Trash，DB 记录失败时 `TrashMoveGuard` 回滚；测试断言原始文件、冲突副本、Trash、change_log、undo_actions 都恢复到失败前状态。见 [resolve.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/icloud_conflicts/resolve.rs:42)、[resolve.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/icloud_conflicts/resolve.rs:64)、[icloud_conflict_visual_failure_recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/icloud_conflict_visual_failure_recovery.rs:275)
+- 涉及文件：`core/src/icloud_conflicts/resolve.rs`、`core/tests/icloud_conflict_visual_failure_recovery.rs`
+
+- 项目：隐私 / AI / 远程调用默认关闭、密钥不入日志
+- 结果：通过
+- 证据：C2-16 路径只做本地文件与 DB 操作；测试确认 `load_config` 后 `ai_enabled == false`，repo_config 中没有 `api_key` / `token` 类键。见 [icloud_conflict_visual_failure_recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/icloud_conflict_visual_failure_recovery.rs:424)
+- 涉及文件：`core/tests/icloud_conflict_visual_failure_recovery.rs`
+
+- 项目：不得吞错或静默降级
+- 结果：通过
+- 证据：preview/resolve 均返回 `CoreResult`，禁用 destructive resolution 时返回 `Conflict`；DB、IO、placeholder、权限错误显式传播。见 [icloud_conflicts.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/icloud_conflicts.rs:72)、[icloud_conflicts.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/icloud_conflicts.rs:95)、[preview.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/icloud_conflicts/preview.rs:31)
+- 涉及文件：`core/src/icloud_conflicts.rs`、`core/src/icloud_conflicts/preview.rs`
+
+- 项目：C2-16 失败路径有明确返回、可测试证据和用户文件安全保证
+- 结果：通过
+- 证据：UDL/API 暴露 `preview_conflict_versions` 与 `resolve_icloud_conflict`，测试覆盖 10 个 failure-edge 场景。见 [area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:224)、[area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:229)、[icloud_conflict_visual_failure_recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/icloud_conflict_visual_failure_recovery.rs:128)
+- 涉及文件：`core/area_matrix.udl`、`core/tests/icloud_conflict_visual_failure_recovery.rs`
+
+- 项目：高风险路径具备可回滚或可恢复说明
+- 结果：通过
+- 证据：destructive path 使用 Trash + rollback guard；DB 事务记录 change_log / undo action，失败回滚后可重试 KeepBoth。见 [db/icloud_conflicts.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/db/icloud_conflicts.rs:43)、[resolve.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/icloud_conflicts/resolve.rs:98)、[icloud_conflict_visual_failure_recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/icloud_conflict_visual_failure_recovery.rs:309)
+- 涉及文件：`core/src/db/icloud_conflicts.rs`、`core/src/icloud_conflicts/resolve.rs`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，C2-16 按 `paths` / `preview` / `resolve` / `db` 拆分，未发现单次脚本化实现。
+- 注释 / rustdoc / 文档同步：通过，public API、domain DTO 和 UDL 与 `docs/api/core-api.md` 对齐。
+- 错误处理与边界处理：通过，未发现吞错；高风险 Trash 路径有回滚 guard。
+- 测试与验证覆盖：通过，task-scoped 验证已新鲜运行。
+- 占位、硬编码、mock-only、一次性实现检查：通过，测试调用真实 Core API、真实 temp repo、真实 SQLite 和测试 Trash 目录。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-78`
+- 通过：prompt doctor、`git diff --check`、`cargo fmt --all -- --check`、`cargo clippy --all-targets --all-features -- -D warnings`
+- 通过：`cargo test --test icloud_conflict_visual_contract_api -- --nocapture`，4 passed
+- 通过：`cargo test --test icloud_conflict_visual_failure_recovery -- --nocapture`，10 passed
+- 通过：`cargo test --test icloud_conflict_visual_implementation -- --nocapture`，3 passed
+- 缺失：无。未运行 `./dev check all`，因为 manifest 只要求 `./dev check task 4-1/task-78`，且该命令已按 Mission-Critical widened Core quality gate 执行。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+VERIFY_RESULT: PASS

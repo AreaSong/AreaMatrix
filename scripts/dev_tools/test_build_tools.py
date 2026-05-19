@@ -8,6 +8,8 @@ from pathlib import Path
 from unittest.mock import patch
 
 from scripts.dev_tools import build, checks
+from scripts.task_loop import console
+from scripts.task_loop.runner import RuntimeConfig, TaskFile, TaskLoopRunner
 
 
 class BuildToolsTest(unittest.TestCase):
@@ -191,6 +193,271 @@ class BuildToolsTest(unittest.TestCase):
 
             self.assertEqual(calls, ["aarch64-apple-darwin", "x86_64-apple-darwin"])
             bindgen.assert_not_called()
+
+    def test_task_check_path_resolves_phase_task_label(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            task = root / "tasks/prompts/phase-4/4-1-stage2-experience/task-15-c2-03-integration-verify.md"
+            task.parent.mkdir(parents=True)
+            task.write_text("# 4-1/task-15\n", encoding="utf-8")
+
+            self.assertEqual(checks._task_path(root, "4-1/task-15"), task)
+
+    def test_task_check_maps_c2_03_to_saved_search_tests(self) -> None:
+        text = "Core ability C2-03 saved-search-crud"
+
+        self.assertEqual(
+            checks._core_task_test_commands(text),
+            [
+                ["cargo", "test", "--test", "saved_search_contract_api", "--", "--nocapture"],
+                ["cargo", "test", "--test", "saved_search_implementation", "--", "--nocapture"],
+                ["cargo", "test", "--test", "saved_search_failure_recovery", "--", "--nocapture"],
+                ["cargo", "test", "--test", "saved_search_validation", "--", "--nocapture"],
+            ],
+        )
+
+    def test_task_check_maps_c2_04_to_smart_list_tests(self) -> None:
+        text = "Core ability C2-04 smart-lists"
+
+        self.assertEqual(
+            checks._core_task_test_commands(text),
+            [
+                ["cargo", "test", "--test", "smart_list_contract_api", "--", "--nocapture"],
+                ["cargo", "test", "--test", "smart_list_implementation", "--", "--nocapture"],
+                ["cargo", "test", "--test", "smart_list_failure_recovery", "--", "--nocapture"],
+            ],
+        )
+
+    def test_task_check_discovers_capability_tests_from_spec_slug(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            spec_dir = root / "docs/core/capability-specs/stage-2-experience"
+            tests_dir = root / "core/tests"
+            spec_dir.mkdir(parents=True)
+            tests_dir.mkdir(parents=True)
+            (spec_dir / "C2-05-tag-crud.md").write_text("# C2-05 tag-crud\n", encoding="utf-8")
+            for name in [
+                "tag_crud_contract_api.rs",
+                "tag_crud_implementation.rs",
+                "tag_crud_failure_recovery.rs",
+            ]:
+                (tests_dir / name).write_text("// test\n", encoding="utf-8")
+
+            self.assertEqual(
+                checks._core_task_test_commands("Core ability C2-05 tag-crud", root),
+                [
+                    ["cargo", "test", "--test", "tag_crud_contract_api", "--", "--nocapture"],
+                    ["cargo", "test", "--test", "tag_crud_failure_recovery", "--", "--nocapture"],
+                    ["cargo", "test", "--test", "tag_crud_implementation", "--", "--nocapture"],
+                ],
+            )
+
+    def test_core_task_check_fails_when_no_targeted_tests_are_mapped(self) -> None:
+        text = "Core ability C4-99 imaginary capability"
+
+        with (
+            patch("scripts.dev_tools.checks.require_command"),
+            patch.dict("os.environ", {}, clear=True),
+            patch("scripts.dev_tools.checks.run_step") as run_step,
+        ):
+            run_step.return_value.returncode = 0
+
+            self.assertEqual(checks._run_core_task_checks(Path("/tmp/repo"), text), 2)
+
+        self.assertEqual(
+            [call.args[0] for call in run_step.call_args_list],
+            [],
+        )
+
+    def test_core_task_check_allows_explicit_full_fallback(self) -> None:
+        text = "Core ability C4-99 imaginary capability"
+
+        with (
+            patch("scripts.dev_tools.checks.require_command"),
+            patch.dict("os.environ", {checks.ALLOW_FULL_TASK_FALLBACK_ENV: "1"}, clear=True),
+            patch("scripts.dev_tools.checks.run_step") as run_step,
+        ):
+            run_step.return_value.returncode = 0
+
+            self.assertEqual(checks._run_core_task_checks(Path("/tmp/repo"), text), 0)
+
+        self.assertEqual(
+            [call.args[0] for call in run_step.call_args_list],
+            [["cargo", "test", "--workspace"]],
+        )
+
+    def test_atomic_core_task_check_runs_only_targeted_tests(self) -> None:
+        text = "Core ability C2-04 smart-lists"
+
+        with (
+            patch("scripts.dev_tools.checks.require_command"),
+            patch("scripts.dev_tools.checks.run_step") as run_step,
+        ):
+            run_step.return_value.returncode = 0
+
+            self.assertEqual(checks._run_core_task_checks(Path("/tmp/repo"), text), 0)
+
+        self.assertEqual(
+            [call.args[0] for call in run_step.call_args_list],
+            [
+                ["cargo", "test", "--test", "smart_list_contract_api", "--", "--nocapture"],
+                ["cargo", "test", "--test", "smart_list_implementation", "--", "--nocapture"],
+                ["cargo", "test", "--test", "smart_list_failure_recovery", "--", "--nocapture"],
+            ],
+        )
+
+    def test_core_integration_task_check_adds_quality_gate(self) -> None:
+        text = "Core ability C2-04 integration-verify smart-lists"
+
+        with (
+            patch("scripts.dev_tools.checks.require_command"),
+            patch("scripts.dev_tools.checks.run_step") as run_step,
+        ):
+            run_step.return_value.returncode = 0
+
+            self.assertEqual(checks._run_core_task_checks(Path("/tmp/repo"), text), 0)
+
+        self.assertEqual(
+            [call.args[0] for call in run_step.call_args_list][:2],
+            [
+                ["cargo", "fmt", "--all", "--", "--check"],
+                ["cargo", "clippy", "--all-targets", "--all-features", "--", "-D", "warnings"],
+            ],
+        )
+
+    def test_mission_critical_file_safety_task_check_adds_quality_gate(self) -> None:
+        text = "Core ability C2-04 smart-lists"
+        entry = checks.TaskManifestEntry(
+            raw="### Exact Docs\n- docs/architecture/transactional-import.md",
+            risk="Mission-Critical",
+            exact_docs=("docs/architecture/transactional-import.md",),
+            existing_code=("core/src/**",),
+            expected_new_paths=("core/tests/**",),
+            forbidden_touches=("apps/**",),
+            validation=("./dev check task 4-1/task-18",),
+        )
+
+        with (
+            patch("scripts.dev_tools.checks.require_command"),
+            patch("scripts.dev_tools.checks.run_step") as run_step,
+        ):
+            run_step.return_value.returncode = 0
+
+            self.assertEqual(checks._run_core_task_checks(Path("/tmp/repo"), text, entry), 0)
+
+        self.assertEqual(
+            [call.args[0] for call in run_step.call_args_list][:2],
+            [
+                ["cargo", "fmt", "--all", "--", "--check"],
+                ["cargo", "clippy", "--all-targets", "--all-features", "--", "-D", "warnings"],
+            ],
+        )
+
+    def test_task_manifest_entry_reads_phase_manifest(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            manifest = root / "tasks/prompts/_shared/manifests/phase-4.md"
+            manifest.parent.mkdir(parents=True)
+            manifest.write_text(
+                "\n".join(
+                    [
+                        "## 4-1/task-18",
+                        "",
+                        "### Risk Level",
+                        "- `High`",
+                        "",
+                        "### Validation",
+                        "- ./dev check task 4-1/task-18",
+                        "",
+                        "## 4-1/task-19",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+
+            entry = checks._task_manifest_entry(root, "4-1/task-18")
+
+            self.assertEqual(entry.risk, "High")
+            self.assertEqual(entry.validation, ("./dev check task 4-1/task-18",))
+
+    def test_task_check_detects_stage_closeout_without_core_integration_false_positive(self) -> None:
+        core_integration = "# 4-1/task-15: C2-03 integration-verify\n- 阶段：Stage 2 Experience\n"
+        stage_closeout = "# 4-1/task-143: stage-2-experience integration verify\n"
+
+        self.assertFalse(checks._is_stage_closeout_task(core_integration))
+        self.assertTrue(checks._is_stage_closeout_task(stage_closeout))
+
+    def test_verify_suffix_defers_runner_checkpoint_evidence(self) -> None:
+        cfg = RuntimeConfig(root_dir=Path("/tmp/areamatrix"))
+        cfg.git_checkpoint = "commit"
+
+        suffix = TaskLoopRunner(cfg).verify_suffix()
+
+        self.assertIn("runner 写入 completed progress 和 Git checkpoint 之前", suffix)
+        self.assertIn("progress.json", suffix)
+        self.assertIn("git add", suffix)
+        self.assertIn("GIT_CHECKPOINT=commit", suffix)
+        self.assertIn("runner checkpoint 阶段", suffix)
+
+    def test_retry_prompt_keeps_task_validation_upper_bound(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            verify_log = root / "verify.log"
+            verify_log.write_text(
+                "验证失败：缺少 targeted C2-03 failure test 证据。\nVERIFY_RESULT: FAIL\n",
+                encoding="utf-8",
+            )
+            task = TaskFile(
+                phase="phase-4",
+                task_name="4-1-task-13",
+                label="4-1/task-13",
+                copy_file=root / "copy.md",
+                verify_file=root / "verify.md",
+                risk="High",
+            )
+
+            prompt = TaskLoopRunner(RuntimeConfig(root_dir=root)).build_copy_retry_prompt(task, 2, verify_log)
+
+        self.assertIn("仍以当前 task manifest 的 `Validation` 为上限", prompt)
+        self.assertIn("不要因为 retry、证据不足、上一次 verify 失败或 `core/**` 改动", prompt)
+        self.assertIn("重新执行当前 task manifest `Validation`", prompt)
+        self.assertNotIn("全部全面修复", prompt)
+
+    def test_verify_suffix_keeps_retry_validation_scoped(self) -> None:
+        suffix = TaskLoopRunner(RuntimeConfig(root_dir=Path("/tmp/areamatrix"))).verify_suffix()
+
+        self.assertIn("验证边界不随 retry 次数变化", suffix)
+        self.assertIn("当前 task manifest 的 `Validation` 为上限", suffix)
+        self.assertIn("除非当前 task manifest 明确要求宽门禁", suffix)
+        self.assertNotIn("全部全面修复", suffix)
+
+    def test_runner_defaults_to_single_repair_retry(self) -> None:
+        with patch.dict("os.environ", {}, clear=True):
+            cfg = RuntimeConfig.from_env()
+
+        self.assertEqual(cfg.max_retries, 1)
+
+    def test_dev_console_wizard_can_select_infinite_repair_retries(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            cfg = console.ConsoleConfig(
+                runtime=RuntimeConfig(root_dir=root),
+                task_loop_bin=root / "task-loop",
+                pipeline=root / "tasks/prompts/_shared/prompt_pipeline.py",
+                console_log_root=root / ".codex/task-loop-console",
+            )
+
+            with (
+                patch.dict("os.environ", {}, clear=True),
+                patch("sys.stdin.isatty", return_value=True),
+                patch("builtins.input", side_effect=["2", "1", "1", "3", "1"]),
+            ):
+                command = console.build_runner_command(cfg, "run", [])
+
+        self.assertEqual(command.execution_mode, "foreground")
+        self.assertEqual(command.env["MAX_RETRIES"], "0")
+        self.assertIn("MAX_RETRIES=0", command.env_bits)
+        self.assertNotIn("--max-tasks", command.argv)
 
 
 if __name__ == "__main__":

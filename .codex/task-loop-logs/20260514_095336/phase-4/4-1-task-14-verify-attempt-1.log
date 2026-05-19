@@ -1,0 +1,69 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-1/task-14`
+- Task：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-14-c2-03-validation.md`
+- 主要验收文件：
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/tests/saved_search_validation.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/search/saved_search.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/db/saved_search.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：补齐测试覆盖成功和失败路径
+- 结果：通过
+- 证据：`saved_search_validation_covers_successful_crud_and_ui_recovery_state` 覆盖 create/update/list/delete、sidebar 恢复状态和不触碰 files/change_log/tags/notes/staging/generated/user paths；`saved_search_validation_covers_failed_validation_and_persistence_paths_without_writes` 覆盖重复名、非法 query、非法 filter、非法 display metadata、非法 id、空 repo、missing row、DB 写失败且快照不变。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/saved_search_validation.rs:236`, `:295`
+
+- 项目：验证 Core API / UDL / Rust 实现三者一致
+- 结果：通过
+- 证据：UDL 暴露 `create_saved_search`、`update_saved_search`、`delete_saved_search`、`list_saved_searches` 和 `SavedSearch*` dictionary；Rust public API 与 DB row 函数存在；validation 测试锁定 Core API、UDL、Rust、docs 关键片段。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:83`, `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:280`, `/Users/as/Ai-Project/project/AreaMatrix/core/src/search/saved_search.rs:96`, `/Users/as/Ai-Project/project/AreaMatrix/core/tests/saved_search_validation.rs:352`
+
+- 项目：不新增业务功能，只补验证与必要测试 fixture
+- 结果：通过
+- 证据：工作树中 task 相关新增为 `core/tests/saved_search_validation.rs`；`core/src` 和 `core/area_matrix.udl` 当前无 task 相关未提交变更。测试 fixture 只在临时 repo 中插入 active file 和 DB 行，用于证明 saved search 不触碰用户文件。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/saved_search_validation.rs:189`
+
+- 项目：记录无法运行的验证及原因
+- 结果：通过
+- 证据：要求验证 `./dev check all` 已完整运行并返回 0；其中 `xcodebuild test` 遇到本地 `testmanagerd` sandbox restriction，脚本按仓库规则复用已构建 XCTest bundle 执行 `xcrun xctest` 并通过。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/.codex/skills-src/areamatrix-validation-driver/references/validation-matrix.md`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。Rust API 分层清楚，public API 负责参数验证并委托 DB 层；DB 层使用事务执行 create/update/delete/list。
+- 注释 / rustdoc / 文档同步：通过。新增 public Rust API 和结构体有 rustdoc，且测试锁定 capability spec、control map、Core API、UDL、Rust 实现关键一致性。
+- 错误处理与边界处理：通过。Config/Db 错误路径均有结构化断言；删除 saved search 的测试证明不删除、不移动、不改名、不写 change_log。
+- 测试与验证覆盖：通过。`saved_search_contract_api`、`saved_search_failure_recovery`、`saved_search_implementation`、`saved_search_validation` 均在 `cargo test --workspace` 中通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。测试调用真实 Core API 和真实临时 repo/SQLite 路径，不是 mock-only 或静态通过态。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`./dev check all`
+- 通过：governance、skills、task-loop check、prompt doctor、git diff check、`cargo fmt --all -- --check`、`cargo clippy --all-targets --all-features -- -D warnings`、`cargo test --workspace`、macOS UniFFI/build/test fallback、SwiftFormat、SwiftLint。
+- 关键直接证据：`saved_search_validation.rs` 3 tests passed；`saved_search_failure_recovery.rs` 11 tests passed；`saved_search_implementation.rs` 9 tests passed；`saved_search_contract_api.rs` 5 tests passed。
+- 失败：无必需验证命令失败。
+- 缺失：无。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。C2-03 saved-search-crud 已有足够测试证明可进入 UI 接入，且 manifest 要求的 validation 命令已通过。
+
+VERIFY_RESULT: PASS
