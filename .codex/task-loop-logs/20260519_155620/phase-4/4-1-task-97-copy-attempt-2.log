@@ -1,0 +1,57 @@
+一、执行结论
+
+已完成。
+
+二、执行范围
+
+单任务：`4-1/task-97`，只修复上次验收失败的本 task 范围问题。
+
+修改文件清单：
+- [SearchFiltersPopover.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/SearchFiltersPopover.swift:3)
+- [MainRepositoryContentNoteDrafts.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentNoteDrafts.swift:302)
+- [MainFileListModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileListModel.swift:1)
+- [MainFileListDiagnosticsActions.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileListDiagnosticsActions.swift:1)
+- [CoreBridgeRepositoryTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/CoreBridgeRepositoryTests.swift:157)
+- [project.pbxproj](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj:101)
+
+三、完成情况
+
+核对清单：
+- 只处理 S2-01 + C2-02：通过。
+- 已读取并按页面规格、control map、Core API、C2-02 规格对齐：通过。
+- 只接入 C2-02 对应筛选状态、facets、错误重试：通过。
+- 未实现相邻页面、相邻平台或 control map 外能力：通过。
+
+完成标准：
+- S2-01 的 `Filters` 现在可通过用户控件生成非空 `searchFilters`，并触发 `search_files` / `list_filter_facets` 链路：通过。
+- 生产路径未用 mock / fixture 伪造 Core 闭环：通过。
+- 未触碰 `core/src/**`，也未修改 `core/area_matrix.udl`：通过。
+
+四、工程质量
+
+`SearchFiltersPopover` 从原先只读摘要改为可编辑控件，支持 Category、Type、Tags、Modified / Imported date preset、Storage、Include deleted，并通过同一份 `searchFilters` 状态触发搜索任务 key 变化。
+
+`MainFileListModel.swift` 已从 504 行降到 491 行，修复 Swift 单文件 ≤500 行门禁。诊断动作拆到 `MainFileListDiagnosticsActions.swift`，没有改变行为。
+
+无新增依赖；未新增 Rust public API；无 `try!`、强制解包、mock-only、硬编码通过态。
+
+五、验证情况
+
+已运行：
+
+```bash
+./dev check task 4-1/task-97
+```
+
+最终通过，包含：
+- `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`：通过
+- `git diff --check`：通过
+- `xcodebuild -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination platform=macOS,arch=arm64 build CODE_SIGNING_ALLOWED=NO`：通过
+
+中间曾因拆分后 `diagnosticsCollector` 访问级别不匹配导致一次 build 失败，已修复并重新运行，最终验证通过。
+
+六、风险与后续
+
+剩余风险：本 task 按 manifest 只运行任务级验证，未升级到全量 test / all gate；这是按本 task 验证上限执行。xcodebuild 输出有 CoreSimulatorService 环境警告，但 macOS build 成功，不影响本次任务判定。
+
+建议下一个任务：进入当前 task 的 verify-ready 验收，若通过再推进后续 `4-1/task-98` / `4-1/task-99`。

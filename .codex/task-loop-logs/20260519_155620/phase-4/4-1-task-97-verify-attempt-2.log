@@ -1,0 +1,75 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-1/task-97`
+- 对应文件路径：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-97-s2-01-c2-02-search-filters.md`
+- 验收实现范围：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：12
+- 未覆盖项数：0
+- 通过项数：12
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 S2-01 页面中的 C2-02 功能点
+- 结果：通过
+- 证据：control map 明确 S2-01 只绑定 C2-01、C2-02；本 task 对应 C2-02。实现只在搜索页加入 filter/facet 状态、Filters popover、facet 加载和 search filter 传递。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-2-control-map.md:7`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift:84`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/SearchFiltersPopover.swift:48`
+
+- 项目：读取并对齐 UX、control map、Core API、C2-02 规格
+- 结果：通过
+- 证据：S2-01 要求 Filters、scope、query、filter/sort 变化刷新；C2-02 规格为只读 filter/facet；Core API 暴露 `search_files` 与 `list_filter_facets`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-2-experience/S2-01-search-results.md:90`，`/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-2-experience/C2-02-search-filters.md:8`，`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:2146`
+
+- 项目：只接入 C2-02 对应 CoreBridge / 状态 / 错误映射
+- 结果：通过
+- 证据：生产路径通过 `CoreSearchFiltering` 和 `CoreBridge.listFilterFacets` 调用真实 `AreaMatrix.listFilterFacets`；facet 失败走 `mapCoreError` 并保留 retry。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridgeSnapshots.swift:180`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridgeSnapshots.swift:326`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainListVisibleFileFiltering.swift:185`
+
+- 项目：不实现相邻页面、相邻平台或同页其他能力
+- 结果：通过
+- 证据：相关生产调用只出现 `searchFiles` 与 `listFilterFacets`；未发现 saved search、Smart List、tag 写入等 C2-03/C2-04/C2-05 越界接入。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainListVisibleFileFiltering.swift:132`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainListVisibleFileFiltering.swift:193`
+
+- 项目：用户可见功能可触发和验收
+- 结果：通过
+- 证据：toolbar 和 banner 都能打开 Filters；popover 提供 Category、Type、Tags、日期、Storage、Include deleted、Reset、Retry。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentNoteDrafts.swift:295`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/SearchFiltersPopover.swift:50`
+
+- 项目：无 mock / fixture / 静态状态伪造真实 Core 闭环
+- 结果：通过
+- 证据：生产代码调用真实 UniFFI wrapper；fixture 仅存在于 XCTest test doubles，用于验证请求与错误映射。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridgeSnapshots.swift:327`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/CoreBridgeRepositoryTests.swift:280`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，相关文件均低于 500 行；搜索状态、facet 状态、UI popover、CoreBridge 转换职责分离。
+- 注释 / rustdoc / 文档同步：通过，本 task 未新增 Rust public API；UDL 与 Core API 的 C2-02 字段一致。
+- 错误处理与边界处理：通过，facet failure 映射为结构化 `CoreErrorMappingSnapshot`，Retry 不清空 search/filter 状态。
+- 测试与验证覆盖：通过，已有模型测试覆盖 filter 请求、用户控件、facet 失败与 retry；task-scoped 验证命令通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过，生产路径未使用 mock-only wiring 或硬编码通过态。
+
+六、阻塞项
+
+- 未发现阻塞项。
+- Forbidden Touches 检查：`git diff --name-only -- core/src` 无输出，未发现 `core/src/**` 被触碰。
+- Expected New Paths 检查：`apps/macos/AreaMatrix/**` 与 `apps/macos/AreaMatrixTests/**` 已落地。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-97`
+- 通过项：prompt doctor 通过，`git diff --check` 通过，macOS `xcodebuild ... build CODE_SIGNING_ALLOWED=NO` 通过，最终 `BUILD SUCCEEDED`，命令 exit 0。
+- 失败项：无。
+- 缺失项：未运行额外 `./dev test macos`；本 task manifest 要求的验证命令是 `./dev check task 4-1/task-97`，且该命令已按 page-feature gate 完成 macOS build。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+VERIFY_RESULT: PASS

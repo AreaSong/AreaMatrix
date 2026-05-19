@@ -93,7 +93,8 @@ final class MainListIntegrationFilterTests: XCTestCase {
             query: " 合同 ",
             scope: .all,
             sort: .newestImported,
-            sidebarRow: RepositoryTreeNodeSnapshot.integrationFilterFixtureTree().sidebarRows[0]
+            sidebarRow: RepositoryTreeNodeSnapshot.integrationFilterFixtureTree().sidebarRows[0],
+            filters: .empty
         )
         let requests = await searcher.recordedRequests()
 
@@ -103,6 +104,7 @@ final class MainListIntegrationFilterTests: XCTestCase {
                 scope: .all,
                 currentPath: nil,
                 category: nil,
+                filters: .empty,
                 sort: .newestImported,
                 limit: 50,
                 offset: 0
@@ -130,7 +132,13 @@ final class MainListIntegrationFilterTests: XCTestCase {
             errorMapper: MainListRecordingErrorMapper(mapping: .integrationFilterDbFixture(rawContext: "unused"))
         )
 
-        await model.runSearch(query: "customer", scope: .current, sort: .relevance, sidebarRow: row)
+        await model.runSearch(
+            query: "customer",
+            scope: .current,
+            sort: .relevance,
+            sidebarRow: row,
+            filters: .empty
+        )
         let requests = await searcher.recordedRequests()
 
         XCTAssertEqual(requests.map(\.request.currentPath), ["docs/contracts"])
@@ -158,7 +166,8 @@ final class MainListIntegrationFilterTests: XCTestCase {
             query: "合同",
             scope: .all,
             sort: .newestImported,
-            sidebarRow: RepositoryTreeNodeSnapshot.integrationFilterFixtureTree().sidebarRows[0]
+            sidebarRow: RepositoryTreeNodeSnapshot.integrationFilterFixtureTree().sidebarRows[0],
+            filters: .empty
         )
         let mappedErrors = await mapper.recordedErrors()
 
@@ -191,7 +200,8 @@ final class MainListIntegrationFilterTests: XCTestCase {
             query: "合同",
             scope: .all,
             sort: .newestImported,
-            sidebarRow: RepositoryTreeNodeSnapshot.integrationFilterFixtureTree().sidebarRows[0]
+            sidebarRow: RepositoryTreeNodeSnapshot.integrationFilterFixtureTree().sidebarRows[0],
+            filters: .empty
         )
         model.clearSearch()
 

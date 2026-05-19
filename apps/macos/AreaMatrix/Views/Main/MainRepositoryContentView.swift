@@ -32,6 +32,8 @@ struct MainRepositoryContentView: View {
     @State var filterText: String = ""
     @State var searchScope: SearchScopeSnapshot = .all
     @State var searchSort: SearchSortSnapshot = .newestImported
+    @State var searchFilters: SearchFilterStateSnapshot = .empty
+    @State var isSearchFiltersPresented = false
     @StateObject var dropPreviewModel: ImportDropPreviewModel
     @StateObject var detailNoteModel: DetailNoteModel
     @State var tableSortOrder: [KeyPathComparator<FileEntrySnapshot>] = [
@@ -87,7 +89,17 @@ extension MainRepositoryContentView {
                 query: filterText,
                 scope: searchScope,
                 sort: searchSort,
-                sidebarRow: selectedSidebarRow
+                sidebarRow: selectedSidebarRow,
+                filters: searchFilters
+            )
+        }
+        .task(id: searchFacetsTaskKey) {
+            guard state == .list else { return }
+            await fileListModel.loadSearchFacets(
+                query: filterText,
+                scope: searchScope,
+                sidebarRow: selectedSidebarRow,
+                filters: searchFilters
             )
         }
         .onChange(of: selectedFileIDs) { previousIDs, ids in
@@ -143,6 +155,7 @@ extension MainRepositoryContentView {
                 }
             }
             .frame(width: 170)
+            searchFiltersButton
             Button("Import...", action: onImport)
                 .disabled(opening.isReadOnly)
             Button(action: onOpenSettings) {
@@ -228,6 +241,7 @@ extension MainRepositoryContentView {
         fileLister: any CoreFileListing = CoreBridge(),
         fileDetailer: any CoreFileDetailing = CoreBridge(),
         searchQuerying: any CoreSearchQuerying = CoreBridge(),
+        searchFiltering: any CoreSearchFiltering = CoreBridge(),
         fileCategoryMover: any CoreFileCategoryMoving = CoreBridge(),
         iCloudConflictResolver: any ICloudConflictResolving = CoreBridge(),
         changeLogLister: any CoreChangeLogListing = CoreBridge(),
@@ -267,6 +281,7 @@ extension MainRepositoryContentView {
             fileLister: fileLister,
             fileDetailer: fileDetailer,
             searchQuerying: searchQuerying,
+            searchFiltering: searchFiltering,
             fileCategoryMover: fileCategoryMover,
             iCloudConflictResolver: iCloudConflictResolver,
             changeLogLister: changeLogLister,

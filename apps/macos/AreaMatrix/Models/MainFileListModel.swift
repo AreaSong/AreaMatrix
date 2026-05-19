@@ -14,6 +14,7 @@ final class MainFileListModel: ObservableObject {
     @Published private(set) var detailLogDiagnosticsState: MainDetailLogDiagnosticsState = .idle
     @Published private(set) var detailExternalCreateSyncState: MainDetailExternalCreateSyncState = .idle
     @Published var searchState: MainSearchState = .idle
+    @Published var searchFacetsState: MainSearchFacetsState = .idle
     @Published var selectedFileNoteWriteBlock: MainDetailNoteWriteBlock?
     @Published var detailTabRequest: MainDetailTabRequest?
     @Published var pendingActionDestination: MainFileActionDestination?
@@ -37,18 +38,21 @@ final class MainFileListModel: ObservableObject {
     private let externalChangesSyncer: any CoreExternalChangesSyncing
     let errorMapper: any CoreErrorMapping
     let searchQuerying: any CoreSearchQuerying
-    private let diagnosticsCollector: any CoreDiagnosticsCollecting
+    let searchFiltering: any CoreSearchFiltering
+    let diagnosticsCollector: any CoreDiagnosticsCollecting
     var currentCategory: String?
     private var loadGeneration = 0
     private var detailGeneration = 0
     private var detailLogGeneration = 0
     var searchGeneration = 0
+    var searchFacetsGeneration = 0
 
     init(
         opening: RepositoryOpeningResult,
         fileLister: any CoreFileListing,
         fileDetailer: any CoreFileDetailing,
         searchQuerying: any CoreSearchQuerying = CoreBridge(),
+        searchFiltering: any CoreSearchFiltering = CoreBridge(),
         fileRenamer: any CoreFileRenaming = CoreBridge(),
         fileDeleter: any CoreFileDeleting = CoreBridge(),
         fileCategoryMover: any CoreFileCategoryMoving = CoreBridge(),
@@ -66,6 +70,7 @@ final class MainFileListModel: ObservableObject {
         self.fileLister = fileLister
         self.fileDetailer = fileDetailer
         self.searchQuerying = searchQuerying
+        self.searchFiltering = searchFiltering
         self.fileRenamer = fileRenamer
         self.fileDeleter = fileDeleter
         self.fileCategoryMover = fileCategoryMover
@@ -248,19 +253,6 @@ extension MainFileListModel {
     var loadingAccessibilityText: String? {
         guard let loadingStatusText else { return nil }
         return "Loading files. \(loadingStatusText)"
-    }
-
-    func collectCurrentListDiagnostics() async {
-        guard diagnosticsState != .collecting else { return }
-
-        diagnosticsState = .collecting
-        do {
-            diagnosticsState = try await .collected(diagnosticsCollector.createDiagnosticsSnapshot(repoPath: repoPath))
-        } catch { diagnosticsState = await .failed(mapCoreError(error)) }
-    }
-
-    func clearDiagnosticsState() {
-        diagnosticsState = .idle
     }
 
     private func reloadCurrentCategory(focusingOn fileID: Int64? = nil) async {

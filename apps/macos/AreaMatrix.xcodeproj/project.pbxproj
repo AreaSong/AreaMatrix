@@ -101,6 +101,8 @@
 		0A000000000000000000024A /* DetailNotePageFeatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000024B /* DetailNotePageFeatureTests.swift */; };
 		0A000000000000000000024C /* MainListSystemActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000024D /* MainListSystemActions.swift */; };
 		0A000000000000000000024E /* MainRepositoryContentNoteDrafts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000024F /* MainRepositoryContentNoteDrafts.swift */; };
+		0A0000000000000000000310 /* MainFileListDiagnosticsActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000311 /* MainFileListDiagnosticsActions.swift */; };
+		0A0000000000000000000312 /* SearchFiltersPopover.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000313 /* SearchFiltersPopover.swift */; };
 		0A00000000000000000002D0 /* MainRepositoryContentCategoryMoveRefresh.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002D1 /* MainRepositoryContentCategoryMoveRefresh.swift */; };
 		0A00000000000000000002D2 /* MainRepositoryContentActionRouting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002D3 /* MainRepositoryContentActionRouting.swift */; };
 		0A000000000000000000013E /* MainFileActionRoutingSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000013F /* MainFileActionRoutingSheet.swift */; };
@@ -341,6 +343,8 @@
 		0A000000000000000000024B /* DetailNotePageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/DetailNotePageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000024D /* MainListSystemActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/MainListSystemActions.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000024F /* MainRepositoryContentNoteDrafts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/MainRepositoryContentNoteDrafts.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000311 /* MainFileListDiagnosticsActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/MainFileListDiagnosticsActions.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000313 /* SearchFiltersPopover.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/SearchFiltersPopover.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002D1 /* MainRepositoryContentCategoryMoveRefresh.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/MainRepositoryContentCategoryMoveRefresh.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002D3 /* MainRepositoryContentActionRouting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/MainRepositoryContentActionRouting.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000271 /* GeneralSettingsModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/GeneralSettingsModel.swift; sourceTree = SOURCE_ROOT; };
@@ -567,6 +571,7 @@
 				0A0000000000000000000211 /* DetailLogTabView.swift */,
 				0A0000000000000000000225 /* DetailExternalCreateSyncStatusView.swift */,
 				0A0000000000000000000249 /* DetailNoteTabView.swift */,
+				0A0000000000000000000313 /* SearchFiltersPopover.swift */,
 				0A000000000000000000024F /* MainRepositoryContentNoteDrafts.swift */,
 				0A00000000000000000002D1 /* MainRepositoryContentCategoryMoveRefresh.swift */,
 				0A00000000000000000002D3 /* MainRepositoryContentActionRouting.swift */,
@@ -701,6 +706,7 @@
 				0A0000000000000000000245 /* MainDetailNoteState.swift */,
 				0A0000000000000000000247 /* MainDetailNoteActions.swift */,
 				0A000000000000000000024D /* MainListSystemActions.swift */,
+				0A0000000000000000000311 /* MainFileListDiagnosticsActions.swift */,
 				0A0000000000000000000221 /* MainDetailExternalCreateSyncState.swift */,
 				0A0000000000000000000227 /* MainExternalCreatedFileActions.swift */,
 				0A0000000000000000000135 /* MainListVisibleFileFiltering.swift */,
@@ -1026,6 +1032,7 @@
 				0A0000000000000000000224 /* DetailExternalCreateSyncStatusView.swift in Sources */,
 				0A0000000000000000000248 /* DetailNoteTabView.swift in Sources */,
 				0A000000000000000000024E /* MainRepositoryContentNoteDrafts.swift in Sources */,
+				0A0000000000000000000312 /* SearchFiltersPopover.swift in Sources */,
 				0A00000000000000000002D0 /* MainRepositoryContentCategoryMoveRefresh.swift in Sources */,
 				0A00000000000000000002D2 /* MainRepositoryContentActionRouting.swift in Sources */,
 				0A000000000000000000013E /* MainFileActionRoutingSheet.swift in Sources */,
@@ -1070,6 +1077,7 @@
 				0A0000000000000000000222 /* MainFileListState.swift in Sources */,
 				0A0000000000000000000244 /* MainDetailNoteState.swift in Sources */,
 				0A0000000000000000000246 /* MainDetailNoteActions.swift in Sources */,
+				0A0000000000000000000310 /* MainFileListDiagnosticsActions.swift in Sources */,
 				0A0000000000000000000220 /* MainDetailExternalCreateSyncState.swift in Sources */,
 				0A0000000000000000000226 /* MainExternalCreatedFileActions.swift in Sources */,
 				0A0000000000000000000158 /* MainRepoExternalRemovalActions.swift in Sources */,

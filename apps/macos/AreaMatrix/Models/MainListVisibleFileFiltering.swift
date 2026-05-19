@@ -58,12 +58,36 @@ enum MainSearchState: Equatable {
     }
 }
 
+enum MainSearchFacetsState: Equatable {
+    case idle
+    case loading(request: SearchFacetRequestSnapshot, previousFacets: SearchFacetsSnapshot?)
+    case loaded(request: SearchFacetRequestSnapshot, facets: SearchFacetsSnapshot)
+    case failed(request: SearchFacetRequestSnapshot, CoreErrorMappingSnapshot)
+
+    var facets: SearchFacetsSnapshot? {
+        switch self {
+        case let .loaded(_, facets):
+            facets
+        case let .loading(_, previousFacets):
+            previousFacets
+        case .idle, .failed:
+            nil
+        }
+    }
+
+    var errorMapping: CoreErrorMappingSnapshot? {
+        if case let .failed(_, mapping) = self { return mapping }
+        return nil
+    }
+}
+
 extension MainFileListModel {
     func runSearch(
         query: String,
         scope: SearchScopeSnapshot,
         sort: SearchSortSnapshot,
-        sidebarRow: RepositorySidebarRowSnapshot
+        sidebarRow: RepositorySidebarRowSnapshot,
+        filters: SearchFilterStateSnapshot
     ) async {
         let trimmedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedQuery.isEmpty else {
@@ -75,7 +99,8 @@ extension MainFileListModel {
             query: trimmedQuery,
             scope: scope,
             sort: sort,
-            sidebarRow: sidebarRow
+            sidebarRow: sidebarRow,
+            filters: filters
         )
         await loadSearch(request)
     }
@@ -88,6 +113,7 @@ extension MainFileListModel {
     func clearSearch() {
         searchGeneration += 1
         searchState = .idle
+        clearSearchFacets()
         errorMapping = nil
         isLoading = false
     }
@@ -119,6 +145,59 @@ extension MainFileListModel {
         searchState = .loaded(request: request, page: page)
         errorMapping = nil
         isLoading = false
+    }
+
+    func loadSearchFacets(
+        query: String,
+        scope: SearchScopeSnapshot,
+        sidebarRow: RepositorySidebarRowSnapshot,
+        filters: SearchFilterStateSnapshot
+    ) async {
+        let trimmedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedQuery.isEmpty else {
+            searchFacetsState = .idle
+            return
+        }
+
+        let request = SearchFacetRequestSnapshot.pageFeature(
+            query: trimmedQuery,
+            scope: scope,
+            sidebarRow: sidebarRow,
+            filters: filters
+        )
+        await loadSearchFacets(request)
+    }
+
+    func retrySearchFacets() async {
+        switch searchFacetsState {
+        case let .failed(request, _), let .loaded(request, _), let .loading(request, _):
+            await loadSearchFacets(request)
+        case .idle:
+            return
+        }
+    }
+
+    func clearSearchFacets() {
+        searchFacetsGeneration += 1
+        searchFacetsState = .idle
+    }
+
+    private func loadSearchFacets(_ request: SearchFacetRequestSnapshot) async {
+        searchFacetsGeneration += 1
+        let generation = searchFacetsGeneration
+        let previousFacets = searchFacetsState.facets
+
+        searchFacetsState = .loading(request: request, previousFacets: previousFacets)
+
+        do {
+            let facets = try await searchFiltering.listFilterFacets(repoPath: repoPath, request: request)
+            guard generation == searchFacetsGeneration else { return }
+            searchFacetsState = .loaded(request: request, facets: facets)
+        } catch {
+            let mappedError = await mapCoreError(error)
+            guard generation == searchFacetsGeneration else { return }
+            searchFacetsState = .failed(request: request, mappedError)
+        }
     }
 }
 

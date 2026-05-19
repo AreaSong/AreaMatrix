@@ -25,6 +25,16 @@ extension MainRepositoryContentView {
             filterText,
             searchScope.rawValue,
             searchSort.rawValue,
+            searchFilters.taskKey,
+            selectedSidebarID
+        ].joined(separator: "|")
+    }
+
+    var searchFacetsTaskKey: String {
+        [
+            filterText,
+            searchScope.rawValue,
+            searchFilters.taskKey,
             selectedSidebarID
         ].joined(separator: "|")
     }
@@ -147,11 +157,19 @@ extension MainRepositoryContentView {
                     }
                     .opacity(searchRetryOpacity)
                     .disabled(searchRetryDisabled)
+                    Button(searchFiltersButtonTitle) {
+                        isSearchFiltersPresented.toggle()
+                    }
                     Button("Clear") {
                         clearSearch()
                     }
                 }
                 searchBannerDetail
+                if !searchFilterSummaryText.isEmpty {
+                    Text(searchFilterSummaryText)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
             .padding(10)
             .background(searchBannerBackground)
@@ -159,12 +177,39 @@ extension MainRepositoryContentView {
     }
 
     private func searchBannerText(_ request: SearchQueryRequestSnapshot) -> String {
-        "搜索：\"\(request.query)\"  范围：\(request.scope.bannerDisplayName)  结果：\(searchResultCountText)"
+        [
+            "搜索：\"\(request.query)\"",
+            "范围：\(request.scope.bannerDisplayName)",
+            "结果：\(searchResultCountText)",
+            "过滤：\(searchActiveFilterCount)"
+        ].joined(separator: "  ")
+    }
+
+    var searchFiltersButtonTitle: String {
+        searchActiveFilterCount > 0 ? "Filters (\(searchActiveFilterCount))" : "Filters"
+    }
+
+    var searchFiltersAccessibilityLabel: String {
+        "\(searchFiltersButtonTitle), \(searchFilterSummaryText)"
     }
 
     private var searchResultCountText: String {
         guard let page = fileListModel.searchState.page else { return "-" }
         return "\(page.totalCount)"
+    }
+
+    private var searchActiveFilterCount: Int64 {
+        fileListModel.searchFacetsState.facets?.activeFilterCount ?? searchFilters.activeFilterCount
+    }
+
+    private var searchFilterSummaryText: String {
+        if let error = fileListModel.searchFacetsState.errorMapping {
+            return "Could not load filters: \(error.userMessage)"
+        }
+        if let facets = fileListModel.searchFacetsState.facets {
+            return "\(facets.activeFilterCount) filters active, \(facets.totalCount) matching files"
+        }
+        return "\(searchFilters.activeFilterCount) filters active"
     }
 
     private var searchBannerSystemImage: String {
@@ -234,11 +279,37 @@ extension MainRepositoryContentView {
 
     func clearSearch() {
         filterText = ""
+        searchFilters = .empty
         fileListModel.clearSearch()
         selectedFileIDs = []
         searchScope = selectedSidebarRow.categoryForFileList == nil ? .all : .current
         Task {
             await fileListModel.loadCurrentCategory(selectedSidebarRow.categoryForFileList)
         }
+    }
+
+    func resetSearchFilters() {
+        searchFilters = .empty
+    }
+
+    var searchFiltersButton: some View {
+        Button {
+            isSearchFiltersPresented.toggle()
+        } label: {
+            Label(searchFiltersButtonTitle, systemImage: "line.3.horizontal.decrease.circle")
+        }
+        .popover(isPresented: $isSearchFiltersPresented) {
+            SearchFiltersPopover(
+                filters: $searchFilters,
+                facetsState: fileListModel.searchFacetsState,
+                onReset: {
+                    resetSearchFilters()
+                },
+                onRetry: {
+                    Task { await fileListModel.retrySearchFacets() }
+                }
+            )
+        }
+        .accessibilityLabel(searchFiltersAccessibilityLabel)
     }
 }

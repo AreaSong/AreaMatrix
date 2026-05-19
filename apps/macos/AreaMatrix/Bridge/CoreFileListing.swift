@@ -90,6 +90,7 @@ struct SearchQueryRequestSnapshot: Equatable {
     var scope: SearchScopeSnapshot
     var currentPath: String?
     var category: String?
+    var filters: SearchFilterStateSnapshot
     var sort: SearchSortSnapshot
     var limit: Int64
     var offset: Int64
@@ -98,13 +99,15 @@ struct SearchQueryRequestSnapshot: Equatable {
         query: String,
         scope: SearchScopeSnapshot,
         sort: SearchSortSnapshot,
-        sidebarRow: RepositorySidebarRowSnapshot
+        sidebarRow: RepositorySidebarRowSnapshot,
+        filters: SearchFilterStateSnapshot
     ) -> SearchQueryRequestSnapshot {
         SearchQueryRequestSnapshot(
             query: query,
             scope: scope,
             currentPath: scope == .current ? sidebarRow.pathFilterPrefix : nil,
             category: scope == .current ? sidebarRow.categoryForFileList : nil,
+            filters: filters,
             sort: sort,
             limit: 50,
             offset: 0
@@ -225,19 +228,20 @@ extension FileFilter {
 
 extension SearchFilter {
     init(_ snapshot: SearchQueryRequestSnapshot) {
+        let filters = snapshot.filters
         self.init(
             scope: SearchScope(snapshot.scope),
             currentPath: snapshot.currentPath,
-            category: snapshot.category,
-            fileKind: nil,
-            tags: [],
-            tagMatchMode: .any,
-            importedAfter: nil,
-            importedBefore: nil,
-            modifiedAfter: nil,
-            modifiedBefore: nil,
-            storageMode: nil,
-            includeDeleted: false
+            category: filters.category ?? snapshot.category,
+            fileKind: filters.fileKind,
+            tags: filters.tags,
+            tagMatchMode: SearchTagMatchMode(filters.tagMatchMode),
+            importedAfter: filters.importedAfter,
+            importedBefore: filters.importedBefore,
+            modifiedAfter: filters.modifiedAfter,
+            modifiedBefore: filters.modifiedBefore,
+            storageMode: filters.storageMode.map(StorageMode.init),
+            includeDeleted: filters.includeDeleted
         )
     }
 }
