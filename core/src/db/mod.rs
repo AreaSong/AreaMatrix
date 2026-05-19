@@ -86,7 +86,10 @@ pub(crate) use staging_recovery::{
     delete_staging_file_row, list_protected_staging_paths, list_staging_file_rows, StagingFileRow,
 };
 pub(crate) use sync::*;
-pub(crate) use tags::{add_tag_row, batch_add_tags_rows, list_tag_set, remove_tag_row};
+pub(crate) use tags::{
+    add_tag_row, apply_tag_suggestion_rows, batch_add_tags_rows, list_tag_set,
+    load_tag_suggestion_snapshot, remove_tag_row, TagSuggestionApplyRow, TagSuggestionSnapshot,
+};
 pub(crate) use undo::{
     execute_undo_action_row, list_undo_action_rows, update_delete_undo_trash_path,
 };

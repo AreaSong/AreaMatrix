@@ -1,0 +1,53 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`4-1/task-92`
+- 对应路径：`/Users/as/Ai-Project/project/AreaMatrix/core/src/tags.rs`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/tags/suggestions.rs`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/db/tags.rs`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/db/tags/suggestions.rs`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/tag_suggestions_contract_api.rs`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/tag_suggestions_implementation.rs`
+- Forbidden `apps/**`：未触碰
+
+三、完成度摘要
+
+- 已覆盖项数：6
+- 未覆盖项数：0
+- 通过项数：5
+- 不通过项数：1
+- 阻塞项数：1
+
+四、逐项验收结果
+
+- 只实现 C2-19，不得顺手实现同阶段其他 C* 能力：通过。证据：新增实现集中在 `core/src/tags/suggestions.rs`、`core/src/db/tags/suggestions.rs`，`git diff --name-status` 没有扩展到其他能力或 `apps/**`。
+- 按能力规格落实输入、输出、DB/文件系统变化和错误映射：不通过。证据：`docs/api/core-api.md:2523-2605` 和 `docs/core/capability-specs/stage-2-experience/C2-19-tag-suggestions.md:27-38` 只允许 `FileNotFound / Validation / Conflict / Db`，但 `core/src/tags.rs:396-404` 仍会对空或 `.areamatrix` 路径返回 `InvalidPath`，`core/src/api.rs:1158-1184` 也暴露了同一行为。
+- 保持 Rust Core 不依赖平台 UI API：通过。证据：实现只落在 `core/**`，使用的是 Rust DB / serde / chrono / uuid / rusqlite 路径，没有 AppKit / SwiftUI 依赖。
+- 必要时补最小测试支撑，但不做页面接入：通过。证据：新增 `core/tests/tag_suggestions_contract_api.rs`、`core/tests/tag_suggestions_implementation.rs`，没有触碰 `apps/**`。
+- C2-19 的核心行为可被测试或桥接调用验证：通过。证据：`./dev check task 4-1/task-92` 通过，contract 与 implementation 两组 targeted tests 都通过。
+- 未触碰用户文件安全边界之外的行为：通过。证据：实现只写 tags / change_log / undo_actions，测试里也确认了用户可见文件路径未变化。
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过。`core/src/db/tags.rs` 已 503 行、`core/src/tags.rs` 已 531 行，仍超出 500 行建议阈值；虽然拆出了子模块，但还没达到长期维护标准。
+- 注释 / rustdoc / 文档同步：不通过。C2-19 exact docs 和 API docs 没有允许 `InvalidPath`，但实现仍可能返回它，文档与行为未完全对齐。
+- 错误处理与边界处理：不通过。`InvalidPath` 边界未按 C2-19 合同收敛，而且缺少对应验证用例。
+- 测试与验证覆盖：通过。`./dev check task 4-1/task-92` 以及两个 targeted tests 都通过了。
+- 占位、硬编码、mock-only、一次性实现检查：通过。这里走的是真实 SQLite 写入、change log 和 undo 路径，不是 mock-only 或硬编码通过态。
+
+六、阻塞项
+
+- P1 C2-19 error mapping drift：`suggest_tags_for_file` / `apply_tag_suggestions` 仍可通过 `validate_tag_repo_path` 返回 `InvalidPath`，但 C2-19 的 exact docs 只允许 `FileNotFound / Validation / Conflict / Db`。绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/core/src/tags.rs:396-404`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:1158-1184`、`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:2523-2605`、`/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-2-experience/C2-19-tag-suggestions.md:27-38`。这属于高风险 Core 合同的错误映射漂移，直接导致不通过。
+
+七、验证情况
+
+- 已跑：`./dev check task 4-1/task-92`
+- 结果：通过。`doctor: OK`，`git diff --check` 通过，`cargo test --test tag_suggestions_contract_api -- --nocapture` 通过，`cargo test --test tag_suggestions_implementation -- --nocapture` 通过
+- 未跑：`cargo fmt --all -- --check`、`cargo clippy --all-targets --all-features -- -D warnings`、`cargo test --workspace`
+- 原因：本 task 的 manifest 验证门禁就是 `./dev check task 4-1/task-92`，atomic Core task 按 task-scoped targeted tests 验收，不需要升级到 broad gate
+- 额外只读核对：`sed`、`rg`、`git diff`、`git show`、`wc`、`git status`
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+
+
+VERIFY_RESULT: FAIL

@@ -194,6 +194,15 @@ fn tag_suggestions_contract_validates_inputs_without_fake_success() {
         suggest_tags_for_file("/tmp/repo".to_owned(), request()),
         Err(CoreError::Db { .. })
     ));
+    for invalid_repo in ["", "/tmp/repo/.areamatrix"] {
+        assert!(
+            matches!(
+                suggest_tags_for_file(invalid_repo.to_owned(), request()),
+                Err(CoreError::Db { .. })
+            ),
+            "C2-19 suggest must not expose InvalidPath for repo metadata boundaries"
+        );
+    }
 
     assert!(matches!(
         apply_tag_suggestions(
@@ -244,6 +253,15 @@ fn tag_suggestions_contract_validates_inputs_without_fake_success() {
         apply_tag_suggestions("/tmp/repo".to_owned(), apply_request()),
         Err(CoreError::Db { .. })
     ));
+    for invalid_repo in ["", "/tmp/repo/.areamatrix"] {
+        assert!(
+            matches!(
+                apply_tag_suggestions(invalid_repo.to_owned(), apply_request()),
+                Err(CoreError::Db { .. })
+            ),
+            "C2-19 apply must not expose InvalidPath for repo metadata boundaries"
+        );
+    }
 }
 
 #[test]
