@@ -9,7 +9,7 @@ use crate::{
     TagRecord, TagSet,
 };
 
-use super::open_repo_connection;
+use super::{clear_redo_stack_in_tx, open_repo_connection};
 
 const RECENT_TAG_LIMIT: i64 = 10;
 
@@ -53,6 +53,7 @@ pub(crate) fn batch_add_tags_rows(
         return Err(CoreError::file_not_found("file:empty"));
     }
     if report.added_count > 0 {
+        clear_redo_stack_in_tx(&tx, occurred_at)?;
         let token = create_batch_tag_undo_action(&tx, &report.added_items, occurred_at)?;
         report.undo_token = Some(token);
     }
@@ -165,6 +166,7 @@ fn mutate_tag_relation(
         TagMutation::Remove => delete_tag_relation(&tx, file_id, tag)?,
     };
     if changed {
+        clear_redo_stack_in_tx(&tx, occurred_at)?;
         insert_tag_change(&tx, file_id, &mutation.detail(tag, changed), occurred_at)?;
     }
     let fallback_updated_at = if changed {

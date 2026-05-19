@@ -44,7 +44,7 @@ Repo-local skills：
 
 无输出 watchdog：
 - `NO_OUTPUT_NOTICE_SECONDS=120`
-- `NO_OUTPUT_TIMEOUT_SECONDS=900`
+- `NO_OUTPUT_TIMEOUT_SECONDS=5400`
 - `NO_OUTPUT_RESTART_DELAY_SECONDS=300`
 - `NO_OUTPUT_RESTART_LIMIT=2`
 
@@ -139,7 +139,7 @@ PID 和耗时；中段 `live log` 纵向列出 prompt、输出日志路径和日
 `./dev status --verbose` 也会显示同一份 live activity。若屏幕上长时间只看到
 日志状态为 `missing` 或日志更新时间不变化，可判断是 `codex exec` 子进程本身没有
 产生日志；这是一种 no-output wait，不代表验证命令正在正常输出。默认超过
-`NO_OUTPUT_TIMEOUT_SECONDS=900` 后 runner 会终止该子进程，等待
+`NO_OUTPUT_TIMEOUT_SECONDS=5400` 后 runner 会终止该子进程，等待
 `NO_OUTPUT_RESTART_DELAY_SECONDS=300`，再重开同一步骤的 `codex exec`；连续超过
 `NO_OUTPUT_RESTART_LIMIT=2` 次仍无输出，才把任务留在失败/可恢复状态，避免一条
 copy / verify 卡住整条队列。

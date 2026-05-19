@@ -5,7 +5,7 @@ use std::path::PathBuf;
 use crate::{
     batch_category, batch_delete, batch_rename as batch_rename_mod, classifier_correction,
     classifier_impact, classifier_rule_editor, classifier_rules, classify, db, icloud_conflicts,
-    import_conflict_batch, note, redo, recovery, repair, repo_init, repo_path, repo_scan, storage,
+    import_conflict_batch, note, recovery, redo, repair, repo_init, repo_path, repo_scan, storage,
     sync, tree, BatchCategoryChangeReport, BatchCategoryPreviewReport, BatchDeleteMode,
     BatchDeletePreviewReport, BatchDeleteReport, BatchRenamePreviewReport, BatchRenameReport,
     BatchRenameRule, ChangeFilter, ChangeLogEntry, ClassifierCorrectionResult,
@@ -16,8 +16,8 @@ use crate::{
     ICloudConflictResolveReport, ImportConflictBatchApplyReport, ImportConflictBatchApplyRequest,
     ImportConflictBatchPreviewReport, ImportConflictBatchPreviewRequest, ImportOptions,
     MoveToCategoryPreview, RecoveryReport, RedoActionRecord, RedoActionResult, ReindexReport,
-    RepairOptions, RepairReport, RepoConfig, RepoInitOptions, RepoPathValidation,
-    RuleImpactReport, ScanSession, SyncResult,
+    RepairOptions, RepairReport, RepoConfig, RepoInitOptions, RepoPathValidation, RuleImpactReport,
+    ScanSession, SyncResult,
 };
 
 fn not_implemented<T>() -> CoreResult<T> {

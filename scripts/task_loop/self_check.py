@@ -223,7 +223,7 @@ def write_live_activity(lock_dir: Path, tmp: Path) -> None:
             "prompt_file": str(tmp / "copy.md"),
             "output_file": str(output_file),
             "no_output_elapsed_seconds": 3,
-            "no_output_timeout_seconds": 900,
+            "no_output_timeout_seconds": 5400,
             "child_restart": 1,
             "child_restart_limit": 2,
             "restart_delay_seconds": 300,
@@ -686,7 +686,7 @@ def check_real_status(h: Harness) -> None:
     assert_contains(live_status, "live_activity_pid:", "live activity pid")
     assert_contains(live_status, "live_activity_log_state: exists", "live activity log state")
     assert_contains(live_status, "live_activity_no_output_elapsed: 3s", "live activity no-output elapsed")
-    assert_contains(live_status, "live_activity_no_output_timeout: 15m00s", "live activity no-output timeout")
+    assert_contains(live_status, "live_activity_no_output_timeout: 1h30m00s", "live activity no-output timeout")
     assert_contains(live_status, "live_activity_child_restart: 1/2", "live activity child restart")
     assert_contains(live_status, "live_activity_restart_delay: 5m00s", "live activity restart delay")
     assert_contains(live_status, "live_activity_command: codex exec -m gpt-5.5 --full-auto -", "live activity command")

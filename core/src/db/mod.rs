@@ -22,6 +22,7 @@ mod import_conflicts;
 mod move_to_category;
 mod note;
 mod overview;
+mod redo;
 mod rename;
 mod saved_search;
 mod scan;
@@ -69,6 +70,7 @@ pub(crate) use overview::{
     list_overview_node_files, list_overview_node_summaries, list_overview_recent_changes,
     OverviewChangeRow, OverviewFileRow, OverviewNodeSummary,
 };
+pub(crate) use redo::{clear_redo_stack_in_tx, execute_redo_action_row, list_redo_action_rows};
 pub(crate) use rename::{
     batch_update_rename_indexed_in_tx, batch_update_rename_repo_owned_in_tx,
     insert_batch_rename_undo_action_in_tx, load_batch_rename_active_file, rename_active_file,

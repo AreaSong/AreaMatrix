@@ -65,7 +65,10 @@ fn redo_action_log_contract_exposes_signatures_outputs_and_errors() {
     };
     assert_eq!(result.status, RedoActionStatus::Executed);
     assert_eq!(result.refresh_targets[3], "redo_actions");
-    assert_eq!(result.undo_token.as_deref(), Some("undo:redo:batch-tags:42"));
+    assert_eq!(
+        result.undo_token.as_deref(),
+        Some("undo:redo:batch-tags:42")
+    );
 
     let documented_errors = [
         CoreError::conflict("redo action blocked"),

@@ -85,7 +85,7 @@ pub struct RedoActionResult {
 pub fn list_redo_actions(repo_path: String) -> CoreResult<Vec<RedoActionRecord>> {
     let repo = validate_redo_repo_path(&repo_path)?;
     db::ensure_initialized(&repo).map_err(normalize_redo_metadata_error)?;
-    Err(CoreError::db("redo metadata is unavailable"))
+    db::list_redo_action_rows(&repo).map_err(normalize_redo_metadata_error)
 }
 
 /// Executes one C2-18 redo action.
@@ -112,7 +112,7 @@ pub fn redo_action(repo_path: String, action_id: String) -> CoreResult<RedoActio
         return Err(CoreError::file_not_found("redo action is required"));
     }
     db::ensure_initialized(&repo).map_err(normalize_redo_metadata_error)?;
-    Err(CoreError::db("redo metadata is unavailable"))
+    db::execute_redo_action_row(&repo, normalized_action_id).map_err(normalize_redo_metadata_error)
 }
 
 fn validate_redo_repo_path(repo_path: &str) -> CoreResult<PathBuf> {

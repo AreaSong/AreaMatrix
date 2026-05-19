@@ -6,7 +6,7 @@ use uuid::Uuid;
 
 use crate::{CoreError, CoreResult};
 
-use super::{open_repo_connection, undo};
+use super::{clear_redo_stack_in_tx, open_repo_connection, undo};
 
 pub(crate) fn soft_delete_repo_owned_file(
     repo_path: &Path,
@@ -89,8 +89,9 @@ pub(crate) fn insert_batch_delete_undo_action(
         return Err(CoreError::internal("internal error"));
     }
     let connection = open_repo_connection(repo_path)?;
-    let token = format!("undo:batch-trash-delete:{}", Uuid::new_v4());
     let occurred_at = chrono::Utc::now().timestamp();
+    clear_redo_stack_in_tx(&connection, occurred_at)?;
+    let token = format!("undo:batch-trash-delete:{}", Uuid::new_v4());
     let summary = json!({
         "kind": "trash_delete",
         "operation": "batch_delete",
@@ -237,6 +238,7 @@ fn update_file_status_and_log(
         params![file_id, action, detail_json],
     )
     .map_err(|error| CoreError::db(error.to_string()))?;
+    clear_redo_stack_in_tx(&tx, occurred_at)?;
     let undo_token = if action == "deleted" && insert_undo {
         let before = before.ok_or_else(|| CoreError::internal("internal error"))?;
         Some(undo::insert_delete_undo_action(
