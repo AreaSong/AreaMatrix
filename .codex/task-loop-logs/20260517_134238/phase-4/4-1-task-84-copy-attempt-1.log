@@ -1,0 +1,44 @@
+一、执行结论
+
+已完成 `4-1/task-84`。
+
+二、执行范围
+
+单任务：C2-17 `import-conflict-batch` validation。  
+修改文件：新增 [core/tests/import_conflict_batch_validation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/import_conflict_batch_validation.rs:1)。
+
+三、完成情况
+
+- 补齐验证测试：新增 3 个测试，覆盖默认策略成功路径、index-only Replace 阻断失败路径、Core API / UDL / Rust / docs 对齐。
+- Core API / UDL / Rust 一致性：新增测试显式检查 `docs/api/core-api.md`、`core/area_matrix.udl`、`core/src/api.rs`、`core/src/import_conflict_batch.rs` 的 C2-17 关键片段。
+- 未新增业务功能：只新增 `core/tests/**` 测试文件，未改生产代码、UDL、docs。
+- Forbidden Touches：未触碰 `apps/**`。
+- 工作区中原本已有 `.codex/task-loop-runs/20260517_134238/summary.json` 和 `tasks/prompts/_shared/progress.json` 未提交改动，我没有修改它们。
+
+四、工程质量
+
+测试使用临时 repo、真实 SQLite fixture、真实 staging/final 文件状态断言，不是 mock-only 或硬编码通过。文件 372 行，辅助函数拆分清晰；没有新增 public Rust API，因此无新增 rustdoc 需求；没有新增依赖。
+
+五、验证情况
+
+已运行并通过：
+
+- `cargo test --test import_conflict_batch_validation -- --nocapture`：3 passed。
+- `rustfmt core/tests/import_conflict_batch_validation.rs`。
+- `./dev check task 4-1/task-84`：通过。
+  - `prompt doctor`: OK，637 tasks / 637 manifests。
+  - `git diff --check`: OK。
+  - targeted tests:
+    - `import_conflict_batch_contract_api`: 4 passed
+    - `import_conflict_batch_failure_recovery`: 6 passed
+    - `import_conflict_batch_file_safety`: 5 passed
+    - `import_conflict_batch_implementation`: 2 passed
+    - `import_conflict_batch_validation`: 3 passed
+
+未运行：无。按本 task 要求，未升级到 `cargo test --workspace` / `./dev check core` / `./dev check all`。
+
+六、风险与后续
+
+剩余风险：本任务范围内无已知剩余阻断；High 风险边界通过临时目录测试验证，没有操作真实用户文件。回滚方式是删除新增测试文件。  
+建议下一个任务：进入 `4-1/task-85`，或先跑 verify-ready 验收 `4-1/task-84`。
+
