@@ -1,0 +1,80 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-1/task-95`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-95-c2-19-integration-verify.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-2-experience/C2-19-tag-suggestions.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-2-control-map.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-2-experience/S2-23-tag-suggestions.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/tests/**`
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：交叉检查 capability spec、Core API、UDL、Rust 实现和测试
+- 结果：通过
+- 证据：`docs/api/core-api.md` 和 `core/area_matrix.udl` 均声明 `suggest_tags_for_file`、`apply_tag_suggestions`、`TagSuggestion*` 字典与枚举；`core/src/api.rs` 转发到 `tags`；`core/src/tags.rs` 与 `core/src/tags/suggestions.rs` 实现真实建议和采纳路径；`core/tests/tag_suggestions_*` 覆盖 contract、implementation、failure-recovery、integration validation。
+- 涉及文件：上述 docs、UDL、`core/src/api.rs`、`core/src/tags.rs`、`core/src/tags/suggestions.rs`、`core/src/db/tags/suggestions.rs`、`core/tests/tag_suggestions_validation.rs`
+
+- 项目：确认消费页面需要的状态、错误和副作用均已覆盖
+- 结果：通过
+- 证据：S2-23 需要 Strong/Weak、NewTag/AlreadyAdded/Invalid/Blocked、Apply selected / Apply edited、部分失败、Undo、change_log、非 AI/非内容读取标记；Core API 和 UDL 暴露对应 report 字段，Rust 实现返回 `contents_read=false`、`ai_used=false`、`network_used=false`，采纳写入 tags/change_log/undo，并返回 `refresh_targets`。
+- 涉及文件：`S2-23-tag-suggestions.md`、`core/src/tags/suggestion_types.rs`、`core/src/db/tags/suggestions.rs`
+
+- 项目：确认没有实现 control map 之外的能力
+- 结果：通过
+- 证据：control map 中 S2-23 仅声明 `C2-19, C2-05`；当前 Core task 覆盖 C2-19，Rust 实现明确不移动、不重命名、不删除文件，不读正文，不调用 AI/网络，不触碰 `apps/**`。
+- 涉及文件：`docs/architecture/stage-2-control-map.md`、`core/src/tags.rs`、`core/src/tags/suggestions.rs`
+
+- 项目：不得修改文件；只记录验收证据和阻塞项
+- 结果：通过
+- 证据：本轮未执行任何写入或 formatter/codegen 修复命令；仅运行只读读取、`git status`、`git diff --check` 和 manifest 允许的验证命令。
+- 涉及文件：工作区只读验收范围
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。C2-19 类型、API 转发、建议生成、DB 写入拆分清楚，核心文件未超过 500 行。
+- 注释 / rustdoc / 文档同步：通过。新增 public API 和类型有 rustdoc，Core API、UDL、capability spec、control map、UX spec 对齐。
+- 错误处理与边界处理：通过。覆盖 FileNotFound、Validation、Conflict、Db；失败路径测试证明无用户文件变更、undo 写入失败可回滚。
+- 测试与验证覆盖：通过。`./dev check task 4-1/task-95` 已通过，包含 fmt、clippy 和 C2-19 四组 targeted tests。
+- 占位、硬编码、mock-only、一次性实现检查：通过。实现连接真实 DB tags/change_log/undo/search/list_tags 路径，不是 mock-only。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-95`
+- 通过：
+  - `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`
+  - `git diff --check`
+  - `cargo fmt --all -- --check`
+  - `cargo clippy --all-targets --all-features -- -D warnings`
+  - `cargo test --test tag_suggestions_contract_api -- --nocapture`
+  - `cargo test --test tag_suggestions_failure_recovery -- --nocapture`
+  - `cargo test --test tag_suggestions_implementation -- --nocapture`
+  - `cargo test --test tag_suggestions_validation -- --nocapture`
+- 失败：无
+- 缺失：无。未运行 `./dev check all`，因为 manifest 和 validation-driver 对本 task 的边界是 `./dev check task 4-1/task-95`。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。C2-19 可以作为后续 S2-23 page-feature task 的真实 Core 依赖。
+
+
+VERIFY_RESULT: PASS

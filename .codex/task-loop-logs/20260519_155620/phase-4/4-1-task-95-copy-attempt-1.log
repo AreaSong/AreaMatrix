@@ -1,0 +1,56 @@
+一、执行结论
+
+未完成。C2-19 本身的文档/API/UDL/Rust/测试证据基本能闭合，但任务指定验证 `./dev check task 4-1/task-95` 失败，失败点是 `cargo fmt --all -- --check`，因此不能判定完成或放行后续 UI 接入。
+
+二、执行范围
+
+单任务：`4-1/task-95` C2-19 integration-verify。  
+修改文件清单：无，本轮只读验收，未修改文件。  
+已有脏文件：`.codex/task-loop-runs/20260519_155620/summary.json`、`tasks/prompts/_shared/progress.json` 是进入本轮前已有状态，我未改动。
+
+三、完成情况
+
+核对清单结果：
+
+- capability spec / Core API / UDL / Rust / 测试：有实现与测试证据。API 在 [api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:1158)，核心入口在 [tags.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/tags.rs:208)，UDL 有 `suggest_tags_for_file` / `apply_tag_suggestions`，测试覆盖 `tag_suggestions_*`。
+- 消费页面需要的状态、错误、副作用：大体覆盖。`S2-23` 需要的 Strong/Weak、AlreadyAdded、disabled reason、apply report、refresh targets、undo/change_log 均有代码或测试证据。
+- control map 之外能力：未发现实现 AI、网络、正文读取、文件移动/删除/重命名，也未触碰 `apps/**`。
+- 不得修改文件：满足，本轮未修改。
+
+完成标准：
+
+- “C2-19 可作为后续 page-feature task 的真实 Core 依赖”：当前不能正式判定通过，因为验证失败。
+- “若无法证明，明确阻塞后续 UI 接入”：阻塞，直到格式化门禁通过。
+
+四、工程质量
+
+代码结构：C2-19 分层清楚，类型在 `core/src/tags/suggestion_types.rs`，生成逻辑在 `core/src/tags/suggestions.rs`，DB 写入在 `core/src/db/tags/suggestions.rs`。  
+错误与边界：有 `FileNotFound`、`Validation`、`Conflict`、`Db` 路径测试，采纳写入使用 transaction/savepoint，undo 失败会整体回滚。  
+占位/mock：未发现 mock-only 或硬编码通过态。  
+阻断项：当前代码未满足 rustfmt，具体是 [tags.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/tags.rs:9) 的 module/use 排序，以及 [tag_suggestions_validation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/tag_suggestions_validation.rs:112) 的长函数签名格式。
+
+五、验证情况
+
+已运行：
+
+- `./dev check task 4-1/task-95`
+- `git diff --check`
+- `git diff --name-status -- apps core/src/tags.rs core/tests/tag_suggestions_validation.rs core/area_matrix.udl core/tests`
+- `git status --short -- apps core/src/tags.rs core/tests/tag_suggestions_validation.rs core/area_matrix.udl core/tests`
+
+通过：
+
+- prompt doctor：OK，`tasks: 637`，`manifests: 637`
+- `git diff --check`
+- scoped Forbidden Touches 检查：`apps/**` 无输出
+
+失败：
+
+- `./dev check task 4-1/task-95`
+- 失败原因：`cargo fmt --all -- --check` 要求格式化 `core/src/tags.rs` 和 `core/tests/tag_suggestions_validation.rs`
+
+六、风险与后续
+
+剩余风险：不是 C2-19 行为证据不足，而是格式化门禁未过；在 AreaMatrix 规则下，验证失败即不能声明完成。  
+建议下一个动作：在允许修复模式下，仅格式化上述 Rust 文件，然后重新运行 `./dev check task 4-1/task-95`。后续任务仍应先阻塞 `4-1/task-140` 的 UI 接入，直到本 task 验证通过。
+

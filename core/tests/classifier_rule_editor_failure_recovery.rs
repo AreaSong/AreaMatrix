@@ -167,7 +167,7 @@ fn mapping_input(error: &CoreError) -> ErrorMappingInput {
             reason: None,
             message: Some(raw_context),
         },
-        ErrorKind::Config | ErrorKind::Classify => ErrorMappingInput {
+        ErrorKind::Config | ErrorKind::Validation | ErrorKind::Classify => ErrorMappingInput {
             kind: error.kind(),
             path: None,
             reason: Some(raw_context),

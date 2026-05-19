@@ -6,13 +6,14 @@ use serde::{Deserialize, Serialize};
 
 use crate::{db, CoreError, CoreResult};
 
-mod suggestions;
 mod suggestion_types;
+mod suggestions;
 
 pub use suggestion_types::{
-    ApplyTagSuggestionItem, ApplyTagSuggestionsRequest, TagSuggestion, TagSuggestionApplyItemResult,
-    TagSuggestionApplyReport, TagSuggestionApplyStatus, TagSuggestionContext, TagSuggestionMatch,
-    TagSuggestionReport, TagSuggestionRequest, TagSuggestionSource, TagSuggestionStatus,
+    ApplyTagSuggestionItem, ApplyTagSuggestionsRequest, TagSuggestion,
+    TagSuggestionApplyItemResult, TagSuggestionApplyReport, TagSuggestionApplyStatus,
+    TagSuggestionContext, TagSuggestionMatch, TagSuggestionReport, TagSuggestionRequest,
+    TagSuggestionSource, TagSuggestionStatus,
 };
 
 const AREA_MATRIX_DIR: &str = ".areamatrix";

@@ -203,7 +203,7 @@ fn slug_from_text(value: &str) -> Option<String> {
     }
     let slug = slug.trim_matches('-').to_owned();
     let len = slug.chars().count();
-    if len < MIN_SUGGESTION_LEN || len > super::MAX_TAG_LEN {
+    if !(MIN_SUGGESTION_LEN..=super::MAX_TAG_LEN).contains(&len) {
         return None;
     }
     slug.chars().any(char::is_alphabetic).then_some(slug)

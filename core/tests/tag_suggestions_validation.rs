@@ -109,7 +109,10 @@ fn tag_search_filter(tag: &str) -> SearchFilter {
     }
 }
 
-fn first_suggestion<'a>(report: &'a TagSuggestionReport, slug: &str) -> &'a area_matrix_core::TagSuggestion {
+fn first_suggestion<'a>(
+    report: &'a TagSuggestionReport,
+    slug: &str,
+) -> &'a area_matrix_core::TagSuggestion {
     report
         .suggestions
         .iter()
