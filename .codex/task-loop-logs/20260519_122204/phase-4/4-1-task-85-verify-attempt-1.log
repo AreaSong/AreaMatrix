@@ -1,0 +1,70 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`4-1/task-85`
+- 对应文件路径：`tasks/prompts/phase-4/4-1-stage2-experience/task-85-c2-17-integration-verify.md`
+- 核验范围：`docs/core/capability-specs/stage-2-experience/C2-17-import-conflict-batch.md`、`docs/architecture/stage-2-control-map.md`、`docs/api/core-api.md`、`docs/ux/page-specs/stage-2-experience/S2-21-import-conflict-batch.md`、`core/src/**`、`core/area_matrix.udl`、`core/tests/**`
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：1
+- 通过项数：3
+- 不通过项数：1
+- 阻塞项数：1
+
+四、逐项验收结果
+
+- 项目：交叉检查 capability spec、Core API、UDL、Rust 实现和测试
+- 结果：不通过
+- 证据：Core API 明确要求 `preview_token` 绑定 Trash 可用性；`core/src/import_conflict_batch/token.rs:15-54` 只 hash session、scope、strategy、row/staging/existing/final path/reason，没有纳入 `trash_available`。`core/src/import_conflict_batch/plan.rs:77` 仅把 Trash 可用性写入 report。
+- 涉及文件：`docs/api/core-api.md:3477`、`core/src/import_conflict_batch/token.rs:15`、`core/src/import_conflict_batch/plan.rs:77`
+
+- 项目：确认消费页面需要的状态、错误和副作用均已覆盖
+- 结果：不通过
+- 证据：S2-21 要求 Trash 不可用时禁用 Replace，并显示 blocked 原因；但 `plan_replace` 只检查 staging、existing 和 index-only，未把 Trash 不可用转成 row `Blocked`，`can_apply` 也不检查 Trash 可用性。
+- 涉及文件：`docs/ux/page-specs/stage-2-experience/S2-21-import-conflict-batch.md:90`、`core/src/import_conflict_batch/plan.rs:87`、`core/src/import_conflict_batch/plan.rs:197`
+
+- 项目：确认没有实现 control map 之外的能力
+- 结果：通过
+- 证据：control map 中 S2-21 仅声明 C2-17、C2-07；实现仅暴露 `preview_import_conflict_batch` / `apply_import_conflict_batch`，未实现 iCloud/sync/search/tag/classifier/macOS UI 能力。
+- 涉及文件：`docs/architecture/stage-2-control-map.md:29`、`core/src/api.rs:1056`、`core/src/api.rs:1085`
+
+- 项目：不得修改文件，只记录验收证据和阻塞项
+- 结果：通过
+- 证据：本轮未修改文件；`git status --short -- core/src core/area_matrix.udl core/tests apps` 无输出；`apps/**` 未见 Forbidden Touches 脏改。
+- 涉及文件：`apps/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过。C2-17 不是空壳，但 Trash availability 与 preview token/blocked state 的合同未闭环。
+- 注释 / rustdoc / 文档同步：不通过。Rustdoc 写明 token 绑定 Trash availability，但实际 token 未包含该输入。
+- 错误处理与边界处理：不通过。Trash 不可用未在 preview 阶段阻断 Replace，不能满足 S2-21 的危险策略预览语义。
+- 测试与验证覆盖：不通过。`./dev check task 4-1/task-85` 通过，但现有 20 个 C2-17 测试未覆盖 Trash availability token/state 失配。
+- 占位、硬编码、mock-only、一次性实现检查：通过。实现连接真实 DB、staging、文件移动、rollback、undo 预检路径。
+
+六、阻塞项
+
+- P0：C2-17 preview token 未绑定 Trash 可用性，且 Replace 预览未在 Trash 不可用时阻断
+  - 说明：Core API 要求 token 绑定 Trash 可用性，S2-21 要求 Trash 不可用时禁用 Replace；当前 token 未包含该状态，preview 也只返回 `trash_available`，不把 Replace row 标为 `Blocked`。
+  - 绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/core/src/import_conflict_batch/token.rs:15`
+  - 绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/core/src/import_conflict_batch/plan.rs:77`
+  - 绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/core/src/import_conflict_batch/plan.rs:197`
+  - 为什么导致不通过：后续 S2-21 UI 不能把 C2-17 当作真实 Core 依赖来获得稳定的危险策略 blocked state 和 stale preview 保护。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-85`
+- 通过：prompt doctor、git diff check、`cargo fmt --all -- --check`、`cargo clippy --all-targets --all-features -- -D warnings`
+- 通过：`import_conflict_batch_contract_api` 4 tests、`failure_recovery` 6 tests、`file_safety` 5 tests、`implementation` 2 tests、`validation` 3 tests
+- 失败：无命令失败
+- 缺失：缺少 Trash availability 变化时 preview blocked state 与 preview token stale 校验测试
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。C2-17 目前不能作为后续 page-feature task 的完整真实 Core 依赖。
+
+VERIFY_RESULT: FAIL

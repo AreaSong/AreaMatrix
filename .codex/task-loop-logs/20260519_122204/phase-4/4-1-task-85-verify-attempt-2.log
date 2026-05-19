@@ -1,0 +1,67 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-1/task-85`
+- Task：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-85-c2-17-integration-verify.md`
+- Manifest：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-4.md:2488`
+- Core 范围：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/**`
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：0
+- 阻塞项数：0
+- Manifest 覆盖：Exact Docs 4/4 已读；Existing Code 2/2 已核；Expected New Paths 3/3 已落地；Forbidden Touches `apps/**` 未发现违规改动。
+
+四、逐项验收结果
+
+- 项目：交叉检查 capability spec、Core API、UDL、Rust 实现和测试  
+  结果：通过  
+  证据：C2-17 spec 定义 API、输入输出、DB/FS 变化、错误码与验收标准；Core API 声明 preview/apply 合同与副作用边界；UDL 暴露同名接口和数据结构；Rust 实现提供 public types、preview/apply entry points、token 校验和执行路径；测试包含 docs/API/UDL/Rust 对齐断言。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-2-experience/C2-17-import-conflict-batch.md:7`、`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:3454`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:236`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/import_conflict_batch.rs:249`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/import_conflict_batch_validation.rs:205`
+
+- 项目：确认消费页面需要的状态、错误和副作用均已覆盖  
+  结果：通过  
+  证据：S2-21 需要默认策略、全量/选中作用域、Replace 二次确认、Pending/Blocked/Failed、Index-only 阻断、Undo/change_log、失败恢复；Core API 文档列出这些消费状态；实现提供 preview counts/status/reason、preview token、Replace/Trash/Index-only gate、AskPerItem、Undo/change_log 和 rollback；测试覆盖默认策略、Trash unavailable、Index-only、Replace failure、Undo failure、IO/DB failure。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-2-experience/S2-21-import-conflict-batch.md:23`、`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:3557`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/import_conflict_batch/plan.rs:37`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/import_conflict_batch/apply.rs:17`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/import_conflict_batch_file_safety.rs:93`
+
+- 项目：确认没有实现 control map 之外的能力  
+  结果：通过  
+  证据：control map 对 S2-21 声明 `C2-17, C2-07`；Core API 明确 C2-17 不实现 iCloud conflict、Stage 4 sync conflict、通用 batch delete/rename/category、classifier、tag、search、AI 或 macOS UI；实现集中在 `import_conflict_batch`，仅通过 `undo_token/change_log_actions` 给 C2-07 消费。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-2-control-map.md:29`、`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:3544`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/import_conflict_batch.rs:202`
+
+- 项目：不得修改文件；只记录验收证据和阻塞项  
+  结果：通过  
+  证据：本轮只读验收未编辑文件；`git status --short -- apps core/src core/tests core/area_matrix.udl` 未显示 `apps/**` 改动。当前 core/test 脏改动均在 task 允许范围内；`progress.json` 与 `.codex/task-loop-*` 为 runner 状态/日志，不按本 verify 阶段阻断。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-4.md:2503`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。C2-17 拆分为 contract entry、plan、token、apply、replace、path，职责清楚；Replace 使用可恢复 archive + rollback。
+- 注释 / rustdoc / 文档同步：通过。public Rust API 与公开 structs/enums 有 rustdoc；docs/API/UDL/Rust 对齐由测试覆盖。
+- 错误处理与边界处理：通过。空 session/conflict、stale token、Replace 未确认、Trash unavailable、Index-only、staging residue、DB/IO/Undo 失败均有显式错误或失败报告。
+- 测试与验证覆盖：通过。任务验证运行 5 个 C2-17 test target，共 22 个测试通过，并包含失败/回滚/文件安全路径。
+- 占位、硬编码、mock-only、一次性实现检查：通过。实现连接 DB、staging、filesystem、change_log、undo_action 和 rollback；未发现 mock-only 或静态通过态。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-85`
+- 通过：`prompt doctor` OK；`git diff --check` OK；`cargo fmt --all -- --check` OK；`cargo clippy --all-targets --all-features -- -D warnings` OK。
+- 通过：`cargo test --test import_conflict_batch_contract_api` 4/4；`import_conflict_batch_failure_recovery` 6/6；`import_conflict_batch_file_safety` 5/5；`import_conflict_batch_implementation` 2/2；`import_conflict_batch_validation` 5/5。
+- 失败：无。
+- 缺失：无必需验证缺失；未扩大到 `./dev check all`，因为本 task manifest 和 validation-driver 要求 task-scoped gate。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。C2-17 可以作为后续 S2-21 page-feature task 的真实 Core 依赖。
+
+VERIFY_RESULT: PASS

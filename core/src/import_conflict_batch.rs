@@ -239,6 +239,7 @@ struct PlannedImportConflict {
     existing: Option<FileEntry>,
     included: bool,
     strategy: ImportConflictBatchStrategy,
+    trash_available: bool,
     final_relative_path: Option<String>,
     final_name: Option<String>,
     status: ImportConflictBatchPreviewStatus,

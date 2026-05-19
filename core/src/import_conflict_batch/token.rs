@@ -17,6 +17,9 @@ pub(super) fn preview_token_for(
     for conflict_id in requested_ids {
         feed(&mut hasher, conflict_id);
     }
+    if let Some(item) = plan.first() {
+        feed_bool(&mut hasher, item.trash_available);
+    }
     for item in plan {
         feed(&mut hasher, &item.row.conflict_id);
         feed(&mut hasher, conflict_type_detail(&item.row.conflict_type));
