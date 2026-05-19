@@ -4,8 +4,8 @@ import Foundation
 @MainActor
 final class MainFileListModel: ObservableObject {
     @Published var files: [FileEntrySnapshot]
-    @Published private(set) var isLoading = false
-    @Published private(set) var errorMapping: CoreErrorMappingSnapshot?
+    @Published var isLoading = false
+    @Published var errorMapping: CoreErrorMappingSnapshot?
     @Published var selection: MainFileSelectionState = .none
     @Published var selectedFileDetail: FileEntrySnapshot?
     @Published var isDetailLoading = false
@@ -13,11 +13,12 @@ final class MainFileListModel: ObservableObject {
     @Published private(set) var detailLogState: MainDetailLogState = .notLoaded
     @Published private(set) var detailLogDiagnosticsState: MainDetailLogDiagnosticsState = .idle
     @Published private(set) var detailExternalCreateSyncState: MainDetailExternalCreateSyncState = .idle
+    @Published var searchState: MainSearchState = .idle
     @Published var selectedFileNoteWriteBlock: MainDetailNoteWriteBlock?
     @Published var detailTabRequest: MainDetailTabRequest?
     @Published var pendingActionDestination: MainFileActionDestination?
     @Published var statusBanner: MainListStatusBanner?
-    @Published private(set) var diagnosticsState: MainListDiagnosticsState = .idle
+    @Published var diagnosticsState: MainListDiagnosticsState = .idle
     @Published var renameState: MainFileRenameState = .idle
     @Published var deleteState: MainFileDeleteState = .idle
     @Published var changeCategoryState: MainFileCategoryMoveState = .idle
@@ -35,16 +36,19 @@ final class MainFileListModel: ObservableObject {
     private let changeLogLister: any CoreChangeLogListing
     private let externalChangesSyncer: any CoreExternalChangesSyncing
     let errorMapper: any CoreErrorMapping
+    let searchQuerying: any CoreSearchQuerying
     private let diagnosticsCollector: any CoreDiagnosticsCollecting
     var currentCategory: String?
     private var loadGeneration = 0
     private var detailGeneration = 0
     private var detailLogGeneration = 0
+    var searchGeneration = 0
 
     init(
         opening: RepositoryOpeningResult,
         fileLister: any CoreFileListing,
         fileDetailer: any CoreFileDetailing,
+        searchQuerying: any CoreSearchQuerying = CoreBridge(),
         fileRenamer: any CoreFileRenaming = CoreBridge(),
         fileDeleter: any CoreFileDeleting = CoreBridge(),
         fileCategoryMover: any CoreFileCategoryMoving = CoreBridge(),
@@ -61,6 +65,7 @@ final class MainFileListModel: ObservableObject {
         errorMapping = opening.currentCategoryListError
         self.fileLister = fileLister
         self.fileDetailer = fileDetailer
+        self.searchQuerying = searchQuerying
         self.fileRenamer = fileRenamer
         self.fileDeleter = fileDeleter
         self.fileCategoryMover = fileCategoryMover
@@ -236,6 +241,7 @@ extension MainFileListModel {
 
     var loadingStatusText: String? {
         guard isLoading else { return nil }
+        if searchState.isActive { return "Searching..." }
         return "正在加载 \(currentCategoryDisplayName)..."
     }
 

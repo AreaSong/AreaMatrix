@@ -29,13 +29,15 @@ struct RepositoryErrorPresentation: Equatable {
             return temporarilyUnavailable
         case .db:
             return metadataNeedsRepair
-        case .config, .repoNotInitialized:
+        case .config, .validation, .repoNotInitialized:
             return incompatibleRepository
+        case .stagingRecoveryRequired:
+            return metadataNeedsRepair
         case .io:
             return ioFailure
         case .internal:
             return internalFailure
-        case .classify, .conflict, .duplicateFile:
+        case .classify, .conflict, .duplicateFile, .expiredAction:
             return fallback
         }
     }

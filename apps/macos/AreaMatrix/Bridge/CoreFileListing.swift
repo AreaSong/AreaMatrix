@@ -8,6 +8,10 @@ protocol CoreFileDetailing: Sendable {
     func getFile(repoPath: String, fileID: Int64) async throws -> FileEntrySnapshot
 }
 
+protocol CoreSearchQuerying: Sendable {
+    func searchFiles(repoPath: String, request: SearchQueryRequestSnapshot) async throws -> SearchResultPageSnapshot
+}
+
 struct FileFilterSnapshot: Equatable {
     var category: String?
     var includeDeleted: Bool?
@@ -25,6 +29,123 @@ struct FileFilterSnapshot: Equatable {
             limit: 50,
             offset: 0
         )
+    }
+}
+
+enum SearchScopeSnapshot: String, CaseIterable, Equatable, Identifiable {
+    case all
+    case current
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .all:
+            "All"
+        case .current:
+            "Current"
+        }
+    }
+
+    var bannerDisplayName: String {
+        switch self {
+        case .all:
+            "全库"
+        case .current:
+            "当前"
+        }
+    }
+}
+
+enum SearchSortSnapshot: String, CaseIterable, Equatable, Identifiable {
+    case relevance
+    case newestImported
+    case newestModified
+    case nameAsc
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .relevance:
+            "Relevance"
+        case .newestImported:
+            "Newest imported"
+        case .newestModified:
+            "Newest modified"
+        case .nameAsc:
+            "Name A-Z"
+        }
+    }
+}
+
+enum SearchIndexStatusSnapshot: Equatable {
+    case ready
+    case indexing
+    case unavailable
+}
+
+struct SearchQueryRequestSnapshot: Equatable {
+    var query: String
+    var scope: SearchScopeSnapshot
+    var currentPath: String?
+    var category: String?
+    var sort: SearchSortSnapshot
+    var limit: Int64
+    var offset: Int64
+
+    static func pageFeature(
+        query: String,
+        scope: SearchScopeSnapshot,
+        sort: SearchSortSnapshot,
+        sidebarRow: RepositorySidebarRowSnapshot
+    ) -> SearchQueryRequestSnapshot {
+        SearchQueryRequestSnapshot(
+            query: query,
+            scope: scope,
+            currentPath: scope == .current ? sidebarRow.pathFilterPrefix : nil,
+            category: scope == .current ? sidebarRow.categoryForFileList : nil,
+            sort: sort,
+            limit: 50,
+            offset: 0
+        )
+    }
+}
+
+struct SearchMatchSnapshot: Equatable {
+    var fieldDisplayName: String
+    var kindDisplayName: String
+    var snippet: String
+}
+
+struct SearchFileResultSnapshot: Equatable, Identifiable {
+    var file: FileEntrySnapshot
+    var score: Float
+    var matches: [SearchMatchSnapshot]
+    var noteSnippet: String?
+
+    var id: Int64 { file.id }
+}
+
+struct SearchQueryDiagnosticSnapshot: Equatable {
+    var severityDisplayName: String
+    var message: String
+    var suggestion: String?
+
+    var isError: Bool {
+        severityDisplayName == "Error"
+    }
+}
+
+struct SearchResultPageSnapshot: Equatable {
+    var query: String
+    var totalCount: Int64
+    var results: [SearchFileResultSnapshot]
+    var diagnostics: [SearchQueryDiagnosticSnapshot]
+    var indexStatus: SearchIndexStatusSnapshot
+
+    var hasDiagnosticError: Bool {
+        diagnostics.contains(where: \.isError)
     }
 }
 
@@ -73,7 +194,21 @@ extension FileEntrySnapshot {
     }
 }
 
-extension CoreBridge: CoreFileListing, CoreFileDetailing {}
+extension CoreBridge: CoreFileListing, CoreFileDetailing, CoreSearchQuerying {
+    func searchFiles(repoPath: String, request: SearchQueryRequestSnapshot) async throws -> SearchResultPageSnapshot {
+        let corePage = try await Task.detached(priority: .userInitiated) {
+            try searchCoreFiles(repoPath: repoPath, request: request)
+        }.value
+
+        var results: [SearchFileResultSnapshot] = []
+        results.reserveCapacity(corePage.results.count)
+        for result in corePage.results {
+            let file = await makeFileEntrySnapshot(from: result.entry, repoPath: repoPath)
+            results.append(SearchFileResultSnapshot(coreResult: result, file: file))
+        }
+        return SearchResultPageSnapshot(corePage: corePage, results: results)
+    }
+}
 
 extension FileFilter {
     init(_ snapshot: FileFilterSnapshot) {
@@ -85,6 +220,51 @@ extension FileFilter {
             limit: snapshot.limit,
             offset: snapshot.offset
         )
+    }
+}
+
+extension SearchFilter {
+    init(_ snapshot: SearchQueryRequestSnapshot) {
+        self.init(
+            scope: SearchScope(snapshot.scope),
+            currentPath: snapshot.currentPath,
+            category: snapshot.category,
+            fileKind: nil,
+            tags: [],
+            tagMatchMode: .any,
+            importedAfter: nil,
+            importedBefore: nil,
+            modifiedAfter: nil,
+            modifiedBefore: nil,
+            storageMode: nil,
+            includeDeleted: false
+        )
+    }
+}
+
+extension SearchScope {
+    init(_ snapshot: SearchScopeSnapshot) {
+        switch snapshot {
+        case .all:
+            self = .allRepo
+        case .current:
+            self = .currentNode
+        }
+    }
+}
+
+extension SearchSort {
+    init(_ snapshot: SearchSortSnapshot) {
+        switch snapshot {
+        case .relevance:
+            self = .relevance
+        case .newestImported:
+            self = .newestImported
+        case .newestModified:
+            self = .newestModified
+        case .nameAsc:
+            self = .nameAsc
+        }
     }
 }
 
@@ -106,6 +286,54 @@ extension FileEntrySnapshot {
     }
 }
 
+extension SearchFileResultSnapshot {
+    init(coreResult: SearchFileResult, file: FileEntrySnapshot) {
+        self.file = file
+        score = coreResult.score
+        matches = coreResult.matches.map(SearchMatchSnapshot.init(coreMatch:))
+        noteSnippet = coreResult.noteSnippet
+    }
+}
+
+extension SearchMatchSnapshot {
+    init(coreMatch: SearchMatch) {
+        fieldDisplayName = coreMatch.field.displayName
+        kindDisplayName = coreMatch.kind.displayName
+        snippet = coreMatch.snippet
+    }
+}
+
+extension SearchQueryDiagnosticSnapshot {
+    init(coreDiagnostic: SearchQueryDiagnostic) {
+        severityDisplayName = coreDiagnostic.severity.displayName
+        message = coreDiagnostic.message
+        suggestion = coreDiagnostic.suggestion
+    }
+}
+
+extension SearchResultPageSnapshot {
+    init(corePage: SearchResultPage, results: [SearchFileResultSnapshot]) {
+        query = corePage.query
+        totalCount = corePage.totalCount
+        self.results = results
+        diagnostics = corePage.diagnostics.map(SearchQueryDiagnosticSnapshot.init(coreDiagnostic:))
+        indexStatus = SearchIndexStatusSnapshot(coreStatus: corePage.indexStatus)
+    }
+}
+
+extension SearchIndexStatusSnapshot {
+    init(coreStatus: SearchIndexStatus) {
+        switch coreStatus {
+        case .ready:
+            self = .ready
+        case .indexing:
+            self = .indexing
+        case .unavailable:
+            self = .unavailable
+        }
+    }
+}
+
 private enum FileAvailabilityResolver {
     static func availability(repoPath: String, relativePath: String, sourcePath: String?) -> FileAvailabilitySnapshot {
         if isICloudPlaceholder(relativePath) || sourcePath.map(isICloudPlaceholder) == true {
@@ -121,6 +349,16 @@ private enum FileAvailabilityResolver {
     }
 }
 
+private func searchCoreFiles(repoPath: String, request: SearchQueryRequestSnapshot) throws -> SearchResultPage {
+    try searchFiles(
+        repoPath: repoPath,
+        query: request.query,
+        filter: SearchFilter(request),
+        sort: SearchSort(request.sort),
+        pagination: SearchPagination(limit: request.limit, offset: request.offset)
+    )
+}
+
 private extension StorageMode {
     var fileListDisplayName: String {
         switch self {
@@ -130,6 +368,49 @@ private extension StorageMode {
             "Copied"
         case .indexed:
             "Indexed"
+        }
+    }
+}
+
+private extension SearchMatchField {
+    var displayName: String {
+        switch self {
+        case .name:
+            "Name"
+        case .path:
+            "Path"
+        case .note:
+            "Note"
+        case .category:
+            "Category"
+        case .changeLog:
+            "Change log"
+        }
+    }
+}
+
+private extension SearchMatchKind {
+    var displayName: String {
+        switch self {
+        case .exact:
+            "Exact match"
+        case .fuzzy:
+            "Fuzzy match"
+        case .pinyinInitials:
+            "Pinyin initials"
+        }
+    }
+}
+
+private extension SearchDiagnosticSeverity {
+    var displayName: String {
+        switch self {
+        case .info:
+            "Info"
+        case .warning:
+            "Warning"
+        case .error:
+            "Error"
         }
     }
 }

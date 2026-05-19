@@ -1,0 +1,67 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-1/task-96`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-96-s2-01-c2-01-search-query-files.md`
+- 实际涉及：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`
+- 禁止触碰：`core/src/**`
+
+三、完成度摘要
+
+- 已覆盖项数：12
+- 未覆盖项数：0
+- 通过项数：12
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 S2-01 页面中的 C2-01 功能点
+- 结果：通过
+- 证据：S2-01 通过 toolbar 搜索框、scope、sort 触发搜索；`task(id: searchTaskKey)` debounce 后调用 `runSearch`，未实现保存搜索、facet、Smart List 等其他能力。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift:82`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift:127`
+
+- 项目：读取并对齐页面规格、control map、Core API、C2-01 能力规格
+- 结果：通过
+- 证据：UDL 暴露 `search_files(repo_path, query, filter, sort, pagination)`，返回 `SearchResultPage`、diagnostics、index_status；control map 中 S2-01 对应 C2-01/C2-02，本 task 只覆盖 C2-01。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:158`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:429`
+
+- 项目：只接入 C2-01 对应 CoreBridge / 状态 / 错误映射
+- 结果：通过
+- 证据：生产路径通过 `CoreBridge: CoreSearchQuerying` 调用真实 UniFFI `searchFiles`，状态包含 loading/loaded/failed，失败路径通过 `mapCoreError` 映射并保留 request 供 Retry。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreFileListing.swift:197`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainListVisibleFileFiltering.swift:95`
+
+- 项目：不实现相邻页面、相邻平台或同页其他能力
+- 结果：通过
+- 证据：未发现 saved search CRUD、filter facets、Smart List 或批量操作 wiring；`SearchFilter` 中 tags/fileKind/storageMode 等 C2-02 过滤字段保持空值/默认值。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreFileListing.swift:226`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。搜索请求、状态机、CoreBridge 转换和 UI 展示分层清楚。
+- 注释 / rustdoc / 文档同步：通过。本 task 未新增 public Rust API；UDL/API 文档已有 C2-01 合同。
+- 错误处理与边界处理：通过。Search API 失败、index unavailable、diagnostics、loading、empty 都有 UI 状态入口。
+- 测试与验证覆盖：通过。测试覆盖 All repo 请求、Current scope 上下文、失败映射与 Clear 行为；task validation 已通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。生产路径调用真实 CoreBridge/UniFFI；测试中的 recording stub 仅用于单元验证，不替代生产闭环。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-96`
+- 结果：通过，退出码 0。
+- 关键证据：`prompt doctor: OK`，tasks/manifests 均为 637；`git diff --check` 无失败；macOS build gate 执行并输出 `** BUILD SUCCEEDED **`。
+- 未运行：未额外运行 `./dev check all` 或 broad core gate；本 task manifest 只要求 `./dev check task 4-1/task-96`。
+- 备注：xcodebuild 有 CoreSimulator/FSEvents 环境警告，但 macOS build 成功，不构成本 task 阻塞。
+- Forbidden Touches：`git diff --name-only -- core/src` 无输出，未发现 `core/src/**` 被触碰。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。S2-01 中 C2-01 search-query-files 的用户可见入口、真实 CoreBridge 闭环、状态展示、错误映射和 task-scoped 验证均有证据支撑；当前可以视为通过本单任务验收。
+
+VERIFY_RESULT: PASS

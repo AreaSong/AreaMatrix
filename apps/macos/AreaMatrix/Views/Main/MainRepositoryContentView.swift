@@ -28,11 +28,13 @@ struct MainRepositoryContentView: View {
     @State var selectedSidebarID: String = "inbox"
     @State var selectedFileIDs: Set<Int64> = []
     @State var pendingMovedFileFocusID: Int64?
-    @State private var selectedImportProgressIDs: Set<String> = []
-    @State private var filterText: String = ""
-    @StateObject private var dropPreviewModel: ImportDropPreviewModel
+    @State var selectedImportProgressIDs: Set<String> = []
+    @State var filterText: String = ""
+    @State var searchScope: SearchScopeSnapshot = .all
+    @State var searchSort: SearchSortSnapshot = .newestImported
+    @StateObject var dropPreviewModel: ImportDropPreviewModel
     @StateObject var detailNoteModel: DetailNoteModel
-    @State private var tableSortOrder: [KeyPathComparator<FileEntrySnapshot>] = [
+    @State var tableSortOrder: [KeyPathComparator<FileEntrySnapshot>] = [
         KeyPathComparator(\FileEntrySnapshot.importedAt, order: .reverse)
     ]
 }
@@ -56,6 +58,11 @@ extension MainRepositoryContentView {
         }
         .task(id: selectedSidebarID) {
             guard state == .list else { return }
+            if fileListModel.searchState.isActive {
+                selectedFileIDs = []
+                return
+            }
+            searchScope = selectedSidebarRow.categoryForFileList == nil ? .all : .current
             let focusedFileID = pendingMovedFileFocusID
             if let focusedFileID {
                 selectedFileIDs = [focusedFileID]
@@ -71,6 +78,17 @@ extension MainRepositoryContentView {
             guard let externalCreatedEvent else { return }
             await fileListModel.syncExternalCreated(externalCreatedEvent)
             onExternalCreatedEventHandled(externalCreatedEvent)
+        }
+        .task(id: searchTaskKey) {
+            guard state == .list else { return }
+            try? await Task.sleep(nanoseconds: 250_000_000)
+            guard !Task.isCancelled else { return }
+            await fileListModel.runSearch(
+                query: filterText,
+                scope: searchScope,
+                sort: searchSort,
+                sidebarRow: selectedSidebarRow
+            )
         }
         .onChange(of: selectedFileIDs) { previousIDs, ids in
             showFailedNoteDraftBannerIfNeeded(leaving: previousIDs)
@@ -106,9 +124,25 @@ extension MainRepositoryContentView {
             }
             .accessibilityLabel("Repository AreaMatrix")
             Spacer()
-            TextField("Filter current list", text: $filterText)
+            TextField("Search files", text: $filterText)
                 .textFieldStyle(.roundedBorder)
-                .frame(width: 180)
+                .frame(width: 220)
+                .onExitCommand {
+                    clearSearch()
+                }
+            Picker("Scope", selection: $searchScope) {
+                ForEach(SearchScopeSnapshot.allCases) { scope in
+                    Text(scope.displayName).tag(scope)
+                }
+            }
+            .pickerStyle(.segmented)
+            .frame(width: 150)
+            Picker("Sort", selection: $searchSort) {
+                ForEach(SearchSortSnapshot.allCases) { sort in
+                    Text(sort.displayName).tag(sort)
+                }
+            }
+            .frame(width: 170)
             Button("Import...", action: onImport)
                 .disabled(opening.isReadOnly)
             Button(action: onOpenSettings) {
@@ -193,6 +227,7 @@ extension MainRepositoryContentView {
         importProgressItems: [ImportBatchProgressSnapshot.Item] = [],
         fileLister: any CoreFileListing = CoreBridge(),
         fileDetailer: any CoreFileDetailing = CoreBridge(),
+        searchQuerying: any CoreSearchQuerying = CoreBridge(),
         fileCategoryMover: any CoreFileCategoryMoving = CoreBridge(),
         iCloudConflictResolver: any ICloudConflictResolving = CoreBridge(),
         changeLogLister: any CoreChangeLogListing = CoreBridge(),
@@ -231,6 +266,7 @@ extension MainRepositoryContentView {
             opening: opening,
             fileLister: fileLister,
             fileDetailer: fileDetailer,
+            searchQuerying: searchQuerying,
             fileCategoryMover: fileCategoryMover,
             iCloudConflictResolver: iCloudConflictResolver,
             changeLogLister: changeLogLister,
@@ -240,6 +276,10 @@ extension MainRepositoryContentView {
         ))
         _repositoryTree = State(initialValue: opening.tree)
         _selectedSidebarID = State(initialValue: Self.defaultSelectedSidebarID(from: opening.tree.sidebarRows))
+        let defaultRow = opening.tree.sidebarRows.first {
+            $0.id == Self.defaultSelectedSidebarID(from: opening.tree.sidebarRows)
+        }
+        _searchScope = State(initialValue: defaultRow?.categoryForFileList == nil ? .all : .current)
     }
 
     @ViewBuilder
@@ -283,7 +323,7 @@ extension MainRepositoryContentView {
                 HStack(alignment: .firstTextBaseline) {
                     Text(selectedListTitle)
                         .font(.title3.weight(.semibold))
-                    Text("\(visibleFiles.count) files")
+                    Text(listCountText)
                         .font(.callout)
                         .foregroundStyle(.secondary)
                     Spacer()
@@ -326,12 +366,7 @@ extension MainRepositoryContentView {
             ImportProgressTableView(rows: importProgressRows, selection: $selectedImportProgressIDs)
             fileTableContent
         }
-        .overlay {
-            if !fileListModel.isLoading, visibleFiles.isEmpty, importProgressRows.isEmpty {
-                Text("No files in this category")
-                    .foregroundStyle(.secondary)
-            }
-        }
+        .overlay { emptyListOverlay }
     }
 
     private var fileTableContent: some View {
@@ -342,6 +377,11 @@ extension MainRepositoryContentView {
             }
             TableColumn("Category / Path", sortUsing: KeyPathComparator(\FileEntrySnapshot.path)) { file in
                 Text(file.categoryPathDisplay)
+                    .lineLimit(1)
+                    .foregroundStyle(.secondary)
+            }
+            TableColumn("Match") { file in
+                Text(searchMatchText(for: file.id))
                     .lineLimit(1)
                     .foregroundStyle(.secondary)
             }
@@ -365,40 +405,6 @@ extension MainRepositoryContentView {
             contextMenu(for: selection)
         } primaryAction: { selection in
             selectedFileIDs = selection
-        }
-    }
-
-    var visibleFiles: [FileEntrySnapshot] {
-        MainListVisibleFileFiltering.visibleFiles(
-            from: fileListModel.files,
-            sidebarRow: selectedSidebarRow,
-            filterText: filterText
-        )
-        .sorted(using: tableSortOrder)
-    }
-
-    private var importProgressRows: [ImportProgressListRow] {
-        importProgressItems.map(ImportProgressListRow.init)
-    }
-
-    @ViewBuilder
-    private var statusBanner: some View {
-        if let banner = fileListModel.statusBanner {
-            HStack(spacing: 10) {
-                Label(banner.message, systemImage: banner.systemImage)
-                    .font(.callout)
-                Spacer()
-                Button("Retry") {
-                    Task {
-                        await fileListModel.retryCurrentCategory()
-                    }
-                }
-                Button("Dismiss") {
-                    fileListModel.clearStatusBanner()
-                }
-            }
-            .padding(10)
-            .background(Color.yellow.opacity(0.12))
         }
     }
 

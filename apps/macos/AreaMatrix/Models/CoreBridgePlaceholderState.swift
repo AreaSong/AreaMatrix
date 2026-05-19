@@ -122,13 +122,16 @@ enum CoreErrorKindSnapshot: String, Equatable {
     case io = "Io"
     case db = "Db"
     case config = "Config"
+    case validation = "Validation"
     case classify = "Classify"
     case conflict = "Conflict"
     case duplicateFile = "DuplicateFile"
     case fileNotFound = "FileNotFound"
+    case expiredAction = "ExpiredAction"
     case repoNotInitialized = "RepoNotInitialized"
     case invalidPath = "InvalidPath"
     case iCloudPlaceholder = "ICloudPlaceholder"
+    case stagingRecoveryRequired = "StagingRecoveryRequired"
     case permissionDenied = "PermissionDenied"
     case `internal` = "Internal"
 }
@@ -181,6 +184,8 @@ private extension ErrorMappingInput {
             self.init(kind: .db, path: nil, reason: nil, message: message)
         case let .Config(reason):
             self.init(kind: .config, path: nil, reason: reason, message: nil)
+        case let .Validation(reason):
+            self.init(kind: .validation, path: nil, reason: reason, message: nil)
         case let .Classify(reason):
             self.init(kind: .classify, path: nil, reason: reason, message: nil)
         case let .Conflict(path):
@@ -189,12 +194,16 @@ private extension ErrorMappingInput {
             self.init(kind: .duplicateFile, path: existingPath, reason: nil, message: nil)
         case let .FileNotFound(path):
             self.init(kind: .fileNotFound, path: path, reason: nil, message: nil)
+        case let .ExpiredAction(actionId):
+            self.init(kind: .expiredAction, path: nil, reason: actionId, message: nil)
         case let .RepoNotInitialized(path):
             self.init(kind: .repoNotInitialized, path: path, reason: nil, message: nil)
         case let .InvalidPath(path):
             self.init(kind: .invalidPath, path: path, reason: nil, message: nil)
         case let .ICloudPlaceholder(path):
             self.init(kind: .iCloudPlaceholder, path: path, reason: nil, message: nil)
+        case let .StagingRecoveryRequired(path):
+            self.init(kind: .stagingRecoveryRequired, path: path, reason: nil, message: nil)
         case let .PermissionDenied(path):
             self.init(kind: .permissionDenied, path: path, reason: nil, message: nil)
         case let .Internal(message):
@@ -210,13 +219,16 @@ private extension CoreErrorKindSnapshot {
         case .io: self = .io
         case .db: self = .db
         case .config: self = .config
+        case .validation: self = .validation
         case .classify: self = .classify
         case .conflict: self = .conflict
         case .duplicateFile: self = .duplicateFile
         case .fileNotFound: self = .fileNotFound
+        case .expiredAction: self = .expiredAction
         case .repoNotInitialized: self = .repoNotInitialized
         case .invalidPath: self = .invalidPath
         case .iCloudPlaceholder: self = .iCloudPlaceholder
+        case .stagingRecoveryRequired: self = .stagingRecoveryRequired
         case .permissionDenied: self = .permissionDenied
         case .internal: self = .internal
         }
