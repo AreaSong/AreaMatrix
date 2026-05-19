@@ -34,6 +34,7 @@ struct MainRepositoryContentView: View {
     @State var searchSort: SearchSortSnapshot = .newestImported
     @State var searchFilters: SearchFilterStateSnapshot = .empty
     @State var isSearchFiltersPresented = false
+    @FocusState var isSearchFieldFocused: Bool
     @StateObject var dropPreviewModel: ImportDropPreviewModel
     @StateObject var detailNoteModel: DetailNoteModel
     @State var tableSortOrder: [KeyPathComparator<FileEntrySnapshot>] = [
@@ -115,9 +116,8 @@ extension MainRepositoryContentView {
             guard !ids.isEmpty else { return }
             selectedFileIDs = []
         }
-        .sheet(item: actionDestinationBinding) { destination in
-            actionRoutingSheet(destination)
-        }
+        .sheet(item: actionDestinationBinding, content: actionRoutingSheet)
+        .sheet(item: searchDestinationBinding, content: searchRoutingSheet)
     }
 
     private var toolbar: some View {
@@ -139,9 +139,14 @@ extension MainRepositoryContentView {
             TextField("Search files", text: $filterText)
                 .textFieldStyle(.roundedBorder)
                 .frame(width: 220)
+                .focused($isSearchFieldFocused)
                 .onExitCommand {
-                    clearSearch()
+                    handleSearchEscape()
                 }
+                .onSubmit {
+                    fileListModel.enterSearch(context: .toolbar)
+                }
+                .accessibilityIdentifier("S2-01-search-field")
             Picker("Scope", selection: $searchScope) {
                 ForEach(SearchScopeSnapshot.allCases) { scope in
                     Text(scope.displayName).tag(scope)
@@ -167,8 +172,17 @@ extension MainRepositoryContentView {
                 .font(.callout)
                 .foregroundStyle(.secondary)
         }
-        .padding(.horizontal, 18)
-        .padding(.vertical, 12)
+        .padding(EdgeInsets(top: 12, leading: 18, bottom: 12, trailing: 18))
+        .onKeyPress("f", phases: .down) { event in
+            guard event.modifiers.contains(.command) else { return .ignored }
+            beginCommandFindSearch()
+            return .handled
+        }
+        .onKeyPress("k", phases: .down) { event in
+            guard event.modifiers.contains(.command) else { return .ignored }
+            fileListModel.openCommandPaletteForSearch()
+            return .handled
+        }
     }
 
     private var sidebar: some View {

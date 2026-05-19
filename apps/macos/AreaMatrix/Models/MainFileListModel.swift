@@ -24,6 +24,8 @@ final class MainFileListModel: ObservableObject {
     @Published var deleteState: MainFileDeleteState = .idle
     @Published var changeCategoryState: MainFileCategoryMoveState = .idle
     @Published var iCloudConflictResolutionState: ICloudConflictResolutionState = .idle
+    @Published var pendingSearchDestination: MainSearchDestination?
+    @Published var lastSearchExitContext: MainSearchExitContext?
 
     let repoPath: String
     let isReadOnly: Bool
@@ -461,7 +463,7 @@ extension MainFileListModel {
         }
     }
 
-    private func clearDetail() {
+    func clearDetail() {
         detailGeneration += 1
         selection = .none
         selectedFileDetail = nil; selectedFileNoteWriteBlock = nil; detailErrorMapping = nil

@@ -102,6 +102,8 @@ enum CoreBridgeBoundary: String, CaseIterable, Equatable {
     case moveToCategory = "move_to_category"
     case restoreFile = "restore_file"
     case listFiles = "list_files"
+    case searchFiles = "search_files"
+    case listFilterFacets = "list_filter_facets"
     case getFile = "get_file"
     case listChanges = "list_changes"
     case listTreeJSON = "list_tree_json"

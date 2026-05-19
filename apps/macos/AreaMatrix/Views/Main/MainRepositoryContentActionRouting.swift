@@ -48,6 +48,42 @@ extension MainRepositoryContentView {
         )
     }
 
+    var searchDestinationBinding: Binding<MainSearchDestination?> {
+        Binding(
+            get: {
+                guard fileListModel.pendingSearchDestination?.isSheetRoute == true else { return nil }
+                return fileListModel.pendingSearchDestination
+            },
+            set: { value in
+                if value == nil {
+                    fileListModel.clearPendingSearchDestination()
+                }
+            }
+        )
+    }
+
+    @ViewBuilder
+    func searchRoutingSheet(_ destination: MainSearchDestination) -> some View {
+        switch destination {
+        case let .savedSearchSheet(request):
+            SavedSearchSheetRouteView(request: request, onCancel: fileListModel.clearPendingSearchDestination)
+        case let .indexingStatus(request):
+            SearchIndexingStatusRouteView(
+                request: request,
+                indexStatus: fileListModel.searchState.indexStatus,
+                onRetry: { Task { await fileListModel.retrySearch() } },
+                onClose: fileListModel.clearPendingSearchDestination
+            )
+        case .commandPalette:
+            SearchCommandPaletteRouteView(
+                query: filterText,
+                onClose: fileListModel.clearPendingSearchDestination
+            )
+        case .searchEmpty, .queryError:
+            EmptyView()
+        }
+    }
+
     private func file(for fileID: Int64) -> FileEntrySnapshot? {
         fileListModel.files.first { $0.id == fileID } ??
             fileListModel.selectedFileDetail.flatMap { $0.id == fileID ? $0 : nil }
@@ -94,4 +130,144 @@ extension MainRepositoryContentView {
             )
         }
     }
+}
+
+struct SearchEmptyRouteView: View {
+    let request: SearchQueryRequestSnapshot
+    let onClear: () -> Void
+
+    var body: some View {
+        VStack(alignment: .center, spacing: 10) {
+            Label("No results for \"\(request.query)\"", systemImage: "magnifyingglass")
+                .font(.headline)
+            Text("S2-04 search-empty")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Text(searchContextText(request))
+                .font(.callout)
+                .foregroundStyle(.secondary)
+            Button("Clear search", action: onClear)
+        }
+        .padding(18)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("S2-04-search-empty")
+    }
+}
+
+struct QueryErrorRouteView: View {
+    let request: SearchQueryRequestSnapshot
+    let diagnostic: SearchQueryDiagnosticSnapshot
+    let onClear: () -> Void
+
+    var body: some View {
+        VStack(alignment: .center, spacing: 10) {
+            Label("Query error", systemImage: "exclamationmark.triangle")
+                .font(.headline)
+            Text("S2-05 query-error")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Text(diagnostic.message)
+                .font(.callout)
+                .multilineTextAlignment(.center)
+            if let suggestion = diagnostic.suggestion, !suggestion.isEmpty {
+                Text(suggestion)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+            Text(searchContextText(request))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Button("Clear search", action: onClear)
+        }
+        .padding(18)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("S2-05-query-error")
+    }
+}
+
+struct SavedSearchSheetRouteView: View {
+    let request: SearchQueryRequestSnapshot
+    let onCancel: () -> Void
+
+    var body: some View {
+        MainFileActionSheetContainer(title: "Save Search", pageID: "S2-03") {
+            TextField("Name", text: .constant(request.query))
+                .textFieldStyle(.roundedBorder)
+            metadataRow("Query", request.query)
+            metadataRow("Scope", request.scope.displayName)
+            metadataRow("Sort", request.sort.displayName)
+            metadataRow("Filters", "\(request.filters.activeFilterCount) active")
+            HStack {
+                Spacer()
+                Button("Cancel", action: onCancel)
+                    .keyboardShortcut(.cancelAction)
+                Button("Save", action: onCancel)
+                    .disabled(true)
+            }
+        }
+        .accessibilityIdentifier("S2-03-search-route")
+    }
+}
+
+struct SearchIndexingStatusRouteView: View {
+    let request: SearchQueryRequestSnapshot
+    let indexStatus: SearchIndexStatusSnapshot?
+    let onRetry: () -> Void
+    let onClose: () -> Void
+
+    var body: some View {
+        MainFileActionSheetContainer(title: "Search Index Status", pageID: "S2-01-indexing-status") {
+            Label(statusText, systemImage: "exclamationmark.triangle")
+                .font(.callout)
+            metadataRow("Query", request.query)
+            metadataRow("Scope", request.scope.displayName)
+            HStack {
+                Spacer()
+                Button("Close", action: onClose)
+                    .keyboardShortcut(.cancelAction)
+                Button("Retry", action: onRetry)
+            }
+        }
+        .accessibilityIdentifier("S2-01-indexing-status-search-route")
+    }
+
+    private var statusText: String {
+        switch indexStatus {
+        case .unavailable:
+            "Search index unavailable"
+        case .indexing:
+            "Search index is updating"
+        case .ready:
+            "Search index ready"
+        case nil:
+            "Search index status unavailable"
+        }
+    }
+}
+
+struct SearchCommandPaletteRouteView: View {
+    let query: String
+    let onClose: () -> Void
+
+    var body: some View {
+        MainFileActionSheetContainer(title: "Command Palette", pageID: "S2-15") {
+            TextField("Search commands", text: .constant(query))
+                .textFieldStyle(.roundedBorder)
+            Text("Search related commands")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+            HStack {
+                Spacer()
+                Button("Close", action: onClose)
+                    .keyboardShortcut(.cancelAction)
+            }
+        }
+        .accessibilityIdentifier("S2-15-search-route")
+    }
+}
+
+private func searchContextText(_ request: SearchQueryRequestSnapshot) -> String {
+    "Scope: \(request.scope.displayName) | Sort: \(request.sort.displayName)"
 }

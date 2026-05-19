@@ -81,7 +81,96 @@ enum MainSearchFacetsState: Equatable {
     }
 }
 
+enum MainSearchDestination: Equatable, Identifiable {
+    case savedSearchSheet(SearchQueryRequestSnapshot)
+    case searchEmpty(SearchQueryRequestSnapshot)
+    case queryError(SearchQueryRequestSnapshot, SearchQueryDiagnosticSnapshot)
+    case indexingStatus(SearchQueryRequestSnapshot)
+    case commandPalette
+
+    var id: String {
+        switch self {
+        case let .savedSearchSheet(request):
+            "S2-03-\(request.query)"
+        case let .searchEmpty(request):
+            "S2-04-\(request.query)"
+        case let .queryError(request, diagnostic):
+            "S2-05-\(request.query)-\(diagnostic.message)"
+        case let .indexingStatus(request):
+            "S2-01-indexing-\(request.query)"
+        case .commandPalette:
+            "S2-15-command-palette"
+        }
+    }
+
+    var pageID: String {
+        switch self {
+        case .savedSearchSheet:
+            "S2-03"
+        case .searchEmpty:
+            "S2-04"
+        case .queryError:
+            "S2-05"
+        case .indexingStatus:
+            "S2-01-indexing-status"
+        case .commandPalette:
+            "S2-15"
+        }
+    }
+
+    var isSheetRoute: Bool {
+        switch self {
+        case .savedSearchSheet, .indexingStatus, .commandPalette:
+            true
+        case .searchEmpty, .queryError:
+            false
+        }
+    }
+}
+
+enum MainSearchEntryContext: Equatable {
+    case toolbar
+    case commandFind
+    case smartList(id: Int64, name: String)
+    case commandPalette
+    case sidebar(String)
+}
+
+enum MainSearchExitContext: Equatable {
+    case toolbar
+    case smartList(id: Int64, name: String)
+    case sidebar(String)
+    case list
+}
+
 extension MainFileListModel {
+    var searchPageDestination: MainSearchDestination? {
+        switch searchState {
+        case let .loaded(request, page):
+            if let diagnostic = page.diagnostics.first(where: \.isError) {
+                return .queryError(request, diagnostic)
+            }
+            if page.indexStatus == .unavailable {
+                return nil
+            }
+            if page.totalCount == 0 {
+                return .searchEmpty(request)
+            }
+            return nil
+        case .idle, .loading, .failed:
+            return nil
+        }
+    }
+
+    var canSaveCurrentSearch: Bool {
+        guard case let .loaded(request, page) = searchState else { return false }
+        return !request.query.isEmpty && !page.hasDiagnosticError
+    }
+
+    func enterSearch(context: MainSearchEntryContext) {
+        lastSearchExitContext = exitContext(for: context)
+    }
+
     func runSearch(
         query: String,
         scope: SearchScopeSnapshot,
@@ -113,9 +202,31 @@ extension MainFileListModel {
     func clearSearch() {
         searchGeneration += 1
         searchState = .idle
+        pendingSearchDestination = nil
         clearSearchFacets()
         errorMapping = nil
         isLoading = false
+        clearDetail()
+    }
+
+    func openSavedSearchSheet() {
+        guard let request = searchState.request, canSaveCurrentSearch else { return }
+        pendingSearchDestination = .savedSearchSheet(request)
+    }
+
+    func openIndexingStatus() {
+        guard let request = searchState.request,
+              searchState.indexStatus == .unavailable else { return }
+        pendingSearchDestination = .indexingStatus(request)
+    }
+
+    func openCommandPaletteForSearch() {
+        pendingSearchDestination = .commandPalette
+        enterSearch(context: .commandPalette)
+    }
+
+    func clearPendingSearchDestination() {
+        pendingSearchDestination = nil
     }
 
     private func loadSearch(_ request: SearchQueryRequestSnapshot) async {
@@ -124,6 +235,7 @@ extension MainFileListModel {
         let previousPage = searchState.page
 
         searchState = .loading(request: request, previousPage: previousPage)
+        pendingSearchDestination = nil
         isLoading = true
         errorMapping = nil
         diagnosticsState = .idle
@@ -136,6 +248,7 @@ extension MainFileListModel {
             let mappedError = await mapCoreError(error)
             guard generation == searchGeneration else { return }
             searchState = .failed(request: request, mappedError)
+            pendingSearchDestination = nil
             isLoading = false
         }
     }
@@ -143,8 +256,20 @@ extension MainFileListModel {
     private func applySearchPage(_ page: SearchResultPageSnapshot, request: SearchQueryRequestSnapshot) {
         files = page.results.map(\.file)
         searchState = .loaded(request: request, page: page)
+        pendingSearchDestination = nil
         errorMapping = nil
         isLoading = false
+    }
+
+    private func exitContext(for context: MainSearchEntryContext) -> MainSearchExitContext {
+        switch context {
+        case .toolbar, .commandFind, .commandPalette:
+            .toolbar
+        case let .smartList(id, name):
+            .smartList(id: id, name: name)
+        case let .sidebar(id):
+            .sidebar(id)
+        }
     }
 
     func loadSearchFacets(

@@ -1,0 +1,82 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`4-1/task-98`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-98-s2-01-page-integration-verify.md`
+- 主要实现路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`
+- 主要测试路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`
+- UDL：`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：5
+- 未覆盖项数：5
+- 通过项数：5
+- 不通过项数：5
+- 阻塞项数：2
+
+四、逐项验收结果
+
+- 项目：page-feature task 覆盖
+- 结果：通过
+- 证据：`4-1/task-96`、`4-1/task-97` 在 `progress.json` 中为 completed；control map 声明 S2-01 覆盖 `C2-01, C2-02`
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/progress.json`，`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-2-control-map.md:9`
+
+- 项目：CoreBridge 真实接入
+- 结果：通过
+- 证据：生产代码通过 `CoreBridge.searchFiles` 调用 `searchFiles(...)`，通过 `CoreBridge.listFilterFacets` 调用 `AreaMatrix.listFilterFacets(...)`
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreFileListing.swift:200`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridgeSnapshots.swift:326`
+
+- 项目：搜索 banner、结果、Detail、Clear 基础闭环
+- 结果：通过
+- 证据：新增集成测试覆盖 search request、facet request、Detail request 和 clear 后 idle
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/MainWindowIntegrationVerifyTests.swift:100`
+
+- 项目：S2-01 完整入口/退出
+- 结果：不通过
+- 证据：page spec 要求 Cmd+F、Smart List、Cmd+K 入口，以及 Smart List Back/Clear 返回语义；实际搜索入口只有 toolbar `TextField` 和 `.onExitCommand`
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-2-experience/S2-01-search-results.md:20`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift:139`
+
+- 项目：S2-01 全部页面状态
+- 结果：不通过
+- 证据：文档要求 0 结果进入 `S2-04`、高级查询错误进入 `S2-05`、索引不可用提供 `Open indexing status`；实际只显示 `No search results`、diagnostic 文本和 `Search index unavailable`，未见页面路由或 Open indexing status 动作
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-2-experience/S2-01-search-results.md:95`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentNoteDrafts.swift:70`
+
+- 项目：Save... 保存搜索入口
+- 结果：不通过
+- 证据：page spec 要求 banner 有 `Save...` 且打开 `S2-03 saved-search-sheet`；实际 banner 只有 Retry、Filters、Clear，代码搜索未发现 `Save...` 或 saved search 入口
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-2-experience/S2-01-search-results.md:86`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentNoteDrafts.swift:147`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git status --short -- core/src` 无输出，未触碰 `core/src/**`
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过，S2-01 整页闭环缺入口/路由/保存搜索等页面层状态机证据。
+- 注释 / rustdoc / 文档同步：通过，本 task 未修改 docs/API/UDL，Swift 生产改动小。
+- 错误处理与边界处理：不通过，Search API 失败有错误态，但 0 结果、query error、索引不可用未按 page spec 串到对应页面/动作。
+- 测试与验证覆盖：不通过，`./dev check task 4-1/task-98` 通过，但测试未覆盖 Cmd+F、Smart List、Save、S2-04/S2-05 路由、Open indexing status。
+- 占位、硬编码、mock-only、一次性实现检查：不通过，新增 task-98 集成测试主要用 recording doubles/fixture 证明 wiring，不能替代完整页面闭环验收。
+
+六、阻塞项
+
+- P1：S2-01 页面状态路由未完整落地。文档要求 0 结果进入 `S2-04`、高级查询错误进入 `S2-05`、索引不可用提供 `Open indexing status`；当前实现只在同页显示文本，缺少可验收页面闭环。路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentNoteDrafts.swift:70`、`:245`。
+- P1：S2-01 入口/退出与保存搜索入口缺失。文档要求 Cmd+F、Smart List、Cmd+K 入口、Smart List Back/Clear 返回语义，以及 `Save...` 打开 `S2-03`；当前实现未见这些入口和保存按钮。路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift:139`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentNoteDrafts.swift:147`。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-98`
+- 通过：prompt doctor、git diff check、macOS xcodebuild build；命令退出码 0
+- 失败：无命令失败
+- 缺失：未见覆盖 Cmd+F、Smart List、Save...、S2-04、S2-05、Open indexing status 的实现和测试证据
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。虽然 `C2-01/C2-02` 基础 CoreBridge 接入和构建验证通过，但 S2-01 page integration verify 要求整页按 page spec/control map 完整验收，当前仍缺关键入口、退出、保存和状态路由证据。
+
+VERIFY_RESULT: FAIL

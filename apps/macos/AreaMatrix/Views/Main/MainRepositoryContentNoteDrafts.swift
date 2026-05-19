@@ -69,8 +69,12 @@ extension MainRepositoryContentView {
     @ViewBuilder
     var emptyListOverlay: some View {
         if !fileListModel.isLoading, visibleFiles.isEmpty, importProgressRows.isEmpty {
-            Text(fileListModel.searchState.isActive ? "No search results" : "No files in this category")
-                .foregroundStyle(.secondary)
+            if let destination = fileListModel.searchPageDestination {
+                searchRouteStatus(destination)
+            } else {
+                Text(fileListModel.searchState.isActive ? "No search results" : "No files in this category")
+                    .foregroundStyle(.secondary)
+            }
         }
     }
 
@@ -160,6 +164,10 @@ extension MainRepositoryContentView {
                     Button(searchFiltersButtonTitle) {
                         isSearchFiltersPresented.toggle()
                     }
+                    Button("Save...") {
+                        fileListModel.openSavedSearchSheet()
+                    }
+                    .disabled(!fileListModel.canSaveCurrentSearch)
                     Button("Clear") {
                         clearSearch()
                     }
@@ -248,9 +256,14 @@ extension MainRepositoryContentView {
                 .font(.callout)
                 .foregroundStyle(.secondary)
         } else if fileListModel.searchState.indexStatus == .unavailable {
-            Text("Search index unavailable")
-                .font(.callout)
-                .foregroundStyle(.secondary)
+            HStack(spacing: 10) {
+                Text("Search index unavailable")
+                Button("Open indexing status") {
+                    fileListModel.openIndexingStatus()
+                }
+            }
+            .font(.callout)
+            .foregroundStyle(.secondary)
         } else if fileListModel.searchState.isLoading {
             Text("Searching...")
                 .font(.callout)
@@ -288,6 +301,24 @@ extension MainRepositoryContentView {
         }
     }
 
+    func beginCommandFindSearch() {
+        fileListModel.enterSearch(context: .commandFind)
+        searchScope = .all
+        isSearchFieldFocused = true
+    }
+
+    func handleSearchEscape() {
+        if isSearchFiltersPresented {
+            isSearchFiltersPresented = false
+            return
+        }
+        if filterText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            isSearchFieldFocused = false
+            return
+        }
+        clearSearch()
+    }
+
     func resetSearchFilters() {
         searchFilters = .empty
     }
@@ -311,5 +342,21 @@ extension MainRepositoryContentView {
             )
         }
         .accessibilityLabel(searchFiltersAccessibilityLabel)
+    }
+
+    @ViewBuilder
+    private func searchRouteStatus(_ destination: MainSearchDestination) -> some View {
+        switch destination {
+        case let .searchEmpty(request):
+            SearchEmptyRouteView(request: request, onClear: clearSearch)
+        case let .queryError(request, diagnostic):
+            QueryErrorRouteView(
+                request: request,
+                diagnostic: diagnostic,
+                onClear: clearSearch
+            )
+        case .savedSearchSheet, .indexingStatus, .commandPalette:
+            EmptyView()
+        }
     }
 }

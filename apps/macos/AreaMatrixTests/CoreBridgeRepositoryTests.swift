@@ -242,7 +242,8 @@ final class MainSearchFiltersPageFeatureTests: XCTestCase {
             filters: .empty
         )
         XCTAssertEqual(model.searchFacetsState.errorMapping, mapping)
-        XCTAssertEqual(await mapper.recordedErrors(), [CoreError.Db(message: "facet db locked")])
+        let mappedErrors = await mapper.recordedErrors()
+        XCTAssertEqual(mappedErrors, [CoreError.Db(message: "facet db locked")])
 
         await model.retrySearchFacets()
         XCTAssertEqual(model.searchFacetsState.facets?.activeFilterCount, 1)
