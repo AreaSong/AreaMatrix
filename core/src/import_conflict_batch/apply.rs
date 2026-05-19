@@ -537,7 +537,9 @@ fn error_message(error: CoreError) -> String {
         CoreError::Io { message } | CoreError::Db { message } | CoreError::Internal { message } => {
             message
         }
-        CoreError::Config { reason } | CoreError::Classify { reason } => reason,
+        CoreError::Config { reason }
+        | CoreError::Validation { reason }
+        | CoreError::Classify { reason } => reason,
         CoreError::RepoNotInitialized { path } | CoreError::ICloudPlaceholder { path } => path,
     }
 }

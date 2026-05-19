@@ -88,8 +88,12 @@ pub use redo::{
 };
 pub use search::*;
 pub use tags::{
-    add_tag, batch_add_tags, list_tags, remove_tag, BatchMutationItemResult, BatchMutationReport,
-    BatchMutationStatus, TagRecord, TagSet,
+    add_tag, apply_tag_suggestions, batch_add_tags, list_tags, remove_tag, suggest_tags_for_file,
+    ApplyTagSuggestionItem, ApplyTagSuggestionsRequest, BatchMutationItemResult,
+    BatchMutationReport, BatchMutationStatus, TagRecord, TagSet, TagSuggestion,
+    TagSuggestionApplyItemResult, TagSuggestionApplyReport, TagSuggestionApplyStatus,
+    TagSuggestionContext, TagSuggestionMatch, TagSuggestionReport, TagSuggestionRequest,
+    TagSuggestionSource, TagSuggestionStatus,
 };
 pub use undo::{
     list_undo_actions, undo_action, UndoActionRecord, UndoActionResult, UndoActionStatus,

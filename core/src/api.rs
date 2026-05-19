@@ -6,9 +6,9 @@ use crate::{
     batch_category, batch_delete, batch_rename as batch_rename_mod, classifier_correction,
     classifier_impact, classifier_rule_editor, classifier_rules, classify, db, icloud_conflicts,
     import_conflict_batch, note, recovery, redo, repair, repo_init, repo_path, repo_scan, storage,
-    sync, tree, BatchCategoryChangeReport, BatchCategoryPreviewReport, BatchDeleteMode,
-    BatchDeletePreviewReport, BatchDeleteReport, BatchRenamePreviewReport, BatchRenameReport,
-    BatchRenameRule, ChangeFilter, ChangeLogEntry, ClassifierCorrectionResult,
+    sync, tree, ApplyTagSuggestionsRequest, BatchCategoryChangeReport, BatchCategoryPreviewReport,
+    BatchDeleteMode, BatchDeletePreviewReport, BatchDeleteReport, BatchRenamePreviewReport,
+    BatchRenameReport, BatchRenameRule, ChangeFilter, ChangeLogEntry, ClassifierCorrectionResult,
     ClassifierImpactPreviewRequest, ClassifierRule, ClassifierRuleCreateRequest,
     ClassifierRuleDeleteRequest, ClassifierRuleEditorSnapshot, ClassifierRuleUpdate,
     ClassifyResult, CoreError, CoreResult, DiagnosticsSnapshot, ExternalEvent, FileEntry,
@@ -17,7 +17,7 @@ use crate::{
     ImportConflictBatchPreviewReport, ImportConflictBatchPreviewRequest, ImportOptions,
     MoveToCategoryPreview, RecoveryReport, RedoActionRecord, RedoActionResult, ReindexReport,
     RepairOptions, RepairReport, RepoConfig, RepoInitOptions, RepoPathValidation, RuleImpactReport,
-    ScanSession, SyncResult,
+    ScanSession, SyncResult, TagSuggestionApplyReport, TagSuggestionReport, TagSuggestionRequest,
 };
 
 fn not_implemented<T>() -> CoreResult<T> {
@@ -1138,6 +1138,50 @@ pub fn list_redo_actions(repo_path: String) -> CoreResult<Vec<RedoActionRecord>>
 /// filesystem execution or rollback failures.
 pub fn redo_action(repo_path: String, action_id: String) -> CoreResult<RedoActionResult> {
     redo::redo_action(repo_path, action_id)
+}
+
+/// Suggests deterministic C2-19 tags for S2-23 without reading file contents.
+///
+/// The contract inspects only repository metadata, file name, relative path,
+/// optional import source context, and existing tag registry state. The output
+/// tells S2-23 which suggestions are strong/weak, already added, invalid, or
+/// blocked, plus privacy flags proving no AI, network, or content read was
+/// used.
+///
+/// # Errors
+///
+/// Returns `CoreError::FileNotFound { path }` when the active file is missing,
+/// `CoreError::Validation { reason }` for invalid limits or context,
+/// `CoreError::Conflict { path }` when metadata cannot produce a deterministic
+/// suggestion set, and `CoreError::Db { message }` when file or tag metadata
+/// cannot be read.
+pub fn suggest_tags_for_file(
+    repo_path: String,
+    request: TagSuggestionRequest,
+) -> CoreResult<TagSuggestionReport> {
+    crate::tags::suggest_tags_for_file(repo_path, request)
+}
+
+/// Applies selected or edited C2-19 tag suggestions for one active file.
+///
+/// A successful implementation creates or reuses normalized tags, writes only
+/// the selected file/tag relations, records change-log rows, and returns a
+/// C2-07 undo token when new relations were added. It must not apply ignored
+/// suggestions, alter filters, move/rename/delete files, read file contents, or
+/// call AI/network providers.
+///
+/// # Errors
+///
+/// Returns `CoreError::FileNotFound { path }` when the active file is missing,
+/// `CoreError::Validation { reason }` for empty or invalid submitted
+/// suggestions, `CoreError::Conflict { path }` for duplicate edited rows that
+/// cannot be applied deterministically, and `CoreError::Db { message }` when
+/// tag metadata, change-log, or undo writes fail.
+pub fn apply_tag_suggestions(
+    repo_path: String,
+    request: ApplyTagSuggestionsRequest,
+) -> CoreResult<TagSuggestionApplyReport> {
+    crate::tags::apply_tag_suggestions(repo_path, request)
 }
 
 /// Reads the markdown note associated with one active file entry.

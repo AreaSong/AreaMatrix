@@ -43,6 +43,9 @@ pub enum CoreError {
     #[error("config error: {reason}")]
     Config { reason: String },
 
+    #[error("validation error: {reason}")]
+    Validation { reason: String },
+
     #[error("classification failed: {reason}")]
     Classify { reason: String },
 
@@ -119,6 +122,7 @@ impl From<walkdir::Error> for CoreError {
 | `Io { message }` | 文件读写失败、磁盘空间、损坏 | 视情况 | toast「文件操作失败：{}」 | medium |
 | `Db { message }` | SQLite locked、busy、schema 损坏、索引损坏 | locked/busy 可重试；损坏不可自动重试 | locked/busy：inline Retry；损坏：blocking repair | medium / critical |
 | `Config { reason }` | classifier.yaml 解析失败、必填字段缺失 | 否 | 弹窗：跳转到设置 → 显示具体字段错误 | medium |
+| `Validation { reason }` | API 输入无效、编辑草稿不合法、数量上限越界 | 否 | inline field error 或 toast「输入无效」 | low |
 | `Classify { reason }` | 分类引擎内部错误 | 否 | toast「分类失败」+ 落到 inbox | low |
 | `Conflict { path }` | 路径冲突（应已被 conflict::resolve 解决） | 否 | toast「路径冲突」 | medium |
 | `DuplicateFile { existing_path }` | 拖入重复 hash 文件且 strategy=Skip | 否 | 弹窗：跳过 / 覆盖 / 保留两份 | low |
@@ -521,6 +525,7 @@ public enum AppError: Error, LocalizedError {
     case io(String)
     case db(String)
     case config(reason: String)
+    case validation(reason: String)
     case classify(reason: String)
     case conflict(path: String)
     case duplicate(existingPath: String)
@@ -538,6 +543,7 @@ public enum AppError: Error, LocalizedError {
         case .io(let msg): return String(localized: "core.io.\(msg)")
         case .db(let msg): return String(localized: "core.db.\(msg)")
         case .config(let r): return String(localized: "core.config.\(r)")
+        case .validation(let r): return String(localized: "core.validation.\(r)")
         case .classify(let r): return String(localized: "core.classify.\(r)")
         case .conflict(let p): return String(localized: "core.conflict.\(p)")
         case .duplicate(let p): return String(localized: "core.dup.\(p)")
@@ -559,6 +565,7 @@ extension CoreError {
         case .Io(let m): return .io(m)
         case .Db(let m): return .db(m)
         case .Config(let r): return .config(reason: r)
+        case .Validation(let r): return .validation(reason: r)
         case .Classify(let r): return .classify(reason: r)
         case .Conflict(let p): return .conflict(path: p)
         case .DuplicateFile(let p): return .duplicate(existingPath: p)
@@ -723,6 +730,7 @@ flowchart TB
 | `Io` | `io_when_disk_full`, `io_when_source_corrupt` |
 | `Db` | `db_when_corrupted`, `db_when_busy_recovers` |
 | `Config` | `config_when_yaml_invalid`, `config_when_default_missing` |
+| `Validation` | `validation_when_tag_suggestion_input_invalid` |
 | `Classify` | `classify_when_engine_panics` |
 | `Conflict` | （罕见，仅 stress test） |
 | `DuplicateFile` | `duplicate_when_same_hash`, `duplicate_skip_strategy` |

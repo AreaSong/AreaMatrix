@@ -14,6 +14,8 @@ pub enum ErrorKind {
     Db,
     /// Configuration validation or persistence failure.
     Config,
+    /// User input validation failed.
+    Validation,
     /// Classification rule failure.
     Classify,
     /// Path or naming conflict.
@@ -136,6 +138,13 @@ static CONFIG_MAPPING: ErrorMappingTemplate = ErrorMappingTemplate {
     recoverability: ErrorRecoverability::UserActionRequired,
 };
 
+static VALIDATION_MAPPING: ErrorMappingTemplate = ErrorMappingTemplate {
+    user_message: "输入无效",
+    severity: ErrorSeverity::Low,
+    suggested_action: "请修改输入后重试",
+    recoverability: ErrorRecoverability::UserActionRequired,
+};
+
 static CLASSIFY_MAPPING: ErrorMappingTemplate = ErrorMappingTemplate {
     user_message: "分类失败",
     severity: ErrorSeverity::Low,
@@ -219,6 +228,7 @@ impl ErrorKind {
             Self::Io => &IO_MAPPING,
             Self::Db => &DB_MAPPING,
             Self::Config => &CONFIG_MAPPING,
+            Self::Validation => &VALIDATION_MAPPING,
             Self::Classify => &CLASSIFY_MAPPING,
             Self::Conflict => &CONFLICT_MAPPING,
             Self::DuplicateFile => &DUPLICATE_FILE_MAPPING,
@@ -253,6 +263,9 @@ pub enum CoreError {
     /// Configuration validation or persistence failure.
     #[error("config error: {reason}")]
     Config { reason: String },
+    /// User input validation failure.
+    #[error("validation error: {reason}")]
+    Validation { reason: String },
     /// Classification rule failure.
     #[error("classification failed: {reason}")]
     Classify { reason: String },
@@ -314,6 +327,13 @@ impl CoreError {
     /// Creates a configuration error with a user-actionable reason.
     pub fn config(reason: impl Into<String>) -> Self {
         Self::Config {
+            reason: reason.into(),
+        }
+    }
+
+    /// Creates a validation error with a user-actionable reason.
+    pub fn validation(reason: impl Into<String>) -> Self {
+        Self::Validation {
             reason: reason.into(),
         }
     }
@@ -380,6 +400,7 @@ impl CoreError {
             Self::Io { .. } => ErrorKind::Io,
             Self::Db { .. } => ErrorKind::Db,
             Self::Config { .. } => ErrorKind::Config,
+            Self::Validation { .. } => ErrorKind::Validation,
             Self::Classify { .. } => ErrorKind::Classify,
             Self::Conflict { .. } => ErrorKind::Conflict,
             Self::DuplicateFile { .. } => ErrorKind::DuplicateFile,
@@ -398,7 +419,9 @@ impl CoreError {
     pub fn raw_context(&self) -> &str {
         match self {
             Self::Io { message } | Self::Db { message } | Self::Internal { message } => message,
-            Self::Config { reason } | Self::Classify { reason } => reason,
+            Self::Config { reason } | Self::Validation { reason } | Self::Classify { reason } => {
+                reason
+            }
             Self::ExpiredAction { action_id } => action_id,
             Self::Conflict { path }
             | Self::FileNotFound { path }
@@ -441,6 +464,7 @@ impl ErrorMappingInput {
             ErrorKind::Io => CoreError::Io { message },
             ErrorKind::Db => CoreError::Db { message },
             ErrorKind::Config => CoreError::Config { reason },
+            ErrorKind::Validation => CoreError::Validation { reason },
             ErrorKind::Classify => CoreError::Classify { reason },
             ErrorKind::Conflict => CoreError::Conflict { path },
             ErrorKind::DuplicateFile => CoreError::DuplicateFile {

@@ -343,6 +343,7 @@ fn normalize_contract_error(error: CoreError) -> CoreError {
         | CoreError::Conflict { .. }
         | CoreError::Io { .. }
         | CoreError::Db { .. }
+        | CoreError::Validation { .. }
         | CoreError::StagingRecoveryRequired { .. } => error,
         CoreError::Config { .. } => CoreError::classify("classification error"),
         CoreError::DuplicateFile { .. } => CoreError::conflict("path conflict"),
