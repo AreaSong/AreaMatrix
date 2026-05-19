@@ -1,0 +1,66 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-1/task-94`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-94-c2-19-validation.md`
+- Manifest 章节：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-4.md`
+- 涉及路径：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/**`
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：补齐单元测试、集成测试或契约测试，覆盖成功和失败路径
+- 结果：通过
+- 证据：`core/tests/tag_suggestions_contract_api.rs` 覆盖合同与输入错误；`core/tests/tag_suggestions_implementation.rs` 覆盖生成、采纳、already-added；`core/tests/tag_suggestions_failure_recovery.rs` 覆盖无效输入、缺表、权限、undo 失败、DB item 失败；`core/tests/tag_suggestions_validation.rs` 覆盖 UI 接入前的成功、失败、持久化回滚与消费者读取。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/tag_suggestions_*.rs`
+
+- 项目：验证 Core API / UDL / Rust 实现三者一致
+- 结果：通过
+- 证据：`core/src/api.rs:1158`、`core/src/api.rs:1180` 暴露 `suggest_tags_for_file` / `apply_tag_suggestions`；`core/area_matrix.udl:205`、`core/area_matrix.udl:210` 暴露同名 UDL；`docs/api/core-api.md:1394`、`docs/api/core-api.md:1395` 记录错误合同；validation 测试锁定 docs / API / UDL / Rust surface。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+
+- 项目：不新增业务功能，只补验证与必要测试 fixture
+- 结果：通过
+- 证据：当前 diff 只显示 `core/tests/tag_suggestions_validation.rs` 未跟踪，`git diff --name-status -- apps core/src core/area_matrix.udl core/tests` 无输出，说明本轮验收范围内未发现生产代码、UDL 或 `apps/**` 改动。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/tag_suggestions_validation.rs`
+
+- 项目：记录无法运行的验证及原因
+- 结果：通过
+- 证据：要求验证 `./dev check task 4-1/task-94` 已实际运行并通过；无必需验证缺失。
+- 涉及命令：`./dev check task 4-1/task-94`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。C2-19 实现分层在 `core/src/tags/suggestions.rs`、`core/src/db/tags/suggestions.rs`、`core/src/tags/suggestion_types.rs`，职责清楚。
+- 注释 / rustdoc / 文档同步：通过。public API 有 rustdoc 和 `# Errors`；Core API、UDL、capability spec、control map 均有对应合同。
+- 错误处理与边界处理：通过。生产路径抽查未发现 `unwrap()` / `expect()` / `panic!()`；失败测试覆盖 FileNotFound / Validation / Conflict / Db / PermissionDenied 映射与回滚。
+- 测试与验证覆盖：通过。`./dev check task 4-1/task-94` 运行 4 个 targeted test binary，合计 21 个测试通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。实现连接 DB tag、change_log、undo_actions、search/list/detail 消费路径；suggest 报告明确 `contents_read=false`、`ai_used=false`、`network_used=false`。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-94`
+- 通过：`prompt doctor` OK，`git diff --check` OK，`tag_suggestions_contract_api` 4 passed，`tag_suggestions_failure_recovery` 10 passed，`tag_suggestions_implementation` 3 passed，`tag_suggestions_validation` 4 passed。
+- 失败：无
+- 缺失：无
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。C2-19 有足够测试证明可进入 UI 接入，manifest 验证命令已通过，`apps/**` 未被触碰。
+
+
+VERIFY_RESULT: PASS
