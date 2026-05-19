@@ -1,0 +1,81 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-1/task-90`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-90-c2-18-integration-verify.md`
+- Exact Docs：
+  - `docs/core/capability-specs/stage-2-experience/C2-18-redo-action-log.md`
+  - `docs/architecture/stage-2-control-map.md`
+  - `docs/api/core-api.md`
+  - `docs/ux/page-specs/stage-2-experience/S2-22-redo.md`
+- Existing Code / Expected New Paths：
+  - `core/src/**`
+  - `core/area_matrix.udl`
+  - `core/tests/**`
+- Forbidden Touches：`apps/**`
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：交叉检查 capability spec、Core API、UDL、Rust 实现和测试
+- 结果：通过
+- 证据：`C2-18` 文档声明 `list_redo_actions`、`redo_action(repo_path, action_id)`；`core/area_matrix.udl:212`、`:215` 暴露接口，`:836`、`:850`、`:1202` 定义 redo 记录、结果和状态；`core/src/api.rs:1094`、`:1116` 提供 public API 和 rustdoc；`core/src/redo.rs:85`、`:108` 连接真实 DB redo 路径；`core/tests/redo_action_log_validation.rs:195`、`:202`、`:273`、`:341`、`:393` 覆盖合同、成功、清空、阻塞、回滚和 Trash 路径。
+- 涉及文件：`docs/core/capability-specs/stage-2-experience/C2-18-redo-action-log.md`、`docs/api/core-api.md`、`core/area_matrix.udl`、`core/src/api.rs`、`core/src/redo.rs`、`core/src/db/redo.rs`、`core/tests/redo_action_log_validation.rs`
+
+- 项目：确认消费页面需要的状态、错误和副作用均已覆盖
+- 结果：通过
+- 证据：`S2-22-redo.md:50` 到 `:61` 要求 Available/Cleared/Blocked/Expired、清空、外部变更、Trash 重新检查；UDL 定义 `RedoActionStatus`；`core/src/db/redo/records.rs:82` 到 `:114` 生成可用性、禁用原因和来源 Undo；`core/src/db/redo/file_actions.rs:171` 到 `:215`、`:313` 到 `:337` 覆盖外部变更、路径冲突、文件缺失；`core/tests/redo_action_log_failure_recovery.rs` 在验证命令中 12 项通过。
+- 涉及文件：`docs/ux/page-specs/stage-2-experience/S2-22-redo.md`、`core/src/db/redo/records.rs`、`core/src/db/redo/file_actions.rs`、`core/tests/redo_action_log_failure_recovery.rs`
+
+- 项目：确认没有实现 control map 之外的能力
+- 结果：通过
+- 证据：control map `S2-22` 只声明 `C2-18, C2-07`；`core/src/api.rs:1125` 到 `:1127` 明确不实现 Undo 本身、batch actions、import conflict、classifier、AI、remote sync 或独立 Redo 页面；`core/src/redo.rs:72` 到 `:78` 明确 list 是 metadata-only，且不触发 reindex、iCloud、AI/network 或 app 层。
+- 涉及文件：`docs/architecture/stage-2-control-map.md`、`core/src/api.rs`、`core/src/redo.rs`
+
+- 项目：不得修改文件；只记录验收证据和阻塞项
+- 结果：通过
+- 证据：本轮未执行写入、formatter 或修复命令；`git diff --name-status -- apps` 无输出，未触碰 Forbidden Touches。工作区已有 `core/tests/redo_action_log_validation.rs` 格式化差异和 task-loop 运行证据文件，但不属于本轮验收修改；`git diff --check` 通过。
+- 涉及文件：`apps/**`、`core/tests/redo_action_log_validation.rs`、`.codex/task-loop-runs/20260519_155620/summary.json`、`tasks/prompts/_shared/progress.json`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，redo 入口、DB orchestration、records、tags、file actions、batch file actions、fs rollback 分层清楚；核心文件均低于 500 行。
+- 注释 / rustdoc / 文档同步：通过，public API 和 public redo 类型有 rustdoc；Core API、UDL、capability spec、control map 已由验证测试锁定。
+- 错误处理与边界处理：通过，覆盖 `Conflict`、`FileNotFound`、`PermissionDenied`、`ExpiredAction`、`Db`、`Io`；失败 redo 通过 rollback guard 保持 DB/FS 不被部分提交。
+- 测试与验证覆盖：通过，专项 contract、failure recovery、implementation、validation 测试全部通过，并包含 Core quality gate。
+- 占位、硬编码、mock-only、一次性实现检查：通过，未发现 `unimplemented!`、业务路径 `panic!`、mock-only 或静态通过态；测试使用 fixture 属于集成测试构造，不是产品实现。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-90`
+- 通过：
+  - `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`
+  - `git diff --check`
+  - `cargo fmt --all -- --check`
+  - `cargo clippy --all-targets --all-features -- -D warnings`
+  - `cargo test --test redo_action_log_contract_api -- --nocapture`：4 passed
+  - `cargo test --test redo_action_log_failure_recovery -- --nocapture`：12 passed
+  - `cargo test --test redo_action_log_implementation -- --nocapture`：8 passed
+  - `cargo test --test redo_action_log_validation -- --nocapture`：5 passed
+- 失败：无
+- 缺失：未运行 `./dev check all`，原因是本 task manifest 只要求 `./dev check task 4-1/task-90`，且 validation-driver 对 Core capability integration verify 要求专项 Rust tests + Core quality gate，本次已覆盖。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。`C2-18 redo-action-log` 可以作为后续 page-feature task 的真实 Core 依赖；当前验收不阻塞后续 UI 接入。
+
+VERIFY_RESULT: PASS

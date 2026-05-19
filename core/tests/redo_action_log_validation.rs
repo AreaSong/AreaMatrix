@@ -234,7 +234,10 @@ fn redo_action_log_validation_success_paths_are_ui_ready() {
             (second_id, "urgent".to_owned())
         ]
     );
-    assert_eq!(undo_status(repo.path(), tag_result.action_id.as_str()), "pending");
+    assert_eq!(
+        undo_status(repo.path(), tag_result.action_id.as_str()),
+        "pending"
+    );
     assert!(list_redo_actions(path_string(repo.path()))
         .expect("list redo after execution")
         .is_empty());
@@ -301,8 +304,12 @@ fn redo_action_log_validation_cleared_and_blocked_paths_do_not_mutate_state() {
     assert_eq!(snapshot(repo.path()), cleared_before);
 
     let blocked_id = insert_file(repo.path(), "docs/source.pdf", "docs");
-    rename_file(path_string(repo.path()), blocked_id, "target.pdf".to_owned())
-        .expect("create rename action");
+    rename_file(
+        path_string(repo.path()),
+        blocked_id,
+        "target.pdf".to_owned(),
+    )
+    .expect("create rename action");
     let blocked_token = latest_undo_action_id(repo.path(), "rename_files");
     undo_action(path_string(repo.path()), blocked_token.clone()).expect("undo rename");
     fs::write(repo.path().join("docs/target.pdf"), b"external conflict")
