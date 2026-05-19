@@ -71,13 +71,14 @@ pub(super) fn execute_restore_batch_file_state_redo(
     ensure_batch_file_state_matches_restored(tx, inverse)?;
     let mut guards = move_redo_batch_active_paths(repo, inverse)?;
     if let Err(error) = update_batch_file_state_to_expected(tx, inverse, completed_at) {
-        for guard in &mut guards {
-            guard.rollback();
-        }
-        return Err(error);
+        return Err(fs_ops::rollback_guards_or_error(&mut guards, error));
     }
     for item in &inverse.items {
-        insert_file_redo_change(tx, kind, item.file_id, completed_at, &inverse.operation)?;
+        if let Err(error) =
+            insert_file_redo_change(tx, kind, item.file_id, completed_at, &inverse.operation)
+        {
+            return Err(fs_ops::rollback_guards_or_error(&mut guards, error));
+        }
     }
     Ok(RedoExecution {
         summary: format!("Redone: {}.", inverse.operation),
@@ -97,19 +98,18 @@ pub(super) fn execute_restore_batch_deleted_files_redo(
     ensure_batch_deleted_files_match_restored(tx, inverse)?;
     let mut guards = move_batch_files_to_trash(repo, inverse)?;
     if let Err(error) = update_batch_deleted_files_to_deleted(tx, inverse, completed_at) {
-        for guard in &mut guards {
-            guard.rollback();
-        }
-        return Err(error);
+        return Err(fs_ops::rollback_guards_or_error(&mut guards, error));
     }
     for item in &inverse.items {
-        insert_file_redo_change(
+        if let Err(error) = insert_file_redo_change(
             tx,
             TRASH_DELETE_KIND,
             item.file_id,
             completed_at,
             &inverse.operation,
-        )?;
+        ) {
+            return Err(fs_ops::rollback_guards_or_error(&mut guards, error));
+        }
     }
     Ok(RedoExecution {
         summary: "Redone: moved files to Trash.".to_owned(),
@@ -189,7 +189,11 @@ fn move_redo_batch_active_paths(
         if restored_path == expected_path {
             continue;
         }
-        guards.push(fs_ops::move_checked_path(&restored_path, &expected_path)?);
+        guards.push(fs_ops::move_checked_path(
+            repo,
+            &restored_path,
+            &expected_path,
+        )?);
     }
     Ok(guards)
 }
@@ -201,7 +205,7 @@ fn move_batch_files_to_trash(
     let mut guards = Vec::new();
     for item in &inverse.items {
         let current_path = fs_ops::repo_relative_path(repo, &item.restore_path)?;
-        guards.push(fs_ops::move_path_to_user_trash(&current_path)?);
+        guards.push(fs_ops::move_path_to_user_trash(repo, &current_path)?);
     }
     Ok(guards)
 }

@@ -51,9 +51,21 @@ pub(crate) fn execute_redo_action_row(
         return Err(CoreError::conflict("Unsupported redo action kind"));
     };
 
-    restore_pending_undo_action(&tx, row.token.as_str(), completed_at)?;
-    tx.commit()
-        .map_err(|error| CoreError::db(error.to_string()))?;
+    if let Err(error) = restore_pending_undo_action(&tx, row.token.as_str(), completed_at) {
+        return Err(fs_ops::rollback_guards_or_error(
+            &mut execution.guards,
+            error,
+        ));
+    }
+    if let Err(error) = tx
+        .commit()
+        .map_err(|error| CoreError::db(error.to_string()))
+    {
+        return Err(fs_ops::rollback_guards_or_error(
+            &mut execution.guards,
+            error,
+        ));
+    }
     execution.disarm();
 
     Ok(RedoActionResult {

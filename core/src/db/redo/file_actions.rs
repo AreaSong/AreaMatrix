@@ -123,12 +123,13 @@ fn execute_restore_file_state_redo(
         move_redo_active_path(repo, &inverse.restore_path, &inverse.expected_path)?
     };
     if let Err(error) = update_active_file_state_to_expected(tx, inverse, completed_at) {
-        for guard in &mut guards {
-            guard.rollback();
-        }
-        return Err(error);
+        return Err(fs_ops::rollback_guards_or_error(&mut guards, error));
     }
-    insert_file_redo_change(tx, kind, inverse.file_id, completed_at, &inverse.operation)?;
+    if let Err(error) =
+        insert_file_redo_change(tx, kind, inverse.file_id, completed_at, &inverse.operation)
+    {
+        return Err(fs_ops::rollback_guards_or_error(&mut guards, error));
+    }
     Ok(RedoExecution {
         summary: format!("Redone: {}.", inverse.operation),
         affected_count: 1,
@@ -146,20 +147,19 @@ fn execute_restore_deleted_file_redo(
     ensure_restore_deleted_file_kind(inverse)?;
     ensure_deleted_file_matches_restored(tx, inverse)?;
     let current_path = fs_ops::repo_relative_path(repo, &inverse.restore_path)?;
-    let mut guards = vec![fs_ops::move_path_to_user_trash(&current_path)?];
+    let mut guards = vec![fs_ops::move_path_to_user_trash(repo, &current_path)?];
     if let Err(error) = update_deleted_file_state_to_deleted(tx, inverse, completed_at) {
-        for guard in &mut guards {
-            guard.rollback();
-        }
-        return Err(error);
+        return Err(fs_ops::rollback_guards_or_error(&mut guards, error));
     }
-    insert_file_redo_change(
+    if let Err(error) = insert_file_redo_change(
         tx,
         TRASH_DELETE_KIND,
         inverse.file_id,
         completed_at,
         "delete",
-    )?;
+    ) {
+        return Err(fs_ops::rollback_guards_or_error(&mut guards, error));
+    }
     Ok(RedoExecution {
         summary: "Redone: moved file to Trash.".to_owned(),
         affected_count: 1,
@@ -307,7 +307,7 @@ fn move_redo_active_path(
     if restored_path == expected_path {
         return Ok(Vec::new());
     }
-    fs_ops::move_checked_path(&restored_path, &expected_path).map(|guard| vec![guard])
+    fs_ops::move_checked_path(repo, &restored_path, &expected_path).map(|guard| vec![guard])
 }
 
 pub(super) fn filesystem_redo_block_reason(

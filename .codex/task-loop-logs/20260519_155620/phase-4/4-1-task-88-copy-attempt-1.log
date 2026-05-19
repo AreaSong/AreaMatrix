@@ -1,0 +1,53 @@
+一、执行结论
+
+已完成。
+
+二、执行范围
+
+单任务：`4-1/task-88`，未触碰 `apps/**`。
+
+修改文件：
+- `core/src/db/redo/fs_ops.rs`
+- `core/tests/redo_action_log_failure_recovery.rs`
+- `core/tests/support/redo_failure.rs`
+- `core/tests/support/mod.rs`
+- `core/tests/classifier_rule_editor_failure_recovery.rs`
+- `core/tests/classifier_rule_save_failure_recovery.rs`
+
+三、完成情况
+
+- 空态、非法输入、ExpiredAction、DB metadata/write failure、权限、外部文件变化、错误映射：已覆盖。
+- 写入/移动/删除相关失败不留半成品：已用 snapshot 断言 DB、change_log、undo_actions、用户可见路径、staging/generated 状态不变。
+- 隐私/AI/远程调用：已断言 `ai_enabled=false` 保持不变，redo 不写 staging/generated，不在 change_log detail 中写 `api_key` / `secret`。
+- 不吞错、不静默降级：redo 执行前新增普通文件校验，目录替换会返回 `Conflict`，不再进入 move/trash 路径。
+- Forbidden Touches：未触碰 `apps/**`。
+
+四、工程质量
+
+- 代码改动集中在 redo FS 操作边界：`move_checked_path` / `move_path_to_user_trash` 执行前确认源路径是普通文件。
+- 新测试拆出 `core/tests/support/redo_failure.rs`，避免单测试文件超过 500 行。
+- 没有新增依赖、没有 mock-only、没有硬编码通过态。
+- 两个 classifier 相关测试只补 `ErrorKind::ExpiredAction` 的穷举映射，原因是 task gate 的 clippy 编译所有 test target 时暴露既有枚举演进缺口，不改变业务语义。
+
+五、验证情况
+
+已通过：
+- `cd core && cargo fmt --all -- --check`
+- `cd core && cargo test --test redo_action_log_failure_recovery -- --nocapture`：9 passed
+- `./dev check task 4-1/task-88`
+
+`./dev check task 4-1/task-88` 最终通过内容包括：
+- prompt doctor：OK
+- git diff check：OK
+- cargo fmt：OK
+- cargo clippy all targets/features：OK
+- `redo_action_log_contract_api`：4 passed
+- `redo_action_log_failure_recovery`：9 passed
+- `redo_action_log_implementation`：8 passed
+
+六、风险与后续
+
+剩余风险：未运行超出 manifest 上限的 `cargo test --workspace` / `./dev check all`，按本任务要求没有升级验证范围。工作树里已有 `.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json` 变更，我未处理它们。
+
+建议下一个任务：继续 `4-1/task-89`（C2-18 validation）。
+

@@ -1,0 +1,75 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-1/task-88`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-88-c2-18-failure-edge.md`
+- 代码范围：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/**`
+- 禁止范围：`/Users/as/Ai-Project/project/AreaMatrix/apps/**`
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：0
+- 通过项数：10
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：空态、非法输入、权限、IO/DB 错误和错误码映射
+- 结果：通过
+- 证据：task 要求见 `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-88-c2-18-failure-edge.md:21`；C2-18 文档错误码见 `/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-2-experience/C2-18-redo-action-log.md:28`；Core API 错误边界见 `/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:3331`；测试覆盖 empty stack、空 action id、缺失 redo action、cleared/expired、DB metadata、DB write、IO、permission denied，见 `/Users/as/Ai-Project/project/AreaMatrix/core/tests/redo_action_log_failure_recovery.rs:30`
+- 涉及文件：`core/src/redo.rs`、`core/src/db/redo.rs`、`core/tests/redo_action_log_failure_recovery.rs`
+
+- 项目：写入、移动、删除失败不留下半成品
+- 结果：通过
+- 证据：文档要求 redo 失败不得破坏 FS/DB，见 `/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-2-experience/C2-18-redo-action-log.md:37`；实现用事务 + rollback guards，见 `/Users/as/Ai-Project/project/AreaMatrix/core/src/db/redo.rs:34`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/db/redo/fs_ops.rs:33`；测试覆盖 DB 失败回滚真实文件移动、真实 IO 失败无半成品、rollback 失败进入 recovery quarantine，见 `/Users/as/Ai-Project/project/AreaMatrix/core/tests/redo_action_log_failure_recovery.rs:250`、`:293`、`:318`
+- 涉及文件：`core/src/db/redo/fs_ops.rs`、`core/src/db/redo/file_actions.rs`、`core/src/db/redo/batch_file_actions.rs`
+
+- 项目：隐私 / AI / 远程调用默认关闭、密钥不入日志
+- 结果：通过
+- 证据：Core API 明确 redo 不调用 AI/network provider，见 `/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:3295`、`:3341`；实现搜索未发现 redo 路径调用网络或 AI provider；测试断言 `ai_enabled=false` 不变、generated/staging 不被无关写入、change_log 不含 `api_key` / `secret`，见 `/Users/as/Ai-Project/project/AreaMatrix/core/tests/redo_action_log_failure_recovery.rs:412`
+- 涉及文件：`core/tests/redo_action_log_failure_recovery.rs`
+
+- 项目：不得吞错或静默降级
+- 结果：通过
+- 证据：`redo_action` 明确返回 `FileNotFound`、`ExpiredAction`、`Conflict`、`PermissionDenied`、`Db`、`Io`；rollback 失败被包装为可观察 IO 错误并保留 recovery 路径，见 `/Users/as/Ai-Project/project/AreaMatrix/core/src/db/redo/fs_ops.rs:97`、`:122`
+- 涉及文件：`core/src/db/redo/fs_ops.rs`
+
+- 项目：Expected New Paths
+- 结果：通过
+- 证据：manifest 期望 `core/src/**`、`core/area_matrix.udl`、`core/tests/**`，见 `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-4.md:2593`；三项均存在，且新增/现有 C2-18 实现和测试落在这些路径内
+- 涉及文件：`core/src/**`、`core/area_matrix.udl`、`core/tests/**`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：manifest 禁止 `apps/**`，见 `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-4.md:2598`；`git diff --name-status -- apps` 无输出
+- 涉及文件：无 `apps/**` 改动
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。redo 入口、metadata records、tag redo、file redo、batch file redo、fs rollback 分层清楚，核心事务入口见 `/Users/as/Ai-Project/project/AreaMatrix/core/src/db/redo.rs:34`
+- 注释 / rustdoc / 文档同步：通过。公开 C2-18 API 和结构体有 rustdoc，UDL/API 对齐见 `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:211`、`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:3267`
+- 错误处理与边界处理：通过。无未证明的静默成功路径；外部变化、目录替换、权限、DB 和 IO 均显式返回结构化错误
+- 测试与验证覆盖：通过。`./dev check task 4-1/task-88` 已通过，含 doctor、diff check、fmt、clippy、redo contract、failure recovery、implementation tests
+- 占位、硬编码、mock-only、一次性实现检查：通过。实现连接真实 DB/FS/Trash/rollback 路径；测试用 tempdir 和 SQLite trigger 注入失败，不是 mock-only 闭环
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-88`
+- 通过：prompt doctor OK；`git diff --check` 通过；`cargo fmt --all -- --check` 通过；`cargo clippy --all-targets --all-features -- -D warnings` 通过；`redo_action_log_contract_api` 4 passed；`redo_action_log_failure_recovery` 12 passed；`redo_action_log_implementation` 8 passed
+- 失败：无
+- 缺失：无。远端 CI 与 Git checkpoint 属于 runner / PR 收口阶段；本 verify 阶段不因 `progress.json` 仍为 `in_progress` 判不通过
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。C2-18 的失败路径有明确返回、可测试证据和用户文件安全保证；高风险文件动作具备 rollback 或 recovery quarantine 证据，可视为当前 task 完成。
+
+VERIFY_RESULT: PASS

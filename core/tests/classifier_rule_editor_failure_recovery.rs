@@ -176,6 +176,7 @@ fn mapping_input(error: &CoreError) -> ErrorMappingInput {
         ErrorKind::Conflict
         | ErrorKind::DuplicateFile
         | ErrorKind::FileNotFound
+        | ErrorKind::ExpiredAction
         | ErrorKind::RepoNotInitialized
         | ErrorKind::InvalidPath
         | ErrorKind::ICloudPlaceholder
