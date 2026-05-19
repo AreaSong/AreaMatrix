@@ -5,8 +5,8 @@ use std::path::PathBuf;
 use crate::{
     batch_category, batch_delete, batch_rename as batch_rename_mod, classifier_correction,
     classifier_impact, classifier_rule_editor, classifier_rules, classify, db, icloud_conflicts,
-    import_conflict_batch, note, recovery, repair, repo_init, repo_path, repo_scan, storage, sync,
-    tree, BatchCategoryChangeReport, BatchCategoryPreviewReport, BatchDeleteMode,
+    import_conflict_batch, note, redo, recovery, repair, repo_init, repo_path, repo_scan, storage,
+    sync, tree, BatchCategoryChangeReport, BatchCategoryPreviewReport, BatchDeleteMode,
     BatchDeletePreviewReport, BatchDeleteReport, BatchRenamePreviewReport, BatchRenameReport,
     BatchRenameRule, ChangeFilter, ChangeLogEntry, ClassifierCorrectionResult,
     ClassifierImpactPreviewRequest, ClassifierRule, ClassifierRuleCreateRequest,
@@ -15,8 +15,9 @@ use crate::{
     FileFilter, ICloudConflictPair, ICloudConflictPreviewReport, ICloudConflictResolution,
     ICloudConflictResolveReport, ImportConflictBatchApplyReport, ImportConflictBatchApplyRequest,
     ImportConflictBatchPreviewReport, ImportConflictBatchPreviewRequest, ImportOptions,
-    MoveToCategoryPreview, RecoveryReport, ReindexReport, RepairOptions, RepairReport, RepoConfig,
-    RepoInitOptions, RepoPathValidation, RuleImpactReport, ScanSession, SyncResult,
+    MoveToCategoryPreview, RecoveryReport, RedoActionRecord, RedoActionResult, ReindexReport,
+    RepairOptions, RepairReport, RepoConfig, RepoInitOptions, RepoPathValidation,
+    RuleImpactReport, ScanSession, SyncResult,
 };
 
 fn not_implemented<T>() -> CoreResult<T> {
@@ -1088,6 +1089,55 @@ pub fn apply_import_conflict_batch(
     preview_token: String,
 ) -> CoreResult<ImportConflictBatchApplyReport> {
     import_conflict_batch::apply_import_conflict_batch(repo_path, request, preview_token)
+}
+
+/// Lists C2-18 redo action state for S2-22.
+///
+/// S2-22 uses this contract in the redo slot of S2-10 and the redo row of
+/// S2-11. The returned rows expose availability, source undo action, disabled
+/// reasons, affected counts, and updated timestamps so the app can render
+/// `Redo`, `Redo latest`, `Shift+Cmd+Z`, and VoiceOver state from one stable
+/// contract.
+///
+/// This contract is read-only. It must not execute redo, write undo state,
+/// write change-log rows, move files, restore Trash items, retag, reclassify,
+/// reindex, trigger iCloud downloads, call AI/network providers, or touch
+/// `apps/**`.
+///
+/// # Errors
+///
+/// Returns `CoreError::Db { message }` when redo stack metadata cannot be read.
+/// Implementations may also return `CoreError::Io { message }` when summary
+/// state requires AreaMatrix-owned metadata reads.
+pub fn list_redo_actions(repo_path: String) -> CoreResult<Vec<RedoActionRecord>> {
+    redo::list_redo_actions(repo_path)
+}
+
+/// Executes one C2-18 redo action after preflight validation.
+///
+/// `action_id` must reference an available redo row returned by
+/// [`list_redo_actions`]. Redo only replays an AreaMatrix action that was
+/// previously undone successfully, and successful redo restores the original
+/// operation to the C2-07 Undo stack. New writes clear redo availability; this
+/// API must return a cleared, expired, or blocked result/error rather than
+/// replaying across unsafe state.
+///
+/// This contract does not implement Undo itself, batch actions, import
+/// conflict decisions, classifier rules, AI suggestions, remote sync, or a
+/// standalone Redo page.
+///
+/// # Errors
+///
+/// Returns `CoreError::FileNotFound { path }` when `action_id` is empty or no
+/// redo row exists, `CoreError::ExpiredAction { action_id }` when the row was
+/// cleared or expired, `CoreError::Conflict { path }` for external changes,
+/// stale state, path conflicts, or Trash preflight failure,
+/// `CoreError::PermissionDenied { path }` for blocked metadata, Trash, target-file, or
+/// directory permissions, `CoreError::Db { message }` for redo metadata,
+/// change-log, or undo-stack writes, and `CoreError::Io { message }` for
+/// filesystem execution or rollback failures.
+pub fn redo_action(repo_path: String, action_id: String) -> CoreResult<RedoActionResult> {
+    redo::redo_action(repo_path, action_id)
 }
 
 /// Reads the markdown note associated with one active file entry.

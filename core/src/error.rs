@@ -22,6 +22,8 @@ pub enum ErrorKind {
     DuplicateFile,
     /// Requested file does not exist.
     FileNotFound,
+    /// Undo or redo action is no longer available.
+    ExpiredAction,
     /// Repository has not been initialized.
     RepoNotInitialized,
     /// Path is invalid or outside the allowed boundary.
@@ -162,6 +164,13 @@ static FILE_NOT_FOUND_MAPPING: ErrorMappingTemplate = ErrorMappingTemplate {
     recoverability: ErrorRecoverability::RefreshRequired,
 };
 
+static EXPIRED_ACTION_MAPPING: ErrorMappingTemplate = ErrorMappingTemplate {
+    user_message: "操作已过期",
+    severity: ErrorSeverity::Low,
+    suggested_action: "请刷新撤销历史后继续操作",
+    recoverability: ErrorRecoverability::RefreshRequired,
+};
+
 static REPO_NOT_INITIALIZED_MAPPING: ErrorMappingTemplate = ErrorMappingTemplate {
     user_message: "资料库未初始化",
     severity: ErrorSeverity::High,
@@ -214,6 +223,7 @@ impl ErrorKind {
             Self::Conflict => &CONFLICT_MAPPING,
             Self::DuplicateFile => &DUPLICATE_FILE_MAPPING,
             Self::FileNotFound => &FILE_NOT_FOUND_MAPPING,
+            Self::ExpiredAction => &EXPIRED_ACTION_MAPPING,
             Self::RepoNotInitialized => &REPO_NOT_INITIALIZED_MAPPING,
             Self::InvalidPath => &INVALID_PATH_MAPPING,
             Self::ICloudPlaceholder => &ICLOUD_PLACEHOLDER_MAPPING,
@@ -255,6 +265,9 @@ pub enum CoreError {
     /// Requested file does not exist.
     #[error("file not found: {path}")]
     FileNotFound { path: String },
+    /// Undo or redo action is no longer available.
+    #[error("expired action: {action_id}")]
+    ExpiredAction { action_id: String },
     /// Repository has not been initialized.
     #[error("repo not initialized at: {path}")]
     RepoNotInitialized { path: String },
@@ -322,6 +335,13 @@ impl CoreError {
         Self::FileNotFound { path: path.into() }
     }
 
+    /// Creates an expired-action error with the blocked action id.
+    pub fn expired_action(action_id: impl Into<String>) -> Self {
+        Self::ExpiredAction {
+            action_id: action_id.into(),
+        }
+    }
+
     /// Creates a repo-not-initialized error with the repository path.
     pub fn repo_not_initialized(path: impl Into<String>) -> Self {
         Self::RepoNotInitialized { path: path.into() }
@@ -364,6 +384,7 @@ impl CoreError {
             Self::Conflict { .. } => ErrorKind::Conflict,
             Self::DuplicateFile { .. } => ErrorKind::DuplicateFile,
             Self::FileNotFound { .. } => ErrorKind::FileNotFound,
+            Self::ExpiredAction { .. } => ErrorKind::ExpiredAction,
             Self::RepoNotInitialized { .. } => ErrorKind::RepoNotInitialized,
             Self::InvalidPath { .. } => ErrorKind::InvalidPath,
             Self::ICloudPlaceholder { .. } => ErrorKind::ICloudPlaceholder,
@@ -378,6 +399,7 @@ impl CoreError {
         match self {
             Self::Io { message } | Self::Db { message } | Self::Internal { message } => message,
             Self::Config { reason } | Self::Classify { reason } => reason,
+            Self::ExpiredAction { action_id } => action_id,
             Self::Conflict { path }
             | Self::FileNotFound { path }
             | Self::RepoNotInitialized { path }
@@ -425,6 +447,7 @@ impl ErrorMappingInput {
                 existing_path: path,
             },
             ErrorKind::FileNotFound => CoreError::FileNotFound { path },
+            ErrorKind::ExpiredAction => CoreError::ExpiredAction { action_id: path },
             ErrorKind::RepoNotInitialized => CoreError::RepoNotInitialized { path },
             ErrorKind::InvalidPath => CoreError::InvalidPath { path },
             ErrorKind::ICloudPlaceholder => CoreError::ICloudPlaceholder { path },

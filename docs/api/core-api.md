@@ -233,6 +233,12 @@ namespace area_matrix {
     UndoActionResult undo_action(string repo_path, string action_id);
 
     [Throws=CoreError]
+    sequence<RedoActionRecord> list_redo_actions(string repo_path);
+
+    [Throws=CoreError]
+    RedoActionResult redo_action(string repo_path, string action_id);
+
+    [Throws=CoreError]
     FileEntry get_file(string repo_path, i64 file_id);
 
     [Throws=CoreError]
@@ -851,6 +857,30 @@ dictionary UndoActionResult {
     i64 completed_at;
 };
 
+dictionary RedoActionRecord {
+    string action_id;
+    string kind;
+    string summary;
+    i64 affected_count;
+    sequence<string> affected_file_names;
+    RedoActionStatus status;
+    boolean can_redo;
+    string? disabled_reason;
+    string source_undo_action_id;
+    i64 created_at;
+    i64 updated_at;
+};
+
+dictionary RedoActionResult {
+    string action_id;
+    RedoActionStatus status;
+    string summary;
+    i64 affected_count;
+    sequence<string> refresh_targets;
+    string? undo_token;
+    i64 completed_at;
+};
+
 dictionary ChangeFilter {
     i64? file_id;
     string? category;
@@ -1193,9 +1223,10 @@ enum RuleImpactStatus {
 };
 enum RuleImpactConflictKind { "NameConflict", "MissingFile", "UnsupportedStorage", "RuleConflict" };
 enum UndoActionStatus { "Pending", "Executed", "Expired", "Blocked" };
+enum RedoActionStatus { "Available", "Cleared", "Blocked", "Expired", "Executed" };
 enum ErrorKind {
     "Io", "Db", "Config", "Classify", "Conflict", "DuplicateFile",
-    "FileNotFound", "RepoNotInitialized", "InvalidPath",
+    "FileNotFound", "ExpiredAction", "RepoNotInitialized", "InvalidPath",
     "ICloudPlaceholder", "StagingRecoveryRequired", "PermissionDenied", "Internal"
 };
 enum ErrorSeverity { "Low", "Medium", "High", "Critical" };
@@ -1212,6 +1243,7 @@ interface CoreError {
     Conflict(string path);
     DuplicateFile(string existing_path);
     FileNotFound(string path);
+    ExpiredAction(string action_id);
     RepoNotInitialized(string path);
     InvalidPath(string path);
     ICloudPlaceholder(string path);
@@ -1295,6 +1327,8 @@ interface CoreError {
 | `delete_classifier_rule(repo, request)` | classify | √ | Config / PermissionDenied / Io |
 | `list_undo_actions(repo)` | undo | √ | Db / Io |
 | `undo_action(repo, action_id)` | undo | √ | Conflict / FileNotFound / PermissionDenied / Db / Io |
+| `list_redo_actions(repo)` | redo | √ | Db / Io |
+| `redo_action(repo, action_id)` | redo | √ | Conflict / FileNotFound / ExpiredAction / PermissionDenied / Db / Io |
 | `get_file(repo, file_id)` | query | √ | FileNotFound |
 | `list_changes(repo, filter)` | query | √ | Db |
 | `list_tree_json(repo, locale)` | query | √ | RepoNotInitialized / Db / Io |
@@ -3229,6 +3263,92 @@ C2-18。
   FSEvents 造成的变化不得被撤销。
 - 该入口不实现批量改分类、批量删除、批量重命名、导入冲突批量决策、Redo、
   AI 标签建议、远程同步或跨端 Undo。
+
+### `list_redo_actions(repoPath) throws -> [RedoActionRecord]`
+
+```swift
+let actions = try AreaMatrix.listRedoActions(repoPath: repoPath)
+let latest = actions.first { $0.status == .available && $0.canRedo }
+redoRegion.render(action: latest)
+```
+
+C2-18 的 Redo action log 列表入口，服务 `S2-22 redo`，并被宿主
+`S2-10 undo-toast` Redo slot 与 `S2-11 undo-history` Redo row 消费。输入只包含
+已初始化 `repoPath`；输出按最近优先返回 redo stack snapshot，让 Redo 按钮、
+`Redo latest`、`Shift+Cmd+Z`、VoiceOver 和禁用原因从同一份合同中得到状态。
+
+输出 `RedoActionRecord`：
+
+- `action_id`：稳定 redo action 标识，也是 `redo_action` 的输入。
+- `kind`：稳定操作类型，例如 `batch_add_tags`、`move_files`、`rename_files`
+  或 `trash_delete`，供 UI 选择图标和文案。
+- `summary`：显示在 Redo slot 和历史行的操作摘要，不要求 UI 解析 JSON。
+- `affected_count`：影响文件数或关系数。
+- `affected_file_names`：最多若干文件名样例，供 `S2-22` preview 使用。
+- `status`：`Available`、`Cleared`、`Blocked`、`Expired`、`Executed`。
+- `can_redo`：当前是否允许通过 `redo_action` 执行。
+- `disabled_reason`：redo stack 被新写操作清空、外部变化阻塞、跨重启过期、
+  Trash restore 不可用或权限不足时的用户可读原因。
+- `source_undo_action_id`：生成该 redo 行的 C2-07 undo action，供 S2-22 说明来源。
+- `created_at` / `updated_at`：排序、相对时间和状态刷新使用的 Unix 秒级时间戳。
+
+错误与副作用边界：
+
+- `Db`：读取 redo stack metadata、summary、source undo linkage 或状态失败。
+- `Io`：实现阶段读取与 summary 相关的 AreaMatrix-owned metadata 失败。
+- 该 API 只读，不执行 redo，不写 `undo_actions`，不写 `change_log`，不移动、
+  重命名、删除、Trash restore、retag、reclassify、reindex、更新 generated
+  overview、触发 iCloud 下载、调用 AI/network provider 或触碰 `apps/**`。
+- 新写操作清空 redo stack 后必须返回 `Cleared` 或不进入可用列表，并通过
+  `disabled_reason` 提供用户可见原因。
+
+### `redo_action(repoPath, actionId) throws -> RedoActionResult`
+
+```swift
+let result = try AreaMatrix.redoAction(
+    repoPath: repoPath,
+    actionId: action.actionId
+)
+store.refresh(result.refreshTargets)
+```
+
+C2-18 的 Redo 执行入口。输入是已初始化 `repoPath` 和 redo `action_id`；输出
+`RedoActionResult` 告诉 UI 本次重做的最终状态、影响数量、完成摘要、恢复后的
+Undo token 以及需要刷新的页面状态。Redo 只重放 AreaMatrix 成功 Undo 后生成的
+可用 redo action；新的写操作会清空 redo stack，多设备协同 redo 不属于 Stage 2。
+
+输出 `RedoActionResult`：
+
+- `action_id`：本次请求的 redo action 标识。
+- `status`：执行后状态，成功通常为 `Executed`；失败可保持或转为 `Blocked`。
+- `summary`：完成或失败文案，例如 `Redone: moved 5 files to Documents.`。
+- `affected_count`：实际重做影响范围。
+- `refresh_targets`：稳定刷新建议，例如 `files`、`tags`、`undo_actions`、
+  `redo_actions`、`change_log`、`tree`、`selection`，供页面消费方刷新对应 store。
+- `undo_token`：redo 成功后原操作重新进入 C2-07 Undo stack 时创建的 undo token。
+- `completed_at`：重做完成时间。
+
+错误与副作用边界：
+
+- `FileNotFound`：`action_id` 为空、找不到 redo action、或原动作引用的文件已不存在。
+- `ExpiredAction`：redo action 已被新写操作清空、跨重启过期或不再属于可用 stack。
+- `Conflict`：外部变化、路径冲突、stale state 或 Trash preflight 让重做不安全。
+- `PermissionDenied`：metadata、目标文件、Trash restore 或目录写入被权限阻断。
+- `Db`：读取/标记 redo action、写入 redo `change_log` 或恢复 C2-07 undo stack 失败。
+- `Io`：重做文件操作或 rollback 失败。
+- Redo 必须按单个 action 的事务边界执行。失败不得破坏当前文件系统和 DB 状态，
+  不得把未完成 redo 标记为 `Executed`，不得覆盖外部 FSEvents 造成的变化。
+- 该入口不实现 Undo 本身、批量改分类、批量删除、批量重命名、导入冲突批量决策、
+  classifier rule、AI 标签建议、远程同步、多设备 redo 或独立 Redo 页面。
+
+页面消费状态：
+
+- S2-22 可以从列表合同得到 redo 可用性、来源 undo action、影响数量、示例文件、
+  cleared/blocked/expired 原因、相对时间、`Shift+Cmd+Z` 和 VoiceOver 所需状态。
+- S2-22 可以从执行结果得到成功/失败摘要、刷新用 `refresh_targets`、恢复后的
+  `undo_token` 和失败后是否继续保留 redo row。
+- S2-10 / S2-11 只作为宿主区域消费 C2-18 状态；本合同不新增 control map 之外的
+  独立 Redo 页面、独立 panel 或其他页面能力。
 
 ### `get_file(repoPath, fileId) throws -> FileEntry`
 

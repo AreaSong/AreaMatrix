@@ -39,6 +39,7 @@ fn error_mapping_contract_api_exposes_structured_core_error_variants() {
             existing_path: "finance/existing.pdf".to_owned(),
         },
         CoreError::file_not_found("missing file"),
+        CoreError::expired_action("redo:batch-tags:42"),
         CoreError::repo_not_initialized("repository not initialized"),
         CoreError::invalid_path("invalid path"),
         CoreError::icloud_placeholder("icloud placeholder"),
@@ -46,7 +47,7 @@ fn error_mapping_contract_api_exposes_structured_core_error_variants() {
         CoreError::permission_denied("permission denied"),
         CoreError::internal("internal error"),
     ];
-    assert_eq!(documented_variants.len(), 13);
+    assert_eq!(documented_variants.len(), 14);
 }
 
 #[test]
@@ -127,6 +128,7 @@ fn error_mapping_contract_api_docs_control_map_and_udl_stay_aligned() {
         "Conflict(string path);",
         "DuplicateFile(string existing_path);",
         "FileNotFound(string path);",
+        "ExpiredAction(string action_id);",
         "RepoNotInitialized(string path);",
         "InvalidPath(string path);",
         "ICloudPlaceholder(string path);",
@@ -148,6 +150,7 @@ fn error_mapping_contract_api_documents_severity_actions_and_side_effects() {
         "| `Conflict { path }` |",
         "| `DuplicateFile { existing_path }` |",
         "| `FileNotFound { path }` |",
+        "| `ExpiredAction { action_id }` |",
         "| `RepoNotInitialized { path }` |",
         "| `InvalidPath { path }` |",
         "| `ICloudPlaceholder { path }` |",
@@ -251,6 +254,14 @@ fn error_mapping_contract_api_maps_each_error_to_stable_ui_metadata() {
             ErrorRecoverability::RefreshRequired,
             "文件不存在",
             "docs/missing.pdf",
+        ),
+        (
+            CoreError::expired_action("redo:batch-tags:42"),
+            ErrorKind::ExpiredAction,
+            ErrorSeverity::Low,
+            ErrorRecoverability::RefreshRequired,
+            "操作已过期",
+            "redo:batch-tags:42",
         ),
         (
             CoreError::repo_not_initialized("/repo"),

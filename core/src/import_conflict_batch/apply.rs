@@ -533,6 +533,7 @@ fn error_message(error: CoreError) -> String {
         | CoreError::PermissionDenied { path }
         | CoreError::StagingRecoveryRequired { path } => path,
         CoreError::DuplicateFile { existing_path } => existing_path,
+        CoreError::ExpiredAction { action_id } => action_id,
         CoreError::Io { message } | CoreError::Db { message } | CoreError::Internal { message } => {
             message
         }

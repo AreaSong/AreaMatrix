@@ -23,6 +23,7 @@ mod icloud_conflicts;
 mod import_conflict_batch;
 mod note;
 pub mod overview;
+mod redo;
 mod recovery;
 mod repair;
 mod repo_entries;
@@ -81,6 +82,9 @@ pub use import_conflict_batch::{
     ImportConflictBatchItemResult, ImportConflictBatchPreviewItem,
     ImportConflictBatchPreviewReport, ImportConflictBatchPreviewRequest,
     ImportConflictBatchPreviewStatus, ImportConflictBatchResultStatus, ImportConflictBatchStrategy,
+};
+pub use redo::{
+    list_redo_actions, redo_action, RedoActionRecord, RedoActionResult, RedoActionStatus,
 };
 pub use search::*;
 pub use tags::{

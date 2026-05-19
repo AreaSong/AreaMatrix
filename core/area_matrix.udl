@@ -209,6 +209,12 @@ namespace area_matrix {
     UndoActionResult undo_action(string repo_path, string action_id);
 
     [Throws=CoreError]
+    sequence<RedoActionRecord> list_redo_actions(string repo_path);
+
+    [Throws=CoreError]
+    RedoActionResult redo_action(string repo_path, string action_id);
+
+    [Throws=CoreError]
     FileEntry get_file(string repo_path, i64 file_id);
 
     [Throws=CoreError]
@@ -827,6 +833,30 @@ dictionary UndoActionResult {
     i64 completed_at;
 };
 
+dictionary RedoActionRecord {
+    string action_id;
+    string kind;
+    string summary;
+    i64 affected_count;
+    sequence<string> affected_file_names;
+    RedoActionStatus status;
+    boolean can_redo;
+    string? disabled_reason;
+    string source_undo_action_id;
+    i64 created_at;
+    i64 updated_at;
+};
+
+dictionary RedoActionResult {
+    string action_id;
+    RedoActionStatus status;
+    string summary;
+    i64 affected_count;
+    sequence<string> refresh_targets;
+    string? undo_token;
+    i64 completed_at;
+};
+
 dictionary ChangeFilter {
     i64? file_id;
     string? category;
@@ -1169,9 +1199,10 @@ enum RuleImpactStatus {
 };
 enum RuleImpactConflictKind { "NameConflict", "MissingFile", "UnsupportedStorage", "RuleConflict" };
 enum UndoActionStatus { "Pending", "Executed", "Expired", "Blocked" };
+enum RedoActionStatus { "Available", "Cleared", "Blocked", "Expired", "Executed" };
 enum ErrorKind {
     "Io", "Db", "Config", "Classify", "Conflict", "DuplicateFile",
-    "FileNotFound", "RepoNotInitialized", "InvalidPath",
+    "FileNotFound", "ExpiredAction", "RepoNotInitialized", "InvalidPath",
     "ICloudPlaceholder", "StagingRecoveryRequired", "PermissionDenied", "Internal"
 };
 enum ErrorSeverity { "Low", "Medium", "High", "Critical" };
@@ -1190,6 +1221,7 @@ interface CoreError {
     Conflict(string path);
     DuplicateFile(string existing_path);
     FileNotFound(string path);
+    ExpiredAction(string action_id);
     RepoNotInitialized(string path);
     InvalidPath(string path);
     ICloudPlaceholder(string path);
