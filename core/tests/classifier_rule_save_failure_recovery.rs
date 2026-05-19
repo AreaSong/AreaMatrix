@@ -130,6 +130,7 @@ fn mapping_input(error: &CoreError) -> ErrorMappingInput {
         | ErrorKind::RepoNotInitialized
         | ErrorKind::InvalidPath
         | ErrorKind::ICloudPlaceholder
+        | ErrorKind::StagingRecoveryRequired
         | ErrorKind::PermissionDenied => ErrorMappingInput {
             kind: error.kind(),
             path: Some(raw_context),

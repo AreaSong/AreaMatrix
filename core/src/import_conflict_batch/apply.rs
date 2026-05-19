@@ -25,7 +25,13 @@ pub(super) fn apply_plan(
         db::preflight_import_conflict_undo_action(repo)?;
     }
     for item in plan {
-        execution.push(apply_item(repo, item, &session_status));
+        match apply_item(repo, item, &session_status) {
+            Ok(applied) => execution.push(applied),
+            Err(error) => {
+                let rollback_error = execution.rollback_successes(repo).err();
+                return Err(rollback_error.unwrap_or(error));
+            }
+        }
     }
     execution.insert_undo(repo)?;
     Ok(execution.into_report())
@@ -108,14 +114,14 @@ impl ImportConflictBatchExecution {
         match db::insert_import_conflict_undo_action(repo, &self.undo_names) {
             Ok(token) => self.report.undo_token = Some(token),
             Err(error) => {
-                let rollback_error = self.rollback_after_undo_failure(repo).err();
+                let rollback_error = self.rollback_successes(repo).err();
                 return Err(rollback_error.unwrap_or(error));
             }
         }
         Ok(())
     }
 
-    fn rollback_after_undo_failure(&mut self, repo: &Path) -> CoreResult<()> {
+    fn rollback_successes(&mut self, repo: &Path) -> CoreResult<()> {
         let mut first_error = None;
         while let Some(rollback) = self.rollbacks.pop() {
             if let Err(error) = rollback.apply(repo) {
@@ -249,9 +255,9 @@ fn apply_item(
     repo: &Path,
     item: &PlannedImportConflict,
     session_status: &str,
-) -> AppliedImportConflictItem {
+) -> CoreResult<AppliedImportConflictItem> {
     if !item.included || !is_actionable(&item.status) {
-        return pending_result(item);
+        return Ok(pending_result(item));
     }
     let result = match item.strategy {
         ImportConflictBatchStrategy::Skip => apply_skip(repo, item, session_status),
@@ -260,7 +266,7 @@ fn apply_item(
         ImportConflictBatchStrategy::Replace => replace::apply_replace(repo, item, session_status),
     };
     match result {
-        Ok(applied) => applied,
+        Ok(applied) => Ok(applied),
         Err(error) => mark_failed(repo, item, error),
     }
 }
@@ -425,23 +431,15 @@ fn mark_failed(
     repo: &Path,
     item: &PlannedImportConflict,
     error: CoreError,
-) -> AppliedImportConflictItem {
+) -> CoreResult<AppliedImportConflictItem> {
     let reason = error_message(error);
-    if let Err(mark_error) =
-        db::mark_import_conflict_failed(repo, &item.row, strategy_detail(&item.strategy), &reason)
-    {
-        tracing::warn!(
-            conflict_id = %item.row.conflict_id,
-            error = %error_message(mark_error),
-            "failed to persist import conflict batch item failure"
-        );
-    }
-    simple_result(
+    db::mark_import_conflict_failed(repo, &item.row, strategy_detail(&item.strategy), &reason)?;
+    Ok(simple_result(
         item,
         ImportConflictBatchResultStatus::Failed,
         item.final_relative_path.clone(),
         Some(reason),
-    )
+    ))
 }
 
 pub(super) fn required_final_path(item: &PlannedImportConflict) -> CoreResult<&str> {
