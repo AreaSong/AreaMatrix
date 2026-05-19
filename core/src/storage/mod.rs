@@ -8,7 +8,7 @@ mod import;
 mod import_target;
 mod move_to_category;
 mod rename;
-mod replacement_trash;
+pub(crate) mod replacement_trash;
 mod safe_move;
 mod staging_row;
 mod validate;

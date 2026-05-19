@@ -1,0 +1,18 @@
+一、执行结论：已完成。
+
+二、执行范围：单任务 `4-1/task-82`。本轮修复集中在：
+- [docs/architecture/data-model.md](/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/data-model.md)：补齐 `import_sessions` / `import_conflicts` schema 与 ER 关系。
+- [core/tests/import_conflict_batch_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/import_conflict_batch_implementation.rs)：保留 Skip + KeepBoth 真实实现测试。
+- [core/tests/import_conflict_batch_file_safety.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/import_conflict_batch_file_safety.rs)：新增 Replace、AskPerItem、Replace 失败回滚/保留 staged 的文件安全测试。
+- [core/tests/support/import_conflict_batch.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/support/import_conflict_batch.rs)：提取 C2-17 测试 fixture。
+
+三、完成情况：C2-17 范围内的两个验收阻塞项已修复。DB schema 源事实已同步；高风险 Replace 路径已有真实 FS/DB 测试证明二次确认、可恢复替换、失败回滚、staged 文件保留和冲突状态不误清除。未触碰 `apps/**`，`git diff --name-only -- apps` 无输出。
+
+四、工程质量：测试按真实临时仓库、真实 SQLite、真实文件移动执行；没有 mock-only、硬编码通过态或页面接入。新增测试文件均低于 500 行，测试 helper 只服务 C2-17，未引入新依赖。
+
+五、验证情况：
+- `cargo test --test import_conflict_batch_file_safety -- --nocapture`：3 passed。
+- `cargo test --test import_conflict_batch_implementation -- --nocapture`：1 passed。
+- `./dev check task 4-1/task-82`：通过；包含 prompt doctor、diff check、contract 4 tests、file-safety 3 tests、implementation 1 test，共 8 个 targeted tests 通过。
+
+六、风险与后续：本 task 范围内无剩余阻塞风险。建议下一个任务进入 `4-1/task-83`，继续按 manifest 边界执行。

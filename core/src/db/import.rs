@@ -413,7 +413,7 @@ fn origin_to_db(origin: &FileOrigin) -> &'static str {
     }
 }
 
-fn file_entry_from_row(row: &Row<'_>) -> rusqlite::Result<FileEntry> {
+pub(crate) fn file_entry_from_row(row: &Row<'_>) -> rusqlite::Result<FileEntry> {
     let storage_mode_value: String = row.get(7)?;
     let origin_value: String = row.get(8)?;
     Ok(FileEntry {

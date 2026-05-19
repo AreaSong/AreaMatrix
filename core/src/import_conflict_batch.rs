@@ -1,12 +1,18 @@
 //! C2-17 import conflict batch contract types and entry points.
 
-use std::path::{Component, PathBuf};
+use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
 
-use crate::{db, CoreError, CoreResult};
+use crate::{db, CoreError, CoreResult, FileEntry, StorageMode};
+
+mod apply;
+mod path;
+mod plan;
+mod token;
 
 const AREA_MATRIX_DIR: &str = ".areamatrix";
+const TRASH_PENDING_DIR: &str = "trash-pending";
 
 /// Import conflict type surfaced by S2-21.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
@@ -226,6 +232,19 @@ pub struct ImportConflictBatchApplyReport {
     pub failure_summary: Option<String>,
 }
 
+#[derive(Clone, Debug)]
+struct PlannedImportConflict {
+    row: db::ImportConflictRow,
+    staging: Option<FileEntry>,
+    existing: Option<FileEntry>,
+    included: bool,
+    strategy: ImportConflictBatchStrategy,
+    final_relative_path: Option<String>,
+    final_name: Option<String>,
+    status: ImportConflictBatchPreviewStatus,
+    reason: Option<String>,
+}
+
 /// Previews C2-17 import conflict batch decisions without mutating staging or files.
 ///
 /// S2-21 uses this API to show conflict type groups, selected strategies, row
@@ -247,15 +266,13 @@ pub fn preview_import_conflict_batch(
     repo_path: String,
     request: ImportConflictBatchPreviewRequest,
 ) -> CoreResult<ImportConflictBatchPreviewReport> {
-    let repo = prepare_import_conflict_batch_request(
-        &repo_path,
-        &request.import_session_id,
-        &request.conflict_ids,
-    )?;
+    let normalized = normalize_import_conflict_ids(&request.conflict_ids)?;
+    let repo =
+        prepare_import_conflict_batch_request(&repo_path, &request.import_session_id, &normalized)?;
     db::ensure_initialized(&repo).map_err(normalize_import_conflict_metadata_error)?;
-    Err(CoreError::db(
-        "import conflict batch implementation is pending",
-    ))
+    db::ensure_import_conflict_schema(&repo).map_err(normalize_import_conflict_metadata_error)?;
+    let plan = plan::build_plan(&repo, &request.import_session_id, &normalized, &request)?;
+    Ok(plan::preview_report(&repo, &request, &normalized, &plan))
 }
 
 /// Applies C2-17 import conflict batch decisions after explicit user confirmation.
@@ -288,36 +305,38 @@ pub fn apply_import_conflict_batch(
     if has_replace_strategy(&request) && !request.replace_confirmed {
         return Err(CoreError::conflict("missing replace confirmation"));
     }
-    let repo = prepare_import_conflict_batch_request(
-        &repo_path,
-        &request.import_session_id,
-        &request.conflict_ids,
-    )?;
+    let normalized = normalize_import_conflict_ids(&request.conflict_ids)?;
+    let repo =
+        prepare_import_conflict_batch_request(&repo_path, &request.import_session_id, &normalized)?;
     db::ensure_initialized(&repo).map_err(normalize_import_conflict_metadata_error)?;
-    Err(CoreError::db(
-        "import conflict batch implementation is pending",
-    ))
+    db::ensure_import_conflict_schema(&repo).map_err(normalize_import_conflict_metadata_error)?;
+    let preview_request = preview_request_from_apply(&request);
+    let plan = plan::build_plan(
+        &repo,
+        &request.import_session_id,
+        &normalized,
+        &preview_request,
+    )?;
+    let expected_token = token::preview_token_for(&request.import_session_id, &normalized, &plan);
+    if expected_token != preview_token {
+        return Err(CoreError::conflict("stale import conflict batch preview"));
+    }
+    if !plan::can_apply(&plan) {
+        return Err(CoreError::conflict(
+            plan::apply_blocked_reason(&plan)
+                .unwrap_or_else(|| "import conflict batch preview cannot be applied".to_owned()),
+        ));
+    }
+    apply::apply_plan(&repo, &request.import_session_id, &plan)
 }
 
 fn prepare_import_conflict_batch_request(
     repo_path: &str,
     import_session_id: &str,
-    conflict_ids: &[String],
+    _conflict_ids: &[String],
 ) -> CoreResult<PathBuf> {
-    let repo = validate_import_conflict_repo_path(repo_path)?;
+    let repo = path::validate_repo_path(repo_path)?;
     validate_import_session_id(import_session_id)?;
-    normalize_import_conflict_ids(conflict_ids)?;
-    Ok(repo)
-}
-
-fn validate_import_conflict_repo_path(repo_path: &str) -> CoreResult<PathBuf> {
-    if repo_path.trim().is_empty() {
-        return Err(CoreError::permission_denied("repository path is required"));
-    }
-    let repo = PathBuf::from(repo_path);
-    if repo.components().any(is_area_matrix_component) {
-        return Err(CoreError::permission_denied("repository path is invalid"));
-    }
     Ok(repo)
 }
 
@@ -368,6 +387,71 @@ fn has_replace_strategy(request: &ImportConflictBatchApplyRequest) -> bool {
     )
 }
 
-fn is_area_matrix_component(component: Component<'_>) -> bool {
-    matches!(component, Component::Normal(value) if value == AREA_MATRIX_DIR)
+fn preview_request_from_apply(
+    request: &ImportConflictBatchApplyRequest,
+) -> ImportConflictBatchPreviewRequest {
+    ImportConflictBatchPreviewRequest {
+        import_session_id: request.import_session_id.clone(),
+        conflict_ids: request.conflict_ids.clone(),
+        duplicate_strategy: request.duplicate_strategy.clone(),
+        same_name_strategy: request.same_name_strategy.clone(),
+        apply_to_all_similar_conflicts: request.apply_to_all_similar_conflicts,
+    }
+}
+
+fn api_conflict_type(kind: &db::ImportConflictKind) -> ImportConflictBatchConflictType {
+    match kind {
+        db::ImportConflictKind::DuplicateHash => ImportConflictBatchConflictType::DuplicateHash,
+        db::ImportConflictKind::SameNameDifferentContent => {
+            ImportConflictBatchConflictType::SameNameDifferentContent
+        }
+    }
+}
+
+fn conflict_type_detail(kind: &db::ImportConflictKind) -> &'static str {
+    match kind {
+        db::ImportConflictKind::DuplicateHash => "duplicate_hash",
+        db::ImportConflictKind::SameNameDifferentContent => "same_name_different_content",
+    }
+}
+
+fn strategy_detail(strategy: &ImportConflictBatchStrategy) -> &'static str {
+    match strategy {
+        ImportConflictBatchStrategy::Skip => "skip",
+        ImportConflictBatchStrategy::KeepBoth => "keep_both",
+        ImportConflictBatchStrategy::Replace => "replace",
+        ImportConflictBatchStrategy::AskPerItem => "ask_per_item",
+    }
+}
+
+fn storage_mode_detail(mode: &StorageMode) -> &'static str {
+    match mode {
+        StorageMode::Moved => "moved",
+        StorageMode::Copied => "copied",
+        StorageMode::Indexed => "indexed",
+    }
+}
+
+fn risk_summary(item: &PlannedImportConflict) -> String {
+    if item.status == ImportConflictBatchPreviewStatus::Blocked {
+        return item
+            .reason
+            .clone()
+            .unwrap_or_else(|| "This row cannot be processed safely".to_owned());
+    }
+    match item.strategy {
+        ImportConflictBatchStrategy::Skip => {
+            "Incoming duplicate stays in staging; existing file is unchanged".to_owned()
+        }
+        ImportConflictBatchStrategy::KeepBoth => {
+            "Incoming file will be imported with a conflict-free name".to_owned()
+        }
+        ImportConflictBatchStrategy::Replace => {
+            "Existing file will move to recoverable storage before incoming file takes its place"
+                .to_owned()
+        }
+        ImportConflictBatchStrategy::AskPerItem => {
+            "Conflict will stay staged for per-item handling".to_owned()
+        }
+    }
 }

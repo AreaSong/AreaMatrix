@@ -342,7 +342,7 @@ fn import_conflict_batch_contract_matches_consuming_page_state_without_adjacent_
         "apply_import_conflict_batch",
         "side-effect free",
         "missing replace confirmation",
-        "import conflict batch implementation is pending",
+        "stale import conflict batch preview",
     ] {
         assert_contains(CONTRACT_RS, fragment);
     }
