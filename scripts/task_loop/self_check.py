@@ -222,6 +222,11 @@ def write_live_activity(lock_dir: Path, tmp: Path) -> None:
             "pid": os.getpid(),
             "prompt_file": str(tmp / "copy.md"),
             "output_file": str(output_file),
+            "no_output_elapsed_seconds": 3,
+            "no_output_timeout_seconds": 900,
+            "child_restart": 1,
+            "child_restart_limit": 2,
+            "restart_delay_seconds": 300,
             "command": "codex exec -m gpt-5.5 --full-auto -",
             "started_at": state.utc_now(),
         },
@@ -680,6 +685,10 @@ def check_real_status(h: Harness) -> None:
     assert_contains(live_status, "live_activity_elapsed:", "live activity elapsed")
     assert_contains(live_status, "live_activity_pid:", "live activity pid")
     assert_contains(live_status, "live_activity_log_state: exists", "live activity log state")
+    assert_contains(live_status, "live_activity_no_output_elapsed: 3s", "live activity no-output elapsed")
+    assert_contains(live_status, "live_activity_no_output_timeout: 15m00s", "live activity no-output timeout")
+    assert_contains(live_status, "live_activity_child_restart: 1/2", "live activity child restart")
+    assert_contains(live_status, "live_activity_restart_delay: 5m00s", "live activity restart delay")
     assert_contains(live_status, "live_activity_command: codex exec -m gpt-5.5 --full-auto -", "live activity command")
 
 
@@ -1164,6 +1173,95 @@ fi
         raise CheckFailure("runner did not auto-create task branch")
 
 
+def check_runner_no_output_timeout(h: Harness) -> None:
+    log("runner codex no-output timeout restarts child")
+    runner_repo = h.tmp / "runner-no-output"
+    init_temp_git_repo(runner_repo)
+    add_prompt_fixture(runner_repo, ["0-1/task-01"])
+    subprocess.run(["git", "add", "."], cwd=runner_repo, check=True)
+    subprocess.run(["git", "commit", "-q", "-m", "add prompt fixtures"], cwd=runner_repo, check=True)
+    fake_codex = h.tmp / "fake-codex-no-output"
+    fake_codex.write_text(
+        """#!/usr/bin/env bash
+set -euo pipefail
+out=""
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    -o)
+      out="$2"
+      shift 2
+      ;;
+    --cd)
+      cd "$2"
+      shift 2
+      ;;
+    *)
+      shift
+      ;;
+  esac
+done
+input="$(cat)"
+counter="${FAKE_CODEX_COUNTER}"
+count=0
+if [ -f "$counter" ]; then
+  count="$(cat "$counter")"
+fi
+count=$((count + 1))
+printf '%s\n' "$count" > "$counter"
+if [ "$count" = "1" ]; then
+  sleep 30
+fi
+mkdir -p "$(dirname "$out")"
+if printf '%s' "$input" | grep -q 'VERIFY_RESULT'; then
+  printf '验收通过 after restart\nVERIFY_RESULT: PASS\n' > "$out"
+else
+  printf 'copy ok after restart\n' > "$out"
+fi
+""",
+        encoding="utf-8",
+    )
+    fake_codex.chmod(0o755)
+    result = h.run(
+        [h.task_loop, "run", "--phase", "phase-0", "--max-tasks", "1"],
+        env={
+            "ROOT_DIR": str(runner_repo),
+            "PROGRESS_FILE": str(runner_repo / "tasks/prompts/_shared/progress.json"),
+            "LOG_ROOT": str(runner_repo / ".codex/task-loop-logs"),
+            "RUN_SUMMARY_ROOT": str(runner_repo / ".codex/task-loop-runs"),
+            "PROGRESS_BACKUP_ROOT": str(runner_repo / ".codex/task-loop-progress-backups"),
+            "LOCK_DIR": str(runner_repo / ".codex/task-loop-lock"),
+            "CONTROL_DIR": str(runner_repo / ".codex/task-loop-control"),
+            "CODEX_BIN": str(fake_codex),
+            "GIT_CHECKPOINT": "off",
+            "RISK_POLICY": "allow",
+            "MAX_RETRIES": "1",
+            "ACTIVITY_HEARTBEAT_SECONDS": "1",
+            "NO_OUTPUT_NOTICE_SECONDS": "1",
+            "NO_OUTPUT_TIMEOUT_SECONDS": "2",
+            "NO_OUTPUT_RESTART_DELAY_SECONDS": "1",
+            "NO_OUTPUT_RESTART_LIMIT": "1",
+            "FAKE_CODEX_COUNTER": str(h.tmp / "fake-codex-no-output-counter"),
+        },
+        check=False,
+    )
+    if result.returncode != 0:
+        raise CheckFailure(
+            f"runner no-output timeout restart returned {result.returncode}, expected 0\n"
+            f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
+        )
+    combined = result.stdout + result.stderr
+    assert_contains(combined, "live activity no-output timeout", "no-output timeout heartbeat")
+    assert_contains(combined, "codex exec no-output timeout; restart copy task=0-1/task-01", "no-output restart event")
+    progress = runner_repo / "tasks/prompts/_shared/progress.json"
+    assert_json(
+        progress,
+        lambda data: data["tasks"]["0-1/task-01"]["status"] == "completed",  # type: ignore[index]
+        "no-output timeout restart progress",
+    )
+    if (runner_repo / ".codex/task-loop-lock").exists():
+        raise CheckFailure("runner no-output timeout restart left live lock")
+
+
 def check_git_ignore(h: Harness) -> None:
     log("git ignore policy")
     ignored = [
@@ -1207,6 +1305,7 @@ def run_check(root_dir: Path) -> int:
             check_runner_core(harness)
             check_git_helpers(harness)
             check_runner_git_checkpoint(harness)
+            check_runner_no_output_timeout(harness)
             check_git_ignore(harness)
         except CheckFailure as exc:
             print(f"[task-loop-check] FAIL: {exc}")

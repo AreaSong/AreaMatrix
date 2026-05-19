@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import os
 import re
+import signal
 import shlex
 import shutil
 import subprocess
@@ -28,6 +29,14 @@ class TaskLoopError(RuntimeError):
     def __init__(self, message: str, code: int = 1) -> None:
         super().__init__(message)
         self.code = code
+
+
+class CodexNoOutputTimeout(TaskLoopError):
+    pass
+
+
+class CodexNoOutputTimeoutLimit(TaskLoopError):
+    pass
 
 
 @dataclass
@@ -77,6 +86,9 @@ class RuntimeConfig:
     dry_run_max_attempts: int = 10
     activity_heartbeat_seconds: int = 30
     no_output_notice_seconds: int = 120
+    no_output_timeout_seconds: int = 900
+    no_output_restart_delay_seconds: int = 300
+    no_output_restart_limit: int = 2
     run_id: str = ""
 
     @classmethod
@@ -115,6 +127,9 @@ class RuntimeConfig:
         cfg.dry_run_max_attempts = int(os.environ.get("DRY_RUN_MAX_ATTEMPTS", "10"))
         cfg.activity_heartbeat_seconds = int(os.environ.get("ACTIVITY_HEARTBEAT_SECONDS", "30"))
         cfg.no_output_notice_seconds = int(os.environ.get("NO_OUTPUT_NOTICE_SECONDS", "120"))
+        cfg.no_output_timeout_seconds = int(os.environ.get("NO_OUTPUT_TIMEOUT_SECONDS", "900"))
+        cfg.no_output_restart_delay_seconds = int(os.environ.get("NO_OUTPUT_RESTART_DELAY_SECONDS", "300"))
+        cfg.no_output_restart_limit = int(os.environ.get("NO_OUTPUT_RESTART_LIMIT", "2"))
         cfg.run_id = os.environ.get("RUN_ID", "")
         return cfg
 
@@ -258,6 +273,12 @@ class TaskLoopRunner:
             raise TaskLoopError("ACTIVITY_HEARTBEAT_SECONDS must be >= 1")
         if self.cfg.no_output_notice_seconds < 1:
             raise TaskLoopError("NO_OUTPUT_NOTICE_SECONDS must be >= 1")
+        if self.cfg.no_output_timeout_seconds < 0:
+            raise TaskLoopError("NO_OUTPUT_TIMEOUT_SECONDS must be >= 0")
+        if self.cfg.no_output_restart_delay_seconds < 0:
+            raise TaskLoopError("NO_OUTPUT_RESTART_DELAY_SECONDS must be >= 0")
+        if self.cfg.no_output_restart_limit < 0:
+            raise TaskLoopError("NO_OUTPUT_RESTART_LIMIT must be >= 0")
         for phase in self.cfg.selected_phases():
             if phase not in PHASES:
                 raise TaskLoopError(f"invalid phase: {phase}")
@@ -616,6 +637,9 @@ class TaskLoopRunner:
             log_event("INFO", f"DRY_RUN_RESULT={self.cfg.dry_run_result}")
         log_event("INFO", f"ACTIVITY_HEARTBEAT_SECONDS={self.cfg.activity_heartbeat_seconds}")
         log_event("INFO", f"NO_OUTPUT_NOTICE_SECONDS={self.cfg.no_output_notice_seconds}")
+        log_event("INFO", f"NO_OUTPUT_TIMEOUT_SECONDS={self.cfg.no_output_timeout_seconds}")
+        log_event("INFO", f"NO_OUTPUT_RESTART_DELAY_SECONDS={self.cfg.no_output_restart_delay_seconds}")
+        log_event("INFO", f"NO_OUTPUT_RESTART_LIMIT={self.cfg.no_output_restart_limit}")
         log_event("INFO", f"ROOT_DIR={self.cfg.root_dir}")
         log_event("INFO", f"COPY_ROOT={self.cfg.copy_root}")
         log_event("INFO", f"VERIFY_ROOT={self.cfg.verify_root}")
@@ -696,6 +720,59 @@ class TaskLoopRunner:
             "-",
         ]
         command_text = shlex.join([str(part) for part in command])
+        restarts = 0
+        while True:
+            try:
+                self.run_codex_child(
+                    command,
+                    command_text,
+                    prompt_text,
+                    prompt_file,
+                    output_file,
+                    stage,
+                    task,
+                    attempt,
+                    restart_index=restarts,
+                )
+                return
+            except CodexNoOutputTimeout as exc:
+                if restarts >= self.cfg.no_output_restart_limit:
+                    raise CodexNoOutputTimeoutLimit(
+                        f"{exc}; restart limit reached ({self.cfg.no_output_restart_limit})",
+                        124,
+                    ) from exc
+                restarts += 1
+                delay = self.cfg.no_output_restart_delay_seconds
+                log_event(
+                    "WARN",
+                    f"codex exec no-output timeout; restart {stage} task={task.label} "
+                    f"attempt={attempt} child_restart={restarts}/{self.cfg.no_output_restart_limit} "
+                    f"after {state.human_duration(delay)}",
+                )
+                state.write_lock_activity(
+                    self.cfg.lock_dir,
+                    {
+                        "status": "restart_wait",
+                        "child_restart": restarts,
+                        "child_restart_limit": self.cfg.no_output_restart_limit,
+                        "restart_delay_seconds": delay,
+                    },
+                )
+                sleep_with_drain_notice(delay)
+
+    def run_codex_child(
+        self,
+        command: list[str],
+        command_text: str,
+        prompt_text: str,
+        prompt_file: Path,
+        output_file: Path,
+        stage: str,
+        task: TaskFile,
+        attempt: int,
+        *,
+        restart_index: int,
+    ) -> None:
         state.write_lock_activity(
             self.cfg.lock_dir,
             {
@@ -708,6 +785,8 @@ class TaskLoopRunner:
                 "output_file": str(output_file),
                 "command": command_text,
                 "started_at": utc_now(),
+                "child_restart": restart_index,
+                "child_restart_limit": self.cfg.no_output_restart_limit,
                 "pid": "",
             },
         )
@@ -716,7 +795,7 @@ class TaskLoopRunner:
             stage=stage,
             task=task,
             attempt=attempt,
-            pid="starting",
+            pid=f"starting restart={restart_index}",
             elapsed="0s",
             prompt_file=prompt_file,
             output_file=output_file,
@@ -724,9 +803,11 @@ class TaskLoopRunner:
             command_elapsed="0s",
             command_text=command_text,
         )
-        proc = subprocess.Popen(command, stdin=subprocess.PIPE, text=True)
+        proc = subprocess.Popen(command, stdin=subprocess.PIPE, text=True, start_new_session=True)
         start_monotonic = time.monotonic()
-        state.write_lock_activity(self.cfg.lock_dir, {"status": "running", "pid": proc.pid})
+        last_output_signature = output_file_signature(output_file)
+        last_output_change_monotonic = start_monotonic
+        state.write_lock_activity(self.cfg.lock_dir, {"status": "running", "pid": proc.pid, "child_restart": restart_index})
         log_live_snapshot(
             title="live activity running",
             stage=stage,
@@ -741,6 +822,7 @@ class TaskLoopRunner:
             command_text=command_text,
         )
         communicate_error: list[BaseException] = []
+        timeout_error = ""
 
         def communicate_with_child() -> None:
             try:
@@ -755,14 +837,68 @@ class TaskLoopRunner:
                 time.sleep(self.cfg.activity_heartbeat_seconds)
                 if not worker.is_alive():
                     break
-                elapsed = state.human_duration(time.monotonic() - start_monotonic)
+                now = time.monotonic()
+                current_signature = output_file_signature(output_file)
+                if current_signature != last_output_signature:
+                    last_output_signature = current_signature
+                    last_output_change_monotonic = now
+                no_output_elapsed_seconds = int(now - last_output_change_monotonic)
+                elapsed = state.human_duration(now - start_monotonic)
                 log_state = state.log_file_status(str(output_file))
                 no_output_notice = ""
-                if log_state == "missing" and time.monotonic() - start_monotonic >= self.cfg.no_output_notice_seconds:
+                if no_output_elapsed_seconds >= self.cfg.no_output_notice_seconds:
                     no_output_notice = (
                         "codex exec child is running but has not written the output log yet; "
                         "this is a no-output wait, not proof that validation commands are progressing."
                     )
+                state.write_lock_activity(
+                    self.cfg.lock_dir,
+                    {
+                        "status": "running",
+                        "log_state": log_state,
+                        "no_output_elapsed_seconds": no_output_elapsed_seconds,
+                        "no_output_timeout_seconds": self.cfg.no_output_timeout_seconds,
+                        "child_restart": restart_index,
+                        "child_restart_limit": self.cfg.no_output_restart_limit,
+                    },
+                )
+                if (
+                    self.cfg.no_output_timeout_seconds > 0
+                    and no_output_elapsed_seconds >= self.cfg.no_output_timeout_seconds
+                ):
+                    timeout_error = (
+                        f"codex exec no-output timeout for {stage} {task.label} attempt={attempt}: "
+                        f"no output log progress for {state.human_duration(no_output_elapsed_seconds)} "
+                        f"(timeout={state.human_duration(self.cfg.no_output_timeout_seconds)}; "
+                        f"log_state={log_state})"
+                    )
+                    state.write_lock_activity(
+                        self.cfg.lock_dir,
+                        {
+                            "status": "no_output_timeout",
+                            "no_output_elapsed_seconds": no_output_elapsed_seconds,
+                            "no_output_timeout_seconds": self.cfg.no_output_timeout_seconds,
+                            "child_restart": restart_index,
+                            "child_restart_limit": self.cfg.no_output_restart_limit,
+                            "log_state": log_state,
+                        },
+                    )
+                    log_live_snapshot(
+                        title="live activity no-output timeout",
+                        stage=stage,
+                        task=task,
+                        attempt=attempt,
+                        pid=proc.pid,
+                        elapsed=elapsed,
+                        prompt_file=prompt_file,
+                        output_file=output_file,
+                        heartbeat_seconds=self.cfg.activity_heartbeat_seconds,
+                        command_elapsed=elapsed,
+                        command_text=command_text,
+                        no_output_notice=timeout_error,
+                    )
+                    terminate_child(proc, worker)
+                    break
                 log_live_snapshot(
                     title="live activity heartbeat",
                     stage=stage,
@@ -777,16 +913,18 @@ class TaskLoopRunner:
                     command_text=command_text,
                     no_output_notice=no_output_notice,
                 )
-            worker.join()
+            worker.join(timeout=5)
         finally:
             state.write_lock_activity(
                 self.cfg.lock_dir,
                 {
-                    "status": "finished",
+                    "status": "no_output_timeout" if timeout_error else "finished",
                     "finished_at": utc_now(),
                     "returncode": proc.returncode,
                 },
             )
+        if timeout_error:
+            raise CodexNoOutputTimeout(timeout_error, 124)
         if communicate_error:
             raise TaskLoopError(f"codex exec communication failed for {prompt_file}: {communicate_error[0]}", 1)
         if proc.returncode != 0:
@@ -936,9 +1074,15 @@ class TaskLoopRunner:
             self.mark_progress(task, "in_progress", progress_note, copy_log, verify_log, attempt)
             self.record_task_summary(task, "in_progress", attempt, copy_log, verify_log, progress_note)
             previous_verify_log = self.session_log_root / task.phase / f"{task.task_name}-verify-attempt-{attempt - 1}.log" if attempt > 1 else None
-            self.run_codex(task.copy_file, copy_log, "copy", self.build_copy_context_prompt(task, attempt, previous_verify_log), task, attempt)
-            log_event("TASK", f"verify prompt -> {verify_log}")
-            self.run_codex(task.verify_file, verify_log, "verify", self.verify_suffix(), task, attempt)
+            try:
+                self.run_codex(task.copy_file, copy_log, "copy", self.build_copy_context_prompt(task, attempt, previous_verify_log), task, attempt)
+                log_event("TASK", f"verify prompt -> {verify_log}")
+                self.run_codex(task.verify_file, verify_log, "verify", self.verify_suffix(), task, attempt)
+            except CodexNoOutputTimeoutLimit as exc:
+                note = f"codex exec no-output timeout：{exc}"
+                self.mark_progress(task, "failed", note, copy_log, verify_log, attempt)
+                self.record_task_summary(task, "failed", attempt, copy_log, verify_log, note)
+                raise
             if self.is_verify_pass(verify_log):
                 self.mark_progress(task, "completed", f"自动执行验收通过：attempt={attempt}", copy_log, verify_log, attempt)
                 self.done_tasks += 1
@@ -974,6 +1118,44 @@ def json_dumps(value: object) -> str:
     import json
 
     return json.dumps(value, ensure_ascii=False, sort_keys=True)
+
+
+def output_file_signature(path: Path) -> tuple[str, int, int]:
+    try:
+        stat = path.stat()
+    except FileNotFoundError:
+        return ("missing", 0, 0)
+    except OSError:
+        return ("unreadable", 0, 0)
+    return ("exists", stat.st_mtime_ns, stat.st_size)
+
+
+def terminate_child(proc: subprocess.Popen[str], worker: threading.Thread) -> None:
+    if proc.poll() is None:
+        terminate_process_group(proc, signal.SIGTERM)
+    worker.join(timeout=5)
+    if worker.is_alive() and proc.poll() is None:
+        terminate_process_group(proc, signal.SIGKILL)
+    worker.join(timeout=5)
+
+
+def terminate_process_group(proc: subprocess.Popen[str], sig: signal.Signals) -> None:
+    try:
+        os.killpg(proc.pid, sig)
+    except OSError:
+        try:
+            if sig == signal.SIGTERM:
+                proc.terminate()
+            else:
+                proc.kill()
+        except OSError:
+            pass
+
+
+def sleep_with_drain_notice(seconds: int) -> None:
+    deadline = time.monotonic() + seconds
+    while time.monotonic() < deadline:
+        time.sleep(min(5, max(0, deadline - time.monotonic())))
 
 
 def print_loop_status(cfg: RuntimeConfig) -> None:

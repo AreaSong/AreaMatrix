@@ -341,6 +341,22 @@ def status_fragment(progress_file: Path, lock_dir: Path, log_root: Path, drain_r
                 output_file = activity["output_file"]
                 lines.append(f"- live_activity_log: {output_file}")
                 lines.append(f"- live_activity_log_state: {log_file_status(output_file)}")
+            if activity.get("no_output_elapsed_seconds") is not None:
+                lines.append(
+                    f"- live_activity_no_output_elapsed: {human_duration(float(activity['no_output_elapsed_seconds']))}"
+                )
+            if activity.get("no_output_timeout_seconds") is not None:
+                timeout_seconds = float(activity["no_output_timeout_seconds"])
+                timeout = "disabled" if timeout_seconds <= 0 else human_duration(timeout_seconds)
+                lines.append(f"- live_activity_no_output_timeout: {timeout}")
+            if activity.get("child_restart") is not None and activity.get("child_restart_limit") is not None:
+                lines.append(
+                    f"- live_activity_child_restart: {activity['child_restart']}/{activity['child_restart_limit']}"
+                )
+            if activity.get("restart_delay_seconds") is not None:
+                lines.append(
+                    f"- live_activity_restart_delay: {human_duration(float(activity['restart_delay_seconds']))}"
+                )
             if activity.get("command"):
                 lines.append(f"- live_activity_command: {activity['command']}")
 
