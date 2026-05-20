@@ -173,7 +173,6 @@ final class DetailTagPageFeatureTests: XCTestCase {
         let tagStoreCalls = await tagStore.recordedCalls()
         XCTAssertEqual(tagStoreCalls, [])
     }
-
     @MainActor
     func testS208TagsFilterLoadsC205RegistryWithoutMutatingTags() async {
         let detail = FileEntrySnapshot.detailMetaFixture(id: 208, currentName: "registry.pdf")

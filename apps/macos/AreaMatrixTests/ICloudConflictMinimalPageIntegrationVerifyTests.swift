@@ -221,6 +221,7 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
             selectedImportProgressRow: nil,
             repoPath: "/tmp/s125-repo",
             batchTagStore: model.tagStore,
+            batchTagUndoStore: model.undoActionStore,
             batchTagErrorMapper: model.errorMapper,
             onRetrySelectedFileDetail: {},
             onLoadTags: {},

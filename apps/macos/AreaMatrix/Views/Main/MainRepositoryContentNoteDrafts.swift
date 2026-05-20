@@ -180,6 +180,7 @@ extension MainRepositoryContentView {
             selectedImportProgressRow: selectedImportProgressRow,
             repoPath: opening.config.repoPath,
             batchTagStore: fileListModel.tagStore,
+            batchTagUndoStore: fileListModel.undoActionStore,
             batchTagErrorMapper: fileListModel.errorMapper,
             onRetrySelectedFileDetail: { Task { await fileListModel.retrySelectedFileDetail() } },
             onLoadTags: { Task { await fileListModel.loadSelectedFileTags() } },

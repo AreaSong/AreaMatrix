@@ -258,6 +258,7 @@ extension MainRepositoryContentView {
         fileCategoryMover: any CoreFileCategoryMoving = CoreBridge(),
         iCloudConflictResolver: any ICloudConflictResolving = CoreBridge(),
         tagStore: any CoreTagCRUD = CoreBridge(),
+        undoActionStore: any CoreUndoActionLogging = CoreBridge(),
         changeLogLister: any CoreChangeLogListing = CoreBridge(),
         externalChangesSyncer: any CoreExternalChangesSyncing = CoreBridge(),
         noteStore: any CoreNoteReadingWriting = CoreBridge(),
@@ -280,7 +281,8 @@ extension MainRepositoryContentView {
         self.savedSearchStore = savedSearchStore
         self.errorMapper = errorMapper
         self.externalCreatedEvent = externalCreatedEvent
-        self.onExternalCreatedEventHandled = onExternalCreatedEventHandled; self.importProgressItems = importProgressItems
+        self.onExternalCreatedEventHandled = onExternalCreatedEventHandled
+        self.importProgressItems = importProgressItems
         _dropPreviewModel = StateObject(wrappedValue: ImportDropPreviewModel(
             repoPath: opening.config.repoPath,
             predictor: categoryPredictor
@@ -299,6 +301,7 @@ extension MainRepositoryContentView {
             fileCategoryMover: fileCategoryMover,
             iCloudConflictResolver: iCloudConflictResolver,
             tagStore: tagStore,
+            undoActionStore: undoActionStore,
             changeLogLister: changeLogLister,
             externalChangesSyncer: externalChangesSyncer,
             errorMapper: errorMapper,
@@ -483,17 +486,4 @@ extension MainRepositoryContentView {
         )
     }
 
-    var dropOverlay: some View {
-        Group {
-            if let presentation = dropPreviewModel.presentation {
-                DropZoneOverlay(presentation: presentation)
-                    .padding(24)
-            }
-        }
-    }
-
-    var selectedImportProgressRow: ImportProgressListRow? {
-        guard let id = selectedImportProgressIDs.first else { return nil }
-        return importProgressRows.first { $0.id == id }
-    }
 }

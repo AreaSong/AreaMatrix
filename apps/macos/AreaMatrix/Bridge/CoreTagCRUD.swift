@@ -7,6 +7,11 @@ protocol CoreTagCRUD: Sendable {
     func batchAddTags(repoPath: String, fileIDs: [Int64], tags: [String]) async throws -> BatchMutationReportSnapshot
 }
 
+protocol CoreUndoActionLogging: Sendable {
+    func listUndoActions(repoPath: String) async throws -> [UndoActionRecordSnapshot]
+    func undoAction(repoPath: String, actionID: String) async throws -> UndoActionResultSnapshot
+}
+
 struct TagRecordSnapshot: Equatable, Identifiable {
     var value: String
     var label: String
@@ -57,6 +62,37 @@ struct BatchMutationReportSnapshot: Equatable {
     var undoToken: String?
 }
 
+enum UndoActionStatusSnapshot: String, Equatable {
+    case pending = "Pending"
+    case executed = "Executed"
+    case expired = "Expired"
+    case blocked = "Blocked"
+}
+
+struct UndoActionRecordSnapshot: Equatable, Identifiable {
+    var actionID: String
+    var kind: String
+    var summary: String
+    var affectedCount: Int64
+    var affectedFileNames: [String]
+    var status: UndoActionStatusSnapshot
+    var canUndo: Bool
+    var disabledReason: String?
+    var createdAt: Int64
+    var updatedAt: Int64
+
+    var id: String { actionID }
+}
+
+struct UndoActionResultSnapshot: Equatable {
+    var actionID: String
+    var status: UndoActionStatusSnapshot
+    var summary: String
+    var affectedCount: Int64
+    var refreshTargets: [String]
+    var completedAt: Int64
+}
+
 extension CoreTagCRUD {
     func batchAddTags(repoPath _: String, fileIDs _: [Int64], tags _: [String]) async throws -> BatchMutationReportSnapshot {
         throw CoreError.Internal(message: "batch_add_tags is unavailable")
@@ -89,6 +125,20 @@ extension CoreBridge: CoreTagCRUD {
                 fileIds: fileIDs,
                 tags: tags
             ))
+        }.value
+    }
+}
+
+extension CoreBridge: CoreUndoActionLogging {
+    func listUndoActions(repoPath: String) async throws -> [UndoActionRecordSnapshot] {
+        try await Task.detached(priority: .userInitiated) {
+            try AreaMatrix.listUndoActions(repoPath: repoPath).map(UndoActionRecordSnapshot.init(coreRecord:))
+        }.value
+    }
+
+    func undoAction(repoPath: String, actionID: String) async throws -> UndoActionResultSnapshot {
+        try await Task.detached(priority: .userInitiated) {
+            try UndoActionResultSnapshot(coreResult: AreaMatrix.undoAction(repoPath: repoPath, actionId: actionID))
         }.value
     }
 }
@@ -144,6 +194,47 @@ private extension BatchMutationStatusSnapshot {
             self = .alreadyHadTag
         case .failed:
             self = .failed
+        }
+    }
+}
+
+private extension UndoActionRecordSnapshot {
+    init(coreRecord: UndoActionRecord) {
+        actionID = coreRecord.actionId
+        kind = coreRecord.kind
+        summary = coreRecord.summary
+        affectedCount = coreRecord.affectedCount
+        affectedFileNames = coreRecord.affectedFileNames
+        status = UndoActionStatusSnapshot(coreStatus: coreRecord.status)
+        canUndo = coreRecord.canUndo
+        disabledReason = coreRecord.disabledReason
+        createdAt = coreRecord.createdAt
+        updatedAt = coreRecord.updatedAt
+    }
+}
+
+private extension UndoActionResultSnapshot {
+    init(coreResult: UndoActionResult) {
+        actionID = coreResult.actionId
+        status = UndoActionStatusSnapshot(coreStatus: coreResult.status)
+        summary = coreResult.summary
+        affectedCount = coreResult.affectedCount
+        refreshTargets = coreResult.refreshTargets
+        completedAt = coreResult.completedAt
+    }
+}
+
+private extension UndoActionStatusSnapshot {
+    init(coreStatus: UndoActionStatus) {
+        switch coreStatus {
+        case .pending:
+            self = .pending
+        case .executed:
+            self = .executed
+        case .expired:
+            self = .expired
+        case .blocked:
+            self = .blocked
         }
     }
 }

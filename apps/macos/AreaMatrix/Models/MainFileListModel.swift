@@ -42,6 +42,7 @@ final class MainFileListModel: ObservableObject {
     let fileCategoryMover: any CoreFileCategoryMoving
     let iCloudConflictResolver: any ICloudConflictResolving
     let tagStore: any CoreTagCRUD
+    let undoActionStore: any CoreUndoActionLogging
     private let changeLogLister: any CoreChangeLogListing
     private let externalChangesSyncer: any CoreExternalChangesSyncing
     let errorMapper: any CoreErrorMapping
@@ -67,6 +68,7 @@ final class MainFileListModel: ObservableObject {
         fileCategoryMover: any CoreFileCategoryMoving = CoreBridge(),
         iCloudConflictResolver: any ICloudConflictResolving = CoreBridge(),
         tagStore: any CoreTagCRUD = CoreBridge(),
+        undoActionStore: any CoreUndoActionLogging = CoreBridge(),
         changeLogLister: any CoreChangeLogListing = CoreBridge(),
         externalChangesSyncer: any CoreExternalChangesSyncing = CoreBridge(),
         errorMapper: any CoreErrorMapping,
@@ -86,6 +88,7 @@ final class MainFileListModel: ObservableObject {
         self.fileCategoryMover = fileCategoryMover
         self.iCloudConflictResolver = iCloudConflictResolver
         self.tagStore = tagStore
+        self.undoActionStore = undoActionStore
         self.changeLogLister = changeLogLister
         self.externalChangesSyncer = externalChangesSyncer
         self.errorMapper = errorMapper

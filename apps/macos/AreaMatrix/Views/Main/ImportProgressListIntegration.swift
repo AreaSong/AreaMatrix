@@ -103,6 +103,13 @@ struct ImportProgressDetailPane: View {
     }
 }
 
+extension MainRepositoryContentView {
+    var selectedImportProgressRow: ImportProgressListRow? {
+        guard let id = selectedImportProgressIDs.first else { return nil }
+        return importProgressRows.first { $0.id == id }
+    }
+}
+
 private extension ImportProgressListRow {
     var systemImage: String {
         switch item.phase {

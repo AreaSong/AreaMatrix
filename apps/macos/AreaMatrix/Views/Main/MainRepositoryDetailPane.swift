@@ -16,6 +16,7 @@ struct MainRepositoryDetailPane: View {
     let selectedImportProgressRow: ImportProgressListRow?
     let repoPath: String
     let batchTagStore: any CoreTagCRUD
+    let batchTagUndoStore: any CoreUndoActionLogging
     let batchTagErrorMapper: any CoreErrorMapping
     let onRetrySelectedFileDetail: () -> Void
     let onLoadTags: () -> Void
@@ -56,6 +57,7 @@ struct MainRepositoryDetailPane: View {
         selectedImportProgressRow: ImportProgressListRow?,
         repoPath: String,
         batchTagStore: any CoreTagCRUD,
+        batchTagUndoStore: any CoreUndoActionLogging,
         batchTagErrorMapper: any CoreErrorMapping,
         onRetrySelectedFileDetail: @escaping () -> Void,
         onLoadTags: @escaping () -> Void,
@@ -93,6 +95,7 @@ struct MainRepositoryDetailPane: View {
         self.selectedImportProgressRow = selectedImportProgressRow
         self.repoPath = repoPath
         self.batchTagStore = batchTagStore
+        self.batchTagUndoStore = batchTagUndoStore
         self.batchTagErrorMapper = batchTagErrorMapper
         self.onRetrySelectedFileDetail = onRetrySelectedFileDetail
         self.onLoadTags = onLoadTags
@@ -229,7 +232,10 @@ extension MainRepositoryDetailPane {
                 selectedCount: multiSelectionSummary.selectedCount,
                 disabledReason: batchAddTagsDisabledReason,
                 tagStore: batchTagStore,
-                errorMapper: batchTagErrorMapper
+                undoStore: batchTagUndoStore,
+                errorMapper: batchTagErrorMapper,
+                onRefreshSelection: onRetrySelectedFileDetail,
+                onRefreshChangeLog: onRefreshChangeLog
             )
             if detailErrorMapping != nil {
                 Button("Retry Metadata", action: onRetrySelectedFileDetail)
