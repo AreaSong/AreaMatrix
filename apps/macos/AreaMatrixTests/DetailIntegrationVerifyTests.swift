@@ -129,11 +129,15 @@ final class DetailIntegrationVerifyTests: XCTestCase {
             content.fileListModel.lastSearchExitContext,
             .sidebar("S2-08-sidebar-tags-filter")
         )
-        XCTAssertEqual(await tagStore.listRequests(), [
+        let tagListRequests = await tagStore.listRequests()
+        let tagAddRequests = await tagStore.addRequests()
+        let tagRemoveRequests = await tagStore.removeRequests()
+
+        XCTAssertEqual(tagListRequests, [
             DetailTagListRequest(repoPath: "/tmp/repo", fileID: detail.id)
         ])
-        XCTAssertEqual(await tagStore.addRequests(), [])
-        XCTAssertEqual(await tagStore.removeRequests(), [])
+        XCTAssertEqual(tagAddRequests, [])
+        XCTAssertEqual(tagRemoveRequests, [])
     }
 
     @MainActor

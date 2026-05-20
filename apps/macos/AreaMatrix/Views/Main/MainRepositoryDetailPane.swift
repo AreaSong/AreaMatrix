@@ -14,6 +14,9 @@ struct MainRepositoryDetailPane: View {
     let detailTagUndoToast: DetailTagUndoToast?
     let detailTabRequest: MainDetailTabRequest?
     let selectedImportProgressRow: ImportProgressListRow?
+    let repoPath: String
+    let batchTagStore: any CoreTagCRUD
+    let batchTagErrorMapper: any CoreErrorMapping
     let onRetrySelectedFileDetail: () -> Void
     let onLoadTags: () -> Void
     let onRetryTags: () -> Void
@@ -51,6 +54,9 @@ struct MainRepositoryDetailPane: View {
         detailTagUndoToast: DetailTagUndoToast?,
         detailTabRequest: MainDetailTabRequest?,
         selectedImportProgressRow: ImportProgressListRow?,
+        repoPath: String,
+        batchTagStore: any CoreTagCRUD,
+        batchTagErrorMapper: any CoreErrorMapping,
         onRetrySelectedFileDetail: @escaping () -> Void,
         onLoadTags: @escaping () -> Void,
         onRetryTags: @escaping () -> Void,
@@ -85,6 +91,9 @@ struct MainRepositoryDetailPane: View {
         self.detailTagUndoToast = detailTagUndoToast
         self.detailTabRequest = detailTabRequest
         self.selectedImportProgressRow = selectedImportProgressRow
+        self.repoPath = repoPath
+        self.batchTagStore = batchTagStore
+        self.batchTagErrorMapper = batchTagErrorMapper
         self.onRetrySelectedFileDetail = onRetrySelectedFileDetail
         self.onLoadTags = onLoadTags
         self.onRetryTags = onRetryTags
@@ -214,10 +223,26 @@ extension MainRepositoryDetailPane {
                 onCopyPaths(multiSelectionSummary.paths)
             }
             .disabled(multiSelectionSummary.paths.isEmpty)
+            BatchAddTagsTrigger(
+                repoPath: repoPath,
+                fileIDs: selection.multipleFileIDs.sorted(),
+                selectedCount: multiSelectionSummary.selectedCount,
+                disabledReason: batchAddTagsDisabledReason,
+                tagStore: batchTagStore,
+                errorMapper: batchTagErrorMapper
+            )
             if detailErrorMapping != nil {
                 Button("Retry Metadata", action: onRetrySelectedFileDetail)
             }
         }
+    }
+
+    private var batchAddTagsDisabledReason: String? {
+        if multiSelectionSummary.selectedCount == 0 { return "No files selected" }
+        if let reason = multiSelectionSummary.files.compactMap({ writeActionDisabledReason($0.id) }).first {
+            return reason.rawValue
+        }
+        return nil
     }
 
     private var emptyDetailPane: some View {
@@ -453,15 +478,6 @@ extension MainRepositoryDetailPane {
     }
 }
 
-struct DetailMetaMetadataRow: Equatable, Identifiable {
-    let label: String
-    let value: String
-
-    var id: String {
-        label
-    }
-}
-
 private enum DetailRemoveFromIndexButtonStyle {
     case primary
     case secondary
@@ -474,24 +490,4 @@ private enum DetailRemoveFromIndexButtonStyle {
             "S1-12-inline-remove-from-index"
         }
     }
-}
-
-func detailMetaMetadataRows(for detail: FileEntrySnapshot) -> [DetailMetaMetadataRow] {
-    [
-        DetailMetaMetadataRow(label: "Category", value: detail.category),
-        DetailMetaMetadataRow(label: "Path", value: detail.path),
-        DetailMetaMetadataRow(label: "Size", value: detail.sizeDisplay),
-        DetailMetaMetadataRow(label: "Storage", value: detail.storageMode),
-        DetailMetaMetadataRow(label: "Origin", value: detail.origin),
-        DetailMetaMetadataRow(label: "Imported", value: detail.importedAtDisplay),
-        DetailMetaMetadataRow(label: "Modified", value: detail.updatedAtDisplay),
-        DetailMetaMetadataRow(label: "SHA-256", value: detail.hashSha256),
-        DetailMetaMetadataRow(label: "Source", value: detailMetaDisplayValue(detail.sourcePath)),
-        DetailMetaMetadataRow(label: "Status", value: detail.statusDisplay)
-    ]
-}
-
-private func detailMetaDisplayValue(_ value: String?) -> String {
-    guard let value, !value.isEmpty else { return "Not available" }
-    return value
 }

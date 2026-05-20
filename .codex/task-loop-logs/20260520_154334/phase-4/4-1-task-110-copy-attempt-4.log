@@ -1,0 +1,29 @@
+一、执行结论  
+- 已完成。
+
+二、执行范围  
+- 单任务：`4-1/task-110`
+- 本轮 repair 只修复上次验收暴露的测试编译/验证证据问题。
+- 修改文件：
+  - [DetailMultiListFilesPageFeatureTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/DetailMultiListFilesPageFeatureTests.swift:319)：补齐 `S209RecordingBatchTagStore` 的 `addTag/removeTag` 协议方法，且 fail-fast 防止误走 C2-05；补全 `batchAddTags` switch；修复 fixture 显式 `return`。
+  - [DetailIntegrationVerifyTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/DetailIntegrationVerifyTests.swift:132)：把 actor 方法调用先 `await` 到局部变量，再进入 `XCTAssertEqual`，修复测试 target 编译阻塞。
+
+三、完成情况  
+- 核对清单：已保持 S2-09 + C2-06 范围，未实现 C2-07 或相邻页面能力。
+- 完成标准：C2-06 的 batch add tags 测试路径可编译并通过定向 XCTest fallback 验证。
+- Forbidden Touches：未触碰 `core/src/**`，`git diff -- core/src` 无输出。
+
+四、工程质量  
+- 测试 fixture 现在完整遵循 `CoreTagCRUD`，并用 fail-fast 明确禁止 S2-09 测试误调用单文件 `addTag/removeTag`。
+- 没有新增依赖、没有 public Rust API、没有文档或 UDL 改动。
+- 没有生产路径 mock-only 或硬编码通过态；本轮改动只在 XCTest 编译一致性和验证证据层面。
+
+五、验证情况  
+- 已运行 `./dev check task 4-1/task-110`：通过。包含 `prompt doctor: OK`、`git diff --check`、macOS `xcodebuild ... build`，最终 `BUILD SUCCEEDED`。
+- 已运行 `./dev test macos --only-testing AreaMatrixTests/DetailMultiListFilesPageFeatureTests`：整体通过。标准 `xcodebuild test` 被本地 `testmanagerd` sandbox 限制拦截，脚本按仓库策略复用已构建 XCTest bundle，`xcrun xctest` 通过。
+- 未运行全量 `./dev test macos` / `./dev check all`：当前 task manifest 验证上限是 `./dev check task 4-1/task-110`，retry 不升级宽门禁。
+
+六、风险与后续  
+- 剩余风险：本地标准 XCTest runner 仍受 sandbox 限制，但 fallback 已给出定向测试通过证据；真机 UI 手动烟测未做。
+- 建议下一个任务：进入 `4-1/task-110` 的 verify-ready 只读验收，若通过再继续 `4-1/task-111`。
+

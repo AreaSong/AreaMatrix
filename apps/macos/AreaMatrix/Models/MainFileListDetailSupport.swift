@@ -5,6 +5,66 @@ struct MultiSelectionDetailRefreshResult: Equatable {
     var errorMapping: CoreErrorMappingSnapshot?
 }
 
+struct BatchMutationReportPresentation: Equatable {
+    let addedSummaryText: String
+    let skippedSummaryText: String
+    let failedSummaryText: String
+
+    init(report: BatchMutationReportSnapshot) {
+        let added = BatchMutationReportSummary(status: .added, relationCount: report.addedCount, report: report)
+        let skipped = BatchMutationReportSummary(
+            status: .alreadyHadTag,
+            relationCount: report.skippedCount,
+            report: report
+        )
+        let failed = BatchMutationReportSummary(status: .failed, relationCount: report.failedCount, report: report)
+        addedSummaryText = added.addedText
+        skippedSummaryText = skipped.skippedText
+        failedSummaryText = failed.failedText
+    }
+}
+
+private struct BatchMutationReportSummary {
+    var status: BatchMutationStatusSnapshot
+    var relationCount: Int64
+    var report: BatchMutationReportSnapshot
+
+    var addedText: String {
+        guard fileCount > 0 else { return relationOnlyText(action: "added", emptyText: "Added to 0 files") }
+        return "Added to \(Self.countText(fileCount, singular: "file", plural: "files"))\(relationSuffix)"
+    }
+
+    var skippedText: String {
+        guard fileCount > 0 else {
+            return relationOnlyText(action: "already existed", emptyText: "0 files already had these tags")
+        }
+        return "\(Self.countText(fileCount, singular: "file", plural: "files")) already had these tags\(relationSuffix)"
+    }
+
+    var failedText: String {
+        guard fileCount > 0 else { return relationOnlyText(action: "failed", emptyText: "0 failed") }
+        return "\(Self.countText(fileCount, singular: "file", plural: "files")) failed\(relationSuffix)"
+    }
+
+    private var fileCount: Int64 {
+        Int64(Set(report.itemResults.filter { $0.status == status }.map(\.fileID)).count)
+    }
+
+    private var relationSuffix: String {
+        guard relationCount > 0, relationCount != fileCount else { return "" }
+        return " (\(Self.countText(relationCount, singular: "tag relation", plural: "tag relations")))"
+    }
+
+    private func relationOnlyText(action: String, emptyText: String) -> String {
+        guard relationCount > 0 else { return emptyText }
+        return "\(Self.countText(relationCount, singular: "tag relation", plural: "tag relations")) \(action)"
+    }
+
+    private static func countText(_ count: Int64, singular: String, plural: String) -> String {
+        "\(count) \(count == 1 ? singular : plural)"
+    }
+}
+
 struct MultiSelectionDetailRefreshRequest {
     var ids: Set<Int64>
     var repoPath: String
