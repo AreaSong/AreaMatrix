@@ -174,6 +174,83 @@ final class DetailTagPageFeatureTests: XCTestCase {
         XCTAssertEqual(tagStoreCalls, [])
     }
 
+    @MainActor
+    func testS208TagsFilterLoadsC205RegistryWithoutMutatingTags() async {
+        let detail = FileEntrySnapshot.detailMetaFixture(id: 208, currentName: "registry.pdf")
+        let registry = TagSetSnapshot.s208RegistryFixture(fileID: detail.id)
+        let tagStore = DetailTagRecordingStore(listResults: [.success(registry)])
+        let model = MainFileListModel(
+            opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [detail]),
+            fileLister: DetailMetaNoopLister(),
+            fileDetailer: DetailMetaImmediateDetailer(result: .success(detail)),
+            searchQuerying: MainListRecordingSearchQuerying(results: [.success(.s208SearchPage(filters: .empty))]),
+            searchFiltering: MainListRecordingSearchFiltering(results: [.success(.s208Facets())]),
+            tagStore: tagStore,
+            errorMapper: DetailMetaErrorMapper(mapping: .s207TagDb())
+        )
+
+        await model.selectFiles([detail.id])
+        await model.loadSearchFacets(query: "", scope: .all, sidebarRow: .s208Root, filters: .empty)
+        await model.loadTagFilterRegistry(activeFileID: detail.id)
+        let options = TagFilterRegistryPresentation.options(
+            registryState: model.tagFilterRegistryState,
+            facetsState: model.searchFacetsState
+        )
+        let listRequests = await tagStore.listRequests()
+
+        XCTAssertEqual(listRequests, [DetailTagListRequest(repoPath: "/tmp/repo", fileID: detail.id)])
+        XCTAssertEqual(options.map(\.value), ["finance", "tax", "archive", "legal"])
+        XCTAssertEqual(options.first { $0.value == "legal" }?.countDisplayText, "--")
+        XCTAssertEqual(options.first { $0.value == "legal" }?.disabled, false)
+        XCTAssertEqual(await tagStore.addRequests(), [])
+        XCTAssertEqual(await tagStore.removeRequests(), [])
+    }
+
+    @MainActor
+    func testS208TagRegistryFailureMapsErrorAndPreservesPreviousOptions() async {
+        let detail = FileEntrySnapshot.detailMetaFixture(id: 209, currentName: "registry-fail.pdf")
+        let registry = TagSetSnapshot.s208RegistryFixture(fileID: detail.id)
+        let mapping = CoreErrorMappingSnapshot.s207TagDb()
+        let tagStore = DetailTagRecordingStore(
+            listResults: [.success(registry), .failure(CoreError.Db(message: "tag registry locked"))]
+        )
+        let mapper = DetailMetaErrorMapper(mapping: mapping)
+        let model = MainFileListModel(
+            opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [detail]),
+            fileLister: DetailMetaNoopLister(),
+            fileDetailer: DetailMetaImmediateDetailer(result: .success(detail)),
+            tagStore: tagStore,
+            errorMapper: mapper
+        )
+
+        await model.loadTagFilterRegistry(activeFileID: detail.id)
+        await model.loadTagFilterRegistry(activeFileID: detail.id)
+        let mappedErrors = await mapper.recordedErrors()
+
+        XCTAssertEqual(model.tagFilterRegistryState, .failed(fileID: detail.id, mapping, previous: registry))
+        XCTAssertEqual(model.tagFilterRegistryState.tagSet, registry)
+        XCTAssertEqual(mappedErrors, [CoreError.Db(message: "tag registry locked")])
+    }
+
+    @MainActor
+    func testS208ClearingDetailClearsTagRegistryAnchorState() async {
+        let detail = FileEntrySnapshot.detailMetaFixture(id: 210, currentName: "clear-registry.pdf")
+        let registry = TagSetSnapshot.s208RegistryFixture(fileID: detail.id)
+        let tagStore = DetailTagRecordingStore(listResults: [.success(registry)])
+        let model = MainFileListModel(
+            opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [detail]),
+            fileLister: DetailMetaNoopLister(),
+            fileDetailer: DetailMetaImmediateDetailer(result: .success(detail)),
+            tagStore: tagStore,
+            errorMapper: DetailMetaErrorMapper(mapping: .s207TagDb())
+        )
+
+        await model.loadTagFilterRegistry(activeFileID: detail.id)
+        model.clearDetail()
+
+        XCTAssertEqual(model.tagFilterRegistryState, .idle)
+    }
+
     func testS208TagsFilterEditingIsCaseInsensitiveAndDoesNotCreateTags() {
         var filters = SearchFilterEditing.togglingTag("Finance", in: .empty)
         filters = SearchFilterEditing.togglingTag("finance", in: filters)
@@ -211,6 +288,11 @@ struct DetailTagMutationRequest: Equatable {
     var tag: String
 }
 
+struct DetailTagListRequest: Equatable {
+    var repoPath: String
+    var fileID: Int64
+}
+
 actor DetailTagRecordingStore: CoreTagCRUD {
     enum Result {
         case success(TagSetSnapshot)
@@ -220,6 +302,7 @@ actor DetailTagRecordingStore: CoreTagCRUD {
     private var listResults: [Result]
     private var addResults: [Result]
     private var removeResults: [Result]
+    private var recordedListRequests: [DetailTagListRequest] = []
     private var recordedAddRequests: [DetailTagMutationRequest] = []
     private var recordedRemoveRequests: [DetailTagMutationRequest] = []
 
@@ -233,7 +316,8 @@ actor DetailTagRecordingStore: CoreTagCRUD {
         self.removeResults = removeResults
     }
 
-    func listTags(repoPath _: String, fileID: Int64) async throws -> TagSetSnapshot {
+    func listTags(repoPath: String, fileID: Int64) async throws -> TagSetSnapshot {
+        recordedListRequests.append(DetailTagListRequest(repoPath: repoPath, fileID: fileID))
         try consume(&listResults, fallbackFileID: fileID)
     }
 
@@ -253,6 +337,10 @@ actor DetailTagRecordingStore: CoreTagCRUD {
 
     func removeRequests() -> [DetailTagMutationRequest] {
         recordedRemoveRequests
+    }
+
+    func listRequests() -> [DetailTagListRequest] {
+        recordedListRequests
     }
 
     private func consume(_ results: inout [Result], fallbackFileID: Int64) throws -> TagSetSnapshot {
@@ -287,6 +375,33 @@ extension TagSetSnapshot {
             availableTags: tags,
             recentTags: tags,
             updatedAt: 1_700_000_300
+        )
+    }
+
+    static func s208RegistryFixture(fileID: Int64) -> TagSetSnapshot {
+        TagSetSnapshot(
+            fileID: fileID,
+            fileTags: [],
+            availableTags: [
+                TagRecordSnapshot(
+                    value: "finance",
+                    label: "Finance",
+                    fileCount: 24,
+                    selected: false,
+                    disabled: false,
+                    updatedAt: 1_700_000_300
+                ),
+                TagRecordSnapshot(
+                    value: "legal",
+                    label: "Legal",
+                    fileCount: 5,
+                    selected: false,
+                    disabled: false,
+                    updatedAt: 1_700_000_301
+                )
+            ],
+            recentTags: [],
+            updatedAt: 1_700_000_301
         )
     }
 }

@@ -125,3 +125,95 @@ extension TagSetSnapshot {
         fileTags.contains { $0.value.caseInsensitiveCompare(value) == .orderedSame }
     }
 }
+
+enum TagFilterRegistryState: Equatable {
+    case idle
+    case loading(fileID: Int64, previous: TagSetSnapshot?)
+    case loaded(fileID: Int64, TagSetSnapshot)
+    case failed(fileID: Int64, CoreErrorMappingSnapshot, previous: TagSetSnapshot?)
+
+    var tagSet: TagSetSnapshot? {
+        switch self {
+        case let .loaded(_, tagSet), let .loading(_, tagSet?),
+             let .failed(_, _, tagSet?):
+            tagSet
+        case .idle, .loading, .failed:
+            nil
+        }
+    }
+
+    var errorMapping: CoreErrorMappingSnapshot? {
+        guard case let .failed(_, mapping, _) = self else { return nil }
+        return mapping
+    }
+
+    var isLoading: Bool {
+        if case .loading = self { return true }
+        return false
+    }
+}
+
+enum TagFacetFiltering {
+    static func visibleTags(query: String, facets: [SearchFacetCountSnapshot]) -> [SearchFacetCountSnapshot] {
+        let normalizedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !normalizedQuery.isEmpty else { return facets }
+        return facets.filter { facet in
+            facet.value.localizedCaseInsensitiveContains(normalizedQuery) ||
+                facet.label.localizedCaseInsensitiveContains(normalizedQuery)
+        }
+    }
+}
+
+enum TagFilterRegistryPresentation {
+    static func options(
+        registryState: TagFilterRegistryState,
+        facetsState: MainSearchFacetsState
+    ) -> [SearchFacetCountSnapshot] {
+        let facets = facetsState.facets?.tags ?? []
+        guard let tagSet = registryState.tagSet else { return facets }
+
+        var merged = facets
+        for tag in tagSet.availableTags where !contains(tag.value, in: merged) {
+            merged.append(SearchFacetCountSnapshot(
+                value: tag.value,
+                label: tag.displayName,
+                count: -1,
+                selected: tag.selected,
+                disabled: tag.disabled
+            ))
+        }
+        return merged
+    }
+
+    private static func contains(_ value: String, in facets: [SearchFacetCountSnapshot]) -> Bool {
+        facets.contains { $0.value.caseInsensitiveCompare(value) == .orderedSame }
+    }
+}
+
+extension SearchFacetCountSnapshot {
+    var countDisplayText: String {
+        if count < 0 || disabled { return "--" }
+        return "\(count) files"
+    }
+
+    func isSelected(in filters: SearchFilterStateSnapshot) -> Bool {
+        filters.tags.contains { $0.caseInsensitiveCompare(value) == .orderedSame }
+    }
+
+    func accessibilityLabel(isSelected: Bool) -> String {
+        let state = isSelected ? "selected" : "not selected"
+        let availability = disabled ? "disabled" : countDisplayText
+        return "\(label), \(availability), \(state)"
+    }
+}
+
+extension SearchTagMatchModeSnapshot {
+    var accessibilityText: String {
+        switch self {
+        case .any:
+            "Any selected tag"
+        case .all:
+            "All selected tags"
+        }
+    }
+}

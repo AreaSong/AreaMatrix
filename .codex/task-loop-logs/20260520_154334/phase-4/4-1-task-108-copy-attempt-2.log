@@ -1,0 +1,49 @@
+一、执行结论
+
+已完成。
+
+二、执行范围
+
+单任务：`4-1/task-108` repair retry。  
+修改集中在 `apps/macos/AreaMatrix/**` 与 `apps/macos/AreaMatrixTests/**`；未触碰 `core/src/**`、`core/area_matrix.udl`、`apps/macos/AreaMatrix.xcodeproj/project.pbxproj`。
+
+主要修复：
+- 将 S2-08 tag filter 的 registry 状态、合并展示、大小写筛选、count `--` 展示等 helper 从超限文件中拆分到 `MainDetailTagState.swift`。
+- 保留 `SearchTagFacetPicker` 生产 UI 在 `DetailTagSection.swift`，继续通过 C2-05 `listTags` registry 加载真实 CoreBridge 闭环。
+- 调整 search filter routing helper 位置，使相关 Swift 文件都回到 500 行内。
+
+三、完成情况
+
+核对清单全部满足：只处理 S2-08 + C2-05；未实现同页 C2-02 之外的能力；未新增 add/remove 标签 mutation；C2-05 仍只通过 `listTags` 读取 registry。  
+完成标准全部满足：用户可打开 tag filter、加载 registry、看到可选 tags / Retry / Clear all / Any-All；没有 mock-only 生产路径；未触碰 control map 外能力。  
+Forbidden Touches：未触碰。
+
+四、工程质量
+
+文件规模 blocker 已修复，当前相关文件行数：
+- `DetailTagSection.swift` 496
+- `MainFileListModel.swift` 496
+- `MainRepositoryContentNoteDrafts.swift` 492
+- `SearchFiltersPopover.swift` 498
+- `DetailTagPageFeatureTests.swift` 497
+
+错误状态仍保留 `Could not load tags`、Retry、previous options；未新增依赖、Rust public API 或文档漂移修复。生产路径仍经 `CoreTagCRUD` / `CoreBridge` 调 UniFFI。
+
+五、验证情况
+
+已运行并通过：
+
+```bash
+./dev check task 4-1/task-108
+```
+
+结果：
+- `prompt doctor`: OK
+- `git diff --check`: 通过
+- `xcodebuild ... build CODE_SIGNING_ALLOWED=NO`: `BUILD SUCCEEDED`
+
+六、风险与后续
+
+剩余风险：未运行 `./dev test macos` 和 UI smoke，因为当前 manifest 验证上限只要求 `./dev check task 4-1/task-108`。  
+建议下一个任务：进入该 task 的 verify-ready 验收，确认 repair 后工程质量 blocker 消除。
+

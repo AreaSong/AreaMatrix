@@ -144,10 +144,14 @@ enum SearchFilterEditing {
 struct SearchFiltersPopover: View {
     @Binding var filters: SearchFilterStateSnapshot
     var facetsState: MainSearchFacetsState
+    var tagRegistryState: TagFilterRegistryState
+    var tagRegistryAnchorFileID: Int64?
     var canSaveAsSmartList: Bool
     var saveDisabledReason: String?
     var onReset: () -> Void
     var onRetry: () -> Void
+    var onLoadTagRegistry: (Int64?) -> Void
+    var onRetryTagRegistry: () -> Void
     var onSaveAsSmartList: () -> Void
     @Environment(\.dismiss) private var dismiss
 
@@ -216,7 +220,11 @@ struct SearchFiltersPopover: View {
             SearchTagFacetPicker(
                 filters: $filters,
                 facetsState: facetsState,
-                onRetry: onRetry
+                tagRegistryState: tagRegistryState,
+                tagRegistryAnchorFileID: tagRegistryAnchorFileID,
+                onRetry: onRetry,
+                onLoadTagRegistry: onLoadTagRegistry,
+                onRetryTagRegistry: onRetryTagRegistry
             )
             SearchDateFilterSection(
                 title: "Modified",
@@ -433,6 +441,28 @@ struct SearchFilterChipsBar: View {
             .accessibilityElement(children: .contain)
             .accessibilityLabel("\(chips.count) active filters")
         }
+    }
+}
+
+enum SearchFilterStateRouting {
+    static func effective(
+        searchFilters: SearchFilterStateSnapshot,
+        draft: SmartListFilterDraft?
+    ) -> SearchFilterStateSnapshot {
+        draft?.filters ?? searchFilters
+    }
+
+    @MainActor
+    static func assign(
+        _ filters: SearchFilterStateSnapshot,
+        searchFilters: inout SearchFilterStateSnapshot,
+        fileListModel: MainFileListModel
+    ) {
+        if fileListModel.isEditingSmartListFilterDraft {
+            fileListModel.updateSmartListFilterDraft(filters)
+            return
+        }
+        searchFilters = filters
     }
 }
 

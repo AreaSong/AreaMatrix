@@ -59,28 +59,6 @@ enum SearchFilterChips {
     }
 }
 
-enum SearchFilterStateRouting {
-    static func effective(
-        searchFilters: SearchFilterStateSnapshot,
-        draft: SmartListFilterDraft?
-    ) -> SearchFilterStateSnapshot {
-        draft?.filters ?? searchFilters
-    }
-
-    @MainActor
-    static func assign(
-        _ filters: SearchFilterStateSnapshot,
-        searchFilters: inout SearchFilterStateSnapshot,
-        fileListModel: MainFileListModel
-    ) {
-        if fileListModel.isEditingSmartListFilterDraft {
-            fileListModel.updateSmartListFilterDraft(filters)
-            return
-        }
-        searchFilters = filters
-    }
-}
-
 extension MainRepositoryContentView {
     @MainActor
     func showFailedNoteDraftBannerIfNeeded(leaving previousSelection: Set<Int64>) {
@@ -458,6 +436,8 @@ extension MainRepositoryContentView {
             SearchFiltersPopover(
                 filters: searchFiltersBinding,
                 facetsState: fileListModel.searchFacetsState,
+                tagRegistryState: fileListModel.tagFilterRegistryState,
+                tagRegistryAnchorFileID: tagRegistryAnchorFileID,
                 canSaveAsSmartList: !fileListModel.isEditingSmartListFilterDraft && fileListModel.canSaveCurrentSearch,
                 saveDisabledReason: searchSaveDisabledReason,
                 onReset: {
@@ -466,6 +446,12 @@ extension MainRepositoryContentView {
                 onRetry: {
                     Task { await fileListModel.retrySearchFacets() }
                 },
+                onLoadTagRegistry: { fileID in
+                    Task { await fileListModel.loadTagFilterRegistry(activeFileID: fileID) }
+                },
+                onRetryTagRegistry: {
+                    Task { await fileListModel.retryTagFilterRegistry() }
+                },
                 onSaveAsSmartList: {
                     isSearchFiltersPresented = false
                     fileListModel.openSavedSearchSheet()
@@ -473,6 +459,10 @@ extension MainRepositoryContentView {
             )
         }
         .accessibilityLabel(searchFiltersAccessibilityLabel)
+    }
+
+    var tagRegistryAnchorFileID: Int64? {
+        fileListModel.selection.singleFileID ?? fileListModel.files.first?.id
     }
 
     @ViewBuilder

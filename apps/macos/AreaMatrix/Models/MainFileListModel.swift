@@ -17,6 +17,7 @@ final class MainFileListModel: ObservableObject {
     @Published var detailTagUndoToast: DetailTagUndoToast?
     @Published var searchState: MainSearchState = .idle
     @Published var searchFacetsState: MainSearchFacetsState = .idle
+    @Published var tagFilterRegistryState: TagFilterRegistryState = .idle
     @Published var selectedFileNoteWriteBlock: MainDetailNoteWriteBlock?
     @Published var detailTabRequest: MainDetailTabRequest?
     @Published var pendingActionDestination: MainFileActionDestination?
@@ -51,6 +52,7 @@ final class MainFileListModel: ObservableObject {
     private var loadGeneration = 0
     private var detailGeneration = 0
     private var detailLogGeneration = 0
+    var tagFilterRegistryGeneration = 0
     var searchGeneration = 0
     var searchFacetsGeneration = 0
 
@@ -151,18 +153,15 @@ extension MainFileListModel {
     }
 
     func loadSelectedFileChangeLog() async {
-        guard let selectedFileID = selection.singleFileID else { return }
-        await loadChangeLog(fileID: selectedFileID)
+        if let selectedFileID = selection.singleFileID { await loadChangeLog(fileID: selectedFileID) }
     }
 
     func retrySelectedFileChangeLog() async {
-        guard let selectedFileID = selection.singleFileID else { return }
-        await loadChangeLog(fileID: selectedFileID)
+        if let selectedFileID = selection.singleFileID { await loadChangeLog(fileID: selectedFileID) }
     }
 
     func consumeDetailTabRequest(_ request: MainDetailTabRequest) {
-        guard detailTabRequest == request else { return }
-        detailTabRequest = nil
+        if detailTabRequest == request { detailTabRequest = nil }
     }
 
     func syncExternalCreated(_ event: MainExternalCreatedFileEvent) async {
@@ -235,13 +234,9 @@ extension MainFileListModel {
         statusBanner = .removedSelectedFile(fileID: fileID)
     }
 
-    func clearStatusBanner() {
-        statusBanner = nil
-    }
+    func clearStatusBanner() { statusBanner = nil }
 
-    func showUnsavedNoteDraftPreserved(fileID: Int64) {
-        statusBanner = .unsavedNoteDraftPreserved(fileID: fileID)
-    }
+    func showUnsavedNoteDraftPreserved(fileID: Int64) { statusBanner = .unsavedNoteDraftPreserved(fileID: fileID) }
 
     func writeActionDisabledReason(fileID: Int64) -> MainFileWriteActionDisabledReason? {
         if isReadOnly { return .repoReadOnly }
@@ -474,6 +469,7 @@ extension MainFileListModel {
         selection = .none
         selectedFileDetail = nil; selectedFileNoteWriteBlock = nil; detailErrorMapping = nil
         detailTagEditorState = .notLoaded
+        clearTagFilterRegistry()
         isDetailLoading = false
         resetDetailLog()
         pendingActionDestination = nil; renameState = .idle; deleteState = .idle; changeCategoryState = .idle

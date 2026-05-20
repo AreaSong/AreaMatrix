@@ -301,7 +301,11 @@ private struct TagSuggestionRow: View {
 struct SearchTagFacetPicker: View {
     @Binding var filters: SearchFilterStateSnapshot
     var facetsState: MainSearchFacetsState
+    var tagRegistryState: TagFilterRegistryState
+    var tagRegistryAnchorFileID: Int64?
     var onRetry: () -> Void
+    var onLoadTagRegistry: (Int64?) -> Void
+    var onRetryTagRegistry: () -> Void
     @State private var query = ""
     @FocusState private var isSearchFocused: Bool
 
@@ -313,55 +317,49 @@ struct SearchTagFacetPicker: View {
                 .textFieldStyle(.roundedBorder)
                 .focused($isSearchFocused)
                 .accessibilityIdentifier("S2-08-tag-search")
-            SelectedTagChips(filters: $filters, tagFacets: tagFacets)
+            SelectedTagChips(filters: $filters, tagFacets: tagOptions)
             TagMatchModeControl(filters: $filters)
             tagList
             tagFooter
         }
         .accessibilityIdentifier("S2-08-tags-filter")
         .onAppear { isSearchFocused = true }
+        .task(id: tagRegistryAnchorFileID) {
+            onLoadTagRegistry(tagRegistryAnchorFileID)
+        }
     }
 
     @ViewBuilder
     private var tagList: some View {
-        if let error = facetsState.errorMapping {
-            HStack(spacing: 8) {
-                Text("Could not load tags")
-                Button("Retry", action: onRetry)
-            }
-            .font(.caption)
-            .foregroundStyle(.secondary)
-            .accessibilityLabel("Could not load tags. \(error.userMessage)")
-        } else if facetsState.isLoading, tagFacets.isEmpty {
+        if let error = tagRegistryState.errorMapping, tagOptions.isEmpty {
+            tagLoadingFailure(error: error, retry: onRetryTagRegistry)
+        } else if let error = facetsState.errorMapping, tagOptions.isEmpty {
+            tagLoadingFailure(error: error, retry: onRetry)
+        } else if isLoadingTags, tagOptions.isEmpty {
             Text("Loading tags...")
                 .font(.caption)
                 .foregroundStyle(.secondary)
-        } else if tagFacets.isEmpty {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("No tags yet")
-                Text("Add tags from file detail or batch actions.")
-            }
-            .font(.caption)
-            .foregroundStyle(.secondary)
-        } else if visibleTagFacets.isEmpty {
+        } else if tagOptions.isEmpty {
+            tagEmptyState
+        } else if visibleTagOptions.isEmpty {
             Text("No matching tags")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         } else {
-            tagOptions
+            tagOptionsView
         }
     }
 
-    private var tagOptions: some View {
+    private var tagOptionsView: some View {
         VStack(alignment: .leading, spacing: 4) {
-            ForEach(visibleTagFacets) { option in
+            ForEach(visibleTagOptions) { option in
                 Toggle(isOn: Binding(
                     get: { option.isSelected(in: filters) },
                     set: { _ in filters = SearchFilterEditing.togglingTag(option.value, in: filters) }
                 )) {
                     TagFacetRow(option: option)
                 }
-                .disabled(option.disabled || facetsState.errorMapping != nil)
+                .disabled(option.disabled || tagRegistryState.errorMapping != nil)
                 .accessibilityLabel(option.accessibilityLabel(isSelected: option.isSelected(in: filters)))
             }
         }
@@ -374,18 +372,54 @@ struct SearchTagFacetPicker: View {
             }
             .disabled(filters.tags.isEmpty)
             Spacer()
-            if facetsState.isLoading, !tagFacets.isEmpty {
-                Text("Loading tags...")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
+            tagFooterStatus
         }
     }
 
-    private var tagFacets: [SearchFacetCountSnapshot] { facetsState.facets?.tags ?? [] }
+    @ViewBuilder
+    private var tagFooterStatus: some View {
+        if tagRegistryState.errorMapping != nil, !tagOptions.isEmpty {
+            Button("Retry tags", action: onRetryTagRegistry)
+                .font(.caption)
+        } else if facetsState.errorMapping != nil, !tagOptions.isEmpty {
+            Button("Retry counts", action: onRetry)
+                .font(.caption)
+        } else if isLoadingTags, !tagOptions.isEmpty {
+            Text("Loading tags...")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
 
-    private var visibleTagFacets: [SearchFacetCountSnapshot] {
-        TagFacetFiltering.visibleTags(query: query, facets: tagFacets)
+    private func tagLoadingFailure(error: CoreErrorMappingSnapshot, retry: @escaping () -> Void) -> some View {
+        HStack(spacing: 8) {
+            Text("Could not load tags")
+            Button("Retry", action: retry)
+        }
+        .font(.caption)
+        .foregroundStyle(.secondary)
+        .accessibilityLabel("Could not load tags. \(error.userMessage)")
+    }
+
+    private var tagEmptyState: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text("No tags yet")
+            Text("Add tags from file detail or batch actions.")
+        }
+        .font(.caption)
+        .foregroundStyle(.secondary)
+    }
+
+    private var tagOptions: [SearchFacetCountSnapshot] {
+        TagFilterRegistryPresentation.options(registryState: tagRegistryState, facetsState: facetsState)
+    }
+
+    private var visibleTagOptions: [SearchFacetCountSnapshot] {
+        TagFacetFiltering.visibleTags(query: query, facets: tagOptions)
+    }
+
+    private var isLoadingTags: Bool {
+        tagRegistryState.isLoading || facetsState.isLoading
     }
 }
 
@@ -457,44 +491,6 @@ private struct TagMatchModeControl: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-        }
-    }
-}
-
-enum TagFacetFiltering {
-    static func visibleTags(query: String, facets: [SearchFacetCountSnapshot]) -> [SearchFacetCountSnapshot] {
-        let normalizedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !normalizedQuery.isEmpty else { return facets }
-        return facets.filter { facet in
-            facet.value.localizedCaseInsensitiveContains(normalizedQuery) ||
-                facet.label.localizedCaseInsensitiveContains(normalizedQuery)
-        }
-    }
-}
-
-extension SearchFacetCountSnapshot {
-    var countDisplayText: String {
-        disabled ? "--" : "\(count) files"
-    }
-
-    func isSelected(in filters: SearchFilterStateSnapshot) -> Bool {
-        filters.tags.contains { $0.caseInsensitiveCompare(value) == .orderedSame }
-    }
-
-    func accessibilityLabel(isSelected: Bool) -> String {
-        let state = isSelected ? "selected" : "not selected"
-        let availability = disabled ? "disabled" : countDisplayText
-        return "\(label), \(availability), \(state)"
-    }
-}
-
-private extension SearchTagMatchModeSnapshot {
-    var accessibilityText: String {
-        switch self {
-        case .any:
-            "Any selected tag"
-        case .all:
-            "All selected tags"
         }
     }
 }
