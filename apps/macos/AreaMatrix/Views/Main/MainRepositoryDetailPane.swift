@@ -10,9 +10,17 @@ struct MainRepositoryDetailPane: View {
     let detailLogState: MainDetailLogState
     let detailLogDiagnosticsState: MainDetailLogDiagnosticsState
     let detailExternalCreateSyncState: MainDetailExternalCreateSyncState
+    let detailTagEditorState: DetailTagEditorState
+    let detailTagUndoToast: DetailTagUndoToast?
     let detailTabRequest: MainDetailTabRequest?
     let selectedImportProgressRow: ImportProgressListRow?
     let onRetrySelectedFileDetail: () -> Void
+    let onLoadTags: () -> Void
+    let onRetryTags: () -> Void
+    let onAddTag: (String) -> Void
+    let onRemoveTag: (String) -> Void
+    let onUndoTagChange: () -> Void
+    let onDismissTagUndoToast: () -> Void
     let onCopyPaths: ([String]) -> Void
     let onOpenNoteFile: (String) -> Void
     let onRefreshChangeLog: () -> Void
@@ -39,9 +47,17 @@ struct MainRepositoryDetailPane: View {
         detailLogState: MainDetailLogState,
         detailLogDiagnosticsState: MainDetailLogDiagnosticsState,
         detailExternalCreateSyncState: MainDetailExternalCreateSyncState,
+        detailTagEditorState: DetailTagEditorState,
+        detailTagUndoToast: DetailTagUndoToast?,
         detailTabRequest: MainDetailTabRequest?,
         selectedImportProgressRow: ImportProgressListRow?,
         onRetrySelectedFileDetail: @escaping () -> Void,
+        onLoadTags: @escaping () -> Void,
+        onRetryTags: @escaping () -> Void,
+        onAddTag: @escaping (String) -> Void,
+        onRemoveTag: @escaping (String) -> Void,
+        onUndoTagChange: @escaping () -> Void,
+        onDismissTagUndoToast: @escaping () -> Void,
         onCopyPaths: @escaping ([String]) -> Void,
         onOpenNoteFile: @escaping (String) -> Void,
         onRefreshChangeLog: @escaping () -> Void,
@@ -65,9 +81,17 @@ struct MainRepositoryDetailPane: View {
         self.detailLogState = detailLogState
         self.detailLogDiagnosticsState = detailLogDiagnosticsState
         self.detailExternalCreateSyncState = detailExternalCreateSyncState
+        self.detailTagEditorState = detailTagEditorState
+        self.detailTagUndoToast = detailTagUndoToast
         self.detailTabRequest = detailTabRequest
         self.selectedImportProgressRow = selectedImportProgressRow
         self.onRetrySelectedFileDetail = onRetrySelectedFileDetail
+        self.onLoadTags = onLoadTags
+        self.onRetryTags = onRetryTags
+        self.onAddTag = onAddTag
+        self.onRemoveTag = onRemoveTag
+        self.onUndoTagChange = onUndoTagChange
+        self.onDismissTagUndoToast = onDismissTagUndoToast
         self.onCopyPaths = onCopyPaths
         self.onOpenNoteFile = onOpenNoteFile
         self.onRefreshChangeLog = onRefreshChangeLog
@@ -276,6 +300,18 @@ extension MainRepositoryDetailPane {
         switch selectedTab {
         case .meta:
             detailStatusSection
+            DetailTagSection(
+                file: detail,
+                state: detailTagEditorState,
+                undoToast: detailTagUndoToast,
+                disabledReason: writeActionDisabledReason(detail.id),
+                onLoadTags: onLoadTags,
+                onRetryTags: onRetryTags,
+                onAddTag: onAddTag,
+                onRemoveTag: onRemoveTag,
+                onUndoTagChange: onUndoTagChange,
+                onDismissUndoToast: onDismissTagUndoToast
+            )
             metadataRows(for: detail)
         case .log:
             DetailLogTabView(

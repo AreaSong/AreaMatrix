@@ -1,0 +1,299 @@
+import SwiftUI
+
+struct DetailTagSection: View {
+    let file: FileEntrySnapshot
+    let state: DetailTagEditorState
+    let undoToast: DetailTagUndoToast?
+    let disabledReason: MainFileWriteActionDisabledReason?
+    let onLoadTags: () -> Void
+    let onRetryTags: () -> Void
+    let onAddTag: (String) -> Void
+    let onRemoveTag: (String) -> Void
+    let onUndoTagChange: () -> Void
+    let onDismissUndoToast: () -> Void
+
+    @State private var isPopoverPresented = false
+    @State private var query = ""
+    @State private var pendingSubmittedTag: String?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            tagHeader
+            Text("分类决定“放哪儿”，标签决定“怎么横向组织”。")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            if let failure = state.failure {
+                tagFailureView(failure.mapping)
+            }
+            tagUndoToast
+        }
+        .task(id: file.id) { onLoadTags() }
+        .onChange(of: state) { _, newState in
+            clearCommittedQuery(newState: newState)
+        }
+    }
+
+    private var tagHeader: some View {
+        HStack(spacing: 8) {
+            Text("Tags")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            tagChips
+            addButton
+        }
+    }
+
+    private var tagChips: some View {
+        Group {
+            if let tagSet = state.tagSet, !tagSet.fileTags.isEmpty {
+                ForEach(tagSet.fileTags) { tag in
+                    TagChipView(tag: tag, disabled: disabledReason != nil || state.isLoading) {
+                        onRemoveTag(tag.value)
+                    }
+                }
+            } else if state.isLoading {
+                Text("Loading tags...")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            } else {
+                Text("No tags yet")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private var addButton: some View {
+        Button("+ Add...") {
+            isPopoverPresented = true
+            if state.tagSet == nil { onLoadTags() }
+        }
+        .disabled(disabledReason != nil)
+        .popover(isPresented: $isPopoverPresented) {
+            TagEditorPopover(
+                query: $query,
+                state: state,
+                disabledReason: disabledReason,
+                onRetry: onRetryTags,
+                onAddTag: submitTag,
+                onClose: { isPopoverPresented = false }
+            )
+        }
+        .accessibilityIdentifier("S2-07-tags-add")
+    }
+
+    private func tagFailureView(_ mapping: CoreErrorMappingSnapshot) -> some View {
+        HStack(spacing: 8) {
+            Label(mapping.userMessage, systemImage: "exclamationmark.triangle")
+                .font(.callout)
+            Button("Retry", action: onRetryTags)
+        }
+        .foregroundStyle(.secondary)
+    }
+
+    @ViewBuilder
+    private var tagUndoToast: some View {
+        if let undoToast, undoToast.belongs(to: file.id) {
+            HStack(spacing: 8) {
+                Label(undoToast.message, systemImage: "arrow.uturn.backward.circle")
+                Button("Undo", action: onUndoTagChange)
+                Button("Dismiss", action: onDismissUndoToast)
+            }
+            .font(.caption)
+            .padding(8)
+            .background(Color.secondary.opacity(0.12), in: RoundedRectangle(cornerRadius: 8))
+        }
+    }
+
+    private func submitTag(_ tag: String) {
+        pendingSubmittedTag = tag.trimmingCharacters(in: .whitespacesAndNewlines)
+        onAddTag(tag)
+    }
+
+    private func clearCommittedQuery(newState: DetailTagEditorState) {
+        guard let pending = pendingSubmittedTag else { return }
+        guard !newState.isLoading else { return }
+
+        if DetailTagInputCommitPolicy.shouldClearSubmittedQuery(submittedTag: pending, state: newState) {
+            query = ""
+        }
+        pendingSubmittedTag = nil
+    }
+}
+
+enum DetailTagInputCommitPolicy {
+    static func shouldClearSubmittedQuery(submittedTag: String, state: DetailTagEditorState) -> Bool {
+        let normalizedTag = submittedTag.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard case let .loaded(_, tagSet) = state, !normalizedTag.isEmpty else { return false }
+        return tagSet.containsFileTag(value: normalizedTag)
+    }
+}
+
+private struct TagChipView: View {
+    let tag: TagRecordSnapshot
+    let disabled: Bool
+    let onRemove: () -> Void
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Text(tag.displayName)
+            Button(action: onRemove) {
+                Image(systemName: "xmark")
+                    .imageScale(.small)
+            }
+            .buttonStyle(.borderless)
+            .disabled(disabled)
+            .accessibilityLabel("Remove tag \(tag.displayName)")
+        }
+        .font(.caption)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 3)
+        .background(Color.secondary.opacity(0.12), in: Capsule())
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Tag \(tag.displayName)")
+    }
+}
+
+private struct TagEditorPopover: View {
+    @Binding var query: String
+    let state: DetailTagEditorState
+    let disabledReason: MainFileWriteActionDisabledReason?
+    let onRetry: () -> Void
+    let onAddTag: (String) -> Void
+    let onClose: () -> Void
+
+    @FocusState private var isInputFocused: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            TextField("Search or create tag...", text: $query)
+                .textFieldStyle(.roundedBorder)
+                .focused($isInputFocused)
+                .disabled(disabledReason != nil)
+                .onSubmit(performSubmit)
+                .accessibilityIdentifier("S2-07-tag-search-create")
+            if shouldShowValidationMessage, let tagValidationMessage {
+                Text(tagValidationMessage)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            popoverStatus
+            tagList
+            HStack {
+                Button("Suggestions...", action: {})
+                    .disabled(true)
+                Spacer()
+                Button("Close", action: onClose)
+            }
+        }
+        .padding(12)
+        .frame(width: 280)
+        .onAppear { isInputFocused = true }
+    }
+
+    @ViewBuilder
+    private var popoverStatus: some View {
+        if state.isLoading {
+            Text("Loading tags...")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        } else if let failure = state.failure {
+            HStack(spacing: 8) {
+                Text(failure.mapping.userMessage)
+                Button("Retry", action: onRetry)
+            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
+        } else if let reason = disabledReason {
+            Text(reason.rawValue)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private var tagList: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            ForEach(candidateTags) { tag in
+                TagSuggestionRow(tag: tag) {
+                    guard !tag.selected, !tag.disabled else { return }
+                    onAddTag(tag.value)
+                }
+            }
+            if candidateTags.isEmpty {
+                Text(state.tagSet == nil ? "Could not load tags" : "No tags yet")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+            if canCreateTag {
+                Button("Create \"\(normalizedQuery)\"") {
+                    onAddTag(normalizedQuery)
+                }
+            }
+        }
+    }
+
+    private var candidateTags: [TagRecordSnapshot] {
+        let tags = query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?
+            state.tagSet?.recentTags ?? [] :
+            state.tagSet?.availableTags ?? []
+        let normalized = normalizedQuery
+        guard !normalized.isEmpty else { return tags }
+        return tags.filter { tag in
+            tag.value.localizedCaseInsensitiveContains(normalized) ||
+                tag.displayName.localizedCaseInsensitiveContains(normalized)
+        }
+    }
+
+    private var normalizedQuery: String {
+        query.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var canCreateTag: Bool {
+        guard disabledReason == nil, !state.isLoading, tagValidationMessage == nil else { return false }
+        return state.tagSet?.availableTags.contains { tag in
+            tag.value.caseInsensitiveCompare(normalizedQuery) == .orderedSame
+        } == false
+    }
+
+    private var shouldShowValidationMessage: Bool {
+        !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    private var tagValidationMessage: String? {
+        let tag = normalizedQuery
+        if tag.isEmpty { return "Tag is empty." }
+        if tag.count > 64 { return "Tag is too long." }
+        if tag.contains("/") || tag.contains(":") || tag.contains("\0") { return "Tag contains illegal characters." }
+        return nil
+    }
+
+    private func performSubmit() {
+        guard let first = candidateTags.first(where: { !$0.selected && !$0.disabled }) else {
+            if canCreateTag { onAddTag(normalizedQuery) }
+            return
+        }
+        onAddTag(first.value)
+    }
+}
+
+private struct TagSuggestionRow: View {
+    let tag: TagRecordSnapshot
+    let onSelect: () -> Void
+
+    var body: some View {
+        Button(action: onSelect) {
+            HStack {
+                Text(tag.displayName)
+                Spacer()
+                if tag.selected {
+                    Text("已添加")
+                        .foregroundStyle(.secondary)
+                } else {
+                    Text("\(tag.fileCount)")
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+        .disabled(tag.selected || tag.disabled)
+    }
+}

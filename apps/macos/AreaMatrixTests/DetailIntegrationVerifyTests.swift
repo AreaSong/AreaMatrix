@@ -25,6 +25,7 @@ final class DetailIntegrationVerifyTests: XCTestCase {
             repoURL: context.repoURL,
             file: XCTUnwrap(context.model.selectedFileDetail)
         )
+        try await verifyTagCrudRoundTrip(context)
         try await verifyExternalSyncEvents(context)
         await verifyMultiSelectionSummary(context)
     }
@@ -101,6 +102,47 @@ final class DetailIntegrationVerifyTests: XCTestCase {
             saveStatus: .saved,
             writeBlock: nil
         ))
+    }
+
+    @MainActor
+    private func verifyTagCrudRoundTrip(_ context: DetailIntegrationContext) async throws {
+        let file = try XCTUnwrap(context.model.selectedFileDetail)
+        let originalCategory = file.category
+        let originalPath = file.path
+
+        await context.model.loadSelectedFileTags()
+        assertLoadedTags(context.model.detailTagEditorState, fileID: file.id, expectedValues: [])
+
+        await context.model.addSelectedFileTag(" ClientA ")
+        assertLoadedTags(context.model.detailTagEditorState, fileID: file.id, expectedValues: ["clienta"])
+        XCTAssertEqual(context.model.detailTagUndoToast?.message, #"Added tag "clienta"."#)
+
+        let addedTags = try await context.bridge.listTags(repoPath: context.repoURL.path, fileID: file.id)
+        XCTAssertEqual(addedTags.fileTags.map(\.value), ["clienta"])
+
+        await context.model.undoLastDetailTagChange()
+        assertLoadedTags(context.model.detailTagEditorState, fileID: file.id, expectedValues: [])
+        XCTAssertNil(context.model.detailTagUndoToast)
+        let undoneAddedTags = try await context.bridge.listTags(repoPath: context.repoURL.path, fileID: file.id)
+        XCTAssertEqual(undoneAddedTags.fileTags, [])
+
+        await context.model.addSelectedFileTag("clienta")
+        assertLoadedTags(context.model.detailTagEditorState, fileID: file.id, expectedValues: ["clienta"])
+
+        await context.model.removeSelectedFileTag("clienta")
+        assertLoadedTags(context.model.detailTagEditorState, fileID: file.id, expectedValues: [])
+        XCTAssertEqual(context.model.detailTagUndoToast?.message, #"Removed tag "clienta"."#)
+
+        let removedTags = try await context.bridge.listTags(repoPath: context.repoURL.path, fileID: file.id)
+        XCTAssertEqual(removedTags.fileTags, [])
+
+        await context.model.undoLastDetailTagChange()
+        assertLoadedTags(context.model.detailTagEditorState, fileID: file.id, expectedValues: ["clienta"])
+        XCTAssertNil(context.model.detailTagUndoToast)
+        let restoredTags = try await context.bridge.listTags(repoPath: context.repoURL.path, fileID: file.id)
+        XCTAssertEqual(restoredTags.fileTags.map(\.value), ["clienta"])
+        XCTAssertEqual(context.model.selectedFileDetail?.category, originalCategory)
+        XCTAssertEqual(context.model.selectedFileDetail?.path, originalPath)
     }
 
     @MainActor
@@ -191,6 +233,20 @@ final class DetailIntegrationVerifyTests: XCTestCase {
         XCTAssertTrue(entries.contains { $0.action == expectedAction })
     }
 
+    private func assertLoadedTags(
+        _ state: DetailTagEditorState,
+        fileID: Int64,
+        expectedValues: [String]
+    ) {
+        guard case let .loaded(loadedFileID, tagSet) = state else {
+            return XCTFail("expected loaded tag set")
+        }
+
+        XCTAssertEqual(loadedFileID, fileID)
+        XCTAssertEqual(tagSet.fileID, fileID)
+        XCTAssertEqual(tagSet.fileTags.map(\.value), expectedValues)
+    }
+
     @MainActor
     private func makeDetailIntegrationModel(
         bridge: CoreBridge,
@@ -202,6 +258,7 @@ final class DetailIntegrationVerifyTests: XCTestCase {
             opening: RepositoryOpeningResult(config: config, tree: tree, currentCategoryFiles: []),
             fileLister: bridge,
             fileDetailer: bridge,
+            tagStore: bridge,
             changeLogLister: bridge,
             externalChangesSyncer: bridge,
             errorMapper: bridge

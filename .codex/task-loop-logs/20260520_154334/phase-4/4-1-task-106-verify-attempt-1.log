@@ -1,0 +1,98 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`4-1/task-106`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-106-s2-07-c2-05-tag-crud.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：8
+- 未覆盖项数：2
+- 通过项数：6
+- 不通过项数：2
+- 阻塞项数：2
+
+四、逐项验收结果
+
+- 项目：Manifest Exact Docs / Existing Code / Expected New Paths
+- 结果：通过
+- 证据：Exact Docs 均存在并已读取；`apps/macos/AreaMatrix/**` 与 `apps/macos/AreaMatrixTests/**` 已有实现和测试；`core/area_matrix.udl` 含 `add_tag/remove_tag/list_tags` 与 `TagSet`。
+- 涉及文件：`phase-4.md:3098-3119`，`core/area_matrix.udl:192`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git diff --name-only -- core/src` 无输出；当前 diff 未触碰 `core/src/**`。
+- 涉及文件：`core/src/**`
+
+- 项目：真实 CoreBridge 闭环
+- 结果：通过
+- 证据：`CoreTagCRUD` 经 `CoreBridge` 调用 `AreaMatrix.listTags/addTag/removeTag`；测试用真实临时 repo 和 CoreBridge 验证 add/remove 后再 `bridge.listTags` 回查。
+- 涉及文件：`apps/macos/AreaMatrix/Bridge/CoreFileDeleting.swift:51`，`apps/macos/AreaMatrixTests/DetailIntegrationVerifyTests.swift:107`
+
+- 项目：S2-07 用户可见入口
+- 结果：通过
+- 证据：Detail Meta 中挂载 `DetailTagSection`，提供 `+ Add...`、输入框、候选、Create 行、chip 删除、Retry。
+- 涉及文件：`apps/macos/AreaMatrix/Views/Main/MainRepositoryDetailPane.swift:292`，`apps/macos/AreaMatrix/Views/Main/DetailExternalCreateSyncStatusView.swift:120`
+
+- 项目：创建或添加失败时保留输入
+- 结果：不通过
+- 证据：`addTagAndClear` 在调用 `onAddTag(tag)` 后立即 `query = ""`，而模型异步失败时才进入 `.failed`；这会在创建/添加失败前清空用户输入，违反 S2-07 “创建或添加失败时保留输入”。
+- 涉及文件：`apps/macos/AreaMatrix/Views/Main/DetailExternalCreateSyncStatusView.swift:148`，`docs/ux/page-specs/stage-2-experience/S2-07-tags-add.md:70`
+
+- 项目：Undo toast
+- 结果：不通过
+- 证据：S2-07 要求添加/移除成功后显示 Undo toast，Undo 只撤销本次关系变更；当前实现只刷新 tag state 和 change log，未发现 toast/undo action wiring，测试也未覆盖。
+- 涉及文件：`docs/ux/page-specs/stage-2-experience/S2-07-tags-add.md:78`，`apps/macos/AreaMatrix/Models/MainDetailNoteActions.swift:52`
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过，核心成功路径清晰，但 C2-05 实现放在 `CoreFileDeleting.swift`，命名边界不清；更关键的是失败输入保留逻辑与页面状态机不匹配。
+- 注释 / rustdoc / 文档同步：通过，当前为 Swift UI/桥接改动，无新增 public Rust API；文档侧 C2-05 与 UDL/API 已对齐。
+- 错误处理与边界处理：不通过，加载失败有 Retry，移除失败可保留 previous tag set；但添加/创建失败不保留输入，Undo 恢复路径缺证据。
+- 测试与验证覆盖：不通过，`./dev check task 4-1/task-106` 通过，但测试只覆盖成功 add/remove、分类/路径不变，未覆盖创建失败、添加失败、移除失败、Undo toast。
+- 占位、硬编码、mock-only、一次性实现检查：通过，成功路径使用真实 CoreBridge 与真实临时 repo，不是 mock-only。
+
+六、阻塞项
+
+- P0：添加/创建失败时输入被提前清空
+  - 说明：页面规格明确要求创建或添加失败时保留输入；当前 `addTagAndClear` 在异步 Core 结果返回前清空 `query`，失败时用户无法直接基于原输入恢复/重试。
+  - 绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/DetailExternalCreateSyncStatusView.swift:148`
+  - 为什么导致不通过：违反 S2-07 错误态和恢复态，是用户可见功能验收标准的一部分。
+
+- P1：缺少 Undo toast / Undo 关系变更闭环
+  - 说明：S2-07 要求添加/移除成功后显示 Undo toast，Undo 只撤销本次标签关系变更；当前 task 范围内未发现对应 UI 状态、动作入口或测试证据。
+  - 绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainDetailNoteActions.swift:52`
+  - 为什么导致不通过：验收清单要求 Undo 行为可验收，当前缺少实现和测试证据。
+
+七、验证情况
+
+- 跑了哪些验证：
+  - `./dev check task 4-1/task-106`
+  - `git diff --name-only -- core/src`
+  - `git diff --check -- apps/macos/AreaMatrix/...`
+- 哪些通过：
+  - `prompt doctor`: OK，tasks 637，manifests 637，high risk tasks 633
+  - `git diff --check`: 无错误
+  - `xcodebuild ... build CODE_SIGNING_ALLOWED=NO`: `BUILD SUCCEEDED`
+  - Forbidden Touches 检查：未触碰 `core/src/**`
+- 哪些失败：
+  - 命令无失败；功能验收失败来自文件证据与 S2-07 文档不一致。
+- 哪些缺失：
+  - 缺少添加/创建失败保留输入的测试。
+  - 缺少移除失败恢复路径的测试。
+  - 缺少 Undo toast / Undo 本次关系变更的实现和测试证据。
+  - 未做真机窗口 UI smoke；本 task manifest 未强制，但页面交互仍有残余风险。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+- 虽然 task-scoped validation 命令通过，且成功路径已经接入真实 CoreBridge，但 S2-07 明确要求的失败恢复与 Undo 行为缺证据且存在代码冲突，因此不能判定通过。
+
+VERIFY_RESULT: FAIL

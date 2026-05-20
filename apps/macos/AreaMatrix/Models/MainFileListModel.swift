@@ -6,13 +6,15 @@ final class MainFileListModel: ObservableObject {
     @Published var files: [FileEntrySnapshot]
     @Published var isLoading = false
     @Published var errorMapping: CoreErrorMappingSnapshot?
-    @Published var selection: MainFileSelectionState = .none
+    @Published var selection: MainFileSelectionState = .none { didSet { clearStaleDetailTagUndoToast() } }
     @Published var selectedFileDetail: FileEntrySnapshot?
     @Published var isDetailLoading = false
     @Published var detailErrorMapping: CoreErrorMappingSnapshot?
     @Published private(set) var detailLogState: MainDetailLogState = .notLoaded
     @Published private(set) var detailLogDiagnosticsState: MainDetailLogDiagnosticsState = .idle
     @Published private(set) var detailExternalCreateSyncState: MainDetailExternalCreateSyncState = .idle
+    @Published var detailTagEditorState: DetailTagEditorState = .notLoaded
+    @Published var detailTagUndoToast: DetailTagUndoToast?
     @Published var searchState: MainSearchState = .idle
     @Published var searchFacetsState: MainSearchFacetsState = .idle
     @Published var selectedFileNoteWriteBlock: MainDetailNoteWriteBlock?
@@ -38,6 +40,7 @@ final class MainFileListModel: ObservableObject {
     let fileDeleter: any CoreFileDeleting
     let fileCategoryMover: any CoreFileCategoryMoving
     let iCloudConflictResolver: any ICloudConflictResolving
+    let tagStore: any CoreTagCRUD
     private let changeLogLister: any CoreChangeLogListing
     private let externalChangesSyncer: any CoreExternalChangesSyncing
     let errorMapper: any CoreErrorMapping
@@ -61,6 +64,7 @@ final class MainFileListModel: ObservableObject {
         fileDeleter: any CoreFileDeleting = CoreBridge(),
         fileCategoryMover: any CoreFileCategoryMoving = CoreBridge(),
         iCloudConflictResolver: any ICloudConflictResolving = CoreBridge(),
+        tagStore: any CoreTagCRUD = CoreBridge(),
         changeLogLister: any CoreChangeLogListing = CoreBridge(),
         externalChangesSyncer: any CoreExternalChangesSyncing = CoreBridge(),
         errorMapper: any CoreErrorMapping,
@@ -79,13 +83,13 @@ final class MainFileListModel: ObservableObject {
         self.fileDeleter = fileDeleter
         self.fileCategoryMover = fileCategoryMover
         self.iCloudConflictResolver = iCloudConflictResolver
+        self.tagStore = tagStore
         self.changeLogLister = changeLogLister
         self.externalChangesSyncer = externalChangesSyncer
         self.errorMapper = errorMapper
         self.diagnosticsCollector = diagnosticsCollector
     }
 }
-
 extension MainFileListModel {
     func loadCurrentCategory(_ category: String?, focusingOn fileID: Int64? = nil) async {
         currentCategory = category
@@ -104,9 +108,8 @@ extension MainFileListModel {
 
         guard ids.count == 1, let id = ids.first else {
             selection = .multiple(ids)
-            selectedFileDetail = nil
-            selectedFileNoteWriteBlock = nil
-            detailErrorMapping = nil
+            selectedFileDetail = nil; selectedFileNoteWriteBlock = nil; detailErrorMapping = nil
+            detailTagEditorState = .notLoaded
             isDetailLoading = true
             resetDetailLog()
             await loadMultiSelectionDetails(ids: ids)
@@ -122,8 +125,7 @@ extension MainFileListModel {
             return
         }
 
-        selection = .single(id)
-        selectedFileDetail = cachedFile(id: id)
+        selection = .single(id); selectedFileDetail = cachedFile(id: id)
         selectedFileNoteWriteBlock = selectedFileDetail.flatMap { noteWriteBlock(for: $0) }
         detailErrorMapping = nil
         isDetailLoading = true
@@ -311,6 +313,7 @@ extension MainFileListModel {
             files = files.map { $0.id == loadedFile.id ? loadedFile : $0 }
             detailErrorMapping = nil
             isDetailLoading = false
+            detailTagEditorState = .notLoaded
         } catch {
             let mappedError = await mapCoreError(error)
             guard generation == detailGeneration else { return }
@@ -443,6 +446,7 @@ extension MainFileListModel {
         selectedFileNoteWriteBlock = removedSnapshot.flatMap { noteWriteBlock(for: $0) }
         detailErrorMapping = CoreErrorMappingSnapshot.missingFromExternalChange(fileID: removedFileID)
         isDetailLoading = false
+        detailTagEditorState = .notLoaded
         statusBanner = .removedSelectedFile(fileID: removedFileID)
         return removedFileID
     }
@@ -469,6 +473,7 @@ extension MainFileListModel {
         detailGeneration += 1
         selection = .none
         selectedFileDetail = nil; selectedFileNoteWriteBlock = nil; detailErrorMapping = nil
+        detailTagEditorState = .notLoaded
         isDetailLoading = false
         resetDetailLog()
         pendingActionDestination = nil; renameState = .idle; deleteState = .idle; changeCategoryState = .idle

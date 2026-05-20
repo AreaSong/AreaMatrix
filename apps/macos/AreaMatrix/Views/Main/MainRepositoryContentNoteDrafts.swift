@@ -196,13 +196,17 @@ extension MainRepositoryContentView {
             detailLogState: fileListModel.detailLogState,
             detailLogDiagnosticsState: fileListModel.detailLogDiagnosticsState,
             detailExternalCreateSyncState: fileListModel.detailExternalCreateSyncState,
+            detailTagEditorState: fileListModel.detailTagEditorState,
+            detailTagUndoToast: fileListModel.detailTagUndoToast,
             detailTabRequest: fileListModel.detailTabRequest,
             selectedImportProgressRow: selectedImportProgressRow,
-            onRetrySelectedFileDetail: {
-                Task {
-                    await fileListModel.retrySelectedFileDetail()
-                }
-            },
+            onRetrySelectedFileDetail: { Task { await fileListModel.retrySelectedFileDetail() } },
+            onLoadTags: { Task { await fileListModel.loadSelectedFileTags() } },
+            onRetryTags: { Task { await fileListModel.retrySelectedFileTags() } },
+            onAddTag: { tag in Task { await fileListModel.addSelectedFileTag(tag) } },
+            onRemoveTag: { tag in Task { await fileListModel.removeSelectedFileTag(tag) } },
+            onUndoTagChange: { Task { await fileListModel.undoLastDetailTagChange() } },
+            onDismissTagUndoToast: fileListModel.dismissDetailTagUndoToast,
             onCopyPaths: onCopyPaths,
             onOpenNoteFile: onOpenNoteFile,
             onRefreshChangeLog: {

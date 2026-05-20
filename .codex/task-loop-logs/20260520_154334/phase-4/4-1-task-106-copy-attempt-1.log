@@ -1,0 +1,52 @@
+一、执行结论
+
+已完成 `4-1/task-106`。S2-07 Detail Meta 的标签添加/移除已接入真实 C2-05 CoreBridge：`listTags` / `addTag` / `removeTag`，未使用 mock、fixture 或静态状态伪造闭环。
+
+二、执行范围
+
+单任务：`4-1/task-106`，只改了 `Expected New Paths` 内文件：
+
+- [CoreFileDeleting.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreFileDeleting.swift)
+- [MainDetailExternalCreateSyncState.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainDetailExternalCreateSyncState.swift)
+- [MainDetailNoteActions.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainDetailNoteActions.swift)
+- [MainFileListModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileListModel.swift)
+- [DetailExternalCreateSyncStatusView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/DetailExternalCreateSyncStatusView.swift)
+- [MainRepositoryContentNoteDrafts.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentNoteDrafts.swift)
+- [MainRepositoryContentView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift)
+- [MainRepositoryDetailPane.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryDetailPane.swift)
+- [DetailIntegrationVerifyTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/DetailIntegrationVerifyTests.swift)
+- [ChangeCategoryPageIntegrationVerifyTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ChangeCategoryPageIntegrationVerifyTests.swift)
+- [ICloudConflictMinimalPageIntegrationVerifyTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ICloudConflictMinimalPageIntegrationVerifyTests.swift)
+
+三、完成情况
+
+核对清单通过：只处理 S2-07 + C2-05；已按页面规格、control map、Core API、C2-05 spec 接入；未实现 S2-08、C2-06、C2-07、S2-23 等相邻能力。
+
+完成标准通过：用户可在 Detail Meta 触发标签加载、创建/添加、移除；操作走真实 CoreBridge；标签操作不改变文件分类和路径，测试已覆盖这一点。
+
+Forbidden Touches：未触碰 `core/src/**`，也未修改 `core/area_matrix.udl`。
+
+四、工程质量
+
+代码结构按现有模型/视图分层接入：Core snapshot/protocol、detail tag state、model action、Detail Meta UI、集成测试。错误路径保留 previous tag set，加载/添加/移除失败会映射 Core error 并提供 Retry；写入受 read-only/list-loading/import-lock 禁用约束保护。
+
+没有新增依赖；没有 mock-only wiring；没有一次性硬编码通过态。已改源码/测试文件均保持在 500 行以内。未新增 Rust public API，因此无 rustdoc 变更。
+
+五、验证情况
+
+已运行并通过：
+
+```bash
+./dev check task 4-1/task-106
+```
+
+结果：`doctor: OK`、`git diff --check` 通过、`xcodebuild ... build CODE_SIGNING_ALLOWED=NO` 最终 `BUILD SUCCEEDED`。Xcode 输出了 CoreSimulator/FSEvents 相关环境警告，但没有阻断 macOS build。
+
+六、风险与后续
+
+High 风险影响面已限制在 macOS UI 对 C2-05 tag relation 的消费层；不会删除、移动、重命名或覆盖用户原文件。回滚方式是 revert 本次 `apps/macos/AreaMatrix/**` 与 `apps/macos/AreaMatrixTests/**` 改动。
+
+剩余范围外项：S2-07 文档中的 Undo toast 属于 C2-07，Suggestions 属于 S2-23，本任务未实现。建议下一个任务按 manifest 继续 `4-1/task-107`。
+
+备注：工作区里还有执行器已有状态文件改动 `.codex/task-loop-runs/20260520_154334/summary.json`、`tasks/prompts/_shared/progress.json`，本次没有把它们作为任务代码改动处理。
+

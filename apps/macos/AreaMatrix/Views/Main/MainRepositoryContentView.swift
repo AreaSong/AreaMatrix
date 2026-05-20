@@ -258,6 +258,7 @@ extension MainRepositoryContentView {
         searchFiltering: any CoreSearchFiltering = CoreBridge(),
         fileCategoryMover: any CoreFileCategoryMoving = CoreBridge(),
         iCloudConflictResolver: any ICloudConflictResolving = CoreBridge(),
+        tagStore: any CoreTagCRUD = CoreBridge(),
         changeLogLister: any CoreChangeLogListing = CoreBridge(),
         externalChangesSyncer: any CoreExternalChangesSyncing = CoreBridge(),
         noteStore: any CoreNoteReadingWriting = CoreBridge(),
@@ -265,8 +266,7 @@ extension MainRepositoryContentView {
         errorMapper: any CoreErrorMapping = CoreBridge(),
         diagnosticsCollector: any CoreDiagnosticsCollecting = CoreBridge()
     ) {
-        self.opening = opening
-        self.state = state
+        self.opening = opening; self.state = state
         self.onImport = onImport
         self.onDropImport = onDropImport
         self.onOpenSettings = onOpenSettings
@@ -281,8 +281,7 @@ extension MainRepositoryContentView {
         self.savedSearchStore = savedSearchStore
         self.errorMapper = errorMapper
         self.externalCreatedEvent = externalCreatedEvent
-        self.onExternalCreatedEventHandled = onExternalCreatedEventHandled
-        self.importProgressItems = importProgressItems
+        self.onExternalCreatedEventHandled = onExternalCreatedEventHandled; self.importProgressItems = importProgressItems
         _dropPreviewModel = StateObject(wrappedValue: ImportDropPreviewModel(
             repoPath: opening.config.repoPath,
             predictor: categoryPredictor
@@ -300,6 +299,7 @@ extension MainRepositoryContentView {
             searchFiltering: searchFiltering,
             fileCategoryMover: fileCategoryMover,
             iCloudConflictResolver: iCloudConflictResolver,
+            tagStore: tagStore,
             changeLogLister: changeLogLister,
             externalChangesSyncer: externalChangesSyncer,
             errorMapper: errorMapper,
