@@ -369,7 +369,8 @@ extension MainRepositoryContentView {
         } else if let diagnostic = fileListModel.searchState.page?.diagnostics.first {
             Text("\(diagnostic.severityDisplayName): \(diagnostic.message)")
                 .font(.callout)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(diagnostic.isError ? Color.red : Color.secondary)
+                .accessibilityHint(diagnostic.problemAccessibilityHint)
         } else if let result = fileListModel.searchState.page?.results.first {
             searchMatchSummary(result)
         }
@@ -488,10 +489,12 @@ extension MainRepositoryContentView {
             QueryErrorRouteView(
                 request: request,
                 diagnostic: diagnostic,
+                onApplySuggestion: applyQuerySuggestion,
                 onClear: clearSearch
             )
         case .savedSearchSheet, .indexingStatus, .commandPalette:
             EmptyView()
         }
     }
+
 }

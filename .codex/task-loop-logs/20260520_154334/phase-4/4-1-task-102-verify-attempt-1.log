@@ -1,0 +1,71 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-1/task-102`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-102-s2-05-c2-01-search-query-files.md`
+- 实际覆盖路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreFileListing.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainCurrentListErrorPane.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentActionRouting.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentNoteDrafts.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportFolderCoreBridgeModeTests.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ValidatePathErrorMappingSmokeTests.swift`
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 S2-05 页面中的 C2-01 功能点
+- 结果：通过
+- 证据：control map 中 `S2-05 -> C2-01`；实现只新增 query diagnostic 展示、suggestion、clear/help、Smart List save gate。
+- 涉及文件：`MainCurrentListErrorPane.swift:94`、`MainListVisibleFileFiltering.swift:248`
+
+- 项目：读取页面规格、control map、Core API、C2-01 能力规格
+- 结果：通过
+- 证据：已核对 `S2-05-query-error.md`、`stage-2-control-map.md`、`core-api.md`、`C2-01-search-query-files.md`；Core API 定义 `SearchQueryDiagnostic` 含 kind/severity/message/token/start/end/suggestion。
+- 涉及文件：`core/area_matrix.udl:419`
+
+- 项目：只接入 C2-01 对应 CoreBridge / 状态 / 错误映射
+- 结果：通过
+- 证据：`CoreBridge.searchFiles` 调用真实 UniFFI `searchFiles`，diagnostics 转成 Swift snapshot；`MainFileListModel.runSearch` 调用 `searchQuerying.searchFiles`，diagnostic error 路由到 `S2-05`。
+- 涉及文件：`CoreFileListing.swift:254`、`MainListVisibleFileFiltering.swift:364`
+
+- 项目：不实现相邻页面、相邻平台或同页其他能力
+- 结果：通过
+- 证据：未改 `core/src/**`；未接入 C2-02/C2-03/C2-04 新能力；Smart List save 仅复用已有 gate 并在 diagnostic error 时禁用。
+- 涉及文件：`MainListVisibleFileFiltering.swift:267`、`MainRepositoryContentNoteDrafts.swift:247`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。CoreBridge、search state、route view、测试分层清楚，未发现明显一次性脚本化实现。
+- 注释 / rustdoc / 文档同步：通过。本 task 未新增 Rust public API；UDL / docs 既有合同与 Swift snapshot 字段对齐。
+- 错误处理与边界处理：通过。diagnostic error 不进入空态，`Apply suggestion` 失败保留原 query 并显示 `Could not apply suggestion`。
+- 测试与验证覆盖：通过。覆盖 route 渲染、token range 高亮、suggestion 替换、Core diagnostic snapshot、Smart List save gate。
+- 占位、硬编码、mock-only、一次性实现检查：通过。生产路径通过 `CoreBridge.searchFiles` 连接真实 Core；测试中的 recording store / fixture 仅用于 XCTest，不伪造生产闭环。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-102`
+- 通过：`prompt doctor`、`git diff --check`、macOS `xcodebuild ... build CODE_SIGNING_ALLOWED=NO`
+- 失败：无
+- 缺失：未运行真实窗口 UI smoke；manifest 未要求，当前 task gate 已覆盖 build 和单任务检查。
+- 额外核对：`git diff --name-only -- core/src` 无输出，未触碰 Forbidden Touches。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。当前 dirty 的 `progress.json` 与 `.codex/task-loop-*` 属于 runner 状态/日志材料，不作为本 task 功能证据，也未构成本 task 阻断。
+
+VERIFY_RESULT: PASS

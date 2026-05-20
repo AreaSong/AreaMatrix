@@ -164,12 +164,33 @@ struct SearchFileResultSnapshot: Equatable, Identifiable {
 }
 
 struct SearchQueryDiagnosticSnapshot: Equatable {
+    var kindDisplayName: String
     var severityDisplayName: String
     var message: String
+    var token: String?
+    var start: Int64?
+    var end: Int64?
     var suggestion: String?
 
-    var isError: Bool {
-        severityDisplayName == "Error"
+    init(
+        kindDisplayName: String = "unknown", severityDisplayName: String, message: String, token: String? = nil,
+        start: Int64? = nil, end: Int64? = nil, suggestion: String? = nil
+    ) {
+        self.kindDisplayName = kindDisplayName; self.severityDisplayName = severityDisplayName
+        self.message = message; self.token = token; self.start = start
+        self.end = end; self.suggestion = suggestion
+    }
+
+    var isError: Bool { severityDisplayName == "Error" }
+
+    var problemAccessibilityHint: String {
+        [
+            token.map { "Token \($0)" },
+            start.map { value in end.map { "Position \(value)-\($0)" } ?? "Position \(value)" },
+            suggestion.map { "Suggestion \($0)" }
+        ]
+        .compactMap { $0 }
+        .joined(separator: ". ")
     }
 }
 
@@ -340,14 +361,6 @@ extension SearchMatchSnapshot {
     }
 }
 
-extension SearchQueryDiagnosticSnapshot {
-    init(coreDiagnostic: SearchQueryDiagnostic) {
-        severityDisplayName = coreDiagnostic.severity.displayName
-        message = coreDiagnostic.message
-        suggestion = coreDiagnostic.suggestion
-    }
-}
-
 extension SearchResultPageSnapshot {
     init(corePage: SearchResultPage, results: [SearchFileResultSnapshot]) {
         query = corePage.query
@@ -355,6 +368,16 @@ extension SearchResultPageSnapshot {
         self.results = results
         diagnostics = corePage.diagnostics.map(SearchQueryDiagnosticSnapshot.init(coreDiagnostic:))
         indexStatus = SearchIndexStatusSnapshot(coreStatus: corePage.indexStatus)
+    }
+}
+
+extension SearchQueryDiagnosticSnapshot {
+    init(coreDiagnostic: SearchQueryDiagnostic) {
+        self.init(
+            kindDisplayName: coreDiagnostic.kind.displayName, severityDisplayName: coreDiagnostic.severity.displayName,
+            message: coreDiagnostic.message, token: coreDiagnostic.token, start: coreDiagnostic.start,
+            end: coreDiagnostic.end, suggestion: coreDiagnostic.suggestion
+        )
     }
 }
 
@@ -439,15 +462,24 @@ private extension SearchMatchKind {
     }
 }
 
+private extension SearchDiagnosticKind {
+    var displayName: String {
+        switch self {
+        case .unclosedQuote: "Unclosed quote"
+        case .unknownField: "Unknown field"
+        case .invalidDate: "Invalid date"
+        case .unbalancedParentheses: "Unbalanced parentheses"
+        case .invalidOperator: "Invalid operator"
+        }
+    }
+}
+
 private extension SearchDiagnosticSeverity {
     var displayName: String {
         switch self {
-        case .info:
-            "Info"
-        case .warning:
-            "Warning"
-        case .error:
-            "Error"
+        case .info: "Info"
+        case .warning: "Warning"
+        case .error: "Error"
         }
     }
 }

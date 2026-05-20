@@ -316,37 +316,12 @@ extension MainRepositoryContentView {
     func searchAllFileTypesFromEmptyState() {
         removeSearchFilterFromEmptyState(.fileKind)
     }
-}
 
-struct QueryErrorRouteView: View {
-    let request: SearchQueryRequestSnapshot
-    let diagnostic: SearchQueryDiagnosticSnapshot
-    let onClear: () -> Void
-
-    var body: some View {
-        VStack(alignment: .center, spacing: 10) {
-            Label("Query error", systemImage: "exclamationmark.triangle")
-                .font(.headline)
-            Text("S2-05 query-error")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            Text(diagnostic.message)
-                .font(.callout)
-                .multilineTextAlignment(.center)
-            if let suggestion = diagnostic.suggestion, !suggestion.isEmpty {
-                Text(suggestion)
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-            }
-            Text(searchContextText(request))
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            Button("Clear search", action: onClear)
-        }
-        .padding(18)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .accessibilityElement(children: .combine)
-        .accessibilityIdentifier("S2-05-query-error")
+    func applyQuerySuggestion(_ query: String) {
+        filterText = query
+        selectedFileIDs = []
+        fileListModel.enterSearch(context: .toolbar)
+        isSearchFieldFocused = true
     }
 }
 
