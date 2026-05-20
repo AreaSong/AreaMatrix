@@ -26,6 +26,7 @@ final class MainFileListModel: ObservableObject {
     @Published var iCloudConflictResolutionState: ICloudConflictResolutionState = .idle
     @Published var pendingSearchDestination: MainSearchDestination?
     @Published var lastSearchExitContext: MainSearchExitContext?
+    @Published var smartListFilterDraft: SmartListFilterDraft?
 
     let repoPath: String
     let isReadOnly: Bool

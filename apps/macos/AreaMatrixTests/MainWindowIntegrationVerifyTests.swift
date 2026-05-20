@@ -155,6 +155,7 @@ final class MainWindowIntegrationVerifyTests: XCTestCase {
         let searcher = MainListRecordingSearchQuerying(results: [
             .success(.task98SearchPage(query: "missing", files: [])),
             .success(.task98SearchPage(query: "owner:me", diagnostics: [diagnostic])),
+            .success(.task98SearchPage(query: "")),
             .success(.task98SearchPage(query: "合同", files: [], indexStatus: .unavailable))
         ])
         let model = MainFileListModel(
@@ -174,6 +175,9 @@ final class MainWindowIntegrationVerifyTests: XCTestCase {
         await model.runSearch(query: "owner:me", scope: .current, sort: .relevance, sidebarRow: row, filters: .empty)
         XCTAssertEqual(model.searchPageDestination?.pageID, "S2-05")
         XCTAssertFalse(model.canSaveCurrentSearch)
+
+        await model.runSearch(query: "", scope: .current, sort: .newestModified, sidebarRow: row, filters: .task98ContractFilters())
+        XCTAssertTrue(model.canSaveCurrentSearch)
 
         await model.runSearch(query: "合同", scope: .current, sort: .newestImported, sidebarRow: row, filters: .empty)
         model.openIndexingStatus()

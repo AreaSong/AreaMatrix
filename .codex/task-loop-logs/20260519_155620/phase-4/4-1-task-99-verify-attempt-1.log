@@ -1,0 +1,89 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`4-1/task-99`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-99-s2-02-c2-02-search-filters.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/SearchFiltersPopover.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainListVisibleFileFiltering.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentNoteDrafts.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/CoreBridgeRepositoryTests.swift`
+
+三、完成度摘要
+
+- 已覆盖项数：7
+- 未覆盖项数：2
+- 通过项数：7
+- 不通过项数：2
+- 阻塞项数：2
+
+四、逐项验收结果
+
+- 项目：读取 task、共享规则、切片规则、质量规则、编码规范、validation-driver、dependency graph、phase manifest
+- 结果：通过
+- 证据：task 文件定义只验 S2-02 + C2-02；manifest `## 4-1/task-99` 列出 4 个 Exact Docs、2 个 Existing Code、2 个 Expected New Paths、1 个 Forbidden Touch。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-4.md:2896`
+
+- 项目：Exact Docs 存在并与任务绑定一致
+- 结果：通过
+- 证据：control map 明确 `S2-02 search-filters` 只绑定 `C2-02`，API 为 filter/facet query，只读。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-2-control-map.md:10`
+
+- 项目：Expected New Paths 落地
+- 结果：通过
+- 证据：`apps/macos/AreaMatrix/**` 和 `apps/macos/AreaMatrixTests/**` 均存在，且本 task 相关 Swift 实现和测试已落在这些路径。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/SearchFiltersPopover.swift:106`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git diff --name-only --diff-filter=AM -- core/src` 无输出；未发现 `core/src/**` 被本轮改动触碰。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+- 项目：C2-02 CoreBridge / 状态 / 错误映射真实接入
+- 结果：通过
+- 证据：`CoreSearchFiltering` 通过 `CoreBridge` 调用 `AreaMatrix.listFilterFacets`；搜索请求通过 `searchQuerying.searchFiles` 执行。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridgeSnapshots.swift:326`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainListVisibleFileFiltering.swift:336`
+
+- 项目：S2-02 普通搜索过滤器可触发
+- 结果：通过
+- 证据：`searchFilters.taskKey` 参与 `.task(id:)`，filter 变化会触发 `runSearch` 和 `loadSearchFacets`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift:85`
+
+- 项目：Smart List 编辑 draft filter 语义
+- 结果：不通过
+- 证据：文档要求 Smart List 编辑场景只更新 draft，不立即保存；C2-02 验收标准要求可保存 draft filter。但实现中仅有 `MainSearchEntryContext.smartList` 作为 exit context，没有 Smart List filter draft state、draft 写入路径或对应测试。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-2-experience/S2-02-search-filters.md:75`，`/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-2-experience/C2-02-search-filters.md:38`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainListVisibleFileFiltering.swift:223`
+
+- 项目：Tags 多选 / Choose tags 入口
+- 结果：不通过
+- 证据：页面规格要求 `Any / All selected tags / Choose tags...`，但当前 `SearchTagFacetPicker` 只读取 `filters.tags.first` 并把选择写成单元素数组；`All selected tags` 在 `filters.tags.count < 2` 时禁用，且未看到打开 S2-08 tag filter 的入口。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-2-experience/S2-02-search-filters.md:42`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/SearchFiltersPopover.swift:253`
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过。普通搜索路径结构清楚，但 Smart List draft 语义缺实现，tag 多选入口缺实现。
+- 注释 / rustdoc / 文档同步：通过。当前改动是 Swift UI/模型，无新增 public Rust API；文档未被改动。
+- 错误处理与边界处理：部分通过。facet 加载失败有 `errorMapping` 与 Retry；但 Smart List draft 回滚/提交边界无代码证据。
+- 测试与验证覆盖：不通过。`./dev check task 4-1/task-99` 通过，但测试未覆盖 Smart List 编辑 draft filter，也未覆盖多标签选择入口。
+- 占位、硬编码、mock-only、一次性实现检查：不通过。生产路径不是 mock-only，但 `SavedSearchSheetRouteView` 的 Save 按钮仍 disabled，占位路由不能证明 S2-02 的 Smart List 相关闭环。
+
+六、阻塞项
+
+- P1 Smart List 编辑 draft filter 缺失：文档和 C2-02 验收标准要求 Smart List 编辑场景更新 draft filter，当前实现没有对应状态、入口、保存/回滚语义或测试证据。路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainListVisibleFileFiltering.swift:223`。
+- P1 Tags 多选 / Choose tags 入口缺失：S2-02 规格要求 `All selected tags / Choose tags...`，当前 UI 只能选择单个 tag，无法形成多个 selected tags，也没有打开 S2-08 的入口。路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/SearchFiltersPopover.swift:253`。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-99`
+- 通过：prompt doctor、`git diff --check`、macOS `xcodebuild ... build CODE_SIGNING_ALLOWED=NO`
+- 失败：无命令失败
+- 缺失：没有 Smart List draft filter 行为测试；没有 S2-02 tag 多选 / Choose tags 入口测试；没有真实窗口交互烟测证据
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+
+VERIFY_RESULT: FAIL

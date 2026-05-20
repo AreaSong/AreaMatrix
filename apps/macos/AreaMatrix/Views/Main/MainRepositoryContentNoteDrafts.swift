@@ -1,6 +1,86 @@
 import Foundation
 import SwiftUI
 
+enum SearchFilterChipKind: String, Equatable {
+    case category
+    case fileKind
+    case tags
+    case importedDate
+    case modifiedDate
+    case storage
+    case includeDeleted
+}
+
+struct SearchFilterChip: Identifiable, Equatable {
+    var kind: SearchFilterChipKind
+    var label: String
+
+    var id: SearchFilterChipKind { kind }
+}
+
+enum SearchFilterChips {
+    static func items(for filters: SearchFilterStateSnapshot) -> [SearchFilterChip] {
+        var chips: [SearchFilterChip] = []
+        append(filters.category, kind: .category, prefix: "Category", to: &chips)
+        append(filters.fileKind, kind: .fileKind, prefix: "Type", to: &chips)
+        if !filters.tags.isEmpty {
+            chips.append(SearchFilterChip(kind: .tags, label: "tag:\(filters.tags.joined(separator: ","))"))
+        }
+        appendDate(.modified, filters: filters, kind: .modifiedDate, title: "Modified", to: &chips)
+        appendDate(.imported, filters: filters, kind: .importedDate, title: "Imported", to: &chips)
+        if let storageMode = filters.storageMode {
+            chips.append(SearchFilterChip(kind: .storage, label: "Storage: \(storageMode.displayName)"))
+        }
+        if filters.includeDeleted {
+            chips.append(SearchFilterChip(kind: .includeDeleted, label: "Include deleted"))
+        }
+        return chips
+    }
+
+    private static func append(
+        _ value: String?,
+        kind: SearchFilterChipKind,
+        prefix: String,
+        to chips: inout [SearchFilterChip]
+    ) {
+        guard let value, !value.isEmpty else { return }
+        chips.append(SearchFilterChip(kind: kind, label: "\(prefix): \(value)"))
+    }
+
+    private static func appendDate(
+        _ field: SearchFilterDateField,
+        filters: SearchFilterStateSnapshot,
+        kind: SearchFilterChipKind,
+        title: String,
+        to chips: inout [SearchFilterChip]
+    ) {
+        guard field.afterTimestamp(in: filters) != nil || field.beforeTimestamp(in: filters) != nil else { return }
+        chips.append(SearchFilterChip(kind: kind, label: "\(title): \(field.summary(in: filters))"))
+    }
+}
+
+enum SearchFilterStateRouting {
+    static func effective(
+        searchFilters: SearchFilterStateSnapshot,
+        draft: SmartListFilterDraft?
+    ) -> SearchFilterStateSnapshot {
+        draft?.filters ?? searchFilters
+    }
+
+    @MainActor
+    static func assign(
+        _ filters: SearchFilterStateSnapshot,
+        searchFilters: inout SearchFilterStateSnapshot,
+        fileListModel: MainFileListModel
+    ) {
+        if fileListModel.isEditingSmartListFilterDraft {
+            fileListModel.updateSmartListFilterDraft(filters)
+            return
+        }
+        searchFilters = filters
+    }
+}
+
 extension MainRepositoryContentView {
     @MainActor
     func showFailedNoteDraftBannerIfNeeded(leaving previousSelection: Set<Int64>) {
@@ -25,7 +105,7 @@ extension MainRepositoryContentView {
             filterText,
             searchScope.rawValue,
             searchSort.rawValue,
-            searchFilters.taskKey,
+            effectiveSearchFilters.taskKey,
             selectedSidebarID
         ].joined(separator: "|")
     }
@@ -34,7 +114,7 @@ extension MainRepositoryContentView {
         [
             filterText,
             searchScope.rawValue,
-            searchFilters.taskKey,
+            effectiveSearchFilters.taskKey,
             selectedSidebarID
         ].joined(separator: "|")
     }
@@ -178,6 +258,7 @@ extension MainRepositoryContentView {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
+                SearchFilterChipsBar(filters: searchFiltersBinding)
             }
             .padding(10)
             .background(searchBannerBackground)
@@ -207,10 +288,27 @@ extension MainRepositoryContentView {
     }
 
     private var searchActiveFilterCount: Int64 {
-        fileListModel.searchFacetsState.facets?.activeFilterCount ?? searchFilters.activeFilterCount
+        if let draft = fileListModel.smartListFilterDraft {
+            return draft.activeFilterCount
+        }
+        return fileListModel.searchFacetsState.facets?.activeFilterCount ?? searchFilters.activeFilterCount
+    }
+
+    var searchSaveDisabledReason: String? {
+        guard !fileListModel.canSaveCurrentSearch else { return nil }
+        if fileListModel.searchState.page?.hasDiagnosticError == true {
+            return "Fix query syntax before saving"
+        }
+        if fileListModel.searchState.request == nil {
+            return "Enter a query before saving"
+        }
+        return "Wait for search results"
     }
 
     private var searchFilterSummaryText: String {
+        if fileListModel.isEditingSmartListFilterDraft {
+            return "\(searchActiveFilterCount) draft filters active"
+        }
         if let error = fileListModel.searchFacetsState.errorMapping {
             return "Could not load filters: \(error.userMessage)"
         }
@@ -320,7 +418,31 @@ extension MainRepositoryContentView {
     }
 
     func resetSearchFilters() {
+        if fileListModel.isEditingSmartListFilterDraft {
+            fileListModel.updateSmartListFilterDraft(.empty)
+            return
+        }
         searchFilters = .empty
+    }
+
+    var effectiveSearchFilters: SearchFilterStateSnapshot {
+        SearchFilterStateRouting.effective(
+            searchFilters: searchFilters,
+            draft: fileListModel.smartListFilterDraft
+        )
+    }
+
+    var searchFiltersBinding: Binding<SearchFilterStateSnapshot> {
+        Binding(
+            get: { effectiveSearchFilters },
+            set: { filters in
+                SearchFilterStateRouting.assign(
+                    filters,
+                    searchFilters: &searchFilters,
+                    fileListModel: fileListModel
+                )
+            }
+        )
     }
 
     var searchFiltersButton: some View {
@@ -331,13 +453,19 @@ extension MainRepositoryContentView {
         }
         .popover(isPresented: $isSearchFiltersPresented) {
             SearchFiltersPopover(
-                filters: $searchFilters,
+                filters: searchFiltersBinding,
                 facetsState: fileListModel.searchFacetsState,
+                canSaveAsSmartList: !fileListModel.isEditingSmartListFilterDraft && fileListModel.canSaveCurrentSearch,
+                saveDisabledReason: searchSaveDisabledReason,
                 onReset: {
                     resetSearchFilters()
                 },
                 onRetry: {
                     Task { await fileListModel.retrySearchFacets() }
+                },
+                onSaveAsSmartList: {
+                    isSearchFiltersPresented = false
+                    fileListModel.openSavedSearchSheet()
                 }
             )
         }

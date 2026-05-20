@@ -1,0 +1,69 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-1/task-99`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-99-s2-02-c2-02-search-filters.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 S2-02 页面中的 C2-02 功能点
+- 结果：通过
+- 证据：`S2-02` control map 只绑定 `C2-02`；实现集中在搜索过滤 popover、搜索状态、CoreBridge facet 查询。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-2-control-map.md:9`
+
+- 项目：读取页面规格、control map、Core API、C2-02 能力规格
+- 结果：通过
+- 证据：Exact Docs 均存在并已读取；Core API/UDL 均声明 `search_files` 与 `list_filter_facets`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:182`，`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:158`
+
+- 项目：只接入 C2-02 对应 CoreBridge / 状态 / 错误映射
+- 结果：通过
+- 证据：`CoreBridge` 通过 `AreaMatrix.listFilterFacets(...)` 调用真实 UniFFI；`MainFileListModel` 通过 `searchFiltering.listFilterFacets` 加载 facet，并通过 `mapCoreError` 映射失败。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridgeSnapshots.swift:326`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainListVisibleFileFiltering.swift:401`
+
+- 项目：不顺手实现相邻页面、相邻平台或同页其他能力
+- 结果：通过
+- 证据：未修改 `core/src/**`；脏改动集中在 `apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**` 与 task-loop 状态/日志。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-4.md:2911`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，新增类型按状态、编辑器、popover、chips、facet bridge 分层；相关文件均未超过 500 行。
+- 注释 / rustdoc / 文档同步：通过，本 task 未新增 public Rust API；Core API 与 UDL 已对齐 `list_filter_facets`。
+- 错误处理与边界处理：通过，facet 加载失败进入 `MainSearchFacetsState.failed`，UI 显示 `Could not load filters` 并提供 Retry；非法日期不写入 filter state。
+- 测试与验证覆盖：通过，manifest 验证通过，task 相关 XCTest 通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过，生产路径调用真实 `CoreBridge`/UniFFI；fixture 仅出现在测试内。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-99`
+- 结果：通过；包含 `prompt doctor: OK`、`git diff --check`、macOS `xcodebuild ... build`，最终 `** BUILD SUCCEEDED **`。
+- 已运行：task 相关 `./dev test macos --only-testing ...`
+- 结果：通过；xcodebuild 命中本地 `testmanagerd` sandbox 后复用 XCTest bundle，`xcrun xctest passed after xcodebuild test sandbox block`。
+- 补充运行：全量 `./dev test macos`
+- 结果：不作为本 task 阻断；全量测试报告 501 tests、2 failures，且输出未保留失败名，超出本 manifest 验证上限，需要另行归因。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。Manifest 指定验证通过，S2-02 + C2-02 用户可见搜索过滤闭环已接入真实 CoreBridge，未触碰 `core/src/**`，未发现本 task 范围内 blocker。
+
+VERIFY_RESULT: PASS

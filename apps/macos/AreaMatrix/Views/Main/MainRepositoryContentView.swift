@@ -91,7 +91,7 @@ extension MainRepositoryContentView {
                 scope: searchScope,
                 sort: searchSort,
                 sidebarRow: selectedSidebarRow,
-                filters: searchFilters
+                filters: effectiveSearchFilters
             )
         }
         .task(id: searchFacetsTaskKey) {
@@ -100,7 +100,7 @@ extension MainRepositoryContentView {
                 query: filterText,
                 scope: searchScope,
                 sidebarRow: selectedSidebarRow,
-                filters: searchFilters
+                filters: effectiveSearchFilters
             )
         }
         .onChange(of: selectedFileIDs) { previousIDs, ids in

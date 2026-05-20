@@ -13,6 +13,98 @@ enum MainListVisibleFileFiltering {
     }
 }
 
+enum SearchDateFilterPreset {
+    case any
+    case last7Days
+    case last30Days
+    case thisYear
+}
+
+enum SearchFilterDateField {
+    case imported
+    case modified
+
+    func summary(in filters: SearchFilterStateSnapshot) -> String {
+        let after = afterTimestamp(in: filters)
+        let before = beforeTimestamp(in: filters)
+        if let after, let before {
+            return "\(dateText(after)) - \(dateText(before))"
+        }
+        return after.map { "Since \(dateText($0))" } ?? "Any"
+    }
+
+    func hasCustomRange(in filters: SearchFilterStateSnapshot) -> Bool {
+        afterTimestamp(in: filters) != nil && beforeTimestamp(in: filters) != nil
+    }
+
+    func afterTimestamp(in filters: SearchFilterStateSnapshot) -> Int64? {
+        switch self {
+        case .imported:
+            filters.importedAfter
+        case .modified:
+            filters.modifiedAfter
+        }
+    }
+
+    func beforeTimestamp(in filters: SearchFilterStateSnapshot) -> Int64? {
+        switch self {
+        case .imported:
+            filters.importedBefore
+        case .modified:
+            filters.modifiedBefore
+        }
+    }
+
+    func applying(after: Int64?, before: Int64? = nil, to filters: SearchFilterStateSnapshot) -> SearchFilterStateSnapshot {
+        var updated = filters
+        switch self {
+        case .imported:
+            updated.importedAfter = after
+            updated.importedBefore = before
+        case .modified:
+            updated.modifiedAfter = after
+            updated.modifiedBefore = before
+        }
+        return updated
+    }
+
+    func allowedDateRange(from bounds: SearchDateFacetBoundsSnapshot?) -> ClosedRange<Date> {
+        let lower = boundTimestamp(from: bounds, oldest: true)
+            .map { Date(timeIntervalSince1970: TimeInterval($0)) } ?? Date(timeIntervalSince1970: 0)
+        let upper = boundTimestamp(from: bounds, oldest: false)
+            .map { Date(timeIntervalSince1970: TimeInterval($0)) } ?? Date(timeIntervalSince1970: 4_102_444_800)
+        return min(lower, upper)...max(lower, upper)
+    }
+
+    func clearing(in filters: SearchFilterStateSnapshot) -> SearchFilterStateSnapshot {
+        applying(after: nil, before: nil, to: filters)
+    }
+
+    private func boundTimestamp(from bounds: SearchDateFacetBoundsSnapshot?, oldest: Bool) -> Int64? {
+        switch (self, oldest) {
+        case (.imported, true):
+            bounds?.oldestImportedAt
+        case (.imported, false):
+            bounds?.newestImportedAt
+        case (.modified, true):
+            bounds?.oldestModifiedAt
+        case (.modified, false):
+            bounds?.newestModifiedAt
+        }
+    }
+
+    private func dateText(_ timestamp: Int64) -> String {
+        Self.formatter.string(from: Date(timeIntervalSince1970: TimeInterval(timestamp)))
+    }
+
+    private static let formatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .none
+        return formatter
+    }()
+}
+
 enum MainSearchState: Equatable {
     case idle
     case loading(request: SearchQueryRequestSnapshot, previousPage: SearchResultPageSnapshot?)
@@ -143,6 +235,16 @@ enum MainSearchExitContext: Equatable {
     case list
 }
 
+struct SmartListFilterDraft: Equatable {
+    var id: Int64
+    var name: String
+    var filters: SearchFilterStateSnapshot
+
+    var activeFilterCount: Int64 {
+        filters.activeFilterCount
+    }
+}
+
 extension MainFileListModel {
     var searchPageDestination: MainSearchDestination? {
         switch searchState {
@@ -164,11 +266,34 @@ extension MainFileListModel {
 
     var canSaveCurrentSearch: Bool {
         guard case let .loaded(request, page) = searchState else { return false }
-        return !request.query.isEmpty && !page.hasDiagnosticError
+        return (!request.query.isEmpty || !request.filters.isEmpty) && !page.hasDiagnosticError
     }
 
     func enterSearch(context: MainSearchEntryContext) {
         lastSearchExitContext = exitContext(for: context)
+    }
+
+    var isEditingSmartListFilterDraft: Bool {
+        smartListFilterDraft != nil
+    }
+
+    func beginSmartListFilterDraft(
+        id: Int64,
+        name: String,
+        filters: SearchFilterStateSnapshot
+    ) {
+        smartListFilterDraft = SmartListFilterDraft(id: id, name: name, filters: filters)
+        enterSearch(context: .smartList(id: id, name: name))
+    }
+
+    func updateSmartListFilterDraft(_ filters: SearchFilterStateSnapshot) {
+        guard var draft = smartListFilterDraft else { return }
+        draft.filters = filters
+        smartListFilterDraft = draft
+    }
+
+    func cancelSmartListFilterDraft() {
+        smartListFilterDraft = nil
     }
 
     func runSearch(
@@ -179,7 +304,7 @@ extension MainFileListModel {
         filters: SearchFilterStateSnapshot
     ) async {
         let trimmedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedQuery.isEmpty else {
+        guard !trimmedQuery.isEmpty || !filters.isEmpty else {
             clearSearch()
             return
         }
@@ -203,6 +328,7 @@ extension MainFileListModel {
         searchGeneration += 1
         searchState = .idle
         pendingSearchDestination = nil
+        smartListFilterDraft = nil
         clearSearchFacets()
         errorMapping = nil
         isLoading = false
@@ -279,7 +405,7 @@ extension MainFileListModel {
         filters: SearchFilterStateSnapshot
     ) async {
         let trimmedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedQuery.isEmpty else {
+        guard !trimmedQuery.isEmpty || !filters.isEmpty else {
             searchFacetsState = .idle
             return
         }

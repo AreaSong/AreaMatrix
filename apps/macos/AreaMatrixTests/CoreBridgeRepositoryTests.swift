@@ -103,7 +103,7 @@ private struct CoreBridgeTestHelpOpener: WelcomeHelpOpening {
 
 final class MainSearchFiltersPageFeatureTests: XCTestCase {
     @MainActor
-    func testS201SearchFiltersDriveSearchFilesAndFacetCountsThroughC202() async {
+    func testS202SearchFiltersDriveSearchFilesAndFacetCountsThroughC202() async {
         let tree = RepositoryTreeNodeSnapshot.searchFiltersFixtureTree()
         guard let row = tree.sidebarRow(id: "docs/contracts") else {
             return XCTFail("expected docs/contracts sidebar row")
@@ -158,7 +158,7 @@ final class MainSearchFiltersPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS201SearchFiltersUserControlsProduceNonEmptyC202Request() async {
+    func testS202SearchFiltersUserControlsProduceNonEmptyC202Request() async {
         let tree = RepositoryTreeNodeSnapshot.searchFiltersFixtureTree()
         guard let row = tree.sidebarRow(id: "docs/contracts") else {
             return XCTFail("expected docs/contracts sidebar row")
@@ -219,7 +219,7 @@ final class MainSearchFiltersPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS201SearchFiltersFailureMapsC202ErrorAndCanRetryWithoutClearingSearch() async {
+    func testS202SearchFiltersFailureMapsC202ErrorAndCanRetryWithoutClearingSearch() async {
         let mapping = CoreErrorMappingSnapshot.searchFiltersDbFixture()
         let mapper = MainListRecordingErrorMapper(mapping: mapping)
         let facetLoader = MainListRecordingSearchFiltering(results: [
@@ -250,7 +250,7 @@ final class MainSearchFiltersPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS201ClearSearchAlsoClearsC202FacetState() async {
+    func testS202ClearSearchAlsoClearsC202FacetState() async {
         let model = MainFileListModel(
             opening: .searchFiltersFixture(repoPath: "/tmp/repo", tree: .searchFiltersFixtureTree()),
             fileLister: MainListRecordingFileLister(results: []),
