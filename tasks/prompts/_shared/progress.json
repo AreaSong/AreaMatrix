@@ -7248,11 +7248,27 @@
     "4-1/task-101": {
       "attempts": 1,
       "copy_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260519_155620/phase-4/4-1-task-101-copy-attempt-1.log",
+      "git_branch": "codex/areamatrix-task-loop-20260501_132850",
+      "git_changed_files": [
+        ".codex/task-loop-logs/20260519_155620/phase-4/4-1-task-101-copy-attempt-1.log",
+        ".codex/task-loop-logs/20260519_155620/phase-4/4-1-task-101-verify-attempt-1.log",
+        ".codex/task-loop-runs/20260519_155620/summary.json",
+        ".codex/task-loop-runs/index.json",
+        "apps/macos/AreaMatrix/Views/Main/MainRepositoryContentActionRouting.swift",
+        "apps/macos/AreaMatrix/Views/Main/MainRepositoryContentNoteDrafts.swift",
+        "apps/macos/AreaMatrixTests/MainRepoExternalRemovalTests.swift",
+        "apps/macos/AreaMatrixTests/MainWindowIntegrationVerifyTests.swift",
+        "tasks/prompts/_shared/progress.json"
+      ],
+      "git_checkpoint_status": "committed",
+      "git_commit": "682545e2148066b3ac506b903681b006a7a7331b",
+      "git_push_status": "not_requested",
+      "git_remote": "",
       "note": "自动执行验收通过：attempt=1",
       "risk": "High",
       "run_id": "20260519_155620",
       "status": "completed",
-      "updated_at": "2026-05-20T07:19:15.526118+00:00",
+      "updated_at": "2026-05-20T07:19:15.723609+00:00",
       "verify_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260519_155620/phase-4/4-1-task-101-verify-attempt-1.log"
     },
     "4-1/task-11": {
@@ -9656,6 +9672,6 @@
       "verify_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260519_155620/phase-4/4-1-task-99-verify-attempt-4.log"
     }
   },
-  "updated_at": "2026-05-20T05:53:43.598848+00:00",
+  "updated_at": "2026-05-20T07:19:15.723611+00:00",
   "version": 1
 }
