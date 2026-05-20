@@ -21,8 +21,8 @@ enum SearchFilterEditing {
         guard !tag.isEmpty else { return filters }
 
         var updated = filters
-        if updated.tags.contains(tag) {
-            updated.tags.removeAll { $0 == tag }
+        if containsTag(tag, in: updated.tags) {
+            updated.tags.removeAll { $0.caseInsensitiveCompare(tag) == .orderedSame }
         } else {
             updated.tags.append(tag)
         }
@@ -38,6 +38,18 @@ enum SearchFilterEditing {
     ) -> SearchFilterStateSnapshot {
         var updated = filters
         updated.tagMatchMode = mode
+        return updated
+    }
+
+    static func removingTag(_ value: String, from filters: SearchFilterStateSnapshot) -> SearchFilterStateSnapshot {
+        let tag = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !tag.isEmpty else { return filters }
+
+        var updated = filters
+        updated.tags.removeAll { $0.caseInsensitiveCompare(tag) == .orderedSame }
+        if updated.tags.isEmpty {
+            updated.tagMatchMode = .any
+        }
         return updated
     }
 
@@ -76,13 +88,19 @@ enum SearchFilterEditing {
         return updated
     }
 
-    static func settingIncludeDeleted(_ value: Bool, in filters: SearchFilterStateSnapshot) -> SearchFilterStateSnapshot {
+    static func settingIncludeDeleted(
+        _ value: Bool,
+        in filters: SearchFilterStateSnapshot
+    ) -> SearchFilterStateSnapshot {
         var updated = filters
         updated.includeDeleted = value
         return updated
     }
 
-    static func removing(_ chipKind: SearchFilterChipKind, from filters: SearchFilterStateSnapshot) -> SearchFilterStateSnapshot {
+    static func removing(
+        _ chipKind: SearchFilterChipKind,
+        from filters: SearchFilterStateSnapshot
+    ) -> SearchFilterStateSnapshot {
         var updated = filters
         switch chipKind {
         case .category:
@@ -117,6 +135,10 @@ enum SearchFilterEditing {
                 .map { Int64($0.timeIntervalSince1970) }
         }
     }
+
+    private static func containsTag(_ tag: String, in tags: [String]) -> Bool {
+        tags.contains { $0.caseInsensitiveCompare(tag) == .orderedSame }
+    }
 }
 
 struct SearchFiltersPopover: View {
@@ -127,6 +149,7 @@ struct SearchFiltersPopover: View {
     var onReset: () -> Void
     var onRetry: () -> Void
     var onSaveAsSmartList: () -> Void
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -192,11 +215,21 @@ struct SearchFiltersPopover: View {
             )
             SearchTagFacetPicker(
                 filters: $filters,
-                options: facetsState.facets?.tags ?? [],
-                isLoading: facetsState.isLoading
+                facetsState: facetsState,
+                onRetry: onRetry
             )
-            SearchDateFilterSection(title: "Modified", field: .modified, bounds: facetsState.facets?.dateBounds, filters: $filters)
-            SearchDateFilterSection(title: "Imported", field: .imported, bounds: facetsState.facets?.dateBounds, filters: $filters)
+            SearchDateFilterSection(
+                title: "Modified",
+                field: .modified,
+                bounds: facetsState.facets?.dateBounds,
+                filters: $filters
+            )
+            SearchDateFilterSection(
+                title: "Imported",
+                field: .imported,
+                bounds: facetsState.facets?.dateBounds,
+                filters: $filters
+            )
             SearchStorageFacetPicker(filters: $filters, options: facetsState.facets?.storageModes ?? [])
             Toggle(
                 "Include deleted files",
@@ -224,6 +257,7 @@ struct SearchFiltersPopover: View {
             Button("Save as Smart List", action: onSaveAsSmartList)
                 .keyboardShortcut(.defaultAction)
                 .disabled(!canSaveAsSmartList)
+            Button("Close") { dismiss() }
         }
     }
 
@@ -258,60 +292,6 @@ private struct SearchFacetPicker: View {
                 Text(isLoading ? "Loading..." : emptyMessage)
                     .font(.caption)
                     .foregroundStyle(.secondary)
-            }
-        }
-    }
-}
-
-private struct SearchTagFacetPicker: View {
-    @Binding var filters: SearchFilterStateSnapshot
-    var options: [SearchFacetCountSnapshot]
-    var isLoading: Bool
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                Text("Tags")
-                Spacer()
-                Button("Any") {
-                    filters = SearchFilterEditing.removing(.tags, from: filters)
-                }
-                .disabled(filters.tags.isEmpty)
-            }
-            .font(.callout)
-            tagOptions
-            if options.isEmpty {
-                Text(isLoading ? "Loading..." : "No tags yet")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .accessibilityLabel(isLoading ? "Tags are loading" : "No tags yet")
-            }
-            Picker("Tag match", selection: Binding(
-                get: { filters.tagMatchMode },
-                set: { filters = SearchFilterEditing.settingTagMatchMode($0, in: filters) }
-            )) {
-                Text("Any selected tag").tag(SearchTagMatchModeSnapshot.any)
-                Text("All selected tags").tag(SearchTagMatchModeSnapshot.all)
-            }
-            if filters.tags.count == 1 {
-                Text("Any and All match the same single selected tag.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-        }
-    }
-
-    private var tagOptions: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            ForEach(options) { option in
-                Toggle(isOn: Binding(
-                    get: { filters.tags.contains(option.value) },
-                    set: { _ in filters = SearchFilterEditing.togglingTag(option.value, in: filters) }
-                )) {
-                    Text(option.displayTitle)
-                }
-                .disabled(option.disabled)
-                .accessibilityLabel("\(option.label), \(option.count) files")
             }
         }
     }

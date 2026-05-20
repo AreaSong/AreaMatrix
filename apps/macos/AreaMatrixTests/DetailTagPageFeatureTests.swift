@@ -8,7 +8,7 @@ final class DetailTagPageFeatureTests: XCTestCase {
         let initialTags = TagSetSnapshot.s207Fixture(fileID: detail.id, values: ["urgent"])
         let tagStore = DetailTagRecordingStore(
             listResults: [.success(initialTags)],
-            addResults: [.failure(CoreError.InvalidPath(reason: "tag contains illegal characters"))]
+            addResults: [.failure(CoreError.InvalidPath(path: "bad/tag"))]
         )
         let mapping = CoreErrorMappingSnapshot.s207TagDb()
         let mapper = DetailMetaErrorMapper(mapping: mapping)
@@ -26,7 +26,9 @@ final class DetailTagPageFeatureTests: XCTestCase {
         let addRequests = await tagStore.addRequests()
         let mappedErrors = await mapper.recordedErrors()
 
-        XCTAssertEqual(addRequests, [DetailTagMutationRequest(repoPath: "/tmp/repo", fileID: detail.id, tag: "bad/tag")])
+        XCTAssertEqual(addRequests, [
+            DetailTagMutationRequest(repoPath: "/tmp/repo", fileID: detail.id, tag: "bad/tag")
+        ])
         XCTAssertEqual(model.detailTagEditorState, .failed(
             fileID: detail.id,
             operation: .add("bad/tag"),
@@ -35,7 +37,7 @@ final class DetailTagPageFeatureTests: XCTestCase {
         ))
         XCTAssertEqual(model.detailTagEditorState.tagSet, initialTags)
         XCTAssertNil(model.detailTagUndoToast)
-        XCTAssertEqual(mappedErrors, [CoreError.InvalidPath(reason: "tag contains illegal characters")])
+        XCTAssertEqual(mappedErrors, [CoreError.InvalidPath(path: "bad/tag")])
         XCTAssertFalse(DetailTagInputCommitPolicy.shouldClearSubmittedQuery(
             submittedTag: "bad/tag",
             state: model.detailTagEditorState
@@ -130,6 +132,61 @@ final class DetailTagPageFeatureTests: XCTestCase {
             submittedTag: " ClientA ",
             state: loadedState
         ))
+    }
+
+    @MainActor
+    func testS208TagsFilterUsesC202FacetsAndSearchFiltersOnly() async {
+        let filters = SearchFilterEditing.settingTagMatchMode(
+            .all,
+            in: SearchFilterEditing.togglingTag(
+                "Tax",
+                in: SearchFilterEditing.togglingTag("finance", in: .empty)
+            )
+        )
+        let tagStore = S208ForbiddenTagStore()
+        let model = MainFileListModel(
+            opening: .detailMetaFixture(repoPath: "/tmp/repo", files: []),
+            fileLister: DetailMetaNoopLister(),
+            fileDetailer: DetailMetaImmediateDetailer(result: .failure(CoreError.FileNotFound(path: "unused"))),
+            searchQuerying: MainListRecordingSearchQuerying(results: [.success(.s208SearchPage(filters: filters))]),
+            searchFiltering: MainListRecordingSearchFiltering(results: [.success(.s208Facets())]),
+            tagStore: tagStore,
+            errorMapper: DetailMetaErrorMapper(mapping: .s207TagDb())
+        )
+
+        await model.runSearch(
+            query: "",
+            scope: .all,
+            sort: .newestImported,
+            sidebarRow: .s208Root,
+            filters: filters
+        )
+        await model.loadSearchFacets(
+            query: "",
+            scope: .all,
+            sidebarRow: .s208Root,
+            filters: filters
+        )
+
+        XCTAssertEqual(model.searchState.request?.filters.tags, ["finance", "Tax"])
+        XCTAssertEqual(model.searchFacetsState.facets?.tags.map(\.label), ["Finance", "Tax", "Archive"])
+        let tagStoreCalls = await tagStore.recordedCalls()
+        XCTAssertEqual(tagStoreCalls, [])
+    }
+
+    func testS208TagsFilterEditingIsCaseInsensitiveAndDoesNotCreateTags() {
+        var filters = SearchFilterEditing.togglingTag("Finance", in: .empty)
+        filters = SearchFilterEditing.togglingTag("finance", in: filters)
+        XCTAssertEqual(filters.tags, [])
+        filters = SearchFilterEditing.removingTag(
+            "FINANCE",
+            from: SearchFilterEditing.togglingTag("Finance", in: .empty)
+        )
+        XCTAssertEqual(filters.tags, [])
+        XCTAssertEqual(
+            TagFacetFiltering.visibleTags(query: "TAX", facets: SearchFacetsSnapshot.s208Facets().tags).map(\.value),
+            ["tax"]
+        )
     }
 }
 
@@ -244,5 +301,82 @@ extension CoreErrorMappingSnapshot {
             recoverability: .retryable,
             rawContext: "S2-07 C2-05 tag-crud"
         )
+    }
+}
+
+private extension RepositorySidebarRowSnapshot {
+    static let s208Root = RepositorySidebarRowSnapshot(node: RepositoryTreeNodeSnapshot(
+        slug: "__root__",
+        displayName: "Repository",
+        kind: "RepositoryRoot",
+        relativePath: "",
+        fileCount: 0,
+        depth: 0,
+        children: []
+    ), depth: 0)
+}
+
+private extension SearchResultPageSnapshot {
+    static func s208SearchPage(filters: SearchFilterStateSnapshot) -> SearchResultPageSnapshot {
+        SearchResultPageSnapshot(
+            query: "",
+            totalCount: filters.tags.isEmpty ? 0 : 1,
+            results: [],
+            diagnostics: [],
+            indexStatus: .ready
+        )
+    }
+}
+
+private extension SearchFacetsSnapshot {
+    static func s208Facets() -> SearchFacetsSnapshot {
+        SearchFacetsSnapshot(
+            query: "",
+            totalCount: 42,
+            categories: [],
+            fileKinds: [],
+            tags: [
+                SearchFacetCountSnapshot(
+                    value: "finance",
+                    label: "Finance",
+                    count: 24,
+                    selected: true,
+                    disabled: false
+                ),
+                SearchFacetCountSnapshot(value: "tax", label: "Tax", count: 8, selected: true, disabled: false),
+                SearchFacetCountSnapshot(value: "archive", label: "Archive", count: 0, selected: false, disabled: true)
+            ],
+            storageModes: [],
+            dateBounds: SearchDateFacetBoundsSnapshot(
+                oldestImportedAt: nil,
+                newestImportedAt: nil,
+                oldestModifiedAt: nil,
+                newestModifiedAt: nil
+            ),
+            activeFilterCount: 1
+        )
+    }
+}
+
+private actor S208ForbiddenTagStore: CoreTagCRUD {
+    private var calls: [String] = []
+
+    func listTags(repoPath _: String, fileID _: Int64) async throws -> TagSetSnapshot {
+        calls.append("listTags")
+        throw CoreError.Internal(message: "S2-08 C2-02 must use list_filter_facets")
+    }
+
+    func addTag(repoPath _: String, fileID _: Int64, tag _: String) async throws -> TagSetSnapshot {
+        calls.append("addTag")
+        throw CoreError.Internal(message: "S2-08 C2-02 must not add tags")
+    }
+
+    func removeTag(repoPath _: String, fileID _: Int64, tag _: String) async throws -> TagSetSnapshot {
+        calls.append("removeTag")
+        throw CoreError.Internal(message: "S2-08 C2-02 must not remove tags")
+    }
+
+    func recordedCalls() -> [String] {
+        calls
     }
 }

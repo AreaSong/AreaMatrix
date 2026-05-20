@@ -297,3 +297,204 @@ private struct TagSuggestionRow: View {
         .disabled(tag.selected || tag.disabled)
     }
 }
+
+struct SearchTagFacetPicker: View {
+    @Binding var filters: SearchFilterStateSnapshot
+    var facetsState: MainSearchFacetsState
+    var onRetry: () -> Void
+    @State private var query = ""
+    @FocusState private var isSearchFocused: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Filter by tags")
+                .font(.callout.weight(.semibold))
+            TextField("Search tags", text: $query)
+                .textFieldStyle(.roundedBorder)
+                .focused($isSearchFocused)
+                .accessibilityIdentifier("S2-08-tag-search")
+            SelectedTagChips(filters: $filters, tagFacets: tagFacets)
+            TagMatchModeControl(filters: $filters)
+            tagList
+            tagFooter
+        }
+        .accessibilityIdentifier("S2-08-tags-filter")
+        .onAppear { isSearchFocused = true }
+    }
+
+    @ViewBuilder
+    private var tagList: some View {
+        if let error = facetsState.errorMapping {
+            HStack(spacing: 8) {
+                Text("Could not load tags")
+                Button("Retry", action: onRetry)
+            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .accessibilityLabel("Could not load tags. \(error.userMessage)")
+        } else if facetsState.isLoading, tagFacets.isEmpty {
+            Text("Loading tags...")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        } else if tagFacets.isEmpty {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("No tags yet")
+                Text("Add tags from file detail or batch actions.")
+            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
+        } else if visibleTagFacets.isEmpty {
+            Text("No matching tags")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        } else {
+            tagOptions
+        }
+    }
+
+    private var tagOptions: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            ForEach(visibleTagFacets) { option in
+                Toggle(isOn: Binding(
+                    get: { option.isSelected(in: filters) },
+                    set: { _ in filters = SearchFilterEditing.togglingTag(option.value, in: filters) }
+                )) {
+                    TagFacetRow(option: option)
+                }
+                .disabled(option.disabled || facetsState.errorMapping != nil)
+                .accessibilityLabel(option.accessibilityLabel(isSelected: option.isSelected(in: filters)))
+            }
+        }
+    }
+
+    private var tagFooter: some View {
+        HStack {
+            Button("Clear all") {
+                filters = SearchFilterEditing.removing(.tags, from: filters)
+            }
+            .disabled(filters.tags.isEmpty)
+            Spacer()
+            if facetsState.isLoading, !tagFacets.isEmpty {
+                Text("Loading tags...")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private var tagFacets: [SearchFacetCountSnapshot] { facetsState.facets?.tags ?? [] }
+
+    private var visibleTagFacets: [SearchFacetCountSnapshot] {
+        TagFacetFiltering.visibleTags(query: query, facets: tagFacets)
+    }
+}
+
+private struct TagFacetRow: View {
+    var option: SearchFacetCountSnapshot
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Circle()
+                .fill(Color.accentColor.opacity(option.disabled ? 0.25 : 0.75))
+                .frame(width: 8, height: 8)
+                .accessibilityHidden(true)
+            Text(option.label)
+            Spacer()
+            Text(option.countDisplayText)
+                .foregroundStyle(.secondary)
+        }
+    }
+}
+
+struct SelectedTagChips: View {
+    @Binding var filters: SearchFilterStateSnapshot
+    var tagFacets: [SearchFacetCountSnapshot]
+
+    var body: some View {
+        if filters.tags.isEmpty {
+            EmptyView()
+        } else {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 6) {
+                    ForEach(filters.tags, id: \.self) { tag in
+                        Button {
+                            filters = SearchFilterEditing.removingTag(tag, from: filters)
+                        } label: {
+                            Label(label(for: tag), systemImage: "xmark.circle")
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                        .accessibilityLabel("Remove tag filter \(label(for: tag))")
+                    }
+                }
+            }
+            .accessibilityLabel("Selected tags \(filters.tags.joined(separator: ", "))")
+        }
+    }
+
+    private func label(for tag: String) -> String {
+        tagFacets.first { $0.value.caseInsensitiveCompare(tag) == .orderedSame }?.label ?? tag
+    }
+}
+
+private struct TagMatchModeControl: View {
+    @Binding var filters: SearchFilterStateSnapshot
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Picker("Tag match mode", selection: Binding(
+                get: { filters.tagMatchMode },
+                set: { filters = SearchFilterEditing.settingTagMatchMode($0, in: filters) }
+            )) {
+                Text("Any").tag(SearchTagMatchModeSnapshot.any)
+                Text("All").tag(SearchTagMatchModeSnapshot.all)
+            }
+            .pickerStyle(.segmented)
+            .accessibilityLabel("Tag match mode")
+            .accessibilityValue(filters.tagMatchMode.accessibilityText)
+            if filters.tags.count == 1 {
+                Text("Any and All match the same single selected tag.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+}
+
+enum TagFacetFiltering {
+    static func visibleTags(query: String, facets: [SearchFacetCountSnapshot]) -> [SearchFacetCountSnapshot] {
+        let normalizedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !normalizedQuery.isEmpty else { return facets }
+        return facets.filter { facet in
+            facet.value.localizedCaseInsensitiveContains(normalizedQuery) ||
+                facet.label.localizedCaseInsensitiveContains(normalizedQuery)
+        }
+    }
+}
+
+extension SearchFacetCountSnapshot {
+    var countDisplayText: String {
+        disabled ? "--" : "\(count) files"
+    }
+
+    func isSelected(in filters: SearchFilterStateSnapshot) -> Bool {
+        filters.tags.contains { $0.caseInsensitiveCompare(value) == .orderedSame }
+    }
+
+    func accessibilityLabel(isSelected: Bool) -> String {
+        let state = isSelected ? "selected" : "not selected"
+        let availability = disabled ? "disabled" : countDisplayText
+        return "\(label), \(availability), \(state)"
+    }
+}
+
+private extension SearchTagMatchModeSnapshot {
+    var accessibilityText: String {
+        switch self {
+        case .any:
+            "Any selected tag"
+        case .all:
+            "All selected tags"
+        }
+    }
+}
