@@ -202,8 +202,10 @@ final class DetailTagPageFeatureTests: XCTestCase {
         XCTAssertEqual(options.map(\.value), ["finance", "tax", "archive", "legal"])
         XCTAssertEqual(options.first { $0.value == "legal" }?.countDisplayText, "--")
         XCTAssertEqual(options.first { $0.value == "legal" }?.disabled, false)
-        XCTAssertEqual(await tagStore.addRequests(), [])
-        XCTAssertEqual(await tagStore.removeRequests(), [])
+        let addRequests = await tagStore.addRequests()
+        let removeRequests = await tagStore.removeRequests()
+        XCTAssertEqual(addRequests, [])
+        XCTAssertEqual(removeRequests, [])
     }
 
     @MainActor
@@ -318,7 +320,7 @@ actor DetailTagRecordingStore: CoreTagCRUD {
 
     func listTags(repoPath: String, fileID: Int64) async throws -> TagSetSnapshot {
         recordedListRequests.append(DetailTagListRequest(repoPath: repoPath, fileID: fileID))
-        try consume(&listResults, fallbackFileID: fileID)
+        return try consume(&listResults, fallbackFileID: fileID)
     }
 
     func addTag(repoPath: String, fileID: Int64, tag: String) async throws -> TagSetSnapshot {

@@ -1,0 +1,58 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`4-1/task-109`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-109-s2-08-page-integration-verify.md`
+- 代码范围：`/Users/as/Ai-Project/project/AreaMatrix/apps/**`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+- 禁触范围：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+三、完成度摘要
+
+- 已覆盖项数：5
+- 未覆盖项数：1
+- 通过项数：4
+- 不通过项数：2
+- 阻塞项数：1
+
+四、逐项验收结果
+
+- 本页所有 page-feature task 覆盖：通过。`4-1/task-107`、`4-1/task-108` 对应 C2-02/C2-05，control map 只声明这两个能力。
+- 页面状态、入口、退出、错误态和 CoreBridge 闭环：不通过。Toolbar Filters 和 Smart List draft 入口有证据，但 page spec 要求的“侧边栏标签入口”没有实现证据。
+- mock、fixture、硬编码状态移除：通过。产品代码通过 `searchFiles`、`listFilterFacets`、`listTags` 接 CoreBridge；测试替身未进入产品路径。
+- 不新增 control map 外功能：通过。未发现 S2-08 使用 C2-02/C2-05 之外能力。
+- 完成标准 1，按 page spec/control map 完整验收：不通过。入口缺口导致 page spec 不能完整验收。
+- 完成标准 2，页面声明 Core 能力真实接入：通过。`tags/tagMatchMode` 进入 `searchFiles` 和 `listFilterFacets`，tag registry 只读走 `listTags`。
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过。主体结构清晰，但 S2-08 入口链路缺侧边栏标签入口。
+- 注释 / rustdoc / 文档同步：不通过。`S2-08-tags-filter.md:20` 的入口定义未被实现覆盖。
+- 错误处理与边界处理：通过。tag registry 和 facet count 失败有 `Could not load tags`、`Retry tags`、`Retry counts`。
+- 测试与验证覆盖：不通过。`./dev check task 4-1/task-109` 通过，但测试未覆盖侧边栏标签入口。
+- 占位、硬编码、mock-only、一次性实现检查：通过。未发现产品路径 mock-only 或硬编码完成态。
+
+六、阻塞项
+
+- P1：缺少 S2-08 侧边栏标签入口。
+  说明：page spec 明确入口包含“搜索过滤器栏点击 Tags filter；侧边栏标签入口；Smart List 编辑器中添加标签条件”。现有 sidebar 只渲染普通目录行和 Smart Lists，没有 tag sidebar row 或打开 S2-08 的入口。
+  绝对路径与行号：`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-2-experience/S2-08-tags-filter.md:20`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentCategoryMoveRefresh.swift:21`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentCategoryMoveRefresh.swift:85`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreRepositoryOpening.swift:48`
+  为什么导致不通过：task checklist 要求验收入口、退出、错误态和 CoreBridge 闭环；completion standard 要求 S2-08 可按 page spec 完整验收。缺一个声明入口，不能视为整页闭环完成。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-109`
+- 通过项：prompt doctor OK，`git diff --check` 通过，macOS `xcodebuild ... build CODE_SIGNING_ALLOWED=NO` 显示 `BUILD SUCCEEDED`
+- 失败项：无命令失败
+- 缺失项：缺少侧边栏标签入口的实现和测试证据
+- Forbidden Touches：`core/src/**` 未发现 diff
+- Expected New Paths：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**` 已落地
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+
+
+VERIFY_RESULT: FAIL

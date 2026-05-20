@@ -147,6 +147,7 @@ struct SearchFiltersPopover: View {
     var tagRegistryState: TagFilterRegistryState
     var tagRegistryAnchorFileID: Int64?
     var canSaveAsSmartList: Bool
+    var isEditingSmartListDraft: Bool
     var saveDisabledReason: String?
     var onReset: () -> Void
     var onRetry: () -> Void
@@ -255,16 +256,22 @@ struct SearchFiltersPopover: View {
             Button("Reset filters", action: onReset)
                 .disabled(filters.isEmpty)
             Spacer()
-            if let saveDisabledReason, !canSaveAsSmartList {
+            if isEditingSmartListDraft {
+                Text("Draft changes")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            } else if let saveDisabledReason, !canSaveAsSmartList {
                 Text(saveDisabledReason)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
             Button("Retry", action: onRetry)
                 .disabled(facetsState.errorMapping == nil)
-            Button("Save as Smart List", action: onSaveAsSmartList)
-                .keyboardShortcut(.defaultAction)
-                .disabled(!canSaveAsSmartList)
+            if !isEditingSmartListDraft {
+                Button("Save as Smart List", action: onSaveAsSmartList)
+                    .keyboardShortcut(.defaultAction)
+                    .disabled(!canSaveAsSmartList)
+            }
             Button("Close") { dismiss() }
         }
     }
@@ -342,9 +349,7 @@ private struct SearchDateFilterSection: View {
         }
     }
 
-    private var dateSummary: String {
-        field.summary(in: filters)
-    }
+    private var dateSummary: String { field.summary(in: filters) }
 
     private var customDatePickers: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -474,9 +479,7 @@ extension MainSearchFacetsState {
 }
 
 extension SearchFacetCountSnapshot {
-    var displayTitle: String {
-        disabled ? "\(label) (0)" : "\(label) (\(count))"
-    }
+    var displayTitle: String { disabled ? "\(label) (0)" : "\(label) (\(count))" }
 }
 
 private extension SearchStorageModeFacetCountSnapshot {
@@ -492,7 +495,5 @@ private extension SearchStorageModeFacetCountSnapshot {
         }
     }
 
-    var displayTitle: String {
-        disabled ? "\(label) (0)" : "\(label) (\(count))"
-    }
+    var displayTitle: String { disabled ? "\(label) (0)" : "\(label) (\(count))" }
 }

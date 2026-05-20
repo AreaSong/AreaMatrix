@@ -31,6 +31,112 @@ final class DetailIntegrationVerifyTests: XCTestCase {
     }
 
     @MainActor
+    func testS208PageIntegrationVerifyConnectsEntryExitErrorsAndDeclaredCoreOnly() async {
+        let detail = FileEntrySnapshot.detailMetaFixture(id: 219, currentName: "integration.pdf")
+        let filters = SearchFilterEditing.settingTagMatchMode(
+            .all,
+            in: SearchFilterEditing.togglingTag(
+                "tax",
+                in: SearchFilterEditing.togglingTag("finance", in: .empty)
+            )
+        )
+        let tagStore = DetailTagRecordingStore(
+            listResults: [
+                .success(.s208RegistryFixture(fileID: detail.id)),
+                .failure(CoreError.Db(message: "tags")),
+                .success(.s208RegistryFixture(fileID: detail.id))
+            ]
+        )
+        let facets = MainListRecordingSearchFiltering(results: [
+            .success(.s208IntegrationFacets()),
+            .failure(CoreError.Db(message: "counts")),
+            .success(.s208IntegrationFacets())
+        ])
+        let searcher = MainListRecordingSearchQuerying(results: [.success(.s208IntegrationSearchPage(filters))])
+        let mapper = DetailMetaErrorMapper(mapping: .s208FilterFailure())
+        let model = MainFileListModel(
+            opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [detail]),
+            fileLister: DetailMetaNoopLister(),
+            fileDetailer: DetailMetaImmediateDetailer(result: .success(detail)),
+            searchQuerying: searcher,
+            searchFiltering: facets,
+            tagStore: tagStore,
+            errorMapper: mapper
+        )
+
+        await model.selectFiles([detail.id])
+        await model.runSearch(
+            query: "",
+            scope: .all,
+            sort: .newestImported,
+            sidebarRow: .s208IntegrationRoot,
+            filters: filters
+        )
+        await model.loadSearchFacets(query: "", scope: .all, sidebarRow: .s208IntegrationRoot, filters: filters)
+        await model.loadTagFilterRegistry(activeFileID: detail.id)
+        model.beginSmartListFilterDraft(id: 42, name: "Tagged", filters: .empty)
+        model.updateSmartListFilterDraft(filters)
+        await model.loadSearchFacets(query: "", scope: .all, sidebarRow: .s208IntegrationRoot, filters: filters)
+        await model.retrySearchFacets()
+        await model.retryTagFilterRegistry()
+
+        let searchRequests = await searcher.recordedRequests().map(\.request)
+        let facetRequests = await facets.recordedRequests().map(\.request)
+        XCTAssertEqual(searchRequests.map(\.filters.tags), [filters.tags])
+        XCTAssertEqual(searchRequests.map(\.filters.tagMatchMode), [.all])
+        XCTAssertEqual(facetRequests.map(\.filters.tags), [filters.tags, filters.tags, filters.tags])
+        XCTAssertEqual(facetRequests.map(\.filters.tagMatchMode), [.all, .all, .all])
+        XCTAssertEqual(model.tagFilterRegistryState.errorMapping, .s208FilterFailure())
+        XCTAssertEqual(model.tagFilterRegistryState.tagSet?.availableTags.map(\.value), ["finance", "legal"])
+        XCTAssertEqual(model.searchFacetsState.facets?.tags.map(\.value), ["finance", "tax", "archive"])
+        await model.retryTagFilterRegistry()
+        XCTAssertNil(model.tagFilterRegistryState.errorMapping)
+        XCTAssertEqual(model.smartListFilterDraft?.filters, filters)
+        XCTAssertEqual(model.lastSearchExitContext, .smartList(id: 42, name: "Tagged"))
+        let tagListRequestFileIDs = await tagStore.listRequests().map(\.fileID)
+        let tagAddRequests = await tagStore.addRequests()
+        let tagRemoveRequests = await tagStore.removeRequests()
+        XCTAssertEqual(tagListRequestFileIDs, [detail.id, detail.id, detail.id])
+        XCTAssertEqual(tagAddRequests, [])
+        XCTAssertEqual(tagRemoveRequests, [])
+    }
+
+    @MainActor
+    func testS208SidebarTagsEntryOpensSameTagFilterRouteWithoutMutatingTags() async {
+        let detail = FileEntrySnapshot.detailMetaFixture(id: 220, currentName: "sidebar-tags.pdf")
+        let tagStore = DetailTagRecordingStore(listResults: [.success(.s208RegistryFixture(fileID: detail.id))])
+        var content = MainRepositoryContentView(
+            opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [detail]),
+            state: .list,
+            onImport: {},
+            onDropImport: { _, _ in },
+            fileLister: DetailMetaNoopLister(),
+            fileDetailer: DetailMetaImmediateDetailer(result: .success(detail)),
+            searchQuerying: MainListRecordingSearchQuerying(results: [.success(.s208IntegrationSearchPage(.empty))]),
+            searchFiltering: MainListRecordingSearchFiltering(results: [.success(.s208IntegrationFacets())]),
+            tagStore: tagStore,
+            errorMapper: DetailMetaErrorMapper(mapping: .s208FilterFailure())
+        )
+
+        content.repositoryTree = .s208SidebarTagsTree
+        content.selectedSidebarID = "docs"
+        content.openSidebarTagFilter()
+        await content.fileListModel.loadTagFilterRegistry(activeFileID: detail.id)
+
+        XCTAssertTrue(content.isSidebarTagsFilterPresented)
+        XCTAssertEqual(content.searchScope, .current)
+        XCTAssertEqual(
+            content.fileListModel.lastSearchExitContext,
+            .sidebar("S2-08-sidebar-tags-filter")
+        )
+        XCTAssertEqual(await tagStore.listRequests(), [
+            DetailTagListRequest(repoPath: "/tmp/repo", fileID: detail.id)
+        ])
+        XCTAssertEqual(await tagStore.addRequests(), [])
+        XCTAssertEqual(await tagStore.removeRequests(), [])
+    }
+
+    @MainActor
     private func makeDetailIntegrationContext() async throws -> DetailIntegrationContext {
         let repoURL = try makeDetailIntegrationTemporaryRepositoryURL()
         let sourceRootURL = try makeDetailIntegrationTemporaryRepositoryURL()
@@ -304,5 +410,91 @@ private func makeDetailIntegrationTemporaryRepositoryURL() throws -> URL {
 private extension [DetailMetaMetadataRow] {
     func value(for label: String) -> String? {
         first { $0.label == label }?.value
+    }
+}
+
+private extension RepositorySidebarRowSnapshot {
+    static let s208IntegrationRoot = RepositorySidebarRowSnapshot(node: RepositoryTreeNodeSnapshot(
+        slug: "__root__",
+        displayName: "Repository",
+        kind: "RepositoryRoot",
+        relativePath: "",
+        fileCount: 0,
+        depth: 0,
+        children: []
+    ), depth: 0)
+}
+
+private extension RepositoryTreeNodeSnapshot {
+    static let s208SidebarTagsTree = RepositoryTreeNodeSnapshot(
+        slug: "__root__",
+        displayName: "Repository",
+        kind: "RepositoryRoot",
+        relativePath: "",
+        fileCount: 0,
+        depth: 0,
+        children: [
+            RepositoryTreeNodeSnapshot(
+                slug: "docs",
+                displayName: "Documents",
+                fileCount: 1,
+                children: []
+            )
+        ]
+    )
+}
+
+private extension SearchResultPageSnapshot {
+    static func s208IntegrationSearchPage(_ filters: SearchFilterStateSnapshot) -> SearchResultPageSnapshot {
+        SearchResultPageSnapshot(
+            query: "",
+            totalCount: filters.tags.isEmpty ? 0 : 1,
+            results: [],
+            diagnostics: [],
+            indexStatus: .ready
+        )
+    }
+}
+
+private extension SearchFacetsSnapshot {
+    static func s208IntegrationFacets() -> SearchFacetsSnapshot {
+        SearchFacetsSnapshot(
+            query: "",
+            totalCount: 42,
+            categories: [],
+            fileKinds: [],
+            tags: [
+                SearchFacetCountSnapshot(
+                    value: "finance",
+                    label: "Finance",
+                    count: 24,
+                    selected: true,
+                    disabled: false
+                ),
+                SearchFacetCountSnapshot(value: "tax", label: "Tax", count: 8, selected: true, disabled: false),
+                SearchFacetCountSnapshot(value: "archive", label: "Archive", count: 0, selected: false, disabled: true)
+            ],
+            storageModes: [],
+            dateBounds: SearchDateFacetBoundsSnapshot(
+                oldestImportedAt: nil,
+                newestImportedAt: nil,
+                oldestModifiedAt: nil,
+                newestModifiedAt: nil
+            ),
+            activeFilterCount: 1
+        )
+    }
+}
+
+private extension CoreErrorMappingSnapshot {
+    static func s208FilterFailure() -> CoreErrorMappingSnapshot {
+        CoreErrorMappingSnapshot(
+            kind: .db,
+            userMessage: "Could not load tags",
+            severity: .medium,
+            suggestedAction: "Retry tag filter loading.",
+            recoverability: .retryable,
+            rawContext: "S2-08 tags-filter"
+        )
     }
 }

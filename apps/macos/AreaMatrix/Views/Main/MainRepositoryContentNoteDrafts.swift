@@ -439,6 +439,7 @@ extension MainRepositoryContentView {
                 tagRegistryState: fileListModel.tagFilterRegistryState,
                 tagRegistryAnchorFileID: tagRegistryAnchorFileID,
                 canSaveAsSmartList: !fileListModel.isEditingSmartListFilterDraft && fileListModel.canSaveCurrentSearch,
+                isEditingSmartListDraft: fileListModel.isEditingSmartListFilterDraft,
                 saveDisabledReason: searchSaveDisabledReason,
                 onReset: {
                     resetSearchFilters()

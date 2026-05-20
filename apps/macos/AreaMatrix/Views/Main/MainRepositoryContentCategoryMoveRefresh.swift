@@ -1,6 +1,13 @@
 import Foundation
 import SwiftUI
 
+private enum MainSidebarTagFilterEntry {
+    static let id = "S2-08-sidebar-tags-filter"
+    static let title = "Tags"
+    static let accessibilityLabel = "Tags filter"
+    static let accessibilityHint = "Open tag filters for the current search scope."
+}
+
 extension MainRepositoryContentView {
     var regularSidebarRows: [RepositorySidebarRowSnapshot] {
         repositoryTree.sidebarRows.filter { !$0.isSmartList }
@@ -24,6 +31,7 @@ extension MainRepositoryContentView {
                 sidebarRow(row)
                     .tag(row.id)
             }
+            sidebarTagsFilterRow
             if !smartListRows.isEmpty || smartListLoadError != nil {
                 Section("Smart Lists") {
                     ForEach(smartListRows) { row in
@@ -39,6 +47,56 @@ extension MainRepositoryContentView {
         }
         .listStyle(.sidebar)
         .frame(minWidth: 180, idealWidth: 220, maxWidth: 260)
+    }
+
+    var sidebarTagsFilterRow: some View {
+        Button(action: openSidebarTagFilter) {
+            HStack(spacing: 6) {
+                Image(systemName: "tag")
+                    .foregroundStyle(Color.secondary)
+                Text(MainSidebarTagFilterEntry.title)
+                Spacer()
+                Text(searchFilters.tags.isEmpty ? "" : "\(searchFilters.tags.count)")
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier(MainSidebarTagFilterEntry.id)
+        .accessibilityLabel(MainSidebarTagFilterEntry.accessibilityLabel)
+        .accessibilityHint(MainSidebarTagFilterEntry.accessibilityHint)
+        .popover(isPresented: $isSidebarTagsFilterPresented) {
+            SearchFiltersPopover(
+                filters: searchFiltersBinding,
+                facetsState: fileListModel.searchFacetsState,
+                tagRegistryState: fileListModel.tagFilterRegistryState,
+                tagRegistryAnchorFileID: tagRegistryAnchorFileID,
+                canSaveAsSmartList: !fileListModel.isEditingSmartListFilterDraft && fileListModel.canSaveCurrentSearch,
+                isEditingSmartListDraft: fileListModel.isEditingSmartListFilterDraft,
+                saveDisabledReason: searchSaveDisabledReason,
+                onReset: {
+                    resetSearchFilters()
+                },
+                onRetry: {
+                    Task { await fileListModel.retrySearchFacets() }
+                },
+                onLoadTagRegistry: { fileID in
+                    Task { await fileListModel.loadTagFilterRegistry(activeFileID: fileID) }
+                },
+                onRetryTagRegistry: {
+                    Task { await fileListModel.retryTagFilterRegistry() }
+                },
+                onSaveAsSmartList: {
+                    isSidebarTagsFilterPresented = false
+                    fileListModel.openSavedSearchSheet()
+                }
+            )
+        }
+    }
+
+    func openSidebarTagFilter() {
+        searchScope = selectedSidebarRow.categoryForFileList == nil ? .all : .current
+        fileListModel.enterSearch(context: .sidebar(MainSidebarTagFilterEntry.id))
+        isSidebarTagsFilterPresented = true
     }
 
     @MainActor

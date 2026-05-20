@@ -1,0 +1,76 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-1/task-109`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-109-s2-08-page-integration-verify.md`
+- 覆盖页面：`S2-08-tags-filter`
+- 覆盖能力：`C2-02`, `C2-05`
+
+三、完成度摘要
+
+- 已覆盖项数：6
+- 未覆盖项数：0
+- 通过项数：6
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：page-feature task 覆盖完整
+- 结果：通过
+- 证据：control map 中 `S2-08` 只声明 `C2-02, C2-05`，manifest 依赖为 `4-1/task-107`, `4-1/task-108`；实现分别通过 `search_files/list_filter_facets` 和 `list_tags` 接入。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-2-control-map.md`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainListVisibleFileFiltering.swift:299`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainDetailTagActions.swift:58`
+
+- 项目：页面状态、入口、退出、错误态和 CoreBridge 闭环
+- 结果：通过
+- 证据：搜索 filter popover 与侧边栏 Tags 入口均进入同一 S2-08 组件；tag 选择会更新 filter task key 并触发 search/facet 刷新；错误态区分 tag registry 与 count/facet retry。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/SearchFiltersPopover.swift:314`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentCategoryMoveRefresh.swift:52`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentNoteDrafts.swift:81`
+
+- 项目：C2-02 search-filters 真实接入
+- 结果：通过
+- 证据：`runSearch` 调用 `searchQuerying.searchFiles`，`loadSearchFacets` 调用 `searchFiltering.listFilterFacets`；CoreBridge wrapper 最终调用 UniFFI `AreaMatrix.searchFiles` / `AreaMatrix.listFilterFacets`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainListVisibleFileFiltering.swift:376`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreFileListing.swift:254`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridgeSnapshots.swift:326`
+
+- 项目：C2-05 tag-crud 在本页只读接入
+- 结果：通过
+- 证据：S2-08 tag registry 只调用 `listTags` 加载可选标签，不调用 `addTag/removeTag`；测试明确断言 add/remove 请求为空。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainDetailTagActions.swift:94`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreTagCRUD.swift:32`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/DetailIntegrationVerifyTests.swift:96`
+
+- 项目：无 mock、fixture、硬编码生产闭环
+- 结果：通过
+- 证据：生产路径通过 CoreBridge 调用真实 Core API；fixture 仅存在测试文件中。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreTagCRUD.swift:33`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridgeSnapshots.swift:327`
+
+- 项目：未新增 control map 之外能力，未触碰 forbidden path
+- 结果：通过
+- 证据：`git diff --name-only -- core/src` 无输出；当前改动集中在 `apps/macos/AreaMatrix/**` 和 `apps/macos/AreaMatrixTests/**`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。filter 状态、CoreBridge 调用、tag registry 状态和 Smart List draft 路由边界清楚。
+- 注释 / rustdoc / 文档同步：通过。本 task 未改 Rust public API；UDL 与 `core-api.md` 已包含所需合同。
+- 错误处理与边界处理：通过。tag registry/facet 失败均映射为结构化 error mapping，并保留 retry 路径。
+- 测试与验证覆盖：通过。新增/现有测试覆盖 S2-08 C2-02、C2-05、整页 integration、sidebar entry、retry 和禁止 mutation。
+- 占位、硬编码、mock-only、一次性实现检查：通过。生产实现未发现 mock-only 闭环。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-109`
+- 通过：`prompt doctor` 显示 `doctor: OK`，`tasks: 637`，`manifests: 637`
+- 通过：`git diff --check`
+- 通过：macOS build gate，最终输出 `** BUILD SUCCEEDED **`
+- 失败：无
+- 缺失：未单独运行 `./dev test macos`，本 task manifest 指定验证为 `./dev check task 4-1/task-109`，且该命令已按 task-scoped page integration gate 完成 macOS build。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+VERIFY_RESULT: PASS

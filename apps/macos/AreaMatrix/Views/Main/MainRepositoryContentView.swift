@@ -36,6 +36,7 @@ struct MainRepositoryContentView: View {
     @State var searchSort: SearchSortSnapshot = .newestImported
     @State var searchFilters: SearchFilterStateSnapshot = .empty
     @State var isSearchFiltersPresented = false
+    @State var isSidebarTagsFilterPresented = false
     @State var savedSearchesBySidebarID: [String: SavedSearchSnapshot] = [:]
     @State var smartListLoadError: CoreErrorMappingSnapshot?
     @State var smartListManagementRoute: SmartListManagementRoute?
@@ -220,9 +221,7 @@ extension MainRepositoryContentView {
         rows.first { $0.node.slug == "inbox" }?.id ?? rows.first?.id ?? "__root__"
     }
 
-    private var statusText: String {
-        state == .empty ? "Idle" : "Synced"
-    }
+    private var statusText: String { state == .empty ? "Idle" : "Synced" }
 
     private var selectedListTitle: String {
         selectedSidebarRow.displayName
