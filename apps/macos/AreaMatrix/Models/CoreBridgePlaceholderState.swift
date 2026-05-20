@@ -108,6 +108,7 @@ enum CoreBridgeBoundary: String, CaseIterable, Equatable {
     case updateSavedSearch = "update_saved_search"
     case deleteSavedSearch = "delete_saved_search"
     case listSavedSearches = "list_saved_searches"
+    case runSmartList = "run_smart_list"
     case getFile = "get_file"
     case listChanges = "list_changes"
     case listTreeJSON = "list_tree_json"

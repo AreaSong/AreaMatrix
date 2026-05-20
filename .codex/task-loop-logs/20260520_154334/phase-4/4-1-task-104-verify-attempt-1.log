@@ -1,0 +1,75 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-1/task-104`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-104-s2-06-c2-04-smart-lists.md`
+- 实际核验路径：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`core/area_matrix.udl`
+- 禁止触碰路径：`core/src/**`
+
+三、完成度摘要
+
+- 已覆盖项数：12
+- 未覆盖项数：0
+- 通过项数：12
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 S2-06 页面中的 C2-04 功能点
+- 结果：通过
+- 证据：task 限定 S2-06 + C2-04；control map 声明 S2-06 = C2-03, C2-04；本次新增链路是 `runSmartList`，未新增 control map 外能力。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-4.md:3036`、`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-2-control-map.md:14`
+
+- 项目：真实 CoreBridge / 状态 / 错误映射
+- 结果：通过
+- 证据：`CoreBridge.runSmartList` 包装 UniFFI `runSmartList`；`loadSmartList` 调用 `searchQuerying.runSmartList`，失败后走 `mapCoreError` 并写入 `searchState.failed`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreFileRenaming.swift:139`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainListSystemActions.swift:322`
+
+- 项目：用户可见触发入口
+- 结果：通过
+- 证据：sidebar 选中 Smart List 后 `restoreSelectedSavedSearchIfNeeded()` 进入 `restoreSavedSearch`；普通搜索 task 对 Smart List 选中态有 guard，避免同时跑 `searchFiles`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift:67`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift:98`
+
+- 项目：没有 mock-only / fixture-only 伪造真实闭环
+- 结果：通过
+- 证据：生产路径调用 UniFFI `runSmartList`；测试专门断言打开与 Retry 只调用 `runSmartList`，`searchFiles` 调用数为空。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/UniFFI/area_matrix.swift:15012`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportFolderCoreBridgeModeTests.swift:290`
+
+- 项目：Expected New Paths
+- 结果：通过
+- 证据：`apps/macos/AreaMatrix` 与 `apps/macos/AreaMatrixTests` 均存在，并有本 task 相关改动。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git diff --name-only -- 'core/src/**'` 输出为空；未修改 `core/src/**`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。`runSmartList` bridge、model 状态流和 retry 逻辑分层清楚；新增/核验文件均未超过 500 行。
+- 注释 / rustdoc / 文档同步：通过。UDL、Core API、C2-04 spec 均有 `run_smart_list` 合同；Core 实现已有只读副作用边界 rustdoc。
+- 错误处理与边界处理：通过。`FileNotFound` 等错误通过 `mapCoreError` 映射；Retry 保持 Smart List 上下文重新跑 `runSmartList`。
+- 测试与验证覆盖：通过。存在针对 S2-06 C2-04 的打开、失败、Retry、禁止 `searchFiles` 回退测试；task-scoped 验证命令已通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。生产路径没有以静态状态替代 Core；测试 fixture 仅用于断言调用边界。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-104`
+- 通过：`prompt doctor` 通过，`doctor: OK`，tasks/manifests 均为 637；`git diff --check` 通过；macOS build gate 通过，`** BUILD SUCCEEDED **`。
+- 失败：无。
+- 缺失：未单独运行 `./dev test macos`；本 task manifest 要求的验证命令是 `./dev check task 4-1/task-104`，该命令已按 page-feature gate 完成。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。当前 task 的 S2-06 + C2-04 Smart List 打开/运行链路已接入真实 `run_smart_list`，验证命令通过，未触碰 `core/src/**`，不能视为未完成。
+
+VERIFY_RESULT: PASS

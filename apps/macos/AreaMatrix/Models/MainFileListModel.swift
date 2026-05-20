@@ -27,6 +27,7 @@ final class MainFileListModel: ObservableObject {
     @Published var pendingSearchDestination: MainSearchDestination?
     @Published var lastSearchExitContext: MainSearchExitContext?
     @Published var smartListFilterDraft: SmartListFilterDraft?
+    var activeSmartListSearch: SavedSearchSnapshot?
 
     let repoPath: String
     let isReadOnly: Bool

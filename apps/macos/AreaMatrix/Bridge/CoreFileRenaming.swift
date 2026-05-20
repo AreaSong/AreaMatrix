@@ -13,6 +13,15 @@ protocol CoreSavedSearchCRUD: Sendable {
     func listSavedSearches(repoPath: String) async throws -> [SavedSearchSnapshot]
 }
 
+protocol CoreSmartListRunning: Sendable {
+    func runSmartList(
+        repoPath: String,
+        savedSearchID: Int64,
+        limit: Int64,
+        offset: Int64
+    ) async throws -> SearchResultPageSnapshot
+}
+
 extension CoreSavedSearchCRUD {
     func updateSavedSearch(
         repoPath _: String,
@@ -23,6 +32,17 @@ extension CoreSavedSearchCRUD {
 
     func deleteSavedSearch(repoPath _: String, savedSearchID _: Int64) async throws {
         throw CoreError.Internal(message: "delete_saved_search is not available in this saved search store")
+    }
+}
+
+extension CoreSearchQuerying {
+    func runSmartList(
+        repoPath _: String,
+        savedSearchID _: Int64,
+        limit _: Int64,
+        offset _: Int64
+    ) async throws -> SearchResultPageSnapshot {
+        throw CoreError.Internal(message: "run_smart_list is not available in this search store")
     }
 }
 
@@ -115,6 +135,25 @@ extension CoreBridge: CoreFileRenaming, CoreSavedSearchCRUD {
             try listCoreSavedSearches(repoPath: repoPath).map(SavedSearchSnapshot.init(coreSavedSearch:))
         }.value
     }
+
+    func runSmartList(
+        repoPath: String,
+        savedSearchID: Int64,
+        limit: Int64,
+        offset: Int64
+    ) async throws -> SearchResultPageSnapshot {
+        let corePage = try await Task.detached(priority: .userInitiated) {
+            try runCoreSmartList(repoPath: repoPath, savedSearchID: savedSearchID, limit: limit, offset: offset)
+        }.value
+
+        var results: [SearchFileResultSnapshot] = []
+        results.reserveCapacity(corePage.results.count)
+        for result in corePage.results {
+            let file = await makeFileEntrySnapshot(from: result.entry, repoPath: repoPath)
+            results.append(SearchFileResultSnapshot(coreResult: result, file: file))
+        }
+        return SearchResultPageSnapshot(corePage: corePage, results: results)
+    }
 }
 
 private func renameCoreFile(repoPath: String, fileID: Int64, newName: String) throws -> FileEntry {
@@ -141,6 +180,19 @@ private func deleteCoreSavedSearch(repoPath: String, savedSearchID: Int64) throw
 
 private func listCoreSavedSearches(repoPath: String) throws -> [SavedSearch] {
     try listSavedSearches(repoPath: repoPath)
+}
+
+private func runCoreSmartList(
+    repoPath: String,
+    savedSearchID: Int64,
+    limit: Int64,
+    offset: Int64
+) throws -> SearchResultPage {
+    try runSmartList(
+        repoPath: repoPath,
+        savedSearchId: savedSearchID,
+        pagination: SearchPagination(limit: limit, offset: offset)
+    )
 }
 
 extension SavedSearchQuery {

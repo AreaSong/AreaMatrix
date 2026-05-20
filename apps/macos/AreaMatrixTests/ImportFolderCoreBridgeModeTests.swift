@@ -285,6 +285,40 @@ final class SmartListQueryDiagnosticPageFeatureTests: XCTestCase {
         XCTAssertEqual(model.updateRequest.query.filter, draftFilters)
         XCTAssertEqual(model.updateRequest.query.filter.tags, ["tax"])
     }
+
+    @MainActor
+    func testS206SmartListOpenAndRetryUseC204RunSmartList() async {
+        let saved = SavedSearchSnapshot.s206Fixture(query: "Finance")
+        let mapping = CoreErrorMappingSnapshot.s205ConfigMapping()
+        let mapper = MainListRecordingErrorMapper(mapping: mapping)
+        let runner = S206RecordingSmartListRunner(results: [
+            .failure(CoreError.FileNotFound(path: "\(saved.id)")),
+            .success(.s206ValidQueryPage(query: "Finance", totalCount: 4))
+        ])
+        let model = MainFileListModel(
+            opening: .s205Opening(repoPath: "/tmp/repo", tree: .s205FixtureTree()),
+            fileLister: MainListRecordingFileLister(results: [.success([])]),
+            fileDetailer: MainListRecordingFileDetailer(results: []),
+            searchQuerying: runner,
+            errorMapper: mapper
+        )
+
+        await model.restoreSavedSearch(saved)
+        XCTAssertEqual(model.searchState.errorMapping, mapping)
+        await model.retrySearch()
+
+        let runRequests = await runner.recordedRunRequests()
+        let searchRequests = await runner.recordedSearchRequests()
+        let mappedErrors = await mapper.recordedErrors()
+        XCTAssertEqual(runRequests, [
+            S206SmartListRunRequest(repoPath: "/tmp/repo", savedSearchID: saved.id, limit: 50, offset: 0),
+            S206SmartListRunRequest(repoPath: "/tmp/repo", savedSearchID: saved.id, limit: 50, offset: 0)
+        ])
+        XCTAssertEqual(searchRequests, [])
+        XCTAssertEqual(mappedErrors, [CoreError.FileNotFound(path: "\(saved.id)")])
+        XCTAssertEqual(model.searchState.page?.totalCount, 4)
+        XCTAssertEqual(model.lastSearchExitContext, .smartList(id: saved.id, name: saved.name))
+    }
 }
 
 private extension RepositoryOpeningResult {

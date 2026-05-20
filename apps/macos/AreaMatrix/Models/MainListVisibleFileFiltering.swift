@@ -296,12 +296,6 @@ extension MainFileListModel {
         smartListFilterDraft = nil
     }
 
-    func restoreSavedSearch(_ savedSearch: SavedSearchSnapshot) async {
-        cancelSmartListFilterDraft()
-        enterSearch(context: .smartList(id: savedSearch.id, name: savedSearch.name))
-        await loadSearch(SearchQueryRequestSnapshot(savedSearchQuery: savedSearch.query))
-    }
-
     func runSearch(
         query: String,
         scope: SearchScopeSnapshot,
@@ -322,10 +316,15 @@ extension MainFileListModel {
             sidebarRow: sidebarRow,
             filters: filters
         )
+        activeSmartListSearch = nil
         await loadSearch(request)
     }
 
     func retrySearch() async {
+        if let savedSearch = activeSmartListSearch {
+            await loadSmartList(savedSearch)
+            return
+        }
         guard let request = searchState.request else { return }
         await loadSearch(request)
     }
@@ -335,6 +334,7 @@ extension MainFileListModel {
         searchState = .idle
         pendingSearchDestination = nil
         smartListFilterDraft = nil
+        activeSmartListSearch = nil
         clearSearchFacets()
         errorMapping = nil
         isLoading = false
@@ -365,6 +365,7 @@ extension MainFileListModel {
         searchGeneration += 1
         let generation = searchGeneration
         let previousPage = searchState.page
+        activeSmartListSearch = nil
 
         searchState = .loading(request: request, previousPage: previousPage)
         pendingSearchDestination = nil
@@ -392,7 +393,9 @@ extension MainFileListModel {
         errorMapping = nil
         isLoading = false
     }
+}
 
+extension MainFileListModel {
     private func exitContext(for context: MainSearchEntryContext) -> MainSearchExitContext {
         switch context {
         case .toolbar, .commandFind, .commandPalette:

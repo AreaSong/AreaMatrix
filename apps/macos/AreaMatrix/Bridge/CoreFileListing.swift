@@ -8,7 +8,7 @@ protocol CoreFileDetailing: Sendable {
     func getFile(repoPath: String, fileID: Int64) async throws -> FileEntrySnapshot
 }
 
-protocol CoreSearchQuerying: Sendable {
+protocol CoreSearchQuerying: CoreSmartListRunning, Sendable {
     func searchFiles(repoPath: String, request: SearchQueryRequestSnapshot) async throws -> SearchResultPageSnapshot
 }
 

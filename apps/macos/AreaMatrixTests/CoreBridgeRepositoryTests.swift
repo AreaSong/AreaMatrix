@@ -414,3 +414,67 @@ private extension CoreErrorMappingSnapshot {
     }
 
 }
+
+struct S206SmartListRunRequest: Equatable {
+    var repoPath: String
+    var savedSearchID: Int64
+    var limit: Int64
+    var offset: Int64
+}
+
+actor S206RecordingSmartListRunner: CoreSearchQuerying {
+    enum Result {
+        case success(SearchResultPageSnapshot)
+        case failure(Error)
+    }
+
+    private var results: [Result]
+    private var runRequests: [S206SmartListRunRequest] = []
+    private var searchRequests: [SearchQueryRequestSnapshot] = []
+
+    init(results: [Result]) {
+        self.results = results
+    }
+
+    func searchFiles(repoPath _: String, request: SearchQueryRequestSnapshot) async throws -> SearchResultPageSnapshot {
+        searchRequests.append(request)
+        throw CoreError.Internal(message: "search_files must not run S2-06 C2-04 Smart List execution")
+    }
+
+    func runSmartList(
+        repoPath: String,
+        savedSearchID: Int64,
+        limit: Int64,
+        offset: Int64
+    ) async throws -> SearchResultPageSnapshot {
+        runRequests.append(S206SmartListRunRequest(
+            repoPath: repoPath,
+            savedSearchID: savedSearchID,
+            limit: limit,
+            offset: offset
+        ))
+        guard !results.isEmpty else {
+            return SearchResultPageSnapshot(
+                query: "",
+                totalCount: 0,
+                results: [],
+                diagnostics: [],
+                indexStatus: .ready
+            )
+        }
+        switch results.removeFirst() {
+        case let .success(page):
+            return page
+        case let .failure(error):
+            throw error
+        }
+    }
+
+    func recordedRunRequests() -> [S206SmartListRunRequest] {
+        runRequests
+    }
+
+    func recordedSearchRequests() -> [SearchQueryRequestSnapshot] {
+        searchRequests
+    }
+}

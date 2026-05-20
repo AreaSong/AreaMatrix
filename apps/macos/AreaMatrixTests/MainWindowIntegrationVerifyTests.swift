@@ -86,6 +86,7 @@ final class MainWindowIntegrationVerifyTests: XCTestCase {
             .listFiles,
             .searchFiles,
             .listFilterFacets,
+            .runSmartList,
             .getFile,
             .listTreeJSON,
             .syncExternalChanges,
