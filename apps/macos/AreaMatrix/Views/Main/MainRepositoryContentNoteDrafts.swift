@@ -476,7 +476,14 @@ extension MainRepositoryContentView {
     private func searchRouteStatus(_ destination: MainSearchDestination) -> some View {
         switch destination {
         case let .searchEmpty(request):
-            SearchEmptyRouteView(request: request, onClear: clearSearch)
+            SearchEmptyRouteView(
+                request: request,
+                indexStatus: fileListModel.searchState.indexStatus,
+                onClearSearch: clearSearchQuery,
+                onClearFilters: clearSearchFiltersFromEmptyState,
+                onRemoveFilter: removeSearchFilterFromEmptyState,
+                onSearchAllFileTypes: searchAllFileTypesFromEmptyState
+            )
         case let .queryError(request, diagnostic):
             QueryErrorRouteView(
                 request: request,

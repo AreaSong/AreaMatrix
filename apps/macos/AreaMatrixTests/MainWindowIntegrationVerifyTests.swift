@@ -168,6 +168,8 @@ final class MainWindowIntegrationVerifyTests: XCTestCase {
 
         await model.runSearch(query: "missing", scope: .current, sort: .newestImported, sidebarRow: row, filters: .empty)
         XCTAssertEqual(model.searchPageDestination?.pageID, "S2-04")
+        XCTAssertEqual(model.files, [])
+        XCTAssertEqual(await searcher.recordedRequests().first?.request.query, "missing")
         model.openSavedSearchSheet()
         XCTAssertEqual(model.pendingSearchDestination?.pageID, "S2-03")
         model.clearPendingSearchDestination()
@@ -175,6 +177,7 @@ final class MainWindowIntegrationVerifyTests: XCTestCase {
         await model.runSearch(query: "owner:me", scope: .current, sort: .relevance, sidebarRow: row, filters: .empty)
         XCTAssertEqual(model.searchPageDestination?.pageID, "S2-05")
         XCTAssertFalse(model.canSaveCurrentSearch)
+        XCTAssertNil(model.searchState.errorMapping)
 
         await model.runSearch(query: "", scope: .current, sort: .newestModified, sidebarRow: row, filters: .task98ContractFilters())
         XCTAssertTrue(model.canSaveCurrentSearch)

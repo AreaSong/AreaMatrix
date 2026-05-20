@@ -10,7 +10,11 @@ final class MainRepoExternalRemovalTests: XCTestCase {
             suggestion: "Use category:"
         )
 
-        let emptyBody = s201RouteMirrorDescription(of: SearchEmptyRouteView(request: request, onClear: {}).body)
+        let emptyView = SearchEmptyRouteView(
+            request: request, onClearSearch: {}, onClearFilters: {}, onRemoveFilter: { _ in },
+            onSearchAllFileTypes: {}
+        )
+        let emptyBody = s201RouteMirrorDescription(of: emptyView.body)
         let errorBody = s201RouteMirrorDescription(of: QueryErrorRouteView(
             request: request,
             diagnostic: diagnostic,
@@ -34,13 +38,13 @@ final class MainRepoExternalRemovalTests: XCTestCase {
         let commandBody = s201RouteMirrorDescription(of: SearchCommandPaletteRouteView(query: "合同", onClose: {}).body)
 
         XCTAssertTrue(emptyBody.contains("S2-04-search-empty"))
+        XCTAssertTrue(emptyBody.contains("Clear filters") && emptyBody.contains("Search all file types"))
         XCTAssertTrue(errorBody.contains("Unknown field: owner"))
         XCTAssertTrue(errorBody.contains("S2-05-query-error"))
         XCTAssertTrue(saveBody.contains("S2-03-search-route"))
         XCTAssertTrue(indexingBody.contains("S2-01-indexing-status-search-route"))
         XCTAssertTrue(commandBody.contains("S2-15-search-route"))
     }
-
     @MainActor
     func testS203SavedSearchSheetCreatesSmartListThroughCoreBridge() async {
         let request = SearchQueryRequestSnapshot.s201RouteFixture(query: "合同")

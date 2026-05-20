@@ -184,24 +184,137 @@ extension MainRepositoryContentView {
 
 struct SearchEmptyRouteView: View {
     let request: SearchQueryRequestSnapshot
-    let onClear: () -> Void
+    var indexStatus: SearchIndexStatusSnapshot? = .ready
+    let onClearSearch: () -> Void
+    let onClearFilters: () -> Void
+    let onRemoveFilter: (SearchFilterChipKind) -> Void
+    let onSearchAllFileTypes: () -> Void
 
     var body: some View {
-        VStack(alignment: .center, spacing: 10) {
-            Label("No results for \"\(request.query)\"", systemImage: "magnifyingglass")
-                .font(.headline)
-            Text("S2-04 search-empty")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            Text(searchContextText(request))
+        VStack(alignment: .center, spacing: 14) {
+            Label("No files found", systemImage: "magnifyingglass")
+                .font(.title3.weight(.semibold))
+            Text(reasonText)
                 .font(.callout)
                 .foregroundStyle(.secondary)
-            Button("Clear search", action: onClear)
+                .multilineTextAlignment(.center)
+            conditionSummary
+            actionButtons
+            if shouldShowFilterShortcuts {
+                filterShortcutButtons
+            }
         }
-        .padding(18)
+        .padding(20)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .accessibilityElement(children: .combine)
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier("S2-04-search-empty")
+    }
+
+    private var conditionSummary: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("Query: \(querySummary)")
+            Text("Filters: \(filterSummary)")
+            Text(searchContextText(request))
+            if indexStatus == .indexing {
+                Text("Indexing...")
+            }
+        }
+        .font(.caption)
+        .foregroundStyle(.secondary)
+        .frame(maxWidth: 360, alignment: .leading)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Search conditions. Query \(querySummary). Filters \(filterSummary).")
+    }
+
+    @ViewBuilder
+    private var actionButtons: some View {
+        HStack(spacing: 10) {
+            if request.filters.isEmpty {
+                Button("Clear search", action: onClearSearch)
+                    .keyboardShortcut(.cancelAction)
+            } else {
+                Button("Clear filters", action: onClearFilters)
+                    .keyboardShortcut(.defaultAction)
+                Button("Clear search", action: onClearSearch)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var filterShortcutButtons: some View {
+        VStack(alignment: .center, spacing: 8) {
+            if request.filters.fileKind != nil {
+                Button("Search all file types", action: onSearchAllFileTypes)
+            }
+            ForEach(SearchFilterChips.items(for: request.filters)) { chip in
+                Button("Remove \(chip.label)") {
+                    onRemoveFilter(chip.kind)
+                }
+            }
+        }
+        .buttonStyle(.borderless)
+        .font(.callout)
+        .accessibilityElement(children: .contain)
+    }
+
+    private var reasonText: String {
+        if indexStatus == .indexing {
+            return "Search is still indexing. Results may appear in a moment."
+        }
+        if !request.query.isEmpty, request.filters.activeFilterCount > 0 {
+            return "No files match this query and \(activeFilterText)."
+        }
+        if !request.query.isEmpty {
+            return "No files match \"\(request.query)\"."
+        }
+        return "No files match \(activeFilterText)."
+    }
+
+    private var shouldShowFilterShortcuts: Bool {
+        request.filters.activeFilterCount > 0 && indexStatus != .indexing
+    }
+
+    private var querySummary: String {
+        request.query.isEmpty ? "None" : request.query
+    }
+
+    private var filterSummary: String {
+        let chips = SearchFilterChips.items(for: request.filters).map(\.label)
+        return chips.isEmpty ? "None" : chips.joined(separator: ", ")
+    }
+
+    private var activeFilterText: String {
+        let count = request.filters.activeFilterCount
+        return count == 1 ? "1 active filter" : "\(count) active filters"
+    }
+}
+
+extension MainRepositoryContentView {
+    func clearSearchQuery() {
+        guard !effectiveSearchFilters.isEmpty else {
+            clearSearch()
+            return
+        }
+        filterText = ""
+        selectedFileIDs = []
+        fileListModel.enterSearch(context: .toolbar)
+    }
+
+    func clearSearchFiltersFromEmptyState() {
+        SearchFilterStateRouting.assign(.empty, searchFilters: &searchFilters, fileListModel: fileListModel)
+        selectedFileIDs = []
+        if filterText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            clearSearch()
+        }
+    }
+
+    func removeSearchFilterFromEmptyState(_ kind: SearchFilterChipKind) {
+        let updated = SearchFilterEditing.removing(kind, from: effectiveSearchFilters)
+        SearchFilterStateRouting.assign(updated, searchFilters: &searchFilters, fileListModel: fileListModel)
+    }
+
+    func searchAllFileTypesFromEmptyState() {
+        removeSearchFilterFromEmptyState(.fileKind)
     }
 }
 
