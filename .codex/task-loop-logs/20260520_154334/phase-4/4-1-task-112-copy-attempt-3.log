@@ -1,0 +1,40 @@
+一、执行结论
+
+- 已完成（按当前 task manifest 的 Validation 上限）
+
+二、执行范围
+
+- 单任务：`4-1/task-112`
+- 本次 repair 实际修改：将 [DetailMultiListFilesPageFeatureTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/DetailMultiListFilesPageFeatureTests.swift:454) 中的 `TagSetSnapshot.s209TagCatalogFixture` 从 `private extension` 改为测试 target 内可见的 `extension`。
+- 未触碰 `core/src/**`，未改 `core/area_matrix.udl`。
+
+三、完成情况
+
+- page-feature 覆盖：C2-06 / C2-07 已由 `4-1/task-110`、`4-1/task-111` 覆盖。
+- 本次阻塞修复：`ImportBatchICloudPageIntegrationTests.swift` 现在可跨测试文件访问 `.s209TagCatalogFixture(fileID:)`。
+- mock / fixture / 硬编码：仅调整测试 fixture 可见性，未引入生产 mock 或硬编码闭环。
+- Forbidden Touches：`git diff --name-only -- core/src` 无输出。
+
+四、工程质量
+
+- 改动是最小范围修复，没有新增抽象、依赖、生产路径或 Core API。
+- 没有新增注释、rustdoc 或文档同步需求。
+- 错误处理/边界处理不涉及生产逻辑；本次只修复 XCTest 编译可见性问题。
+
+五、验证情况
+
+- 已运行：`./dev check task 4-1/task-112`
+  - 结果：通过
+  - 证据：prompt doctor OK、`git diff --check` OK、macOS build `BUILD SUCCEEDED`
+- 已运行：`git diff --check`
+  - 结果：通过
+- 已运行：`git diff --name-only -- core/src`
+  - 结果：通过，无输出
+- 未运行：`./dev test macos`
+  - 原因：本次 retry 明确要求以 manifest `Validation` 为上限，manifest 只列 `./dev check task 4-1/task-112`。
+
+六、风险与后续
+
+- 剩余风险：未在本轮重新跑 `./dev test macos`，因此测试 target 的完整运行证据需由后续验收或人工授权补跑确认。
+- 建议下一个任务：进入 `4-1/task-112` 的 verify-ready 验收；若验收仍要求 macOS XCTest 证据，应在验收上下文中明确授权运行对应测试门禁。
+

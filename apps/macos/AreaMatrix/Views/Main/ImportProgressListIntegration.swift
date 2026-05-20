@@ -110,6 +110,107 @@ extension MainRepositoryContentView {
     }
 }
 
+struct BatchTagUndoToastHost: View {
+    let repoPath: String
+    let undoStore: any CoreUndoActionLogging
+    let errorMapper: any CoreErrorMapping
+    let onRefreshSelection: () -> Void
+    let onRefreshChangeLog: () -> Void
+    @Binding var undoState: BatchTagUndoState
+    @Binding var actionLogRefreshFailure: CoreErrorMappingSnapshot?
+
+    var body: some View {
+        if !undoState.isIdle {
+            BatchTagUndoToastView(
+                state: undoState,
+                actionLogRefreshFailure: actionLogRefreshFailure,
+                onUndo: { action in Task { await undo(action) } },
+                onDismiss: dismissUndoToast
+            )
+            .frame(maxWidth: 420)
+        }
+    }
+
+    @MainActor
+    private func undo(_ action: UndoActionRecordSnapshot) async {
+        undoState = .undoing(action)
+        actionLogRefreshFailure = nil
+        let applied = await BatchTagUndoAction.undo(
+            repoPath: repoPath,
+            action: action,
+            undoStore: undoStore,
+            errorMapper: errorMapper
+        )
+        if let failure = applied.failure {
+            undoState = .failed(failure, previous: action)
+            return
+        }
+        guard let result = applied.result else {
+            undoState = .unavailable(reason: "Undo action finished without a result.")
+            return
+        }
+
+        undoState = .undone(result)
+        await refreshAfterUndo(result)
+    }
+
+    @MainActor
+    private func refreshAfterUndo(_ result: UndoActionResultSnapshot) async {
+        let plan = BatchTagUndoRefreshPlan(refreshTargets: result.refreshTargets)
+        if plan.refreshesSelectionDetails { onRefreshSelection() }
+        if plan.refreshesChangeLog { onRefreshChangeLog() }
+        guard plan.refreshesUndoActions else { return }
+
+        let refreshed = await BatchTagUndoAction.refreshActionLog(
+            repoPath: repoPath,
+            actionID: result.actionID,
+            undoStore: undoStore,
+            errorMapper: errorMapper
+        )
+        actionLogRefreshFailure = refreshed.failure
+    }
+
+    private func dismissUndoToast() {
+        undoState = .idle
+        actionLogRefreshFailure = nil
+    }
+}
+
+struct SearchCommandPaletteRouteView: View {
+    let query: String
+    let batchAddTagsRoute: BatchAddTagsRoute
+    let onOpenBatchAddTags: (BatchAddTagsRoute) -> Void
+    let onClose: () -> Void
+
+    var body: some View {
+        MainFileActionSheetContainer(title: "Command Palette", pageID: "S2-15") {
+            TextField("Search commands", text: .constant(query))
+                .textFieldStyle(.roundedBorder)
+            Text("Search related commands")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+            commandPaletteBatchAddTagsButton
+            HStack {
+                Spacer()
+                Button("Close", action: onClose)
+                    .keyboardShortcut(.cancelAction)
+            }
+        }
+        .accessibilityIdentifier("S2-15-search-route")
+    }
+
+    private var commandPaletteBatchAddTagsButton: some View {
+        Button {
+            onOpenBatchAddTags(batchAddTagsRoute)
+        } label: {
+            Label("Add tags...", systemImage: "tag")
+        }
+        .disabled(batchAddTagsRoute.selectedCount == 0)
+        .help(BatchAddTagsEntryPolicy.openHelp(disabledReason: batchAddTagsRoute.disabledReason))
+        .accessibilityIdentifier("S2-09-command-palette-add-tags")
+    }
+}
+
 private extension ImportProgressListRow {
     var systemImage: String {
         switch item.phase {

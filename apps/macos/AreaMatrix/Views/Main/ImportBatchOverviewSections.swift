@@ -10,17 +10,14 @@ struct BatchAddTagsTrigger: View {
     let errorMapper: any CoreErrorMapping
     let onRefreshSelection: () -> Void
     let onRefreshChangeLog: () -> Void
+    let onUndoStateChange: (BatchTagUndoState) -> Void
     @State private var isPresented = false
-    @State private var undoState: BatchTagUndoState = .idle
-    @State private var actionLogRefreshFailure: CoreErrorMappingSnapshot?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Button("Add tag...") { isPresented = true }
-            .disabled(disabledReason != nil)
-            .help(disabledReason ?? "Add tags to the selected files")
+            .help(BatchAddTagsEntryPolicy.openHelp(disabledReason: disabledReason))
             .accessibilityIdentifier("S2-09-batch-add-tags-open")
-            batchTagUndoToast
         }
         .sheet(isPresented: $isPresented) {
             BatchAddTagsSheet(
@@ -31,73 +28,14 @@ struct BatchAddTagsTrigger: View {
                 tagStore: tagStore,
                 undoStore: undoStore,
                 errorMapper: errorMapper,
-                onUndoStateChange: handleUndoState,
+                onUndoStateChange: onUndoStateChange,
                 onClose: { isPresented = false }
             )
         }
     }
-
-    @ViewBuilder
-    private var batchTagUndoToast: some View {
-        if !undoState.isIdle {
-            BatchTagUndoToastView(
-                state: undoState,
-                actionLogRefreshFailure: actionLogRefreshFailure,
-                onUndo: { action in Task { await undo(action) } },
-                onDismiss: dismissUndoToast
-            )
-        }
-    }
-
-    private func handleUndoState(_ state: BatchTagUndoState) {
-        undoState = state; actionLogRefreshFailure = nil
-    }
-
-    private func dismissUndoToast() {
-        undoState = .idle; actionLogRefreshFailure = nil
-    }
-
-    @MainActor
-    private func undo(_ action: UndoActionRecordSnapshot) async {
-        undoState = .undoing(action)
-        actionLogRefreshFailure = nil
-        let applied = await BatchTagUndoAction.undo(
-            repoPath: repoPath,
-            action: action,
-            undoStore: undoStore,
-            errorMapper: errorMapper
-        )
-        if let failure = applied.failure {
-            undoState = .failed(failure, previous: action)
-            return
-        }
-        guard let result = applied.result else {
-            undoState = .unavailable(reason: "Undo action finished without a result.")
-            return
-        }
-
-        undoState = .undone(result)
-        await refreshAfterUndo(result)
-    }
-
-    @MainActor
-    private func refreshAfterUndo(_ result: UndoActionResultSnapshot) async {
-        let plan = BatchTagUndoRefreshPlan(refreshTargets: result.refreshTargets)
-        if plan.refreshesSelectionDetails { onRefreshSelection() }
-        if plan.refreshesChangeLog { onRefreshChangeLog() }
-        guard plan.refreshesUndoActions else { return }
-
-        let refreshed = await BatchTagUndoAction.refreshActionLog(
-            repoPath: repoPath,
-            actionID: result.actionID,
-            undoStore: undoStore,
-            errorMapper: errorMapper
-        )
-        actionLogRefreshFailure = refreshed.failure
-    }
 }
 
-private struct BatchTagUndoToastView: View {
+struct BatchTagUndoToastView: View {
     let state: BatchTagUndoState
     let actionLogRefreshFailure: CoreErrorMappingSnapshot?
     let onUndo: (UndoActionRecordSnapshot) -> Void

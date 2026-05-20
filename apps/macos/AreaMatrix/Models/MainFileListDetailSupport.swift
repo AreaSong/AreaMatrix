@@ -1,5 +1,32 @@
 import Foundation
 
+enum BatchAddTagsRouteSource: String, Equatable {
+    case detailMulti
+    case listContextMenu
+    case commandPalette
+}
+
+struct BatchAddTagsRoute: Identifiable, Equatable {
+    let source: BatchAddTagsRouteSource
+    let fileIDs: [Int64]
+    let selectedCount: Int
+    let disabledReason: String?
+
+    var id: String {
+        "\(source.rawValue):\(fileIDs.map(String.init).joined(separator: ",")):\(selectedCount):\(disabledReason ?? "")"
+    }
+}
+
+struct MainRepositoryDetailPaneTagActions {
+    let onLoadTags: () -> Void
+    let onRetryTags: () -> Void
+    let onAddTag: (String) -> Void
+    let onRemoveTag: (String) -> Void
+    let onUndoTagChange: () -> Void
+    let onDismissTagUndoToast: () -> Void
+    let onBatchTagUndoStateChange: (BatchTagUndoState) -> Void
+}
+
 struct MultiSelectionDetailRefreshResult: Equatable {
     var files: [FileEntrySnapshot]
     var errorMapping: CoreErrorMappingSnapshot?

@@ -31,6 +31,9 @@ struct MainRepositoryContentView: View {
     @State var selectedFileIDs: Set<Int64> = []
     @State var pendingMovedFileFocusID: Int64?
     @State var selectedImportProgressIDs: Set<String> = []
+    @State var pendingBatchAddTagsRoute: BatchAddTagsRoute?
+    @State var batchTagUndoState: BatchTagUndoState = .idle
+    @State var batchTagActionLogRefreshFailure: CoreErrorMappingSnapshot?
     @State var filterText: String = ""
     @State var searchScope: SearchScopeSnapshot = .all
     @State var searchSort: SearchSortSnapshot = .newestImported
@@ -64,6 +67,9 @@ extension MainRepositoryContentView {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .overlay(alignment: .center) {
             dropOverlay
+        }
+        .overlay(alignment: .bottomTrailing) {
+            batchTagUndoToastOverlay.padding(18)
         }
         .task(id: selectedSidebarID) {
             guard state == .list else { return }
@@ -134,6 +140,7 @@ extension MainRepositoryContentView {
         }
         .sheet(item: actionDestinationBinding, content: actionRoutingSheet)
         .sheet(item: searchDestinationBinding, content: searchRoutingSheet)
+        .sheet(item: $pendingBatchAddTagsRoute, content: batchAddTagsRoutingSheet)
         .sheet(item: $smartListManagementRoute, content: smartListManagementSheet)
         .onChange(of: isSearchFiltersPresented) { _, presented in
             guard !presented else { return }
@@ -439,41 +446,6 @@ extension MainRepositoryContentView {
         } primaryAction: { selection in
             selectedFileIDs = selection
         }
-    }
-
-    @ViewBuilder
-    private func contextMenu(for selection: Set<Int64>) -> some View {
-        let selectedFiles = files(for: selection)
-        if selectedFiles.count == 1, let file = selectedFiles.first {
-            Button("Show in Finder") {
-                onShowInFinder(file.path)
-            }
-            Button("Rename...") {
-                fileListModel.beginRename(fileID: file.id)
-            }
-            .disabled(fileListModel.writeActionDisabledReason(fileID: file.id) != nil)
-            Button("Change Category...") {
-                fileListModel.beginChangeCategory(fileID: file.id)
-            }
-            .disabled(fileListModel.writeActionDisabledReason(fileID: file.id) != nil)
-            Button("Delete...", role: .destructive) {
-                fileListModel.beginDelete(fileID: file.id)
-            }
-            .disabled(fileListModel.writeActionDisabledReason(fileID: file.id) != nil)
-            Divider()
-            Button("Copy Path") {
-                onCopyPath(file.path)
-            }
-        } else {
-            Button("Copy Paths") {
-                onCopyPaths(selectedFiles.map(\.path))
-            }
-            .disabled(selectedFiles.isEmpty)
-        }
-    }
-
-    private func files(for selection: Set<Int64>) -> [FileEntrySnapshot] {
-        visibleFiles.filter { selection.contains($0.id) }
     }
 
     private func currentListErrorPane(_ error: CoreErrorMappingSnapshot) -> some View {

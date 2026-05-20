@@ -9,6 +9,70 @@ private enum MainSidebarTagFilterEntry {
 }
 
 extension MainRepositoryContentView {
+    var detailTagActions: MainRepositoryDetailPaneTagActions {
+        MainRepositoryDetailPaneTagActions(
+            onLoadTags: { Task { await fileListModel.loadSelectedFileTags() } },
+            onRetryTags: { Task { await fileListModel.retrySelectedFileTags() } },
+            onAddTag: { tag in Task { await fileListModel.addSelectedFileTag(tag) } },
+            onRemoveTag: { tag in Task { await fileListModel.removeSelectedFileTag(tag) } },
+            onUndoTagChange: { Task { await fileListModel.undoLastDetailTagChange() } },
+            onDismissTagUndoToast: fileListModel.dismissDetailTagUndoToast,
+            onBatchTagUndoStateChange: updateBatchTagUndoState
+        )
+    }
+
+    @ViewBuilder
+    var batchTagUndoToastOverlay: some View {
+        BatchTagUndoToastHost(
+            repoPath: opening.config.repoPath,
+            undoStore: fileListModel.undoActionStore,
+            errorMapper: fileListModel.errorMapper,
+            onRefreshSelection: { Task { await fileListModel.retrySelectedFileDetail() } },
+            onRefreshChangeLog: { Task { await fileListModel.loadSelectedFileChangeLog() } },
+            undoState: $batchTagUndoState,
+            actionLogRefreshFailure: $batchTagActionLogRefreshFailure
+        )
+    }
+
+    func batchAddTagsRoutingSheet(_ route: BatchAddTagsRoute) -> some View {
+        BatchAddTagsSheet(
+            repoPath: opening.config.repoPath,
+            fileIDs: route.fileIDs,
+            selectedCount: route.selectedCount,
+            disabledReason: route.disabledReason,
+            tagStore: fileListModel.tagStore,
+            undoStore: fileListModel.undoActionStore,
+            errorMapper: fileListModel.errorMapper,
+            onUndoStateChange: updateBatchTagUndoState,
+            onClose: { pendingBatchAddTagsRoute = nil }
+        )
+    }
+
+    func updateBatchTagUndoState(_ state: BatchTagUndoState) {
+        batchTagUndoState = state
+        batchTagActionLogRefreshFailure = nil
+    }
+
+    func openBatchAddTagsRoute(_ ids: Set<Int64>, source: BatchAddTagsRouteSource) {
+        let selectedFiles = files(forBatchAddTags: ids)
+        pendingBatchAddTagsRoute = BatchAddTagsRoute(
+            source: source,
+            fileIDs: selectedFiles.map(\.id),
+            selectedCount: selectedFiles.count,
+            disabledReason: batchAddTagsDisabledReason(for: selectedFiles)
+        )
+    }
+
+    func commandPaletteBatchAddTagsRoute() -> BatchAddTagsRoute {
+        let selectedFiles = files(forBatchAddTags: selectedFileIDs)
+        return BatchAddTagsRoute(
+            source: .commandPalette,
+            fileIDs: selectedFiles.map(\.id),
+            selectedCount: selectedFiles.count,
+            disabledReason: batchAddTagsDisabledReason(for: selectedFiles)
+        )
+    }
+
     var regularSidebarRows: [RepositorySidebarRowSnapshot] {
         repositoryTree.sidebarRows.filter { !$0.isSmartList }
     }
@@ -138,6 +202,19 @@ extension MainRepositoryContentView {
         } catch {
             return nil
         }
+    }
+
+    private func files(forBatchAddTags ids: Set<Int64>) -> [FileEntrySnapshot] {
+        visibleFiles.filter { ids.contains($0.id) }
+    }
+
+    private func batchAddTagsDisabledReason(for files: [FileEntrySnapshot]) -> String? {
+        BatchAddTagsEntryPolicy.disabledReason(
+            selectedFiles: files,
+            isReadOnly: fileListModel.isReadOnly,
+            isLoading: fileListModel.isLoading,
+            writeLockedFileIDs: fileListModel.writeLockedFileIDs
+        )
     }
 
     private func sidebarRow(_ row: RepositorySidebarRowSnapshot) -> some View {

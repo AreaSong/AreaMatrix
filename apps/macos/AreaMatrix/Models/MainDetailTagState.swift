@@ -189,6 +189,28 @@ enum BatchPendingTagStatus: String, Equatable {
     }
 }
 
+enum BatchAddTagsEntryPolicy {
+    static func openHelp(disabledReason: String?) -> String {
+        disabledReason.map { "\($0). You can still review selected files and tag candidates." } ??
+            "Add tags to the selected files"
+    }
+
+    static func disabledReason(
+        selectedFiles: [FileEntrySnapshot],
+        isReadOnly: Bool,
+        isLoading: Bool,
+        writeLockedFileIDs: Set<Int64>
+    ) -> String? {
+        if selectedFiles.isEmpty { return "No files selected" }
+        if isReadOnly { return MainFileWriteActionDisabledReason.repoReadOnly.rawValue }
+        if isLoading { return MainFileWriteActionDisabledReason.listLoading.rawValue }
+        if selectedFiles.contains(where: { writeLockedFileIDs.contains($0.id) }) {
+            return MainFileWriteActionDisabledReason.importLocked.rawValue
+        }
+        return nil
+    }
+}
+
 struct BatchPendingTagChip: Equatable {
     var value: String
     var status: BatchPendingTagStatus

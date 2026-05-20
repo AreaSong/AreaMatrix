@@ -183,12 +183,7 @@ extension MainRepositoryContentView {
             batchTagUndoStore: fileListModel.undoActionStore,
             batchTagErrorMapper: fileListModel.errorMapper,
             onRetrySelectedFileDetail: { Task { await fileListModel.retrySelectedFileDetail() } },
-            onLoadTags: { Task { await fileListModel.loadSelectedFileTags() } },
-            onRetryTags: { Task { await fileListModel.retrySelectedFileTags() } },
-            onAddTag: { tag in Task { await fileListModel.addSelectedFileTag(tag) } },
-            onRemoveTag: { tag in Task { await fileListModel.removeSelectedFileTag(tag) } },
-            onUndoTagChange: { Task { await fileListModel.undoLastDetailTagChange() } },
-            onDismissTagUndoToast: fileListModel.dismissDetailTagUndoToast,
+            tagActions: detailTagActions,
             onCopyPaths: onCopyPaths,
             onOpenNoteFile: onOpenNoteFile,
             onRefreshChangeLog: {

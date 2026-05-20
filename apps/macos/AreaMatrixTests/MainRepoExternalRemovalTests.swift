@@ -28,7 +28,10 @@ final class MainRepoExternalRemovalTests: XCTestCase {
             onRetry: {},
             onClose: {}
         ).body)
-        let commandBody = s201RouteMirrorDescription(of: SearchCommandPaletteRouteView(query: "合同", onClose: {}).body)
+        let commandRoute = BatchAddTagsRoute(source: .commandPalette, fileIDs: [], selectedCount: 0, disabledReason: "No files selected")
+        let commandBody = s201RouteMirrorDescription(of: SearchCommandPaletteRouteView(
+            query: "合同", batchAddTagsRoute: commandRoute, onOpenBatchAddTags: { _ in }, onClose: {}
+        ).body)
 
         XCTAssertTrue(emptyBody.contains("S2-04-search-empty"))
         XCTAssertTrue(emptyBody.contains("Clear filters") && emptyBody.contains("Search all file types"))

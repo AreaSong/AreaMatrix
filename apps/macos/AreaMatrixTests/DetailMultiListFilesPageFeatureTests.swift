@@ -451,7 +451,7 @@ private extension CoreErrorMappingSnapshot {
 
 }
 
-private extension TagSetSnapshot {
+extension TagSetSnapshot {
     static func s209TagCatalogFixture(fileID: Int64) -> TagSetSnapshot {
         let urgent = TagRecordSnapshot.s209Tag(value: "urgent", fileCount: 3)
         let client = TagRecordSnapshot.s209Tag(value: "clienta", fileCount: 1)

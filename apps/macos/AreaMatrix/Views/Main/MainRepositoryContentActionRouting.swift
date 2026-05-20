@@ -83,6 +83,11 @@ extension MainRepositoryContentView {
         case .commandPalette:
             SearchCommandPaletteRouteView(
                 query: filterText,
+                batchAddTagsRoute: commandPaletteBatchAddTagsRoute(),
+                onOpenBatchAddTags: { route in
+                    pendingBatchAddTagsRoute = route
+                    fileListModel.clearPendingSearchDestination()
+                },
                 onClose: fileListModel.clearPendingSearchDestination
             )
         case .searchEmpty, .queryError:
@@ -469,27 +474,6 @@ struct SearchIndexingStatusRouteView: View {
         case nil:
             "Search index status unavailable"
         }
-    }
-}
-
-struct SearchCommandPaletteRouteView: View {
-    let query: String
-    let onClose: () -> Void
-
-    var body: some View {
-        MainFileActionSheetContainer(title: "Command Palette", pageID: "S2-15") {
-            TextField("Search commands", text: .constant(query))
-                .textFieldStyle(.roundedBorder)
-            Text("Search related commands")
-                .font(.callout)
-                .foregroundStyle(.secondary)
-            HStack {
-                Spacer()
-                Button("Close", action: onClose)
-                    .keyboardShortcut(.cancelAction)
-            }
-        }
-        .accessibilityIdentifier("S2-15-search-route")
     }
 }
 

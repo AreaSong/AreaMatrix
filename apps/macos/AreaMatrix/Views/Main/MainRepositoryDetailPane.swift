@@ -19,12 +19,7 @@ struct MainRepositoryDetailPane: View {
     let batchTagUndoStore: any CoreUndoActionLogging
     let batchTagErrorMapper: any CoreErrorMapping
     let onRetrySelectedFileDetail: () -> Void
-    let onLoadTags: () -> Void
-    let onRetryTags: () -> Void
-    let onAddTag: (String) -> Void
-    let onRemoveTag: (String) -> Void
-    let onUndoTagChange: () -> Void
-    let onDismissTagUndoToast: () -> Void
+    let tagActions: MainRepositoryDetailPaneTagActions
     let onCopyPaths: ([String]) -> Void
     let onOpenNoteFile: (String) -> Void
     let onRefreshChangeLog: () -> Void
@@ -60,12 +55,7 @@ struct MainRepositoryDetailPane: View {
         batchTagUndoStore: any CoreUndoActionLogging,
         batchTagErrorMapper: any CoreErrorMapping,
         onRetrySelectedFileDetail: @escaping () -> Void,
-        onLoadTags: @escaping () -> Void,
-        onRetryTags: @escaping () -> Void,
-        onAddTag: @escaping (String) -> Void,
-        onRemoveTag: @escaping (String) -> Void,
-        onUndoTagChange: @escaping () -> Void,
-        onDismissTagUndoToast: @escaping () -> Void,
+        tagActions: MainRepositoryDetailPaneTagActions,
         onCopyPaths: @escaping ([String]) -> Void,
         onOpenNoteFile: @escaping (String) -> Void,
         onRefreshChangeLog: @escaping () -> Void,
@@ -98,12 +88,7 @@ struct MainRepositoryDetailPane: View {
         self.batchTagUndoStore = batchTagUndoStore
         self.batchTagErrorMapper = batchTagErrorMapper
         self.onRetrySelectedFileDetail = onRetrySelectedFileDetail
-        self.onLoadTags = onLoadTags
-        self.onRetryTags = onRetryTags
-        self.onAddTag = onAddTag
-        self.onRemoveTag = onRemoveTag
-        self.onUndoTagChange = onUndoTagChange
-        self.onDismissTagUndoToast = onDismissTagUndoToast
+        self.tagActions = tagActions
         self.onCopyPaths = onCopyPaths
         self.onOpenNoteFile = onOpenNoteFile
         self.onRefreshChangeLog = onRefreshChangeLog
@@ -235,7 +220,8 @@ extension MainRepositoryDetailPane {
                 undoStore: batchTagUndoStore,
                 errorMapper: batchTagErrorMapper,
                 onRefreshSelection: onRetrySelectedFileDetail,
-                onRefreshChangeLog: onRefreshChangeLog
+                onRefreshChangeLog: onRefreshChangeLog,
+                onUndoStateChange: tagActions.onBatchTagUndoStateChange
             )
             if detailErrorMapping != nil {
                 Button("Retry Metadata", action: onRetrySelectedFileDetail)
@@ -336,12 +322,12 @@ extension MainRepositoryDetailPane {
                 state: detailTagEditorState,
                 undoToast: detailTagUndoToast,
                 disabledReason: writeActionDisabledReason(detail.id),
-                onLoadTags: onLoadTags,
-                onRetryTags: onRetryTags,
-                onAddTag: onAddTag,
-                onRemoveTag: onRemoveTag,
-                onUndoTagChange: onUndoTagChange,
-                onDismissUndoToast: onDismissTagUndoToast
+                onLoadTags: tagActions.onLoadTags,
+                onRetryTags: tagActions.onRetryTags,
+                onAddTag: tagActions.onAddTag,
+                onRemoveTag: tagActions.onRemoveTag,
+                onUndoTagChange: tagActions.onUndoTagChange,
+                onDismissUndoToast: tagActions.onDismissTagUndoToast
             )
             metadataRows(for: detail)
         case .log:
