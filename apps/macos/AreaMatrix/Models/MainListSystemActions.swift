@@ -106,6 +106,211 @@ struct SavedSearchSheetModel {
     }
 }
 
+enum SmartListManagementMode: Equatable {
+    case rename
+    case duplicate
+    case editQuery
+    case delete
+
+    var title: String {
+        switch self {
+        case .rename:
+            "Rename Smart List"
+        case .duplicate:
+            "Duplicate Smart List"
+        case .editQuery:
+            "Edit Smart List"
+        case .delete:
+            "Delete Smart List"
+        }
+    }
+}
+
+struct SmartListManagementRoute: Identifiable, Equatable {
+    var mode: SmartListManagementMode
+    var savedSearch: SavedSearchSnapshot
+    var draftFilters: SearchFilterStateSnapshot?
+
+    var id: String {
+        "\(mode)-\(savedSearch.id)"
+    }
+}
+
+struct SmartListEditorModel {
+    static let deleteSafetyMessage = "This only removes the Smart List. Files will not be deleted or moved."
+
+    var mode: SmartListManagementMode
+    var original: SavedSearchSnapshot
+    var name: String
+    var query: String
+    var scope: SearchScopeSnapshot
+    var filters: SearchFilterStateSnapshot
+    var sort: SearchSortSnapshot
+    var pinned: Bool
+    var existingNames: Set<String>
+    var resultCountState: SavedSearchResultCountState
+    var queryDiagnostic: SearchQueryDiagnosticSnapshot?
+    var validatedQueryDiagnosticTaskKey: String?
+    var isCheckingQuery = false
+    var isSaving = false
+    var failure: CoreErrorMappingSnapshot?
+
+    init(
+        mode: SmartListManagementMode,
+        savedSearch: SavedSearchSnapshot,
+        existingNames: Set<String>,
+        resultCountState: SavedSearchResultCountState,
+        draftFilters: SearchFilterStateSnapshot? = nil
+    ) {
+        self.mode = mode
+        original = savedSearch
+        name = mode == .duplicate ? Self.copyName(for: savedSearch.name) : savedSearch.name
+        query = savedSearch.query.query
+        scope = savedSearch.query.scope
+        filters = draftFilters ?? savedSearch.query.filter
+        sort = savedSearch.query.sort
+        pinned = mode == .duplicate ? false : savedSearch.pinned
+        self.existingNames = existingNames
+        self.resultCountState = resultCountState
+    }
+
+    var validationMessage: String? {
+        guard mode != .delete else { return nil }
+        let trimmed = trimmedName
+        if trimmed.isEmpty { return "Name is required." }
+        if trimmed.count > 64 { return "Name must be 64 characters or fewer." }
+        if isDuplicate(trimmed) { return "A Smart List named \"\(trimmed)\" already exists." }
+        if mode == .editQuery, query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, filters.isEmpty {
+            return "Query or filters are required."
+        }
+        if mode == .editQuery, isQueryDiagnosticCurrent, queryDiagnostic?.isError == true {
+            return "Fix query syntax before saving changes."
+        }
+        return nil
+    }
+
+    var canSubmit: Bool {
+        validationMessage == nil && !isSaving && !isCheckingQuery && isQueryDiagnosticCurrent
+    }
+
+    var primaryActionTitle: String {
+        if isSaving { return savingTitle }
+        switch mode {
+        case .rename, .editQuery:
+            return "Save changes"
+        case .duplicate:
+            return "Create"
+        case .delete:
+            return "Delete Smart List"
+        }
+    }
+
+    var requestSnapshot: SavedSearchQuerySnapshot {
+        SavedSearchQuerySnapshot(request: request)
+    }
+
+    var createRequest: CreateSavedSearchRequestSnapshot {
+        CreateSavedSearchRequestSnapshot(
+            name: trimmedName,
+            query: requestSnapshot,
+            icon: original.icon,
+            color: original.color,
+            pinned: pinned
+        )
+    }
+
+    var updateRequest: UpdateSavedSearchRequestSnapshot {
+        UpdateSavedSearchRequestSnapshot(
+            id: original.id,
+            name: trimmedName,
+            query: requestSnapshot,
+            icon: original.icon,
+            color: original.color,
+            pinned: pinned
+        )
+    }
+
+    var filterSummary: String {
+        filters.isEmpty ? "None" : "\(filters.activeFilterCount) active"
+    }
+
+    var resultCountSummary: String {
+        resultCountState.summary
+    }
+
+    var queryDiagnosticRequest: SearchQueryRequestSnapshot {
+        request
+    }
+
+    var queryDiagnosticTaskKey: String {
+        [
+            mode == .editQuery ? "edit" : "skip",
+            query.trimmingCharacters(in: .whitespacesAndNewlines),
+            scope.rawValue,
+            filters.taskKey,
+            sort.rawValue
+        ].joined(separator: "|")
+    }
+
+    mutating func clearQueryDiagnostic() {
+        queryDiagnostic = nil
+        validatedQueryDiagnosticTaskKey = nil
+    }
+
+    mutating func applyQueryDiagnosticPage(_ page: SearchResultPageSnapshot) {
+        queryDiagnostic = page.diagnostics.first(where: \.isError)
+        resultCountState = .loaded(page.totalCount)
+        validatedQueryDiagnosticTaskKey = queryDiagnosticTaskKey
+    }
+
+    mutating func markQueryDiagnosticUnavailable() {
+        resultCountState = .failed
+        validatedQueryDiagnosticTaskKey = queryDiagnosticTaskKey
+    }
+
+    private var request: SearchQueryRequestSnapshot {
+        SearchQueryRequestSnapshot(
+            query: query.trimmingCharacters(in: .whitespacesAndNewlines),
+            scope: scope,
+            currentPath: scope == .current ? original.query.currentPath : nil,
+            category: scope == .current ? original.query.category : nil,
+            filters: filters,
+            sort: sort,
+            limit: 50,
+            offset: 0
+        )
+    }
+
+    private var trimmedName: String {
+        name.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var savingTitle: String {
+        switch mode {
+        case .delete:
+            "Deleting..."
+        case .duplicate:
+            "Creating..."
+        case .rename, .editQuery:
+            "Saving..."
+        }
+    }
+
+    private var isQueryDiagnosticCurrent: Bool {
+        mode != .editQuery || validatedQueryDiagnosticTaskKey == queryDiagnosticTaskKey
+    }
+
+    private func isDuplicate(_ trimmed: String) -> Bool {
+        let normalized = trimmed.lowercased()
+        if mode == .duplicate { return existingNames.contains(normalized) }
+        return normalized != original.name.lowercased() && existingNames.contains(normalized)
+    }
+
+    private static func copyName(for name: String) -> String {
+        "\(name) Copy"
+    }
+}
+
 extension OnboardingModel {
     @MainActor
     func openLearnMore() {

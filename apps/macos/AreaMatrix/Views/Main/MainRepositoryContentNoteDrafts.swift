@@ -244,10 +244,9 @@ extension MainRepositoryContentView {
                     Button(searchFiltersButtonTitle) {
                         isSearchFiltersPresented.toggle()
                     }
-                    Button("Save...") {
-                        fileListModel.openSavedSearchSheet()
-                    }
+                    Button("Save...", action: fileListModel.openSavedSearchSheet)
                     .disabled(!fileListModel.canSaveCurrentSearch)
+                    smartListBannerEditButton
                     Button("Clear") {
                         clearSearch()
                     }

@@ -25,6 +25,56 @@ enum ImportEntrySheetHelper {
     }
 }
 
+struct MainFileActionSheetContainer<Content: View>: View {
+    let title: String
+    let pageID: String
+    private let content: Content
+
+    init(title: String, pageID: String, @ViewBuilder content: () -> Content) {
+        self.title = title
+        self.pageID = pageID
+        self.content = content()
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text(title)
+                .font(.headline)
+            content
+        }
+        .padding(22)
+        .frame(width: 420, alignment: .leading)
+        .accessibilityIdentifier("\(pageID)-file-action-sheet")
+    }
+}
+
+struct MissingFileActionContext: View {
+    let onCancel: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("The selected file context is no longer available.")
+                .foregroundStyle(.secondary)
+            HStack {
+                Spacer()
+                Button("Cancel", action: onCancel)
+                    .keyboardShortcut(.cancelAction)
+            }
+        }
+    }
+}
+
+func metadataRow(_ label: String, _ value: String) -> some View {
+    VStack(alignment: .leading, spacing: 3) {
+        Text(label)
+            .font(.caption)
+            .foregroundStyle(.secondary)
+        Text(value)
+            .font(.callout)
+            .textSelection(.enabled)
+    }
+}
+
 extension ImportEntrySheetView {
     func batchCategoryOptions(
         row: ImportBatchCopyImportRow,

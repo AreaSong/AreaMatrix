@@ -91,76 +91,6 @@ struct MainFileActionRoutingSheet: View {
     }
 }
 
-extension ICloudConflictVersionSnapshot {
-    static func originalCandidate(repoPath: String, file: FileEntrySnapshot?) -> ICloudConflictVersionSnapshot {
-        ICloudConflictVersionSnapshot(
-            role: .original,
-            path: file.flatMap { originalCandidatePath(repoPath: repoPath, file: $0) },
-            modifiedAt: file?.updatedAt,
-            sizeBytes: nil
-        )
-    }
-
-    static func conflictedCandidate(repoPath: String, file: FileEntrySnapshot?) -> ICloudConflictVersionSnapshot {
-        ICloudConflictVersionSnapshot(
-            role: .conflictedCopy,
-            path: file.map { absolutePath(repoPath: repoPath, relativePath: $0.path) },
-            modifiedAt: file?.updatedAt,
-            sizeBytes: file?.sizeBytes
-        )
-    }
-
-    private static func originalCandidatePath(repoPath: String, file: FileEntrySnapshot) -> String {
-        let relativePath = file.path.replacingOccurrences(of: " (Conflicted Copy)", with: "")
-        return absolutePath(repoPath: repoPath, relativePath: relativePath)
-    }
-
-    private static func absolutePath(repoPath: String, relativePath: String) -> String {
-        URL(fileURLWithPath: repoPath, isDirectory: true)
-            .appendingPathComponent(relativePath)
-            .path
-    }
-}
-
-struct MainFileActionSheetContainer<Content: View>: View {
-    let title: String
-    let pageID: String
-    private let content: Content
-
-    init(title: String, pageID: String, @ViewBuilder content: () -> Content) {
-        self.title = title
-        self.pageID = pageID
-        self.content = content()
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text(title)
-                .font(.headline)
-            content
-        }
-        .padding(22)
-        .frame(width: 420, alignment: .leading)
-        .accessibilityIdentifier("\(pageID)-file-action-sheet")
-    }
-}
-
-struct MissingFileActionContext: View {
-    let onCancel: () -> Void
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("The selected file context is no longer available.")
-                .foregroundStyle(.secondary)
-            HStack {
-                Spacer()
-                Button("Cancel", action: onCancel)
-                    .keyboardShortcut(.cancelAction)
-            }
-        }
-    }
-}
-
 struct SavedSearchPreview: View {
     let model: SavedSearchSheetModel
 
@@ -214,28 +144,6 @@ struct SavedSearchSheetRouteView: View {
             request: request,
             resultCountState: resultCountState
         ))
-    }
-
-    init(
-        request: SearchQueryRequestSnapshot,
-        repoPath: String = "",
-        resultCount: Int64?,
-        savedSearchStore: any CoreSavedSearchCRUD = CoreBridge(),
-        errorMapper: any CoreErrorMapping = CoreBridge(),
-        onCancel: @escaping () -> Void,
-        onSaved: @escaping (SavedSearchSnapshot) -> Void = { _ in },
-        onEditFilters: @escaping () -> Void = {}
-    ) {
-        self.init(
-            request: request,
-            repoPath: repoPath,
-            resultCountState: resultCount.map(SavedSearchResultCountState.loaded) ?? .loading,
-            savedSearchStore: savedSearchStore,
-            errorMapper: errorMapper,
-            onCancel: onCancel,
-            onSaved: onSaved,
-            onEditFilters: onEditFilters
-        )
     }
 
     var body: some View {
@@ -351,13 +259,242 @@ struct SavedSearchSheetRouteView: View {
     }
 }
 
-func metadataRow(_ label: String, _ value: String) -> some View {
-    VStack(alignment: .leading, spacing: 3) {
-        Text(label)
-            .font(.caption)
-            .foregroundStyle(.secondary)
-        Text(value)
-            .font(.callout)
-            .textSelection(.enabled)
+struct SmartListManagementSheet: View {
+    let route: SmartListManagementRoute
+    let repoPath: String
+    let savedSearches: [SavedSearchSnapshot]
+    let resultCountState: SavedSearchResultCountState
+    let savedSearchStore: any CoreSavedSearchCRUD
+    let searchQuerying: any CoreSearchQuerying
+    let errorMapper: any CoreErrorMapping
+    let onCancel: () -> Void
+    let onSaved: (SavedSearchSnapshot) -> Void
+    let onDeleted: (SavedSearchSnapshot) -> Void
+    let onEditFilters: (SavedSearchSnapshot, SearchFilterStateSnapshot) -> Void
+    @State private var model: SmartListEditorModel
+
+    init(
+        route: SmartListManagementRoute,
+        repoPath: String,
+        savedSearches: [SavedSearchSnapshot],
+        resultCountState: SavedSearchResultCountState = .loading,
+        savedSearchStore: any CoreSavedSearchCRUD = CoreBridge(),
+        searchQuerying: any CoreSearchQuerying = CoreBridge(),
+        errorMapper: any CoreErrorMapping = CoreBridge(),
+        onCancel: @escaping () -> Void,
+        onSaved: @escaping (SavedSearchSnapshot) -> Void,
+        onDeleted: @escaping (SavedSearchSnapshot) -> Void,
+        onEditFilters: @escaping (SavedSearchSnapshot, SearchFilterStateSnapshot) -> Void
+    ) {
+        self.route = route
+        self.repoPath = repoPath
+        self.savedSearches = savedSearches
+        self.resultCountState = resultCountState
+        self.savedSearchStore = savedSearchStore
+        self.searchQuerying = searchQuerying
+        self.errorMapper = errorMapper
+        self.onCancel = onCancel
+        self.onSaved = onSaved
+        self.onDeleted = onDeleted
+        self.onEditFilters = onEditFilters
+        _model = State(initialValue: SmartListEditorModel(
+            mode: route.mode,
+            savedSearch: route.savedSearch,
+            existingNames: Set(savedSearches.map { $0.name.lowercased() }),
+            resultCountState: resultCountState,
+            draftFilters: route.draftFilters
+        ))
+    }
+
+    var body: some View {
+        MainFileActionSheetContainer(title: route.mode.title, pageID: "S2-06", content: { content })
+        .accessibilityIdentifier("S2-06-smart-list-management")
+        .task(id: model.queryDiagnosticTaskKey) {
+            await refreshQueryDiagnostic()
+        }
+    }
+
+    @MainActor
+    func submit() async {
+        guard model.canSubmit else { return }
+        model.isSaving = true
+        model.failure = nil
+        do {
+            switch model.mode {
+            case .rename, .editQuery:
+                let saved = try await savedSearchStore.updateSavedSearch(repoPath: repoPath, request: model.updateRequest)
+                model.isSaving = false
+                onSaved(saved)
+            case .duplicate:
+                let saved = try await savedSearchStore.createSavedSearch(repoPath: repoPath, request: model.createRequest)
+                model.isSaving = false
+                onSaved(saved)
+            case .delete:
+                try await savedSearchStore.deleteSavedSearch(repoPath: repoPath, savedSearchID: model.original.id)
+                model.isSaving = false
+                onDeleted(model.original)
+            }
+        } catch {
+            model.isSaving = false
+            model.failure = await mapError(error)
+        }
+    }
+
+    private func mapError(_ error: Error) async -> CoreErrorMappingSnapshot {
+        if let coreError = error as? CoreError {
+            return await errorMapper.mapCoreError(coreError)
+        }
+        return await errorMapper.mapCoreError(CoreError.Internal(message: error.localizedDescription))
+    }
+
+    @MainActor
+    private func refreshQueryDiagnostic() async {
+        guard model.mode == .editQuery else { return }
+        model.clearQueryDiagnostic()
+        let request = model.queryDiagnosticRequest
+        guard !request.query.isEmpty || !request.filters.isEmpty else { return }
+
+        model.isCheckingQuery = true
+        defer { model.isCheckingQuery = false }
+        do {
+            let page = try await searchQuerying.searchFiles(repoPath: repoPath, request: request)
+            guard !Task.isCancelled else { return }
+            model.applyQueryDiagnosticPage(page)
+        } catch {
+            guard !Task.isCancelled else { return }
+            model.markQueryDiagnosticUnavailable()
+        }
+    }
+}
+
+private extension SmartListManagementSheet {
+    @ViewBuilder
+    var content: some View {
+        failureView
+        switch model.mode {
+        case .delete:
+            deleteContent
+        case .rename:
+            nameEditor
+            footer
+        case .duplicate:
+            nameEditor
+            Toggle("Pin to sidebar", isOn: $model.pinned)
+                .disabled(model.isSaving)
+            preview
+            footer
+        case .editQuery:
+            savedSummary
+            queryEditor
+            preview
+            footer
+        }
+    }
+
+    @ViewBuilder
+    var failureView: some View {
+        if let validationMessage = model.validationMessage {
+            Label(validationMessage, systemImage: "exclamationmark.triangle")
+                .foregroundStyle(.orange)
+                .accessibilityIdentifier("S2-06-validation-error")
+        }
+        if let failure = model.failure {
+            Label(failure.userMessage, systemImage: "exclamationmark.triangle")
+                .foregroundStyle(.red)
+                .accessibilityIdentifier("S2-06-save-error")
+        }
+        if let diagnostic = model.queryDiagnostic {
+            QueryDiagnosticSummary(diagnostic: diagnostic, query: model.queryDiagnosticRequest.query)
+        }
+    }
+
+    var nameEditor: some View {
+        TextField("Name", text: $model.name)
+            .textFieldStyle(.roundedBorder)
+            .disabled(model.isSaving)
+            .accessibilityIdentifier("S2-06-smart-list-name")
+    }
+
+    var savedSummary: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            metadataRow("Name", model.original.name)
+            metadataRow("Icon", model.original.icon ?? "Default")
+            metadataRow("Pin", pinSummary)
+        }
+    }
+
+    var queryEditor: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            TextField("Query", text: $model.query)
+                .textFieldStyle(.roundedBorder)
+                .disabled(model.isSaving)
+            Picker("Scope", selection: $model.scope) {
+                ForEach(SearchScopeSnapshot.allCases) { scope in
+                    Text(scope.displayName).tag(scope)
+                }
+            }
+            Picker("Sort", selection: $model.sort) {
+                ForEach(SearchSortSnapshot.allCases) { sort in
+                    Text(sort.displayName).tag(sort)
+                }
+            }
+        }
+        .accessibilityIdentifier("S2-06-edit-query-fields")
+    }
+
+    var preview: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            metadataRow("Filters", model.filterSummary)
+            metadataRow("Current results", model.resultCountSummary)
+        }
+        .accessibilityIdentifier("S2-06-smart-list-preview")
+    }
+
+    var deleteContent: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Delete \"\(model.original.name)\"?")
+                .font(.callout.weight(.semibold))
+            Text(SmartListEditorModel.deleteSafetyMessage)
+                .font(.callout)
+                .foregroundStyle(.secondary)
+            footer
+        }
+    }
+
+    var footer: some View {
+        HStack {
+            if model.mode == .editQuery {
+                Button("Reset changes", action: resetChanges)
+                    .disabled(model.isSaving)
+                Button("Edit filters") {
+                    onEditFilters(model.original, model.filters)
+                }
+                .disabled(model.isSaving)
+            }
+            Spacer()
+            Button("Cancel", action: onCancel)
+                .keyboardShortcut(.cancelAction)
+                .disabled(model.isSaving)
+            Button(model.primaryActionTitle) {
+                Task { await submit() }
+            }
+            .keyboardShortcut(.defaultAction)
+            .disabled(!model.canSubmit)
+            .foregroundStyle(model.mode == .delete ? Color.red : Color.primary)
+            .accessibilityIdentifier("S2-06-primary-action")
+        }
+    }
+
+    var pinSummary: String {
+        model.original.pinned ? "Pinned" : "Not pinned"
+    }
+
+    func resetChanges() {
+        model.query = model.original.query.query
+        model.scope = model.original.query.scope
+        model.filters = model.original.query.filter
+        model.sort = model.original.query.sort
+        model.failure = nil
+        model.clearQueryDiagnostic()
     }
 }

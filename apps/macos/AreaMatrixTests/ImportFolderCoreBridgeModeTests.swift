@@ -146,7 +146,144 @@ final class QueryErrorPageFeatureTests: XCTestCase {
         XCTAssertFalse(model.canSaveCurrentSearch)
         XCTAssertEqual(model.searchState.page?.diagnostics.first, diagnostic)
         XCTAssertEqual(model.files, [])
-        XCTAssertEqual(await searcher.recordedRequests().map(\.request.query), ["kindd:pdf tag:finance"])
+        let recordedQueries = await searcher.recordedRequests().map(\.request.query)
+        XCTAssertEqual(recordedQueries, ["kindd:pdf tag:finance"])
+    }
+}
+
+final class SmartListQueryDiagnosticPageFeatureTests: XCTestCase {
+    func testS206EditQueryDiagnosticBlocksSaveAndRendersS205Summary() {
+        let diagnostic = SearchQueryDiagnosticSnapshot.s205UnknownField()
+        var model = SmartListEditorModel(
+            mode: .editQuery,
+            savedSearch: .s206Fixture(query: "Finance"),
+            existingNames: ["finance"],
+            resultCountState: .loaded(12)
+        )
+
+        model.query = "kindd:pdf tag:finance"
+        XCTAssertFalse(model.canSubmit)
+
+        model.applyQueryDiagnosticPage(.s205QueryErrorPage(query: model.query, diagnostic: diagnostic))
+        XCTAssertEqual(model.validationMessage, "Fix query syntax before saving changes.")
+        XCTAssertFalse(model.canSubmit)
+
+        let body = s205RouteMirrorDescription(of: QueryDiagnosticSummary(
+            diagnostic: diagnostic,
+            query: model.query
+        ).body)
+        XCTAssertTrue(body.contains("Query could not be parsed"))
+        XCTAssertTrue(body.contains("[kindd]:pdf tag:finance"))
+        XCTAssertTrue(body.contains("Unknown field: kindd"))
+        XCTAssertTrue(body.contains("S2-05-query-error"))
+    }
+
+    func testS206EditQueryRequiresFreshDiagnosticBeforeSaveChanges() {
+        var model = SmartListEditorModel(
+            mode: .editQuery,
+            savedSearch: .s206Fixture(query: "Finance"),
+            existingNames: ["finance"],
+            resultCountState: .loaded(12)
+        )
+
+        model.applyQueryDiagnosticPage(.s206ValidQueryPage(query: "Finance", totalCount: 4))
+        XCTAssertTrue(model.canSubmit)
+        XCTAssertEqual(model.resultCountSummary, "4 files")
+
+        model.query = "kind:pdf"
+        XCTAssertFalse(model.canSubmit)
+
+        model.applyQueryDiagnosticPage(.s206ValidQueryPage(query: "kind:pdf", totalCount: 1))
+        XCTAssertNil(model.validationMessage)
+        XCTAssertTrue(model.canSubmit)
+        XCTAssertEqual(model.resultCountSummary, "1 file")
+    }
+
+    @MainActor
+    func testS206SearchBannerShowsEditAndOpensCurrentSmartListEditor() {
+        let saved = SavedSearchSnapshot.s206Fixture(query: "Finance")
+        var content = MainRepositoryContentView(
+            opening: .s205Opening(
+                repoPath: "/tmp/repo",
+                tree: .s205FixtureTree().insertingSavedSearch(saved)
+            ),
+            state: .list,
+            onImport: {},
+            onDropImport: { _, _ in },
+            fileLister: MainListRecordingFileLister(results: []),
+            fileDetailer: MainListRecordingFileDetailer(results: []),
+            searchQuerying: MainListRecordingSearchQuerying(results: []),
+            errorMapper: MainListRecordingErrorMapper(mapping: .s205ConfigMapping())
+        )
+        let sidebarID = RepositoryTreeNodeSnapshot.savedSearchSidebarID(saved.id)
+
+        content.savedSearchesBySidebarID = [sidebarID: saved]
+        content.selectedSidebarID = sidebarID
+        content.fileListModel.searchState = .loaded(
+            request: SearchQueryRequestSnapshot(savedSearchQuery: saved.query),
+            page: .s206ValidQueryPage(query: "Finance", totalCount: 4)
+        )
+
+        let banner = s205RouteMirrorDescription(of: content.statusBanner)
+        XCTAssertTrue(banner.contains("Edit"))
+
+        content.openSelectedSmartListEditor()
+        XCTAssertEqual(content.smartListManagementRoute, SmartListManagementRoute(mode: .editQuery, savedSearch: saved))
+    }
+
+    @MainActor
+    func testS206EditFiltersDraftReopensEditorAndFeedsUpdateRequest() {
+        let saved = SavedSearchSnapshot.s206Fixture(query: "Finance")
+        let sidebarID = RepositoryTreeNodeSnapshot.savedSearchSidebarID(saved.id)
+        let draftFilters = SearchFilterStateSnapshot(
+            category: "docs",
+            fileKind: "spreadsheet",
+            tags: ["tax"],
+            tagMatchMode: .all,
+            importedAfter: nil,
+            importedBefore: nil,
+            modifiedAfter: 1_700_000_000,
+            modifiedBefore: nil,
+            storageMode: .copied,
+            includeDeleted: false
+        )
+        var content = MainRepositoryContentView(
+            opening: .s205Opening(
+                repoPath: "/tmp/repo",
+                tree: .s205FixtureTree().insertingSavedSearch(saved)
+            ),
+            state: .list,
+            onImport: {},
+            onDropImport: { _, _ in },
+            fileLister: MainListRecordingFileLister(results: []),
+            fileDetailer: MainListRecordingFileDetailer(results: []),
+            searchQuerying: MainListRecordingSearchQuerying(results: []),
+            errorMapper: MainListRecordingErrorMapper(mapping: .s205ConfigMapping())
+        )
+
+        content.savedSearchesBySidebarID = [sidebarID: saved]
+        content.fileListModel.beginSmartListFilterDraft(id: saved.id, name: saved.name, filters: draftFilters)
+        content.reopenSmartListEditorFromDraftIfNeeded()
+
+        guard let route = content.smartListManagementRoute else {
+            return XCTFail("expected S2-06 edit query route to reopen with draft filters")
+        }
+        var model = SmartListEditorModel(
+            mode: route.mode,
+            savedSearch: route.savedSearch,
+            existingNames: ["finance"],
+            resultCountState: .loaded(4),
+            draftFilters: route.draftFilters
+        )
+        model.applyQueryDiagnosticPage(.s206ValidQueryPage(query: model.query, totalCount: 4))
+
+        XCTAssertEqual(route, SmartListManagementRoute(
+            mode: .editQuery,
+            savedSearch: saved,
+            draftFilters: draftFilters
+        ))
+        XCTAssertEqual(model.updateRequest.query.filter, draftFilters)
+        XCTAssertEqual(model.updateRequest.query.filter.tags, ["tax"])
     }
 }
 
@@ -222,6 +359,21 @@ private extension SearchQueryDiagnosticSnapshot {
     }
 }
 
+private extension SavedSearchSnapshot {
+    static func s206Fixture(query: String) -> SavedSearchSnapshot {
+        SavedSearchSnapshot(
+            id: 77,
+            name: "Finance",
+            query: SavedSearchQuerySnapshot(request: .s205QueryFixture(query: query)),
+            icon: "magnifyingglass",
+            color: nil,
+            pinned: true,
+            createdAt: 1_700_000_000,
+            updatedAt: 1_700_000_100
+        )
+    }
+}
+
 private extension SearchQueryRequestSnapshot {
     static func s205QueryFixture(query: String) -> SearchQueryRequestSnapshot {
         SearchQueryRequestSnapshot(
@@ -247,6 +399,16 @@ private extension SearchResultPageSnapshot {
             totalCount: 0,
             results: [],
             diagnostics: [diagnostic],
+            indexStatus: .ready
+        )
+    }
+
+    static func s206ValidQueryPage(query: String, totalCount: Int64) -> SearchResultPageSnapshot {
+        SearchResultPageSnapshot(
+            query: query,
+            totalCount: totalCount,
+            results: [],
+            diagnostics: [],
             indexStatus: .ready
         )
     }

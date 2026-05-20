@@ -4,16 +4,9 @@ import XCTest
 final class MainRepoExternalRemovalTests: XCTestCase {
     func testS201PageIntegrationRendersSearchRouteViews() {
         let request = SearchQueryRequestSnapshot.s201RouteFixture(query: "合同")
-        let diagnostic = SearchQueryDiagnosticSnapshot(
-            severityDisplayName: "Error",
-            message: "Unknown field: owner",
-            suggestion: "Use category:"
-        )
+        let diagnostic = SearchQueryDiagnosticSnapshot(severityDisplayName: "Error", message: "Unknown field: owner", suggestion: "Use category:")
 
-        let emptyView = SearchEmptyRouteView(
-            request: request, onClearSearch: {}, onClearFilters: {}, onRemoveFilter: { _ in },
-            onSearchAllFileTypes: {}
-        )
+        let emptyView = SearchEmptyRouteView(request: request, onClearSearch: {}, onClearFilters: {}, onRemoveFilter: { _ in }, onSearchAllFileTypes: {})
         let emptyBody = s201RouteMirrorDescription(of: emptyView.body)
         let errorBody = s201RouteMirrorDescription(of: QueryErrorRouteView(
             request: request,
@@ -24,7 +17,7 @@ final class MainRepoExternalRemovalTests: XCTestCase {
         let saveBody = s201RouteMirrorDescription(of: SavedSearchSheetRouteView(
             request: request,
             repoPath: "/tmp/repo",
-            resultCount: 3,
+            resultCountState: .loaded(3),
             savedSearchStore: savedSearchStore,
             errorMapper: MainListRecordingErrorMapper(mapping: .searchFiltersDbFixture()),
             onCancel: {}
@@ -61,7 +54,8 @@ final class MainRepoExternalRemovalTests: XCTestCase {
         XCTAssertEqual(model.createRequest.query.sort, .relevance)
         XCTAssertEqual(model.createRequest.pinned, true)
         XCTAssertEqual(model.emptyResultWarning, "This Smart List is currently empty.")
-        XCTAssertEqual(await store.createdRequests().map(\.request), [model.createRequest])
+        let createdRequests = await store.createdRequests().map(\.request)
+        XCTAssertEqual(createdRequests, [model.createRequest])
     }
 
     @MainActor
@@ -77,7 +71,8 @@ final class MainRepoExternalRemovalTests: XCTestCase {
         XCTAssertEqual(model.validationMessage, "A Smart List named \"Finance\" already exists.")
         XCTAssertFalse(model.canSave)
         XCTAssertEqual(model.resultCountSummary, "12 files")
-        XCTAssertEqual(await store.createdRequests(), [])
+        let createdRequests = await store.createdRequests()
+        XCTAssertEqual(createdRequests, [])
     }
 
     @MainActor
@@ -100,7 +95,8 @@ final class MainRepoExternalRemovalTests: XCTestCase {
         XCTAssertEqual(model.name, "Finance")
         XCTAssertEqual(model.resultCountSummary, "Counting results...")
         XCTAssertEqual(model.saveFailure, mapping)
-        XCTAssertEqual(await mapper.recordedErrors(), [CoreError.Db(message: "db locked")])
+        let recordedErrors = await mapper.recordedErrors()
+        XCTAssertEqual(recordedErrors, [CoreError.Db(message: "db locked")])
     }
 
     func testS202TagFilterEditingSupportsMultipleTagsAndAllMatchMode() {

@@ -1,0 +1,51 @@
+一、执行结论
+
+已完成。
+
+二、执行范围
+
+单任务：`4-1/task-103`，只修复上一次验收失败的 S2-06 + C2-03 范围问题。
+
+本次 repair 触及文件：
+- [MainListSystemActions.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainListSystemActions.swift:129)
+- [MainFileActionRoutingSheet.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainFileActionRoutingSheet.swift:300)
+- [MainRepositoryContentView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift:134)
+- [MainRepositoryContentActionRouting.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentActionRouting.swift:154)
+- [ImportFolderCoreBridgeModeTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportFolderCoreBridgeModeTests.swift:235)
+- [MainRepoExternalRemovalTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/MainRepoExternalRemovalTests.swift:64)
+- [MainWindowIntegrationVerifyTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/MainWindowIntegrationVerifyTests.swift:169)
+
+三、完成情况
+
+- 只处理 S2-06 页面中的 C2-03：通过。
+- 已读取 task、共享规则、切片规则、工程质量规则、编码规范、repo-local skill、依赖图、manifest、Exact Docs、Existing Code：通过。
+- 修复 `Edit filters` draft 回流：通过。S2-02 draft 关闭后会重新打开 S2-06 edit sheet，并把 draft filters 注入 `SmartListEditorModel`，最终进入 `updateRequest`。
+- 未实现 C2-04 或同页其他能力：通过。
+- Forbidden Touches：未触碰 `core/src/**`，`git diff --name-only -- core/src` 无输出。
+
+四、工程质量
+
+代码结构保持在现有 S2-06 管理链路内，没有新增依赖、没有新增 Rust public API。  
+错误路径仍走现有 CoreBridge / error mapping；`Cancel` 会清理 draft，`Save changes` 成功也会清理 draft。  
+测试侧修掉了 `await` 放入 XCTest autoclosure 的 Swift 并发编译问题，并新增 draft filters 到 `updateRequest` 的回归覆盖。  
+未引入 mock-only 生产路径；测试中的 recording store/searcher 只用于测试证据。
+
+五、验证情况
+
+已通过：
+- `git diff --check`
+- `./dev check task 4-1/task-103`
+  - `prompt doctor`: OK
+  - `git diff --check`: OK
+  - macOS build: `BUILD SUCCEEDED`
+- `xcodebuild -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' build-for-testing CODE_SIGNING_ALLOWED=NO`
+  - 结果：`TEST BUILD SUCCEEDED`
+
+未运行：
+- `./dev test macos` 未运行，因为当前 retry 要求验证上限仍以 manifest 的 `./dev check task 4-1/task-103` 为准；我只补充了 `build-for-testing` 来证明上次 P0 的测试 target 编译 blocker 已解除。
+
+六、风险与后续
+
+剩余风险：未执行完整 XCTest runtime，只证明测试 target 可编译、链接。当前 manifest validation 已通过。  
+建议下一个任务：继续 `4-1/task-104`，处理同页 S2-06 的 C2-04 能力，避免把 Smart List execution 混进本 task。
+

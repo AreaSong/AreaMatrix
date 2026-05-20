@@ -160,6 +160,124 @@ final class SavedSearchPageFeatureTests: XCTestCase {
             SearchQueryRequestSnapshot(savedSearchQuery: saved.query)
         ])
     }
+
+    @MainActor
+    func testS206RenameBuildsUpdateRequestAndBlocksDuplicateName() {
+        let saved = SavedSearchSnapshot.s206Fixture(id: 77, name: "Finance", pinned: true, updatedAt: 10)
+        var model = SmartListEditorModel(
+            mode: .rename,
+            savedSearch: saved,
+            existingNames: ["finance", "tax"],
+            resultCountState: .loaded(12)
+        )
+
+        XCTAssertNil(model.validationMessage)
+        model.name = " Tax "
+        XCTAssertEqual(model.validationMessage, "A Smart List named \"Tax\" already exists.")
+        XCTAssertFalse(model.canSubmit)
+
+        model.name = " Quarter Plan "
+        let request = model.updateRequest
+
+        XCTAssertNil(model.validationMessage)
+        XCTAssertEqual(model.primaryActionTitle, "Save changes")
+        XCTAssertEqual(request.id, 77)
+        XCTAssertEqual(request.name, "Quarter Plan")
+        XCTAssertEqual(request.query.query, "Finance")
+        XCTAssertEqual(request.query.filter.tags, ["finance"])
+        XCTAssertTrue(request.pinned)
+    }
+
+    @MainActor
+    func testS206DuplicateCreatesUnpinnedRequestWithoutMutatingOriginal() {
+        let saved = SavedSearchSnapshot.s206Fixture(id: 77, name: "Finance", pinned: true, updatedAt: 10)
+        var model = SmartListEditorModel(
+            mode: .duplicate,
+            savedSearch: saved,
+            existingNames: ["finance"],
+            resultCountState: .failed
+        )
+
+        XCTAssertEqual(model.name, "Finance Copy")
+        XCTAssertEqual(model.resultCountSummary, "Result count unavailable")
+        XCTAssertEqual(model.createRequest.name, "Finance Copy")
+        XCTAssertFalse(model.createRequest.pinned)
+        XCTAssertTrue(saved.pinned)
+
+        model.name = "Finance"
+        XCTAssertEqual(model.validationMessage, "A Smart List named \"Finance\" already exists.")
+        XCTAssertFalse(model.canSubmit)
+    }
+
+    @MainActor
+    func testS206LoadSmartListsUsesCoreListAndBuildsPinnedSortedSidebar() async {
+        let pinnedOld = SavedSearchSnapshot.s206Fixture(id: 1, name: "Pinned Old", pinned: true, updatedAt: 10)
+        let pinnedNew = SavedSearchSnapshot.s206Fixture(id: 2, name: "Pinned New", pinned: true, updatedAt: 20)
+        let alpha = SavedSearchSnapshot.s206Fixture(id: 3, name: "Alpha", pinned: false, updatedAt: 30)
+        let store = S206RecordingSavedSearchStore(results: [.listSuccess([alpha, pinnedOld, pinnedNew])])
+        var content = MainRepositoryContentView(
+            opening: .s203SavedSearchFixture(repoPath: "/tmp/repo", tree: .s203SavedSearchFixtureTree()),
+            state: .list,
+            onImport: {},
+            onDropImport: { _, _ in },
+            savedSearchStore: store,
+            fileLister: MainListRecordingFileLister(results: []),
+            fileDetailer: MainListRecordingFileDetailer(results: []),
+            errorMapper: MainListRecordingErrorMapper(mapping: .s203SavedSearchDbFixture())
+        )
+
+        await content.loadSmartLists()
+
+        let recordedRepoPaths = await store.recordedListRepoPaths()
+        XCTAssertNil(content.smartListLoadError)
+        XCTAssertEqual(recordedRepoPaths, ["/tmp/repo"])
+        XCTAssertEqual(content.regularSidebarRows.map(\.displayName), ["inbox"])
+        XCTAssertEqual(content.smartListRows.map(\.displayName), ["Pinned New", "Pinned Old", "Alpha"])
+        XCTAssertEqual(content.smartListRows.compactMap(\.savedSearchID), [2, 1, 3])
+    }
+
+    @MainActor
+    func testS206LoadSmartListsFailureKeepsNormalSidebarRecoverable() async {
+        let mapping = CoreErrorMappingSnapshot.s203SavedSearchDbFixture()
+        let mapper = MainListRecordingErrorMapper(mapping: mapping)
+        let store = S206RecordingSavedSearchStore(results: [.listFailure(CoreError.Db(message: "db locked"))])
+        var content = MainRepositoryContentView(
+            opening: .s203SavedSearchFixture(repoPath: "/tmp/repo", tree: .s203SavedSearchFixtureTree()),
+            state: .list,
+            onImport: {},
+            onDropImport: { _, _ in },
+            savedSearchStore: store,
+            fileLister: MainListRecordingFileLister(results: []),
+            fileDetailer: MainListRecordingFileDetailer(results: []),
+            errorMapper: mapper
+        )
+
+        await content.loadSmartLists()
+
+        let recordedErrors = await mapper.recordedErrors()
+        XCTAssertEqual(content.regularSidebarRows.map(\.displayName), ["inbox"])
+        XCTAssertEqual(content.smartListRows, [])
+        XCTAssertEqual(content.smartListLoadError, mapping)
+        XCTAssertEqual(recordedErrors, [CoreError.Db(message: "db locked")])
+    }
+
+    func testS206DeleteCopyStatesFilesAreNotMovedOrDeleted() {
+        let saved = SavedSearchSnapshot.s206Fixture(id: 77, name: "Finance", pinned: true, updatedAt: 10)
+        let model = SmartListEditorModel(
+            mode: .delete,
+            savedSearch: saved,
+            existingNames: ["finance"],
+            resultCountState: .loaded(3)
+        )
+
+        XCTAssertEqual(
+            SmartListEditorModel.deleteSafetyMessage,
+            "This only removes the Smart List. Files will not be deleted or moved."
+        )
+        XCTAssertNil(model.validationMessage)
+        XCTAssertEqual(model.primaryActionTitle, "Delete Smart List")
+        XCTAssertTrue(model.canSubmit)
+    }
 }
 
 private func s118NamingRequest(urls: [URL]) -> ImportEntryRequest {
@@ -211,6 +329,61 @@ private extension SavedSearchSnapshot {
             createdAt: 1_700_000_000,
             updatedAt: 1_700_000_000
         )
+    }
+
+    static func s206Fixture(
+        id: Int64,
+        name: String,
+        pinned: Bool,
+        updatedAt: Int64
+    ) -> SavedSearchSnapshot {
+        let request = SearchQueryRequestSnapshot.s203SavedSearchFixture(query: name)
+        return SavedSearchSnapshot(
+            id: id,
+            name: name,
+            query: SavedSearchQuerySnapshot(request: request),
+            icon: "magnifyingglass",
+            color: nil,
+            pinned: pinned,
+            createdAt: 1_700_000_000,
+            updatedAt: updatedAt
+        )
+    }
+}
+
+private actor S206RecordingSavedSearchStore: CoreSavedSearchCRUD {
+    enum Result {
+        case listSuccess([SavedSearchSnapshot])
+        case listFailure(Error)
+    }
+
+    private var results: [Result]
+    private var listRepoPaths: [String] = []
+
+    init(results: [Result]) {
+        self.results = results
+    }
+
+    func createSavedSearch(
+        repoPath _: String,
+        request _: CreateSavedSearchRequestSnapshot
+    ) async throws -> SavedSearchSnapshot {
+        throw CoreError.Internal(message: "create_saved_search is not used by S2-06 list tests")
+    }
+
+    func listSavedSearches(repoPath: String) async throws -> [SavedSearchSnapshot] {
+        listRepoPaths.append(repoPath)
+        guard !results.isEmpty else { return [] }
+        switch results.removeFirst() {
+        case let .listSuccess(saved):
+            return saved
+        case let .listFailure(error):
+            throw error
+        }
+    }
+
+    func recordedListRepoPaths() -> [String] {
+        listRepoPaths
     }
 }
 

@@ -1,0 +1,120 @@
+**Checkpoint Summary**
+
+当前任务是 AreaMatrix `4-1/task-103` repair retry，第 2 次尝试。目标只修复上次验收失败的两个本任务范围问题：
+
+1. S2-06 Smart List 搜索 banner 缺少 `Edit` 入口。
+2. Edit query 未接入 query parse diagnostic，非法 query 时不能禁用 `Save changes`，也缺少 S2-05 同类错误摘要。
+
+**已确认约束**
+
+- 只允许改：
+  - `apps/macos/AreaMatrix/**`
+  - `apps/macos/AreaMatrixTests/**`
+- 禁止触碰：
+  - `core/src/**`
+- Manifest validation 上限仍是：
+  - `./dev check task 4-1/task-103`
+- 不要升级到 `cargo test --workspace`、`./dev check core`、`./dev check all`。
+- High risk 已由自动执行器静默授权，但报告里仍要说明风险、验证、回滚。
+- 本 task 只做 S2-06 + C2-03，不实现 C2-04 或同页其他能力。
+
+**已做的实现方向**
+
+主要改动集中在 Swift UI / model：
+
+- `apps/macos/AreaMatrix/Models/MainListSystemActions.swift`
+  - 给 `SmartListEditorModel` 加入 query diagnostic 状态。
+  - `editQuery` 模式下会触发 query parse/check。
+  - 非法 query 或 diagnostic 未完成时，`canSubmit` 不允许保存。
+  - 增加 diagnostic unavailable / page apply 逻辑。
+
+- `apps/macos/AreaMatrix/Views/Main/MainFileActionRoutingSheet.swift`
+  - `SmartListManagementSheet` 接入 `searchQuerying`。
+  - `.task(id:)` 根据 query 触发真实 `searchFiles` diagnostic。
+  - 增加 `QueryDiagnosticSummary`，复用 S2-05 query-error 风格/信息。
+  - 避免生产路径 mock。
+
+- `apps/macos/AreaMatrix/Views/Main/MainRepositoryContentActionRouting.swift`
+  - 增加 `selectedSmartList` / `openSelectedSmartListEditor`，支持当前选中 Smart List 从 banner 打开 edit query。
+
+- `apps/macos/AreaMatrix/Views/Main/MainRepositoryContentCategoryMoveRefresh.swift`
+  - 增加 Smart List banner `Edit` button。
+
+- `apps/macos/AreaMatrix/Views/Main/MainRepositoryContentNoteDrafts.swift`
+  - banner 中接入 Smart List `Edit` 入口。
+
+- `apps/macos/AreaMatrix/Views/Main/MainCurrentListErrorPane.swift`
+  - 提供/调整 query diagnostic 摘要复用所需的小组件或可见性。
+
+**测试/验证现状**
+
+已经跑过一次：
+
+```bash
+./dev check task 4-1/task-103
+```
+
+当时通过了，包括 prompt doctor、diff check、xcodebuild build。但随后又继续修了测试文件里的 Swift concurrency 编译问题，所以这个 validation 结果现在已经是“旧证据”，需要最后重新跑。
+
+之后尝试跑 targeted XCTest：
+
+```bash
+xcodebuild \
+  -project apps/macos/AreaMatrix.xcodeproj \
+  -scheme AreaMatrix \
+  -destination 'platform=macOS' \
+  -derivedDataPath /tmp/AreaMatrixDerivedData-task103 \
+  -only-testing:AreaMatrixTests/SmartListQueryDiagnosticPageFeatureTests \
+  test CODE_SIGNING_ALLOWED=NO
+```
+
+失败点不是新增业务逻辑本身，而是 test target 里已有/相邻测试的 Swift concurrency 编译问题，例如 XCTest autoclosure 里不能直接 `await`。
+
+已顺手修过部分测试 await 问题：
+
+- `apps/macos/AreaMatrixTests/ImportBatchNamingStrategyTests.swift`
+- `apps/macos/AreaMatrixTests/ImportFolderCoreBridgeModeTests.swift`
+- `apps/macos/AreaMatrixTests/MainRepoExternalRemovalTests.swift`
+
+但 targeted XCTest 仍可能还有类似 compile error，需要下一轮继续看最新输出。
+
+**当前剩余工作**
+
+1. 先跑：
+   ```bash
+   git status --short
+   git diff --name-only
+   git diff --name-only -- core/src
+   ```
+   确认没有触碰 Forbidden Touches。
+
+2. 重新跑 targeted XCTest，看是否还有 test compile 问题：
+   ```bash
+   xcodebuild -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS' -derivedDataPath /tmp/AreaMatrixDerivedData-task103 -only-testing:AreaMatrixTests/SmartListQueryDiagnosticPageFeatureTests test CODE_SIGNING_ALLOWED=NO
+   ```
+
+3. 如果 targeted XCTest 继续因为已有测试 `await` autoclosure 报错，按同样模式修测试文件：把 `await something()` 先赋给局部变量，再传给 `XCTAssertEqual` / `XCTAssertTrue` 等断言。
+
+4. 最后必须重新跑 manifest 要求的验证：
+   ```bash
+   ./dev check task 4-1/task-103
+   ```
+
+5. 最终报告要按用户要求输出：
+   - 一、执行结论
+   - 二、执行范围
+   - 三、完成情况
+   - 四、工程质量
+   - 五、验证情况
+   - 六、风险与后续
+
+**注意事项**
+
+- 不要回滚已有脏工作区；很多改动来自上一轮执行/本轮修复，应继续在其上收口。
+- 文件长度之前有意控制在 500 行以内，尤其：
+  - `MainFileActionRoutingSheet.swift`
+  - `MainRepositoryContentNoteDrafts.swift`
+  - `MainRepositoryContentActionRouting.swift`
+- 不要碰 `core/src/**`。
+- 不要新增 C2-04 行为。
+- 如果 `./dev check task 4-1/task-103` 通过，但 targeted XCTest 因仓库既有测试 target 编译问题失败，最终报告中要明确区分：manifest validation 通过/失败，以及额外 targeted XCTest 的失败原因。

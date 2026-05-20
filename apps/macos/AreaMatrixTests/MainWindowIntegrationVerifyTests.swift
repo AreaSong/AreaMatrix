@@ -169,7 +169,8 @@ final class MainWindowIntegrationVerifyTests: XCTestCase {
         await model.runSearch(query: "missing", scope: .current, sort: .newestImported, sidebarRow: row, filters: .empty)
         XCTAssertEqual(model.searchPageDestination?.pageID, "S2-04")
         XCTAssertEqual(model.files, [])
-        XCTAssertEqual(await searcher.recordedRequests().first?.request.query, "missing")
+        let firstRecordedQuery = await searcher.recordedRequests().first?.request.query
+        XCTAssertEqual(firstRecordedQuery, "missing")
         model.openSavedSearchSheet()
         XCTAssertEqual(model.pendingSearchDestination?.pageID, "S2-03")
         model.clearPendingSearchDestination()

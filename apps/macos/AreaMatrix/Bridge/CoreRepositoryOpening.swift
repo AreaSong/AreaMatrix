@@ -46,6 +46,8 @@ struct RepositoryCurrentCategoryFilesResult: Equatable {
 }
 
 struct RepositoryTreeNodeSnapshot: Equatable, Identifiable {
+    static let savedSearchSidebarIDPrefix = "smart-list-"
+
     var slug: String
     var displayName: String
     var kind: String
@@ -98,7 +100,7 @@ struct RepositoryTreeNodeSnapshot: Equatable, Identifiable {
     }
 
     static func savedSearchSidebarID(_ id: Int64) -> String {
-        "smart-list-\(id)"
+        "\(savedSearchSidebarIDPrefix)\(id)"
     }
 
     func insertingSavedSearch(_ savedSearch: SavedSearchSnapshot) -> RepositoryTreeNodeSnapshot {
@@ -113,6 +115,12 @@ struct RepositoryTreeNodeSnapshot: Equatable, Identifiable {
             depth: 1,
             children: []
         ))
+        return updated
+    }
+
+    func removingSavedSearch(id: Int64) -> RepositoryTreeNodeSnapshot {
+        var updated = self
+        updated.children.removeAll { $0.id == Self.savedSearchSidebarID(id) }
         return updated
     }
 
@@ -186,9 +194,21 @@ struct RepositorySidebarRowSnapshot: Equatable, Identifiable {
         node.kind == "SmartList"
     }
 
+    var savedSearchID: Int64? {
+        guard isSmartList else { return nil }
+        return id.removingPrefix(RepositoryTreeNodeSnapshot.savedSearchSidebarIDPrefix).flatMap(Int64.init)
+    }
+
     func contains(_ file: FileEntrySnapshot) -> Bool {
         guard let pathFilterPrefix else { return true }
         return file.path == pathFilterPrefix || file.path.hasPrefix("\(pathFilterPrefix)/")
+    }
+}
+
+private extension String {
+    func removingPrefix(_ prefix: String) -> String? {
+        guard hasPrefix(prefix) else { return nil }
+        return String(dropFirst(prefix.count))
     }
 }
 

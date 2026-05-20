@@ -5,7 +5,25 @@ protocol CoreSavedSearchCRUD: Sendable {
         repoPath: String,
         request: CreateSavedSearchRequestSnapshot
     ) async throws -> SavedSearchSnapshot
+    func updateSavedSearch(
+        repoPath: String,
+        request: UpdateSavedSearchRequestSnapshot
+    ) async throws -> SavedSearchSnapshot
+    func deleteSavedSearch(repoPath: String, savedSearchID: Int64) async throws
     func listSavedSearches(repoPath: String) async throws -> [SavedSearchSnapshot]
+}
+
+extension CoreSavedSearchCRUD {
+    func updateSavedSearch(
+        repoPath _: String,
+        request _: UpdateSavedSearchRequestSnapshot
+    ) async throws -> SavedSearchSnapshot {
+        throw CoreError.Internal(message: "update_saved_search is not available in this saved search store")
+    }
+
+    func deleteSavedSearch(repoPath _: String, savedSearchID _: Int64) async throws {
+        throw CoreError.Internal(message: "delete_saved_search is not available in this saved search store")
+    }
 }
 
 struct SavedSearchQuerySnapshot: Equatable {
@@ -27,6 +45,15 @@ struct SavedSearchQuerySnapshot: Equatable {
 }
 
 struct CreateSavedSearchRequestSnapshot: Equatable {
+    var name: String
+    var query: SavedSearchQuerySnapshot
+    var icon: String?
+    var color: String?
+    var pinned: Bool
+}
+
+struct UpdateSavedSearchRequestSnapshot: Equatable {
+    var id: Int64
     var name: String
     var query: SavedSearchQuerySnapshot
     var icon: String?
@@ -67,6 +94,22 @@ extension CoreBridge: CoreFileRenaming, CoreSavedSearchCRUD {
         return SavedSearchSnapshot(coreSavedSearch: saved)
     }
 
+    func updateSavedSearch(
+        repoPath: String,
+        request: UpdateSavedSearchRequestSnapshot
+    ) async throws -> SavedSearchSnapshot {
+        let saved = try await Task.detached(priority: .userInitiated) {
+            try updateCoreSavedSearch(repoPath: repoPath, request: request)
+        }.value
+        return SavedSearchSnapshot(coreSavedSearch: saved)
+    }
+
+    func deleteSavedSearch(repoPath: String, savedSearchID: Int64) async throws {
+        try await Task.detached(priority: .userInitiated) {
+            try deleteCoreSavedSearch(repoPath: repoPath, savedSearchID: savedSearchID)
+        }.value
+    }
+
     func listSavedSearches(repoPath: String) async throws -> [SavedSearchSnapshot] {
         try await Task.detached(priority: .userInitiated) {
             try listCoreSavedSearches(repoPath: repoPath).map(SavedSearchSnapshot.init(coreSavedSearch:))
@@ -83,6 +126,17 @@ private func createCoreSavedSearch(
     request: CreateSavedSearchRequestSnapshot
 ) throws -> SavedSearch {
     try createSavedSearch(repoPath: repoPath, request: CreateSavedSearchRequest(request))
+}
+
+private func updateCoreSavedSearch(
+    repoPath: String,
+    request: UpdateSavedSearchRequestSnapshot
+) throws -> SavedSearch {
+    try updateSavedSearch(repoPath: repoPath, request: UpdateSavedSearchRequest(request))
+}
+
+private func deleteCoreSavedSearch(repoPath: String, savedSearchID: Int64) throws {
+    try deleteSavedSearch(repoPath: repoPath, savedSearchId: savedSearchID)
 }
 
 private func listCoreSavedSearches(repoPath: String) throws -> [SavedSearch] {
@@ -108,6 +162,19 @@ extension SavedSearchQuery {
 extension CreateSavedSearchRequest {
     init(_ snapshot: CreateSavedSearchRequestSnapshot) {
         self.init(
+            name: snapshot.name,
+            query: SavedSearchQuery(snapshot.query),
+            icon: snapshot.icon,
+            color: snapshot.color,
+            pinned: snapshot.pinned
+        )
+    }
+}
+
+extension UpdateSavedSearchRequest {
+    init(_ snapshot: UpdateSavedSearchRequestSnapshot) {
+        self.init(
+            id: snapshot.id,
             name: snapshot.name,
             query: SavedSearchQuery(snapshot.query),
             icon: snapshot.icon,

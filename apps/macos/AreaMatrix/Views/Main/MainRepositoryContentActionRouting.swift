@@ -35,16 +35,10 @@ extension MainRepositoryContentView {
             onRenameFirstFromChangeCategory: { fileID, targetCategory in
                 fileListModel.beginRenameFromChangeCategory(fileID: fileID, targetCategory: targetCategory)
             },
-            onOpenChangeCategoryPermissionRecovery: {
-                onOpenChangeCategoryPermissionRecovery()
-            },
+            onOpenChangeCategoryPermissionRecovery: onOpenChangeCategoryPermissionRecovery,
             onDelete: submitDelete,
             onApplyICloudConflict: applyICloudConflict,
-            onCollectDiagnostics: {
-                Task {
-                    await fileListModel.collectCurrentListDiagnostics()
-                }
-            }
+            onCollectDiagnostics: { Task { await fileListModel.collectCurrentListDiagnostics() } }
         )
     }
 
@@ -70,11 +64,10 @@ extension MainRepositoryContentView {
                 request: request,
                 repoPath: opening.config.repoPath,
                 resultCountState: savedSearchResultCountState,
+                savedSearchStore: savedSearchStore,
+                errorMapper: errorMapper,
                 onCancel: fileListModel.clearPendingSearchDestination,
-                onSaved: { saved in
-                    selectSavedSearch(saved)
-                    fileListModel.clearPendingSearchDestination()
-                },
+                onSaved: saveAndCloseSearchSheet,
                 onEditFilters: {
                     fileListModel.clearPendingSearchDestination()
                     isSearchFiltersPresented = true
@@ -95,6 +88,22 @@ extension MainRepositoryContentView {
         case .searchEmpty, .queryError:
             EmptyView()
         }
+    }
+
+    func smartListManagementSheet(_ route: SmartListManagementRoute) -> some View {
+        SmartListManagementSheet(
+            route: route,
+            repoPath: opening.config.repoPath,
+            savedSearches: sortedSavedSearches,
+            resultCountState: savedSearchResultCountState,
+            savedSearchStore: savedSearchStore,
+            searchQuerying: fileListModel.searchQuerying,
+            errorMapper: errorMapper,
+            onCancel: { cancelSmartListManagement(route) },
+            onSaved: applyManagedSmartList,
+            onDeleted: deleteManagedSmartList,
+            onEditFilters: beginSmartListFilterEditing
+        )
     }
 
     private func file(for fileID: Int64) -> FileEntrySnapshot? {
@@ -123,15 +132,47 @@ extension MainRepositoryContentView {
         }
     }
 
+    private func saveAndCloseSearchSheet(_ saved: SavedSearchSnapshot) {
+        selectSavedSearch(saved)
+        fileListModel.clearPendingSearchDestination()
+    }
+
     private func selectSavedSearch(_ saved: SavedSearchSnapshot) {
+        applySavedSearchToSidebar(saved)
+        selectAppliedSavedSearch(saved)
+    }
+
+    var selectedSmartList: SavedSearchSnapshot? {
+        savedSearchesBySidebarID[selectedSidebarID]
+    }
+
+    func openSelectedSmartListEditor() {
+        guard let saved = selectedSmartList else { return }
+        openSmartListManagement(.editQuery, saved: saved)
+    }
+
+    private func applyManagedSmartList(_ saved: SavedSearchSnapshot) {
+        fileListModel.cancelSmartListFilterDraft()
+        applySavedSearchToSidebar(saved)
+        if selectedSidebarID == RepositoryTreeNodeSnapshot.savedSearchSidebarID(saved.id) {
+            Task { await restoreSavedSearch(saved) }
+        }
+        smartListManagementRoute = nil
+    }
+
+    private func applySavedSearchToSidebar(_ saved: SavedSearchSnapshot) {
+        let sidebarID = RepositoryTreeNodeSnapshot.savedSearchSidebarID(saved.id)
+        savedSearchesBySidebarID[sidebarID] = saved
+        rebuildSmartListSidebar()
+    }
+
+    private func selectAppliedSavedSearch(_ saved: SavedSearchSnapshot) {
         filterText = saved.query.query
         searchScope = saved.query.scope
         searchSort = saved.query.sort
         searchFilters = saved.query.filter
-        savedSearchesBySidebarID[RepositoryTreeNodeSnapshot.savedSearchSidebarID(saved.id)] = saved
         fileListModel.cancelSmartListFilterDraft()
         fileListModel.enterSearch(context: .smartList(id: saved.id, name: saved.name))
-        repositoryTree = repositoryTree.insertingSavedSearch(saved)
         selectedSidebarID = RepositoryTreeNodeSnapshot.savedSearchSidebarID(saved.id)
         selectedFileIDs = []
     }
@@ -141,12 +182,88 @@ extension MainRepositoryContentView {
             return selectedSidebarRow.isSmartList
         }
 
+        await restoreSavedSearch(saved)
+        return true
+    }
+
+    func restoreSavedSearch(_ saved: SavedSearchSnapshot) async {
         filterText = saved.query.query
         searchScope = saved.query.scope
         searchSort = saved.query.sort
         searchFilters = saved.query.filter
         await fileListModel.restoreSavedSearch(saved)
-        return true
+    }
+
+    func loadSmartLists() async {
+        do {
+            let saved = try await savedSearchStore.listSavedSearches(repoPath: opening.config.repoPath)
+            await MainActor.run {
+                smartListLoadError = nil
+                savedSearchesBySidebarID = Dictionary(
+                    uniqueKeysWithValues: saved.map {
+                        (RepositoryTreeNodeSnapshot.savedSearchSidebarID($0.id), $0)
+                    }
+                )
+                rebuildSmartListSidebar()
+            }
+        } catch {
+            let mapped = await mapSmartListError(error)
+            await MainActor.run {
+                smartListLoadError = mapped
+            }
+        }
+    }
+
+    func openSmartListManagement(
+        _ mode: SmartListManagementMode,
+        saved: SavedSearchSnapshot,
+        draftFilters: SearchFilterStateSnapshot? = nil
+    ) {
+        smartListManagementRoute = SmartListManagementRoute(mode: mode, savedSearch: saved, draftFilters: draftFilters)
+    }
+
+    private func cancelSmartListManagement(_ route: SmartListManagementRoute) {
+        if route.mode == .editQuery {
+            fileListModel.cancelSmartListFilterDraft()
+        }
+        smartListManagementRoute = nil
+    }
+
+    private func deleteManagedSmartList(_ saved: SavedSearchSnapshot) {
+        let sidebarID = RepositoryTreeNodeSnapshot.savedSearchSidebarID(saved.id)
+        savedSearchesBySidebarID.removeValue(forKey: sidebarID)
+        repositoryTree = repositoryTree.removingSavedSearch(id: saved.id)
+        if selectedSidebarID == sidebarID {
+            selectedSidebarID = Self.defaultSelectedSidebarID(from: regularSidebarRows)
+            clearSearch()
+        }
+        smartListManagementRoute = nil
+    }
+
+    private func beginSmartListFilterEditing(_ saved: SavedSearchSnapshot, filters: SearchFilterStateSnapshot) {
+        fileListModel.beginSmartListFilterDraft(id: saved.id, name: saved.name, filters: filters)
+        smartListManagementRoute = nil
+        isSearchFiltersPresented = true
+    }
+
+    private func rebuildSmartListSidebar() {
+        var tree = repositoryTree
+        for row in smartListRows {
+            if let id = row.savedSearchID {
+                tree = tree.removingSavedSearch(id: id)
+            }
+        }
+        for saved in sortedSavedSearches {
+            tree = tree.insertingSavedSearch(saved)
+        }
+        repositoryTree = tree
+    }
+
+    private func mapSmartListError(_ error: Error) async -> CoreErrorMappingSnapshot {
+        if let coreError = error as? CoreError {
+            return await errorMapper.mapCoreError(coreError)
+        }
+        return await errorMapper.mapCoreError(CoreError.Internal(message: error.localizedDescription))
     }
 
     private func previewChangeCategory(fileID: Int64, targetCategory: String) {
@@ -270,13 +387,9 @@ struct SearchEmptyRouteView: View {
         return "No files match \(activeFilterText)."
     }
 
-    private var shouldShowFilterShortcuts: Bool {
-        request.filters.activeFilterCount > 0 && indexStatus != .indexing
-    }
+    private var shouldShowFilterShortcuts: Bool { request.filters.activeFilterCount > 0 && indexStatus != .indexing }
 
-    private var querySummary: String {
-        request.query.isEmpty ? "None" : request.query
-    }
+    private var querySummary: String { request.query.isEmpty ? "None" : request.query }
 
     private var filterSummary: String {
         let chips = SearchFilterChips.items(for: request.filters).map(\.label)
@@ -313,9 +426,7 @@ extension MainRepositoryContentView {
         SearchFilterStateRouting.assign(updated, searchFilters: &searchFilters, fileListModel: fileListModel)
     }
 
-    func searchAllFileTypesFromEmptyState() {
-        removeSearchFilterFromEmptyState(.fileKind)
-    }
+    func searchAllFileTypesFromEmptyState() { removeSearchFilterFromEmptyState(.fileKind) }
 
     func applyQuerySuggestion(_ query: String) {
         filterText = query

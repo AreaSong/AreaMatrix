@@ -1,6 +1,46 @@
 import Foundation
+import SwiftUI
 
 extension MainRepositoryContentView {
+    var regularSidebarRows: [RepositorySidebarRowSnapshot] {
+        repositoryTree.sidebarRows.filter { !$0.isSmartList }
+    }
+
+    var smartListRows: [RepositorySidebarRowSnapshot] {
+        repositoryTree.sidebarRows.filter(\.isSmartList)
+    }
+
+    var sortedSavedSearches: [SavedSearchSnapshot] {
+        savedSearchesBySidebarID.values.sorted { lhs, rhs in
+            if lhs.pinned != rhs.pinned { return lhs.pinned && !rhs.pinned }
+            if lhs.pinned { return lhs.updatedAt > rhs.updatedAt }
+            return lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
+        }
+    }
+
+    var sidebar: some View {
+        List(selection: $selectedSidebarID) {
+            ForEach(regularSidebarRows) { row in
+                sidebarRow(row)
+                    .tag(row.id)
+            }
+            if !smartListRows.isEmpty || smartListLoadError != nil {
+                Section("Smart Lists") {
+                    ForEach(smartListRows) { row in
+                        sidebarRow(row)
+                            .tag(row.id)
+                            .contextMenu {
+                                smartListContextMenu(for: row)
+                            }
+                    }
+                    smartListErrorRow
+                }
+            }
+        }
+        .listStyle(.sidebar)
+        .frame(minWidth: 180, idealWidth: 220, maxWidth: 260)
+    }
+
     @MainActor
     func refreshAfterCategoryMove(_ movedFile: FileEntrySnapshot) {
         Task {
@@ -40,6 +80,80 @@ extension MainRepositoryContentView {
         } catch {
             return nil
         }
+    }
+
+    private func sidebarRow(_ row: RepositorySidebarRowSnapshot) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: row.isSmartList ? "folder.badge.gearshape" : "folder")
+                .foregroundStyle(row.isSmartList ? Color.accentColor : Color.secondary)
+            Text(row.displayName)
+                .padding(.leading, CGFloat(row.depth) * 14)
+            Spacer()
+            Text(row.isSmartList ? "--" : "\(row.totalFileCount)")
+                .foregroundStyle(.secondary)
+        }
+        .modifier(ImportDropTargetModifier(
+            target: row.importDropTarget,
+            dropPreviewModel: dropPreviewModel,
+            onDropImport: { urls, target in
+                onDropImport(urls, target.entryDestination)
+            },
+            isEnabled: !opening.isReadOnly
+        ))
+        .help(row.importDropTarget.sidebarHelp)
+        .accessibilityLabel(sidebarAccessibilityLabel(row))
+        .accessibilityHint(row.importDropTarget.sidebarHelp)
+    }
+
+    @ViewBuilder
+    private var smartListErrorRow: some View {
+        if let smartListLoadError {
+            HStack(spacing: 8) {
+                Label("Could not load Smart Lists", systemImage: "exclamationmark.triangle")
+                Spacer()
+                Button("Retry") {
+                    Task { await loadSmartLists() }
+                }
+            }
+            .font(.callout)
+            .foregroundStyle(.red)
+            .accessibilityIdentifier("S2-06-smart-list-load-error")
+            .accessibilityHint(smartListLoadError.suggestedAction)
+        }
+    }
+
+    @ViewBuilder
+    var smartListBannerEditButton: some View {
+        if selectedSmartList != nil {
+            Button("Edit", action: openSelectedSmartListEditor)
+        }
+    }
+
+    @ViewBuilder
+    private func smartListContextMenu(for row: RepositorySidebarRowSnapshot) -> some View {
+        if let saved = savedSearchesBySidebarID[row.id] {
+            Button("Open") {
+                selectedSidebarID = row.id
+            }
+            Button("Rename...") {
+                openSmartListManagement(.rename, saved: saved)
+            }
+            Button("Duplicate...") {
+                openSmartListManagement(.duplicate, saved: saved)
+            }
+            Button("Edit query...") {
+                openSmartListManagement(.editQuery, saved: saved)
+            }
+            Button("Delete...", role: .destructive) {
+                openSmartListManagement(.delete, saved: saved)
+            }
+        }
+    }
+
+    private func sidebarAccessibilityLabel(_ row: RepositorySidebarRowSnapshot) -> String {
+        guard row.isSmartList else { return "\(row.displayName) \(row.totalFileCount)" }
+        let pin = savedSearchesBySidebarID[row.id]?.pinned == true ? "Pinned" : "Not pinned"
+        return "Smart List \(row.displayName), result count unavailable, \(pin)"
     }
 }
 

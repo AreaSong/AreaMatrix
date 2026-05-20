@@ -220,6 +220,29 @@ struct QuerySyntaxHintPopover: View {
     }
 }
 
+struct QueryDiagnosticSummary: View {
+    let diagnostic: SearchQueryDiagnosticSnapshot
+    let query: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label("Query could not be parsed", systemImage: "exclamationmark.triangle")
+                .font(.callout.weight(.semibold))
+            metadataRow("Query", QueryTokenHighlighter.highlighted(query: query, diagnostic: diagnostic))
+            metadataRow("Problem", diagnostic.problemText)
+            if let suggestion = diagnostic.safeSuggestion {
+                metadataRow("Suggestion", suggestion)
+            }
+        }
+        .padding(12)
+        .background(Color.red.opacity(0.08))
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("S2-05-query-error")
+        .accessibilityHint(diagnostic.problemAccessibilityHint)
+    }
+}
+
 enum QueryTokenHighlighter {
     static func highlighted(query: String, diagnostic: SearchQueryDiagnosticSnapshot) -> String {
         if let start = diagnostic.start,

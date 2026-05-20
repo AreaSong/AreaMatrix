@@ -20,6 +20,8 @@ struct MainRepositoryContentView: View {
     let onOpenNoteFile: (String) -> Void
     let onOpenChangeCategoryPermissionRecovery: () -> Void
     let treeLister: any CoreRepositoryTreeListing
+    let savedSearchStore: any CoreSavedSearchCRUD
+    let errorMapper: any CoreErrorMapping
     let externalCreatedEvent: MainExternalCreatedFileEvent?
     let onExternalCreatedEventHandled: (MainExternalCreatedFileEvent) -> Void
     let importProgressItems: [ImportBatchProgressSnapshot.Item]
@@ -35,6 +37,8 @@ struct MainRepositoryContentView: View {
     @State var searchFilters: SearchFilterStateSnapshot = .empty
     @State var isSearchFiltersPresented = false
     @State var savedSearchesBySidebarID: [String: SavedSearchSnapshot] = [:]
+    @State var smartListLoadError: CoreErrorMappingSnapshot?
+    @State var smartListManagementRoute: SmartListManagementRoute?
     @FocusState var isSearchFieldFocused: Bool
     @StateObject var dropPreviewModel: ImportDropPreviewModel
     @StateObject var detailNoteModel: DetailNoteModel
@@ -82,6 +86,10 @@ extension MainRepositoryContentView {
                 pendingMovedFileFocusID = nil
             }
         }
+        .task(id: opening.config.repoPath) {
+            guard state == .list else { return }
+            await loadSmartLists()
+        }
         .task(id: externalCreatedEvent?.id) {
             guard let externalCreatedEvent else { return }
             await fileListModel.syncExternalCreated(externalCreatedEvent)
@@ -125,6 +133,22 @@ extension MainRepositoryContentView {
         }
         .sheet(item: actionDestinationBinding, content: actionRoutingSheet)
         .sheet(item: searchDestinationBinding, content: searchRoutingSheet)
+        .sheet(item: $smartListManagementRoute, content: smartListManagementSheet)
+        .onChange(of: isSearchFiltersPresented) { _, presented in
+            guard !presented else { return }
+            reopenSmartListEditorFromDraftIfNeeded()
+        }
+    }
+
+    func reopenSmartListEditorFromDraftIfNeeded() {
+        guard let draft = fileListModel.smartListFilterDraft else { return }
+        let sidebarID = RepositoryTreeNodeSnapshot.savedSearchSidebarID(draft.id)
+        guard let saved = savedSearchesBySidebarID[sidebarID] else { return }
+        smartListManagementRoute = SmartListManagementRoute(
+            mode: .editQuery,
+            savedSearch: saved,
+            draftFilters: draft.filters
+        )
     }
 
     private var toolbar: some View {
@@ -192,38 +216,6 @@ extension MainRepositoryContentView {
         }
     }
 
-    private var sidebar: some View {
-        List(selection: $selectedSidebarID) {
-            ForEach(repositoryTree.sidebarRows) { row in
-                sidebarRow(row)
-                    .tag(row.id)
-            }
-        }
-        .listStyle(.sidebar)
-        .frame(minWidth: 180, idealWidth: 220, maxWidth: 260)
-    }
-
-    private func sidebarRow(_ row: RepositorySidebarRowSnapshot) -> some View {
-        HStack(spacing: 6) {
-            Text(row.displayName)
-                .padding(.leading, CGFloat(row.depth) * 14)
-            Spacer()
-            Text("\(row.totalFileCount)")
-                .foregroundStyle(.secondary)
-        }
-        .modifier(ImportDropTargetModifier(
-            target: row.importDropTarget,
-            dropPreviewModel: dropPreviewModel,
-            onDropImport: { urls, target in
-                onDropImport(urls, target.entryDestination)
-            },
-            isEnabled: !opening.isReadOnly
-        ))
-        .help(row.importDropTarget.sidebarHelp)
-        .accessibilityLabel("\(row.displayName) \(row.totalFileCount)")
-        .accessibilityHint(row.importDropTarget.sidebarHelp)
-    }
-
     static func defaultSelectedSidebarID(from rows: [RepositorySidebarRowSnapshot]) -> String {
         rows.first { $0.node.slug == "inbox" }?.id ?? rows.first?.id ?? "__root__"
     }
@@ -256,6 +248,7 @@ extension MainRepositoryContentView {
         onOpenNoteFile: @escaping (String) -> Void = { _ in },
         onOpenChangeCategoryPermissionRecovery: @escaping () -> Void = {},
         treeLister: any CoreRepositoryTreeListing = CoreBridge(),
+        savedSearchStore: any CoreSavedSearchCRUD = CoreBridge(),
         externalCreatedEvent: MainExternalCreatedFileEvent? = nil,
         onExternalCreatedEventHandled: @escaping (MainExternalCreatedFileEvent) -> Void = { _ in },
         importProgressItems: [ImportBatchProgressSnapshot.Item] = [],
@@ -285,6 +278,8 @@ extension MainRepositoryContentView {
         self.onOpenNoteFile = onOpenNoteFile
         self.onOpenChangeCategoryPermissionRecovery = onOpenChangeCategoryPermissionRecovery
         self.treeLister = treeLister
+        self.savedSearchStore = savedSearchStore
+        self.errorMapper = errorMapper
         self.externalCreatedEvent = externalCreatedEvent
         self.onExternalCreatedEventHandled = onExternalCreatedEventHandled
         self.importProgressItems = importProgressItems
