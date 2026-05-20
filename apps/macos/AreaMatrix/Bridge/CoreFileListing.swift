@@ -95,6 +95,26 @@ struct SearchQueryRequestSnapshot: Equatable {
     var limit: Int64
     var offset: Int64
 
+    init(
+        query: String,
+        scope: SearchScopeSnapshot,
+        currentPath: String?,
+        category: String?,
+        filters: SearchFilterStateSnapshot,
+        sort: SearchSortSnapshot,
+        limit: Int64,
+        offset: Int64
+    ) {
+        self.query = query
+        self.scope = scope
+        self.currentPath = currentPath
+        self.category = category
+        self.filters = filters
+        self.sort = sort
+        self.limit = limit
+        self.offset = offset
+    }
+
     static func pageFeature(
         query: String,
         scope: SearchScopeSnapshot,
@@ -109,6 +129,19 @@ struct SearchQueryRequestSnapshot: Equatable {
             category: scope == .current ? sidebarRow.categoryForFileList : nil,
             filters: filters,
             sort: sort,
+            limit: 50,
+            offset: 0
+        )
+    }
+
+    init(savedSearchQuery: SavedSearchQuerySnapshot) {
+        self.init(
+            query: savedSearchQuery.query,
+            scope: savedSearchQuery.scope,
+            currentPath: savedSearchQuery.currentPath,
+            category: savedSearchQuery.category,
+            filters: savedSearchQuery.filter,
+            sort: savedSearchQuery.sort,
             limit: 50,
             offset: 0
         )

@@ -347,6 +347,7 @@ private extension SearchResultPageSnapshot {
             indexStatus: .ready
         )
     }
+
 }
 
 private extension RepositoryTreeNodeSnapshot {
@@ -411,4 +412,5 @@ private extension CoreErrorMappingSnapshot {
             rawContext: "facet db locked"
         )
     }
+
 }

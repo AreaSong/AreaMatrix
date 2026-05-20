@@ -161,6 +161,196 @@ struct MissingFileActionContext: View {
     }
 }
 
+struct SavedSearchPreview: View {
+    let model: SavedSearchSheetModel
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            metadataRow("Query", model.querySummary)
+            metadataRow("Filters", model.filterSummary)
+            metadataRow("Sort", model.request.sort.displayName)
+            metadataRow("Current results", model.resultCountSummary)
+            if let warning = model.emptyResultWarning {
+                Label(warning, systemImage: "exclamationmark.triangle")
+                    .foregroundStyle(.orange)
+            }
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("S2-03-saved-search-preview")
+    }
+}
+
+struct SavedSearchSheetRouteView: View {
+    let request: SearchQueryRequestSnapshot
+    let repoPath: String
+    let resultCountState: SavedSearchResultCountState
+    let savedSearchStore: any CoreSavedSearchCRUD
+    let errorMapper: any CoreErrorMapping
+    let onCancel: () -> Void
+    let onSaved: (SavedSearchSnapshot) -> Void
+    let onEditFilters: () -> Void
+    @State private var model: SavedSearchSheetModel
+    @State private var showSavingCancelPrompt = false
+
+    init(
+        request: SearchQueryRequestSnapshot,
+        repoPath: String = "",
+        resultCountState: SavedSearchResultCountState = .loading,
+        savedSearchStore: any CoreSavedSearchCRUD = CoreBridge(),
+        errorMapper: any CoreErrorMapping = CoreBridge(),
+        onCancel: @escaping () -> Void,
+        onSaved: @escaping (SavedSearchSnapshot) -> Void = { _ in },
+        onEditFilters: @escaping () -> Void = {}
+    ) {
+        self.request = request
+        self.repoPath = repoPath
+        self.resultCountState = resultCountState
+        self.savedSearchStore = savedSearchStore
+        self.errorMapper = errorMapper
+        self.onCancel = onCancel
+        self.onSaved = onSaved
+        self.onEditFilters = onEditFilters
+        _model = State(initialValue: SavedSearchSheetModel(
+            request: request,
+            resultCountState: resultCountState
+        ))
+    }
+
+    init(
+        request: SearchQueryRequestSnapshot,
+        repoPath: String = "",
+        resultCount: Int64?,
+        savedSearchStore: any CoreSavedSearchCRUD = CoreBridge(),
+        errorMapper: any CoreErrorMapping = CoreBridge(),
+        onCancel: @escaping () -> Void,
+        onSaved: @escaping (SavedSearchSnapshot) -> Void = { _ in },
+        onEditFilters: @escaping () -> Void = {}
+    ) {
+        self.init(
+            request: request,
+            repoPath: repoPath,
+            resultCountState: resultCount.map(SavedSearchResultCountState.loaded) ?? .loading,
+            savedSearchStore: savedSearchStore,
+            errorMapper: errorMapper,
+            onCancel: onCancel,
+            onSaved: onSaved,
+            onEditFilters: onEditFilters
+        )
+    }
+
+    var body: some View {
+        MainFileActionSheetContainer(title: "Save Search", pageID: "S2-03") {
+            Text("Save the current query as a Smart List. Files are not moved or duplicated.")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+            savedSearchErrorView
+            TextField("Name", text: $model.name)
+                .textFieldStyle(.roundedBorder)
+                .disabled(model.isSaving)
+                .accessibilityIdentifier("S2-03-saved-search-name")
+            Picker("Icon", selection: $model.icon) {
+                ForEach(SavedSearchSheetModel.icons, id: \.self) { icon in
+                    Label(icon, systemImage: icon).tag(icon)
+                }
+            }
+            .disabled(model.isSaving)
+            Toggle("Pin to sidebar", isOn: $model.pinned)
+                .disabled(model.isSaving)
+            SavedSearchPreview(model: model)
+            HStack {
+                Button("Edit filters", action: onEditFilters)
+                    .disabled(model.isSaving)
+                Spacer()
+                Button("Cancel") {
+                    if model.isSaving {
+                        showSavingCancelPrompt = true
+                    } else {
+                        onCancel()
+                    }
+                }
+                    .keyboardShortcut(.cancelAction)
+                Button(model.primaryActionTitle) {
+                    Task { await save() }
+                }
+                .keyboardShortcut(.defaultAction)
+                .disabled(!model.canSave)
+            }
+        }
+        .confirmationDialog(
+            "Saving is in progress.",
+            isPresented: $showSavingCancelPrompt,
+            titleVisibility: .visible
+        ) {
+            Button("Continue Saving", role: .cancel) {}
+        }
+        .task {
+            await loadExistingSavedSearches()
+        }
+        .accessibilityIdentifier("S2-03-search-route")
+    }
+
+    @ViewBuilder
+    private var savedSearchErrorView: some View {
+        if let validationMessage = model.validationMessage {
+            Label(validationMessage, systemImage: "exclamationmark.triangle")
+                .foregroundStyle(.orange)
+                .accessibilityIdentifier("S2-03-validation-error")
+        }
+        if let failure = model.saveFailure {
+            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                Label(failure.userMessage, systemImage: "exclamationmark.triangle")
+                    .foregroundStyle(.red)
+                    .accessibilityIdentifier("S2-03-save-error")
+                Spacer()
+                Button("Retry") {
+                    Task { await save() }
+                }
+                .disabled(!model.showsRetry || model.validationMessage != nil)
+                .accessibilityIdentifier("S2-03-save-retry")
+            }
+        }
+    }
+
+    private func loadExistingSavedSearches() async {
+        do {
+            let saved = try await savedSearchStore.listSavedSearches(repoPath: repoPath)
+            await MainActor.run {
+                model.existingNames = Set(saved.map { $0.name.lowercased() })
+            }
+        } catch {
+            let mapped = await mapError(error)
+            await MainActor.run {
+                model.saveFailure = mapped
+            }
+        }
+    }
+
+    @MainActor
+    private func save() async {
+        guard model.canSave else { return }
+        model.isSaving = true
+        model.saveFailure = nil
+        do {
+            let saved = try await savedSearchStore.createSavedSearch(
+                repoPath: repoPath,
+                request: model.createRequest
+            )
+            model.isSaving = false
+            onSaved(saved)
+        } catch {
+            model.isSaving = false
+            model.saveFailure = await mapError(error)
+        }
+    }
+
+    private func mapError(_ error: Error) async -> CoreErrorMappingSnapshot {
+        if let coreError = error as? CoreError {
+            return await errorMapper.mapCoreError(coreError)
+        }
+        return await errorMapper.mapCoreError(CoreError.Internal(message: error.localizedDescription))
+    }
+}
+
 func metadataRow(_ label: String, _ value: String) -> some View {
     VStack(alignment: .leading, spacing: 3) {
         Text(label)

@@ -34,6 +34,7 @@ struct MainRepositoryContentView: View {
     @State var searchSort: SearchSortSnapshot = .newestImported
     @State var searchFilters: SearchFilterStateSnapshot = .empty
     @State var isSearchFiltersPresented = false
+    @State var savedSearchesBySidebarID: [String: SavedSearchSnapshot] = [:]
     @FocusState var isSearchFieldFocused: Bool
     @StateObject var dropPreviewModel: ImportDropPreviewModel
     @StateObject var detailNoteModel: DetailNoteModel
@@ -61,6 +62,10 @@ extension MainRepositoryContentView {
         }
         .task(id: selectedSidebarID) {
             guard state == .list else { return }
+            if await restoreSelectedSavedSearchIfNeeded() {
+                selectedFileIDs = []
+                return
+            }
             if fileListModel.searchState.isActive {
                 selectedFileIDs = []
                 return
@@ -84,6 +89,7 @@ extension MainRepositoryContentView {
         }
         .task(id: searchTaskKey) {
             guard state == .list else { return }
+            guard savedSearchesBySidebarID[selectedSidebarID] == nil else { return }
             try? await Task.sleep(nanoseconds: 250_000_000)
             guard !Task.isCancelled else { return }
             await fileListModel.runSearch(
@@ -96,6 +102,7 @@ extension MainRepositoryContentView {
         }
         .task(id: searchFacetsTaskKey) {
             guard state == .list else { return }
+            guard savedSearchesBySidebarID[selectedSidebarID] == nil else { return }
             await fileListModel.loadSearchFacets(
                 query: filterText,
                 scope: searchScope,

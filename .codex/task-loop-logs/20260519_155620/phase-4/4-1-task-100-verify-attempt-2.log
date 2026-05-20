@@ -1,0 +1,68 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-1/task-100`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-100-s2-03-c2-03-saved-search-crud.md`
+- 对应实现：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`
+- 对应测试：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`
+- Forbidden Touches：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 S2-03 页面中的 C2-03 功能点
+- 结果：通过
+- 证据：`S2-03` 在 control map 中只绑定 `C2-03`；实现集中在 Saved Search sheet、CoreBridge saved-search create/list、sidebar Smart List 插入与恢复。
+- 涉及文件：`apps/macos/AreaMatrix/Views/Main/MainFileActionRoutingSheet.swift:183`、`apps/macos/AreaMatrix/Views/Main/MainRepositoryContentActionRouting.swift:68`
+
+- 项目：读取页面规格、control map、Core API、C2-03 能力规格
+- 结果：通过
+- 证据：页面规格要求保存 query/filter/sort、重复/空名/失败处理、成功后 sidebar 恢复；Core API 定义 `create_saved_search/list_saved_searches` 和副作用边界；UDL 已有对应接口。
+- 涉及文件：`docs/ux/page-specs/stage-2-experience/S2-03-saved-search-sheet.md:28`、`docs/api/core-api.md:2194`、`core/area_matrix.udl:169`
+
+- 项目：只接入 C2-03 对应 CoreBridge / 状态 / 错误映射
+- 结果：通过
+- 证据：`CoreSavedSearchCRUD` 经 `CoreBridge` 调用 UniFFI `createSavedSearch/listSavedSearches`；保存失败通过 `mapCoreError` 映射并保留 draft；无直接 UI 调 UniFFI。
+- 涉及文件：`apps/macos/AreaMatrix/Bridge/CoreFileRenaming.swift:52`、`apps/macos/AreaMatrix/Views/Main/MainFileActionRoutingSheet.swift:314`
+
+- 项目：不顺手实现相邻页面、相邻平台或同页其他能力
+- 结果：通过
+- 证据：未修改 `core/src/**`；未实现 C2-04 `run_smart_list`，仅用已保存 query 恢复搜索上下文；工作区脏改动在 `apps/macos/**` 和 task-loop 运行材料范围内。
+- 涉及文件：`apps/macos/AreaMatrix/Models/MainListVisibleFileFiltering.swift:299`、`apps/macos/AreaMatrix/Views/Main/MainRepositoryContentActionRouting.swift:139`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。Sheet model、CoreBridge wrapper、route wiring、sidebar restore 分层清楚，文件长度均低于 500 行。
+- 注释 / rustdoc / 文档同步：通过。本 task 未新增 public Rust API；Core API 与 UDL 已对齐 `SavedSearch` 合同。
+- 错误处理与边界处理：通过。空名、超长、重复名、保存失败、result count failed/empty 均有状态或测试证据；非法 query 在入口层由 `canSaveCurrentSearch` 阻止打开保存入口。
+- 测试与验证覆盖：通过。新增/相关测试覆盖创建、重复名阻断、保存失败保留 draft、sidebar 插入与 query 恢复。
+- 占位、硬编码、mock-only、一次性实现检查：通过。生产路径调用真实 `CoreBridge`，测试 fixture 仅用于 XCTest，不作为产品闭环。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-100`
+- 通过：`prompt doctor` 显示 `doctor: OK`，`tasks: 637`，`manifests: 637`，`high risk tasks: 633`
+- 通过：`git diff --check` 无报错
+- 通过：macOS build gate 最终输出 `** BUILD SUCCEEDED **`
+- 缺失：未单独运行 `./dev test macos`，因为本 task manifest 指定验证为 `./dev check task 4-1/task-100`，validation-driver 对 page-feature task 使用 task-scoped macOS build gate。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+
+VERIFY_RESULT: PASS

@@ -1,0 +1,51 @@
+一、执行结论
+
+已完成。`4-1/task-100` 的 S2-03 保存搜索入口已接入 C2-03 的真实 CoreBridge create/list 路径，验证命令通过。
+
+二、执行范围
+
+单任务：`4-1/task-100`
+
+本 task 相关实现文件：
+- [CoreFileRenaming.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreFileRenaming.swift:3)
+- [MainListSystemActions.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainListSystemActions.swift:3)
+- [MainFileActionRoutingSheet.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainFileActionRoutingSheet.swift:164)
+- [MainRepositoryContentActionRouting.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentActionRouting.swift:66)
+- [CoreBridgePlaceholderState.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/CoreBridgePlaceholderState.swift:104)
+- [MainRepoExternalRemovalTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/MainRepoExternalRemovalTests.swift:45)
+
+三、完成情况
+
+核对清单：
+- 只处理 S2-03 + C2-03：通过。
+- 已读取 UX 页面、control map、Core API、C2-03 能力规格：通过。
+- 只接入 C2-03 create/list saved search、状态与错误映射：通过。
+- 未实现 S2-06 Smart List 管理、C2-04 run smart list 或相邻能力：通过。
+
+完成标准：
+- S2-03 保存动作可触发真实 `create_saved_search`：通过。
+- 名称为空、重复、过长和保存失败有 UI 状态/错误映射：通过。
+- 生产路径未使用 mock、fixture 或静态状态伪造 Core 闭环：通过。
+- Forbidden Touches：未触碰 `core/src/**`。
+
+四、工程质量
+
+代码通过 CoreBridge 包装 generated UniFFI，不让 View 直接调生成绑定；保存失败保留 draft，重复名先通过 `list_saved_searches` 校验，最终仍由 Core `create_saved_search` 兜底。未新增依赖，未写用户文件，未改 DB/Rust Core。
+
+一个残余整理点：saved-search bridge 代码当前放在既有 Bridge 文件内；拆独立文件需要改 `AreaMatrix.xcodeproj`，不在本 task Expected New Paths 内，所以本轮未越界调整。
+
+五、验证情况
+
+已运行：
+- `./dev check task 4-1/task-100`：通过。包含 `prompt_pipeline.py doctor` OK、`git diff --check` OK、macOS `xcodebuild ... build CODE_SIGNING_ALLOWED=NO` 成功。
+- 复查 `git diff --check`：通过。
+
+未运行：
+- `./dev test macos` / 全量检查：manifest 明确本 atomic task 验证上限是 `./dev check task 4-1/task-100`，未自行扩大门禁。
+
+六、风险与后续
+
+剩余风险：合并级 CI、人工 review、Git checkpoint evidence 未在本轮执行；本地 task gate 已通过。当前工作区还存在本轮开始前已有的 task-loop 状态文件脏改动，未作为本 task 产品实现范围处理。
+
+建议下一个任务：继续队列的 `4-1/task-101`；S2-06 的 Smart List 列表/运行/管理面应由后续对应 task 完成。
+

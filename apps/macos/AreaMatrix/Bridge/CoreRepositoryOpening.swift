@@ -97,6 +97,25 @@ struct RepositoryTreeNodeSnapshot: Equatable, Identifiable {
         sidebarRows.first { $0.id == id }
     }
 
+    static func savedSearchSidebarID(_ id: Int64) -> String {
+        "smart-list-\(id)"
+    }
+
+    func insertingSavedSearch(_ savedSearch: SavedSearchSnapshot) -> RepositoryTreeNodeSnapshot {
+        var updated = self
+        updated.children.removeAll { $0.id == Self.savedSearchSidebarID(savedSearch.id) }
+        updated.children.append(RepositoryTreeNodeSnapshot(
+            slug: Self.savedSearchSidebarID(savedSearch.id),
+            displayName: savedSearch.name,
+            kind: "SmartList",
+            relativePath: Self.savedSearchSidebarID(savedSearch.id),
+            fileCount: 0,
+            depth: 1,
+            children: []
+        ))
+        return updated
+    }
+
     private func sidebarRows(depth: Int) -> [RepositorySidebarRowSnapshot] {
         let childRows = Self.sortForSidebar(children).flatMap { $0.sidebarRows(depth: depth + 1) }
         return [RepositorySidebarRowSnapshot(node: self, depth: depth)] + childRows
@@ -161,6 +180,10 @@ struct RepositorySidebarRowSnapshot: Equatable, Identifiable {
         let path = node.relativePath
         guard path.contains("/") else { return nil }
         return path
+    }
+
+    var isSmartList: Bool {
+        node.kind == "SmartList"
     }
 
     func contains(_ file: FileEntrySnapshot) -> Bool {

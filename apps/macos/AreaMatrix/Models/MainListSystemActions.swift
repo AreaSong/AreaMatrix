@@ -1,5 +1,111 @@
 import Foundation
 
+enum SavedSearchResultCountState: Equatable {
+    case loading
+    case loaded(Int64)
+    case failed
+
+    var summary: String {
+        switch self {
+        case .loading:
+            "Counting results..."
+        case let .loaded(count):
+            count == 1 ? "1 file" : "\(count) files"
+        case .failed:
+            "Result count unavailable"
+        }
+    }
+
+    var emptyResultWarning: String? {
+        guard case .loaded(0) = self else { return nil }
+        return "This Smart List is currently empty."
+    }
+}
+
+struct SavedSearchSheetModel {
+    static let icons = ["magnifyingglass", "doc.text.magnifyingglass", "folder"]
+
+    var request: SearchQueryRequestSnapshot
+    var resultCountState: SavedSearchResultCountState
+    var name: String
+    var icon = "magnifyingglass"
+    var pinned = true
+    var existingNames: Set<String> = []
+    var isSaving = false
+    var saveFailure: CoreErrorMappingSnapshot?
+
+    init(request: SearchQueryRequestSnapshot, resultCountState: SavedSearchResultCountState) {
+        self.request = request
+        self.resultCountState = resultCountState
+        name = Self.defaultName(for: request)
+    }
+
+    init(request: SearchQueryRequestSnapshot, resultCount: Int64?) {
+        self.init(
+            request: request,
+            resultCountState: resultCount.map(SavedSearchResultCountState.loaded) ?? .loading
+        )
+    }
+
+    var validationMessage: String? {
+        let trimmed = trimmedName
+        if trimmed.isEmpty { return "Name is required." }
+        if trimmed.count > 64 { return "Name must be 64 characters or fewer." }
+        if existingNames.contains(trimmed.lowercased()) {
+            return "A Smart List named \"\(trimmed)\" already exists."
+        }
+        return nil
+    }
+
+    var canSave: Bool {
+        validationMessage == nil && !isSaving
+    }
+
+    var primaryActionTitle: String {
+        isSaving ? "Saving..." : "Save"
+    }
+
+    var createRequest: CreateSavedSearchRequestSnapshot {
+        CreateSavedSearchRequestSnapshot(
+            name: trimmedName,
+            query: SavedSearchQuerySnapshot(request: request),
+            icon: icon,
+            color: nil,
+            pinned: pinned
+        )
+    }
+
+    var querySummary: String {
+        request.query.isEmpty ? "Filtered search" : request.query
+    }
+
+    var filterSummary: String {
+        request.filters.isEmpty ? "None" : "\(request.filters.activeFilterCount) active"
+    }
+
+    var resultCountSummary: String {
+        resultCountState.summary
+    }
+
+    var emptyResultWarning: String? {
+        resultCountState.emptyResultWarning
+    }
+
+    var showsRetry: Bool {
+        saveFailure != nil && !isSaving
+    }
+
+    private var trimmedName: String {
+        name.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private static func defaultName(for request: SearchQueryRequestSnapshot) -> String {
+        let trimmed = request.query.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmed.isEmpty { return trimmed.prefix(64).description }
+        return request.filters.isEmpty ? "Saved Search" : "Filtered Search"
+    }
+}
+
 extension OnboardingModel {
     @MainActor
     func openLearnMore() {

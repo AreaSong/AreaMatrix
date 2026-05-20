@@ -66,7 +66,20 @@ extension MainRepositoryContentView {
     func searchRoutingSheet(_ destination: MainSearchDestination) -> some View {
         switch destination {
         case let .savedSearchSheet(request):
-            SavedSearchSheetRouteView(request: request, onCancel: fileListModel.clearPendingSearchDestination)
+            SavedSearchSheetRouteView(
+                request: request,
+                repoPath: opening.config.repoPath,
+                resultCountState: savedSearchResultCountState,
+                onCancel: fileListModel.clearPendingSearchDestination,
+                onSaved: { saved in
+                    selectSavedSearch(saved)
+                    fileListModel.clearPendingSearchDestination()
+                },
+                onEditFilters: {
+                    fileListModel.clearPendingSearchDestination()
+                    isSearchFiltersPresented = true
+                }
+            )
         case let .indexingStatus(request):
             SearchIndexingStatusRouteView(
                 request: request,
@@ -97,6 +110,43 @@ extension MainRepositoryContentView {
         selectedFileIDs = [fileID]
         fileListModel.clearPendingActionDestination()
         Task { await fileListModel.selectFiles([fileID]) }
+    }
+
+    private var savedSearchResultCountState: SavedSearchResultCountState {
+        switch fileListModel.searchState {
+        case let .loaded(_, page):
+            .loaded(page.totalCount)
+        case .failed:
+            .failed
+        case .idle, .loading:
+            .loading
+        }
+    }
+
+    private func selectSavedSearch(_ saved: SavedSearchSnapshot) {
+        filterText = saved.query.query
+        searchScope = saved.query.scope
+        searchSort = saved.query.sort
+        searchFilters = saved.query.filter
+        savedSearchesBySidebarID[RepositoryTreeNodeSnapshot.savedSearchSidebarID(saved.id)] = saved
+        fileListModel.cancelSmartListFilterDraft()
+        fileListModel.enterSearch(context: .smartList(id: saved.id, name: saved.name))
+        repositoryTree = repositoryTree.insertingSavedSearch(saved)
+        selectedSidebarID = RepositoryTreeNodeSnapshot.savedSearchSidebarID(saved.id)
+        selectedFileIDs = []
+    }
+
+    func restoreSelectedSavedSearchIfNeeded() async -> Bool {
+        guard let saved = savedSearchesBySidebarID[selectedSidebarID] else {
+            return selectedSidebarRow.isSmartList
+        }
+
+        filterText = saved.query.query
+        searchScope = saved.query.scope
+        searchSort = saved.query.sort
+        searchFilters = saved.query.filter
+        await fileListModel.restoreSavedSearch(saved)
+        return true
     }
 
     private func previewChangeCategory(fileID: Int64, targetCategory: String) {
@@ -184,30 +234,6 @@ struct QueryErrorRouteView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .accessibilityElement(children: .combine)
         .accessibilityIdentifier("S2-05-query-error")
-    }
-}
-
-struct SavedSearchSheetRouteView: View {
-    let request: SearchQueryRequestSnapshot
-    let onCancel: () -> Void
-
-    var body: some View {
-        MainFileActionSheetContainer(title: "Save Search", pageID: "S2-03") {
-            TextField("Name", text: .constant(request.query))
-                .textFieldStyle(.roundedBorder)
-            metadataRow("Query", request.query)
-            metadataRow("Scope", request.scope.displayName)
-            metadataRow("Sort", request.sort.displayName)
-            metadataRow("Filters", "\(request.filters.activeFilterCount) active")
-            HStack {
-                Spacer()
-                Button("Cancel", action: onCancel)
-                    .keyboardShortcut(.cancelAction)
-                Button("Save", action: onCancel)
-                    .disabled(true)
-            }
-        }
-        .accessibilityIdentifier("S2-03-search-route")
     }
 }
 

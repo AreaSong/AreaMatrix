@@ -16,7 +16,15 @@ final class MainRepoExternalRemovalTests: XCTestCase {
             diagnostic: diagnostic,
             onClear: {}
         ).body)
-        let saveBody = s201RouteMirrorDescription(of: SavedSearchSheetRouteView(request: request, onCancel: {}).body)
+        let savedSearchStore = S203RecordingSavedSearchStore(results: [.listSuccess([])])
+        let saveBody = s201RouteMirrorDescription(of: SavedSearchSheetRouteView(
+            request: request,
+            repoPath: "/tmp/repo",
+            resultCount: 3,
+            savedSearchStore: savedSearchStore,
+            errorMapper: MainListRecordingErrorMapper(mapping: .searchFiltersDbFixture()),
+            onCancel: {}
+        ).body)
         let indexingBody = s201RouteMirrorDescription(of: SearchIndexingStatusRouteView(
             request: request,
             indexStatus: .unavailable,
@@ -31,6 +39,64 @@ final class MainRepoExternalRemovalTests: XCTestCase {
         XCTAssertTrue(saveBody.contains("S2-03-search-route"))
         XCTAssertTrue(indexingBody.contains("S2-01-indexing-status-search-route"))
         XCTAssertTrue(commandBody.contains("S2-15-search-route"))
+    }
+
+    @MainActor
+    func testS203SavedSearchSheetCreatesSmartListThroughCoreBridge() async {
+        let request = SearchQueryRequestSnapshot.s201RouteFixture(query: "合同")
+        let model = SavedSearchSheetModel(request: request, resultCount: 0)
+        let saved = SavedSearchSnapshot.s203Fixture(id: 77, request: model.createRequest)
+        let store = S203RecordingSavedSearchStore(results: [.listSuccess([]), .createSuccess(saved)])
+
+        _ = try? await store.listSavedSearches(repoPath: "/tmp/repo")
+        let created = try? await store.createSavedSearch(repoPath: "/tmp/repo", request: model.createRequest)
+
+        XCTAssertEqual(created, saved)
+        XCTAssertEqual(model.createRequest.name, "合同")
+        XCTAssertEqual(model.createRequest.query.filter.tags, ["contract"])
+        XCTAssertEqual(model.createRequest.query.sort, .relevance)
+        XCTAssertEqual(model.createRequest.pinned, true)
+        XCTAssertEqual(model.emptyResultWarning, "This Smart List is currently empty.")
+        XCTAssertEqual(await store.createdRequests().map(\.request), [model.createRequest])
+    }
+
+    @MainActor
+    func testS203SavedSearchSheetBlocksDuplicateNameBeforeCreate() async {
+        let request = SearchQueryRequestSnapshot.s201RouteFixture(query: "Finance")
+        var model = SavedSearchSheetModel(request: request, resultCount: 12)
+        model.existingNames = ["finance"]
+        let store = S203RecordingSavedSearchStore(results: [.listSuccess([.s203Fixture(
+            id: 1,
+            request: model.createRequest
+        )])])
+
+        XCTAssertEqual(model.validationMessage, "A Smart List named \"Finance\" already exists.")
+        XCTAssertFalse(model.canSave)
+        XCTAssertEqual(model.resultCountSummary, "12 files")
+        XCTAssertEqual(await store.createdRequests(), [])
+    }
+
+    @MainActor
+    func testS203SavedSearchFailureKeepsDraftAndMapsError() async {
+        let request = SearchQueryRequestSnapshot.s201RouteFixture(query: "Finance")
+        var model = SavedSearchSheetModel(request: request, resultCount: nil)
+        let mapping = CoreErrorMappingSnapshot.searchFiltersDbFixture()
+        let mapper = MainListRecordingErrorMapper(mapping: mapping)
+        let store = S203RecordingSavedSearchStore(results: [.createFailure(CoreError.Db(message: "db locked"))])
+
+        do {
+            _ = try await store.createSavedSearch(repoPath: "/tmp/repo", request: model.createRequest)
+            XCTFail("expected saved search create failure")
+        } catch let error as CoreError {
+            model.saveFailure = await mapper.mapCoreError(error)
+        } catch {
+            XCTFail("expected CoreError, got \(error)")
+        }
+
+        XCTAssertEqual(model.name, "Finance")
+        XCTAssertEqual(model.resultCountSummary, "Counting results...")
+        XCTAssertEqual(model.saveFailure, mapping)
+        XCTAssertEqual(await mapper.recordedErrors(), [CoreError.Db(message: "db locked")])
     }
 
     func testS202TagFilterEditingSupportsMultipleTagsAndAllMatchMode() {
@@ -343,6 +409,71 @@ private extension CoreErrorMappingSnapshot {
             suggestedAction: "请重试过滤器。",
             recoverability: .retryable,
             rawContext: "facet db locked"
+        )
+    }
+}
+
+private struct S203SavedSearchRequestRecord: Equatable {
+    var repoPath: String
+    var request: CreateSavedSearchRequestSnapshot
+}
+
+private actor S203RecordingSavedSearchStore: CoreSavedSearchCRUD {
+    enum Result {
+        case listSuccess([SavedSearchSnapshot])
+        case createSuccess(SavedSearchSnapshot)
+        case createFailure(Error)
+    }
+
+    private var results: [Result]
+    private var createRecords: [S203SavedSearchRequestRecord] = []
+
+    init(results: [Result]) {
+        self.results = results
+    }
+
+    func createSavedSearch(
+        repoPath: String,
+        request: CreateSavedSearchRequestSnapshot
+    ) async throws -> SavedSearchSnapshot {
+        createRecords.append(S203SavedSearchRequestRecord(repoPath: repoPath, request: request))
+        guard !results.isEmpty else { throw CoreError.Db(message: "missing saved search result") }
+        switch results.removeFirst() {
+        case let .createSuccess(saved):
+            return saved
+        case let .createFailure(error):
+            throw error
+        case .listSuccess:
+            throw CoreError.Internal(message: "expected saved search create result")
+        }
+    }
+
+    func listSavedSearches(repoPath _: String) async throws -> [SavedSearchSnapshot] {
+        guard !results.isEmpty else { return [] }
+        switch results.removeFirst() {
+        case let .listSuccess(saved):
+            return saved
+        case .createSuccess, .createFailure:
+            throw CoreError.Internal(message: "expected saved search list result")
+        }
+    }
+
+    func createdRequests() -> [S203SavedSearchRequestRecord] {
+        createRecords
+    }
+}
+
+private extension SavedSearchSnapshot {
+    static func s203Fixture(id: Int64, request: CreateSavedSearchRequestSnapshot) -> SavedSearchSnapshot {
+        SavedSearchSnapshot(
+            id: id,
+            name: request.name,
+            query: request.query,
+            icon: request.icon,
+            color: request.color,
+            pinned: request.pinned,
+            createdAt: 1_700_000_000,
+            updatedAt: 1_700_000_000
         )
     }
 }

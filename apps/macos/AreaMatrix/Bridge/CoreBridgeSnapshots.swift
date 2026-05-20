@@ -390,6 +390,7 @@ extension SearchStorageModeSnapshot {
     }
 }
 
+
 extension SearchFacetsSnapshot {
     init(coreFacets: SearchFacets) {
         query = coreFacets.query

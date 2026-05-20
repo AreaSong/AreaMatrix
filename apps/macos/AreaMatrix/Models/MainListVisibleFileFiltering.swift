@@ -296,6 +296,12 @@ extension MainFileListModel {
         smartListFilterDraft = nil
     }
 
+    func restoreSavedSearch(_ savedSearch: SavedSearchSnapshot) async {
+        cancelSmartListFilterDraft()
+        enterSearch(context: .smartList(id: savedSearch.id, name: savedSearch.name))
+        await loadSearch(SearchQueryRequestSnapshot(savedSearchQuery: savedSearch.query))
+    }
+
     func runSearch(
         query: String,
         scope: SearchScopeSnapshot,

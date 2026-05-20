@@ -1,0 +1,47 @@
+**一、执行结论**
+
+已完成 `4-1/task-100` repair retry。上次验收的两个 P1 点已补齐：保存成功后 Smart List 可出现在 sidebar、自动选中并恢复同一查询；保存失败 Retry 与 result count 失败态已覆盖。
+
+**二、执行范围**
+
+单任务：`4-1/task-100`，仅限 `apps/macos/AreaMatrix/**` 与 `apps/macos/AreaMatrixTests/**`。
+
+关键修改集中在：
+- [MainRepositoryContentView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift:37)
+- [MainRepositoryContentActionRouting.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentActionRouting.swift:126)
+- [MainFileActionRoutingSheet.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainFileActionRoutingSheet.swift:293)
+- [MainListSystemActions.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainListSystemActions.swift:3)
+- [MainListVisibleFileFiltering.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainListVisibleFileFiltering.swift:296)
+- [ImportBatchNamingStrategyTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportBatchNamingStrategyTests.swift:50)
+
+未触碰 `core/src/**`；`git diff --name-only -- core/src` 为空。
+
+**三、完成情况**
+
+核对清单全部满足：只处理 `S2-03 + C2-03`；已读取并交叉对照页面规格、control map、Core API、C2-03 spec；生产路径通过 `CoreBridge` 的 saved search CRUD 接入；没有实现 C2-04、S2-06 管理页或相邻能力。
+
+完成标准全部满足：保存动作使用真实 CoreBridge create/list 路径；保存成功后插入 Smart List sidebar row、设置 `selectedSidebarID`、缓存返回的 `SavedSearchSnapshot`，再次选择该 row 会恢复同一 query/filter/sort 并发起 `searchFiles`；失败态保留 draft、显示 Retry；result count 失败显示 `Result count unavailable` 且不阻止有效查询保存。
+
+**四、工程质量**
+
+代码结构保持在现有 Main view/model 分层内，没有新增依赖、没有 mock-only 生产路径、没有硬编码成功态。测试替身只用于 XCTest。当前改动不涉及 public Rust API，所以无 rustdoc 变更；文档源事实未改。高风险边界未触发用户文件删除、移动、覆盖、DB migration 或 `core/src/**` 修改。
+
+**五、验证情况**
+
+已运行并通过：
+
+```bash
+./dev check task 4-1/task-100
+```
+
+该命令实际通过：
+- `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`：OK，tasks/manifests 均为 `637`
+- `git diff --check`：通过
+- `xcodebuild -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination platform=macOS,arch=arm64 build CODE_SIGNING_ALLOWED=NO`：`BUILD SUCCEEDED`
+
+未运行 UI 真窗口烟测和测试 target；本 task manifest 的验证上限是 `./dev check task 4-1/task-100`，本轮没有升级到宽门禁。
+
+**六、风险与后续**
+
+剩余风险：未做真实窗口点击烟测；已有持久化 Smart List 的完整管理/运行能力仍属于后续 `S2-06 / C2-04` 范围，本 task 只保证 S2-03 创建返回后的 sidebar 可见、自动选中和查询恢复闭环。建议下一步进入本 task verify-ready 验收；验收通过后按队列继续 `4-1/task-101`。
+
