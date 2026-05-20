@@ -153,7 +153,10 @@ final class SavedSearchPageFeatureTests: XCTestCase {
         XCTAssertEqual(content.searchSort, saved.query.sort)
         XCTAssertEqual(content.searchFilters, saved.query.filter)
         XCTAssertEqual(content.fileListModel.lastSearchExitContext, .smartList(id: 77, name: "Finance"))
-        XCTAssertEqual(content.fileListModel.searchState.request, SearchQueryRequestSnapshot(savedSearchQuery: saved.query))
+        XCTAssertEqual(
+            content.fileListModel.searchState.request,
+            SearchQueryRequestSnapshot(savedSearchQuery: saved.query)
+        )
         XCTAssertEqual(content.fileListModel.files, [resultFile])
         let recordedRequests = await searcher.recordedRequests().map(\.request)
         XCTAssertEqual(recordedRequests, [
@@ -180,7 +183,7 @@ final class SavedSearchPageFeatureTests: XCTestCase {
         let request = model.updateRequest
 
         XCTAssertNil(model.validationMessage)
-        XCTAssertEqual(model.primaryActionTitle, "Save changes")
+        XCTAssertEqual(model.primaryActionTitle, "Save")
         XCTAssertEqual(request.id, 77)
         XCTAssertEqual(request.name, "Quarter Plan")
         XCTAssertEqual(request.query.query, "Finance")

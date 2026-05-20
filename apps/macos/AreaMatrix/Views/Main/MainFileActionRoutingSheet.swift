@@ -90,7 +90,6 @@ struct MainFileActionRoutingSheet: View {
         }
     }
 }
-
 struct SavedSearchPreview: View {
     let model: SavedSearchSheetModel
 
@@ -252,9 +251,7 @@ struct SavedSearchSheetRouteView: View {
     }
 
     private func mapError(_ error: Error) async -> CoreErrorMappingSnapshot {
-        if let coreError = error as? CoreError {
-            return await errorMapper.mapCoreError(coreError)
-        }
+        if let coreError = error as? CoreError { return await errorMapper.mapCoreError(coreError) }
         return await errorMapper.mapCoreError(CoreError.Internal(message: error.localizedDescription))
     }
 }
@@ -322,11 +319,13 @@ struct SmartListManagementSheet: View {
         do {
             switch model.mode {
             case .rename, .editQuery:
-                let saved = try await savedSearchStore.updateSavedSearch(repoPath: repoPath, request: model.updateRequest)
+                let request = model.updateRequest
+                let saved = try await savedSearchStore.updateSavedSearch(repoPath: repoPath, request: request)
                 model.isSaving = false
                 onSaved(saved)
             case .duplicate:
-                let saved = try await savedSearchStore.createSavedSearch(repoPath: repoPath, request: model.createRequest)
+                let request = model.createRequest
+                let saved = try await savedSearchStore.createSavedSearch(repoPath: repoPath, request: request)
                 model.isSaving = false
                 onSaved(saved)
             case .delete:
@@ -341,9 +340,7 @@ struct SmartListManagementSheet: View {
     }
 
     private func mapError(_ error: Error) async -> CoreErrorMappingSnapshot {
-        if let coreError = error as? CoreError {
-            return await errorMapper.mapCoreError(coreError)
-        }
+        if let coreError = error as? CoreError { return await errorMapper.mapCoreError(coreError) }
         return await errorMapper.mapCoreError(CoreError.Internal(message: error.localizedDescription))
     }
 
@@ -399,9 +396,16 @@ private extension SmartListManagementSheet {
                 .accessibilityIdentifier("S2-06-validation-error")
         }
         if let failure = model.failure {
-            Label(failure.userMessage, systemImage: "exclamationmark.triangle")
-                .foregroundStyle(.red)
-                .accessibilityIdentifier("S2-06-save-error")
+            HStack(spacing: 8) {
+                Label(failure.userMessage, systemImage: "exclamationmark.triangle")
+                Spacer()
+                if model.showsRetry {
+                    Button("Retry") { Task { await submit() } }
+                        .accessibilityIdentifier("S2-06-save-retry")
+                }
+            }
+            .foregroundStyle(.red)
+            .accessibilityIdentifier("S2-06-save-error")
         }
         if let diagnostic = model.queryDiagnostic {
             QueryDiagnosticSummary(diagnostic: diagnostic, query: model.queryDiagnosticRequest.query)
@@ -455,8 +459,7 @@ private extension SmartListManagementSheet {
             Text("Delete \"\(model.original.name)\"?")
                 .font(.callout.weight(.semibold))
             Text(SmartListEditorModel.deleteSafetyMessage)
-                .font(.callout)
-                .foregroundStyle(.secondary)
+                .font(.callout).foregroundStyle(.secondary)
             footer
         }
     }
@@ -466,22 +469,19 @@ private extension SmartListManagementSheet {
             if model.mode == .editQuery {
                 Button("Reset changes", action: resetChanges)
                     .disabled(model.isSaving)
-                Button("Edit filters") {
-                    onEditFilters(model.original, model.filters)
-                }
-                .disabled(model.isSaving)
+                Button("Edit filters") { onEditFilters(model.original, model.filters) }
+                    .disabled(model.isSaving)
             }
             Spacer()
             Button("Cancel", action: onCancel)
                 .keyboardShortcut(.cancelAction)
                 .disabled(model.isSaving)
-            Button(model.primaryActionTitle) {
+            Button(model.primaryActionTitle, role: model.mode == .delete ? .destructive : nil) {
                 Task { await submit() }
             }
-            .keyboardShortcut(.defaultAction)
-            .disabled(!model.canSubmit)
-            .foregroundStyle(model.mode == .delete ? Color.red : Color.primary)
-            .accessibilityIdentifier("S2-06-primary-action")
+                .keyboardShortcut(.defaultAction)
+                .disabled(!model.canSubmit)
+                .accessibilityIdentifier("S2-06-primary-action")
         }
     }
 

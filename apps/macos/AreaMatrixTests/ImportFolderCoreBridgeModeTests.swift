@@ -199,42 +199,73 @@ final class SmartListQueryDiagnosticPageFeatureTests: XCTestCase {
         XCTAssertEqual(model.resultCountSummary, "1 file")
     }
 
-    @MainActor
-    func testS206SearchBannerShowsEditAndOpensCurrentSmartListEditor() {
+    func testS206EditQuerySaveFailureKeepsDraftAndShowsRetry() {
+        var model = SmartListEditorModel(
+            mode: .editQuery,
+            savedSearch: .s206Fixture(query: "Finance"),
+            existingNames: ["finance"],
+            resultCountState: .loaded(12)
+        )
+        model.query = "kind:pdf"
+        model.applyQueryDiagnosticPage(.s206ValidQueryPage(query: "kind:pdf", totalCount: 4))
+        model.failure = .s205ConfigMapping()
+
+        XCTAssertTrue(model.showsRetry)
+        XCTAssertEqual(model.query, "kind:pdf")
+        XCTAssertEqual(model.primaryActionTitle, "Save changes")
+    }
+
+    func testS206SidebarStatusUsesResultCountAndWarnings() {
         let saved = SavedSearchSnapshot.s206Fixture(query: "Finance")
-        var content = MainRepositoryContentView(
-            opening: .s205Opening(
-                repoPath: "/tmp/repo",
-                tree: .s205FixtureTree().insertingSavedSearch(saved)
-            ),
-            state: .list,
-            onImport: {},
-            onDropImport: { _, _ in },
+        let loaded = SmartListSidebarRowStatus.make(
+            savedSearch: saved,
+            isCurrent: true,
+            searchState: .loaded(
+                request: .s205QueryFixture(query: "Finance"),
+                page: .s206ValidQueryPage(query: "Finance", totalCount: 4)
+            )
+        )
+        let invalid = SmartListSidebarRowStatus.make(
+            savedSearch: saved,
+            isCurrent: true,
+            searchState: .loaded(
+                request: .s205QueryFixture(query: "kindd:pdf"),
+                page: .s205QueryErrorPage(query: "kindd:pdf", diagnostic: .s205UnknownField())
+            )
+        )
+        let failed = SmartListSidebarRowStatus.make(
+            savedSearch: saved,
+            isCurrent: true,
+            searchState: .failed(request: .s205QueryFixture(query: "Finance"), .s205ConfigMapping())
+        )
+
+        XCTAssertEqual(loaded.badgeText, "4")
+        XCTAssertEqual(loaded.accessibilityValue, "4 results, Pinned")
+        XCTAssertEqual(invalid.badgeText, "Invalid query")
+        XCTAssertEqual(invalid.warningMessage, "Unknown field `kindd`")
+        XCTAssertEqual(failed.badgeText, "--")
+        XCTAssertEqual(failed.warningMessage, "Query syntax is invalid.")
+    }
+
+    @MainActor
+    func testS206SearchBannerUsesSavedSmartListContextText() {
+        let saved = SavedSearchSnapshot.s206Fixture(query: "Finance")
+        let request = SearchQueryRequestSnapshot(savedSearchQuery: saved.query)
+        let model = MainFileListModel(
+            opening: .s205Opening(repoPath: "/tmp/repo", tree: .s205FixtureTree().insertingSavedSearch(saved)),
             fileLister: MainListRecordingFileLister(results: []),
             fileDetailer: MainListRecordingFileDetailer(results: []),
             searchQuerying: MainListRecordingSearchQuerying(results: []),
             errorMapper: MainListRecordingErrorMapper(mapping: .s205ConfigMapping())
         )
-        let sidebarID = RepositoryTreeNodeSnapshot.savedSearchSidebarID(saved.id)
+        model.activeSmartListSearch = saved
 
-        content.savedSearchesBySidebarID = [sidebarID: saved]
-        content.selectedSidebarID = sidebarID
-        content.fileListModel.searchState = .loaded(
-            request: SearchQueryRequestSnapshot(savedSearchQuery: saved.query),
-            page: .s206ValidQueryPage(query: "Finance", totalCount: 4)
-        )
-
-        let banner = s205RouteMirrorDescription(of: content.statusBanner)
-        XCTAssertTrue(banner.contains("Edit"))
-
-        content.openSelectedSmartListEditor()
-        XCTAssertEqual(content.smartListManagementRoute, SmartListManagementRoute(mode: .editQuery, savedSearch: saved))
+        XCTAssertEqual(model.searchBannerContextText(for: request), "Smart List: Finance  query=\"Finance\"")
     }
 
     @MainActor
     func testS206EditFiltersDraftReopensEditorAndFeedsUpdateRequest() {
         let saved = SavedSearchSnapshot.s206Fixture(query: "Finance")
-        let sidebarID = RepositoryTreeNodeSnapshot.savedSearchSidebarID(saved.id)
         let draftFilters = SearchFilterStateSnapshot(
             category: "docs",
             fileKind: "spreadsheet",
@@ -247,27 +278,7 @@ final class SmartListQueryDiagnosticPageFeatureTests: XCTestCase {
             storageMode: .copied,
             includeDeleted: false
         )
-        var content = MainRepositoryContentView(
-            opening: .s205Opening(
-                repoPath: "/tmp/repo",
-                tree: .s205FixtureTree().insertingSavedSearch(saved)
-            ),
-            state: .list,
-            onImport: {},
-            onDropImport: { _, _ in },
-            fileLister: MainListRecordingFileLister(results: []),
-            fileDetailer: MainListRecordingFileDetailer(results: []),
-            searchQuerying: MainListRecordingSearchQuerying(results: []),
-            errorMapper: MainListRecordingErrorMapper(mapping: .s205ConfigMapping())
-        )
-
-        content.savedSearchesBySidebarID = [sidebarID: saved]
-        content.fileListModel.beginSmartListFilterDraft(id: saved.id, name: saved.name, filters: draftFilters)
-        content.reopenSmartListEditorFromDraftIfNeeded()
-
-        guard let route = content.smartListManagementRoute else {
-            return XCTFail("expected S2-06 edit query route to reopen with draft filters")
-        }
+        let route = SmartListManagementRoute(mode: .editQuery, savedSearch: saved, draftFilters: draftFilters)
         var model = SmartListEditorModel(
             mode: route.mode,
             savedSearch: route.savedSearch,

@@ -266,7 +266,7 @@ extension MainRepositoryContentView {
 
     private func searchBannerText(_ request: SearchQueryRequestSnapshot) -> String {
         [
-            "搜索：\"\(request.query)\"",
+            fileListModel.searchBannerContextText(for: request),
             "范围：\(request.scope.bannerDisplayName)",
             "结果：\(searchResultCountText)",
             "过滤：\(searchActiveFilterCount)"
@@ -393,10 +393,9 @@ extension MainRepositoryContentView {
         searchFilters = .empty
         fileListModel.clearSearch()
         selectedFileIDs = []
+        if selectedSmartList != nil { selectedSidebarID = Self.defaultSelectedSidebarID(from: regularSidebarRows) }
         searchScope = selectedSidebarRow.categoryForFileList == nil ? .all : .current
-        Task {
-            await fileListModel.loadCurrentCategory(selectedSidebarRow.categoryForFileList)
-        }
+        Task { await fileListModel.loadCurrentCategory(selectedSidebarRow.categoryForFileList) }
     }
 
     func beginCommandFindSearch() {

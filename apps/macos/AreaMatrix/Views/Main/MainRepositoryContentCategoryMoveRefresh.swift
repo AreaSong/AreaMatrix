@@ -89,8 +89,12 @@ extension MainRepositoryContentView {
             Text(row.displayName)
                 .padding(.leading, CGFloat(row.depth) * 14)
             Spacer()
-            Text(row.isSmartList ? "--" : "\(row.totalFileCount)")
-                .foregroundStyle(.secondary)
+            if row.isSmartList {
+                smartListRowStatus(for: row)
+            } else {
+                Text("\(row.totalFileCount)")
+                    .foregroundStyle(.secondary)
+            }
         }
         .modifier(ImportDropTargetModifier(
             target: row.importDropTarget,
@@ -152,8 +156,36 @@ extension MainRepositoryContentView {
 
     private func sidebarAccessibilityLabel(_ row: RepositorySidebarRowSnapshot) -> String {
         guard row.isSmartList else { return "\(row.displayName) \(row.totalFileCount)" }
-        let pin = savedSearchesBySidebarID[row.id]?.pinned == true ? "Pinned" : "Not pinned"
-        return "Smart List \(row.displayName), result count unavailable, \(pin)"
+        return "Smart List \(row.displayName), \(smartListStatus(for: row).accessibilityValue)"
+    }
+
+    @ViewBuilder
+    private func smartListRowStatus(for row: RepositorySidebarRowSnapshot) -> some View {
+        let status = smartListStatus(for: row)
+        HStack(spacing: 4) {
+            if let warningMessage = status.warningMessage {
+                Image(systemName: "exclamationmark.circle.fill")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+                    .help(warningMessage)
+                    .accessibilityLabel("Warning: \(warningMessage)")
+            }
+            Text(status.badgeText)
+                .font(.caption)
+                .foregroundStyle(status.warningMessage == nil ? Color.secondary : Color.orange)
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(status.accessibilityValue)
+        .help(status.warningMessage ?? status.badgeAccessibilityText)
+    }
+
+    private func smartListStatus(for row: RepositorySidebarRowSnapshot) -> SmartListSidebarRowStatus {
+        let savedSearch = savedSearchesBySidebarID[row.id]
+        return SmartListSidebarRowStatus.make(
+            savedSearch: savedSearch,
+            isCurrent: selectedSidebarID == row.id,
+            searchState: fileListModel.searchState
+        )
     }
 }
 

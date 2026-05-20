@@ -1,0 +1,39 @@
+一、执行结论：已完成。
+
+二、执行范围：单任务 `4-1/task-105`。本任务代码改动仅在 Expected New Paths 内：
+
+- `apps/macos/AreaMatrix/Models/MainListSystemActions.swift`
+- `apps/macos/AreaMatrix/Views/Main/MainRepositoryContentNoteDrafts.swift`
+- `apps/macos/AreaMatrixTests/ImportFolderCoreBridgeModeTests.swift`
+
+另有既存 task-loop 运行状态脏文件：`.codex/task-loop-runs/20260520_154334/summary.json`、`tasks/prompts/_shared/progress.json`，未回退、未纳入本任务实现改动。
+
+三、完成情况：
+
+- 已补齐 S2-06 Smart List 搜索 banner 的页面闭环语义：Smart List 搜索现在显示 `Smart List: <name> query="<query>"`，对齐 page spec 的首屏/状态信号。
+- 已修正清除 Smart List 搜索后的退出路径：从 Smart List 搜索清除时回到默认普通 sidebar/list context，避免停留在已退出的 Smart List 选中态。
+- 已补充/调整 S2-06 测试证据，覆盖 Smart List banner、edit query draft、C2-04 runSmartList 等页面闭环证据。
+- 未新增 control map 之外能力。
+- 未触碰 `core/src/**`，也未修改 `.xcodeproj`。
+
+四、工程质量：
+
+- 代码结构保持在既有 `MainFileListModel` / `MainRepositoryContentView` 分层内，没有新增一次性脚本、mock-only wiring 或硬编码通过态。
+- 错误路径沿用既有 CoreBridge/search 状态流；本次只补页面状态展示与退出 wiring。
+- 未新增 public Rust API，无 rustdoc 需求；未改文档或 UDL。
+- 文件长度检查：3 个触碰文件均低于 500 行；无超过 120 字符行。
+
+五、验证情况：
+
+- 通过：`./dev check task 4-1/task-105`
+  - `prompt_pipeline.py doctor`: OK
+  - `git diff --check`: OK
+  - macOS `AreaMatrix` build: `BUILD SUCCEEDED`
+- 通过补充定向测试：
+  - `AreaMatrixTests/SmartListQueryDiagnosticPageFeatureTests`
+  - 5 个测试 0 失败；`xcodebuild test` 结束阶段被本地 `testmanagerd.control` sandbox 拦截，仓库 fallback `xcrun xctest` 通过，退出码 0。
+
+六、风险与后续：
+
+- 剩余风险：未做真实窗口 UI 手工冒烟；当前证据覆盖构建和定向 XCTest，不包含可视化点击验证。
+- 建议下一个任务：进入下一条 phase-4 队列任务；若 task-loop 要 checkpoint，注意当前还有运行状态文件脏改动需要由 task-loop 自身处理。  

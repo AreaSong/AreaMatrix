@@ -1,0 +1,89 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`4-1/task-105`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-105-s2-06-page-integration-verify.md`
+- Exact Docs：`S2-06-smart-lists.md`、`stage-2-control-map.md`、`core-api.md`、`C2-03`、`C2-04`
+- Existing Code：`apps/**`、`core/area_matrix.udl`
+- Expected New Paths：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`
+
+三、完成度摘要
+
+- 已覆盖项数：8
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：4
+- 阻塞项数：3
+
+四、逐项验收结果
+
+- 项目：Expected New Paths 落地
+- 结果：通过
+- 证据：`apps/macos/AreaMatrix` 和 `apps/macos/AreaMatrixTests` 均存在
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git diff --name-only -- core/src` 无输出，未发现 `core/src/**` 被触碰
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+- 项目：C2-03 / C2-04 CoreBridge 接入
+- 结果：通过
+- 证据：`CoreBridge` 调用 `create_saved_search`、`update_saved_search`、`delete_saved_search`、`list_saved_searches`、`run_smart_list`
+- 涉及文件：[CoreFileRenaming.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreFileRenaming.swift:107)、[core/area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:169)
+
+- 项目：页面状态、入口、退出、错误态闭环
+- 结果：不通过
+- 证据：S2-06 要求 Edit query 保存失败显示错误原因和 `Retry`；当前 S2-06 管理失败只渲染错误 Label，没有 Retry 按钮
+- 涉及文件：[MainFileActionRoutingSheet.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainFileActionRoutingSheet.swift:395)
+
+- 项目：Smart List 行状态与异常提示
+- 结果：不通过
+- 证据：S2-06 要求结果数量或状态徽标、warning dot、查询字段失效原因；当前 Smart List 行固定显示 `--`，accessibility 也固定为 `result count unavailable`
+- 涉及文件：[MainRepositoryContentCategoryMoveRefresh.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentCategoryMoveRefresh.swift:92)
+
+- 项目：管理动作按钮语义
+- 结果：不通过
+- 证据：S2-06 Rename 要求 `Cancel` / `Save`，Delete 要求 destructive `Delete Smart List`；当前 Rename 主按钮为 `Save changes`，Delete 主按钮仅红色样式，未使用 destructive role
+- 涉及文件：[MainListSystemActions.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainListSystemActions.swift:196)、[MainFileActionRoutingSheet.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainFileActionRoutingSheet.swift:478)
+
+- 项目：不新增 control map 外能力
+- 结果：通过
+- 证据：Control map 中 S2-06 仅声明 C2-03、C2-04；当前生产接入未发现 S2-06 额外 Core 能力
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-2-control-map.md`
+
+- 项目：mock / fixture / 硬编码状态检查
+- 结果：不通过
+- 证据：生产 Smart List sidebar 对结果数量/状态统一硬编码为 `--`，不足以证明 page spec 所需状态闭环
+- 涉及文件：[MainRepositoryContentCategoryMoveRefresh.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentCategoryMoveRefresh.swift:92)
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过，S2-06 管理失败、行状态、按钮语义未完整表达页面规格。
+- 注释 / rustdoc / 文档同步：通过，本 task 未要求新增 public Rust API；UDL 与 Core API 中 C2-03/C2-04 声明存在。
+- 错误处理与边界处理：不通过，Edit query 保存失败缺少明确 Retry 入口；Smart List 行异常状态缺少可见原因。
+- 测试与验证覆盖：不通过，`./dev check task` 通过，但现有测试覆盖偏模型/recording，未证明完整 UI 入口和失败恢复闭环。
+- 占位、硬编码、mock-only、一次性实现检查：不通过，Smart List 行状态存在固定 `--`。
+
+六、阻塞项
+
+- P1：S2-06 Edit query 保存失败缺少 `Retry` 入口。保存失败只显示错误 Label，不能满足 page spec “保留 draft、错误原因和 Retry”。路径：[MainFileActionRoutingSheet.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainFileActionRoutingSheet.swift:395)。
+- P1：Smart List sidebar 行未实现状态徽标、warning dot、查询字段失效原因。当前只固定显示 `--`，无法按 S2-06 完整验收异常状态。路径：[MainRepositoryContentCategoryMoveRefresh.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentCategoryMoveRefresh.swift:92)。
+- P1：管理按钮语义与 page spec 不一致。Rename 使用 `Save changes`，Delete 主按钮未声明 destructive role。路径：[MainListSystemActions.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainListSystemActions.swift:196)、[MainFileActionRoutingSheet.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainFileActionRoutingSheet.swift:478)。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-105`
+- 通过：prompt doctor OK，`git diff --check` 通过，`xcodebuild ... build CODE_SIGNING_ALLOWED=NO` 最终 `BUILD SUCCEEDED`
+- 失败：无命令失败
+- 缺失：未单独运行 `./dev test macos`；本 task manifest 指定验证为 `./dev check task 4-1/task-105`，且 page integration task 的 task gate 当前执行 macOS build gate
+- 工作区检查：未发现 `core/src/**` diff；`.codex/task-loop-*`、`progress.json` 属 runner 收口状态，不作为本次不通过原因
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+
+VERIFY_RESULT: FAIL

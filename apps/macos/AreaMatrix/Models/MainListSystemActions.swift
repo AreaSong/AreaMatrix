@@ -106,6 +106,72 @@ struct SavedSearchSheetModel {
     }
 }
 
+struct SmartListSidebarRowStatus: Equatable {
+    var badgeText: String
+    var badgeAccessibilityText: String
+    var warningMessage: String?
+    var pinned: Bool
+
+    var accessibilityValue: String {
+        [
+            badgeAccessibilityText,
+            pinned ? "Pinned" : "Not pinned",
+            warningMessage.map { "warning: \($0)" }
+        ].compactMap { $0 }.joined(separator: ", ")
+    }
+
+    static func make(
+        savedSearch: SavedSearchSnapshot?,
+        isCurrent: Bool,
+        searchState: MainSearchState
+    ) -> SmartListSidebarRowStatus {
+        guard let savedSearch else {
+            return make("--", "Result count unavailable", "Smart List metadata unavailable.", false)
+        }
+        let pinned = savedSearch.pinned
+        guard isCurrent else { return make("Ready", "Ready", nil, pinned) }
+        switch searchState {
+        case .idle:
+            return make("Ready", "Ready", nil, pinned)
+        case .loading:
+            return make("...", "Counting results", nil, pinned)
+        case let .failed(_, error):
+            return make("--", "Result count unavailable", error.userMessage, pinned)
+        case let .loaded(_, page):
+            return loaded(page, pinned: pinned)
+        }
+    }
+
+    private static func loaded(_ page: SearchResultPageSnapshot, pinned: Bool) -> SmartListSidebarRowStatus {
+        if let diagnostic = page.diagnostics.first(where: \.isError) {
+            return make("Invalid query", "Invalid query", diagnostic.message, pinned)
+        }
+        switch page.indexStatus {
+        case .ready:
+            let resultText = page.totalCount == 1 ? "1 result" : "\(page.totalCount) results"
+            return make("\(page.totalCount)", resultText, nil, pinned)
+        case .indexing:
+            return make("...", "Counting results", nil, pinned)
+        case .unavailable:
+            return make("--", "Result count unavailable", "Search index unavailable.", pinned)
+        }
+    }
+
+    private static func make(
+        _ badgeText: String,
+        _ badgeAccessibilityText: String,
+        _ warningMessage: String?,
+        _ pinned: Bool
+    ) -> SmartListSidebarRowStatus {
+        SmartListSidebarRowStatus(
+            badgeText: badgeText,
+            badgeAccessibilityText: badgeAccessibilityText,
+            warningMessage: warningMessage,
+            pinned: pinned
+        )
+    }
+}
+
 enum SmartListManagementMode: Equatable {
     case rename
     case duplicate
@@ -196,13 +262,19 @@ struct SmartListEditorModel {
     var primaryActionTitle: String {
         if isSaving { return savingTitle }
         switch mode {
-        case .rename, .editQuery:
+        case .rename:
+            return "Save"
+        case .editQuery:
             return "Save changes"
         case .duplicate:
             return "Create"
         case .delete:
             return "Delete Smart List"
         }
+    }
+
+    var showsRetry: Bool {
+        failure != nil && !isSaving
     }
 
     var requestSnapshot: SavedSearchQuerySnapshot {
@@ -312,6 +384,11 @@ struct SmartListEditorModel {
 }
 
 extension MainFileListModel {
+    func searchBannerContextText(for request: SearchQueryRequestSnapshot) -> String {
+        activeSmartListSearch
+            .map { "Smart List: \($0.name)  query=\"\(request.query)\"" } ?? "搜索：\"\(request.query)\""
+    }
+
     func restoreSavedSearch(_ savedSearch: SavedSearchSnapshot) async {
         cancelSmartListFilterDraft()
         enterSearch(context: .smartList(id: savedSearch.id, name: savedSearch.name))
