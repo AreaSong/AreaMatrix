@@ -110,25 +110,63 @@ extension MainRepositoryContentView {
     }
 }
 
+struct UndoToastHistoryRequest: Identifiable, Equatable {
+    enum Source: String, Equatable {
+        case viewHistory
+        case viewDetails
+    }
+
+    let source: Source
+    let state: BatchTagUndoState
+    let actionLogRefreshFailure: CoreErrorMappingSnapshot?
+
+    var id: String {
+        "\(source.rawValue):\(state.routeIdentity):\(actionLogRefreshFailure?.rawContext ?? "")"
+    }
+}
+
 struct BatchTagUndoToastHost: View {
     let repoPath: String
     let undoStore: any CoreUndoActionLogging
     let errorMapper: any CoreErrorMapping
     let onRefreshSelection: () -> Void
     let onRefreshChangeLog: () -> Void
+    let onRefreshCurrentList: () -> Void
+    let onOpenHistory: (UndoToastHistoryRequest) -> Void
     @Binding var undoState: BatchTagUndoState
     @Binding var actionLogRefreshFailure: CoreErrorMappingSnapshot?
 
     var body: some View {
-        if !undoState.isIdle {
-            BatchTagUndoToastView(
-                state: undoState,
-                actionLogRefreshFailure: actionLogRefreshFailure,
-                onUndo: { action in Task { await undo(action) } },
-                onDismiss: dismissUndoToast
-            )
-            .frame(maxWidth: 420)
+        Group {
+            if !undoState.isIdle {
+                BatchTagUndoToastView(
+                    state: undoState,
+                    actionLogRefreshFailure: actionLogRefreshFailure,
+                    onUndo: { action in Task { await undo(action) } },
+                    onOpenHistory: openHistory,
+                    onDismiss: dismissUndoToast
+                )
+                .frame(maxWidth: 420)
+            }
         }
+        .task(id: repoPath) { await loadLatestUndoAction() }
+        .onKeyPress("z", phases: .down) { event in
+            guard event.modifiers.contains(.command) else { return .ignored }
+            if let action = undoState.executableAction, !undoState.isBusy {
+                Task { await undo(action) }
+                return .handled
+            }
+            return .ignored
+        }
+    }
+
+    @MainActor
+    private func loadLatestUndoAction() async {
+        undoState = await BatchTagUndoAction.refreshLatestToastState(
+            repoPath: repoPath,
+            undoStore: undoStore,
+            errorMapper: errorMapper
+        )
     }
 
     @MainActor
@@ -157,6 +195,7 @@ struct BatchTagUndoToastHost: View {
     @MainActor
     private func refreshAfterUndo(_ result: UndoActionResultSnapshot) async {
         let plan = BatchTagUndoRefreshPlan(refreshTargets: result.refreshTargets)
+        if plan.refreshesCurrentList { onRefreshCurrentList() }
         if plan.refreshesSelectionDetails { onRefreshSelection() }
         if plan.refreshesChangeLog { onRefreshChangeLog() }
         guard plan.refreshesUndoActions else { return }
@@ -173,6 +212,95 @@ struct BatchTagUndoToastHost: View {
     private func dismissUndoToast() {
         undoState = .idle
         actionLogRefreshFailure = nil
+    }
+
+    private func openHistory(_ source: UndoToastHistoryRequest.Source) {
+        onOpenHistory(UndoToastHistoryRequest(
+            source: source,
+            state: undoState,
+            actionLogRefreshFailure: actionLogRefreshFailure
+        ))
+    }
+}
+
+private extension BatchTagUndoState {
+    var routeIdentity: String {
+        switch self {
+        case .idle:
+            "idle"
+        case let .loading(token):
+            "loading:\(token)"
+        case let .ready(action), let .disabled(action, _), let .undoing(action):
+            action.actionID
+        case let .unavailable(reason):
+            "unavailable:\(reason)"
+        case let .undone(result):
+            "undone:\(result.actionID)"
+        case let .failed(mapping, previous):
+            "failed:\(previous?.actionID ?? "none"):\(mapping.kind.rawValue)"
+        }
+    }
+}
+
+extension UndoToastHistoryRequest {
+    var focusedActionID: String? {
+        switch state {
+        case let .ready(action), let .disabled(action, _), let .undoing(action):
+            action.actionID
+        case let .undone(result):
+            result.actionID
+        case let .failed(_, previous):
+            previous?.actionID
+        case .idle, .loading, .unavailable:
+            nil
+        }
+    }
+
+    var failureMapping: CoreErrorMappingSnapshot? {
+        if case let .failed(mapping, _) = state { return mapping }
+        return actionLogRefreshFailure
+    }
+}
+
+struct UndoToastHistoryRouteSheet: View {
+    let request: UndoToastHistoryRequest
+    let onClose: () -> Void
+
+    var body: some View {
+        MainFileActionSheetContainer(title: title, pageID: "S2-10") {
+            VStack(alignment: .leading, spacing: 12) {
+                Label(message, systemImage: systemImage)
+                    .font(.callout)
+                if let failure = request.failureMapping {
+                    Text(failure.userMessage)
+                        .foregroundStyle(.secondary)
+                    Text(failure.suggestedAction)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                HStack {
+                    Spacer()
+                    Button("Close", action: onClose)
+                        .keyboardShortcut(.cancelAction)
+                }
+            }
+        }
+        .frame(width: 420)
+        .accessibilityIdentifier("S2-10-C2-07-undo-history-route")
+    }
+
+    private var title: String {
+        request.source == .viewDetails ? "Undo Details" : "Undo History"
+    }
+
+    private var message: String {
+        request.source == .viewDetails ?
+            "Undo details will open in Undo History." :
+            "Undo History will show recent undo actions."
+    }
+
+    private var systemImage: String {
+        request.source == .viewDetails ? "exclamationmark.triangle" : "clock.arrow.circlepath"
     }
 }
 

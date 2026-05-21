@@ -37,8 +37,10 @@ final class DetailMultiPageIntegrationVerifyTests: XCTestCase {
         XCTAssertEqual(load.action, action)
         XCTAssertEqual(applied.result, .s209ExecutedBatchAddTags())
         XCTAssertEqual(blockedLoad.unavailableReason, "External change prevents undo.")
-        XCTAssertEqual(await undoStore.listRequests(), ["/tmp/repo", "/tmp/repo"])
-        XCTAssertEqual(await undoStore.undoRequests(), ["/tmp/repo|\(action.actionID)"])
+        let listRequests = await undoStore.listRequests()
+        let undoRequests = await undoStore.undoRequests()
+        XCTAssertEqual(listRequests, ["/tmp/repo", "/tmp/repo"])
+        XCTAssertEqual(undoRequests, ["/tmp/repo|\(action.actionID)"])
     }
 
     @MainActor
@@ -54,7 +56,8 @@ final class DetailMultiPageIntegrationVerifyTests: XCTestCase {
 
         XCTAssertNil(applied.result)
         XCTAssertEqual(applied.failure, .s209UndoFailure())
-        XCTAssertEqual(await undoStore.undoRequests(), ["/tmp/repo|\(action.actionID)"])
+        let undoRequests = await undoStore.undoRequests()
+        XCTAssertEqual(undoRequests, ["/tmp/repo|\(action.actionID)"])
     }
 
     @MainActor
@@ -71,7 +74,8 @@ final class DetailMultiPageIntegrationVerifyTests: XCTestCase {
 
         XCTAssertEqual(completion.undoState, .ready(action))
         XCTAssertTrue(completion.closesSheet)
-        XCTAssertEqual(await undoStore.listRequests(), ["/tmp/repo"])
+        let listRequests = await undoStore.listRequests()
+        XCTAssertEqual(listRequests, ["/tmp/repo"])
     }
 
     @MainActor
@@ -102,8 +106,10 @@ final class DetailMultiPageIntegrationVerifyTests: XCTestCase {
         XCTAssertTrue(plan.refreshesChangeLog)
         XCTAssertTrue(plan.refreshesUndoActions)
         XCTAssertEqual(refreshed.action, .s209ExecutedActionLogRow())
-        XCTAssertEqual(await undoStore.undoRequests(), ["/tmp/repo|\(action.actionID)"])
-        XCTAssertEqual(await undoStore.listRequests(), ["/tmp/repo"])
+        let undoRequests = await undoStore.undoRequests()
+        let listRequests = await undoStore.listRequests()
+        XCTAssertEqual(undoRequests, ["/tmp/repo|\(action.actionID)"])
+        XCTAssertEqual(listRequests, ["/tmp/repo"])
     }
 
     @MainActor
@@ -425,7 +431,7 @@ private actor S209RecordingUndoStore: CoreUndoActionLogging {
 
     func listUndoActions(repoPath: String) async throws -> [UndoActionRecordSnapshot] {
         recordedListRequests.append(repoPath)
-        guard case let .list(result) = consumeResult() else {
+        guard case let .list(result) = try consumeResult() else {
             throw CoreError.Internal(message: "expected list_undo_actions before undo_action")
         }
         return try result.get()
@@ -433,7 +439,7 @@ private actor S209RecordingUndoStore: CoreUndoActionLogging {
 
     func undoAction(repoPath: String, actionID: String) async throws -> UndoActionResultSnapshot {
         recordedUndoRequests.append("\(repoPath)|\(actionID)")
-        guard case let .undo(result) = consumeResult() else {
+        guard case let .undo(result) = try consumeResult() else {
             throw CoreError.Internal(message: "expected undo_action result")
         }
         return try result.get()

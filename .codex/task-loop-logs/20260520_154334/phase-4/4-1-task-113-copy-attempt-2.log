@@ -1,0 +1,44 @@
+一、执行结论
+
+已完成。
+
+二、执行范围
+
+单任务：`4-1/task-113`。修改范围保持在允许路径内：
+
+- [MainFileListDetailSupport.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileListDetailSupport.swift)
+- [ImportBatchOverviewSections.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportBatchOverviewSections.swift)
+- [ImportProgressListIntegration.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportProgressListIntegration.swift)
+- [MainRepositoryContentCategoryMoveRefresh.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentCategoryMoveRefresh.swift)
+- [MainRepositoryContentView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift)
+- [ImportBatchICloudPageIntegrationTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportBatchICloudPageIntegrationTests.swift)
+- [DetailMultiPageIntegrationVerifyTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/DetailMultiPageIntegrationVerifyTests.swift)
+
+三、完成情况
+
+- S2-10 + C2-07：已接入真实 `CoreUndoActionLogging`，读取 latest undo action、执行 undo、刷新当前列表 / change log / undo action log。
+- `View history`：已从原来的关闭 toast 改为打开 `S2-11` Undo History panel 入口。
+- 上次 XCTest 编译失败：已修复 actor/await 断言写法，并修掉测试 target 编译时暴露的同类问题。
+- Forbidden Touches：未触碰 `core/src/**`，`git diff --name-only -- core/src` 无输出。
+- 未实现 control map 之外的 Core 能力；S2-11 这里只做 S2-10 入口所需的历史面板承接，不宣称完成 `4-1/task-114` 整页任务。
+
+四、工程质量
+
+结构上保持在现有 Main/Batch undo 体系内，没有引入 mock-only 生产路径或硬编码成功态。错误路径保留 Core error mapping，禁用态、失败态、执行中态都有用户可见表达。新增 Swift 文件长度仍低于 500 行阈值；未新增 Rust public API，所以无 rustdoc 变更。
+
+五、验证情况
+
+已运行并通过：
+
+```bash
+./dev check task 4-1/task-113
+```
+
+该命令最新结果：`prompt doctor: OK`、`git diff --check` 通过、macOS `xcodebuild ... build` 最终 `BUILD SUCCEEDED`。
+
+补充验证：针对新增 S2-10/C2-07 XCTest 的 `./dev test macos --only-testing ...` 在本机 `xcodebuild test` 遇到 sandbox/testmanagerd 通信限制后，由 repo 工具 fallback 到 `xcrun xctest`，最终通过。当前没有失败的 manifest validation 项。
+
+六、风险与后续
+
+剩余风险主要是 S2-11 完整历史面板能力仍应由下一个独立任务 `4-1/task-114` 覆盖；本任务只修复 S2-10 的 `View history` 可达性和 C2-07 真实闭环。建议下一个任务继续执行 `4-1/task-114`，把完整 Undo History 面板交互补齐。  
+

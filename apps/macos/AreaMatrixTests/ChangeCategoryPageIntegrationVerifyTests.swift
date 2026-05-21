@@ -19,9 +19,10 @@ final class ChangeCategoryPageIntegrationVerifyTests: XCTestCase {
         try assertS135Preview(preview, context: context)
 
         var movedCallback: FileEntrySnapshot?
-        await context.model.submitMoveToCategory(fileID: moving.id, targetCategory: "finance") { movedFile in
+        let didMove = await context.model.submitMoveToCategory(fileID: moving.id, targetCategory: "finance") { movedFile in
             movedCallback = movedFile
         }
+        XCTAssertTrue(didMove)
         let moved = try XCTUnwrap(movedCallback)
         let refreshedTree = try await context.bridge.listTree(repoPath: context.repoURL.path, locale: "zh-Hans")
         let plan = CategoryMoveRefreshPlan.make(
@@ -167,7 +168,8 @@ final class ChangeCategoryPageIntegrationVerifyTests: XCTestCase {
         XCTAssertEqual(model.files, [original])
         XCTAssertEqual(model.selectedFileDetail, original)
 
-        await model.submitRename(fileID: original.id, newName: "contract-renamed.pdf")
+        let didRename = await model.submitRename(fileID: original.id, newName: "contract-renamed.pdf")
+        XCTAssertTrue(didRename)
         await assertS135ReturnedToChangeCategory(
             model: model,
             renamer: renamer,

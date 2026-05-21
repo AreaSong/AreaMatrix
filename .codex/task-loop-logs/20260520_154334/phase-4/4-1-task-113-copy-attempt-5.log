@@ -1,0 +1,43 @@
+一、执行结论
+
+已完成。
+
+二、执行范围
+
+单任务：`4-1/task-113`。本次 retry 只修复上次验收指出的两个问题，修改了：
+
+- [ImportProgressListIntegration.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportProgressListIntegration.swift:113)
+- [ImportBatchOverviewSections.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportBatchOverviewSections.swift:38)
+- [MainRepositoryContentView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift:35)
+- [MainRepositoryContentCategoryMoveRefresh.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentCategoryMoveRefresh.swift:24)
+- [ImportBatchICloudPageIntegrationTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportBatchICloudPageIntegrationTests.swift:96)
+
+三、完成情况
+
+- 核对清单：通过。保留 S2-10 + C2-07 toast、Undo、View history/View details request、Cmd+Z、CoreBridge undo action log 接入。
+- 完成标准：通过。没有 mock-only 生产闭环；`CoreUndoActionLogging` 仍走真实 CoreBridge 合同。
+- 范围修复：已移除 `UndoHistoryRouteView`、`S2-11` pageID/accessibility id、S2-11 route 测试断言，改为 S2-10 toast scoped request。
+- 编译修复：已把 `XCTAssertEqual(await undoStore.listRequests(), ...)` 拆成先 `await` 局部变量再断言。
+- Forbidden Touches：未触碰 `core/src/**`；`git diff --name-only -- core/src` 为空。
+
+四、工程质量
+
+代码结构保持在现有 SwiftUI/Main 模块内，没有新增依赖、没有新增 Rust public API、没有文档/UDL 变更需求。错误状态仍通过 `CoreErrorMappingSnapshot` 呈现，Undo blocked/failed/refresh failure 路径保留。未发现占位、硬编码通过态或生产 mock-only 实现。
+
+五、验证情况
+
+已运行并通过：
+
+```bash
+./dev check task 4-1/task-113
+git diff --check
+```
+
+`./dev check task 4-1/task-113` 内部结果：prompt doctor OK、diff check OK、macOS build `BUILD SUCCEEDED`。另外核对 `rg "UndoHistoryRoute|UndoHistoryRouteView|S2-11|XCTAssertEqual\\(await"` 在 app/tests 范围内无残留。
+
+未运行 `./dev test macos`：本 retry 明确要求以 manifest Validation 为上限，不能因 retry 或上次额外验证失败升级到更宽门禁。
+
+六、风险与后续
+
+剩余风险：S2-10 的 `View history` / `View details` 当前只记录 toast scoped request，不实现 S2-11 历史面板 UI；这是本 task 边界内的刻意收口。建议下一个任务继续 `4-1/task-114`，在那里实现 S2-11 undo-history 页面闭环。
+

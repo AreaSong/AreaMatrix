@@ -1,0 +1,42 @@
+一、执行结论
+
+- 已完成。
+
+二、执行范围
+
+- 单任务：`4-1/task-113`
+- 本次修复涉及：
+  - `apps/macos/AreaMatrix/Views/Main/ImportBatchOverviewSections.swift`
+  - `apps/macos/AreaMatrix/Views/Main/ImportProgressListIntegration.swift`
+  - `apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift`
+  - `apps/macos/AreaMatrix/Views/Main/MainRepositoryContentCategoryMoveRefresh.swift`
+  - `apps/macos/AreaMatrixTests/ImportBatchICloudPageIntegrationTests.swift`
+
+三、完成情况
+
+- 核对清单：已只处理 S2-10 + C2-07；已按 UX spec / control map / Core API / C2-07 spec 对齐；未实现同页或相邻能力。
+- 完成标准：S2-10 的 `Undo`、`View history`、失败态 `View details` 都已可触发；Core 调用仍通过 `CoreUndoActionLogging` / `CoreBridge`；无 mock-only 闭环。
+- Forbidden Touches：未触碰。`git diff --name-only -- core/src` 无输出。
+
+四、工程质量
+
+- 移除了生产 UI 中禁用空按钮，把 `View history` 和失败态 `View details` 接到 S2-11 Undo History route。
+- 路由携带当前 C2-07 action/error 上下文，不新增 Core API、不直接调用 UniFFI、不实现 S2-11 完整历史列表。
+- 补了 focused XCTest，覆盖 history/details route 证据。
+- 未新增依赖；未做文档或 UDL 变更。
+
+五、验证情况
+
+- 已运行：`./dev check task 4-1/task-113`
+- 首次结果：失败，Swift 编译发现 `actionLogRefreshFailure` 作用域错误。
+- 修复后重跑：通过。
+  - `prompt doctor: OK`
+  - `git diff --check`: 通过
+  - `xcodebuild ... build CODE_SIGNING_ALLOWED=NO`: `BUILD SUCCEEDED`
+
+六、风险与后续
+
+- 剩余风险：本 task 只打通 S2-10 到 S2-11 的入口和上下文传递；S2-11 完整 undo-history 页面能力仍应由 `4-1/task-114` 覆盖。
+- 当前工作区存在 task-loop/其他文件的既有改动和日志，我未回滚或清理它们。
+- 建议下一个任务：进入 `4-1/task-114`，实现/验收 S2-11 undo-history 的完整列表与执行闭环。
+

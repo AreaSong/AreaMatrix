@@ -117,7 +117,10 @@ extension MainRepositoryContentView {
     }
 
     private func submitRename(fileID: Int64, newName: String) {
-        Task { await fileListModel.submitRename(fileID: fileID, newName: newName) }
+        Task {
+            let didRename = await fileListModel.submitRename(fileID: fileID, newName: newName)
+            if didRename { refreshLatestUndoToast() }
+        }
     }
 
     private func showExistingFile(fileID: Int64) {
@@ -277,14 +280,18 @@ extension MainRepositoryContentView {
 
     private func submitChangeCategory(fileID: Int64, targetCategory: String) {
         Task {
-            await fileListModel.submitMoveToCategory(fileID: fileID, targetCategory: targetCategory) { movedFile in
+            let didMove = await fileListModel.submitMoveToCategory(fileID: fileID, targetCategory: targetCategory) { movedFile in
                 refreshAfterCategoryMove(movedFile)
             }
+            if didMove { refreshLatestUndoToast() }
         }
     }
 
     private func submitDelete(fileID: Int64, operation: MainFileDeleteOperation) {
-        Task { await fileListModel.submitDelete(fileID: fileID, operation: operation) }
+        Task {
+            let didDelete = await fileListModel.submitDelete(fileID: fileID, operation: operation)
+            if didDelete { refreshLatestUndoToast() }
+        }
     }
 
     private func applyICloudConflict(

@@ -1,0 +1,35 @@
+一、执行结论：已完成。
+
+二、执行范围：单任务 `4-1/task-113`，仅修改 `apps/macos/AreaMatrix/**` 与 `apps/macos/AreaMatrixTests/**`：
+- [MainFileListDetailSupport.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileListDetailSupport.swift:55)
+- [ImportBatchOverviewSections.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportBatchOverviewSections.swift:38)
+- [ImportProgressListIntegration.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportProgressListIntegration.swift:113)
+- [MainRepositoryContentCategoryMoveRefresh.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentCategoryMoveRefresh.swift:25)
+- [ImportBatchICloudPageIntegrationTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportBatchICloudPageIntegrationTests.swift:72)
+
+三、完成情况：
+- 已只处理 `S2-10 undo-toast + C2-07 undo-action-log`。
+- 已通过现有 `CoreBridge/CoreUndoActionLogging` 接入真实 `listUndoActions` / `undoAction` 路径，没有改 Core 或 UDL。
+- Toast 会加载最新 pending/blocked/expired undo action，显示可执行或禁用原因，支持按钮 Undo 与 `Cmd+Z`。
+- Undo 成功后按 `refreshTargets` 刷新当前列表、选择详情、change log、undo action log。
+- `View history` 仅保留入口标识并 dismiss，未实现 `S2-11`，避免越界。
+- `Forbidden Touches`：未触碰 `core/src/**`，也未修改 `core/area_matrix.udl`。
+
+四、工程质量：
+- 状态拆分为 `ready/disabled/unavailable/undoing/undone/failed`，错误通过 `CoreErrorMapping` 显式映射。
+- 没有新增依赖，没有 mock-only 产品路径；测试中的 fake store 只用于验证 CoreBridge 协议消费行为。
+- 补充了 S2-10/C2-07 相关测试覆盖：加载最新 action、执行 undo 后刷新目标、blocked action 不执行。
+- 未做文档或 Rust public API 变更，因此无 rustdoc 同步项。
+
+五、验证情况：
+- 已运行 `git diff --check`：通过。
+- 已运行 `./dev check task 4-1/task-113`：通过。
+  - `prompt doctor` OK：637 tasks / 637 manifests / 633 high risk tasks。
+  - `xcodebuild ... build CODE_SIGNING_ALLOWED=NO`：`BUILD SUCCEEDED`。
+- 未单独运行 `xcodebuild test`；本 task manifest 的验证上限是 `./dev check task 4-1/task-113`，当前没有自行扩大门禁。
+
+六、风险与后续：
+- 当前仍有既存 task-loop 状态文件脏改：`.codex/task-loop-runs/20260520_154334/summary.json`、`tasks/prompts/_shared/progress.json`，未回滚。
+- 剩余产品风险是 `View history` 只作为入口占位，不展开历史面板；这应交给后续 `S2-11 undo-history` 任务。
+- 建议下一个任务继续执行页面集成或 `S2-11/C2-07` 历史查看相关任务。
+

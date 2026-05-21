@@ -32,6 +32,7 @@ struct MainRepositoryContentView: View {
     @State var pendingMovedFileFocusID: Int64?
     @State var selectedImportProgressIDs: Set<String> = []
     @State var pendingBatchAddTagsRoute: BatchAddTagsRoute?
+    @State var pendingUndoHistoryRequest: UndoToastHistoryRequest?
     @State var batchTagUndoState: BatchTagUndoState = .idle
     @State var batchTagActionLogRefreshFailure: CoreErrorMappingSnapshot?
     @State var filterText: String = ""
@@ -141,6 +142,7 @@ extension MainRepositoryContentView {
         .sheet(item: actionDestinationBinding, content: actionRoutingSheet)
         .sheet(item: searchDestinationBinding, content: searchRoutingSheet)
         .sheet(item: $pendingBatchAddTagsRoute, content: batchAddTagsRoutingSheet)
+        .sheet(item: $pendingUndoHistoryRequest, content: undoHistorySheet)
         .sheet(item: $smartListManagementRoute, content: smartListManagementSheet)
         .onChange(of: isSearchFiltersPresented) { _, presented in
             guard !presented else { return }

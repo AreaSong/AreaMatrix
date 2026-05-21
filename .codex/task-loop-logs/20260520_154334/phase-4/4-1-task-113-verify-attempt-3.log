@@ -1,0 +1,83 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`4-1/task-113`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-113-s2-10-c2-07-undo-action-log.md`
+- 代码范围：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`
+- 禁止触碰范围：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+三、完成度摘要
+
+- 已覆盖项数：12
+- 未覆盖项数：2
+- 通过项数：10
+- 不通过项数：2
+- 阻塞项数：2
+
+四、逐项验收结果
+
+- 项目：task/manifest/Exact Docs 读取与交叉验收
+- 结果：通过
+- 证据：已读取 S2-10 页面规格、Stage 2 control map、Core API、C2-07 spec；control map 明确 S2-10 只绑定 C2-07。
+- 涉及文件：`docs/ux/page-specs/stage-2-experience/S2-10-undo-toast.md`、`docs/architecture/stage-2-control-map.md`、`docs/api/core-api.md`、`docs/core/capability-specs/stage-2-experience/C2-07-undo-action-log.md`
+
+- 项目：真实 CoreBridge / C2-07 调用
+- 结果：通过
+- 证据：`CoreUndoActionLogging` 通过 `CoreBridge` 调用 `AreaMatrix.listUndoActions` 与 `AreaMatrix.undoAction`，不是直接在视图层调用 UniFFI，也不是静态 mock。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreTagCRUD.swift:10`
+
+- 项目：S2-10 toast 可显示最近 undo action 并执行 Undo
+- 结果：通过
+- 证据：`BatchTagUndoAction.loadLatestAction` 读取 Core action log；`undo` 调用 `undoAction`；Cmd+Z 与 toast Undo 指向同一 executable action。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileListDetailSupport.swift:220`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportProgressListIntegration.swift:136`
+
+- 项目：S2-10 的 `View history` 入口
+- 结果：不通过
+- 证据：页面规格要求 `View history` 进入 S2-11 undo-history，但实现是空 action 且 `.disabled(true)`，用户不可触发。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportBatchOverviewSections.swift:98`
+
+- 项目：Undo 失败后的 `View details` / Undo History 入口
+- 结果：不通过
+- 证据：页面规格要求失败态提供 `View details` 打开 S2-11；实现只显示 `mapping.userMessage` 与 `mapping.suggestedAction` 文本，没有可触发入口。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportBatchOverviewSections.swift:79`
+
+- 项目：Expected New Paths / Forbidden Touches
+- 结果：通过
+- 证据：实现落在 `apps/macos/AreaMatrix/**` 与 `apps/macos/AreaMatrixTests/**`；`git diff --name-only -- core/src` 无输出，未触碰 `core/src/**`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，Core 调用集中在 `CoreUndoActionLogging` / `BatchTagUndoAction`，视图负责展示与触发。
+- 注释 / rustdoc / 文档同步：不通过，S2-10 文档要求的 history/details 入口未同步到实现。
+- 错误处理与边界处理：不通过，失败态只有文本提示，没有按规格提供可进入 Undo History 的可读入口。
+- 测试与验证覆盖：通过但不足以放行，新增测试覆盖 list/undo/blocked summary；指定验证通过，但没有覆盖 `View history` 可触发。
+- 占位、硬编码、mock-only、一次性实现检查：不通过，生产 UI 中 `View history` 是 disabled 空按钮，属于未打通入口。
+
+六、阻塞项
+
+- P1：`View history` 不可触发
+  - 说明：S2-10 规格要求点击 `View history` 打开 `S2-11 undo-history`，但当前按钮为空 action 且禁用。
+  - 绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportBatchOverviewSections.swift:98`
+  - 为什么导致不通过：C2-07 的用户可见入口未打通，不能视为 S2-10 功能可触发和验收。
+
+- P1：Undo 失败态缺少 `View details` / Undo History 入口
+  - 说明：失败态只展示错误消息和建议文本，没有可点击的 `View details`。
+  - 绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportBatchOverviewSections.swift:79`
+  - 为什么导致不通过：页面规格明确要求 Undo 失败时提供进入 Undo History 的入口，错误闭环缺失。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-113`
+- 通过：`prompt doctor: OK`，`git diff --check` 无错误，`xcodebuild ... build CODE_SIGNING_ALLOWED=NO` 最终 `BUILD SUCCEEDED`
+- 失败：无命令失败
+- 缺失：未单独运行 `./dev test macos`；本 task manifest 的指定验证是 `./dev check task 4-1/task-113`，本轮未扩大到宽门禁。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。虽然指定验证命令通过，且核心 undo list/execute 已接入真实 CoreBridge，但 S2-10 页面内 C2-07 的 history/details 用户入口仍未打通。
+
+VERIFY_RESULT: FAIL

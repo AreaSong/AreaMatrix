@@ -1,0 +1,91 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`4-1/task-113`
+- Task 文件：[/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-113-s2-10-c2-07-undo-action-log.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-113-s2-10-c2-07-undo-action-log.md)
+- 实际涉及：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`
+- Forbidden Touches：`core/src/**` 未发现改动
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：0
+- 通过项数：7
+- 不通过项数：3
+- 阻塞项数：2
+
+四、逐项验收结果
+
+- 项目：读取并对齐 S2-10 / C2-07 / control map / Core API / UDL
+- 结果：通过
+- 证据：`S2-10` 规格要求 toast 展示最近可撤销操作、Undo、View history、禁用/失败状态；control map 映射 `S2-10 -> C2-07`；Core API / UDL 声明 `list_undo_actions`、`undo_action`
+- 涉及文件：[/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-2-experience/S2-10-undo-toast.md](/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-2-experience/S2-10-undo-toast.md)、[/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md](/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:3360)、[/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:216)
+
+- 项目：CoreBridge 真实接入 C2-07
+- 结果：通过
+- 证据：`CoreBridge` 通过 `AreaMatrix.listUndoActions` 和 `AreaMatrix.undoAction` 调用 UniFFI/Core，而不是生产路径 mock
+- 涉及文件：[/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreTagCRUD.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreTagCRUD.swift:132)
+
+- 项目：S2-10 用户可见 Undo toast
+- 结果：通过
+- 证据：toast host 加载最近 undo action，按钮触发 undo，Cmd+Z 复用同一 action，Undo 后按 `refresh_targets` 刷新列表、详情、change log、undo actions
+- 涉及文件：[/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportProgressListIntegration.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportProgressListIntegration.swift:128)、[/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileListDetailSupport.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileListDetailSupport.swift:150)
+
+- 项目：Expected New Paths 落地
+- 结果：通过
+- 证据：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**` 均有实际实现和测试改动
+- 涉及文件：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git diff --name-only -- core/src` 输出为空
+- 涉及文件：`core/src/**`
+
+- 项目：不实现相邻页面、相邻平台或同页其他能力
+- 结果：不通过
+- 证据：当前 task 直接新增/修改了 `UndoHistoryPanel`，并标记 `pageID: "S2-11"`，同时实现了加载 undo history 列表、空态、错误态和 row 展示；这属于相邻页面 `S2-11 undo-history` 的实质功能，不只是 S2-10 的 toast 入口
+- 涉及文件：[/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportProgressListIntegration.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportProgressListIntegration.swift:245)
+
+- 项目：验证命令
+- 结果：不通过
+- 证据：`./dev check task 4-1/task-113` 通过；但补充的 macOS 测试门禁 `./dev test macos` 失败，且失败原因为测试编译错误，不是 testmanagerd sandbox fallback 场景
+- 涉及文件：[/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportProgressPageIntegrationVerifyTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportProgressPageIntegrationVerifyTests.swift:88)
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过，`UndoHistoryPanel` 把 `S2-11` 页面能力放进 `S2-10` task，违反 page-feature 切片边界。
+- 注释 / rustdoc / 文档同步：通过，本 task 未新增 public Rust API；Swift 生产代码未见必须补注释的复杂隐式逻辑。
+- 错误处理与边界处理：通过，生产路径对 Core error 走 `CoreErrorMapping`，禁用态不执行 `undo_action`。
+- 测试与验证覆盖：不通过，`./dev test macos` 编译失败，测试证据不可用。
+- 占位、硬编码、mock-only、一次性实现检查：通过，生产路径默认 `CoreBridge()`，测试 actor 仅用于 XCTest 记录调用。
+
+六、阻塞项
+
+- P0：macOS 测试编译失败
+  - 说明：`./dev test macos` 失败，错误为 `Call to actor-isolated instance method 'recordedRepoPaths()' in a synchronous main actor-isolated context` 和 `'await' in an autoclosure that does not support concurrency`。
+  - 位置：[/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportProgressPageIntegrationVerifyTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportProgressPageIntegrationVerifyTests.swift:88)、[/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportProgressPageIntegrationVerifyTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportProgressPageIntegrationVerifyTests.swift:104)
+  - 为什么导致不通过：测试 target 无法编译，工程质量和验证覆盖不成立。
+
+- P1：当前 task 越界实现相邻页面 S2-11
+  - 说明：`S2-10 + C2-07` page-feature task 要只处理 undo-toast；当前实现包含 `UndoHistoryPanel`、`S2-11` pageID、history list/error/empty/row 展示。
+  - 位置：[/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportProgressListIntegration.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportProgressListIntegration.swift:270)
+  - 为什么导致不通过：违反 task checklist 第 4 项和 task-slicing-rules 的 page-feature 边界。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-113`
+- 结果：通过；`doctor: OK`，`git diff --check` 通过，macOS build `BUILD SUCCEEDED`
+- 已运行：`./dev test macos`
+- 结果：失败；测试 target 编译失败，非 sandbox fallback
+- 已运行：`git diff --name-only -- core/src`
+- 结果：通过；无 `core/src/**` 改动
+- 缺失：无可用的完整 macOS XCTest 通过证据
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+
+VERIFY_RESULT: FAIL

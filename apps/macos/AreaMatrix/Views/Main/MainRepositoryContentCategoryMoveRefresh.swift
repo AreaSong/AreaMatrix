@@ -29,6 +29,8 @@ extension MainRepositoryContentView {
             errorMapper: fileListModel.errorMapper,
             onRefreshSelection: { Task { await fileListModel.retrySelectedFileDetail() } },
             onRefreshChangeLog: { Task { await fileListModel.loadSelectedFileChangeLog() } },
+            onRefreshCurrentList: { Task { await fileListModel.retryCurrentCategory() } },
+            onOpenHistory: { pendingUndoHistoryRequest = $0 },
             undoState: $batchTagUndoState,
             actionLogRefreshFailure: $batchTagActionLogRefreshFailure
         )
@@ -48,9 +50,25 @@ extension MainRepositoryContentView {
         )
     }
 
+    func undoHistorySheet(_ request: UndoToastHistoryRequest) -> some View {
+        UndoToastHistoryRouteSheet(request: request, onClose: { pendingUndoHistoryRequest = nil })
+    }
+
     func updateBatchTagUndoState(_ state: BatchTagUndoState) {
         batchTagUndoState = state
         batchTagActionLogRefreshFailure = nil
+    }
+
+    @MainActor
+    func refreshLatestUndoToast() {
+        Task {
+            batchTagUndoState = await BatchTagUndoAction.refreshLatestToastState(
+                repoPath: opening.config.repoPath,
+                undoStore: fileListModel.undoActionStore,
+                errorMapper: fileListModel.errorMapper
+            )
+            batchTagActionLogRefreshFailure = nil
+        }
     }
 
     func openBatchAddTagsRoute(_ ids: Set<Int64>, source: BatchAddTagsRouteSource) {

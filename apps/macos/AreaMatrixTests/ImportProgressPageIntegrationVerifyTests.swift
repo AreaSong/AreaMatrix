@@ -38,6 +38,40 @@ final class ImportProgressPageIntegrationVerifyTests: XCTestCase {
         XCTAssertEqual(result.items.map(\.status), [.imported, .failed, .skipped, .skipped, .pending])
         XCTAssertEqual(result.items[1].reason, "Storage write failed")
     }
+
+    @MainActor
+    func testS210ViewHistoryRequestBuildsToastScopedRoute() {
+        let action = UndoActionRecordSnapshot.s210HistoryFixture()
+        let request = UndoToastHistoryRequest(source: .viewHistory, state: .ready(action), actionLogRefreshFailure: nil)
+        let content = MainRepositoryContentView(
+            opening: .s117Fixture(repoPath: "/tmp/repo"),
+            state: .list,
+            onImport: {},
+            onDropImport: { _, _ in },
+            errorMapper: S210HistoryErrorMapper()
+        )
+
+        let sheetDescription = importProgressMirrorDescription(of: content.undoHistorySheet(request))
+
+        XCTAssertTrue(sheetDescription.contains("UndoToastHistoryRouteSheet"))
+        XCTAssertTrue(sheetDescription.contains("S2-10-C2-07-undo-history-route"))
+        XCTAssertFalse(sheetDescription.contains("UndoHistoryPanel"))
+        XCTAssertEqual(request.focusedActionID, action.actionID)
+    }
+
+    @MainActor
+    func testS210ViewDetailsRequestCarriesFailedActionContext() {
+        let action = UndoActionRecordSnapshot.s210HistoryFixture()
+        let failure = CoreErrorMappingSnapshot.s210HistoryFailure
+        let request = UndoToastHistoryRequest(
+            source: .viewDetails,
+            state: .failed(failure, previous: action),
+            actionLogRefreshFailure: nil
+        )
+
+        XCTAssertEqual(request.focusedActionID, action.actionID)
+        XCTAssertEqual(request.failureMapping, failure)
+    }
 }
 
 private extension ImportProgressPageIntegrationVerifyTests {
@@ -122,5 +156,56 @@ private extension CoreErrorMappingSnapshot {
             recoverability: .fatal,
             rawContext: "S1-20 fatal import progress"
         )
+    }
+
+    static var s210HistoryFailure: CoreErrorMappingSnapshot {
+        CoreErrorMappingSnapshot(
+            kind: .db,
+            userMessage: "Undo history could not be loaded",
+            severity: .medium,
+            suggestedAction: "Retry from Undo history.",
+            recoverability: .refreshRequired,
+            rawContext: "S2-10 C2-07 undo-action-log"
+        )
+    }
+}
+
+private extension UndoActionRecordSnapshot {
+    static func s210HistoryFixture() -> UndoActionRecordSnapshot {
+        UndoActionRecordSnapshot(
+            actionID: "undo-history-1",
+            kind: "batch_add_tags",
+            summary: #"Added tag "finance" to 3 files."#,
+            affectedCount: 3,
+            affectedFileNames: ["invoice.pdf", "receipt.pdf"],
+            status: .pending,
+            canUndo: true,
+            disabledReason: nil,
+            createdAt: 1_700_000_000,
+            updatedAt: 1_700_000_010
+        )
+    }
+}
+
+private func importProgressMirrorDescription(of value: Any) -> String {
+    var lines: [String] = []
+    appendImportProgressMirrorDescription(of: value, to: &lines)
+    return lines.joined(separator: "\n")
+}
+
+private func appendImportProgressMirrorDescription(of value: Any, to lines: inout [String]) {
+    lines.append(String(describing: type(of: value)))
+    lines.append(String(describing: value))
+    for child in Mirror(reflecting: value).children {
+        if let label = child.label {
+            lines.append(label)
+        }
+        appendImportProgressMirrorDescription(of: child.value, to: &lines)
+    }
+}
+
+private actor S210HistoryErrorMapper: CoreErrorMapping {
+    func mapCoreError(_: CoreError) async -> CoreErrorMappingSnapshot {
+        .s210HistoryFailure
     }
 }

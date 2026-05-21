@@ -1,20 +1,23 @@
 import Foundation
 
 extension MainFileListModel {
-    func submitDelete(fileID: Int64, operation: MainFileDeleteOperation) async {
+    @discardableResult
+    func submitDelete(fileID: Int64, operation: MainFileDeleteOperation) async -> Bool {
         guard pendingActionDestination == .delete(fileID: fileID),
               !deleteState.isDeleting,
-              writeActionDisabledReason(fileID: fileID) == nil else { return }
+              writeActionDisabledReason(fileID: fileID) == nil else { return false }
 
         deleteState = .deleting(fileID: fileID, operation: operation)
         clearDiagnosticsState()
         do {
             try await performDelete(fileID: fileID, operation: operation)
             await applyDeletedFile(fileID: fileID, operation: operation)
+            return true
         } catch {
             let mapping = await mapCoreError(error)
-            guard pendingActionDestination == .delete(fileID: fileID) else { return }
+            guard pendingActionDestination == .delete(fileID: fileID) else { return false }
             deleteState = .failed(fileID: fileID, operation: operation, mapping)
+            return false
         }
     }
 

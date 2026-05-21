@@ -20,9 +20,10 @@ final class RenameFilePageFeatureTests: XCTestCase {
 
         await model.selectFiles([original.id])
         model.beginRename()
-        await model.submitRename(fileID: original.id, newName: "new.pdf")
+        let didRename = await model.submitRename(fileID: original.id, newName: "new.pdf")
         let requests = await renamer.recordedRequests()
 
+        XCTAssertTrue(didRename)
         XCTAssertEqual(requests, [
             RenameRequest(repoPath: "/tmp/repo", fileID: original.id, newName: "new.pdf")
         ])
@@ -51,9 +52,10 @@ final class RenameFilePageFeatureTests: XCTestCase {
 
         await model.selectFiles([original.id])
         model.beginRename()
-        await model.submitRename(fileID: original.id, newName: "new.pdf")
+        let didRename = await model.submitRename(fileID: original.id, newName: "new.pdf")
         let mappedErrors = await mapper.recordedErrors()
 
+        XCTAssertFalse(didRename)
         XCTAssertEqual(model.files, [original])
         XCTAssertEqual(model.selectedFileDetail, original)
         XCTAssertEqual(model.pendingActionDestination, .rename(fileID: original.id))

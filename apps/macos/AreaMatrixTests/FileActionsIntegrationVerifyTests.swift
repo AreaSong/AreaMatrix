@@ -19,9 +19,10 @@ final class FileActionsIntegrationVerifyTests: XCTestCase {
         await context.model.loadCurrentCategory("docs")
         await context.model.selectFiles([context.ownedFile.id])
         context.model.beginRename()
-        await context.model.submitRename(fileID: context.ownedFile.id, newName: "renamed.pdf")
+        let didRename = await context.model.submitRename(fileID: context.ownedFile.id, newName: "renamed.pdf")
         let renamed = try XCTUnwrap(context.model.selectedFileDetail)
 
+        XCTAssertTrue(didRename)
         XCTAssertEqual(context.model.pendingActionDestination, nil)
         XCTAssertEqual(context.model.renameState, .idle)
         XCTAssertEqual(renamed.id, context.ownedFile.id)
@@ -48,7 +49,7 @@ final class FileActionsIntegrationVerifyTests: XCTestCase {
         _ context: FileActionsRealCoreContext
     ) async throws -> FileEntrySnapshot {
         try await assertFileActionMovePreview(renamed, context)
-        await context.model.submitMoveToCategory(fileID: renamed.id, targetCategory: "finance")
+        let didMove = await context.model.submitMoveToCategory(fileID: renamed.id, targetCategory: "finance")
         let moved = try XCTUnwrap(context.model.selectedFileDetail)
         let refreshedTree = try await context.bridge.listTree(repoPath: context.repoURL.path, locale: "zh-Hans")
         let refreshPlan = CategoryMoveRefreshPlan.make(
@@ -59,6 +60,7 @@ final class FileActionsIntegrationVerifyTests: XCTestCase {
         )
         await context.model.loadCurrentCategory(refreshPlan.categoryForFileList, focusingOn: moved.id)
 
+        XCTAssertTrue(didMove)
         XCTAssertEqual(context.model.pendingActionDestination, nil)
         XCTAssertEqual(context.model.changeCategoryState, .idle)
         XCTAssertEqual(context.model.selection, .single(moved.id))
@@ -107,12 +109,13 @@ final class FileActionsIntegrationVerifyTests: XCTestCase {
         await context.model.loadCurrentCategory("docs")
         await context.model.selectFiles([context.indexedFile.id])
         context.model.beginDelete()
-        await context.model.submitDelete(fileID: context.indexedFile.id, operation: .removeFromIndex)
+        let didDelete = await context.model.submitDelete(fileID: context.indexedFile.id, operation: .removeFromIndex)
         let docsFiles = try await context.bridge.listFiles(
             repoPath: context.repoURL.path,
             filter: .currentCategory("docs")
         )
 
+        XCTAssertTrue(didDelete)
         XCTAssertEqual(context.model.pendingActionDestination, nil)
         XCTAssertEqual(context.model.deleteState, .idle)
         XCTAssertNotEqual(context.model.selectedFileDetail?.id, moved.id)
@@ -146,18 +149,22 @@ final class FileActionsIntegrationVerifyTests: XCTestCase {
 
         await model.selectFiles([owned.id])
         model.beginRename()
-        await model.submitRename(fileID: owned.id, newName: "renamed.pdf")
+        let didRename = await model.submitRename(fileID: owned.id, newName: "renamed.pdf")
         model.beginChangeCategory(fileID: owned.id)
         await model.loadMoveToCategoryPreview(fileID: owned.id, targetCategory: "finance")
-        await model.submitMoveToCategory(fileID: owned.id, targetCategory: "finance")
+        let didMove = await model.submitMoveToCategory(fileID: owned.id, targetCategory: "finance")
 
         model.beginDelete(fileID: indexed.id)
-        await model.submitDelete(fileID: indexed.id, operation: .removeFromIndex)
+        let didRemoveIndex = await model.submitDelete(fileID: indexed.id, operation: .removeFromIndex)
         model.beginDelete(fileID: trash.id)
-        await model.submitDelete(fileID: trash.id, operation: .moveToTrash)
+        let didMoveToTrash = await model.submitDelete(fileID: trash.id, operation: .moveToTrash)
 
         let calls = await core.recordedActionCalls()
 
+        XCTAssertTrue(didRename)
+        XCTAssertTrue(didMove)
+        XCTAssertTrue(didRemoveIndex)
+        XCTAssertTrue(didMoveToTrash)
         XCTAssertEqual(calls, [
             .rename(fileID: owned.id, newName: "renamed.pdf"),
             .previewMove(fileID: owned.id, targetCategory: "finance"),

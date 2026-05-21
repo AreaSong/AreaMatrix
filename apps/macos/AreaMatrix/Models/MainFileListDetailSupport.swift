@@ -55,6 +55,7 @@ enum BatchTagUndoState: Equatable {
     case idle
     case loading(token: String)
     case ready(UndoActionRecordSnapshot)
+    case disabled(UndoActionRecordSnapshot, reason: String)
     case unavailable(reason: String)
     case undoing(UndoActionRecordSnapshot)
     case undone(UndoActionResultSnapshot)
@@ -62,18 +63,23 @@ enum BatchTagUndoState: Equatable {
 
     var action: UndoActionRecordSnapshot? {
         switch self {
-        case let .ready(action), let .undoing(action), let .failed(_, action?):
+        case let .ready(action), let .disabled(action, _), let .undoing(action), let .failed(_, action?):
             action
         case .idle, .loading, .unavailable, .undone, .failed:
             nil
         }
     }
 
+    var executableAction: UndoActionRecordSnapshot? {
+        guard case let .ready(action) = self else { return nil }
+        return action
+    }
+
     var isBusy: Bool {
         switch self {
         case .loading, .undoing:
             true
-        case .idle, .ready, .unavailable, .undone, .failed:
+        case .idle, .ready, .disabled, .unavailable, .undone, .failed:
             false
         }
     }
@@ -88,6 +94,14 @@ struct BatchTagUndoLoadResult: Equatable {
     var action: UndoActionRecordSnapshot?
     var unavailableReason: String?
     var failure: CoreErrorMappingSnapshot?
+
+    var toastState: BatchTagUndoState? {
+        if let failure { return .failed(failure, previous: action) }
+        if let action, let unavailableReason { return .disabled(action, reason: unavailableReason) }
+        if let unavailableReason { return .unavailable(reason: unavailableReason) }
+        if let action { return .ready(action) }
+        return nil
+    }
 }
 
 struct BatchTagUndoApplyResult: Equatable {
@@ -107,6 +121,10 @@ struct BatchAddTagsSheetCompletion: Equatable {
 
 struct BatchTagUndoRefreshPlan: Equatable {
     var refreshTargets: [String]
+
+    var refreshesCurrentList: Bool {
+        containsAny(["files", "tree"])
+    }
 
     var refreshesSelectionDetails: Bool {
         containsAny(["files", "tags", "selection"])
@@ -130,6 +148,19 @@ struct BatchTagUndoRefreshPlan: Equatable {
 }
 
 enum BatchTagUndoAction {
+    static func refreshLatestToastState(
+        repoPath: String,
+        undoStore: any CoreUndoActionLogging,
+        errorMapper: any CoreErrorMapping
+    ) async -> BatchTagUndoState {
+        let loadResult = await loadLatestAction(
+            repoPath: repoPath,
+            undoStore: undoStore,
+            errorMapper: errorMapper
+        )
+        return loadResult.toastState ?? .idle
+    }
+
     static func completionAfterBatchApply(
         repoPath: String,
         report: BatchMutationReportSnapshot?,
@@ -153,14 +184,8 @@ enum BatchTagUndoAction {
             undoStore: undoStore,
             errorMapper: errorMapper
         )
-        if let failure = loadResult.failure {
-            return BatchAddTagsSheetCompletion(undoState: .failed(failure, previous: nil), closesSheet: true)
-        }
-        if let reason = loadResult.unavailableReason {
-            return BatchAddTagsSheetCompletion(undoState: .unavailable(reason: reason), closesSheet: true)
-        }
-        if let action = loadResult.action {
-            return BatchAddTagsSheetCompletion(undoState: .ready(action), closesSheet: true)
+        if let toastState = loadResult.toastState {
+            return BatchAddTagsSheetCompletion(undoState: toastState, closesSheet: true)
         }
         return BatchAddTagsSheetCompletion(
             undoState: .unavailable(reason: "Undo action is no longer available."),
@@ -182,14 +207,27 @@ enum BatchTagUndoAction {
             guard let action = actions.first(where: { $0.actionID == token }) else {
                 return BatchTagUndoLoadResult(action: nil, unavailableReason: "Undo action is no longer available.", failure: nil)
             }
-            guard action.status == .pending, action.canUndo else {
-                return BatchTagUndoLoadResult(
-                    action: action,
-                    unavailableReason: action.disabledReason ?? "Undo action is currently blocked.",
-                    failure: nil
-                )
+            return loadResult(for: action)
+        } catch {
+            return BatchTagUndoLoadResult(
+                action: nil,
+                unavailableReason: nil,
+                failure: await mapError(error, errorMapper: errorMapper)
+            )
+        }
+    }
+
+    static func loadLatestAction(
+        repoPath: String,
+        undoStore: any CoreUndoActionLogging,
+        errorMapper: any CoreErrorMapping
+    ) async -> BatchTagUndoLoadResult {
+        do {
+            let actions = try await undoStore.listUndoActions(repoPath: repoPath)
+            guard let action = latestToastAction(from: actions) else {
+                return BatchTagUndoLoadResult(action: nil, unavailableReason: nil, failure: nil)
             }
-            return BatchTagUndoLoadResult(action: action, unavailableReason: nil, failure: nil)
+            return loadResult(for: action)
         } catch {
             return BatchTagUndoLoadResult(
                 action: nil,
@@ -236,6 +274,37 @@ enum BatchTagUndoAction {
     private static func normalizedToken(_ undoToken: String?) -> String? {
         let token = undoToken?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         return token.isEmpty ? nil : token
+    }
+
+    private static func latestToastAction(from actions: [UndoActionRecordSnapshot]) -> UndoActionRecordSnapshot? {
+        actions.first { action in
+            action.status == .pending || action.status == .blocked || action.status == .expired
+        }
+    }
+
+    private static func loadResult(for action: UndoActionRecordSnapshot) -> BatchTagUndoLoadResult {
+        guard action.status == .pending, action.canUndo else {
+            return BatchTagUndoLoadResult(
+                action: action,
+                unavailableReason: disabledReason(for: action),
+                failure: nil
+            )
+        }
+        return BatchTagUndoLoadResult(action: action, unavailableReason: nil, failure: nil)
+    }
+
+    private static func disabledReason(for action: UndoActionRecordSnapshot) -> String {
+        if let reason = action.disabledReason, !reason.isEmpty { return reason }
+        switch action.status {
+        case .blocked:
+            return "Undo action is currently blocked."
+        case .expired:
+            return "Undo action expired."
+        case .executed:
+            return "Undo action has already been executed."
+        case .pending:
+            return "Undo action is currently unavailable."
+        }
     }
 
     private static func mapError(_ error: Error, errorMapper: any CoreErrorMapping) async -> CoreErrorMappingSnapshot {

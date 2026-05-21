@@ -39,6 +39,7 @@ struct BatchTagUndoToastView: View {
     let state: BatchTagUndoState
     let actionLogRefreshFailure: CoreErrorMappingSnapshot?
     let onUndo: (UndoActionRecordSnapshot) -> Void
+    let onOpenHistory: (UndoToastHistoryRequest.Source) -> Void
     let onDismiss: () -> Void
 
     var body: some View {
@@ -50,7 +51,7 @@ struct BatchTagUndoToastView: View {
         .font(.caption)
         .padding(8)
         .background(Color.secondary.opacity(0.12), in: RoundedRectangle(cornerRadius: 8))
-        .accessibilityIdentifier("S2-09-C2-07-main-undo-toast")
+        .accessibilityIdentifier("S2-10-C2-07-undo-toast")
     }
 
     @ViewBuilder
@@ -61,13 +62,13 @@ struct BatchTagUndoToastView: View {
         case .loading:
             Label("Loading undo action...", systemImage: "arrow.uturn.backward.circle")
         case let .ready(action):
-            Label("已添加标签", systemImage: "arrow.uturn.backward.circle")
-            Text(action.summary)
-                .foregroundStyle(.secondary)
+            undoSummary(action, status: "Undo available")
+        case let .disabled(action, reason):
+            disabledUndoSummary(action, reason: reason)
         case let .unavailable(reason):
             Label(reason, systemImage: "exclamationmark.triangle")
         case let .undoing(action):
-            Label("Undoing \(action.summary)", systemImage: "arrow.uturn.backward.circle")
+            undoSummary(action, status: "Undoing...")
         case let .undone(result):
             VStack(alignment: .leading, spacing: 3) {
                 Label(result.summary, systemImage: "checkmark.circle")
@@ -87,11 +88,40 @@ struct BatchTagUndoToastView: View {
 
     @ViewBuilder
     private var toastActions: some View {
-        if let action = state.action, !state.isBusy {
+        if case .ready(let action) = state {
             Button("Undo") { onUndo(action) }
-                .accessibilityIdentifier("S2-09-C2-07-undo-action")
+                .accessibilityIdentifier("S2-10-C2-07-undo-action")
+        } else if case .disabled = state {
+            Button("Undo") {}
+                .disabled(true)
+                .accessibilityIdentifier("S2-10-C2-07-undo-action-disabled")
+        }
+        if case .failed = state {
+            Button("View details") { onOpenHistory(.viewDetails) }
+                .help("Open Undo History details for this failed undo.")
+                .accessibilityIdentifier("S2-10-C2-07-view-details")
+        } else {
+            Button("View history") { onOpenHistory(.viewHistory) }
+                .help("Open Undo History for this action.")
+                .accessibilityIdentifier("S2-10-C2-07-view-history")
         }
         Button("Dismiss", action: onDismiss)
+    }
+
+    private func undoSummary(_ action: UndoActionRecordSnapshot, status: String) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Label(action.summary, systemImage: "arrow.uturn.backward.circle")
+            Text("\(status) · \(action.affectedCount) affected")
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private func disabledUndoSummary(_ action: UndoActionRecordSnapshot, reason: String) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Label(action.summary, systemImage: "exclamationmark.triangle")
+            Text(reason)
+                .foregroundStyle(.secondary)
+        }
     }
 }
 
