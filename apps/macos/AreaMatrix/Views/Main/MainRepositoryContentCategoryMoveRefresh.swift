@@ -50,6 +50,22 @@ extension MainRepositoryContentView {
         )
     }
 
+    func batchChangeCategoryRoutingSheet(_ route: BatchChangeCategoryRoute) -> some View {
+        BatchChangeCategorySheet(
+            repoPath: opening.config.repoPath,
+            fileIDs: route.fileIDs,
+            selectedFiles: route.selectedFiles,
+            selectedCount: route.selectedCount,
+            disabledReason: route.disabledReason,
+            categoryRows: repositoryTree.sidebarRows,
+            changer: fileListModel.batchCategoryChanger,
+            errorMapper: fileListModel.errorMapper,
+            onApplied: applyBatchCategoryChangeResult,
+            onCreateNewCategory: openClassifierRuleEditorFromBatchCategory,
+            onClose: { pendingBatchChangeCategoryRoute = nil }
+        )
+    }
+
     func undoHistorySheet(_ request: UndoToastHistoryRequest) -> some View {
         UndoHistoryPanel(
             repoPath: opening.config.repoPath,
@@ -286,6 +302,26 @@ extension MainRepositoryContentView {
             isLoading: fileListModel.isLoading,
             writeLockedFileIDs: fileListModel.writeLockedFileIDs
         )
+    }
+
+    func applyBatchCategoryChangeResult(_ report: BatchCategoryChangeReportSnapshot) {
+        Task {
+            if !report.updatedFiles.isEmpty {
+                fileListModel.files = fileListModel.files.map { current in
+                    report.updatedFiles.first { $0.id == current.id } ?? current
+                }
+            }
+            await fileListModel.retryCurrentCategory()
+            refreshLatestUndoToast()
+            let changedCount = report.movedCount + report.metadataOnlyCount
+            fileListModel.statusBanner = .changedBatchCategory(count: changedCount, category: report.targetCategory)
+        }
+    }
+
+    func openClassifierRuleEditorFromBatchCategory(_ handoff: BatchChangeCategoryNewCategoryHandoff) {
+        guard handoff.targetPageID == "S2-19" else { return }
+        pendingBatchChangeCategoryRoute = nil
+        fileListModel.openClassifierRuleEditorForBatchCategory()
     }
 
     private func sidebarRow(_ row: RepositorySidebarRowSnapshot) -> some View {

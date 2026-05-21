@@ -40,6 +40,7 @@ final class MainFileListModel: ObservableObject {
     let fileRenamer: any CoreFileRenaming
     let fileDeleter: any CoreFileDeleting
     let fileCategoryMover: any CoreFileCategoryMoving
+    let batchCategoryChanger: any CoreBatchCategoryChanging
     let iCloudConflictResolver: any ICloudConflictResolving
     let tagStore: any CoreTagCRUD
     let undoActionStore: any CoreUndoActionLogging
@@ -66,6 +67,7 @@ final class MainFileListModel: ObservableObject {
         fileRenamer: any CoreFileRenaming = CoreBridge(),
         fileDeleter: any CoreFileDeleting = CoreBridge(),
         fileCategoryMover: any CoreFileCategoryMoving = CoreBridge(),
+        batchCategoryChanger: any CoreBatchCategoryChanging = CoreBridge(),
         iCloudConflictResolver: any ICloudConflictResolving = CoreBridge(),
         tagStore: any CoreTagCRUD = CoreBridge(),
         undoActionStore: any CoreUndoActionLogging = CoreBridge(),
@@ -86,6 +88,7 @@ final class MainFileListModel: ObservableObject {
         self.fileRenamer = fileRenamer
         self.fileDeleter = fileDeleter
         self.fileCategoryMover = fileCategoryMover
+        self.batchCategoryChanger = batchCategoryChanger
         self.iCloudConflictResolver = iCloudConflictResolver
         self.tagStore = tagStore
         self.undoActionStore = undoActionStore
@@ -161,10 +164,6 @@ extension MainFileListModel {
 
     func retrySelectedFileChangeLog() async {
         if let selectedFileID = selection.singleFileID { await loadChangeLog(fileID: selectedFileID) }
-    }
-
-    func consumeDetailTabRequest(_ request: MainDetailTabRequest) {
-        if detailTabRequest == request { detailTabRequest = nil }
     }
 
     func syncExternalCreated(_ event: MainExternalCreatedFileEvent) async {

@@ -108,6 +108,9 @@ extension MainRepositoryContentView {
             Button("Add tags...") {
                 openBatchAddTagsRoute(selection, source: .listContextMenu)
             }
+            Button("Change category...") {
+                openBatchChangeCategoryRoute(selection, source: .listContextMenu)
+            }
         }
         Button("Copy Paths") {
             onCopyPaths(selectedFiles.map(\.path))

@@ -182,6 +182,10 @@ extension MainRepositoryContentView {
             batchTagStore: fileListModel.tagStore,
             batchTagUndoStore: fileListModel.undoActionStore,
             batchTagErrorMapper: fileListModel.errorMapper,
+            batchCategoryChanger: fileListModel.batchCategoryChanger,
+            categoryRows: repositoryTree.sidebarRows,
+            onBatchCategoryApplied: applyBatchCategoryChangeResult,
+            onBatchCategoryCreateNewCategory: openClassifierRuleEditorFromBatchCategory,
             onRetrySelectedFileDetail: { Task { await fileListModel.retrySelectedFileDetail() } },
             tagActions: detailTagActions,
             onCopyPaths: onCopyPaths,
@@ -484,7 +488,7 @@ extension MainRepositoryContentView {
                 onApplySuggestion: applyQuerySuggestion,
                 onClear: clearSearch
             )
-        case .savedSearchSheet, .indexingStatus, .commandPalette:
+        case .savedSearchSheet, .indexingStatus, .commandPalette, .classifierRuleEditor:
             EmptyView()
         }
     }

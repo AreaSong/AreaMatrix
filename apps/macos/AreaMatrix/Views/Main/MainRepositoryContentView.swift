@@ -32,6 +32,7 @@ struct MainRepositoryContentView: View {
     @State var pendingMovedFileFocusID: Int64?
     @State var selectedImportProgressIDs: Set<String> = []
     @State var pendingBatchAddTagsRoute: BatchAddTagsRoute?
+    @State var pendingBatchChangeCategoryRoute: BatchChangeCategoryRoute?
     @State var pendingUndoHistoryRequest: UndoToastHistoryRequest?
     @State var batchTagUndoState: BatchTagUndoState = .idle
     @State var batchTagActionLogRefreshFailure: CoreErrorMappingSnapshot?
@@ -142,6 +143,7 @@ extension MainRepositoryContentView {
         .sheet(item: actionDestinationBinding, content: actionRoutingSheet)
         .sheet(item: searchDestinationBinding, content: searchRoutingSheet)
         .sheet(item: $pendingBatchAddTagsRoute, content: batchAddTagsRoutingSheet)
+        .sheet(item: $pendingBatchChangeCategoryRoute, content: batchChangeCategoryRoutingSheet)
         .sheet(item: $pendingUndoHistoryRequest, content: undoHistorySheet)
         .sheet(item: $smartListManagementRoute, content: smartListManagementSheet)
         .onChange(of: isSearchFiltersPresented) { _, presented in
@@ -284,6 +286,7 @@ extension MainRepositoryContentView {
         searchQuerying: any CoreSearchQuerying = CoreBridge(),
         searchFiltering: any CoreSearchFiltering = CoreBridge(),
         fileCategoryMover: any CoreFileCategoryMoving = CoreBridge(),
+        batchCategoryChanger: any CoreBatchCategoryChanging = CoreBridge(),
         iCloudConflictResolver: any ICloudConflictResolving = CoreBridge(),
         tagStore: any CoreTagCRUD = CoreBridge(),
         undoActionStore: any CoreUndoActionLogging = CoreBridge(),
@@ -327,6 +330,7 @@ extension MainRepositoryContentView {
             searchQuerying: searchQuerying,
             searchFiltering: searchFiltering,
             fileCategoryMover: fileCategoryMover,
+            batchCategoryChanger: batchCategoryChanger,
             iCloudConflictResolver: iCloudConflictResolver,
             tagStore: tagStore,
             undoActionStore: undoActionStore,

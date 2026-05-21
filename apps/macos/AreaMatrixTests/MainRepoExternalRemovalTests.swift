@@ -29,8 +29,20 @@ final class MainRepoExternalRemovalTests: XCTestCase {
             onClose: {}
         ).body)
         let commandRoute = BatchAddTagsRoute(source: .commandPalette, fileIDs: [], selectedCount: 0, disabledReason: "No files selected")
+        let categoryRoute = BatchChangeCategoryRoute(
+            source: .commandPalette,
+            fileIDs: [],
+            selectedFiles: [],
+            selectedCount: 0,
+            disabledReason: "No files selected"
+        )
         let commandBody = s201RouteMirrorDescription(of: SearchCommandPaletteRouteView(
-            query: "合同", batchAddTagsRoute: commandRoute, onOpenBatchAddTags: { _ in }, onClose: {}
+            query: "合同",
+            batchAddTagsRoute: commandRoute,
+            batchChangeCategoryRoute: categoryRoute,
+            onOpenBatchAddTags: { _ in },
+            onOpenBatchChangeCategory: { _ in },
+            onClose: {}
         ).body)
 
         XCTAssertTrue(emptyBody.contains("S2-04-search-empty"))

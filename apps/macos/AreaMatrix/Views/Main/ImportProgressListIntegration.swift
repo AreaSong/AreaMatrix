@@ -307,7 +307,9 @@ struct UndoToastHistoryRouteSheet: View {
 struct SearchCommandPaletteRouteView: View {
     let query: String
     let batchAddTagsRoute: BatchAddTagsRoute
+    let batchChangeCategoryRoute: BatchChangeCategoryRoute
     let onOpenBatchAddTags: (BatchAddTagsRoute) -> Void
+    let onOpenBatchChangeCategory: (BatchChangeCategoryRoute) -> Void
     let onClose: () -> Void
 
     var body: some View {
@@ -318,6 +320,7 @@ struct SearchCommandPaletteRouteView: View {
                 .font(.callout)
                 .foregroundStyle(.secondary)
             commandPaletteBatchAddTagsButton
+            commandPaletteBatchChangeCategoryButton
             HStack {
                 Spacer()
                 Button("Close", action: onClose)
@@ -336,6 +339,17 @@ struct SearchCommandPaletteRouteView: View {
         .disabled(batchAddTagsRoute.selectedCount == 0)
         .help(BatchAddTagsEntryPolicy.openHelp(disabledReason: batchAddTagsRoute.disabledReason))
         .accessibilityIdentifier("S2-09-command-palette-add-tags")
+    }
+
+    private var commandPaletteBatchChangeCategoryButton: some View {
+        Button {
+            onOpenBatchChangeCategory(batchChangeCategoryRoute)
+        } label: {
+            Label("Change category...", systemImage: "folder")
+        }
+        .disabled(batchChangeCategoryRoute.selectedCount == 0)
+        .help(BatchChangeCategoryEntryPolicy.openHelp(disabledReason: batchChangeCategoryRoute.disabledReason))
+        .accessibilityIdentifier("S2-12-command-palette-change-category")
     }
 }
 

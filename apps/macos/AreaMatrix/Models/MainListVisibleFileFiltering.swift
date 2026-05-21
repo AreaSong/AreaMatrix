@@ -179,6 +179,7 @@ enum MainSearchDestination: Equatable, Identifiable {
     case queryError(SearchQueryRequestSnapshot, SearchQueryDiagnosticSnapshot)
     case indexingStatus(SearchQueryRequestSnapshot)
     case commandPalette
+    case classifierRuleEditor(sourcePageID: String)
 
     var id: String {
         switch self {
@@ -192,6 +193,7 @@ enum MainSearchDestination: Equatable, Identifiable {
             "S2-01-indexing-\(request.query)"
         case .commandPalette:
             "S2-15-command-palette"
+        case let .classifierRuleEditor(sourcePageID): "S2-19-classifier-rule-editor-\(sourcePageID)"
         }
     }
 
@@ -207,12 +209,13 @@ enum MainSearchDestination: Equatable, Identifiable {
             "S2-01-indexing-status"
         case .commandPalette:
             "S2-15"
+        case .classifierRuleEditor: "S2-19"
         }
     }
 
     var isSheetRoute: Bool {
         switch self {
-        case .savedSearchSheet, .indexingStatus, .commandPalette:
+        case .savedSearchSheet, .indexingStatus, .commandPalette, .classifierRuleEditor:
             true
         case .searchEmpty, .queryError:
             false

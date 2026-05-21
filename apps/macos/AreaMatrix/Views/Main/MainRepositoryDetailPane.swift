@@ -18,6 +18,10 @@ struct MainRepositoryDetailPane: View {
     let batchTagStore: any CoreTagCRUD
     let batchTagUndoStore: any CoreUndoActionLogging
     let batchTagErrorMapper: any CoreErrorMapping
+    let batchCategoryChanger: any CoreBatchCategoryChanging
+    let categoryRows: [RepositorySidebarRowSnapshot]
+    let onBatchCategoryApplied: (BatchCategoryChangeReportSnapshot) -> Void
+    let onBatchCategoryCreateNewCategory: (BatchChangeCategoryNewCategoryHandoff) -> Void
     let onRetrySelectedFileDetail: () -> Void
     let tagActions: MainRepositoryDetailPaneTagActions
     let onCopyPaths: ([String]) -> Void
@@ -54,6 +58,10 @@ struct MainRepositoryDetailPane: View {
         batchTagStore: any CoreTagCRUD,
         batchTagUndoStore: any CoreUndoActionLogging,
         batchTagErrorMapper: any CoreErrorMapping,
+        batchCategoryChanger: any CoreBatchCategoryChanging,
+        categoryRows: [RepositorySidebarRowSnapshot],
+        onBatchCategoryApplied: @escaping (BatchCategoryChangeReportSnapshot) -> Void,
+        onBatchCategoryCreateNewCategory: @escaping (BatchChangeCategoryNewCategoryHandoff) -> Void = { _ in },
         onRetrySelectedFileDetail: @escaping () -> Void,
         tagActions: MainRepositoryDetailPaneTagActions,
         onCopyPaths: @escaping ([String]) -> Void,
@@ -87,6 +95,10 @@ struct MainRepositoryDetailPane: View {
         self.batchTagStore = batchTagStore
         self.batchTagUndoStore = batchTagUndoStore
         self.batchTagErrorMapper = batchTagErrorMapper
+        self.batchCategoryChanger = batchCategoryChanger
+        self.categoryRows = categoryRows
+        self.onBatchCategoryApplied = onBatchCategoryApplied
+        self.onBatchCategoryCreateNewCategory = onBatchCategoryCreateNewCategory
         self.onRetrySelectedFileDetail = onRetrySelectedFileDetail
         self.tagActions = tagActions
         self.onCopyPaths = onCopyPaths
@@ -200,41 +212,24 @@ extension MainRepositoryDetailPane {
     }
 
     private var multiSelectionActions: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Button("Show in Finder") {}
-                .disabled(true)
-                .help("Open one file at a time")
-            Text("Open one file at a time")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            Button("Copy Paths") {
-                onCopyPaths(multiSelectionSummary.paths)
-            }
-            .disabled(multiSelectionSummary.paths.isEmpty)
-            BatchAddTagsTrigger(
-                repoPath: repoPath,
-                fileIDs: selection.multipleFileIDs.sorted(),
-                selectedCount: multiSelectionSummary.selectedCount,
-                disabledReason: batchAddTagsDisabledReason,
-                tagStore: batchTagStore,
-                undoStore: batchTagUndoStore,
-                errorMapper: batchTagErrorMapper,
-                onRefreshSelection: onRetrySelectedFileDetail,
-                onRefreshChangeLog: onRefreshChangeLog,
-                onUndoStateChange: tagActions.onBatchTagUndoStateChange
-            )
-            if detailErrorMapping != nil {
-                Button("Retry Metadata", action: onRetrySelectedFileDetail)
-            }
-        }
-    }
-
-    private var batchAddTagsDisabledReason: String? {
-        if multiSelectionSummary.selectedCount == 0 { return "No files selected" }
-        if let reason = multiSelectionSummary.files.compactMap({ writeActionDisabledReason($0.id) }).first {
-            return reason.rawValue
-        }
-        return nil
+        MainRepositoryMultiSelectionActions(
+            selection: selection,
+            summary: multiSelectionSummary,
+            detailErrorMapping: detailErrorMapping,
+            repoPath: repoPath,
+            categoryRows: categoryRows,
+            batchTagStore: batchTagStore,
+            batchTagUndoStore: batchTagUndoStore,
+            batchTagErrorMapper: batchTagErrorMapper,
+            batchCategoryChanger: batchCategoryChanger,
+            tagActions: tagActions,
+            writeActionDisabledReason: writeActionDisabledReason,
+            onCopyPaths: onCopyPaths,
+            onRetrySelectedFileDetail: onRetrySelectedFileDetail,
+            onRefreshChangeLog: onRefreshChangeLog,
+            onBatchCategoryApplied: onBatchCategoryApplied,
+            onBatchCategoryCreateNewCategory: onBatchCategoryCreateNewCategory
+        )
     }
 
     private var emptyDetailPane: some View {

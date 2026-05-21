@@ -429,6 +429,10 @@ extension MainFileListModel {
         return files.first { $0.path == path }?.id
     }
 
+    func consumeDetailTabRequest(_ request: MainDetailTabRequest) {
+        if detailTabRequest == request { detailTabRequest = nil }
+    }
+
     func missingDetailSnapshotIfNeeded(_ error: Error, fileID: Int64) -> FileEntrySnapshot? {
         guard case let .FileNotFound(path) = error as? CoreError else { return nil }
         return missingSnapshot(fileID: fileID, fallbackPath: path)

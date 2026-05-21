@@ -1,0 +1,82 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`4-1/task-115`
+- 对应文件路径：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-115-s2-12-c2-08-batch-change-category.md`
+- 主要验收实现：`apps/macos/AreaMatrix/Bridge/CoreBatchChangeCategory.swift`、`apps/macos/AreaMatrix/Models/BatchChangeCategoryState.swift`、`apps/macos/AreaMatrix/Views/Main/BatchChangeCategorySheet.swift`、`apps/macos/AreaMatrix/Views/Main/MainRepositoryMultiSelectionActions.swift`
+
+三、完成度摘要
+
+- 已覆盖项数：6
+- 未覆盖项数：3
+- 通过项数：5
+- 不通过项数：3
+- 阻塞项数：2
+
+四、逐项验收结果
+
+- 项目：manifest / Exact Docs / Existing Code 已读取并交叉核验
+- 结果：通过
+- 证据：`phase-4.md` 中 `4-1/task-115` 章节匹配 task，Exact Docs 均存在；`core/area_matrix.udl` 已包含 C2-08 API 与数据结构。
+- 涉及文件：`tasks/prompts/_shared/manifests/phase-4.md`、`docs/ux/page-specs/stage-2-experience/S2-12-batch-change-category.md`、`docs/api/core-api.md`、`core/area_matrix.udl`
+
+- 项目：C2-08 CoreBridge 接入
+- 结果：通过
+- 证据：`CoreBatchChangeCategory.swift` 通过 `CoreBridge` 调用 `AreaMatrix.previewBatchMoveToCategory` 和 `AreaMatrix.batchMoveToCategory`，并传递 `previewToken`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBatchChangeCategory.swift:99`
+
+- 项目：S2-12 用户可触发入口
+- 结果：通过
+- 证据：多选详情区、右键菜单、命令面板均接到 `BatchChangeCategorySheet` 路由。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryMultiSelectionActions.swift:44`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/FileDropAdapter.swift:111`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportProgressListIntegration.swift:346`
+
+- 项目：Apply 绑定最新 dry-run
+- 结果：通过
+- 证据：`canApply` 校验 target category、move option、file count 与 preview 匹配，并且 apply 使用 preview 中的 `previewToken`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/BatchChangeCategoryState.swift:158`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/BatchChangeCategoryState.swift:128`
+
+- 项目：部分失败保留成功项并进入可刷新/Undo 上下文
+- 结果：不通过
+- 证据：文档要求“部分失败时成功项保留，失败项显示原因；可撤销项进入 Undo stack”。当前 `apply()` 只有 `failedCount == 0` 才调用 `onApplied(report)`；部分失败时不会触发主列表更新、change log / undo toast 刷新和成功项反馈。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/BatchChangeCategorySheet.swift:267`
+
+- 项目：S2-12 验收清单覆盖
+- 结果：不通过
+- 证据：页面规格要求 `Create new category...` 进入 S2-19；当前 `BatchChangeCategorySheet` 只有 `Picker("New category")`，未发现 `Create new category...` 入口或 S2-19 handoff。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/BatchChangeCategorySheet.swift:119`
+
+- 项目：测试与验证覆盖
+- 结果：不通过
+- 证据：`./dev check task 4-1/task-115` 通过，但当前 `apps/macos/AreaMatrixTests` 未发现 S2-12 / BatchChangeCategory 专项 XCTest；只看到两个既有路由测试因构造参数变化补了 `BatchChangeCategoryRoute`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportBatchICloudPageIntegrationTests.swift:60`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/MainRepoExternalRemovalTests.swift:32`
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过，核心结构清楚，但部分失败路径没有把成功项回写主窗口，破坏 C2-08 执行报告消费闭环。
+- 注释 / rustdoc / 文档同步：通过，本 task 是 Swift UI/bridge 消费层，未新增 Rust public API；文档与 UDL 已对齐。
+- 错误处理与边界处理：不通过，preview/apply 错误有映射，但部分失败未进入刷新/Undo handoff。
+- 测试与验证覆盖：不通过，manifest 命令通过，但缺少 S2-12 page-feature 专项测试覆盖 preview、apply、blocked/partial failure、preview token gating。
+- 占位、硬编码、mock-only、一次性实现检查：通过，生产路径接真实 CoreBridge；未发现用 mock/fixture 伪造生产闭环。
+
+六、阻塞项
+
+- P1：部分失败路径未消费成功项和 Undo/刷新结果。说明：C2-08 API 明确返回 `updated_files`、失败详情和 `undo_token`，S2-12 文档要求部分失败时成功项保留且可撤销项进入 Undo stack；当前 `failedCount > 0` 时不调用 `onApplied`，导致成功项不刷新、Undo toast 不刷新。路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/BatchChangeCategorySheet.swift:267`。
+- P1：缺少 S2-12 新建分类 handoff。说明：页面规格要求 `Create new category...` 跳转 S2-19，新分类保存成功后返回并重新 dry-run；当前 sheet 未实现该入口，S2-12 页面验收清单缺项。路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/BatchChangeCategorySheet.swift:119`。
+- P1：缺少本 task 范围内的 S2-12 专项测试证据。说明：高风险 page-feature 触碰批量移动/metadata 更新/Undo handoff，仅有 macOS build 不足以证明 preview、Apply、blocked、partial failure 和 CoreBridge 请求参数均正确。路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests`。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-115`
+- 通过：`prompt doctor`、`git diff --check`、macOS `xcodebuild ... build CODE_SIGNING_ALLOWED=NO`
+- 失败：无命令失败
+- 缺失：未发现 S2-12 page-feature 专项 XCTest；未做真实 UI smoke；未运行 `./dev test macos`，manifest 本轮只要求 `./dev check task 4-1/task-115`
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。虽然 manifest 验证命令通过，且生产路径接入了真实 CoreBridge，但 S2-12 页面规格中的部分失败消费、新建分类 handoff 和测试证据仍不足，按“无法证明通过即不通过”判定。
+
+
+VERIFY_RESULT: FAIL

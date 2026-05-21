@@ -84,12 +84,19 @@ extension MainRepositoryContentView {
             SearchCommandPaletteRouteView(
                 query: filterText,
                 batchAddTagsRoute: commandPaletteBatchAddTagsRoute(),
+                batchChangeCategoryRoute: commandPaletteBatchChangeCategoryRoute(),
                 onOpenBatchAddTags: { route in
                     pendingBatchAddTagsRoute = route
                     fileListModel.clearPendingSearchDestination()
                 },
+                onOpenBatchChangeCategory: { route in
+                    pendingBatchChangeCategoryRoute = route
+                    fileListModel.clearPendingSearchDestination()
+                },
                 onClose: fileListModel.clearPendingSearchDestination
             )
+        case .classifierRuleEditor:
+            ClassifierSettingsPane(repoPath: opening.config.repoPath)
         case .searchEmpty, .queryError:
             EmptyView()
         }
