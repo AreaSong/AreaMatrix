@@ -7736,11 +7736,30 @@
     "4-1/task-114": {
       "attempts": 2,
       "copy_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260520_154334/phase-4/4-1-task-114-copy-attempt-2.log",
+      "git_branch": "codex/areamatrix-task-loop-20260501_132850",
+      "git_changed_files": [
+        ".codex/task-loop-logs/20260520_154334/phase-4/4-1-task-114-copy-attempt-1.log",
+        ".codex/task-loop-logs/20260520_154334/phase-4/4-1-task-114-copy-attempt-2.log",
+        ".codex/task-loop-logs/20260520_154334/phase-4/4-1-task-114-verify-attempt-1.log",
+        ".codex/task-loop-logs/20260520_154334/phase-4/4-1-task-114-verify-attempt-2.log",
+        ".codex/task-loop-runs/20260520_154334/summary.json",
+        ".codex/task-loop-runs/index.json",
+        "apps/macos/AreaMatrix/App/AreaMatrixApp.swift",
+        "apps/macos/AreaMatrix/Models/MainFileListDiagnosticsActions.swift",
+        "apps/macos/AreaMatrix/Views/Main/MainRepositoryContentCategoryMoveRefresh.swift",
+        "apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift",
+        "apps/macos/AreaMatrixTests/ImportProgressPageIntegrationVerifyTests.swift",
+        "tasks/prompts/_shared/progress.json"
+      ],
+      "git_checkpoint_status": "committed",
+      "git_commit": "9c9ffac80b5d5b121cf57d0c25440898d0d17ae8",
+      "git_push_status": "not_requested",
+      "git_remote": "",
       "note": "自动执行验收通过：attempt=2",
       "risk": "High",
       "run_id": "20260520_154334",
       "status": "completed",
-      "updated_at": "2026-05-21T05:56:33.017208+00:00",
+      "updated_at": "2026-05-21T05:56:33.232100+00:00",
       "verify_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260520_154334/phase-4/4-1-task-114-verify-attempt-2.log"
     },
     "4-1/task-12": {
@@ -10115,6 +10134,6 @@
       "verify_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260519_155620/phase-4/4-1-task-99-verify-attempt-4.log"
     }
   },
-  "updated_at": "2026-05-21T03:24:01.792444+00:00",
+  "updated_at": "2026-05-21T05:56:33.232103+00:00",
   "version": 1
 }
