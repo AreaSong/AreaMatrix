@@ -10,6 +10,23 @@ struct AreaMatrixApp: App {
             MainWindow()
         }
         .windowResizability(.contentMinSize)
+        .commands {
+            CommandGroup(after: .sidebar) {
+                Button("Undo History") {
+                    AreaMatrixUndoHistoryCommandRelay.publish()
+                }
+                .keyboardShortcut("z", modifiers: [.command, .option])
+            }
+        }
+    }
+}
+
+@MainActor
+enum AreaMatrixUndoHistoryCommandRelay {
+    static let notification = Notification.Name("AreaMatrixUndoHistoryCommandRelay.notification")
+
+    static func publish() {
+        NotificationCenter.default.post(name: notification, object: nil)
     }
 }
 

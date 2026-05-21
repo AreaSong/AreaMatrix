@@ -148,6 +148,18 @@ extension MainRepositoryContentView {
             guard !presented else { return }
             reopenSmartListEditorFromDraftIfNeeded()
         }
+        .onReceive(NotificationCenter.default.publisher(for: AreaMatrixUndoHistoryCommandRelay.notification)) { _ in
+            openUndoHistoryFromMenu()
+        }
+        .onKeyPress("z", phases: .down) { event in
+            guard event.modifiers.contains(.command) else { return .ignored }
+            if event.modifiers.contains(.shift) {
+                openUndoHistoryFromRedoShortcut()
+                return .handled
+            }
+            openUndoHistoryFromShortcut()
+            return .handled
+        }
     }
 
     func reopenSmartListEditorFromDraftIfNeeded() {
@@ -202,6 +214,13 @@ extension MainRepositoryContentView {
             }
             .frame(width: 170)
             searchFiltersButton
+            Button(action: openUndoHistoryFromToolbar) {
+                Image(systemName: "clock.arrow.circlepath")
+            }
+            .buttonStyle(.borderless)
+            .help("Undo History")
+            .accessibilityLabel("Undo History")
+            .accessibilityIdentifier("S2-11-C2-07-toolbar-open-history")
             Button("Import...", action: onImport)
                 .disabled(opening.isReadOnly)
             Button(action: onOpenSettings) {

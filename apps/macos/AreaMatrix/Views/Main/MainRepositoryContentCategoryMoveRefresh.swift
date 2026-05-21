@@ -51,7 +51,31 @@ extension MainRepositoryContentView {
     }
 
     func undoHistorySheet(_ request: UndoToastHistoryRequest) -> some View {
-        UndoToastHistoryRouteSheet(request: request, onClose: { pendingUndoHistoryRequest = nil })
+        UndoHistoryPanel(
+            repoPath: opening.config.repoPath,
+            focusedActionID: request.focusedActionID,
+            initialFailure: request.failureMapping,
+            undoStore: fileListModel.undoActionStore,
+            errorMapper: fileListModel.errorMapper,
+            onClose: { pendingUndoHistoryRequest = nil },
+            onUndoCompleted: handleUndoHistoryResult
+        )
+    }
+
+    func handleUndoHistoryResult(_ result: UndoActionResultSnapshot) {
+        let plan = BatchTagUndoRefreshPlan(refreshTargets: result.refreshTargets)
+        if plan.refreshesCurrentList {
+            Task { await fileListModel.retryCurrentCategory() }
+        }
+        if plan.refreshesSelectionDetails {
+            Task { await fileListModel.retrySelectedFileDetail() }
+        }
+        if plan.refreshesChangeLog {
+            Task { await fileListModel.loadSelectedFileChangeLog() }
+        }
+        if plan.refreshesUndoActions {
+            refreshLatestUndoToast()
+        }
     }
 
     func updateBatchTagUndoState(_ state: BatchTagUndoState) {
@@ -69,6 +93,35 @@ extension MainRepositoryContentView {
             )
             batchTagActionLogRefreshFailure = nil
         }
+    }
+
+    func openUndoHistoryFromToolbar() {
+        pendingUndoHistoryRequest = UndoToastHistoryRequest(
+            source: .viewHistory,
+            state: batchTagUndoState,
+            actionLogRefreshFailure: batchTagActionLogRefreshFailure
+        )
+    }
+
+    func openUndoHistoryFromMenu() {
+        pendingUndoHistoryRequest = UndoHistoryActionLog.menuRequest(
+            state: batchTagUndoState,
+            failure: batchTagActionLogRefreshFailure
+        )
+    }
+
+    func openUndoHistoryFromShortcut() {
+        pendingUndoHistoryRequest = UndoHistoryActionLog.shortcutRequest(
+            state: batchTagUndoState,
+            failure: batchTagActionLogRefreshFailure
+        )
+    }
+
+    func openUndoHistoryFromRedoShortcut() {
+        pendingUndoHistoryRequest = UndoHistoryActionLog.redoShortcutRequest(
+            state: batchTagUndoState,
+            failure: batchTagActionLogRefreshFailure
+        )
     }
 
     func openBatchAddTagsRoute(_ ids: Set<Int64>, source: BatchAddTagsRouteSource) {
