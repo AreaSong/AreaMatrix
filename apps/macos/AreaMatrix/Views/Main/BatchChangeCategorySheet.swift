@@ -8,8 +8,10 @@ struct BatchChangeCategoryTrigger: View {
     let disabledReason: String?
     let categoryRows: [RepositorySidebarRowSnapshot]
     let changer: any CoreBatchCategoryChanging
+    let undoStore: any CoreUndoActionLogging
     let errorMapper: any CoreErrorMapping
     let onApplied: (BatchCategoryChangeReportSnapshot) -> Void
+    let onUndoStateChange: (BatchTagUndoState) -> Void
     let onCreateNewCategory: (BatchChangeCategoryNewCategoryHandoff) -> Void
     @State private var isPresented = false
 
@@ -26,8 +28,10 @@ struct BatchChangeCategoryTrigger: View {
                     disabledReason: disabledReason,
                     categoryRows: categoryRows,
                     changer: changer,
+                    undoStore: undoStore,
                     errorMapper: errorMapper,
                     onApplied: onApplied,
+                    onUndoStateChange: onUndoStateChange,
                     onCreateNewCategory: onCreateNewCategory,
                     onClose: { isPresented = false }
                 )
@@ -43,8 +47,10 @@ struct BatchChangeCategorySheet: View {
     let disabledReason: String?
     let categoryRows: [RepositorySidebarRowSnapshot]
     let changer: any CoreBatchCategoryChanging
+    let undoStore: any CoreUndoActionLogging
     let errorMapper: any CoreErrorMapping
     let onApplied: (BatchCategoryChangeReportSnapshot) -> Void
+    let onUndoStateChange: (BatchTagUndoState) -> Void
     let onCreateNewCategory: (BatchChangeCategoryNewCategoryHandoff) -> Void
     let onClose: () -> Void
     @State private var targetCategory: String
@@ -64,8 +70,10 @@ struct BatchChangeCategorySheet: View {
         disabledReason: String?,
         categoryRows: [RepositorySidebarRowSnapshot],
         changer: any CoreBatchCategoryChanging,
+        undoStore: any CoreUndoActionLogging,
         errorMapper: any CoreErrorMapping,
         onApplied: @escaping (BatchCategoryChangeReportSnapshot) -> Void,
+        onUndoStateChange: @escaping (BatchTagUndoState) -> Void,
         onCreateNewCategory: @escaping (BatchChangeCategoryNewCategoryHandoff) -> Void = { _ in },
         onClose: @escaping () -> Void
     ) {
@@ -76,8 +84,10 @@ struct BatchChangeCategorySheet: View {
         self.disabledReason = disabledReason
         self.categoryRows = categoryRows
         self.changer = changer
+        self.undoStore = undoStore
         self.errorMapper = errorMapper
         self.onApplied = onApplied
+        self.onUndoStateChange = onUndoStateChange
         self.onCreateNewCategory = onCreateNewCategory
         self.onClose = onClose
         _targetCategory = State(initialValue: BatchChangeCategorySelection.defaultTargetCategory(
@@ -268,6 +278,7 @@ struct BatchChangeCategorySheet: View {
         isApplying = true
         failure = nil
         result = nil
+        onUndoStateChange(.idle)
         let applyResult = await BatchChangeCategoryAction.apply(
             repoPath: repoPath,
             fileIDs: fileIDs,
@@ -280,6 +291,16 @@ struct BatchChangeCategorySheet: View {
         isApplying = false
         if let report = applyResult.report, report.shouldRefreshConsumerAfterApply {
             onApplied(report)
+        }
+        let undoState = await BatchChangeCategoryUndoAction.stateAfterBatchApply(
+            repoPath: repoPath,
+            report: applyResult.report,
+            failure: applyResult.failure,
+            undoStore: undoStore,
+            errorMapper: errorMapper
+        )
+        if let undoState {
+            onUndoStateChange(undoState)
         }
         if let report = applyResult.report, report.shouldCloseSheetAfterApply {
             onClose()

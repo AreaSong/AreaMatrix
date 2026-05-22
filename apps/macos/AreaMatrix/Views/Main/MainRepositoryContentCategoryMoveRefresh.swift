@@ -59,8 +59,10 @@ extension MainRepositoryContentView {
             disabledReason: route.disabledReason,
             categoryRows: repositoryTree.sidebarRows,
             changer: fileListModel.batchCategoryChanger,
+            undoStore: fileListModel.undoActionStore,
             errorMapper: fileListModel.errorMapper,
             onApplied: applyBatchCategoryChangeResult,
+            onUndoStateChange: updateBatchTagUndoState,
             onCreateNewCategory: openClassifierRuleEditorFromBatchCategory,
             onClose: { pendingBatchChangeCategoryRoute = nil }
         )
@@ -312,7 +314,6 @@ extension MainRepositoryContentView {
                 }
             }
             await fileListModel.retryCurrentCategory()
-            refreshLatestUndoToast()
             let changedCount = report.movedCount + report.metadataOnlyCount
             fileListModel.statusBanner = .changedBatchCategory(count: changedCount, category: report.targetCategory)
         }

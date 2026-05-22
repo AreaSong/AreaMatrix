@@ -50,8 +50,10 @@ struct MainRepositoryMultiSelectionActions: View {
                 disabledReason: batchChangeCategoryDisabledReason,
                 categoryRows: categoryRows,
                 changer: batchCategoryChanger,
+                undoStore: batchTagUndoStore,
                 errorMapper: batchTagErrorMapper,
                 onApplied: onBatchCategoryApplied,
+                onUndoStateChange: tagActions.onBatchTagUndoStateChange,
                 onCreateNewCategory: onBatchCategoryCreateNewCategory
             )
             if detailErrorMapping != nil {

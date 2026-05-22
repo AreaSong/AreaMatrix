@@ -99,6 +99,24 @@ final class ImportBatchResultSummaryTests: XCTestCase {
         XCTAssertFalse(allFailed.shouldCloseSheetAfterApply)
     }
 
+    @MainActor
+    func testS212C207BatchCategoryApplyLoadsUndoActionFromReturnedToken() async {
+        let action = UndoActionRecordSnapshot(
+            actionID: "undo-c2-08", kind: "batch_move_to_category", summary: "Changed category for 2 files.",
+            affectedCount: 2, affectedFileNames: ["a.pdf"], status: .pending, canUndo: true,
+            disabledReason: nil, createdAt: 1_700_000_400, updatedAt: 1_700_000_400
+        )
+        let undoStore = S212RecordingUndoStore(actions: [action])
+        let undoState = await BatchChangeCategoryUndoAction.stateAfterBatchApply(
+            repoPath: "/tmp/repo", report: .s212SuccessReport(), failure: nil,
+            undoStore: undoStore, errorMapper: S212ErrorMapper()
+        )
+
+        XCTAssertEqual(undoState, .ready(action))
+        XCTAssertEqual(await undoStore.recordedListRequests(), ["/tmp/repo"])
+        XCTAssertEqual(await undoStore.recordedUndoRequests(), [])
+    }
+
     func testS212CreateNewCategoryRoutesToS219WithoutCreatingInlineCategory() {
         let handoff = BatchChangeCategoryNewCategoryHandoff(
             selectedFileIDs: [1, 2],
@@ -218,6 +236,28 @@ final class ImportBatchResultSummaryTests: XCTestCase {
             pending: 1
         ))
     }
+}
+
+private actor S212RecordingUndoStore: CoreUndoActionLogging {
+    private let actions: [UndoActionRecordSnapshot]
+    private var listRequests: [String] = []
+    private var undoRequests: [String] = []
+
+    init(actions: [UndoActionRecordSnapshot]) { self.actions = actions }
+
+    func listUndoActions(repoPath: String) async throws -> [UndoActionRecordSnapshot] {
+        listRequests.append(repoPath)
+        return actions
+    }
+
+    func undoAction(repoPath: String, actionID: String) async throws -> UndoActionResultSnapshot {
+        undoRequests.append("\(repoPath)|\(actionID)")
+        throw CoreError.Internal(message: "S2-12 completion must not execute undo")
+    }
+
+    func recordedListRequests() -> [String] { listRequests }
+
+    func recordedUndoRequests() -> [String] { undoRequests }
 }
 
 private func s118ResultSummaryRequest(urls: [URL]) -> ImportEntryRequest {
