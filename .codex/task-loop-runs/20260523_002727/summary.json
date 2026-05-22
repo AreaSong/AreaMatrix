@@ -35,6 +35,66 @@
     "4-1/task-116": {
       "attempts": 1,
       "copy_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260523_002727/phase-4/4-1-task-116-copy-attempt-1.log",
+      "git": {
+        "attempts": 1,
+        "branch": "codex/areamatrix-task-loop-20260501_132850",
+        "changed_files": [
+          ".codex/task-loop-logs/20260523_002727/",
+          ".codex/task-loop-runs/20260523_002727/",
+          ".codex/task-loop-runs/index.json",
+          "apps/macos/AreaMatrix/Models/BatchChangeCategoryState.swift",
+          "apps/macos/AreaMatrix/Views/Main/BatchChangeCategorySheet.swift",
+          "apps/macos/AreaMatrix/Views/Main/MainRepositoryContentCategoryMoveRefresh.swift",
+          "apps/macos/AreaMatrix/Views/Main/MainRepositoryMultiSelectionActions.swift",
+          "apps/macos/AreaMatrixTests/ImportBatchResultSummaryTests.swift",
+          "tasks/prompts/_shared/progress.json"
+        ],
+        "commit": "cfd5626b2a7db44edb5ab83d5490213cd0f1cb75",
+        "copy_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260523_002727/phase-4/4-1-task-116-copy-attempt-1.log",
+        "diff_name_status": [
+          "M\t.codex/task-loop-runs/index.json",
+          "M\tapps/macos/AreaMatrix/Models/BatchChangeCategoryState.swift",
+          "M\tapps/macos/AreaMatrix/Views/Main/BatchChangeCategorySheet.swift",
+          "M\tapps/macos/AreaMatrix/Views/Main/MainRepositoryContentCategoryMoveRefresh.swift",
+          "M\tapps/macos/AreaMatrix/Views/Main/MainRepositoryMultiSelectionActions.swift",
+          "M\tapps/macos/AreaMatrixTests/ImportBatchResultSummaryTests.swift",
+          "M\ttasks/prompts/_shared/progress.json"
+        ],
+        "label": "4-1/task-116",
+        "mode": "commit",
+        "phase": "phase-4",
+        "push_status": "not_requested",
+        "remote": "",
+        "run_id": "20260523_002727",
+        "staged_name_status": [
+          "A\t.codex/task-loop-logs/20260523_002727/phase-4/4-1-task-116-copy-attempt-1.log",
+          "A\t.codex/task-loop-logs/20260523_002727/phase-4/4-1-task-116-verify-attempt-1.log",
+          "A\t.codex/task-loop-runs/20260523_002727/summary.json",
+          "M\t.codex/task-loop-runs/index.json",
+          "M\tapps/macos/AreaMatrix/Models/BatchChangeCategoryState.swift",
+          "M\tapps/macos/AreaMatrix/Views/Main/BatchChangeCategorySheet.swift",
+          "M\tapps/macos/AreaMatrix/Views/Main/MainRepositoryContentCategoryMoveRefresh.swift",
+          "M\tapps/macos/AreaMatrix/Views/Main/MainRepositoryMultiSelectionActions.swift",
+          "M\tapps/macos/AreaMatrixTests/ImportBatchResultSummaryTests.swift",
+          "M\ttasks/prompts/_shared/progress.json"
+        ],
+        "status": "committed",
+        "status_short": [
+          " M .codex/task-loop-runs/index.json",
+          " M apps/macos/AreaMatrix/Models/BatchChangeCategoryState.swift",
+          " M apps/macos/AreaMatrix/Views/Main/BatchChangeCategorySheet.swift",
+          " M apps/macos/AreaMatrix/Views/Main/MainRepositoryContentCategoryMoveRefresh.swift",
+          " M apps/macos/AreaMatrix/Views/Main/MainRepositoryMultiSelectionActions.swift",
+          " M apps/macos/AreaMatrixTests/ImportBatchResultSummaryTests.swift",
+          " M tasks/prompts/_shared/progress.json",
+          "?? .codex/task-loop-logs/20260523_002727/",
+          "?? .codex/task-loop-runs/20260523_002727/"
+        ],
+        "summary_file": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-runs/20260523_002727/summary.json",
+        "task_name": "4-1-task-116",
+        "updated_at": "2026-05-22T16:49:28.892736+00:00",
+        "verify_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260523_002727/phase-4/4-1-task-116-verify-attempt-1.log"
+      },
       "note": "自动执行验收通过",
       "phase": "phase-4",
       "risk": "High",
@@ -49,7 +109,7 @@
     "retries": 0,
     "task_count": 637
   },
-  "updated_at": "2026-05-22T16:49:28.706907+00:00",
+  "updated_at": "2026-05-22T16:49:28.898158+00:00",
   "verify_root": "/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/verify-ready",
   "version": 1
 }
