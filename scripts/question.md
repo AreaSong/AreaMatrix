@@ -22,6 +22,7 @@
 - [附录 B：总控脚本架构](#附录-b总控脚本架构)
 - [附录 C：AreaFlow 分层架构（最终版）](#附录-careaflow-分层架构最终版)
 - [附录 D：AreaFlow 引擎配置示例](#附录-dareaflow-引擎配置示例)
+- [附录 E：完整 areaflow.yaml schema](#附录-e完整-areaflowy aml-schema)
 
 ---
 
@@ -791,6 +792,187 @@ AreaMatrix MVP 完成后：
 4. 实现 MS-1（核心闭环）
 5. 用 AreaMatrix 作为第一个接入项目验证
 
+### 9.19 多代理 Git 策略
+
+> 2026-05-25 讨论确认：混合方案，分两阶段。
+
+#### 核心矛盾
+
+同一项目内多个代理同时改代码时，Git 只有一个工作目录，两个 AI 进程不能同时在同一目录里修改文件。
+
+#### Phase 1：项目内排队，项目间并行（MS-4 初版）
+
+```
+项目 A 内部：
+  后端代理 ──完成──> 前端代理 ──完成──> 测试代理
+  （共享同一个 worktree 和分支，通过 order + depends_on 控制顺序）
+
+项目 B 内部：
+  小程序代理 ──完成──> 云函数代理
+  （与项目 A 完全并行）
+```
+
+配置示例：
+
+```yaml
+agents:
+  - id: backend
+    role: backend
+    tasks_dir: tasks/backend/
+    order: 1
+  - id: frontend
+    role: frontend
+    tasks_dir: tasks/frontend/
+    order: 2
+    depends_on: [backend]
+  - id: test
+    role: test
+    tasks_dir: tasks/test/
+    order: 3
+    depends_on: [frontend, backend]
+```
+
+#### Phase 2：Worktree 并行（MS-4 成熟后）
+
+无 `depends_on` 关系的代理可用独立 Git worktree 并行执行：
+
+```
+project-repo/                         (主 worktree，协调用)
+.areaflow/worktrees/
+  agent-001a/                        (前端代理，分支 agent/001a)
+  agent-001b/                        (后端代理，分支 agent/001b)
+
+合并流程：
+  agent/001a ──┐
+  agent/001b ──┼──> staging/proj-001 ──> 集成测试 ──> main
+  agent/001c ──┘
+```
+
+#### 依赖失败处理
+
+- 上游代理失败 → 下游代理自动标记为 `blocked`
+- `blocked` 代理不执行，等待上游修复后自动恢复
+- 通知用户哪些代理被阻塞及原因
+
+### 9.20 Secret 管理
+
+> 2026-05-25 讨论确认：分层优先级，安全优先。
+
+#### 解析优先级（高到低）
+
+| 优先级 | 来源 | 说明 |
+|--------|------|------|
+| 1 | 环境变量 | `AREAFLOW_OPENAI_API_KEY=sk-xxx`，CI 友好 |
+| 2 | 系统密钥链 | macOS Keychain / Windows Credential Store，本地最安全 |
+| 3 | 加密本地文件 | `~/.areaflow/secrets.enc`，便携可备份 |
+
+#### CLI 管理命令
+
+```
+areaflow config set-key <engine> <key>   # 存入加密文件
+areaflow config show                      # 显示已配置引擎 + 脱敏 key（sk-...abc）
+areaflow config remove-key <engine>       # 删除指定引擎的 key
+```
+
+#### 安全规则
+
+- 加密文件存在 `~/.areaflow/`（用户 home 目录），**永远不进项目 repo**
+- 日志中所有 key 自动脱敏（正则匹配 `sk-`、`key-`、`token-` 等前缀，替换为 `***`）
+- `areaflow.yaml`（项目级配置）只写引擎名称和 type，**不含任何 key**
+- MS-6 Web 看板提供可视化的 key 管理设置页面
+
+### 9.21 CLI 命令全景
+
+| 命令 | 说明 | 里程碑 |
+|------|------|--------|
+| `areaflow init` | 初始化项目，生成 `areaflow.yaml` 模板 | MS-1 |
+| `areaflow run` | 启动 task-loop 执行 | MS-1 |
+| `areaflow status` | 查看当前进度 | MS-1 |
+| `areaflow stop` | 优雅停止（跑完当前任务后退出） | MS-1 |
+| `areaflow resume` | 恢复中断的执行 | MS-1 |
+| `areaflow config set-key <engine> <key>` | 存储 API key | MS-1 |
+| `areaflow config show` | 显示配置和脱敏 key | MS-1 |
+| `areaflow config remove-key <engine>` | 删除 API key | MS-1 |
+| `areaflow engine list` | 列出已配置引擎及状态 | MS-2 |
+| `areaflow engine test <name>` | 测试引擎连通性 | MS-2 |
+| `areaflow logs` | 查看执行日志 | MS-3 |
+| `areaflow logs --task <id>` | 查看指定任务日志 | MS-3 |
+| `areaflow stats` | 查看成本/token/耗时统计 | MS-3 |
+| `areaflow project add <path>` | 添加项目 | MS-4 |
+| `areaflow project list` | 列出所有项目 | MS-4 |
+| `areaflow project status <id>` | 查看指定项目进度 | MS-4 |
+| `areaflow project remove <id>` | 移除项目 | MS-4 |
+
+### 9.22 成本追踪
+
+> 补充 #31 全局统计面板的成本追踪细节。
+
+#### 数据采集
+
+每次 Engine 调用记录：
+
+```
+{
+  "engine": "openai-api",
+  "model": "gpt-5.5",
+  "input_tokens": 12400,
+  "output_tokens": 3200,
+  "duration_ms": 8500,
+  "cost_usd": 0.0312,
+  "task_id": "task-01",
+  "agent_id": "agent-001b",
+  "project_id": "proj-001",
+  "timestamp": "2026-06-01T10:30:00Z"
+}
+```
+
+#### 定价配置
+
+```yaml
+# areaflow.yaml
+engines:
+  - name: openai-api
+    type: api
+    provider: openai
+    model: gpt-5.5
+    pricing:                          # 可选，用于成本估算
+      input_per_1k_tokens: 0.002
+      output_per_1k_tokens: 0.008
+```
+
+#### 展示与告警
+
+| 功能 | 说明 | 里程碑 |
+|------|------|--------|
+| `areaflow stats` | 按项目/代理/引擎汇总：总 token、总成本、平均耗时 | MS-3 |
+| 预算上限 | `global.budget_limit: 50.00`（美元），超过时暂停执行并通知 | MS-3 |
+| Web 统计面板 | 图表展示成本趋势、引擎利用率、项目对比 | MS-6 |
+
+### 9.23 测试策略
+
+> AreaFlow 自身的测试方案。
+
+| 测试类型 | 说明 | 里程碑 |
+|----------|------|--------|
+| **单元测试** | Go 标准 `_test.go`，覆盖 scheduler、runner、engine adapter、config parser、store | MS-1 |
+| **Mock Engine** | 内置 `mock` 引擎类型，返回预定义结果（可配置 PASS/FAIL/超时/错误类型） | MS-1 |
+| **集成测试** | 用 mock engine 跑完整 copy → verify → checkpoint 流程 | MS-1 |
+| **容错测试** | 模拟各类失败场景：capacity error、timeout、重复失败、熔断 | MS-2 |
+| **E2E 测试** | 用真实引擎跑一个小项目的完整流程 | MS-3+ |
+
+Mock Engine 配置示例：
+
+```yaml
+engines:
+  - name: mock
+    type: mock
+    mock_config:
+      copy_result: pass           # pass / fail / timeout
+      verify_result: pass
+      fail_after_n: 3             # 前 3 次成功，之后失败（测试容错）
+      latency_ms: 500             # 模拟延迟
+```
+
 ---
 
 ## 附录 A：流水线架构图
@@ -939,4 +1121,162 @@ type Engine interface {
     SupportsGUI() bool
     MaxContextTokens() int
 }
+```
+
+---
+
+## 附录 E：完整 areaflow.yaml schema
+
+> 所有顶级块定义，每个字段标注所属里程碑。MS-1 最小可用配置只需 `project` + `engines` + `skills`。
+
+```yaml
+# ═══════════════════════════════════════════════════════
+# project — 项目元信息（MS-1）
+# ═══════════════════════════════════════════════════════
+project:
+  name: "AreaMatrix"                      # 必填，项目名称
+  repo: "."                               # 可选，Git 仓库路径，默认当前目录
+  tech_stack: [rust, swift, uniffi]       # 必填，技术栈标识，用于匹配平台 Skill
+  description: "桌面资料管理工具"           # 可选
+
+# ═══════════════════════════════════════════════════════
+# engines — AI 引擎配置（MS-1 单引擎 / MS-2 多引擎 fallback）
+# ═══════════════════════════════════════════════════════
+engines:
+  - name: codex-cli                       # 必填，唯一标识
+    type: cli                             # cli | api | mock
+    command: "codex exec"                 # type=cli 时必填
+    priority: 1                           # 数字越小优先级越高
+    fallback_on: [capacity_error, timeout, rate_limit]  # MS-2
+    timeout: "30m"                        # 可选，单次执行超时
+    sandbox:                              # 可选，沙箱配置
+      allow_network: true
+      allow_file_write: true
+      working_dir: "."
+  - name: openai-api
+    type: api                             # type=api 时需要 provider + model
+    provider: openai
+    model: gpt-5.5
+    priority: 2
+    max_context_tokens: 128000            # 可选
+    pricing:                              # 可选，用于成本估算（MS-3）
+      input_per_1k_tokens: 0.002
+      output_per_1k_tokens: 0.008
+  - name: mock                            # 测试用引擎
+    type: mock
+    mock_config:                          # type=mock 时使用
+      copy_result: pass                   # pass | fail | timeout
+      verify_result: pass
+      fail_after_n: 0                     # 0 = 不模拟失败
+      latency_ms: 500
+
+# ═══════════════════════════════════════════════════════
+# skills — Skill 配置（MS-1）
+# ═══════════════════════════════════════════════════════
+skills:
+  platform:                               # 按 tech_stack 激活的平台 Skill
+    - rust-core
+    - swift-macos
+    - uniffi-bridge
+  universal:                              # 所有项目可用的通用 Skill
+    - git-checkpoint
+    - file-safety
+    - doc-sync
+    - validation-driver
+  optional:                               # 按需开启的增强 Skill
+    - enterprise-governance
+    - workflow-planning
+
+# ═══════════════════════════════════════════════════════
+# agents — 多代理配置（MS-4）
+# ═══════════════════════════════════════════════════════
+agents:
+  - id: backend                           # 必填，项目内唯一
+    role: backend                         # frontend | backend | test | infra | docs | custom
+    tasks_dir: "tasks/backend/"           # 该代理的 task prompt 目录
+    order: 1                              # 执行顺序（Phase 1 排队模式）
+    engine: codex-cli                     # 可选，覆盖项目级引擎
+  - id: frontend
+    role: frontend
+    tasks_dir: "tasks/frontend/"
+    order: 2
+    depends_on: [backend]                 # 依赖的代理 ID 列表
+  - id: test
+    role: test
+    tasks_dir: "tasks/test/"
+    order: 3
+    depends_on: [frontend, backend]
+
+# ═══════════════════════════════════════════════════════
+# pipeline — 流水线自定义（MS-5）
+# ═══════════════════════════════════════════════════════
+pipeline:
+  stages:
+    - name: copy
+      type: copy                          # copy | verify | checkpoint
+      max_retry: 3
+      on_fail: retry                      # retry | block | skip
+    - name: verify
+      type: verify
+      max_retry: 5
+      on_fail: retry
+    - name: checkpoint
+      type: checkpoint
+      on_fail: block
+
+# ═══════════════════════════════════════════════════════
+# notification — 通知配置（MS-3）
+# ═══════════════════════════════════════════════════════
+notification:
+  on_complete: [macos, email]             # 任务完成时通知方式
+  on_fail: [macos, email]                 # 任务失败时
+  on_blocked: [macos, email]              # 代理被阻塞时
+  email:
+    to: "user@example.com"
+    smtp_host: "smtp.gmail.com"
+    smtp_port: 587
+  macos:
+    enabled: true
+  webhook:                                # 可选，用于集成外部系统
+    url: "https://hooks.example.com/areaflow"
+
+# ═══════════════════════════════════════════════════════
+# logging — 日志配置（MS-3）
+# ═══════════════════════════════════════════════════════
+logging:
+  level: info                             # debug | info | warn | error
+  dir: ".areaflow/logs/"                  # 日志目录
+  format: json                            # json | text
+
+# ═══════════════════════════════════════════════════════
+# global — 全局设置（MS-1）
+# ═══════════════════════════════════════════════════════
+global:
+  state_dir: ".areaflow/"                 # 状态文件存储目录
+  checkpoint_on_pass: true                # verify PASS 后自动 git commit
+  max_retry: 5                            # 全局最大重试次数
+  graceful_stop_timeout: "5m"             # 优雅停止等待时间
+  budget_limit: 50.00                     # 可选，成本上限（美元），超过暂停执行（MS-3）
+```
+
+### MS-1 最小可用配置
+
+```yaml
+project:
+  name: "AreaMatrix"
+  tech_stack: [rust, swift, uniffi]
+
+engines:
+  - name: codex-cli
+    type: cli
+    command: "codex exec"
+    priority: 1
+
+skills:
+  platform: [rust-core, swift-macos, uniffi-bridge]
+  universal: [git-checkpoint, file-safety, validation-driver]
+
+global:
+  checkpoint_on_pass: true
+  max_retry: 5
 ```
