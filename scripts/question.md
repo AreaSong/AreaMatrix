@@ -973,6 +973,250 @@ engines:
       latency_ms: 500             # 模拟延迟
 ```
 
+### 9.24 Task/Agent/Project 生命周期状态机
+
+> 2026-05-25 讨论确认。每次 retry 产生独立 Run 记录；支持 cancelled / skipped 状态。
+
+#### Task 状态机
+
+```
+                          ┌──────────────────────────────────┐
+                          │          用户操作                  │
+                          │  cancel ──> cancelled             │
+                          │  skip   ──> skipped               │
+                          └──────────────────────────────────┘
+
+pending ──> running ──> passed ──> checkpointed（完成）
+               │            ▲
+               │            │ verify PASS
+               ▼            │
+            failed ◄── running（verify FAIL 且 retry 耗尽）
+               │
+               ▼
+            blocked（非代码问题：环境/权限/依赖）
+
+retry 路径：
+  running(verify FAIL) ──> running(copy repair) ──> running(verify) ...
+  直到 PASS 或 retry 耗尽
+```
+
+| 状态 | 含义 | 进入条件 | 退出条件 |
+|------|------|----------|----------|
+| `pending` | 等待执行 | 初始状态 | 代理开始处理 |
+| `running` | 正在执行（copy 或 verify 阶段） | 代理取出任务 | copy/verify 完成或失败 |
+| `passed` | verify 通过 | verify 返回 PASS | git checkpoint 完成 |
+| `checkpointed` | git commit 成功，任务最终完成 | checkpoint 成功 | 终态 |
+| `failed` | 代码级失败，retry 已耗尽 | max_retry 用完 | 用户 retry 或修复后 resume |
+| `blocked` | 非代码问题，不应再 retry | 失败分类器判定为环境/权限/依赖问题 | 用户修复根因后 unblock |
+| `cancelled` | 用户主动取消 | 用户执行 `areaflow cancel <task>` | 终态 |
+| `skipped` | 用户选择跳过 | 用户执行 `areaflow skip <task>` | 终态 |
+
+#### Run 记录模型
+
+每个 Task 下有多条 Run 记录，每次 retry 产生新的 Run：
+
+```
+Task "task-001" { state: checkpointed }
+  ├── Run #1 { type: copy,   result: completed, attempt: 1, duration: 3m42s }
+  ├── Run #2 { type: verify, result: failed,    attempt: 1, duration: 1m15s }
+  ├── Run #3 { type: copy,   result: completed, attempt: 2, duration: 2m30s }
+  └── Run #4 { type: verify, result: passed,    attempt: 2, duration: 1m08s }
+```
+
+Run 记录字段：
+
+```yaml
+run:
+  id: int                  # 自增序号
+  type: copy | verify      # 执行类型
+  result: running | completed | failed | timeout
+  attempt: int             # 第几轮尝试
+  engine: string           # 使用的引擎名
+  duration_ms: int         # 耗时
+  tokens_in: int           # 输入 token 数
+  tokens_out: int          # 输出 token 数
+  log_path: string         # 日志文件路径
+  started_at: timestamp
+  finished_at: timestamp
+```
+
+#### Agent 状态机
+
+```
+idle ──> waiting ──> running ──> completed
+            │           │
+            │           ├──> failed（有 task 失败且无法恢复）
+            │           └──> stopped（graceful stop）
+            │
+            └──> blocked（依赖的代理失败）
+
+恢复路径：
+  stopped ──> running（resume）
+  blocked ──> waiting（上游代理修复后）
+```
+
+| 状态 | 含义 |
+|------|------|
+| `idle` | 已配置，等待调度 |
+| `waiting` | 有依赖（`depends_on`）未完成 |
+| `running` | 正在执行 task 队列 |
+| `completed` | 所有 task 完成 |
+| `failed` | 有 task 失败且达到全局限制 |
+| `stopped` | 收到 graceful stop 信号 |
+| `blocked` | 依赖的代理失败 |
+
+#### Project 状态机
+
+```
+configured ──> running ──> completed（所有代理完成）
+                  │
+                  ├──> partial（部分代理完成，部分失败/blocked）
+                  └──> stopped（graceful stop）
+
+恢复路径：
+  partial ──> running（修复后继续）
+  stopped ──> running（resume）
+```
+
+| 状态 | 含义 |
+|------|------|
+| `configured` | 已配置，尚未启动 |
+| `running` | 至少一个代理在执行 |
+| `completed` | 所有代理 completed |
+| `partial` | 部分代理 completed，部分 failed/blocked |
+| `stopped` | 所有代理已停止 |
+
+### 9.25 Task Prompt 通用格式
+
+> 2026-05-25 讨论确认：YAML frontmatter + Markdown body，单文件，分两层（通用 + Skill 扩展）。
+
+#### 格式说明
+
+一个 task = 一个 `.md` 文件，由两部分组成：
+
+```
+┌─ --- ────────────────────┐
+│ YAML frontmatter          │  ← AreaFlow 引擎解析（结构化数据）
+│ (id, type, paths, deps)   │
+└─ --- ────────────────────┘
+┌──────────────────────────┐
+│ Markdown body             │  ← AI Agent + 人类读取（描述、清单、标准）
+│ (范围、清单、完成标准)      │
+└──────────────────────────┘
+```
+
+#### 通用 frontmatter 字段（所有项目共享）
+
+```yaml
+id: string                   # 必填，任务唯一标识
+title: string                # 必填，任务标题
+type: atomic | integration | verify  # 必填，任务类型
+scope: string                # 可选，所属模块/领域（如 backend / frontend）
+
+expected_paths:              # 允许修改/新增的文件 glob
+  - "src/api/**/*.go"
+  - "src/api/**/*_test.go"
+
+forbidden_paths:             # 禁止触碰的文件 glob
+  - "src/db/migrations/**"
+  - "*.lock"
+
+verify_commands:             # 验证命令列表
+  - "go test ./src/api/..."
+  - "go vet ./src/api/..."
+
+dependencies:                # 依赖的 task ID 列表
+  - "task-001"
+
+refs:                        # 参考文档路径
+  - "docs/api/auth-spec.md"
+
+extensions: {}               # Skill 扩展字段（见下方）
+```
+
+#### Skill 扩展字段示例
+
+不同项目通过 Skill 注入不同的扩展字段：
+
+```yaml
+# AreaMatrix 项目的扩展（由 swift-macos + rust-core Skill 定义）
+extensions:
+  ux_binding: "S2-13 batch-delete-confirm"
+  core_binding: "C2-09 batch-delete-trash"
+  control_map: "docs/architecture/stage2-control-map.md"
+
+# 微信小程序项目的扩展（由 wechat-miniprogram Skill 定义）
+extensions:
+  page: "pages/login/index"
+  cloud_function: "login"
+  wxml_template: "templates/auth-form.wxml"
+```
+
+#### 完整示例
+
+```markdown
+---
+id: task-015
+title: 实现用户登录 API
+type: atomic
+scope: backend
+
+expected_paths:
+  - "src/api/auth/login.go"
+  - "src/api/auth/login_test.go"
+
+forbidden_paths:
+  - "src/db/migrations/**"
+
+verify_commands:
+  - "go test ./src/api/auth/..."
+  - "go vet ./..."
+
+dependencies:
+  - "task-014"
+
+refs:
+  - "docs/api/auth-spec.md"
+  - "docs/architecture/auth-flow.md"
+
+extensions: {}
+---
+
+# task-015: 实现用户登录 API
+
+> 共享规则：`_shared/audit-rules.md`
+
+## 范围
+
+只实现 `POST /api/login` 端点。接受 email + password，验证后返回 JWT token。
+
+## 核对清单
+
+1. 读取 `docs/api/auth-spec.md` 确认接口契约
+2. 实现 `LoginHandler` 和路由注册
+3. 密码使用 bcrypt 验证，不存明文
+4. JWT 有效期 24 小时，包含 user_id claim
+5. 错误返回统一 JSON 格式
+
+## 完成标准
+
+- `POST /api/login` 正确返回 JWT token
+- 密码错误返回 401 + `{"error": "invalid credentials"}`
+- 用户不存在返回 404
+- 通过 `go test ./src/api/auth/...` 所有测试
+```
+
+#### 与当前 AreaMatrix 格式的对比
+
+| 维度 | AreaMatrix 当前格式 | AreaFlow 通用格式 |
+|------|---------------------|-------------------|
+| 文件格式 | 纯 Markdown | YAML frontmatter + Markdown body |
+| 结构化数据 | 隐含在 Markdown 标题中 | 显式 YAML 字段，机器可解析 |
+| 路径约束 | 在 manifest 中统一管理 | 每个 task 自带 expected/forbidden paths |
+| 验证命令 | `./dev check task <id>` | `verify_commands` 列表，引擎执行 |
+| 项目特有字段 | 硬编码（UX 绑定、Core 绑定） | `extensions` 块，由 Skill 定义 |
+| 依赖管理 | 在 `dependency-graph.md` 集中管理 | 每个 task 自带 `dependencies` 字段 |
+
 ---
 
 ## 附录 A：流水线架构图
