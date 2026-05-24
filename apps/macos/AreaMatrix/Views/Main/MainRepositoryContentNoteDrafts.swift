@@ -185,7 +185,9 @@ extension MainRepositoryContentView {
             batchCategoryChanger: fileListModel.batchCategoryChanger,
             categoryRows: repositoryTree.sidebarRows,
             onBatchCategoryApplied: applyBatchCategoryChangeResult,
-            onBatchCategoryCreateNewCategory: openClassifierRuleEditorFromBatchCategory,
+            onBatchCategoryCreateNewCategory: { handoff in
+                openClassifierRuleEditorFromBatchCategory(handoff, route: commandPaletteBatchChangeCategoryRoute())
+            },
             onRetrySelectedFileDetail: { Task { await fileListModel.retrySelectedFileDetail() } },
             tagActions: detailTagActions,
             onCopyPaths: onCopyPaths,

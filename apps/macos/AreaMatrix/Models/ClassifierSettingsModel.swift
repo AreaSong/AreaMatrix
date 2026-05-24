@@ -40,8 +40,10 @@ final class ClassifierSettingsModel: ObservableObject {
     private let fileRevealer: any RepositoryFileRevealing
     private let finderOpener: any RepositoryFinderOpening
     private let accessibilityAnnouncer: any AccessibilityAnnouncing
+    private let onSavedCategory: ((String) -> Void)?
     private var pendingRetry: ClassifierSettingsPendingSave?
     private var previewGeneration = 0
+    private var loadedClassifierSlugs: Set<String> = []
 
     private static let classifierRelativePath = ".areamatrix/classifier.yaml"
     private static let validationProbeFilename = "AreaMatrixValidationProbe.txt"
@@ -56,7 +58,8 @@ final class ClassifierSettingsModel: ObservableObject {
         fileOpener: any RepositoryFileOpening = NSWorkspaceRepositoryFileOpener(),
         fileRevealer: any RepositoryFileRevealing = NSWorkspaceRepositoryFileRevealer(),
         finderOpener: any RepositoryFinderOpening = NSWorkspaceRepositoryFinderOpener(),
-        accessibilityAnnouncer: any AccessibilityAnnouncing = VoiceOverAccessibilityAnnouncer()
+        accessibilityAnnouncer: any AccessibilityAnnouncing = VoiceOverAccessibilityAnnouncer(),
+        onSavedCategory: ((String) -> Void)? = nil
     ) {
         self.repoPath = repoPath
         self.loader = loader
@@ -68,6 +71,7 @@ final class ClassifierSettingsModel: ObservableObject {
         self.fileRevealer = fileRevealer
         self.finderOpener = finderOpener
         self.accessibilityAnnouncer = accessibilityAnnouncer
+        self.onSavedCategory = onSavedCategory
     }
 }
 
@@ -130,11 +134,13 @@ extension ClassifierSettingsModel {
             savedConfig = effectiveConfig
             draft = ClassifierSettingsDraft(config: effectiveConfig)
             loadState = .loaded
+            loadedClassifierSlugs = currentClassifierSlugs()
             refreshLastValidBackupAvailability()
         } catch {
             savedConfig = nil
             draft = nil
             hasLastValidBackup = false
+            loadedClassifierSlugs = []
             loadState = await .failed(loadError(for: error))
         }
     }
@@ -298,6 +304,7 @@ extension ClassifierSettingsModel {
         do {
             try classifierRulesManager.storeLastValidBackup(repoPath: repoPath)
             refreshLastValidBackupAvailability()
+            publishSavedCategoryIfNeeded()
             validationState = .passed
             accessibilityAnnouncer.announce("分类规则校验通过")
             return true
@@ -372,6 +379,20 @@ extension ClassifierSettingsModel {
 
     private func refreshLastValidBackupAvailability() {
         hasLastValidBackup = classifierRulesManager.lastValidBackupExists(repoPath: repoPath)
+    }
+
+    private func currentClassifierSlugs() -> Set<String> {
+        (try? classifierRulesManager.classifierCategorySlugs(repoPath: repoPath)).map(Set.init) ?? []
+    }
+
+    private func publishSavedCategoryIfNeeded() {
+        let currentSlugs = currentClassifierSlugs()
+        defer { loadedClassifierSlugs = currentSlugs }
+        let savedCategories = currentSlugs.subtracting(loadedClassifierSlugs)
+        guard savedCategories.count == 1, let savedCategory = savedCategories.first else {
+            return
+        }
+        onSavedCategory?(savedCategory)
     }
 
     private func loadError(for error: Error) async -> ClassifierSettingsLoadError {
@@ -466,4 +487,5 @@ extension ClassifierSettingsModel {
         previewError = nil
         isPreviewing = false
     }
+
 }

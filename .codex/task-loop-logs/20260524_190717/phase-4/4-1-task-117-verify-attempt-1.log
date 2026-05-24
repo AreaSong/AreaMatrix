@@ -1,0 +1,81 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-1/task-117`
+- 对应文件路径：`tasks/prompts/phase-4/4-1-stage2-experience/task-117-s2-12-page-integration-verify.md`
+- 覆盖页面：`S2-12-batch-change-category`
+- 覆盖能力：`C2-08, C2-07`
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：0
+- 通过项数：10
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：本页所有 page-feature task 覆盖
+- 结果：通过
+- 证据：manifest 明确 `4-1/task-117` 依赖 `4-1/task-115`、`4-1/task-116`；control map 中 S2-12 仅声明 `C2-08, C2-07`，对应 prompt 为 `task-115, task-116, task-117`。
+- 涉及文件：`tasks/prompts/_shared/manifests/phase-4.md:3403`、`docs/architecture/stage-2-control-map.md:20`
+
+- 项目：页面状态、入口、退出、错误态、CoreBridge 闭环
+- 结果：通过
+- 证据：多选工具区、右键菜单、命令面板均可进入 S2-12；sheet 自动 preview、Preview 展开、Apply 绑定最新 preview、Cancel 关闭；preview/apply 通过 `CoreBridge` 调用 C2-08，Undo toast 通过 C2-07 加载。
+- 涉及文件：`apps/macos/AreaMatrix/Views/Main/MainRepositoryMultiSelectionActions.swift:45`、`apps/macos/AreaMatrix/Views/Main/FileDropAdapter.swift:106`、`apps/macos/AreaMatrix/Views/Main/ImportProgressListIntegration.swift:344`、`apps/macos/AreaMatrix/Views/Main/BatchChangeCategorySheet.swift:127`、`apps/macos/AreaMatrix/Views/Main/BatchChangeCategorySheet.swift:280`
+
+- 项目：真实 Core 能力接入
+- 结果：通过
+- 证据：`previewBatchMoveToCategory` / `batchMoveToCategory` 直接包装 UniFFI C2-08 API；`listUndoActions` / `undoAction` 直接包装 C2-07 API。UDL 与 Core API 文档均存在对应合同。
+- 涉及文件：`apps/macos/AreaMatrix/Bridge/CoreBatchChangeCategory.swift:99`、`apps/macos/AreaMatrix/Bridge/CoreTagCRUD.swift:132`、`core/area_matrix.udl:66`、`core/area_matrix.udl:888`
+
+- 项目：mock、fixture、硬编码最终闭环检查
+- 结果：通过
+- 证据：生产路径未用 mock/fixture 伪造闭环；新增 S2-12 integration test 创建真实临时 repo，真实导入 copied/indexed 文件，真实 preview/apply/undo，并断言 repo-owned 文件移动、index-only 外部源文件不移动、Undo action 可执行。
+- 涉及文件：`apps/macos/AreaMatrixTests/S212BatchChangeCategoryPageIntegrationVerifyTests.swift:6`、`apps/macos/AreaMatrixTests/S212BatchChangeCategoryPageIntegrationVerifyTests.swift:188`、`apps/macos/AreaMatrixTests/S212BatchChangeCategoryPageIntegrationVerifyTests.swift:403`
+
+- 项目：不新增 control map 外能力
+- 结果：通过
+- 证据：S2-12 只消费 C2-08 与 C2-07；`Create new category...` 仅路由到 S2-19 并在返回后重新选择分类/preview，没有在 S2-12 内联新增分类能力。
+- 涉及文件：`docs/ux/page-specs/stage-2-experience/S2-12-batch-change-category.md:41`、`apps/macos/AreaMatrix/Models/BatchChangeCategoryState.swift:98`、`apps/macos/AreaMatrix/Views/Main/MainRepositoryContentCategoryMoveRefresh.swift:324`
+
+- 项目：Expected New Paths
+- 结果：通过
+- 证据：`apps/macos/AreaMatrix/**` 与 `apps/macos/AreaMatrixTests/**` 均有真实落地；新增 `S212BatchChangeCategoryPageIntegrationVerifyTests.swift` 已加入 Xcode test target。
+- 涉及文件：`apps/macos/AreaMatrix.xcodeproj/project.pbxproj:208`、`apps/macos/AreaMatrix.xcodeproj/project.pbxproj:1153`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：检查 `core/src/**` 无 staged/unstaged diff 输出，未发现 forbidden touch。
+- 涉及文件：`core/src/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。S2-12 状态、CoreBridge、sheet、route/refresh 分层清楚，相关生产文件均低于 500 行。
+- 注释 / rustdoc / 文档同步：通过。本 task 未新增 Rust public API；UDL/Core API 与 Swift wrapper 字段对齐。
+- 错误处理与边界处理：通过。preview/apply 错误经 `CoreErrorMapping` 显示，Apply 依赖最新 preview、`canApply`、选择集和移动选项一致性。
+- 测试与验证覆盖：通过。manifest 验证通过，且补跑 S2-12 targeted XCTest 6 项通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。测试 fixture 仅用于单元状态验证；最终闭环由真实 CoreBridge integration test 覆盖。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-117`
+- 结果：通过。`prompt doctor: OK`，`git diff --check` 通过，macOS `xcodebuild ... build` 显示 `BUILD SUCCEEDED`。
+- 已运行：`./dev test macos --only-testing AreaMatrixTests/S212BatchChangeCategoryPageIntegrationVerifyTests`
+- 结果：通过。`xcodebuild test` 在最后收集阶段被本地 `testmanagerd` sandbox 阻断，但已先执行 6 个 selected tests 且 0 failures；仓库 runner 随后复用 built XCTest bundle，`xcrun xctest` 通过。
+- 缺失：未做真实窗口 UI smoke；当前 manifest 未要求，核心页面闭环由 build + targeted XCTest 证明。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS

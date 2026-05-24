@@ -38,8 +38,8 @@ extension MainFileListModel {
         pendingActionDestination = .iCloudConflict(fileID: fileID)
     }
 
-    func openClassifierRuleEditorForBatchCategory() {
-        pendingSearchDestination = .classifierRuleEditor(sourcePageID: "S2-12")
+    func openClassifierRuleEditorForBatchCategory(context: BatchChangeCategoryNewCategoryReturnContext) {
+        pendingSearchDestination = .classifierRuleEditor(context: context)
     }
 
     func applyICloudConflictResolution(

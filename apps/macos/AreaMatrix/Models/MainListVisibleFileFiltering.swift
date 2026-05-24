@@ -55,7 +55,11 @@ enum SearchFilterDateField {
         }
     }
 
-    func applying(after: Int64?, before: Int64? = nil, to filters: SearchFilterStateSnapshot) -> SearchFilterStateSnapshot {
+    func applying(
+        after: Int64?,
+        before: Int64? = nil,
+        to filters: SearchFilterStateSnapshot
+    ) -> SearchFilterStateSnapshot {
         var updated = filters
         switch self {
         case .imported:
@@ -179,21 +183,17 @@ enum MainSearchDestination: Equatable, Identifiable {
     case queryError(SearchQueryRequestSnapshot, SearchQueryDiagnosticSnapshot)
     case indexingStatus(SearchQueryRequestSnapshot)
     case commandPalette
-    case classifierRuleEditor(sourcePageID: String)
+    case classifierRuleEditor(context: BatchChangeCategoryNewCategoryReturnContext?)
 
     var id: String {
         switch self {
-        case let .savedSearchSheet(request):
-            "S2-03-\(request.query)"
-        case let .searchEmpty(request):
-            "S2-04-\(request.query)"
-        case let .queryError(request, diagnostic):
-            "S2-05-\(request.query)-\(diagnostic.message)"
-        case let .indexingStatus(request):
-            "S2-01-indexing-\(request.query)"
-        case .commandPalette:
-            "S2-15-command-palette"
-        case let .classifierRuleEditor(sourcePageID): "S2-19-classifier-rule-editor-\(sourcePageID)"
+        case let .savedSearchSheet(request): "S2-03-\(request.query)"
+        case let .searchEmpty(request): "S2-04-\(request.query)"
+        case let .queryError(request, diagnostic): "S2-05-\(request.query)-\(diagnostic.message)"
+        case let .indexingStatus(request): "S2-01-indexing-\(request.query)"
+        case .commandPalette: "S2-15-command-palette"
+        case let .classifierRuleEditor(context):
+            "S2-19-classifier-rule-editor-\(context?.handoff.id ?? "settings")"
         }
     }
 

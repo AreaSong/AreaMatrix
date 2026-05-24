@@ -1,0 +1,60 @@
+一、执行结论
+
+已完成。
+
+二、执行范围
+
+- 单任务：`4-1/task-117`
+- 产品改动限制在 `apps/macos/AreaMatrix/**` 与 `apps/macos/AreaMatrixTests/**`
+- 未触碰 `core/src/**`
+- 未修改 `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+
+主要处理：
+
+- 移除了本 task 范围外的 S2-19 / C2-15 classifier rule creation 接入与测试残留。
+- 保留 S2-12 的 `Create new category...` 为跳转 / handoff 到 S2-19，不在本页内创建或保存规则。
+- 补齐 S2-12 批量改分类的 route return、preview/apply、undo 状态与测试证据。
+- 将超 500 行风险的测试拆并整理到现有测试文件内。
+
+三、完成情况
+
+- 核对清单 1：已逐项覆盖 `4-1/task-115`、`4-1/task-116` 对应的 C2-08 / C2-07 页面闭环。
+- 核对清单 2：入口、退出、Preview、Apply、错误态、Undo 状态和 CoreBridge 调用已串联。
+- 核对清单 3：已移除本 task 不能验收通过的 C2-15 创建路径。
+- 核对清单 4：未新增 S2-12 control map 外功能。
+- 完成标准：S2-12 现在只围绕 `C2-08, C2-07` 验收；C2-15 仅保留跨页跳转语义。
+- Forbidden Touches：`git diff --name-only -- core/src` 无输出。
+
+四、工程质量
+
+- 代码结构：当前 S2-12 改动集中在 batch category 状态、sheet wiring、主视图刷新/路由和测试。
+- 文件长度：此前阻塞文件 `ChangeCategoryPageIntegrationVerifyTests.swift` 现在为 500 行；相关修改文件均不超过 500 行。
+- 错误处理：Preview failure、Apply failure、Undo unavailable 等路径仍保留显式状态。
+- 占位 / 硬编码 / mock-only：生产路径未新增 mock-only 闭环；测试 fake 仅用于记录 C2-08 / C2-07 请求证据。
+- 文档同步：本次未改文档；按当前 task manifest 和 control map 收窄实现范围。
+
+五、验证情况
+
+已重新执行并通过：
+
+```bash
+./dev check task 4-1/task-117
+```
+
+该命令内通过：
+
+- `prompt doctor`
+- `git diff --check`
+- `xcodebuild ... build CODE_SIGNING_ALLOWED=NO`
+
+额外核验：
+
+- `rg` 确认非生成代码中无 `CoreClassifierRuleCreating`、`ClassifierRuleDraftCreate`、`createClassifierRule(...)` 等越界创建符号残留。
+- `git diff -- apps/macos/AreaMatrix.xcodeproj/project.pbxproj` 无输出。
+- `wc -l` 确认相关 Swift 文件满足 500 行阈值。
+
+`xcodebuild` 仍输出 CoreSimulator / FSEvents 环境 warning，但最终 `BUILD SUCCEEDED`。未运行 `./dev test macos`，因为当前 manifest 的验证上限是 `./dev check task 4-1/task-117`。
+
+六、风险与后续
+
+剩余风险主要是未做宽门禁测试；这是按本 task manifest 验证边界执行的结果，不额外扩大到全量 macOS test。建议下一步进入 `4-1/task-117` 的 verify-ready 验收，若通过再继续 `4-1/task-118`。

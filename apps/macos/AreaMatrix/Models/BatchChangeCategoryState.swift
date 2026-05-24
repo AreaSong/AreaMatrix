@@ -12,9 +12,53 @@ struct BatchChangeCategoryRoute: Identifiable, Equatable {
     let selectedFiles: [FileEntrySnapshot]
     let selectedCount: Int
     let disabledReason: String?
+    let initialTargetCategory: String?
+    let acceptedCreatedCategory: String?
+
+    init(
+        source: BatchChangeCategoryRouteSource,
+        fileIDs: [Int64],
+        selectedFiles: [FileEntrySnapshot],
+        selectedCount: Int,
+        disabledReason: String?,
+        initialTargetCategory: String? = nil,
+        acceptedCreatedCategory: String? = nil
+    ) {
+        self.source = source
+        self.fileIDs = fileIDs
+        self.selectedFiles = selectedFiles
+        self.selectedCount = selectedCount
+        self.disabledReason = disabledReason
+        self.initialTargetCategory = BatchChangeCategoryCreatedCategoryReturn
+            .normalizedCategory(initialTargetCategory)
+        self.acceptedCreatedCategory = BatchChangeCategoryCreatedCategoryReturn
+            .normalizedCategory(acceptedCreatedCategory)
+    }
 
     var id: String {
-        "\(source.rawValue):\(fileIDs.map(String.init).joined(separator: ",")):\(selectedCount):\(disabledReason ?? "")"
+        [
+            source.rawValue,
+            fileIDs.map(String.init).joined(separator: ","),
+            "\(selectedCount)",
+            disabledReason ?? "",
+            initialTargetCategory ?? "",
+            acceptedCreatedCategory ?? ""
+        ].joined(separator: ":")
+    }
+
+    func returningFromCategoryEditor(
+        targetCategory: String?,
+        acceptedCreatedCategory: String? = nil
+    ) -> BatchChangeCategoryRoute {
+        BatchChangeCategoryRoute(
+            source: source,
+            fileIDs: fileIDs,
+            selectedFiles: selectedFiles,
+            selectedCount: selectedCount,
+            disabledReason: disabledReason,
+            initialTargetCategory: targetCategory,
+            acceptedCreatedCategory: acceptedCreatedCategory
+        )
     }
 }
 
@@ -59,6 +103,71 @@ struct BatchChangeCategoryNewCategoryHandoff: Equatable, Identifiable {
 
     var id: String {
         "\(sourcePageID)-\(targetPageID)-\(selectedFileIDs.map(String.init).joined(separator: ","))"
+    }
+}
+
+struct BatchChangeCategoryNewCategoryReturnContext: Equatable {
+    var route: BatchChangeCategoryRoute
+    var handoff: BatchChangeCategoryNewCategoryHandoff
+
+    func routeRestoringOriginalTarget() -> BatchChangeCategoryRoute {
+        route.returningFromCategoryEditor(targetCategory: handoff.currentTargetCategory)
+    }
+
+    func routeSelectingCreatedCategory(_ category: String) -> BatchChangeCategoryRoute {
+        route.returningFromCategoryEditor(
+            targetCategory: category,
+            acceptedCreatedCategory: category
+        )
+    }
+}
+
+enum BatchChangeCategoryClassifierReturn {
+    static func cancelledRoute(
+        context: BatchChangeCategoryNewCategoryReturnContext
+    ) -> BatchChangeCategoryRoute {
+        context.routeRestoringOriginalTarget()
+    }
+
+    static func acceptedRoute(
+        category: String,
+        context: BatchChangeCategoryNewCategoryReturnContext
+    ) -> BatchChangeCategoryRoute? {
+        guard let normalized = BatchChangeCategoryCreatedCategoryReturn.normalizedCategory(category) else {
+            return nil
+        }
+        return context.routeSelectingCreatedCategory(normalized)
+    }
+
+    static func acceptedRoute(
+        notification: Notification,
+        context: BatchChangeCategoryNewCategoryReturnContext
+    ) -> BatchChangeCategoryRoute? {
+        guard let category = ClassifierRuleEditorSaveEvents.savedCategory(from: notification) else {
+            return nil
+        }
+        return acceptedRoute(category: category, context: context)
+    }
+}
+
+enum ClassifierRuleEditorSaveEvents {
+    static let savedCategoryNotification = Notification.Name(
+        "AreaMatrixClassifierRuleEditorSavedCategory"
+    )
+    static let categoryUserInfoKey = "savedCategory"
+
+    static func savedCategory(from notification: Notification) -> String? {
+        BatchChangeCategoryCreatedCategoryReturn.normalizedCategory(
+            notification.userInfo?[categoryUserInfoKey] as? String
+        )
+    }
+
+    static func notification(savedCategory: String) -> Notification {
+        Notification(
+            name: savedCategoryNotification,
+            object: nil,
+            userInfo: [categoryUserInfoKey: savedCategory]
+        )
     }
 }
 
@@ -144,17 +253,35 @@ enum BatchChangeCategorySelection {
             .map { "\($0.key) (\($0.value))" }
             .joined(separator: ", ")
     }
+
+    static func filteredCategories(_ categories: [String], query: String) -> [String] {
+        let normalizedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !normalizedQuery.isEmpty else { return categories }
+        return categories.filter {
+            $0.localizedCaseInsensitiveContains(normalizedQuery)
+        }
+    }
 }
 
 enum BatchChangeCategoryCreatedCategoryReturn {
+    static func normalizedCategory(_ category: String?) -> String? {
+        let normalized = category?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return normalized.isEmpty ? nil : normalized
+    }
+
     static func updatedCategories(_ categories: [String], savedCategory: String) -> [String] {
-        let normalized = savedCategory.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !normalized.isEmpty else { return categories }
+        guard let normalized = normalizedCategory(savedCategory) else { return categories }
         return BatchChangeCategorySelection.availableCategories(
             selectedFiles: [],
             categoryRows: [],
             createdCategories: categories + [normalized]
         )
+    }
+}
+
+enum BatchChangeCategoryPreviewDisclosure {
+    static func shouldShowDetails(after state: BatchChangeCategoryPreviewState, expandDetails: Bool) -> Bool {
+        expandDetails && state.report != nil
     }
 }
 
@@ -176,7 +303,7 @@ enum BatchChangeCategoryAction {
             )
             return .loaded(report)
         } catch {
-            return .failed(await mapError(error, errorMapper: errorMapper), previous: nil)
+            return await .failed(mapError(error, errorMapper: errorMapper), previous: nil)
         }
     }
 
@@ -197,9 +324,9 @@ enum BatchChangeCategoryAction {
             )
             return BatchChangeCategoryApplyResult(report: report, failure: nil)
         } catch {
-            return BatchChangeCategoryApplyResult(
+            return await BatchChangeCategoryApplyResult(
                 report: nil,
-                failure: await mapError(error, errorMapper: errorMapper)
+                failure: mapError(error, errorMapper: errorMapper)
             )
         }
     }

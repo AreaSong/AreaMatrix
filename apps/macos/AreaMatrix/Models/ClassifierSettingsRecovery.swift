@@ -44,6 +44,7 @@ struct ClassifierSettingsDraft: Equatable {
 
 protocol ClassifierRulesManaging {
     func classifierFileExists(repoPath: String) -> Bool
+    func classifierCategorySlugs(repoPath: String) throws -> [String]
     func lastValidBackupExists(repoPath: String) -> Bool
     func createDefaultClassifier(repoPath: String) throws
     func storeLastValidBackup(repoPath: String) throws
@@ -63,6 +64,11 @@ struct FileSystemClassifierRulesManager: ClassifierRulesManaging {
         }
 
         return fileManager.fileExists(atPath: url.path)
+    }
+
+    func classifierCategorySlugs(repoPath: String) throws -> [String] {
+        let content = try String(contentsOf: classifierURL(repoPath: repoPath), encoding: .utf8)
+        return ClassifierRulesCategorySlugParser.slugs(in: content)
     }
 
     func lastValidBackupExists(repoPath: String) -> Bool {
@@ -166,6 +172,29 @@ struct FileSystemClassifierRulesManager: ClassifierRulesManaging {
       - slug: inbox
         display_name: { zh-Hans: 未分类, en: Inbox }
     """
+}
+
+enum ClassifierRulesCategorySlugParser {
+    static func slugs(in yaml: String) -> [String] {
+        var seen = Set<String>()
+        var slugs: [String] = []
+        for line in yaml.components(separatedBy: .newlines) {
+            guard let slug = slug(from: line), !seen.contains(slug) else {
+                continue
+            }
+            seen.insert(slug)
+            slugs.append(slug)
+        }
+        return slugs
+    }
+
+    private static func slug(from line: String) -> String? {
+        let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed.hasPrefix("- slug:") else { return nil }
+        let value = trimmed.dropFirst("- slug:".count).trimmingCharacters(in: .whitespacesAndNewlines)
+        let unquoted = value.trimmingCharacters(in: CharacterSet(charactersIn: "\"'"))
+        return unquoted.isEmpty ? nil : unquoted
+    }
 }
 
 enum ClassifierRulesFileError: Error, Equatable, LocalizedError {

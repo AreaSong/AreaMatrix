@@ -11,15 +11,18 @@ extension ClassifierSettingsPane {
         loader: any CoreConfigurationLoading = CoreBridge(),
         updater: any CoreConfigurationUpdating = CoreBridge(),
         predictor: any CoreCategoryPredicting = CoreBridge(),
-        errorMapper: any CoreErrorMapping = CoreBridge()
+        errorMapper: any CoreErrorMapping = CoreBridge(),
+        onSavedCategory: ((String) -> Void)? = nil
     ) {
-        _model = StateObject(wrappedValue: ClassifierSettingsModel(
+        let settingsModel = ClassifierSettingsModel(
             repoPath: repoPath,
             loader: loader,
             updater: updater,
             predictor: predictor,
-            errorMapper: errorMapper
-        ))
+            errorMapper: errorMapper,
+            onSavedCategory: onSavedCategory
+        )
+        _model = StateObject(wrappedValue: settingsModel)
     }
 
     var body: some View {
@@ -447,6 +450,7 @@ extension ClassifierSettingsPane {
             }
         )
     }
+
 }
 
 private struct ClassifierSettingsSection<Content: View>: View {

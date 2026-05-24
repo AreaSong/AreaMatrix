@@ -10,6 +10,8 @@ struct BatchChangeCategoryTrigger: View {
     let changer: any CoreBatchCategoryChanging
     let undoStore: any CoreUndoActionLogging
     let errorMapper: any CoreErrorMapping
+    let initialTargetCategory: String? = nil
+    let acceptedCreatedCategory: String? = nil
     let onApplied: (BatchCategoryChangeReportSnapshot) -> Void
     let onUndoStateChange: (BatchTagUndoState) -> Void
     let onCreateNewCategory: (BatchChangeCategoryNewCategoryHandoff) -> Void
@@ -30,9 +32,14 @@ struct BatchChangeCategoryTrigger: View {
                     changer: changer,
                     undoStore: undoStore,
                     errorMapper: errorMapper,
+                    initialTargetCategory: initialTargetCategory,
+                    acceptedCreatedCategory: acceptedCreatedCategory,
                     onApplied: onApplied,
                     onUndoStateChange: onUndoStateChange,
-                    onCreateNewCategory: onCreateNewCategory,
+                    onCreateNewCategory: { handoff in
+                        isPresented = false
+                        onCreateNewCategory(handoff)
+                    },
                     onClose: { isPresented = false }
                 )
             }
@@ -49,6 +56,8 @@ struct BatchChangeCategorySheet: View {
     let changer: any CoreBatchCategoryChanging
     let undoStore: any CoreUndoActionLogging
     let errorMapper: any CoreErrorMapping
+    let initialTargetCategory: String?
+    let acceptedCreatedCategory: String?
     let onApplied: (BatchCategoryChangeReportSnapshot) -> Void
     let onUndoStateChange: (BatchTagUndoState) -> Void
     let onCreateNewCategory: (BatchChangeCategoryNewCategoryHandoff) -> Void
@@ -61,6 +70,7 @@ struct BatchChangeCategorySheet: View {
     @State private var result: BatchCategoryChangeReportSnapshot?
     @State private var failure: CoreErrorMappingSnapshot?
     @State private var showsDetails = false
+    @State private var categorySearchText = ""
 
     init(
         repoPath: String,
@@ -72,6 +82,8 @@ struct BatchChangeCategorySheet: View {
         changer: any CoreBatchCategoryChanging,
         undoStore: any CoreUndoActionLogging,
         errorMapper: any CoreErrorMapping,
+        initialTargetCategory: String? = nil,
+        acceptedCreatedCategory: String? = nil,
         onApplied: @escaping (BatchCategoryChangeReportSnapshot) -> Void,
         onUndoStateChange: @escaping (BatchTagUndoState) -> Void,
         onCreateNewCategory: @escaping (BatchChangeCategoryNewCategoryHandoff) -> Void = { _ in },
@@ -86,14 +98,20 @@ struct BatchChangeCategorySheet: View {
         self.changer = changer
         self.undoStore = undoStore
         self.errorMapper = errorMapper
+        self.initialTargetCategory = BatchChangeCategoryCreatedCategoryReturn
+            .normalizedCategory(initialTargetCategory)
+        self.acceptedCreatedCategory = BatchChangeCategoryCreatedCategoryReturn
+            .normalizedCategory(acceptedCreatedCategory)
         self.onApplied = onApplied
         self.onUndoStateChange = onUndoStateChange
         self.onCreateNewCategory = onCreateNewCategory
         self.onClose = onClose
-        _targetCategory = State(initialValue: BatchChangeCategorySelection.defaultTargetCategory(
-            selectedFiles: selectedFiles,
-            categoryRows: categoryRows
-        ))
+        _targetCategory = State(initialValue: self.initialTargetCategory ??
+            BatchChangeCategorySelection.defaultTargetCategory(
+                selectedFiles: selectedFiles,
+                categoryRows: categoryRows
+            ))
+        _createdCategories = State(initialValue: self.acceptedCreatedCategory.map { [$0] } ?? [])
     }
 
     var body: some View {
@@ -107,6 +125,10 @@ struct BatchChangeCategorySheet: View {
             }
         }
         .task(id: previewTaskKey) { await refreshPreview() }
+        .task(id: acceptedCreatedCategory) {
+            guard let acceptedCreatedCategory else { return }
+            await acceptCreatedCategory(acceptedCreatedCategory)
+        }
     }
 
     private var content: some View {
@@ -134,13 +156,13 @@ struct BatchChangeCategorySheet: View {
 
     private var targetSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Picker("New category", selection: $targetCategory) {
-                ForEach(availableCategories, id: \.self) { category in
-                    Text(category).tag(category)
-                }
-            }
-            .pickerStyle(.menu)
-            .disabled(isApplying || disabledReason != nil)
+            BatchChangeCategoryPicker(
+                categories: availableCategories,
+                filteredCategories: filteredCategories,
+                selection: $targetCategory,
+                searchText: $categorySearchText,
+                isDisabled: isApplying || disabledReason != nil
+            )
             Button("Create new category...") {
                 onCreateNewCategory(BatchChangeCategoryNewCategoryHandoff(
                     selectedFileIDs: fileIDs,
@@ -192,7 +214,7 @@ struct BatchChangeCategorySheet: View {
             if let reason = preview.applyBlockedReason, !reason.isEmpty {
                 Text(reason).foregroundStyle(.secondary)
             }
-            Button(showsDetails ? "Hide details" : "Preview") {
+            Button(showsDetails ? "Hide details" : "Show details") {
                 showsDetails.toggle()
             }
             if showsDetails {
@@ -240,7 +262,7 @@ struct BatchChangeCategorySheet: View {
 
     private var actionButtons: some View {
         HStack {
-            Button("Preview") { Task { await refreshPreview() } }
+            Button("Preview") { Task { await refreshPreview(expandDetails: true) } }
                 .disabled(isApplying || targetCategory.isEmpty || disabledReason != nil)
             Spacer()
             Button("Cancel", action: onClose)
@@ -256,7 +278,7 @@ struct BatchChangeCategorySheet: View {
     }
 
     @MainActor
-    private func refreshPreview() async {
+    private func refreshPreview(expandDetails: Bool = false) async {
         guard selectedCount > 0, disabledReason == nil, !targetCategory.isEmpty else { return }
         let previous = previewState.report
         previewState = .loading(previous: previous)
@@ -270,6 +292,12 @@ struct BatchChangeCategorySheet: View {
             changer: changer,
             errorMapper: errorMapper
         )
+        if expandDetails {
+            showsDetails = BatchChangeCategoryPreviewDisclosure.shouldShowDetails(
+                after: previewState,
+                expandDetails: expandDetails
+            )
+        }
     }
 
     @MainActor
@@ -340,8 +368,59 @@ struct BatchChangeCategorySheet: View {
         )
     }
 
+    private var filteredCategories: [String] {
+        BatchChangeCategorySelection.filteredCategories(
+            availableCategories,
+            query: categorySearchText
+        )
+    }
+
     private var currentCategoriesText: String {
         BatchChangeCategorySelection.categoryDistributionText(selectedFiles: selectedFiles)
+    }
+}
+
+private struct BatchChangeCategoryPicker: View {
+    let categories: [String]
+    let filteredCategories: [String]
+    @Binding var selection: String
+    @Binding var searchText: String
+    let isDisabled: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("New category")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            TextField("Search categories", text: $searchText)
+                .textFieldStyle(.roundedBorder)
+                .disabled(isDisabled)
+                .accessibilityIdentifier("S2-12-new-category-search")
+            pickerBody
+        }
+    }
+
+    @ViewBuilder
+    private var pickerBody: some View {
+        if filteredCategories.isEmpty {
+            Text(emptyMessage)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .accessibilityIdentifier("S2-12-new-category-empty-search")
+        } else {
+            Picker("New category", selection: $selection) {
+                ForEach(filteredCategories, id: \.self) { category in
+                    Text(category).tag(category)
+                }
+            }
+            .pickerStyle(.menu)
+            .disabled(isDisabled)
+            .accessibilityIdentifier("S2-12-new-category-picker")
+        }
+    }
+
+    private var emptyMessage: String {
+        categories.isEmpty ? "No categories available" : "No matching categories"
     }
 }
 

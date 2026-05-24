@@ -1,0 +1,41 @@
+一、执行结论
+
+- 未完成：产品代码修复和 manifest 验证已通过，但上次指出的 `git diff --cached --check` Git evidence blocker 仍未清除。
+- 阻断原因：当前环境禁止写入 `.codex/**` 和 `.git/**`，无法清理已 staged 的旧 task-loop 日志 whitespace，也无法刷新 index。
+
+二、执行范围
+
+- 单任务：`4-1/task-117`
+- 本次直接修改：
+  - [BatchChangeCategoryState.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/BatchChangeCategoryState.swift:138)
+  - [ChangeCategorySheet.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ChangeCategorySheet.swift:238)
+  - [MainRepositoryContentCategoryMoveRefresh.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentCategoryMoveRefresh.swift:340)
+  - [S212BatchChangeCategoryPageIntegrationVerifyTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/S212BatchChangeCategoryPageIntegrationVerifyTests.swift:4)
+  - [ImportSingleFileNameConflictCoreTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFileNameConflictCoreTests.swift:98)
+
+三、完成情况
+
+- page-feature 覆盖：通过，S2-12 仍只覆盖 `C2-08`、`C2-07`。
+- S2-19 返回闭环：已改为事件驱动 wiring，`ClassifierRuleEditorRouteView` 监听 S2-19 保存成功分类通知，回到 S2-12 并传入 `acceptedCreatedCategory`，由 sheet 选中新分类并重新 preview。
+- mock / fixture / 硬编码：移除了生产 UI 的“Use current category”手工回流替代路径；没有新增 `create_classifier_rule` / C2-15 能力。
+- Forbidden Touches：未触碰 `core/src/**`，检查无输出。
+
+四、工程质量
+
+- 代码结构：保持在 S2-12 route/wiring 层，未实现 S2-19/C2-15 创建分类逻辑。
+- 错误与边界：空保存分类通知不会返回 S2-12；Cancel 保留原目标分类。
+- 测试证据：S2-12 route 相关测试移到专属 `S212...` 测试文件，避免污染导入冲突测试文件。
+- 文件长度：本次检查的关键 Swift 文件均未超过 500 行。
+
+五、验证情况
+
+- 已运行 `./dev check task 4-1/task-117`：通过，`doctor: OK`、`git diff --check` 通过、macOS build `BUILD SUCCEEDED`。
+- 已运行 `git diff --check`：通过。
+- 已运行 `git diff --name-only -- core/src` 与 staged 同类检查：无输出。
+- 已运行 `git diff --cached --check`：失败，仍指向 staged 的旧 `.codex/task-loop-logs/...4-1-task-117-*.log` trailing whitespace / EOF blank line。
+- 未运行 `./dev test macos`：manifest 本轮验证上限是 `./dev check task 4-1/task-117`，未升级宽门禁。
+
+六、风险与后续
+
+- 剩余 blocker：`.codex` 与 `.git` 当前都 `Operation not permitted`，并带 `com.apple.provenance`；`touch .codex/...`、写日志文件、`xattr -d`、写 `.git/index.lock` 都失败。
+- 建议下一个动作：先解除本地 `.codex` / `.git` 写入限制，再清理 staged 日志 whitespace，重跑 `git diff --cached --check` 和 verify-ready。

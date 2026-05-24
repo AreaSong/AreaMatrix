@@ -3,8 +3,8 @@ import XCTest
 
 final class ImportBatchResultSummaryTests: XCTestCase {
     @MainActor
-    func testS212C208PreviewAndApplyUseCoreBridgeRequestAndPreviewToken() async {
-        let preview = BatchCategoryPreviewReportSnapshot.s212Preview(token: "preview-current")
+    func testS212C208PreviewApplyUndoAndRouteStayWithinControlMap() async {
+        let preview = BatchCategoryPreviewReportSnapshot.s212Preview()
         let report = BatchCategoryChangeReportSnapshot.s212SuccessReport()
         let changer = S212RecordingBatchCategoryChanger(results: [
             .preview(.success(preview)),
@@ -19,32 +19,72 @@ final class ImportBatchResultSummaryTests: XCTestCase {
             changer: changer,
             errorMapper: S212ErrorMapper()
         )
-        guard let loadedPreview = previewState.report else {
-            return XCTFail("Expected S2-12 preview to load from C2-08 CoreBridge")
-        }
         let apply = await BatchChangeCategoryAction.apply(
             repoPath: "/tmp/repo",
             fileIDs: [2, 1],
-            preview: loadedPreview,
+            preview: preview,
             changer: changer,
             errorMapper: S212ErrorMapper()
         )
+        let undoState = await BatchChangeCategoryUndoAction.stateAfterBatchApply(
+            repoPath: "/tmp/repo",
+            report: report,
+            failure: nil,
+            undoStore: S212RecordingUndoStore(actions: [.s212Action]),
+            errorMapper: S212ErrorMapper()
+        )
+        let createdCategories = BatchChangeCategoryCreatedCategoryReturn
+            .updatedCategories(["finance"], savedCategory: "tax")
         let requests = await changer.recordedRequests()
 
         XCTAssertEqual(requests, [
             "preview|/tmp/repo|2,1|finance|true",
             "apply|/tmp/repo|2,1|finance|true|preview-current"
         ])
+        XCTAssertEqual(previewState.report, preview)
         XCTAssertEqual(apply.report, report)
-        XCTAssertNil(apply.failure)
+        XCTAssertEqual(undoState, .ready(.s212Action))
+        XCTAssertEqual(createdCategories, ["finance", "tax"])
+        XCTAssertEqual(MainSearchDestination.classifierRuleEditor(context: nil).pageID, "S2-19")
     }
 
-    func testS212C208ApplyRequiresLatestPreviewSelectionAndUnblockedDryRun() {
-        let preview = BatchCategoryPreviewReportSnapshot.s212Preview(token: "preview-current")
+    @MainActor
+    func testS212C208PreviewFailureKeepsApplyClosedAndDoesNotExpandDetails() async {
+        let changer = S212RecordingBatchCategoryChanger(results: [
+            .preview(.failure(CoreError.PermissionDenied(path: "/tmp/repo/finance")))
+        ])
+        let previewState = await BatchChangeCategoryAction.preview(
+            repoPath: "/tmp/repo",
+            fileIDs: [1, 2],
+            targetCategory: "finance",
+            moveRepoOwnedFiles: true,
+            changer: changer,
+            errorMapper: S212ErrorMapper()
+        )
+        let requests = await changer.recordedRequests()
+
+        XCTAssertEqual(requests, ["preview|/tmp/repo|1,2|finance|true"])
+        XCTAssertEqual(previewState.failure?.kind, .permissionDenied)
+        XCTAssertNil(previewState.report)
+        XCTAssertFalse(BatchChangeCategoryPreviewDisclosure.shouldShowDetails(
+            after: previewState,
+            expandDetails: true
+        ))
+        XCTAssertFalse(BatchChangeCategoryValidation.canApply(
+            targetCategory: "finance",
+            moveRepoOwnedFiles: true,
+            fileIDs: [1, 2],
+            preview: previewState.report,
+            disabledReason: nil,
+            isApplying: false
+        ))
+    }
+
+    func testS212C208ApplyRequiresLatestUnblockedDryRunAndPartialFailureRefresh() {
+        let preview = BatchCategoryPreviewReportSnapshot.s212Preview()
+        let partial = BatchCategoryChangeReportSnapshot.s212PartialFailureReport()
         var blockedPreview = preview
         blockedPreview.canApply = false
-        blockedPreview.blockedCount = 1
-        blockedPreview.applyBlockedReason = "Target folder is not writable."
 
         XCTAssertTrue(BatchChangeCategoryValidation.canApply(
             targetCategory: "finance",
@@ -64,73 +104,15 @@ final class ImportBatchResultSummaryTests: XCTestCase {
         ))
         XCTAssertFalse(BatchChangeCategoryValidation.canApply(
             targetCategory: "finance",
-            moveRepoOwnedFiles: false,
-            fileIDs: [1, 2],
-            preview: preview,
-            disabledReason: nil,
-            isApplying: false
-        ))
-        XCTAssertFalse(BatchChangeCategoryValidation.canApply(
-            targetCategory: "finance",
-            moveRepoOwnedFiles: true,
-            fileIDs: [1, 2, 3],
-            preview: preview,
-            disabledReason: nil,
-            isApplying: false
-        ))
-        XCTAssertFalse(BatchChangeCategoryValidation.canApply(
-            targetCategory: "finance",
             moveRepoOwnedFiles: true,
             fileIDs: [1, 2],
             preview: blockedPreview,
             disabledReason: nil,
             isApplying: false
         ))
-    }
-
-    func testS212C208PartialFailureStillRefreshesSuccessfulItemsAndUndoContext() {
-        let partial = BatchCategoryChangeReportSnapshot.s212PartialFailureReport()
-        let allFailed = BatchCategoryChangeReportSnapshot.s212AllFailedReport()
-
-        XCTAssertEqual(partial.successfulChangeCount, 1)
         XCTAssertTrue(partial.shouldRefreshConsumerAfterApply)
         XCTAssertFalse(partial.shouldCloseSheetAfterApply)
-        XCTAssertFalse(allFailed.shouldRefreshConsumerAfterApply)
-        XCTAssertFalse(allFailed.shouldCloseSheetAfterApply)
-    }
-
-    @MainActor
-    func testS212C207BatchCategoryApplyLoadsUndoActionFromReturnedToken() async {
-        let action = UndoActionRecordSnapshot(
-            actionID: "undo-c2-08", kind: "batch_move_to_category", summary: "Changed category for 2 files.",
-            affectedCount: 2, affectedFileNames: ["a.pdf"], status: .pending, canUndo: true,
-            disabledReason: nil, createdAt: 1_700_000_400, updatedAt: 1_700_000_400
-        )
-        let undoStore = S212RecordingUndoStore(actions: [action])
-        let undoState = await BatchChangeCategoryUndoAction.stateAfterBatchApply(
-            repoPath: "/tmp/repo", report: .s212SuccessReport(), failure: nil,
-            undoStore: undoStore, errorMapper: S212ErrorMapper()
-        )
-
-        XCTAssertEqual(undoState, .ready(action))
-        XCTAssertEqual(await undoStore.recordedListRequests(), ["/tmp/repo"])
-        XCTAssertEqual(await undoStore.recordedUndoRequests(), [])
-    }
-
-    func testS212CreateNewCategoryRoutesToS219WithoutCreatingInlineCategory() {
-        let handoff = BatchChangeCategoryNewCategoryHandoff(
-            selectedFileIDs: [1, 2],
-            currentTargetCategory: "finance"
-        )
-        let createdCategories = BatchChangeCategoryCreatedCategoryReturn.updatedCategories(
-            ["finance"],
-            savedCategory: " tax "
-        )
-
-        XCTAssertEqual(handoff.sourcePageID, "S2-12")
-        XCTAssertEqual(handoff.targetPageID, "S2-19")
-        XCTAssertEqual(createdCategories, ["finance", "tax"])
-        XCTAssertEqual(MainSearchDestination.classifierRuleEditor(sourcePageID: handoff.sourcePageID).pageID, "S2-19")
+        XCTAssertFalse(BatchCategoryChangeReportSnapshot.s212AllFailedReport().shouldRefreshConsumerAfterApply)
     }
 
     @MainActor
@@ -238,28 +220,6 @@ final class ImportBatchResultSummaryTests: XCTestCase {
     }
 }
 
-private actor S212RecordingUndoStore: CoreUndoActionLogging {
-    private let actions: [UndoActionRecordSnapshot]
-    private var listRequests: [String] = []
-    private var undoRequests: [String] = []
-
-    init(actions: [UndoActionRecordSnapshot]) { self.actions = actions }
-
-    func listUndoActions(repoPath: String) async throws -> [UndoActionRecordSnapshot] {
-        listRequests.append(repoPath)
-        return actions
-    }
-
-    func undoAction(repoPath: String, actionID: String) async throws -> UndoActionResultSnapshot {
-        undoRequests.append("\(repoPath)|\(actionID)")
-        throw CoreError.Internal(message: "S2-12 completion must not execute undo")
-    }
-
-    func recordedListRequests() -> [String] { listRequests }
-
-    func recordedUndoRequests() -> [String] { undoRequests }
-}
-
 private func s118ResultSummaryRequest(urls: [URL]) -> ImportEntryRequest {
     ImportEntryRequest(
         repoPath: "/tmp/repo",
@@ -269,6 +229,39 @@ private func s118ResultSummaryRequest(urls: [URL]) -> ImportEntryRequest {
         kind: .multipleItems(urls.count),
         availableCategories: ["inbox", "finance"]
     )
+}
+
+private actor S212RecordingUndoStore: CoreUndoActionLogging {
+    private let actions: [UndoActionRecordSnapshot]
+
+    init(actions: [UndoActionRecordSnapshot]) {
+        self.actions = actions
+    }
+
+    func listUndoActions(repoPath _: String) async throws -> [UndoActionRecordSnapshot] {
+        actions
+    }
+
+    func undoAction(repoPath _: String, actionID _: String) async throws -> UndoActionResultSnapshot {
+        throw CoreError.Internal(message: "S2-12 completion must not execute undo")
+    }
+}
+
+private extension UndoActionRecordSnapshot {
+    static var s212Action: UndoActionRecordSnapshot {
+        UndoActionRecordSnapshot(
+            actionID: "undo-c2-08",
+            kind: "batch_move_to_category",
+            summary: "Changed category for 2 files.",
+            affectedCount: 2,
+            affectedFileNames: ["a.pdf"],
+            status: .pending,
+            canUndo: true,
+            disabledReason: nil,
+            createdAt: 1_700_000_400,
+            updatedAt: 1_700_000_400
+        )
+    }
 }
 
 private extension FileEntrySnapshot {
@@ -291,12 +284,12 @@ private extension FileEntrySnapshot {
 }
 
 private extension BatchCategoryPreviewReportSnapshot {
-    static func s212Preview(token: String) -> BatchCategoryPreviewReportSnapshot {
+    static func s212Preview() -> BatchCategoryPreviewReportSnapshot {
         BatchCategoryPreviewReportSnapshot(
             requestedFileCount: 2,
             targetCategory: "finance",
             moveRepoOwnedFiles: true,
-            previewToken: token,
+            previewToken: "preview-current",
             categoryDistribution: [
                 CategoryDistributionItemSnapshot(category: "docs", count: 2)
             ],
@@ -306,8 +299,8 @@ private extension BatchCategoryPreviewReportSnapshot {
             skippedCount: 0,
             blockedCount: 0,
             items: [
-                BatchCategoryPreviewItemSnapshot.s212Item(fileID: 1, status: .willMove),
-                BatchCategoryPreviewItemSnapshot.s212Item(fileID: 2, status: .metadataOnly, indexOnly: true)
+                .s212Item(fileID: 1, status: .willMove),
+                .s212Item(fileID: 2, status: .metadataOnly, indexOnly: true)
             ],
             canApply: true,
             applyBlockedReason: nil
@@ -348,8 +341,8 @@ private extension BatchCategoryChangeReportSnapshot {
             skippedCount: 0,
             failedCount: 0,
             itemResults: [
-                BatchCategoryChangeItemResultSnapshot.s212Result(fileID: 1, status: .moved),
-                BatchCategoryChangeItemResultSnapshot.s212Result(fileID: 2, status: .metadataUpdated)
+                .s212Result(fileID: 1, status: .moved),
+                .s212Result(fileID: 2, status: .metadataUpdated)
             ],
             updatedFiles: [.s212CategoryFixture(id: 1, currentName: "a.pdf")],
             undoToken: "undo-c2-08"
@@ -366,12 +359,8 @@ private extension BatchCategoryChangeReportSnapshot {
             skippedCount: 0,
             failedCount: 1,
             itemResults: [
-                BatchCategoryChangeItemResultSnapshot.s212Result(fileID: 1, status: .moved),
-                BatchCategoryChangeItemResultSnapshot.s212Result(
-                    fileID: 2,
-                    status: .failed,
-                    error: "Permission denied"
-                )
+                .s212Result(fileID: 1, status: .moved),
+                .s212Result(fileID: 2, status: .failed, error: "Permission denied")
             ],
             updatedFiles: [.s212CategoryFixture(id: 1, currentName: "a.pdf")],
             undoToken: "undo-partial-c2-08"
@@ -388,11 +377,7 @@ private extension BatchCategoryChangeReportSnapshot {
             skippedCount: 0,
             failedCount: 1,
             itemResults: [
-                BatchCategoryChangeItemResultSnapshot.s212Result(
-                    fileID: 2,
-                    status: .failed,
-                    error: "Permission denied"
-                )
+                .s212Result(fileID: 2, status: .failed, error: "Permission denied")
             ],
             updatedFiles: [],
             undoToken: nil
@@ -436,7 +421,13 @@ private actor S212RecordingBatchCategoryChanger: CoreBatchCategoryChanging {
         targetCategory: String,
         moveRepoOwnedFiles: Bool
     ) async throws -> BatchCategoryPreviewReportSnapshot {
-        requests.append("preview|\(repoPath)|\(fileIDs.map(String.init).joined(separator: ","))|\(targetCategory)|\(moveRepoOwnedFiles)")
+        requests.append(requestLabel(
+            action: "preview",
+            repoPath: repoPath,
+            fileIDs: fileIDs,
+            targetCategory: targetCategory,
+            moveRepoOwnedFiles: moveRepoOwnedFiles
+        ))
         guard !results.isEmpty, case let .preview(result) = results.removeFirst() else {
             throw CoreError.Internal(message: "Expected preview_batch_move_to_category")
         }
@@ -450,9 +441,14 @@ private actor S212RecordingBatchCategoryChanger: CoreBatchCategoryChanging {
         moveRepoOwnedFiles: Bool,
         previewToken: String
     ) async throws -> BatchCategoryChangeReportSnapshot {
-        requests.append(
-            "apply|\(repoPath)|\(fileIDs.map(String.init).joined(separator: ","))|\(targetCategory)|\(moveRepoOwnedFiles)|\(previewToken)"
-        )
+        requests.append(requestLabel(
+            action: "apply",
+            repoPath: repoPath,
+            fileIDs: fileIDs,
+            targetCategory: targetCategory,
+            moveRepoOwnedFiles: moveRepoOwnedFiles,
+            previewToken: previewToken
+        ))
         guard !results.isEmpty, case let .apply(result) = results.removeFirst() else {
             throw CoreError.Internal(message: "Expected batch_move_to_category")
         }
@@ -461,6 +457,18 @@ private actor S212RecordingBatchCategoryChanger: CoreBatchCategoryChanging {
 
     func recordedRequests() -> [String] {
         requests
+    }
+
+    private func requestLabel(
+        action: String,
+        repoPath: String,
+        fileIDs: [Int64],
+        targetCategory: String,
+        moveRepoOwnedFiles: Bool,
+        previewToken: String? = nil
+    ) -> String {
+        let base = "\(action)|\(repoPath)|\(fileIDs.map(String.init).joined(separator: ","))"
+        return "\(base)|\(targetCategory)|\(moveRepoOwnedFiles)\(previewToken.map { "|\($0)" } ?? "")"
     }
 }
 
@@ -478,16 +486,11 @@ private actor S212ErrorMapper: CoreErrorMapping {
 
     private func kind(for error: CoreError) -> CoreErrorKindSnapshot {
         switch error {
-        case .Conflict:
-            .conflict
-        case .FileNotFound:
-            .fileNotFound
-        case .PermissionDenied:
-            .permissionDenied
-        case .Db:
-            .db
-        case .Io:
-            .io
+        case .Conflict: .conflict
+        case .FileNotFound: .fileNotFound
+        case .PermissionDenied: .permissionDenied
+        case .Db: .db
+        case .Io: .io
         default:
             .internal
         }

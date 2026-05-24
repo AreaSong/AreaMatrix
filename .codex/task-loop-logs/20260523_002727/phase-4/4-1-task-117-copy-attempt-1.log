@@ -1,0 +1,43 @@
+一、执行结论
+
+已完成。S2-12 页面集成补齐已落在允许范围内，最终 `./dev check task 4-1/task-117` 通过。
+
+二、执行范围
+
+修改文件清单：
+- `apps/macos/AreaMatrix/Views/Main/BatchChangeCategorySheet.swift`
+- `apps/macos/AreaMatrix/Models/BatchChangeCategoryState.swift`
+- `apps/macos/AreaMatrixTests/ImportBatchResultSummaryTests.swift`
+- `apps/macos/AreaMatrixTests/ChangeCategoryPageIntegrationVerifyTests.swift`
+- `apps/macos/AreaMatrixTests/ICloudConflictMinimalPageIntegrationVerifyTests.swift`
+
+工作区另有既有脏文件 `.codex/task-loop-runs/20260523_002727/summary.json`、`tasks/prompts/_shared/progress.json`，未作为本任务改动处理。
+
+三、完成情况
+
+核对清单：
+- 本页 page-feature 覆盖已补证：C2-08 preview/apply、C2-07 undo action log handoff 有测试覆盖。
+- 页面闭环已补齐：底部 `Preview` 现在刷新并展开完整 dry-run 结果；原结果区的展开按钮改为 `Show details`，避免两个 `Preview` 控件语义冲突。
+- mock / fixture / 硬编码状态：未新增产品 mock；测试 fixture 仅用于 XCTest 证据。
+- control map 外功能：未新增，仍限于 S2-12 的 C2-08、C2-07。
+
+完成标准：
+- S2-12 可按 page spec 与 control map 验收：通过。
+- 页面声明 Core 能力真实接入或有证据：C2-08 走 `CoreBatchCategoryChanging`，C2-07 走 `CoreUndoActionLogging`，测试验证请求和 undo handoff。
+- Forbidden Touches：未触碰 `core/src/**`；未保留 `.xcodeproj` 改动。
+
+四、工程质量
+
+结构保持现有模式：把“Preview 是否展开详情”的判断抽到 `BatchChangeCategoryPreviewDisclosure`，便于测试，不引入额外架构。错误路径补了 preview failure 断言，确保失败时不展开详情、不允许 Apply。未新增依赖、未改 Core API / UDL / DB / 用户文件路径；无新增 rustdoc 需求。
+
+五、验证情况
+
+已运行并通过：
+- `swiftformat --lint ...`：通过，0/5 文件需格式化。
+- `git diff --check`：通过。
+- `./dev test macos --only-testing AreaMatrixTests/ImportBatchResultSummaryTests`：通过；xcodebuild test 被本地 `testmanagerd` sandbox 阻断后，仓库脚本按规则 fallback 到 `xcrun xctest`，8 tests / 0 failures。
+- `./dev check task 4-1/task-117`：通过；`doctor: OK`，`git diff --check` 通过，macOS app build `BUILD SUCCEEDED`。
+
+六、风险与后续
+
+剩余风险：未做真实窗口点击级 UI smoke；本任务验证上限是 manifest 的 `./dev check task 4-1/task-117`，并已额外补 targeted XCTest。回滚思路：回退上述 5 个文件即可恢复本次行为变更。建议下一个动作：进入 `4-1/task-117` 的 verify-ready 只读验收，再决定是否标记 completed。

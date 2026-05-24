@@ -1,0 +1,70 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`4-1/task-117`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-117-s2-12-page-integration-verify.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：6
+- 未覆盖项数：0
+- 通过项数：5
+- 不通过项数：1
+- 阻塞项数：1
+
+四、逐项验收结果
+
+- 项目：本页 page-feature task 覆盖
+- 结果：通过
+- 证据：control map 声明 S2-12 只绑定 `C2-08, C2-07`，并映射 `4-1/task-115`, `4-1/task-116`, `4-1/task-117`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-2-control-map.md:20`
+
+- 项目：页面状态、入口、退出、错误态和 CoreBridge 调用闭环
+- 结果：不通过
+- 证据：`Create new category...` 要求 S2-19 Save 成功后返回 S2-12 并选中新分类重新预览，但当前路由渲染仅调用 `ClassifierSettingsPane(repoPath:)`，没有传入 `BatchChangeCategoryNewCategoryReturnContext`，也没有 Save/Cancel 回调接到 `acceptClassifierRuleEditorCategory` / `cancelClassifierRuleEditorFromBatchCategory`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-2-experience/S2-12-batch-change-category.md:74`，`/Users/as/Ai-Project/project/AreaMatrix/Views/Main/MainRepositoryContentActionRouting.swift:98`
+
+- 项目：mock、fixture、硬编码状态
+- 结果：通过
+- 证据：生产路径通过 `CoreBridge` 调用 `AreaMatrix.previewBatchMoveToCategory` 和 `AreaMatrix.batchMoveToCategory`；测试中的 fake/fixture 未作为生产闭环。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBatchChangeCategory.swift:99`
+
+- 项目：不新增 control map 外功能
+- 结果：通过
+- 证据：S2-12 生产页面主要接入 C2-08/C2-07；S2-19 仅作为跳转目标存在，未在当前 S2-12 路径实际实现 C2-15 保存闭环。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-2-control-map.md:20`
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过。S2-19 返回上下文已有函数，但未接入实际 route view，导致代码存在未闭合分支。
+- 注释 / rustdoc / 文档同步：通过。当前阻塞是实现未满足文档，不是文档缺失。
+- 错误处理与边界处理：不通过。S2-19 Cancel / Save failure 保留原目标分类的要求缺少可执行回调链路。
+- 测试与验证覆盖：不通过。`./dev check task 4-1/task-117` 通过，但未证明 S2-19 Save 成功返回 S2-12、选中新分类并重新 dry-run。
+- 占位、硬编码、mock-only、一次性实现检查：通过。未发现生产路径 mock-only 替代 C2-08/C2-07。
+
+六、阻塞项
+
+- P1：S2-12 `Create new category...` 往返闭环未打通
+  - 说明：页面规格要求进入 S2-19，新分类保存成功后返回本 sheet 并选中新分类重新预览；Cancel 或保存失败保留原目标分类。当前 `MainRepositoryContentActionRouting` 丢弃 `.classifierRuleEditor(context:)` 的 context，仅渲染 `ClassifierSettingsPane(repoPath:)`，而 `ClassifierSettingsPane` 初始化参数也没有返回回调。
+  - 绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentActionRouting.swift:98`
+  - 为什么导致不通过：task-117 是整页 integration verify，完成标准要求 S2-12 可按 page spec 完整验收；该交互是 S2-12 明确验收清单项，缺失即页面闭环不完整。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-117`
+- 通过：`prompt doctor` OK，`git diff --check` 通过，macOS `xcodebuild ... build CODE_SIGNING_ALLOWED=NO` 通过，输出 `** BUILD SUCCEEDED **`
+- 失败：无命令失败
+- 缺失：未运行 `./dev test macos`；manifest 指定验证为 `./dev check task 4-1/task-117`，且当前已发现语义阻塞，未扩大验证范围。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+
+VERIFY_RESULT: FAIL

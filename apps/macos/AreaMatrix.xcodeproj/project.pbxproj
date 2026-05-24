@@ -205,6 +205,7 @@
 		0A0000000000000000000190 /* ImportBatchCopyFooterSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000191 /* ImportBatchCopyFooterSection.swift */; };
 		0A0000000000000000000192 /* ImportBatchCopyPageIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000193 /* ImportBatchCopyPageIntegrationTests.swift */; };
 		0A00000000000000000001A6 /* ImportBatchResultSummaryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001A7 /* ImportBatchResultSummaryTests.swift */; };
+		0A0000000000000000000400 /* S212BatchChangeCategoryPageIntegrationVerifyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000401 /* S212BatchChangeCategoryPageIntegrationVerifyTests.swift */; };
 		0A00000000000000000001E0 /* ImportResultCopyRetryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001E1 /* ImportResultCopyRetryTests.swift */; };
 		0A00000000000000000001A8 /* ImportBatchNamingStrategyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001A9 /* ImportBatchNamingStrategyTests.swift */; };
 		0A00000000000000000001D4 /* ImportResultView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001D5 /* ImportResultView.swift */; };
@@ -496,6 +497,7 @@
 		0A0000000000000000000191 /* ImportBatchCopyFooterSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/ImportBatchCopyFooterSection.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000193 /* ImportBatchCopyPageIntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportBatchCopyPageIntegrationTests.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000001A7 /* ImportBatchResultSummaryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportBatchResultSummaryTests.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000401 /* S212BatchChangeCategoryPageIntegrationVerifyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/S212BatchChangeCategoryPageIntegrationVerifyTests.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000001E1 /* ImportResultCopyRetryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportResultCopyRetryTests.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000001A9 /* ImportBatchNamingStrategyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportBatchNamingStrategyTests.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000001AD /* ImportBatchPrecheckTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportBatchPrecheckTestSupport.swift; sourceTree = SOURCE_ROOT; };
@@ -782,6 +784,7 @@
 				0A000000000000000000018F /* ImportBatchCopyImportModelTests.swift */,
 				0A000000000000000000019D /* ImportBatchDuplicateResolutionTests.swift */,
 				0A00000000000000000001A7 /* ImportBatchResultSummaryTests.swift */,
+				0A0000000000000000000401 /* S212BatchChangeCategoryPageIntegrationVerifyTests.swift */,
 				0A00000000000000000001E1 /* ImportResultCopyRetryTests.swift */,
 				0A00000000000000000001A9 /* ImportBatchNamingStrategyTests.swift */,
 				0A00000000000000000001AD /* ImportBatchPrecheckTestSupport.swift */,
@@ -1147,6 +1150,7 @@
 				0A000000000000000000018E /* ImportBatchCopyImportModelTests.swift in Sources */,
 				0A000000000000000000019C /* ImportBatchDuplicateResolutionTests.swift in Sources */,
 				0A00000000000000000001A6 /* ImportBatchResultSummaryTests.swift in Sources */,
+				0A0000000000000000000400 /* S212BatchChangeCategoryPageIntegrationVerifyTests.swift in Sources */,
 				0A00000000000000000001E0 /* ImportResultCopyRetryTests.swift in Sources */,
 				0A00000000000000000001A8 /* ImportBatchNamingStrategyTests.swift in Sources */,
 				0A00000000000000000001AC /* ImportBatchPrecheckTestSupport.swift in Sources */,

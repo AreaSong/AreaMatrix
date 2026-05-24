@@ -1,0 +1,88 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`4-1/task-117`
+- 对应文件路径：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-117-s2-12-page-integration-verify.md`
+- 已读范围：task、共享规则、切片规则、工程质量规则、编码规范、repo-local validation-driver、dependency graph、phase manifest、Exact Docs、`apps/**`、`core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：11
+- 未覆盖项数：0
+- 通过项数：8
+- 不通过项数：3
+- 阻塞项数：2
+
+四、逐项验收结果
+
+- 项目：Exact Docs / Manifest 覆盖
+- 结果：通过
+- 证据：manifest `4-1/task-117` 声明的 5 个 Exact Docs 均存在并已读取；`Expected New Paths` 的 `apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**` 已落地。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-4.md:3408`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git diff --name-only -- core/src` 无输出，未发现 `core/src/**` 被触碰。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-4.md:3423`
+
+- 项目：C2-08 批量改分类接入
+- 结果：通过
+- 证据：生产路径通过 `CoreBridge.previewBatchMoveToCategory` / `batchMoveToCategory` 调用 UniFFI 真实 Core API，Apply 使用 `previewToken`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBatchChangeCategory.swift:99`
+
+- 项目：C2-07 Undo 接入
+- 结果：通过
+- 证据：批量分类 Apply 后使用返回的 `undoToken` 查询 `listUndoActions`，toast 可进入 Undo 状态；`CoreBridge` 真实实现 `listUndoActions` / `undoAction`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/BatchChangeCategoryState.swift:68`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreTagCRUD.swift:132`
+
+- 项目：入口、状态、Preview、Apply、错误态
+- 结果：通过
+- 证据：sheet 有空态、加载态、错误 Retry、Preview、Apply、Cancel；`canApply` 校验目标分类、最新 preview、选择集、移动选项和 `preview.canApply`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/BatchChangeCategorySheet.swift:114`
+
+- 项目：不新增 control map 外功能
+- 结果：不通过
+- 证据：S2-12 control map 只声明 `C2-08, C2-07`；当前新增了 `CoreClassifierRuleCreating.createClassifierRule` 并调用 `AreaMatrix.createClassifierRule`，这是 S2-19 / C2-15 rule CRUD 能力，不属于 task-117 的绑定能力。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-2-control-map.md:20`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreClassifierRuleEditing.swift:46`
+
+- 项目：page spec / control map 完整验收
+- 结果：不通过
+- 证据：S2-12 规格允许 `Create new category...` 跳转 S2-19，但本页 task 明确要求不新增 control map 外功能；当前实现不仅路由，还实现并接入 C2-15 保存路径。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-2-experience/S2-12-batch-change-category.md:43`，`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-117-s2-12-page-integration-verify.md:26`
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过。`ChangeCategoryPageIntegrationVerifyTests.swift` 当前 506 行，超过编码规范“单文件 ≤ 500 行”；且 task-117 引入 C2-15 相关新文件，范围越界。
+- 注释 / rustdoc / 文档同步：不通过。control map 未把 C2-15 归入 S2-12，当前代码却在 task-117 范围内接入 C2-15。
+- 错误处理与边界处理：通过。S2-12 C2-08/C2-07 路径有 preview failure、Apply failure、Undo unavailable 等状态处理。
+- 测试与验证覆盖：不通过。`./dev check task 4-1/task-117` 通过，但测试侧主要是 fake bridge 请求记录；新增 C2-15 保存路径不应由本 task 验收为完成。
+- 占位、硬编码、mock-only、一次性实现检查：S2-12 生产路径通过；但 C2-15 新增路径属于越界实现，不能包装为本 task 完成。
+
+六、阻塞项
+
+- P0：越界实现 S2-19 / C2-15 classifier rule creation
+  说明：task-117 绑定能力只有 C2-08、C2-07，且核对清单禁止新增 control map 未声明功能；当前新增 `CoreClassifierRuleCreating`、`ClassifierRuleDraftCreateAction`、`ClassifierRuleDraftCreateSheet`，并调用 `AreaMatrix.createClassifierRule`。这属于 `4-1/task-130` / C2-15 范围。
+  绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreClassifierRuleEditing.swift:46`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ClassifierRuleDraftCreateState.swift:40`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Settings/ClassifierRuleDraftCreateSheet.swift:32`
+  为什么导致不通过：违反 task checklist 第 4 项和 page integration task 边界，不能视为 S2-12 control map 内闭环完成。
+
+- P1：本 task 范围内测试文件超过编码规范阈值
+  说明：编码规范要求单文件 ≤ 500 行；当前 `ChangeCategoryPageIntegrationVerifyTests.swift` 到 506 行，且本轮 diff 对该文件有新增。
+  绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ChangeCategoryPageIntegrationVerifyTests.swift:506`，`/Users/as/Ai-Project/project/AreaMatrix/docs/development/coding-standards.md:13`
+  为什么导致不通过：工程质量规则要求验收阻断明显编码规范问题，不能只以 build 通过作为完成证据。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-117`
+- 通过：`prompt doctor`，`git diff --check`，macOS `xcodebuild ... build CODE_SIGNING_ALLOWED=NO`
+- 失败：无命令失败
+- 缺失：未运行 `./dev test macos`；本 task manifest 只要求 `./dev check task 4-1/task-117`，但当前语义验收发现范围和工程质量阻塞，命令通过不能改写验收结论。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+
+
+VERIFY_RESULT: FAIL

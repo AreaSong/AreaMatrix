@@ -1,5 +1,4 @@
 import SwiftUI
-
 extension MainRepositoryContentView {
     var actionDestinationBinding: Binding<MainFileActionDestination?> {
         Binding(
@@ -95,8 +94,13 @@ extension MainRepositoryContentView {
                 },
                 onClose: fileListModel.clearPendingSearchDestination
             )
-        case .classifierRuleEditor:
-            ClassifierSettingsPane(repoPath: opening.config.repoPath)
+        case let .classifierRuleEditor(context):
+            ClassifierRuleEditorRouteView(
+                repoPath: opening.config.repoPath,
+                context: context,
+                onCancelFromBatchCategory: cancelClassifierRuleEditorFromBatchCategory,
+                onAcceptedCategoryFromBatchCategory: acceptClassifierRuleEditorCategory
+            )
         case .searchEmpty, .queryError:
             EmptyView()
         }

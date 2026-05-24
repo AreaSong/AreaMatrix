@@ -1,0 +1,99 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`4-1/task-117`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-117-s2-12-page-integration-verify.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-2-experience/S2-12-batch-change-category.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-2-control-map.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-2-experience/C2-08-batch-change-category.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-2-experience/C2-07-undo-action-log.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：3
+- 未覆盖项数：1
+- 通过项数：7
+- 不通过项数：1
+- 阻塞项数：1
+
+四、逐项验收结果
+
+- 项目：所有 page-feature task 覆盖 control map 声明能力
+  结果：通过
+  证据：control map 声明 S2-12 = C2-08, C2-07，Prompt 为 `4-1/task-115`, `4-1/task-116`, `4-1/task-117`；task-117 manifest 依赖 `4-1/task-115`, `4-1/task-116`。
+  涉及文件：`docs/architecture/stage-2-control-map.md:20`，`tasks/prompts/_shared/manifests/phase-4.md:3403`
+
+- 项目：C2-08 CoreBridge 真实接入
+  结果：通过
+  证据：`CoreBridge` 调用 UniFFI `AreaMatrix.previewBatchMoveToCategory` 和 `AreaMatrix.batchMoveToCategory`，并传入 `previewToken`。
+  涉及文件：`apps/macos/AreaMatrix/Bridge/CoreBatchChangeCategory.swift:99`，`apps/macos/AreaMatrix/Bridge/CoreBatchChangeCategory.swift:116`
+
+- 项目：C2-07 Undo action log 接入
+  结果：通过
+  证据：批量改分类 apply 后用 `undoToken` 调 `BatchTagUndoAction.loadAction`，CoreBridge 真实调用 `AreaMatrix.listUndoActions` / `AreaMatrix.undoAction`。
+  涉及文件：`apps/macos/AreaMatrix/Models/BatchChangeCategoryState.swift:26`，`apps/macos/AreaMatrix/Bridge/CoreTagCRUD.swift:132`
+
+- 项目：页面入口
+  结果：通过
+  证据：多选操作栏、右键菜单、命令面板均能打开 S2-12 路由。
+  涉及文件：`apps/macos/AreaMatrix/Views/Main/MainRepositoryMultiSelectionActions.swift:45`，`apps/macos/AreaMatrix/Views/Main/FileDropAdapter.swift:111`，`apps/macos/AreaMatrix/Views/Main/ImportProgressListIntegration.swift:344`
+
+- 项目：页面状态、错误态、Apply dry-run 绑定
+  结果：通过
+  证据：加载态显示 `Previewing changes...`，错误态有 `Retry`；Apply 必须匹配最新 preview 的 target、move option、file IDs 和 `preview.canApply`。
+  涉及文件：`apps/macos/AreaMatrix/Views/Main/BatchChangeCategorySheet.swift:160`，`apps/macos/AreaMatrix/Models/BatchChangeCategoryState.swift:219`
+
+- 项目：退出与结果刷新
+  结果：部分通过
+  证据：成功 apply 会刷新 list、设置 status banner、加载 Undo toast；失败/部分失败保留结果区。
+  涉及文件：`apps/macos/AreaMatrix/Views/Main/BatchChangeCategorySheet.swift:281`，`apps/macos/AreaMatrix/Views/Main/MainRepositoryContentCategoryMoveRefresh.swift:309`
+
+- 项目：S2-19 新建分类返回闭环
+  结果：不通过
+  证据：page spec 要求 `Create new category...` 进入 S2-19，保存成功后返回本 sheet、选中新分类并重新 dry-run；当前实现只关闭 `pendingBatchChangeCategoryRoute` 并打开 `ClassifierSettingsPane`，未发现保存成功回传、恢复 S2-12 route、调用 `acceptCreatedCategory` 的链路。
+  涉及文件：`docs/ux/page-specs/stage-2-experience/S2-12-batch-change-category.md:74`，`docs/ux/page-specs/stage-2-experience/S2-12-batch-change-category.md:88`，`apps/macos/AreaMatrix/Views/Main/MainRepositoryContentCategoryMoveRefresh.swift:322`，`apps/macos/AreaMatrix/Views/Main/MainRepositoryContentActionRouting.swift:98`
+
+- 项目：Expected New Paths / Forbidden Touches
+  结果：通过
+  证据：`apps/macos/AreaMatrix/**` 与 `apps/macos/AreaMatrixTests/**` 已存在；`git status --short -- apps core/area_matrix.udl core/src` 未显示 `core/src/**` 变更。
+  涉及文件：`apps/macos/AreaMatrix/**`，`apps/macos/AreaMatrixTests/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过，S2-19 返回 S2-12 的页面闭环缺失，整页 integration 不能完整验收。
+- 注释 / rustdoc / 文档同步：通过，未发现本 task 需要新增文档同步；UDL/Core API/C2 specs 对 C2-08/C2-07 声明一致。
+- 错误处理与边界处理：部分通过，dry-run 错误、permission denied、blocked preview、partial failure 有处理；但 S2-19 保存成功返回路径无证据。
+- 测试与验证覆盖：不通过，`./dev check task 4-1/task-117` 通过，但测试只证明 preview/apply/undo 局部与路由到 S2-19，不证明 S2-19 Save 成功后返回 S2-12 并重新 dry-run。
+- 占位、硬编码、mock-only、一次性实现检查：不通过，生产路径未见 mock-only CoreBridge；但验收证据里 S2-19 返回闭环缺实现，不能用局部测试替代整页完成。
+
+六、阻塞项
+
+- P1：S2-12 的 `Create new category...` 返回闭环未实现
+  说明：页面规格明确要求 S2-19 Save 成功后返回本 sheet、选中新分类并重新 dry-run。当前 `openClassifierRuleEditorFromBatchCategory` 只关闭 S2-12 sheet 并打开 S2-19；`ClassifierSettingsPane` 装配处没有把保存结果回传给 S2-12，也未发现 `acceptCreatedCategory` 被调用。
+  绝对路径与行号：
+  `/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-2-experience/S2-12-batch-change-category.md:74`
+  `/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-2-experience/S2-12-batch-change-category.md:88`
+  `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentCategoryMoveRefresh.swift:322`
+  `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentActionRouting.swift:98`
+  为什么导致不通过：task-117 是 page integration verify，完成标准要求 S2-12 可按 page spec 和 control map 完整验收；该交互是 S2-12 验收清单项，缺失即整页闭环不完整。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-117`
+- 通过：prompt doctor OK；`git diff --check` 通过；macOS `xcodebuild ... build CODE_SIGNING_ALLOWED=NO` 最终 `BUILD SUCCEEDED`
+- 失败：无命令失败
+- 缺失：未运行 UI 真机交互 smoke；即使命令通过，仍不能证明缺失的 S2-19 保存返回链路存在
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+
+VERIFY_RESULT: FAIL

@@ -6,7 +6,6 @@ final class ChangeCategoryPageIntegrationVerifyTests: XCTestCase {
     func testS135PageIntegrationUsesRealCorePreviewMoveConflictAndRefreshesExit() async throws {
         let context = try await makeS135IntegrationContext()
         defer { context.cleanUp() }
-
         await context.model.loadCurrentCategory("docs")
         let moving = try XCTUnwrap(context.model.files.first { $0.id == context.movingFile.id })
         await context.model.selectFiles([moving.id])
@@ -19,9 +18,10 @@ final class ChangeCategoryPageIntegrationVerifyTests: XCTestCase {
         try assertS135Preview(preview, context: context)
 
         var movedCallback: FileEntrySnapshot?
-        let didMove = await context.model.submitMoveToCategory(fileID: moving.id, targetCategory: "finance") { movedFile in
-            movedCallback = movedFile
-        }
+        let didMove = await context.model
+            .submitMoveToCategory(fileID: moving.id, targetCategory: "finance") { movedFile in
+                movedCallback = movedFile
+            }
         XCTAssertTrue(didMove)
         let moved = try XCTUnwrap(movedCallback)
         let refreshedTree = try await context.bridge.listTree(repoPath: context.repoURL.path, locale: "zh-Hans")
@@ -32,7 +32,6 @@ final class ChangeCategoryPageIntegrationVerifyTests: XCTestCase {
             refreshedTree: refreshedTree
         )
         await context.model.loadCurrentCategory(plan.categoryForFileList, focusingOn: moved.id)
-
         let changes = try await context.bridge.listChanges(
             repoPath: context.repoURL.path,
             filter: .detailLog(fileID: moved.id)
@@ -44,7 +43,6 @@ final class ChangeCategoryPageIntegrationVerifyTests: XCTestCase {
     func testS135PageIntegrationPreviewErrorKeepsSheetOpenWithoutMovingFile() async throws {
         let context = try await makeS135IntegrationContext()
         defer { context.cleanUp() }
-
         await context.model.loadCurrentCategory("docs")
         let moving = try XCTUnwrap(context.model.files.first { $0.id == context.movingFile.id })
         await context.model.selectFiles([moving.id])
@@ -95,6 +93,9 @@ final class ChangeCategoryPageIntegrationVerifyTests: XCTestCase {
             repoPath: "/tmp/repo",
             batchTagStore: model.tagStore, batchTagUndoStore: model.undoActionStore,
             batchTagErrorMapper: model.errorMapper,
+            batchCategoryChanger: model.batchCategoryChanger,
+            categoryRows: .s135Rows,
+            onBatchCategoryApplied: { _ in },
             onRetrySelectedFileDetail: {},
             tagActions: .noop,
             onCopyPaths: { _ in }, onOpenNoteFile: { _ in },
@@ -148,7 +149,6 @@ final class ChangeCategoryPageIntegrationVerifyTests: XCTestCase {
         await model.loadMoveToCategoryPreview(fileID: original.id, targetCategory: "finance")
         let moveRequests = await mover.recordedRequests()
         let mappedErrors = await mapper.recordedErrors()
-
         XCTAssertEqual(moveRequests, [
             .preview(repoPath: "/tmp/repo", fileID: original.id, targetCategory: "finance")
         ])
@@ -159,7 +159,6 @@ final class ChangeCategoryPageIntegrationVerifyTests: XCTestCase {
         )
 
         model.beginRenameFromChangeCategory(fileID: original.id, targetCategory: "finance")
-
         XCTAssertEqual(model.pendingActionDestination, .rename(fileID: original.id))
         XCTAssertEqual(
             model.renameState,
@@ -167,7 +166,6 @@ final class ChangeCategoryPageIntegrationVerifyTests: XCTestCase {
         )
         XCTAssertEqual(model.files, [original])
         XCTAssertEqual(model.selectedFileDetail, original)
-
         let didRename = await model.submitRename(fileID: original.id, newName: "contract-renamed.pdf")
         XCTAssertTrue(didRename)
         await assertS135ReturnedToChangeCategory(

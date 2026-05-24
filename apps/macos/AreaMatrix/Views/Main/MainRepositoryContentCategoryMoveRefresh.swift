@@ -61,9 +61,11 @@ extension MainRepositoryContentView {
             changer: fileListModel.batchCategoryChanger,
             undoStore: fileListModel.undoActionStore,
             errorMapper: fileListModel.errorMapper,
+            initialTargetCategory: route.initialTargetCategory,
+            acceptedCreatedCategory: route.acceptedCreatedCategory,
             onApplied: applyBatchCategoryChangeResult,
             onUndoStateChange: updateBatchTagUndoState,
-            onCreateNewCategory: openClassifierRuleEditorFromBatchCategory,
+            onCreateNewCategory: { openClassifierRuleEditorFromBatchCategory($0, route: route) },
             onClose: { pendingBatchChangeCategoryRoute = nil }
         )
     }
@@ -319,10 +321,33 @@ extension MainRepositoryContentView {
         }
     }
 
-    func openClassifierRuleEditorFromBatchCategory(_ handoff: BatchChangeCategoryNewCategoryHandoff) {
+    func openClassifierRuleEditorFromBatchCategory(
+        _ handoff: BatchChangeCategoryNewCategoryHandoff,
+        route: BatchChangeCategoryRoute
+    ) {
         guard handoff.targetPageID == "S2-19" else { return }
         pendingBatchChangeCategoryRoute = nil
-        fileListModel.openClassifierRuleEditorForBatchCategory()
+        let context = BatchChangeCategoryNewCategoryReturnContext(route: route, handoff: handoff)
+        fileListModel.openClassifierRuleEditorForBatchCategory(context: context)
+    }
+
+    func cancelClassifierRuleEditorFromBatchCategory(_ context: BatchChangeCategoryNewCategoryReturnContext) {
+        pendingBatchChangeCategoryRoute = BatchChangeCategoryClassifierReturn.cancelledRoute(context: context)
+        fileListModel.clearPendingSearchDestination()
+    }
+
+    func acceptClassifierRuleEditorCategory(
+        _ category: String,
+        context: BatchChangeCategoryNewCategoryReturnContext
+    ) {
+        let notification = ClassifierRuleEditorSaveEvents.notification(savedCategory: category)
+        guard let route = BatchChangeCategoryClassifierReturn.acceptedRoute(
+            notification: notification,
+            context: context
+        )
+        else { return }
+        pendingBatchChangeCategoryRoute = route
+        fileListModel.clearPendingSearchDestination()
     }
 
     private func sidebarRow(_ row: RepositorySidebarRowSnapshot) -> some View {
