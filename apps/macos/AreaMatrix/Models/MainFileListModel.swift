@@ -40,6 +40,7 @@ final class MainFileListModel: ObservableObject {
     let fileRenamer: any CoreFileRenaming
     let fileDeleter: any CoreFileDeleting
     let fileCategoryMover: any CoreFileCategoryMoving
+    let batchDeleter: any CoreBatchDeleting
     let batchCategoryChanger: any CoreBatchCategoryChanging
     let iCloudConflictResolver: any ICloudConflictResolving
     let tagStore: any CoreTagCRUD
@@ -67,6 +68,7 @@ final class MainFileListModel: ObservableObject {
         fileRenamer: any CoreFileRenaming = CoreBridge(),
         fileDeleter: any CoreFileDeleting = CoreBridge(),
         fileCategoryMover: any CoreFileCategoryMoving = CoreBridge(),
+        batchDeleter: any CoreBatchDeleting = CoreBridge(),
         batchCategoryChanger: any CoreBatchCategoryChanging = CoreBridge(),
         iCloudConflictResolver: any ICloudConflictResolving = CoreBridge(),
         tagStore: any CoreTagCRUD = CoreBridge(),
@@ -88,6 +90,7 @@ final class MainFileListModel: ObservableObject {
         self.fileRenamer = fileRenamer
         self.fileDeleter = fileDeleter
         self.fileCategoryMover = fileCategoryMover
+        self.batchDeleter = batchDeleter
         self.batchCategoryChanger = batchCategoryChanger
         self.iCloudConflictResolver = iCloudConflictResolver
         self.tagStore = tagStore

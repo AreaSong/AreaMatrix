@@ -88,6 +88,8 @@ final class MainWindowIntegrationVerifyTests: XCTestCase {
             .listFilterFacets,
             .runSmartList,
             .getFile,
+            .previewBatchDelete,
+            .batchDeleteToTrash,
             .listTreeJSON,
             .syncExternalChanges,
             .mapCoreError

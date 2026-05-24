@@ -33,6 +33,7 @@ struct MainRepositoryContentView: View {
     @State var selectedImportProgressIDs: Set<String> = []
     @State var pendingBatchAddTagsRoute: BatchAddTagsRoute?
     @State var pendingBatchChangeCategoryRoute: BatchChangeCategoryRoute?
+    @State var pendingBatchDeleteRoute: BatchDeleteRoute?
     @State var pendingUndoHistoryRequest: UndoToastHistoryRequest?
     @State var batchTagUndoState: BatchTagUndoState = .idle
     @State var batchTagActionLogRefreshFailure: CoreErrorMappingSnapshot?
@@ -144,6 +145,7 @@ extension MainRepositoryContentView {
         .sheet(item: searchDestinationBinding, content: searchRoutingSheet)
         .sheet(item: $pendingBatchAddTagsRoute, content: batchAddTagsRoutingSheet)
         .sheet(item: $pendingBatchChangeCategoryRoute, content: batchChangeCategoryRoutingSheet)
+        .sheet(item: $pendingBatchDeleteRoute, content: batchDeleteRoutingSheet)
         .sheet(item: $pendingUndoHistoryRequest, content: undoHistorySheet)
         .sheet(item: $smartListManagementRoute, content: smartListManagementSheet)
         .onChange(of: isSearchFiltersPresented) { _, presented in
@@ -286,6 +288,7 @@ extension MainRepositoryContentView {
         searchQuerying: any CoreSearchQuerying = CoreBridge(),
         searchFiltering: any CoreSearchFiltering = CoreBridge(),
         fileCategoryMover: any CoreFileCategoryMoving = CoreBridge(),
+        batchDeleter: any CoreBatchDeleting = CoreBridge(),
         batchCategoryChanger: any CoreBatchCategoryChanging = CoreBridge(),
         iCloudConflictResolver: any ICloudConflictResolving = CoreBridge(),
         tagStore: any CoreTagCRUD = CoreBridge(),
@@ -330,6 +333,7 @@ extension MainRepositoryContentView {
             searchQuerying: searchQuerying,
             searchFiltering: searchFiltering,
             fileCategoryMover: fileCategoryMover,
+            batchDeleter: batchDeleter,
             batchCategoryChanger: batchCategoryChanger,
             iCloudConflictResolver: iCloudConflictResolver,
             tagStore: tagStore,

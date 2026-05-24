@@ -1,0 +1,66 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-1/task-118`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-118-s2-13-c2-09-batch-delete-trash.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`
+
+三、完成度摘要
+
+- 已覆盖项数：12
+- 未覆盖项数：0
+- 通过项数：12
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 S2-13 页面中的 C2-09 功能点
+- 结果：通过
+- 证据：S2-13 control map 绑定 `C2-09, C2-07`，当前实现新增 `CoreBatchDeleting.previewBatchDelete` / `batchDeleteToTrash`，并在多选详情、右键菜单和批量删除 sheet 触发 C2-09 删除预览与执行。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-2-control-map.md:21`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBatchDelete.swift:89`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryMultiSelectionActions.swift:61`
+
+- 项目：读取页面规格、control map、Core API、C2-09 能力规格
+- 结果：通过
+- 证据：页面规格要求 Trash 删除、Index-only 仅移除索引、blocked/Undo/部分失败状态；Core API 与 UDL 定义 C2-09 两个真实入口和 report 结构。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-2-experience/S2-13-batch-delete-confirm.md:18`，`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:2729`，`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:83`
+
+- 项目：只接入 C2-09 对应 CoreBridge / 状态 / 错误映射
+- 结果：通过
+- 证据：`CoreBatchDelete.swift` 生产路径调用 UniFFI 生成绑定 `AreaMatrix.previewBatchDelete` 和 `AreaMatrix.batchDeleteToTrash`；`BatchDeleteAction` 对 Core 错误统一映射，不使用 mock-only 闭环。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBatchDelete.swift:95`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/BatchDeleteState.swift:79`
+
+- 项目：不顺手实现相邻页面、相邻平台或 control map 外能力
+- 结果：通过
+- 证据：改动集中在 macOS S2-13 批量删除入口、sheet、状态、桥接和测试；`core/src/**` 无变更，未新增 control map 外 Core 调用。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/BatchDeleteConfirmSheet.swift:38`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/S213BatchDeletePageIntegrationVerifyTests.swift:5`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，桥接、状态计算、sheet UI、摘要展示、路由刷新分层清楚；新增 Swift 文件均低于 500 行。
+- 注释 / rustdoc / 文档同步：通过，本任务未新增 Rust public API；Core API/UDL 已存在并与 C2-09 Swift 消费一致。
+- 错误处理与边界处理：通过，preview/apply 都走 `do/try/catch` 和 `CoreErrorMapping`；Trash unavailable、Undo unavailable、blocked、partial failure、retry failed 均有 UI 状态。
+- 测试与验证覆盖：通过，新增真实 Core 集成测试覆盖 repo-owned 移入 Trash、index-only 仅移除索引、undo token 暴露、retry subset 校验。
+- 占位、硬编码、mock-only、一次性实现检查：通过，生产路径默认注入 `CoreBridge()`，测试也使用真实 CoreBridge 创建临时 repo、导入文件、执行 C2-09。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 跑了哪些验证：`./dev check task 4-1/task-118`
+- 哪些通过：`prompt doctor: OK`；`git diff --check` 通过；macOS `xcodebuild ... build CODE_SIGNING_ALLOWED=NO` 最终 `BUILD SUCCEEDED`；命令退出码 0。
+- 哪些失败：无。
+- 哪些缺失：无必需验证缺失。`./dev test macos` 未运行，因为本 task manifest 的验证命令为 `./dev check task 4-1/task-118`，task-scoped page-feature gate 已执行 macOS build gate。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS

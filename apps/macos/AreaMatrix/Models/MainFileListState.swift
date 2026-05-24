@@ -210,6 +210,7 @@ enum MainListStatusBanner: Equatable {
     case unsavedNoteDraftPreserved(fileID: Int64)
     case movedFileToTrash(fileID: Int64)
     case removedFileFromIndex(fileID: Int64)
+    case batchDeleted(count: Int64)
     case changedCategory(fileID: Int64, category: String)
     case changedBatchCategory(count: Int64, category: String)
     case changedCategoryTreeRefreshFailed(fileID: Int64, category: String)
@@ -227,6 +228,8 @@ enum MainListStatusBanner: Equatable {
             "Moved to Trash. Metadata retained for traceability."
         case .removedFileFromIndex:
             "Removed from AreaMatrix index. Original file was not deleted."
+        case let .batchDeleted(count):
+            "Processed \(count) selected items. List and undo action log are refreshed."
         case let .changedCategory(_, category):
             "Category changed to \(category). Tree, list, detail, and change log are refreshed."
         case let .changedBatchCategory(count, category):
@@ -246,7 +249,7 @@ enum MainListStatusBanner: Equatable {
             "arrow.triangle.2.circlepath"
         case .removedSelectedFile, .unsavedNoteDraftPreserved, .changedCategoryTreeRefreshFailed:
             "exclamationmark.triangle"
-        case .movedFileToTrash, .removedFileFromIndex, .changedCategory, .changedBatchCategory,
+        case .movedFileToTrash, .removedFileFromIndex, .batchDeleted, .changedCategory, .changedBatchCategory,
              .resolvedICloudConflict:
             "checkmark.circle"
         }

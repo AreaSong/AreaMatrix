@@ -57,9 +57,11 @@
 		0A00000000000000000002C4 /* DeleteFilePageFeatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002C5 /* DeleteFilePageFeatureTests.swift */; };
 		0A00000000000000000002C6 /* CoreMoveToCategory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002C7 /* CoreMoveToCategory.swift */; };
 		0A0000000000000000000330 /* CoreBatchChangeCategory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000331 /* CoreBatchChangeCategory.swift */; };
+		0A0000000000000000000410 /* CoreBatchDelete.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000411 /* CoreBatchDelete.swift */; };
 		0A00000000000000000002C8 /* MainFileCategoryMoveActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002C9 /* MainFileCategoryMoveActions.swift */; };
 		0A00000000000000000002CA /* MainFileCategoryMoveState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002CB /* MainFileCategoryMoveState.swift */; };
 		0A0000000000000000000332 /* BatchChangeCategoryState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000333 /* BatchChangeCategoryState.swift */; };
+		0A0000000000000000000412 /* BatchDeleteState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000413 /* BatchDeleteState.swift */; };
 		0A00000000000000000002CC /* MainFileActionRoutingActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002CD /* MainFileActionRoutingActions.swift */; };
 		0A00000000000000000002CE /* ChangeCategoryPageFeatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002CF /* ChangeCategoryPageFeatureTests.swift */; };
 		0A00000000000000000002D4 /* ChangeCategoryPageIntegrationVerifyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002D5 /* ChangeCategoryPageIntegrationVerifyTests.swift */; };
@@ -116,6 +118,8 @@
 		0A0000000000000000000140 /* RenameFileSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000141 /* RenameFileSheet.swift */; };
 		0A0000000000000000000142 /* ChangeCategorySheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000143 /* ChangeCategorySheet.swift */; };
 		0A0000000000000000000334 /* BatchChangeCategorySheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000335 /* BatchChangeCategorySheet.swift */; };
+		0A0000000000000000000414 /* BatchDeleteConfirmSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000415 /* BatchDeleteConfirmSheet.swift */; };
+		0A0000000000000000000416 /* BatchDeleteConfirmSections.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000417 /* BatchDeleteConfirmSections.swift */; };
 		0A0000000000000000000336 /* MainRepositoryMultiSelectionActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000337 /* MainRepositoryMultiSelectionActions.swift */; };
 		0A0000000000000000000144 /* DeleteFileConfirmSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000145 /* DeleteFileConfirmSheet.swift */; };
 		0A0000000000000000000146 /* MainLoadingState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000147 /* MainLoadingState.swift */; };
@@ -206,6 +210,7 @@
 		0A0000000000000000000192 /* ImportBatchCopyPageIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000193 /* ImportBatchCopyPageIntegrationTests.swift */; };
 		0A00000000000000000001A6 /* ImportBatchResultSummaryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001A7 /* ImportBatchResultSummaryTests.swift */; };
 		0A0000000000000000000400 /* S212BatchChangeCategoryPageIntegrationVerifyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000401 /* S212BatchChangeCategoryPageIntegrationVerifyTests.swift */; };
+		0A0000000000000000000418 /* S213BatchDeletePageIntegrationVerifyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000419 /* S213BatchDeletePageIntegrationVerifyTests.swift */; };
 		0A00000000000000000001E0 /* ImportResultCopyRetryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001E1 /* ImportResultCopyRetryTests.swift */; };
 		0A00000000000000000001A8 /* ImportBatchNamingStrategyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001A9 /* ImportBatchNamingStrategyTests.swift */; };
 		0A00000000000000000001D4 /* ImportResultView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001D5 /* ImportResultView.swift */; };
@@ -314,9 +319,11 @@
 		0A00000000000000000002C5 /* DeleteFilePageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/DeleteFilePageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002C7 /* CoreMoveToCategory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/CoreMoveToCategory.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000331 /* CoreBatchChangeCategory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/CoreBatchChangeCategory.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000411 /* CoreBatchDelete.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/CoreBatchDelete.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002C9 /* MainFileCategoryMoveActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/MainFileCategoryMoveActions.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002CB /* MainFileCategoryMoveState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/MainFileCategoryMoveState.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000333 /* BatchChangeCategoryState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/BatchChangeCategoryState.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000413 /* BatchDeleteState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/BatchDeleteState.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002CD /* MainFileActionRoutingActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/MainFileActionRoutingActions.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002CF /* ChangeCategoryPageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ChangeCategoryPageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002D5 /* ChangeCategoryPageIntegrationVerifyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ChangeCategoryPageIntegrationVerifyTests.swift; sourceTree = SOURCE_ROOT; };
@@ -399,6 +406,8 @@
 		0A0000000000000000000141 /* RenameFileSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/RenameFileSheet.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000143 /* ChangeCategorySheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/ChangeCategorySheet.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000335 /* BatchChangeCategorySheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/BatchChangeCategorySheet.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000415 /* BatchDeleteConfirmSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/BatchDeleteConfirmSheet.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000417 /* BatchDeleteConfirmSections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/BatchDeleteConfirmSections.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000337 /* MainRepositoryMultiSelectionActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/MainRepositoryMultiSelectionActions.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000145 /* DeleteFileConfirmSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/DeleteFileConfirmSheet.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000147 /* MainLoadingState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/MainLoadingState.swift; sourceTree = SOURCE_ROOT; };
@@ -498,6 +507,7 @@
 		0A0000000000000000000193 /* ImportBatchCopyPageIntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportBatchCopyPageIntegrationTests.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000001A7 /* ImportBatchResultSummaryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportBatchResultSummaryTests.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000401 /* S212BatchChangeCategoryPageIntegrationVerifyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/S212BatchChangeCategoryPageIntegrationVerifyTests.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000419 /* S213BatchDeletePageIntegrationVerifyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/S213BatchDeletePageIntegrationVerifyTests.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000001E1 /* ImportResultCopyRetryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportResultCopyRetryTests.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000001A9 /* ImportBatchNamingStrategyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportBatchNamingStrategyTests.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000001AD /* ImportBatchPrecheckTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportBatchPrecheckTestSupport.swift; sourceTree = SOURCE_ROOT; };
@@ -601,6 +611,8 @@
 				0A0000000000000000000141 /* RenameFileSheet.swift */,
 				0A0000000000000000000143 /* ChangeCategorySheet.swift */,
 				0A0000000000000000000335 /* BatchChangeCategorySheet.swift */,
+				0A0000000000000000000415 /* BatchDeleteConfirmSheet.swift */,
+				0A0000000000000000000417 /* BatchDeleteConfirmSections.swift */,
 				0A0000000000000000000145 /* DeleteFileConfirmSheet.swift */,
 				0A00000000000000000002DB /* ICloudConflictMinimalSheet.swift */,
 				0A00000000000000000002E9 /* ICloudConflictListView.swift */,
@@ -648,6 +660,7 @@
 				0A0000000000000000000315 /* CoreTagCRUD.swift */,
 				0A00000000000000000002C7 /* CoreMoveToCategory.swift */,
 				0A0000000000000000000331 /* CoreBatchChangeCategory.swift */,
+				0A0000000000000000000411 /* CoreBatchDelete.swift */,
 				0A0000000000000000000171 /* CoreImporting.swift */,
 				0A0000000000000000000157 /* CoreExternalChangesSyncing.swift */,
 				0A00000000000000000002E5 /* CoreICloudConflictListing.swift */,
@@ -722,6 +735,7 @@
 				0A00000000000000000002C9 /* MainFileCategoryMoveActions.swift */,
 				0A00000000000000000002CB /* MainFileCategoryMoveState.swift */,
 				0A0000000000000000000333 /* BatchChangeCategoryState.swift */,
+				0A0000000000000000000413 /* BatchDeleteState.swift */,
 				0A00000000000000000002CD /* MainFileActionRoutingActions.swift */,
 				0A00000000000000000002D9 /* ICloudConflictMinimalValidation.swift */,
 				0A00000000000000000002E1 /* ICloudConflictMinimalResolution.swift */,
@@ -785,6 +799,7 @@
 				0A000000000000000000019D /* ImportBatchDuplicateResolutionTests.swift */,
 				0A00000000000000000001A7 /* ImportBatchResultSummaryTests.swift */,
 				0A0000000000000000000401 /* S212BatchChangeCategoryPageIntegrationVerifyTests.swift */,
+				0A0000000000000000000419 /* S213BatchDeletePageIntegrationVerifyTests.swift */,
 				0A00000000000000000001E1 /* ImportResultCopyRetryTests.swift */,
 				0A00000000000000000001A9 /* ImportBatchNamingStrategyTests.swift */,
 				0A00000000000000000001AD /* ImportBatchPrecheckTestSupport.swift */,
@@ -1071,6 +1086,8 @@
 				0A0000000000000000000140 /* RenameFileSheet.swift in Sources */,
 				0A0000000000000000000142 /* ChangeCategorySheet.swift in Sources */,
 				0A0000000000000000000334 /* BatchChangeCategorySheet.swift in Sources */,
+				0A0000000000000000000414 /* BatchDeleteConfirmSheet.swift in Sources */,
+				0A0000000000000000000416 /* BatchDeleteConfirmSections.swift in Sources */,
 				0A0000000000000000000144 /* DeleteFileConfirmSheet.swift in Sources */,
 				0A00000000000000000002DA /* ICloudConflictMinimalSheet.swift in Sources */,
 				0A00000000000000000002E8 /* ICloudConflictListView.swift in Sources */,
@@ -1102,6 +1119,7 @@
 				0A0000000000000000000314 /* CoreTagCRUD.swift in Sources */,
 				0A00000000000000000002C6 /* CoreMoveToCategory.swift in Sources */,
 				0A0000000000000000000330 /* CoreBatchChangeCategory.swift in Sources */,
+				0A0000000000000000000410 /* CoreBatchDelete.swift in Sources */,
 				0A0000000000000000000260 /* MainFileListDetailSupport.swift in Sources */,
 				0A0000000000000000000170 /* CoreImporting.swift in Sources */,
 				0A0000000000000000000156 /* CoreExternalChangesSyncing.swift in Sources */,
@@ -1115,6 +1133,7 @@
 				0A0000000000000000000316 /* MainDetailTagState.swift in Sources */,
 				0A0000000000000000000318 /* MainDetailTagActions.swift in Sources */,
 				0A0000000000000000000332 /* BatchChangeCategoryState.swift in Sources */,
+				0A0000000000000000000412 /* BatchDeleteState.swift in Sources */,
 				0A0000000000000000000310 /* MainFileListDiagnosticsActions.swift in Sources */,
 				0A0000000000000000000220 /* MainDetailExternalCreateSyncState.swift in Sources */,
 				0A0000000000000000000226 /* MainExternalCreatedFileActions.swift in Sources */,
@@ -1151,6 +1170,7 @@
 				0A000000000000000000019C /* ImportBatchDuplicateResolutionTests.swift in Sources */,
 				0A00000000000000000001A6 /* ImportBatchResultSummaryTests.swift in Sources */,
 				0A0000000000000000000400 /* S212BatchChangeCategoryPageIntegrationVerifyTests.swift in Sources */,
+				0A0000000000000000000418 /* S213BatchDeletePageIntegrationVerifyTests.swift in Sources */,
 				0A00000000000000000001E0 /* ImportResultCopyRetryTests.swift in Sources */,
 				0A00000000000000000001A8 /* ImportBatchNamingStrategyTests.swift in Sources */,
 				0A00000000000000000001AC /* ImportBatchPrecheckTestSupport.swift in Sources */,

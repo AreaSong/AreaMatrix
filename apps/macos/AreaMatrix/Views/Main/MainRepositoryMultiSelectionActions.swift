@@ -9,6 +9,7 @@ struct MainRepositoryMultiSelectionActions: View {
     let batchTagStore: any CoreTagCRUD
     let batchTagUndoStore: any CoreUndoActionLogging
     let batchTagErrorMapper: any CoreErrorMapping
+    let batchDeleter: any CoreBatchDeleting
     let batchCategoryChanger: any CoreBatchCategoryChanging
     let tagActions: MainRepositoryDetailPaneTagActions
     let writeActionDisabledReason: (Int64) -> MainFileWriteActionDisabledReason?
@@ -16,6 +17,7 @@ struct MainRepositoryMultiSelectionActions: View {
     let onRetrySelectedFileDetail: () -> Void
     let onRefreshChangeLog: () -> Void
     let onBatchCategoryApplied: (BatchCategoryChangeReportSnapshot) -> Void
+    let onBatchDeleteApplied: (BatchDeleteReportSnapshot) -> Void
     let onBatchCategoryCreateNewCategory: (BatchChangeCategoryNewCategoryHandoff) -> Void
 
     var body: some View {
@@ -56,6 +58,18 @@ struct MainRepositoryMultiSelectionActions: View {
                 onUndoStateChange: tagActions.onBatchTagUndoStateChange,
                 onCreateNewCategory: onBatchCategoryCreateNewCategory
             )
+            BatchDeleteTrigger(
+                repoPath: repoPath,
+                fileIDs: selection.multipleFileIDs.sorted(),
+                selectedFiles: summary.files,
+                selectedCount: summary.selectedCount,
+                disabledReason: batchDeleteDisabledReason,
+                deleter: batchDeleter,
+                undoStore: batchTagUndoStore,
+                errorMapper: batchTagErrorMapper,
+                onApplied: onBatchDeleteApplied,
+                onUndoStateChange: tagActions.onBatchTagUndoStateChange
+            )
             if detailErrorMapping != nil {
                 Button("Retry Metadata", action: onRetrySelectedFileDetail)
             }
@@ -77,6 +91,15 @@ struct MainRepositoryMultiSelectionActions: View {
         }
         return nil
     }
+
+    private var batchDeleteDisabledReason: String? {
+        if summary.selectedCount == 0 { return "No files selected" }
+        if summary.isUpdating { return MainFileWriteActionDisabledReason.listLoading.rawValue }
+        if let reason = summary.files.compactMap({ writeActionDisabledReason($0.id) }).first {
+            return reason.rawValue
+        }
+        return nil
+    }
 }
 
 extension MainRepositoryContentView {
@@ -88,6 +111,17 @@ extension MainRepositoryContentView {
             selectedFiles: selectedFiles,
             selectedCount: selectedFiles.count,
             disabledReason: batchChangeCategoryDisabledReason(for: selectedFiles)
+        )
+    }
+
+    func openBatchDeleteRoute(_ ids: Set<Int64>, source: BatchDeleteRouteSource) {
+        let selectedFiles = filesForBatchDelete(ids)
+        pendingBatchDeleteRoute = BatchDeleteRoute(
+            source: source,
+            fileIDs: selectedFiles.map(\.id),
+            selectedFiles: selectedFiles,
+            selectedCount: selectedFiles.count,
+            disabledReason: batchDeleteDisabledReason(for: selectedFiles)
         )
     }
 
@@ -106,8 +140,21 @@ extension MainRepositoryContentView {
         visibleFiles.filter { ids.contains($0.id) }
     }
 
+    private func filesForBatchDelete(_ ids: Set<Int64>) -> [FileEntrySnapshot] {
+        visibleFiles.filter { ids.contains($0.id) }
+    }
+
     private func batchChangeCategoryDisabledReason(for files: [FileEntrySnapshot]) -> String? {
         BatchChangeCategoryEntryPolicy.disabledReason(
+            selectedFiles: files,
+            isReadOnly: fileListModel.isReadOnly,
+            isLoading: fileListModel.isLoading,
+            writeLockedFileIDs: fileListModel.writeLockedFileIDs
+        )
+    }
+
+    private func batchDeleteDisabledReason(for files: [FileEntrySnapshot]) -> String? {
+        BatchDeleteEntryPolicy.disabledReason(
             selectedFiles: files,
             isReadOnly: fileListModel.isReadOnly,
             isLoading: fileListModel.isLoading,

@@ -70,6 +70,22 @@ extension MainRepositoryContentView {
         )
     }
 
+    func batchDeleteRoutingSheet(_ route: BatchDeleteRoute) -> some View {
+        BatchDeleteConfirmSheet(
+            repoPath: opening.config.repoPath,
+            fileIDs: route.fileIDs,
+            selectedFiles: route.selectedFiles,
+            selectedCount: route.selectedCount,
+            disabledReason: route.disabledReason,
+            deleter: fileListModel.batchDeleter,
+            undoStore: fileListModel.undoActionStore,
+            errorMapper: fileListModel.errorMapper,
+            onApplied: applyBatchDeleteResult,
+            onUndoStateChange: updateBatchTagUndoState,
+            onClose: { pendingBatchDeleteRoute = nil }
+        )
+    }
+
     func undoHistorySheet(_ request: UndoToastHistoryRequest) -> some View {
         UndoHistoryPanel(
             repoPath: opening.config.repoPath,
@@ -318,6 +334,15 @@ extension MainRepositoryContentView {
             await fileListModel.retryCurrentCategory()
             let changedCount = report.movedCount + report.metadataOnlyCount
             fileListModel.statusBanner = .changedBatchCategory(count: changedCount, category: report.targetCategory)
+        }
+    }
+
+    func applyBatchDeleteResult(_ report: BatchDeleteReportSnapshot) {
+        Task {
+            selectedFileIDs.subtract(report.affectedFileIDs)
+            await fileListModel.retryCurrentCategory()
+            await fileListModel.retrySelectedFileDetail()
+            fileListModel.statusBanner = .batchDeleted(count: report.successfulDeleteCount)
         }
     }
 

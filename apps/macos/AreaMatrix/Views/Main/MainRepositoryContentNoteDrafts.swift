@@ -182,9 +182,11 @@ extension MainRepositoryContentView {
             batchTagStore: fileListModel.tagStore,
             batchTagUndoStore: fileListModel.undoActionStore,
             batchTagErrorMapper: fileListModel.errorMapper,
+            batchDeleter: fileListModel.batchDeleter,
             batchCategoryChanger: fileListModel.batchCategoryChanger,
             categoryRows: repositoryTree.sidebarRows,
             onBatchCategoryApplied: applyBatchCategoryChangeResult,
+            onBatchDeleteApplied: applyBatchDeleteResult,
             onBatchCategoryCreateNewCategory: { handoff in
                 openClassifierRuleEditorFromBatchCategory(handoff, route: commandPaletteBatchChangeCategoryRoute())
             },
