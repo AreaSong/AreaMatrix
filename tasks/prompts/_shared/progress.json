@@ -7847,11 +7847,38 @@
     "4-1/task-118": {
       "attempts": 1,
       "copy_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260524_193327/phase-4/4-1-task-118-copy-attempt-1.log",
+      "git_branch": "codex/areamatrix-task-loop-20260501_132850",
+      "git_changed_files": [
+        ".codex/task-loop-logs/20260524_193327/",
+        ".codex/task-loop-runs/20260524_193327/",
+        ".codex/task-loop-runs/index.json",
+        "apps/macos/AreaMatrix.xcodeproj/project.pbxproj",
+        "apps/macos/AreaMatrix/Bridge/CoreBatchDelete.swift",
+        "apps/macos/AreaMatrix/Models/BatchDeleteState.swift",
+        "apps/macos/AreaMatrix/Models/CoreBridgePlaceholderState.swift",
+        "apps/macos/AreaMatrix/Models/MainFileListModel.swift",
+        "apps/macos/AreaMatrix/Models/MainFileListState.swift",
+        "apps/macos/AreaMatrix/Views/Main/BatchDeleteConfirmSections.swift",
+        "apps/macos/AreaMatrix/Views/Main/BatchDeleteConfirmSheet.swift",
+        "apps/macos/AreaMatrix/Views/Main/FileDropAdapter.swift",
+        "apps/macos/AreaMatrix/Views/Main/MainRepositoryContentCategoryMoveRefresh.swift",
+        "apps/macos/AreaMatrix/Views/Main/MainRepositoryContentNoteDrafts.swift",
+        "apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift",
+        "apps/macos/AreaMatrix/Views/Main/MainRepositoryDetailPane.swift",
+        "apps/macos/AreaMatrix/Views/Main/MainRepositoryMultiSelectionActions.swift",
+        "apps/macos/AreaMatrixTests/MainWindowIntegrationVerifyTests.swift",
+        "apps/macos/AreaMatrixTests/S213BatchDeletePageIntegrationVerifyTests.swift",
+        "tasks/prompts/_shared/progress.json"
+      ],
+      "git_checkpoint_status": "committed",
+      "git_commit": "c07194d7af67643bef1edd0c00812c57a2ea932b",
+      "git_push_status": "not_requested",
+      "git_remote": "",
       "note": "自动执行验收通过：attempt=1",
       "risk": "High",
       "run_id": "20260524_193327",
       "status": "completed",
-      "updated_at": "2026-05-24T12:24:28.527940+00:00",
+      "updated_at": "2026-05-24T12:24:28.760373+00:00",
       "verify_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260524_193327/phase-4/4-1-task-118-verify-attempt-1.log"
     },
     "4-1/task-12": {
@@ -10226,6 +10253,6 @@
       "verify_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260519_155620/phase-4/4-1-task-99-verify-attempt-4.log"
     }
   },
-  "updated_at": "2026-05-22T16:49:28.894002+00:00",
+  "updated_at": "2026-05-24T12:24:28.760377+00:00",
   "version": 1
 }
