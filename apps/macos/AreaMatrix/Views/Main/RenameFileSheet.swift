@@ -144,37 +144,6 @@ struct RenameFileSheet: View {
     }
 }
 
-struct BatchRenameTrigger: View {
-    let repoPath: String
-    let fileIDs: [Int64]
-    let selectedFiles: [FileEntrySnapshot]
-    let selectedCount: Int
-    let disabledReason: String?
-    let renamer: any CoreBatchRenaming
-    let errorMapper: any CoreErrorMapping
-    let onApplied: (BatchRenameReportSnapshot) -> Void
-    @State private var isPresented = false
-
-    var body: some View {
-        Button("Rename...") { isPresented = true }
-            .help(BatchRenameEntryPolicy.openHelp(disabledReason: disabledReason))
-            .accessibilityIdentifier("S2-14-batch-rename-open")
-            .sheet(isPresented: $isPresented) {
-                BatchRenameSheet(
-                    repoPath: repoPath,
-                    fileIDs: fileIDs,
-                    selectedFiles: selectedFiles,
-                    selectedCount: selectedCount,
-                    disabledReason: disabledReason,
-                    renamer: renamer,
-                    errorMapper: errorMapper,
-                    onApplied: onApplied,
-                    onClose: { isPresented = false }
-                )
-            }
-    }
-}
-
 struct BatchRenameSheet: View {
     let repoPath: String
     let fileIDs: [Int64]
@@ -182,8 +151,10 @@ struct BatchRenameSheet: View {
     let selectedCount: Int
     let disabledReason: String?
     let renamer: any CoreBatchRenaming
+    let undoStore: any CoreUndoActionLogging
     let errorMapper: any CoreErrorMapping
     let onApplied: (BatchRenameReportSnapshot) -> Void
+    let onUndoStateChange: (BatchTagUndoState) -> Void
     let onClose: () -> Void
     @State private var draft = BatchRenameRuleDraft()
     @State private var previewState: BatchRenamePreviewState = .idle
@@ -255,6 +226,7 @@ struct BatchRenameSheet: View {
         isApplying = true
         failure = nil
         result = nil
+        onUndoStateChange(.idle)
         let applyResult = await BatchRenameAction.apply(
             repoPath: repoPath,
             fileIDs: fileIDs,
@@ -266,6 +238,14 @@ struct BatchRenameSheet: View {
         failure = applyResult.failure
         isApplying = false
         if let report = applyResult.report, report.shouldRefreshConsumerAfterApply { onApplied(report) }
+        let undoState = await BatchRenameUndoAction.stateAfterBatchApply(
+            repoPath: repoPath,
+            report: applyResult.report,
+            failure: applyResult.failure,
+            undoStore: undoStore,
+            errorMapper: errorMapper
+        )
+        if let undoState { onUndoStateChange(undoState) }
         if let report = applyResult.report, report.shouldCloseSheetAfterApply { onClose() }
     }
 

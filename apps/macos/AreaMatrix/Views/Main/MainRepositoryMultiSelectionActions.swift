@@ -67,8 +67,10 @@ struct MainRepositoryMultiSelectionActions: View {
                 selectedCount: summary.selectedCount,
                 disabledReason: batchRenameDisabledReason,
                 renamer: batchRenamer,
+                undoStore: batchTagUndoStore,
                 errorMapper: batchTagErrorMapper,
-                onApplied: onBatchRenameApplied
+                onApplied: onBatchRenameApplied,
+                onUndoStateChange: tagActions.onBatchTagUndoStateChange
             )
             BatchDeleteTrigger(
                 repoPath: repoPath,
@@ -215,8 +217,10 @@ extension MainRepositoryContentView {
             selectedCount: route.selectedCount,
             disabledReason: route.disabledReason,
             renamer: batchRenamer,
+            undoStore: fileListModel.undoActionStore,
             errorMapper: fileListModel.errorMapper,
             onApplied: applyBatchRenameResult,
+            onUndoStateChange: updateBatchTagUndoState,
             onClose: { pendingBatchRenameRoute = nil }
         )
     }

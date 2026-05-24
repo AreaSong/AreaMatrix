@@ -51,6 +51,9 @@
 		0A00000000000000000002BA /* CoreFileRenaming.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002BB /* CoreFileRenaming.swift */; };
 		0A00000000000000000002BC /* MainFileRenameActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002BD /* MainFileRenameActions.swift */; };
 		0A00000000000000000002BE /* RenameFilePageFeatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002BF /* RenameFilePageFeatureTests.swift */; };
+		0A000000000000000000041A /* BatchRenameUndoAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000041B /* BatchRenameUndoAction.swift */; };
+		0A000000000000000000041C /* S214BatchRenameUndoPageFeatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000041D /* S214BatchRenameUndoPageFeatureTests.swift */; };
+		0A000000000000000000041E /* BatchRenameTrigger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000041F /* BatchRenameTrigger.swift */; };
 		0A00000000000000000002C0 /* CoreFileDeleting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002C1 /* CoreFileDeleting.swift */; };
 		0A0000000000000000000314 /* CoreTagCRUD.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000315 /* CoreTagCRUD.swift */; };
 		0A00000000000000000002C2 /* MainFileDeleteActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002C3 /* MainFileDeleteActions.swift */; };
@@ -313,6 +316,9 @@
 		0A00000000000000000002BB /* CoreFileRenaming.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/CoreFileRenaming.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002BD /* MainFileRenameActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/MainFileRenameActions.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002BF /* RenameFilePageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/RenameFilePageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
+		0A000000000000000000041B /* BatchRenameUndoAction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/BatchRenameUndoAction.swift; sourceTree = SOURCE_ROOT; };
+		0A000000000000000000041D /* S214BatchRenameUndoPageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/S214BatchRenameUndoPageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
+		0A000000000000000000041F /* BatchRenameTrigger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/BatchRenameTrigger.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002C1 /* CoreFileDeleting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/CoreFileDeleting.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000315 /* CoreTagCRUD.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/CoreTagCRUD.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002C3 /* MainFileDeleteActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/MainFileDeleteActions.swift; sourceTree = SOURCE_ROOT; };
@@ -609,6 +615,7 @@
 				0A0000000000000000000337 /* MainRepositoryMultiSelectionActions.swift */,
 				0A000000000000000000013F /* MainFileActionRoutingSheet.swift */,
 				0A0000000000000000000141 /* RenameFileSheet.swift */,
+				0A000000000000000000041F /* BatchRenameTrigger.swift */,
 				0A0000000000000000000143 /* ChangeCategorySheet.swift */,
 				0A0000000000000000000335 /* BatchChangeCategorySheet.swift */,
 				0A0000000000000000000415 /* BatchDeleteConfirmSheet.swift */,
@@ -731,6 +738,7 @@
 				0A0000000000000000000123 /* OnboardingModelInputs.swift */,
 				0A0000000000000000000131 /* MainFileListModel.swift */,
 				0A00000000000000000002BD /* MainFileRenameActions.swift */,
+				0A000000000000000000041B /* BatchRenameUndoAction.swift */,
 				0A00000000000000000002C3 /* MainFileDeleteActions.swift */,
 				0A00000000000000000002C9 /* MainFileCategoryMoveActions.swift */,
 				0A00000000000000000002CB /* MainFileCategoryMoveState.swift */,
@@ -800,6 +808,7 @@
 				0A00000000000000000001A7 /* ImportBatchResultSummaryTests.swift */,
 				0A0000000000000000000401 /* S212BatchChangeCategoryPageIntegrationVerifyTests.swift */,
 				0A0000000000000000000419 /* S213BatchDeletePageIntegrationVerifyTests.swift */,
+				0A000000000000000000041D /* S214BatchRenameUndoPageFeatureTests.swift */,
 				0A00000000000000000001E1 /* ImportResultCopyRetryTests.swift */,
 				0A00000000000000000001A9 /* ImportBatchNamingStrategyTests.swift */,
 				0A00000000000000000001AD /* ImportBatchPrecheckTestSupport.swift */,
@@ -998,6 +1007,7 @@
 				0A0000000000000000000120 /* ImportEntryRequest.swift in Sources */,
 				0A0000000000000000000130 /* MainFileListModel.swift in Sources */,
 				0A00000000000000000002BC /* MainFileRenameActions.swift in Sources */,
+				0A000000000000000000041A /* BatchRenameUndoAction.swift in Sources */,
 				0A00000000000000000002C2 /* MainFileDeleteActions.swift in Sources */,
 				0A00000000000000000002C8 /* MainFileCategoryMoveActions.swift in Sources */,
 				0A00000000000000000002CA /* MainFileCategoryMoveState.swift in Sources */,
@@ -1084,6 +1094,7 @@
 				0A0000000000000000000336 /* MainRepositoryMultiSelectionActions.swift in Sources */,
 				0A000000000000000000013E /* MainFileActionRoutingSheet.swift in Sources */,
 				0A0000000000000000000140 /* RenameFileSheet.swift in Sources */,
+				0A000000000000000000041E /* BatchRenameTrigger.swift in Sources */,
 				0A0000000000000000000142 /* ChangeCategorySheet.swift in Sources */,
 				0A0000000000000000000334 /* BatchChangeCategorySheet.swift in Sources */,
 				0A0000000000000000000414 /* BatchDeleteConfirmSheet.swift in Sources */,
@@ -1171,6 +1182,7 @@
 				0A00000000000000000001A6 /* ImportBatchResultSummaryTests.swift in Sources */,
 				0A0000000000000000000400 /* S212BatchChangeCategoryPageIntegrationVerifyTests.swift in Sources */,
 				0A0000000000000000000418 /* S213BatchDeletePageIntegrationVerifyTests.swift in Sources */,
+				0A000000000000000000041C /* S214BatchRenameUndoPageFeatureTests.swift in Sources */,
 				0A00000000000000000001E0 /* ImportResultCopyRetryTests.swift in Sources */,
 				0A00000000000000000001A8 /* ImportBatchNamingStrategyTests.swift in Sources */,
 				0A00000000000000000001AC /* ImportBatchPrecheckTestSupport.swift in Sources */,
