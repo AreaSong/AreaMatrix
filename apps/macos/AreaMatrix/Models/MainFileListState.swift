@@ -362,12 +362,14 @@ enum MainDetailLogDiagnosticsState: Equatable {
 struct MultiSelectionDetailSummary: Equatable {
     var selectedCount: Int
     var files: [FileEntrySnapshot]
+    var listOrderedFileIDs: [Int64]
     var unresolvedMetadataCount: Int
     var isUpdating: Bool
 
     init(selection: MainFileSelectionState, files: [FileEntrySnapshot], isUpdating: Bool = false) {
         let selectedIDs = selection.multipleFileIDs
         selectedCount = selectedIDs.count
+        listOrderedFileIDs = files.filter { selectedIDs.contains($0.id) }.map(\.id)
         self.files = Self.orderedSelectedFiles(from: files, selectedIDs: selectedIDs)
         unresolvedMetadataCount = max(0, selectedIDs.count - self.files.count)
         self.isUpdating = isUpdating
@@ -387,9 +389,7 @@ struct MultiSelectionDetailSummary: Equatable {
         return "\(selectedCount) 个项目"
     }
 
-    var paths: [String] {
-        files.map(\.path)
-    }
+    var paths: [String] { files.map(\.path) }
 
     var warningMessages: [String] {
         var warnings: [String] = []
@@ -459,14 +459,9 @@ struct MultiSelectionDetailSummary: Equatable {
         )
     }
 
-    private static func orderedSelectedFiles(
-        from files: [FileEntrySnapshot],
-        selectedIDs: Set<Int64>
-    ) -> [FileEntrySnapshot] {
+    private static func orderedSelectedFiles(from files: [FileEntrySnapshot], selectedIDs: Set<Int64>) -> [FileEntrySnapshot] {
         files.filter { selectedIDs.contains($0.id) }
-            .sorted { lhs, rhs in
-                lhs.currentName.localizedStandardCompare(rhs.currentName) == .orderedAscending
-            }
+            .sorted { $0.currentName.localizedStandardCompare($1.currentName) == .orderedAscending }
     }
 
     private static func fileTypeLabel(for file: FileEntrySnapshot) -> String {

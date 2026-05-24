@@ -21,6 +21,7 @@ struct MainRepositoryContentView: View {
     let onOpenChangeCategoryPermissionRecovery: () -> Void
     let treeLister: any CoreRepositoryTreeListing
     let savedSearchStore: any CoreSavedSearchCRUD
+    let batchRenamer: any CoreBatchRenaming
     let errorMapper: any CoreErrorMapping
     let externalCreatedEvent: MainExternalCreatedFileEvent?
     let onExternalCreatedEventHandled: (MainExternalCreatedFileEvent) -> Void
@@ -34,6 +35,7 @@ struct MainRepositoryContentView: View {
     @State var pendingBatchAddTagsRoute: BatchAddTagsRoute?
     @State var pendingBatchChangeCategoryRoute: BatchChangeCategoryRoute?
     @State var pendingBatchDeleteRoute: BatchDeleteRoute?
+    @State var pendingBatchRenameRoute: BatchRenameRoute?
     @State var pendingUndoHistoryRequest: UndoToastHistoryRequest?
     @State var batchTagUndoState: BatchTagUndoState = .idle
     @State var batchTagActionLogRefreshFailure: CoreErrorMappingSnapshot?
@@ -146,6 +148,7 @@ extension MainRepositoryContentView {
         .sheet(item: $pendingBatchAddTagsRoute, content: batchAddTagsRoutingSheet)
         .sheet(item: $pendingBatchChangeCategoryRoute, content: batchChangeCategoryRoutingSheet)
         .sheet(item: $pendingBatchDeleteRoute, content: batchDeleteRoutingSheet)
+        .sheet(item: $pendingBatchRenameRoute, content: batchRenameRoutingSheet)
         .sheet(item: $pendingUndoHistoryRequest, content: undoHistorySheet)
         .sheet(item: $smartListManagementRoute, content: smartListManagementSheet)
         .onChange(of: isSearchFiltersPresented) { _, presented in
@@ -290,6 +293,7 @@ extension MainRepositoryContentView {
         fileCategoryMover: any CoreFileCategoryMoving = CoreBridge(),
         batchDeleter: any CoreBatchDeleting = CoreBridge(),
         batchCategoryChanger: any CoreBatchCategoryChanging = CoreBridge(),
+        batchRenamer: any CoreBatchRenaming = CoreBridge(),
         iCloudConflictResolver: any ICloudConflictResolving = CoreBridge(),
         tagStore: any CoreTagCRUD = CoreBridge(),
         undoActionStore: any CoreUndoActionLogging = CoreBridge(),
@@ -313,6 +317,7 @@ extension MainRepositoryContentView {
         self.onOpenChangeCategoryPermissionRecovery = onOpenChangeCategoryPermissionRecovery
         self.treeLister = treeLister
         self.savedSearchStore = savedSearchStore
+        self.batchRenamer = batchRenamer
         self.errorMapper = errorMapper
         self.externalCreatedEvent = externalCreatedEvent
         self.onExternalCreatedEventHandled = onExternalCreatedEventHandled

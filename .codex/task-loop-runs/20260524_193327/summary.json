@@ -249,14 +249,25 @@
       "task_name": "4-1-task-120",
       "updated_at": "2026-05-24T12:48:29.379258+00:00",
       "verify_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260524_193327/phase-4/4-1-task-120-verify-attempt-1.log"
+    },
+    "4-1/task-121": {
+      "attempts": 5,
+      "copy_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260524_193327/phase-4/4-1-task-121-copy-attempt-5.log",
+      "note": "自动执行验收通过",
+      "phase": "phase-4",
+      "risk": "High",
+      "status": "completed",
+      "task_name": "4-1-task-121",
+      "updated_at": "2026-05-24T17:32:32.729849+00:00",
+      "verify_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260524_193327/phase-4/4-1-task-121-verify-attempt-5.log"
     }
   },
   "totals": {
-    "completed_in_run": 3,
-    "retries": 0,
+    "completed_in_run": 4,
+    "retries": 4,
     "task_count": 637
   },
-  "updated_at": "2026-05-24T12:48:29.569481+00:00",
+  "updated_at": "2026-05-24T17:32:32.729865+00:00",
   "verify_root": "/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/verify-ready",
   "version": 1
 }

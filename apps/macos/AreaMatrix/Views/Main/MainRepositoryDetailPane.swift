@@ -20,9 +20,11 @@ struct MainRepositoryDetailPane: View {
     let batchTagErrorMapper: any CoreErrorMapping
     let batchDeleter: any CoreBatchDeleting
     let batchCategoryChanger: any CoreBatchCategoryChanging
+    let batchRenamer: any CoreBatchRenaming
     let categoryRows: [RepositorySidebarRowSnapshot]
     let onBatchCategoryApplied: (BatchCategoryChangeReportSnapshot) -> Void
     let onBatchDeleteApplied: (BatchDeleteReportSnapshot) -> Void
+    let onBatchRenameApplied: (BatchRenameReportSnapshot) -> Void
     let onBatchCategoryCreateNewCategory: (BatchChangeCategoryNewCategoryHandoff) -> Void
     let onRetrySelectedFileDetail: () -> Void
     let tagActions: MainRepositoryDetailPaneTagActions
@@ -62,9 +64,11 @@ struct MainRepositoryDetailPane: View {
         batchTagErrorMapper: any CoreErrorMapping,
         batchDeleter: any CoreBatchDeleting,
         batchCategoryChanger: any CoreBatchCategoryChanging,
+        batchRenamer: any CoreBatchRenaming,
         categoryRows: [RepositorySidebarRowSnapshot],
         onBatchCategoryApplied: @escaping (BatchCategoryChangeReportSnapshot) -> Void,
         onBatchDeleteApplied: @escaping (BatchDeleteReportSnapshot) -> Void,
+        onBatchRenameApplied: @escaping (BatchRenameReportSnapshot) -> Void,
         onBatchCategoryCreateNewCategory: @escaping (BatchChangeCategoryNewCategoryHandoff) -> Void = { _ in },
         onRetrySelectedFileDetail: @escaping () -> Void,
         tagActions: MainRepositoryDetailPaneTagActions,
@@ -101,9 +105,11 @@ struct MainRepositoryDetailPane: View {
         self.batchTagErrorMapper = batchTagErrorMapper
         self.batchDeleter = batchDeleter
         self.batchCategoryChanger = batchCategoryChanger
+        self.batchRenamer = batchRenamer
         self.categoryRows = categoryRows
         self.onBatchCategoryApplied = onBatchCategoryApplied
         self.onBatchDeleteApplied = onBatchDeleteApplied
+        self.onBatchRenameApplied = onBatchRenameApplied
         self.onBatchCategoryCreateNewCategory = onBatchCategoryCreateNewCategory
         self.onRetrySelectedFileDetail = onRetrySelectedFileDetail
         self.tagActions = tagActions
@@ -229,6 +235,7 @@ extension MainRepositoryDetailPane {
             batchTagErrorMapper: batchTagErrorMapper,
             batchDeleter: batchDeleter,
             batchCategoryChanger: batchCategoryChanger,
+            batchRenamer: batchRenamer,
             tagActions: tagActions,
             writeActionDisabledReason: writeActionDisabledReason,
             onCopyPaths: onCopyPaths,
@@ -236,6 +243,7 @@ extension MainRepositoryDetailPane {
             onRefreshChangeLog: onRefreshChangeLog,
             onBatchCategoryApplied: onBatchCategoryApplied,
             onBatchDeleteApplied: onBatchDeleteApplied,
+            onBatchRenameApplied: onBatchRenameApplied,
             onBatchCategoryCreateNewCategory: onBatchCategoryCreateNewCategory
         )
     }

@@ -11,6 +11,7 @@ struct MainRepositoryMultiSelectionActions: View {
     let batchTagErrorMapper: any CoreErrorMapping
     let batchDeleter: any CoreBatchDeleting
     let batchCategoryChanger: any CoreBatchCategoryChanging
+    let batchRenamer: any CoreBatchRenaming
     let tagActions: MainRepositoryDetailPaneTagActions
     let writeActionDisabledReason: (Int64) -> MainFileWriteActionDisabledReason?
     let onCopyPaths: ([String]) -> Void
@@ -18,6 +19,7 @@ struct MainRepositoryMultiSelectionActions: View {
     let onRefreshChangeLog: () -> Void
     let onBatchCategoryApplied: (BatchCategoryChangeReportSnapshot) -> Void
     let onBatchDeleteApplied: (BatchDeleteReportSnapshot) -> Void
+    let onBatchRenameApplied: (BatchRenameReportSnapshot) -> Void
     let onBatchCategoryCreateNewCategory: (BatchChangeCategoryNewCategoryHandoff) -> Void
 
     var body: some View {
@@ -57,6 +59,16 @@ struct MainRepositoryMultiSelectionActions: View {
                 onApplied: onBatchCategoryApplied,
                 onUndoStateChange: tagActions.onBatchTagUndoStateChange,
                 onCreateNewCategory: onBatchCategoryCreateNewCategory
+            )
+            BatchRenameTrigger(
+                repoPath: repoPath,
+                fileIDs: BatchRenameEntryPolicy.fileIDsForPreview(summary: summary),
+                selectedFiles: summary.files,
+                selectedCount: summary.selectedCount,
+                disabledReason: batchRenameDisabledReason,
+                renamer: batchRenamer,
+                errorMapper: batchTagErrorMapper,
+                onApplied: onBatchRenameApplied
             )
             BatchDeleteTrigger(
                 repoPath: repoPath,
@@ -100,6 +112,15 @@ struct MainRepositoryMultiSelectionActions: View {
         }
         return nil
     }
+
+    private var batchRenameDisabledReason: String? {
+        if summary.selectedCount == 0 { return "No files selected" }
+        if summary.isUpdating { return MainFileWriteActionDisabledReason.listLoading.rawValue }
+        if let reason = summary.files.compactMap({ writeActionDisabledReason($0.id) }).first {
+            return reason.rawValue
+        }
+        return nil
+    }
 }
 
 extension MainRepositoryContentView {
@@ -125,6 +146,17 @@ extension MainRepositoryContentView {
         )
     }
 
+    func openBatchRenameRoute(_ ids: Set<Int64>, source: BatchRenameRouteSource) {
+        let selectedFiles = filesForBatchRename(ids)
+        pendingBatchRenameRoute = BatchRenameRoute(
+            source: source,
+            fileIDs: selectedFiles.map(\.id),
+            selectedFiles: selectedFiles,
+            selectedCount: selectedFiles.count,
+            disabledReason: batchRenameDisabledReason(for: selectedFiles)
+        )
+    }
+
     func commandPaletteBatchChangeCategoryRoute() -> BatchChangeCategoryRoute {
         let selectedFiles = filesForBatchChangeCategory(selectedFileIDs)
         return BatchChangeCategoryRoute(
@@ -144,6 +176,10 @@ extension MainRepositoryContentView {
         visibleFiles.filter { ids.contains($0.id) }
     }
 
+    private func filesForBatchRename(_ ids: Set<Int64>) -> [FileEntrySnapshot] {
+        visibleFiles.filter { ids.contains($0.id) }
+    }
+
     private func batchChangeCategoryDisabledReason(for files: [FileEntrySnapshot]) -> String? {
         BatchChangeCategoryEntryPolicy.disabledReason(
             selectedFiles: files,
@@ -160,5 +196,40 @@ extension MainRepositoryContentView {
             isLoading: fileListModel.isLoading,
             writeLockedFileIDs: fileListModel.writeLockedFileIDs
         )
+    }
+
+    private func batchRenameDisabledReason(for files: [FileEntrySnapshot]) -> String? {
+        BatchRenameEntryPolicy.disabledReason(
+            selectedFiles: files,
+            isReadOnly: fileListModel.isReadOnly,
+            isLoading: fileListModel.isLoading,
+            writeLockedFileIDs: fileListModel.writeLockedFileIDs
+        )
+    }
+
+    func batchRenameRoutingSheet(_ route: BatchRenameRoute) -> some View {
+        BatchRenameSheet(
+            repoPath: opening.config.repoPath,
+            fileIDs: route.fileIDs,
+            selectedFiles: route.selectedFiles,
+            selectedCount: route.selectedCount,
+            disabledReason: route.disabledReason,
+            renamer: batchRenamer,
+            errorMapper: fileListModel.errorMapper,
+            onApplied: applyBatchRenameResult,
+            onClose: { pendingBatchRenameRoute = nil }
+        )
+    }
+
+    func applyBatchRenameResult(_ report: BatchRenameReportSnapshot) {
+        Task {
+            if !report.updatedFiles.isEmpty {
+                fileListModel.files = fileListModel.files.map { current in
+                    report.updatedFiles.first { $0.id == current.id } ?? current
+                }
+            }
+            await fileListModel.retryCurrentCategory()
+            await fileListModel.retrySelectedFileDetail()
+        }
     }
 }

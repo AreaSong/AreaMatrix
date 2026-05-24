@@ -111,6 +111,9 @@ extension MainRepositoryContentView {
             Button("Change category...") {
                 openBatchChangeCategoryRoute(selection, source: .listContextMenu)
             }
+            Button("Rename...") {
+                openBatchRenameRoute(selection, source: .listContextMenu)
+            }
             Button("Delete...", role: .destructive) {
                 openBatchDeleteRoute(selection, source: .listContextMenu)
             }

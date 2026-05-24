@@ -1,0 +1,58 @@
+一、执行结论
+
+已完成。
+
+二、执行范围
+
+单任务：`4-1/task-121`。
+
+本次 retry 实际修复增量落在：
+- `apps/macos/AreaMatrix/Models/MainFileListState.swift`
+- `apps/macos/AreaMatrix/Models/MainFileRenameActions.swift`
+- `apps/macos/AreaMatrix/Views/Main/MainRepositoryMultiSelectionActions.swift`
+- `apps/macos/AreaMatrixTests/RenameFilePageFeatureTests.swift`
+
+三、完成情况
+
+- 只处理 S2-14 页面中的 C2-10 功能点：通过。`BatchRenameTrigger` 现在使用当前 List 顺序的选中 id，而不是 `selection.multipleFileIDs.sorted()`。
+- 读取页面规格、control map、Core API、C2-10 能力规格：已完成。
+- 只接入 C2-10 对应 CoreBridge / 状态 / 错误映射：通过，未新增同页 C2-07 undo 执行能力。
+- 不实现相邻页面、相邻平台或同页其他能力：通过。
+- 用户可见功能可被触发和验收：通过，Detail multi 入口的 preview/apply 顺序已按当前 List 顺序传递。
+- 无 mock / fixture 伪造真实 Core 闭环：通过，生产路径仍走 `CoreBatchRenaming`。
+- Forbidden Touches：未触碰 `core/src/**`，`git diff --name-only -- core/src` 无输出。
+
+四、工程质量
+
+- 修复了排序合同：`MultiSelectionDetailSummary` 增加 `listOrderedFileIDs`，保留当前 List 顺序；summary 展示排序仍保持原来的名称排序。
+- `BatchRenameValidation.canApply` 改为顺序敏感，排序变化后旧 preview 不再可 Apply。
+- 新增 XCTest 覆盖：
+  - 当前 List 顺序不同于 id/name 顺序时，C2-10 使用 List 顺序。
+  - preview/apply 都按该顺序传参。
+  - 顺序变化时旧 preview 不可 Apply。
+- 未新增依赖，未新增 public Rust API，无 rustdoc 变更需求。
+- 没有占位、硬编码通过态、mock-only 生产路径或一次性脚本化实现。
+
+五、验证情况
+
+已运行：
+
+```bash
+./dev check task 4-1/task-121
+```
+
+结果：通过。
+
+该命令内实际通过：
+- `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`
+- `git diff --check`
+- `xcodebuild -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination platform=macOS,arch=arm64 build CODE_SIGNING_ALLOWED=NO`
+
+未运行 UI 真窗口交互烟测或单独 XCTest 执行；原因是当前 task manifest 的验证上限就是 `./dev check task 4-1/task-121`，本次 retry 未升级到额外宽门禁。
+
+六、风险与后续
+
+剩余风险：manifest 验证只构建 macOS app，没有实际点击 UI 或执行 XCTest 断言；但排序合同已用测试源码固定，下一轮 verify 可按 task + manifest + 文件证据验收。
+
+建议下一个任务：进入 `4-1/task-121` verify-ready 验收；若通过，再继续同页后续能力任务 `4-1/task-122` / `4-1/task-123`。  
+

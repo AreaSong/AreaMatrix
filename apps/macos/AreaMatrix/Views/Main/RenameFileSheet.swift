@@ -144,6 +144,165 @@ struct RenameFileSheet: View {
     }
 }
 
+struct BatchRenameTrigger: View {
+    let repoPath: String
+    let fileIDs: [Int64]
+    let selectedFiles: [FileEntrySnapshot]
+    let selectedCount: Int
+    let disabledReason: String?
+    let renamer: any CoreBatchRenaming
+    let errorMapper: any CoreErrorMapping
+    let onApplied: (BatchRenameReportSnapshot) -> Void
+    @State private var isPresented = false
+
+    var body: some View {
+        Button("Rename...") { isPresented = true }
+            .help(BatchRenameEntryPolicy.openHelp(disabledReason: disabledReason))
+            .accessibilityIdentifier("S2-14-batch-rename-open")
+            .sheet(isPresented: $isPresented) {
+                BatchRenameSheet(
+                    repoPath: repoPath,
+                    fileIDs: fileIDs,
+                    selectedFiles: selectedFiles,
+                    selectedCount: selectedCount,
+                    disabledReason: disabledReason,
+                    renamer: renamer,
+                    errorMapper: errorMapper,
+                    onApplied: onApplied,
+                    onClose: { isPresented = false }
+                )
+            }
+    }
+}
+
+struct BatchRenameSheet: View {
+    let repoPath: String
+    let fileIDs: [Int64]
+    let selectedFiles: [FileEntrySnapshot]
+    let selectedCount: Int
+    let disabledReason: String?
+    let renamer: any CoreBatchRenaming
+    let errorMapper: any CoreErrorMapping
+    let onApplied: (BatchRenameReportSnapshot) -> Void
+    let onClose: () -> Void
+    @State private var draft = BatchRenameRuleDraft()
+    @State private var previewState: BatchRenamePreviewState = .idle
+    @State private var isApplying = false
+    @State private var result: BatchRenameReportSnapshot?
+    @State private var failure: CoreErrorMappingSnapshot?
+
+    var body: some View {
+        MainFileActionSheetContainer(title: "批量重命名", pageID: "S2-14") {
+            selectedCount == 0 ? AnyView(emptyContent) : AnyView(content)
+        }
+        .task(id: previewTaskKey) { await refreshPreview() }
+        .accessibilityIdentifier("S2-14-C2-10-batch-rename-preview")
+    }
+
+    private var emptyContent: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("No files selected").foregroundStyle(.secondary)
+            HStack { Spacer(); Button("Close", action: onClose) }
+        }
+    }
+
+    private var content: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            BatchRenameSelectedFilesSummary(selectedFiles: selectedFiles, selectedCount: selectedCount)
+            RenameRuleEditor(draft: $draft, isDisabled: isApplying || disabledReason != nil)
+            BatchRenamePreviewSection(
+                previewState: previewState,
+                validationMessage: draft.validationMessage,
+                failure: failure,
+                disabledReason: disabledReason
+            )
+            BatchRenameResultSummary(result: result)
+            actionButtons
+        }
+    }
+
+    private var actionButtons: some View {
+        HStack {
+            Button("Refresh preview") { Task { await refreshPreview() } }
+                .disabled(previewRefreshDisabled)
+            Spacer()
+            Button("Cancel", action: onClose).keyboardShortcut(.cancelAction).disabled(isApplying)
+            Button(isApplying ? "Renaming..." : "Apply") { Task { await apply() } }
+                .keyboardShortcut(.defaultAction)
+                .disabled(!canApplyPreview)
+                .accessibilityIdentifier("S2-14-C2-10-batch-rename-apply")
+        }
+    }
+
+    @MainActor
+    private func refreshPreview() async {
+        guard selectedCount > 0, disabledReason == nil, draft.validationMessage == nil else { return }
+        previewState = .loading(previous: previewState.displayReport)
+        failure = nil
+        result = nil
+        previewState = await BatchRenameAction.preview(
+            repoPath: repoPath,
+            fileIDs: fileIDs,
+            rule: draft.snapshot,
+            renamer: renamer,
+            errorMapper: errorMapper
+        )
+    }
+
+    @MainActor
+    private func apply() async {
+        guard let preview = previewState.applyReport, canApplyPreview else { return }
+        isApplying = true
+        failure = nil
+        result = nil
+        let applyResult = await BatchRenameAction.apply(
+            repoPath: repoPath,
+            fileIDs: fileIDs,
+            preview: preview,
+            renamer: renamer,
+            errorMapper: errorMapper
+        )
+        result = applyResult.report
+        failure = applyResult.failure
+        isApplying = false
+        if let report = applyResult.report, report.shouldRefreshConsumerAfterApply { onApplied(report) }
+        if let report = applyResult.report, report.shouldCloseSheetAfterApply { onClose() }
+    }
+
+    private var canApplyPreview: Bool {
+        BatchRenameValidation.canApply(
+            fileIDs: fileIDs,
+            preview: previewState.applyReport,
+            rule: draft.snapshot,
+            disabledReason: disabledReason,
+            isApplying: isApplying
+        )
+    }
+
+    private var previewRefreshDisabled: Bool {
+        isApplying || disabledReason != nil || draft.validationMessage != nil
+    }
+
+    private var previewTaskKey: String {
+        [fileIDs.map(String.init).joined(separator: ","), draft.previewKey].joined(separator: "|")
+    }
+}
+
+private struct BatchRenameSelectedFilesSummary: View {
+    let selectedFiles: [FileEntrySnapshot]
+    let selectedCount: Int
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Selected: \(selectedCount) files")
+            ForEach(selectedFiles.prefix(5)) { file in
+                Text(file.currentName).font(.caption).foregroundStyle(.secondary)
+            }
+        }
+        .accessibilityElement(children: .contain)
+    }
+}
+
 struct RenameFilenameEditingConfiguration: Equatable {
     let text: String
     let initialSelection: RenameFilenameSelection
