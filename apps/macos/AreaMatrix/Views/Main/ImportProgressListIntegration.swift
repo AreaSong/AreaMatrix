@@ -304,10 +304,32 @@ struct UndoToastHistoryRouteSheet: View {
     }
 }
 
+struct CommandPaletteSmartListTarget: Equatable, Identifiable {
+    let savedSearch: SavedSearchSnapshot
+
+    var id: Int64 { savedSearch.id }
+    var title: String { savedSearch.name }
+    var systemImage: String { savedSearch.icon ?? "line.3.horizontal.decrease.circle" }
+    var helpText: String { "Open Smart List" }
+    var accessibilityIdentifier: String { "S2-15-C2-04-smart-list-\(savedSearch.id)" }
+
+    static func matching(_ savedSearches: [SavedSearchSnapshot], query: String) -> [CommandPaletteSmartListTarget] {
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        let filtered = savedSearches.filter { saved in
+            trimmed.isEmpty ||
+                saved.name.localizedCaseInsensitiveContains(trimmed) ||
+                saved.query.query.localizedCaseInsensitiveContains(trimmed)
+        }
+        return filtered.map(CommandPaletteSmartListTarget.init(savedSearch:))
+    }
+}
+
 struct SearchCommandPaletteRouteView: View {
     let query: String
+    var smartLists: [SavedSearchSnapshot] = []
     let batchAddTagsRoute: BatchAddTagsRoute
     let batchChangeCategoryRoute: BatchChangeCategoryRoute
+    var onOpenSmartList: (SavedSearchSnapshot) -> Void = { _ in }
     let onOpenBatchAddTags: (BatchAddTagsRoute) -> Void
     let onOpenBatchChangeCategory: (BatchChangeCategoryRoute) -> Void
     let onClose: () -> Void
@@ -319,6 +341,7 @@ struct SearchCommandPaletteRouteView: View {
             Text("Search related commands")
                 .font(.callout)
                 .foregroundStyle(.secondary)
+            commandPaletteSmartListSection
             commandPaletteBatchAddTagsButton
             commandPaletteBatchChangeCategoryButton
             HStack {
@@ -328,6 +351,29 @@ struct SearchCommandPaletteRouteView: View {
             }
         }
         .accessibilityIdentifier("S2-15-search-route")
+    }
+
+    private var commandPaletteSmartListSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Smart Lists")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            ForEach(smartListTargets) { target in
+                Button {
+                    onOpenSmartList(target.savedSearch)
+                } label: {
+                    Label(target.title, systemImage: target.systemImage)
+                }
+                .help(target.helpText)
+                .accessibilityIdentifier(target.accessibilityIdentifier)
+            }
+            if smartListTargets.isEmpty {
+                Text(emptySmartListMessage)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .accessibilityIdentifier("S2-15-C2-04-smart-list-empty")
+            }
+        }
     }
 
     private var commandPaletteBatchAddTagsButton: some View {
@@ -350,6 +396,40 @@ struct SearchCommandPaletteRouteView: View {
         .disabled(batchChangeCategoryRoute.selectedCount == 0)
         .help(BatchChangeCategoryEntryPolicy.openHelp(disabledReason: batchChangeCategoryRoute.disabledReason))
         .accessibilityIdentifier("S2-12-command-palette-change-category")
+    }
+
+    private var smartListTargets: [CommandPaletteSmartListTarget] {
+        CommandPaletteSmartListTarget.matching(smartLists, query: query)
+    }
+
+    private var emptySmartListMessage: String {
+        smartLists.isEmpty ? "No Smart Lists saved." : "No Smart Lists match this search."
+    }
+}
+
+extension MainRepositoryContentView {
+    func commandPaletteRouteView() -> some View {
+        SearchCommandPaletteRouteView(
+            query: filterText,
+            smartLists: sortedSavedSearches,
+            batchAddTagsRoute: commandPaletteBatchAddTagsRoute(),
+            batchChangeCategoryRoute: commandPaletteBatchChangeCategoryRoute(),
+            onOpenSmartList: { saved in
+                fileListModel.clearPendingSearchDestination()
+                selectedSidebarID = RepositoryTreeNodeSnapshot.savedSearchSidebarID(saved.id)
+                selectedFileIDs = []
+                Task { await restoreSavedSearch(saved) }
+            },
+            onOpenBatchAddTags: { route in
+                pendingBatchAddTagsRoute = route
+                fileListModel.clearPendingSearchDestination()
+            },
+            onOpenBatchChangeCategory: { route in
+                pendingBatchChangeCategoryRoute = route
+                fileListModel.clearPendingSearchDestination()
+            },
+            onClose: fileListModel.clearPendingSearchDestination
+        )
     }
 }
 

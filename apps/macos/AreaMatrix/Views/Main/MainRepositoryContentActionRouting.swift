@@ -80,20 +80,7 @@ extension MainRepositoryContentView {
                 onClose: fileListModel.clearPendingSearchDestination
             )
         case .commandPalette:
-            SearchCommandPaletteRouteView(
-                query: filterText,
-                batchAddTagsRoute: commandPaletteBatchAddTagsRoute(),
-                batchChangeCategoryRoute: commandPaletteBatchChangeCategoryRoute(),
-                onOpenBatchAddTags: { route in
-                    pendingBatchAddTagsRoute = route
-                    fileListModel.clearPendingSearchDestination()
-                },
-                onOpenBatchChangeCategory: { route in
-                    pendingBatchChangeCategoryRoute = route
-                    fileListModel.clearPendingSearchDestination()
-                },
-                onClose: fileListModel.clearPendingSearchDestination
-            )
+            commandPaletteRouteView()
         case let .classifierRuleEditor(context):
             ClassifierRuleEditorRouteView(
                 repoPath: opening.config.repoPath,

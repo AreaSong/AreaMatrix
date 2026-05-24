@@ -95,6 +95,16 @@ final class MainEmptyImportEntryTests: XCTestCase {
         XCTAssertEqual(decodedFileURL, fileURL)
         XCTAssertNil(decodedRemoteURL)
     }
+
+    func testS215CommandPaletteRendersSmartListC204Targets() {
+        let saved = SavedSearchSnapshot.s215CommandPaletteFixture()
+        let targets = CommandPaletteSmartListTarget.matching([saved], query: "fin")
+
+        XCTAssertEqual(targets.map(\.savedSearch.id), [77])
+        XCTAssertEqual(targets.map(\.title), ["Finance"])
+        XCTAssertEqual(targets.map(\.accessibilityIdentifier), ["S2-15-C2-04-smart-list-77"])
+        XCTAssertEqual(targets.map(\.helpText), ["Open Smart List"])
+    }
 }
 
 private struct MainEmptyImportStaticSettingsReader: AppSettingsReading {
@@ -144,6 +154,31 @@ private extension RepositoryOpeningResult {
             ),
             tree: RepositoryTreeNodeSnapshot(slug: "__root__", displayName: "资料库", fileCount: 0, children: []),
             currentCategoryFiles: []
+        )
+    }
+}
+
+private extension SavedSearchSnapshot {
+    static func s215CommandPaletteFixture() -> SavedSearchSnapshot {
+        let request = SearchQueryRequestSnapshot(
+            query: "Finance",
+            scope: .all,
+            currentPath: nil,
+            category: nil,
+            filters: .empty,
+            sort: .relevance,
+            limit: 50,
+            offset: 0
+        )
+        return SavedSearchSnapshot(
+            id: 77,
+            name: "Finance",
+            query: SavedSearchQuerySnapshot(request: request),
+            icon: "magnifyingglass",
+            color: nil,
+            pinned: true,
+            createdAt: 1_700_000_000,
+            updatedAt: 1_700_000_100
         )
     }
 }
