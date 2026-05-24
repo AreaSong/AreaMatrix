@@ -9,6 +9,14 @@ extension RepositoryOpeningResult {
             currentCategoryFiles: []
         )
     }
+
+    static func s215CommandFixture(repoPath: String, files: [FileEntrySnapshot]) -> RepositoryOpeningResult {
+        RepositoryOpeningResult(
+            config: .mainLoadingFixture(repoPath: repoPath),
+            tree: .s215CommandFixtureTree(),
+            currentCategoryFiles: files
+        )
+    }
 }
 
 extension RepositoryTreeNodeSnapshot {
@@ -45,6 +53,20 @@ extension RepositoryTreeNodeSnapshot {
             fileCount: 1,
             depth: 2,
             children: []
+        )
+    }
+
+    static func s215CommandFixtureTree() -> RepositoryTreeNodeSnapshot {
+        RepositoryTreeNodeSnapshot(
+            slug: "__root__",
+            displayName: "Repository",
+            kind: "RepositoryRoot",
+            relativePath: "",
+            fileCount: 0,
+            depth: 0,
+            children: [
+                RepositoryTreeNodeSnapshot(slug: "docs", displayName: "docs", fileCount: 1, children: [])
+            ]
         )
     }
 }
@@ -206,6 +228,156 @@ extension CoreErrorMappingSnapshot {
             recoverability: .fatal,
             rawContext: rawContext
         )
+    }
+
+    static func s215CommandDb(rawContext: String) -> CoreErrorMappingSnapshot {
+        CoreErrorMappingSnapshot(
+            kind: .db,
+            userMessage: "Some commands are unavailable",
+            severity: .medium,
+            suggestedAction: "Retry the command palette.",
+            recoverability: .retryable,
+            rawContext: rawContext
+        )
+    }
+}
+
+extension FileEntrySnapshot {
+    static func s215CommandFileFixture(id: Int64, currentName: String) -> FileEntrySnapshot {
+        FileEntrySnapshot(
+            id: id,
+            path: "docs/\(currentName)",
+            originalName: currentName,
+            currentName: currentName,
+            category: "docs",
+            sizeBytes: 256,
+            hashSha256: "s215-command-\(id)",
+            storageMode: "Copied",
+            origin: "Imported",
+            sourcePath: nil,
+            importedAt: 1_700_000_000,
+            updatedAt: 1_700_000_100
+        )
+    }
+}
+
+extension SavedSearchSnapshot {
+    static func s215CommandPaletteFixture() -> SavedSearchSnapshot {
+        let request = SearchQueryRequestSnapshot(
+            query: "Finance",
+            scope: .all,
+            currentPath: nil,
+            category: nil,
+            filters: .empty,
+            sort: .relevance,
+            limit: 50,
+            offset: 0
+        )
+        return SavedSearchSnapshot(
+            id: 77,
+            name: "Finance",
+            query: SavedSearchQuerySnapshot(request: request),
+            icon: "magnifyingglass",
+            color: nil,
+            pinned: true,
+            createdAt: 1_700_000_000,
+            updatedAt: 1_700_000_100
+        )
+    }
+}
+
+extension SearchResultPageSnapshot {
+    static func s215CommandSmartListPage(saved: SavedSearchSnapshot) -> SearchResultPageSnapshot {
+        SearchResultPageSnapshot(
+            query: saved.query.query,
+            totalCount: 0,
+            results: [],
+            diagnostics: [],
+            indexStatus: .ready
+        )
+    }
+}
+
+extension CommandTargetSnapshot {
+    static func s215RouteFixture(
+        id: String,
+        title: String = "Delete selected files...",
+        action: CommandTargetActionSnapshot,
+        route: String?,
+        disabled: Bool = false,
+        disabledReason: String? = nil,
+        requiresConfirmation: Bool = false,
+        fileID: Int64? = nil,
+        savedSearchID: Int64? = nil
+    ) -> CommandTargetSnapshot {
+        CommandTargetSnapshot(
+            id: id,
+            title: title,
+            subtitle: "Open command target",
+            group: .currentSelection,
+            kind: .command,
+            action: action,
+            route: route,
+            shortcut: nil,
+            disabled: disabled,
+            disabledReason: disabledReason,
+            requiresConfirmation: requiresConfirmation,
+            fileID: fileID,
+            savedSearchID: savedSearchID
+        )
+    }
+}
+
+extension CommandIndex {
+    static func s215Fixture(commands: [CommandTarget] = []) -> CommandIndex {
+        CommandIndex(
+            commands: commands,
+            navigationTargets: [],
+            currentSelectionTargets: [],
+            recentTargets: [],
+            smartLists: [],
+            fileCandidates: [],
+            generatedAt: 1_700_000_000
+        )
+    }
+}
+
+extension CommandTarget {
+    static func s215Fixture(
+        id: String,
+        title: String,
+        action: CommandTargetAction,
+        route: String?
+    ) -> CommandTarget {
+        CommandTarget(
+            id: id,
+            title: title,
+            subtitle: "Open command target",
+            group: .commands,
+            kind: .command,
+            action: action,
+            route: route,
+            shortcut: "Cmd+K",
+            disabled: false,
+            disabledReason: nil,
+            requiresConfirmation: false,
+            fileId: nil,
+            savedSearchId: nil
+        )
+    }
+}
+
+func s215CommandMirrorDescription(of value: Any) -> String {
+    var lines: [String] = []
+    appendS215CommandMirrorDescription(of: value, to: &lines)
+    return lines.joined(separator: "\n")
+}
+
+private func appendS215CommandMirrorDescription(of value: Any, to lines: inout [String]) {
+    lines.append(String(describing: type(of: value)))
+    lines.append(String(describing: value))
+    for child in Mirror(reflecting: value).children {
+        appendS215CommandMirrorDescription(of: child.value, to: &lines)
     }
 }
 

@@ -174,11 +174,11 @@ extension MainRepositoryContentView {
         visibleFiles.filter { ids.contains($0.id) }
     }
 
-    private func filesForBatchDelete(_ ids: Set<Int64>) -> [FileEntrySnapshot] {
+    func filesForBatchDelete(_ ids: Set<Int64>) -> [FileEntrySnapshot] {
         visibleFiles.filter { ids.contains($0.id) }
     }
 
-    private func filesForBatchRename(_ ids: Set<Int64>) -> [FileEntrySnapshot] {
+    func filesForBatchRename(_ ids: Set<Int64>) -> [FileEntrySnapshot] {
         visibleFiles.filter { ids.contains($0.id) }
     }
 
@@ -191,7 +191,7 @@ extension MainRepositoryContentView {
         )
     }
 
-    private func batchDeleteDisabledReason(for files: [FileEntrySnapshot]) -> String? {
+    func batchDeleteDisabledReason(for files: [FileEntrySnapshot]) -> String? {
         BatchDeleteEntryPolicy.disabledReason(
             selectedFiles: files,
             isReadOnly: fileListModel.isReadOnly,
@@ -200,7 +200,7 @@ extension MainRepositoryContentView {
         )
     }
 
-    private func batchRenameDisabledReason(for files: [FileEntrySnapshot]) -> String? {
+    func batchRenameDisabledReason(for files: [FileEntrySnapshot]) -> String? {
         BatchRenameEntryPolicy.disabledReason(
             selectedFiles: files,
             isReadOnly: fileListModel.isReadOnly,
@@ -235,5 +235,58 @@ extension MainRepositoryContentView {
             await fileListModel.retryCurrentCategory()
             await fileListModel.retrySelectedFileDetail()
         }
+    }
+}
+
+enum CommandPaletteBatchRouteBuilder {
+    static func batchDeleteRoute(
+        selectedFileIDs: Set<Int64>,
+        visibleFiles: [FileEntrySnapshot],
+        isReadOnly: Bool,
+        isLoading: Bool,
+        writeLockedFileIDs: Set<Int64>
+    ) -> BatchDeleteRoute {
+        let files = selectedFiles(selectedFileIDs, visibleFiles: visibleFiles)
+        return BatchDeleteRoute(
+            source: .commandPalette,
+            fileIDs: files.map(\.id),
+            selectedFiles: files,
+            selectedCount: files.count,
+            disabledReason: BatchDeleteEntryPolicy.disabledReason(
+                selectedFiles: files,
+                isReadOnly: isReadOnly,
+                isLoading: isLoading,
+                writeLockedFileIDs: writeLockedFileIDs
+            )
+        )
+    }
+
+    static func batchRenameRoute(
+        selectedFileIDs: Set<Int64>,
+        visibleFiles: [FileEntrySnapshot],
+        isReadOnly: Bool,
+        isLoading: Bool,
+        writeLockedFileIDs: Set<Int64>
+    ) -> BatchRenameRoute {
+        let files = selectedFiles(selectedFileIDs, visibleFiles: visibleFiles)
+        return BatchRenameRoute(
+            source: .commandPalette,
+            fileIDs: files.map(\.id),
+            selectedFiles: files,
+            selectedCount: files.count,
+            disabledReason: BatchRenameEntryPolicy.disabledReason(
+                selectedFiles: files,
+                isReadOnly: isReadOnly,
+                isLoading: isLoading,
+                writeLockedFileIDs: writeLockedFileIDs
+            )
+        )
+    }
+
+    private static func selectedFiles(
+        _ selectedFileIDs: Set<Int64>,
+        visibleFiles: [FileEntrySnapshot]
+    ) -> [FileEntrySnapshot] {
+        visibleFiles.filter { selectedFileIDs.contains($0.id) }
     }
 }

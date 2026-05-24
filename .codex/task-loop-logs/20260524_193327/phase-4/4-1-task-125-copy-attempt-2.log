@@ -1,0 +1,51 @@
+一、执行结论
+
+已完成 `4-1/task-125` 的 repair retry。上次验收阻塞项已修复：S2-15 command palette 的 query 已从全局文件搜索 `filterText` 中拆出，不再间接触发 C2-01 文件搜索链路。
+
+二、执行范围
+
+单任务：`4-1/task-125`，仅处理 S2-15 页面中的 C2-11 command-index。
+
+关键修改：
+- [MainFileListModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileListModel.swift:31)：新增独立 `commandPaletteQuery`，并注入 `CoreCommandIndexing`。
+- [ImportProgressListIntegration.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportProgressListIntegration.swift:353)：命令面板改绑定 `$fileListModel.commandPaletteQuery`，加载时只调用 `loadCommandIndex(...)`。
+- [MainRepositoryContentView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift:248)：`Cmd+K` 走 `openCommandPalette()`，打开/关闭只清理 command palette 自身 query。
+- [MainEmptyImportEntryTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/MainEmptyImportEntryTests.swift:203)：补了 C2-11 query 隔离测试，断言 command palette 输入不会产生 file search request。
+
+三、完成情况
+
+核对清单：通过。只处理 S2-15 + C2-11；命令索引仍走真实 `CoreBridge` / UniFFI `listCommandTargets`；未实现同页其他能力。
+
+完成标准：通过。S2-15 中 C2-11 用户可见命令索引可触发；没有用 mock/fixture 伪造产品闭环；当前修复切断了命令输入到文件搜索 Core 路径的耦合。
+
+Forbidden Touches：未触碰。`git diff --name-only -- core/src` 无输出。
+
+四、工程质量
+
+状态边界已分离：文件搜索 query 和命令面板 query 不再共用状态，避免 command-index task 越界驱动搜索能力。错误映射、加载状态和危险命令展示沿用既有结构；未新增依赖，未新增 Rust public API，因此无 rustdoc/UDL 同步需求。
+
+产品路径没有 mock-only、硬编码通过态或一次性脚本化实现。测试侧 fake store 仅用于单元测试注入。
+
+五、验证情况
+
+已重新执行 manifest 指定验证：
+
+```bash
+./dev check task 4-1/task-125
+```
+
+结果通过：
+- `prompt doctor`: OK
+- `git diff --check`: OK
+- `xcodebuild ... build CODE_SIGNING_ALLOWED=NO`: `BUILD SUCCEEDED`
+
+Xcode 仍输出本机 CoreSimulator / FSEvents / cache 访问警告，但未导致构建失败。按本 task manifest 上限，未升级到 `./dev check all`、`./dev check core` 或全量 `cargo test --workspace`。
+
+六、风险与后续
+
+剩余风险：未跑手工 UI smoke 或全量 XCTest，这不是当前 manifest 要求；当前证据覆盖 build gate 和 query 隔离源码测试。
+
+回滚方式：回退上述 `apps/macos/AreaMatrix/**` 与 `apps/macos/AreaMatrixTests/**` 中本 task 相关改动即可；未涉及用户原文件删除/移动/覆盖，也未改 `core/src/**`。
+
+建议下一个任务：进入 S2-15 后续 page integration verify，例如 `4-1/task-126`，检查同页多能力的整体闭环。
+

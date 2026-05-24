@@ -1,4 +1,5 @@
 @testable import AreaMatrix
+import SwiftUI
 import XCTest
 
 final class ImportBatchICloudPageIntegrationTests: XCTestCase {
@@ -56,26 +57,17 @@ final class ImportBatchICloudPageIntegrationTests: XCTestCase {
     }
 
     func testS209CommandPaletteRouteExposesContextualAddTagsCommand() {
-        let route = BatchAddTagsRoute(source: .commandPalette, fileIDs: [1, 2], selectedCount: 2, disabledReason: nil)
-        let categoryRoute = BatchChangeCategoryRoute(
-            source: .commandPalette,
-            fileIDs: [1, 2],
-            selectedFiles: [.s209RouteFixture(id: 1, currentName: "a.pdf")],
-            selectedCount: 2,
-            disabledReason: nil
-        )
+        var commandQuery = "tag"
         let body = s209RouteMirrorDescription(of: SearchCommandPaletteRouteView(
-            query: "tag",
-            batchAddTagsRoute: route,
-            batchChangeCategoryRoute: categoryRoute,
-            onOpenBatchAddTags: { _ in },
-            onOpenBatchChangeCategory: { _ in },
+            query: Binding(get: { commandQuery }, set: { commandQuery = $0 }),
+            state: .idle,
+            onLoad: {},
+            onExecuteTarget: { _ in },
             onClose: {}
         ).body)
 
         XCTAssertTrue(body.contains("S2-15-search-route"))
-        XCTAssertTrue(body.contains("S2-09-command-palette-add-tags"))
-        XCTAssertTrue(body.contains("Add tags..."))
+        XCTAssertTrue(body.contains("CommandPaletteView"))
     }
 
     @MainActor

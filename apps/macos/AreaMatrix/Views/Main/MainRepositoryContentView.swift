@@ -247,7 +247,7 @@ extension MainRepositoryContentView {
         }
         .onKeyPress("k", phases: .down) { event in
             guard event.modifiers.contains(.command) else { return .ignored }
-            fileListModel.openCommandPaletteForSearch()
+            openCommandPalette()
             return .handled
         }
     }
@@ -290,6 +290,7 @@ extension MainRepositoryContentView {
         fileDetailer: any CoreFileDetailing = CoreBridge(),
         searchQuerying: any CoreSearchQuerying = CoreBridge(),
         searchFiltering: any CoreSearchFiltering = CoreBridge(),
+        commandIndexer: any CoreCommandIndexing = CoreBridge(),
         fileCategoryMover: any CoreFileCategoryMoving = CoreBridge(),
         batchDeleter: any CoreBatchDeleting = CoreBridge(),
         batchCategoryChanger: any CoreBatchCategoryChanging = CoreBridge(),
@@ -337,6 +338,7 @@ extension MainRepositoryContentView {
             fileDetailer: fileDetailer,
             searchQuerying: searchQuerying,
             searchFiltering: searchFiltering,
+            commandIndexer: commandIndexer,
             fileCategoryMover: fileCategoryMover,
             batchDeleter: batchDeleter,
             batchCategoryChanger: batchCategoryChanger,

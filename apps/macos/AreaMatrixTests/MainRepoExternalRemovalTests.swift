@@ -1,16 +1,19 @@
 @testable import AreaMatrix
+import SwiftUI
 import XCTest
 
 final class MainRepoExternalRemovalTests: XCTestCase {
     func testS201PageIntegrationRendersSearchRouteViews() {
         let request = SearchQueryRequestSnapshot.s201RouteFixture(query: "合同")
-        let diagnostic = SearchQueryDiagnosticSnapshot(severityDisplayName: "Error", message: "Unknown field: owner", suggestion: "Use category:")
-
         let emptyView = SearchEmptyRouteView(request: request, onClearSearch: {}, onClearFilters: {}, onRemoveFilter: { _ in }, onSearchAllFileTypes: {})
         let emptyBody = s201RouteMirrorDescription(of: emptyView.body)
         let errorBody = s201RouteMirrorDescription(of: QueryErrorRouteView(
             request: request,
-            diagnostic: diagnostic,
+            diagnostic: SearchQueryDiagnosticSnapshot(
+                severityDisplayName: "Error",
+                message: "Unknown field: owner",
+                suggestion: "Use category:"
+            ),
             onClear: {}
         ).body)
         let savedSearchStore = S203RecordingSavedSearchStore(results: [.listSuccess([])])
@@ -22,26 +25,13 @@ final class MainRepoExternalRemovalTests: XCTestCase {
             errorMapper: MainListRecordingErrorMapper(mapping: .searchFiltersDbFixture()),
             onCancel: {}
         ).body)
-        let indexingBody = s201RouteMirrorDescription(of: SearchIndexingStatusRouteView(
-            request: request,
-            indexStatus: .unavailable,
-            onRetry: {},
-            onClose: {}
-        ).body)
-        let commandRoute = BatchAddTagsRoute(source: .commandPalette, fileIDs: [], selectedCount: 0, disabledReason: "No files selected")
-        let categoryRoute = BatchChangeCategoryRoute(
-            source: .commandPalette,
-            fileIDs: [],
-            selectedFiles: [],
-            selectedCount: 0,
-            disabledReason: "No files selected"
-        )
+        let indexingBody = s201RouteMirrorDescription(of: SearchIndexingStatusRouteView(request: request, indexStatus: .unavailable, onRetry: {}, onClose: {}).body)
+        var commandQuery = "合同"
         let commandBody = s201RouteMirrorDescription(of: SearchCommandPaletteRouteView(
-            query: "合同",
-            batchAddTagsRoute: commandRoute,
-            batchChangeCategoryRoute: categoryRoute,
-            onOpenBatchAddTags: { _ in },
-            onOpenBatchChangeCategory: { _ in },
+            query: Binding(get: { commandQuery }, set: { commandQuery = $0 }),
+            state: .idle,
+            onLoad: {},
+            onExecuteTarget: { _ in },
             onClose: {}
         ).body)
 
@@ -503,9 +493,7 @@ private func s201RouteAppendMirrorDescription(of value: Any, to lines: inout [St
     lines.append(String(describing: type(of: value)))
     lines.append(String(describing: value))
     for child in Mirror(reflecting: value).children {
-        if let label = child.label {
-            lines.append(label)
-        }
+        if let label = child.label { lines.append(label) }
         s201RouteAppendMirrorDescription(of: child.value, to: &lines)
     }
 }

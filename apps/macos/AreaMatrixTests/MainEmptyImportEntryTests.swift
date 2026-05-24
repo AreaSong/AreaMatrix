@@ -1,5 +1,6 @@
 @testable import AreaMatrix
 import Foundation
+import SwiftUI
 import XCTest
 
 final class MainEmptyImportEntryTests: XCTestCase {
@@ -103,7 +104,179 @@ final class MainEmptyImportEntryTests: XCTestCase {
         XCTAssertEqual(targets.map(\.savedSearch.id), [77])
         XCTAssertEqual(targets.map(\.title), ["Finance"])
         XCTAssertEqual(targets.map(\.accessibilityIdentifier), ["S2-15-C2-04-smart-list-77"])
-        XCTAssertEqual(targets.map(\.helpText), ["Open Smart List"])
+    }
+
+    @MainActor
+    func testS215C211LoadsCommandIndexAndKeepsQuerySeparateFromFileSearch() async {
+        let searcher = MainListRecordingSearchQuerying(results: [])
+        let target = CommandTarget.s215Fixture(
+            id: "selection.delete",
+            title: "Delete selected files...",
+            action: .openConfirmation,
+            route: "S2-13"
+        )
+        let indexer = S215CommandIndexStore(results: [.success(.s215Fixture(commands: [target]))])
+        let model = MainFileListModel(
+            opening: .mainEmptyImportFixture(repoPath: "/tmp/repo"),
+            fileLister: MainListRecordingFileLister(results: []),
+            fileDetailer: MainListRecordingFileDetailer(results: []),
+            searchQuerying: searcher,
+            commandIndexer: indexer,
+            errorMapper: S215CommandErrorMapper(mapping: .s215CommandDb(rawContext: "unused"))
+        )
+
+        await model.loadCommandIndex(query: " delete ", selectedFileIDs: [20, 10], currentPath: "docs")
+        let requests = await indexer.recordedRequests()
+        let searchRequests = await searcher.recordedRequests()
+
+        XCTAssertEqual(searchRequests, [])
+        XCTAssertEqual(requests.map(\.context.query), ["delete"])
+        XCTAssertEqual(requests.map(\.context.selectedFileIds), [[10, 20]])
+        XCTAssertEqual(model.commandPaletteState.snapshot?.sections[0].targets.first?.title, "Delete selected files...")
+    }
+
+    @MainActor
+    func testS215C211MapsCommandIndexFailureForInlineError() async {
+        let mapping = CoreErrorMappingSnapshot.s215CommandDb(rawContext: "command db locked")
+        let mapper = S215CommandErrorMapper(mapping: mapping)
+        let model = MainFileListModel(
+            opening: .mainEmptyImportFixture(repoPath: "/tmp/repo"),
+            fileLister: MainListRecordingFileLister(results: []),
+            fileDetailer: MainListRecordingFileDetailer(results: []),
+            commandIndexer: S215CommandIndexStore(results: [.failure(CoreError.Db(message: "command db locked"))]),
+            errorMapper: mapper
+        )
+
+        await model.loadCommandIndex(query: "", selectedFileIDs: Set<Int64>(), currentPath: Optional<String>.none)
+        let mappedErrors = await mapper.recordedErrors()
+
+        XCTAssertEqual(model.commandPaletteState.errorMapping, mapping)
+        XCTAssertEqual(mappedErrors, [CoreError.Db(message: "command db locked")])
+    }
+
+    func testS215C211CommandPaletteRowsAreExecutableAndShowDangerBoundary() {
+        var query = "delete"
+        let target = CommandTargetSnapshot.s215RouteFixture(
+            id: "selection.delete",
+            action: .openConfirmation,
+            route: "S2-13",
+            requiresConfirmation: true
+        )
+        let snapshot = CommandPaletteSnapshot(
+            sections: [.init(title: "Current Selection", targets: [target])],
+            generatedAt: 1
+        )
+        let body = s215CommandMirrorDescription(of: CommandPaletteView(
+            query: Binding(get: { query }, set: { query = $0 }),
+            state: .loaded(snapshot),
+            onLoad: {},
+            onExecuteTarget: { _ in },
+            onClose: {}
+        ).body)
+
+        XCTAssertTrue(body.contains("Button"))
+        XCTAssertTrue(body.contains("Delete selected files..."))
+        XCTAssertEqual(target.confirmationLabel, "Requires confirmation")
+        XCTAssertEqual(target.executionRoute, .batchDelete)
+    }
+
+    func testS215C211DisabledCommandTargetsCannotExecute() {
+        let target = CommandTargetSnapshot.s215RouteFixture(
+            id: "selection.delete",
+            action: .openConfirmation,
+            route: "S2-13",
+            disabled: true,
+            disabledReason: "Select files first.",
+            requiresConfirmation: true
+        )
+
+        XCTAssertFalse(target.isExecutable)
+        XCTAssertEqual(target.executionRoute, .batchDelete)
+    }
+
+    func testS215C211BuildsCoreDeleteTargetAsBatchDeleteConfirmationRoute() {
+        let file = FileEntrySnapshot.s215CommandFileFixture(id: 515, currentName: "delete.pdf")
+        let target = CommandTargetSnapshot.s215RouteFixture(
+            id: "selection.delete",
+            action: .openConfirmation,
+            route: "S2-13",
+            requiresConfirmation: true
+        )
+        let route = CommandPaletteBatchRouteBuilder.batchDeleteRoute(
+            selectedFileIDs: [file.id],
+            visibleFiles: [file],
+            isReadOnly: false,
+            isLoading: false,
+            writeLockedFileIDs: []
+        )
+
+        XCTAssertEqual(target.executionRoute, .batchDelete)
+        XCTAssertTrue(target.requiresConfirmation)
+        XCTAssertEqual(route.source, .commandPalette)
+        XCTAssertEqual(route.fileIDs, [file.id])
+        XCTAssertNil(route.disabledReason)
+    }
+
+    func testS215C211ResolvesCoreSmartListTargetThroughSavedSearchRoute() {
+        let saved = SavedSearchSnapshot.s215CommandPaletteFixture()
+        let target = CommandTargetSnapshot.s215RouteFixture(
+            id: "smart-list:77",
+            action: .runSmartList,
+            route: nil,
+            savedSearchID: saved.id
+        )
+        let resolved = CommandPaletteSmartListRouting.savedSearch(savedSearchID: saved.id, in: [saved])
+
+        XCTAssertEqual(target.executionRoute, .runSmartList(saved.id))
+        XCTAssertEqual(resolved, saved)
+        XCTAssertNil(CommandPaletteSmartListRouting.savedSearch(savedSearchID: 404, in: [saved]))
+    }
+}
+
+struct S215CommandIndexRequest: Equatable {
+    var repoPath: String
+    var context: CommandIndexContext
+}
+
+actor S215CommandIndexStore: CoreCommandIndexing {
+    enum Result { case success(CommandIndex), failure(Error) }
+
+    private var results: [Result]
+    private var requests: [S215CommandIndexRequest] = []
+
+    init(results: [Result]) {
+        self.results = results
+    }
+
+    func listCommandTargets(repoPath: String, context: CommandIndexContext) async throws -> CommandIndex {
+        requests.append(.init(repoPath: repoPath, context: context))
+        guard !results.isEmpty else { return .s215Fixture() }
+        switch results.removeFirst() {
+        case let .success(index): return index
+        case let .failure(error): throw error
+        }
+    }
+
+    func recordedRequests() -> [S215CommandIndexRequest] {
+        requests
+    }
+}
+
+actor S215CommandErrorMapper: CoreErrorMapping {
+    private let mapping: CoreErrorMappingSnapshot
+    private var errors: [CoreError] = []
+
+    init(mapping: CoreErrorMappingSnapshot) {
+        self.mapping = mapping
+    }
+
+    func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
+        errors.append(error)
+        return mapping
+    }
+
+    func recordedErrors() -> [CoreError] {
+        errors
     }
 }
 
@@ -154,31 +327,6 @@ private extension RepositoryOpeningResult {
             ),
             tree: RepositoryTreeNodeSnapshot(slug: "__root__", displayName: "资料库", fileCount: 0, children: []),
             currentCategoryFiles: []
-        )
-    }
-}
-
-private extension SavedSearchSnapshot {
-    static func s215CommandPaletteFixture() -> SavedSearchSnapshot {
-        let request = SearchQueryRequestSnapshot(
-            query: "Finance",
-            scope: .all,
-            currentPath: nil,
-            category: nil,
-            filters: .empty,
-            sort: .relevance,
-            limit: 50,
-            offset: 0
-        )
-        return SavedSearchSnapshot(
-            id: 77,
-            name: "Finance",
-            query: SavedSearchQuerySnapshot(request: request),
-            icon: "magnifyingglass",
-            color: nil,
-            pinned: true,
-            createdAt: 1_700_000_000,
-            updatedAt: 1_700_000_100
         )
     }
 }

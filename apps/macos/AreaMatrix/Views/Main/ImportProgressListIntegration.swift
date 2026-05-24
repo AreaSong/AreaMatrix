@@ -325,110 +325,138 @@ struct CommandPaletteSmartListTarget: Equatable, Identifiable {
 }
 
 struct SearchCommandPaletteRouteView: View {
-    let query: String
+    @Binding var query: String
+    let state: CommandPaletteLoadState
     var smartLists: [SavedSearchSnapshot] = []
-    let batchAddTagsRoute: BatchAddTagsRoute
-    let batchChangeCategoryRoute: BatchChangeCategoryRoute
+    let onLoad: () -> Void
     var onOpenSmartList: (SavedSearchSnapshot) -> Void = { _ in }
-    let onOpenBatchAddTags: (BatchAddTagsRoute) -> Void
-    let onOpenBatchChangeCategory: (BatchChangeCategoryRoute) -> Void
+    let onExecuteTarget: (CommandTargetSnapshot) -> Void
     let onClose: () -> Void
 
     var body: some View {
-        MainFileActionSheetContainer(title: "Command Palette", pageID: "S2-15") {
-            TextField("Search commands", text: .constant(query))
-                .textFieldStyle(.roundedBorder)
-            Text("Search related commands")
-                .font(.callout)
-                .foregroundStyle(.secondary)
-            commandPaletteSmartListSection
-            commandPaletteBatchAddTagsButton
-            commandPaletteBatchChangeCategoryButton
-            HStack {
-                Spacer()
-                Button("Close", action: onClose)
-                    .keyboardShortcut(.cancelAction)
-            }
-        }
+        CommandPaletteView(
+            query: $query,
+            state: state,
+            smartLists: smartLists,
+            onLoad: onLoad,
+            onOpenSmartList: onOpenSmartList,
+            onExecuteTarget: onExecuteTarget,
+            onClose: onClose
+        )
         .accessibilityIdentifier("S2-15-search-route")
-    }
-
-    private var commandPaletteSmartListSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Smart Lists")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            ForEach(smartListTargets) { target in
-                Button {
-                    onOpenSmartList(target.savedSearch)
-                } label: {
-                    Label(target.title, systemImage: target.systemImage)
-                }
-                .help(target.helpText)
-                .accessibilityIdentifier(target.accessibilityIdentifier)
-            }
-            if smartListTargets.isEmpty {
-                Text(emptySmartListMessage)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .accessibilityIdentifier("S2-15-C2-04-smart-list-empty")
-            }
-        }
-    }
-
-    private var commandPaletteBatchAddTagsButton: some View {
-        Button {
-            onOpenBatchAddTags(batchAddTagsRoute)
-        } label: {
-            Label("Add tags...", systemImage: "tag")
-        }
-        .disabled(batchAddTagsRoute.selectedCount == 0)
-        .help(BatchAddTagsEntryPolicy.openHelp(disabledReason: batchAddTagsRoute.disabledReason))
-        .accessibilityIdentifier("S2-09-command-palette-add-tags")
-    }
-
-    private var commandPaletteBatchChangeCategoryButton: some View {
-        Button {
-            onOpenBatchChangeCategory(batchChangeCategoryRoute)
-        } label: {
-            Label("Change category...", systemImage: "folder")
-        }
-        .disabled(batchChangeCategoryRoute.selectedCount == 0)
-        .help(BatchChangeCategoryEntryPolicy.openHelp(disabledReason: batchChangeCategoryRoute.disabledReason))
-        .accessibilityIdentifier("S2-12-command-palette-change-category")
-    }
-
-    private var smartListTargets: [CommandPaletteSmartListTarget] {
-        CommandPaletteSmartListTarget.matching(smartLists, query: query)
-    }
-
-    private var emptySmartListMessage: String {
-        smartLists.isEmpty ? "No Smart Lists saved." : "No Smart Lists match this search."
     }
 }
 
 extension MainRepositoryContentView {
     func commandPaletteRouteView() -> some View {
         SearchCommandPaletteRouteView(
-            query: filterText,
+            query: $fileListModel.commandPaletteQuery,
+            state: fileListModel.commandPaletteState,
             smartLists: sortedSavedSearches,
-            batchAddTagsRoute: commandPaletteBatchAddTagsRoute(),
-            batchChangeCategoryRoute: commandPaletteBatchChangeCategoryRoute(),
+            onLoad: loadCommandPaletteIndex,
             onOpenSmartList: { saved in
                 fileListModel.clearPendingSearchDestination()
                 selectedSidebarID = RepositoryTreeNodeSnapshot.savedSearchSidebarID(saved.id)
                 selectedFileIDs = []
                 Task { await restoreSavedSearch(saved) }
             },
-            onOpenBatchAddTags: { route in
-                pendingBatchAddTagsRoute = route
-                fileListModel.clearPendingSearchDestination()
-            },
-            onOpenBatchChangeCategory: { route in
-                pendingBatchChangeCategoryRoute = route
-                fileListModel.clearPendingSearchDestination()
-            },
-            onClose: fileListModel.clearPendingSearchDestination
+            onExecuteTarget: executeCommandPaletteTarget,
+            onClose: closeCommandPalette
+        )
+    }
+
+    func loadCommandPaletteIndex() {
+        Task {
+            await loadCommandPaletteIndexFromCurrentState()
+        }
+    }
+
+    func loadCommandPaletteIndexFromCurrentState() async {
+        await fileListModel.loadCommandIndex(
+            query: fileListModel.commandPaletteQuery,
+            selectedFileIDs: selectedFileIDs,
+            currentPath: selectedSidebarRow.pathFilterPrefix
+        )
+    }
+
+    func openCommandPalette() {
+        fileListModel.commandPaletteQuery = ""
+        fileListModel.openCommandPaletteForSearch()
+    }
+
+    func closeCommandPalette() {
+        fileListModel.commandPaletteQuery = ""
+        fileListModel.clearCommandPaletteState()
+        fileListModel.clearPendingSearchDestination()
+    }
+
+    func executeCommandPaletteTarget(_ target: CommandTargetSnapshot) {
+        guard target.isExecutable else { return }
+        switch target.executionRoute {
+        case .importFiles:
+            closeCommandPalette()
+            onImport()
+        case .settings:
+            closeCommandPalette()
+            onOpenSettings()
+        case .beginSearch:
+            closeCommandPalette()
+            beginCommandFindSearch()
+        case .batchAddTags:
+            pendingBatchAddTagsRoute = commandPaletteBatchAddTagsRoute()
+            closeCommandPalette()
+        case .batchChangeCategory:
+            pendingBatchChangeCategoryRoute = commandPaletteBatchChangeCategoryRoute()
+            closeCommandPalette()
+        case .batchDelete:
+            pendingBatchDeleteRoute = commandPaletteBatchDeleteRoute()
+            closeCommandPalette()
+        case .batchRename:
+            pendingBatchRenameRoute = commandPaletteBatchRenameRoute()
+            closeCommandPalette()
+        case let .runSmartList(savedSearchID):
+            executeCommandPaletteSmartList(savedSearchID: savedSearchID)
+        case let .focusFile(fileID):
+            selectedFileIDs = [fileID]
+            closeCommandPalette()
+            Task { await fileListModel.selectFiles([fileID]) }
+        case .classifierRuleEditor:
+            fileListModel.clearCommandPaletteState()
+            fileListModel.commandPaletteQuery = ""
+            fileListModel.pendingSearchDestination = .classifierRuleEditor(context: nil)
+        case .unsupported:
+            return
+        }
+    }
+
+    private func executeCommandPaletteSmartList(savedSearchID: Int64) {
+        guard let saved = CommandPaletteSmartListRouting.savedSearch(
+            savedSearchID: savedSearchID,
+            in: sortedSavedSearches
+        ) else { return }
+        fileListModel.clearPendingSearchDestination()
+        selectedSidebarID = RepositoryTreeNodeSnapshot.savedSearchSidebarID(saved.id)
+        selectedFileIDs = []
+        Task { await restoreSavedSearch(saved) }
+    }
+
+    func commandPaletteBatchDeleteRoute() -> BatchDeleteRoute {
+        CommandPaletteBatchRouteBuilder.batchDeleteRoute(
+            selectedFileIDs: selectedFileIDs,
+            visibleFiles: visibleFiles,
+            isReadOnly: fileListModel.isReadOnly,
+            isLoading: fileListModel.isLoading,
+            writeLockedFileIDs: fileListModel.writeLockedFileIDs
+        )
+    }
+
+    func commandPaletteBatchRenameRoute() -> BatchRenameRoute {
+        CommandPaletteBatchRouteBuilder.batchRenameRoute(
+            selectedFileIDs: selectedFileIDs,
+            visibleFiles: visibleFiles,
+            isReadOnly: fileListModel.isReadOnly,
+            isLoading: fileListModel.isLoading,
+            writeLockedFileIDs: fileListModel.writeLockedFileIDs
         )
     }
 }

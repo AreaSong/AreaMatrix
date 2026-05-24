@@ -6,28 +6,30 @@ final class MainFileListModel: ObservableObject {
     @Published var files: [FileEntrySnapshot]
     @Published var isLoading = false
     @Published var errorMapping: CoreErrorMappingSnapshot?
-    @Published var selection: MainFileSelectionState = .none { didSet { clearStaleDetailTagUndoToast() } }
+    @Published var selection = MainFileSelectionState.none { didSet { clearStaleDetailTagUndoToast() } }
     @Published var selectedFileDetail: FileEntrySnapshot?
     @Published var isDetailLoading = false
     @Published var detailErrorMapping: CoreErrorMappingSnapshot?
-    @Published private(set) var detailLogState: MainDetailLogState = .notLoaded
-    @Published private(set) var detailLogDiagnosticsState: MainDetailLogDiagnosticsState = .idle
-    @Published private(set) var detailExternalCreateSyncState: MainDetailExternalCreateSyncState = .idle
-    @Published var detailTagEditorState: DetailTagEditorState = .notLoaded
+    @Published private(set) var detailLogState = MainDetailLogState.notLoaded
+    @Published private(set) var detailLogDiagnosticsState = MainDetailLogDiagnosticsState.idle
+    @Published private(set) var detailExternalCreateSyncState = MainDetailExternalCreateSyncState.idle
+    @Published var detailTagEditorState = DetailTagEditorState.notLoaded
     @Published var detailTagUndoToast: DetailTagUndoToast?
-    @Published var searchState: MainSearchState = .idle
-    @Published var searchFacetsState: MainSearchFacetsState = .idle
-    @Published var tagFilterRegistryState: TagFilterRegistryState = .idle
+    @Published var searchState = MainSearchState.idle
+    @Published var searchFacetsState = MainSearchFacetsState.idle
+    @Published var tagFilterRegistryState = TagFilterRegistryState.idle
     @Published var selectedFileNoteWriteBlock: MainDetailNoteWriteBlock?
     @Published var detailTabRequest: MainDetailTabRequest?
     @Published var pendingActionDestination: MainFileActionDestination?
     @Published var statusBanner: MainListStatusBanner?
-    @Published var diagnosticsState: MainListDiagnosticsState = .idle
-    @Published var renameState: MainFileRenameState = .idle
-    @Published var deleteState: MainFileDeleteState = .idle
-    @Published var changeCategoryState: MainFileCategoryMoveState = .idle
-    @Published var iCloudConflictResolutionState: ICloudConflictResolutionState = .idle
+    @Published var diagnosticsState = MainListDiagnosticsState.idle
+    @Published var renameState = MainFileRenameState.idle
+    @Published var deleteState = MainFileDeleteState.idle
+    @Published var changeCategoryState = MainFileCategoryMoveState.idle
+    @Published var iCloudConflictResolutionState = ICloudConflictResolutionState.idle
     @Published var pendingSearchDestination: MainSearchDestination?
+    @Published var commandPaletteState = CommandPaletteLoadState.idle
+    @Published var commandPaletteQuery = ""
     @Published var lastSearchExitContext: MainSearchExitContext?
     @Published var smartListFilterDraft: SmartListFilterDraft?
     var activeSmartListSearch: SavedSearchSnapshot?
@@ -50,6 +52,7 @@ final class MainFileListModel: ObservableObject {
     let errorMapper: any CoreErrorMapping
     let searchQuerying: any CoreSearchQuerying
     let searchFiltering: any CoreSearchFiltering
+    let commandIndexer: any CoreCommandIndexing
     let diagnosticsCollector: any CoreDiagnosticsCollecting
     var currentCategory: String?
     private var loadGeneration = 0
@@ -65,6 +68,7 @@ final class MainFileListModel: ObservableObject {
         fileDetailer: any CoreFileDetailing,
         searchQuerying: any CoreSearchQuerying = CoreBridge(),
         searchFiltering: any CoreSearchFiltering = CoreBridge(),
+        commandIndexer: any CoreCommandIndexing = CoreBridge(),
         fileRenamer: any CoreFileRenaming = CoreBridge(),
         fileDeleter: any CoreFileDeleting = CoreBridge(),
         fileCategoryMover: any CoreFileCategoryMoving = CoreBridge(),
@@ -87,6 +91,7 @@ final class MainFileListModel: ObservableObject {
         self.fileDetailer = fileDetailer
         self.searchQuerying = searchQuerying
         self.searchFiltering = searchFiltering
+        self.commandIndexer = commandIndexer
         self.fileRenamer = fileRenamer
         self.fileDeleter = fileDeleter
         self.fileCategoryMover = fileCategoryMover
@@ -112,10 +117,7 @@ extension MainFileListModel {
     }
 
     func selectFiles(_ ids: Set<Int64>) async {
-        if ids.isEmpty {
-            clearDetail()
-            return
-        }
+        if ids.isEmpty { clearDetail(); return }
 
         guard ids.count == 1, let id = ids.first else {
             selection = .multiple(ids)
@@ -131,10 +133,7 @@ extension MainFileListModel {
     }
 
     func selectFile(id: Int64?) async {
-        guard let id else {
-            clearDetail()
-            return
-        }
+        guard let id else { clearDetail(); return }
 
         selection = .single(id); selectedFileDetail = cachedFile(id: id)
         selectedFileNoteWriteBlock = selectedFileDetail.flatMap { noteWriteBlock(for: $0) }

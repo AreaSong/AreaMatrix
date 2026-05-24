@@ -175,6 +175,7 @@ struct BatchRenameReportSnapshot: Equatable {
 enum BatchRenameRouteSource: String, Equatable {
     case detailMulti
     case listContextMenu
+    case commandPalette
 }
 
 struct BatchRenameRoute: Identifiable, Equatable {
