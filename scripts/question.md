@@ -22,7 +22,7 @@
 - [附录 B：总控脚本架构](#附录-b总控脚本架构)
 - [附录 C：AreaFlow 分层架构（最终版）](#附录-careaflow-分层架构最终版)
 - [附录 D：AreaFlow 引擎配置示例](#附录-dareaflow-引擎配置示例)
-- [附录 E：完整 areaflow.yaml schema](#附录-e完整-areaflowy aml-schema)
+- [附录 E：完整 areaflow.yaml schema](#附录-e完整-areaflow-yaml-schema)
 
 ---
 
@@ -112,17 +112,23 @@ docs 讨论 → middle-layer 账本 → changes 账本 → plans 整体提示词
 
 ### 2.3 环境重置
 
+> **Backlog**：留待 AreaFlow MS-5（完整流水线）时讨论，当前 AreaMatrix task-loop 不涉及环境重置。
+
 > 每次测试是否都需要把环境归位到最初始状态？
 
 需要明确：哪些环境状态需要重置、哪些可以增量保留。
 
 ### 2.4 资源分配
 
+> **Backlog**：留待 AreaFlow MS-5（完整流水线）时讨论，受限于 Codex CLI 并发能力。
+
 > 脚本执行感觉很慢，能否多分配资源加速？
 
 待讨论：并行度、Codex 并发会话数、本机资源限制等。
 
 ### 2.5 脚本内模型切换
+
+> **已被覆盖**：此需求已由 [9.2 AI 引擎方向](#92-ai-引擎方向) 和 [9.3 交互形态](#93-交互形态) 中的多引擎 fallback + `areaflow.yaml` 引擎配置方案覆盖。
 
 > 脚本中能否通过 `/model` 类似形式动态切换模型？
 
@@ -231,6 +237,8 @@ docs 讨论 → middle-layer 账本 → changes 账本 → plans 整体提示词
 
 ### 6.2 GitHub CI 测试
 
+> **Backlog**：CI 环境问题与 AreaFlow 产品无关，属于 AreaMatrix 项目本身的运维事项，单独处理。
+
 > 为什么在 GitHub 中的测试有很多是失败的？
 
 需要排查 CI 环境与本地环境的差异。
@@ -252,6 +260,8 @@ docs 讨论 → middle-layer 账本 → changes 账本 → plans 整体提示词
 **已知妥协**：这套体验只存在于 AreaMatrix 应用内部。其他应用的"打开文件"对话框仍受限于 macOS 原生行为。
 
 ### 7.2 AppleScript / UI 自动化测试
+
+> **已被覆盖**：此需求已纳入 [9.5 全部 31 项功能全景](#95-全部-31-项功能全景) 中的 #21（UI 自动化引擎），归属 M3 Pluggable Engine，排期 MS-6。
 
 > Codex exec 能否执行 AppleScript 和 Swift CGEvent 来操控 UI？
 
