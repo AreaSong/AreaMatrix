@@ -303,14 +303,14 @@ final class RenameFilePageFeatureTests: XCTestCase {
 
         XCTAssertEqual(loadedPreview.applyReport, preview)
         XCTAssertEqual(applyResult.report, report)
-        XCTAssertEqual(
-            await renamer.previewRequests,
-            [BatchRenamePreviewRequest(repoPath: "/repo", fileIDs: [11, 12], rule: rule)]
-        )
-        XCTAssertEqual(
-            await renamer.applyRequests,
-            [BatchRenameApplyRequest(repoPath: "/repo", fileIDs: [11, 12], rule: rule, token: "preview-token")]
-        )
+        let previewRequests = await renamer.previewRequests
+        let applyRequests = await renamer.applyRequests
+        XCTAssertEqual(previewRequests, [
+            BatchRenamePreviewRequest(repoPath: "/repo", fileIDs: [11, 12], rule: rule)
+        ])
+        XCTAssertEqual(applyRequests, [
+            BatchRenameApplyRequest(repoPath: "/repo", fileIDs: [11, 12], rule: rule, token: "preview-token")
+        ])
     }
 
     func testS214C210BatchRenameUsesCurrentListOrderForPreviewAndApply() async {
@@ -335,8 +335,10 @@ final class RenameFilePageFeatureTests: XCTestCase {
         )
 
         XCTAssertEqual(loadedPreview.applyReport?.items.map(\.fileID), [30, 10, 20])
-        XCTAssertEqual(await renamer.previewRequests.map(\.fileIDs), [[30, 10, 20]])
-        XCTAssertEqual(await renamer.applyRequests.map(\.fileIDs), [[30, 10, 20]])
+        let previewFileIDs = await renamer.previewRequests.map(\.fileIDs)
+        let applyFileIDs = await renamer.applyRequests.map(\.fileIDs)
+        XCTAssertEqual(previewFileIDs, [[30, 10, 20]])
+        XCTAssertEqual(applyFileIDs, [[30, 10, 20]])
     }
 
     func testS214C210BatchRenameEntryUsesListOrderInsteadOfIDOrNameOrder() {
@@ -382,7 +384,8 @@ final class RenameFilePageFeatureTests: XCTestCase {
 
         XCTAssertEqual(previewState.failure, .batchRenameConflict)
         XCTAssertEqual(applyResult.failure, .batchRenameConflict)
-        XCTAssertEqual(await mapper.errors.count, 2)
+        let mappedErrorCount = await mapper.errors.count
+        XCTAssertEqual(mappedErrorCount, 2)
     }
 }
 

@@ -123,7 +123,8 @@ final class S213BatchDeletePageIntegrationVerifyTests: XCTestCase {
                 filter: .currentCategory(nil)
             )
             XCTAssertFalse(visibleFiles.contains { $0.id == context.indexOnly.id })
-            XCTAssertEqual(try await context.bridge.listUndoActions(repoPath: context.repoURL.path), [])
+            let undoActions = try await context.bridge.listUndoActions(repoPath: context.repoURL.path)
+            XCTAssertEqual(undoActions, [])
         }
     }
 
