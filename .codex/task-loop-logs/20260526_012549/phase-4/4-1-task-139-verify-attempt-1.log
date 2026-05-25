@@ -1,0 +1,101 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-1/task-139`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-139-s2-22-page-integration-verify.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-2-experience/S2-22-redo.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：9
+- 未覆盖项数：0
+- 通过项数：9
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：Exact Docs / control map / Core API / capability specs 读取与一致性
+- 结果：通过
+- 证据：S2-22 明确为 S2-10/S2-11 共享 Redo feedback region，入口含 Redo slot、Undo History、Shift+Cmd+Z、命令面板；control map 仅声明 `C2-18, C2-07`；Core API/UDL 均声明 undo/redo 列表和执行合同。
+- 涉及文件：`S2-22-redo.md:11`、`S2-22-redo.md:20`、`stage-2-control-map.md:30`、`core-api.md:3439`、`core/area_matrix.udl:216`
+
+- 项目：page-feature task 覆盖
+- 结果：通过
+- 证据：task-137 覆盖 `S2-22 + C2-18`，task-138 覆盖 `S2-22 + C2-07`；实现中 Redo 与 Undo 均通过对应 store/bridge 消费。
+- 涉及文件：`CoreTagCRUD.swift:10`、`CoreTagCRUD.swift:15`、`MainFileListDiagnosticsActions.swift:109`
+
+- 项目：页面状态、入口、退出、错误态闭环
+- 结果：通过
+- 证据：S2-10 toast Redo slot 有 checking/available/disabled/redoing/redone/failed 状态；S2-11 面板有 Redo latest、Close、Shift+Cmd+Z；Redo 成功按 `refreshTargets` 刷新并回到宿主上下文。
+- 涉及文件：`ImportBatchCopyFooterSection.swift:3`、`ImportProgressListIntegration.swift:128`、`MainFileListDiagnosticsActions.swift:307`、`MainFileListDiagnosticsActions.swift:375`
+
+- 项目：CoreBridge 调用闭环
+- 结果：通过
+- 证据：生产路径只通过 `CoreBridge` 实现 `listUndoActions`、`undoAction`、`listRedoActions`、`redoAction`；业务层通过协议调用，未直接绕过 UniFFI。
+- 涉及文件：`CoreTagCRUD.swift:171`、`CoreTagCRUD.swift:185`、`BatchRenameUndoAction.swift:86`、`MainFileListDiagnosticsActions.swift:221`
+
+- 项目：mock / fixture / 硬编码状态检查
+- 结果：通过
+- 证据：生产路径通过 CoreBridge 和 Core 返回状态驱动；fixture 仅出现在测试文件。静态检索未发现生产 S2-22 路径用 mock-only 闭环替代真实 CoreBridge。
+- 涉及文件：`CoreTagCRUD.swift:186`、`MainRepositoryContentView.swift:312`、`MainRepositoryContentView.swift:313`
+
+- 项目：control map 之外能力
+- 结果：通过
+- 证据：S2-22 生产逻辑只消费 undo/redo action log 和命令面板进入 redo 宿主区；没有新增独立 Redo 页面、独立 panel 或未声明 Core 能力。
+- 涉及文件：`stage-2-control-map.md:30`、`S2-22-redo.md:101`、`MainFileActionRoutingActions.swift:373`
+
+- 项目：Expected New Paths
+- 结果：通过
+- 证据：`apps/macos/AreaMatrix`、`apps/macos/AreaMatrixTests` 均存在，且 S2-22 实现与测试落在该范围内。
+- 涉及文件：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git diff --name-only -- core/src apps/macos core/area_matrix.udl` 对 `core/src/**` 无输出；`git status --short -- core/src apps/macos/AreaMatrix apps/macos/AreaMatrixTests core/area_matrix.udl` 无输出。
+- 涉及文件：`core/src/**`
+
+- 项目：任务验证
+- 结果：通过
+- 证据：`./dev check task 4-1/task-139` 退出码 0；`doctor: OK`，`git diff --check` 通过，macOS `xcodebuild ... build CODE_SIGNING_ALLOWED=NO` 输出 `** BUILD SUCCEEDED **`。
+- 涉及文件：task manifest Validation
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。Redo 状态、加载、执行、错误映射、刷新计划拆在 `RedoActionFeedback`、`UndoHistoryActionLog`、toast host 和 history panel 中，结构可读。
+- 注释 / rustdoc / 文档同步：通过。本 task 为 Swift UI 集成，未新增 public Rust API；UDL、Core API、UX spec、control map 与 Swift snapshots 对齐。
+- 错误处理与边界处理：通过。Redo unavailable、cleared、blocked、expired、执行失败、刷新失败均保留用户可见原因；失败不伪装为成功。
+- 测试与验证覆盖：通过。存在 S2-22 C2-18/C2-07 行为测试，覆盖动态 redo stack、命令面板、Shift+Cmd+Z、不可用状态、来源 undo 摘要；task-scoped 验证通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。测试桩只在 XCTest 中；生产路径通过 CoreBridge 协议和真实生成绑定入口。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 跑了哪些验证：
+  - `./dev check task 4-1/task-139`
+  - `git diff --check -- core/src apps/macos core/area_matrix.udl`
+  - `git status --short -- core/src apps/macos/AreaMatrix apps/macos/AreaMatrixTests core/area_matrix.udl`
+- 哪些通过：
+  - `prompt doctor`：OK，637 tasks / 637 manifests
+  - `git diff --check`：通过
+  - macOS build：`** BUILD SUCCEEDED **`
+  - Forbidden Touches / tracked task paths 状态检查：无违规输出
+- 哪些失败：
+  - 无
+- 哪些缺失：
+  - 未单独运行 `./dev test macos`；本 task manifest 指定验证为 `./dev check task 4-1/task-139`，该命令已按 page integration task 选择 macOS build gate 并通过。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+VERIFY_RESULT: PASS
