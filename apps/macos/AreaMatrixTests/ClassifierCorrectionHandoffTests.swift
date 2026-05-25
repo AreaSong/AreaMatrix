@@ -178,6 +178,82 @@ final class ClassifierCorrectionHandoffTests: XCTestCase {
             atPath: repoURL.appendingPathComponent("docs/contract-s217.txt").path
         ))
     }
+
+    @MainActor
+    func testS218PreviewModelBuildsRuleDraftRequestAndFiltersReportRows() {
+        let file = s216File(id: 263, name: "contract.pdf")
+        var model = ClassifierImpactPreviewSheetModel(handoff: s216Handoff(file: file, targetCategory: "finance"))
+        let request = model.request
+
+        XCTAssertEqual(request.mode, .ruleDraft)
+        XCTAssertEqual(request.rule.targetCategory, "finance")
+        XCTAssertEqual(request.rule.keywords, ["client-a"])
+        XCTAssertEqual(request.rule.extensions, ["pdf"])
+        XCTAssertTrue(request.moveFiles)
+        XCTAssertNil(request.replacementCategory)
+
+        model.markLoaded(s218Report(request: request))
+        XCTAssertEqual(model.emptyStateText, nil)
+        XCTAssertEqual(model.filteredSamples.map(\.status), [.willUpdate, .alreadyCorrect, .indexOnly])
+
+        model.filter = .willUpdate
+        XCTAssertEqual(model.filteredSamples.map(\.fileID), [263])
+
+        model.filter = .skipped
+        XCTAssertEqual(model.filteredSamples.map(\.status), [.alreadyCorrect, .indexOnly])
+    }
+
+    func testS218DefaultCoreBridgePreviewsImpactWithoutSavingRuleOrChangingExistingFile() async throws {
+        let repoURL = try makeImportSingleFileTemporaryDirectory(prefix: "s218-repo")
+        let sourceRoot = try makeImportSingleFileTemporaryDirectory(prefix: "s218-source")
+        defer {
+            try? FileManager.default.removeItem(at: repoURL)
+            try? FileManager.default.removeItem(at: sourceRoot)
+        }
+        let sourceURL = sourceRoot.appendingPathComponent("contract-s218.txt")
+        try Data("impact preview bytes".utf8).write(to: sourceURL)
+        let bridge = CoreBridge()
+
+        try await bridge.initializeEmptyRepository(repoPath: repoURL.path)
+        let imported = try await bridge.importCopiedFile(
+            repoPath: repoURL.path,
+            sourceURL: sourceURL,
+            overrideCategory: "docs",
+            overrideFilename: "contract-s218.txt",
+            duplicateStrategy: .skip
+        )
+        let classifierURL = repoURL.appendingPathComponent(".areamatrix/classifier.yaml")
+        let classifierBefore = try String(contentsOf: classifierURL)
+        let report = try await bridge.previewClassifierRuleImpact(
+            repoPath: repoURL.path,
+            request: ClassifierImpactPreviewRequestSnapshot(
+                mode: .ruleDraft,
+                rule: ClassifierRuleSnapshot(
+                    targetCategory: "finance",
+                    keywords: ["contract"],
+                    extensions: [],
+                    priority: 100,
+                    previewConfirmed: false
+                ),
+                moveFiles: false,
+                replacementCategory: nil
+            )
+        )
+        let classifierAfter = try String(contentsOf: classifierURL)
+        let detail = try await bridge.getFile(repoPath: repoURL.path, fileID: imported.id)
+
+        XCTAssertEqual(report.request.rule.keywords, ["contract"])
+        XCTAssertEqual(report.affectedFileCount, 1)
+        XCTAssertEqual(report.willUpdateCount, 1)
+        XCTAssertEqual(report.samples.first?.fileID, imported.id)
+        XCTAssertEqual(report.samples.first?.status, .willUpdate)
+        XCTAssertEqual(classifierAfter, classifierBefore)
+        XCTAssertEqual(detail.category, "docs")
+        XCTAssertEqual(detail.path, "docs/contract-s218.txt")
+        XCTAssertTrue(FileManager.default.fileExists(
+            atPath: repoURL.appendingPathComponent("docs/contract-s218.txt").path
+        ))
+    }
 }
 
 private actor S216NoopCategoryMover: CoreFileCategoryMoving {
@@ -293,5 +369,40 @@ private func s216ClassifierCorrectionClassifyMapping() -> CoreErrorMappingSnapsh
         suggestedAction: "Choose another category, then retry.",
         recoverability: .userActionRequired,
         rawContext: "S2-16 C2-12 correct_file_category"
+    )
+}
+
+private func s218Report(request: ClassifierImpactPreviewRequestSnapshot) -> RuleImpactReportSnapshot {
+    RuleImpactReportSnapshot(
+        request: request,
+        affectedFileCount: 3,
+        willUpdateCount: 1,
+        alreadyCorrectCount: 1,
+        needsReviewCount: 1,
+        conflictCount: 0,
+        sampleLimit: 50,
+        samples: [
+            s218Sample(fileID: 263, status: .willUpdate),
+            s218Sample(fileID: 264, status: .alreadyCorrect),
+            s218Sample(fileID: 265, status: .indexOnly)
+        ],
+        conflicts: [],
+        needsReview: true,
+        warningRequired: false,
+        warning: nil,
+        canApply: false,
+        applyBlockedReason: "Resolve review items before applying."
+    )
+}
+
+private func s218Sample(fileID: Int64, status: RuleImpactStatusSnapshot) -> RuleImpactSampleSnapshot {
+    RuleImpactSampleSnapshot(
+        fileID: fileID,
+        path: "docs/contract-\(fileID).pdf",
+        currentCategory: "docs",
+        newCategory: "finance",
+        matchReasons: [.keyword],
+        status: status,
+        reason: nil
     )
 }

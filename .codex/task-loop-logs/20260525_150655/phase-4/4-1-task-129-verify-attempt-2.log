@@ -1,0 +1,63 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-1/task-129`
+- 对应文件路径：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-129-s2-18-c2-14-classifier-impact-preview.md`
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 S2-18 页面中的 C2-14 功能点
+- 结果：通过
+- 证据：`S2-18` 在 control map 中只绑定 `C2-14`；实现集中在 `ClassifierImpactPreviewSheet`，页面标题、加载态、影响摘要、表格、Move toggle、Retry 均为 impact preview。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-2-control-map.md:26`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ClassifierRuleHandoffRouteView.swift:268`
+
+- 项目：读取页面规格、control map、Core API 和 C2-14 能力规格
+- 结果：通过
+- 证据：四个 Exact Docs 均存在并已核对；Core API 定义 `preview_classifier_rule_impact(repo_path, request) -> RuleImpactReport`，UDL 与文档一致。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:148`，`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:125`
+
+- 项目：只接入 C2-14 对应 CoreBridge / 状态 / 错误映射
+- 结果：通过
+- 证据：`CoreClassifierImpactPreviewing` 通过 `CoreBridge.previewClassifierRuleImpact` 调用真实 UniFFI API；sheet 打开时执行 dry-run，失败走 `CoreErrorMapping` 并提供 `Retry preview`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreMoveToCategory.swift:25`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ClassifierRuleHandoffRouteView.swift:431`
+
+- 项目：不实现相邻页面、相邻平台或同页其他能力
+- 结果：通过
+- 证据：未触碰 `core/src/**`；S2-18 的 `Save rule only` / `Save and apply` 保持不可执行，避免把 C2-13 或后续 apply 行为塞入本任务。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ClassifierRuleHandoffRouteView.swift:414`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，桥接 snapshot、sheet model、SwiftUI view 分层清楚。
+- 注释 / rustdoc / 文档同步：通过，本 task 未新增 Rust public API；UDL 与 Core API 已存在并一致。
+- 错误处理与边界处理：通过，preview failure 映射到用户错误区，dry-run 不保存规则、不 apply。
+- 测试与验证覆盖：通过，新增模型测试和真实 CoreBridge 临时仓库测试，验证 preview 不改 classifier 和现有文件。
+- 占位、硬编码、mock-only、一次性实现检查：通过，最终闭环使用真实 `AreaMatrix.previewClassifierRuleImpact`；测试 fixture 未替代产品路径。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-129`
+- 通过：prompt doctor OK；`git diff --check` 通过；macOS `xcodebuild ... build CODE_SIGNING_ALLOWED=NO` 最终 `BUILD SUCCEEDED`
+- 失败：无
+- 缺失：未运行 `./dev check all`，因为本 task manifest 只要求 task-scoped gate，validation-driver 也要求普通 page-feature 不默认扩大门禁。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS

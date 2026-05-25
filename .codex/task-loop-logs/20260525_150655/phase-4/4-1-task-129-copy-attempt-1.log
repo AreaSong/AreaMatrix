@@ -1,0 +1,47 @@
+一、执行结论
+
+已完成 `4-1/task-129`。
+
+二、执行范围
+
+单任务：S2-18 `classifier-impact-preview` 中的 C2-14 预览闭环。  
+修改文件：
+- [CoreMoveToCategory.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreMoveToCategory.swift:25)
+- [MainFileClassifierCorrectionRoutingActions.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileClassifierCorrectionRoutingActions.swift:109)
+- [ClassifierRuleHandoffRouteView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ClassifierRuleHandoffRouteView.swift:268)
+- [ClassifierCorrectionHandoffTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ClassifierCorrectionHandoffTests.swift:183)
+
+三、完成情况
+
+核对清单全部完成：只接入 S2-18 + C2-14，读取并按 UX、control map、Core API、C2-14 能力规格对齐；未实现 C2-13、C2-15、保存、应用或相邻页面能力。  
+完成标准满足：页面可触发真实 `CoreBridge.previewClassifierRuleImpact(...)`，不是 mock/fixture/静态状态；保存和应用按钮保持禁用，避免越界。  
+Forbidden Touches：未触碰 `core/src/**`，复核 `git diff -- core/src` 为空。
+
+四、工程质量
+
+结构上把 UniFFI/Core 映射、Sheet 状态模型、SwiftUI 页面渲染分开处理，错误通过现有 `CoreErrorMapping` 显示并提供重试。  
+没有新增依赖，没有文档或 Rust public API 改动需求。  
+测试补了请求构造/筛选模型测试，以及真实 CoreBridge 预览不会保存规则、不会移动或改分类的回归测试。  
+不存在 mock-only、硬编码通过态或一次性脚本化实现。
+
+五、验证情况
+
+已运行并通过：
+
+```bash
+./dev check task 4-1/task-129
+```
+
+该命令本轮结果：
+- `prompt_pipeline.py doctor`：OK，`tasks: 637`，`manifests: 637`
+- `git diff --check`：通过
+- macOS `xcodebuild ... build CODE_SIGNING_ALLOWED=NO`：`BUILD SUCCEEDED`
+
+Xcode 输出了 CoreSimulator / cache 相关环境警告，但命令退出码为 0，未阻断 macOS build。按当前 task 规则没有升级运行 `cargo test --workspace`、`./dev check core` 或 `./dev check all`。
+
+六、风险与后续
+
+剩余风险：当前实现只完成 C2-14 影响预览；保存规则和“保存并应用到现有文件”仍按任务边界禁用，需由后续绑定能力任务接上。  
+工作树中另有 task-loop 状态文件变更：`.codex/task-loop-runs/20260525_150655/summary.json` 和 `tasks/prompts/_shared/progress.json`，不是本次产品代码实现范围。  
+建议下一个任务继续执行 S2-18 后续保存/应用相关绑定能力或页面 integration verify。
+

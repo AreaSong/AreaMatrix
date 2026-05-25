@@ -61,19 +61,24 @@ struct ClassifierRuleHandoffRouteView: View {
     }
 
     var body: some View {
-        MainFileActionSheetContainer(title: mode.title, pageID: mode.pageID) {
-            VStack(alignment: .leading, spacing: 12) {
-                Text(mode.intro).font(.callout).foregroundStyle(.secondary)
-                ClassifierRuleHandoffSummary(handoff: handoff)
-                if mode == .saveRule {
+        if mode == .impactPreview {
+            ClassifierImpactPreviewSheet(
+                repoPath: repoPath,
+                handoff: handoff,
+                onCancel: onCancel,
+                onBack: onBack
+            )
+        } else {
+            MainFileActionSheetContainer(title: mode.title, pageID: mode.pageID) {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text(mode.intro).font(.callout).foregroundStyle(.secondary)
+                    ClassifierRuleHandoffSummary(handoff: handoff)
                     saveRuleContent
-                } else {
-                    Text(mode.note).font(.caption).foregroundStyle(.secondary)
+                    actionButtons
                 }
-                actionButtons
             }
+            .accessibilityIdentifier("\(mode.pageID)-classifier-rule-route")
         }
-        .accessibilityIdentifier("\(mode.pageID)-classifier-rule-route")
     }
 
     private var actionButtons: some View {
@@ -257,5 +262,199 @@ private extension ClassifierRuleSnapshot {
         let keywordText = keywords.isEmpty ? "no keywords" : keywords.joined(separator: ", ")
         let extensionText = extensions.isEmpty ? "no extensions" : extensions.joined(separator: ", ")
         return "Classification rule saved for \(targetCategory): \(keywordText); \(extensionText)."
+    }
+}
+
+struct ClassifierImpactPreviewSheet: View {
+    let repoPath: String
+    let handoff: ClassifierRuleHandoff
+    let previewer: any CoreClassifierImpactPreviewing
+    let errorMapper: any CoreErrorMapping
+    let onCancel: () -> Void
+    let onBack: (ClassifierRuleHandoff) -> Void
+    @State private var model: ClassifierImpactPreviewSheetModel
+
+    init(
+        repoPath: String,
+        handoff: ClassifierRuleHandoff,
+        previewer: any CoreClassifierImpactPreviewing = CoreBridge(),
+        errorMapper: any CoreErrorMapping = CoreBridge(),
+        onCancel: @escaping () -> Void,
+        onBack: @escaping (ClassifierRuleHandoff) -> Void
+    ) {
+        self.repoPath = repoPath
+        self.handoff = handoff
+        self.previewer = previewer
+        self.errorMapper = errorMapper
+        self.onCancel = onCancel
+        self.onBack = onBack
+        _model = State(initialValue: ClassifierImpactPreviewSheetModel(handoff: handoff))
+    }
+
+    var body: some View {
+        MainFileActionSheetContainer(title: "Preview rule impact", pageID: "S2-18") {
+            VStack(alignment: .leading, spacing: 12) {
+                ruleSummary
+                previewState
+                if let report = model.loadState.report {
+                    impactSummary(report)
+                    impactTable
+                }
+                actionButtons
+            }
+        }
+        .task(id: previewTaskKey) { await refreshPreview() }
+        .accessibilityIdentifier("S2-18-classifier-impact-preview")
+    }
+
+    private var previewTaskKey: String {
+        [
+            model.request.mode.rawValue,
+            model.request.rule.targetCategory,
+            model.request.rule.keywords.joined(separator: ","),
+            model.request.rule.extensions.joined(separator: ","),
+            "\(model.request.rule.priority)",
+            model.request.moveFiles ? "move" : "metadata"
+        ].joined(separator: ":")
+    }
+
+    private var ruleSummary: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            metadataRow("Rule", model.ruleSummary)
+            metadataRow("Applies to", model.appliesSummary)
+            metadataRow("Move preference", model.moveFiles ? "Move files to new category folders" : "Metadata only")
+            Toggle("Move files to new category folders", isOn: moveFilesBinding)
+                .disabled(model.loadState.isLoading)
+                .accessibilityIdentifier("S2-18-move-files")
+        }
+    }
+
+    @ViewBuilder
+    private var previewState: some View {
+        if model.loadState.isLoading {
+            Label("Previewing impact...", systemImage: "arrow.triangle.2.circlepath")
+                .foregroundStyle(.secondary)
+                .accessibilityIdentifier("S2-18-loading")
+        }
+        if let failure = model.loadState.failure {
+            VStack(alignment: .leading, spacing: 4) {
+                Label(failure.userMessage, systemImage: "exclamationmark.triangle")
+                    .font(.caption.weight(.semibold))
+                Text(failure.suggestedAction).font(.caption)
+                Button("Retry preview") { Task { await refreshPreview() } }
+                    .accessibilityIdentifier("S2-18-retry-preview")
+            }
+            .foregroundStyle(.red)
+            .accessibilityIdentifier("S2-18-preview-error")
+        }
+    }
+
+    private func impactSummary(_ report: RuleImpactReportSnapshot) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            if let empty = model.emptyStateText {
+                Text(empty).foregroundStyle(.secondary)
+            } else {
+                Text("\(report.affectedFileCount) existing files match this rule")
+                Text("\(report.willUpdateCount) will change category")
+                Text("\(report.alreadyCorrectCount) already match target category")
+                Text("\(report.needsReviewCount + report.conflictCount) need review")
+            }
+            if report.warningRequired, let warning = report.warning {
+                Label(warning, systemImage: "exclamationmark.triangle")
+                    .foregroundStyle(.orange)
+            }
+            if let reason = model.primaryApplyDisabledReason {
+                Label(reason, systemImage: "exclamationmark.triangle")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .accessibilityIdentifier("S2-18-apply-disabled-reason")
+            }
+        }
+        .accessibilityIdentifier("S2-18-impact-summary")
+    }
+
+    private var impactTable: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Picker("Rows", selection: $model.filter) {
+                ForEach(ClassifierImpactPreviewFilter.allCases) { filter in
+                    Text(filter.rawValue).tag(filter)
+                }
+            }
+            .pickerStyle(.segmented)
+            .accessibilityIdentifier("S2-18-filter")
+
+            Table(model.filteredSamples) {
+                TableColumn("File") { sample in
+                    Text(sample.path).lineLimit(1)
+                }
+                TableColumn("Current category") { sample in
+                    Text(sample.currentCategory)
+                }
+                TableColumn("New category") { sample in
+                    Text(sample.newCategory)
+                }
+                TableColumn("Action") { sample in
+                    Text(actionText(for: sample))
+                }
+                TableColumn("Status") { sample in
+                    statusCell(sample)
+                }
+            }
+            .frame(minHeight: 220)
+            .accessibilityIdentifier("S2-18-impact-table")
+        }
+    }
+
+    private var actionButtons: some View {
+        HStack {
+            Button("Back") { onBack(model.handoff) }
+                .disabled(model.loadState.isLoading)
+            Spacer()
+            Button("Cancel", action: onCancel).keyboardShortcut(.cancelAction)
+            Button("Save rule only") {}
+                .disabled(true)
+                .help("Rule saving is handled by S2-17.")
+            Button("Save and apply to existing files") {}
+                .keyboardShortcut(.defaultAction)
+                .disabled(true)
+                .help(model.primaryApplyDisabledReason ?? "Apply is handled by a later task.")
+        }
+    }
+
+    private var moveFilesBinding: Binding<Bool> {
+        Binding(
+            get: { model.moveFiles },
+            set: { model.setMoveFiles($0) }
+        )
+    }
+
+    @MainActor
+    private func refreshPreview() async {
+        model.markLoading()
+        do {
+            let report = try await previewer.previewClassifierRuleImpact(repoPath: repoPath, request: model.request)
+            model.markLoaded(report)
+        } catch {
+            await model.markFailed(mapError(error))
+        }
+    }
+
+    private func mapError(_ error: Error) async -> CoreErrorMappingSnapshot {
+        if let coreError = error as? CoreError { return await errorMapper.mapCoreError(coreError) }
+        return await errorMapper.mapCoreError(CoreError.Internal(message: error.localizedDescription))
+    }
+
+    private func actionText(for sample: RuleImpactSampleSnapshot) -> String {
+        let reasons = sample.matchReasons.map(\.displayLabel).joined(separator: ", ")
+        return reasons.isEmpty ? "Classifier matcher" : reasons
+    }
+
+    private func statusCell(_ sample: RuleImpactSampleSnapshot) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(sample.status.rawValue).font(.caption.weight(.semibold))
+            if let reason = sample.reason {
+                Text(reason).font(.caption).foregroundStyle(.secondary)
+            }
+        }
     }
 }
