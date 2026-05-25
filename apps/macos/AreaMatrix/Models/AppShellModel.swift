@@ -167,6 +167,10 @@ extension OnboardingModel {
 
     @MainActor
     func showChoosePath() {
+        if case let .mainEmpty(opening) = route {
+            validatePathReturnRoute = .settingsGeneral(opening)
+            settingsGeneralSelectedTab = "repository"
+        }
         if !validatePathReturnRoute.isSettingsReturnRoute { validatePathReturnRoute = .choosePath }
         route = .choosePath
         toastMessage = nil

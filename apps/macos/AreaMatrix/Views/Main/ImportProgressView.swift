@@ -251,6 +251,14 @@ struct CommandPaletteView: View {
         .onSubmit(of: .text) {
             executeSelectedTarget()
         }
+        .onKeyPress(.upArrow, phases: .down) { _ in
+            moveSelectedTarget(offset: -1)
+            return .handled
+        }
+        .onKeyPress(.downArrow, phases: .down) { _ in
+            moveSelectedTarget(offset: 1)
+            return .handled
+        }
         .accessibilityIdentifier("S2-15-C2-11-command-palette")
     }
 
@@ -372,6 +380,14 @@ struct CommandPaletteView: View {
             return
         }
         onExecuteTarget(target)
+    }
+
+    private func moveSelectedTarget(offset: Int) {
+        selectedTargetID = CommandPaletteSelectionRouting.nextSelectedID(
+            currentID: selectedTargetID,
+            targets: state.snapshot?.sections.flatMap(\.targets) ?? [],
+            offset: offset
+        )
     }
 }
 

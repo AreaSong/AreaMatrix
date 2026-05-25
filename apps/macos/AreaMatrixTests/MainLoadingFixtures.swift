@@ -296,6 +296,32 @@ extension SearchResultPageSnapshot {
             indexStatus: .ready
         )
     }
+
+    static func s215CommandSmartListPage(
+        saved: SavedSearchSnapshot,
+        files: [FileEntrySnapshot]
+    ) -> SearchResultPageSnapshot {
+        SearchResultPageSnapshot(
+            query: saved.query.query,
+            totalCount: Int64(files.count),
+            results: files.map {
+                SearchFileResultSnapshot(
+                    file: $0,
+                    score: 1,
+                    matches: [
+                        SearchMatchSnapshot(
+                            fieldDisplayName: "Name",
+                            kindDisplayName: "Smart List match",
+                            snippet: $0.currentName
+                        )
+                    ],
+                    noteSnippet: nil
+                )
+            },
+            diagnostics: [],
+            indexStatus: .ready
+        )
+    }
 }
 
 extension CommandTargetSnapshot {
@@ -329,13 +355,16 @@ extension CommandTargetSnapshot {
 }
 
 extension CommandIndex {
-    static func s215Fixture(commands: [CommandTarget] = []) -> CommandIndex {
+    static func s215Fixture(
+        commands: [CommandTarget] = [],
+        smartLists: [CommandTarget] = []
+    ) -> CommandIndex {
         CommandIndex(
             commands: commands,
             navigationTargets: [],
             currentSelectionTargets: [],
             recentTargets: [],
-            smartLists: [],
+            smartLists: smartLists,
             fileCandidates: [],
             generatedAt: 1_700_000_000
         )
@@ -347,7 +376,8 @@ extension CommandTarget {
         id: String,
         title: String,
         action: CommandTargetAction,
-        route: String?
+        route: String?,
+        savedSearchID: Int64? = nil
     ) -> CommandTarget {
         CommandTarget(
             id: id,
@@ -362,7 +392,7 @@ extension CommandTarget {
             disabledReason: nil,
             requiresConfirmation: false,
             fileId: nil,
-            savedSearchId: nil
+            savedSearchId: savedSearchID
         )
     }
 }

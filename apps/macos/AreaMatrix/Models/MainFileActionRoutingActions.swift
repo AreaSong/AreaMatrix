@@ -157,15 +157,19 @@ enum CommandPaletteLoadState: Equatable {
     case idle
     case loading(CommandIndexContext)
     case loaded(CommandPaletteSnapshot)
-    case failed(CommandIndexContext, CoreErrorMappingSnapshot)
+    case failed(CommandIndexContext, CommandPaletteSnapshot?, CoreErrorMappingSnapshot)
 
     var snapshot: CommandPaletteSnapshot? {
-        guard case let .loaded(snapshot) = self else { return nil }
-        return snapshot
+        switch self {
+        case let .loaded(snapshot), let .failed(_, snapshot?, _):
+            return snapshot
+        case .idle, .loading, .failed:
+            return nil
+        }
     }
 
     var errorMapping: CoreErrorMappingSnapshot? {
-        guard case let .failed(_, mapping) = self else { return nil }
+        guard case let .failed(_, _, mapping) = self else { return nil }
         return mapping
     }
 
@@ -218,6 +222,9 @@ enum CommandPaletteTargetRoute: Equatable {
     case classifierRuleEditor
     case runSmartList(Int64)
     case focusFile(Int64)
+    case openRepository
+    case help
+    case linkedPage(CommandPaletteLinkedPageRoute)
     case unsupported
 }
 
@@ -285,7 +292,7 @@ extension CommandTargetSnapshot {
         case "S2-09":
             .batchAddTags
         default:
-            .unsupported
+            linkedPageRoute ?? .unsupported
         }
     }
 
@@ -298,7 +305,7 @@ extension CommandTargetSnapshot {
         case "S2-14":
             .batchRename
         default:
-            .unsupported
+            linkedPageRoute ?? .unsupported
         }
     }
 
@@ -306,12 +313,32 @@ extension CommandTargetSnapshot {
         switch route {
         case "settings":
             .settings
+        case "openRepository":
+            .openRepository
+        case "help":
+            .help
         case "S2-19":
             .classifierRuleEditor
         case "search":
             .beginSearch
         default:
-            .unsupported
+            linkedPageRoute ?? .unsupported
+        }
+    }
+
+    private var linkedPageRoute: CommandPaletteTargetRoute? {
+        guard let route else { return nil }
+        switch route {
+        case CommandPaletteLinkedPageRoute.classifierImpactPreview.pageID:
+            return .linkedPage(.classifierImpactPreview)
+        case CommandPaletteLinkedPageRoute.importConflictBatch.pageID:
+            return .linkedPage(.importConflictBatch)
+        case CommandPaletteLinkedPageRoute.redo.pageID:
+            return .linkedPage(.redo)
+        case CommandPaletteLinkedPageRoute.tagSuggestions.pageID:
+            return .linkedPage(.tagSuggestions)
+        default:
+            return nil
         }
     }
 }
@@ -383,13 +410,18 @@ extension MainFileListModel {
             selectedFileIDs: selectedFileIDs,
             currentPath: currentPath
         )
+        let availableCommands = commandPaletteState.snapshot
         commandPaletteState = .loading(context)
         do {
             let index = try await commandIndexer.listCommandTargets(repoPath: repoPath, context: context)
             commandPaletteState = .loaded(CommandPaletteSnapshot(coreIndex: index))
         } catch {
             let mappedError = await mapCoreError(error)
-            commandPaletteState = .failed(context, mappedError)
+            commandPaletteState = .failed(
+                context,
+                availableCommands ?? .commandRegistryRecovery(query: context.query),
+                mappedError
+            )
         }
     }
 

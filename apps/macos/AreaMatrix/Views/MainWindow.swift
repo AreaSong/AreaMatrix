@@ -381,6 +381,8 @@ extension MainWindow {
                     )
                 },
                 onOpenSettings: { model.showGeneralSettings(opening: opening) },
+                onOpenRepository: model.showChoosePath,
+                onOpenHelp: model.openLearnMore,
                 onRetryCurrentList: { Task { await model.retryConfigurationLoad() } },
                 onCollectDiagnostics: { await model.collectMainListDiagnostics(opening: opening) },
                 onShowInFinder: { model.showMainListFileInFinder(opening: opening, relativePath: $0) },
@@ -407,6 +409,8 @@ extension MainWindow {
                     )
                 },
                 onOpenSettings: { model.showGeneralSettings(opening: opening) },
+                onOpenRepository: model.showChoosePath,
+                onOpenHelp: model.openLearnMore,
                 onRetryCurrentList: { Task { await model.retryConfigurationLoad() } },
                 onCollectDiagnostics: { await model.collectMainListDiagnostics(opening: opening) },
                 onShowInFinder: { model.showMainListFileInFinder(opening: opening, relativePath: $0) },
@@ -440,6 +444,8 @@ extension MainWindow {
                 onImport: {},
                 onDropImport: { _, _ in },
                 onOpenSettings: { model.showGeneralSettings(opening: state.sourceOpening) },
+                onOpenRepository: model.showChoosePath,
+                onOpenHelp: model.openLearnMore,
                 onRetryCurrentList: { Task { await model.retryConfigurationLoad() } },
                 onCollectDiagnostics: { await model.collectMainListDiagnostics(opening: state.sourceOpening) },
                 onShowInFinder: { model.showMainListFileInFinder(opening: state.sourceOpening, relativePath: $0) },

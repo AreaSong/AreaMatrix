@@ -203,6 +203,18 @@ struct QueryErrorRouteView: View {
     }
 }
 
+extension MainRepositoryContentView {
+    func currentListErrorPane(_ error: CoreErrorMappingSnapshot) -> some View {
+        MainCurrentListErrorPane(
+            error: error,
+            state: state,
+            fileListModel: fileListModel,
+            onRetryCurrentList: onRetryCurrentList,
+            onCollectDiagnostics: onCollectDiagnostics
+        )
+    }
+}
+
 struct QuerySyntaxHintPopover: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {

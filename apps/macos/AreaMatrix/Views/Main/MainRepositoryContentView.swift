@@ -12,6 +12,8 @@ struct MainRepositoryContentView: View {
     let onImport: () -> Void
     let onDropImport: ([URL], ImportEntryDestination) -> Void
     let onOpenSettings: () -> Void
+    let onOpenRepository: () -> Void
+    let onOpenHelp: () -> Void
     let onRetryCurrentList: () -> Void
     let onCollectDiagnostics: () async -> Void
     let onShowInFinder: (String) -> Void
@@ -39,6 +41,7 @@ struct MainRepositoryContentView: View {
     @State var pendingUndoHistoryRequest: UndoToastHistoryRequest?
     @State var batchTagUndoState: BatchTagUndoState = .idle
     @State var batchTagActionLogRefreshFailure: CoreErrorMappingSnapshot?
+    @State var shouldRestoreSearchFocusAfterCommandPalette = false
     @State var filterText: String = ""
     @State var searchScope: SearchScopeSnapshot = .all
     @State var searchSort: SearchSortSnapshot = .newestImported
@@ -158,6 +161,9 @@ extension MainRepositoryContentView {
         .onReceive(NotificationCenter.default.publisher(for: AreaMatrixUndoHistoryCommandRelay.notification)) { _ in
             openUndoHistoryFromMenu()
         }
+        .onReceive(NotificationCenter.default.publisher(for: AreaMatrixCommandPaletteCommandRelay.notification)) { _ in
+            toggleCommandPalette()
+        }
         .onKeyPress("z", phases: .down) { event in
             guard event.modifiers.contains(.command) else { return .ignored }
             if event.modifiers.contains(.shift) {
@@ -247,7 +253,7 @@ extension MainRepositoryContentView {
         }
         .onKeyPress("k", phases: .down) { event in
             guard event.modifiers.contains(.command) else { return .ignored }
-            openCommandPalette()
+            toggleCommandPalette()
             return .handled
         }
     }
@@ -274,6 +280,8 @@ extension MainRepositoryContentView {
         onImport: @escaping () -> Void,
         onDropImport: @escaping ([URL], ImportEntryDestination) -> Void,
         onOpenSettings: @escaping () -> Void = {},
+        onOpenRepository: @escaping () -> Void = {},
+        onOpenHelp: @escaping () -> Void = {},
         onRetryCurrentList: @escaping () -> Void = {},
         onCollectDiagnostics: @escaping () async -> Void = {},
         onShowInFinder: @escaping (String) -> Void = { _ in },
@@ -309,6 +317,8 @@ extension MainRepositoryContentView {
         self.onImport = onImport
         self.onDropImport = onDropImport
         self.onOpenSettings = onOpenSettings
+        self.onOpenRepository = onOpenRepository
+        self.onOpenHelp = onOpenHelp
         self.onRetryCurrentList = onRetryCurrentList
         self.onCollectDiagnostics = onCollectDiagnostics
         self.onShowInFinder = onShowInFinder
@@ -482,16 +492,6 @@ extension MainRepositoryContentView {
         } primaryAction: { selection in
             selectedFileIDs = selection
         }
-    }
-
-    private func currentListErrorPane(_ error: CoreErrorMappingSnapshot) -> some View {
-        MainCurrentListErrorPane(
-            error: error,
-            state: state,
-            fileListModel: fileListModel,
-            onRetryCurrentList: onRetryCurrentList,
-            onCollectDiagnostics: onCollectDiagnostics
-        )
     }
 
 }

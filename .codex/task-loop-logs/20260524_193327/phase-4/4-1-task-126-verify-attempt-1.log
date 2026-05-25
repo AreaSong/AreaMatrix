@@ -1,0 +1,97 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`4-1/task-126`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-126-s2-15-page-integration-verify.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：6
+- 未覆盖项数：0
+- 通过项数：3
+- 不通过项数：3
+- 阻塞项数：3
+
+四、逐项验收结果
+
+- 项目：本页 page-feature task 完成情况
+- 结果：不通过
+- 证据：`task-124` 的 C2-04 Smart List 调用有 `runSmartList` 接入证据；`task-125` 的 C2-11 `listCommandTargets` 有接入证据。但 S2-15 page spec 要求的完整命令入口和键盘闭环未完成。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileActionRoutingActions.swift:260`
+
+- 项目：页面状态、入口、退出、错误态和 CoreBridge 闭环
+- 结果：不通过
+- 证据：`Cmd+K` 入口存在，`listCommandTargets` 和 `runSmartList` 接入存在，错误态有 mapping；但 `Cmd+K` 再次关闭、上下箭头移动选中行、焦点恢复、S2-18/S2-21/S2-22/S2-23 等命令目标路由缺失。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportProgressView.swift:251`
+
+- 项目：移除 mock、fixture 或硬编码状态
+- 结果：通过
+- 证据：生产路径调用 `CoreBridge`，未发现生产代码用 mock/fixture 伪造 C2-04/C2-11；测试 fixture 只在 `AreaMatrixTests` 中使用。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift:330`
+
+- 项目：不新增 control map 外功能
+- 结果：通过
+- 证据：control map 声明 S2-15 只绑定 C2-04、C2-11；当前实现主要消费 `runSmartList` 与 `listCommandTargets`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-2-control-map.md:23`
+
+- 项目：S2-15 可按 page spec 和 control map 完整验收
+- 结果：不通过
+- 证据：page spec 要求分类规则命令打开 S2-18/S2-19，Redo、导入冲突、标签建议只作为对应页面入口；当前路由只支持 `import`、`S2-09`、`S2-12`、`S2-13`、`S2-14`、`settings`、`S2-19`、`search`，其余目标会落入 unsupported。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileActionRoutingActions.swift:281`
+
+- 项目：页面声明的 Core 能力真实接入或有明确阻塞证据
+- 结果：不通过
+- 证据：C2-04、C2-11 的 CoreBridge 接入存在，但 C2-11 返回的合法 command target 不能被 UI 完整消费，且没有明确阻塞证据说明这些 page-spec 命令延后。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileActionRoutingActions.swift:305`
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过。路由模型把多个 page-spec 合法命令硬落到 `.unsupported`，导致完整页面闭环不可维护。
+- 注释 / rustdoc / 文档同步：不通过。实现未对齐 `S2-15-command-palette.md` 中 classifier、redo、import conflict、tag suggestion 命令入口要求。
+- 错误处理与边界处理：不通过。命令索引失败可显示错误，但命令执行失败、焦点恢复、二次 Cmd+K 退出缺少闭环证据。
+- 测试与验证覆盖：不通过。`./dev check task 4-1/task-126` 通过，但现有测试未覆盖上下箭头选择、Cmd+K toggle、S2-18/S2-21/S2-22/S2-23 路由。
+- 占位、硬编码、mock-only、一次性实现检查：不通过。未发现生产 mock-only，但 `.lowRiskAction` 与多个合法路由被硬编码为 unsupported，不能作为最终闭环通过。
+
+六、阻塞项
+
+- P1：S2-15 合法命令目标路由不完整
+  - 说明：page spec 要求 `Preview classifier rule impact...` / `Apply classifier rule...` 打开 S2-18，`Review import conflicts` 打开 S2-21，`Redo latest action` 进入 S2-22，`Review tag suggestions` 打开 S2-23；当前 `executionRoute` 不支持这些目标，C2-11 返回对应 route 时 UI 无法执行。
+  - 绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileActionRoutingActions.swift:281`
+  - 为什么导致不通过：S2-15 不能按 page spec 完整验收，C2-11 command index 的 UI 消费闭环不完整。
+
+- P1：Cmd+K toggle 和焦点恢复缺失
+  - 说明：page spec 要求 Cmd+K 打开/关闭，关闭后焦点回到打开前控件；当前菜单和 key handler 都调用 `openCommandPalette()`，`closeCommandPalette()` 只清状态，没有记录或恢复原焦点。
+  - 绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportProgressListIntegration.swift:382`
+  - 为什么导致不通过：入口/退出闭环不满足 S2-15 交互和可访问性要求。
+
+- P1：键盘上下箭头选择结果缺失
+  - 说明：page spec 要求方向键移动选中行、Enter 执行；当前 `CommandPaletteView` 只有 submit 执行和 hover/click 选择，没有 Up/Down key handling。
+  - 绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportProgressView.swift:251`
+  - 为什么导致不通过：命令面板不能完成规格要求的键盘操作闭环。
+
+七、验证情况
+
+- 跑了哪些验证：
+  - `./dev check task 4-1/task-126`
+- 哪些通过：
+  - `prompt doctor`: OK，tasks 637，manifests 637
+  - `git diff --check`: 通过
+  - `xcodebuild ... build CODE_SIGNING_ALLOWED=NO`: `BUILD SUCCEEDED`
+- 哪些失败：
+  - 命令级验证无失败
+- 哪些缺失：
+  - 未运行 `./dev test macos`，因为当前 task manifest 只要求 `./dev check task 4-1/task-126`
+  - 未发现 Core `core/src/**` diff；Forbidden Touches 未违规
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。虽然 manifest 验证命令通过，但 S2-15 的完整页面闭环、键盘交互和 C2-11 合法命令目标消费仍缺失，按“无法证明通过就判定不通过”处理。
+
+VERIFY_RESULT: FAIL

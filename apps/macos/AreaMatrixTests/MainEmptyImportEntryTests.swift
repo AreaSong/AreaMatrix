@@ -231,52 +231,169 @@ final class MainEmptyImportEntryTests: XCTestCase {
         XCTAssertEqual(resolved, saved)
         XCTAssertNil(CommandPaletteSmartListRouting.savedSearch(savedSearchID: 404, in: [saved]))
     }
-}
 
-struct S215CommandIndexRequest: Equatable {
-    var repoPath: String
-    var context: CommandIndexContext
-}
+    func testS215PageIntegrationRoutesAllPageSpecCommandTargets() {
+        let routes: [(String, CommandTargetActionSnapshot, CommandPaletteTargetRoute)] = [
+            ("S2-18", .navigate, .linkedPage(.classifierImpactPreview)),
+            ("S2-18", .openSheet, .linkedPage(.classifierImpactPreview)),
+            ("S2-21", .openSheet, .linkedPage(.importConflictBatch)),
+            ("S2-22", .navigate, .linkedPage(.redo)),
+            ("S2-23", .navigate, .linkedPage(.tagSuggestions)),
+            ("S2-19", .navigate, .classifierRuleEditor)
+        ]
 
-actor S215CommandIndexStore: CoreCommandIndexing {
-    enum Result { case success(CommandIndex), failure(Error) }
+        for (route, action, expectedRoute) in routes {
+            let target = CommandTargetSnapshot.s215RouteFixture(
+                id: "target-\(route)-\(action.rawValue)",
+                action: action,
+                route: route,
+                requiresConfirmation: route == "S2-21"
+            )
 
-    private var results: [Result]
-    private var requests: [S215CommandIndexRequest] = []
-
-    init(results: [Result]) {
-        self.results = results
-    }
-
-    func listCommandTargets(repoPath: String, context: CommandIndexContext) async throws -> CommandIndex {
-        requests.append(.init(repoPath: repoPath, context: context))
-        guard !results.isEmpty else { return .s215Fixture() }
-        switch results.removeFirst() {
-        case let .success(index): return index
-        case let .failure(error): throw error
+            XCTAssertEqual(target.executionRoute, expectedRoute)
+            XCTAssertTrue(target.isExecutable)
         }
     }
 
-    func recordedRequests() -> [S215CommandIndexRequest] {
-        requests
+    func testS215KeyboardSelectionSkipsDisabledTargetsAndWraps() {
+        let first = CommandTargetSnapshot.s215RouteFixture(id: "import", action: .openSheet, route: "import")
+        let disabled = CommandTargetSnapshot.s215RouteFixture(
+            id: "disabled",
+            action: .openSheet,
+            route: "S2-09",
+            disabled: true
+        )
+        let last = CommandTargetSnapshot.s215RouteFixture(id: "settings", action: .navigate, route: "settings")
+        let targets = [first, disabled, last]
+
+        XCTAssertEqual(CommandPaletteSelectionRouting.nextSelectedID(
+            currentID: nil,
+            targets: targets,
+            offset: 1
+        ), first.id)
+        XCTAssertEqual(CommandPaletteSelectionRouting.nextSelectedID(
+            currentID: first.id,
+            targets: targets,
+            offset: 1
+        ), last.id)
+        XCTAssertEqual(CommandPaletteSelectionRouting.nextSelectedID(
+            currentID: first.id,
+            targets: targets,
+            offset: -1
+        ), last.id)
     }
-}
 
-actor S215CommandErrorMapper: CoreErrorMapping {
-    private let mapping: CoreErrorMappingSnapshot
-    private var errors: [CoreError] = []
+    @MainActor
+    func testS215PageIntegrationWiresEntryCloseCommandIndexAndSmartListRun() async {
+        let saved = SavedSearchSnapshot.s215CommandPaletteFixture()
+        let resultFile = FileEntrySnapshot.s215CommandFileFixture(id: 88, currentName: "finance.pdf")
+        let indexTarget = CommandTarget.s215Fixture(
+            id: "smart-list:77",
+            title: "Finance",
+            action: .runSmartList,
+            route: nil,
+            savedSearchID: saved.id
+        )
+        let indexer = S215CommandIndexStore(results: [.success(.s215Fixture(smartLists: [indexTarget]))])
+        let smartListRunner = S215SmartListRunner(results: [
+            .success(.s215CommandSmartListPage(saved: saved, files: [resultFile]))
+        ])
+        let model = MainFileListModel(
+            opening: .s215CommandFixture(repoPath: "/tmp/repo", files: []),
+            fileLister: MainListRecordingFileLister(results: []),
+            fileDetailer: MainListRecordingFileDetailer(results: []),
+            searchQuerying: smartListRunner,
+            commandIndexer: indexer,
+            errorMapper: S215CommandErrorMapper(mapping: .s215CommandDb(rawContext: "unused"))
+        )
 
-    init(mapping: CoreErrorMappingSnapshot) {
-        self.mapping = mapping
+        model.openCommandPaletteForSearch()
+        model.commandPaletteQuery = " finance "
+        await model.loadCommandIndex(query: model.commandPaletteQuery, selectedFileIDs: [20, 10], currentPath: "docs")
+        model.clearCommandPaletteState()
+        model.commandPaletteQuery = ""
+        model.clearPendingSearchDestination()
+        await model.restoreSavedSearch(saved)
+        let indexRequests = await indexer.recordedRequests()
+        let runRequests = await smartListRunner.recordedRunRequests()
+        let searchRequests = await smartListRunner.recordedSearchRequests()
+
+        XCTAssertEqual(CommandTargetSnapshot(coreTarget: indexTarget).executionRoute, .runSmartList(saved.id))
+        XCTAssertNil(model.pendingSearchDestination)
+        XCTAssertEqual(indexRequests.map(\.context.selectedFileIds), [[10, 20]])
+        XCTAssertEqual(indexRequests.map(\.context.currentPath), ["docs"])
+        XCTAssertEqual(indexRequests.map(\.context.query), ["finance"])
+        XCTAssertEqual(runRequests, [
+            S215SmartListRunRequest(repoPath: "/tmp/repo", savedSearchID: saved.id, limit: 50, offset: 0)
+        ])
+        XCTAssertEqual(searchRequests, [])
+        XCTAssertEqual(model.files, [resultFile])
+        XCTAssertEqual(model.commandPaletteState, .idle)
+        XCTAssertEqual(model.commandPaletteQuery, "")
+        XCTAssertEqual(model.lastSearchExitContext, .smartList(id: saved.id, name: saved.name))
     }
 
-    func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
-        errors.append(error)
-        return mapping
+    @MainActor
+    func testS215PageIntegrationRoutesDangerCommandsToConfirmationWithoutDirectMutation() {
+        let file = FileEntrySnapshot.s215CommandFileFixture(id: 515, currentName: "delete.pdf")
+        let model = MainFileListModel(
+            opening: .s215CommandFixture(repoPath: "/tmp/repo", files: [file]),
+            fileLister: MainListRecordingFileLister(results: []),
+            fileDetailer: MainListRecordingFileDetailer(results: []),
+            errorMapper: S215CommandErrorMapper(mapping: .s215CommandDb(rawContext: "unused"))
+        )
+        let target = CommandTargetSnapshot.s215RouteFixture(
+            id: "selection.delete",
+            action: .openConfirmation,
+            route: "S2-13",
+            requiresConfirmation: true
+        )
+        let route = CommandPaletteBatchRouteBuilder.batchDeleteRoute(
+            selectedFileIDs: [file.id],
+            visibleFiles: [file],
+            isReadOnly: model.isReadOnly,
+            isLoading: model.isLoading,
+            writeLockedFileIDs: model.writeLockedFileIDs
+        )
+
+        model.commandPaletteState = .loaded(CommandPaletteSnapshot(coreIndex: .s215Fixture()))
+        model.commandPaletteQuery = "delete"
+        model.pendingSearchDestination = .commandPalette
+        model.clearCommandPaletteState()
+        model.commandPaletteQuery = ""
+        model.clearPendingSearchDestination()
+
+        XCTAssertEqual(target.executionRoute, .batchDelete)
+        XCTAssertTrue(target.requiresConfirmation)
+        XCTAssertEqual(route.source, .commandPalette)
+        XCTAssertEqual(route.fileIDs, [file.id])
+        XCTAssertNil(route.disabledReason)
+        XCTAssertEqual(model.commandPaletteState, .idle)
+        XCTAssertEqual(model.commandPaletteQuery, "")
+        XCTAssertNil(model.pendingSearchDestination)
+        XCTAssertEqual(model.files, [file])
     }
 
-    func recordedErrors() -> [CoreError] {
-        errors
+    @MainActor
+    func testS215CommandPaletteToggleRestoresPreviousSearchFocus() {
+        var content = MainRepositoryContentView(
+            opening: .s215CommandFixture(repoPath: "/tmp/repo", files: []),
+            state: .list,
+            onImport: {},
+            onDropImport: { _, _ in },
+            fileLister: MainListRecordingFileLister(results: []),
+            fileDetailer: MainListRecordingFileDetailer(results: []),
+            errorMapper: S215CommandErrorMapper(mapping: .s215CommandDb(rawContext: "unused"))
+        )
+
+        content.isSearchFieldFocused = true
+        content.toggleCommandPalette()
+        XCTAssertEqual(content.fileListModel.pendingSearchDestination, .commandPalette)
+        XCTAssertFalse(content.isSearchFieldFocused)
+
+        content.toggleCommandPalette()
+        XCTAssertNil(content.fileListModel.pendingSearchDestination)
+        XCTAssertTrue(content.isSearchFieldFocused)
     }
 }
 

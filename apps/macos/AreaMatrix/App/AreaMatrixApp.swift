@@ -12,12 +12,25 @@ struct AreaMatrixApp: App {
         .windowResizability(.contentMinSize)
         .commands {
             CommandGroup(after: .sidebar) {
+                Button("Command Palette") {
+                    AreaMatrixCommandPaletteCommandRelay.publish()
+                }
+                .keyboardShortcut("k", modifiers: [.command])
                 Button("Undo History") {
                     AreaMatrixUndoHistoryCommandRelay.publish()
                 }
                 .keyboardShortcut("z", modifiers: [.command, .option])
             }
         }
+    }
+}
+
+@MainActor
+enum AreaMatrixCommandPaletteCommandRelay {
+    static let notification = Notification.Name("AreaMatrixCommandPaletteCommandRelay.notification")
+
+    static func publish() {
+        NotificationCenter.default.post(name: notification, object: nil)
     }
 }
 

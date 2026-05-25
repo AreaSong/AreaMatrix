@@ -106,3 +106,58 @@ extension ImportEntryKind {
         return FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory) && isDirectory.boolValue
     }
 }
+
+enum CommandPaletteLinkedPageRoute: String, Equatable, Identifiable, CaseIterable {
+    case classifierImpactPreview = "S2-18"
+    case importConflictBatch = "S2-21"
+    case redo = "S2-22"
+    case tagSuggestions = "S2-23"
+
+    var id: String { rawValue }
+    var pageID: String { rawValue }
+
+    var blockedMapping: CoreErrorMappingSnapshot {
+        switch self {
+        case .classifierImpactPreview:
+            CoreErrorMappingSnapshot(
+                kind: .validation,
+                userMessage: "Classifier impact preview is not available yet.",
+                severity: .medium,
+                suggestedAction: "Open classifier rules first; S2-18 will provide the real preview flow.",
+                recoverability: .userActionRequired,
+                rawContext: pageID
+            )
+        case .importConflictBatch:
+            CoreErrorMappingSnapshot(
+                kind: .stagingRecoveryRequired,
+                userMessage: "There is no active import conflict batch to review.",
+                severity: .medium,
+                suggestedAction: "Start or resume a batch import with unresolved conflicts.",
+                recoverability: .userActionRequired,
+                rawContext: pageID
+            )
+        case .redo:
+            CoreErrorMappingSnapshot(
+                kind: .conflict,
+                userMessage: "Redo latest is handled in Undo History.",
+                severity: .medium,
+                suggestedAction: "Review Undo History until S2-22 redo is available.",
+                recoverability: .refreshRequired,
+                rawContext: pageID
+            )
+        case .tagSuggestions:
+            CoreErrorMappingSnapshot(
+                kind: .validation,
+                userMessage: "Select a file before reviewing tag suggestions.",
+                severity: .medium,
+                suggestedAction: "Open a file detail, then use Suggestions from the Tags section.",
+                recoverability: .userActionRequired,
+                rawContext: pageID
+            )
+        }
+    }
+
+    var accessibilityIdentifier: String {
+        "S2-15-C2-11-route-\(pageID)"
+    }
+}

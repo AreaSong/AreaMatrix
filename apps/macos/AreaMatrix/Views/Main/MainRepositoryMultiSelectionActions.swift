@@ -126,6 +126,159 @@ struct MainRepositoryMultiSelectionActions: View {
 }
 
 extension MainRepositoryContentView {
+    func commandPaletteRouteView() -> some View {
+        SearchCommandPaletteRouteView(
+            query: $fileListModel.commandPaletteQuery,
+            state: visibleCommandPaletteState,
+            smartLists: state == .list ? sortedSavedSearches : [],
+            onLoad: loadCommandPaletteIndex,
+            onOpenSmartList: openCommandPaletteSmartList,
+            onExecuteTarget: executeCommandPaletteTarget,
+            onClose: closeCommandPalette
+        )
+    }
+
+    func loadCommandPaletteIndex() {
+        guard state == .list else {
+            fileListModel.commandPaletteState = .loaded(.noRepositoryCommands())
+            return
+        }
+        Task { await loadCommandPaletteIndexFromCurrentState() }
+    }
+
+    func loadCommandPaletteIndexFromCurrentState() async {
+        await fileListModel.loadCommandIndex(
+            query: fileListModel.commandPaletteQuery,
+            selectedFileIDs: selectedFileIDs,
+            currentPath: selectedSidebarRow.pathFilterPrefix
+        )
+    }
+
+    func openCommandPalette() {
+        shouldRestoreSearchFocusAfterCommandPalette = isSearchFieldFocused
+        isSearchFieldFocused = false
+        fileListModel.commandPaletteQuery = ""
+        if state == .list {
+            fileListModel.openCommandPaletteForSearch()
+        } else {
+            fileListModel.pendingSearchDestination = .commandPalette
+            fileListModel.commandPaletteState = .loaded(.noRepositoryCommands())
+        }
+    }
+
+    func toggleCommandPalette() {
+        if fileListModel.pendingSearchDestination == .commandPalette {
+            closeCommandPalette()
+            return
+        }
+        openCommandPalette()
+    }
+
+    func closeCommandPalette() {
+        fileListModel.commandPaletteQuery = ""
+        fileListModel.clearCommandPaletteState()
+        fileListModel.clearPendingSearchDestination()
+        isSearchFieldFocused = shouldRestoreSearchFocusAfterCommandPalette
+        shouldRestoreSearchFocusAfterCommandPalette = false
+    }
+
+    func executeCommandPaletteTarget(_ target: CommandTargetSnapshot) {
+        guard target.isExecutable else { return }
+        switch target.executionRoute {
+        case .importFiles:
+            closeCommandPalette()
+            onImport()
+        case .settings:
+            closeCommandPalette()
+            onOpenSettings()
+        case .beginSearch:
+            closeCommandPalette()
+            beginCommandFindSearch()
+        case .batchAddTags:
+            pendingBatchAddTagsRoute = commandPaletteBatchAddTagsRoute()
+            closeCommandPalette()
+        case .batchChangeCategory:
+            pendingBatchChangeCategoryRoute = commandPaletteBatchChangeCategoryRoute()
+            closeCommandPalette()
+        case .batchDelete:
+            pendingBatchDeleteRoute = commandPaletteBatchDeleteRoute()
+            closeCommandPalette()
+        case .batchRename:
+            pendingBatchRenameRoute = commandPaletteBatchRenameRoute()
+            closeCommandPalette()
+        case let .runSmartList(savedSearchID):
+            executeCommandPaletteSmartList(savedSearchID: savedSearchID)
+        case let .focusFile(fileID):
+            selectedFileIDs = [fileID]
+            closeCommandPalette()
+            Task { await fileListModel.selectFiles([fileID]) }
+        case .openRepository:
+            closeCommandPalette()
+            onOpenRepository()
+        case .help:
+            closeCommandPalette()
+            onOpenHelp()
+        case .classifierRuleEditor:
+            fileListModel.clearCommandPaletteState()
+            fileListModel.commandPaletteQuery = ""
+            fileListModel.pendingSearchDestination = .classifierRuleEditor(context: nil)
+        case let .linkedPage(route):
+            if routeLinkedCommandPaletteTarget(route) { closeCommandPalette() }
+        case .unsupported:
+            return
+        }
+    }
+
+    var visibleCommandPaletteState: CommandPaletteLoadState {
+        if state == .empty, fileListModel.commandPaletteState.snapshot == nil {
+            return .loaded(.noRepositoryCommands())
+        }
+        return fileListModel.commandPaletteState
+    }
+
+    func routeLinkedCommandPaletteTarget(_ route: CommandPaletteLinkedPageRoute) -> Bool {
+        switch route {
+        case .redo:
+            pendingUndoHistoryRequest = UndoHistoryActionLog.redoShortcutRequest(
+                state: batchTagUndoState,
+                failure: batchTagActionLogRefreshFailure
+            )
+            return true
+        case .classifierImpactPreview, .importConflictBatch, .tagSuggestions:
+            fileListModel.commandPaletteState = .failed(
+                commandPaletteContext(),
+                fileListModel.commandPaletteState.snapshot ?? .commandRegistryRecovery(
+                    query: fileListModel.commandPaletteQuery
+                ),
+                route.blockedMapping
+            )
+            return false
+        }
+    }
+
+    private func commandPaletteContext() -> CommandIndexContext {
+        CommandIndexContext.commandPalette(
+            query: fileListModel.commandPaletteQuery,
+            selectedFileIDs: selectedFileIDs,
+            currentPath: selectedSidebarRow.pathFilterPrefix
+        )
+    }
+
+    private func openCommandPaletteSmartList(_ saved: SavedSearchSnapshot) {
+        closeCommandPalette()
+        selectedSidebarID = RepositoryTreeNodeSnapshot.savedSearchSidebarID(saved.id)
+        selectedFileIDs = []
+        Task { await restoreSavedSearch(saved) }
+    }
+
+    private func executeCommandPaletteSmartList(savedSearchID: Int64) {
+        guard let saved = CommandPaletteSmartListRouting.savedSearch(
+            savedSearchID: savedSearchID,
+            in: sortedSavedSearches
+        ) else { return }
+        openCommandPaletteSmartList(saved)
+    }
+
     func openBatchChangeCategoryRoute(_ ids: Set<Int64>, source: BatchChangeCategoryRouteSource) {
         let selectedFiles = filesForBatchChangeCategory(ids)
         pendingBatchChangeCategoryRoute = BatchChangeCategoryRoute(
@@ -288,5 +441,29 @@ enum CommandPaletteBatchRouteBuilder {
         visibleFiles: [FileEntrySnapshot]
     ) -> [FileEntrySnapshot] {
         visibleFiles.filter { selectedFileIDs.contains($0.id) }
+    }
+}
+
+enum CommandPaletteSelectionRouting {
+    static func nextSelectedID(
+        currentID: String?,
+        targets: [CommandTargetSnapshot],
+        offset: Int
+    ) -> String? {
+        let executableTargets = targets.filter(\.isExecutable)
+        guard !executableTargets.isEmpty else { return nil }
+        guard let currentID,
+              let currentIndex = executableTargets.firstIndex(where: { $0.id == currentID })
+        else {
+            return executableTargets.first?.id
+        }
+
+        let nextIndex = wrappedIndex(currentIndex + offset, count: executableTargets.count)
+        return executableTargets[nextIndex].id
+    }
+
+    private static func wrappedIndex(_ index: Int, count: Int) -> Int {
+        let remainder = index % count
+        return remainder >= 0 ? remainder : remainder + count
     }
 }

@@ -59,6 +59,77 @@ final class MainEmptyBuildTreeTests: XCTestCase {
         XCTAssertEqual(routedOpening.tree.children.first?.displayName, "inbox")
         XCTAssertEqual(routedOpening.tree.children.first?.totalFileCount, 0)
     }
+
+    @MainActor
+    func testS215CommandPaletteNoRepositoryShowsOnlySafeCommands() {
+        var content = MainRepositoryContentView(
+            opening: .s215CommandFixture(repoPath: "/tmp/repo", files: []),
+            state: .empty,
+            onImport: {},
+            onDropImport: { _, _ in },
+            onOpenSettings: {},
+            fileLister: MainListRecordingFileLister(results: []),
+            fileDetailer: MainListRecordingFileDetailer(results: []),
+            errorMapper: S215CommandErrorMapper(mapping: .s215CommandDb(rawContext: "unused"))
+        )
+
+        content.openCommandPalette()
+
+        XCTAssertEqual(content.fileListModel.pendingSearchDestination, .commandPalette)
+        XCTAssertEqual(content.visibleCommandPaletteState.snapshot?.targetTitles, [
+            "Open repository...", "Settings", "Help"
+        ])
+    }
+
+    @MainActor
+    func testS215CommandPaletteIndexFailureKeepsAvailableCommands() async {
+        let previous = CommandPaletteSnapshot(
+            sections: [.init(title: "Commands", targets: [.importFiles])],
+            generatedAt: 1
+        )
+        let mapping = CoreErrorMappingSnapshot.s215CommandDb(rawContext: "command registry locked")
+        let model = MainFileListModel(
+            opening: .s215CommandFixture(repoPath: "/tmp/repo", files: []),
+            fileLister: MainListRecordingFileLister(results: []),
+            fileDetailer: MainListRecordingFileDetailer(results: []),
+            commandIndexer: S215CommandIndexStore(results: [.failure(CoreError.Db(message: "locked"))]),
+            errorMapper: S215CommandErrorMapper(mapping: mapping)
+        )
+
+        model.commandPaletteState = .loaded(previous)
+        await model.loadCommandIndex(query: "import", selectedFileIDs: [], currentPath: nil)
+
+        XCTAssertEqual(model.commandPaletteState.errorMapping, mapping)
+        XCTAssertEqual(model.commandPaletteState.snapshot?.targetTitles, ["Import files..."])
+    }
+
+    @MainActor
+    func testS215CommandPaletteLinkedRoutesPreserveBlockedEvidenceOrOpenRedoHost() {
+        var content = MainRepositoryContentView(
+            opening: .s215CommandFixture(repoPath: "/tmp/repo", files: []),
+            state: .list,
+            onImport: {},
+            onDropImport: { _, _ in },
+            fileLister: MainListRecordingFileLister(results: []),
+            fileDetailer: MainListRecordingFileDetailer(results: []),
+            errorMapper: S215CommandErrorMapper(mapping: .s215CommandDb(rawContext: "unused"))
+        )
+        content.fileListModel.commandPaletteQuery = "classifier"
+        content.fileListModel.commandPaletteState = .loaded(.commandRegistryRecovery(query: nil))
+
+        XCTAssertFalse(content.routeLinkedCommandPaletteTarget(.classifierImpactPreview))
+        XCTAssertEqual(content.fileListModel.commandPaletteState.errorMapping?.rawContext, "S2-18")
+        XCTAssertNotNil(content.fileListModel.commandPaletteState.snapshot)
+
+        XCTAssertTrue(content.routeLinkedCommandPaletteTarget(.redo))
+        XCTAssertEqual(content.pendingUndoHistoryRequest?.source, .viewHistory)
+    }
+}
+
+private extension CommandPaletteSnapshot {
+    var targetTitles: [String] {
+        sections.flatMap(\.targets).map(\.title)
+    }
 }
 
 private actor BuildTreeRecordingRepositoryOpener: CoreEmptyRepositoryOpening {

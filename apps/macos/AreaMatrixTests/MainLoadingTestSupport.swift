@@ -284,3 +284,107 @@ func waitForMainLoadingState(
     XCTFail("Timed out waiting for matching main loading state, got \(model.route)", file: file, line: line)
     return nil
 }
+
+struct S215CommandIndexRequest: Equatable {
+    var repoPath: String
+    var context: CommandIndexContext
+}
+
+actor S215CommandIndexStore: CoreCommandIndexing {
+    enum Result { case success(CommandIndex), failure(Error) }
+
+    private var results: [Result]
+    private var requests: [S215CommandIndexRequest] = []
+
+    init(results: [Result]) {
+        self.results = results
+    }
+
+    func listCommandTargets(repoPath: String, context: CommandIndexContext) async throws -> CommandIndex {
+        requests.append(.init(repoPath: repoPath, context: context))
+        guard !results.isEmpty else { return .s215Fixture() }
+        switch results.removeFirst() {
+        case let .success(index):
+            return index
+        case let .failure(error):
+            throw error
+        }
+    }
+
+    func recordedRequests() -> [S215CommandIndexRequest] {
+        requests
+    }
+}
+
+actor S215CommandErrorMapper: CoreErrorMapping {
+    private let mapping: CoreErrorMappingSnapshot
+    private var errors: [CoreError] = []
+
+    init(mapping: CoreErrorMappingSnapshot) {
+        self.mapping = mapping
+    }
+
+    func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
+        errors.append(error)
+        return mapping
+    }
+
+    func recordedErrors() -> [CoreError] {
+        errors
+    }
+}
+
+struct S215SmartListRunRequest: Equatable {
+    var repoPath: String
+    var savedSearchID: Int64
+    var limit: Int64
+    var offset: Int64
+}
+
+actor S215SmartListRunner: CoreSearchQuerying {
+    enum Result { case success(SearchResultPageSnapshot), failure(Error) }
+
+    private var results: [Result]
+    private var runRequests: [S215SmartListRunRequest] = []
+    private var searchRequests: [SearchQueryRequestSnapshot] = []
+
+    init(results: [Result]) {
+        self.results = results
+    }
+
+    func searchFiles(repoPath _: String, request: SearchQueryRequestSnapshot) async throws -> SearchResultPageSnapshot {
+        searchRequests.append(request)
+        throw CoreError.Internal(message: "search_files must not run S2-15 C2-04 Smart List execution")
+    }
+
+    func runSmartList(
+        repoPath: String,
+        savedSearchID: Int64,
+        limit: Int64,
+        offset: Int64
+    ) async throws -> SearchResultPageSnapshot {
+        runRequests.append(S215SmartListRunRequest(
+            repoPath: repoPath,
+            savedSearchID: savedSearchID,
+            limit: limit,
+            offset: offset
+        ))
+        guard !results.isEmpty else {
+            return SearchResultPageSnapshot(query: "", totalCount: 0, results: [], diagnostics: [], indexStatus: .ready)
+        }
+        switch results.removeFirst() {
+        case let .success(page):
+            return page
+        case let .failure(error):
+            throw error
+        }
+    }
+
+    func recordedRunRequests() -> [S215SmartListRunRequest] {
+        runRequests
+    }
+
+    func recordedSearchRequests() -> [SearchQueryRequestSnapshot] {
+        searchRequests
+    }
+}
