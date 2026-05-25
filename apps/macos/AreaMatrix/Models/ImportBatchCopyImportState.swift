@@ -367,6 +367,7 @@ extension ImportBatchCopyImportModel {
     func resetConflictBatchOutcome() {
         conflictBatchApplyResult = nil
         conflictBatchUndoState = .idle
+        conflictBatchPerItemQueue = nil
     }
 
     func refreshConflictBatchUndoState(

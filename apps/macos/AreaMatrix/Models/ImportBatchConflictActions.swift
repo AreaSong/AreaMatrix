@@ -57,9 +57,7 @@ enum ImportConflictBatchAction {
 
 enum ImportConflictBatchValidation {
     static func actionableIncludedCount(preview: ImportConflictBatchPreviewReportSnapshot) -> Int64 {
-        Int64(preview.items.filter { item in
-            item.status == .ready || item.status == .needsConfirmation
-        }.count)
+        Int64(preview.items.filter(\.isActionablePreviewItem).count)
     }
 
     static func canApply(
@@ -69,12 +67,10 @@ enum ImportConflictBatchValidation {
     ) -> Bool {
         guard !isApplying,
               let preview,
-              !preview.previewToken.isEmpty,
-              preview.importSessionID == request.importSessionID,
+              preview.canApply,
+              !preview.previewToken.isEmpty, preview.importSessionID == request.importSessionID,
               actionableIncludedCount(preview: preview) > 0 else { return false }
-        if preview.replaceConfirmationRequired && !request.replaceConfirmed {
-            return false
-        }
+        if preview.replaceConfirmationRequired && !request.replaceConfirmed { return false }
         return selectedStrategiesMatch(preview: preview, request: request)
     }
 
@@ -94,7 +90,7 @@ enum ImportConflictBatchValidation {
     ) -> Bool {
         preview.applyToAllSimilarConflicts == request.applyToAllSimilarConflicts
             && preview.items.allSatisfy { item in
-                guard item.status == .ready || item.status == .needsConfirmation else { return true }
+                guard item.isActionablePreviewItem else { return true }
                 switch item.conflictType {
                 case .duplicateHash:
                     return item.selectedStrategy == request.duplicateStrategy
@@ -107,10 +103,7 @@ enum ImportConflictBatchValidation {
 
 @MainActor
 extension ImportBatchCopyImportModel {
-    func updateDuplicateStrategy(
-        for rowID: ImportBatchCopyImportRow.ID,
-        strategy: ImportBatchDuplicateResolutionStrategy
-    ) {
+    func updateDuplicateStrategy(for rowID: ImportBatchCopyImportRow.ID, strategy: ImportBatchDuplicateResolutionStrategy) {
         guard canSelectDuplicateStrategy(strategy) else { return }
         guard let row = rows.first(where: { $0.id == rowID }) else { return }
         guard case let .duplicate(existingPath, _, isReplaceConfirmed) = row.status else { return }
@@ -121,10 +114,7 @@ extension ImportBatchCopyImportModel {
         ), for: rowID)
     }
 
-    func updateNameConflictResolution(
-        for rowID: ImportBatchCopyImportRow.ID,
-        resolution: ImportBatchNameConflictResolution
-    ) {
+    func updateNameConflictResolution(for rowID: ImportBatchCopyImportRow.ID, resolution: ImportBatchNameConflictResolution) {
         guard canSelectNameConflictResolution(resolution) else { return }
         guard let row = rows.first(where: { $0.id == rowID }) else { return }
         guard case let .nameConflict(existingPath, _) = row.status else { return }
@@ -136,53 +126,15 @@ extension ImportBatchCopyImportModel {
     }
 
     var conflictBatchPreviewReport: ImportConflictBatchPreviewReportSnapshot? {
-        conflictBatchPreviewState.report
+        if hasEmptyManualConflictBatchScope {
+            return emptyManualConflictBatchPreview()
+        }
+        return conflictBatchPreviewState.report
     }
 
     var conflictBatchFailure: CoreErrorMappingSnapshot? {
         conflictBatchPreviewState.failure ?? conflictBatchApplyResult?.failure
     }
-
-    var conflictBatchScopeSummary: String {
-        guard let preview = conflictBatchPreviewReport else { return "Checking conflicts..." }
-        if preview.applyToAllSimilarConflicts {
-            return "Will apply to \(preview.duplicateConflictCount) duplicate conflicts and " +
-                "\(preview.sameNameConflictCount) same-name conflicts."
-        }
-        return "Will apply to \(preview.includedCount) selected conflicts."
-    }
-
-    var conflictBatchApplyDisabledReason: String? {
-        if isConflictBatchApplying { return "Applying..." }
-        guard let preview = conflictBatchPreviewReport else { return "Checking conflicts..." }
-        if !preview.canApply && ImportConflictBatchValidation.actionableIncludedCount(preview: preview) == 0 {
-            return preview.applyBlockedReason ?? "Could not prepare conflict strategy."
-        }
-        if ImportConflictBatchValidation.actionableIncludedCount(preview: preview) == 0 {
-            return "All conflicts in this scope are blocked."
-        }
-        let replaceConfirmed = isConflictBatchReplaceConfirmed || preview.replaceConfirmationRequired
-        guard let request = makeImportConflictBatchApplyRequest(replaceConfirmed: replaceConfirmed),
-              ImportConflictBatchValidation.canApply(
-                  preview: preview,
-                  request: request,
-                  isApplying: false
-              ) else {
-            return "Refresh conflict strategy preview."
-        }
-        return nil
-    }
-
-    var conflictBatchAskPerItemDisabledReason: String? {
-        if isConflictBatchApplying { return "Applying..." }
-        guard let preview = conflictBatchPreviewReport else { return "Checking conflicts..." }
-        if ImportConflictBatchValidation.canAskPerItem(preview: preview, isApplying: false) { return nil }
-        if preview.includedCount > 0 {
-            return "All conflicts in this scope are blocked."
-        }
-        return preview.applyBlockedReason ?? "Select at least one conflict."
-    }
-
     var currentConflictBatchIDs: [String] {
         if appliesConflictBatchToAllSimilarConflicts {
             return coreConflictBatchRows.map(\.id).sorted()
@@ -219,7 +171,10 @@ extension ImportBatchCopyImportModel {
 
     func loadImportConflictBatchPreview() async {
         guard let request = makeImportConflictBatchPreviewRequest() else {
-            conflictBatchPreviewState = .idle
+            resetConflictBatchOutcome()
+            if !hasEmptyManualConflictBatchScope {
+                conflictBatchPreviewState = .idle
+            }
             return
         }
         isConflictBatchReplaceConfirmed = false
@@ -285,26 +240,62 @@ extension ImportBatchCopyImportModel {
     }
 
     func askConflictBatchPerItem() async -> ImportConflictBatchApplyResult? {
-        let previousDuplicate = conflictBatchDuplicateStrategy
-        let previousSameName = conflictBatchSameNameStrategy
-        conflictBatchDuplicateStrategy = .askPerItem
-        conflictBatchSameNameStrategy = .askPerItem
-        await loadImportConflictBatchPreview()
-        let result = await applyImportConflictBatch(replaceConfirmed: false)
-        conflictBatchDuplicateStrategy = previousDuplicate
-        conflictBatchSameNameStrategy = previousSameName
-        return result
+        guard let previewRequest = makeImportConflictBatchPreviewRequest(duplicateStrategy: .askPerItem,
+                                                                         sameNameStrategy: .askPerItem)
+        else { return nil }
+        let previousPreview = conflictBatchPreviewReport
+        if let previousPreview,
+           !ImportConflictBatchValidation.canAskPerItem(preview: previousPreview, isApplying: isConflictBatchApplying) {
+            return nil
+        }
+        resetConflictBatchOutcome()
+        isConflictBatchApplying = true
+        defer { isConflictBatchApplying = false }
+        conflictBatchPreviewState = .loading(previous: previousPreview)
+        conflictBatchPreviewState = await ImportConflictBatchAction.preview(
+            repoPath: self.request?.repoPath ?? "",
+            request: previewRequest,
+            batcher: conflictBatcher,
+            errorMapper: errorMapper,
+            previous: previousPreview
+        )
+        guard let preview = conflictBatchPreviewState.report,
+              let queue = ImportConflictBatchPerItemQueue.make(from: preview) else { return nil }
+        let applyRequest = ImportConflictBatchApplyRequestSnapshot(
+            importSessionID: previewRequest.importSessionID,
+            conflictIDs: previewRequest.conflictIDs,
+            duplicateStrategy: .askPerItem,
+            sameNameStrategy: .askPerItem,
+            applyToAllSimilarConflicts: previewRequest.applyToAllSimilarConflicts,
+            replaceConfirmed: false
+        )
+        guard ImportConflictBatchValidation.canApply(
+            preview: preview,
+            request: applyRequest,
+            isApplying: false
+        ) else { return nil }
+        let result = await ImportConflictBatchAction.apply(
+            repoPath: self.request?.repoPath ?? "",
+            request: applyRequest,
+            preview: preview,
+            batcher: conflictBatcher,
+            errorMapper: errorMapper
+        )
+        return await finishConflictBatchPerItem(result: result, queue: queue)
     }
 
-    func makeImportConflictBatchPreviewRequest() -> ImportConflictBatchPreviewRequestSnapshot? {
+    func makeImportConflictBatchPreviewRequest(
+        duplicateStrategy: ImportConflictBatchStrategySnapshot? = nil,
+        sameNameStrategy: ImportConflictBatchStrategySnapshot? = nil
+    ) -> ImportConflictBatchPreviewRequestSnapshot? {
         guard let importSessionID = normalizedImportConflictBatchSessionID else { return nil }
         let conflictIDs = currentConflictBatchIDs
         guard !conflictIDs.isEmpty else { return nil }
         return ImportConflictBatchPreviewRequestSnapshot(
             importSessionID: importSessionID,
             conflictIDs: conflictIDs,
-            duplicateStrategy: conflictBatchDuplicateStrategy,
-            sameNameStrategy: conflictBatchSameNameStrategy,
+            duplicateStrategy: duplicateStrategy ?? conflictBatchDuplicateStrategy,
+            sameNameStrategy: sameNameStrategy ?? conflictBatchSameNameStrategy,
             applyToAllSimilarConflicts: appliesConflictBatchToAllSimilarConflicts
         )
     }
@@ -327,6 +318,21 @@ extension ImportBatchCopyImportModel {
             guard let result = resultsByID[row.id] else { continue }
             setStatus(status(for: result, fallback: row.status), for: row.id)
         }
+    }
+
+    private func finishConflictBatchPerItem(
+        result: ImportConflictBatchApplyResult,
+        queue: ImportConflictBatchPerItemQueue
+    ) async -> ImportConflictBatchApplyResult {
+        conflictBatchApplyResult = result
+        guard let report = result.report, report.queuedForPerItemCount > 0 else {
+            conflictBatchUndoState = .idle
+            return result
+        }
+        conflictBatchPerItemQueue = queue
+        applyImportConflictBatchReportToRows(report)
+        await refreshConflictBatchUndoState(report: report, failure: result.failure)
+        return result
     }
 
     func applyImportConflictBatch(replaceConfirmed: Bool? = nil) async -> ImportConflictBatchApplyResult? {
@@ -455,10 +461,8 @@ extension ImportBatchCopyImportModel {
         !resolution.isReplace || replaceOptionVisibility == .enabled
     }
 
-    private func status(
-        for result: ImportConflictBatchItemResultSnapshot,
-        fallback: ImportBatchCopyImportRowStatus
-    ) -> ImportBatchCopyImportRowStatus {
+    private func status(for result: ImportConflictBatchItemResultSnapshot,
+                        fallback: ImportBatchCopyImportRowStatus) -> ImportBatchCopyImportRowStatus {
         switch result.status {
         case .skipped:
             return .skippedDuplicate(existingPath: result.finalPath ?? existingPath(from: fallback))
@@ -481,9 +485,7 @@ extension ImportBatchCopyImportModel {
         }
     }
 
-    private func currentReplaceConfirmationContext(
-        for rowID: ImportBatchCopyImportRow.ID
-    ) -> SingleFileReplaceConfirmationContext? {
+    private func currentReplaceConfirmationContext(for rowID: ImportBatchCopyImportRow.ID) -> SingleFileReplaceConfirmationContext? {
         guard let row = rows.first(where: { $0.id == rowID }) else { return nil }
         guard request?.allowReplaceDuringImport == true, request?.isTrashAvailable == true else { return nil }
         guard let existingPath = row.existingConflictPath else { return nil }

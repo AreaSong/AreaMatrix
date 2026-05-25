@@ -78,36 +78,6 @@ final class ImportSingleFileNameConflictCoreTests: XCTestCase {
     }
 
     @MainActor
-    func testS221ManualScopeAndAskPerItemUseSelectedConflictIDs() async {
-        let invoiceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
-        let conflictBatcher = S221RecordingConflictBatcher()
-        let model = ImportBatchCopyImportModel(
-            importer: S118RecordingBatchImporter(),
-            errorMapper: S117RecordingErrorMapper(),
-            conflictBatcher: conflictBatcher
-        )
-
-        model.applyPreviewRows(
-            [s118ReadyBatchRow(url: invoiceURL)],
-            request: s221BatchRequest(urls: [invoiceURL], conflictIDs: ["dup-1", "name-1"]),
-            selectedDestination: .autoClassify
-        )
-        model.updateConflictBatchScope(appliesToAll: false)
-        model.setConflictBatchItemSelected("name-1", isSelected: true)
-        _ = await model.askConflictBatchPerItem()
-        let applyRequests = await conflictBatcher.applyRequests()
-
-        XCTAssertEqual(applyRequests.last?.request, ImportConflictBatchApplyRequestSnapshot(
-            importSessionID: "session-221",
-            conflictIDs: ["name-1"],
-            duplicateStrategy: .askPerItem,
-            sameNameStrategy: .askPerItem,
-            applyToAllSimilarConflicts: false,
-            replaceConfirmed: false
-        ))
-    }
-
-    @MainActor
     func testS221PartialBlockedRowsDoNotDisableActionableScope() async {
         let invoiceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
         let blockedPreview = ImportConflictBatchPreviewReportSnapshot.s221DefaultPreview

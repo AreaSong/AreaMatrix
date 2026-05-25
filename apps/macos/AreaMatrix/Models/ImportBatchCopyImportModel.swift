@@ -19,6 +19,7 @@ final class ImportBatchCopyImportModel: ObservableObject, ImportProgressQueueCon
     @Published var appliesConflictBatchToAllSimilarConflicts = true
     @Published var selectedConflictBatchIDs: Set<String> = []
     @Published var isConflictBatchReplaceConfirmed = false
+    @Published var conflictBatchPerItemQueue: ImportConflictBatchPerItemQueue?
 
     let importer: any CoreBatchCopyImporting
     let conflictBatcher: any CoreImportConflictBatching

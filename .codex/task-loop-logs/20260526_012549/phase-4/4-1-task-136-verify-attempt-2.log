@@ -1,0 +1,91 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`4-1/task-136`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-136-s2-21-page-integration-verify.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：6
+- 未覆盖项数：0
+- 通过项数：3
+- 不通过项数：3
+- 阻塞项数：2
+
+四、逐项验收结果
+
+- 项目：page-feature task 覆盖 C2-17 / C2-07
+- 结果：不通过
+- 证据：C2-17 / C2-07 API 与 UDL 存在，`CoreBridge` 也接入；但 S2-21 的 `Ask per item` 未证明能进入 S1-22 / S1-23 / S1-24 逐项处理队列。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportBatchConflictActions.swift:288`
+
+- 项目：页面状态、入口、退出、错误态和 CoreBridge 闭环
+- 结果：不通过
+- 证据：入口、CoreBridge preview/apply、错误映射、Undo 加载存在；但关闭全量作用域且未勾选行时，preview request 为空后状态被置为 idle，UI 会显示 `No conflicts remain`，不符合 spec 要求的 `Select at least one conflict.`
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportBatchConflictActions.swift:187`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportBatchConflictSection.swift:143`
+
+- 项目：mock / fixture / 硬编码状态检查
+- 结果：通过
+- 证据：生产路径通过 `CoreBridge` 调用 `previewImportConflictBatch`、`applyImportConflictBatch`、`listUndoActions`、`undoAction`；测试 fixture 未被当作生产闭环。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreImporting.swift:258`
+
+- 项目：未新增 control map 外能力
+- 结果：通过
+- 证据：S2-21 control map 只声明 `C2-17, C2-07`；当前相关实现集中在 import conflict batch 与 undo action log。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-2-control-map.md:29`
+
+- 项目：Expected New Paths
+- 结果：通过
+- 证据：`apps/macos/AreaMatrix/**` 与 `apps/macos/AreaMatrixTests/**` 均存在并有相关实现 / 测试文件。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportBatchConflictActions.swift:1`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git diff --name-only -- core/src apps core/area_matrix.udl` 未显示 `core/src/**` 改动。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过，`Ask per item` 逻辑仍走 batch apply，并未完成页面退出到逐项队列的可验收闭环。
+- 注释 / rustdoc / 文档同步：通过，Core API 与 UDL 对 C2-17 / C2-07 的声明一致，本 task 未新增 public Rust API。
+- 错误处理与边界处理：不通过，空选择状态被折叠成 idle / no conflicts，导致错误状态表达不符合 page spec。
+- 测试与验证覆盖：不通过，测试覆盖 blocked preview、selected scope apply、Undo；缺少未选中 scope 与 Ask per item 路由到逐项页面的断言。
+- 占位、硬编码、mock-only、一次性实现检查：通过，未发现生产路径 mock-only；但 `Ask per item` 闭环缺失仍阻断完成。
+
+六、阻塞项
+
+- P0：`Ask per item` 未进入逐项冲突处理队列
+  - 说明：page spec 要求 `Ask per item` 不执行批量策略，并按类型进入 S1-22 / S1-23 / S1-24。当前实现把 duplicate / same-name 策略改为 `.askPerItem` 后调用 `loadImportConflictBatchPreview()` 与 `applyImportConflictBatch()`，结果 `.queuedForPerItem` 仅保持原 row fallback，没有页面路由证据。
+  - 绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportBatchConflictActions.swift:288`
+  - 为什么导致不通过：S2-21 整页闭环的退出路径缺失，无法按 page spec 完整验收。
+
+- P1：关闭全量作用域且未勾选行时状态不符合 spec
+  - 说明：spec 要求显示 `Select at least one conflict.` 并禁用 Apply / Ask per item。当前 `currentConflictBatchIDs` 返回空数组后 `makeImportConflictBatchPreviewRequest()` 返回 nil，`loadImportConflictBatchPreview()` 将状态置为 `.idle`，UI fallback 显示 `No conflicts remain`。
+  - 绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportBatchConflictActions.swift:187`
+  - 为什么导致不通过：把“当前作用域为空”误表达为“冲突不存在”，破坏页面状态验收和用户安全提示。
+
+七、验证情况
+
+- 跑了哪些验证：
+  - `./dev check task 4-1/task-136`
+- 哪些通过：
+  - `prompt_pipeline.py doctor`: OK，tasks 637，manifests 637
+  - `git diff --check`: 通过，无 whitespace error 输出
+  - `xcodebuild -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination platform=macOS,arch=arm64 build CODE_SIGNING_ALLOWED=NO`: `BUILD SUCCEEDED`
+- 哪些失败：
+  - 无命令失败
+- 哪些缺失：
+  - 未单独运行 `./dev test macos`；本 task manifest 指定的验证命令已运行并通过，但行为审查发现上述闭环阻塞。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+
+VERIFY_RESULT: FAIL

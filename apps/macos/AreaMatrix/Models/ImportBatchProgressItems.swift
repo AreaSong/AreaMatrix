@@ -159,6 +159,36 @@ struct ImportConflictBatchApplyResult: Equatable {
     var failure: CoreErrorMappingSnapshot?
 }
 
+struct ImportConflictBatchPerItemRoute: Equatable, Identifiable {
+    var conflictID: String
+    var conflictType: ImportConflictBatchConflictTypeSnapshot
+    var page: ImportSingleFileConflictPage
+    var existingPath: String?
+    var incomingPath: String
+    var targetPath: String?
+
+    var id: String { conflictID }
+
+    var routeLabel: String { page.routeLabel }
+
+    var replaceConfirmationRouteLabel: String { "S1-24 replace-confirm" }
+}
+
+struct ImportConflictBatchPerItemQueue: Equatable {
+    var importSessionID: String
+    var routes: [ImportConflictBatchPerItemRoute]
+
+    var summary: String {
+        "Queued \(routes.count) conflicts for per-item review."
+    }
+
+    static func make(from preview: ImportConflictBatchPreviewReportSnapshot) -> ImportConflictBatchPerItemQueue? {
+        let routes = preview.items.compactMap(ImportConflictBatchPerItemRoute.init)
+        guard !routes.isEmpty else { return nil }
+        return ImportConflictBatchPerItemQueue(importSessionID: preview.importSessionID, routes: routes)
+    }
+}
+
 enum ImportConflictBatchPreviewState: Equatable {
     case idle
     case loading(previous: ImportConflictBatchPreviewReportSnapshot?)
@@ -182,6 +212,144 @@ enum ImportConflictBatchPreviewState: Equatable {
     var failure: CoreErrorMappingSnapshot? {
         guard case let .failed(mapping, _) = self else { return nil }
         return mapping
+    }
+}
+
+extension ImportConflictBatchPerItemRoute {
+    init?(_ item: ImportConflictBatchPreviewItemSnapshot) {
+        guard item.status == .ready || item.status == .needsConfirmation else { return nil }
+        guard item.willAskPerItem || item.selectedStrategy == .askPerItem else { return nil }
+        switch item.conflictType {
+        case .duplicateHash:
+            page = .duplicate
+        case .sameNameDifferentContent:
+            page = .name
+        }
+        conflictID = item.conflictID
+        conflictType = item.conflictType
+        existingPath = item.existingPath
+        incomingPath = item.incomingPath
+        targetPath = item.targetPath
+    }
+}
+
+extension ImportConflictBatchPreviewReportSnapshot {
+    static func emptyManualScope(
+        importSessionID: String,
+        sourceItems: [ImportConflictBatchPreviewItemSnapshot],
+        fallbackConflictIDs: [String]
+    ) -> ImportConflictBatchPreviewReportSnapshot {
+        let items = sourceItems.isEmpty
+            ? fallbackConflictIDs.map(ImportConflictBatchPreviewItemSnapshot.pendingPlaceholder)
+            : sourceItems
+        return ImportConflictBatchPreviewReportSnapshot(
+            importSessionID: importSessionID,
+            previewToken: "",
+            applyToAllSimilarConflicts: false,
+            requestedConflictCount: 0,
+            duplicateConflictCount: Int64(items.filter { $0.conflictType == .duplicateHash }.count),
+            sameNameConflictCount: Int64(items.filter { $0.conflictType == .sameNameDifferentContent }.count),
+            includedCount: 0,
+            pendingCount: Int64(items.count),
+            blockedCount: 0,
+            replaceCount: 0,
+            skipCount: 0,
+            keepBothCount: 0,
+            askPerItemCount: 0,
+            trashAvailable: false,
+            undoAvailable: false,
+            canApply: false,
+            applyBlockedReason: "Select at least one conflict.",
+            replaceConfirmationRequired: false,
+            replaceConfirmationSummary: nil,
+            items: items.map(\.notSelected)
+        )
+    }
+}
+
+extension ImportConflictBatchPreviewItemSnapshot {
+    var isActionablePreviewItem: Bool {
+        status == .ready || status == .needsConfirmation
+    }
+
+    var isPerItemQueueItem: Bool {
+        isActionablePreviewItem && (willAskPerItem || selectedStrategy == .askPerItem)
+    }
+
+    var notSelected: ImportConflictBatchPreviewItemSnapshot {
+        var copy = self
+        copy.status = .pending
+        copy.willReplace = false
+        copy.willKeepBoth = false
+        copy.willSkip = false
+        copy.willAskPerItem = false
+        copy.reason = "Not selected"
+        return copy
+    }
+}
+
+@MainActor
+extension ImportBatchCopyImportModel {
+    var conflictBatchPerItemSummary: String? {
+        conflictBatchPerItemQueue?.summary
+    }
+
+    var conflictBatchPerItemRouteLabels: [String] {
+        conflictBatchPerItemQueue?.routes.map(\.routeLabel) ?? []
+    }
+
+    var conflictBatchScopeSummary: String {
+        if hasEmptyManualConflictBatchScope { return "Select at least one conflict." }
+        guard let preview = conflictBatchPreviewReport else { return "Checking conflicts..." }
+        if preview.applyToAllSimilarConflicts {
+            return "Will apply to \(preview.duplicateConflictCount) duplicate conflicts and " +
+                "\(preview.sameNameConflictCount) same-name conflicts."
+        }
+        return "Will apply to \(preview.includedCount) selected conflicts."
+    }
+
+    var conflictBatchApplyDisabledReason: String? {
+        if isConflictBatchApplying { return "Applying..." }
+        if hasEmptyManualConflictBatchScope { return "Select at least one conflict." }
+        guard let preview = conflictBatchPreviewReport else { return "Checking conflicts..." }
+        if !preview.canApply {
+            return preview.applyBlockedReason ?? "Could not prepare conflict strategy."
+        }
+        if ImportConflictBatchValidation.actionableIncludedCount(preview: preview) == 0 {
+            return "All conflicts in this scope are blocked."
+        }
+        let replaceConfirmed = isConflictBatchReplaceConfirmed || preview.replaceConfirmationRequired
+        guard let request = makeImportConflictBatchApplyRequest(replaceConfirmed: replaceConfirmed),
+              ImportConflictBatchValidation.canApply(preview: preview, request: request, isApplying: false) else {
+            return "Refresh conflict strategy preview."
+        }
+        return nil
+    }
+
+    var conflictBatchAskPerItemDisabledReason: String? {
+        if isConflictBatchApplying { return "Applying..." }
+        if hasEmptyManualConflictBatchScope { return "Select at least one conflict." }
+        guard let preview = conflictBatchPreviewReport else { return "Checking conflicts..." }
+        if ImportConflictBatchValidation.canAskPerItem(preview: preview, isApplying: false) { return nil }
+        if preview.includedCount > 0 {
+            return "All conflicts in this scope are blocked."
+        }
+        return preview.applyBlockedReason ?? "Select at least one conflict."
+    }
+
+    var hasEmptyManualConflictBatchScope: Bool {
+        showsCoreConflictBatchReview
+            && !appliesConflictBatchToAllSimilarConflicts
+            && selectedConflictBatchIDs.isEmpty
+    }
+
+    func emptyManualConflictBatchPreview() -> ImportConflictBatchPreviewReportSnapshot? {
+        guard let importSessionID = normalizedImportConflictBatchSessionID else { return nil }
+        return .emptyManualScope(
+            importSessionID: importSessionID,
+            sourceItems: conflictBatchPreviewState.report?.items ?? [],
+            fallbackConflictIDs: request?.importConflictIDs ?? []
+        )
     }
 }
 

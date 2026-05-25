@@ -1,0 +1,56 @@
+一、执行结论
+
+已完成 `4-1/task-136`。
+
+二、执行范围
+
+单任务：S2-21 import-conflict-batch page integration verify。
+
+修改文件清单：
+- [ImportBatchConflictActions.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportBatchConflictActions.swift)
+- [AreaMatrixShellTestSupport.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/AreaMatrixShellTestSupport.swift)
+- [ImportBatchPrecheckTestSupport.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportBatchPrecheckTestSupport.swift)
+- [ImportConflictIntegrationVerifyTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportConflictIntegrationVerifyTests.swift)
+
+三、完成情况
+
+核对清单：
+- page-feature task 覆盖：补充 S2-21 集成测试覆盖 C2-17 与 C2-07。
+- 页面闭环：验证 preview 阻断、replace 二次确认、apply request、undo action list/undo 调用链。
+- mock/fixture/硬编码状态：生产逻辑移除对 actionable rows 的错误放行，测试替身只用于记录 CoreBridge 协议调用。
+- control map 外功能：未新增。
+
+完成标准：
+- S2-21 可按 page spec/control map 验收：通过新增集成测试和 task gate 证明。
+- 页面声明 Core 能力真实接入：测试覆盖 `preview_import_conflict_batch`、`apply_import_conflict_batch`、`list_undo_actions`、`undo_action` 的消费链路。
+
+Forbidden Touches：
+- 未触碰 `core/src/**`。
+
+四、工程质量
+
+- 生产修复很小：`ImportConflictBatchValidation.canApply` 现在严格尊重 Core preview 的 `canApply=false`。
+- 所有触达 Swift 文件均低于 500 行；未新增依赖、未改 UDL/Core。
+- 错误与边界处理补齐了 Core 阻断原因展示，避免 UI 在 Core 明确禁止 apply 时仍尝试提交。
+- 不存在 mock-only 产品路径；测试替身只用于验证真实协议 wiring。
+
+五、验证情况
+
+已运行并通过：
+- `./dev check task 4-1/task-136`
+  - `prompt doctor`: OK
+  - `git diff --check`: OK
+  - macOS build gate: `BUILD SUCCEEDED`
+- `./dev test macos --only-testing AreaMatrixTests/ImportConflictIntegrationVerifyTests`
+  - 标准 `xcodebuild test` 被本地 `testmanagerd` sandbox 阻断
+  - 仓库封装 fallback 使用同一 XCTest bundle 执行：1 test，0 failures，通过
+
+六、风险与后续
+
+剩余风险：
+- 标准 `xcodebuild test` 在当前 sandbox 下仍不能直接完成 testmanagerd 通信；已按仓库规则用 `xcrun xctest` fallback 补足同 bundle 测试证据。
+- 工作树中仍有既存的 `tasks/prompts/_shared/progress.json` 和 `.codex/task-loop-*` 改动/日志，本次未触碰、未回滚。
+
+建议下一个任务：
+- 进入 `4-1/task-137` 或后续相邻 page integration verify 前，继续保持同样的 task gate + 聚焦 XCTest 证据模式。
+

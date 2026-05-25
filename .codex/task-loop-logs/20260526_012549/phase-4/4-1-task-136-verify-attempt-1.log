@@ -1,0 +1,91 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`4-1/task-136`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-136-s2-21-page-integration-verify.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-2-experience/S2-21-import-conflict-batch.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：6
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：2
+- 阻塞项数：1
+
+四、逐项验收结果
+
+- 项目：逐项验收本页所有 page-feature task 是否完成
+  - 结果：通过
+  - 证据：control map 将 S2-21 映射到 C2-17、C2-07、task-134、task-135、task-136；manifest 也声明 task-136 依赖 task-134/task-135。
+  - 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-2-control-map.md:29`，`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-4.md:3940`
+
+- 项目：检查页面状态、入口、退出、错误态和 CoreBridge 调用是否能串成完整页面闭环
+  - 结果：不通过
+  - 证据：关闭全量作用域后，行选择只更新本地 `selectedConflictBatchIDs`，没有重新调用 Core preview；但 UX 要求作用域变化后重新计算 affected / replace / blocked count 和 selected action preview。
+  - 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-2-experience/S2-21-import-conflict-batch.md:87`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportBatchConflictSection.swift:189`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportBatchConflictActions.swift:263`
+
+- 项目：移除无法通过最终验收的 mock、fixture 或硬编码状态
+  - 结果：通过
+  - 证据：生产路径通过 `CoreBridge()` 注入 `CoreImportConflictBatching` 和 `CoreUndoActionLogging`；CoreBridge 调用生成绑定 `AreaMatrix.previewImportConflictBatch`、`applyImportConflictBatch`、`listUndoActions`、`undoAction`。
+  - 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreImporting.swift:258`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreTagCRUD.swift:132`
+
+- 项目：不新增本页未在 control map 中声明的功能
+  - 结果：通过
+  - 证据：本页实现范围仍围绕 C2-17 import conflict batch 与 C2-07 undo action log；未发现 `core/src/**` Forbidden Touches 被修改。
+  - 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-2-control-map.md:29`
+
+- 项目：完成标准：S2-21 页面可以按 page spec 和 control map 完整验收
+  - 结果：不通过
+  - 证据：手动选择作用域闭环不能按 page spec 完整验收，详见阻塞项 P1。
+  - 涉及文件：同 P1
+
+- 项目：完成标准：页面声明的所有 Core 能力都已真实接入或有明确阻塞证据
+  - 结果：通过
+  - 证据：UDL 声明 C2-17/C2-07 API；Swift CoreBridge 有真实生成绑定调用。
+  - 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:252`，`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:216`
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过。手动选择作用域后的 preview 状态与 apply/ask 按钮状态不一致。
+- 注释 / rustdoc / 文档同步：通过。未发现本 task 范围内 API/UDL/文档声明缺失。
+- 错误处理与边界处理：不通过。关闭全量作用域后选择行不会刷新 Core preview，导致 selected scope 边界无法被 Core 重新确认。
+- 测试与验证覆盖：不通过。`./dev check task 4-1/task-136` 通过，但现有测试主要覆盖 model 直接调用，未覆盖真实 UI 行选择触发 preview 刷新的缺口。
+- 占位、硬编码、mock-only、一次性实现检查：通过。生产实现未发现 mock-only；测试 fixture 未被当作生产闭环。
+
+六、阻塞项
+
+- P1：手动选择冲突行不会刷新 Core preview，导致 S2-21 selected-scope 闭环不成立。
+  - 说明：UX 要求关闭全量作用域后，只处理显式勾选行，且作用域变化后必须重新计算 affected count、Replace count、blocked count 和 selected action preview。当前 UI 的行 checkbox setter 只调用 `setConflictBatchItemSelected`，而该方法只更新本地集合并 reset outcome，没有调用 `loadImportConflictBatchPreview` / `refreshImportConflictBatchPreview`。结果是用户勾选行后页面仍停在旧 preview 或 idle preview，`Apply strategy` / `Ask per item` 不能可靠按当前选择验收。
+  - 绝对路径与行号：
+    - `/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-2-experience/S2-21-import-conflict-batch.md:87`
+    - `/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-2-experience/S2-21-import-conflict-batch.md:88`
+    - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportBatchConflictSection.swift:189`
+    - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportBatchConflictActions.swift:263`
+  - 为什么导致不通过：这是 S2-21 page spec 明确要求的核心交互路径，属于 page integration verify 的页面闭环范围；无法用当前文件和验证证明完整通过。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-136`
+  - 通过：prompt doctor OK；`git diff --check` OK；macOS `xcodebuild ... build CODE_SIGNING_ALLOWED=NO` 最终 `BUILD SUCCEEDED`
+- 已运行：`git diff --check`
+  - 通过：无 whitespace / diff check 问题
+- Forbidden Touches：
+  - 通过：未发现 `core/src/**` 修改
+- 缺失：
+  - 未运行 `./dev test macos`。本 task manifest 指定验证是 `./dev check task 4-1/task-136`，该 page task gate 当前只运行 macOS build；未扩大到宽门禁。
+- 工作区状态：
+  - 存在 `tasks/prompts/_shared/progress.json` 与 `.codex/task-loop-*` 运行态改动；按本 verify 时序规则，不因 runner 收口状态本身判失败。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+
+VERIFY_RESULT: FAIL

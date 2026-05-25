@@ -3,6 +3,63 @@ import XCTest
 
 final class ImportBatchDuplicateResolutionTests: XCTestCase {
     @MainActor
+    func testS221ManualScopeWithoutSelectionShowsSelectAtLeastOneConflict() async {
+        let batcher = S221IntegrationConflictBatcher(previews: [.s221MixedPreview()])
+        let model = s221IntegrationModel(conflictBatcher: batcher, undoStore: S221IntegrationUndoStore())
+
+        model.applyPreviewRows(
+            [s118ReadyBatchRow(url: URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf"))],
+            request: s221IntegrationRequest(
+                urls: [URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")],
+                conflictIDs: ["dup-1", "name-1"]
+            ),
+            selectedDestination: .autoClassify
+        )
+        await model.loadImportConflictBatchPreview()
+        model.updateConflictBatchScope(appliesToAll: false)
+        await model.refreshImportConflictBatchPreview()
+        let applyResult = await model.applyImportConflictBatch()
+        let askResult = await model.askConflictBatchPerItem()
+
+        XCTAssertEqual(model.conflictBatchScopeSummary, "Select at least one conflict.")
+        XCTAssertEqual(model.conflictBatchApplyDisabledReason, "Select at least one conflict.")
+        XCTAssertEqual(model.conflictBatchAskPerItemDisabledReason, "Select at least one conflict.")
+        XCTAssertEqual(model.coreConflictBatchRows.map(\.status), [.pending, .pending])
+        XCTAssertNil(applyResult)
+        XCTAssertNil(askResult)
+        XCTAssertEqual(await batcher.previewRequests().count, 1)
+        XCTAssertEqual(await batcher.applyRequests(), [])
+    }
+
+    @MainActor
+    func testS221AskPerItemRoutesSelectedConflicts() async {
+        let batcher = S221IntegrationConflictBatcher(previews: [.s221MixedPreview(), .s221MixedPreview()])
+        let model = s221IntegrationModel(conflictBatcher: batcher, undoStore: S221IntegrationUndoStore())
+
+        model.applyPreviewRows(
+            [s118ReadyBatchRow(url: URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf"))],
+            request: s221IntegrationRequest(
+                urls: [URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")],
+                conflictIDs: ["dup-1", "name-1"]
+            ),
+            selectedDestination: .autoClassify
+        )
+        await model.loadImportConflictBatchPreview()
+        model.updateConflictBatchScope(appliesToAll: false)
+        model.setConflictBatchItemSelected("name-1", isSelected: true)
+        let result = await model.askConflictBatchPerItem()
+
+        XCTAssertEqual(result?.report?.queuedForPerItemCount, 1)
+        XCTAssertEqual(model.conflictBatchPerItemRouteLabels, ["S1-23 conflict-name"])
+        XCTAssertEqual(model.conflictBatchPerItemQueue?.routes.map(\.conflictID), ["name-1"])
+        XCTAssertEqual(model.conflictBatchPerItemQueue?.routes.map(\.replaceConfirmationRouteLabel), [
+            "S1-24 replace-confirm"
+        ])
+        XCTAssertEqual(await batcher.applyRequests().last?.request.duplicateStrategy, .askPerItem)
+        XCTAssertEqual(await batcher.applyRequests().last?.request.conflictIDs, ["name-1"])
+    }
+
+    @MainActor
     func testDuplicateFileErrorFromCoreImportBecomesVisibleConflictAndStopsBatch() async {
         let invoiceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
         let contractURL = URL(fileURLWithPath: "/tmp/合同.pdf")
@@ -310,5 +367,38 @@ private final class S118RecordingFileRevealer: RepositoryFileRevealing {
     func revealFile(repoPath: String, relativePath: String) throws {
         requests.append((repoPath: repoPath, relativePath: relativePath))
         try result.get()
+    }
+}
+
+extension ImportConflictBatchPreviewReportSnapshot {
+    static func s221MixedPreview() -> ImportConflictBatchPreviewReportSnapshot {
+        var preview = s221Preview(canApply: true)
+        preview.previewToken = "token-mixed"
+        preview.duplicateConflictCount = 1
+        preview.sameNameConflictCount = 1
+        preview.replaceCount = 0
+        preview.skipCount = 1
+        preview.keepBothCount = 1
+        preview.replaceConfirmationRequired = false
+        preview.replaceConfirmationSummary = nil
+        preview.items = [
+            .s221Item(conflictID: "dup-1", strategy: .skip, status: .ready),
+            .s221Item(conflictID: "name-1", strategy: .keepBoth, status: .ready)
+                .withConflictType(.sameNameDifferentContent)
+        ]
+        return preview
+    }
+}
+
+extension ImportConflictBatchPreviewItemSnapshot {
+    func withConflictType(_ type: ImportConflictBatchConflictTypeSnapshot) -> ImportConflictBatchPreviewItemSnapshot {
+        var item = self
+        item.conflictType = type
+        if type == .sameNameDifferentContent {
+            item.existingPath = "docs/contract.pdf"
+            item.incomingPath = "/tmp/contract.pdf"
+            item.targetPath = "docs/contract 2.pdf"
+        }
+        return item
     }
 }

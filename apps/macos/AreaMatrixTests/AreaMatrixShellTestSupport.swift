@@ -1,6 +1,34 @@
 @testable import AreaMatrix
 import XCTest
 
+func s221IntegrationRequest(urls: [URL], conflictIDs: [String]) -> ImportEntryRequest {
+    ImportEntryRequest(
+        repoPath: "/tmp/repo",
+        source: .importConflictBatch(.importConflictBatch),
+        destination: .autoClassify,
+        urls: urls,
+        kind: .multipleItems(urls.count),
+        availableCategories: ["inbox", "docs", "finance"],
+        allowReplaceDuringImport: true,
+        isTrashAvailable: true,
+        importSessionID: "session-221",
+        importConflictIDs: conflictIDs
+    )
+}
+
+@MainActor
+func s221IntegrationModel(
+    conflictBatcher: any CoreImportConflictBatching,
+    undoStore: any CoreUndoActionLogging
+) -> ImportBatchCopyImportModel {
+    ImportBatchCopyImportModel(
+        importer: S118RecordingBatchImporter(),
+        errorMapper: S117RecordingErrorMapper(),
+        conflictBatcher: conflictBatcher,
+        undoActionStore: undoStore
+    )
+}
+
 struct ShellStaticSettingsReader: AppSettingsReading {
     let repoPath: String?
     var lastOpenedAtByRepoPath: [String: Int64] = [:]

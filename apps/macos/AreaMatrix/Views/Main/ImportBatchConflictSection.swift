@@ -94,6 +94,7 @@ struct ImportBatchConflictSection: View {
             coreConflictBatchSummary
             coreConflictBatchStrategyControls
             coreConflictBatchRows
+            coreConflictBatchPerItemQueue
             coreConflictBatchResult
             ImportConflictBatchUndoStateView(
                 state: batchImportModel.conflictBatchUndoState,
@@ -188,7 +189,10 @@ struct ImportBatchConflictSection: View {
             TableColumn("Use") { item in
                 Toggle("", isOn: Binding(
                     get: { batchImportModel.selectedConflictBatchIDs.contains(item.id) },
-                    set: { batchImportModel.setConflictBatchItemSelected(item.id, isSelected: $0) }
+                    set: { isSelected in
+                        batchImportModel.setConflictBatchItemSelected(item.id, isSelected: isSelected)
+                        Task { await batchImportModel.refreshImportConflictBatchPreview() }
+                    }
                 ))
                 .labelsHidden()
                 .disabled(batchImportModel.appliesConflictBatchToAllSimilarConflicts)
@@ -213,6 +217,19 @@ struct ImportBatchConflictSection: View {
             }
         }
         .frame(minHeight: 140)
+    }
+
+    @ViewBuilder
+    private var coreConflictBatchPerItemQueue: some View {
+        if let summary = batchImportModel.conflictBatchPerItemSummary {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(summary)
+                    .font(.callout)
+                Text(batchImportModel.conflictBatchPerItemRouteLabels.joined(separator: " · "))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
     }
 
     @ViewBuilder

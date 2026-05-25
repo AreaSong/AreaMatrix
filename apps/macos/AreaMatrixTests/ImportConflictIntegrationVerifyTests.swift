@@ -3,9 +3,9 @@ import XCTest
 
 final class ImportConflictIntegrationVerifyTests: XCTestCase {
     @MainActor
-    func testS116ThroughS124ImportConflictLoopUsesRealWiring() async throws {
+    func testImportConflictLoopsUseRealWiring() async throws {
         XCTAssertEqual(Self.coveredCoreCapabilities, [
-            "C1-05", "C1-06", "C1-07", "C1-08", "C1-09", "C1-10", "C1-13"
+            "C1-05", "C1-06", "C1-07", "C1-08", "C1-09", "C1-10", "C1-13", "C2-07", "C2-17"
         ])
 
         try await verifyHoverAndEntryRouting()
@@ -13,12 +13,13 @@ final class ImportConflictIntegrationVerifyTests: XCTestCase {
         try await verifySingleFileConflictPagesBlockReplaceUntilConfirmation()
         try await verifyBatchAndFolderConflictImports()
         try await verifyProgressResultAndChangeLogRoutes()
+        try await verifyS221ImportConflictBatchPageIntegration()
     }
 }
 
 private extension ImportConflictIntegrationVerifyTests {
     static let coveredCoreCapabilities: Set<String> = [
-        "C1-05", "C1-06", "C1-07", "C1-08", "C1-09", "C1-10", "C1-13"
+        "C1-05", "C1-06", "C1-07", "C1-08", "C1-09", "C1-10", "C1-13", "C2-07", "C2-17"
     ]
 
     @MainActor
@@ -282,6 +283,93 @@ private extension ImportConflictIntegrationVerifyTests {
         XCTAssertEqual(result.changeLog, .loaded([
             ChangeLogEntrySnapshot.task27Fixture(filename: "Invoice_2026Q1.pdf")
         ]))
+    }
+
+    @MainActor
+    func verifyS221ImportConflictBatchPageIntegration() async throws {
+        try await verifyS221BlockedPreviewDoesNotApply()
+        try await verifyS221SelectedScopeRefreshesBeforeApplyAndUndo()
+    }
+
+    @MainActor
+    func verifyS221BlockedPreviewDoesNotApply() async throws {
+        let invoiceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
+        let blockedBatcher = S221IntegrationConflictBatcher(previews: [.s221Preview(canApply: false)])
+        let blockedModel = s221IntegrationModel(conflictBatcher: blockedBatcher, undoStore: S221IntegrationUndoStore())
+
+        blockedModel.applyPreviewRows(
+            [s118ReadyBatchRow(url: invoiceURL)],
+            request: s221IntegrationRequest(urls: [invoiceURL], conflictIDs: ["dup-blocked"]),
+            selectedDestination: .autoClassify
+        )
+        await blockedModel.loadImportConflictBatchPreview()
+        let blockedResult = await blockedModel.applyImportConflictBatch(replaceConfirmed: true)
+
+        XCTAssertNil(blockedResult)
+        XCTAssertEqual(blockedModel.conflictBatchApplyDisabledReason, "Blocked: Trash unavailable")
+        let blockedApplyRequests = await blockedBatcher.applyRequests()
+        XCTAssertEqual(blockedApplyRequests, [])
+    }
+
+    @MainActor
+    func verifyS221SelectedScopeRefreshesBeforeApplyAndUndo() async throws {
+        let invoiceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
+        let action = UndoActionRecordSnapshot.s221IntegrationAction()
+        let undoResult = UndoActionResultSnapshot.s221IntegrationResult()
+        let undoStore = S221IntegrationUndoStore(actions: .success([action]), undoResult: .success(undoResult))
+        let batcher = S221IntegrationConflictBatcher(previews: [
+            .s221Preview(canApply: true),
+            .s221Preview(canApply: true)
+        ])
+        let model = s221IntegrationModel(conflictBatcher: batcher, undoStore: undoStore)
+
+        model.applyPreviewRows(
+            [s118ReadyBatchRow(url: invoiceURL)],
+            request: s221IntegrationRequest(urls: [invoiceURL], conflictIDs: ["dup-1"]),
+            selectedDestination: .autoClassify
+        )
+        model.updateConflictBatchDuplicateStrategy(.replace)
+        await model.loadImportConflictBatchPreview()
+        model.updateConflictBatchScope(appliesToAll: false)
+        model.setConflictBatchItemSelected("dup-1", isSelected: true)
+        await model.refreshImportConflictBatchPreview()
+
+        XCTAssertTrue(model.showsCoreConflictBatchReview)
+        XCTAssertEqual(model.conflictBatchScopeSummary, "Will apply to 1 selected conflicts.")
+        XCTAssertNil(model.conflictBatchApplyDisabledReason)
+        let unconfirmedApply = await model.applyImportConflictBatch(replaceConfirmed: false)
+        let unconfirmedApplyRequests = await batcher.applyRequests()
+        XCTAssertNil(unconfirmedApply)
+        XCTAssertEqual(unconfirmedApplyRequests, [])
+
+        let applied = await model.applyImportConflictBatch(replaceConfirmed: true)
+        await model.undoImportConflictBatchAction()
+        let previewStrategies = await batcher.previewRequests().map(\.request.duplicateStrategy)
+        let applyRequests = await batcher.applyRequests()
+        let listRequests = await undoStore.listRequests()
+        let undoRequests = await undoStore.undoRequests()
+
+        XCTAssertEqual(applied?.report?.replacedCount, 1)
+        XCTAssertEqual(model.conflictBatchUndoState, .undone(undoResult))
+        XCTAssertEqual(previewStrategies, [.replace, .replace])
+        let previewScopes = await batcher.previewRequests().map(\.request.applyToAllSimilarConflicts)
+        XCTAssertEqual(previewScopes, [true, false])
+        XCTAssertEqual(applyRequests, [
+            S221IntegrationApplyRequest(
+                repoPath: "/tmp/repo",
+                request: ImportConflictBatchApplyRequestSnapshot(
+                    importSessionID: "session-221",
+                    conflictIDs: ["dup-1"],
+                    duplicateStrategy: .replace,
+                    sameNameStrategy: .keepBoth,
+                    applyToAllSimilarConflicts: false,
+                    replaceConfirmed: true
+                ),
+                previewToken: "token-replace"
+            )
+        ])
+        XCTAssertEqual(listRequests, ["/tmp/repo"])
+        XCTAssertEqual(undoRequests, ["/tmp/repo|undo-import-conflict-batch"])
     }
 }
 
