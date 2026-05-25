@@ -223,7 +223,7 @@ extension ImportBatchCopyImportModel {
             return
         }
         isConflictBatchReplaceConfirmed = false
-        conflictBatchApplyResult = nil
+        resetConflictBatchOutcome()
         conflictBatchPreviewState = .loading(previous: conflictBatchPreviewState.report)
         conflictBatchPreviewState = await ImportConflictBatchAction.preview(
             repoPath: self.request?.repoPath ?? "",
@@ -241,13 +241,13 @@ extension ImportBatchCopyImportModel {
     func updateConflictBatchDuplicateStrategy(_ strategy: ImportConflictBatchStrategySnapshot) {
         conflictBatchDuplicateStrategy = strategy
         isConflictBatchReplaceConfirmed = false
-        conflictBatchApplyResult = nil
+        resetConflictBatchOutcome()
     }
 
     func updateConflictBatchSameNameStrategy(_ strategy: ImportConflictBatchStrategySnapshot) {
         conflictBatchSameNameStrategy = strategy
         isConflictBatchReplaceConfirmed = false
-        conflictBatchApplyResult = nil
+        resetConflictBatchOutcome()
     }
 
     func updateConflictBatchScope(appliesToAll: Bool) {
@@ -256,7 +256,7 @@ extension ImportBatchCopyImportModel {
         if appliesToAll {
             selectedConflictBatchIDs = []
         }
-        conflictBatchApplyResult = nil
+        resetConflictBatchOutcome()
     }
 
     func setConflictBatchItemSelected(_ conflictID: String, isSelected: Bool) {
@@ -266,7 +266,7 @@ extension ImportBatchCopyImportModel {
             selectedConflictBatchIDs.remove(conflictID)
         }
         isConflictBatchReplaceConfirmed = false
-        conflictBatchApplyResult = nil
+        resetConflictBatchOutcome()
     }
 
     func confirmConflictBatchReplace() {
@@ -281,7 +281,7 @@ extension ImportBatchCopyImportModel {
         if conflictBatchSameNameStrategy == .replace {
             conflictBatchSameNameStrategy = .keepBoth
         }
-        conflictBatchApplyResult = nil
+        resetConflictBatchOutcome()
     }
 
     func askConflictBatchPerItem() async -> ImportConflictBatchApplyResult? {
@@ -351,6 +351,9 @@ extension ImportBatchCopyImportModel {
         conflictBatchApplyResult = result
         if let report = result.report {
             applyImportConflictBatchReportToRows(report)
+            await refreshConflictBatchUndoState(report: report, failure: result.failure)
+        } else {
+            conflictBatchUndoState = .idle
         }
         return result
     }

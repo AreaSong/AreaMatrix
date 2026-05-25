@@ -13,7 +13,7 @@ final class ImportSingleFileNameConflictCoreTests: XCTestCase {
         )
 
         model.applyPreviewRows(
-            [s118PreviewRow(url: invoiceURL, category: "finance", suggestedName: "Invoice_2026Q1.pdf")],
+            [s118ReadyBatchRow(url: invoiceURL)],
             request: s221BatchRequest(urls: [invoiceURL], conflictIDs: ["dup-1", "name-1"]),
             selectedDestination: .autoClassify
         )
@@ -48,7 +48,7 @@ final class ImportSingleFileNameConflictCoreTests: XCTestCase {
         )
 
         model.applyPreviewRows(
-            [s118PreviewRow(url: invoiceURL, category: "finance", suggestedName: "Invoice_2026Q1.pdf")],
+            [s118ReadyBatchRow(url: invoiceURL)],
             request: s221BatchRequest(urls: [invoiceURL], conflictIDs: ["dup-1"]),
             selectedDestination: .autoClassify
         )
@@ -88,7 +88,7 @@ final class ImportSingleFileNameConflictCoreTests: XCTestCase {
         )
 
         model.applyPreviewRows(
-            [s118PreviewRow(url: invoiceURL, category: "finance", suggestedName: "Invoice_2026Q1.pdf")],
+            [s118ReadyBatchRow(url: invoiceURL)],
             request: s221BatchRequest(urls: [invoiceURL], conflictIDs: ["dup-1", "name-1"]),
             selectedDestination: .autoClassify
         )
@@ -120,7 +120,7 @@ final class ImportSingleFileNameConflictCoreTests: XCTestCase {
         )
 
         model.applyPreviewRows(
-            [s118PreviewRow(url: invoiceURL, category: "finance", suggestedName: "Invoice_2026Q1.pdf")],
+            [s118ReadyBatchRow(url: invoiceURL)],
             request: s221BatchRequest(urls: [invoiceURL], conflictIDs: ["dup-1", "name-blocked"]),
             selectedDestination: .autoClassify
         )

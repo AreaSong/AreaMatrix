@@ -143,3 +143,56 @@ struct ImportBatchSummarySection: View {
         }
     }
 }
+
+struct ImportConflictBatchUndoStateView: View {
+    let state: BatchTagUndoState
+    let onUndo: () -> Void
+    let onDismiss: () -> Void
+
+    var body: some View {
+        switch state {
+        case .idle:
+            EmptyView()
+        case let .loading(token):
+            undoStatus("Loading Undo action \(token)...")
+        case let .ready(action):
+            HStack(spacing: 8) {
+                undoStatus(action.summary)
+                Button("Undo", action: onUndo)
+                    .keyboardShortcut("z", modifiers: [.command])
+            }
+            .accessibilityLabel("Undo available. \(action.summary)")
+        case let .disabled(action, reason):
+            undoStatus("\(action.summary) \(reason)")
+        case let .unavailable(reason):
+            undoStatus(reason)
+        case let .undoing(action):
+            HStack(spacing: 8) {
+                ProgressView()
+                    .controlSize(.small)
+                undoStatus("Undoing \(action.summary)")
+            }
+        case let .undone(result):
+            HStack(spacing: 8) {
+                undoStatus(result.summary)
+                Button("Dismiss", action: onDismiss)
+            }
+            .accessibilityLabel("Undo completed. \(result.summary)")
+        case let .failed(mapping, previous):
+            HStack(spacing: 8) {
+                undoStatus(mapping.userMessage)
+                    .foregroundStyle(.red)
+                if previous != nil {
+                    Button("Dismiss", action: onDismiss)
+                }
+            }
+            .accessibilityLabel("Undo failed. \(mapping.userMessage)")
+        }
+    }
+
+    private func undoStatus(_ text: String) -> some View {
+        Text(text)
+            .font(.caption)
+            .foregroundStyle(.secondary)
+    }
+}

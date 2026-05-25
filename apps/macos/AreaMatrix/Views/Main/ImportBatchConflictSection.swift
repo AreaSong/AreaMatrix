@@ -95,6 +95,15 @@ struct ImportBatchConflictSection: View {
             coreConflictBatchStrategyControls
             coreConflictBatchRows
             coreConflictBatchResult
+            ImportConflictBatchUndoStateView(
+                state: batchImportModel.conflictBatchUndoState,
+                onUndo: {
+                    Task { await batchImportModel.undoImportConflictBatchAction() }
+                },
+                onDismiss: {
+                    batchImportModel.conflictBatchUndoState = .idle
+                }
+            )
             coreConflictBatchActions
         }
         .padding(12)
