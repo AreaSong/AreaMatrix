@@ -88,7 +88,8 @@ enum MainFileActionDestination: Equatable {
 
     var fileID: Int64 {
         switch self {
-        case let .rename(fileID), let .changeCategory(fileID, _, _, _), let .delete(fileID), let .iCloudConflict(fileID):
+        case let .rename(fileID), let .changeCategory(fileID, _, _, _), let .delete(fileID),
+             let .iCloudConflict(fileID):
             fileID
         }
     }
@@ -235,6 +236,7 @@ enum MainListStatusBanner: Equatable {
     case batchDeleted(count: Int64)
     case changedCategory(fileID: Int64, category: String)
     case correctedClassification(fileID: Int64, category: String, ruleConfirmationRequired: Bool)
+    case savedClassifierRule(category: String)
     case changedBatchCategory(count: Int64, category: String)
     case changedCategoryTreeRefreshFailed(fileID: Int64, category: String)
     case resolvedICloudConflict(fileID: Int64, strategy: ICloudConflictResolutionStrategy)
@@ -259,6 +261,8 @@ enum MainListStatusBanner: Equatable {
             ruleConfirmationRequired
                 ? "Classification corrected to \(category). Current file and change log are updated; rule still needs confirmation."
                 : "Classification corrected to \(category). Current file and change log are updated."
+        case let .savedClassifierRule(category):
+            "Classification rule saved for \(category). Future classification uses the updated classifier config."
         case let .changedBatchCategory(count, category):
             "Changed \(count) files to \(category). List and undo action log are refreshed."
         case let .changedCategoryTreeRefreshFailed(_, category):
@@ -277,7 +281,7 @@ enum MainListStatusBanner: Equatable {
         case .removedSelectedFile, .unsavedNoteDraftPreserved, .changedCategoryTreeRefreshFailed:
             "exclamationmark.triangle"
         case .movedFileToTrash, .removedFileFromIndex, .batchDeleted, .changedCategory, .correctedClassification,
-             .changedBatchCategory, .resolvedICloudConflict:
+             .savedClassifierRule, .changedBatchCategory, .resolvedICloudConflict:
             "checkmark.circle"
         }
     }
@@ -416,7 +420,9 @@ struct MultiSelectionDetailSummary: Equatable {
         return "\(selectedCount) 个项目"
     }
 
-    var paths: [String] { files.map(\.path) }
+    var paths: [String] {
+        files.map(\.path)
+    }
 
     var warningMessages: [String] {
         var warnings: [String] = []
@@ -486,7 +492,8 @@ struct MultiSelectionDetailSummary: Equatable {
         )
     }
 
-    private static func orderedSelectedFiles(from files: [FileEntrySnapshot], selectedIDs: Set<Int64>) -> [FileEntrySnapshot] {
+    private static func orderedSelectedFiles(from files: [FileEntrySnapshot],
+                                             selectedIDs: Set<Int64>) -> [FileEntrySnapshot] {
         files.filter { selectedIDs.contains($0.id) }
             .sorted { $0.currentName.localizedStandardCompare($1.currentName) == .orderedAscending }
     }

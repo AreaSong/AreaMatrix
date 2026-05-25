@@ -25,6 +25,7 @@ struct MainFileActionRoutingSheet: View {
     let onRenameFirstFromChangeCategory: (Int64, String) -> Void
     let onEditClassifierRule: (ClassifierRuleHandoff) -> Void
     let onPreviewClassifierRuleImpact: (ClassifierRuleHandoff) -> Void
+    let onClassifierRuleSaved: (ClassifierRuleSnapshot) -> Void
     let onOpenChangeCategoryPermissionRecovery: () -> Void
     let onDelete: (Int64, MainFileDeleteOperation) -> Void
     let onApplyICloudConflict: (
@@ -111,13 +112,16 @@ struct MainFileActionRoutingSheet: View {
     private func classifierRuleRouteView(_ route: ClassifierCorrectionRuleRoute) -> some View {
         ClassifierRuleHandoffRouteView(
             mode: route.handoffMode,
+            repoPath: repoPath,
             handoff: route.handoff,
             onCancel: onDismiss,
             onBack: onEditClassifierRule,
-            onPreviewImpact: onPreviewClassifierRuleImpact
+            onPreviewImpact: onPreviewClassifierRuleImpact,
+            onSaved: onClassifierRuleSaved
         )
     }
 }
+
 struct SavedSearchPreview: View {
     let model: SavedSearchSheetModel
 
@@ -203,7 +207,7 @@ struct SavedSearchSheetRouteView: View {
                         onCancel()
                     }
                 }
-                    .keyboardShortcut(.cancelAction)
+                .keyboardShortcut(.cancelAction)
                 Button(model.primaryActionTitle) {
                     Task { await save() }
                 }
@@ -333,10 +337,10 @@ struct SmartListManagementSheet: View {
 
     var body: some View {
         MainFileActionSheetContainer(title: route.mode.title, pageID: "S2-06", content: { content })
-        .accessibilityIdentifier("S2-06-smart-list-management")
-        .task(id: model.queryDiagnosticTaskKey) {
-            await refreshQueryDiagnostic()
-        }
+            .accessibilityIdentifier("S2-06-smart-list-management")
+            .task(id: model.queryDiagnosticTaskKey) {
+                await refreshQueryDiagnostic()
+            }
     }
 
     @MainActor
@@ -507,9 +511,9 @@ private extension SmartListManagementSheet {
             Button(model.primaryActionTitle, role: model.mode == .delete ? .destructive : nil) {
                 Task { await submit() }
             }
-                .keyboardShortcut(.defaultAction)
-                .disabled(!model.canSubmit)
-                .accessibilityIdentifier("S2-06-primary-action")
+            .keyboardShortcut(.defaultAction)
+            .disabled(!model.canSubmit)
+            .accessibilityIdentifier("S2-06-primary-action")
         }
     }
 

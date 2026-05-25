@@ -18,6 +18,10 @@ protocol CoreFileCategoryMoving: Sendable {
     ) async throws -> ClassifierCorrectionResultSnapshot
 }
 
+protocol CoreClassifierRuleSaving: Sendable {
+    func saveClassifierRule(repoPath: String, rule: ClassifierRuleSnapshot) async throws -> ClassifierRuleSnapshot
+}
+
 extension CoreFileCategoryMoving {
     func correctFileCategory(
         repoPath _: String,
@@ -59,6 +63,14 @@ struct ClassifierCorrectionResultSnapshot: Equatable {
     var ruleConfirmationRequired: Bool
 }
 
+struct ClassifierRuleSnapshot: Equatable {
+    var targetCategory: String
+    var keywords: [String]
+    var extensions: [String]
+    var priority: Int64
+    var previewConfirmed: Bool
+}
+
 extension MoveToCategoryPreviewSnapshot {
     init(corePreview: MoveToCategoryPreview) {
         fileID = corePreview.fileId
@@ -74,7 +86,7 @@ extension MoveToCategoryPreviewSnapshot {
     }
 }
 
-extension CoreBridge: CoreFileCategoryMoving {
+extension CoreBridge: CoreFileCategoryMoving, CoreClassifierRuleSaving {
     func previewMoveToCategory(
         repoPath: String,
         fileID: Int64,
@@ -114,6 +126,13 @@ extension CoreBridge: CoreFileCategoryMoving {
         }.value
         let updatedFile = await makeFileEntrySnapshot(from: result.updatedFile, repoPath: repoPath)
         return ClassifierCorrectionResultSnapshot(coreResult: result, updatedFile: updatedFile)
+    }
+
+    func saveClassifierRule(repoPath: String, rule: ClassifierRuleSnapshot) async throws -> ClassifierRuleSnapshot {
+        let saved = try await Task.detached(priority: .userInitiated) {
+            try AreaMatrix.saveClassifierRule(repoPath: repoPath, rule: ClassifierRule(rule))
+        }.value
+        return ClassifierRuleSnapshot(coreRule: saved)
     }
 }
 
@@ -159,5 +178,27 @@ private extension ClassifierRuleDraftSnapshot {
         keywordCandidates = coreDraft.keywordCandidates
         extensionCandidates = coreDraft.extensionCandidates
         priority = coreDraft.priority
+    }
+}
+
+private extension ClassifierRule {
+    init(_ snapshot: ClassifierRuleSnapshot) {
+        self.init(
+            targetCategory: snapshot.targetCategory,
+            keywords: snapshot.keywords,
+            extensions: snapshot.extensions,
+            priority: snapshot.priority,
+            previewConfirmed: snapshot.previewConfirmed
+        )
+    }
+}
+
+private extension ClassifierRuleSnapshot {
+    init(coreRule: ClassifierRule) {
+        targetCategory = coreRule.targetCategory
+        keywords = coreRule.keywords
+        extensions = coreRule.extensions
+        priority = coreRule.priority
+        previewConfirmed = coreRule.previewConfirmed
     }
 }

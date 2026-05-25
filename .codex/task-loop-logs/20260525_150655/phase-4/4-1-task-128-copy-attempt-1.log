@@ -1,0 +1,50 @@
+一、执行结论
+
+- 已完成：`4-1/task-128` 已实现并通过指定验证 `./dev check task 4-1/task-128`。
+
+二、执行范围
+
+- 单任务：`S2-17-classifier-save-rule` 中的 `C2-13 classifier-rule-save`。
+- 修改文件：
+  - `apps/macos/AreaMatrix/Bridge/CoreMoveToCategory.swift`
+  - `apps/macos/AreaMatrix/Models/CoreBridgePlaceholderState.swift`
+  - `apps/macos/AreaMatrix/Models/MainFileCategoryMoveState.swift`
+  - `apps/macos/AreaMatrix/Models/MainFileClassifierCorrectionRoutingActions.swift`
+  - `apps/macos/AreaMatrix/Models/MainFileListState.swift`
+  - `apps/macos/AreaMatrix/Views/Main/ClassifierRuleHandoffRouteView.swift`
+  - `apps/macos/AreaMatrix/Views/Main/MainFileActionRoutingSheet.swift`
+  - `apps/macos/AreaMatrix/Views/Main/MainRepositoryContentActionRouting.swift`
+  - `apps/macos/AreaMatrixTests/ClassifierCorrectionHandoffTests.swift`
+
+三、完成情况
+
+- 已只处理 S2-17 页面中的 C2-13 功能点。
+- 已按 UX spec、Stage 2 control map、Core API、C2-13 capability spec 接入真实 `CoreBridge.saveClassifierRule`。
+- 已实现规则候选选择、扩展名规范化、priority、preview confirmation gate、保存错误映射和成功状态。
+- 未实现本页其他 Core 能力，未触碰 control map 之外能力。
+- Forbidden Touches：`core/src/**` 未触碰。`core/area_matrix.udl` 只读未改。
+
+四、工程质量
+
+- 结构上把保存逻辑放在 sheet model，UI 负责渲染和触发，Bridge 只承接真实 Core 调用。
+- 没有新增依赖，没有 mock-only 最终闭环，没有硬编码成功态。
+- 错误路径包括无有效候选、extension-only 未 preview confirmation、Core 保存失败。
+- 新增测试覆盖候选规范化、extension-only preview gate、保存完成 banner、默认 CoreBridge 保存配置且不改动导入文件。
+- 现有少数 Swift 文件已超过 500 行阈值，属于既有文件体量，本任务未做范围外拆分。
+
+五、验证情况
+
+- 已运行并通过：`./dev check task 4-1/task-128`
+  - `prompt doctor`: OK，`tasks: 637`，`manifests: 637`
+  - `git diff --check`: PASS
+  - `xcodebuild ... build CODE_SIGNING_ALLOWED=NO`: `BUILD SUCCEEDED`
+- 额外 targeted XCTest 曾尝试运行，构建/链接已完成，但测试执行被本机 sandbox 的 `testmanagerd` 通信限制阻断；未把它当作通过证据。
+- 最后再次运行 `git diff --check`：PASS。
+- 最后核对 `git diff --name-only -- core/src`：无输出，确认未触碰 Forbidden Touches。
+
+六、风险与后续
+
+- 剩余风险：当前没有做真实窗口点击级 UI smoke；验证证据以 macOS build、模型/桥接测试和 task gate 为主。
+- 工作区里仍有非本任务既有改动：`tasks/prompts/_shared/progress.json` 和 `.codex/task-loop-runs/20260525_150655/`，本任务未回滚也未纳入修改范围。
+- 建议下一个任务：进入 `4-1/task-128` 的 verify-ready 只读验收，按 task + manifest + 实际文件交叉确认。
+

@@ -25,6 +25,13 @@ extension MainFileListModel {
         beginClassifierRuleRoute(.impactPreview(handoff), handoff: handoff)
     }
 
+    func completeClassifierRuleSave(_ savedRule: ClassifierRuleSnapshot) {
+        guard let destination = pendingActionDestination,
+              destination.classifierRuleRoute != nil else { return }
+        pendingActionDestination = nil
+        statusBanner = .savedClassifierRule(category: savedRule.targetCategory)
+    }
+
     private func beginClassifierRuleRoute(
         _ route: ClassifierCorrectionRuleRoute,
         handoff: ClassifierRuleHandoff
@@ -55,6 +62,7 @@ extension MainFileListModel {
             sourcePageID: "S2-16",
             fileID: file.id,
             fileName: file.currentName,
+            sourcePath: file.sourcePath ?? file.path,
             currentCategory: file.category,
             targetCategory: targetCategory,
             moveFile: moveFile,

@@ -1,4 +1,5 @@
 import SwiftUI
+
 extension MainRepositoryContentView {
     var actionDestinationBinding: Binding<MainFileActionDestination?> {
         Binding(
@@ -39,6 +40,7 @@ extension MainRepositoryContentView {
             },
             onEditClassifierRule: fileListModel.beginClassifierRuleSave,
             onPreviewClassifierRuleImpact: fileListModel.beginClassifierImpactPreview,
+            onClassifierRuleSaved: fileListModel.completeClassifierRuleSave,
             onOpenChangeCategoryPermissionRecovery: onOpenChangeCategoryPermissionRecovery,
             onDelete: submitDelete,
             onApplyICloudConflict: applyICloudConflict,
@@ -377,7 +379,6 @@ struct SearchEmptyRouteView: View {
         .accessibilityLabel("Search conditions. Query \(querySummary). Filters \(filterSummary).")
     }
 
-    @ViewBuilder
     private var actionButtons: some View {
         HStack(spacing: 10) {
             if request.filters.isEmpty {
@@ -391,7 +392,6 @@ struct SearchEmptyRouteView: View {
         }
     }
 
-    @ViewBuilder
     private var filterShortcutButtons: some View {
         VStack(alignment: .center, spacing: 8) {
             if request.filters.fileKind != nil {
@@ -421,9 +421,13 @@ struct SearchEmptyRouteView: View {
         return "No files match \(activeFilterText)."
     }
 
-    private var shouldShowFilterShortcuts: Bool { request.filters.activeFilterCount > 0 && indexStatus != .indexing }
+    private var shouldShowFilterShortcuts: Bool {
+        request.filters.activeFilterCount > 0 && indexStatus != .indexing
+    }
 
-    private var querySummary: String { request.query.isEmpty ? "None" : request.query }
+    private var querySummary: String {
+        request.query.isEmpty ? "None" : request.query
+    }
 
     private var filterSummary: String {
         let chips = SearchFilterChips.items(for: request.filters).map(\.label)
@@ -460,7 +464,9 @@ extension MainRepositoryContentView {
         SearchFilterStateRouting.assign(updated, searchFilters: &searchFilters, fileListModel: fileListModel)
     }
 
-    func searchAllFileTypesFromEmptyState() { removeSearchFilterFromEmptyState(.fileKind) }
+    func searchAllFileTypesFromEmptyState() {
+        removeSearchFilterFromEmptyState(.fileKind)
+    }
 
     func applyQuerySuggestion(_ query: String) {
         filterText = query

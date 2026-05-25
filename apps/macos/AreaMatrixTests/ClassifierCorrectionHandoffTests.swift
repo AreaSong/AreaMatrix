@@ -67,17 +67,116 @@ final class ClassifierCorrectionHandoffTests: XCTestCase {
             moveFile: true,
             draft: draft
         )
-        let body = s135MirrorDescription(of: ClassifierRuleHandoffRouteView(
-            mode: .saveRule,
-            handoff: handoff,
-            onCancel: {},
-            onBack: { _ in },
-            onPreviewImpact: { _ in }
-        ).body)
+        let values = handoff.summaryRows.map(\.value)
 
-        XCTAssertTrue(body.contains("client-a, contract"))
-        XCTAssertTrue(body.contains("pdf"))
-        XCTAssertTrue(body.contains("42"))
+        XCTAssertTrue(values.contains("client-a, contract"))
+        XCTAssertTrue(values.contains("pdf"))
+        XCTAssertTrue(values.contains("42"))
+    }
+
+    @MainActor
+    func testS217RuleSaveModelNormalizesExtensionAndRequiresPreviewForExtensionOnlyRule() {
+        let file = s216File(id: 261, name: "Contract.PDF")
+        var model = ClassifierRuleSaveSheetModel(handoff: s216Handoff(
+            file: file,
+            targetCategory: "finance",
+            selectedKeywords: [],
+            selectedExtensions: [".PDF"],
+            previewConfirmed: false
+        ))
+
+        XCTAssertEqual(model.selectedKeywords, [])
+        XCTAssertEqual(model.selectedExtensions, ["pdf"])
+        XCTAssertEqual(model.priority, 42)
+        XCTAssertEqual(model.validationMessage, "Extension-only rules must be previewed before saving.")
+        XCTAssertFalse(model.canSave)
+        XCTAssertEqual(model.saveRequest.extensions, ["pdf"])
+        XCTAssertFalse(model.saveRequest.previewConfirmed)
+
+        model.setKeyword("contract", isSelected: true)
+
+        XCTAssertNil(model.validationMessage)
+        XCTAssertTrue(model.canSave)
+        XCTAssertEqual(model.saveRequest.keywords, ["contract"])
+        XCTAssertEqual(model.saveRequest.extensions, ["pdf"])
+    }
+
+    @MainActor
+    func testS217CompletesSaveRuleRouteWithSavedStatusBanner() async {
+        let file = s216File(id: 262, name: "contract.pdf")
+        let model = MainFileListModel(
+            opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [file]),
+            fileLister: DetailMetaNoopLister(),
+            fileDetailer: DetailMetaImmediateDetailer(result: .success(file)),
+            errorMapper: DetailMetaErrorMapper(mapping: s216ClassifierCorrectionClassifyMapping())
+        )
+
+        await model.selectFiles([file.id])
+        model.beginClassifierCorrection()
+        model.beginClassifierRuleHandoff(
+            fileID: file.id,
+            targetCategory: "finance",
+            moveFile: true,
+            destination: .saveRule
+        )
+        model.completeClassifierRuleSave(ClassifierRuleSnapshot(
+            targetCategory: "finance",
+            keywords: ["contract"],
+            extensions: ["pdf"],
+            priority: 0,
+            previewConfirmed: false
+        ))
+
+        XCTAssertNil(model.pendingActionDestination)
+        XCTAssertEqual(model.statusBanner, .savedClassifierRule(category: "finance"))
+        XCTAssertEqual(
+            model.statusBanner?.message,
+            "Classification rule saved for finance. Future classification uses the updated classifier config."
+        )
+    }
+
+    func testS217DefaultCoreBridgeSavesClassifierRuleWithoutTouchingImportedFile() async throws {
+        let repoURL = try makeImportSingleFileTemporaryDirectory(prefix: "s217-repo")
+        let sourceRoot = try makeImportSingleFileTemporaryDirectory(prefix: "s217-source")
+        defer {
+            try? FileManager.default.removeItem(at: repoURL)
+            try? FileManager.default.removeItem(at: sourceRoot)
+        }
+        let sourceURL = sourceRoot.appendingPathComponent("contract-s217.txt")
+        try Data("rule-save bytes".utf8).write(to: sourceURL)
+        let bridge = CoreBridge()
+
+        try await bridge.initializeEmptyRepository(repoPath: repoURL.path)
+        let imported = try await bridge.importCopiedFile(
+            repoPath: repoURL.path,
+            sourceURL: sourceURL,
+            overrideCategory: "docs",
+            overrideFilename: "contract-s217.txt",
+            duplicateStrategy: .skip
+        )
+        let classifierURL = repoURL.appendingPathComponent(".areamatrix/classifier.yaml")
+        let saved = try await bridge.saveClassifierRule(
+            repoPath: repoURL.path,
+            rule: ClassifierRuleSnapshot(
+                targetCategory: "finance",
+                keywords: ["contract-s217"],
+                extensions: [],
+                priority: 0,
+                previewConfirmed: false
+            )
+        )
+        let classifierText = try String(contentsOf: classifierURL)
+        let detail = try await bridge.getFile(repoPath: repoURL.path, fileID: imported.id)
+
+        XCTAssertEqual(saved.targetCategory, "finance")
+        XCTAssertEqual(saved.keywords, ["contract-s217"])
+        XCTAssertTrue(classifierText.contains("contract-s217"))
+        XCTAssertEqual(detail.id, imported.id)
+        XCTAssertEqual(detail.category, "docs")
+        XCTAssertEqual(detail.path, "docs/contract-s217.txt")
+        XCTAssertTrue(FileManager.default.fileExists(
+            atPath: repoURL.appendingPathComponent("docs/contract-s217.txt").path
+        ))
     }
 }
 
@@ -149,10 +248,27 @@ private func s216File(id: Int64, name: String) -> FileEntrySnapshot {
 }
 
 private func s216Handoff(file: FileEntrySnapshot, targetCategory: String) -> ClassifierRuleHandoff {
+    s216Handoff(
+        file: file,
+        targetCategory: targetCategory,
+        selectedKeywords: ["client-a"],
+        selectedExtensions: ["pdf"],
+        previewConfirmed: false
+    )
+}
+
+private func s216Handoff(
+    file: FileEntrySnapshot,
+    targetCategory: String,
+    selectedKeywords: [String],
+    selectedExtensions: [String],
+    previewConfirmed: Bool
+) -> ClassifierRuleHandoff {
     ClassifierRuleHandoff(
         sourcePageID: "S2-16",
         fileID: file.id,
         fileName: file.currentName,
+        sourcePath: file.sourcePath ?? file.path,
         currentCategory: file.category,
         targetCategory: targetCategory,
         moveFile: true,
@@ -162,7 +278,10 @@ private func s216Handoff(file: FileEntrySnapshot, targetCategory: String) -> Cla
             keywordCandidates: ["client-a", "contract"],
             extensionCandidates: ["pdf"],
             priority: 42
-        )
+        ),
+        selectedKeywords: selectedKeywords,
+        selectedExtensions: selectedExtensions,
+        previewConfirmed: previewConfirmed
     )
 }
 
