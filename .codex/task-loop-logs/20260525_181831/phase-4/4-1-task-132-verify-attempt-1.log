@@ -1,0 +1,81 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`4-1/task-132`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-132-s2-20-c1-25-25-list-icloud-conflicts.md`
+- 主要实现路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`
+- 主要测试路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`
+- 禁止触碰路径：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+三、完成度摘要
+
+- 已覆盖项数：8
+- 未覆盖项数：1
+- 通过项数：8
+- 不通过项数：1
+- 阻塞项数：1
+
+四、逐项验收结果
+
+- 项目：Exact Docs / manifest / task 范围读取
+- 结果：通过
+- 证据：manifest `4-1/task-132` 声明 Exact Docs、Existing Code、Expected New Paths、Forbidden Touches 和验证命令；四个 Exact Docs 均存在并已读取。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-4.md:3827`
+
+- 项目：C1-25 Core API / UDL 合同存在
+- 结果：通过
+- 证据：UDL 暴露 `list_icloud_conflicts`，并定义 `ICloudConflictPair`；Core API 明确 C1-25 是只读列表入口，不删除、不移动、不覆盖、不触发 iCloud 下载。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:237`、`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:3603`
+
+- 项目：Swift CoreBridge / 状态 / 错误映射接入
+- 结果：通过
+- 证据：`CoreICloudConflictListing` 通过 `CoreBridge` 调用 `listIcloudConflicts`；`ICloudConflictListModel.load()` 使用该 lister，失败时经 `CoreErrorMapping` 转换。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreICloudConflictListing.swift:157`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ICloudConflictListModel.swift:101`
+
+- 项目：S2-20 中 C1-25 用户可见功能可被触发
+- 结果：不通过
+- 证据：生产代码没有任何调用点传入 `pageContext: .s220ConflictVisual`；`rg` 结果显示 `.s220ConflictVisual` 只出现在 view 定义和测试中。现有生产入口 `IntegrationsSettingsPane` 调用 `ICloudConflictListView` 时使用默认 `.s136List`，无法证明 S2-20 绑定页面中 C1-25 功能可由用户触发。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ICloudConflictListView.swift:112`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Settings/IntegrationsSettingsPane.swift:37`
+
+- 项目：Expected New Paths
+- 结果：通过
+- 证据：`apps/macos/AreaMatrix/**` 与 `apps/macos/AreaMatrixTests/**` 下存在本 task 相关实现和测试改动。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ICloudConflictListView.swift:1`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ICloudConflictListPageFeatureTests.swift:1`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git diff --name-only -- core/src` 和 `git diff --cached --name-only -- core/src` 均无输出。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过，S2-20 context 只是可构造状态，未接入生产入口，不能证明真实用户路径。
+- 注释 / rustdoc / 文档同步：通过，本 task 未新增 Rust public API；UDL 与 Core API 对 C1-25 合同一致。
+- 错误处理与边界处理：通过，C1-25 list 失败经结构化 CoreError 映射，生产路径未直接文件 IO。
+- 测试与验证覆盖：不通过，验证命令通过，但测试里的 S2-20 context 不能替代生产触发路径。
+- 占位、硬编码、mock-only、一次性实现检查：通过，生产 CoreBridge 路径调用真实 `listIcloudConflicts`；但这不抵消 S2-20 不可触发的阻塞项。
+
+六、阻塞项
+
+- P0：S2-20 + C1-25 页面功能没有生产入口
+- 说明：当前 `.s220ConflictVisual` 只在 `ICloudConflictListView` 类型定义和测试中出现，生产 UI 没有任何入口以 S2-20 context 打开该列表；因此不能满足“用户可见功能可被触发和验收”。
+- 绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ICloudConflictListView.swift:53`
+- 绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Settings/IntegrationsSettingsPane.swift:37`
+- 为什么导致不通过：真实闭环 task 不能只靠测试构造或未接入的 context 证明完成；S2-20 页面绑定能力缺少可触发生产链路。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-132`
+- 通过：`prompt doctor` 通过，`git diff --check` 通过，`xcodebuild ... build CODE_SIGNING_ALLOWED=NO` 通过，最终 `** BUILD SUCCEEDED **`，命令退出码 0。
+- 失败：无命令失败。
+- 缺失：未运行 UI smoke；当前静态证据已证明 S2-20 context 没有生产入口，UI smoke 不能证明缺失链路。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+
+
+VERIFY_RESULT: FAIL

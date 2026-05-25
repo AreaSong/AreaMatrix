@@ -36,6 +36,7 @@ struct IntegrationsSettingsPane: View {
         .sheet(isPresented: $isConflictListPresented) {
             ICloudConflictListView(
                 model: ICloudConflictListModel(repoPath: model.repoPath),
+                pageContext: .s220ConflictVisual,
                 onClose: { isConflictListPresented = false },
                 onResolve: model.recordConflictResolveEntry,
                 onCollectDiagnostics: model.recordConflictDiagnosticsEntry

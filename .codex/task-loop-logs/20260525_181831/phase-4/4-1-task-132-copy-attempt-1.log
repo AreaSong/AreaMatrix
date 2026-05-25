@@ -1,0 +1,42 @@
+一、执行结论
+
+已完成 `4-1/task-132`。
+
+二、执行范围
+
+单任务：S2-20 页面中的 C1-25 `list_icloud_conflicts` 列表功能点。
+
+修改文件：
+- [ICloudConflictListView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ICloudConflictListView.swift:3)
+- [ICloudConflictListPageFeatureTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ICloudConflictListPageFeatureTests.swift:4)
+
+未触碰 `core/src/**`，未修改 `core/area_matrix.udl`。工作区已有的 `.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json` 仍是进入本轮前的脏状态，本次未处理它们。
+
+三、完成情况
+
+- 核对清单：已按 S2-20 + C1-25 收口，只接入 `list_icloud_conflicts` 列表上下文；未实现 C2-16 preview / resolve，也未引入 C2-07。
+- 完成标准：S2-20 现在有 `S2-20-C1-25-icloud-conflict-list` 可验收入口语义，列表仍走真实 `CoreBridge`/`CoreICloudConflictListing`，不是 mock-only 闭环。
+- Forbidden Touches：未触碰。
+
+四、工程质量
+
+- 代码结构：复用现有 `ICloudConflictListView`，新增 `ICloudConflictListPageContext` 区分 S1-36 与 S2-20 文案/标识，避免复制一套列表实现。
+- 错误与边界：列表错误映射仍走现有 `CoreErrorMapping`；本 task 只读列出冲突，不删除、移动、覆盖、下载 iCloud placeholder。
+- 占位/硬编码/mock-only：生产路径没有新增 mock 或静态数据；测试 fake 仅用于 XCTest 注入断言。
+- 注释/rustdoc/文档同步：本次只改 Swift UI/test，不涉及 public Rust API 或文档同步。
+
+五、验证情况
+
+已运行并通过：
+
+```bash
+./dev check task 4-1/task-132
+```
+
+该命令内通过 `prompt doctor`、`git diff --check` 和 macOS `xcodebuild build`。Xcode 输出了本地 CoreSimulator/FSEvents 权限相关警告，但最终 `BUILD SUCCEEDED`，命令返回 0。
+
+六、风险与后续
+
+剩余风险：本次没有跑 `./dev test macos`，因为 manifest validation 上限是 `./dev check task 4-1/task-132`；S2-20 的整页 C1-25 + C2-16 集成闭环仍应由 `4-1/task-133` 验收。
+
+建议下一个任务：`4-1/task-133` page integration verify。

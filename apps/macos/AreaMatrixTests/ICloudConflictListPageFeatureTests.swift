@@ -3,12 +3,24 @@ import XCTest
 
 final class ICloudConflictListPageFeatureTests: XCTestCase {
     private static let declaredCapabilities: Set<String> = ["C1-25"]
+    private static let s220DeclaredCapabilities: Set<String> = ["C1-25"]
 
     func testS136DeclaresOnlyC125AndCoreBridgeBoundary() {
         XCTAssertEqual(Self.declaredCapabilities, ["C1-25"])
         XCTAssertTrue(CoreBridgeBoundary.allCases.contains(.listICloudConflicts))
         XCTAssertFalse(Self.declaredCapabilities.contains("C1-23"))
         XCTAssertFalse(Self.declaredCapabilities.contains("C1-26"))
+    }
+
+    func testS220DeclaresOnlyC125ListBoundary() {
+        XCTAssertEqual(Self.s220DeclaredCapabilities, ["C1-25"])
+        XCTAssertTrue(CoreBridgeBoundary.allCases.contains(.listICloudConflicts))
+        XCTAssertFalse(Self.s220DeclaredCapabilities.contains("C2-16"))
+        XCTAssertFalse(Self.s220DeclaredCapabilities.contains("C2-07"))
+        XCTAssertEqual(
+            ICloudConflictListPageContext.s220ConflictVisual.accessibilityID,
+            "S2-20-C1-25-icloud-conflict-list"
+        )
     }
 
     @MainActor
@@ -211,6 +223,33 @@ final class ICloudConflictListPageFeatureTests: XCTestCase {
 
         listModel.closeResolvingConflict()
         XCTAssertNil(listModel.resolvingRoute)
+    }
+
+    @MainActor
+    func testS220C125ListContextUsesReadOnlyCoreListerWithoutPreviewOrResolve() async {
+        let conflict = ICloudConflictPairSnapshot.s136Fixture()
+        let lister = S136RecordingConflictLister(result: .success([conflict]))
+        let model = ICloudConflictListModel(
+            repoPath: "/tmp/s220-repo",
+            conflictLister: lister,
+            errorMapper: S136RecordingErrorMapper(mapping: .s136Mapping())
+        )
+
+        await model.load()
+        let body = s136MirrorDescription(of: ICloudConflictListView(
+            model: model,
+            pageContext: .s220ConflictVisual,
+            onClose: {},
+            onResolve: { _ in XCTFail("Body inspection must not invoke C2-16 resolution") }
+        ).body)
+        let requests = await lister.recordedRequests()
+
+        XCTAssertEqual(requests, ["/tmp/s220-repo"])
+        XCTAssertEqual(model.state, .loaded([conflict]))
+        XCTAssertTrue(body.contains(ICloudConflictListAccessibilityID.s220Page))
+        XCTAssertTrue(body.contains(ICloudConflictListCopy.s220Title))
+        XCTAssertTrue(body.contains("1 conflict groups found"))
+        XCTAssertFalse(body.contains("S2-20-C2-16-icloud-conflict-visual"))
     }
 
     func testS136C125DefaultCoreBridgeListsRealConflictedCopiesReadOnly() async throws {
