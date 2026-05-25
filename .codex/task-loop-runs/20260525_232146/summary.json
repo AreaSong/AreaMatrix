@@ -35,6 +35,74 @@
     "4-1/task-135": {
       "attempts": 1,
       "copy_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260525_232146/phase-4/4-1-task-135-copy-attempt-1.log",
+      "git": {
+        "attempts": 1,
+        "branch": "codex/areamatrix-task-loop-20260501_132850",
+        "changed_files": [
+          ".codex/task-loop-logs/20260525_232146/",
+          ".codex/task-loop-runs/20260525_232146/",
+          ".codex/task-loop-runs/index.json",
+          "apps/macos/AreaMatrix/Models/ImportBatchConflictActions.swift",
+          "apps/macos/AreaMatrix/Models/ImportBatchCopyImportModel.swift",
+          "apps/macos/AreaMatrix/Models/ImportBatchCopyImportState.swift",
+          "apps/macos/AreaMatrix/Views/Main/ImportBatchConflictSection.swift",
+          "apps/macos/AreaMatrix/Views/Main/ImportBatchCopyFooterSection.swift",
+          "apps/macos/AreaMatrixTests/ImportFolderConflictResolutionTests.swift",
+          "apps/macos/AreaMatrixTests/ImportSingleFileNameConflictCoreTests.swift",
+          "tasks/prompts/_shared/progress.json"
+        ],
+        "commit": "4d403e3141222609f05fa8f3f9d930c5b65b6cb8",
+        "copy_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260525_232146/phase-4/4-1-task-135-copy-attempt-1.log",
+        "diff_name_status": [
+          "M\t.codex/task-loop-runs/index.json",
+          "M\tapps/macos/AreaMatrix/Models/ImportBatchConflictActions.swift",
+          "M\tapps/macos/AreaMatrix/Models/ImportBatchCopyImportModel.swift",
+          "M\tapps/macos/AreaMatrix/Models/ImportBatchCopyImportState.swift",
+          "M\tapps/macos/AreaMatrix/Views/Main/ImportBatchConflictSection.swift",
+          "M\tapps/macos/AreaMatrix/Views/Main/ImportBatchCopyFooterSection.swift",
+          "M\tapps/macos/AreaMatrixTests/ImportFolderConflictResolutionTests.swift",
+          "M\tapps/macos/AreaMatrixTests/ImportSingleFileNameConflictCoreTests.swift",
+          "M\ttasks/prompts/_shared/progress.json"
+        ],
+        "label": "4-1/task-135",
+        "mode": "commit",
+        "phase": "phase-4",
+        "push_status": "not_requested",
+        "remote": "",
+        "run_id": "20260525_232146",
+        "staged_name_status": [
+          "A\t.codex/task-loop-logs/20260525_232146/phase-4/4-1-task-135-copy-attempt-1.log",
+          "A\t.codex/task-loop-logs/20260525_232146/phase-4/4-1-task-135-verify-attempt-1.log",
+          "A\t.codex/task-loop-runs/20260525_232146/summary.json",
+          "M\t.codex/task-loop-runs/index.json",
+          "M\tapps/macos/AreaMatrix/Models/ImportBatchConflictActions.swift",
+          "M\tapps/macos/AreaMatrix/Models/ImportBatchCopyImportModel.swift",
+          "M\tapps/macos/AreaMatrix/Models/ImportBatchCopyImportState.swift",
+          "M\tapps/macos/AreaMatrix/Views/Main/ImportBatchConflictSection.swift",
+          "M\tapps/macos/AreaMatrix/Views/Main/ImportBatchCopyFooterSection.swift",
+          "M\tapps/macos/AreaMatrixTests/ImportFolderConflictResolutionTests.swift",
+          "M\tapps/macos/AreaMatrixTests/ImportSingleFileNameConflictCoreTests.swift",
+          "M\ttasks/prompts/_shared/progress.json"
+        ],
+        "status": "committed",
+        "status_short": [
+          " M .codex/task-loop-runs/index.json",
+          " M apps/macos/AreaMatrix/Models/ImportBatchConflictActions.swift",
+          " M apps/macos/AreaMatrix/Models/ImportBatchCopyImportModel.swift",
+          " M apps/macos/AreaMatrix/Models/ImportBatchCopyImportState.swift",
+          " M apps/macos/AreaMatrix/Views/Main/ImportBatchConflictSection.swift",
+          " M apps/macos/AreaMatrix/Views/Main/ImportBatchCopyFooterSection.swift",
+          " M apps/macos/AreaMatrixTests/ImportFolderConflictResolutionTests.swift",
+          " M apps/macos/AreaMatrixTests/ImportSingleFileNameConflictCoreTests.swift",
+          " M tasks/prompts/_shared/progress.json",
+          "?? .codex/task-loop-logs/20260525_232146/",
+          "?? .codex/task-loop-runs/20260525_232146/"
+        ],
+        "summary_file": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-runs/20260525_232146/summary.json",
+        "task_name": "4-1-task-135",
+        "updated_at": "2026-05-25T16:07:17.352690+00:00",
+        "verify_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260525_232146/phase-4/4-1-task-135-verify-attempt-1.log"
+      },
       "note": "自动执行验收通过",
       "phase": "phase-4",
       "risk": "High",
@@ -49,7 +117,7 @@
     "retries": 0,
     "task_count": 637
   },
-  "updated_at": "2026-05-25T16:07:17.152854+00:00",
+  "updated_at": "2026-05-25T16:07:17.358045+00:00",
   "verify_root": "/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/verify-ready",
   "version": 1
 }
