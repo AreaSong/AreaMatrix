@@ -98,6 +98,14 @@ def write_lock_activity(lock_dir: Path, values: dict[str, Any]) -> None:
     write_json(lock_dir / "activity.json", current)
 
 
+def replace_lock_activity(lock_dir: Path, values: dict[str, Any]) -> None:
+    if not lock_dir.is_dir():
+        return
+    next_values = dict(values)
+    next_values["updated_at"] = utc_now()
+    write_json(lock_dir / "activity.json", next_values)
+
+
 def clear_lock_activity(lock_dir: Path) -> None:
     try:
         (lock_dir / "activity.json").unlink()
@@ -341,6 +349,10 @@ def status_fragment(progress_file: Path, lock_dir: Path, log_root: Path, drain_r
                 output_file = activity["output_file"]
                 lines.append(f"- live_activity_log: {output_file}")
                 lines.append(f"- live_activity_log_state: {log_file_status(output_file)}")
+            if activity.get("exec_log_file"):
+                exec_log_file = activity["exec_log_file"]
+                lines.append(f"- live_activity_exec_log: {exec_log_file}")
+                lines.append(f"- live_activity_exec_log_state: {log_file_status(exec_log_file)}")
             if activity.get("no_output_elapsed_seconds") is not None:
                 lines.append(
                     f"- live_activity_no_output_elapsed: {human_duration(float(activity['no_output_elapsed_seconds']))}"

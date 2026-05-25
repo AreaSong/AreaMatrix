@@ -15,7 +15,7 @@ from scripts.dev_tools.checks import run_skills_check
 from scripts.dev_tools.discussion import discussion_artifacts, validate_discussion_artifacts
 from scripts.dev_tools.changes import write_artifacts
 from scripts.dev_tools.workflow_init import init_artifacts
-from scripts.task_loop.runner import RuntimeConfig, TaskFile, TaskLoopRunner
+from scripts.task_loop.runner import RuntimeConfig, TaskFile, TaskLoopRunner, task_loop_codex_exec_processes_from_ps
 
 from . import git as git_helpers
 from .actions import ACTIONS, COMMAND_ALIASES, MENUS, SHORTCUT_ALIASES, validate_actions
@@ -210,7 +210,9 @@ def write_live_lock(lock_dir: Path, run_id: str, operation: str = "run") -> None
 
 def write_live_activity(lock_dir: Path, tmp: Path) -> None:
     output_file = tmp / "live-activity.log"
+    exec_log_file = tmp / "live-activity.exec.log"
     output_file.write_text("running\n", encoding="utf-8")
+    exec_log_file.write_text("exec running\n", encoding="utf-8")
     state.write_lock_activity(
         lock_dir,
         {
@@ -222,6 +224,7 @@ def write_live_activity(lock_dir: Path, tmp: Path) -> None:
             "pid": os.getpid(),
             "prompt_file": str(tmp / "copy.md"),
             "output_file": str(output_file),
+            "exec_log_file": str(exec_log_file),
             "no_output_elapsed_seconds": 3,
             "no_output_timeout_seconds": 5400,
             "child_restart": 1,
@@ -685,6 +688,7 @@ def check_real_status(h: Harness) -> None:
     assert_contains(live_status, "live_activity_elapsed:", "live activity elapsed")
     assert_contains(live_status, "live_activity_pid:", "live activity pid")
     assert_contains(live_status, "live_activity_log_state: exists", "live activity log state")
+    assert_contains(live_status, "live_activity_exec_log_state: exists", "live activity exec log state")
     assert_contains(live_status, "live_activity_no_output_elapsed: 3s", "live activity no-output elapsed")
     assert_contains(live_status, "live_activity_no_output_timeout: 1h30m00s", "live activity no-output timeout")
     assert_contains(live_status, "live_activity_child_restart: 1/2", "live activity child restart")
@@ -1260,6 +1264,37 @@ fi
     )
     if (runner_repo / ".codex/task-loop-lock").exists():
         raise CheckFailure("runner no-output timeout restart left live lock")
+    exec_logs = list((runner_repo / ".codex/task-loop-logs").glob("*/phase-0/0-1-task-01-copy-attempt-1.exec.log"))
+    if not exec_logs:
+        raise CheckFailure("missing no-output copy exec stream log")
+    copy_exec_log = exec_logs[0]
+    assert_exists(copy_exec_log, "no-output copy exec stream log")
+
+
+def check_runner_activity_replace_and_orphan_detection(h: Harness) -> None:
+    log("runner activity replace and orphan detection")
+    activity_root = h.tmp / "activity-replace"
+    lock_dir = activity_root / "lock"
+    write_live_lock(lock_dir, "activity-replace")
+    state.write_lock_activity(lock_dir, {"status": "finished", "finished_at": "old", "returncode": 0})
+    state.replace_lock_activity(lock_dir, {"status": "starting", "stage": "copy", "task_label": "0-1/task-01"})
+    activity = read_json(lock_dir / "activity.json")
+    if "finished_at" in activity or "returncode" in activity:
+        raise CheckFailure("replace_lock_activity retained stale finished fields")
+
+    root = Path("/tmp/AreaMatrix")
+    log_root = root / ".codex/task-loop-logs"
+    lines = [
+        f" 111 1 111 Ss 10:00 /Applications/Codex.app/Contents/Resources/codex exec -m gpt-5.5 --cd {root} -o {log_root}/run/phase-4/task-copy.log -",
+        f" 222 111 222 Ss 00:10 /Applications/Codex.app/Contents/Resources/codex exec -m gpt-5.5 --cd {root} -o {log_root}/run/phase-4/task-copy.log -",
+        " 333 1 333 Ss 10:00 /Applications/Codex.app/Contents/Resources/codex exec -m gpt-5.5 --cd /tmp/Other -o /tmp/Other/.codex/task-loop-logs/x.log -",
+    ]
+    matches = task_loop_codex_exec_processes_from_ps(lines, root, log_root)
+    if [proc.pid for proc in matches] != [111, 222]:
+        raise CheckFailure(f"unexpected task-loop codex process parse result: {[proc.pid for proc in matches]}")
+    orphaned = [proc.pid for proc in matches if proc.ppid == 1]
+    if orphaned != [111]:
+        raise CheckFailure(f"unexpected orphan detection result: {orphaned}")
 
 
 def check_git_ignore(h: Harness) -> None:
@@ -1306,6 +1341,7 @@ def run_check(root_dir: Path) -> int:
             check_git_helpers(harness)
             check_runner_git_checkpoint(harness)
             check_runner_no_output_timeout(harness)
+            check_runner_activity_replace_and_orphan_detection(harness)
             check_git_ignore(harness)
         except CheckFailure as exc:
             print(f"[task-loop-check] FAIL: {exc}")
