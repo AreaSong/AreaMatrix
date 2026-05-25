@@ -92,6 +92,10 @@ extension MainRepositoryContentView {
             fileListModel.beginChangeCategory(fileID: file.id)
         }
         .disabled(fileListModel.writeActionDisabledReason(fileID: file.id) != nil)
+        Button("Correct Classification...") {
+            fileListModel.beginClassifierCorrection(fileID: file.id)
+        }
+        .disabled(fileListModel.writeActionDisabledReason(fileID: file.id) != nil)
         Button("Delete...", role: .destructive) {
             fileListModel.beginDelete(fileID: file.id)
         }

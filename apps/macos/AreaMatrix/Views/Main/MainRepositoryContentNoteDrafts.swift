@@ -209,6 +209,7 @@ extension MainRepositoryContentView {
             onDetailTabRequestConsumed: fileListModel.consumeDetailTabRequest,
             onBeginRenameFile: fileListModel.beginRename,
             onBeginChangeCategoryFile: fileListModel.beginChangeCategory,
+            onBeginClassifierCorrectionFile: fileListModel.beginClassifierCorrection,
             onBeginDeleteFile: fileListModel.beginDelete,
             onBeginICloudConflictResolution: fileListModel.beginICloudConflictResolution,
             writeActionDisabledReason: fileListModel.writeActionDisabledReason,

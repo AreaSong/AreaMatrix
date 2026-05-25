@@ -1,0 +1,101 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`4-1/task-127`
+- 对应文件路径：`tasks/prompts/phase-4/4-1-stage2-experience/task-127-s2-16-c2-12-classifier-correction.md`
+- 主要实现范围：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`
+- 主要测试范围：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`
+
+三、完成度摘要
+
+- 已覆盖项数：13
+- 未覆盖项数：0
+- 通过项数：11
+- 不通过项数：2
+- 阻塞项数：2
+
+四、逐项验收结果
+
+- 项目：只处理 S2-16 页面中的 C2-12 功能点
+- 结果：通过
+- 证据：`S2-16` 路由进入 classifier correction，Apply 调用 `CoreBridge.correctFileCategory`
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileActionRoutingActions.swift:19`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreMoveToCategory.swift:99`
+
+- 项目：读取页面规格、control map、Core API、C2-12 能力规格
+- 结果：通过
+- 证据：已逐项读取 manifest 的 4 个 Exact Docs；control map 显示 `S2-16: C2-12`
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-2-control-map.md`
+
+- 项目：只接入 C2-12 对应 CoreBridge / 状态 / 错误映射
+- 结果：通过
+- 证据：`submitCategoryChange` 在 `.classifierCorrection` 分支调用 `fileCategoryMover.correctFileCategory(...)`，失败进入 `.correction` 错误态
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileCategoryMoveActions.swift:61`
+
+- 项目：不实现同页其他 Core 能力
+- 结果：通过
+- 证据：静态搜索未发现生产代码调用 `saveClassifierRule`、`previewClassifierRuleImpact`、rule CRUD 等 C2-13/C2-14/C2-15 Core API；S2-17/S2-18 仅做 handoff 路由
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ClassifierRuleHandoffRouteView.swift:3`
+
+- 项目：S2-16 中 C2-12 用户可见功能可触发
+- 结果：通过
+- 证据：详情页和列表入口可进入 `S2-16`，主按钮标题为 `Apply correction`
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryDetailPane.swift:383`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ChangeCategorySheet.swift:262`
+
+- 项目：没有 mock / fixture / 静态状态伪造真实 Core 闭环
+- 结果：通过
+- 证据：生产路径通过 `AreaMatrix.correctFileCategory(...)`；测试也覆盖真实 CoreBridge 写入、移动、change log、classifier.yaml 不变
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreMoveToCategory.swift:106`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ChangeCategoryPageFeatureTests.swift:220`
+
+- 项目：未触碰 control map 之外 Core 能力
+- 结果：通过
+- 证据：未发现 `core/src/**` 工作区或 index diff；未新增 C2-13/C2-14/C2-15 真实调用
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+- 项目：Expected New Paths
+- 结果：通过
+- 证据：`apps/macos/AreaMatrix/**` 与 `apps/macos/AreaMatrixTests/**` 已落地；新增文件已加入 Xcode project sources
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj:69`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git status --short -- core/src`、`git diff --name-status -- core/src`、`git diff --cached --name-status -- core/src` 均无输出
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+- 项目：任务验证
+- 结果：不通过
+- 证据：manifest 验证 `./dev check task 4-1/task-127` 通过；但补充运行 `./dev test macos` 失败，新增测试 target 无法编译
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ClassifierCorrectionHandoffTests.swift:14`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。C2-12 生产路径集中在 `CoreMoveToCategory`、`MainFileCategoryMoveActions` 和 S2-16 route/view，未绕过 CoreBridge。
+- 注释 / rustdoc / 文档同步：通过。未改 Rust public API；UDL、Core API、UniFFI 已存在 C2-12 合同。
+- 错误处理与边界处理：通过。Core 错误经 `mapCoreError` 进入 `.correction` 失败态，sheet 保持可恢复。
+- 测试与验证覆盖：不通过。`./dev test macos` 在测试 target 编译阶段失败。
+- 占位、硬编码、mock-only、一次性实现检查：通过。生产 Apply 路径不是 mock；S2-17/S2-18 仅 handoff，不执行规则保存或影响预览。
+
+六、阻塞项
+
+- P0：新增测试无法访问 private helper，导致 `AreaMatrixTests` 编译失败。`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ClassifierCorrectionHandoffTests.swift:14` 调用 `CoreErrorMappingSnapshot.changeCategoryClassify()`，但该 helper 定义在 `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ChangeCategoryPageFeatureTests.swift:471` 的 private extension 中，跨文件不可访问。测试 target 无法编译，不能视为完成。
+- P0：新增测试在 XCTest autoclosure 中使用 `await`，导致 `AreaMatrixTests` 编译失败。`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ClassifierCorrectionHandoffTests.swift:27` 写法为 `XCTAssertEqual(await mover.recordedRequests(), [])`，同时 `recordedRequests()` 是 actor-isolated 方法，`XCTAssertEqual` autoclosure 不支持 concurrency。测试 target 无法编译，不能视为完成。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-127`
+- 结果：通过，退出码 0
+- 证据：`doctor: OK`，`tasks: 637`，`git diff --check` 无失败，`xcodebuild ... build` 输出 `BUILD SUCCEEDED`
+
+- 已运行：`./dev test macos`
+- 结果：失败，退出码 65
+- 证据：`Testing failed`；包含 `changeCategoryClassify is inaccessible due to fileprivate protection level`、`await in an autoclosure that does not support concurrency`、`Testing cancelled because the build failed`
+
+- 缺失：无。必需 manifest 验证已跑；补充 macOS test gate 已跑但失败。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。虽然 C2-12 生产链路和 manifest task check 已通过，但新增/相关 `AreaMatrixTests` 当前无法编译，属于工程质量和验证覆盖阻塞项。
+
+VERIFY_RESULT: FAIL

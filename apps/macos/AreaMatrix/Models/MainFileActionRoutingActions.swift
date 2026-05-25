@@ -12,7 +12,18 @@ extension MainFileListModel {
         guard let fileID = fileID ?? selection.singleFileID,
               writeActionDisabledReason(fileID: fileID) == nil else { return }
         changeCategoryState = .idle
+        classifierCorrectionContextState = .idle
+        classifierCorrectionResult = nil
         pendingActionDestination = .changeCategory(fileID: fileID)
+    }
+
+    func beginClassifierCorrection(fileID: Int64? = nil) {
+        guard let fileID = fileID ?? selection.singleFileID,
+              writeActionDisabledReason(fileID: fileID) == nil else { return }
+        changeCategoryState = .idle
+        classifierCorrectionContextState = .idle
+        classifierCorrectionResult = nil
+        pendingActionDestination = .changeCategory(fileID: fileID, mode: .classifierCorrection)
     }
 
     func beginRenameFromChangeCategory(fileID: Int64, targetCategory: String) {
@@ -129,6 +140,8 @@ extension MainFileListModel {
             renameState = .idle
             deleteState = .idle
             changeCategoryState = .idle
+            classifierCorrectionContextState = .idle
+            classifierCorrectionResult = nil
             iCloudConflictResolutionState = .idle
         }
     }

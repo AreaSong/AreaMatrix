@@ -37,6 +37,7 @@ struct MainRepositoryDetailPane: View {
     let onDetailTabRequestConsumed: (MainDetailTabRequest) -> Void
     let onBeginRenameFile: (Int64) -> Void
     let onBeginChangeCategoryFile: (Int64) -> Void
+    let onBeginClassifierCorrectionFile: (Int64) -> Void
     let onBeginDeleteFile: (Int64) -> Void
     let onBeginICloudConflictResolution: (Int64) -> Void
     let writeActionDisabledReason: (Int64) -> MainFileWriteActionDisabledReason?
@@ -81,6 +82,7 @@ struct MainRepositoryDetailPane: View {
         onDetailTabRequestConsumed: @escaping (MainDetailTabRequest) -> Void,
         onBeginRenameFile: @escaping (Int64) -> Void,
         onBeginChangeCategoryFile: @escaping (Int64) -> Void,
+        onBeginClassifierCorrectionFile: @escaping (Int64) -> Void = { _ in },
         onBeginDeleteFile: @escaping (Int64) -> Void,
         onBeginICloudConflictResolution: @escaping (Int64) -> Void,
         writeActionDisabledReason: @escaping (Int64) -> MainFileWriteActionDisabledReason?,
@@ -122,6 +124,7 @@ struct MainRepositoryDetailPane: View {
         self.onDetailTabRequestConsumed = onDetailTabRequestConsumed
         self.onBeginRenameFile = onBeginRenameFile
         self.onBeginChangeCategoryFile = onBeginChangeCategoryFile
+        self.onBeginClassifierCorrectionFile = onBeginClassifierCorrectionFile
         self.onBeginDeleteFile = onBeginDeleteFile
         self.onBeginICloudConflictResolution = onBeginICloudConflictResolution
         self.writeActionDisabledReason = writeActionDisabledReason
@@ -377,6 +380,11 @@ extension MainRepositoryDetailPane {
                 }
                 .disabled(disabledReason != nil)
                 .accessibilityIdentifier("S1-12-change-category")
+                Button("Correct Classification...") {
+                    onBeginClassifierCorrectionFile(detail.id)
+                }
+                .disabled(disabledReason != nil)
+                .accessibilityIdentifier("S2-16-correct-classification")
                 if detail.hasICloudConflictCopySignal {
                     Button("Resolve iCloud Conflict...") {
                         onBeginICloudConflictResolution(detail.id)

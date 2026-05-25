@@ -1,0 +1,80 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`4-1/task-127`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-127-s2-16-c2-12-classifier-correction.md`
+- 主要实现路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`
+- 主要测试路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`
+
+三、完成度摘要
+
+- 已覆盖项数：9
+- 未覆盖项数：0
+- 通过项数：6
+- 不通过项数：3
+- 阻塞项数：2
+
+四、逐项验收结果
+
+- 项目：Exact Docs / manifest / Existing Code 读取与交叉检查
+- 结果：通过
+- 证据：4 个 Exact Docs 均存在并已读取；manifest `4-1/task-127` 与 task 绑定一致。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-4.md:3687`
+
+- 项目：Expected New Paths 落地
+- 结果：通过
+- 证据：`apps/macos/AreaMatrix/**` 与 `apps/macos/AreaMatrixTests/**` 均已有实现/测试改动。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreMoveToCategory.swift:12`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git diff --name-only -- core/src` 与 `git diff --cached --name-only -- core/src` 无输出，未触碰 `core/src/**`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+- 项目：S2-16 + C2-12 CoreBridge 接入
+- 结果：通过
+- 证据：`CoreBridge.correctFileCategory` 通过 `AreaMatrix.correctFileCategory(...)` 调用真实 UniFFI 入口。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreMoveToCategory.swift:99`
+
+- 项目：S2-16 用户入口可触发
+- 结果：不通过
+- 证据：`./dev test macos` 中 `ChangeCategoryPageIntegrationVerifyTests.testS135PageIntegrationDetailMetaMenuRoutesToChangeCategorySheet` 失败；期望 `S2-16 / Correct Classification`，实际仍为 `S1-35 / Change Category`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ChangeCategoryPageIntegrationVerifyTests.swift:127`
+
+- 项目：Remember 规则确认/预览 handoff
+- 结果：不通过
+- 证据：`Edit rule...` 与 `Preview impact` 在 S2-16 中是空 action 且恒禁用，无法进入 S2-17/S2-18 确认/预览流程。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ChangeCategorySheet.swift:113`
+
+- 项目：不保存 classifier rule / 不越界实现 C2-13/C2-14/C2-15
+- 结果：通过
+- 证据：S2-16 实现未调用 `saveClassifierRule` / `previewClassifierRuleImpact` 等相邻 Core 写入能力。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ChangeCategorySheet.swift:109`
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过。S2-16 复用 Change Category sheet 的结构可维护，但详情页路由测试证明 classifier correction 入口状态仍不可靠。
+- 注释 / rustdoc / 文档同步：通过。本 task 未新增 public Rust API，UDL 与 Core API 中 `correct_file_category` 合同一致。
+- 错误处理与边界处理：部分通过。Core 错误映射路径存在，但 Remember handoff 被禁用，规则确认边界没有可验收入口。
+- 测试与验证覆盖：不通过。`./dev check task 4-1/task-127` 通过，但 `./dev test macos` 失败，且包含本 task 相关失败。
+- 占位、硬编码、mock-only、一次性实现检查：不通过。真实 Core 调用不是 mock，但 S2-16 的 `Edit rule...` / `Preview impact` 是禁用空 action，属于用户可见占位入口。
+
+六、阻塞项
+
+- P0：S2-16 classifier correction 详情页入口验收失败。`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ChangeCategoryPageIntegrationVerifyTests.swift:127` 断言期望 `.classifierCorrection`，实际仍为 `.moveToCategory`，导致用户可见入口无法由测试证明进入 S2-16。
+- P1：Remember 后规则确认/预览入口不可触发。`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ChangeCategorySheet.swift:113` 和 `:115` 的按钮为空 action 且禁用，不满足 C2-12 “记住规则必须进入规则保存/预览流程”的验收口径。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-127`，通过；包含 prompt doctor、diff check、macOS build gate。
+- 已运行：`git diff --cached --check`，通过。
+- 已运行：`./dev test macos`，失败；最终 `AreaMatrixTests.xctest` 执行 599 tests，29 failures，其中包含 S2-16 路由相关失败。
+- 缺失：未做真实窗口 UI smoke；当前已有验证失败，不能用 UI smoke 覆盖失败结论。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+VERIFY_RESULT: FAIL

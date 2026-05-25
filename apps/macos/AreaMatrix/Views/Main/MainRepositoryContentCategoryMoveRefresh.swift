@@ -278,6 +278,18 @@ extension MainRepositoryContentView {
     }
 
     @MainActor
+    func refreshAfterClassifierCorrection(_ correctedFile: FileEntrySnapshot) async {
+        await fileListModel.retryCurrentCategory()
+        selectedFileIDs = [correctedFile.id]
+        await fileListModel.selectFiles([correctedFile.id])
+        fileListModel.statusBanner = .correctedClassification(
+            fileID: correctedFile.id,
+            category: correctedFile.category,
+            ruleConfirmationRequired: fileListModel.classifierCorrectionResult?.ruleConfirmationRequired ?? false
+        )
+    }
+
+    @MainActor
     func refreshTreeAndFocusMovedFile(_ movedFile: FileEntrySnapshot) async {
         let refreshedTree = await refreshedTreeAfterCategoryMove()
         let plan = CategoryMoveRefreshPlan.make(

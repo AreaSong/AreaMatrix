@@ -1,0 +1,90 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`4-1/task-127`
+- 对应文件路径：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-127-s2-16-c2-12-classifier-correction.md`
+- 绑定页面 / 能力：`S2-16 classifier-correct` + `C2-12 classifier-correction`
+
+三、完成度摘要
+
+- 已覆盖项数：8
+- 未覆盖项数：0
+- 通过项数：5
+- 不通过项数：3
+- 阻塞项数：1
+
+四、逐项验收结果
+
+- 项目：读取 task、共享规则、切片规则、工程质量规则、编码规范、validation-driver、依赖图、phase manifest
+- 结果：通过
+- 证据：已按顺序读取并定位 manifest `## 4-1/task-127`
+- 涉及文件：`tasks/prompts/**`、`.codex/skills-src/areamatrix-validation-driver/SKILL.md`
+
+- 项目：Exact Docs 逐个读取并交叉验收
+- 结果：通过
+- 证据：`S2-16` control map 明确只绑定 `C2-12`，Core API 定义 `correct_file_category`
+- 涉及文件：[stage-2-control-map.md](/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-2-control-map.md:24)、[core-api.md](/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:2976)
+
+- 项目：C2-12 CoreBridge 真实接入
+- 结果：通过
+- 证据：Swift `CoreBridge.correctFileCategory` 调用真实 `AreaMatrix.correctFileCategory`，不是 mock-only
+- 涉及文件：[CoreMoveToCategory.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreMoveToCategory.swift:99)
+
+- 项目：S2-16 Apply correction 可触发真实 Core 闭环
+- 结果：通过
+- 证据：`submitCategoryChange(.classifierCorrection)` 调用 `fileCategoryMover.correctFileCategory`，测试也覆盖真实 Core bridge 路径
+- 涉及文件：[MainFileCategoryMoveActions.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileCategoryMoveActions.swift:99)、[ChangeCategoryPageFeatureTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ChangeCategoryPageFeatureTests.swift:372)
+
+- 项目：Expected New Paths
+- 结果：通过
+- 证据：`apps/macos/AreaMatrix/**` 与 `apps/macos/AreaMatrixTests/**` 已落地新增 / 修改文件
+- 涉及文件：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git diff --name-only -- core/src` 与 staged diff 未出现 `core/src/**`
+- 涉及文件：`core/src/**`
+
+- 项目：S2-16 Remember / Edit rule / Preview impact 交互
+- 结果：不通过
+- 证据：页面规格要求进入 S2-17/S2-18 前不改变当前文件，且从 S2-17 Save 返回后仍需用户点击 `Apply correction` 才改当前文件；实现中 `Edit rule...` / `Preview impact` 按钮直接调用 `onChangeCategory`，随后执行 `correct_file_category`，会先更新 / 移动当前文件再进入 handoff route
+- 涉及文件：[S2-16-classifier-correct.md](/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-2-experience/S2-16-classifier-correct.md:100)、[S2-16-classifier-correct.md](/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-2-experience/S2-16-classifier-correct.md:104)、[ChangeCategorySheet.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ChangeCategorySheet.swift:254)、[MainFileCategoryMoveActions.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileCategoryMoveActions.swift:100)
+
+- 项目：不实现同页其他能力 / 相邻页面能力
+- 结果：不通过
+- 证据：本 task 新增了 S2-17/S2-18 handoff route UI，且通过 C2-12 mutation 进入这些 route；这不是纯 handoff 状态，已经影响当前文件
+- 涉及文件：[ClassifierRuleHandoffRouteView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ClassifierRuleHandoffRouteView.swift:3)
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过。阻塞点是 handoff 按钮复用了 Apply correction 的 mutation 路径，导致用户点击 `Edit rule...` / `Preview impact` 时先执行 C2-12 写操作。
+- 注释 / rustdoc / 文档同步：通过。本 task 没新增 Rust public API；UDL、Core API、Swift bridge 名称一致。
+- 错误处理与边界处理：不通过。S2-17 Cancel / S2-18 Back 的“不得改变当前文件”边界无法由当前实现保证。
+- 测试与验证覆盖：不通过。`testS216RememberHandoffUsesCoreReturnedRuleDraft` 反而断言 handoff 前会调用 `.correction`，把规格偏差固化为测试期望。
+- 占位、硬编码、mock-only、一次性实现检查：不通过。真实 Apply correction 不是 mock，但 handoff route 中 S2-17/S2-18 保存按钮是禁用壳，且当前 task 把相邻页面 route 混进 S2-16 行为。
+
+六、阻塞项
+
+- P0：`Edit rule...` / `Preview impact` 会在进入 S2-17/S2-18 前先修改当前文件  
+  说明：S2-16 规格要求 S2-17 Save 成功后仍需用户点击 `Apply correction` 才会改当前文件；当前实现中 handoff 按钮调用 `onChangeCategory`，走 `submitMoveToCategory -> correctFileCategory`，会更新分类、可选移动文件并写 change log。用户取消 S2-17/S2-18 时，当前文件已经被改动。  
+  绝对路径与行号：  
+  [ChangeCategorySheet.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ChangeCategorySheet.swift:254)  
+  [MainFileCategoryMoveActions.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileCategoryMoveActions.swift:100)  
+  [S2-16-classifier-correct.md](/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-2-experience/S2-16-classifier-correct.md:104)  
+  为什么导致不通过：这是用户文件分类 / 路径 / change_log 的真实写入时序错误，违反 S2-16 交互和 C2-12 handoff 边界，不能视为完成。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-127`
+- 通过：`prompt doctor: OK`，`git diff --check` 无报错，macOS `xcodebuild ... build CODE_SIGNING_ALLOWED=NO` 最终 `BUILD SUCCEEDED`
+- 失败：无命令失败
+- 缺失：没有额外运行 `./dev test macos`；本 task manifest 指定验证为 `./dev check task 4-1/task-127`，本轮未扩大到宽门禁
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。虽然 C2-12 的真实 CoreBridge 调用和 build gate 已通过，但 S2-16 的 Remember / rule handoff 写入时序与 UX 规格冲突，属于当前 task 范围内的阻塞问题。
+
+VERIFY_RESULT: FAIL

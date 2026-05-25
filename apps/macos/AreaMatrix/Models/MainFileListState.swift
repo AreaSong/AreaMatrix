@@ -44,7 +44,12 @@ enum MainFileSelectionState: Equatable {
 
 enum MainFileActionDestination: Equatable {
     case rename(fileID: Int64)
-    case changeCategory(fileID: Int64, initialTargetCategory: String? = nil)
+    case changeCategory(
+        fileID: Int64,
+        initialTargetCategory: String? = nil,
+        mode: MainFileCategoryMoveMode = .moveToCategory,
+        ruleRoute: ClassifierCorrectionRuleRoute? = nil
+    )
     case delete(fileID: Int64)
     case iCloudConflict(fileID: Int64)
 
@@ -52,8 +57,8 @@ enum MainFileActionDestination: Equatable {
         switch self {
         case .rename:
             "S1-33"
-        case .changeCategory:
-            "S1-35"
+        case let .changeCategory(_, _, mode, ruleRoute):
+            ruleRoute?.pageID ?? (mode == .classifierCorrection ? "S2-16" : "S1-35")
         case .delete:
             "S1-34"
         case .iCloudConflict:
@@ -65,8 +70,15 @@ enum MainFileActionDestination: Equatable {
         switch self {
         case .rename:
             "Rename File"
-        case .changeCategory:
-            "Change Category"
+        case let .changeCategory(_, _, mode, ruleRoute):
+            switch ruleRoute {
+            case .saveRule:
+                "Save Classifier Rule"
+            case .impactPreview:
+                "Preview Classifier Impact"
+            case nil:
+                mode == .classifierCorrection ? "Correct Classification" : "Change Category"
+            }
         case .delete:
             "Move File to Trash?"
         case .iCloudConflict:
@@ -76,18 +88,28 @@ enum MainFileActionDestination: Equatable {
 
     var fileID: Int64 {
         switch self {
-        case let .rename(fileID), let .changeCategory(fileID, _), let .delete(fileID), let .iCloudConflict(fileID):
+        case let .rename(fileID), let .changeCategory(fileID, _, _, _), let .delete(fileID), let .iCloudConflict(fileID):
             fileID
         }
     }
 
     var initialChangeCategoryTarget: String? {
-        guard case let .changeCategory(_, targetCategory) = self else { return nil }
+        guard case let .changeCategory(_, targetCategory, _, _) = self else { return nil }
         return targetCategory
     }
 
+    var changeCategoryMode: MainFileCategoryMoveMode {
+        guard case let .changeCategory(_, _, mode, _) = self else { return .moveToCategory }
+        return mode
+    }
+
+    var classifierRuleRoute: ClassifierCorrectionRuleRoute? {
+        guard case let .changeCategory(_, _, _, ruleRoute) = self else { return nil }
+        return ruleRoute
+    }
+
     func isChangeCategory(fileID expectedFileID: Int64) -> Bool {
-        guard case let .changeCategory(fileID, _) = self else { return false }
+        guard case let .changeCategory(fileID, _, _, _) = self else { return false }
         return fileID == expectedFileID
     }
 }
@@ -212,6 +234,7 @@ enum MainListStatusBanner: Equatable {
     case removedFileFromIndex(fileID: Int64)
     case batchDeleted(count: Int64)
     case changedCategory(fileID: Int64, category: String)
+    case correctedClassification(fileID: Int64, category: String, ruleConfirmationRequired: Bool)
     case changedBatchCategory(count: Int64, category: String)
     case changedCategoryTreeRefreshFailed(fileID: Int64, category: String)
     case resolvedICloudConflict(fileID: Int64, strategy: ICloudConflictResolutionStrategy)
@@ -232,6 +255,10 @@ enum MainListStatusBanner: Equatable {
             "Processed \(count) selected items. List and undo action log are refreshed."
         case let .changedCategory(_, category):
             "Category changed to \(category). Tree, list, detail, and change log are refreshed."
+        case let .correctedClassification(_, category, ruleConfirmationRequired):
+            ruleConfirmationRequired
+                ? "Classification corrected to \(category). Current file and change log are updated; rule still needs confirmation."
+                : "Classification corrected to \(category). Current file and change log are updated."
         case let .changedBatchCategory(count, category):
             "Changed \(count) files to \(category). List and undo action log are refreshed."
         case let .changedCategoryTreeRefreshFailed(_, category):
@@ -249,8 +276,8 @@ enum MainListStatusBanner: Equatable {
             "arrow.triangle.2.circlepath"
         case .removedSelectedFile, .unsavedNoteDraftPreserved, .changedCategoryTreeRefreshFailed:
             "exclamationmark.triangle"
-        case .movedFileToTrash, .removedFileFromIndex, .batchDeleted, .changedCategory, .changedBatchCategory,
-             .resolvedICloudConflict:
+        case .movedFileToTrash, .removedFileFromIndex, .batchDeleted, .changedCategory, .correctedClassification,
+             .changedBatchCategory, .resolvedICloudConflict:
             "checkmark.circle"
         }
     }

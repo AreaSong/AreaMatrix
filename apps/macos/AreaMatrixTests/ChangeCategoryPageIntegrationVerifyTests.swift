@@ -107,6 +107,7 @@ final class ChangeCategoryPageIntegrationVerifyTests: XCTestCase {
             onCancelDetailLogDiagnostics: {}, onDetailTabRequestConsumed: { _ in },
             onBeginRenameFile: model.beginRename,
             onBeginChangeCategoryFile: model.beginChangeCategory,
+            onBeginClassifierCorrectionFile: model.beginClassifierCorrection,
             onBeginDeleteFile: model.beginDelete, onBeginICloudConflictResolution: model.beginICloudConflictResolution,
             writeActionDisabledReason: model.writeActionDisabledReason,
             noteModel: DetailNoteModel(
@@ -118,10 +119,15 @@ final class ChangeCategoryPageIntegrationVerifyTests: XCTestCase {
         let body = s135MirrorDescription(of: pane.body)
 
         XCTAssertTrue(body.contains("Change Category..."))
+        XCTAssertTrue(body.contains("Correct Classification..."))
         pane.onBeginChangeCategoryFile(file.id)
         XCTAssertEqual(model.pendingActionDestination, .changeCategory(fileID: file.id))
         XCTAssertEqual(model.pendingActionDestination?.pageID, "S1-35")
         XCTAssertEqual(model.pendingActionDestination?.pageTitle, "Change Category")
+        pane.onBeginClassifierCorrectionFile(file.id)
+        XCTAssertEqual(model.pendingActionDestination, .changeCategory(fileID: file.id, mode: .classifierCorrection))
+        XCTAssertEqual(model.pendingActionDestination?.pageID, "S2-16")
+        XCTAssertEqual(model.pendingActionDestination?.pageTitle, "Correct Classification")
     }
 
     @MainActor
@@ -196,7 +202,7 @@ final class ChangeCategoryPageIntegrationVerifyTests: XCTestCase {
             initialTargetCategory: "finance",
             onCancel: {},
             onPreview: { _, _ in },
-            onChangeCategory: { _, _ in },
+            onChangeCategory: { _, _, _, _ in },
             onRenameFirst: { _, _ in },
             onOpenPermissionRecovery: { openedPermissionRecovery = true },
             onCollectDiagnostics: {}

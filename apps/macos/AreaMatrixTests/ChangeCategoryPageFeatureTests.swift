@@ -217,6 +217,124 @@ final class ChangeCategoryPageFeatureTests: XCTestCase {
         XCTAssertEqual(preview.targetPath, "finance/contract_1.pdf")
     }
 
+    @MainActor
+    func testS216ClassifierCorrectionLoadsRealReasonAndCorePreviewBeforeApply() async {
+        let original = FileEntrySnapshot.changeCategoryFixture(id: 246, name: "contract.pdf")
+        let reason = ClassifyResultSnapshot(
+            category: "docs",
+            suggestedName: "contract.pdf",
+            reason: .extension,
+            confidence: 0.93
+        )
+        let preview = MoveToCategoryPreviewSnapshot.changeCategoryFixture(
+            fileID: original.id,
+            targetPath: "finance/contract.pdf",
+            targetName: "contract.pdf"
+        )
+        let predictor = ChangeCategoryRecordingPredictor(result: .success(reason))
+        let mover = ChangeCategoryRecordingMover(previewResult: .success(preview))
+        let model = MainFileListModel(
+            opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [original]),
+            fileLister: DetailMetaNoopLister(),
+            fileDetailer: DetailMetaImmediateDetailer(result: .success(original)),
+            fileCategoryMover: mover,
+            categoryPredictor: predictor,
+            errorMapper: DetailMetaErrorMapper(mapping: .changeCategoryClassify())
+        )
+
+        await model.selectFiles([original.id])
+        model.beginClassifierCorrection()
+        await model.loadClassifierCorrectionContext(fileID: original.id, filename: original.currentName)
+        await model.loadMoveToCategoryPreview(fileID: original.id, targetCategory: "finance")
+        let predictionRequests = await predictor.recordedRequests()
+        let moveRequests = await mover.recordedRequests()
+
+        XCTAssertEqual(predictionRequests, [
+            ChangeCategoryPredictionRequest(repoPath: "/tmp/repo", filename: "contract.pdf")
+        ])
+        XCTAssertEqual(moveRequests, [
+            .preview(repoPath: "/tmp/repo", fileID: original.id, targetCategory: "finance")
+        ])
+        XCTAssertEqual(model.classifierCorrectionContextState.result(for: original.id), reason)
+        let previewRequest = MainFileCategoryMovePreviewRequest(
+            fileID: original.id,
+            targetCategory: "finance"
+        )
+        XCTAssertEqual(model.changeCategoryState.preview(for: previewRequest), preview)
+    }
+
+    @MainActor
+    func testS216ApplyCorrectionUsesRealCoreBridgeAndReturnedRuleDraft() async {
+        let original = FileEntrySnapshot.changeCategoryFixture(id: 247, name: "contract.pdf")
+        let corrected = FileEntrySnapshot.changeCategoryFixture(
+            id: original.id,
+            path: "finance/contract.pdf",
+            category: "finance",
+            name: "contract.pdf",
+            updatedAt: 1_700_000_800
+        )
+        let preview = MoveToCategoryPreviewSnapshot.changeCategoryFixture(
+            fileID: original.id,
+            targetPath: corrected.path,
+            targetName: corrected.currentName
+        )
+        let draft = ClassifierRuleDraftSnapshot(
+            sourceFileID: original.id,
+            targetCategory: "finance",
+            keywordCandidates: ["client-a", "contract"],
+            extensionCandidates: ["pdf"],
+            priority: 42
+        )
+        let correction = ClassifierCorrectionResultSnapshot(
+            updatedFile: corrected,
+            ruleDraft: draft,
+            moveFileRequested: true,
+            rememberRequested: true,
+            ruleConfirmationRequired: true
+        )
+        let mover = ChangeCategoryRecordingMover(
+            previewResult: .success(preview),
+            correctionResult: .success(correction)
+        )
+        let model = MainFileListModel(
+            opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [original]),
+            fileLister: DetailMetaNoopLister(),
+            fileDetailer: DetailMetaImmediateDetailer(result: .success(original)),
+            fileCategoryMover: mover,
+            changeLogLister: DetailLogRecordingLister(results: [.success([])]),
+            errorMapper: DetailMetaErrorMapper(mapping: .changeCategoryClassify())
+        )
+
+        await model.selectFiles([original.id])
+        model.beginClassifierCorrection()
+        await model.loadMoveToCategoryPreview(fileID: original.id, targetCategory: "finance")
+        let didCorrect = await model.submitMoveToCategory(
+            fileID: original.id,
+            targetCategory: "finance",
+            mode: .classifierCorrection,
+            options: MainFileCategoryMoveOptions(
+                moveFile: true,
+                remember: true
+            )
+        )
+        let requests = await mover.recordedRequests()
+
+        XCTAssertTrue(didCorrect)
+        XCTAssertEqual(requests, [
+            .preview(repoPath: "/tmp/repo", fileID: original.id, targetCategory: "finance"),
+            .correction(
+                repoPath: "/tmp/repo",
+                fileID: original.id,
+                targetCategory: "finance",
+                moveFile: true,
+                remember: true
+            )
+        ])
+        XCTAssertEqual(model.classifierCorrectionResult?.ruleDraft, draft)
+        XCTAssertEqual(model.selectedFileDetail, corrected)
+        XCTAssertNil(model.pendingActionDestination)
+    }
+
     func testS135C124DefaultCoreBridgePreviewsThenMovesCopiedFileAndWritesChangeLog() async throws {
         let repoURL = try makeChangeCategoryTemporaryDirectory(prefix: "repo")
         let sourceRoot = try makeChangeCategoryTemporaryDirectory(prefix: "source")
@@ -236,6 +354,8 @@ final class ChangeCategoryPageFeatureTests: XCTestCase {
             overrideFilename: "contract.pdf",
             duplicateStrategy: .skip
         )
+        let classifierURL = repoURL.appendingPathComponent(".areamatrix/classifier.yaml")
+        let classifierBefore = try String(contentsOf: classifierURL)
         let preview = try await bridge.previewMoveToCategory(
             repoPath: repoURL.path,
             fileID: imported.id,
@@ -243,6 +363,13 @@ final class ChangeCategoryPageFeatureTests: XCTestCase {
         )
         let moved = try await bridge.moveToCategory(repoPath: repoURL.path, fileID: imported.id, newCategory: "finance")
         let detail = try await bridge.getFile(repoPath: repoURL.path, fileID: imported.id)
+        let correction = try await bridge.correctFileCategory(
+            repoPath: repoURL.path,
+            fileID: imported.id,
+            targetCategory: "docs",
+            moveFile: true,
+            remember: true
+        )
         let changes = try await bridge.listChanges(repoPath: repoURL.path, filter: .detailLog(fileID: imported.id))
 
         XCTAssertEqual(preview.fileID, imported.id)
@@ -252,11 +379,20 @@ final class ChangeCategoryPageFeatureTests: XCTestCase {
         XCTAssertEqual(moved.id, imported.id)
         XCTAssertEqual(moved.category, "finance")
         XCTAssertEqual(detail.path, "finance/contract.pdf")
+        XCTAssertEqual(correction.updatedFile.id, imported.id)
+        XCTAssertEqual(correction.updatedFile.category, "docs")
+        XCTAssertEqual(correction.updatedFile.path, "docs/contract.pdf")
+        XCTAssertTrue(correction.moveFileRequested)
+        XCTAssertTrue(correction.rememberRequested)
+        XCTAssertTrue(correction.ruleConfirmationRequired)
+        XCTAssertEqual(correction.ruleDraft?.targetCategory, "docs")
+        XCTAssertTrue(correction.ruleDraft?.extensionCandidates.contains("pdf") == true)
+        XCTAssertEqual(try String(contentsOf: classifierURL), classifierBefore)
         XCTAssertTrue(FileManager.default.fileExists(
-            atPath: repoURL.appendingPathComponent("finance/contract.pdf").path
+            atPath: repoURL.appendingPathComponent("docs/contract.pdf").path
         ))
         XCTAssertFalse(FileManager.default.fileExists(
-            atPath: repoURL.appendingPathComponent("docs/contract.pdf").path
+            atPath: repoURL.appendingPathComponent("finance/contract.pdf").path
         ))
         XCTAssertTrue(changes.contains { $0.action == "moved" })
     }
@@ -310,24 +446,31 @@ final class ChangeCategoryPageFeatureTests: XCTestCase {
             atPath: repoURL.appendingPathComponent("finance/contract.pdf").path
         ))
     }
+
 }
 
 private enum ChangeCategoryRequest: Equatable {
     case preview(repoPath: String, fileID: Int64, targetCategory: String)
     case move(repoPath: String, fileID: Int64, targetCategory: String)
+    case correction(repoPath: String, fileID: Int64, targetCategory: String, moveFile: Bool, remember: Bool)
 }
 
 private actor ChangeCategoryRecordingMover: CoreFileCategoryMoving {
     private let previewResult: Result<MoveToCategoryPreviewSnapshot, Error>
     private let moveResult: Result<FileEntrySnapshot, Error>
+    private let correctionResult: Result<ClassifierCorrectionResultSnapshot, Error>
     private var requests: [ChangeCategoryRequest] = []
 
     init(
         previewResult: Result<MoveToCategoryPreviewSnapshot, Error>,
-        moveResult: Result<FileEntrySnapshot, Error> = .failure(CoreError.Internal(message: "unexpected move"))
+        moveResult: Result<FileEntrySnapshot, Error> = .failure(CoreError.Internal(message: "unexpected move")),
+        correctionResult: Result<ClassifierCorrectionResultSnapshot, Error> = .failure(
+            CoreError.Internal(message: "unexpected classifier correction")
+        )
     ) {
         self.previewResult = previewResult
         self.moveResult = moveResult
+        self.correctionResult = correctionResult
     }
 
     func previewMoveToCategory(
@@ -344,7 +487,47 @@ private actor ChangeCategoryRecordingMover: CoreFileCategoryMoving {
         return try moveResult.get()
     }
 
+    func correctFileCategory(
+        repoPath: String,
+        fileID: Int64,
+        targetCategory: String,
+        moveFile: Bool,
+        remember: Bool
+    ) async throws -> ClassifierCorrectionResultSnapshot {
+        requests.append(.correction(
+            repoPath: repoPath,
+            fileID: fileID,
+            targetCategory: targetCategory,
+            moveFile: moveFile,
+            remember: remember
+        ))
+        return try correctionResult.get()
+    }
+
     func recordedRequests() -> [ChangeCategoryRequest] {
+        requests
+    }
+}
+
+private struct ChangeCategoryPredictionRequest: Equatable {
+    var repoPath: String
+    var filename: String
+}
+
+private actor ChangeCategoryRecordingPredictor: CoreCategoryPredicting {
+    private let result: Result<ClassifyResultSnapshot, Error>
+    private var requests: [ChangeCategoryPredictionRequest] = []
+
+    init(result: Result<ClassifyResultSnapshot, Error>) {
+        self.result = result
+    }
+
+    func predictCategory(repoPath: String, filename: String) async throws -> ClassifyResultSnapshot {
+        requests.append(ChangeCategoryPredictionRequest(repoPath: repoPath, filename: filename))
+        return try result.get()
+    }
+
+    func recordedRequests() -> [ChangeCategoryPredictionRequest] {
         requests
     }
 }
@@ -467,19 +650,4 @@ private func makeChangeCategoryTemporaryDirectory(prefix: String) throws -> URL 
     let url = FileManager.default.temporaryDirectory.appendingPathComponent(name, isDirectory: true)
     try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
     return url
-}
-
-func s135MirrorDescription(of value: Any, depth: Int = 0) -> String {
-    guard depth < 8 else { return "" }
-
-    var lines: [String] = []
-    lines.append(String(describing: type(of: value)))
-    lines.append(String(describing: value))
-    for child in Mirror(reflecting: value).children {
-        if let label = child.label {
-            lines.append(label)
-        }
-        lines.append(s135MirrorDescription(of: child.value, depth: depth + 1))
-    }
-    return lines.joined(separator: "\n")
 }

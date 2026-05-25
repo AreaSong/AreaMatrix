@@ -26,6 +26,8 @@ final class MainFileListModel: ObservableObject {
     @Published var renameState = MainFileRenameState.idle
     @Published var deleteState = MainFileDeleteState.idle
     @Published var changeCategoryState = MainFileCategoryMoveState.idle
+    @Published var classifierCorrectionContextState = ClassifierCorrectionContextState.idle
+    @Published var classifierCorrectionResult: ClassifierCorrectionResultSnapshot?
     @Published var iCloudConflictResolutionState = ICloudConflictResolutionState.idle
     @Published var pendingSearchDestination: MainSearchDestination?
     @Published var commandPaletteState = CommandPaletteLoadState.idle
@@ -42,6 +44,7 @@ final class MainFileListModel: ObservableObject {
     let fileRenamer: any CoreFileRenaming
     let fileDeleter: any CoreFileDeleting
     let fileCategoryMover: any CoreFileCategoryMoving
+    let categoryPredictor: any CoreCategoryPredicting
     let batchDeleter: any CoreBatchDeleting
     let batchCategoryChanger: any CoreBatchCategoryChanging
     let iCloudConflictResolver: any ICloudConflictResolving
@@ -72,6 +75,7 @@ final class MainFileListModel: ObservableObject {
         fileRenamer: any CoreFileRenaming = CoreBridge(),
         fileDeleter: any CoreFileDeleting = CoreBridge(),
         fileCategoryMover: any CoreFileCategoryMoving = CoreBridge(),
+        categoryPredictor: any CoreCategoryPredicting = CoreBridge(),
         batchDeleter: any CoreBatchDeleting = CoreBridge(),
         batchCategoryChanger: any CoreBatchCategoryChanging = CoreBridge(),
         iCloudConflictResolver: any ICloudConflictResolving = CoreBridge(),
@@ -95,6 +99,7 @@ final class MainFileListModel: ObservableObject {
         self.fileRenamer = fileRenamer
         self.fileDeleter = fileDeleter
         self.fileCategoryMover = fileCategoryMover
+        self.categoryPredictor = categoryPredictor
         self.batchDeleter = batchDeleter
         self.batchCategoryChanger = batchCategoryChanger
         self.iCloudConflictResolver = iCloudConflictResolver

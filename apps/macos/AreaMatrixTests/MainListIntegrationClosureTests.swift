@@ -44,6 +44,11 @@ final class MainListIntegrationClosureTests: XCTestCase {
         XCTAssertEqual(model.pendingActionDestination?.pageID, "S1-35")
         XCTAssertEqual(model.pendingActionDestination?.pageTitle, "Change Category")
 
+        model.beginClassifierCorrection()
+        XCTAssertEqual(model.pendingActionDestination, .changeCategory(fileID: docsFile.id, mode: .classifierCorrection))
+        XCTAssertEqual(model.pendingActionDestination?.pageID, "S2-16")
+        XCTAssertEqual(model.pendingActionDestination?.pageTitle, "Correct Classification")
+
         model.beginDelete()
         XCTAssertEqual(model.pendingActionDestination, .delete(fileID: docsFile.id))
         XCTAssertEqual(model.pendingActionDestination?.pageID, "S1-34")

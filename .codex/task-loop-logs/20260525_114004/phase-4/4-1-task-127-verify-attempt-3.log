@@ -1,0 +1,83 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`4-1/task-127`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-127-s2-16-c2-12-classifier-correction.md`
+- Manifest 章节：`tasks/prompts/_shared/manifests/phase-4.md` 的 `## 4-1/task-127`
+- 实际检查范围：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`core/area_matrix.udl`
+- Forbidden Touches：`core/src/**`
+
+三、完成度摘要
+
+- 已覆盖项数：6
+- 未覆盖项数：2
+- 通过项数：6
+- 不通过项数：2
+- 阻塞项数：2
+
+四、逐项验收结果
+
+- 项目：Exact Docs / Core API / control map / UDL 对齐  
+  结果：通过  
+  证据：S2-16 在 control map 中只映射 C2-12；`core-api.md` 与 `core/area_matrix.udl` 均声明 `correct_file_category(...) -> ClassifierCorrectionResult`。  
+  涉及文件：`docs/architecture/stage-2-control-map.md:24`、`docs/api/core-api.md:2976`、`core/area_matrix.udl:113`
+
+- 项目：Expected New Paths 落地  
+  结果：通过  
+  证据：`apps/macos/AreaMatrix/**` 与 `apps/macos/AreaMatrixTests/**` 有新增/修改实现和测试文件。  
+  涉及文件：`apps/macos/AreaMatrix/Models/MainFileClassifierCorrectionRoutingActions.swift`、`apps/macos/AreaMatrix/Views/Main/ClassifierRuleHandoffRouteView.swift`、`apps/macos/AreaMatrixTests/ClassifierCorrectionHandoffTests.swift`
+
+- 项目：Forbidden Touches  
+  结果：通过  
+  证据：`git status --short -- core/src`、`git diff --name-only -- core/src`、`git ls-files --others --exclude-standard core/src` 均无输出。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+- 项目：C2-12 Apply correction CoreBridge 接入  
+  结果：通过  
+  证据：`CoreBridge.correctFileCategory` 调用真实 UniFFI `AreaMatrix.correctFileCategory(...)`；页面提交路径在 classifierCorrection 模式下调用 `fileCategoryMover.correctFileCategory(...)`。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreMoveToCategory.swift:99`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileCategoryMoveActions.swift:74`
+
+- 项目：S2-16 页面状态与目标预览  
+  结果：不通过  
+  证据：页面规格要求显示真实分类原因、选择新分类后显示目标路径预览、目标不可写时禁用移动或 Apply；当前实现把分类来源固定为 `"Matched rule or default classifier"`，classifierCorrection 模式下直接跳过 preview，仅用 `targetCategory/currentName` 拼接目标路径，并允许未经过目标状态验证时提交。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-2-experience/S2-16-classifier-correct.md:72`、`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-2-experience/S2-16-classifier-correct.md:96`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ChangeCategorySheet.swift:84`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ChangeCategorySheet.swift:252`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ChangeCategorySheet.swift:272`
+
+- 项目：规则建议 / handoff 真实性  
+  结果：不通过  
+  证据：页面规格要求 Remember 后生成安全的 keyword / extension / priority 草稿，并区分当前文件纠错与未来规则保存；Core API 也声明 C2-12 可返回 `rule_draft` 供 S2-17/S2-18 确认。当前 UI 在进入 S2-17/S2-18 前用 `safeRuleDraft(for:)` 从 `file.currentName`、扩展名和硬编码 `priority: 100` 生成草稿，未连接真实 classifier/rule suggestion 数据，也没有证明 Core 返回的 `ruleDraft` 被用于 handoff。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:2994`、`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-2-experience/S2-16-classifier-correct.md:56`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ChangeCategorySheet.swift:303`
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过，S2-16 复用 ChangeCategorySheet 的结构可编译，但 classifierCorrection 分支存在静态分类来源、跳过目标预览、手写规则草稿的问题。
+- 注释 / rustdoc / 文档同步：不通过，实现与 S2-16 页面规格、C2-12 API 的 rule draft 消费口径不一致。
+- 错误处理与边界处理：不通过，执行纠错失败可映射错误，但分类原因加载失败、目标路径预览失败、目标不可写等 S2-16 状态没有真实处理证据。
+- 测试与验证覆盖：不通过，`./dev check task 4-1/task-127` 通过，但现有测试主要覆盖 CoreBridge 直接调用和路由，未覆盖 S2-16 UI 提交前的真实分类原因、目标预览、规则草稿来源。
+- 占位、硬编码、mock-only、一次性实现检查：不通过，分类来源与规则草稿存在静态/硬编码证据。
+
+六、阻塞项
+
+- P1：S2-16 分类原因和目标路径预览未接真实状态  
+  说明：文档要求打开 sheet 加载当前分类原因，并在选择新分类后显示目标路径预览；当前代码用固定文案和拼接路径替代真实加载/预览。  
+  绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ChangeCategorySheet.swift:84`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ChangeCategorySheet.swift:252`  
+  为什么导致不通过：这是 S2-16 用户可见功能，缺证据即不能证明 C2-12 页面闭环可验收。
+
+- P1：Remember 规则草稿 handoff 不是由真实规则建议/Core 结果驱动  
+  说明：`safeRuleDraft(for:)` 从文件名、扩展名和硬编码 priority 生成草稿；未证明使用真实 classifier.yaml 支持的安全候选或 C2-12 `ClassifierCorrectionResult.ruleDraft`。  
+  绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ChangeCategorySheet.swift:319`  
+  为什么导致不通过：完成标准禁止用静态状态伪造真实 Core 闭环，且 C2-12 API 明确返回 rule draft 供 S2-17/S2-18 确认。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-127`
+- 通过：`prompt doctor: OK`，`git diff --check` 无报错，`xcodebuild ... build CODE_SIGNING_ALLOWED=NO` 结束为 `BUILD SUCCEEDED`
+- 失败：验证命令本身无失败
+- 缺失：没有能覆盖上述两个阻塞项的真实 UI/状态/规则草稿来源证据；命令通过不能替代产品闭环证据。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+VERIFY_RESULT: FAIL

@@ -8,6 +8,7 @@ struct MainFileActionRoutingSheet: View {
     let renameState: MainFileRenameState
     let deleteState: MainFileDeleteState
     let changeCategoryState: MainFileCategoryMoveState
+    let classifierCorrectionContextState: ClassifierCorrectionContextState
     let iCloudConflictResolutionState: ICloudConflictResolutionState
     let iCloudConflictResolutionCapability: ICloudConflictResolutionCapability
     let repoPath: String
@@ -18,8 +19,12 @@ struct MainFileActionRoutingSheet: View {
     let onRename: (Int64, String) -> Void
     let onShowExistingFile: (Int64) -> Void
     let onPreviewChangeCategory: (Int64, String) -> Void
-    let onChangeCategory: (Int64, String) -> Void
+    let onLoadClassifierCorrectionContext: (Int64, String) -> Void
+    let onChangeCategory: (Int64, String, MainFileCategoryMoveMode, MainFileCategoryMoveOptions) -> Void
+    let onBeginClassifierRuleHandoff: (Int64, String, Bool, ClassifierRuleHandoffDestination) -> Void
     let onRenameFirstFromChangeCategory: (Int64, String) -> Void
+    let onEditClassifierRule: (ClassifierRuleHandoff) -> Void
+    let onPreviewClassifierRuleImpact: (ClassifierRuleHandoff) -> Void
     let onOpenChangeCategoryPermissionRecovery: () -> Void
     let onDelete: (Int64, MainFileDeleteOperation) -> Void
     let onApplyICloudConflict: (
@@ -42,18 +47,7 @@ struct MainFileActionRoutingSheet: View {
                 onShowExistingFile: onShowExistingFile
             )
         case .changeCategory:
-            ChangeCategorySheet(
-                file: file,
-                categoryRows: categoryRows,
-                state: changeCategoryState,
-                initialTargetCategory: destination.initialChangeCategoryTarget,
-                onCancel: onDismiss,
-                onPreview: onPreviewChangeCategory,
-                onChangeCategory: onChangeCategory,
-                onRenameFirst: onRenameFirstFromChangeCategory,
-                onOpenPermissionRecovery: onOpenChangeCategoryPermissionRecovery,
-                onCollectDiagnostics: onCollectDiagnostics
-            )
+            changeCategoryRouteView(destination)
         case .delete:
             DeleteFileConfirmSheet(
                 file: file,
@@ -88,6 +82,40 @@ struct MainFileActionRoutingSheet: View {
                 }
             )
         }
+    }
+
+    @ViewBuilder
+    private func changeCategoryRouteView(_ destination: MainFileActionDestination) -> some View {
+        if let ruleRoute = destination.classifierRuleRoute {
+            classifierRuleRouteView(ruleRoute)
+        } else {
+            ChangeCategorySheet(
+                file: file,
+                categoryRows: categoryRows,
+                state: changeCategoryState,
+                classifierContextState: classifierCorrectionContextState,
+                mode: destination.changeCategoryMode,
+                initialTargetCategory: destination.initialChangeCategoryTarget,
+                onCancel: onDismiss,
+                onPreview: onPreviewChangeCategory,
+                onLoadClassifierContext: onLoadClassifierCorrectionContext,
+                onChangeCategory: onChangeCategory,
+                onBeginRuleHandoff: onBeginClassifierRuleHandoff,
+                onRenameFirst: onRenameFirstFromChangeCategory,
+                onOpenPermissionRecovery: onOpenChangeCategoryPermissionRecovery,
+                onCollectDiagnostics: onCollectDiagnostics
+            )
+        }
+    }
+
+    private func classifierRuleRouteView(_ route: ClassifierCorrectionRuleRoute) -> some View {
+        ClassifierRuleHandoffRouteView(
+            mode: route.handoffMode,
+            handoff: route.handoff,
+            onCancel: onDismiss,
+            onBack: onEditClassifierRule,
+            onPreviewImpact: onPreviewClassifierRuleImpact
+        )
     }
 }
 struct SavedSearchPreview: View {

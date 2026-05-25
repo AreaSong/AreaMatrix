@@ -20,6 +20,7 @@ extension MainRepositoryContentView {
             renameState: fileListModel.renameState,
             deleteState: fileListModel.deleteState,
             changeCategoryState: fileListModel.changeCategoryState,
+            classifierCorrectionContextState: fileListModel.classifierCorrectionContextState,
             iCloudConflictResolutionState: fileListModel.iCloudConflictResolutionState,
             iCloudConflictResolutionCapability: fileListModel.iCloudConflictResolver.iCloudConflictResolutionCapability,
             repoPath: opening.config.repoPath,
@@ -30,10 +31,14 @@ extension MainRepositoryContentView {
             onRename: submitRename,
             onShowExistingFile: showExistingFile,
             onPreviewChangeCategory: previewChangeCategory,
+            onLoadClassifierCorrectionContext: loadClassifierCorrectionContext,
             onChangeCategory: submitChangeCategory,
+            onBeginClassifierRuleHandoff: fileListModel.beginClassifierRuleHandoff,
             onRenameFirstFromChangeCategory: { fileID, targetCategory in
                 fileListModel.beginRenameFromChangeCategory(fileID: fileID, targetCategory: targetCategory)
             },
+            onEditClassifierRule: fileListModel.beginClassifierRuleSave,
+            onPreviewClassifierRuleImpact: fileListModel.beginClassifierImpactPreview,
             onOpenChangeCategoryPermissionRecovery: onOpenChangeCategoryPermissionRecovery,
             onDelete: submitDelete,
             onApplyICloudConflict: applyICloudConflict,
@@ -276,11 +281,30 @@ extension MainRepositoryContentView {
         Task { await fileListModel.loadMoveToCategoryPreview(fileID: fileID, targetCategory: targetCategory) }
     }
 
-    private func submitChangeCategory(fileID: Int64, targetCategory: String) {
+    private func loadClassifierCorrectionContext(fileID: Int64, filename: String) {
+        Task { await fileListModel.loadClassifierCorrectionContext(fileID: fileID, filename: filename) }
+    }
+
+    private func submitChangeCategory(
+        fileID: Int64,
+        targetCategory: String,
+        mode: MainFileCategoryMoveMode,
+        options: MainFileCategoryMoveOptions
+    ) {
         Task {
-            let didMove = await fileListModel.submitMoveToCategory(fileID: fileID, targetCategory: targetCategory) { movedFile in
-                refreshAfterCategoryMove(movedFile)
-            }
+            let didMove = await fileListModel.submitMoveToCategory(
+                fileID: fileID,
+                targetCategory: targetCategory,
+                mode: mode,
+                options: options,
+                onMoved: { changedFile in
+                    if mode == .classifierCorrection {
+                        Task { await refreshAfterClassifierCorrection(changedFile) }
+                    } else {
+                        refreshAfterCategoryMove(changedFile)
+                    }
+                }
+            )
             if didMove { refreshLatestUndoToast() }
         }
     }

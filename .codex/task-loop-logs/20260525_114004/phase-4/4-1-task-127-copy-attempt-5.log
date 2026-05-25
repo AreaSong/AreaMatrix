@@ -1,0 +1,53 @@
+一、执行结论
+
+已完成。已修复上次验收指出的 S2-16 handoff 写入时序问题：`Edit rule...` / `Preview impact` 现在只进入规则 handoff route，不再复用 `Apply correction` 的 `correct_file_category` 写入路径。
+
+二、执行范围
+
+单任务：`4-1/task-127`
+
+修改文件清单：
+- [ChangeCategorySheet.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ChangeCategorySheet.swift:257)
+- [MainFileClassifierCorrectionRoutingActions.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileClassifierCorrectionRoutingActions.swift:4)
+- [MainFileCategoryMoveActions.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileCategoryMoveActions.swift:99)
+- [MainFileCategoryMoveState.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileCategoryMoveState.swift:1)
+- [MainFileActionRoutingSheet.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainFileActionRoutingSheet.swift:24)
+- [MainRepositoryContentActionRouting.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentActionRouting.swift:36)
+- [ClassifierRuleHandoffRouteView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ClassifierRuleHandoffRouteView.swift:1)
+- [ChangeCategoryPageFeatureTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ChangeCategoryPageFeatureTests.swift:267)
+- [ClassifierCorrectionHandoffTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ClassifierCorrectionHandoffTests.swift:6)
+
+三、完成情况
+
+核对清单：已只处理 S2-16 + C2-12；已读取并交叉核对页面规格、control map、Core API、C2-12 spec；`Apply correction` 仍走真实 `CoreBridge.correctFileCategory`；未实现同页 C2-13/C2-14 保存或影响预览能力。
+
+完成标准：S2-16 的 `Apply correction` 可触发真实 C2-12；handoff 按钮不再先改当前文件；没有 mock-only 或静态通过态；未触碰 control map 外 Core 能力。
+
+Forbidden Touches：未触碰 `core/src/**`，检查 `git diff --name-only -- core/src` 为空。
+
+四、工程质量
+
+代码结构：写入路径和 handoff 路径已拆开，`onBeginRuleHandoff` 不再调用 mutation。  
+错误与边界：S2-17 Cancel / S2-18 Back 前，当前文件、分类、路径、change log 不会被提前改变。  
+测试：新增/更新断言覆盖 handoff 不调用 preview/move/correction Core mutation，`Apply correction` 仍调用真实 C2-12 路径。  
+占位检查：移除了 S2-17/S2-18 route 中禁用的保存按钮壳，保留纯 handoff 导航。
+
+五、验证情况
+
+已运行：
+```bash
+./dev check task 4-1/task-127
+```
+
+结果：
+- `prompt doctor: OK`
+- `git diff --check` 通过
+- `xcodebuild ... build CODE_SIGNING_ALLOWED=NO` 最终 `BUILD SUCCEEDED`
+
+未运行：未扩大到 `./dev check all`、`./dev check core`、`cargo test --workspace` 或 `./dev test macos`，因为当前 task manifest 的 Validation 上限是 `./dev check task 4-1/task-127`。
+
+六、风险与后续
+
+剩余风险：本次只修复 S2-16 handoff 写入时序；S2-17 保存规则和 S2-18 影响预览仍应由后续对应任务实现。  
+建议下一个任务：进入 `4-1/task-128`，实现 S2-17 + C2-13 classifier rule save。
+
