@@ -124,6 +124,71 @@
     "4-1/task-129": {
       "attempts": 2,
       "copy_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260525_150655/phase-4/4-1-task-129-copy-attempt-2.log",
+      "git": {
+        "attempts": 2,
+        "branch": "codex/areamatrix-task-loop-20260501_132850",
+        "changed_files": [
+          ".codex/task-loop-logs/20260525_150655/phase-4/4-1-task-129-copy-attempt-1.log",
+          ".codex/task-loop-logs/20260525_150655/phase-4/4-1-task-129-copy-attempt-2.log",
+          ".codex/task-loop-logs/20260525_150655/phase-4/4-1-task-129-verify-attempt-1.log",
+          ".codex/task-loop-logs/20260525_150655/phase-4/4-1-task-129-verify-attempt-2.log",
+          ".codex/task-loop-runs/20260525_150655/summary.json",
+          ".codex/task-loop-runs/index.json",
+          "apps/macos/AreaMatrix/Bridge/CoreMoveToCategory.swift",
+          "apps/macos/AreaMatrix/Models/MainFileClassifierCorrectionRoutingActions.swift",
+          "apps/macos/AreaMatrix/Views/Main/ClassifierRuleHandoffRouteView.swift",
+          "apps/macos/AreaMatrixTests/ClassifierCorrectionHandoffTests.swift",
+          "tasks/prompts/_shared/progress.json"
+        ],
+        "commit": "b02782d47a30a71873dcc83b3f455b3dffdb9520",
+        "copy_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260525_150655/phase-4/4-1-task-129-copy-attempt-2.log",
+        "diff_name_status": [
+          "M\t.codex/task-loop-runs/20260525_150655/summary.json",
+          "M\t.codex/task-loop-runs/index.json",
+          "M\tapps/macos/AreaMatrix/Bridge/CoreMoveToCategory.swift",
+          "M\tapps/macos/AreaMatrix/Models/MainFileClassifierCorrectionRoutingActions.swift",
+          "M\tapps/macos/AreaMatrix/Views/Main/ClassifierRuleHandoffRouteView.swift",
+          "M\tapps/macos/AreaMatrixTests/ClassifierCorrectionHandoffTests.swift",
+          "M\ttasks/prompts/_shared/progress.json"
+        ],
+        "label": "4-1/task-129",
+        "mode": "commit",
+        "phase": "phase-4",
+        "push_status": "not_requested",
+        "remote": "",
+        "run_id": "20260525_150655",
+        "staged_name_status": [
+          "A\t.codex/task-loop-logs/20260525_150655/phase-4/4-1-task-129-copy-attempt-1.log",
+          "A\t.codex/task-loop-logs/20260525_150655/phase-4/4-1-task-129-copy-attempt-2.log",
+          "A\t.codex/task-loop-logs/20260525_150655/phase-4/4-1-task-129-verify-attempt-1.log",
+          "A\t.codex/task-loop-logs/20260525_150655/phase-4/4-1-task-129-verify-attempt-2.log",
+          "M\t.codex/task-loop-runs/20260525_150655/summary.json",
+          "M\t.codex/task-loop-runs/index.json",
+          "M\tapps/macos/AreaMatrix/Bridge/CoreMoveToCategory.swift",
+          "M\tapps/macos/AreaMatrix/Models/MainFileClassifierCorrectionRoutingActions.swift",
+          "M\tapps/macos/AreaMatrix/Views/Main/ClassifierRuleHandoffRouteView.swift",
+          "M\tapps/macos/AreaMatrixTests/ClassifierCorrectionHandoffTests.swift",
+          "M\ttasks/prompts/_shared/progress.json"
+        ],
+        "status": "committed",
+        "status_short": [
+          " M .codex/task-loop-runs/20260525_150655/summary.json",
+          " M .codex/task-loop-runs/index.json",
+          " M apps/macos/AreaMatrix/Bridge/CoreMoveToCategory.swift",
+          " M apps/macos/AreaMatrix/Models/MainFileClassifierCorrectionRoutingActions.swift",
+          " M apps/macos/AreaMatrix/Views/Main/ClassifierRuleHandoffRouteView.swift",
+          " M apps/macos/AreaMatrixTests/ClassifierCorrectionHandoffTests.swift",
+          " M tasks/prompts/_shared/progress.json",
+          "?? .codex/task-loop-logs/20260525_150655/phase-4/4-1-task-129-copy-attempt-1.log",
+          "?? .codex/task-loop-logs/20260525_150655/phase-4/4-1-task-129-copy-attempt-2.log",
+          "?? .codex/task-loop-logs/20260525_150655/phase-4/4-1-task-129-verify-attempt-1.log",
+          "?? .codex/task-loop-logs/20260525_150655/phase-4/4-1-task-129-verify-attempt-2.log"
+        ],
+        "summary_file": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-runs/20260525_150655/summary.json",
+        "task_name": "4-1-task-129",
+        "updated_at": "2026-05-25T08:52:28.130877+00:00",
+        "verify_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260525_150655/phase-4/4-1-task-129-verify-attempt-2.log"
+      },
       "note": "自动执行验收通过",
       "phase": "phase-4",
       "risk": "High",
@@ -138,7 +203,7 @@
     "retries": 2,
     "task_count": 637
   },
-  "updated_at": "2026-05-25T08:52:27.932307+00:00",
+  "updated_at": "2026-05-25T08:52:28.136282+00:00",
   "verify_root": "/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/verify-ready",
   "version": 1
 }
