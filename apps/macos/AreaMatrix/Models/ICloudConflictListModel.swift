@@ -51,7 +51,7 @@ struct ICloudConflictMinimalRouteContext: Equatable, Identifiable {
     }
 
     var resolutionCapability: ICloudConflictResolutionCapability {
-        .blocked(.missingCoreResolutionEndpoint)
+        .supported
     }
 
     private func absolutePath(_ path: String?) -> String? {

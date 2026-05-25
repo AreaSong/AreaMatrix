@@ -131,6 +131,7 @@ enum ICloudConflictResolutionCapability: Equatable {
 
 struct ICloudConflictResolutionRequest: Equatable {
     var repoPath: String
+    var conflictID: String
     var fileID: Int64
     var strategy: ICloudConflictResolutionStrategy
     var originalPath: String?
@@ -139,8 +140,30 @@ struct ICloudConflictResolutionRequest: Equatable {
 
 struct ICloudConflictResolutionResult: Equatable {
     var focusFileID: Int64?
+    var conflictID: String? = nil
+    var report: ICloudConflictResolveReportSnapshot? = nil
+    var status: ICloudConflictStatusSnapshot? = nil
+    var keptPaths: [String] = []
+    var trashedPaths: [String] = []
+    var undoToken: String? = nil
+    var changeLogAction: String? = nil
     var didClearConflictState: Bool
     var didWriteChangeLog: Bool
+}
+
+extension ICloudConflictResolutionResult {
+    init(report: ICloudConflictResolveReportSnapshot) {
+        focusFileID = nil
+        conflictID = report.conflictID
+        self.report = report
+        status = report.status
+        keptPaths = report.keptPaths
+        trashedPaths = report.trashedPaths
+        undoToken = report.undoToken
+        changeLogAction = report.changeLogAction
+        didClearConflictState = report.status == .resolved
+        didWriteChangeLog = !report.changeLogAction.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
 }
 
 protocol ICloudConflictResolving: Sendable {

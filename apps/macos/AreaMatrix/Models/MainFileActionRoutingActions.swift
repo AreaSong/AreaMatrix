@@ -74,6 +74,7 @@ extension MainFileListModel {
         do {
             let result = try await iCloudConflictResolver.resolveICloudConflict(ICloudConflictResolutionRequest(
                 repoPath: repoPath,
+                conflictID: conflictedCopyPath ?? "\(fileID)",
                 fileID: fileID,
                 strategy: strategy,
                 originalPath: originalPath,

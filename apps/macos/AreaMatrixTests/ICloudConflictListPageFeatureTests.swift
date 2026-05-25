@@ -155,7 +155,7 @@ final class ICloudConflictListPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS136ResolveRoutesIntoS125MinimalResolverWithExplicitCoreResolutionBlocker() async {
+    func testS220C216ResolveRouteUsesConflictIDAndSupportedPreviewResolution() async {
         let conflict = ICloudConflictPairSnapshot.s136Fixture()
         let listModel = ICloudConflictListModel(
             repoPath: "/tmp/s136-repo",
@@ -167,37 +167,47 @@ final class ICloudConflictListPageFeatureTests: XCTestCase {
         listModel.beginResolvingConflict(conflict)
 
         guard let route = listModel.resolvingRoute else {
-            return XCTFail("Expected S1-36 Resolve to open S1-25 route context")
+            return XCTFail("Expected Resolve to open S2-20 route context")
         }
         XCTAssertEqual(route.conflict, conflict)
+        XCTAssertEqual(route.conflict.conflictID, "docs/report (Alice's conflicted copy).pdf")
         XCTAssertEqual(route.originalVersion.path, "/tmp/s136-repo/docs/report.pdf")
         XCTAssertEqual(route.conflictedCopyVersion.path, "/tmp/s136-repo/docs/report (Alice's conflicted copy).pdf")
-        XCTAssertEqual(route.resolutionCapability, .blocked(.missingCoreResolutionEndpoint))
+        XCTAssertEqual(route.resolutionCapability, .supported)
         XCTAssertTrue(listModel.isResolving(conflict))
 
         let validator = S136RecordingPathValidator(result: .success(.s136ValidationFixture(repoPath: route.repoPath)))
         let sheetModel = ICloudConflictMinimalModel(
             repoPath: route.repoPath,
+            conflictID: route.conflict.conflictID,
             originalVersion: route.originalVersion,
             conflictedCopyVersion: route.conflictedCopyVersion,
             pathValidator: validator,
+            conflictReviewer: S220RecordingConflictReviewer(
+                previewResult: .success(.s220Preview(conflictID: route.conflict.conflictID)),
+                resolveResult: .success(.s220ResolvedReport(conflictID: route.conflict.conflictID))
+            ),
             errorMapper: S136RecordingErrorMapper(mapping: .s136Mapping(kind: .internal))
         )
         await sheetModel.validateRepositoryPath()
+        await sheetModel.loadPreview()
         let sheetBody = s136MirrorDescription(of: ICloudConflictMinimalSheet(
             model: sheetModel,
             resolutionCapability: route.resolutionCapability,
             isTrashAvailable: true,
             onCancel: {},
-            onApply: { _, _, _ in XCTFail("Blocked S1-25 resolver must not invoke Apply") },
+            onApply: { _, _, _ in },
             onCollectDiagnostics: {}
         ).body)
         let validatorRequests = await validator.recordedRequests()
 
         XCTAssertEqual(validatorRequests, ["/tmp/s136-repo"])
-        XCTAssertTrue(sheetBody.contains("S1-25-core-resolution-blocked"))
-        XCTAssertTrue(sheetBody.contains("Core resolution unavailable"))
-        XCTAssertTrue(sheetBody.contains("Missing Core API: resolve_icloud_conflict or mark_icloud_conflict_resolved"))
+        XCTAssertEqual(sheetModel.previewState.preview?.conflictID, route.conflict.conflictID)
+        XCTAssertTrue(sheetModel.canApply(strategy: .keepBoth, isTrashAvailable: true, didConfirmSingleVersion: false))
+        XCTAssertTrue(sheetBody.contains("S2-20-C2-16-icloud-conflict-visual"))
+        XCTAssertTrue(sheetBody.contains("Conflict details loaded"))
+        XCTAssertTrue(sheetBody.contains("Preview available"))
+        XCTAssertFalse(sheetBody.contains("S1-25-core-resolution-blocked"))
 
         listModel.closeResolvingConflict()
         XCTAssertNil(listModel.resolvingRoute)

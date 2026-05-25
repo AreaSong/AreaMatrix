@@ -1,0 +1,76 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-1/task-131`
+- 对应文件路径：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-131-s2-20-c2-16-icloud-conflict-visual.md`
+
+三、完成度摘要
+
+- 已覆盖项数：12
+- 未覆盖项数：0
+- 通过项数：12
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 S2-20 页面中的 C2-16 功能点
+- 结果：通过
+- 证据：task 明确绑定 S2-20 + C2-16；control map 声明 S2-20 同页能力为 C2-16、C1-25，当前 task 只验 C2-16，C1-25 留给 task-132/page integration。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-131-s2-20-c2-16-icloud-conflict-visual.md:20`，`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-2-control-map.md:28`
+
+- 项目：Exact Docs、Core API、能力规格已交叉核验
+- 结果：通过
+- 证据：C2-16 要求 preview/resolve、metadata、预览摘要、解决报告、KeepBoth 默认和 Trash 边界；Core API 同步定义 `preview_conflict_versions` 与 `resolve_icloud_conflict`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-2-experience/C2-16-icloud-conflict-visual.md:8`，`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:3640`
+
+- 项目：C2-16 CoreBridge / 状态 / 错误映射接入
+- 结果：通过
+- 证据：`CoreBridge` 通过 `Task.detached` 调用真实 UniFFI `previewConflictVersions` 和 `resolveIcloudConflict`；model 对 preview/resolve 错误走 `CoreErrorMapping`，并校验 resolved 状态与 change_log。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreICloudConflictListing.swift:172`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ICloudConflictMinimalValidation.swift:154`
+
+- 项目：S2-20 C2-16 用户可见功能可触发
+- 结果：通过
+- 证据：iCloud conflict list route 传入 `conflictID` 并打开 S2-20 sheet；sheet 展示 metadata/hash/preview、loading、empty、error、Trash disabled 和 destructive 二次确认文案。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ICloudConflictListView.swift:80`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ICloudConflictMinimalSheet.swift:93`
+
+- 项目：无 mock / fixture / 静态状态伪造真实闭环
+- 结果：通过
+- 证据：生产路径默认注入 `CoreBridge()` 作为 `CoreICloudConflictReviewing`；recording reviewer 只在 `AreaMatrixTests` 中用于测试。旧 S1-25 fallback/blocker 路径不作为当前 S2-20+C2-16 验收路径。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ICloudConflictMinimalValidation.swift:92`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ICloudConflictMinimalValidationTests.swift:230`
+
+- 项目：未触碰 control map 之外 Core 能力
+- 结果：通过
+- 证据：UDL 已存在 C2-16 合同；本轮未修改 `core/src/**`，未新增依赖，未实现相邻页面或相邻平台。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:239`，`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-4.md:3818`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。Bridge snapshot、model 状态、SwiftUI sheet 分层清晰，检查文件均低于 500 行。
+- 注释 / rustdoc / 文档同步：通过。本 task 未改文档；Core API、UDL、生成 Swift 绑定与 C2-16 合同一致。
+- 错误处理与边界处理：通过。preview/resolve 失败映射为结构化错误；失败不清除 unresolved；Trash/metadata/readonly 类禁用状态有 UI。
+- 测试与验证覆盖：通过。新增测试覆盖 preview 失败禁用、KeepBoth resolve 调用和 S2-20 route 支持；task 指定验证已通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。当前 S2-20+C2-16 生产路径接真实 CoreBridge；测试替身仅位于测试文件。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-131`
+- 通过：`prompt doctor` 输出 `doctor: OK`，`tasks: 637`，`manifests: 637`，`high risk tasks: 633`
+- 通过：`git diff --check`
+- 通过：`xcodebuild -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination platform=macOS,arch=arm64 build CODE_SIGNING_ALLOWED=NO`，最终输出 `** BUILD SUCCEEDED **`
+- 失败：无
+- 缺失：无 manifest 必需验证缺失；未额外运行 `./dev test macos` 或 UI smoke，因为本 task manifest 的验证上限是 `./dev check task 4-1/task-131`
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+
+VERIFY_RESULT: PASS

@@ -272,6 +272,7 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
             originalVersion: .s125Original(repoPath: "/tmp/s125-repo"),
             conflictedCopyVersion: .s125ConflictedCopy(repoPath: "/tmp/s125-repo"),
             pathValidator: pathValidator,
+            conflictReviewer: nil,
             errorMapper: errorMapper
         )
     }

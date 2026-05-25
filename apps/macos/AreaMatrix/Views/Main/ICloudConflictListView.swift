@@ -81,13 +81,18 @@ struct ICloudConflictListView: View {
             ICloudConflictMinimalSheet(
                 model: ICloudConflictMinimalModel(
                     repoPath: route.repoPath,
+                    conflictID: route.conflict.conflictID,
                     originalVersion: route.originalVersion,
                     conflictedCopyVersion: route.conflictedCopyVersion
                 ),
                 resolutionCapability: route.resolutionCapability,
                 isTrashAvailable: OnboardingModel.isSystemTrashAvailable(),
                 onCancel: model.closeResolvingConflict,
-                onApply: { _, _, _ in },
+                onApply: { _, report, _ in
+                    guard report?.status == .resolved else { return }
+                    Task { await model.refresh() }
+                    model.closeResolvingConflict()
+                },
                 onCollectDiagnostics: onCollectDiagnostics
             )
         }

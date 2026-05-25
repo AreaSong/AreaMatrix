@@ -69,14 +69,17 @@ struct MainFileActionRoutingSheet: View {
                         file: file
                     ),
                     pathValidator: iCloudConflictPathValidator,
+                    conflictReviewer: nil,
                     errorMapper: iCloudConflictErrorMapper
                 ),
                 resolutionState: iCloudConflictResolutionState,
                 resolutionCapability: iCloudConflictResolutionCapability,
                 isTrashAvailable: isTrashAvailable,
                 onCancel: onDismiss,
-                onApply: { strategy, originalPath, conflictedCopyPath in
-                    onApplyICloudConflict(fileID, strategy, originalPath, conflictedCopyPath)
+                onApply: { strategy, _, _ in
+                    let original = ICloudConflictVersionSnapshot.originalCandidate(repoPath: repoPath, file: file).path
+                    let conflicted = ICloudConflictVersionSnapshot.conflictedCandidate(repoPath: repoPath, file: file).path
+                    onApplyICloudConflict(fileID, strategy, original, conflicted)
                 },
                 onCollectDiagnostics: {
                     onCollectDiagnostics()
