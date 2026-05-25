@@ -14,6 +14,7 @@ struct MainFileActionRoutingSheet: View {
     let repoPath: String
     let isTrashAvailable: Bool
     let iCloudConflictPathValidator: any CoreRepositoryPathValidating
+    let iCloudConflictReviewer: any CoreICloudConflictReviewing
     let iCloudConflictErrorMapper: any CoreErrorMapping
     let onDismiss: () -> Void
     let onRename: (Int64, String) -> Void
@@ -32,7 +33,9 @@ struct MainFileActionRoutingSheet: View {
         Int64,
         ICloudConflictResolutionStrategy,
         String?,
-        String?
+        String?,
+        ICloudConflictResolveReportSnapshot?,
+        CoreErrorMappingSnapshot?
     ) -> Void
     let onCollectDiagnostics: () -> Void
 
@@ -63,23 +66,24 @@ struct MainFileActionRoutingSheet: View {
             ICloudConflictMinimalSheet(
                 model: ICloudConflictMinimalModel(
                     repoPath: repoPath,
+                    conflictID: file?.path,
                     originalVersion: ICloudConflictVersionSnapshot.originalCandidate(repoPath: repoPath, file: file),
                     conflictedCopyVersion: ICloudConflictVersionSnapshot.conflictedCandidate(
                         repoPath: repoPath,
                         file: file
                     ),
                     pathValidator: iCloudConflictPathValidator,
-                    conflictReviewer: nil,
+                    conflictReviewer: iCloudConflictReviewer,
                     errorMapper: iCloudConflictErrorMapper
                 ),
                 resolutionState: iCloudConflictResolutionState,
                 resolutionCapability: iCloudConflictResolutionCapability,
                 isTrashAvailable: isTrashAvailable,
                 onCancel: onDismiss,
-                onApply: { strategy, _, _ in
+                onApply: { strategy, report, mapping in
                     let original = ICloudConflictVersionSnapshot.originalCandidate(repoPath: repoPath, file: file).path
                     let conflicted = ICloudConflictVersionSnapshot.conflictedCandidate(repoPath: repoPath, file: file).path
-                    onApplyICloudConflict(fileID, strategy, original, conflicted)
+                    onApplyICloudConflict(fileID, strategy, original, conflicted, report, mapping)
                 },
                 onCollectDiagnostics: {
                     onCollectDiagnostics()

@@ -266,6 +266,52 @@ final class ICloudConflictMinimalValidationTests: XCTestCase {
             didWriteChangeLog: true
         )))
     }
+
+    @MainActor
+    func testS220C216DefaultCoreBridgePreviewsAndKeepsBothVersionsWithoutFileMoves() async throws {
+        let repoURL = try makeICloudConflictTemporaryDirectory(prefix: "s220-core")
+        defer {
+            try? FileManager.default.removeItem(at: repoURL)
+        }
+        try await CoreBridge().initializeEmptyRepository(repoPath: repoURL.path)
+        let docsURL = repoURL.appendingPathComponent("docs", isDirectory: true)
+        try FileManager.default.createDirectory(at: docsURL, withIntermediateDirectories: true)
+        let originalURL = docsURL.appendingPathComponent("report.pdf")
+        let conflictedURL = docsURL.appendingPathComponent("report (Alice's conflicted copy).pdf")
+        let originalData = Data("original stage 2 bytes".utf8)
+        let conflictedData = Data("conflicted stage 2 bytes".utf8)
+        try originalData.write(to: originalURL)
+        try conflictedData.write(to: conflictedURL)
+
+        let model = ICloudConflictMinimalModel(
+            repoPath: repoURL.path,
+            conflictID: "docs/report (Alice's conflicted copy).pdf",
+            originalVersion: .original(path: originalURL.path),
+            conflictedCopyVersion: .conflictedCopy(path: conflictedURL.path),
+            conflictReviewer: CoreBridge()
+        )
+
+        await model.validateRepositoryPath()
+        await model.loadPreview()
+        let result = await model.resolveConflict(strategy: .keepBoth)
+
+        guard case let .resolved(resolution) = result else {
+            return XCTFail("Expected KeepBoth to resolve through the default CoreBridge")
+        }
+        XCTAssertEqual(model.previewState.preview?.conflictID, "docs/report (Alice's conflicted copy).pdf")
+        XCTAssertEqual(model.previewState.preview?.defaultResolution, .keepBoth)
+        XCTAssertTrue(model.canApply(strategy: .keepBoth, isTrashAvailable: true, didConfirmSingleVersion: false))
+        XCTAssertEqual(resolution.status, .resolved)
+        XCTAssertEqual(resolution.trashedPaths, [])
+        XCTAssertEqual(Set(resolution.keptPaths), [
+            "docs/report.pdf",
+            "docs/report (Alice's conflicted copy).pdf"
+        ])
+        XCTAssertEqual(try Data(contentsOf: originalURL), originalData)
+        XCTAssertEqual(try Data(contentsOf: conflictedURL), conflictedData)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: originalURL.path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: conflictedURL.path))
+    }
 }
 
 private actor ICloudConflictRecordingPathValidator: CoreRepositoryPathValidating {

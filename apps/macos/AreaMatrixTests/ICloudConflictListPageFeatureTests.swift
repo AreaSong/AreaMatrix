@@ -215,10 +215,12 @@ final class ICloudConflictListPageFeatureTests: XCTestCase {
 
         XCTAssertEqual(validatorRequests, ["/tmp/s136-repo"])
         XCTAssertEqual(sheetModel.previewState.preview?.conflictID, route.conflict.conflictID)
+        XCTAssertEqual(sheetModel.previewVersions.map(\.previewStatus), [.available, .available])
         XCTAssertTrue(sheetModel.canApply(strategy: .keepBoth, isTrashAvailable: true, didConfirmSingleVersion: false))
         XCTAssertTrue(sheetBody.contains("S2-20-C2-16-icloud-conflict-visual"))
         XCTAssertTrue(sheetBody.contains("Conflict details loaded"))
-        XCTAssertTrue(sheetBody.contains("Preview available"))
+        XCTAssertTrue(sheetBody.contains("Original preview"))
+        XCTAssertTrue(sheetBody.contains("Conflicted preview"))
         XCTAssertFalse(sheetBody.contains("S1-25-core-resolution-blocked"))
 
         listModel.closeResolvingConflict()

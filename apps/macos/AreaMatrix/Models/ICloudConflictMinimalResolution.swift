@@ -172,14 +172,3 @@ protocol ICloudConflictResolving: Sendable {
     func resolveICloudConflict(_ request: ICloudConflictResolutionRequest) async throws
         -> ICloudConflictResolutionResult
 }
-
-extension CoreBridge: ICloudConflictResolving {
-    nonisolated var iCloudConflictResolutionCapability: ICloudConflictResolutionCapability {
-        .blocked(.missingCoreResolutionEndpoint)
-    }
-
-    func resolveICloudConflict(_: ICloudConflictResolutionRequest) async throws
-        -> ICloudConflictResolutionResult {
-        throw ICloudConflictResolutionBlocker.missingCoreResolutionEndpoint.coreError
-    }
-}

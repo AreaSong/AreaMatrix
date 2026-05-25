@@ -16,7 +16,7 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
     func testS125EntryCancelAndApplyBlockedByMissingCoreResolutionEndpoint() async {
         let conflictFile = FileEntrySnapshot.s125ConflictFixture(id: 125)
         let core = S125RecordingMainCore(files: [conflictFile])
-        let productionResolver = CoreBridge()
+        let blockedCapability = ICloudConflictResolutionCapability.blocked(.missingCoreResolutionEndpoint)
         let model = makeMainFileListModel(conflictFile: conflictFile, core: core)
 
         await model.selectFiles([conflictFile.id])
@@ -34,7 +34,7 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
         let body = await makeICloudConflictSheetBody(
             model: makeReadyICloudConflictModel(),
             resolutionState: model.iCloudConflictResolutionState,
-            resolutionCapability: productionResolver.iCloudConflictResolutionCapability,
+            resolutionCapability: blockedCapability,
             isTrashAvailable: true
         )
         let outOfScopeActions = await core.recordedOutOfScopeActions()
@@ -56,11 +56,15 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
             kind: .internal,
             rawContext: ICloudConflictResolutionBlocker.missingCoreResolutionEndpoint.rawContext
         ))
+        let blockedResolver = S125RecordingICloudConflictResolver(
+            capability: .blocked(.missingCoreResolutionEndpoint),
+            result: .failure(ICloudConflictResolutionBlocker.missingCoreResolutionEndpoint.coreError)
+        )
         let model = MainFileListModel(
             opening: .s125Fixture(repoPath: "/tmp/s125-repo", files: [conflictFile]),
             fileLister: core,
             fileDetailer: core,
-            iCloudConflictResolver: CoreBridge(),
+            iCloudConflictResolver: blockedResolver,
             changeLogLister: core,
             externalChangesSyncer: core,
             errorMapper: mapper,
@@ -72,7 +76,7 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
         let failedBody = await makeICloudConflictSheetBody(
             model: makeReadyICloudConflictModel(),
             resolutionState: model.iCloudConflictResolutionState,
-            resolutionCapability: CoreBridge().iCloudConflictResolutionCapability,
+            resolutionCapability: blockedResolver.iCloudConflictResolutionCapability,
             isTrashAvailable: true
         )
 
@@ -87,6 +91,10 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
         let outOfScopeActions = await core.recordedOutOfScopeActions()
         XCTAssertEqual(outOfScopeActions, [])
         XCTAssertNil(model.statusBanner)
+    }
+
+    func testS220CoreBridgeResolutionCapabilityIsSupported() {
+        XCTAssertEqual(CoreBridge().iCloudConflictResolutionCapability, .supported)
     }
 
     @MainActor

@@ -193,6 +193,17 @@ extension CoreBridge: CoreICloudConflictReviewing {
     }
 }
 
+extension CoreBridge: ICloudConflictResolving {
+    nonisolated var iCloudConflictResolutionCapability: ICloudConflictResolutionCapability {
+        .supported
+    }
+
+    func resolveICloudConflict(_ request: ICloudConflictResolutionRequest) async throws
+        -> ICloudConflictResolutionResult {
+        try await resolvePreviewedICloudConflict(request)
+    }
+}
+
 extension ICloudConflictPairSnapshot {
     init(corePair: ICloudConflictPair) {
         conflictID = corePair.conflictId

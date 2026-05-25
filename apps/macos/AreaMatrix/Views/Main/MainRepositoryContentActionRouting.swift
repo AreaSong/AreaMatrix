@@ -27,6 +27,7 @@ extension MainRepositoryContentView {
             repoPath: opening.config.repoPath,
             isTrashAvailable: OnboardingModel.isSystemTrashAvailable(),
             iCloudConflictPathValidator: CoreBridge(),
+            iCloudConflictReviewer: CoreBridge(),
             iCloudConflictErrorMapper: fileListModel.errorMapper,
             onDismiss: fileListModel.clearPendingActionDestination,
             onRename: submitRename,
@@ -322,9 +323,27 @@ extension MainRepositoryContentView {
         fileID: Int64,
         strategy: ICloudConflictResolutionStrategy,
         originalPath: String?,
-        conflictedCopyPath: String?
+        conflictedCopyPath: String?,
+        report: ICloudConflictResolveReportSnapshot?,
+        failure: CoreErrorMappingSnapshot?
     ) {
         Task {
+            if let report {
+                await fileListModel.completePreviewedICloudConflictResolution(
+                    fileID: fileID,
+                    strategy: strategy,
+                    report: report
+                )
+                return
+            }
+            if let failure {
+                fileListModel.recordICloudConflictResolutionFailure(
+                    fileID: fileID,
+                    strategy: strategy,
+                    mapping: failure
+                )
+                return
+            }
             await fileListModel.applyICloudConflictResolution(
                 fileID: fileID,
                 strategy: strategy,

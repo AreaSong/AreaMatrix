@@ -72,9 +72,10 @@ extension MainFileListModel {
         iCloudConflictResolutionState = .applying(fileID: fileID, strategy: strategy)
         clearDiagnosticsState()
         do {
+            let conflictID = file(for: fileID)?.path ?? conflictedCopyPath ?? "\(fileID)"
             let result = try await iCloudConflictResolver.resolveICloudConflict(ICloudConflictResolutionRequest(
                 repoPath: repoPath,
-                conflictID: conflictedCopyPath ?? "\(fileID)",
+                conflictID: conflictID,
                 fileID: fileID,
                 strategy: strategy,
                 originalPath: originalPath,
@@ -87,6 +88,31 @@ extension MainFileListModel {
             guard pendingActionDestination == .iCloudConflict(fileID: fileID) else { return }
             iCloudConflictResolutionState = .failed(fileID: fileID, strategy: strategy, mapping)
         }
+    }
+
+    func completePreviewedICloudConflictResolution(
+        fileID: Int64,
+        strategy: ICloudConflictResolutionStrategy,
+        report: ICloudConflictResolveReportSnapshot
+    ) async {
+        guard pendingActionDestination == .iCloudConflict(fileID: fileID) else { return }
+        let result = ICloudConflictResolutionResult(report: report)
+        do {
+            try validateICloudConflictResolution(result, fileID: fileID)
+            await refreshAfterICloudConflictResolution(fileID: fileID, strategy: strategy)
+        } catch {
+            let mapping = await mapCoreError(error)
+            iCloudConflictResolutionState = .failed(fileID: fileID, strategy: strategy, mapping)
+        }
+    }
+
+    func recordICloudConflictResolutionFailure(
+        fileID: Int64,
+        strategy: ICloudConflictResolutionStrategy,
+        mapping: CoreErrorMappingSnapshot
+    ) {
+        guard pendingActionDestination == .iCloudConflict(fileID: fileID) else { return }
+        iCloudConflictResolutionState = .failed(fileID: fileID, strategy: strategy, mapping)
     }
 
     func applyKeepBothICloudConflict(fileID: Int64) async {
