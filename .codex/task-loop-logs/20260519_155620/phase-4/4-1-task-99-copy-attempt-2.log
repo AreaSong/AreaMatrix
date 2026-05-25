@@ -1,0 +1,52 @@
+一、执行结论
+
+已完成。
+
+二、执行范围
+
+单任务：`4-1/task-99`。本次 repair 只在 `apps/macos/AreaMatrix/**` 和 `apps/macos/AreaMatrixTests/**` 内修复上次验收的两个阻塞点。
+
+修改文件：
+- `apps/macos/AreaMatrix/Views/Main/SearchFiltersPopover.swift`
+- `apps/macos/AreaMatrix/Models/MainFileListModel.swift`
+- `apps/macos/AreaMatrix/Models/MainListVisibleFileFiltering.swift`
+- `apps/macos/AreaMatrix/Views/Main/MainRepositoryContentActionRouting.swift`
+- `apps/macos/AreaMatrix/Views/Main/MainRepositoryContentNoteDrafts.swift`
+- `apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift`
+- `apps/macos/AreaMatrixTests/CoreBridgeRepositoryTests.swift`
+- `apps/macos/AreaMatrixTests/MainRepoExternalRemovalTests.swift`
+
+三、完成情况
+
+- C2-02 范围：只处理 S2-02 search-filters 的 filter/facet UI 状态与 CoreBridge 消费，没有实现 C2-03 保存搜索 CRUD，也没有实现 C2-05 标签写入。
+- Smart List draft：新增 `SmartListFilterDraft`，Smart List 编辑场景中 filter 变化写入 draft，不会立即打开创建保存 sheet 或持久化保存。
+- Tags 多选 / Choose tags：S2-02 Tags 行从单选改为多选 toggle，支持 Any/All selected tags，并补了 `Choose tags...` 打开 S2-08 tag filter route。
+- Forbidden Touches：未触碰 `core/src/**`，`git diff --name-only --diff-filter=AM -- core/src` 无输出。
+
+四、工程质量
+
+- 代码结构：状态边界放在 `MainFileListModel` / `MainListVisibleFileFiltering`，视图只绑定状态和触发 route，没有绕过 CoreBridge。
+- 错误与边界：facet 加载错误仍保留 Retry；tag route 只读取 facet tags 并更新 filter，不创建/删除/重命名标签。
+- 测试：补了多标签 Any/All、Smart List draft 不保存、Choose tags 路由、S2-08 route 渲染证据。
+- 没有新增依赖、没有新增 public Rust API、没有 mock-only 产品闭环。
+
+五、验证情况
+
+已运行：
+
+```bash
+./dev check task 4-1/task-99
+```
+
+结果：通过。包含：
+- `prompt_pipeline.py doctor`: OK
+- `git diff --check`: OK
+- `xcodebuild ... build CODE_SIGNING_ALLOWED=NO`: `BUILD SUCCEEDED`
+
+第一次验证曾因新增 `tagFilterSheet` 后一个 switch 未穷尽而失败；已补分支后重新运行同一条 manifest validation 并通过。
+
+六、风险与后续
+
+剩余风险：未做真实窗口交互烟测，因为当前 task manifest 只允许 `./dev check task 4-1/task-99`，没有升级到宽门禁或手工 UI 验收。
+
+建议下一个任务：进入当前 task 的 verify-ready 验收；若通过，再继续 `4-1/task-100`。

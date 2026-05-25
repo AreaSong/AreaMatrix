@@ -1,0 +1,42 @@
+一、执行结论
+
+已完成。上次验收唯一阻塞项是 rustfmt，本次 retry 已修复格式门禁，并重新跑通当前 task manifest 指定验证。
+
+二、执行范围
+
+单任务：`4-1/task-87`，仅处理 C2-18 redo-action-log。
+
+修改/保留在范围内的产品文件：
+- `core/src/db/redo.rs`
+- `core/src/db/redo/{batch_file_actions.rs,change_log.rs,file_actions.rs,file_state.rs,records.rs,tags.rs}`
+- `core/tests/redo_action_log_implementation.rs`
+
+未触碰 `apps/**`；`git status --porcelain -- apps 'apps/**'` 无输出。
+
+三、完成情况
+
+核对清单：C2-18 单能力范围、输入/输出/DB/文件系统/错误映射、Rust Core 无 UI 依赖、最小测试支撑均满足。  
+完成标准：C2-18 可通过 bridge-facing API 和 targeted tests 验证；未越过用户文件安全边界。  
+Forbidden Touches：未触碰。
+
+四、工程质量
+
+本次 retry 只做格式修复，不改写业务逻辑。`core/` 下 `cargo fmt --all -- --check` 已通过；代码仍是前序拆分后的 redo DB/records/tags/file actions/rollback 结构，无新增依赖、无 mock-only、无硬编码通过态。
+
+五、验证情况
+
+已运行并通过：
+- `cd core && cargo fmt --all -- --check`
+- `./dev check task 4-1/task-87`
+  - prompt doctor：OK
+  - `git diff --check`：OK
+  - `redo_action_log_contract_api`：4/4 passed
+  - `redo_action_log_implementation`：8/8 passed
+
+说明：曾在 repo 根目录尝试 `cargo fmt --all`，因根目录没有 `Cargo.toml` 失败；随后按实际 Rust crate 位置在 `core/` 复跑并通过。
+
+六、风险与后续
+
+剩余风险：未运行 clippy / workspace 全量测试，因为当前 manifest 验证上限是 `./dev check task 4-1/task-87`，本次 retry 不升级宽门禁。  
+建议下一个任务：进入 `4-1/task-87` 的只读 verify-ready 验收，通过后再继续队列下一项。
+

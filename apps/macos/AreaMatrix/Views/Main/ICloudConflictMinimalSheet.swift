@@ -1,5 +1,36 @@
 import SwiftUI
 
+extension ICloudConflictVersionSnapshot {
+    static func originalCandidate(repoPath: String, file: FileEntrySnapshot?) -> ICloudConflictVersionSnapshot {
+        ICloudConflictVersionSnapshot(
+            role: .original,
+            path: file.flatMap { originalCandidatePath(repoPath: repoPath, file: $0) },
+            modifiedAt: file?.updatedAt,
+            sizeBytes: nil
+        )
+    }
+
+    static func conflictedCandidate(repoPath: String, file: FileEntrySnapshot?) -> ICloudConflictVersionSnapshot {
+        ICloudConflictVersionSnapshot(
+            role: .conflictedCopy,
+            path: file.map { absolutePath(repoPath: repoPath, relativePath: $0.path) },
+            modifiedAt: file?.updatedAt,
+            sizeBytes: file?.sizeBytes
+        )
+    }
+
+    private static func originalCandidatePath(repoPath: String, file: FileEntrySnapshot) -> String {
+        let relativePath = file.path.replacingOccurrences(of: " (Conflicted Copy)", with: "")
+        return absolutePath(repoPath: repoPath, relativePath: relativePath)
+    }
+
+    private static func absolutePath(repoPath: String, relativePath: String) -> String {
+        URL(fileURLWithPath: repoPath, isDirectory: true)
+            .appendingPathComponent(relativePath)
+            .path
+    }
+}
+
 struct ICloudConflictMinimalSheet: View {
     let resolutionState: ICloudConflictResolutionState
     let resolutionCapability: ICloudConflictResolutionCapability

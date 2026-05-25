@@ -86,7 +86,7 @@ class RuntimeConfig:
     dry_run_max_attempts: int = 10
     activity_heartbeat_seconds: int = 30
     no_output_notice_seconds: int = 120
-    no_output_timeout_seconds: int = 900
+    no_output_timeout_seconds: int = 5400
     no_output_restart_delay_seconds: int = 300
     no_output_restart_limit: int = 2
     run_id: str = ""
@@ -127,7 +127,7 @@ class RuntimeConfig:
         cfg.dry_run_max_attempts = int(os.environ.get("DRY_RUN_MAX_ATTEMPTS", "10"))
         cfg.activity_heartbeat_seconds = int(os.environ.get("ACTIVITY_HEARTBEAT_SECONDS", "30"))
         cfg.no_output_notice_seconds = int(os.environ.get("NO_OUTPUT_NOTICE_SECONDS", "120"))
-        cfg.no_output_timeout_seconds = int(os.environ.get("NO_OUTPUT_TIMEOUT_SECONDS", "900"))
+        cfg.no_output_timeout_seconds = int(os.environ.get("NO_OUTPUT_TIMEOUT_SECONDS", "5400"))
         cfg.no_output_restart_delay_seconds = int(os.environ.get("NO_OUTPUT_RESTART_DELAY_SECONDS", "300"))
         cfg.no_output_restart_limit = int(os.environ.get("NO_OUTPUT_RESTART_LIMIT", "2"))
         cfg.run_id = os.environ.get("RUN_ID", "")

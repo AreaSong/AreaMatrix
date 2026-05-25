@@ -1,0 +1,94 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`4-1/task-103`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-103-s2-06-c2-03-saved-search-crud.md`
+- 主要实现路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreFileRenaming.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainListSystemActions.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainFileActionRoutingSheet.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentActionRouting.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentCategoryMoveRefresh.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportBatchNamingStrategyTests.swift`
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：2
+- 通过项数：10
+- 不通过项数：2
+- 阻塞项数：2
+
+四、逐项验收结果
+
+- 项目：读取 task、共享规则、切片规则、工程质量规则、编码规范、validation-driver、依赖图、phase manifest 与 Exact Docs
+- 结果：通过
+- 证据：manifest `4-1/task-103` 声明 Exact Docs、Existing Code、Expected New Paths、Forbidden Touches 与 `./dev check task 4-1/task-103`；相关文档均存在并已读取
+- 涉及文件：`phase-4.md:3008`
+
+- 项目：C2-03 CoreBridge CRUD 接入
+- 结果：通过
+- 证据：`CoreSavedSearchCRUD` 声明 `create/update/delete/list`；`CoreBridge` 通过 UniFFI 调用 `createSavedSearch`、`updateSavedSearch`、`deleteSavedSearch`、`listSavedSearches`
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreFileRenaming.swift:3`
+
+- 项目：S2-06 侧边栏 Smart Lists 列表、排序、右键管理入口
+- 结果：通过
+- 证据：`loadSmartLists()` 调用真实 `listSavedSearches`；排序为 pinned first，pinned 内按 `updatedAt` 倒序，其余按名称 A-Z；右键菜单包含 Open/Rename/Duplicate/Edit query/Delete
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentCategoryMoveRefresh.swift:13`
+
+- 项目：S2-06 banner `Edit` 入口
+- 结果：不通过
+- 证据：页面规格要求 Smart List 搜索 banner 提供 `Edit` 入口；当前 banner 只有 `Retry`、`Filters`、`Save...`、`Clear`，没有针对当前 Smart List 的 `Edit`
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-2-experience/S2-06-smart-lists.md:70`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentNoteDrafts.swift:239`
+
+- 项目：Edit query 非法 query 禁用保存与 S2-05 同类错误摘要
+- 结果：不通过
+- 证据：规格要求 query 语法错误时禁用 `Save changes` 并显示 S2-05 query-error 同类摘要；当前 `SmartListEditorModel.validationMessage` 只校验空名称、重复名称、空 query/filter，未接入 query parser/diagnostic，sheet 也未展示 query parse diagnostic
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-2-experience/S2-06-smart-lists.md:95`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainListSystemActions.swift:172`
+
+- 项目：Expected New Paths
+- 结果：通过
+- 证据：实现与测试均落在 `apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-4.md:3023`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git diff --name-only -- core/src` 无输出；未触碰 `core/src/**`
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过，主要 CRUD wiring 清晰，但缺少 banner edit 触发路径与 query diagnostic 结构，导致 S2-06 C2-03 用户闭环不完整
+- 注释 / rustdoc / 文档同步：通过，本 task 未新增 public Rust API；Swift 侧未发现需要解释复杂 WHY 的新增注释缺口
+- 错误处理与边界处理：不通过，Core CRUD 失败有 `mapCoreError`，但非法 query 的前置禁用与 S2-05 同类错误摘要缺失
+- 测试与验证覆盖：不通过，已有模型/加载测试，但缺少对 banner Edit 入口和非法 query 禁用保存的覆盖
+- 占位、硬编码、mock-only、一次性实现检查：通过，生产路径通过 `CoreBridge` 调真实 UniFFI CRUD；测试替身未作为生产闭环
+
+六、阻塞项
+
+- P1：Smart List 搜索 banner 缺少 `Edit` 入口
+  - 说明：S2-06 明确要求 sidebar 右键 `Edit query...` 和 Smart List 搜索 banner `Edit` 都能打开 Edit query sheet；当前 banner 没有 `Edit`
+  - 绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentNoteDrafts.swift:239`
+  - 为什么导致不通过：当前选中 Smart List 后，用户无法从 banner 触发 C2-03 update/edit 闭环，未满足页面规格
+
+- P1：Edit query 未接入 query parse diagnostic，不能在非法 query 时禁用 `Save changes`
+  - 说明：当前 `SmartListEditorModel.validationMessage` 未调用 query validator，也没有 S2-05 query-error 同类摘要 UI
+  - 绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainListSystemActions.swift:172`
+  - 为什么导致不通过：C2-03 能力规格要求非法 query 有结构化错误；S2-06 页面规格要求保存前禁用并展示错误摘要，当前证据不足
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-103`
+- 通过：`prompt doctor` OK，`git diff --check` 无输出，`xcodebuild ... build CODE_SIGNING_ALLOWED=NO` 最终 `BUILD SUCCEEDED`
+- 失败：无命令失败
+- 缺失：未运行 `./dev test macos` 和真实 UI smoke；本 task manifest 只要求 `./dev check task 4-1/task-103`，但代码审查发现的功能缺口已足以阻断
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+
+
+VERIFY_RESULT: FAIL

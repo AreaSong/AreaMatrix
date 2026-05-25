@@ -1,0 +1,77 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`4-1/task-113`
+- 对应文件路径：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-113-s2-10-c2-07-undo-action-log.md`
+
+三、完成度摘要
+
+- 已覆盖项数：8
+- 未覆盖项数：1
+- 通过项数：8
+- 不通过项数：1
+- 阻塞项数：1
+
+四、逐项验收结果
+
+- 项目：Exact Docs、control map、Core API、UDL 对齐
+- 结果：通过
+- 证据：`S2-10` 在 control map 中只绑定 `C2-07`；UDL/API 均存在 `list_undo_actions` 与 `undo_action`
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-2-control-map.md:18`，`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:216`
+
+- 项目：Expected New Paths
+- 结果：通过
+- 证据：实现与测试均落在 `apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreTagCRUD.swift:132`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git diff --exit-code --quiet -- core/src` 返回 `0`，未触碰 `core/src/**`
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+- 项目：真实 CoreBridge 闭环
+- 结果：通过
+- 证据：生产路径通过 `CoreBridge` 调用生成绑定 `AreaMatrix.listUndoActions` / `AreaMatrix.undoAction`
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreTagCRUD.swift:132`
+
+- 项目：S2-10 toast Undo 动作
+- 结果：通过
+- 证据：toast 可展示 ready/disabled/undoing/failed 状态，Undo 调用 `undoStore.undoAction`
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileListDetailSupport.swift:220`
+
+- 项目：S2-10 View history / View details
+- 结果：不通过
+- 证据：按钮只创建 `UndoToastHistoryRequest` 并写入 `pendingUndoHistoryRequest`，仓库内没有 `.sheet(item: $pendingUndoHistoryRequest)`、`UndoHistoryPanel` 或其他消费者；点击后无法打开 S2-11 历史面板
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportBatchOverviewSections.swift:100`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift:35`
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过，`View history` / `View details` 是死路由状态，用户可见链路未打通
+- 注释 / rustdoc / 文档同步：不通过，S2-10 文档要求打开 `S2-11 undo-history`，当前实现没有真实打开目标
+- 错误处理与边界处理：通过，Core 错误会映射为 `CoreErrorMappingSnapshot`
+- 测试与验证覆盖：不通过，新增测试只验证 request 对象生成，没有证明点击后打开真实历史面板
+- 占位、硬编码、mock-only、一次性实现检查：不通过，生产 Core 调用不是 mock，但 `View history` 入口目前是未消费的占位状态
+
+六、阻塞项
+
+- P1：`View history` / `View details` 未打开 Undo History
+  - 说明：S2-10 规格要求点击 `View history` 打开 `S2-11 undo-history`，Undo 失败时 `View details` 也应进入历史详情。当前实现只设置 `pendingUndoHistoryRequest`，没有任何 UI 消费该 state。
+  - 绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift:35`
+  - 绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentCategoryMoveRefresh.swift:33`
+  - 为什么导致不通过：S2-10 中 C2-07 的用户可见功能不能完整触发和验收，属于链路未打通。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-113`
+- 通过：`prompt doctor`、`git diff --check`、macOS `xcodebuild` build
+- 失败：无命令失败
+- 缺失：未做真实窗口点击验证；更关键的是文件证据已证明 `View history` 没有消费者
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+
+VERIFY_RESULT: FAIL

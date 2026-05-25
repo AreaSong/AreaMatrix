@@ -64,9 +64,10 @@ final class ChangeCategoryPageFeatureTests: XCTestCase {
         await model.selectFiles([original.id])
         model.beginChangeCategory()
         await model.loadMoveToCategoryPreview(fileID: original.id, targetCategory: "finance")
-        await model.submitMoveToCategory(fileID: original.id, targetCategory: "finance")
+        let didMove = await model.submitMoveToCategory(fileID: original.id, targetCategory: "finance")
         let requests = await mover.recordedRequests()
 
+        XCTAssertTrue(didMove)
         XCTAssertEqual(requests, [
             .preview(repoPath: "/tmp/repo", fileID: original.id, targetCategory: "finance"),
             .move(repoPath: "/tmp/repo", fileID: original.id, targetCategory: "finance")
@@ -111,12 +112,13 @@ final class ChangeCategoryPageFeatureTests: XCTestCase {
         await model.selectFiles([original.id])
         model.beginChangeCategory()
         await model.loadMoveToCategoryPreview(fileID: original.id, targetCategory: "finance")
-        await model.submitMoveToCategory(fileID: original.id, targetCategory: "finance") { movedFile in
+        let didMove = await model.submitMoveToCategory(fileID: original.id, targetCategory: "finance") { movedFile in
             movedCallback = movedFile
         }
         await model.loadCurrentCategory(moved.category, focusingOn: moved.id)
         let listRequests = await lister.recordedRequests()
 
+        XCTAssertTrue(didMove)
         XCTAssertEqual(movedCallback, moved)
         XCTAssertEqual(listRequests, [
             FileFilterSnapshot.currentCategory("docs"),

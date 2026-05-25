@@ -10,9 +10,20 @@ struct MainRepositoryDetailPane: View {
     let detailLogState: MainDetailLogState
     let detailLogDiagnosticsState: MainDetailLogDiagnosticsState
     let detailExternalCreateSyncState: MainDetailExternalCreateSyncState
+    let detailTagEditorState: DetailTagEditorState
+    let detailTagUndoToast: DetailTagUndoToast?
     let detailTabRequest: MainDetailTabRequest?
     let selectedImportProgressRow: ImportProgressListRow?
+    let repoPath: String
+    let batchTagStore: any CoreTagCRUD
+    let batchTagUndoStore: any CoreUndoActionLogging
+    let batchTagErrorMapper: any CoreErrorMapping
+    let batchCategoryChanger: any CoreBatchCategoryChanging
+    let categoryRows: [RepositorySidebarRowSnapshot]
+    let onBatchCategoryApplied: (BatchCategoryChangeReportSnapshot) -> Void
+    let onBatchCategoryCreateNewCategory: (BatchChangeCategoryNewCategoryHandoff) -> Void
     let onRetrySelectedFileDetail: () -> Void
+    let tagActions: MainRepositoryDetailPaneTagActions
     let onCopyPaths: ([String]) -> Void
     let onOpenNoteFile: (String) -> Void
     let onRefreshChangeLog: () -> Void
@@ -39,9 +50,20 @@ struct MainRepositoryDetailPane: View {
         detailLogState: MainDetailLogState,
         detailLogDiagnosticsState: MainDetailLogDiagnosticsState,
         detailExternalCreateSyncState: MainDetailExternalCreateSyncState,
+        detailTagEditorState: DetailTagEditorState,
+        detailTagUndoToast: DetailTagUndoToast?,
         detailTabRequest: MainDetailTabRequest?,
         selectedImportProgressRow: ImportProgressListRow?,
+        repoPath: String,
+        batchTagStore: any CoreTagCRUD,
+        batchTagUndoStore: any CoreUndoActionLogging,
+        batchTagErrorMapper: any CoreErrorMapping,
+        batchCategoryChanger: any CoreBatchCategoryChanging,
+        categoryRows: [RepositorySidebarRowSnapshot],
+        onBatchCategoryApplied: @escaping (BatchCategoryChangeReportSnapshot) -> Void,
+        onBatchCategoryCreateNewCategory: @escaping (BatchChangeCategoryNewCategoryHandoff) -> Void = { _ in },
         onRetrySelectedFileDetail: @escaping () -> Void,
+        tagActions: MainRepositoryDetailPaneTagActions,
         onCopyPaths: @escaping ([String]) -> Void,
         onOpenNoteFile: @escaping (String) -> Void,
         onRefreshChangeLog: @escaping () -> Void,
@@ -65,9 +87,20 @@ struct MainRepositoryDetailPane: View {
         self.detailLogState = detailLogState
         self.detailLogDiagnosticsState = detailLogDiagnosticsState
         self.detailExternalCreateSyncState = detailExternalCreateSyncState
+        self.detailTagEditorState = detailTagEditorState
+        self.detailTagUndoToast = detailTagUndoToast
         self.detailTabRequest = detailTabRequest
         self.selectedImportProgressRow = selectedImportProgressRow
+        self.repoPath = repoPath
+        self.batchTagStore = batchTagStore
+        self.batchTagUndoStore = batchTagUndoStore
+        self.batchTagErrorMapper = batchTagErrorMapper
+        self.batchCategoryChanger = batchCategoryChanger
+        self.categoryRows = categoryRows
+        self.onBatchCategoryApplied = onBatchCategoryApplied
+        self.onBatchCategoryCreateNewCategory = onBatchCategoryCreateNewCategory
         self.onRetrySelectedFileDetail = onRetrySelectedFileDetail
+        self.tagActions = tagActions
         self.onCopyPaths = onCopyPaths
         self.onOpenNoteFile = onOpenNoteFile
         self.onRefreshChangeLog = onRefreshChangeLog
@@ -179,21 +212,24 @@ extension MainRepositoryDetailPane {
     }
 
     private var multiSelectionActions: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Button("Show in Finder") {}
-                .disabled(true)
-                .help("Open one file at a time")
-            Text("Open one file at a time")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            Button("Copy Paths") {
-                onCopyPaths(multiSelectionSummary.paths)
-            }
-            .disabled(multiSelectionSummary.paths.isEmpty)
-            if detailErrorMapping != nil {
-                Button("Retry Metadata", action: onRetrySelectedFileDetail)
-            }
-        }
+        MainRepositoryMultiSelectionActions(
+            selection: selection,
+            summary: multiSelectionSummary,
+            detailErrorMapping: detailErrorMapping,
+            repoPath: repoPath,
+            categoryRows: categoryRows,
+            batchTagStore: batchTagStore,
+            batchTagUndoStore: batchTagUndoStore,
+            batchTagErrorMapper: batchTagErrorMapper,
+            batchCategoryChanger: batchCategoryChanger,
+            tagActions: tagActions,
+            writeActionDisabledReason: writeActionDisabledReason,
+            onCopyPaths: onCopyPaths,
+            onRetrySelectedFileDetail: onRetrySelectedFileDetail,
+            onRefreshChangeLog: onRefreshChangeLog,
+            onBatchCategoryApplied: onBatchCategoryApplied,
+            onBatchCategoryCreateNewCategory: onBatchCategoryCreateNewCategory
+        )
     }
 
     private var emptyDetailPane: some View {
@@ -276,6 +312,18 @@ extension MainRepositoryDetailPane {
         switch selectedTab {
         case .meta:
             detailStatusSection
+            DetailTagSection(
+                file: detail,
+                state: detailTagEditorState,
+                undoToast: detailTagUndoToast,
+                disabledReason: writeActionDisabledReason(detail.id),
+                onLoadTags: tagActions.onLoadTags,
+                onRetryTags: tagActions.onRetryTags,
+                onAddTag: tagActions.onAddTag,
+                onRemoveTag: tagActions.onRemoveTag,
+                onUndoTagChange: tagActions.onUndoTagChange,
+                onDismissUndoToast: tagActions.onDismissTagUndoToast
+            )
             metadataRows(for: detail)
         case .log:
             DetailLogTabView(
@@ -417,15 +465,6 @@ extension MainRepositoryDetailPane {
     }
 }
 
-struct DetailMetaMetadataRow: Equatable, Identifiable {
-    let label: String
-    let value: String
-
-    var id: String {
-        label
-    }
-}
-
 private enum DetailRemoveFromIndexButtonStyle {
     case primary
     case secondary
@@ -438,24 +477,4 @@ private enum DetailRemoveFromIndexButtonStyle {
             "S1-12-inline-remove-from-index"
         }
     }
-}
-
-func detailMetaMetadataRows(for detail: FileEntrySnapshot) -> [DetailMetaMetadataRow] {
-    [
-        DetailMetaMetadataRow(label: "Category", value: detail.category),
-        DetailMetaMetadataRow(label: "Path", value: detail.path),
-        DetailMetaMetadataRow(label: "Size", value: detail.sizeDisplay),
-        DetailMetaMetadataRow(label: "Storage", value: detail.storageMode),
-        DetailMetaMetadataRow(label: "Origin", value: detail.origin),
-        DetailMetaMetadataRow(label: "Imported", value: detail.importedAtDisplay),
-        DetailMetaMetadataRow(label: "Modified", value: detail.updatedAtDisplay),
-        DetailMetaMetadataRow(label: "SHA-256", value: detail.hashSha256),
-        DetailMetaMetadataRow(label: "Source", value: detailMetaDisplayValue(detail.sourcePath)),
-        DetailMetaMetadataRow(label: "Status", value: detail.statusDisplay)
-    ]
-}
-
-private func detailMetaDisplayValue(_ value: String?) -> String {
-    guard let value, !value.isEmpty else { return "Not available" }
-    return value
 }

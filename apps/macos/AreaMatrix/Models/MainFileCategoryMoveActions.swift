@@ -26,14 +26,15 @@ extension MainFileListModel {
         }
     }
 
+    @discardableResult
     func submitMoveToCategory(
         fileID: Int64,
         targetCategory: String,
         onMoved: MoveToCategoryCompletion? = nil
-    ) async {
+    ) async -> Bool {
         guard pendingActionDestination?.isChangeCategory(fileID: fileID) == true,
               !changeCategoryState.isMoving(fileID: fileID),
-              writeActionDisabledReason(fileID: fileID) == nil else { return }
+              writeActionDisabledReason(fileID: fileID) == nil else { return false }
 
         let request = MainFileCategoryMovePreviewRequest(fileID: fileID, targetCategory: targetCategory)
         changeCategoryState = .moving(request, preview: changeCategoryState.preview(for: request))
@@ -45,10 +46,12 @@ extension MainFileListModel {
             )
             await applyMovedToCategoryFile(movedFile)
             onMoved?(movedFile)
+            return true
         } catch {
             let mapping = await mapCoreError(error)
-            guard pendingActionDestination?.isChangeCategory(fileID: fileID) == true else { return }
+            guard pendingActionDestination?.isChangeCategory(fileID: fileID) == true else { return false }
             changeCategoryState = .failed(request, operation: .move, mapping)
+            return false
         }
     }
 

@@ -1,0 +1,51 @@
+一、执行结论
+
+已完成。`View history` / `View details` 现在不再停留在未消费 state，会打开真实的 Undo History sheet，并通过 C2-07 `listUndoActions` 加载 action log。
+
+二、执行范围
+
+单任务：`4-1/task-113`
+
+修改文件：
+- [MainRepositoryContentView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift:145)
+- [MainRepositoryContentCategoryMoveRefresh.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentCategoryMoveRefresh.swift:53)
+- [ImportProgressListIntegration.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportProgressListIntegration.swift:245)
+- [ImportProgressPageIntegrationVerifyTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportProgressPageIntegrationVerifyTests.swift:43)
+
+三、完成情况
+
+核对清单：通过。只处理 S2-10 + C2-07；读取并对齐了 UX page spec、control map、Core API、C2-07 spec；只接入 `CoreUndoActionLogging` 的 `listUndoActions` 状态与错误映射；没有实现 redo 或其他页面能力。
+
+完成标准：通过。S2-10 的 `View history` / `View details` 可触发 Undo History 面板；生产路径没有 mock/fixture；未触碰 control map 之外能力。
+
+Forbidden Touches：未触碰。`git diff --exit-code --quiet -- core/src` 返回 `0`。
+
+四、工程质量
+
+结构清晰：新增 `UndoHistoryPanelAction` 负责加载 C2-07 action log，`UndoHistoryPanel` 负责 UI 展示，主视图只增加 sheet routing。
+
+错误处理：`listUndoActions` 失败会通过 `CoreErrorMapping` 显示可重试错误态，不静默吞错。
+
+占位 / mock：生产路径不是 mock-only；测试使用 recording store 证明 sheet 消费链路和错误映射。
+
+文件长度：相关文件均低于 500 行。
+
+五、验证情况
+
+已运行并通过：
+
+```bash
+./dev check task 4-1/task-113
+```
+
+该命令内实际通过：
+- `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`
+- `git diff --check`
+- `xcodebuild -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination platform=macOS,arch=arm64 build CODE_SIGNING_ALLOWED=NO`
+
+未运行：没有升级到 `./dev check all` / `cargo test --workspace`，因为当前 manifest 验证上限就是 `./dev check task 4-1/task-113`。
+
+六、风险与后续
+
+剩余风险：未做真实窗口点击 UI smoke；本轮用文件证据、单元测试和 macOS build 证明链路。建议下一个任务进入当前 task 的 verify-ready 验收。
+

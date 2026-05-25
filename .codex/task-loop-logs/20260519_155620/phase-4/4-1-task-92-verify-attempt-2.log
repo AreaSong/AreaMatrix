@@ -1,0 +1,77 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-1/task-92`
+- 对应文件路径：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-92-c2-19-implementation.md`
+- 实际核验范围：`core/src/**`、`core/area_matrix.udl`、`core/tests/**` 中 C2-19 相关实现与测试；`apps/**` Forbidden Touches。
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：0
+- 通过项数：10
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只实现 C2-19，不顺手实现同阶段其他 C* 能力
+- 结果：通过
+- 证据：改动集中在 `core/src/tags*`、`core/src/db/tags*`、`core/tests/tag_suggestions_*`；未发现 `apps/**` 改动。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/tags.rs:193`
+
+- 项目：输入、输出、DB/文件系统变化和错误映射
+- 结果：通过
+- 证据：API/UDL 暴露 `suggest_tags_for_file` 与 `apply_tag_suggestions`；实现校验 `file_id`、`limit`、context、slug/display name，并映射 `FileNotFound` / `Validation` / `Conflict` / `Db`。采纳写入 `tags`、`change_log`、`undo_actions`，不改用户可见路径。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/tags.rs:208`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/db/tags/suggestions.rs:117`
+
+- 项目：Rust Core 不依赖平台 UI API
+- 结果：通过
+- 证据：C2-19 实现只使用 Rust std path、rusqlite、serde/json、uuid、chrono 等 Core 层能力；未发现 SwiftUI/AppKit/UIKit 或 `apps/**` 接入。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/tags/suggestions.rs:1`
+
+- 项目：最小测试支撑且不做页面接入
+- 结果：通过
+- 证据：`tag_suggestions_contract_api` 4 个测试通过，`tag_suggestions_implementation` 3 个测试通过；没有 macOS 页面改动。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/tag_suggestions_implementation.rs:167`
+
+- 项目：Expected New Paths 落地
+- 结果：通过
+- 证据：`core/src/**`、`core/area_matrix.udl`、`core/tests/**` 均存在 C2-19 合同、实现或测试证据。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-4.md:2709`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git status --short -- apps` 无输出，未触碰 `apps/**`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-4.md:2714`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。C2-19 类型、建议生成、DB apply 写入被拆到 `suggestion_types.rs`、`tags/suggestions.rs`、`db/tags/suggestions.rs`，单文件均低于 500 行。
+- 注释 / rustdoc / 文档同步：通过。新增 public 类型/API 有 rustdoc，Core API 与 UDL 字段对齐。
+- 错误处理与边界处理：通过。生产路径未发现 `unwrap()` / `expect()` / `panic!()`；只读建议返回 `contents_read=false`、`ai_used=false`、`network_used=false`。
+- 测试与验证覆盖：通过。覆盖 deterministic suggestions、apply 写入、already-added skip、change log、undo action、用户可见路径不变。
+- 占位、硬编码、mock-only、一次性实现检查：通过。测试使用真实初始化 repo 和 SQLite metadata，不是 mock-only 闭环。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-92`
+- 通过：`prompt doctor` OK，`git diff --check` OK。
+- 通过：`cargo test --test tag_suggestions_contract_api -- --nocapture`，4 passed。
+- 通过：`cargo test --test tag_suggestions_implementation -- --nocapture`，3 passed。
+- 失败：无。
+- 缺失：无。未运行 `./dev check all` / `cargo test --workspace`，原因是本 task manifest 的验证上限为普通 atomic Core task 的 `./dev check task 4-1/task-92`。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+
+VERIFY_RESULT: PASS

@@ -356,11 +356,11 @@ struct CoreImportSingleFilePreflight: ImportSingleFilePreflighting {
         switch coreError {
         case let .Io(message), let .Db(message), let .Internal(message):
             return message
-        case let .Config(reason), let .Classify(reason):
+        case let .Config(reason), let .Validation(reason), let .Classify(reason):
             return reason
         case let .Conflict(path), let .DuplicateFile(path), let .FileNotFound(path),
-             let .RepoNotInitialized(path), let .InvalidPath(path), let .ICloudPlaceholder(path),
-             let .PermissionDenied(path):
+             let .ExpiredAction(path), let .RepoNotInitialized(path), let .InvalidPath(path),
+             let .ICloudPlaceholder(path), let .StagingRecoveryRequired(path), let .PermissionDenied(path):
             return path
         }
     }

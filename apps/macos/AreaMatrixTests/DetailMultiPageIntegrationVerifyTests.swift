@@ -3,6 +3,116 @@ import XCTest
 
 final class DetailMultiPageIntegrationVerifyTests: XCTestCase {
     @MainActor
+    func testS209C207LoadsActionLogExecutesUndoAndBlocksUnsafeAction() async {
+        let action = UndoActionRecordSnapshot.s209PendingBatchAddTags()
+        var blockedAction = action
+        blockedAction.status = .blocked
+        blockedAction.canUndo = false
+        blockedAction.disabledReason = "External change prevents undo."
+        let undoStore = S209RecordingUndoStore(results: [
+            .list(.success([action])),
+            .undo(.success(.s209ExecutedBatchAddTags())),
+            .list(.success([blockedAction]))
+        ])
+        let mapper = S115ErrorMapper(mapping: .s209UndoFailure())
+        let load = await BatchTagUndoAction.loadAction(
+            repoPath: "/tmp/repo",
+            undoToken: action.actionID,
+            undoStore: undoStore,
+            errorMapper: mapper
+        )
+        let applied = await BatchTagUndoAction.undo(
+            repoPath: "/tmp/repo",
+            action: action,
+            undoStore: undoStore,
+            errorMapper: mapper
+        )
+        let blockedLoad = await BatchTagUndoAction.loadAction(
+            repoPath: "/tmp/repo",
+            undoToken: blockedAction.actionID,
+            undoStore: undoStore,
+            errorMapper: mapper
+        )
+
+        XCTAssertEqual(load.action, action)
+        XCTAssertEqual(applied.result, .s209ExecutedBatchAddTags())
+        XCTAssertEqual(blockedLoad.unavailableReason, "External change prevents undo.")
+        let listRequests = await undoStore.listRequests()
+        let undoRequests = await undoStore.undoRequests()
+        XCTAssertEqual(listRequests, ["/tmp/repo", "/tmp/repo"])
+        XCTAssertEqual(undoRequests, ["/tmp/repo|\(action.actionID)"])
+    }
+
+    @MainActor
+    func testS209C207MapsUndoFailureWithoutMockingSuccess() async {
+        let action = UndoActionRecordSnapshot.s209PendingBatchAddTags()
+        let undoStore = S209RecordingUndoStore(results: [.undo(.failure(CoreError.Conflict(path: "docs/contract.pdf")))])
+        let applied = await BatchTagUndoAction.undo(
+            repoPath: "/tmp/repo",
+            action: action,
+            undoStore: undoStore,
+            errorMapper: S115ErrorMapper(mapping: .s209UndoFailure())
+        )
+
+        XCTAssertNil(applied.result)
+        XCTAssertEqual(applied.failure, .s209UndoFailure())
+        let undoRequests = await undoStore.undoRequests()
+        XCTAssertEqual(undoRequests, ["/tmp/repo|\(action.actionID)"])
+    }
+
+    @MainActor
+    func testS209C207ApplyCompletionHandsUndoActionToMainWindowToast() async {
+        let action = UndoActionRecordSnapshot.s209PendingBatchAddTags()
+        let undoStore = S209RecordingUndoStore(results: [.list(.success([action]))])
+        let completion = await BatchTagUndoAction.completionAfterBatchApply(
+            repoPath: "/tmp/repo",
+            report: .s209BatchAddTagsReport(),
+            failure: nil,
+            undoStore: undoStore,
+            errorMapper: S115ErrorMapper(mapping: .s209UndoFailure())
+        )
+
+        XCTAssertEqual(completion.undoState, .ready(action))
+        XCTAssertTrue(completion.closesSheet)
+        let listRequests = await undoStore.listRequests()
+        XCTAssertEqual(listRequests, ["/tmp/repo"])
+    }
+
+    @MainActor
+    func testS209C207UndoRefreshTargetsDriveVisibleRefreshes() async {
+        let action = UndoActionRecordSnapshot.s209PendingBatchAddTags()
+        let undoStore = S209RecordingUndoStore(results: [
+            .undo(.success(.s209ExecutedBatchAddTags())),
+            .list(.success([.s209ExecutedActionLogRow()]))
+        ])
+        let applied = await BatchTagUndoAction.undo(
+            repoPath: "/tmp/repo",
+            action: action,
+            undoStore: undoStore,
+            errorMapper: S115ErrorMapper(mapping: .s209UndoFailure())
+        )
+        guard let result = applied.result else {
+            return XCTFail("expected undo_action to return refresh_targets")
+        }
+        let plan = BatchTagUndoRefreshPlan(refreshTargets: result.refreshTargets)
+        let refreshed = await BatchTagUndoAction.refreshActionLog(
+            repoPath: "/tmp/repo",
+            actionID: result.actionID,
+            undoStore: undoStore,
+            errorMapper: S115ErrorMapper(mapping: .s209UndoFailure())
+        )
+
+        XCTAssertTrue(plan.refreshesSelectionDetails)
+        XCTAssertTrue(plan.refreshesChangeLog)
+        XCTAssertTrue(plan.refreshesUndoActions)
+        XCTAssertEqual(refreshed.action, .s209ExecutedActionLogRow())
+        let undoRequests = await undoStore.undoRequests()
+        let listRequests = await undoStore.listRequests()
+        XCTAssertEqual(undoRequests, ["/tmp/repo|\(action.actionID)"])
+        XCTAssertEqual(listRequests, ["/tmp/repo"])
+    }
+
+    @MainActor
     func testS115PageIntegrationUsesRealC111AndC112CoreBridgeForMultiSelection() async throws {
         let repoURL = try makeS115TemporaryRepositoryURL()
         defer { try? FileManager.default.removeItem(at: repoURL) }
@@ -219,6 +329,17 @@ private extension FileEntrySnapshot {
 }
 
 private extension CoreErrorMappingSnapshot {
+    static func s209UndoFailure() -> CoreErrorMappingSnapshot {
+        CoreErrorMappingSnapshot(
+            kind: .conflict,
+            userMessage: "无法撤销批量标签操作",
+            severity: .medium,
+            suggestedAction: "打开 Undo 历史查看阻塞原因。",
+            recoverability: .refreshRequired,
+            rawContext: "S2-09 C2-07 undo_action"
+        )
+    }
+
     static func s115DbMapping() -> CoreErrorMappingSnapshot {
         CoreErrorMappingSnapshot(
             kind: .db,
@@ -239,6 +360,98 @@ private extension CoreErrorMappingSnapshot {
             recoverability: .refreshRequired,
             rawContext: "S1-15 C1-12 get_file"
         )
+    }
+}
+
+private extension UndoActionRecordSnapshot {
+    static func s209PendingBatchAddTags() -> UndoActionRecordSnapshot {
+        UndoActionRecordSnapshot(
+            actionID: "undo-c2-07",
+            kind: "batch_add_tags",
+            summary: "Added urgent to 2 files.",
+            affectedCount: 3,
+            affectedFileNames: ["contract.pdf", "notes.md"],
+            status: .pending,
+            canUndo: true,
+            disabledReason: nil,
+            createdAt: 1_700_000_400,
+            updatedAt: 1_700_000_400
+        )
+    }
+
+    static func s209ExecutedActionLogRow() -> UndoActionRecordSnapshot {
+        var action = s209PendingBatchAddTags()
+        action.status = .executed
+        action.canUndo = false
+        action.updatedAt = 1_700_000_420
+        return action
+    }
+}
+
+private extension UndoActionResultSnapshot {
+    static func s209ExecutedBatchAddTags() -> UndoActionResultSnapshot {
+        UndoActionResultSnapshot(
+            actionID: "undo-c2-07",
+            status: .executed,
+            summary: "Undone: added urgent to 2 files.",
+            affectedCount: 3,
+            refreshTargets: ["tags", "change_log", "undo_actions"],
+            completedAt: 1_700_000_420
+        )
+    }
+}
+
+private extension BatchMutationReportSnapshot {
+    static func s209BatchAddTagsReport() -> BatchMutationReportSnapshot {
+        BatchMutationReportSnapshot(
+            requestedFileCount: 2,
+            requestedTagCount: 1,
+            addedCount: 2,
+            skippedCount: 0,
+            failedCount: 0,
+            itemResults: [
+                BatchMutationItemResultSnapshot(fileID: 1, tag: "urgent", status: .added, error: nil),
+                BatchMutationItemResultSnapshot(fileID: 2, tag: "urgent", status: .added, error: nil)
+            ],
+            undoToken: "undo-c2-07"
+        )
+    }
+}
+
+private actor S209RecordingUndoStore: CoreUndoActionLogging {
+    enum Result { case list(Swift.Result<[UndoActionRecordSnapshot], Error>), undo(Swift.Result<UndoActionResultSnapshot, Error>) }
+
+    private var results: [Result]
+    private var recordedListRequests: [String] = []
+    private var recordedUndoRequests: [String] = []
+
+    init(results: [Result]) {
+        self.results = results
+    }
+
+    func listUndoActions(repoPath: String) async throws -> [UndoActionRecordSnapshot] {
+        recordedListRequests.append(repoPath)
+        guard case let .list(result) = try consumeResult() else {
+            throw CoreError.Internal(message: "expected list_undo_actions before undo_action")
+        }
+        return try result.get()
+    }
+
+    func undoAction(repoPath: String, actionID: String) async throws -> UndoActionResultSnapshot {
+        recordedUndoRequests.append("\(repoPath)|\(actionID)")
+        guard case let .undo(result) = try consumeResult() else {
+            throw CoreError.Internal(message: "expected undo_action result")
+        }
+        return try result.get()
+    }
+
+    func listRequests() -> [String] { recordedListRequests }
+
+    func undoRequests() -> [String] { recordedUndoRequests }
+
+    private func consumeResult() throws -> Result {
+        guard !results.isEmpty else { throw CoreError.Db(message: "missing undo action result") }
+        return results.removeFirst()
     }
 }
 

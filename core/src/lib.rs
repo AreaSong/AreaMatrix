@@ -24,6 +24,7 @@ mod import_conflict_batch;
 mod note;
 pub mod overview;
 mod recovery;
+mod redo;
 mod repair;
 mod repo_entries;
 mod repo_init;
@@ -82,10 +83,17 @@ pub use import_conflict_batch::{
     ImportConflictBatchPreviewReport, ImportConflictBatchPreviewRequest,
     ImportConflictBatchPreviewStatus, ImportConflictBatchResultStatus, ImportConflictBatchStrategy,
 };
+pub use redo::{
+    list_redo_actions, redo_action, RedoActionRecord, RedoActionResult, RedoActionStatus,
+};
 pub use search::*;
 pub use tags::{
-    add_tag, batch_add_tags, list_tags, remove_tag, BatchMutationItemResult, BatchMutationReport,
-    BatchMutationStatus, TagRecord, TagSet,
+    add_tag, apply_tag_suggestions, batch_add_tags, list_tags, remove_tag, suggest_tags_for_file,
+    ApplyTagSuggestionItem, ApplyTagSuggestionsRequest, BatchMutationItemResult,
+    BatchMutationReport, BatchMutationStatus, TagRecord, TagSet, TagSuggestion,
+    TagSuggestionApplyItemResult, TagSuggestionApplyReport, TagSuggestionApplyStatus,
+    TagSuggestionContext, TagSuggestionMatch, TagSuggestionReport, TagSuggestionRequest,
+    TagSuggestionSource, TagSuggestionStatus,
 };
 pub use undo::{
     list_undo_actions, undo_action, UndoActionRecord, UndoActionResult, UndoActionStatus,

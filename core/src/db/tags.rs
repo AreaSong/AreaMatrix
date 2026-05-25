@@ -1,15 +1,23 @@
 use std::path::Path;
 
-use rusqlite::{params, OptionalExtension, Row};
+use rusqlite::{params, OptionalExtension};
 use serde_json::{json, Value};
 use uuid::Uuid;
 
 use crate::{
     BatchMutationItemResult, BatchMutationReport, BatchMutationStatus, CoreError, CoreResult,
-    TagRecord, TagSet,
+    TagSet,
 };
 
-use super::open_repo_connection;
+use super::{clear_redo_stack_in_tx, open_repo_connection};
+
+mod read_models;
+mod suggestions;
+use read_models::load_tag_set;
+pub(crate) use suggestions::{
+    apply_tag_suggestion_rows, load_tag_suggestion_snapshot, TagSuggestionApplyRow,
+    TagSuggestionSnapshot,
+};
 
 const RECENT_TAG_LIMIT: i64 = 10;
 
@@ -53,6 +61,7 @@ pub(crate) fn batch_add_tags_rows(
         return Err(CoreError::file_not_found("file:empty"));
     }
     if report.added_count > 0 {
+        clear_redo_stack_in_tx(&tx, occurred_at)?;
         let token = create_batch_tag_undo_action(&tx, &report.added_items, occurred_at)?;
         report.undo_token = Some(token);
     }
@@ -165,6 +174,7 @@ fn mutate_tag_relation(
         TagMutation::Remove => delete_tag_relation(&tx, file_id, tag)?,
     };
     if changed {
+        clear_redo_stack_in_tx(&tx, occurred_at)?;
         insert_tag_change(&tx, file_id, &mutation.detail(tag, changed), occurred_at)?;
     }
     let fallback_updated_at = if changed {
@@ -370,118 +380,6 @@ fn create_batch_tag_undo_action(
     )
     .map_err(|error| CoreError::db(error.to_string()))?;
     Ok(token)
-}
-
-fn load_tag_set(
-    connection: &rusqlite::Connection,
-    file_id: i64,
-    fallback_updated_at: i64,
-) -> CoreResult<TagSet> {
-    let selected_tags = selected_tag_values(connection, file_id)?;
-    let file_tags = file_tag_records(connection, file_id)?;
-    let available_tags = available_tag_records(connection)?;
-    let recent_tags = recent_tag_records(connection)?;
-    let updated_at = file_tags
-        .iter()
-        .chain(available_tags.iter())
-        .map(|record| record.updated_at)
-        .max()
-        .map(|record_updated_at| record_updated_at.max(fallback_updated_at))
-        .unwrap_or(fallback_updated_at);
-
-    Ok(TagSet {
-        file_id,
-        file_tags,
-        available_tags: mark_selected(available_tags, &selected_tags),
-        recent_tags: mark_selected(recent_tags, &selected_tags),
-        updated_at,
-    })
-}
-
-fn selected_tag_values(connection: &rusqlite::Connection, file_id: i64) -> CoreResult<Vec<String>> {
-    let mut statement = connection
-        .prepare("SELECT tag FROM tags WHERE file_id = ?1 ORDER BY lower(tag) ASC, tag ASC")
-        .map_err(|error| CoreError::db(error.to_string()))?;
-    let rows = statement
-        .query_map(params![file_id], |row| row.get(0))
-        .map_err(|error| CoreError::db(error.to_string()))?;
-    rows.collect::<Result<Vec<_>, _>>()
-        .map_err(|error| CoreError::db(error.to_string()))
-}
-
-fn file_tag_records(connection: &rusqlite::Connection, file_id: i64) -> CoreResult<Vec<TagRecord>> {
-    let mut statement = connection
-        .prepare(
-            "SELECT t.tag, COUNT(active.file_id) AS file_count, MAX(active.added_at) AS updated_at
-               FROM tags t
-               JOIN tags active ON active.tag = t.tag
-               JOIN files f ON f.id = active.file_id AND f.status = 'active'
-              WHERE t.file_id = ?1
-              GROUP BY t.tag
-              ORDER BY lower(t.tag) ASC, t.tag ASC",
-        )
-        .map_err(|error| CoreError::db(error.to_string()))?;
-    let rows = statement
-        .query_map(params![file_id], |row| tag_record_from_row(row, true))
-        .map_err(|error| CoreError::db(error.to_string()))?;
-    rows.collect::<Result<Vec<_>, _>>()
-        .map_err(|error| CoreError::db(error.to_string()))
-}
-
-fn available_tag_records(connection: &rusqlite::Connection) -> CoreResult<Vec<TagRecord>> {
-    let mut statement = connection
-        .prepare(
-            "SELECT t.tag, COUNT(t.file_id) AS file_count, MAX(t.added_at) AS updated_at
-               FROM tags t
-               JOIN files f ON f.id = t.file_id AND f.status = 'active'
-              GROUP BY t.tag
-              ORDER BY lower(t.tag) ASC, t.tag ASC",
-        )
-        .map_err(|error| CoreError::db(error.to_string()))?;
-    let rows = statement
-        .query_map([], |row| tag_record_from_row(row, false))
-        .map_err(|error| CoreError::db(error.to_string()))?;
-    rows.collect::<Result<Vec<_>, _>>()
-        .map_err(|error| CoreError::db(error.to_string()))
-}
-
-fn recent_tag_records(connection: &rusqlite::Connection) -> CoreResult<Vec<TagRecord>> {
-    let mut statement = connection
-        .prepare(
-            "SELECT t.tag, COUNT(t.file_id) AS file_count, MAX(t.added_at) AS updated_at
-               FROM tags t
-               JOIN files f ON f.id = t.file_id AND f.status = 'active'
-              GROUP BY t.tag
-              ORDER BY updated_at DESC, lower(t.tag) ASC, t.tag ASC
-              LIMIT ?1",
-        )
-        .map_err(|error| CoreError::db(error.to_string()))?;
-    let rows = statement
-        .query_map(params![RECENT_TAG_LIMIT], |row| {
-            tag_record_from_row(row, false)
-        })
-        .map_err(|error| CoreError::db(error.to_string()))?;
-    rows.collect::<Result<Vec<_>, _>>()
-        .map_err(|error| CoreError::db(error.to_string()))
-}
-
-fn tag_record_from_row(row: &Row<'_>, selected: bool) -> rusqlite::Result<TagRecord> {
-    let tag: String = row.get(0)?;
-    Ok(TagRecord {
-        value: tag.clone(),
-        label: tag,
-        file_count: row.get(1)?,
-        selected,
-        disabled: false,
-        updated_at: row.get(2)?,
-    })
-}
-
-fn mark_selected(mut records: Vec<TagRecord>, selected_tags: &[String]) -> Vec<TagRecord> {
-    for record in &mut records {
-        record.selected = selected_tags.iter().any(|tag| tag == &record.value);
-    }
-    records
 }
 
 fn current_tag_updated_at(connection: &rusqlite::Connection, file_id: i64) -> CoreResult<i64> {

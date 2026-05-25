@@ -1,0 +1,67 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-1/task-106`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-106-s2-07-c2-05-tag-crud.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 S2-07 页面中的 C2-05 功能点
+- 结果：通过
+- 证据：`DetailTagSection` 只挂在 Detail Meta，提供 `+ Add...`、tag chip 删除、候选、Create、Retry、Undo toast；未实现批量 tag、tag suggestion 采纳或 S2-08 filter。
+- 涉及文件：`apps/macos/AreaMatrix/Views/Main/DetailTagSection.swift`
+
+- 项目：读取页面规格、control map、Core API、C2-05 能力规格
+- 结果：通过
+- 证据：S2-07 映射为 `C2-05 add/remove/list tags`；Core API / UDL 均声明 `add_tag`、`remove_tag`、`list_tags` 和 `TagSet`。
+- 涉及文件：`docs/ux/page-specs/stage-2-experience/S2-07-tags-add.md`、`docs/architecture/stage-2-control-map.md`、`docs/api/core-api.md`、`docs/core/capability-specs/stage-2-experience/C2-05-tag-crud.md`、`core/area_matrix.udl`
+
+- 项目：只接入 C2-05 对应 CoreBridge / 状态 / 错误映射
+- 结果：通过
+- 证据：`CoreTagCRUD` 通过 `CoreBridge` 调用 `AreaMatrix.listTags/addTag/removeTag`；`MainDetailTagActions` 维护 loading/failed/loaded 状态并映射 Core error。
+- 涉及文件：`apps/macos/AreaMatrix/Bridge/CoreTagCRUD.swift`、`apps/macos/AreaMatrix/Models/MainDetailTagActions.swift`、`apps/macos/AreaMatrix/Models/MainDetailTagState.swift`
+
+- 项目：不顺手实现相邻页面、相邻平台或同页其他能力
+- 结果：通过
+- 证据：未发现 `batchAddTags`、`suggestTagsForFile`、`applyTagSuggestions`、S2-08 tag filter 等越界接入；`Suggestions...` 仅禁用显示。
+- 涉及文件：`apps/macos/AreaMatrix/Views/Main/DetailTagSection.swift`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，新增职责拆分为 bridge、state/actions、view、tests；文件长度未超过 500 行。
+- 注释 / rustdoc / 文档同步：通过，本 task 未新增 public Rust API；Swift 代码未依赖无意义注释。
+- 错误处理与边界处理：通过，加载失败、添加失败、移除失败均保留可恢复状态；失败时不清空输入或错误移除 chip。
+- 测试与验证覆盖：通过，`DetailTagPageFeatureTests` 覆盖失败路径和 stale undo；`DetailIntegrationVerifyTests` 使用真实 `CoreBridge` 验证 add/remove/list round trip。
+- 占位、硬编码、mock-only、一次性实现检查：通过，生产路径默认 `CoreBridge()`，测试 fixture 未替代真实集成验收。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-106`
+- 通过：`prompt doctor` 通过，`git diff --check` 通过，`xcodebuild -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination platform=macOS,arch=arm64 build CODE_SIGNING_ALLOWED=NO` 最终 `BUILD SUCCEEDED`
+- 失败：无
+- 缺失：未运行手动 UI smoke；本 task manifest 只要求 `./dev check task 4-1/task-106`，当前通过 build 与测试代码证据完成验收。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。`Expected New Paths` 已落地，`core/src/**` 未被触碰，S2-07 + C2-05 真实 CoreBridge 闭环可由文件和验证命令证明。
+
+VERIFY_RESULT: PASS

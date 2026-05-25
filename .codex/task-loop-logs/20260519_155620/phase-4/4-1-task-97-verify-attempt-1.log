@@ -1,0 +1,68 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`4-1/task-97`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-97-s2-01-c2-02-search-filters.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：12
+- 未覆盖项数：0
+- 通过项数：9
+- 不通过项数：3
+- 阻塞项数：2
+
+四、逐项验收结果
+
+| 项目 | 结果 | 证据 | 涉及文件 |
+|---|---|---|---|
+| 只处理 S2-01 + C2-02 | 通过 | 改动集中在 macOS 搜索页、CoreBridge snapshot、测试；`core/src/**` 未触碰 | `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**` |
+| Exact Docs / Core API / UDL 对齐 | 通过 | `core-api.md` 与 `core/area_matrix.udl` 均声明 `search_files`、`list_filter_facets`、`SearchFilter`、`SearchFacetQuery` | `/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:181`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:157` |
+| CoreBridge / 状态 / 错误映射 | 通过 | `CoreBridge.listFilterFacets` 调用真实 `AreaMatrix.listFilterFacets`；facets 失败进入 `MainSearchFacetsState.failed` 并经 `mapCoreError` | `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridgeSnapshots.swift:326`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainListVisibleFileFiltering.swift:185` |
+| 不实现 control map 外能力 | 通过 | 未发现 C2-03/C2-05 等写能力接入；C2-02 只读 | `/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-2-control-map.md:6` |
+| Expected New Paths | 通过 | `apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**` 已有真实实现和测试改动 | `git diff --name-status` |
+| Forbidden Touches | 通过 | `git status --short core/src core/area_matrix.udl` 无 `core/src/**` 或 UDL 脏改动 | `/Users/as/Ai-Project/project/AreaMatrix/core/src/**` |
+| C2-02 用户可见功能可触发和验收 | 不通过 | `Filters` 只打开摘要 popover；未提供 category、tag、date、storage、include deleted 等用户可操作控件。`searchFilters` 只被初始化或重置为空，用户不能触发非空 filter 闭环 | `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentNoteDrafts.swift:295`、`:317`、`:330`、`:370` |
+| 无 mock / fixture 伪造 Core 闭环 | 部分通过 | 生产路径调用真实 CoreBridge；但 UI 侧非空 filters 只能由测试直接注入，不能由用户操作产生 | `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/CoreBridgeRepositoryTests.swift:111` |
+| 验证命令 | 通过 | `./dev check task 4-1/task-97` 退出码 0，包含 doctor、diff check、macOS build | 本次命令输出 |
+| 编码规范 | 不通过 | `MainFileListModel.swift` 当前 504 行，超过 Swift 单文件 ≤500 行规则；该文件本 task 从 499 行增至 504 行 | `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileListModel.swift:1` |
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过。CoreBridge 链路清楚，但 S2-01 的 filter 入口是摘要/重置形态，不能产生用户选择的 filter 状态。
+- 注释 / rustdoc / 文档同步：通过。未新增 Rust public API；API/UDL 已有 C2-02 合同。
+- 错误处理与边界处理：通过。facets 失败有错误映射和 Retry；C2-02 未写 DB/文件系统。
+- 测试与验证覆盖：不通过。命令通过，但测试主要直接注入 `SearchFilterStateSnapshot`，没有证明用户可见控件能设置非空 filters。
+- 占位、硬编码、mock-only、一次性实现检查：不通过。`SearchFiltersSummaryPopover` 目前更像只读摘要入口，不足以证明 search filters 用户闭环完成。
+
+六、阻塞项
+
+- P1：S2-01 的 C2-02 filter 入口不可产生用户选择的过滤条件。  
+  说明：页面有 `Filters` 按钮和 facet count，但 popover 只展示当前 filter 摘要、`Reset filters`、`Retry`；没有 category/tag/date/storage/include-deleted 等选择控件。`rg` 结果显示 `searchFilters` 只在初始化、Clear、Reset 时变为空。  
+  绝对路径与行号：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentNoteDrafts.swift:317`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentNoteDrafts.swift:330`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentNoteDrafts.swift:370`  
+  为什么导致不通过：完成标准要求 S2-01 中 C2-02 对应的用户可见功能可被触发和验收；当前无法验收用户选择过滤条件后的真实搜索闭环。
+
+- P1：触碰文件超过 Swift 单文件长度规则。  
+  说明：`docs/development/coding-standards.md` 要求单文件 ≤500 行；`MainFileListModel.swift` 当前 504 行，且本 task 将其从 499 行推过阈值。  
+  绝对路径与行号：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileListModel.swift:1`  
+  为什么导致不通过：工程质量规则明确要求遵守编码规范；验收不能在已知质量门禁违规时判定完成。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-97`
+- 通过：`python3 tasks/prompts/_shared/prompt_pipeline.py doctor`、`git diff --check`、`xcodebuild -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination platform=macOS,arch=arm64 build CODE_SIGNING_ALLOWED=NO`
+- 失败：无命令失败
+- 缺失：未运行真实 UI 交互 smoke；当前已有文件证据已足以判定用户 filter 操作闭环缺失。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。验证命令通过只能证明当前 build 和 task gate 通过，不能覆盖用户可见 C2-02 filter 闭环缺失和编码规范阻塞。
+
+VERIFY_RESULT: FAIL

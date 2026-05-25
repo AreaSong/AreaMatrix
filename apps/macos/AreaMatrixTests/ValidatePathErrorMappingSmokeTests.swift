@@ -75,6 +75,29 @@ final class ValidatePathIntegrationSmokeTests: XCTestCase {
     }
 }
 
+final class QueryErrorDiagnosticSnapshotTests: XCTestCase {
+    func testS205DiagnosticSnapshotPreservesCoreTokenRangeAndSuggestion() {
+        let diagnostic = SearchQueryDiagnostic(
+            kind: .unknownField,
+            severity: .error,
+            message: "Unknown field `kindd`",
+            token: "kindd",
+            start: 0,
+            end: 5,
+            suggestion: "kind"
+        )
+        let snapshot = SearchQueryDiagnosticSnapshot(coreDiagnostic: diagnostic)
+
+        XCTAssertEqual(snapshot.kindDisplayName, "Unknown field")
+        XCTAssertEqual(snapshot.severityDisplayName, "Error")
+        XCTAssertEqual(snapshot.token, "kindd")
+        XCTAssertEqual(snapshot.start, 0)
+        XCTAssertEqual(snapshot.end, 5)
+        XCTAssertEqual(snapshot.suggestion, "kind")
+        XCTAssertEqual(snapshot.problemAccessibilityHint, "Token kindd. Position 0-5. Suggestion kind")
+    }
+}
+
 private final class ErrorSmokeRecordingErrorMapper: CoreErrorMapping {
     private let mapping: CoreErrorMappingSnapshot
     private(set) var mappedErrors: [CoreError] = []

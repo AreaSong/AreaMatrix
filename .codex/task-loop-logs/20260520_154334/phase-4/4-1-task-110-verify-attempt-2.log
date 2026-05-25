@@ -1,0 +1,87 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`4-1/task-110`
+- 对应文件路径：`tasks/prompts/phase-4/4-1-stage2-experience/task-110-s2-09-c2-06-batch-add-tags.md`
+- 绑定范围：`S2-09-batch-add-tags` + `C2-06 batch_add_tags`
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：0
+- 通过项数：8
+- 不通过项数：2
+- 阻塞项数：1
+
+四、逐项验收结果
+
+- 项目：读取 task / shared rules / slicing rules / quality rules / coding standards / validation-driver / dependency graph / manifest
+- 结果：通过
+- 证据：已按顺序读取；manifest `4-1/task-110` 指向 4 个 Exact Docs、2 个 Expected New Paths、1 个 Forbidden Touches、1 个验证命令。
+- 涉及文件：`tasks/prompts/_shared/manifests/phase-4.md:3206`
+
+- 项目：Exact Docs 与 Core API / UDL 对齐
+- 结果：通过
+- 证据：`batch_add_tags(repoPath, fileIds, tags) -> BatchMutationReport` 已在 API 和 UDL 中定义，含 `added/skipped/failed/item_results/undo_token`。
+- 涉及文件：`docs/api/core-api.md:2476`、`core/area_matrix.udl:200`
+
+- 项目：S2-09 中 C2-06 用户可见功能可触发
+- 结果：通过
+- 证据：多选 detail pane 注入 `BatchAddTagsTrigger`，sheet 内 `Apply` 调用 `BatchAddTagsAction.apply`，再经 `CoreTagCRUD.batchAddTags`。
+- 涉及文件：`apps/macos/AreaMatrix/Views/Main/MainRepositoryDetailPane.swift:226`、`apps/macos/AreaMatrix/Views/Main/ImportEntrySheetHelpers.swift:203`
+
+- 项目：真实 CoreBridge 闭环
+- 结果：通过
+- 证据：`CoreBridge.batchAddTags` 调用 UniFFI 生成的 `AreaMatrix.batchAddTags`，不是静态成功态。
+- 涉及文件：`apps/macos/AreaMatrix/Bridge/CoreTagCRUD.swift:85`
+
+- 项目：错误映射与结果摘要
+- 结果：通过
+- 证据：失败进入 `CoreErrorMapping`，结果摘要区分 `Added`、`already had`、`failed`，并可展开失败明细。
+- 涉及文件：`apps/macos/AreaMatrix/Models/MainDetailTagState.swift:341`、`apps/macos/AreaMatrix/Views/Main/ImportEntrySheetHelpers.swift:165`
+
+- 项目：Expected New Paths
+- 结果：通过
+- 证据：实现和测试落在 `apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`。
+- 涉及文件：`apps/macos/AreaMatrix/Bridge/CoreTagCRUD.swift:1`、`apps/macos/AreaMatrixTests/DetailMultiListFilesPageFeatureTests.swift:1`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git diff --name-only -- core/src` 无输出，未触碰 `core/src/**`。
+- 涉及文件：`core/src/**`
+
+- 项目：不顺手实现相邻页面、相邻平台或同页其他能力
+- 结果：不通过
+- 证据：本 task 范围只允许 `S2-09 + C2-06`，但实际改动了 `DetailTagSection` 的单文件标签编辑校验逻辑，属于 `S2-07 tags-add / C2-05` 相邻页面能力。
+- 涉及文件：`apps/macos/AreaMatrix/Views/Main/DetailTagSection.swift:247`
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过。核心链路清晰，但存在相邻页面行为改动，违反 page-feature 边界。
+- 注释 / rustdoc / 文档同步：通过。当前为 Swift UI/bridge 层，无新增 public Rust API；API/UDL 已有合同。
+- 错误处理与边界处理：通过。Apply 前校验 pending tags，Core 调用失败进入错误映射。
+- 测试与验证覆盖：通过但有限。`./dev check task 4-1/task-110` 已通过；未运行额外 UI smoke。
+- 占位、硬编码、mock-only、一次性实现检查：通过。生产路径接真实 `CoreBridge.batchAddTags`；测试中的 recording store 不作为生产闭环。
+
+六、阻塞项
+
+- P1：当前 task 修改了相邻页面 `S2-07 / C2-05` 的标签编辑行为
+  - 说明：`4-1/task-110` 核对清单要求只处理 `S2-09` 页面中的 `C2-06`，不得顺手实现相邻页面或同页其他能力。`DetailTagSection` 是单文件标签编辑区域，不是 `S2-09 batch-add-tags` sheet；这里改为复用 `TagInputNormalization`，会改变 `S2-07 tags-add` 的校验文案和 normalization 行为。
+  - 绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/DetailTagSection.swift`
+  - 行号：247、262
+  - 为什么导致不通过：这是 page-feature 任务范围越界，无法证明当前 task 只实现了 `S2-09 + C2-06`。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-110`
+- 通过：`prompt_pipeline.py doctor` 返回 OK；`git diff --check` 通过；`xcodebuild ... build CODE_SIGNING_ALLOWED=NO` 最终 `BUILD SUCCEEDED`
+- 失败：无命令失败
+- 缺失：未运行额外 `./dev test macos` 或真实 UI smoke；本次阻塞不是命令失败，而是文件范围越界。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+VERIFY_RESULT: FAIL

@@ -20,6 +20,7 @@ pub(super) fn build_plan(
     }
     ensure_requested_conflicts_exist(&rows, requested_ids)?;
     let selected_kinds = selected_conflict_kinds(&rows, requested_ids);
+    let trash_available = trash_available(repo);
     rows.into_iter()
         .map(|row| {
             let included = should_include(
@@ -28,7 +29,7 @@ pub(super) fn build_plan(
                 &selected_kinds,
                 request.apply_to_all_similar_conflicts,
             );
-            plan_row(repo, row, included, request)
+            plan_row(repo, row, included, request, trash_available)
         })
         .collect()
 }
@@ -74,7 +75,7 @@ pub(super) fn preview_report(
         skip_count: count_strategy(plan, ImportConflictBatchStrategy::Skip),
         keep_both_count: count_strategy(plan, ImportConflictBatchStrategy::KeepBoth),
         ask_per_item_count: count_strategy(plan, ImportConflictBatchStrategy::AskPerItem),
-        trash_available: trash_available(repo),
+        trash_available: plan_trash_available(repo, plan),
         undo_available: true,
         can_apply,
         apply_blocked_reason: apply_blocked_reason(plan),
@@ -112,6 +113,7 @@ fn plan_row(
     row: db::ImportConflictRow,
     included: bool,
     request: &ImportConflictBatchPreviewRequest,
+    trash_available: bool,
 ) -> CoreResult<PlannedImportConflict> {
     let strategy = strategy_for(&row.conflict_type, request);
     let mut item = PlannedImportConflict {
@@ -120,6 +122,7 @@ fn plan_row(
         existing: None,
         included,
         strategy,
+        trash_available,
         final_relative_path: None,
         final_name: None,
         status: ImportConflictBatchPreviewStatus::Pending,
@@ -206,6 +209,10 @@ fn plan_replace(repo: &Path, item: &mut PlannedImportConflict) -> CoreResult<()>
     };
     if existing.storage_mode == StorageMode::Indexed {
         block_item(item, "Index-only target cannot be replaced");
+        return Ok(());
+    }
+    if !item.trash_available {
+        block_item(item, "Trash unavailable");
         return Ok(());
     }
     path::ensure_staging_file_matches(repo, &staging.path)?;
@@ -366,7 +373,22 @@ fn replace_summary(
 }
 
 fn trash_available(repo: &Path) -> bool {
-    repo.join(super::AREA_MATRIX_DIR)
-        .metadata()
+    let trash_pending = repo
+        .join(super::AREA_MATRIX_DIR)
+        .join(super::TRASH_PENDING_DIR);
+    if trash_pending.exists() {
+        return is_writable_dir(&trash_pending);
+    }
+    is_writable_dir(&repo.join(super::AREA_MATRIX_DIR))
+}
+
+fn plan_trash_available(repo: &Path, plan: &[PlannedImportConflict]) -> bool {
+    plan.first()
+        .map(|item| item.trash_available)
+        .unwrap_or_else(|| trash_available(repo))
+}
+
+fn is_writable_dir(path: &Path) -> bool {
+    path.metadata()
         .is_ok_and(|metadata| metadata.is_dir() && !metadata.permissions().readonly())
 }

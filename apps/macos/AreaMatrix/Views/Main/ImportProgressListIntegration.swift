@@ -103,6 +103,256 @@ struct ImportProgressDetailPane: View {
     }
 }
 
+extension MainRepositoryContentView {
+    var selectedImportProgressRow: ImportProgressListRow? {
+        guard let id = selectedImportProgressIDs.first else { return nil }
+        return importProgressRows.first { $0.id == id }
+    }
+}
+
+struct UndoToastHistoryRequest: Identifiable, Equatable {
+    enum Source: String, Equatable {
+        case viewHistory
+        case viewDetails
+    }
+
+    let source: Source
+    let state: BatchTagUndoState
+    let actionLogRefreshFailure: CoreErrorMappingSnapshot?
+
+    var id: String {
+        "\(source.rawValue):\(state.routeIdentity):\(actionLogRefreshFailure?.rawContext ?? "")"
+    }
+}
+
+struct BatchTagUndoToastHost: View {
+    let repoPath: String
+    let undoStore: any CoreUndoActionLogging
+    let errorMapper: any CoreErrorMapping
+    let onRefreshSelection: () -> Void
+    let onRefreshChangeLog: () -> Void
+    let onRefreshCurrentList: () -> Void
+    let onOpenHistory: (UndoToastHistoryRequest) -> Void
+    @Binding var undoState: BatchTagUndoState
+    @Binding var actionLogRefreshFailure: CoreErrorMappingSnapshot?
+
+    var body: some View {
+        Group {
+            if !undoState.isIdle {
+                BatchTagUndoToastView(
+                    state: undoState,
+                    actionLogRefreshFailure: actionLogRefreshFailure,
+                    onUndo: { action in Task { await undo(action) } },
+                    onOpenHistory: openHistory,
+                    onDismiss: dismissUndoToast
+                )
+                .frame(maxWidth: 420)
+            }
+        }
+        .task(id: repoPath) { await loadLatestUndoAction() }
+        .onKeyPress("z", phases: .down) { event in
+            guard event.modifiers.contains(.command) else { return .ignored }
+            if let action = undoState.executableAction, !undoState.isBusy {
+                Task { await undo(action) }
+                return .handled
+            }
+            return .ignored
+        }
+    }
+
+    @MainActor
+    private func loadLatestUndoAction() async {
+        undoState = await BatchTagUndoAction.refreshLatestToastState(
+            repoPath: repoPath,
+            undoStore: undoStore,
+            errorMapper: errorMapper
+        )
+    }
+
+    @MainActor
+    private func undo(_ action: UndoActionRecordSnapshot) async {
+        undoState = .undoing(action)
+        actionLogRefreshFailure = nil
+        let applied = await BatchTagUndoAction.undo(
+            repoPath: repoPath,
+            action: action,
+            undoStore: undoStore,
+            errorMapper: errorMapper
+        )
+        if let failure = applied.failure {
+            undoState = .failed(failure, previous: action)
+            return
+        }
+        guard let result = applied.result else {
+            undoState = .unavailable(reason: "Undo action finished without a result.")
+            return
+        }
+
+        undoState = .undone(result)
+        await refreshAfterUndo(result)
+    }
+
+    @MainActor
+    private func refreshAfterUndo(_ result: UndoActionResultSnapshot) async {
+        let plan = BatchTagUndoRefreshPlan(refreshTargets: result.refreshTargets)
+        if plan.refreshesCurrentList { onRefreshCurrentList() }
+        if plan.refreshesSelectionDetails { onRefreshSelection() }
+        if plan.refreshesChangeLog { onRefreshChangeLog() }
+        guard plan.refreshesUndoActions else { return }
+
+        let refreshed = await BatchTagUndoAction.refreshActionLog(
+            repoPath: repoPath,
+            actionID: result.actionID,
+            undoStore: undoStore,
+            errorMapper: errorMapper
+        )
+        actionLogRefreshFailure = refreshed.failure
+    }
+
+    private func dismissUndoToast() {
+        undoState = .idle
+        actionLogRefreshFailure = nil
+    }
+
+    private func openHistory(_ source: UndoToastHistoryRequest.Source) {
+        onOpenHistory(UndoToastHistoryRequest(
+            source: source,
+            state: undoState,
+            actionLogRefreshFailure: actionLogRefreshFailure
+        ))
+    }
+}
+
+private extension BatchTagUndoState {
+    var routeIdentity: String {
+        switch self {
+        case .idle:
+            "idle"
+        case let .loading(token):
+            "loading:\(token)"
+        case let .ready(action), let .disabled(action, _), let .undoing(action):
+            action.actionID
+        case let .unavailable(reason):
+            "unavailable:\(reason)"
+        case let .undone(result):
+            "undone:\(result.actionID)"
+        case let .failed(mapping, previous):
+            "failed:\(previous?.actionID ?? "none"):\(mapping.kind.rawValue)"
+        }
+    }
+}
+
+extension UndoToastHistoryRequest {
+    var focusedActionID: String? {
+        switch state {
+        case let .ready(action), let .disabled(action, _), let .undoing(action):
+            action.actionID
+        case let .undone(result):
+            result.actionID
+        case let .failed(_, previous):
+            previous?.actionID
+        case .idle, .loading, .unavailable:
+            nil
+        }
+    }
+
+    var failureMapping: CoreErrorMappingSnapshot? {
+        if case let .failed(mapping, _) = state { return mapping }
+        return actionLogRefreshFailure
+    }
+}
+
+struct UndoToastHistoryRouteSheet: View {
+    let request: UndoToastHistoryRequest
+    let onClose: () -> Void
+
+    var body: some View {
+        MainFileActionSheetContainer(title: title, pageID: "S2-10") {
+            VStack(alignment: .leading, spacing: 12) {
+                Label(message, systemImage: systemImage)
+                    .font(.callout)
+                if let failure = request.failureMapping {
+                    Text(failure.userMessage)
+                        .foregroundStyle(.secondary)
+                    Text(failure.suggestedAction)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                HStack {
+                    Spacer()
+                    Button("Close", action: onClose)
+                        .keyboardShortcut(.cancelAction)
+                }
+            }
+        }
+        .frame(width: 420)
+        .accessibilityIdentifier("S2-10-C2-07-undo-history-route")
+    }
+
+    private var title: String {
+        request.source == .viewDetails ? "Undo Details" : "Undo History"
+    }
+
+    private var message: String {
+        request.source == .viewDetails ?
+            "Undo details will open in Undo History." :
+            "Undo History will show recent undo actions."
+    }
+
+    private var systemImage: String {
+        request.source == .viewDetails ? "exclamationmark.triangle" : "clock.arrow.circlepath"
+    }
+}
+
+struct SearchCommandPaletteRouteView: View {
+    let query: String
+    let batchAddTagsRoute: BatchAddTagsRoute
+    let batchChangeCategoryRoute: BatchChangeCategoryRoute
+    let onOpenBatchAddTags: (BatchAddTagsRoute) -> Void
+    let onOpenBatchChangeCategory: (BatchChangeCategoryRoute) -> Void
+    let onClose: () -> Void
+
+    var body: some View {
+        MainFileActionSheetContainer(title: "Command Palette", pageID: "S2-15") {
+            TextField("Search commands", text: .constant(query))
+                .textFieldStyle(.roundedBorder)
+            Text("Search related commands")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+            commandPaletteBatchAddTagsButton
+            commandPaletteBatchChangeCategoryButton
+            HStack {
+                Spacer()
+                Button("Close", action: onClose)
+                    .keyboardShortcut(.cancelAction)
+            }
+        }
+        .accessibilityIdentifier("S2-15-search-route")
+    }
+
+    private var commandPaletteBatchAddTagsButton: some View {
+        Button {
+            onOpenBatchAddTags(batchAddTagsRoute)
+        } label: {
+            Label("Add tags...", systemImage: "tag")
+        }
+        .disabled(batchAddTagsRoute.selectedCount == 0)
+        .help(BatchAddTagsEntryPolicy.openHelp(disabledReason: batchAddTagsRoute.disabledReason))
+        .accessibilityIdentifier("S2-09-command-palette-add-tags")
+    }
+
+    private var commandPaletteBatchChangeCategoryButton: some View {
+        Button {
+            onOpenBatchChangeCategory(batchChangeCategoryRoute)
+        } label: {
+            Label("Change category...", systemImage: "folder")
+        }
+        .disabled(batchChangeCategoryRoute.selectedCount == 0)
+        .help(BatchChangeCategoryEntryPolicy.openHelp(disabledReason: batchChangeCategoryRoute.disabledReason))
+        .accessibilityIdentifier("S2-12-command-palette-change-category")
+    }
+}
+
 private extension ImportProgressListRow {
     var systemImage: String {
         switch item.phase {

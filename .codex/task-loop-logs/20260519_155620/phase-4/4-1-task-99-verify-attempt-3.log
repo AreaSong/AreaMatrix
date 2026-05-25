@@ -1,0 +1,78 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`4-1/task-99`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-99-s2-02-c2-02-search-filters.md`
+- 主要实现路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`
+- 测试路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`
+
+三、完成度摘要
+
+- 已覆盖项数：12
+- 未覆盖项数：0
+- 通过项数：8
+- 不通过项数：4
+- 阻塞项数：2
+
+四、逐项验收结果
+
+- 项目：读取 task / 共享规则 / manifest / Exact Docs / Existing Code
+- 结果：通过
+- 证据：manifest `4-1/task-99` 声明 4 份 Exact Docs、`apps/**`、`core/area_matrix.udl`、Expected New Paths、Forbidden Touches 和 `./dev check task 4-1/task-99`
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-4.md:2896`
+
+- 项目：S2-02 + C2-02 真实 CoreBridge 闭环
+- 结果：通过
+- 证据：`runSearch` 调用 `searchQuerying.searchFiles`，`loadSearchFacets` 调用 `searchFiltering.listFilterFacets`；CoreBridge 转换到 `AreaMatrix.searchFiles` / `AreaMatrix.listFilterFacets`
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/Models/MainListVisibleFileFiltering.swift:379`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridgeSnapshots.swift:326`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git diff -- core/src` 无输出；当前未见 `core/src/**` 被修改
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+- 项目：只处理 S2-02 页面中的 C2-02 功能点
+- 结果：不通过
+- 证据：实现新增了 `S2-08` destination、route、sheet view 和测试断言；control map 中 `S2-08 tags-filter` 是独立页面，绑定 `4-1/task-107`、`4-1/task-108`、`4-1/task-109`，不属于本 task 的 S2-02 页面范围
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentActionRouting.swift:143`、`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-2-control-map.md:16`
+
+- 项目：Smart List draft 与普通 search state 一致性
+- 结果：不通过
+- 证据：已定义 `searchFiltersBinding` 会在 draft 场景写入 `smartListFilterDraft`，但 banner chips 仍绑定 `$searchFilters`，draft 场景点击 chip 会改普通 filters，不改 draft filters，违反 S2-02 “同一套状态 / draft 只更新草稿”的要求
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentNoteDrafts.swift:239`
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过，S2-08 独立页面实现混入 S2-02 page-feature task，任务边界扩散。
+- 注释 / rustdoc / 文档同步：通过，本 task 未新增 Rust public API；UDL 已有 `SearchFilter`、`SearchFacetQuery`、`list_filter_facets`。
+- 错误处理与边界处理：不通过，facet 错误映射和 Retry 有实现，但 Smart List draft chips 状态边界有回归。
+- 测试与验证覆盖：不通过，`./dev check task 4-1/task-99` 通过，但新增测试没有覆盖 banner chip draft 绑定错误，且当前验收未扩大运行 XCTest。
+- 占位、硬编码、mock-only、一次性实现检查：通过，生产路径默认走 CoreBridge；fixture 只出现在测试内。
+
+六、阻塞项
+
+- P1：越界实现 S2-08 tags-filter 页面
+  说明：当前 task 只绑定 S2-02 + C2-02，但实现新增 `TagFilterSheetRouteView`、`S2-08` route 和相关测试。S2-08 在 control map 中是独立页面任务，属于相邻页面实现。
+  绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentActionRouting.swift:143`
+  为什么导致不通过：违反 task checklist “只处理 S2-02 页面”与“不顺手实现相邻页面”。
+
+- P1：Smart List draft 场景下 banner chips 写错状态源
+  说明：draft 场景应通过 `searchFiltersBinding` 写入 `smartListFilterDraft`，但 banner chips 使用 `$searchFilters`，会绕过 draft。
+  绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentNoteDrafts.swift:239`
+  为什么导致不通过：S2-02 要求普通搜索与 Smart List 编辑使用同一套状态语义，draft 变化不能污染普通搜索状态。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-99`
+- 通过：prompt doctor OK；`git diff --check` OK；macOS `xcodebuild ... build CODE_SIGNING_ALLOWED=NO` 最终 `BUILD SUCCEEDED`
+- 失败：无命令级失败
+- 缺失：未运行 `./dev test macos` 和 UI smoke；本 task manifest 只要求 `./dev check task 4-1/task-99`，但命令通过不能覆盖上述范围和状态一致性阻塞。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+
+VERIFY_RESULT: FAIL

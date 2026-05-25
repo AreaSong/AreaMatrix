@@ -1,0 +1,54 @@
+一、执行结论
+
+已完成。
+
+二、执行范围
+
+单任务：`4-1/task-98`。本轮修复只落在 `apps/macos/AreaMatrix/**` 与 `apps/macos/AreaMatrixTests/**` 内。
+
+修改文件清单：
+- [MainListVisibleFileFiltering.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainListVisibleFileFiltering.swift)
+- [MainRepositoryContentView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift)
+- [MainRepositoryContentNoteDrafts.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentNoteDrafts.swift)
+- [MainRepositoryContentActionRouting.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentActionRouting.swift)
+- [MainWindowIntegrationVerifyTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/MainWindowIntegrationVerifyTests.swift)
+- [MainRepoExternalRemovalTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/MainRepoExternalRemovalTests.swift)
+
+三、完成情况
+
+核对清单：
+- page-feature task 覆盖 C2-01 / C2-02：已覆盖。
+- 页面状态、入口、退出、错误态、CoreBridge 调用闭环：已补齐 `Save...`、`Open indexing status`、`Cmd+K` 的生产 UI route 消费。
+- mock / fixture / 硬编码状态：已把 S2-04 / S2-05 从纯文本占位改为真实 route view，含 clear 动作与 accessibility id。
+- 未新增 control map 外真实 Core 能力：未新增 C2-03 / C2-04 的 Core 写入或命令索引调用，只做页面跳转承接。
+
+完成标准：
+- S2-01 可按 page spec / control map 验收：满足。
+- C2-01 / C2-02 已真实接入或有证据：满足，仍通过现有 CoreBridge 搜索与 facets 调用。
+
+Forbidden Touches：未触碰 `core/src/**`；也确认 `.xcodeproj` 无 diff。
+
+四、工程质量
+
+代码结构保持在现有 Main 页面拆分模式内，文件长度均低于 500 行。新增 route view 只处理 S2-01 需要的页面承接、空态、查询错误、索引状态、保存搜索入口和命令入口，不实现相邻 Core 能力。未新增依赖；未新增 public Rust API；错误/空态都有可见 UI 和清理/重试动作。
+
+五、验证情况
+
+已运行并通过：
+
+```bash
+./dev check task 4-1/task-98
+```
+
+该命令内含：
+- `prompt doctor`：OK，`tasks: 637`，`manifests: 637`
+- `git diff --check`：通过
+- macOS `xcodebuild ... build CODE_SIGNING_ALLOWED=NO`：`BUILD SUCCEEDED`
+
+未运行 `./dev test macos`、`./dev check all` 或 Core 宽门禁，因为本 task manifest 只要求 `./dev check task 4-1/task-98`。
+
+六、风险与后续
+
+剩余风险：`S2-03 saved-search-sheet` 和 `S2-15 command-palette` 的完整业务能力仍属于后续 task，本轮只完成 S2-01 的入口闭环，不越界实现 C2-03 / C2-04。
+
+建议下一个动作：进入 `4-1/task-98` verify-ready 验收；通过后继续队列下一个 task。

@@ -17,9 +17,10 @@ final class DeleteFilePageFeatureTests: XCTestCase {
 
         await model.selectFiles([file.id])
         model.beginDelete()
-        await model.submitDelete(fileID: file.id, operation: .moveToTrash)
+        let didDelete = await model.submitDelete(fileID: file.id, operation: .moveToTrash)
         let requests = await deleter.recordedRequests()
 
+        XCTAssertTrue(didDelete)
         XCTAssertEqual(requests, [.delete(repoPath: "/tmp/repo", fileID: file.id)])
         XCTAssertEqual(model.files, [])
         XCTAssertEqual(model.selection, .none)
@@ -55,9 +56,10 @@ final class DeleteFilePageFeatureTests: XCTestCase {
 
         await model.selectFiles([indexed.id])
         model.beginDelete()
-        await model.submitDelete(fileID: indexed.id, operation: .removeFromIndex)
+        let didDelete = await model.submitDelete(fileID: indexed.id, operation: .removeFromIndex)
         let requests = await deleter.recordedRequests()
 
+        XCTAssertTrue(didDelete)
         XCTAssertEqual(requests, [.removeIndex(repoPath: "/tmp/repo", fileID: indexed.id)])
         XCTAssertEqual(model.files, [missing, external])
         XCTAssertEqual(model.statusBanner, .removedFileFromIndex(fileID: indexed.id))
@@ -79,9 +81,10 @@ final class DeleteFilePageFeatureTests: XCTestCase {
 
         await model.selectFiles([file.id])
         model.beginDelete()
-        await model.submitDelete(fileID: file.id, operation: .moveToTrash)
+        let didDelete = await model.submitDelete(fileID: file.id, operation: .moveToTrash)
         let mappedErrors = await mapper.recordedErrors()
 
+        XCTAssertFalse(didDelete)
         XCTAssertEqual(model.files, [file])
         XCTAssertEqual(model.selectedFileDetail, file)
         XCTAssertEqual(model.pendingActionDestination, .delete(fileID: file.id))

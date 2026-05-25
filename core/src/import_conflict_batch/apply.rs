@@ -533,10 +533,13 @@ fn error_message(error: CoreError) -> String {
         | CoreError::PermissionDenied { path }
         | CoreError::StagingRecoveryRequired { path } => path,
         CoreError::DuplicateFile { existing_path } => existing_path,
+        CoreError::ExpiredAction { action_id } => action_id,
         CoreError::Io { message } | CoreError::Db { message } | CoreError::Internal { message } => {
             message
         }
-        CoreError::Config { reason } | CoreError::Classify { reason } => reason,
+        CoreError::Config { reason }
+        | CoreError::Validation { reason }
+        | CoreError::Classify { reason } => reason,
         CoreError::RepoNotInitialized { path } | CoreError::ICloudPlaceholder { path } => path,
     }
 }

@@ -1,0 +1,87 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-1/task-105`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-105-s2-06-page-integration-verify.md`
+- 对应范围：`apps/**`、`core/area_matrix.udl`
+- Expected New Paths：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`
+- Forbidden Touches：`core/src/**`
+
+三、完成度摘要
+
+- 已覆盖项数：8
+- 未覆盖项数：0
+- 通过项数：8
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：page-feature task 覆盖
+- 结果：通过
+- 证据：Manifest 中 `4-1/task-105` 依赖 `4-1/task-103`、`4-1/task-104`，control map 中 S2-06 只声明 `C2-03, C2-04`，两项均已由依赖任务覆盖。
+- 涉及文件：[phase-4.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-4.md:3064)、[stage-2-control-map.md](/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-2-control-map.md:14)
+
+- 项目：Expected New Paths 落地
+- 结果：通过
+- 证据：`apps/macos/AreaMatrix/**` 与 `apps/macos/AreaMatrixTests/**` 均存在，且当前 S2-06 生产代码和测试位于该范围内。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git diff --name-only -- core/src` 无输出，当前未发现 `core/src/**` 被违规触碰。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+- 项目：C2-03 saved-search CRUD 真实接入
+- 结果：通过
+- 证据：UDL/API 声明 `create_saved_search`、`update_saved_search`、`delete_saved_search`、`list_saved_searches`；macOS `CoreBridge` 通过生成绑定调用真实 Core API。
+- 涉及文件：[core/area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:169)、[CoreFileRenaming.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreFileRenaming.swift:107)
+
+- 项目：C2-04 smart-list execution 真实接入
+- 结果：通过
+- 证据：UDL/API 声明 `run_smart_list`；`MainFileListModel.loadSmartList` 调用 `searchQuerying.runSmartList`，`CoreBridge` 包装真实 `runSmartList` 绑定。
+- 涉及文件：[core/area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:182)、[MainListSystemActions.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainListSystemActions.swift:399)、[CoreFileRenaming.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreFileRenaming.swift:139)
+
+- 项目：页面状态、入口、退出、错误态闭环
+- 结果：通过
+- 证据：sidebar Smart Lists 分组、右键菜单、保存后插入、点击恢复搜索、Clear 退出、读取失败 Retry、管理失败 Retry、Edit query 诊断与保存失败保留 draft 均有实现。
+- 涉及文件：[MainRepositoryContentCategoryMoveRefresh.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentCategoryMoveRefresh.swift:21)、[MainRepositoryContentActionRouting.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentActionRouting.swift:197)、[MainFileActionRoutingSheet.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainFileActionRoutingSheet.swift:392)
+
+- 项目：S2-06 page spec 细节
+- 结果：通过
+- 证据：固定排序为 pinned first + pinned updatedAt 倒序 + name A-Z；Delete 文案包含 “Files will not be deleted or moved”；Delete 按钮使用 destructive role；Smart List 行状态不再固定 `--`，会根据真实 search state 显示数量、loading、invalid query 或 warning。
+- 涉及文件：[MainRepositoryContentCategoryMoveRefresh.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentCategoryMoveRefresh.swift:13)、[MainFileActionRoutingSheet.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainFileActionRoutingSheet.swift:457)、[MainListSystemActions.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainListSystemActions.swift:109)
+
+- 项目：mock / fixture / control map 外能力检查
+- 结果：通过
+- 证据：生产路径未发现 mock-only 或固定通过态；fixture/recording 仅位于测试；S2-06 生产接入集中在 C2-03/C2-04，没有新增 control map 外 Core 能力。
+- 涉及文件：[stage-2-control-map.md](/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-2-control-map.md:14)、[MainRepositoryContentActionRouting.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentActionRouting.swift:93)
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。触达的 Swift 文件均未超过 500 行；Smart List 状态、管理 sheet、CoreBridge 包装和页面路由分层清楚。
+- 注释 / rustdoc / 文档同步：通过。本 task 未新增 public Rust API；`docs/api/core-api.md` 与 `core/area_matrix.udl` 对 C2-03/C2-04 的接口声明一致。
+- 错误处理与边界处理：通过。读取失败、保存失败、query diagnostic、result count unavailable、delete safety message 都有用户可见路径；Delete Smart List 只调用 saved search 删除，不触碰文件。
+- 测试与验证覆盖：通过。当前 task-scoped 验证已通过；相关 S2-06 模型/路由测试存在于 macOS test target。
+- 占位、硬编码、mock-only、一次性实现检查：通过。生产 Smart List sidebar 状态基于 `MainSearchState` / `SearchResultPageSnapshot`，Core 调用经 `CoreBridge` 真实绑定。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-105`
+- 通过：`prompt_pipeline.py doctor` 通过，`git diff --check` 通过，macOS `xcodebuild ... build CODE_SIGNING_ALLOWED=NO` 最终 `BUILD SUCCEEDED`
+- 失败：无
+- 缺失：未单独运行 `./dev test macos`；本 task manifest 指定验证为 `./dev check task 4-1/task-105`，page integration task 当前 task gate 为 macOS build gate。
+- 工作区状态：当前存在 task-loop 的 `progress.json`、summary/log 以及本 task 范围内 macOS 生产/测试改动；`4-1/task-105` 仍处于 runner 收口前的 `in_progress` 不作为本 verify 阶段失败原因。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS

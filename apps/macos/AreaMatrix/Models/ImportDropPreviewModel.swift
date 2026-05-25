@@ -206,6 +206,9 @@ final class ImportDropPreviewModel: ObservableObject {
 
 extension RepositorySidebarRowSnapshot {
     var importDropTarget: ImportDropTarget {
+        if isSmartList {
+            return .repositoryRoot
+        }
         if node.slug == "__root__" || node.relativePath.isEmpty {
             return .repositoryRoot
         }

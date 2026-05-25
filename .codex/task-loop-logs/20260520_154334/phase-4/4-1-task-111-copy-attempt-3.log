@@ -1,0 +1,48 @@
+一、执行结论
+
+已完成。
+
+二、执行范围
+
+单任务 repair retry：`4-1/task-111`。本次只修复上次验收失败的 SwiftLint 工程质量问题，未扩大功能范围。
+
+本轮修复修改文件：
+- [MainRepositoryContentView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift:284)
+- [FileDropAdapter.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/FileDropAdapter.swift:62)
+- [ImportProgressListIntegration.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportProgressListIntegration.swift:106)
+
+三、完成情况
+
+核对清单通过：仍只处理 `S2-09 + C2-07`，没有实现同页 `C2-06` 之外的新能力，也没有触碰相邻页面或相邻平台。`CoreBridge` 的 `CoreUndoActionLogging` 接入保持不变。
+
+完成标准通过：用户可见 Undo toast / action log / undo action 链路未被改写；没有新增 mock、fixture 或静态伪造状态；未触碰 control map 之外能力。
+
+Forbidden Touches：通过。`git diff --name-only -- core/src` 无输出，未触碰 `core/src/**`。
+
+四、工程质量
+
+已修复上次 blocker：
+- `MainRepositoryContentView.swift` 从 501 行降到 489 行，满足 `file_length: 500`。
+- 原 122 字符长行已拆为两行。
+- `dropOverlay` 和 `selectedImportProgressRow` 移入已在 Xcode target 中登记的现有 Swift 文件，避免新增未编译源文件导致 build 失败。
+- 未新增依赖、未新增 public Rust API、未改文档源事实。
+- 不存在新增占位、硬编码、mock-only 或一次性实现。
+
+五、验证情况
+
+已运行并通过：
+- `cd apps/macos && swiftlint lint --strict --config ../../scripts/dev_tools/swiftlint.yml --force-exclude --no-cache AreaMatrix/Views/Main/MainRepositoryContentView.swift AreaMatrix/Views/Main/FileDropAdapter.swift AreaMatrix/Views/Main/ImportProgressListIntegration.swift`
+  - 结果：0 violations, 0 serious。
+- `./dev check task 4-1/task-111`
+  - `prompt doctor`: OK
+  - `git diff --check`: 通过
+  - `xcodebuild ... build CODE_SIGNING_ALLOWED=NO`: `BUILD SUCCEEDED`
+
+未运行宽门禁：未运行 `./dev check all`、`./dev check core`、`cargo test --workspace`，因为当前 manifest 的 Validation 上限是 `./dev check task 4-1/task-111`。
+
+六、风险与后续
+
+剩余风险：当前工作树里还有 task-loop 前序留下的多处未提交改动和日志文件，我没有回滚或重写它们。本次 repair 自身的 blocker 已清除。
+
+建议下一个任务：进入 `4-1/task-111` 的 verify-ready 验收，确认最终验收结论从上次 SwiftLint blocker 变为通过。
+

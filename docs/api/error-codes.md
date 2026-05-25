@@ -43,6 +43,9 @@ pub enum CoreError {
     #[error("config error: {reason}")]
     Config { reason: String },
 
+    #[error("validation error: {reason}")]
+    Validation { reason: String },
+
     #[error("classification failed: {reason}")]
     Classify { reason: String },
 
@@ -54,6 +57,9 @@ pub enum CoreError {
 
     #[error("file not found: {path}")]
     FileNotFound { path: String },
+
+    #[error("expired action: {action_id}")]
+    ExpiredAction { action_id: String },
 
     #[error("repo not initialized at: {path}")]
     RepoNotInitialized { path: String },
@@ -116,10 +122,12 @@ impl From<walkdir::Error> for CoreError {
 | `Io { message }` | 文件读写失败、磁盘空间、损坏 | 视情况 | toast「文件操作失败：{}」 | medium |
 | `Db { message }` | SQLite locked、busy、schema 损坏、索引损坏 | locked/busy 可重试；损坏不可自动重试 | locked/busy：inline Retry；损坏：blocking repair | medium / critical |
 | `Config { reason }` | classifier.yaml 解析失败、必填字段缺失 | 否 | 弹窗：跳转到设置 → 显示具体字段错误 | medium |
+| `Validation { reason }` | API 输入无效、编辑草稿不合法、数量上限越界 | 否 | inline field error 或 toast「输入无效」 | low |
 | `Classify { reason }` | 分类引擎内部错误 | 否 | toast「分类失败」+ 落到 inbox | low |
 | `Conflict { path }` | 路径冲突（应已被 conflict::resolve 解决） | 否 | toast「路径冲突」 | medium |
 | `DuplicateFile { existing_path }` | 拖入重复 hash 文件且 strategy=Skip | 否 | 弹窗：跳过 / 覆盖 / 保留两份 | low |
 | `FileNotFound { path }` | 引用的 file_id 不存在或物理文件已消失 | 否 | toast「文件已不存在」+ 刷新列表 | low |
+| `ExpiredAction { action_id }` | Undo / Redo action 已过期、被新写操作清空或不再可用 | 否 | toast「操作已过期」+ 刷新撤销/重做历史 | low |
 | `RepoNotInitialized { path }` | 资料库目录未 init | 否 | 触发首次启动向导 | high |
 | `InvalidPath { path }` | 路径含非法字符、空、超长 | 否 | toast「路径不合法」+ 让用户改名 | low |
 | `ICloudPlaceholder { path }` | 操作占位符文件 | 自动重试 | 静默触发下载 + retry | medium |
@@ -296,6 +304,26 @@ catch CoreError.FileNotFound(let path) {
     Toast.show("文件已不存在：\(URL(fileURLWithPath: path).lastPathComponent)")
     appState.removeFile(id: entry.id)
     appState.refreshList()
+}
+```
+
+### `ExpiredAction`
+
+```rust
+#[test]
+fn expired_action_after_redo_stack_cleared() {
+    let r = redo_action(&repo.path(), "redo:batch-tags:42");
+    assert!(matches!(r, Err(CoreError::ExpiredAction { .. })));
+}
+```
+
+Swift 处理（用户感知低，需要刷新状态）：
+
+```swift
+catch CoreError.ExpiredAction(let actionId) {
+    Toast.show("操作已过期，请刷新历史后再试")
+    Logger.shared.info("expired_action", metadata: ["action": actionId])
+    appState.refreshUndoRedoHistory()
 }
 ```
 
@@ -497,6 +525,7 @@ public enum AppError: Error, LocalizedError {
     case io(String)
     case db(String)
     case config(reason: String)
+    case validation(reason: String)
     case classify(reason: String)
     case conflict(path: String)
     case duplicate(existingPath: String)
@@ -506,6 +535,7 @@ public enum AppError: Error, LocalizedError {
     case icloudPlaceholder(path: String)
     case stagingRecoveryRequired(path: String)
     case permissionDenied(path: String)
+    case expiredAction(actionId: String)
     case internalError(message: String)
 
     public var errorDescription: String? {
@@ -513,6 +543,7 @@ public enum AppError: Error, LocalizedError {
         case .io(let msg): return String(localized: "core.io.\(msg)")
         case .db(let msg): return String(localized: "core.db.\(msg)")
         case .config(let r): return String(localized: "core.config.\(r)")
+        case .validation(let r): return String(localized: "core.validation.\(r)")
         case .classify(let r): return String(localized: "core.classify.\(r)")
         case .conflict(let p): return String(localized: "core.conflict.\(p)")
         case .duplicate(let p): return String(localized: "core.dup.\(p)")
@@ -522,6 +553,7 @@ public enum AppError: Error, LocalizedError {
         case .icloudPlaceholder(let p): return String(localized: "core.icloud.\(p)")
         case .stagingRecoveryRequired(let p): return String(localized: "core.staging_recovery.\(p)")
         case .permissionDenied(let p): return String(localized: "core.perm.\(p)")
+        case .expiredAction(let id): return String(localized: "core.expired_action.\(id)")
         case .internalError(let m): return String(localized: "core.internal.\(m)")
         }
     }
@@ -533,10 +565,12 @@ extension CoreError {
         case .Io(let m): return .io(m)
         case .Db(let m): return .db(m)
         case .Config(let r): return .config(reason: r)
+        case .Validation(let r): return .validation(reason: r)
         case .Classify(let r): return .classify(reason: r)
         case .Conflict(let p): return .conflict(path: p)
         case .DuplicateFile(let p): return .duplicate(existingPath: p)
         case .FileNotFound(let p): return .fileNotFound(path: p)
+        case .ExpiredAction(let id): return .expiredAction(actionId: id)
         case .RepoNotInitialized(let p): return .repoNotInitialized(path: p)
         case .InvalidPath(let p): return .invalidPath(path: p)
         case .ICloudPlaceholder(let p): return .icloudPlaceholder(path: p)
@@ -562,6 +596,7 @@ extension CoreError {
 "core.icloud.short" = "iCloud 文件未下载";
 "core.permission.short" = "无访问权限";
 "core.notfound.short" = "文件不存在";
+"core.expired_action.short" = "操作已过期";
 "core.uninitialized.short" = "资料库未初始化";
 "core.internal.short" = "应用内部错误";
 
@@ -584,6 +619,7 @@ extension CoreError {
 "core.icloud.short" = "iCloud file not downloaded";
 "core.permission.short" = "Permission denied";
 "core.notfound.short" = "File not found";
+"core.expired_action.short" = "Action expired";
 "core.uninitialized.short" = "Repository not initialized";
 "core.internal.short" = "Internal error";
 
@@ -694,10 +730,12 @@ flowchart TB
 | `Io` | `io_when_disk_full`, `io_when_source_corrupt` |
 | `Db` | `db_when_corrupted`, `db_when_busy_recovers` |
 | `Config` | `config_when_yaml_invalid`, `config_when_default_missing` |
+| `Validation` | `validation_when_tag_suggestion_input_invalid` |
 | `Classify` | `classify_when_engine_panics` |
 | `Conflict` | （罕见，仅 stress test） |
 | `DuplicateFile` | `duplicate_when_same_hash`, `duplicate_skip_strategy` |
 | `FileNotFound` | `file_not_found_after_external_delete` |
+| `ExpiredAction` | `expired_action_after_redo_stack_cleared` |
 | `RepoNotInitialized` | `repo_not_initialized_when_no_db` |
 | `InvalidPath` | `invalid_path_with_slash`, `invalid_path_too_long`, `invalid_path_empty` |
 | `ICloudPlaceholder` | `icloud_placeholder_when_undownloaded` |

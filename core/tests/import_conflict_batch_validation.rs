@@ -1,4 +1,7 @@
-use std::path::Path;
+use std::{
+    fs,
+    path::{Path, PathBuf},
+};
 
 use area_matrix_core::{
     apply_import_conflict_batch, preview_import_conflict_batch, CoreError,
@@ -116,6 +119,84 @@ fn import_conflict_batch_validation_blocks_index_only_replace_without_mutation()
     assert_same_name_unchanged(repo.path(), named, ".areamatrix/staging/staged-indexed");
     assert_eq!(
         conflict_status(repo.path(), "name-indexed"),
+        ("pending".to_owned(), None, None)
+    );
+}
+
+#[test]
+fn import_conflict_batch_validation_blocks_replace_when_trash_unavailable() {
+    let repo = initialized_conflict_repo();
+    let session_id = "validation-trash-block";
+    insert_import_session(repo.path(), session_id);
+    let named = same_name_fixture(repo.path(), session_id, "name-trash-block", "staged-trash");
+    let request = replace_request(session_id, "name-trash-block");
+    let _guard = make_trash_pending_readonly(repo.path());
+
+    let preview = preview_import_conflict_batch(path_string(repo.path()), request.clone())
+        .expect("preview replace with unavailable Trash");
+
+    assert!(!preview.trash_available);
+    assert!(!preview.can_apply);
+    assert_eq!(preview.blocked_count, 1);
+    assert_eq!(preview.replace_count, 0);
+    let item = preview
+        .items
+        .iter()
+        .find(|item| item.conflict_id == "name-trash-block")
+        .expect("blocked Trash preview row");
+    assert_eq!(item.selected_strategy, ImportConflictBatchStrategy::Replace);
+    assert_eq!(item.status, ImportConflictBatchPreviewStatus::Blocked);
+    assert_eq!(item.reason.as_deref(), Some("Trash unavailable"));
+
+    let error = apply_import_conflict_batch(
+        path_string(repo.path()),
+        apply_request_from_preview(request, true),
+        preview.preview_token,
+    )
+    .expect_err("Trash-unavailable replace must not apply");
+
+    assert!(matches!(error, CoreError::Conflict { .. }));
+    assert_same_name_unchanged(repo.path(), named, ".areamatrix/staging/staged-trash");
+    assert_eq!(
+        conflict_status(repo.path(), "name-trash-block"),
+        ("pending".to_owned(), None, None)
+    );
+}
+
+#[test]
+fn import_conflict_batch_validation_binds_preview_token_to_trash_availability() {
+    let repo = initialized_conflict_repo();
+    let session_id = "validation-trash-token";
+    insert_import_session(repo.path(), session_id);
+    let named = same_name_fixture(repo.path(), session_id, "name-trash-token", "staged-token");
+    let request = safe_default_request(session_id, &["name-trash-token"], false);
+
+    let available_preview =
+        preview_import_conflict_batch(path_string(repo.path()), request.clone())
+            .expect("preview with available Trash");
+    assert!(available_preview.trash_available);
+
+    let _guard = make_trash_pending_readonly(repo.path());
+    let unavailable_preview =
+        preview_import_conflict_batch(path_string(repo.path()), request.clone())
+            .expect("preview with unavailable Trash");
+    assert!(!unavailable_preview.trash_available);
+    assert_ne!(
+        available_preview.preview_token,
+        unavailable_preview.preview_token
+    );
+
+    let error = apply_import_conflict_batch(
+        path_string(repo.path()),
+        apply_request_from_preview(request, false),
+        available_preview.preview_token,
+    )
+    .expect_err("Trash availability change makes old preview token stale");
+
+    assert!(matches!(error, CoreError::Conflict { .. }));
+    assert_same_name_unchanged(repo.path(), named, ".areamatrix/staging/staged-token");
+    assert_eq!(
+        conflict_status(repo.path(), "name-trash-token"),
         ("pending".to_owned(), None, None)
     );
 }
@@ -350,6 +431,31 @@ fn mark_indexed(repo: &Path, file_id: i64) {
             [file_id],
         )
         .expect("mark fixture file as indexed");
+}
+
+struct TrashPendingPermissionsGuard {
+    path: PathBuf,
+    original: fs::Permissions,
+}
+
+impl Drop for TrashPendingPermissionsGuard {
+    fn drop(&mut self) {
+        if let Err(_error) = fs::set_permissions(&self.path, self.original.clone()) {
+            // Best-effort test cleanup; the assertion path has already completed.
+        }
+    }
+}
+
+fn make_trash_pending_readonly(repo: &Path) -> TrashPendingPermissionsGuard {
+    let path = repo.join(".areamatrix/trash-pending");
+    fs::create_dir_all(&path).expect("create trash-pending fixture directory");
+    let original = fs::metadata(&path)
+        .expect("read trash-pending permissions")
+        .permissions();
+    let mut readonly = original.clone();
+    readonly.set_readonly(true);
+    fs::set_permissions(&path, readonly).expect("make trash-pending read-only");
+    TrashPendingPermissionsGuard { path, original }
 }
 
 fn conflict_status(repo: &Path, conflict_id: &str) -> (String, Option<String>, Option<String>) {

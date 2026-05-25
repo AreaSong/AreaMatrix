@@ -1,0 +1,39 @@
+一、执行结论
+
+- 已完成
+
+二、执行范围
+
+- 单任务：`4-1/task-115`
+- 主要改动：完成 S2-12 的 C2-08 批量改分类 UI/CoreBridge 接入修复，补齐部分失败消费、S2-19 新建分类 handoff、S2-12 专项 XCTest 覆盖。
+- 未触碰 `core/src/**`。
+
+三、完成情况
+
+- 核对清单：已按 S2-12 + C2-08 范围处理，未实现同页 C2-07 细节；C2-07 仅消费 Undo toast 刷新入口。
+- 完成标准：S2-12 可通过多选入口、右键/命令面板触发；Preview/Apply 走真实 `CoreBatchCategoryChanging`，Apply 绑定 `previewToken`；无 mock-only 生产闭环。
+- 修复项：
+  - 部分失败时只要存在成功项/Undo 上下文，就调用 `onApplied(report)` 刷新列表、change log/Undo toast。
+  - 增加 `Create new category...` 到 S2-19 的 handoff。
+  - 增加 S2-12 专项 XCTest：preview/apply 参数、preview token、blocked dry-run、部分失败刷新、S2-19 handoff。
+- Forbidden Touches：未触碰。
+
+四、工程质量
+
+- 代码结构：批量改分类状态、sheet、bridge、主窗口路由分层清晰；把超 500 行风险文件重新拆回规范内。
+- 错误/边界：Apply 校验目标分类、移动选项、选择集、preview item IDs 与最新 dry-run 一致；blocked preview 禁用 Apply。
+- 占位/mock：生产路径没有 mock、fixture 或静态状态伪造；测试中使用 recording fake 只作为 XCTest 断言工具。
+- 高风险说明：本 task 只接 UI 到既有 Core C2-08；真实移动文件行为仍由 Core preview/apply 安全合同控制。回滚方式是回退本 task 的 `apps/macos/AreaMatrix/**` 与 `apps/macos/AreaMatrixTests/**` 改动，不涉及用户文件数据回滚。
+
+五、验证情况
+
+- 已运行：`./dev check task 4-1/task-115`
+- 结果：通过
+- 覆盖：`prompt doctor` 通过、`git diff --check` 通过、macOS `xcodebuild ... build CODE_SIGNING_ALLOWED=NO` 最终 `BUILD SUCCEEDED`。
+- 未运行：`./dev test macos`，因为当前 task manifest 的 validation 上限只有 `./dev check task 4-1/task-115`，本轮没有升级宽门禁。
+
+六、风险与后续
+
+- 剩余风险：本轮没有做真实 UI 点击 smoke；专项 XCTest 已加入但 task validation 只构建不执行测试。
+- 建议下一步：进入 `4-1/task-115` verify-ready 验收；通过后继续 `4-1/task-116`。
+

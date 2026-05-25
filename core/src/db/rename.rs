@@ -6,7 +6,9 @@ use uuid::Uuid;
 
 use crate::{CoreError, CoreResult, FileEntry};
 
-use super::{open_repo_connection, origin_from_db, storage_mode_from_db, undo};
+use super::{
+    clear_redo_stack_in_tx, open_repo_connection, origin_from_db, storage_mode_from_db, undo,
+};
 
 pub(crate) fn rename_active_file(
     repo_path: &Path,
@@ -35,6 +37,7 @@ pub(crate) fn rename_active_file(
     if changed != 1 {
         return Err(CoreError::db("database error"));
     }
+    clear_redo_stack_in_tx(&tx, occurred_at)?;
     insert_renamed_change(&tx, file_id, &detail_json)?;
     undo::insert_rename_undo_action(
         &tx,
@@ -74,6 +77,7 @@ pub(crate) fn rename_indexed_display_name(
     if changed != 1 {
         return Err(CoreError::db("database error"));
     }
+    clear_redo_stack_in_tx(&tx, occurred_at)?;
     insert_renamed_change(&tx, file_id, &detail_json)?;
     undo::insert_rename_undo_action(
         &tx,
@@ -291,6 +295,7 @@ fn batch_update_rename_in_tx(
     if changed != 1 {
         return Err(CoreError::db("database error"));
     }
+    clear_redo_stack_in_tx(connection, chrono::Utc::now().timestamp())?;
     insert_renamed_change(connection, file_id, &detail_json)
 }
 

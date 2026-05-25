@@ -152,14 +152,20 @@ extension CoreErrorMappingSnapshot {
             "数据库错误"
         case .fileNotFound:
             "文件不存在"
+        case .expiredAction:
+            "操作已过期"
         case .config:
             "配置不可用"
+        case .validation:
+            "输入校验失败"
         case .classify:
             "分类失败"
         case .conflict:
             "命名冲突未解决"
         case .repoNotInitialized:
             "资料库尚未初始化"
+        case .stagingRecoveryRequired:
+            "需要先恢复未完成导入"
         case .internal:
             "内部错误"
         }

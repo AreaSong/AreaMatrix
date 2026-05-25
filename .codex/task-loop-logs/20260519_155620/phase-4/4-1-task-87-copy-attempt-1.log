@@ -1,0 +1,51 @@
+一、执行结论
+
+已完成。C2-18 redo-action-log 的 Core 实现已存在，并通过本 task 指定验证。
+
+二、执行范围
+
+单任务：`4-1/task-87`。  
+本轮未修改文件；未触碰 `apps/**`。工作区已有的 `tasks/prompts/_shared/progress.json` 和 `.codex/task-loop-runs/20260519_155620/` 保持未处理，我没有改动它们。
+
+三、完成情况
+
+核对清单结果：
+
+- 只实现 C2-18：通过，检查范围集中在 `redo` Core API / DB redo 行为 / 测试。
+- 输入、输出、DB/文件系统变化和错误映射：通过，`list_redo_actions` / `redo_action` 覆盖 redo 可用性、执行结果、刷新建议、undo stack 恢复、cleared/expired 错误。
+- Rust Core 不依赖平台 UI API：通过，未触碰 Swift/macOS app。
+- 最小测试支撑：通过，已有 `redo_action_log_contract_api` 和 `redo_action_log_implementation` targeted tests。
+
+完成标准结果：
+
+- C2-18 可被测试或桥接调用验证：通过。
+- 未触碰用户文件安全边界之外行为：通过；未执行真实用户文件破坏性操作。
+
+四、工程质量
+
+代码结构清晰，redo 行为复用现有 undo/action log、DB transaction 和文件移动 rollback guard。  
+public Rust API 已有 rustdoc；本轮未做文档同步变更。  
+错误路径覆盖了空 action、missing action、cleared/expired redo、tag conflict、DB/IO 映射等现有路径。未发现占位、硬编码、mock-only 或一次性实现。
+
+五、验证情况
+
+已运行：
+
+```bash
+./dev check task 4-1/task-87
+```
+
+结果：通过。
+
+该命令实际执行并通过：
+
+- `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`
+- `git diff --check`
+- `cargo test --test redo_action_log_contract_api -- --nocapture`
+- `cargo test --test redo_action_log_implementation -- --nocapture`
+
+六、风险与后续
+
+剩余风险：本 task 只跑 manifest 要求的 targeted gate，未扩大到全量 workspace 测试；这是当前 atomic Core task 的验证上限。  
+建议下一个任务：继续 `4-1/task-88`，补 C2-18 failure-edge 边界。  
+

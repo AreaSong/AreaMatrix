@@ -4,24 +4,33 @@ import Foundation
 @MainActor
 final class MainFileListModel: ObservableObject {
     @Published var files: [FileEntrySnapshot]
-    @Published private(set) var isLoading = false
-    @Published private(set) var errorMapping: CoreErrorMappingSnapshot?
-    @Published var selection: MainFileSelectionState = .none
+    @Published var isLoading = false
+    @Published var errorMapping: CoreErrorMappingSnapshot?
+    @Published var selection: MainFileSelectionState = .none { didSet { clearStaleDetailTagUndoToast() } }
     @Published var selectedFileDetail: FileEntrySnapshot?
     @Published var isDetailLoading = false
     @Published var detailErrorMapping: CoreErrorMappingSnapshot?
     @Published private(set) var detailLogState: MainDetailLogState = .notLoaded
     @Published private(set) var detailLogDiagnosticsState: MainDetailLogDiagnosticsState = .idle
     @Published private(set) var detailExternalCreateSyncState: MainDetailExternalCreateSyncState = .idle
+    @Published var detailTagEditorState: DetailTagEditorState = .notLoaded
+    @Published var detailTagUndoToast: DetailTagUndoToast?
+    @Published var searchState: MainSearchState = .idle
+    @Published var searchFacetsState: MainSearchFacetsState = .idle
+    @Published var tagFilterRegistryState: TagFilterRegistryState = .idle
     @Published var selectedFileNoteWriteBlock: MainDetailNoteWriteBlock?
     @Published var detailTabRequest: MainDetailTabRequest?
     @Published var pendingActionDestination: MainFileActionDestination?
     @Published var statusBanner: MainListStatusBanner?
-    @Published private(set) var diagnosticsState: MainListDiagnosticsState = .idle
+    @Published var diagnosticsState: MainListDiagnosticsState = .idle
     @Published var renameState: MainFileRenameState = .idle
     @Published var deleteState: MainFileDeleteState = .idle
     @Published var changeCategoryState: MainFileCategoryMoveState = .idle
     @Published var iCloudConflictResolutionState: ICloudConflictResolutionState = .idle
+    @Published var pendingSearchDestination: MainSearchDestination?
+    @Published var lastSearchExitContext: MainSearchExitContext?
+    @Published var smartListFilterDraft: SmartListFilterDraft?
+    var activeSmartListSearch: SavedSearchSnapshot?
 
     let repoPath: String
     let isReadOnly: Bool
@@ -31,24 +40,37 @@ final class MainFileListModel: ObservableObject {
     let fileRenamer: any CoreFileRenaming
     let fileDeleter: any CoreFileDeleting
     let fileCategoryMover: any CoreFileCategoryMoving
+    let batchCategoryChanger: any CoreBatchCategoryChanging
     let iCloudConflictResolver: any ICloudConflictResolving
+    let tagStore: any CoreTagCRUD
+    let undoActionStore: any CoreUndoActionLogging
     private let changeLogLister: any CoreChangeLogListing
     private let externalChangesSyncer: any CoreExternalChangesSyncing
     let errorMapper: any CoreErrorMapping
-    private let diagnosticsCollector: any CoreDiagnosticsCollecting
+    let searchQuerying: any CoreSearchQuerying
+    let searchFiltering: any CoreSearchFiltering
+    let diagnosticsCollector: any CoreDiagnosticsCollecting
     var currentCategory: String?
     private var loadGeneration = 0
     private var detailGeneration = 0
     private var detailLogGeneration = 0
+    var tagFilterRegistryGeneration = 0
+    var searchGeneration = 0
+    var searchFacetsGeneration = 0
 
     init(
         opening: RepositoryOpeningResult,
         fileLister: any CoreFileListing,
         fileDetailer: any CoreFileDetailing,
+        searchQuerying: any CoreSearchQuerying = CoreBridge(),
+        searchFiltering: any CoreSearchFiltering = CoreBridge(),
         fileRenamer: any CoreFileRenaming = CoreBridge(),
         fileDeleter: any CoreFileDeleting = CoreBridge(),
         fileCategoryMover: any CoreFileCategoryMoving = CoreBridge(),
+        batchCategoryChanger: any CoreBatchCategoryChanging = CoreBridge(),
         iCloudConflictResolver: any ICloudConflictResolving = CoreBridge(),
+        tagStore: any CoreTagCRUD = CoreBridge(),
+        undoActionStore: any CoreUndoActionLogging = CoreBridge(),
         changeLogLister: any CoreChangeLogListing = CoreBridge(),
         externalChangesSyncer: any CoreExternalChangesSyncing = CoreBridge(),
         errorMapper: any CoreErrorMapping,
@@ -61,17 +83,21 @@ final class MainFileListModel: ObservableObject {
         errorMapping = opening.currentCategoryListError
         self.fileLister = fileLister
         self.fileDetailer = fileDetailer
+        self.searchQuerying = searchQuerying
+        self.searchFiltering = searchFiltering
         self.fileRenamer = fileRenamer
         self.fileDeleter = fileDeleter
         self.fileCategoryMover = fileCategoryMover
+        self.batchCategoryChanger = batchCategoryChanger
         self.iCloudConflictResolver = iCloudConflictResolver
+        self.tagStore = tagStore
+        self.undoActionStore = undoActionStore
         self.changeLogLister = changeLogLister
         self.externalChangesSyncer = externalChangesSyncer
         self.errorMapper = errorMapper
         self.diagnosticsCollector = diagnosticsCollector
     }
 }
-
 extension MainFileListModel {
     func loadCurrentCategory(_ category: String?, focusingOn fileID: Int64? = nil) async {
         currentCategory = category
@@ -90,9 +116,8 @@ extension MainFileListModel {
 
         guard ids.count == 1, let id = ids.first else {
             selection = .multiple(ids)
-            selectedFileDetail = nil
-            selectedFileNoteWriteBlock = nil
-            detailErrorMapping = nil
+            selectedFileDetail = nil; selectedFileNoteWriteBlock = nil; detailErrorMapping = nil
+            detailTagEditorState = .notLoaded
             isDetailLoading = true
             resetDetailLog()
             await loadMultiSelectionDetails(ids: ids)
@@ -108,8 +133,7 @@ extension MainFileListModel {
             return
         }
 
-        selection = .single(id)
-        selectedFileDetail = cachedFile(id: id)
+        selection = .single(id); selectedFileDetail = cachedFile(id: id)
         selectedFileNoteWriteBlock = selectedFileDetail.flatMap { noteWriteBlock(for: $0) }
         detailErrorMapping = nil
         isDetailLoading = true
@@ -135,18 +159,11 @@ extension MainFileListModel {
     }
 
     func loadSelectedFileChangeLog() async {
-        guard let selectedFileID = selection.singleFileID else { return }
-        await loadChangeLog(fileID: selectedFileID)
+        if let selectedFileID = selection.singleFileID { await loadChangeLog(fileID: selectedFileID) }
     }
 
     func retrySelectedFileChangeLog() async {
-        guard let selectedFileID = selection.singleFileID else { return }
-        await loadChangeLog(fileID: selectedFileID)
-    }
-
-    func consumeDetailTabRequest(_ request: MainDetailTabRequest) {
-        guard detailTabRequest == request else { return }
-        detailTabRequest = nil
+        if let selectedFileID = selection.singleFileID { await loadChangeLog(fileID: selectedFileID) }
     }
 
     func syncExternalCreated(_ event: MainExternalCreatedFileEvent) async {
@@ -219,13 +236,9 @@ extension MainFileListModel {
         statusBanner = .removedSelectedFile(fileID: fileID)
     }
 
-    func clearStatusBanner() {
-        statusBanner = nil
-    }
+    func clearStatusBanner() { statusBanner = nil }
 
-    func showUnsavedNoteDraftPreserved(fileID: Int64) {
-        statusBanner = .unsavedNoteDraftPreserved(fileID: fileID)
-    }
+    func showUnsavedNoteDraftPreserved(fileID: Int64) { statusBanner = .unsavedNoteDraftPreserved(fileID: fileID) }
 
     func writeActionDisabledReason(fileID: Int64) -> MainFileWriteActionDisabledReason? {
         if isReadOnly { return .repoReadOnly }
@@ -236,25 +249,13 @@ extension MainFileListModel {
 
     var loadingStatusText: String? {
         guard isLoading else { return nil }
+        if searchState.isActive { return "Searching..." }
         return "正在加载 \(currentCategoryDisplayName)..."
     }
 
     var loadingAccessibilityText: String? {
         guard let loadingStatusText else { return nil }
         return "Loading files. \(loadingStatusText)"
-    }
-
-    func collectCurrentListDiagnostics() async {
-        guard diagnosticsState != .collecting else { return }
-
-        diagnosticsState = .collecting
-        do {
-            diagnosticsState = try await .collected(diagnosticsCollector.createDiagnosticsSnapshot(repoPath: repoPath))
-        } catch { diagnosticsState = await .failed(mapCoreError(error)) }
-    }
-
-    func clearDiagnosticsState() {
-        diagnosticsState = .idle
     }
 
     private func reloadCurrentCategory(focusingOn fileID: Int64? = nil) async {
@@ -309,6 +310,7 @@ extension MainFileListModel {
             files = files.map { $0.id == loadedFile.id ? loadedFile : $0 }
             detailErrorMapping = nil
             isDetailLoading = false
+            detailTagEditorState = .notLoaded
         } catch {
             let mappedError = await mapCoreError(error)
             guard generation == detailGeneration else { return }
@@ -441,6 +443,7 @@ extension MainFileListModel {
         selectedFileNoteWriteBlock = removedSnapshot.flatMap { noteWriteBlock(for: $0) }
         detailErrorMapping = CoreErrorMappingSnapshot.missingFromExternalChange(fileID: removedFileID)
         isDetailLoading = false
+        detailTagEditorState = .notLoaded
         statusBanner = .removedSelectedFile(fileID: removedFileID)
         return removedFileID
     }
@@ -463,10 +466,12 @@ extension MainFileListModel {
         }
     }
 
-    private func clearDetail() {
+    func clearDetail() {
         detailGeneration += 1
         selection = .none
         selectedFileDetail = nil; selectedFileNoteWriteBlock = nil; detailErrorMapping = nil
+        detailTagEditorState = .notLoaded
+        clearTagFilterRegistry()
         isDetailLoading = false
         resetDetailLog()
         pendingActionDestination = nil; renameState = .idle; deleteState = .idle; changeCategoryState = .idle

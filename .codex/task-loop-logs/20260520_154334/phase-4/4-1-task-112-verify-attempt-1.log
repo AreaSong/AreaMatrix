@@ -1,0 +1,59 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`4-1/task-112`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-112-s2-09-page-integration-verify.md`
+- 主要实现路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`
+- Existing Code：`apps/**` 相关 S2-09 / C2-06 / C2-07 命中代码、`core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：9
+- 未覆盖项数：0
+- 通过项数：7
+- 不通过项数：2
+- 阻塞项数：1
+
+四、逐项验收结果
+
+- 本页 page-feature task 覆盖：通过。control map 中 S2-09 声明 `C2-06, C2-07`，对应 `4-1/task-110`, `4-1/task-111`, `4-1/task-112` 已在 manifest 中覆盖。涉及：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-2-control-map.md:17`
+- 页面状态、入口、退出、错误态、CoreBridge 闭环：不通过。Detail multi 入口存在，但 page spec 要求的“列表右键菜单、命令面板上下文命令”未接入 S2-09。涉及：`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-2-experience/S2-09-batch-add-tags.md:20`
+- mock / fixture / 硬编码状态检查：通过。生产路径通过 `CoreBridge` 调用 `AreaMatrix.batchAddTags`、`listUndoActions`、`undoAction`，测试 fixture 限于 XCTest。涉及：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreTagCRUD.swift:121`
+- 不新增 control map 外能力：通过。实际消费集中在 C2-06 / C2-07，未发现 S2-09 新增未声明能力。
+- 完成标准“S2-09 可按 page spec 和 control map 完整验收”：不通过。入口链路未完整满足 page spec。
+- 完成标准“页面声明 Core 能力真实接入”：通过。UDL、Swift CoreBridge、Core Rust/export/test 证据显示 C2-06 / C2-07 已真实存在并被 Swift 消费。
+- Expected New Paths：通过。`apps/macos/AreaMatrix/` 与 `apps/macos/AreaMatrixTests/` 存在并包含相关实现/测试。
+- Forbidden Touches：通过。`git diff -- core/src` 无输出，未发现 `core/src/**` 被本 task 修改。
+- Validation：通过。`./dev check task 4-1/task-112` exit 0。
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过，S2-09 的入口路由未完整闭合。
+- 注释 / rustdoc / 文档同步：不通过，当前实现未对齐 page spec 的入口要求。
+- 错误处理与边界处理：通过，批量添加失败、Undo 阻塞/失败、只读 tag store、空选择等路径有实现证据。
+- 测试与验证覆盖：不通过，现有验证和测试覆盖了 Detail multi、CoreBridge、Undo，但缺少右键菜单与命令面板入口证据。
+- 占位、硬编码、mock-only、一次性实现检查：通过，未发现生产路径用 mock-only 闭环伪装通过。
+
+六、阻塞项
+
+- P1：S2-09 页面入口未按 page spec 完整落地。说明：文档要求入口包含 Detail multi 的 `Add tag...`、列表右键菜单、命令面板上下文命令；当前只有 Detail multi 入口。列表右键菜单多选分支只有 `Copy Paths`，命令面板 route 仅显示 Search commands，未提供 S2-09 Add tags 上下文命令。导致 page integration verify 不能按 page spec 完整验收。
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-2-experience/S2-09-batch-add-tags.md:20`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportBatchOverviewSections.swift:19`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift:445`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentActionRouting.swift:480`
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-112`
+- 通过：prompt doctor OK；`git diff --check` 通过；macOS `xcodebuild ... build CODE_SIGNING_ALLOWED=NO` 成功。
+- 失败：无命令失败。
+- 缺失：缺少列表右键菜单入口和命令面板上下文入口的实现/测试证据；因此验证命令通过不能抵消 page spec 缺口。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+
+VERIFY_RESULT: FAIL

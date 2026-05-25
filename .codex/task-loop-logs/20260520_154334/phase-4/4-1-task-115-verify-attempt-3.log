@@ -1,0 +1,85 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-1/task-115`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-115-s2-12-c2-08-batch-change-category.md`
+- 实现路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`
+- 测试路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：0
+- 通过项数：10
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 S2-12 页面中的 C2-08 功能点
+- 结果：通过
+- 证据：生产代码新增 S2-12 batch change category sheet、入口路由、状态模型与 CoreBridge C2-08 调用；未新增相邻页面实现。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/BatchChangeCategorySheet.swift:38`
+
+- 项目：读取并对齐页面规格、control map、Core API、C2-08 能力规格
+- 结果：通过
+- 证据：S2-12 要求 preview、Apply、Index-only 不移动、blocked 原因、Undo；control map 声明 S2-12 对应 C2-08/C2-07；Core API/UDL 均有 `preview_batch_move_to_category` 与 `batch_move_to_category`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-2-experience/S2-12-batch-change-category.md:23`、`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-2-control-map.md:20`、`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:2613`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:66`
+
+- 项目：只接入 C2-08 对应 CoreBridge / 状态 / 错误映射
+- 结果：通过
+- 证据：`CoreBridge` 直接调用 UniFFI `AreaMatrix.previewBatchMoveToCategory` 和 `AreaMatrix.batchMoveToCategory`；错误通过 `CoreErrorMapping` 显示，不是 mock-only。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBatchChangeCategory.swift:99`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/BatchChangeCategoryState.swift:133`
+
+- 项目：不顺手实现相邻页面、相邻平台或同页其他能力
+- 结果：通过
+- 证据：未修改 `core/src/**`；C2-07 仅复用既有 undo toast/action log 刷新，不新增 C2-07 Core 能力；S2-19 仅做 handoff，不内联创建分类。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileActionRoutingActions.swift:41`
+
+- 项目：C2-08 用户可见功能可触发和验收
+- 结果：通过
+- 证据：入口覆盖多选详情、右键菜单、命令面板；sheet 提供 target category、move checkbox、preview、Apply、失败摘要和 partial result。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryMultiSelectionActions.swift:45`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/FileDropAdapter.swift:106`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportProgressListIntegration.swift:344`
+
+- 项目：没有 mock、fixture 或静态状态伪造真实 Core 闭环
+- 结果：通过
+- 证据：生产路径使用 `CoreBridge()` 注入真实 `CoreBatchCategoryChanging`；测试 fixture 只存在于 XCTest。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileListModel.swift:70`
+
+- 项目：Expected New Paths 已落地
+- 结果：通过
+- 证据：`apps/macos/AreaMatrix/**` 和 `apps/macos/AreaMatrixTests/**` 均有本 task 新增/修改文件。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBatchChangeCategory.swift:1`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportBatchResultSummaryTests.swift:1`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git diff --name-only -- core/src` 无输出，未触碰 `core/src/**`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，Bridge / State / Sheet / Routing 分层清楚，未把 UniFFI 直接放进 View。
+- 注释 / rustdoc / 文档同步：通过，本 task 未新增 public Rust API；Swift 生产代码无低价值注释堆叠，UDL 与 Core API 已存在且对齐。
+- 错误处理与边界处理：通过，preview/apply catch 后走 `CoreErrorMapping`；Apply 必须绑定最近 preview，blocked dry-run 禁用。
+- 测试与验证覆盖：通过，XCTest 覆盖 CoreBridge 请求、preview token、blocked dry-run、partial failure、S2-19 handoff。
+- 占位、硬编码、mock-only、一次性实现检查：通过，mock/fixture 仅在测试内；生产路径连接真实 CoreBridge。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-115`
+- 通过：`prompt doctor`，输出 `doctor: OK`，`tasks: 637`，`manifests: 637`
+- 通过：`git diff --check`
+- 通过：`xcodebuild -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination platform=macOS,arch=arm64 build CODE_SIGNING_ALLOWED=NO`，输出 `BUILD SUCCEEDED`
+- 缺失：未运行 `./dev test macos`；本 task manifest 要求为 `./dev check task 4-1/task-115`，普通 page-feature task 未扩大到宽门禁。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+VERIFY_RESULT: PASS

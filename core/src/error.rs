@@ -14,6 +14,8 @@ pub enum ErrorKind {
     Db,
     /// Configuration validation or persistence failure.
     Config,
+    /// User input validation failed.
+    Validation,
     /// Classification rule failure.
     Classify,
     /// Path or naming conflict.
@@ -22,6 +24,8 @@ pub enum ErrorKind {
     DuplicateFile,
     /// Requested file does not exist.
     FileNotFound,
+    /// Undo or redo action is no longer available.
+    ExpiredAction,
     /// Repository has not been initialized.
     RepoNotInitialized,
     /// Path is invalid or outside the allowed boundary.
@@ -134,6 +138,13 @@ static CONFIG_MAPPING: ErrorMappingTemplate = ErrorMappingTemplate {
     recoverability: ErrorRecoverability::UserActionRequired,
 };
 
+static VALIDATION_MAPPING: ErrorMappingTemplate = ErrorMappingTemplate {
+    user_message: "输入无效",
+    severity: ErrorSeverity::Low,
+    suggested_action: "请修改输入后重试",
+    recoverability: ErrorRecoverability::UserActionRequired,
+};
+
 static CLASSIFY_MAPPING: ErrorMappingTemplate = ErrorMappingTemplate {
     user_message: "分类失败",
     severity: ErrorSeverity::Low,
@@ -159,6 +170,13 @@ static FILE_NOT_FOUND_MAPPING: ErrorMappingTemplate = ErrorMappingTemplate {
     user_message: "文件不存在",
     severity: ErrorSeverity::Low,
     suggested_action: "请刷新列表后重试",
+    recoverability: ErrorRecoverability::RefreshRequired,
+};
+
+static EXPIRED_ACTION_MAPPING: ErrorMappingTemplate = ErrorMappingTemplate {
+    user_message: "操作已过期",
+    severity: ErrorSeverity::Low,
+    suggested_action: "请刷新撤销历史后继续操作",
     recoverability: ErrorRecoverability::RefreshRequired,
 };
 
@@ -210,10 +228,12 @@ impl ErrorKind {
             Self::Io => &IO_MAPPING,
             Self::Db => &DB_MAPPING,
             Self::Config => &CONFIG_MAPPING,
+            Self::Validation => &VALIDATION_MAPPING,
             Self::Classify => &CLASSIFY_MAPPING,
             Self::Conflict => &CONFLICT_MAPPING,
             Self::DuplicateFile => &DUPLICATE_FILE_MAPPING,
             Self::FileNotFound => &FILE_NOT_FOUND_MAPPING,
+            Self::ExpiredAction => &EXPIRED_ACTION_MAPPING,
             Self::RepoNotInitialized => &REPO_NOT_INITIALIZED_MAPPING,
             Self::InvalidPath => &INVALID_PATH_MAPPING,
             Self::ICloudPlaceholder => &ICLOUD_PLACEHOLDER_MAPPING,
@@ -243,6 +263,9 @@ pub enum CoreError {
     /// Configuration validation or persistence failure.
     #[error("config error: {reason}")]
     Config { reason: String },
+    /// User input validation failure.
+    #[error("validation error: {reason}")]
+    Validation { reason: String },
     /// Classification rule failure.
     #[error("classification failed: {reason}")]
     Classify { reason: String },
@@ -255,6 +278,9 @@ pub enum CoreError {
     /// Requested file does not exist.
     #[error("file not found: {path}")]
     FileNotFound { path: String },
+    /// Undo or redo action is no longer available.
+    #[error("expired action: {action_id}")]
+    ExpiredAction { action_id: String },
     /// Repository has not been initialized.
     #[error("repo not initialized at: {path}")]
     RepoNotInitialized { path: String },
@@ -305,6 +331,13 @@ impl CoreError {
         }
     }
 
+    /// Creates a validation error with a user-actionable reason.
+    pub fn validation(reason: impl Into<String>) -> Self {
+        Self::Validation {
+            reason: reason.into(),
+        }
+    }
+
     /// Creates a classification error with a user-actionable reason.
     pub fn classify(reason: impl Into<String>) -> Self {
         Self::Classify {
@@ -320,6 +353,13 @@ impl CoreError {
     /// Creates a file-not-found error with the missing path.
     pub fn file_not_found(path: impl Into<String>) -> Self {
         Self::FileNotFound { path: path.into() }
+    }
+
+    /// Creates an expired-action error with the blocked action id.
+    pub fn expired_action(action_id: impl Into<String>) -> Self {
+        Self::ExpiredAction {
+            action_id: action_id.into(),
+        }
     }
 
     /// Creates a repo-not-initialized error with the repository path.
@@ -360,10 +400,12 @@ impl CoreError {
             Self::Io { .. } => ErrorKind::Io,
             Self::Db { .. } => ErrorKind::Db,
             Self::Config { .. } => ErrorKind::Config,
+            Self::Validation { .. } => ErrorKind::Validation,
             Self::Classify { .. } => ErrorKind::Classify,
             Self::Conflict { .. } => ErrorKind::Conflict,
             Self::DuplicateFile { .. } => ErrorKind::DuplicateFile,
             Self::FileNotFound { .. } => ErrorKind::FileNotFound,
+            Self::ExpiredAction { .. } => ErrorKind::ExpiredAction,
             Self::RepoNotInitialized { .. } => ErrorKind::RepoNotInitialized,
             Self::InvalidPath { .. } => ErrorKind::InvalidPath,
             Self::ICloudPlaceholder { .. } => ErrorKind::ICloudPlaceholder,
@@ -377,7 +419,10 @@ impl CoreError {
     pub fn raw_context(&self) -> &str {
         match self {
             Self::Io { message } | Self::Db { message } | Self::Internal { message } => message,
-            Self::Config { reason } | Self::Classify { reason } => reason,
+            Self::Config { reason } | Self::Validation { reason } | Self::Classify { reason } => {
+                reason
+            }
+            Self::ExpiredAction { action_id } => action_id,
             Self::Conflict { path }
             | Self::FileNotFound { path }
             | Self::RepoNotInitialized { path }
@@ -419,12 +464,14 @@ impl ErrorMappingInput {
             ErrorKind::Io => CoreError::Io { message },
             ErrorKind::Db => CoreError::Db { message },
             ErrorKind::Config => CoreError::Config { reason },
+            ErrorKind::Validation => CoreError::Validation { reason },
             ErrorKind::Classify => CoreError::Classify { reason },
             ErrorKind::Conflict => CoreError::Conflict { path },
             ErrorKind::DuplicateFile => CoreError::DuplicateFile {
                 existing_path: path,
             },
             ErrorKind::FileNotFound => CoreError::FileNotFound { path },
+            ErrorKind::ExpiredAction => CoreError::ExpiredAction { action_id: path },
             ErrorKind::RepoNotInitialized => CoreError::RepoNotInitialized { path },
             ErrorKind::InvalidPath => CoreError::InvalidPath { path },
             ErrorKind::ICloudPlaceholder => CoreError::ICloudPlaceholder { path },

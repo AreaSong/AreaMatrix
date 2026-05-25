@@ -1,0 +1,80 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-1/task-108`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-108-s2-08-c2-05-tag-crud.md`
+- 代码范围：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`
+- 禁止触碰范围：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+三、完成度摘要
+
+- 已覆盖项数：7
+- 未覆盖项数：0
+- 通过项数：7
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 S2-08 页面中的 C2-05 功能点
+- 结果：通过
+- 证据：`SearchTagFacetPicker` 在 `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/DetailTagSection.swift:301` 接入 tag registry 读取、搜索、chips、Any/All、Clear all；测试确认 S2-08 不调用 `addTag/removeTag`，见 `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/DetailTagPageFeatureTests.swift:178`、`:205`
+- 涉及文件：`DetailTagSection.swift`、`DetailTagPageFeatureTests.swift`
+
+- 项目：读取并交叉核验页面规格、control map、Core API、C2-05 能力规格
+- 结果：通过
+- 证据：S2-08 页面要求标签搜索、Any/All、空态/错误态见 `/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-2-experience/S2-08-tags-filter.md:23`、`:61`、`:102`；control map 声明 S2-08 = C2-02 + C2-05，见 `/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-2-control-map.md:16`；Core API/UDL 有 `list_tags`、`TagSet`、`SearchFilter.tags/tag_match_mode`，见 `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:191`、`:334`、`:504`
+- 涉及文件：Exact Docs、`core/area_matrix.udl`
+
+- 项目：只接入 C2-05 对应 CoreBridge / 状态 / 错误映射
+- 结果：通过
+- 证据：生产路径通过 `CoreBridge: CoreTagCRUD` 调用真实 `AreaMatrix.listTags/addTag/removeTag`，见 `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreTagCRUD.swift:32`；S2-08 新增 registry 状态和失败映射，见 `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainDetailTagState.swift:129`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainDetailTagActions.swift:58`
+- 涉及文件：`CoreTagCRUD.swift`、`MainDetailTagState.swift`、`MainDetailTagActions.swift`
+
+- 项目：不实现相邻页面、相邻平台或同页其他能力
+- 结果：通过
+- 证据：`git diff -- core/src` 无输出；`git diff -- core/area_matrix.udl` 无输出；S2-08 只读取 tag registry 并合并已有 facets，没有新增 batch、AI、tag suggestion、rename/delete 等 control map 外能力
+- 涉及文件：`core/src/**`、`core/area_matrix.udl`、macOS Swift 文件
+
+- 项目：S2-08 中 C2-05 用户可见功能可触发和验收
+- 结果：通过
+- 证据：搜索 filter popover 注入 `tagRegistryState/onLoadTagRegistry/onRetryTagRegistry`，见 `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentNoteDrafts.swift:429`；打开后按 anchor file 加载 C2-05 registry，见 `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/DetailTagSection.swift:327`
+- 涉及文件：`MainRepositoryContentNoteDrafts.swift`、`DetailTagSection.swift`
+
+- 项目：没有 mock、fixture 或静态状态伪造真实 Core 闭环
+- 结果：通过
+- 证据：生产代码使用 `CoreBridge` 和 UniFFI 生成函数；fixture 仅存在于 XCTest，见 `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/DetailTagPageFeatureTests.swift:381`
+- 涉及文件：`CoreTagCRUD.swift`、`DetailTagPageFeatureTests.swift`
+
+- 项目：未触碰 control map 之外 Core 能力
+- 结果：通过
+- 证据：S2-08 仍只使用 C2-02 facets 与 C2-05 tag registry；C2-05 当前 task 新增部分不写 tag、不移动文件、不改 Core
+- 涉及文件：`stage-2-control-map.md`、macOS Swift 文件
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。新增状态、presentation merge、UI 展示与 actions 分层清楚；相关文件行数均低于 500。
+- 注释 / rustdoc / 文档同步：通过。本 task 未新增 Rust public API；UDL/Core API 未变更，无需文档同步。
+- 错误处理与边界处理：通过。registry 失败映射到 `TagFilterRegistryState.failed`，保留 previous options，并区分 tag registry failure 与 count failure。
+- 测试与验证覆盖：通过。新增测试覆盖 registry 读取不写 tag、失败保留状态、清理 anchor、大小写不敏感筛选；任务验证命令通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。生产路径未发现 mock-only 或静态通过态；测试替身只用于 XCTest。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-108`
+- 通过：`prompt doctor` OK，`tasks: 637`、`manifests: 637`；`git diff --check` 通过；`xcodebuild -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination platform=macOS,arch=arm64 build CODE_SIGNING_ALLOWED=NO` 最终 `BUILD SUCCEEDED`
+- 失败：无
+- 缺失：未运行额外真机 UI smoke；本 task manifest 只要求 `./dev check task 4-1/task-108`
+- 工作区状态：存在本 task macOS/Test 改动，以及 task-loop summary/progress/logs 收口文件；未发现 `core/src/**` forbidden diff
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+VERIFY_RESULT: PASS

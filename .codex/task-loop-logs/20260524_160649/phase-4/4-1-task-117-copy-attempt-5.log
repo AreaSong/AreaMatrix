@@ -1,0 +1,56 @@
+一、执行结论
+
+已完成。`4-1/task-117` 的 repair retry 已把上一轮 P1 阻塞收口：S2-12 从 S2-19 返回不再依赖测试手工 notification 或 C2-15 create-rule 残留，而是通过 S2-19 的 `Validate` 成功后检测唯一新增分类 slug，再回到 S2-12 选中新分类。
+
+二、执行范围
+
+单任务：`4-1/task-117`
+
+本轮相关修改文件：
+
+- [ClassifierSettingsModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ClassifierSettingsModel.swift:43)
+- [ClassifierSettingsRecovery.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ClassifierSettingsRecovery.swift:44)
+- [ClassifierSettingsPane.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Settings/ClassifierSettingsPane.swift:15)
+- [ChangeCategorySheet.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ChangeCategorySheet.swift:258)
+- [S212BatchChangeCategoryPageIntegrationVerifyTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/S212BatchChangeCategoryPageIntegrationVerifyTests.swift:129)
+
+三、完成情况
+
+核对清单结果：
+
+- page-feature 覆盖：通过，S2-12 仍只覆盖 control map 中的 `C2-08`、`C2-07`。
+- 页面入口、退出、错误态、CoreBridge 闭环：通过，C2-08 preview/apply 和 C2-07 undo 路径保留，S2-19 返回链路改为生产 Validate 事件。
+- mock / fixture / 硬编码清理：通过，移除了本 task 内不应实现的 C2-15 create-rule UI/bridge/test 路径。
+- control map 外功能：未新增。
+
+完成标准结果：
+
+- S2-12 可按 page spec 和 control map 完整验收：通过。
+- 页面声明 Core 能力真实接入：通过；`C2-08`/`C2-07` 继续走真实 `CoreBridge`，S2-19 返回只作为页面跳转/回填证据。
+- Forbidden Touches：未触碰 `core/src/**`，`git diff -- core/src` 无输出。
+
+四、工程质量
+
+代码结构收敛到当前 task 需要的整页 wiring：`ClassifierSettingsModel` 只暴露 `onSavedCategory` 回调，并在 `validateClassifierRules()` 成功保存 last-valid backup 后发布唯一新增分类。`ClassifierSettingsPane` 删除了 “New category / Save” 表单，避免在 task-117 中提前实现 C2-15。相关文件长度均低于 500 行。
+
+错误与边界处理保留原有 Validate 失败、文件缺失、backup 保存失败路径；新增返回事件只在“新增 slug 恰好一个”时触发，多新增或无新增不会误返回。未新增依赖，未新增 Rust public API。
+
+五、验证情况
+
+已运行并通过：
+
+```bash
+./dev check task 4-1/task-117
+git diff --check
+git diff --cached --check
+git diff -- core/src
+```
+
+`./dev check task 4-1/task-117` 输出包含 `doctor: OK`、diff check、macOS `xcodebuild ... build CODE_SIGNING_ALLOWED=NO`，最终 `BUILD SUCCEEDED`。旧符号扫描也无输出，确认非生成代码中已无 `saveNewCategory`、`newCategoryDraft`、`CoreClassifierRuleEditing` 等 C2-15 残留。
+
+六、风险与后续
+
+剩余风险：当前 worktree 仍有大量 task-loop 日志、summary、progress 及其他 macOS 文件的既有 staged/unstaged 变更，我没有回退这些不属于本轮修复的内容。上一轮的 staged `.codex` whitespace 阻塞这次复查已清除：`git diff --cached --check` 通过。
+
+建议下一个任务：进入 `4-1/task-117` 的 verify-ready 只读验收，重点核验 S2-19 Validate 返回 S2-12 的真实证据和 `C2-15` 未越界实现。
+

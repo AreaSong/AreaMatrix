@@ -1,0 +1,85 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-1/task-112`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-112-s2-09-page-integration-verify.md`
+- 实现范围：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：8
+- 未覆盖项数：0
+- 通过项数：8
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：Exact Docs / manifest 边界
+- 结果：通过
+- 证据：已读取 S2-09 page spec、Stage 2 control map、Core API、C2-06、C2-07；control map 声明 `S2-09 -> C2-06, C2-07`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-2-control-map.md:17`
+
+- 项目：Expected New Paths
+- 结果：通过
+- 证据：`apps/macos/AreaMatrix` 与 `apps/macos/AreaMatrixTests` 均存在；当前实现和测试落在 manifest 允许路径内。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git diff --name-only -- core/src` 无输出，未触碰 `core/src/**`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+- 项目：page-feature task 覆盖
+- 结果：通过
+- 证据：C2-06 通过 `batchAddTags` 接入，C2-07 通过 `listUndoActions` / `undoAction` 接入；对应测试覆盖成功、失败、blocked 和 refresh targets。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreTagCRUD.swift:121`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreTagCRUD.swift:133`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/DetailMultiPageIntegrationVerifyTests.swift:5`
+
+- 项目：页面入口、状态、退出、错误态和 CoreBridge 调用闭环
+- 结果：通过
+- 证据：Detail multi、列表右键、命令面板均可进入；Sheet 覆盖空选中、Loading tags、输入校验、pending chips、预览、Apply、Cancel、结果摘要、View details；成功后关闭并显示 Undo toast，部分失败停留摘要。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryDetailPane.swift:214`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/FileDropAdapter.swift:106`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportBatchOverviewSections.swift:115`
+
+- 项目：mock / fixture / 硬编码状态
+- 结果：通过
+- 证据：生产路径未发现 `mock`、`fixture`、`TODO`、`try!`、`print()`；Core 调用经过 `CoreBridge`，测试中的 fixture 仅用于 XCTest。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreTagCRUD.swift:102`
+
+- 项目：不新增 control map 外能力
+- 结果：通过
+- 证据：S2-09 主路径只消费 C2-06 / C2-07；命令面板入口只是 page spec 声明的入口，不新增额外 Core 能力。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentActionRouting.swift:83`
+
+- 项目：任务验证
+- 结果：通过
+- 证据：`./dev check task 4-1/task-112` 通过；包含 `prompt doctor: OK`、`git diff --check`、`xcodebuild ... build`，最终 `BUILD SUCCEEDED`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/dev`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，状态、校验、Core action、Undo action 分层清楚。
+- 注释 / rustdoc / 文档同步：通过，本 task 未新增 Rust public API；UDL 与 Core API 中 C2-06/C2-07 合同一致。
+- 错误处理与边界处理：通过，batch apply、catalog load、undo load/execute/refresh 均映射 CoreError，不静默吞错。
+- 测试与验证覆盖：通过，task-scoped 验证命令已通过；测试文件覆盖 C2-06/C2-07 关键路径。
+- 占位、硬编码、mock-only、一次性实现检查：通过，未发现生产 mock-only 闭环。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-112`
+- 通过：`prompt doctor`、`git diff --check`、macOS `xcodebuild build`
+- 失败：无
+- 缺失：未单独运行 `./dev test macos`；本 task manifest 指定验证命令为 `./dev check task 4-1/task-112`，本轮未扩大门禁。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+- 当前 runner 的 progress、summary、Git checkpoint 收口文件仍处于 verify 后续阶段边界内，不作为本 task 验收失败依据。
+
+VERIFY_RESULT: PASS

@@ -1,0 +1,88 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`4-1/task-117`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-117-s2-12-page-integration-verify.md`
+- 实际核验范围：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`core/area_matrix.udl`
+- 禁止触碰范围：`core/src/**`
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：0
+- 通过项数：7
+- 不通过项数：3
+- 阻塞项数：2
+
+四、逐项验收结果
+
+- 项目：所有 page-feature task 覆盖 control map 声明能力
+- 结果：通过
+- 证据：control map 声明 `S2-12 = C2-08, C2-07`；manifest 依赖 `4-1/task-115`、`4-1/task-116`；progress 中两者均为 `completed`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-2-control-map.md:20`
+
+- 项目：C2-08 preview/apply 真实 CoreBridge 接入
+- 结果：通过
+- 证据：`CoreBridge` 调用 UniFFI `AreaMatrix.previewBatchMoveToCategory` 和 `AreaMatrix.batchMoveToCategory`，Apply 传入 `previewToken`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBatchChangeCategory.swift:99`
+
+- 项目：C2-07 Undo action log 接入
+- 结果：通过
+- 证据：批量改分类成功后通过 `undoToken` 查询 `listUndoActions`，集成测试也通过真实 `CoreBridge` 验证 `undoAction`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/BatchChangeCategoryState.swift:70`
+
+- 项目：页面入口、Preview、Apply、错误态
+- 结果：部分通过
+- 证据：多选详情区、右键/路由、命令面板可进入；Preview loading/error/retry 存在；Apply 校验最新 preview 的 category、move option、file ids 和 `canApply`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/BatchChangeCategorySheet.swift:280`
+
+- 项目：`Create new category...` 到 S2-19 再返回 S2-12
+- 结果：不通过
+- 证据：page spec 要求 S2-19 Save 成功后返回本 sheet、选中新分类并重新 dry-run；当前生产代码只监听 `ClassifierRuleEditorSaveEvents.savedCategoryNotification`，但未发现生产保存路径发布该 notification。`ClassifierSettingsPane` 只是嵌入设置页，测试中手工构造 notification 不能证明真实 Save 闭环。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-2-experience/S2-12-batch-change-category.md:74`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ChangeCategorySheet.swift:264`
+
+- 项目：Expected New Paths / Forbidden Touches
+- 结果：通过
+- 证据：`apps/macos/AreaMatrix/**` 与 `apps/macos/AreaMatrixTests/**` 已落地；`git diff HEAD -- core/src` 无输出，未触碰 `core/src/**`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+- 项目：验证命令
+- 结果：不通过
+- 证据：manifest 命令 `./dev check task 4-1/task-117` 通过；但额外 Git evidence 检查 `git diff --cached --check` 失败，staged task-loop 日志存在 trailing whitespace / EOF blank line。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260523_002727/phase-4/4-1-task-117-verify-attempt-1.log:29`
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过，S2-19 保存成功返回 S2-12 的整页闭环缺失。
+- 注释 / rustdoc / 文档同步：通过，Core API 与 UDL 已声明 C2-08/C2-07；本 task 未新增 Rust public API。
+- 错误处理与边界处理：部分通过，dry-run 错误、blocked preview、partial failure 有处理；S2-19 返回路径缺真实保存事件证据。
+- 测试与验证覆盖：不通过，build 通过，但没有证明 S2-19 Save 成功后选中新分类并重新 dry-run。
+- 占位、硬编码、mock-only、一次性实现检查：不通过，生产 CoreBridge 不是 mock-only，但 S2-19 返回链路目前靠测试手工 notification，不能作为真实闭环证据。
+
+六、阻塞项
+
+- P1：S2-12 的 `Create new category...` 保存返回闭环未实现
+  说明：页面规格明确要求 S2-19 Save 成功后返回 S2-12、选中新分类并重新 dry-run。当前代码只有监听和手工回调测试，未发现生产保存路径发布 saved category。
+  绝对路径与行号：`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-2-experience/S2-12-batch-change-category.md:74`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ChangeCategorySheet.swift:264`
+  为什么导致不通过：task-117 是整页 integration verify，完成标准要求 S2-12 可按 page spec 和 control map 完整验收。
+
+- P1：Git evidence 检查失败
+  说明：`git diff --cached --check` exit 2，staged task-loop 日志存在 whitespace 问题。
+  绝对路径与行号：`/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260523_002727/phase-4/4-1-task-117-verify-attempt-1.log:29`
+  为什么导致不通过：validation-driver 要求 Git evidence blocker 未清除时不得报 PASS。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-117`，通过；包含 `doctor: OK`、`git diff --check`、`xcodebuild ... build CODE_SIGNING_ALLOWED=NO`，最终 `BUILD SUCCEEDED`。
+- 已运行：`git diff HEAD -- core/src`，通过，无输出。
+- 已运行：`rg` 检查 saved category notification 生产发布方，未发现生产 `NotificationCenter.default.post` 发布该 notification。
+- 已运行：`git diff --cached --check`，失败，exit 2。
+- 未运行：`./dev test macos`；原因是 manifest 指定验证为 `./dev check task 4-1/task-117`，且当前已有整页闭环阻塞，扩大测试不能改变不通过结论。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+VERIFY_RESULT: FAIL

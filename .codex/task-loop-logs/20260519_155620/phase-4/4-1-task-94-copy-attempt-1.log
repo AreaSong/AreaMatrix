@@ -1,0 +1,44 @@
+一、执行结论
+
+已完成 `4-1/task-94`。
+
+二、执行范围
+
+单任务：C2-19 `tag-suggestions` validation。  
+新增文件：[tag_suggestions_validation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/tag_suggestions_validation.rs)
+
+未触碰 `apps/**`。当前 worktree 里另有 `.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json` 已存在运行状态变更，我未修改或回退。
+
+三、完成情况
+
+核对清单已覆盖：新增 validation 集成测试，覆盖成功路径、无效输入、缺失文件、DB/change_log 行级失败、undo 写入失败回滚。  
+Core API / UDL / Rust 一致性已在测试中静态锁定：`suggest_tags_for_file`、`apply_tag_suggestions` 及 C2-19 相关 report/status/source 类型。  
+未新增业务功能，只补 `core/tests/**` 验证证据和 fixture 使用。
+
+四、工程质量
+
+测试文件 500 行，符合仓库单文件上限建议。测试逻辑拆分为对齐检查、成功 UI 消费路径、失败路径、持久化失败回滚路径；没有 mock-only、硬编码通过态或一次性脚本。C2-19 的非 AI、非网络、非正文读取边界通过 report flags 和用户可见文件路径不变进行验证。
+
+五、验证情况
+
+已运行并通过：
+
+```bash
+cd core && cargo test --test tag_suggestions_validation -- --nocapture
+./dev check task 4-1/task-94
+```
+
+`./dev check task 4-1/task-94` 最终新鲜结果通过，包含：
+- prompt doctor: OK，637 tasks / 637 manifests
+- `git diff --check`: PASS
+- `tag_suggestions_contract_api`: 4 passed
+- `tag_suggestions_failure_recovery`: 10 passed
+- `tag_suggestions_implementation`: 3 passed
+- `tag_suggestions_validation`: 4 passed
+
+无无法运行项。
+
+六、风险与后续
+
+剩余风险：未运行宽门禁 `cargo test --workspace` / clippy / fmt，因为本 atomic Core task 的 manifest validation 上限是 `./dev check task 4-1/task-94`。  
+建议下一个任务：进入依赖后续的 `4-1/task-95` C2-19 integration-verify。  

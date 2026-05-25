@@ -1,0 +1,79 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`4-1/task-109`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-109-s2-08-page-integration-verify.md`
+- 代码范围：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`core/area_matrix.udl`
+- 禁止触碰范围：`core/src/**`
+
+三、完成度摘要
+
+- 已覆盖项数：7
+- 未覆盖项数：0
+- 通过项数：6
+- 不通过项数：1
+- 阻塞项数：1
+
+四、逐项验收结果
+
+- 本页 page-feature task 覆盖
+- 结果：通过
+- 证据：Manifest 中 S2-08 对应 `4-1/task-107` 覆盖 C2-02，`4-1/task-108` 覆盖 C2-05，`4-1/task-109` 做整页集成；control map 只声明 `S2-08: C2-02, C2-05`。
+- 涉及文件：`tasks/prompts/_shared/manifests/phase-4.md`，`docs/architecture/stage-2-control-map.md`
+
+- 页面状态、入口、退出、错误态和 CoreBridge 闭环
+- 结果：通过
+- 证据：搜索栏 filter 与侧边栏 `Tags` 入口均打开 `SearchFiltersPopover`；筛选变化进入 `runSearch` / `loadSearchFacets`；C2-02 走 `CoreBridge.searchFiles` 和 `CoreBridge.listFilterFacets`；C2-05 registry 走 `CoreBridge.listTags`；错误态和 Retry 分开处理。
+- 涉及文件：`MainRepositoryContentNoteDrafts.swift`、`MainRepositoryContentCategoryMoveRefresh.swift`、`MainListVisibleFileFiltering.swift`、`CoreBridgeSnapshots.swift`、`CoreFileListing.swift`、`CoreTagCRUD.swift`
+
+- mock、fixture、硬编码状态移除检查
+- 结果：通过
+- 证据：生产路径未发现 S2-08 mock-only、fixture-only 或硬编码完成态；测试 fixture 只在 `AreaMatrixTests` 内使用。
+- 涉及文件：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`
+
+- 不新增 control map 外功能
+- 结果：通过
+- 证据：S2-08 页面只消费 C2-02/C2-05；标签筛选 UI 不调用 `addTag` / `removeTag`，测试断言 add/remove 请求为空。
+- 涉及文件：`DetailIntegrationVerifyTests.swift`、`DetailTagPageFeatureTests.swift`
+
+- Expected New Paths
+- 结果：通过
+- 证据：`apps/macos/AreaMatrix/` 与 `apps/macos/AreaMatrixTests/` 均存在，当前分别有 155 和 86 个文件。
+- 涉及文件：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`
+
+- Forbidden Touches
+- 结果：通过
+- 证据：`git diff --name-only | rg '^core/src/'` 无输出，`core/src/**` 未被修改。
+- 涉及文件：`core/src/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过。功能拆分整体清晰，但本 task 触碰的 `MainRepositoryContentView.swift` 当前 501 行，超过编码规范单文件 500 行上限。
+- 注释 / rustdoc / 文档同步：通过。未新增 public Rust API；Swift 变更无需要额外 WHY 注释的复杂逻辑。
+- 错误处理与边界处理：通过。tag registry error、facet count error、Retry、Smart List draft 与普通搜索路径均有处理。
+- 测试与验证覆盖：通过。`./dev check task 4-1/task-109` 已通过，相关 XCTest 覆盖 S2-08 集成、侧边栏入口、Smart List draft 和不触发 tag mutation。
+- 占位、硬编码、mock-only、一次性实现检查：通过。未在生产路径发现 mock-only 闭环。
+
+六、阻塞项
+
+- P1：被触碰 Swift 文件超过编码规范单文件 500 行上限。
+  说明：编码规范要求单文件 `≤ 500 行`，本 task 范围内修改过的 `MainRepositoryContentView.swift` 当前到第 501 行。虽然只超 1 行，但验收模式不能豁免明确质量门禁。
+  绝对路径与行号：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift:501`；规范依据：`/Users/as/Ai-Project/project/AreaMatrix/docs/development/coding-standards.md:13`
+  为什么导致不通过：工程质量规则要求验收时检查编码规范和长期维护标准；当前 task 尚未满足该文件长度门禁，不能判定完成。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-109`
+- 通过：`prompt_pipeline.py doctor`，输出 `doctor: OK`，`tasks: 637`，`manifests: 637`
+- 通过：`git diff --check`
+- 通过：`xcodebuild -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination platform=macOS,arch=arm64 build CODE_SIGNING_ALLOWED=NO`，输出 `** BUILD SUCCEEDED **`
+- 缺失：未运行 `./dev test macos`，因为本 task manifest 指定验证为 `./dev check task 4-1/task-109`，page integration task 当前 task gate 为 macOS build gate。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+
+VERIFY_RESULT: FAIL

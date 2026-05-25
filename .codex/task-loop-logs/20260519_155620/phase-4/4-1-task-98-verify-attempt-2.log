@@ -1,0 +1,68 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`4-1/task-98`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-98-s2-01-page-integration-verify.md`
+- 主要代码范围：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`
+- Forbidden Touches：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+三、完成度摘要
+
+- 已覆盖项数：4/4 个核对清单均已检查
+- 未覆盖项数：0
+- 通过项数：2
+- 不通过项数：2
+- 阻塞项数：2
+
+四、逐项验收结果
+
+- 项目：page-feature task 覆盖 C2-01 / C2-02
+- 结果：通过
+- 证据：`CoreBridge` 已通过真实 UniFFI/Core 调用 `searchFiles` 与 `listFilterFacets`；S2-01 也把 search request、filters、scope、sort 传入模型。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreFileListing.swift:200`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridgeSnapshots.swift:326`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainListVisibleFileFiltering.swift:223`
+
+- 项目：入口、退出、错误态、跨页入口闭环
+- 结果：不通过
+- 证据：`Save...`、`Open indexing status`、`Cmd+K` 只写入 `pendingSearchDestination`，但生产 UI 中没有任何 `.sheet`、navigation 或 route 消费该状态；实际点击后不能证明会打开 S2-03、索引状态或 S2-15。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainListVisibleFileFiltering.swift:203`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentNoteDrafts.swift:167`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift:182`
+
+- 项目：mock / fixture / 硬编码状态
+- 结果：不通过
+- 证据：0 结果和 query error 目前渲染为硬编码的 `S2-04 search-empty`、`S2-05 query-error` 文本状态；这只能证明有占位路由提示，不能证明“进入对应页面”的最终闭环。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentNoteDrafts.swift:348`
+
+- 项目：不新增 control map 外真实 Core 能力
+- 结果：通过
+- 证据：生产 Core 调用限于 C2-01 `search_files` 与 C2-02 `list_filter_facets`；未发现 `core/src/**` diff。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:158`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:167`
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过。搜索模型结构清晰，但跨页 destination 只有状态写入，无消费者，闭环断开。
+- 注释 / rustdoc / 文档同步：通过。本轮未要求新增 public Rust API；API/UDL 搜索合同已对齐。
+- 错误处理与边界处理：不通过。Search API failure、index unavailable 有展示入口，但 index/status 入口未实际路由。
+- 测试与验证覆盖：不通过。`./dev check task 4-1/task-98` 通过，但现有测试主要断言状态值，不证明对应页面或 sheet 真正展示。
+- 占位、硬编码、mock-only、一次性实现检查：不通过。S2-04/S2-05 route status 是硬编码文本占位；`pendingSearchDestination` 未消费。
+
+六、阻塞项
+
+- P1：跨页 destination 未被生产 UI 消费，导致 Save / indexing status / Cmd+K 不形成真实闭环。绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainListVisibleFileFiltering.swift:203`。原因：S2-01 page spec 要求 `Save...` 打开 S2-03、索引不可用可打开 indexing status、Cmd+K 进入命令相关搜索入口；当前只设置状态，没有可见路由。
+- P1：0 结果和 query error 仍是硬编码页面标签，不足以作为最终页面验收证据。绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentNoteDrafts.swift:348`。原因：真实闭环验收不接受占位或硬编码状态替代页面入口。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-98`
+- 通过：`prompt doctor`、`git diff --check`、macOS `xcodebuild ... build CODE_SIGNING_ALLOWED=NO`，最终 `BUILD SUCCEEDED`
+- 失败：无命令失败
+- 缺失：未运行 `./dev test macos`，因为 manifest 本 task 只要求 `./dev check task 4-1/task-98`
+- Forbidden Touches：未发现 `core/src/**` diff
+- Expected New Paths：`apps/macos/AreaMatrix/**` 与 `apps/macos/AreaMatrixTests/**` 已存在
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。验证命令通过只能证明当前构建门禁通过；按 task、manifest、page spec、实际文件交叉核验，S2-01 整页闭环仍有阻塞项。
+
+VERIFY_RESULT: FAIL

@@ -1,0 +1,12 @@
+交接摘要：
+
+- 已完成前置阅读：task、共享规则、切片规则、工程质量规则、编码规范、repo-local skill 说明、dependency graph、phase-4 manifest 的 `4-1/task-115`、Exact Docs，以及现有 `apps/**` 和 `core/area_matrix.udl`。本任务是 High 风险，但有静默授权；边界是只改 `apps/macos/AreaMatrix/**` 和 `apps/macos/AreaMatrixTests/**`，禁止触碰 `core/src/**`。
+- 已新增/修改一批 macOS 文件，目标是给 `S2-12` 接入 `C2-08 batch-change-category`：新增了 `CoreBatchChangeCategory.swift`、`BatchChangeCategoryState.swift`、`BatchChangeCategorySheet.swift`、`MainRepositoryMultiSelectionActions.swift`；修改了 `MainRepositoryContentView.swift`、`MainFileListModel.swift`、`MainRepositoryDetailPane.swift`、`MainRepositoryContentCategoryMoveRefresh.swift`、`MainFileListState.swift`、`FileDropAdapter.swift`、`MainRepositoryContentActionRouting.swift`、`ImportProgressListIntegration.swift`，以及两个现有测试调用点。
+- 当前状态还没完成，不能直接宣称通过。很可能存在编译问题：新文件还没有加入 Xcode project；部分 `MainRepositoryDetailPane` 测试构造器还没补齐新参数；`CoreBatchChangeCategory.swift` 里用了 `StorageMode.moveToCategoryDisplayName`，但该扩展在另一个文件里是 `private`，跨文件不可见，需要改成本文件内 helper 或调整可见性。
+- 还需要补测试。建议新增独立测试文件，不要继续塞进接近 500 行的既有测试文件。重点测：S2-12 批量分类预览调用 C2-08 bridge、Apply 使用 preview token、blocked preview 禁止提交或展示错误、菜单/命令入口触发的是 batch category flow 而不是单文件 `moveToCategory`。
+- 注意文件长度：`MainRepositoryContentCategoryMoveRefresh.swift`、`MainRepositoryContentActionRouting.swift`、`MainRepositoryDetailPane.swift` 已接近 500 行，后续尽量不要继续加大，必要时拆小文件。
+- `git status` 里之前有非本任务产生的脏文件：`.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json`。不要回滚或顺手修改它们。
+- 最后只运行 task 指定验证：`./dev check task 4-1/task-115`。不要自行升级到全量 `cargo test`、`clippy` 或 `./dev check all`。
+
+关键上下文：之前 C2-08 core 侧已做过安全修复，preview 需要把不可写目录等 blocked 状态映射为 `can_apply=false`，UI 应基于真实 preview/apply 闭环，不要 mock 或静态伪造。
+

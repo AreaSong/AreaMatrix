@@ -117,3 +117,29 @@ struct ImportBatchCopyFooterSection: View {
         )
     }
 }
+
+struct ImportBatchSummarySection: View {
+    let totalSizeDescription: String?
+    let sourceLabel: String
+    let duplicateCount: Int
+    let nameConflictCount: Int
+    let iCloudPlaceholderCount: Int
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("批量导入摘要")
+                .font(.headline)
+            HStack(spacing: 16) {
+                if let totalSizeDescription {
+                    LabeledContent("总大小", value: totalSizeDescription)
+                }
+                LabeledContent("来源", value: sourceLabel)
+                LabeledContent("预计重复", value: "\(duplicateCount) 个")
+                LabeledContent("重名冲突", value: "\(nameConflictCount) 个")
+                LabeledContent("iCloud", value: "\(iCloudPlaceholderCount) 个")
+            }
+            .font(.callout)
+            .foregroundStyle(.secondary)
+        }
+    }
+}

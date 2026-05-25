@@ -1,0 +1,15 @@
+一、执行结论：已完成。
+
+二、执行范围：单任务 `4-1/task-112`。本次只改了：
+- [ImportBatchOverviewSections.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportBatchOverviewSections.swift:19)
+- [MainDetailTagState.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainDetailTagState.swift:192)
+- [DetailMultiPageIntegrationVerifyTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/DetailMultiPageIntegrationVerifyTests.swift:109)
+
+三、完成情况：S2-09 的入口现在在只读/写锁定时仍可打开，用于查看选中数量、候选标签和只读提示；`Apply`、新增 pending tag、候选选择仍被 sheet 内 `disabledReason` 阻断，不会写入标签。这样对齐 page spec 中“只读时可查看候选和已选文件数量，但禁用新建标签和 Apply”的要求。`C2-06 batch_add_tags` 和 `C2-07 undo_action/list_undo_actions` 仍通过 `CoreBridge` 真实调用，没有新增 control map 外能力。
+
+四、工程质量：逻辑保持在现有 S2-09 模型/视图结构内，没有 mock-only、fixture-only 或硬编码成功态；新增测试覆盖只读入口可打开但 Apply 仍禁用的整页集成边界。未触碰 `Forbidden Touches`：`core/src/**` 无 diff。
+
+五、验证情况：已运行 `./dev check task 4-1/task-112`，通过。该命令包含 `prompt doctor`、`git diff --check`、macOS `xcodebuild ... build CODE_SIGNING_ALLOWED=NO`，最终 `BUILD SUCCEEDED`。未额外升级到 `./dev test macos` 或全量门禁，按本 task manifest 的验证上限执行。
+
+六、风险与后续：当前 worktree 还有既有脏文件 `.codex/task-loop-runs/20260520_154334/summary.json` 和 `tasks/prompts/_shared/progress.json`，不是本次任务范围，我没有修改或回滚。建议下一个任务继续执行 `4-1/task-113`，进入 S2-10 undo-toast 的页面功能验收/实现闭环。
+

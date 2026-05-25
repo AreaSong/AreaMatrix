@@ -52,11 +52,14 @@
 		0A00000000000000000002BC /* MainFileRenameActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002BD /* MainFileRenameActions.swift */; };
 		0A00000000000000000002BE /* RenameFilePageFeatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002BF /* RenameFilePageFeatureTests.swift */; };
 		0A00000000000000000002C0 /* CoreFileDeleting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002C1 /* CoreFileDeleting.swift */; };
+		0A0000000000000000000314 /* CoreTagCRUD.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000315 /* CoreTagCRUD.swift */; };
 		0A00000000000000000002C2 /* MainFileDeleteActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002C3 /* MainFileDeleteActions.swift */; };
 		0A00000000000000000002C4 /* DeleteFilePageFeatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002C5 /* DeleteFilePageFeatureTests.swift */; };
 		0A00000000000000000002C6 /* CoreMoveToCategory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002C7 /* CoreMoveToCategory.swift */; };
+		0A0000000000000000000330 /* CoreBatchChangeCategory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000331 /* CoreBatchChangeCategory.swift */; };
 		0A00000000000000000002C8 /* MainFileCategoryMoveActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002C9 /* MainFileCategoryMoveActions.swift */; };
 		0A00000000000000000002CA /* MainFileCategoryMoveState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002CB /* MainFileCategoryMoveState.swift */; };
+		0A0000000000000000000332 /* BatchChangeCategoryState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000333 /* BatchChangeCategoryState.swift */; };
 		0A00000000000000000002CC /* MainFileActionRoutingActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002CD /* MainFileActionRoutingActions.swift */; };
 		0A00000000000000000002CE /* ChangeCategoryPageFeatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002CF /* ChangeCategoryPageFeatureTests.swift */; };
 		0A00000000000000000002D4 /* ChangeCategoryPageIntegrationVerifyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002D5 /* ChangeCategoryPageIntegrationVerifyTests.swift */; };
@@ -97,15 +100,23 @@
 		0A0000000000000000000242 /* InFlightFileChangeTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000243 /* InFlightFileChangeTracker.swift */; };
 		0A0000000000000000000244 /* MainDetailNoteState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000245 /* MainDetailNoteState.swift */; };
 		0A0000000000000000000246 /* MainDetailNoteActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000247 /* MainDetailNoteActions.swift */; };
+		0A0000000000000000000316 /* MainDetailTagState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000317 /* MainDetailTagState.swift */; };
+		0A0000000000000000000318 /* MainDetailTagActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000319 /* MainDetailTagActions.swift */; };
 		0A0000000000000000000248 /* DetailNoteTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000249 /* DetailNoteTabView.swift */; };
 		0A000000000000000000024A /* DetailNotePageFeatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000024B /* DetailNotePageFeatureTests.swift */; };
+		0A0000000000000000000320 /* DetailTagSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000321 /* DetailTagSection.swift */; };
+		0A0000000000000000000322 /* DetailTagPageFeatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000323 /* DetailTagPageFeatureTests.swift */; };
 		0A000000000000000000024C /* MainListSystemActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000024D /* MainListSystemActions.swift */; };
 		0A000000000000000000024E /* MainRepositoryContentNoteDrafts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000024F /* MainRepositoryContentNoteDrafts.swift */; };
+		0A0000000000000000000310 /* MainFileListDiagnosticsActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000311 /* MainFileListDiagnosticsActions.swift */; };
+		0A0000000000000000000312 /* SearchFiltersPopover.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000313 /* SearchFiltersPopover.swift */; };
 		0A00000000000000000002D0 /* MainRepositoryContentCategoryMoveRefresh.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002D1 /* MainRepositoryContentCategoryMoveRefresh.swift */; };
 		0A00000000000000000002D2 /* MainRepositoryContentActionRouting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002D3 /* MainRepositoryContentActionRouting.swift */; };
 		0A000000000000000000013E /* MainFileActionRoutingSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000013F /* MainFileActionRoutingSheet.swift */; };
 		0A0000000000000000000140 /* RenameFileSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000141 /* RenameFileSheet.swift */; };
 		0A0000000000000000000142 /* ChangeCategorySheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000143 /* ChangeCategorySheet.swift */; };
+		0A0000000000000000000334 /* BatchChangeCategorySheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000335 /* BatchChangeCategorySheet.swift */; };
+		0A0000000000000000000336 /* MainRepositoryMultiSelectionActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000337 /* MainRepositoryMultiSelectionActions.swift */; };
 		0A0000000000000000000144 /* DeleteFileConfirmSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000145 /* DeleteFileConfirmSheet.swift */; };
 		0A0000000000000000000146 /* MainLoadingState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000147 /* MainLoadingState.swift */; };
 		0A0000000000000000000148 /* MainLoadingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000149 /* MainLoadingView.swift */; };
@@ -194,6 +205,7 @@
 		0A0000000000000000000190 /* ImportBatchCopyFooterSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000191 /* ImportBatchCopyFooterSection.swift */; };
 		0A0000000000000000000192 /* ImportBatchCopyPageIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000193 /* ImportBatchCopyPageIntegrationTests.swift */; };
 		0A00000000000000000001A6 /* ImportBatchResultSummaryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001A7 /* ImportBatchResultSummaryTests.swift */; };
+		0A0000000000000000000400 /* S212BatchChangeCategoryPageIntegrationVerifyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000401 /* S212BatchChangeCategoryPageIntegrationVerifyTests.swift */; };
 		0A00000000000000000001E0 /* ImportResultCopyRetryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001E1 /* ImportResultCopyRetryTests.swift */; };
 		0A00000000000000000001A8 /* ImportBatchNamingStrategyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001A9 /* ImportBatchNamingStrategyTests.swift */; };
 		0A00000000000000000001D4 /* ImportResultView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001D5 /* ImportResultView.swift */; };
@@ -297,11 +309,14 @@
 		0A00000000000000000002BD /* MainFileRenameActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/MainFileRenameActions.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002BF /* RenameFilePageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/RenameFilePageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002C1 /* CoreFileDeleting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/CoreFileDeleting.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000315 /* CoreTagCRUD.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/CoreTagCRUD.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002C3 /* MainFileDeleteActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/MainFileDeleteActions.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002C5 /* DeleteFilePageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/DeleteFilePageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002C7 /* CoreMoveToCategory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/CoreMoveToCategory.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000331 /* CoreBatchChangeCategory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/CoreBatchChangeCategory.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002C9 /* MainFileCategoryMoveActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/MainFileCategoryMoveActions.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002CB /* MainFileCategoryMoveState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/MainFileCategoryMoveState.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000333 /* BatchChangeCategoryState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/BatchChangeCategoryState.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002CD /* MainFileActionRoutingActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/MainFileActionRoutingActions.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002CF /* ChangeCategoryPageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ChangeCategoryPageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002D5 /* ChangeCategoryPageIntegrationVerifyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ChangeCategoryPageIntegrationVerifyTests.swift; sourceTree = SOURCE_ROOT; };
@@ -337,10 +352,16 @@
 		0A0000000000000000000243 /* InFlightFileChangeTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/App/InFlightFileChangeTracker.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000245 /* MainDetailNoteState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/MainDetailNoteState.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000247 /* MainDetailNoteActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/MainDetailNoteActions.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000317 /* MainDetailTagState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/MainDetailTagState.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000319 /* MainDetailTagActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/MainDetailTagActions.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000249 /* DetailNoteTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/DetailNoteTabView.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000024B /* DetailNotePageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/DetailNotePageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000321 /* DetailTagSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/DetailTagSection.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000323 /* DetailTagPageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/DetailTagPageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000024D /* MainListSystemActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/MainListSystemActions.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000024F /* MainRepositoryContentNoteDrafts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/MainRepositoryContentNoteDrafts.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000311 /* MainFileListDiagnosticsActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/MainFileListDiagnosticsActions.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000313 /* SearchFiltersPopover.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/SearchFiltersPopover.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002D1 /* MainRepositoryContentCategoryMoveRefresh.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/MainRepositoryContentCategoryMoveRefresh.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002D3 /* MainRepositoryContentActionRouting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/MainRepositoryContentActionRouting.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000271 /* GeneralSettingsModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/GeneralSettingsModel.swift; sourceTree = SOURCE_ROOT; };
@@ -377,6 +398,8 @@
 		0A000000000000000000013F /* MainFileActionRoutingSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/MainFileActionRoutingSheet.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000141 /* RenameFileSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/RenameFileSheet.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000143 /* ChangeCategorySheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/ChangeCategorySheet.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000335 /* BatchChangeCategorySheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/BatchChangeCategorySheet.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000337 /* MainRepositoryMultiSelectionActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/MainRepositoryMultiSelectionActions.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000145 /* DeleteFileConfirmSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/DeleteFileConfirmSheet.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000147 /* MainLoadingState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/MainLoadingState.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000149 /* MainLoadingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/MainLoadingView.swift; sourceTree = SOURCE_ROOT; };
@@ -474,6 +497,7 @@
 		0A0000000000000000000191 /* ImportBatchCopyFooterSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/ImportBatchCopyFooterSection.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000193 /* ImportBatchCopyPageIntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportBatchCopyPageIntegrationTests.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000001A7 /* ImportBatchResultSummaryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportBatchResultSummaryTests.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000401 /* S212BatchChangeCategoryPageIntegrationVerifyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/S212BatchChangeCategoryPageIntegrationVerifyTests.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000001E1 /* ImportResultCopyRetryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportResultCopyRetryTests.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000001A9 /* ImportBatchNamingStrategyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportBatchNamingStrategyTests.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000001AD /* ImportBatchPrecheckTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportBatchPrecheckTestSupport.swift; sourceTree = SOURCE_ROOT; };
@@ -567,12 +591,16 @@
 				0A0000000000000000000211 /* DetailLogTabView.swift */,
 				0A0000000000000000000225 /* DetailExternalCreateSyncStatusView.swift */,
 				0A0000000000000000000249 /* DetailNoteTabView.swift */,
+				0A0000000000000000000321 /* DetailTagSection.swift */,
+				0A0000000000000000000313 /* SearchFiltersPopover.swift */,
 				0A000000000000000000024F /* MainRepositoryContentNoteDrafts.swift */,
 				0A00000000000000000002D1 /* MainRepositoryContentCategoryMoveRefresh.swift */,
 				0A00000000000000000002D3 /* MainRepositoryContentActionRouting.swift */,
+				0A0000000000000000000337 /* MainRepositoryMultiSelectionActions.swift */,
 				0A000000000000000000013F /* MainFileActionRoutingSheet.swift */,
 				0A0000000000000000000141 /* RenameFileSheet.swift */,
 				0A0000000000000000000143 /* ChangeCategorySheet.swift */,
+				0A0000000000000000000335 /* BatchChangeCategorySheet.swift */,
 				0A0000000000000000000145 /* DeleteFileConfirmSheet.swift */,
 				0A00000000000000000002DB /* ICloudConflictMinimalSheet.swift */,
 				0A00000000000000000002E9 /* ICloudConflictListView.swift */,
@@ -617,7 +645,9 @@
 				0A0000000000000000000101 /* CoreFileListing.swift */,
 				0A00000000000000000002BB /* CoreFileRenaming.swift */,
 				0A00000000000000000002C1 /* CoreFileDeleting.swift */,
+				0A0000000000000000000315 /* CoreTagCRUD.swift */,
 				0A00000000000000000002C7 /* CoreMoveToCategory.swift */,
+				0A0000000000000000000331 /* CoreBatchChangeCategory.swift */,
 				0A0000000000000000000171 /* CoreImporting.swift */,
 				0A0000000000000000000157 /* CoreExternalChangesSyncing.swift */,
 				0A00000000000000000002E5 /* CoreICloudConflictListing.swift */,
@@ -691,6 +721,7 @@
 				0A00000000000000000002C3 /* MainFileDeleteActions.swift */,
 				0A00000000000000000002C9 /* MainFileCategoryMoveActions.swift */,
 				0A00000000000000000002CB /* MainFileCategoryMoveState.swift */,
+				0A0000000000000000000333 /* BatchChangeCategoryState.swift */,
 				0A00000000000000000002CD /* MainFileActionRoutingActions.swift */,
 				0A00000000000000000002D9 /* ICloudConflictMinimalValidation.swift */,
 				0A00000000000000000002E1 /* ICloudConflictMinimalResolution.swift */,
@@ -700,7 +731,10 @@
 				0A0000000000000000000223 /* MainFileListState.swift */,
 				0A0000000000000000000245 /* MainDetailNoteState.swift */,
 				0A0000000000000000000247 /* MainDetailNoteActions.swift */,
+				0A0000000000000000000317 /* MainDetailTagState.swift */,
+				0A0000000000000000000319 /* MainDetailTagActions.swift */,
 				0A000000000000000000024D /* MainListSystemActions.swift */,
+				0A0000000000000000000311 /* MainFileListDiagnosticsActions.swift */,
 				0A0000000000000000000221 /* MainDetailExternalCreateSyncState.swift */,
 				0A0000000000000000000227 /* MainExternalCreatedFileActions.swift */,
 				0A0000000000000000000135 /* MainListVisibleFileFiltering.swift */,
@@ -750,6 +784,7 @@
 				0A000000000000000000018F /* ImportBatchCopyImportModelTests.swift */,
 				0A000000000000000000019D /* ImportBatchDuplicateResolutionTests.swift */,
 				0A00000000000000000001A7 /* ImportBatchResultSummaryTests.swift */,
+				0A0000000000000000000401 /* S212BatchChangeCategoryPageIntegrationVerifyTests.swift */,
 				0A00000000000000000001E1 /* ImportResultCopyRetryTests.swift */,
 				0A00000000000000000001A9 /* ImportBatchNamingStrategyTests.swift */,
 				0A00000000000000000001AD /* ImportBatchPrecheckTestSupport.swift */,
@@ -774,6 +809,7 @@
 					0A00000000000000000002BF /* RenameFilePageFeatureTests.swift */,
 					0A00000000000000000002C5 /* DeleteFilePageFeatureTests.swift */,
 					0A0000000000000000000201 /* DetailMetaPageFeatureTests.swift */,
+					0A0000000000000000000323 /* DetailTagPageFeatureTests.swift */,
 					0A0000000000000000000251 /* DetailMultiListFilesPageFeatureTests.swift */,
 					0A0000000000000000000253 /* DetailMultiPageIntegrationVerifyTests.swift */,
 					0A0000000000000000000263 /* DetailIntegrationVerifyTests.swift */,
@@ -1025,12 +1061,16 @@
 				0A0000000000000000000210 /* DetailLogTabView.swift in Sources */,
 				0A0000000000000000000224 /* DetailExternalCreateSyncStatusView.swift in Sources */,
 				0A0000000000000000000248 /* DetailNoteTabView.swift in Sources */,
+				0A0000000000000000000320 /* DetailTagSection.swift in Sources */,
 				0A000000000000000000024E /* MainRepositoryContentNoteDrafts.swift in Sources */,
+				0A0000000000000000000312 /* SearchFiltersPopover.swift in Sources */,
 				0A00000000000000000002D0 /* MainRepositoryContentCategoryMoveRefresh.swift in Sources */,
 				0A00000000000000000002D2 /* MainRepositoryContentActionRouting.swift in Sources */,
+				0A0000000000000000000336 /* MainRepositoryMultiSelectionActions.swift in Sources */,
 				0A000000000000000000013E /* MainFileActionRoutingSheet.swift in Sources */,
 				0A0000000000000000000140 /* RenameFileSheet.swift in Sources */,
 				0A0000000000000000000142 /* ChangeCategorySheet.swift in Sources */,
+				0A0000000000000000000334 /* BatchChangeCategorySheet.swift in Sources */,
 				0A0000000000000000000144 /* DeleteFileConfirmSheet.swift in Sources */,
 				0A00000000000000000002DA /* ICloudConflictMinimalSheet.swift in Sources */,
 				0A00000000000000000002E8 /* ICloudConflictListView.swift in Sources */,
@@ -1059,7 +1099,9 @@
 				0A0000000000000000000100 /* CoreFileListing.swift in Sources */,
 				0A00000000000000000002BA /* CoreFileRenaming.swift in Sources */,
 				0A00000000000000000002C0 /* CoreFileDeleting.swift in Sources */,
+				0A0000000000000000000314 /* CoreTagCRUD.swift in Sources */,
 				0A00000000000000000002C6 /* CoreMoveToCategory.swift in Sources */,
+				0A0000000000000000000330 /* CoreBatchChangeCategory.swift in Sources */,
 				0A0000000000000000000260 /* MainFileListDetailSupport.swift in Sources */,
 				0A0000000000000000000170 /* CoreImporting.swift in Sources */,
 				0A0000000000000000000156 /* CoreExternalChangesSyncing.swift in Sources */,
@@ -1070,6 +1112,10 @@
 				0A0000000000000000000222 /* MainFileListState.swift in Sources */,
 				0A0000000000000000000244 /* MainDetailNoteState.swift in Sources */,
 				0A0000000000000000000246 /* MainDetailNoteActions.swift in Sources */,
+				0A0000000000000000000316 /* MainDetailTagState.swift in Sources */,
+				0A0000000000000000000318 /* MainDetailTagActions.swift in Sources */,
+				0A0000000000000000000332 /* BatchChangeCategoryState.swift in Sources */,
+				0A0000000000000000000310 /* MainFileListDiagnosticsActions.swift in Sources */,
 				0A0000000000000000000220 /* MainDetailExternalCreateSyncState.swift in Sources */,
 				0A0000000000000000000226 /* MainExternalCreatedFileActions.swift in Sources */,
 				0A0000000000000000000158 /* MainRepoExternalRemovalActions.swift in Sources */,
@@ -1104,6 +1150,7 @@
 				0A000000000000000000018E /* ImportBatchCopyImportModelTests.swift in Sources */,
 				0A000000000000000000019C /* ImportBatchDuplicateResolutionTests.swift in Sources */,
 				0A00000000000000000001A6 /* ImportBatchResultSummaryTests.swift in Sources */,
+				0A0000000000000000000400 /* S212BatchChangeCategoryPageIntegrationVerifyTests.swift in Sources */,
 				0A00000000000000000001E0 /* ImportResultCopyRetryTests.swift in Sources */,
 				0A00000000000000000001A8 /* ImportBatchNamingStrategyTests.swift in Sources */,
 				0A00000000000000000001AC /* ImportBatchPrecheckTestSupport.swift in Sources */,
@@ -1137,6 +1184,7 @@
 					0A00000000000000000002F3 /* DatabaseRepairConfirmPageFeatureTests.swift in Sources */,
 					0A00000000000000000002F7 /* DatabaseRepairConfirmPageIntegrationVerifyTests.swift in Sources */,
 					0A0000000000000000000200 /* DetailMetaPageFeatureTests.swift in Sources */,
+					0A0000000000000000000322 /* DetailTagPageFeatureTests.swift in Sources */,
 					0A0000000000000000000250 /* DetailMultiListFilesPageFeatureTests.swift in Sources */,
 					0A0000000000000000000252 /* DetailMultiPageIntegrationVerifyTests.swift in Sources */,
 					0A0000000000000000000262 /* DetailIntegrationVerifyTests.swift in Sources */,

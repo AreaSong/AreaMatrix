@@ -46,6 +46,8 @@ struct RepositoryCurrentCategoryFilesResult: Equatable {
 }
 
 struct RepositoryTreeNodeSnapshot: Equatable, Identifiable {
+    static let savedSearchSidebarIDPrefix = "smart-list-"
+
     var slug: String
     var displayName: String
     var kind: String
@@ -95,6 +97,31 @@ struct RepositoryTreeNodeSnapshot: Equatable, Identifiable {
 
     func sidebarRow(id: String) -> RepositorySidebarRowSnapshot? {
         sidebarRows.first { $0.id == id }
+    }
+
+    static func savedSearchSidebarID(_ id: Int64) -> String {
+        "\(savedSearchSidebarIDPrefix)\(id)"
+    }
+
+    func insertingSavedSearch(_ savedSearch: SavedSearchSnapshot) -> RepositoryTreeNodeSnapshot {
+        var updated = self
+        updated.children.removeAll { $0.id == Self.savedSearchSidebarID(savedSearch.id) }
+        updated.children.append(RepositoryTreeNodeSnapshot(
+            slug: Self.savedSearchSidebarID(savedSearch.id),
+            displayName: savedSearch.name,
+            kind: "SmartList",
+            relativePath: Self.savedSearchSidebarID(savedSearch.id),
+            fileCount: 0,
+            depth: 1,
+            children: []
+        ))
+        return updated
+    }
+
+    func removingSavedSearch(id: Int64) -> RepositoryTreeNodeSnapshot {
+        var updated = self
+        updated.children.removeAll { $0.id == Self.savedSearchSidebarID(id) }
+        return updated
     }
 
     private func sidebarRows(depth: Int) -> [RepositorySidebarRowSnapshot] {
@@ -163,9 +190,25 @@ struct RepositorySidebarRowSnapshot: Equatable, Identifiable {
         return path
     }
 
+    var isSmartList: Bool {
+        node.kind == "SmartList"
+    }
+
+    var savedSearchID: Int64? {
+        guard isSmartList else { return nil }
+        return id.removingPrefix(RepositoryTreeNodeSnapshot.savedSearchSidebarIDPrefix).flatMap(Int64.init)
+    }
+
     func contains(_ file: FileEntrySnapshot) -> Bool {
         guard let pathFilterPrefix else { return true }
         return file.path == pathFilterPrefix || file.path.hasPrefix("\(pathFilterPrefix)/")
+    }
+}
+
+private extension String {
+    func removingPrefix(_ prefix: String) -> String? {
+        guard hasPrefix(prefix) else { return nil }
+        return String(dropFirst(prefix.count))
     }
 }
 

@@ -1,0 +1,50 @@
+一、执行结论
+
+已完成。
+
+二、执行范围
+
+单任务：`4-1/task-91`，围绕 C2-19 `tag-suggestions` 的 Core API / UDL 合同补齐。
+
+修改文件：
+- `core/area_matrix.udl`
+- `core/src/api.rs`
+- `core/src/error.rs`
+- `core/src/lib.rs`
+- `core/src/tags.rs`
+- `core/src/classifier_correction.rs`
+- `core/src/import_conflict_batch/apply.rs`
+- `core/tests/tag_suggestions_contract_api.rs`
+- `docs/api/core-api.md`
+- `docs/api/error-codes.md`
+
+开始前已有脏文件仍存在：`.codex/task-loop-runs/20260519_155620/summary.json`、`tasks/prompts/_shared/progress.json`，我未把它们作为本任务改动处理。
+
+三、完成情况
+
+核对清单均完成：
+- 已读取 C2-19 能力规格、Stage 2 control map、Core API、错误码。
+- 已补齐 `suggest_tags_for_file` / `apply_tag_suggestions` 的 API、UDL、Rust 类型、错误码和消费状态。
+- 没有实现 C2-19 业务逻辑；当前函数只做合同级输入校验，后续实现 task 可直接接上。
+- S2-23 可从合同拿到候选、理由、Strong/Weak、Already added、Invalid/Blocked、隐私标记、apply 结果、undo token 和 refresh targets。
+
+完成标准均满足：
+- C2-19 合同已可被后续 `4-1/task-92` 实现。
+- 未引入 control map 之外页面能力。
+- Forbidden Touches：未触碰 `apps/**`。
+
+四、工程质量
+
+结构清晰，没有 mock-only 成功路径，也没有把业务实现提前塞进 contract task。新增 public Rust 类型和函数均有 rustdoc；新增 `Validation` 错误后补了现有 match 的穷尽分支，避免破坏编译。边界明确保留：不读文件正文、不调用 AI、不联网、不移动/删除/重命名用户文件。
+
+五、验证情况
+
+已运行并通过：
+- `cargo fmt --all -- --check`
+- `cargo test --test tag_suggestions_contract_api -- --nocapture`：4 passed
+- `./dev check task 4-1/task-91`：doctor OK、diff check OK、targeted tests 4 passed
+
+六、风险与后续
+
+剩余风险：C2-19 目前是合同/API 层，不包含真实建议生成和采纳写入逻辑，这是下一任务范围。建议下一个任务进入 `4-1/task-92` 实现最小 Core 行为闭环。
+

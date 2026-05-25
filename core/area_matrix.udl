@@ -203,10 +203,26 @@ namespace area_matrix {
     );
 
     [Throws=CoreError]
+    TagSuggestionReport suggest_tags_for_file(
+        string repo_path, TagSuggestionRequest request
+    );
+
+    [Throws=CoreError]
+    TagSuggestionApplyReport apply_tag_suggestions(
+        string repo_path, ApplyTagSuggestionsRequest request
+    );
+
+    [Throws=CoreError]
     sequence<UndoActionRecord> list_undo_actions(string repo_path);
 
     [Throws=CoreError]
     UndoActionResult undo_action(string repo_path, string action_id);
+
+    [Throws=CoreError]
+    sequence<RedoActionRecord> list_redo_actions(string repo_path);
+
+    [Throws=CoreError]
+    RedoActionResult redo_action(string repo_path, string action_id);
 
     [Throws=CoreError]
     FileEntry get_file(string repo_path, i64 file_id);
@@ -519,6 +535,70 @@ dictionary BatchMutationReport {
     string? undo_token;
 };
 
+dictionary TagSuggestionContext {
+    string? source_folder;
+    sequence<string> source_keywords;
+};
+
+dictionary TagSuggestionRequest {
+    i64 file_id;
+    TagSuggestionContext? context;
+    i64 limit;
+};
+
+dictionary TagSuggestion {
+    string suggestion_id;
+    string slug;
+    string display_name;
+    string reason;
+    TagSuggestionSource source;
+    TagSuggestionMatch match_strength;
+    boolean already_exists;
+    boolean needs_create;
+    TagSuggestionStatus status;
+    boolean selected_by_default;
+    string? disabled_reason;
+};
+
+dictionary TagSuggestionReport {
+    i64 file_id;
+    sequence<TagSuggestion> suggestions;
+    TagSet tag_set;
+    boolean contents_read;
+    boolean ai_used;
+    boolean network_used;
+};
+
+dictionary ApplyTagSuggestionItem {
+    string suggestion_id;
+    string slug;
+    string display_name;
+};
+
+dictionary ApplyTagSuggestionsRequest {
+    i64 file_id;
+    sequence<ApplyTagSuggestionItem> suggestions;
+};
+
+dictionary TagSuggestionApplyItemResult {
+    string suggestion_id;
+    string slug;
+    TagSuggestionApplyStatus status;
+    string? error;
+};
+
+dictionary TagSuggestionApplyReport {
+    i64 file_id;
+    i64 requested_count;
+    i64 applied_count;
+    i64 skipped_count;
+    i64 failed_count;
+    sequence<TagSuggestionApplyItemResult> item_results;
+    TagSet tag_set;
+    string? undo_token;
+    sequence<string> refresh_targets;
+};
+
 dictionary CategoryDistributionItem {
     string category;
     i64 count;
@@ -824,6 +904,30 @@ dictionary UndoActionResult {
     string summary;
     i64 affected_count;
     sequence<string> refresh_targets;
+    i64 completed_at;
+};
+
+dictionary RedoActionRecord {
+    string action_id;
+    string kind;
+    string summary;
+    i64 affected_count;
+    sequence<string> affected_file_names;
+    RedoActionStatus status;
+    boolean can_redo;
+    string? disabled_reason;
+    string source_undo_action_id;
+    i64 created_at;
+    i64 updated_at;
+};
+
+dictionary RedoActionResult {
+    string action_id;
+    RedoActionStatus status;
+    string summary;
+    i64 affected_count;
+    sequence<string> refresh_targets;
+    string? undo_token;
     i64 completed_at;
 };
 
@@ -1147,6 +1251,10 @@ enum ImportConflictBatchResultStatus {
 };
 enum ExternalEventKind { "Created", "Removed", "Modified", "Renamed" };
 enum BatchMutationStatus { "Added", "AlreadyHadTag", "Failed" };
+enum TagSuggestionSource { "FileName", "Path", "SourceFolder", "ExistingTagPattern" };
+enum TagSuggestionMatch { "Strong", "Weak" };
+enum TagSuggestionStatus { "NewTag", "AlreadyAdded", "Invalid", "Blocked" };
+enum TagSuggestionApplyStatus { "Applied", "AlreadyAdded", "Failed" };
 enum BatchCategoryPreviewStatus { "WillMove", "MetadataOnly", "Unchanged", "Skipped", "Blocked" };
 enum BatchCategoryResultStatus { "Moved", "MetadataUpdated", "Unchanged", "Skipped", "Failed" };
 enum BatchDeleteMode { "MoveToTrash", "RemoveFromIndex" };
@@ -1169,9 +1277,10 @@ enum RuleImpactStatus {
 };
 enum RuleImpactConflictKind { "NameConflict", "MissingFile", "UnsupportedStorage", "RuleConflict" };
 enum UndoActionStatus { "Pending", "Executed", "Expired", "Blocked" };
+enum RedoActionStatus { "Available", "Cleared", "Blocked", "Expired", "Executed" };
 enum ErrorKind {
-    "Io", "Db", "Config", "Classify", "Conflict", "DuplicateFile",
-    "FileNotFound", "RepoNotInitialized", "InvalidPath",
+    "Io", "Db", "Config", "Validation", "Classify", "Conflict", "DuplicateFile",
+    "FileNotFound", "ExpiredAction", "RepoNotInitialized", "InvalidPath",
     "ICloudPlaceholder", "StagingRecoveryRequired", "PermissionDenied", "Internal"
 };
 enum ErrorSeverity { "Low", "Medium", "High", "Critical" };
@@ -1186,10 +1295,12 @@ interface CoreError {
     Io(string message);
     Db(string message);
     Config(string reason);
+    Validation(string reason);
     Classify(string reason);
     Conflict(string path);
     DuplicateFile(string existing_path);
     FileNotFound(string path);
+    ExpiredAction(string action_id);
     RepoNotInitialized(string path);
     InvalidPath(string path);
     ICloudPlaceholder(string path);

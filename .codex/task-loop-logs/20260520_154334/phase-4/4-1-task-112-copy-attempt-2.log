@@ -1,0 +1,27 @@
+一、执行结论：已完成。
+
+二、执行范围：单任务 `4-1/task-112`。实现改动集中在 `apps/macos/AreaMatrix/**` 与 `apps/macos/AreaMatrixTests/**`，补齐 S2-09 的列表右键菜单入口、命令面板上下文入口、统一 batch add tags sheet 路由、主窗口 Undo toast host，以及对应测试证据。`apps/macos/AreaMatrix.xcodeproj/project.pbxproj` 最终无 diff。
+
+三、完成情况：
+- page-feature 覆盖：`4-1/task-110` / `4-1/task-111` 对应 C2-06 / C2-07，已保持闭环。
+- 页面入口闭环：已补齐 Detail multi、列表右键菜单、命令面板上下文命令三类入口。
+- 错误态 / 退出 / Undo：批量添加后统一进入主窗口 Undo toast，Undo 后按 refresh targets 刷新选择详情、change log、undo actions。
+- mock / fixture / 硬编码：生产路径仍走 `CoreBridge` 能力抽象；新增 fixture 仅用于 XCTest。
+- Forbidden Touches：未触碰 `core/src/**`。
+
+四、工程质量：
+- 文件长度复核通过，触及文件均 ≤ 500 行。
+- 未新增依赖，未引入 `try!`、强制解包、mock-only 生产路径或一次性通过态。
+- 保留并适配原有命令面板 route 测试断言，没有削弱既有覆盖。
+- 仍有 task-loop 运行状态文件在工作树中显示为 dirty / untracked，我未把它们作为产品实现改动处理。
+
+五、验证情况：
+- 已运行：`./dev check task 4-1/task-112`
+- 结果：通过，exit 0。
+- 包含：`prompt doctor` OK、`git diff --check` OK、macOS `xcodebuild ... build CODE_SIGNING_ALLOWED=NO` 成功。
+- 额外核对：`git diff -- core/src` 无输出；`project.pbxproj` 无 diff。
+
+六、风险与后续：
+- 剩余风险：未做真实窗口点击级 UI smoke，仅完成 manifest 指定 task gate 与代码/测试证据。
+- 建议下一个任务：进入该 task 的 verify-ready 验收或继续 runner 后续队列。
+

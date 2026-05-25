@@ -1,10 +1,20 @@
-//! C2-05 and C2-06 tag contract behavior and types.
+//! C2-05, C2-06, and C2-19 tag contract behavior and types.
 
 use std::path::{Component, PathBuf};
 
 use serde::{Deserialize, Serialize};
 
 use crate::{db, CoreError, CoreResult};
+
+mod suggestion_types;
+mod suggestions;
+
+pub use suggestion_types::{
+    ApplyTagSuggestionItem, ApplyTagSuggestionsRequest, TagSuggestion,
+    TagSuggestionApplyItemResult, TagSuggestionApplyReport, TagSuggestionApplyStatus,
+    TagSuggestionContext, TagSuggestionMatch, TagSuggestionReport, TagSuggestionRequest,
+    TagSuggestionSource, TagSuggestionStatus,
+};
 
 const AREA_MATRIX_DIR: &str = ".areamatrix";
 const MAX_TAG_LEN: usize = 64;
@@ -181,6 +191,50 @@ pub fn batch_add_tags(
         .map_err(normalize_tag_metadata_error)
 }
 
+/// Suggests deterministic non-AI tags for one active file.
+///
+/// C2-19 owns the Stage 2 tag-suggestion contract for S2-23. Suggestions may
+/// inspect file metadata, repository-relative path, optional import source
+/// context, and existing tag registry state. They must not read file contents,
+/// call AI or remote providers, access the network, write metadata, mutate
+/// files, change filters, or touch app-layer code.
+///
+/// # Errors
+///
+/// Returns `CoreError::FileNotFound { path }` when `file_id` is invalid or the
+/// active file cannot be found, `CoreError::Validation { reason }` when the
+/// request limit or context is invalid, `CoreError::Conflict { path }` when
+/// metadata cannot produce a deterministic suggestion state, and
+/// `CoreError::Db { message }` when tag or file metadata cannot be read.
+pub fn suggest_tags_for_file(
+    repo_path: String,
+    request: TagSuggestionRequest,
+) -> CoreResult<TagSuggestionReport> {
+    suggestions::suggest_tags_for_file(repo_path, request)
+}
+
+/// Applies selected C2-19 tag suggestions to one active file.
+///
+/// The apply contract creates or reuses normalized tags, writes file/tag
+/// relations, emits change-log rows, and returns an undo token for C2-07 when
+/// at least one new relation is written. It must never apply unselected
+/// suggestions, update search filters, move/rename/delete files, read file
+/// contents, call AI/network providers, or modify app-layer code.
+///
+/// # Errors
+///
+/// Returns `CoreError::FileNotFound { path }` when the file id is invalid or
+/// absent, `CoreError::Validation { reason }` when selected/edited suggestions
+/// are empty or invalid, `CoreError::Conflict { path }` when duplicate edited
+/// suggestions cannot be applied deterministically, and `CoreError::Db {
+/// message }` when tag metadata, change-log, or undo writes fail.
+pub fn apply_tag_suggestions(
+    repo_path: String,
+    request: ApplyTagSuggestionsRequest,
+) -> CoreResult<TagSuggestionApplyReport> {
+    suggestions::apply_tag_suggestions(repo_path, request)
+}
+
 fn validate_tag_repo_path(repo_path: &str) -> CoreResult<PathBuf> {
     if repo_path.trim().is_empty() {
         return Err(CoreError::invalid_path("repository path is required"));
@@ -190,6 +244,75 @@ fn validate_tag_repo_path(repo_path: &str) -> CoreResult<PathBuf> {
         return Err(CoreError::invalid_path("repository path is invalid"));
     }
     Ok(repo)
+}
+
+fn validate_tag_suggestion_repo_path(repo_path: &str) -> CoreResult<PathBuf> {
+    validate_tag_repo_path(repo_path).map_err(|_| {
+        CoreError::db("tag suggestion metadata is unavailable for this repository path")
+    })
+}
+
+fn validate_suggestion_limit(limit: i64) -> CoreResult<()> {
+    if !(1..=50).contains(&limit) {
+        return Err(CoreError::validation("tag suggestion limit must be 1..50"));
+    }
+    Ok(())
+}
+
+fn validate_suggestion_context(context: Option<&TagSuggestionContext>) -> CoreResult<()> {
+    let Some(context) = context else {
+        return Ok(());
+    };
+    if let Some(source_folder) = context.source_folder.as_deref() {
+        validate_context_text(source_folder, "source folder")?;
+    }
+    for keyword in &context.source_keywords {
+        validate_context_text(keyword, "source keyword")?;
+    }
+    Ok(())
+}
+
+fn validate_context_text(value: &str, label: &str) -> CoreResult<()> {
+    let trimmed = value.trim();
+    if trimmed.is_empty()
+        || trimmed.chars().count() > 128
+        || trimmed.contains('\0')
+        || trimmed.contains("://")
+    {
+        return Err(CoreError::validation(format!(
+            "tag suggestion {label} is invalid"
+        )));
+    }
+    Ok(())
+}
+
+fn validate_apply_suggestions(suggestions: &[ApplyTagSuggestionItem]) -> CoreResult<Vec<String>> {
+    if suggestions.is_empty() {
+        return Err(CoreError::validation(
+            "at least one tag suggestion must be selected",
+        ));
+    }
+    let mut slugs = Vec::new();
+    for suggestion in suggestions {
+        if suggestion.suggestion_id.trim().is_empty() {
+            return Err(CoreError::validation("suggestion id is required"));
+        }
+        let slug = normalize_suggestion_slug(&suggestion.slug)?;
+        if suggestion.display_name.trim().is_empty() || suggestion.display_name.contains('\0') {
+            return Err(CoreError::validation(
+                "tag suggestion display name is invalid",
+            ));
+        }
+        if slugs.iter().any(|existing| existing == &slug) {
+            return Err(CoreError::conflict(format!("tag:{slug}")));
+        }
+        slugs.push(slug);
+    }
+    Ok(slugs)
+}
+
+fn normalize_suggestion_slug(slug: &str) -> CoreResult<String> {
+    normalize_tag_value(slug).map_err(|_| CoreError::validation("tag suggestion slug is invalid"))
 }
 
 fn validate_file_id(file_id: i64) -> CoreResult<()> {

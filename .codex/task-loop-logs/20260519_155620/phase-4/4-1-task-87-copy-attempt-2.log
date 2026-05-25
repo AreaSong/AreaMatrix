@@ -1,0 +1,48 @@
+一、执行结论
+
+- 已完成：`4-1/task-87` repair retry 已修复上次验收指出的两个阻塞项。
+
+二、执行范围
+
+- 单任务：`4-1/task-87`
+- 修改文件：
+  - [core/src/db/redo.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/db/redo.rs)
+  - [core/src/db/redo/records.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/db/redo/records.rs)
+  - [core/src/db/redo/tags.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/db/redo/tags.rs)
+  - [core/src/db/redo/file_actions.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/db/redo/file_actions.rs)
+  - [core/src/db/redo/batch_file_actions.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/db/redo/batch_file_actions.rs)
+  - [core/src/db/redo/file_state.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/db/redo/file_state.rs)
+  - [core/src/db/redo/change_log.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/db/redo/change_log.rs)
+  - [core/tests/redo_action_log_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/redo_action_log_implementation.rs)
+
+三、完成情况
+
+- 只实现 C2-18：通过，未实现相邻 C*、未接 UI。
+- 输入、输出、DB/FS 变化、错误映射：通过，补齐 rename/move/trash redo 与失败 rollback 证据。
+- Rust Core 不依赖平台 UI API：通过，未触碰 `apps/**`。
+- 最小测试支撑：通过，implementation 测试从 3 个扩到 8 个。
+- Completion standard：通过，C2-18 可通过 Core API 测试验证，未越界触碰用户文件安全边界。
+- Forbidden Touches：未触碰；`git diff --name-only -- apps` 无输出。
+
+四、工程质量
+
+- 已把原 1248 行 `core/src/db/redo.rs` 拆成职责清晰的模块；当前新增/改动的 redo 模块均低于 500 行，测试文件 416 行。
+- 无新增依赖；无 mock-only、硬编码通过态或一次性脚本。
+- public API / UDL 合同未变，本次无需同步 `core/area_matrix.udl`。
+- rollback 测试通过 DB trigger 模拟 change-log 写失败，证明文件移动/Trash redo 失败后 FS、DB、redo/undo 状态不被污染。
+
+五、验证情况
+
+- 已运行：`./dev check task 4-1/task-87`
+- 通过：
+  - `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`：OK，tasks 637 / manifests 637 / high risk tasks 633
+  - `git diff --check`：通过
+  - `cargo test --test redo_action_log_contract_api -- --nocapture`：4 passed
+  - `cargo test --test redo_action_log_implementation -- --nocapture`：8 passed
+- 未运行：未升级到 `cargo test --workspace`、`./dev check core` 或 `./dev check all`，因为当前 task manifest 只允许 `./dev check task 4-1/task-87`。
+
+六、风险与后续
+
+- 剩余风险：本地 CI/Git checkpoint 证据不属于本 task manifest 验证范围；合并前仍需按仓库流程走 review/CI。
+- 建议下一个任务：进入 `4-1/task-88`，即 C2-18 后续 failure-edge / validation 范围任务。
+

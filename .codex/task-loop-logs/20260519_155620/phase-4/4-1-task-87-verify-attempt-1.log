@@ -1,0 +1,109 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`4-1/task-87`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-87-c2-18-implementation.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/tests/**`
+
+三、完成度摘要
+
+- 已覆盖项数：9
+- 未覆盖项数：0
+- 通过项数：6
+- 不通过项数：3
+- 阻塞项数：2
+
+四、逐项验收结果
+
+- 项目：Exact Docs 读取与存在性
+- 结果：通过
+- 证据：5 个 Exact Docs 均存在并已核对，C2-18 要求 redo API、undo/redo 状态更新、redo change log、安全执行路径和错误码。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-2-experience/C2-18-redo-action-log.md:1`
+
+- 项目：Expected New Paths
+- 结果：通过
+- 证据：`core/src/**`、`core/area_matrix.udl`、`core/tests/**` 均有 C2-18 相关落地。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/redo.rs:85`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:212`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/redo_action_log_implementation.rs:105`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git status --short apps core core/area_matrix.udl core/tests` 无 `apps/**` 输出；全局 status 仅显示 `progress.json` 和 task-loop 本地日志目录。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/**`
+
+- 项目：只实现 C2-18，不顺手实现同阶段其他 C*
+- 结果：通过
+- 证据：新增公开入口集中在 `list_redo_actions` / `redo_action`，API 文档也声明不实现 Undo 本身、批量操作、classifier、AI、远程同步或独立 Redo 页面。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:1116`
+
+- 项目：按能力规格落实输入、输出、DB/文件系统变化和错误映射
+- 结果：不通过
+- 证据：实现包含 batch tag redo、文件 redo、change log、undo action 恢复等路径，但当前 task 证据只测试 batch tag redo 和 redo stack 清空；文档要求文件系统变化“必须使用原 action 的安全执行路径”且失败不破坏 FS/DB，当前缺少 rename/move/trash redo 的测试证据。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/db/redo.rs:445`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/redo_action_log_implementation.rs:105`
+
+- 项目：保持 Rust Core 不依赖平台 UI API
+- 结果：通过
+- 证据：C2-18 实现在 Rust core 与 DB/fs helper 中，未触碰 `apps/**`，未看到平台 UI API 依赖。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/redo.rs:1`
+
+- 项目：必要时补最小测试支撑，不做页面接入
+- 结果：不通过
+- 证据：已补 targeted tests，且未做页面接入；但高风险 redo 文件系统路径、失败回滚路径未被本 task 测试覆盖，不能满足“必要测试支撑”。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/redo_action_log_implementation.rs:130`
+
+- 项目：C2-18 核心行为可被测试或桥接调用验证
+- 结果：通过
+- 证据：UDL 暴露 `list_redo_actions` / `redo_action`，targeted tests 通过。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:212`
+
+- 项目：未触碰用户文件安全边界之外行为
+- 结果：不通过
+- 证据：未发现越界目录触碰，但 C2-18 实现包含文件移动和 Trash redo；缺少文件系统 redo / rollback 测试，不能证明高风险用户文件安全边界已满足。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/db/redo.rs:613`
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过。`core/src/db/redo.rs` 为 1248 行，明显超过编码规范“单文件 ≤ 500 行”阈值；该文件混合 listing、execution、JSON parsing、file movement、Trash redo、change log、DB state 更新等职责。
+- 注释 / rustdoc / 文档同步：通过。公开 API 有 rustdoc，UDL 与 Core API 存在 C2-18 合同。
+- 错误处理与边界处理：不通过。代码有错误分支与 rollback guard，但高风险文件系统 redo 的失败不破坏 FS/DB 缺少测试证据。
+- 测试与验证覆盖：不通过。`./dev check task 4-1/task-87` 通过，但 targeted tests 只覆盖合同、batch tag redo、redo stack cleared，不覆盖 rename/move/trash redo 与 rollback。
+- 占位、硬编码、mock-only、一次性实现检查：通过。未发现 mock-only 或空壳；实现连接真实 DB 和文件系统路径。
+
+六、阻塞项
+
+- P0：高风险文件系统 redo / rollback 缺少 task 内测试证据
+  - 说明：C2-18 文档要求 Redo 文件系统变化使用原 action 安全路径，且失败不破坏当前 FS/DB；实现覆盖 file action redo，但 `redo_action_log_implementation.rs` 只测试 batch tag redo 和 redo stack 清空。
+  - 绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/redo_action_log_implementation.rs:105`
+  - 为什么导致不通过：验收规则要求无法证明通过即不通过；高风险用户文件边界缺少测试与回滚证据不能判定完成。
+
+- P1：新增实现文件严重超过编码规范文件长度阈值
+  - 说明：`core/src/db/redo.rs` 共 1248 行，超过 `docs/development/coding-standards.md` 规定的单文件 ≤ 500 行。
+  - 绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/core/src/db/redo.rs:1`
+  - 为什么导致不通过：工程质量规则要求明显违反编码规范或缺少可维护结构时验收不通过。
+
+七、验证情况
+
+- 跑了哪些验证：
+  - `./dev check task 4-1/task-87`
+- 哪些通过：
+  - `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`：通过，tasks 637 / manifests 637 / high risk tasks 633
+  - `git diff --check`：通过
+  - `cargo test --test redo_action_log_contract_api -- --nocapture`：通过，4 passed
+  - `cargo test --test redo_action_log_implementation -- --nocapture`：通过，3 passed
+- 哪些失败：
+  - 命令层面无失败
+- 哪些缺失：
+  - C2-18 文件系统 redo 行为测试：rename/move/category/trash redo
+  - C2-18 文件系统 redo 失败 rollback / DB 不污染测试
+  - 针对 1248 行 `core/src/db/redo.rs` 的结构拆分或可维护性证据
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。虽然 manifest 验证命令通过，当前实现仍缺少高风险文件系统 redo 安全证据，并存在明确编码规范阻塞。
+
+VERIFY_RESULT: FAIL

@@ -1,0 +1,43 @@
+一、执行结论
+
+已完成。
+
+二、执行范围
+
+单任务：`4-1/task-114`，只处理 `S2-11 undo-history` + `C2-07 undo-action-log`。
+
+修改文件：
+- `apps/macos/AreaMatrix/Models/MainFileListDiagnosticsActions.swift`
+- `apps/macos/AreaMatrix/Views/Main/ImportBatchNamingOptionsSection.swift`
+- `apps/macos/AreaMatrix/Views/Main/MainRepositoryContentCategoryMoveRefresh.swift`
+- `apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift`
+- `apps/macos/AreaMatrixTests/ImportProgressPageIntegrationVerifyTests.swift`
+
+三、完成情况
+
+核对清单通过：已读取 task、共享规则、切片规则、工程质量规则、编码规范、repo-local skill、依赖图、manifest、Exact Docs、Existing Code。实现只接入 C2-07 的 `listUndoActions` / `undoAction` 真实 CoreBridge 路径，没有实现 C2-18 Redo 或同页其他能力。
+
+完成标准通过：`UndoHistoryPanel` 可从 toolbar / toast history route 打开，读取真实 undo action snapshot，展示 pending / blocked / expired / executed 状态，支持 `Undo latest`，执行后按 `refreshTargets` 刷新列表、详情、change log 和 undo toast。没有使用 mock/fixture 伪造生产闭环；测试中的 recording store 只用于 XCTest。
+
+Forbidden Touches：未触碰 `core/src/**`。也未修改 `core/area_matrix.udl` 或 `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`。
+
+四、工程质量
+
+代码结构满足当前任务边界，未新增依赖，未引入 `try!`、强制解包、直接 UniFFI 调用或 Redo 调用。文件长度核对均低于 500 行。错误路径覆盖了加载失败、不可撤销 latest、undo 执行失败和 blocked action 保留原因。
+
+五、验证情况
+
+已运行：
+- `./dev check task 4-1/task-114`：通过。
+  - `prompt_pipeline.py doctor`：OK，637 tasks / 637 manifests。
+  - `git diff --check`：通过。
+  - `xcodebuild ... build CODE_SIGNING_ALLOWED=NO`：BUILD SUCCEEDED。
+
+说明：第一次验证失败在 Swift 编译，原因是 `.frame(width:minHeight:)` 参数组合非法；已改为合法的链式 `.frame(width:)` + `.frame(minHeight:)` 后重新运行并通过。
+
+六、风险与后续
+
+剩余风险：没有做真实窗口点击级 UI smoke，只完成了 task 指定验证和 SwiftUI/XCTest 结构证据。工作区还有既存脏文件 `.codex/task-loop-runs/20260520_154334/summary.json`、`tasks/prompts/_shared/progress.json`，不属于本任务修改范围，我未处理。
+
+建议下一个任务：继续 `4-1/task-115`，但保持 S2-12 / C2-08 与 C2-07 的边界，不把 S2-11 的 Redo 或其他 batch 能力并入本任务链路。
+

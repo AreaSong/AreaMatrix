@@ -1,0 +1,93 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`4-1/task-113`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-113-s2-10-c2-07-undo-action-log.md`
+- 主要实现路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`
+- 主要测试路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`
+
+三、完成度摘要
+
+- 已覆盖项数：8
+- 未覆盖项数：0
+- 通过项数：6
+- 不通过项数：2
+- 阻塞项数：2
+
+四、逐项验收结果
+
+- 项目：Exact Docs / manifest / Existing Code 读取与交叉核验
+- 结果：通过
+- 证据：已读取 S2-10 页面规格、Stage 2 control map、Core API、C2-07 spec、`core/area_matrix.udl` 和 macOS 代码。
+- 涉及文件：manifest 所列全部 Exact Docs、`apps/**`、`core/area_matrix.udl`
+
+- 项目：Expected New Paths 落地
+- 结果：通过
+- 证据：`apps/macos/AreaMatrix/**` 与 `apps/macos/AreaMatrixTests/**` 均存在，且有本 task 相关改动。
+- 涉及文件：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git diff --name-only -- core/src core/area_matrix.udl ...` 未显示 `core/src/**` 改动；`core/area_matrix.udl` 也未被本轮改动。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+- 项目：C2-07 真实 CoreBridge 接入
+- 结果：通过
+- 证据：`CoreUndoActionLogging` 调用 `AreaMatrix.listUndoActions` 与 `AreaMatrix.undoAction`，不是生产 mock。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreTagCRUD.swift:10`
+
+- 项目：S2-10 用户可见 Undo toast
+- 结果：通过
+- 证据：toast 展示 ready / disabled / undoing / undone / failed 状态，提供 `Undo`、`View history`、`View details`、dismiss，Cmd+Z 调用同一 undo action。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportBatchOverviewSections.swift:38`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportProgressListIntegration.swift:234`
+
+- 项目：只处理 S2-10 + C2-07，不顺手实现相邻页面
+- 结果：不通过
+- 证据：本 task 新增 `UndoHistoryRouteView`，明确使用 `pageID: "S2-11"` 和 `S2-11-C2-07-undo-history-route`，测试也断言 S2-11 route。S2-11 属于相邻页面，应由 `4-1/task-114` 覆盖。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportProgressListIntegration.swift:128`
+
+- 项目：任务要求验证
+- 结果：通过
+- 证据：`./dev check task 4-1/task-113` 退出码 0；doctor OK、`git diff --check` 通过、macOS build `BUILD SUCCEEDED`。
+- 涉及命令：`./dev check task 4-1/task-113`
+
+- 项目：测试与验证覆盖
+- 结果：不通过
+- 证据：额外运行 `./dev test macos` 后失败，且脚本明确归因为 non-sandbox reason；`ImportBatchICloudPageIntegrationTests.swift:106` 在 `XCTAssertEqual` autoclosure 中使用 `await`，导致测试 target 编译失败。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportBatchICloudPageIntegrationTests.swift:106`
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过。生产代码基本可读且文件长度未超过 500 行，但实现混入 S2-11 route，违反当前 page-feature task 边界。
+- 注释 / rustdoc / 文档同步：通过。未新增 Rust public API；Core API / UDL 已有 C2-07 合同。
+- 错误处理与边界处理：通过。Undo list / undo action 失败映射到 `CoreErrorMappingSnapshot`，blocked / expired / unavailable 状态有用户可读原因。
+- 测试与验证覆盖：不通过。`./dev test macos` 编译失败，测试证据不能支撑完成。
+- 占位、硬编码、mock-only、一次性实现检查：通过生产路径；测试中 recording store 是测试替身，不是生产 mock。未发现生产路径用静态状态伪造 Core 闭环。
+
+六、阻塞项
+
+- P0：macOS 测试 target 编译失败  
+  说明：`await undoStore.listRequests()` 被直接放进 `XCTAssertEqual` 的 autoclosure，Swift 不支持该并发用法。  
+  路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportBatchICloudPageIntegrationTests.swift:106`  
+  为什么导致不通过：`./dev test macos` 退出码 65，测试 target 未能编译，不能证明本 task 的测试覆盖有效。
+
+- P1：任务范围扩散到 S2-11  
+  说明：S2-10 task 新增并测试了 `UndoHistoryRouteView`，使用 `pageID: "S2-11"` 与 S2-11 accessibility id。  
+  路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportProgressListIntegration.swift:128`  
+  为什么导致不通过：task checklist 明确禁止实现相邻页面；S2-11 已有后续 task `4-1/task-114`。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-113`，通过。
+- 已运行：`git diff --check`，通过。
+- 已运行：`./dev test macos`，失败；非 sandbox 编译失败。
+- 缺失：没有可用的 macOS test pass 证据；未做真实窗口 UI smoke，但当前已有编译阻塞，先不作为额外阻断。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+
+VERIFY_RESULT: FAIL

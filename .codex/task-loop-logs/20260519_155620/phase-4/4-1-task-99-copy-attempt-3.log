@@ -1,0 +1,39 @@
+一、执行结论
+
+已完成。上次验收阻塞的 XCTest 编译错误已修复。
+
+二、执行范围
+
+单任务：`4-1/task-99`
+
+本次 repair 修改文件：
+
+- [MainRepoExternalRemovalTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/MainRepoExternalRemovalTests.swift:95)
+
+三、完成情况
+
+- 修复 `.searchFiltersDbFixture()` 不可见问题：在当前测试文件内补了 `CoreErrorMappingSnapshot.searchFiltersDbFixture()`，不再依赖另一个测试文件的 private helper。
+- 修复 Swift 枚举 case 推断错误：将 `.smartList(...)` 和 `.idle` 改为显式类型 `MainSearchExitContext.smartList(...)`、`MainSearchFacetsState.idle`。
+- Forbidden Touches：未触碰。`git diff --name-only -- core/src ':(glob)core/src/**'` 无输出。
+- 未扩展到 `S2-02 + C2-02` 之外的功能。
+
+四、工程质量
+
+代码只改测试可编译性，未改生产路径、Core Rust、UDL 或依赖。修复是局部、可读的测试支撑代码，没有 mock-only 产品闭环、硬编码通过态或一次性脚本逻辑。未新增依赖，无 rustdoc 需求。
+
+五、验证情况
+
+已运行：
+
+- `./dev test macos --derived-data-path apps/macos/DerivedData/AreaMatrix --keep-derived-data --only-testing ...`
+  - 结果：通过。标准 `xcodebuild test` 被本地 `testmanagerd` sandbox 限制挡住，但测试 bundle 已成功构建，仓库脚本按规则用 `xcrun xctest` 直接执行并通过。
+- `./dev check task 4-1/task-99`
+  - 结果：通过，exit 0。
+  - 包含：`prompt doctor OK`、`git diff --check`、macOS `xcodebuild build`，最终 `BUILD SUCCEEDED`。
+
+六、风险与后续
+
+剩余风险：未做 UI 真机交互 smoke；本次 retry 只修复上次明确阻塞的 XCTest 编译失败，并按 manifest 上限完成验证。
+
+建议下一个任务：进入 `4-1/task-99` verify-ready 重新验收。当前阻塞项应已解除。
+

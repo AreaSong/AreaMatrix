@@ -1,0 +1,93 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`4-1/task-106`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-106-s2-07-c2-05-tag-crud.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：8
+- 未覆盖项数：1
+- 通过项数：7
+- 不通过项数：1
+- 阻塞项数：1
+
+四、逐项验收结果
+
+- 项目：Exact Docs / Existing Code / Expected New Paths
+- 结果：通过
+- 证据：manifest `4-1/task-106` 声明的 4 个 Exact Docs 均存在并已读取；`apps/macos/AreaMatrix/**` 和 `apps/macos/AreaMatrixTests/**` 已有落地文件。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-4.md:3098`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git diff --name-only -- core/src` 无输出，未触碰 `core/src/**`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+- 项目：C2-05 真实 CoreBridge 闭环
+- 结果：通过
+- 证据：`CoreTagCRUD` 通过 `CoreBridge` 调用 `AreaMatrix.listTags/addTag/removeTag`；未发现 mock-only 成功路径。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreTagCRUD.swift:32`
+
+- 项目：S2-07 用户可见添加 / 创建 / 移除入口
+- 结果：通过
+- 证据：Detail Meta 挂载 `DetailTagSection`，包含 `+ Add...`、输入框、候选、Create 行、chip 删除和 Retry。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryDetailPane.swift:300`
+
+- 项目：错误恢复与失败保留状态
+- 结果：通过
+- 证据：新增测试覆盖添加失败保留 previous state、移除失败保留 chip、失败不提供 Undo。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/DetailTagPageFeatureTests.swift:6`
+
+- 项目：Undo toast 只撤销本次标签关系变更
+- 结果：不通过
+- 证据：`detailTagUndoToast` 在切换选择或清空详情时没有被清理；`DetailTagSection` 只要收到任意 `undoToast` 就显示，未按当前 `file.id` 过滤。切到另一个文件后会显示上一个文件的 Undo toast，而 `undoLastDetailTagChange` 又因 `selection.singleFileID == toast.fileID` guard 直接 no-op。
+- 涉及文件：
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileListModel.swift:104`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileListModel.swift:473`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/DetailTagSection.swift:96`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainDetailTagActions.swift:30`
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过，C2-05 成功路径拆分清晰，但 Undo toast 生命周期与当前文件选择不一致。
+- 注释 / rustdoc / 文档同步：通过，本 task 未新增 public Rust API；Core API / UDL 已有 `add_tag/remove_tag/list_tags`。
+- 错误处理与边界处理：不通过，失败路径已有覆盖，但跨文件选择后的 Undo 状态会泄漏到错误文件。
+- 测试与验证覆盖：不通过，现有测试未覆盖“添加标签后切换文件，旧 Undo toast 不应显示 / 不应 no-op”的场景。
+- 占位、硬编码、mock-only、一次性实现检查：通过，未发现用 mock 或静态状态伪造真实 Core 闭环。
+
+六、阻塞项
+
+- P1：Undo toast 可跨文件泄漏，导致错误文件上出现无效 Undo
+  - 说明：S2-07 要求 Undo 只撤销本次标签关系变更；当前 toast 未绑定当前显示文件，切换文件后仍可见但点击不会生效。
+  - 绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/DetailTagSection.swift:96`
+  - 为什么导致不通过：这是用户可见功能错误，且现有测试没有覆盖，不能证明 S2-07 的 Undo 恢复语义达标。
+
+七、验证情况
+
+- 跑了哪些验证：
+  - `./dev check task 4-1/task-106`
+  - `git diff --name-only -- core/src`
+- 哪些通过：
+  - `prompt doctor`: OK，`tasks: 637`，`manifests: 637`，`high risk tasks: 633`
+  - `git diff --check`: 通过
+  - `xcodebuild ... build CODE_SIGNING_ALLOWED=NO`: `BUILD SUCCEEDED`
+  - Forbidden Touches 检查：未触碰 `core/src/**`
+- 哪些失败：
+  - 命令无失败；功能验收因 Undo toast 状态泄漏不通过。
+- 哪些缺失：
+  - 缺少跨文件选择后清理 / 过滤 `detailTagUndoToast` 的实现或测试证据。
+  - 未做真机窗口 UI smoke；manifest 未强制，但仍是页面交互残余风险。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+
+VERIFY_RESULT: FAIL

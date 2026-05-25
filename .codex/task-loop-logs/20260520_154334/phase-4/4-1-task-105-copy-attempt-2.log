@@ -1,0 +1,44 @@
+一、执行结论
+
+已完成。
+
+二、执行范围
+
+单任务：`4-1/task-105`
+
+修改文件清单：
+- `apps/macos/AreaMatrix/Models/MainListSystemActions.swift`
+- `apps/macos/AreaMatrix/Views/Main/MainFileActionRoutingSheet.swift`
+- `apps/macos/AreaMatrix/Views/Main/MainRepositoryContentCategoryMoveRefresh.swift`
+- `apps/macos/AreaMatrix/Views/Main/MainRepositoryContentNoteDrafts.swift`
+- `apps/macos/AreaMatrixTests/ImportBatchNamingStrategyTests.swift`
+- `apps/macos/AreaMatrixTests/ImportFolderCoreBridgeModeTests.swift`
+
+工作区里还存在 task-loop evidence/progress 改动与日志文件，我没有回滚这些 runner 状态文件。
+
+三、完成情况
+
+- page-feature task 闭环：已补 S2-06 page integration 缺口，保留 C2-03/C2-04 真实 CoreBridge 路径。
+- 页面状态/入口/退出/错误态：Edit query 保存失败现在保留 draft、显示错误并提供 `Retry`。
+- Smart List 行状态：移除固定 `--` 通过态，改为根据当前真实搜索状态显示数量、`...`、`--`、`Invalid query` 和 warning 信息。
+- 管理按钮语义：Rename 主按钮改为 `Save`；Delete 主按钮使用 destructive role 的 `Delete Smart List`。
+- Forbidden Touches：未触碰 `core/src/**`，`git diff --name-only -- core/src` 无输出。
+- 未新增 control map 外能力。
+
+四、工程质量
+
+代码仍走现有 `CoreBridge` / `runSmartList` / `searchState` 数据流，没有引入 mock-only、fixture-only 或硬编码完成态。新增状态模型有对应测试覆盖结果数量、异常 query、结果不可用和保存失败 Retry。触碰的主要 Swift 文件行数已控制在 500 行以内。
+
+五、验证情况
+
+已运行：
+
+```bash
+./dev check task 4-1/task-105
+```
+
+结果：通过。包含 prompt doctor OK、`git diff --check` 通过、macOS `xcodebuild ... build CODE_SIGNING_ALLOWED=NO` 最终 `BUILD SUCCEEDED`。运行中有 CoreSimulator/FSEvents 本地环境警告，但未导致命令失败。
+
+六、风险与后续
+
+剩余风险：本 task manifest 只要求 `./dev check task 4-1/task-105`，未额外运行 `./dev test macos` 或全量门禁。建议下一个任务进入该 task 的 verify-ready 验收。  

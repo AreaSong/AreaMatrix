@@ -234,3 +234,68 @@ struct ChangeCategorySheet: View {
         return MainFileActionCategoryOptions.defaultTargetCategory(for: file, categoryRows: categoryRows)
     }
 }
+
+struct ClassifierRuleEditorRouteView: View {
+    let repoPath: String
+    let context: BatchChangeCategoryNewCategoryReturnContext?
+    let onCancelFromBatchCategory: (BatchChangeCategoryNewCategoryReturnContext) -> Void
+    let onAcceptedCategoryFromBatchCategory: (String, BatchChangeCategoryNewCategoryReturnContext) -> Void
+
+    init(
+        repoPath: String,
+        context: BatchChangeCategoryNewCategoryReturnContext?,
+        onCancelFromBatchCategory: @escaping (BatchChangeCategoryNewCategoryReturnContext) -> Void = { _ in },
+        onAcceptedCategoryFromBatchCategory: @escaping (String, BatchChangeCategoryNewCategoryReturnContext) -> Void = { _, _ in }
+    ) {
+        self.repoPath = repoPath
+        self.context = context
+        self.onCancelFromBatchCategory = onCancelFromBatchCategory
+        self.onAcceptedCategoryFromBatchCategory = onAcceptedCategoryFromBatchCategory
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            ClassifierSettingsPane(
+                repoPath: repoPath,
+                onSavedCategory: postSavedCategory
+            )
+            if let context {
+                Divider()
+                createBar(context)
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(
+            for: ClassifierRuleEditorSaveEvents.savedCategoryNotification
+        )) { notification in
+            handleClassifierSave(notification)
+        }
+    }
+
+    private func createBar(_ context: BatchChangeCategoryNewCategoryReturnContext) -> some View {
+        HStack(spacing: 12) {
+            Text("Edit classifier.yaml in S2-19. Validate returns to S2-12 when one new category is saved.")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+            Spacer()
+            Button("Cancel") { onCancelFromBatchCategory(context) }
+                .keyboardShortcut(.cancelAction)
+        }
+        .padding(.horizontal, 34).padding(.vertical, 12)
+        .accessibilityIdentifier("S2-12-classifier-editor-return-context")
+    }
+
+    private func handleClassifierSave(_ notification: Notification) {
+        guard let context,
+              let savedCategory = ClassifierRuleEditorSaveEvents.savedCategory(from: notification)
+        else {
+            return
+        }
+        onAcceptedCategoryFromBatchCategory(savedCategory, context)
+    }
+
+    private func postSavedCategory(_ category: String) {
+        NotificationCenter.default.post(
+            ClassifierRuleEditorSaveEvents.notification(savedCategory: category)
+        )
+    }
+}

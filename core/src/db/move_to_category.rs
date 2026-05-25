@@ -6,7 +6,9 @@ use uuid::Uuid;
 
 use crate::{CoreError, CoreResult, FileEntry};
 
-use super::{open_repo_connection, origin_from_db, storage_mode_from_db, undo};
+use super::{
+    clear_redo_stack_in_tx, open_repo_connection, origin_from_db, storage_mode_from_db, undo,
+};
 
 pub(crate) fn move_repo_owned_file_to_category(
     repo_path: &Path,
@@ -224,6 +226,7 @@ fn update_file_category_and_log(
         params![file_id, detail_json],
     )
     .map_err(|error| CoreError::db(error.to_string()))?;
+    clear_redo_stack_in_tx(&tx, occurred_at)?;
     if insert_undo {
         let (final_path, final_name, index_only) = match final_location {
             Some((path, name)) => (path, name, false),
@@ -267,6 +270,7 @@ fn update_file_category_and_log_on_connection(
     if changed != 1 {
         return Err(CoreError::db("database error"));
     }
+    clear_redo_stack_in_tx(connection, chrono::Utc::now().timestamp())?;
     connection
         .execute(
             "INSERT INTO change_log (file_id, action, detail_json, occurred_at)

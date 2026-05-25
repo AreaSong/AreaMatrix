@@ -1,0 +1,85 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`4-1/task-111`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-111-s2-09-c2-07-undo-action-log.md`
+- 主要实现路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`
+- 测试路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`
+
+三、完成度摘要
+
+- 已覆盖项数：11
+- 未覆盖项数：0
+- 通过项数：10
+- 不通过项数：1
+- 阻塞项数：1
+
+四、逐项验收结果
+
+- 项目：只处理 S2-09 页面中的 C2-07 功能点
+- 结果：通过
+- 证据：`S2-09` multi selection 中 `BatchAddTagsTrigger` 接入 `CoreUndoActionLogging`，Undo toast 只消费 `undoToken`、`listUndoActions`、`undoAction`
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportBatchOverviewSections.swift:3`
+
+- 项目：读取页面规格、control map、Core API、C2-07 能力规格
+- 结果：通过
+- 证据：已核对 `S2-09`、`stage-2-control-map`、`core-api.md`、`C2-07-undo-action-log.md`；control map 声明 `S2-09: C2-06, C2-07`
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-2-control-map.md`
+
+- 项目：只接入 C2-07 对应 CoreBridge / 状态 / 错误映射
+- 结果：通过
+- 证据：`CoreBridge` 调用真实 `AreaMatrix.listUndoActions` 和 `AreaMatrix.undoAction`；失败经 `CoreErrorMapping` 映射
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreTagCRUD.swift:132`
+
+- 项目：S2-09 中 C2-07 用户可见功能可触发
+- 结果：通过
+- 证据：批量 Apply 成功后加载 undo action，关闭 sheet 并显示 `S2-09-C2-07-main-undo-toast`，按钮触发 `undoAction`
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportBatchOverviewSections.swift:41`
+
+- 项目：没有 mock / fixture / 静态状态伪造真实 Core 闭环
+- 结果：通过
+- 证据：生产路径默认注入 `CoreBridge()`；测试中的 `S209RecordingUndoStore` 仅为 XCTest test double
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift:260`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git diff --name-only -- core/src` 无输出，未触碰 `core/src/**`
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+- 项目：Expected New Paths
+- 结果：通过
+- 证据：`apps/macos/AreaMatrix/**` 与 `apps/macos/AreaMatrixTests/**` 均有落地改动
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/DetailMultiPageIntegrationVerifyTests.swift:5`
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过，`MainRepositoryContentView.swift` 当前 501 行，超过 SwiftLint `file_length: 500`
+- 注释 / rustdoc / 文档同步：通过，本 task 未新增 public Rust API；UDL 已有 `list_undo_actions` / `undo_action`
+- 错误处理与边界处理：通过，blocked action、undo failure、missing action 都有用户可见状态或 error mapping
+- 测试与验证覆盖：不通过，manifest 验证通过，但 targeted SwiftLint 失败
+- 占位、硬编码、mock-only、一次性实现检查：通过，生产链路走 CoreBridge；未发现生产 mock-only 闭环
+
+六、阻塞项
+
+- P1：Swift 编码规范失败
+- 说明：仓库 SwiftLint 配置要求 `file_length: 500`、`line_length: 120`；当前文件触发 2 个 serious violations，不能满足工程质量门禁。
+- 绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift`
+- 行号：`501`、`284`
+- 为什么导致不通过：`docs/development/coding-standards.md` 和 `engineering-quality-rules.md` 要求遵守 Swift 文件长度与行长；当前 task 触碰该文件后验证仍失败，不能判定完成。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-111`
+- 结果：通过；`doctor: OK`，`git diff --check` 通过，macOS `xcodebuild ... build CODE_SIGNING_ALLOWED=NO` 最终 `BUILD SUCCEEDED`
+- 已运行：`cd apps/macos && swiftlint lint --strict --config ../../scripts/dev_tools/swiftlint.yml --force-exclude --no-cache AreaMatrix/Views/Main/MainRepositoryContentView.swift`
+- 结果：失败；`File Length Violation` 501 > 500，`Line Length Violation` 122 > 120
+- 缺失：未运行完整 `./dev test macos`，因为 manifest 对本 atomic page-feature task 要求是 `./dev check task 4-1/task-111`
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+
+VERIFY_RESULT: FAIL

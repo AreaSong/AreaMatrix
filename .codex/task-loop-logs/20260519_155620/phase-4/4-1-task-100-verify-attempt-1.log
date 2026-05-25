@@ -1,0 +1,90 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`4-1/task-100`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-100-s2-03-c2-03-saved-search-crud.md`
+- 实际检查路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+- Forbidden Touches：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+三、完成度摘要
+
+- 已覆盖项数：7
+- 未覆盖项数：2
+- 通过项数：7
+- 不通过项数：2
+- 阻塞项数：2
+- `Expected New Paths`：已落地，`apps/macos/AreaMatrix/**` 和 `apps/macos/AreaMatrixTests/**` 均有相关实现/测试改动
+- `Forbidden Touches`：未发现 `core/src/**` 改动
+
+四、逐项验收结果
+
+- 项目：只处理 S2-03 页面中的 C2-03 功能点  
+  结果：通过  
+  证据：control map 声明 `S2-03 saved-search-sheet -> C2-03 saved search CRUD`；实现集中在 saved search sheet、CoreBridge saved search CRUD adapter 和对应测试。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-2-control-map.md:11`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainFileActionRoutingSheet.swift:183`
+
+- 项目：读取页面规格、control map、Core API 和 C2-03 能力规格  
+  结果：通过  
+  证据：S2-03 要求保存成功关闭 sheet 并选中新建 Smart List；Core API 定义 `create_saved_search` 保存 query/filter/sort/scope；C2-03 要求保存后可在 sidebar 恢复同一搜索条件。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-2-experience/S2-03-saved-search-sheet.md:21`，`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:2226`，`/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-2-experience/C2-03-saved-search-crud.md:37`
+
+- 项目：只接入 C2-03 对应 CoreBridge / 状态 / 错误映射  
+  结果：通过  
+  证据：`CoreSavedSearchCRUD` 只暴露 `createSavedSearch` / `listSavedSearches`，并经 `CoreBridge` 调 UniFFI 的 `createSavedSearch` / `listSavedSearches`。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreFileRenaming.swift:3`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreFileRenaming.swift:60`
+
+- 项目：不顺手实现相邻页面、相邻平台或同页其他能力  
+  结果：通过  
+  证据：未发现 `runSmartList`、C2-04、S2-06 管理页功能或 `core/src/**` 改动进入本 task。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentActionRouting.swift:68`
+
+- 项目：S2-03 中 C2-03 用户可见功能可被触发和验收  
+  结果：不通过  
+  证据：sheet 可打开、可调用 create，但保存成功后只执行 `enterSearch(context: .smartList(...))` 和清空 sheet；`enterSearch` 只写 `lastSearchExitContext`，没有刷新 sidebar 数据源、没有插入新 Smart List row、没有更新 `selectedSidebarID`。这不满足“sidebar 中出现新 Smart List 并自动选中 / 可点击复现查询”。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentActionRouting.swift:74`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainListVisibleFileFiltering.swift:272`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift:188`
+
+- 项目：没有使用 mock、fixture 或静态状态伪造真实 Core 闭环  
+  结果：通过  
+  证据：生产代码默认注入 `CoreBridge()`，`createSavedSearch` 真实调用 CoreBridge；测试中 fake store 只作为测试替身。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainFileActionRoutingSheet.swift:199`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreFileRenaming.swift:81`
+
+- 项目：未触碰 control map 之外的 Core 能力  
+  结果：通过  
+  证据：`core/area_matrix.udl` 已有 C2-03 API；本轮 diff 未触碰 `core/src/**`。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:169`
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过。保存成功后的 UI 状态只写退出上下文，没有完成 sidebar 可见和选中闭环。
+- 注释 / rustdoc / 文档同步：通过。当前为 Swift app 层，无新增 public Rust API；文档未被本 task 修改。
+- 错误处理与边界处理：不通过。保存失败只显示错误 label，未实现规格要求的 `Retry` 恢复动作；result count 失败也没有 `Result count unavailable` 状态，只把 `nil` 显示为 `Counting results...`。
+- 测试与验证覆盖：不通过。`./dev check task 4-1/task-100` 通过，但测试主要覆盖 model/fake store 调用，没有证明保存成功后 sidebar 出现、自动选中和可复现查询。
+- 占位、硬编码、mock-only、一次性实现检查：通过。生产路径不是 disabled placeholder，也不是 mock-only；但闭环仍缺关键 UI 状态更新。
+
+六、阻塞项
+
+- P1 保存成功后未让新 Smart List 出现在 sidebar 并自动选中  
+  说明：S2-03 规格要求保存成功后关闭 sheet，sidebar 中出现新 Smart List 并自动选中；C2-03 规格要求保存后可在 sidebar 恢复同一搜索条件。当前 `onSaved` 只调用 `fileListModel.enterSearch(context: .smartList(...))` 和清空 sheet，而 `enterSearch` 只设置 `lastSearchExitContext`。`MainRepositoryContentView` 的 sidebar 只渲染 `repositoryTree.sidebarRows`，本 task 没有刷新或扩展该 tree，也没有设置 `selectedSidebarID` 指向新 Smart List。  
+  绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentActionRouting.swift:74`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainListVisibleFileFiltering.swift:272`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift:188`  
+  为什么导致不通过：完成标准要求 C2-03 对应用户可见功能可被触发和验收；这里只能创建记录，不能证明 sidebar 可见、选中或复现查询。
+
+- P1 保存失败恢复态未实现 Retry，result count 失败态缺失  
+  说明：规格要求保存失败时表单顶部显示错误和 `Retry`，并要求 result count 获取失败显示 `Result count unavailable` 且允许保存。当前失败视图只渲染 `Label(failure.userMessage...)`，没有 Retry 按钮；`resultCount == nil` 固定显示 `Counting results...`，无法表达 count 失败。  
+  绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainFileActionRoutingSheet.swift:274`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainListSystemActions.swift:57`  
+  为什么导致不通过：错误路径和恢复路径属于 S2-03 saved-search-sheet 的验收清单，缺失后不能证明高风险 C2-03 UI 闭环满足长期维护标准。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-100`
+- 通过：`prompt doctor` 通过，`git diff --check` 通过，macOS `xcodebuild ... build CODE_SIGNING_ALLOWED=NO` 最终 `BUILD SUCCEEDED`
+- 失败：无命令失败
+- 缺失：未运行 UI 真窗口烟测；现有验证命令也未证明保存成功后 sidebar 出现/选中和可复现查询
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。虽然 manifest 验证命令通过，且 CoreBridge create/list 接入存在，但 S2-03 的关键用户可见闭环和失败恢复态缺证据，按“无法证明通过，就判定不通过”处理。
+
+VERIFY_RESULT: FAIL

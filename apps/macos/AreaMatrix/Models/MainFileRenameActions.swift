@@ -1,10 +1,11 @@
 import Foundation
 
 extension MainFileListModel {
-    func submitRename(fileID: Int64, newName: String) async {
+    @discardableResult
+    func submitRename(fileID: Int64, newName: String) async -> Bool {
         guard pendingActionDestination == .rename(fileID: fileID),
               !renameState.isRenaming,
-              writeActionDisabledReason(fileID: fileID) == nil else { return }
+              writeActionDisabledReason(fileID: fileID) == nil else { return false }
 
         let returnTargetCategory = renameState.changeCategoryReturnTarget(for: fileID)
         renameState = renameState.renamingState(fileID: fileID, targetCategory: returnTargetCategory)
@@ -32,14 +33,16 @@ extension MainFileListModel {
                     detailTabRequest = .automatic(.log)
                 }
             }
+            return true
         } catch {
             let mapping = await mapCoreError(error)
-            guard pendingActionDestination == .rename(fileID: fileID) else { return }
+            guard pendingActionDestination == .rename(fileID: fileID) else { return false }
             renameState = renameState.failedState(
                 fileID: fileID,
                 targetCategory: returnTargetCategory,
                 mapping: mapping
             )
+            return false
         }
     }
 

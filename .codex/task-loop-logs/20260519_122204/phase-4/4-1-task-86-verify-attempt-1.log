@@ -1,0 +1,68 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-1/task-86`
+- Task 文件：`tasks/prompts/phase-4/4-1-stage2-experience/task-86-c2-18-contract-api.md`
+- 涉及路径：`core/src/**`、`core/area_matrix.udl`、`core/tests/**`、`docs/api/core-api.md`、`docs/api/error-codes.md`
+- 禁止触碰路径：`apps/**`
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：读取并对齐 C2-18 能力规格、Stage 2 control map、Core API、错误码
+- 结果：通过
+- 证据：C2-18 规格定义 `list_redo_actions` / `redo_action(repo_path, action_id)`、输出、错误码和验收标准；control map 仅声明 `S2-22 redo` 绑定 `C2-18, C2-07`；Core API 与错误码已补齐。
+- 涉及文件：`docs/core/capability-specs/stage-2-experience/C2-18-redo-action-log.md:7`、`docs/architecture/stage-2-control-map.md:30`、`docs/api/core-api.md:235`、`docs/api/error-codes.md:58`
+
+- 项目：确认 API 名称、输入、输出、错误码、权限/隐私边界与能力规格一致
+- 结果：通过
+- 证据：UDL 暴露 `list_redo_actions(string repo_path)`、`redo_action(string repo_path, string action_id)`，并定义 `RedoActionRecord`、`RedoActionResult`、`RedoActionStatus`、`ExpiredAction`；Rust API 委派到 `redo` 模块，rustdoc 明确错误和副作用边界。
+- 涉及文件：`core/area_matrix.udl:212`、`core/area_matrix.udl:836`、`core/area_matrix.udl:1202`、`core/src/api.rs:1094`、`core/src/redo.rs:72`
+
+- 项目：只补合同、类型、桥接声明或文档缺口，不实现相邻能力
+- 结果：通过
+- 证据：`core/src/redo.rs` 只定义合同类型、入口、输入校验和未实现 metadata 的结构化错误；没有实现 Undo、批量操作、导入冲突、AI、远程同步或 UI 页面能力；无 `apps/**` diff。
+- 涉及文件：`core/src/redo.rs:85`、`core/src/redo.rs:108`、`core/src/api.rs:1125`
+
+- 项目：记录当前页面消费方是否能从合同中得到所需状态
+- 结果：通过
+- 证据：Core API 明确 S2-22 可从列表合同得到 redo 可用性、来源 undo action、影响数量、禁用原因、时间、快捷键/VoiceOver 状态，并从执行结果得到摘要、`refresh_targets`、`undo_token`。
+- 涉及文件：`docs/api/core-api.md:3275`、`docs/api/core-api.md:3344`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。C2-18 合同集中在 `core/src/redo.rs`，`core/src/api.rs` 只做 public API 委派，`core/src/lib.rs` re-export。
+- 注释 / rustdoc / 文档同步：通过。新增 public API 和类型有 rustdoc，Core API、UDL、错误码文档同步。
+- 错误处理与边界处理：通过。新增 `ExpiredAction` 结构化错误；合同入口不 fake success，空 repo / 缺 metadata 返回显式错误。
+- 测试与验证覆盖：通过。新增 `core/tests/redo_action_log_contract_api.rs` 锁定签名、输出字段、错误码、文档/UDL/control map 和消费边界。
+- 占位、硬编码、mock-only、一次性实现检查：通过。当前 task 是 contract-api，未实现业务 redo；没有 mock-only 成功路径或硬编码通过态。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-86`
+- 通过：`python3 tasks/prompts/_shared/prompt_pipeline.py doctor`，结果 `doctor: OK`，`tasks: 637`，`manifests: 637`
+- 通过：`git diff --check`
+- 通过：`cargo test --test redo_action_log_contract_api -- --nocapture`，4 passed，0 failed
+- 缺失：未运行 `./dev check all` / `cargo test --workspace`，原因是本 task manifest 指定验证为 `./dev check task 4-1/task-86`，普通 atomic Core task 不扩大到 broad gate。
+- Forbidden Touches：`git diff --name-only -- apps` 无输出，未触碰 `apps/**`
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。C2-18 的 Core API / UDL / 错误码 / 合同测试已经能支撑后续 `4-1/task-87` implementation task，且未引入 control map 之外的页面能力。
+
+
+VERIFY_RESULT: PASS

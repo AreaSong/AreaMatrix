@@ -58,3 +58,67 @@ struct FileDropAdapter {
         }
     }
 }
+
+extension MainRepositoryContentView {
+    var dropOverlay: some View {
+        Group {
+            if let presentation = dropPreviewModel.presentation {
+                DropZoneOverlay(presentation: presentation)
+                    .padding(24)
+            }
+        }
+    }
+
+    @ViewBuilder
+    func contextMenu(for selection: Set<Int64>) -> some View {
+        let selectedFiles = files(for: selection)
+        if selectedFiles.count == 1, let file = selectedFiles.first {
+            singleFileContextMenu(for: file)
+        } else {
+            multiFileContextMenu(for: selection, selectedFiles: selectedFiles)
+        }
+    }
+
+    @ViewBuilder
+    private func singleFileContextMenu(for file: FileEntrySnapshot) -> some View {
+        Button("Show in Finder") {
+            onShowInFinder(file.path)
+        }
+        Button("Rename...") {
+            fileListModel.beginRename(fileID: file.id)
+        }
+        .disabled(fileListModel.writeActionDisabledReason(fileID: file.id) != nil)
+        Button("Change Category...") {
+            fileListModel.beginChangeCategory(fileID: file.id)
+        }
+        .disabled(fileListModel.writeActionDisabledReason(fileID: file.id) != nil)
+        Button("Delete...", role: .destructive) {
+            fileListModel.beginDelete(fileID: file.id)
+        }
+        .disabled(fileListModel.writeActionDisabledReason(fileID: file.id) != nil)
+        Divider()
+        Button("Copy Path") {
+            onCopyPath(file.path)
+        }
+    }
+
+    @ViewBuilder
+    private func multiFileContextMenu(for selection: Set<Int64>, selectedFiles: [FileEntrySnapshot]) -> some View {
+        if selectedFiles.count > 1 {
+            Button("Add tags...") {
+                openBatchAddTagsRoute(selection, source: .listContextMenu)
+            }
+            Button("Change category...") {
+                openBatchChangeCategoryRoute(selection, source: .listContextMenu)
+            }
+        }
+        Button("Copy Paths") {
+            onCopyPaths(selectedFiles.map(\.path))
+        }
+        .disabled(selectedFiles.isEmpty)
+    }
+
+    func files(for selection: Set<Int64>) -> [FileEntrySnapshot] {
+        visibleFiles.filter { selection.contains($0.id) }
+    }
+}
