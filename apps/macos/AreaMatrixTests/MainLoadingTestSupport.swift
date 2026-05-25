@@ -38,6 +38,56 @@ func s135MirrorDescription(of value: Any, depth: Int = 0) -> String {
     return lines.joined(separator: "\n")
 }
 
+func makeS135TemporaryDirectory(prefix: String) throws -> URL {
+    let name = "AreaMatrixS135Integration-\(prefix)-\(UUID().uuidString)"
+    let url = FileManager.default.temporaryDirectory.appendingPathComponent(name, isDirectory: true)
+    try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+    return url
+}
+
+enum ImportBatchICloudErrorKindMapper {
+    static func kind(for error: CoreError) -> CoreErrorKindSnapshot {
+        switch error {
+        case .Conflict:
+            .conflict
+        case .FileNotFound:
+            .fileNotFound
+        case .PermissionDenied:
+            .permissionDenied
+        case .Db:
+            .db
+        case .Io:
+            .io
+        default:
+            .internal
+        }
+    }
+}
+
+extension CoreErrorMappingSnapshot {
+    static func s135Conflict() -> CoreErrorMappingSnapshot {
+        CoreErrorMappingSnapshot(
+            kind: .conflict,
+            userMessage: "Path conflict.",
+            severity: .medium,
+            suggestedAction: "Rename the file first, then retry.",
+            recoverability: .userActionRequired,
+            rawContext: "S1-35 C1-10 safe target name"
+        )
+    }
+
+    static func s135PermissionDenied() -> CoreErrorMappingSnapshot {
+        CoreErrorMappingSnapshot(
+            kind: .permissionDenied,
+            userMessage: "Target category is not writable.",
+            severity: .high,
+            suggestedAction: "Grant folder access in Finder, then retry.",
+            recoverability: .userActionRequired,
+            rawContext: "S1-35 C1-24 preview_move_to_category permission"
+        )
+    }
+}
+
 actor MainLoadingRecordingStartupRecoverer: CoreStartupRecovering {
     private var results: [MainLoadingStartupRecoveryResult]
     private var paths: [String] = []

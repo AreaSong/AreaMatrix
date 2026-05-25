@@ -224,6 +224,8 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
             detailLogDiagnosticsState: model.detailLogDiagnosticsState,
             detailExternalCreateSyncState: model.detailExternalCreateSyncState,
             detailTagEditorState: model.detailTagEditorState,
+            detailTagSuggestionState: model.detailTagSuggestionState,
+            tagSuggestionPresentationRequest: model.tagSuggestionPresentationRequest,
             detailTagUndoToast: model.detailTagUndoToast,
             detailTabRequest: model.detailTabRequest,
             selectedImportProgressRow: nil,

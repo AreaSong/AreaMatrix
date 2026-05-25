@@ -24,6 +24,7 @@ final class OnboardingModel: ObservableObject {
     @Published var mainRepoDiagnostics: MainRepoDiagnosticsState = .idle
     @Published var mainRepoLastOpenedAt: Int64?
     @Published var pendingExternalCreatedFileEvent: MainPendingExternalCreatedFileEvent?
+    @Published var pendingTagSuggestionFocus: TagSuggestionPresentationRequest?
     @Published var isRetryingMainRepository = false
     var openingCancellationToken: UUID?
     @Published var initializationDiagnostics: InitializationDiagnosticsState = .idle

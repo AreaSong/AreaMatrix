@@ -147,6 +147,7 @@ struct ImportProgressRouteState: Equatable {
         pending = 0
         items = [
             ImportBatchProgressSnapshot.Item(
+                fileID: nil,
                 sourcePath: currentPath,
                 targetPath: currentPath,
                 phase: .copying,
@@ -177,6 +178,7 @@ struct ImportProgressRouteState: Equatable {
         pending = 0
         items = [
             ImportBatchProgressSnapshot.Item(
+                fileID: nil,
                 sourcePath: currentPath,
                 targetPath: currentPath,
                 phase: storageMode.progressPhase,
@@ -330,6 +332,7 @@ struct ImportProgressRouteState: Equatable {
         failed: Int
     ) -> ImportBatchProgressSnapshot.Item {
         ImportBatchProgressSnapshot.Item(
+            fileID: nil,
             sourcePath: currentPath,
             targetPath: currentPath,
             phase: fallbackPhase(status: status, completed: completed, failed: failed),

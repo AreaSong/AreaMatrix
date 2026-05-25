@@ -175,6 +175,8 @@ extension MainRepositoryContentView {
             detailLogDiagnosticsState: fileListModel.detailLogDiagnosticsState,
             detailExternalCreateSyncState: fileListModel.detailExternalCreateSyncState,
             detailTagEditorState: fileListModel.detailTagEditorState,
+            detailTagSuggestionState: fileListModel.detailTagSuggestionState,
+            tagSuggestionPresentationRequest: fileListModel.tagSuggestionPresentationRequest,
             detailTagUndoToast: fileListModel.detailTagUndoToast,
             detailTabRequest: fileListModel.detailTabRequest,
             selectedImportProgressRow: selectedImportProgressRow,
@@ -472,30 +474,6 @@ extension MainRepositoryContentView {
 
     var tagRegistryAnchorFileID: Int64? {
         fileListModel.selection.singleFileID ?? fileListModel.files.first?.id
-    }
-
-    @ViewBuilder
-    private func searchRouteStatus(_ destination: MainSearchDestination) -> some View {
-        switch destination {
-        case let .searchEmpty(request):
-            SearchEmptyRouteView(
-                request: request,
-                indexStatus: fileListModel.searchState.indexStatus,
-                onClearSearch: clearSearchQuery,
-                onClearFilters: clearSearchFiltersFromEmptyState,
-                onRemoveFilter: removeSearchFilterFromEmptyState,
-                onSearchAllFileTypes: searchAllFileTypesFromEmptyState
-            )
-        case let .queryError(request, diagnostic):
-            QueryErrorRouteView(
-                request: request,
-                diagnostic: diagnostic,
-                onApplySuggestion: applyQuerySuggestion,
-                onClear: clearSearch
-            )
-        case .savedSearchSheet, .indexingStatus, .commandPalette, .classifierRuleEditor:
-            EmptyView()
-        }
     }
 
 }

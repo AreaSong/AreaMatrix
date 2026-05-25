@@ -115,6 +115,7 @@ private struct CodableImportBatchSession: Codable {
 
 private struct CodableImportBatchSessionItem: Codable {
     var sourcePath: String
+    var fileID: Int64?
     var targetPath: String
     var phase: ImportBatchProgressSnapshot.Phase
     var errorMessage: String?
@@ -123,6 +124,7 @@ private struct CodableImportBatchSessionItem: Codable {
 
     init(item: ImportBatchProgressSnapshot.Item) {
         sourcePath = item.sourcePath
+        fileID = item.fileID
         targetPath = item.targetPath
         phase = item.phase
         errorMessage = item.errorMessage
@@ -132,6 +134,7 @@ private struct CodableImportBatchSessionItem: Codable {
 
     var snapshotItem: ImportBatchProgressSnapshot.Item {
         ImportBatchProgressSnapshot.Item(
+            fileID: fileID,
             sourcePath: sourcePath,
             targetPath: targetPath,
             phase: phase,

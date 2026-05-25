@@ -186,6 +186,33 @@ final class ImportResultCopyRetryTests: XCTestCase {
     }
 
     @MainActor
+    func testS223C219ImportResultQueuesTagSuggestionReviewForImportedFile() {
+        let opening = RepositoryOpeningResult.s117Fixture(repoPath: "/tmp/repo")
+        let model = OnboardingModel(
+            settingsReader: S117StaticSettingsReader(repoPath: nil),
+            accessibilityAnnouncer: S117RecordingAccessibilityAnnouncer(),
+            helpOpener: S117NoopWelcomeHelpOpener()
+        )
+
+        model.route = .mainList(opening)
+        model.showImportEntryResults(Self.importedProgress)
+        guard case let .importResult(result) = model.route,
+              let importedItem = result.items.first(where: { $0.canReviewTagSuggestions })
+        else {
+            return XCTFail("Expected imported result item with S2-23 review action")
+        }
+
+        model.reviewImportResultTagSuggestions(itemID: importedItem.id)
+
+        XCTAssertEqual(model.pendingTagSuggestionFocus?.fileID, 117)
+        XCTAssertEqual(model.pendingTagSuggestionFocus?.source, .importResult)
+        guard case let .mainList(mainOpening) = model.route else {
+            return XCTFail("Expected main list route for S2-23 tag suggestions")
+        }
+        XCTAssertTrue(mainOpening.currentCategoryFiles.contains { $0.id == 117 && $0.path == "docs/imported.pdf" })
+    }
+
+    @MainActor
     func testS121ExportDetailsUsesRedactedPathsAndPrivacyState() {
         let opening = RepositoryOpeningResult.s117Fixture(repoPath: "/tmp/repo")
         let exporter = S121RecordingImportResultExporter()
@@ -226,6 +253,7 @@ private extension ImportResultCopyRetryTests {
         currentPath: "docs/imported.pdf",
         items: [
             ImportBatchProgressSnapshot.Item(
+                fileID: 117,
                 sourcePath: "/tmp/imported.pdf",
                 targetPath: "docs/imported.pdf",
                 phase: .done,

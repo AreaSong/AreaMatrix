@@ -80,6 +80,7 @@ struct ImportResultRouteState: Equatable {
     }
 
     struct Item: Identifiable, Equatable {
+        var fileID: Int64?
         var sourcePath: String
         var targetPath: String
         var status: ItemStatus
@@ -101,6 +102,10 @@ struct ImportResultRouteState: Equatable {
 
         var canShowExistingFile: Bool {
             status == .skipped && existingRelativePath?.isEmpty == false
+        }
+
+        var canReviewTagSuggestions: Bool {
+            status == .imported && fileID != nil
         }
     }
 
@@ -196,6 +201,7 @@ struct ImportResultRouteState: Equatable {
         }
         return progressItems.map { item in
             Item(
+                fileID: item.fileID,
                 sourcePath: item.sourcePath,
                 targetPath: item.targetPath,
                 status: status(for: item.phase, stopped: counts.stopped),
@@ -211,6 +217,7 @@ struct ImportResultRouteState: Equatable {
         counts: ImportResultCounts
     ) -> Item {
         Item(
+            fileID: nil,
             sourcePath: currentPath,
             targetPath: currentPath,
             status: fallbackStatus(

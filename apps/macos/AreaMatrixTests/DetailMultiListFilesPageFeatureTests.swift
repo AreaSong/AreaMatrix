@@ -40,14 +40,14 @@ final class DetailMultiListFilesPageFeatureTests: XCTestCase {
         XCTAssertEqual(invalid.fieldError, "Tag name is invalid.")
         XCTAssertEqual(blocked.fieldError, "Tag store is read-only.")
         XCTAssertEqual(reserved.fieldError, "Tag name is invalid.")
-        XCTAssertFalse(BatchTagValidation.canApply(
+        XCTAssertFalse(BatchTagValidation.canApply(BatchTagApplyEligibility(
             isApplying: false, disabledReason: nil, input: " unsaved ", pendingTags: first.pendingTags,
             fieldError: nil, selectedCount: 2
-        ))
-        XCTAssertFalse(BatchTagValidation.canApply(
+        )))
+        XCTAssertFalse(BatchTagValidation.canApply(BatchTagApplyEligibility(
             isApplying: false, disabledReason: nil, input: "", pendingTags: ["clienta", "ClientA"],
             fieldError: nil, selectedCount: 2
-        ))
+        )))
         XCTAssertEqual(BatchTagValidation.normalizedTagsForApply(["bad/tag"]), .failure("Tag name is invalid."))
     }
 
@@ -109,10 +109,10 @@ final class DetailMultiListFilesPageFeatureTests: XCTestCase {
 
         XCTAssertEqual(readOnly.fieldError, "Tag store is read-only.")
         XCTAssertEqual(chips.map(\.status), [.ready, .alreadySelected])
-        XCTAssertFalse(BatchTagValidation.canApply(
+        XCTAssertFalse(BatchTagValidation.canApply(BatchTagApplyEligibility(
             isApplying: false, disabledReason: MainFileWriteActionDisabledReason.repoReadOnly.rawValue,
             input: "", pendingTags: ["urgent"], fieldError: nil, selectedCount: 2
-        ))
+        )))
         let duplicateApply = BatchTagValidation.normalizedTagsForApply(["urgent", "urgent"])
         XCTAssertEqual(duplicateApply, .failure("Tag already selected."))
     }

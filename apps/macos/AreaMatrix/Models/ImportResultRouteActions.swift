@@ -86,6 +86,7 @@ extension ImportResultRouteState {
         replacingItem(
             matching: item,
             with: Item(
+                fileID: entry.id,
                 sourcePath: item.sourcePath,
                 targetPath: entry.path,
                 status: .imported,
@@ -102,6 +103,7 @@ extension ImportResultRouteState {
         replacingItem(
             matching: item,
             with: Item(
+                fileID: item.fileID,
                 sourcePath: item.sourcePath,
                 targetPath: item.targetPath,
                 status: .failed,
@@ -136,5 +138,45 @@ extension ImportResultRouteState {
             exportState: exportState,
             shouldClearInterruptedSessionOnDone: shouldClearInterruptedSessionOnDone
         )
+    }
+}
+
+extension RepositoryOpeningResult {
+    func focusingImportResultItem(_ item: ImportResultRouteState.Item) -> RepositoryOpeningResult {
+        guard let fileID = item.fileID else { return self }
+        var opening = self
+        if !opening.currentCategoryFiles.contains(where: { $0.id == fileID }) {
+            opening.currentCategoryFiles.insert(item.focusFileSnapshot, at: 0)
+        }
+        return opening
+    }
+}
+
+private extension ImportResultRouteState.Item {
+    var focusFileSnapshot: FileEntrySnapshot {
+        FileEntrySnapshot(
+            id: fileID ?? -1,
+            path: targetPath,
+            originalName: displayName,
+            currentName: displayName,
+            category: category,
+            sizeBytes: 0,
+            hashSha256: "import-result-\(fileID ?? -1)",
+            storageMode: "Copied",
+            origin: "Imported",
+            sourcePath: sourcePath,
+            importedAt: 0,
+            updatedAt: 0
+        )
+    }
+
+    var displayName: String {
+        let name = (targetPath as NSString).lastPathComponent
+        return name.isEmpty ? targetPath : name
+    }
+
+    var category: String {
+        let category = (targetPath as NSString).deletingLastPathComponent
+        return category.isEmpty || category == "." ? "inbox" : category
     }
 }

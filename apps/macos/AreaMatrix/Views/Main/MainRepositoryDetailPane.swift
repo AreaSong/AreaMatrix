@@ -11,6 +11,8 @@ struct MainRepositoryDetailPane: View {
     let detailLogDiagnosticsState: MainDetailLogDiagnosticsState
     let detailExternalCreateSyncState: MainDetailExternalCreateSyncState
     let detailTagEditorState: DetailTagEditorState
+    let detailTagSuggestionState: DetailTagSuggestionState
+    let tagSuggestionPresentationRequest: TagSuggestionPresentationRequest?
     let detailTagUndoToast: DetailTagUndoToast?
     let detailTabRequest: MainDetailTabRequest?
     let selectedImportProgressRow: ImportProgressListRow?
@@ -43,93 +45,8 @@ struct MainRepositoryDetailPane: View {
     let writeActionDisabledReason: (Int64) -> MainFileWriteActionDisabledReason?
 
     @State private var selectedTab: DetailPaneTab = .meta
-    @ObservedObject private var noteModel: DetailNoteModel
+    @ObservedObject var noteModel: DetailNoteModel
 
-    init(
-        selection: MainFileSelectionState,
-        multiSelectionSummary: MultiSelectionDetailSummary,
-        detailErrorMapping: CoreErrorMappingSnapshot?,
-        isDetailLoading: Bool,
-        selectedFileDetail: FileEntrySnapshot?,
-        noteWriteBlock: MainDetailNoteWriteBlock?,
-        detailLogState: MainDetailLogState,
-        detailLogDiagnosticsState: MainDetailLogDiagnosticsState,
-        detailExternalCreateSyncState: MainDetailExternalCreateSyncState,
-        detailTagEditorState: DetailTagEditorState,
-        detailTagUndoToast: DetailTagUndoToast?,
-        detailTabRequest: MainDetailTabRequest?,
-        selectedImportProgressRow: ImportProgressListRow?,
-        repoPath: String,
-        batchTagStore: any CoreTagCRUD,
-        batchTagUndoStore: any CoreUndoActionLogging,
-        batchTagErrorMapper: any CoreErrorMapping,
-        batchDeleter: any CoreBatchDeleting,
-        batchCategoryChanger: any CoreBatchCategoryChanging,
-        batchRenamer: any CoreBatchRenaming,
-        categoryRows: [RepositorySidebarRowSnapshot],
-        onBatchCategoryApplied: @escaping (BatchCategoryChangeReportSnapshot) -> Void,
-        onBatchDeleteApplied: @escaping (BatchDeleteReportSnapshot) -> Void,
-        onBatchRenameApplied: @escaping (BatchRenameReportSnapshot) -> Void,
-        onBatchCategoryCreateNewCategory: @escaping (BatchChangeCategoryNewCategoryHandoff) -> Void = { _ in },
-        onRetrySelectedFileDetail: @escaping () -> Void,
-        tagActions: MainRepositoryDetailPaneTagActions,
-        onCopyPaths: @escaping ([String]) -> Void,
-        onOpenNoteFile: @escaping (String) -> Void,
-        onRefreshChangeLog: @escaping () -> Void,
-        onRequestDetailLogDiagnostics: @escaping () -> Void,
-        onConfirmDetailLogDiagnostics: @escaping () -> Void,
-        onCancelDetailLogDiagnostics: @escaping () -> Void,
-        onDetailTabRequestConsumed: @escaping (MainDetailTabRequest) -> Void,
-        onBeginRenameFile: @escaping (Int64) -> Void,
-        onBeginChangeCategoryFile: @escaping (Int64) -> Void,
-        onBeginClassifierCorrectionFile: @escaping (Int64) -> Void = { _ in },
-        onBeginDeleteFile: @escaping (Int64) -> Void,
-        onBeginICloudConflictResolution: @escaping (Int64) -> Void,
-        writeActionDisabledReason: @escaping (Int64) -> MainFileWriteActionDisabledReason?,
-        noteModel: DetailNoteModel
-    ) {
-        self.selection = selection
-        self.multiSelectionSummary = multiSelectionSummary
-        self.detailErrorMapping = detailErrorMapping
-        self.isDetailLoading = isDetailLoading
-        self.selectedFileDetail = selectedFileDetail
-        self.noteWriteBlock = noteWriteBlock
-        self.detailLogState = detailLogState
-        self.detailLogDiagnosticsState = detailLogDiagnosticsState
-        self.detailExternalCreateSyncState = detailExternalCreateSyncState
-        self.detailTagEditorState = detailTagEditorState
-        self.detailTagUndoToast = detailTagUndoToast
-        self.detailTabRequest = detailTabRequest
-        self.selectedImportProgressRow = selectedImportProgressRow
-        self.repoPath = repoPath
-        self.batchTagStore = batchTagStore
-        self.batchTagUndoStore = batchTagUndoStore
-        self.batchTagErrorMapper = batchTagErrorMapper
-        self.batchDeleter = batchDeleter
-        self.batchCategoryChanger = batchCategoryChanger
-        self.batchRenamer = batchRenamer
-        self.categoryRows = categoryRows
-        self.onBatchCategoryApplied = onBatchCategoryApplied
-        self.onBatchDeleteApplied = onBatchDeleteApplied
-        self.onBatchRenameApplied = onBatchRenameApplied
-        self.onBatchCategoryCreateNewCategory = onBatchCategoryCreateNewCategory
-        self.onRetrySelectedFileDetail = onRetrySelectedFileDetail
-        self.tagActions = tagActions
-        self.onCopyPaths = onCopyPaths
-        self.onOpenNoteFile = onOpenNoteFile
-        self.onRefreshChangeLog = onRefreshChangeLog
-        self.onRequestDetailLogDiagnostics = onRequestDetailLogDiagnostics
-        self.onConfirmDetailLogDiagnostics = onConfirmDetailLogDiagnostics
-        self.onCancelDetailLogDiagnostics = onCancelDetailLogDiagnostics
-        self.onDetailTabRequestConsumed = onDetailTabRequestConsumed
-        self.onBeginRenameFile = onBeginRenameFile
-        self.onBeginChangeCategoryFile = onBeginChangeCategoryFile
-        self.onBeginClassifierCorrectionFile = onBeginClassifierCorrectionFile
-        self.onBeginDeleteFile = onBeginDeleteFile
-        self.onBeginICloudConflictResolution = onBeginICloudConflictResolution
-        self.writeActionDisabledReason = writeActionDisabledReason
-        self.noteModel = noteModel
-    }
 }
 
 extension MainRepositoryDetailPane {
@@ -334,12 +251,27 @@ extension MainRepositoryDetailPane {
             DetailTagSection(
                 file: detail,
                 state: detailTagEditorState,
+                suggestionState: detailTagSuggestionState,
+                suggestionPresentationRequest: tagSuggestionPresentationRequest,
                 undoToast: detailTagUndoToast,
                 disabledReason: writeActionDisabledReason(detail.id),
                 onLoadTags: tagActions.onLoadTags,
                 onRetryTags: tagActions.onRetryTags,
                 onAddTag: tagActions.onAddTag,
                 onRemoveTag: tagActions.onRemoveTag,
+                onLoadSuggestions: tagActions.onLoadSuggestions,
+                onRetrySuggestions: tagActions.onRetrySuggestions,
+                onToggleSuggestion: tagActions.onToggleSuggestion,
+                onSelectAllSuggestions: tagActions.onSelectAllSuggestions,
+                onClearSuggestions: tagActions.onClearSuggestions,
+                onStartEditingSuggestions: tagActions.onStartEditingSuggestions,
+                onCancelEditingSuggestions: tagActions.onCancelEditingSuggestions,
+                onEditSuggestionDisplayName: tagActions.onEditSuggestionDisplayName,
+                onEditSuggestionSlug: tagActions.onEditSuggestionSlug,
+                onRegenerateSuggestionSlug: tagActions.onRegenerateSuggestionSlug,
+                onApplySuggestions: tagActions.onApplySuggestions,
+                onApplyEditedSuggestions: tagActions.onApplyEditedSuggestions,
+                onSuggestionPresentationConsumed: tagActions.onSuggestionPresentationConsumed,
                 onUndoTagChange: tagActions.onUndoTagChange,
                 onDismissUndoToast: tagActions.onDismissTagUndoToast
             )

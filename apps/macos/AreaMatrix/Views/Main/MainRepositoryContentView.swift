@@ -25,6 +25,8 @@ struct MainRepositoryContentView: View {
     let errorMapper: any CoreErrorMapping
     let externalCreatedEvent: MainExternalCreatedFileEvent?
     let onExternalCreatedEventHandled: (MainExternalCreatedFileEvent) -> Void
+    let pendingTagSuggestionFocus: TagSuggestionPresentationRequest?
+    let onPendingTagSuggestionFocusConsumed: (TagSuggestionPresentationRequest) -> Void
     let importProgressItems: [ImportBatchProgressSnapshot.Item]
     @StateObject var fileListModel: MainFileListModel
     @State var repositoryTree: RepositoryTreeNodeSnapshot
@@ -40,7 +42,7 @@ struct MainRepositoryContentView: View {
     @State var pendingUndoHistoryRequest: UndoToastHistoryRequest?
     @State var batchTagUndoState: BatchTagUndoState = .idle
     @State var batchTagActionLogRefreshFailure: CoreErrorMappingSnapshot?
-    @State var shouldRestoreSearchFocusAfterCommandPalette = false
+    @State var restoreSearchFocusAfterPalette = false
     @State var filterText: String = ""
     @State var searchScope: SearchScopeSnapshot = .all
     @State var searchSort: SearchSortSnapshot = .newestImported
@@ -56,6 +58,98 @@ struct MainRepositoryContentView: View {
     @State var tableSortOrder: [KeyPathComparator<FileEntrySnapshot>] = [
         .init(\FileEntrySnapshot.importedAt, order: .reverse)
     ]
+
+    init(
+        opening: RepositoryOpeningResult,
+        state: MainRepositoryContentState,
+        onImport: @escaping () -> Void,
+        onDropImport: @escaping ([URL], ImportEntryDestination) -> Void,
+        onOpenSettings: @escaping () -> Void = {},
+        onOpenRepository: @escaping () -> Void = {},
+        onOpenHelp: @escaping () -> Void = {},
+        onOpenImportConflictBatch: @escaping (ImportConflictBatchRoute) -> Void = { _ in },
+        onRetryCurrentList: @escaping () -> Void = {},
+        onCollectDiagnostics: @escaping () async -> Void = {},
+        onShowInFinder: @escaping (String) -> Void = { _ in },
+        onCopyPath: @escaping (String) -> Void = { _ in },
+        onCopyPaths: @escaping ([String]) -> Void = { _ in },
+        onOpenNoteFile: @escaping (String) -> Void = { _ in },
+        onOpenChangeCategoryPermissionRecovery: @escaping () -> Void = {},
+        treeLister: any CoreRepositoryTreeListing = CoreBridge(),
+        savedSearchStore: any CoreSavedSearchCRUD = CoreBridge(),
+        externalCreatedEvent: MainExternalCreatedFileEvent? = nil,
+        onExternalCreatedEventHandled: @escaping (MainExternalCreatedFileEvent) -> Void = { _ in },
+        pendingTagSuggestionFocus: TagSuggestionPresentationRequest? = nil,
+        onPendingTagSuggestionFocusConsumed: @escaping (TagSuggestionPresentationRequest) -> Void = { _ in },
+        importProgressItems: [ImportBatchProgressSnapshot.Item] = [],
+        fileLister: any CoreFileListing = CoreBridge(),
+        fileDetailer: any CoreFileDetailing = CoreBridge(),
+        searchQuerying: any CoreSearchQuerying = CoreBridge(),
+        searchFiltering: any CoreSearchFiltering = CoreBridge(),
+        commandIndexer: any CoreCommandIndexing = CoreBridge(),
+        fileCategoryMover: any CoreFileCategoryMoving = CoreBridge(),
+        batchDeleter: any CoreBatchDeleting = CoreBridge(),
+        batchCategoryChanger: any CoreBatchCategoryChanging = CoreBridge(),
+        batchRenamer: any CoreBatchRenaming = CoreBridge(),
+        iCloudConflictResolver: any ICloudConflictResolving = CoreBridge(),
+        tagStore: any CoreTagCRUD = CoreBridge(),
+        undoActionStore: any CoreUndoActionLogging = CoreBridge(),
+        redoActionStore: any CoreRedoActionLogging = CoreBridge(),
+        changeLogLister: any CoreChangeLogListing = CoreBridge(),
+        externalChangesSyncer: any CoreExternalChangesSyncing = CoreBridge(),
+        noteStore: any CoreNoteReadingWriting = CoreBridge(),
+        categoryPredictor: any CoreCategoryPredicting = CoreBridge(),
+        errorMapper: any CoreErrorMapping = CoreBridge(),
+        diagnosticsCollector: any CoreDiagnosticsCollecting = CoreBridge()
+    ) {
+        self.opening = opening; self.state = state
+        self.onImport = onImport; self.onDropImport = onDropImport
+        self.onOpenSettings = onOpenSettings; self.onOpenRepository = onOpenRepository; self.onOpenHelp = onOpenHelp
+        self.onOpenImportConflictBatch = onOpenImportConflictBatch
+        self.onRetryCurrentList = onRetryCurrentList; self.onCollectDiagnostics = onCollectDiagnostics
+        self.onShowInFinder = onShowInFinder; self.onCopyPath = onCopyPath; self.onCopyPaths = onCopyPaths
+        self.onOpenNoteFile = onOpenNoteFile
+        self.onOpenChangeCategoryPermissionRecovery = onOpenChangeCategoryPermissionRecovery
+        self.treeLister = treeLister; self.savedSearchStore = savedSearchStore; self.batchRenamer = batchRenamer
+        self.errorMapper = errorMapper; self.externalCreatedEvent = externalCreatedEvent
+        self.onExternalCreatedEventHandled = onExternalCreatedEventHandled
+        self.pendingTagSuggestionFocus = pendingTagSuggestionFocus
+        self.onPendingTagSuggestionFocusConsumed = onPendingTagSuggestionFocusConsumed
+        self.importProgressItems = importProgressItems
+        _dropPreviewModel = StateObject(wrappedValue: ImportDropPreviewModel(
+            repoPath: opening.config.repoPath,
+            predictor: categoryPredictor
+        ))
+        _detailNoteModel = StateObject(wrappedValue: DetailNoteModel(
+            repoPath: opening.config.repoPath,
+            noteStore: noteStore,
+            errorMapper: errorMapper
+        ))
+        _fileListModel = StateObject(wrappedValue: MainFileListModel(
+            opening: opening,
+            fileLister: fileLister,
+            fileDetailer: fileDetailer,
+            searchQuerying: searchQuerying,
+            searchFiltering: searchFiltering,
+            commandIndexer: commandIndexer,
+            fileCategoryMover: fileCategoryMover,
+            batchDeleter: batchDeleter,
+            batchCategoryChanger: batchCategoryChanger,
+            iCloudConflictResolver: iCloudConflictResolver,
+            tagStore: tagStore,
+            undoActionStore: undoActionStore,
+            redoActionStore: redoActionStore,
+            changeLogLister: changeLogLister,
+            externalChangesSyncer: externalChangesSyncer,
+            errorMapper: errorMapper,
+            diagnosticsCollector: diagnosticsCollector
+        ))
+        _repositoryTree = State(initialValue: opening.tree)
+        _selectedSidebarID = State(initialValue: Self.defaultSelectedSidebarID(from: opening.tree.sidebarRows))
+        let defaultSidebarID = Self.defaultSelectedSidebarID(from: opening.tree.sidebarRows)
+        let defaultRow = opening.tree.sidebarRows.first { $0.id == defaultSidebarID }
+        _searchScope = State(initialValue: defaultRow?.categoryForFileList == nil ? .all : .current)
+    }
 }
 
 extension MainRepositoryContentView {
@@ -108,6 +202,9 @@ extension MainRepositoryContentView {
             guard let externalCreatedEvent else { return }
             await fileListModel.syncExternalCreated(externalCreatedEvent)
             onExternalCreatedEventHandled(externalCreatedEvent)
+        }
+        .task(id: pendingTagSuggestionFocus?.id) {
+            await applyPendingTagSuggestionFocus()
         }
         .task(id: searchTaskKey) {
             guard state == .list else { return }
@@ -267,6 +364,14 @@ extension MainRepositoryContentView {
 
     private var statusText: String { state == .empty ? "Idle" : "Synced" }
 
+    private func applyPendingTagSuggestionFocus() async {
+        guard state == .list, let focus = pendingTagSuggestionFocus else { return }
+        selectedFileIDs = [focus.fileID]
+        await fileListModel.selectFiles([focus.fileID])
+        fileListModel.presentSelectedFileTagSuggestions(source: focus.source)
+        onPendingTagSuggestionFocusConsumed(focus)
+    }
+
     private var selectedListTitle: String {
         selectedSidebarRow.displayName
     }
@@ -275,102 +380,6 @@ extension MainRepositoryContentView {
         repositoryTree.sidebarRow(id: selectedSidebarID) ??
             repositoryTree.sidebarRows.first ??
             RepositorySidebarRowSnapshot(node: repositoryTree, depth: 0)
-    }
-
-    init(
-        opening: RepositoryOpeningResult,
-        state: MainRepositoryContentState,
-        onImport: @escaping () -> Void,
-        onDropImport: @escaping ([URL], ImportEntryDestination) -> Void,
-        onOpenSettings: @escaping () -> Void = {},
-        onOpenRepository: @escaping () -> Void = {},
-        onOpenHelp: @escaping () -> Void = {},
-        onOpenImportConflictBatch: @escaping (ImportConflictBatchRoute) -> Void = { _ in },
-        onRetryCurrentList: @escaping () -> Void = {},
-        onCollectDiagnostics: @escaping () async -> Void = {},
-        onShowInFinder: @escaping (String) -> Void = { _ in },
-        onCopyPath: @escaping (String) -> Void = { _ in },
-        onCopyPaths: @escaping ([String]) -> Void = { _ in },
-        onOpenNoteFile: @escaping (String) -> Void = { _ in },
-        onOpenChangeCategoryPermissionRecovery: @escaping () -> Void = {},
-        treeLister: any CoreRepositoryTreeListing = CoreBridge(),
-        savedSearchStore: any CoreSavedSearchCRUD = CoreBridge(),
-        externalCreatedEvent: MainExternalCreatedFileEvent? = nil,
-        onExternalCreatedEventHandled: @escaping (MainExternalCreatedFileEvent) -> Void = { _ in },
-        importProgressItems: [ImportBatchProgressSnapshot.Item] = [],
-        fileLister: any CoreFileListing = CoreBridge(),
-        fileDetailer: any CoreFileDetailing = CoreBridge(),
-        searchQuerying: any CoreSearchQuerying = CoreBridge(),
-        searchFiltering: any CoreSearchFiltering = CoreBridge(),
-        commandIndexer: any CoreCommandIndexing = CoreBridge(),
-        fileCategoryMover: any CoreFileCategoryMoving = CoreBridge(),
-        batchDeleter: any CoreBatchDeleting = CoreBridge(),
-        batchCategoryChanger: any CoreBatchCategoryChanging = CoreBridge(),
-        batchRenamer: any CoreBatchRenaming = CoreBridge(),
-        iCloudConflictResolver: any ICloudConflictResolving = CoreBridge(),
-        tagStore: any CoreTagCRUD = CoreBridge(),
-        undoActionStore: any CoreUndoActionLogging = CoreBridge(),
-        redoActionStore: any CoreRedoActionLogging = CoreBridge(),
-        changeLogLister: any CoreChangeLogListing = CoreBridge(),
-        externalChangesSyncer: any CoreExternalChangesSyncing = CoreBridge(),
-        noteStore: any CoreNoteReadingWriting = CoreBridge(),
-        categoryPredictor: any CoreCategoryPredicting = CoreBridge(),
-        errorMapper: any CoreErrorMapping = CoreBridge(),
-        diagnosticsCollector: any CoreDiagnosticsCollecting = CoreBridge()
-    ) {
-        self.opening = opening; self.state = state
-        self.onImport = onImport
-        self.onDropImport = onDropImport
-        self.onOpenSettings = onOpenSettings; self.onOpenRepository = onOpenRepository; self.onOpenHelp = onOpenHelp
-        self.onOpenImportConflictBatch = onOpenImportConflictBatch
-        self.onRetryCurrentList = onRetryCurrentList
-        self.onCollectDiagnostics = onCollectDiagnostics
-        self.onShowInFinder = onShowInFinder
-        self.onCopyPath = onCopyPath
-        self.onCopyPaths = onCopyPaths
-        self.onOpenNoteFile = onOpenNoteFile
-        self.onOpenChangeCategoryPermissionRecovery = onOpenChangeCategoryPermissionRecovery
-        self.treeLister = treeLister
-        self.savedSearchStore = savedSearchStore
-        self.batchRenamer = batchRenamer
-        self.errorMapper = errorMapper
-        self.externalCreatedEvent = externalCreatedEvent
-        self.onExternalCreatedEventHandled = onExternalCreatedEventHandled
-        self.importProgressItems = importProgressItems
-        _dropPreviewModel = StateObject(wrappedValue: ImportDropPreviewModel(
-            repoPath: opening.config.repoPath,
-            predictor: categoryPredictor
-        ))
-        _detailNoteModel = StateObject(wrappedValue: DetailNoteModel(
-            repoPath: opening.config.repoPath,
-            noteStore: noteStore,
-            errorMapper: errorMapper
-        ))
-        _fileListModel = StateObject(wrappedValue: MainFileListModel(
-            opening: opening,
-            fileLister: fileLister,
-            fileDetailer: fileDetailer,
-            searchQuerying: searchQuerying,
-            searchFiltering: searchFiltering,
-            commandIndexer: commandIndexer,
-            fileCategoryMover: fileCategoryMover,
-            batchDeleter: batchDeleter,
-            batchCategoryChanger: batchCategoryChanger,
-            iCloudConflictResolver: iCloudConflictResolver,
-            tagStore: tagStore,
-            undoActionStore: undoActionStore,
-            redoActionStore: redoActionStore,
-            changeLogLister: changeLogLister,
-            externalChangesSyncer: externalChangesSyncer,
-            errorMapper: errorMapper,
-            diagnosticsCollector: diagnosticsCollector
-        ))
-        _repositoryTree = State(initialValue: opening.tree)
-        _selectedSidebarID = State(initialValue: Self.defaultSelectedSidebarID(from: opening.tree.sidebarRows))
-        let defaultRow = opening.tree.sidebarRows.first {
-            $0.id == Self.defaultSelectedSidebarID(from: opening.tree.sidebarRows)
-        }
-        _searchScope = State(initialValue: defaultRow?.categoryForFileList == nil ? .all : .current)
     }
 
     @ViewBuilder
@@ -449,53 +458,6 @@ extension MainRepositoryContentView {
             }
             .accessibilityElement(children: .combine)
             .accessibilityLabel(fileListModel.loadingAccessibilityText ?? "Loading files")
-        }
-    }
-
-    private var fileTable: some View {
-        VStack(spacing: 8) {
-            ImportProgressTableView(rows: importProgressRows, selection: $selectedImportProgressIDs)
-            fileTableContent
-        }
-        .overlay { emptyListOverlay }
-    }
-
-    private var fileTableContent: some View {
-        Table(visibleFiles, selection: $selectedFileIDs, sortOrder: $tableSortOrder) {
-            TableColumn("Name", sortUsing: KeyPathComparator(\FileEntrySnapshot.currentName)) { file in
-                Text(file.currentName)
-                    .lineLimit(1)
-            }
-            TableColumn("Category / Path", sortUsing: KeyPathComparator(\FileEntrySnapshot.path)) { file in
-                Text(file.categoryPathDisplay)
-                    .lineLimit(1)
-                    .foregroundStyle(.secondary)
-            }
-            TableColumn("Match") { file in
-                Text(searchMatchText(for: file.id))
-                    .lineLimit(1)
-                    .foregroundStyle(.secondary)
-            }
-            TableColumn("Size", sortUsing: KeyPathComparator(\FileEntrySnapshot.sizeBytes)) { file in
-                Text(file.sizeDisplay)
-                    .monospacedDigit()
-            }
-            TableColumn("Modified", sortUsing: KeyPathComparator(\FileEntrySnapshot.updatedAt)) { file in
-                Text(file.updatedAtDisplay)
-                    .monospacedDigit()
-            }
-            TableColumn("Imported", sortUsing: KeyPathComparator(\FileEntrySnapshot.importedAt)) { file in
-                Text(file.importedAtDisplay)
-                    .monospacedDigit()
-            }
-            TableColumn("Status", sortUsing: KeyPathComparator(\FileEntrySnapshot.statusDisplay)) { file in
-                Text(file.statusDisplay)
-            }
-        }
-        .contextMenu(forSelectionType: Int64.self) { selection in
-            contextMenu(for: selection)
-        } primaryAction: { selection in
-            selectedFileIDs = selection
         }
     }
 

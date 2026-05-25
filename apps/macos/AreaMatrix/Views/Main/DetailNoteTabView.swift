@@ -165,3 +165,293 @@ private struct NoteSaveStatusView: View {
         }
     }
 }
+
+struct TagSuggestionsPanel: View {
+    let file: FileEntrySnapshot
+    let state: DetailTagSuggestionState
+    let disabledReason: MainFileWriteActionDisabledReason?
+    let onRetry: () -> Void
+    let onToggleSuggestion: (String) -> Void
+    let onSelectAll: () -> Void
+    let onClearSelection: () -> Void
+    let onStartEditing: () -> Void
+    let onCancelEditing: () -> Void
+    let onEditDisplayName: (String, String) -> Void
+    let onEditSlug: (String, String) -> Void
+    let onRegenerateSlug: (String) -> Void
+    let onApplySelected: () -> Void
+    let onApplyEdited: () -> Void
+    let onAddManually: () -> Void
+    let onClose: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            header
+            stateContent
+            actionBar
+        }
+        .padding(16)
+        .frame(width: 420, alignment: .topLeading)
+        .accessibilityIdentifier("S2-23-C2-19-tag-suggestions-panel")
+    }
+
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("Tag suggestions")
+                .font(.headline)
+            Text("Suggestions come from file name and path keywords. File contents are not read.")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+            Text("Reviewing \(file.currentName)")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    @ViewBuilder
+    private var stateContent: some View {
+        if state.isLoading {
+            Label("Finding tag suggestions...", systemImage: "clock.arrow.circlepath")
+                .foregroundStyle(.secondary)
+        } else if let failure = state.failure {
+            failureView(failure)
+        } else if let report = state.report {
+            reportContent(report)
+        } else {
+            Label("Open suggestions to review deterministic candidates.", systemImage: "tag")
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private func failureView(_ failure: CoreErrorMappingSnapshot) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label("Could not generate suggestions", systemImage: "exclamationmark.triangle")
+                .font(.callout.weight(.semibold))
+            Text(failure.userMessage)
+                .foregroundStyle(.secondary)
+            Button("Retry", action: onRetry)
+        }
+    }
+
+    @ViewBuilder
+    private func reportContent(_ report: TagSuggestionReportSnapshot) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            privacyStatus(report)
+            if let session = state.editSession {
+                editMode(session)
+            } else if report.suggestions.isEmpty {
+                emptyState
+            } else {
+                suggestionList(report)
+            }
+            if let applyReport = state.appliedReport {
+                applySummary(applyReport)
+            }
+        }
+    }
+
+    private func privacyStatus(_ report: TagSuggestionReportSnapshot) -> some View {
+        let status = report.contentsRead || report.aiUsed || report.networkUsed ?
+            "Privacy boundary needs review." :
+            "Non-AI suggestions. No content or network access."
+        return Text(status)
+            .font(.caption)
+            .foregroundStyle(.secondary)
+    }
+
+    private var emptyState: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("No tag suggestions")
+                .font(.callout.weight(.semibold))
+            Button("Add tag manually", action: onAddManually)
+        }
+    }
+
+    private func suggestionList(_ report: TagSuggestionReportSnapshot) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Button("Select all", action: onSelectAll)
+                Button("Clear selection", action: onClearSelection)
+                Spacer()
+                Text("\(state.selectedIDs.count) selected")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            ForEach(report.suggestions) { suggestion in
+                SuggestedTagRow(
+                    suggestion: suggestion,
+                    isSelected: state.selectedIDs.contains(suggestion.suggestionID),
+                    isBusy: state.isApplying,
+                    onToggle: { onToggleSuggestion(suggestion.suggestionID) }
+                )
+            }
+        }
+    }
+
+    private func editMode(_ session: TagSuggestionEditSession) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Edit selected tags")
+                .font(.headline)
+            Text("Editing changes pending tag names only. Nothing is written until Apply edited.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            if session.attentionCount > 0 {
+                Text("\(session.attentionCount) tags need attention before applying.")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+            }
+            ForEach(session.drafts) { draft in
+                SuggestedTagEditRow(
+                    draft: draft,
+                    isBusy: state.isApplying,
+                    isReadOnly: disabledReason != nil,
+                    onDisplayNameChange: { onEditDisplayName(draft.suggestionID, $0) },
+                    onSlugChange: { onEditSlug(draft.suggestionID, $0) },
+                    onRegenerateSlug: { onRegenerateSlug(draft.suggestionID) }
+                )
+            }
+        }
+        .accessibilityIdentifier("S2-23-C2-19-edit-selected-tags")
+    }
+
+    private func applySummary(_ report: TagSuggestionApplyReportSnapshot) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("Applied \(report.appliedCount), skipped \(report.skippedCount), failed \(report.failedCount).")
+            if let failed = report.itemResults.first(where: { $0.status == .failed }) {
+                Text(failed.error ?? "A suggestion could not be applied.")
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .font(.caption)
+    }
+
+    private var actionBar: some View {
+        HStack {
+            Button("Ignore", action: onClose)
+            Spacer()
+            if let session = state.editSession {
+                Button("Cancel edit", action: onCancelEditing)
+                    .disabled(state.isApplying)
+                Button("Apply edited", action: onApplyEdited)
+                    .disabled(!canApplyEdited(session))
+                    .keyboardShortcut(.defaultAction)
+            } else {
+                Button("Edit selected...", action: onStartEditing)
+                    .disabled(!canStartEdit)
+                Button("Apply selected", action: onApplySelected)
+                    .disabled(!canApply)
+                    .keyboardShortcut(.defaultAction)
+            }
+        }
+    }
+
+    private var canApply: Bool {
+        disabledReason == nil &&
+            !state.isLoading &&
+            !state.isApplying &&
+            !DetailTagSuggestionAction.selectedApplyItems(in: state).isEmpty
+    }
+
+    private var canStartEdit: Bool {
+        !state.isLoading &&
+            !state.isApplying &&
+            !state.selectedIDs.isEmpty
+    }
+
+    private func canApplyEdited(_ session: TagSuggestionEditSession) -> Bool {
+        disabledReason == nil &&
+            !state.isLoading &&
+            !state.isApplying &&
+            session.canApply
+    }
+}
+
+private struct SuggestedTagRow: View {
+    let suggestion: TagSuggestionSnapshot
+    let isSelected: Bool
+    let isBusy: Bool
+    let onToggle: () -> Void
+
+    var body: some View {
+        Toggle(isOn: Binding(get: { isSelected }, set: { _ in onToggle() })) {
+            VStack(alignment: .leading, spacing: 3) {
+                HStack(spacing: 6) {
+                    Text(suggestion.displayName)
+                        .font(.callout.weight(.semibold))
+                    Text(suggestion.matchStrength.rawValue)
+                    Text(suggestion.status.rawValue)
+                }
+                .font(.caption)
+                Text(suggestion.reason)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Text(suggestion.source.rawValue)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                if let reason = suggestion.disabledReason {
+                    Text(reason)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+        .disabled(isBusy || !suggestion.canApply)
+        .accessibilityLabel(accessibilityLabel)
+    }
+
+    private var accessibilityLabel: String {
+        "\(suggestion.displayName), \(suggestion.reason), \(suggestion.matchStrength.rawValue), " +
+            "\(suggestion.status.rawValue), \(isSelected ? "selected" : "not selected")"
+    }
+}
+
+private struct SuggestedTagEditRow: View {
+    let draft: TagSuggestionEditDraft
+    let isBusy: Bool
+    let isReadOnly: Bool
+    let onDisplayNameChange: (String) -> Void
+    let onSlugChange: (String) -> Void
+    let onRegenerateSlug: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text(draft.originalDisplayName)
+                    .font(.callout.weight(.semibold))
+                Text(draft.status.label)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            TextField("displayName", text: Binding(
+                get: { draft.displayName },
+                set: onDisplayNameChange
+            ))
+            .textFieldStyle(.roundedBorder)
+            .disabled(fieldsDisabled)
+            HStack {
+                TextField("slug", text: Binding(get: { draft.slug }, set: onSlugChange))
+                    .textFieldStyle(.roundedBorder)
+                    .disabled(fieldsDisabled)
+                Button("Regenerate slug", action: onRegenerateSlug)
+                    .disabled(fieldsDisabled)
+            }
+            Text(draft.reason)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            if let message = draft.status.message {
+                Text(message)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .accessibilityLabel(accessibilityLabel)
+    }
+
+    private var fieldsDisabled: Bool {
+        isBusy || isReadOnly || draft.status == .applied
+    }
+
+    private var accessibilityLabel: String {
+        "\(draft.originalDisplayName), \(draft.reason), \(draft.status.label)"
+    }
+}

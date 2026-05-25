@@ -1,0 +1,51 @@
+一、执行结论
+
+已完成 `4-1/task-140`。
+
+二、执行范围
+
+单任务：S2-23 页面中的 C2-19 `tag-suggestions` 功能点。
+
+修改范围集中在 macOS app/test：
+- [CoreTagCRUD.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreTagCRUD.swift:8)：接入 `suggestTagsForFile` / `applyTagSuggestions` 真实 UniFFI CoreBridge 调用与 snapshot 转换。
+- [MainDetailTagState.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainDetailTagState.swift:62)、[MainDetailTagActions.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainDetailTagActions.swift:53)：新增建议生成、选择、应用、错误映射和 undo token 刷新状态。
+- [DetailTagSection.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/DetailTagSection.swift:42)、[DetailNoteTabView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/DetailNoteTabView.swift:169)：新增 S2-23 建议面板和入口。
+- 同步更新 detail pane/action wiring 与相关 XCTest 调用点；新增 [DetailTagPageFeatureTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/DetailTagPageFeatureTests.swift:270) 中的 C2-19 覆盖。
+
+三、完成情况
+
+核对清单通过：只处理 S2-23 + C2-19；读取并对齐页面规格、control map、Core API、C2-19 capability spec；未实现同页 C2-05 新能力，只复用既有手动标签入口；未扩展相邻页面或相邻能力。
+
+完成标准通过：用户可从 Tags popover 打开建议面板，触发真实 `suggest_tags_for_file`，选择可应用建议后调用真实 `apply_tag_suggestions`，刷新 tag set/change log/undo action；没有 mock-only 或静态状态伪造产品闭环。
+
+Forbidden Touches：未触碰 `core/src/**`。`git diff --name-only -- core/src` 为空。
+
+四、工程质量
+
+数据流按 `View -> MainFileListModel -> CoreTagCRUD -> CoreBridge -> UniFFI` 走，没有让 SwiftUI 直接调用生成绑定。错误路径使用现有 `mapCoreError`，选择变更会清理过期 suggestion state，应用失败会保留前一份 report。
+
+没有新增依赖；没有新增远程 AI、网络或读取文件内容逻辑。隐私状态来自 Core report 的 `contentsRead/aiUsed/networkUsed` 字段。
+
+残余质量风险：为避免修改 manifest 未授权的 `.xcodeproj`，新增 UI 面板放在已有 target 文件中，少数 Swift 文件仍超过“尽量 500 行”的软阈值。当前指定 build gate 已通过；后续若允许修改 Xcode project，建议拆出独立 `TagSuggestionsPanel.swift` / C2-19 snapshot 文件。
+
+五、验证情况
+
+已运行并通过：
+
+```bash
+./dev check task 4-1/task-140
+```
+
+结果摘要：
+- `prompt doctor`: OK，tasks 637，manifests 637。
+- `git diff --check`: 通过，无 whitespace 报错。
+- `xcodebuild ... build CODE_SIGNING_ALLOWED=NO`: `** BUILD SUCCEEDED **`。
+
+未运行：`./dev test macos`、SwiftLint、SwiftFormat。原因是本 task manifest 的验证上限明确为 `./dev check task 4-1/task-140`，普通 atomic page-feature task 不自行升级宽门禁。
+
+六、风险与后续
+
+剩余风险主要是未做真实窗口点击级 UI smoke 和 XCTest 执行；本轮证据覆盖到了编译、任务门禁和新增模型测试代码。回滚方式是 revert 本次列出的 `apps/macos/AreaMatrix/**` 与 `apps/macos/AreaMatrixTests/**` 改动，不涉及用户原文件、DB migration、`core/src/**` 或破坏性文件操作。
+
+建议下一个任务：进入 `4-1/task-140` 的 verify-ready 只读验收，或继续同页 page integration verify 来检查 S2-23 的 C2-19 与 C2-05 覆盖关系。
+

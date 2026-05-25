@@ -22,11 +22,23 @@ struct MainRepositoryDetailPaneTagActions {
     let onRetryTags: () -> Void
     let onAddTag: (String) -> Void
     let onRemoveTag: (String) -> Void
+    let onLoadSuggestions: () -> Void
+    let onRetrySuggestions: () -> Void
+    let onToggleSuggestion: (String) -> Void
+    let onSelectAllSuggestions: () -> Void
+    let onClearSuggestions: () -> Void
+    let onStartEditingSuggestions: () -> Void
+    let onCancelEditingSuggestions: () -> Void
+    let onEditSuggestionDisplayName: (String, String) -> Void
+    let onEditSuggestionSlug: (String, String) -> Void
+    let onRegenerateSuggestionSlug: (String) -> Void
+    let onApplySuggestions: () -> Void
+    let onApplyEditedSuggestions: () -> Void
+    let onSuggestionPresentationConsumed: (TagSuggestionPresentationRequest) -> Void
     let onUndoTagChange: () -> Void
     let onDismissTagUndoToast: () -> Void
     let onBatchTagUndoStateChange: (BatchTagUndoState) -> Void
 }
-
 struct MultiSelectionDetailRefreshResult: Equatable {
     var files: [FileEntrySnapshot]
     var errorMapping: CoreErrorMappingSnapshot?
@@ -204,12 +216,20 @@ enum BatchTagUndoAction {
         errorMapper: any CoreErrorMapping
     ) async -> BatchTagUndoLoadResult {
         guard let token = normalizedToken(undoToken) else {
-            return BatchTagUndoLoadResult(action: nil, unavailableReason: "Undo is unavailable for this result.", failure: nil)
+            return BatchTagUndoLoadResult(
+                action: nil,
+                unavailableReason: "Undo is unavailable for this result.",
+                failure: nil
+            )
         }
         do {
             let actions = try await undoStore.listUndoActions(repoPath: repoPath)
             guard let action = actions.first(where: { $0.actionID == token }) else {
-                return BatchTagUndoLoadResult(action: nil, unavailableReason: "Undo action is no longer available.", failure: nil)
+                return BatchTagUndoLoadResult(
+                    action: nil,
+                    unavailableReason: "Undo action is no longer available.",
+                    failure: nil
+                )
             }
             return loadResult(for: action)
         } catch {
@@ -472,18 +492,5 @@ extension MainFileListModel {
                 """
             )
         }
-    }
-}
-
-extension CoreErrorMappingSnapshot {
-    static func missingFromExternalChange(fileID: Int64) -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
-            kind: .fileNotFound,
-            userMessage: "The selected file is missing.",
-            severity: .medium,
-            suggestedAction: "Refresh the current list or remove the stale index entry.",
-            recoverability: .refreshRequired,
-            rawContext: "file_id=\(fileID)"
-        )
     }
 }

@@ -216,14 +216,14 @@ struct BatchAddTagsSheet: View {
 
     @MainActor
     private func apply() async {
-        guard BatchTagValidation.canApply(
+        guard BatchTagValidation.canApply(BatchTagApplyEligibility(
             isApplying: isApplying,
             disabledReason: disabledReason,
             input: draft.input,
             pendingTags: draft.pendingTags,
             fieldError: draft.fieldError,
             selectedCount: selectedCount
-        ) else { return }
+        )) else { return }
         switch BatchTagValidation.normalizedTagsForApply(draft.pendingTags) {
         case let .failure(message):
             draft.fieldError = message
@@ -336,7 +336,9 @@ private struct BatchAddTagsSheetContent: View {
     }
 
     private func candidateButton(_ tag: TagRecordSnapshot) -> some View {
-        Button(action: { onAddCandidateTag(tag) }) {
+        Button {
+            onAddCandidateTag(tag)
+        } label: {
             HStack {
                 Text(tag.displayName)
                 Spacer()
@@ -449,7 +451,11 @@ private struct BatchAddTagsSheetContent: View {
     }
 
     private var candidateTags: [TagRecordSnapshot] {
-        BatchTagValidation.visibleCandidates(input: draft.input, catalog: catalogState.tagSet, pendingTags: draft.pendingTags)
+        BatchTagValidation.visibleCandidates(
+            input: draft.input,
+            catalog: catalogState.tagSet,
+            pendingTags: draft.pendingTags
+        )
     }
 
     private var pendingChips: [BatchPendingTagChip] {
@@ -457,11 +463,14 @@ private struct BatchAddTagsSheetContent: View {
     }
 
     private var canApply: Bool {
-        BatchTagValidation.canApply(
-            isApplying: isApplying, disabledReason: disabledReason, input: draft.input,
-            pendingTags: draft.pendingTags, fieldError: draft.fieldError,
+        BatchTagValidation.canApply(BatchTagApplyEligibility(
+            isApplying: isApplying,
+            disabledReason: disabledReason,
+            input: draft.input,
+            pendingTags: draft.pendingTags,
+            fieldError: draft.fieldError,
             selectedCount: selectedCount
-        )
+        ))
     }
 
     private func candidateStatusText(_ tag: TagRecordSnapshot) -> String {

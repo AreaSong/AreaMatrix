@@ -18,14 +18,14 @@ final class ImportBatchICloudPageIntegrationTests: XCTestCase {
             "Repository is read-only. You can still review selected files and tag candidates."
         )
         XCTAssertEqual(pending.fieldError, "Tag store is read-only.")
-        XCTAssertFalse(BatchTagValidation.canApply(
+        XCTAssertFalse(BatchTagValidation.canApply(BatchTagApplyEligibility(
             isApplying: false,
             disabledReason: disabledReason,
             input: "",
             pendingTags: ["urgent"],
             fieldError: nil,
             selectedCount: 2
-        ))
+        )))
     }
 
     func testS209PageIntegrationBuildsListAndCommandPaletteRoutesForSameSheet() {
@@ -268,6 +268,19 @@ extension MainRepositoryDetailPaneTagActions {
             onRetryTags: {},
             onAddTag: { _ in },
             onRemoveTag: { _ in },
+            onLoadSuggestions: {},
+            onRetrySuggestions: {},
+            onToggleSuggestion: { _ in },
+            onSelectAllSuggestions: {},
+            onClearSuggestions: {},
+            onStartEditingSuggestions: {},
+            onCancelEditingSuggestions: {},
+            onEditSuggestionDisplayName: { _, _ in },
+            onEditSuggestionSlug: { _, _ in },
+            onRegenerateSuggestionSlug: { _ in },
+            onApplySuggestions: {},
+            onApplyEditedSuggestions: {},
+            onSuggestionPresentationConsumed: { _ in },
             onUndoTagChange: {},
             onDismissTagUndoToast: {},
             onBatchTagUndoStateChange: { _ in }
@@ -472,19 +485,6 @@ private actor S210ErrorMapper: CoreErrorMapping {
     }
 
     private func kind(for error: CoreError) -> CoreErrorKindSnapshot {
-        switch error {
-        case .Conflict:
-            .conflict
-        case .FileNotFound:
-            .fileNotFound
-        case .PermissionDenied:
-            .permissionDenied
-        case .Db:
-            .db
-        case .Io:
-            .io
-        default:
-            .internal
-        }
+        ImportBatchICloudErrorKindMapper.kind(for: error)
     }
 }

@@ -45,6 +45,7 @@ enum ImportConflictBatchResultStatusSnapshot: String, Equatable, Hashable {
     case failed = "Failed"
 }
 
+// swiftlint:disable:next type_name
 struct ImportConflictBatchPreviewRequestSnapshot: Equatable {
     var importSessionID: String
     var conflictIDs: [String]

@@ -148,6 +148,7 @@ extension OnboardingModel {
     ) async {
         let mapping = await importProgressMapping(for: error)
         let failedItem = ImportBatchProgressSnapshot.Item(
+            fileID: nil,
             sourcePath: context.sourcePath,
             targetPath: ImportSingleFilePreflightTarget.relativePath(
                 category: context.overrideCategory,
@@ -309,6 +310,28 @@ extension OnboardingModel {
     }
 
     @MainActor
+    func reviewImportResultTagSuggestions(itemID: ImportResultRouteState.Item.ID) {
+        guard case let .importResult(state) = route else { return }
+        guard let item = state.items.first(where: { $0.id == itemID }),
+              let fileID = item.fileID,
+              item.status == .imported else { return }
+        pendingTagSuggestionFocus = TagSuggestionPresentationRequest(
+            fileID: fileID,
+            source: .importResult,
+            sequence: Int(fileID)
+        )
+        route = Self.mainRoute(for: state.sourceOpening.focusingImportResultItem(item))
+        toastMessage = nil
+    }
+
+    @MainActor
+    func consumePendingTagSuggestionFocus(_ request: TagSuggestionPresentationRequest) {
+        if pendingTagSuggestionFocus == request {
+            pendingTagSuggestionFocus = nil
+        }
+    }
+
+    @MainActor
     func requestImportResultExportPrivacyConfirmation() {
         guard case let .importResult(state) = route else { return }
         route = .importResult(state.replacing(exportState: .confirmingPrivacy))
@@ -418,6 +441,7 @@ private func retryProgressItem(
     errorMessage: String? = nil
 ) -> ImportBatchProgressSnapshot.Item {
     ImportBatchProgressSnapshot.Item(
+        fileID: item.fileID,
         sourcePath: item.sourcePath,
         targetPath: targetPath ?? item.targetPath,
         phase: phase,

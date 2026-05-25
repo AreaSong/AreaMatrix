@@ -67,6 +67,7 @@ final class ChangeCategoryPageIntegrationVerifyTests: XCTestCase {
     }
 
     @MainActor
+    // swiftlint:disable:next function_body_length
     func testS135PageIntegrationDetailMetaMenuRoutesToChangeCategorySheet() async {
         let file = FileEntrySnapshot.s135Fixture(id: 249, name: "detail.pdf")
         let model = MainFileListModel(
@@ -88,6 +89,8 @@ final class ChangeCategoryPageIntegrationVerifyTests: XCTestCase {
             detailLogDiagnosticsState: model.detailLogDiagnosticsState,
             detailExternalCreateSyncState: model.detailExternalCreateSyncState,
             detailTagEditorState: model.detailTagEditorState,
+            detailTagSuggestionState: model.detailTagSuggestionState,
+            tagSuggestionPresentationRequest: model.tagSuggestionPresentationRequest,
             detailTagUndoToast: model.detailTagUndoToast, detailTabRequest: model.detailTabRequest,
             selectedImportProgressRow: nil,
             repoPath: "/tmp/repo",
@@ -476,35 +479,4 @@ private extension [RepositorySidebarRowSnapshot] {
     static var s135Rows: [RepositorySidebarRowSnapshot] {
         RepositoryTreeNodeSnapshot.s135Tree(docsCount: 1, financeCount: 0).sidebarRows
     }
-}
-
-private extension CoreErrorMappingSnapshot {
-    static func s135Conflict() -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
-            kind: .conflict,
-            userMessage: "Path conflict.",
-            severity: .medium,
-            suggestedAction: "Rename the file first, then retry.",
-            recoverability: .userActionRequired,
-            rawContext: "S1-35 C1-10 safe target name"
-        )
-    }
-
-    static func s135PermissionDenied() -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
-            kind: .permissionDenied,
-            userMessage: "Target category is not writable.",
-            severity: .high,
-            suggestedAction: "Grant folder access in Finder, then retry.",
-            recoverability: .userActionRequired,
-            rawContext: "S1-35 C1-24 preview_move_to_category permission"
-        )
-    }
-}
-
-private func makeS135TemporaryDirectory(prefix: String) throws -> URL {
-    let name = "AreaMatrixS135Integration-\(prefix)-\(UUID().uuidString)"
-    let url = FileManager.default.temporaryDirectory.appendingPathComponent(name, isDirectory: true)
-    try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
-    return url
 }

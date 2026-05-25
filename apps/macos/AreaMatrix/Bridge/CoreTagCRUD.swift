@@ -5,6 +5,14 @@ protocol CoreTagCRUD: Sendable {
     func addTag(repoPath: String, fileID: Int64, tag: String) async throws -> TagSetSnapshot
     func removeTag(repoPath: String, fileID: Int64, tag: String) async throws -> TagSetSnapshot
     func batchAddTags(repoPath: String, fileIDs: [Int64], tags: [String]) async throws -> BatchMutationReportSnapshot
+    func suggestTagsForFile(
+        repoPath: String,
+        request: TagSuggestionRequestSnapshot
+    ) async throws -> TagSuggestionReportSnapshot
+    func applyTagSuggestions(
+        repoPath: String,
+        request: ApplyTagSuggestionsRequestSnapshot
+    ) async throws -> TagSuggestionApplyReportSnapshot
 }
 
 protocol CoreUndoActionLogging: Sendable {
@@ -133,8 +141,26 @@ struct RedoActionResultSnapshot: Equatable {
 }
 
 extension CoreTagCRUD {
-    func batchAddTags(repoPath _: String, fileIDs _: [Int64], tags _: [String]) async throws -> BatchMutationReportSnapshot {
+    func batchAddTags(
+        repoPath _: String,
+        fileIDs _: [Int64],
+        tags _: [String]
+    ) async throws -> BatchMutationReportSnapshot {
         throw CoreError.Internal(message: "batch_add_tags is unavailable")
+    }
+
+    func suggestTagsForFile(
+        repoPath _: String,
+        request _: TagSuggestionRequestSnapshot
+    ) async throws -> TagSuggestionReportSnapshot {
+        throw CoreError.Internal(message: "suggest_tags_for_file is unavailable")
+    }
+
+    func applyTagSuggestions(
+        repoPath _: String,
+        request _: ApplyTagSuggestionsRequestSnapshot
+    ) async throws -> TagSuggestionApplyReportSnapshot {
+        throw CoreError.Internal(message: "apply_tag_suggestions is unavailable")
     }
 }
 
@@ -163,6 +189,30 @@ extension CoreBridge: CoreTagCRUD {
                 repoPath: repoPath,
                 fileIds: fileIDs,
                 tags: tags
+            ))
+        }.value
+    }
+
+    func suggestTagsForFile(
+        repoPath: String,
+        request: TagSuggestionRequestSnapshot
+    ) async throws -> TagSuggestionReportSnapshot {
+        try await Task.detached(priority: .userInitiated) {
+            try TagSuggestionReportSnapshot(coreReport: AreaMatrix.suggestTagsForFile(
+                repoPath: repoPath,
+                request: TagSuggestionRequest(snapshot: request)
+            ))
+        }.value
+    }
+
+    func applyTagSuggestions(
+        repoPath: String,
+        request: ApplyTagSuggestionsRequestSnapshot
+    ) async throws -> TagSuggestionApplyReportSnapshot {
+        try await Task.detached(priority: .userInitiated) {
+            try TagSuggestionApplyReportSnapshot(coreReport: AreaMatrix.applyTagSuggestions(
+                repoPath: repoPath,
+                request: ApplyTagSuggestionsRequest(snapshot: request)
             ))
         }.value
     }
@@ -196,7 +246,7 @@ extension CoreBridge: CoreRedoActionLogging {
     }
 }
 
-private extension TagSetSnapshot {
+extension TagSetSnapshot {
     init(coreTagSet: TagSet) {
         fileID = coreTagSet.fileId
         fileTags = coreTagSet.fileTags.map(TagRecordSnapshot.init(coreRecord:))

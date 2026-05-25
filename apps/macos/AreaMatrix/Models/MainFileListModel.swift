@@ -6,7 +6,12 @@ final class MainFileListModel: ObservableObject {
     @Published var files: [FileEntrySnapshot]
     @Published var isLoading = false
     @Published var errorMapping: CoreErrorMappingSnapshot?
-    @Published var selection = MainFileSelectionState.none { didSet { clearStaleDetailTagUndoToast() } }
+    @Published var selection = MainFileSelectionState.none {
+        didSet {
+            clearStaleDetailTagUndoToast()
+            clearStaleDetailTagSuggestions()
+        }
+    }
     @Published var selectedFileDetail: FileEntrySnapshot?
     @Published var isDetailLoading = false
     @Published var detailErrorMapping: CoreErrorMappingSnapshot?
@@ -14,6 +19,8 @@ final class MainFileListModel: ObservableObject {
     @Published private(set) var detailLogDiagnosticsState = MainDetailLogDiagnosticsState.idle
     @Published private(set) var detailExternalCreateSyncState = MainDetailExternalCreateSyncState.idle
     @Published var detailTagEditorState = DetailTagEditorState.notLoaded
+    @Published var detailTagSuggestionState = DetailTagSuggestionState.idle
+    @Published var tagSuggestionPresentationRequest: TagSuggestionPresentationRequest?
     @Published var detailTagUndoToast: DetailTagUndoToast?
     @Published var searchState = MainSearchState.idle
     @Published var searchFacetsState = MainSearchFacetsState.idle
@@ -60,8 +67,9 @@ final class MainFileListModel: ObservableObject {
     let diagnosticsCollector: any CoreDiagnosticsCollecting
     var currentCategory: String?
     private var loadGeneration = 0
-    private var detailGeneration = 0
-    private var detailLogGeneration = 0
+    var detailGeneration = 0
+    var detailLogGeneration = 0
+    var tagSuggestionPresentationSequence = 0
     var tagFilterRegistryGeneration = 0
     var searchGeneration = 0
     var searchFacetsGeneration = 0
@@ -131,6 +139,7 @@ extension MainFileListModel {
             selection = .multiple(ids)
             selectedFileDetail = nil; selectedFileNoteWriteBlock = nil; detailErrorMapping = nil
             detailTagEditorState = .notLoaded
+            detailTagSuggestionState = .idle
             isDetailLoading = true
             resetDetailLog()
             await loadMultiSelectionDetails(ids: ids)
@@ -257,17 +266,6 @@ extension MainFileListModel {
         return nil
     }
 
-    var loadingStatusText: String? {
-        guard isLoading else { return nil }
-        if searchState.isActive { return "Searching..." }
-        return "正在加载 \(currentCategoryDisplayName)..."
-    }
-
-    var loadingAccessibilityText: String? {
-        guard let loadingStatusText else { return nil }
-        return "Loading files. \(loadingStatusText)"
-    }
-
     private func reloadCurrentCategory(focusingOn fileID: Int64? = nil) async {
         loadGeneration += 1
         let generation = loadGeneration
@@ -321,6 +319,7 @@ extension MainFileListModel {
             detailErrorMapping = nil
             isDetailLoading = false
             detailTagEditorState = .notLoaded
+            detailTagSuggestionState = .idle
         } catch {
             let mappedError = await mapCoreError(error)
             guard generation == detailGeneration else { return }
@@ -454,6 +453,7 @@ extension MainFileListModel {
         detailErrorMapping = CoreErrorMappingSnapshot.missingFromExternalChange(fileID: removedFileID)
         isDetailLoading = false
         detailTagEditorState = .notLoaded
+        detailTagSuggestionState = .idle
         statusBanner = .removedSelectedFile(fileID: removedFileID)
         return removedFileID
     }
@@ -481,28 +481,19 @@ extension MainFileListModel {
         selection = .none
         selectedFileDetail = nil; selectedFileNoteWriteBlock = nil; detailErrorMapping = nil
         detailTagEditorState = .notLoaded
+        detailTagSuggestionState = .idle
         clearTagFilterRegistry()
         isDetailLoading = false
         resetDetailLog()
         pendingActionDestination = nil; renameState = .idle; deleteState = .idle; changeCategoryState = .idle
     }
 
-    private func resetDetailLog() {
+    func resetDetailLog() {
         detailLogGeneration += 1
         detailLogState = .notLoaded
         detailLogDiagnosticsState = .idle
         detailExternalCreateSyncState = .idle
         detailTabRequest = nil
         iCloudConflictResolutionState = .idle
-    }
-
-    private func canApplyDetailLogDiagnosticsResult(fileID: Int64) -> Bool {
-        guard selection.singleFileID == fileID,
-              case let .failed(failedFileID, _) = detailLogState else { return false }
-        return failedFileID == fileID
-    }
-
-    private func canApplyMultiSelectionDetailResult(generation: Int, ids: Set<Int64>) -> Bool {
-        generation == detailGeneration && selection.multipleFileIDs == ids
     }
 }

@@ -4,10 +4,12 @@ enum DetailTagEditorOperation: Equatable {
     case load
     case add(String)
     case remove(String)
+    case suggest
+    case applySuggestions([String])
 
     var tag: String? {
         switch self {
-        case .load:
+        case .load, .suggest, .applySuggestions:
             nil
         case let .add(tag), let .remove(tag):
             tag
@@ -153,7 +155,8 @@ enum TagInputNormalization {
     private static let reservedValues: Set<String> = [".", "..", ".areamatrix", "areamatrix"]
 
     static func normalizedValue(_ rawValue: String) -> String? {
-        validationMessage(for: rawValue) == nil ? rawValue.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() : nil
+        guard validationMessage(for: rawValue) == nil else { return nil }
+        return rawValue.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
     }
 
     static func validationMessage(for rawValue: String) -> String? {
@@ -176,6 +179,15 @@ struct BatchTagPendingState: Equatable {
 struct BatchAddTagsApplyResult: Equatable {
     var report: BatchMutationReportSnapshot?
     var failure: CoreErrorMappingSnapshot?
+}
+
+struct BatchTagApplyEligibility: Equatable {
+    var isApplying: Bool
+    var disabledReason: String?
+    var input: String
+    var pendingTags: [String]
+    var fieldError: String?
+    var selectedCount: Int
 }
 
 enum BatchPendingTagStatus: String, Equatable {
@@ -287,10 +299,18 @@ enum BatchTagValidation {
         disabledReason: String?
     ) -> BatchTagPendingState {
         if disabledReason != nil {
-            return BatchTagPendingState(input: input, pendingTags: pendingTags, fieldError: "Tag store is read-only.")
+            return BatchTagPendingState(
+                input: input,
+                pendingTags: pendingTags,
+                fieldError: "Tag store is read-only."
+            )
         }
         guard let normalizedValue = TagInputNormalization.normalizedValue(input) else {
-            return BatchTagPendingState(input: input, pendingTags: pendingTags, fieldError: TagInputNormalization.invalidMessage)
+            return BatchTagPendingState(
+                input: input,
+                pendingTags: pendingTags,
+                fieldError: TagInputNormalization.invalidMessage
+            )
         }
         let value = matchingKnownTagValue(normalizedValue, catalog: catalog) ?? normalizedValue
         if pendingTags.contains(where: { normalized($0) == value }) {
@@ -319,7 +339,11 @@ enum BatchTagValidation {
         }
     }
 
-    static func visibleCandidates(input: String, catalog: TagSetSnapshot?, pendingTags: [String]) -> [TagRecordSnapshot] {
+    static func visibleCandidates(
+        input: String,
+        catalog: TagSetSnapshot?,
+        pendingTags: [String]
+    ) -> [TagRecordSnapshot] {
         let query = input.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         let source = query.isEmpty ? catalog?.recentTags ?? [] : catalog?.availableTags ?? []
         let filtered = query.isEmpty ? source : source.filter {
@@ -332,19 +356,19 @@ enum BatchTagValidation {
         }
     }
 
-    static func canApply(
-        isApplying: Bool,
-        disabledReason: String?,
-        input: String,
-        pendingTags: [String],
-        fieldError: String?,
-        selectedCount: Int
-    ) -> Bool {
-        guard !isApplying, selectedCount > 0, disabledReason == nil, !pendingTags.isEmpty, fieldError == nil else {
+    static func canApply(_ eligibility: BatchTagApplyEligibility) -> Bool {
+        guard !eligibility.isApplying,
+              eligibility.selectedCount > 0,
+              eligibility.disabledReason == nil,
+              !eligibility.pendingTags.isEmpty,
+              eligibility.fieldError == nil else {
             return false
         }
-        guard input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return false }
-        return pendingChips(pendingTags: pendingTags, disabledReason: disabledReason).allSatisfy { !$0.status.preventsApply }
+        guard eligibility.input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return false }
+        return pendingChips(
+            pendingTags: eligibility.pendingTags,
+            disabledReason: eligibility.disabledReason
+        ).allSatisfy { !$0.status.preventsApply }
     }
 
     static func normalizedTagsForApply(_ pendingTags: [String]) -> BatchTagApplyNormalizationResult {

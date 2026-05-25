@@ -3,16 +3,32 @@ import SwiftUI
 struct DetailTagSection: View {
     let file: FileEntrySnapshot
     let state: DetailTagEditorState
+    let suggestionState: DetailTagSuggestionState
+    let suggestionPresentationRequest: TagSuggestionPresentationRequest?
     let undoToast: DetailTagUndoToast?
     let disabledReason: MainFileWriteActionDisabledReason?
     let onLoadTags: () -> Void
     let onRetryTags: () -> Void
     let onAddTag: (String) -> Void
     let onRemoveTag: (String) -> Void
+    let onLoadSuggestions: () -> Void
+    let onRetrySuggestions: () -> Void
+    let onToggleSuggestion: (String) -> Void
+    let onSelectAllSuggestions: () -> Void
+    let onClearSuggestions: () -> Void
+    let onStartEditingSuggestions: () -> Void
+    let onCancelEditingSuggestions: () -> Void
+    let onEditSuggestionDisplayName: (String, String) -> Void
+    let onEditSuggestionSlug: (String, String) -> Void
+    let onRegenerateSuggestionSlug: (String) -> Void
+    let onApplySuggestions: () -> Void
+    let onApplyEditedSuggestions: () -> Void
+    let onSuggestionPresentationConsumed: (TagSuggestionPresentationRequest) -> Void
     let onUndoTagChange: () -> Void
     let onDismissUndoToast: () -> Void
 
     @State private var isPopoverPresented = false
+    @State private var isSuggestionsPresented = false
     @State private var query = ""
     @State private var pendingSubmittedTag: String?
 
@@ -30,6 +46,32 @@ struct DetailTagSection: View {
         .task(id: file.id) { onLoadTags() }
         .onChange(of: state) { _, newState in
             clearCommittedQuery(newState: newState)
+        }
+        .onChange(of: suggestionPresentationRequest) { _, request in
+            presentSuggestionsIfNeeded(request)
+        }
+        .sheet(isPresented: $isSuggestionsPresented) {
+            TagSuggestionsPanel(
+                file: file,
+                state: suggestionState,
+                disabledReason: disabledReason,
+                onRetry: onRetrySuggestions,
+                onToggleSuggestion: onToggleSuggestion,
+                onSelectAll: onSelectAllSuggestions,
+                onClearSelection: onClearSuggestions,
+                onStartEditing: onStartEditingSuggestions,
+                onCancelEditing: onCancelEditingSuggestions,
+                onEditDisplayName: onEditSuggestionDisplayName,
+                onEditSlug: onEditSuggestionSlug,
+                onRegenerateSlug: onRegenerateSuggestionSlug,
+                onApplySelected: onApplySuggestions,
+                onApplyEdited: onApplyEditedSuggestions,
+                onAddManually: {
+                    isSuggestionsPresented = false
+                    isPopoverPresented = true
+                },
+                onClose: { isSuggestionsPresented = false }
+            )
         }
     }
 
@@ -76,10 +118,23 @@ struct DetailTagSection: View {
                 disabledReason: disabledReason,
                 onRetry: onRetryTags,
                 onAddTag: submitTag,
+                onOpenSuggestions: openSuggestions,
                 onClose: { isPopoverPresented = false }
             )
         }
         .accessibilityIdentifier("S2-07-tags-add")
+    }
+
+    private func openSuggestions() {
+        isPopoverPresented = false
+        isSuggestionsPresented = true
+        onLoadSuggestions()
+    }
+
+    private func presentSuggestionsIfNeeded(_ request: TagSuggestionPresentationRequest?) {
+        guard let request, request.fileID == file.id else { return }
+        openSuggestions()
+        onSuggestionPresentationConsumed(request)
     }
 
     private func tagFailureView(_ mapping: CoreErrorMappingSnapshot) -> some View {
@@ -160,6 +215,7 @@ private struct TagEditorPopover: View {
     let disabledReason: MainFileWriteActionDisabledReason?
     let onRetry: () -> Void
     let onAddTag: (String) -> Void
+    let onOpenSuggestions: () -> Void
     let onClose: () -> Void
 
     @FocusState private var isInputFocused: Bool
@@ -180,8 +236,8 @@ private struct TagEditorPopover: View {
             popoverStatus
             tagList
             HStack {
-                Button("Suggestions...", action: {})
-                    .disabled(true)
+                Button("Suggestions...", action: onOpenSuggestions)
+                    .accessibilityIdentifier("S2-23-C2-19-open-tag-suggestions")
                 Spacer()
                 Button("Close", action: onClose)
             }
@@ -295,202 +351,5 @@ private struct TagSuggestionRow: View {
             }
         }
         .disabled(tag.selected || tag.disabled)
-    }
-}
-
-struct SearchTagFacetPicker: View {
-    @Binding var filters: SearchFilterStateSnapshot
-    var facetsState: MainSearchFacetsState
-    var tagRegistryState: TagFilterRegistryState
-    var tagRegistryAnchorFileID: Int64?
-    var onRetry: () -> Void
-    var onLoadTagRegistry: (Int64?) -> Void
-    var onRetryTagRegistry: () -> Void
-    @State private var query = ""
-    @FocusState private var isSearchFocused: Bool
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("Filter by tags")
-                .font(.callout.weight(.semibold))
-            TextField("Search tags", text: $query)
-                .textFieldStyle(.roundedBorder)
-                .focused($isSearchFocused)
-                .accessibilityIdentifier("S2-08-tag-search")
-            SelectedTagChips(filters: $filters, tagFacets: tagOptions)
-            TagMatchModeControl(filters: $filters)
-            tagList
-            tagFooter
-        }
-        .accessibilityIdentifier("S2-08-tags-filter")
-        .onAppear { isSearchFocused = true }
-        .task(id: tagRegistryAnchorFileID) {
-            onLoadTagRegistry(tagRegistryAnchorFileID)
-        }
-    }
-
-    @ViewBuilder
-    private var tagList: some View {
-        if let error = tagRegistryState.errorMapping, tagOptions.isEmpty {
-            tagLoadingFailure(error: error, retry: onRetryTagRegistry)
-        } else if let error = facetsState.errorMapping, tagOptions.isEmpty {
-            tagLoadingFailure(error: error, retry: onRetry)
-        } else if isLoadingTags, tagOptions.isEmpty {
-            Text("Loading tags...")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        } else if tagOptions.isEmpty {
-            tagEmptyState
-        } else if visibleTagOptions.isEmpty {
-            Text("No matching tags")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        } else {
-            tagOptionsView
-        }
-    }
-
-    private var tagOptionsView: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            ForEach(visibleTagOptions) { option in
-                Toggle(isOn: Binding(
-                    get: { option.isSelected(in: filters) },
-                    set: { _ in filters = SearchFilterEditing.togglingTag(option.value, in: filters) }
-                )) {
-                    TagFacetRow(option: option)
-                }
-                .disabled(option.disabled || tagRegistryState.errorMapping != nil)
-                .accessibilityLabel(option.accessibilityLabel(isSelected: option.isSelected(in: filters)))
-            }
-        }
-    }
-
-    private var tagFooter: some View {
-        HStack {
-            Button("Clear all") {
-                filters = SearchFilterEditing.removing(.tags, from: filters)
-            }
-            .disabled(filters.tags.isEmpty)
-            Spacer()
-            tagFooterStatus
-        }
-    }
-
-    @ViewBuilder
-    private var tagFooterStatus: some View {
-        if tagRegistryState.errorMapping != nil, !tagOptions.isEmpty {
-            Button("Retry tags", action: onRetryTagRegistry)
-                .font(.caption)
-        } else if facetsState.errorMapping != nil, !tagOptions.isEmpty {
-            Button("Retry counts", action: onRetry)
-                .font(.caption)
-        } else if isLoadingTags, !tagOptions.isEmpty {
-            Text("Loading tags...")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        }
-    }
-
-    private func tagLoadingFailure(error: CoreErrorMappingSnapshot, retry: @escaping () -> Void) -> some View {
-        HStack(spacing: 8) {
-            Text("Could not load tags")
-            Button("Retry", action: retry)
-        }
-        .font(.caption)
-        .foregroundStyle(.secondary)
-        .accessibilityLabel("Could not load tags. \(error.userMessage)")
-    }
-
-    private var tagEmptyState: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text("No tags yet")
-            Text("Add tags from file detail or batch actions.")
-        }
-        .font(.caption)
-        .foregroundStyle(.secondary)
-    }
-
-    private var tagOptions: [SearchFacetCountSnapshot] {
-        TagFilterRegistryPresentation.options(registryState: tagRegistryState, facetsState: facetsState)
-    }
-
-    private var visibleTagOptions: [SearchFacetCountSnapshot] {
-        TagFacetFiltering.visibleTags(query: query, facets: tagOptions)
-    }
-
-    private var isLoadingTags: Bool {
-        tagRegistryState.isLoading || facetsState.isLoading
-    }
-}
-
-private struct TagFacetRow: View {
-    var option: SearchFacetCountSnapshot
-
-    var body: some View {
-        HStack(spacing: 8) {
-            Circle()
-                .fill(Color.accentColor.opacity(option.disabled ? 0.25 : 0.75))
-                .frame(width: 8, height: 8)
-                .accessibilityHidden(true)
-            Text(option.label)
-            Spacer()
-            Text(option.countDisplayText)
-                .foregroundStyle(.secondary)
-        }
-    }
-}
-
-struct SelectedTagChips: View {
-    @Binding var filters: SearchFilterStateSnapshot
-    var tagFacets: [SearchFacetCountSnapshot]
-
-    var body: some View {
-        if filters.tags.isEmpty {
-            EmptyView()
-        } else {
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 6) {
-                    ForEach(filters.tags, id: \.self) { tag in
-                        Button {
-                            filters = SearchFilterEditing.removingTag(tag, from: filters)
-                        } label: {
-                            Label(label(for: tag), systemImage: "xmark.circle")
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
-                        .accessibilityLabel("Remove tag filter \(label(for: tag))")
-                    }
-                }
-            }
-            .accessibilityLabel("Selected tags \(filters.tags.joined(separator: ", "))")
-        }
-    }
-
-    private func label(for tag: String) -> String {
-        tagFacets.first { $0.value.caseInsensitiveCompare(tag) == .orderedSame }?.label ?? tag
-    }
-}
-
-private struct TagMatchModeControl: View {
-    @Binding var filters: SearchFilterStateSnapshot
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Picker("Tag match mode", selection: Binding(
-                get: { filters.tagMatchMode },
-                set: { filters = SearchFilterEditing.settingTagMatchMode($0, in: filters) }
-            )) {
-                Text("Any").tag(SearchTagMatchModeSnapshot.any)
-                Text("All").tag(SearchTagMatchModeSnapshot.all)
-            }
-            .pickerStyle(.segmented)
-            .accessibilityLabel("Tag match mode")
-            .accessibilityValue(filters.tagMatchMode.accessibilityText)
-            if filters.tags.count == 1 {
-                Text("Any and All match the same single selected tag.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-        }
     }
 }

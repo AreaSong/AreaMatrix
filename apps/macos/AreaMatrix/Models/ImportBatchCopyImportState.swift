@@ -415,12 +415,13 @@ struct ImportBatchProgressSnapshot: Equatable {
     }
 
     struct Item: Identifiable, Equatable {
+        var fileID: Int64?
         var sourcePath: String
         var targetPath: String
         var phase: Phase
         var errorMessage: String?
         var existingRelativePath: String?
-        var importConflictBatch: ImportConflictBatchProgressMetadata? = nil
+        var importConflictBatch: ImportConflictBatchProgressMetadata?
 
         var id: String {
             sourcePath
@@ -465,7 +466,8 @@ struct ImportBatchImportResult: Equatable {
             remaining: 0,
             currentPath: lastImportedPath.isEmpty ? fallbackPath : lastImportedPath,
             skipped: skippedDuplicateCount + stoppedPendingCount,
-            pending: pendingICloudCount
+            pending: pendingICloudCount,
+            items: succeededProgressItems
         )
     }
 
@@ -474,19 +476,24 @@ struct ImportBatchImportResult: Equatable {
         let processed = succeededEntries.count + failedCount
         return max(total - processed, 0)
     }
+
+    private var succeededProgressItems: [ImportBatchProgressSnapshot.Item] {
+        succeededEntries.map { entry in
+            ImportBatchProgressSnapshot.Item(
+                fileID: entry.id,
+                sourcePath: entry.sourcePath ?? entry.path,
+                targetPath: entry.path,
+                phase: .done,
+                errorMessage: nil
+            )
+        }
+    }
 }
 
 extension ImportBatchProgressSnapshot {
     func withItems(_ items: [Item]) -> ImportBatchProgressSnapshot {
-        ImportBatchProgressSnapshot(
-            completed: completed,
-            failed: failed,
-            total: total,
-            remaining: remaining,
-            currentPath: currentPath,
-            skipped: skipped,
-            pending: pending,
-            items: items
-        )
+        var snapshot = self
+        snapshot.items = items
+        return snapshot
     }
 }

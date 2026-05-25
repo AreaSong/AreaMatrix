@@ -15,6 +15,31 @@ extension MainRepositoryContentView {
             onRetryTags: { Task { await fileListModel.retrySelectedFileTags() } },
             onAddTag: { tag in Task { await fileListModel.addSelectedFileTag(tag) } },
             onRemoveTag: { tag in Task { await fileListModel.removeSelectedFileTag(tag) } },
+            onLoadSuggestions: { Task { await fileListModel.loadSelectedFileTagSuggestions() } },
+            onRetrySuggestions: { Task { await fileListModel.retrySelectedFileTagSuggestions() } },
+            onToggleSuggestion: fileListModel.toggleSelectedFileTagSuggestion,
+            onSelectAllSuggestions: fileListModel.selectAllSelectedFileTagSuggestions,
+            onClearSuggestions: fileListModel.clearSelectedFileTagSuggestions,
+            onStartEditingSuggestions: fileListModel.startEditingSelectedFileTagSuggestions,
+            onCancelEditingSuggestions: fileListModel.cancelEditingSelectedFileTagSuggestions,
+            onEditSuggestionDisplayName: fileListModel.updateSelectedFileTagSuggestionDisplayName,
+            onEditSuggestionSlug: fileListModel.updateSelectedFileTagSuggestionSlug,
+            onRegenerateSuggestionSlug: fileListModel.regenerateSelectedFileTagSuggestionSlug,
+            onApplySuggestions: {
+                Task {
+                    if let state = await fileListModel.applySelectedFileTagSuggestions() {
+                        updateBatchTagUndoState(state)
+                    }
+                }
+            },
+            onApplyEditedSuggestions: {
+                Task {
+                    if let state = await fileListModel.applyEditedSelectedFileTagSuggestions() {
+                        updateBatchTagUndoState(state)
+                    }
+                }
+            },
+            onSuggestionPresentationConsumed: fileListModel.consumeTagSuggestionPresentationRequest,
             onUndoTagChange: { Task { await fileListModel.undoLastDetailTagChange() } },
             onDismissTagUndoToast: fileListModel.dismissDetailTagUndoToast,
             onBatchTagUndoStateChange: updateBatchTagUndoState

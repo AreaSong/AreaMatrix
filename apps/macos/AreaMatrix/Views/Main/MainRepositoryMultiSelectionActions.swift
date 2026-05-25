@@ -155,7 +155,7 @@ extension MainRepositoryContentView {
     }
 
     func openCommandPalette() {
-        shouldRestoreSearchFocusAfterCommandPalette = isSearchFieldFocused
+        restoreSearchFocusAfterPalette = isSearchFieldFocused
         isSearchFieldFocused = false
         fileListModel.commandPaletteQuery = ""
         if state == .list {
@@ -178,50 +178,38 @@ extension MainRepositoryContentView {
         fileListModel.commandPaletteQuery = ""
         fileListModel.clearCommandPaletteState()
         fileListModel.clearPendingSearchDestination()
-        isSearchFieldFocused = shouldRestoreSearchFocusAfterCommandPalette
-        shouldRestoreSearchFocusAfterCommandPalette = false
+        isSearchFieldFocused = restoreSearchFocusAfterPalette
+        restoreSearchFocusAfterPalette = false
     }
 
+    // swiftlint:disable:next cyclomatic_complexity
     func executeCommandPaletteTarget(_ target: CommandTargetSnapshot) {
         guard target.isExecutable else { return }
         switch target.executionRoute {
         case .importFiles:
-            closeCommandPalette()
-            onImport()
+            openImportFromCommandPalette()
         case .settings:
-            closeCommandPalette()
-            onOpenSettings()
+            openSettingsFromCommandPalette()
         case .beginSearch:
-            closeCommandPalette()
-            beginCommandFindSearch()
+            beginSearchFromCommandPalette()
         case .batchAddTags:
-            pendingBatchAddTagsRoute = commandPaletteBatchAddTagsRoute()
-            closeCommandPalette()
+            openBatchAddTagsFromCommandPalette()
         case .batchChangeCategory:
-            pendingBatchChangeCategoryRoute = commandPaletteBatchChangeCategoryRoute()
-            closeCommandPalette()
+            openBatchChangeCategoryFromCommandPalette()
         case .batchDelete:
-            pendingBatchDeleteRoute = commandPaletteBatchDeleteRoute()
-            closeCommandPalette()
+            openBatchDeleteFromCommandPalette()
         case .batchRename:
-            pendingBatchRenameRoute = commandPaletteBatchRenameRoute()
-            closeCommandPalette()
+            openBatchRenameFromCommandPalette()
         case let .runSmartList(savedSearchID):
             executeCommandPaletteSmartList(savedSearchID: savedSearchID)
         case let .focusFile(fileID):
-            selectedFileIDs = [fileID]
-            closeCommandPalette()
-            Task { await fileListModel.selectFiles([fileID]) }
+            focusFileFromCommandPalette(fileID)
         case .openRepository:
-            closeCommandPalette()
-            onOpenRepository()
+            openRepositoryFromCommandPalette()
         case .help:
-            closeCommandPalette()
-            onOpenHelp()
+            openHelpFromCommandPalette()
         case .classifierRuleEditor:
-            fileListModel.clearCommandPaletteState()
-            fileListModel.commandPaletteQuery = ""
-            fileListModel.pendingSearchDestination = .classifierRuleEditor(context: nil)
+            openClassifierRuleEditorFromCommandPalette()
         case let .linkedPage(route):
             if routeLinkedCommandPaletteTarget(route) { closeCommandPalette() }
         case .unsupported:
@@ -254,7 +242,7 @@ extension MainRepositoryContentView {
             }
             pendingImportConflictBatchRoute = route
             return true
-        case .classifierImpactPreview, .tagSuggestions:
+        case .classifierImpactPreview:
             fileListModel.commandPaletteState = .failed(
                 commandPaletteContext(),
                 fileListModel.commandPaletteState.snapshot ?? .commandRegistryRecovery(
@@ -263,7 +251,28 @@ extension MainRepositoryContentView {
                 route.blockedMapping
             )
             return false
+        case .tagSuggestions:
+            return routeSelectedFileTagSuggestions(source: route)
         }
+    }
+
+    private func routeSelectedFileTagSuggestions(source: CommandPaletteLinkedPageRoute) -> Bool {
+        guard let fileID = selectedFileIDs.first, selectedFileIDs.count == 1 else {
+            fileListModel.commandPaletteState = .failed(
+                commandPaletteContext(),
+                fileListModel.commandPaletteState.snapshot ?? .commandRegistryRecovery(
+                    query: fileListModel.commandPaletteQuery
+                ),
+                source.blockedMapping
+            )
+            return false
+        }
+        selectedFileIDs = [fileID]
+        Task {
+            await fileListModel.selectFiles([fileID])
+            fileListModel.presentSelectedFileTagSuggestions(source: .commandPalette)
+        }
+        return true
     }
 
     private func activeImportConflictBatchRoute(
