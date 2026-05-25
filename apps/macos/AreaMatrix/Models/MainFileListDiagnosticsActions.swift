@@ -71,6 +71,39 @@ struct UndoHistorySnapshot: Equatable {
         }
         return UndoHistorySnapshot(undoActions: updatedUndoActions, redoActions: redoActions)
     }
+
+    func sourceUndoAction(for redoAction: RedoActionRecordSnapshot?) -> UndoActionRecordSnapshot? {
+        guard let sourceUndoActionID = redoAction?.sourceUndoActionID else { return nil }
+        return undoActions.first { $0.actionID == sourceUndoActionID }
+    }
+}
+
+struct RedoUndoSourcePresentation: Equatable {
+    let redoAction: RedoActionRecordSnapshot
+    let sourceUndoAction: UndoActionRecordSnapshot?
+
+    init(redoAction: RedoActionRecordSnapshot, undoActions: [UndoActionRecordSnapshot]) {
+        self.redoAction = redoAction
+        sourceUndoAction = undoActions.first { $0.actionID == redoAction.sourceUndoActionID }
+    }
+
+    var sourceText: String {
+        guard let sourceUndoAction else {
+            return "Source undo \(redoAction.sourceUndoActionID)"
+        }
+        return "Source undo: \(sourceUndoAction.summary)"
+    }
+
+    var accessibilityText: String {
+        "\(redoAction.summary), \(statusText), \(sourceText)"
+    }
+
+    var statusText: String {
+        if redoAction.status == .available, redoAction.canRedo {
+            return "Available until the next file operation"
+        }
+        return RedoActionFeedback.disabledReason(for: redoAction)
+    }
 }
 
 enum UndoHistoryActionLog {
@@ -320,6 +353,7 @@ struct UndoHistoryPanel: View {
                     UndoPreviewPane(
                         action: selectedAction,
                         redoAction: latestRedoAction,
+                        redoSourceUndoAction: state.snapshot.sourceUndoAction(for: latestRedoAction),
                         isLatest: selectedActionID == state.actions.first?.actionID
                     )
                 }

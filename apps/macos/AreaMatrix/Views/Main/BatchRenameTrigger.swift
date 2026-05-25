@@ -3,6 +3,7 @@ import SwiftUI
 struct UndoPreviewPane: View {
     let action: UndoActionRecordSnapshot?
     let redoAction: RedoActionRecordSnapshot?
+    let redoSourceUndoAction: UndoActionRecordSnapshot?
     let isLatest: Bool
 
     var body: some View {
@@ -45,20 +46,25 @@ struct UndoPreviewPane: View {
     @ViewBuilder
     private var redoSection: some View {
         if let redoAction {
+            let source = RedoUndoSourcePresentation(
+                redoAction: redoAction,
+                undoActions: redoSourceUndoAction.map { [$0] } ?? []
+            )
             VStack(alignment: .leading, spacing: 8) {
                 Label("Redo: \(displayKind(redoAction.kind))", systemImage: "arrow.uturn.forward.circle")
                     .font(.headline)
                 Text(redoAction.summary)
                     .foregroundStyle(.secondary)
-                Text("Source undo: \(redoAction.sourceUndoActionID)")
+                Text(source.sourceText)
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                Text(statusText(for: redoAction))
+                Text(source.statusText)
                     .font(.caption)
                     .foregroundStyle(redoAction.canRedo ? .green : .secondary)
                 fileSamples(redoAction.affectedFileNames)
             }
             .accessibilityIdentifier("S2-22-C2-18-redo-row")
+            .accessibilityLabel(source.accessibilityText)
         } else {
             Text("No redoable actions")
                 .foregroundStyle(.secondary)
@@ -90,12 +96,6 @@ struct UndoPreviewPane: View {
         kind.replacingOccurrences(of: "_", with: " ").capitalized
     }
 
-    private func statusText(for action: RedoActionRecordSnapshot) -> String {
-        if action.status == .available, action.canRedo {
-            return "Available until the next file operation"
-        }
-        return RedoActionFeedback.disabledReason(for: action)
-    }
 }
 
 struct UndoHistoryList: View {

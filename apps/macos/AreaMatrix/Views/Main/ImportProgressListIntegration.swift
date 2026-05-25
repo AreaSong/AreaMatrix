@@ -137,6 +137,7 @@ struct BatchTagUndoToastHost: View {
     @Binding var undoState: BatchTagUndoState
     @Binding var actionLogRefreshFailure: CoreErrorMappingSnapshot?
     @State private var redoState: RedoActionState = .idle
+    @State private var redoSourceUndoAction: UndoActionRecordSnapshot?
 
     var body: some View {
         Group {
@@ -144,6 +145,7 @@ struct BatchTagUndoToastHost: View {
                 BatchTagUndoToastView(
                     state: undoState,
                     redoState: redoState,
+                    redoSourceUndoAction: redoSourceUndoAction,
                     actionLogRefreshFailure: actionLogRefreshFailure,
                     onUndo: { action in Task { await undo(action) } },
                     onRedo: { action in Task { await redo(action) } },
@@ -219,6 +221,7 @@ struct BatchTagUndoToastHost: View {
             errorMapper: errorMapper
         )
         actionLogRefreshFailure = refreshed.failure
+        redoSourceUndoAction = refreshed.action
     }
 
     @MainActor
@@ -231,6 +234,7 @@ struct BatchTagUndoToastHost: View {
             errorMapper: errorMapper
         )
         redoState = loaded.feedbackState() ?? .idle
+        updateRedoSourceUndoAction(for: loaded.action)
     }
 
     @MainActor
@@ -269,7 +273,20 @@ struct BatchTagUndoToastHost: View {
     private func dismissUndoToast() {
         undoState = .idle
         redoState = .idle
+        redoSourceUndoAction = nil
         actionLogRefreshFailure = nil
+    }
+
+    @MainActor
+    private func updateRedoSourceUndoAction(for action: RedoActionRecordSnapshot?) {
+        guard let action else {
+            redoSourceUndoAction = nil
+            return
+        }
+        if redoSourceUndoAction?.actionID == action.sourceUndoActionID {
+            return
+        }
+        redoSourceUndoAction = undoState.action?.actionID == action.sourceUndoActionID ? undoState.action : nil
     }
 
     private func openHistory(_ source: UndoToastHistoryRequest.Source) {

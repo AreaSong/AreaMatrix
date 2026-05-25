@@ -2,6 +2,7 @@ import SwiftUI
 
 struct RedoFeedbackRegion: View {
     let state: RedoActionState
+    let sourceUndoAction: UndoActionRecordSnapshot?
     let onRedo: (RedoActionRecordSnapshot) -> Void
 
     var body: some View {
@@ -47,9 +48,10 @@ struct RedoFeedbackRegion: View {
     }
 
     private func redoSummary(_ action: RedoActionRecordSnapshot, status: String) -> some View {
-        VStack(alignment: .leading, spacing: 3) {
+        let source = RedoUndoSourcePresentation(redoAction: action, undoActions: sourceUndoAction.map { [$0] } ?? [])
+        return VStack(alignment: .leading, spacing: 3) {
             Label(action.summary, systemImage: "arrow.uturn.forward.circle")
-            Text("\(status) · \(action.affectedCount) affected · Source undo \(action.sourceUndoActionID)")
+            Text("\(status) · \(action.affectedCount) affected · \(source.sourceText)")
                 .foregroundStyle(.secondary)
         }
     }

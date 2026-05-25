@@ -204,6 +204,16 @@ final class ImportProgressPageIntegrationVerifyTests: XCTestCase {
         XCTAssertEqual(redoShortcutRequest.failureMapping, failure)
         XCTAssertEqual(UndoHistoryPanel.accessibilityID, "S2-11-C2-07-undo-history-panel")
     }
+
+    func testS222C207RedoSourceUsesLoadedUndoActionLogSummary() {
+        let undo = UndoActionRecordSnapshot.s211ExecutedTrashMove()
+        let redo = RedoActionRecordSnapshot.s222AvailableMoveRedo()
+        let presentation = RedoUndoSourcePresentation(redoAction: redo, undoActions: [undo])
+
+        XCTAssertEqual(presentation.sourceText, "Source undo: Moved 3 files to Trash.")
+        XCTAssertEqual(presentation.statusText, "Available until the next file operation")
+        XCTAssertEqual(UndoHistorySnapshot(undoActions: [undo], redoActions: [redo]).sourceUndoAction(for: redo), undo)
+    }
 }
 
 private extension ImportProgressPageIntegrationVerifyTests {

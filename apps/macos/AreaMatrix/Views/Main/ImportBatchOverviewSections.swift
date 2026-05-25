@@ -38,6 +38,7 @@ struct BatchAddTagsTrigger: View {
 struct BatchTagUndoToastView: View {
     let state: BatchTagUndoState
     let redoState: RedoActionState
+    let redoSourceUndoAction: UndoActionRecordSnapshot?
     let actionLogRefreshFailure: CoreErrorMappingSnapshot?
     let onUndo: (UndoActionRecordSnapshot) -> Void
     let onRedo: (RedoActionRecordSnapshot) -> Void
@@ -51,7 +52,7 @@ struct BatchTagUndoToastView: View {
                 Spacer()
                 toastActions
             }
-            RedoFeedbackRegion(state: redoState, onRedo: onRedo)
+            RedoFeedbackRegion(state: redoState, sourceUndoAction: redoSourceUndoAction, onRedo: onRedo)
         }
         .font(.caption)
         .padding(8)
