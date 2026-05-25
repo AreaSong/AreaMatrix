@@ -297,11 +297,15 @@ enum CommandTargetActionSnapshot: String, Equatable {
 
 extension CommandTargetSnapshot {
     var isExecutable: Bool {
-        !disabled && executionRoute != .unsupported
+        executionRoute != .unsupported && (!disabled || usesDynamicRedoAvailability)
     }
 
     var confirmationLabel: String? {
         requiresConfirmation ? "Requires confirmation" : nil
+    }
+
+    var effectiveDisabledReason: String? {
+        isExecutable ? nil : disabledReason
     }
 
     var executionRoute: CommandPaletteTargetRoute {
@@ -380,6 +384,11 @@ extension CommandTargetSnapshot {
         default:
             return nil
         }
+    }
+
+    private var usesDynamicRedoAvailability: Bool {
+        if case .linkedPage(.redo) = executionRoute { return true }
+        return false
     }
 }
 

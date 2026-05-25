@@ -128,6 +128,7 @@ struct UndoToastHistoryRequest: Identifiable, Equatable {
 struct BatchTagUndoToastHost: View {
     let repoPath: String
     let undoStore: any CoreUndoActionLogging
+    let redoStore: any CoreRedoActionLogging
     let errorMapper: any CoreErrorMapping
     let onRefreshSelection: () -> Void
     let onRefreshChangeLog: () -> Void
@@ -135,14 +136,17 @@ struct BatchTagUndoToastHost: View {
     let onOpenHistory: (UndoToastHistoryRequest) -> Void
     @Binding var undoState: BatchTagUndoState
     @Binding var actionLogRefreshFailure: CoreErrorMappingSnapshot?
+    @State private var redoState: RedoActionState = .idle
 
     var body: some View {
         Group {
             if !undoState.isIdle {
                 BatchTagUndoToastView(
                     state: undoState,
+                    redoState: redoState,
                     actionLogRefreshFailure: actionLogRefreshFailure,
                     onUndo: { action in Task { await undo(action) } },
+                    onRedo: { action in Task { await redo(action) } },
                     onOpenHistory: openHistory,
                     onDismiss: dismissUndoToast
                 )
@@ -152,6 +156,13 @@ struct BatchTagUndoToastHost: View {
         .task(id: repoPath) { await loadLatestUndoAction() }
         .onKeyPress("z", phases: .down) { event in
             guard event.modifiers.contains(.command) else { return .ignored }
+            if event.modifiers.contains(.shift) {
+                if let action = redoState.executableAction, !redoState.isBusy {
+                    Task { await redo(action) }
+                    return .handled
+                }
+                return .ignored
+            }
             if let action = undoState.executableAction, !undoState.isBusy {
                 Task { await undo(action) }
                 return .handled
@@ -190,6 +201,7 @@ struct BatchTagUndoToastHost: View {
 
         undoState = .undone(result)
         await refreshAfterUndo(result)
+        await loadLatestRedoAction()
     }
 
     @MainActor
@@ -209,8 +221,54 @@ struct BatchTagUndoToastHost: View {
         actionLogRefreshFailure = refreshed.failure
     }
 
+    @MainActor
+    private func loadLatestRedoAction() async {
+        let previous = redoState.action
+        redoState = .checking(previous: previous)
+        let loaded = await RedoActionFeedback.loadLatestAction(
+            repoPath: repoPath,
+            redoStore: redoStore,
+            errorMapper: errorMapper
+        )
+        redoState = loaded.feedbackState() ?? .idle
+    }
+
+    @MainActor
+    private func redo(_ action: RedoActionRecordSnapshot) async {
+        redoState = .redoing(action)
+        let applied = await RedoActionFeedback.redo(
+            repoPath: repoPath,
+            action: action,
+            redoStore: redoStore,
+            errorMapper: errorMapper
+        )
+        if let failure = applied.failure {
+            redoState = .failed(failure, previous: action)
+            return
+        }
+        guard let result = applied.result else {
+            redoState = .unavailable(reason: "Redo action finished without a result.")
+            return
+        }
+
+        redoState = .redone(result)
+        await refreshAfterRedo(result)
+    }
+
+    @MainActor
+    private func refreshAfterRedo(_ result: RedoActionResultSnapshot) async {
+        let plan = BatchTagUndoRefreshPlan(refreshTargets: result.refreshTargets)
+        if plan.refreshesCurrentList { onRefreshCurrentList() }
+        if plan.refreshesSelectionDetails { onRefreshSelection() }
+        if plan.refreshesChangeLog { onRefreshChangeLog() }
+        if plan.refreshesUndoActions {
+            await loadLatestUndoAction()
+        }
+    }
+
     private func dismissUndoToast() {
         undoState = .idle
+        redoState = .idle
         actionLogRefreshFailure = nil
     }
 

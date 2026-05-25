@@ -1,0 +1,90 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`4-1/task-137`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-137-s2-22-c2-18-redo-action-log.md`
+- 主要验收路径：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`core/area_matrix.udl`
+- 禁止触碰路径：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：2
+- 通过项数：10
+- 不通过项数：2
+- 阻塞项数：2
+
+四、逐项验收结果
+
+- 项目：读取 task、共享规则、切片规则、质量规则、编码规范、validation-driver、依赖图、manifest 与 Exact Docs
+- 结果：通过
+- 证据：4 个 Exact Docs 均存在并已读取；manifest `4-1/task-137` 与 task 文件一致
+- 涉及文件：`tasks/prompts/_shared/manifests/phase-4.md`
+
+- 项目：Expected New Paths 落地
+- 结果：通过
+- 证据：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**` 均存在并有 C2-18 相关实现/测试
+- 涉及文件：`apps/macos/AreaMatrix/Bridge/CoreTagCRUD.swift`、`apps/macos/AreaMatrixTests/S214BatchRenameUndoPageFeatureTests.swift`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git status --short core/src core/area_matrix.udl ...` 未显示 `core/src/**` 脏改动
+- 涉及文件：`core/src/**`
+
+- 项目：C2-18 CoreBridge / 状态 / 错误映射
+- 结果：通过
+- 证据：`CoreRedoActionLogging`、`listRedoActions`、`redoAction`、`RedoActionRecordSnapshot`、`RedoActionResultSnapshot` 均接入真实 UniFFI/CoreBridge
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreTagCRUD.swift:15`
+
+- 项目：S2-10 / S2-11 宿主区域 Redo UI
+- 结果：通过
+- 证据：Redo slot 和 Undo History redo row 已接入 `RedoFeedbackRegion` / `UndoHistoryPanel`，没有新增独立 Redo 页面
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportBatchCopyFooterSection.swift:3`
+
+- 项目：命令面板 `Redo latest action` 入口
+- 结果：不通过
+- 证据：S2-22 规格要求命令面板入口，但 Core command target 当前被标记 disabled，Swift 侧 `isExecutable` 会直接阻断执行
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-2-experience/S2-22-redo.md:20`
+
+- 项目：`Shift+Cmd+Z` 指向同一 redo action
+- 结果：不通过
+- 证据：主内容区 `Shift+Cmd+Z` 当前打开 Undo History，并未直接执行 latest redo；只有进入 Undo History 或特定 toast host 后才可能执行 redo
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift:170`
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过，入口链路仍有未闭合行为，尤其命令面板和顶层快捷键无法证明触发同一 C2-18 redo action
+- 注释 / rustdoc / 文档同步：不通过，S2-22 文档声明命令面板入口，但实现侧 command target 仍 disabled
+- 错误处理与边界处理：通过，已实现 disabled / failed / blocked / expired 状态映射和失败保留 redo row
+- 测试与验证覆盖：不通过，验证命令通过，但测试未阻止命令面板 disabled 与顶层快捷键不执行 redo 的缺口
+- 占位、硬编码、mock-only、一次性实现检查：通过，生产路径使用 `CoreBridge` / `AreaMatrix.listRedoActions` / `AreaMatrix.redoAction`；测试 double 仅用于单元测试
+
+六、阻塞项
+
+- P1：命令面板 Redo 入口不可执行
+  说明：S2-22 要求命令面板 `Redo latest action` 作为入口，但当前 target 被 `.disabled("Redo stack is unavailable.")` 固定禁用；Swift 执行入口先检查 `target.isExecutable`，因此不会进入 `.linkedPage(.redo)` 路由。
+  绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/core/src/command_index/registry.rs:68`
+  相关路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileActionRoutingActions.swift:298`
+  为什么导致不通过：用户无法从规格声明的命令面板入口触发并验收 C2-18。
+
+- P1：顶层 `Shift+Cmd+Z` 未证明指向同一 redo action
+  说明：主内容区快捷键处理将 `Shift+Cmd+Z` 路由为打开 Undo History，而不是直接调用最新可 redo action；这与 S2-22 “快捷键与按钮 Redo 同步 / 指向同一操作”的验收要求不一致。
+  绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift:170`
+  相关路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileListDiagnosticsActions.swift:274`
+  为什么导致不通过：无法证明快捷键入口触发的是同一 C2-18 redo action。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-137`
+- 通过：`prompt doctor` 通过，`git diff --check` 通过，`xcodebuild ... build CODE_SIGNING_ALLOWED=NO` 最终 `BUILD SUCCEEDED`
+- 失败：无命令失败
+- 缺失：未做真实 UI smoke；但静态验收已发现入口链路 blocker，不足以判定完成
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+
+VERIFY_RESULT: FAIL

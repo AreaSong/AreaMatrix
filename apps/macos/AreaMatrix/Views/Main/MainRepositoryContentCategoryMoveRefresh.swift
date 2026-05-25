@@ -21,21 +21,6 @@ extension MainRepositoryContentView {
         )
     }
 
-    @ViewBuilder
-    var batchTagUndoToastOverlay: some View {
-        BatchTagUndoToastHost(
-            repoPath: opening.config.repoPath,
-            undoStore: fileListModel.undoActionStore,
-            errorMapper: fileListModel.errorMapper,
-            onRefreshSelection: { Task { await fileListModel.retrySelectedFileDetail() } },
-            onRefreshChangeLog: { Task { await fileListModel.loadSelectedFileChangeLog() } },
-            onRefreshCurrentList: { Task { await fileListModel.retryCurrentCategory() } },
-            onOpenHistory: { pendingUndoHistoryRequest = $0 },
-            undoState: $batchTagUndoState,
-            actionLogRefreshFailure: $batchTagActionLogRefreshFailure
-        )
-    }
-
     func batchAddTagsRoutingSheet(_ route: BatchAddTagsRoute) -> some View {
         BatchAddTagsSheet(
             repoPath: opening.config.repoPath,
@@ -83,80 +68,6 @@ extension MainRepositoryContentView {
             onApplied: applyBatchDeleteResult,
             onUndoStateChange: updateBatchTagUndoState,
             onClose: { pendingBatchDeleteRoute = nil }
-        )
-    }
-
-    func undoHistorySheet(_ request: UndoToastHistoryRequest) -> some View {
-        UndoHistoryPanel(
-            repoPath: opening.config.repoPath,
-            focusedActionID: request.focusedActionID,
-            initialFailure: request.failureMapping,
-            undoStore: fileListModel.undoActionStore,
-            errorMapper: fileListModel.errorMapper,
-            onClose: { pendingUndoHistoryRequest = nil },
-            onUndoCompleted: handleUndoHistoryResult
-        )
-    }
-
-    func handleUndoHistoryResult(_ result: UndoActionResultSnapshot) {
-        let plan = BatchTagUndoRefreshPlan(refreshTargets: result.refreshTargets)
-        if plan.refreshesCurrentList {
-            Task { await fileListModel.retryCurrentCategory() }
-        }
-        if plan.refreshesSelectionDetails {
-            Task { await fileListModel.retrySelectedFileDetail() }
-        }
-        if plan.refreshesChangeLog {
-            Task { await fileListModel.loadSelectedFileChangeLog() }
-        }
-        if plan.refreshesUndoActions {
-            refreshLatestUndoToast()
-        }
-    }
-
-    func updateBatchTagUndoState(_ state: BatchTagUndoState) {
-        batchTagUndoState = state
-        batchTagActionLogRefreshFailure = nil
-    }
-
-    @MainActor
-    func refreshLatestUndoToast() {
-        Task {
-            batchTagUndoState = await BatchTagUndoAction.refreshLatestToastState(
-                repoPath: opening.config.repoPath,
-                undoStore: fileListModel.undoActionStore,
-                errorMapper: fileListModel.errorMapper
-            )
-            batchTagActionLogRefreshFailure = nil
-        }
-    }
-
-    func openUndoHistoryFromToolbar() {
-        pendingUndoHistoryRequest = UndoToastHistoryRequest(
-            source: .viewHistory,
-            state: batchTagUndoState,
-            actionLogRefreshFailure: batchTagActionLogRefreshFailure
-        )
-    }
-
-    func openUndoHistoryFromMenu() {
-        pendingUndoHistoryRequest = UndoHistoryActionLog.menuRequest(
-            state: batchTagUndoState,
-            failure: batchTagActionLogRefreshFailure
-        )
-    }
-
-    func openUndoHistoryFromShortcut() {
-        pendingUndoHistoryRequest = UndoHistoryActionLog.shortcutRequest(
-            state: batchTagUndoState,
-            failure: batchTagActionLogRefreshFailure
-        )
-    }
-
-    func openUndoHistoryFromRedoShortcut() {
-        pendingUndoHistoryRequest = UndoHistoryActionLog.redoShortcutRequest(
-            state: batchTagUndoState,
-            failure: batchTagActionLogRefreshFailure
         )
     }
 

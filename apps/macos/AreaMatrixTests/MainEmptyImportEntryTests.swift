@@ -194,6 +194,21 @@ final class MainEmptyImportEntryTests: XCTestCase {
         XCTAssertEqual(target.executionRoute, .batchDelete)
     }
 
+    func testS222C218RedoCommandTargetBypassesStaticCoreDisabledAndUsesDynamicRedoStack() {
+        let target = CommandTargetSnapshot.s215RouteFixture(
+            id: "redo.latest",
+            title: "Redo latest action",
+            action: .navigate,
+            route: "S2-22",
+            disabled: true,
+            disabledReason: "Redo stack is unavailable."
+        )
+
+        XCTAssertEqual(target.executionRoute, .linkedPage(.redo))
+        XCTAssertTrue(target.isExecutable)
+        XCTAssertNil(target.effectiveDisabledReason)
+    }
+
     func testS215C211BuildsCoreDeleteTargetAsBatchDeleteConfirmationRoute() {
         let file = FileEntrySnapshot.s215CommandFileFixture(id: 515, currentName: "delete.pdf")
         let target = CommandTargetSnapshot.s215RouteFixture(
@@ -394,6 +409,85 @@ final class MainEmptyImportEntryTests: XCTestCase {
         content.toggleCommandPalette()
         XCTAssertNil(content.fileListModel.pendingSearchDestination)
         XCTAssertTrue(content.isSearchFieldFocused)
+    }
+
+    @MainActor
+    func testS222CommandPaletteRedoExecutesLatestRedoActionDirectly() async {
+        let redoStore = S222RecordingRedoStore(results: [
+            .list(.success([.s222AvailableMoveRedo()])),
+            .redo(.success(.s222RedoneMove())),
+            .list(.success([.s222ExecutedMoveRedo()]))
+        ])
+        var content = MainRepositoryContentView(
+            opening: .s215CommandFixture(repoPath: "/tmp/repo", files: []),
+            state: .list,
+            onImport: {},
+            onDropImport: { _, _ in },
+            fileLister: MainListRecordingFileLister(results: []),
+            fileDetailer: MainListRecordingFileDetailer(results: []),
+            redoActionStore: redoStore,
+            errorMapper: S215CommandErrorMapper(mapping: .s215CommandDb(rawContext: "unused"))
+        )
+        content.fileListModel.pendingSearchDestination = .commandPalette
+        content.fileListModel.commandPaletteQuery = "redo"
+        content.fileListModel.commandPaletteState = .loaded(.commandRegistryRecovery(query: nil))
+
+        await content.executeLatestRedoAction(entryPoint: .commandPalette)
+
+        XCTAssertEqual(content.fileListModel.commandPaletteState, .idle)
+        XCTAssertEqual(content.fileListModel.commandPaletteQuery, "")
+        XCTAssertNil(content.fileListModel.pendingSearchDestination)
+        let redoRequests = await redoStore.redoRequests()
+        XCTAssertEqual(redoRequests, ["/tmp/repo|redo-move-3"])
+        let listRequests = await redoStore.listRequests()
+        XCTAssertEqual(listRequests, ["/tmp/repo", "/tmp/repo"])
+    }
+
+    @MainActor
+    func testS222ShiftCommandZExecutesSameLatestRedoAction() async {
+        let redoStore = S222RecordingRedoStore(results: [
+            .list(.success([.s222AvailableMoveRedo()])),
+            .redo(.success(.s222RedoneMove())),
+            .list(.success([.s222ExecutedMoveRedo()]))
+        ])
+        var content = MainRepositoryContentView(
+            opening: .s215CommandFixture(repoPath: "/tmp/repo", files: []),
+            state: .list,
+            onImport: {},
+            onDropImport: { _, _ in },
+            fileLister: MainListRecordingFileLister(results: []),
+            fileDetailer: MainListRecordingFileDetailer(results: []),
+            redoActionStore: redoStore,
+            errorMapper: S215CommandErrorMapper(mapping: .s215CommandDb(rawContext: "unused"))
+        )
+
+        await content.executeLatestRedoAction(entryPoint: .keyboardShortcut)
+
+        XCTAssertNil(content.pendingUndoHistoryRequest)
+        let redoRequests = await redoStore.redoRequests()
+        XCTAssertEqual(redoRequests, ["/tmp/repo|redo-move-3"])
+    }
+
+    @MainActor
+    func testS222ShortcutKeepsUndoHistoryFailureEvidenceWhenRedoIsUnavailable() async {
+        let redoStore = S222RecordingRedoStore(results: [.list(.success([]))])
+        var content = MainRepositoryContentView(
+            opening: .s215CommandFixture(repoPath: "/tmp/repo", files: []),
+            state: .list,
+            onImport: {},
+            onDropImport: { _, _ in },
+            fileLister: MainListRecordingFileLister(results: []),
+            fileDetailer: MainListRecordingFileDetailer(results: []),
+            redoActionStore: redoStore,
+            errorMapper: S215CommandErrorMapper(mapping: .s215CommandDb(rawContext: "unused"))
+        )
+
+        await content.executeLatestRedoAction(entryPoint: .keyboardShortcut)
+
+        XCTAssertEqual(content.pendingUndoHistoryRequest?.source, .viewHistory)
+        XCTAssertEqual(content.pendingUndoHistoryRequest?.failureMapping?.rawContext, "S2-22 C2-18 redo-action-log")
+        let redoRequests = await redoStore.redoRequests()
+        XCTAssertEqual(redoRequests, [])
     }
 }
 

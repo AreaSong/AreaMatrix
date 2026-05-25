@@ -53,6 +53,79 @@ final class S214BatchRenameUndoPageFeatureTests: XCTestCase {
         let listRequests = await undoStore.listRequests()
         XCTAssertEqual(listRequests, [])
     }
+
+    @MainActor
+    func testS222C218RedoLatestUsesRealRedoActionLogAndRefreshesSnapshot() async {
+        let undo = UndoActionRecordSnapshot.s214PendingBatchRename()
+        let redo = RedoActionRecordSnapshot.s222AvailableMoveRedo()
+        let redoStore = S222RecordingRedoStore(results: [
+            .redo(.success(.s222RedoneMove())),
+            .list(.success([.s222ExecutedMoveRedo()]))
+        ])
+        let undoStore = S214BatchRenameRecordingUndoStore(results: [.list(.success([undo]))])
+
+        let state = await UndoHistoryActionLog.redoLatest(
+            repoPath: "/tmp/repo",
+            snapshot: UndoHistorySnapshot(undoActions: [undo], redoActions: [redo]),
+            undoStore: undoStore,
+            redoStore: redoStore,
+            errorMapper: BatchRenameErrorMapper(mapping: .s214UndoFailure())
+        )
+
+        guard case let .redone(result, refreshed) = state else {
+            return XCTFail("expected redone, got \(state)")
+        }
+        XCTAssertEqual(result, .s222RedoneMove())
+        XCTAssertEqual(refreshed.redoActions, [.s222ExecutedMoveRedo()])
+        let redoRequests = await redoStore.redoRequests()
+        XCTAssertEqual(redoRequests, ["/tmp/repo|\(redo.actionID)"])
+    }
+
+    @MainActor
+    func testS222C218ClearedRedoShowsReasonWithoutExecuting() async {
+        let cleared = RedoActionRecordSnapshot.s222ClearedMoveRedo()
+        let redoStore = S222RecordingRedoStore(results: [])
+        let state = await UndoHistoryActionLog.redoLatest(
+            repoPath: "/tmp/repo",
+            snapshot: UndoHistorySnapshot(undoActions: [], redoActions: [cleared]),
+            undoStore: S214BatchRenameRecordingUndoStore(results: []),
+            redoStore: redoStore,
+            errorMapper: BatchRenameErrorMapper(mapping: .s214UndoFailure())
+        )
+
+        XCTAssertEqual(state.failure?.kind, .conflict)
+        XCTAssertEqual(state.failure?.userMessage, "Redo was cleared by the next file operation.")
+        let redoRequests = await redoStore.redoRequests()
+        XCTAssertEqual(redoRequests, [])
+    }
+
+    @MainActor
+    func testS222C218FeedbackLoadsLatestRedoAndExecutesThroughStore() async {
+        let action = RedoActionRecordSnapshot.s222AvailableMoveRedo()
+        let redoStore = S222RecordingRedoStore(results: [
+            .list(.success([action])),
+            .redo(.success(.s222RedoneMove()))
+        ])
+        let errorMapper = BatchRenameErrorMapper(mapping: .s214UndoFailure())
+
+        let loaded = await RedoActionFeedback.loadLatestAction(
+            repoPath: "/tmp/repo",
+            redoStore: redoStore,
+            errorMapper: errorMapper
+        )
+        XCTAssertEqual(loaded.feedbackState(), .available(action))
+
+        let applied = await RedoActionFeedback.redo(
+            repoPath: "/tmp/repo",
+            action: action,
+            redoStore: redoStore,
+            errorMapper: errorMapper
+        )
+        XCTAssertEqual(applied.result, .s222RedoneMove())
+        XCTAssertNil(applied.failure)
+        let redoRequests = await redoStore.redoRequests()
+        XCTAssertEqual(redoRequests, ["/tmp/repo|\(action.actionID)"])
+    }
 }
 
 final class S214BatchRenamePageIntegrationVerifyTests: XCTestCase {
@@ -323,5 +396,96 @@ private extension CoreErrorMappingSnapshot {
             recoverability: .refreshRequired,
             rawContext: "S2-14 C2-07 undo-action-log"
         )
+    }
+}
+
+extension RedoActionRecordSnapshot {
+    static func s222AvailableMoveRedo() -> RedoActionRecordSnapshot {
+        RedoActionRecordSnapshot(
+            actionID: "redo-move-3",
+            kind: "move_files",
+            summary: "Redo: Move 3 files to Documents",
+            affectedCount: 3,
+            affectedFileNames: ["a.pdf", "b.pdf", "c.pdf"],
+            status: .available,
+            canRedo: true,
+            disabledReason: nil,
+            sourceUndoActionID: "undo-trash-3",
+            createdAt: 1_700_000_045,
+            updatedAt: 1_700_000_045
+        )
+    }
+
+    static func s222ClearedMoveRedo() -> RedoActionRecordSnapshot {
+        var action = s222AvailableMoveRedo()
+        action.status = .cleared
+        action.canRedo = false
+        action.disabledReason = "Redo was cleared by the next file operation."
+        return action
+    }
+
+    static func s222ExecutedMoveRedo() -> RedoActionRecordSnapshot {
+        var action = s222AvailableMoveRedo()
+        action.status = .executed
+        action.canRedo = false
+        action.updatedAt = 1_700_000_060
+        return action
+    }
+}
+
+extension RedoActionResultSnapshot {
+    static func s222RedoneMove() -> RedoActionResultSnapshot {
+        RedoActionResultSnapshot(
+            actionID: "redo-move-3",
+            status: .executed,
+            summary: "Redone: moved 3 files to Documents.",
+            affectedCount: 3,
+            refreshTargets: ["files", "undo_actions", "redo_actions", "change_log"],
+            undoToken: "undo-redone-move-3",
+            completedAt: 1_700_000_070
+        )
+    }
+}
+
+actor S222RecordingRedoStore: CoreRedoActionLogging {
+    enum Result {
+        case list(Swift.Result<[RedoActionRecordSnapshot], Error>)
+        case redo(Swift.Result<RedoActionResultSnapshot, Error>)
+    }
+
+    private var results: [Result]
+    private var recordedListRequests: [String] = []
+    private var recordedRedoRequests: [String] = []
+
+    init(results: [Result]) {
+        self.results = results
+    }
+
+    func listRedoActions(repoPath: String) async throws -> [RedoActionRecordSnapshot] {
+        recordedListRequests.append(repoPath)
+        guard !results.isEmpty else { return [] }
+        guard case let .list(result) = results.removeFirst() else {
+            throw CoreError.Internal(message: "Expected listRedoActions")
+        }
+        return try result.get()
+    }
+
+    func redoAction(repoPath: String, actionID: String) async throws -> RedoActionResultSnapshot {
+        recordedRedoRequests.append("\(repoPath)|\(actionID)")
+        guard !results.isEmpty else {
+            throw CoreError.FileNotFound(path: actionID)
+        }
+        guard case let .redo(result) = results.removeFirst() else {
+            throw CoreError.Internal(message: "Expected redoAction")
+        }
+        return try result.get()
+    }
+
+    func listRequests() -> [String] {
+        recordedListRequests
+    }
+
+    func redoRequests() -> [String] {
+        recordedRedoRequests
     }
 }

@@ -1,5 +1,242 @@
 import SwiftUI
 
+struct RedoFeedbackRegion: View {
+    let state: RedoActionState
+    let onRedo: (RedoActionRecordSnapshot) -> Void
+
+    var body: some View {
+        switch state {
+        case .idle:
+            EmptyView()
+        case .checking:
+            Label("Checking redo...", systemImage: "arrow.uturn.forward.circle")
+                .accessibilityIdentifier("S2-22-C2-18-redo-checking")
+        case let .available(action):
+            redoSummary(action, status: "Available")
+            Button("Redo") { onRedo(action) }
+                .accessibilityIdentifier("S2-22-C2-18-redo-action")
+        case let .disabled(action, reason):
+            redoSummary(action, status: reason)
+            Button("Redo") {}
+                .disabled(true)
+                .accessibilityIdentifier("S2-22-C2-18-redo-action-disabled")
+        case let .unavailable(reason):
+            Label(reason, systemImage: "arrow.uturn.forward.circle")
+                .foregroundStyle(.secondary)
+                .accessibilityIdentifier("S2-22-C2-18-redo-unavailable")
+        case let .redoing(action):
+            redoSummary(action, status: "Redoing...")
+            Button("Redoing...") {}
+                .disabled(true)
+                .accessibilityIdentifier("S2-22-C2-18-redo-action-busy")
+        case let .redone(result):
+            Label(result.summary, systemImage: "checkmark.circle")
+                .accessibilityIdentifier("S2-22-C2-18-redo-completed")
+        case let .failed(mapping, action):
+            VStack(alignment: .leading, spacing: 3) {
+                Label("Could not redo action", systemImage: "exclamationmark.triangle")
+                Text(mapping.userMessage)
+                    .foregroundStyle(.secondary)
+                if let action {
+                    Text("Redo row retained: \(action.summary)")
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .accessibilityIdentifier("S2-22-C2-18-redo-failed")
+        }
+    }
+
+    private func redoSummary(_ action: RedoActionRecordSnapshot, status: String) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Label(action.summary, systemImage: "arrow.uturn.forward.circle")
+            Text("\(status) · \(action.affectedCount) affected · Source undo \(action.sourceUndoActionID)")
+                .foregroundStyle(.secondary)
+        }
+    }
+}
+
+extension MainRepositoryContentView {
+    @ViewBuilder
+    var batchTagUndoToastOverlay: some View {
+        BatchTagUndoToastHost(
+            repoPath: opening.config.repoPath,
+            undoStore: fileListModel.undoActionStore,
+            redoStore: fileListModel.redoActionStore,
+            errorMapper: fileListModel.errorMapper,
+            onRefreshSelection: { Task { await fileListModel.retrySelectedFileDetail() } },
+            onRefreshChangeLog: { Task { await fileListModel.loadSelectedFileChangeLog() } },
+            onRefreshCurrentList: { Task { await fileListModel.retryCurrentCategory() } },
+            onOpenHistory: { pendingUndoHistoryRequest = $0 },
+            undoState: $batchTagUndoState,
+            actionLogRefreshFailure: $batchTagActionLogRefreshFailure
+        )
+    }
+
+    func undoHistorySheet(_ request: UndoToastHistoryRequest) -> some View {
+        UndoHistoryPanel(
+            repoPath: opening.config.repoPath,
+            focusedActionID: request.focusedActionID,
+            initialFailure: request.failureMapping,
+            undoStore: fileListModel.undoActionStore,
+            redoStore: fileListModel.redoActionStore,
+            errorMapper: fileListModel.errorMapper,
+            onClose: { pendingUndoHistoryRequest = nil },
+            onUndoCompleted: handleUndoHistoryResult,
+            onRedoCompleted: handleRedoHistoryResult
+        )
+    }
+
+    func handleUndoHistoryResult(_ result: UndoActionResultSnapshot) {
+        refreshAfterUndoRedo(targets: result.refreshTargets)
+    }
+
+    func handleRedoHistoryResult(_ result: RedoActionResultSnapshot) {
+        refreshAfterUndoRedo(targets: result.refreshTargets)
+    }
+
+    func updateBatchTagUndoState(_ state: BatchTagUndoState) {
+        batchTagUndoState = state
+        batchTagActionLogRefreshFailure = nil
+    }
+
+    @MainActor
+    func refreshLatestUndoToast() {
+        Task {
+            batchTagUndoState = await BatchTagUndoAction.refreshLatestToastState(
+                repoPath: opening.config.repoPath,
+                undoStore: fileListModel.undoActionStore,
+                errorMapper: fileListModel.errorMapper
+            )
+            batchTagActionLogRefreshFailure = nil
+        }
+    }
+
+    func openUndoHistoryFromToolbar() {
+        pendingUndoHistoryRequest = UndoToastHistoryRequest(
+            source: .viewHistory,
+            state: batchTagUndoState,
+            actionLogRefreshFailure: batchTagActionLogRefreshFailure
+        )
+    }
+
+    func openUndoHistoryFromMenu() {
+        pendingUndoHistoryRequest = UndoHistoryActionLog.menuRequest(
+            state: batchTagUndoState,
+            failure: batchTagActionLogRefreshFailure
+        )
+    }
+
+    func openUndoHistoryFromShortcut() {
+        pendingUndoHistoryRequest = UndoHistoryActionLog.shortcutRequest(
+            state: batchTagUndoState,
+            failure: batchTagActionLogRefreshFailure
+        )
+    }
+
+    func openUndoHistoryFromRedoShortcut() {
+        Task { await executeLatestRedoAction(entryPoint: .keyboardShortcut) }
+    }
+
+    @MainActor
+    func executeLatestRedoAction(entryPoint: RedoLatestEntryPoint) async {
+        if entryPoint == .commandPalette {
+            fileListModel.commandPaletteState = .loading(commandPaletteContext())
+        }
+        let loaded = await UndoHistoryActionLog.load(
+            repoPath: opening.config.repoPath,
+            undoStore: fileListModel.undoActionStore,
+            redoStore: fileListModel.redoActionStore,
+            errorMapper: fileListModel.errorMapper
+        )
+        guard case let .loaded(snapshot) = loaded else {
+            handleRedoEntryFailure(loaded.failure, entryPoint: entryPoint)
+            return
+        }
+        let result = await UndoHistoryActionLog.redoLatest(
+            repoPath: opening.config.repoPath,
+            snapshot: snapshot,
+            undoStore: fileListModel.undoActionStore,
+            redoStore: fileListModel.redoActionStore,
+            errorMapper: fileListModel.errorMapper
+        )
+        handleRedoEntryResult(result, entryPoint: entryPoint)
+    }
+
+    @MainActor
+    private func handleRedoEntryResult(_ state: UndoHistoryState, entryPoint: RedoLatestEntryPoint) {
+        switch state {
+        case let .redone(result, _):
+            closeCommandPaletteIfNeeded(entryPoint)
+            handleRedoHistoryResult(result)
+        case let .redoFailed(mapping, _, _), let .refreshFailed(mapping, _):
+            handleRedoEntryFailure(mapping, entryPoint: entryPoint)
+        case .loaded:
+            handleRedoEntryFailure(RedoLatestEntryPoint.noRedoMapping, entryPoint: entryPoint)
+        case let .failed(mapping):
+            handleRedoEntryFailure(mapping, entryPoint: entryPoint)
+        case .loading, .undoing, .undoFailed, .undone, .redoing:
+            break
+        }
+    }
+
+    @MainActor
+    private func handleRedoEntryFailure(_ mapping: CoreErrorMappingSnapshot?, entryPoint: RedoLatestEntryPoint) {
+        let mapping = mapping ?? RedoLatestEntryPoint.noRedoMapping
+        switch entryPoint {
+        case .commandPalette:
+            fileListModel.commandPaletteState = .failed(
+                commandPaletteContext(),
+                fileListModel.commandPaletteState.snapshot ?? .commandRegistryRecovery(
+                    query: fileListModel.commandPaletteQuery
+                ),
+                mapping
+            )
+        case .keyboardShortcut:
+            batchTagActionLogRefreshFailure = mapping
+            pendingUndoHistoryRequest = UndoHistoryActionLog.redoShortcutRequest(
+                state: batchTagUndoState,
+                failure: mapping
+            )
+        }
+    }
+
+    @MainActor
+    private func closeCommandPaletteIfNeeded(_ entryPoint: RedoLatestEntryPoint) {
+        guard entryPoint == .commandPalette else { return }
+        closeCommandPalette()
+    }
+
+    private func refreshAfterUndoRedo(targets: [String]) {
+        let plan = BatchTagUndoRefreshPlan(refreshTargets: targets)
+        if plan.refreshesCurrentList {
+            Task { await fileListModel.retryCurrentCategory() }
+        }
+        if plan.refreshesSelectionDetails {
+            Task { await fileListModel.retrySelectedFileDetail() }
+        }
+        if plan.refreshesChangeLog {
+            Task { await fileListModel.loadSelectedFileChangeLog() }
+        }
+        if plan.refreshesUndoActions {
+            refreshLatestUndoToast()
+        }
+    }
+}
+
+enum RedoLatestEntryPoint: Equatable {
+    case keyboardShortcut
+    case commandPalette
+
+    static let noRedoMapping = CoreErrorMappingSnapshot(
+        kind: .expiredAction,
+        userMessage: "No redoable action is available.",
+        severity: .medium,
+        suggestedAction: "Undo an AreaMatrix action before using Redo latest.",
+        recoverability: .refreshRequired,
+        rawContext: "S2-22 C2-18 redo-action-log"
+    )
+}
+
 struct ImportBatchCopyFooterSection: View {
     let request: ImportEntryRequest
     @ObservedObject var batchPreviewModel: ImportBatchPreviewModel

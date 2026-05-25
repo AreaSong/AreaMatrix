@@ -138,6 +138,10 @@ struct BatchTagUndoRefreshPlan: Equatable {
         contains("undo_actions")
     }
 
+    var refreshesRedoActions: Bool {
+        contains("redo_actions")
+    }
+
     private func containsAny(_ targets: [String]) -> Bool {
         targets.contains { contains($0) }
     }

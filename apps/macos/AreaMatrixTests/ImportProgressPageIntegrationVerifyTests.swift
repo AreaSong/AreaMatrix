@@ -78,9 +78,11 @@ final class ImportProgressPageIntegrationVerifyTests: XCTestCase {
         let latest = UndoActionRecordSnapshot.s211MovedFilesToTrash()
         let older = UndoActionRecordSnapshot.s211RenamedFiles()
         let undoStore = S211RecordingUndoStore(results: [.list(.success([latest, older]))])
+        let redoStore = S222RecordingRedoStore(results: [.list(.success([]))])
         let state = await UndoHistoryActionLog.load(
             repoPath: "/tmp/repo",
             undoStore: undoStore,
+            redoStore: redoStore,
             errorMapper: S211HistoryErrorMapper()
         )
 
@@ -89,24 +91,30 @@ final class ImportProgressPageIntegrationVerifyTests: XCTestCase {
         XCTAssertNil(state.failure)
         let listRequests = await undoStore.listRequests()
         XCTAssertEqual(listRequests, ["/tmp/repo"])
+        let redoListRequests = await redoStore.listRequests()
+        XCTAssertEqual(redoListRequests, ["/tmp/repo"])
     }
 
     @MainActor
     func testS211C207UndoLatestExecutesOnlyTopActionAndRefreshesSnapshot() async {
         let latest = UndoActionRecordSnapshot.s211MovedFilesToTrash()
         let older = UndoActionRecordSnapshot.s211RenamedFiles()
+        let redo = RedoActionRecordSnapshot.s222AvailableMoveRedo()
         let undoStore = S211RecordingUndoStore(results: [
             .undo(.success(.s211UndoneTrashMove())),
             .list(.success([.s211ExecutedTrashMove(), older]))
         ])
+        let redoStore = S222RecordingRedoStore(results: [.list(.success([redo]))])
         let state = await UndoHistoryActionLog.undoLatest(
             repoPath: "/tmp/repo",
-            actions: [latest, older],
+            snapshot: UndoHistorySnapshot(undoActions: [latest, older], redoActions: []),
             undoStore: undoStore,
+            redoStore: redoStore,
             errorMapper: S211HistoryErrorMapper()
         )
 
         XCTAssertEqual(state.actions, [.s211ExecutedTrashMove(), older])
+        XCTAssertEqual(state.snapshot.redoActions, [redo])
         let undoRequests = await undoStore.undoRequests()
         let listRequests = await undoStore.listRequests()
         XCTAssertEqual(undoRequests, ["/tmp/repo|\(latest.actionID)"])
@@ -120,19 +128,20 @@ final class ImportProgressPageIntegrationVerifyTests: XCTestCase {
             .undo(.success(.s211UndoneTrashMove())),
             .list(.failure(CoreError.Db(message: "refresh failed")))
         ])
+        let redoStore = S222RecordingRedoStore(results: [])
         let state = await UndoHistoryActionLog.undoLatest(
             repoPath: "/tmp/repo",
-            actions: [latest],
+            snapshot: UndoHistorySnapshot(undoActions: [latest], redoActions: []),
             undoStore: undoStore,
+            redoStore: redoStore,
             errorMapper: S211HistoryErrorMapper()
         )
 
-        guard case let .refreshFailed(result, mapping, previous) = state else {
+        guard case let .refreshFailed(mapping, previous) = state else {
             return XCTFail("expected refreshFailed, got \(state)")
         }
-        XCTAssertEqual(result, .s211UndoneTrashMove())
         XCTAssertEqual(mapping.kind, .db)
-        XCTAssertEqual(previous, [latest])
+        XCTAssertEqual(previous.undoActions, [latest])
         let listRequests = await undoStore.listRequests()
         XCTAssertEqual(listRequests, ["/tmp/repo"])
     }
@@ -141,10 +150,12 @@ final class ImportProgressPageIntegrationVerifyTests: XCTestCase {
     func testS211C207BlockedLatestDoesNotCallUndoAction() async {
         let blocked = UndoActionRecordSnapshot.s211BlockedRename()
         let undoStore = S211RecordingUndoStore(results: [])
+        let redoStore = S222RecordingRedoStore(results: [])
         let state = await UndoHistoryActionLog.undoLatest(
             repoPath: "/tmp/repo",
-            actions: [blocked],
+            snapshot: UndoHistorySnapshot(undoActions: [blocked], redoActions: []),
             undoStore: undoStore,
+            redoStore: redoStore,
             errorMapper: S211HistoryErrorMapper()
         )
 
@@ -163,9 +174,11 @@ final class ImportProgressPageIntegrationVerifyTests: XCTestCase {
             focusedActionID: ready.actionID,
             initialFailure: nil,
             undoStore: S211RecordingUndoStore(results: [.list(.success([ready, blocked]))]),
+            redoStore: S222RecordingRedoStore(results: [.list(.success([.s222AvailableMoveRedo()]))]),
             errorMapper: S211HistoryErrorMapper(),
             onClose: {},
-            onUndoCompleted: { _ in }
+            onUndoCompleted: { _ in },
+            onRedoCompleted: { _ in }
         )
         let description = importProgressMirrorDescription(of: panel.body)
 
@@ -173,7 +186,6 @@ final class ImportProgressPageIntegrationVerifyTests: XCTestCase {
         XCTAssertTrue(description.contains("Undo latest"))
         XCTAssertTrue(description.contains("Redo latest"))
         XCTAssertEqual(UndoHistoryPanel.accessibilityID, "S2-11-C2-07-undo-history-panel")
-        XCTAssertFalse(description.contains("redoAction"))
     }
 
     @MainActor

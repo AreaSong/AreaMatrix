@@ -239,11 +239,8 @@ extension MainRepositoryContentView {
     func routeLinkedCommandPaletteTarget(_ route: CommandPaletteLinkedPageRoute) -> Bool {
         switch route {
         case .redo:
-            pendingUndoHistoryRequest = UndoHistoryActionLog.redoShortcutRequest(
-                state: batchTagUndoState,
-                failure: batchTagActionLogRefreshFailure
-            )
-            return true
+            Task { await executeLatestRedoAction(entryPoint: .commandPalette) }
+            return false
         case .importConflictBatch:
             guard let route = activeImportConflictBatchRoute(source: route) else {
                 fileListModel.commandPaletteState = .failed(
@@ -278,7 +275,7 @@ extension MainRepositoryContentView {
         )
     }
 
-    private func commandPaletteContext() -> CommandIndexContext {
+    func commandPaletteContext() -> CommandIndexContext {
         CommandIndexContext.commandPalette(
             query: fileListModel.commandPaletteQuery,
             selectedFileIDs: selectedFileIDs,

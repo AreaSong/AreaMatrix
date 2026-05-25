@@ -452,7 +452,7 @@ private struct CommandPaletteResultRow: View {
         }
         .buttonStyle(.plain)
         .disabled(!target.isExecutable)
-        .opacity(target.disabled ? 0.55 : 1)
+        .opacity(target.isExecutable ? 1 : 0.55)
         .onHover { hovering in
             if hovering { onSelect() }
         }
@@ -470,7 +470,7 @@ private struct CommandPaletteResultRow: View {
     }
 
     private var subtitleText: String {
-        target.disabledReason ?? target.subtitle ?? target.action.rawValue
+        target.effectiveDisabledReason ?? target.subtitle ?? target.action.rawValue
     }
 
     private var accessibilityLabel: String {
