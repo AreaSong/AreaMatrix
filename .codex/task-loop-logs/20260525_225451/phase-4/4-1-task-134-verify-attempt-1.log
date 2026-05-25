@@ -1,0 +1,80 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-1/task-134`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-134-s2-21-c2-17-import-conflict-batch.md`
+- 代码范围：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+- 禁止范围：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+三、完成度摘要
+
+- 已覆盖项数：13
+- 未覆盖项数：0
+- 通过项数：13
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：Manifest 与依赖读取
+- 结果：通过
+- 证据：已定位 `phase-4.md` 的 `## 4-1/task-134`，依赖为 `4-1/task-133`、`4-1/task-85`，Exact Docs 全部存在并已读取。
+- 涉及文件：`tasks/prompts/_shared/manifests/phase-4.md`、`tasks/prompts/_shared/dependency-graph.md`
+
+- 项目：只处理 `S2-21` 页面中的 `C2-17`
+- 结果：通过
+- 证据：control map 声明 `S2-21` 绑定 `C2-17, C2-07`；当前实现接入 `previewImportConflictBatch` / `applyImportConflictBatch`，未新增 `C2-07` undo 执行逻辑。
+- 涉及文件：`docs/architecture/stage-2-control-map.md`、`apps/macos/AreaMatrix/Bridge/CoreImporting.swift`
+
+- 项目：CoreBridge / 状态 / 错误映射真实接入
+- 结果：通过
+- 证据：`CoreImportConflictBatching` 通过 `CoreBridge` 调用 UniFFI `AreaMatrix.previewImportConflictBatch` 与 `AreaMatrix.applyImportConflictBatch`；模型层将错误交给 `CoreErrorMapping`。
+- 涉及文件：`apps/macos/AreaMatrix/Bridge/CoreImporting.swift:35`、`apps/macos/AreaMatrix/Models/ImportBatchConflictActions.swift:3`
+
+- 项目：用户可见功能可触发和验收
+- 结果：通过
+- 证据：导入 sheet 在存在 `importConflictBatchRoute` 时自动加载 Core preview；UI 提供策略选择、作用域切换、冲突表、Replace 二次确认、Apply strategy、Ask per item 和结果摘要。
+- 涉及文件：`apps/macos/AreaMatrix/Views/Main/ImportEntrySheetView.swift:127`、`apps/macos/AreaMatrix/Views/Main/ImportBatchConflictSection.swift:82`
+
+- 项目：无 mock / fixture / 静态状态伪造真实闭环
+- 结果：通过
+- 证据：生产默认注入 `CoreBridge()`；测试中的 `S221RecordingConflictBatcher` 仅用于 XCTest 断言请求与状态。
+- 涉及文件：`apps/macos/AreaMatrix/Views/Main/ImportEntrySheetView.swift:58`、`apps/macos/AreaMatrixTests/ImportSingleFileNameConflictCoreTests.swift:258`
+
+- 项目：Expected New Paths
+- 结果：通过
+- 证据：`apps/macos/AreaMatrix/**` 与 `apps/macos/AreaMatrixTests/**` 均存在并包含本 task 的实现与测试。
+- 涉及文件：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git diff --quiet -- core/src` 与 `git diff --cached --quiet -- core/src` 均返回 0，未发现 `core/src/**` 改动。
+- 涉及文件：`core/src/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，CoreBridge、snapshot、model action、SwiftUI section 分层清楚，相关文件均未超过 500 行。
+- 注释 / rustdoc / 文档同步：通过，本 task 未新增 Rust public API；UDL 与 `docs/api/core-api.md` 的 C2-17 合同一致。
+- 错误处理与边界处理：通过，preview/apply 错误进入 `CoreErrorMapping`，Replace 未确认不会调用 Core apply，blocked/pending/failed 状态由 Core preview/report 驱动。
+- 测试与验证覆盖：通过，覆盖默认安全策略、Replace 二次确认、手动作用域、Ask per item、blocked 行与命令面板路由。
+- 占位、硬编码、mock-only、一次性实现检查：通过，生产路径未发现 mock-only 闭环；等待 Core preview 的占位行不会伪造成功状态。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 跑了哪些验证：`./dev check task 4-1/task-134`
+- 哪些通过：`prompt doctor` 通过；`git diff --check` 通过；macOS `xcodebuild ... build CODE_SIGNING_ALLOWED=NO` 通过，输出 `BUILD SUCCEEDED`，最终退出码 `0`。
+- 哪些失败：无
+- 哪些缺失：未运行额外 `./dev check all`，因为 manifest 和 validation-driver 对 page-feature task 的上限是 `./dev check task 4-1/task-134`。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS

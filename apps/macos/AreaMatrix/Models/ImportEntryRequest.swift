@@ -4,6 +4,7 @@ enum ImportEntrySource: Equatable {
     case filePicker
     case dropZone
     case dockOpenFile
+    case importConflictBatch(CommandPaletteLinkedPageRoute?)
 }
 
 enum ImportEntryDestination: Equatable {
@@ -29,6 +30,9 @@ struct ImportEntryRequest: Equatable, Identifiable {
     let defaultStorageMode: ImportSingleFileStorageMode
     let allowReplaceDuringImport: Bool
     let isTrashAvailable: Bool
+    let importSessionID: String?
+    let importConflictIDs: [String]
+    let importConflictIDsBySourcePath: [String: String]
 
     init(
         id: UUID = UUID(),
@@ -40,7 +44,10 @@ struct ImportEntryRequest: Equatable, Identifiable {
         availableCategories: [String] = [],
         defaultStorageMode: ImportSingleFileStorageMode = .copy,
         allowReplaceDuringImport: Bool = false,
-        isTrashAvailable: Bool = true
+        isTrashAvailable: Bool = true,
+        importSessionID: String? = nil,
+        importConflictIDs: [String] = [],
+        importConflictIDsBySourcePath: [String: String] = [:]
     ) {
         self.id = id
         self.repoPath = repoPath
@@ -52,6 +59,9 @@ struct ImportEntryRequest: Equatable, Identifiable {
         self.defaultStorageMode = defaultStorageMode
         self.allowReplaceDuringImport = allowReplaceDuringImport
         self.isTrashAvailable = isTrashAvailable
+        self.importSessionID = importSessionID
+        self.importConflictIDs = importConflictIDs
+        self.importConflictIDsBySourcePath = importConflictIDsBySourcePath
     }
 
     var sheetTitle: String {
@@ -74,6 +84,28 @@ struct ImportEntryRequest: Equatable, Identifiable {
         case .repositoryRoot:
             "Repo root"
         }
+    }
+
+    var importConflictBatchRoute: ImportConflictBatchRoute? {
+        guard let importSessionID else { return nil }
+        let conflictIDs = importConflictIDs.filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+        guard !conflictIDs.isEmpty else { return nil }
+        let sourceRoute: CommandPaletteLinkedPageRoute?
+        if case let .importConflictBatch(route) = source {
+            sourceRoute = route
+        } else {
+            sourceRoute = nil
+        }
+        return ImportConflictBatchRoute(
+            importSessionID: importSessionID,
+            conflictIDs: conflictIDs,
+            source: sourceRoute
+        )
+    }
+
+    func importConflictID(forSourcePath sourcePath: String) -> String? {
+        importConflictIDsBySourcePath[sourcePath] ??
+            importConflictIDsBySourcePath[(sourcePath as NSString).abbreviatingWithTildeInPath]
     }
 }
 

@@ -320,6 +320,7 @@ struct ImportBatchProgressSnapshot: Equatable {
         var phase: Phase
         var errorMessage: String?
         var existingRelativePath: String?
+        var importConflictBatch: ImportConflictBatchProgressMetadata? = nil
 
         var id: String {
             sourcePath

@@ -1,10 +1,7 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
-enum MainRepositoryContentState: Equatable {
-    case empty
-    case list
-}
+enum MainRepositoryContentState: Equatable { case empty, list }
 
 struct MainRepositoryContentView: View {
     let opening: RepositoryOpeningResult
@@ -14,6 +11,7 @@ struct MainRepositoryContentView: View {
     let onOpenSettings: () -> Void
     let onOpenRepository: () -> Void
     let onOpenHelp: () -> Void
+    let onOpenImportConflictBatch: (ImportConflictBatchRoute) -> Void
     let onRetryCurrentList: () -> Void
     let onCollectDiagnostics: () async -> Void
     let onShowInFinder: (String) -> Void
@@ -38,6 +36,7 @@ struct MainRepositoryContentView: View {
     @State var pendingBatchChangeCategoryRoute: BatchChangeCategoryRoute?
     @State var pendingBatchDeleteRoute: BatchDeleteRoute?
     @State var pendingBatchRenameRoute: BatchRenameRoute?
+    @State var pendingImportConflictBatchRoute: ImportConflictBatchRoute?
     @State var pendingUndoHistoryRequest: UndoToastHistoryRequest?
     @State var batchTagUndoState: BatchTagUndoState = .idle
     @State var batchTagActionLogRefreshFailure: CoreErrorMappingSnapshot?
@@ -55,7 +54,7 @@ struct MainRepositoryContentView: View {
     @StateObject var dropPreviewModel: ImportDropPreviewModel
     @StateObject var detailNoteModel: DetailNoteModel
     @State var tableSortOrder: [KeyPathComparator<FileEntrySnapshot>] = [
-        KeyPathComparator(\FileEntrySnapshot.importedAt, order: .reverse)
+        .init(\FileEntrySnapshot.importedAt, order: .reverse)
     ]
 }
 
@@ -154,6 +153,10 @@ extension MainRepositoryContentView {
         .sheet(item: $pendingBatchRenameRoute, content: batchRenameRoutingSheet)
         .sheet(item: $pendingUndoHistoryRequest, content: undoHistorySheet)
         .sheet(item: $smartListManagementRoute, content: smartListManagementSheet)
+        .onChange(of: pendingImportConflictBatchRoute) { _, route in
+            guard let route else { return }; pendingImportConflictBatchRoute = nil
+            onOpenImportConflictBatch(route)
+        }
         .onChange(of: isSearchFiltersPresented) { _, presented in
             guard !presented else { return }
             reopenSmartListEditorFromDraftIfNeeded()
@@ -282,6 +285,7 @@ extension MainRepositoryContentView {
         onOpenSettings: @escaping () -> Void = {},
         onOpenRepository: @escaping () -> Void = {},
         onOpenHelp: @escaping () -> Void = {},
+        onOpenImportConflictBatch: @escaping (ImportConflictBatchRoute) -> Void = { _ in },
         onRetryCurrentList: @escaping () -> Void = {},
         onCollectDiagnostics: @escaping () async -> Void = {},
         onShowInFinder: @escaping (String) -> Void = { _ in },
@@ -316,9 +320,8 @@ extension MainRepositoryContentView {
         self.opening = opening; self.state = state
         self.onImport = onImport
         self.onDropImport = onDropImport
-        self.onOpenSettings = onOpenSettings
-        self.onOpenRepository = onOpenRepository
-        self.onOpenHelp = onOpenHelp
+        self.onOpenSettings = onOpenSettings; self.onOpenRepository = onOpenRepository; self.onOpenHelp = onOpenHelp
+        self.onOpenImportConflictBatch = onOpenImportConflictBatch
         self.onRetryCurrentList = onRetryCurrentList
         self.onCollectDiagnostics = onCollectDiagnostics
         self.onShowInFinder = onShowInFinder

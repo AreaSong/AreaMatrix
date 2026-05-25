@@ -119,6 +119,7 @@ private struct CodableImportBatchSessionItem: Codable {
     var phase: ImportBatchProgressSnapshot.Phase
     var errorMessage: String?
     var existingRelativePath: String?
+    var importConflictBatch: ImportConflictBatchProgressMetadata?
 
     init(item: ImportBatchProgressSnapshot.Item) {
         sourcePath = item.sourcePath
@@ -126,6 +127,7 @@ private struct CodableImportBatchSessionItem: Codable {
         phase = item.phase
         errorMessage = item.errorMessage
         existingRelativePath = item.existingRelativePath
+        importConflictBatch = item.importConflictBatch
     }
 
     var snapshotItem: ImportBatchProgressSnapshot.Item {
@@ -134,7 +136,8 @@ private struct CodableImportBatchSessionItem: Codable {
             targetPath: targetPath,
             phase: phase,
             errorMessage: errorMessage,
-            existingRelativePath: existingRelativePath
+            existingRelativePath: existingRelativePath,
+            importConflictBatch: importConflictBatch
         )
     }
 }

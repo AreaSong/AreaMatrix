@@ -244,7 +244,20 @@ extension MainRepositoryContentView {
                 failure: batchTagActionLogRefreshFailure
             )
             return true
-        case .classifierImpactPreview, .importConflictBatch, .tagSuggestions:
+        case .importConflictBatch:
+            guard let route = activeImportConflictBatchRoute(source: route) else {
+                fileListModel.commandPaletteState = .failed(
+                    commandPaletteContext(),
+                    fileListModel.commandPaletteState.snapshot ?? .commandRegistryRecovery(
+                        query: fileListModel.commandPaletteQuery
+                    ),
+                    route.blockedMapping
+                )
+                return false
+            }
+            pendingImportConflictBatchRoute = route
+            return true
+        case .classifierImpactPreview, .tagSuggestions:
             fileListModel.commandPaletteState = .failed(
                 commandPaletteContext(),
                 fileListModel.commandPaletteState.snapshot ?? .commandRegistryRecovery(
@@ -254,6 +267,15 @@ extension MainRepositoryContentView {
             )
             return false
         }
+    }
+
+    private func activeImportConflictBatchRoute(
+        source: CommandPaletteLinkedPageRoute
+    ) -> ImportConflictBatchRoute? {
+        ImportConflictBatchRoute(
+            metadata: importProgressItems.compactMap(\.importConflictBatch),
+            source: source
+        )
     }
 
     private func commandPaletteContext() -> CommandIndexContext {

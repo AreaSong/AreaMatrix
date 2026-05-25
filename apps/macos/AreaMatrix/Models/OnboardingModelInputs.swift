@@ -122,6 +122,34 @@ extension OnboardingModel {
     }
 
     @MainActor
+    func startImportConflictBatchReview(
+        opening: RepositoryOpeningResult,
+        route: ImportConflictBatchRoute
+    ) {
+        let conflictIDs = route.conflictIDs.filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+        guard !route.importSessionID.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+              !conflictIDs.isEmpty else {
+            toastMessage = "No active import conflicts to review."
+            return
+        }
+        let placeholderURLs = conflictIDs.map { URL(fileURLWithPath: "/.areamatrix/import-conflicts/\($0)") }
+        pendingImportEntry = ImportEntryRequest(
+            repoPath: opening.config.repoPath,
+            source: .importConflictBatch(route.source),
+            destination: .autoClassify,
+            urls: placeholderURLs,
+            kind: .multipleItems(placeholderURLs.count),
+            availableCategories: opening.availableImportCategories,
+            defaultStorageMode: ImportSingleFileStorageMode(coreSnapshotValue: opening.config.defaultMode),
+            allowReplaceDuringImport: opening.config.allowReplaceDuringImport,
+            isTrashAvailable: Self.isSystemTrashAvailable(),
+            importSessionID: route.importSessionID,
+            importConflictIDs: conflictIDs
+        )
+        toastMessage = nil
+    }
+
+    @MainActor
     func dismissImportEntry() {
         pendingImportEntry = nil
         consumeQueuedDockImportIfPossible()

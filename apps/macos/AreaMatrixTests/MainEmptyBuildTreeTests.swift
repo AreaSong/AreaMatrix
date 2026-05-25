@@ -124,6 +124,92 @@ final class MainEmptyBuildTreeTests: XCTestCase {
         XCTAssertTrue(content.routeLinkedCommandPaletteTarget(.redo))
         XCTAssertEqual(content.pendingUndoHistoryRequest?.source, .viewHistory)
     }
+
+    @MainActor
+    func testS221CommandPaletteOpensImportConflictBatchWhenActiveProgressRouteExists() {
+        let item = ImportBatchProgressSnapshot.Item(
+            sourcePath: "/tmp/source.pdf",
+            targetPath: "docs/source.pdf",
+            phase: .pending,
+            errorMessage: nil,
+            existingRelativePath: "docs/existing.pdf",
+            importConflictBatch: ImportConflictBatchProgressMetadata(
+                importSessionID: "session-221",
+                conflictID: "conflict-1"
+            )
+        )
+        var openedRoute: ImportConflictBatchRoute?
+        var content = MainRepositoryContentView(
+            opening: .s215CommandFixture(repoPath: "/tmp/repo", files: []),
+            state: .list,
+            onImport: {},
+            onDropImport: { _, _ in },
+            onOpenImportConflictBatch: { openedRoute = $0 },
+            importProgressItems: [item],
+            fileLister: MainListRecordingFileLister(results: []),
+            fileDetailer: MainListRecordingFileDetailer(results: []),
+            errorMapper: S215CommandErrorMapper(mapping: .s215CommandDb(rawContext: "unused"))
+        )
+
+        let routed = content.routeLinkedCommandPaletteTarget(.importConflictBatch)
+
+        XCTAssertTrue(routed)
+        XCTAssertEqual(openedRoute, ImportConflictBatchRoute(
+            importSessionID: "session-221",
+            conflictIDs: ["conflict-1"],
+            source: .importConflictBatch
+        ))
+        XCTAssertNil(content.pendingImportConflictBatchRoute)
+    }
+
+    @MainActor
+    func testS221CommandPaletteDoesNotFabricateImportConflictBatchWithoutActiveRoute() {
+        var openedRoute: ImportConflictBatchRoute?
+        var content = MainRepositoryContentView(
+            opening: .s215CommandFixture(repoPath: "/tmp/repo", files: []),
+            state: .list,
+            onImport: {},
+            onDropImport: { _, _ in },
+            onOpenImportConflictBatch: { openedRoute = $0 },
+            fileLister: MainListRecordingFileLister(results: []),
+            fileDetailer: MainListRecordingFileDetailer(results: []),
+            errorMapper: S215CommandErrorMapper(mapping: .s215CommandDb(rawContext: "unused"))
+        )
+
+        let routed = content.routeLinkedCommandPaletteTarget(.importConflictBatch)
+
+        XCTAssertFalse(routed)
+        XCTAssertNil(openedRoute)
+        XCTAssertNil(content.pendingImportConflictBatchRoute)
+        XCTAssertEqual(content.fileListModel.commandPaletteState.errorMapping?.rawContext, "S2-21")
+    }
+
+    @MainActor
+    func testS221OnboardingStartsImportConflictBatchReviewFromRealRouteMetadata() {
+        let opening = RepositoryOpeningResult.mainEmptyBuildTreeFixture(
+            repoPath: "/tmp/repo",
+            tree: .mainEmptyFixtureTree()
+        )
+        let model = OnboardingModel(
+            settingsReader: BuildTreeStaticSettingsReader(repoPath: nil),
+            accessibilityAnnouncer: BuildTreeAnnouncer(),
+            helpOpener: BuildTreeNoopWelcomeHelpOpener()
+        )
+
+        model.startImportConflictBatchReview(
+            opening: opening,
+            route: ImportConflictBatchRoute(
+                importSessionID: "session-221",
+                conflictIDs: ["dup-1", "name-1"],
+                source: .importConflictBatch
+            )
+        )
+
+        XCTAssertEqual(model.pendingImportEntry?.source, .importConflictBatch(.importConflictBatch))
+        XCTAssertEqual(model.pendingImportEntry?.importSessionID, "session-221")
+        XCTAssertEqual(model.pendingImportEntry?.importConflictIDs, ["dup-1", "name-1"])
+        XCTAssertEqual(model.pendingImportEntry?.kind, .multipleItems(2))
+    }
 }
 
 private extension CommandPaletteSnapshot {
@@ -168,6 +254,15 @@ private struct BuildTreeStaticSettingsReader: AppSettingsReading {
 
 private struct BuildTreeNoopWelcomeHelpOpener: WelcomeHelpOpening {
     func openWelcomeHelp() throws {}
+}
+
+@MainActor
+private final class BuildTreeAnnouncer: AccessibilityAnnouncing {
+    private(set) var announcements: [String] = []
+
+    func announce(_ message: String) {
+        announcements.append(message)
+    }
 }
 
 private extension RepositoryOpeningResult {

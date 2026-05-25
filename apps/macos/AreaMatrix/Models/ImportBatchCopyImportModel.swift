@@ -10,8 +10,17 @@ final class ImportBatchCopyImportModel: ObservableObject, ImportProgressQueueCon
     @Published var isICloudDownloading = false
     @Published private(set) var replaceConfirmationErrorMessage: String?
     @Published private(set) var replaceConfirmationDiagnosticsMessage: String?
+    @Published var conflictBatchPreviewState: ImportConflictBatchPreviewState = .idle
+    @Published var conflictBatchApplyResult: ImportConflictBatchApplyResult?
+    @Published var isConflictBatchApplying = false
+    @Published var conflictBatchDuplicateStrategy: ImportConflictBatchStrategySnapshot = .skip
+    @Published var conflictBatchSameNameStrategy: ImportConflictBatchStrategySnapshot = .keepBoth
+    @Published var appliesConflictBatchToAllSimilarConflicts = true
+    @Published var selectedConflictBatchIDs: Set<String> = []
+    @Published var isConflictBatchReplaceConfirmed = false
 
     let importer: any CoreBatchCopyImporting
+    let conflictBatcher: any CoreImportConflictBatching
     let sessionStore: any ImportBatchSessionPersisting
     let errorMapper: any CoreErrorMapping
     let placeholderDownloader: any ICloudPlaceholderDownloading
@@ -22,10 +31,12 @@ final class ImportBatchCopyImportModel: ObservableObject, ImportProgressQueueCon
     init(
         importer: any CoreBatchCopyImporting,
         errorMapper: any CoreErrorMapping,
+        conflictBatcher: any CoreImportConflictBatching = CoreBridge(),
         sessionStore: any ImportBatchSessionPersisting = FileImportBatchSessionStore(),
         placeholderDownloader: any ICloudPlaceholderDownloading = LocalICloudPlaceholderDownloader()
     ) {
         self.importer = importer
+        self.conflictBatcher = conflictBatcher
         self.sessionStore = sessionStore
         self.errorMapper = errorMapper
         self.placeholderDownloader = placeholderDownloader
