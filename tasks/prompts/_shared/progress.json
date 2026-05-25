@@ -8167,11 +8167,31 @@
     "4-1/task-128": {
       "attempts": 2,
       "copy_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260525_150655/phase-4/4-1-task-128-copy-attempt-2.log",
+      "git_branch": "codex/areamatrix-task-loop-20260501_132850",
+      "git_changed_files": [
+        ".codex/task-loop-logs/20260525_150655/",
+        ".codex/task-loop-runs/20260525_150655/",
+        ".codex/task-loop-runs/index.json",
+        "apps/macos/AreaMatrix/Bridge/CoreMoveToCategory.swift",
+        "apps/macos/AreaMatrix/Models/CoreBridgePlaceholderState.swift",
+        "apps/macos/AreaMatrix/Models/MainFileCategoryMoveState.swift",
+        "apps/macos/AreaMatrix/Models/MainFileClassifierCorrectionRoutingActions.swift",
+        "apps/macos/AreaMatrix/Models/MainFileListState.swift",
+        "apps/macos/AreaMatrix/Views/Main/ClassifierRuleHandoffRouteView.swift",
+        "apps/macos/AreaMatrix/Views/Main/MainFileActionRoutingSheet.swift",
+        "apps/macos/AreaMatrix/Views/Main/MainRepositoryContentActionRouting.swift",
+        "apps/macos/AreaMatrixTests/ClassifierCorrectionHandoffTests.swift",
+        "tasks/prompts/_shared/progress.json"
+      ],
+      "git_checkpoint_status": "committed",
+      "git_commit": "b7dee332a331460ead35d4110a8c3817f324cc6b",
+      "git_push_status": "not_requested",
+      "git_remote": "",
       "note": "自动执行验收通过：attempt=2",
       "risk": "High",
       "run_id": "20260525_150655",
       "status": "completed",
-      "updated_at": "2026-05-25T08:06:56.934119+00:00",
+      "updated_at": "2026-05-25T08:06:57.141268+00:00",
       "verify_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260525_150655/phase-4/4-1-task-128-verify-attempt-2.log"
     },
     "4-1/task-13": {
@@ -10519,6 +10539,6 @@
       "verify_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260519_155620/phase-4/4-1-task-99-verify-attempt-4.log"
     }
   },
-  "updated_at": "2026-05-25T00:09:09.924844+00:00",
+  "updated_at": "2026-05-25T08:06:57.141270+00:00",
   "version": 1
 }
