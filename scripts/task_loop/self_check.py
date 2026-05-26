@@ -19,9 +19,11 @@ from scripts.task_loop.runner import (
     RuntimeConfig,
     TaskFile,
     TaskLoopRunner,
+    descendant_process_groups_from_ps,
     exec_activity_signature,
-    process_group_has_validation_child_from_ps,
     meaningful_exec_activity_lines,
+    process_tree_has_validation_child_from_ps,
+    process_tree_validation_processes_from_ps,
     task_loop_codex_exec_processes_from_ps,
 )
 
@@ -234,9 +236,11 @@ def write_live_activity(lock_dir: Path, tmp: Path) -> None:
             "output_file": str(output_file),
             "exec_log_file": str(exec_log_file),
             "no_output_elapsed_seconds": 3,
-            "no_output_timeout_seconds": 5400,
+            "no_output_timeout_seconds": 0,
             "codex_idle_timeout_seconds": 900,
             "validation_child_running": False,
+            "validation_child_count": 0,
+            "validation_child_details": [],
             "child_restart": 1,
             "child_restart_limit": 2,
             "restart_delay_seconds": 300,
@@ -700,9 +704,10 @@ def check_real_status(h: Harness) -> None:
     assert_contains(live_status, "live_activity_log_state: exists", "live activity log state")
     assert_contains(live_status, "live_activity_exec_log_state: exists", "live activity exec log state")
     assert_contains(live_status, "live_activity_no_output_elapsed: 3s", "live activity no-output elapsed")
-    assert_contains(live_status, "live_activity_no_output_timeout: 1h30m00s", "live activity no-output timeout")
+    assert_contains(live_status, "live_activity_no_output_timeout: disabled", "live activity no-output timeout")
     assert_contains(live_status, "live_activity_codex_idle_timeout: 15m00s", "live activity codex idle timeout")
     assert_contains(live_status, "live_activity_validation_child_running: no", "live activity validation child")
+    assert_contains(live_status, "live_activity_validation_child_count: 0", "live activity validation child count")
     assert_contains(live_status, "live_activity_child_restart: 1/2", "live activity child restart")
     assert_contains(live_status, "live_activity_restart_delay: 5m00s", "live activity restart delay")
     assert_contains(live_status, "live_activity_command: codex exec -m gpt-5.5 --full-auto -", "live activity command")
@@ -1204,7 +1209,7 @@ fi
 
 
 def check_runner_no_output_timeout(h: Harness) -> None:
-    log("runner codex no-output timeout restarts child")
+    log("runner manual no-output timeout restarts child")
     runner_repo = h.tmp / "runner-no-output"
     init_temp_git_repo(runner_repo)
     add_prompt_fixture(runner_repo, ["0-1/task-01"])
@@ -1381,6 +1386,13 @@ fi
     assert_contains(combined, "codex exec no-output timeout; restart copy task=0-1/task-01", "codex idle restart event")
 
 
+def check_runner_no_output_timeout_default_disabled() -> None:
+    log("runner no-output timeout is disabled by default")
+    cfg = RuntimeConfig.from_env()
+    if cfg.no_output_timeout_seconds != 0:
+        raise CheckFailure(f"default NO_OUTPUT_TIMEOUT_SECONDS should be 0, got {cfg.no_output_timeout_seconds}")
+
+
 def check_runner_repeated_diff_is_not_progress(h: Harness) -> None:
     log("runner repeated diff stream is diagnostic only")
     diff_log = h.tmp / "repeated-diff.exec.log"
@@ -1499,17 +1511,24 @@ fi
 
 
 def check_validation_process_detection() -> None:
-    log("runner validation subprocess detection")
+    log("runner validation subprocess tree detection")
     lines = [
         " 100 1 100 Ss 00:30 /Applications/Codex.app/Contents/Resources/codex exec -m gpt-5.5 -",
-        " 101 100 100 S 00:20 ./dev check task 4-1/task-141",
-        " 102 100 102 S 00:20 npm exec @modelcontextprotocol/server-sequential-thinking",
+        " 101 100 101 S 00:20 ./dev check all",
+        " 102 101 101 S 00:19 cargo test --workspace",
+        " 103 100 103 S 00:20 npm exec @modelcontextprotocol/server-sequential-thinking",
         " 200 1 200 S 00:20 swift test",
     ]
-    if not process_group_has_validation_child_from_ps(lines, 100):
-        raise CheckFailure("validation subprocess was not detected in codex process group")
-    if process_group_has_validation_child_from_ps(lines, 102):
-        raise CheckFailure("MCP-only process group was incorrectly treated as validation")
+    if not process_tree_has_validation_child_from_ps(lines, 100):
+        raise CheckFailure("validation subprocess was not detected in codex process tree")
+    validation = process_tree_validation_processes_from_ps(lines, 100)
+    if [proc.pid for proc in validation] != [101, 102]:
+        raise CheckFailure(f"unexpected validation subprocesses: {[proc.pid for proc in validation]}")
+    if process_tree_has_validation_child_from_ps(lines, 103):
+        raise CheckFailure("MCP-only process tree was incorrectly treated as validation")
+    pgids = descendant_process_groups_from_ps(lines, 100)
+    if pgids != [101, 103]:
+        raise CheckFailure(f"unexpected descendant process groups for cleanup: {pgids}")
 
 
 def check_runner_activity_replace_and_orphan_detection(h: Harness) -> None:
@@ -1582,6 +1601,7 @@ def run_check(root_dir: Path) -> int:
             check_runner_core(harness)
             check_git_helpers(harness)
             check_runner_git_checkpoint(harness)
+            check_runner_no_output_timeout_default_disabled()
             check_runner_no_output_timeout(harness)
             check_runner_codex_idle_timeout(harness)
             check_runner_repeated_diff_is_not_progress(harness)

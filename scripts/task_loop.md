@@ -44,13 +44,13 @@ Repo-local skills：
 
 无输出 watchdog：
 - `NO_OUTPUT_NOTICE_SECONDS=120`
-- `NO_OUTPUT_TIMEOUT_SECONDS=5400`
+- `NO_OUTPUT_TIMEOUT_SECONDS=0`
 - `CODEX_IDLE_TIMEOUT_SECONDS=900`
 - `NO_OUTPUT_RESTART_DELAY_SECONDS=300`
 - `NO_OUTPUT_RESTART_LIMIT=2`
 - `ORPHAN_CODEX_POLICY=fail`
 
-runner 会在 `codex exec` 子进程活着但目标 copy / verify 最终输出日志没有生成，且没有真实执行进展时持续显示 no-output 状态。真实执行进展指最终 `.log` 变化、同一进程组存在 `./dev check`、`xcodebuild`、`cargo`、`swift test` 等验证子进程，或 `.exec.log` 中出现新的命令开始 / 命令结束事件。`.exec.log` 文件大小增长本身只代表诊断流仍在写入，重复 diff、模型自述或长文本输出不再重置 idle 计时。如果同一进程组没有验证子进程，超过 `CODEX_IDLE_TIMEOUT_SECONDS` 会按 Codex / 模型 / 工具等待卡住处理，先终止并重启同一步骤；如果检测到验证子进程仍在运行，则继续等待 `NO_OUTPUT_TIMEOUT_SECONDS` 这个硬超时。超过 `NO_OUTPUT_RESTART_LIMIT` 仍无输出时，才把当前 task 标记为失败；`CODEX_IDLE_TIMEOUT_SECONDS=0` 可临时禁用早期 idle 超时，`NO_OUTPUT_TIMEOUT_SECONDS=0` 可临时禁用硬超时。
+runner 会在 `codex exec` 子进程活着但目标 copy / verify 最终输出日志没有生成，且没有真实执行进展时持续显示 no-output 状态。真实执行进展指最终 `.log` 变化、Codex 子进程树中存在 `./dev check`、`xcodebuild`、`cargo`、`swift test` 等验证子进程，或 `.exec.log` 中出现新的命令开始 / 命令结束事件。`.exec.log` 文件大小增长本身只代表诊断流仍在写入，重复 diff、模型自述或长文本输出不再重置 idle 计时。如果 Codex 子进程树没有验证子进程，超过 `CODEX_IDLE_TIMEOUT_SECONDS` 会按 Codex / 模型 / 工具等待卡住处理，先终止并重启同一步骤；如果检测到验证子进程仍在运行，即使 `./dev check all`、`cargo test` 或 `xcodebuild` 超过 90 分钟，也不会因为默认墙钟硬超时被杀。`NO_OUTPUT_TIMEOUT_SECONDS` 默认是 `0`，表示禁用 legacy 硬超时；只有手动设置为正数且没有验证子进程时才会作为额外兜底。超过 `NO_OUTPUT_RESTART_LIMIT` 仍无输出时，才把当前 task 标记为失败；`CODEX_IDLE_TIMEOUT_SECONDS=0` 可临时禁用早期 idle 超时。
 
 `output` 指向 `codex exec -o` 的 final message 文件，不是实时流式日志；`exec` 指向 runner 捕获的 stdout/stderr stream，用来确认 CLI 曾经启动、工具调用输出了什么、失败前最后发生了什么。`.exec.log` 是本地诊断流，不是完成证据，也不是单独的健康证据，默认不进入 Git checkpoint。正式 run 启动新 child 前会扫描同仓库 `.codex/task-loop-logs` 下的孤儿 `codex exec`。默认 `ORPHAN_CODEX_POLICY=fail` 会阻止继续启动；确认要自动清理时可显式使用 `ORPHAN_CODEX_POLICY=terminate`。
 
@@ -145,8 +145,7 @@ PID 和耗时；中段 `live log` 纵向列出 prompt、输出日志路径和日
 产生可验证进展；这是一种 no-output wait，不代表验证命令正在正常输出。`status`
 同时显示 `live_activity_validation_child_running`、`live_activity_meaningful_activity` 和
 `live_activity_exec_activity_events`：`validation_child_running=no` 且 `meaningful_activity=no` 时默认超过
-`CODEX_IDLE_TIMEOUT_SECONDS=900` 就提前重启，`yes` 时保留到
-`NO_OUTPUT_TIMEOUT_SECONDS=5400` 硬超时。超时后 runner 会终止该子进程，等待
+`CODEX_IDLE_TIMEOUT_SECONDS=900` 就提前重启；`validation_child_running=yes` 时说明 Codex 子进程树里仍有真实验证，runner 会继续等待。`NO_OUTPUT_TIMEOUT_SECONDS=0` 表示默认没有 90 分钟墙钟硬杀。超时后 runner 会终止该子进程树，等待
 `NO_OUTPUT_RESTART_DELAY_SECONDS=300`，再重开同一步骤的 `codex exec`；连续超过
 `NO_OUTPUT_RESTART_LIMIT=2` 次仍无输出，才把任务留在失败/可恢复状态，避免一条
 copy / verify 卡住整条队列。

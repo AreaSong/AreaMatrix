@@ -26,8 +26,10 @@ PHASES = ("phase-0", "phase-1", "phase-2", "phase-3", "phase-4")
 CODEX_SANDBOX_MODES = {"read-only", "workspace-write", "danger-full-access"}
 VALIDATION_PROCESS_MARKERS = (
     "./dev check",
-    " xcodebuild",
+    "/dev check",
+    "xcodebuild",
     "/xcodebuild",
+    "cargo ",
     " cargo ",
     "/cargo ",
     "swift build",
@@ -123,7 +125,7 @@ class RuntimeConfig:
     dry_run_max_attempts: int = 10
     activity_heartbeat_seconds: int = 30
     no_output_notice_seconds: int = 120
-    no_output_timeout_seconds: int = 5400
+    no_output_timeout_seconds: int = 0
     codex_idle_timeout_seconds: int = 900
     no_output_restart_delay_seconds: int = 300
     no_output_restart_limit: int = 2
@@ -166,7 +168,7 @@ class RuntimeConfig:
         cfg.dry_run_max_attempts = int(os.environ.get("DRY_RUN_MAX_ATTEMPTS", "10"))
         cfg.activity_heartbeat_seconds = int(os.environ.get("ACTIVITY_HEARTBEAT_SECONDS", "30"))
         cfg.no_output_notice_seconds = int(os.environ.get("NO_OUTPUT_NOTICE_SECONDS", "120"))
-        cfg.no_output_timeout_seconds = int(os.environ.get("NO_OUTPUT_TIMEOUT_SECONDS", "5400"))
+        cfg.no_output_timeout_seconds = int(os.environ.get("NO_OUTPUT_TIMEOUT_SECONDS", "0"))
         cfg.codex_idle_timeout_seconds = int(os.environ.get("CODEX_IDLE_TIMEOUT_SECONDS", "900"))
         cfg.no_output_restart_delay_seconds = int(os.environ.get("NO_OUTPUT_RESTART_DELAY_SECONDS", "300"))
         cfg.no_output_restart_limit = int(os.environ.get("NO_OUTPUT_RESTART_LIMIT", "2"))
@@ -311,6 +313,15 @@ def read_process_table_lines() -> tuple[list[str], str]:
     return [line for line in proc.stdout.splitlines() if line.strip()], ""
 
 
+def parse_process_table_lines(lines: Sequence[str]) -> list[CodexExecProcess]:
+    processes: list[CodexExecProcess] = []
+    for line in lines:
+        parsed = parse_ps_line(line)
+        if parsed:
+            processes.append(parsed)
+    return processes
+
+
 def scan_task_loop_codex_exec_processes(root_dir: Path, log_root: Path) -> list[CodexExecProcess]:
     lines, reason = read_process_table_lines()
     if reason:
@@ -334,15 +345,71 @@ def process_group_has_validation_child(pgid: int) -> bool:
     return process_group_has_validation_child_from_ps(lines, pgid)
 
 
+def command_is_validation_process(command: str) -> bool:
+    return any(marker in command for marker in VALIDATION_PROCESS_MARKERS)
+
+
 def process_group_has_validation_child_from_ps(lines: Sequence[str], pgid: int) -> bool:
     for line in lines:
         parsed = parse_ps_line(line)
         if not parsed or parsed.pgid != pgid:
             continue
-        command = parsed.command
-        if any(marker in command for marker in VALIDATION_PROCESS_MARKERS):
+        if command_is_validation_process(parsed.command):
             return True
     return False
+
+
+def descendant_processes_from_ps(lines: Sequence[str], root_pid: int) -> list[CodexExecProcess]:
+    by_parent: dict[int, list[CodexExecProcess]] = {}
+    for proc in parse_process_table_lines(lines):
+        by_parent.setdefault(proc.ppid, []).append(proc)
+
+    descendants: list[CodexExecProcess] = []
+    queue = [root_pid]
+    seen = {root_pid}
+    while queue:
+        parent_pid = queue.pop(0)
+        for child in by_parent.get(parent_pid, []):
+            if child.pid in seen:
+                continue
+            seen.add(child.pid)
+            descendants.append(child)
+            queue.append(child.pid)
+    return descendants
+
+
+def process_tree_validation_processes_from_ps(lines: Sequence[str], root_pid: int) -> list[CodexExecProcess]:
+    return [proc for proc in descendant_processes_from_ps(lines, root_pid) if command_is_validation_process(proc.command)]
+
+
+def process_tree_has_validation_child_from_ps(lines: Sequence[str], root_pid: int) -> bool:
+    return bool(process_tree_validation_processes_from_ps(lines, root_pid))
+
+
+def scan_process_tree_validation_children(root_pid: int) -> tuple[list[CodexExecProcess], str]:
+    lines, reason = read_process_table_lines()
+    if reason:
+        return [], reason
+    return process_tree_validation_processes_from_ps(lines, root_pid), ""
+
+
+def process_tree_has_validation_child(root_pid: int) -> bool:
+    processes, reason = scan_process_tree_validation_children(root_pid)
+    if reason:
+        return False
+    return bool(processes)
+
+
+def process_detail(proc: CodexExecProcess) -> str:
+    return f"pid={proc.pid} pgid={proc.pgid} elapsed={proc.elapsed} command={proc.command}"
+
+
+def process_details(processes: Sequence[CodexExecProcess], *, limit: int = 3) -> list[str]:
+    details = [process_detail(proc) for proc in processes[:limit]]
+    remaining = len(processes) - len(details)
+    if remaining > 0:
+        details.append(f"... {remaining} more")
+    return details
 
 
 def task_loop_codex_exec_processes_from_ps(
@@ -416,6 +483,36 @@ def meaningful_exec_activity_lines(text: str) -> list[str]:
         ):
             lines.append(line)
     return lines
+
+
+def descendant_process_groups_from_ps(lines: Sequence[str], root_pid: int) -> list[int]:
+    seen: set[int] = set()
+    pgids: list[int] = []
+    for proc in descendant_processes_from_ps(lines, root_pid):
+        if proc.pgid in seen:
+            continue
+        seen.add(proc.pgid)
+        pgids.append(proc.pgid)
+    return pgids
+
+
+def process_tree_process_groups(root_pid: int) -> list[int]:
+    lines, reason = read_process_table_lines()
+    if reason:
+        return []
+    return descendant_process_groups_from_ps(lines, root_pid)
+
+
+def signal_process_tree(root_pid: int, sig: signal.Signals) -> None:
+    target_pgids = process_tree_process_groups(root_pid)
+    if root_pid not in target_pgids:
+        target_pgids.append(root_pid)
+    current_pid = os.getpid()
+    current_pgid = os.getpgrp()
+    for pgid in reversed(target_pgids):
+        if pgid in {0, current_pid, current_pgid}:
+            continue
+        terminate_process_group_by_pgid(pgid, sig)
 
 
 def terminate_process_group_by_pgid(pgid: int, sig: signal.Signals) -> None:
@@ -547,11 +644,11 @@ class TaskLoopRunner:
         proc = self.current_child
         if proc is None or proc.poll() is not None:
             return
-        terminate_process_group(proc, signal.SIGTERM)
+        terminate_process_tree(proc, signal.SIGTERM)
         try:
             proc.wait(timeout=5)
         except subprocess.TimeoutExpired:
-            terminate_process_group(proc, signal.SIGKILL)
+            terminate_process_tree(proc, signal.SIGKILL)
             try:
                 proc.wait(timeout=5)
             except subprocess.TimeoutExpired:
@@ -591,7 +688,7 @@ class TaskLoopRunner:
             )
         log_event("WARN", f"terminate orphaned codex exec task-loop children:\n{details}")
         for proc in orphaned:
-            terminate_process_group_by_pgid(proc.pgid, signal.SIGTERM)
+            terminate_codex_exec_process(proc, signal.SIGTERM)
         time.sleep(2)
         still_alive = [
             proc
@@ -599,7 +696,7 @@ class TaskLoopRunner:
             if proc.pid in {item.pid for item in orphaned}
         ]
         for proc in still_alive:
-            terminate_process_group_by_pgid(proc.pgid, signal.SIGKILL)
+            terminate_codex_exec_process(proc, signal.SIGKILL)
         if still_alive:
             time.sleep(1)
         remaining = [
@@ -1196,14 +1293,20 @@ class TaskLoopRunner:
                 no_output_elapsed_seconds = int(now - last_meaningful_activity_monotonic)
                 elapsed = state.human_duration(now - start_monotonic)
                 log_state = state.log_file_status(str(output_file))
-                validation_child_running = process_group_has_validation_child(proc.pid)
+                validation_children, validation_scan_reason = scan_process_tree_validation_children(proc.pid)
+                validation_child_running = bool(validation_children)
+                validation_child_details = process_details(validation_children)
                 no_output_notice = ""
                 if no_output_elapsed_seconds >= self.cfg.no_output_notice_seconds:
                     if validation_child_running:
                         no_output_notice = (
-                            "codex exec child and a validation subprocess are running, but no final output "
-                            "or command start/finish event has made progress; this remains bounded by the "
-                            "hard no-output timeout."
+                            "codex exec child and validation subprocesses are running in the child process tree; "
+                            "continue waiting because real validation is active even when the final output log is quiet."
+                        )
+                    elif validation_scan_reason:
+                        no_output_notice = (
+                            "codex exec child is running but process validation scan is unavailable; "
+                            f"{validation_scan_reason}; .exec.log growth alone is diagnostic, not proof of progress."
                         )
                     else:
                         no_output_notice = (
@@ -1221,6 +1324,9 @@ class TaskLoopRunner:
                         "no_output_timeout_seconds": self.cfg.no_output_timeout_seconds,
                         "codex_idle_timeout_seconds": self.cfg.codex_idle_timeout_seconds,
                         "validation_child_running": validation_child_running,
+                        "validation_child_count": len(validation_children),
+                        "validation_child_details": validation_child_details,
+                        "validation_scan_reason": validation_scan_reason,
                         "meaningful_activity": bool(meaningful_activity_detected or validation_child_running),
                         "exec_activity_event_count": current_exec_activity_signature.event_count,
                         "child_restart": restart_index,
@@ -1231,13 +1337,14 @@ class TaskLoopRunner:
                     self.cfg.codex_idle_timeout_seconds > 0
                     and no_output_elapsed_seconds >= self.cfg.codex_idle_timeout_seconds
                     and not validation_child_running
+                    and not validation_scan_reason
                 ):
                     timeout_error = (
                         f"codex exec idle timeout for {stage} {task.label} attempt={attempt}: "
                         f"no final output, validation subprocess, or command start/finish event for "
                         f"{state.human_duration(no_output_elapsed_seconds)} "
                         f"(idle_timeout={state.human_duration(self.cfg.codex_idle_timeout_seconds)}; "
-                        f"hard_timeout={state.human_duration(self.cfg.no_output_timeout_seconds)}; "
+                        f"hard_timeout={'disabled' if self.cfg.no_output_timeout_seconds <= 0 else state.human_duration(self.cfg.no_output_timeout_seconds)}; "
                         f"log_state={log_state}; "
                         f"exec_activity_events={current_exec_activity_signature.event_count})"
                     )
@@ -1249,6 +1356,9 @@ class TaskLoopRunner:
                             "no_output_timeout_seconds": self.cfg.no_output_timeout_seconds,
                             "codex_idle_timeout_seconds": self.cfg.codex_idle_timeout_seconds,
                             "validation_child_running": validation_child_running,
+                            "validation_child_count": len(validation_children),
+                            "validation_child_details": validation_child_details,
+                            "validation_scan_reason": validation_scan_reason,
                             "meaningful_activity": False,
                             "exec_activity_event_count": current_exec_activity_signature.event_count,
                             "child_restart": restart_index,
@@ -1276,6 +1386,8 @@ class TaskLoopRunner:
                 if (
                     self.cfg.no_output_timeout_seconds > 0
                     and no_output_elapsed_seconds >= self.cfg.no_output_timeout_seconds
+                    and not validation_child_running
+                    and not validation_scan_reason
                 ):
                     timeout_error = (
                         f"codex exec no-output timeout for {stage} {task.label} attempt={attempt}: "
@@ -1293,6 +1405,9 @@ class TaskLoopRunner:
                             "no_output_timeout_seconds": self.cfg.no_output_timeout_seconds,
                             "codex_idle_timeout_seconds": self.cfg.codex_idle_timeout_seconds,
                             "validation_child_running": validation_child_running,
+                            "validation_child_count": len(validation_children),
+                            "validation_child_details": validation_child_details,
+                            "validation_scan_reason": validation_scan_reason,
                             "meaningful_activity": False,
                             "exec_activity_event_count": current_exec_activity_signature.event_count,
                             "child_restart": restart_index,
@@ -1561,11 +1676,29 @@ def output_file_signature(path: Path) -> tuple[str, int, int]:
 
 def terminate_child(proc: subprocess.Popen[str], worker: threading.Thread) -> None:
     if proc.poll() is None:
-        terminate_process_group(proc, signal.SIGTERM)
+        terminate_process_tree(proc, signal.SIGTERM)
     worker.join(timeout=5)
     if worker.is_alive() and proc.poll() is None:
-        terminate_process_group(proc, signal.SIGKILL)
+        terminate_process_tree(proc, signal.SIGKILL)
     worker.join(timeout=5)
+
+
+def terminate_process_tree(proc: subprocess.Popen[str], sig: signal.Signals) -> None:
+    signal_process_tree(proc.pid, sig)
+    if proc.poll() is not None:
+        return
+    try:
+        if sig == signal.SIGTERM:
+            proc.terminate()
+        else:
+            proc.kill()
+    except OSError:
+        pass
+
+
+def terminate_codex_exec_process(proc: CodexExecProcess, sig: signal.Signals) -> None:
+    signal_process_tree(proc.pid, sig)
+    terminate_process_group_by_pgid(proc.pgid, sig)
 
 
 def terminate_process_group(proc: subprocess.Popen[str], sig: signal.Signals) -> None:
