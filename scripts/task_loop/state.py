@@ -361,6 +361,14 @@ def status_fragment(progress_file: Path, lock_dir: Path, log_root: Path, drain_r
                 timeout_seconds = float(activity["no_output_timeout_seconds"])
                 timeout = "disabled" if timeout_seconds <= 0 else human_duration(timeout_seconds)
                 lines.append(f"- live_activity_no_output_timeout: {timeout}")
+            if activity.get("codex_idle_timeout_seconds") is not None:
+                timeout_seconds = float(activity["codex_idle_timeout_seconds"])
+                timeout = "disabled" if timeout_seconds <= 0 else human_duration(timeout_seconds)
+                lines.append(f"- live_activity_codex_idle_timeout: {timeout}")
+            if activity.get("validation_child_running") is not None:
+                lines.append(
+                    f"- live_activity_validation_child_running: {'yes' if activity.get('validation_child_running') else 'no'}"
+                )
             if activity.get("child_restart") is not None and activity.get("child_restart_limit") is not None:
                 lines.append(
                     f"- live_activity_child_restart: {activity['child_restart']}/{activity['child_restart_limit']}"

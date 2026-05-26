@@ -24,6 +24,18 @@ from . import state
 
 PHASES = ("phase-0", "phase-1", "phase-2", "phase-3", "phase-4")
 CODEX_SANDBOX_MODES = {"read-only", "workspace-write", "danger-full-access"}
+VALIDATION_PROCESS_MARKERS = (
+    "./dev check",
+    " xcodebuild",
+    "/xcodebuild",
+    " cargo ",
+    "/cargo ",
+    "swift build",
+    "swift test",
+    "swiftlint",
+    "swiftformat",
+    "pytest",
+)
 
 
 class TaskLoopError(RuntimeError):
@@ -92,6 +104,7 @@ class RuntimeConfig:
     activity_heartbeat_seconds: int = 30
     no_output_notice_seconds: int = 120
     no_output_timeout_seconds: int = 5400
+    codex_idle_timeout_seconds: int = 900
     no_output_restart_delay_seconds: int = 300
     no_output_restart_limit: int = 2
     orphan_codex_policy: str = "fail"
@@ -134,6 +147,7 @@ class RuntimeConfig:
         cfg.activity_heartbeat_seconds = int(os.environ.get("ACTIVITY_HEARTBEAT_SECONDS", "30"))
         cfg.no_output_notice_seconds = int(os.environ.get("NO_OUTPUT_NOTICE_SECONDS", "120"))
         cfg.no_output_timeout_seconds = int(os.environ.get("NO_OUTPUT_TIMEOUT_SECONDS", "5400"))
+        cfg.codex_idle_timeout_seconds = int(os.environ.get("CODEX_IDLE_TIMEOUT_SECONDS", "900"))
         cfg.no_output_restart_delay_seconds = int(os.environ.get("NO_OUTPUT_RESTART_DELAY_SECONDS", "300"))
         cfg.no_output_restart_limit = int(os.environ.get("NO_OUTPUT_RESTART_LIMIT", "2"))
         cfg.orphan_codex_policy = os.environ.get("ORPHAN_CODEX_POLICY", "fail")
@@ -289,6 +303,28 @@ def task_loop_codex_exec_processes_from_ps(
     return processes
 
 
+def process_group_has_validation_child(pgid: int) -> bool:
+    proc = subprocess.run(
+        ["ps", "-axo", "pid=,ppid=,pgid=,stat=,etime=,command="],
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        check=False,
+    )
+    return process_group_has_validation_child_from_ps(proc.stdout.splitlines(), pgid)
+
+
+def process_group_has_validation_child_from_ps(lines: Sequence[str], pgid: int) -> bool:
+    for line in lines:
+        parsed = parse_ps_line(line)
+        if not parsed or parsed.pgid != pgid:
+            continue
+        command = parsed.command
+        if any(marker in command for marker in VALIDATION_PROCESS_MARKERS):
+            return True
+    return False
+
+
 def terminate_process_group_by_pgid(pgid: int, sig: signal.Signals) -> None:
     try:
         os.killpg(pgid, sig)
@@ -311,6 +347,8 @@ class TaskLoopRunner:
         self.current_child: subprocess.Popen[str] | None = None
         self.cleanup_registered = False
         self._terminating = False
+        self.preflight_allowed_dirty_paths: list[str] | None = None
+        self.run_paths_initialized = False
 
     def ensure_run_id(self) -> None:
         if self.cfg.run_id:
@@ -329,6 +367,7 @@ class TaskLoopRunner:
         self.summary_file = self.cfg.run_summary_root / self.cfg.run_id / "summary.json"
         self.session_log_root.mkdir(parents=True, exist_ok=True)
         self.summary_file.parent.mkdir(parents=True, exist_ok=True)
+        self.run_paths_initialized = True
 
     def validate_runtime_options(self) -> None:
         if self.cfg.risk_gate not in {"high", "mission-critical", "none"}:
@@ -349,6 +388,8 @@ class TaskLoopRunner:
             raise TaskLoopError("NO_OUTPUT_NOTICE_SECONDS must be >= 1")
         if self.cfg.no_output_timeout_seconds < 0:
             raise TaskLoopError("NO_OUTPUT_TIMEOUT_SECONDS must be >= 0")
+        if self.cfg.codex_idle_timeout_seconds < 0:
+            raise TaskLoopError("CODEX_IDLE_TIMEOUT_SECONDS must be >= 0")
         if self.cfg.no_output_restart_delay_seconds < 0:
             raise TaskLoopError("NO_OUTPUT_RESTART_DELAY_SECONDS must be >= 0")
         if self.cfg.no_output_restart_limit < 0:
@@ -520,6 +561,43 @@ class TaskLoopRunner:
             return
         raise TaskLoopError("Codex CLI not found. Install it, add it to PATH, or set CODEX_BIN=/path/to/codex.")
 
+    def task_allowed_dirty_paths(self, task: TaskFile) -> list[str]:
+        task_text = task.copy_file.read_text(encoding="utf-8", errors="replace")
+        patterns: list[str] = []
+        in_section = False
+        for line in task_text.splitlines():
+            stripped = line.strip()
+            if stripped == "### Expected New Paths":
+                in_section = True
+                continue
+            if in_section and stripped.startswith("### "):
+                break
+            if not in_section or not stripped.startswith("- `") or "`" not in stripped[3:]:
+                continue
+            pattern = stripped.split("`", 2)[1].strip()
+            if pattern:
+                patterns.append(pattern)
+        for path in [self.cfg.progress_file, self.summary_file]:
+            try:
+                patterns.append(str(path.resolve().relative_to(self.cfg.root_dir.resolve())))
+            except ValueError:
+                pass
+        patterns.extend([".codex/task-loop-runs/**"])
+        return sorted(dict.fromkeys(patterns))
+
+    def configure_resume_stale_preflight(self) -> None:
+        if not self.cfg.start_from:
+            return
+        for task in self.task_files():
+            if task.label == self.cfg.start_from:
+                self.preflight_allowed_dirty_paths = self.task_allowed_dirty_paths(task)
+                log_event(
+                    "GIT",
+                    "resume-stale dirty worktree allowlist: "
+                    + ", ".join(self.preflight_allowed_dirty_paths),
+                )
+                return
+
     def run_git_preflight(self) -> None:
         if self.cfg.git_checkpoint == "off" or self.cfg.dry_run:
             proc = subprocess.run(["git", "branch", "--show-current"], cwd=self.cfg.root_dir, text=True, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
@@ -533,6 +611,7 @@ class TaskLoopRunner:
             self.cfg.git_push_set_upstream,
             self.cfg.run_id,
             dry_run=self.cfg.dry_run,
+            allowed_dirty_paths=self.preflight_allowed_dirty_paths,
         )
         log_event("GIT", json_dumps(output))
         proc = subprocess.run(["git", "branch", "--show-current"], cwd=self.cfg.root_dir, text=True, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
@@ -783,6 +862,7 @@ class TaskLoopRunner:
         log_event("INFO", f"ACTIVITY_HEARTBEAT_SECONDS={self.cfg.activity_heartbeat_seconds}")
         log_event("INFO", f"NO_OUTPUT_NOTICE_SECONDS={self.cfg.no_output_notice_seconds}")
         log_event("INFO", f"NO_OUTPUT_TIMEOUT_SECONDS={self.cfg.no_output_timeout_seconds}")
+        log_event("INFO", f"CODEX_IDLE_TIMEOUT_SECONDS={self.cfg.codex_idle_timeout_seconds}")
         log_event("INFO", f"NO_OUTPUT_RESTART_DELAY_SECONDS={self.cfg.no_output_restart_delay_seconds}")
         log_event("INFO", f"NO_OUTPUT_RESTART_LIMIT={self.cfg.no_output_restart_limit}")
         log_event("INFO", f"ROOT_DIR={self.cfg.root_dir}")
@@ -1008,6 +1088,7 @@ class TaskLoopRunner:
                 no_output_elapsed_seconds = int(now - last_output_change_monotonic)
                 elapsed = state.human_duration(now - start_monotonic)
                 log_state = state.log_file_status(str(output_file))
+                validation_child_running = process_group_has_validation_child(proc.pid)
                 no_output_notice = ""
                 if no_output_elapsed_seconds >= self.cfg.no_output_notice_seconds:
                     no_output_notice = (
@@ -1022,10 +1103,55 @@ class TaskLoopRunner:
                         "exec_log_state": state.log_file_status(str(exec_log_file)),
                         "no_output_elapsed_seconds": no_output_elapsed_seconds,
                         "no_output_timeout_seconds": self.cfg.no_output_timeout_seconds,
+                        "codex_idle_timeout_seconds": self.cfg.codex_idle_timeout_seconds,
+                        "validation_child_running": validation_child_running,
                         "child_restart": restart_index,
                         "child_restart_limit": self.cfg.no_output_restart_limit,
                     },
                 )
+                if (
+                    self.cfg.codex_idle_timeout_seconds > 0
+                    and no_output_elapsed_seconds >= self.cfg.codex_idle_timeout_seconds
+                    and not validation_child_running
+                ):
+                    timeout_error = (
+                        f"codex exec idle timeout for {stage} {task.label} attempt={attempt}: "
+                        f"no final output / exec stream progress for {state.human_duration(no_output_elapsed_seconds)} "
+                        f"and no validation subprocess detected "
+                        f"(idle_timeout={state.human_duration(self.cfg.codex_idle_timeout_seconds)}; "
+                        f"hard_timeout={state.human_duration(self.cfg.no_output_timeout_seconds)}; "
+                        f"log_state={log_state})"
+                    )
+                    state.write_lock_activity(
+                        self.cfg.lock_dir,
+                        {
+                            "status": "codex_idle_timeout",
+                            "no_output_elapsed_seconds": no_output_elapsed_seconds,
+                            "no_output_timeout_seconds": self.cfg.no_output_timeout_seconds,
+                            "codex_idle_timeout_seconds": self.cfg.codex_idle_timeout_seconds,
+                            "validation_child_running": validation_child_running,
+                            "child_restart": restart_index,
+                            "child_restart_limit": self.cfg.no_output_restart_limit,
+                            "log_state": log_state,
+                        },
+                    )
+                    log_live_snapshot(
+                        title="live activity codex-idle timeout",
+                        stage=stage,
+                        task=task,
+                        attempt=attempt,
+                        pid=proc.pid,
+                        elapsed=elapsed,
+                        prompt_file=prompt_file,
+                        output_file=output_file,
+                        exec_log_file=exec_log_file,
+                        heartbeat_seconds=self.cfg.activity_heartbeat_seconds,
+                        command_elapsed=elapsed,
+                        command_text=command_text,
+                        no_output_notice=timeout_error,
+                    )
+                    terminate_child(proc, worker)
+                    break
                 if (
                     self.cfg.no_output_timeout_seconds > 0
                     and no_output_elapsed_seconds >= self.cfg.no_output_timeout_seconds
@@ -1042,6 +1168,8 @@ class TaskLoopRunner:
                             "status": "no_output_timeout",
                             "no_output_elapsed_seconds": no_output_elapsed_seconds,
                             "no_output_timeout_seconds": self.cfg.no_output_timeout_seconds,
+                            "codex_idle_timeout_seconds": self.cfg.codex_idle_timeout_seconds,
+                            "validation_child_running": validation_child_running,
                             "child_restart": restart_index,
                             "child_restart_limit": self.cfg.no_output_restart_limit,
                             "log_state": log_state,
@@ -1088,7 +1216,7 @@ class TaskLoopRunner:
             state.write_lock_activity(
                 self.cfg.lock_dir,
                 {
-                    "status": "no_output_timeout" if timeout_error else "finished",
+                    "status": "timeout" if timeout_error else "finished",
                     "finished_at": utc_now(),
                     "returncode": proc.returncode,
                 },
@@ -1183,8 +1311,12 @@ class TaskLoopRunner:
             if not self.cfg.dry_run:
                 self.resolve_codex_bin()
             self.handle_orphan_codex_exec_processes()
+            if resume_stale:
+                self.init_run_paths()
+                self.configure_resume_stale_preflight()
             self.run_git_preflight()
-            self.init_run_paths()
+            if not self.run_paths_initialized:
+                self.init_run_paths()
             self.bootstrap_counts()
             self.init_summary()
             self.print_launch_header()

@@ -15,7 +15,13 @@ from scripts.dev_tools.checks import run_skills_check
 from scripts.dev_tools.discussion import discussion_artifacts, validate_discussion_artifacts
 from scripts.dev_tools.changes import write_artifacts
 from scripts.dev_tools.workflow_init import init_artifacts
-from scripts.task_loop.runner import RuntimeConfig, TaskFile, TaskLoopRunner, task_loop_codex_exec_processes_from_ps
+from scripts.task_loop.runner import (
+    RuntimeConfig,
+    TaskFile,
+    TaskLoopRunner,
+    process_group_has_validation_child_from_ps,
+    task_loop_codex_exec_processes_from_ps,
+)
 
 from . import git as git_helpers
 from .actions import ACTIONS, COMMAND_ALIASES, MENUS, SHORTCUT_ALIASES, validate_actions
@@ -180,7 +186,7 @@ def init_temp_git_repo(repo: Path) -> None:
     subprocess.run(["git", "config", "user.email", "task-loop-check@example.invalid"], cwd=repo, check=True)
     subprocess.run(["git", "config", "user.name", "AreaMatrix Task Loop Check"], cwd=repo, check=True)
     (repo / ".gitignore").write_text(
-        ".codex/task-loop-lock/\n.codex/task-loop-tmp/\n.codex/task-loop-control/\n",
+        ".codex/task-loop-logs/\n.codex/task-loop-lock/\n.codex/task-loop-tmp/\n.codex/task-loop-control/\n",
         encoding="utf-8",
     )
     (repo / "README.md").write_text("baseline\n", encoding="utf-8")
@@ -227,6 +233,8 @@ def write_live_activity(lock_dir: Path, tmp: Path) -> None:
             "exec_log_file": str(exec_log_file),
             "no_output_elapsed_seconds": 3,
             "no_output_timeout_seconds": 5400,
+            "codex_idle_timeout_seconds": 900,
+            "validation_child_running": False,
             "child_restart": 1,
             "child_restart_limit": 2,
             "restart_delay_seconds": 300,
@@ -691,6 +699,8 @@ def check_real_status(h: Harness) -> None:
     assert_contains(live_status, "live_activity_exec_log_state: exists", "live activity exec log state")
     assert_contains(live_status, "live_activity_no_output_elapsed: 3s", "live activity no-output elapsed")
     assert_contains(live_status, "live_activity_no_output_timeout: 1h30m00s", "live activity no-output timeout")
+    assert_contains(live_status, "live_activity_codex_idle_timeout: 15m00s", "live activity codex idle timeout")
+    assert_contains(live_status, "live_activity_validation_child_running: no", "live activity validation child")
     assert_contains(live_status, "live_activity_child_restart: 1/2", "live activity child restart")
     assert_contains(live_status, "live_activity_restart_delay: 5m00s", "live activity restart delay")
     assert_contains(live_status, "live_activity_command: codex exec -m gpt-5.5 --full-auto -", "live activity command")
@@ -1026,6 +1036,13 @@ def check_git_helpers(h: Harness) -> None:
     summary = git_repo / ".codex/task-loop-runs/check001/summary.json"
     write_json(progress, {"version": 1, "tasks": {"0-1/task-01": {"status": "completed"}}})
     write_json(summary, {"version": 1, "tasks": {"0-1/task-01": {"status": "completed"}}})
+    copy_log = git_repo / ".codex/task-loop-logs/check001/phase-0/copy.log"
+    verify_log = git_repo / ".codex/task-loop-logs/check001/phase-0/verify.log"
+    exec_log = git_repo / ".codex/task-loop-logs/check001/phase-0/copy.exec.log"
+    copy_log.parent.mkdir(parents=True, exist_ok=True)
+    copy_log.write_text("copy evidence\n", encoding="utf-8")
+    verify_log.write_text("verify evidence\nVERIFY_RESULT: PASS\n", encoding="utf-8")
+    exec_log.write_text("raw exec stream\n", encoding="utf-8")
     (git_repo / "implemented.txt").write_text("implemented\n", encoding="utf-8")
     evidence = git_helpers.checkpoint(
         git_repo,
@@ -1037,8 +1054,8 @@ def check_git_helpers(h: Harness) -> None:
         "0-1-task-01",
         1,
         "check001",
-        str(git_repo / ".codex/task-loop-logs/check001/phase-0/copy.log"),
-        str(git_repo / ".codex/task-loop-logs/check001/phase-0/verify.log"),
+        str(copy_log),
+        str(verify_log),
         progress,
         summary,
     )
@@ -1047,6 +1064,10 @@ def check_git_helpers(h: Harness) -> None:
     assert_json(progress, lambda data: data["tasks"]["0-1/task-01"]["git_checkpoint_status"] == "committed", "git checkpoint progress")  # type: ignore[index]
     if git_helpers.status_short(git_repo):
         raise CheckFailure("git checkpoint left dirty worktree")
+    tracked = subprocess.run(["git", "ls-files"], cwd=git_repo, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True).stdout
+    assert_contains(tracked, ".codex/task-loop-logs/check001/phase-0/copy.log", "git checkpoint force-adds copy log")
+    assert_contains(tracked, ".codex/task-loop-logs/check001/phase-0/verify.log", "git checkpoint force-adds verify log")
+    assert_not_contains(tracked, ".codex/task-loop-logs/check001/phase-0/copy.exec.log", "git checkpoint skips exec stream log")
 
     dirty_repo = h.tmp / "git-dirty"
     init_temp_git_repo(dirty_repo)
@@ -1175,6 +1196,9 @@ fi
         raise CheckFailure("runner git checkpoint left dirty worktree")
     if not git_helpers.current_branch(runner_repo).startswith("codex/areamatrix-task-loop-"):
         raise CheckFailure("runner did not auto-create task branch")
+    tracked = subprocess.run(["git", "ls-files"], cwd=runner_repo, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True).stdout
+    assert_contains(tracked, ".codex/task-loop-logs/", "runner git checkpoint tracks final task logs")
+    assert_not_contains(tracked, ".exec.log", "runner git checkpoint leaves exec stream logs local")
 
 
 def check_runner_no_output_timeout(h: Harness) -> None:
@@ -1242,6 +1266,7 @@ fi
             "ACTIVITY_HEARTBEAT_SECONDS": "1",
             "NO_OUTPUT_NOTICE_SECONDS": "1",
             "NO_OUTPUT_TIMEOUT_SECONDS": "2",
+            "CODEX_IDLE_TIMEOUT_SECONDS": "0",
             "NO_OUTPUT_RESTART_DELAY_SECONDS": "1",
             "NO_OUTPUT_RESTART_LIMIT": "1",
             "FAKE_CODEX_COUNTER": str(h.tmp / "fake-codex-no-output-counter"),
@@ -1269,6 +1294,103 @@ fi
         raise CheckFailure("missing no-output copy exec stream log")
     copy_exec_log = exec_logs[0]
     assert_exists(copy_exec_log, "no-output copy exec stream log")
+
+
+def check_runner_codex_idle_timeout(h: Harness) -> None:
+    log("runner codex idle timeout restarts when validation is absent")
+    runner_repo = h.tmp / "runner-idle-timeout"
+    init_temp_git_repo(runner_repo)
+    add_prompt_fixture(runner_repo, ["0-1/task-01"])
+    subprocess.run(["git", "add", "."], cwd=runner_repo, check=True)
+    subprocess.run(["git", "commit", "-q", "-m", "add prompt fixtures"], cwd=runner_repo, check=True)
+    fake_codex = h.tmp / "fake-codex-idle-timeout"
+    fake_codex.write_text(
+        """#!/usr/bin/env bash
+set -euo pipefail
+out=""
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    -o)
+      out="$2"
+      shift 2
+      ;;
+    --cd)
+      cd "$2"
+      shift 2
+      ;;
+    *)
+      shift
+      ;;
+  esac
+done
+input="$(cat)"
+counter="${FAKE_CODEX_COUNTER}"
+count=0
+if [ -f "$counter" ]; then
+  count="$(cat "$counter")"
+fi
+count=$((count + 1))
+printf '%s\\n' "$count" > "$counter"
+if [ "$count" = "1" ]; then
+  sleep 30
+fi
+mkdir -p "$(dirname "$out")"
+if printf '%s' "$input" | grep -q 'VERIFY_RESULT'; then
+  printf '验收通过 after idle restart\\nVERIFY_RESULT: PASS\\n' > "$out"
+else
+  printf 'copy ok after idle restart\\n' > "$out"
+fi
+""",
+        encoding="utf-8",
+    )
+    fake_codex.chmod(0o755)
+    result = h.run(
+        [h.task_loop, "run", "--phase", "phase-0", "--max-tasks", "1"],
+        env={
+            "ROOT_DIR": str(runner_repo),
+            "PROGRESS_FILE": str(runner_repo / "tasks/prompts/_shared/progress.json"),
+            "LOG_ROOT": str(runner_repo / ".codex/task-loop-logs"),
+            "RUN_SUMMARY_ROOT": str(runner_repo / ".codex/task-loop-runs"),
+            "PROGRESS_BACKUP_ROOT": str(runner_repo / ".codex/task-loop-progress-backups"),
+            "LOCK_DIR": str(runner_repo / ".codex/task-loop-lock"),
+            "CONTROL_DIR": str(runner_repo / ".codex/task-loop-control"),
+            "CODEX_BIN": str(fake_codex),
+            "GIT_CHECKPOINT": "off",
+            "RISK_POLICY": "allow",
+            "MAX_RETRIES": "1",
+            "ACTIVITY_HEARTBEAT_SECONDS": "1",
+            "NO_OUTPUT_NOTICE_SECONDS": "1",
+            "NO_OUTPUT_TIMEOUT_SECONDS": "20",
+            "CODEX_IDLE_TIMEOUT_SECONDS": "2",
+            "NO_OUTPUT_RESTART_DELAY_SECONDS": "1",
+            "NO_OUTPUT_RESTART_LIMIT": "1",
+            "FAKE_CODEX_COUNTER": str(h.tmp / "fake-codex-idle-timeout-counter"),
+        },
+        check=False,
+    )
+    if result.returncode != 0:
+        raise CheckFailure(
+            f"runner idle timeout restart returned {result.returncode}, expected 0\n"
+            f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
+        )
+    combined = result.stdout + result.stderr
+    assert_contains(combined, "live activity codex-idle timeout", "codex idle timeout heartbeat")
+    assert_contains(combined, "codex exec idle timeout", "codex idle timeout error")
+    assert_contains(combined, "codex exec no-output timeout; restart copy task=0-1/task-01", "codex idle restart event")
+
+
+def check_validation_process_detection() -> None:
+    log("runner validation subprocess detection")
+    lines = [
+        " 100 1 100 Ss 00:30 /Applications/Codex.app/Contents/Resources/codex exec -m gpt-5.5 -",
+        " 101 100 100 S 00:20 ./dev check task 4-1/task-141",
+        " 102 100 102 S 00:20 npm exec @modelcontextprotocol/server-sequential-thinking",
+        " 200 1 200 S 00:20 swift test",
+    ]
+    if not process_group_has_validation_child_from_ps(lines, 100):
+        raise CheckFailure("validation subprocess was not detected in codex process group")
+    if process_group_has_validation_child_from_ps(lines, 102):
+        raise CheckFailure("MCP-only process group was incorrectly treated as validation")
 
 
 def check_runner_activity_replace_and_orphan_detection(h: Harness) -> None:
@@ -1300,6 +1422,8 @@ def check_runner_activity_replace_and_orphan_detection(h: Harness) -> None:
 def check_git_ignore(h: Harness) -> None:
     log("git ignore policy")
     ignored = [
+        ".codex/task-loop-logs/example/phase-0/example.log",
+        ".codex/task-loop-logs/example/phase-0/example.exec.log",
         ".codex/task-loop-lock/foo",
         ".codex/task-loop-control/drain.request",
         ".codex/task-loop-tmp/foo",
@@ -1311,7 +1435,6 @@ def check_git_ignore(h: Harness) -> None:
         ".codex/task-loop-runs/index.json",
         ".codex/task-loop-runs/example/summary.json",
         ".codex/task-loop-progress-backups/progress-before-reset-example.json",
-        ".codex/task-loop-logs/example/phase-0/example.log",
     ]
     for item in ignored:
         proc = h.run(["git", "check-ignore", "-q", item], check=False)
@@ -1341,6 +1464,8 @@ def run_check(root_dir: Path) -> int:
             check_git_helpers(harness)
             check_runner_git_checkpoint(harness)
             check_runner_no_output_timeout(harness)
+            check_runner_codex_idle_timeout(harness)
+            check_validation_process_detection()
             check_runner_activity_replace_and_orphan_detection(harness)
             check_git_ignore(harness)
         except CheckFailure as exc:
