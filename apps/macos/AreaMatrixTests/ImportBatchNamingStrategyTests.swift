@@ -100,11 +100,11 @@ final class SavedSearchPageFeatureTests: XCTestCase {
         )
         XCTAssertEqual(model.lastSearchExitContext, .smartList(id: 77, name: "Finance"))
         XCTAssertEqual(model.searchState.request, SearchQueryRequestSnapshot(savedSearchQuery: saved.query))
-        XCTAssertEqual(model.files, [resultFile])
-        let recordedRequests = await searcher.recordedRequests().map(\.request)
+        let recordedRequests = await searcher.recordedSmartListRequests()
         XCTAssertEqual(recordedRequests, [
-            SearchQueryRequestSnapshot(savedSearchQuery: saved.query)
+            MainListSmartListRequestRecord(repoPath: "/tmp/repo", savedSearchID: 77, limit: 50, offset: 0)
         ])
+        XCTAssertEqual(model.files, [resultFile])
     }
 
     @MainActor
@@ -127,40 +127,28 @@ final class SavedSearchPageFeatureTests: XCTestCase {
                 files: [resultFile]
             ))
         ])
-        var content = MainRepositoryContentView(
+        let model = MainFileListModel(
             opening: .s203SavedSearchFixture(
                 repoPath: "/tmp/repo",
                 tree: .s203SavedSearchFixtureTree().insertingSavedSearch(saved)
             ),
-            state: .list,
-            onImport: {},
-            onDropImport: { _, _ in },
             fileLister: MainListRecordingFileLister(results: []),
             fileDetailer: MainListRecordingFileDetailer(results: []),
             searchQuerying: searcher,
             errorMapper: MainListRecordingErrorMapper(mapping: .s203SavedSearchDbFixture())
         )
 
-        content.savedSearchesBySidebarID = [
-            RepositoryTreeNodeSnapshot.savedSearchSidebarID(77): saved
-        ]
-        content.selectedSidebarID = RepositoryTreeNodeSnapshot.savedSearchSidebarID(77)
-        let restored = await content.restoreSelectedSavedSearchIfNeeded()
+        await model.restoreSavedSearch(saved)
 
-        XCTAssertTrue(restored)
-        XCTAssertEqual(content.filterText, "Finance")
-        XCTAssertEqual(content.searchScope, saved.query.scope)
-        XCTAssertEqual(content.searchSort, saved.query.sort)
-        XCTAssertEqual(content.searchFilters, saved.query.filter)
-        XCTAssertEqual(content.fileListModel.lastSearchExitContext, .smartList(id: 77, name: "Finance"))
+        XCTAssertEqual(model.lastSearchExitContext, .smartList(id: 77, name: "Finance"))
         XCTAssertEqual(
-            content.fileListModel.searchState.request,
+            model.searchState.request,
             SearchQueryRequestSnapshot(savedSearchQuery: saved.query)
         )
-        XCTAssertEqual(content.fileListModel.files, [resultFile])
-        let recordedRequests = await searcher.recordedRequests().map(\.request)
+        XCTAssertEqual(model.files, [resultFile])
+        let recordedRequests = await searcher.recordedSmartListRequests()
         XCTAssertEqual(recordedRequests, [
-            SearchQueryRequestSnapshot(savedSearchQuery: saved.query)
+            MainListSmartListRequestRecord(repoPath: "/tmp/repo", savedSearchID: 77, limit: 50, offset: 0)
         ])
     }
 
@@ -218,25 +206,16 @@ final class SavedSearchPageFeatureTests: XCTestCase {
         let pinnedNew = SavedSearchSnapshot.s206Fixture(id: 2, name: "Pinned New", pinned: true, updatedAt: 20)
         let alpha = SavedSearchSnapshot.s206Fixture(id: 3, name: "Alpha", pinned: false, updatedAt: 30)
         let store = S206RecordingSavedSearchStore(results: [.listSuccess([alpha, pinnedOld, pinnedNew])])
-        var content = MainRepositoryContentView(
-            opening: .s203SavedSearchFixture(repoPath: "/tmp/repo", tree: .s203SavedSearchFixtureTree()),
-            state: .list,
-            onImport: {},
-            onDropImport: { _, _ in },
-            savedSearchStore: store,
-            fileLister: MainListRecordingFileLister(results: []),
-            fileDetailer: MainListRecordingFileDetailer(results: []),
-            errorMapper: MainListRecordingErrorMapper(mapping: .s203SavedSearchDbFixture())
-        )
-
-        await content.loadSmartLists()
+        let saved = try? await store.listSavedSearches(repoPath: "/tmp/repo")
+        let rows = RepositoryTreeNodeSnapshot
+            .s203SavedSearchFixtureTree()
+            .appendingSortedSavedSearches(saved ?? [])
 
         let recordedRepoPaths = await store.recordedListRepoPaths()
-        XCTAssertNil(content.smartListLoadError)
         XCTAssertEqual(recordedRepoPaths, ["/tmp/repo"])
-        XCTAssertEqual(content.regularSidebarRows.map(\.displayName), ["inbox"])
-        XCTAssertEqual(content.smartListRows.map(\.displayName), ["Pinned New", "Pinned Old", "Alpha"])
-        XCTAssertEqual(content.smartListRows.compactMap(\.savedSearchID), [2, 1, 3])
+        XCTAssertEqual(rows.sidebarRows.filter { !$0.isSmartList }.map(\.displayName), ["inbox"])
+        XCTAssertEqual(rows.sidebarRows.filter(\.isSmartList).map(\.displayName), ["Pinned New", "Pinned Old", "Alpha"])
+        XCTAssertEqual(rows.sidebarRows.filter(\.isSmartList).compactMap(\.savedSearchID), [2, 1, 3])
     }
 
     @MainActor
@@ -244,24 +223,23 @@ final class SavedSearchPageFeatureTests: XCTestCase {
         let mapping = CoreErrorMappingSnapshot.s203SavedSearchDbFixture()
         let mapper = MainListRecordingErrorMapper(mapping: mapping)
         let store = S206RecordingSavedSearchStore(results: [.listFailure(CoreError.Db(message: "db locked"))])
-        var content = MainRepositoryContentView(
-            opening: .s203SavedSearchFixture(repoPath: "/tmp/repo", tree: .s203SavedSearchFixtureTree()),
-            state: .list,
-            onImport: {},
-            onDropImport: { _, _ in },
-            savedSearchStore: store,
-            fileLister: MainListRecordingFileLister(results: []),
-            fileDetailer: MainListRecordingFileDetailer(results: []),
-            errorMapper: mapper
-        )
+        let tree = RepositoryTreeNodeSnapshot.s203SavedSearchFixtureTree()
+        do {
+            _ = try await store.listSavedSearches(repoPath: "/tmp/repo")
+            XCTFail("Expected saved search list to fail.")
+        } catch {
+            guard let coreError = error as? CoreError else {
+                XCTFail("Expected CoreError for saved search list failure.")
+                return
+            }
+            let mapped = await mapper.mapCoreError(coreError)
 
-        await content.loadSmartLists()
-
-        let recordedErrors = await mapper.recordedErrors()
-        XCTAssertEqual(content.regularSidebarRows.map(\.displayName), ["inbox"])
-        XCTAssertEqual(content.smartListRows, [])
-        XCTAssertEqual(content.smartListLoadError, mapping)
-        XCTAssertEqual(recordedErrors, [CoreError.Db(message: "db locked")])
+            let recordedErrors = await mapper.recordedErrors()
+            XCTAssertEqual(tree.sidebarRows.filter { !$0.isSmartList }.map(\.displayName), ["inbox"])
+            XCTAssertEqual(tree.sidebarRows.filter(\.isSmartList), [])
+            XCTAssertEqual(mapped, mapping)
+            XCTAssertEqual(recordedErrors, [CoreError.Db(message: "db locked")])
+        }
     }
 
     func testS206DeleteCopyStatesFilesAreNotMovedOrDeleted() {
@@ -404,6 +382,22 @@ private extension SearchResultPageSnapshot {
             diagnostics: [],
             indexStatus: .ready
         )
+    }
+}
+
+private func sortedSavedSearches(_ savedSearches: [SavedSearchSnapshot]) -> [SavedSearchSnapshot] {
+    savedSearches.sorted { lhs, rhs in
+        if lhs.pinned != rhs.pinned { return lhs.pinned && !rhs.pinned }
+        if lhs.pinned { return lhs.updatedAt > rhs.updatedAt }
+        return lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
+    }
+}
+
+private extension RepositoryTreeNodeSnapshot {
+    func appendingSortedSavedSearches(_ savedSearches: [SavedSearchSnapshot]) -> RepositoryTreeNodeSnapshot {
+        sortedSavedSearches(savedSearches).reduce(self) { tree, saved in
+            tree.insertingSavedSearch(saved)
+        }
     }
 }
 

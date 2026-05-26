@@ -103,6 +103,7 @@ final class ChangeCategoryPageIntegrationVerifyTests: XCTestCase {
             onBatchCategoryApplied: { _ in },
             onBatchDeleteApplied: { _ in },
             onBatchRenameApplied: { _ in },
+            onBatchCategoryCreateNewCategory: { _ in },
             onRetrySelectedFileDetail: {},
             tagActions: .noop,
             onCopyPaths: { _ in }, onOpenNoteFile: { _ in },

@@ -293,15 +293,56 @@ def parse_ps_line(line: str) -> CodexExecProcess | None:
     return CodexExecProcess(pid=pid, ppid=ppid, pgid=pgid, state=parts[3], elapsed=parts[4], command=parts[5])
 
 
+def read_process_table_lines() -> tuple[list[str], str]:
+    try:
+        proc = subprocess.run(
+            ["ps", "-axo", "pid=,ppid=,pgid=,stat=,etime=,command="],
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+    except OSError as error:
+        reason = error.strerror or str(error)
+        return [], f"ps unavailable: {reason}"
+    if proc.returncode != 0:
+        reason = (proc.stderr or "").strip() or f"exit {proc.returncode}"
+        return [], f"ps unavailable: {reason}"
+    return [line for line in proc.stdout.splitlines() if line.strip()], ""
+
+
 def scan_task_loop_codex_exec_processes(root_dir: Path, log_root: Path) -> list[CodexExecProcess]:
-    proc = subprocess.run(
-        ["ps", "-axo", "pid=,ppid=,pgid=,stat=,etime=,command="],
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.DEVNULL,
-        check=False,
-    )
-    return task_loop_codex_exec_processes_from_ps(proc.stdout.splitlines(), root_dir, log_root)
+    lines, reason = read_process_table_lines()
+    if reason:
+        return []
+    return task_loop_codex_exec_processes_from_ps(lines, root_dir, log_root)
+
+
+def scan_task_loop_codex_exec_processes_with_reason(
+    root_dir: Path, log_root: Path
+) -> tuple[list[CodexExecProcess], str]:
+    lines, reason = read_process_table_lines()
+    if reason:
+        return [], reason
+    return task_loop_codex_exec_processes_from_ps(lines, root_dir, log_root), ""
+
+
+def process_group_has_validation_child(pgid: int) -> bool:
+    lines, reason = read_process_table_lines()
+    if reason:
+        return False
+    return process_group_has_validation_child_from_ps(lines, pgid)
+
+
+def process_group_has_validation_child_from_ps(lines: Sequence[str], pgid: int) -> bool:
+    for line in lines:
+        parsed = parse_ps_line(line)
+        if not parsed or parsed.pgid != pgid:
+            continue
+        command = parsed.command
+        if any(marker in command for marker in VALIDATION_PROCESS_MARKERS):
+            return True
+    return False
 
 
 def task_loop_codex_exec_processes_from_ps(
@@ -321,29 +362,6 @@ def task_loop_codex_exec_processes_from_ps(
         if parsed and parsed.pid != os.getpid():
             processes.append(parsed)
     return processes
-
-
-def process_group_has_validation_child(pgid: int) -> bool:
-    proc = subprocess.run(
-        ["ps", "-axo", "pid=,ppid=,pgid=,stat=,etime=,command="],
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.DEVNULL,
-        check=False,
-    )
-    return process_group_has_validation_child_from_ps(proc.stdout.splitlines(), pgid)
-
-
-def process_group_has_validation_child_from_ps(lines: Sequence[str], pgid: int) -> bool:
-    for line in lines:
-        parsed = parse_ps_line(line)
-        if not parsed or parsed.pgid != pgid:
-            continue
-        command = parsed.command
-        if any(marker in command for marker in VALIDATION_PROCESS_MARKERS):
-            return True
-    return False
-
 
 @dataclass(frozen=True)
 class ExecActivitySignature:
@@ -551,7 +569,14 @@ class TaskLoopRunner:
     def handle_orphan_codex_exec_processes(self) -> None:
         if self.cfg.dry_run or self.cfg.orphan_codex_policy == "ignore":
             return
-        orphaned = [proc for proc in scan_task_loop_codex_exec_processes(self.cfg.root_dir, self.cfg.log_root) if proc.ppid == 1]
+        processes, unavailable_reason = scan_task_loop_codex_exec_processes_with_reason(
+            self.cfg.root_dir,
+            self.cfg.log_root,
+        )
+        if unavailable_reason:
+            log_event("WARN", f"skip orphan codex exec scan: {unavailable_reason}")
+            return
+        orphaned = [proc for proc in processes if proc.ppid == 1]
         if not orphaned:
             return
         details = "\n".join(

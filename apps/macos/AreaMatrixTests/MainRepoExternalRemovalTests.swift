@@ -134,15 +134,19 @@ final class MainRepoExternalRemovalTests: XCTestCase {
         XCTAssertEqual(filters.modifiedAfter, 1_700_000_000)
         XCTAssertNil(filters.modifiedBefore)
 
+        let validFrom = Date(timeIntervalSince1970: 1_800_000_000)
+        let validTo = Date(timeIntervalSince1970: 1_800_086_400)
         let valid = SearchFilterEditing.settingCustomDateRange(
-            from: Date(timeIntervalSince1970: 1_800_000_000),
-            to: Date(timeIntervalSince1970: 1_800_086_400),
+            from: validFrom,
+            to: validTo,
             field: .modified,
             in: filters
         )
+        let expectedStart = Int64(Calendar.current.startOfDay(for: validFrom).timeIntervalSince1970)
+        let expectedEnd = Int64(Calendar.current.startOfDay(for: validTo).timeIntervalSince1970)
 
-        XCTAssertEqual(valid.updatedFilters?.modifiedAfter, 1_799_971_200)
-        XCTAssertEqual(valid.updatedFilters?.modifiedBefore, 1_800_057_600)
+        XCTAssertEqual(valid.updatedFilters?.modifiedAfter, expectedStart)
+        XCTAssertEqual(valid.updatedFilters?.modifiedBefore, expectedEnd)
         XCTAssertNil(valid.errorMessage)
     }
 

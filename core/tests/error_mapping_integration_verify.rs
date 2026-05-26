@@ -103,8 +103,6 @@ fn assert_core_api_and_udl_contract() {
         "ErrorRecoverability recoverability;",
         "string raw_context;",
         "enum ErrorKind",
-        "\"Io\", \"Db\", \"Config\", \"Classify\", \"Conflict\", \"DuplicateFile\"",
-        "\"ICloudPlaceholder\", \"PermissionDenied\", \"Internal\"",
         "enum ErrorSeverity { \"Low\", \"Medium\", \"High\", \"Critical\" };",
         "enum ErrorRecoverability",
         "\"Retryable\", \"UserActionRequired\", \"RefreshRequired\", \"Fatal\"",
@@ -115,6 +113,27 @@ fn assert_core_api_and_udl_contract() {
     ] {
         assert_contains(CORE_API, fragment);
         assert_contains(UDL, fragment);
+    }
+
+    for variant in [
+        "\"Io\"",
+        "\"Db\"",
+        "\"Config\"",
+        "\"Validation\"",
+        "\"Classify\"",
+        "\"Conflict\"",
+        "\"DuplicateFile\"",
+        "\"FileNotFound\"",
+        "\"ExpiredAction\"",
+        "\"RepoNotInitialized\"",
+        "\"InvalidPath\"",
+        "\"ICloudPlaceholder\"",
+        "\"StagingRecoveryRequired\"",
+        "\"PermissionDenied\"",
+        "\"Internal\"",
+    ] {
+        assert_contains(CORE_API, variant);
+        assert_contains(UDL, variant);
     }
 
     for fragment in [

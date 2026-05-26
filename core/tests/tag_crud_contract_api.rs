@@ -197,7 +197,7 @@ fn tag_crud_contract_documents_consumer_state_and_scope_boundaries() {
     }
 
     for fragment in [
-        "C2-05 tag CRUD contract",
+        "C2-05 owns this single-file tag mutation contract",
         "must write only tag metadata",
         "must never rename, move, delete",
         "does not delete the tag definition",

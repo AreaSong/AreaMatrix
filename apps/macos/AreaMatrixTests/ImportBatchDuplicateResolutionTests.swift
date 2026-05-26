@@ -27,8 +27,10 @@ final class ImportBatchDuplicateResolutionTests: XCTestCase {
         XCTAssertEqual(model.coreConflictBatchRows.map(\.status), [.pending, .pending])
         XCTAssertNil(applyResult)
         XCTAssertNil(askResult)
-        XCTAssertEqual(await batcher.previewRequests().count, 1)
-        XCTAssertEqual(await batcher.applyRequests(), [])
+        let previewRequests = await batcher.previewRequests()
+        let applyRequests = await batcher.applyRequests()
+        XCTAssertEqual(previewRequests.count, 1)
+        XCTAssertEqual(applyRequests, [])
     }
 
     @MainActor
@@ -55,8 +57,9 @@ final class ImportBatchDuplicateResolutionTests: XCTestCase {
         XCTAssertEqual(model.conflictBatchPerItemQueue?.routes.map(\.replaceConfirmationRouteLabel), [
             "S1-24 replace-confirm"
         ])
-        XCTAssertEqual(await batcher.applyRequests().last?.request.duplicateStrategy, .askPerItem)
-        XCTAssertEqual(await batcher.applyRequests().last?.request.conflictIDs, ["name-1"])
+        let applyRequests = await batcher.applyRequests()
+        XCTAssertEqual(applyRequests.last?.request.duplicateStrategy, .askPerItem)
+        XCTAssertEqual(applyRequests.last?.request.conflictIDs, ["name-1"])
     }
 
     @MainActor

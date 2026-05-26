@@ -193,13 +193,13 @@ fn list_icloud_conflicts_validation_placeholder_error_preserves_files_and_metada
 }
 
 #[test]
-fn list_icloud_conflicts_validation_missing_repo_path_returns_io_error() {
+fn list_icloud_conflicts_validation_missing_repo_path_returns_file_not_found() {
     let parent = tempfile::tempdir().expect("create temporary parent directory");
     let missing_repo = parent.path().join("missing-repository");
 
     let result = list_icloud_conflicts(path_string(&missing_repo));
 
-    assert!(matches!(result, Err(CoreError::Io { .. })));
+    assert!(matches!(result, Err(CoreError::FileNotFound { .. })));
 }
 
 #[cfg(unix)]

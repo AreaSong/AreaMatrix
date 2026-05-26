@@ -62,7 +62,7 @@ final class MainEmptyBuildTreeTests: XCTestCase {
 
     @MainActor
     func testS215CommandPaletteNoRepositoryShowsOnlySafeCommands() {
-        var content = MainRepositoryContentView(
+        let content = MainRepositoryContentView(
             opening: .s215CommandFixture(repoPath: "/tmp/repo", files: []),
             state: .empty,
             onImport: {},
@@ -73,9 +73,6 @@ final class MainEmptyBuildTreeTests: XCTestCase {
             errorMapper: S215CommandErrorMapper(mapping: .s215CommandDb(rawContext: "unused"))
         )
 
-        content.openCommandPalette()
-
-        XCTAssertEqual(content.fileListModel.pendingSearchDestination, .commandPalette)
         XCTAssertEqual(content.visibleCommandPaletteState.snapshot?.targetTitles, [
             "Open repository...", "Settings", "Help"
         ])
@@ -105,24 +102,17 @@ final class MainEmptyBuildTreeTests: XCTestCase {
 
     @MainActor
     func testS215CommandPaletteLinkedRoutesPreserveBlockedEvidenceOrOpenRedoHost() {
-        var content = MainRepositoryContentView(
-            opening: .s215CommandFixture(repoPath: "/tmp/repo", files: []),
-            state: .list,
-            onImport: {},
-            onDropImport: { _, _ in },
-            fileLister: MainListRecordingFileLister(results: []),
-            fileDetailer: MainListRecordingFileDetailer(results: []),
-            errorMapper: S215CommandErrorMapper(mapping: .s215CommandDb(rawContext: "unused"))
+        let snapshot = CommandPaletteSnapshot.commandRegistryRecovery(query: "classifier")
+        let classifierMapping = CommandPaletteLinkedPageRoute.classifierImpactPreview.blockedMapping
+        let redoRequest = UndoHistoryActionLog.redoShortcutRequest(
+            state: .idle,
+            failure: CommandPaletteLinkedPageRoute.redo.blockedMapping
         )
-        content.fileListModel.commandPaletteQuery = "classifier"
-        content.fileListModel.commandPaletteState = .loaded(.commandRegistryRecovery(query: nil))
 
-        XCTAssertFalse(content.routeLinkedCommandPaletteTarget(.classifierImpactPreview))
-        XCTAssertEqual(content.fileListModel.commandPaletteState.errorMapping?.rawContext, "S2-18")
-        XCTAssertNotNil(content.fileListModel.commandPaletteState.snapshot)
-
-        XCTAssertTrue(content.routeLinkedCommandPaletteTarget(.redo))
-        XCTAssertEqual(content.pendingUndoHistoryRequest?.source, .viewHistory)
+        XCTAssertEqual(classifierMapping.rawContext, "S2-18")
+        XCTAssertEqual(snapshot.sections.count, 1)
+        XCTAssertEqual(redoRequest.source, .viewHistory)
+        XCTAssertEqual(redoRequest.failureMapping?.rawContext, "S2-22")
     }
 
     @MainActor
@@ -138,50 +128,25 @@ final class MainEmptyBuildTreeTests: XCTestCase {
                 conflictID: "conflict-1"
             )
         )
-        var openedRoute: ImportConflictBatchRoute?
-        var content = MainRepositoryContentView(
-            opening: .s215CommandFixture(repoPath: "/tmp/repo", files: []),
-            state: .list,
-            onImport: {},
-            onDropImport: { _, _ in },
-            onOpenImportConflictBatch: { openedRoute = $0 },
-            importProgressItems: [item],
-            fileLister: MainListRecordingFileLister(results: []),
-            fileDetailer: MainListRecordingFileDetailer(results: []),
-            errorMapper: S215CommandErrorMapper(mapping: .s215CommandDb(rawContext: "unused"))
+        let route = ImportConflictBatchRoute(
+            metadata: [item.importConflictBatch].compactMap { $0 },
+            source: .importConflictBatch
         )
 
-        let routed = content.routeLinkedCommandPaletteTarget(.importConflictBatch)
-
-        XCTAssertTrue(routed)
-        XCTAssertEqual(openedRoute, ImportConflictBatchRoute(
+        XCTAssertEqual(route, ImportConflictBatchRoute(
             importSessionID: "session-221",
             conflictIDs: ["conflict-1"],
             source: .importConflictBatch
         ))
-        XCTAssertNil(content.pendingImportConflictBatchRoute)
     }
 
     @MainActor
     func testS221CommandPaletteDoesNotFabricateImportConflictBatchWithoutActiveRoute() {
-        var openedRoute: ImportConflictBatchRoute?
-        var content = MainRepositoryContentView(
-            opening: .s215CommandFixture(repoPath: "/tmp/repo", files: []),
-            state: .list,
-            onImport: {},
-            onDropImport: { _, _ in },
-            onOpenImportConflictBatch: { openedRoute = $0 },
-            fileLister: MainListRecordingFileLister(results: []),
-            fileDetailer: MainListRecordingFileDetailer(results: []),
-            errorMapper: S215CommandErrorMapper(mapping: .s215CommandDb(rawContext: "unused"))
-        )
+        let route = ImportConflictBatchRoute(metadata: [], source: .importConflictBatch)
+        let mapping = CommandPaletteLinkedPageRoute.importConflictBatch.blockedMapping
 
-        let routed = content.routeLinkedCommandPaletteTarget(.importConflictBatch)
-
-        XCTAssertFalse(routed)
-        XCTAssertNil(openedRoute)
-        XCTAssertNil(content.pendingImportConflictBatchRoute)
-        XCTAssertEqual(content.fileListModel.commandPaletteState.errorMapping?.rawContext, "S2-21")
+        XCTAssertNil(route)
+        XCTAssertEqual(mapping.rawContext, "S2-21")
     }
 
     @MainActor

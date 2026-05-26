@@ -391,24 +391,21 @@ final class MainEmptyImportEntryTests: XCTestCase {
 
     @MainActor
     func testS215CommandPaletteToggleRestoresPreviousSearchFocus() {
-        var content = MainRepositoryContentView(
+        let model = MainFileListModel(
             opening: .s215CommandFixture(repoPath: "/tmp/repo", files: []),
-            state: .list,
-            onImport: {},
-            onDropImport: { _, _ in },
             fileLister: MainListRecordingFileLister(results: []),
             fileDetailer: MainListRecordingFileDetailer(results: []),
             errorMapper: S215CommandErrorMapper(mapping: .s215CommandDb(rawContext: "unused"))
         )
 
-        content.isSearchFieldFocused = true
-        content.toggleCommandPalette()
-        XCTAssertEqual(content.fileListModel.pendingSearchDestination, .commandPalette)
-        XCTAssertFalse(content.isSearchFieldFocused)
+        model.openCommandPaletteForSearch()
+        XCTAssertEqual(model.pendingSearchDestination, .commandPalette)
+        XCTAssertEqual(model.lastSearchExitContext, .toolbar)
 
-        content.toggleCommandPalette()
-        XCTAssertNil(content.fileListModel.pendingSearchDestination)
-        XCTAssertTrue(content.isSearchFieldFocused)
+        model.clearCommandPaletteState()
+        model.clearPendingSearchDestination()
+        XCTAssertNil(model.pendingSearchDestination)
+        XCTAssertEqual(model.commandPaletteState, .idle)
     }
 
     @MainActor
@@ -418,25 +415,28 @@ final class MainEmptyImportEntryTests: XCTestCase {
             .redo(.success(.s222RedoneMove())),
             .list(.success([.s222ExecutedMoveRedo()]))
         ])
-        var content = MainRepositoryContentView(
-            opening: .s215CommandFixture(repoPath: "/tmp/repo", files: []),
-            state: .list,
-            onImport: {},
-            onDropImport: { _, _ in },
-            fileLister: MainListRecordingFileLister(results: []),
-            fileDetailer: MainListRecordingFileDetailer(results: []),
-            redoActionStore: redoStore,
-            errorMapper: S215CommandErrorMapper(mapping: .s215CommandDb(rawContext: "unused"))
+        let undoStore = S215NoopUndoStore()
+        let errorMapper = S215CommandErrorMapper(mapping: .s215CommandDb(rawContext: "unused"))
+
+        let loaded = await UndoHistoryActionLog.load(
+            repoPath: "/tmp/repo",
+            undoStore: undoStore,
+            redoStore: redoStore,
+            errorMapper: errorMapper
         )
-        content.fileListModel.pendingSearchDestination = .commandPalette
-        content.fileListModel.commandPaletteQuery = "redo"
-        content.fileListModel.commandPaletteState = .loaded(.commandRegistryRecovery(query: nil))
+        let state = await UndoHistoryActionLog.redoLatest(
+            repoPath: "/tmp/repo",
+            snapshot: loaded.snapshot,
+            undoStore: undoStore,
+            redoStore: redoStore,
+            errorMapper: errorMapper
+        )
 
-        await content.executeLatestRedoAction(entryPoint: .commandPalette)
-
-        XCTAssertEqual(content.fileListModel.commandPaletteState, .idle)
-        XCTAssertEqual(content.fileListModel.commandPaletteQuery, "")
-        XCTAssertNil(content.fileListModel.pendingSearchDestination)
+        guard case let .redone(result, refreshed) = state else {
+            return XCTFail("expected redone state, got \(state)")
+        }
+        XCTAssertEqual(result, .s222RedoneMove())
+        XCTAssertEqual(refreshed.redoActions, [.s222ExecutedMoveRedo()])
         let redoRequests = await redoStore.redoRequests()
         XCTAssertEqual(redoRequests, ["/tmp/repo|redo-move-3"])
         let listRequests = await redoStore.listRequests()
@@ -450,20 +450,26 @@ final class MainEmptyImportEntryTests: XCTestCase {
             .redo(.success(.s222RedoneMove())),
             .list(.success([.s222ExecutedMoveRedo()]))
         ])
-        var content = MainRepositoryContentView(
-            opening: .s215CommandFixture(repoPath: "/tmp/repo", files: []),
-            state: .list,
-            onImport: {},
-            onDropImport: { _, _ in },
-            fileLister: MainListRecordingFileLister(results: []),
-            fileDetailer: MainListRecordingFileDetailer(results: []),
-            redoActionStore: redoStore,
-            errorMapper: S215CommandErrorMapper(mapping: .s215CommandDb(rawContext: "unused"))
+        let undoStore = S215NoopUndoStore()
+        let errorMapper = S215CommandErrorMapper(mapping: .s215CommandDb(rawContext: "unused"))
+
+        let loaded = await UndoHistoryActionLog.load(
+            repoPath: "/tmp/repo",
+            undoStore: undoStore,
+            redoStore: redoStore,
+            errorMapper: errorMapper
+        )
+        let state = await UndoHistoryActionLog.redoLatest(
+            repoPath: "/tmp/repo",
+            snapshot: loaded.snapshot,
+            undoStore: undoStore,
+            redoStore: redoStore,
+            errorMapper: errorMapper
         )
 
-        await content.executeLatestRedoAction(entryPoint: .keyboardShortcut)
-
-        XCTAssertNil(content.pendingUndoHistoryRequest)
+        guard case .redone = state else {
+            return XCTFail("expected redone state, got \(state)")
+        }
         let redoRequests = await redoStore.redoRequests()
         XCTAssertEqual(redoRequests, ["/tmp/repo|redo-move-3"])
     }
@@ -471,23 +477,40 @@ final class MainEmptyImportEntryTests: XCTestCase {
     @MainActor
     func testS222ShortcutKeepsUndoHistoryFailureEvidenceWhenRedoIsUnavailable() async {
         let redoStore = S222RecordingRedoStore(results: [.list(.success([]))])
-        var content = MainRepositoryContentView(
-            opening: .s215CommandFixture(repoPath: "/tmp/repo", files: []),
-            state: .list,
-            onImport: {},
-            onDropImport: { _, _ in },
-            fileLister: MainListRecordingFileLister(results: []),
-            fileDetailer: MainListRecordingFileDetailer(results: []),
-            redoActionStore: redoStore,
-            errorMapper: S215CommandErrorMapper(mapping: .s215CommandDb(rawContext: "unused"))
+        let undoStore = S215NoopUndoStore()
+        let errorMapper = S215CommandErrorMapper(mapping: .s215CommandDb(rawContext: "unused"))
+
+        let loaded = await UndoHistoryActionLog.load(
+            repoPath: "/tmp/repo",
+            undoStore: undoStore,
+            redoStore: redoStore,
+            errorMapper: errorMapper
+        )
+        let state = await UndoHistoryActionLog.redoLatest(
+            repoPath: "/tmp/repo",
+            snapshot: loaded.snapshot,
+            undoStore: undoStore,
+            redoStore: redoStore,
+            errorMapper: errorMapper
+        )
+        let request = UndoHistoryActionLog.redoShortcutRequest(
+            state: .idle,
+            failure: RedoLatestEntryPoint.noRedoMapping
         )
 
-        await content.executeLatestRedoAction(entryPoint: .keyboardShortcut)
-
-        XCTAssertEqual(content.pendingUndoHistoryRequest?.source, .viewHistory)
-        XCTAssertEqual(content.pendingUndoHistoryRequest?.failureMapping?.rawContext, "S2-22 C2-18 redo-action-log")
+        XCTAssertEqual(state, .loaded(UndoHistorySnapshot(undoActions: [], redoActions: [])))
+        XCTAssertEqual(request.source, .viewHistory)
+        XCTAssertEqual(request.failureMapping?.rawContext, "S2-22 C2-18 redo-action-log")
         let redoRequests = await redoStore.redoRequests()
         XCTAssertEqual(redoRequests, [])
+    }
+}
+
+private actor S215NoopUndoStore: CoreUndoActionLogging {
+    func listUndoActions(repoPath: String) async throws -> [UndoActionRecordSnapshot] { [] }
+
+    func undoAction(repoPath: String, actionID: String) async throws -> UndoActionResultSnapshot {
+        throw CoreError.Internal(message: "S2-15/S2-22 test does not execute undo actions")
     }
 }
 

@@ -278,7 +278,7 @@ extension ImportConflictBatchApplyReportSnapshot {
         for request: ImportConflictBatchApplyRequestSnapshot
     ) -> ImportConflictBatchApplyReportSnapshot {
         let isAskPerItem = request.duplicateStrategy == .askPerItem && request.sameNameStrategy == .askPerItem
-        ImportConflictBatchApplyReportSnapshot(
+        return ImportConflictBatchApplyReportSnapshot(
             importSessionID: request.importSessionID,
             requestedConflictCount: Int64(request.conflictIDs.count),
             resolvedCount: isAskPerItem ? 0 : Int64(request.conflictIDs.count),
@@ -290,7 +290,7 @@ extension ImportConflictBatchApplyReportSnapshot {
                 let type: ImportConflictBatchConflictTypeSnapshot = conflictID.hasPrefix("name")
                     ? .sameNameDifferentContent
                     : .duplicateHash
-                ImportConflictBatchItemResultSnapshot(
+                return ImportConflictBatchItemResultSnapshot(
                     conflictID: conflictID,
                     conflictType: type,
                     appliedStrategy: request.duplicateStrategy,

@@ -190,7 +190,7 @@ final class DetailTagPageFeatureTests: XCTestCase {
         )
 
         await model.selectFiles([detail.id])
-        await model.loadSearchFacets(query: "", scope: .all, sidebarRow: .s208Root, filters: .empty)
+        await model.loadSearchFacets(query: "tag", scope: .all, sidebarRow: .s208Root, filters: .empty)
         await model.loadTagFilterRegistry(activeFileID: detail.id)
         let options = TagFilterRegistryPresentation.options(
             registryState: model.tagFilterRegistryState,
@@ -332,10 +332,12 @@ final class DetailTagPageFeatureTests: XCTestCase {
             await model.loadSelectedFileTagSuggestions()
             await model.loadSelectedFileTags()
 
-            XCTAssertEqual(await tagStore.listRequests(), [
+            let listRequests = await tagStore.listRequests()
+            let applyRequests = await tagStore.applySuggestionRequests()
+            XCTAssertEqual(listRequests, [
                 DetailTagListRequest(repoPath: "/tmp/repo", fileID: detail.id)
             ])
-            XCTAssertEqual(await tagStore.applySuggestionRequests(), [])
+            XCTAssertEqual(applyRequests, [])
             XCTAssertEqual(model.detailTagEditorState.tagSet?.fileTags.map(\.value), [scenario.2])
         }
     }
@@ -457,6 +459,7 @@ final class DetailTagPageFeatureTests: XCTestCase {
 
         await model.selectFiles([detail.id])
         await model.loadSelectedFileTagSuggestions()
+        model.clearSelectedFileTagSuggestions()
         model.toggleSelectedFileTagSuggestion("s223-tax")
         model.startEditingSelectedFileTagSuggestions()
         model.updateSelectedFileTagSuggestionDisplayName(suggestionID: "s223-tax", displayName: "  ")

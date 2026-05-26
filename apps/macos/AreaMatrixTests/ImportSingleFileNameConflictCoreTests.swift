@@ -95,11 +95,13 @@ final class ImportSingleFileNameConflictCoreTests: XCTestCase {
             selectedDestination: .autoClassify
         )
         await model.loadImportConflictBatchPreview()
+        XCTAssertNil(model.conflictBatchApplyDisabledReason)
+        XCTAssertNil(model.conflictBatchAskPerItemDisabledReason)
+
         let applyResult = await model.applyImportConflictBatch()
         _ = await model.askConflictBatchPerItem()
         let applyRequests = await conflictBatcher.applyRequests()
 
-        XCTAssertNil(model.conflictBatchApplyDisabledReason)
         XCTAssertNil(model.conflictBatchAskPerItemDisabledReason)
         XCTAssertEqual(applyResult?.report?.resolvedCount, 2)
         XCTAssertEqual(applyRequests.first?.request.conflictIDs, ["dup-1", "name-blocked"])

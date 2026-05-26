@@ -171,3 +171,19 @@ extension RepositorySidebarRowSnapshot {
         children: []
     ), depth: 0)
 }
+
+extension MainFileListModel {
+    @MainActor
+    static func s223Fixture(
+        detail: FileEntrySnapshot,
+        tagStore: any CoreTagCRUD = DetailTagRecordingStore()
+    ) -> MainFileListModel {
+        MainFileListModel(
+            opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [detail]),
+            fileLister: DetailMetaNoopLister(),
+            fileDetailer: DetailMetaImmediateDetailer(result: .success(detail)),
+            tagStore: tagStore,
+            errorMapper: DetailMetaErrorMapper(mapping: .s207TagDb())
+        )
+    }
+}

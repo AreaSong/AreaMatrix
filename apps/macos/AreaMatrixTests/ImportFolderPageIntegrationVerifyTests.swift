@@ -136,7 +136,16 @@ final class ImportFolderPageIntegrationVerifyTests: XCTestCase {
             remaining: 0,
             currentPath: "docs/ready.pdf",
             skipped: 0,
-            pending: 1
+            pending: 1,
+            items: [
+                ImportBatchProgressSnapshot.Item(
+                    fileID: 117,
+                    sourcePath: "/tmp/source.pdf",
+                    targetPath: "docs/ready.pdf",
+                    phase: .done,
+                    errorMessage: nil
+                )
+            ]
         ))
     }
 }

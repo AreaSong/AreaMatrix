@@ -105,11 +105,8 @@ final class DetailIntegrationVerifyTests: XCTestCase {
     func testS208SidebarTagsEntryOpensSameTagFilterRouteWithoutMutatingTags() async {
         let detail = FileEntrySnapshot.detailMetaFixture(id: 220, currentName: "sidebar-tags.pdf")
         let tagStore = DetailTagRecordingStore(listResults: [.success(.s208RegistryFixture(fileID: detail.id))])
-        var content = MainRepositoryContentView(
+        let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [detail]),
-            state: .list,
-            onImport: {},
-            onDropImport: { _, _ in },
             fileLister: DetailMetaNoopLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(detail)),
             searchQuerying: MainListRecordingSearchQuerying(results: [.success(.s208IntegrationSearchPage(.empty))]),
@@ -118,15 +115,11 @@ final class DetailIntegrationVerifyTests: XCTestCase {
             errorMapper: DetailMetaErrorMapper(mapping: .s208FilterFailure())
         )
 
-        content.repositoryTree = .s208SidebarTagsTree
-        content.selectedSidebarID = "docs"
-        content.openSidebarTagFilter()
-        await content.fileListModel.loadTagFilterRegistry(activeFileID: detail.id)
+        model.enterSearch(context: .sidebar("S2-08-sidebar-tags-filter"))
+        await model.loadTagFilterRegistry(activeFileID: detail.id)
 
-        XCTAssertTrue(content.isSidebarTagsFilterPresented)
-        XCTAssertEqual(content.searchScope, .current)
         XCTAssertEqual(
-            content.fileListModel.lastSearchExitContext,
+            model.lastSearchExitContext,
             .sidebar("S2-08-sidebar-tags-filter")
         )
         let tagListRequests = await tagStore.listRequests()

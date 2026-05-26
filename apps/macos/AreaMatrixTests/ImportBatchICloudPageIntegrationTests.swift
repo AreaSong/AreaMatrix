@@ -217,7 +217,16 @@ final class ImportBatchICloudPageIntegrationTests: XCTestCase {
             remaining: 0,
             currentPath: "finance/Invoice_2026Q1.pdf",
             skipped: 0,
-            pending: 1
+            pending: 1,
+            items: [
+                ImportBatchProgressSnapshot.Item(
+                    fileID: 117,
+                    sourcePath: "/tmp/source.pdf",
+                    targetPath: "finance/Invoice_2026Q1.pdf",
+                    phase: .done,
+                    errorMessage: nil
+                )
+            ]
         ))
         XCTAssertEqual(recordedRequests, [
             S118BatchImportRequest(
