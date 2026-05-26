@@ -369,6 +369,12 @@ def status_fragment(progress_file: Path, lock_dir: Path, log_root: Path, drain_r
                 lines.append(
                     f"- live_activity_validation_child_running: {'yes' if activity.get('validation_child_running') else 'no'}"
                 )
+            if activity.get("meaningful_activity") is not None:
+                lines.append(
+                    f"- live_activity_meaningful_activity: {'yes' if activity.get('meaningful_activity') else 'no'}"
+                )
+            if activity.get("exec_activity_event_count") is not None:
+                lines.append(f"- live_activity_exec_activity_events: {activity['exec_activity_event_count']}")
             if activity.get("child_restart") is not None and activity.get("child_restart_limit") is not None:
                 lines.append(
                     f"- live_activity_child_restart: {activity['child_restart']}/{activity['child_restart_limit']}"

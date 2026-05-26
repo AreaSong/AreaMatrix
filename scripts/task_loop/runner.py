@@ -36,6 +36,26 @@ VALIDATION_PROCESS_MARKERS = (
     "swiftformat",
     "pytest",
 )
+EXEC_ACTIVITY_COMMAND_MARKERS = (
+    "exec\n",
+    "exec\r\n",
+    "tool call",
+    "function call",
+    "/bin/",
+    "./dev ",
+    "cargo ",
+    "xcodebuild",
+    "swift test",
+    "swift build",
+    "pytest",
+)
+EXEC_ACTIVITY_RESULT_MARKERS = (
+    "succeeded in ",
+    "exited ",
+    "failed in ",
+    "returncode=",
+)
+EXEC_ACTIVITY_TAIL_BYTES = 65536
 
 
 class TaskLoopError(RuntimeError):
@@ -323,6 +343,61 @@ def process_group_has_validation_child_from_ps(lines: Sequence[str], pgid: int) 
         if any(marker in command for marker in VALIDATION_PROCESS_MARKERS):
             return True
     return False
+
+
+@dataclass(frozen=True)
+class ExecActivitySignature:
+    status: str
+    mtime_ns: int
+    size: int
+    event_count: int
+    event_tail_hash: int
+
+
+def exec_activity_signature(path: Path) -> ExecActivitySignature:
+    try:
+        stat = path.stat()
+    except FileNotFoundError:
+        return ExecActivitySignature("missing", 0, 0, 0, 0)
+    except OSError:
+        return ExecActivitySignature("unreadable", 0, 0, 0, 0)
+    tail = read_file_tail(path, EXEC_ACTIVITY_TAIL_BYTES)
+    events = meaningful_exec_activity_lines(tail)
+    return ExecActivitySignature(
+        "exists",
+        stat.st_mtime_ns,
+        stat.st_size,
+        len(events),
+        hash(tuple(events[-8:])),
+    )
+
+
+def read_file_tail(path: Path, limit: int) -> str:
+    try:
+        with path.open("rb") as handle:
+            handle.seek(0, os.SEEK_END)
+            size = handle.tell()
+            handle.seek(max(0, size - limit), os.SEEK_SET)
+            return handle.read().decode("utf-8", errors="replace")
+    except OSError:
+        return ""
+
+
+def meaningful_exec_activity_lines(text: str) -> list[str]:
+    lines: list[str] = []
+    for raw_line in text.splitlines():
+        line = raw_line.strip()
+        if not line:
+            continue
+        if line.startswith("diff --git ") or line.startswith("@@ "):
+            continue
+        if line.startswith(("+", "-")) and not line.startswith(("+++", "---")):
+            continue
+        if any(marker in raw_line for marker in EXEC_ACTIVITY_COMMAND_MARKERS) or any(
+            marker in line for marker in EXEC_ACTIVITY_RESULT_MARKERS
+        ):
+            lines.append(line)
+    return lines
 
 
 def terminate_process_group_by_pgid(pgid: int, sig: signal.Signals) -> None:
@@ -1047,8 +1122,9 @@ class TaskLoopRunner:
         )
         self.current_child = proc
         start_monotonic = time.monotonic()
-        last_output_signature = (output_file_signature(output_file), output_file_signature(exec_log_file))
-        last_output_change_monotonic = start_monotonic
+        last_output_signature = output_file_signature(output_file)
+        last_exec_activity_signature = exec_activity_signature(exec_log_file)
+        last_meaningful_activity_monotonic = start_monotonic
         state.write_lock_activity(self.cfg.lock_dir, {"status": "running", "pid": proc.pid, "child_restart": restart_index})
         log_live_snapshot(
             title="live activity running",
@@ -1081,20 +1157,35 @@ class TaskLoopRunner:
                 if not worker.is_alive():
                     break
                 now = time.monotonic()
-                current_signature = (output_file_signature(output_file), output_file_signature(exec_log_file))
-                if current_signature != last_output_signature:
-                    last_output_signature = current_signature
-                    last_output_change_monotonic = now
-                no_output_elapsed_seconds = int(now - last_output_change_monotonic)
+                current_output_signature = output_file_signature(output_file)
+                current_exec_activity_signature = exec_activity_signature(exec_log_file)
+                meaningful_activity_detected = (
+                    current_output_signature != last_output_signature
+                    or current_exec_activity_signature.event_count != last_exec_activity_signature.event_count
+                    or current_exec_activity_signature.event_tail_hash != last_exec_activity_signature.event_tail_hash
+                )
+                if meaningful_activity_detected:
+                    last_output_signature = current_output_signature
+                    last_exec_activity_signature = current_exec_activity_signature
+                    last_meaningful_activity_monotonic = now
+                no_output_elapsed_seconds = int(now - last_meaningful_activity_monotonic)
                 elapsed = state.human_duration(now - start_monotonic)
                 log_state = state.log_file_status(str(output_file))
                 validation_child_running = process_group_has_validation_child(proc.pid)
                 no_output_notice = ""
                 if no_output_elapsed_seconds >= self.cfg.no_output_notice_seconds:
-                    no_output_notice = (
-                        "codex exec child is running but final output / exec stream have not made progress; "
-                        "this is a no-output wait, not proof that validation commands are progressing."
-                    )
+                    if validation_child_running:
+                        no_output_notice = (
+                            "codex exec child and a validation subprocess are running, but no final output "
+                            "or command start/finish event has made progress; this remains bounded by the "
+                            "hard no-output timeout."
+                        )
+                    else:
+                        no_output_notice = (
+                            "codex exec child is running but no final output, validation subprocess, "
+                            "or command start/finish event has made progress; .exec.log growth alone is diagnostic, "
+                            "not proof that validation commands are progressing."
+                        )
                 state.write_lock_activity(
                     self.cfg.lock_dir,
                     {
@@ -1105,6 +1196,8 @@ class TaskLoopRunner:
                         "no_output_timeout_seconds": self.cfg.no_output_timeout_seconds,
                         "codex_idle_timeout_seconds": self.cfg.codex_idle_timeout_seconds,
                         "validation_child_running": validation_child_running,
+                        "meaningful_activity": bool(meaningful_activity_detected or validation_child_running),
+                        "exec_activity_event_count": current_exec_activity_signature.event_count,
                         "child_restart": restart_index,
                         "child_restart_limit": self.cfg.no_output_restart_limit,
                     },
@@ -1116,11 +1209,12 @@ class TaskLoopRunner:
                 ):
                     timeout_error = (
                         f"codex exec idle timeout for {stage} {task.label} attempt={attempt}: "
-                        f"no final output / exec stream progress for {state.human_duration(no_output_elapsed_seconds)} "
-                        f"and no validation subprocess detected "
+                        f"no final output, validation subprocess, or command start/finish event for "
+                        f"{state.human_duration(no_output_elapsed_seconds)} "
                         f"(idle_timeout={state.human_duration(self.cfg.codex_idle_timeout_seconds)}; "
                         f"hard_timeout={state.human_duration(self.cfg.no_output_timeout_seconds)}; "
-                        f"log_state={log_state})"
+                        f"log_state={log_state}; "
+                        f"exec_activity_events={current_exec_activity_signature.event_count})"
                     )
                     state.write_lock_activity(
                         self.cfg.lock_dir,
@@ -1130,6 +1224,8 @@ class TaskLoopRunner:
                             "no_output_timeout_seconds": self.cfg.no_output_timeout_seconds,
                             "codex_idle_timeout_seconds": self.cfg.codex_idle_timeout_seconds,
                             "validation_child_running": validation_child_running,
+                            "meaningful_activity": False,
+                            "exec_activity_event_count": current_exec_activity_signature.event_count,
                             "child_restart": restart_index,
                             "child_restart_limit": self.cfg.no_output_restart_limit,
                             "log_state": log_state,
@@ -1158,9 +1254,11 @@ class TaskLoopRunner:
                 ):
                     timeout_error = (
                         f"codex exec no-output timeout for {stage} {task.label} attempt={attempt}: "
-                        f"no output log progress for {state.human_duration(no_output_elapsed_seconds)} "
+                        f"no final output, validation subprocess, or command start/finish event for "
+                        f"{state.human_duration(no_output_elapsed_seconds)} "
                         f"(timeout={state.human_duration(self.cfg.no_output_timeout_seconds)}; "
-                        f"log_state={log_state})"
+                        f"log_state={log_state}; "
+                        f"exec_activity_events={current_exec_activity_signature.event_count})"
                     )
                     state.write_lock_activity(
                         self.cfg.lock_dir,
@@ -1170,6 +1268,8 @@ class TaskLoopRunner:
                             "no_output_timeout_seconds": self.cfg.no_output_timeout_seconds,
                             "codex_idle_timeout_seconds": self.cfg.codex_idle_timeout_seconds,
                             "validation_child_running": validation_child_running,
+                            "meaningful_activity": False,
+                            "exec_activity_event_count": current_exec_activity_signature.event_count,
                             "child_restart": restart_index,
                             "child_restart_limit": self.cfg.no_output_restart_limit,
                             "log_state": log_state,

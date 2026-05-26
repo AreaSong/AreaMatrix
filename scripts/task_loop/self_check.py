@@ -19,7 +19,9 @@ from scripts.task_loop.runner import (
     RuntimeConfig,
     TaskFile,
     TaskLoopRunner,
+    exec_activity_signature,
     process_group_has_validation_child_from_ps,
+    meaningful_exec_activity_lines,
     task_loop_codex_exec_processes_from_ps,
 )
 
@@ -1379,6 +1381,123 @@ fi
     assert_contains(combined, "codex exec no-output timeout; restart copy task=0-1/task-01", "codex idle restart event")
 
 
+def check_runner_repeated_diff_is_not_progress(h: Harness) -> None:
+    log("runner repeated diff stream is diagnostic only")
+    diff_log = h.tmp / "repeated-diff.exec.log"
+    diff_log.write_text(
+        "\n".join(
+            [
+                "diff --git a/scripts/task_loop/runner.py b/scripts/task_loop/runner.py",
+                "--- a/scripts/task_loop/runner.py",
+                "+++ b/scripts/task_loop/runner.py",
+                "@@ -1,2 +1,2 @@",
+                "-old",
+                "+new",
+                "codex",
+                "diff --git a/scripts/task_loop/runner.py b/scripts/task_loop/runner.py",
+                "--- a/scripts/task_loop/runner.py",
+                "+++ b/scripts/task_loop/runner.py",
+                "@@ -1,2 +1,2 @@",
+                "-old",
+                "+new",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    if meaningful_exec_activity_lines(diff_log.read_text(encoding="utf-8")):
+        raise CheckFailure("repeated diff output should not be treated as meaningful exec activity")
+    if exec_activity_signature(diff_log).event_count != 0:
+        raise CheckFailure("repeated diff exec activity signature should have zero events")
+
+    runner_repo = h.tmp / "runner-repeated-diff-timeout"
+    init_temp_git_repo(runner_repo)
+    add_prompt_fixture(runner_repo, ["0-1/task-01"])
+    subprocess.run(["git", "add", "."], cwd=runner_repo, check=True)
+    subprocess.run(["git", "commit", "-q", "-m", "add prompt fixtures"], cwd=runner_repo, check=True)
+    fake_codex = h.tmp / "fake-codex-repeated-diff"
+    fake_codex.write_text(
+        """#!/usr/bin/env bash
+set -euo pipefail
+out=""
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    -o)
+      out="$2"
+      shift 2
+      ;;
+    --cd)
+      cd "$2"
+      shift 2
+      ;;
+    *)
+      shift
+      ;;
+  esac
+done
+input="$(cat)"
+counter="${FAKE_CODEX_COUNTER}"
+count=0
+if [ -f "$counter" ]; then
+  count="$(cat "$counter")"
+fi
+count=$((count + 1))
+printf '%s\\n' "$count" > "$counter"
+if [ "$count" = "1" ]; then
+  for _ in 1 2 3 4 5; do
+    printf 'diff --git a/example b/example\\n'
+    printf -- '--- a/example\\n'
+    printf '+++ b/example\\n'
+    printf '@@ -1 +1 @@\\n'
+    printf -- '-old\\n'
+    printf '+new\\n'
+    sleep 1
+  done
+fi
+mkdir -p "$(dirname "$out")"
+if [ "$count" != "1" ]; then
+  if printf '%s' "$input" | grep -q 'VERIFY_RESULT'; then
+    printf '验收通过 after repeated diff restart\\nVERIFY_RESULT: PASS\\n' > "$out"
+  else
+    printf 'copy ok after repeated diff restart\\n' > "$out"
+  fi
+fi
+""",
+        encoding="utf-8",
+    )
+    fake_codex.chmod(0o755)
+    result = h.run(
+        [h.task_loop, "run", "--phase", "phase-0", "--max-tasks", "1"],
+        env={
+            "ROOT_DIR": str(runner_repo),
+            "PROGRESS_FILE": str(runner_repo / "tasks/prompts/_shared/progress.json"),
+            "LOG_ROOT": str(runner_repo / ".codex/task-loop-logs"),
+            "RUN_SUMMARY_ROOT": str(runner_repo / ".codex/task-loop-runs"),
+            "PROGRESS_BACKUP_ROOT": str(runner_repo / ".codex/task-loop-progress-backups"),
+            "LOCK_DIR": str(runner_repo / ".codex/task-loop-lock"),
+            "CONTROL_DIR": str(runner_repo / ".codex/task-loop-control"),
+            "CODEX_BIN": str(fake_codex),
+            "GIT_CHECKPOINT": "off",
+            "RISK_POLICY": "allow",
+            "MAX_RETRIES": "1",
+            "ACTIVITY_HEARTBEAT_SECONDS": "1",
+            "NO_OUTPUT_NOTICE_SECONDS": "1",
+            "NO_OUTPUT_TIMEOUT_SECONDS": "20",
+            "CODEX_IDLE_TIMEOUT_SECONDS": "2",
+            "NO_OUTPUT_RESTART_DELAY_SECONDS": "1",
+            "NO_OUTPUT_RESTART_LIMIT": "1",
+            "FAKE_CODEX_COUNTER": str(h.tmp / "fake-codex-repeated-diff-counter"),
+        },
+        check=False,
+    )
+    if result.returncode != 0:
+        raise CheckFailure(
+            f"runner repeated-diff timeout restart returned {result.returncode}, expected 0\n"
+            f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
+    )
+    combined = result.stdout + result.stderr
+    assert_contains(combined, "codex exec idle timeout", "repeated diff idle timeout")
+
+
 def check_validation_process_detection() -> None:
     log("runner validation subprocess detection")
     lines = [
@@ -1465,6 +1584,7 @@ def run_check(root_dir: Path) -> int:
             check_runner_git_checkpoint(harness)
             check_runner_no_output_timeout(harness)
             check_runner_codex_idle_timeout(harness)
+            check_runner_repeated_diff_is_not_progress(harness)
             check_validation_process_detection()
             check_runner_activity_replace_and_orphan_detection(harness)
             check_git_ignore(harness)

@@ -162,7 +162,7 @@ DRY_RUN=1 \
   ./task-loop run --phase phase-1 --max-tasks 1
 ```
 
-Python runner 会在 `.codex/task-loop-logs/<timestamp>/<phase>/` 写入每次执行和验收日志。该目录默认本地忽略；任务通过后，Git checkpoint 只强制提交成功 attempt 对应的最终 copy / verify `.log`，`.exec.log` 等实时诊断流只留本地排障。
+Python runner 会在 `.codex/task-loop-logs/<timestamp>/<phase>/` 写入每次执行和验收日志。最终 copy / verify `.log` 是 `codex exec -o` 的完成输出；`.exec.log` 是 stdout/stderr 实时诊断流，只用于确认 CLI 是否启动、是否有工具命令开始/结束、失败前最后发生了什么。`.exec.log` 文件增长本身不代表任务健康推进，重复 diff 或模型自述不会被当作真实执行进展。该目录默认本地忽略；任务通过后，Git checkpoint 只强制提交成功 attempt 对应的最终 copy / verify `.log`，`.exec.log` 等实时诊断流只留本地排障。
 进度统一写入 `tasks/prompts/_shared/progress.json`，因此 `next` 和 `status` 会直接反映自动执行结果。
 
 查看或恢复：

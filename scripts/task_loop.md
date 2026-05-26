@@ -50,9 +50,9 @@ Repo-local skills：
 - `NO_OUTPUT_RESTART_LIMIT=2`
 - `ORPHAN_CODEX_POLICY=fail`
 
-runner 会在 `codex exec` 子进程活着但目标 copy / verify 最终输出日志或 exec stream 日志长时间不存在或不再增长时持续显示 no-output 状态。如果同一进程组没有 `./dev check`、`xcodebuild`、`cargo`、`swift test` 等验证子进程，超过 `CODEX_IDLE_TIMEOUT_SECONDS` 会按 Codex / 模型 / 工具等待卡住处理，先终止并重启同一步骤；如果检测到验证子进程仍在运行，则继续等待 `NO_OUTPUT_TIMEOUT_SECONDS` 这个硬超时。超过 `NO_OUTPUT_RESTART_LIMIT` 仍无输出时，才把当前 task 标记为失败；`CODEX_IDLE_TIMEOUT_SECONDS=0` 可临时禁用早期 idle 超时，`NO_OUTPUT_TIMEOUT_SECONDS=0` 可临时禁用硬超时。
+runner 会在 `codex exec` 子进程活着但目标 copy / verify 最终输出日志没有生成，且没有真实执行进展时持续显示 no-output 状态。真实执行进展指最终 `.log` 变化、同一进程组存在 `./dev check`、`xcodebuild`、`cargo`、`swift test` 等验证子进程，或 `.exec.log` 中出现新的命令开始 / 命令结束事件。`.exec.log` 文件大小增长本身只代表诊断流仍在写入，重复 diff、模型自述或长文本输出不再重置 idle 计时。如果同一进程组没有验证子进程，超过 `CODEX_IDLE_TIMEOUT_SECONDS` 会按 Codex / 模型 / 工具等待卡住处理，先终止并重启同一步骤；如果检测到验证子进程仍在运行，则继续等待 `NO_OUTPUT_TIMEOUT_SECONDS` 这个硬超时。超过 `NO_OUTPUT_RESTART_LIMIT` 仍无输出时，才把当前 task 标记为失败；`CODEX_IDLE_TIMEOUT_SECONDS=0` 可临时禁用早期 idle 超时，`NO_OUTPUT_TIMEOUT_SECONDS=0` 可临时禁用硬超时。
 
-`output` 指向 `codex exec -o` 的 final message 文件，不是实时流式日志；`exec` 指向 runner 捕获的 stdout/stderr stream，用来判断 CLI 是否已经启动、是否打印错误、是否有真实输出推进。`.exec.log` 是本地诊断流，默认不进入 Git checkpoint。正式 run 启动新 child 前会扫描同仓库 `.codex/task-loop-logs` 下的孤儿 `codex exec`。默认 `ORPHAN_CODEX_POLICY=fail` 会阻止继续启动；确认要自动清理时可显式使用 `ORPHAN_CODEX_POLICY=terminate`。
+`output` 指向 `codex exec -o` 的 final message 文件，不是实时流式日志；`exec` 指向 runner 捕获的 stdout/stderr stream，用来确认 CLI 曾经启动、工具调用输出了什么、失败前最后发生了什么。`.exec.log` 是本地诊断流，不是完成证据，也不是单独的健康证据，默认不进入 Git checkpoint。正式 run 启动新 child 前会扫描同仓库 `.codex/task-loop-logs` 下的孤儿 `codex exec`。默认 `ORPHAN_CODEX_POLICY=fail` 会阻止继续启动；确认要自动清理时可显式使用 `ORPHAN_CODEX_POLICY=terminate`。
 
 正式执行前工作区必须干净。若当前在 `main`，runner 会自动创建 `codex/areamatrix-task-loop-<run_id>` 分支；dry-run 永远不会真实 commit 或 push。
 
@@ -141,9 +141,10 @@ PID 和耗时；中段 `live log` 纵向列出 prompt、输出日志路径和日
 命令。后续心跳仍按这个从上到下的结构刷新，避免把长命令重复塞进单行日志。
 `./task-loop status` 和
 `./dev status --verbose` 也会显示同一份 live activity。若屏幕上长时间只看到
-最终输出日志和 exec stream 日志状态均为 `missing`，或两者更新时间都不变化，可判断是 `codex exec` 子进程本身没有
-产生可观察进展；这是一种 no-output wait，不代表验证命令正在正常输出。`status`
-同时显示 `live_activity_validation_child_running`：`no` 时默认超过
+最终输出日志状态为 `missing`，且没有验证子进程或新的命令事件，可判断是 `codex exec` 子进程本身没有
+产生可验证进展；这是一种 no-output wait，不代表验证命令正在正常输出。`status`
+同时显示 `live_activity_validation_child_running`、`live_activity_meaningful_activity` 和
+`live_activity_exec_activity_events`：`validation_child_running=no` 且 `meaningful_activity=no` 时默认超过
 `CODEX_IDLE_TIMEOUT_SECONDS=900` 就提前重启，`yes` 时保留到
 `NO_OUTPUT_TIMEOUT_SECONDS=5400` 硬超时。超时后 runner 会终止该子进程，等待
 `NO_OUTPUT_RESTART_DELAY_SECONDS=300`，再重开同一步骤的 `codex exec`；连续超过
