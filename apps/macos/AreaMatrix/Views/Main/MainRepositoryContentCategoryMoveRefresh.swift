@@ -39,6 +39,13 @@ extension MainRepositoryContentView {
                     }
                 }
             },
+            onRetryFailedSuggestions: {
+                Task {
+                    if let state = await fileListModel.retryFailedSelectedFileTagSuggestions() {
+                        updateBatchTagUndoState(state)
+                    }
+                }
+            },
             onSuggestionPresentationConsumed: fileListModel.consumeTagSuggestionPresentationRequest,
             onUndoTagChange: { Task { await fileListModel.undoLastDetailTagChange() } },
             onDismissTagUndoToast: fileListModel.dismissDetailTagUndoToast,

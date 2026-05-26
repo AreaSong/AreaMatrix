@@ -271,6 +271,7 @@ extension MainRepositoryDetailPane {
                 onRegenerateSuggestionSlug: tagActions.onRegenerateSuggestionSlug,
                 onApplySuggestions: tagActions.onApplySuggestions,
                 onApplyEditedSuggestions: tagActions.onApplyEditedSuggestions,
+                onRetryFailedSuggestions: tagActions.onRetryFailedSuggestions,
                 onSuggestionPresentationConsumed: tagActions.onSuggestionPresentationConsumed,
                 onUndoTagChange: tagActions.onUndoTagChange,
                 onDismissUndoToast: tagActions.onDismissTagUndoToast

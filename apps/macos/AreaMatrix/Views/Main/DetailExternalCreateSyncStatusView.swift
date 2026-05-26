@@ -70,6 +70,7 @@ enum TagSuggestionEditRowStatus: Equatable {
     case invalid(String)
     case alreadyAdded(String)
     case blocked(String)
+    case failed(String)
     case applied
 
     var label: String {
@@ -79,6 +80,7 @@ enum TagSuggestionEditRowStatus: Equatable {
         case .invalid: "Invalid"
         case .alreadyAdded: "Already added"
         case .blocked: "Blocked"
+        case .failed: "Failed"
         case .applied: "Applied"
         }
     }
@@ -87,7 +89,8 @@ enum TagSuggestionEditRowStatus: Equatable {
         switch self {
         case .ready, .applied:
             nil
-        case let .duplicate(message), let .invalid(message), let .alreadyAdded(message), let .blocked(message):
+        case let .duplicate(message), let .invalid(message), let .alreadyAdded(message), let .blocked(message),
+             let .failed(message):
             message
         }
     }
@@ -96,10 +99,11 @@ enum TagSuggestionEditRowStatus: Equatable {
         switch self {
         case .ready:
             false
-        case .duplicate, .invalid, .alreadyAdded, .blocked, .applied:
+        case .duplicate, .invalid, .alreadyAdded, .blocked, .failed, .applied:
             true
         }
     }
+
 }
 
 struct TagSuggestionEditDraft: Equatable, Identifiable {
@@ -129,12 +133,28 @@ struct TagSuggestionEditSession: Equatable {
 
     var applyItems: [ApplyTagSuggestionItemSnapshot] {
         guard canApply else { return [] }
-        return drafts.map {
-            ApplyTagSuggestionItemSnapshot(
-                suggestionID: $0.suggestionID,
-                slug: $0.slug,
-                displayName: $0.displayName.trimmingCharacters(in: .whitespacesAndNewlines)
-            )
+        return drafts.map(\.applyItem)
+    }
+
+    var retryFailedItems: [ApplyTagSuggestionItemSnapshot] {
+        drafts.compactMap { draft in
+            switch draft.status {
+            case .failed:
+                draft.applyItem
+            case .ready, .duplicate, .invalid, .alreadyAdded, .blocked, .applied:
+                nil
+            }
         }
+    }
+}
+
+private extension TagSuggestionEditDraft {
+    var applyItem: ApplyTagSuggestionItemSnapshot {
+        let displayName = displayName.trimmingCharacters(in: .whitespacesAndNewlines)
+        return ApplyTagSuggestionItemSnapshot(
+            suggestionID: suggestionID,
+            slug: slug,
+            displayName: displayName.isEmpty ? slug : displayName
+        )
     }
 }

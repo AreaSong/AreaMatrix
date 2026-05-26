@@ -280,6 +280,7 @@ extension MainRepositoryDetailPaneTagActions {
             onRegenerateSuggestionSlug: { _ in },
             onApplySuggestions: {},
             onApplyEditedSuggestions: {},
+            onRetryFailedSuggestions: {},
             onSuggestionPresentationConsumed: { _ in },
             onUndoTagChange: {},
             onDismissTagUndoToast: {},

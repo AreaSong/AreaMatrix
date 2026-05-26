@@ -213,6 +213,54 @@ final class ImportResultCopyRetryTests: XCTestCase {
     }
 
     @MainActor
+    func testS223C219PartialApplyFailureCanRetryFailedSuggestionOnly() async {
+        let detail = FileEntrySnapshot.detailMetaFixture(id: 231, currentName: "invoice_2026.pdf")
+        let report = TagSuggestionReportSnapshot.s223Fixture(fileID: detail.id)
+        let partialFailure = TagSuggestionApplyReportSnapshot.s223PartialFailure(fileID: detail.id)
+        let retrySuccess = TagSuggestionApplyReportSnapshot.s223Applied(
+            fileID: detail.id,
+            suggestionID: "s223-tax",
+            slug: "tax-review",
+            displayName: "Tax Review"
+        )
+        let tagStore = DetailTagRecordingStore(
+            suggestionResults: [.success(report)],
+            applySuggestionResults: [.success(partialFailure), .success(retrySuccess)]
+        )
+        let model = MainFileListModel.s223Fixture(detail: detail, tagStore: tagStore)
+
+        await model.selectFiles([detail.id])
+        await model.loadSelectedFileTagSuggestions()
+        model.toggleSelectedFileTagSuggestion("s223-tax")
+        model.startEditingSelectedFileTagSuggestions()
+        model.updateSelectedFileTagSuggestionSlug(suggestionID: "s223-tax", slug: "tax-review")
+        _ = await model.applyEditedSelectedFileTagSuggestions()
+
+        XCTAssertEqual(model.detailTagSuggestionState.appliedReport?.failedCount, 1)
+        XCTAssertEqual(model.detailTagSuggestionState.editSession?.drafts.map(\.status.label), ["Applied", "Failed"])
+        XCTAssertEqual(DetailTagSuggestionAction.retryFailedItems(in: model.detailTagSuggestionState), [
+            ApplyTagSuggestionItemSnapshot(
+                suggestionID: "s223-tax",
+                slug: "tax-review",
+                displayName: "Tax"
+            )
+        ])
+
+        _ = await model.retryFailedSelectedFileTagSuggestions()
+        let applyRequests = await tagStore.applySuggestionRequests()
+
+        XCTAssertEqual(applyRequests.last?.request.suggestions, [
+            ApplyTagSuggestionItemSnapshot(
+                suggestionID: "s223-tax",
+                slug: "tax-review",
+                displayName: "Tax"
+            )
+        ])
+        XCTAssertEqual(model.detailTagSuggestionState.appliedReport?.failedCount, 0)
+        XCTAssertEqual(model.detailTagEditorState.tagSet?.fileTags.map(\.value), ["tax-review"])
+    }
+
+    @MainActor
     func testS121ExportDetailsUsesRedactedPathsAndPrivacyState() {
         let opening = RepositoryOpeningResult.s117Fixture(repoPath: "/tmp/repo")
         let exporter = S121RecordingImportResultExporter()

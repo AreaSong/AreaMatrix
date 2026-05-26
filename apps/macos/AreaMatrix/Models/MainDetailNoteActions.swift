@@ -236,6 +236,10 @@ extension DetailTagSuggestionAction {
         state.editSession?.applyItems ?? []
     }
 
+    static func retryFailedItems(in state: DetailTagSuggestionState) -> [ApplyTagSuggestionItemSnapshot] {
+        state.editSession?.retryFailedItems ?? []
+    }
+
     private static func updateDraft(
         suggestionID: String,
         in state: DetailTagSuggestionState,

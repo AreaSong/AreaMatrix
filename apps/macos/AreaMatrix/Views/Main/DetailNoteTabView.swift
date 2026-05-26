@@ -181,6 +181,7 @@ struct TagSuggestionsPanel: View {
     let onRegenerateSlug: (String) -> Void
     let onApplySelected: () -> Void
     let onApplyEdited: () -> Void
+    let onRetryFailed: () -> Void
     let onAddManually: () -> Void
     let onClose: () -> Void
 
@@ -320,11 +321,19 @@ struct TagSuggestionsPanel: View {
     }
 
     private func applySummary(_ report: TagSuggestionApplyReportSnapshot) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 6) {
             Text("Applied \(report.appliedCount), skipped \(report.skippedCount), failed \(report.failedCount).")
-            if let failed = report.itemResults.first(where: { $0.status == .failed }) {
-                Text(failed.error ?? "A suggestion could not be applied.")
+            ForEach(report.itemResults.filter { $0.status == .failed }) { failed in
+                Text(failed.error ?? "\(failed.slug) could not be applied.")
                     .foregroundStyle(.secondary)
+            }
+            if report.failedCount > 0 {
+                HStack {
+                    Button("Retry failed", action: onRetryFailed)
+                        .disabled(!canRetryFailed)
+                    Button("Add tag manually", action: onAddManually)
+                        .accessibilityIdentifier("S2-23-C2-05-add-tag-manually-after-failure")
+                }
             }
         }
         .font(.caption)
@@ -368,6 +377,13 @@ struct TagSuggestionsPanel: View {
             !state.isLoading &&
             !state.isApplying &&
             session.canApply
+    }
+
+    private var canRetryFailed: Bool {
+        disabledReason == nil &&
+            !state.isLoading &&
+            !state.isApplying &&
+            !DetailTagSuggestionAction.retryFailedItems(in: state).isEmpty
     }
 }
 

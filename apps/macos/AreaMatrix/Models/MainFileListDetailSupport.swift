@@ -34,6 +34,7 @@ struct MainRepositoryDetailPaneTagActions {
     let onRegenerateSuggestionSlug: (String) -> Void
     let onApplySuggestions: () -> Void
     let onApplyEditedSuggestions: () -> Void
+    let onRetryFailedSuggestions: () -> Void
     let onSuggestionPresentationConsumed: (TagSuggestionPresentationRequest) -> Void
     let onUndoTagChange: () -> Void
     let onDismissTagUndoToast: () -> Void

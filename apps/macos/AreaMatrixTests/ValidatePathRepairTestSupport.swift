@@ -348,6 +348,33 @@ extension TagSuggestionApplyReportSnapshot {
             refreshTargets: ["tags", "change_log", "undo_actions"]
         )
     }
+
+    static func s223PartialFailure(fileID: Int64) -> TagSuggestionApplyReportSnapshot {
+        TagSuggestionApplyReportSnapshot(
+            fileID: fileID,
+            requestedCount: 2,
+            appliedCount: 1,
+            skippedCount: 0,
+            failedCount: 1,
+            itemResults: [
+                TagSuggestionApplyItemResultSnapshot(
+                    suggestionID: "s223-finance",
+                    slug: "finance",
+                    status: .applied,
+                    error: nil
+                ),
+                TagSuggestionApplyItemResultSnapshot(
+                    suggestionID: "s223-tax",
+                    slug: "tax-review",
+                    status: .failed,
+                    error: "Tag relation write failed."
+                )
+            ],
+            tagSet: .s207Fixture(fileID: fileID, values: ["finance"]),
+            undoToken: "undo-s223-partial",
+            refreshTargets: ["tags", "change_log", "undo_actions"]
+        )
+    }
 }
 
 extension ChangeLogEntrySnapshot {

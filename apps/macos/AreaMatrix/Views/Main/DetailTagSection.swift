@@ -23,6 +23,7 @@ struct DetailTagSection: View {
     let onRegenerateSuggestionSlug: (String) -> Void
     let onApplySuggestions: () -> Void
     let onApplyEditedSuggestions: () -> Void
+    let onRetryFailedSuggestions: () -> Void
     let onSuggestionPresentationConsumed: (TagSuggestionPresentationRequest) -> Void
     let onUndoTagChange: () -> Void
     let onDismissUndoToast: () -> Void
@@ -66,6 +67,7 @@ struct DetailTagSection: View {
                 onRegenerateSlug: onRegenerateSuggestionSlug,
                 onApplySelected: onApplySuggestions,
                 onApplyEdited: onApplyEditedSuggestions,
+                onRetryFailed: onRetryFailedSuggestions,
                 onAddManually: {
                     isSuggestionsPresented = false
                     isPopoverPresented = true

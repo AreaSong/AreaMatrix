@@ -459,7 +459,7 @@ final class DetailTagPageFeatureTests: XCTestCase {
         await model.loadSelectedFileTagSuggestions()
         model.toggleSelectedFileTagSuggestion("s223-tax")
         model.startEditingSelectedFileTagSuggestions()
-        model.updateSelectedFileTagSuggestionDisplayName(suggestionID: "s223-tax", displayName: "Tax Review")
+        model.updateSelectedFileTagSuggestionDisplayName(suggestionID: "s223-tax", displayName: "  ")
         model.updateSelectedFileTagSuggestionSlug(suggestionID: "s223-tax", slug: "tax-review")
 
         _ = await model.applyEditedSelectedFileTagSuggestions()
@@ -471,13 +471,14 @@ final class DetailTagPageFeatureTests: XCTestCase {
             ApplyTagSuggestionItemSnapshot(
                 suggestionID: "s223-tax",
                 slug: "tax-review",
-                displayName: "Tax Review"
+                displayName: "tax-review"
             )
         ])
         XCTAssertEqual(model.detailTagEditorState.tagSet?.fileTags.map(\.value), ["tax-review"])
         XCTAssertNotNil(model.detailTagSuggestionState.editSession)
         XCTAssertNotNil(model.detailTagEditorState.failure)
     }
+
 }
 // swiftlint:enable type_body_length
 

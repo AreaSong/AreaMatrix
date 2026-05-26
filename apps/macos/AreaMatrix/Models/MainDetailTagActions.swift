@@ -201,6 +201,42 @@ extension MainFileListModel {
         }
     }
 
+    func retryFailedSelectedFileTagSuggestions() async -> BatchTagUndoState? {
+        guard let fileID = selection.singleFileID,
+              writeActionDisabledReason(fileID: fileID) == nil,
+              let report = detailTagSuggestionState.report,
+              let session = detailTagSuggestionState.editSession else { return nil }
+        let suggestions = DetailTagSuggestionAction.retryFailedItems(in: detailTagSuggestionState)
+        guard !suggestions.isEmpty else { return nil }
+
+        let previousTagSet = detailTagEditorState.tagSet
+        detailTagSuggestionState = DetailTagSuggestionAction.applyingEdited(in: detailTagSuggestionState)
+        detailTagEditorState = .loading(fileID: fileID, previous: previousTagSet)
+        do {
+            let applyReport = try await tagStore.applyTagSuggestions(
+                repoPath: repoPath,
+                request: ApplyTagSuggestionsRequestSnapshot(fileID: fileID, suggestions: suggestions)
+            )
+            guard selection.singleFileID == fileID else { return nil }
+            let recovered = editedSessionAfterApply(session, report: applyReport)
+            detailTagSuggestionState = .editApplied(fileID: fileID, report, applyReport, recovered)
+            detailTagEditorState = .loaded(fileID: fileID, applyReport.tagSet)
+            await loadChangeLog(fileID: fileID)
+            return await loadSuggestionUndoState(undoToken: applyReport.undoToken)
+        } catch {
+            let mapping = await mapCoreError(error)
+            guard selection.singleFileID == fileID else { return nil }
+            detailTagSuggestionState = .editing(fileID: fileID, report, session)
+            detailTagEditorState = .failed(
+                fileID: fileID,
+                operation: .applySuggestions(suggestions.map(\.slug)),
+                mapping,
+                previous: previousTagSet
+            )
+            return nil
+        }
+    }
+
     func clearStaleDetailTagUndoToast() {
         guard detailTagUndoToast?.fileID != selection.singleFileID else { return }
         detailTagUndoToast = nil
@@ -312,7 +348,7 @@ extension MainFileListModel {
             case .alreadyAdded:
                 updated.status = .alreadyAdded(result.error ?? "Already added")
             case .failed:
-                updated.status = .blocked(result.error ?? "A suggestion could not be applied.")
+                updated.status = .failed(result.error ?? "A suggestion could not be applied.")
             }
             return updated
         }
