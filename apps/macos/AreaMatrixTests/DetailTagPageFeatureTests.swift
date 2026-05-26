@@ -315,6 +315,32 @@ final class DetailTagPageFeatureTests: XCTestCase {
     }
 
     @MainActor
+    func testS223C205ManualFallbackUsesTagCrudWithoutApplyingSuggestions() async {
+        let scenarios: [(Int64, String, String, DetailTagRecordingStore.SuggestionResult)] = [
+            (229, "manual-tag.pdf", "manual", .success(.s223EmptyFixture(fileID: 229))),
+            (230, "suggestion-fail.pdf", "fallback", .failure(CoreError.Db(message: "suggestion locked")))
+        ]
+        for scenario in scenarios {
+            let detail = FileEntrySnapshot.detailMetaFixture(id: scenario.0, currentName: scenario.1)
+            let tagStore = DetailTagRecordingStore(
+                listResults: [.success(.s207Fixture(fileID: detail.id, values: [scenario.2]))],
+                suggestionResults: [scenario.3]
+            )
+            let model = MainFileListModel.s223Fixture(detail: detail, tagStore: tagStore)
+
+            await model.selectFiles([detail.id])
+            await model.loadSelectedFileTagSuggestions()
+            await model.loadSelectedFileTags()
+
+            XCTAssertEqual(await tagStore.listRequests(), [
+                DetailTagListRequest(repoPath: "/tmp/repo", fileID: detail.id)
+            ])
+            XCTAssertEqual(await tagStore.applySuggestionRequests(), [])
+            XCTAssertEqual(model.detailTagEditorState.tagSet?.fileTags.map(\.value), [scenario.2])
+        }
+    }
+
+    @MainActor
     func testS223C219ApplySelectedUsesCoreApplyAndRefreshesUndoAction() async {
         let detail = FileEntrySnapshot.detailMetaFixture(id: 224, currentName: "invoice_2026.pdf")
         let report = TagSuggestionReportSnapshot.s223Fixture(fileID: detail.id)

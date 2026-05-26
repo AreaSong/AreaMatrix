@@ -69,6 +69,7 @@ struct DetailTagSection: View {
                 onAddManually: {
                     isSuggestionsPresented = false
                     isPopoverPresented = true
+                    if state.tagSet == nil { onLoadTags() }
                 },
                 onClose: { isSuggestionsPresented = false }
             )

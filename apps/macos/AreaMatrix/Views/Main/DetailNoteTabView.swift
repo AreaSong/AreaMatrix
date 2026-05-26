@@ -229,7 +229,11 @@ struct TagSuggestionsPanel: View {
                 .font(.callout.weight(.semibold))
             Text(failure.userMessage)
                 .foregroundStyle(.secondary)
-            Button("Retry", action: onRetry)
+            HStack {
+                Button("Retry", action: onRetry)
+                Button("Add tag manually", action: onAddManually)
+                    .accessibilityIdentifier("S2-23-C2-05-add-tag-manually")
+            }
         }
     }
 
@@ -264,6 +268,7 @@ struct TagSuggestionsPanel: View {
             Text("No tag suggestions")
                 .font(.callout.weight(.semibold))
             Button("Add tag manually", action: onAddManually)
+                .accessibilityIdentifier("S2-23-C2-05-add-tag-manually")
         }
     }
 

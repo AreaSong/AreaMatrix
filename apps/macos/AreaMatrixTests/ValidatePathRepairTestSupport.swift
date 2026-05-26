@@ -309,6 +309,17 @@ extension TagSuggestionReportSnapshot {
             networkUsed: false
         )
     }
+
+    static func s223EmptyFixture(fileID: Int64, existingValues: [String] = []) -> TagSuggestionReportSnapshot {
+        TagSuggestionReportSnapshot(
+            fileID: fileID,
+            suggestions: [],
+            tagSet: .s207Fixture(fileID: fileID, values: existingValues),
+            contentsRead: false,
+            aiUsed: false,
+            networkUsed: false
+        )
+    }
 }
 
 extension TagSuggestionApplyReportSnapshot {
