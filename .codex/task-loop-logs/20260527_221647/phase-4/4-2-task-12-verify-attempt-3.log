@@ -1,0 +1,74 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-2/task-12`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-2-stage3-ai/task-12-c3-03-implementation.md`
+- 实际验收文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/remote_provider_config.rs`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/remote_provider_config/probe.rs`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/db/remote_provider_config.rs`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/remote_provider_config_implementation.rs`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：0
+- 通过项数：10
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只实现 C3-03，不顺手实现同阶段其他 C* 能力
+- 结果：通过
+- 证据：实现集中在 `remote_provider_config` 与 DB repo_config 存储；`api.rs:270-273` 明确不实现 C3-09 privacy gate、AI 建议、用户文件写入等相邻能力；`git diff --name-only -- apps` 为空。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/remote_provider_config.rs:143`
+
+- 项目：按能力规格落实输入、输出、DB/文件系统变化和错误映射
+- 结果：通过
+- 证据：输入/输出类型和 UDL 已存在；`test_remote_ai_provider` 测试连接并写 pending verification，`enable_remote_ai_provider` 校验 token 后写启用快照；DB 写入只落 `repo_config`，保存 provider metadata、key reference 和 scope，不保存 key 明文；错误映射覆盖 `Config`、`PermissionDenied`、`Internal`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/remote_provider_config.rs:143`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/db/remote_provider_config.rs:12`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:39`
+
+- 项目：保持 Rust Core 不依赖平台 UI API
+- 结果：通过
+- 证据：实现使用 Rust Core、SQLite、环境/外部 probe runtime/curl；未引入 Swift、AppKit、SwiftUI 或 `apps/**` 调用。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/remote_provider_config/probe.rs:69`
+
+- 项目：必要最小测试支撑，不做页面接入
+- 结果：通过
+- 证据：新增实现测试覆盖成功启用、必须先测试、secret-like key 拒绝、失败状态不写入、credential denied、写入失败回滚、用户文件边界；未修改 `apps/**`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/remote_provider_config_implementation.rs:96`
+
+- 项目：Expected New Paths
+- 结果：通过
+- 证据：`core/src/**`、`core/area_matrix.udl`、`core/tests/**` 均已存在并包含 C3-03 实现/合同/测试。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/remote_provider_config_implementation.rs:1`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git diff --name-only -- apps` 无输出，未触碰 `apps/**`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过；文件均未超过 500 行，主流程拆成 validation、probe、DB storage、snapshot helpers。
+- 注释 / rustdoc / 文档同步：通过；新增 public API 类型与 `api.rs` wrapper 有 rustdoc，Core API 与 UDL 对齐。
+- 错误处理与边界处理：通过；生产实现未发现 `unwrap()` / `expect()` / `panic!()` / `TODO`，失败路径返回结构化 `CoreError`。
+- 测试与验证覆盖：通过；task-scoped 验证已运行并通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过；原先 unavailable stub 已替换为真实 probe + repo_config 持久化路径，测试未作为唯一业务路径。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-2/task-12`
+- 通过：`prompt_pipeline.py doctor` OK，637 tasks / 637 manifests；`git diff --check` OK；`cargo test --test remote_provider_config_contract_api -- --nocapture` 4 passed；`cargo test --test remote_provider_config_implementation -- --nocapture` 7 passed。
+- 失败：无。
+- 缺失：无。未扩大到 `./dev check all`，因为 manifest 对普通 atomic Core task 的验证上限是 `./dev check task 4-2/task-12`。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。当前 `progress.json` / task-loop summary 仍显示 `in_progress` 属于 verify 阶段前后的 runner 收口时序，不作为本次只读验收失败依据；未发现危险、无关或 Forbidden Touches 脏改动。
+
+VERIFY_RESULT: PASS
