@@ -36,6 +36,16 @@ namespace area_matrix {
     );
 
     [Throws=CoreError]
+    RemoteProviderTestResult test_remote_ai_provider(
+        string repo_path, RemoteProviderTestRequest request
+    );
+
+    [Throws=CoreError]
+    RemoteProviderConfigSnapshot enable_remote_ai_provider(
+        string repo_path, RemoteProviderEnableRequest request
+    );
+
+    [Throws=CoreError]
     RecoveryReport recover_on_startup(string repo_path);
 
     [Throws=CoreError]
@@ -388,6 +398,46 @@ dictionary LocalModelFolderLocation {
     boolean readable;
     boolean openable;
     string? unavailable_reason;
+};
+
+dictionary RemoteProviderTestRequest {
+    RemoteAiProviderKind provider;
+    string model_id;
+    string? endpoint_url;
+    string key_reference;
+};
+
+dictionary RemoteProviderEnableRequest {
+    RemoteAiProviderKind provider;
+    string model_id;
+    string? endpoint_url;
+    string key_reference;
+    sequence<AiFeatureKind> feature_scope;
+    string verification_token;
+    boolean data_flow_confirmed;
+};
+
+dictionary RemoteProviderConfigSnapshot {
+    boolean provider_configured;
+    boolean provider_verified;
+    boolean remote_provider_enabled;
+    RemoteAiProviderKind? provider;
+    string? model_id;
+    string? endpoint_url;
+    boolean credential_configured;
+    sequence<AiFeatureKind> feature_scope;
+    i64? updated_at;
+    string? disabled_reason;
+};
+
+dictionary RemoteProviderTestResult {
+    RemoteAiProviderKind provider;
+    string model_id;
+    string? endpoint_url;
+    RemoteProviderTestStatus status;
+    boolean provider_verified;
+    string? verification_token;
+    string sanitized_message;
 };
 
 dictionary RepoInitOptions {
@@ -1310,6 +1360,10 @@ enum OverviewOutput { "GeneratedOnly", "RootAreaMatrixFile" };
 enum AiProviderPreference { "LocalFirst", "LocalOnly", "RemoteFirst" };
 enum AiFeatureKind {
     "ClassificationSuggestions", "AutoSummaries", "AutoTags", "SemanticSearch"
+};
+enum RemoteAiProviderKind { "OpenAi", "Anthropic", "Other" };
+enum RemoteProviderTestStatus {
+    "Succeeded", "ProviderRejected", "ConnectionFailed", "UnsupportedProvider"
 };
 enum LocalModelAvailability {
     "Unknown", "Ready", "NotInstalled", "PathUnreadable",

@@ -5,20 +5,22 @@ use std::path::PathBuf;
 use crate::{
     ai_settings, batch_category, batch_delete, batch_rename as batch_rename_mod,
     classifier_correction, classifier_impact, classifier_rule_editor, classifier_rules, classify,
-    db, icloud_conflicts, import_conflict_batch, local_model_status, note, recovery, redo, repair,
-    repo_init, repo_path, repo_scan, storage, sync, tree, AiConfig, AiConfigSnapshot,
-    ApplyTagSuggestionsRequest, BatchCategoryChangeReport, BatchCategoryPreviewReport,
-    BatchDeleteMode, BatchDeletePreviewReport, BatchDeleteReport, BatchRenamePreviewReport,
-    BatchRenameReport, BatchRenameRule, ChangeFilter, ChangeLogEntry, ClassifierCorrectionResult,
-    ClassifierImpactPreviewRequest, ClassifierRule, ClassifierRuleCreateRequest,
-    ClassifierRuleDeleteRequest, ClassifierRuleEditorSnapshot, ClassifierRuleUpdate,
-    ClassifyResult, CoreError, CoreResult, DiagnosticsSnapshot, ExternalEvent, FileEntry,
-    FileFilter, ICloudConflictPair, ICloudConflictPreviewReport, ICloudConflictResolution,
-    ICloudConflictResolveReport, ImportConflictBatchApplyReport, ImportConflictBatchApplyRequest,
-    ImportConflictBatchPreviewReport, ImportConflictBatchPreviewRequest, ImportOptions,
-    LocalModelFolderLocation, LocalModelFolderRequest, LocalModelStatusRequest,
-    LocalModelStatusSnapshot, MoveToCategoryPreview, RecoveryReport, RedoActionRecord,
-    RedoActionResult, ReindexReport, RepairOptions, RepairReport, RepoConfig, RepoInitOptions,
+    db, icloud_conflicts, import_conflict_batch, local_model_status, note, recovery, redo,
+    remote_provider_config, repair, repo_init, repo_path, repo_scan, storage, sync, tree, AiConfig,
+    AiConfigSnapshot, ApplyTagSuggestionsRequest, BatchCategoryChangeReport,
+    BatchCategoryPreviewReport, BatchDeleteMode, BatchDeletePreviewReport, BatchDeleteReport,
+    BatchRenamePreviewReport, BatchRenameReport, BatchRenameRule, ChangeFilter, ChangeLogEntry,
+    ClassifierCorrectionResult, ClassifierImpactPreviewRequest, ClassifierRule,
+    ClassifierRuleCreateRequest, ClassifierRuleDeleteRequest, ClassifierRuleEditorSnapshot,
+    ClassifierRuleUpdate, ClassifyResult, CoreError, CoreResult, DiagnosticsSnapshot,
+    ExternalEvent, FileEntry, FileFilter, ICloudConflictPair, ICloudConflictPreviewReport,
+    ICloudConflictResolution, ICloudConflictResolveReport, ImportConflictBatchApplyReport,
+    ImportConflictBatchApplyRequest, ImportConflictBatchPreviewReport,
+    ImportConflictBatchPreviewRequest, ImportOptions, LocalModelFolderLocation,
+    LocalModelFolderRequest, LocalModelStatusRequest, LocalModelStatusSnapshot,
+    MoveToCategoryPreview, RecoveryReport, RedoActionRecord, RedoActionResult, ReindexReport,
+    RemoteProviderConfigSnapshot, RemoteProviderEnableRequest, RemoteProviderTestRequest,
+    RemoteProviderTestResult, RepairOptions, RepairReport, RepoConfig, RepoInitOptions,
     RepoPathValidation, RuleImpactReport, ScanSession, SyncResult, TagSuggestionApplyReport,
     TagSuggestionReport, TagSuggestionRequest,
 };
@@ -230,6 +232,58 @@ pub fn locate_local_model_folder(
     request: LocalModelFolderRequest,
 ) -> CoreResult<LocalModelFolderLocation> {
     local_model_status::locate_local_model_folder(repo_path, request)
+}
+
+/// Tests a C3-03 remote AI provider without sending user file content.
+///
+/// S3-03 uses this contract before enabling remote AI. The request includes
+/// provider, model, optional custom endpoint, and a platform secure-storage key
+/// reference. Core must never accept or return raw API keys, user file paths,
+/// file content, prompts, notes, summaries, tags, or provider raw responses.
+///
+/// The later implementation may perform a minimal provider connectivity probe
+/// and write a sanitized provider-test log entry owned by C3-05. The test must
+/// not persist enablement, feature scope, privacy rules, or any user content.
+///
+/// # Errors
+///
+/// Returns `CoreError::Config { reason }` for invalid provider, model,
+/// endpoint, or key-reference shape; `CoreError::PermissionDenied { path }`
+/// when the secure credential reference cannot be accessed; and
+/// `CoreError::Internal { message }` for unavailable provider runtime or
+/// unexpected sanitized probe failures.
+pub fn test_remote_ai_provider(
+    repo_path: String,
+    request: RemoteProviderTestRequest,
+) -> CoreResult<RemoteProviderTestResult> {
+    remote_provider_config::test_remote_ai_provider(repo_path, request)
+}
+
+/// Enables a C3-03 remote AI provider after successful test and consent.
+///
+/// S3-03 uses this contract after the user selects usage scope and confirms
+/// that allowed content may leave the device. The returned snapshot exposes the
+/// five provider gate fields consumed by S3-03 and S3-09:
+/// `provider_configured`, `provider_verified`, `remote_provider_enabled`,
+/// `feature_scope`, and credential presence without API key material.
+///
+/// This contract does not execute AI calls, evaluate privacy rules, edit
+/// privacy field filters, generate suggestions, write user files, or disable
+/// remote calls through S3-09's privacy gate. C3-09 remains responsible for
+/// `privacy_gate_enabled` and field/rule evaluation.
+///
+/// # Errors
+///
+/// Returns `CoreError::Config { reason }` for invalid provider settings,
+/// missing feature scope, missing verification token, or missing data-flow
+/// consent; `CoreError::PermissionDenied { path }` when secure credential or
+/// provider metadata cannot be inspected; and `CoreError::Internal { message }`
+/// when provider metadata persistence or sanitized enablement state fails.
+pub fn enable_remote_ai_provider(
+    repo_path: String,
+    request: RemoteProviderEnableRequest,
+) -> CoreResult<RemoteProviderConfigSnapshot> {
+    remote_provider_config::enable_remote_ai_provider(repo_path, request)
 }
 
 /// Recovers AreaMatrix-owned startup residue before the UI opens.

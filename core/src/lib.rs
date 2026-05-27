@@ -27,6 +27,7 @@ mod note;
 pub mod overview;
 mod recovery;
 mod redo;
+mod remote_provider_config;
 mod repair;
 mod repo_entries;
 mod repo_init;
@@ -96,6 +97,10 @@ pub use local_model_status::{
 };
 pub use redo::{
     list_redo_actions, redo_action, RedoActionRecord, RedoActionResult, RedoActionStatus,
+};
+pub use remote_provider_config::{
+    RemoteAiProviderKind, RemoteProviderConfigSnapshot, RemoteProviderEnableRequest,
+    RemoteProviderTestRequest, RemoteProviderTestResult, RemoteProviderTestStatus,
 };
 pub use search::*;
 pub use tags::{
