@@ -1,8 +1,9 @@
 use area_matrix_core::{
-    get_local_model_status, locate_local_model_folder, AiFeatureKind, CoreError, CoreResult,
-    LocalModelAvailability, LocalModelCachedStatus, LocalModelFeatureStatus,
+    get_local_model_status, init_repo, locate_local_model_folder, AiFeatureKind, CoreError,
+    CoreResult, LocalModelAvailability, LocalModelCachedStatus, LocalModelFeatureStatus,
     LocalModelFolderLocation, LocalModelFolderRequest, LocalModelRecommendedAction,
-    LocalModelStatusRequest, LocalModelStatusSnapshot,
+    LocalModelStatusRequest, LocalModelStatusSnapshot, OverviewOutput, RepoInitMode,
+    RepoInitOptions,
 };
 use pretty_assertions::assert_eq;
 
@@ -112,17 +113,17 @@ fn local_model_status_contract_exposes_signatures_inputs_outputs_and_errors() {
 }
 
 #[test]
-fn local_model_status_contract_has_no_fake_success_before_implementation() {
+fn local_model_status_contract_rejects_invalid_inputs_without_fake_success() {
     let repo = tempfile::tempdir().expect("create temporary repository directory");
 
     assert!(matches!(
-        get_local_model_status(repo.path().to_string_lossy().into_owned(), status_request()),
+        get_local_model_status(String::new(), status_request()),
         Err(CoreError::Config { .. })
     ));
 
     assert!(matches!(
         locate_local_model_folder(
-            repo.path().to_string_lossy().into_owned(),
+            String::new(),
             LocalModelFolderRequest {
                 model_id: "areamatrix-local-classifier".to_owned(),
                 storage_location: "~/Library/Application Support/AreaMatrix/Models".to_owned(),
@@ -144,6 +145,37 @@ fn local_model_status_contract_has_no_fake_success_before_implementation() {
         ),
         Err(CoreError::Config { .. })
     ));
+}
+
+#[test]
+fn local_model_status_contract_returns_structured_missing_status_after_implementation() {
+    let repo = tempfile::tempdir().expect("create temporary repository directory");
+    init_repo(
+        repo.path().to_string_lossy().into_owned(),
+        RepoInitOptions {
+            mode: RepoInitMode::CreateEmpty,
+            create_default_categories: false,
+            overview_output: OverviewOutput::GeneratedOnly,
+        },
+    )
+    .expect("initialize repository");
+    let missing_model = repo.path().join("models/missing");
+
+    let snapshot = get_local_model_status(
+        repo.path().to_string_lossy().into_owned(),
+        LocalModelStatusRequest {
+            model_id: "areamatrix-local-classifier".to_owned(),
+            storage_location: missing_model.to_string_lossy().into_owned(),
+            cached_status: None,
+        },
+    )
+    .expect("missing local model returns structured status");
+
+    assert_eq!(snapshot.availability, LocalModelAvailability::NotInstalled);
+    assert_eq!(
+        snapshot.recommended_action,
+        LocalModelRecommendedAction::OpenInstallHelp
+    );
 }
 
 #[test]
@@ -273,7 +305,8 @@ fn local_model_status_contract_documents_consumer_state_and_scope_boundaries() {
         "C3-02 local model status contract types",
     );
     for fragment in [
-        "implementation is not available yet",
+        "inspect_local_model",
+        "update_local_model_status_record",
         "local model diagnostics summary contains disallowed content",
         "sk-",
         "remote_provider",

@@ -1,10 +1,18 @@
 //! C3-02 local model status contract types and entry points.
 
-use std::path::{Component, PathBuf};
+use std::{
+    env,
+    path::{Component, PathBuf},
+    time::{SystemTime, UNIX_EPOCH},
+};
 
 use serde::{Deserialize, Serialize};
 
-use crate::{AiFeatureKind, CoreError, CoreResult};
+use crate::{db, AiFeatureKind, CoreError, CoreResult};
+
+pub(super) mod diagnostics;
+pub(super) mod filesystem;
+mod inspection;
 
 const AREA_MATRIX_DIR: &str = ".areamatrix";
 const MAX_MODEL_ID_LEN: usize = 128;
@@ -162,9 +170,13 @@ pub(crate) fn get_local_model_status(
 ) -> CoreResult<LocalModelStatusSnapshot> {
     validate_repo_path(&repo_path)?;
     validate_status_request(&request)?;
-    Err(CoreError::config(
-        "local model status implementation is not available yet",
-    ))
+
+    let repo = PathBuf::from(&repo_path);
+    let model_path = resolve_storage_location(&request.storage_location)?;
+    let checked_at = unix_timestamp()?;
+    let snapshot = inspection::inspect_local_model(&request, &model_path, checked_at)?;
+    db::update_local_model_status_record(&repo, &snapshot).map_err(map_status_cache_error)?;
+    Ok(snapshot)
 }
 
 pub(crate) fn locate_local_model_folder(
@@ -173,9 +185,8 @@ pub(crate) fn locate_local_model_folder(
 ) -> CoreResult<LocalModelFolderLocation> {
     validate_repo_path(&repo_path)?;
     validate_model_identity(&request.model_id, &request.storage_location)?;
-    Err(CoreError::config(
-        "local model folder location implementation is not available yet",
-    ))
+    let folder_path = resolve_storage_location(&request.storage_location)?;
+    inspection::locate_model_folder(&request.model_id, &folder_path)
 }
 
 fn validate_status_request(request: &LocalModelStatusRequest) -> CoreResult<()> {
@@ -229,6 +240,28 @@ fn validate_model_identity(model_id: &str, storage_location: &str) -> CoreResult
     Ok(())
 }
 
+fn resolve_storage_location(storage_location: &str) -> CoreResult<PathBuf> {
+    let expanded = if let Some(suffix) = storage_location.strip_prefix("~/") {
+        home_dir()
+            .ok_or_else(|| CoreError::config("local model storage location is invalid"))?
+            .join(suffix)
+    } else {
+        PathBuf::from(storage_location)
+    };
+    if expanded.components().any(is_area_matrix_component) {
+        return Err(CoreError::config(
+            "local model storage location must not point inside repository metadata",
+        ));
+    }
+    Ok(expanded)
+}
+
+fn home_dir() -> Option<PathBuf> {
+    env::var_os("HOME")
+        .filter(|home| !home.is_empty())
+        .map(PathBuf::from)
+}
+
 fn validate_repo_path(repo_path: &str) -> CoreResult<()> {
     if repo_path.trim().is_empty() || repo_path.contains('\0') {
         return Err(CoreError::config(
@@ -244,6 +277,26 @@ fn validate_repo_path(repo_path: &str) -> CoreResult<()> {
     Ok(())
 }
 
+fn map_status_cache_error(error: CoreError) -> CoreError {
+    match error {
+        CoreError::Db { .. } => CoreError::config("local model status cache persistence failed"),
+        CoreError::RepoNotInitialized { .. } => {
+            CoreError::config("local model status requires initialized repository metadata")
+        }
+        CoreError::InvalidPath { .. } => {
+            CoreError::config("local model status repository path is invalid")
+        }
+        other => other,
+    }
+}
+
+fn unix_timestamp() -> CoreResult<i64> {
+    let duration = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_err(|_| CoreError::io("system clock is before unix epoch"))?;
+    i64::try_from(duration.as_secs()).map_err(|_| CoreError::io("system clock is out of range"))
+}
+
 fn is_model_id_char(value: char) -> bool {
     value.is_ascii_alphanumeric() || matches!(value, '-' | '_' | '.' | ':')
 }
@@ -252,7 +305,7 @@ fn is_area_matrix_component(component: Component<'_>) -> bool {
     matches!(component, Component::Normal(value) if value == AREA_MATRIX_DIR)
 }
 
-fn looks_sensitive(summary: &str) -> bool {
+pub(super) fn looks_sensitive(summary: &str) -> bool {
     let normalized = summary.to_ascii_lowercase();
     let direct_tokens = [
         "api key",
