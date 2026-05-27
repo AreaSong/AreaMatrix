@@ -294,9 +294,7 @@ fn local_model_status_contract_documents_consumer_state_and_scope_boundaries() {
         assert_contains(LOCAL_MODEL_PAGE, fragment);
     }
 
-    for fragment in ["Local model status"] {
-        assert_contains(AI_SETTINGS_PAGE, fragment);
-    }
+    assert_contains(AI_SETTINGS_PAGE, "Local model status");
 
     assert_contains(FALLBACK_PAGE, "Open local model status");
 

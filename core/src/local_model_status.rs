@@ -13,6 +13,7 @@ use crate::{db, AiFeatureKind, CoreError, CoreResult};
 pub(super) mod diagnostics;
 pub(super) mod filesystem;
 mod inspection;
+mod snapshot;
 
 const AREA_MATRIX_DIR: &str = ".areamatrix";
 const MAX_MODEL_ID_LEN: usize = 128;
@@ -215,6 +216,15 @@ fn validate_cached_status(
     {
         return Err(CoreError::config(
             "local model last_checked_at must not be negative",
+        ));
+    }
+    if cached
+        .last_error
+        .as_deref()
+        .is_some_and(|last_error| last_error.contains('\0') || looks_sensitive(last_error))
+    {
+        return Err(CoreError::config(
+            "local model last error contains disallowed content",
         ));
     }
     if cached.diagnostics_summary.contains('\0') || looks_sensitive(&cached.diagnostics_summary) {

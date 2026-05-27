@@ -5,14 +5,16 @@ use std::path::Path;
 use serde::Deserialize;
 
 use crate::{
-    AiFeatureKind, CoreError, CoreResult, LocalModelAvailability, LocalModelFeatureStatus,
-    LocalModelFolderLocation, LocalModelRecommendedAction, LocalModelStatusRequest,
-    LocalModelStatusSnapshot,
+    CoreError, CoreResult, LocalModelAvailability, LocalModelFeatureStatus,
+    LocalModelFolderLocation, LocalModelStatusRequest, LocalModelStatusSnapshot,
 };
 
 use super::{
     diagnostics::{diagnostics, sanitize_optional_str},
     filesystem::{directory_size, inspect_folder, read_text_if_exists},
+    snapshot::{
+        default_feature_statuses, feature_kind, snapshot, unavailable_reason, SnapshotDraft,
+    },
 };
 
 const MANIFEST_FILE: &str = "manifest.json";
@@ -64,65 +66,65 @@ pub(super) fn inspect_local_model(
 ) -> CoreResult<LocalModelStatusSnapshot> {
     let folder = inspect_folder(model_path)?;
     if !folder.exists {
-        return Ok(snapshot(
+        return Ok(snapshot(SnapshotDraft {
             request,
-            LocalModelAvailability::NotInstalled,
-            None,
-            None,
-            Some("Model is not installed".to_owned()),
+            availability: LocalModelAvailability::NotInstalled,
+            version: None,
+            size_bytes: None,
+            last_error: Some("Model is not installed".to_owned()),
             checked_at,
-            diagnostics("missing", "not checked", "missing", None, None),
-            None,
-        ));
+            diagnostics_summary: diagnostics("missing", "not checked", "missing", None, None),
+            feature_statuses: None,
+        }));
     }
     if !folder.openable {
-        return Ok(snapshot(
+        return Ok(snapshot(SnapshotDraft {
             request,
-            LocalModelAvailability::PathUnreadable,
-            None,
-            None,
-            folder.unavailable_reason,
+            availability: LocalModelAvailability::PathUnreadable,
+            version: None,
+            size_bytes: None,
+            last_error: folder.unavailable_reason,
             checked_at,
-            diagnostics("unknown", "not checked", "unreadable", None, None),
-            None,
-        ));
+            diagnostics_summary: diagnostics("unknown", "not checked", "unreadable", None, None),
+            feature_statuses: None,
+        }));
     }
 
     let size_bytes = Some(directory_size(model_path)?);
     let runtime = read_runtime_health(model_path)?;
     match read_manifest(model_path)? {
-        ManifestRead::Missing => Ok(snapshot(
+        ManifestRead::Missing => Ok(snapshot(SnapshotDraft {
             request,
-            LocalModelAvailability::NotInstalled,
-            None,
+            availability: LocalModelAvailability::NotInstalled,
+            version: None,
             size_bytes,
-            Some("Model manifest is missing".to_owned()),
+            last_error: Some("Model manifest is missing".to_owned()),
             checked_at,
-            diagnostics(
+            diagnostics_summary: diagnostics(
                 "missing",
                 runtime_label(&runtime),
                 "readable",
                 size_bytes,
                 None,
             ),
-            None,
-        )),
-        ManifestRead::Invalid(reason) => Ok(snapshot(
+            feature_statuses: None,
+        })),
+        ManifestRead::Invalid(reason) => Ok(snapshot(SnapshotDraft {
             request,
-            LocalModelAvailability::Corrupted,
-            None,
+            availability: LocalModelAvailability::Corrupted,
+            version: None,
             size_bytes,
-            Some(reason.clone()),
+            last_error: Some(reason.clone()),
             checked_at,
-            diagnostics(
+            diagnostics_summary: diagnostics(
                 "invalid",
                 runtime_label(&runtime),
                 "readable",
                 size_bytes,
                 Some(&reason),
             ),
-            None,
-        )),
+            feature_statuses: None,
+        })),
         ManifestRead::Present(manifest) => {
             manifest_snapshot(request, manifest, runtime, size_bytes, checked_at)
         }
@@ -174,13 +176,14 @@ fn manifest_snapshot(
             &runtime,
         );
     }
-    let availability = manifest_availability(&manifest, &runtime).unwrap_or_else(|reason| {
-        if reason.contains("manifest") {
-            LocalModelAvailability::Corrupted
-        } else {
-            LocalModelAvailability::RuntimeFailed
+    let availability = match manifest_availability(&manifest, &runtime) {
+        Ok(availability) => availability,
+        Err(reason) => {
+            return Ok(invalid_status_snapshot(
+                request, &manifest, size_bytes, checked_at, &reason, &runtime,
+            ));
         }
-    });
+    };
     snapshot_from_manifest(
         request,
         &manifest,
@@ -212,16 +215,55 @@ fn snapshot_from_manifest(
             .or(manifest.diagnostics_summary.as_deref()),
     );
     let features = manifest_features(manifest, &availability)?;
-    Ok(snapshot(
+    Ok(snapshot(SnapshotDraft {
         request,
         availability,
-        manifest.version.clone(),
+        version: manifest.version.clone(),
         size_bytes,
         last_error,
         checked_at,
-        summary,
-        Some(features),
-    ))
+        diagnostics_summary: summary,
+        feature_statuses: Some(features),
+    }))
+}
+
+fn invalid_status_snapshot(
+    request: &LocalModelStatusRequest,
+    manifest: &ModelManifest,
+    size_bytes: Option<i64>,
+    checked_at: i64,
+    reason: &str,
+    runtime: &RuntimeRead,
+) -> LocalModelStatusSnapshot {
+    let availability = if reason.contains("manifest") {
+        LocalModelAvailability::Corrupted
+    } else {
+        LocalModelAvailability::RuntimeFailed
+    };
+    snapshot(SnapshotDraft {
+        request,
+        availability,
+        version: manifest.version.clone(),
+        size_bytes,
+        last_error: sanitize_optional_str(Some(reason)),
+        checked_at,
+        diagnostics_summary: diagnostics(
+            manifest_status_for_invalid(reason),
+            runtime_label(runtime),
+            "readable",
+            size_bytes,
+            Some(reason),
+        ),
+        feature_statuses: None,
+    })
+}
+
+fn manifest_status_for_invalid(reason: &str) -> &'static str {
+    if reason.contains("manifest") {
+        "invalid"
+    } else {
+        "ok"
+    }
 }
 
 fn read_manifest(model_path: &Path) -> CoreResult<ManifestRead> {
@@ -281,22 +323,6 @@ fn manifest_features(
     Ok(statuses)
 }
 
-fn default_feature_statuses(availability: &LocalModelAvailability) -> Vec<LocalModelFeatureStatus> {
-    let available = matches!(availability, LocalModelAvailability::Ready);
-    all_features()
-        .into_iter()
-        .map(|feature| LocalModelFeatureStatus {
-            feature,
-            available,
-            unavailable_reason: if available {
-                None
-            } else {
-                Some(unavailable_reason(availability))
-            },
-        })
-        .collect()
-}
-
 fn replace_feature_status(
     statuses: &mut [LocalModelFeatureStatus],
     replacement: LocalModelFeatureStatus,
@@ -306,26 +332,6 @@ fn replace_feature_status(
         .find(|status| status.feature == replacement.feature)
     {
         *status = replacement;
-    }
-}
-
-fn all_features() -> Vec<AiFeatureKind> {
-    vec![
-        AiFeatureKind::ClassificationSuggestions,
-        AiFeatureKind::AutoTags,
-        AiFeatureKind::SemanticSearch,
-    ]
-}
-
-fn feature_kind(value: &str) -> Option<AiFeatureKind> {
-    match value {
-        "ClassificationSuggestions" | "classification_suggestions" => {
-            Some(AiFeatureKind::ClassificationSuggestions)
-        }
-        "AutoSummaries" | "auto_summaries" => Some(AiFeatureKind::AutoSummaries),
-        "AutoTags" | "auto_tags" => Some(AiFeatureKind::AutoTags),
-        "SemanticSearch" | "semantic_search" => Some(AiFeatureKind::SemanticSearch),
-        _ => None,
     }
 }
 
@@ -381,64 +387,6 @@ fn version_incompatible(manifest: &ModelManifest) -> bool {
         || manifest.min_area_matrix_version.is_some()
 }
 
-fn recommended_action(availability: &LocalModelAvailability) -> LocalModelRecommendedAction {
-    match availability {
-        LocalModelAvailability::Unknown => LocalModelRecommendedAction::CheckStatus,
-        LocalModelAvailability::Ready => LocalModelRecommendedAction::None,
-        LocalModelAvailability::NotInstalled => LocalModelRecommendedAction::OpenInstallHelp,
-        LocalModelAvailability::PathUnreadable => LocalModelRecommendedAction::OpenModelLocation,
-        LocalModelAvailability::VersionIncompatible => LocalModelRecommendedAction::OpenInstallHelp,
-        LocalModelAvailability::Checking
-        | LocalModelAvailability::Verifying
-        | LocalModelAvailability::Loading => LocalModelRecommendedAction::OpenDiagnostics,
-        LocalModelAvailability::Corrupted => LocalModelRecommendedAction::RepairMetadata,
-        LocalModelAvailability::RuntimeFailed => LocalModelRecommendedAction::RunHealthCheck,
-        LocalModelAvailability::Error => LocalModelRecommendedAction::RetryStatusCheck,
-    }
-}
-
-fn unavailable_reason(availability: &LocalModelAvailability) -> String {
-    match availability {
-        LocalModelAvailability::Unknown => "Local model status is unknown",
-        LocalModelAvailability::NotInstalled => "Local model is not installed",
-        LocalModelAvailability::PathUnreadable => "Local model path cannot be read",
-        LocalModelAvailability::VersionIncompatible => "Local model version is incompatible",
-        LocalModelAvailability::Checking => "Local model status check is running",
-        LocalModelAvailability::Verifying => "Local model manifest verification is running",
-        LocalModelAvailability::Loading => "Local model runtime is loading",
-        LocalModelAvailability::Corrupted => "Local model metadata is corrupted",
-        LocalModelAvailability::RuntimeFailed => "Local model runtime failed",
-        LocalModelAvailability::Error => "Local model status check failed",
-        LocalModelAvailability::Ready => "Local model is ready",
-    }
-    .to_owned()
-}
-
-fn snapshot(
-    request: &LocalModelStatusRequest,
-    availability: LocalModelAvailability,
-    version: Option<String>,
-    size_bytes: Option<i64>,
-    last_error: Option<String>,
-    checked_at: i64,
-    diagnostics_summary: String,
-    feature_statuses: Option<Vec<LocalModelFeatureStatus>>,
-) -> LocalModelStatusSnapshot {
-    LocalModelStatusSnapshot {
-        model_id: request.model_id.clone(),
-        storage_location: request.storage_location.clone(),
-        recommended_action: recommended_action(&availability),
-        feature_statuses: feature_statuses
-            .unwrap_or_else(|| default_feature_statuses(&availability)),
-        availability,
-        version,
-        size_bytes,
-        last_error,
-        last_checked_at: Some(checked_at),
-        diagnostics_summary,
-    }
-}
-
 fn corrupted_snapshot(
     request: &LocalModelStatusRequest,
     size_bytes: Option<i64>,
@@ -446,22 +394,22 @@ fn corrupted_snapshot(
     reason: &str,
     runtime: &RuntimeRead,
 ) -> LocalModelStatusSnapshot {
-    snapshot(
+    snapshot(SnapshotDraft {
         request,
-        LocalModelAvailability::Corrupted,
-        None,
+        availability: LocalModelAvailability::Corrupted,
+        version: None,
         size_bytes,
-        Some(reason.to_owned()),
+        last_error: Some(reason.to_owned()),
         checked_at,
-        diagnostics(
+        diagnostics_summary: diagnostics(
             "invalid",
             runtime_label(runtime),
             "readable",
             size_bytes,
             Some(reason),
         ),
-        None,
-    )
+        feature_statuses: None,
+    })
 }
 
 fn runtime_label(runtime: &RuntimeRead) -> &str {
