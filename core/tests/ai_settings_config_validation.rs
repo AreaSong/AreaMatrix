@@ -140,10 +140,10 @@ fn forbidden_metadata_paths(repo: &Path) -> Vec<String> {
     .collect()
 }
 
-fn capability<'a>(
-    snapshot: &'a AiConfigSnapshot,
+fn capability(
+    snapshot: &AiConfigSnapshot,
     feature: AiFeatureKind,
-) -> &'a area_matrix_core::AiCapabilityState {
+) -> &area_matrix_core::AiCapabilityState {
     snapshot
         .capabilities
         .iter()
