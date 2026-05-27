@@ -50,6 +50,16 @@ namespace area_matrix {
     AiConfigSnapshot update_ai_config(string repo_path, AiConfig new_config);
 
     [Throws=CoreError]
+    LocalModelStatusSnapshot get_local_model_status(
+        string repo_path, LocalModelStatusRequest request
+    );
+
+    [Throws=CoreError]
+    LocalModelFolderLocation locate_local_model_folder(
+        string repo_path, LocalModelFolderRequest request
+    );
+
+    [Throws=CoreError]
     RecoveryReport recover_on_startup(string repo_path);
 
     [Throws=CoreError]
@@ -351,6 +361,57 @@ dictionary AiConfigSnapshot {
     AiConfig config;
     sequence<AiCapabilityState> capabilities;
     i64? updated_at;
+};
+
+dictionary LocalModelFeatureStatus {
+    AiFeatureKind feature;
+    boolean available;
+    string? unavailable_reason;
+};
+
+dictionary LocalModelCachedStatus {
+    string model_id;
+    string storage_location;
+    LocalModelAvailability availability;
+    string? version;
+    i64? size_bytes;
+    string? last_error;
+    LocalModelRecommendedAction recommended_action;
+    i64? last_checked_at;
+    string diagnostics_summary;
+};
+
+dictionary LocalModelStatusRequest {
+    string model_id;
+    string storage_location;
+    LocalModelCachedStatus? cached_status;
+};
+
+dictionary LocalModelStatusSnapshot {
+    string model_id;
+    string storage_location;
+    LocalModelAvailability availability;
+    string? version;
+    i64? size_bytes;
+    string? last_error;
+    LocalModelRecommendedAction recommended_action;
+    i64? last_checked_at;
+    string diagnostics_summary;
+    sequence<LocalModelFeatureStatus> feature_statuses;
+};
+
+dictionary LocalModelFolderRequest {
+    string model_id;
+    string storage_location;
+};
+
+dictionary LocalModelFolderLocation {
+    string model_id;
+    string folder_path;
+    boolean exists;
+    boolean readable;
+    boolean openable;
+    string? unavailable_reason;
 };
 
 dictionary RepoInitOptions {
@@ -1274,6 +1335,16 @@ enum AiProviderPreference { "LocalFirst", "LocalOnly", "RemoteFirst" };
 enum AiFeatureKind {
     "ClassificationSuggestions", "AutoSummaries", "AutoTags", "SemanticSearch"
 };
+enum LocalModelAvailability {
+    "Unknown", "Ready", "NotInstalled", "PathUnreadable",
+    "VersionIncompatible", "Checking", "Verifying", "Loading",
+    "Corrupted", "RuntimeFailed", "Error"
+};
+enum LocalModelRecommendedAction {
+    "None", "CheckStatus", "RetryStatusCheck", "OpenInstallHelp",
+    "OpenModelLocation", "RunHealthCheck", "RepairMetadata",
+    "OpenDiagnostics", "UseNonAiFallback"
+};
 enum ImportDestination { "AutoClassify", "SelectedDirectory", "Category" };
 enum ScanSessionKind { "Adopt", "Reindex" };
 enum ScanSessionStatus { "Running", "Completed", "Paused", "Failed", "Interrupted" };
@@ -1407,6 +1478,8 @@ interface CoreError {
 | `update_config(repo, cfg)` | repo | √ | Config / PermissionDenied / Io / Db |
 | `load_ai_config(repo)` | ai | √ | Config / PermissionDenied / Io |
 | `update_ai_config(repo, cfg)` | ai | √ | Config / PermissionDenied / Io |
+| `get_local_model_status(repo, request)` | ai | √ | Config / PermissionDenied / Io |
+| `locate_local_model_folder(repo, request)` | ai | √ | Config / PermissionDenied / Io |
 | `recover_on_startup(repo)` | repo | √ | Db |
 | `reindex_from_filesystem(repo)` | repo | √ | Io / Db |
 | `create_diagnostics_snapshot(repo)` | repo | √ | Db / PermissionDenied / Io / Internal |
@@ -1780,6 +1853,111 @@ C3-01 的 AI settings 更新入口，只保存 AI 设置元数据：总开关、
 - S3-09 可以更新 `privacy_gate_enabled` 并继续保持 provider 配置、Keychain key、
   `remote_provider_enabled` 和 `feature_scope` 不变；真正禁用 remote provider 只能走 S3-03。
 - 本合同不新增 control map 之外的页面能力。
+
+### `get_local_model_status(repoPath: String, request: LocalModelStatusRequest) throws -> LocalModelStatusSnapshot`
+
+```swift
+let status = try AreaMatrix.getLocalModelStatus(
+    repoPath: repoPath,
+    request: LocalModelStatusRequest(
+        modelId: "areamatrix-local-classifier",
+        storageLocation: modelFolder,
+        cachedStatus: cachedStatus
+    )
+)
+```
+
+C3-02 的本地模型状态读取入口，服务 `S3-02 local-model-status`。输入
+`LocalModelStatusRequest`：
+
+- `model_id`：稳定本地模型标识，例如 `areamatrix-local-classifier`。
+- `storage_location`：本地模型存储位置。该路径用于读取模型 manifest、目录 metadata、
+  磁盘占用和 runtime 状态，不代表 Core 可以创建、下载、删除或训练模型。
+- `cached_status`：可选缓存快照，用于首次打开、从失败提示进入和离线诊断展示。缓存必须属于
+  同一 `model_id` 与 `storage_location`。
+
+返回 `LocalModelStatusSnapshot`：
+
+- `availability`：`Unknown`、`Ready`、`NotInstalled`、`PathUnreadable`、
+  `VersionIncompatible`、`Checking`、`Verifying`、`Loading`、`Corrupted`、
+  `RuntimeFailed` 或 `Error`。
+- `version` / `size_bytes`：模型版本和磁盘占用，未知时为 `nil`。
+- `last_error`：可展示的最后错误摘要；不得包含 API key、远程 provider 配置、用户文件正文或完整
+  用户文件路径列表。
+- `recommended_action`：`CheckStatus`、`RetryStatusCheck`、`OpenInstallHelp`、
+  `OpenModelLocation`、`RunHealthCheck`、`RepairMetadata`、`OpenDiagnostics`、
+  `UseNonAiFallback` 或 `None`。
+- `last_checked_at`：最近检查时间，未知时为 `nil`。
+- `diagnostics_summary`：本地诊断摘要，只包含模型 manifest 状态、runtime 启动状态、模型目录权限、
+  磁盘空间和最后错误码；不得包含用户文件正文、完整文件路径列表、API key 或远程 provider 配置。
+- `feature_statuses`：`ClassificationSuggestions`、`AutoTags`、`SemanticSearch` 等 S3-02 展示的
+  本地模型功能支持状态。该字段只描述本地模型支持能力，不代表远程 provider 可用。
+
+副作用边界：
+
+- 状态检查只读本地模型 manifest、模型目录 metadata、磁盘占用、缓存状态和 runtime 健康 metadata。
+- 不下载、安装、删除、训练模型，不改写模型权重，不读取用户文件内容，不调用远程 provider，
+  不写 AI call log，不自动启用远程 fallback。
+- 本地模型不可用时，调用方只能显示本地修复、安装帮助、诊断或非 AI 回退；不得把返回状态解释成
+  允许启用远程 AI。
+- 轻量 `RepairMetadata` 只是 UI 可展示的建议动作；实际 repair 行为必须由后续独立能力实现。
+
+错误：
+
+- `Config`：`repoPath`、`model_id`、`storage_location` 或 `cached_status` 无效，或本地模型
+  metadata schema 不可用。
+- `PermissionDenied`：模型目录、manifest、runtime 状态或 AreaMatrix-owned status cache 不可读。
+- `Io`：读取模型 manifest、目录 metadata、磁盘占用或 runtime health metadata 失败。
+
+页面消费状态：
+
+- S3-02 可以从合同得到 Ready、Not installed、Path unreadable、Version incompatible、
+  Checking、Verifying、Loading、Corrupted、Runtime failed、Error 和 Unknown 状态。
+- S3-02 可以从 `recommended_action` 渲染 `Check status`、`Retry status check`、
+  `Open install help`、`Open model location`、`Run health check`、`Repair`、`Open diagnostics`
+  和非 AI 回退说明。
+- S3-02 可以从 `diagnostics_summary` 打开本地诊断入口，但该入口只展示脱敏摘要，不提供远程
+  provider、模型下载、删除缓存或训练能力。
+- 本合同不新增 control map 之外的页面能力；S3-03 仍负责远程 provider/key/连接测试，C3-10 仍负责
+  fallback 状态。
+
+### `locate_local_model_folder(repoPath: String, request: LocalModelFolderRequest) throws -> LocalModelFolderLocation`
+
+```swift
+let location = try AreaMatrix.locateLocalModelFolder(
+    repoPath: repoPath,
+    request: LocalModelFolderRequest(
+        modelId: "areamatrix-local-classifier",
+        storageLocation: modelFolder
+    )
+)
+```
+
+C3-02 的本地模型目录定位入口，服务 S3-02 的 `Open model location`。返回
+`LocalModelFolderLocation`：
+
+- `folder_path`：平台层可尝试 reveal 的模型目录。
+- `exists` / `readable` / `openable`：目录存在性、可读性和是否可由平台层打开。
+- `unavailable_reason`：不可打开时的稳定原因，供按钮禁用文案和 VoiceOver 使用。
+
+副作用边界：
+
+- 该 API 只定位目录，不创建目录、不下载模型、不修复 metadata、不删除缓存、不训练模型、不读取
+  用户文件内容，也不写入任何模型或 repository 文件。
+- 路径不存在或不可读时返回结构化不可用原因或对应错误；调用方不得因为定位失败而创建、删除、
+  移动、覆盖或重命名任何文件。
+
+错误：
+
+- `Config`：`repoPath`、`model_id` 或 `storage_location` 无效。
+- `PermissionDenied`：模型目录无法 inspection。
+- `Io`：目录 metadata 读取失败。
+
+页面消费状态：
+
+- S3-02 可以从 `exists`、`readable`、`openable` 和 `unavailable_reason` 决定
+  `Open model location` 的启用、禁用和错误说明。
+- 本合同不提供下载、删除、训练、远程 provider 或 fallback 能力。
 
 ### `recover_on_startup(repoPath: String) throws -> RecoveryReport`
 

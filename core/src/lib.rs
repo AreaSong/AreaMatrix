@@ -22,6 +22,7 @@ pub mod domain;
 pub mod error;
 mod icloud_conflicts;
 mod import_conflict_batch;
+mod local_model_status;
 mod note;
 pub mod overview;
 mod recovery;
@@ -87,6 +88,11 @@ pub use import_conflict_batch::{
     ImportConflictBatchItemResult, ImportConflictBatchPreviewItem,
     ImportConflictBatchPreviewReport, ImportConflictBatchPreviewRequest,
     ImportConflictBatchPreviewStatus, ImportConflictBatchResultStatus, ImportConflictBatchStrategy,
+};
+pub use local_model_status::{
+    LocalModelAvailability, LocalModelCachedStatus, LocalModelFeatureStatus,
+    LocalModelFolderLocation, LocalModelFolderRequest, LocalModelRecommendedAction,
+    LocalModelStatusRequest, LocalModelStatusSnapshot,
 };
 pub use redo::{
     list_redo_actions, redo_action, RedoActionRecord, RedoActionResult, RedoActionStatus,

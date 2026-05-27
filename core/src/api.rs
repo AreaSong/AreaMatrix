@@ -5,8 +5,8 @@ use std::path::PathBuf;
 use crate::{
     ai_settings, batch_category, batch_delete, batch_rename as batch_rename_mod,
     classifier_correction, classifier_impact, classifier_rule_editor, classifier_rules, classify,
-    db, icloud_conflicts, import_conflict_batch, note, recovery, redo, repair, repo_init,
-    repo_path, repo_scan, storage, sync, tree, AiConfig, AiConfigSnapshot,
+    db, icloud_conflicts, import_conflict_batch, local_model_status, note, recovery, redo, repair,
+    repo_init, repo_path, repo_scan, storage, sync, tree, AiConfig, AiConfigSnapshot,
     ApplyTagSuggestionsRequest, BatchCategoryChangeReport, BatchCategoryPreviewReport,
     BatchDeleteMode, BatchDeletePreviewReport, BatchDeleteReport, BatchRenamePreviewReport,
     BatchRenameReport, BatchRenameRule, ChangeFilter, ChangeLogEntry, ClassifierCorrectionResult,
@@ -16,9 +16,11 @@ use crate::{
     FileFilter, ICloudConflictPair, ICloudConflictPreviewReport, ICloudConflictResolution,
     ICloudConflictResolveReport, ImportConflictBatchApplyReport, ImportConflictBatchApplyRequest,
     ImportConflictBatchPreviewReport, ImportConflictBatchPreviewRequest, ImportOptions,
-    MoveToCategoryPreview, RecoveryReport, RedoActionRecord, RedoActionResult, ReindexReport,
-    RepairOptions, RepairReport, RepoConfig, RepoInitOptions, RepoPathValidation, RuleImpactReport,
-    ScanSession, SyncResult, TagSuggestionApplyReport, TagSuggestionReport, TagSuggestionRequest,
+    LocalModelFolderLocation, LocalModelFolderRequest, LocalModelStatusRequest,
+    LocalModelStatusSnapshot, MoveToCategoryPreview, RecoveryReport, RedoActionRecord,
+    RedoActionResult, ReindexReport, RepairOptions, RepairReport, RepoConfig, RepoInitOptions,
+    RepoPathValidation, RuleImpactReport, ScanSession, SyncResult, TagSuggestionApplyReport,
+    TagSuggestionReport, TagSuggestionRequest,
 };
 
 fn not_implemented<T>() -> CoreResult<T> {
@@ -184,6 +186,50 @@ pub fn load_ai_config(repo_path: String) -> CoreResult<AiConfigSnapshot> {
 /// inspection failures.
 pub fn update_ai_config(repo_path: String, new_config: AiConfig) -> CoreResult<AiConfigSnapshot> {
     ai_settings::update_ai_config(repo_path, new_config)
+}
+
+/// Reads the C3-02 local model status without enabling remote fallback.
+///
+/// The contract is for S3-02 local-model-status. It accepts a model id, a
+/// configured storage location, and an optional cached status snapshot so the
+/// page can render first-load, failure-entry, and manual refresh states from a
+/// stable shape. A status check may inspect only local model manifest,
+/// directory metadata, disk usage, cached status, and runtime health metadata.
+///
+/// This API must not download, install, delete, train, rewrite model weights,
+/// read user file contents, contact remote providers, enable remote fallback,
+/// write AI call logs, or expose API keys/provider config through diagnostics.
+///
+/// # Errors
+///
+/// Returns `CoreError::Config { reason }` for invalid request shape or
+/// unavailable local-model metadata, `CoreError::PermissionDenied { path }` for
+/// unreadable model metadata or runtime state, and `CoreError::Io { message }`
+/// for model manifest, directory metadata, or runtime inspection failures.
+pub fn get_local_model_status(
+    repo_path: String,
+    request: LocalModelStatusRequest,
+) -> CoreResult<LocalModelStatusSnapshot> {
+    local_model_status::get_local_model_status(repo_path, request)
+}
+
+/// Locates the configured C3-02 local model folder without mutating it.
+///
+/// S3-02 uses this read-only contract for `Open model location`. The result
+/// tells the platform layer which folder can be revealed and why revealing is
+/// unavailable. Core must not create missing folders, download models, repair
+/// metadata, delete caches, or touch user-authored files.
+///
+/// # Errors
+///
+/// Returns `CoreError::Config { reason }` for invalid request shape,
+/// `CoreError::PermissionDenied { path }` when the folder cannot be inspected,
+/// and `CoreError::Io { message }` for filesystem metadata failures.
+pub fn locate_local_model_folder(
+    repo_path: String,
+    request: LocalModelFolderRequest,
+) -> CoreResult<LocalModelFolderLocation> {
+    local_model_status::locate_local_model_folder(repo_path, request)
 }
 
 /// Recovers AreaMatrix-owned startup residue before the UI opens.

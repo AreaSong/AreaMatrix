@@ -26,6 +26,16 @@ namespace area_matrix {
     AiConfigSnapshot update_ai_config(string repo_path, AiConfig new_config);
 
     [Throws=CoreError]
+    LocalModelStatusSnapshot get_local_model_status(
+        string repo_path, LocalModelStatusRequest request
+    );
+
+    [Throws=CoreError]
+    LocalModelFolderLocation locate_local_model_folder(
+        string repo_path, LocalModelFolderRequest request
+    );
+
+    [Throws=CoreError]
     RecoveryReport recover_on_startup(string repo_path);
 
     [Throws=CoreError]
@@ -327,6 +337,57 @@ dictionary AiConfigSnapshot {
     AiConfig config;
     sequence<AiCapabilityState> capabilities;
     i64? updated_at;
+};
+
+dictionary LocalModelFeatureStatus {
+    AiFeatureKind feature;
+    boolean available;
+    string? unavailable_reason;
+};
+
+dictionary LocalModelCachedStatus {
+    string model_id;
+    string storage_location;
+    LocalModelAvailability availability;
+    string? version;
+    i64? size_bytes;
+    string? last_error;
+    LocalModelRecommendedAction recommended_action;
+    i64? last_checked_at;
+    string diagnostics_summary;
+};
+
+dictionary LocalModelStatusRequest {
+    string model_id;
+    string storage_location;
+    LocalModelCachedStatus? cached_status;
+};
+
+dictionary LocalModelStatusSnapshot {
+    string model_id;
+    string storage_location;
+    LocalModelAvailability availability;
+    string? version;
+    i64? size_bytes;
+    string? last_error;
+    LocalModelRecommendedAction recommended_action;
+    i64? last_checked_at;
+    string diagnostics_summary;
+    sequence<LocalModelFeatureStatus> feature_statuses;
+};
+
+dictionary LocalModelFolderRequest {
+    string model_id;
+    string storage_location;
+};
+
+dictionary LocalModelFolderLocation {
+    string model_id;
+    string folder_path;
+    boolean exists;
+    boolean readable;
+    boolean openable;
+    string? unavailable_reason;
 };
 
 dictionary RepoInitOptions {
@@ -1249,6 +1310,16 @@ enum OverviewOutput { "GeneratedOnly", "RootAreaMatrixFile" };
 enum AiProviderPreference { "LocalFirst", "LocalOnly", "RemoteFirst" };
 enum AiFeatureKind {
     "ClassificationSuggestions", "AutoSummaries", "AutoTags", "SemanticSearch"
+};
+enum LocalModelAvailability {
+    "Unknown", "Ready", "NotInstalled", "PathUnreadable",
+    "VersionIncompatible", "Checking", "Verifying", "Loading",
+    "Corrupted", "RuntimeFailed", "Error"
+};
+enum LocalModelRecommendedAction {
+    "None", "CheckStatus", "RetryStatusCheck", "OpenInstallHelp",
+    "OpenModelLocation", "RunHealthCheck", "RepairMetadata",
+    "OpenDiagnostics", "UseNonAiFallback"
 };
 enum ImportDestination { "AutoClassify", "SelectedDirectory", "Category" };
 enum ScanSessionKind { "Adopt", "Reindex" };
