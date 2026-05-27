@@ -1,6 +1,6 @@
 //! Repository config-table storage for C3-01 AI settings.
 
-use std::path::Path;
+use std::{fs::Metadata, path::Path};
 
 use rusqlite::{params, OptionalExtension};
 
@@ -10,9 +10,12 @@ const AI_CONFIG_KEY: &str = "ai_config";
 const AI_ENABLED_KEY: &str = "ai_enabled";
 
 pub(crate) fn load_ai_config_record(repo_path: &Path) -> CoreResult<Option<(String, i64)>> {
-    if !super::path_exists(&super::db_path(repo_path))? {
+    let db_path = super::db_path(repo_path);
+    if !super::path_exists(&db_path)? {
         return Ok(None);
     }
+    ensure_readable_path(&repo_path.join(super::AREA_MATRIX_DIR))?;
+    ensure_readable_path(&db_path)?;
 
     let connection = super::open_repo_connection(repo_path)?;
     connection
@@ -74,4 +77,33 @@ fn upsert_repo_config(
     )
     .map_err(|error| CoreError::db(error.to_string()))?;
     Ok(())
+}
+
+fn ensure_readable_path(path: &Path) -> CoreResult<()> {
+    let metadata = path.metadata().map_err(map_metadata_error)?;
+    if metadata_allows_read(&metadata) {
+        Ok(())
+    } else {
+        Err(CoreError::permission_denied("permission denied"))
+    }
+}
+
+fn map_metadata_error(error: std::io::Error) -> CoreError {
+    match error.kind() {
+        std::io::ErrorKind::PermissionDenied => CoreError::permission_denied("permission denied"),
+        std::io::ErrorKind::InvalidInput => CoreError::invalid_path("invalid path"),
+        _ => CoreError::io("io error"),
+    }
+}
+
+#[cfg(unix)]
+fn metadata_allows_read(metadata: &Metadata) -> bool {
+    use std::os::unix::fs::PermissionsExt;
+
+    metadata.permissions().mode() & 0o444 != 0
+}
+
+#[cfg(not(unix))]
+fn metadata_allows_read(metadata: &Metadata) -> bool {
+    !metadata.permissions().readonly()
 }

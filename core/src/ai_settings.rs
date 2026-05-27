@@ -10,6 +10,7 @@ use serde::{Deserialize, Serialize};
 use crate::{db, CoreError, CoreResult};
 
 const AREA_MATRIX_DIR: &str = ".areamatrix";
+const MAX_PRIVACY_POLICY_REF_LEN: usize = 128;
 
 /// Preferred provider route for AI features.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
@@ -213,14 +214,47 @@ fn validate_payload(repo_path: &str, config: &AiConfig) -> CoreResult<()> {
     if config.repo_path != repo_path {
         return Err(CoreError::config("AI config payload repo_path mismatch"));
     }
-    if config
-        .privacy_policy_ref
-        .as_deref()
-        .is_some_and(|reference| reference.trim().is_empty() || reference.contains('\0'))
+    if let Some(reference) = config.privacy_policy_ref.as_deref() {
+        validate_privacy_policy_ref(reference)?;
+    }
+    validate_feature_toggles(&config.feature_toggles)
+}
+
+fn validate_privacy_policy_ref(reference: &str) -> CoreResult<()> {
+    if reference.trim() != reference
+        || reference.is_empty()
+        || reference.len() > MAX_PRIVACY_POLICY_REF_LEN
+        || reference.contains('\0')
+        || reference.contains('/')
+        || reference.contains('\\')
     {
         return Err(CoreError::config("AI privacy policy reference is invalid"));
     }
-    validate_feature_toggles(&config.feature_toggles)
+    if !reference.chars().all(is_privacy_policy_ref_char) {
+        return Err(CoreError::config("AI privacy policy reference is invalid"));
+    }
+    if looks_like_secret_reference(reference) {
+        return Err(CoreError::config(
+            "AI privacy policy reference must not contain secrets",
+        ));
+    }
+    Ok(())
+}
+
+fn is_privacy_policy_ref_char(value: char) -> bool {
+    value.is_ascii_alphanumeric() || matches!(value, '-' | '_' | '.' | ':')
+}
+
+fn looks_like_secret_reference(reference: &str) -> bool {
+    let normalized = reference.to_ascii_lowercase();
+    normalized.starts_with("sk-")
+        || normalized.starts_with("sk_")
+        || normalized.contains("api_key")
+        || normalized.contains("apikey")
+        || normalized.contains("bearer")
+        || normalized.contains("secret=")
+        || normalized.contains("token=")
+        || normalized.contains("-----begin")
 }
 
 fn validate_feature_toggles(toggles: &[AiFeatureConfig]) -> CoreResult<()> {
@@ -253,6 +287,7 @@ fn deserialize_config(serialized: &str) -> CoreResult<AiConfig> {
 fn map_storage_error(error: CoreError) -> CoreError {
     match error {
         CoreError::Db { .. } => CoreError::config("AI config metadata persistence failed"),
+        CoreError::InvalidPath { .. } => CoreError::config("AI config repository path is invalid"),
         CoreError::RepoNotInitialized { .. } => {
             CoreError::config("AI config requires initialized repository metadata")
         }
