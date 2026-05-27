@@ -1,0 +1,85 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-2/task-04`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-2-stage3-ai/task-04-c3-01-validation.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/ai_settings.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/db/ai_settings.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/tests/ai_settings_config_validation.rs`
+
+三、完成度摘要
+
+- 已覆盖项数：6
+- 未覆盖项数：0
+- 通过项数：6
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：补齐成功和失败路径测试
+- 结果：通过
+- 证据：`core/tests/ai_settings_config_validation.rs:162` 覆盖默认关闭、持久化、UI capability state；`:221` 覆盖重复 feature、secret-like 引用、`.areamatrix` 路径拒绝、失败后回滚。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/ai_settings_config_validation.rs`
+
+- 项目：Core API / UDL / Rust 实现一致
+- 结果：通过
+- 证据：UDL 暴露 `load_ai_config` / `update_ai_config` 于 `core/area_matrix.udl:22`、`:25`；Rust public API 在 `core/src/api.rs:167`、`:185`；实现入口在 `core/src/ai_settings.rs:97`、`:110`；测试在 `core/tests/ai_settings_config_validation.rs:263` 锁定 API、UDL、Rust 合同片段。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`，`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs`，`/Users/as/Ai-Project/project/AreaMatrix/core/src/ai_settings.rs`
+
+- 项目：不新增业务功能，只补验证与必要测试 fixture
+- 结果：通过
+- 证据：当前脏改动中业务实现文件未变更；新增路径为 `core/tests/ai_settings_config_validation.rs`，属于 manifest 允许的 `core/tests/**`。`git status --short -- apps` 和 `git diff --name-only -- apps` 均无输出，未触碰 Forbidden `apps/**`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/ai_settings_config_validation.rs`
+
+- 项目：记录无法运行的验证及原因
+- 结果：通过
+- 证据：必需验证 `./dev check task 4-2/task-04` 已实际运行并通过，无必需验证无法运行。
+- 涉及文件：manifest validation 为 `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-4.md:4294`
+
+- 项目：C3-01 有足够测试证明可进入 UI 接入
+- 结果：通过
+- 证据：测试覆盖 S3-01/S3-09 所需的默认关闭、provider preference、本地/远程 gate、privacy policy ref、feature toggles、capabilities、disabled reason、持久化 reload 和失败回滚。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/ai_settings_config_validation.rs`
+
+- 项目：Validation 命令通过或失败原因被明确记录
+- 结果：通过
+- 证据：`./dev check task 4-2/task-04` exit 0；doctor OK；`git diff --check` 通过；4 个目标测试共 19 个测试通过。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/scripts/dev_tools/checks.py` 映射由命令实际输出证明
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，`core/src/ai_settings.rs` 305 行、`core/src/db/ai_settings.rs` 109 行、`core/tests/ai_settings_config_validation.rs` 320 行，未超过单文件 500 行门槛；验证测试聚焦 C3-01。
+- 注释 / rustdoc / 文档同步：通过，public API 有 rustdoc，`docs/api/core-api.md:1694` 与 `:1744` 描述读写合同，UDL 与 Rust 签名一致。
+- 错误处理与边界处理：通过，失败路径覆盖 Config 错误、secret-like 输入不泄露、metadata 内部路径拒绝、失败后 baseline 保持。
+- 测试与验证覆盖：通过，指定 task validation 已通过，覆盖 contract、failure、implementation、validation 四类 C3-01 测试。
+- 占位、硬编码、mock-only、一次性实现检查：通过，测试调用真实 `init_repo`、`load_ai_config`、`update_ai_config` 和 SQLite repo_config；未发现 mock-only 闭环或硬编码通过态。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 跑了哪些验证：`./dev check task 4-2/task-04`
+- 哪些通过：
+  - `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`：OK，tasks 637，manifests 637，high risk tasks 633
+  - `git diff --check`：通过
+  - `cargo test --test ai_settings_config_contract_api -- --nocapture`：5 passed
+  - `cargo test --test ai_settings_config_failure_recovery -- --nocapture`：6 passed
+  - `cargo test --test ai_settings_config_implementation -- --nocapture`：5 passed
+  - `cargo test --test ai_settings_config_validation -- --nocapture`：3 passed
+- 哪些失败：无
+- 哪些缺失：无 task 必需验证缺失；未运行 `./dev check all`、`cargo test --workspace`、clippy 宽门禁，因为当前为普通 atomic Core validation，manifest 指定上限是 `./dev check task 4-2/task-04`。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS
