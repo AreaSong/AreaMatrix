@@ -178,8 +178,11 @@ fn local_model_status_validation_covers_success_path_for_ui_readiness() {
     let repo = initialized_repo();
     let model_dir = repo.path().join("models/local-classifier");
     write_ready_model(&model_dir);
-    fs::write(repo.path().join("README.md"), "user readme must stay private\n")
-        .expect("write user README");
+    fs::write(
+        repo.path().join("README.md"),
+        "user readme must stay private\n",
+    )
+    .expect("write user README");
     let before = snapshot(repo.path(), &model_dir);
 
     let status = get_local_model_status(path_string(repo.path()), request(&model_dir))
@@ -190,10 +193,7 @@ fn local_model_status_validation_covers_success_path_for_ui_readiness() {
     assert_eq!(status.availability, LocalModelAvailability::Ready);
     assert_eq!(status.version.as_deref(), Some("1.0.3"));
     assert!(status.size_bytes.expect("disk usage is available") > 0);
-    assert_eq!(
-        status.recommended_action,
-        LocalModelRecommendedAction::None
-    );
+    assert_eq!(status.recommended_action, LocalModelRecommendedAction::None);
     assert!(status.last_checked_at.is_some());
     assert!(status.diagnostics_summary.contains("manifest=ok"));
     assert!(status.diagnostics_summary.contains("runtime=ready"));
@@ -229,8 +229,11 @@ fn local_model_status_validation_covers_failure_paths_without_remote_fallback_or
     let repo = initialized_repo();
     let model_dir = repo.path().join("models/broken-runtime");
     write_invalid_runtime_model(&model_dir);
-    fs::write(repo.path().join("README.md"), "private local document body\n")
-        .expect("write user README");
+    fs::write(
+        repo.path().join("README.md"),
+        "private local document body\n",
+    )
+    .expect("write user README");
     let before = snapshot(repo.path(), &model_dir);
 
     let status = get_local_model_status(path_string(repo.path()), request(&model_dir))
@@ -245,7 +248,12 @@ fn local_model_status_validation_covers_failure_paths_without_remote_fallback_or
         status.last_error.as_deref(),
         Some("runtime health metadata is invalid")
     );
-    for leaked in ["sk-SECRET", "remote_provider", "provider_config", "private local"] {
+    for leaked in [
+        "sk-SECRET",
+        "remote_provider",
+        "provider_config",
+        "private local",
+    ] {
         assert_not_contains(&status.diagnostics_summary, leaked);
     }
     assert!(status
