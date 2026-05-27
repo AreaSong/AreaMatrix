@@ -20,6 +20,12 @@ namespace area_matrix {
     void update_config(string repo_path, RepoConfig new_config);
 
     [Throws=CoreError]
+    AiConfigSnapshot load_ai_config(string repo_path);
+
+    [Throws=CoreError]
+    AiConfigSnapshot update_ai_config(string repo_path, AiConfig new_config);
+
+    [Throws=CoreError]
     RecoveryReport recover_on_startup(string repo_path);
 
     [Throws=CoreError]
@@ -290,6 +296,37 @@ dictionary RepoConfig {
     boolean enable_keyword_rules;
     boolean fallback_to_inbox;
     boolean allow_replace_during_import;
+};
+
+dictionary AiFeatureConfig {
+    AiFeatureKind feature;
+    boolean enabled;
+    boolean allow_remote;
+};
+
+dictionary AiConfig {
+    string repo_path;
+    boolean ai_enabled;
+    AiProviderPreference provider_preference;
+    boolean local_ai_enabled;
+    boolean remote_ai_allowed;
+    boolean privacy_gate_enabled;
+    string? privacy_policy_ref;
+    sequence<AiFeatureConfig> feature_toggles;
+};
+
+dictionary AiCapabilityState {
+    AiFeatureKind feature;
+    boolean enabled;
+    boolean local_allowed;
+    boolean remote_allowed;
+    string? disabled_reason;
+};
+
+dictionary AiConfigSnapshot {
+    AiConfig config;
+    sequence<AiCapabilityState> capabilities;
+    i64? updated_at;
 };
 
 dictionary RepoInitOptions {
@@ -1209,6 +1246,10 @@ enum RepoPathIssue {
     "ICloudPath", "UnfinishedScanSession"
 };
 enum OverviewOutput { "GeneratedOnly", "RootAreaMatrixFile" };
+enum AiProviderPreference { "LocalFirst", "LocalOnly", "RemoteFirst" };
+enum AiFeatureKind {
+    "ClassificationSuggestions", "AutoSummaries", "AutoTags", "SemanticSearch"
+};
 enum ImportDestination { "AutoClassify", "SelectedDirectory", "Category" };
 enum ScanSessionKind { "Adopt", "Reindex" };
 enum ScanSessionStatus { "Running", "Completed", "Paused", "Failed", "Interrupted" };

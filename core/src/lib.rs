@@ -5,6 +5,7 @@
 
 uniffi::include_scaffolding!("area_matrix");
 
+mod ai_settings;
 pub mod api;
 mod batch_category;
 mod batch_delete;
@@ -37,6 +38,10 @@ mod tags;
 pub mod tree;
 pub mod undo;
 
+pub use ai_settings::{
+    AiCapabilityState, AiConfig, AiConfigSnapshot, AiFeatureConfig, AiFeatureKind,
+    AiProviderPreference,
+};
 pub use api::*;
 pub use batch_category::{
     batch_move_to_category, preview_batch_move_to_category, BatchCategoryChangeItemResult,

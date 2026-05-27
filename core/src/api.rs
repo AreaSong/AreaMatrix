@@ -3,10 +3,11 @@
 use std::path::PathBuf;
 
 use crate::{
-    batch_category, batch_delete, batch_rename as batch_rename_mod, classifier_correction,
-    classifier_impact, classifier_rule_editor, classifier_rules, classify, db, icloud_conflicts,
-    import_conflict_batch, note, recovery, redo, repair, repo_init, repo_path, repo_scan, storage,
-    sync, tree, ApplyTagSuggestionsRequest, BatchCategoryChangeReport, BatchCategoryPreviewReport,
+    ai_settings, batch_category, batch_delete, batch_rename as batch_rename_mod,
+    classifier_correction, classifier_impact, classifier_rule_editor, classifier_rules, classify,
+    db, icloud_conflicts, import_conflict_batch, note, recovery, redo, repair, repo_init,
+    repo_path, repo_scan, storage, sync, tree, AiConfig, AiConfigSnapshot,
+    ApplyTagSuggestionsRequest, BatchCategoryChangeReport, BatchCategoryPreviewReport,
     BatchDeleteMode, BatchDeletePreviewReport, BatchDeleteReport, BatchRenamePreviewReport,
     BatchRenameReport, BatchRenameRule, ChangeFilter, ChangeLogEntry, ClassifierCorrectionResult,
     ClassifierImpactPreviewRequest, ClassifierRule, ClassifierRuleCreateRequest,
@@ -150,6 +151,39 @@ pub fn load_config(repo_path: String) -> CoreResult<RepoConfig> {
 /// SQLite persistence failures.
 pub fn update_config(repo_path: String, new_config: RepoConfig) -> CoreResult<()> {
     db::update_config(repo_path, new_config)
+}
+
+/// Loads the C3-01 AI settings snapshot without starting any AI provider.
+///
+/// The contract is for S3-01 AI settings and the S3-09 privacy gate summary.
+/// It exposes the master AI switch, provider preference, local/remote route
+/// toggles, privacy gate reference, and per-feature switches. Loading settings
+/// must never call local models, contact remote providers, read user file
+/// contents, write logs, or store API keys.
+///
+/// # Errors
+///
+/// Returns `CoreError::Config { reason }` when the repository path is invalid.
+pub fn load_ai_config(repo_path: String) -> CoreResult<AiConfigSnapshot> {
+    ai_settings::load_ai_config(repo_path)
+}
+
+/// Validates a C3-01 AI settings update payload.
+///
+/// This contract accepts only settings metadata. API keys, provider connection
+/// tests, remote enablement, privacy rule CRUD/evaluation, AI call logs,
+/// pending suggestion cleanup, and actual model execution remain owned by
+/// their separate C3 tasks.
+///
+/// # Errors
+///
+/// Returns `CoreError::Config { reason }` for invalid repository paths,
+/// mismatched payloads, incomplete feature toggles, or unavailable C3-01
+/// persistence. Returns `CoreError::PermissionDenied { path }` when repository
+/// metadata cannot be inspected and `CoreError::Io { message }` for metadata
+/// inspection failures.
+pub fn update_ai_config(repo_path: String, new_config: AiConfig) -> CoreResult<AiConfigSnapshot> {
+    ai_settings::update_ai_config(repo_path, new_config)
 }
 
 /// Recovers AreaMatrix-owned startup residue before the UI opens.
