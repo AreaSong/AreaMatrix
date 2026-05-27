@@ -2,13 +2,17 @@
 
 mod implementation;
 
-use std::path::{Component, PathBuf};
+use std::{
+    fs::Metadata,
+    path::{Component, Path, PathBuf},
+};
 
 use serde::{Deserialize, Serialize};
 
 use crate::{CoreError, CoreResult};
 
 const AREA_MATRIX_DIR: &str = ".areamatrix";
+const INDEX_DB_FILE: &str = "index.db";
 const MAX_POLICY_REF_LEN: usize = 128;
 
 /// Context extraction policy allowed for AI category suggestions.
@@ -120,6 +124,7 @@ pub(crate) fn suggest_category_with_ai(
 ) -> CoreResult<AiCategorySuggestion> {
     validate_repo_path(&repo_path)?;
     validate_request(&request)?;
+    ensure_metadata_readable(&repo_path)?;
     implementation::suggest_category_with_ai(repo_path, request)
 }
 
@@ -148,6 +153,51 @@ fn validate_request(request: &AiCategorySuggestionRequest) -> CoreResult<()> {
         validate_policy_ref(reference)?;
     }
     Ok(())
+}
+
+fn ensure_metadata_readable(repo_path: &str) -> CoreResult<()> {
+    let repo = PathBuf::from(repo_path);
+    let metadata_dir = repo.join(AREA_MATRIX_DIR);
+    ensure_readable_metadata_path(&metadata_dir)?;
+    ensure_readable_metadata_path(&metadata_dir.join(INDEX_DB_FILE))
+}
+
+fn ensure_readable_metadata_path(path: &Path) -> CoreResult<()> {
+    let metadata = path.metadata().map_err(map_metadata_error)?;
+    if metadata_allows_read(&metadata) {
+        Ok(())
+    } else {
+        Err(CoreError::permission_denied(
+            "AI classification metadata is not readable",
+        ))
+    }
+}
+
+fn map_metadata_error(error: std::io::Error) -> CoreError {
+    match error.kind() {
+        std::io::ErrorKind::NotFound => {
+            CoreError::config("AI classification requires initialized repository metadata")
+        }
+        std::io::ErrorKind::PermissionDenied => {
+            CoreError::permission_denied("AI classification metadata is not readable")
+        }
+        std::io::ErrorKind::InvalidInput => {
+            CoreError::config("AI classification repository path is invalid")
+        }
+        _ => CoreError::internal("AI classification metadata inspection failed"),
+    }
+}
+
+#[cfg(unix)]
+fn metadata_allows_read(metadata: &Metadata) -> bool {
+    use std::os::unix::fs::PermissionsExt;
+
+    metadata.permissions().mode() & 0o444 != 0
+}
+
+#[cfg(not(unix))]
+fn metadata_allows_read(metadata: &Metadata) -> bool {
+    !metadata.permissions().readonly()
 }
 
 fn validate_policy_ref(reference: &str) -> CoreResult<()> {
