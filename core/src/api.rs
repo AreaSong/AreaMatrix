@@ -3,26 +3,27 @@
 use std::path::PathBuf;
 
 use crate::{
-    ai_settings, batch_category, batch_delete, batch_rename as batch_rename_mod,
-    classifier_correction, classifier_impact, classifier_rule_editor, classifier_rules, classify,
-    db, icloud_conflicts, import_conflict_batch, local_model_status, note, recovery, redo,
-    remote_provider_config, repair, repo_init, repo_path, repo_scan, storage, sync, tree, AiConfig,
-    AiConfigSnapshot, ApplyTagSuggestionsRequest, BatchCategoryChangeReport,
-    BatchCategoryPreviewReport, BatchDeleteMode, BatchDeletePreviewReport, BatchDeleteReport,
-    BatchRenamePreviewReport, BatchRenameReport, BatchRenameRule, ChangeFilter, ChangeLogEntry,
-    ClassifierCorrectionResult, ClassifierImpactPreviewRequest, ClassifierRule,
-    ClassifierRuleCreateRequest, ClassifierRuleDeleteRequest, ClassifierRuleEditorSnapshot,
-    ClassifierRuleUpdate, ClassifyResult, CoreError, CoreResult, DiagnosticsSnapshot,
-    ExternalEvent, FileEntry, FileFilter, ICloudConflictPair, ICloudConflictPreviewReport,
-    ICloudConflictResolution, ICloudConflictResolveReport, ImportConflictBatchApplyReport,
-    ImportConflictBatchApplyRequest, ImportConflictBatchPreviewReport,
-    ImportConflictBatchPreviewRequest, ImportOptions, LocalModelFolderLocation,
-    LocalModelFolderRequest, LocalModelStatusRequest, LocalModelStatusSnapshot,
-    MoveToCategoryPreview, RecoveryReport, RedoActionRecord, RedoActionResult, ReindexReport,
-    RemoteProviderConfigSnapshot, RemoteProviderDisableRequest, RemoteProviderEnableRequest,
-    RemoteProviderTestRequest, RemoteProviderTestResult, RepairOptions, RepairReport, RepoConfig,
-    RepoInitOptions, RepoPathValidation, RuleImpactReport, ScanSession, SyncResult,
-    TagSuggestionApplyReport, TagSuggestionReport, TagSuggestionRequest,
+    ai_classification_suggestion, ai_settings, batch_category, batch_delete,
+    batch_rename as batch_rename_mod, classifier_correction, classifier_impact,
+    classifier_rule_editor, classifier_rules, classify, db, icloud_conflicts,
+    import_conflict_batch, local_model_status, note, recovery, redo, remote_provider_config,
+    repair, repo_init, repo_path, repo_scan, storage, sync, tree, AiCategorySuggestion,
+    AiCategorySuggestionRequest, AiConfig, AiConfigSnapshot, ApplyTagSuggestionsRequest,
+    BatchCategoryChangeReport, BatchCategoryPreviewReport, BatchDeleteMode,
+    BatchDeletePreviewReport, BatchDeleteReport, BatchRenamePreviewReport, BatchRenameReport,
+    BatchRenameRule, ChangeFilter, ChangeLogEntry, ClassifierCorrectionResult,
+    ClassifierImpactPreviewRequest, ClassifierRule, ClassifierRuleCreateRequest,
+    ClassifierRuleDeleteRequest, ClassifierRuleEditorSnapshot, ClassifierRuleUpdate,
+    ClassifyResult, CoreError, CoreResult, DiagnosticsSnapshot, ExternalEvent, FileEntry,
+    FileFilter, ICloudConflictPair, ICloudConflictPreviewReport, ICloudConflictResolution,
+    ICloudConflictResolveReport, ImportConflictBatchApplyReport, ImportConflictBatchApplyRequest,
+    ImportConflictBatchPreviewReport, ImportConflictBatchPreviewRequest, ImportOptions,
+    LocalModelFolderLocation, LocalModelFolderRequest, LocalModelStatusRequest,
+    LocalModelStatusSnapshot, MoveToCategoryPreview, RecoveryReport, RedoActionRecord,
+    RedoActionResult, ReindexReport, RemoteProviderConfigSnapshot, RemoteProviderDisableRequest,
+    RemoteProviderEnableRequest, RemoteProviderTestRequest, RemoteProviderTestResult,
+    RepairOptions, RepairReport, RepoConfig, RepoInitOptions, RepoPathValidation, RuleImpactReport,
+    ScanSession, SyncResult, TagSuggestionApplyReport, TagSuggestionReport, TagSuggestionRequest,
 };
 
 fn not_implemented<T>() -> CoreResult<T> {
@@ -330,6 +331,39 @@ pub fn disable_remote_ai_provider(
     request: RemoteProviderDisableRequest,
 ) -> CoreResult<RemoteProviderConfigSnapshot> {
     remote_provider_config::disable_remote_ai_provider(repo_path, request)
+}
+
+/// Requests a C3-04 AI category suggestion without applying it.
+///
+/// S3-04 uses this contract for `Ask AI for suggestion...`, and S3-10 uses
+/// its structured status and skipped reason for fallback rendering. The
+/// request identifies one active file and the maximum context extraction policy
+/// the caller allows. Returned suggestions are drafts only: consumers must keep
+/// category writes, file moves, rule creation, and rejection feedback in their
+/// own explicit confirmation flows.
+/// The `requires_user_confirmation` field is part of the stable contract and
+/// must stay true for suggested, skipped, unavailable, and no-suggestion states.
+///
+/// This contract may inspect only file metadata and privacy/settings/provider
+/// gate state. It must not overwrite classifier rules, change
+/// `files.category`, move files, write user-authored content, leak API keys, or
+/// send data to a remote provider unless C3-01, C3-03, and C3-09 gates later
+/// allow it. The contract shape includes call-log and privacy-rule ids for
+/// traceability, but log persistence and privacy-rule CRUD remain owned by
+/// C3-05 and C3-09.
+///
+/// # Errors
+///
+/// Returns `CoreError::Config { reason }` for invalid request shape or disabled
+/// AI configuration, `CoreError::PermissionDenied { path }` when metadata,
+/// allowed content, or provider credentials cannot be inspected, and
+/// `CoreError::Internal { message }` for unavailable AI runtime or sanitized
+/// provider failures.
+pub fn suggest_category_with_ai(
+    repo_path: String,
+    request: AiCategorySuggestionRequest,
+) -> CoreResult<AiCategorySuggestion> {
+    ai_classification_suggestion::suggest_category_with_ai(repo_path, request)
 }
 
 /// Recovers AreaMatrix-owned startup residue before the UI opens.

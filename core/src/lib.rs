@@ -5,6 +5,7 @@
 
 uniffi::include_scaffolding!("area_matrix");
 
+mod ai_classification_suggestion;
 mod ai_settings;
 pub mod api;
 mod batch_category;
@@ -40,6 +41,11 @@ mod tags;
 pub mod tree;
 pub mod undo;
 
+pub use ai_classification_suggestion::{
+    AiCategorySuggestion, AiCategorySuggestionContextField, AiCategorySuggestionContextPolicy,
+    AiCategorySuggestionRequest, AiCategorySuggestionRoute, AiCategorySuggestionSkipReason,
+    AiCategorySuggestionStatus,
+};
 pub use ai_settings::{
     AiCapabilityState, AiConfig, AiConfigSnapshot, AiFeatureConfig, AiFeatureKind,
     AiProviderPreference,

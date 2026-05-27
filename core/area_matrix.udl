@@ -54,6 +54,11 @@ namespace area_matrix {
     );
 
     [Throws=CoreError]
+    AiCategorySuggestion suggest_category_with_ai(
+        string repo_path, AiCategorySuggestionRequest request
+    );
+
+    [Throws=CoreError]
     RecoveryReport recover_on_startup(string repo_path);
 
     [Throws=CoreError]
@@ -450,6 +455,27 @@ dictionary RemoteProviderTestResult {
     boolean provider_verified;
     string? verification_token;
     string sanitized_message;
+};
+
+dictionary AiCategorySuggestionRequest {
+    i64 file_id;
+    AiCategorySuggestionContextPolicy context_policy;
+    string? privacy_policy_ref;
+};
+
+dictionary AiCategorySuggestion {
+    i64 file_id;
+    AiCategorySuggestionStatus status;
+    string? current_category;
+    string? suggested_category;
+    f32 confidence;
+    string? reason;
+    AiCategorySuggestionRoute? route;
+    sequence<AiCategorySuggestionContextField> used_context;
+    AiCategorySuggestionSkipReason? skipped_reason;
+    string? privacy_rule_id;
+    i64? call_log_id;
+    boolean requires_user_confirmation;
 };
 
 dictionary RepoInitOptions {
@@ -1376,6 +1402,20 @@ enum AiFeatureKind {
 enum RemoteAiProviderKind { "OpenAi", "Anthropic", "Other" };
 enum RemoteProviderTestStatus {
     "Succeeded", "ProviderRejected", "ConnectionFailed", "UnsupportedProvider"
+};
+enum AiCategorySuggestionContextPolicy {
+    "FileNameOnly", "FileNameAndPath", "LimitedTextSummary"
+};
+enum AiCategorySuggestionContextField {
+    "FileName", "Extension", "RepoRelativePath", "LimitedTextSummary"
+};
+enum AiCategorySuggestionRoute { "Local", "Remote" };
+enum AiCategorySuggestionStatus {
+    "Suggested", "NoSuggestion", "Skipped", "Unavailable"
+};
+enum AiCategorySuggestionSkipReason {
+    "AiDisabled", "FeatureDisabled", "RuleResultConfident",
+    "NoEligibleContext", "PrivacyRule", "ProviderUnavailable"
 };
 enum LocalModelAvailability {
     "Unknown", "Ready", "NotInstalled", "PathUnreadable",
