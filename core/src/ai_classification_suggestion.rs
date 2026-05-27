@@ -1,4 +1,6 @@
-//! C3-04 AI classification suggestion contract types.
+//! C3-04 AI classification suggestion contract types and entry point.
+
+mod implementation;
 
 use std::path::{Component, PathBuf};
 
@@ -118,9 +120,7 @@ pub(crate) fn suggest_category_with_ai(
 ) -> CoreResult<AiCategorySuggestion> {
     validate_repo_path(&repo_path)?;
     validate_request(&request)?;
-    Err(CoreError::config(
-        "AI classification suggestion implementation is pending",
-    ))
+    implementation::suggest_category_with_ai(repo_path, request)
 }
 
 fn validate_repo_path(repo_path: &str) -> CoreResult<()> {

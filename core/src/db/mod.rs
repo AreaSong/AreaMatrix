@@ -13,6 +13,7 @@ use crate::{
     StorageMode,
 };
 
+mod ai_call_log;
 mod ai_settings;
 mod change_log;
 mod command_index;
@@ -33,6 +34,7 @@ mod staging_recovery;
 mod sync;
 mod tags;
 mod undo;
+pub(crate) use ai_call_log::{insert_ai_call_log_record, AiCallLogRecord};
 pub(crate) use ai_settings::{load_ai_config_record, update_ai_config_record};
 pub(crate) use change_log::list_changes;
 pub(crate) use command_index::{

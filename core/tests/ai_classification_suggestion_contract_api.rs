@@ -20,6 +20,9 @@ const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const API_RS: &str = include_str!("../src/api.rs");
 const AI_CLASSIFICATION_RS: &str = include_str!("../src/ai_classification_suggestion.rs");
+const AI_CLASSIFICATION_IMPL_RS: &str =
+    include_str!("../src/ai_classification_suggestion/implementation.rs");
+const AI_CALL_LOG_RS: &str = include_str!("../src/db/ai_call_log.rs");
 const UDL: &str = include_str!("../area_matrix.udl");
 
 fn assert_contains(haystack: &str, needle: &str) {
@@ -275,15 +278,32 @@ fn ai_classification_suggestion_contract_documents_consumers_and_boundaries() {
 
     assert_contains(
         AI_CLASSIFICATION_RS,
-        "C3-04 AI classification suggestion contract types",
+        "C3-04 AI classification suggestion contract types and entry point",
     );
     for fragment in [
         "suggest_category_with_ai",
-        "AI classification suggestion implementation is pending",
         "looks_sensitive",
         "privacy policy reference is invalid",
     ] {
         assert_contains(AI_CLASSIFICATION_RS, fragment);
+    }
+    for fragment in [
+        "get_active_file_by_id",
+        "requires_user_confirmation: true",
+        "RuleResultConfident",
+        "PrivacyRule",
+        "ProviderUnavailable",
+        "insert_ai_call_log_record",
+    ] {
+        assert_contains(AI_CLASSIFICATION_IMPL_RS, fragment);
+    }
+    for fragment in [
+        "CREATE TABLE IF NOT EXISTS ai_call_log",
+        "sent_fields_json",
+        "status TEXT NOT NULL CHECK",
+        "FOREIGN KEY (file_id) REFERENCES files(id) ON DELETE SET NULL",
+    ] {
+        assert_contains(AI_CALL_LOG_RS, fragment);
     }
 
     for fragment in [
