@@ -40,6 +40,12 @@ pub(crate) fn load_remote_provider_test_record(
     load_repo_config_value(repo_path, REMOTE_PROVIDER_PENDING_TEST_KEY)
 }
 
+pub(crate) fn load_remote_provider_config_record(
+    repo_path: &Path,
+) -> CoreResult<Option<(String, i64)>> {
+    load_repo_config_value(repo_path, REMOTE_PROVIDER_CONFIG_KEY)
+}
+
 pub(crate) fn update_remote_provider_config_record(
     repo_path: &Path,
     serialized_config: &str,

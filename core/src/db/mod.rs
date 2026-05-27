@@ -77,8 +77,8 @@ pub(crate) use overview::{
 };
 pub(crate) use redo::{clear_redo_stack_in_tx, execute_redo_action_row, list_redo_action_rows};
 pub(crate) use remote_provider_config::{
-    load_remote_provider_test_record, save_remote_provider_test_record,
-    update_remote_provider_config_record,
+    load_remote_provider_config_record, load_remote_provider_test_record,
+    save_remote_provider_test_record, update_remote_provider_config_record,
 };
 pub(crate) use rename::{
     batch_update_rename_indexed_in_tx, batch_update_rename_repo_owned_in_tx,

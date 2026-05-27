@@ -99,8 +99,9 @@ pub use redo::{
     list_redo_actions, redo_action, RedoActionRecord, RedoActionResult, RedoActionStatus,
 };
 pub use remote_provider_config::{
-    RemoteAiProviderKind, RemoteProviderConfigSnapshot, RemoteProviderEnableRequest,
-    RemoteProviderTestRequest, RemoteProviderTestResult, RemoteProviderTestStatus,
+    RemoteAiProviderKind, RemoteProviderConfigSnapshot, RemoteProviderDisableRequest,
+    RemoteProviderEnableRequest, RemoteProviderTestRequest, RemoteProviderTestResult,
+    RemoteProviderTestStatus,
 };
 pub use search::*;
 pub use tags::{

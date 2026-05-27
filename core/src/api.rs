@@ -19,10 +19,10 @@ use crate::{
     ImportConflictBatchPreviewRequest, ImportOptions, LocalModelFolderLocation,
     LocalModelFolderRequest, LocalModelStatusRequest, LocalModelStatusSnapshot,
     MoveToCategoryPreview, RecoveryReport, RedoActionRecord, RedoActionResult, ReindexReport,
-    RemoteProviderConfigSnapshot, RemoteProviderEnableRequest, RemoteProviderTestRequest,
-    RemoteProviderTestResult, RepairOptions, RepairReport, RepoConfig, RepoInitOptions,
-    RepoPathValidation, RuleImpactReport, ScanSession, SyncResult, TagSuggestionApplyReport,
-    TagSuggestionReport, TagSuggestionRequest,
+    RemoteProviderConfigSnapshot, RemoteProviderDisableRequest, RemoteProviderEnableRequest,
+    RemoteProviderTestRequest, RemoteProviderTestResult, RepairOptions, RepairReport, RepoConfig,
+    RepoInitOptions, RepoPathValidation, RuleImpactReport, ScanSession, SyncResult,
+    TagSuggestionApplyReport, TagSuggestionReport, TagSuggestionRequest,
 };
 
 fn not_implemented<T>() -> CoreResult<T> {
@@ -259,6 +259,27 @@ pub fn test_remote_ai_provider(
     remote_provider_config::test_remote_ai_provider(repo_path, request)
 }
 
+/// Loads the persisted C3-03 remote provider gate snapshot.
+///
+/// S3-03 calls this when opening the remote model configuration sheet, and
+/// S3-09 reads it as provider-consent state. The snapshot reports configured,
+/// verified, enabled, credential-present, scope, and disabled-reason state
+/// without returning API key material or contacting a provider.
+///
+/// This contract does not mutate provider settings, enable privacy gates,
+/// inspect user files, execute AI calls, or delete credentials.
+///
+/// # Errors
+///
+/// Returns `CoreError::Config { reason }` for invalid repository paths or
+/// invalid persisted metadata, and `CoreError::Internal { message }` when
+/// provider metadata cannot be read from initialized repository storage.
+pub fn load_remote_ai_provider_config(
+    repo_path: String,
+) -> CoreResult<RemoteProviderConfigSnapshot> {
+    remote_provider_config::load_remote_ai_provider_config(repo_path)
+}
+
 /// Enables a C3-03 remote AI provider after successful test and consent.
 ///
 /// S3-03 uses this contract after the user selects usage scope and confirms
@@ -284,6 +305,31 @@ pub fn enable_remote_ai_provider(
     request: RemoteProviderEnableRequest,
 ) -> CoreResult<RemoteProviderConfigSnapshot> {
     remote_provider_config::enable_remote_ai_provider(repo_path, request)
+}
+
+/// Disables the C3-03 remote provider gate without touching S3-09 rules.
+///
+/// S3-03 uses this for `Disable remote AI`. The call sets
+/// `remote_provider_enabled` to false and may forget the stored credential
+/// reference when the user explicitly chooses `Also remove stored API key`.
+/// It preserves provider metadata and feature scope unless the credential
+/// reference is removed, in which case verification is reset because the
+/// tested provider/key combination no longer exists in Core metadata.
+///
+/// This contract does not delete user files, execute AI calls, change local AI
+/// settings, modify privacy rules, clear call logs, or implement S3-09's
+/// `privacy_gate_enabled` persistence.
+///
+/// # Errors
+///
+/// Returns `CoreError::Config { reason }` for invalid repository paths or
+/// invalid persisted metadata, and `CoreError::Internal { message }` when
+/// provider metadata cannot be read or updated atomically.
+pub fn disable_remote_ai_provider(
+    repo_path: String,
+    request: RemoteProviderDisableRequest,
+) -> CoreResult<RemoteProviderConfigSnapshot> {
+    remote_provider_config::disable_remote_ai_provider(repo_path, request)
 }
 
 /// Recovers AreaMatrix-owned startup residue before the UI opens.

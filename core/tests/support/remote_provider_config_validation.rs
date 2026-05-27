@@ -171,7 +171,8 @@ pub fn assert_not_contains(haystack: &str, needle: &str) {
 
 pub fn assert_validation_docs_alignment() {
     for fragment in [
-        "计划新增：`test_remote_ai_provider`、`enable_remote_ai_provider`",
+        "计划新增：`test_remote_ai_provider`、`load_remote_ai_provider_config`",
+        "`enable_remote_ai_provider`、`disable_remote_ai_provider`",
         "provider_configured",
         "provider_verified",
         "remote_provider_enabled",
@@ -179,6 +180,8 @@ pub fn assert_validation_docs_alignment() {
         "保存 provider metadata 和 scope，不保存 key 明文。",
         "API key 不进入日志、诊断、错误文案。",
         "本地模型失败不得自动启用远程 provider。",
+        "S3-03/S3-09 必须能读取当前 provider 配置",
+        "S3-03 必须能禁用 remote provider",
     ] {
         assert_contains(CAPABILITY_SPEC, fragment);
     }
@@ -203,11 +206,15 @@ pub fn assert_validation_docs_alignment() {
 pub fn assert_core_api_and_udl_alignment() {
     for fragment in [
         "RemoteProviderTestResult test_remote_ai_provider(",
+        "RemoteProviderConfigSnapshot load_remote_ai_provider_config(",
         "RemoteProviderConfigSnapshot enable_remote_ai_provider(",
+        "RemoteProviderConfigSnapshot disable_remote_ai_provider(",
         "dictionary RemoteProviderTestRequest",
         "dictionary RemoteProviderEnableRequest",
+        "dictionary RemoteProviderDisableRequest",
         "sequence<AiFeatureKind> feature_scope;",
         "boolean data_flow_confirmed;",
+        "boolean remove_stored_credential;",
         "dictionary RemoteProviderConfigSnapshot",
         "boolean provider_configured;",
         "boolean provider_verified;",
@@ -228,8 +235,10 @@ pub fn assert_core_api_and_udl_alignment() {
     for fragment in [
         "不接受 API key 明文",
         "不得发送文件名、repo-relative path、提取文本",
+        "只读取 metadata，不测试 provider",
         "不修改 `privacy_gate_enabled`",
         "只保存远程 provider metadata、Keychain reference 和 scope",
+        "只关闭 C3-03 provider gate",
         "`privacy_gate_enabled` 由 C3-09 管理",
         "任一失败必须保留上一次成功的 remote provider state",
     ] {
@@ -247,9 +256,12 @@ pub fn assert_core_api_and_udl_alignment() {
 pub fn assert_rust_contract_alignment() {
     for fragment in [
         "pub fn test_remote_ai_provider(",
+        "pub fn load_remote_ai_provider_config(",
         "pub fn enable_remote_ai_provider(",
+        "pub fn disable_remote_ai_provider(",
         "RemoteProviderTestRequest",
         "RemoteProviderEnableRequest",
+        "RemoteProviderDisableRequest",
         "RemoteProviderConfigSnapshot",
         "Core must never accept or return raw API keys",
         "C3-09 remains responsible for",
@@ -269,6 +281,7 @@ pub fn assert_rust_contract_alignment() {
     }
 
     for fragment in [
+        "load_remote_provider_config_record",
         "remote_provider_pending_verification",
         "remote_provider_config",
         "update_remote_provider_config_record",
@@ -278,6 +291,9 @@ pub fn assert_rust_contract_alignment() {
 
     for fragment in [
         "SECURE_STORAGE_ENV_PREFIX",
+        "KEYCHAIN_PREFIX",
+        "ProbeCredential::PlatformReference",
+        "key_reference: request.key_reference.as_deref()",
         "probe_remote_provider",
         "sanitized_probe_message",
         "custom_endpoint_scheme_allowed",
@@ -293,6 +309,8 @@ pub fn assert_consumer_gate_alignment() {
         "`remote_provider_enabled`：用户在本页显式点击 `Enable remote AI` 后为 true",
         "`feature_scope`：本页保存的远程可用功能范围",
         "`privacy_gate_enabled`：由 S3-09 管理的远程隐私 gate",
+        "打开 sheet 时读取已配置 provider",
+        "点击 Disable remote AI 弹确认",
         "Test connection 只发送 provider/model/key 可用性的最小探测请求",
         "API key 不出现在日志、诊断包、UI 明文和错误文本中。",
     ] {
@@ -302,6 +320,7 @@ pub fn assert_consumer_gate_alignment() {
     for fragment in [
         "本区是隐私 gate，不是 provider 禁用页",
         "`provider_configured`、`provider_verified`、`remote_provider_enabled` 和 `feature_scope` 来自 S3-03，只读展示。",
+        "打开页面时读取远程 gate、字段过滤设置和 S3-03 provider consent 状态。",
         "本页的 `Block remote AI with privacy gate` 不得被实现为 S3-03 的 `Disable remote AI`",
         "如果 `feature_scope` 不包含某 AI 功能",
     ] {

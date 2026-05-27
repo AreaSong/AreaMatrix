@@ -41,8 +41,16 @@ namespace area_matrix {
     );
 
     [Throws=CoreError]
+    RemoteProviderConfigSnapshot load_remote_ai_provider_config(string repo_path);
+
+    [Throws=CoreError]
     RemoteProviderConfigSnapshot enable_remote_ai_provider(
         string repo_path, RemoteProviderEnableRequest request
+    );
+
+    [Throws=CoreError]
+    RemoteProviderConfigSnapshot disable_remote_ai_provider(
+        string repo_path, RemoteProviderDisableRequest request
     );
 
     [Throws=CoreError]
@@ -415,6 +423,10 @@ dictionary RemoteProviderEnableRequest {
     sequence<AiFeatureKind> feature_scope;
     string verification_token;
     boolean data_flow_confirmed;
+};
+
+dictionary RemoteProviderDisableRequest {
+    boolean remove_stored_credential;
 };
 
 dictionary RemoteProviderConfigSnapshot {

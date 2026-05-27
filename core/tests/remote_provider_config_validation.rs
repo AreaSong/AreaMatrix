@@ -2,8 +2,9 @@
 mod validation_support;
 
 use area_matrix_core::{
-    enable_remote_ai_provider, test_remote_ai_provider, AiFeatureKind, CoreResult, ErrorKind,
-    RemoteAiProviderKind, RemoteProviderConfigSnapshot, RemoteProviderEnableRequest,
+    disable_remote_ai_provider, enable_remote_ai_provider, load_remote_ai_provider_config,
+    test_remote_ai_provider, AiFeatureKind, CoreResult, ErrorKind, RemoteAiProviderKind,
+    RemoteProviderConfigSnapshot, RemoteProviderDisableRequest, RemoteProviderEnableRequest,
     RemoteProviderTestRequest, RemoteProviderTestResult, RemoteProviderTestStatus,
 };
 use pretty_assertions::assert_eq;
@@ -68,6 +69,43 @@ fn remote_provider_config_validation_covers_ui_ready_success_without_secret_pers
     assert_not_contains(&stored, &verification_token);
     assert_no_api_key_material(&stored);
     assert!(repo_config_value(repo.path(), PENDING_TEST_KEY).is_none());
+
+    let loaded =
+        load_remote_ai_provider_config(path_string(repo.path())).expect("load enabled snapshot");
+    assert_eq!(loaded, snapshot);
+
+    let disabled = disable_remote_ai_provider(
+        path_string(repo.path()),
+        RemoteProviderDisableRequest {
+            remove_stored_credential: false,
+        },
+    )
+    .expect("disable provider while keeping credential reference");
+    assert!(disabled.provider_configured);
+    assert!(disabled.provider_verified);
+    assert!(!disabled.remote_provider_enabled);
+    assert!(disabled.credential_configured);
+    assert_eq!(disabled.feature_scope, snapshot.feature_scope);
+    assert_eq!(
+        disabled.disabled_reason.as_deref(),
+        Some("Remote provider is disabled")
+    );
+
+    let disabled_without_credential = disable_remote_ai_provider(
+        path_string(repo.path()),
+        RemoteProviderDisableRequest {
+            remove_stored_credential: true,
+        },
+    )
+    .expect("forget credential reference after explicit user choice");
+    assert!(!disabled_without_credential.provider_configured);
+    assert!(!disabled_without_credential.provider_verified);
+    assert!(!disabled_without_credential.remote_provider_enabled);
+    assert!(!disabled_without_credential.credential_configured);
+    assert_eq!(
+        disabled_without_credential.disabled_reason.as_deref(),
+        Some("Remote provider is not configured")
+    );
 
     let after = repo_snapshot(repo.path());
     assert_eq!(after.user_readme, before.user_readme);
@@ -173,9 +211,16 @@ fn remote_provider_config_validation_locks_core_api_udl_and_rust_contract() {
         _: fn(String, RemoteProviderEnableRequest) -> CoreResult<RemoteProviderConfigSnapshot>,
     ) {
     }
+    fn assert_load_signature(_: fn(String) -> CoreResult<RemoteProviderConfigSnapshot>) {}
+    fn assert_disable_signature(
+        _: fn(String, RemoteProviderDisableRequest) -> CoreResult<RemoteProviderConfigSnapshot>,
+    ) {
+    }
 
     assert_test_signature(test_remote_ai_provider);
+    assert_load_signature(load_remote_ai_provider_config);
     assert_enable_signature(enable_remote_ai_provider);
+    assert_disable_signature(disable_remote_ai_provider);
     assert_validation_docs_alignment();
     assert_core_api_and_udl_alignment();
     assert_rust_contract_alignment();

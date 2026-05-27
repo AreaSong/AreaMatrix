@@ -22,8 +22,10 @@ const VERIFIED_MESSAGE: &str = "Remote provider metadata verified";
 const REJECTED_MESSAGE: &str = "Remote provider rejected the credential or model";
 const CONNECTION_FAILED_MESSAGE: &str = "Remote provider connection failed";
 const UNSUPPORTED_MESSAGE: &str = "Remote provider is not supported by this runtime";
+const INVALID_KEY_REFERENCE_MESSAGE: &str = "remote provider key reference is invalid";
 const SECURE_STORAGE_ENV_PREFIX: &str = "secure-storage:env:";
 const SECURE_STORE_ENV_PREFIX: &str = "secure-store:env:";
+const KEYCHAIN_PREFIX: &str = "keychain:";
 const OPENAI_MODELS_ENDPOINT: &str = "https://api.openai.com/v1/models";
 const ANTHROPIC_MODELS_ENDPOINT: &str = "https://api.anthropic.com/v1/models";
 const PROBE_RUNTIME_ENV: &str = "AREAMATRIX_REMOTE_PROVIDER_PROBE_RUNTIME";
@@ -38,11 +40,17 @@ struct CredentialSecret {
     value: String,
 }
 
+enum ProbeCredential {
+    Secret(CredentialSecret),
+    PlatformReference(String),
+}
+
 struct ProbeHttpRequest {
     provider: RemoteAiProviderKind,
     method: &'static str,
     url: String,
     headers: Vec<(&'static str, String)>,
+    key_reference: Option<String>,
 }
 
 struct ProbeUrl {
@@ -58,6 +66,8 @@ struct RuntimeProbePayload<'a> {
     method: &'a str,
     url: &'a str,
     headers: Vec<RuntimeProbeHeader<'a>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    key_reference: Option<&'a str>,
 }
 
 #[derive(Serialize)]
@@ -83,7 +93,10 @@ pub(super) fn custom_endpoint_scheme_allowed(endpoint: &str) -> bool {
     endpoint.starts_with("https://") || is_loopback_http_endpoint(endpoint)
 }
 
-fn inspect_credential_reference(key_reference: &str) -> CoreResult<CredentialSecret> {
+fn inspect_credential_reference(key_reference: &str) -> CoreResult<ProbeCredential> {
+    if key_reference.starts_with(KEYCHAIN_PREFIX) {
+        return keychain_reference(key_reference);
+    }
     let Some(env_name) = credential_env_name(key_reference)? else {
         return Err(CoreError::permission_denied("remote provider credential"));
     };
@@ -92,7 +105,17 @@ fn inspect_credential_reference(key_reference: &str) -> CoreResult<CredentialSec
     if value.trim().is_empty() || value.contains('\0') || value.chars().any(char::is_control) {
         return Err(CoreError::permission_denied("remote provider credential"));
     }
-    Ok(CredentialSecret { value })
+    Ok(ProbeCredential::Secret(CredentialSecret { value }))
+}
+
+fn keychain_reference(key_reference: &str) -> CoreResult<ProbeCredential> {
+    let name = key_reference
+        .strip_prefix(KEYCHAIN_PREFIX)
+        .expect("keychain prefix was checked before parsing");
+    if name.is_empty() {
+        return Err(CoreError::config(INVALID_KEY_REFERENCE_MESSAGE));
+    }
+    Ok(ProbeCredential::PlatformReference(key_reference.to_owned()))
 }
 
 fn credential_env_name(key_reference: &str) -> CoreResult<Option<&str>> {
@@ -108,18 +131,21 @@ fn credential_env_name(key_reference: &str) -> CoreResult<Option<&str>> {
             .chars()
             .all(|value| value.is_ascii_alphanumeric() || value == '_')
     {
-        return Err(CoreError::config(
-            "remote provider key reference is invalid",
-        ));
+        return Err(CoreError::config(INVALID_KEY_REFERENCE_MESSAGE));
     }
     Ok(Some(env_name))
 }
 
 fn build_probe_request(
     request: &RemoteProviderTestRequest,
-    credential: &CredentialSecret,
+    credential: &ProbeCredential,
 ) -> CoreResult<ProbeHttpRequest> {
-    let headers = provider_headers(&request.provider, &credential.value);
+    let (headers, key_reference) = match credential {
+        ProbeCredential::Secret(secret) => {
+            (provider_headers(&request.provider, &secret.value), None)
+        }
+        ProbeCredential::PlatformReference(reference) => (Vec::new(), Some(reference.clone())),
+    };
     let url = match request.provider {
         RemoteAiProviderKind::OpenAi => {
             model_metadata_url(OPENAI_MODELS_ENDPOINT, &request.model_id)
@@ -134,6 +160,7 @@ fn build_probe_request(
         method: "GET",
         url,
         headers,
+        key_reference,
     })
 }
 
@@ -171,6 +198,10 @@ fn custom_probe_url(request: &RemoteProviderTestRequest) -> CoreResult<String> {
 }
 
 fn execute_probe_request(request: &ProbeHttpRequest) -> CoreResult<RemoteProviderTestStatus> {
+    if request.key_reference.is_some() {
+        return execute_external_probe_runtime(request)?
+            .ok_or_else(|| CoreError::permission_denied("remote provider credential"));
+    }
     if let Some(status) = execute_external_probe_runtime(request)? {
         return Ok(status);
     }
@@ -257,6 +288,7 @@ fn runtime_probe_payload(request: &ProbeHttpRequest) -> CoreResult<Vec<u8>> {
         method: request.method,
         url: &request.url,
         headers,
+        key_reference: request.key_reference.as_deref(),
     })
     .map_err(|_| CoreError::internal("remote provider probe metadata is invalid"))
 }

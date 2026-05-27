@@ -1,6 +1,7 @@
 use area_matrix_core::{
-    enable_remote_ai_provider, test_remote_ai_provider, AiFeatureKind, CoreError, CoreResult,
-    RemoteAiProviderKind, RemoteProviderConfigSnapshot, RemoteProviderEnableRequest,
+    disable_remote_ai_provider, enable_remote_ai_provider, load_remote_ai_provider_config,
+    test_remote_ai_provider, AiFeatureKind, CoreError, CoreResult, RemoteAiProviderKind,
+    RemoteProviderConfigSnapshot, RemoteProviderDisableRequest, RemoteProviderEnableRequest,
     RemoteProviderTestRequest, RemoteProviderTestResult, RemoteProviderTestStatus,
 };
 use pretty_assertions::assert_eq;
@@ -59,9 +60,16 @@ fn remote_provider_config_contract_exposes_signatures_inputs_outputs_and_errors(
         _: fn(String, RemoteProviderEnableRequest) -> CoreResult<RemoteProviderConfigSnapshot>,
     ) {
     }
+    fn assert_load(_: fn(String) -> CoreResult<RemoteProviderConfigSnapshot>) {}
+    fn assert_disable(
+        _: fn(String, RemoteProviderDisableRequest) -> CoreResult<RemoteProviderConfigSnapshot>,
+    ) {
+    }
 
     assert_test(test_remote_ai_provider);
+    assert_load(load_remote_ai_provider_config);
     assert_enable(enable_remote_ai_provider);
+    assert_disable(disable_remote_ai_provider);
 
     let result = RemoteProviderTestResult {
         provider: RemoteAiProviderKind::OpenAi,
@@ -171,7 +179,8 @@ fn remote_provider_config_contract_docs_api_udl_and_control_map_stay_aligned() {
         "# C3-03 remote-provider-config",
         "- S3-03 remote-model-enable",
         "- S3-09 ai-privacy-rules",
-        "计划新增：`test_remote_ai_provider`、`enable_remote_ai_provider`",
+        "计划新增：`test_remote_ai_provider`、`load_remote_ai_provider_config`",
+        "`enable_remote_ai_provider`、`disable_remote_ai_provider`",
         "provider、model、key reference、allowed scopes。",
         "provider_configured",
         "provider_verified",
@@ -183,6 +192,8 @@ fn remote_provider_config_contract_docs_api_udl_and_control_map_stay_aligned() {
         "- `PermissionDenied`",
         "- `Internal`",
         "远程 provider 必须显式测试和确认数据流向后启用。",
+        "S3-03/S3-09 必须能读取当前 provider 配置",
+        "S3-03 必须能禁用 remote provider",
         "API key 不进入日志、诊断、错误文案。",
         "本地模型失败不得自动启用远程 provider。",
     ] {
@@ -201,14 +212,19 @@ fn remote_provider_config_contract_docs_api_udl_and_control_map_stay_aligned() {
     for fragment in [
         "RemoteProviderTestResult test_remote_ai_provider(",
         "string repo_path, RemoteProviderTestRequest request",
+        "RemoteProviderConfigSnapshot load_remote_ai_provider_config(",
         "RemoteProviderConfigSnapshot enable_remote_ai_provider(",
         "string repo_path, RemoteProviderEnableRequest request",
+        "RemoteProviderConfigSnapshot disable_remote_ai_provider(",
+        "string repo_path, RemoteProviderDisableRequest request",
         "dictionary RemoteProviderTestRequest",
         "RemoteAiProviderKind provider;",
         "string key_reference;",
         "dictionary RemoteProviderEnableRequest",
         "sequence<AiFeatureKind> feature_scope;",
         "boolean data_flow_confirmed;",
+        "dictionary RemoteProviderDisableRequest",
+        "boolean remove_stored_credential;",
         "dictionary RemoteProviderConfigSnapshot",
         "boolean provider_configured;",
         "boolean provider_verified;",
@@ -233,12 +249,18 @@ fn remote_provider_config_contract_docs_api_udl_and_control_map_stay_aligned() {
 
     for fragment in [
         "| `test_remote_ai_provider(repo, request)` | ai | √ | Config / PermissionDenied / Internal |",
+        "| `load_remote_ai_provider_config(repo)` | ai | √ | Config / Internal |",
         "| `enable_remote_ai_provider(repo, request)` | ai | √ | Config / PermissionDenied / Internal |",
+        "| `disable_remote_ai_provider(repo, request)` | ai | √ | Config / Internal |",
         "### `test_remote_ai_provider(repoPath: String, request: RemoteProviderTestRequest) throws -> RemoteProviderTestResult`",
+        "### `load_remote_ai_provider_config(repoPath: String) throws -> RemoteProviderConfigSnapshot`",
         "### `enable_remote_ai_provider(repoPath: String, request: RemoteProviderEnableRequest) throws -> RemoteProviderConfigSnapshot`",
+        "### `disable_remote_ai_provider(repoPath: String, request: RemoteProviderDisableRequest) throws -> RemoteProviderConfigSnapshot`",
         "不接受 API key 明文",
         "不得发送文件名、repo-relative path、提取文本",
+        "只读取 metadata，不测试 provider",
         "只保存远程 provider metadata、Keychain reference 和 scope",
+        "只关闭 C3-03 provider gate",
         "privacy_gate_enabled` 由 C3-09 管理",
     ] {
         assert_contains(CORE_API, fragment);
@@ -260,6 +282,7 @@ fn remote_provider_config_contract_documents_consumer_state_and_scope_boundaries
         "输入 API key，并保存到 Keychain。",
         "选择使用范围：分类、摘要、标签、语义搜索。",
         "测试连接，且测试不发送用户文件内容。",
+        "提供禁用远程 AI 的动作。",
         "provider_configured",
         "provider_verified",
         "remote_provider_enabled",
@@ -268,6 +291,8 @@ fn remote_provider_config_contract_documents_consumer_state_and_scope_boundaries
         "远程调用允许条件固定为",
         "Test connection 只发送 provider/model/key 可用性的最小探测请求",
         "点击 `Enable remote AI` 成功后必须一次性保存",
+        "打开 sheet 时读取已配置 provider",
+        "点击 Disable remote AI 弹确认",
         "所有字段类型都受隐私规则 gate 约束。",
     ] {
         assert_contains(REMOTE_MODEL_PAGE, fragment);
@@ -304,14 +329,17 @@ fn remote_provider_config_contract_documents_consumer_state_and_scope_boundaries
         "validate_feature_scope",
         "validate_verification_token",
         "looks_sensitive",
+        "keychain:",
     ] {
         assert_contains(REMOTE_PROVIDER_RS, fragment);
     }
 
     for fragment in [
         "Tests a C3-03 remote AI provider without sending user file content.",
+        "Loads the persisted C3-03 remote provider gate snapshot.",
         "Core must never accept or return raw API keys",
         "Enables a C3-03 remote AI provider after successful test and consent.",
+        "Disables the C3-03 remote provider gate without touching S3-09 rules.",
         "C3-09 remains responsible for",
     ] {
         assert_contains(API_RS, fragment);

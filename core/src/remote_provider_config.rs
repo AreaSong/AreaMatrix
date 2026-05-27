@@ -1,6 +1,7 @@
 //! C3-03 remote provider configuration contract types and entry points.
 
 mod probe;
+mod state;
 
 use std::{
     collections::HashSet,
@@ -9,9 +10,12 @@ use std::{
 
 use probe::probe_remote_provider;
 use serde::{Deserialize, Serialize};
+use state::{serialize_stored_config, snapshot_from_stored_config};
 use uuid::Uuid;
 
 use crate::{db, AiFeatureKind, CoreError, CoreResult};
+
+pub(crate) use state::{disable_remote_ai_provider, load_remote_ai_provider_config};
 
 const AREA_MATRIX_DIR: &str = ".areamatrix";
 const MAX_MODEL_ID_LEN: usize = 128;
@@ -74,6 +78,13 @@ pub struct RemoteProviderEnableRequest {
     pub verification_token: String,
     /// Explicit user confirmation that allowed content may leave the device.
     pub data_flow_confirmed: bool,
+}
+
+/// Request for disabling the current remote provider gate.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub struct RemoteProviderDisableRequest {
+    /// Whether Core should forget the stored secure-credential reference.
+    pub remove_stored_credential: bool,
 }
 
 /// Persisted remote provider gate state consumed by S3-03 and S3-09.
@@ -244,43 +255,6 @@ fn ensure_pending_matches_request(
     Ok(())
 }
 
-fn snapshot_from_stored_config(
-    config: StoredRemoteProviderConfig,
-    updated_at: Option<i64>,
-) -> RemoteProviderConfigSnapshot {
-    let disabled_reason = disabled_reason(&config);
-    RemoteProviderConfigSnapshot {
-        provider_configured: provider_configured(&config),
-        provider_verified: config.provider_verified,
-        remote_provider_enabled: config.remote_provider_enabled,
-        provider: Some(config.provider),
-        model_id: Some(config.model_id),
-        endpoint_url: config.endpoint_url,
-        credential_configured: !config.key_reference.is_empty(),
-        feature_scope: config.feature_scope,
-        updated_at,
-        disabled_reason,
-    }
-}
-
-fn provider_configured(config: &StoredRemoteProviderConfig) -> bool {
-    !config.model_id.is_empty() && !config.key_reference.is_empty()
-}
-
-fn disabled_reason(config: &StoredRemoteProviderConfig) -> Option<String> {
-    if !provider_configured(config) {
-        Some("Remote provider is not configured".to_owned())
-    } else if !config.provider_verified {
-        Some("Remote provider has not been verified".to_owned())
-    } else if !config.remote_provider_enabled {
-        Some("Remote provider is disabled".to_owned())
-    } else if config.feature_scope.is_empty() {
-        Some("Remote provider feature scope is empty".to_owned())
-    } else {
-        None
-    }
-}
-
 fn validate_connection_request(request: &RemoteProviderTestRequest) -> CoreResult<()> {
     validate_provider_fields(
         &request.provider,
@@ -438,11 +412,6 @@ fn deserialize_pending_verification(
 ) -> CoreResult<PendingRemoteProviderVerification> {
     serde_json::from_str(serialized)
         .map_err(|_| CoreError::config("remote provider verification metadata is invalid"))
-}
-
-fn serialize_stored_config(config: &StoredRemoteProviderConfig) -> CoreResult<String> {
-    serde_json::to_string(config)
-        .map_err(|_| CoreError::internal("remote provider metadata is invalid"))
 }
 
 fn map_storage_error(error: CoreError) -> CoreError {

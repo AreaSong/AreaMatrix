@@ -1,98 +1,24 @@
-use std::{
-    fs,
-    path::Path,
-    sync::{Mutex, MutexGuard},
-};
+#[path = "support/remote_provider_config_common.rs"]
+mod common;
+
+use std::{fs, path::Path};
 
 use area_matrix_core::{
-    enable_remote_ai_provider, init_repo, load_ai_config, map_core_error, test_remote_ai_provider,
-    AiFeatureKind, CoreError, ErrorKind, ErrorRecoverability, ErrorSeverity, OverviewOutput,
-    RemoteAiProviderKind, RemoteProviderEnableRequest, RemoteProviderTestRequest,
-    RemoteProviderTestStatus, RepoInitMode, RepoInitOptions,
+    disable_remote_ai_provider, enable_remote_ai_provider, load_ai_config,
+    load_remote_ai_provider_config, map_core_error, test_remote_ai_provider, AiFeatureKind,
+    CoreError, ErrorKind, ErrorRecoverability, ErrorSeverity, RemoteAiProviderKind,
+    RemoteProviderDisableRequest, RemoteProviderTestRequest, RemoteProviderTestStatus,
+};
+use common::{
+    enable_request_for_endpoint, initialized_repo, path_string, repo_config_rows,
+    repo_config_value, test_key_reference, test_request_for_endpoint, ProbeRuntime, SECRET_VALUE,
+    TEST_SECRET_ENV,
 };
 use pretty_assertions::assert_eq;
-use rusqlite::{params, Connection, OptionalExtension};
+use rusqlite::Connection;
 
-const TEST_SECRET_ENV: &str = "AREAMATRIX_REMOTE_PROVIDER_FAILURE_KEY";
-const SECRET_VALUE: &str = "failure-test-provider-secret";
 const REMOTE_CONFIG_KEY: &str = "remote_provider_config";
 const PENDING_TEST_KEY: &str = "remote_provider_pending_verification";
-static PROBE_RUNTIME_LOCK: Mutex<()> = Mutex::new(());
-
-fn path_string(path: &Path) -> String {
-    path.to_string_lossy().into_owned()
-}
-
-fn create_empty_options() -> RepoInitOptions {
-    RepoInitOptions {
-        mode: RepoInitMode::CreateEmpty,
-        create_default_categories: false,
-        overview_output: OverviewOutput::GeneratedOnly,
-    }
-}
-
-fn initialized_repo() -> tempfile::TempDir {
-    let repo = tempfile::tempdir().expect("create temporary repository directory");
-    init_repo(path_string(repo.path()), create_empty_options()).expect("initialize repository");
-    repo
-}
-
-fn test_key_reference() -> String {
-    std::env::set_var(TEST_SECRET_ENV, SECRET_VALUE);
-    format!("secure-storage:env:{TEST_SECRET_ENV}")
-}
-
-fn test_request_for_endpoint(endpoint_url: &str) -> RemoteProviderTestRequest {
-    RemoteProviderTestRequest {
-        provider: RemoteAiProviderKind::Other,
-        model_id: "gpt-4.1-mini".to_owned(),
-        endpoint_url: Some(endpoint_url.to_owned()),
-        key_reference: test_key_reference(),
-    }
-}
-
-fn enable_request_for_endpoint(
-    verification_token: String,
-    endpoint_url: &str,
-) -> RemoteProviderEnableRequest {
-    RemoteProviderEnableRequest {
-        provider: RemoteAiProviderKind::Other,
-        model_id: "gpt-4.1-mini".to_owned(),
-        endpoint_url: Some(endpoint_url.to_owned()),
-        key_reference: test_key_reference(),
-        feature_scope: vec![AiFeatureKind::AutoSummaries, AiFeatureKind::AutoTags],
-        verification_token,
-        data_flow_confirmed: true,
-    }
-}
-
-fn repo_config_value(repo: &Path, key: &str) -> Option<String> {
-    let connection =
-        Connection::open(repo.join(".areamatrix/index.db")).expect("open repository database");
-    connection
-        .query_row(
-            "SELECT value FROM repo_config WHERE key = ?1",
-            params![key],
-            |row| row.get(0),
-        )
-        .optional()
-        .expect("query repo_config value")
-}
-
-fn repo_config_rows(repo: &Path) -> Vec<(String, String)> {
-    let connection =
-        Connection::open(repo.join(".areamatrix/index.db")).expect("open repository database");
-    let mut statement = connection
-        .prepare("SELECT key, value FROM repo_config ORDER BY key")
-        .expect("prepare repo_config query");
-    let rows = statement
-        .query_map([], |row| {
-            Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
-        })
-        .expect("query repo_config rows");
-
-    rows.map(|row| row.expect("read repo_config row")).collect()
-}
 
 fn assert_no_remote_provider_rows(repo: &Path) {
     assert!(repo_config_value(repo, REMOTE_CONFIG_KEY).is_none());
@@ -363,6 +289,45 @@ fn remote_provider_config_failure_enable_rollback_preserves_previous_successful_
 }
 
 #[test]
+fn remote_provider_config_failure_disable_rollback_preserves_previous_successful_state() {
+    let repo = initialized_repo();
+    let endpoint = "https://provider.example.test/disable-rollback";
+    let token = successful_provider_test(repo.path(), endpoint);
+    let enabled = enable_remote_ai_provider(
+        path_string(repo.path()),
+        enable_request_for_endpoint(token, endpoint),
+    )
+    .expect("enable provider before disable rollback");
+    assert!(enabled.remote_provider_enabled);
+    let stored_before =
+        repo_config_value(repo.path(), REMOTE_CONFIG_KEY).expect("provider config stored");
+
+    install_repo_config_update_failure(repo.path(), REMOTE_CONFIG_KEY);
+    let result = disable_remote_ai_provider(
+        path_string(repo.path()),
+        RemoteProviderDisableRequest {
+            remove_stored_credential: true,
+        },
+    );
+
+    assert_sanitized_error(
+        result.expect_err("disable update failure must fail"),
+        ErrorKind::Internal,
+    );
+    assert_eq!(
+        repo_config_value(repo.path(), REMOTE_CONFIG_KEY),
+        Some(stored_before)
+    );
+
+    let loaded = load_remote_ai_provider_config(path_string(repo.path()))
+        .expect("load previous successful provider state");
+    assert!(loaded.provider_configured);
+    assert!(loaded.provider_verified);
+    assert!(loaded.remote_provider_enabled);
+    assert!(loaded.credential_configured);
+}
+
+#[test]
 fn remote_provider_config_failure_error_mapping_is_structured_and_side_effect_free() {
     let repo = initialized_repo();
     let rows_before = repo_config_rows(repo.path());
@@ -433,60 +398,4 @@ fn install_repo_config_update_failure(repo: &Path, key: &str) {
             key
         ))
         .expect("install update failure trigger");
-}
-
-struct ProbeRuntime {
-    _lock: MutexGuard<'static, ()>,
-    output: tempfile::TempDir,
-    payload_path: std::path::PathBuf,
-}
-
-impl ProbeRuntime {
-    fn new(output_status: &str) -> Self {
-        let lock = PROBE_RUNTIME_LOCK
-            .lock()
-            .expect("lock remote provider probe runtime env");
-        let output = tempfile::tempdir().expect("create probe runtime directory");
-        let script_path = output.path().join("probe-runtime.sh");
-        let payload_path = output.path().join("payload.json");
-        let script = format!(
-            "#!/bin/sh\ncat > \"{}\"\nprintf '{}\\n'\n",
-            payload_path.display(),
-            output_status
-        );
-        fs::write(&script_path, script).expect("write probe runtime script");
-        make_executable(&script_path);
-        std::env::set_var(
-            "AREAMATRIX_REMOTE_PROVIDER_PROBE_RUNTIME",
-            script_path.to_string_lossy().into_owned(),
-        );
-        Self {
-            _lock: lock,
-            output,
-            payload_path,
-        }
-    }
-
-    fn captured_payload(self) -> String {
-        fs::read_to_string(&self.payload_path).expect("read captured probe payload")
-    }
-}
-
-impl Drop for ProbeRuntime {
-    fn drop(&mut self) {
-        std::env::remove_var("AREAMATRIX_REMOTE_PROVIDER_PROBE_RUNTIME");
-        let _ = self.output.path();
-    }
-}
-
-fn make_executable(path: &Path) {
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        let mut permissions = fs::metadata(path)
-            .expect("read probe runtime metadata")
-            .permissions();
-        permissions.set_mode(0o755);
-        fs::set_permissions(path, permissions).expect("mark probe runtime executable");
-    }
 }
