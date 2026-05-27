@@ -98,7 +98,7 @@ fn remote_provider_config_implementation_tests_then_enables_persisted_snapshot()
     let repo = initialized_repo();
     let runtime = ProbeRuntime::new(200);
     let endpoint_url = "https://provider.example.test/probe";
-    let request = test_request_for_endpoint(&endpoint_url);
+    let request = test_request_for_endpoint(endpoint_url);
     let expected_key_reference = request.key_reference.clone();
     let test_result =
         test_remote_ai_provider(path_string(repo.path()), request).expect("test provider");
@@ -124,7 +124,7 @@ fn remote_provider_config_implementation_tests_then_enables_persisted_snapshot()
 
     let snapshot = enable_remote_ai_provider(
         path_string(repo.path()),
-        enable_request_for_endpoint(verification_token.clone(), &endpoint_url),
+        enable_request_for_endpoint(verification_token.clone(), endpoint_url),
     )
     .expect("enable tested provider");
 
@@ -166,7 +166,7 @@ fn remote_provider_config_implementation_requires_matching_successful_test() {
     let runtime = ProbeRuntime::new(200);
     let endpoint_url = "https://provider.example.test/probe";
     let test_result =
-        test_remote_ai_provider(repo_path.clone(), test_request_for_endpoint(&endpoint_url))
+        test_remote_ai_provider(repo_path.clone(), test_request_for_endpoint(endpoint_url))
             .expect("test provider before enable");
     let _ = runtime.captured_payload();
     let mut changed_model = enable_request(
@@ -264,7 +264,7 @@ fn remote_provider_config_implementation_rolls_back_when_enable_write_fails() {
     let runtime = ProbeRuntime::new(200);
     let endpoint_url = "https://provider.example.test/probe";
     let test_result =
-        test_remote_ai_provider(repo_path.clone(), test_request_for_endpoint(&endpoint_url))
+        test_remote_ai_provider(repo_path.clone(), test_request_for_endpoint(endpoint_url))
             .expect("test provider");
     let _ = runtime.captured_payload();
     let pending_before = repo_config_value(repo.path(), "remote_provider_pending_verification")
@@ -289,7 +289,7 @@ fn remote_provider_config_implementation_rolls_back_when_enable_write_fails() {
             test_result
                 .verification_token
                 .expect("successful test returns verification token"),
-            &endpoint_url,
+            endpoint_url,
         ),
     );
 
@@ -313,7 +313,7 @@ fn remote_provider_config_implementation_preserves_user_files_and_ai_boundaries(
     let endpoint_url = "https://provider.example.test/probe";
     let test_result = test_remote_ai_provider(
         path_string(repo.path()),
-        test_request_for_endpoint(&endpoint_url),
+        test_request_for_endpoint(endpoint_url),
     )
     .expect("test remote provider");
     let captured_request = runtime.captured_payload();
@@ -325,7 +325,7 @@ fn remote_provider_config_implementation_preserves_user_files_and_ai_boundaries(
             test_result
                 .verification_token
                 .expect("successful test returns verification token"),
-            &endpoint_url,
+            endpoint_url,
         ),
     )
     .expect("enable remote provider");
