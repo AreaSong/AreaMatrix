@@ -131,7 +131,9 @@ struct RuleImpactSampleSnapshot: Equatable, Identifiable {
     var status: RuleImpactStatusSnapshot
     var reason: String?
 
-    var id: Int64 { fileID }
+    var id: Int64 {
+        fileID
+    }
 }
 
 struct RuleImpactConflictSnapshot: Equatable, Identifiable {
@@ -141,7 +143,9 @@ struct RuleImpactConflictSnapshot: Equatable, Identifiable {
     var kind: RuleImpactConflictKindSnapshot
     var reason: String
 
-    var id: String { "\(fileID)-\(kind.rawValue)-\(conflictingPath ?? path ?? "none")" }
+    var id: String {
+        "\(fileID)-\(kind.rawValue)-\(conflictingPath ?? path ?? "none")"
+    }
 }
 
 struct RuleImpactReportSnapshot: Equatable {

@@ -1,6 +1,8 @@
 @testable import AreaMatrix
 import XCTest
 
+// swiftlint:disable file_length
+// swiftlint:disable:next type_body_length
 final class ChangeCategoryPageFeatureTests: XCTestCase {
     @MainActor
     func testS135C124PreviewUsesCoreBridgeWithoutMovingFile() async {
@@ -264,6 +266,7 @@ final class ChangeCategoryPageFeatureTests: XCTestCase {
     }
 
     @MainActor
+    // swiftlint:disable:next function_body_length
     func testS216ApplyCorrectionUsesRealCoreBridgeAndReturnedRuleDraft() async {
         let original = FileEntrySnapshot.changeCategoryFixture(id: 247, name: "contract.pdf")
         let corrected = FileEntrySnapshot.changeCategoryFixture(
@@ -335,6 +338,7 @@ final class ChangeCategoryPageFeatureTests: XCTestCase {
         XCTAssertNil(model.pendingActionDestination)
     }
 
+    // swiftlint:disable:next function_body_length
     func testS135C124DefaultCoreBridgePreviewsThenMovesCopiedFileAndWritesChangeLog() async throws {
         let repoURL = try makeChangeCategoryTemporaryDirectory(prefix: "repo")
         let sourceRoot = try makeChangeCategoryTemporaryDirectory(prefix: "source")
@@ -446,7 +450,6 @@ final class ChangeCategoryPageFeatureTests: XCTestCase {
             atPath: repoURL.appendingPathComponent("finance/contract.pdf").path
         ))
     }
-
 }
 
 private enum ChangeCategoryRequest: Equatable {

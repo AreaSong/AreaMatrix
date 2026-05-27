@@ -2,6 +2,7 @@
 import SwiftUI
 import XCTest
 
+// swiftlint:disable file_length
 final class ImportBatchICloudPageIntegrationTests: XCTestCase {
     func testS209PageIntegrationAllowsReadOnlyEntryButBlocksApply() {
         let disabledReason = MainFileWriteActionDisabledReason.repoReadOnly.rawValue
@@ -180,6 +181,7 @@ final class ImportBatchICloudPageIntegrationTests: XCTestCase {
     }
 
     @MainActor
+    // swiftlint:disable:next function_body_length
     func testS118ICloudPendingRowsDoNotSilentlyImportUnavailableRows() async {
         let localURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
         let cloudURL = URL(fileURLWithPath: "/tmp/iCloudOnly.pdf.icloud")

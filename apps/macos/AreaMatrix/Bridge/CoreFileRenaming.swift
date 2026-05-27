@@ -314,7 +314,7 @@ extension CoreBridge {
     func makeFileEntrySnapshots(from entries: [FileEntry], repoPath: String) async -> [FileEntrySnapshot] {
         var snapshots: [FileEntrySnapshot] = []
         for entry in entries {
-            snapshots.append(await makeFileEntrySnapshot(from: entry, repoPath: repoPath))
+            await snapshots.append(makeFileEntrySnapshot(from: entry, repoPath: repoPath))
         }
         return snapshots
     }

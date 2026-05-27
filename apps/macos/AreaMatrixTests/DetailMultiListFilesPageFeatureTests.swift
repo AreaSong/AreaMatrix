@@ -289,7 +289,7 @@ private actor S209RecordingBatchTagStore: CoreTagCRUD {
         self.results = results
     }
 
-    func listTags(repoPath: String, fileID: Int64) async throws -> TagSetSnapshot {
+    func listTags(repoPath _: String, fileID: Int64) async throws -> TagSetSnapshot {
         recordedListRequests.append("\(fileID)")
         guard !results.isEmpty else {
             throw CoreError.Db(message: "missing list_tags result")
@@ -448,7 +448,6 @@ private extension CoreErrorMappingSnapshot {
             rawContext: "S2-09 C2-06 batch_add_tags"
         )
     }
-
 }
 
 extension TagSetSnapshot {

@@ -400,9 +400,9 @@ private extension ImportConflictBatchPreviewItemSnapshot {
     ) -> ImportConflictBatchPreviewItemSnapshot {
         switch conflictType {
         case .duplicateHash:
-            return .s221Duplicate(conflictID: conflictID, strategy: duplicateStrategy)
+            .s221Duplicate(conflictID: conflictID, strategy: duplicateStrategy)
         case .sameNameDifferentContent:
-            return .s221SameName(conflictID: conflictID, strategy: sameNameStrategy)
+            .s221SameName(conflictID: conflictID, strategy: sameNameStrategy)
         }
     }
 }

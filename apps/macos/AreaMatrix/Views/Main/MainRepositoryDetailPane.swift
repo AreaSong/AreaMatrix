@@ -46,7 +46,6 @@ struct MainRepositoryDetailPane: View {
 
     @State private var selectedTab: DetailPaneTab = .meta
     @ObservedObject var noteModel: DetailNoteModel
-
 }
 
 extension MainRepositoryDetailPane {
@@ -247,36 +246,7 @@ extension MainRepositoryDetailPane {
     private func detailTabContent(for detail: FileEntrySnapshot) -> some View {
         switch selectedTab {
         case .meta:
-            detailStatusSection
-            DetailTagSection(
-                file: detail,
-                state: detailTagEditorState,
-                suggestionState: detailTagSuggestionState,
-                suggestionPresentationRequest: tagSuggestionPresentationRequest,
-                undoToast: detailTagUndoToast,
-                disabledReason: writeActionDisabledReason(detail.id),
-                onLoadTags: tagActions.onLoadTags,
-                onRetryTags: tagActions.onRetryTags,
-                onAddTag: tagActions.onAddTag,
-                onRemoveTag: tagActions.onRemoveTag,
-                onLoadSuggestions: tagActions.onLoadSuggestions,
-                onRetrySuggestions: tagActions.onRetrySuggestions,
-                onToggleSuggestion: tagActions.onToggleSuggestion,
-                onSelectAllSuggestions: tagActions.onSelectAllSuggestions,
-                onClearSuggestions: tagActions.onClearSuggestions,
-                onStartEditingSuggestions: tagActions.onStartEditingSuggestions,
-                onCancelEditingSuggestions: tagActions.onCancelEditingSuggestions,
-                onEditSuggestionDisplayName: tagActions.onEditSuggestionDisplayName,
-                onEditSuggestionSlug: tagActions.onEditSuggestionSlug,
-                onRegenerateSuggestionSlug: tagActions.onRegenerateSuggestionSlug,
-                onApplySuggestions: tagActions.onApplySuggestions,
-                onApplyEditedSuggestions: tagActions.onApplyEditedSuggestions,
-                onRetryFailedSuggestions: tagActions.onRetryFailedSuggestions,
-                onSuggestionPresentationConsumed: tagActions.onSuggestionPresentationConsumed,
-                onUndoTagChange: tagActions.onUndoTagChange,
-                onDismissUndoToast: tagActions.onDismissTagUndoToast
-            )
-            metadataRows(for: detail)
+            detailMetaTabContent(for: detail)
         case .log:
             DetailLogTabView(
                 selection: selection,
@@ -296,6 +266,40 @@ extension MainRepositoryDetailPane {
                 onOpenNoteFile: onOpenNoteFile
             )
         }
+    }
+
+    @ViewBuilder
+    private func detailMetaTabContent(for detail: FileEntrySnapshot) -> some View {
+        detailStatusSection
+        DetailTagSection(
+            file: detail,
+            state: detailTagEditorState,
+            suggestionState: detailTagSuggestionState,
+            suggestionPresentationRequest: tagSuggestionPresentationRequest,
+            undoToast: detailTagUndoToast,
+            disabledReason: writeActionDisabledReason(detail.id),
+            onLoadTags: tagActions.onLoadTags,
+            onRetryTags: tagActions.onRetryTags,
+            onAddTag: tagActions.onAddTag,
+            onRemoveTag: tagActions.onRemoveTag,
+            onLoadSuggestions: tagActions.onLoadSuggestions,
+            onRetrySuggestions: tagActions.onRetrySuggestions,
+            onToggleSuggestion: tagActions.onToggleSuggestion,
+            onSelectAllSuggestions: tagActions.onSelectAllSuggestions,
+            onClearSuggestions: tagActions.onClearSuggestions,
+            onStartEditingSuggestions: tagActions.onStartEditingSuggestions,
+            onCancelEditingSuggestions: tagActions.onCancelEditingSuggestions,
+            onEditSuggestionDisplayName: tagActions.onEditSuggestionDisplayName,
+            onEditSuggestionSlug: tagActions.onEditSuggestionSlug,
+            onRegenerateSuggestionSlug: tagActions.onRegenerateSuggestionSlug,
+            onApplySuggestions: tagActions.onApplySuggestions,
+            onApplyEditedSuggestions: tagActions.onApplyEditedSuggestions,
+            onRetryFailedSuggestions: tagActions.onRetryFailedSuggestions,
+            onSuggestionPresentationConsumed: tagActions.onSuggestionPresentationConsumed,
+            onUndoTagChange: tagActions.onUndoTagChange,
+            onDismissUndoToast: tagActions.onDismissTagUndoToast
+        )
+        metadataRows(for: detail)
     }
 
     private func detailFileActions(for detail: FileEntrySnapshot) -> some View {

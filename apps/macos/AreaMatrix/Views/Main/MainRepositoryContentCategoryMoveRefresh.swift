@@ -307,18 +307,18 @@ extension MainRepositoryContentView {
     ) {
         guard handoff.targetPageID == "S2-19" else { return }
         pendingBatchChangeCategoryRoute = nil
-        let context = BatchChangeCategoryNewCategoryReturnContext(route: route, handoff: handoff)
+        let context = BatchChangeCategoryReturnContext(route: route, handoff: handoff)
         fileListModel.openClassifierRuleEditorForBatchCategory(context: context)
     }
 
-    func cancelClassifierRuleEditorFromBatchCategory(_ context: BatchChangeCategoryNewCategoryReturnContext) {
+    func cancelClassifierRuleEditorFromBatchCategory(_ context: BatchChangeCategoryReturnContext) {
         pendingBatchChangeCategoryRoute = BatchChangeCategoryClassifierReturn.cancelledRoute(context: context)
         fileListModel.clearPendingSearchDestination()
     }
 
     func acceptClassifierRuleEditorCategory(
         _ category: String,
-        context: BatchChangeCategoryNewCategoryReturnContext
+        context: BatchChangeCategoryReturnContext
     ) {
         let notification = ClassifierRuleEditorSaveEvents.notification(savedCategory: category)
         guard let route = BatchChangeCategoryClassifierReturn.acceptedRoute(

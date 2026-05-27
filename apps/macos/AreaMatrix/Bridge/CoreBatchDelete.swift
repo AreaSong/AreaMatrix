@@ -39,7 +39,9 @@ struct BatchDeletePreviewItemSnapshot: Equatable, Identifiable {
     var status: BatchDeletePreviewStatusSnapshot
     var reason: String?
 
-    var id: Int64 { fileID }
+    var id: Int64 {
+        fileID
+    }
 }
 
 struct BatchDeletePreviewReportSnapshot: Equatable {
@@ -71,7 +73,9 @@ struct BatchDeleteItemResultSnapshot: Equatable, Identifiable {
     var status: BatchDeleteResultStatusSnapshot
     var error: String?
 
-    var id: Int64 { fileID }
+    var id: Int64 {
+        fileID
+    }
 }
 
 struct BatchDeleteReportSnapshot: Equatable {

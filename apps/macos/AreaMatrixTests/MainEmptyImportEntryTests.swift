@@ -3,6 +3,8 @@ import Foundation
 import SwiftUI
 import XCTest
 
+// swiftlint:disable file_length
+// swiftlint:disable:next type_body_length
 final class MainEmptyImportEntryTests: XCTestCase {
     @MainActor
     func testMainEmptyImportButtonCreatesImportEntryFromPicker() {
@@ -147,7 +149,7 @@ final class MainEmptyImportEntryTests: XCTestCase {
             errorMapper: mapper
         )
 
-        await model.loadCommandIndex(query: "", selectedFileIDs: Set<Int64>(), currentPath: Optional<String>.none)
+        await model.loadCommandIndex(query: "", selectedFileIDs: Set<Int64>(), currentPath: String?.none)
         let mappedErrors = await mapper.recordedErrors()
 
         XCTAssertEqual(model.commandPaletteState.errorMapping, mapping)
@@ -248,6 +250,7 @@ final class MainEmptyImportEntryTests: XCTestCase {
     }
 
     func testS215PageIntegrationRoutesAllPageSpecCommandTargets() {
+        // swiftlint:disable:next large_tuple
         let routes: [(String, CommandTargetActionSnapshot, CommandPaletteTargetRoute)] = [
             ("S2-18", .navigate, .linkedPage(.classifierImpactPreview)),
             ("S2-18", .openSheet, .linkedPage(.classifierImpactPreview)),
@@ -507,9 +510,11 @@ final class MainEmptyImportEntryTests: XCTestCase {
 }
 
 private actor S215NoopUndoStore: CoreUndoActionLogging {
-    func listUndoActions(repoPath: String) async throws -> [UndoActionRecordSnapshot] { [] }
+    func listUndoActions(repoPath _: String) async throws -> [UndoActionRecordSnapshot] {
+        []
+    }
 
-    func undoAction(repoPath: String, actionID: String) async throws -> UndoActionResultSnapshot {
+    func undoAction(repoPath _: String, actionID _: String) async throws -> UndoActionResultSnapshot {
         throw CoreError.Internal(message: "S2-15/S2-22 test does not execute undo actions")
     }
 }

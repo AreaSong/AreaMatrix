@@ -81,8 +81,8 @@ private struct SequenceFields: View {
     var body: some View {
         HStack {
             TextField("Separator", text: $draft.separator).textFieldStyle(.roundedBorder).frame(width: 120)
-            Stepper("Start \(draft.startNumber)", value: $draft.startNumber, in: 0...999_999)
-            Stepper("Padding \(draft.padding)", value: $draft.padding, in: 1...12)
+            Stepper("Start \(draft.startNumber)", value: $draft.startNumber, in: 0 ... 999_999)
+            Stepper("Padding \(draft.padding)", value: $draft.padding, in: 1 ... 12)
         }
         .disabled(isDisabled)
     }

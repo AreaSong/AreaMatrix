@@ -33,7 +33,9 @@ struct TagRecordSnapshot: Equatable, Identifiable {
     var disabled: Bool
     var updatedAt: Int64
 
-    var id: String { value }
+    var id: String {
+        value
+    }
 
     var displayName: String {
         label.isEmpty ? value : label
@@ -102,7 +104,9 @@ struct UndoActionRecordSnapshot: Equatable, Identifiable {
     var createdAt: Int64
     var updatedAt: Int64
 
-    var id: String { actionID }
+    var id: String {
+        actionID
+    }
 }
 
 struct UndoActionResultSnapshot: Equatable {
@@ -127,7 +131,9 @@ struct RedoActionRecordSnapshot: Equatable, Identifiable {
     var createdAt: Int64
     var updatedAt: Int64
 
-    var id: String { actionID }
+    var id: String {
+        actionID
+    }
 }
 
 struct RedoActionResultSnapshot: Equatable {

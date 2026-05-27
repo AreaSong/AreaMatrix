@@ -14,9 +14,9 @@ struct ChangeCategorySheet: View {
     let onRenameFirst: (Int64, String) -> Void
     let onOpenPermissionRecovery: () -> Void
     let onCollectDiagnostics: () -> Void
-    @State private var targetCategory: String
-    @State private var moveFile: Bool
-    @State private var rememberCorrection = false
+    @State var targetCategory: String
+    @State var moveFile: Bool
+    @State var rememberCorrection = false
 
     init(
         file: FileEntrySnapshot?,
@@ -29,7 +29,8 @@ struct ChangeCategorySheet: View {
         onPreview: @escaping (Int64, String) -> Void,
         onLoadClassifierContext: @escaping (Int64, String) -> Void = { _, _ in },
         onChangeCategory: @escaping (Int64, String, MainFileCategoryMoveMode, MainFileCategoryMoveOptions) -> Void,
-        onBeginRuleHandoff: @escaping (Int64, String, Bool, ClassifierRuleHandoffDestination) -> Void = { _, _, _, _ in },
+        onBeginRuleHandoff: @escaping (Int64, String, Bool, ClassifierRuleHandoffDestination) -> Void = { _, _, _, _ in
+        },
         onRenameFirst: @escaping (Int64, String) -> Void,
         onOpenPermissionRecovery: @escaping () -> Void,
         onCollectDiagnostics: @escaping () -> Void
@@ -84,177 +85,13 @@ struct ChangeCategorySheet: View {
         }
     }
 
-    @ViewBuilder
-    private var classifierReasonRow: some View {
-        if mode == .classifierCorrection, let file {
-            classifierReasonRow(for: file)
-        }
-    }
-
-    @ViewBuilder
-    private func classifierReasonRow(for file: FileEntrySnapshot) -> some View {
-        if let result = classifierContextState.result(for: file.id) {
-            metadataRow("Classification source", classificationReasonText(result))
-        } else if classifierContextState.isLoading(classifierContextRequest(for: file)) {
-            metadataRow("Classification source", "Loading classification...")
-        } else if let failure = classifierContextState.failure(for: file.id) {
-            metadataRow("Classification source", "Cannot load classification: \(failure.userMessage)")
-        } else {
-            metadataRow("Classification source", "Loading classification...")
-        }
-    }
-
-    @ViewBuilder
-    private func classifierOptions(for file: FileEntrySnapshot) -> some View {
-        if mode == .classifierCorrection {
-            Toggle("Move file to the new category folder", isOn: $moveFile)
-                .disabled(!canToggleMoveFile(for: file) || state.isMoving(fileID: file.id))
-            if !canToggleMoveFile(for: file) {
-                Text(moveDisabledReason(for: file))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-            Toggle("Remember this correction as a rule", isOn: $rememberCorrection)
-                .disabled(state.isMoving(fileID: file.id))
-            if rememberCorrection {
-                ruleSuggestionPanel(for: file)
-            }
-        }
-    }
-
-    private func ruleSuggestionPanel(for file: FileEntrySnapshot) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("Rule suggestions")
-                .font(.callout.weight(.semibold))
-            Text(ruleSuggestionText(for: file))
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            Text("Apply correction changes only this file. Save a rule from Edit rule or Preview impact.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            HStack {
-                ruleHandoffSubmitButton("Edit rule...", file: file, destination: .saveRule)
-                ruleHandoffSubmitButton("Preview impact", file: file, destination: .impactPreview)
-            }
-        }
-        .padding(10)
-        .background(Color.secondary.opacity(0.10), in: RoundedRectangle(cornerRadius: 8))
-    }
-
-    private func targetPathText(for file: FileEntrySnapshot) -> String {
-        let request = previewRequest(for: file)
-        if let preview = state.preview(for: request) {
-            return preview.targetPath
-        }
-        if targetCategory == file.category {
-            return file.path
-        }
-        if state.isChecking(request) {
-            return "Checking destination..."
-        }
-        if mode == .classifierCorrection {
-            return "Select a category to preview the Core target path."
-        }
-        return "\(targetCategory)/\(file.currentName)"
-    }
-
-    @ViewBuilder
-    private func statusView(for file: FileEntrySnapshot) -> some View {
-        let request = previewRequest(for: file)
-        if targetCategory == file.category {
-            statusLabel("Choose a different category", systemImage: "info.circle", color: .secondary)
-        } else if state.isChecking(request) {
-            statusLabel("Checking destination...", systemImage: "arrow.triangle.2.circlepath", color: .secondary)
-        } else if state.isMoving(fileID: file.id) {
-            statusLabel("Moving...", systemImage: "arrow.triangle.2.circlepath", color: .secondary)
-        } else if let failure = state.failure(for: file.id, targetCategory: targetCategory) {
-            failureView(failure, file: file)
-        } else if let preview = state.preview(for: request) {
-            previewStatus(preview)
-        }
-    }
-
-    private func actionButtons(for file: FileEntrySnapshot) -> some View {
-        HStack {
-            if mode == .classifierCorrection, rememberCorrection {
-                ruleHandoffSubmitButton("Edit rule...", file: file, destination: .saveRule)
-                ruleHandoffSubmitButton("Preview impact", file: file, destination: .impactPreview)
-            }
-            Spacer()
-            Button("Cancel", action: onCancel)
-                .keyboardShortcut(.cancelAction)
-                .disabled(state.isMoving(fileID: file.id))
-            Button(primaryActionTitle(for: file)) {
-                onChangeCategory(file.id, targetCategory, mode, classifierOptions)
-            }
-            .disabled(actionDisabled(for: file))
-            .keyboardShortcut(.defaultAction)
-            .accessibilityIdentifier("\(pageID)-apply")
-        }
-    }
-
-    private func failureView(_ failure: CoreErrorMappingSnapshot, file: FileEntrySnapshot) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Label(failureMessage(failure, file: file), systemImage: "exclamationmark.triangle")
-                .font(.caption.weight(.semibold))
-            Text(failure.suggestedAction)
-                .font(.caption)
-            Text(failure.rawContext)
-                .font(.system(.caption, design: .monospaced))
-                .textSelection(.enabled)
-            failureActions(failure, file: file)
-        }
-        .foregroundStyle(.secondary)
-        .padding(10)
-        .background(Color.yellow.opacity(0.12))
-    }
-
-    private func failureActions(_ failure: CoreErrorMappingSnapshot, file: FileEntrySnapshot) -> some View {
-        HStack {
-            if hasUnresolvedNameConflict(for: file) {
-                Button("Rename first") {
-                    onRenameFirst(file.id, targetCategory)
-                }
-            }
-            if failure.kind == .permissionDenied {
-                Button("Open folder permissions", action: onOpenPermissionRecovery)
-            }
-            if state.failureOperation(for: file.id, targetCategory: targetCategory) == .preview {
-                Button("Retry preview") {
-                    onPreview(file.id, targetCategory)
-                }
-            }
-            Button("Collect Diagnostics...", action: onCollectDiagnostics)
-        }
-    }
-
-    private func previewStatus(_ preview: MoveToCategoryPreviewSnapshot) -> some View {
-        VStack(alignment: .leading, spacing: 5) {
-            if preview.indexOnly {
-                statusLabel(
-                    "Index-only: AreaMatrix updates category metadata and change log only.",
-                    systemImage: "link",
-                    color: .secondary
-                )
-            } else if preview.nameConflictResolved {
-                statusLabel(
-                    "Target name exists. AreaMatrix will use \(preview.targetName).",
-                    systemImage: "number",
-                    color: .secondary
-                )
-            } else {
-                statusLabel("No conflict at target location", systemImage: "checkmark.circle", color: .green)
-            }
-        }
-    }
-
-    private func statusLabel(_ text: String, systemImage: String, color: Color) -> some View {
+    func statusLabel(_ text: String, systemImage: String, color: Color) -> some View {
         Label(text, systemImage: systemImage)
             .font(.caption)
             .foregroundStyle(color)
     }
 
-    private func ruleHandoffSubmitButton(
+    func ruleHandoffSubmitButton(
         _ title: String,
         file: FileEntrySnapshot,
         destination: ClassifierRuleHandoffDestination
@@ -265,25 +102,25 @@ struct ChangeCategorySheet: View {
         .disabled(ruleHandoffDisabled(for: file))
     }
 
-    private func previewTaskID(for file: FileEntrySnapshot) -> String {
+    func previewTaskID(for file: FileEntrySnapshot) -> String {
         "\(file.id)-\(file.currentName)-\(targetCategory)-\(mode)"
     }
 
-    private func requestPreviewIfNeeded(for file: FileEntrySnapshot) {
+    func requestPreviewIfNeeded(for file: FileEntrySnapshot) {
         guard targetCategory != file.category, !targetCategory.isEmpty else { return }
         onPreview(file.id, targetCategory)
     }
 
-    private func requestClassifierContextIfNeeded(for file: FileEntrySnapshot) {
+    func requestClassifierContextIfNeeded(for file: FileEntrySnapshot) {
         guard mode == .classifierCorrection else { return }
         onLoadClassifierContext(file.id, file.currentName)
     }
 
-    private func previewRequest(for file: FileEntrySnapshot) -> MainFileCategoryMovePreviewRequest {
+    func previewRequest(for file: FileEntrySnapshot) -> MainFileCategoryMovePreviewRequest {
         MainFileCategoryMovePreviewRequest(fileID: file.id, targetCategory: targetCategory)
     }
 
-    private func primaryActionTitle(for file: FileEntrySnapshot) -> String {
+    func primaryActionTitle(for file: FileEntrySnapshot) -> String {
         if state.isMoving(fileID: file.id) {
             return mode == .classifierCorrection ? "Applying..." : "Moving..."
         }
@@ -293,7 +130,7 @@ struct ChangeCategorySheet: View {
         return mode == .classifierCorrection ? "Apply correction" : "Change Category"
     }
 
-    private func actionDisabled(for file: FileEntrySnapshot) -> Bool {
+    func actionDisabled(for file: FileEntrySnapshot) -> Bool {
         if targetCategory == file.category || targetCategory.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             return true
         }
@@ -324,60 +161,60 @@ struct ChangeCategorySheet: View {
         return state.failureOperation(for: file.id, targetCategory: targetCategory) != .move
     }
 
-    private func failureMessage(_ failure: CoreErrorMappingSnapshot, file: FileEntrySnapshot) -> String {
+    func failureMessage(_ failure: CoreErrorMappingSnapshot, file: FileEntrySnapshot) -> String {
         if hasUnresolvedNameConflict(for: file) {
             return "Cannot create a safe target name. Rename the file first."
         }
         return failure.userMessage
     }
 
-    private func hasUnresolvedNameConflict(for file: FileEntrySnapshot) -> Bool {
+    func hasUnresolvedNameConflict(for file: FileEntrySnapshot) -> Bool {
         state.unresolvedNameConflict(for: file.id, targetCategory: targetCategory) != nil
     }
 
-    private func ruleHandoffDisabled(for file: FileEntrySnapshot) -> Bool {
+    func ruleHandoffDisabled(for file: FileEntrySnapshot) -> Bool {
         mode != .classifierCorrection || !rememberCorrection || actionDisabled(for: file)
     }
 
-    private var availableCategories: [String] {
+    var availableCategories: [String] {
         MainFileActionCategoryOptions.availableCategories(file: file, categoryRows: categoryRows)
     }
 
-    private var pageID: String {
+    var pageID: String {
         mode == .classifierCorrection ? "S2-16" : "S1-35"
     }
 
-    private var pageTitle: String {
+    var pageTitle: String {
         mode == .classifierCorrection ? "Correct classification" : "Change Category"
     }
 
-    private var classifierOptions: MainFileCategoryMoveOptions {
+    var classifierOptions: MainFileCategoryMoveOptions {
         MainFileCategoryMoveOptions(
             moveFile: moveFile,
             remember: rememberCorrection
         )
     }
 
-    private var failureOperation: MainFileCategoryMoveFailureOperation {
+    var failureOperation: MainFileCategoryMoveFailureOperation {
         mode == .classifierCorrection ? .correction : .move
     }
 
-    private func canToggleMoveFile(for file: FileEntrySnapshot) -> Bool {
+    func canToggleMoveFile(for file: FileEntrySnapshot) -> Bool {
         file.storageMode != "Indexed" && file.availability == .available && file.origin == "Imported"
     }
 
-    private func moveDisabledReason(for file: FileEntrySnapshot) -> String {
+    func moveDisabledReason(for file: FileEntrySnapshot) -> String {
         if file.availability == .missing { return "Missing files can only update classification metadata." }
         if file.storageMode == "Indexed" { return "Index-only files are not moved by classifier correction." }
         if file.origin != "Imported" { return "Adopted or external files default to metadata-only correction." }
         return "This file cannot be moved from this correction sheet."
     }
 
-    private func ruleSuggestionText(for _: FileEntrySnapshot) -> String {
+    func ruleSuggestionText(for _: FileEntrySnapshot) -> String {
         "Safe keyword, extension, and priority candidates are reviewed before any rule is saved."
     }
 
-    private func classifierContextRequest(
+    func classifierContextRequest(
         for file: FileEntrySnapshot?
     ) -> ClassifierCorrectionContextRequest {
         ClassifierCorrectionContextRequest(
@@ -386,7 +223,7 @@ struct ChangeCategorySheet: View {
         )
     }
 
-    private func classificationReasonText(_ result: ClassifyResultSnapshot) -> String {
+    func classificationReasonText(_ result: ClassifyResultSnapshot) -> String {
         switch result.reason {
         case .keyword:
             "Matched keyword rule -> \(result.category) (\(result.confidencePercent)% confidence)"
@@ -418,15 +255,16 @@ struct ChangeCategorySheet: View {
 
 struct ClassifierRuleEditorRouteView: View {
     let repoPath: String
-    let context: BatchChangeCategoryNewCategoryReturnContext?
-    let onCancelFromBatchCategory: (BatchChangeCategoryNewCategoryReturnContext) -> Void
-    let onAcceptedCategoryFromBatchCategory: (String, BatchChangeCategoryNewCategoryReturnContext) -> Void
+    let context: BatchChangeCategoryReturnContext?
+    let onCancelFromBatchCategory: (BatchChangeCategoryReturnContext) -> Void
+    let onAcceptedCategoryFromBatchCategory: (String, BatchChangeCategoryReturnContext) -> Void
 
     init(
         repoPath: String,
-        context: BatchChangeCategoryNewCategoryReturnContext?,
-        onCancelFromBatchCategory: @escaping (BatchChangeCategoryNewCategoryReturnContext) -> Void = { _ in },
-        onAcceptedCategoryFromBatchCategory: @escaping (String, BatchChangeCategoryNewCategoryReturnContext) -> Void = { _, _ in }
+        context: BatchChangeCategoryReturnContext?,
+        onCancelFromBatchCategory: @escaping (BatchChangeCategoryReturnContext) -> Void = { _ in },
+        onAcceptedCategoryFromBatchCategory: @escaping (String, BatchChangeCategoryReturnContext)
+            -> Void = { _, _ in }
     ) {
         self.repoPath = repoPath
         self.context = context
@@ -452,7 +290,7 @@ struct ClassifierRuleEditorRouteView: View {
         }
     }
 
-    private func createBar(_ context: BatchChangeCategoryNewCategoryReturnContext) -> some View {
+    private func createBar(_ context: BatchChangeCategoryReturnContext) -> some View {
         HStack(spacing: 12) {
             Text("Edit classifier.yaml in S2-19. Validate returns to S2-12 when one new category is saved.")
                 .font(.callout)

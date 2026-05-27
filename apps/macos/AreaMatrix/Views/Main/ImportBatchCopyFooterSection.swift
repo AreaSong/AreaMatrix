@@ -58,7 +58,6 @@ struct RedoFeedbackRegion: View {
 }
 
 extension MainRepositoryContentView {
-    @ViewBuilder
     var batchTagUndoToastOverlay: some View {
         BatchTagUndoToastHost(
             repoPath: opening.config.repoPath,

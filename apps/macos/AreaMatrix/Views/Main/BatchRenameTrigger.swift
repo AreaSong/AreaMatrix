@@ -95,7 +95,6 @@ struct UndoPreviewPane: View {
     private func displayKind(_ kind: String) -> String {
         kind.replacingOccurrences(of: "_", with: " ").capitalized
     }
-
 }
 
 struct UndoHistoryList: View {
@@ -144,13 +143,13 @@ private struct UndoHistoryRow: View {
     private var statusText: String {
         switch action.status {
         case .pending:
-            return action.canUndo ? "Available" : "Blocked"
+            action.canUndo ? "Available" : "Blocked"
         case .blocked:
-            return "Blocked"
+            "Blocked"
         case .expired:
-            return "Expired"
+            "Expired"
         case .executed:
-            return "Executed"
+            "Executed"
         }
     }
 

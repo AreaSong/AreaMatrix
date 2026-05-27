@@ -114,9 +114,9 @@ enum UndoHistoryActionLog {
         errorMapper: any CoreErrorMapping
     ) async -> UndoHistoryState {
         do {
-            return .loaded(try await loadSnapshot(repoPath: repoPath, undoStore: undoStore, redoStore: redoStore))
+            return try await .loaded(loadSnapshot(repoPath: repoPath, undoStore: undoStore, redoStore: redoStore))
         } catch {
-            return .failed(await mapError(error, errorMapper: errorMapper))
+            return await .failed(mapError(error, errorMapper: errorMapper))
         }
     }
 
@@ -141,13 +141,13 @@ enum UndoHistoryActionLog {
                 let refreshed = try await loadSnapshot(repoPath: repoPath, undoStore: undoStore, redoStore: redoStore)
                 return .undone(result, refreshed: refreshed.markingUndoBlockedIfNeeded(result))
             } catch {
-                return .refreshFailed(
-                    await mapError(error, errorMapper: errorMapper),
+                return await .refreshFailed(
+                    mapError(error, errorMapper: errorMapper),
                     previous: snapshot.markingUndoBlockedIfNeeded(result)
                 )
             }
         } catch {
-            return .undoFailed(await mapError(error, errorMapper: errorMapper), previous: snapshot, attempted: latest)
+            return await .undoFailed(mapError(error, errorMapper: errorMapper), previous: snapshot, attempted: latest)
         }
     }
 
@@ -165,16 +165,16 @@ enum UndoHistoryActionLog {
         do {
             let result = try await redoStore.redoAction(repoPath: repoPath, actionID: latest.actionID)
             do {
-                return .redone(result, refreshed: try await loadSnapshot(
+                return try await .redone(result, refreshed: loadSnapshot(
                     repoPath: repoPath,
                     undoStore: undoStore,
                     redoStore: redoStore
                 ))
             } catch {
-                return .refreshFailed(await mapError(error, errorMapper: errorMapper), previous: snapshot)
+                return await .refreshFailed(mapError(error, errorMapper: errorMapper), previous: snapshot)
             }
         } catch {
-            return .redoFailed(await mapError(error, errorMapper: errorMapper), previous: snapshot, attempted: latest)
+            return await .redoFailed(mapError(error, errorMapper: errorMapper), previous: snapshot, attempted: latest)
         }
     }
 
@@ -207,7 +207,8 @@ enum UndoHistoryActionLog {
         UndoToastHistoryRequest(source: .viewHistory, state: state, actionLogRefreshFailure: failure)
     }
 
-    static func shortcutRequest(state: BatchTagUndoState, failure: CoreErrorMappingSnapshot?) -> UndoToastHistoryRequest {
+    static func shortcutRequest(state: BatchTagUndoState,
+                                failure: CoreErrorMappingSnapshot?) -> UndoToastHistoryRequest {
         UndoToastHistoryRequest(source: .viewHistory, state: state, actionLogRefreshFailure: failure)
     }
 
@@ -293,6 +294,7 @@ struct UndoHistoryPanel: View {
         _state = State(initialValue: initialFailure.map(UndoHistoryState.failed) ?? .loading)
         _selectedActionID = State(initialValue: focusedActionID)
     }
+
     var body: some View {
         VStack(spacing: 0) {
             header

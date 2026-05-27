@@ -36,7 +36,9 @@ enum SearchScopeSnapshot: String, CaseIterable, Equatable, Identifiable {
     case all
     case current
 
-    var id: String { rawValue }
+    var id: String {
+        rawValue
+    }
 
     var displayName: String {
         switch self {
@@ -63,7 +65,9 @@ enum SearchSortSnapshot: String, CaseIterable, Equatable, Identifiable {
     case newestModified
     case nameAsc
 
-    var id: String { rawValue }
+    var id: String {
+        rawValue
+    }
 
     var displayName: String {
         switch self {
@@ -160,7 +164,9 @@ struct SearchFileResultSnapshot: Equatable, Identifiable {
     var matches: [SearchMatchSnapshot]
     var noteSnippet: String?
 
-    var id: Int64 { file.id }
+    var id: Int64 {
+        file.id
+    }
 }
 
 struct SearchQueryDiagnosticSnapshot: Equatable {
@@ -181,7 +187,9 @@ struct SearchQueryDiagnosticSnapshot: Equatable {
         self.end = end; self.suggestion = suggestion
     }
 
-    var isError: Bool { severityDisplayName == "Error" }
+    var isError: Bool {
+        severityDisplayName == "Error"
+    }
 
     var problemAccessibilityHint: String {
         [
@@ -417,82 +425,4 @@ private func searchCoreFiles(repoPath: String, request: SearchQueryRequestSnapsh
         sort: SearchSort(request.sort),
         pagination: SearchPagination(limit: request.limit, offset: request.offset)
     )
-}
-
-private extension StorageMode {
-    var fileListDisplayName: String {
-        switch self {
-        case .moved:
-            "Moved"
-        case .copied:
-            "Copied"
-        case .indexed:
-            "Indexed"
-        }
-    }
-}
-
-private extension SearchMatchField {
-    var displayName: String {
-        switch self {
-        case .name:
-            "Name"
-        case .path:
-            "Path"
-        case .note:
-            "Note"
-        case .category:
-            "Category"
-        case .changeLog:
-            "Change log"
-        }
-    }
-}
-
-private extension SearchMatchKind {
-    var displayName: String {
-        switch self {
-        case .exact:
-            "Exact match"
-        case .fuzzy:
-            "Fuzzy match"
-        case .pinyinInitials:
-            "Pinyin initials"
-        }
-    }
-}
-
-private extension SearchDiagnosticKind {
-    var displayName: String {
-        switch self {
-        case .unclosedQuote: "Unclosed quote"
-        case .unknownField: "Unknown field"
-        case .invalidDate: "Invalid date"
-        case .unbalancedParentheses: "Unbalanced parentheses"
-        case .invalidOperator: "Invalid operator"
-        }
-    }
-}
-
-private extension SearchDiagnosticSeverity {
-    var displayName: String {
-        switch self {
-        case .info: "Info"
-        case .warning: "Warning"
-        case .error: "Error"
-        }
-    }
-}
-
-private extension FileOrigin {
-    var fileListDisplayName: String {
-        switch self {
-        case .imported:
-            "Imported"
-        case .adopted:
-            "Adopted"
-        case .external:
-            "External"
-        }
-    }
 }

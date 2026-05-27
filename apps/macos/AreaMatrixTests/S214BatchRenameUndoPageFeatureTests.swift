@@ -128,7 +128,7 @@ final class S214BatchRenameUndoPageFeatureTests: XCTestCase {
     }
 }
 
-final class S214BatchRenamePageIntegrationVerifyTests: XCTestCase {
+final class S214BatchRenameVerifyTests: XCTestCase {
     func testS214PageIntegrationUsesRealCorePreviewApplyUndoAndExitRefresh() async throws {
         let context = try await makeS214IntegrationContext()
         defer { context.cleanUp() }
@@ -359,9 +359,13 @@ private actor S214BatchRenameRecordingUndoStore: CoreUndoActionLogging {
         return try result.get()
     }
 
-    func listRequests() -> [String] { recordedListRequests }
+    func listRequests() -> [String] {
+        recordedListRequests
+    }
 
-    func undoRequests() -> [String] { recordedUndoRequests }
+    func undoRequests() -> [String] {
+        recordedUndoRequests
+    }
 
     private func consumeResult() throws -> Result {
         guard !results.isEmpty else { throw CoreError.Db(message: "missing undo action result") }

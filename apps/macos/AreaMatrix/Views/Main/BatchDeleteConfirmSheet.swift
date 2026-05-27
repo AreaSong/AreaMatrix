@@ -267,14 +267,14 @@ struct BatchDeleteConfirmSheet: View {
     }
 
     private func canApplyMode(_ mode: BatchDeleteModeSnapshot) -> Bool {
-        BatchDeleteValidation.canApply(
+        BatchDeleteValidation.canApply(BatchDeleteApplyGate(
             fileIDs: fileIDs,
             preview: previewState.report,
             deleteMode: mode,
             disabledReason: disabledReason,
             undoConfirmationAccepted: undoConfirmationAccepted,
             isApplying: isApplying
-        )
+        ))
     }
 
     private var previewTaskKey: String {
@@ -290,7 +290,7 @@ struct BatchDeleteConfirmSheet: View {
     }
 
     private var primaryTitle: String {
-        if isApplying && deleteMode == .moveToTrash { return "Moving..." }
+        if isApplying, deleteMode == .moveToTrash { return "Moving..." }
         if previewState.report?.blockedCount ?? 0 > 0 { return "Move available files to Trash" }
         return "Move to Trash"
     }

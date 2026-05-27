@@ -49,7 +49,7 @@ extension MainFileListModel {
         pendingActionDestination = .iCloudConflict(fileID: fileID)
     }
 
-    func openClassifierRuleEditorForBatchCategory(context: BatchChangeCategoryNewCategoryReturnContext) {
+    func openClassifierRuleEditorForBatchCategory(context: BatchChangeCategoryReturnContext) {
         pendingSearchDestination = .classifierRuleEditor(context: context)
     }
 
@@ -202,9 +202,9 @@ enum CommandPaletteLoadState: Equatable {
     var snapshot: CommandPaletteSnapshot? {
         switch self {
         case let .loaded(snapshot), let .failed(_, snapshot?, _):
-            return snapshot
+            snapshot
         case .idle, .loading, .failed:
-            return nil
+            nil
         }
     }
 
@@ -232,7 +232,9 @@ struct CommandPaletteSectionSnapshot: Equatable, Identifiable {
     var title: String
     var targets: [CommandTargetSnapshot]
 
-    var id: String { title }
+    var id: String {
+        title
+    }
 }
 
 struct CommandTargetSnapshot: Equatable, Identifiable {
@@ -419,12 +421,30 @@ extension CommandPaletteSnapshot {
     init(coreIndex: CommandIndex) {
         generatedAt = coreIndex.generatedAt
         sections = [
-            CommandPaletteSectionSnapshot(title: CommandTargetGroupSnapshot.commands.rawValue, targets: coreIndex.commands),
-            CommandPaletteSectionSnapshot(title: CommandTargetGroupSnapshot.navigation.rawValue, targets: coreIndex.navigationTargets),
-            CommandPaletteSectionSnapshot(title: CommandTargetGroupSnapshot.currentSelection.rawValue, targets: coreIndex.currentSelectionTargets),
-            CommandPaletteSectionSnapshot(title: CommandTargetGroupSnapshot.recent.rawValue, targets: coreIndex.recentTargets),
-            CommandPaletteSectionSnapshot(title: CommandTargetGroupSnapshot.smartLists.rawValue, targets: coreIndex.smartLists),
-            CommandPaletteSectionSnapshot(title: CommandTargetGroupSnapshot.fileCandidates.rawValue, targets: coreIndex.fileCandidates)
+            CommandPaletteSectionSnapshot(
+                title: CommandTargetGroupSnapshot.commands.rawValue,
+                targets: coreIndex.commands
+            ),
+            CommandPaletteSectionSnapshot(
+                title: CommandTargetGroupSnapshot.navigation.rawValue,
+                targets: coreIndex.navigationTargets
+            ),
+            CommandPaletteSectionSnapshot(
+                title: CommandTargetGroupSnapshot.currentSelection.rawValue,
+                targets: coreIndex.currentSelectionTargets
+            ),
+            CommandPaletteSectionSnapshot(
+                title: CommandTargetGroupSnapshot.recent.rawValue,
+                targets: coreIndex.recentTargets
+            ),
+            CommandPaletteSectionSnapshot(
+                title: CommandTargetGroupSnapshot.smartLists.rawValue,
+                targets: coreIndex.smartLists
+            ),
+            CommandPaletteSectionSnapshot(
+                title: CommandTargetGroupSnapshot.fileCandidates.rawValue,
+                targets: coreIndex.fileCandidates
+            )
         ]
     }
 }
@@ -476,69 +496,5 @@ extension MainFileListModel {
 
     func clearCommandPaletteState() {
         commandPaletteState = .idle
-    }
-}
-
-private extension CommandPaletteSectionSnapshot {
-    init(title: String, targets: [CommandTarget]) {
-        self.title = title
-        self.targets = targets.map(CommandTargetSnapshot.init(coreTarget:))
-    }
-}
-
-private extension CommandTargetGroupSnapshot {
-    init(coreGroup: CommandTargetGroup) {
-        switch coreGroup {
-        case .commands:
-            self = .commands
-        case .navigation:
-            self = .navigation
-        case .currentSelection:
-            self = .currentSelection
-        case .recent:
-            self = .recent
-        case .smartLists:
-            self = .smartLists
-        case .fileCandidates:
-            self = .fileCandidates
-        }
-    }
-}
-
-private extension CommandTargetKindSnapshot {
-    init(coreKind: CommandTargetKind) {
-        switch coreKind {
-        case .command:
-            self = .command
-        case .navigation:
-            self = .navigation
-        case .smartList:
-            self = .smartList
-        case .fileCandidate:
-            self = .fileCandidate
-        case .recentCommand:
-            self = .recentCommand
-        }
-    }
-}
-
-private extension CommandTargetActionSnapshot {
-    init(coreAction: CommandTargetAction) {
-        switch coreAction {
-        case .navigate:
-            self = .navigate
-        case .openSheet:
-            self = .openSheet
-        case .openConfirmation:
-            self = .openConfirmation
-        case .runSmartList:
-            self = .runSmartList
-        case .focusFile:
-            self = .focusFile
-        case .openSearch:
-            self = .openSearch
-        case .lowRiskAction:
-            self = .lowRiskAction
-        }
     }
 }

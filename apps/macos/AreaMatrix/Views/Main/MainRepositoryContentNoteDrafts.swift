@@ -15,7 +15,9 @@ struct SearchFilterChip: Identifiable, Equatable {
     var kind: SearchFilterChipKind
     var label: String
 
-    var id: SearchFilterChipKind { kind }
+    var id: SearchFilterChipKind {
+        kind
+    }
 }
 
 enum SearchFilterChips {
@@ -237,7 +239,7 @@ extension MainRepositoryContentView {
                         isSearchFiltersPresented.toggle()
                     }
                     Button("Save...", action: fileListModel.openSavedSearchSheet)
-                    .disabled(!fileListModel.canSaveCurrentSearch)
+                        .disabled(!fileListModel.canSaveCurrentSearch)
                     smartListBannerEditButton
                     Button("Clear") {
                         clearSearch()
@@ -475,5 +477,4 @@ extension MainRepositoryContentView {
     var tagRegistryAnchorFileID: Int64? {
         fileListModel.selection.singleFileID ?? fileListModel.files.first?.id
     }
-
 }

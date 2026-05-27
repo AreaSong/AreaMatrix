@@ -16,8 +16,8 @@ struct BatchAddTagsTrigger: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Button("Add tag...") { isPresented = true }
-            .help(BatchAddTagsEntryPolicy.openHelp(disabledReason: disabledReason))
-            .accessibilityIdentifier("S2-09-batch-add-tags-open")
+                .help(BatchAddTagsEntryPolicy.openHelp(disabledReason: disabledReason))
+                .accessibilityIdentifier("S2-09-batch-add-tags-open")
         }
         .sheet(isPresented: $isPresented) {
             BatchAddTagsSheet(
@@ -94,7 +94,7 @@ struct BatchTagUndoToastView: View {
 
     @ViewBuilder
     private var toastActions: some View {
-        if case .ready(let action) = state {
+        if case let .ready(action) = state {
             Button("Undo") { onUndo(action) }
                 .accessibilityIdentifier("S2-10-C2-07-undo-action")
         } else if case .disabled = state {
@@ -129,7 +129,6 @@ struct BatchTagUndoToastView: View {
                 .foregroundStyle(.secondary)
         }
     }
-
 }
 
 struct BatchAddTagsSheet: View {

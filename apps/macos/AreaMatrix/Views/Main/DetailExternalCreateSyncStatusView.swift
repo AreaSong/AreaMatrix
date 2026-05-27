@@ -103,7 +103,6 @@ enum TagSuggestionEditRowStatus: Equatable {
             true
         }
     }
-
 }
 
 struct TagSuggestionEditDraft: Equatable, Identifiable {
@@ -116,7 +115,9 @@ struct TagSuggestionEditDraft: Equatable, Identifiable {
     var slugWasEdited: Bool
     var status: TagSuggestionEditRowStatus
 
-    var id: String { suggestionID }
+    var id: String {
+        suggestionID
+    }
 }
 
 struct TagSuggestionEditSession: Equatable {

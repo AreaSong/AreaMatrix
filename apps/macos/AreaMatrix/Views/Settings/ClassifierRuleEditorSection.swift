@@ -301,9 +301,9 @@ private struct ClassifierRuleDetailView: View {
         }
     }
 
-    private func riskPanel<Content: View>(
+    private func riskPanel(
         identifier: String,
-        @ViewBuilder content: () -> Content
+        @ViewBuilder content: () -> some View
     ) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             content()

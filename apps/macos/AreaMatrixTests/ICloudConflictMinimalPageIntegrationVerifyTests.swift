@@ -302,7 +302,7 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
             resolutionCapability: resolutionCapability,
             isTrashAvailable: isTrashAvailable,
             onCancel: {},
-            onApply: { _, _, _ in },
+            onApply: { _ in },
             onCollectDiagnostics: {}
         ).body)
     }

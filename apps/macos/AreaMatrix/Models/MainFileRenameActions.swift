@@ -80,7 +80,9 @@ enum BatchRenameModeSnapshot: String, CaseIterable, Equatable, Identifiable {
     case keepBaseSequence = "Keep base + sequence"
     case replaceText = "Replace text"
 
-    var id: String { rawValue }
+    var id: String {
+        rawValue
+    }
 }
 
 enum BatchRenameDateSourceSnapshot: String, CaseIterable, Equatable, Identifiable {
@@ -88,7 +90,9 @@ enum BatchRenameDateSourceSnapshot: String, CaseIterable, Equatable, Identifiabl
     case modified = "Modified"
     case today = "Today"
 
-    var id: String { rawValue }
+    var id: String {
+        rawValue
+    }
 }
 
 struct BatchRenameRuleSnapshot: Equatable {
@@ -124,7 +128,9 @@ struct BatchRenamePreviewItemSnapshot: Equatable, Identifiable {
     var status: BatchRenamePreviewStatusSnapshot
     var reason: String?
 
-    var id: Int64 { fileID }
+    var id: Int64 {
+        fileID
+    }
 }
 
 struct BatchRenamePreviewReportSnapshot: Equatable {
@@ -157,7 +163,9 @@ struct BatchRenameItemResultSnapshot: Equatable, Identifiable {
     var status: BatchRenameResultStatusSnapshot
     var error: String?
 
-    var id: Int64 { fileID }
+    var id: Int64 {
+        fileID
+    }
 }
 
 struct BatchRenameReportSnapshot: Equatable {

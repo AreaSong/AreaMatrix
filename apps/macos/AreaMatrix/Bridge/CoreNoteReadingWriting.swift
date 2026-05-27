@@ -43,7 +43,9 @@ struct TagSuggestionSnapshot: Equatable, Identifiable {
     var selectedByDefault: Bool
     var disabledReason: String?
 
-    var id: String { suggestionID }
+    var id: String {
+        suggestionID
+    }
 
     var canApply: Bool {
         status == .newTag && disabledReason == nil
@@ -64,7 +66,9 @@ struct ApplyTagSuggestionItemSnapshot: Equatable, Identifiable {
     var slug: String
     var displayName: String
 
-    var id: String { suggestionID }
+    var id: String {
+        suggestionID
+    }
 }
 
 struct ApplyTagSuggestionsRequestSnapshot: Equatable {
@@ -84,7 +88,9 @@ struct TagSuggestionApplyItemResultSnapshot: Equatable, Identifiable {
     var status: TagSuggestionApplyStatusSnapshot
     var error: String?
 
-    var id: String { suggestionID }
+    var id: String {
+        suggestionID
+    }
 }
 
 struct TagSuggestionApplyReportSnapshot: Equatable {

@@ -2,7 +2,8 @@
 import Foundation
 import XCTest
 
-final class S213BatchDeletePageIntegrationVerifyTests: XCTestCase {
+final class S213BatchDeleteVerifyTests: XCTestCase {
+    // swiftlint:disable:next function_body_length
     func testS213MoveToTrashUsesRealCorePreviewApplyAndUndoToken() async throws {
         let context = try await makeS213IntegrationContext()
         defer { context.cleanUp() }
@@ -117,7 +118,8 @@ final class S213BatchDeletePageIntegrationVerifyTests: XCTestCase {
             XCTAssertEqual(report.itemResults.map(\.status), [.removedFromIndex])
 
             XCTAssertEqual(try Data(contentsOf: context.indexOnlySourceURL), externalBytes)
-            XCTAssertFalse(FileManager.default.fileExists(atPath: context.trashURL.appendingPathComponent("indexed.pdf").path))
+            XCTAssertFalse(FileManager.default
+                .fileExists(atPath: context.trashURL.appendingPathComponent("indexed.pdf").path))
             let visibleFiles = try await context.bridge.listFiles(
                 repoPath: context.repoURL.path,
                 filter: .currentCategory(nil)
@@ -131,22 +133,22 @@ final class S213BatchDeletePageIntegrationVerifyTests: XCTestCase {
     func testS213ValidationUsesPreviewFileIDsForRetrySubset() {
         let preview = BatchDeletePreviewReportSnapshot.s213Fixture(fileIDs: [20])
 
-        XCTAssertTrue(BatchDeleteValidation.canApply(
+        XCTAssertTrue(BatchDeleteValidation.canApply(BatchDeleteApplyGate(
             fileIDs: [10, 20],
             preview: preview,
             deleteMode: .moveToTrash,
             disabledReason: nil,
             undoConfirmationAccepted: false,
             isApplying: false
-        ))
-        XCTAssertFalse(BatchDeleteValidation.canApply(
+        )))
+        XCTAssertFalse(BatchDeleteValidation.canApply(BatchDeleteApplyGate(
             fileIDs: [10],
             preview: preview,
             deleteMode: .moveToTrash,
             disabledReason: nil,
             undoConfirmationAccepted: false,
             isApplying: false
-        ))
+        )))
     }
 }
 

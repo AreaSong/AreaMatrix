@@ -40,6 +40,7 @@ struct MainRepositoryDetailPaneTagActions {
     let onDismissTagUndoToast: () -> Void
     let onBatchTagUndoStateChange: (BatchTagUndoState) -> Void
 }
+
 struct MultiSelectionDetailRefreshResult: Equatable {
     var files: [FileEntrySnapshot]
     var errorMapping: CoreErrorMappingSnapshot?
@@ -234,10 +235,10 @@ enum BatchTagUndoAction {
             }
             return loadResult(for: action)
         } catch {
-            return BatchTagUndoLoadResult(
+            return await BatchTagUndoLoadResult(
                 action: nil,
                 unavailableReason: nil,
-                failure: await mapError(error, errorMapper: errorMapper)
+                failure: mapError(error, errorMapper: errorMapper)
             )
         }
     }
@@ -254,10 +255,10 @@ enum BatchTagUndoAction {
             }
             return loadResult(for: action)
         } catch {
-            return BatchTagUndoLoadResult(
+            return await BatchTagUndoLoadResult(
                 action: nil,
                 unavailableReason: nil,
-                failure: await mapError(error, errorMapper: errorMapper)
+                failure: mapError(error, errorMapper: errorMapper)
             )
         }
     }
@@ -272,7 +273,7 @@ enum BatchTagUndoAction {
             let result = try await undoStore.undoAction(repoPath: repoPath, actionID: action.actionID)
             return BatchTagUndoApplyResult(result: result, failure: nil)
         } catch {
-            return BatchTagUndoApplyResult(result: nil, failure: await mapError(error, errorMapper: errorMapper))
+            return await BatchTagUndoApplyResult(result: nil, failure: mapError(error, errorMapper: errorMapper))
         }
     }
 
@@ -289,9 +290,9 @@ enum BatchTagUndoAction {
                 failure: nil
             )
         } catch {
-            return BatchTagUndoActionLogRefreshResult(
+            return await BatchTagUndoActionLogRefreshResult(
                 action: nil,
-                failure: await mapError(error, errorMapper: errorMapper)
+                failure: mapError(error, errorMapper: errorMapper)
             )
         }
     }

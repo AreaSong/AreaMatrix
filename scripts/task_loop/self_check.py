@@ -198,6 +198,15 @@ def init_temp_git_repo(repo: Path) -> None:
     subprocess.run(["git", "commit", "-q", "-m", "initial"], cwd=repo, check=True)
 
 
+def fake_empty_ps_env(h: Harness, name: str) -> dict[str, str]:
+    fake_bin = h.tmp / name
+    fake_bin.mkdir(parents=True, exist_ok=True)
+    fake_ps = fake_bin / "ps"
+    fake_ps.write_text("#!/usr/bin/env bash\nexit 0\n", encoding="utf-8")
+    fake_ps.chmod(0o755)
+    return {"PATH": f"{fake_bin}{os.pathsep}{os.environ.get('PATH', '')}"}
+
+
 def add_prompt_fixture(repo: Path, labels: Sequence[str]) -> None:
     for label in labels:
         phase = f"phase-{label.split('-', 1)[0]}"
@@ -1256,9 +1265,9 @@ fi
         encoding="utf-8",
     )
     fake_codex.chmod(0o755)
-    result = h.run(
-        [h.task_loop, "run", "--phase", "phase-0", "--max-tasks", "1"],
-        env={
+    env = fake_empty_ps_env(h, "fake-ps-no-output")
+    env.update(
+        {
             "ROOT_DIR": str(runner_repo),
             "PROGRESS_FILE": str(runner_repo / "tasks/prompts/_shared/progress.json"),
             "LOG_ROOT": str(runner_repo / ".codex/task-loop-logs"),
@@ -1277,7 +1286,11 @@ fi
             "NO_OUTPUT_RESTART_DELAY_SECONDS": "1",
             "NO_OUTPUT_RESTART_LIMIT": "1",
             "FAKE_CODEX_COUNTER": str(h.tmp / "fake-codex-no-output-counter"),
-        },
+        }
+    )
+    result = h.run(
+        [h.task_loop, "run", "--phase", "phase-0", "--max-tasks", "1"],
+        env=env,
         check=False,
     )
     if result.returncode != 0:
@@ -1351,9 +1364,9 @@ fi
         encoding="utf-8",
     )
     fake_codex.chmod(0o755)
-    result = h.run(
-        [h.task_loop, "run", "--phase", "phase-0", "--max-tasks", "1"],
-        env={
+    env = fake_empty_ps_env(h, "fake-ps-idle-timeout")
+    env.update(
+        {
             "ROOT_DIR": str(runner_repo),
             "PROGRESS_FILE": str(runner_repo / "tasks/prompts/_shared/progress.json"),
             "LOG_ROOT": str(runner_repo / ".codex/task-loop-logs"),
@@ -1372,7 +1385,11 @@ fi
             "NO_OUTPUT_RESTART_DELAY_SECONDS": "1",
             "NO_OUTPUT_RESTART_LIMIT": "1",
             "FAKE_CODEX_COUNTER": str(h.tmp / "fake-codex-idle-timeout-counter"),
-        },
+        }
+    )
+    result = h.run(
+        [h.task_loop, "run", "--phase", "phase-0", "--max-tasks", "1"],
+        env=env,
         check=False,
     )
     if result.returncode != 0:
@@ -1477,9 +1494,9 @@ fi
         encoding="utf-8",
     )
     fake_codex.chmod(0o755)
-    result = h.run(
-        [h.task_loop, "run", "--phase", "phase-0", "--max-tasks", "1"],
-        env={
+    env = fake_empty_ps_env(h, "fake-ps-repeated-diff")
+    env.update(
+        {
             "ROOT_DIR": str(runner_repo),
             "PROGRESS_FILE": str(runner_repo / "tasks/prompts/_shared/progress.json"),
             "LOG_ROOT": str(runner_repo / ".codex/task-loop-logs"),
@@ -1498,7 +1515,11 @@ fi
             "NO_OUTPUT_RESTART_DELAY_SECONDS": "1",
             "NO_OUTPUT_RESTART_LIMIT": "1",
             "FAKE_CODEX_COUNTER": str(h.tmp / "fake-codex-repeated-diff-counter"),
-        },
+        }
+    )
+    result = h.run(
+        [h.task_loop, "run", "--phase", "phase-0", "--max-tasks", "1"],
+        env=env,
         check=False,
     )
     if result.returncode != 0:

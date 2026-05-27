@@ -167,6 +167,7 @@ final class ICloudConflictListPageFeatureTests: XCTestCase {
     }
 
     @MainActor
+    // swiftlint:disable:next function_body_length
     func testS220C216ResolveRouteUsesConflictIDAndSupportedPreviewResolution() async {
         let conflict = ICloudConflictPairSnapshot.s136Fixture()
         let listModel = ICloudConflictListModel(
@@ -208,7 +209,7 @@ final class ICloudConflictListPageFeatureTests: XCTestCase {
             resolutionCapability: route.resolutionCapability,
             isTrashAvailable: true,
             onCancel: {},
-            onApply: { _, _, _ in },
+            onApply: { _ in },
             onCollectDiagnostics: {}
         ).body)
         let validatorRequests = await validator.recordedRequests()

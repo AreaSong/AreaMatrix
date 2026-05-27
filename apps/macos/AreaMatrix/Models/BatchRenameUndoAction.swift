@@ -96,7 +96,11 @@ enum RedoActionFeedback {
             }
             return loadResult(for: action)
         } catch {
-            return RedoActionLoadResult(action: nil, unavailableReason: nil, failure: await mapError(error, errorMapper))
+            return await RedoActionLoadResult(
+                action: nil,
+                unavailableReason: nil,
+                failure: mapError(error, errorMapper)
+            )
         }
     }
 
@@ -110,7 +114,7 @@ enum RedoActionFeedback {
             let result = try await redoStore.redoAction(repoPath: repoPath, actionID: action.actionID)
             return RedoActionApplyResult(result: result, failure: nil)
         } catch {
-            return RedoActionApplyResult(result: nil, failure: await mapError(error, errorMapper))
+            return await RedoActionApplyResult(result: nil, failure: mapError(error, errorMapper))
         }
     }
 
@@ -137,7 +141,8 @@ enum RedoActionFeedback {
 
     private static func latestFeedbackAction(from actions: [RedoActionRecordSnapshot]) -> RedoActionRecordSnapshot? {
         actions.first { action in
-            action.status == .available || action.status == .cleared || action.status == .blocked || action.status == .expired
+            action.status == .available || action.status == .cleared || action.status == .blocked || action
+                .status == .expired
         }
     }
 

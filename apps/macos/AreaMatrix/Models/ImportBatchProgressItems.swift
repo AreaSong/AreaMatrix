@@ -80,7 +80,9 @@ struct ImportConflictBatchPreviewItemSnapshot: Equatable, Identifiable {
     var riskSummary: String
     var reason: String?
 
-    var id: String { conflictID }
+    var id: String {
+        conflictID
+    }
 
     static func pendingPlaceholder(conflictID: String) -> ImportConflictBatchPreviewItemSnapshot {
         ImportConflictBatchPreviewItemSnapshot(
@@ -135,7 +137,9 @@ struct ImportConflictBatchItemResultSnapshot: Equatable, Identifiable {
     var finalPath: String?
     var error: String?
 
-    var id: String { conflictID }
+    var id: String {
+        conflictID
+    }
 }
 
 struct ImportConflictBatchApplyReportSnapshot: Equatable {
@@ -168,11 +172,17 @@ struct ImportConflictBatchPerItemRoute: Equatable, Identifiable {
     var incomingPath: String
     var targetPath: String?
 
-    var id: String { conflictID }
+    var id: String {
+        conflictID
+    }
 
-    var routeLabel: String { page.routeLabel }
+    var routeLabel: String {
+        page.routeLabel
+    }
 
-    var replaceConfirmationRouteLabel: String { "S1-24 replace-confirm" }
+    var replaceConfirmationRouteLabel: String {
+        "S1-24 replace-confirm"
+    }
 }
 
 struct ImportConflictBatchPerItemQueue: Equatable {
@@ -340,7 +350,7 @@ extension ImportBatchCopyImportModel {
 
     var hasEmptyManualConflictBatchScope: Bool {
         showsCoreConflictBatchReview
-            && !appliesConflictBatchToAllSimilarConflicts
+            && !appliesConflictBatchToAll
             && selectedConflictBatchIDs.isEmpty
     }
 

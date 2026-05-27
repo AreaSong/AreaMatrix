@@ -140,13 +140,13 @@ struct ICloudConflictResolutionRequest: Equatable {
 
 struct ICloudConflictResolutionResult: Equatable {
     var focusFileID: Int64?
-    var conflictID: String? = nil
-    var report: ICloudConflictResolveReportSnapshot? = nil
-    var status: ICloudConflictStatusSnapshot? = nil
+    var conflictID: String?
+    var report: ICloudConflictResolveReportSnapshot?
+    var status: ICloudConflictStatusSnapshot?
     var keptPaths: [String] = []
     var trashedPaths: [String] = []
-    var undoToken: String? = nil
-    var changeLogAction: String? = nil
+    var undoToken: String?
+    var changeLogAction: String?
     var didClearConflictState: Bool
     var didWriteChangeLog: Bool
 }

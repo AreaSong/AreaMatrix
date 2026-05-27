@@ -1387,7 +1387,6 @@ class TaskLoopRunner:
                     self.cfg.no_output_timeout_seconds > 0
                     and no_output_elapsed_seconds >= self.cfg.no_output_timeout_seconds
                     and not validation_child_running
-                    and not validation_scan_reason
                 ):
                     timeout_error = (
                         f"codex exec no-output timeout for {stage} {task.label} attempt={attempt}: "

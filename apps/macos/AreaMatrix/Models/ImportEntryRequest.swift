@@ -90,11 +90,10 @@ struct ImportEntryRequest: Equatable, Identifiable {
         guard let importSessionID else { return nil }
         let conflictIDs = importConflictIDs.filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
         guard !conflictIDs.isEmpty else { return nil }
-        let sourceRoute: CommandPaletteLinkedPageRoute?
-        if case let .importConflictBatch(route) = source {
-            sourceRoute = route
+        let sourceRoute: CommandPaletteLinkedPageRoute? = if case let .importConflictBatch(route) = source {
+            route
         } else {
-            sourceRoute = nil
+            nil
         }
         return ImportConflictBatchRoute(
             importSessionID: importSessionID,
@@ -145,8 +144,13 @@ enum CommandPaletteLinkedPageRoute: String, Equatable, Identifiable, CaseIterabl
     case redo = "S2-22"
     case tagSuggestions = "S2-23"
 
-    var id: String { rawValue }
-    var pageID: String { rawValue }
+    var id: String {
+        rawValue
+    }
+
+    var pageID: String {
+        rawValue
+    }
 
     var blockedMapping: CoreErrorMappingSnapshot {
         switch self {

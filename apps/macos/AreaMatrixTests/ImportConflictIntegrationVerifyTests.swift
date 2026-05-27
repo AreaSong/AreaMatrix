@@ -312,6 +312,7 @@ private extension ImportConflictIntegrationVerifyTests {
     }
 
     @MainActor
+    // swiftlint:disable:next function_body_length
     func verifyS221SelectedScopeRefreshesBeforeApplyAndUndo() async throws {
         let invoiceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
         let action = UndoActionRecordSnapshot.s221IntegrationAction()

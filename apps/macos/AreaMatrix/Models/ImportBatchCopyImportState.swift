@@ -343,7 +343,7 @@ enum ImportConflictBatchUndoAction {
         if let failure = result.failure {
             return .failed(failure, previous: action)
         }
-        return .failed(await fallbackMapping(errorMapper: errorMapper), previous: action)
+        return await .failed(fallbackMapping(errorMapper: errorMapper), previous: action)
     }
 
     private static func normalizedToken(_ undoToken: String?) -> String? {

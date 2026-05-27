@@ -1,6 +1,7 @@
 @testable import AreaMatrix
 import Foundation
 
+// swiftlint:disable file_length
 actor S118StaticBatchFileLoader: ImportBatchCoreFileLoading {
     private let pagesByCategory: [String: [[FileEntrySnapshot]]]
     private var requests: [FileFilterSnapshot] = []
@@ -134,7 +135,9 @@ actor S221IntegrationConflictBatcher: CoreImportConflictBatching {
     private var recordedPreviewRequests: [S221IntegrationPreviewRequest] = []
     private var recordedApplyRequests: [S221IntegrationApplyRequest] = []
 
-    init(previews: [ImportConflictBatchPreviewReportSnapshot]) { self.previews = previews }
+    init(previews: [ImportConflictBatchPreviewReportSnapshot]) {
+        self.previews = previews
+    }
 
     func previewImportConflictBatch(
         repoPath: String,
@@ -158,9 +161,13 @@ actor S221IntegrationConflictBatcher: CoreImportConflictBatching {
         return .s221IntegrationReport(for: request)
     }
 
-    func previewRequests() -> [S221IntegrationPreviewRequest] { recordedPreviewRequests }
+    func previewRequests() -> [S221IntegrationPreviewRequest] {
+        recordedPreviewRequests
+    }
 
-    func applyRequests() -> [S221IntegrationApplyRequest] { recordedApplyRequests }
+    func applyRequests() -> [S221IntegrationApplyRequest] {
+        recordedApplyRequests
+    }
 }
 
 actor S221IntegrationUndoStore: CoreUndoActionLogging {
@@ -187,9 +194,13 @@ actor S221IntegrationUndoStore: CoreUndoActionLogging {
         return try undoResult.get()
     }
 
-    func listRequests() -> [String] { recordedListRequests }
+    func listRequests() -> [String] {
+        recordedListRequests
+    }
 
-    func undoRequests() -> [String] { recordedUndoRequests }
+    func undoRequests() -> [String] {
+        recordedUndoRequests
+    }
 }
 
 extension ImportConflictBatchPreviewReportSnapshot {
@@ -223,7 +234,8 @@ extension ImportConflictBatchPreviewReportSnapshot {
         )
     }
 
-    func withS221Request(_ request: ImportConflictBatchPreviewRequestSnapshot) -> ImportConflictBatchPreviewReportSnapshot {
+    func withS221Request(_ request: ImportConflictBatchPreviewRequestSnapshot)
+        -> ImportConflictBatchPreviewReportSnapshot {
         var copy = self
         copy.importSessionID = request.importSessionID
         copy.applyToAllSimilarConflicts = request.applyToAllSimilarConflicts

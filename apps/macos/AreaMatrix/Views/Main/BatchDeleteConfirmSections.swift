@@ -30,7 +30,10 @@ struct BatchDeletePreviewSummary: View {
     private var availabilityWarnings: some View {
         if !preview.trashAvailable {
             Label(
-                "Trash is not available for this location. AreaMatrix will not permanently delete these files in Stage 2.",
+                [
+                    "Trash is not available for this location.",
+                    "AreaMatrix will not permanently delete these files in Stage 2."
+                ].joined(separator: " "),
                 systemImage: "trash.slash"
             )
         }

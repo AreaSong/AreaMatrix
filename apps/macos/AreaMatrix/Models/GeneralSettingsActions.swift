@@ -224,7 +224,7 @@ struct ClassifierRuleEditorDraft: Equatable {
 
 enum ClassifierRuleMatcherKind: String, Equatable {
     case fileExtension = "extension"
-    case keyword = "keyword"
+    case keyword
 }
 
 struct ClassifierRuleMatcherRemoval: Equatable {

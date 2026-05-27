@@ -130,7 +130,7 @@ final class ICloudConflictMinimalValidationTests: XCTestCase {
             resolutionCapability: .supported,
             isTrashAvailable: true,
             onCancel: {},
-            onApply: { _, _, _ in },
+            onApply: { _ in },
             onCollectDiagnostics: {}
         )
         let body = s125MirrorDescription(of: view.body)
@@ -203,7 +203,7 @@ final class ICloudConflictMinimalValidationTests: XCTestCase {
             resolutionCapability: .supported,
             isTrashAvailable: true,
             onCancel: {},
-            onApply: { _, _, _ in XCTFail("Preview failure must keep Apply unavailable") },
+            onApply: { _ in XCTFail("Preview failure must keep Apply unavailable") },
             onCollectDiagnostics: {}
         ).body)
         let previewRequests = await reviewer.recordedPreviewRequests()

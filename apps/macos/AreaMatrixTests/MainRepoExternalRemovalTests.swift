@@ -2,10 +2,18 @@
 import SwiftUI
 import XCTest
 
+// swiftlint:disable file_length
+// swiftlint:disable:next type_body_length
 final class MainRepoExternalRemovalTests: XCTestCase {
     func testS201PageIntegrationRendersSearchRouteViews() {
         let request = SearchQueryRequestSnapshot.s201RouteFixture(query: "合同")
-        let emptyView = SearchEmptyRouteView(request: request, onClearSearch: {}, onClearFilters: {}, onRemoveFilter: { _ in }, onSearchAllFileTypes: {})
+        let emptyView = SearchEmptyRouteView(
+            request: request,
+            onClearSearch: {},
+            onClearFilters: {},
+            onRemoveFilter: { _ in },
+            onSearchAllFileTypes: {}
+        )
         let emptyBody = s201RouteMirrorDescription(of: emptyView.body)
         let errorBody = s201RouteMirrorDescription(of: QueryErrorRouteView(
             request: request,
@@ -25,7 +33,12 @@ final class MainRepoExternalRemovalTests: XCTestCase {
             errorMapper: MainListRecordingErrorMapper(mapping: .searchFiltersDbFixture()),
             onCancel: {}
         ).body)
-        let indexingBody = s201RouteMirrorDescription(of: SearchIndexingStatusRouteView(request: request, indexStatus: .unavailable, onRetry: {}, onClose: {}).body)
+        let indexingBody = s201RouteMirrorDescription(of: SearchIndexingStatusRouteView(
+            request: request,
+            indexStatus: .unavailable,
+            onRetry: {},
+            onClose: {}
+        ).body)
         var commandQuery = "合同"
         let commandBody = s201RouteMirrorDescription(of: SearchCommandPaletteRouteView(
             query: Binding(get: { commandQuery }, set: { commandQuery = $0 }),
@@ -43,6 +56,7 @@ final class MainRepoExternalRemovalTests: XCTestCase {
         XCTAssertTrue(indexingBody.contains("S2-01-indexing-status-search-route"))
         XCTAssertTrue(commandBody.contains("S2-15-search-route"))
     }
+
     @MainActor
     func testS203SavedSearchSheetCreatesSmartListThroughCoreBridge() async {
         let request = SearchQueryRequestSnapshot.s201RouteFixture(query: "合同")
@@ -124,7 +138,7 @@ final class MainRepoExternalRemovalTests: XCTestCase {
         let filters = SearchFilterStateSnapshot.searchFiltersFixture()
         let invalid = SearchFilterEditing.settingCustomDateRange(
             from: Date(timeIntervalSince1970: 1_800_086_400),
-            to: Date(timeIntervalSince1970: 1_800_000_000),
+            until: Date(timeIntervalSince1970: 1_800_000_000),
             field: .modified,
             in: filters
         )
@@ -138,7 +152,7 @@ final class MainRepoExternalRemovalTests: XCTestCase {
         let validTo = Date(timeIntervalSince1970: 1_800_086_400)
         let valid = SearchFilterEditing.settingCustomDateRange(
             from: validFrom,
-            to: validTo,
+            until: validTo,
             field: .modified,
             in: filters
         )

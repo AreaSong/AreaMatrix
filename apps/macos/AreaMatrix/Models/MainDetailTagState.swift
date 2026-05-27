@@ -271,9 +271,9 @@ enum BatchTagCatalogAction {
             return .failed(.batchTagFileSelectionMissing(), previous: nil)
         }
         do {
-            return .loaded(try await tagStore.listTags(repoPath: repoPath, fileID: anchorFileID))
+            return try await .loaded(tagStore.listTags(repoPath: repoPath, fileID: anchorFileID))
         } catch {
-            return .failed(await mapError(error, errorMapper: errorMapper), previous: nil)
+            return await .failed(mapError(error, errorMapper: errorMapper), previous: nil)
         }
     }
 
@@ -396,7 +396,7 @@ enum BatchAddTagsAction {
             let report = try await tagStore.batchAddTags(repoPath: repoPath, fileIDs: fileIDs, tags: tags)
             return BatchAddTagsApplyResult(report: report, failure: nil)
         } catch {
-            return BatchAddTagsApplyResult(report: nil, failure: await mapError(error, errorMapper: errorMapper))
+            return await BatchAddTagsApplyResult(report: nil, failure: mapError(error, errorMapper: errorMapper))
         }
     }
 

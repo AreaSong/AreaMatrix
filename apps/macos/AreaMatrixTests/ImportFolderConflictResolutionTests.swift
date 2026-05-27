@@ -315,9 +315,13 @@ private actor S221UndoStore: CoreUndoActionLogging {
         return try result.get()
     }
 
-    func listRequests() -> [String] { recordedListRequests }
+    func listRequests() -> [String] {
+        recordedListRequests
+    }
 
-    func undoRequests() -> [String] { recordedUndoRequests }
+    func undoRequests() -> [String] {
+        recordedUndoRequests
+    }
 
     private func consumeResult() throws -> Result {
         guard !results.isEmpty else { throw CoreError.Db(message: "missing undo action result") }

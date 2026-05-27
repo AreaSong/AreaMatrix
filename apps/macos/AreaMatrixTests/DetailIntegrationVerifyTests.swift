@@ -10,6 +10,7 @@ private struct DetailIntegrationContext {
     let secondary: FileEntrySnapshot
 }
 
+// swiftlint:disable:next type_body_length
 final class DetailIntegrationVerifyTests: XCTestCase {
     @MainActor
     func testS112ToS115DetailLoopUsesRealCoreBridgeWithoutFinalMock() async throws {
@@ -31,6 +32,7 @@ final class DetailIntegrationVerifyTests: XCTestCase {
     }
 
     @MainActor
+    // swiftlint:disable:next function_body_length
     func testS208PageIntegrationVerifyConnectsEntryExitErrorsAndDeclaredCoreOnly() async {
         let detail = FileEntrySnapshot.detailMetaFixture(id: 219, currentName: "integration.pdf")
         let filters = SearchFilterEditing.settingTagMatchMode(

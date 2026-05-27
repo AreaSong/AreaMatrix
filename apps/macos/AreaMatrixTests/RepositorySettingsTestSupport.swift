@@ -309,11 +309,25 @@ actor DetailTagRecordingStore: CoreTagCRUD {
         }
     }
 
-    func addRequests() -> [DetailTagMutationRequest] { recordedAddRequests }
-    func removeRequests() -> [DetailTagMutationRequest] { recordedRemoveRequests }
-    func listRequests() -> [DetailTagListRequest] { recordedListRequests }
-    func suggestionRequests() -> [TagSuggestionRequestRecord] { recordedSuggestionRequests }
-    func applySuggestionRequests() -> [ApplyTagSuggestionsRequestRecord] { recordedApplySuggestionRequests }
+    func addRequests() -> [DetailTagMutationRequest] {
+        recordedAddRequests
+    }
+
+    func removeRequests() -> [DetailTagMutationRequest] {
+        recordedRemoveRequests
+    }
+
+    func listRequests() -> [DetailTagListRequest] {
+        recordedListRequests
+    }
+
+    func suggestionRequests() -> [TagSuggestionRequestRecord] {
+        recordedSuggestionRequests
+    }
+
+    func applySuggestionRequests() -> [ApplyTagSuggestionsRequestRecord] {
+        recordedApplySuggestionRequests
+    }
 
     private func consume(_ results: inout [Result], fallbackFileID: Int64) throws -> TagSetSnapshot {
         guard !results.isEmpty else { return TagSetSnapshot.s207Fixture(fileID: fallbackFileID, values: []) }

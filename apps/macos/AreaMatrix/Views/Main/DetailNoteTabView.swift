@@ -238,7 +238,6 @@ struct TagSuggestionsPanel: View {
         }
     }
 
-    @ViewBuilder
     private func reportContent(_ report: TagSuggestionReportSnapshot) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             privacyStatus(report)

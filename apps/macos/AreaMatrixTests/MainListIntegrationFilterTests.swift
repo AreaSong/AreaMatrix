@@ -1,6 +1,7 @@
 @testable import AreaMatrix
 import XCTest
 
+// swiftlint:disable file_length
 final class MainListIntegrationFilterTests: XCTestCase {
     func testCurrentListFilterMatchesLoadedFileNamesOnly() {
         let files = [

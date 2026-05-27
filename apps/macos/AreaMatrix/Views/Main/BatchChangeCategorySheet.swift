@@ -62,15 +62,15 @@ struct BatchChangeCategorySheet: View {
     let onUndoStateChange: (BatchTagUndoState) -> Void
     let onCreateNewCategory: (BatchChangeCategoryNewCategoryHandoff) -> Void
     let onClose: () -> Void
-    @State private var targetCategory: String
-    @State private var createdCategories: [String] = []
-    @State private var moveRepoOwnedFiles = false
-    @State private var previewState: BatchChangeCategoryPreviewState = .idle
-    @State private var isApplying = false
-    @State private var result: BatchCategoryChangeReportSnapshot?
-    @State private var failure: CoreErrorMappingSnapshot?
-    @State private var showsDetails = false
-    @State private var categorySearchText = ""
+    @State var targetCategory: String
+    @State var createdCategories: [String] = []
+    @State var moveRepoOwnedFiles = false
+    @State var previewState: BatchChangeCategoryPreviewState = .idle
+    @State var isApplying = false
+    @State var result: BatchCategoryChangeReportSnapshot?
+    @State var failure: CoreErrorMappingSnapshot?
+    @State var showsDetails = false
+    @State var categorySearchText = ""
 
     init(
         repoPath: String,
@@ -131,164 +131,20 @@ struct BatchChangeCategorySheet: View {
         }
     }
 
-    private var content: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            summarySection
-            targetSection
-            previewSection
-            resultSection
-            actionButtons
-        }
-    }
-
-    private var summarySection: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("Selected: \(selectedCount) files")
-            Text("Current categories: \(currentCategoriesText)")
-            ForEach(selectedFiles.prefix(5)) { file in
-                Text(file.currentName)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-        }
-        .accessibilityElement(children: .contain)
-    }
-
-    private var targetSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            BatchChangeCategoryPicker(
-                categories: availableCategories,
-                filteredCategories: filteredCategories,
-                selection: $targetCategory,
-                searchText: $categorySearchText,
-                isDisabled: isApplying || disabledReason != nil
-            )
-            Button("Create new category...") {
-                onCreateNewCategory(BatchChangeCategoryNewCategoryHandoff(
-                    selectedFileIDs: fileIDs,
-                    currentTargetCategory: targetCategory
-                ))
-            }
-            .disabled(isApplying || disabledReason != nil)
-            .accessibilityIdentifier("S2-12-create-new-category")
-            Toggle("Move files into the category folder", isOn: $moveRepoOwnedFiles)
-                .disabled(isApplying || disabledReason != nil)
-            Text("When off, only AreaMatrix metadata changes. Files stay in their current locations.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        }
-    }
-
-    @ViewBuilder
-    private var previewSection: some View {
-        if previewState.isLoading {
-            Label("Previewing changes...", systemImage: "arrow.triangle.2.circlepath")
-                .foregroundStyle(.secondary)
-        }
-        if let failure = previewState.failure {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Label(failure.userMessage, systemImage: "exclamationmark.triangle")
-                Spacer()
-                Button("Retry") { Task { await refreshPreview() } }
-            }
-            .font(.callout)
-            .foregroundStyle(.secondary)
-        }
-        if let preview = previewState.report {
-            previewSummary(preview)
-        }
-        if let reason = disabledReason {
-            Label(reason, systemImage: "exclamationmark.triangle")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        }
-    }
-
-    private func previewSummary(_ preview: BatchCategoryPreviewReportSnapshot) -> some View {
-        let presentation = BatchCategoryPreviewReportPresentation(report: preview)
-        return VStack(alignment: .leading, spacing: 6) {
-            Text(presentation.moveSummaryText)
-            Text(presentation.metadataSummaryText)
-            Text(presentation.skippedSummaryText)
-            Text(presentation.blockedSummaryText)
-            if let reason = preview.applyBlockedReason, !reason.isEmpty {
-                Text(reason).foregroundStyle(.secondary)
-            }
-            Button(showsDetails ? "Hide details" : "Show details") {
-                showsDetails.toggle()
-            }
-            if showsDetails {
-                BatchChangeCategoryPreviewTable(items: preview.items)
-            }
-        }
-        .padding(10)
-        .background(Color.secondary.opacity(0.10), in: RoundedRectangle(cornerRadius: 8))
-        .accessibilityElement(children: .contain)
-    }
-
-    @ViewBuilder
-    private var resultSection: some View {
-        if let result {
-            let presentation = BatchCategoryChangeReportPresentation(report: result)
-            VStack(alignment: .leading, spacing: 6) {
-                Text(presentation.changedSummaryText)
-                Text(presentation.skippedSummaryText)
-                Text(presentation.failedSummaryText)
-                if result.failedCount > 0 {
-                    failureResultDetails(for: result)
-                }
-            }
-            .padding(10)
-            .background(Color.secondary.opacity(0.10), in: RoundedRectangle(cornerRadius: 8))
-        }
-        if let failure {
-            Label(failure.userMessage, systemImage: "exclamationmark.triangle")
-                .font(.callout)
-                .foregroundStyle(.secondary)
-        }
-    }
-
-    @ViewBuilder
-    private func failureResultDetails(for report: BatchCategoryChangeReportSnapshot) -> some View {
-        Button("View details") { showsDetails.toggle() }
-        if showsDetails {
-            ForEach(report.itemResults.filter { $0.status == .failed }) { item in
-                Text("File \(item.fileID): \(item.error ?? "Failed")")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-        }
-    }
-
-    private var actionButtons: some View {
-        HStack {
-            Button("Preview") { Task { await refreshPreview(expandDetails: true) } }
-                .disabled(isApplying || targetCategory.isEmpty || disabledReason != nil)
-            Spacer()
-            Button("Cancel", action: onClose)
-                .keyboardShortcut(.cancelAction)
-                .disabled(isApplying)
-            Button(isApplying ? "Applying..." : "Apply") {
-                Task { await apply() }
-            }
-            .keyboardShortcut(.defaultAction)
-            .disabled(!canApply)
-            .accessibilityIdentifier("S2-12-batch-change-category-apply")
-        }
-    }
-
     @MainActor
-    private func refreshPreview(expandDetails: Bool = false) async {
+    func refreshPreview(expandDetails: Bool = false) async {
         guard selectedCount > 0, disabledReason == nil, !targetCategory.isEmpty else { return }
         let previous = previewState.report
         previewState = .loading(previous: previous)
         failure = nil
         result = nil
         previewState = await BatchChangeCategoryAction.preview(
-            repoPath: repoPath,
-            fileIDs: fileIDs,
-            targetCategory: targetCategory,
-            moveRepoOwnedFiles: moveRepoOwnedFiles,
+            request: BatchChangeCategoryPreviewRequest(
+                repoPath: repoPath,
+                fileIDs: fileIDs,
+                targetCategory: targetCategory,
+                moveRepoOwnedFiles: moveRepoOwnedFiles
+            ),
             changer: changer,
             errorMapper: errorMapper
         )
@@ -301,7 +157,7 @@ struct BatchChangeCategorySheet: View {
     }
 
     @MainActor
-    private func apply() async {
+    func apply() async {
         guard let preview = previewState.report, canApply else { return }
         isApplying = true
         failure = nil
@@ -345,22 +201,22 @@ struct BatchChangeCategorySheet: View {
         await refreshPreview()
     }
 
-    private var canApply: Bool {
-        BatchChangeCategoryValidation.canApply(
+    var canApply: Bool {
+        BatchChangeCategoryValidation.canApply(BatchChangeCategoryApplyGate(
             targetCategory: targetCategory,
             moveRepoOwnedFiles: moveRepoOwnedFiles,
             fileIDs: fileIDs,
             preview: previewState.report,
             disabledReason: disabledReason,
             isApplying: isApplying
-        )
+        ))
     }
 
     private var previewTaskKey: String {
         "\(fileIDs.map(String.init).joined(separator: ","))|\(targetCategory)|\(moveRepoOwnedFiles)"
     }
 
-    private var availableCategories: [String] {
+    var availableCategories: [String] {
         BatchChangeCategorySelection.availableCategories(
             selectedFiles: selectedFiles,
             categoryRows: categoryRows,
@@ -368,19 +224,19 @@ struct BatchChangeCategorySheet: View {
         )
     }
 
-    private var filteredCategories: [String] {
+    var filteredCategories: [String] {
         BatchChangeCategorySelection.filteredCategories(
             availableCategories,
             query: categorySearchText
         )
     }
 
-    private var currentCategoriesText: String {
+    var currentCategoriesText: String {
         BatchChangeCategorySelection.categoryDistributionText(selectedFiles: selectedFiles)
     }
 }
 
-private struct BatchChangeCategoryPicker: View {
+struct BatchChangeCategoryPicker: View {
     let categories: [String]
     let filteredCategories: [String]
     @Binding var selection: String
@@ -424,7 +280,7 @@ private struct BatchChangeCategoryPicker: View {
     }
 }
 
-private struct BatchChangeCategoryPreviewTable: View {
+struct BatchChangeCategoryPreviewTable: View {
     let items: [BatchCategoryPreviewItemSnapshot]
 
     var body: some View {

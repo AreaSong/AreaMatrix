@@ -64,12 +64,12 @@ enum SearchFilterEditing {
 
     static func settingCustomDateRange(
         from: Date,
-        to: Date,
+        until: Date,
         field: SearchFilterDateField,
         in filters: SearchFilterStateSnapshot
     ) -> SearchDateRangeEditResult {
         let start = Int64(Calendar.current.startOfDay(for: from).timeIntervalSince1970)
-        let end = Int64(Calendar.current.startOfDay(for: to).timeIntervalSince1970)
+        let end = Int64(Calendar.current.startOfDay(for: until).timeIntervalSince1970)
         guard start <= end else {
             return SearchDateRangeEditResult(
                 updatedFilters: nil,
@@ -330,7 +330,7 @@ private struct SearchDateFilterSection: View {
                     Button("Last 30 days") { applyPreset(.last30Days) }
                     Button("This year") { applyPreset(.thisYear) }
                     Button("Custom...") {
-                        applyCustomRange(from: customFromDate, to: customToDate)
+                        applyCustomRange(from: customFromDate, until: customToDate)
                     }
                 }
             }
@@ -349,7 +349,9 @@ private struct SearchDateFilterSection: View {
         }
     }
 
-    private var dateSummary: String { field.summary(in: filters) }
+    private var dateSummary: String {
+        field.summary(in: filters)
+    }
 
     private var customDatePickers: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -361,14 +363,14 @@ private struct SearchDateFilterSection: View {
     private var fromBinding: Binding<Date> {
         Binding(
             get: { customFromDate },
-            set: { applyCustomRange(from: $0, to: customToDate) }
+            set: { applyCustomRange(from: $0, until: customToDate) }
         )
     }
 
     private var toBinding: Binding<Date> {
         Binding(
             get: { customToDate },
-            set: { applyCustomRange(from: customFromDate, to: $0) }
+            set: { applyCustomRange(from: customFromDate, until: $0) }
         )
     }
 
@@ -390,8 +392,8 @@ private struct SearchDateFilterSection: View {
         filters = SearchFilterEditing.settingDatePreset(preset, field: field, in: filters)
     }
 
-    private func applyCustomRange(from: Date, to: Date) {
-        let result = SearchFilterEditing.settingCustomDateRange(from: from, to: to, field: field, in: filters)
+    private func applyCustomRange(from: Date, until: Date) {
+        let result = SearchFilterEditing.settingCustomDateRange(from: from, until: until, field: field, in: filters)
         if let updated = result.updatedFilters {
             validationError = nil
             filters = updated
@@ -423,54 +425,6 @@ private struct SearchStorageFacetPicker: View {
     }
 }
 
-struct SearchFilterChipsBar: View {
-    @Binding var filters: SearchFilterStateSnapshot
-
-    var body: some View {
-        let chips = SearchFilterChips.items(for: filters)
-        if !chips.isEmpty {
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 6) {
-                    ForEach(chips) { chip in
-                        Button {
-                            filters = SearchFilterEditing.removing(chip.kind, from: filters)
-                        } label: {
-                            Label(chip.label, systemImage: "xmark.circle")
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
-                        .accessibilityLabel("Remove filter \(chip.label)")
-                    }
-                }
-            }
-            .accessibilityElement(children: .contain)
-            .accessibilityLabel("\(chips.count) active filters")
-        }
-    }
-}
-
-enum SearchFilterStateRouting {
-    static func effective(
-        searchFilters: SearchFilterStateSnapshot,
-        draft: SmartListFilterDraft?
-    ) -> SearchFilterStateSnapshot {
-        draft?.filters ?? searchFilters
-    }
-
-    @MainActor
-    static func assign(
-        _ filters: SearchFilterStateSnapshot,
-        searchFilters: inout SearchFilterStateSnapshot,
-        fileListModel: MainFileListModel
-    ) {
-        if fileListModel.isEditingSmartListFilterDraft {
-            fileListModel.updateSmartListFilterDraft(filters)
-            return
-        }
-        searchFilters = filters
-    }
-}
-
 extension MainSearchFacetsState {
     var isLoading: Bool {
         if case .loading = self { return true }
@@ -479,10 +433,12 @@ extension MainSearchFacetsState {
 }
 
 extension SearchFacetCountSnapshot {
-    var displayTitle: String { disabled ? "\(label) (0)" : "\(label) (\(count))" }
+    var displayTitle: String {
+        disabled ? "\(label) (0)" : "\(label) (\(count))"
+    }
 }
 
-private extension SearchStorageModeFacetCountSnapshot {
+extension SearchStorageModeFacetCountSnapshot {
     static var defaultOptions: [SearchStorageModeFacetCountSnapshot] {
         SearchStorageModeSnapshot.allCases.map {
             SearchStorageModeFacetCountSnapshot(
@@ -495,5 +451,7 @@ private extension SearchStorageModeFacetCountSnapshot {
         }
     }
 
-    var displayTitle: String { disabled ? "\(label) (0)" : "\(label) (\(count))" }
+    var displayTitle: String {
+        disabled ? "\(label) (0)" : "\(label) (\(count))"
+    }
 }

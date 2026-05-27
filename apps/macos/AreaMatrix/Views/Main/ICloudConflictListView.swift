@@ -93,9 +93,9 @@ enum ICloudConflictListPageContext: Equatable {
     func countLabel(conflictCount: Int) -> String {
         switch self {
         case .s136List:
-            return "\(conflictCount) conflicts"
+            "\(conflictCount) conflicts"
         case .s220ConflictVisual:
-            return "\(conflictCount) conflict groups found"
+            "\(conflictCount) conflict groups found"
         }
     }
 }
@@ -146,8 +146,8 @@ struct ICloudConflictListView: View {
                 resolutionCapability: route.resolutionCapability,
                 isTrashAvailable: OnboardingModel.isSystemTrashAvailable(),
                 onCancel: model.closeResolvingConflict,
-                onApply: { _, report, _ in
-                    guard report?.status == .resolved else { return }
+                onApply: { result in
+                    guard result.report?.status == .resolved else { return }
                     Task { await model.refresh() }
                     model.closeResolvingConflict()
                 },

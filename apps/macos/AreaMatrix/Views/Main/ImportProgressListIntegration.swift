@@ -382,11 +382,25 @@ struct UndoToastHistoryRouteSheet: View {
 struct CommandPaletteSmartListTarget: Equatable, Identifiable {
     let savedSearch: SavedSearchSnapshot
 
-    var id: Int64 { savedSearch.id }
-    var title: String { savedSearch.name }
-    var systemImage: String { savedSearch.icon ?? "line.3.horizontal.decrease.circle" }
-    var helpText: String { "Open Smart List" }
-    var accessibilityIdentifier: String { "S2-15-C2-04-smart-list-\(savedSearch.id)" }
+    var id: Int64 {
+        savedSearch.id
+    }
+
+    var title: String {
+        savedSearch.name
+    }
+
+    var systemImage: String {
+        savedSearch.icon ?? "line.3.horizontal.decrease.circle"
+    }
+
+    var helpText: String {
+        "Open Smart List"
+    }
+
+    var accessibilityIdentifier: String {
+        "S2-15-C2-04-smart-list-\(savedSearch.id)"
+    }
 
     static func matching(_ savedSearches: [SavedSearchSnapshot], query: String) -> [CommandPaletteSmartListTarget] {
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)

@@ -319,36 +319,30 @@ extension MainRepositoryContentView {
         }
     }
 
-    private func applyICloudConflict(
-        fileID: Int64,
-        strategy: ICloudConflictResolutionStrategy,
-        originalPath: String?,
-        conflictedCopyPath: String?,
-        report: ICloudConflictResolveReportSnapshot?,
-        failure: CoreErrorMappingSnapshot?
-    ) {
+    private func applyICloudConflict(_ context: ICloudConflictApplyContext) {
         Task {
-            if let report {
+            let result = context.result
+            if let report = result.report {
                 await fileListModel.completePreviewedICloudConflictResolution(
-                    fileID: fileID,
-                    strategy: strategy,
+                    fileID: context.fileID,
+                    strategy: result.strategy,
                     report: report
                 )
                 return
             }
-            if let failure {
+            if let failure = result.failure {
                 fileListModel.recordICloudConflictResolutionFailure(
-                    fileID: fileID,
-                    strategy: strategy,
+                    fileID: context.fileID,
+                    strategy: result.strategy,
                     mapping: failure
                 )
                 return
             }
             await fileListModel.applyICloudConflictResolution(
-                fileID: fileID,
-                strategy: strategy,
-                originalPath: originalPath,
-                conflictedCopyPath: conflictedCopyPath
+                fileID: context.fileID,
+                strategy: result.strategy,
+                originalPath: context.originalPath,
+                conflictedCopyPath: context.conflictedCopyPath
             )
         }
     }
@@ -493,44 +487,4 @@ extension MainRepositoryContentView {
         fileListModel.enterSearch(context: .toolbar)
         isSearchFieldFocused = true
     }
-}
-
-struct SearchIndexingStatusRouteView: View {
-    let request: SearchQueryRequestSnapshot
-    let indexStatus: SearchIndexStatusSnapshot?
-    let onRetry: () -> Void
-    let onClose: () -> Void
-
-    var body: some View {
-        MainFileActionSheetContainer(title: "Search Index Status", pageID: "S2-01-indexing-status") {
-            Label(statusText, systemImage: "exclamationmark.triangle")
-                .font(.callout)
-            metadataRow("Query", request.query)
-            metadataRow("Scope", request.scope.displayName)
-            HStack {
-                Spacer()
-                Button("Close", action: onClose)
-                    .keyboardShortcut(.cancelAction)
-                Button("Retry", action: onRetry)
-            }
-        }
-        .accessibilityIdentifier("S2-01-indexing-status-search-route")
-    }
-
-    private var statusText: String {
-        switch indexStatus {
-        case .unavailable:
-            "Search index unavailable"
-        case .indexing:
-            "Search index is updating"
-        case .ready:
-            "Search index ready"
-        case nil:
-            "Search index status unavailable"
-        }
-    }
-}
-
-private func searchContextText(_ request: SearchQueryRequestSnapshot) -> String {
-    "Scope: \(request.scope.displayName) | Sort: \(request.sort.displayName)"
 }

@@ -1,6 +1,8 @@
 @testable import AreaMatrix
 import XCTest
 
+// swiftlint:disable file_length
+// swiftlint:disable:next type_body_length
 final class RenameFilePageFeatureTests: XCTestCase {
     @MainActor
     func testS133C122SubmitRenameUsesCoreBridgeAndRefreshesListDetailAndLog() async {
@@ -314,8 +316,17 @@ final class RenameFilePageFeatureTests: XCTestCase {
     }
 
     func testS214C210BatchRenameUsesCurrentListOrderForPreviewAndApply() async {
-        let rule = BatchRenameRuleSnapshot.batchRenameRule(.keepBaseSequence, separator: "_", startNumber: 1, padding: 2)
-        let preview = BatchRenamePreviewReportSnapshot.preview(rule: rule, token: "preview-token", fileIDs: [30, 10, 20])
+        let rule = BatchRenameRuleSnapshot.batchRenameRule(
+            .keepBaseSequence,
+            separator: "_",
+            startNumber: 1,
+            padding: 2
+        )
+        let preview = BatchRenamePreviewReportSnapshot.preview(
+            rule: rule,
+            token: "preview-token",
+            fileIDs: [30, 10, 20]
+        )
         let renamer = BatchRenameRecordingRenamer(preview: .success(preview), apply: .success(.report()))
         let mapper = BatchRenameErrorMapper(mapping: .batchRenameConflict)
 

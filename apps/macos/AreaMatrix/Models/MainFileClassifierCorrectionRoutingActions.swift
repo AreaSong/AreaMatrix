@@ -77,7 +77,9 @@ enum ClassifierImpactPreviewFilter: String, CaseIterable, Equatable, Identifiabl
     case needsReview = "Needs review"
     case skipped = "Skipped"
 
-    var id: String { rawValue }
+    var id: String {
+        rawValue
+    }
 }
 
 enum ClassifierImpactPreviewLoadState: Equatable {
@@ -142,7 +144,9 @@ struct ClassifierImpactPreviewSheetModel: Equatable {
 
     var selectedBasisSummary: String {
         let keywordSummary = selectedKeywords.isEmpty ? nil : "keyword \(selectedKeywords.joined(separator: ", "))"
-        let extensionSummary = selectedExtensions.isEmpty ? nil : "extension \(selectedExtensions.joined(separator: ", "))"
+        let extensionSummary = selectedExtensions.isEmpty
+            ? nil
+            : "extension \(selectedExtensions.joined(separator: ", "))"
         return [keywordSummary, extensionSummary].compactMap { $0 }.joined(separator: "; ")
     }
 

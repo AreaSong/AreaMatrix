@@ -28,6 +28,15 @@ struct BatchDeleteApplyResult: Equatable {
     var failure: CoreErrorMappingSnapshot?
 }
 
+struct BatchDeleteApplyGate {
+    var fileIDs: [Int64]
+    var preview: BatchDeletePreviewReportSnapshot?
+    var deleteMode: BatchDeleteModeSnapshot
+    var disabledReason: String?
+    var undoConfirmationAccepted: Bool
+    var isApplying: Bool
+}
+
 enum BatchDeletePreviewState: Equatable {
     case idle
     case loading(previous: BatchDeletePreviewReportSnapshot?)
@@ -126,26 +135,19 @@ enum BatchDeleteAction {
 }
 
 enum BatchDeleteValidation {
-    static func canApply(
-        fileIDs: [Int64],
-        preview: BatchDeletePreviewReportSnapshot?,
-        deleteMode: BatchDeleteModeSnapshot,
-        disabledReason: String?,
-        undoConfirmationAccepted: Bool,
-        isApplying: Bool
-    ) -> Bool {
-        let selectedFileIDs = Set(fileIDs)
-        guard !isApplying,
-              disabledReason == nil,
+    static func canApply(_ gate: BatchDeleteApplyGate) -> Bool {
+        let selectedFileIDs = Set(gate.fileIDs)
+        guard !gate.isApplying,
+              gate.disabledReason == nil,
               !selectedFileIDs.isEmpty,
-              let preview,
+              let preview = gate.preview,
               preview.canApply,
-              preview.deleteMode == deleteMode else { return false }
+              preview.deleteMode == gate.deleteMode else { return false }
         let previewFileIDs = Set(preview.fileIDs)
         guard !previewFileIDs.isEmpty,
               previewFileIDs.isSubset(of: selectedFileIDs),
               preview.requestedFileCount == Int64(previewFileIDs.count) else { return false }
-        return preview.undoAvailable || undoConfirmationAccepted
+        return preview.undoAvailable || gate.undoConfirmationAccepted
     }
 
     static func canRetryFailed(report: BatchDeleteReportSnapshot?, isApplying: Bool) -> Bool {

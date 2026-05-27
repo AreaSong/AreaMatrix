@@ -64,7 +64,6 @@ final class ImportFolderCoreBridgeModeTests: XCTestCase {
         XCTAssertEqual(entry.sourcePath, sourceURL.path)
         XCTAssertFalse(FileManager.default.fileExists(atPath: repoURL.appendingPathComponent(entry.path).path))
     }
-
 }
 
 final class QueryErrorPageFeatureTests: XCTestCase {

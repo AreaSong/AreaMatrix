@@ -2,6 +2,7 @@
 import XCTest
 
 final class ClassifierRuleEditorCoreBridgeTests: XCTestCase {
+    // swiftlint:disable:next function_body_length
     func testS219DefaultCoreBridgePersistsClassifierRuleCrudToClassifierYaml() async throws {
         let repoURL = try temporaryS219Repo()
         defer { try? FileManager.default.removeItem(at: repoURL) }

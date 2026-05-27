@@ -16,7 +16,7 @@ final class ImportBatchCopyImportModel: ObservableObject, ImportProgressQueueCon
     @Published var isConflictBatchApplying = false
     @Published var conflictBatchDuplicateStrategy: ImportConflictBatchStrategySnapshot = .skip
     @Published var conflictBatchSameNameStrategy: ImportConflictBatchStrategySnapshot = .keepBoth
-    @Published var appliesConflictBatchToAllSimilarConflicts = true
+    @Published var appliesConflictBatchToAll = true
     @Published var selectedConflictBatchIDs: Set<String> = []
     @Published var isConflictBatchReplaceConfirmed = false
     @Published var conflictBatchPerItemQueue: ImportConflictBatchPerItemQueue?

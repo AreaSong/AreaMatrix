@@ -1,7 +1,8 @@
 @testable import AreaMatrix
 import XCTest
 
-// swiftlint:disable type_body_length
+// swiftlint:disable file_length
+// swiftlint:disable:next type_body_length
 final class DetailTagPageFeatureTests: XCTestCase {
     @MainActor
     func testS207AddTagFailurePreservesPreviousStateAndDoesNotOfferUndo() async {
@@ -174,6 +175,7 @@ final class DetailTagPageFeatureTests: XCTestCase {
         let tagStoreCalls = await tagStore.recordedCalls()
         XCTAssertEqual(tagStoreCalls, [])
     }
+
     @MainActor
     func testS208TagsFilterLoadsC205RegistryWithoutMutatingTags() async {
         let detail = FileEntrySnapshot.detailMetaFixture(id: 208, currentName: "registry.pdf")
@@ -316,6 +318,7 @@ final class DetailTagPageFeatureTests: XCTestCase {
 
     @MainActor
     func testS223C205ManualFallbackUsesTagCrudWithoutApplyingSuggestions() async {
+        // swiftlint:disable:next large_tuple
         let scenarios: [(Int64, String, String, DetailTagRecordingStore.SuggestionResult)] = [
             (229, "manual-tag.pdf", "manual", .success(.s223EmptyFixture(fileID: 229))),
             (230, "suggestion-fail.pdf", "fallback", .failure(CoreError.Db(message: "suggestion locked")))
@@ -481,9 +484,7 @@ final class DetailTagPageFeatureTests: XCTestCase {
         XCTAssertNotNil(model.detailTagSuggestionState.editSession)
         XCTAssertNotNil(model.detailTagEditorState.failure)
     }
-
 }
-// swiftlint:enable type_body_length
 
 extension UndoActionRecordSnapshot {
     static func s223ApplySuggestion(token: String) -> UndoActionRecordSnapshot {

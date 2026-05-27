@@ -70,7 +70,7 @@ enum ImportConflictBatchValidation {
               preview.canApply,
               !preview.previewToken.isEmpty, preview.importSessionID == request.importSessionID,
               actionableIncludedCount(preview: preview) > 0 else { return false }
-        if preview.replaceConfirmationRequired && !request.replaceConfirmed { return false }
+        if preview.replaceConfirmationRequired, !request.replaceConfirmed { return false }
         return selectedStrategiesMatch(preview: preview, request: request)
     }
 
@@ -103,7 +103,10 @@ enum ImportConflictBatchValidation {
 
 @MainActor
 extension ImportBatchCopyImportModel {
-    func updateDuplicateStrategy(for rowID: ImportBatchCopyImportRow.ID, strategy: ImportBatchDuplicateResolutionStrategy) {
+    func updateDuplicateStrategy(
+        for rowID: ImportBatchCopyImportRow.ID,
+        strategy: ImportBatchDuplicateResolutionStrategy
+    ) {
         guard canSelectDuplicateStrategy(strategy) else { return }
         guard let row = rows.first(where: { $0.id == rowID }) else { return }
         guard case let .duplicate(existingPath, _, isReplaceConfirmed) = row.status else { return }
@@ -114,7 +117,10 @@ extension ImportBatchCopyImportModel {
         ), for: rowID)
     }
 
-    func updateNameConflictResolution(for rowID: ImportBatchCopyImportRow.ID, resolution: ImportBatchNameConflictResolution) {
+    func updateNameConflictResolution(
+        for rowID: ImportBatchCopyImportRow.ID,
+        resolution: ImportBatchNameConflictResolution
+    ) {
         guard canSelectNameConflictResolution(resolution) else { return }
         guard let row = rows.first(where: { $0.id == rowID }) else { return }
         guard case let .nameConflict(existingPath, _) = row.status else { return }
@@ -135,8 +141,9 @@ extension ImportBatchCopyImportModel {
     var conflictBatchFailure: CoreErrorMappingSnapshot? {
         conflictBatchPreviewState.failure ?? conflictBatchApplyResult?.failure
     }
+
     var currentConflictBatchIDs: [String] {
-        if appliesConflictBatchToAllSimilarConflicts {
+        if appliesConflictBatchToAll {
             return coreConflictBatchRows.map(\.id).sorted()
         }
         return selectedConflictBatchIDs.sorted()
@@ -206,7 +213,7 @@ extension ImportBatchCopyImportModel {
     }
 
     func updateConflictBatchScope(appliesToAll: Bool) {
-        appliesConflictBatchToAllSimilarConflicts = appliesToAll
+        appliesConflictBatchToAll = appliesToAll
         isConflictBatchReplaceConfirmed = false
         if appliesToAll {
             selectedConflictBatchIDs = []
@@ -253,7 +260,7 @@ extension ImportBatchCopyImportModel {
         defer { isConflictBatchApplying = false }
         conflictBatchPreviewState = .loading(previous: previousPreview)
         conflictBatchPreviewState = await ImportConflictBatchAction.preview(
-            repoPath: self.request?.repoPath ?? "",
+            repoPath: request?.repoPath ?? "",
             request: previewRequest,
             batcher: conflictBatcher,
             errorMapper: errorMapper,
@@ -275,7 +282,7 @@ extension ImportBatchCopyImportModel {
             isApplying: false
         ) else { return nil }
         let result = await ImportConflictBatchAction.apply(
-            repoPath: self.request?.repoPath ?? "",
+            repoPath: request?.repoPath ?? "",
             request: applyRequest,
             preview: preview,
             batcher: conflictBatcher,
@@ -296,7 +303,7 @@ extension ImportBatchCopyImportModel {
             conflictIDs: conflictIDs,
             duplicateStrategy: duplicateStrategy ?? conflictBatchDuplicateStrategy,
             sameNameStrategy: sameNameStrategy ?? conflictBatchSameNameStrategy,
-            applyToAllSimilarConflicts: appliesConflictBatchToAllSimilarConflicts
+            applyToAllSimilarConflicts: appliesConflictBatchToAll
         )
     }
 
@@ -418,41 +425,6 @@ extension ImportBatchCopyImportModel {
         return true
     }
 
-    func downloadICloudPlaceholderAndRetry(rowID: ImportBatchCopyImportRow.ID) async -> Bool {
-        guard let row = rows.first(where: { $0.id == rowID }) else { return false }
-        guard case let .iCloudPlaceholder(path, _) = row.status else { return false }
-        isICloudDownloading = true
-        defer { isICloudDownloading = false }
-
-        do {
-            try await placeholderDownloader.downloadPlaceholder(at: row.sourceURL)
-            setStatus(.loading, for: rowID)
-            return true
-        } catch {
-            setStatus(.iCloudPlaceholder(
-                path: path,
-                message: "iCloud 下载失败：\(error.localizedDescription)"
-            ), for: rowID)
-            return false
-        }
-    }
-
-    func downloadAllICloudPlaceholdersAndRetry() async -> Bool {
-        var didDownload = false
-        for row in rows {
-            if case .iCloudPlaceholder = row.status {
-                didDownload = await downloadICloudPlaceholderAndRetry(rowID: row.id) || didDownload
-            }
-        }
-        return didDownload
-    }
-
-    func markICloudPlaceholderPending(rowID: ImportBatchCopyImportRow.ID) {
-        guard let row = rows.first(where: { $0.id == rowID }) else { return }
-        guard case let .iCloudPlaceholder(path, _) = row.status else { return }
-        setStatus(.skippedICloud(path: path), for: rowID)
-    }
-
     private func canSelectDuplicateStrategy(_ strategy: ImportBatchDuplicateResolutionStrategy) -> Bool {
         strategy != .replace || replaceOptionVisibility == .enabled
     }
@@ -465,13 +437,13 @@ extension ImportBatchCopyImportModel {
                         fallback: ImportBatchCopyImportRowStatus) -> ImportBatchCopyImportRowStatus {
         switch result.status {
         case .skipped:
-            return .skippedDuplicate(existingPath: result.finalPath ?? existingPath(from: fallback))
+            .skippedDuplicate(existingPath: result.finalPath ?? existingPath(from: fallback))
         case .keptBoth, .replaced:
-            return .imported
+            .imported
         case .queuedForPerItem, .pending:
-            return fallback
+            fallback
         case .failed:
-            return .error(result.error ?? "Import conflict strategy failed.")
+            .error(result.error ?? "Import conflict strategy failed.")
         }
     }
 
@@ -479,13 +451,14 @@ extension ImportBatchCopyImportModel {
         switch status {
         case let .duplicate(existingPath, _, _), let .nameConflict(existingPath, _),
              let .skippedDuplicate(existingPath):
-            return existingPath
+            existingPath
         case .loading, .ready, .iCloudPlaceholder, .blocked, .importing, .skippedICloud, .imported, .error:
-            return "existing file"
+            "existing file"
         }
     }
 
-    private func currentReplaceConfirmationContext(for rowID: ImportBatchCopyImportRow.ID) -> SingleFileReplaceConfirmationContext? {
+    func currentReplaceConfirmationContext(for rowID: ImportBatchCopyImportRow
+        .ID) -> SingleFileReplaceConfirmationContext? {
         guard let row = rows.first(where: { $0.id == rowID }) else { return nil }
         guard request?.allowReplaceDuringImport == true, request?.isTrashAvailable == true else { return nil }
         guard let existingPath = row.existingConflictPath else { return nil }

@@ -362,7 +362,9 @@ extension MainRepositoryContentView {
         rows.first { $0.node.slug == "inbox" }?.id ?? rows.first?.id ?? "__root__"
     }
 
-    private var statusText: String { state == .empty ? "Idle" : "Synced" }
+    private var statusText: String {
+        state == .empty ? "Idle" : "Synced"
+    }
 
     private func applyPendingTagSuggestionFocus() async {
         guard state == .list, let focus = pendingTagSuggestionFocus else { return }
@@ -460,5 +462,4 @@ extension MainRepositoryContentView {
             .accessibilityLabel(fileListModel.loadingAccessibilityText ?? "Loading files")
         }
     }
-
 }

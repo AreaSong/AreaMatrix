@@ -178,7 +178,7 @@ actor S220RecordingConflictReviewer: CoreICloudConflictReviewing {
             conflictID: request.conflictID,
             strategy: request.strategy
         ))
-        return ICloudConflictResolutionResult(report: try resolveResult.get())
+        return try ICloudConflictResolutionResult(report: resolveResult.get())
     }
 
     func recordedPreviewRequests() -> [PreviewRequest] {
@@ -358,6 +358,7 @@ extension CoreErrorMappingSnapshot {
 }
 
 extension ICloudConflictPreviewSnapshot {
+    // swiftlint:disable:next function_body_length
     static func s220Preview(
         conflictID: String,
         metadataComplete: Bool = true,
