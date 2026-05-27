@@ -7,7 +7,7 @@ use std::{
 
 use serde::{Deserialize, Serialize};
 
-use crate::{CoreError, CoreResult};
+use crate::{db, CoreError, CoreResult};
 
 const AREA_MATRIX_DIR: &str = ".areamatrix";
 
@@ -95,7 +95,15 @@ pub struct AiConfigSnapshot {
 
 pub(crate) fn load_ai_config(repo_path: String) -> CoreResult<AiConfigSnapshot> {
     validate_repo_path(&repo_path)?;
-    Ok(snapshot(default_ai_config(repo_path), None))
+    let repo = PathBuf::from(&repo_path);
+    let Some((serialized, updated_at)) =
+        db::load_ai_config_record(&repo).map_err(map_storage_error)?
+    else {
+        return Ok(snapshot(default_ai_config(repo_path), None));
+    };
+    let config = deserialize_config(&serialized)?;
+    validate_payload(&repo_path, &config)?;
+    Ok(snapshot(config, Some(updated_at)))
 }
 
 pub(crate) fn update_ai_config(
@@ -104,11 +112,12 @@ pub(crate) fn update_ai_config(
 ) -> CoreResult<AiConfigSnapshot> {
     validate_repo_path(&repo_path)?;
     validate_payload(&repo_path, &new_config)?;
-    ensure_metadata_path_readable(&repo_path)?;
 
-    Err(CoreError::config(
-        "AI config persistence requires the C3-01 implementation task",
-    ))
+    let serialized = serialize_config(&new_config)?;
+    let repo = PathBuf::from(&repo_path);
+    let updated_at = db::update_ai_config_record(&repo, &serialized, new_config.ai_enabled)
+        .map_err(map_storage_error)?;
+    Ok(snapshot(new_config, Some(updated_at)))
 }
 
 fn default_ai_config(repo_path: String) -> AiConfig {
@@ -155,8 +164,10 @@ fn capabilities_from_config(config: &AiConfig) -> Vec<AiCapabilityState> {
 fn capability_state(config: &AiConfig, toggle: &AiFeatureConfig) -> AiCapabilityState {
     let enabled = config.ai_enabled && toggle.enabled;
     let local_allowed = enabled && config.local_ai_enabled;
-    let remote_allowed =
-        enabled && config.remote_ai_allowed && toggle.allow_remote && config.privacy_gate_enabled;
+    let remote_allowed = enabled
+        && remote_route_enabled(config)
+        && toggle.allow_remote
+        && config.privacy_gate_enabled;
     AiCapabilityState {
         feature: toggle.feature.clone(),
         enabled,
@@ -171,11 +182,18 @@ fn disabled_reason(config: &AiConfig, toggle: &AiFeatureConfig) -> Option<String
         Some("AI is off".to_owned())
     } else if !toggle.enabled {
         Some("Feature is off".to_owned())
-    } else if !config.local_ai_enabled && !config.remote_ai_allowed {
-        Some("No AI route is enabled".to_owned())
-    } else {
+    } else if config.local_ai_enabled
+        || (remote_route_enabled(config) && toggle.allow_remote && config.privacy_gate_enabled)
+    {
         None
+    } else {
+        Some("No AI route is enabled".to_owned())
     }
+}
+
+fn remote_route_enabled(config: &AiConfig) -> bool {
+    !matches!(config.provider_preference, AiProviderPreference::LocalOnly)
+        && config.remote_ai_allowed
 }
 
 fn validate_repo_path(repo_path: &str) -> CoreResult<()> {
@@ -198,7 +216,7 @@ fn validate_payload(repo_path: &str, config: &AiConfig) -> CoreResult<()> {
     if config
         .privacy_policy_ref
         .as_deref()
-        .is_some_and(str::is_empty)
+        .is_some_and(|reference| reference.trim().is_empty() || reference.contains('\0'))
     {
         return Err(CoreError::config("AI privacy policy reference is invalid"));
     }
@@ -220,22 +238,26 @@ fn validate_feature_toggles(toggles: &[AiFeatureConfig]) -> CoreResult<()> {
     Ok(())
 }
 
-fn ensure_metadata_path_readable(repo_path: &str) -> CoreResult<()> {
-    let metadata_path = PathBuf::from(repo_path).join(AREA_MATRIX_DIR);
-    match metadata_path.try_exists() {
-        Ok(true) => Ok(()),
-        Ok(false) => Err(CoreError::config(
-            "AI config requires initialized repository metadata",
-        )),
-        Err(error) if error.kind() == std::io::ErrorKind::PermissionDenied => {
-            Err(CoreError::permission_denied("permission denied"))
-        }
-        Err(_) => Err(CoreError::io("io error")),
-    }
-}
-
 fn is_area_matrix_component(component: Component<'_>) -> bool {
     matches!(component, Component::Normal(value) if value == AREA_MATRIX_DIR)
+}
+
+fn serialize_config(config: &AiConfig) -> CoreResult<String> {
+    serde_json::to_string(config).map_err(|_| CoreError::config("AI config metadata is invalid"))
+}
+
+fn deserialize_config(serialized: &str) -> CoreResult<AiConfig> {
+    serde_json::from_str(serialized).map_err(|_| CoreError::config("AI config metadata is invalid"))
+}
+
+fn map_storage_error(error: CoreError) -> CoreError {
+    match error {
+        CoreError::Db { .. } => CoreError::config("AI config metadata persistence failed"),
+        CoreError::RepoNotInitialized { .. } => {
+            CoreError::config("AI config requires initialized repository metadata")
+        }
+        other => other,
+    }
 }
 
 fn all_features() -> Vec<AiFeatureKind> {

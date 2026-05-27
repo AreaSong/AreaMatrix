@@ -274,7 +274,11 @@ fn ai_settings_config_contract_documents_consumer_state_and_scope_boundaries() {
     ] {
         assert_contains(API_RS, fragment);
     }
-    for fragment in ["AI config persistence requires the C3-01 implementation task"] {
+    for fragment in [
+        "load_ai_config_record",
+        "update_ai_config_record",
+        "AI config requires initialized repository metadata",
+    ] {
         assert_contains(AI_SETTINGS_RS, fragment);
     }
 }

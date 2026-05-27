@@ -1,0 +1,57 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-2/task-02`
+- 对应文件路径：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-2-stage3-ai/task-02-c3-01-implementation.md`
+- 读取范围：task、共享规则、切片规则、工程质量规则、编码规范、repo-local validation-driver、依赖图、phase manifest、Exact Docs 5/5、Existing Code 2/2。
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：0
+- 通过项数：10
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+| 项目 | 结果 | 证据 | 涉及文件 |
+|---|---|---|---|
+| 只实现 C3-01 | 通过 | 变更集中在 AI settings config：`load_ai_config` / `update_ai_config`、AI config 类型、repo_config 存储和对应测试；未发现 C3-02/C3-03 等 provider/model/call-log 实现。 | `/Users/as/Ai-Project/project/AreaMatrix/core/src/ai_settings.rs:96`, `/Users/as/Ai-Project/project/AreaMatrix/core/src/db/ai_settings.rs:12` |
+| 输入、输出、DB/文件系统变化和错误映射 | 通过 | 输入/输出与 API/UDL 对齐；持久化写入 `repo_config` 的 `ai_config` 和 `ai_enabled`；事务失败回滚；DB 错误映射为 C3-01 允许的 Config/PermissionDenied/Io 口径。 | `/Users/as/Ai-Project/project/AreaMatrix/core/src/ai_settings.rs:109`, `/Users/as/Ai-Project/project/AreaMatrix/core/src/db/ai_settings.rs:28`, `/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:1685` |
+| Rust Core 不依赖平台 UI API | 通过 | 实现仅使用 Rust std、serde、rusqlite 和现有 Core DB helper；无 SwiftUI/AppKit/FSEvents/UI 依赖。 | `/Users/as/Ai-Project/project/AreaMatrix/core/src/ai_settings.rs:3`, `/Users/as/Ai-Project/project/AreaMatrix/core/AGENTS.md:7` |
+| 最小测试支撑，不做页面接入 | 通过 | 新增/更新 Core tests 覆盖合同、默认关闭、持久化、非法 payload、事务回滚、README/AREAMATRIX/secret/call-log/generated 边界；`apps/**` 无 git diff。 | `/Users/as/Ai-Project/project/AreaMatrix/core/tests/ai_settings_config_implementation.rs:85`, `/Users/as/Ai-Project/project/AreaMatrix/core/tests/ai_settings_config_contract_api.rs:72` |
+| C3-01 核心行为可测试或桥接调用验证 | 通过 | UDL 已暴露 `AiConfigSnapshot load_ai_config` 与 `update_ai_config`，targeted tests 10/10 通过。 | `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:22`, `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:301` |
+| 未触碰用户文件安全边界之外行为 | 通过 | 实现只写 metadata DB；测试证明不改 `README.md`、`AREAMATRIX.md`，不创建 remote/secrets/ai_call_log/generated AI config 文件。 | `/Users/as/Ai-Project/project/AreaMatrix/core/tests/ai_settings_config_implementation.rs:176` |
+| Expected New Paths | 通过 | `core/src/**`、`core/area_matrix.udl`、`core/tests/**` 均已存在且 C3-01 合同/实现/测试落地。 | `/Users/as/Ai-Project/project/AreaMatrix/core/src/ai_settings.rs:1`, `/Users/as/Ai-Project/project/AreaMatrix/core/tests/ai_settings_config_implementation.rs:1` |
+| Forbidden Touches | 通过 | `git diff --name-only -- apps` 无输出；未触碰 `apps/**`。 | `/Users/as/Ai-Project/project/AreaMatrix/apps` |
+| Validation | 通过 | `./dev check task 4-2/task-02` exit 0；doctor OK；diff check OK；contract test 5 passed；implementation test 5 passed。 | `/Users/as/Ai-Project/project/AreaMatrix` |
+| 工作区脏改动归属 | 通过 | 脏改动为本 task Core 文件、测试和 runner in-progress 记录；未发现无关危险改动。runner 收口证据不作为 verify 前阻断。 | `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/progress.json` |
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。API 层、业务校验/派生能力、DB 持久化分层清楚；新增文件均低于 500 行。
+- 注释 / rustdoc / 文档同步：通过。新增 public 类型/API 有 rustdoc；Core API 与 UDL 已包含 C3-01 合同。
+- 错误处理与边界处理：通过。生产代码未发现 `unwrap()` / `expect()` / `panic!()`；非法路径、repo mismatch、缺失/重复 feature、无效 privacy ref、DB 写失败均显式处理。
+- 测试与验证覆盖：通过。覆盖正常路径、默认关闭、未初始化更新失败、非法 payload 不写入、事务回滚、用户文件和 secret/call-log 边界。
+- 占位、硬编码、mock-only、一次性实现检查：通过。实现连接真实 `repo_config` SQLite 路径，不是占位或 mock-only。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-2/task-02`
+- 通过：prompt doctor、git diff check、`cargo test --test ai_settings_config_contract_api -- --nocapture`、`cargo test --test ai_settings_config_implementation -- --nocapture`
+- 失败：无
+- 缺失：未运行 `./dev check all`、`./dev check core`、workspace-wide clippy/test；原因是本 atomic Core task 的 manifest 验证上限为 `./dev check task 4-2/task-02`，validation-driver 对普通 Phase 4 atomic Core task 要求 targeted tests，不默认扩大到全量门禁。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS
