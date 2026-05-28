@@ -1,0 +1,44 @@
+一、执行结论
+
+- 已完成。
+
+二、执行范围
+
+- 单任务：`4-2/task-29`
+- 修改文件：[/Users/as/Ai-Project/project/AreaMatrix/core/tests/ai_summary_validation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/ai_summary_validation.rs)
+
+三、完成情况
+
+- 核对清单：
+  - 成功/失败路径测试：已补齐，覆盖 draft 生成、save、clear、privacy skip、call-log gate DB 失败。
+  - Core API / UDL / Rust 一致性：已用 validation 测试锁定 `core-api.md`、`area_matrix.udl`、`api.rs`、`ai_summary.rs`、DB 实现关键片段。
+  - 未新增业务功能：是，仅新增测试文件。
+  - 无法运行验证：无。
+- 完成标准：
+  - C3-06 已有足够测试证明可进入 UI 接入：满足。
+  - Validation 命令通过：满足。
+- Forbidden Touches：未触碰 `apps/**`。
+
+四、工程质量
+
+- 测试文件 499 行，保持在规范建议的 500 行以内。
+- 测试走真实 Core 路径，不是 mock-only 或硬编码通过态。
+- 覆盖隐私、用户文件安全、Note 不被删除、原文件不被改、AI call log 不泄密、DB gate 失败不保存摘要。
+- 未新增依赖，未改 public API，无需新增 rustdoc。
+
+五、验证情况
+
+已运行并通过：
+
+```bash
+cargo test --test ai_summary_validation -- --nocapture
+./dev check task 4-2/task-29
+```
+
+`./dev check task 4-2/task-29` 最终通过内容包括：prompt doctor、git diff check、`ai_summary_contract_api`、`ai_summary_failure_recovery`、`ai_summary_implementation`、`ai_summary_validation`。
+
+六、风险与后续
+
+- 剩余风险：远端 CI、人工 review、Git checkpoint 未在本次执行内完成；本地 task 级验证已通过。
+- 工作区中仍有进入本任务前已存在的脏文件：`.codex/task-loop-runs/20260527_221647/summary.json`、`tasks/prompts/_shared/progress.json`，本次未修改它们。
+- 建议下一个任务：进入 `4-2/task-30`，即 C3-06 integration verify。
