@@ -2572,6 +2572,81 @@
     "4-2/task-37": {
       "attempts": 3,
       "copy_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260527_221647/phase-4/4-2-task-37-copy-attempt-3.log",
+      "git": {
+        "attempts": 3,
+        "branch": "codex/areamatrix-task-loop-20260501_132850",
+        "changed_files": [
+          ".codex/task-loop-logs/20260527_221647/phase-4/4-2-task-37-copy-attempt-3.log",
+          ".codex/task-loop-logs/20260527_221647/phase-4/4-2-task-37-verify-attempt-3.log",
+          ".codex/task-loop-runs/20260527_221647/summary.json",
+          ".codex/task-loop-runs/index.json",
+          "core/src/semantic_search.rs",
+          "core/src/semantic_search/",
+          "core/tests/semantic_search_implementation.rs",
+          "core/tests/support/semantic_search_common.rs",
+          "tasks/prompts/_shared/progress.json"
+        ],
+        "commit": "c1a221087086418a56c08120e4f6776164522d13",
+        "copy_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260527_221647/phase-4/4-2-task-37-copy-attempt-3.log",
+        "diff_name_status": [
+          "M\t.codex/task-loop-runs/20260527_221647/summary.json",
+          "M\t.codex/task-loop-runs/index.json",
+          "M\tcore/src/semantic_search.rs",
+          "M\ttasks/prompts/_shared/progress.json"
+        ],
+        "final_log_files": [
+          ".codex/task-loop-logs/20260527_221647/phase-4/4-2-task-37-copy-attempt-3.log",
+          ".codex/task-loop-logs/20260527_221647/phase-4/4-2-task-37-verify-attempt-3.log"
+        ],
+        "label": "4-2/task-37",
+        "mode": "commit",
+        "phase": "phase-4",
+        "pre_checkpoint_changed_files": [
+          ".codex/task-loop-runs/20260527_221647/summary.json",
+          ".codex/task-loop-runs/index.json",
+          "core/src/semantic_search.rs",
+          "core/src/semantic_search/",
+          "core/tests/semantic_search_implementation.rs",
+          "core/tests/support/semantic_search_common.rs",
+          "tasks/prompts/_shared/progress.json"
+        ],
+        "push_status": "not_requested",
+        "remote": "",
+        "run_id": "20260527_221647",
+        "skipped_log_files": [],
+        "staged_name_status": [
+          "A\t.codex/task-loop-logs/20260527_221647/phase-4/4-2-task-37-copy-attempt-3.log",
+          "A\t.codex/task-loop-logs/20260527_221647/phase-4/4-2-task-37-verify-attempt-3.log",
+          "M\t.codex/task-loop-runs/20260527_221647/summary.json",
+          "M\t.codex/task-loop-runs/index.json",
+          "M\tcore/src/semantic_search.rs",
+          "A\tcore/src/semantic_search/call_log.rs",
+          "A\tcore/src/semantic_search/fallback.rs",
+          "A\tcore/src/semantic_search/implementation.rs",
+          "A\tcore/src/semantic_search/matches.rs",
+          "A\tcore/src/semantic_search/privacy.rs",
+          "A\tcore/src/semantic_search/store.rs",
+          "A\tcore/src/semantic_search/store/db.rs",
+          "A\tcore/src/semantic_search/store/types.rs",
+          "A\tcore/tests/semantic_search_implementation.rs",
+          "A\tcore/tests/support/semantic_search_common.rs",
+          "M\ttasks/prompts/_shared/progress.json"
+        ],
+        "status": "committed",
+        "status_short": [
+          " M .codex/task-loop-runs/20260527_221647/summary.json",
+          " M .codex/task-loop-runs/index.json",
+          " M core/src/semantic_search.rs",
+          " M tasks/prompts/_shared/progress.json",
+          "?? core/src/semantic_search/",
+          "?? core/tests/semantic_search_implementation.rs",
+          "?? core/tests/support/semantic_search_common.rs"
+        ],
+        "summary_file": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-runs/20260527_221647/summary.json",
+        "task_name": "4-2-task-37",
+        "updated_at": "2026-05-28T11:49:36.024868+00:00",
+        "verify_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260527_221647/phase-4/4-2-task-37-verify-attempt-3.log"
+      },
       "note": "自动执行验收通过",
       "phase": "phase-4",
       "risk": "High",
@@ -2586,7 +2661,7 @@
     "retries": 13,
     "task_count": 637
   },
-  "updated_at": "2026-05-28T11:49:35.870091+00:00",
+  "updated_at": "2026-05-28T11:49:36.031249+00:00",
   "verify_root": "/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/verify-ready",
   "version": 1
 }
