@@ -179,9 +179,7 @@ fn looks_sensitive(value: &str) -> bool {
 
 fn map_file_read_error(error: std::io::Error) -> CoreError {
     match error.kind() {
-        std::io::ErrorKind::NotFound => {
-            CoreError::permission_denied("AI summary context file is missing")
-        }
+        std::io::ErrorKind::NotFound => CoreError::file_not_found("AI summary context file"),
         std::io::ErrorKind::PermissionDenied => {
             CoreError::permission_denied("AI summary context file is not readable")
         }

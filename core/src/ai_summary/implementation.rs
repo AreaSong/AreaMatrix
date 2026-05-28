@@ -142,6 +142,7 @@ pub(super) fn clear_ai_summary(
     validate_repo_path(&repo_path)?;
     validate_clear_request(&request)?;
     let repo = PathBuf::from(&repo_path);
+    db::get_active_file_by_id(&repo, request.file_id).map_err(map_file_lookup_error)?;
     let stats = db::clear_ai_summary_metadata(&repo, request.file_id)?;
     Ok(AiSummaryClearReport {
         file_id: request.file_id,

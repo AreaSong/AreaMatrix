@@ -67,8 +67,8 @@ pub(crate) fn upsert_ai_summary_metadata(
     let tx = connection
         .transaction()
         .map_err(|error| CoreError::db(error.to_string()))?;
-    ensure_ai_summary_schema(&tx)?;
     ensure_active_file(&tx, record.file_id)?;
+    ensure_ai_summary_schema(&tx)?;
     let saved_at = current_timestamp(&tx)?;
 
     tx.execute(
@@ -136,8 +136,8 @@ pub(crate) fn clear_ai_summary_metadata(
     let tx = connection
         .transaction()
         .map_err(|error| CoreError::db(error.to_string()))?;
-    ensure_ai_summary_schema(&tx)?;
     ensure_active_file(&tx, file_id)?;
+    ensure_ai_summary_schema(&tx)?;
     let cleared_at = current_timestamp(&tx)?;
     let deleted = tx
         .execute(
