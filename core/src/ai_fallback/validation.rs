@@ -2,7 +2,7 @@ use std::path::{Component, PathBuf};
 
 use crate::{CoreError, CoreResult};
 
-use super::AiFallbackStatusRequest;
+use super::{AiFallbackOperation, AiFallbackProviderErrorKind, AiFallbackStatusRequest};
 
 const AREA_MATRIX_DIR: &str = ".areamatrix";
 const MAX_IDENTIFIER_LEN: usize = 128;
@@ -31,11 +31,40 @@ pub(super) fn validate_request(request: &AiFallbackStatusRequest) -> CoreResult<
     if request.retry_after.is_some_and(|value| value < 0) {
         return Err(CoreError::config("AI fallback retry_after is invalid"));
     }
+    validate_reason_shape(request)?;
     if let Some(value) = request.provider_error_code.as_deref() {
         validate_provider_error_code(value)?;
     }
     if let Some(value) = request.privacy_rule_id.as_deref() {
         validate_identifier(value, "AI fallback privacy rule id is invalid")?;
+    }
+    Ok(())
+}
+
+fn validate_reason_shape(request: &AiFallbackStatusRequest) -> CoreResult<()> {
+    if request.provider_error_code.is_some() && request.provider_error.is_none() {
+        return Err(CoreError::config(
+            "AI fallback provider error code requires provider error kind",
+        ));
+    }
+    if request.category_skipped_reason.is_some()
+        && request.operation != AiFallbackOperation::ClassificationSuggestion
+    {
+        return Err(CoreError::config(
+            "AI fallback category reason does not match operation",
+        ));
+    }
+    if request.semantic_fallback_reason.is_some()
+        && request.operation == AiFallbackOperation::ClassificationSuggestion
+    {
+        return Err(CoreError::config(
+            "AI fallback semantic reason does not match operation",
+        ));
+    }
+    if request.retry_after.is_some() && !has_rate_limit_signal(request) {
+        return Err(CoreError::config(
+            "AI fallback retry_after requires rate limit",
+        ));
     }
     Ok(())
 }
@@ -47,6 +76,16 @@ fn has_reason_signal(request: &AiFallbackStatusRequest) -> bool {
         || request.category_skipped_reason.is_some()
         || request.semantic_fallback_reason.is_some()
         || request.call_log_status.is_some()
+}
+
+fn has_rate_limit_signal(request: &AiFallbackStatusRequest) -> bool {
+    matches!(
+        request.provider_error,
+        Some(AiFallbackProviderErrorKind::RateLimited)
+    ) || matches!(
+        request.semantic_fallback_reason,
+        Some(crate::semantic_search::SemanticSearchFallbackReason::RateLimited)
+    )
 }
 
 fn validate_provider_error_code(value: &str) -> CoreResult<()> {

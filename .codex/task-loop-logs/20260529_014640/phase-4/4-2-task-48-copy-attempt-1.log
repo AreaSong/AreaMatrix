@@ -1,0 +1,41 @@
+一、执行结论
+
+已完成 `4-2/task-48: C3-10 failure-edge`。
+
+二、执行范围
+
+单任务。修改/新增文件：
+
+- [core/src/ai_fallback/validation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/ai_fallback/validation.rs:24)
+- [core/tests/ai_fallback_failure_recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/ai_fallback_failure_recovery.rs:1)
+
+未触碰 `apps/**`。工作树里另有既有 task-loop 状态文件变更：`.codex/task-loop-runs/20260529_014640/summary.json`、`tasks/prompts/_shared/progress.json`，不是本次产品代码改动。
+
+三、完成情况
+
+- 空态/非法输入/错误码映射：补充 reason shape 校验，拒绝无 reason、跨 operation reason、无 provider kind 的 provider error code、非 rate-limit 的 `retry_after`、密钥/路径样式错误码。
+- 权限、IO/DB 错误：新增测试覆盖 metadata 权限失败、损坏 DB 映射为明确错误。
+- 半成品证明：新增事务 abort trigger 测试，证明 call-log 写入失败后不留下半条日志。
+- 隐私/AI/远程调用：测试证明 sent fields 为空、key-like/path-like provider code 不持久化、不自动 provider failover。
+- Forbidden Touches：未触碰。
+
+四、工程质量
+
+代码改动集中在 C3-10 输入校验，未引入新依赖、mock-only 路径或硬编码通过态。新增测试使用临时 repo，覆盖失败边界、用户文件不变和 DB 回滚证据；生产代码无 `unwrap/expect/panic`。
+
+五、验证情况
+
+已通过：
+
+```bash
+cargo test --test ai_fallback_failure_recovery -- --nocapture
+./dev check task 4-2/task-48
+```
+
+`./dev check task 4-2/task-48` 实际通过了 prompt doctor、diff check、`cargo fmt --all -- --check`、`cargo clippy --all-targets --all-features -- -D warnings`，以及 `ai_fallback_contract_api`、`ai_fallback_failure_recovery`、`ai_fallback_implementation` 三个 targeted test。
+
+六、风险与后续
+
+剩余风险：真实远程 provider runtime、UI 展示和 S3-10 页面消费仍由后续 page-feature / integration task 覆盖。本任务只处理 C3-10 Core failure-edge。
+
+建议下一个任务：继续 `4-2/task-49: C3-10 validation`。
