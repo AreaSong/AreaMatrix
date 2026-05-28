@@ -1,0 +1,57 @@
+一、执行结论
+
+已完成 `4-2/task-41: C3-09 contract-api`。
+
+二、执行范围
+
+单任务：C3-09 AI privacy rules 的 Core API / UDL / 合同测试。修改文件：
+
+- [core/src/ai_privacy_rules.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/ai_privacy_rules.rs)
+- [core/src/ai_privacy_rules/validation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/ai_privacy_rules/validation.rs)
+- [core/src/api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs)
+- [core/src/lib.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/lib.rs)
+- [core/area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl)
+- [core/tests/ai_privacy_rules_contract_api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/ai_privacy_rules_contract_api.rs)
+- [docs/api/core-api.md](/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md)
+
+`docs/api/core-api.md` 是本 task 的 Exact Docs，原本缺 C3-09 API 声明；按本次授权的“直接相关 Core API 源事实漂移可同步修复”处理。未触碰 `apps/**`。
+
+三、完成情况
+
+核对清单全部完成：
+
+- C3-09 能力规格、Stage 3 control map、Core API、错误码已对齐。
+- API 名称、输入、输出、错误码、隐私边界已落到 Rust 类型、API wrapper、UDL、Core API 文档。
+- 只补合同、类型、桥接声明和合同测试；未实现相邻 AI 生成、provider、日志、fallback 页面能力。
+- 页面消费状态已记录：S3-09 可拿到 rules / remote field filters / `privacy_gate_enabled` / provider scope；S3-10 和 AI 页面可从 evaluation report 拿到 decision、skipped/provider gate reason、matched rule/field、sent fields none。
+
+完成标准满足：
+
+- C3-09 Core API 合同可供 `4-2/task-42` implementation 直接实现。
+- 未引入 control map 之外的页面能力。
+
+四、工程质量
+
+新增 public Rust API 均有 rustdoc 和 `# Errors`。校验逻辑拆到 `validation.rs`，三个新增 Rust 文件均在 500 行以内；无新增依赖，无生产路径 `unwrap/expect/panic`，无 mock-only 成功闭环。`update_ai_privacy_rules` 和 `evaluate_ai_privacy` 在真实持久化/评估未实现前返回 `Db`，避免伪造成功。
+
+五、验证情况
+
+已运行并通过：
+
+- `cargo fmt --all`
+- `./dev check task 4-2/task-41`
+
+`./dev check task` 内部结果：
+
+- prompt doctor: OK
+- `git diff --check`: OK
+- `cargo test --test ai_privacy_rules_contract_api -- --nocapture`: 4 passed
+
+未运行 `cargo test --workspace`、`./dev check core`、`./dev check all`，因为本 task manifest 的验证上限是 `./dev check task 4-2/task-41`。
+
+六、风险与后续
+
+剩余风险：当前是合同/API task，C3-09 的持久化、真实规则匹配、DB schema、skipped AI call 记录仍未实现。回滚方式是还原上述文件和删除新增的 C3-09 Rust/test 文件；本次没有用户文件、DB migration、Keychain、provider 或 app 层副作用。
+
+建议下一个任务：`4-2/task-42`，即 `C3-09 implementation`。
+

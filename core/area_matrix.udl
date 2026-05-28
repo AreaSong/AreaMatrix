@@ -94,6 +94,19 @@ namespace area_matrix {
     );
 
     [Throws=CoreError]
+    AiPrivacyRulesSnapshot list_ai_privacy_rules(string repo_path);
+
+    [Throws=CoreError]
+    AiPrivacyRulesSnapshot update_ai_privacy_rules(
+        string repo_path, AiPrivacyRulesUpdateRequest request
+    );
+
+    [Throws=CoreError]
+    AiPrivacyEvaluationReport evaluate_ai_privacy(
+        string repo_path, AiPrivacyEvaluationRequest request
+    );
+
+    [Throws=CoreError]
     SemanticSearchResultPage semantic_search(
         string repo_path,
         string query,
@@ -660,6 +673,104 @@ dictionary AiTagSuggestionApplyReport {
     string? undo_token;
     i64? call_log_id;
     sequence<string> refresh_targets;
+};
+
+dictionary AiPrivacyRuleInput {
+    string? rule_id;
+    string name;
+    AiPrivacyRuleKind kind;
+    string pattern;
+    AiPrivacyRuleAppliesTo applies_to;
+    boolean enabled;
+    string? description;
+};
+
+dictionary AiPrivacyRuleRecord {
+    string rule_id;
+    string name;
+    AiPrivacyRuleKind kind;
+    string pattern;
+    AiPrivacyRuleAppliesTo applies_to;
+    boolean enabled;
+    string? description;
+    i64 match_count;
+    i64? last_matched_at;
+};
+
+dictionary AiPrivacyFieldRule {
+    AiPrivacyInputField field;
+    boolean allow_remote;
+};
+
+dictionary AiPrivacyFieldState {
+    AiPrivacyInputField field;
+    boolean allow_remote;
+    i64 last_matched_count;
+};
+
+dictionary AiPrivacyProviderScopeSnapshot {
+    boolean provider_configured;
+    boolean provider_verified;
+    boolean remote_provider_enabled;
+    sequence<AiFeatureKind> feature_scope;
+};
+
+dictionary AiPrivacyRulesSnapshot {
+    boolean privacy_gate_enabled;
+    sequence<AiPrivacyRuleRecord> rules;
+    sequence<AiPrivacyFieldState> remote_allowed_fields;
+    AiPrivacyProviderScopeSnapshot provider_scope;
+    i64? updated_at;
+    boolean remote_blocked_by_default;
+};
+
+dictionary AiPrivacyRulesUpdateRequest {
+    boolean privacy_gate_enabled;
+    sequence<AiPrivacyRuleInput> rules;
+    sequence<AiPrivacyFieldRule> remote_allowed_fields;
+    AiPrivacyProviderScopeSnapshot provider_scope;
+    boolean confirmed;
+};
+
+dictionary AiPrivacyEvaluationContext {
+    i64? file_id;
+    string? repo_relative_path;
+    string? file_name;
+    string? category;
+    string? extension;
+    sequence<string> tags;
+};
+
+dictionary AiPrivacyEvaluationRequest {
+    AiFeatureKind feature;
+    AiPrivacyEvaluationRoute route;
+    sequence<AiPrivacyInputField> requested_fields;
+    boolean privacy_gate_enabled;
+    AiPrivacyProviderScopeSnapshot provider_scope;
+    sequence<AiPrivacyRuleInput> rules;
+    sequence<AiPrivacyFieldRule> remote_allowed_fields;
+    AiPrivacyEvaluationContext context;
+};
+
+dictionary AiPrivacyRuleMatch {
+    string rule_id;
+    string name;
+    AiPrivacyRuleKind kind;
+    string pattern;
+    AiPrivacyRuleAppliesTo applies_to;
+    AiPrivacyInputField? matched_field;
+};
+
+dictionary AiPrivacyEvaluationReport {
+    AiPrivacyDecision decision;
+    AiPrivacySkippedReason? skipped_reason;
+    AiPrivacyProviderGateReason? provider_gate_reason;
+    sequence<AiPrivacyRuleMatch> matched_rules;
+    AiPrivacyInputField? matched_field_type;
+    sequence<AiPrivacyInputField> allowed_fields;
+    sequence<AiPrivacyInputField> blocked_fields;
+    sequence<AiPrivacyInputField> sent_fields;
+    string message;
 };
 
 dictionary SemanticSearchMatch {
@@ -1745,6 +1856,23 @@ enum AiTagSuggestionMergeAction {
     "CreateTag", "UseExistingTag", "MergeWithExistingTag"
 };
 enum AiTagSuggestionApplyStatus { "Applied", "AlreadyAdded", "Failed" };
+enum AiPrivacyRuleKind { "Folder", "Category", "Keyword", "Extension", "Tag" };
+enum AiPrivacyRuleAppliesTo { "RemoteAi", "LocalAndRemoteAi" };
+enum AiPrivacyEvaluationRoute { "Local", "Remote" };
+enum AiPrivacyInputField {
+    "FileName", "RepoRelativePath", "Extension", "ExtractedTextExcerpt",
+    "AiSummary", "NoteSummary", "TagCategoryContext"
+};
+enum AiPrivacyDecision { "Allowed", "Denied", "Skipped" };
+enum AiPrivacySkippedReason {
+    "PrivacyGateDisabled", "ScopeNotAllowed", "ProviderNotConfigured",
+    "ProviderNotVerified", "ProviderDisabled", "PrivacyRule", "FieldRule",
+    "NoEligibleInput"
+};
+enum AiPrivacyProviderGateReason {
+    "PrivacyGateDisabled", "ScopeNotAllowed", "ProviderNotConfigured",
+    "ProviderNotVerified", "ProviderDisabled"
+};
 enum SemanticSearchRoute { "Local", "Remote" };
 enum SemanticSearchInputField {
     "FileName", "RepoRelativePath", "Category", "NoteSummary",

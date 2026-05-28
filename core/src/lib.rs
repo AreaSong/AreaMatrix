@@ -7,6 +7,7 @@ uniffi::include_scaffolding!("area_matrix");
 
 mod ai_call_log;
 mod ai_classification_suggestion;
+mod ai_privacy_rules;
 mod ai_settings;
 mod ai_summary;
 mod ai_tags_suggestion;
@@ -54,6 +55,14 @@ pub use ai_classification_suggestion::{
     AiCategorySuggestion, AiCategorySuggestionContextField, AiCategorySuggestionContextPolicy,
     AiCategorySuggestionRequest, AiCategorySuggestionRoute, AiCategorySuggestionSkipReason,
     AiCategorySuggestionStatus,
+};
+pub use ai_privacy_rules::{
+    AiPrivacyDecision, AiPrivacyEvaluationContext, AiPrivacyEvaluationReport,
+    AiPrivacyEvaluationRequest, AiPrivacyEvaluationRoute, AiPrivacyFieldRule, AiPrivacyFieldState,
+    AiPrivacyInputField, AiPrivacyProviderGateReason, AiPrivacyProviderScopeSnapshot,
+    AiPrivacyRuleAppliesTo, AiPrivacyRuleInput, AiPrivacyRuleKind, AiPrivacyRuleMatch,
+    AiPrivacyRuleRecord, AiPrivacyRulesSnapshot, AiPrivacyRulesUpdateRequest,
+    AiPrivacySkippedReason,
 };
 pub use ai_settings::{
     AiCapabilityState, AiConfig, AiConfigSnapshot, AiFeatureConfig, AiFeatureKind,
