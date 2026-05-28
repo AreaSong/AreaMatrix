@@ -620,6 +620,92 @@
     "4-2/task-51": {
       "attempts": 1,
       "copy_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260529_014640/phase-4/4-2-task-51-copy-attempt-1.log",
+      "git": {
+        "attempts": 1,
+        "branch": "codex/areamatrix-task-loop-20260501_132850",
+        "changed_files": [
+          ".codex/task-loop-logs/20260529_014640/phase-4/4-2-task-51-copy-attempt-1.log",
+          ".codex/task-loop-logs/20260529_014640/phase-4/4-2-task-51-verify-attempt-1.log",
+          ".codex/task-loop-runs/20260529_014640/summary.json",
+          ".codex/task-loop-runs/index.json",
+          "apps/macos/AreaMatrix/Bridge/CoreFileDeleting.swift",
+          "apps/macos/AreaMatrix/Bridge/UniFFI/area_matrix.swift",
+          "apps/macos/AreaMatrix/Bridge/UniFFI/area_matrixFFI.h",
+          "apps/macos/AreaMatrix/Models/AdvancedSettingsDiagnostics.swift",
+          "apps/macos/AreaMatrix/Views/Settings/AdvancedSettingsSupportViews.swift",
+          "apps/macos/AreaMatrix/Views/Settings/GeneralSettingsView.swift",
+          "apps/macos/AreaMatrixTests/ClassifierRuleEditorCoreBridgeTests.swift",
+          "tasks/prompts/_shared/progress.json"
+        ],
+        "commit": "ea4f645ce95e16e8ee477a731eda4c77f02214ce",
+        "copy_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260529_014640/phase-4/4-2-task-51-copy-attempt-1.log",
+        "diff_name_status": [
+          "M\t.codex/task-loop-runs/20260529_014640/summary.json",
+          "M\t.codex/task-loop-runs/index.json",
+          "M\tapps/macos/AreaMatrix/Bridge/CoreFileDeleting.swift",
+          "M\tapps/macos/AreaMatrix/Bridge/UniFFI/area_matrix.swift",
+          "M\tapps/macos/AreaMatrix/Bridge/UniFFI/area_matrixFFI.h",
+          "M\tapps/macos/AreaMatrix/Models/AdvancedSettingsDiagnostics.swift",
+          "M\tapps/macos/AreaMatrix/Views/Settings/AdvancedSettingsSupportViews.swift",
+          "M\tapps/macos/AreaMatrix/Views/Settings/GeneralSettingsView.swift",
+          "M\tapps/macos/AreaMatrixTests/ClassifierRuleEditorCoreBridgeTests.swift",
+          "M\ttasks/prompts/_shared/progress.json"
+        ],
+        "final_log_files": [
+          ".codex/task-loop-logs/20260529_014640/phase-4/4-2-task-51-copy-attempt-1.log",
+          ".codex/task-loop-logs/20260529_014640/phase-4/4-2-task-51-verify-attempt-1.log"
+        ],
+        "label": "4-2/task-51",
+        "mode": "commit",
+        "phase": "phase-4",
+        "pre_checkpoint_changed_files": [
+          ".codex/task-loop-runs/20260529_014640/summary.json",
+          ".codex/task-loop-runs/index.json",
+          "apps/macos/AreaMatrix/Bridge/CoreFileDeleting.swift",
+          "apps/macos/AreaMatrix/Bridge/UniFFI/area_matrix.swift",
+          "apps/macos/AreaMatrix/Bridge/UniFFI/area_matrixFFI.h",
+          "apps/macos/AreaMatrix/Models/AdvancedSettingsDiagnostics.swift",
+          "apps/macos/AreaMatrix/Views/Settings/AdvancedSettingsSupportViews.swift",
+          "apps/macos/AreaMatrix/Views/Settings/GeneralSettingsView.swift",
+          "apps/macos/AreaMatrixTests/ClassifierRuleEditorCoreBridgeTests.swift",
+          "tasks/prompts/_shared/progress.json"
+        ],
+        "push_status": "not_requested",
+        "remote": "",
+        "run_id": "20260529_014640",
+        "skipped_log_files": [],
+        "staged_name_status": [
+          "A\t.codex/task-loop-logs/20260529_014640/phase-4/4-2-task-51-copy-attempt-1.log",
+          "A\t.codex/task-loop-logs/20260529_014640/phase-4/4-2-task-51-verify-attempt-1.log",
+          "M\t.codex/task-loop-runs/20260529_014640/summary.json",
+          "M\t.codex/task-loop-runs/index.json",
+          "M\tapps/macos/AreaMatrix/Bridge/CoreFileDeleting.swift",
+          "M\tapps/macos/AreaMatrix/Bridge/UniFFI/area_matrix.swift",
+          "M\tapps/macos/AreaMatrix/Bridge/UniFFI/area_matrixFFI.h",
+          "M\tapps/macos/AreaMatrix/Models/AdvancedSettingsDiagnostics.swift",
+          "M\tapps/macos/AreaMatrix/Views/Settings/AdvancedSettingsSupportViews.swift",
+          "M\tapps/macos/AreaMatrix/Views/Settings/GeneralSettingsView.swift",
+          "M\tapps/macos/AreaMatrixTests/ClassifierRuleEditorCoreBridgeTests.swift",
+          "M\ttasks/prompts/_shared/progress.json"
+        ],
+        "status": "committed",
+        "status_short": [
+          " M .codex/task-loop-runs/20260529_014640/summary.json",
+          " M .codex/task-loop-runs/index.json",
+          " M apps/macos/AreaMatrix/Bridge/CoreFileDeleting.swift",
+          " M apps/macos/AreaMatrix/Bridge/UniFFI/area_matrix.swift",
+          " M apps/macos/AreaMatrix/Bridge/UniFFI/area_matrixFFI.h",
+          " M apps/macos/AreaMatrix/Models/AdvancedSettingsDiagnostics.swift",
+          " M apps/macos/AreaMatrix/Views/Settings/AdvancedSettingsSupportViews.swift",
+          " M apps/macos/AreaMatrix/Views/Settings/GeneralSettingsView.swift",
+          " M apps/macos/AreaMatrixTests/ClassifierRuleEditorCoreBridgeTests.swift",
+          " M tasks/prompts/_shared/progress.json"
+        ],
+        "summary_file": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-runs/20260529_014640/summary.json",
+        "task_name": "4-2-task-51",
+        "updated_at": "2026-05-28T21:48:42.607018+00:00",
+        "verify_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260529_014640/phase-4/4-2-task-51-verify-attempt-1.log"
+      },
       "note": "自动执行验收通过",
       "phase": "phase-4",
       "risk": "High",
@@ -634,7 +720,7 @@
     "retries": 2,
     "task_count": 637
   },
-  "updated_at": "2026-05-28T21:48:42.402674+00:00",
+  "updated_at": "2026-05-28T21:48:42.613235+00:00",
   "verify_root": "/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/verify-ready",
   "version": 1
 }
