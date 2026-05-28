@@ -37,8 +37,8 @@ mod tags;
 mod undo;
 pub(crate) use ai_call_log::{
     clear_ai_call_log_rows, ensure_ai_call_log_record_insertable, insert_ai_call_log_record,
-    list_ai_call_log_rows, AiCallLogClearSpec, AiCallLogInsertRecord, AiCallLogListFilter,
-    AiCallLogPagination, AiCallLogRow,
+    insert_ai_call_log_record_in_tx, list_ai_call_log_rows, AiCallLogClearSpec,
+    AiCallLogInsertRecord, AiCallLogListFilter, AiCallLogPagination, AiCallLogRow,
 };
 pub(crate) use ai_settings::{load_ai_config_record, update_ai_config_record};
 pub(crate) use ai_summary::{
@@ -107,8 +107,9 @@ pub(crate) use staging_recovery::{
 };
 pub(crate) use sync::*;
 pub(crate) use tags::{
-    add_tag_row, apply_tag_suggestion_rows, batch_add_tags_rows, list_tag_set,
-    load_tag_suggestion_snapshot, remove_tag_row, TagSuggestionApplyRow, TagSuggestionSnapshot,
+    add_tag_row, apply_ai_tag_suggestion_rows, apply_tag_suggestion_rows, batch_add_tags_rows,
+    list_tag_set, load_tag_suggestion_snapshot, remove_tag_row, AiTagSuggestionApplyProvenance,
+    AiTagSuggestionApplyRow, TagSuggestionApplyRow, TagSuggestionSnapshot,
 };
 pub(crate) use undo::{
     execute_undo_action_row, list_undo_action_rows, update_delete_undo_trash_path,

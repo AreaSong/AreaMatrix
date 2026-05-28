@@ -6,6 +6,12 @@ use serde::{Deserialize, Serialize};
 
 use crate::{tags::TagSet, CoreError, CoreResult};
 
+mod call_log;
+mod context;
+mod executor;
+mod implementation;
+mod report;
+
 const AREA_MATRIX_DIR: &str = ".areamatrix";
 const MAX_TAG_LEN: usize = 64;
 const MAX_POLICY_REF_LEN: usize = 128;
@@ -250,25 +256,21 @@ pub(crate) fn suggest_tags_with_ai(
     repo_path: String,
     request: AiTagSuggestionRequest,
 ) -> CoreResult<AiTagSuggestionReport> {
-    validate_repo_path(&repo_path)?;
-    validate_suggestion_request(&request)?;
-    Err(CoreError::db(
-        "AI tag suggestion metadata is not available",
-    ))
+    implementation::suggest_tags_with_ai(repo_path, request)
 }
 
 pub(crate) fn apply_ai_tag_suggestions(
     repo_path: String,
     request: ApplyAiTagSuggestionsRequest,
 ) -> CoreResult<AiTagSuggestionApplyReport> {
-    validate_repo_path(&repo_path)?;
-    validate_apply_request(&request)?;
-    Err(CoreError::db("AI tag apply metadata is not available"))
+    implementation::apply_ai_tag_suggestions(repo_path, request)
 }
 
 fn validate_repo_path(repo_path: &str) -> CoreResult<()> {
     if repo_path.trim().is_empty() || repo_path.contains('\0') {
-        return Err(CoreError::config("AI tag suggestion repository path is invalid"));
+        return Err(CoreError::config(
+            "AI tag suggestion repository path is invalid",
+        ));
     }
     let repo = PathBuf::from(repo_path);
     if repo.components().any(is_area_matrix_component) {
@@ -283,7 +285,10 @@ fn validate_suggestion_request(request: &AiTagSuggestionRequest) -> CoreResult<(
     validate_file_id(request.file_id)?;
     validate_candidate_tags(&request.candidate_tags)?;
     if let Some(reference) = request.privacy_policy_ref.as_deref() {
-        validate_identifier(reference, "AI tag suggestion privacy policy reference is invalid")?;
+        validate_identifier(
+            reference,
+            "AI tag suggestion privacy policy reference is invalid",
+        )?;
     }
     Ok(())
 }
@@ -296,7 +301,10 @@ fn validate_apply_request(request: &ApplyAiTagSuggestionsRequest) -> CoreResult<
         ));
     }
     validate_apply_suggestions(&request.suggestions)?;
-    validate_optional_positive_id(request.call_log_id, "AI tag suggestion call log id is invalid")?;
+    validate_optional_positive_id(
+        request.call_log_id,
+        "AI tag suggestion call log id is invalid",
+    )?;
     if let Some(reference) = request.privacy_rule_id.as_deref() {
         validate_identifier(reference, "AI tag suggestion privacy rule id is invalid")?;
     }
@@ -342,15 +350,16 @@ fn validate_apply_suggestions(suggestions: &[ApplyAiTagSuggestionItem]) -> CoreR
         let slug = normalize_tag_slug(&suggestion.slug)?;
         validate_display_name(&suggestion.display_name)?;
         validate_confidence(suggestion.confidence)?;
-        if let Some(target) = suggestion.merge_target_slug.as_deref() {
-            normalize_tag_slug(target)?;
-        }
-        if normalized.iter().any(|existing| existing == &slug) {
+        let final_slug = match suggestion.merge_target_slug.as_deref() {
+            Some(target) => normalize_tag_slug(target)?,
+            None => slug,
+        };
+        if normalized.iter().any(|existing| existing == &final_slug) {
             return Err(CoreError::config(
                 "AI tag suggestion apply items must be unique",
             ));
         }
-        normalized.push(slug);
+        normalized.push(final_slug);
     }
     Ok(())
 }
@@ -384,9 +393,7 @@ fn validate_confidence(value: f32) -> CoreResult<()> {
     if (0.0..=1.0).contains(&value) {
         Ok(())
     } else {
-        Err(CoreError::config(
-            "AI tag suggestion confidence is invalid",
-        ))
+        Err(CoreError::config("AI tag suggestion confidence is invalid"))
     }
 }
 

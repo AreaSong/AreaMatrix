@@ -101,6 +101,14 @@ pub(crate) fn insert_ai_call_log_record(
     Ok(id)
 }
 
+pub(crate) fn insert_ai_call_log_record_in_tx(
+    tx: &rusqlite::Transaction<'_>,
+    record: AiCallLogInsertRecord,
+) -> CoreResult<i64> {
+    ensure_ai_call_log_schema(tx)?;
+    insert_ai_call_log_record_tx(tx, record)
+}
+
 pub(crate) fn ensure_ai_call_log_record_insertable(
     repo_path: &Path,
     record: AiCallLogInsertRecord,

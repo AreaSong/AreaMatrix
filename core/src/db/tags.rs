@@ -11,8 +11,12 @@ use crate::{
 
 use super::{clear_redo_stack_in_tx, open_repo_connection};
 
+mod ai_suggestions;
 mod read_models;
 mod suggestions;
+pub(crate) use ai_suggestions::{
+    apply_ai_tag_suggestion_rows, AiTagSuggestionApplyProvenance, AiTagSuggestionApplyRow,
+};
 use read_models::load_tag_set;
 pub(crate) use suggestions::{
     apply_tag_suggestion_rows, load_tag_suggestion_snapshot, TagSuggestionApplyRow,

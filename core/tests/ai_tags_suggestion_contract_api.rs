@@ -10,9 +10,8 @@ use pretty_assertions::assert_eq;
 
 const TASK: &str =
     include_str!("../../tasks/prompts/phase-4/4-2-stage3-ai/task-31-c3-07-contract-api.md");
-const CAPABILITY_SPEC: &str = include_str!(
-    "../../docs/core/capability-specs/stage-3-ai/C3-07-ai-tags-suggestion.md"
-);
+const CAPABILITY_SPEC: &str =
+    include_str!("../../docs/core/capability-specs/stage-3-ai/C3-07-ai-tags-suggestion.md");
 const CONTROL_MAP: &str = include_str!("../../docs/architecture/stage-3-control-map.md");
 const AI_TAGS_PAGE: &str =
     include_str!("../../docs/ux/page-specs/stage-3-ai/S3-07-ai-tags-suggestion.md");

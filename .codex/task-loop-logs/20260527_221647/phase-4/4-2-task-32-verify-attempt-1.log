@@ -1,0 +1,58 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-2/task-32`
+- 对应文件路径：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-2-stage3-ai/task-32-c3-07-implementation.md`
+- 核验范围：`core/src/**`、`core/area_matrix.udl`、`core/tests/**`
+- 禁止触碰范围：`apps/**`
+
+三、完成度摘要
+
+- 已覆盖项数：18
+- 未覆盖项数：0
+- 通过项数：18
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- Exact Docs：通过。5 个文档均已读取；C3-07 规格定义 API、输入、输出、DB/FS、错误码和验收标准，见 `/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-3-ai/C3-07-ai-tags-suggestion.md:1`。
+- Existing Code：通过。已核验 `core/src/**` 与 `core/area_matrix.udl`；UDL 暴露 `suggest_tags_with_ai` / `apply_ai_tag_suggestions` 和相关字典/枚举，见 `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:87`、`:578`、`:1663`。
+- Expected New Paths：通过。`core/src/**`、`core/tests/**` 已落地；`core/area_matrix.udl` 已包含 C3-07 合同。
+- Forbidden Touches：通过。`git status --short -- apps` 无输出，未发现 `apps/**` 触碰。
+- Checklist 1 只实现 C3-07：通过。实现集中在 `ai_tags_suggestion`、tags DB helper、API/UDL/test；未接入页面，未修改 `apps/**`。
+- Checklist 2 输入/输出/DB/FS/错误映射：通过。请求校验见 `core/src/ai_tags_suggestion.rs:269`；建议报告构建见 `core/src/ai_tags_suggestion/report.rs:39`；采纳后写 `tags`、`change_log`、`undo_actions`、`ai_call_log` 见 `core/src/db/tags/ai_suggestions.rs:103`。
+- Checklist 3 Rust Core 不依赖平台 UI API：通过。实现位于 Rust Core，未发现 Swift/AppKit/SwiftUI 依赖。
+- Checklist 4 最小测试、不做页面接入：通过。新增 targeted tests：`core/tests/ai_tags_suggestion_implementation.rs:200`、`:262`、`:294`；无 macOS 页面接入。
+- 完成标准 1 核心行为可测试/桥接调用验证：通过。API public wrapper 见 `core/src/api.rs:518`、`:546`，测试验证生成和采纳路径。
+- 完成标准 2 未触碰用户文件安全边界之外行为：通过。生成不写 tags，采纳只写 DB 元数据；测试对用户可见路径做前后比对，见 `core/tests/ai_tags_suggestion_implementation.rs:307`、`:381`。
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。类型、上下文、执行器、报告构建、DB apply 分层清楚；未发现单次脚本化实现。
+- 注释 / rustdoc / 文档同步：通过。新增 public 类型/API 有 rustdoc；Core API 与 UDL 对齐。
+- 错误处理与边界处理：通过。`Config`、`FileNotFound`、`Db` 路径均有校验或映射；隐私命中先返回 `Skipped/PrivacyRule`，不调用 runtime。
+- 测试与验证覆盖：通过。覆盖本地建议不自动写标签、隐私 skip 不调用 provider、采纳后写 tags/change_log/undo/AI log。
+- 占位、硬编码、mock-only、一次性实现检查：通过。测试 runtime 是可控外部执行器用于验证边界；生产路径连接真实 repo DB、AI config、tag set、AI call log 和 tag apply helper。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-2/task-32`
+- 通过：`prompt_pipeline.py doctor`，输出 `doctor: OK`，`tasks: 637`，`manifests: 637`，`high risk tasks: 633`
+- 通过：`git diff --check`
+- 通过：`cargo test --test ai_tags_suggestion_contract_api -- --nocapture`，4 passed
+- 通过：`cargo test --test ai_tags_suggestion_implementation -- --nocapture`，3 passed
+- 未运行：`cargo fmt --all -- --check`、`cargo clippy --all-targets --all-features -- -D warnings`、`cargo test --workspace`；原因是本 task manifest 要求 `./dev check task 4-2/task-32`，validation-driver 对普通 atomic Core task 使用 targeted tests，不默认扩大到 broad gate。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。当前可将 `4-2/task-32` 视为通过 verify-ready 验收。
+
+VERIFY_RESULT: PASS
