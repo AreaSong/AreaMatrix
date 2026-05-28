@@ -488,6 +488,65 @@
     "4-2/task-49": {
       "attempts": 1,
       "copy_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260529_014640/phase-4/4-2-task-49-copy-attempt-1.log",
+      "git": {
+        "attempts": 1,
+        "branch": "codex/areamatrix-task-loop-20260501_132850",
+        "changed_files": [
+          ".codex/task-loop-logs/20260529_014640/phase-4/4-2-task-49-copy-attempt-1.log",
+          ".codex/task-loop-logs/20260529_014640/phase-4/4-2-task-49-verify-attempt-1.log",
+          ".codex/task-loop-runs/20260529_014640/summary.json",
+          ".codex/task-loop-runs/index.json",
+          "core/tests/ai_fallback_validation.rs",
+          "core/tests/support/ai_fallback_validation.rs",
+          "tasks/prompts/_shared/progress.json"
+        ],
+        "commit": "a67c34ba3efb5cf6d874bbd2f527dff13365cd0b",
+        "copy_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260529_014640/phase-4/4-2-task-49-copy-attempt-1.log",
+        "diff_name_status": [
+          "M\t.codex/task-loop-runs/20260529_014640/summary.json",
+          "M\t.codex/task-loop-runs/index.json",
+          "M\ttasks/prompts/_shared/progress.json"
+        ],
+        "final_log_files": [
+          ".codex/task-loop-logs/20260529_014640/phase-4/4-2-task-49-copy-attempt-1.log",
+          ".codex/task-loop-logs/20260529_014640/phase-4/4-2-task-49-verify-attempt-1.log"
+        ],
+        "label": "4-2/task-49",
+        "mode": "commit",
+        "phase": "phase-4",
+        "pre_checkpoint_changed_files": [
+          ".codex/task-loop-runs/20260529_014640/summary.json",
+          ".codex/task-loop-runs/index.json",
+          "core/tests/ai_fallback_validation.rs",
+          "core/tests/support/ai_fallback_validation.rs",
+          "tasks/prompts/_shared/progress.json"
+        ],
+        "push_status": "not_requested",
+        "remote": "",
+        "run_id": "20260529_014640",
+        "skipped_log_files": [],
+        "staged_name_status": [
+          "A\t.codex/task-loop-logs/20260529_014640/phase-4/4-2-task-49-copy-attempt-1.log",
+          "A\t.codex/task-loop-logs/20260529_014640/phase-4/4-2-task-49-verify-attempt-1.log",
+          "M\t.codex/task-loop-runs/20260529_014640/summary.json",
+          "M\t.codex/task-loop-runs/index.json",
+          "A\tcore/tests/ai_fallback_validation.rs",
+          "A\tcore/tests/support/ai_fallback_validation.rs",
+          "M\ttasks/prompts/_shared/progress.json"
+        ],
+        "status": "committed",
+        "status_short": [
+          " M .codex/task-loop-runs/20260529_014640/summary.json",
+          " M .codex/task-loop-runs/index.json",
+          " M tasks/prompts/_shared/progress.json",
+          "?? core/tests/ai_fallback_validation.rs",
+          "?? core/tests/support/ai_fallback_validation.rs"
+        ],
+        "summary_file": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-runs/20260529_014640/summary.json",
+        "task_name": "4-2-task-49",
+        "updated_at": "2026-05-28T20:52:05.007944+00:00",
+        "verify_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260529_014640/phase-4/4-2-task-49-verify-attempt-1.log"
+      },
       "note": "自动执行验收通过",
       "phase": "phase-4",
       "risk": "High",
@@ -502,7 +561,7 @@
     "retries": 2,
     "task_count": 637
   },
-  "updated_at": "2026-05-28T20:52:04.855109+00:00",
+  "updated_at": "2026-05-28T20:52:05.014270+00:00",
   "verify_root": "/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/verify-ready",
   "version": 1
 }
