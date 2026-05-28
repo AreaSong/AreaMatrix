@@ -125,6 +125,7 @@ extension ClassifierSettingsPane {
             VStack(alignment: .leading, spacing: 24) {
                 saveErrorBanner
                 configPathSection
+                ClassifierRuleEditorSection(model: model)
                 rulesSection
                 yamlActionsSection
                 previewSection
@@ -450,10 +451,9 @@ extension ClassifierSettingsPane {
             }
         )
     }
-
 }
 
-private struct ClassifierSettingsSection<Content: View>: View {
+struct ClassifierSettingsSection<Content: View>: View {
     let title: String
     private let content: Content
 
@@ -472,7 +472,7 @@ private struct ClassifierSettingsSection<Content: View>: View {
     }
 }
 
-private struct ClassifierSettingsKeyValueRow: View {
+struct ClassifierSettingsKeyValueRow: View {
     let label: String
     let value: String
 

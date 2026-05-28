@@ -63,3 +63,99 @@ struct DetailExternalCreateSyncStatusView: View {
         """
     }
 }
+
+enum TagSuggestionEditRowStatus: Equatable {
+    case ready
+    case duplicate(String)
+    case invalid(String)
+    case alreadyAdded(String)
+    case blocked(String)
+    case failed(String)
+    case applied
+
+    var label: String {
+        switch self {
+        case .ready: "Ready"
+        case .duplicate: "Duplicate"
+        case .invalid: "Invalid"
+        case .alreadyAdded: "Already added"
+        case .blocked: "Blocked"
+        case .failed: "Failed"
+        case .applied: "Applied"
+        }
+    }
+
+    var message: String? {
+        switch self {
+        case .ready, .applied:
+            nil
+        case let .duplicate(message), let .invalid(message), let .alreadyAdded(message), let .blocked(message),
+             let .failed(message):
+            message
+        }
+    }
+
+    var preventsApply: Bool {
+        switch self {
+        case .ready:
+            false
+        case .duplicate, .invalid, .alreadyAdded, .blocked, .failed, .applied:
+            true
+        }
+    }
+}
+
+struct TagSuggestionEditDraft: Equatable, Identifiable {
+    let suggestionID: String
+    let originalSlug: String
+    let originalDisplayName: String
+    let reason: String
+    var displayName: String
+    var slug: String
+    var slugWasEdited: Bool
+    var status: TagSuggestionEditRowStatus
+
+    var id: String {
+        suggestionID
+    }
+}
+
+struct TagSuggestionEditSession: Equatable {
+    var selectedIDs: Set<String>
+    var drafts: [TagSuggestionEditDraft]
+
+    var attentionCount: Int {
+        drafts.filter(\.status.preventsApply).count
+    }
+
+    var canApply: Bool {
+        !drafts.isEmpty && drafts.allSatisfy { !$0.status.preventsApply }
+    }
+
+    var applyItems: [ApplyTagSuggestionItemSnapshot] {
+        guard canApply else { return [] }
+        return drafts.map(\.applyItem)
+    }
+
+    var retryFailedItems: [ApplyTagSuggestionItemSnapshot] {
+        drafts.compactMap { draft in
+            switch draft.status {
+            case .failed:
+                draft.applyItem
+            case .ready, .duplicate, .invalid, .alreadyAdded, .blocked, .applied:
+                nil
+            }
+        }
+    }
+}
+
+private extension TagSuggestionEditDraft {
+    var applyItem: ApplyTagSuggestionItemSnapshot {
+        let displayName = displayName.trimmingCharacters(in: .whitespacesAndNewlines)
+        return ApplyTagSuggestionItemSnapshot(
+            suggestionID: suggestionID,
+            slug: slug,
+            displayName: displayName.isEmpty ? slug : displayName
+        )
+    }
+}

@@ -1,0 +1,77 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-2/task-19`
+- 对应文件路径：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-2-stage3-ai/task-19-c3-04-validation.md`
+- 只读验收范围：`core/src/**`、`core/area_matrix.udl`、`core/tests/**`
+- 禁止触碰范围：`apps/**`
+
+三、完成度摘要
+
+- 已覆盖项数：6
+- 未覆盖项数：0
+- 通过项数：6
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：补齐单元测试、集成测试或契约测试，覆盖成功和失败路径
+- 结果：通过
+- 证据：`./dev check task 4-2/task-19` 运行了 `ai_classification_suggestion_contract_api`、`failure_recovery`、`implementation`、`validation` 四个 targeted test binary，合计 20 个测试全部通过；validation 测试覆盖成功建议、隐私跳过和失败边界。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/ai_classification_suggestion_validation.rs:216`
+
+- 项目：验证 Core API / UDL / Rust 实现三者一致
+- 结果：通过
+- 证据：Core API 和 UDL 都暴露 `suggest_category_with_ai(repo_path, AiCategorySuggestionRequest) -> AiCategorySuggestion`；Rust public API 委托到 C3-04 实现，validation 测试锁定 API/UDL/Rust/docs 对齐。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:2252`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:57`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:336`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/ai_classification_suggestion_validation.rs:327`
+
+- 项目：不新增业务功能，只补验证与必要测试 fixture
+- 结果：通过
+- 证据：当前业务实现已在 `core/src/ai_classification_suggestion/**`，本轮新增落点是 `core/tests/ai_classification_suggestion_validation.rs`；未发现 `apps/**` 改动。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/ai_classification_suggestion_validation.rs:1`
+
+- 项目：记录无法运行的验证及原因
+- 结果：通过
+- 证据：任务要求的验证命令已运行并通过，无必需验证缺失。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-2-stage3-ai/task-19-c3-04-validation.md:31`
+
+- 项目：C3-04 有足够测试证明可进入 UI 接入
+- 结果：通过
+- 证据：成功路径验证 `Suggested`、`Local` route、`requires_user_confirmation`、call log、分类不被自动改写；失败/隐私路径验证 secret ref 拒绝、privacy skip、无泄漏、用户 README 和文件分类不变。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/ai_classification_suggestion_validation.rs:217`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/ai_classification_suggestion_validation.rs:269`
+
+- 项目：Validation 命令通过或失败原因被明确记录
+- 结果：通过
+- 证据：`./dev check task 4-2/task-19` exit 0。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/.codex/skills-src/areamatrix-validation-driver/references/validation-matrix.md:1`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，C3-04 入口、合同类型、实现逻辑分层清晰；实现通过 `classification_capability`、`privacy_blocks`、`select_route`、`insert_call_log` 等小函数拆分。
+- 注释 / rustdoc / 文档同步：通过，public API 有 rustdoc，Core API、UDL、capability spec 和 control map 被测试锁定。
+- 错误处理与边界处理：通过，invalid repo/file/privacy ref、metadata permission、AI disabled、privacy skip、provider unavailable、call log DB abort 均有 targeted 测试覆盖。
+- 测试与验证覆盖：通过，manifest 指定验证命令已运行并通过；普通 atomic Core task 未扩大到 `./dev check all`。
+- 占位、硬编码、mock-only、一次性实现检查：通过，测试走真实 repo 初始化、导入、AI config、分类建议、SQLite call log 路径；未用 dry-run 或截图替代产品验证。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-2/task-19`
+- 通过：`prompt_pipeline.py doctor`、`git diff --check`、`cargo test --test ai_classification_suggestion_contract_api -- --nocapture`、`cargo test --test ai_classification_suggestion_failure_recovery -- --nocapture`、`cargo test --test ai_classification_suggestion_implementation -- --nocapture`、`cargo test --test ai_classification_suggestion_validation -- --nocapture`
+- 失败：无
+- 缺失：无必需验证缺失；`./dev check all` 非本 atomic task manifest 要求，未运行
+- Forbidden Touches：`git status --short -- apps` 无输出，未发现 `apps/**` 被违规触碰
+- Expected New Paths：`core/src/**`、`core/area_matrix.udl`、`core/tests/**` 均已存在；`core/tests/ai_classification_suggestion_validation.rs` 当前为未跟踪新文件，但本验收发生在 runner checkpoint 前，不作为失败依据
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS

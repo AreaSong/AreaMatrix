@@ -1,0 +1,67 @@
+一、执行结论
+
+已完成。`4-2/task-20` 的上次两项阻塞已修复：C3-04 不再把规则分类结果包装成 AI suggestion，而是通过 local/remote AI runtime 执行路径生成 draft；`LimitedTextSummary` 也已真实提取、脱敏并进入 `used_context` 与 call log sent fields。
+
+二、执行范围
+
+单任务：`4-2/task-20`
+
+本轮修改文件清单：
+- `core/src/ai_classification_suggestion.rs`
+- `core/src/ai_classification_suggestion/implementation.rs`
+- `core/src/ai_classification_suggestion/call_log.rs`
+- `core/src/ai_classification_suggestion/context.rs`
+- `core/src/ai_classification_suggestion/executor.rs`
+- `core/src/remote_provider_config.rs`
+- `core/src/remote_provider_config/state.rs`
+- `core/tests/ai_classification_suggestion_contract_api.rs`
+- `core/tests/ai_classification_suggestion_failure_recovery.rs`
+- `core/tests/ai_classification_suggestion_implementation.rs`
+- `core/tests/ai_classification_suggestion_validation.rs`
+- `core/tests/support/ai_classification_suggestion_common.rs`
+
+`apps/**` 无 diff。工作区里 `.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json` 是进入本轮前已有脏改，我没有把它们作为本轮产品修复内容处理。
+
+三、完成情况
+
+核对清单：
+- capability spec / Core API / UDL / Rust / tests 交叉检查：通过。
+- 消费页面需要的状态、错误、副作用：通过。覆盖 `Suggested`、`NoSuggestion`、`Skipped`、`Unavailable`、runtime failed、privacy skipped、call log id、route、used context。
+- 没有实现 control map 之外能力：通过。未实现采纳、移动、规则沉淀、摘要、标签、语义搜索。
+- Forbidden Touches：未触碰，`git diff --name-only -- apps` 无输出。
+
+完成标准：
+- C3-04 现在可以作为后续 page-feature task 的真实 Core 依赖。
+- 用户确认前仍不改 `files.category`、不移动文件、不写用户文件。
+
+四、工程质量
+
+实现拆成 context / executor / call_log / orchestration，避免继续把所有逻辑堆在一个函数里。生产代码无 `unwrap()` / `expect()` / `panic!()`；新增路径保持 Rust 1.75 MSRV 兼容。
+
+`LimitedTextSummary` 只读取允许范围内的文件文本，做长度限制和敏感片段过滤；call log 只记录 sent field 名称，不记录正文。remote route 复用 C3-03 provider gate metadata，不启用 provider、不保存 key、不绕过 scope。
+
+五、验证情况
+
+已运行并通过：
+
+```bash
+./dev check task 4-2/task-20
+```
+
+该命令通过了：
+- prompt doctor
+- `git diff --check`
+- `cargo fmt --all -- --check`
+- `cargo clippy --all-targets --all-features -- -D warnings`
+- `ai_classification_suggestion_contract_api`: 4/4
+- `ai_classification_suggestion_failure_recovery`: 6/6
+- `ai_classification_suggestion_implementation`: 10/10
+- `ai_classification_suggestion_validation`: 3/3
+
+中途 clippy 发现 `Option::inspect` 不兼容 Rust 1.75，已改成兼容写法并重新跑完整 manifest validation 通过。
+
+六、风险与后续
+
+剩余风险：local/remote runtime 当前通过 Core 可配置执行器边界和测试 runtime 证明真实调用链，后续 macOS page task 仍需要把平台侧 runtime/provider 接入 CoreBridge。当前 task 没有也不应实现 UI、采纳、移动、规则沉淀或 C3-05 调用日志列表页。
+
+建议下一个任务：进入依赖 C3-04 的 S3-04 page-feature task，接入 `suggest_category_with_ai` 并验证页面状态、used context、fallback、call log link 的消费。

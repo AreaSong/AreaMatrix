@@ -115,26 +115,32 @@ private struct CodableImportBatchSession: Codable {
 
 private struct CodableImportBatchSessionItem: Codable {
     var sourcePath: String
+    var fileID: Int64?
     var targetPath: String
     var phase: ImportBatchProgressSnapshot.Phase
     var errorMessage: String?
     var existingRelativePath: String?
+    var importConflictBatch: ImportConflictBatchProgressMetadata?
 
     init(item: ImportBatchProgressSnapshot.Item) {
         sourcePath = item.sourcePath
+        fileID = item.fileID
         targetPath = item.targetPath
         phase = item.phase
         errorMessage = item.errorMessage
         existingRelativePath = item.existingRelativePath
+        importConflictBatch = item.importConflictBatch
     }
 
     var snapshotItem: ImportBatchProgressSnapshot.Item {
         ImportBatchProgressSnapshot.Item(
+            fileID: fileID,
             sourcePath: sourcePath,
             targetPath: targetPath,
             phase: phase,
             errorMessage: errorMessage,
-            existingRelativePath: existingRelativePath
+            existingRelativePath: existingRelativePath,
+            importConflictBatch: importConflictBatch
         )
     }
 }

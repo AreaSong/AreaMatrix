@@ -100,3 +100,90 @@ extension ScanSessionSnapshot {
         )
     }
 }
+
+actor DetailTagFileDetailer: CoreFileDetailing {
+    private let filesByID: [Int64: FileEntrySnapshot]
+
+    init(files: [FileEntrySnapshot]) {
+        filesByID = Dictionary(uniqueKeysWithValues: files.map { ($0.id, $0) })
+    }
+
+    func getFile(repoPath _: String, fileID: Int64) async throws -> FileEntrySnapshot {
+        guard let file = filesByID[fileID] else {
+            throw CoreError.FileNotFound(path: "\(fileID)")
+        }
+        return file
+    }
+}
+
+struct DetailTagMutationRequest: Equatable {
+    var repoPath: String
+    var fileID: Int64
+    var tag: String
+}
+
+struct DetailTagListRequest: Equatable {
+    var repoPath: String
+    var fileID: Int64
+}
+
+struct TagSuggestionRequestRecord: Equatable {
+    var repoPath: String
+    var request: TagSuggestionRequestSnapshot
+}
+
+struct ApplyTagSuggestionsRequestRecord: Equatable {
+    var repoPath: String
+    var request: ApplyTagSuggestionsRequestSnapshot
+}
+
+extension CoreErrorMappingSnapshot {
+    static func s207TagDb() -> CoreErrorMappingSnapshot {
+        CoreErrorMappingSnapshot(
+            kind: .db,
+            userMessage: "无法更新标签",
+            severity: .medium,
+            suggestedAction: "请保留输入并重试标签操作。",
+            recoverability: .retryable,
+            rawContext: "S2-07 C2-05 tag-crud"
+        )
+    }
+}
+
+extension TagSuggestionRequestSnapshot {
+    static func s223(fileID: Int64) -> TagSuggestionRequestSnapshot {
+        TagSuggestionRequestSnapshot(
+            fileID: fileID,
+            context: nil,
+            limit: DetailTagSuggestionAction.defaultLimit
+        )
+    }
+}
+
+extension RepositorySidebarRowSnapshot {
+    static let s208Root = RepositorySidebarRowSnapshot(node: RepositoryTreeNodeSnapshot(
+        slug: "__root__",
+        displayName: "Repository",
+        kind: "RepositoryRoot",
+        relativePath: "",
+        fileCount: 0,
+        depth: 0,
+        children: []
+    ), depth: 0)
+}
+
+extension MainFileListModel {
+    @MainActor
+    static func s223Fixture(
+        detail: FileEntrySnapshot,
+        tagStore: any CoreTagCRUD = DetailTagRecordingStore()
+    ) -> MainFileListModel {
+        MainFileListModel(
+            opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [detail]),
+            fileLister: DetailMetaNoopLister(),
+            fileDetailer: DetailMetaImmediateDetailer(result: .success(detail)),
+            tagStore: tagStore,
+            errorMapper: DetailMetaErrorMapper(mapping: .s207TagDb())
+        )
+    }
+}

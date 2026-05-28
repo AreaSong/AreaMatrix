@@ -1,0 +1,25 @@
+一、执行结论：已完成。
+
+二、执行范围：单任务 `4-2/task-18`。本次修改/新增：
+
+- `core/src/ai_classification_suggestion.rs`
+- `core/src/ai_classification_suggestion/implementation.rs`
+- `core/tests/ai_classification_suggestion_failure_recovery.rs`
+
+三、完成情况：已补齐 C3-04 failure-edge。现在空态/未初始化元数据、非法 file id、secret-like privacy ref、权限不可读、规则配置错误、AI call log DB 写失败、错误码映射都有明确返回和测试证据。C3-04 仍只生成建议草稿，不写 `files.category`，不移动/删除/重命名/覆盖用户文件；隐私/AI/远程边界保持默认关闭和密钥不入日志。未触碰 `apps/**`。
+
+四、工程质量：错误映射限定在文档允许的 `Config` / `PermissionDenied` / `Internal` 语义内；日志写入参数收敛为 `CallLogDraft`，通过 clippy 的复杂度门禁。没有新增依赖，没有 mock-only 或硬编码通过态。
+
+五、验证情况：通过。
+
+- `cargo fmt --all -- --check`
+- `cargo test --test ai_classification_suggestion_contract_api -- --nocapture`
+- `cargo test --test ai_classification_suggestion_failure_recovery -- --nocapture`
+- `cargo test --test ai_classification_suggestion_implementation -- --nocapture`
+- `./dev check task 4-2/task-18`
+
+`./dev check task 4-2/task-18` 完整通过：prompt doctor、diff check、fmt、clippy、C3-04 三个 targeted test binary 全部通过。
+
+六、风险与后续：剩余风险是 C3-04 当前仍是本地/规则预检驱动的建议路径，没有实现真实远程模型调用，这符合本 task failure-edge 范围。建议下一个任务继续 `4-2/task-19`，做 C3-04 validation 收口。
+
+另外，工作区里原本已有两个非本次改动的 dirty 文件：`.codex/task-loop-runs/20260527_221647/summary.json`、`tasks/prompts/_shared/progress.json`，我没有处理它们。  

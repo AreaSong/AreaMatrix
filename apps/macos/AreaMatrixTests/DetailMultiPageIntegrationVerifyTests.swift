@@ -46,7 +46,8 @@ final class DetailMultiPageIntegrationVerifyTests: XCTestCase {
     @MainActor
     func testS209C207MapsUndoFailureWithoutMockingSuccess() async {
         let action = UndoActionRecordSnapshot.s209PendingBatchAddTags()
-        let undoStore = S209RecordingUndoStore(results: [.undo(.failure(CoreError.Conflict(path: "docs/contract.pdf")))])
+        let undoStore =
+            S209RecordingUndoStore(results: [.undo(.failure(CoreError.Conflict(path: "docs/contract.pdf")))])
         let applied = await BatchTagUndoAction.undo(
             repoPath: "/tmp/repo",
             action: action,
@@ -419,7 +420,10 @@ private extension BatchMutationReportSnapshot {
 }
 
 private actor S209RecordingUndoStore: CoreUndoActionLogging {
-    enum Result { case list(Swift.Result<[UndoActionRecordSnapshot], Error>), undo(Swift.Result<UndoActionResultSnapshot, Error>) }
+    enum Result { case list(Swift.Result<[UndoActionRecordSnapshot], Error>), undo(Swift.Result<
+        UndoActionResultSnapshot,
+        Error
+    >) }
 
     private var results: [Result]
     private var recordedListRequests: [String] = []
@@ -445,9 +449,13 @@ private actor S209RecordingUndoStore: CoreUndoActionLogging {
         return try result.get()
     }
 
-    func listRequests() -> [String] { recordedListRequests }
+    func listRequests() -> [String] {
+        recordedListRequests
+    }
 
-    func undoRequests() -> [String] { recordedUndoRequests }
+    func undoRequests() -> [String] {
+        recordedUndoRequests
+    }
 
     private func consumeResult() throws -> Result {
         guard !results.isEmpty else { throw CoreError.Db(message: "missing undo action result") }

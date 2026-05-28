@@ -1,0 +1,88 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-1/task-138`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-138-s2-22-c2-07-undo-action-log.md`
+- 主要实现路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileListDiagnosticsActions.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/BatchRenameTrigger.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportBatchCopyFooterSection.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportBatchOverviewSections.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportProgressListIntegration.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportProgressPageIntegrationVerifyTests.swift`
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：0
+- 通过项数：10
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 S2-22 页面中的 C2-07 功能点
+- 结果：通过
+- 证据：实现只把 redo 的 `sourceUndoActionID` 映射回 C2-07 undo action log 摘要，用于 S2-22 redo region 的来源说明；未新增独立 redo 页面。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileListDiagnosticsActions.swift:75`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/BatchRenameTrigger.swift:48`
+
+- 项目：读取并对齐页面规格、control map、Core API、C2-07 能力规格
+- 结果：通过
+- 证据：S2-22 control map 为 `C2-18, C2-07`；Core API 中 C2-07 为 `list_undo_actions` / `undo_action`，C2-18 为 redo；实现通过 undo action log 补足 redo 来源说明，没有把 redo 执行归入 C2-07。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-2-control-map.md:30`、`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:3360`、`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:3439`
+
+- 项目：只接入 C2-07 对应 CoreBridge / 状态 / 错误映射
+- 结果：通过
+- 证据：`CoreUndoActionLogging` 仍经 `CoreBridge` 调用 `AreaMatrix.listUndoActions` / `AreaMatrix.undoAction`；页面状态通过 `UndoHistorySnapshot` 与 `RedoUndoSourcePresentation` 消费 C2-07 数据。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreTagCRUD.swift:10`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreTagCRUD.swift:171`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileListDiagnosticsActions.swift:81`
+
+- 项目：不实现相邻页面、相邻平台或同页其他能力
+- 结果：通过
+- 证据：C2-18 redo 执行仍走已有 `CoreRedoActionLogging`；本次增量只补 C2-07 来源展示，没有新增 control map 外能力。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileListDiagnosticsActions.swift:154`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportProgressListIntegration.swift:280`
+
+- 项目：S2-22 中 C2-07 用户可见功能可触发和验收
+- 结果：通过
+- 证据：redo toast/history 区域显示 `Source undo: <summary>`，VoiceOver label 包含 redo summary、状态和来源；测试覆盖来源摘要映射。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportBatchCopyFooterSection.swift:50`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/BatchRenameTrigger.swift:66`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportProgressPageIntegrationVerifyTests.swift:208`
+
+- 项目：没有使用 mock、fixture 或静态状态伪造真实 Core 闭环
+- 结果：通过
+- 证据：生产路径从 `CoreBridge` 的真实 UniFFI 方法加载 undo action log；测试 fixture 只用于 XCTest，不进入生产路径。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreTagCRUD.swift:172`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileListDiagnosticsActions.swift:221`
+
+- 项目：未触碰 control map 之外 Core 能力
+- 结果：通过
+- 证据：`git diff -- core/src core/area_matrix.udl apps/macos/AreaMatrix.xcodeproj/project.pbxproj` 无输出；未修改 `core/src/**` Forbidden Touches。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，新增 `RedoUndoSourcePresentation` 聚合来源文案和 accessibility 文案；相关文件均未超过 500 行。
+- 注释 / rustdoc / 文档同步：通过，本任务未新增 public Rust API；Swift 代码无多余注释或文档漂移。
+- 错误处理与边界处理：通过，C2-07/C2-18 错误仍经 `CoreErrorMappingSnapshot` 映射；redo 来源缺失时降级显示 source undo id，不伪造成功态。
+- 测试与验证覆盖：通过，manifest 验证 `./dev check task 4-1/task-138` 通过；补充 `./dev test macos` 失败点在无关测试文件，未作为本 task gate 阻塞。
+- 占位、硬编码、mock-only、一次性实现检查：通过，生产路径无 `try!`、强制解包、`print()`、TODO、mock-only wiring。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-138`
+- 结果：通过，exit 0
+- 关键证据：`prompt doctor` OK；`git diff --check` 通过；`xcodebuild ... build CODE_SIGNING_ALLOWED=NO` 最终 `BUILD SUCCEEDED`。
+- 已运行：`./dev test macos`
+- 结果：失败，exit 65
+- 失败说明：失败来自 `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportBatchDuplicateResolutionTests.swift:30`、`:31`、`:58`、`:59` 的 actor-isolation / `await` in autoclosure 编译问题；该文件不在本 task diff 内，属于补充宽门禁残余风险，不是 manifest 指定 gate。
+- 缺失：未做真实 macOS 窗口交互烟测；当前验收以代码路径、accessibility 文案和 build gate 为证据。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS

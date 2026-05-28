@@ -15,24 +15,41 @@ extension MainRepositoryContentView {
             onRetryTags: { Task { await fileListModel.retrySelectedFileTags() } },
             onAddTag: { tag in Task { await fileListModel.addSelectedFileTag(tag) } },
             onRemoveTag: { tag in Task { await fileListModel.removeSelectedFileTag(tag) } },
+            onLoadSuggestions: { Task { await fileListModel.loadSelectedFileTagSuggestions() } },
+            onRetrySuggestions: { Task { await fileListModel.retrySelectedFileTagSuggestions() } },
+            onToggleSuggestion: fileListModel.toggleSelectedFileTagSuggestion,
+            onSelectAllSuggestions: fileListModel.selectAllSelectedFileTagSuggestions,
+            onClearSuggestions: fileListModel.clearSelectedFileTagSuggestions,
+            onStartEditingSuggestions: fileListModel.startEditingSelectedFileTagSuggestions,
+            onCancelEditingSuggestions: fileListModel.cancelEditingSelectedFileTagSuggestions,
+            onEditSuggestionDisplayName: fileListModel.updateSelectedFileTagSuggestionDisplayName,
+            onEditSuggestionSlug: fileListModel.updateSelectedFileTagSuggestionSlug,
+            onRegenerateSuggestionSlug: fileListModel.regenerateSelectedFileTagSuggestionSlug,
+            onApplySuggestions: {
+                Task {
+                    if let state = await fileListModel.applySelectedFileTagSuggestions() {
+                        updateBatchTagUndoState(state)
+                    }
+                }
+            },
+            onApplyEditedSuggestions: {
+                Task {
+                    if let state = await fileListModel.applyEditedSelectedFileTagSuggestions() {
+                        updateBatchTagUndoState(state)
+                    }
+                }
+            },
+            onRetryFailedSuggestions: {
+                Task {
+                    if let state = await fileListModel.retryFailedSelectedFileTagSuggestions() {
+                        updateBatchTagUndoState(state)
+                    }
+                }
+            },
+            onSuggestionPresentationConsumed: fileListModel.consumeTagSuggestionPresentationRequest,
             onUndoTagChange: { Task { await fileListModel.undoLastDetailTagChange() } },
             onDismissTagUndoToast: fileListModel.dismissDetailTagUndoToast,
             onBatchTagUndoStateChange: updateBatchTagUndoState
-        )
-    }
-
-    @ViewBuilder
-    var batchTagUndoToastOverlay: some View {
-        BatchTagUndoToastHost(
-            repoPath: opening.config.repoPath,
-            undoStore: fileListModel.undoActionStore,
-            errorMapper: fileListModel.errorMapper,
-            onRefreshSelection: { Task { await fileListModel.retrySelectedFileDetail() } },
-            onRefreshChangeLog: { Task { await fileListModel.loadSelectedFileChangeLog() } },
-            onRefreshCurrentList: { Task { await fileListModel.retryCurrentCategory() } },
-            onOpenHistory: { pendingUndoHistoryRequest = $0 },
-            undoState: $batchTagUndoState,
-            actionLogRefreshFailure: $batchTagActionLogRefreshFailure
         )
     }
 
@@ -70,77 +87,19 @@ extension MainRepositoryContentView {
         )
     }
 
-    func undoHistorySheet(_ request: UndoToastHistoryRequest) -> some View {
-        UndoHistoryPanel(
+    func batchDeleteRoutingSheet(_ route: BatchDeleteRoute) -> some View {
+        BatchDeleteConfirmSheet(
             repoPath: opening.config.repoPath,
-            focusedActionID: request.focusedActionID,
-            initialFailure: request.failureMapping,
+            fileIDs: route.fileIDs,
+            selectedFiles: route.selectedFiles,
+            selectedCount: route.selectedCount,
+            disabledReason: route.disabledReason,
+            deleter: fileListModel.batchDeleter,
             undoStore: fileListModel.undoActionStore,
             errorMapper: fileListModel.errorMapper,
-            onClose: { pendingUndoHistoryRequest = nil },
-            onUndoCompleted: handleUndoHistoryResult
-        )
-    }
-
-    func handleUndoHistoryResult(_ result: UndoActionResultSnapshot) {
-        let plan = BatchTagUndoRefreshPlan(refreshTargets: result.refreshTargets)
-        if plan.refreshesCurrentList {
-            Task { await fileListModel.retryCurrentCategory() }
-        }
-        if plan.refreshesSelectionDetails {
-            Task { await fileListModel.retrySelectedFileDetail() }
-        }
-        if plan.refreshesChangeLog {
-            Task { await fileListModel.loadSelectedFileChangeLog() }
-        }
-        if plan.refreshesUndoActions {
-            refreshLatestUndoToast()
-        }
-    }
-
-    func updateBatchTagUndoState(_ state: BatchTagUndoState) {
-        batchTagUndoState = state
-        batchTagActionLogRefreshFailure = nil
-    }
-
-    @MainActor
-    func refreshLatestUndoToast() {
-        Task {
-            batchTagUndoState = await BatchTagUndoAction.refreshLatestToastState(
-                repoPath: opening.config.repoPath,
-                undoStore: fileListModel.undoActionStore,
-                errorMapper: fileListModel.errorMapper
-            )
-            batchTagActionLogRefreshFailure = nil
-        }
-    }
-
-    func openUndoHistoryFromToolbar() {
-        pendingUndoHistoryRequest = UndoToastHistoryRequest(
-            source: .viewHistory,
-            state: batchTagUndoState,
-            actionLogRefreshFailure: batchTagActionLogRefreshFailure
-        )
-    }
-
-    func openUndoHistoryFromMenu() {
-        pendingUndoHistoryRequest = UndoHistoryActionLog.menuRequest(
-            state: batchTagUndoState,
-            failure: batchTagActionLogRefreshFailure
-        )
-    }
-
-    func openUndoHistoryFromShortcut() {
-        pendingUndoHistoryRequest = UndoHistoryActionLog.shortcutRequest(
-            state: batchTagUndoState,
-            failure: batchTagActionLogRefreshFailure
-        )
-    }
-
-    func openUndoHistoryFromRedoShortcut() {
-        pendingUndoHistoryRequest = UndoHistoryActionLog.redoShortcutRequest(
-            state: batchTagUndoState,
-            failure: batchTagActionLogRefreshFailure
+            onApplied: applyBatchDeleteResult,
+            onUndoStateChange: updateBatchTagUndoState,
+            onClose: { pendingBatchDeleteRoute = nil }
         )
     }
 
@@ -262,6 +221,18 @@ extension MainRepositoryContentView {
     }
 
     @MainActor
+    func refreshAfterClassifierCorrection(_ correctedFile: FileEntrySnapshot) async {
+        await fileListModel.retryCurrentCategory()
+        selectedFileIDs = [correctedFile.id]
+        await fileListModel.selectFiles([correctedFile.id])
+        fileListModel.statusBanner = .correctedClassification(
+            fileID: correctedFile.id,
+            category: correctedFile.category,
+            ruleConfirmationRequired: fileListModel.classifierCorrectionResult?.ruleConfirmationRequired ?? false
+        )
+    }
+
+    @MainActor
     func refreshTreeAndFocusMovedFile(_ movedFile: FileEntrySnapshot) async {
         let refreshedTree = await refreshedTreeAfterCategoryMove()
         let plan = CategoryMoveRefreshPlan.make(
@@ -321,24 +292,33 @@ extension MainRepositoryContentView {
         }
     }
 
+    func applyBatchDeleteResult(_ report: BatchDeleteReportSnapshot) {
+        Task {
+            selectedFileIDs.subtract(report.affectedFileIDs)
+            await fileListModel.retryCurrentCategory()
+            await fileListModel.retrySelectedFileDetail()
+            fileListModel.statusBanner = .batchDeleted(count: report.successfulDeleteCount)
+        }
+    }
+
     func openClassifierRuleEditorFromBatchCategory(
         _ handoff: BatchChangeCategoryNewCategoryHandoff,
         route: BatchChangeCategoryRoute
     ) {
         guard handoff.targetPageID == "S2-19" else { return }
         pendingBatchChangeCategoryRoute = nil
-        let context = BatchChangeCategoryNewCategoryReturnContext(route: route, handoff: handoff)
+        let context = BatchChangeCategoryReturnContext(route: route, handoff: handoff)
         fileListModel.openClassifierRuleEditorForBatchCategory(context: context)
     }
 
-    func cancelClassifierRuleEditorFromBatchCategory(_ context: BatchChangeCategoryNewCategoryReturnContext) {
+    func cancelClassifierRuleEditorFromBatchCategory(_ context: BatchChangeCategoryReturnContext) {
         pendingBatchChangeCategoryRoute = BatchChangeCategoryClassifierReturn.cancelledRoute(context: context)
         fileListModel.clearPendingSearchDestination()
     }
 
     func acceptClassifierRuleEditorCategory(
         _ category: String,
-        context: BatchChangeCategoryNewCategoryReturnContext
+        context: BatchChangeCategoryReturnContext
     ) {
         let notification = ClassifierRuleEditorSaveEvents.notification(savedCategory: category)
         guard let route = BatchChangeCategoryClassifierReturn.acceptedRoute(

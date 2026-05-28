@@ -207,7 +207,6 @@ final class DetailMetaPageFeatureTests: XCTestCase {
             CoreError.PermissionDenied(path: "/tmp/repo")
         ])
     }
-
 }
 
 actor DetailMetaNoopLister: CoreFileListing {
@@ -477,5 +476,4 @@ extension CoreErrorMappingSnapshot {
             rawContext: "S1-13 C1-13 list_changes"
         )
     }
-
 }

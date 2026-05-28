@@ -1,0 +1,54 @@
+一、执行结论
+
+已完成。C3-01 `ai-settings-config` 的 Core API / UDL / Rust 合同已补齐，后续 `4-2/task-02` 可以基于该合同实现持久化。
+
+二、执行范围
+
+修改文件：
+- [core/src/ai_settings.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/ai_settings.rs:1)
+- [core/src/api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:156)
+- [core/src/lib.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/lib.rs:42)
+- [core/area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:23)
+- [docs/api/core-api.md](/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:1685)
+- [core/tests/ai_settings_config_contract_api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/ai_settings_config_contract_api.rs:73)
+
+未触碰 `apps/**`。工作区里原本/运行器产生的 `tasks/prompts/_shared/progress.json` 与 `.codex/task-loop-runs/20260527_141240/` 仍是脏状态，未纳入本任务修改。
+
+三、完成情况
+
+核对清单：
+- 已读取 C3-01 能力规格、Stage 3 control map、Core API、错误码。
+- 已对齐 `load_ai_config` / `update_ai_config`、输入输出、错误码 `Config / PermissionDenied / Io`、隐私/API key 边界。
+- 只补合同、类型、UDL、Core API 文档和合同测试；未实现远程 provider、隐私规则 CRUD、AI 调用、Keychain 或相邻能力。
+- 已记录 S3-01/S3-09 可从合同得到 AI 总开关、provider preference、本地/远程路线、privacy gate、功能开关、禁用原因。
+
+完成标准：
+- C3-01 合同已可作为后续 implementation task 的直接实现依据。
+- 合同没有引入 control map 之外的页面能力。
+
+四、工程质量
+
+结构清晰，新增 `ai_settings` 模块只承载 C3-01 合同类型、默认关闭快照、输入校验和“不得假成功”的更新入口。新增 public Rust API 均有 rustdoc 和 `# Errors`。没有新增依赖、mock-only 成功路径、远程调用、用户文件操作或 API key 明文处理。
+
+说明：`update_ai_config` 当前只校验合同并返回 `Config`，避免在 contract-api task 中假装已持久化；真正持久化留给 `4-2/task-02`。
+
+五、验证情况
+
+通过：
+- `./dev check task 4-2/task-01`
+  - `prompt doctor`: OK
+  - `git diff --check`: OK
+  - targeted test: `cargo test --test ai_settings_config_contract_api -- --nocapture`
+  - 结果：5 passed, 0 failed
+
+额外格式确认：
+- `cd core && cargo fmt --all -- --check`: passed
+
+未运行：`cargo test --workspace`、`cargo clippy --all-targets --all-features`、`./dev check core/all`，因为本 task 的 manifest validation 上限是 `./dev check task 4-2/task-01`。
+
+六、风险与后续
+
+剩余风险：C3-01 仍未持久化 AI settings metadata，这是下一 implementation task 的范围；现合同不会启动模型、不会发起网络、不会写 API key、不会触碰用户文件。
+
+建议下一个任务：`4-2/task-02`，实现 C3-01 AI config 的真实持久化与失败回滚。
+

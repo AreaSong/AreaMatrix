@@ -53,15 +53,50 @@ def status_short(root: Path) -> list[str]:
     return [line for line in proc.stdout.splitlines() if line.strip()]
 
 
-def ensure_clean_worktree(root: Path) -> None:
+def git_path_matches(pattern: str, path: str) -> bool:
+    pattern = pattern.strip().lstrip("./")
+    path = path.strip().lstrip("./")
+    if not pattern:
+        return False
+    if pattern.endswith("/**"):
+        prefix = pattern[:-3].rstrip("/")
+        return path == prefix or path.startswith(prefix + "/")
+    if pattern.endswith("/"):
+        return path.startswith(pattern)
+    return path == pattern
+
+
+def dirty_paths_outside_allowed(status_lines: list[str], allowed_dirty_paths: list[str]) -> list[str]:
+    unexpected: list[str] = []
+    for line in status_lines:
+        for path in status_line_paths(line):
+            if not any(git_path_matches(pattern, path) for pattern in allowed_dirty_paths):
+                unexpected.append(path)
+    return unique_paths(unexpected)
+
+
+def ensure_clean_worktree(root: Path, allowed_dirty_paths: list[str] | None = None) -> None:
     dirty = status_short(root)
-    if dirty:
-        preview = "\n".join(dirty[:20])
+    if not dirty:
+        return
+    if allowed_dirty_paths is not None:
+        unexpected = dirty_paths_outside_allowed(dirty, allowed_dirty_paths)
+        if not unexpected:
+            return
+        preview = "\n".join(unexpected[:20])
+        allowed_preview = "\n".join(allowed_dirty_paths[:20])
         raise GitError(
-            "git checkpoint requires a clean worktree before live execution.\n"
-            "Commit the current infrastructure changes first, or run with GIT_CHECKPOINT=off.\n"
-            f"Current changes:\n{preview}"
+            "git checkpoint resume-stale allows dirty worktree only inside the stale task scope.\n"
+            "Commit or move unrelated infrastructure changes first, or run with GIT_CHECKPOINT=off for diagnostics.\n"
+            f"Unexpected dirty paths:\n{preview}\n"
+            f"Allowed dirty patterns:\n{allowed_preview}"
         )
+    preview = "\n".join(dirty[:20])
+    raise GitError(
+        "git checkpoint requires a clean worktree before live execution.\n"
+        "Commit the current infrastructure changes first, or run with GIT_CHECKPOINT=off.\n"
+        f"Current changes:\n{preview}"
+    )
 
 
 def current_branch(root: Path) -> str:
@@ -121,12 +156,10 @@ def maybe_push_existing_ahead(root: Path, remote: str, set_upstream: bool) -> di
 def parse_changed_paths(status_lines: list[str]) -> list[str]:
     paths: list[str] = []
     for line in status_lines:
-        if len(line) < 4:
+        line_paths = status_line_paths(line)
+        if not line_paths:
             continue
-        path = line[3:]
-        if " -> " in path:
-            path = path.split(" -> ", 1)[1]
-        paths.append(path)
+        paths.append(line_paths[-1])
     return sorted(dict.fromkeys(paths))
 
 
@@ -142,6 +175,61 @@ def path_for_git(root: Path, path: Path | None) -> str | None:
         return str(path.resolve().relative_to(root.resolve()))
     except ValueError:
         return None
+
+
+def unique_paths(paths: list[str]) -> list[str]:
+    return sorted(dict.fromkeys(path for path in paths if path))
+
+
+def status_line_paths(line: str) -> list[str]:
+    if len(line) < 4:
+        return []
+    path = line[3:]
+    if " -> " in path:
+        before, after = path.split(" -> ", 1)
+        return [before, after]
+    return [path]
+
+
+def is_task_loop_log_path(path: str) -> bool:
+    return path.startswith(".codex/task-loop-logs/")
+
+
+def is_exec_stream_log_path(path: str) -> bool:
+    return is_task_loop_log_path(path) and path.endswith(".exec.log")
+
+
+def is_final_task_log_path(path: str) -> bool:
+    return is_task_loop_log_path(path) and path.endswith(".log") and not is_exec_stream_log_path(path)
+
+
+def skipped_checkpoint_path(path: str, allowed_paths: set[str]) -> bool:
+    if path in allowed_paths:
+        return False
+    return is_task_loop_log_path(path)
+
+
+def checkpoint_stage_paths(status_lines: list[str], allowed_paths: set[str]) -> tuple[list[str], list[str]]:
+    stage_paths: list[str] = []
+    skipped_paths: list[str] = []
+    for line in status_lines:
+        for path in status_line_paths(line):
+            if skipped_checkpoint_path(path, allowed_paths):
+                skipped_paths.append(path)
+            else:
+                stage_paths.append(path)
+    return unique_paths(stage_paths), unique_paths(skipped_paths)
+
+
+def existing_final_log_paths(root: Path, *logs: str) -> list[str]:
+    paths: list[str] = []
+    for value in logs:
+        if not value:
+            continue
+        rel = path_for_git(root, Path(value))
+        if rel and is_final_task_log_path(rel) and (root / rel).exists():
+            paths.append(rel)
+    return unique_paths(paths)
 
 
 def commit_message(
@@ -241,12 +329,13 @@ def preflight(
     push_set_upstream: bool,
     run_id: str,
     dry_run: bool = False,
+    allowed_dirty_paths: list[str] | None = None,
 ) -> dict[str, Any]:
     if mode == "off" or dry_run:
         return {"status": "skipped", "mode": mode, "dry_run": dry_run}
 
     root = ensure_git_repo(root_dir)
-    ensure_clean_worktree(root)
+    ensure_clean_worktree(root, allowed_dirty_paths=allowed_dirty_paths)
     branch = current_branch(root)
     created_branch = ""
     if branch == "main":
@@ -328,15 +417,36 @@ def checkpoint(
         raise GitError(json.dumps(evidence, ensure_ascii=False, sort_keys=True), 11)
 
     before_status = status_short(root)
+    final_log_paths = existing_final_log_paths(root, copy_log, verify_log)
+    evidence_paths = unique_paths(
+        [
+            path
+            for path in [
+                path_for_git(root, progress_file),
+                path_for_git(root, summary_file),
+            ]
+            if path
+        ]
+    )
+    allowed_paths = set(final_log_paths + evidence_paths)
+    stage_paths, skipped_log_paths = checkpoint_stage_paths(before_status, allowed_paths)
+    stage_paths = unique_paths(stage_paths + final_log_paths)
     evidence["status_short"] = before_status
-    evidence["changed_files"] = parse_changed_paths(before_status)
+    evidence["pre_checkpoint_changed_files"] = parse_changed_paths(before_status)
+    evidence["changed_files"] = stage_paths
+    evidence["final_log_files"] = final_log_paths
+    evidence["skipped_log_files"] = skipped_log_paths
     evidence["diff_name_status"] = diff_name_status(root)
-    if not before_status:
+    if not stage_paths:
         evidence["status"] = "no_changes"
         write_evidence(progress_file, summary_file, label, evidence)
         return evidence
 
-    run_git(root, ["add", "-A"], check=True)
+    regular_stage_paths = [path for path in stage_paths if path not in final_log_paths]
+    if regular_stage_paths:
+        run_git(root, ["add", "--", *regular_stage_paths], check=True)
+    if final_log_paths:
+        run_git(root, ["add", "--force", "--", *final_log_paths], check=True)
     staged = run_git(root, ["diff", "--cached", "--name-status"], check=True).stdout.splitlines()
     evidence["staged_name_status"] = [line for line in staged if line.strip()]
     if not evidence["staged_name_status"]:
@@ -422,4 +532,3 @@ def commit_run_summary(
                 20,
             )
     return {"status": status, "run_id": run_id, "commit": commit, "branch": branch}
-

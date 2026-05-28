@@ -1,0 +1,98 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`4-1/task-125`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-125-s2-15-c2-11-command-index.md`
+- 实际检查范围：
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+  - 禁止触碰边界：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+三、完成度摘要
+
+- 已覆盖项数：12
+- 未覆盖项数：0
+- 通过项数：10
+- 不通过项数：2
+- 阻塞项数：1
+
+四、逐项验收结果
+
+- 项目：读取 task、共享规则、切片规则、工程质量规则、编码规范、validation-driver、依赖图、phase manifest
+- 结果：通过
+- 证据：已按要求读取并定位 `## 4-1/task-125`；manifest 声明 Exact Docs 4 个、Existing Code 2 项、Expected New Paths 2 项、Forbidden Touches 1 项、Validation 1 个。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-4.md:3630`
+
+- 项目：Exact Docs 逐项读取
+- 结果：通过
+- 证据：S2-15 要求命令搜索不搜索文件内容，C2-11 是只读 command index，API 为 `list_command_targets(repoPath, context)`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-2-experience/S2-15-command-palette.md:88`，`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:2346`
+
+- 项目：C2-11 CoreBridge 接入
+- 结果：通过
+- 证据：`CoreCommandIndexing.listCommandTargets` 通过 `CoreBridge` 调用真实 UniFFI 生成函数 `listCommandTargets`，不是产品路径 mock。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift:33`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift:330`
+
+- 项目：S2-15 + C2-11 状态和错误映射
+- 结果：通过
+- 证据：`CommandPaletteLoadState` 覆盖 idle/loading/loaded/failed；失败走 `mapCoreError` 到 inline error。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileActionRoutingActions.swift:156`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileActionRoutingActions.swift:288`
+
+- 项目：Expected New Paths
+- 结果：通过
+- 证据：实现和测试落在 `apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportProgressView.swift:223`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/MainEmptyImportEntryTests.swift:111`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git diff --name-only -- core/src` 无输出；未发现 `core/src/**` 脏改动。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+- 项目：只处理 S2-15 页面中的 C2-11 功能点
+- 结果：不通过
+- 证据：命令面板 query 绑定到全局文件搜索 `filterText`；用户在命令面板输入会改变 `filterText`，而 `searchTaskKey` 也包含 `filterText`，触发 `runSearch(...)`，把命令搜索耦合到文件搜索链路。文档明确要求“命令搜索不搜索文件内容”。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportProgressListIntegration.swift:353`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportProgressView.swift:253`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentNoteDrafts.swift:81`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift:110`
+
+- 项目：未触碰 control map 之外 Core 能力
+- 结果：不通过
+- 证据：C2-11 task 的命令面板输入路径会间接触发搜索 Core 路径，而本 task 当前覆盖 Core 能力仅为 C2-11。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift:115`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainListVisibleFileFiltering.swift:302`
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过。C2-11 query 复用文件搜索 `filterText`，导致 command index 状态和文件搜索状态耦合。
+- 注释 / rustdoc / 文档同步：通过。本 task 未新增 Rust public API；UDL 与 docs/api 已存在对应 C2-11 合同。
+- 错误处理与边界处理：通过。`listCommandTargets` 失败会映射为面板错误状态。
+- 测试与验证覆盖：不通过。新增测试覆盖 CoreBridge 请求、错误映射、危险标记渲染，但未覆盖“命令面板输入不得触发文件搜索 / C2-01 搜索链路”。
+- 占位、硬编码、mock-only、一次性实现检查：通过。产品路径使用真实 `CoreBridge`；测试中的 fake store 仅为单元测试注入。
+
+六、阻塞项
+
+- P1：命令面板 query 复用文件搜索状态，导致 C2-11 输入越界触发搜索链路。
+  说明：S2-15 文档要求命令搜索不搜索文件内容；当前 `SearchCommandPaletteRouteView` 将命令面板 query 绑定到 `$filterText`，而 `filterText` 同时驱动页面级 `searchTaskKey` 和 `runSearch(...)`。这使 C2-11 page-feature task 触发 control map 之外的搜索能力，不能判定为完成。
+  绝对路径与行号：
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportProgressListIntegration.swift:353`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportProgressView.swift:253`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentNoteDrafts.swift:81`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift:110`
+  为什么导致不通过：违反 task checklist 第 1、3 项和完成标准“未触碰 control map 之外的 Core 能力”。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-125`
+- 通过：
+  - `prompt doctor`: OK
+  - `git diff --check`: OK
+  - `xcodebuild ... build CODE_SIGNING_ALLOWED=NO`: `BUILD SUCCEEDED`
+- 失败：无命令失败。
+- 缺失：缺少覆盖命令面板 query 隔离的测试证据；现有通过命令不能证明没有触发 C2-11 之外的搜索链路。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。虽然 manifest 指定验证命令通过，但存在 task 范围内的 control map 越界和状态耦合阻塞项。
+
+VERIFY_RESULT: FAIL

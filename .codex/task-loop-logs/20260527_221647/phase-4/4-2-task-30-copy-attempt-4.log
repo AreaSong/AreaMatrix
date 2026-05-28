@@ -1,0 +1,34 @@
+一、执行结论：已完成
+
+二、执行范围：单任务 `4-2/task-30`。修改文件：
+- [core/src/db/ai_call_log.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/db/ai_call_log.rs:104)
+- [core/src/db/mod.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/db/mod.rs:38)
+- [core/src/ai_summary/call_log.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/ai_summary/call_log.rs:47)
+- [core/src/ai_summary/implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/ai_summary/implementation.rs:88)
+- [core/tests/ai_summary_validation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/ai_summary_validation.rs:314)
+- [core/tests/support/ai_summary_common.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/support/ai_summary_common.rs:264)
+
+三、完成情况：
+- 已将 `generate_ai_summary` 的 call-log gate 前置到 `execute_summary(...)` 之前，日志写入能力不可用时直接返回 `Db`，不触发本地或远程 runtime。
+- 新增 DB 层“可插入并回滚”的 call-log 预检路径，复用真实 insert SQL，不写入最终日志行。
+- 补充负路径测试：坏 `ai_call_log` schema + 远程 runtime probe，断言返回 `Db` 且 remote runtime 未被调用。
+- 未实现 control map 之外能力；未触碰 `apps/**`，`git diff --name-only -- apps` 为空。
+
+四、工程质量：
+- 代码结构保持在现有 ai_summary / db 边界内，没有新增依赖、mock-only 生产路径或硬编码通过态。
+- gate helper 使用真实 DB 事务插入再 rollback，覆盖“能写调用日志”而非只检查 schema。
+- 注释 / rustdoc / 文档同步：本轮未新增 public Rust API，未改 Core API / UDL / docs。
+- 错误处理：call-log gate 失败经既有 `map_call_log_error` 归一为 `CoreError::Db`。
+
+五、验证情况：
+- 已运行 `cargo fmt --all -- --check`：通过。
+- 已运行 `cargo test --test ai_summary_validation -- --nocapture`：4 passed。
+- 已运行 `./dev check task 4-2/task-30`：通过。包含 prompt doctor OK、`git diff --check` OK、fmt OK、clippy OK，以及 `ai_summary_contract_api` 4 passed、`ai_summary_failure_recovery` 7 passed、`ai_summary_implementation` 6 passed、`ai_summary_validation` 4 passed。
+- 未运行宽门禁 `cargo test --workspace` / `./dev check core` / `./dev check all`：manifest 未列出，且本次 retry 要求不得自行升级。
+- `ps` 辅助查看被沙箱拒绝：`operation not permitted`；不影响最终验证，因为 manifest 命令已完整退出并通过。
+
+六、风险与后续：
+- 剩余风险：CI / reviewer / Git checkpoint 尚未在本轮完成；本地 task validation 已提供新鲜证据。
+- 工作区仍有既有脏文件 `.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json`，本轮产品修复未依赖它们。
+- 建议下一个任务：进入 `4-2/task-30` 的 verify-ready 只读验收，确认上一轮 P0/P1 已消除。
+

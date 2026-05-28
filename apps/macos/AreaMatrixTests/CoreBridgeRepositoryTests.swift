@@ -158,6 +158,7 @@ final class MainSearchFiltersPageFeatureTests: XCTestCase {
     }
 
     @MainActor
+    // swiftlint:disable:next function_body_length
     func testS202SearchFiltersUserControlsProduceNonEmptyC202Request() async {
         let tree = RepositoryTreeNodeSnapshot.searchFiltersFixtureTree()
         guard let row = tree.sidebarRow(id: "docs/contracts") else {
@@ -347,7 +348,6 @@ private extension SearchResultPageSnapshot {
             indexStatus: .ready
         )
     }
-
 }
 
 private extension RepositoryTreeNodeSnapshot {
@@ -412,7 +412,6 @@ private extension CoreErrorMappingSnapshot {
             rawContext: "facet db locked"
         )
     }
-
 }
 
 struct S206SmartListRunRequest: Equatable {

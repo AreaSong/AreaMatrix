@@ -1,0 +1,50 @@
+一、执行结论
+
+已完成本次 `4-1/task-126` repair retry。Manifest 指定验证 `./dev check task 4-1/task-126` 已通过。
+
+二、执行范围
+
+单任务：`4-1/task-126`
+
+主要修改：
+- `apps/macos/AreaMatrix/**`
+- `apps/macos/AreaMatrixTests/**`
+
+工作树中还存在 task-loop/progress 记录改动：
+- `.codex/task-loop-runs/.../summary.json`
+- `tasks/prompts/_shared/progress.json`
+
+三、完成情况
+
+- page-feature 覆盖：已补齐 S2-15 对 C2-04 / C2-11 的整页闭环证据。
+- 页面入口 / 退出 / 错误态 / CoreBridge：`Cmd+K` 和菜单入口可打开命令面板；无 repo 状态显示 `Open repository`、`Settings`、`Help`；命令索引失败时保留可用命令 snapshot。
+- mock / fixture / 硬编码状态：移除了生产路径的 linked-page handoff sheet；S2-18/S2-21/S2-23 不再伪装成目标页，而是保留命令面板并展示明确阻塞证据；S2-22 路由到现有 Undo History host。
+- control map 外能力：未新增 S2-15 control map 外 Core 调用。
+- Forbidden Touches：未触碰 `core/src/**`。
+
+四、工程质量
+
+代码结构已收口，相关文件行数均控制在 500 行以内。新增逻辑没有引入新依赖，没有新增 public Rust API，也没有修改 UDL 或 Core Rust 实现。错误态保留可用命令，linked-page 未实现能力以明确阻塞证据呈现，不再用 mock-only sheet 伪装闭环。
+
+五、验证情况
+
+已运行并通过：
+
+```bash
+./dev check task 4-1/task-126
+```
+
+该命令实际通过：
+- `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`
+- `git diff --check`
+- `xcodebuild ... build CODE_SIGNING_ALLOWED=NO`
+
+额外检查：
+- `git diff --name-only | rg '^core/src/'` 无输出
+- linked-page handoff sheet 残留搜索无输出
+
+六、风险与后续
+
+剩余风险：本次按 manifest 只运行 build 级 page task validation，未升级为全量 XCTest 或 UI 真实窗口冒烟。
+
+建议下一个任务：进入 `4-1/task-126` verify-ready 验收。

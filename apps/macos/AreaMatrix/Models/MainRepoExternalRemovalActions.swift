@@ -74,3 +74,16 @@ extension OnboardingModel {
         Int64(Date().timeIntervalSince1970 * 1000)
     }
 }
+
+extension CoreErrorMappingSnapshot {
+    static func missingFromExternalChange(fileID: Int64) -> CoreErrorMappingSnapshot {
+        CoreErrorMappingSnapshot(
+            kind: .fileNotFound,
+            userMessage: "The selected file is missing.",
+            severity: .medium,
+            suggestedAction: "Refresh the current list or remove the stale index entry.",
+            recoverability: .refreshRequired,
+            rawContext: "file_id=\(fileID)"
+        )
+    }
+}

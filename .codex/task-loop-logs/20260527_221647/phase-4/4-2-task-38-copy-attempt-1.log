@@ -1,0 +1,58 @@
+一、执行结论
+
+已完成 `4-2/task-38: C3-08 failure-edge`。
+
+二、执行范围
+
+单任务执行，仅触碰 `Expected New Paths` 内的 Core 文件：
+
+- `core/src/db/mod.rs`
+- `core/src/semantic_search.rs`
+- `core/src/semantic_search/call_log.rs`
+- `core/src/semantic_search/implementation.rs`
+- `core/src/semantic_search/privacy.rs`
+- `core/src/semantic_search/store.rs`
+- `core/src/semantic_search/store/db.rs`
+- `core/src/semantic_search/store/types.rs`
+- `core/tests/semantic_search_failure_recovery.rs`
+- `core/tests/support/semantic_search_failure.rs`
+
+未触碰 `apps/**`。工作区里另有既存 task-loop 状态文件改动：`.codex/task-loop-runs/.../summary.json`、`tasks/prompts/_shared/progress.json`，不是本次 Core 实现改动范围。
+
+三、完成情况
+
+- 空态：默认 AI 关闭和空 repo 返回明确 fallback，不写 semantic index。
+- 非法输入：query、filter、pagination、confirmation、secret-like privacy ref 都返回 `CoreError::Config`，无写入。
+- 权限：文件内容不可读时返回 `PermissionDenied`，不写 index metadata / call log 半成品。
+- IO/DB：缺失正文计入 `failed_count`，全失败状态为 `Failed`；call log 插入失败会回滚 semantic index metadata。
+- 错误码映射：覆盖 `Config`、`PermissionDenied`、`Db locked/corrupted`、`Internal` 的 recoverability/severity。
+- 隐私/远程：AI 默认关闭；远程路线无已启用 provider 时只返回 `ProviderUnavailable`，不自动启用远程；日志断言不含 key/token/secret 片段。
+- 回滚：`build_embedding_index` 的 index metadata 与 AI call log 成功记录进入同一 DB transaction，日志失败不留下新索引半成品。
+
+四、工程质量
+
+代码结构按现有 `semantic_search` 模块拆分，没有新增依赖、mock-only、硬编码通过态或一次性脚本。新增测试拆到 327 行主测试 + 225 行 support，核心实现文件也低于 500 行阈值。错误路径显式返回或记录失败计数，不再静默吞掉内容读取失败。
+
+五、验证情况
+
+已运行并通过：
+
+- `cargo fmt --all -- --check`
+- `cargo test --test semantic_search_failure_recovery -- --nocapture`
+- `./dev check task 4-2/task-38`
+
+最终 `./dev check task 4-2/task-38` 覆盖并通过：
+
+- prompt doctor
+- git diff check
+- `cargo fmt --all -- --check`
+- `cargo clippy --all-targets --all-features -- -D warnings`
+- `semantic_search_contract_api`: 4 passed
+- `semantic_search_failure_recovery`: 7 passed
+- `semantic_search_implementation`: 9 passed
+
+六、风险与后续
+
+剩余风险：当前仍是 C3-08 本地/metadata 语义索引实现边界，未实现真实远程 provider 调用、OCR embedding、跨设备 embedding sync，这些均属于文档延后或相邻能力范围。
+
+建议下一个任务：继续 `4-2/task-39`，做 C3-08 validation。

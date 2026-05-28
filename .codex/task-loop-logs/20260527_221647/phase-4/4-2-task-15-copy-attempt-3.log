@@ -1,0 +1,52 @@
+一、执行结论
+
+已完成。
+
+二、执行范围
+
+单任务：`4-2/task-15`。本轮只触碰 `Expected New Paths` 内的 Core / tests 文件，未触碰 `apps/**`。
+
+修改文件清单：
+- [probe.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/remote_provider_config/probe.rs:96)：让 `keychain:` credential reference 走平台 probe runtime，不再被 Core 直接判为不可读。
+- [remote_provider_config_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/remote_provider_config_implementation.rs:257)：补充 `keychain:` reference 可通过 runtime 完成 test + enable 的证据。
+- [remote_provider_config_common.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/support/remote_provider_config_common.rs:1)：抽出重复测试 helper，修复测试文件超过 500 行问题。
+- [remote_provider_config_failure_recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/remote_provider_config_failure_recovery.rs:1)、[remote_provider_config_validation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/support/remote_provider_config_validation.rs:292)、[remote_provider_config_contract_api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/remote_provider_config_contract_api.rs:329)：同步测试引用和验收断言。
+
+三、完成情况
+
+核对清单结果：
+- capability spec / Core API / UDL / Rust / tests：通过。
+- S3-03 所需 Keychain credential reference：通过，Core 通过平台 runtime 消费 `keychain:`，不接触明文 key。
+- S3-09 只读消费 provider 状态：未扩展到 C3-09，实现仍只覆盖 C3-03。
+- control map 外能力：未实现。
+- Forbidden Touches：未触碰，`git diff --name-only -- apps` 和 `git status --short -- apps` 均无输出。
+
+四、工程质量
+
+代码结构清晰，没有新增依赖。`probe.rs` 保持 500 行，两个被点名测试文件分别为 396 / 401 行，新增 helper 175 行，均符合单文件 500 行阈值。
+
+错误边界保留：无平台 runtime 时 `keychain:` 返回 `PermissionDenied`；有 runtime 时 Core 只传安全存储 reference，不把 API key 放入 header、日志、返回值或持久化内容。
+
+五、验证情况
+
+已运行并通过：
+
+```bash
+./dev check task 4-2/task-15
+```
+
+该命令内通过：
+- prompt doctor
+- `git diff --check`
+- `cargo fmt --all -- --check`
+- `cargo clippy --all-targets --all-features -- -D warnings`
+- `cargo test --test remote_provider_config_contract_api -- --nocapture`：4 passed
+- `cargo test --test remote_provider_config_failure_recovery -- --nocapture`：8 passed
+- `cargo test --test remote_provider_config_implementation -- --nocapture`：8 passed
+- `cargo test --test remote_provider_config_validation -- --nocapture`：3 passed
+
+六、风险与后续
+
+剩余风险：未触碰 `apps/**`，因此真实 macOS Keychain 写入/删除和 Swift 平台 runtime wiring 仍由后续 S3-03 page-feature / bridge task 验证。当前 Core C3-03 已可作为后续 UI 接入依赖。
+
+建议下一个任务：继续 `4-2/task-53/54/55` 这类 S3-03 page-feature 接入任务，重点验证 Swift Keychain store 与 Core `keychain:` runtime handoff。

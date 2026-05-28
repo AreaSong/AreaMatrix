@@ -16,7 +16,7 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
     func testS125EntryCancelAndApplyBlockedByMissingCoreResolutionEndpoint() async {
         let conflictFile = FileEntrySnapshot.s125ConflictFixture(id: 125)
         let core = S125RecordingMainCore(files: [conflictFile])
-        let productionResolver = CoreBridge()
+        let blockedCapability = ICloudConflictResolutionCapability.blocked(.missingCoreResolutionEndpoint)
         let model = makeMainFileListModel(conflictFile: conflictFile, core: core)
 
         await model.selectFiles([conflictFile.id])
@@ -34,7 +34,7 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
         let body = await makeICloudConflictSheetBody(
             model: makeReadyICloudConflictModel(),
             resolutionState: model.iCloudConflictResolutionState,
-            resolutionCapability: productionResolver.iCloudConflictResolutionCapability,
+            resolutionCapability: blockedCapability,
             isTrashAvailable: true
         )
         let outOfScopeActions = await core.recordedOutOfScopeActions()
@@ -56,11 +56,15 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
             kind: .internal,
             rawContext: ICloudConflictResolutionBlocker.missingCoreResolutionEndpoint.rawContext
         ))
+        let blockedResolver = S125RecordingICloudConflictResolver(
+            capability: .blocked(.missingCoreResolutionEndpoint),
+            result: .failure(ICloudConflictResolutionBlocker.missingCoreResolutionEndpoint.coreError)
+        )
         let model = MainFileListModel(
             opening: .s125Fixture(repoPath: "/tmp/s125-repo", files: [conflictFile]),
             fileLister: core,
             fileDetailer: core,
-            iCloudConflictResolver: CoreBridge(),
+            iCloudConflictResolver: blockedResolver,
             changeLogLister: core,
             externalChangesSyncer: core,
             errorMapper: mapper,
@@ -72,7 +76,7 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
         let failedBody = await makeICloudConflictSheetBody(
             model: makeReadyICloudConflictModel(),
             resolutionState: model.iCloudConflictResolutionState,
-            resolutionCapability: CoreBridge().iCloudConflictResolutionCapability,
+            resolutionCapability: blockedResolver.iCloudConflictResolutionCapability,
             isTrashAvailable: true
         )
 
@@ -87,6 +91,10 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
         let outOfScopeActions = await core.recordedOutOfScopeActions()
         XCTAssertEqual(outOfScopeActions, [])
         XCTAssertNil(model.statusBanner)
+    }
+
+    func testS220CoreBridgeResolutionCapabilityIsSupported() {
+        XCTAssertEqual(CoreBridge().iCloudConflictResolutionCapability, .supported)
     }
 
     @MainActor
@@ -216,6 +224,8 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
             detailLogDiagnosticsState: model.detailLogDiagnosticsState,
             detailExternalCreateSyncState: model.detailExternalCreateSyncState,
             detailTagEditorState: model.detailTagEditorState,
+            detailTagSuggestionState: model.detailTagSuggestionState,
+            tagSuggestionPresentationRequest: model.tagSuggestionPresentationRequest,
             detailTagUndoToast: model.detailTagUndoToast,
             detailTabRequest: model.detailTabRequest,
             selectedImportProgressRow: nil,
@@ -223,9 +233,14 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
             batchTagStore: model.tagStore,
             batchTagUndoStore: model.undoActionStore,
             batchTagErrorMapper: model.errorMapper,
+            batchDeleter: CoreBridge(),
             batchCategoryChanger: model.batchCategoryChanger,
+            batchRenamer: CoreBridge(),
             categoryRows: [],
             onBatchCategoryApplied: { _ in },
+            onBatchDeleteApplied: { _ in },
+            onBatchRenameApplied: { _ in },
+            onBatchCategoryCreateNewCategory: { _ in },
             onRetrySelectedFileDetail: {},
             tagActions: .noop,
             onCopyPaths: { _ in },
@@ -237,6 +252,7 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
             onDetailTabRequestConsumed: { _ in },
             onBeginRenameFile: model.beginRename,
             onBeginChangeCategoryFile: model.beginChangeCategory,
+            onBeginClassifierCorrectionFile: model.beginClassifierCorrection,
             onBeginDeleteFile: model.beginDelete,
             onBeginICloudConflictResolution: model.beginICloudConflictResolution,
             writeActionDisabledReason: model.writeActionDisabledReason,
@@ -268,6 +284,7 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
             originalVersion: .s125Original(repoPath: "/tmp/s125-repo"),
             conflictedCopyVersion: .s125ConflictedCopy(repoPath: "/tmp/s125-repo"),
             pathValidator: pathValidator,
+            conflictReviewer: nil,
             errorMapper: errorMapper
         )
     }
@@ -285,7 +302,7 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
             resolutionCapability: resolutionCapability,
             isTrashAvailable: isTrashAvailable,
             onCancel: {},
-            onApply: { _, _, _ in },
+            onApply: { _ in },
             onCollectDiagnostics: {}
         ).body)
     }

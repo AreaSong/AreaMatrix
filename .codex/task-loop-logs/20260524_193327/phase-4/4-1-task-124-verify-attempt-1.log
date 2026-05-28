@@ -1,0 +1,68 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-1/task-124`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-124-s2-15-c2-04-smart-lists.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportProgressListIntegration.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentActionRouting.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/MainEmptyImportEntryTests.swift`
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 S2-15 页面中的 C2-04 功能点
+- 结果：通过
+- 证据：S2-15 control map 声明 C2-04/C2-11，本 task 只新增 Smart List 发现与打开入口；C2-11 command index 未被实现或改动。
+- 涉及文件：`ImportProgressListIntegration.swift:307`、`ImportProgressListIntegration.swift:356`
+
+- 项目：读取页面规格、control map、Core API、C2-04 能力规格
+- 结果：通过
+- 证据：已核对 S2-15 规格、Stage 2 control map、Core API 中 `run_smart_list`、C2-04 smart-lists 文档。
+- 涉及文件：`S2-15-command-palette.md`、`stage-2-control-map.md`、`core-api.md`、`C2-04-smart-lists.md`
+
+- 项目：只接入 C2-04 对应 CoreBridge / 状态 / 错误映射
+- 结果：通过
+- 证据：点击 Smart List 后调用 `restoreSavedSearch`，最终走 `searchQuerying.runSmartList(...)`；CoreBridge 调 UniFFI `runSmartList(...)`。失败路径进入 `mapCoreError` 并写入 `searchState.failed`。
+- 涉及文件：`ImportProgressListIntegration.swift:417`、`MainRepositoryContentActionRouting.swift:195`、`MainListSystemActions.swift:399`、`CoreFileRenaming.swift:186`
+
+- 项目：不顺手实现相邻页面、相邻平台或同页其他能力
+- 结果：通过
+- 证据：`git diff --name-only` 仅含 macOS app/test 路径和 task-loop 状态文件；`core/src/**` 与 `core/area_matrix.udl` 无 diff。
+- 涉及文件：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。新增 `CommandPaletteSmartListTarget` 负责目标匹配，入口扩展集中在 `commandPaletteRouteView()`，未引入跨层绕行。
+- 注释 / rustdoc / 文档同步：通过。本 task 为 Swift UI 接入，无新增 public Rust API；文档与 API/UDL 已对齐。
+- 错误处理与边界处理：通过。C2-04 错误沿 `runSmartList` 抛出并映射到 `searchState.failed`；Smart List 打开只读，不触碰文件。
+- 测试与验证覆盖：通过。新增 S2-15 Smart List 目标渲染测试；既有 `testS206SmartListOpenAndRetryUseC204RunSmartList` 证明打开/重试使用 `runSmartList` 而非 `searchFiles`。
+- 占位、硬编码、mock-only、一次性实现检查：通过。生产路径没有 mock/fixture/static 状态伪装真实闭环；测试 fixture 仅用于单元测试。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-124`
+- 通过：`prompt doctor` OK；`git diff --check` OK；macOS `xcodebuild ... build CODE_SIGNING_ALLOWED=NO` 最终 `BUILD SUCCEEDED`，命令退出码 0。
+- 失败：无。
+- 缺失：未运行额外 UI 真机交互 smoke；manifest 未要求，且 task-scoped validation 已通过。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+
+VERIFY_RESULT: PASS

@@ -48,3 +48,39 @@ extension CoreBridge: CoreMetadataRepairing {
 private func repairCoreMetadata(repoPath: String, options: RepairOptions) throws -> RepairReport {
     try repairMetadata(repoPath: repoPath, options: options)
 }
+
+extension TagSuggestionApplyReportSnapshot {
+    init(coreReport: TagSuggestionApplyReport) {
+        fileID = coreReport.fileId
+        requestedCount = coreReport.requestedCount
+        appliedCount = coreReport.appliedCount
+        skippedCount = coreReport.skippedCount
+        failedCount = coreReport.failedCount
+        itemResults = coreReport.itemResults.map(TagSuggestionApplyItemResultSnapshot.init(coreResult:))
+        tagSet = TagSetSnapshot(coreTagSet: coreReport.tagSet)
+        undoToken = coreReport.undoToken
+        refreshTargets = coreReport.refreshTargets
+    }
+}
+
+private extension TagSuggestionApplyItemResultSnapshot {
+    init(coreResult: TagSuggestionApplyItemResult) {
+        suggestionID = coreResult.suggestionId
+        slug = coreResult.slug
+        status = TagSuggestionApplyStatusSnapshot(coreStatus: coreResult.status)
+        error = coreResult.error
+    }
+}
+
+private extension TagSuggestionApplyStatusSnapshot {
+    init(coreStatus: TagSuggestionApplyStatus) {
+        switch coreStatus {
+        case .applied:
+            self = .applied
+        case .alreadyAdded:
+            self = .alreadyAdded
+        case .failed:
+            self = .failed
+        }
+    }
+}

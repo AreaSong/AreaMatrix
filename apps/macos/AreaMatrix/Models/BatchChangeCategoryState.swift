@@ -67,6 +67,22 @@ struct BatchChangeCategoryApplyResult: Equatable {
     var failure: CoreErrorMappingSnapshot?
 }
 
+struct BatchChangeCategoryPreviewRequest {
+    var repoPath: String
+    var fileIDs: [Int64]
+    var targetCategory: String
+    var moveRepoOwnedFiles: Bool
+}
+
+struct BatchChangeCategoryApplyGate {
+    var targetCategory: String
+    var moveRepoOwnedFiles: Bool
+    var fileIDs: [Int64]
+    var preview: BatchCategoryPreviewReportSnapshot?
+    var disabledReason: String?
+    var isApplying: Bool
+}
+
 enum BatchChangeCategoryUndoAction {
     static func stateAfterBatchApply(
         repoPath: String,
@@ -106,7 +122,7 @@ struct BatchChangeCategoryNewCategoryHandoff: Equatable, Identifiable {
     }
 }
 
-struct BatchChangeCategoryNewCategoryReturnContext: Equatable {
+struct BatchChangeCategoryReturnContext: Equatable {
     var route: BatchChangeCategoryRoute
     var handoff: BatchChangeCategoryNewCategoryHandoff
 
@@ -124,14 +140,14 @@ struct BatchChangeCategoryNewCategoryReturnContext: Equatable {
 
 enum BatchChangeCategoryClassifierReturn {
     static func cancelledRoute(
-        context: BatchChangeCategoryNewCategoryReturnContext
+        context: BatchChangeCategoryReturnContext
     ) -> BatchChangeCategoryRoute {
         context.routeRestoringOriginalTarget()
     }
 
     static func acceptedRoute(
         category: String,
-        context: BatchChangeCategoryNewCategoryReturnContext
+        context: BatchChangeCategoryReturnContext
     ) -> BatchChangeCategoryRoute? {
         guard let normalized = BatchChangeCategoryCreatedCategoryReturn.normalizedCategory(category) else {
             return nil
@@ -141,7 +157,7 @@ enum BatchChangeCategoryClassifierReturn {
 
     static func acceptedRoute(
         notification: Notification,
-        context: BatchChangeCategoryNewCategoryReturnContext
+        context: BatchChangeCategoryReturnContext
     ) -> BatchChangeCategoryRoute? {
         guard let category = ClassifierRuleEditorSaveEvents.savedCategory(from: notification) else {
             return nil
@@ -287,19 +303,16 @@ enum BatchChangeCategoryPreviewDisclosure {
 
 enum BatchChangeCategoryAction {
     static func preview(
-        repoPath: String,
-        fileIDs: [Int64],
-        targetCategory: String,
-        moveRepoOwnedFiles: Bool,
+        request: BatchChangeCategoryPreviewRequest,
         changer: any CoreBatchCategoryChanging,
         errorMapper: any CoreErrorMapping
     ) async -> BatchChangeCategoryPreviewState {
         do {
             let report = try await changer.previewBatchMoveToCategory(
-                repoPath: repoPath,
-                fileIDs: fileIDs,
-                targetCategory: targetCategory,
-                moveRepoOwnedFiles: moveRepoOwnedFiles
+                repoPath: request.repoPath,
+                fileIDs: request.fileIDs,
+                targetCategory: request.targetCategory,
+                moveRepoOwnedFiles: request.moveRepoOwnedFiles
             )
             return .loaded(report)
         } catch {
@@ -338,24 +351,17 @@ enum BatchChangeCategoryAction {
 }
 
 enum BatchChangeCategoryValidation {
-    static func canApply(
-        targetCategory: String,
-        moveRepoOwnedFiles: Bool,
-        fileIDs: [Int64],
-        preview: BatchCategoryPreviewReportSnapshot?,
-        disabledReason: String?,
-        isApplying: Bool
-    ) -> Bool {
-        guard !isApplying,
-              disabledReason == nil,
-              !targetCategory.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
-              !fileIDs.isEmpty,
-              let preview,
+    static func canApply(_ gate: BatchChangeCategoryApplyGate) -> Bool {
+        guard !gate.isApplying,
+              gate.disabledReason == nil,
+              !gate.targetCategory.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+              !gate.fileIDs.isEmpty,
+              let preview = gate.preview,
               preview.canApply else { return false }
-        return preview.targetCategory == targetCategory &&
-            preview.moveRepoOwnedFiles == moveRepoOwnedFiles &&
-            preview.requestedFileCount == Int64(Set(fileIDs).count) &&
-            Set(preview.items.map(\.fileID)) == Set(fileIDs)
+        return preview.targetCategory == gate.targetCategory &&
+            preview.moveRepoOwnedFiles == gate.moveRepoOwnedFiles &&
+            preview.requestedFileCount == Int64(Set(gate.fileIDs).count) &&
+            Set(preview.items.map(\.fileID)) == Set(gate.fileIDs)
     }
 }
 

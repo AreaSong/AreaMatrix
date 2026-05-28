@@ -1,8 +1,9 @@
 @testable import AreaMatrix
 import XCTest
 
-final class S212BatchChangeCategoryPageIntegrationVerifyTests: XCTestCase {
+final class S212BatchCategoryVerifyTests: XCTestCase {
     @MainActor
+    // swiftlint:disable:next function_body_length
     func testS212PageIntegrationUsesRealCorePreviewApplyUndoAndExitRefresh() async throws {
         let context = try await makeS212IntegrationContext()
         defer { context.cleanUp() }
@@ -82,7 +83,7 @@ final class S212BatchChangeCategoryPageIntegrationVerifyTests: XCTestCase {
     }
 
     func testS212CreateNewCategorySaveNotificationReturnsToSheetWithCreatedCategoryPreviewContext() {
-        let context = BatchChangeCategoryNewCategoryReturnContext.s212Fixture()
+        let context = BatchChangeCategoryReturnContext.s212Fixture()
         let notification = ClassifierRuleEditorSaveEvents.notification(savedCategory: " tax ")
 
         let acceptedRoute = BatchChangeCategoryClassifierReturn.acceptedRoute(
@@ -97,7 +98,7 @@ final class S212BatchChangeCategoryPageIntegrationVerifyTests: XCTestCase {
     }
 
     func testS212CreateNewCategoryCancelReturnsToSheetWithOriginalCategory() {
-        let context = BatchChangeCategoryNewCategoryReturnContext.s212Fixture(initialTargetCategory: "docs")
+        let context = BatchChangeCategoryReturnContext.s212Fixture(initialTargetCategory: "docs")
 
         let cancelledRoute = BatchChangeCategoryClassifierReturn.cancelledRoute(context: context)
 
@@ -108,7 +109,7 @@ final class S212BatchChangeCategoryPageIntegrationVerifyTests: XCTestCase {
     }
 
     func testS212CreateNewCategoryBlankSaveNotificationDoesNotSelectCreatedCategory() {
-        let context = BatchChangeCategoryNewCategoryReturnContext.s212Fixture()
+        let context = BatchChangeCategoryReturnContext.s212Fixture()
         let notification = ClassifierRuleEditorSaveEvents.notification(savedCategory: "   ")
 
         let acceptedRoute = BatchChangeCategoryClassifierReturn.acceptedRoute(
@@ -120,7 +121,7 @@ final class S212BatchChangeCategoryPageIntegrationVerifyTests: XCTestCase {
     }
 
     func testS212ClassifierRuleEditorRouteKeepsSettingsEntryAndBatchReturnContextSeparate() {
-        let context = BatchChangeCategoryNewCategoryReturnContext.s212Fixture(initialTargetCategory: "finance")
+        let context = BatchChangeCategoryReturnContext.s212Fixture(initialTargetCategory: "finance")
         let settingsRoute = MainSearchDestination.classifierRuleEditor(context: nil)
         let returningRoute = MainSearchDestination.classifierRuleEditor(context: context)
 
@@ -153,7 +154,7 @@ final class S212BatchChangeCategoryPageIntegrationVerifyTests: XCTestCase {
 
         let didValidate = await model.validateClassifierRules()
 
-        let context = BatchChangeCategoryNewCategoryReturnContext.s212Fixture()
+        let context = BatchChangeCategoryReturnContext.s212Fixture()
         let savedCategory = try XCTUnwrap(savedCategories.first)
         let route = BatchChangeCategoryClassifierReturn.acceptedRoute(
             category: savedCategory,
@@ -164,7 +165,6 @@ final class S212BatchChangeCategoryPageIntegrationVerifyTests: XCTestCase {
         XCTAssertEqual(savedCategories, ["tax"])
         XCTAssertEqual(route, context.routeSelectingCreatedCategory("tax"))
     }
-
 }
 
 private struct S212IntegrationContext {
@@ -350,12 +350,12 @@ private extension RepoConfigSnapshot {
     }
 }
 
-private extension BatchChangeCategoryNewCategoryReturnContext {
+private extension BatchChangeCategoryReturnContext {
     static func s212Fixture(
         initialTargetCategory: String? = nil
-    ) -> BatchChangeCategoryNewCategoryReturnContext {
+    ) -> BatchChangeCategoryReturnContext {
         let route = BatchChangeCategoryRoute.s212Route(initialTargetCategory: initialTargetCategory)
-        return BatchChangeCategoryNewCategoryReturnContext(
+        return BatchChangeCategoryReturnContext(
             route: route,
             handoff: BatchChangeCategoryNewCategoryHandoff(
                 selectedFileIDs: route.fileIDs,
@@ -432,7 +432,10 @@ private func assertS212Applied(
     XCTAssertTrue(FileManager.default.fileExists(atPath: context.repoOwnedFinanceURL.path))
     XCTAssertFalse(FileManager.default.fileExists(atPath: context.repoOwnedDocsURL.path))
     XCTAssertTrue(FileManager.default.fileExists(atPath: context.externalSourceURL.path))
-    let financeFiles = try await context.bridge.listFiles(repoPath: context.repoURL.path, filter: .currentCategory("finance"))
+    let financeFiles = try await context.bridge.listFiles(
+        repoPath: context.repoURL.path,
+        filter: .currentCategory("finance")
+    )
     XCTAssertEqual(Set(financeFiles.map(\.id)), Set([context.repoOwned.id, context.indexOnly.id]))
     let actions = try await context.bridge.listUndoActions(repoPath: context.repoURL.path)
     XCTAssertEqual(actions.first?.actionID, report.undoToken)

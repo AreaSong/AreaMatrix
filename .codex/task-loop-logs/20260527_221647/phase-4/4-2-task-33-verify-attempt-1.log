@@ -1,0 +1,71 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-2/task-33`
+- 对应文件路径：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-2-stage3-ai/task-33-c3-07-failure-edge.md`
+- 核验范围：`core/src/**`、`core/area_matrix.udl`、`core/tests/**`
+- 禁止触碰范围：`apps/**`
+
+三、完成度摘要
+
+- 已覆盖项数：9
+- 未覆盖项数：0
+- 通过项数：9
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：空态、非法输入、权限、IO/DB 错误和错误码映射
+- 结果：通过
+- 证据：空态 `NoSuggestion`、非法输入 `Config/FileNotFound`、权限 `PermissionDenied`、DB 损坏 `Db`、错误映射 `Config/FileNotFound/Db/PermissionDenied/Io` 均有测试覆盖；`./dev check task 4-2/task-33` 中 `ai_tags_suggestion_failure_recovery` 10/10 通过。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/ai_tags_suggestion_failure_recovery.rs:23`、`:69`、`:123`、`:156`、`:324`
+
+- 项目：失败不留下半成品
+- 结果：通过
+- 证据：单项 DB 写失败通过 savepoint 回滚失败项，仅保留成功项；undo 或 apply call log 失败时整批事务回滚；用户可见路径保持不变。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/db/tags/ai_suggestions.rs:103`、`:165`、`:292`；`/Users/as/Ai-Project/project/AreaMatrix/core/tests/ai_tags_suggestion_failure_recovery.rs:227`
+
+- 项目：隐私/AI/远程调用默认关闭、密钥不入日志
+- 结果：通过
+- 证据：默认 AI off 返回 `Skipped/AiDisabled` 且 runtime 未调用；隐私规则命中不调用 provider；远程日志和 report 均断言不含 key/token/secure-storage 片段。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/ai_tags_suggestion/implementation.rs:34`、`:52`、`:133`；`/Users/as/Ai-Project/project/AreaMatrix/core/tests/ai_tags_suggestion_failure_recovery.rs:23`、`:176`、`:201`
+
+- 项目：不得吞错或静默降级
+- 结果：通过
+- 证据：apply 部分失败进入 `item_results` 的 `Failed` 状态并带错误；runtime/provider 不可用返回结构化 `Unavailable` 并写脱敏 call log，不伪装成功。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/db/tags/ai_suggestions.rs:215`；`/Users/as/Ai-Project/project/AreaMatrix/core/src/ai_tags_suggestion/implementation.rs:273`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，C3-07 被拆到 `implementation/context/executor/call_log/report` 与 DB apply 层，职责清晰。
+- 注释 / rustdoc / 文档同步：通过，public API 有 rustdoc；`core-api.md` 与 `core/area_matrix.udl` 的 C3-07 类型和枚举一致。
+- 错误处理与边界处理：通过，生产路径未发现 `unwrap()`、`expect()`、`panic!()`；错误通过 `CoreError` 显式返回。
+- 测试与验证覆盖：通过，覆盖 contract、implementation、failure-recovery 三个目标。
+- 占位、硬编码、mock-only、一次性实现检查：通过，测试 runtime 仅作为可控 provider stub，生产路径连接真实 DB、tag、change log、undo、AI call log 事务路径。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-2/task-33`
+- 通过：prompt doctor、`git diff --check`、`cargo fmt --all -- --check`、`cargo clippy --all-targets --all-features -- -D warnings`
+- 通过：`cargo test --test ai_tags_suggestion_contract_api -- --nocapture`，4 passed
+- 通过：`cargo test --test ai_tags_suggestion_failure_recovery -- --nocapture`，10 passed
+- 通过：`cargo test --test ai_tags_suggestion_implementation -- --nocapture`，3 passed
+- 缺失：未发现缺失验证；未运行 `./dev check all`，因为本 task manifest 只要求 `./dev check task 4-2/task-33`。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+- `apps/**` 未发现 diff 或 untracked forbidden touches。
+- `progress.json` 与 `.codex/task-loop-runs/.../summary.json` 仍显示本 task `in_progress`，按本 verify 阶段规则不作为失败依据，后续应由 runner 在 PASS 后收口。
+
+
+
+VERIFY_RESULT: PASS

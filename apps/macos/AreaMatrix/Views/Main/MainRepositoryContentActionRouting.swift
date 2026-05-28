@@ -1,4 +1,5 @@
 import SwiftUI
+
 extension MainRepositoryContentView {
     var actionDestinationBinding: Binding<MainFileActionDestination?> {
         Binding(
@@ -20,20 +21,27 @@ extension MainRepositoryContentView {
             renameState: fileListModel.renameState,
             deleteState: fileListModel.deleteState,
             changeCategoryState: fileListModel.changeCategoryState,
+            classifierCorrectionContextState: fileListModel.classifierCorrectionContextState,
             iCloudConflictResolutionState: fileListModel.iCloudConflictResolutionState,
             iCloudConflictResolutionCapability: fileListModel.iCloudConflictResolver.iCloudConflictResolutionCapability,
             repoPath: opening.config.repoPath,
             isTrashAvailable: OnboardingModel.isSystemTrashAvailable(),
             iCloudConflictPathValidator: CoreBridge(),
+            iCloudConflictReviewer: CoreBridge(),
             iCloudConflictErrorMapper: fileListModel.errorMapper,
             onDismiss: fileListModel.clearPendingActionDestination,
             onRename: submitRename,
             onShowExistingFile: showExistingFile,
             onPreviewChangeCategory: previewChangeCategory,
+            onLoadClassifierCorrectionContext: loadClassifierCorrectionContext,
             onChangeCategory: submitChangeCategory,
+            onBeginClassifierRuleHandoff: fileListModel.beginClassifierRuleHandoff,
             onRenameFirstFromChangeCategory: { fileID, targetCategory in
                 fileListModel.beginRenameFromChangeCategory(fileID: fileID, targetCategory: targetCategory)
             },
+            onEditClassifierRule: fileListModel.beginClassifierRuleSave,
+            onPreviewClassifierRuleImpact: fileListModel.beginClassifierImpactPreview,
+            onClassifierRuleSaved: fileListModel.completeClassifierRuleSave,
             onOpenChangeCategoryPermissionRecovery: onOpenChangeCategoryPermissionRecovery,
             onDelete: submitDelete,
             onApplyICloudConflict: applyICloudConflict,
@@ -80,20 +88,7 @@ extension MainRepositoryContentView {
                 onClose: fileListModel.clearPendingSearchDestination
             )
         case .commandPalette:
-            SearchCommandPaletteRouteView(
-                query: filterText,
-                batchAddTagsRoute: commandPaletteBatchAddTagsRoute(),
-                batchChangeCategoryRoute: commandPaletteBatchChangeCategoryRoute(),
-                onOpenBatchAddTags: { route in
-                    pendingBatchAddTagsRoute = route
-                    fileListModel.clearPendingSearchDestination()
-                },
-                onOpenBatchChangeCategory: { route in
-                    pendingBatchChangeCategoryRoute = route
-                    fileListModel.clearPendingSearchDestination()
-                },
-                onClose: fileListModel.clearPendingSearchDestination
-            )
+            commandPaletteRouteView()
         case let .classifierRuleEditor(context):
             ClassifierRuleEditorRouteView(
                 repoPath: opening.config.repoPath,
@@ -289,11 +284,30 @@ extension MainRepositoryContentView {
         Task { await fileListModel.loadMoveToCategoryPreview(fileID: fileID, targetCategory: targetCategory) }
     }
 
-    private func submitChangeCategory(fileID: Int64, targetCategory: String) {
+    private func loadClassifierCorrectionContext(fileID: Int64, filename: String) {
+        Task { await fileListModel.loadClassifierCorrectionContext(fileID: fileID, filename: filename) }
+    }
+
+    private func submitChangeCategory(
+        fileID: Int64,
+        targetCategory: String,
+        mode: MainFileCategoryMoveMode,
+        options: MainFileCategoryMoveOptions
+    ) {
         Task {
-            let didMove = await fileListModel.submitMoveToCategory(fileID: fileID, targetCategory: targetCategory) { movedFile in
-                refreshAfterCategoryMove(movedFile)
-            }
+            let didMove = await fileListModel.submitMoveToCategory(
+                fileID: fileID,
+                targetCategory: targetCategory,
+                mode: mode,
+                options: options,
+                onMoved: { changedFile in
+                    if mode == .classifierCorrection {
+                        Task { await refreshAfterClassifierCorrection(changedFile) }
+                    } else {
+                        refreshAfterCategoryMove(changedFile)
+                    }
+                }
+            )
             if didMove { refreshLatestUndoToast() }
         }
     }
@@ -305,18 +319,30 @@ extension MainRepositoryContentView {
         }
     }
 
-    private func applyICloudConflict(
-        fileID: Int64,
-        strategy: ICloudConflictResolutionStrategy,
-        originalPath: String?,
-        conflictedCopyPath: String?
-    ) {
+    private func applyICloudConflict(_ context: ICloudConflictApplyContext) {
         Task {
+            let result = context.result
+            if let report = result.report {
+                await fileListModel.completePreviewedICloudConflictResolution(
+                    fileID: context.fileID,
+                    strategy: result.strategy,
+                    report: report
+                )
+                return
+            }
+            if let failure = result.failure {
+                fileListModel.recordICloudConflictResolutionFailure(
+                    fileID: context.fileID,
+                    strategy: result.strategy,
+                    mapping: failure
+                )
+                return
+            }
             await fileListModel.applyICloudConflictResolution(
-                fileID: fileID,
-                strategy: strategy,
-                originalPath: originalPath,
-                conflictedCopyPath: conflictedCopyPath
+                fileID: context.fileID,
+                strategy: result.strategy,
+                originalPath: context.originalPath,
+                conflictedCopyPath: context.conflictedCopyPath
             )
         }
     }
@@ -366,7 +392,6 @@ struct SearchEmptyRouteView: View {
         .accessibilityLabel("Search conditions. Query \(querySummary). Filters \(filterSummary).")
     }
 
-    @ViewBuilder
     private var actionButtons: some View {
         HStack(spacing: 10) {
             if request.filters.isEmpty {
@@ -380,7 +405,6 @@ struct SearchEmptyRouteView: View {
         }
     }
 
-    @ViewBuilder
     private var filterShortcutButtons: some View {
         VStack(alignment: .center, spacing: 8) {
             if request.filters.fileKind != nil {
@@ -410,9 +434,13 @@ struct SearchEmptyRouteView: View {
         return "No files match \(activeFilterText)."
     }
 
-    private var shouldShowFilterShortcuts: Bool { request.filters.activeFilterCount > 0 && indexStatus != .indexing }
+    private var shouldShowFilterShortcuts: Bool {
+        request.filters.activeFilterCount > 0 && indexStatus != .indexing
+    }
 
-    private var querySummary: String { request.query.isEmpty ? "None" : request.query }
+    private var querySummary: String {
+        request.query.isEmpty ? "None" : request.query
+    }
 
     private var filterSummary: String {
         let chips = SearchFilterChips.items(for: request.filters).map(\.label)
@@ -449,7 +477,9 @@ extension MainRepositoryContentView {
         SearchFilterStateRouting.assign(updated, searchFilters: &searchFilters, fileListModel: fileListModel)
     }
 
-    func searchAllFileTypesFromEmptyState() { removeSearchFilterFromEmptyState(.fileKind) }
+    func searchAllFileTypesFromEmptyState() {
+        removeSearchFilterFromEmptyState(.fileKind)
+    }
 
     func applyQuerySuggestion(_ query: String) {
         filterText = query
@@ -457,44 +487,4 @@ extension MainRepositoryContentView {
         fileListModel.enterSearch(context: .toolbar)
         isSearchFieldFocused = true
     }
-}
-
-struct SearchIndexingStatusRouteView: View {
-    let request: SearchQueryRequestSnapshot
-    let indexStatus: SearchIndexStatusSnapshot?
-    let onRetry: () -> Void
-    let onClose: () -> Void
-
-    var body: some View {
-        MainFileActionSheetContainer(title: "Search Index Status", pageID: "S2-01-indexing-status") {
-            Label(statusText, systemImage: "exclamationmark.triangle")
-                .font(.callout)
-            metadataRow("Query", request.query)
-            metadataRow("Scope", request.scope.displayName)
-            HStack {
-                Spacer()
-                Button("Close", action: onClose)
-                    .keyboardShortcut(.cancelAction)
-                Button("Retry", action: onRetry)
-            }
-        }
-        .accessibilityIdentifier("S2-01-indexing-status-search-route")
-    }
-
-    private var statusText: String {
-        switch indexStatus {
-        case .unavailable:
-            "Search index unavailable"
-        case .indexing:
-            "Search index is updating"
-        case .ready:
-            "Search index ready"
-        case nil:
-            "Search index status unavailable"
-        }
-    }
-}
-
-private func searchContextText(_ request: SearchQueryRequestSnapshot) -> String {
-    "Scope: \(request.scope.displayName) | Sort: \(request.sort.displayName)"
 }

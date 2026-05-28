@@ -224,6 +224,7 @@ extension ImportFolderPreviewModel {
     func progressItems() -> [ImportBatchProgressSnapshot.Item] {
         rows.map { row in
             ImportBatchProgressSnapshot.Item(
+                fileID: nil,
                 sourcePath: row.fileURL.path,
                 targetPath: targetRelativePath(for: row),
                 phase: progressPhase(for: row.status),

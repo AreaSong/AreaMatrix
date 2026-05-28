@@ -22,6 +22,8 @@ const S1_25_ICLOUD_CONFLICT_MIN: &str =
 const API_RS: &str = include_str!("../src/api.rs");
 const DOMAIN_RS: &str = include_str!("../src/domain.rs");
 const ICLOUD_CONFLICTS_RS: &str = include_str!("../src/icloud_conflicts.rs");
+const ICLOUD_CONFLICT_PATHS_RS: &str = include_str!("../src/icloud_conflicts/paths.rs");
+const ICLOUD_CONFLICT_TYPES_RS: &str = include_str!("../src/icloud_conflicts/types.rs");
 const UDL: &str = include_str!("../area_matrix.udl");
 
 fn assert_contains(haystack: &str, needle: &str) {
@@ -244,12 +246,22 @@ fn assert_rust_entry_points_are_real_read_only_wiring() {
         ".same_file_system(true)",
         "filter_entry(|entry| should_descend(&repo, entry))",
         "conflicts.sort_by",
-        "ICloudConflictStatus::NeedsReview",
         "reject_placeholder_path",
-        "AREA_MATRIX_DIR",
     ] {
         assert_contains(ICLOUD_CONFLICTS_RS, fragment);
     }
+
+    for fragment in [
+        "const AREA_MATRIX_DIR",
+        "any(|component| component.as_os_str() == AREA_MATRIX_DIR)",
+    ] {
+        assert_contains(ICLOUD_CONFLICT_PATHS_RS, fragment);
+    }
+
+    assert_contains(
+        ICLOUD_CONFLICT_TYPES_RS,
+        "ICloudConflictStatus::NeedsReview",
+    );
 }
 
 #[test]

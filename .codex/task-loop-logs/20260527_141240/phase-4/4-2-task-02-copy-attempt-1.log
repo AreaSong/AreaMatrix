@@ -1,0 +1,49 @@
+一、执行结论
+
+已完成 `4-2/task-02`。
+
+二、执行范围
+
+单任务：只实现 C3-01 AI settings config Core 行为闭环。
+
+修改文件：
+- `core/src/ai_settings.rs`
+- `core/src/db/mod.rs`
+- `core/src/db/ai_settings.rs`
+- `core/tests/ai_settings_config_contract_api.rs`
+- `core/tests/ai_settings_config_implementation.rs`
+
+`core/area_matrix.udl` 已有 C3-01 签名和类型，未改。未触碰 `apps/**`。
+
+三、完成情况
+
+- 只实现 C3-01：通过，未实现 C3-02/C3-03/C3-09 等相邻能力。
+- 输入/输出/DB/错误映射：通过。`load_ai_config` 读取默认关闭或已持久化配置；`update_ai_config` 将 `AiConfig` 以 JSON 写入 SQLite `repo_config.ai_config`，并同步 `ai_enabled` legacy key。
+- Rust Core 平台无关：通过，无 UI/APIKit/Swift 依赖。
+- 最小测试支撑：已新增 implementation 测试，覆盖持久化、重载、未初始化更新拒绝、非法 payload 无部分写入、事务回滚、用户文件和 remote/secret 边界。
+
+四、工程质量
+
+实现沿用现有 SQLite `repo_config` key/value 表，不新增 schema/migration，不写用户文件，不写 API key，不触发远程调用。更新路径是事务式写入；失败保持旧配置可读。新增 public 类型已有 rustdoc，新增 DB helper 为内部模块；无 mock-only、硬编码通过态或一次性脚本逻辑。
+
+五、验证情况
+
+已运行并通过：
+
+```bash
+./dev check task 4-2/task-02
+```
+
+验证内容：
+- `prompt_pipeline.py doctor`：OK，637 tasks / 637 manifests
+- `git diff --check`：通过
+- `cargo test --test ai_settings_config_contract_api -- --nocapture`：5 passed
+- `cargo test --test ai_settings_config_implementation -- --nocapture`：5 passed
+
+按任务要求没有升级到 `cargo test --workspace`、clippy 或全量 gate。
+
+六、风险与后续
+
+剩余风险：这是 C3-01 配置元数据闭环，不包含 provider/keychain、本地模型、远程 provider 测试、隐私规则 CRUD、AI call log 或 AI 结果生成，这些仍由后续 C3 任务实现。工作树中已有 `.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json` 脏状态，不属于本次 Core 实现范围。
+
+建议下一个任务：继续 `4-2/task-03`，补 C3-01 failure-edge 验证。

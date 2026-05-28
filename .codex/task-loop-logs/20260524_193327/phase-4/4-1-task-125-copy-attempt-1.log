@@ -1,0 +1,57 @@
+**一、执行结论**
+
+已完成 `4-1/task-125`。
+
+**二、执行范围**
+
+单任务：S2-15 command palette 中的 C2-11 command-index 接入。
+
+修改文件：
+- [CoreBridge.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift)
+- [MainFileListModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileListModel.swift)
+- [MainFileActionRoutingActions.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileActionRoutingActions.swift)
+- [ImportProgressView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportProgressView.swift)
+- [ImportProgressListIntegration.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportProgressListIntegration.swift)
+- [MainRepositoryContentView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift)
+- [MainEmptyImportEntryTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/MainEmptyImportEntryTests.swift)
+- [ImportBatchICloudPageIntegrationTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportBatchICloudPageIntegrationTests.swift)
+- [MainRepoExternalRemovalTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/MainRepoExternalRemovalTests.swift)
+
+工作树里还有既有脏文件 `.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json`，未纳入本次任务处理。
+
+**三、完成情况**
+
+核对清单通过：已读取并按 S2-15、Stage 2 control map、Core API、C2-11 规格接入；只新增 C2-11 的 CoreBridge 调用、状态、错误映射和结果展示；未实现相邻页面或其他 Core 能力。
+
+完成标准通过：S2-15 可触发真实 `listCommandTargets(repoPath:context:)`；产品路径未用 mock/fixture/静态状态伪造 Core 闭环；危险命令仅显示 `Requires confirmation`，不在命令面板中直接执行。
+
+Forbidden Touches：未触碰 `core/src/**`。
+
+**四、工程质量**
+
+实现路径清晰：`CoreCommandIndexing` 走现有 UniFFI 生成函数，`MainFileListModel` 维护 command palette load/failed/loaded 状态，SwiftUI 视图按 C2-11 输出分组渲染 commands、navigation、current selection、recent、smart lists、file candidates。
+
+错误处理：Core 错误经 `CoreErrorMapping` 映射为面板 inline error；query 会 trim，selection IDs 会排序，current path 和 file candidate 开关进入 `CommandIndexContext`。
+
+未新增依赖，未修改文档、UDL 或 Rust public API。没有占位、硬编码通过态或 mock-only 产品实现。
+
+**五、验证情况**
+
+已运行并通过：
+
+```bash
+./dev check task 4-1/task-125
+```
+
+结果：
+- `prompt doctor`: OK
+- `git diff --check`: OK
+- `xcodebuild ... build CODE_SIGNING_ALLOWED=NO`: `BUILD SUCCEEDED`
+
+Xcode 输出了 CoreSimulator/FSEvents/cache 相关警告，但未导致构建失败。
+
+**六、风险与后续**
+
+剩余风险：本 task 的验证上限是 macOS build gate，未运行 UI 真机交互测试或全量测试，按任务要求未扩大验证范围。
+
+建议下一个任务：继续执行同页或集成验收相关的 `4-1/task-126`，用于补齐 S2-15 页面级 integration verify。

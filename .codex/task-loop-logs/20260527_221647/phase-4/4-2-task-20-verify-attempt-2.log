@@ -1,0 +1,78 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-2/task-20`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-2-stage3-ai/task-20-c3-04-integration-verify.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-3-ai/C3-04-ai-classification-suggestion.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-3-control-map.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/tests/**`
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：交叉检查 capability spec、Core API、UDL、Rust 实现和测试
+- 结果：通过
+- 证据：Core API 声明 `suggest_category_with_ai(repoPath, request)`，包含 status、current/suggested category、confidence、reason、route、used_context、skipped_reason、privacy_rule_id、call_log_id、requires_user_confirmation；UDL 同步声明相同函数、dictionary 与 enum；Rust public API 暴露 `suggest_category_with_ai`，实现连接 active file、AI config、规则分类 precheck、privacy skip、route selection、runtime execution、call log。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:2252`，`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:57`，`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:362`，`/Users/as/Ai-Project/project/AreaMatrix/core/src/ai_classification_suggestion/implementation.rs:18`
+
+- 项目：确认消费页面需要的状态、错误和副作用均已覆盖
+- 结果：通过
+- 证据：S3-04 需要建议分类、confidence、reason、used fields、privacy skip、call log、确认前不写分类；S3-10 需要 skipped/unavailable/fallback 状态。实现返回 Suggested/NoSuggestion/Skipped/Unavailable，隐私命中写 skipped 且 sent_fields 为空，runtime 失败返回 Unavailable，所有结果 `requires_user_confirmation: true`，并写 AI call log。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-3-ai/S3-04-ai-classification-suggestion.md:83`，`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-3-ai/S3-10-ai-fallback.md:85`，`/Users/as/Ai-Project/project/AreaMatrix/core/src/ai_classification_suggestion/implementation.rs:247`，`/Users/as/Ai-Project/project/AreaMatrix/core/src/ai_classification_suggestion/call_log.rs:20`
+
+- 项目：确认没有实现 control map 之外的能力
+- 结果：通过
+- 证据：control map 中 S3-04/S3-10 均声明 C3-04；实现只新增 C3-04 分类建议与必要的远程 provider gate 读取，不写分类、不移动文件、不保存规则、不实现调用日志列表/隐私规则 CRUD/UI 页面。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-3-control-map.md:12`，`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-3-control-map.md:18`，`/Users/as/Ai-Project/project/AreaMatrix/core/src/ai_classification_suggestion/implementation.rs:83`
+
+- 项目：不得修改文件；只记录验收证据和阻塞项
+- 结果：通过
+- 证据：本轮只读验收未修改文件；工作区已有改动集中在 `core/src/**`、`core/tests/**`、runner 状态文件，`apps/**` 无改动。`Expected New Paths` 已落地，`Forbidden Touches: apps/**` 未触碰。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/ai_classification_suggestion.rs`，`/Users/as/Ai-Project/project/AreaMatrix/core/tests/ai_classification_suggestion_implementation.rs`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。C3-04 拆分为 contract、implementation、context、executor、call_log，单文件均小于 500 行。
+- 注释 / rustdoc / 文档同步：通过。public API 与 public 类型有 rustdoc，Core API 与 UDL 对齐。
+- 错误处理与边界处理：通过。Config、PermissionDenied、Internal 均有结构化路径；隐私命中、runtime 失败、call log 写失败、无 provider route 都有测试。
+- 测试与验证覆盖：通过。task-scoped 验证 fresh 通过，覆盖合同、实现、失败恢复、validation 四组测试。
+- 占位、硬编码、mock-only、一次性实现检查：通过。生产实现走真实 Core API、DB、file metadata、runtime invocation 和 call log；测试 fixture 只用于模拟本地/远程 AI runtime，不替代生产路径。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-2/task-20`
+- 通过：
+  - `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`：OK，tasks 637，manifests 637
+  - `git diff --check`：通过
+  - `cargo fmt --all -- --check`：通过
+  - `cargo clippy --all-targets --all-features -- -D warnings`：通过
+  - `cargo test --test ai_classification_suggestion_contract_api -- --nocapture`：4 passed
+  - `cargo test --test ai_classification_suggestion_failure_recovery -- --nocapture`：6 passed
+  - `cargo test --test ai_classification_suggestion_implementation -- --nocapture`：10 passed
+  - `cargo test --test ai_classification_suggestion_validation -- --nocapture`：3 passed
+- 失败：无
+- 缺失：无；未运行 `./dev check all`，原因是 manifest 验证上限为 `./dev check task 4-2/task-20`，validation-driver 不要求本 task 扩大到全量门禁。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。C3-04 可以作为后续 page-feature task 的真实 Core 依赖；后续 UI 接入可基于该 API 的 Suggested / NoSuggestion / Skipped / Unavailable 状态、call log id、privacy rule id 与 requires_user_confirmation 语义继续开发。
+
+VERIFY_RESULT: PASS

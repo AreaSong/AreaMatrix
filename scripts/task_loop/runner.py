@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import atexit
 import os
 import re
 import signal
@@ -23,6 +24,40 @@ from . import state
 
 PHASES = ("phase-0", "phase-1", "phase-2", "phase-3", "phase-4")
 CODEX_SANDBOX_MODES = {"read-only", "workspace-write", "danger-full-access"}
+VALIDATION_PROCESS_MARKERS = (
+    "./dev check",
+    "/dev check",
+    "xcodebuild",
+    "/xcodebuild",
+    "cargo ",
+    " cargo ",
+    "/cargo ",
+    "swift build",
+    "swift test",
+    "swiftlint",
+    "swiftformat",
+    "pytest",
+)
+EXEC_ACTIVITY_COMMAND_MARKERS = (
+    "exec\n",
+    "exec\r\n",
+    "tool call",
+    "function call",
+    "/bin/",
+    "./dev ",
+    "cargo ",
+    "xcodebuild",
+    "swift test",
+    "swift build",
+    "pytest",
+)
+EXEC_ACTIVITY_RESULT_MARKERS = (
+    "succeeded in ",
+    "exited ",
+    "failed in ",
+    "returncode=",
+)
+EXEC_ACTIVITY_TAIL_BYTES = 65536
 
 
 class TaskLoopError(RuntimeError):
@@ -36,6 +71,10 @@ class CodexNoOutputTimeout(TaskLoopError):
 
 
 class CodexNoOutputTimeoutLimit(TaskLoopError):
+    pass
+
+
+class CodexOrphanError(TaskLoopError):
     pass
 
 
@@ -86,9 +125,11 @@ class RuntimeConfig:
     dry_run_max_attempts: int = 10
     activity_heartbeat_seconds: int = 30
     no_output_notice_seconds: int = 120
-    no_output_timeout_seconds: int = 5400
+    no_output_timeout_seconds: int = 0
+    codex_idle_timeout_seconds: int = 900
     no_output_restart_delay_seconds: int = 300
     no_output_restart_limit: int = 2
+    orphan_codex_policy: str = "fail"
     run_id: str = ""
 
     @classmethod
@@ -127,9 +168,11 @@ class RuntimeConfig:
         cfg.dry_run_max_attempts = int(os.environ.get("DRY_RUN_MAX_ATTEMPTS", "10"))
         cfg.activity_heartbeat_seconds = int(os.environ.get("ACTIVITY_HEARTBEAT_SECONDS", "30"))
         cfg.no_output_notice_seconds = int(os.environ.get("NO_OUTPUT_NOTICE_SECONDS", "120"))
-        cfg.no_output_timeout_seconds = int(os.environ.get("NO_OUTPUT_TIMEOUT_SECONDS", "5400"))
+        cfg.no_output_timeout_seconds = int(os.environ.get("NO_OUTPUT_TIMEOUT_SECONDS", "0"))
+        cfg.codex_idle_timeout_seconds = int(os.environ.get("CODEX_IDLE_TIMEOUT_SECONDS", "900"))
         cfg.no_output_restart_delay_seconds = int(os.environ.get("NO_OUTPUT_RESTART_DELAY_SECONDS", "300"))
         cfg.no_output_restart_limit = int(os.environ.get("NO_OUTPUT_RESTART_LIMIT", "2"))
+        cfg.orphan_codex_policy = os.environ.get("ORPHAN_CODEX_POLICY", "fail")
         cfg.run_id = os.environ.get("RUN_ID", "")
         return cfg
 
@@ -166,6 +209,7 @@ def log_live_snapshot(
     elapsed: str,
     prompt_file: Path,
     output_file: Path,
+    exec_log_file: Path | None = None,
     heartbeat_seconds: int,
     command_elapsed: str,
     command_text: str,
@@ -180,6 +224,9 @@ def log_live_snapshot(
     print(f"    prompt: {prompt_file}", flush=True)
     print(f"    output: {output_file}", flush=True)
     print(f"    state: {state.log_file_status(str(output_file))}", flush=True)
+    if exec_log_file:
+        print(f"    exec: {exec_log_file}", flush=True)
+        print(f"    exec_state: {state.log_file_status(str(exec_log_file))}", flush=True)
     if no_output_notice:
         print(f"    note: {no_output_notice}", flush=True)
     print(
@@ -225,6 +272,256 @@ def bool_text(value: bool) -> str:
     return "yes" if value else "no"
 
 
+@dataclass
+class CodexExecProcess:
+    pid: int
+    ppid: int
+    pgid: int
+    state: str
+    elapsed: str
+    command: str
+
+
+def parse_ps_line(line: str) -> CodexExecProcess | None:
+    parts = line.strip().split(None, 5)
+    if len(parts) < 6:
+        return None
+    try:
+        pid = int(parts[0])
+        ppid = int(parts[1])
+        pgid = int(parts[2])
+    except ValueError:
+        return None
+    return CodexExecProcess(pid=pid, ppid=ppid, pgid=pgid, state=parts[3], elapsed=parts[4], command=parts[5])
+
+
+def read_process_table_lines() -> tuple[list[str], str]:
+    try:
+        proc = subprocess.run(
+            ["ps", "-axo", "pid=,ppid=,pgid=,stat=,etime=,command="],
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+    except OSError as error:
+        reason = error.strerror or str(error)
+        return [], f"ps unavailable: {reason}"
+    if proc.returncode != 0:
+        reason = (proc.stderr or "").strip() or f"exit {proc.returncode}"
+        return [], f"ps unavailable: {reason}"
+    return [line for line in proc.stdout.splitlines() if line.strip()], ""
+
+
+def parse_process_table_lines(lines: Sequence[str]) -> list[CodexExecProcess]:
+    processes: list[CodexExecProcess] = []
+    for line in lines:
+        parsed = parse_ps_line(line)
+        if parsed:
+            processes.append(parsed)
+    return processes
+
+
+def scan_task_loop_codex_exec_processes(root_dir: Path, log_root: Path) -> list[CodexExecProcess]:
+    lines, reason = read_process_table_lines()
+    if reason:
+        return []
+    return task_loop_codex_exec_processes_from_ps(lines, root_dir, log_root)
+
+
+def scan_task_loop_codex_exec_processes_with_reason(
+    root_dir: Path, log_root: Path
+) -> tuple[list[CodexExecProcess], str]:
+    lines, reason = read_process_table_lines()
+    if reason:
+        return [], reason
+    return task_loop_codex_exec_processes_from_ps(lines, root_dir, log_root), ""
+
+
+def process_group_has_validation_child(pgid: int) -> bool:
+    lines, reason = read_process_table_lines()
+    if reason:
+        return False
+    return process_group_has_validation_child_from_ps(lines, pgid)
+
+
+def command_is_validation_process(command: str) -> bool:
+    return any(marker in command for marker in VALIDATION_PROCESS_MARKERS)
+
+
+def process_group_has_validation_child_from_ps(lines: Sequence[str], pgid: int) -> bool:
+    for line in lines:
+        parsed = parse_ps_line(line)
+        if not parsed or parsed.pgid != pgid:
+            continue
+        if command_is_validation_process(parsed.command):
+            return True
+    return False
+
+
+def descendant_processes_from_ps(lines: Sequence[str], root_pid: int) -> list[CodexExecProcess]:
+    by_parent: dict[int, list[CodexExecProcess]] = {}
+    for proc in parse_process_table_lines(lines):
+        by_parent.setdefault(proc.ppid, []).append(proc)
+
+    descendants: list[CodexExecProcess] = []
+    queue = [root_pid]
+    seen = {root_pid}
+    while queue:
+        parent_pid = queue.pop(0)
+        for child in by_parent.get(parent_pid, []):
+            if child.pid in seen:
+                continue
+            seen.add(child.pid)
+            descendants.append(child)
+            queue.append(child.pid)
+    return descendants
+
+
+def process_tree_validation_processes_from_ps(lines: Sequence[str], root_pid: int) -> list[CodexExecProcess]:
+    return [proc for proc in descendant_processes_from_ps(lines, root_pid) if command_is_validation_process(proc.command)]
+
+
+def process_tree_has_validation_child_from_ps(lines: Sequence[str], root_pid: int) -> bool:
+    return bool(process_tree_validation_processes_from_ps(lines, root_pid))
+
+
+def scan_process_tree_validation_children(root_pid: int) -> tuple[list[CodexExecProcess], str]:
+    lines, reason = read_process_table_lines()
+    if reason:
+        return [], reason
+    return process_tree_validation_processes_from_ps(lines, root_pid), ""
+
+
+def process_tree_has_validation_child(root_pid: int) -> bool:
+    processes, reason = scan_process_tree_validation_children(root_pid)
+    if reason:
+        return False
+    return bool(processes)
+
+
+def process_detail(proc: CodexExecProcess) -> str:
+    return f"pid={proc.pid} pgid={proc.pgid} elapsed={proc.elapsed} command={proc.command}"
+
+
+def process_details(processes: Sequence[CodexExecProcess], *, limit: int = 3) -> list[str]:
+    details = [process_detail(proc) for proc in processes[:limit]]
+    remaining = len(processes) - len(details)
+    if remaining > 0:
+        details.append(f"... {remaining} more")
+    return details
+
+
+def task_loop_codex_exec_processes_from_ps(
+    lines: Sequence[str],
+    root_dir: Path,
+    log_root: Path,
+) -> list[CodexExecProcess]:
+    root_marker = f"--cd {root_dir}"
+    log_marker = str(log_root)
+    processes: list[CodexExecProcess] = []
+    for line in lines:
+        if "codex exec" not in line:
+            continue
+        if root_marker not in line or log_marker not in line:
+            continue
+        parsed = parse_ps_line(line)
+        if parsed and parsed.pid != os.getpid():
+            processes.append(parsed)
+    return processes
+
+@dataclass(frozen=True)
+class ExecActivitySignature:
+    status: str
+    mtime_ns: int
+    size: int
+    event_count: int
+    event_tail_hash: int
+
+
+def exec_activity_signature(path: Path) -> ExecActivitySignature:
+    try:
+        stat = path.stat()
+    except FileNotFoundError:
+        return ExecActivitySignature("missing", 0, 0, 0, 0)
+    except OSError:
+        return ExecActivitySignature("unreadable", 0, 0, 0, 0)
+    tail = read_file_tail(path, EXEC_ACTIVITY_TAIL_BYTES)
+    events = meaningful_exec_activity_lines(tail)
+    return ExecActivitySignature(
+        "exists",
+        stat.st_mtime_ns,
+        stat.st_size,
+        len(events),
+        hash(tuple(events[-8:])),
+    )
+
+
+def read_file_tail(path: Path, limit: int) -> str:
+    try:
+        with path.open("rb") as handle:
+            handle.seek(0, os.SEEK_END)
+            size = handle.tell()
+            handle.seek(max(0, size - limit), os.SEEK_SET)
+            return handle.read().decode("utf-8", errors="replace")
+    except OSError:
+        return ""
+
+
+def meaningful_exec_activity_lines(text: str) -> list[str]:
+    lines: list[str] = []
+    for raw_line in text.splitlines():
+        line = raw_line.strip()
+        if not line:
+            continue
+        if line.startswith("diff --git ") or line.startswith("@@ "):
+            continue
+        if line.startswith(("+", "-")) and not line.startswith(("+++", "---")):
+            continue
+        if any(marker in raw_line for marker in EXEC_ACTIVITY_COMMAND_MARKERS) or any(
+            marker in line for marker in EXEC_ACTIVITY_RESULT_MARKERS
+        ):
+            lines.append(line)
+    return lines
+
+
+def descendant_process_groups_from_ps(lines: Sequence[str], root_pid: int) -> list[int]:
+    seen: set[int] = set()
+    pgids: list[int] = []
+    for proc in descendant_processes_from_ps(lines, root_pid):
+        if proc.pgid in seen:
+            continue
+        seen.add(proc.pgid)
+        pgids.append(proc.pgid)
+    return pgids
+
+
+def process_tree_process_groups(root_pid: int) -> list[int]:
+    lines, reason = read_process_table_lines()
+    if reason:
+        return []
+    return descendant_process_groups_from_ps(lines, root_pid)
+
+
+def signal_process_tree(root_pid: int, sig: signal.Signals) -> None:
+    target_pgids = process_tree_process_groups(root_pid)
+    if root_pid not in target_pgids:
+        target_pgids.append(root_pid)
+    current_pid = os.getpid()
+    current_pgid = os.getpgrp()
+    for pgid in reversed(target_pgids):
+        if pgid in {0, current_pid, current_pgid}:
+            continue
+        terminate_process_group_by_pgid(pgid, sig)
+
+
+def terminate_process_group_by_pgid(pgid: int, sig: signal.Signals) -> None:
+    try:
+        os.killpg(pgid, sig)
+    except OSError:
+        pass
+
+
 class TaskLoopRunner:
     def __init__(self, cfg: RuntimeConfig, original_command: str = "") -> None:
         self.cfg = cfg
@@ -237,6 +534,11 @@ class TaskLoopRunner:
         self.total_tasks = 0
         self.run_final_status = ""
         self.git_active_branch = ""
+        self.current_child: subprocess.Popen[str] | None = None
+        self.cleanup_registered = False
+        self._terminating = False
+        self.preflight_allowed_dirty_paths: list[str] | None = None
+        self.run_paths_initialized = False
 
     def ensure_run_id(self) -> None:
         if self.cfg.run_id:
@@ -255,6 +557,7 @@ class TaskLoopRunner:
         self.summary_file = self.cfg.run_summary_root / self.cfg.run_id / "summary.json"
         self.session_log_root.mkdir(parents=True, exist_ok=True)
         self.summary_file.parent.mkdir(parents=True, exist_ok=True)
+        self.run_paths_initialized = True
 
     def validate_runtime_options(self) -> None:
         if self.cfg.risk_gate not in {"high", "mission-critical", "none"}:
@@ -275,10 +578,14 @@ class TaskLoopRunner:
             raise TaskLoopError("NO_OUTPUT_NOTICE_SECONDS must be >= 1")
         if self.cfg.no_output_timeout_seconds < 0:
             raise TaskLoopError("NO_OUTPUT_TIMEOUT_SECONDS must be >= 0")
+        if self.cfg.codex_idle_timeout_seconds < 0:
+            raise TaskLoopError("CODEX_IDLE_TIMEOUT_SECONDS must be >= 0")
         if self.cfg.no_output_restart_delay_seconds < 0:
             raise TaskLoopError("NO_OUTPUT_RESTART_DELAY_SECONDS must be >= 0")
         if self.cfg.no_output_restart_limit < 0:
             raise TaskLoopError("NO_OUTPUT_RESTART_LIMIT must be >= 0")
+        if self.cfg.orphan_codex_policy not in {"fail", "terminate", "ignore"}:
+            raise TaskLoopError("ORPHAN_CODEX_POLICY must be fail, terminate, or ignore")
         for phase in self.cfg.selected_phases():
             if phase not in PHASES:
                 raise TaskLoopError(f"invalid phase: {phase}")
@@ -316,6 +623,37 @@ class TaskLoopRunner:
             shutil.rmtree(self.cfg.lock_dir, ignore_errors=True)
         self.lock_acquired = False
 
+    def register_cleanup_handlers(self) -> None:
+        if self.cleanup_registered:
+            return
+        self.cleanup_registered = True
+        atexit.register(self.cleanup_current_child)
+
+        def handle_signal(signum: int, _frame: object) -> None:
+            if self._terminating:
+                raise SystemExit(128 + signum)
+            self._terminating = True
+            log_event("WARN", f"received signal {signum}; terminate active codex exec child")
+            self.cleanup_current_child()
+            raise SystemExit(128 + signum)
+
+        signal.signal(signal.SIGTERM, handle_signal)
+        signal.signal(signal.SIGINT, handle_signal)
+
+    def cleanup_current_child(self) -> None:
+        proc = self.current_child
+        if proc is None or proc.poll() is not None:
+            return
+        terminate_process_tree(proc, signal.SIGTERM)
+        try:
+            proc.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            terminate_process_tree(proc, signal.SIGKILL)
+            try:
+                proc.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                log_event("WARN", f"active codex exec child did not exit after SIGKILL pid={proc.pid}")
+
     def clear_stale_drain_request_for_new_run(self) -> None:
         request_file = self.cfg.drain_request_file
         if not request_file.exists():
@@ -324,6 +662,51 @@ class TaskLoopRunner:
         if values.get("lock_run_id") != self.cfg.run_id:
             log_event("WARN", f"clear stale drain request before new run: {request_file}")
             request_file.unlink(missing_ok=True)
+
+    def handle_orphan_codex_exec_processes(self) -> None:
+        if self.cfg.dry_run or self.cfg.orphan_codex_policy == "ignore":
+            return
+        processes, unavailable_reason = scan_task_loop_codex_exec_processes_with_reason(
+            self.cfg.root_dir,
+            self.cfg.log_root,
+        )
+        if unavailable_reason:
+            log_event("WARN", f"skip orphan codex exec scan: {unavailable_reason}")
+            return
+        orphaned = [proc for proc in processes if proc.ppid == 1]
+        if not orphaned:
+            return
+        details = "\n".join(
+            f"- pid={proc.pid} pgid={proc.pgid} elapsed={proc.elapsed} command={proc.command}" for proc in orphaned
+        )
+        if self.cfg.orphan_codex_policy == "fail":
+            raise CodexOrphanError(
+                "found orphaned codex exec task-loop children for this workspace; "
+                "clean them up before starting another live child, or set ORPHAN_CODEX_POLICY=terminate:\n"
+                f"{details}",
+                10,
+            )
+        log_event("WARN", f"terminate orphaned codex exec task-loop children:\n{details}")
+        for proc in orphaned:
+            terminate_codex_exec_process(proc, signal.SIGTERM)
+        time.sleep(2)
+        still_alive = [
+            proc
+            for proc in scan_task_loop_codex_exec_processes(self.cfg.root_dir, self.cfg.log_root)
+            if proc.pid in {item.pid for item in orphaned}
+        ]
+        for proc in still_alive:
+            terminate_codex_exec_process(proc, signal.SIGKILL)
+        if still_alive:
+            time.sleep(1)
+        remaining = [
+            proc
+            for proc in scan_task_loop_codex_exec_processes(self.cfg.root_dir, self.cfg.log_root)
+            if proc.pid in {item.pid for item in orphaned}
+        ]
+        if remaining:
+            details = "\n".join(f"- pid={proc.pid} pgid={proc.pgid} elapsed={proc.elapsed}" for proc in remaining)
+            raise CodexOrphanError(f"failed to terminate orphaned codex exec children:\n{details}", 10)
 
     def request_drain(self) -> int:
         self.ensure_run_id()
@@ -375,6 +758,43 @@ class TaskLoopRunner:
             return
         raise TaskLoopError("Codex CLI not found. Install it, add it to PATH, or set CODEX_BIN=/path/to/codex.")
 
+    def task_allowed_dirty_paths(self, task: TaskFile) -> list[str]:
+        task_text = task.copy_file.read_text(encoding="utf-8", errors="replace")
+        patterns: list[str] = []
+        in_section = False
+        for line in task_text.splitlines():
+            stripped = line.strip()
+            if stripped == "### Expected New Paths":
+                in_section = True
+                continue
+            if in_section and stripped.startswith("### "):
+                break
+            if not in_section or not stripped.startswith("- `") or "`" not in stripped[3:]:
+                continue
+            pattern = stripped.split("`", 2)[1].strip()
+            if pattern:
+                patterns.append(pattern)
+        for path in [self.cfg.progress_file, self.summary_file]:
+            try:
+                patterns.append(str(path.resolve().relative_to(self.cfg.root_dir.resolve())))
+            except ValueError:
+                pass
+        patterns.extend([".codex/task-loop-runs/**"])
+        return sorted(dict.fromkeys(patterns))
+
+    def configure_resume_stale_preflight(self) -> None:
+        if not self.cfg.start_from:
+            return
+        for task in self.task_files():
+            if task.label == self.cfg.start_from:
+                self.preflight_allowed_dirty_paths = self.task_allowed_dirty_paths(task)
+                log_event(
+                    "GIT",
+                    "resume-stale dirty worktree allowlist: "
+                    + ", ".join(self.preflight_allowed_dirty_paths),
+                )
+                return
+
     def run_git_preflight(self) -> None:
         if self.cfg.git_checkpoint == "off" or self.cfg.dry_run:
             proc = subprocess.run(["git", "branch", "--show-current"], cwd=self.cfg.root_dir, text=True, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
@@ -388,6 +808,7 @@ class TaskLoopRunner:
             self.cfg.git_push_set_upstream,
             self.cfg.run_id,
             dry_run=self.cfg.dry_run,
+            allowed_dirty_paths=self.preflight_allowed_dirty_paths,
         )
         log_event("GIT", json_dumps(output))
         proc = subprocess.run(["git", "branch", "--show-current"], cwd=self.cfg.root_dir, text=True, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
@@ -638,6 +1059,7 @@ class TaskLoopRunner:
         log_event("INFO", f"ACTIVITY_HEARTBEAT_SECONDS={self.cfg.activity_heartbeat_seconds}")
         log_event("INFO", f"NO_OUTPUT_NOTICE_SECONDS={self.cfg.no_output_notice_seconds}")
         log_event("INFO", f"NO_OUTPUT_TIMEOUT_SECONDS={self.cfg.no_output_timeout_seconds}")
+        log_event("INFO", f"CODEX_IDLE_TIMEOUT_SECONDS={self.cfg.codex_idle_timeout_seconds}")
         log_event("INFO", f"NO_OUTPUT_RESTART_DELAY_SECONDS={self.cfg.no_output_restart_delay_seconds}")
         log_event("INFO", f"NO_OUTPUT_RESTART_LIMIT={self.cfg.no_output_restart_limit}")
         log_event("INFO", f"ROOT_DIR={self.cfg.root_dir}")
@@ -700,6 +1122,7 @@ class TaskLoopRunner:
             log_event("DRY", f"simulating codex exec for {prompt_file} -> {output_file}")
             self.dry_run_stub(prompt_file, output_file, stage, extra_prompt, preview_lines, task, attempt)
             return
+        exec_log_file = output_file.with_suffix(".exec.log")
         prompt_text = prompt_file.read_text(encoding="utf-8")
         if extra_prompt:
             prompt_text = f"{prompt_text}\n\n{extra_prompt}\n"
@@ -729,6 +1152,7 @@ class TaskLoopRunner:
                     prompt_text,
                     prompt_file,
                     output_file,
+                    exec_log_file,
                     stage,
                     task,
                     attempt,
@@ -767,13 +1191,14 @@ class TaskLoopRunner:
         prompt_text: str,
         prompt_file: Path,
         output_file: Path,
+        exec_log_file: Path,
         stage: str,
         task: TaskFile,
         attempt: int,
         *,
         restart_index: int,
     ) -> None:
-        state.write_lock_activity(
+        state.replace_lock_activity(
             self.cfg.lock_dir,
             {
                 "status": "starting",
@@ -783,6 +1208,7 @@ class TaskLoopRunner:
                 "attempt": attempt,
                 "prompt_file": str(prompt_file),
                 "output_file": str(output_file),
+                "exec_log_file": str(exec_log_file),
                 "command": command_text,
                 "started_at": utc_now(),
                 "child_restart": restart_index,
@@ -799,14 +1225,28 @@ class TaskLoopRunner:
             elapsed="0s",
             prompt_file=prompt_file,
             output_file=output_file,
+            exec_log_file=exec_log_file,
             heartbeat_seconds=self.cfg.activity_heartbeat_seconds,
             command_elapsed="0s",
             command_text=command_text,
         )
-        proc = subprocess.Popen(command, stdin=subprocess.PIPE, text=True, start_new_session=True)
+        exec_log_file.parent.mkdir(parents=True, exist_ok=True)
+        exec_log = exec_log_file.open("a", encoding="utf-8", errors="replace")
+        exec_log.write(f"[{utc_now()}] start {stage} task={task.label} attempt={attempt} restart={restart_index}\n")
+        exec_log.flush()
+        proc = subprocess.Popen(
+            command,
+            stdin=subprocess.PIPE,
+            stdout=exec_log,
+            stderr=subprocess.STDOUT,
+            text=True,
+            start_new_session=True,
+        )
+        self.current_child = proc
         start_monotonic = time.monotonic()
         last_output_signature = output_file_signature(output_file)
-        last_output_change_monotonic = start_monotonic
+        last_exec_activity_signature = exec_activity_signature(exec_log_file)
+        last_meaningful_activity_monotonic = start_monotonic
         state.write_lock_activity(self.cfg.lock_dir, {"status": "running", "pid": proc.pid, "child_restart": restart_index})
         log_live_snapshot(
             title="live activity running",
@@ -817,6 +1257,7 @@ class TaskLoopRunner:
             elapsed="0s",
             prompt_file=prompt_file,
             output_file=output_file,
+            exec_log_file=exec_log_file,
             heartbeat_seconds=self.cfg.activity_heartbeat_seconds,
             command_elapsed="0s",
             command_text=command_text,
@@ -838,39 +1279,122 @@ class TaskLoopRunner:
                 if not worker.is_alive():
                     break
                 now = time.monotonic()
-                current_signature = output_file_signature(output_file)
-                if current_signature != last_output_signature:
-                    last_output_signature = current_signature
-                    last_output_change_monotonic = now
-                no_output_elapsed_seconds = int(now - last_output_change_monotonic)
+                current_output_signature = output_file_signature(output_file)
+                current_exec_activity_signature = exec_activity_signature(exec_log_file)
+                meaningful_activity_detected = (
+                    current_output_signature != last_output_signature
+                    or current_exec_activity_signature.event_count != last_exec_activity_signature.event_count
+                    or current_exec_activity_signature.event_tail_hash != last_exec_activity_signature.event_tail_hash
+                )
+                if meaningful_activity_detected:
+                    last_output_signature = current_output_signature
+                    last_exec_activity_signature = current_exec_activity_signature
+                    last_meaningful_activity_monotonic = now
+                no_output_elapsed_seconds = int(now - last_meaningful_activity_monotonic)
                 elapsed = state.human_duration(now - start_monotonic)
                 log_state = state.log_file_status(str(output_file))
+                validation_children, validation_scan_reason = scan_process_tree_validation_children(proc.pid)
+                validation_child_running = bool(validation_children)
+                validation_child_details = process_details(validation_children)
                 no_output_notice = ""
                 if no_output_elapsed_seconds >= self.cfg.no_output_notice_seconds:
-                    no_output_notice = (
-                        "codex exec child is running but has not written the output log yet; "
-                        "this is a no-output wait, not proof that validation commands are progressing."
-                    )
+                    if validation_child_running:
+                        no_output_notice = (
+                            "codex exec child and validation subprocesses are running in the child process tree; "
+                            "continue waiting because real validation is active even when the final output log is quiet."
+                        )
+                    elif validation_scan_reason:
+                        no_output_notice = (
+                            "codex exec child is running but process validation scan is unavailable; "
+                            f"{validation_scan_reason}; .exec.log growth alone is diagnostic, not proof of progress."
+                        )
+                    else:
+                        no_output_notice = (
+                            "codex exec child is running but no final output, validation subprocess, "
+                            "or command start/finish event has made progress; .exec.log growth alone is diagnostic, "
+                            "not proof that validation commands are progressing."
+                        )
                 state.write_lock_activity(
                     self.cfg.lock_dir,
                     {
                         "status": "running",
                         "log_state": log_state,
+                        "exec_log_state": state.log_file_status(str(exec_log_file)),
                         "no_output_elapsed_seconds": no_output_elapsed_seconds,
                         "no_output_timeout_seconds": self.cfg.no_output_timeout_seconds,
+                        "codex_idle_timeout_seconds": self.cfg.codex_idle_timeout_seconds,
+                        "validation_child_running": validation_child_running,
+                        "validation_child_count": len(validation_children),
+                        "validation_child_details": validation_child_details,
+                        "validation_scan_reason": validation_scan_reason,
+                        "meaningful_activity": bool(meaningful_activity_detected or validation_child_running),
+                        "exec_activity_event_count": current_exec_activity_signature.event_count,
                         "child_restart": restart_index,
                         "child_restart_limit": self.cfg.no_output_restart_limit,
                     },
                 )
                 if (
+                    self.cfg.codex_idle_timeout_seconds > 0
+                    and no_output_elapsed_seconds >= self.cfg.codex_idle_timeout_seconds
+                    and not validation_child_running
+                    and not validation_scan_reason
+                ):
+                    timeout_error = (
+                        f"codex exec idle timeout for {stage} {task.label} attempt={attempt}: "
+                        f"no final output, validation subprocess, or command start/finish event for "
+                        f"{state.human_duration(no_output_elapsed_seconds)} "
+                        f"(idle_timeout={state.human_duration(self.cfg.codex_idle_timeout_seconds)}; "
+                        f"hard_timeout={'disabled' if self.cfg.no_output_timeout_seconds <= 0 else state.human_duration(self.cfg.no_output_timeout_seconds)}; "
+                        f"log_state={log_state}; "
+                        f"exec_activity_events={current_exec_activity_signature.event_count})"
+                    )
+                    state.write_lock_activity(
+                        self.cfg.lock_dir,
+                        {
+                            "status": "codex_idle_timeout",
+                            "no_output_elapsed_seconds": no_output_elapsed_seconds,
+                            "no_output_timeout_seconds": self.cfg.no_output_timeout_seconds,
+                            "codex_idle_timeout_seconds": self.cfg.codex_idle_timeout_seconds,
+                            "validation_child_running": validation_child_running,
+                            "validation_child_count": len(validation_children),
+                            "validation_child_details": validation_child_details,
+                            "validation_scan_reason": validation_scan_reason,
+                            "meaningful_activity": False,
+                            "exec_activity_event_count": current_exec_activity_signature.event_count,
+                            "child_restart": restart_index,
+                            "child_restart_limit": self.cfg.no_output_restart_limit,
+                            "log_state": log_state,
+                        },
+                    )
+                    log_live_snapshot(
+                        title="live activity codex-idle timeout",
+                        stage=stage,
+                        task=task,
+                        attempt=attempt,
+                        pid=proc.pid,
+                        elapsed=elapsed,
+                        prompt_file=prompt_file,
+                        output_file=output_file,
+                        exec_log_file=exec_log_file,
+                        heartbeat_seconds=self.cfg.activity_heartbeat_seconds,
+                        command_elapsed=elapsed,
+                        command_text=command_text,
+                        no_output_notice=timeout_error,
+                    )
+                    terminate_child(proc, worker)
+                    break
+                if (
                     self.cfg.no_output_timeout_seconds > 0
                     and no_output_elapsed_seconds >= self.cfg.no_output_timeout_seconds
+                    and not validation_child_running
                 ):
                     timeout_error = (
                         f"codex exec no-output timeout for {stage} {task.label} attempt={attempt}: "
-                        f"no output log progress for {state.human_duration(no_output_elapsed_seconds)} "
+                        f"no final output, validation subprocess, or command start/finish event for "
+                        f"{state.human_duration(no_output_elapsed_seconds)} "
                         f"(timeout={state.human_duration(self.cfg.no_output_timeout_seconds)}; "
-                        f"log_state={log_state})"
+                        f"log_state={log_state}; "
+                        f"exec_activity_events={current_exec_activity_signature.event_count})"
                     )
                     state.write_lock_activity(
                         self.cfg.lock_dir,
@@ -878,6 +1402,13 @@ class TaskLoopRunner:
                             "status": "no_output_timeout",
                             "no_output_elapsed_seconds": no_output_elapsed_seconds,
                             "no_output_timeout_seconds": self.cfg.no_output_timeout_seconds,
+                            "codex_idle_timeout_seconds": self.cfg.codex_idle_timeout_seconds,
+                            "validation_child_running": validation_child_running,
+                            "validation_child_count": len(validation_children),
+                            "validation_child_details": validation_child_details,
+                            "validation_scan_reason": validation_scan_reason,
+                            "meaningful_activity": False,
+                            "exec_activity_event_count": current_exec_activity_signature.event_count,
                             "child_restart": restart_index,
                             "child_restart_limit": self.cfg.no_output_restart_limit,
                             "log_state": log_state,
@@ -892,6 +1423,7 @@ class TaskLoopRunner:
                         elapsed=elapsed,
                         prompt_file=prompt_file,
                         output_file=output_file,
+                        exec_log_file=exec_log_file,
                         heartbeat_seconds=self.cfg.activity_heartbeat_seconds,
                         command_elapsed=elapsed,
                         command_text=command_text,
@@ -908,6 +1440,7 @@ class TaskLoopRunner:
                     elapsed=elapsed,
                     prompt_file=prompt_file,
                     output_file=output_file,
+                    exec_log_file=exec_log_file,
                     heartbeat_seconds=self.cfg.activity_heartbeat_seconds,
                     command_elapsed=elapsed,
                     command_text=command_text,
@@ -915,10 +1448,14 @@ class TaskLoopRunner:
                 )
             worker.join(timeout=5)
         finally:
+            if self.current_child is proc:
+                self.current_child = None
+            exec_log.write(f"[{utc_now()}] finish returncode={proc.returncode}\n")
+            exec_log.close()
             state.write_lock_activity(
                 self.cfg.lock_dir,
                 {
-                    "status": "no_output_timeout" if timeout_error else "finished",
+                    "status": "timeout" if timeout_error else "finished",
                     "finished_at": utc_now(),
                     "returncode": proc.returncode,
                 },
@@ -992,6 +1529,7 @@ class TaskLoopRunner:
 - 不要在最后一行之后输出任何内容。"""
 
     def run_loop(self, resume_failed: bool = False, resume_stale: bool = False) -> int:
+        self.register_cleanup_handlers()
         self.validate_runtime_options()
         self.acquire_lock("run")
         try:
@@ -1011,8 +1549,13 @@ class TaskLoopRunner:
             self.validate_task_targets()
             if not self.cfg.dry_run:
                 self.resolve_codex_bin()
+            self.handle_orphan_codex_exec_processes()
+            if resume_stale:
+                self.init_run_paths()
+                self.configure_resume_stale_preflight()
             self.run_git_preflight()
-            self.init_run_paths()
+            if not self.run_paths_initialized:
+                self.init_run_paths()
             self.bootstrap_counts()
             self.init_summary()
             self.print_launch_header()
@@ -1132,11 +1675,29 @@ def output_file_signature(path: Path) -> tuple[str, int, int]:
 
 def terminate_child(proc: subprocess.Popen[str], worker: threading.Thread) -> None:
     if proc.poll() is None:
-        terminate_process_group(proc, signal.SIGTERM)
+        terminate_process_tree(proc, signal.SIGTERM)
     worker.join(timeout=5)
     if worker.is_alive() and proc.poll() is None:
-        terminate_process_group(proc, signal.SIGKILL)
+        terminate_process_tree(proc, signal.SIGKILL)
     worker.join(timeout=5)
+
+
+def terminate_process_tree(proc: subprocess.Popen[str], sig: signal.Signals) -> None:
+    signal_process_tree(proc.pid, sig)
+    if proc.poll() is not None:
+        return
+    try:
+        if sig == signal.SIGTERM:
+            proc.terminate()
+        else:
+            proc.kill()
+    except OSError:
+        pass
+
+
+def terminate_codex_exec_process(proc: CodexExecProcess, sig: signal.Signals) -> None:
+    signal_process_tree(proc.pid, sig)
+    terminate_process_group_by_pgid(proc.pgid, sig)
 
 
 def terminate_process_group(proc: subprocess.Popen[str], sig: signal.Signals) -> None:

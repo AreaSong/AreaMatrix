@@ -13,16 +13,22 @@ use crate::{
     StorageMode,
 };
 
+mod ai_call_log;
+mod ai_privacy_rules;
+mod ai_settings;
+mod ai_summary;
 mod change_log;
 mod command_index;
 mod delete;
 mod icloud_conflicts;
 mod import;
 mod import_conflicts;
+mod local_model_status;
 mod move_to_category;
 mod note;
 mod overview;
 mod redo;
+mod remote_provider_config;
 mod rename;
 mod saved_search;
 mod scan;
@@ -30,6 +36,17 @@ mod staging_recovery;
 mod sync;
 mod tags;
 mod undo;
+pub(crate) use ai_call_log::{
+    clear_ai_call_log_rows, ensure_ai_call_log_record_insertable, insert_ai_call_log_record,
+    insert_ai_call_log_record_in_tx, list_ai_call_log_rows, AiCallLogClearSpec,
+    AiCallLogInsertRecord, AiCallLogListFilter, AiCallLogPagination, AiCallLogRow,
+};
+pub(crate) use ai_privacy_rules::{load_ai_privacy_rules_record, update_ai_privacy_rules_record};
+pub(crate) use ai_settings::{load_ai_config_record, update_ai_config_record};
+pub(crate) use ai_summary::{
+    clear_ai_summary_metadata, load_ai_summary_metadata, upsert_ai_summary_metadata,
+    AiSummaryUpsert,
+};
 pub(crate) use change_log::list_changes;
 pub(crate) use command_index::{
     count_active_command_selection_files, list_command_file_candidate_rows,
@@ -58,6 +75,7 @@ pub(crate) use import_conflicts::{
     rollback_import_conflict_replace, ImportConflictApplyItem, ImportConflictKind,
     ImportConflictReplacement, ImportConflictRow, ImportConflictStatus,
 };
+pub(crate) use local_model_status::update_local_model_status_record;
 pub(crate) use move_to_category::{
     batch_update_category_metadata_only_in_tx, batch_update_category_repo_owned_in_tx,
     correct_file_category_metadata_only, correct_repo_owned_file_category,
@@ -71,6 +89,10 @@ pub(crate) use overview::{
     OverviewChangeRow, OverviewFileRow, OverviewNodeSummary,
 };
 pub(crate) use redo::{clear_redo_stack_in_tx, execute_redo_action_row, list_redo_action_rows};
+pub(crate) use remote_provider_config::{
+    load_remote_provider_config_record, load_remote_provider_test_record,
+    save_remote_provider_test_record, update_remote_provider_config_record,
+};
 pub(crate) use rename::{
     batch_update_rename_indexed_in_tx, batch_update_rename_repo_owned_in_tx,
     insert_batch_rename_undo_action_in_tx, load_batch_rename_active_file, rename_active_file,
@@ -87,8 +109,9 @@ pub(crate) use staging_recovery::{
 };
 pub(crate) use sync::*;
 pub(crate) use tags::{
-    add_tag_row, apply_tag_suggestion_rows, batch_add_tags_rows, list_tag_set,
-    load_tag_suggestion_snapshot, remove_tag_row, TagSuggestionApplyRow, TagSuggestionSnapshot,
+    add_tag_row, apply_ai_tag_suggestion_rows, apply_tag_suggestion_rows, batch_add_tags_rows,
+    list_tag_set, load_tag_suggestion_snapshot, remove_tag_row, AiTagSuggestionApplyProvenance,
+    AiTagSuggestionApplyRow, TagSuggestionApplyRow, TagSuggestionSnapshot,
 };
 pub(crate) use undo::{
     execute_undo_action_row, list_undo_action_rows, update_delete_undo_trash_path,
@@ -400,6 +423,21 @@ pub(super) fn open_repo_connection(repo_path: &Path) -> CoreResult<Connection> {
         Connection::open(db_path(repo_path)).map_err(|error| CoreError::db(error.to_string()))?;
     configure_connection(&connection)?;
     Ok(connection)
+}
+
+pub(crate) fn with_write_transaction<T>(
+    repo_path: &Path,
+    operation: impl FnOnce(&rusqlite::Transaction<'_>) -> CoreResult<T>,
+) -> CoreResult<T> {
+    ensure_config_storage_writable(repo_path)?;
+    let mut connection = open_repo_connection(repo_path).map_err(map_update_open_error)?;
+    let tx = connection
+        .transaction()
+        .map_err(|error| CoreError::db(error.to_string()))?;
+    let result = operation(&tx)?;
+    tx.commit()
+        .map_err(|error| CoreError::db(error.to_string()))?;
+    Ok(result)
 }
 
 fn configure_connection(connection: &Connection) -> CoreResult<()> {

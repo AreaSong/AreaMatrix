@@ -11,6 +11,8 @@ struct MainRepositoryDetailPane: View {
     let detailLogDiagnosticsState: MainDetailLogDiagnosticsState
     let detailExternalCreateSyncState: MainDetailExternalCreateSyncState
     let detailTagEditorState: DetailTagEditorState
+    let detailTagSuggestionState: DetailTagSuggestionState
+    let tagSuggestionPresentationRequest: TagSuggestionPresentationRequest?
     let detailTagUndoToast: DetailTagUndoToast?
     let detailTabRequest: MainDetailTabRequest?
     let selectedImportProgressRow: ImportProgressListRow?
@@ -18,9 +20,13 @@ struct MainRepositoryDetailPane: View {
     let batchTagStore: any CoreTagCRUD
     let batchTagUndoStore: any CoreUndoActionLogging
     let batchTagErrorMapper: any CoreErrorMapping
+    let batchDeleter: any CoreBatchDeleting
     let batchCategoryChanger: any CoreBatchCategoryChanging
+    let batchRenamer: any CoreBatchRenaming
     let categoryRows: [RepositorySidebarRowSnapshot]
     let onBatchCategoryApplied: (BatchCategoryChangeReportSnapshot) -> Void
+    let onBatchDeleteApplied: (BatchDeleteReportSnapshot) -> Void
+    let onBatchRenameApplied: (BatchRenameReportSnapshot) -> Void
     let onBatchCategoryCreateNewCategory: (BatchChangeCategoryNewCategoryHandoff) -> Void
     let onRetrySelectedFileDetail: () -> Void
     let tagActions: MainRepositoryDetailPaneTagActions
@@ -33,88 +39,13 @@ struct MainRepositoryDetailPane: View {
     let onDetailTabRequestConsumed: (MainDetailTabRequest) -> Void
     let onBeginRenameFile: (Int64) -> Void
     let onBeginChangeCategoryFile: (Int64) -> Void
+    let onBeginClassifierCorrectionFile: (Int64) -> Void
     let onBeginDeleteFile: (Int64) -> Void
     let onBeginICloudConflictResolution: (Int64) -> Void
     let writeActionDisabledReason: (Int64) -> MainFileWriteActionDisabledReason?
 
     @State private var selectedTab: DetailPaneTab = .meta
-    @ObservedObject private var noteModel: DetailNoteModel
-
-    init(
-        selection: MainFileSelectionState,
-        multiSelectionSummary: MultiSelectionDetailSummary,
-        detailErrorMapping: CoreErrorMappingSnapshot?,
-        isDetailLoading: Bool,
-        selectedFileDetail: FileEntrySnapshot?,
-        noteWriteBlock: MainDetailNoteWriteBlock?,
-        detailLogState: MainDetailLogState,
-        detailLogDiagnosticsState: MainDetailLogDiagnosticsState,
-        detailExternalCreateSyncState: MainDetailExternalCreateSyncState,
-        detailTagEditorState: DetailTagEditorState,
-        detailTagUndoToast: DetailTagUndoToast?,
-        detailTabRequest: MainDetailTabRequest?,
-        selectedImportProgressRow: ImportProgressListRow?,
-        repoPath: String,
-        batchTagStore: any CoreTagCRUD,
-        batchTagUndoStore: any CoreUndoActionLogging,
-        batchTagErrorMapper: any CoreErrorMapping,
-        batchCategoryChanger: any CoreBatchCategoryChanging,
-        categoryRows: [RepositorySidebarRowSnapshot],
-        onBatchCategoryApplied: @escaping (BatchCategoryChangeReportSnapshot) -> Void,
-        onBatchCategoryCreateNewCategory: @escaping (BatchChangeCategoryNewCategoryHandoff) -> Void = { _ in },
-        onRetrySelectedFileDetail: @escaping () -> Void,
-        tagActions: MainRepositoryDetailPaneTagActions,
-        onCopyPaths: @escaping ([String]) -> Void,
-        onOpenNoteFile: @escaping (String) -> Void,
-        onRefreshChangeLog: @escaping () -> Void,
-        onRequestDetailLogDiagnostics: @escaping () -> Void,
-        onConfirmDetailLogDiagnostics: @escaping () -> Void,
-        onCancelDetailLogDiagnostics: @escaping () -> Void,
-        onDetailTabRequestConsumed: @escaping (MainDetailTabRequest) -> Void,
-        onBeginRenameFile: @escaping (Int64) -> Void,
-        onBeginChangeCategoryFile: @escaping (Int64) -> Void,
-        onBeginDeleteFile: @escaping (Int64) -> Void,
-        onBeginICloudConflictResolution: @escaping (Int64) -> Void,
-        writeActionDisabledReason: @escaping (Int64) -> MainFileWriteActionDisabledReason?,
-        noteModel: DetailNoteModel
-    ) {
-        self.selection = selection
-        self.multiSelectionSummary = multiSelectionSummary
-        self.detailErrorMapping = detailErrorMapping
-        self.isDetailLoading = isDetailLoading
-        self.selectedFileDetail = selectedFileDetail
-        self.noteWriteBlock = noteWriteBlock
-        self.detailLogState = detailLogState
-        self.detailLogDiagnosticsState = detailLogDiagnosticsState
-        self.detailExternalCreateSyncState = detailExternalCreateSyncState
-        self.detailTagEditorState = detailTagEditorState
-        self.detailTagUndoToast = detailTagUndoToast
-        self.detailTabRequest = detailTabRequest
-        self.selectedImportProgressRow = selectedImportProgressRow
-        self.repoPath = repoPath
-        self.batchTagStore = batchTagStore
-        self.batchTagUndoStore = batchTagUndoStore
-        self.batchTagErrorMapper = batchTagErrorMapper
-        self.batchCategoryChanger = batchCategoryChanger
-        self.categoryRows = categoryRows
-        self.onBatchCategoryApplied = onBatchCategoryApplied
-        self.onBatchCategoryCreateNewCategory = onBatchCategoryCreateNewCategory
-        self.onRetrySelectedFileDetail = onRetrySelectedFileDetail
-        self.tagActions = tagActions
-        self.onCopyPaths = onCopyPaths
-        self.onOpenNoteFile = onOpenNoteFile
-        self.onRefreshChangeLog = onRefreshChangeLog
-        self.onRequestDetailLogDiagnostics = onRequestDetailLogDiagnostics
-        self.onConfirmDetailLogDiagnostics = onConfirmDetailLogDiagnostics
-        self.onCancelDetailLogDiagnostics = onCancelDetailLogDiagnostics
-        self.onDetailTabRequestConsumed = onDetailTabRequestConsumed
-        self.onBeginRenameFile = onBeginRenameFile
-        self.onBeginChangeCategoryFile = onBeginChangeCategoryFile
-        self.onBeginDeleteFile = onBeginDeleteFile
-        self.onBeginICloudConflictResolution = onBeginICloudConflictResolution
-        self.writeActionDisabledReason = writeActionDisabledReason
-        self.noteModel = noteModel
-    }
+    @ObservedObject var noteModel: DetailNoteModel
 }
 
 extension MainRepositoryDetailPane {
@@ -221,13 +152,17 @@ extension MainRepositoryDetailPane {
             batchTagStore: batchTagStore,
             batchTagUndoStore: batchTagUndoStore,
             batchTagErrorMapper: batchTagErrorMapper,
+            batchDeleter: batchDeleter,
             batchCategoryChanger: batchCategoryChanger,
+            batchRenamer: batchRenamer,
             tagActions: tagActions,
             writeActionDisabledReason: writeActionDisabledReason,
             onCopyPaths: onCopyPaths,
             onRetrySelectedFileDetail: onRetrySelectedFileDetail,
             onRefreshChangeLog: onRefreshChangeLog,
             onBatchCategoryApplied: onBatchCategoryApplied,
+            onBatchDeleteApplied: onBatchDeleteApplied,
+            onBatchRenameApplied: onBatchRenameApplied,
             onBatchCategoryCreateNewCategory: onBatchCategoryCreateNewCategory
         )
     }
@@ -311,20 +246,7 @@ extension MainRepositoryDetailPane {
     private func detailTabContent(for detail: FileEntrySnapshot) -> some View {
         switch selectedTab {
         case .meta:
-            detailStatusSection
-            DetailTagSection(
-                file: detail,
-                state: detailTagEditorState,
-                undoToast: detailTagUndoToast,
-                disabledReason: writeActionDisabledReason(detail.id),
-                onLoadTags: tagActions.onLoadTags,
-                onRetryTags: tagActions.onRetryTags,
-                onAddTag: tagActions.onAddTag,
-                onRemoveTag: tagActions.onRemoveTag,
-                onUndoTagChange: tagActions.onUndoTagChange,
-                onDismissUndoToast: tagActions.onDismissTagUndoToast
-            )
-            metadataRows(for: detail)
+            detailMetaTabContent(for: detail)
         case .log:
             DetailLogTabView(
                 selection: selection,
@@ -346,6 +268,40 @@ extension MainRepositoryDetailPane {
         }
     }
 
+    @ViewBuilder
+    private func detailMetaTabContent(for detail: FileEntrySnapshot) -> some View {
+        detailStatusSection
+        DetailTagSection(
+            file: detail,
+            state: detailTagEditorState,
+            suggestionState: detailTagSuggestionState,
+            suggestionPresentationRequest: tagSuggestionPresentationRequest,
+            undoToast: detailTagUndoToast,
+            disabledReason: writeActionDisabledReason(detail.id),
+            onLoadTags: tagActions.onLoadTags,
+            onRetryTags: tagActions.onRetryTags,
+            onAddTag: tagActions.onAddTag,
+            onRemoveTag: tagActions.onRemoveTag,
+            onLoadSuggestions: tagActions.onLoadSuggestions,
+            onRetrySuggestions: tagActions.onRetrySuggestions,
+            onToggleSuggestion: tagActions.onToggleSuggestion,
+            onSelectAllSuggestions: tagActions.onSelectAllSuggestions,
+            onClearSuggestions: tagActions.onClearSuggestions,
+            onStartEditingSuggestions: tagActions.onStartEditingSuggestions,
+            onCancelEditingSuggestions: tagActions.onCancelEditingSuggestions,
+            onEditSuggestionDisplayName: tagActions.onEditSuggestionDisplayName,
+            onEditSuggestionSlug: tagActions.onEditSuggestionSlug,
+            onRegenerateSuggestionSlug: tagActions.onRegenerateSuggestionSlug,
+            onApplySuggestions: tagActions.onApplySuggestions,
+            onApplyEditedSuggestions: tagActions.onApplyEditedSuggestions,
+            onRetryFailedSuggestions: tagActions.onRetryFailedSuggestions,
+            onSuggestionPresentationConsumed: tagActions.onSuggestionPresentationConsumed,
+            onUndoTagChange: tagActions.onUndoTagChange,
+            onDismissUndoToast: tagActions.onDismissTagUndoToast
+        )
+        metadataRows(for: detail)
+    }
+
     private func detailFileActions(for detail: FileEntrySnapshot) -> some View {
         let disabledReason = writeActionDisabledReason(detail.id)
         return HStack(spacing: 10) {
@@ -361,6 +317,11 @@ extension MainRepositoryDetailPane {
                 }
                 .disabled(disabledReason != nil)
                 .accessibilityIdentifier("S1-12-change-category")
+                Button("Correct Classification...") {
+                    onBeginClassifierCorrectionFile(detail.id)
+                }
+                .disabled(disabledReason != nil)
+                .accessibilityIdentifier("S2-16-correct-classification")
                 if detail.hasICloudConflictCopySignal {
                     Button("Resolve iCloud Conflict...") {
                         onBeginICloudConflictResolution(detail.id)

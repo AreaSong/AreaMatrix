@@ -1,0 +1,83 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`4-1/task-140`
+- 对应文件路径：`tasks/prompts/phase-4/4-1-stage2-experience/task-140-s2-23-c2-19-tag-suggestions.md`
+- 主要核验路径：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`core/area_matrix.udl`
+- 禁止触碰路径：`core/src/**`
+
+三、完成度摘要
+
+- 已覆盖项数：7
+- 未覆盖项数：3
+- 通过项数：6
+- 不通过项数：3
+- 阻塞项数：2
+
+四、逐项验收结果
+
+- 项目：读取 task、共享规则、切片规则、工程质量规则、编码规范、validation-driver、依赖图、phase manifest 与 Exact Docs
+- 结果：通过
+- 证据：已定位 manifest `## 4-1/task-140`，Exact Docs 4 个均存在并已读取；manifest 要求 Validation 为 `./dev check task 4-1/task-140`
+- 涉及文件：`tasks/prompts/_shared/manifests/phase-4.md:4054`
+
+- 项目：只处理 S2-23 页面中的 C2-19 功能点
+- 结果：部分通过
+- 证据：实现接入了 `suggestTagsForFile` / `applyTagSuggestions`，但复用了手动标签入口并把 S2-23 挂在 S2-07 popover 内；未实现 S2-23 规格要求的完整 panel edit flow
+- 涉及文件：`apps/macos/AreaMatrix/Views/Main/DetailTagSection.swift:213`
+
+- 项目：CoreBridge / 状态 / 错误映射真实接入 C2-19
+- 结果：通过
+- 证据：`CoreBridge` 通过 `AreaMatrix.suggestTagsForFile` 和 `AreaMatrix.applyTagSuggestions` 调用真实 UniFFI，不是 mock-only；失败路径走 `mapCoreError`
+- 涉及文件：`apps/macos/AreaMatrix/Bridge/CoreTagCRUD.swift:291`、`apps/macos/AreaMatrix/Models/MainDetailTagActions.swift:174`
+
+- 项目：S2-23 中 C2-19 用户可见功能可触发和验收
+- 结果：不通过
+- 证据：可打开 suggestions panel、显示候选、Apply selected；但缺少 `Edit selected...`、`Edit selected tags`、`displayName`/`slug` 编辑、`Cancel edit`、`Apply edited`、`Regenerate slug`、字段级非法/重复校验等 S2-23 必需流程
+- 涉及文件：`docs/ux/page-specs/stage-2-experience/S2-23-tag-suggestions.md:56`、`apps/macos/AreaMatrix/Views/Main/DetailNoteTabView.swift:294`
+
+- 项目：没有 mock、fixture 或静态状态伪造真实 Core 闭环
+- 结果：通过
+- 证据：生产路径调用真实 CoreBridge；测试内 fixture 仅用于 XCTest store recording，不是生产闭环
+- 涉及文件：`apps/macos/AreaMatrix/Bridge/CoreTagCRUD.swift:303`、`apps/macos/AreaMatrixTests/DetailTagPageFeatureTests.swift:271`
+
+- 项目：未触碰 control map 之外 Core 能力 / Forbidden Touches
+- 结果：通过
+- 证据：`git diff --name-only -- core/src` 无输出；`core/src/**` 未被修改。Control map 中 S2-23 为 `C2-19, C2-05`，本 task 接入 C2-19，C2-05 仅作为现有手动标签上下文
+- 涉及文件：`docs/architecture/stage-2-control-map.md:31`
+
+- 项目：Expected New Paths 已落地
+- 结果：通过
+- 证据：`apps/macos/AreaMatrix/**` 与 `apps/macos/AreaMatrixTests/**` 均有本 task 相关改动
+- 涉及文件：`apps/macos/AreaMatrix/Views/Main/DetailNoteTabView.swift:169`、`apps/macos/AreaMatrixTests/DetailTagPageFeatureTests.swift:271`
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过，`CoreTagCRUD.swift` 从 HEAD 的 338 行增至 609 行，`DetailTagPageFeatureTests.swift` 从 498 行增至 782 行，违反编码规范单文件尽量不超过 500 行
+- 注释 / rustdoc / 文档同步：通过，未新增 Rust public API；Core API 与 UDL 已有 `suggest_tags_for_file`、`apply_tag_suggestions`
+- 错误处理与边界处理：不通过，缺少 edit mode 的字段级错误、重复 slug、Already added、只读状态和 `Apply edited` 失败恢复实现
+- 测试与验证覆盖：不通过，新增 XCTest 覆盖 load/apply happy path，但缺 edit mode、Select all 弱匹配语义、Invalid/Already added/Blocked 禁止提交、部分失败恢复
+- 占位、硬编码、mock-only、一次性实现检查：通过，生产路径未发现 mock-only；测试 fixture 不作为生产证据
+
+六、阻塞项
+
+- P0：S2-23 edit mode 未实现，导致页面验收清单缺关键用户闭环。说明：页面规格要求 `Edit selected...` 在同一 panel 进入 edit mode，提供 displayName/slug 字段、`Cancel edit`、`Apply edited`、非法/重复/只读/Already added 阻断；当前 UI 只有 `Ignore` 和 `Apply selected`。绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/DetailNoteTabView.swift:294`。为什么导致不通过：task 完成标准要求 S2-23 中 C2-19 对应用户可见功能可触发和验收，缺 edit-after-suggestion 采纳闭环无法满足 `docs/ux/page-specs/stage-2-experience/S2-23-tag-suggestions.md:56` 到 `:72`。
+- P1：`Select all` 语义不符合页面规格。说明：文档要求 `Select all` 只选择可写 Strong match 和用户已显式勾选的有效 Weak match；当前实现直接选择所有 `canApply` 候选，Weak match 会被一键选中。绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainDetailTagState.swift:270`。为什么导致不通过：会让 Weak match 绕过“用户显式勾选后才进入待采纳集合”的要求，影响真实采纳行为。
+- P1：本 task 新增后造成文件长度明显越过编码规范阈值。说明：`CoreTagCRUD.swift` 609 行，`DetailTagSection.swift` 529 行，`MainFileListModel.swift` 518 行，`MainFileListState.swift` 538 行，`DetailTagPageFeatureTests.swift` 782 行；其中 `CoreTagCRUD.swift`、`DetailTagPageFeatureTests.swift` 是本 task 明显扩大。绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreTagCRUD.swift:1`。为什么导致不通过：`docs/development/coding-standards.md` 要求单文件尽量不超过 500 行，工程质量规则要求明显违反编码规范不能判定完成。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-140`
+- 通过：`prompt_pipeline.py doctor` 显示 `doctor: OK`；`git diff --check` 通过；`xcodebuild ... build CODE_SIGNING_ALLOWED=NO` 最终 `BUILD SUCCEEDED`
+- 失败：无命令级失败
+- 缺失：未运行 UI 真机交互烟测；未运行 `./dev test macos`、SwiftFormat、SwiftLint。按 manifest 本轮主动验证上限为 `./dev check task 4-1/task-140`，但命令通过不能抵消上述功能和质量阻塞。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+- 主要原因不是 CoreBridge 没接通，而是 S2-23 页面规格中的 edit mode、Select all 语义和工程质量门禁仍缺证据或实现不符合。
+
+VERIFY_RESULT: FAIL

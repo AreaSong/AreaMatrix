@@ -1,0 +1,53 @@
+一、执行结论
+
+已完成。
+
+二、执行范围
+
+单任务：`4-2/task-28`，仅修改 `Expected New Paths` 内文件：
+
+- `core/src/ai_summary/context.rs`
+- `core/src/ai_summary/implementation.rs`
+- `core/src/db/ai_summary.rs`
+- `core/tests/ai_summary_failure_recovery.rs`
+
+未触碰 `apps/**`。工作区原有的 `.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json` 是本次前已存在的运行状态改动，我没有修改或回滚。
+
+三、完成情况
+
+核对清单已覆盖：空态默认 AI off、非法输入/缺失 file id、权限错误、IO/DB 错误、错误码映射、远程密钥不入日志、保存/清除失败不留下半成品。
+
+主要改动：
+
+- 缺失 repo-owned context 文件现在映射为 `CoreError::FileNotFound`，不再误报权限。
+- `clear_ai_summary` 先校验 active file id，缺失或删除态明确返回 `FileNotFound`。
+- save/clear DB 写入先校验 active file，再创建/写入 summary metadata，避免缺失 file id 时产生无意义表结构副作用。
+- 新增 failure recovery 测试覆盖默认关闭、缺失文件、权限拒绝、清除回滚、runtime failed log、远程密钥脱敏。
+
+四、工程质量
+
+实现保持在 C3-06 边界内，没有新增依赖，没有 mock-only 产品路径，没有静默吞错。写入路径仍只操作 AreaMatrix-owned summary metadata 和 change log，不删除、移动、覆盖用户文件。新增测试用 `tempfile` repo 隔离，并验证失败后既有摘要、change_log、用户文件安全边界。
+
+五、验证情况
+
+已通过：
+
+```bash
+./dev check task 4-2/task-28
+```
+
+该命令实际执行并通过：
+
+- prompt doctor
+- git diff --check
+- cargo fmt --all -- --check
+- cargo clippy --all-targets --all-features -- -D warnings
+- cargo test --test ai_summary_contract_api -- --nocapture：4 passed
+- cargo test --test ai_summary_failure_recovery -- --nocapture：7 passed
+- cargo test --test ai_summary_implementation -- --nocapture：6 passed
+
+六、风险与后续
+
+剩余风险：真实远程 provider/runtime 仍依赖后续 C3-09 隐私规则与平台 credential gate 的完整实现；本任务只证明 C3-06 当前合同内不绕过 gate、不泄露测试密钥、不写半成品。
+
+建议下一个任务：`4-2/task-29`，继续做 C3-06 validation / 集成侧证据收口。

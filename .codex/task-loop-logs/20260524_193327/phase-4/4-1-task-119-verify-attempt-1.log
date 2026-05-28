@@ -1,0 +1,71 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-1/task-119`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-119-s2-13-c2-07-undo-action-log.md`
+- 绑定页面：`S2-13-batch-delete-confirm`
+- 绑定能力：`C2-07 undo-action-log`
+
+三、完成度摘要
+
+- 已覆盖项数：13
+- 未覆盖项数：0
+- 通过项数：13
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 S2-13 页面中的 C2-07 功能点
+- 结果：通过
+- 证据：control map 声明 S2-13 仅绑定 `C2-09, C2-07`；当前 S2-13 删除后只把 `undoToken` 转成 C2-07 undo toast/action log 状态，没有接入 control map 外能力。
+- 涉及文件：[stage-2-control-map.md](/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-2-control-map.md:15)、[BatchDeleteConfirmSheet.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/BatchDeleteConfirmSheet.swift:232)、[BatchDeleteState.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/BatchDeleteState.swift:161)
+
+- 项目：读取页面规格、control map、Core API、C2-07 能力规格
+- 结果：通过
+- 证据：S2-13 规格要求成功后显示 Undo toast；Core API 规定 S2-13 从执行报告消费 `undo_token`，C2-07 后续消费 `list_undo_actions` / `undo_action`。
+- 涉及文件：[S2-13-batch-delete-confirm.md](/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-2-experience/S2-13-batch-delete-confirm.md:86)、[core-api.md](/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:2841)、[C2-07-undo-action-log.md](/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-2-experience/C2-07-undo-action-log.md:36)
+
+- 项目：只接入 C2-07 对应 CoreBridge / 状态 / 错误映射
+- 结果：通过
+- 证据：`CoreUndoActionLogging` 通过 `AreaMatrix.listUndoActions` 和 `AreaMatrix.undoAction` 走真实 CoreBridge；`BatchDeleteUndoAction` 用 report 的 `undoToken` 拉取 action log，并通过共享 undo helper 映射失败。
+- 涉及文件：[CoreTagCRUD.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreTagCRUD.swift:132)、[MainFileListDetailSupport.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileListDetailSupport.swift:196)、[BatchDeleteState.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/BatchDeleteState.swift:174)
+
+- 项目：不顺手实现相邻页面、相邻平台或同页其他能力
+- 结果：通过
+- 证据：本页 C2-09 preview/apply 仅作为依赖输入；C2-07 消费限于 undo token、action log、undo 状态。未发现 `core/src/**`、相邻页面或 control map 外能力的当前脏改动。
+- 涉及文件：[CoreBatchDelete.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBatchDelete.swift:89)、[core/area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:216)
+
+- 项目：Expected New Paths / Forbidden Touches
+- 结果：通过
+- 证据：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**` 已存在；`git diff --name-only -- core/src apps/macos/AreaMatrix apps/macos/AreaMatrixTests core/area_matrix.udl` 与 cached diff 均为空。当前仅有 task-loop summary/progress/log 运行痕迹。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。S2-13 sheet、batch delete state、CoreBridge snapshot、undo helper 分层清楚；UI 不直接调用 UniFFI。
+- 注释 / rustdoc / 文档同步：通过。本 task 未新增 public Rust API；UDL 中 `BatchDeleteReport.undo_token`、`UndoActionRecord`、`UndoActionResult` 与 Core API 对齐。
+- 错误处理与边界处理：通过。preview/apply 错误经 `CoreErrorMapping` 映射；undo action log 拉取、undo 执行和 action log refresh 都捕获并映射失败。
+- 测试与验证覆盖：通过。`S213BatchDeletePageIntegrationVerifyTests` 用真实 `CoreBridge`、临时 repo、测试 Trash 验证 move-to-trash 后产生 C2-07 undo action，并验证 index-only 不触碰外部源文件。
+- 占位、硬编码、mock-only、一次性实现检查：通过。生产路径调用 `AreaMatrix.previewBatchDelete`、`AreaMatrix.batchDeleteToTrash`、`AreaMatrix.listUndoActions`、`AreaMatrix.undoAction`，未以静态状态伪造闭环。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-119`
+- 通过：`prompt doctor` 通过，`git diff --check` 通过，macOS `xcodebuild ... build CODE_SIGNING_ALLOWED=NO` 通过，输出 `BUILD SUCCEEDED`
+- 失败：无
+- 缺失：无必需验证缺失；未额外运行 `./dev test macos` 或真实窗口 UI smoke，因为本 task manifest 指定验证为 `./dev check task 4-1/task-119`，该命令已按 page-feature task 选择 macOS build gate
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+
+VERIFY_RESULT: PASS

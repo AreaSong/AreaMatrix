@@ -1,0 +1,69 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-2/task-27`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-2-stage3-ai/task-27-c3-06-implementation.md`
+- 核验范围：`core/src/**`、`core/area_matrix.udl`、`core/tests/**`
+- 禁止触碰范围：`apps/**`
+
+三、完成度摘要
+
+- 已覆盖项数：12
+- 未覆盖项数：0
+- 通过项数：12
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只实现 C3-06，不顺手实现其他 C* 能力
+- 结果：通过
+- 证据：新增/修改集中在 `ai_summary`、`db::ai_summary` 和对应测试；未发现 `apps/**` 改动；`git status --short -- apps` 为空。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/ai_summary.rs:1`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/ai_summary/implementation.rs:20`
+
+- 项目：输入、输出、DB/文件系统变化和错误映射
+- 结果：通过
+- 证据：`generate/save/clear` 入口实现；保存/清除只操作 `ai_summaries` 与 change log；生成草稿不持久化 summary；错误映射覆盖 Config/FileNotFound/PermissionDenied/Db。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:418`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/db/ai_summary.rs:60`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/db/ai_summary.rs:129`
+
+- 项目：Rust Core 不依赖平台 UI API
+- 结果：通过
+- 证据：实现仅使用 Rust std、SQLite、现有 Core 模块和外部 runtime adapter；未见 AppKit/SwiftUI/FSEvents/macOS UI API。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/ai_summary/executor.rs:1`
+
+- 项目：最小测试支撑，不做页面接入
+- 结果：通过
+- 证据：新增 `ai_summary_implementation` 测试覆盖生成草稿、保存/清除、远程 gate、事务回滚、runtime failure；未触碰 macOS 页面。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/ai_summary_implementation.rs:50`
+
+- 项目：Expected New Paths
+- 结果：通过
+- 证据：`core/src/**`、`core/area_matrix.udl`、`core/tests/**` 均存在；C3-06 UDL 合同已存在并与 Core API 对齐。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:71`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。实现拆分为 `context`、`executor`、`call_log`、`implementation`、`db::ai_summary`，职责边界清楚。
+- 注释 / rustdoc / 文档同步：通过。公共 API 有 rustdoc，UDL/Core API/C3-06 spec/control map 对齐。
+- 错误处理与边界处理：通过。生产代码未发现 `unwrap()` / `expect()` / `panic!()`；保存使用事务，失败保留原 summary。
+- 测试与验证覆盖：通过。task-scoped 验证已跑完并通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。runtime 不硬编码成功；缺 runtime 返回 Unavailable 并写结构化失败日志。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-2/task-27`
+- 通过：`prompt doctor` OK；`git diff --check` OK；`cargo test --test ai_summary_contract_api -- --nocapture` 4 passed；`cargo test --test ai_summary_implementation -- --nocapture` 6 passed。
+- 失败：无
+- 缺失：未运行 broad gate，如 `cargo test --workspace`、clippy、fmt；原因是本 task manifest 指定普通 atomic Core task 验证上限为 `./dev check task 4-2/task-27`。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+VERIFY_RESULT: PASS

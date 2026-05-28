@@ -1,0 +1,73 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-2/task-01`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-2-stage3-ai/task-01-c3-01-contract-api.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/ai_settings.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/lib.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/tests/ai_settings_config_contract_api.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md`
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：读取 C3-01 能力规格、Stage 3 AI control map、Core API 和错误码
+- 结果：通过
+- 证据：C3-01 规格定义 `load_ai_config` / `update_ai_config`、输入输出和错误码；control map 只将 C3-01 绑定到 S3-01 与 S3-09；Core API 已提升 C3-01 合同。
+- 涉及文件：`docs/core/capability-specs/stage-3-ai/C3-01-ai-settings-config.md:1`、`docs/architecture/stage-3-control-map.md:9`、`docs/api/core-api.md:1694`
+
+- 项目：确认 API 名称、输入、输出、错误码、权限/隐私边界与能力规格一致
+- 结果：通过
+- 证据：UDL 暴露 `load_ai_config` / `update_ai_config`、`AiConfig`、`AiConfigSnapshot`、`AiProviderPreference`、`AiFeatureKind`；Rust public API 有 rustdoc 和 `# Errors`；Core API 明确 Config / PermissionDenied / Io 与不传入/返回 API key。
+- 涉及文件：`core/area_matrix.udl:22`、`core/area_matrix.udl:301`、`core/src/api.rs:156`、`docs/api/core-api.md:1718`
+
+- 项目：只补合同、类型、桥接声明或文档缺口，不实现相邻能力
+- 结果：通过
+- 证据：`ai_settings.rs` 只提供合同类型、默认关闭快照、payload 校验和 implementation task 前的显式 `Config` 错误；未实现 provider 测试、Keychain、隐私规则 CRUD、AI 调用日志、模型执行或建议清理。
+- 涉及文件：`core/src/ai_settings.rs:14`、`core/src/ai_settings.rs:96`、`core/src/ai_settings.rs:101`、`core/src/ai_settings.rs:109`
+
+- 项目：记录当前页面消费方是否能从合同中得到所需状态
+- 结果：通过
+- 证据：Core API 明确 S3-01 可得到总开关、provider preference、本地/远程路线、功能开关、禁用原因和更新时间；S3-09 可得到 `privacy_gate_enabled`、`remote_ai_allowed`、功能远程允许状态和策略引用。
+- 涉及文件：`docs/api/core-api.md:1724`、`docs/api/core-api.md:1776`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，`ai_settings.rs` 248 行，函数拆分清楚，未超过 500 行文件阈值。
+- 注释 / rustdoc / 文档同步：通过，新增 public 类型和 public API 均有 rustdoc，Core API 与 UDL 同步。
+- 错误处理与边界处理：通过，invalid repo、metadata 内部路径、payload mismatch、缺失/重复 feature、metadata 权限/IO 均返回 `CoreError`，无生产路径 `unwrap` / `panic`。
+- 测试与验证覆盖：通过，目标测试覆盖签名、默认关闭无副作用、非法更新拒绝、docs/API/UDL/control map 对齐、页面消费边界。
+- 占位、硬编码、mock-only、一次性实现检查：通过；本 task 是 contract-api，不要求业务持久化。代码明确阻止 fake success，`update_ai_config` 在实现任务前返回 `Config`，未伪装为成功闭环。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-2/task-01`
+- 通过：
+  - `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`: OK，tasks 637，manifests 637
+  - `git diff --check`: 通过
+  - `cargo test --test ai_settings_config_contract_api -- --nocapture`: 5 passed
+- 失败：无
+- 缺失：无；本 task manifest 只要求 `./dev check task 4-2/task-01`
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。`Expected New Paths` 已落地到 `core/src/**`、`core/area_matrix.udl`、`core/tests/**`；`Forbidden Touches` 中的 `apps/**` 未发现变更。`progress.json` 仍为 `in_progress` 属于 runner 收口前状态，不阻断本 verify 阶段。
+
+VERIFY_RESULT: PASS

@@ -1,0 +1,106 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`4-1/task-134`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-134-s2-21-c2-17-import-conflict-batch.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：11
+- 未覆盖项数：0
+- 通过项数：10
+- 不通过项数：1
+- 阻塞项数：1
+
+四、逐项验收结果
+
+- 项目：只处理 S2-21 页面中的 C2-17 功能点
+- 结果：通过
+- 证据：实现集中在 S2-21 批量导入冲突入口、CoreBridge、ImportBatch model/view 和测试；未触碰 `core/src/**`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportBatchConflictActions.swift:134`
+
+- 项目：读取页面规格、control map、Core API、C2-17 能力规格
+- 结果：通过
+- 证据：S2-21 要求默认安全策略、Replace 二次确认、作用域选择、Ask per item、change_log/Undo 状态；control map 绑定 `S2-21: C2-17, C2-07`；本 task 覆盖 C2-17。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-2-experience/S2-21-import-conflict-batch.md:23`
+
+- 项目：只接入 C2-17 CoreBridge / 状态 / 错误映射
+- 结果：通过
+- 证据：`CoreImportConflictBatching` 定义 preview/apply；`CoreBridge` 通过 `AreaMatrix.previewImportConflictBatch` 与 `AreaMatrix.applyImportConflictBatch` 调用真实 UniFFI；模型使用 `CoreErrorMapping` 映射失败。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreImporting.swift:35`
+
+- 项目：不顺手实现相邻页面、相邻平台或同页其他能力
+- 结果：通过
+- 证据：diff 搜索只发现 C2-17 的 `previewImportConflictBatch` / `applyImportConflictBatch` 生产调用；未新增 C2-07 undo API 消费。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreImporting.swift:258`
+
+- 项目：S2-21 中 C2-17 用户可见功能可触发和验收
+- 结果：通过
+- 证据：UI 包含策略 picker、作用域 toggle、冲突列表、Ask per item、Apply strategy、Replace 二次确认；入口支持命令面板从 active progress metadata 打开。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportBatchConflictSection.swift:82`
+
+- 项目：没有 mock、fixture 或静态状态伪造真实 Core 闭环
+- 结果：通过
+- 证据：生产默认 `conflictBatcher: CoreBridge()`；测试中使用 recording batcher 只验证 UI 请求构造，不替代生产 CoreBridge。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportBatchCopyImportModel.swift:34`
+
+- 项目：未触碰 control map 之外 Core 能力
+- 结果：通过
+- 证据：C2-17 相关调用限定为 import conflict batch；同页 C2-07 仅消费报告中的 `undoToken` 状态，没有新增 undo 执行能力。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ImportBatchConflictActions.swift:332`
+
+- 项目：Expected New Paths 落地
+- 结果：通过
+- 证据：实际改动落在 `apps/macos/AreaMatrix/**` 与 `apps/macos/AreaMatrixTests/**`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportBatchConflictSection.swift:1`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git diff --name-only -- core/src` 无输出；`git ls-files --others --exclude-standard -- core/src` 无输出。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+- 项目：任务验证命令
+- 结果：通过
+- 证据：`./dev check task 4-1/task-134` 返回 0；`doctor: OK`，`git diff --check` 无报错，`xcodebuild ... build CODE_SIGNING_ALLOWED=NO` 显示 `BUILD SUCCEEDED`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/dev`
+
+- 项目：工程质量编码规范
+- 结果：不通过
+- 证据：`apps/macos/AreaMatrixTests/MainEmptyImportEntryTests.swift` 当前 532 行，超过 `docs/development/coding-standards.md` 的 Swift 单文件 500 行阈值；该文件在 HEAD 中为 449 行，本 task 新增 S2-21 测试后越过阈值。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/MainEmptyImportEntryTests.swift:378`
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过。核心逻辑拆在 Bridge、Model、View 中，结构基本清楚，但测试文件被本 task 推到 532 行，违反单文件 500 行规范。
+- 注释 / rustdoc / 文档同步：通过。未新增 Rust public API；UDL 已存在 C2-17 合同，Swift 侧按合同消费。
+- 错误处理与边界处理：通过。preview/apply 捕获 Core 错误并走 `CoreErrorMapping`；Replace 需要确认，取消后回到安全策略；未勾选和 blocked 行不由本地写文件。
+- 测试与验证覆盖：通过。测试覆盖默认安全策略、Replace 二次确认、手动作用域、Ask per item、命令面板入口；manifest 验证通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。生产路径使用 `CoreBridge` 调真实 C2-17；测试 fake 未作为产品闭环。
+
+六、阻塞项
+
+- P1：S2-21 测试追加导致 Swift 测试文件超过 500 行规范
+  - 说明：当前 `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/MainEmptyImportEntryTests.swift` 为 532 行；HEAD 版本为 449 行，本 task 新增的 S2-21 command palette / onboarding 测试使文件超过编码规范阈值。
+  - 绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/MainEmptyImportEntryTests.swift`
+  - 行号：`378`
+  - 为什么导致不通过：`docs/development/coding-standards.md` 要求单文件尽量不超过 500 行，SwiftLint 配置也以 `file_length: 500` 为阈值；工程质量规则要求明显违反编码规范时不能判定完成。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-134`
+- 通过：`prompt doctor`、`git diff --check`、macOS `xcodebuild build`
+- 失败：无命令失败
+- 缺失：未运行 `./dev test macos`、SwiftLint、SwiftFormat、真实窗口 UI smoke；manifest 对本 page-feature task 指定的验证命令已运行，但当前已被文件长度质量 blocker 阻断。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+
+VERIFY_RESULT: FAIL

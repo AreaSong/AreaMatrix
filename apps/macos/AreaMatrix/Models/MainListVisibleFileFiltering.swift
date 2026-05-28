@@ -77,7 +77,7 @@ enum SearchFilterDateField {
             .map { Date(timeIntervalSince1970: TimeInterval($0)) } ?? Date(timeIntervalSince1970: 0)
         let upper = boundTimestamp(from: bounds, oldest: false)
             .map { Date(timeIntervalSince1970: TimeInterval($0)) } ?? Date(timeIntervalSince1970: 4_102_444_800)
-        return min(lower, upper)...max(lower, upper)
+        return min(lower, upper) ... max(lower, upper)
     }
 
     func clearing(in filters: SearchFilterStateSnapshot) -> SearchFilterStateSnapshot {
@@ -183,7 +183,7 @@ enum MainSearchDestination: Equatable, Identifiable {
     case queryError(SearchQueryRequestSnapshot, SearchQueryDiagnosticSnapshot)
     case indexingStatus(SearchQueryRequestSnapshot)
     case commandPalette
-    case classifierRuleEditor(context: BatchChangeCategoryNewCategoryReturnContext?)
+    case classifierRuleEditor(context: BatchChangeCategoryReturnContext?)
 
     var id: String {
         switch self {

@@ -15,7 +15,9 @@ struct SearchFilterChip: Identifiable, Equatable {
     var kind: SearchFilterChipKind
     var label: String
 
-    var id: SearchFilterChipKind { kind }
+    var id: SearchFilterChipKind {
+        kind
+    }
 }
 
 enum SearchFilterChips {
@@ -175,6 +177,8 @@ extension MainRepositoryContentView {
             detailLogDiagnosticsState: fileListModel.detailLogDiagnosticsState,
             detailExternalCreateSyncState: fileListModel.detailExternalCreateSyncState,
             detailTagEditorState: fileListModel.detailTagEditorState,
+            detailTagSuggestionState: fileListModel.detailTagSuggestionState,
+            tagSuggestionPresentationRequest: fileListModel.tagSuggestionPresentationRequest,
             detailTagUndoToast: fileListModel.detailTagUndoToast,
             detailTabRequest: fileListModel.detailTabRequest,
             selectedImportProgressRow: selectedImportProgressRow,
@@ -182,9 +186,11 @@ extension MainRepositoryContentView {
             batchTagStore: fileListModel.tagStore,
             batchTagUndoStore: fileListModel.undoActionStore,
             batchTagErrorMapper: fileListModel.errorMapper,
-            batchCategoryChanger: fileListModel.batchCategoryChanger,
+            batchDeleter: fileListModel.batchDeleter, batchCategoryChanger: fileListModel.batchCategoryChanger,
+            batchRenamer: batchRenamer,
             categoryRows: repositoryTree.sidebarRows,
             onBatchCategoryApplied: applyBatchCategoryChangeResult,
+            onBatchDeleteApplied: applyBatchDeleteResult, onBatchRenameApplied: applyBatchRenameResult,
             onBatchCategoryCreateNewCategory: { handoff in
                 openClassifierRuleEditorFromBatchCategory(handoff, route: commandPaletteBatchChangeCategoryRoute())
             },
@@ -207,6 +213,7 @@ extension MainRepositoryContentView {
             onDetailTabRequestConsumed: fileListModel.consumeDetailTabRequest,
             onBeginRenameFile: fileListModel.beginRename,
             onBeginChangeCategoryFile: fileListModel.beginChangeCategory,
+            onBeginClassifierCorrectionFile: fileListModel.beginClassifierCorrection,
             onBeginDeleteFile: fileListModel.beginDelete,
             onBeginICloudConflictResolution: fileListModel.beginICloudConflictResolution,
             writeActionDisabledReason: fileListModel.writeActionDisabledReason,
@@ -232,7 +239,7 @@ extension MainRepositoryContentView {
                         isSearchFiltersPresented.toggle()
                     }
                     Button("Save...", action: fileListModel.openSavedSearchSheet)
-                    .disabled(!fileListModel.canSaveCurrentSearch)
+                        .disabled(!fileListModel.canSaveCurrentSearch)
                     smartListBannerEditButton
                     Button("Clear") {
                         clearSearch()
@@ -470,29 +477,4 @@ extension MainRepositoryContentView {
     var tagRegistryAnchorFileID: Int64? {
         fileListModel.selection.singleFileID ?? fileListModel.files.first?.id
     }
-
-    @ViewBuilder
-    private func searchRouteStatus(_ destination: MainSearchDestination) -> some View {
-        switch destination {
-        case let .searchEmpty(request):
-            SearchEmptyRouteView(
-                request: request,
-                indexStatus: fileListModel.searchState.indexStatus,
-                onClearSearch: clearSearchQuery,
-                onClearFilters: clearSearchFiltersFromEmptyState,
-                onRemoveFilter: removeSearchFilterFromEmptyState,
-                onSearchAllFileTypes: searchAllFileTypesFromEmptyState
-            )
-        case let .queryError(request, diagnostic):
-            QueryErrorRouteView(
-                request: request,
-                diagnostic: diagnostic,
-                onApplySuggestion: applyQuerySuggestion,
-                onClear: clearSearch
-            )
-        case .savedSearchSheet, .indexingStatus, .commandPalette, .classifierRuleEditor:
-            EmptyView()
-        }
-    }
-
 }

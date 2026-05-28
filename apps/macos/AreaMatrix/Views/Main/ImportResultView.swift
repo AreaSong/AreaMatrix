@@ -6,6 +6,7 @@ struct ImportResultView: View {
     let onRetryFailed: () -> Void
     let onLoadChangeLog: () -> Void
     let onShowExistingFile: (ImportResultRouteState.Item.ID) -> Void
+    let onReviewTagSuggestions: (ImportResultRouteState.Item.ID) -> Void
     let onRequestExport: () -> Void
     let onConfirmExport: () -> Void
     let onCancelExport: () -> Void
@@ -44,7 +45,11 @@ struct ImportResultView: View {
                     Text(item.reason)
                 }
                 TableColumn("动作") { item in
-                    if item.canShowExistingFile {
+                    if item.canReviewTagSuggestions {
+                        Button("Review tag suggestions") {
+                            onReviewTagSuggestions(item.id)
+                        }
+                    } else if item.canShowExistingFile {
                         Button("Show existing file") {
                             onShowExistingFile(item.id)
                         }

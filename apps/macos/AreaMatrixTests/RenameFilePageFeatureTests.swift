@@ -1,6 +1,8 @@
 @testable import AreaMatrix
 import XCTest
 
+// swiftlint:disable file_length
+// swiftlint:disable:next type_body_length
 final class RenameFilePageFeatureTests: XCTestCase {
     @MainActor
     func testS133C122SubmitRenameUsesCoreBridgeAndRefreshesListDetailAndLog() async {
@@ -203,6 +205,199 @@ final class RenameFilePageFeatureTests: XCTestCase {
         XCTAssertFalse(FileManager.default.fileExists(atPath: repoURL.appendingPathComponent("docs/source.pdf").path))
         XCTAssertTrue(changes.contains { $0.action == "renamed" })
     }
+
+    func testS214C210BatchRenameRuleSnapshotsCoverFourStrategies() {
+        let prefix = BatchRenameRuleDraft(prefix: "ProjectA_").snapshot
+        var date = BatchRenameRuleDraft(
+            mode: .datePrefix,
+            dateSource: .modified,
+            dateFormat: "yyyy/MM/dd",
+            separator: "-"
+        )
+        var sequence = BatchRenameRuleDraft(mode: .keepBaseSequence, separator: ".", startNumber: 7, padding: 3)
+        var replace = BatchRenameRuleDraft(mode: .replaceText, find: "draft", replacement: "final", caseSensitive: true)
+
+        XCTAssertEqual(prefix, .batchRenameRule(.prefix, prefix: "ProjectA_"))
+        XCTAssertEqual(
+            date.snapshot,
+            .batchRenameRule(.datePrefix, dateSource: .modified, dateFormat: "yyyy/MM/dd", separator: "-")
+        )
+        XCTAssertEqual(
+            sequence.snapshot,
+            .batchRenameRule(.keepBaseSequence, separator: ".", startNumber: 7, padding: 3)
+        )
+        XCTAssertEqual(
+            replace.snapshot,
+            .batchRenameRule(.replaceText, find: "draft", replacement: "final", caseSensitive: true)
+        )
+        replace.find = " "
+        date.dateFormat = " "
+        sequence.padding = 0
+        XCTAssertEqual(replace.validationMessage, "Find is required.")
+        XCTAssertEqual(date.validationMessage, "Date format is required.")
+        XCTAssertEqual(sequence.validationMessage, "Padding must be 1 or greater.")
+    }
+
+    func testS214C210BatchRenameValidationRequiresCurrentPreviewAndApplyState() {
+        let rule = BatchRenameRuleSnapshot.batchRenameRule(.prefix, prefix: "A_")
+        let preview = BatchRenamePreviewReportSnapshot.preview(rule: rule, token: "token-1", fileIDs: [1, 2])
+
+        XCTAssertTrue(BatchRenameValidation.s214CanApply(fileIDs: [1, 2], preview: preview, rule: rule))
+        let refreshingState = BatchRenamePreviewState.loading(previous: preview)
+        XCTAssertNil(refreshingState.applyReport)
+        XCTAssertEqual(refreshingState.displayReport, preview)
+        XCTAssertFalse(
+            BatchRenameValidation.s214CanApply(
+                fileIDs: [1, 2],
+                preview: refreshingState.applyReport,
+                rule: rule
+            )
+        )
+        XCTAssertFalse(BatchRenameValidation.s214CanApply(fileIDs: [1, 2], preview: nil, rule: rule))
+        XCTAssertFalse(
+            BatchRenameValidation.s214CanApply(
+                fileIDs: [1, 2],
+                preview: preview.with(canApply: false),
+                rule: rule
+            )
+        )
+        XCTAssertFalse(
+            BatchRenameValidation.s214CanApply(
+                fileIDs: [1, 2],
+                preview: preview,
+                rule: .batchRenameRule(.replaceText, find: "a")
+            )
+        )
+        XCTAssertFalse(BatchRenameValidation.s214CanApply(fileIDs: [1], preview: preview, rule: rule))
+        XCTAssertFalse(BatchRenameValidation.s214CanApply(fileIDs: [2, 1], preview: preview, rule: rule))
+        XCTAssertFalse(
+            BatchRenameValidation.s214CanApply(
+                fileIDs: [1, 2],
+                preview: preview,
+                rule: rule,
+                disabledReason: "No files selected"
+            )
+        )
+        XCTAssertFalse(
+            BatchRenameValidation.s214CanApply(
+                fileIDs: [1, 2],
+                preview: preview,
+                rule: rule,
+                isApplying: true
+            )
+        )
+    }
+
+    func testS214C210BatchRenameActionCallsPreviewAndApplyWithPreviewToken() async {
+        let rule = BatchRenameRuleSnapshot.batchRenameRule(
+            .keepBaseSequence,
+            separator: "_",
+            startNumber: 1,
+            padding: 2
+        )
+        let preview = BatchRenamePreviewReportSnapshot.preview(rule: rule, token: "preview-token", fileIDs: [11, 12])
+        let report = BatchRenameReportSnapshot.report(token: "undo-token")
+        let renamer = BatchRenameRecordingRenamer(preview: .success(preview), apply: .success(report))
+        let mapper = BatchRenameErrorMapper(mapping: .batchRenameConflict)
+
+        let loadedPreview = await BatchRenameAction.s214Preview(rule: rule, renamer: renamer, errorMapper: mapper)
+        let applyResult = await BatchRenameAction.s214Apply(preview: preview, renamer: renamer, errorMapper: mapper)
+
+        XCTAssertEqual(loadedPreview.applyReport, preview)
+        XCTAssertEqual(applyResult.report, report)
+        let previewRequests = await renamer.previewRequests
+        let applyRequests = await renamer.applyRequests
+        XCTAssertEqual(previewRequests, [
+            BatchRenamePreviewRequest(repoPath: "/repo", fileIDs: [11, 12], rule: rule)
+        ])
+        XCTAssertEqual(applyRequests, [
+            BatchRenameApplyRequest(repoPath: "/repo", fileIDs: [11, 12], rule: rule, token: "preview-token")
+        ])
+    }
+
+    func testS214C210BatchRenameUsesCurrentListOrderForPreviewAndApply() async {
+        let rule = BatchRenameRuleSnapshot.batchRenameRule(
+            .keepBaseSequence,
+            separator: "_",
+            startNumber: 1,
+            padding: 2
+        )
+        let preview = BatchRenamePreviewReportSnapshot.preview(
+            rule: rule,
+            token: "preview-token",
+            fileIDs: [30, 10, 20]
+        )
+        let renamer = BatchRenameRecordingRenamer(preview: .success(preview), apply: .success(.report()))
+        let mapper = BatchRenameErrorMapper(mapping: .batchRenameConflict)
+
+        let loadedPreview = await BatchRenameAction.preview(
+            repoPath: "/repo",
+            fileIDs: [30, 10, 20],
+            rule: rule,
+            renamer: renamer,
+            errorMapper: mapper
+        )
+        _ = await BatchRenameAction.apply(
+            repoPath: "/repo",
+            fileIDs: [30, 10, 20],
+            preview: preview,
+            renamer: renamer,
+            errorMapper: mapper
+        )
+
+        XCTAssertEqual(loadedPreview.applyReport?.items.map(\.fileID), [30, 10, 20])
+        let previewFileIDs = await renamer.previewRequests.map(\.fileIDs)
+        let applyFileIDs = await renamer.applyRequests.map(\.fileIDs)
+        XCTAssertEqual(previewFileIDs, [[30, 10, 20]])
+        XCTAssertEqual(applyFileIDs, [[30, 10, 20]])
+    }
+
+    func testS214C210BatchRenameEntryUsesListOrderInsteadOfIDOrNameOrder() {
+        let firstInList = FileEntrySnapshot.renameFixture(id: 30, name: "zeta.pdf")
+        let secondInList = FileEntrySnapshot.renameFixture(id: 10, name: "alpha.pdf")
+        let thirdInList = FileEntrySnapshot.renameFixture(id: 20, name: "middle.pdf")
+        let summary = MultiSelectionDetailSummary(
+            selection: .multiple([10, 20, 30]),
+            files: [firstInList, secondInList, thirdInList]
+        )
+
+        XCTAssertEqual(BatchRenameEntryPolicy.fileIDsForPreview(summary: summary), [30, 10, 20])
+        XCTAssertEqual(summary.files.map(\.id), [10, 20, 30])
+    }
+
+    func testS214C210BatchRenameActionMapsPreviewAndApplyErrors() async {
+        let rule = BatchRenameRuleSnapshot.batchRenameRule(.replaceText, find: "draft")
+        let preview = BatchRenamePreviewReportSnapshot.preview(rule: rule, token: "token", fileIDs: [9])
+        let previewFailure = BatchRenameRecordingRenamer(
+            preview: .failure(CoreError.InvalidPath(path: "bad")),
+            apply: .success(.report())
+        )
+        let applyFailure = BatchRenameRecordingRenamer(
+            preview: .success(preview),
+            apply: .failure(CoreError.Conflict(path: "stale"))
+        )
+        let mapper = BatchRenameErrorMapper(mapping: .batchRenameConflict)
+
+        let previewState = await BatchRenameAction.preview(
+            repoPath: "/repo",
+            fileIDs: [9],
+            rule: rule,
+            renamer: previewFailure,
+            errorMapper: mapper
+        )
+        let applyResult = await BatchRenameAction.apply(
+            repoPath: "/repo",
+            fileIDs: [9],
+            preview: preview,
+            renamer: applyFailure,
+            errorMapper: mapper
+        )
+
+        XCTAssertEqual(previewState.failure, .batchRenameConflict)
+        XCTAssertEqual(applyResult.failure, .batchRenameConflict)
+        let mappedErrorCount = await mapper.errors.count
+        XCTAssertEqual(mappedErrorCount, 2)
+    }
 }
 
 private struct RenameRequest: Equatable {
@@ -270,6 +465,42 @@ private extension CoreErrorMappingSnapshot {
             recoverability: .userActionRequired,
             rawContext: "S1-33 C1-22 rename_file"
         )
+    }
+}
+
+private extension BatchRenameValidation {
+    static func s214CanApply(
+        fileIDs: [Int64],
+        preview: BatchRenamePreviewReportSnapshot?,
+        rule: BatchRenameRuleSnapshot,
+        disabledReason: String? = nil,
+        isApplying: Bool = false
+    ) -> Bool {
+        canApply(
+            fileIDs: fileIDs,
+            preview: preview,
+            rule: rule,
+            disabledReason: disabledReason,
+            isApplying: isApplying
+        )
+    }
+}
+
+private extension BatchRenameAction {
+    static func s214Preview(
+        rule: BatchRenameRuleSnapshot,
+        renamer: any CoreBatchRenaming,
+        errorMapper: any CoreErrorMapping
+    ) async -> BatchRenamePreviewState {
+        await preview(repoPath: "/repo", fileIDs: [11, 12], rule: rule, renamer: renamer, errorMapper: errorMapper)
+    }
+
+    static func s214Apply(
+        preview: BatchRenamePreviewReportSnapshot,
+        renamer: any CoreBatchRenaming,
+        errorMapper: any CoreErrorMapping
+    ) async -> BatchRenameApplyResult {
+        await apply(repoPath: "/repo", fileIDs: [11, 12], preview: preview, renamer: renamer, errorMapper: errorMapper)
     }
 }
 

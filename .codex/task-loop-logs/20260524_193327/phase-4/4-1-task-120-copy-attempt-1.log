@@ -1,0 +1,44 @@
+一、执行结论
+
+已完成。当前 S2-13 整页闭环已可按 page spec / control map 验收，本轮没有新增代码改动。
+
+二、执行范围
+
+单任务：`4-1/task-120`。
+
+修改文件清单：无。本轮未触碰 `apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**` 或 `core/src/**`。工作树仍有既有运行状态改动：`.codex/task-loop-runs/20260524_193327/summary.json`、`tasks/prompts/_shared/progress.json`，我没有回退或改写。
+
+三、完成情况
+
+核对结果：
+
+- page-feature task 覆盖：`4-1/task-118` 覆盖 `C2-09`，`4-1/task-119` 覆盖 `C2-07`，与 S2-13 control map 一致。
+- 页面闭环：入口、预览、执行、失败/重试、取消、结果摘要、Undo toast / history wiring 已串通。
+- CoreBridge：`previewBatchDelete` / `batchDeleteToTrash` 通过 [CoreBatchDelete.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBatchDelete.swift:89) 真实调用 UniFFI/Core。
+- 页面状态：loading、empty、error、undo unavailable confirmation、partial failure retry 在 [BatchDeleteConfirmSheet.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/BatchDeleteConfirmSheet.swift:58) 覆盖。
+- 退出/刷新：执行后通过 [MainRepositoryContentCategoryMoveRefresh.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentCategoryMoveRefresh.swift:73) 关闭 sheet、刷新列表、清除受影响选择并更新 Undo 状态。
+- Forbidden Touches：未触碰 `core/src/**`。
+
+四、工程质量
+
+代码结构清晰，没有新增抽象、依赖、mock-only wiring 或硬编码通过态。现有测试 [S213BatchDeletePageIntegrationVerifyTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/S213BatchDeletePageIntegrationVerifyTests.swift:6) 使用真实 Core repo、真实 Trash 测试环境验证 Move to Trash、Remove from index、Undo token 和外部源文件不被触碰。
+
+五、验证情况
+
+已运行：
+
+```bash
+./dev check task 4-1/task-120
+```
+
+结果通过：
+
+- `prompt doctor`: OK，tasks `637`，manifests `637`
+- `git diff --check`: 通过
+- `xcodebuild ... build CODE_SIGNING_ALLOWED=NO`: `BUILD SUCCEEDED`
+
+有本地环境警告：CoreSimulator / FSEvents / cache 访问警告，但未导致验证失败。
+
+六、风险与后续
+
+剩余风险：本轮只执行 manifest 指定 task gate，未扩大到全量 XCTest 或 `./dev check all`，符合任务验证上限。建议下一个任务继续执行 `4-1/task-121`。

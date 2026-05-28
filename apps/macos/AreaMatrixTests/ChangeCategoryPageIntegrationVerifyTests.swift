@@ -67,6 +67,7 @@ final class ChangeCategoryPageIntegrationVerifyTests: XCTestCase {
     }
 
     @MainActor
+    // swiftlint:disable:next function_body_length
     func testS135PageIntegrationDetailMetaMenuRoutesToChangeCategorySheet() async {
         let file = FileEntrySnapshot.s135Fixture(id: 249, name: "detail.pdf")
         let model = MainFileListModel(
@@ -88,14 +89,21 @@ final class ChangeCategoryPageIntegrationVerifyTests: XCTestCase {
             detailLogDiagnosticsState: model.detailLogDiagnosticsState,
             detailExternalCreateSyncState: model.detailExternalCreateSyncState,
             detailTagEditorState: model.detailTagEditorState,
+            detailTagSuggestionState: model.detailTagSuggestionState,
+            tagSuggestionPresentationRequest: model.tagSuggestionPresentationRequest,
             detailTagUndoToast: model.detailTagUndoToast, detailTabRequest: model.detailTabRequest,
             selectedImportProgressRow: nil,
             repoPath: "/tmp/repo",
             batchTagStore: model.tagStore, batchTagUndoStore: model.undoActionStore,
             batchTagErrorMapper: model.errorMapper,
+            batchDeleter: CoreBridge(),
             batchCategoryChanger: model.batchCategoryChanger,
+            batchRenamer: CoreBridge(),
             categoryRows: .s135Rows,
             onBatchCategoryApplied: { _ in },
+            onBatchDeleteApplied: { _ in },
+            onBatchRenameApplied: { _ in },
+            onBatchCategoryCreateNewCategory: { _ in },
             onRetrySelectedFileDetail: {},
             tagActions: .noop,
             onCopyPaths: { _ in }, onOpenNoteFile: { _ in },
@@ -103,6 +111,7 @@ final class ChangeCategoryPageIntegrationVerifyTests: XCTestCase {
             onCancelDetailLogDiagnostics: {}, onDetailTabRequestConsumed: { _ in },
             onBeginRenameFile: model.beginRename,
             onBeginChangeCategoryFile: model.beginChangeCategory,
+            onBeginClassifierCorrectionFile: model.beginClassifierCorrection,
             onBeginDeleteFile: model.beginDelete, onBeginICloudConflictResolution: model.beginICloudConflictResolution,
             writeActionDisabledReason: model.writeActionDisabledReason,
             noteModel: DetailNoteModel(
@@ -114,10 +123,15 @@ final class ChangeCategoryPageIntegrationVerifyTests: XCTestCase {
         let body = s135MirrorDescription(of: pane.body)
 
         XCTAssertTrue(body.contains("Change Category..."))
+        XCTAssertTrue(body.contains("Correct Classification..."))
         pane.onBeginChangeCategoryFile(file.id)
         XCTAssertEqual(model.pendingActionDestination, .changeCategory(fileID: file.id))
         XCTAssertEqual(model.pendingActionDestination?.pageID, "S1-35")
         XCTAssertEqual(model.pendingActionDestination?.pageTitle, "Change Category")
+        pane.onBeginClassifierCorrectionFile(file.id)
+        XCTAssertEqual(model.pendingActionDestination, .changeCategory(fileID: file.id, mode: .classifierCorrection))
+        XCTAssertEqual(model.pendingActionDestination?.pageID, "S2-16")
+        XCTAssertEqual(model.pendingActionDestination?.pageTitle, "Correct Classification")
     }
 
     @MainActor
@@ -192,7 +206,7 @@ final class ChangeCategoryPageIntegrationVerifyTests: XCTestCase {
             initialTargetCategory: "finance",
             onCancel: {},
             onPreview: { _, _ in },
-            onChangeCategory: { _, _ in },
+            onChangeCategory: { _, _, _, _ in },
             onRenameFirst: { _, _ in },
             onOpenPermissionRecovery: { openedPermissionRecovery = true },
             onCollectDiagnostics: {}
@@ -466,35 +480,4 @@ private extension [RepositorySidebarRowSnapshot] {
     static var s135Rows: [RepositorySidebarRowSnapshot] {
         RepositoryTreeNodeSnapshot.s135Tree(docsCount: 1, financeCount: 0).sidebarRows
     }
-}
-
-private extension CoreErrorMappingSnapshot {
-    static func s135Conflict() -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
-            kind: .conflict,
-            userMessage: "Path conflict.",
-            severity: .medium,
-            suggestedAction: "Rename the file first, then retry.",
-            recoverability: .userActionRequired,
-            rawContext: "S1-35 C1-10 safe target name"
-        )
-    }
-
-    static func s135PermissionDenied() -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
-            kind: .permissionDenied,
-            userMessage: "Target category is not writable.",
-            severity: .high,
-            suggestedAction: "Grant folder access in Finder, then retry.",
-            recoverability: .userActionRequired,
-            rawContext: "S1-35 C1-24 preview_move_to_category permission"
-        )
-    }
-}
-
-private func makeS135TemporaryDirectory(prefix: String) throws -> URL {
-    let name = "AreaMatrixS135Integration-\(prefix)-\(UUID().uuidString)"
-    let url = FileManager.default.temporaryDirectory.appendingPathComponent(name, isDirectory: true)
-    try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
-    return url
 }

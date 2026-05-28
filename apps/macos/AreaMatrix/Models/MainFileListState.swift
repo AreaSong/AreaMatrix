@@ -44,7 +44,12 @@ enum MainFileSelectionState: Equatable {
 
 enum MainFileActionDestination: Equatable {
     case rename(fileID: Int64)
-    case changeCategory(fileID: Int64, initialTargetCategory: String? = nil)
+    case changeCategory(
+        fileID: Int64,
+        initialTargetCategory: String? = nil,
+        mode: MainFileCategoryMoveMode = .moveToCategory,
+        ruleRoute: ClassifierCorrectionRuleRoute? = nil
+    )
     case delete(fileID: Int64)
     case iCloudConflict(fileID: Int64)
 
@@ -52,8 +57,8 @@ enum MainFileActionDestination: Equatable {
         switch self {
         case .rename:
             "S1-33"
-        case .changeCategory:
-            "S1-35"
+        case let .changeCategory(_, _, mode, ruleRoute):
+            ruleRoute?.pageID ?? (mode == .classifierCorrection ? "S2-16" : "S1-35")
         case .delete:
             "S1-34"
         case .iCloudConflict:
@@ -65,8 +70,15 @@ enum MainFileActionDestination: Equatable {
         switch self {
         case .rename:
             "Rename File"
-        case .changeCategory:
-            "Change Category"
+        case let .changeCategory(_, _, mode, ruleRoute):
+            switch ruleRoute {
+            case .saveRule:
+                "Save Classifier Rule"
+            case .impactPreview:
+                "Preview Classifier Impact"
+            case nil:
+                mode == .classifierCorrection ? "Correct Classification" : "Change Category"
+            }
         case .delete:
             "Move File to Trash?"
         case .iCloudConflict:
@@ -76,18 +88,29 @@ enum MainFileActionDestination: Equatable {
 
     var fileID: Int64 {
         switch self {
-        case let .rename(fileID), let .changeCategory(fileID, _), let .delete(fileID), let .iCloudConflict(fileID):
+        case let .rename(fileID), let .changeCategory(fileID, _, _, _), let .delete(fileID),
+             let .iCloudConflict(fileID):
             fileID
         }
     }
 
     var initialChangeCategoryTarget: String? {
-        guard case let .changeCategory(_, targetCategory) = self else { return nil }
+        guard case let .changeCategory(_, targetCategory, _, _) = self else { return nil }
         return targetCategory
     }
 
+    var changeCategoryMode: MainFileCategoryMoveMode {
+        guard case let .changeCategory(_, _, mode, _) = self else { return .moveToCategory }
+        return mode
+    }
+
+    var classifierRuleRoute: ClassifierCorrectionRuleRoute? {
+        guard case let .changeCategory(_, _, _, ruleRoute) = self else { return nil }
+        return ruleRoute
+    }
+
     func isChangeCategory(fileID expectedFileID: Int64) -> Bool {
-        guard case let .changeCategory(fileID, _) = self else { return false }
+        guard case let .changeCategory(fileID, _, _, _) = self else { return false }
         return fileID == expectedFileID
     }
 }
@@ -210,7 +233,10 @@ enum MainListStatusBanner: Equatable {
     case unsavedNoteDraftPreserved(fileID: Int64)
     case movedFileToTrash(fileID: Int64)
     case removedFileFromIndex(fileID: Int64)
+    case batchDeleted(count: Int64)
     case changedCategory(fileID: Int64, category: String)
+    case correctedClassification(fileID: Int64, category: String, ruleConfirmationRequired: Bool)
+    case savedClassifierRule(category: String)
     case changedBatchCategory(count: Int64, category: String)
     case changedCategoryTreeRefreshFailed(fileID: Int64, category: String)
     case resolvedICloudConflict(fileID: Int64, strategy: ICloudConflictResolutionStrategy)
@@ -218,25 +244,39 @@ enum MainListStatusBanner: Equatable {
     var message: String {
         switch self {
         case .renamedPreservedSelection:
-            "File renamed. The same file remains selected."
+            return "File renamed. The same file remains selected."
         case .removedSelectedFile:
-            "Selected file is missing or was removed outside AreaMatrix."
+            return "Selected file is missing or was removed outside AreaMatrix."
         case .unsavedNoteDraftPreserved:
-            "无法保存笔记。草稿已保留，返回该文件的 Note tab 后可继续重试。"
+            return "无法保存笔记。草稿已保留，返回该文件的 Note tab 后可继续重试。"
         case .movedFileToTrash:
-            "Moved to Trash. Metadata retained for traceability."
+            return "Moved to Trash. Metadata retained for traceability."
         case .removedFileFromIndex:
-            "Removed from AreaMatrix index. Original file was not deleted."
+            return "Removed from AreaMatrix index. Original file was not deleted."
+        case let .batchDeleted(count):
+            return "Processed \(count) selected items. List and undo action log are refreshed."
         case let .changedCategory(_, category):
-            "Category changed to \(category). Tree, list, detail, and change log are refreshed."
-        case let .changedBatchCategory(count, category):
-            "Changed \(count) files to \(category). List and undo action log are refreshed."
-        case let .changedCategoryTreeRefreshFailed(_, category):
+            return "Category changed to \(category). Tree, list, detail, and change log are refreshed."
+        case let .correctedClassification(_, category, ruleConfirmationRequired):
+            if ruleConfirmationRequired {
+                return """
+                Classification corrected to \(category). Current file and change log are updated; \
+                rule still needs confirmation.
+                """
+            }
+            return "Classification corrected to \(category). Current file and change log are updated."
+        case let .savedClassifierRule(category):
+            return """
+            Classification rule saved for \(category). Future classification uses the updated classifier config.
             """
+        case let .changedBatchCategory(count, category):
+            return "Changed \(count) files to \(category). List and undo action log are refreshed."
+        case let .changedCategoryTreeRefreshFailed(_, category):
+            return """
             Category changed to \(category). List, detail, and change log are refreshed. Retry to refresh Tree counts.
             """
         case let .resolvedICloudConflict(_, strategy):
-            strategy.successMessage
+            return strategy.successMessage
         }
     }
 
@@ -246,8 +286,8 @@ enum MainListStatusBanner: Equatable {
             "arrow.triangle.2.circlepath"
         case .removedSelectedFile, .unsavedNoteDraftPreserved, .changedCategoryTreeRefreshFailed:
             "exclamationmark.triangle"
-        case .movedFileToTrash, .removedFileFromIndex, .changedCategory, .changedBatchCategory,
-             .resolvedICloudConflict:
+        case .movedFileToTrash, .removedFileFromIndex, .batchDeleted, .changedCategory, .correctedClassification,
+             .savedClassifierRule, .changedBatchCategory, .resolvedICloudConflict:
             "checkmark.circle"
         }
     }
@@ -341,6 +381,11 @@ enum MainDetailLogState: Equatable {
         if case .loading = self { return true }
         return false
     }
+
+    var entries: [ChangeLogEntrySnapshot]? {
+        guard case let .loaded(_, entries) = self else { return nil }
+        return entries
+    }
 }
 
 enum MainDetailLogDiagnosticsState: Equatable {
@@ -353,149 +398,5 @@ enum MainDetailLogDiagnosticsState: Equatable {
     var isCollecting: Bool {
         if case .collecting = self { return true }
         return false
-    }
-}
-
-struct MultiSelectionDetailSummary: Equatable {
-    var selectedCount: Int
-    var files: [FileEntrySnapshot]
-    var unresolvedMetadataCount: Int
-    var isUpdating: Bool
-
-    init(selection: MainFileSelectionState, files: [FileEntrySnapshot], isUpdating: Bool = false) {
-        let selectedIDs = selection.multipleFileIDs
-        selectedCount = selectedIDs.count
-        self.files = Self.orderedSelectedFiles(from: files, selectedIDs: selectedIDs)
-        unresolvedMetadataCount = max(0, selectedIDs.count - self.files.count)
-        self.isUpdating = isUpdating
-    }
-
-    var title: String {
-        "\(selectedCount) 个文件已选中"
-    }
-
-    var subtitle: String {
-        if categories.count == 1, let category = categories.first {
-            return "\(category) 中的 \(selectedCount) 个项目"
-        }
-        if categories.count > 1 {
-            return "跨 \(categories.count) 个分类的 \(selectedCount) 个项目"
-        }
-        return "\(selectedCount) 个项目"
-    }
-
-    var paths: [String] {
-        files.map(\.path)
-    }
-
-    var warningMessages: [String] {
-        var warnings: [String] = []
-        if unresolvedMetadataCount > 0 {
-            warnings.append("部分选中项无法读取元数据")
-        }
-        if missingCount > 0 {
-            warnings.append("选中的文件中有 \(missingCount) 个缺失条目")
-        }
-        if indexOnlyCount > 0 {
-            warnings.append("某些条目的来源路径可能在资料库外")
-        }
-        return warnings
-    }
-
-    var statisticRows: [MultiSelectionSummaryRow] {
-        [
-            MultiSelectionSummaryRow(label: "Total size", value: totalSizeDisplay),
-            MultiSelectionSummaryRow(label: "Categories", value: categoriesDisplay),
-            MultiSelectionSummaryRow(label: "Storage modes", value: storageModesDisplay),
-            MultiSelectionSummaryRow(label: "Earliest imported", value: importedDateDisplay { $0.min() }),
-            MultiSelectionSummaryRow(label: "Latest imported", value: importedDateDisplay { $0.max() })
-        ]
-    }
-
-    var fileTypeRows: [MultiSelectionSummaryRow] {
-        let groupedTypes = Dictionary(grouping: files.map(Self.fileTypeLabel), by: { $0 })
-        return groupedTypes.map { label, values in
-            (label: label, count: values.count)
-        }
-        .sorted { lhs, rhs in
-            if lhs.count != rhs.count { return lhs.count > rhs.count }
-            return lhs.label < rhs.label
-        }
-        .map { MultiSelectionSummaryRow(label: $0.label, value: "\($0.count)") }
-    }
-
-    private var categories: [String] {
-        uniqueSorted(files.map(\.category))
-    }
-
-    private var categoriesDisplay: String {
-        displayList(categories)
-    }
-
-    private var storageModesDisplay: String {
-        displayList(uniqueSorted(files.map(\.storageMode)))
-    }
-
-    private var totalSizeDisplay: String {
-        ByteCountFormatter.string(fromByteCount: files.reduce(0) { $0 + $1.sizeBytes }, countStyle: .file)
-    }
-
-    private var missingCount: Int {
-        files.filter { $0.availability == .missing }.count
-    }
-
-    private var indexOnlyCount: Int {
-        files.filter { $0.storageMode == "Indexed" }.count
-    }
-
-    private func importedDateDisplay(_ valueSelector: ([Int64]) -> Int64?) -> String {
-        let importedValues = files.map(\.importedAt)
-        guard let timestamp = valueSelector(importedValues) else { return "Not available" }
-        return FileEntrySnapshot.mainDisplayDateFormatter.string(
-            from: Date(timeIntervalSince1970: TimeInterval(timestamp))
-        )
-    }
-
-    private static func orderedSelectedFiles(
-        from files: [FileEntrySnapshot],
-        selectedIDs: Set<Int64>
-    ) -> [FileEntrySnapshot] {
-        files.filter { selectedIDs.contains($0.id) }
-            .sorted { lhs, rhs in
-                lhs.currentName.localizedStandardCompare(rhs.currentName) == .orderedAscending
-            }
-    }
-
-    private static func fileTypeLabel(for file: FileEntrySnapshot) -> String {
-        let fileExtension = (file.currentName as NSString).pathExtension.lowercased()
-        switch fileExtension {
-        case "pdf":
-            return "PDF"
-        case "md", "markdown":
-            return "Markdown"
-        case "png", "jpg", "jpeg", "gif", "heic", "webp":
-            return "Image"
-        case "":
-            return "No Extension"
-        default:
-            return fileExtension.uppercased()
-        }
-    }
-
-    private func uniqueSorted(_ values: [String]) -> [String] {
-        Array(Set(values)).sorted()
-    }
-
-    private func displayList(_ values: [String]) -> String {
-        values.isEmpty ? "Not available" : values.joined(separator: ", ")
-    }
-}
-
-struct MultiSelectionSummaryRow: Equatable, Identifiable {
-    let label: String
-    let value: String
-
-    var id: String {
-        label
     }
 }

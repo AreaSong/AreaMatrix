@@ -1,0 +1,47 @@
+一、执行结论
+
+已完成。
+
+二、执行范围
+
+单任务：`4-1/task-121` repair retry，仅修复上次验收指出的 C2-10 preview 刷新期间 stale preview 仍可 Apply 的问题。
+
+本次 repair 修改文件：
+- [MainFileRenameActions.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileRenameActions.swift:291)
+- [RenameFileSheet.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/RenameFileSheet.swift:238)
+- [ImportBatchNamingOptionsSection.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportBatchNamingOptionsSection.swift:113)
+- [RenameFilePageFeatureTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/RenameFilePageFeatureTests.swift:239)
+
+三、完成情况
+
+- 核对清单：只处理 S2-14 + C2-10；未实现同页 C2-07 或相邻能力。
+- 完成标准：Apply 现在只使用 `.loaded` 状态的最新 preview token；`.loading(previous:)` 只允许展示旧 preview，不再作为执行输入。
+- Forbidden Touches：未触碰 `core/src/**`，`git diff --name-only -- core/src` 无输出。
+
+四、工程质量
+
+状态机边界已拆清：`applyReport` 只来自最新 loaded preview，`displayReport` 用于 loading/failed 时保留展示。`Apply` guard 和按钮禁用判断都改为读取 `applyReport`，避免刷新中提交 stale token。
+
+补了回归测试断言：loading 期间 `applyReport == nil`，但 `displayReport` 仍保留旧 preview 供展示。未新增依赖，未新增 Rust public API，无 rustdoc 同步需求。
+
+五、验证情况
+
+已运行并通过：
+
+```bash
+./dev check task 4-1/task-121
+```
+
+该命令实际通过：
+- `prompt doctor`: OK
+- `git diff --check`: OK
+- `xcodebuild -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination platform=macOS,arch=arm64 build CODE_SIGNING_ALLOWED=NO`: `BUILD SUCCEEDED`
+
+未运行宽门禁或 XCTest：本次 retry 明确要求以 manifest 的 `Validation` 为上限，manifest 只列 `./dev check task 4-1/task-121`。
+
+六、风险与后续
+
+剩余风险：本地只执行了 manifest gate，新增 XCTest 用例作为代码证据存在，但未被本次允许的验证命令单独执行。未执行任何真实用户文件 rename，没有删除、移动、覆盖用户文件。
+
+建议下一个任务：继续 manifest 后续 `4-1/task-122`，以该 task 文件和 manifest 章节为准。
+

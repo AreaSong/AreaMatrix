@@ -88,6 +88,8 @@ final class MainWindowIntegrationVerifyTests: XCTestCase {
             .listFilterFacets,
             .runSmartList,
             .getFile,
+            .previewBatchDelete,
+            .batchDeleteToTrash,
             .listTreeJSON,
             .syncExternalChanges,
             .mapCoreError
@@ -143,6 +145,7 @@ final class MainWindowIntegrationVerifyTests: XCTestCase {
     }
 
     @MainActor
+    // swiftlint:disable:next function_body_length
     func testS201PageIntegrationRoutesEmptyQueryErrorIndexingSaveAndCommandEntrances() async {
         let tree = RepositoryTreeNodeSnapshot.task98FixtureTree()
         guard let row = tree.sidebarRow(id: "docs/contracts") else {
@@ -167,7 +170,13 @@ final class MainWindowIntegrationVerifyTests: XCTestCase {
             errorMapper: MainWindowIntegrationErrorMapper(mapping: .task34Mapping(kind: .db))
         )
 
-        await model.runSearch(query: "missing", scope: .current, sort: .newestImported, sidebarRow: row, filters: .empty)
+        await model.runSearch(
+            query: "missing",
+            scope: .current,
+            sort: .newestImported,
+            sidebarRow: row,
+            filters: .empty
+        )
         XCTAssertEqual(model.searchPageDestination?.pageID, "S2-04")
         XCTAssertEqual(model.files, [])
         let firstRecordedQuery = await searcher.recordedRequests().first?.request.query
@@ -181,7 +190,13 @@ final class MainWindowIntegrationVerifyTests: XCTestCase {
         XCTAssertFalse(model.canSaveCurrentSearch)
         XCTAssertNil(model.searchState.errorMapping)
 
-        await model.runSearch(query: "", scope: .current, sort: .newestModified, sidebarRow: row, filters: .task98ContractFilters())
+        await model.runSearch(
+            query: "",
+            scope: .current,
+            sort: .newestModified,
+            sidebarRow: row,
+            filters: .task98ContractFilters()
+        )
         XCTAssertTrue(model.canSaveCurrentSearch)
 
         await model.runSearch(query: "合同", scope: .current, sort: .newestImported, sidebarRow: row, filters: .empty)

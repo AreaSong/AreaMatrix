@@ -1,0 +1,68 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-2/task-30`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-2-stage3-ai/task-30-c3-06-integration-verify.md`
+- 核验文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-3-ai/C3-06-ai-summary.md`、`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-3-control-map.md`、`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md`、`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-3-ai/S3-06-ai-summary-editor.md`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/**`
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：交叉检查 capability spec、Core API、UDL、Rust 实现和测试
+- 结果：通过
+- 证据：C3-06 spec 定义 `generate_ai_summary` / `save_ai_summary` / `clear_ai_summary`；Core API 与 UDL 均暴露同名函数、请求/返回字典和枚举；Rust `api.rs`、`ai_summary.rs`、`implementation.rs` 已连接真实实现；`ai_summary_validation` 锁定 docs/API/UDL/Rust 对齐。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-3-ai/C3-06-ai-summary.md:7`、`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:95`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:71`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:418`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/ai_summary_validation.rs:346`
+
+- 项目：确认消费页面需要的状态、错误和副作用均已覆盖
+- 结果：通过
+- 证据：S3-06 需要 Draft、本地/远程、隐私跳过、保存/清除、失败恢复、call log 追溯；Core 返回 `status`、`route`、`model_name`、`used_context`、`skipped_reason`、`privacy_rule_id`、`call_log_id`、`requires_user_save`、`character_count`，保存和清除只写 AreaMatrix-owned summary metadata。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-3-ai/S3-06-ai-summary-editor.md:85`、`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:2632`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/ai_summary/implementation.rs:20`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/db/ai_summary.rs:60`
+
+- 项目：确认没有实现 control map 之外的能力
+- 结果：通过
+- 证据：Stage 3 control map 中 S3-06 绑定 C3-06、C3-09；当前实现限于 C3-06 summary 生成草稿、保存、清除、summary metadata 和 AI call log 追溯，没有实现多文档摘要、知识库摘要、隐私规则 CRUD、AI settings UI 或 apps 接入。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-3-control-map.md:14`、`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:2677`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/ai_summary/implementation.rs:99`
+
+- 项目：不得修改文件；只记录验收证据和阻塞项
+- 结果：通过
+- 证据：本次验收未写文件；当前工作区已有脏改动集中在 C3-06 Core/test 与 task-loop progress/summary，`git diff -- apps` 无输出，未命中 Forbidden Touches。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，`api.rs` 只做公开入口转发，`ai_summary.rs` 定义合同类型和校验，`implementation.rs` 拆分 route/gate/draft/save/clear，DB 写入集中在 `db/ai_summary.rs`。
+- 注释 / rustdoc / 文档同步：通过，公开 Rust API 有 rustdoc 和 `# Errors`；Core API、UDL、capability spec、control map、测试断言一致。
+- 错误处理与边界处理：通过，非法输入、缺失文件、权限/DB、runtime failure、call-log gate、隐私跳过均有返回或测试证据；生产路径未发现 `unwrap` / `expect` / `panic!`。
+- 测试与验证覆盖：通过，覆盖 contract、implementation、failure recovery、validation 四组 C3-06 tests。
+- 占位、硬编码、mock-only、一次性实现检查：通过，测试 runtime 仅作为外部 AI runtime fixture，产品路径通过环境配置调用外部 runtime；生成结果不直接持久化，保存/清除走真实 DB metadata。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-2/task-30`
+- 通过：`prompt doctor`、`git diff --check`、`cargo fmt --all -- --check`、`cargo clippy --all-targets --all-features -- -D warnings`
+- 通过：`cargo test --test ai_summary_contract_api -- --nocapture`，4 passed
+- 通过：`cargo test --test ai_summary_failure_recovery -- --nocapture`，7 passed
+- 通过：`cargo test --test ai_summary_implementation -- --nocapture`，6 passed
+- 通过：`cargo test --test ai_summary_validation -- --nocapture`，4 passed
+- 失败：无
+- 缺失：未运行 `./dev check all`，本 task manifest 与 validation-driver 要求为 task-scoped gate，当前不需要扩大到 release gate。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。C3-06 可以作为后续 S3-06 page-feature task 的真实 Core 依赖；本轮不因 C3-09 等 secondary capability 的后续页面能力未完成而阻断。
+
+VERIFY_RESULT: PASS

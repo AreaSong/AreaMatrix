@@ -30,6 +30,10 @@ protocol CoreCategoryPredicting: Sendable {
     func predictCategory(repoPath: String, filename: String) async throws -> ClassifyResultSnapshot
 }
 
+protocol CoreCommandIndexing: Sendable {
+    func listCommandTargets(repoPath: String, context: CommandIndexContext) async throws -> CommandIndex
+}
+
 extension CoreScanSessionReading {
     func resumeScanSession(repoPath _: String, scanSessionId _: Int64) async throws -> ReindexReportSnapshot {
         throw CoreError.Internal(message: "scan session resume is unavailable")
@@ -323,6 +327,12 @@ actor CoreBridge {
         }.value
     }
 
+    func listCommandTargets(repoPath: String, context: CommandIndexContext) async throws -> CommandIndex {
+        try await Task.detached(priority: .userInitiated) {
+            try listCoreCommandTargets(repoPath: repoPath, context: context)
+        }.value
+    }
+
     func readNote(fileID _: Int64) async throws -> Never {
         try requireGeneratedBindings(for: .readNote)
     }
@@ -343,6 +353,7 @@ extension CoreBridge:
     CoreDiagnosticsCollecting,
     CoreErrorMapping,
     CoreCategoryPredicting,
+    CoreCommandIndexing,
     CoreRepositoryInitializing,
     CoreInitializedRepositoryPathValidating,
     CoreRepositoryPathValidating,
@@ -421,6 +432,10 @@ private func getCoreFile(repoPath: String, fileID: Int64) throws -> FileEntry {
 
 private func listCoreTreeJSON(repoPath: String, locale: String) throws -> String {
     try listTreeJson(repoPath: repoPath, locale: locale)
+}
+
+private func listCoreCommandTargets(repoPath: String, context: CommandIndexContext) throws -> CommandIndex {
+    try listCommandTargets(repoPath: repoPath, context: context)
 }
 
 private extension StorageMode {

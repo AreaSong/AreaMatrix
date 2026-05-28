@@ -1,0 +1,43 @@
+**一、执行结论**
+
+已完成。
+
+**二、执行范围**
+
+单任务：`4-1/task-138`，只处理 `S2-22 redo` 中 `C2-07 undo-action-log` 的消费展示。
+
+修改文件：
+- [MainFileListDiagnosticsActions.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileListDiagnosticsActions.swift:75)
+- [BatchRenameTrigger.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/BatchRenameTrigger.swift:3)
+- [ImportBatchCopyFooterSection.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportBatchCopyFooterSection.swift:2)
+- [ImportBatchOverviewSections.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportBatchOverviewSections.swift:38)
+- [ImportProgressListIntegration.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportProgressListIntegration.swift:137)
+- [ImportProgressPageIntegrationVerifyTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportProgressPageIntegrationVerifyTests.swift:204)
+
+另有 `./dev check task` 运行产生/更新的本地 task-loop 状态与日志文件，不属于产品代码改动。
+
+**三、完成情况**
+
+核对清单均完成：已读取 task、共享规则、切片规则、工程质量规则、编码规范、repo-local skill、依赖图、phase manifest、Exact Docs、Existing Code；实现只落在 `apps/macos/AreaMatrix/**` 和 `apps/macos/AreaMatrixTests/**`。
+
+完成标准均满足：S2-22 的 Redo 反馈区现在会用已加载的 C2-07 undo action log 解析 `sourceUndoActionID`，在 toast/history 区域显示来源 Undo 摘要；未新增 mock-only 生产闭环；未实现同页 C2-18 的新执行能力，只复用既有 redo 状态。
+
+Forbidden Touches：未触碰 `core/src/**`，复核 `git diff --name-only -- core/src` 无输出。
+
+**四、工程质量**
+
+代码结构保持局部：新增 `RedoUndoSourcePresentation` 做来源 Undo 展示映射，避免在 View 内散落字符串拼接。错误路径沿用既有 `RedoActionFeedback` / `CoreErrorMappingSnapshot`，没有吞错、强制解包或 `try!`。未新增依赖，未改 Rust/UDL/Core API，未写用户文件。
+
+**五、验证情况**
+
+已运行并通过：
+
+```bash
+./dev check task 4-1/task-138
+```
+
+结果：`prompt doctor` OK、`git diff --check` OK、`xcodebuild ... build CODE_SIGNING_ALLOWED=NO` 最终 `BUILD SUCCEEDED`。期间有 CoreSimulator/FSEvents 环境警告，但不影响 macOS build 成功。
+
+**六、风险与后续**
+
+剩余风险：本任务只覆盖 C2-07 在 S2-22 的来源 Undo action log 展示，不负责整页多能力集成验收。建议下一个任务执行 `4-1/task-139`，做 S2-22 的 page integration verify。

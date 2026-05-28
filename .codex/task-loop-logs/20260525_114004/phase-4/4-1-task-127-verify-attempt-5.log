@@ -1,0 +1,89 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-1/task-127`
+- Task 文件：`tasks/prompts/phase-4/4-1-stage2-experience/task-127-s2-16-c2-12-classifier-correction.md`
+- 绑定范围：`S2-16 classifier-correct` + `C2-12 classifier-correction`
+- 只读验收：未修改文件
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：0
+- 通过项数：10
+- 不通过项数：0
+- 阻塞项数：0
+- Exact Docs：4/4 已读取且存在
+- Existing Code：2/2 已检查
+- Expected New Paths：2/2 已落地
+- Forbidden Touches：`core/src/**` 未发现改动
+
+四、逐项验收结果
+
+- 项目：只处理 S2-16 页面中的 C2-12 功能点  
+  结果：通过  
+  证据：control map 明确 `S2-16 -> C2-12`；入口来自详情菜单和列表右键，路由到 `S2-16`。  
+  涉及文件：`docs/architecture/stage-2-control-map.md:24`，`apps/macos/AreaMatrix/Views/Main/MainRepositoryDetailPane.swift:383`，`apps/macos/AreaMatrix/Views/Main/FileDropAdapter.swift:95`
+
+- 项目：读取并对齐页面规格、control map、Core API、C2-12 能力规格  
+  结果：通过  
+  证据：UDL 和 Core API 都暴露 `correct_file_category`；能力规格要求纠错不等于保存全局规则、不覆盖同名目标。  
+  涉及文件：`core/area_matrix.udl:113`，`core/area_matrix.udl:783`，`docs/api/core-api.md:2976`，`docs/core/capability-specs/stage-2-experience/C2-12-classifier-correction.md:35`
+
+- 项目：只接入 C2-12 对应 CoreBridge / 状态 / 错误映射  
+  结果：通过  
+  证据：生产路径通过 `CoreBridge.correctFileCategory` 调用 UniFFI `AreaMatrix.correctFileCategory`；状态保留 loading/failed/preview/moving/correction 错误分支。  
+  涉及文件：`apps/macos/AreaMatrix/Bridge/CoreMoveToCategory.swift:99`，`apps/macos/AreaMatrix/Models/MainFileCategoryMoveActions.swift:84`，`apps/macos/AreaMatrix/Models/MainFileCategoryMoveState.swift:150`
+
+- 项目：不实现相邻页面、相邻平台或同页其他能力  
+  结果：通过  
+  证据：S2-17/S2-18 仅做 handoff route，不直接保存规则、预览影响或重分类文件；未触碰 `core/src/**`。  
+  涉及文件：`apps/macos/AreaMatrix/Views/Main/ClassifierRuleHandoffRouteView.swift:15`，`apps/macos/AreaMatrix/Models/MainFileClassifierCorrectionRoutingActions.swift:4`
+
+- 项目：S2-16 中 C2-12 用户可见功能可触发和验收  
+  结果：通过  
+  证据：页面显示当前分类、分类来源、目标分类、移动选项、Remember 选项和 `Apply correction`；Apply 调用 C2-12。  
+  涉及文件：`apps/macos/AreaMatrix/Views/Main/ChangeCategorySheet.swift:58`，`apps/macos/AreaMatrix/Views/Main/ChangeCategorySheet.swift:177`
+
+- 项目：没有 mock、fixture 或静态状态伪造真实 Core 闭环  
+  结果：通过  
+  证据：生产 CoreBridge 调用真实 UniFFI；fixture 仅存在于 XCTest。  
+  涉及文件：`apps/macos/AreaMatrix/Bridge/CoreMoveToCategory.swift:106`
+
+- 项目：未触碰 control map 之外 Core 能力  
+  结果：通过  
+  证据：相关 S2-16 生产代码未直接调用 `saveClassifierRule`、`previewClassifierRuleImpact`、rule CRUD、search、tag、batch 等相邻 Core 能力。  
+  涉及文件：`apps/macos/AreaMatrix/Models/MainFileClassifierCorrectionRoutingActions.swift:42`
+
+- 项目：Expected New Paths / Forbidden Touches  
+  结果：通过  
+  证据：`apps/macos/AreaMatrix/**` 与 `apps/macos/AreaMatrixTests/**` 已有实现和测试；`git diff -- core/src` 与 staged diff 均为空。  
+  涉及文件：`tasks/prompts/_shared/manifests/phase-4.md:3702`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。S2-16 复用现有 change-category sheet，并用 mode 区分 C2-12，不额外引入跨层抽象。
+- 注释 / rustdoc / 文档同步：通过。本 task 未新增 Rust public API；Core API 与 UDL 已对齐。
+- 错误处理与边界处理：通过。预测、preview、correction 失败均映射为 `CoreErrorMappingSnapshot` 并保留重试/诊断路径。
+- 测试与验证覆盖：通过。新增/相关测试覆盖加载分类原因、Core preview、真实 CoreBridge correction、Remember handoff 不触发 mutation。
+- 占位、硬编码、mock-only、一次性实现检查：通过。生产路径不以 mock 或静态成功态完成纠错；规则保存/影响预览未在本 task 内伪实现。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-127`
+- 通过：`prompt doctor` 输出 `doctor: OK`；`git diff --check` 无错误输出；macOS `xcodebuild ... build CODE_SIGNING_ALLOWED=NO` 输出 `BUILD SUCCEEDED`，命令退出码 0。
+- 失败：无。
+- 缺失：未单独运行 `./dev test macos`、真机 UI smoke、远端 CI；本 task manifest 要求的验证命令是 `./dev check task 4-1/task-127`，该命令已新鲜通过。
+- 额外只读检查：`core/src/**` 无 staged/unstaged diff；未发现 Forbidden Touches。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+VERIFY_RESULT: PASS

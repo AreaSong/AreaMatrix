@@ -1,0 +1,62 @@
+一、执行结论
+
+已完成。
+
+二、执行范围
+
+单任务：`4-1/task-126`。  
+修改集中在 `apps/macos/AreaMatrix/**` 和 `apps/macos/AreaMatrixTests/**`，未修改 `core/src/**`，最终也未保留 `AreaMatrix.xcodeproj/project.pbxproj` 改动。
+
+主要修改文件：
+- `App/AreaMatrixApp.swift`
+- `Models/ImportProgressActions.swift`
+- `Models/MainFileActionRoutingActions.swift`
+- `Views/Main/ImportProgressListIntegration.swift`
+- `Views/Main/ImportProgressView.swift`
+- `Views/Main/MainCurrentListErrorPane.swift`
+- `Views/Main/MainRepositoryContentActionRouting.swift`
+- `Views/Main/MainRepositoryContentView.swift`
+- `AreaMatrixTests/MainEmptyImportEntryTests.swift`
+- `AreaMatrixTests/MainLoadingFixtures.swift`
+- `AreaMatrixTests/MainLoadingTestSupport.swift`
+
+三、完成情况
+
+核对清单：
+- page-feature task 完成情况：通过，C2-04 `runSmartList` 和 C2-11 `listCommandTargets` 均有 UI/test 接入证据。
+- 页面状态、入口、退出、错误态、CoreBridge 闭环：通过，补齐 Cmd+K toggle、关闭后焦点恢复、Up/Down 选中移动、Enter 执行路径。
+- mock/fixture/硬编码状态：通过，生产路径仍走 CoreBridge；测试 fixture 仅限测试 target。
+- control map 外功能：通过，只处理 S2-15 声明的 C2-04、C2-11 页面闭环。
+
+完成标准：
+- S2-15 已可按 page spec/control map 验收。
+- C2-04、C2-11 已真实消费；S2-18/S2-21/S2-22/S2-23 作为命令入口进入安全 handoff，不直接执行危险动作。
+- Forbidden Touches：未触碰 `core/src/**`。
+
+四、工程质量
+
+代码结构保持在现有 SwiftUI/Main 页面扩展模式内，没有引入新依赖。合法命令目标不再落入 `.unsupported`；命令面板选择逻辑抽成 `CommandPaletteSelectionRouting`，避免把方向键行为写成一次性 UI 分支。  
+所有核对的 touched Swift 文件均不超过 500 行；生产代码未新增强制解包、`try!`、调试 `print` 或 mock-only wiring。注释/rustdoc 无新增需求，本次未改 Rust public API。
+
+五、验证情况
+
+已运行并通过：
+
+```bash
+./dev check task 4-1/task-126
+```
+
+该命令内结果：
+- `prompt doctor`: OK，tasks 637，manifests 637
+- `git diff --check`: 通过
+- `xcodebuild ... build CODE_SIGNING_ALLOWED=NO`: `BUILD SUCCEEDED`
+
+另做了范围核对：
+- `git diff --name-only -- core/src` 为空
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj` 无最终 diff
+
+六、风险与后续
+
+剩余风险：未运行 `./dev test macos`，因为本 task manifest 的验证上限是 `./dev check task 4-1/task-126`，未升级宽门禁。  
+High 风险影响面已限制在命令面板 UI 路由和测试证据；未涉及用户文件删除/移动、DB、migration、Core API/UDL 或远程 AI。回滚方式是 revert 上述 `apps/macos/AreaMatrix/**` 与 `apps/macos/AreaMatrixTests/**` 改动。建议下一个任务进入该 task 的 verify-ready 验收。
+

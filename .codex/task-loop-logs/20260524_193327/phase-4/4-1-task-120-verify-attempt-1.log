@@ -1,0 +1,71 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-1/task-120`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-120-s2-13-page-integration-verify.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBatchDelete.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/BatchDeleteState.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/BatchDeleteConfirmSheet.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/BatchDeleteConfirmSections.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/S213BatchDeletePageIntegrationVerifyTests.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：逐项验收本页所有 page-feature task 是否完成
+- 结果：通过
+- 证据：manifest 中 `S2-13` 仅声明 `C2-09, C2-07`，对应 page-feature task 为 `4-1/task-118`、`4-1/task-119`，page integration 为 `4-1/task-120`；实际实现同时覆盖 `previewBatchDelete` / `batchDeleteToTrash` 与 `listUndoActions` / `undoAction` 消费。
+- 涉及文件：`docs/architecture/stage-2-control-map.md:21`，`apps/macos/AreaMatrix/Bridge/CoreBatchDelete.swift:89`，`apps/macos/AreaMatrix/Bridge/CoreTagCRUD.swift:132`
+
+- 项目：页面状态、入口、退出、错误态和 CoreBridge 调用形成闭环
+- 结果：通过
+- 证据：页面打开后加载 preview，支持 loading、failed+Retry、empty、partial failure retry、Cancel/Close；执行时通过 `CoreBatchDeleting` 调真实 generated binding，完成后刷新列表/选择并加载 Undo toast。
+- 涉及文件：`apps/macos/AreaMatrix/Views/Main/BatchDeleteConfirmSheet.swift:68`，`apps/macos/AreaMatrix/Views/Main/BatchDeleteConfirmSheet.swift:193`，`apps/macos/AreaMatrix/Views/Main/BatchDeleteConfirmSheet.swift:210`，`apps/macos/AreaMatrix/Views/Main/MainRepositoryContentCategoryMoveRefresh.swift:73`，`apps/macos/AreaMatrix/Views/Main/MainRepositoryContentCategoryMoveRefresh.swift:340`
+
+- 项目：移除无法通过最终验收的 mock、fixture 或硬编码状态
+- 结果：通过
+- 证据：生产路径未发现 `mock`、fixture-only、TODO 或硬编码通过态；测试 fixture 仅用于 XCTest 内部构造 retry validation 场景。生产 `CoreBridge` 直接调用 `AreaMatrix.previewBatchDelete`、`AreaMatrix.batchDeleteToTrash`、`AreaMatrix.listUndoActions`。
+- 涉及文件：`apps/macos/AreaMatrix/Bridge/CoreBatchDelete.swift:95`，`apps/macos/AreaMatrix/Bridge/CoreBatchDelete.swift:110`，`apps/macos/AreaMatrix/Bridge/CoreTagCRUD.swift:133`
+
+- 项目：不新增 control map 外功能
+- 结果：通过
+- 证据：页面只覆盖 `C2-09` 批量 Trash/index removal 和 `C2-07` Undo action log；未发现永久删除、Redo、AI、重命名、标签或分类变更混入 S2-13。
+- 涉及文件：`docs/architecture/stage-2-control-map.md:21`，`apps/macos/AreaMatrix/Views/Main/BatchDeleteConfirmSheet.swift:95`，`apps/macos/AreaMatrix/Views/Main/BatchDeleteConfirmSheet.swift:177`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，Bridge snapshot、状态计算、SwiftUI sheet、结果刷新分层清楚。
+- 注释 / rustdoc / 文档同步：通过，本 task 未新增 public Rust API；Core API、UDL、control map、UX spec 与 Swift 消费一致。
+- 错误处理与边界处理：通过，preview failure、apply failure、blocked、Trash unavailable、Undo unavailable、partial failure retry 均有路径。
+- 测试与验证覆盖：通过，`S213BatchDeletePageIntegrationVerifyTests` 覆盖真实 Core preview/apply、Trash 文件结果、index-only 不触碰外部源文件、Undo token/action。
+- 占位、硬编码、mock-only、一次性实现检查：通过，生产路径未发现 mock-only 闭环；测试 fixture 不作为生产证据。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 跑了哪些验证：`./dev check task 4-1/task-120`
+- 哪些通过：`prompt doctor` 通过，`git diff --check` 通过，`xcodebuild -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination platform=macOS,arch=arm64 build CODE_SIGNING_ALLOWED=NO` 通过，最终 `BUILD SUCCEEDED`
+- 哪些失败：无
+- 哪些缺失：未运行真实窗口 UI smoke；manifest 本 task 要求为 `./dev check task 4-1/task-120`，该命令已通过
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+
+VERIFY_RESULT: PASS

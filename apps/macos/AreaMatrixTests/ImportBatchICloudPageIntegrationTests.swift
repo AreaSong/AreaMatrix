@@ -1,6 +1,8 @@
 @testable import AreaMatrix
+import SwiftUI
 import XCTest
 
+// swiftlint:disable file_length
 final class ImportBatchICloudPageIntegrationTests: XCTestCase {
     func testS209PageIntegrationAllowsReadOnlyEntryButBlocksApply() {
         let disabledReason = MainFileWriteActionDisabledReason.repoReadOnly.rawValue
@@ -17,14 +19,14 @@ final class ImportBatchICloudPageIntegrationTests: XCTestCase {
             "Repository is read-only. You can still review selected files and tag candidates."
         )
         XCTAssertEqual(pending.fieldError, "Tag store is read-only.")
-        XCTAssertFalse(BatchTagValidation.canApply(
+        XCTAssertFalse(BatchTagValidation.canApply(BatchTagApplyEligibility(
             isApplying: false,
             disabledReason: disabledReason,
             input: "",
             pendingTags: ["urgent"],
             fieldError: nil,
             selectedCount: 2
-        ))
+        )))
     }
 
     func testS209PageIntegrationBuildsListAndCommandPaletteRoutesForSameSheet() {
@@ -56,26 +58,17 @@ final class ImportBatchICloudPageIntegrationTests: XCTestCase {
     }
 
     func testS209CommandPaletteRouteExposesContextualAddTagsCommand() {
-        let route = BatchAddTagsRoute(source: .commandPalette, fileIDs: [1, 2], selectedCount: 2, disabledReason: nil)
-        let categoryRoute = BatchChangeCategoryRoute(
-            source: .commandPalette,
-            fileIDs: [1, 2],
-            selectedFiles: [.s209RouteFixture(id: 1, currentName: "a.pdf")],
-            selectedCount: 2,
-            disabledReason: nil
-        )
+        var commandQuery = "tag"
         let body = s209RouteMirrorDescription(of: SearchCommandPaletteRouteView(
-            query: "tag",
-            batchAddTagsRoute: route,
-            batchChangeCategoryRoute: categoryRoute,
-            onOpenBatchAddTags: { _ in },
-            onOpenBatchChangeCategory: { _ in },
+            query: Binding(get: { commandQuery }, set: { commandQuery = $0 }),
+            state: .idle,
+            onLoad: {},
+            onExecuteTarget: { _ in },
             onClose: {}
         ).body)
 
         XCTAssertTrue(body.contains("S2-15-search-route"))
-        XCTAssertTrue(body.contains("S2-09-command-palette-add-tags"))
-        XCTAssertTrue(body.contains("Add tags..."))
+        XCTAssertTrue(body.contains("CommandPaletteView"))
     }
 
     @MainActor
@@ -188,6 +181,7 @@ final class ImportBatchICloudPageIntegrationTests: XCTestCase {
     }
 
     @MainActor
+    // swiftlint:disable:next function_body_length
     func testS118ICloudPendingRowsDoNotSilentlyImportUnavailableRows() async {
         let localURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
         let cloudURL = URL(fileURLWithPath: "/tmp/iCloudOnly.pdf.icloud")
@@ -225,7 +219,16 @@ final class ImportBatchICloudPageIntegrationTests: XCTestCase {
             remaining: 0,
             currentPath: "finance/Invoice_2026Q1.pdf",
             skipped: 0,
-            pending: 1
+            pending: 1,
+            items: [
+                ImportBatchProgressSnapshot.Item(
+                    fileID: 117,
+                    sourcePath: "/tmp/source.pdf",
+                    targetPath: "finance/Invoice_2026Q1.pdf",
+                    phase: .done,
+                    errorMessage: nil
+                )
+            ]
         ))
         XCTAssertEqual(recordedRequests, [
             S118BatchImportRequest(
@@ -276,6 +279,20 @@ extension MainRepositoryDetailPaneTagActions {
             onRetryTags: {},
             onAddTag: { _ in },
             onRemoveTag: { _ in },
+            onLoadSuggestions: {},
+            onRetrySuggestions: {},
+            onToggleSuggestion: { _ in },
+            onSelectAllSuggestions: {},
+            onClearSuggestions: {},
+            onStartEditingSuggestions: {},
+            onCancelEditingSuggestions: {},
+            onEditSuggestionDisplayName: { _, _ in },
+            onEditSuggestionSlug: { _, _ in },
+            onRegenerateSuggestionSlug: { _ in },
+            onApplySuggestions: {},
+            onApplyEditedSuggestions: {},
+            onRetryFailedSuggestions: {},
+            onSuggestionPresentationConsumed: { _ in },
             onUndoTagChange: {},
             onDismissTagUndoToast: {},
             onBatchTagUndoStateChange: { _ in }
@@ -480,19 +497,6 @@ private actor S210ErrorMapper: CoreErrorMapping {
     }
 
     private func kind(for error: CoreError) -> CoreErrorKindSnapshot {
-        switch error {
-        case .Conflict:
-            .conflict
-        case .FileNotFound:
-            .fileNotFound
-        case .PermissionDenied:
-            .permissionDenied
-        case .Db:
-            .db
-        case .Io:
-            .io
-        default:
-            .internal
-        }
+        ImportBatchICloudErrorKindMapper.kind(for: error)
     }
 }

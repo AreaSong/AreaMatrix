@@ -10,8 +10,20 @@ final class ImportBatchCopyImportModel: ObservableObject, ImportProgressQueueCon
     @Published var isICloudDownloading = false
     @Published private(set) var replaceConfirmationErrorMessage: String?
     @Published private(set) var replaceConfirmationDiagnosticsMessage: String?
+    @Published var conflictBatchPreviewState: ImportConflictBatchPreviewState = .idle
+    @Published var conflictBatchApplyResult: ImportConflictBatchApplyResult?
+    @Published var conflictBatchUndoState: BatchTagUndoState = .idle
+    @Published var isConflictBatchApplying = false
+    @Published var conflictBatchDuplicateStrategy: ImportConflictBatchStrategySnapshot = .skip
+    @Published var conflictBatchSameNameStrategy: ImportConflictBatchStrategySnapshot = .keepBoth
+    @Published var appliesConflictBatchToAll = true
+    @Published var selectedConflictBatchIDs: Set<String> = []
+    @Published var isConflictBatchReplaceConfirmed = false
+    @Published var conflictBatchPerItemQueue: ImportConflictBatchPerItemQueue?
 
     let importer: any CoreBatchCopyImporting
+    let conflictBatcher: any CoreImportConflictBatching
+    let undoActionStore: any CoreUndoActionLogging
     let sessionStore: any ImportBatchSessionPersisting
     let errorMapper: any CoreErrorMapping
     let placeholderDownloader: any ICloudPlaceholderDownloading
@@ -22,10 +34,14 @@ final class ImportBatchCopyImportModel: ObservableObject, ImportProgressQueueCon
     init(
         importer: any CoreBatchCopyImporting,
         errorMapper: any CoreErrorMapping,
+        conflictBatcher: any CoreImportConflictBatching = CoreBridge(),
+        undoActionStore: any CoreUndoActionLogging = CoreBridge(),
         sessionStore: any ImportBatchSessionPersisting = FileImportBatchSessionStore(),
         placeholderDownloader: any ICloudPlaceholderDownloading = LocalICloudPlaceholderDownloader()
     ) {
         self.importer = importer
+        self.conflictBatcher = conflictBatcher
+        self.undoActionStore = undoActionStore
         self.sessionStore = sessionStore
         self.errorMapper = errorMapper
         self.placeholderDownloader = placeholderDownloader

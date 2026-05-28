@@ -17,28 +17,32 @@ struct RepositoryErrorPresentation: Equatable {
 
     static func mainRepo(mapping: CoreErrorMappingSnapshot?) -> RepositoryErrorPresentation {
         guard let mapping else { return fallback }
+        if mapping.kind == .db {
+            return mapping.usesInlineRepositoryOpeningError ? temporarilyUnavailable : metadataNeedsRepair
+        }
+        return mainRepoNonDatabase(mapping.kind)
+    }
 
-        switch mapping.kind {
+    private static func mainRepoNonDatabase(_ kind: CoreErrorKindSnapshot) -> RepositoryErrorPresentation {
+        switch kind {
         case .fileNotFound, .invalidPath:
-            return missingFolder
+            missingFolder
         case .permissionDenied:
-            return permissionDenied
+            permissionDenied
         case .iCloudPlaceholder:
-            return iCloudPlaceholder
-        case .db where mapping.usesInlineRepositoryOpeningError:
-            return temporarilyUnavailable
+            iCloudPlaceholder
         case .db:
-            return metadataNeedsRepair
+            metadataNeedsRepair
         case .config, .validation, .repoNotInitialized:
-            return incompatibleRepository
+            incompatibleRepository
         case .stagingRecoveryRequired:
-            return metadataNeedsRepair
+            metadataNeedsRepair
         case .io:
-            return ioFailure
+            ioFailure
         case .internal:
-            return internalFailure
+            internalFailure
         case .classify, .conflict, .duplicateFile, .expiredAction:
-            return fallback
+            fallback
         }
     }
 

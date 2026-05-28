@@ -1,0 +1,68 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-2/task-08`
+- 对应文件路径：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-2-stage3-ai/task-08-c3-02-failure-edge.md`
+- 实际核对范围：`core/src/**`、`core/area_matrix.udl`、`core/tests/**`
+- Forbidden Touches：`apps/**` 未发现改动
+
+三、完成度摘要
+
+- 已覆盖项数：4/4 核对清单，2/2 完成标准
+- 未覆盖项数：0
+- 通过项数：6
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：空态、非法输入、权限、IO/DB 错误和错误码映射
+- 结果：通过
+- 证据：`local_model_status_failure_recovery.rs` 覆盖缺失目录、负数 size、敏感缓存、manifest 非法状态、IO 错误、DB 损坏、权限错误与 `to_error_mapping`；`./dev check task 4-2/task-08` 对相关测试全部通过
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/local_model_status_failure_recovery.rs`
+
+- 项目：写入失败不留下半成品
+- 结果：通过
+- 证据：状态缓存写入使用 SQLite transaction；测试断言失败后 `repo_config` 无 `local_model_status:` 记录，用户 `README.md` 未变，未创建远程/AI 配置副产物
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/db/local_model_status.rs`，`/Users/as/Ai-Project/project/AreaMatrix/core/tests/local_model_status_failure_recovery.rs`
+
+- 项目：隐私/AI/远程调用默认关闭、密钥不入日志/诊断
+- 结果：通过
+- 证据：实现只读本地 manifest/runtime metadata；敏感 `api key`、`provider_config`、`authorization` 被 redacted；测试确认 diagnostics/cache 不泄漏 secret，缺失本地模型不启用 remote fallback
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/local_model_status/diagnostics.rs`，`/Users/as/Ai-Project/project/AreaMatrix/core/tests/local_model_status_failure_recovery.rs`
+
+- 项目：不得吞错或静默降级
+- 结果：通过
+- 证据：非法输入返回 `CoreError::Config`，IO 返回 `CoreError::Io`，权限返回 `CoreError::PermissionDenied`，DB persistence 映射到文档允许的 `Config`；manifest/runtime 状态错误返回结构化 `Corrupted`/`RuntimeFailed` 和 `last_error`
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/local_model_status.rs`，`/Users/as/Ai-Project/project/AreaMatrix/core/src/local_model_status/inspection.rs`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，C3-02 拆为入口、filesystem、inspection、diagnostics、snapshot、DB cache 模块，边界清晰
+- 注释 / rustdoc / 文档同步：通过，public C3-02 类型有 rustdoc；Core API 与 UDL 中接口、字典、枚举一致
+- 错误处理与边界处理：通过，未见生产路径 `unwrap()` / `expect()` / `panic!()`；失败路径显式返回或结构化状态
+- 测试与验证覆盖：通过，manifest 验证命令已运行并通过，覆盖 contract、implementation、failure-recovery 三个目标
+- 占位、硬编码、mock-only、一次性实现检查：通过，测试通过真实 tempdir、SQLite repo、manifest/runtime 文件和实际 API 调用验证
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-2/task-08`
+- 通过：prompt doctor、git diff check、`cargo fmt --all -- --check`、`cargo clippy --all-targets --all-features -- -D warnings`
+- 通过：`cargo test --test local_model_status_contract_api -- --nocapture`，5 passed
+- 通过：`cargo test --test local_model_status_failure_recovery -- --nocapture`，8 passed
+- 通过：`cargo test --test local_model_status_implementation -- --nocapture`，5 passed
+- 失败：无
+- 缺失：无
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS

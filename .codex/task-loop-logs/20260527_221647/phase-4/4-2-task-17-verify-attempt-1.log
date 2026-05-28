@@ -1,0 +1,84 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-2/task-17`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-2-stage3-ai/task-17-c3-04-implementation.md`
+- 实际覆盖：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/**`
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：0
+- 通过项数：10
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只实现 C3-04，不顺手实现其他 C* 能力
+- 结果：通过
+- 证据：实现入口集中在 `core/src/ai_classification_suggestion.rs:117` 和 `core/src/ai_classification_suggestion/implementation.rs:18`；未见 `apps/**` 改动；未新增页面接入。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/ai_classification_suggestion.rs`
+
+- 项目：按规格落实输入、输出、DB/文件系统变化和错误映射
+- 结果：通过
+- 证据：UDL 暴露 `suggest_category_with_ai` 与 request/result 类型，见 `core/area_matrix.udl:56`、`core/area_matrix.udl:460`、`core/area_matrix.udl:466`；实现读取 active file、AI config、provider gate，并写 `ai_call_log`，见 `core/src/ai_classification_suggestion/implementation.rs:23`、`:24`、`:60`、`:369`；错误映射见 `:436`、`:448`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/db/ai_call_log.rs`
+
+- 项目：保持 Rust Core 不依赖平台 UI API
+- 结果：通过
+- 证据：实现只使用 Rust core/db/classify/AI config/provider config 模块；未触碰 `apps/**`，也未出现 SwiftUI/AppKit/FSEvents 依赖。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/ai_classification_suggestion/implementation.rs`
+
+- 项目：必要最小测试支撑，不做页面接入
+- 结果：通过
+- 证据：新增/覆盖 targeted tests：contract 4 个、implementation 7 个；验证命令已运行并全部通过。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/ai_classification_suggestion_contract_api.rs`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/ai_classification_suggestion_implementation.rs`
+
+- 项目：完成标准 1，C3-04 核心行为可测试或桥接调用验证
+- 结果：通过
+- 证据：public API rustdoc 和桥接入口见 `core/src/api.rs:336`、`:362`；测试直接调用 `suggest_category_with_ai` 并覆盖 suggested/skipped/unavailable/no-suggestion。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs`
+
+- 项目：完成标准 2，未触碰用户文件安全边界之外行为
+- 结果：通过
+- 证据：实现只读 active file metadata 并写 DB call log；测试断言用户 `README.md` 内容不变、`files.category` 不变，见 `core/tests/ai_classification_suggestion_implementation.rs:297`、`:308`、`:316`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/ai_classification_suggestion_implementation.rs`
+
+- 项目：Expected New Paths
+- 结果：通过
+- 证据：`core/src/**`、`core/area_matrix.udl`、`core/tests/**` 均已落地并被 task check 覆盖。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git diff --name-only --diff-filter=ACMRTUXB -- apps` 与 `git ls-files --others --exclude-standard apps` 无输出，未触碰 `apps/**`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。实现拆为 contract type/entry、implementation、DB call log helper，核心文件均低于 500 行。
+- 注释 / rustdoc / 文档同步：通过。新增 public API 有 rustdoc，UDL/Core API/能力规格/control map 在 contract test 中交叉校验。
+- 错误处理与边界处理：通过。非法 repo、非法 file id、敏感 privacy ref、缺 active file、call log 写入失败都有显式错误路径。
+- 测试与验证覆盖：通过。`./dev check task 4-2/task-17` 已运行，包含 prompt doctor、diff check、targeted Rust tests。
+- 占位、硬编码、mock-only、一次性实现检查：通过。实现连接真实 repo DB、AI settings、remote provider config、classifier 和 `ai_call_log`，不是 mock-only 或静态通过态。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-2/task-17`
+- 通过：`prompt_pipeline.py doctor`，`git diff --check`，`cargo test --test ai_classification_suggestion_contract_api -- --nocapture`，`cargo test --test ai_classification_suggestion_implementation -- --nocapture`
+- 失败：无
+- 缺失：无。按 manifest 和 validation-driver，本 atomic Core task 不需要升级到 `./dev check all`、`./dev check core` 或 `cargo test --workspace`。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS

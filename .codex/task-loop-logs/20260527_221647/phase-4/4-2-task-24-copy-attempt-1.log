@@ -1,0 +1,51 @@
+一、执行结论
+
+已完成。
+
+二、执行范围
+
+单任务：`4-2/task-24`，仅补 C3-05 validation 测试证据。
+
+修改文件：
+- [ai_call_log_validation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/ai_call_log_validation.rs)
+- [ai_call_log_validation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/support/ai_call_log_validation.rs)
+
+工作树中原已有 `.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json` 改动，本次未修改它们。
+
+三、完成情况
+
+核对清单：
+- 成功 / 失败路径：已补 `ai_call_log_validation`，覆盖 list/filter/page redaction、clear selected/older/all、非法输入、删除失败 rollback。
+- Core API / UDL / Rust 一致性：已用测试锁定 `docs/api/core-api.md`、`core/area_matrix.udl`、`api.rs`、`lib.rs`、`ai_call_log.rs`、DB schema 关键片段。
+- 未新增业务功能：只新增测试与测试 fixture。
+- 无法运行验证：无。
+
+完成标准：
+- C3-05 已有 contract、implementation、failure-recovery，加上本次 validation 测试，可作为 UI 接入前 Core 证据。
+- `./dev check task 4-2/task-24` 已通过。
+- Forbidden Touches：未触碰 `apps/**`。
+
+四、工程质量
+
+测试拆成主测试文件和 support fixture，避免单文件超过 500 行；主文件 339 行，support 307 行。测试使用真实 `init_repo`、SQLite metadata 和公开 Core API，不是 mock-only 或硬编码通过态。错误路径覆盖 DB 错误、非法参数、事务回滚、脱敏边界和用户文件不变性。
+
+五、验证情况
+
+已运行：
+- `cd core && cargo test --test ai_call_log_validation -- --nocapture`：最终通过，4 passed。
+- `cd core && cargo fmt --all -- --check`：格式化后通过。
+- `./dev check task 4-2/task-24`：通过。包含 prompt doctor、diff check，以及 targeted tests：
+  - `ai_call_log_contract_api`：4 passed
+  - `ai_call_log_failure_recovery`：6 passed
+  - `ai_call_log_implementation`：3 passed
+  - `ai_call_log_validation`：4 passed
+
+未运行：
+- 未运行 `cargo test --workspace`、clippy、`./dev check core/all`，因为本 atomic task 的验证上限是 `./dev check task 4-2/task-24`。
+
+六、风险与后续
+
+剩余风险：未做 macOS UI 消费验证；这属于后续 S3-05 / C3-05 UI 接入或 integration verify 范围。
+
+建议下一个任务：进入 `4-2/task-25`，做 C3-05 integration verify。 
+

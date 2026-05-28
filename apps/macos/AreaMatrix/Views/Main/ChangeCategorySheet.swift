@@ -4,22 +4,33 @@ struct ChangeCategorySheet: View {
     let file: FileEntrySnapshot?
     let categoryRows: [RepositorySidebarRowSnapshot]
     let state: MainFileCategoryMoveState
+    let classifierContextState: ClassifierCorrectionContextState
+    let mode: MainFileCategoryMoveMode
     let onCancel: () -> Void
     let onPreview: (Int64, String) -> Void
-    let onChangeCategory: (Int64, String) -> Void
+    let onLoadClassifierContext: (Int64, String) -> Void
+    let onChangeCategory: (Int64, String, MainFileCategoryMoveMode, MainFileCategoryMoveOptions) -> Void
+    let onBeginRuleHandoff: (Int64, String, Bool, ClassifierRuleHandoffDestination) -> Void
     let onRenameFirst: (Int64, String) -> Void
     let onOpenPermissionRecovery: () -> Void
     let onCollectDiagnostics: () -> Void
-    @State private var targetCategory: String
+    @State var targetCategory: String
+    @State var moveFile: Bool
+    @State var rememberCorrection = false
 
     init(
         file: FileEntrySnapshot?,
         categoryRows: [RepositorySidebarRowSnapshot],
         state: MainFileCategoryMoveState,
+        classifierContextState: ClassifierCorrectionContextState = .idle,
+        mode: MainFileCategoryMoveMode = .moveToCategory,
         initialTargetCategory: String? = nil,
         onCancel: @escaping () -> Void,
         onPreview: @escaping (Int64, String) -> Void,
-        onChangeCategory: @escaping (Int64, String) -> Void,
+        onLoadClassifierContext: @escaping (Int64, String) -> Void = { _, _ in },
+        onChangeCategory: @escaping (Int64, String, MainFileCategoryMoveMode, MainFileCategoryMoveOptions) -> Void,
+        onBeginRuleHandoff: @escaping (Int64, String, Bool, ClassifierRuleHandoffDestination) -> Void = { _, _, _, _ in
+        },
         onRenameFirst: @escaping (Int64, String) -> Void,
         onOpenPermissionRecovery: @escaping () -> Void,
         onCollectDiagnostics: @escaping () -> Void
@@ -27,9 +38,13 @@ struct ChangeCategorySheet: View {
         self.file = file
         self.categoryRows = categoryRows
         self.state = state
+        self.classifierContextState = classifierContextState
+        self.mode = mode
         self.onCancel = onCancel
         self.onPreview = onPreview
+        self.onLoadClassifierContext = onLoadClassifierContext
         self.onChangeCategory = onChangeCategory
+        self.onBeginRuleHandoff = onBeginRuleHandoff
         self.onRenameFirst = onRenameFirst
         self.onOpenPermissionRecovery = onOpenPermissionRecovery
         self.onCollectDiagnostics = onCollectDiagnostics
@@ -38,26 +53,30 @@ struct ChangeCategorySheet: View {
             categoryRows: categoryRows,
             initialTargetCategory: initialTargetCategory
         ))
+        _moveFile = State(initialValue: Self.defaultMoveFile(for: file))
     }
 
     var body: some View {
-        MainFileActionSheetContainer(title: "Change Category", pageID: "S1-35") {
+        MainFileActionSheetContainer(title: pageTitle, pageID: pageID) {
             if let file {
                 VStack(alignment: .leading, spacing: 12) {
                     metadataRow("Name", file.currentName)
                     metadataRow("Current category", file.categoryPathDisplay)
                     metadataRow("Storage mode", file.storageMode)
+                    classifierReasonRow
                     Picker("Target category", selection: $targetCategory) {
                         ForEach(availableCategories, id: \.self) { category in
                             Text(category).tag(category)
                         }
                     }
                     .pickerStyle(.menu)
+                    classifierOptions(for: file)
                     metadataRow("Target path", targetPathText(for: file))
                     statusView(for: file)
                     actionButtons(for: file)
                 }
                 .task(id: previewTaskID(for: file)) {
+                    requestClassifierContextIfNeeded(for: file)
                     requestPreviewIfNeeded(for: file)
                 }
             } else {
@@ -66,136 +85,70 @@ struct ChangeCategorySheet: View {
         }
     }
 
-    private func targetPathText(for file: FileEntrySnapshot) -> String {
-        let request = previewRequest(for: file)
-        if let preview = state.preview(for: request) {
-            return preview.targetPath
-        }
-        if targetCategory == file.category {
-            return file.path
-        }
-        if state.isChecking(request) {
-            return "Checking destination..."
-        }
-        return "\(targetCategory)/\(file.currentName)"
-    }
-
-    @ViewBuilder
-    private func statusView(for file: FileEntrySnapshot) -> some View {
-        let request = previewRequest(for: file)
-        if targetCategory == file.category {
-            statusLabel("Choose a different category", systemImage: "info.circle", color: .secondary)
-        } else if state.isChecking(request) {
-            statusLabel("Checking destination...", systemImage: "arrow.triangle.2.circlepath", color: .secondary)
-        } else if state.isMoving(fileID: file.id) {
-            statusLabel("Moving...", systemImage: "arrow.triangle.2.circlepath", color: .secondary)
-        } else if let failure = state.failure(for: file.id, targetCategory: targetCategory) {
-            failureView(failure, file: file)
-        } else if let preview = state.preview(for: request) {
-            previewStatus(preview)
-        }
-    }
-
-    private func actionButtons(for file: FileEntrySnapshot) -> some View {
-        HStack {
-            Spacer()
-            Button("Cancel", action: onCancel)
-                .keyboardShortcut(.cancelAction)
-                .disabled(state.isMoving(fileID: file.id))
-            Button(primaryActionTitle(for: file)) {
-                onChangeCategory(file.id, targetCategory)
-            }
-            .disabled(actionDisabled(for: file))
-            .keyboardShortcut(.defaultAction)
-        }
-    }
-
-    private func failureView(_ failure: CoreErrorMappingSnapshot, file: FileEntrySnapshot) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Label(failureMessage(failure, file: file), systemImage: "exclamationmark.triangle")
-                .font(.caption.weight(.semibold))
-            Text(failure.suggestedAction)
-                .font(.caption)
-            Text(failure.rawContext)
-                .font(.system(.caption, design: .monospaced))
-                .textSelection(.enabled)
-            failureActions(failure, file: file)
-        }
-        .foregroundStyle(.secondary)
-        .padding(10)
-        .background(Color.yellow.opacity(0.12))
-    }
-
-    private func failureActions(_ failure: CoreErrorMappingSnapshot, file: FileEntrySnapshot) -> some View {
-        HStack {
-            if hasUnresolvedNameConflict(for: file) {
-                Button("Rename first") {
-                    onRenameFirst(file.id, targetCategory)
-                }
-            }
-            if failure.kind == .permissionDenied {
-                Button("Open folder permissions", action: onOpenPermissionRecovery)
-            }
-            if state.failureOperation(for: file.id, targetCategory: targetCategory) == .preview {
-                Button("Retry preview") {
-                    onPreview(file.id, targetCategory)
-                }
-            }
-            Button("Collect Diagnostics...", action: onCollectDiagnostics)
-        }
-    }
-
-    private func previewStatus(_ preview: MoveToCategoryPreviewSnapshot) -> some View {
-        VStack(alignment: .leading, spacing: 5) {
-            if preview.indexOnly {
-                statusLabel(
-                    "Index-only: AreaMatrix updates category metadata and change log only.",
-                    systemImage: "link",
-                    color: .secondary
-                )
-            } else if preview.nameConflictResolved {
-                statusLabel(
-                    "Target name exists. AreaMatrix will use \(preview.targetName).",
-                    systemImage: "number",
-                    color: .secondary
-                )
-            } else {
-                statusLabel("No conflict at target location", systemImage: "checkmark.circle", color: .green)
-            }
-        }
-    }
-
-    private func statusLabel(_ text: String, systemImage: String, color: Color) -> some View {
+    func statusLabel(_ text: String, systemImage: String, color: Color) -> some View {
         Label(text, systemImage: systemImage)
             .font(.caption)
             .foregroundStyle(color)
     }
 
-    private func previewTaskID(for file: FileEntrySnapshot) -> String {
-        "\(file.id)-\(targetCategory)"
+    func ruleHandoffSubmitButton(
+        _ title: String,
+        file: FileEntrySnapshot,
+        destination: ClassifierRuleHandoffDestination
+    ) -> some View {
+        Button(title) {
+            onBeginRuleHandoff(file.id, targetCategory, moveFile, destination)
+        }
+        .disabled(ruleHandoffDisabled(for: file))
     }
 
-    private func requestPreviewIfNeeded(for file: FileEntrySnapshot) {
+    func previewTaskID(for file: FileEntrySnapshot) -> String {
+        "\(file.id)-\(file.currentName)-\(targetCategory)-\(mode)"
+    }
+
+    func requestPreviewIfNeeded(for file: FileEntrySnapshot) {
         guard targetCategory != file.category, !targetCategory.isEmpty else { return }
         onPreview(file.id, targetCategory)
     }
 
-    private func previewRequest(for file: FileEntrySnapshot) -> MainFileCategoryMovePreviewRequest {
+    func requestClassifierContextIfNeeded(for file: FileEntrySnapshot) {
+        guard mode == .classifierCorrection else { return }
+        onLoadClassifierContext(file.id, file.currentName)
+    }
+
+    func previewRequest(for file: FileEntrySnapshot) -> MainFileCategoryMovePreviewRequest {
         MainFileCategoryMovePreviewRequest(fileID: file.id, targetCategory: targetCategory)
     }
 
-    private func primaryActionTitle(for file: FileEntrySnapshot) -> String {
+    func primaryActionTitle(for file: FileEntrySnapshot) -> String {
         if state.isMoving(fileID: file.id) {
-            return "Moving..."
+            return mode == .classifierCorrection ? "Applying..." : "Moving..."
         }
-        if state.failureOperation(for: file.id, targetCategory: targetCategory) == .move {
+        if state.failureOperation(for: file.id, targetCategory: targetCategory) == failureOperation {
             return "Retry"
         }
-        return "Change Category"
+        return mode == .classifierCorrection ? "Apply correction" : "Change Category"
     }
 
-    private func actionDisabled(for file: FileEntrySnapshot) -> Bool {
-        if targetCategory == file.category || state.isChecking(fileID: file.id, targetCategory: targetCategory) {
+    func actionDisabled(for file: FileEntrySnapshot) -> Bool {
+        if targetCategory == file.category || targetCategory.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return true
+        }
+        if mode == .classifierCorrection {
+            if state.isChecking(fileID: file.id, targetCategory: targetCategory) {
+                return true
+            }
+            if state.isMoving(fileID: file.id) {
+                return true
+            }
+            if moveFile && !canToggleMoveFile(for: file) {
+                return true
+            }
+            let request = previewRequest(for: file)
+            return state.preview(for: request) == nil ||
+                state.failureOperation(for: file.id, targetCategory: targetCategory) == .preview
+        }
+        if state.isChecking(fileID: file.id, targetCategory: targetCategory) {
             return true
         }
         if state.isMoving(fileID: file.id) {
@@ -208,19 +161,79 @@ struct ChangeCategorySheet: View {
         return state.failureOperation(for: file.id, targetCategory: targetCategory) != .move
     }
 
-    private func failureMessage(_ failure: CoreErrorMappingSnapshot, file: FileEntrySnapshot) -> String {
+    func failureMessage(_ failure: CoreErrorMappingSnapshot, file: FileEntrySnapshot) -> String {
         if hasUnresolvedNameConflict(for: file) {
             return "Cannot create a safe target name. Rename the file first."
         }
         return failure.userMessage
     }
 
-    private func hasUnresolvedNameConflict(for file: FileEntrySnapshot) -> Bool {
+    func hasUnresolvedNameConflict(for file: FileEntrySnapshot) -> Bool {
         state.unresolvedNameConflict(for: file.id, targetCategory: targetCategory) != nil
     }
 
-    private var availableCategories: [String] {
+    func ruleHandoffDisabled(for file: FileEntrySnapshot) -> Bool {
+        mode != .classifierCorrection || !rememberCorrection || actionDisabled(for: file)
+    }
+
+    var availableCategories: [String] {
         MainFileActionCategoryOptions.availableCategories(file: file, categoryRows: categoryRows)
+    }
+
+    var pageID: String {
+        mode == .classifierCorrection ? "S2-16" : "S1-35"
+    }
+
+    var pageTitle: String {
+        mode == .classifierCorrection ? "Correct classification" : "Change Category"
+    }
+
+    var classifierOptions: MainFileCategoryMoveOptions {
+        MainFileCategoryMoveOptions(
+            moveFile: moveFile,
+            remember: rememberCorrection
+        )
+    }
+
+    var failureOperation: MainFileCategoryMoveFailureOperation {
+        mode == .classifierCorrection ? .correction : .move
+    }
+
+    func canToggleMoveFile(for file: FileEntrySnapshot) -> Bool {
+        file.storageMode != "Indexed" && file.availability == .available && file.origin == "Imported"
+    }
+
+    func moveDisabledReason(for file: FileEntrySnapshot) -> String {
+        if file.availability == .missing { return "Missing files can only update classification metadata." }
+        if file.storageMode == "Indexed" { return "Index-only files are not moved by classifier correction." }
+        if file.origin != "Imported" { return "Adopted or external files default to metadata-only correction." }
+        return "This file cannot be moved from this correction sheet."
+    }
+
+    func ruleSuggestionText(for _: FileEntrySnapshot) -> String {
+        "Safe keyword, extension, and priority candidates are reviewed before any rule is saved."
+    }
+
+    func classifierContextRequest(
+        for file: FileEntrySnapshot?
+    ) -> ClassifierCorrectionContextRequest {
+        ClassifierCorrectionContextRequest(
+            fileID: file?.id ?? -1,
+            filename: file?.currentName ?? ""
+        )
+    }
+
+    func classificationReasonText(_ result: ClassifyResultSnapshot) -> String {
+        switch result.reason {
+        case .keyword:
+            "Matched keyword rule -> \(result.category) (\(result.confidencePercent)% confidence)"
+        case .extension:
+            "Matched extension rule -> \(result.category) (\(result.confidencePercent)% confidence)"
+        case .aiPredicted:
+            "AI prediction -> \(result.category) (\(result.confidencePercent)% confidence)"
+        case .default:
+            "Default rule -> \(result.category)"
+        }
     }
 
     private static func defaultTargetCategory(
@@ -233,19 +246,25 @@ struct ChangeCategorySheet: View {
         }
         return MainFileActionCategoryOptions.defaultTargetCategory(for: file, categoryRows: categoryRows)
     }
+
+    private static func defaultMoveFile(for file: FileEntrySnapshot?) -> Bool {
+        guard let file else { return false }
+        return file.storageMode != "Indexed" && file.availability == .available && file.origin == "Imported"
+    }
 }
 
 struct ClassifierRuleEditorRouteView: View {
     let repoPath: String
-    let context: BatchChangeCategoryNewCategoryReturnContext?
-    let onCancelFromBatchCategory: (BatchChangeCategoryNewCategoryReturnContext) -> Void
-    let onAcceptedCategoryFromBatchCategory: (String, BatchChangeCategoryNewCategoryReturnContext) -> Void
+    let context: BatchChangeCategoryReturnContext?
+    let onCancelFromBatchCategory: (BatchChangeCategoryReturnContext) -> Void
+    let onAcceptedCategoryFromBatchCategory: (String, BatchChangeCategoryReturnContext) -> Void
 
     init(
         repoPath: String,
-        context: BatchChangeCategoryNewCategoryReturnContext?,
-        onCancelFromBatchCategory: @escaping (BatchChangeCategoryNewCategoryReturnContext) -> Void = { _ in },
-        onAcceptedCategoryFromBatchCategory: @escaping (String, BatchChangeCategoryNewCategoryReturnContext) -> Void = { _, _ in }
+        context: BatchChangeCategoryReturnContext?,
+        onCancelFromBatchCategory: @escaping (BatchChangeCategoryReturnContext) -> Void = { _ in },
+        onAcceptedCategoryFromBatchCategory: @escaping (String, BatchChangeCategoryReturnContext)
+            -> Void = { _, _ in }
     ) {
         self.repoPath = repoPath
         self.context = context
@@ -271,7 +290,7 @@ struct ClassifierRuleEditorRouteView: View {
         }
     }
 
-    private func createBar(_ context: BatchChangeCategoryNewCategoryReturnContext) -> some View {
+    private func createBar(_ context: BatchChangeCategoryReturnContext) -> some View {
         HStack(spacing: 12) {
             Text("Edit classifier.yaml in S2-19. Validate returns to S2-12 when one new category is saved.")
                 .font(.callout)

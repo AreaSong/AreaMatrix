@@ -1,16 +1,27 @@
 @testable import AreaMatrix
+import SwiftUI
 import XCTest
 
+// swiftlint:disable file_length
+// swiftlint:disable:next type_body_length
 final class MainRepoExternalRemovalTests: XCTestCase {
     func testS201PageIntegrationRendersSearchRouteViews() {
         let request = SearchQueryRequestSnapshot.s201RouteFixture(query: "合同")
-        let diagnostic = SearchQueryDiagnosticSnapshot(severityDisplayName: "Error", message: "Unknown field: owner", suggestion: "Use category:")
-
-        let emptyView = SearchEmptyRouteView(request: request, onClearSearch: {}, onClearFilters: {}, onRemoveFilter: { _ in }, onSearchAllFileTypes: {})
+        let emptyView = SearchEmptyRouteView(
+            request: request,
+            onClearSearch: {},
+            onClearFilters: {},
+            onRemoveFilter: { _ in },
+            onSearchAllFileTypes: {}
+        )
         let emptyBody = s201RouteMirrorDescription(of: emptyView.body)
         let errorBody = s201RouteMirrorDescription(of: QueryErrorRouteView(
             request: request,
-            diagnostic: diagnostic,
+            diagnostic: SearchQueryDiagnosticSnapshot(
+                severityDisplayName: "Error",
+                message: "Unknown field: owner",
+                suggestion: "Use category:"
+            ),
             onClear: {}
         ).body)
         let savedSearchStore = S203RecordingSavedSearchStore(results: [.listSuccess([])])
@@ -28,20 +39,12 @@ final class MainRepoExternalRemovalTests: XCTestCase {
             onRetry: {},
             onClose: {}
         ).body)
-        let commandRoute = BatchAddTagsRoute(source: .commandPalette, fileIDs: [], selectedCount: 0, disabledReason: "No files selected")
-        let categoryRoute = BatchChangeCategoryRoute(
-            source: .commandPalette,
-            fileIDs: [],
-            selectedFiles: [],
-            selectedCount: 0,
-            disabledReason: "No files selected"
-        )
+        var commandQuery = "合同"
         let commandBody = s201RouteMirrorDescription(of: SearchCommandPaletteRouteView(
-            query: "合同",
-            batchAddTagsRoute: commandRoute,
-            batchChangeCategoryRoute: categoryRoute,
-            onOpenBatchAddTags: { _ in },
-            onOpenBatchChangeCategory: { _ in },
+            query: Binding(get: { commandQuery }, set: { commandQuery = $0 }),
+            state: .idle,
+            onLoad: {},
+            onExecuteTarget: { _ in },
             onClose: {}
         ).body)
 
@@ -53,6 +56,7 @@ final class MainRepoExternalRemovalTests: XCTestCase {
         XCTAssertTrue(indexingBody.contains("S2-01-indexing-status-search-route"))
         XCTAssertTrue(commandBody.contains("S2-15-search-route"))
     }
+
     @MainActor
     func testS203SavedSearchSheetCreatesSmartListThroughCoreBridge() async {
         let request = SearchQueryRequestSnapshot.s201RouteFixture(query: "合同")
@@ -134,7 +138,7 @@ final class MainRepoExternalRemovalTests: XCTestCase {
         let filters = SearchFilterStateSnapshot.searchFiltersFixture()
         let invalid = SearchFilterEditing.settingCustomDateRange(
             from: Date(timeIntervalSince1970: 1_800_086_400),
-            to: Date(timeIntervalSince1970: 1_800_000_000),
+            until: Date(timeIntervalSince1970: 1_800_000_000),
             field: .modified,
             in: filters
         )
@@ -144,15 +148,19 @@ final class MainRepoExternalRemovalTests: XCTestCase {
         XCTAssertEqual(filters.modifiedAfter, 1_700_000_000)
         XCTAssertNil(filters.modifiedBefore)
 
+        let validFrom = Date(timeIntervalSince1970: 1_800_000_000)
+        let validTo = Date(timeIntervalSince1970: 1_800_086_400)
         let valid = SearchFilterEditing.settingCustomDateRange(
-            from: Date(timeIntervalSince1970: 1_800_000_000),
-            to: Date(timeIntervalSince1970: 1_800_086_400),
+            from: validFrom,
+            until: validTo,
             field: .modified,
             in: filters
         )
+        let expectedStart = Int64(Calendar.current.startOfDay(for: validFrom).timeIntervalSince1970)
+        let expectedEnd = Int64(Calendar.current.startOfDay(for: validTo).timeIntervalSince1970)
 
-        XCTAssertEqual(valid.updatedFilters?.modifiedAfter, 1_799_971_200)
-        XCTAssertEqual(valid.updatedFilters?.modifiedBefore, 1_800_057_600)
+        XCTAssertEqual(valid.updatedFilters?.modifiedAfter, expectedStart)
+        XCTAssertEqual(valid.updatedFilters?.modifiedBefore, expectedEnd)
         XCTAssertNil(valid.errorMessage)
     }
 
@@ -503,9 +511,7 @@ private func s201RouteAppendMirrorDescription(of value: Any, to lines: inout [St
     lines.append(String(describing: type(of: value)))
     lines.append(String(describing: value))
     for child in Mirror(reflecting: value).children {
-        if let label = child.label {
-            lines.append(label)
-        }
+        if let label = child.label { lines.append(label) }
         s201RouteAppendMirrorDescription(of: child.value, to: &lines)
     }
 }

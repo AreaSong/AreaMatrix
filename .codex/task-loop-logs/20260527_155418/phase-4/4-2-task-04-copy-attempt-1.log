@@ -1,0 +1,42 @@
+一、执行结论
+
+已完成。
+
+二、执行范围
+
+单任务：`4-2/task-04`。  
+修改文件清单：新增 [ai_settings_config_validation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/ai_settings_config_validation.rs)。
+
+三、完成情况
+
+核对清单已完成：补齐 C3-01 validation 集成测试，覆盖默认关闭、成功持久化、UI capability 派生状态、失败回滚、secret-like 引用不泄漏，以及 Core API / UDL / Rust 合同一致性。未新增业务功能，只补验证测试。
+
+完成标准已满足：C3-01 现在有 contract、implementation、failure-recovery、validation 四组 targeted tests 作为 UI 接入前证据。未触碰 `apps/**`。
+
+四、工程质量
+
+新增测试只在 `core/tests/**`，结构清晰，使用真实 `init_repo`、SQLite repo_config 和公开 Core API，没有 mock-only、硬编码通过态或一次性脚本逻辑。未新增依赖，未改生产 API/UDL。错误路径覆盖 duplicate feature、secret-like policy ref、`.areamatrix` 内路径拒绝，并验证失败后 baseline 和用户文件不变。
+
+五、验证情况
+
+已运行并通过：
+
+`./dev check task 4-2/task-04`
+
+该命令实际执行了：
+
+- prompt doctor：OK，`tasks: 637`，`manifests: 637`
+- `git diff --check`：通过
+- `cargo test --test ai_settings_config_contract_api -- --nocapture`：5 passed
+- `cargo test --test ai_settings_config_failure_recovery -- --nocapture`：6 passed
+- `cargo test --test ai_settings_config_implementation -- --nocapture`：5 passed
+- `cargo test --test ai_settings_config_validation -- --nocapture`：3 passed
+
+未运行全量 `cargo test --workspace` / `./dev check core`，原因是本 task manifest 明确要求上限为 `./dev check task 4-2/task-04`，普通 atomic Core task 不应自行升级到宽门禁。
+
+六、风险与后续
+
+剩余风险：远端 CI 未在本地执行；工作树里已有非本任务运行状态痕迹 `tasks/prompts/_shared/progress.json` 和 `.codex/task-loop-runs/20260527_155418/`，我未触碰。  
+回滚思路：删除新增的 `core/tests/ai_settings_config_validation.rs` 即可回退本轮改动。  
+建议下一个任务：`4-2/task-05`，进入 C3-01 integration verify。
+

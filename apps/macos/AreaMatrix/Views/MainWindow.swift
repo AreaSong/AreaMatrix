@@ -363,62 +363,15 @@ extension MainWindow {
                     Task { await model.loadImportResultChangeLog() }
                 },
                 onShowExistingFile: model.showImportResultExistingFile,
+                onReviewTagSuggestions: model.reviewImportResultTagSuggestions,
                 onRequestExport: model.requestImportResultExportPrivacyConfirmation,
                 onConfirmExport: model.exportImportResultDetails,
                 onCancelExport: model.cancelImportResultExport
             )
         case let .mainEmpty(opening):
-            MainRepositoryContentView(
-                opening: opening,
-                state: .empty,
-                onImport: { model.chooseImportSources(opening: opening) },
-                onDropImport: { urls, destination in
-                    model.startImportEntry(
-                        opening: opening,
-                        source: .dropZone,
-                        urls: urls,
-                        destination: destination
-                    )
-                },
-                onOpenSettings: { model.showGeneralSettings(opening: opening) },
-                onRetryCurrentList: { Task { await model.retryConfigurationLoad() } },
-                onCollectDiagnostics: { await model.collectMainListDiagnostics(opening: opening) },
-                onShowInFinder: { model.showMainListFileInFinder(opening: opening, relativePath: $0) },
-                onCopyPath: { model.copyMainListPath(opening: opening, relativePath: $0) },
-                onCopyPaths: { model.copyMainListPaths(opening: opening, relativePaths: $0) },
-                onOpenNoteFile: { model.openMainListFile(opening: opening, relativePath: $0) },
-                onOpenChangeCategoryPermissionRecovery: {
-                    model.revealMainRepositoryFolder(repoPath: opening.config.repoPath)
-                },
-                externalCreatedEvent: model.externalCreatedEvent(for: opening),
-                onExternalCreatedEventHandled: model.finishExternalCreatedFileEvent
-            )
+            mainRepositoryContent(opening: opening, state: .empty)
         case let .mainList(opening):
-            MainRepositoryContentView(
-                opening: opening,
-                state: .list,
-                onImport: { model.chooseImportSources(opening: opening) },
-                onDropImport: { urls, destination in
-                    model.startImportEntry(
-                        opening: opening,
-                        source: .dropZone,
-                        urls: urls,
-                        destination: destination
-                    )
-                },
-                onOpenSettings: { model.showGeneralSettings(opening: opening) },
-                onRetryCurrentList: { Task { await model.retryConfigurationLoad() } },
-                onCollectDiagnostics: { await model.collectMainListDiagnostics(opening: opening) },
-                onShowInFinder: { model.showMainListFileInFinder(opening: opening, relativePath: $0) },
-                onCopyPath: { model.copyMainListPath(opening: opening, relativePath: $0) },
-                onCopyPaths: { model.copyMainListPaths(opening: opening, relativePaths: $0) },
-                onOpenNoteFile: { model.openMainListFile(opening: opening, relativePath: $0) },
-                onOpenChangeCategoryPermissionRecovery: {
-                    model.revealMainRepositoryFolder(repoPath: opening.config.repoPath)
-                },
-                externalCreatedEvent: model.externalCreatedEvent(for: opening),
-                onExternalCreatedEventHandled: model.finishExternalCreatedFileEvent
-            )
+            mainRepositoryContent(opening: opening, state: .list)
         case let .configurationError(failure):
             ConfigurationErrorView(
                 failure: failure,
@@ -434,23 +387,10 @@ extension MainWindow {
 
     private func importProgressContent(_ state: ImportProgressRouteState) -> some View {
         ZStack(alignment: .trailing) {
-            MainRepositoryContentView(
-                opening: state.sourceOpening.importProgressReadOnlyOpening,
+            mainRepositoryContent(
+                opening: state.sourceOpening,
                 state: .list,
-                onImport: {},
-                onDropImport: { _, _ in },
-                onOpenSettings: { model.showGeneralSettings(opening: state.sourceOpening) },
-                onRetryCurrentList: { Task { await model.retryConfigurationLoad() } },
-                onCollectDiagnostics: { await model.collectMainListDiagnostics(opening: state.sourceOpening) },
-                onShowInFinder: { model.showMainListFileInFinder(opening: state.sourceOpening, relativePath: $0) },
-                onCopyPath: { model.copyMainListPath(opening: state.sourceOpening, relativePath: $0) },
-                onCopyPaths: { model.copyMainListPaths(opening: state.sourceOpening, relativePaths: $0) },
-                onOpenNoteFile: { model.openMainListFile(opening: state.sourceOpening, relativePath: $0) },
-                onOpenChangeCategoryPermissionRecovery: {
-                    model.revealMainRepositoryFolder(repoPath: state.sourceOpening.config.repoPath)
-                },
-                externalCreatedEvent: model.externalCreatedEvent(for: state.sourceOpening),
-                onExternalCreatedEventHandled: model.finishExternalCreatedFileEvent,
+                isImportProgressReadOnly: true,
                 importProgressItems: state.items
             )
             ImportProgressView(
@@ -477,6 +417,42 @@ extension MainWindow {
         .task(id: state.recoveryCheckTaskID) {
             await model.checkImportProgressRecoveryIfNeeded()
         }
+    }
+
+    private func mainRepositoryContent(
+        opening: RepositoryOpeningResult,
+        state: MainRepositoryContentState,
+        isImportProgressReadOnly: Bool = false,
+        importProgressItems: [ImportBatchProgressSnapshot.Item] = []
+    ) -> MainRepositoryContentView {
+        let displayOpening = isImportProgressReadOnly ? opening.importProgressReadOnlyOpening : opening
+        return MainRepositoryContentView(
+            opening: displayOpening,
+            state: state,
+            onImport: isImportProgressReadOnly ? {} : { model.chooseImportSources(opening: opening) },
+            onDropImport: { urls, destination in
+                guard !isImportProgressReadOnly else { return }
+                model.startImportEntry(opening: opening, source: .dropZone, urls: urls, destination: destination)
+            },
+            onOpenSettings: { model.showGeneralSettings(opening: opening) },
+            onOpenRepository: model.showChoosePath,
+            onOpenHelp: model.openLearnMore,
+            onOpenImportConflictBatch: { model.startImportConflictBatchReview(opening: opening, route: $0) },
+            onRetryCurrentList: { Task { await model.retryConfigurationLoad() } },
+            onCollectDiagnostics: { await model.collectMainListDiagnostics(opening: opening) },
+            onShowInFinder: { model.showMainListFileInFinder(opening: opening, relativePath: $0) },
+            onCopyPath: { model.copyMainListPath(opening: opening, relativePath: $0) },
+            onCopyPaths: { model.copyMainListPaths(opening: opening, relativePaths: $0) },
+            onOpenNoteFile: { model.openMainListFile(opening: opening, relativePath: $0) },
+            onOpenChangeCategoryPermissionRecovery: {
+                model.revealMainRepositoryFolder(repoPath: opening.config.repoPath)
+            },
+            externalCreatedEvent: model.externalCreatedEvent(for: opening),
+            onExternalCreatedEventHandled: model.finishExternalCreatedFileEvent,
+            pendingTagSuggestionFocus: model.pendingTagSuggestionFocus,
+            onPendingTagSuggestionFocusConsumed: model.consumePendingTagSuggestionFocus,
+            importProgressItems: importProgressItems
+        )
     }
 }
 

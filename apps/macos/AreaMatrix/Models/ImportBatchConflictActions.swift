@@ -1,5 +1,106 @@
 import Foundation
 
+enum ImportConflictBatchAction {
+    static func preview(
+        repoPath: String,
+        request: ImportConflictBatchPreviewRequestSnapshot,
+        batcher: any CoreImportConflictBatching,
+        errorMapper: any CoreErrorMapping,
+        previous: ImportConflictBatchPreviewReportSnapshot? = nil
+    ) async -> ImportConflictBatchPreviewState {
+        do {
+            let report = try await batcher.previewImportConflictBatch(repoPath: repoPath, request: request)
+            return .loaded(report)
+        } catch {
+            return await .failed(mapError(error, errorMapper: errorMapper), previous: previous)
+        }
+    }
+
+    static func apply(
+        repoPath: String,
+        request: ImportConflictBatchApplyRequestSnapshot,
+        preview: ImportConflictBatchPreviewReportSnapshot,
+        batcher: any CoreImportConflictBatching,
+        errorMapper: any CoreErrorMapping
+    ) async -> ImportConflictBatchApplyResult {
+        guard ImportConflictBatchValidation.canApply(
+            preview: preview,
+            request: request,
+            isApplying: false
+        ) else {
+            let failure = CoreError.Conflict(path: preview.applyBlockedReason ?? "Import conflict batch")
+            return await ImportConflictBatchApplyResult(
+                report: nil,
+                failure: mapError(failure, errorMapper: errorMapper)
+            )
+        }
+        do {
+            let report = try await batcher.applyImportConflictBatch(
+                repoPath: repoPath,
+                request: request,
+                previewToken: preview.previewToken
+            )
+            return ImportConflictBatchApplyResult(report: report, failure: nil)
+        } catch {
+            return await ImportConflictBatchApplyResult(
+                report: nil,
+                failure: mapError(error, errorMapper: errorMapper)
+            )
+        }
+    }
+
+    private static func mapError(_ error: Error, errorMapper: any CoreErrorMapping) async -> CoreErrorMappingSnapshot {
+        if let coreError = error as? CoreError { return await errorMapper.mapCoreError(coreError) }
+        return await errorMapper.mapCoreError(CoreError.Internal(message: error.localizedDescription))
+    }
+}
+
+enum ImportConflictBatchValidation {
+    static func actionableIncludedCount(preview: ImportConflictBatchPreviewReportSnapshot) -> Int64 {
+        Int64(preview.items.filter(\.isActionablePreviewItem).count)
+    }
+
+    static func canApply(
+        preview: ImportConflictBatchPreviewReportSnapshot?,
+        request: ImportConflictBatchApplyRequestSnapshot,
+        isApplying: Bool
+    ) -> Bool {
+        guard !isApplying,
+              let preview,
+              preview.canApply,
+              !preview.previewToken.isEmpty, preview.importSessionID == request.importSessionID,
+              actionableIncludedCount(preview: preview) > 0 else { return false }
+        if preview.replaceConfirmationRequired, !request.replaceConfirmed { return false }
+        return selectedStrategiesMatch(preview: preview, request: request)
+    }
+
+    static func canAskPerItem(preview: ImportConflictBatchPreviewReportSnapshot?, isApplying: Bool) -> Bool {
+        guard !isApplying, let preview else { return false }
+        return actionableIncludedCount(preview: preview) > 0
+    }
+
+    static func confirmationTitle(for preview: ImportConflictBatchPreviewReportSnapshot?) -> String {
+        let count = preview?.replaceCount ?? 0
+        return "Replace \(count) existing \(count == 1 ? "file" : "files")?"
+    }
+
+    private static func selectedStrategiesMatch(
+        preview: ImportConflictBatchPreviewReportSnapshot,
+        request: ImportConflictBatchApplyRequestSnapshot
+    ) -> Bool {
+        preview.applyToAllSimilarConflicts == request.applyToAllSimilarConflicts
+            && preview.items.allSatisfy { item in
+                guard item.isActionablePreviewItem else { return true }
+                switch item.conflictType {
+                case .duplicateHash:
+                    return item.selectedStrategy == request.duplicateStrategy
+                case .sameNameDifferentContent:
+                    return item.selectedStrategy == request.sameNameStrategy
+                }
+            }
+    }
+}
+
 @MainActor
 extension ImportBatchCopyImportModel {
     func updateDuplicateStrategy(
@@ -24,6 +125,250 @@ extension ImportBatchCopyImportModel {
         guard let row = rows.first(where: { $0.id == rowID }) else { return }
         guard case let .nameConflict(existingPath, _) = row.status else { return }
         setStatus(.nameConflict(existingPath: existingPath, resolution: resolution), for: rowID)
+    }
+
+    var showsCoreConflictBatchReview: Bool {
+        request?.importConflictBatchRoute != nil
+    }
+
+    var conflictBatchPreviewReport: ImportConflictBatchPreviewReportSnapshot? {
+        if hasEmptyManualConflictBatchScope {
+            return emptyManualConflictBatchPreview()
+        }
+        return conflictBatchPreviewState.report
+    }
+
+    var conflictBatchFailure: CoreErrorMappingSnapshot? {
+        conflictBatchPreviewState.failure ?? conflictBatchApplyResult?.failure
+    }
+
+    var currentConflictBatchIDs: [String] {
+        if appliesConflictBatchToAll {
+            return coreConflictBatchRows.map(\.id).sorted()
+        }
+        return selectedConflictBatchIDs.sorted()
+    }
+
+    var normalizedImportConflictBatchSessionID: String? {
+        let trimmed = request?.importSessionID?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return trimmed.isEmpty ? nil : trimmed
+    }
+
+    var coreConflictBatchRows: [ImportConflictBatchPreviewItemSnapshot] {
+        if let preview = conflictBatchPreviewReport {
+            return preview.items
+        }
+        let conflictIDs = request?.importConflictIDs ?? []
+        return conflictIDs.map { conflictID in
+            ImportConflictBatchPreviewItemSnapshot.pendingPlaceholder(conflictID: conflictID)
+        }
+    }
+
+    var currentConflictBatchApplyRequestIsValid: Bool {
+        guard let preview = conflictBatchPreviewReport,
+              let request = makeImportConflictBatchApplyRequest(
+                  replaceConfirmed: isConflictBatchReplaceConfirmed
+              ) else { return false }
+        return ImportConflictBatchValidation.canApply(
+            preview: preview,
+            request: request,
+            isApplying: isConflictBatchApplying
+        )
+    }
+
+    func loadImportConflictBatchPreview() async {
+        guard let request = makeImportConflictBatchPreviewRequest() else {
+            resetConflictBatchOutcome()
+            if !hasEmptyManualConflictBatchScope {
+                conflictBatchPreviewState = .idle
+            }
+            return
+        }
+        isConflictBatchReplaceConfirmed = false
+        resetConflictBatchOutcome()
+        conflictBatchPreviewState = .loading(previous: conflictBatchPreviewState.report)
+        conflictBatchPreviewState = await ImportConflictBatchAction.preview(
+            repoPath: self.request?.repoPath ?? "",
+            request: request,
+            batcher: conflictBatcher,
+            errorMapper: errorMapper,
+            previous: conflictBatchPreviewState.report
+        )
+    }
+
+    func refreshImportConflictBatchPreview() async {
+        await loadImportConflictBatchPreview()
+    }
+
+    func updateConflictBatchDuplicateStrategy(_ strategy: ImportConflictBatchStrategySnapshot) {
+        conflictBatchDuplicateStrategy = strategy
+        isConflictBatchReplaceConfirmed = false
+        resetConflictBatchOutcome()
+    }
+
+    func updateConflictBatchSameNameStrategy(_ strategy: ImportConflictBatchStrategySnapshot) {
+        conflictBatchSameNameStrategy = strategy
+        isConflictBatchReplaceConfirmed = false
+        resetConflictBatchOutcome()
+    }
+
+    func updateConflictBatchScope(appliesToAll: Bool) {
+        appliesConflictBatchToAll = appliesToAll
+        isConflictBatchReplaceConfirmed = false
+        if appliesToAll {
+            selectedConflictBatchIDs = []
+        }
+        resetConflictBatchOutcome()
+    }
+
+    func setConflictBatchItemSelected(_ conflictID: String, isSelected: Bool) {
+        if isSelected {
+            selectedConflictBatchIDs.insert(conflictID)
+        } else {
+            selectedConflictBatchIDs.remove(conflictID)
+        }
+        isConflictBatchReplaceConfirmed = false
+        resetConflictBatchOutcome()
+    }
+
+    func confirmConflictBatchReplace() {
+        isConflictBatchReplaceConfirmed = true
+    }
+
+    func cancelConflictBatchReplace() {
+        isConflictBatchReplaceConfirmed = false
+        if conflictBatchDuplicateStrategy == .replace {
+            conflictBatchDuplicateStrategy = .skip
+        }
+        if conflictBatchSameNameStrategy == .replace {
+            conflictBatchSameNameStrategy = .keepBoth
+        }
+        resetConflictBatchOutcome()
+    }
+
+    func askConflictBatchPerItem() async -> ImportConflictBatchApplyResult? {
+        guard let previewRequest = makeImportConflictBatchPreviewRequest(duplicateStrategy: .askPerItem,
+                                                                         sameNameStrategy: .askPerItem)
+        else { return nil }
+        let previousPreview = conflictBatchPreviewReport
+        if let previousPreview,
+           !ImportConflictBatchValidation.canAskPerItem(preview: previousPreview, isApplying: isConflictBatchApplying) {
+            return nil
+        }
+        resetConflictBatchOutcome()
+        isConflictBatchApplying = true
+        defer { isConflictBatchApplying = false }
+        conflictBatchPreviewState = .loading(previous: previousPreview)
+        conflictBatchPreviewState = await ImportConflictBatchAction.preview(
+            repoPath: request?.repoPath ?? "",
+            request: previewRequest,
+            batcher: conflictBatcher,
+            errorMapper: errorMapper,
+            previous: previousPreview
+        )
+        guard let preview = conflictBatchPreviewState.report,
+              let queue = ImportConflictBatchPerItemQueue.make(from: preview) else { return nil }
+        let applyRequest = ImportConflictBatchApplyRequestSnapshot(
+            importSessionID: previewRequest.importSessionID,
+            conflictIDs: previewRequest.conflictIDs,
+            duplicateStrategy: .askPerItem,
+            sameNameStrategy: .askPerItem,
+            applyToAllSimilarConflicts: previewRequest.applyToAllSimilarConflicts,
+            replaceConfirmed: false
+        )
+        guard ImportConflictBatchValidation.canApply(
+            preview: preview,
+            request: applyRequest,
+            isApplying: false
+        ) else { return nil }
+        let result = await ImportConflictBatchAction.apply(
+            repoPath: request?.repoPath ?? "",
+            request: applyRequest,
+            preview: preview,
+            batcher: conflictBatcher,
+            errorMapper: errorMapper
+        )
+        return await finishConflictBatchPerItem(result: result, queue: queue)
+    }
+
+    func makeImportConflictBatchPreviewRequest(
+        duplicateStrategy: ImportConflictBatchStrategySnapshot? = nil,
+        sameNameStrategy: ImportConflictBatchStrategySnapshot? = nil
+    ) -> ImportConflictBatchPreviewRequestSnapshot? {
+        guard let importSessionID = normalizedImportConflictBatchSessionID else { return nil }
+        let conflictIDs = currentConflictBatchIDs
+        guard !conflictIDs.isEmpty else { return nil }
+        return ImportConflictBatchPreviewRequestSnapshot(
+            importSessionID: importSessionID,
+            conflictIDs: conflictIDs,
+            duplicateStrategy: duplicateStrategy ?? conflictBatchDuplicateStrategy,
+            sameNameStrategy: sameNameStrategy ?? conflictBatchSameNameStrategy,
+            applyToAllSimilarConflicts: appliesConflictBatchToAll
+        )
+    }
+
+    func makeImportConflictBatchApplyRequest(replaceConfirmed: Bool) -> ImportConflictBatchApplyRequestSnapshot? {
+        guard let previewRequest = makeImportConflictBatchPreviewRequest() else { return nil }
+        return ImportConflictBatchApplyRequestSnapshot(
+            importSessionID: previewRequest.importSessionID,
+            conflictIDs: previewRequest.conflictIDs,
+            duplicateStrategy: previewRequest.duplicateStrategy,
+            sameNameStrategy: previewRequest.sameNameStrategy,
+            applyToAllSimilarConflicts: previewRequest.applyToAllSimilarConflicts,
+            replaceConfirmed: replaceConfirmed
+        )
+    }
+
+    func applyImportConflictBatchReportToRows(_ report: ImportConflictBatchApplyReportSnapshot) {
+        let resultsByID = Dictionary(uniqueKeysWithValues: report.itemResults.map { ($0.conflictID, $0) })
+        for row in rows {
+            guard let result = resultsByID[row.id] else { continue }
+            setStatus(status(for: result, fallback: row.status), for: row.id)
+        }
+    }
+
+    private func finishConflictBatchPerItem(
+        result: ImportConflictBatchApplyResult,
+        queue: ImportConflictBatchPerItemQueue
+    ) async -> ImportConflictBatchApplyResult {
+        conflictBatchApplyResult = result
+        guard let report = result.report, report.queuedForPerItemCount > 0 else {
+            conflictBatchUndoState = .idle
+            return result
+        }
+        conflictBatchPerItemQueue = queue
+        applyImportConflictBatchReportToRows(report)
+        await refreshConflictBatchUndoState(report: report, failure: result.failure)
+        return result
+    }
+
+    func applyImportConflictBatch(replaceConfirmed: Bool? = nil) async -> ImportConflictBatchApplyResult? {
+        guard let preview = conflictBatchPreviewReport,
+              let request = makeImportConflictBatchApplyRequest(
+                  replaceConfirmed: replaceConfirmed ?? isConflictBatchReplaceConfirmed
+              ) else { return nil }
+        guard ImportConflictBatchValidation.canApply(
+            preview: preview,
+            request: request,
+            isApplying: isConflictBatchApplying
+        ) else { return nil }
+        isConflictBatchApplying = true
+        defer { isConflictBatchApplying = false }
+        let result = await ImportConflictBatchAction.apply(
+            repoPath: self.request?.repoPath ?? "",
+            request: request,
+            preview: preview,
+            batcher: conflictBatcher,
+            errorMapper: errorMapper
+        )
+        conflictBatchApplyResult = result
+        if let report = result.report {
+            applyImportConflictBatchReportToRows(report)
+            await refreshConflictBatchUndoState(report: report, failure: result.failure)
+        } else {
+            conflictBatchUndoState = .idle
+        }
+        return result
     }
 
     func renameIncomingFile(for rowID: ImportBatchCopyImportRow.ID, to name: String) {
@@ -80,41 +425,6 @@ extension ImportBatchCopyImportModel {
         return true
     }
 
-    func downloadICloudPlaceholderAndRetry(rowID: ImportBatchCopyImportRow.ID) async -> Bool {
-        guard let row = rows.first(where: { $0.id == rowID }) else { return false }
-        guard case let .iCloudPlaceholder(path, _) = row.status else { return false }
-        isICloudDownloading = true
-        defer { isICloudDownloading = false }
-
-        do {
-            try await placeholderDownloader.downloadPlaceholder(at: row.sourceURL)
-            setStatus(.loading, for: rowID)
-            return true
-        } catch {
-            setStatus(.iCloudPlaceholder(
-                path: path,
-                message: "iCloud 下载失败：\(error.localizedDescription)"
-            ), for: rowID)
-            return false
-        }
-    }
-
-    func downloadAllICloudPlaceholdersAndRetry() async -> Bool {
-        var didDownload = false
-        for row in rows {
-            if case .iCloudPlaceholder = row.status {
-                didDownload = await downloadICloudPlaceholderAndRetry(rowID: row.id) || didDownload
-            }
-        }
-        return didDownload
-    }
-
-    func markICloudPlaceholderPending(rowID: ImportBatchCopyImportRow.ID) {
-        guard let row = rows.first(where: { $0.id == rowID }) else { return }
-        guard case let .iCloudPlaceholder(path, _) = row.status else { return }
-        setStatus(.skippedICloud(path: path), for: rowID)
-    }
-
     private func canSelectDuplicateStrategy(_ strategy: ImportBatchDuplicateResolutionStrategy) -> Bool {
         strategy != .replace || replaceOptionVisibility == .enabled
     }
@@ -123,9 +433,32 @@ extension ImportBatchCopyImportModel {
         !resolution.isReplace || replaceOptionVisibility == .enabled
     }
 
-    private func currentReplaceConfirmationContext(
-        for rowID: ImportBatchCopyImportRow.ID
-    ) -> SingleFileReplaceConfirmationContext? {
+    private func status(for result: ImportConflictBatchItemResultSnapshot,
+                        fallback: ImportBatchCopyImportRowStatus) -> ImportBatchCopyImportRowStatus {
+        switch result.status {
+        case .skipped:
+            .skippedDuplicate(existingPath: result.finalPath ?? existingPath(from: fallback))
+        case .keptBoth, .replaced:
+            .imported
+        case .queuedForPerItem, .pending:
+            fallback
+        case .failed:
+            .error(result.error ?? "Import conflict strategy failed.")
+        }
+    }
+
+    private func existingPath(from status: ImportBatchCopyImportRowStatus) -> String {
+        switch status {
+        case let .duplicate(existingPath, _, _), let .nameConflict(existingPath, _),
+             let .skippedDuplicate(existingPath):
+            existingPath
+        case .loading, .ready, .iCloudPlaceholder, .blocked, .importing, .skippedICloud, .imported, .error:
+            "existing file"
+        }
+    }
+
+    func currentReplaceConfirmationContext(for rowID: ImportBatchCopyImportRow
+        .ID) -> SingleFileReplaceConfirmationContext? {
         guard let row = rows.first(where: { $0.id == rowID }) else { return nil }
         guard request?.allowReplaceDuringImport == true, request?.isTrashAvailable == true else { return nil }
         guard let existingPath = row.existingConflictPath else { return nil }
@@ -137,139 +470,4 @@ extension ImportBatchCopyImportModel {
             isTrashAvailable: true
         )
     }
-}
-
-struct ImportBatchCopyCycleResult {
-    var entry: FileEntrySnapshot?
-    var completed: Int
-    var failed: Int
-    var total: Int
-    var currentPath: String
-    var lastImportedPath: String?
-    var stoppedForDuplicate: Bool
-    var stoppedForQueue: Bool
-
-    var progress: ImportBatchProgressSnapshot {
-        ImportBatchProgressSnapshot(
-            completed: completed,
-            failed: failed,
-            total: total,
-            remaining: total - completed - failed,
-            currentPath: currentPath
-        )
-    }
-
-    static func success(
-        entry: FileEntrySnapshot,
-        completed: Int,
-        failed: Int,
-        total: Int,
-        currentPath: String
-    ) -> ImportBatchCopyCycleResult {
-        ImportBatchCopyCycleResult(
-            entry: entry,
-            completed: completed,
-            failed: failed,
-            total: total,
-            currentPath: currentPath,
-            lastImportedPath: entry.path,
-            stoppedForDuplicate: false,
-            stoppedForQueue: false
-        )
-    }
-
-    static func failure(
-        completed: Int,
-        failed: Int,
-        total: Int,
-        currentPath: String,
-        stoppedForQueue: Bool = false
-    ) -> ImportBatchCopyCycleResult {
-        ImportBatchCopyCycleResult(
-            entry: nil,
-            completed: completed,
-            failed: failed,
-            total: total,
-            currentPath: currentPath,
-            lastImportedPath: nil,
-            stoppedForDuplicate: false,
-            stoppedForQueue: stoppedForQueue
-        )
-    }
-
-    static func duplicate(
-        completed: Int,
-        failed: Int,
-        total: Int,
-        currentPath: String
-    ) -> ImportBatchCopyCycleResult {
-        ImportBatchCopyCycleResult(
-            entry: nil,
-            completed: completed,
-            failed: failed,
-            total: total,
-            currentPath: currentPath,
-            lastImportedPath: nil,
-            stoppedForDuplicate: true,
-            stoppedForQueue: true
-        )
-    }
-}
-
-struct ImportBatchCopyCycleInput {
-    var rowIndex: Int
-    var request: ImportEntryRequest
-    var selectedDestination: ImportBatchDestinationOption
-    var completed: Int
-    var failed: Int
-    var total: Int
-}
-
-struct ImportFolderImportCycleInput {
-    var rowIndex: Int
-    var request: ImportEntryRequest
-    var storageMode: ImportSingleFileStorageMode
-    var completed: Int
-    var failed: Int
-    var total: Int
-}
-
-struct ImportBatchRetryContinuation {
-    var request: ImportEntryRequest
-    var retryEntry: FileEntrySnapshot
-    var retryRowIndex: Int?
-    var retryPath: String
-}
-
-struct ImportBatchCopyRunState {
-    var completed = 0
-    var failed = 0
-    var succeededEntries: [FileEntrySnapshot] = []
-    var lastImportedPath = ""
-    var stoppedForDuplicate = false
-    var didStopAfterCurrentFile = false
-    var fatalRetryContext: ImportProgressRetryContext?
-}
-
-struct ImportBatchCopyRunInput {
-    var readyRowIDs: Set<ImportBatchCopyImportRow.ID>
-    var request: ImportEntryRequest
-    var selectedDestination: ImportBatchDestinationOption
-    var total: Int
-}
-
-struct ImportFolderImportRunState {
-    var completed = 0
-    var failed = 0
-    var succeededEntries: [FileEntrySnapshot] = []
-    var lastImportedPath = ""
-    var didStopAfterCurrentFile = false
-    var fatalRetryContext: ImportProgressRetryContext?
-}
-
-struct ImportFolderImportRunInput {
-    var readyRowIDs: Set<ImportFolderPreviewRow.ID>
-    var request: ImportEntryRequest
-    var storageMode: ImportSingleFileStorageMode
-    var total: Int
 }

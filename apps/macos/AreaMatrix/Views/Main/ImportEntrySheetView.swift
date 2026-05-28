@@ -55,6 +55,7 @@ struct ImportEntrySheetView: View {
         categoryPredictor: any CoreCategoryPredicting = CoreBridge(),
         fileImporter: any CoreFileImporting = CoreBridge(),
         batchFileImporter: any CoreBatchCopyImporting = CoreBridge(),
+        batchConflictBatcher: any CoreImportConflictBatching = CoreBridge(),
         batchDuplicatePrechecker: any ImportBatchDuplicatePrechecking = CoreImportBatchDuplicatePrechecker(),
         batchNameConflictPrechecker: any ImportBatchNameConflictPrechecking = CoreImportBatchNameConflictPrechecker(),
         folderScanner: any ImportFolderScanning = LocalImportFolderScanner(),
@@ -90,6 +91,7 @@ struct ImportEntrySheetView: View {
         _batchImportModel = StateObject(wrappedValue: ImportBatchCopyImportModel(
             importer: batchFileImporter,
             errorMapper: errorMapper,
+            conflictBatcher: batchConflictBatcher,
             sessionStore: batchSessionStore,
             placeholderDownloader: placeholderDownloader
         ))
@@ -133,6 +135,10 @@ extension ImportEntrySheetView {
                     request: request,
                     selectedDestination: batchPreviewModel.selectedDestination
                 )
+                if batchImportModel.showsCoreConflictBatchReview {
+                    showsBatchConflictReview = true
+                    await batchImportModel.loadImportConflictBatchPreview()
+                }
             case .folder:
                 await folderPreviewModel.load(request: request)
             }
@@ -144,6 +150,10 @@ extension ImportEntrySheetView {
                     request: request,
                     selectedDestination: batchPreviewModel.selectedDestination
                 )
+                if batchImportModel.showsCoreConflictBatchReview {
+                    showsBatchConflictReview = true
+                    Task { await batchImportModel.loadImportConflictBatchPreview() }
+                }
             }
         }
         .onChange(of: batchPreviewModel.selectedDestination) { _, selectedDestination in

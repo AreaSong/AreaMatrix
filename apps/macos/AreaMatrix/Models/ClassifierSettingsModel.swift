@@ -28,13 +28,15 @@ final class ClassifierSettingsModel: ObservableObject {
     @Published private(set) var isSaving = false
     @Published private(set) var validationState: ValidationState = .idle
     @Published private(set) var hasLastValidBackup = false
+    @Published var classifierRuleEditor = ClassifierRuleEditorModelState()
 
     let repoPath: String
+    let ruleEditor: any CoreClassifierRuleEditing
 
     private let loader: any CoreConfigurationLoading
     private let updater: any CoreConfigurationUpdating
     private let predictor: any CoreCategoryPredicting
-    private let errorMapper: any CoreErrorMapping
+    let errorMapper: any CoreErrorMapping
     private let classifierRulesManager: any ClassifierRulesManaging
     private let fileOpener: any RepositoryFileOpening
     private let fileRevealer: any RepositoryFileRevealing
@@ -53,6 +55,7 @@ final class ClassifierSettingsModel: ObservableObject {
         loader: any CoreConfigurationLoading = CoreBridge(),
         updater: any CoreConfigurationUpdating = CoreBridge(),
         predictor: any CoreCategoryPredicting = CoreBridge(),
+        ruleEditor: any CoreClassifierRuleEditing = CoreBridge(),
         errorMapper: any CoreErrorMapping = CoreBridge(),
         classifierRulesManager: any ClassifierRulesManaging = FileSystemClassifierRulesManager(),
         fileOpener: any RepositoryFileOpening = NSWorkspaceRepositoryFileOpener(),
@@ -65,6 +68,7 @@ final class ClassifierSettingsModel: ObservableObject {
         self.loader = loader
         self.updater = updater
         self.predictor = predictor
+        self.ruleEditor = ruleEditor
         self.errorMapper = errorMapper
         self.classifierRulesManager = classifierRulesManager
         self.fileOpener = fileOpener
@@ -134,12 +138,14 @@ extension ClassifierSettingsModel {
             savedConfig = effectiveConfig
             draft = ClassifierSettingsDraft(config: effectiveConfig)
             loadState = .loaded
+            await loadClassifierRuleEditor()
             loadedClassifierSlugs = currentClassifierSlugs()
             refreshLastValidBackupAvailability()
         } catch {
             savedConfig = nil
             draft = nil
             hasLastValidBackup = false
+            classifierRuleEditor = ClassifierRuleEditorModelState()
             loadedClassifierSlugs = []
             loadState = await .failed(loadError(for: error))
         }
@@ -385,7 +391,7 @@ extension ClassifierSettingsModel {
         (try? classifierRulesManager.classifierCategorySlugs(repoPath: repoPath)).map(Set.init) ?? []
     }
 
-    private func publishSavedCategoryIfNeeded() {
+    func publishSavedCategoryIfNeeded() {
         let currentSlugs = currentClassifierSlugs()
         defer { loadedClassifierSlugs = currentSlugs }
         let savedCategories = currentSlugs.subtracting(loadedClassifierSlugs)
@@ -487,5 +493,4 @@ extension ClassifierSettingsModel {
         previewError = nil
         isPreviewing = false
     }
-
 }

@@ -1,0 +1,67 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-1/task-136`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-136-s2-21-page-integration-verify.md`
+- 代码范围：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+- Forbidden Touches：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：page-feature task 覆盖
+- 结果：通过
+- 证据：control map 中 S2-21 仅声明 `C2-17, C2-07`，对应 `4-1/task-134`, `4-1/task-135`, `4-1/task-136`；依赖 task 的 `./dev check task 4-1/task-134` 和 `./dev check task 4-1/task-135` 均 `BUILD SUCCEEDED`
+- 涉及文件：`docs/architecture/stage-2-control-map.md`、`tasks/prompts/_shared/manifests/phase-4.md`
+
+- 项目：页面状态、入口、退出、错误态、CoreBridge 闭环
+- 结果：通过
+- 证据：Swift UI 有预览、加载、失败、空态、结果摘要、Replace 确认、Ask per item、Undo 入口；模型通过 `CoreImportConflictBatching` 调用 `previewImportConflictBatch` / `applyImportConflictBatch`，通过 `CoreUndoActionLogging` 调用 `listUndoActions` / `undoAction`
+- 涉及文件：`apps/macos/AreaMatrix/Views/Main/ImportBatchConflictSection.swift:82`、`apps/macos/AreaMatrix/Models/ImportBatchConflictActions.swift:3`、`apps/macos/AreaMatrix/Bridge/CoreImporting.swift`
+
+- 项目：mock / fixture / 硬编码状态检查
+- 结果：通过
+- 证据：生产路径使用 CoreBridge 协议与 UniFFI 生成合同；fixture 仅存在于测试支撑；`rg "try!|as!|print\\("` 在本 task 生产改动文件中无命中
+- 涉及文件：`apps/macos/AreaMatrix/Models/ImportBatchConflictActions.swift:37`、`apps/macos/AreaMatrix/Bridge/CoreImporting.swift`
+
+- 项目：不新增 control map 外能力
+- 结果：通过
+- 证据：实际接入能力为 `C2-17` 与 `C2-07`；未修改 `core/src/**`；`Expected New Paths` 已存在；未发现 control map 外新增页面能力
+- 涉及文件：`core/area_matrix.udl`、`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，模型层负责状态与 CoreBridge 调用，View 层只展示与触发交互，符合 macOS 局部规则。
+- 注释 / rustdoc / 文档同步：通过，本 task 未新增 Rust public API；Core API 与 UDL 已包含 C2-17/C2-07 合同。
+- 错误处理与边界处理：通过，preview/apply 错误映射到 `CoreErrorMappingSnapshot`，Replace 缺确认、Trash blocked、空选区、失败摘要均有处理。
+- 测试与验证覆盖：通过，`ImportConflictIntegrationVerifyTests` 覆盖 blocked preview、selected scope、Replace confirmation、apply、undo；`ImportBatchDuplicateResolutionTests` 覆盖空手动作用域与 Ask per item 路由。
+- 占位、硬编码、mock-only、一次性实现检查：通过，未发现生产路径 mock-only 闭环；测试 mock 限定在 XCTest 支撑内。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-136`：通过；`doctor: OK`，`git diff --check` 通过，macOS `xcodebuild ... build CODE_SIGNING_ALLOWED=NO` 最终 `BUILD SUCCEEDED`
+- 已运行：`./dev check task 4-1/task-134`：通过；最终 `BUILD SUCCEEDED`
+- 已运行：`./dev check task 4-1/task-135`：通过；最终 `BUILD SUCCEEDED`
+- 已运行：`git diff --check`：通过
+- 已运行：`git diff --name-only -- core/src`：无输出，未触碰 Forbidden Touches
+- 缺失：未运行 `./dev test macos`，因为 manifest 对本 task 的验证命令是 `./dev check task 4-1/task-136`，该 task-scoped gate 已按 validation-driver 选择 macOS build gate
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。S2-21 页面按 page spec 与 control map 可完整验收，`C2-17` 与 `C2-07` 均有真实 CoreBridge 接入和新鲜验证证据；未发现 Forbidden Touches、验证失败、mock-only 闭环或工程质量阻塞。
+
+VERIFY_RESULT: PASS

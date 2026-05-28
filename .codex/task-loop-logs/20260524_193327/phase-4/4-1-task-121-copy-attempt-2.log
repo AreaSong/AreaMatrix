@@ -1,0 +1,67 @@
+**一、执行结论**
+
+已完成。`4-1/task-121` repair retry 已修复上次验收失败的本 task 范围问题，并通过当前 manifest 指定验证：`./dev check task 4-1/task-121`。
+
+**二、执行范围**
+
+单任务：`4-1/task-121`，只处理 `S2-14 batch-rename` + `C2-10 batch-rename-preview`。
+
+主要修改落在允许路径内：
+
+- macOS 实现：`apps/macos/AreaMatrix/**`
+- macOS 测试：`apps/macos/AreaMatrixTests/**`
+
+涉及文件包括 CoreBridge 批量重命名接入、S2-14 sheet/入口 wiring、批量重命名状态模型，以及 `RenameFilePageFeatureTests.swift` / `ImportBatchPrecheckTestSupport.swift` 中的 C2-10 行为测试支持。
+
+当前工作树仍有 `.codex/`、`tasks/prompts/_shared/progress.json`、`scripts/question.md` 等 task-loop/外部状态文件改动，我没有把它们纳入本次代码修复范围。
+
+**三、完成情况**
+
+核对清单结果：
+
+- 只处理 S2-14 中 C2-10：通过；已移除 S2-15 command palette 批量重命名入口残留。
+- 已读取页面规格、control map、Core API、C2-10 capability spec：通过。
+- 只接入 C2-10 的 CoreBridge / 状态 / 错误映射：通过。
+- 未顺手实现相邻页面或同页 C2-07：通过；Undo/toast 留给 `4-1/task-122`。
+
+完成标准结果：
+
+- 用户可见的批量重命名预览 / Apply 可触发：通过。
+- 生产路径未使用 mock / fixture / 静态状态伪造 Core：通过；测试中使用 recording renamer 仅作单测替身。
+- 未触碰 control map 外能力：通过。
+- Forbidden Touches：未触碰 `core/src/**`。
+
+**四、工程质量**
+
+已修复上次点名问题：
+
+- 去掉 S2-15 command palette 越界 wiring。
+- 增加 S2-14/C2-10 targeted tests，覆盖四种规则 snapshot、Apply 禁用条件、preview token 绑定、错误映射。
+- 拆分测试支持，最终触碰的 app/test 文件均不超过 500 行；长行扫描无输出。
+- 修复 Swift 编译问题：共享 `makeFileEntrySnapshots` 的访问级别，并移除不存在的 `.batchRenamed` banner 调用，避免触碰已超限的 `MainFileListState.swift`。
+
+**五、验证情况**
+
+已运行并通过：
+
+- `./dev check task 4-1/task-121`
+  - `prompt doctor`: OK
+  - `git diff --check`: OK
+  - macOS `xcodebuild ... build CODE_SIGNING_ALLOWED=NO`: `BUILD SUCCEEDED`
+
+辅助检查：
+
+- `git diff --name-only -- core/src`: 无输出。
+- S2-15 batch rename route 关键字扫描：无匹配。
+- 修改文件行数检查：触碰文件均 `<= 500` 行。
+
+未运行：
+
+- `./dev test macos`：未运行，原因是本 task manifest 的验证上限是 `./dev check task 4-1/task-121`。
+
+**六、风险与后续**
+
+剩余风险：未做真实 macOS 窗口交互 smoke；本次证据来自代码、targeted test 文件和 manifest build gate。C2-07 Undo/toast 不是本 task 范围。
+
+建议下一个任务：`4-1/task-122`，继续补 S2-14 的 C2-07 undo/action-log 闭环。  
+

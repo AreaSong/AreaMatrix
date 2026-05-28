@@ -1,0 +1,31 @@
+一、执行结论：已完成。
+
+二、执行范围：单任务 `4-1/task-133`。本次只修改了 `Expected New Paths` 内的 macOS app/test 文件：
+- [CoreICloudConflictListing.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreICloudConflictListing.swift:196)
+- [ICloudConflictMinimalResolution.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/ICloudConflictMinimalResolution.swift:172)
+- [MainFileActionRoutingActions.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileActionRoutingActions.swift:75)
+- [MainFileActionRoutingSheet.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainFileActionRoutingSheet.swift:16)
+- [MainRepositoryContentActionRouting.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentActionRouting.swift:29)
+- `apps/macos/AreaMatrixTests/ICloudConflictListPageFeatureTests.swift`
+- `apps/macos/AreaMatrixTests/ICloudConflictMinimalPageIntegrationVerifyTests.swift`
+- `apps/macos/AreaMatrixTests/ICloudConflictMinimalValidationTests.swift`
+
+三、完成情况：
+- page-feature task 闭环：已补齐 S2-20 的 C2-16 preview + C1-25/list/resolve 入口串联证据。
+- 页面状态、入口、退出、错误态、CoreBridge 调用：已串到真实 `CoreBridge`，不再走生产 blocked resolver 或 `nil` reviewer fallback。
+- mock/fixture/硬编码状态：生产路径移除了旧的 `missingCoreResolutionEndpoint` blocked 实现；测试里的 blocked resolver 改为显式测试替身。
+- control map 外功能：未新增。
+- Forbidden Touches：未触碰 `core/src/**`，也未修改 `core/area_matrix.udl`。
+
+四、工程质量：
+代码结构保持在现有协议和 routing 模型内，没有新增依赖或额外抽象。错误路径继续通过 `CoreErrorMappingSnapshot` 回传，preview resolve 的成功/失败都会回到 `MainFileListModel` 状态机。没有新增文档或 Rust public API，因此无 rustdoc / UDL 同步需求。本次没有执行真实用户文件删除、移动、覆盖或 iCloud 下载操作。
+
+五、验证情况：
+- `./dev check task 4-1/task-133`：通过。包含 `prompt doctor: OK`、`git diff --check`、macOS `xcodebuild ... build CODE_SIGNING_ALLOWED=NO`，最终 `BUILD SUCCEEDED`。
+- 额外构建：`xcodebuild ... build` 通过。
+- 额外测试：直接 `xcodebuild test` 因本地 `testmanagerd.control` sandbox 限制无法连接 test runner；随后 `build-for-testing` 通过，`xcrun xctest` 跑过 `ICloudConflictListPageFeatureTests`、`ICloudConflictMinimalValidationTests`、`ICloudConflictMinimalIntegrationTests`，均 0 failures。
+- `git diff --check`：通过。
+
+六、风险与后续：
+剩余风险是没有在真实 GUI 中对真实用户 iCloud 文件执行 destructive resolution；这是按文件安全边界刻意避免的。回滚方式是还原上述 8 个 app/test 文件即可，未涉及 Core、DB schema、migration 或真实用户文件。建议下一步进入 `4-1/task-133` 的 verify-ready 只读验收，通过后再推进 task-loop 的下一个 pending label。
+

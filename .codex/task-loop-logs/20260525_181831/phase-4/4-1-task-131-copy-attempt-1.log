@@ -1,0 +1,55 @@
+一、执行结论
+
+已完成 `4-1/task-131`。
+
+二、执行范围
+
+单任务：只实现 `S2-20 + C2-16 icloud-conflict-visual` 的 macOS UI/CoreBridge 接入。
+
+修改文件清单：
+- `apps/macos/AreaMatrix/**`
+- `apps/macos/AreaMatrixTests/**`
+
+未触碰 `core/src/**`、`core/area_matrix.udl`、`apps/macos/AreaMatrix.xcodeproj`。`tasks/prompts/_shared/progress.json` 和 `.codex/task-loop-runs/20260525_181831/` 是接手前已有 task-loop 脏状态/运行产物，我未把它们作为本次实现范围处理。
+
+三、完成情况
+
+核对清单：
+- 只处理 S2-20 中 C2-16：通过。
+- 读取并对齐页面规格、control map、Core API、C2-16 spec：通过。
+- 只接入 C2-16 的 `preview_conflict_versions` / `resolve_icloud_conflict`：通过。
+- 未实现同页 C1-25 或相邻页面能力：通过。
+
+完成标准：
+- S2-20 可通过 conflict id 加载真实 preview，并提交 Keep both/Keep left/right 到 CoreBridge：通过。
+- 无 mock/fixture 冒充生产闭环；测试 double 仅用于 XCTest：通过。
+- 未触碰 control map 之外 Core 能力：通过。
+- Forbidden Touches：未触碰 `core/src/**`。
+
+四、工程质量
+
+实现把 Core preview/resolve 快照类型、错误映射、preview 状态、resolution 提交流程拆在现有 Bridge/Model/View 层内；旧详情入口没有可靠 `conflict_id`，保留 `conflictReviewer: nil` 的兼容阻断路径，避免猜 ID 调用可能移动文件的 Core resolution。
+
+文件安全边界：Keep both 不移动文件；Keep left/right 依赖 Core `resolve_icloud_conflict` 和 Trash 可用性，UI 需要二次确认，失败保持 unresolved。未新增依赖，未做 SwiftUI 直接文件 IO。
+
+五、验证情况
+
+已运行并通过：
+
+```bash
+./dev check task 4-1/task-131
+```
+
+结果包含：
+- `prompt doctor`: OK
+- `git diff --check`: OK
+- macOS `xcodebuild ... build CODE_SIGNING_ALLOWED=NO`: `BUILD SUCCEEDED`
+
+期间 Xcode 输出 CoreSimulator/FSEvents 相关环境警告，但命令最终退出码为 0。
+
+六、风险与后续
+
+剩余风险：本 task 按 manifest 上限只跑 macOS build gate，没有升级到全量 XCTest 或 `./dev check all`。S2-20 同页 C1-25 仍由 `4-1/task-132` 和页面 integration verify 覆盖。
+
+建议下一个任务：继续执行 `4-1/task-132`，补齐 S2-20 的 C1-25 同页列表/入口能力，然后由 `4-1/task-133` 做整页 integration verify。
+

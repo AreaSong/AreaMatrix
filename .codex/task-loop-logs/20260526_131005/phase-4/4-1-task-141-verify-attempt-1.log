@@ -1,0 +1,65 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-1/task-141`
+- 对应文件路径：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-141-s2-23-c2-05-tag-crud.md`
+- 实际核验范围：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`core/area_matrix.udl`
+- Forbidden Touches：`core/src/**`
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 S2-23 页面中的 C2-05 功能点
+- 结果：通过
+- 证据：S2-23 control map 声明 `S2-23` 绑定 `C2-19, C2-05`；本 task 依赖 `4-1/task-140`，当前 C2-05 证据集中在手动标签 fallback 和真实 tag CRUD。`Add tag manually` 从建议 panel 返回标签添加入口，`addSelectedFileTag/removeSelectedFileTag/loadTags` 通过 `tagStore.addTag/removeTag/listTags` 调用 CoreBridge。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/DetailTagSection.swift:69`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainDetailTagActions.swift:14`
+
+- 项目：读取并对齐页面规格、control map、Core API、C2-05 spec
+- 结果：通过
+- 证据：Exact Docs 均存在且已读取；UDL 暴露 `add_tag/remove_tag/list_tags`，Swift `CoreBridge` 对应调用 UniFFI 生成函数并转换 `TagSet`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:192`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreTagCRUD.swift:167`
+
+- 项目：只接入 C2-05 对应 CoreBridge / 状态 / 错误映射
+- 结果：通过
+- 证据：S2-23 手动 fallback 测试确认空建议/生成失败时走 `listTags`，且不调用 `applyTagSuggestions`；错误映射使用 `mapCoreError`，失败保留上一状态。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/DetailTagPageFeatureTests.swift:317`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainDetailTagActions.swift:237`
+
+- 项目：不顺手实现相邻页面、相邻平台或 control map 外能力
+- 结果：通过
+- 证据：`git diff --name-only -- apps/macos/AreaMatrix apps/macos/AreaMatrixTests core/area_matrix.udl core/src` 无输出；`core/src/**` 未被触碰。现存 C2-19 代码属于同页依赖 task 范围，不作为本 task 越界。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-4.md:4082`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。CoreBridge、模型动作、SwiftUI 展示分层清楚，视图未直接调用 UniFFI。
+- 注释 / rustdoc / 文档同步：通过。本 task 未改 Rust public API；UDL/Core API 与 C2-05 文档一致。
+- 错误处理与边界处理：通过。Swift 路径使用 `do/try/catch` 与 `mapCoreError`，无 `try!`、强制解包、`print()` 证据。
+- 测试与验证覆盖：通过。存在 S2-23 C2-05 fallback 测试；本轮执行了 manifest 指定验证。
+- 占位、硬编码、mock-only、一次性实现检查：通过。生产路径通过 `CoreBridge` 调用真实 UniFFI；fixture 仅存在于测试。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-141`
+- 通过：`prompt doctor` 通过，`git diff --check` 通过，`xcodebuild -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' build CODE_SIGNING_ALLOWED=NO` 最终 `BUILD SUCCEEDED`
+- 失败：无
+- 缺失：未运行 `./dev test macos` 和 UI smoke；原因是本 task manifest 与 task-scoped gate 的验证上限为 `./dev check task 4-1/task-141`，该命令对 page-feature task 执行 macOS build gate。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。当前仅有 `tasks/prompts/_shared/progress.json` 与 `.codex/task-loop-runs/20260526_131005/summary.json` 的 runner 收口相关脏改动；按本验收时序规则，不作为 task-141 功能不通过依据。
+
+VERIFY_RESULT: PASS

@@ -186,6 +186,81 @@ final class ImportResultCopyRetryTests: XCTestCase {
     }
 
     @MainActor
+    func testS223C219ImportResultQueuesTagSuggestionReviewForImportedFile() {
+        let opening = RepositoryOpeningResult.s117Fixture(repoPath: "/tmp/repo")
+        let model = OnboardingModel(
+            settingsReader: S117StaticSettingsReader(repoPath: nil),
+            accessibilityAnnouncer: S117RecordingAccessibilityAnnouncer(),
+            helpOpener: S117NoopWelcomeHelpOpener()
+        )
+
+        model.route = .mainList(opening)
+        model.showImportEntryResults(Self.importedProgress)
+        guard case let .importResult(result) = model.route,
+              let importedItem = result.items.first(where: { $0.canReviewTagSuggestions })
+        else {
+            return XCTFail("Expected imported result item with S2-23 review action")
+        }
+
+        model.reviewImportResultTagSuggestions(itemID: importedItem.id)
+
+        XCTAssertEqual(model.pendingTagSuggestionFocus?.fileID, 117)
+        XCTAssertEqual(model.pendingTagSuggestionFocus?.source, .importResult)
+        guard case let .mainList(mainOpening) = model.route else {
+            return XCTFail("Expected main list route for S2-23 tag suggestions")
+        }
+        XCTAssertTrue(mainOpening.currentCategoryFiles.contains { $0.id == 117 && $0.path == "docs/imported.pdf" })
+    }
+
+    @MainActor
+    func testS223C219PartialApplyFailureCanRetryFailedSuggestionOnly() async {
+        let detail = FileEntrySnapshot.detailMetaFixture(id: 231, currentName: "invoice_2026.pdf")
+        let report = TagSuggestionReportSnapshot.s223Fixture(fileID: detail.id)
+        let partialFailure = TagSuggestionApplyReportSnapshot.s223PartialFailure(fileID: detail.id)
+        let retrySuccess = TagSuggestionApplyReportSnapshot.s223Applied(
+            fileID: detail.id,
+            suggestionID: "s223-tax",
+            slug: "tax-review",
+            displayName: "Tax Review"
+        )
+        let tagStore = DetailTagRecordingStore(
+            suggestionResults: [.success(report)],
+            applySuggestionResults: [.success(partialFailure), .success(retrySuccess)]
+        )
+        let model = MainFileListModel.s223Fixture(detail: detail, tagStore: tagStore)
+
+        await model.selectFiles([detail.id])
+        await model.loadSelectedFileTagSuggestions()
+        model.toggleSelectedFileTagSuggestion("s223-tax")
+        model.startEditingSelectedFileTagSuggestions()
+        model.updateSelectedFileTagSuggestionSlug(suggestionID: "s223-tax", slug: "tax-review")
+        _ = await model.applyEditedSelectedFileTagSuggestions()
+
+        XCTAssertEqual(model.detailTagSuggestionState.appliedReport?.failedCount, 1)
+        XCTAssertEqual(model.detailTagSuggestionState.editSession?.drafts.map(\.status.label), ["Applied", "Failed"])
+        XCTAssertEqual(DetailTagSuggestionAction.retryFailedItems(in: model.detailTagSuggestionState), [
+            ApplyTagSuggestionItemSnapshot(
+                suggestionID: "s223-tax",
+                slug: "tax-review",
+                displayName: "Tax"
+            )
+        ])
+
+        _ = await model.retryFailedSelectedFileTagSuggestions()
+        let applyRequests = await tagStore.applySuggestionRequests()
+
+        XCTAssertEqual(applyRequests.last?.request.suggestions, [
+            ApplyTagSuggestionItemSnapshot(
+                suggestionID: "s223-tax",
+                slug: "tax-review",
+                displayName: "Tax"
+            )
+        ])
+        XCTAssertEqual(model.detailTagSuggestionState.appliedReport?.failedCount, 0)
+        XCTAssertEqual(model.detailTagEditorState.tagSet?.fileTags.map(\.value), ["tax-review"])
+    }
+
+    @MainActor
     func testS121ExportDetailsUsesRedactedPathsAndPrivacyState() {
         let opening = RepositoryOpeningResult.s117Fixture(repoPath: "/tmp/repo")
         let exporter = S121RecordingImportResultExporter()
@@ -226,6 +301,7 @@ private extension ImportResultCopyRetryTests {
         currentPath: "docs/imported.pdf",
         items: [
             ImportBatchProgressSnapshot.Item(
+                fileID: 117,
                 sourcePath: "/tmp/imported.pdf",
                 targetPath: "docs/imported.pdf",
                 phase: .done,

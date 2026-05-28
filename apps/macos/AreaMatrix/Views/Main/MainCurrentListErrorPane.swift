@@ -194,12 +194,25 @@ struct QueryErrorRouteView: View {
     }
 
     private func applySuggestion(_ suggestion: String) {
-        guard let nextQuery = QuerySuggestionApplier.applying(suggestion, diagnostic: diagnostic, query: request.query) else {
+        guard let nextQuery = QuerySuggestionApplier.applying(suggestion, diagnostic: diagnostic, query: request.query)
+        else {
             applyFailure = "Could not apply suggestion"
             return
         }
         applyFailure = nil
         onApplySuggestion(nextQuery)
+    }
+}
+
+extension MainRepositoryContentView {
+    func currentListErrorPane(_ error: CoreErrorMappingSnapshot) -> some View {
+        MainCurrentListErrorPane(
+            error: error,
+            state: state,
+            fileListModel: fileListModel,
+            onRetryCurrentList: onRetryCurrentList,
+            onCollectDiagnostics: onCollectDiagnostics
+        )
     }
 }
 
@@ -261,7 +274,7 @@ enum QueryTokenHighlighter {
               let lower = query.index(query.startIndex, offsetBy: Int(start), limitedBy: query.endIndex),
               let upper = query.index(query.startIndex, offsetBy: Int(end), limitedBy: query.endIndex)
         else { return nil }
-        return highlighting(range: lower..<upper, in: query)
+        return highlighting(range: lower ..< upper, in: query)
     }
 
     private static func highlighting(range: Range<String.Index>, in query: String) -> String {
@@ -294,17 +307,19 @@ enum QuerySuggestionApplier {
         return value.trimmingCharacters(in: CharacterSet(charactersIn: "`\" "))
     }
 
-    private static func replacingRange(start: Int64, end: Int64, in query: String, with replacement: String) -> String? {
+    private static func replacingRange(start: Int64, end: Int64, in query: String,
+                                       with replacement: String) -> String? {
         guard start >= 0, end >= start,
               let lower = query.index(query.startIndex, offsetBy: Int(start), limitedBy: query.endIndex),
               let upper = query.index(query.startIndex, offsetBy: Int(end), limitedBy: query.endIndex)
         else { return nil }
         var updated = query
-        updated.replaceSubrange(lower..<upper, with: replacement)
+        updated.replaceSubrange(lower ..< upper, with: replacement)
         return updated
     }
 
-    private static func replacingFirstOccurrence(of token: String, in query: String, with replacement: String) -> String? {
+    private static func replacingFirstOccurrence(of token: String, in query: String,
+                                                 with replacement: String) -> String? {
         guard let range = query.range(of: token) else { return nil }
         var updated = query
         updated.replaceSubrange(range, with: replacement)

@@ -16,8 +16,8 @@ struct BatchAddTagsTrigger: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Button("Add tag...") { isPresented = true }
-            .help(BatchAddTagsEntryPolicy.openHelp(disabledReason: disabledReason))
-            .accessibilityIdentifier("S2-09-batch-add-tags-open")
+                .help(BatchAddTagsEntryPolicy.openHelp(disabledReason: disabledReason))
+                .accessibilityIdentifier("S2-09-batch-add-tags-open")
         }
         .sheet(isPresented: $isPresented) {
             BatchAddTagsSheet(
@@ -37,16 +37,22 @@ struct BatchAddTagsTrigger: View {
 
 struct BatchTagUndoToastView: View {
     let state: BatchTagUndoState
+    let redoState: RedoActionState
+    let redoSourceUndoAction: UndoActionRecordSnapshot?
     let actionLogRefreshFailure: CoreErrorMappingSnapshot?
     let onUndo: (UndoActionRecordSnapshot) -> Void
+    let onRedo: (RedoActionRecordSnapshot) -> Void
     let onOpenHistory: (UndoToastHistoryRequest.Source) -> Void
     let onDismiss: () -> Void
 
     var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 8) {
-            toastLabel
-            Spacer()
-            toastActions
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                toastLabel
+                Spacer()
+                toastActions
+            }
+            RedoFeedbackRegion(state: redoState, sourceUndoAction: redoSourceUndoAction, onRedo: onRedo)
         }
         .font(.caption)
         .padding(8)
@@ -88,7 +94,7 @@ struct BatchTagUndoToastView: View {
 
     @ViewBuilder
     private var toastActions: some View {
-        if case .ready(let action) = state {
+        if case let .ready(action) = state {
             Button("Undo") { onUndo(action) }
                 .accessibilityIdentifier("S2-10-C2-07-undo-action")
         } else if case .disabled = state {
@@ -209,14 +215,14 @@ struct BatchAddTagsSheet: View {
 
     @MainActor
     private func apply() async {
-        guard BatchTagValidation.canApply(
+        guard BatchTagValidation.canApply(BatchTagApplyEligibility(
             isApplying: isApplying,
             disabledReason: disabledReason,
             input: draft.input,
             pendingTags: draft.pendingTags,
             fieldError: draft.fieldError,
             selectedCount: selectedCount
-        ) else { return }
+        )) else { return }
         switch BatchTagValidation.normalizedTagsForApply(draft.pendingTags) {
         case let .failure(message):
             draft.fieldError = message
@@ -329,7 +335,9 @@ private struct BatchAddTagsSheetContent: View {
     }
 
     private func candidateButton(_ tag: TagRecordSnapshot) -> some View {
-        Button(action: { onAddCandidateTag(tag) }) {
+        Button {
+            onAddCandidateTag(tag)
+        } label: {
             HStack {
                 Text(tag.displayName)
                 Spacer()
@@ -442,7 +450,11 @@ private struct BatchAddTagsSheetContent: View {
     }
 
     private var candidateTags: [TagRecordSnapshot] {
-        BatchTagValidation.visibleCandidates(input: draft.input, catalog: catalogState.tagSet, pendingTags: draft.pendingTags)
+        BatchTagValidation.visibleCandidates(
+            input: draft.input,
+            catalog: catalogState.tagSet,
+            pendingTags: draft.pendingTags
+        )
     }
 
     private var pendingChips: [BatchPendingTagChip] {
@@ -450,11 +462,14 @@ private struct BatchAddTagsSheetContent: View {
     }
 
     private var canApply: Bool {
-        BatchTagValidation.canApply(
-            isApplying: isApplying, disabledReason: disabledReason, input: draft.input,
-            pendingTags: draft.pendingTags, fieldError: draft.fieldError,
+        BatchTagValidation.canApply(BatchTagApplyEligibility(
+            isApplying: isApplying,
+            disabledReason: disabledReason,
+            input: draft.input,
+            pendingTags: draft.pendingTags,
+            fieldError: draft.fieldError,
             selectedCount: selectedCount
-        )
+        ))
     }
 
     private func candidateStatusText(_ tag: TagRecordSnapshot) -> String {

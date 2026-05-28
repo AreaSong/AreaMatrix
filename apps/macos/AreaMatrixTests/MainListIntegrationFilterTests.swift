@@ -1,6 +1,7 @@
 @testable import AreaMatrix
 import XCTest
 
+// swiftlint:disable file_length
 final class MainListIntegrationFilterTests: XCTestCase {
     func testCurrentListFilterMatchesLoadedFileNamesOnly() {
         let files = [
@@ -299,6 +300,13 @@ struct MainListSearchRequestRecord: Equatable {
     var request: SearchQueryRequestSnapshot
 }
 
+struct MainListSmartListRequestRecord: Equatable {
+    var repoPath: String
+    var savedSearchID: Int64
+    var limit: Int64
+    var offset: Int64
+}
+
 actor MainListRecordingSearchQuerying: CoreSearchQuerying {
     enum Result {
         case success(SearchResultPageSnapshot)
@@ -307,6 +315,7 @@ actor MainListRecordingSearchQuerying: CoreSearchQuerying {
 
     private var results: [Result]
     private var requests: [MainListSearchRequestRecord] = []
+    private var smartListRequests: [MainListSmartListRequestRecord] = []
 
     init(results: [Result]) {
         self.results = results
@@ -328,6 +337,34 @@ actor MainListRecordingSearchQuerying: CoreSearchQuerying {
 
     func recordedRequests() -> [MainListSearchRequestRecord] {
         requests
+    }
+
+    func runSmartList(
+        repoPath: String,
+        savedSearchID: Int64,
+        limit: Int64,
+        offset: Int64
+    ) async throws -> SearchResultPageSnapshot {
+        smartListRequests.append(MainListSmartListRequestRecord(
+            repoPath: repoPath,
+            savedSearchID: savedSearchID,
+            limit: limit,
+            offset: offset
+        ))
+        guard !results.isEmpty else {
+            return .mainSearchFixture(query: "", files: [])
+        }
+
+        switch results.removeFirst() {
+        case let .success(page):
+            return page
+        case let .failure(error):
+            throw error
+        }
+    }
+
+    func recordedSmartListRequests() -> [MainListSmartListRequestRecord] {
+        smartListRequests
     }
 }
 

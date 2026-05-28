@@ -131,6 +131,7 @@ enum ICloudConflictResolutionCapability: Equatable {
 
 struct ICloudConflictResolutionRequest: Equatable {
     var repoPath: String
+    var conflictID: String
     var fileID: Int64
     var strategy: ICloudConflictResolutionStrategy
     var originalPath: String?
@@ -139,8 +140,30 @@ struct ICloudConflictResolutionRequest: Equatable {
 
 struct ICloudConflictResolutionResult: Equatable {
     var focusFileID: Int64?
+    var conflictID: String?
+    var report: ICloudConflictResolveReportSnapshot?
+    var status: ICloudConflictStatusSnapshot?
+    var keptPaths: [String] = []
+    var trashedPaths: [String] = []
+    var undoToken: String?
+    var changeLogAction: String?
     var didClearConflictState: Bool
     var didWriteChangeLog: Bool
+}
+
+extension ICloudConflictResolutionResult {
+    init(report: ICloudConflictResolveReportSnapshot) {
+        focusFileID = nil
+        conflictID = report.conflictID
+        self.report = report
+        status = report.status
+        keptPaths = report.keptPaths
+        trashedPaths = report.trashedPaths
+        undoToken = report.undoToken
+        changeLogAction = report.changeLogAction
+        didClearConflictState = report.status == .resolved
+        didWriteChangeLog = !report.changeLogAction.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
 }
 
 protocol ICloudConflictResolving: Sendable {
@@ -148,15 +171,4 @@ protocol ICloudConflictResolving: Sendable {
 
     func resolveICloudConflict(_ request: ICloudConflictResolutionRequest) async throws
         -> ICloudConflictResolutionResult
-}
-
-extension CoreBridge: ICloudConflictResolving {
-    nonisolated var iCloudConflictResolutionCapability: ICloudConflictResolutionCapability {
-        .blocked(.missingCoreResolutionEndpoint)
-    }
-
-    func resolveICloudConflict(_: ICloudConflictResolutionRequest) async throws
-        -> ICloudConflictResolutionResult {
-        throw ICloudConflictResolutionBlocker.missingCoreResolutionEndpoint.coreError
-    }
 }

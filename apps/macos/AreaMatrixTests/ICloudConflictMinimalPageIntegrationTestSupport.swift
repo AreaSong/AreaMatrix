@@ -140,6 +140,56 @@ actor S125RecordingICloudConflictResolver: ICloudConflictResolving {
     }
 }
 
+actor S220RecordingConflictReviewer: CoreICloudConflictReviewing {
+    struct PreviewRequest: Equatable {
+        var repoPath: String
+        var conflictID: String
+    }
+
+    struct ResolveRequest: Equatable {
+        var repoPath: String
+        var conflictID: String
+        var strategy: ICloudConflictResolutionStrategy
+    }
+
+    private let previewResult: Result<ICloudConflictPreviewSnapshot, Error>
+    private let resolveResult: Result<ICloudConflictResolveReportSnapshot, Error>
+    private var previewRequests: [PreviewRequest] = []
+    private var resolveRequests: [ResolveRequest] = []
+
+    init(
+        previewResult: Result<ICloudConflictPreviewSnapshot, Error>,
+        resolveResult: Result<ICloudConflictResolveReportSnapshot, Error>
+    ) {
+        self.previewResult = previewResult
+        self.resolveResult = resolveResult
+    }
+
+    func previewICloudConflict(repoPath: String, conflictID: String) async throws
+        -> ICloudConflictPreviewSnapshot {
+        previewRequests.append(PreviewRequest(repoPath: repoPath, conflictID: conflictID))
+        return try previewResult.get()
+    }
+
+    func resolvePreviewedICloudConflict(_ request: ICloudConflictResolutionRequest) async throws
+        -> ICloudConflictResolutionResult {
+        resolveRequests.append(ResolveRequest(
+            repoPath: request.repoPath,
+            conflictID: request.conflictID,
+            strategy: request.strategy
+        ))
+        return try ICloudConflictResolutionResult(report: resolveResult.get())
+    }
+
+    func recordedPreviewRequests() -> [PreviewRequest] {
+        previewRequests
+    }
+
+    func recordedResolveRequests() -> [ResolveRequest] {
+        resolveRequests
+    }
+}
+
 actor S125RecordingPathValidator: CoreRepositoryPathValidating {
     private let result: Result<RepoPathValidationSnapshot, Error>
     private var repoPaths: [String] = []
@@ -303,6 +353,87 @@ extension CoreErrorMappingSnapshot {
             suggestedAction: "Refresh the source page or download the iCloud item in Finder, then retry.",
             recoverability: .userActionRequired,
             rawContext: rawContext
+        )
+    }
+}
+
+extension ICloudConflictPreviewSnapshot {
+    // swiftlint:disable:next function_body_length
+    static func s220Preview(
+        conflictID: String,
+        metadataComplete: Bool = true,
+        trashAvailable: Bool = true
+    ) -> ICloudConflictPreviewSnapshot {
+        ICloudConflictPreviewSnapshot(
+            conflictID: conflictID,
+            versions: [
+                ICloudConflictVersionMetadataSnapshot(
+                    versionID: "original",
+                    role: .original,
+                    path: "docs/report.pdf",
+                    modifiedAt: 1_775_020_800,
+                    sizeBytes: 512,
+                    hashSha256: "aaaaaaaaaaaabbbb",
+                    previewSummary: "Original preview",
+                    previewStatus: .available
+                ),
+                ICloudConflictVersionMetadataSnapshot(
+                    versionID: "conflicted-copy",
+                    role: .conflictedCopy,
+                    path: "docs/report (copy).pdf",
+                    modifiedAt: 1_775_020_860,
+                    sizeBytes: 768,
+                    hashSha256: "bbbbbbbbbbbbaaaa",
+                    previewSummary: "Conflicted preview",
+                    previewStatus: .available
+                )
+            ],
+            defaultResolution: .keepBoth,
+            resolutionOptions: [
+                ICloudConflictResolutionOptionSnapshot(
+                    resolution: .keepBoth,
+                    destructive: false,
+                    requiresTrash: false,
+                    enabled: true,
+                    disabledReason: nil
+                ),
+                ICloudConflictResolutionOptionSnapshot(
+                    resolution: .keepOriginalOnly,
+                    destructive: true,
+                    requiresTrash: true,
+                    enabled: metadataComplete && trashAvailable,
+                    disabledReason: metadataComplete && trashAvailable ? nil : "Trash unavailable"
+                ),
+                ICloudConflictResolutionOptionSnapshot(
+                    resolution: .keepConflictedCopyOnly,
+                    destructive: true,
+                    requiresTrash: true,
+                    enabled: metadataComplete && trashAvailable,
+                    disabledReason: metadataComplete && trashAvailable ? nil : "Trash unavailable"
+                )
+            ],
+            metadataComplete: metadataComplete,
+            trashAvailable: trashAvailable,
+            canKeepBoth: true,
+            canResolveDestructive: metadataComplete && trashAvailable,
+            blockedReason: metadataComplete && trashAvailable ? nil : "Trash unavailable"
+        )
+    }
+}
+
+extension ICloudConflictResolveReportSnapshot {
+    static func s220ResolvedReport(conflictID: String) -> ICloudConflictResolveReportSnapshot {
+        ICloudConflictResolveReportSnapshot(
+            conflictID: conflictID,
+            resolution: .keepBoth,
+            status: .resolved,
+            keptPaths: [
+                "docs/report.pdf",
+                "docs/report (copy).pdf"
+            ],
+            trashedPaths: [],
+            undoToken: nil,
+            changeLogAction: "external_modified"
         )
     }
 }

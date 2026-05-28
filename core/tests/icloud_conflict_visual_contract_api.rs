@@ -29,6 +29,17 @@ fn assert_contains(haystack: &str, needle: &str) {
     );
 }
 
+fn text_between<'a>(haystack: &'a str, start: &str, end: &str) -> &'a str {
+    let start_index = haystack
+        .find(start)
+        .unwrap_or_else(|| panic!("missing start marker `{start}`"));
+    let tail = &haystack[start_index..];
+    let end_index = tail
+        .find(end)
+        .unwrap_or_else(|| panic!("missing end marker `{end}`"));
+    &tail[..end_index]
+}
+
 #[test]
 fn icloud_conflict_visual_contract_exposes_signatures_inputs_outputs_and_errors() {
     fn assert_preview(_: fn(String, String) -> CoreResult<ICloudConflictPreviewReport>) {}
@@ -258,6 +269,12 @@ fn icloud_conflict_visual_contract_matches_consuming_page_state_without_adjacent
         assert_contains(DOMAIN_RS, fragment);
     }
 
+    let c2_16_api_contract = text_between(
+        API_RS,
+        "/// Previews C2-16 iCloud conflict versions without resolving the conflict.",
+        "/// Previews C2-17 import conflict batch decisions without mutating staging or files.",
+    );
+
     for forbidden in [
         "import conflict batch",
         "AI provider",
@@ -265,7 +282,7 @@ fn icloud_conflict_visual_contract_matches_consuming_page_state_without_adjacent
         "Cloud SDK",
     ] {
         assert!(
-            !API_RS.contains(forbidden),
+            !c2_16_api_contract.contains(forbidden),
             "C2-16 API contract should not implement adjacent scope: {forbidden}"
         );
     }

@@ -302,6 +302,11 @@ final class ImportBatchPreviewModel: ObservableObject {
         let currentGeneration = generation
         self.request = request
 
+        if let route = request.importConflictBatchRoute {
+            loadImportConflictBatchRoute(request: request, route: route)
+            return
+        }
+
         guard case .multipleItems = request.kind, request.urls.count > 1 else {
             rows = []
             status = .unsupported("此 sheet 只处理批量文件导入")
@@ -344,6 +349,24 @@ final class ImportBatchPreviewModel: ObservableObject {
             total: rows.count,
             failed: failedPreviewCount
         )
+    }
+
+    private func loadImportConflictBatchRoute(
+        request: ImportEntryRequest,
+        route: ImportConflictBatchRoute
+    ) {
+        selectedDestination = request.initialBatchDestination
+        let rowStatus = ImportBatchPreviewRowStatus.nameConflict(
+            existingPath: "Core import session \(route.importSessionID)",
+            reasonLabel: "Waiting for Core conflict batch preview"
+        )
+        rows = route.conflictIDs.map {
+            ImportBatchPreviewRow(
+                originalName: $0, sourcePath: $0, sizeBytes: nil, predictedCategory: nil,
+                suggestedName: $0, status: rowStatus
+            )
+        }
+        status = .loaded(successful: rows.count, total: rows.count, failed: 0)
     }
 
     func retryPreview() async {
@@ -461,12 +484,10 @@ private extension ImportBatchPreviewRow {
 private extension ImportEntrySource {
     var batchSourceLabel: String {
         switch self {
-        case .filePicker:
-            "Finder 选择"
-        case .dropZone:
-            "Finder 拖入"
-        case .dockOpenFile:
-            "Dock 打开"
+        case .filePicker: "Finder 选择"
+        case .dropZone: "Finder 拖入"
+        case .dockOpenFile: "Dock 打开"
+        case .importConflictBatch: "Import conflict batch"
         }
     }
 }

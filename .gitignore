@@ -40,8 +40,9 @@ AreaMatrix-dev/
 .idea/
 .vscode/
 
-# AreaMatrix task-loop progress and logs are tracked as resumable workflow evidence.
-# Only volatile runner coordination files stay local.
+# AreaMatrix task-loop progress and run summaries are tracked as resumable workflow evidence.
+# Raw live logs stay local by default; checkpoint force-adds the final PASS copy/verify logs.
+.codex/task-loop-logs/
 .codex/task-loop-lock/
 .codex/task-loop-control/
 .codex/task-loop-tmp/

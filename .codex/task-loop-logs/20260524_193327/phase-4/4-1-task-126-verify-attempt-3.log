@@ -1,0 +1,67 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-1/task-126`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-126-s2-15-page-integration-verify.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：逐项验收本页所有 page-feature task 是否完成。
+- 结果：通过
+- 证据：manifest 明确 `4-1/task-126` 依赖 `4-1/task-124`、`4-1/task-125`，control map 声明 S2-15 仅覆盖 `C2-04, C2-11`；实际代码同时接入 `runSmartList` 和 `listCommandTargets`。
+- 涉及文件：`tasks/prompts/_shared/manifests/phase-4.md:3658`、`docs/architecture/stage-2-control-map.md:23`、`apps/macos/AreaMatrix/Bridge/CoreBridge.swift:33`、`apps/macos/AreaMatrix/Models/MainListSystemActions.swift:411`
+
+- 项目：检查页面状态、入口、退出、错误态和 CoreBridge 调用是否能串成完整页面闭环。
+- 结果：通过
+- 证据：`Cmd+K` 菜单入口和通知 relay 已接入；页面内 `Cmd+K` toggle、关闭、焦点恢复、错误 fallback、命令索引加载、Smart List 执行均有代码和测试覆盖。
+- 涉及文件：`apps/macos/AreaMatrix/App/AreaMatrixApp.swift:13`、`apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift:164`、`apps/macos/AreaMatrix/Views/Main/MainRepositoryMultiSelectionActions.swift:157`、`apps/macos/AreaMatrix/Models/MainFileActionRoutingActions.swift:403`、`apps/macos/AreaMatrixTests/MainEmptyImportEntryTests.swift:287`
+
+- 项目：移除本页无法通过最终验收的 mock、fixture 或硬编码状态。
+- 结果：通过
+- 证据：生产路径通过 `CoreBridge` 调 `list_command_targets` / `run_smart_list`；测试 fixture 仅在 `AreaMatrixTests` 中使用。无 repo / registry recovery 的静态安全命令是 page spec 允许的降级态，不是 mock-only 闭环。
+- 涉及文件：`core/area_matrix.udl:181`、`core/area_matrix.udl:188`、`apps/macos/AreaMatrix/Bridge/CoreBridge.swift:330`、`apps/macos/AreaMatrix/Bridge/CoreFileRenaming.swift:186`、`apps/macos/AreaMatrix/Models/DiagnosticsSnapshotState.swift:29`
+
+- 项目：不新增本页未在 control map 中声明的功能。
+- 结果：通过
+- 证据：S2-15 control map 只声明 `C2-04, C2-11`；实现未触碰 `core/src/**`，也未直接执行 S2-18/S2-21/S2-23 等相邻页面能力，只保留阻塞证据或跳转入口。
+- 涉及文件：`docs/architecture/stage-2-control-map.md:23`、`apps/macos/AreaMatrix/Models/ImportEntryRequest.swift:106`、`apps/macos/AreaMatrix/Views/Main/MainRepositoryMultiSelectionActions.swift:239`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。S2-15 路由、状态、CoreBridge 调用和测试支撑分层清楚；相关 Swift 文件均未超过 500 行。
+- 注释 / rustdoc / 文档同步：通过。本 task 未新增 Rust public API；UDL 与 `docs/api/core-api.md` 中 `run_smart_list`、`list_command_targets` 合同一致。
+- 错误处理与边界处理：通过。命令索引失败映射为 `Some commands are unavailable` 并保留可用命令；危险命令只打开确认/预览路线。
+- 测试与验证覆盖：通过。新增测试覆盖 C2-04、C2-11、错误态、无 repo、键盘选择、Smart List run、危险命令不直接 mutation。
+- 占位、硬编码、mock-only、一次性实现检查：通过。未发现生产路径 mock-only 或硬编码通过态。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 跑了哪些验证：`./dev check task 4-1/task-126`
+- 哪些通过：`prompt doctor` 通过，`git diff --check` 通过，macOS `xcodebuild ... build CODE_SIGNING_ALLOWED=NO` 通过，最终 `BUILD SUCCEEDED`。
+- 哪些失败：无。
+- 哪些缺失：未额外运行 `./dev test macos` 或真机 UI smoke；当前 manifest 指定验证为 `./dev check task 4-1/task-126`，validation-driver 对 page integration task 的默认门禁为 macOS build gate。`git diff --name-only -- core/src` 返回空，未发现 Forbidden Touches。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS

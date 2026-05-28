@@ -1,0 +1,69 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-2/task-05`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-2-stage3-ai/task-05-c3-01-integration-verify.md`
+- 核验范围：`core/src/**`、`core/area_matrix.udl`、`core/tests/**`
+- Forbidden Touches：`apps/**`，未发现改动
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：交叉检查 capability spec、Core API、UDL、Rust 实现和测试  
+  结果：通过  
+  证据：`C3-01` 规格声明 `load_ai_config` / `update_ai_config`、默认关闭、持久化、不得保存 key；Core API 与 UDL 均声明 `AiConfigSnapshot load_ai_config` 和 `update_ai_config`；Rust 通过 `core/src/ai_settings.rs`、`core/src/db/ai_settings.rs`、`core/src/api.rs` 落地；4 个 targeted test binaries 全部通过。  
+  涉及文件：`docs/core/capability-specs/stage-3-ai/C3-01-ai-settings-config.md:8`、`docs/api/core-api.md:46`、`core/area_matrix.udl:23`、`core/src/ai_settings.rs:97`
+
+- 项目：确认消费页面需要的状态、错误和副作用均已覆盖  
+  结果：通过  
+  证据：S3-01 需要 AI 总开关、provider preference、功能开关、禁用原因；S3-09 需要 `privacy_gate_enabled`、远程 gate 状态且不得误关 provider。实现返回 `AiConfigSnapshot.capabilities`、默认 disabled reason、持久化 rollback、PermissionDenied/Io/Config 失败路径，并测试 README/AREAMATRIX 与 AI call log/secrets 等边界不被触碰。  
+  涉及文件：`docs/ux/page-specs/stage-3-ai/S3-01-ai-settings.md:82`、`docs/ux/page-specs/stage-3-ai/S3-09-ai-privacy-rules.md:45`、`core/tests/ai_settings_config_validation.rs:161`
+
+- 项目：确认没有实现 control map 之外的能力  
+  结果：通过  
+  证据：control map 中 S3-01 绑定 C3-01，S3-09 同时消费 C3-01/C3-03/C3-09；当前 Rust API 只实现 AI settings metadata 读写，不实现 provider 配置、Keychain、隐私规则 CRUD/evaluate、AI call log、模型调用或网络调用。  
+  涉及文件：`docs/architecture/stage-3-control-map.md:9`、`docs/architecture/stage-3-control-map.md:17`、`core/src/api.rs:171`
+
+- 项目：不得修改文件；只记录验收证据和阻塞项  
+  结果：通过  
+  证据：本轮未编辑文件。当前工作区已有改动为 `core/tests/ai_settings_config_validation.rs`、`.codex/task-loop-runs/20260527_155418/summary.json`、`tasks/prompts/_shared/progress.json`；其中测试文件属于本 task 证据范围，runner 状态文件按任务循环时序不作为本 verify 阶段阻断。`git diff --name-only -- apps` 无输出。  
+  涉及文件：`core/tests/ai_settings_config_validation.rs`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。C3-01 独立在 `core/src/ai_settings.rs`，DB 持久化在 `core/src/db/ai_settings.rs`，public API 只在 `core/src/api.rs` 暴露，边界清楚。
+- 注释 / rustdoc / 文档同步：通过。public API 有 rustdoc，Core API、UDL、capability spec、control map 和测试锁定一致性。
+- 错误处理与边界处理：通过。无生产路径 `unwrap()` / `expect()` / `panic!()` 命中；Config、PermissionDenied、Io、DB rollback、secret-like reference 均有测试。
+- 测试与验证覆盖：通过。contract、implementation、failure_recovery、validation 四类 targeted tests 均通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。实现连接真实 repo metadata / SQLite `repo_config`，不是 mock-only；更新失败保持上一次成功配置。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-2/task-05`
+- 通过：`prompt doctor`，`git diff --check`，`cargo fmt --all -- --check`，`cargo clippy --all-targets --all-features -- -D warnings`
+- 通过：`cargo test --test ai_settings_config_contract_api -- --nocapture`，5 passed
+- 通过：`cargo test --test ai_settings_config_failure_recovery -- --nocapture`，6 passed
+- 通过：`cargo test --test ai_settings_config_implementation -- --nocapture`，5 passed
+- 通过：`cargo test --test ai_settings_config_validation -- --nocapture`，3 passed
+- 失败：无
+- 缺失：无；远端 CI 未在本地验收模式运行，不替代后续 PR 门禁
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。C3-01 可以作为后续 page-feature task 的真实 Core 依赖。
+
+VERIFY_RESULT: PASS

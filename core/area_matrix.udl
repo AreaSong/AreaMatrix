@@ -20,6 +20,106 @@ namespace area_matrix {
     void update_config(string repo_path, RepoConfig new_config);
 
     [Throws=CoreError]
+    AiConfigSnapshot load_ai_config(string repo_path);
+
+    [Throws=CoreError]
+    AiConfigSnapshot update_ai_config(string repo_path, AiConfig new_config);
+
+    [Throws=CoreError]
+    LocalModelStatusSnapshot get_local_model_status(
+        string repo_path, LocalModelStatusRequest request
+    );
+
+    [Throws=CoreError]
+    LocalModelFolderLocation locate_local_model_folder(
+        string repo_path, LocalModelFolderRequest request
+    );
+
+    [Throws=CoreError]
+    RemoteProviderTestResult test_remote_ai_provider(
+        string repo_path, RemoteProviderTestRequest request
+    );
+
+    [Throws=CoreError]
+    RemoteProviderConfigSnapshot load_remote_ai_provider_config(string repo_path);
+
+    [Throws=CoreError]
+    RemoteProviderConfigSnapshot enable_remote_ai_provider(
+        string repo_path, RemoteProviderEnableRequest request
+    );
+
+    [Throws=CoreError]
+    RemoteProviderConfigSnapshot disable_remote_ai_provider(
+        string repo_path, RemoteProviderDisableRequest request
+    );
+
+    [Throws=CoreError]
+    AiCategorySuggestion suggest_category_with_ai(
+        string repo_path, AiCategorySuggestionRequest request
+    );
+
+    [Throws=CoreError]
+    AiCallLogPage list_ai_calls(
+        string repo_path, AiCallLogFilter filter, AiCallLogPagination pagination
+    );
+
+    [Throws=CoreError]
+    AiCallLogClearReport clear_ai_call_log(
+        string repo_path, AiCallLogClearRequest request
+    );
+
+    [Throws=CoreError]
+    AiSummaryDraft generate_ai_summary(
+        string repo_path, AiSummaryGenerationRequest request
+    );
+
+    [Throws=CoreError]
+    AiSummarySaveReport save_ai_summary(
+        string repo_path, AiSummarySaveRequest request
+    );
+
+    [Throws=CoreError]
+    AiSummaryClearReport clear_ai_summary(
+        string repo_path, AiSummaryClearRequest request
+    );
+
+    [Throws=CoreError]
+    AiTagSuggestionReport suggest_tags_with_ai(
+        string repo_path, AiTagSuggestionRequest request
+    );
+
+    [Throws=CoreError]
+    AiTagSuggestionApplyReport apply_ai_tag_suggestions(
+        string repo_path, ApplyAiTagSuggestionsRequest request
+    );
+
+    [Throws=CoreError]
+    AiPrivacyRulesSnapshot list_ai_privacy_rules(string repo_path);
+
+    [Throws=CoreError]
+    AiPrivacyRulesSnapshot update_ai_privacy_rules(
+        string repo_path, AiPrivacyRulesUpdateRequest request
+    );
+
+    [Throws=CoreError]
+    AiPrivacyEvaluationReport evaluate_ai_privacy(
+        string repo_path, AiPrivacyEvaluationRequest request
+    );
+
+    [Throws=CoreError]
+    SemanticSearchResultPage semantic_search(
+        string repo_path,
+        string query,
+        SearchFilter filter,
+        SearchPagination pagination
+    );
+
+    [Throws=CoreError]
+    SemanticIndexBuildReport build_embedding_index(
+        string repo_path, SemanticIndexScope scope
+    );
+
+    [Throws=CoreError]
     RecoveryReport recover_on_startup(string repo_path);
 
     [Throws=CoreError]
@@ -290,6 +390,498 @@ dictionary RepoConfig {
     boolean enable_keyword_rules;
     boolean fallback_to_inbox;
     boolean allow_replace_during_import;
+};
+
+dictionary AiFeatureConfig {
+    AiFeatureKind feature;
+    boolean enabled;
+    boolean allow_remote;
+};
+
+dictionary AiConfig {
+    string repo_path;
+    boolean ai_enabled;
+    AiProviderPreference provider_preference;
+    boolean local_ai_enabled;
+    boolean remote_ai_allowed;
+    boolean privacy_gate_enabled;
+    string? privacy_policy_ref;
+    sequence<AiFeatureConfig> feature_toggles;
+};
+
+dictionary AiCapabilityState {
+    AiFeatureKind feature;
+    boolean enabled;
+    boolean local_allowed;
+    boolean remote_allowed;
+    string? disabled_reason;
+};
+
+dictionary AiConfigSnapshot {
+    AiConfig config;
+    sequence<AiCapabilityState> capabilities;
+    i64? updated_at;
+};
+
+dictionary LocalModelFeatureStatus {
+    AiFeatureKind feature;
+    boolean available;
+    string? unavailable_reason;
+};
+
+dictionary LocalModelCachedStatus {
+    string model_id;
+    string storage_location;
+    LocalModelAvailability availability;
+    string? version;
+    i64? size_bytes;
+    string? last_error;
+    LocalModelRecommendedAction recommended_action;
+    i64? last_checked_at;
+    string diagnostics_summary;
+};
+
+dictionary LocalModelStatusRequest {
+    string model_id;
+    string storage_location;
+    LocalModelCachedStatus? cached_status;
+};
+
+dictionary LocalModelStatusSnapshot {
+    string model_id;
+    string storage_location;
+    LocalModelAvailability availability;
+    string? version;
+    i64? size_bytes;
+    string? last_error;
+    LocalModelRecommendedAction recommended_action;
+    i64? last_checked_at;
+    string diagnostics_summary;
+    sequence<LocalModelFeatureStatus> feature_statuses;
+};
+
+dictionary LocalModelFolderRequest {
+    string model_id;
+    string storage_location;
+};
+
+dictionary LocalModelFolderLocation {
+    string model_id;
+    string folder_path;
+    boolean exists;
+    boolean readable;
+    boolean openable;
+    string? unavailable_reason;
+};
+
+dictionary RemoteProviderTestRequest {
+    RemoteAiProviderKind provider;
+    string model_id;
+    string? endpoint_url;
+    string key_reference;
+};
+
+dictionary RemoteProviderEnableRequest {
+    RemoteAiProviderKind provider;
+    string model_id;
+    string? endpoint_url;
+    string key_reference;
+    sequence<AiFeatureKind> feature_scope;
+    string verification_token;
+    boolean data_flow_confirmed;
+};
+
+dictionary RemoteProviderDisableRequest {
+    boolean remove_stored_credential;
+};
+
+dictionary RemoteProviderConfigSnapshot {
+    boolean provider_configured;
+    boolean provider_verified;
+    boolean remote_provider_enabled;
+    RemoteAiProviderKind? provider;
+    string? model_id;
+    string? endpoint_url;
+    boolean credential_configured;
+    sequence<AiFeatureKind> feature_scope;
+    i64? updated_at;
+    string? disabled_reason;
+};
+
+dictionary RemoteProviderTestResult {
+    RemoteAiProviderKind provider;
+    string model_id;
+    string? endpoint_url;
+    RemoteProviderTestStatus status;
+    boolean provider_verified;
+    string? verification_token;
+    string sanitized_message;
+};
+
+dictionary AiCategorySuggestionRequest {
+    i64 file_id;
+    AiCategorySuggestionContextPolicy context_policy;
+    string? privacy_policy_ref;
+};
+
+dictionary AiCategorySuggestion {
+    i64 file_id;
+    AiCategorySuggestionStatus status;
+    string? current_category;
+    string? suggested_category;
+    f32 confidence;
+    string? reason;
+    AiCategorySuggestionRoute? route;
+    sequence<AiCategorySuggestionContextField> used_context;
+    AiCategorySuggestionSkipReason? skipped_reason;
+    string? privacy_rule_id;
+    i64? call_log_id;
+    boolean requires_user_confirmation;
+};
+
+dictionary AiSummaryGenerationRequest {
+    i64 file_id;
+    AiSummaryProviderScope provider_scope;
+    AiSummaryContextPolicy context_policy;
+    string? privacy_policy_ref;
+    boolean regenerate_existing;
+};
+
+dictionary AiSummaryDraft {
+    i64 file_id;
+    string? draft_id;
+    AiSummaryDraftStatus status;
+    string? summary_text;
+    AiSummaryRoute? route;
+    string? model_name;
+    i64? generated_at;
+    sequence<AiSummaryInputField> used_context;
+    AiSummarySkipReason? skipped_reason;
+    string? privacy_rule_id;
+    i64? call_log_id;
+    boolean requires_user_save;
+    i64 character_count;
+};
+
+dictionary AiSummarySaveRequest {
+    i64 file_id;
+    string summary_text;
+    string? draft_id;
+    AiSummaryRoute? route;
+    string? model_name;
+    i64? generated_at;
+    sequence<AiSummaryInputField> used_context;
+    string? privacy_rule_id;
+    i64? call_log_id;
+    boolean edited_by_user;
+};
+
+dictionary AiSummarySaveReport {
+    i64 file_id;
+    string saved_summary;
+    i64 saved_at;
+    AiSummaryRoute? route;
+    string? model_name;
+    i64? generated_at;
+    sequence<AiSummaryInputField> used_context;
+    string? privacy_rule_id;
+    i64? call_log_id;
+    boolean edited_by_user;
+    i64 character_count;
+};
+
+dictionary AiSummaryClearRequest {
+    i64 file_id;
+    boolean confirmed;
+};
+
+dictionary AiSummaryClearReport {
+    i64 file_id;
+    boolean cleared;
+    i64 cleared_at;
+};
+
+dictionary AiTagSuggestionRequest {
+    i64 file_id;
+    sequence<string> candidate_tags;
+    string? privacy_policy_ref;
+};
+
+dictionary AiTagSuggestion {
+    string suggestion_id;
+    string slug;
+    string display_name;
+    f32 confidence;
+    string reason;
+    AiTagSuggestionCandidateStatus status;
+    AiTagSuggestionMergeAction merge_action;
+    string? matched_existing_slug;
+    boolean selected_by_default;
+    string? disabled_reason;
+};
+
+dictionary AiTagSuggestionReport {
+    i64 file_id;
+    AiTagSuggestionReportStatus status;
+    sequence<AiTagSuggestion> suggestions;
+    AiTagSuggestionRoute? route;
+    string? model_name;
+    i64? generated_at;
+    sequence<AiTagSuggestionInputField> used_context;
+    AiTagSuggestionSkipReason? skipped_reason;
+    string? privacy_rule_id;
+    i64? call_log_id;
+    boolean requires_user_confirmation;
+    f32 confidence_threshold;
+    boolean contents_read;
+    boolean ai_used;
+    boolean network_used;
+};
+
+dictionary ApplyAiTagSuggestionItem {
+    string suggestion_id;
+    string slug;
+    string display_name;
+    f32 confidence;
+    boolean edited_by_user;
+    string? merge_target_slug;
+};
+
+dictionary ApplyAiTagSuggestionsRequest {
+    i64 file_id;
+    sequence<ApplyAiTagSuggestionItem> suggestions;
+    i64? call_log_id;
+    string? privacy_rule_id;
+    boolean confirmed;
+};
+
+dictionary AiTagSuggestionApplyItemResult {
+    string suggestion_id;
+    string slug;
+    AiTagSuggestionApplyStatus status;
+    string? error;
+};
+
+dictionary AiTagSuggestionApplyReport {
+    i64 file_id;
+    i64 requested_count;
+    i64 applied_count;
+    i64 skipped_count;
+    i64 failed_count;
+    sequence<AiTagSuggestionApplyItemResult> item_results;
+    TagSet tag_set;
+    string? undo_token;
+    i64? call_log_id;
+    sequence<string> refresh_targets;
+};
+
+dictionary AiPrivacyRuleInput {
+    string? rule_id;
+    string name;
+    AiPrivacyRuleKind kind;
+    string pattern;
+    AiPrivacyRuleAppliesTo applies_to;
+    boolean enabled;
+    string? description;
+};
+
+dictionary AiPrivacyRuleRecord {
+    string rule_id;
+    string name;
+    AiPrivacyRuleKind kind;
+    string pattern;
+    AiPrivacyRuleAppliesTo applies_to;
+    boolean enabled;
+    string? description;
+    i64 match_count;
+    i64? last_matched_at;
+};
+
+dictionary AiPrivacyFieldRule {
+    AiPrivacyInputField field;
+    boolean allow_remote;
+};
+
+dictionary AiPrivacyFieldState {
+    AiPrivacyInputField field;
+    boolean allow_remote;
+    i64 last_matched_count;
+};
+
+dictionary AiPrivacyProviderScopeSnapshot {
+    boolean provider_configured;
+    boolean provider_verified;
+    boolean remote_provider_enabled;
+    sequence<AiFeatureKind> feature_scope;
+};
+
+dictionary AiPrivacyRulesSnapshot {
+    boolean privacy_gate_enabled;
+    sequence<AiPrivacyRuleRecord> rules;
+    sequence<AiPrivacyFieldState> remote_allowed_fields;
+    AiPrivacyProviderScopeSnapshot provider_scope;
+    i64? updated_at;
+    boolean remote_blocked_by_default;
+};
+
+dictionary AiPrivacyRulesUpdateRequest {
+    boolean privacy_gate_enabled;
+    sequence<AiPrivacyRuleInput> rules;
+    sequence<AiPrivacyFieldRule> remote_allowed_fields;
+    AiPrivacyProviderScopeSnapshot provider_scope;
+    boolean confirmed;
+};
+
+dictionary AiPrivacyEvaluationContext {
+    i64? file_id;
+    string? repo_relative_path;
+    string? file_name;
+    string? category;
+    string? extension;
+    sequence<string> tags;
+};
+
+dictionary AiPrivacyEvaluationRequest {
+    AiFeatureKind feature;
+    AiPrivacyEvaluationRoute route;
+    sequence<AiPrivacyInputField> requested_fields;
+    boolean privacy_gate_enabled;
+    AiPrivacyProviderScopeSnapshot provider_scope;
+    sequence<AiPrivacyRuleInput> rules;
+    sequence<AiPrivacyFieldRule> remote_allowed_fields;
+    AiPrivacyEvaluationContext context;
+};
+
+dictionary AiPrivacyRuleMatch {
+    string rule_id;
+    string name;
+    AiPrivacyRuleKind kind;
+    string pattern;
+    AiPrivacyRuleAppliesTo applies_to;
+    AiPrivacyInputField? matched_field;
+};
+
+dictionary AiPrivacyEvaluationReport {
+    AiPrivacyDecision decision;
+    AiPrivacySkippedReason? skipped_reason;
+    AiPrivacyProviderGateReason? provider_gate_reason;
+    sequence<AiPrivacyRuleMatch> matched_rules;
+    AiPrivacyInputField? matched_field_type;
+    sequence<AiPrivacyInputField> allowed_fields;
+    sequence<AiPrivacyInputField> blocked_fields;
+    sequence<AiPrivacyInputField> sent_fields;
+    string message;
+};
+
+dictionary SemanticSearchMatch {
+    SearchFileResult result;
+    f32 relevance;
+    string matched_reason;
+    sequence<SemanticSearchInputField> used_fields;
+    SemanticSearchRoute route;
+    boolean also_matched_normal_search;
+    i64? call_log_id;
+    string? privacy_rule_id;
+};
+
+dictionary SemanticNormalSearchMatch {
+    SearchFileResult result;
+    boolean deduped_by_semantic;
+};
+
+dictionary SemanticSearchResultPage {
+    string query;
+    i64 semantic_total_count;
+    i64 normal_total_count;
+    sequence<SemanticSearchMatch> semantic_matches;
+    sequence<SemanticNormalSearchMatch> normal_matches;
+    i64 deduped_normal_count;
+    SemanticIndexStatus index_status;
+    SemanticSearchRoute? route;
+    SemanticSearchFallbackReason? fallback_reason;
+    string? fallback_message;
+    i64? call_log_id;
+    string? privacy_rule_id;
+    boolean low_confidence;
+};
+
+dictionary SemanticIndexScope {
+    SearchFilter filter;
+    SemanticSearchRoute? route;
+    string? privacy_policy_ref;
+    boolean confirmed;
+};
+
+dictionary SemanticIndexBuildReport {
+    SemanticIndexStatus status;
+    SemanticSearchRoute? route;
+    i64 total_count;
+    i64 processed_count;
+    i64 skipped_count;
+    i64 failed_count;
+    i64 privacy_skipped_count;
+    string? provider_name;
+    i64? call_log_id;
+    SemanticSearchFallbackReason? fallback_reason;
+    string? message;
+};
+
+dictionary AiCallLogFilter {
+    AiCallLogFeature? feature;
+    AiCallLogRoute? route;
+    AiCallLogStatus? status;
+    i64? occurred_after;
+    i64? occurred_before;
+    string? search_query;
+};
+
+dictionary AiCallLogPagination {
+    i64 limit;
+    i64 offset;
+};
+
+dictionary AiCallLogRecord {
+    i64 id;
+    i64 occurred_at;
+    AiCallLogFeature feature;
+    i64? file_id;
+    string? file_display_name;
+    string? batch_id;
+    string? scope;
+    AiCallLogRoute? route;
+    string? provider_name;
+    string? model_name;
+    AiCallLogStatus status;
+    i64? duration_ms;
+    sequence<AiCallLogSentField> sent_fields;
+    boolean privacy_rules_checked;
+    string? privacy_rule_id;
+    string? privacy_rule_name;
+    AiCallLogSentField? matched_field_type;
+    string result_summary;
+    string? error_code;
+};
+
+dictionary AiCallLogPage {
+    i64 total_count;
+    sequence<AiCallLogRecord> records;
+    i64 limit;
+    i64 offset;
+    boolean has_more;
+    i64 retention_days;
+    string redaction_policy;
+};
+
+dictionary AiCallLogClearRequest {
+    AiCallLogClearScope scope;
+    sequence<i64> entry_ids;
+    i64? older_than;
+};
+
+dictionary AiCallLogClearReport {
+    i64 deleted_count;
+    i64 remaining_count;
+    i64 cleared_at;
 };
 
 dictionary RepoInitOptions {
@@ -1209,6 +1801,111 @@ enum RepoPathIssue {
     "ICloudPath", "UnfinishedScanSession"
 };
 enum OverviewOutput { "GeneratedOnly", "RootAreaMatrixFile" };
+enum AiProviderPreference { "LocalFirst", "LocalOnly", "RemoteFirst" };
+enum AiFeatureKind {
+    "ClassificationSuggestions", "AutoSummaries", "AutoTags", "SemanticSearch"
+};
+enum RemoteAiProviderKind { "OpenAi", "Anthropic", "Other" };
+enum RemoteProviderTestStatus {
+    "Succeeded", "ProviderRejected", "ConnectionFailed", "UnsupportedProvider"
+};
+enum AiCategorySuggestionContextPolicy {
+    "FileNameOnly", "FileNameAndPath", "LimitedTextSummary"
+};
+enum AiCategorySuggestionContextField {
+    "FileName", "Extension", "RepoRelativePath", "LimitedTextSummary"
+};
+enum AiCategorySuggestionRoute { "Local", "Remote" };
+enum AiCategorySuggestionStatus {
+    "Suggested", "NoSuggestion", "Skipped", "Unavailable"
+};
+enum AiCategorySuggestionSkipReason {
+    "AiDisabled", "FeatureDisabled", "RuleResultConfident",
+    "NoEligibleContext", "PrivacyRule", "ProviderUnavailable"
+};
+enum AiSummaryProviderScope { "LocalOnly", "LocalPreferred", "RemoteAllowed" };
+enum AiSummaryContextPolicy {
+    "MetadataOnly", "MetadataAndExtractedText", "MetadataTextAndNotes"
+};
+enum AiSummaryInputField {
+    "FileName", "RepoRelativePath", "ExtractedTextExcerpt",
+    "ExistingAiSummary", "NoteSummary", "TagCategoryContext"
+};
+enum AiSummaryRoute { "Local", "Remote" };
+enum AiSummaryDraftStatus { "Draft", "Skipped", "Unavailable" };
+enum AiSummarySkipReason {
+    "AiDisabled", "FeatureDisabled", "ProviderUnavailable",
+    "PrivacyRule", "NoEligibleInput", "CallLogUnavailable"
+};
+enum AiTagSuggestionRoute { "Local", "Remote" };
+enum AiTagSuggestionInputField {
+    "FileName", "RepoRelativePath", "ExtractedTextExcerpt",
+    "AiSummary", "NoteSummary", "ExistingTags", "TagRegistry"
+};
+enum AiTagSuggestionReportStatus {
+    "Suggested", "NoSuggestion", "Skipped", "Unavailable"
+};
+enum AiTagSuggestionSkipReason {
+    "AiDisabled", "FeatureDisabled", "ProviderUnavailable",
+    "PrivacyRule", "NoEligibleInput", "CallLogUnavailable"
+};
+enum AiTagSuggestionCandidateStatus {
+    "Suggested", "LowConfidence", "AlreadyApplied", "Invalid", "Blocked"
+};
+enum AiTagSuggestionMergeAction {
+    "CreateTag", "UseExistingTag", "MergeWithExistingTag"
+};
+enum AiTagSuggestionApplyStatus { "Applied", "AlreadyAdded", "Failed" };
+enum AiPrivacyRuleKind { "Folder", "Category", "Keyword", "Extension", "Tag" };
+enum AiPrivacyRuleAppliesTo { "RemoteAi", "LocalAndRemoteAi" };
+enum AiPrivacyEvaluationRoute { "Local", "Remote" };
+enum AiPrivacyInputField {
+    "FileName", "RepoRelativePath", "Extension", "ExtractedTextExcerpt",
+    "AiSummary", "NoteSummary", "TagCategoryContext"
+};
+enum AiPrivacyDecision { "Allowed", "Denied", "Skipped" };
+enum AiPrivacySkippedReason {
+    "PrivacyGateDisabled", "ScopeNotAllowed", "ProviderNotConfigured",
+    "ProviderNotVerified", "ProviderDisabled", "PrivacyRule", "FieldRule",
+    "NoEligibleInput"
+};
+enum AiPrivacyProviderGateReason {
+    "PrivacyGateDisabled", "ScopeNotAllowed", "ProviderNotConfigured",
+    "ProviderNotVerified", "ProviderDisabled"
+};
+enum SemanticSearchRoute { "Local", "Remote" };
+enum SemanticSearchInputField {
+    "FileName", "RepoRelativePath", "Category", "NoteSummary",
+    "AiSummary", "ExtractedTextExcerpt"
+};
+enum SemanticIndexStatus {
+    "Ready", "NotReady", "Building", "Paused", "Canceled", "Failed", "Partial"
+};
+enum SemanticSearchFallbackReason {
+    "AiDisabled", "FeatureDisabled", "ProviderUnavailable", "PrivacyRule",
+    "SemanticIndexNotReady", "CallLogUnavailable", "NoEligibleInput",
+    "NormalSearchUnavailable", "RateLimited", "Timeout"
+};
+enum AiCallLogFeature {
+    "Classification", "Summary", "Tags", "SemanticSearch", "ProviderTest"
+};
+enum AiCallLogRoute { "Local", "Remote" };
+enum AiCallLogStatus { "Success", "Failed", "Skipped", "Unavailable" };
+enum AiCallLogSentField {
+    "FileName", "RepoRelativePath", "Extension", "ExtractedTextExcerpt",
+    "AiSummary", "NoteSummary", "TagCategoryContext"
+};
+enum AiCallLogClearScope { "All", "SelectedEntries", "OlderThan" };
+enum LocalModelAvailability {
+    "Unknown", "Ready", "NotInstalled", "PathUnreadable",
+    "VersionIncompatible", "Checking", "Verifying", "Loading",
+    "Corrupted", "RuntimeFailed", "Error"
+};
+enum LocalModelRecommendedAction {
+    "None", "CheckStatus", "RetryStatusCheck", "OpenInstallHelp",
+    "OpenModelLocation", "RunHealthCheck", "RepairMetadata",
+    "OpenDiagnostics", "UseNonAiFallback"
+};
 enum ImportDestination { "AutoClassify", "SelectedDirectory", "Category" };
 enum ScanSessionKind { "Adopt", "Reindex" };
 enum ScanSessionStatus { "Running", "Completed", "Paused", "Failed", "Interrupted" };

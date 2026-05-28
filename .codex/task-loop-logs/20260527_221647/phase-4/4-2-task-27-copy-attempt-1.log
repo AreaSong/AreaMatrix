@@ -1,0 +1,57 @@
+一、执行结论
+
+已完成 `4-2/task-27`。
+
+二、执行范围
+
+单任务：仅 C3-06 `ai-summary` Core implementation。未触碰 `apps/**`，`core/area_matrix.udl` 本次无需改动。
+
+修改/新增文件：
+- `core/src/ai_summary.rs`
+- `core/src/ai_summary/call_log.rs`
+- `core/src/ai_summary/context.rs`
+- `core/src/ai_summary/executor.rs`
+- `core/src/ai_summary/implementation.rs`
+- `core/src/db/mod.rs`
+- `core/src/db/ai_summary.rs`
+- `core/tests/ai_summary_contract_api.rs`
+- `core/tests/ai_summary_implementation.rs`
+- `core/tests/support/ai_summary_common.rs`
+
+三、完成情况
+
+核对清单通过：
+- 只实现 C3-06，未实现相邻 AI 能力。
+- `generate_ai_summary` 生成草稿并写 AI call log，不持久化 summary。
+- `save_ai_summary` 持久化 AreaMatrix-owned summary metadata。
+- `clear_ai_summary` 只清除 summary metadata，不删除用户文件、notes、tags、AI logs 或 provider config。
+- Rust Core 未依赖平台 UI API。
+- 已补最小合同与实现测试。
+
+完成标准通过：
+- C3-06 核心行为可由 Rust 测试和桥接合同验证。
+- 未触碰用户文件安全边界之外行为；测试覆盖 `README.md` 不被保存/清除流程改写。
+- Forbidden Touches：未触碰 `apps/**`。
+
+四、工程质量
+
+结构按 `ai_summary` 子模块拆分为 call log、context、executor、implementation，DB metadata 单独放在 `core/src/db/ai_summary.rs`。错误路径显式处理，包括无效输入、缺失文件、provider unavailable、runtime failure、DB 事务失败与 clear confirmation。未引入新依赖，未使用 mock-only 业务路径或硬编码通过态；测试中的 runtime 脚本只作为外部 AI runtime 替身验证真实调用边界。
+
+五、验证情况
+
+已通过：
+- `cd core && cargo clippy --test ai_summary_implementation --test ai_summary_contract_api -- -D warnings`
+- `./dev check task 4-2/task-27`
+
+`./dev check task 4-2/task-27` 实际跑到：
+- prompt doctor：OK，637 tasks / 637 manifests。
+- `git diff --check`：通过。
+- `cargo test --test ai_summary_contract_api -- --nocapture`：4 passed。
+- `cargo test --test ai_summary_implementation -- --nocapture`：6 passed。
+
+六、风险与后续
+
+剩余风险：真实本地/远程 AI runtime 的生产接入仍取决于后续平台或 provider 配置任务；本任务只实现 Core 侧最小闭环和环境变量 runtime 调用边界。当前工作树还存在 `.codex/task-loop-runs/.../summary.json` 与 `tasks/prompts/_shared/progress.json` 的 task-loop 运行状态改动，我未回退它们。
+
+建议下一个任务：进入 `4-2/task-28` 或对应 C3-06 integration/verify，检查 API / UDL / Core / 测试 / UX 消费一致性。
+

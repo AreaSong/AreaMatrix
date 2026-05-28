@@ -8,26 +8,28 @@ struct MainFileActionRoutingSheet: View {
     let renameState: MainFileRenameState
     let deleteState: MainFileDeleteState
     let changeCategoryState: MainFileCategoryMoveState
+    let classifierCorrectionContextState: ClassifierCorrectionContextState
     let iCloudConflictResolutionState: ICloudConflictResolutionState
     let iCloudConflictResolutionCapability: ICloudConflictResolutionCapability
     let repoPath: String
     let isTrashAvailable: Bool
     let iCloudConflictPathValidator: any CoreRepositoryPathValidating
+    let iCloudConflictReviewer: any CoreICloudConflictReviewing
     let iCloudConflictErrorMapper: any CoreErrorMapping
     let onDismiss: () -> Void
     let onRename: (Int64, String) -> Void
     let onShowExistingFile: (Int64) -> Void
     let onPreviewChangeCategory: (Int64, String) -> Void
-    let onChangeCategory: (Int64, String) -> Void
+    let onLoadClassifierCorrectionContext: (Int64, String) -> Void
+    let onChangeCategory: (Int64, String, MainFileCategoryMoveMode, MainFileCategoryMoveOptions) -> Void
+    let onBeginClassifierRuleHandoff: (Int64, String, Bool, ClassifierRuleHandoffDestination) -> Void
     let onRenameFirstFromChangeCategory: (Int64, String) -> Void
+    let onEditClassifierRule: (ClassifierRuleHandoff) -> Void
+    let onPreviewClassifierRuleImpact: (ClassifierRuleHandoff) -> Void
+    let onClassifierRuleSaved: (ClassifierRuleSnapshot) -> Void
     let onOpenChangeCategoryPermissionRecovery: () -> Void
     let onDelete: (Int64, MainFileDeleteOperation) -> Void
-    let onApplyICloudConflict: (
-        Int64,
-        ICloudConflictResolutionStrategy,
-        String?,
-        String?
-    ) -> Void
+    let onApplyICloudConflict: (ICloudConflictApplyContext) -> Void
     let onCollectDiagnostics: () -> Void
 
     var body: some View {
@@ -42,18 +44,7 @@ struct MainFileActionRoutingSheet: View {
                 onShowExistingFile: onShowExistingFile
             )
         case .changeCategory:
-            ChangeCategorySheet(
-                file: file,
-                categoryRows: categoryRows,
-                state: changeCategoryState,
-                initialTargetCategory: destination.initialChangeCategoryTarget,
-                onCancel: onDismiss,
-                onPreview: onPreviewChangeCategory,
-                onChangeCategory: onChangeCategory,
-                onRenameFirst: onRenameFirstFromChangeCategory,
-                onOpenPermissionRecovery: onOpenChangeCategoryPermissionRecovery,
-                onCollectDiagnostics: onCollectDiagnostics
-            )
+            changeCategoryRouteView(destination)
         case .delete:
             DeleteFileConfirmSheet(
                 file: file,
@@ -68,20 +59,30 @@ struct MainFileActionRoutingSheet: View {
             ICloudConflictMinimalSheet(
                 model: ICloudConflictMinimalModel(
                     repoPath: repoPath,
+                    conflictID: file?.path,
                     originalVersion: ICloudConflictVersionSnapshot.originalCandidate(repoPath: repoPath, file: file),
                     conflictedCopyVersion: ICloudConflictVersionSnapshot.conflictedCandidate(
                         repoPath: repoPath,
                         file: file
                     ),
                     pathValidator: iCloudConflictPathValidator,
+                    conflictReviewer: iCloudConflictReviewer,
                     errorMapper: iCloudConflictErrorMapper
                 ),
                 resolutionState: iCloudConflictResolutionState,
                 resolutionCapability: iCloudConflictResolutionCapability,
                 isTrashAvailable: isTrashAvailable,
                 onCancel: onDismiss,
-                onApply: { strategy, originalPath, conflictedCopyPath in
-                    onApplyICloudConflict(fileID, strategy, originalPath, conflictedCopyPath)
+                onApply: { result in
+                    let original = ICloudConflictVersionSnapshot.originalCandidate(repoPath: repoPath, file: file).path
+                    let conflicted = ICloudConflictVersionSnapshot.conflictedCandidate(repoPath: repoPath, file: file)
+                        .path
+                    onApplyICloudConflict(ICloudConflictApplyContext(
+                        fileID: fileID,
+                        result: result,
+                        originalPath: original,
+                        conflictedCopyPath: conflicted
+                    ))
                 },
                 onCollectDiagnostics: {
                     onCollectDiagnostics()
@@ -89,7 +90,44 @@ struct MainFileActionRoutingSheet: View {
             )
         }
     }
+
+    @ViewBuilder
+    private func changeCategoryRouteView(_ destination: MainFileActionDestination) -> some View {
+        if let ruleRoute = destination.classifierRuleRoute {
+            classifierRuleRouteView(ruleRoute)
+        } else {
+            ChangeCategorySheet(
+                file: file,
+                categoryRows: categoryRows,
+                state: changeCategoryState,
+                classifierContextState: classifierCorrectionContextState,
+                mode: destination.changeCategoryMode,
+                initialTargetCategory: destination.initialChangeCategoryTarget,
+                onCancel: onDismiss,
+                onPreview: onPreviewChangeCategory,
+                onLoadClassifierContext: onLoadClassifierCorrectionContext,
+                onChangeCategory: onChangeCategory,
+                onBeginRuleHandoff: onBeginClassifierRuleHandoff,
+                onRenameFirst: onRenameFirstFromChangeCategory,
+                onOpenPermissionRecovery: onOpenChangeCategoryPermissionRecovery,
+                onCollectDiagnostics: onCollectDiagnostics
+            )
+        }
+    }
+
+    private func classifierRuleRouteView(_ route: ClassifierCorrectionRuleRoute) -> some View {
+        ClassifierRuleHandoffRouteView(
+            mode: route.handoffMode,
+            repoPath: repoPath,
+            handoff: route.handoff,
+            onCancel: onDismiss,
+            onBack: onEditClassifierRule,
+            onPreviewImpact: onPreviewClassifierRuleImpact,
+            onSaved: onClassifierRuleSaved
+        )
+    }
 }
+
 struct SavedSearchPreview: View {
     let model: SavedSearchSheetModel
 
@@ -175,7 +213,7 @@ struct SavedSearchSheetRouteView: View {
                         onCancel()
                     }
                 }
-                    .keyboardShortcut(.cancelAction)
+                .keyboardShortcut(.cancelAction)
                 Button(model.primaryActionTitle) {
                     Task { await save() }
                 }
@@ -268,7 +306,7 @@ struct SmartListManagementSheet: View {
     let onSaved: (SavedSearchSnapshot) -> Void
     let onDeleted: (SavedSearchSnapshot) -> Void
     let onEditFilters: (SavedSearchSnapshot, SearchFilterStateSnapshot) -> Void
-    @State private var model: SmartListEditorModel
+    @State var model: SmartListEditorModel
 
     init(
         route: SmartListManagementRoute,
@@ -305,10 +343,10 @@ struct SmartListManagementSheet: View {
 
     var body: some View {
         MainFileActionSheetContainer(title: route.mode.title, pageID: "S2-06", content: { content })
-        .accessibilityIdentifier("S2-06-smart-list-management")
-        .task(id: model.queryDiagnosticTaskKey) {
-            await refreshQueryDiagnostic()
-        }
+            .accessibilityIdentifier("S2-06-smart-list-management")
+            .task(id: model.queryDiagnosticTaskKey) {
+                await refreshQueryDiagnostic()
+            }
     }
 
     @MainActor
@@ -361,140 +399,5 @@ struct SmartListManagementSheet: View {
             guard !Task.isCancelled else { return }
             model.markQueryDiagnosticUnavailable()
         }
-    }
-}
-
-private extension SmartListManagementSheet {
-    @ViewBuilder
-    var content: some View {
-        failureView
-        switch model.mode {
-        case .delete:
-            deleteContent
-        case .rename:
-            nameEditor
-            footer
-        case .duplicate:
-            nameEditor
-            Toggle("Pin to sidebar", isOn: $model.pinned)
-                .disabled(model.isSaving)
-            preview
-            footer
-        case .editQuery:
-            savedSummary
-            queryEditor
-            preview
-            footer
-        }
-    }
-
-    @ViewBuilder
-    var failureView: some View {
-        if let validationMessage = model.validationMessage {
-            Label(validationMessage, systemImage: "exclamationmark.triangle")
-                .foregroundStyle(.orange)
-                .accessibilityIdentifier("S2-06-validation-error")
-        }
-        if let failure = model.failure {
-            HStack(spacing: 8) {
-                Label(failure.userMessage, systemImage: "exclamationmark.triangle")
-                Spacer()
-                if model.showsRetry {
-                    Button("Retry") { Task { await submit() } }
-                        .accessibilityIdentifier("S2-06-save-retry")
-                }
-            }
-            .foregroundStyle(.red)
-            .accessibilityIdentifier("S2-06-save-error")
-        }
-        if let diagnostic = model.queryDiagnostic {
-            QueryDiagnosticSummary(diagnostic: diagnostic, query: model.queryDiagnosticRequest.query)
-        }
-    }
-
-    var nameEditor: some View {
-        TextField("Name", text: $model.name)
-            .textFieldStyle(.roundedBorder)
-            .disabled(model.isSaving)
-            .accessibilityIdentifier("S2-06-smart-list-name")
-    }
-
-    var savedSummary: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            metadataRow("Name", model.original.name)
-            metadataRow("Icon", model.original.icon ?? "Default")
-            metadataRow("Pin", pinSummary)
-        }
-    }
-
-    var queryEditor: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            TextField("Query", text: $model.query)
-                .textFieldStyle(.roundedBorder)
-                .disabled(model.isSaving)
-            Picker("Scope", selection: $model.scope) {
-                ForEach(SearchScopeSnapshot.allCases) { scope in
-                    Text(scope.displayName).tag(scope)
-                }
-            }
-            Picker("Sort", selection: $model.sort) {
-                ForEach(SearchSortSnapshot.allCases) { sort in
-                    Text(sort.displayName).tag(sort)
-                }
-            }
-        }
-        .accessibilityIdentifier("S2-06-edit-query-fields")
-    }
-
-    var preview: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            metadataRow("Filters", model.filterSummary)
-            metadataRow("Current results", model.resultCountSummary)
-        }
-        .accessibilityIdentifier("S2-06-smart-list-preview")
-    }
-
-    var deleteContent: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Delete \"\(model.original.name)\"?")
-                .font(.callout.weight(.semibold))
-            Text(SmartListEditorModel.deleteSafetyMessage)
-                .font(.callout).foregroundStyle(.secondary)
-            footer
-        }
-    }
-
-    var footer: some View {
-        HStack {
-            if model.mode == .editQuery {
-                Button("Reset changes", action: resetChanges)
-                    .disabled(model.isSaving)
-                Button("Edit filters") { onEditFilters(model.original, model.filters) }
-                    .disabled(model.isSaving)
-            }
-            Spacer()
-            Button("Cancel", action: onCancel)
-                .keyboardShortcut(.cancelAction)
-                .disabled(model.isSaving)
-            Button(model.primaryActionTitle, role: model.mode == .delete ? .destructive : nil) {
-                Task { await submit() }
-            }
-                .keyboardShortcut(.defaultAction)
-                .disabled(!model.canSubmit)
-                .accessibilityIdentifier("S2-06-primary-action")
-        }
-    }
-
-    var pinSummary: String {
-        model.original.pinned ? "Pinned" : "Not pinned"
-    }
-
-    func resetChanges() {
-        model.query = model.original.query.query
-        model.scope = model.original.query.scope
-        model.filters = model.original.query.filter
-        model.sort = model.original.query.sort
-        model.failure = nil
-        model.clearQueryDiagnostic()
     }
 }

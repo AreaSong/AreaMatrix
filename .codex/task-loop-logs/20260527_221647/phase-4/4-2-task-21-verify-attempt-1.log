@@ -1,0 +1,72 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-2/task-21`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-2-stage3-ai/task-21-c3-05-contract-api.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/ai_call_log.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/lib.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/tests/ai_call_log_contract_api.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md`
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：读取 C3-05 能力规格、Stage 3 AI control map、Core API 和错误码
+- 结果：通过
+- 证据：C3-05 spec 定义 `list_ai_calls`、`clear_ai_call_log`、输入 filter/pagination/clear scope、输出不含密钥和完整文件内容，错误码为 `Db` / `PermissionDenied`；control map 仅将 S3-05 绑定到 C3-05 list/clear AI log。
+- 涉及文件：`docs/core/capability-specs/stage-3-ai/C3-05-ai-call-log.md`、`docs/architecture/stage-3-control-map.md`、`docs/api/core-api.md`、`docs/api/error-codes.md`
+
+- 项目：API 名称、输入、输出、错误码、权限/隐私边界与能力规格一致
+- 结果：通过
+- 证据：`core/area_matrix.udl` 和 `docs/api/core-api.md` 均声明 `list_ai_calls(repo_path, filter, pagination)` 与 `clear_ai_call_log(repo_path, request)`；Rust API 有同名入口和 rustdoc，输出类型包含 redacted record/page/clear report；文档明确不返回 API key、完整 prompt、完整输出、完整 Note、绝对路径等敏感内容。
+- 涉及文件：`core/area_matrix.udl`、`core/src/api.rs`、`core/src/ai_call_log.rs`、`docs/api/core-api.md`
+
+- 项目：只补合同、类型、桥接声明或文档缺口，不实现相邻能力
+- 结果：通过
+- 证据：`core/src/ai_call_log.rs` 仅定义合同类型、输入校验和占位错误返回；未实现 AI 调用、provider enable、隐私规则 CRUD、文件 reveal/export、用户文件操作或 DB 清理业务逻辑。测试也显式检查相邻能力关键词不得出现在该模块。
+- 涉及文件：`core/src/ai_call_log.rs`、`core/tests/ai_call_log_contract_api.rs`
+
+- 项目：记录当前页面消费方是否能从合同中得到所需状态
+- 结果：通过
+- 证据：Core API 文档记录 S3-05 可从合同得到表格、详情、过滤空态、远程标记、隐私 skipped、Provider Test 详情、90 天保留说明，以及 clear/delete 后的 `deleted_count`、`remaining_count`、`cleared_at`。
+- 涉及文件：`docs/api/core-api.md`、`docs/ux/page-specs/stage-3-ai/S3-05-ai-call-log.md`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，C3-05 独立模块 `core/src/ai_call_log.rs`，API 转发在 `core/src/api.rs`，类型 re-export 在 `core/src/lib.rs`，职责清晰。
+- 注释 / rustdoc / 文档同步：通过，新增 public Rust 类型和 public API 有 rustdoc；`docs/api/core-api.md` 与 `core/area_matrix.udl` 同步。
+- 错误处理与边界处理：通过，输入校验返回 `CoreError::Db`，合同文档声明 `Db` / `PermissionDenied`；无 `unwrap()`、`expect()`、`panic!()`、TODO。
+- 测试与验证覆盖：通过，新增 `core/tests/ai_call_log_contract_api.rs` 覆盖签名、输入输出、文档/UDL/API/control map 对齐、页面消费和隐私边界。
+- 占位、硬编码、mock-only、一次性实现检查：通过，本任务是 contract-api，当前未声称实现真实 list/clear 业务逻辑；占位错误返回用于防止 fake success，符合“不实现业务逻辑”的任务范围。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-2/task-21`
+- 通过：`prompt doctor` 通过，`git diff --check` 通过，`cargo test --test ai_call_log_contract_api -- --nocapture` 通过，4 个测试全部通过。
+- 失败：无
+- 缺失：无；未扩大到 `./dev check all`，符合当前普通 atomic Core task 的 manifest 验证边界。
+- Forbidden Touches：`git diff --numstat -- apps` 无输出，未触碰 `apps/**`。
+- 工作区状态：`progress.json` 与 task-loop `summary.json` 仍显示 `4-2/task-21` 为 `in_progress`，按本 verify-ready 时序规则不作为本验收阻断。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS

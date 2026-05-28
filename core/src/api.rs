@@ -3,19 +3,31 @@
 use std::path::PathBuf;
 
 use crate::{
-    batch_category, batch_delete, batch_rename as batch_rename_mod, classifier_correction,
-    classifier_impact, classifier_rule_editor, classifier_rules, classify, db, icloud_conflicts,
-    import_conflict_batch, note, recovery, redo, repair, repo_init, repo_path, repo_scan, storage,
-    sync, tree, ApplyTagSuggestionsRequest, BatchCategoryChangeReport, BatchCategoryPreviewReport,
-    BatchDeleteMode, BatchDeletePreviewReport, BatchDeleteReport, BatchRenamePreviewReport,
-    BatchRenameReport, BatchRenameRule, ChangeFilter, ChangeLogEntry, ClassifierCorrectionResult,
+    ai_call_log, ai_classification_suggestion, ai_privacy_rules, ai_settings, ai_summary,
+    ai_tags_suggestion, batch_category, batch_delete, batch_rename as batch_rename_mod,
+    classifier_correction, classifier_impact, classifier_rule_editor, classifier_rules, classify,
+    db, icloud_conflicts, import_conflict_batch, local_model_status, note, recovery, redo,
+    remote_provider_config, repair, repo_init, repo_path, repo_scan, storage, sync, tree,
+    AiCallLogClearReport, AiCallLogClearRequest, AiCallLogFilter, AiCallLogPage,
+    AiCallLogPagination, AiCategorySuggestion, AiCategorySuggestionRequest, AiConfig,
+    AiConfigSnapshot, AiPrivacyEvaluationReport, AiPrivacyEvaluationRequest,
+    AiPrivacyRulesSnapshot, AiPrivacyRulesUpdateRequest, AiSummaryClearReport,
+    AiSummaryClearRequest, AiSummaryDraft, AiSummaryGenerationRequest, AiSummarySaveReport,
+    AiSummarySaveRequest, AiTagSuggestionApplyReport, AiTagSuggestionReport,
+    AiTagSuggestionRequest, ApplyAiTagSuggestionsRequest, ApplyTagSuggestionsRequest,
+    BatchCategoryChangeReport, BatchCategoryPreviewReport, BatchDeleteMode,
+    BatchDeletePreviewReport, BatchDeleteReport, BatchRenamePreviewReport, BatchRenameReport,
+    BatchRenameRule, ChangeFilter, ChangeLogEntry, ClassifierCorrectionResult,
     ClassifierImpactPreviewRequest, ClassifierRule, ClassifierRuleCreateRequest,
     ClassifierRuleDeleteRequest, ClassifierRuleEditorSnapshot, ClassifierRuleUpdate,
     ClassifyResult, CoreError, CoreResult, DiagnosticsSnapshot, ExternalEvent, FileEntry,
     FileFilter, ICloudConflictPair, ICloudConflictPreviewReport, ICloudConflictResolution,
     ICloudConflictResolveReport, ImportConflictBatchApplyReport, ImportConflictBatchApplyRequest,
     ImportConflictBatchPreviewReport, ImportConflictBatchPreviewRequest, ImportOptions,
-    MoveToCategoryPreview, RecoveryReport, RedoActionRecord, RedoActionResult, ReindexReport,
+    LocalModelFolderLocation, LocalModelFolderRequest, LocalModelStatusRequest,
+    LocalModelStatusSnapshot, MoveToCategoryPreview, RecoveryReport, RedoActionRecord,
+    RedoActionResult, ReindexReport, RemoteProviderConfigSnapshot, RemoteProviderDisableRequest,
+    RemoteProviderEnableRequest, RemoteProviderTestRequest, RemoteProviderTestResult,
     RepairOptions, RepairReport, RepoConfig, RepoInitOptions, RepoPathValidation, RuleImpactReport,
     ScanSession, SyncResult, TagSuggestionApplyReport, TagSuggestionReport, TagSuggestionRequest,
 };
@@ -150,6 +162,471 @@ pub fn load_config(repo_path: String) -> CoreResult<RepoConfig> {
 /// SQLite persistence failures.
 pub fn update_config(repo_path: String, new_config: RepoConfig) -> CoreResult<()> {
     db::update_config(repo_path, new_config)
+}
+
+/// Loads the C3-01 AI settings snapshot without starting any AI provider.
+///
+/// The contract is for S3-01 AI settings and the S3-09 privacy gate summary.
+/// It exposes the master AI switch, provider preference, local/remote route
+/// toggles, privacy gate reference, and per-feature switches. Loading settings
+/// must never call local models, contact remote providers, read user file
+/// contents, write logs, or store API keys.
+///
+/// # Errors
+///
+/// Returns `CoreError::Config { reason }` when the repository path is invalid.
+pub fn load_ai_config(repo_path: String) -> CoreResult<AiConfigSnapshot> {
+    ai_settings::load_ai_config(repo_path)
+}
+
+/// Validates a C3-01 AI settings update payload.
+///
+/// This contract accepts only settings metadata. API keys, provider connection
+/// tests, remote enablement, privacy rule CRUD/evaluation, AI call logs,
+/// pending suggestion cleanup, and actual model execution remain owned by
+/// their separate C3 tasks.
+///
+/// # Errors
+///
+/// Returns `CoreError::Config { reason }` for invalid repository paths,
+/// mismatched payloads, incomplete feature toggles, or unavailable C3-01
+/// persistence. Returns `CoreError::PermissionDenied { path }` when repository
+/// metadata cannot be inspected and `CoreError::Io { message }` for metadata
+/// inspection failures.
+pub fn update_ai_config(repo_path: String, new_config: AiConfig) -> CoreResult<AiConfigSnapshot> {
+    ai_settings::update_ai_config(repo_path, new_config)
+}
+
+/// Reads the C3-02 local model status without enabling remote fallback.
+///
+/// The contract is for S3-02 local-model-status. It accepts a model id, a
+/// configured storage location, and an optional cached status snapshot so the
+/// page can render first-load, failure-entry, and manual refresh states from a
+/// stable shape. A status check may inspect only local model manifest,
+/// directory metadata, disk usage, cached status, and runtime health metadata.
+///
+/// This API must not download, install, delete, train, rewrite model weights,
+/// read user file contents, contact remote providers, enable remote fallback,
+/// write AI call logs, or expose API keys/provider config through diagnostics.
+///
+/// # Errors
+///
+/// Returns `CoreError::Config { reason }` for invalid request shape or
+/// unavailable local-model metadata, `CoreError::PermissionDenied { path }` for
+/// unreadable model metadata or runtime state, and `CoreError::Io { message }`
+/// for model manifest, directory metadata, or runtime inspection failures.
+pub fn get_local_model_status(
+    repo_path: String,
+    request: LocalModelStatusRequest,
+) -> CoreResult<LocalModelStatusSnapshot> {
+    local_model_status::get_local_model_status(repo_path, request)
+}
+
+/// Locates the configured C3-02 local model folder without mutating it.
+///
+/// S3-02 uses this read-only contract for `Open model location`. The result
+/// tells the platform layer which folder can be revealed and why revealing is
+/// unavailable. Core must not create missing folders, download models, repair
+/// metadata, delete caches, or touch user-authored files.
+///
+/// # Errors
+///
+/// Returns `CoreError::Config { reason }` for invalid request shape,
+/// `CoreError::PermissionDenied { path }` when the folder cannot be inspected,
+/// and `CoreError::Io { message }` for filesystem metadata failures.
+pub fn locate_local_model_folder(
+    repo_path: String,
+    request: LocalModelFolderRequest,
+) -> CoreResult<LocalModelFolderLocation> {
+    local_model_status::locate_local_model_folder(repo_path, request)
+}
+
+/// Tests a C3-03 remote AI provider without sending user file content.
+///
+/// S3-03 uses this contract before enabling remote AI. The request includes
+/// provider, model, optional custom endpoint, and a platform secure-storage key
+/// reference. Core must never accept or return raw API keys, user file paths,
+/// file content, prompts, notes, summaries, tags, or provider raw responses.
+///
+/// The later implementation may perform a minimal provider connectivity probe
+/// and write a sanitized provider-test log entry owned by C3-05. The test must
+/// not persist enablement, feature scope, privacy rules, or any user content.
+///
+/// # Errors
+///
+/// Returns `CoreError::Config { reason }` for invalid provider, model,
+/// endpoint, or key-reference shape; `CoreError::PermissionDenied { path }`
+/// when the secure credential reference cannot be accessed; and
+/// `CoreError::Internal { message }` for unavailable provider runtime or
+/// unexpected sanitized probe failures.
+pub fn test_remote_ai_provider(
+    repo_path: String,
+    request: RemoteProviderTestRequest,
+) -> CoreResult<RemoteProviderTestResult> {
+    remote_provider_config::test_remote_ai_provider(repo_path, request)
+}
+
+/// Loads the persisted C3-03 remote provider gate snapshot.
+///
+/// S3-03 calls this when opening the remote model configuration sheet, and
+/// S3-09 reads it as provider-consent state. The snapshot reports configured,
+/// verified, enabled, credential-present, scope, and disabled-reason state
+/// without returning API key material or contacting a provider.
+///
+/// This contract does not mutate provider settings, enable privacy gates,
+/// inspect user files, execute AI calls, or delete credentials.
+///
+/// # Errors
+///
+/// Returns `CoreError::Config { reason }` for invalid repository paths or
+/// invalid persisted metadata, and `CoreError::Internal { message }` when
+/// provider metadata cannot be read from initialized repository storage.
+pub fn load_remote_ai_provider_config(
+    repo_path: String,
+) -> CoreResult<RemoteProviderConfigSnapshot> {
+    remote_provider_config::load_remote_ai_provider_config(repo_path)
+}
+
+/// Enables a C3-03 remote AI provider after successful test and consent.
+///
+/// S3-03 uses this contract after the user selects usage scope and confirms
+/// that allowed content may leave the device. The returned snapshot exposes the
+/// five provider gate fields consumed by S3-03 and S3-09:
+/// `provider_configured`, `provider_verified`, `remote_provider_enabled`,
+/// `feature_scope`, and credential presence without API key material.
+///
+/// This contract does not execute AI calls, evaluate privacy rules, edit
+/// privacy field filters, generate suggestions, write user files, or disable
+/// remote calls through S3-09's privacy gate. C3-09 remains responsible for
+/// `privacy_gate_enabled` and field/rule evaluation.
+///
+/// # Errors
+///
+/// Returns `CoreError::Config { reason }` for invalid provider settings,
+/// missing feature scope, missing verification token, or missing data-flow
+/// consent; `CoreError::PermissionDenied { path }` when secure credential or
+/// provider metadata cannot be inspected; and `CoreError::Internal { message }`
+/// when provider metadata persistence or sanitized enablement state fails.
+pub fn enable_remote_ai_provider(
+    repo_path: String,
+    request: RemoteProviderEnableRequest,
+) -> CoreResult<RemoteProviderConfigSnapshot> {
+    remote_provider_config::enable_remote_ai_provider(repo_path, request)
+}
+
+/// Disables the C3-03 remote provider gate without touching S3-09 rules.
+///
+/// S3-03 uses this for `Disable remote AI`. The call sets
+/// `remote_provider_enabled` to false and may forget the stored credential
+/// reference when the user explicitly chooses `Also remove stored API key`.
+/// It preserves provider metadata and feature scope unless the credential
+/// reference is removed, in which case verification is reset because the
+/// tested provider/key combination no longer exists in Core metadata.
+///
+/// This contract does not delete user files, execute AI calls, change local AI
+/// settings, modify privacy rules, clear call logs, or implement S3-09's
+/// `privacy_gate_enabled` persistence.
+///
+/// # Errors
+///
+/// Returns `CoreError::Config { reason }` for invalid repository paths or
+/// invalid persisted metadata, and `CoreError::Internal { message }` when
+/// provider metadata cannot be read or updated atomically.
+pub fn disable_remote_ai_provider(
+    repo_path: String,
+    request: RemoteProviderDisableRequest,
+) -> CoreResult<RemoteProviderConfigSnapshot> {
+    remote_provider_config::disable_remote_ai_provider(repo_path, request)
+}
+
+/// Requests a C3-04 AI category suggestion without applying it.
+///
+/// S3-04 uses this contract for `Ask AI for suggestion...`, and S3-10 uses
+/// its structured status and skipped reason for fallback rendering. The
+/// request identifies one active file and the maximum context extraction policy
+/// the caller allows. Returned suggestions are drafts only: consumers must keep
+/// category writes, file moves, rule creation, and rejection feedback in their
+/// own explicit confirmation flows.
+/// The `requires_user_confirmation` field is part of the stable contract and
+/// must stay true for suggested, skipped, unavailable, and no-suggestion states.
+///
+/// This contract may inspect only file metadata and privacy/settings/provider
+/// gate state. It must not overwrite classifier rules, change
+/// `files.category`, move files, write user-authored content, leak API keys, or
+/// send data to a remote provider unless C3-01, C3-03, and C3-09 gates later
+/// allow it. The contract shape includes call-log and privacy-rule ids for
+/// traceability, but log persistence and privacy-rule CRUD remain owned by
+/// C3-05 and C3-09.
+///
+/// # Errors
+///
+/// Returns `CoreError::Config { reason }` for invalid request shape or disabled
+/// AI configuration, `CoreError::PermissionDenied { path }` when metadata,
+/// allowed content, or provider credentials cannot be inspected, and
+/// `CoreError::Internal { message }` for unavailable AI runtime or sanitized
+/// provider failures.
+pub fn suggest_category_with_ai(
+    repo_path: String,
+    request: AiCategorySuggestionRequest,
+) -> CoreResult<AiCategorySuggestion> {
+    ai_classification_suggestion::suggest_category_with_ai(repo_path, request)
+}
+
+/// Lists redacted C3-05 AI call log rows for S3-05.
+///
+/// The contract exposes only audit metadata: feature, local/remote route,
+/// provider/model display names, status, duration, sent field categories,
+/// privacy rule snapshots, error codes, and sanitized result summaries. It must
+/// never return API keys, key fragments, full file contents, full prompts, full
+/// model outputs, full notes, provider raw responses, Keychain reference
+/// values, or absolute user paths.
+///
+/// Listing is read-only. It must not execute AI calls, clear logs, export files,
+/// reveal files, mutate AI settings, edit privacy rules, or touch user files.
+///
+/// # Errors
+///
+/// Returns `CoreError::Db { message }` for invalid filter/pagination shape or
+/// AI call log metadata query failures, and `CoreError::PermissionDenied {
+/// path }` when repository metadata cannot be inspected.
+pub fn list_ai_calls(
+    repo_path: String,
+    filter: AiCallLogFilter,
+    pagination: AiCallLogPagination,
+) -> CoreResult<AiCallLogPage> {
+    ai_call_log::list_ai_calls(repo_path, filter, pagination)
+}
+
+/// Clears local C3-05 AI call log rows without deleting user data.
+///
+/// This contract deletes only `ai_call_log` audit rows in the requested scope.
+/// It must not delete, move, rename, trash, overwrite, or reclassify user
+/// files, and it must not remove AI settings, provider metadata, Keychain
+/// credentials, summaries, tags, notes, classifier rules, generated overviews,
+/// change log, undo/redo state, or any AI results.
+///
+/// # Errors
+///
+/// Returns `CoreError::Db { message }` for invalid clear scope, selected ids,
+/// retention cutoff, or SQLite write failures. Returns
+/// `CoreError::PermissionDenied { path }` when repository metadata is not
+/// writable.
+pub fn clear_ai_call_log(
+    repo_path: String,
+    request: AiCallLogClearRequest,
+) -> CoreResult<AiCallLogClearReport> {
+    ai_call_log::clear_ai_call_log(repo_path, request)
+}
+
+/// Generates a C3-06 AI summary draft without saving it.
+///
+/// S3-06 uses this contract for `Generate summary` and confirmed
+/// `Regenerate...` flows. The returned [`AiSummaryDraft`] is explicitly a draft
+/// until the caller invokes [`save_ai_summary`]. It carries source route,
+/// model/provider display state, used field categories, privacy rule id, call
+/// log id, and skipped/unavailable reasons so the page can render Draft,
+/// generated locally/remotely, skipped-by-privacy, and fallback states without
+/// parsing errors.
+///
+/// This contract must not persist a summary, overwrite notes, write user
+/// files, modify tags/categories/searches, enable remote AI, or bypass C3-09
+/// privacy rules. Remote generation remains gated by C3-01 settings, C3-03
+/// provider scope, C3-09 privacy evaluation, and C3-05 call-log availability.
+///
+/// # Errors
+///
+/// Returns `CoreError::Config { reason }` for invalid repository paths,
+/// request shape, provider scope, privacy reference, or AI gate configuration.
+/// Returns `CoreError::FileNotFound { path }` when the file id is missing,
+/// `CoreError::PermissionDenied { path }` when metadata, allowed input fields,
+/// or provider credentials cannot be inspected, and `CoreError::Db {
+/// message }` when summary or call-log metadata cannot be read or written.
+pub fn generate_ai_summary(
+    repo_path: String,
+    request: AiSummaryGenerationRequest,
+) -> CoreResult<AiSummaryDraft> {
+    ai_summary::generate_ai_summary(repo_path, request)
+}
+
+/// Saves a C3-06 AI summary draft as AreaMatrix-owned metadata.
+///
+/// S3-06 uses this after the user explicitly clicks `Save`. The request may
+/// contain AI-generated or user-edited text, but it remains derived summary
+/// metadata: it must not overwrite the original file, user note, extracted
+/// text, tags, categories, generated overview, AI call log, or provider state.
+/// The returned [`AiSummarySaveReport`] gives the page saved text, provenance,
+/// timestamps, edited-by-user state, and character count for badges, source
+/// rows, VoiceOver labels, and retry/dirty-state recovery.
+///
+/// # Errors
+///
+/// Returns `CoreError::Config { reason }` for invalid repository paths, file
+/// ids, empty or oversized summary text, unsafe draft ids, or unsafe provenance
+/// fields. Returns `CoreError::FileNotFound { path }` when the file id no
+/// longer exists, `CoreError::PermissionDenied { path }` when summary metadata
+/// cannot be written, and `CoreError::Db { message }` for persistence failures.
+pub fn save_ai_summary(
+    repo_path: String,
+    request: AiSummarySaveRequest,
+) -> CoreResult<AiSummarySaveReport> {
+    ai_summary::save_ai_summary(repo_path, request)
+}
+
+/// Clears C3-06 AI summary metadata for one file after confirmation.
+///
+/// This contract backs S3-06 `Clear summary...`. It may clear only the
+/// AreaMatrix-owned AI summary value. It must not delete, move, rename, trash,
+/// or overwrite the original file, and must not delete user notes, extracted
+/// text, tags, AI call logs, provider metadata, privacy rules, change log,
+/// undo/redo state, or generated overviews.
+///
+/// # Errors
+///
+/// Returns `CoreError::Config { reason }` for invalid repository paths, file
+/// ids, or missing confirmation. Returns `CoreError::FileNotFound { path }`
+/// when the file id no longer exists, `CoreError::PermissionDenied { path }`
+/// when summary metadata cannot be written, and `CoreError::Db { message }`
+/// for persistence failures.
+pub fn clear_ai_summary(
+    repo_path: String,
+    request: AiSummaryClearRequest,
+) -> CoreResult<AiSummaryClearReport> {
+    ai_summary::clear_ai_summary(repo_path, request)
+}
+
+/// Generates C3-07 AI tag suggestions without applying them.
+///
+/// S3-07 uses this contract to populate review chips before any tag write.
+/// The request identifies one active file, caller-provided candidate tags, and
+/// a privacy policy reference. Returned suggestions include confidence,
+/// display-safe reasons, merge hints, local/remote route, used context, privacy
+/// rule id, and call-log id so the page can render AI off, skipped, empty,
+/// low-confidence, merge, and traceability states without parsing provider
+/// responses.
+///
+/// This contract must not create or attach tags, write change log or undo
+/// rows, save AI settings, enable remote providers, edit privacy rules, or
+/// move, rename, delete, read, upload, or overwrite user files. Remote AI
+/// remains gated by C3-01 settings, C3-03 provider scope, C3-09 privacy
+/// evaluation, and C3-05 call-log availability.
+///
+/// # Errors
+///
+/// Returns `CoreError::Config { reason }` for invalid repository paths,
+/// candidate tags, privacy references, or AI gate configuration. Returns
+/// `CoreError::FileNotFound { path }` when the target file id is invalid or
+/// missing, and `CoreError::Db { message }` when tag, file, or AI call-log
+/// metadata cannot be read. Returns `CoreError::PermissionDenied { path }` or
+/// `CoreError::Io { message }` when repository metadata or allowed local
+/// context cannot be inspected.
+pub fn suggest_tags_with_ai(
+    repo_path: String,
+    request: AiTagSuggestionRequest,
+) -> CoreResult<AiTagSuggestionReport> {
+    ai_tags_suggestion::suggest_tags_with_ai(repo_path, request)
+}
+
+/// Applies reviewed C3-07 AI tag suggestions after explicit confirmation.
+///
+/// S3-07 calls this only for selected or edited suggestions. Rejected or
+/// cancelled rows stay in UI state and are not submitted. The implementation
+/// may later create or reuse normalized tags, write file/tag relations, record
+/// change-log rows, carry AI call provenance, and return an undo token for the
+/// tag write. It must never apply unselected suggestions or auto-write tags
+/// from generation output.
+///
+/// This contract does not generate AI suggestions, retry providers, change
+/// privacy rules, enable remote AI, or mutate files. It only defines the
+/// reviewed tag-apply boundary for C3-07.
+///
+/// # Errors
+///
+/// Returns `CoreError::Config { reason }` for invalid repository paths,
+/// missing confirmation, duplicate or invalid suggestion rows, unsafe
+/// provenance ids, or invalid tag names. Returns `CoreError::FileNotFound {
+/// path }` when the target file id is invalid or missing, and
+/// `CoreError::PermissionDenied { path }` when tag metadata cannot be written,
+/// and `CoreError::Db { message }` when tag metadata, change log, undo, or AI
+/// call-log provenance cannot be persisted.
+pub fn apply_ai_tag_suggestions(
+    repo_path: String,
+    request: ApplyAiTagSuggestionsRequest,
+) -> CoreResult<AiTagSuggestionApplyReport> {
+    ai_tags_suggestion::apply_ai_tag_suggestions(repo_path, request)
+}
+
+/// Lists C3-09 AI privacy rules, remote field filters, and provider gate state.
+///
+/// S3-09 uses this contract to render the privacy rules table, global
+/// `privacy_gate_enabled` state, remote allowed field controls, and read-only
+/// C3-03 provider scope. S3-10 can use matched rule ids from other AI
+/// contracts to route `View privacy rule` back to this snapshot.
+///
+/// This API is read-only. It must not create recommended templates
+/// automatically, enable or disable remote providers, delete credentials,
+/// inspect or send user file contents, write AI call logs, delete AI results,
+/// or touch user files.
+///
+/// # Errors
+///
+/// Returns `CoreError::Config { reason }` for invalid repository paths or
+/// malformed privacy metadata, and `CoreError::Db { message }` when privacy
+/// rules or provider gate metadata cannot be read.
+pub fn list_ai_privacy_rules(repo_path: String) -> CoreResult<AiPrivacyRulesSnapshot> {
+    ai_privacy_rules::list_ai_privacy_rules(repo_path)
+}
+
+/// Updates C3-09 AI privacy rules and remote privacy gate metadata.
+///
+/// The request replaces the S3-09-owned privacy rule set, remote field filter
+/// settings, and global `privacy_gate_enabled` value after explicit user
+/// confirmation. Enabling the privacy gate requires the read-only provider
+/// snapshot to show configured, verified, enabled provider state and non-empty
+/// feature scope; this prevents the privacy page from replacing the provider
+/// configuration flow.
+///
+/// The contract must not enable or disable C3-03 remote provider metadata,
+/// remove Keychain keys, execute AI calls, write suggestions, clear logs,
+/// regenerate summaries/tags, or modify user files. Disabling
+/// `privacy_gate_enabled` blocks future remote calls only.
+///
+/// # Errors
+///
+/// Returns `CoreError::Config { reason }` for invalid rules, duplicate rule
+/// ids, incomplete field settings, invalid provider gate state, or missing
+/// confirmation. Returns `CoreError::Db { message }` when privacy metadata
+/// cannot be written atomically.
+pub fn update_ai_privacy_rules(
+    repo_path: String,
+    request: AiPrivacyRulesUpdateRequest,
+) -> CoreResult<AiPrivacyRulesSnapshot> {
+    ai_privacy_rules::update_ai_privacy_rules(repo_path, request)
+}
+
+/// Evaluates C3-09 privacy rules before an AI feature uses candidate fields.
+///
+/// AI classification, summary, tag, and semantic search implementations use
+/// this contract before local or remote input is prepared. The returned report
+/// gives pages a stable allow/deny/skipped decision, provider-gate reason,
+/// matched rule, matched field type, sent field categories, and display-safe
+/// message. Privacy skips must keep `sent_fields` empty so S3-05 can log
+/// `No AI call was made`.
+///
+/// This contract evaluates gate state only. It must not execute providers,
+/// retry models, persist call logs, read full user note text, write AI results,
+/// or mutate files.
+///
+/// # Errors
+///
+/// Returns `CoreError::Config { reason }` for invalid evaluation input,
+/// duplicate fields, invalid rules, or unsafe path/context values. Returns
+/// `CoreError::Db { message }` when privacy metadata required for evaluation
+/// cannot be loaded.
+pub fn evaluate_ai_privacy(
+    repo_path: String,
+    request: AiPrivacyEvaluationRequest,
+) -> CoreResult<AiPrivacyEvaluationReport> {
+    ai_privacy_rules::evaluate_ai_privacy(repo_path, request)
 }
 
 /// Recovers AreaMatrix-owned startup residue before the UI opens.

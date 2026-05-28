@@ -98,6 +98,14 @@ def write_lock_activity(lock_dir: Path, values: dict[str, Any]) -> None:
     write_json(lock_dir / "activity.json", current)
 
 
+def replace_lock_activity(lock_dir: Path, values: dict[str, Any]) -> None:
+    if not lock_dir.is_dir():
+        return
+    next_values = dict(values)
+    next_values["updated_at"] = utc_now()
+    write_json(lock_dir / "activity.json", next_values)
+
+
 def clear_lock_activity(lock_dir: Path) -> None:
     try:
         (lock_dir / "activity.json").unlink()
@@ -341,6 +349,10 @@ def status_fragment(progress_file: Path, lock_dir: Path, log_root: Path, drain_r
                 output_file = activity["output_file"]
                 lines.append(f"- live_activity_log: {output_file}")
                 lines.append(f"- live_activity_log_state: {log_file_status(output_file)}")
+            if activity.get("exec_log_file"):
+                exec_log_file = activity["exec_log_file"]
+                lines.append(f"- live_activity_exec_log: {exec_log_file}")
+                lines.append(f"- live_activity_exec_log_state: {log_file_status(exec_log_file)}")
             if activity.get("no_output_elapsed_seconds") is not None:
                 lines.append(
                     f"- live_activity_no_output_elapsed: {human_duration(float(activity['no_output_elapsed_seconds']))}"
@@ -349,6 +361,28 @@ def status_fragment(progress_file: Path, lock_dir: Path, log_root: Path, drain_r
                 timeout_seconds = float(activity["no_output_timeout_seconds"])
                 timeout = "disabled" if timeout_seconds <= 0 else human_duration(timeout_seconds)
                 lines.append(f"- live_activity_no_output_timeout: {timeout}")
+            if activity.get("codex_idle_timeout_seconds") is not None:
+                timeout_seconds = float(activity["codex_idle_timeout_seconds"])
+                timeout = "disabled" if timeout_seconds <= 0 else human_duration(timeout_seconds)
+                lines.append(f"- live_activity_codex_idle_timeout: {timeout}")
+            if activity.get("validation_child_running") is not None:
+                lines.append(
+                    f"- live_activity_validation_child_running: {'yes' if activity.get('validation_child_running') else 'no'}"
+                )
+            if activity.get("validation_child_count") is not None:
+                lines.append(f"- live_activity_validation_child_count: {activity['validation_child_count']}")
+            details = activity.get("validation_child_details")
+            if isinstance(details, list):
+                for detail in details[:5]:
+                    lines.append(f"- live_activity_validation_child: {detail}")
+            if activity.get("validation_scan_reason"):
+                lines.append(f"- live_activity_validation_scan_reason: {activity['validation_scan_reason']}")
+            if activity.get("meaningful_activity") is not None:
+                lines.append(
+                    f"- live_activity_meaningful_activity: {'yes' if activity.get('meaningful_activity') else 'no'}"
+                )
+            if activity.get("exec_activity_event_count") is not None:
+                lines.append(f"- live_activity_exec_activity_events: {activity['exec_activity_event_count']}")
             if activity.get("child_restart") is not None and activity.get("child_restart_limit") is not None:
                 lines.append(
                     f"- live_activity_child_restart: {activity['child_restart']}/{activity['child_restart_limit']}"

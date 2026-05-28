@@ -6,7 +6,7 @@
 
 ## Core API
 
-- 计划新增：`semantic_search(repo_path, query, filter, pagination) -> SearchResultPage`
+- 计划新增：`semantic_search(repo_path, query, filter, pagination) -> SemanticSearchResultPage`
 - 计划新增：`build_embedding_index(repo_path, scope)`
 
 ## 输入

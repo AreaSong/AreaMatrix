@@ -128,6 +128,7 @@ struct UndoToastHistoryRequest: Identifiable, Equatable {
 struct BatchTagUndoToastHost: View {
     let repoPath: String
     let undoStore: any CoreUndoActionLogging
+    let redoStore: any CoreRedoActionLogging
     let errorMapper: any CoreErrorMapping
     let onRefreshSelection: () -> Void
     let onRefreshChangeLog: () -> Void
@@ -135,14 +136,19 @@ struct BatchTagUndoToastHost: View {
     let onOpenHistory: (UndoToastHistoryRequest) -> Void
     @Binding var undoState: BatchTagUndoState
     @Binding var actionLogRefreshFailure: CoreErrorMappingSnapshot?
+    @State private var redoState: RedoActionState = .idle
+    @State private var redoSourceUndoAction: UndoActionRecordSnapshot?
 
     var body: some View {
         Group {
             if !undoState.isIdle {
                 BatchTagUndoToastView(
                     state: undoState,
+                    redoState: redoState,
+                    redoSourceUndoAction: redoSourceUndoAction,
                     actionLogRefreshFailure: actionLogRefreshFailure,
                     onUndo: { action in Task { await undo(action) } },
+                    onRedo: { action in Task { await redo(action) } },
                     onOpenHistory: openHistory,
                     onDismiss: dismissUndoToast
                 )
@@ -152,6 +158,13 @@ struct BatchTagUndoToastHost: View {
         .task(id: repoPath) { await loadLatestUndoAction() }
         .onKeyPress("z", phases: .down) { event in
             guard event.modifiers.contains(.command) else { return .ignored }
+            if event.modifiers.contains(.shift) {
+                if let action = redoState.executableAction, !redoState.isBusy {
+                    Task { await redo(action) }
+                    return .handled
+                }
+                return .ignored
+            }
             if let action = undoState.executableAction, !undoState.isBusy {
                 Task { await undo(action) }
                 return .handled
@@ -190,6 +203,7 @@ struct BatchTagUndoToastHost: View {
 
         undoState = .undone(result)
         await refreshAfterUndo(result)
+        await loadLatestRedoAction()
     }
 
     @MainActor
@@ -207,11 +221,72 @@ struct BatchTagUndoToastHost: View {
             errorMapper: errorMapper
         )
         actionLogRefreshFailure = refreshed.failure
+        redoSourceUndoAction = refreshed.action
+    }
+
+    @MainActor
+    private func loadLatestRedoAction() async {
+        let previous = redoState.action
+        redoState = .checking(previous: previous)
+        let loaded = await RedoActionFeedback.loadLatestAction(
+            repoPath: repoPath,
+            redoStore: redoStore,
+            errorMapper: errorMapper
+        )
+        redoState = loaded.feedbackState() ?? .idle
+        updateRedoSourceUndoAction(for: loaded.action)
+    }
+
+    @MainActor
+    private func redo(_ action: RedoActionRecordSnapshot) async {
+        redoState = .redoing(action)
+        let applied = await RedoActionFeedback.redo(
+            repoPath: repoPath,
+            action: action,
+            redoStore: redoStore,
+            errorMapper: errorMapper
+        )
+        if let failure = applied.failure {
+            redoState = .failed(failure, previous: action)
+            return
+        }
+        guard let result = applied.result else {
+            redoState = .unavailable(reason: "Redo action finished without a result.")
+            return
+        }
+
+        redoState = .redone(result)
+        await refreshAfterRedo(result)
+    }
+
+    @MainActor
+    private func refreshAfterRedo(_ result: RedoActionResultSnapshot) async {
+        let plan = BatchTagUndoRefreshPlan(refreshTargets: result.refreshTargets)
+        if plan.refreshesCurrentList { onRefreshCurrentList() }
+        if plan.refreshesSelectionDetails { onRefreshSelection() }
+        if plan.refreshesChangeLog { onRefreshChangeLog() }
+        if plan.refreshesUndoActions {
+            await loadLatestUndoAction()
+        }
     }
 
     private func dismissUndoToast() {
         undoState = .idle
+        redoState = .idle
+        redoSourceUndoAction = nil
         actionLogRefreshFailure = nil
+    }
+
+    @MainActor
+    private func updateRedoSourceUndoAction(for action: RedoActionRecordSnapshot?) {
+        guard let action else {
+            redoSourceUndoAction = nil
+            return
+        }
+        if redoSourceUndoAction?.actionID == action.sourceUndoActionID {
+            return
+        }
+        redoSourceUndoAction = undoState.action?.actionID == action.sourceUndoActionID ? undoState.action : nil
     }
 
     private func openHistory(_ source: UndoToastHistoryRequest.Source) {
@@ -304,52 +379,82 @@ struct UndoToastHistoryRouteSheet: View {
     }
 }
 
+struct CommandPaletteSmartListTarget: Equatable, Identifiable {
+    let savedSearch: SavedSearchSnapshot
+
+    var id: Int64 {
+        savedSearch.id
+    }
+
+    var title: String {
+        savedSearch.name
+    }
+
+    var systemImage: String {
+        savedSearch.icon ?? "line.3.horizontal.decrease.circle"
+    }
+
+    var helpText: String {
+        "Open Smart List"
+    }
+
+    var accessibilityIdentifier: String {
+        "S2-15-C2-04-smart-list-\(savedSearch.id)"
+    }
+
+    static func matching(_ savedSearches: [SavedSearchSnapshot], query: String) -> [CommandPaletteSmartListTarget] {
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        let filtered = savedSearches.filter { saved in
+            trimmed.isEmpty ||
+                saved.name.localizedCaseInsensitiveContains(trimmed) ||
+                saved.query.query.localizedCaseInsensitiveContains(trimmed)
+        }
+        return filtered.map(CommandPaletteSmartListTarget.init(savedSearch:))
+    }
+}
+
 struct SearchCommandPaletteRouteView: View {
-    let query: String
-    let batchAddTagsRoute: BatchAddTagsRoute
-    let batchChangeCategoryRoute: BatchChangeCategoryRoute
-    let onOpenBatchAddTags: (BatchAddTagsRoute) -> Void
-    let onOpenBatchChangeCategory: (BatchChangeCategoryRoute) -> Void
+    @Binding var query: String
+    let state: CommandPaletteLoadState
+    var smartLists: [SavedSearchSnapshot] = []
+    let onLoad: () -> Void
+    var onOpenSmartList: (SavedSearchSnapshot) -> Void = { _ in }
+    let onExecuteTarget: (CommandTargetSnapshot) -> Void
     let onClose: () -> Void
 
     var body: some View {
-        MainFileActionSheetContainer(title: "Command Palette", pageID: "S2-15") {
-            TextField("Search commands", text: .constant(query))
-                .textFieldStyle(.roundedBorder)
-            Text("Search related commands")
-                .font(.callout)
-                .foregroundStyle(.secondary)
-            commandPaletteBatchAddTagsButton
-            commandPaletteBatchChangeCategoryButton
-            HStack {
-                Spacer()
-                Button("Close", action: onClose)
-                    .keyboardShortcut(.cancelAction)
-            }
-        }
+        CommandPaletteView(
+            query: $query,
+            state: state,
+            smartLists: smartLists,
+            onLoad: onLoad,
+            onOpenSmartList: onOpenSmartList,
+            onExecuteTarget: onExecuteTarget,
+            onClose: onClose
+        )
         .accessibilityIdentifier("S2-15-search-route")
     }
+}
 
-    private var commandPaletteBatchAddTagsButton: some View {
-        Button {
-            onOpenBatchAddTags(batchAddTagsRoute)
-        } label: {
-            Label("Add tags...", systemImage: "tag")
-        }
-        .disabled(batchAddTagsRoute.selectedCount == 0)
-        .help(BatchAddTagsEntryPolicy.openHelp(disabledReason: batchAddTagsRoute.disabledReason))
-        .accessibilityIdentifier("S2-09-command-palette-add-tags")
+extension MainRepositoryContentView {
+    func commandPaletteBatchDeleteRoute() -> BatchDeleteRoute {
+        CommandPaletteBatchRouteBuilder.batchDeleteRoute(
+            selectedFileIDs: selectedFileIDs,
+            visibleFiles: visibleFiles,
+            isReadOnly: fileListModel.isReadOnly,
+            isLoading: fileListModel.isLoading,
+            writeLockedFileIDs: fileListModel.writeLockedFileIDs
+        )
     }
 
-    private var commandPaletteBatchChangeCategoryButton: some View {
-        Button {
-            onOpenBatchChangeCategory(batchChangeCategoryRoute)
-        } label: {
-            Label("Change category...", systemImage: "folder")
-        }
-        .disabled(batchChangeCategoryRoute.selectedCount == 0)
-        .help(BatchChangeCategoryEntryPolicy.openHelp(disabledReason: batchChangeCategoryRoute.disabledReason))
-        .accessibilityIdentifier("S2-12-command-palette-change-category")
+    func commandPaletteBatchRenameRoute() -> BatchRenameRoute {
+        CommandPaletteBatchRouteBuilder.batchRenameRoute(
+            selectedFileIDs: selectedFileIDs,
+            visibleFiles: visibleFiles,
+            isReadOnly: fileListModel.isReadOnly,
+            isLoading: fileListModel.isLoading,
+            writeLockedFileIDs: fileListModel.writeLockedFileIDs
+        )
     }
 }
 

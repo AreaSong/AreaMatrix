@@ -1,0 +1,50 @@
+一、执行结论
+
+已完成。
+
+二、执行范围
+
+单任务：`4-1/task-127`
+
+修改/新增文件清单：
+- [MainFileClassifierCorrectionRoutingActions.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileClassifierCorrectionRoutingActions.swift)
+- [MainFileCategoryMoveState.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileCategoryMoveState.swift)
+- [MainFileListState.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileListState.swift)
+- [ChangeCategorySheet.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ChangeCategorySheet.swift)
+- [ClassifierRuleHandoffRouteView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ClassifierRuleHandoffRouteView.swift)
+- [MainFileActionRoutingSheet.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainFileActionRoutingSheet.swift)
+- [MainRepositoryContentActionRouting.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentActionRouting.swift)
+- [ClassifierCorrectionHandoffTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ClassifierCorrectionHandoffTests.swift)
+- [ChangeCategoryPageIntegrationVerifyTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ChangeCategoryPageIntegrationVerifyTests.swift)
+- [project.pbxproj](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix.xcodeproj/project.pbxproj)
+
+三、完成情况
+
+核对清单均已处理：S2-16 只接入 C2-12；详情页入口已修正到 `.classifierCorrection`；`Edit rule...` / `Preview impact` 改为 S2-17/S2-18 handoff 入口；未实现同页其他 Core 能力。
+
+完成标准：S2-16 的 C2-12 用户入口可触发；真实 `correctFileCategory` CoreBridge 路径保留；未调用 `saveClassifierRule` / `previewClassifierRuleImpact`，没有越界实现 C2-13/C2-14。
+
+Forbidden Touches：未触碰 `core/src/**`。
+
+四、工程质量
+
+结构上把 classifier rule handoff 拆到独立 routing action、state 和 view，避免继续在原 sheet 中堆空 action。handoff 只传递规则草稿与页面路由，不保存规则、不预览影响、不伪造 Core 结果。
+
+错误和边界处理：S2-16 修正仍走真实 C2-12；Remember 后续仅进入确认/预览页面壳层，避免在 task-127 中越界调用后续能力。未新增 Rust public API，无 rustdoc 需求。现有部分路由聚合文件仍偏大，这是既有结构债，本次未扩大重构范围。
+
+五、验证情况
+
+已运行并通过：
+- `./dev check task 4-1/task-127`
+- `git diff --check`
+- `git diff --name-only -- core/src && git diff --cached --name-only -- core/src`
+- 目标文件内 C2-13/C2-14 Core 调用关键字检查，无命中
+
+验证过程中首次 `./dev check task 4-1/task-127` 曾因 Swift 编译缺少 `return` 失败，已修复后重新运行通过。按 manifest 验证上限，本次没有升级运行 `./dev test macos`、`cargo test --workspace` 或全量门禁。
+
+六、风险与后续
+
+剩余风险：S2-17/S2-18 的真实规则保存和影响预览仍应由后续对应任务实现，本次只做 S2-16 到后续页面的可验收 handoff，不越界完成后续 Core 闭环。
+
+建议下一个任务：继续执行 S2-17/S2-18 对应的 classifier rule save / impact preview task。
+

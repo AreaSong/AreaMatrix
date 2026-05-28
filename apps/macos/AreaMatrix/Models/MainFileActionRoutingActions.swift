@@ -12,7 +12,18 @@ extension MainFileListModel {
         guard let fileID = fileID ?? selection.singleFileID,
               writeActionDisabledReason(fileID: fileID) == nil else { return }
         changeCategoryState = .idle
+        classifierCorrectionContextState = .idle
+        classifierCorrectionResult = nil
         pendingActionDestination = .changeCategory(fileID: fileID)
+    }
+
+    func beginClassifierCorrection(fileID: Int64? = nil) {
+        guard let fileID = fileID ?? selection.singleFileID,
+              writeActionDisabledReason(fileID: fileID) == nil else { return }
+        changeCategoryState = .idle
+        classifierCorrectionContextState = .idle
+        classifierCorrectionResult = nil
+        pendingActionDestination = .changeCategory(fileID: fileID, mode: .classifierCorrection)
     }
 
     func beginRenameFromChangeCategory(fileID: Int64, targetCategory: String) {
@@ -38,7 +49,7 @@ extension MainFileListModel {
         pendingActionDestination = .iCloudConflict(fileID: fileID)
     }
 
-    func openClassifierRuleEditorForBatchCategory(context: BatchChangeCategoryNewCategoryReturnContext) {
+    func openClassifierRuleEditorForBatchCategory(context: BatchChangeCategoryReturnContext) {
         pendingSearchDestination = .classifierRuleEditor(context: context)
     }
 
@@ -61,8 +72,10 @@ extension MainFileListModel {
         iCloudConflictResolutionState = .applying(fileID: fileID, strategy: strategy)
         clearDiagnosticsState()
         do {
+            let conflictID = file(for: fileID)?.path ?? conflictedCopyPath ?? "\(fileID)"
             let result = try await iCloudConflictResolver.resolveICloudConflict(ICloudConflictResolutionRequest(
                 repoPath: repoPath,
+                conflictID: conflictID,
                 fileID: fileID,
                 strategy: strategy,
                 originalPath: originalPath,
@@ -75,6 +88,31 @@ extension MainFileListModel {
             guard pendingActionDestination == .iCloudConflict(fileID: fileID) else { return }
             iCloudConflictResolutionState = .failed(fileID: fileID, strategy: strategy, mapping)
         }
+    }
+
+    func completePreviewedICloudConflictResolution(
+        fileID: Int64,
+        strategy: ICloudConflictResolutionStrategy,
+        report: ICloudConflictResolveReportSnapshot
+    ) async {
+        guard pendingActionDestination == .iCloudConflict(fileID: fileID) else { return }
+        let result = ICloudConflictResolutionResult(report: report)
+        do {
+            try validateICloudConflictResolution(result, fileID: fileID)
+            await refreshAfterICloudConflictResolution(fileID: fileID, strategy: strategy)
+        } catch {
+            let mapping = await mapCoreError(error)
+            iCloudConflictResolutionState = .failed(fileID: fileID, strategy: strategy, mapping)
+        }
+    }
+
+    func recordICloudConflictResolutionFailure(
+        fileID: Int64,
+        strategy: ICloudConflictResolutionStrategy,
+        mapping: CoreErrorMappingSnapshot
+    ) {
+        guard pendingActionDestination == .iCloudConflict(fileID: fileID) else { return }
+        iCloudConflictResolutionState = .failed(fileID: fileID, strategy: strategy, mapping)
     }
 
     func applyKeepBothICloudConflict(fileID: Int64) async {
@@ -129,6 +167,8 @@ extension MainFileListModel {
             renameState = .idle
             deleteState = .idle
             changeCategoryState = .idle
+            classifierCorrectionContextState = .idle
+            classifierCorrectionResult = nil
             iCloudConflictResolutionState = .idle
         }
     }
@@ -150,5 +190,311 @@ extension FileEntrySnapshot {
         let lowercasedPath = path.lowercased()
         return lowercasedName.contains("conflicted copy") ||
             lowercasedPath.contains("conflicted copy")
+    }
+}
+
+enum CommandPaletteLoadState: Equatable {
+    case idle
+    case loading(CommandIndexContext)
+    case loaded(CommandPaletteSnapshot)
+    case failed(CommandIndexContext, CommandPaletteSnapshot?, CoreErrorMappingSnapshot)
+
+    var snapshot: CommandPaletteSnapshot? {
+        switch self {
+        case let .loaded(snapshot), let .failed(_, snapshot?, _):
+            snapshot
+        case .idle, .loading, .failed:
+            nil
+        }
+    }
+
+    var errorMapping: CoreErrorMappingSnapshot? {
+        guard case let .failed(_, _, mapping) = self else { return nil }
+        return mapping
+    }
+
+    var isLoading: Bool {
+        if case .loading = self { return true }
+        return false
+    }
+}
+
+struct CommandPaletteSnapshot: Equatable {
+    var sections: [CommandPaletteSectionSnapshot]
+    var generatedAt: Int64
+
+    var isEmpty: Bool {
+        sections.allSatisfy(\.targets.isEmpty)
+    }
+}
+
+struct CommandPaletteSectionSnapshot: Equatable, Identifiable {
+    var title: String
+    var targets: [CommandTargetSnapshot]
+
+    var id: String {
+        title
+    }
+}
+
+struct CommandTargetSnapshot: Equatable, Identifiable {
+    var id: String
+    var title: String
+    var subtitle: String?
+    var group: CommandTargetGroupSnapshot
+    var kind: CommandTargetKindSnapshot
+    var action: CommandTargetActionSnapshot
+    var route: String?
+    var shortcut: String?
+    var disabled: Bool
+    var disabledReason: String?
+    var requiresConfirmation: Bool
+    var fileID: Int64?
+    var savedSearchID: Int64?
+}
+
+enum CommandPaletteTargetRoute: Equatable {
+    case importFiles
+    case settings
+    case beginSearch
+    case batchAddTags
+    case batchChangeCategory
+    case batchDelete
+    case batchRename
+    case classifierRuleEditor
+    case runSmartList(Int64)
+    case focusFile(Int64)
+    case openRepository
+    case help
+    case linkedPage(CommandPaletteLinkedPageRoute)
+    case unsupported
+}
+
+enum CommandTargetGroupSnapshot: String, Equatable {
+    case commands = "Commands"
+    case navigation = "Navigation"
+    case currentSelection = "Current Selection"
+    case recent = "Recent"
+    case smartLists = "Smart Lists"
+    case fileCandidates = "File Candidates"
+}
+
+enum CommandTargetKindSnapshot: String, Equatable {
+    case command = "Command"
+    case navigation = "Navigation"
+    case smartList = "Smart List"
+    case fileCandidate = "File Candidate"
+    case recentCommand = "Recent Command"
+}
+
+enum CommandTargetActionSnapshot: String, Equatable {
+    case navigate = "Navigate"
+    case openSheet = "Open Sheet"
+    case openConfirmation = "Open Confirmation"
+    case runSmartList = "Run Smart List"
+    case focusFile = "Focus File"
+    case openSearch = "Open Search"
+    case lowRiskAction = "Low Risk Action"
+}
+
+extension CommandTargetSnapshot {
+    var isExecutable: Bool {
+        executionRoute != .unsupported && (!disabled || usesDynamicRedoAvailability)
+    }
+
+    var confirmationLabel: String? {
+        requiresConfirmation ? "Requires confirmation" : nil
+    }
+
+    var effectiveDisabledReason: String? {
+        isExecutable ? nil : disabledReason
+    }
+
+    var executionRoute: CommandPaletteTargetRoute {
+        switch action {
+        case .openSheet:
+            return openSheetRoute
+        case .openConfirmation:
+            return confirmationRoute
+        case .navigate:
+            return navigationRoute
+        case .runSmartList:
+            guard let savedSearchID else { return .unsupported }
+            return .runSmartList(savedSearchID)
+        case .focusFile:
+            guard let fileID else { return .unsupported }
+            return .focusFile(fileID)
+        case .openSearch:
+            return .beginSearch
+        case .lowRiskAction:
+            return .unsupported
+        }
+    }
+
+    private var openSheetRoute: CommandPaletteTargetRoute {
+        switch route {
+        case "import":
+            .importFiles
+        case "S2-09":
+            .batchAddTags
+        default:
+            linkedPageRoute ?? .unsupported
+        }
+    }
+
+    private var confirmationRoute: CommandPaletteTargetRoute {
+        switch route {
+        case "S2-12":
+            .batchChangeCategory
+        case "S2-13":
+            .batchDelete
+        case "S2-14":
+            .batchRename
+        default:
+            linkedPageRoute ?? .unsupported
+        }
+    }
+
+    private var navigationRoute: CommandPaletteTargetRoute {
+        switch route {
+        case "settings":
+            .settings
+        case "openRepository":
+            .openRepository
+        case "help":
+            .help
+        case "S2-19":
+            .classifierRuleEditor
+        case "search":
+            .beginSearch
+        default:
+            linkedPageRoute ?? .unsupported
+        }
+    }
+
+    private var linkedPageRoute: CommandPaletteTargetRoute? {
+        guard let route else { return nil }
+        switch route {
+        case CommandPaletteLinkedPageRoute.classifierImpactPreview.pageID:
+            return .linkedPage(.classifierImpactPreview)
+        case CommandPaletteLinkedPageRoute.importConflictBatch.pageID:
+            return .linkedPage(.importConflictBatch)
+        case CommandPaletteLinkedPageRoute.redo.pageID:
+            return .linkedPage(.redo)
+        case CommandPaletteLinkedPageRoute.tagSuggestions.pageID:
+            return .linkedPage(.tagSuggestions)
+        default:
+            return nil
+        }
+    }
+
+    private var usesDynamicRedoAvailability: Bool {
+        if case .linkedPage(.redo) = executionRoute { return true }
+        return false
+    }
+}
+
+enum CommandPaletteSmartListRouting {
+    static func savedSearch(savedSearchID: Int64, in savedSearches: [SavedSearchSnapshot]) -> SavedSearchSnapshot? {
+        savedSearches.first { $0.id == savedSearchID }
+    }
+}
+
+extension CommandIndexContext {
+    static func commandPalette(
+        query: String,
+        selectedFileIDs: Set<Int64>,
+        currentPath: String?,
+        includeFileCandidates: Bool = true
+    ) -> CommandIndexContext {
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        return CommandIndexContext(
+            query: trimmed.isEmpty ? nil : trimmed,
+            selectedFileIds: selectedFileIDs.sorted(),
+            currentPath: currentPath,
+            includeFileCandidates: includeFileCandidates
+        )
+    }
+}
+
+extension CommandPaletteSnapshot {
+    init(coreIndex: CommandIndex) {
+        generatedAt = coreIndex.generatedAt
+        sections = [
+            CommandPaletteSectionSnapshot(
+                title: CommandTargetGroupSnapshot.commands.rawValue,
+                targets: coreIndex.commands
+            ),
+            CommandPaletteSectionSnapshot(
+                title: CommandTargetGroupSnapshot.navigation.rawValue,
+                targets: coreIndex.navigationTargets
+            ),
+            CommandPaletteSectionSnapshot(
+                title: CommandTargetGroupSnapshot.currentSelection.rawValue,
+                targets: coreIndex.currentSelectionTargets
+            ),
+            CommandPaletteSectionSnapshot(
+                title: CommandTargetGroupSnapshot.recent.rawValue,
+                targets: coreIndex.recentTargets
+            ),
+            CommandPaletteSectionSnapshot(
+                title: CommandTargetGroupSnapshot.smartLists.rawValue,
+                targets: coreIndex.smartLists
+            ),
+            CommandPaletteSectionSnapshot(
+                title: CommandTargetGroupSnapshot.fileCandidates.rawValue,
+                targets: coreIndex.fileCandidates
+            )
+        ]
+    }
+}
+
+extension CommandTargetSnapshot {
+    init(coreTarget: CommandTarget) {
+        id = coreTarget.id
+        title = coreTarget.title
+        subtitle = coreTarget.subtitle
+        group = CommandTargetGroupSnapshot(coreGroup: coreTarget.group)
+        kind = CommandTargetKindSnapshot(coreKind: coreTarget.kind)
+        action = CommandTargetActionSnapshot(coreAction: coreTarget.action)
+        route = coreTarget.route
+        shortcut = coreTarget.shortcut
+        disabled = coreTarget.disabled
+        disabledReason = coreTarget.disabledReason
+        requiresConfirmation = coreTarget.requiresConfirmation
+        fileID = coreTarget.fileId
+        savedSearchID = coreTarget.savedSearchId
+    }
+}
+
+@MainActor
+extension MainFileListModel {
+    func loadCommandIndex(
+        query: String,
+        selectedFileIDs: Set<Int64>,
+        currentPath: String?
+    ) async {
+        let context = CommandIndexContext.commandPalette(
+            query: query,
+            selectedFileIDs: selectedFileIDs,
+            currentPath: currentPath
+        )
+        let availableCommands = commandPaletteState.snapshot
+        commandPaletteState = .loading(context)
+        do {
+            let index = try await commandIndexer.listCommandTargets(repoPath: repoPath, context: context)
+            commandPaletteState = .loaded(CommandPaletteSnapshot(coreIndex: index))
+        } catch {
+            let mappedError = await mapCoreError(error)
+            commandPaletteState = .failed(
+                context,
+                availableCommands ?? .commandRegistryRecovery(query: context.query),
+                mappedError
+            )
+        }
+    }
+
+    func clearCommandPaletteState() {
+        commandPaletteState = .idle
     }
 }

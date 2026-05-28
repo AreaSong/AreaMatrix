@@ -1,6 +1,7 @@
 @testable import AreaMatrix
 import XCTest
 
+// swiftlint:disable file_length
 final class ImportBatchResultSummaryTests: XCTestCase {
     @MainActor
     func testS212C208PreviewApplyUndoAndRouteStayWithinControlMap() async {
@@ -12,10 +13,12 @@ final class ImportBatchResultSummaryTests: XCTestCase {
         ])
 
         let previewState = await BatchChangeCategoryAction.preview(
-            repoPath: "/tmp/repo",
-            fileIDs: [2, 1],
-            targetCategory: "finance",
-            moveRepoOwnedFiles: true,
+            request: BatchChangeCategoryPreviewRequest(
+                repoPath: "/tmp/repo",
+                fileIDs: [2, 1],
+                targetCategory: "finance",
+                moveRepoOwnedFiles: true
+            ),
             changer: changer,
             errorMapper: S212ErrorMapper()
         )
@@ -54,10 +57,12 @@ final class ImportBatchResultSummaryTests: XCTestCase {
             .preview(.failure(CoreError.PermissionDenied(path: "/tmp/repo/finance")))
         ])
         let previewState = await BatchChangeCategoryAction.preview(
-            repoPath: "/tmp/repo",
-            fileIDs: [1, 2],
-            targetCategory: "finance",
-            moveRepoOwnedFiles: true,
+            request: BatchChangeCategoryPreviewRequest(
+                repoPath: "/tmp/repo",
+                fileIDs: [1, 2],
+                targetCategory: "finance",
+                moveRepoOwnedFiles: true
+            ),
             changer: changer,
             errorMapper: S212ErrorMapper()
         )
@@ -70,14 +75,14 @@ final class ImportBatchResultSummaryTests: XCTestCase {
             after: previewState,
             expandDetails: true
         ))
-        XCTAssertFalse(BatchChangeCategoryValidation.canApply(
+        XCTAssertFalse(BatchChangeCategoryValidation.canApply(BatchChangeCategoryApplyGate(
             targetCategory: "finance",
             moveRepoOwnedFiles: true,
             fileIDs: [1, 2],
             preview: previewState.report,
             disabledReason: nil,
             isApplying: false
-        ))
+        )))
     }
 
     func testS212C208ApplyRequiresLatestUnblockedDryRunAndPartialFailureRefresh() {
@@ -86,36 +91,37 @@ final class ImportBatchResultSummaryTests: XCTestCase {
         var blockedPreview = preview
         blockedPreview.canApply = false
 
-        XCTAssertTrue(BatchChangeCategoryValidation.canApply(
+        XCTAssertTrue(BatchChangeCategoryValidation.canApply(BatchChangeCategoryApplyGate(
             targetCategory: "finance",
             moveRepoOwnedFiles: true,
             fileIDs: [1, 2],
             preview: preview,
             disabledReason: nil,
             isApplying: false
-        ))
-        XCTAssertFalse(BatchChangeCategoryValidation.canApply(
+        )))
+        XCTAssertFalse(BatchChangeCategoryValidation.canApply(BatchChangeCategoryApplyGate(
             targetCategory: "archive",
             moveRepoOwnedFiles: true,
             fileIDs: [1, 2],
             preview: preview,
             disabledReason: nil,
             isApplying: false
-        ))
-        XCTAssertFalse(BatchChangeCategoryValidation.canApply(
+        )))
+        XCTAssertFalse(BatchChangeCategoryValidation.canApply(BatchChangeCategoryApplyGate(
             targetCategory: "finance",
             moveRepoOwnedFiles: true,
             fileIDs: [1, 2],
             preview: blockedPreview,
             disabledReason: nil,
             isApplying: false
-        ))
+        )))
         XCTAssertTrue(partial.shouldRefreshConsumerAfterApply)
         XCTAssertFalse(partial.shouldCloseSheetAfterApply)
         XCTAssertFalse(BatchCategoryChangeReportSnapshot.s212AllFailedReport().shouldRefreshConsumerAfterApply)
     }
 
     @MainActor
+    // swiftlint:disable:next function_body_length
     func testS118PreviewErrorAndPartialSuccessSurfaceFailedItemInResultSummary() async {
         let readyURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
         let failedPreviewURL = URL(fileURLWithPath: "/tmp/unreadable.mov")
@@ -167,7 +173,16 @@ final class ImportBatchResultSummaryTests: XCTestCase {
             remaining: 0,
             currentPath: "finance/Invoice_2026Q1.pdf",
             skipped: 0,
-            pending: 0
+            pending: 0,
+            items: [
+                ImportBatchProgressSnapshot.Item(
+                    fileID: 117,
+                    sourcePath: "/tmp/source.pdf",
+                    targetPath: "finance/Invoice_2026Q1.pdf",
+                    phase: .done,
+                    errorMessage: nil
+                )
+            ]
         ))
     }
 

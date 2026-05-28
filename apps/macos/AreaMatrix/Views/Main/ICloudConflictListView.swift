@@ -2,8 +2,12 @@ import SwiftUI
 
 enum ICloudConflictListCopy {
     static let title = "iCloud Conflicts"
+    static let s220Title = "解决 iCloud 冲突"
     static let subtitle = """
     iCloud created conflict copies for these files. AreaMatrix will not delete any version automatically.
+    """
+    static let s220Subtitle = """
+    Select a conflict found by Core before comparing versions. Listing is read-only and will not move files.
     """
     static let loadingTitle = "Checking iCloud conflicts..."
     static let emptyTitle = "No iCloud conflicts found"
@@ -18,6 +22,7 @@ enum ICloudConflictListCopy {
 
 enum ICloudConflictListAccessibilityID {
     static let page = "S1-36-C1-25-icloud-conflict-list"
+    static let s220Page = "S2-20-C1-25-icloud-conflict-list"
     static let loading = "S1-36-C1-25-loading"
     static let emptyRefresh = "S1-36-C1-25-empty-refresh"
     static let error = "S1-36-C1-25-error"
@@ -45,19 +50,72 @@ enum ICloudConflictListAccessibilityID {
     }
 }
 
+enum ICloudConflictListPageContext: Equatable {
+    case s136List
+    case s220ConflictVisual
+
+    var accessibilityID: String {
+        switch self {
+        case .s136List:
+            ICloudConflictListAccessibilityID.page
+        case .s220ConflictVisual:
+            ICloudConflictListAccessibilityID.s220Page
+        }
+    }
+
+    var title: String {
+        switch self {
+        case .s136List:
+            ICloudConflictListCopy.title
+        case .s220ConflictVisual:
+            ICloudConflictListCopy.s220Title
+        }
+    }
+
+    var subtitle: String {
+        switch self {
+        case .s136List:
+            ICloudConflictListCopy.subtitle
+        case .s220ConflictVisual:
+            ICloudConflictListCopy.s220Subtitle
+        }
+    }
+
+    var loadingTitle: String {
+        switch self {
+        case .s136List:
+            ICloudConflictListCopy.loadingTitle
+        case .s220ConflictVisual:
+            "Loading conflict details..."
+        }
+    }
+
+    func countLabel(conflictCount: Int) -> String {
+        switch self {
+        case .s136List:
+            "\(conflictCount) conflicts"
+        case .s220ConflictVisual:
+            "\(conflictCount) conflict groups found"
+        }
+    }
+}
+
 struct ICloudConflictListView: View {
     @StateObject private var model: ICloudConflictListModel
+    let pageContext: ICloudConflictListPageContext
     let onClose: () -> Void
     let onResolve: (ICloudConflictPairSnapshot) -> Void
     let onCollectDiagnostics: () -> Void
 
     init(
         model: ICloudConflictListModel,
+        pageContext: ICloudConflictListPageContext = .s136List,
         onClose: @escaping () -> Void,
         onResolve: @escaping (ICloudConflictPairSnapshot) -> Void,
         onCollectDiagnostics: @escaping () -> Void = {}
     ) {
         _model = StateObject(wrappedValue: model)
+        self.pageContext = pageContext
         self.onClose = onClose
         self.onResolve = onResolve
         self.onCollectDiagnostics = onCollectDiagnostics
@@ -81,26 +139,31 @@ struct ICloudConflictListView: View {
             ICloudConflictMinimalSheet(
                 model: ICloudConflictMinimalModel(
                     repoPath: route.repoPath,
+                    conflictID: route.conflict.conflictID,
                     originalVersion: route.originalVersion,
                     conflictedCopyVersion: route.conflictedCopyVersion
                 ),
                 resolutionCapability: route.resolutionCapability,
                 isTrashAvailable: OnboardingModel.isSystemTrashAvailable(),
                 onCancel: model.closeResolvingConflict,
-                onApply: { _, _, _ in },
+                onApply: { result in
+                    guard result.report?.status == .resolved else { return }
+                    Task { await model.refresh() }
+                    model.closeResolvingConflict()
+                },
                 onCollectDiagnostics: onCollectDiagnostics
             )
         }
-        .accessibilityIdentifier("S1-36-C1-25-icloud-conflict-list")
+        .accessibilityIdentifier(pageContext.accessibilityID)
     }
 
     private var header: some View {
         HStack(alignment: .firstTextBaseline) {
             VStack(alignment: .leading, spacing: 5) {
-                Text(ICloudConflictListCopy.title)
+                Text(pageContext.title)
                     .font(.title2.weight(.semibold))
                     .accessibilityAddTraits(.isHeader)
-                Text(ICloudConflictListCopy.subtitle)
+                Text(pageContext.subtitle)
                     .font(.callout)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -133,7 +196,7 @@ struct ICloudConflictListView: View {
     private var loadingContent: some View {
         VStack(spacing: 12) {
             ProgressView()
-            Text(ICloudConflictListCopy.loadingTitle)
+            Text(pageContext.loadingTitle)
                 .font(.headline)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -181,7 +244,7 @@ struct ICloudConflictListView: View {
     private func conflictTable(_ conflicts: [ICloudConflictPairSnapshot]) -> some View {
         VStack(spacing: 10) {
             HStack {
-                Text("\(conflicts.count) conflicts")
+                Text(pageContext.countLabel(conflictCount: conflicts.count))
                     .font(.headline)
                 Spacer()
                 revealFeedback

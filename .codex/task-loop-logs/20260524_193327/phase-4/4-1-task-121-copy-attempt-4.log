@@ -1,0 +1,51 @@
+一、执行结论
+
+未完成。功能验证已通过，但上一次验收的阻塞项仍未能清除：`scripts/question.md` 仍处于暂存 + 工作区双重修改状态。原因是当前环境禁止写入 `.git`，`git restore --staged -- scripts/question.md` 失败：`Unable to create .../.git/index.lock: Operation not permitted`。
+
+二、执行范围
+
+单任务：`4-1/task-121`。本次 retry 没有成功修改任何文件；只尝试取消 `scripts/question.md` 的暂存以修复验收失败。
+
+现有任务实现仍在这些路径内：
+- [CoreFileRenaming.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreFileRenaming.swift:99)
+- [RenameFileSheet.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/RenameFileSheet.swift:147)
+- [RenameFilePageFeatureTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/RenameFilePageFeatureTests.swift:207)
+
+三、完成情况
+
+核对项功能侧已满足：S2-14/C2-10 通过 `CoreBatchRenaming` 接入真实 `AreaMatrix.previewBatchRename` / `AreaMatrix.batchRename`，Apply 使用 preview token，测试覆盖四种规则、当前 preview 校验、列表顺序、错误映射。
+
+Forbidden Touches：未触碰 `core/src/**`，`git diff --name-only -- core/src` 和 staged 对应检查均无输出。
+
+阻塞项：`scripts/question.md` 仍显示 `MM scripts/question.md`，并且 staged/worktree 各有修改；该文件不在本 task 的 Expected New Paths 内。
+
+四、工程质量
+
+本次未改产品代码。现有实现没有新增依赖、没有 mock-only 生产闭环，错误通过 mapper 映射；Swift 代码仍在 CoreBridge 边界内，没有直接绕过 UniFFI 的 View 调用。工程质量当前的唯一阻塞是 Git evidence/范围洁净性，而不是 S2-14/C2-10 功能代码。
+
+五、验证情况
+
+已运行并通过：
+
+```bash
+./dev check task 4-1/task-121
+```
+
+结果：退出码 0。包含：
+- `prompt_pipeline.py doctor`: OK，637 tasks / 637 manifests
+- `git diff --check`: 通过
+- `xcodebuild ... build CODE_SIGNING_ALLOWED=NO`: `BUILD SUCCEEDED`
+
+未能完成：
+- `git restore --staged -- scripts/question.md`: 失败，当前环境无法写 `.git/index.lock`
+
+六、风险与后续
+
+剩余风险：当前仓库状态仍不足以让 verify 判定 PASS，因为范围外暂存改动未清除。建议下一步在有 `.git` 写权限的环境执行：
+
+```bash
+git restore --staged -- scripts/question.md
+./dev check task 4-1/task-121
+```
+
+然后重新进入本 task 验收。

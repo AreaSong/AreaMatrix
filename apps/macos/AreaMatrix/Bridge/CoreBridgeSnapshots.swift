@@ -191,7 +191,9 @@ enum SearchStorageModeSnapshot: String, CaseIterable, Equatable, Identifiable {
     case copied
     case indexed
 
-    var id: String { rawValue }
+    var id: String {
+        rawValue
+    }
 
     var displayName: String {
         switch self {
@@ -292,7 +294,9 @@ struct SearchFacetCountSnapshot: Equatable, Identifiable {
     var selected: Bool
     var disabled: Bool
 
-    var id: String { value }
+    var id: String {
+        value
+    }
 }
 
 struct SearchStorageModeFacetCountSnapshot: Equatable, Identifiable {
@@ -302,7 +306,9 @@ struct SearchStorageModeFacetCountSnapshot: Equatable, Identifiable {
     var selected: Bool
     var disabled: Bool
 
-    var id: String { value.rawValue }
+    var id: String {
+        value.rawValue
+    }
 }
 
 struct SearchDateFacetBoundsSnapshot: Equatable {
@@ -389,7 +395,6 @@ extension SearchStorageModeSnapshot {
         }
     }
 }
-
 
 extension SearchFacetsSnapshot {
     init(coreFacets: SearchFacets) {

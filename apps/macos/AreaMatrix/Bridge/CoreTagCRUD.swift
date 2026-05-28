@@ -5,11 +5,24 @@ protocol CoreTagCRUD: Sendable {
     func addTag(repoPath: String, fileID: Int64, tag: String) async throws -> TagSetSnapshot
     func removeTag(repoPath: String, fileID: Int64, tag: String) async throws -> TagSetSnapshot
     func batchAddTags(repoPath: String, fileIDs: [Int64], tags: [String]) async throws -> BatchMutationReportSnapshot
+    func suggestTagsForFile(
+        repoPath: String,
+        request: TagSuggestionRequestSnapshot
+    ) async throws -> TagSuggestionReportSnapshot
+    func applyTagSuggestions(
+        repoPath: String,
+        request: ApplyTagSuggestionsRequestSnapshot
+    ) async throws -> TagSuggestionApplyReportSnapshot
 }
 
 protocol CoreUndoActionLogging: Sendable {
     func listUndoActions(repoPath: String) async throws -> [UndoActionRecordSnapshot]
     func undoAction(repoPath: String, actionID: String) async throws -> UndoActionResultSnapshot
+}
+
+protocol CoreRedoActionLogging: Sendable {
+    func listRedoActions(repoPath: String) async throws -> [RedoActionRecordSnapshot]
+    func redoAction(repoPath: String, actionID: String) async throws -> RedoActionResultSnapshot
 }
 
 struct TagRecordSnapshot: Equatable, Identifiable {
@@ -20,7 +33,9 @@ struct TagRecordSnapshot: Equatable, Identifiable {
     var disabled: Bool
     var updatedAt: Int64
 
-    var id: String { value }
+    var id: String {
+        value
+    }
 
     var displayName: String {
         label.isEmpty ? value : label
@@ -69,6 +84,14 @@ enum UndoActionStatusSnapshot: String, Equatable {
     case blocked = "Blocked"
 }
 
+enum RedoActionStatusSnapshot: String, Equatable {
+    case available = "Available"
+    case cleared = "Cleared"
+    case blocked = "Blocked"
+    case expired = "Expired"
+    case executed = "Executed"
+}
+
 struct UndoActionRecordSnapshot: Equatable, Identifiable {
     var actionID: String
     var kind: String
@@ -81,7 +104,9 @@ struct UndoActionRecordSnapshot: Equatable, Identifiable {
     var createdAt: Int64
     var updatedAt: Int64
 
-    var id: String { actionID }
+    var id: String {
+        actionID
+    }
 }
 
 struct UndoActionResultSnapshot: Equatable {
@@ -93,9 +118,55 @@ struct UndoActionResultSnapshot: Equatable {
     var completedAt: Int64
 }
 
+struct RedoActionRecordSnapshot: Equatable, Identifiable {
+    var actionID: String
+    var kind: String
+    var summary: String
+    var affectedCount: Int64
+    var affectedFileNames: [String]
+    var status: RedoActionStatusSnapshot
+    var canRedo: Bool
+    var disabledReason: String?
+    var sourceUndoActionID: String
+    var createdAt: Int64
+    var updatedAt: Int64
+
+    var id: String {
+        actionID
+    }
+}
+
+struct RedoActionResultSnapshot: Equatable {
+    var actionID: String
+    var status: RedoActionStatusSnapshot
+    var summary: String
+    var affectedCount: Int64
+    var refreshTargets: [String]
+    var undoToken: String?
+    var completedAt: Int64
+}
+
 extension CoreTagCRUD {
-    func batchAddTags(repoPath _: String, fileIDs _: [Int64], tags _: [String]) async throws -> BatchMutationReportSnapshot {
+    func batchAddTags(
+        repoPath _: String,
+        fileIDs _: [Int64],
+        tags _: [String]
+    ) async throws -> BatchMutationReportSnapshot {
         throw CoreError.Internal(message: "batch_add_tags is unavailable")
+    }
+
+    func suggestTagsForFile(
+        repoPath _: String,
+        request _: TagSuggestionRequestSnapshot
+    ) async throws -> TagSuggestionReportSnapshot {
+        throw CoreError.Internal(message: "suggest_tags_for_file is unavailable")
+    }
+
+    func applyTagSuggestions(
+        repoPath _: String,
+        request _: ApplyTagSuggestionsRequestSnapshot
+    ) async throws -> TagSuggestionApplyReportSnapshot {
+        throw CoreError.Internal(message: "apply_tag_suggestions is unavailable")
     }
 }
 
@@ -127,6 +198,30 @@ extension CoreBridge: CoreTagCRUD {
             ))
         }.value
     }
+
+    func suggestTagsForFile(
+        repoPath: String,
+        request: TagSuggestionRequestSnapshot
+    ) async throws -> TagSuggestionReportSnapshot {
+        try await Task.detached(priority: .userInitiated) {
+            try TagSuggestionReportSnapshot(coreReport: AreaMatrix.suggestTagsForFile(
+                repoPath: repoPath,
+                request: TagSuggestionRequest(snapshot: request)
+            ))
+        }.value
+    }
+
+    func applyTagSuggestions(
+        repoPath: String,
+        request: ApplyTagSuggestionsRequestSnapshot
+    ) async throws -> TagSuggestionApplyReportSnapshot {
+        try await Task.detached(priority: .userInitiated) {
+            try TagSuggestionApplyReportSnapshot(coreReport: AreaMatrix.applyTagSuggestions(
+                repoPath: repoPath,
+                request: ApplyTagSuggestionsRequest(snapshot: request)
+            ))
+        }.value
+    }
 }
 
 extension CoreBridge: CoreUndoActionLogging {
@@ -143,7 +238,21 @@ extension CoreBridge: CoreUndoActionLogging {
     }
 }
 
-private extension TagSetSnapshot {
+extension CoreBridge: CoreRedoActionLogging {
+    func listRedoActions(repoPath: String) async throws -> [RedoActionRecordSnapshot] {
+        try await Task.detached(priority: .userInitiated) {
+            try AreaMatrix.listRedoActions(repoPath: repoPath).map(RedoActionRecordSnapshot.init(coreRecord:))
+        }.value
+    }
+
+    func redoAction(repoPath: String, actionID: String) async throws -> RedoActionResultSnapshot {
+        try await Task.detached(priority: .userInitiated) {
+            try RedoActionResultSnapshot(coreResult: AreaMatrix.redoAction(repoPath: repoPath, actionId: actionID))
+        }.value
+    }
+}
+
+extension TagSetSnapshot {
     init(coreTagSet: TagSet) {
         fileID = coreTagSet.fileId
         fileTags = coreTagSet.fileTags.map(TagRecordSnapshot.init(coreRecord:))
@@ -224,6 +333,34 @@ private extension UndoActionResultSnapshot {
     }
 }
 
+private extension RedoActionRecordSnapshot {
+    init(coreRecord: RedoActionRecord) {
+        actionID = coreRecord.actionId
+        kind = coreRecord.kind
+        summary = coreRecord.summary
+        affectedCount = coreRecord.affectedCount
+        affectedFileNames = coreRecord.affectedFileNames
+        status = RedoActionStatusSnapshot(coreStatus: coreRecord.status)
+        canRedo = coreRecord.canRedo
+        disabledReason = coreRecord.disabledReason
+        sourceUndoActionID = coreRecord.sourceUndoActionId
+        createdAt = coreRecord.createdAt
+        updatedAt = coreRecord.updatedAt
+    }
+}
+
+private extension RedoActionResultSnapshot {
+    init(coreResult: RedoActionResult) {
+        actionID = coreResult.actionId
+        status = RedoActionStatusSnapshot(coreStatus: coreResult.status)
+        summary = coreResult.summary
+        affectedCount = coreResult.affectedCount
+        refreshTargets = coreResult.refreshTargets
+        undoToken = coreResult.undoToken
+        completedAt = coreResult.completedAt
+    }
+}
+
 private extension UndoActionStatusSnapshot {
     init(coreStatus: UndoActionStatus) {
         switch coreStatus {
@@ -235,6 +372,23 @@ private extension UndoActionStatusSnapshot {
             self = .expired
         case .blocked:
             self = .blocked
+        }
+    }
+}
+
+private extension RedoActionStatusSnapshot {
+    init(coreStatus: RedoActionStatus) {
+        switch coreStatus {
+        case .available:
+            self = .available
+        case .cleared:
+            self = .cleared
+        case .blocked:
+            self = .blocked
+        case .expired:
+            self = .expired
+        case .executed:
+            self = .executed
         }
     }
 }

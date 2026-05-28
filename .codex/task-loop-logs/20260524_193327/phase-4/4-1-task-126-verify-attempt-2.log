@@ -1,0 +1,84 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`4-1/task-126`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-126-s2-15-page-integration-verify.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：0
+- 通过项数：6
+- 不通过项数：4
+- 阻塞项数：3
+
+四、逐项验收结果
+
+- 项目：page-feature task 覆盖 C2-04 / C2-11
+- 结果：不通过
+- 证据：C2-04 / C2-11 CoreBridge 调用已存在，但 C2-11 返回的部分页面目标只打开占位 handoff sheet，未进入真实目标页。
+- 涉及文件：`MainFileActionRoutingActions.swift`, `MainCurrentListErrorPane.swift`
+
+- 项目：页面状态、入口、退出、错误态和 CoreBridge 闭环
+- 结果：不通过
+- 证据：`Cmd+K` 和菜单入口已接入；`listCommandTargets`、`runSmartList` 已走 CoreBridge。但无 repo 状态未实现，命令索引失败态不保留可用命令。
+- 涉及文件：`AreaMatrixApp.swift`, `MainRepositoryContentView.swift`, `ImportProgressView.swift`
+
+- 项目：移除 mock、fixture 或硬编码状态
+- 结果：不通过
+- 证据：生产路径对 S2-18/S2-21/S2-22/S2-23 使用硬编码说明性 sheet 作为目标页入口，不能作为最终页面闭环证据。
+- 涉及文件：`MainCurrentListErrorPane.swift`
+
+- 项目：不新增 control map 外 Core 能力
+- 结果：通过
+- 证据：S2-15 control map 仅声明 C2-04、C2-11；当前生产调用集中在 `listCommandTargets` 和 `runSmartList`，未发现新增其他 Core 调用或 `core/src/**` 修改。
+- 涉及文件：`CoreBridge.swift`, `MainFileActionRoutingActions.swift`, `MainListSystemActions.swift`
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过。CoreBridge 接入结构清楚，但目标页路由用占位 sheet 替代真实页面入口，整页闭环不完整。
+- 注释 / rustdoc / 文档同步：通过。未发现本 task 范围内需要新增文档同步的 API / UDL 漂移。
+- 错误处理与边界处理：不通过。命令索引失败态只显示错误，不满足 page spec “仍显示可用命令”的恢复要求。
+- 测试与验证覆盖：不通过。新增测试覆盖 CoreBridge 请求、Smart List run、危险命令不直接执行和快捷键选择，但未覆盖无 repo 状态、失败态保留可用命令、真实 S2-18/S2-21/S2-22/S2-23 页面入口。
+- 占位、硬编码、mock-only、一次性实现检查：不通过。`CommandPaletteLinkedPageRouteSheet` 是生产路径占位 handoff，不是目标页闭环。
+
+六、阻塞项
+
+- P1：命令面板未打开真实目标页
+  - 说明：S2-15 page spec 要求 `Apply classifier rule...` 打开 S2-18，`Review import conflicts` 打开 S2-21，Redo 打开 S2-22，Tag suggestions 打开 S2-23；当前只打开说明性 `CommandPaletteLinkedPageRouteSheet`。
+  - 绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainCurrentListErrorPane.swift:106`
+  - 绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentActionRouting.swift:112`
+  - 为什么导致不通过：这不是 page spec 要求的确认/预览/处理页入口，无法证明 S2-15 整页闭环可按最终验收通过。
+
+- P1：无 repo 状态未实现
+  - 说明：page spec 要求没有 repo 打开时只显示 Open repository、Settings、Help；当前命令面板通知只在 `state == .list` 时响应。
+  - 绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift:164`
+  - 为什么导致不通过：无 repo 上下文是 S2-15 明确状态，当前无法打开命令面板展示受限命令集。
+
+- P1：命令索引失败态不保留可用命令
+  - 说明：page spec 要求命令注册失败时显示错误且仍显示可用命令；当前 `.failed` 没有 snapshot，视图只渲染错误文本。
+  - 绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileActionRoutingActions.swift:160`
+  - 绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/ImportProgressView.swift:286`
+  - 为什么导致不通过：错误态缺少可用命令恢复路径，页面状态闭环不完整。
+
+七、验证情况
+
+- 跑了哪些验证：`./dev check task 4-1/task-126`
+- 哪些通过：`prompt_pipeline.py doctor` 通过；`git diff --check` 通过；`xcodebuild ... build CODE_SIGNING_ALLOWED=NO` 显示 `BUILD SUCCEEDED`。
+- 哪些失败：验证命令本身未失败。
+- 哪些缺失：未运行 UI 真实窗口冒烟；但本次不通过主要来自源码与 page spec 的静态证据，不依赖 UI 冒烟结论。
+- Forbidden Touches：`git diff --name-only | rg '^core/src/'` 无输出，未发现 `core/src/**` 被修改。
+- Expected New Paths：`apps/macos/AreaMatrix/**` 与 `apps/macos/AreaMatrixTests/**` 已存在并有相关实现 / 测试。
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+
+VERIFY_RESULT: FAIL

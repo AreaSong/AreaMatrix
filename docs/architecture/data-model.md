@@ -166,6 +166,33 @@ CREATE TABLE IF NOT EXISTS scan_sessions (
 CREATE INDEX IF NOT EXISTS idx_scan_sessions_status
   ON scan_sessions(status, updated_at DESC);
 
+CREATE TABLE IF NOT EXISTS ai_call_log (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  feature TEXT NOT NULL,
+  file_id INTEGER,
+  batch_id TEXT,
+  scope TEXT,
+  route TEXT,
+  provider TEXT,
+  model TEXT,
+  status TEXT NOT NULL CHECK (status IN ('success', 'failed', 'skipped', 'unavailable')),
+  duration_ms INTEGER,
+  sent_fields_json TEXT NOT NULL,
+  privacy_rules_checked INTEGER NOT NULL DEFAULT 0 CHECK (privacy_rules_checked IN (0, 1)),
+  privacy_rule_id TEXT,
+  privacy_rule_name TEXT,
+  matched_field_type TEXT,
+  result_summary TEXT NOT NULL,
+  error_code TEXT,
+  occurred_at INTEGER NOT NULL,
+  FOREIGN KEY (file_id) REFERENCES files(id) ON DELETE SET NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_ai_call_log_time
+  ON ai_call_log(occurred_at DESC);
+CREATE INDEX IF NOT EXISTS idx_ai_call_log_feature_time
+  ON ai_call_log(feature, occurred_at DESC);
+
 CREATE TABLE IF NOT EXISTS repo_config (
   key TEXT PRIMARY KEY,
   value TEXT NOT NULL,
@@ -185,6 +212,7 @@ erDiagram
     files ||--o{ change_log : "logs"
     files ||--o| notes : "annotates"
     files ||--o{ tags : "tagged"
+    files ||--o{ ai_call_log : "ai audit"
     files {
         int id PK
         string path UK
@@ -244,6 +272,26 @@ erDiagram
         int updated
         int skipped
         string errors_json
+    }
+    ai_call_log {
+        int id PK
+        string feature
+        int file_id FK
+        string batch_id
+        string scope
+        string route
+        string provider
+        string model
+        string status
+        int duration_ms
+        string sent_fields_json
+        int privacy_rules_checked
+        string privacy_rule_id
+        string privacy_rule_name
+        string matched_field_type
+        string result_summary
+        string error_code
+        int occurred_at
     }
     repo_config {
         string key PK

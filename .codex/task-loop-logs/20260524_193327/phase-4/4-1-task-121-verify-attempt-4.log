@@ -1,0 +1,79 @@
+一、验收结论
+
+- 不通过
+
+二、验收范围
+
+- 单任务：`4-1/task-121`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-1-stage2-experience/task-121-s2-14-c2-10-batch-rename-preview.md`
+- 代码范围：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`
+- 禁止触碰范围：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：1
+- 通过项数：9
+- 不通过项数：1
+- 阻塞项数：1
+
+四、逐项验收结果
+
+- 项目：读取 task、共享规则、切片规则、工程质量规则、编码规范、validation-driver、依赖图、phase manifest、Exact Docs
+- 结果：通过
+- 证据：相关文件均已读取；manifest `4-1/task-121` 声明 Exact Docs 4 个、Expected New Paths 2 个、Forbidden Touches 1 个
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-4.md`
+
+- 项目：Expected New Paths 落地
+- 结果：通过
+- 证据：`apps/macos/AreaMatrix/**` 与 `apps/macos/AreaMatrixTests/**` 均存在，且本 task 有 Swift 实现与测试改动
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreFileRenaming.swift`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/RenameFilePageFeatureTests.swift`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git diff --name-only -- core/src` 无输出
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+- 项目：C2-10 CoreBridge 真实接入
+- 结果：通过
+- 证据：`CoreBridge` 调用 `AreaMatrix.previewBatchRename` 与 `AreaMatrix.batchRename`，不是静态状态或 mock-only
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreFileRenaming.swift:122`
+
+- 项目：S2-14 用户可见入口与预览
+- 结果：通过
+- 证据：多选区与右键菜单接入 `Rename...`，`BatchRenameSheet` 展示策略、预览、Apply
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryMultiSelectionActions.swift:63`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/RenameFileSheet.swift:178`
+
+- 项目：Apply 绑定最新 preview、加载时禁用
+- 结果：不通过
+- 证据：页面规格要求预览计算中 Apply 禁用，且旧 preview 失效直到刷新完成；当前 `loading(previous:)` 仍通过 `report` 暴露旧 preview，`canApplyPreview` 只检查 `previewState.report`，没有检查 `previewState.isLoading`
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-2-experience/S2-14-batch-rename.md:94`、`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-2-experience/S2-14-batch-rename.md:107`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileRenameActions.swift:297`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/RenameFileSheet.swift:272`
+
+五、工程质量验收
+
+- 代码结构与逻辑：不通过，证据是加载中仍复用旧 preview 作为可 Apply 输入，状态机边界不符合 SSOT。
+- 注释 / rustdoc / 文档同步：通过，本 task 未新增 Rust public API；Swift 与 API/UDL 已对齐。
+- 错误处理与边界处理：不通过，加载中 Apply 未禁用会允许 stale preview 进入执行路径。
+- 测试与验证覆盖：不通过，`./dev check task 4-1/task-121` 通过，但现有测试没有覆盖“刷新中旧 preview 不可 Apply”。
+- 占位、硬编码、mock-only、一次性实现检查：通过，生产路径接入 CoreBridge；测试 fixture 未被当作生产闭环。
+
+六、阻塞项
+
+- P1：刷新 preview 期间旧 preview 仍可用于 Apply
+  - 说明：S2-14 明确要求加载态 Apply 禁用，并要求用户修改规则、排序或选择集后旧 preview 失效直到刷新完成。当前 `BatchRenamePreviewState.report` 在 `.loading(previous:)` 时返回旧 report，`BatchRenameValidation.canApply` 又只基于该 report 判断，使已有可用 preview 在 Refresh 期间仍可能启用 Apply。
+  - 绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileRenameActions.swift:297`
+  - 绝对路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/RenameFileSheet.swift:272`
+  - 为什么导致不通过：这是 C2-10 preview 与 Apply token 绑定的核心安全边界，可能把过期 preview 用于真实批量重命名执行，不能视为完成。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-1/task-121`
+- 通过：`prompt doctor`，`git diff --check`，`xcodebuild -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination platform=macOS,arch=arm64 build CODE_SIGNING_ALLOWED=NO`
+- 失败：无命令失败
+- 缺失：缺少覆盖刷新中旧 preview 必须禁用 Apply 的测试证据
+
+八、最终判定说明
+
+- 本次执行尚未达到验收标准，不能视为完成。
+
+VERIFY_RESULT: FAIL
