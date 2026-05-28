@@ -1,0 +1,99 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-2/task-31`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-2-stage3-ai/task-31-c3-07-contract-api.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-3-ai/C3-07-ai-tags-suggestion.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-3-control-map.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/api/error-codes.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/ai_tags_suggestion.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/lib.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/tests/ai_tags_suggestion_contract_api.rs`
+
+三、完成度摘要
+
+- 已覆盖项数：9
+- 未覆盖项数：0
+- 通过项数：9
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：读取 C3-07 能力规格、Stage 3 AI control map、Core API 和错误码
+- 结果：通过
+- 证据：C3-07 spec 声明 `suggest_tags_with_ai`、`apply_ai_tag_suggestions`，输入为 `file_id`、候选标签、privacy policy，输出含标签建议、confidence、reason，错误码为 `Config` / `FileNotFound` / `Db`；control map 将 S3-07 绑定 C3-07/C3-09。
+- 涉及文件：`docs/core/capability-specs/stage-3-ai/C3-07-ai-tags-suggestion.md`，`docs/architecture/stage-3-control-map.md`，`docs/api/core-api.md`，`docs/api/error-codes.md`
+
+- 项目：API 名称、输入、输出、错误码、权限/隐私边界与能力规格一致
+- 结果：通过
+- 证据：`core-api.md` 与 `core/area_matrix.udl` 均声明两个 API、请求/响应 DTO、状态 enum；Rust 暴露同名 API 和类型；文档明确用户确认前不写标签、隐私命中不调用 provider、远程 AI 受 C3-01/C3-03/C3-09/C3-05 gate 约束。
+- 涉及文件：`core/src/ai_tags_suggestion.rs`，`core/src/api.rs`，`core/area_matrix.udl`，`docs/api/core-api.md`
+
+- 项目：只补合同、类型、桥接声明或文档缺口，不实现相邻能力
+- 结果：通过
+- 证据：实现仅包含合同类型、输入校验、公共 API 转发与 UDL 声明；未发现 provider 执行、AI settings 写入、隐私规则编辑、文件导入/删除/移动等相邻能力调用。有效请求当前返回结构化 `Db` 未实现错误，符合 contract-api 边界。
+- 涉及文件：`core/src/ai_tags_suggestion.rs`，`core/src/api.rs`
+
+- 项目：记录当前页面消费方是否能从合同中得到所需状态
+- 结果：通过
+- 证据：合同提供建议行、confidence、reason、route、used_context、privacy skipped、call_log_id、privacy_rule_id、requires_user_confirmation、apply 结果计数、逐项失败、tag_set、undo_token、refresh_targets；覆盖 S3-07 review sheet 所需状态。
+- 涉及文件：`docs/ux/page-specs/stage-3-ai/S3-07-ai-tags-suggestion.md`，`docs/api/core-api.md`
+
+- 项目：完成标准 1，C3-07 Core API 合同可被后续 implementation task 直接实现
+- 结果：通过
+- 证据：Rust 类型、API 函数、UDL dictionary/enum、文档合同和 contract test 已落地，后续 implementation 可在同一 API 下替换当前 `Db` 未实现路径。
+- 涉及文件：`core/src/ai_tags_suggestion.rs`，`core/src/api.rs`，`core/area_matrix.udl`，`core/tests/ai_tags_suggestion_contract_api.rs`
+
+- 项目：完成标准 2，合同没有引入 control map 之外的页面能力
+- 结果：通过
+- 证据：合同只覆盖 S3-07 的 AI tags suggestion/apply；C3-09 隐私规则、C3-05 日志列表、C2-07 undo 执行均明确为外部能力，不在本 task 实现。
+- 涉及文件：`docs/architecture/stage-3-control-map.md`，`docs/api/core-api.md`
+
+- 项目：Expected New Paths
+- 结果：通过
+- 证据：`core/src/**`、`core/area_matrix.udl`、`core/tests/**` 均有对应落地；新增 `core/src/ai_tags_suggestion.rs` 与 `core/tests/ai_tags_suggestion_contract_api.rs`。
+- 涉及文件：`core/src/**`，`core/area_matrix.udl`，`core/tests/**`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git diff --name-status -- apps` 与 `git status --short --untracked-files=all -- apps` 无输出，未触碰 `apps/**`。
+- 涉及文件：`apps/**`
+
+- 项目：任务验证
+- 结果：通过
+- 证据：`./dev check task 4-2/task-31` 通过；包含 `doctor: OK`、`git diff --check`、`cargo test --test ai_tags_suggestion_contract_api -- --nocapture`，4 个测试全部通过。
+- 涉及文件：task manifest validation
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，`core/src/ai_tags_suggestion.rs` 433 行，按类型、入口、校验函数分层；未发现相邻能力实现。
+- 注释 / rustdoc / 文档同步：通过，新增 public 类型和 API 有 rustdoc；`docs/api/core-api.md`、`core/area_matrix.udl`、Rust 类型同步。
+- 错误处理与边界处理：通过，无生产 `unwrap()` / `expect()` / `panic!()`；无效 repo path、file id、候选标签、隐私引用、确认状态、重复 apply item 均返回结构化错误。
+- 测试与验证覆盖：通过，contract test 覆盖签名、DTO、错误码、docs/API/UDL/control map 对齐、页面消费与越界能力排除。
+- 占位、硬编码、mock-only、一次性实现检查：通过。本 task 是 contract-api，不要求业务实现；当前未用 fake success 伪造完成，有效路径返回未实现的 `Db` 错误。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 跑了哪些验证：`./dev check task 4-2/task-31`
+- 哪些通过：prompt doctor 通过；`git diff --check` 通过；`cargo test --test ai_tags_suggestion_contract_api -- --nocapture` 通过，4 passed。
+- 哪些失败：无
+- 哪些缺失：未运行 `./dev check all` / `./dev check core`，因为 manifest 指定验证为 task-scoped gate，普通 atomic Core contract task 不要求扩大到 broad gate。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+- 工作区存在 runner 状态文件改动：`.codex/task-loop-runs/20260527_221647/summary.json`、`tasks/prompts/_shared/progress.json`；按本 verify 阶段规则，它们不作为完成证据，也未构成本 task 阻塞。
+
+VERIFY_RESULT: PASS

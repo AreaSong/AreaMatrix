@@ -3,15 +3,17 @@
 use std::path::PathBuf;
 
 use crate::{
-    ai_call_log, ai_classification_suggestion, ai_settings, ai_summary, batch_category,
-    batch_delete, batch_rename as batch_rename_mod, classifier_correction, classifier_impact,
-    classifier_rule_editor, classifier_rules, classify, db, icloud_conflicts,
+    ai_call_log, ai_classification_suggestion, ai_settings, ai_summary, ai_tags_suggestion,
+    batch_category, batch_delete, batch_rename as batch_rename_mod, classifier_correction,
+    classifier_impact, classifier_rule_editor, classifier_rules, classify, db, icloud_conflicts,
     import_conflict_batch, local_model_status, note, recovery, redo, remote_provider_config,
     repair, repo_init, repo_path, repo_scan, storage, sync, tree, AiCallLogClearReport,
     AiCallLogClearRequest, AiCallLogFilter, AiCallLogPage, AiCallLogPagination,
     AiCategorySuggestion, AiCategorySuggestionRequest, AiConfig, AiConfigSnapshot,
     AiSummaryClearReport, AiSummaryClearRequest, AiSummaryDraft, AiSummaryGenerationRequest,
-    AiSummarySaveReport, AiSummarySaveRequest, ApplyTagSuggestionsRequest,
+    AiSummarySaveReport, AiSummarySaveRequest, AiTagSuggestionApplyReport,
+    AiTagSuggestionReport, AiTagSuggestionRequest, ApplyAiTagSuggestionsRequest,
+    ApplyTagSuggestionsRequest,
     BatchCategoryChangeReport, BatchCategoryPreviewReport, BatchDeleteMode,
     BatchDeletePreviewReport, BatchDeleteReport, BatchRenamePreviewReport, BatchRenameReport,
     BatchRenameRule, ChangeFilter, ChangeLogEntry, ClassifierCorrectionResult,
@@ -489,6 +491,64 @@ pub fn clear_ai_summary(
     request: AiSummaryClearRequest,
 ) -> CoreResult<AiSummaryClearReport> {
     ai_summary::clear_ai_summary(repo_path, request)
+}
+
+/// Generates C3-07 AI tag suggestions without applying them.
+///
+/// S3-07 uses this contract to populate review chips before any tag write.
+/// The request identifies one active file, caller-provided candidate tags, and
+/// a privacy policy reference. Returned suggestions include confidence,
+/// display-safe reasons, merge hints, local/remote route, used context, privacy
+/// rule id, and call-log id so the page can render AI off, skipped, empty,
+/// low-confidence, merge, and traceability states without parsing provider
+/// responses.
+///
+/// This contract must not create or attach tags, write change log or undo
+/// rows, save AI settings, enable remote providers, edit privacy rules, or
+/// move, rename, delete, read, upload, or overwrite user files. Remote AI
+/// remains gated by C3-01 settings, C3-03 provider scope, C3-09 privacy
+/// evaluation, and C3-05 call-log availability.
+///
+/// # Errors
+///
+/// Returns `CoreError::Config { reason }` for invalid repository paths,
+/// candidate tags, privacy references, or AI gate configuration. Returns
+/// `CoreError::FileNotFound { path }` when the target file id is invalid or
+/// missing, and `CoreError::Db { message }` when tag, file, or AI call-log
+/// metadata cannot be read.
+pub fn suggest_tags_with_ai(
+    repo_path: String,
+    request: AiTagSuggestionRequest,
+) -> CoreResult<AiTagSuggestionReport> {
+    ai_tags_suggestion::suggest_tags_with_ai(repo_path, request)
+}
+
+/// Applies reviewed C3-07 AI tag suggestions after explicit confirmation.
+///
+/// S3-07 calls this only for selected or edited suggestions. Rejected or
+/// cancelled rows stay in UI state and are not submitted. The implementation
+/// may later create or reuse normalized tags, write file/tag relations, record
+/// change-log rows, carry AI call provenance, and return an undo token for the
+/// tag write. It must never apply unselected suggestions or auto-write tags
+/// from generation output.
+///
+/// This contract does not generate AI suggestions, retry providers, change
+/// privacy rules, enable remote AI, or mutate files. It only defines the
+/// reviewed tag-apply boundary for C3-07.
+///
+/// # Errors
+///
+/// Returns `CoreError::Config { reason }` for invalid repository paths,
+/// missing confirmation, duplicate or invalid suggestion rows, unsafe
+/// provenance ids, or invalid tag names. Returns `CoreError::FileNotFound {
+/// path }` when the target file id is invalid or missing, and
+/// `CoreError::Db { message }` when tag metadata, change log, undo, or AI
+/// call-log provenance cannot be persisted.
+pub fn apply_ai_tag_suggestions(
+    repo_path: String,
+    request: ApplyAiTagSuggestionsRequest,
+) -> CoreResult<AiTagSuggestionApplyReport> {
+    ai_tags_suggestion::apply_ai_tag_suggestions(repo_path, request)
 }
 
 /// Recovers AreaMatrix-owned startup residue before the UI opens.

@@ -9,6 +9,7 @@ mod ai_call_log;
 mod ai_classification_suggestion;
 mod ai_settings;
 mod ai_summary;
+mod ai_tags_suggestion;
 pub mod api;
 mod batch_category;
 mod batch_delete;
@@ -61,6 +62,13 @@ pub use ai_summary::{
     AiSummaryClearReport, AiSummaryClearRequest, AiSummaryContextPolicy, AiSummaryDraft,
     AiSummaryDraftStatus, AiSummaryGenerationRequest, AiSummaryInputField, AiSummaryProviderScope,
     AiSummaryRoute, AiSummarySaveReport, AiSummarySaveRequest, AiSummarySkipReason,
+};
+pub use ai_tags_suggestion::{
+    AiTagSuggestion, AiTagSuggestionApplyItemResult, AiTagSuggestionApplyReport,
+    AiTagSuggestionApplyStatus, AiTagSuggestionCandidateStatus, AiTagSuggestionInputField,
+    AiTagSuggestionMergeAction, AiTagSuggestionReport, AiTagSuggestionReportStatus,
+    AiTagSuggestionRequest, AiTagSuggestionRoute, AiTagSuggestionSkipReason,
+    ApplyAiTagSuggestionItem, ApplyAiTagSuggestionsRequest,
 };
 pub use api::*;
 pub use batch_category::{

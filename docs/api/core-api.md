@@ -108,6 +108,16 @@ namespace area_matrix {
     );
 
     [Throws=CoreError]
+    AiTagSuggestionReport suggest_tags_with_ai(
+        string repo_path, AiTagSuggestionRequest request
+    );
+
+    [Throws=CoreError]
+    AiTagSuggestionApplyReport apply_ai_tag_suggestions(
+        string repo_path, ApplyAiTagSuggestionsRequest request
+    );
+
+    [Throws=CoreError]
     RecoveryReport recover_on_startup(string repo_path);
 
     [Throws=CoreError]
@@ -587,6 +597,80 @@ dictionary AiSummaryClearReport {
     i64 file_id;
     boolean cleared;
     i64 cleared_at;
+};
+
+dictionary AiTagSuggestionRequest {
+    i64 file_id;
+    sequence<string> candidate_tags;
+    string? privacy_policy_ref;
+};
+
+dictionary AiTagSuggestion {
+    string suggestion_id;
+    string slug;
+    string display_name;
+    f32 confidence;
+    string reason;
+    AiTagSuggestionCandidateStatus status;
+    AiTagSuggestionMergeAction merge_action;
+    string? matched_existing_slug;
+    boolean selected_by_default;
+    string? disabled_reason;
+};
+
+dictionary AiTagSuggestionReport {
+    i64 file_id;
+    AiTagSuggestionReportStatus status;
+    sequence<AiTagSuggestion> suggestions;
+    AiTagSuggestionRoute? route;
+    string? model_name;
+    i64? generated_at;
+    sequence<AiTagSuggestionInputField> used_context;
+    AiTagSuggestionSkipReason? skipped_reason;
+    string? privacy_rule_id;
+    i64? call_log_id;
+    boolean requires_user_confirmation;
+    f32 confidence_threshold;
+    boolean contents_read;
+    boolean ai_used;
+    boolean network_used;
+};
+
+dictionary ApplyAiTagSuggestionItem {
+    string suggestion_id;
+    string slug;
+    string display_name;
+    f32 confidence;
+    boolean edited_by_user;
+    string? merge_target_slug;
+};
+
+dictionary ApplyAiTagSuggestionsRequest {
+    i64 file_id;
+    sequence<ApplyAiTagSuggestionItem> suggestions;
+    i64? call_log_id;
+    string? privacy_rule_id;
+    boolean confirmed;
+};
+
+dictionary AiTagSuggestionApplyItemResult {
+    string suggestion_id;
+    string slug;
+    AiTagSuggestionApplyStatus status;
+    string? error;
+};
+
+dictionary AiTagSuggestionApplyReport {
+    i64 file_id;
+    i64 requested_count;
+    i64 applied_count;
+    i64 skipped_count;
+    i64 failed_count;
+    sequence<AiTagSuggestionApplyItemResult> item_results;
+    TagSet tag_set;
+    string? undo_token;
+    i64? call_log_id;
+    sequence<string> refresh_targets;
 };
 
 dictionary AiCallLogFilter {
@@ -1600,6 +1684,25 @@ enum AiSummarySkipReason {
     "AiDisabled", "FeatureDisabled", "ProviderUnavailable",
     "PrivacyRule", "NoEligibleInput", "CallLogUnavailable"
 };
+enum AiTagSuggestionRoute { "Local", "Remote" };
+enum AiTagSuggestionInputField {
+    "FileName", "RepoRelativePath", "ExtractedTextExcerpt",
+    "AiSummary", "NoteSummary", "ExistingTags", "TagRegistry"
+};
+enum AiTagSuggestionReportStatus {
+    "Suggested", "NoSuggestion", "Skipped", "Unavailable"
+};
+enum AiTagSuggestionSkipReason {
+    "AiDisabled", "FeatureDisabled", "ProviderUnavailable",
+    "PrivacyRule", "NoEligibleInput", "CallLogUnavailable"
+};
+enum AiTagSuggestionCandidateStatus {
+    "Suggested", "LowConfidence", "AlreadyApplied", "Invalid", "Blocked"
+};
+enum AiTagSuggestionMergeAction {
+    "CreateTag", "UseExistingTag", "MergeWithExistingTag"
+};
+enum AiTagSuggestionApplyStatus { "Applied", "AlreadyAdded", "Failed" };
 enum AiCallLogFeature {
     "Classification", "Summary", "Tags", "SemanticSearch", "ProviderTest"
 };
@@ -1765,6 +1868,8 @@ interface CoreError {
 | `generate_ai_summary(repo, request)` | ai | √ | Config / FileNotFound / PermissionDenied / Db |
 | `save_ai_summary(repo, request)` | ai | √ | Config / FileNotFound / PermissionDenied / Db |
 | `clear_ai_summary(repo, request)` | ai | √ | Config / FileNotFound / PermissionDenied / Db |
+| `suggest_tags_with_ai(repo, request)` | ai | √ | Config / FileNotFound / Db |
+| `apply_ai_tag_suggestions(repo, request)` | ai | √ | Config / FileNotFound / Db |
 | `recover_on_startup(repo)` | repo | √ | Db |
 | `reindex_from_filesystem(repo)` | repo | √ | Io / Db |
 | `create_diagnostics_snapshot(repo)` | repo | √ | Db / PermissionDenied / Io / Internal |
@@ -2775,6 +2880,120 @@ C3-06 的 AI 摘要清除入口，服务 S3-06 的 `Clear summary...` 确认 she
 
 - S3-06 可以从 `cleared` 和 `cleared_at` 刷新 `No AI summary yet.` 空态、toast 和来源信息隐藏。
 - 本合同不实现 Note 清除、文件删除、日志清理、隐私规则编辑、AI 调用执行或相邻页面能力。
+
+### `suggest_tags_with_ai(repoPath: String, request: AiTagSuggestionRequest) throws -> AiTagSuggestionReport`
+
+```swift
+let report = try AreaMatrix.suggestTagsWithAi(
+    repoPath: repoPath,
+    request: AiTagSuggestionRequest(
+        fileId: file.id,
+        candidateTags: ["finance", "invoice"],
+        privacyPolicyRef: snapshot.config.privacyPolicyRef
+    )
+)
+```
+
+C3-07 的 AI 标签建议入口，服务 `S3-07 ai-tags-suggestion` 的 review sheet。输入：
+
+- `file_id`：一个 active file row。后续实现必须拒绝缺失、删除态或不可访问的 file id。
+- `candidate_tags`：调用方可提供的候选标签或 tag registry 摘要，用来提示合并、复用或避免重复。
+  候选标签只作为建议上下文，不代表要写入的标签。
+- `privacy_policy_ref`：可选稳定隐私策略引用。规则内容和 CRUD 属于 C3-09，不内嵌在本请求。
+
+返回 `AiTagSuggestionReport`：
+
+- `status`：`Suggested`、`NoSuggestion`、`Skipped` 或 `Unavailable`。
+- `suggestions`：建议标签行，包含 `suggestion_id`、`slug`、`display_name`、`confidence`、
+  `reason`、行状态、合并动作、匹配到的现有标签和默认选择状态。
+- `route` / `model_name` / `generated_at`：脱敏来源信息，不得包含 API key、完整 prompt、
+  provider 原始响应或文件内容。
+- `used_context`：实际使用或允许展示的字段类型，包含 filename、repo-relative path、limited
+  extracted text excerpt、AI summary、note summary、existing tags 或 tag registry。
+- `skipped_reason`：`AiDisabled`、`FeatureDisabled`、`ProviderUnavailable`、`PrivacyRule`、
+  `NoEligibleInput` 或 `CallLogUnavailable`。
+- `privacy_rule_id` / `call_log_id`：供页面跳转隐私规则和调用日志；具体日志读写属于 C3-05，
+  隐私规则详情属于 C3-09。
+- `requires_user_confirmation`：必须为 true。建议在用户采纳前不得写入正式标签。
+- `confidence_threshold`、`contents_read`、`ai_used`、`network_used`：供 S3-07 展示高置信阈值、
+  内容读取、AI 使用和远程调用边界。
+
+副作用边界：
+
+- 本 API 只生成建议草稿；不得创建、修改、删除或采纳标签，不得写 `change_log`、undo/redo、
+  AI settings、provider metadata、privacy rules、generated overview、notes 或任何用户文件。
+- 远程路线必须同时通过 C3-01 AI settings、C3-03 remote provider gate、C3-09 privacy gate、
+  feature scope 和 C3-05 call-log gate；本 API 不启用远程 provider，不保存 API key，不绕过隐私规则。
+- 隐私规则命中时必须返回 `Skipped` / `PrivacyRule`，`suggestions` 为空，
+  `used_context` 为空或只包含允许展示字段，且不得调用 provider。
+- 低置信度建议只能作为可审阅行返回；`Accept high confidence` 由页面按 `confidence_threshold`
+  选择，不得由生成 API 写入标签。
+
+错误：
+
+- `Config`：`repoPath`、候选标签、隐私策略引用或 AI gate 配置无效。
+- `FileNotFound`：目标 file id 不存在、已删除或后续实现无法找到对应 active file metadata。
+- `Db`：file metadata、tag registry、AI call log gate 或相关 repository metadata 读取失败。
+
+页面消费状态：
+
+- S3-07 可以从合同得到建议标签、confidence、reason、local/remote route、used fields、
+  existing/merge hints、privacy skipped、call log id、privacy rule id、高置信阈值，以及
+  “必须确认后才能写入”的状态。
+- 本合同不新增 control map 之外的页面能力；隐私规则由 C3-09 覆盖，AI 调用日志由 C3-05
+  覆盖，真实 tag 写入只通过 `apply_ai_tag_suggestions` 的用户确认入口。
+
+### `apply_ai_tag_suggestions(repoPath: String, request: ApplyAiTagSuggestionsRequest) throws -> AiTagSuggestionApplyReport`
+
+```swift
+let report = try AreaMatrix.applyAiTagSuggestions(
+    repoPath: repoPath,
+    request: ApplyAiTagSuggestionsRequest(
+        fileId: file.id,
+        suggestions: selectedSuggestions,
+        callLogId: report.callLogId,
+        privacyRuleId: report.privacyRuleId,
+        confirmed: true
+    )
+)
+```
+
+C3-07 的 AI 标签建议采纳入口，服务 S3-07 的 `+`、`Accept selected` 和确认后的
+batch apply。输入：
+
+- `file_id`：一个 active file row。
+- `suggestions`：用户明确选中或编辑后的建议行。未选、Reject、Cancel 或低置信度未选择行不得提交。
+- `call_log_id` / `privacy_rule_id`：来自生成结果的可选追溯信息。
+- `confirmed`：调用方已经完成 single action 或 batch 确认；为 false 必须返回结构化 `Config` 错误。
+
+输出 `AiTagSuggestionApplyReport`：
+
+- `requested_count`、`applied_count`、`skipped_count`、`failed_count`：供 single/batch 结果和部分失败 UI 使用。
+- `item_results`：逐建议行结果，`status` 为 `Applied`、`AlreadyAdded` 或 `Failed`。
+- `tag_set`：采纳后的当前标签状态，供详情 Tags 区和导入结果刷新。
+- `undo_token`：新增关系进入 C2-07 undo stack 后的 token；没有新增关系时为 `nil`。
+- `call_log_id`：保留 AI 生成来源追溯。
+- `refresh_targets`：稳定刷新建议，至少覆盖 `tags`、`change_log`、`undo_actions` 和 `ai_call_log`。
+
+副作用边界：
+
+- 只允许在用户确认后创建或复用规范化 tag、写当前文件 tag relation、记录 change log、
+  关联 AI call log provenance，并返回 undo token。
+- 不生成 AI 建议、不执行 provider、不启用远程 AI、不修改隐私规则、不自动采纳未提交建议、
+  不移动、删除、重命名、Trash、覆盖或读取用户文件内容。
+- 部分失败时已成功写入的标签保持，失败项必须在 `item_results` 中可见，不得静默吞错。
+
+错误：
+
+- `Config`：`repoPath`、确认状态、建议行、编辑后的 tag 名称或追溯 id 无效。
+- `FileNotFound`：目标 file id 不存在、已删除或后续实现无法找到对应 active file metadata。
+- `Db`：tag metadata、change log、undo action 或 AI call log provenance 持久化失败。
+
+页面消费状态：
+
+- S3-07 可以从合同得到成功/失败/重复数量、逐行失败原因、刷新后的 tag set、undo token 和
+  AI call log 追溯状态。
+- 本合同不实现 C3-09 隐私规则编辑、S3-05 日志列表、C2-07 undo 执行或 batch 页面状态管理。
 
 ### `recover_on_startup(repoPath: String) throws -> RecoveryReport`
 

@@ -84,6 +84,16 @@ namespace area_matrix {
     );
 
     [Throws=CoreError]
+    AiTagSuggestionReport suggest_tags_with_ai(
+        string repo_path, AiTagSuggestionRequest request
+    );
+
+    [Throws=CoreError]
+    AiTagSuggestionApplyReport apply_ai_tag_suggestions(
+        string repo_path, ApplyAiTagSuggestionsRequest request
+    );
+
+    [Throws=CoreError]
     RecoveryReport recover_on_startup(string repo_path);
 
     [Throws=CoreError]
@@ -563,6 +573,80 @@ dictionary AiSummaryClearReport {
     i64 file_id;
     boolean cleared;
     i64 cleared_at;
+};
+
+dictionary AiTagSuggestionRequest {
+    i64 file_id;
+    sequence<string> candidate_tags;
+    string? privacy_policy_ref;
+};
+
+dictionary AiTagSuggestion {
+    string suggestion_id;
+    string slug;
+    string display_name;
+    f32 confidence;
+    string reason;
+    AiTagSuggestionCandidateStatus status;
+    AiTagSuggestionMergeAction merge_action;
+    string? matched_existing_slug;
+    boolean selected_by_default;
+    string? disabled_reason;
+};
+
+dictionary AiTagSuggestionReport {
+    i64 file_id;
+    AiTagSuggestionReportStatus status;
+    sequence<AiTagSuggestion> suggestions;
+    AiTagSuggestionRoute? route;
+    string? model_name;
+    i64? generated_at;
+    sequence<AiTagSuggestionInputField> used_context;
+    AiTagSuggestionSkipReason? skipped_reason;
+    string? privacy_rule_id;
+    i64? call_log_id;
+    boolean requires_user_confirmation;
+    f32 confidence_threshold;
+    boolean contents_read;
+    boolean ai_used;
+    boolean network_used;
+};
+
+dictionary ApplyAiTagSuggestionItem {
+    string suggestion_id;
+    string slug;
+    string display_name;
+    f32 confidence;
+    boolean edited_by_user;
+    string? merge_target_slug;
+};
+
+dictionary ApplyAiTagSuggestionsRequest {
+    i64 file_id;
+    sequence<ApplyAiTagSuggestionItem> suggestions;
+    i64? call_log_id;
+    string? privacy_rule_id;
+    boolean confirmed;
+};
+
+dictionary AiTagSuggestionApplyItemResult {
+    string suggestion_id;
+    string slug;
+    AiTagSuggestionApplyStatus status;
+    string? error;
+};
+
+dictionary AiTagSuggestionApplyReport {
+    i64 file_id;
+    i64 requested_count;
+    i64 applied_count;
+    i64 skipped_count;
+    i64 failed_count;
+    sequence<AiTagSuggestionApplyItemResult> item_results;
+    TagSet tag_set;
+    string? undo_token;
+    i64? call_log_id;
+    sequence<string> refresh_targets;
 };
 
 dictionary AiCallLogFilter {
@@ -1576,6 +1660,25 @@ enum AiSummarySkipReason {
     "AiDisabled", "FeatureDisabled", "ProviderUnavailable",
     "PrivacyRule", "NoEligibleInput", "CallLogUnavailable"
 };
+enum AiTagSuggestionRoute { "Local", "Remote" };
+enum AiTagSuggestionInputField {
+    "FileName", "RepoRelativePath", "ExtractedTextExcerpt",
+    "AiSummary", "NoteSummary", "ExistingTags", "TagRegistry"
+};
+enum AiTagSuggestionReportStatus {
+    "Suggested", "NoSuggestion", "Skipped", "Unavailable"
+};
+enum AiTagSuggestionSkipReason {
+    "AiDisabled", "FeatureDisabled", "ProviderUnavailable",
+    "PrivacyRule", "NoEligibleInput", "CallLogUnavailable"
+};
+enum AiTagSuggestionCandidateStatus {
+    "Suggested", "LowConfidence", "AlreadyApplied", "Invalid", "Blocked"
+};
+enum AiTagSuggestionMergeAction {
+    "CreateTag", "UseExistingTag", "MergeWithExistingTag"
+};
+enum AiTagSuggestionApplyStatus { "Applied", "AlreadyAdded", "Failed" };
 enum AiCallLogFeature {
     "Classification", "Summary", "Tags", "SemanticSearch", "ProviderTest"
 };

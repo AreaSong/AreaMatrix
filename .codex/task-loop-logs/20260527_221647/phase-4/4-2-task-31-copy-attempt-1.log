@@ -1,0 +1,45 @@
+一、执行结论
+
+- 已完成。
+
+二、执行范围
+
+- 单任务：`4-2/task-31`
+- 修改文件：
+  - [core/src/ai_tags_suggestion.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/ai_tags_suggestion.rs)
+  - [core/src/api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs)
+  - [core/src/lib.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/lib.rs)
+  - [core/area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl)
+  - [core/tests/ai_tags_suggestion_contract_api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/ai_tags_suggestion_contract_api.rs)
+  - [docs/api/core-api.md](/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md) 同步 Exact Doc 源事实漂移
+
+三、完成情况
+
+- 已读取 C3-07 能力规格、Stage 3 control map、Core API、错误码。
+- 已补 `suggest_tags_with_ai` / `apply_ai_tag_suggestions` 的 Rust 类型、API 入口、UDL 声明和 Core API 文档。
+- 合同覆盖输入、输出、错误码、隐私边界、用户确认边界、页面消费状态。
+- 未实现相邻能力：未实现 C3-09 隐私规则 CRUD、C3-05 日志列表、provider 执行、UI 或真实 AI 生成。
+- Forbidden Touches：未触碰 `apps/**`。
+
+四、工程质量
+
+- 新增合同类型均有 rustdoc，结构按现有 C3-04/C3-06 风格对齐。
+- 输入校验显式处理空 repo、metadata 内部路径、非法 tag、重复建议、缺少确认、敏感 token 形态等边界。
+- 未新增依赖。
+- 不存在 mock-only 成功路径；当前合同函数在通过输入校验后返回结构化 `Db`，留给 `4-2/task-32` 实现真实行为。
+
+五、验证情况
+
+- 已运行：`./dev check task 4-2/task-31`
+- 通过：
+  - prompt doctor OK
+  - `git diff --check` OK
+  - `cargo test --test ai_tags_suggestion_contract_api -- --nocapture` OK，4 passed
+- 未运行：未升级到 `cargo test --workspace`、`./dev check core` 或 `./dev check all`，按本 task manifest 验证上限执行。
+
+六、风险与后续
+
+- 剩余风险：这只是 C3-07 contract/API task，真实 AI tag suggestion、tag 写入、AI call log provenance 仍待 implementation/failure/validation task 完成。
+- 工作区原有 `.codex/task-loop-runs/.../summary.json` 与 `tasks/prompts/_shared/progress.json` 改动不是本次产生，未触碰。
+- 建议下一个任务：`4-2/task-32` C3-07 implementation。
+
