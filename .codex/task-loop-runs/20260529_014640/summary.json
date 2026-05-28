@@ -166,6 +166,67 @@
     "4-2/task-45": {
       "attempts": 2,
       "copy_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260529_014640/phase-4/4-2-task-45-copy-attempt-2.log",
+      "git": {
+        "attempts": 2,
+        "branch": "codex/areamatrix-task-loop-20260501_132850",
+        "changed_files": [
+          ".codex/task-loop-logs/20260529_014640/phase-4/4-2-task-45-copy-attempt-2.log",
+          ".codex/task-loop-logs/20260529_014640/phase-4/4-2-task-45-verify-attempt-2.log",
+          ".codex/task-loop-runs/20260529_014640/summary.json",
+          ".codex/task-loop-runs/index.json",
+          "core/tests/ai_privacy_rules_validation.rs",
+          "core/tests/support/ai_privacy_rules_validation.rs",
+          "tasks/prompts/_shared/progress.json"
+        ],
+        "commit": "45772155284f7d6a3b7e8711ccc7317230e87438",
+        "copy_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260529_014640/phase-4/4-2-task-45-copy-attempt-2.log",
+        "diff_name_status": [
+          "M\t.codex/task-loop-runs/20260529_014640/summary.json",
+          "M\t.codex/task-loop-runs/index.json",
+          "M\tcore/tests/ai_privacy_rules_validation.rs",
+          "M\tcore/tests/support/ai_privacy_rules_validation.rs",
+          "M\ttasks/prompts/_shared/progress.json"
+        ],
+        "final_log_files": [
+          ".codex/task-loop-logs/20260529_014640/phase-4/4-2-task-45-copy-attempt-2.log",
+          ".codex/task-loop-logs/20260529_014640/phase-4/4-2-task-45-verify-attempt-2.log"
+        ],
+        "label": "4-2/task-45",
+        "mode": "commit",
+        "phase": "phase-4",
+        "pre_checkpoint_changed_files": [
+          ".codex/task-loop-runs/20260529_014640/summary.json",
+          ".codex/task-loop-runs/index.json",
+          "core/tests/ai_privacy_rules_validation.rs",
+          "core/tests/support/ai_privacy_rules_validation.rs",
+          "tasks/prompts/_shared/progress.json"
+        ],
+        "push_status": "not_requested",
+        "remote": "",
+        "run_id": "20260529_014640",
+        "skipped_log_files": [],
+        "staged_name_status": [
+          "A\t.codex/task-loop-logs/20260529_014640/phase-4/4-2-task-45-copy-attempt-2.log",
+          "A\t.codex/task-loop-logs/20260529_014640/phase-4/4-2-task-45-verify-attempt-2.log",
+          "M\t.codex/task-loop-runs/20260529_014640/summary.json",
+          "M\t.codex/task-loop-runs/index.json",
+          "M\tcore/tests/ai_privacy_rules_validation.rs",
+          "M\tcore/tests/support/ai_privacy_rules_validation.rs",
+          "M\ttasks/prompts/_shared/progress.json"
+        ],
+        "status": "committed",
+        "status_short": [
+          " M .codex/task-loop-runs/20260529_014640/summary.json",
+          " M .codex/task-loop-runs/index.json",
+          " M core/tests/ai_privacy_rules_validation.rs",
+          " M core/tests/support/ai_privacy_rules_validation.rs",
+          " M tasks/prompts/_shared/progress.json"
+        ],
+        "summary_file": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-runs/20260529_014640/summary.json",
+        "task_name": "4-2-task-45",
+        "updated_at": "2026-05-28T18:42:48.645279+00:00",
+        "verify_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260529_014640/phase-4/4-2-task-45-verify-attempt-2.log"
+      },
       "note": "自动执行验收通过",
       "phase": "phase-4",
       "risk": "Mission-Critical",
@@ -180,7 +241,7 @@
     "retries": 1,
     "task_count": 637
   },
-  "updated_at": "2026-05-28T18:42:48.480317+00:00",
+  "updated_at": "2026-05-28T18:42:48.651583+00:00",
   "verify_root": "/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/verify-ready",
   "version": 1
 }
