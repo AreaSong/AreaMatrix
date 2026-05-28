@@ -1,0 +1,77 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-2/task-51`
+- 对应文件路径：`tasks/prompts/phase-4/4-2-stage3-ai/task-51-s3-01-c3-01-ai-settings-config.md`
+- 实际核验范围：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`、`core/area_matrix.udl`
+- 禁止触碰范围：`core/src/**`
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：0
+- 通过项数：10
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 S3-01 页面中的 C3-01 功能点
+- 结果：通过
+- 证据：`S3-01` 在 control map 中只映射 `C3-01`；实现新增 AI tab、`AISettingsPane`、AI settings model，并通过 `loadAISettings` / `updateAISettings` 读写 C3-01 配置。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Settings/GeneralSettingsView.swift:98`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Settings/AdvancedSettingsSupportViews.swift:209`
+
+- 项目：读取页面规格、Stage 3 control map、Core API、C3-01 能力规格
+- 结果：通过
+- 证据：四份 Exact Docs 均存在并已核验；Core API 和 UDL 均声明 `load_ai_config` / `update_ai_config`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:47`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:23`
+
+- 项目：只接入 C3-01 对应 CoreBridge / 状态 / 错误映射
+- 结果：通过
+- 证据：生产路径通过 `CoreBridge` 调用 UniFFI 的 `loadAiConfig` / `updateAiConfig`；错误经 `CoreErrorMapping` 转成页面错误态。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreFileDeleting.swift:123`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/AdvancedSettingsDiagnostics.swift:248`
+
+- 项目：不实现相邻页面、相邻平台或同页其他能力
+- 结果：通过
+- 证据：`Configure remote AI`、`Local model status`、`Privacy rules`、`AI call log` 只作为入口反馈，没有实现 C3-02/C3-03/C3-05/C3-09 的真实闭环；`Clear AI generated suggestions` 被禁用并明确不归 C3-01。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/AdvancedSettingsDiagnostics.swift:198`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Settings/AdvancedSettingsSupportViews.swift:366`
+
+- 项目：Expected New Paths 落地
+- 结果：通过
+- 证据：`apps/macos/AreaMatrix/**` 有页面、模型、CoreBridge 接入；`apps/macos/AreaMatrixTests/**` 有 S3-01/C3-01 model/CoreBridge 覆盖。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ClassifierRuleEditorCoreBridgeTests.swift:65`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git status -- core/src`、`git diff --name-only -- core/src`、未跟踪检查均无输出；未触碰 `core/src/**`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。Swift 文件均未超过 500 行，关键逻辑拆在 model、view、bridge adapter 中；存在文件命名不够理想的问题，但未达到阻断级别。
+- 注释 / rustdoc / 文档同步：通过。当前 task 未改文档；Core API / UDL / capability spec 已与 C3-01 对齐。
+- 错误处理与边界处理：通过。加载失败、保存失败、Pause 失败均有 inline error、retry/revert 路径。
+- 测试与验证覆盖：通过。Manifest 要求的 `./dev check task 4-2/task-51` 已通过；测试文件包含注入 bridge、远程配置拦截、Pause 重试、真实 CoreBridge 持久化覆盖。
+- 占位、硬编码、mock-only、一次性实现检查：通过。生产路径未使用 mock/fixture 伪造 C3-01 Core 闭环；测试中的静态 loader/updater 仅用于 model 单元测试，另有真实 CoreBridge 持久化测试。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-2/task-51`
+- 通过：`python3 tasks/prompts/_shared/prompt_pipeline.py doctor`，结果 `doctor: OK`
+- 通过：`git diff --check`
+- 通过：`xcodebuild -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination platform=macOS,arch=arm64 build CODE_SIGNING_ALLOWED=NO`，结果 `BUILD SUCCEEDED`
+- 失败：无
+- 缺失：未运行 `./dev test macos`，因为本 task manifest 仅要求 `./dev check task 4-2/task-51`，且 page-feature task gate 当前映射为 macOS build gate。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS
