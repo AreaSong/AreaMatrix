@@ -1,0 +1,74 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-2/task-34`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-2-stage3-ai/task-34-c3-07-validation.md`
+- 相关实现与测试：`/Users/as/Ai-Project/project/AreaMatrix/core/src/ai_tags_suggestion.rs`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/ai_tags_suggestion/**`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/db/tags/ai_suggestions.rs`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/ai_tags_suggestion_*.rs`
+
+三、完成度摘要
+
+- 已覆盖项数：9
+- 未覆盖项数：0
+- 通过项数：9
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：补齐测试，覆盖成功和失败路径
+- 结果：通过
+- 证据：`core/tests/ai_tags_suggestion_implementation.rs` 覆盖本地建议不写 tag、privacy skip 不调用 runtime、apply 写 tags/change_log/undo/ai_call_log；`core/tests/ai_tags_suggestion_failure_recovery.rs` 覆盖默认关闭、空结果、非法输入、缺失文件、DB 损坏、权限错误、隐私跳过、远程日志脱敏、部分失败、undo/call-log 回滚。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/ai_tags_suggestion_implementation.rs`，`/Users/as/Ai-Project/project/AreaMatrix/core/tests/ai_tags_suggestion_failure_recovery.rs`
+
+- 项目：Core API / UDL / Rust 实现一致
+- 结果：通过
+- 证据：`core/src/api.rs:520`、`core/src/api.rs:549` 暴露 `suggest_tags_with_ai` / `apply_ai_tag_suggestions`；`core/area_matrix.udl:87`、`core/area_matrix.udl:92` 有同名 UniFFI 声明；`docs/api/core-api.md:2884`、`docs/api/core-api.md:2946` 有对应 API 文档；`core/tests/ai_tags_suggestion_contract_api.rs:253` 专门校验 docs/api/UDL/control map 对齐。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs`，`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`，`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md`
+
+- 项目：不新增业务功能，只补验证与必要测试 fixture
+- 结果：通过
+- 证据：当前工作区 `core/src`、`core/tests`、`core/area_matrix.udl` 无未提交脏改；脏改仅为 task-loop 本地状态文件。C3-07 相关测试 fixture 位于 `core/tests/support/ai_tags_suggestion_common.rs`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/support/ai_tags_suggestion_common.rs`
+
+- 项目：记录无法运行的验证及原因
+- 结果：通过
+- 证据：必需验证 `./dev check task 4-2/task-34` 已运行并通过；无必需验证无法运行。
+- 涉及文件：无
+
+- 项目：Expected New Paths 落地
+- 结果：通过
+- 证据：`core/src/**`、`core/area_matrix.udl`、`core/tests/**` 均存在，且包含 C3-07 实现、桥接合同与测试。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/ai_tags_suggestion.rs`，`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`，`/Users/as/Ai-Project/project/AreaMatrix/core/tests/ai_tags_suggestion_contract_api.rs`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git diff --name-only -- apps` 无输出，`apps/**` 未被触碰。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。C3-07 拆分为 contract、context、executor、implementation、report、call_log，生产相关文件均低于 500 行。
+- 注释 / rustdoc / 文档同步：通过。public API 有 rustdoc 和 `# Errors`；UDL、Core API、capability spec、control map 有测试约束。
+- 错误处理与边界处理：通过。相关生产代码未检出 `unwrap()` / `expect()` / `panic!()` / `todo!()`；失败路径测试覆盖 Config、FileNotFound、Db、PermissionDenied、隐私与日志脱敏。
+- 测试与验证覆盖：通过。task-scoped gate 实际运行 17 个 C3-07 测试，全部通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。测试 runtime 是可控 fixture，用于验证真实 API 路径；生产路径通过 DB、AI settings、provider gate、call log、tag apply 真实模块连接。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-2/task-34`
+- 通过：`python3 tasks/prompts/_shared/prompt_pipeline.py doctor`，`git diff --check`，`cargo test --test ai_tags_suggestion_contract_api -- --nocapture`，`cargo test --test ai_tags_suggestion_failure_recovery -- --nocapture`，`cargo test --test ai_tags_suggestion_implementation -- --nocapture`
+- 失败：无
+- 缺失：无。`./dev check all`、`./dev check core`、全量 `cargo test --workspace` 不属于本 atomic task manifest 要求，未扩大验证边界。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS
