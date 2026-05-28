@@ -3,16 +3,18 @@
 use std::path::PathBuf;
 
 use crate::{
-    ai_call_log, ai_classification_suggestion, ai_settings, batch_category, batch_delete,
-    batch_rename as batch_rename_mod, classifier_correction, classifier_impact,
+    ai_call_log, ai_classification_suggestion, ai_settings, ai_summary, batch_category,
+    batch_delete, batch_rename as batch_rename_mod, classifier_correction, classifier_impact,
     classifier_rule_editor, classifier_rules, classify, db, icloud_conflicts,
     import_conflict_batch, local_model_status, note, recovery, redo, remote_provider_config,
     repair, repo_init, repo_path, repo_scan, storage, sync, tree, AiCallLogClearReport,
     AiCallLogClearRequest, AiCallLogFilter, AiCallLogPage, AiCallLogPagination,
     AiCategorySuggestion, AiCategorySuggestionRequest, AiConfig, AiConfigSnapshot,
-    ApplyTagSuggestionsRequest, BatchCategoryChangeReport, BatchCategoryPreviewReport,
-    BatchDeleteMode, BatchDeletePreviewReport, BatchDeleteReport, BatchRenamePreviewReport,
-    BatchRenameReport, BatchRenameRule, ChangeFilter, ChangeLogEntry, ClassifierCorrectionResult,
+    AiSummaryClearReport, AiSummaryClearRequest, AiSummaryDraft, AiSummaryGenerationRequest,
+    AiSummarySaveReport, AiSummarySaveRequest, ApplyTagSuggestionsRequest,
+    BatchCategoryChangeReport, BatchCategoryPreviewReport, BatchDeleteMode,
+    BatchDeletePreviewReport, BatchDeleteReport, BatchRenamePreviewReport, BatchRenameReport,
+    BatchRenameRule, ChangeFilter, ChangeLogEntry, ClassifierCorrectionResult,
     ClassifierImpactPreviewRequest, ClassifierRule, ClassifierRuleCreateRequest,
     ClassifierRuleDeleteRequest, ClassifierRuleEditorSnapshot, ClassifierRuleUpdate,
     ClassifyResult, CoreError, CoreResult, DiagnosticsSnapshot, ExternalEvent, FileEntry,
@@ -411,6 +413,82 @@ pub fn clear_ai_call_log(
     request: AiCallLogClearRequest,
 ) -> CoreResult<AiCallLogClearReport> {
     ai_call_log::clear_ai_call_log(repo_path, request)
+}
+
+/// Generates a C3-06 AI summary draft without saving it.
+///
+/// S3-06 uses this contract for `Generate summary` and confirmed
+/// `Regenerate...` flows. The returned [`AiSummaryDraft`] is explicitly a draft
+/// until the caller invokes [`save_ai_summary`]. It carries source route,
+/// model/provider display state, used field categories, privacy rule id, call
+/// log id, and skipped/unavailable reasons so the page can render Draft,
+/// generated locally/remotely, skipped-by-privacy, and fallback states without
+/// parsing errors.
+///
+/// This contract must not persist a summary, overwrite notes, write user
+/// files, modify tags/categories/searches, enable remote AI, or bypass C3-09
+/// privacy rules. Remote generation remains gated by C3-01 settings, C3-03
+/// provider scope, C3-09 privacy evaluation, and C3-05 call-log availability.
+///
+/// # Errors
+///
+/// Returns `CoreError::Config { reason }` for invalid repository paths,
+/// request shape, provider scope, privacy reference, or AI gate configuration.
+/// Returns `CoreError::FileNotFound { path }` when the file id is missing,
+/// `CoreError::PermissionDenied { path }` when metadata, allowed input fields,
+/// or provider credentials cannot be inspected, and `CoreError::Db {
+/// message }` when summary or call-log metadata cannot be read or written.
+pub fn generate_ai_summary(
+    repo_path: String,
+    request: AiSummaryGenerationRequest,
+) -> CoreResult<AiSummaryDraft> {
+    ai_summary::generate_ai_summary(repo_path, request)
+}
+
+/// Saves a C3-06 AI summary draft as AreaMatrix-owned metadata.
+///
+/// S3-06 uses this after the user explicitly clicks `Save`. The request may
+/// contain AI-generated or user-edited text, but it remains derived summary
+/// metadata: it must not overwrite the original file, user note, extracted
+/// text, tags, categories, generated overview, AI call log, or provider state.
+/// The returned [`AiSummarySaveReport`] gives the page saved text, provenance,
+/// timestamps, edited-by-user state, and character count for badges, source
+/// rows, VoiceOver labels, and retry/dirty-state recovery.
+///
+/// # Errors
+///
+/// Returns `CoreError::Config { reason }` for invalid repository paths, file
+/// ids, empty or oversized summary text, unsafe draft ids, or unsafe provenance
+/// fields. Returns `CoreError::FileNotFound { path }` when the file id no
+/// longer exists, `CoreError::PermissionDenied { path }` when summary metadata
+/// cannot be written, and `CoreError::Db { message }` for persistence failures.
+pub fn save_ai_summary(
+    repo_path: String,
+    request: AiSummarySaveRequest,
+) -> CoreResult<AiSummarySaveReport> {
+    ai_summary::save_ai_summary(repo_path, request)
+}
+
+/// Clears C3-06 AI summary metadata for one file after confirmation.
+///
+/// This contract backs S3-06 `Clear summary...`. It may clear only the
+/// AreaMatrix-owned AI summary value. It must not delete, move, rename, trash,
+/// or overwrite the original file, and must not delete user notes, extracted
+/// text, tags, AI call logs, provider metadata, privacy rules, change log,
+/// undo/redo state, or generated overviews.
+///
+/// # Errors
+///
+/// Returns `CoreError::Config { reason }` for invalid repository paths, file
+/// ids, or missing confirmation. Returns `CoreError::FileNotFound { path }`
+/// when the file id no longer exists, `CoreError::PermissionDenied { path }`
+/// when summary metadata cannot be written, and `CoreError::Db { message }`
+/// for persistence failures.
+pub fn clear_ai_summary(
+    repo_path: String,
+    request: AiSummaryClearRequest,
+) -> CoreResult<AiSummaryClearReport> {
+    ai_summary::clear_ai_summary(repo_path, request)
 }
 
 /// Recovers AreaMatrix-owned startup residue before the UI opens.

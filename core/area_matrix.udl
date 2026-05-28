@@ -69,6 +69,21 @@ namespace area_matrix {
     );
 
     [Throws=CoreError]
+    AiSummaryDraft generate_ai_summary(
+        string repo_path, AiSummaryGenerationRequest request
+    );
+
+    [Throws=CoreError]
+    AiSummarySaveReport save_ai_summary(
+        string repo_path, AiSummarySaveRequest request
+    );
+
+    [Throws=CoreError]
+    AiSummaryClearReport clear_ai_summary(
+        string repo_path, AiSummaryClearRequest request
+    );
+
+    [Throws=CoreError]
     RecoveryReport recover_on_startup(string repo_path);
 
     [Throws=CoreError]
@@ -486,6 +501,68 @@ dictionary AiCategorySuggestion {
     string? privacy_rule_id;
     i64? call_log_id;
     boolean requires_user_confirmation;
+};
+
+dictionary AiSummaryGenerationRequest {
+    i64 file_id;
+    AiSummaryProviderScope provider_scope;
+    AiSummaryContextPolicy context_policy;
+    string? privacy_policy_ref;
+    boolean regenerate_existing;
+};
+
+dictionary AiSummaryDraft {
+    i64 file_id;
+    string? draft_id;
+    AiSummaryDraftStatus status;
+    string? summary_text;
+    AiSummaryRoute? route;
+    string? model_name;
+    i64? generated_at;
+    sequence<AiSummaryInputField> used_context;
+    AiSummarySkipReason? skipped_reason;
+    string? privacy_rule_id;
+    i64? call_log_id;
+    boolean requires_user_save;
+    i64 character_count;
+};
+
+dictionary AiSummarySaveRequest {
+    i64 file_id;
+    string summary_text;
+    string? draft_id;
+    AiSummaryRoute? route;
+    string? model_name;
+    i64? generated_at;
+    sequence<AiSummaryInputField> used_context;
+    string? privacy_rule_id;
+    i64? call_log_id;
+    boolean edited_by_user;
+};
+
+dictionary AiSummarySaveReport {
+    i64 file_id;
+    string saved_summary;
+    i64 saved_at;
+    AiSummaryRoute? route;
+    string? model_name;
+    i64? generated_at;
+    sequence<AiSummaryInputField> used_context;
+    string? privacy_rule_id;
+    i64? call_log_id;
+    boolean edited_by_user;
+    i64 character_count;
+};
+
+dictionary AiSummaryClearRequest {
+    i64 file_id;
+    boolean confirmed;
+};
+
+dictionary AiSummaryClearReport {
+    i64 file_id;
+    boolean cleared;
+    i64 cleared_at;
 };
 
 dictionary AiCallLogFilter {
@@ -1484,6 +1561,20 @@ enum AiCategorySuggestionStatus {
 enum AiCategorySuggestionSkipReason {
     "AiDisabled", "FeatureDisabled", "RuleResultConfident",
     "NoEligibleContext", "PrivacyRule", "ProviderUnavailable"
+};
+enum AiSummaryProviderScope { "LocalOnly", "LocalPreferred", "RemoteAllowed" };
+enum AiSummaryContextPolicy {
+    "MetadataOnly", "MetadataAndExtractedText", "MetadataTextAndNotes"
+};
+enum AiSummaryInputField {
+    "FileName", "RepoRelativePath", "ExtractedTextExcerpt",
+    "ExistingAiSummary", "NoteSummary", "TagCategoryContext"
+};
+enum AiSummaryRoute { "Local", "Remote" };
+enum AiSummaryDraftStatus { "Draft", "Skipped", "Unavailable" };
+enum AiSummarySkipReason {
+    "AiDisabled", "FeatureDisabled", "ProviderUnavailable",
+    "PrivacyRule", "NoEligibleInput", "CallLogUnavailable"
 };
 enum AiCallLogFeature {
     "Classification", "Summary", "Tags", "SemanticSearch", "ProviderTest"

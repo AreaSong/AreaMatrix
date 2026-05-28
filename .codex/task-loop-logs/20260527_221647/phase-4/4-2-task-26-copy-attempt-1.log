@@ -1,0 +1,49 @@
+一、执行结论
+
+已完成 `4-2/task-26: C3-06 contract-api`。
+
+二、执行范围
+
+单任务：`4-2/task-26`
+
+修改文件清单：
+- `core/src/ai_summary.rs`：新增 C3-06 AI summary 合同类型、输入校验和三入口边界。
+- `core/src/api.rs`：新增 `generate_ai_summary`、`save_ai_summary`、`clear_ai_summary` public Core API 与 rustdoc。
+- `core/src/lib.rs`：导出 C3-06 类型和入口。
+- `core/area_matrix.udl`：补齐 UniFFI 函数、dictionary、enum 声明。
+- `core/tests/ai_summary_contract_api.rs`：新增 task-scoped contract test。
+- `docs/api/core-api.md`：同步 Exact Docs 中的 Core API 合同漂移。
+
+三、完成情况
+
+核对清单均已完成：已读取能力规格、Stage 3 control map、Core API、错误码，并对齐 API 名称、输入、输出、错误码和隐私边界。只补了合同、类型、桥接声明、Core API 文档和合同测试，没有实现相邻能力。
+
+S3-06 页面可从合同得到 Draft、本地/远程来源、model、generated time、used fields、privacy skipped、call log id、privacy rule id、character count、save/clear 结果；S3-10 可从 `status`、`skipped_reason`、`route`、`call_log_id` 得到 fallback 所需状态。
+
+未触碰 `apps/**`。
+
+四、工程质量
+
+新增 Rust public 类型和 API 均有 rustdoc，`core/src/ai_summary.rs` 保持在 500 行以内。生产路径没有 `unwrap()` / `expect()` / `panic!()`，也没有 mock-only 或硬编码成功态；当前合法请求在真实实现前返回结构化 `Db` 缺口错误，避免伪造摘要生成成功。
+
+未新增依赖。AI/隐私边界明确限制：不启用远程 provider、不保存 API key、不覆盖用户 Note、不写用户原文件、不清日志或相邻 AI 结果。
+
+五、验证情况
+
+已运行并通过：
+
+```bash
+cargo fmt --all
+./dev check task 4-2/task-26
+```
+
+`./dev check task 4-2/task-26` 结果：
+- prompt doctor：OK
+- git diff --check：通过
+- `cargo test --test ai_summary_contract_api -- --nocapture`：4 passed
+
+六、风险与后续
+
+剩余风险：C3-06 真实生成、保存持久化、清除持久化、AI call log 写入和失败回滚尚未实现，这是后续 `4-2/task-27` / `4-2/task-28` 的范围。
+
+建议下一个任务：执行 `4-2/task-27`，实现 C3-06 最小 Core 行为闭环。

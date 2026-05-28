@@ -8,6 +8,7 @@ uniffi::include_scaffolding!("area_matrix");
 mod ai_call_log;
 mod ai_classification_suggestion;
 mod ai_settings;
+mod ai_summary;
 pub mod api;
 mod batch_category;
 mod batch_delete;
@@ -55,6 +56,11 @@ pub use ai_classification_suggestion::{
 pub use ai_settings::{
     AiCapabilityState, AiConfig, AiConfigSnapshot, AiFeatureConfig, AiFeatureKind,
     AiProviderPreference,
+};
+pub use ai_summary::{
+    AiSummaryClearReport, AiSummaryClearRequest, AiSummaryContextPolicy, AiSummaryDraft,
+    AiSummaryDraftStatus, AiSummaryGenerationRequest, AiSummaryInputField, AiSummaryProviderScope,
+    AiSummaryRoute, AiSummarySaveReport, AiSummarySaveRequest, AiSummarySkipReason,
 };
 pub use api::*;
 pub use batch_category::{
