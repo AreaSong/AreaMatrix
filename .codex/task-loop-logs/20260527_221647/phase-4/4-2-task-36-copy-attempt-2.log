@@ -1,0 +1,53 @@
+一、执行结论
+
+已完成。`4-2/task-36` repair retry 的两项验收失败已修复。
+
+二、执行范围
+
+单任务：`4-2/task-36`
+
+本次 retry 修改：
+- [C3-08-semantic-search.md](/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-3-ai/C3-08-semantic-search.md:9)：返回类型改为 `SemanticSearchResultPage`
+- [semantic_search.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/semantic_search.rs:60)：`SemanticSearchFallbackReason` 增加 `RateLimited`、`Timeout`
+- [area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:1756)：UDL fallback enum 同步
+- [core-api.md](/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:1780)：Core API enum 与页面消费说明同步
+- [semantic_search_contract_api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/semantic_search_contract_api.rs:288)：补充合同一致性测试断言
+
+未触碰 `apps/**`。
+
+三、完成情况
+
+核对清单：
+- 已读取 C3-08 能力规格、Stage 3 control map、Core API、错误码。
+- 已对齐 API 名称、输入、输出、错误码、隐私/权限边界；能力规格不再写旧 `SearchResultPage`。
+- 只补合同、类型、桥接声明和测试，没有实现 provider、搜索业务逻辑或相邻能力。
+- S3-10 现在可从合同稳定得到 `RateLimited` / `Timeout` fallback reason。
+
+完成标准：
+- C3-08 Core API 合同可供后续 implementation task 实现。
+- 未引入 control map 之外页面能力。
+
+四、工程质量
+
+结构仍清晰：`core/src/semantic_search.rs` 389 行，测试 478 行，未超过文件阈值。新增 enum variant 有 rustdoc；Core API、UDL、能力规格和测试同步。没有新增依赖、mock-only 闭环、硬编码成功路径或用户文件破坏性操作。
+
+五、验证情况
+
+已运行并通过：
+
+```bash
+./dev check task 4-2/task-36
+```
+
+结果：
+- prompt doctor：OK
+- `git diff --check`：OK
+- `cargo test --test semantic_search_contract_api -- --nocapture`：4 passed
+
+未运行宽门禁：按当前 task manifest，验证上限是 `./dev check task 4-2/task-36`，未升级到 `cargo test --workspace` / `./dev check core` / `./dev check all`。
+
+六、风险与后续
+
+剩余风险：这是合同/API task，真实语义搜索、provider timeout/rate-limit 映射和 fallback UI wiring 仍由后续 implementation / integration task 覆盖。
+
+建议下一个任务：进入 `4-2/task-37`，继续 C3-08 implementation 范围。

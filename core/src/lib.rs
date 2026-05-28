@@ -38,6 +38,7 @@ mod repo_init;
 mod repo_path;
 mod repo_scan;
 pub mod search;
+mod semantic_search;
 pub mod storage;
 pub mod sync;
 mod tags;
@@ -130,6 +131,11 @@ pub use remote_provider_config::{
     RemoteProviderTestStatus,
 };
 pub use search::*;
+pub use semantic_search::{
+    build_embedding_index, semantic_search, SemanticIndexBuildReport, SemanticIndexScope,
+    SemanticIndexStatus, SemanticNormalSearchMatch, SemanticSearchFallbackReason,
+    SemanticSearchInputField, SemanticSearchMatch, SemanticSearchResultPage, SemanticSearchRoute,
+};
 pub use tags::{
     add_tag, apply_tag_suggestions, batch_add_tags, list_tags, remove_tag, suggest_tags_for_file,
     ApplyTagSuggestionItem, ApplyTagSuggestionsRequest, BatchMutationItemResult,

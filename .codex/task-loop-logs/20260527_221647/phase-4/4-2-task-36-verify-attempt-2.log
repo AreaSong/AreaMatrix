@@ -1,0 +1,73 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-2/task-36`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-2-stage3-ai/task-36-c3-08-contract-api.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-3-ai/C3-08-semantic-search.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-3-control-map.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/api/error-codes.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/semantic_search.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/lib.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/tests/semantic_search_contract_api.rs`
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：读取 C3-08 能力规格、Stage 3 AI control map、Core API 和错误码
+- 结果：通过
+- 证据：C3-08 spec 定义 `semantic_search` / `build_embedding_index`、输入输出、错误码；control map 仅将 C3-08 绑定到 S3-08 和 S3-10；Core API 已新增合同段；错误码表包含 `Config` / `Db` / `PermissionDenied` / `Internal`。
+- 涉及文件：`docs/core/.../C3-08-semantic-search.md:7`、`docs/architecture/stage-3-control-map.md:16`、`docs/api/core-api.md:3079`、`docs/api/error-codes.md:35`
+
+- 项目：API 名称、输入、输出、错误码、权限/隐私边界与能力规格一致
+- 结果：通过
+- 证据：Rust 暴露 `semantic_search(repo_path, query, filter, pagination)` 与 `build_embedding_index(repo_path, scope)`；UDL 同步声明；输出包含 semantic/normal 分组、dedupe、index status、fallback、call log、privacy rule；Core API 明确隐私、远程 provider、用户文件只读边界。
+- 涉及文件：`core/src/semantic_search.rs:201`、`core/src/semantic_search.rs:229`、`core/area_matrix.udl:97`、`docs/api/core-api.md:3114`
+
+- 项目：只补合同、类型、桥接声明或文档缺口，不实现相邻能力
+- 结果：通过
+- 证据：新增模块只定义合同类型、输入校验和当前不可用的结构化错误返回；未发现远程 provider 启用、AI 配置写入、摘要/标签采纳、导入/删除/移动等相邻能力调用；`apps/**` 未被触碰。
+- 涉及文件：`core/src/semantic_search.rs:1`、`core/src/semantic_search.rs:207`、`core/src/semantic_search.rs:233`
+
+- 项目：记录当前页面消费方是否能从合同中得到所需状态
+- 结果：通过
+- 证据：Core API “页面消费状态”明确 S3-08 可获得分组结果、relevance、matched reason、used fields、route、index status、dedupe、fallback；S3-10 可获得 fallback reason/message、route、call log、privacy rule。
+- 涉及文件：`docs/api/core-api.md:3135`、`docs/api/core-api.md:3194`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，`core/src/semantic_search.rs` 389 行，职责集中；合同类型、入口函数、校验函数分层清楚。
+- 注释 / rustdoc / 文档同步：通过，新增 public Rust 类型、字段和函数均有 rustdoc；Core API 与 UDL 同步。
+- 错误处理与边界处理：通过，输入无效返回 `CoreError::Config`，合同未伪造成功结果；路径、query、filter、pagination、privacy ref 有边界校验。
+- 测试与验证覆盖：通过，`core/tests/semantic_search_contract_api.rs` 覆盖签名、输出结构、错误码、文档 / UDL / control map 对齐、消费页面状态和相邻能力禁止项。
+- 占位、硬编码、mock-only、一次性实现检查：通过。本 task 明确是 contract-api，不要求业务实现；当前未以假成功或 mock 闭环冒充语义搜索实现。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 跑了哪些验证：`./dev check task 4-2/task-36`
+- 哪些通过：`prompt doctor` 通过；`git diff --check` 通过；`cargo test --test semantic_search_contract_api -- --nocapture` 通过，4 个测试全部通过。
+- 哪些失败：无
+- 哪些缺失：未运行 `./dev check all` / `cargo test --workspace`，因为当前普通 atomic Core contract task 的 manifest 验证上限是 `./dev check task 4-2/task-36`。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。C3-08 的 Core API / UDL / Rust 合同可交给后续 implementation task 直接实现，且未引入 control map 之外的页面能力。
+
+
+VERIFY_RESULT: PASS

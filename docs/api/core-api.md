@@ -118,6 +118,19 @@ namespace area_matrix {
     );
 
     [Throws=CoreError]
+    SemanticSearchResultPage semantic_search(
+        string repo_path,
+        string query,
+        SearchFilter filter,
+        SearchPagination pagination
+    );
+
+    [Throws=CoreError]
+    SemanticIndexBuildReport build_embedding_index(
+        string repo_path, SemanticIndexScope scope
+    );
+
+    [Throws=CoreError]
     RecoveryReport recover_on_startup(string repo_path);
 
     [Throws=CoreError]
@@ -671,6 +684,59 @@ dictionary AiTagSuggestionApplyReport {
     string? undo_token;
     i64? call_log_id;
     sequence<string> refresh_targets;
+};
+
+dictionary SemanticSearchMatch {
+    SearchFileResult result;
+    f32 relevance;
+    string matched_reason;
+    sequence<SemanticSearchInputField> used_fields;
+    SemanticSearchRoute route;
+    boolean also_matched_normal_search;
+    i64? call_log_id;
+    string? privacy_rule_id;
+};
+
+dictionary SemanticNormalSearchMatch {
+    SearchFileResult result;
+    boolean deduped_by_semantic;
+};
+
+dictionary SemanticSearchResultPage {
+    string query;
+    i64 semantic_total_count;
+    i64 normal_total_count;
+    sequence<SemanticSearchMatch> semantic_matches;
+    sequence<SemanticNormalSearchMatch> normal_matches;
+    i64 deduped_normal_count;
+    SemanticIndexStatus index_status;
+    SemanticSearchRoute? route;
+    SemanticSearchFallbackReason? fallback_reason;
+    string? fallback_message;
+    i64? call_log_id;
+    string? privacy_rule_id;
+    boolean low_confidence;
+};
+
+dictionary SemanticIndexScope {
+    SearchFilter filter;
+    SemanticSearchRoute? route;
+    string? privacy_policy_ref;
+    boolean confirmed;
+};
+
+dictionary SemanticIndexBuildReport {
+    SemanticIndexStatus status;
+    SemanticSearchRoute? route;
+    i64 total_count;
+    i64 processed_count;
+    i64 skipped_count;
+    i64 failed_count;
+    i64 privacy_skipped_count;
+    string? provider_name;
+    i64? call_log_id;
+    SemanticSearchFallbackReason? fallback_reason;
+    string? message;
 };
 
 dictionary AiCallLogFilter {
@@ -1703,6 +1769,19 @@ enum AiTagSuggestionMergeAction {
     "CreateTag", "UseExistingTag", "MergeWithExistingTag"
 };
 enum AiTagSuggestionApplyStatus { "Applied", "AlreadyAdded", "Failed" };
+enum SemanticSearchRoute { "Local", "Remote" };
+enum SemanticSearchInputField {
+    "FileName", "RepoRelativePath", "Category", "NoteSummary",
+    "AiSummary", "ExtractedTextExcerpt"
+};
+enum SemanticIndexStatus {
+    "Ready", "NotReady", "Building", "Paused", "Canceled", "Failed", "Partial"
+};
+enum SemanticSearchFallbackReason {
+    "AiDisabled", "FeatureDisabled", "ProviderUnavailable", "PrivacyRule",
+    "SemanticIndexNotReady", "CallLogUnavailable", "NoEligibleInput",
+    "NormalSearchUnavailable", "RateLimited", "Timeout"
+};
 enum AiCallLogFeature {
     "Classification", "Summary", "Tags", "SemanticSearch", "ProviderTest"
 };
@@ -1870,6 +1949,8 @@ interface CoreError {
 | `clear_ai_summary(repo, request)` | ai | √ | Config / FileNotFound / PermissionDenied / Db |
 | `suggest_tags_with_ai(repo, request)` | ai | √ | Config / FileNotFound / Db |
 | `apply_ai_tag_suggestions(repo, request)` | ai | √ | Config / FileNotFound / Db |
+| `semantic_search(repo, query, filter, pagination)` | ai/search | √ | Config / PermissionDenied / Db / Internal |
+| `build_embedding_index(repo, scope)` | ai/search | √ | Config / PermissionDenied / Db / Internal |
 | `recover_on_startup(repo)` | repo | √ | Db |
 | `reindex_from_filesystem(repo)` | repo | √ | Io / Db |
 | `create_diagnostics_snapshot(repo)` | repo | √ | Db / PermissionDenied / Io / Internal |
@@ -2994,6 +3075,129 @@ batch apply。输入：
 - S3-07 可以从合同得到成功/失败/重复数量、逐行失败原因、刷新后的 tag set、undo token 和
   AI call log 追溯状态。
 - 本合同不实现 C3-09 隐私规则编辑、S3-05 日志列表、C2-07 undo 执行或 batch 页面状态管理。
+
+### `semantic_search(repoPath: String, query: String, filter: SearchFilter, pagination: SearchPagination) throws -> SemanticSearchResultPage`
+
+```swift
+let page = try AreaMatrix.semanticSearch(
+    repoPath: repoPath,
+    query: "上个月的发票",
+    filter: currentSearchFilter,
+    pagination: SearchPagination(limit: 50, offset: 0)
+)
+```
+
+C3-08 的语义搜索入口，服务 `S3-08 semantic-search-results` 的语义结果组，
+并为 `S3-10 ai-fallback` 提供语义不可用、隐私跳过、provider 不可用和普通搜索
+回退状态。输入复用 Stage 2 `SearchFilter` 和 `SearchPagination`，使 filters、
+scope 和分页与普通搜索保持同一合同。
+
+返回 `SemanticSearchResultPage`：
+
+- `query`：自然语言 query 回显。
+- `semantic_total_count` / `normal_total_count`：语义组和普通搜索组分页前数量。
+- `semantic_matches`：第一组 `Semantic matches`，每行包含 `SearchFileResult`、
+  `relevance`、`matched_reason`、`used_fields`、`route`、dedupe 标记、call log id 和
+  privacy rule id。
+- `normal_matches`：第二组 `Normal search matches`，复用普通搜索结果并标记
+  `deduped_by_semantic`。
+- `deduped_normal_count`：被语义组折叠的普通搜索重复数量。
+- `index_status`：`Ready`、`NotReady`、`Building`、`Paused`、`Canceled`、`Failed` 或
+  `Partial`。
+- `route`：`Local` 或 `Remote`；未进入 AI 路线时为 `nil`。
+- `fallback_reason` / `fallback_message`：`AiDisabled`、`FeatureDisabled`、
+  `ProviderUnavailable`、`PrivacyRule`、`SemanticIndexNotReady`、`CallLogUnavailable`、
+  `NoEligibleInput`、`NormalSearchUnavailable`、`RateLimited` 或 `Timeout`。
+- `call_log_id` / `privacy_rule_id`：跳转 S3-05 / S3-09 所需的追溯 id。
+- `low_confidence`：语义组存在低置信结果时为 true。
+
+副作用边界：
+
+- 语义搜索只读取 repository metadata、semantic index metadata、允许的安全上下文和普通搜索
+  fallback 数据；不得写 tags、分类、摘要、notes、saved searches、change log、undo/redo、
+  generated overview 或用户文件。
+- 远程语义路线必须同时通过 C3-01 AI settings、C3-03 remote provider gate、C3-09 privacy gate、
+  feature scope 和 C3-05 call-log gate；不得自动启用远程 provider，不保存 API key 明文，
+  不把 key、provider 原始响应、完整 prompt、完整输出、完整文件内容或绝对路径用户名放入返回值、
+  日志、诊断或错误文案。
+- Core 必须以 `Semantic matches` / `Normal search matches` 两组表达结果，不生成不可解释的单一
+  混合分数。普通搜索失败不得清空已可用的语义组；语义失败也不得阻断普通搜索回退展示。
+- 本 API 不创建或刷新 embedding index；索引构建只通过 `build_embedding_index`。
+
+错误：
+
+- `Config`：`repoPath`、query、filter、pagination、privacy metadata 或 AI gate 配置无效。
+- `PermissionDenied`：repository metadata、允许的上下文字段、本地模型状态或 provider credential
+  reference 无法 inspection。
+- `Db`：semantic index metadata、普通搜索 fallback、AI call log 或 file metadata 无法读取。
+- `Internal`：AI runtime、provider adapter、embedding runtime 或脱敏后的结果解析发生未归类失败。
+
+页面消费状态：
+
+- S3-08 可以从合同得到 query、semantic/normal 分组结果、relevance、matched reason、used fields、
+  local/remote badge、index status、low-confidence、dedupe、分页、call log id、privacy rule id 和
+  普通搜索 fallback 状态。
+- S3-10 可以从 `fallback_reason`、`fallback_message`、`route`、`call_log_id` 和
+  `privacy_rule_id` 渲染 semantic index not ready、AI disabled、provider unavailable、
+  privacy skipped、timeout/rate-limit 的承接状态，并显示 `Use normal search` 或 `Build semantic index`。
+- 本合同不新增 control map 之外的页面能力；普通搜索仍由 C2-01 覆盖，Smart List 保存仍由 C2-03/C2-04
+  覆盖，AI 调用日志由 C3-05 覆盖，隐私规则由 C3-09 覆盖，fallback reason matrix 由 C3-10 覆盖。
+
+### `build_embedding_index(repoPath: String, scope: SemanticIndexScope) throws -> SemanticIndexBuildReport`
+
+```swift
+let report = try AreaMatrix.buildEmbeddingIndex(
+    repoPath: repoPath,
+    scope: SemanticIndexScope(
+        filter: currentSearchFilter,
+        route: .local,
+        privacyPolicyRef: snapshot.config.privacyPolicyRef,
+        confirmed: true
+    )
+)
+```
+
+C3-08 的 embedding index 构建入口，服务 S3-08 `Build semantic index` 确认后的
+启动/重试路径。输入 `SemanticIndexScope`：
+
+- `filter`：索引范围，复用普通搜索 filter/scope。
+- `route`：可选 `Local` / `Remote` 偏好；为 `nil` 时后续实现按 AI settings 和 provider gate 选择。
+- `privacy_policy_ref`：可选隐私策略引用。
+- `confirmed`：S3-08 `Build semantic index?` 已确认；为 false 必须返回 `Config` 错误。
+
+返回 `SemanticIndexBuildReport`：
+
+- `status`：索引构建后的状态。
+- `route`、`provider_name`：选中的本地/远程路线和脱敏 provider/model 名称。
+- `total_count`、`processed_count`、`skipped_count`、`failed_count`、`privacy_skipped_count`：
+  构建状态、部分失败和隐私跳过计数。
+- `call_log_id`：构建或跳过记录的追溯 id。
+- `fallback_reason` / `message`：无法开始构建时的稳定阻断原因和脱敏说明。
+
+副作用边界：
+
+- 允许的写入仅限 AreaMatrix-owned semantic index metadata、embedding metadata、临时索引批次和
+  AI call log；不得移动、删除、重命名、覆盖、Trash、导入或改写任何用户文件。
+- 远程 embedding 只在远程 AI 显式启用、SemanticSearch scope 允许、测试连接成功、隐私规则通过且
+  call-log gate 可用后进入；隐私命中文件不得进入远程队列，sent fields 必须为 none。
+- 取消、暂停、清理未提交临时 index batch 和远程队列停止语义由后续 C3-08 failure-edge /
+  implementation 任务补齐；本合同只定义启动和报告形状。
+
+错误：
+
+- `Config`：`repoPath`、scope、privacy reference、route 或确认状态无效。
+- `PermissionDenied`：repository metadata、允许的上下文字段、本地模型或 provider credential
+  reference 无法 inspection。
+- `Db`：embedding index metadata、AI call log 或 file metadata 无法读写。
+- `Internal`：embedding runtime、provider adapter 或脱敏后的索引构建结果发生未归类失败。
+
+页面消费状态：
+
+- S3-08 可以从合同得到构建状态、文件数、已处理/跳过/失败数量、隐私跳过数量、provider、
+  local/remote 路线、call log id 和 gate 阻断原因。
+- S3-10 可以把 `SemanticIndexNotReady` 映射到 `Build semantic index`，失败时仍保留
+  `Use normal search`。
+- 本合同不实现 pause/cancel/retry 队列控制、Smart List 保存、普通搜索 UI、provider 配置或隐私规则编辑。
 
 ### `recover_on_startup(repoPath: String) throws -> RecoveryReport`
 
