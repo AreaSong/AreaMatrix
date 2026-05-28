@@ -15,7 +15,10 @@ use uuid::Uuid;
 
 use crate::{db, AiFeatureKind, CoreError, CoreResult};
 
-pub(crate) use state::{disable_remote_ai_provider, load_remote_ai_provider_config};
+pub(crate) use state::{
+    disable_remote_ai_provider, load_enabled_remote_provider_runtime,
+    load_remote_ai_provider_config,
+};
 
 const AREA_MATRIX_DIR: &str = ".areamatrix";
 const MAX_MODEL_ID_LEN: usize = 128;
@@ -141,14 +144,14 @@ struct PendingRemoteProviderVerification {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
-struct StoredRemoteProviderConfig {
-    provider: RemoteAiProviderKind,
-    model_id: String,
-    endpoint_url: Option<String>,
-    key_reference: String,
-    feature_scope: Vec<AiFeatureKind>,
-    provider_verified: bool,
-    remote_provider_enabled: bool,
+pub(crate) struct StoredRemoteProviderConfig {
+    pub(crate) provider: RemoteAiProviderKind,
+    pub(crate) model_id: String,
+    pub(crate) endpoint_url: Option<String>,
+    pub(crate) key_reference: String,
+    pub(crate) feature_scope: Vec<AiFeatureKind>,
+    pub(crate) provider_verified: bool,
+    pub(crate) remote_provider_enabled: bool,
 }
 
 pub(crate) fn test_remote_ai_provider(

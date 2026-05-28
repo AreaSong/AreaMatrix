@@ -1,5 +1,9 @@
+#[path = "support/ai_classification_suggestion_common.rs"]
+mod ai_common;
+
 use std::{fs, path::Path};
 
+use ai_common::AiRuntime;
 use area_matrix_core::{
     import_file, init_repo, list_files, map_core_error, suggest_category_with_ai, update_ai_config,
     AiCategorySuggestionContextPolicy, AiCategorySuggestionRequest, AiConfig, AiFeatureConfig,
@@ -40,7 +44,9 @@ fn import_options(category: &str) -> ImportOptions {
 }
 
 fn import_fixture(repo: &Path, name: &str, category: &str) -> i64 {
-    let source = repo.join(format!("source-{name}"));
+    let source_dir = repo.join("fixtures");
+    fs::create_dir_all(&source_dir).expect("create fixture source directory");
+    let source = source_dir.join(name);
     fs::write(&source, b"fixture").expect("write fixture source");
     import_file(
         path_string(repo),
@@ -267,6 +273,11 @@ fn ai_classification_suggestion_failure_call_log_db_abort_preserves_file_state()
     update_ai_config(repo_path.clone(), ai_config(repo_path.clone())).expect("enable AI");
     let config_before =
         repo_config_value(repo.path(), "ai_config").expect("AI config should be persisted");
+    let _runtime = AiRuntime::local(
+        "finance",
+        0.86,
+        "local model matched invoice filename and path",
+    );
     let connection = Connection::open(repo.path().join(".areamatrix/index.db"))
         .expect("open repository database");
     connection

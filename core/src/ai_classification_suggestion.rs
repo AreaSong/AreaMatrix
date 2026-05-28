@@ -1,5 +1,8 @@
 //! C3-04 AI classification suggestion contract types and entry point.
 
+mod call_log;
+mod context;
+mod executor;
 mod implementation;
 
 use std::{

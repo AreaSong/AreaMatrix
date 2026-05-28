@@ -1,19 +1,19 @@
 use std::path::{Path, PathBuf};
 
 use crate::{
-    classify, db, AiCapabilityState, AiFeatureKind, AiProviderPreference, ClassifyReason,
-    ClassifyResult, CoreError, CoreResult, FileEntry, RemoteProviderConfigSnapshot,
+    classify, db, AiCapabilityState, AiFeatureKind, AiProviderPreference, ClassifyResult,
+    CoreError, CoreResult, FileEntry, RemoteProviderConfigSnapshot,
 };
 
 use super::{
-    AiCategorySuggestion, AiCategorySuggestionContextField, AiCategorySuggestionContextPolicy,
-    AiCategorySuggestionRequest, AiCategorySuggestionRoute, AiCategorySuggestionSkipReason,
-    AiCategorySuggestionStatus,
+    call_log::{insert_call_log, CallLogDraft},
+    context::{build_context, AiSuggestionContext},
+    executor::{execute_local, execute_remote, AiSuggestionDraft},
+    AiCategorySuggestion, AiCategorySuggestionContextField, AiCategorySuggestionRequest,
+    AiCategorySuggestionRoute, AiCategorySuggestionSkipReason, AiCategorySuggestionStatus,
 };
 
 const HIGH_RULE_CONFIDENCE: f32 = 0.8;
-const LOCAL_SUGGESTION_CONFIDENCE: f32 = 0.72;
-const FEATURE_NAME: &str = "classification";
 
 pub(super) fn suggest_category_with_ai(
     repo_path: String,
@@ -58,12 +58,8 @@ pub(super) fn suggest_category_with_ai(
         return no_suggestion_for_confident_rule(&repo, &file);
     }
 
-    let Some(route) = select_route(capability, &ai_config.config.provider_preference, &repo)?
-    else {
-        return unavailable_provider(&repo, &file);
-    };
-    let used_context = used_context_fields(&file, &request);
-    if used_context.is_empty() {
+    let context = build_context(&repo, &file, &request.context_policy)?;
+    if context.fields.is_empty() {
         return skipped(
             &repo,
             &file,
@@ -73,10 +69,21 @@ pub(super) fn suggest_category_with_ai(
         );
     }
 
-    let Some(suggested_category) = suggestion_category(&rule_result, &file) else {
-        return no_suggestion(&repo, &file, route, used_context);
+    let Some(route) = select_route(capability, &ai_config.config.provider_preference, &repo)?
+    else {
+        return unavailable_provider(&repo, &file);
     };
-    suggested(&repo, &file, suggested_category, route, used_context)
+    let route_for_error = route.clone();
+    let draft = match execute_suggestion(route, &repo, &context) {
+        Ok(draft) => draft,
+        Err(error) => {
+            return unavailable_after_runtime_error(&repo, &file, route_for_error, &context, error);
+        }
+    };
+    match draft.category.clone() {
+        Some(category) if category != file.category => suggested(&repo, &file, draft, category),
+        _ => no_suggestion(&repo, &file, draft, context.fields),
+    }
 }
 
 fn classification_capability(capabilities: &[AiCapabilityState]) -> CoreResult<&AiCapabilityState> {
@@ -145,63 +152,44 @@ fn remote_provider_allows_classification(snapshot: &RemoteProviderConfigSnapshot
             .contains(&AiFeatureKind::ClassificationSuggestions)
 }
 
-fn used_context_fields(
-    file: &FileEntry,
-    request: &AiCategorySuggestionRequest,
-) -> Vec<AiCategorySuggestionContextField> {
-    let mut fields = vec![AiCategorySuggestionContextField::FileName];
-    if Path::new(&file.current_name).extension().is_some() {
-        fields.push(AiCategorySuggestionContextField::Extension);
+fn execute_suggestion(
+    route: AiCategorySuggestionRoute,
+    repo: &Path,
+    context: &AiSuggestionContext,
+) -> CoreResult<AiSuggestionDraft> {
+    match route {
+        AiCategorySuggestionRoute::Local => execute_local(context),
+        AiCategorySuggestionRoute::Remote => execute_remote(repo, context),
     }
-    match request.context_policy {
-        AiCategorySuggestionContextPolicy::FileNameOnly => {}
-        AiCategorySuggestionContextPolicy::FileNameAndPath
-        | AiCategorySuggestionContextPolicy::LimitedTextSummary => {
-            fields.push(AiCategorySuggestionContextField::RepoRelativePath);
-        }
-    }
-    fields
-}
-
-fn suggestion_category(rule_result: &ClassifyResult, file: &FileEntry) -> Option<String> {
-    if rule_result.category == file.category {
-        return None;
-    }
-    if matches!(rule_result.reason, ClassifyReason::Default) && rule_result.category == "inbox" {
-        return None;
-    }
-    Some(rule_result.category.clone())
 }
 
 fn suggested(
     repo: &Path,
     file: &FileEntry,
+    draft: AiSuggestionDraft,
     suggested_category: String,
-    route: AiCategorySuggestionRoute,
-    used_context: Vec<AiCategorySuggestionContextField>,
 ) -> CoreResult<AiCategorySuggestion> {
-    let reason = format!(
-        "Local classification context suggests `{suggested_category}`; confirm before applying."
-    );
     let result_summary = format!("Suggested category: {suggested_category}");
+    let used_context = draft_context(&draft);
     let call_log_id = insert_call_log(
         repo,
         CallLogDraft {
             file_id: Some(file.id),
-            route: Some(&route),
+            route: Some(&draft.route),
             status: "success",
             sent_fields: &used_context,
             privacy_rule_id: None,
             result_summary: &result_summary,
             error_code: None,
+            model: Some(&draft.model),
         },
     )?;
     Ok(base_result(file, AiCategorySuggestionStatus::Suggested)
         .with_suggestion(
             suggested_category,
-            LOCAL_SUGGESTION_CONFIDENCE,
-            reason,
-            route,
+            draft.confidence,
+            format!("{}; confirm before applying.", draft.reason),
+            draft.route,
         )
         .with_context(used_context)
         .with_call_log(call_log_id))
@@ -221,6 +209,7 @@ fn no_suggestion_for_confident_rule(
             privacy_rule_id: None,
             result_summary: "Rule classification is already confident",
             error_code: None,
+            model: None,
         },
     )?;
     Ok(base_result(file, AiCategorySuggestionStatus::NoSuggestion)
@@ -232,24 +221,25 @@ fn no_suggestion_for_confident_rule(
 fn no_suggestion(
     repo: &Path,
     file: &FileEntry,
-    route: AiCategorySuggestionRoute,
+    draft: AiSuggestionDraft,
     used_context: Vec<AiCategorySuggestionContextField>,
 ) -> CoreResult<AiCategorySuggestion> {
     let call_log_id = insert_call_log(
         repo,
         CallLogDraft {
             file_id: Some(file.id),
-            route: Some(&route),
+            route: Some(&draft.route),
             status: "success",
             sent_fields: &used_context,
             privacy_rule_id: None,
             result_summary: "No category suggestion is available",
             error_code: None,
+            model: Some(&draft.model),
         },
     )?;
     Ok(base_result(file, AiCategorySuggestionStatus::NoSuggestion)
         .with_reason("No AI category suggestion is available")
-        .with_route(route)
+        .with_route(draft.route)
         .with_context(used_context)
         .with_call_log(call_log_id))
 }
@@ -271,6 +261,7 @@ fn skipped(
             privacy_rule_id: privacy_rule_id.as_deref(),
             result_summary: message,
             error_code: None,
+            model: None,
         },
     )?;
     Ok(base_result(file, AiCategorySuggestionStatus::Skipped)
@@ -291,12 +282,63 @@ fn unavailable_provider(repo: &Path, file: &FileEntry) -> CoreResult<AiCategoryS
             privacy_rule_id: None,
             result_summary: "AI classification provider is unavailable",
             error_code: Some("ProviderUnavailable"),
+            model: None,
         },
     )?;
     Ok(base_result(file, AiCategorySuggestionStatus::Unavailable)
         .with_reason("AI classification provider is unavailable")
         .with_skipped_reason(AiCategorySuggestionSkipReason::ProviderUnavailable)
         .with_call_log(call_log_id))
+}
+
+fn unavailable_after_runtime_error(
+    repo: &Path,
+    file: &FileEntry,
+    route: AiCategorySuggestionRoute,
+    context: &AiSuggestionContext,
+    error: CoreError,
+) -> CoreResult<AiCategorySuggestion> {
+    let error_code = runtime_error_code(&error);
+    let message = runtime_error_message(route.clone());
+    let call_log_id = insert_call_log(
+        repo,
+        CallLogDraft {
+            file_id: Some(file.id),
+            route: Some(&route),
+            status: "failed",
+            sent_fields: &context.fields,
+            privacy_rule_id: None,
+            result_summary: &message,
+            error_code: Some(error_code),
+            model: None,
+        },
+    )?;
+    Ok(base_result(file, AiCategorySuggestionStatus::Unavailable)
+        .with_reason(&message)
+        .with_route(route)
+        .with_context(context.fields.clone())
+        .with_skipped_reason(AiCategorySuggestionSkipReason::ProviderUnavailable)
+        .with_call_log(call_log_id))
+}
+
+fn runtime_error_code(error: &CoreError) -> &'static str {
+    match error {
+        CoreError::Config { .. } => "ProviderUnavailable",
+        CoreError::PermissionDenied { .. } => "PermissionDenied",
+        _ => "RuntimeFailed",
+    }
+}
+
+fn runtime_error_message(route: AiCategorySuggestionRoute) -> String {
+    match route {
+        AiCategorySuggestionRoute::Local => "AI classification local runtime is unavailable",
+        AiCategorySuggestionRoute::Remote => "AI classification remote provider failed",
+    }
+    .to_owned()
+}
+
+fn draft_context(draft: &AiSuggestionDraft) -> Vec<AiCategorySuggestionContextField> {
+    draft.used_context.clone()
 }
 
 fn base_result(file: &FileEntry, status: AiCategorySuggestionStatus) -> AiCategorySuggestion {
@@ -378,74 +420,6 @@ impl SuggestionBuilder for AiCategorySuggestion {
     }
 }
 
-struct CallLogDraft<'a> {
-    file_id: Option<i64>,
-    route: Option<&'a AiCategorySuggestionRoute>,
-    status: &'a str,
-    sent_fields: &'a [AiCategorySuggestionContextField],
-    privacy_rule_id: Option<&'a str>,
-    result_summary: &'a str,
-    error_code: Option<&'a str>,
-}
-
-fn insert_call_log(repo: &Path, draft: CallLogDraft<'_>) -> CoreResult<Option<i64>> {
-    let sent_fields_json = serde_json::to_string(&field_names(draft.sent_fields))
-        .map_err(|_| CoreError::internal("AI call log fields are invalid"))?;
-    let id = db::insert_ai_call_log_record(
-        repo,
-        db::AiCallLogRecord {
-            feature: FEATURE_NAME.to_owned(),
-            file_id: draft.file_id,
-            route: draft.route.map(route_name),
-            provider: draft.route.map(provider_name),
-            model: draft.route.map(model_name),
-            status: draft.status.to_owned(),
-            sent_fields_json,
-            privacy_rule_id: draft.privacy_rule_id.map(str::to_owned),
-            result_summary: draft.result_summary.to_owned(),
-            error_code: draft.error_code.map(str::to_owned),
-        },
-    )
-    .map_err(map_call_log_error)?;
-    Ok(Some(id))
-}
-
-fn field_names(fields: &[AiCategorySuggestionContextField]) -> Vec<&'static str> {
-    fields
-        .iter()
-        .map(|field| match field {
-            AiCategorySuggestionContextField::FileName => "filename",
-            AiCategorySuggestionContextField::Extension => "extension",
-            AiCategorySuggestionContextField::RepoRelativePath => "repo_relative_path",
-            AiCategorySuggestionContextField::LimitedTextSummary => "limited_text_summary",
-        })
-        .collect()
-}
-
-fn route_name(route: &AiCategorySuggestionRoute) -> String {
-    match route {
-        AiCategorySuggestionRoute::Local => "local",
-        AiCategorySuggestionRoute::Remote => "remote",
-    }
-    .to_owned()
-}
-
-fn provider_name(route: &AiCategorySuggestionRoute) -> String {
-    match route {
-        AiCategorySuggestionRoute::Local => "local_model",
-        AiCategorySuggestionRoute::Remote => "remote_provider",
-    }
-    .to_owned()
-}
-
-fn model_name(route: &AiCategorySuggestionRoute) -> String {
-    match route {
-        AiCategorySuggestionRoute::Local => "local-classifier-v1",
-        AiCategorySuggestionRoute::Remote => "configured-remote-provider",
-    }
-    .to_owned()
-}
-
 fn map_file_lookup_error(error: CoreError) -> CoreError {
     match error {
         CoreError::FileNotFound { .. } => {
@@ -473,18 +447,6 @@ fn map_rule_error(error: CoreError) -> CoreError {
         | CoreError::InvalidPath { .. }
         | CoreError::RepoNotInitialized { .. } => {
             CoreError::config("AI classification rule precheck input is invalid")
-        }
-        other => other,
-    }
-}
-
-fn map_call_log_error(error: CoreError) -> CoreError {
-    match error {
-        CoreError::Db { .. } | CoreError::Io { .. } => {
-            CoreError::internal("AI call log persistence failed")
-        }
-        CoreError::RepoNotInitialized { .. } => {
-            CoreError::config("AI classification requires initialized repository metadata")
         }
         other => other,
     }

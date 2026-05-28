@@ -293,7 +293,9 @@ fn ai_classification_suggestion_contract_documents_consumers_and_boundaries() {
         "RuleResultConfident",
         "PrivacyRule",
         "ProviderUnavailable",
-        "insert_ai_call_log_record",
+        "execute_suggestion",
+        "unavailable_after_runtime_error",
+        "insert_call_log",
     ] {
         assert_contains(AI_CLASSIFICATION_IMPL_RS, fragment);
     }

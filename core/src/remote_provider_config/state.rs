@@ -8,7 +8,7 @@ use crate::{
         map_storage_error, RemoteProviderConfigSnapshot, RemoteProviderDisableRequest,
         StoredRemoteProviderConfig,
     },
-    CoreError, CoreResult,
+    AiFeatureKind, CoreError, CoreResult,
 };
 
 pub(crate) fn load_remote_ai_provider_config(
@@ -48,6 +48,27 @@ pub(crate) fn disable_remote_ai_provider(
     let updated_at =
         db::update_remote_provider_config_record(&repo, &updated).map_err(map_storage_error)?;
     Ok(snapshot_from_stored_config(config, Some(updated_at)))
+}
+
+pub(crate) fn load_enabled_remote_provider_runtime(
+    repo_path: &std::path::Path,
+    feature: AiFeatureKind,
+) -> CoreResult<Option<StoredRemoteProviderConfig>> {
+    let Some((serialized, _)) =
+        db::load_remote_provider_config_record(repo_path).map_err(map_storage_error)?
+    else {
+        return Ok(None);
+    };
+    let config = deserialize_stored_config(&serialized)?;
+    if provider_configured(&config)
+        && config.provider_verified
+        && config.remote_provider_enabled
+        && config.feature_scope.contains(&feature)
+    {
+        Ok(Some(config))
+    } else {
+        Ok(None)
+    }
 }
 
 pub(super) fn snapshot_from_stored_config(
@@ -107,7 +128,9 @@ fn disabled_reason(config: &StoredRemoteProviderConfig) -> Option<String> {
     }
 }
 
-fn deserialize_stored_config(serialized: &str) -> CoreResult<StoredRemoteProviderConfig> {
+pub(super) fn deserialize_stored_config(
+    serialized: &str,
+) -> CoreResult<StoredRemoteProviderConfig> {
     serde_json::from_str(serialized)
         .map_err(|_| CoreError::config("remote provider metadata is invalid"))
 }

@@ -1,5 +1,9 @@
+#[path = "support/ai_classification_suggestion_common.rs"]
+mod ai_common;
+
 use std::{fs, path::Path};
 
+use ai_common::AiRuntime;
 use area_matrix_core::{
     import_file, init_repo, list_files, suggest_category_with_ai, update_ai_config,
     AiCategorySuggestionContextField, AiCategorySuggestionContextPolicy,
@@ -72,7 +76,9 @@ fn import_options(category: &str) -> ImportOptions {
 }
 
 fn import_fixture(repo: &Path, name: &str, category: &str) -> i64 {
-    let source = repo.join(format!("source-{name}"));
+    let source_dir = repo.join("fixtures");
+    fs::create_dir_all(&source_dir).expect("create fixture source directory");
+    let source = source_dir.join(name);
     fs::write(&source, b"private invoice fixture body").expect("write fixture source");
     import_file(
         path_string(repo),
@@ -222,9 +228,15 @@ fn ai_classification_suggestion_validation_covers_ui_ready_success_path() {
     update_ai_config(repo_path.clone(), ai_config(repo_path.clone()))
         .expect("enable AI classification");
     let before = snapshot(repo.path(), file_id);
+    let runtime = AiRuntime::local(
+        "finance",
+        0.86,
+        "local model matched invoice and payment context",
+    );
 
     let suggestion =
         suggest_category_with_ai(repo_path, request(file_id)).expect("suggest category");
+    let payload = runtime.captured_payload();
 
     assert_eq!(suggestion.status, AiCategorySuggestionStatus::Suggested);
     assert_eq!(suggestion.current_category.as_deref(), Some("inbox"));
@@ -235,7 +247,7 @@ fn ai_classification_suggestion_validation_covers_ui_ready_success_path() {
     assert!(suggestion
         .reason
         .expect("suggestion reason")
-        .contains("confirm"));
+        .contains("local model matched"));
     assert_eq!(
         suggestion.used_context,
         vec![
@@ -262,6 +274,8 @@ fn ai_classification_suggestion_validation_covers_ui_ready_success_path() {
     assert_contains(&log.sent_fields_json, "extension");
     assert_contains(&log.sent_fields_json, "repo_relative_path");
     assert_contains(&log.result_summary, "finance");
+    assert_contains(&payload, "\"route\":\"local\"");
+    assert_contains(&payload, "\"filename\":\"invoice-2026.pdf\"");
     assert_eq!(secret_log_rows(repo.path()), 0);
 }
 
@@ -405,6 +419,8 @@ fn ai_classification_suggestion_validation_locks_api_udl_rust_and_docs_alignment
         "privacy_blocks",
         "rule_result_is_confident",
         "select_route",
+        "execute_suggestion",
+        "unavailable_after_runtime_error",
         "insert_call_log",
         "requires_user_confirmation: true",
     ] {

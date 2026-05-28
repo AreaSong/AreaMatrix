@@ -1,14 +1,22 @@
+#[path = "support/ai_classification_suggestion_common.rs"]
+mod ai_common;
+
+#[path = "support/remote_provider_config_common.rs"]
+mod remote_common;
+
 use std::path::Path;
 
+use ai_common::AiRuntime;
 use area_matrix_core::{
-    import_file, init_repo, list_files, suggest_category_with_ai, update_ai_config,
-    AiCategorySuggestionContextField, AiCategorySuggestionContextPolicy,
-    AiCategorySuggestionRequest, AiCategorySuggestionRoute, AiCategorySuggestionSkipReason,
-    AiCategorySuggestionStatus, AiConfig, AiFeatureConfig, AiFeatureKind, AiProviderPreference,
-    DuplicateStrategy, FileFilter, ImportDestination, ImportOptions, OverviewOutput, RepoInitMode,
-    RepoInitOptions, StorageMode,
+    enable_remote_ai_provider, import_file, init_repo, list_files, suggest_category_with_ai,
+    test_remote_ai_provider, update_ai_config, AiCategorySuggestionContextField,
+    AiCategorySuggestionContextPolicy, AiCategorySuggestionRequest, AiCategorySuggestionRoute,
+    AiCategorySuggestionSkipReason, AiCategorySuggestionStatus, AiConfig, AiFeatureConfig,
+    AiFeatureKind, AiProviderPreference, DuplicateStrategy, FileFilter, ImportDestination,
+    ImportOptions, OverviewOutput, RepoInitMode, RepoInitOptions, StorageMode,
 };
 use pretty_assertions::assert_eq;
+use remote_common::{enable_request_for_endpoint, test_request_for_endpoint, ProbeRuntime};
 use rusqlite::{params, Connection, OptionalExtension};
 
 fn path_string(path: &Path) -> String {
@@ -41,7 +49,9 @@ fn import_options(category: &str) -> ImportOptions {
 }
 
 fn import_fixture(repo: &Path, name: &str, category: &str) -> i64 {
-    let source = repo.join(format!("source-{name}"));
+    let source_dir = repo.join("fixtures");
+    std::fs::create_dir_all(&source_dir).expect("create fixture source directory");
+    let source = source_dir.join(name);
     std::fs::write(&source, b"fixture").expect("write fixture source");
     import_file(
         path_string(repo),
@@ -94,13 +104,28 @@ fn ai_config(repo_path: String, feature_enabled: bool) -> AiConfig {
     }
 }
 
+fn remote_ai_config(repo_path: String) -> AiConfig {
+    let mut config = ai_config(repo_path, true);
+    config.provider_preference = AiProviderPreference::RemoteFirst;
+    config.local_ai_enabled = false;
+    config.remote_ai_allowed = true;
+    for toggle in &mut config.feature_toggles {
+        if toggle.feature == AiFeatureKind::ClassificationSuggestions {
+            toggle.allow_remote = true;
+        }
+    }
+    config
+}
+
 #[derive(Debug)]
 struct AiLogRow {
     status: String,
     route: Option<String>,
+    model: Option<String>,
     sent_fields_json: String,
     privacy_rule_id: Option<String>,
     result_summary: String,
+    error_code: Option<String>,
 }
 
 fn ai_log_row(repo: &Path, id: i64) -> AiLogRow {
@@ -108,16 +133,19 @@ fn ai_log_row(repo: &Path, id: i64) -> AiLogRow {
         Connection::open(repo.join(".areamatrix/index.db")).expect("open repository database");
     connection
         .query_row(
-            "SELECT status, route, sent_fields_json, privacy_rule_id, result_summary
+            "SELECT status, route, model, sent_fields_json, privacy_rule_id, result_summary,
+                    error_code
              FROM ai_call_log WHERE id = ?1",
             params![id],
             |row| {
                 Ok(AiLogRow {
                     status: row.get(0)?,
                     route: row.get(1)?,
-                    sent_fields_json: row.get(2)?,
-                    privacy_rule_id: row.get(3)?,
-                    result_summary: row.get(4)?,
+                    model: row.get(2)?,
+                    sent_fields_json: row.get(3)?,
+                    privacy_rule_id: row.get(4)?,
+                    result_summary: row.get(5)?,
+                    error_code: row.get(6)?,
                 })
             },
         )
@@ -141,6 +169,20 @@ fn active_category(repo: &Path, file_id: i64) -> String {
         .category
 }
 
+fn enable_remote_classification_provider(repo: &Path, endpoint_url: &str) {
+    let probe = ProbeRuntime::new(200);
+    let test_result =
+        test_remote_ai_provider(path_string(repo), test_request_for_endpoint(endpoint_url))
+            .expect("test remote provider");
+    let _ = probe.captured_payload();
+    let token = test_result
+        .verification_token
+        .expect("successful test returns verification token");
+    let mut request = enable_request_for_endpoint(token, endpoint_url);
+    request.feature_scope = vec![AiFeatureKind::ClassificationSuggestions];
+    enable_remote_ai_provider(path_string(repo), request).expect("enable remote provider");
+}
+
 #[test]
 fn ai_classification_suggestion_implementation_returns_local_draft_without_changing_category() {
     let repo = initialized_repo();
@@ -148,9 +190,15 @@ fn ai_classification_suggestion_implementation_returns_local_draft_without_chang
     let file_id = import_fixture(repo.path(), "invoice-2026.pdf", "inbox");
     update_ai_config(repo_path.clone(), ai_config(repo_path.clone(), true))
         .expect("enable AI classification");
+    let runtime = AiRuntime::local(
+        "finance",
+        0.86,
+        "local model matched invoice filename and path",
+    );
 
     let suggestion =
         suggest_category_with_ai(repo_path, request(file_id)).expect("suggest category");
+    let payload = runtime.captured_payload();
 
     assert_eq!(suggestion.status, AiCategorySuggestionStatus::Suggested);
     assert_eq!(suggestion.current_category.as_deref(), Some("inbox"));
@@ -158,6 +206,13 @@ fn ai_classification_suggestion_implementation_returns_local_draft_without_chang
     assert_eq!(suggestion.route, Some(AiCategorySuggestionRoute::Local));
     assert!(suggestion.requires_user_confirmation);
     assert!(suggestion.confidence > 0.0);
+    assert!(suggestion
+        .reason
+        .as_deref()
+        .expect("suggestion reason")
+        .contains("local model matched"));
+    assert!(payload.contains("\"route\":\"local\""));
+    assert!(payload.contains("\"filename\":\"invoice-2026.pdf\""));
     assert_eq!(active_category(repo.path(), file_id), "inbox");
 
     let log = ai_log_row(
@@ -166,9 +221,111 @@ fn ai_classification_suggestion_implementation_returns_local_draft_without_chang
     );
     assert_eq!(log.status, "success");
     assert_eq!(log.route.as_deref(), Some("local"));
+    assert_eq!(log.model.as_deref(), Some("areamatrix-local-classifier"));
     assert!(log.sent_fields_json.contains("filename"));
     assert!(log.sent_fields_json.contains("repo_relative_path"));
     assert!(log.result_summary.contains("finance"));
+}
+
+#[test]
+fn ai_classification_suggestion_implementation_reports_limited_text_summary_context() {
+    let repo = initialized_repo();
+    let repo_path = path_string(repo.path());
+    let file_id = import_fixture(repo.path(), "ambiguous-note.txt", "inbox");
+    let imported_path = repo.path().join("inbox/ambiguous-note.txt");
+    std::fs::write(
+        imported_path,
+        "Quarterly payment receipt for invoice 2026 without secret token=hidden",
+    )
+    .expect("write imported text fixture");
+    update_ai_config(repo_path.clone(), ai_config(repo_path.clone(), true))
+        .expect("enable AI classification");
+    let runtime = AiRuntime::local("finance", 0.91, "limited summary mentions payment receipt");
+    let mut limited_request = request(file_id);
+    limited_request.context_policy = AiCategorySuggestionContextPolicy::LimitedTextSummary;
+
+    let suggestion =
+        suggest_category_with_ai(repo_path, limited_request).expect("suggest category");
+    let payload = runtime.captured_payload();
+
+    assert_eq!(suggestion.status, AiCategorySuggestionStatus::Suggested);
+    assert_eq!(suggestion.suggested_category.as_deref(), Some("finance"));
+    assert!(suggestion
+        .used_context
+        .contains(&AiCategorySuggestionContextField::LimitedTextSummary));
+    assert!(payload.contains("\"limited_text_summary\""));
+    assert!(payload.contains("Quarterly payment receipt"));
+    assert!(!payload.contains("token=hidden"));
+
+    let log = ai_log_row(
+        repo.path(),
+        suggestion.call_log_id.expect("suggestion has call log id"),
+    );
+    assert!(log.sent_fields_json.contains("limited_text_summary"));
+}
+
+#[test]
+fn ai_classification_suggestion_implementation_executes_remote_route_with_provider_metadata() {
+    let repo = initialized_repo();
+    let repo_path = path_string(repo.path());
+    let file_id = import_fixture(repo.path(), "invoice-2026.pdf", "inbox");
+    update_ai_config(repo_path.clone(), remote_ai_config(repo_path.clone()))
+        .expect("enable remote AI classification setting");
+    let endpoint_url = "https://provider.example.test/classify";
+    enable_remote_classification_provider(repo.path(), endpoint_url);
+    let runtime = AiRuntime::remote("finance", 0.88, "remote provider matched invoice context");
+
+    let suggestion =
+        suggest_category_with_ai(repo_path, request(file_id)).expect("suggest category");
+    let payload = runtime.captured_payload();
+
+    assert_eq!(suggestion.status, AiCategorySuggestionStatus::Suggested);
+    assert_eq!(suggestion.route, Some(AiCategorySuggestionRoute::Remote));
+    assert_eq!(suggestion.suggested_category.as_deref(), Some("finance"));
+    assert!(payload.contains("\"route\":\"remote\""));
+    assert!(payload.contains("\"provider\":\"Other\""));
+    assert!(payload.contains("\"key_reference\""));
+    assert!(!payload.contains("test-provider-secret"));
+    assert_eq!(active_category(repo.path(), file_id), "inbox");
+
+    let log = ai_log_row(
+        repo.path(),
+        suggestion.call_log_id.expect("suggestion has call log id"),
+    );
+    assert_eq!(log.status, "success");
+    assert_eq!(log.route.as_deref(), Some("remote"));
+    assert_eq!(log.model.as_deref(), Some("gpt-4.1-mini"));
+}
+
+#[test]
+fn ai_classification_suggestion_implementation_maps_runtime_failure_to_fallback_state() {
+    let repo = initialized_repo();
+    let repo_path = path_string(repo.path());
+    let file_id = import_fixture(repo.path(), "invoice-2026.pdf", "inbox");
+    update_ai_config(repo_path.clone(), ai_config(repo_path.clone(), true))
+        .expect("enable AI classification");
+    let runtime = AiRuntime::failing_local();
+
+    let suggestion =
+        suggest_category_with_ai(repo_path, request(file_id)).expect("runtime failure is fallback");
+    let payload = runtime.captured_payload();
+
+    assert_eq!(suggestion.status, AiCategorySuggestionStatus::Unavailable);
+    assert_eq!(
+        suggestion.skipped_reason,
+        Some(AiCategorySuggestionSkipReason::ProviderUnavailable)
+    );
+    assert_eq!(suggestion.route, Some(AiCategorySuggestionRoute::Local));
+    assert!(payload.contains("\"route\":\"local\""));
+    assert_eq!(active_category(repo.path(), file_id), "inbox");
+
+    let log = ai_log_row(
+        repo.path(),
+        suggestion.call_log_id.expect("failure has call log id"),
+    );
+    assert_eq!(log.status, "failed");
+    assert_eq!(log.route.as_deref(), Some("local"));
+    assert_eq!(log.error_code.as_deref(), Some("RuntimeFailed"));
 }
 
 #[test]
@@ -257,6 +414,7 @@ fn ai_classification_suggestion_implementation_returns_no_suggestion_for_unmatch
     let file_id = import_fixture(repo.path(), "unmatched.binaryxyz", "inbox");
     update_ai_config(repo_path.clone(), ai_config(repo_path.clone(), true))
         .expect("enable AI classification");
+    let _runtime = AiRuntime::local("", 0.2, "local model found no useful category");
 
     let suggestion =
         suggest_category_with_ai(repo_path, request(file_id)).expect("no category suggestion");
@@ -302,6 +460,11 @@ fn ai_classification_suggestion_implementation_leaves_existing_files_untouched()
     let file_id = import_fixture(repo.path(), "invoice-2026.pdf", "inbox");
     update_ai_config(repo_path.clone(), ai_config(repo_path.clone(), true))
         .expect("enable AI classification");
+    let _runtime = AiRuntime::local(
+        "finance",
+        0.86,
+        "local model matched invoice filename and path",
+    );
 
     let _ = suggest_category_with_ai(repo_path, request(file_id)).expect("suggest category");
 
