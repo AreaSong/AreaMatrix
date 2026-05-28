@@ -107,6 +107,11 @@ namespace area_matrix {
     );
 
     [Throws=CoreError]
+    AiFallbackStatus get_ai_fallback_status(
+        string repo_path, AiFallbackStatusRequest request
+    );
+
+    [Throws=CoreError]
     SemanticSearchResultPage semantic_search(
         string repo_path,
         string query,
@@ -771,6 +776,38 @@ dictionary AiPrivacyEvaluationReport {
     sequence<AiPrivacyInputField> blocked_fields;
     sequence<AiPrivacyInputField> sent_fields;
     string message;
+};
+
+dictionary AiFallbackStatusRequest {
+    AiFallbackOperation operation;
+    AiCallLogRoute? route;
+    AiFallbackProviderErrorKind? provider_error;
+    string? provider_error_code;
+    AiPrivacyDecision? privacy_decision;
+    AiPrivacySkippedReason? privacy_skipped_reason;
+    AiCategorySuggestionSkipReason? category_skipped_reason;
+    SemanticSearchFallbackReason? semantic_fallback_reason;
+    AiCallLogStatus? call_log_status;
+    i64? call_log_id;
+    string? privacy_rule_id;
+    i64? retry_after;
+};
+
+dictionary AiFallbackStatus {
+    AiFallbackOperation operation;
+    AiFallbackKind kind;
+    AiFallbackCategory category;
+    string title;
+    string message;
+    boolean retryable;
+    string? retry_disabled_reason;
+    AiFallbackAction? primary_action;
+    AiFallbackAction? secondary_action;
+    AiFallbackAction non_ai_fallback_action;
+    AiCallLogRoute? route;
+    i64? call_log_id;
+    string? privacy_rule_id;
+    i64? retry_after;
 };
 
 dictionary SemanticSearchMatch {
@@ -1872,6 +1909,29 @@ enum AiPrivacySkippedReason {
 enum AiPrivacyProviderGateReason {
     "PrivacyGateDisabled", "ScopeNotAllowed", "ProviderNotConfigured",
     "ProviderNotVerified", "ProviderDisabled"
+};
+enum AiFallbackOperation {
+    "ClassificationSuggestion", "SemanticSearch", "EmbeddingIndexBuild"
+};
+enum AiFallbackProviderErrorKind {
+    "LocalModelNotReady", "RemoteNotConfigured", "RemoteFailed",
+    "ProviderUnavailable", "RateLimited", "Timeout", "CallLogUnavailable",
+    "InternalFailure"
+};
+enum AiFallbackKind {
+    "AiDisabled", "FeatureDisabled", "LocalModelNotReady",
+    "RemoteNotConfigured", "RemoteFailed", "ProviderUnavailable",
+    "PrivacySkipped", "SemanticIndexNotReady", "NoEligibleInput",
+    "NormalSearchUnavailable", "CallLogUnavailable", "RateLimited",
+    "Timeout", "InternalFailure"
+};
+enum AiFallbackCategory {
+    "Disabled", "Skipped", "Unavailable", "Error"
+};
+enum AiFallbackAction {
+    "Retry", "RetryLater", "OpenAiSettings", "OpenLocalModelStatus",
+    "ConfigureRemoteAi", "ViewPrivacyRule", "ViewCallLog",
+    "BuildSemanticIndex", "UseNormalSearch", "ClassifyManually"
 };
 enum SemanticSearchRoute { "Local", "Remote" };
 enum SemanticSearchInputField {

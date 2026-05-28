@@ -7,6 +7,7 @@ uniffi::include_scaffolding!("area_matrix");
 
 mod ai_call_log;
 mod ai_classification_suggestion;
+mod ai_fallback;
 mod ai_privacy_rules;
 mod ai_settings;
 mod ai_summary;
@@ -55,6 +56,10 @@ pub use ai_classification_suggestion::{
     AiCategorySuggestion, AiCategorySuggestionContextField, AiCategorySuggestionContextPolicy,
     AiCategorySuggestionRequest, AiCategorySuggestionRoute, AiCategorySuggestionSkipReason,
     AiCategorySuggestionStatus,
+};
+pub use ai_fallback::{
+    AiFallbackAction, AiFallbackCategory, AiFallbackKind, AiFallbackOperation,
+    AiFallbackProviderErrorKind, AiFallbackStatus, AiFallbackStatusRequest,
 };
 pub use ai_privacy_rules::{
     AiPrivacyDecision, AiPrivacyEvaluationContext, AiPrivacyEvaluationReport,

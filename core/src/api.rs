@@ -3,17 +3,17 @@
 use std::path::PathBuf;
 
 use crate::{
-    ai_call_log, ai_classification_suggestion, ai_privacy_rules, ai_settings, ai_summary,
-    ai_tags_suggestion, batch_category, batch_delete, batch_rename as batch_rename_mod,
+    ai_call_log, ai_classification_suggestion, ai_fallback, ai_privacy_rules, ai_settings,
+    ai_summary, ai_tags_suggestion, batch_category, batch_delete, batch_rename as batch_rename_mod,
     classifier_correction, classifier_impact, classifier_rule_editor, classifier_rules, classify,
     db, icloud_conflicts, import_conflict_batch, local_model_status, note, recovery, redo,
     remote_provider_config, repair, repo_init, repo_path, repo_scan, storage, sync, tree,
     AiCallLogClearReport, AiCallLogClearRequest, AiCallLogFilter, AiCallLogPage,
     AiCallLogPagination, AiCategorySuggestion, AiCategorySuggestionRequest, AiConfig,
-    AiConfigSnapshot, AiPrivacyEvaluationReport, AiPrivacyEvaluationRequest,
-    AiPrivacyRulesSnapshot, AiPrivacyRulesUpdateRequest, AiSummaryClearReport,
-    AiSummaryClearRequest, AiSummaryDraft, AiSummaryGenerationRequest, AiSummarySaveReport,
-    AiSummarySaveRequest, AiTagSuggestionApplyReport, AiTagSuggestionReport,
+    AiConfigSnapshot, AiFallbackStatus, AiFallbackStatusRequest, AiPrivacyEvaluationReport,
+    AiPrivacyEvaluationRequest, AiPrivacyRulesSnapshot, AiPrivacyRulesUpdateRequest,
+    AiSummaryClearReport, AiSummaryClearRequest, AiSummaryDraft, AiSummaryGenerationRequest,
+    AiSummarySaveReport, AiSummarySaveRequest, AiTagSuggestionApplyReport, AiTagSuggestionReport,
     AiTagSuggestionRequest, ApplyAiTagSuggestionsRequest, ApplyTagSuggestionsRequest,
     BatchCategoryChangeReport, BatchCategoryPreviewReport, BatchDeleteMode,
     BatchDeletePreviewReport, BatchDeleteReport, BatchRenamePreviewReport, BatchRenameReport,
@@ -627,6 +627,36 @@ pub fn evaluate_ai_privacy(
     request: AiPrivacyEvaluationRequest,
 ) -> CoreResult<AiPrivacyEvaluationReport> {
     ai_privacy_rules::evaluate_ai_privacy(repo_path, request)
+}
+
+/// Normalizes C3-10 AI fallback metadata into a display-ready status.
+///
+/// S3-10 uses this contract after AI classification or semantic search returns
+/// skipped, unavailable, or failed metadata. The request carries only stable
+/// operation, provider-error, privacy-decision, and traceability fields. It
+/// must not include raw provider output, prompts, file contents, API keys, or
+/// absolute user paths. Returned actions are semantic commands; the host page
+/// remains responsible for rendering concrete labels such as `Classify
+/// manually` or `Use normal search`.
+///
+/// This contract does not execute AI calls, switch providers, enable remote AI,
+/// evaluate privacy rules, write user files, or mutate AI results. Later C3-10
+/// implementation may record AI call failures in C3-05 metadata, but the
+/// fallback status itself remains side-effect free.
+///
+/// # Errors
+///
+/// Returns `CoreError::Config { reason }` for invalid repository paths, missing
+/// fallback reason metadata, unsafe provider-error codes, unsafe privacy rule
+/// ids, invalid call-log ids, or invalid retry timestamps. Later
+/// implementation may return `CoreError::PermissionDenied { path }` when
+/// fallback metadata cannot be inspected and `CoreError::Internal { message }`
+/// when status resolution fails after sanitization.
+pub fn get_ai_fallback_status(
+    repo_path: String,
+    request: AiFallbackStatusRequest,
+) -> CoreResult<AiFallbackStatus> {
+    ai_fallback::get_ai_fallback_status(repo_path, request)
 }
 
 /// Recovers AreaMatrix-owned startup residue before the UI opens.
