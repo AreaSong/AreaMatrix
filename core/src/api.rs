@@ -640,18 +640,19 @@ pub fn evaluate_ai_privacy(
 /// manually` or `Use normal search`.
 ///
 /// This contract does not execute AI calls, switch providers, enable remote AI,
-/// evaluate privacy rules, write user files, or mutate AI results. Later C3-10
-/// implementation may record AI call failures in C3-05 metadata, but the
-/// fallback status itself remains side-effect free.
+/// evaluate privacy rules, write user files, or mutate AI results. The C3-10
+/// implementation records one sanitized C3-05 call-log row when the caller did
+/// not already provide a `call_log_id`, keeping sent fields empty and result
+/// summary display-safe.
 ///
 /// # Errors
 ///
 /// Returns `CoreError::Config { reason }` for invalid repository paths, missing
 /// fallback reason metadata, unsafe provider-error codes, unsafe privacy rule
-/// ids, invalid call-log ids, or invalid retry timestamps. Later
-/// implementation may return `CoreError::PermissionDenied { path }` when
+/// ids, invalid call-log ids, invalid retry timestamps, or missing initialized
+/// repository metadata. Returns `CoreError::PermissionDenied { path }` when
 /// fallback metadata cannot be inspected and `CoreError::Internal { message }`
-/// when status resolution fails after sanitization.
+/// when call-log persistence or status resolution fails after sanitization.
 pub fn get_ai_fallback_status(
     repo_path: String,
     request: AiFallbackStatusRequest,

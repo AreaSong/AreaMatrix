@@ -1,8 +1,9 @@
 use area_matrix_core::{
-    get_ai_fallback_status, AiCallLogRoute, AiCallLogStatus, AiCategorySuggestionSkipReason,
-    AiFallbackAction, AiFallbackCategory, AiFallbackKind, AiFallbackOperation,
-    AiFallbackProviderErrorKind, AiFallbackStatus, AiFallbackStatusRequest, AiPrivacyDecision,
-    AiPrivacySkippedReason, CoreError, CoreResult, SemanticSearchFallbackReason,
+    get_ai_fallback_status, init_repo, AiCallLogRoute, AiCallLogStatus,
+    AiCategorySuggestionSkipReason, AiFallbackAction, AiFallbackCategory, AiFallbackKind,
+    AiFallbackOperation, AiFallbackProviderErrorKind, AiFallbackStatus, AiFallbackStatusRequest,
+    AiPrivacyDecision, AiPrivacySkippedReason, CoreError, CoreResult, OverviewOutput, RepoInitMode,
+    RepoInitOptions, SemanticSearchFallbackReason,
 };
 use pretty_assertions::assert_eq;
 
@@ -25,6 +26,21 @@ fn assert_contains(haystack: &str, needle: &str) {
         haystack.contains(needle),
         "expected text to contain `{needle}`"
     );
+}
+
+fn initialized_repo_path() -> String {
+    let repo = tempfile::tempdir().expect("create temporary repository directory");
+    let repo_path = repo.path().to_string_lossy().into_owned();
+    init_repo(
+        repo_path.clone(),
+        RepoInitOptions {
+            mode: RepoInitMode::CreateEmpty,
+            create_default_categories: false,
+            overview_output: OverviewOutput::GeneratedOnly,
+        },
+    )
+    .expect("initialize repository");
+    repo.keep().to_string_lossy().into_owned()
 }
 
 fn privacy_request() -> AiFallbackStatusRequest {
@@ -66,8 +82,9 @@ fn ai_fallback_contract_exposes_signature_inputs_outputs_and_errors() {
     fn assert_status(_: fn(String, AiFallbackStatusRequest) -> CoreResult<AiFallbackStatus>) {}
     assert_status(get_ai_fallback_status);
 
+    let repo_path = initialized_repo_path();
     let privacy_status =
-        get_ai_fallback_status("/tmp/repo".to_owned(), privacy_request()).expect("status");
+        get_ai_fallback_status(repo_path.clone(), privacy_request()).expect("status");
     assert_eq!(privacy_status.kind, AiFallbackKind::PrivacySkipped);
     assert_eq!(privacy_status.category, AiFallbackCategory::Skipped);
     assert!(!privacy_status.retryable);
@@ -85,7 +102,7 @@ fn ai_fallback_contract_exposes_signature_inputs_outputs_and_errors() {
     );
 
     let remote_status =
-        get_ai_fallback_status("/tmp/repo".to_owned(), remote_failed_request()).expect("status");
+        get_ai_fallback_status(repo_path.clone(), remote_failed_request()).expect("status");
     assert_eq!(remote_status.kind, AiFallbackKind::RemoteFailed);
     assert_eq!(remote_status.category, AiFallbackCategory::Error);
     assert!(remote_status.retryable);
@@ -96,7 +113,7 @@ fn ai_fallback_contract_exposes_signature_inputs_outputs_and_errors() {
     );
 
     let semantic_index_status = get_ai_fallback_status(
-        "/tmp/repo".to_owned(),
+        repo_path,
         AiFallbackStatusRequest {
             operation: AiFallbackOperation::EmbeddingIndexBuild,
             route: Some(AiCallLogRoute::Local),
@@ -285,7 +302,7 @@ fn ai_fallback_contract_documents_consumer_state_and_safety_boundaries() {
     }
 
     for fragment in [
-        "C3-10 AI fallback status contract",
+        "C3-10 AI fallback status",
         "AI operation whose failure or skipped state needs standard fallback UI",
         "Standard AI fallback status returned to S3-10 consumers",
         "Remote AI could not be reached. Your files were not changed.",

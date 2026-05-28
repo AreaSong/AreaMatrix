@@ -1,4 +1,6 @@
-//! C3-10 AI fallback status contract types and entry point.
+//! C3-10 AI fallback status types and implementation.
+
+use std::path::Path;
 
 use serde::{Deserialize, Serialize};
 
@@ -10,6 +12,7 @@ use crate::{
     CoreResult,
 };
 
+mod call_log;
 mod validation;
 
 /// AI operation whose failure or skipped state needs standard fallback UI.
@@ -183,7 +186,17 @@ pub(crate) fn get_ai_fallback_status(
 ) -> CoreResult<AiFallbackStatus> {
     validation::validate_repo_path(&repo_path)?;
     validation::validate_request(&request)?;
-    Ok(status_from_request(request))
+    let provider_error_code = request.provider_error_code.clone();
+    let repo = Path::new(&repo_path);
+    call_log::ensure_metadata_readable(repo)?;
+    let mut status = status_from_request(request);
+    if status.call_log_id.is_none() {
+        let call_log_id =
+            call_log::insert_fallback_call_log(repo, &status, provider_error_code.as_deref())?;
+        status.call_log_id = Some(call_log_id);
+        status.secondary_action = secondary_action_after_call_log(&status);
+    }
+    Ok(status)
 }
 
 fn status_from_request(request: AiFallbackStatusRequest) -> AiFallbackStatus {
@@ -206,6 +219,25 @@ fn status_from_request(request: AiFallbackStatusRequest) -> AiFallbackStatus {
         category,
         retryable,
     }
+}
+
+fn secondary_action_after_call_log(status: &AiFallbackStatus) -> Option<AiFallbackAction> {
+    if should_show_call_log(&status.kind) {
+        return Some(AiFallbackAction::ViewCallLog);
+    }
+    status.secondary_action.clone()
+}
+
+fn should_show_call_log(kind: &AiFallbackKind) -> bool {
+    matches!(
+        kind,
+        AiFallbackKind::PrivacySkipped
+            | AiFallbackKind::RemoteFailed
+            | AiFallbackKind::RateLimited
+            | AiFallbackKind::Timeout
+            | AiFallbackKind::CallLogUnavailable
+            | AiFallbackKind::InternalFailure
+    )
 }
 
 fn fallback_kind(request: &AiFallbackStatusRequest) -> AiFallbackKind {
