@@ -1,0 +1,48 @@
+一、执行结论
+
+已完成。C3-09 failure-edge 已由现有 `core` 实现和测试覆盖，本轮未发现需要新增代码的缺口。
+
+二、执行范围
+
+单任务：`4-2/task-43`
+
+修改文件清单：无。  
+工作区已有未关联改动仍存在：`tasks/prompts/_shared/progress.json`、`.codex/task-loop-runs/20260529_014640/`。本轮未触碰 `apps/**`。
+
+三、完成情况
+
+核对清单通过：
+
+- 空态、非法输入、权限、IO/DB 错误和错误码映射：已由 `ai_privacy_rules_failure_recovery` 覆盖。
+- 写入失败不留下半成品：DB abort 回滚到上一份 `ai_privacy_rules` payload，用户可见文件列表不变。
+- 隐私/AI/远程调用：默认 remote blocked，provider key / secret 不出现在 C3-09 snapshot、错误或序列化输出。
+- 未用吞错或静默降级：腐坏 payload 返回 `Config`，不会静默回默认值。
+
+完成标准通过：失败路径有结构化 `CoreError`、测试证据和用户文件安全保证；高风险路径具备回滚测试证据。
+
+四、工程质量
+
+代码结构清晰，C3-09 拆分为 `persistence`、`validation`、`evaluation`；public API 有 rustdoc 与 `# Errors`。没有新增依赖、占位、mock-only 或一次性实现。
+
+五、验证情况
+
+已运行并通过：
+
+```bash
+./dev check task 4-2/task-43
+```
+
+该命令实际执行并通过：
+
+- `prompt doctor`: OK
+- `git diff --check`: OK
+- `cargo fmt --all -- --check`: OK
+- `cargo clippy --all-targets --all-features -- -D warnings`: OK
+- `ai_privacy_rules_contract_api`: 4 passed
+- `ai_privacy_rules_failure_recovery`: 8 passed
+- `ai_privacy_rules_implementation`: 4 passed
+
+六、风险与后续
+
+剩余风险：未跑全量 `cargo test --workspace`，因为本 task 明确要求以 `./dev check task 4-2/task-43` 为验证上限。  
+建议下一个任务：进入 `4-2/task-44`（C3-09 validation）或按 task-loop 继续后续 C3-09 集成验收。
