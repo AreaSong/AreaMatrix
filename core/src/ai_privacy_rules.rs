@@ -1,13 +1,13 @@
 //! C3-09 AI privacy rules contract types and entry points.
 
+mod evaluation;
+mod persistence;
 mod validation;
 
 use serde::{Deserialize, Serialize};
 
-use crate::{AiFeatureKind, CoreError, CoreResult};
-use validation::{
-    default_snapshot, validate_evaluation_request, validate_repo_path, validate_update_request,
-};
+use crate::{AiFeatureKind, CoreResult};
+use validation::{validate_evaluation_request, validate_repo_path, validate_update_request};
 
 /// Privacy rule matcher kind supported by C3-09.
 #[derive(Clone, Debug, Eq, PartialEq, Hash, Serialize, Deserialize)]
@@ -28,8 +28,14 @@ pub enum AiPrivacyRuleKind {
 #[derive(Clone, Debug, Eq, PartialEq, Hash, Serialize, Deserialize)]
 pub enum AiPrivacyRuleAppliesTo {
     /// Rule blocks only remote AI input.
+    #[serde(rename = "Remote AI", alias = "RemoteAi", alias = "remote")]
     RemoteAi,
     /// Rule blocks both local and remote AI input.
+    #[serde(
+        rename = "Local and remote AI",
+        alias = "LocalAndRemoteAi",
+        alias = "local_and_remote"
+    )]
     LocalAndRemoteAi,
 }
 
@@ -131,6 +137,7 @@ pub struct AiPrivacyRuleInput {
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct AiPrivacyRuleRecord {
     /// Stable persisted rule id.
+    #[serde(rename = "id", alias = "rule_id")]
     pub rule_id: String,
     /// User-visible rule name.
     pub name: String,
@@ -306,7 +313,7 @@ pub struct AiPrivacyEvaluationReport {
 /// message }` when persisted privacy metadata cannot be read.
 pub fn list_ai_privacy_rules(repo_path: String) -> CoreResult<AiPrivacyRulesSnapshot> {
     validate_repo_path(&repo_path)?;
-    Ok(default_snapshot())
+    persistence::load_snapshot(&repo_path)
 }
 
 /// Updates C3-09 privacy rules, remote field filters, and the remote privacy gate.
@@ -328,7 +335,13 @@ pub fn update_ai_privacy_rules(
 ) -> CoreResult<AiPrivacyRulesSnapshot> {
     validate_repo_path(&repo_path)?;
     validate_update_request(&request)?;
-    Err(CoreError::db("AI privacy rules persistence is unavailable"))
+    persistence::store_update(
+        &repo_path,
+        request.privacy_gate_enabled,
+        request.rules,
+        request.remote_allowed_fields,
+        request.provider_scope,
+    )
 }
 
 /// Evaluates C3-09 privacy gates for one AI attempt.
@@ -349,7 +362,5 @@ pub fn evaluate_ai_privacy(
 ) -> CoreResult<AiPrivacyEvaluationReport> {
     validate_repo_path(&repo_path)?;
     validate_evaluation_request(&request)?;
-    Err(CoreError::db(
-        "AI privacy evaluation metadata is unavailable",
-    ))
+    Ok(evaluation::evaluate(request))
 }

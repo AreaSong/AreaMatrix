@@ -6,9 +6,9 @@ use std::{
 use crate::{CoreError, CoreResult};
 
 use super::{
-    AiPrivacyEvaluationContext, AiPrivacyEvaluationRequest, AiPrivacyFieldRule,
-    AiPrivacyFieldState, AiPrivacyInputField, AiPrivacyProviderScopeSnapshot, AiPrivacyRuleInput,
-    AiPrivacyRuleKind, AiPrivacyRulesSnapshot, AiPrivacyRulesUpdateRequest,
+    persistence::all_input_fields, AiPrivacyEvaluationContext, AiPrivacyEvaluationRequest,
+    AiPrivacyFieldRule, AiPrivacyInputField, AiPrivacyProviderScopeSnapshot, AiPrivacyRuleInput,
+    AiPrivacyRuleKind, AiPrivacyRulesUpdateRequest,
 };
 
 const AREA_MATRIX_DIR: &str = ".areamatrix";
@@ -17,17 +17,6 @@ const MAX_RULE_ID_LEN: usize = 128;
 const MAX_RULE_NAME_LEN: usize = 128;
 const MAX_PATTERN_LEN: usize = 256;
 const MAX_DESCRIPTION_LEN: usize = 500;
-
-pub(super) fn default_snapshot() -> AiPrivacyRulesSnapshot {
-    AiPrivacyRulesSnapshot {
-        privacy_gate_enabled: false,
-        rules: Vec::new(),
-        remote_allowed_fields: default_field_states(),
-        provider_scope: default_provider_scope(),
-        updated_at: None,
-        remote_blocked_by_default: true,
-    }
-}
 
 pub(super) fn validate_update_request(request: &AiPrivacyRulesUpdateRequest) -> CoreResult<()> {
     if !request.confirmed {
@@ -64,26 +53,6 @@ pub(super) fn validate_repo_path(repo_path: &str) -> CoreResult<()> {
         ));
     }
     Ok(())
-}
-
-fn default_provider_scope() -> AiPrivacyProviderScopeSnapshot {
-    AiPrivacyProviderScopeSnapshot {
-        provider_configured: false,
-        provider_verified: false,
-        remote_provider_enabled: false,
-        feature_scope: Vec::new(),
-    }
-}
-
-fn default_field_states() -> Vec<AiPrivacyFieldState> {
-    all_input_fields()
-        .into_iter()
-        .map(|field| AiPrivacyFieldState {
-            field,
-            allow_remote: false,
-            last_matched_count: 0,
-        })
-        .collect()
 }
 
 fn validate_rules(rules: &[AiPrivacyRuleInput]) -> CoreResult<()> {
@@ -287,18 +256,6 @@ fn validate_extension(value: &str) -> CoreResult<()> {
         return Err(CoreError::config("AI privacy extension pattern is invalid"));
     }
     Ok(())
-}
-
-fn all_input_fields() -> Vec<AiPrivacyInputField> {
-    vec![
-        AiPrivacyInputField::FileName,
-        AiPrivacyInputField::RepoRelativePath,
-        AiPrivacyInputField::Extension,
-        AiPrivacyInputField::ExtractedTextExcerpt,
-        AiPrivacyInputField::AiSummary,
-        AiPrivacyInputField::NoteSummary,
-        AiPrivacyInputField::TagCategoryContext,
-    ]
 }
 
 fn is_identifier_char(value: char) -> bool {

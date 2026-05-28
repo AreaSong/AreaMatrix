@@ -14,6 +14,7 @@ use crate::{
 };
 
 mod ai_call_log;
+mod ai_privacy_rules;
 mod ai_settings;
 mod ai_summary;
 mod change_log;
@@ -40,6 +41,7 @@ pub(crate) use ai_call_log::{
     insert_ai_call_log_record_in_tx, list_ai_call_log_rows, AiCallLogClearSpec,
     AiCallLogInsertRecord, AiCallLogListFilter, AiCallLogPagination, AiCallLogRow,
 };
+pub(crate) use ai_privacy_rules::{load_ai_privacy_rules_record, update_ai_privacy_rules_record};
 pub(crate) use ai_settings::{load_ai_config_record, update_ai_config_record};
 pub(crate) use ai_summary::{
     clear_ai_summary_metadata, load_ai_summary_metadata, upsert_ai_summary_metadata,

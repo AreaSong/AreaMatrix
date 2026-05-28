@@ -1,0 +1,73 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-2/task-42`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-2-stage3-ai/task-42-c3-09-implementation.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/ai_privacy_rules.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/ai_privacy_rules/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/db/ai_privacy_rules.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/tests/ai_privacy_rules_implementation.rs`
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只实现 C3-09，不顺手实现同阶段其他 C* 能力
+- 结果：通过
+- 证据：新增和修改集中在 `ai_privacy_rules`、DB privacy rules helper、C3-09 tests；`git diff --name-only -- apps` 为空。
+- 涉及文件：`core/src/ai_privacy_rules.rs`、`core/src/ai_privacy_rules/*`、`core/src/db/ai_privacy_rules.rs`
+
+- 项目：按能力规格落实输入、输出、DB/文件系统变化和错误映射
+- 结果：通过
+- 证据：三个 API 入口已实现；UDL 暴露 `list_ai_privacy_rules`、`update_ai_privacy_rules`、`evaluate_ai_privacy`；规则持久化写入 `repo_config`，测试覆盖保存、重载、回滚、provider gate、field filter、rule match、不写用户文件。
+- 涉及文件：`core/src/ai_privacy_rules.rs:303`、`core/src/db/ai_privacy_rules.rs:16`、`core/area_matrix.udl:96`、`core/tests/ai_privacy_rules_implementation.rs:124`
+
+- 项目：保持 Rust Core 不依赖平台 UI API
+- 结果：通过
+- 证据：C3-09 代码只使用 Rust/std、serde、rusqlite、core 内部模块；针对 touched C3-09 files 未发现 `AppKit`、`SwiftUI`、`NSWorkspace`、`CoreBridge` 等平台 UI/API 依赖。
+- 涉及文件：`core/src/ai_privacy_rules.rs`、`core/src/ai_privacy_rules/*`、`core/src/db/ai_privacy_rules.rs`
+
+- 项目：必要时补最小测试支撑，但不做页面接入
+- 结果：通过
+- 证据：`core/tests/ai_privacy_rules_implementation.rs` 新增 4 个实现测试；没有 `apps/**` 变更。
+- 涉及文件：`core/tests/ai_privacy_rules_implementation.rs:124`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，C3-09 拆成 contract entry、validation、persistence、evaluation，单文件均小于 500 行。
+- 注释 / rustdoc / 文档同步：通过，public Rust API 有 rustdoc；Core API 与 UDL 均包含 C3-09 类型和函数声明。
+- 错误处理与边界处理：通过，输入校验返回 `CoreError::Config`，DB 持久化错误返回 `CoreError::Db`；保存失败测试验证旧规则保留。
+- 测试与验证覆盖：通过，task-scoped 验证已覆盖 contract 和 implementation targeted tests。
+- 占位、硬编码、mock-only、一次性实现检查：通过，未发现 mock-only 闭环；实现连接真实 repo_config 持久化和真实评估逻辑。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-2/task-42`
+- 通过：
+  - `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`：OK，637 tasks / 637 manifests
+  - `git diff --check`：通过
+  - `cargo test --test ai_privacy_rules_contract_api -- --nocapture`：4 passed
+  - `cargo test --test ai_privacy_rules_implementation -- --nocapture`：4 passed
+- 失败：无
+- 缺失：无
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS

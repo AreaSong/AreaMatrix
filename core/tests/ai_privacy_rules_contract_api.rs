@@ -261,6 +261,13 @@ fn ai_privacy_rules_contract_validates_inputs_without_fake_update_or_evaluate_su
         Err(CoreError::Config { .. })
     ));
 
+    let mut stale_provider_scope = update_request();
+    stale_provider_scope.privacy_gate_enabled = false;
+    assert!(matches!(
+        update_ai_privacy_rules(repo_path.clone(), stale_provider_scope),
+        Err(CoreError::Config { .. })
+    ));
+
     let mut missing_field = update_request();
     missing_field.remote_allowed_fields.pop();
     assert!(matches!(
@@ -270,7 +277,7 @@ fn ai_privacy_rules_contract_validates_inputs_without_fake_update_or_evaluate_su
 
     assert!(matches!(
         update_ai_privacy_rules(repo_path.clone(), update_request()),
-        Err(CoreError::Db { .. })
+        Err(CoreError::Config { .. })
     ));
 
     let mut duplicate_requested_field = evaluation_request();
@@ -289,10 +296,14 @@ fn ai_privacy_rules_contract_validates_inputs_without_fake_update_or_evaluate_su
         Err(CoreError::Config { .. })
     ));
 
-    assert!(matches!(
-        evaluate_ai_privacy(repo_path, evaluation_request()),
-        Err(CoreError::Db { .. })
-    ));
+    let report =
+        evaluate_ai_privacy(repo_path, evaluation_request()).expect("evaluate privacy request");
+    assert_eq!(report.decision, AiPrivacyDecision::Denied);
+    assert_eq!(
+        report.skipped_reason,
+        Some(AiPrivacySkippedReason::PrivacyRule)
+    );
+    assert!(report.sent_fields.is_empty());
 }
 
 #[test]
