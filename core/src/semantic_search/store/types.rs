@@ -75,19 +75,37 @@ pub(super) struct IndexStats {
 }
 
 impl Candidate {
-    pub(super) fn field_terms(&self, repo: &Path) -> Vec<SemanticFieldTerms> {
+    pub(super) fn field_terms(&self, repo: &Path) -> CoreResult<FieldTermsOutcome> {
         if !self.field_terms.is_empty() {
-            return self.field_terms.clone();
+            return Ok(FieldTermsOutcome::indexed(self.field_terms.clone()));
         }
         let mut fields = self.metadata_field_terms();
-        if let Some(content) = readable_file_excerpt(repo, &self.entry) {
+        let content = match readable_file_excerpt(repo, &self.entry) {
+            Ok(content) => content,
+            Err(ContentReadError::Skipped) => None,
+            Err(ContentReadError::PermissionDenied { path }) => {
+                return Err(CoreError::permission_denied(path));
+            }
+            Err(ContentReadError::Failed) => {
+                return Ok(FieldTermsOutcome {
+                    fields,
+                    content_inspected: false,
+                    content_failed: true,
+                });
+            }
+        };
+        if let Some(content) = content {
             super::push_field_terms(
                 &mut fields,
                 SemanticSearchInputField::ExtractedTextExcerpt,
                 content,
             );
         }
-        fields
+        Ok(FieldTermsOutcome {
+            fields,
+            content_inspected: true,
+            content_failed: false,
+        })
     }
 
     pub(super) fn metadata_field_terms(&self) -> Vec<SemanticFieldTerms> {
@@ -159,6 +177,23 @@ impl Candidate {
     }
 }
 
+#[derive(Clone, Debug)]
+pub(super) struct FieldTermsOutcome {
+    pub(super) fields: Vec<SemanticFieldTerms>,
+    pub(super) content_inspected: bool,
+    pub(super) content_failed: bool,
+}
+
+impl FieldTermsOutcome {
+    fn indexed(fields: Vec<SemanticFieldTerms>) -> Self {
+        Self {
+            fields,
+            content_inspected: false,
+            content_failed: false,
+        }
+    }
+}
+
 impl SemanticFieldTerms {
     fn match_query(&self, query_tokens: &[String]) -> Option<SemanticFieldMatch> {
         let matched_terms = query_tokens
@@ -197,16 +232,21 @@ impl IndexStats {
         }
     }
 
-    pub(super) fn finish(&mut self, privacy_rule_set_empty: bool) {
+    pub(super) fn finish(&mut self) {
         self.metadata.processed_count = self.processed;
         self.metadata.privacy_skipped_count = self.privacy_skipped;
         self.metadata.skipped_count = self.skipped + self.privacy_skipped;
+        self.metadata.failed_count =
+            self.metadata.total_count - self.processed - self.skipped - self.privacy_skipped;
+        if self.metadata.failed_count < 0 {
+            self.metadata.failed_count = 0;
+        }
         self.metadata.status = if self.processed == self.metadata.total_count {
             SemanticIndexStatus::Ready
         } else if self.processed > 0 {
             SemanticIndexStatus::Partial
-        } else if self.privacy_skipped > 0 && !privacy_rule_set_empty {
-            SemanticIndexStatus::NotReady
+        } else if self.metadata.failed_count > 0 {
+            SemanticIndexStatus::Failed
         } else {
             SemanticIndexStatus::NotReady
         };
@@ -225,13 +265,15 @@ fn matched_token_count(matches: &[SemanticFieldMatch]) -> usize {
         .len()
 }
 
-fn readable_file_excerpt(repo: &Path, entry: &FileEntry) -> Option<String> {
-    read_limited_utf8(&entry_path(repo, entry))
-        .ok()
-        .filter(|text| !text.trim().is_empty())
+fn readable_file_excerpt(
+    repo: &Path,
+    entry: &FileEntry,
+) -> Result<Option<String>, ContentReadError> {
+    let text = read_limited_utf8(&entry_path(repo, entry))?;
+    Ok((!text.trim().is_empty()).then_some(text))
 }
 
-fn read_limited_utf8(path: &Path) -> CoreResult<String> {
+fn read_limited_utf8(path: &Path) -> Result<String, ContentReadError> {
     let file = File::open(path).map_err(|error| map_content_read_error(path, error.kind()))?;
     let mut bytes = Vec::new();
     file.take(MAX_CONTENT_READ_BYTES)
@@ -239,7 +281,7 @@ fn read_limited_utf8(path: &Path) -> CoreResult<String> {
         .map_err(|error| map_content_read_error(path, error.kind()))?;
     String::from_utf8(bytes)
         .map(|value| excerpt(&value))
-        .map_err(|_| CoreError::db("semantic input is not utf-8"))
+        .map_err(|_| ContentReadError::Skipped)
 }
 
 fn entry_path(repo: &Path, entry: &FileEntry) -> PathBuf {
@@ -251,11 +293,19 @@ fn entry_path(repo: &Path, entry: &FileEntry) -> PathBuf {
     repo.join(&entry.path)
 }
 
-fn map_content_read_error(path: &Path, kind: ErrorKind) -> CoreError {
+enum ContentReadError {
+    PermissionDenied { path: String },
+    Failed,
+    Skipped,
+}
+
+fn map_content_read_error(path: &Path, kind: ErrorKind) -> ContentReadError {
     match kind {
-        ErrorKind::NotFound => CoreError::file_not_found(path.to_string_lossy()),
-        ErrorKind::PermissionDenied => CoreError::permission_denied(path.to_string_lossy()),
-        _ => CoreError::db("semantic input cannot be read"),
+        ErrorKind::NotFound => ContentReadError::Failed,
+        ErrorKind::PermissionDenied => ContentReadError::PermissionDenied {
+            path: path.to_string_lossy().into_owned(),
+        },
+        _ => ContentReadError::Failed,
     }
 }
 

@@ -43,17 +43,26 @@ impl<'a> SearchLog<'a> {
         }
     }
 
-    pub(super) fn build_success(
+    pub(super) fn build_result(
         route: &'a SemanticSearchRoute,
-        total_count: i64,
+        processed_count: i64,
+        failed_count: i64,
         privacy_rule_id: Option<&'a str>,
     ) -> Self {
+        let status = if processed_count == 0 && failed_count > 0 {
+            "failed"
+        } else {
+            "success"
+        };
+        let error_code = (failed_count > 0).then_some("SemanticIndexBuildFailed");
         Self {
             route: Some(route),
-            status: "success",
+            status,
             sent_fields: default_sent_fields(),
-            result_summary: format!("Built semantic index metadata for {total_count} files"),
-            error_code: None,
+            result_summary: format!(
+                "Built semantic index metadata for {processed_count} files; {failed_count} failed"
+            ),
+            error_code,
             privacy_rule_id,
         }
     }
@@ -71,23 +80,33 @@ impl<'a> SearchLog<'a> {
 }
 
 pub(super) fn insert_call_log(repo: &Path, log: SearchLog<'_>) -> CoreResult<i64> {
-    let sent_fields_json = serde_json::to_string(&log.sent_fields)
-        .map_err(|_| CoreError::internal("semantic search call log fields are invalid"))?;
-    db::insert_ai_call_log_record(
-        repo,
-        db::AiCallLogInsertRecord {
+    db::insert_ai_call_log_record(repo, log.into_record()?)
+}
+
+pub(super) fn insert_call_log_in_tx(
+    tx: &rusqlite::Transaction<'_>,
+    log: SearchLog<'_>,
+) -> CoreResult<i64> {
+    db::insert_ai_call_log_record_in_tx(tx, log.into_record()?)
+}
+
+impl SearchLog<'_> {
+    fn into_record(self) -> CoreResult<db::AiCallLogInsertRecord> {
+        let sent_fields_json = serde_json::to_string(&self.sent_fields)
+            .map_err(|_| CoreError::internal("semantic search call log fields are invalid"))?;
+        Ok(db::AiCallLogInsertRecord {
             feature: FEATURE_NAME.to_owned(),
             file_id: None,
-            route: log.route.map(route_name),
-            provider: log.route.map(provider_name),
-            model: log.route.map(model_name),
-            status: log.status.to_owned(),
+            route: self.route.map(route_name),
+            provider: self.route.map(provider_name),
+            model: self.route.map(model_name),
+            status: self.status.to_owned(),
             sent_fields_json,
-            privacy_rule_id: log.privacy_rule_id.map(str::to_owned),
-            result_summary: log.result_summary,
-            error_code: log.error_code.map(str::to_owned),
-        },
-    )
+            privacy_rule_id: self.privacy_rule_id.map(str::to_owned),
+            result_summary: self.result_summary,
+            error_code: self.error_code.map(str::to_owned),
+        })
+    }
 }
 
 fn semantic_sent_fields(candidate_count: usize) -> Vec<&'static str> {

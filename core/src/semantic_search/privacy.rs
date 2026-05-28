@@ -73,10 +73,6 @@ impl PrivacyEvaluator {
         Ok(Self { rules })
     }
 
-    pub(super) fn is_empty(&self) -> bool {
-        self.rules.is_empty()
-    }
-
     pub(super) fn blocking_rule(&self, input: &PrivacyInput<'_>) -> Option<String> {
         self.rules
             .iter()

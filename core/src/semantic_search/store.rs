@@ -55,24 +55,21 @@ pub(super) fn load_indexed_files(
 
 pub(super) fn save_semantic_index(
     repo: &Path,
+    tx: &rusqlite::Transaction<'_>,
     route: SemanticSearchRoute,
     filter: &SearchFilter,
     _privacy_ref: Option<&str>,
 ) -> CoreResult<SemanticIndexBuildOutcome> {
-    let mut connection = db::open_write_connection(repo)?;
-    let tx = connection
-        .transaction()
-        .map_err(|error| CoreError::db(error.to_string()))?;
-    db::ensure_schema(&tx)?;
-    let updated_at = db::current_timestamp(&tx)?;
-    let privacy_rules_json = db::repo_config_value_tx(&tx, PRIVACY_RULES_KEY)?;
+    db::ensure_schema_tx(tx)?;
+    let updated_at = db::current_timestamp(tx)?;
+    let privacy_rules_json = db::repo_config_value_tx(tx, PRIVACY_RULES_KEY)?;
     let privacy = PrivacyEvaluator::from_rules_json(privacy_rules_json.as_deref())?;
-    let candidates = load_candidates(&tx, filter)?;
+    let candidates = load_candidates(tx, filter)?;
     let mut stats = IndexStats::new(route.clone(), candidates.len(), updated_at);
 
     tx.execute("DELETE FROM semantic_index_entries", [])
         .map_err(|error| CoreError::db(error.to_string()))?;
-    let privacy_rule_id = replace_entries(repo, &tx, candidates, &route, &privacy, &mut stats)?;
+    let privacy_rule_id = replace_entries(repo, tx, candidates, &route, &privacy, &mut stats)?;
     stats.metadata.privacy_rule_id = privacy_rule_id.clone();
     let serialized = serialize_index(stats.metadata.clone())?;
     tx.execute(
@@ -82,8 +79,6 @@ pub(super) fn save_semantic_index(
         params![SEMANTIC_INDEX_KEY, serialized, updated_at],
     )
     .map_err(|error| CoreError::db(error.to_string()))?;
-    tx.commit()
-        .map_err(|error| CoreError::db(error.to_string()))?;
     Ok(SemanticIndexBuildOutcome {
         metadata: stats.metadata,
         privacy_rule_id,
@@ -116,21 +111,28 @@ fn replace_entries(
             first_privacy_rule_id.get_or_insert(rule_id);
             continue;
         }
-        let field_terms = candidate.field_terms(repo);
-        if field_terms.is_empty() {
+        let field_terms = candidate.field_terms(repo)?;
+        if field_terms.content_failed {
+            stats.metadata.failed_count += 1;
+            continue;
+        }
+        if field_terms.fields.is_empty() {
             stats.skipped += 1;
             continue;
         }
-        if let Some(rule_id) = field_privacy_blocking_rule(&candidate, route, privacy, &field_terms)
-        {
-            stats.privacy_skipped += 1;
-            first_privacy_rule_id.get_or_insert(rule_id);
-            continue;
+        if field_terms.content_inspected {
+            if let Some(rule_id) =
+                field_privacy_blocking_rule(&candidate, route, privacy, &field_terms.fields)
+            {
+                stats.privacy_skipped += 1;
+                first_privacy_rule_id.get_or_insert(rule_id);
+                continue;
+            }
         }
-        db::insert_index_entry(tx, candidate.entry.id, &field_terms, &candidate.tags)?;
+        db::insert_index_entry(tx, candidate.entry.id, &field_terms.fields, &candidate.tags)?;
         stats.processed += 1;
     }
-    stats.finish(privacy.is_empty());
+    stats.finish();
     Ok(first_privacy_rule_id)
 }
 

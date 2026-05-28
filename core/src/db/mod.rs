@@ -423,6 +423,21 @@ pub(super) fn open_repo_connection(repo_path: &Path) -> CoreResult<Connection> {
     Ok(connection)
 }
 
+pub(crate) fn with_write_transaction<T>(
+    repo_path: &Path,
+    operation: impl FnOnce(&rusqlite::Transaction<'_>) -> CoreResult<T>,
+) -> CoreResult<T> {
+    ensure_config_storage_writable(repo_path)?;
+    let mut connection = open_repo_connection(repo_path).map_err(map_update_open_error)?;
+    let tx = connection
+        .transaction()
+        .map_err(|error| CoreError::db(error.to_string()))?;
+    let result = operation(&tx)?;
+    tx.commit()
+        .map_err(|error| CoreError::db(error.to_string()))?;
+    Ok(result)
+}
+
 fn configure_connection(connection: &Connection) -> CoreResult<()> {
     connection
         .execute_batch(

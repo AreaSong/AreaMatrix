@@ -1,4 +1,7 @@
-use std::{collections::HashSet, path::PathBuf};
+use std::{
+    collections::HashSet,
+    path::{Path, PathBuf},
+};
 
 use crate::{
     search, AiCapabilityState, AiFeatureKind, AiProviderPreference, CoreError, CoreResult,
@@ -6,7 +9,7 @@ use crate::{
 };
 
 use super::{
-    call_log::{insert_call_log, SearchLog, LOCAL_MODEL},
+    call_log::{insert_call_log, insert_call_log_in_tx, SearchLog, LOCAL_MODEL},
     fallback::{BuildFallback, SearchFallback},
     matches::{build_index_groups, normal_matches},
     store::{load_indexed_files, load_semantic_index, save_semantic_index, StoredSemanticIndex},
@@ -55,6 +58,18 @@ pub(super) fn semantic_search(
             SearchFallback::privacy(rule_id),
         );
     }
+    if remote_requested(&ai_config.config.provider_preference, capability) {
+        let _provider = crate::remote_provider_config::load_enabled_remote_provider_runtime(
+            &repo,
+            AiFeatureKind::SemanticSearch,
+        )?;
+        return fallback_search_page_from_normal_result(
+            repo,
+            query,
+            normal_page,
+            SearchFallback::provider(),
+        );
+    }
 
     let Some(route) = select_route(capability, &ai_config.config.provider_preference) else {
         return fallback_search_page_from_normal_result(
@@ -86,7 +101,7 @@ pub(super) fn semantic_search(
             )
         }
     };
-    Ok(success_search_page(
+    success_search_page(
         query,
         normal_page,
         route,
@@ -94,7 +109,7 @@ pub(super) fn semantic_search(
         call_log_id,
         semantic_total_count,
         indexed_files,
-    )?)
+    )
 }
 
 pub(super) fn build_embedding_index(
@@ -124,6 +139,13 @@ pub(super) fn build_embedding_index(
             BuildFallback::feature_disabled(),
         );
     }
+    if remote_build_requested(&scope, &ai_config.config.provider_preference, capability) {
+        let _provider = crate::remote_provider_config::load_enabled_remote_provider_runtime(
+            &repo,
+            AiFeatureKind::SemanticSearch,
+        )?;
+        return fallback_build_report(&repo, scope_page.total_count, BuildFallback::provider());
+    }
     let Some(route) =
         selected_build_route(&scope, capability, &ai_config.config.provider_preference)
     else {
@@ -133,23 +155,28 @@ pub(super) fn build_embedding_index(
         return fallback_build_report(&repo, 0, BuildFallback::no_input(route));
     }
 
-    let outcome = save_semantic_index(
-        &repo,
-        route.clone(),
-        &scope.filter,
-        scope
-            .privacy_policy_ref
-            .as_deref()
-            .or(ai_config.config.privacy_policy_ref.as_deref()),
-    )?;
-    let call_log_id = insert_call_log(
-        &repo,
-        SearchLog::build_success(
-            &route,
-            outcome.metadata.processed_count,
-            outcome.privacy_rule_id.as_deref(),
-        ),
-    )?;
+    let (outcome, call_log_id) = crate::db::with_write_transaction(&repo, |tx| {
+        let outcome = save_semantic_index(
+            &repo,
+            tx,
+            route.clone(),
+            &scope.filter,
+            scope
+                .privacy_policy_ref
+                .as_deref()
+                .or(ai_config.config.privacy_policy_ref.as_deref()),
+        )?;
+        let call_log_id = insert_call_log_in_tx(
+            tx,
+            SearchLog::build_result(
+                &route,
+                outcome.metadata.processed_count,
+                outcome.metadata.failed_count,
+                outcome.privacy_rule_id.as_deref(),
+            ),
+        )?;
+        Ok((outcome, call_log_id))
+    })?;
     Ok(SemanticIndexBuildReport {
         status: outcome.metadata.status.clone(),
         route: Some(route),
@@ -225,6 +252,19 @@ fn selected_build_route(
         Some(SemanticSearchRoute::Remote) => None,
         None => select_route(capability, preference),
     }
+}
+
+fn remote_requested(preference: &AiProviderPreference, capability: &AiCapabilityState) -> bool {
+    matches!(preference, AiProviderPreference::RemoteFirst) && capability.remote_allowed
+}
+
+fn remote_build_requested(
+    scope: &SemanticIndexScope,
+    preference: &AiProviderPreference,
+    capability: &AiCapabilityState,
+) -> bool {
+    matches!(scope.route, Some(SemanticSearchRoute::Remote))
+        || (scope.route.is_none() && remote_requested(preference, capability))
 }
 
 fn ready_index(index: Option<&StoredSemanticIndex>) -> Option<&StoredSemanticIndex> {
@@ -315,7 +355,7 @@ fn success_search_page(
 }
 
 fn fallback_build_report(
-    repo: &PathBuf,
+    repo: &Path,
     total_count: i64,
     fallback: BuildFallback,
 ) -> CoreResult<SemanticIndexBuildReport> {
@@ -358,6 +398,18 @@ fn build_fallback_reason(metadata: &StoredSemanticIndex) -> Option<SemanticSearc
 }
 
 fn build_message(metadata: &StoredSemanticIndex) -> String {
+    if metadata.failed_count > 0 && metadata.processed_count == 0 {
+        return format!(
+            "Semantic index is not ready; {} file(s) failed",
+            metadata.failed_count
+        );
+    }
+    if metadata.failed_count > 0 {
+        return format!(
+            "Semantic index is partially ready; {} file(s) failed",
+            metadata.failed_count
+        );
+    }
     if metadata.processed_count == 0 && metadata.privacy_skipped_count > 0 {
         return "Embedding input was skipped by privacy policy".to_owned();
     }

@@ -16,13 +16,6 @@ pub(super) fn open_read_connection(repo: &Path) -> CoreResult<Connection> {
     Ok(connection)
 }
 
-pub(super) fn open_write_connection(repo: &Path) -> CoreResult<Connection> {
-    let connection =
-        Connection::open(db_path(repo)).map_err(|error| CoreError::db(error.to_string()))?;
-    configure_write_connection(&connection)?;
-    Ok(connection)
-}
-
 pub(super) fn ensure_schema(connection: &Connection) -> CoreResult<()> {
     connection
         .execute_batch(
@@ -39,6 +32,10 @@ pub(super) fn ensure_schema(connection: &Connection) -> CoreResult<()> {
         )
         .map_err(|error| CoreError::db(error.to_string()))?;
     ensure_tags_json_column(connection)
+}
+
+pub(super) fn ensure_schema_tx(tx: &rusqlite::Transaction<'_>) -> CoreResult<()> {
+    ensure_schema(tx)
 }
 
 pub(super) fn load_source_candidates(
@@ -263,15 +260,6 @@ fn configure_read_connection(connection: &Connection) -> CoreResult<()> {
         .execute_batch(
             "PRAGMA query_only = ON;
              PRAGMA foreign_keys = ON;
-             PRAGMA busy_timeout = 5000;",
-        )
-        .map_err(|error| CoreError::db(error.to_string()))
-}
-
-fn configure_write_connection(connection: &Connection) -> CoreResult<()> {
-    connection
-        .execute_batch(
-            "PRAGMA foreign_keys = ON;
              PRAGMA busy_timeout = 5000;",
         )
         .map_err(|error| CoreError::db(error.to_string()))
