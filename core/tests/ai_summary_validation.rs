@@ -1,11 +1,7 @@
 #[path = "support/ai_summary_common.rs"]
 mod common;
 
-use std::{
-    fs,
-    path::{Path, PathBuf},
-    sync::{Mutex, MutexGuard},
-};
+use std::{fs, path::Path};
 
 use area_matrix_core::{
     clear_ai_summary, generate_ai_summary, read_note, save_ai_summary, write_note,
@@ -15,7 +11,7 @@ use area_matrix_core::{
 };
 use common::{
     ai_summary_row, change_log_kinds, enable_local_summaries, enable_remote_summaries,
-    import_fixture, initialized_repo, path_string, AiSummaryRuntime,
+    import_fixture, initialized_repo, path_string, AiSummaryRuntime, RemoteRuntimeProbe,
 };
 use pretty_assertions::assert_eq;
 use rusqlite::{params, Connection};
@@ -32,8 +28,6 @@ const API_RS: &str = include_str!("../src/api.rs");
 const AI_SUMMARY_RS: &str = include_str!("../src/ai_summary.rs");
 const AI_SUMMARY_IMPL_RS: &str = include_str!("../src/ai_summary/implementation.rs");
 const DB_AI_SUMMARY_RS: &str = include_str!("../src/db/ai_summary.rs");
-
-static REMOTE_RUNTIME_ENV_LOCK: Mutex<()> = Mutex::new(());
 
 #[derive(Debug, Eq, PartialEq)]
 struct SummarySafetySnapshot {
@@ -101,9 +95,11 @@ fn snapshot(repo: &Path, file_id: i64) -> SummarySafetySnapshot {
 
 fn active_file_path(repo: &Path, file_id: i64) -> String {
     open_db(repo)
-        .query_row("SELECT path FROM files WHERE id = ?1", params![file_id], |row| {
-            row.get(0)
-        })
+        .query_row(
+            "SELECT path FROM files WHERE id = ?1",
+            params![file_id],
+            |row| row.get(0),
+        )
         .expect("read active file path")
 }
 
@@ -187,14 +183,18 @@ fn ai_summary_validation_proves_draft_save_clear_path_is_ui_ready() {
         "summary-source.txt",
         "original file body with useful summary context",
     );
-    write_note(repo_path.clone(), file_id, "user note must survive clear".to_owned())
-        .expect("write user note");
+    write_note(
+        repo_path.clone(),
+        file_id,
+        "user note must survive clear".to_owned(),
+    )
+    .expect("write user note");
     enable_local_summaries(repo.path());
     let before = snapshot(repo.path(), file_id);
     let runtime = AiSummaryRuntime::local("Draft summary from local validation runtime.");
 
-    let draft =
-        generate_ai_summary(repo_path.clone(), generation_request(file_id)).expect("generate draft");
+    let draft = generate_ai_summary(repo_path.clone(), generation_request(file_id))
+        .expect("generate draft");
     let payload = runtime.captured_payload();
 
     assert_eq!(draft.status, AiSummaryDraftStatus::Draft);
@@ -206,7 +206,9 @@ fn ai_summary_validation_proves_draft_save_clear_path_is_ui_ready() {
     assert!(draft.requires_user_save);
     assert!(draft.call_log_id.is_some());
     assert!(draft.used_context.contains(&AiSummaryInputField::FileName));
-    assert!(draft.used_context.contains(&AiSummaryInputField::NoteSummary));
+    assert!(draft
+        .used_context
+        .contains(&AiSummaryInputField::NoteSummary));
     assert!(payload.contains("\"feature\":\"summary\""));
     assert!(payload.contains("user note must survive clear"));
     assert!(ai_summary_row(repo.path(), file_id).is_none());
@@ -228,7 +230,10 @@ fn ai_summary_validation_proves_draft_save_clear_path_is_ui_ready() {
         Some("Edited validation summary.")
     );
     assert!(change_log_kinds(repo.path()).contains(&"ai_summary_saved".to_owned()));
-    assert_eq!(snapshot(repo.path(), file_id).user_readme, before.user_readme);
+    assert_eq!(
+        snapshot(repo.path(), file_id).user_readme,
+        before.user_readme
+    );
     assert_eq!(snapshot(repo.path(), file_id).user_note, before.user_note);
     assert_eq!(
         snapshot(repo.path(), file_id).stored_file_body,
@@ -247,7 +252,10 @@ fn ai_summary_validation_proves_draft_save_clear_path_is_ui_ready() {
     assert!(cleared.cleared);
     assert!(ai_summary_row(repo.path(), file_id).is_none());
     assert!(change_log_kinds(repo.path()).contains(&"ai_summary_cleared".to_owned()));
-    assert_eq!(snapshot(repo.path(), file_id), before_with_one_summary_log(before));
+    assert_eq!(
+        snapshot(repo.path(), file_id),
+        before_with_one_summary_log(before)
+    );
 }
 
 #[test]
@@ -274,16 +282,25 @@ fn ai_summary_validation_blocks_remote_generation_before_privacy_leakage() {
     assert_eq!(draft.route, None);
     assert!(draft.summary_text.is_none());
     assert!(draft.used_context.is_empty());
-    assert_eq!(draft.privacy_rule_id.as_deref(), Some("rule:private-folder"));
+    assert_eq!(
+        draft.privacy_rule_id.as_deref(),
+        Some("rule:private-folder")
+    );
     assert!(!remote_runtime.was_invoked());
     assert!(ai_summary_row(repo.path(), file_id).is_none());
-    assert_eq!(snapshot(repo.path(), file_id).user_readme, before.user_readme);
+    assert_eq!(
+        snapshot(repo.path(), file_id).user_readme,
+        before.user_readme
+    );
     assert_eq!(
         snapshot(repo.path(), file_id).stored_file_body,
         before.stored_file_body
     );
 
-    let row = summary_log_row(repo.path(), draft.call_log_id.expect("skip has call log id"));
+    let row = summary_log_row(
+        repo.path(),
+        draft.call_log_id.expect("skip has call log id"),
+    );
     assert_eq!(row.status, "skipped");
     assert_eq!(row.route, None);
     assert_eq!(row.sent_fields_json, "[]");
@@ -294,21 +311,31 @@ fn ai_summary_validation_blocks_remote_generation_before_privacy_leakage() {
 }
 
 #[test]
-fn ai_summary_validation_returns_db_error_when_call_log_gate_is_unavailable() {
+fn ai_summary_validation_blocks_remote_runtime_when_call_log_gate_is_unavailable() {
     let repo = initialized_repo();
     let repo_path = path_string(repo.path());
     fs::write(repo.path().join("README.md"), "user readme\n").expect("write user README");
-    let file_id = import_fixture(repo.path(), "call-log-broken.txt", "summary input");
-    enable_local_summaries(repo.path());
+    let file_id = import_fixture(
+        repo.path(),
+        "call-log-broken.txt",
+        "summary input with remote-only secret",
+    );
+    enable_remote_summaries(repo.path(), "https://provider.example.test/summary");
     install_broken_ai_call_log_schema(repo.path());
+    let remote_runtime = RemoteRuntimeProbe::new();
     let before = snapshot(repo.path(), file_id);
-    let _runtime = AiSummaryRuntime::local("Summary that must not be persisted.");
+    let mut request = generation_request(file_id);
+    request.provider_scope = AiSummaryProviderScope::RemoteAllowed;
 
-    let result = generate_ai_summary(repo_path, generation_request(file_id));
+    let result = generate_ai_summary(repo_path, request);
 
     assert!(matches!(result, Err(CoreError::Db { .. })));
+    assert!(!remote_runtime.was_invoked());
     assert!(ai_summary_row(repo.path(), file_id).is_none());
-    assert_eq!(snapshot(repo.path(), file_id).user_readme, before.user_readme);
+    assert_eq!(
+        snapshot(repo.path(), file_id).user_readme,
+        before.user_readme
+    );
     assert_eq!(
         snapshot(repo.path(), file_id).stored_file_body,
         before.stored_file_body
@@ -440,60 +467,4 @@ fn ai_summary_validation_locks_core_api_udl_rust_and_docs_alignment() {
 fn before_with_one_summary_log(mut snapshot: SummarySafetySnapshot) -> SummarySafetySnapshot {
     snapshot.ai_call_log_rows += 1;
     snapshot
-}
-
-struct RemoteRuntimeProbe {
-    _guard: MutexGuard<'static, ()>,
-    output: tempfile::TempDir,
-    marker_path: PathBuf,
-}
-
-impl RemoteRuntimeProbe {
-    fn new() -> Self {
-        let guard = REMOTE_RUNTIME_ENV_LOCK
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner());
-        let output = tempfile::tempdir().expect("create remote runtime probe directory");
-        let script_path = output.path().join("remote-summary-runtime.sh");
-        let marker_path = output.path().join("invoked");
-        let script = format!(
-            "#!/bin/sh\nprintf invoked > \"{}\"\nexit 33\n",
-            marker_path.display()
-        );
-        fs::write(&script_path, script).expect("write remote runtime probe script");
-        make_executable(&script_path);
-        std::env::set_var(
-            "AREAMATRIX_AI_SUMMARY_REMOTE_RUNTIME",
-            script_path.to_string_lossy().into_owned(),
-        );
-        Self {
-            _guard: guard,
-            output,
-            marker_path,
-        }
-    }
-
-    fn was_invoked(&self) -> bool {
-        self.marker_path.exists()
-    }
-}
-
-impl Drop for RemoteRuntimeProbe {
-    fn drop(&mut self) {
-        std::env::remove_var("AREAMATRIX_AI_SUMMARY_REMOTE_RUNTIME");
-        let _ = self.output.path();
-    }
-}
-
-fn make_executable(path: &Path) {
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-
-        let mut permissions = fs::metadata(path)
-            .expect("read runtime script metadata")
-            .permissions();
-        permissions.set_mode(0o700);
-        fs::set_permissions(path, permissions).expect("mark runtime script executable");
-    }
 }

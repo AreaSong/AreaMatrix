@@ -44,6 +44,26 @@ pub(super) fn insert_summary_call_log(
     .map_err(map_call_log_error)
 }
 
+pub(super) fn ensure_summary_call_log_gate(repo: &Path) -> CoreResult<()> {
+    db::ensure_ai_call_log_record_insertable(repo, summary_call_log_gate_record())
+        .map_err(map_call_log_error)
+}
+
+fn summary_call_log_gate_record() -> db::AiCallLogInsertRecord {
+    db::AiCallLogInsertRecord {
+        feature: FEATURE_NAME.to_owned(),
+        file_id: None,
+        route: None,
+        provider: None,
+        model: None,
+        status: "unavailable".to_owned(),
+        sent_fields_json: "[]".to_owned(),
+        privacy_rule_id: None,
+        result_summary: "AI summary call log gate".to_owned(),
+        error_code: Some("CallLogGate".to_owned()),
+    }
+}
+
 fn field_names(fields: &[AiSummaryInputField]) -> Vec<&'static str> {
     fields
         .iter()

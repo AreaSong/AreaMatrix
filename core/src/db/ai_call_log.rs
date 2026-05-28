@@ -95,6 +95,33 @@ pub(crate) fn insert_ai_call_log_record(
         .transaction()
         .map_err(|error| CoreError::db(error.to_string()))?;
     ensure_ai_call_log_schema(&tx)?;
+    let id = insert_ai_call_log_record_tx(&tx, record)?;
+    tx.commit()
+        .map_err(|error| CoreError::db(error.to_string()))?;
+    Ok(id)
+}
+
+pub(crate) fn ensure_ai_call_log_record_insertable(
+    repo_path: &Path,
+    record: AiCallLogInsertRecord,
+) -> CoreResult<()> {
+    super::ensure_config_storage_writable(repo_path)?;
+
+    let mut connection =
+        super::open_repo_connection(repo_path).map_err(super::map_update_open_error)?;
+    let tx = connection
+        .transaction()
+        .map_err(|error| CoreError::db(error.to_string()))?;
+    ensure_ai_call_log_schema(&tx)?;
+    insert_ai_call_log_record_tx(&tx, record)?;
+    tx.rollback()
+        .map_err(|error| CoreError::db(error.to_string()))
+}
+
+fn insert_ai_call_log_record_tx(
+    tx: &rusqlite::Transaction<'_>,
+    record: AiCallLogInsertRecord,
+) -> CoreResult<i64> {
     let privacy_rules_checked = record.privacy_rule_id.is_some();
     let scope = default_scope(&record.feature);
     tx.execute(
@@ -118,14 +145,11 @@ pub(crate) fn insert_ai_call_log_record(
             record.privacy_rule_id,
             record.result_summary,
             record.error_code,
-            current_timestamp(&tx)?,
+            current_timestamp(tx)?,
         ],
     )
     .map_err(|error| CoreError::db(error.to_string()))?;
-    let id = tx.last_insert_rowid();
-    tx.commit()
-        .map_err(|error| CoreError::db(error.to_string()))?;
-    Ok(id)
+    Ok(tx.last_insert_rowid())
 }
 
 pub(crate) fn list_ai_call_log_rows(

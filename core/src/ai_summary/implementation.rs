@@ -8,7 +8,7 @@ use crate::{
 };
 
 use super::{
-    call_log::{insert_summary_call_log, SummaryCallLogDraft},
+    call_log::{ensure_summary_call_log_gate, insert_summary_call_log, SummaryCallLogDraft},
     context::{build_context, AiSummaryContext},
     executor::{execute_local, execute_remote, AiSummaryRuntimeDraft},
     validate_clear_request, validate_generation_request, validate_repo_path, validate_save_request,
@@ -85,6 +85,7 @@ pub(super) fn generate_ai_summary(
     else {
         return unavailable_provider(&repo, &file);
     };
+    ensure_summary_call_log_gate(&repo)?;
     let route_for_error = route.clone();
     let draft = match execute_summary(route, &repo, &context) {
         Ok(draft) => draft,

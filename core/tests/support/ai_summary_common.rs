@@ -261,6 +261,49 @@ impl Drop for AiSummaryRuntime {
     }
 }
 
+pub struct RemoteRuntimeProbe {
+    _guard: MutexGuard<'static, ()>,
+    output: tempfile::TempDir,
+    marker_path: PathBuf,
+}
+
+impl RemoteRuntimeProbe {
+    pub fn new() -> Self {
+        let guard = REMOTE_RUNTIME_LOCK
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        let output = tempfile::tempdir().expect("create remote runtime probe directory");
+        let script_path = output.path().join("remote-summary-runtime.sh");
+        let marker_path = output.path().join("invoked");
+        let script = format!(
+            "#!/bin/sh\nprintf invoked > \"{}\"\nexit 33\n",
+            marker_path.display()
+        );
+        fs::write(&script_path, script).expect("write remote runtime probe script");
+        make_executable(&script_path);
+        std::env::set_var(
+            "AREAMATRIX_AI_SUMMARY_REMOTE_RUNTIME",
+            script_path.to_string_lossy().into_owned(),
+        );
+        Self {
+            _guard: guard,
+            output,
+            marker_path,
+        }
+    }
+
+    pub fn was_invoked(&self) -> bool {
+        self.marker_path.exists()
+    }
+}
+
+impl Drop for RemoteRuntimeProbe {
+    fn drop(&mut self) {
+        std::env::remove_var("AREAMATRIX_AI_SUMMARY_REMOTE_RUNTIME");
+        let _ = self.output.path();
+    }
+}
+
 struct ProviderProbeRuntime {
     _lock: MutexGuard<'static, ()>,
     output: tempfile::TempDir,
