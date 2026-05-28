@@ -1,0 +1,74 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-2/task-50`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-2-stage3-ai/task-50-c3-10-integration-verify.md`
+- 核验文件路径：`/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-3-ai/C3-10-ai-fallback.md`、`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-3-control-map.md`、`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/ai_fallback.rs`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/ai_fallback_*.rs`
+
+三、完成度摘要
+
+- 已覆盖项数：6
+- 未覆盖项数：0
+- 通过项数：6
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：交叉检查 capability spec、Core API、UDL、Rust 实现和测试
+- 结果：通过
+- 证据：C3-10 spec 要求 `get_ai_fallback_status`、fallback kind/message/retry ability、AI call failure 记录和 `Config/Internal/PermissionDenied`；API 文档定义该入口和副作用边界；UDL 声明 `AiFallbackStatusRequest/Status` 与 enums；Rust API 委托到 `ai_fallback::get_ai_fallback_status`；测试包含 contract、implementation、validation、failure recovery 四类。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-3-ai/C3-10-ai-fallback.md:7`、`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:3416`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:109`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:632`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/ai_fallback_validation.rs:312`
+
+- 项目：确认消费页面需要的状态、错误和副作用均已覆盖
+- 结果：通过
+- 证据：control map 声明 S3-04/S3-08/S3-10 消费 C3-10；实现覆盖 disabled/skipped/unavailable/error、local/remote/privacy/semantic-index/rate-limit/timeout 等 reason，记录脱敏 call log，非 AI 回退映射覆盖分类和语义搜索；测试证明 AI fallback 不阻断导入、普通搜索、本地规则分类。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-3-control-map.md:12`、`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-3-ai/S3-10-ai-fallback.md:65`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/ai_fallback.rs:243`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/support/ai_fallback_validation.rs:156`
+
+- 项目：确认没有实现 control map 之外的能力
+- 结果：通过
+- 证据：C3-10 API 文档明确只标准化 fallback 状态，不执行 AI、不切换 provider、不启用远程 AI、不写分类/标签/摘要、不写用户文件；实现只生成状态并在缺少 `call_log_id` 时写入脱敏 AI call log。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:3470`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/ai_fallback.rs:183`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/ai_fallback/call_log.rs:11`
+
+- 项目：不得修改文件；只记录验收证据和阻塞项
+- 结果：通过
+- 证据：本轮未修改文件；当前脏改动仅为 runner 收口相关 `.codex/task-loop-runs/20260529_014640/summary.json` 与 `tasks/prompts/_shared/progress.json`。`git diff --name-only -- apps` 无输出，未触碰 Forbidden Touches。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-runs/20260529_014640/summary.json`、`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/progress.json`
+
+- 项目：Expected New Paths 落地
+- 结果：通过
+- 证据：`core/src/**` 下存在 `ai_fallback.rs`、`ai_fallback/validation.rs`、`ai_fallback/call_log.rs`；`core/area_matrix.udl` 已声明 C3-10 API 与类型；`core/tests/**` 下存在 `ai_fallback_contract_api.rs`、`ai_fallback_implementation.rs`、`ai_fallback_validation.rs`、`ai_fallback_failure_recovery.rs`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/ai_fallback.rs:1`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:781`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/ai_fallback_contract_api.rs:80`
+
+- 项目：完成标准
+- 结果：通过
+- 证据：C3-10 可作为后续 page-feature task 的真实 Core 依赖；API、UDL、Rust surface、测试和 task-scoped validation 均通过。未发现需要阻塞后续 UI 接入的问题。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/lib.rs:60`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/ai_fallback_validation.rs:35`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，`ai_fallback.rs` 457 行，拆出 validation 与 call_log 子模块，未超过 500 行；主流程为 validate -> metadata check -> status normalize -> optional call-log insert。
+- 注释 / rustdoc / 文档同步：通过，public Rust 类型和 API 有 rustdoc，Core API 与 UDL 同步，contract tests 锁定 docs/API/UDL/control map。
+- 错误处理与边界处理：通过，生产路径未发现 `unwrap()`、`expect()`、`panic!`、`todo!`、`unimplemented!`；无效 repo path、metadata、provider code、privacy rule id、call log id、retry timestamp 均返回 `Config/PermissionDenied/Internal`。
+- 测试与验证覆盖：通过，contract、implementation、validation、failure recovery 覆盖正常路径、隐私跳过、远程失败、semantic index、rate limit、权限、损坏 DB、rollback。
+- 占位、硬编码、mock-only、一次性实现检查：通过，实现连接真实 `db::insert_ai_call_log_record` 与 `list_ai_calls` 验证，不是 mock-only；未实现自动 provider failover 或 control map 外能力。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 跑了哪些验证：`./dev check task 4-2/task-50`
+- 哪些通过：`prompt_pipeline.py doctor` 通过；`git diff --check` 通过；`cargo fmt --all -- --check` 通过；`cargo clippy --all-targets --all-features -- -D warnings` 通过；`cargo test --test ai_fallback_contract_api -- --nocapture` 4 passed；`cargo test --test ai_fallback_failure_recovery -- --nocapture` 6 passed；`cargo test --test ai_fallback_implementation -- --nocapture` 5 passed；`cargo test --test ai_fallback_validation -- --nocapture` 3 passed。
+- 哪些失败：无
+- 哪些缺失：无
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS
