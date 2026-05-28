@@ -1,0 +1,74 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-2/task-24`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-2-stage3-ai/task-24-c3-05-validation.md`
+- 核验范围：`core/src/**`、`core/area_matrix.udl`、`core/tests/**`
+- Forbidden Touches：`apps/**`，未发现变更
+
+三、完成度摘要
+
+- 已覆盖项数：6
+- 未覆盖项数：0
+- 通过项数：6
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：补齐成功和失败路径测试
+- 结果：通过
+- 证据：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/ai_call_log_validation.rs:31` 覆盖分页、过滤、脱敏；`:102` 覆盖清除日志且不触碰用户文件；`:152` 覆盖非法输入、回滚、错误码。既有 `ai_call_log_contract_api`、`ai_call_log_failure_recovery`、`ai_call_log_implementation` 也被 task check 执行通过。
+- 涉及文件：`core/tests/ai_call_log_validation.rs`、`core/tests/support/ai_call_log_validation.rs`
+
+- 项目：Core API / UDL / Rust 实现一致
+- 结果：通过
+- 证据：UDL 声明 `list_ai_calls`、`clear_ai_call_log` 于 `core/area_matrix.udl:61`、`:66`；Rust API 转发和 rustdoc 于 `core/src/api.rs:370`、`:395`；类型导出于 `core/src/lib.rs:45`；验证测试锁定 API/UDL/docs/Rust 片段于 `core/tests/ai_call_log_validation.rs:232`。
+- 涉及文件：`core/area_matrix.udl`、`core/src/api.rs`、`core/src/lib.rs`、`core/src/ai_call_log.rs`
+
+- 项目：不新增业务功能，只补验证与 fixture
+- 结果：通过
+- 证据：工作区变更显示新增路径仅为 `core/tests/ai_call_log_validation.rs` 和 `core/tests/support/ai_call_log_validation.rs`；未见 `core/src/**`、`core/area_matrix.udl` 或 `apps/**` 变更。
+- 涉及文件：`core/tests/**`
+
+- 项目：记录无法运行的验证及原因
+- 结果：通过
+- 证据：必需验证 `./dev check task 4-2/task-24` 已运行并通过；本轮不存在无法运行的必需验证。
+- 涉及文件：不适用
+
+- 项目：C3-05 足够证明可进入 UI 接入
+- 结果：通过
+- 证据：能力规格要求本地/远程可区分、可清除日志且不影响用户文件、日志不含 API key 或未脱敏隐私内容，见 `docs/core/capability-specs/stage-3-ai/C3-05-ai-call-log.md:32`；测试覆盖这些边界并通过。
+- 涉及文件：`docs/core/capability-specs/stage-3-ai/C3-05-ai-call-log.md`、`core/tests/ai_call_log_validation.rs`
+
+- 项目：Validation 命令通过
+- 结果：通过
+- 证据：`./dev check task 4-2/task-24` exit 0；prompt doctor OK、diff check OK、targeted Core tests 全部通过。
+- 涉及文件：`scripts/dev_tools/checks.py`、`core/tests/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。新增验证测试拆分为主测试与 support fixture，未把验证逻辑塞进生产路径。
+- 注释 / rustdoc / 文档同步：通过。公开 API 有 rustdoc，UDL、Core API 文档、Rust 类型和测试互相锁定。
+- 错误处理与边界处理：通过。覆盖 invalid input、schema corruption、permission denied、delete rollback、secret redaction。
+- 测试与验证覆盖：通过。task-scoped 验证执行 17 个 C3-05 相关测试，全部通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。测试通过真实 public API 和 SQLite repo fixture 验证，不是 UI mock 或硬编码通过态。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-2/task-24`
+- 通过：`prompt doctor` OK；`git diff --check` OK；`ai_call_log_contract_api` 4/4；`ai_call_log_failure_recovery` 6/6；`ai_call_log_implementation` 3/3；`ai_call_log_validation` 4/4。
+- 失败：无。
+- 缺失：无。`./dev check core`、`./dev check all` 未运行，因为当前 manifest 只要求 task-scoped validation，且 validation-driver 不要求普通 atomic Core task 扩大到 broad gate。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+VERIFY_RESULT: PASS
