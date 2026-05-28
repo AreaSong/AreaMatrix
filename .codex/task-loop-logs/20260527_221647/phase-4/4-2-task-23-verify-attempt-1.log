@@ -1,0 +1,66 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-2/task-23`
+- 对应文件路径：`tasks/prompts/phase-4/4-2-stage3-ai/task-23-c3-05-failure-edge.md`
+- 实际核验：`docs/**`、`core/src/**`、`core/area_matrix.udl`、`core/tests/**`
+- Forbidden Touches：`apps/**` 未发现改动
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：空态、非法输入、权限、IO/DB 错误和错误码映射
+- 结果：通过
+- 证据：空态不建表且不动用户文件；非法 filter/pagination/clear scope 返回 `CoreError::Db`；只读权限返回 `PermissionDenied`；schema 损坏和删除 trigger 返回 `Db`；`map_core_error` 覆盖 Db/PermissionDenied。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/ai_call_log_failure_recovery.rs:142`、`:159`、`:234`、`:270`、`:319`、`:346`
+
+- 项目：失败不留下半成品
+- 结果：通过
+- 证据：`clear_ai_call_log_rows` 在事务内删除并统计，删除 trigger 中断后日志行仍为 2，用户 `README.md` 保持不变。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/db/ai_call_log.rs:153`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/ai_call_log_failure_recovery.rs:234`
+
+- 项目：隐私/AI/远程调用默认关闭、密钥不入返回日志
+- 结果：通过
+- 证据：`list_ai_calls` 只读 DB，不执行 AI 调用；返回字段经过 `sanitize_text`，测试覆盖 `sk-secret`、`api_key`、`keychain:`、`secure-storage:`、`token=` 不出现在公开返回和错误上下文中。当前真实写入路径只写字段类别和脱敏摘要，不写 key_reference。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/ai_call_log.rs:341`、`:462`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/ai_classification_suggestion/call_log.rs:20`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/ai_call_log_failure_recovery.rs:270`
+
+- 项目：不得吞错或静默降级
+- 结果：通过
+- 证据：输入校验、schema 校验、SQL 查询/删除、bool/enum 解析均显式返回 `CoreError::Db` 或 `PermissionDenied`；测试断言错误可观察。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/ai_call_log.rs:241`、`:254`、`:270`、`:277`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/db/ai_call_log/schema.rs:15`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，C3-05 API、领域类型、DB helper/schema/list/clear 分层清楚；文件长度均在 500 行以内。
+- 注释 / rustdoc / 文档同步：通过，public API 与类型有 rustdoc；`docs/api/core-api.md`、`core/area_matrix.udl`、Stage 3 control map 对齐 C3-05。
+- 错误处理与边界处理：通过，未发现生产路径 `unwrap()` / `expect()` / `panic!()` 处理可恢复错误；错误显式传播。
+- 测试与验证覆盖：通过，新增失败恢复测试覆盖空态、非法输入、回滚、schema 损坏、权限、错误映射。
+- 占位、硬编码、mock-only、一次性实现检查：通过，C3-05 list/clear 连接真实 SQLite 表和真实 Core API；未发现用 mock 代替产品路径。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-2/task-23`
+- 通过：prompt doctor OK；`git diff --check` 通过；`cargo fmt --all -- --check` 通过；`cargo clippy --all-targets --all-features -- -D warnings` 通过。
+- 通过：`cargo test --test ai_call_log_contract_api -- --nocapture`，4 passed。
+- 通过：`cargo test --test ai_call_log_failure_recovery -- --nocapture`，6 passed。
+- 通过：`cargo test --test ai_call_log_implementation -- --nocapture`，3 passed。
+- 缺失：无。未运行 `./dev check all`，因为本 atomic task manifest 只要求 `./dev check task 4-2/task-23`，validation-driver 也要求普通 Phase 4 atomic Core task 不默认扩大到 broad gate。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+VERIFY_RESULT: PASS

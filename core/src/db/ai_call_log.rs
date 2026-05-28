@@ -11,7 +11,10 @@ use rusqlite::{params, params_from_iter};
 
 use crate::{CoreError, CoreResult};
 
-use helpers::{bool_to_db, db_to_bool, default_scope, ensure_storage_writable, map_open_error};
+use helpers::{
+    bool_to_db, db_to_bool, default_scope, ensure_storage_readable, ensure_storage_writable,
+    map_open_error,
+};
 use schema::{ensure_ai_call_log_schema, read_schema, AiCallLogSchema};
 
 pub(crate) struct AiCallLogInsertRecord {
@@ -130,6 +133,8 @@ pub(crate) fn list_ai_call_log_rows(
     filter: &AiCallLogListFilter,
     pagination: &AiCallLogPagination,
 ) -> CoreResult<AiCallLogListPage> {
+    ensure_storage_readable(repo_path)?;
+
     let connection = super::open_repo_connection(repo_path).map_err(map_open_error)?;
     let schema = read_schema(&connection)?;
     if !schema.exists {

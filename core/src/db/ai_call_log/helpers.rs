@@ -10,6 +10,20 @@ pub(super) fn ensure_storage_writable(repo_path: &Path) -> CoreResult<()> {
     ensure_writable_path(&repo_path.join(AREA_MATRIX_DIR).join(INDEX_DB_FILE))
 }
 
+pub(super) fn ensure_storage_readable(repo_path: &Path) -> CoreResult<()> {
+    ensure_readable_path(&repo_path.join(AREA_MATRIX_DIR))?;
+    ensure_readable_path(&repo_path.join(AREA_MATRIX_DIR).join(INDEX_DB_FILE))
+}
+
+fn ensure_readable_path(path: &Path) -> CoreResult<()> {
+    let metadata = path.metadata().map_err(map_metadata_error)?;
+    if metadata_allows_read(&metadata) {
+        Ok(())
+    } else {
+        Err(CoreError::permission_denied("permission denied"))
+    }
+}
+
 fn ensure_writable_path(path: &Path) -> CoreResult<()> {
     let metadata = path.metadata().map_err(map_metadata_error)?;
     if metadata_allows_write(&metadata) {
@@ -24,6 +38,18 @@ fn map_metadata_error(error: std::io::Error) -> CoreError {
         std::io::ErrorKind::PermissionDenied => CoreError::permission_denied("permission denied"),
         _ => CoreError::db("AI call log metadata unavailable"),
     }
+}
+
+#[cfg(unix)]
+fn metadata_allows_read(metadata: &Metadata) -> bool {
+    use std::os::unix::fs::PermissionsExt;
+
+    metadata.permissions().mode() & 0o444 != 0
+}
+
+#[cfg(not(unix))]
+fn metadata_allows_read(metadata: &Metadata) -> bool {
+    !metadata.permissions().readonly()
 }
 
 #[cfg(unix)]
