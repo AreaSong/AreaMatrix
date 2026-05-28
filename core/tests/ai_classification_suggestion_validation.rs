@@ -28,7 +28,7 @@ const API_RS: &str = include_str!("../src/api.rs");
 const AI_CLASSIFICATION_RS: &str = include_str!("../src/ai_classification_suggestion.rs");
 const AI_CLASSIFICATION_IMPL_RS: &str =
     include_str!("../src/ai_classification_suggestion/implementation.rs");
-const AI_CALL_LOG_RS: &str = include_str!("../src/db/ai_call_log.rs");
+const AI_CALL_LOG_SCHEMA_RS: &str = include_str!("../src/db/ai_call_log/schema.rs");
 
 #[derive(Debug)]
 struct AiLogRow {
@@ -432,6 +432,6 @@ fn ai_classification_suggestion_validation_locks_api_udl_rust_and_docs_alignment
         "sent_fields_json TEXT NOT NULL",
         "privacy_rule_id TEXT",
     ] {
-        assert_contains(AI_CALL_LOG_RS, fragment);
+        assert_contains(AI_CALL_LOG_SCHEMA_RS, fragment);
     }
 }

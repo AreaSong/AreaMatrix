@@ -14,6 +14,7 @@ const AI_CALL_LOG_PAGE: &str =
     include_str!("../../docs/ux/page-specs/stage-3-ai/S3-05-ai-call-log.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
+const DATA_MODEL: &str = include_str!("../../docs/architecture/data-model.md");
 const API_RS: &str = include_str!("../src/api.rs");
 const AI_CALL_LOG_RS: &str = include_str!("../src/ai_call_log.rs");
 const UDL: &str = include_str!("../area_matrix.udl");
@@ -290,6 +291,15 @@ fn ai_call_log_contract_docs_api_udl_and_control_map_stay_aligned() {
         assert_contains(UDL, error_name);
         assert_contains(API_RS, error_name);
     }
+
+    for fragment in [
+        "CREATE TABLE IF NOT EXISTS ai_call_log",
+        "idx_ai_call_log_time",
+        "idx_ai_call_log_feature_time",
+        "files ||--o{ ai_call_log",
+    ] {
+        assert_contains(DATA_MODEL, fragment);
+    }
 }
 
 #[test]
@@ -322,8 +332,8 @@ fn ai_call_log_contract_documents_consumers_and_privacy_boundaries() {
         "pub struct AiCallLogClearReport",
         "pub(crate) fn list_ai_calls(",
         "pub(crate) fn clear_ai_call_log(",
-        "AI call log query implementation unavailable",
-        "AI call log clear implementation unavailable",
+        "db::list_ai_call_log_rows",
+        "db::clear_ai_call_log_rows",
     ] {
         assert_contains(AI_CALL_LOG_RS, fragment);
     }

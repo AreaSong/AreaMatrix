@@ -34,7 +34,10 @@ mod staging_recovery;
 mod sync;
 mod tags;
 mod undo;
-pub(crate) use ai_call_log::{insert_ai_call_log_record, AiCallLogRecord};
+pub(crate) use ai_call_log::{
+    clear_ai_call_log_rows, insert_ai_call_log_record, list_ai_call_log_rows, AiCallLogClearSpec,
+    AiCallLogInsertRecord, AiCallLogListFilter, AiCallLogPagination, AiCallLogRow,
+};
 pub(crate) use ai_settings::{load_ai_config_record, update_ai_config_record};
 pub(crate) use change_log::list_changes;
 pub(crate) use command_index::{

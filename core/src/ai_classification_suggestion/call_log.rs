@@ -22,7 +22,7 @@ pub(super) fn insert_call_log(repo: &Path, draft: CallLogDraft<'_>) -> CoreResul
         .map_err(|_| CoreError::internal("AI call log fields are invalid"))?;
     let id = db::insert_ai_call_log_record(
         repo,
-        db::AiCallLogRecord {
+        db::AiCallLogInsertRecord {
             feature: FEATURE_NAME.to_owned(),
             file_id: draft.file_id,
             route: draft.route.map(route_name),

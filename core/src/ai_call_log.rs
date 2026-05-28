@@ -4,12 +4,16 @@ use std::path::{Component, PathBuf};
 
 use serde::{Deserialize, Serialize};
 
-use crate::{CoreError, CoreResult};
+use crate::{db, CoreError, CoreResult};
 
 const AREA_MATRIX_DIR: &str = ".areamatrix";
 const MAX_SEARCH_QUERY_LEN: usize = 256;
+const MAX_REDACTED_TEXT_LEN: usize = 240;
 const MAX_PAGE_LIMIT: i64 = 200;
 const MAX_CLEAR_ENTRY_IDS: usize = 500;
+const RETENTION_DAYS: i64 = 90;
+const REDACTION_POLICY: &str =
+    "No API keys, full prompts, outputs, notes, file contents, raw provider responses, or absolute user paths.";
 
 /// AI feature represented by one redacted call log row.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
@@ -196,9 +200,27 @@ pub(crate) fn list_ai_calls(
     validate_repo_path(&repo_path)?;
     validate_filter(&filter)?;
     validate_pagination(&pagination)?;
-    Err(CoreError::db(
-        "AI call log query implementation unavailable",
-    ))
+    let repo = PathBuf::from(repo_path);
+    let db_filter = to_db_filter(&filter);
+    let db_pagination = db::AiCallLogPagination {
+        limit: pagination.limit,
+        offset: pagination.offset,
+    };
+    let page = db::list_ai_call_log_rows(&repo, &db_filter, &db_pagination)?;
+    let records = page
+        .rows
+        .into_iter()
+        .map(record_from_row)
+        .collect::<CoreResult<Vec<_>>>()?;
+    Ok(AiCallLogPage {
+        total_count: page.total_count,
+        records,
+        limit: pagination.limit,
+        offset: pagination.offset,
+        has_more: pagination.offset + pagination.limit < page.total_count,
+        retention_days: RETENTION_DAYS,
+        redaction_policy: REDACTION_POLICY.to_owned(),
+    })
 }
 
 pub(crate) fn clear_ai_call_log(
@@ -207,9 +229,13 @@ pub(crate) fn clear_ai_call_log(
 ) -> CoreResult<AiCallLogClearReport> {
     validate_repo_path(&repo_path)?;
     validate_clear_request(&request)?;
-    Err(CoreError::db(
-        "AI call log clear implementation unavailable",
-    ))
+    let repo = PathBuf::from(repo_path);
+    let stats = db::clear_ai_call_log_rows(&repo, clear_spec(request))?;
+    Ok(AiCallLogClearReport {
+        deleted_count: stats.deleted_count,
+        remaining_count: stats.remaining_count,
+        cleared_at: stats.cleared_at,
+    })
 }
 
 fn validate_repo_path(repo_path: &str) -> CoreResult<()> {
@@ -287,4 +313,187 @@ fn validate_older_than_clear_request(request: &AiCallLogClearRequest) -> CoreRes
 
 fn is_area_matrix_component(component: Component<'_>) -> bool {
     matches!(component, Component::Normal(name) if name == AREA_MATRIX_DIR)
+}
+
+fn to_db_filter(filter: &AiCallLogFilter) -> db::AiCallLogListFilter {
+    db::AiCallLogListFilter {
+        feature: filter.feature.as_ref().map(feature_to_db),
+        route: filter.route.as_ref().map(route_to_db),
+        status: filter.status.as_ref().map(status_to_db),
+        occurred_after: filter.occurred_after,
+        occurred_before: filter.occurred_before,
+        search_pattern: filter.search_query.as_deref().map(search_pattern),
+    }
+}
+
+fn clear_spec(request: AiCallLogClearRequest) -> db::AiCallLogClearSpec {
+    match request.scope {
+        AiCallLogClearScope::All => db::AiCallLogClearSpec::All,
+        AiCallLogClearScope::SelectedEntries => {
+            db::AiCallLogClearSpec::SelectedEntries(request.entry_ids)
+        }
+        AiCallLogClearScope::OlderThan => {
+            db::AiCallLogClearSpec::OlderThan(request.older_than.unwrap_or_default())
+        }
+    }
+}
+
+fn record_from_row(row: db::AiCallLogRow) -> CoreResult<AiCallLogRecord> {
+    Ok(AiCallLogRecord {
+        id: row.id,
+        occurred_at: row.occurred_at,
+        feature: feature_from_db(&row.feature)?,
+        file_id: row.file_id,
+        file_display_name: row.file_display_name.map(sanitize_text),
+        batch_id: row.batch_id.map(sanitize_text),
+        scope: row.scope.map(sanitize_text),
+        route: row.route.as_deref().map(route_from_db).transpose()?,
+        provider_name: row.provider_name.map(sanitize_text),
+        model_name: row.model_name.map(sanitize_text),
+        status: status_from_db(&row.status)?,
+        duration_ms: row.duration_ms,
+        sent_fields: sent_fields_from_json(&row.sent_fields_json)?,
+        privacy_rules_checked: row.privacy_rules_checked,
+        privacy_rule_id: row.privacy_rule_id.map(sanitize_text),
+        privacy_rule_name: row.privacy_rule_name.map(sanitize_text),
+        matched_field_type: row
+            .matched_field_type
+            .as_deref()
+            .map(sent_field_from_db)
+            .transpose()?,
+        result_summary: sanitize_text(row.result_summary),
+        error_code: row.error_code.map(sanitize_text),
+    })
+}
+
+fn feature_to_db(feature: &AiCallLogFeature) -> String {
+    match feature {
+        AiCallLogFeature::Classification => "classification",
+        AiCallLogFeature::Summary => "summary",
+        AiCallLogFeature::Tags => "tags",
+        AiCallLogFeature::SemanticSearch => "semantic_search",
+        AiCallLogFeature::ProviderTest => "provider_test",
+    }
+    .to_owned()
+}
+
+fn feature_from_db(value: &str) -> CoreResult<AiCallLogFeature> {
+    match value {
+        "classification" | "Classification" => Ok(AiCallLogFeature::Classification),
+        "summary" | "Summary" => Ok(AiCallLogFeature::Summary),
+        "tags" | "Tags" => Ok(AiCallLogFeature::Tags),
+        "semantic_search" | "SemanticSearch" => Ok(AiCallLogFeature::SemanticSearch),
+        "provider_test" | "ProviderTest" => Ok(AiCallLogFeature::ProviderTest),
+        _ => Err(CoreError::db("AI call log feature is invalid")),
+    }
+}
+
+fn route_to_db(route: &AiCallLogRoute) -> String {
+    match route {
+        AiCallLogRoute::Local => "local",
+        AiCallLogRoute::Remote => "remote",
+    }
+    .to_owned()
+}
+
+fn route_from_db(value: &str) -> CoreResult<AiCallLogRoute> {
+    match value {
+        "local" | "Local" => Ok(AiCallLogRoute::Local),
+        "remote" | "Remote" => Ok(AiCallLogRoute::Remote),
+        _ => Err(CoreError::db("AI call log route is invalid")),
+    }
+}
+
+fn status_to_db(status: &AiCallLogStatus) -> String {
+    match status {
+        AiCallLogStatus::Success => "success",
+        AiCallLogStatus::Failed => "failed",
+        AiCallLogStatus::Skipped => "skipped",
+        AiCallLogStatus::Unavailable => "unavailable",
+    }
+    .to_owned()
+}
+
+fn status_from_db(value: &str) -> CoreResult<AiCallLogStatus> {
+    match value {
+        "success" | "Success" => Ok(AiCallLogStatus::Success),
+        "failed" | "Failed" => Ok(AiCallLogStatus::Failed),
+        "skipped" | "Skipped" => Ok(AiCallLogStatus::Skipped),
+        "unavailable" | "Unavailable" => Ok(AiCallLogStatus::Unavailable),
+        _ => Err(CoreError::db("AI call log status is invalid")),
+    }
+}
+
+fn sent_fields_from_json(value: &str) -> CoreResult<Vec<AiCallLogSentField>> {
+    let raw_fields: Vec<String> = serde_json::from_str(value)
+        .map_err(|_| CoreError::db("AI call log sent fields are invalid"))?;
+    raw_fields
+        .iter()
+        .map(|field| sent_field_from_db(field))
+        .collect()
+}
+
+fn sent_field_from_db(value: &str) -> CoreResult<AiCallLogSentField> {
+    match value {
+        "filename" | "file_name" | "FileName" => Ok(AiCallLogSentField::FileName),
+        "repo_relative_path" | "RepoRelativePath" => Ok(AiCallLogSentField::RepoRelativePath),
+        "extension" | "Extension" => Ok(AiCallLogSentField::Extension),
+        "limited_text_summary" | "extracted_text_excerpt" | "ExtractedTextExcerpt" => {
+            Ok(AiCallLogSentField::ExtractedTextExcerpt)
+        }
+        "ai_summary" | "AiSummary" => Ok(AiCallLogSentField::AiSummary),
+        "note_summary" | "NoteSummary" => Ok(AiCallLogSentField::NoteSummary),
+        "tag_category_context" | "TagCategoryContext" => Ok(AiCallLogSentField::TagCategoryContext),
+        _ => Err(CoreError::db("AI call log sent field is invalid")),
+    }
+}
+
+fn search_pattern(query: &str) -> String {
+    let mut escaped = String::with_capacity(query.len());
+    for ch in query.chars() {
+        if matches!(ch, '%' | '_' | '\\') {
+            escaped.push('\\');
+        }
+        escaped.push(ch);
+    }
+    format!("%{}%", escaped.to_ascii_lowercase())
+}
+
+fn sanitize_text(value: String) -> String {
+    let cleaned = value.replace('\0', "");
+    let redacted = cleaned
+        .split_whitespace()
+        .map(redact_sensitive_token)
+        .collect::<Vec<_>>()
+        .join(" ");
+    truncate_redacted_text(redacted)
+}
+
+fn redact_sensitive_token(token: &str) -> String {
+    let normalized = token.to_ascii_lowercase();
+    if normalized.contains("api_key")
+        || normalized.contains("api-key")
+        || normalized.contains("apikey")
+        || normalized.contains("keychain:")
+        || normalized.contains("secure-storage:")
+        || normalized.contains("token=")
+        || normalized.contains("sk-")
+    {
+        "[redacted]".to_owned()
+    } else {
+        token.to_owned()
+    }
+}
+
+fn truncate_redacted_text(value: String) -> String {
+    let mut chars = value.chars();
+    let truncated = chars
+        .by_ref()
+        .take(MAX_REDACTED_TEXT_LEN)
+        .collect::<String>();
+    if chars.next().is_some() {
+        format!("{truncated}...")
+    } else {
+        value
+    }
 }
