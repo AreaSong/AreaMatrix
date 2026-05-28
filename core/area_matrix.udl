@@ -59,6 +59,16 @@ namespace area_matrix {
     );
 
     [Throws=CoreError]
+    AiCallLogPage list_ai_calls(
+        string repo_path, AiCallLogFilter filter, AiCallLogPagination pagination
+    );
+
+    [Throws=CoreError]
+    AiCallLogClearReport clear_ai_call_log(
+        string repo_path, AiCallLogClearRequest request
+    );
+
+    [Throws=CoreError]
     RecoveryReport recover_on_startup(string repo_path);
 
     [Throws=CoreError]
@@ -476,6 +486,64 @@ dictionary AiCategorySuggestion {
     string? privacy_rule_id;
     i64? call_log_id;
     boolean requires_user_confirmation;
+};
+
+dictionary AiCallLogFilter {
+    AiCallLogFeature? feature;
+    AiCallLogRoute? route;
+    AiCallLogStatus? status;
+    i64? occurred_after;
+    i64? occurred_before;
+    string? search_query;
+};
+
+dictionary AiCallLogPagination {
+    i64 limit;
+    i64 offset;
+};
+
+dictionary AiCallLogRecord {
+    i64 id;
+    i64 occurred_at;
+    AiCallLogFeature feature;
+    i64? file_id;
+    string? file_display_name;
+    string? batch_id;
+    string? scope;
+    AiCallLogRoute? route;
+    string? provider_name;
+    string? model_name;
+    AiCallLogStatus status;
+    i64? duration_ms;
+    sequence<AiCallLogSentField> sent_fields;
+    boolean privacy_rules_checked;
+    string? privacy_rule_id;
+    string? privacy_rule_name;
+    AiCallLogSentField? matched_field_type;
+    string result_summary;
+    string? error_code;
+};
+
+dictionary AiCallLogPage {
+    i64 total_count;
+    sequence<AiCallLogRecord> records;
+    i64 limit;
+    i64 offset;
+    boolean has_more;
+    i64 retention_days;
+    string redaction_policy;
+};
+
+dictionary AiCallLogClearRequest {
+    AiCallLogClearScope scope;
+    sequence<i64> entry_ids;
+    i64? older_than;
+};
+
+dictionary AiCallLogClearReport {
+    i64 deleted_count;
+    i64 remaining_count;
+    i64 cleared_at;
 };
 
 dictionary RepoInitOptions {
@@ -1417,6 +1485,16 @@ enum AiCategorySuggestionSkipReason {
     "AiDisabled", "FeatureDisabled", "RuleResultConfident",
     "NoEligibleContext", "PrivacyRule", "ProviderUnavailable"
 };
+enum AiCallLogFeature {
+    "Classification", "Summary", "Tags", "SemanticSearch", "ProviderTest"
+};
+enum AiCallLogRoute { "Local", "Remote" };
+enum AiCallLogStatus { "Success", "Failed", "Skipped", "Unavailable" };
+enum AiCallLogSentField {
+    "FileName", "RepoRelativePath", "Extension", "ExtractedTextExcerpt",
+    "AiSummary", "NoteSummary", "TagCategoryContext"
+};
+enum AiCallLogClearScope { "All", "SelectedEntries", "OlderThan" };
 enum LocalModelAvailability {
     "Unknown", "Ready", "NotInstalled", "PathUnreadable",
     "VersionIncompatible", "Checking", "Verifying", "Loading",

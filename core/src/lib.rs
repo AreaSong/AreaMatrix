@@ -5,6 +5,7 @@
 
 uniffi::include_scaffolding!("area_matrix");
 
+mod ai_call_log;
 mod ai_classification_suggestion;
 mod ai_settings;
 pub mod api;
@@ -41,6 +42,11 @@ mod tags;
 pub mod tree;
 pub mod undo;
 
+pub use ai_call_log::{
+    AiCallLogClearReport, AiCallLogClearRequest, AiCallLogClearScope, AiCallLogFeature,
+    AiCallLogFilter, AiCallLogPage, AiCallLogPagination, AiCallLogRecord, AiCallLogRoute,
+    AiCallLogSentField, AiCallLogStatus,
+};
 pub use ai_classification_suggestion::{
     AiCategorySuggestion, AiCategorySuggestionContextField, AiCategorySuggestionContextPolicy,
     AiCategorySuggestionRequest, AiCategorySuggestionRoute, AiCategorySuggestionSkipReason,

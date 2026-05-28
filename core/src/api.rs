@@ -3,15 +3,16 @@
 use std::path::PathBuf;
 
 use crate::{
-    ai_classification_suggestion, ai_settings, batch_category, batch_delete,
+    ai_call_log, ai_classification_suggestion, ai_settings, batch_category, batch_delete,
     batch_rename as batch_rename_mod, classifier_correction, classifier_impact,
     classifier_rule_editor, classifier_rules, classify, db, icloud_conflicts,
     import_conflict_batch, local_model_status, note, recovery, redo, remote_provider_config,
-    repair, repo_init, repo_path, repo_scan, storage, sync, tree, AiCategorySuggestion,
-    AiCategorySuggestionRequest, AiConfig, AiConfigSnapshot, ApplyTagSuggestionsRequest,
-    BatchCategoryChangeReport, BatchCategoryPreviewReport, BatchDeleteMode,
-    BatchDeletePreviewReport, BatchDeleteReport, BatchRenamePreviewReport, BatchRenameReport,
-    BatchRenameRule, ChangeFilter, ChangeLogEntry, ClassifierCorrectionResult,
+    repair, repo_init, repo_path, repo_scan, storage, sync, tree, AiCallLogClearReport,
+    AiCallLogClearRequest, AiCallLogFilter, AiCallLogPage, AiCallLogPagination,
+    AiCategorySuggestion, AiCategorySuggestionRequest, AiConfig, AiConfigSnapshot,
+    ApplyTagSuggestionsRequest, BatchCategoryChangeReport, BatchCategoryPreviewReport,
+    BatchDeleteMode, BatchDeletePreviewReport, BatchDeleteReport, BatchRenamePreviewReport,
+    BatchRenameReport, BatchRenameRule, ChangeFilter, ChangeLogEntry, ClassifierCorrectionResult,
     ClassifierImpactPreviewRequest, ClassifierRule, ClassifierRuleCreateRequest,
     ClassifierRuleDeleteRequest, ClassifierRuleEditorSnapshot, ClassifierRuleUpdate,
     ClassifyResult, CoreError, CoreResult, DiagnosticsSnapshot, ExternalEvent, FileEntry,
@@ -364,6 +365,52 @@ pub fn suggest_category_with_ai(
     request: AiCategorySuggestionRequest,
 ) -> CoreResult<AiCategorySuggestion> {
     ai_classification_suggestion::suggest_category_with_ai(repo_path, request)
+}
+
+/// Lists redacted C3-05 AI call log rows for S3-05.
+///
+/// The contract exposes only audit metadata: feature, local/remote route,
+/// provider/model display names, status, duration, sent field categories,
+/// privacy rule snapshots, error codes, and sanitized result summaries. It must
+/// never return API keys, key fragments, full file contents, full prompts, full
+/// model outputs, full notes, provider raw responses, Keychain reference
+/// values, or absolute user paths.
+///
+/// Listing is read-only. It must not execute AI calls, clear logs, export files,
+/// reveal files, mutate AI settings, edit privacy rules, or touch user files.
+///
+/// # Errors
+///
+/// Returns `CoreError::Db { message }` for invalid filter/pagination shape or
+/// AI call log metadata query failures, and `CoreError::PermissionDenied {
+/// path }` when repository metadata cannot be inspected.
+pub fn list_ai_calls(
+    repo_path: String,
+    filter: AiCallLogFilter,
+    pagination: AiCallLogPagination,
+) -> CoreResult<AiCallLogPage> {
+    ai_call_log::list_ai_calls(repo_path, filter, pagination)
+}
+
+/// Clears local C3-05 AI call log rows without deleting user data.
+///
+/// This contract deletes only `ai_call_log` audit rows in the requested scope.
+/// It must not delete, move, rename, trash, overwrite, or reclassify user
+/// files, and it must not remove AI settings, provider metadata, Keychain
+/// credentials, summaries, tags, notes, classifier rules, generated overviews,
+/// change log, undo/redo state, or any AI results.
+///
+/// # Errors
+///
+/// Returns `CoreError::Db { message }` for invalid clear scope, selected ids,
+/// retention cutoff, or SQLite write failures. Returns
+/// `CoreError::PermissionDenied { path }` when repository metadata is not
+/// writable.
+pub fn clear_ai_call_log(
+    repo_path: String,
+    request: AiCallLogClearRequest,
+) -> CoreResult<AiCallLogClearReport> {
+    ai_call_log::clear_ai_call_log(repo_path, request)
 }
 
 /// Recovers AreaMatrix-owned startup residue before the UI opens.
