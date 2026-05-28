@@ -349,11 +349,10 @@ fn current_timestamp() -> i64 {
 
 fn map_metadata_error(error: CoreError) -> CoreError {
     match error {
+        CoreError::PermissionDenied { .. } | CoreError::Io { .. } => error,
         CoreError::RepoNotInitialized { .. }
         | CoreError::InvalidPath { .. }
-        | CoreError::Config { .. }
-        | CoreError::Io { .. }
-        | CoreError::PermissionDenied { .. } => CoreError::db("AI tag metadata is unavailable"),
+        | CoreError::Config { .. } => CoreError::db("AI tag metadata is unavailable"),
         other => other,
     }
 }

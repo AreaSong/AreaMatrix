@@ -514,7 +514,9 @@ pub fn clear_ai_summary(
 /// candidate tags, privacy references, or AI gate configuration. Returns
 /// `CoreError::FileNotFound { path }` when the target file id is invalid or
 /// missing, and `CoreError::Db { message }` when tag, file, or AI call-log
-/// metadata cannot be read.
+/// metadata cannot be read. Returns `CoreError::PermissionDenied { path }` or
+/// `CoreError::Io { message }` when repository metadata or allowed local
+/// context cannot be inspected.
 pub fn suggest_tags_with_ai(
     repo_path: String,
     request: AiTagSuggestionRequest,
@@ -541,7 +543,8 @@ pub fn suggest_tags_with_ai(
 /// missing confirmation, duplicate or invalid suggestion rows, unsafe
 /// provenance ids, or invalid tag names. Returns `CoreError::FileNotFound {
 /// path }` when the target file id is invalid or missing, and
-/// `CoreError::Db { message }` when tag metadata, change log, undo, or AI
+/// `CoreError::PermissionDenied { path }` when tag metadata cannot be written,
+/// and `CoreError::Db { message }` when tag metadata, change log, undo, or AI
 /// call-log provenance cannot be persisted.
 pub fn apply_ai_tag_suggestions(
     repo_path: String,

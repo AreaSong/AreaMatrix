@@ -7,6 +7,8 @@ use std::{
 };
 
 static LOCAL_RUNTIME_LOCK: Mutex<()> = Mutex::new(());
+const LOCAL_RUNTIME_ENV: &str = "AREAMATRIX_AI_TAGS_LOCAL_RUNTIME";
+const REMOTE_RUNTIME_ENV: &str = "AREAMATRIX_AI_TAGS_REMOTE_RUNTIME";
 
 #[derive(Clone)]
 pub struct RuntimeSuggestion {
@@ -46,7 +48,27 @@ impl AiTagsRuntime {
             payload_path.display(),
             response.replace('\'', "'\\''")
         );
-        install_runtime_script(&script_path, &script);
+        install_runtime_script(LOCAL_RUNTIME_ENV, &script_path, &script);
+        Self {
+            _lock: guard,
+            output,
+            payload_path,
+            marker_path: None,
+        }
+    }
+
+    pub fn remote(suggestions: Vec<RuntimeSuggestion>) -> Self {
+        let guard = runtime_guard();
+        let output = tempfile::tempdir().expect("create AI tags runtime directory");
+        let script_path = output.path().join("ai-tags-remote-runtime.sh");
+        let payload_path = output.path().join("payload.json");
+        let response = runtime_response(suggestions);
+        let script = format!(
+            "#!/bin/sh\ncat > \"{}\"\nprintf '%s\\n' '{}'\n",
+            payload_path.display(),
+            response.replace('\'', "'\\''")
+        );
+        install_runtime_script(REMOTE_RUNTIME_ENV, &script_path, &script);
         Self {
             _lock: guard,
             output,
@@ -66,7 +88,7 @@ impl AiTagsRuntime {
             payload_path.display(),
             marker_path.display()
         );
-        install_runtime_script(&script_path, &script);
+        install_runtime_script(LOCAL_RUNTIME_ENV, &script_path, &script);
         Self {
             _lock: guard,
             output,
@@ -86,7 +108,8 @@ impl AiTagsRuntime {
 
 impl Drop for AiTagsRuntime {
     fn drop(&mut self) {
-        std::env::remove_var("AREAMATRIX_AI_TAGS_LOCAL_RUNTIME");
+        std::env::remove_var(LOCAL_RUNTIME_ENV);
+        std::env::remove_var(REMOTE_RUNTIME_ENV);
         let _ = self.output.path();
     }
 }
@@ -113,13 +136,10 @@ fn runtime_response(suggestions: Vec<RuntimeSuggestion>) -> String {
     .to_string()
 }
 
-fn install_runtime_script(script_path: &Path, script: &str) {
+fn install_runtime_script(env_name: &str, script_path: &Path, script: &str) {
     fs::write(script_path, script).expect("write AI tags runtime script");
     make_executable(script_path);
-    std::env::set_var(
-        "AREAMATRIX_AI_TAGS_LOCAL_RUNTIME",
-        script_path.to_string_lossy().into_owned(),
-    );
+    std::env::set_var(env_name, script_path.to_string_lossy().into_owned());
 }
 
 fn make_executable(path: &Path) {
