@@ -6,8 +6,8 @@ use area_matrix_core::{
     evaluate_ai_privacy, list_ai_privacy_rules, update_ai_privacy_rules, AiFeatureKind,
     AiPrivacyEvaluationContext, AiPrivacyEvaluationReport, AiPrivacyEvaluationRequest,
     AiPrivacyEvaluationRoute, AiPrivacyFieldRule, AiPrivacyInputField,
-    AiPrivacyProviderScopeSnapshot, AiPrivacyRuleAppliesTo, AiPrivacyRuleInput,
-    AiPrivacyRuleKind, AiPrivacyRulesSnapshot, AiPrivacyRulesUpdateRequest, CoreResult,
+    AiPrivacyProviderScopeSnapshot, AiPrivacyRuleAppliesTo, AiPrivacyRuleInput, AiPrivacyRuleKind,
+    AiPrivacyRulesSnapshot, AiPrivacyRulesUpdateRequest, CoreResult,
 };
 use rusqlite::{params, Connection};
 

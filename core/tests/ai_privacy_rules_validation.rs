@@ -21,8 +21,7 @@ use validation_support::{
 fn ai_privacy_rules_validation_proves_ui_ready_success_gate_and_rule_paths() {
     let repo = remote_provider_common::initialized_repo();
     fs::write(repo.path().join("README.md"), "user readme\n").expect("write user README");
-    fs::write(repo.path().join("AREAMATRIX.md"), "user overview\n")
-        .expect("write user AREAMATRIX");
+    fs::write(repo.path().join("AREAMATRIX.md"), "user overview\n").expect("write user AREAMATRIX");
     let before = snapshot(repo.path());
     let provider_scope = configure_remote_provider(repo.path());
 
@@ -125,8 +124,7 @@ fn ai_privacy_rules_validation_proves_ui_ready_success_gate_and_rule_paths() {
 fn ai_privacy_rules_validation_covers_failure_paths_and_rollback() {
     let repo = remote_provider_common::initialized_repo();
     fs::write(repo.path().join("README.md"), "user readme\n").expect("write user README");
-    fs::write(repo.path().join("AREAMATRIX.md"), "user overview\n")
-        .expect("write user AREAMATRIX");
+    fs::write(repo.path().join("AREAMATRIX.md"), "user overview\n").expect("write user AREAMATRIX");
     let provider_scope = disabled_provider_scope();
     let baseline = update_request(
         false,
