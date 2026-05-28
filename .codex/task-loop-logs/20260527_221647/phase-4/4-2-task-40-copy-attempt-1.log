@@ -1,0 +1,58 @@
+一、执行结论
+
+- 已完成。
+- 结论：C3-08 `semantic-search` 可以作为后续 page-feature task 的真实 Core 依赖；未发现阻塞 S3-08 / S3-10 后续 UI 接入的问题。
+
+二、执行范围
+
+- 单任务：`4-2/task-40`
+- 修改文件清单：无。本轮未修改文件。
+- 注意：工作树原本已有 `.codex/task-loop-runs/20260527_221647/summary.json`、`tasks/prompts/_shared/progress.json` 两处本地修改，不是本轮产生。
+
+三、完成情况
+
+- capability spec、Core API、UDL、Rust 实现和测试已交叉检查：通过。
+- 消费页面需要的状态、错误和副作用已覆盖：通过。C3-08 提供 semantic/normal 分组、fallback reason、index status、dedupe、call log id、privacy rule id 等页面消费字段。
+- 未实现 control map 之外能力：通过。普通搜索、Smart List、AI call log 列表、隐私规则 CRUD、fallback reason matrix 仍由各自能力覆盖。
+- Forbidden Touches：未触碰 `apps/**`。
+
+关键证据包括：
+- C3-08 spec 要求 `semantic_search`、`build_embedding_index`、分组输出、fallback、隐私与错误码：[C3-08-semantic-search.md](/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-3-ai/C3-08-semantic-search.md:9)
+- Rust public contract 暴露页面需要的结果结构与 rustdoc：[semantic_search.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/semantic_search.rs:128)
+- 实现先取普通搜索 fallback，再处理 AI settings、provider、privacy、index 与 call log：[implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/semantic_search/implementation.rs:20)
+- 隐私规则命中文件跳过，不写入 embedding index entry：[store.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/semantic_search/store.rs:56)
+- semantic/normal dedupe 与低置信度由 Core 结构化输出：[matches.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/semantic_search/matches.rs:20)
+
+四、工程质量
+
+- 代码结构清晰：public contract、implementation、store、privacy、matches、call_log 分层明确。
+- 注释 / rustdoc：public Rust API 和结构体字段具备说明，错误语义有 `# Errors`。
+- 错误与边界：覆盖 invalid input、permission denied、DB/call-log rollback、privacy skip、remote provider unavailable、normal search unavailable。
+- 未发现占位、硬编码通过态、mock-only 或一次性实现。当前实现是本地 semantic index 的最小真实闭环，远程实际 embedding/OCR/sync 属于文档延后或相邻能力范围。
+
+五、验证情况
+
+已运行：
+
+```bash
+./dev check task 4-2/task-40
+```
+
+结果：通过。该命令实际执行并通过：
+
+- `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`
+- `git diff --check`
+- `cd core && cargo fmt --all -- --check`
+- `cd core && cargo clippy --all-targets --all-features -- -D warnings`
+- `cargo test --test semantic_search_contract_api -- --nocapture`：4 passed
+- `cargo test --test semantic_search_failure_recovery -- --nocapture`：7 passed
+- `cargo test --test semantic_search_implementation -- --nocapture`：9 passed
+- `cargo test --test semantic_search_validation -- --nocapture`：2 passed
+
+未运行：无。本 task manifest 只要求 `./dev check task 4-2/task-40`，未升级到 `cargo test --workspace` 或 `./dev check all`。
+
+六、风险与后续
+
+- 剩余风险：后续 S3-08/S3-10 UI 接入仍需验证 Swift 页面是否正确消费这些 Core 字段；这不属于当前 Core integration verify 的阻断项。
+- 建议下一个任务：继续执行 S3-08 相关 page-feature task，从 control map 看对应后续是 `4-2/task-67` 起的语义搜索页面接入链路。
+
