@@ -1,0 +1,48 @@
+一、执行结论
+
+已完成。
+
+二、执行范围
+
+单任务：`4-2/task-44`。  
+新增文件：
+- [core/tests/ai_privacy_rules_validation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/ai_privacy_rules_validation.rs)
+- [core/tests/support/ai_privacy_rules_validation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/support/ai_privacy_rules_validation.rs)
+
+未触碰 `apps/**`。工作区已有的 `.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json` 保留未处理。
+
+三、完成情况
+
+- 补齐 C3-09 validation 测试：覆盖默认保守策略、远程 provider scope、规则命中、字段过滤、关闭 `privacy_gate_enabled`、失败回滚和无密钥泄露。
+- 验证 Core API / UDL / Rust 实现一致：新增测试用 `include_str!` 锁定 task、capability spec、control map、testing doc、Core API、UDL、Rust public surface、persistence/evaluation/validation/db 实现关键片段。
+- 未新增业务功能，只新增测试和测试 support helper。
+- Forbidden Touches：未触碰。
+
+四、工程质量
+
+测试入口文件 205 行，support helper 469 行，符合当前文件长度阈值。测试走真实 Core API 和临时 repo，不靠硬编码通过态；错误路径覆盖 Config、Db 回滚、重复规则/字段、unsafe context。未新增依赖，未新增 public Rust API，因此无 rustdoc 同步需求。
+
+五、验证情况
+
+已运行并通过：
+
+```bash
+cargo test --test ai_privacy_rules_validation -- --nocapture
+./dev check task 4-2/task-44
+```
+
+`./dev check task 4-2/task-44` 通过内容：
+- `prompt doctor`: OK
+- `git diff --check`: OK
+- `ai_privacy_rules_contract_api`: 4 passed
+- `ai_privacy_rules_failure_recovery`: 8 passed
+- `ai_privacy_rules_implementation`: 4 passed
+- `ai_privacy_rules_validation`: 3 passed
+
+未运行：未运行全量 `cargo test --workspace` / clippy / `./dev check all`，因为本普通 atomic Core task 的 manifest 验证上限是 `./dev check task 4-2/task-44`。
+
+六、风险与后续
+
+剩余风险：未做 macOS UI 接入验证；这属于后续 S3-09/S3-10 页面 task。  
+建议下一个任务：继续 `4-2/task-45` 做 C3-09 integration verify。
+
