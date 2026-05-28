@@ -170,7 +170,7 @@ fn ai_summary_contract_rejects_invalid_inputs_without_fake_success() {
 
     assert!(matches!(
         generate_ai_summary("/tmp/repo".to_owned(), generation_request()),
-        Err(CoreError::Db { .. })
+        Err(CoreError::Config { .. })
     ));
 
     let mut empty_summary = save_request();
@@ -198,7 +198,7 @@ fn ai_summary_contract_rejects_invalid_inputs_without_fake_success() {
 
     assert!(matches!(
         save_ai_summary("/tmp/repo".to_owned(), save_request()),
-        Err(CoreError::Db { .. })
+        Err(CoreError::Config { .. })
     ));
 
     let mut missing_confirmation = clear_request();
@@ -210,7 +210,7 @@ fn ai_summary_contract_rejects_invalid_inputs_without_fake_success() {
 
     assert!(matches!(
         clear_ai_summary("/tmp/repo".to_owned(), clear_request()),
-        Err(CoreError::Db { .. })
+        Err(CoreError::Config { .. })
     ));
 }
 

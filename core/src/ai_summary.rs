@@ -6,6 +6,11 @@ use serde::{Deserialize, Serialize};
 
 use crate::{CoreError, CoreResult};
 
+mod call_log;
+mod context;
+mod executor;
+mod implementation;
+
 const AREA_MATRIX_DIR: &str = ".areamatrix";
 const MAX_POLICY_REF_LEN: usize = 128;
 const MAX_DRAFT_ID_LEN: usize = 128;
@@ -210,27 +215,21 @@ pub(crate) fn generate_ai_summary(
     repo_path: String,
     request: AiSummaryGenerationRequest,
 ) -> CoreResult<AiSummaryDraft> {
-    validate_repo_path(&repo_path)?;
-    validate_generation_request(&request)?;
-    Err(CoreError::db("AI summary metadata unavailable"))
+    implementation::generate_ai_summary(repo_path, request)
 }
 
 pub(crate) fn save_ai_summary(
     repo_path: String,
     request: AiSummarySaveRequest,
 ) -> CoreResult<AiSummarySaveReport> {
-    validate_repo_path(&repo_path)?;
-    validate_save_request(&request)?;
-    Err(CoreError::db("AI summary metadata unavailable"))
+    implementation::save_ai_summary(repo_path, request)
 }
 
 pub(crate) fn clear_ai_summary(
     repo_path: String,
     request: AiSummaryClearRequest,
 ) -> CoreResult<AiSummaryClearReport> {
-    validate_repo_path(&repo_path)?;
-    validate_clear_request(&request)?;
-    Err(CoreError::db("AI summary metadata unavailable"))
+    implementation::clear_ai_summary(repo_path, request)
 }
 
 fn validate_repo_path(repo_path: &str) -> CoreResult<()> {
