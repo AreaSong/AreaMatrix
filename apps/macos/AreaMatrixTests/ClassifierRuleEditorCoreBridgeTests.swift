@@ -157,6 +157,102 @@ final class ClassifierRuleEditorCoreBridgeTests: XCTestCase {
         XCTAssertFalse(FileManager.default.fileExists(atPath: repoURL.appendingPathComponent("README.md").path))
         XCTAssertFalse(FileManager.default.fileExists(atPath: repoURL.appendingPathComponent("AREAMATRIX.md").path))
     }
+
+    @MainActor
+    func testS302LocalModelStatusModelRefreshesThroughInjectedCoreBridgeReader() async {
+        let reader = S302RecordingLocalModelStatusReader(
+            status: .s302Snapshot(
+                storageLocation: "/tmp/s302-models",
+                availability: .notInstalled,
+                recommendedAction: .openInstallHelp
+            ),
+            location: .s302Location(folderPath: "/tmp/s302-models", openable: false)
+        )
+        let copier = S302RecordingDiagnosticsCopier()
+        let model = LocalModelStatusModel(
+            repoPath: "/tmp/s302",
+            storageLocation: "/tmp/s302-models",
+            statusReader: reader,
+            installHelpOpener: S302RecordingInstallHelpOpener(),
+            folderOpener: S302RecordingFolderOpener(),
+            diagnosticsCopier: copier,
+            errorMapper: S302StaticErrorMapper()
+        )
+
+        await model.checkStatus()
+        model.showDiagnostics()
+        model.copyDiagnosticsSummary()
+        let requests = await reader.statusRequests()
+
+        XCTAssertEqual(requests.map(\.repoPath), ["/tmp/s302"])
+        XCTAssertEqual(requests.first?.request.modelID, LocalModelStatusModel.defaultModelID)
+        XCTAssertEqual(requests.first?.request.storageLocation, "/tmp/s302-models")
+        XCTAssertEqual(model.snapshot?.availability, .notInstalled)
+        XCTAssertEqual(model.statusText, "Status: Not installed")
+        XCTAssertEqual(copier.summaries, ["manifest: missing; runtime: unavailable"])
+    }
+
+    @MainActor
+    func testS302OpenModelLocationUsesC302LocationResultWithoutCreatingFallbackPath() async {
+        let reader = S302RecordingLocalModelStatusReader(
+            status: .s302Snapshot(
+                storageLocation: "/tmp/s302-models",
+                availability: .ready,
+                recommendedAction: .openModelLocation
+            ),
+            location: .s302Location(folderPath: "/tmp/s302-models", openable: true)
+        )
+        let folderOpener = S302RecordingFolderOpener()
+        let model = LocalModelStatusModel(
+            repoPath: "/tmp/s302",
+            storageLocation: "/tmp/s302-models",
+            statusReader: reader,
+            installHelpOpener: S302RecordingInstallHelpOpener(),
+            folderOpener: folderOpener,
+            diagnosticsCopier: S302RecordingDiagnosticsCopier(),
+            errorMapper: S302StaticErrorMapper()
+        )
+
+        await model.checkStatus()
+        await model.openModelLocation()
+        let folderRequests = await reader.folderRequests()
+
+        XCTAssertEqual(folderRequests.map(\.repoPath), ["/tmp/s302"])
+        XCTAssertEqual(folderRequests.first?.request.storageLocation, "/tmp/s302-models")
+        XCTAssertEqual(folderOpener.locations.map(\.folderPath), ["/tmp/s302-models"])
+        XCTAssertEqual(model.feedback, .success("Model location opened."))
+    }
+
+    @MainActor
+    func testS302DefaultCoreBridgeReadsLocalModelStatusWithoutCreatingModelFolder() async throws {
+        let repoURL = try temporaryS219Repo()
+        defer { try? FileManager.default.removeItem(at: repoURL) }
+        let bridge = CoreBridge()
+        try await bridge.initializeEmptyRepository(repoPath: repoURL.path)
+        let modelURL = repoURL.appendingPathComponent("Models/areamatrix-local-classifier", isDirectory: true)
+        let request = LocalModelStatusRequestState(
+            modelID: LocalModelStatusModel.defaultModelID,
+            storageLocation: modelURL.path,
+            cachedStatus: nil
+        )
+
+        let status = try await bridge.getLocalModelStatus(repoPath: repoURL.path, request: request)
+        let location = try await bridge.locateLocalModelFolder(
+            repoPath: repoURL.path,
+            request: LocalModelFolderRequestState(
+                modelID: LocalModelStatusModel.defaultModelID,
+                storageLocation: modelURL.path
+            )
+        )
+
+        XCTAssertEqual(status.modelID, LocalModelStatusModel.defaultModelID)
+        XCTAssertEqual(status.storageLocation, modelURL.path)
+        XCTAssertEqual(status.availability, .notInstalled)
+        XCTAssertEqual(status.recommendedAction, .openInstallHelp)
+        XCTAssertFalse(location.exists)
+        XCTAssertFalse(location.openable)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: modelURL.path))
+    }
 }
 
 private actor S301StaticAISettingsLoader: CoreAISettingsLoading {
@@ -220,6 +316,92 @@ private actor S301StaticAIErrorMapper: CoreErrorMapping {
     }
 }
 
+private actor S302RecordingLocalModelStatusReader: CoreLocalModelStatusReading {
+    struct StatusRequest: Equatable {
+        var repoPath: String
+        var request: LocalModelStatusRequestState
+    }
+
+    struct FolderRequest: Equatable {
+        var repoPath: String
+        var request: LocalModelFolderRequestState
+    }
+
+    private let status: LocalModelStatusState
+    private let location: LocalModelFolderLocationState
+    private var recordedStatusRequests: [StatusRequest] = []
+    private var recordedFolderRequests: [FolderRequest] = []
+
+    init(status: LocalModelStatusState, location: LocalModelFolderLocationState) {
+        self.status = status
+        self.location = location
+    }
+
+    func getLocalModelStatus(
+        repoPath: String,
+        request: LocalModelStatusRequestState
+    ) async throws -> LocalModelStatusState {
+        recordedStatusRequests.append(StatusRequest(repoPath: repoPath, request: request))
+        return status
+    }
+
+    func locateLocalModelFolder(
+        repoPath: String,
+        request: LocalModelFolderRequestState
+    ) async throws -> LocalModelFolderLocationState {
+        recordedFolderRequests.append(FolderRequest(repoPath: repoPath, request: request))
+        return location
+    }
+
+    func statusRequests() -> [StatusRequest] {
+        recordedStatusRequests
+    }
+
+    func folderRequests() -> [FolderRequest] {
+        recordedFolderRequests
+    }
+}
+
+private struct S302StaticErrorMapper: CoreErrorMapping {
+    func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
+        CoreErrorMappingSnapshot(
+            kind: .io,
+            userMessage: String(describing: error),
+            severity: .medium,
+            suggestedAction: "Retry status check",
+            recoverability: .retryable,
+            rawContext: "S3-02"
+        )
+    }
+}
+
+@MainActor
+private final class S302RecordingInstallHelpOpener: LocalModelInstallHelpOpening {
+    private(set) var openCount = 0
+
+    func openLocalModelInstallHelp() throws {
+        openCount += 1
+    }
+}
+
+@MainActor
+private final class S302RecordingFolderOpener: LocalModelFolderOpening {
+    private(set) var locations: [LocalModelFolderLocationState] = []
+
+    func openLocalModelFolder(_ location: LocalModelFolderLocationState) throws {
+        locations.append(location)
+    }
+}
+
+@MainActor
+private final class S302RecordingDiagnosticsCopier: LocalModelDiagnosticsCopying {
+    private(set) var summaries: [String] = []
+
+    func copyLocalModelDiagnostics(_ summary: String) throws {
+        summaries.append(summary)
+    }
+}
+
 private extension AISettingsSnapshot {
     static func s301Default(repoPath: String, aiEnabled: Bool = false) -> AISettingsSnapshot {
         s301Snapshot(config: AISettingsConfigSnapshot(
@@ -242,6 +424,46 @@ private extension AISettingsSnapshot {
             config: normalized,
             capabilities: AISettingsCapabilitySnapshot.derived(from: normalized),
             updatedAt: 1_778_000_000
+        )
+    }
+}
+
+private extension LocalModelStatusState {
+    static func s302Snapshot(
+        storageLocation: String,
+        availability: LocalModelAvailabilityState,
+        recommendedAction: LocalModelRecommendedActionState
+    ) -> LocalModelStatusState {
+        LocalModelStatusState(
+            modelID: LocalModelStatusModel.defaultModelID,
+            storageLocation: storageLocation,
+            availability: availability,
+            version: nil,
+            sizeBytes: nil,
+            lastError: availability == .ready ? nil : "Model is not installed",
+            recommendedAction: recommendedAction,
+            lastCheckedAt: 1_778_000_052,
+            diagnosticsSummary: "manifest: missing; runtime: unavailable",
+            featureStatuses: [
+                LocalModelFeatureStatusState(
+                    feature: .classificationSuggestions,
+                    available: availability == .ready,
+                    unavailableReason: availability == .ready ? nil : "Local model unavailable"
+                )
+            ]
+        )
+    }
+}
+
+private extension LocalModelFolderLocationState {
+    static func s302Location(folderPath: String, openable: Bool) -> LocalModelFolderLocationState {
+        LocalModelFolderLocationState(
+            modelID: LocalModelStatusModel.defaultModelID,
+            folderPath: folderPath,
+            exists: openable,
+            readable: openable,
+            openable: openable,
+            unavailableReason: openable ? nil : "The folder is not available."
         )
     }
 }

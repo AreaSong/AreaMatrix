@@ -256,7 +256,7 @@ private extension AISettingsProviderPreference {
     }
 }
 
-private extension AISettingsFeatureKind {
+extension AISettingsFeatureKind {
     init(coreFeature: AiFeatureKind) {
         switch coreFeature {
         case .classificationSuggestions: self = .classificationSuggestions

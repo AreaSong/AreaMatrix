@@ -45,8 +45,114 @@ extension CoreBridge: CoreMetadataRepairing {
     }
 }
 
+extension CoreBridge: CoreLocalModelStatusReading {
+    func getLocalModelStatus(
+        repoPath: String,
+        request: LocalModelStatusRequestState
+    ) async throws -> LocalModelStatusState {
+        try await Task.detached(priority: .userInitiated) {
+            try LocalModelStatusState(coreSnapshot: getCoreLocalModelStatus(
+                repoPath: repoPath,
+                request: LocalModelStatusRequest(snapshot: request)
+            ))
+        }.value
+    }
+
+    func locateLocalModelFolder(
+        repoPath: String,
+        request: LocalModelFolderRequestState
+    ) async throws -> LocalModelFolderLocationState {
+        try await Task.detached(priority: .userInitiated) {
+            try LocalModelFolderLocationState(coreLocation: getCoreLocalModelFolder(
+                repoPath: repoPath,
+                request: LocalModelFolderRequest(snapshot: request)
+            ))
+        }.value
+    }
+}
+
 private func repairCoreMetadata(repoPath: String, options: RepairOptions) throws -> RepairReport {
     try repairMetadata(repoPath: repoPath, options: options)
+}
+
+private func getCoreLocalModelStatus(
+    repoPath: String,
+    request: LocalModelStatusRequest
+) throws -> LocalModelStatusSnapshot {
+    try getLocalModelStatus(repoPath: repoPath, request: request)
+}
+
+private func getCoreLocalModelFolder(
+    repoPath: String,
+    request: LocalModelFolderRequest
+) throws -> LocalModelFolderLocation {
+    try locateLocalModelFolder(repoPath: repoPath, request: request)
+}
+
+extension LocalModelStatusState {
+    init(coreSnapshot: LocalModelStatusSnapshot) {
+        modelID = coreSnapshot.modelId
+        storageLocation = coreSnapshot.storageLocation
+        availability = LocalModelAvailabilityState(coreAvailability: coreSnapshot.availability)
+        version = coreSnapshot.version
+        sizeBytes = coreSnapshot.sizeBytes
+        lastError = coreSnapshot.lastError
+        recommendedAction = LocalModelRecommendedActionState(coreAction: coreSnapshot.recommendedAction)
+        lastCheckedAt = coreSnapshot.lastCheckedAt
+        diagnosticsSummary = coreSnapshot.diagnosticsSummary
+        featureStatuses = coreSnapshot.featureStatuses.map(LocalModelFeatureStatusState.init(coreStatus:))
+    }
+}
+
+extension LocalModelStatusRequest {
+    init(snapshot: LocalModelStatusRequestState) {
+        self.init(
+            modelId: snapshot.modelID,
+            storageLocation: snapshot.storageLocation,
+            cachedStatus: snapshot.cachedStatus.map(LocalModelCachedStatus.init(snapshot:))
+        )
+    }
+}
+
+extension LocalModelFolderRequest {
+    init(snapshot: LocalModelFolderRequestState) {
+        self.init(modelId: snapshot.modelID, storageLocation: snapshot.storageLocation)
+    }
+}
+
+private extension LocalModelFeatureStatusState {
+    init(coreStatus: LocalModelFeatureStatus) {
+        feature = AISettingsFeatureKind(coreFeature: coreStatus.feature)
+        available = coreStatus.available
+        unavailableReason = coreStatus.unavailableReason
+    }
+}
+
+private extension LocalModelCachedStatus {
+    init(snapshot: LocalModelCachedStatusState) {
+        self.init(
+            modelId: snapshot.modelID,
+            storageLocation: snapshot.storageLocation,
+            availability: LocalModelAvailability(snapshotAvailability: snapshot.availability),
+            version: snapshot.version,
+            sizeBytes: snapshot.sizeBytes,
+            lastError: snapshot.lastError,
+            recommendedAction: LocalModelRecommendedAction(snapshotAction: snapshot.recommendedAction),
+            lastCheckedAt: snapshot.lastCheckedAt,
+            diagnosticsSummary: snapshot.diagnosticsSummary
+        )
+    }
+}
+
+private extension LocalModelFolderLocationState {
+    init(coreLocation: LocalModelFolderLocation) {
+        modelID = coreLocation.modelId
+        folderPath = coreLocation.folderPath
+        exists = coreLocation.exists
+        readable = coreLocation.readable
+        openable = coreLocation.openable
+        unavailableReason = coreLocation.unavailableReason
+    }
 }
 
 extension TagSuggestionApplyReportSnapshot {

@@ -208,6 +208,7 @@ private struct AISettingsFeatureRow: View {
 
 struct AISettingsPane: View {
     @StateObject private var model: AISettingsModel
+    @State private var isLocalModelStatusPresented = false
 
     init(repoPath: String) {
         _model = StateObject(wrappedValue: AISettingsModel(repoPath: repoPath))
@@ -227,6 +228,12 @@ struct AISettingsPane: View {
         }
         .task {
             await model.load()
+        }
+        .sheet(isPresented: $isLocalModelStatusPresented) {
+            LocalModelStatusView(
+                model: LocalModelStatusModel(repoPath: model.repoPath),
+                onClose: { isLocalModelStatusPresented = false }
+            )
         }
     }
 
@@ -331,7 +338,8 @@ struct AISettingsPane: View {
             .disabled(writesDisabled)
             .frame(maxWidth: 360)
             HStack {
-                Button("Local model status", action: model.openLocalModelStatusEntry)
+                Button("Local model status", action: openLocalModelStatus)
+                    .accessibilityIdentifier("S3-02-C3-02-open-local-model-status")
                 Button("Configure remote AI", action: model.openRemoteConfigurationEntry)
             }
         }
@@ -480,14 +488,9 @@ struct AISettingsPane: View {
     private func pauseAllAI() {
         Task { await model.pauseAllAI() }
     }
-}
 
-private struct AISettingsFeatureRowSnapshot: Identifiable, Equatable {
-    var feature: AISettingsFeatureKind
-    var enabled: Bool
-    var providerLabel: String
-    var remoteScope: String
-    var disabledReason: String?
-
-    var id: String { feature.rawValue }
+    private func openLocalModelStatus() {
+        model.openLocalModelStatusEntry()
+        isLocalModelStatusPresented = true
+    }
 }
