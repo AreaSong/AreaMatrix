@@ -6,6 +6,19 @@ use serde::{Deserialize, Serialize};
 
 use crate::{CoreError, CoreResult, SearchFileResult, SearchFilter, SearchPagination, SearchScope};
 
+#[path = "semantic_search/call_log.rs"]
+mod call_log;
+#[path = "semantic_search/fallback.rs"]
+mod fallback;
+#[path = "semantic_search/implementation.rs"]
+mod implementation;
+#[path = "semantic_search/matches.rs"]
+mod matches;
+#[path = "semantic_search/privacy.rs"]
+mod privacy;
+#[path = "semantic_search/store.rs"]
+mod store;
+
 const AREA_MATRIX_DIR: &str = ".areamatrix";
 const MAX_QUERY_LEN: usize = 512;
 const MAX_POLICY_REF_LEN: usize = 128;
@@ -208,7 +221,7 @@ pub fn semantic_search(
     validate_query(&query)?;
     validate_filter(&filter)?;
     validate_pagination(&pagination)?;
-    Err(CoreError::db("semantic search index metadata unavailable"))
+    implementation::semantic_search(repo_path, query, filter, pagination)
 }
 
 /// Starts a C3-08 semantic embedding index build after explicit confirmation.
@@ -232,9 +245,7 @@ pub fn build_embedding_index(
 ) -> CoreResult<SemanticIndexBuildReport> {
     validate_repo_path(&repo_path)?;
     validate_index_scope(&scope)?;
-    Err(CoreError::db(
-        "semantic embedding index metadata unavailable",
-    ))
+    implementation::build_embedding_index(repo_path, scope)
 }
 
 fn validate_repo_path(repo_path: &str) -> CoreResult<()> {

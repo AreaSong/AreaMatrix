@@ -1,0 +1,61 @@
+一、执行结论
+
+已完成。`4-2/task-37` 的 C3-08 semantic-search repair retry 已按上次验收失败点修复，并通过当前 manifest 指定验证。
+
+二、执行范围
+
+单任务：`4-2/task-37`
+
+修改文件清单：
+- `core/src/semantic_search.rs`
+- `core/src/semantic_search/call_log.rs`
+- `core/src/semantic_search/fallback.rs`
+- `core/src/semantic_search/implementation.rs`
+- `core/src/semantic_search/matches.rs`
+- `core/src/semantic_search/privacy.rs`
+- `core/src/semantic_search/store.rs`
+- `core/src/semantic_search/store/db.rs`
+- `core/src/semantic_search/store/types.rs`
+- `core/tests/semantic_search_implementation.rs`
+- `core/tests/support/semantic_search_common.rs`
+
+未修改 `apps/**`，未修改 `core/area_matrix.udl`。
+
+三、完成情况
+
+核对清单全部完成：
+- 只实现 C3-08，未扩展到其他 C* 能力。
+- semantic 结果已应用 `SearchFilter`、`SearchPagination`、scope、category、tags 等输入边界。
+- `relevance`、`matched_reason`、`used_fields` 改为基于真实匹配字段和 query token 计算，不再固定硬编码。
+- embedding index 构建读取受限文件正文摘录，并在写入 semantic index 前应用隐私规则。
+- Rust Core 未依赖平台 UI API。
+- 补充最小实现测试，未做页面接入。
+
+完成标准全部满足：
+- C3-08 核心行为可由 contract + implementation 测试验证。
+- 未触碰用户文件写入边界；测试覆盖用户 `README.md` 不被改写。
+
+四、工程质量
+
+代码按职责拆分为 implementation、store/db、store/types、privacy、matches、call_log、fallback；单文件均低于 500 行。隐私规则消费现有 repo metadata，不实现 C3-09 CRUD；文件内容只做有限 UTF-8 摘录读取，并且不写入用户文件。没有 mock-only、固定评分、固定 matched reason 或一次性脚本化实现。
+
+五、验证情况
+
+已运行并通过：
+- `cargo test --test semantic_search_contract_api -- --nocapture`：4 passed
+- `cargo test --test semantic_search_implementation -- --nocapture`：9 passed
+- `cargo fmt`
+- `git diff --check`
+- `./dev check task 4-2/task-37`
+
+`./dev check task 4-2/task-37` 通过内容：
+- prompt doctor：OK
+- diff check：OK
+- `semantic_search_contract_api`：4 passed
+- `semantic_search_implementation`：9 passed
+
+六、风险与后续
+
+剩余风险：本任务仍是 C3-08 最小 Core 闭环，本地 semantic index 仍是基于受限文本 term 的可测试实现，不包含真实 embedding runtime、OCR embedding、跨设备 embedding sync、pause/cancel 队列等延后范围。
+
+建议下一个任务：进入 `4-2/task-37` 的 verify-ready 验收；验收通过后再按 manifest 流程推进后续 C3-08 failure-edge / validation / integration verify。
