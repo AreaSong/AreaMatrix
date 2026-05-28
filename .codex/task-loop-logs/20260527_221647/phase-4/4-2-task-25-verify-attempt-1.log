@@ -1,0 +1,81 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-2/task-25`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-2-stage3-ai/task-25-c3-05-integration-verify.md`
+- 验收对象：C3-05 `ai-call-log` Core integration verify
+- 涉及范围：`core/src/**`、`core/area_matrix.udl`、`core/tests/**`
+- 禁止范围：`apps/**`
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：0
+- 通过项数：10
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：capability spec、Core API、UDL、Rust 实现和测试交叉检查
+- 结果：通过
+- 证据：C3-05 spec 声明 `list_ai_calls` / `clear_ai_call_log`、不含密钥和完整文件内容、读写 `ai_call_log`；Core API 与 UDL 均声明相同接口、filter/page/record/clear 类型和 enum；Rust 暴露 `list_ai_calls`、`clear_ai_call_log`，并连接 `db::list_ai_call_log_rows` / `db::clear_ai_call_log_rows`；测试覆盖 contract、implementation、failure、validation。
+- 涉及文件：`docs/core/capability-specs/stage-3-ai/C3-05-ai-call-log.md:7`，`docs/api/core-api.md:2402`，`core/area_matrix.udl:61`，`core/src/ai_call_log.rs:195`，`core/tests/ai_call_log_validation.rs:233`
+
+- 项目：消费页面需要的状态、错误和副作用覆盖
+- 结果：通过
+- 证据：S3-05 需要远程标记、Skipped、Provider Test、清除/删除不影响用户文件、90 天保留、脱敏；Core API 提供表格/详情/过滤状态、默认 90 天、`Db`/`PermissionDenied`、清除只删 `ai_call_log`；测试验证脱敏、过滤、分页、清除范围、失败回滚和用户文件不变。
+- 涉及文件：`docs/ux/page-specs/stage-3-ai/S3-05-ai-call-log.md:111`，`docs/api/core-api.md:2448`，`core/tests/ai_call_log_validation.rs:32`，`core/tests/ai_call_log_failure_recovery.rs:234`
+
+- 项目：没有实现 control map 之外的能力
+- 结果：通过
+- 证据：control map 对 S3-05 仅映射 C3-05 `list/clear AI log`；Core API 明确不实现 redacted export、保存面板、Reveal file、AI 调用执行或相邻页面能力；contract test 检查 `ai_call_log.rs` 不包含远程执行、provider enable、AI config 写入、分类规则保存、导入/删除/移动等相邻能力。
+- 涉及文件：`docs/architecture/stage-3-control-map.md:13`，`docs/api/core-api.md:2507`，`core/tests/ai_call_log_contract_api.rs:341`
+
+- 项目：Expected New Paths
+- 结果：通过
+- 证据：`core/src/**`、`core/area_matrix.udl`、`core/tests/**` 均存在，C3-05 实现与测试已落地。
+- 涉及文件：`core/src/ai_call_log.rs:1`，`core/area_matrix.udl:61`，`core/tests/ai_call_log_implementation.rs:181`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git diff --name-only -- apps` 输出为空，未发现 `apps/**` 被触碰。
+- 涉及文件：`apps/**`
+
+- 项目：任务要求验证
+- 结果：通过
+- 证据：已运行 `./dev check task 4-2/task-25`，结果通过；包括 prompt doctor、diff check、Core quality gate、4 个 C3-05 目标测试文件，共 17 个测试通过。
+- 涉及文件：`./dev`，`core/tests/ai_call_log_contract_api.rs`，`core/tests/ai_call_log_failure_recovery.rs`，`core/tests/ai_call_log_implementation.rs`，`core/tests/ai_call_log_validation.rs`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。`core/src/ai_call_log.rs` 保持在 499 行，低于 500 行上限；接口层、校验、DB 查询/删除、schema/helper 分层清楚。
+- 注释 / rustdoc / 文档同步：通过。新增 public Rust 类型与 API 有 rustdoc；Core API、UDL、capability spec、control map、UX spec 被测试锁定。
+- 错误处理与边界处理：通过。无生产路径 `unwrap()`/`expect()`；无效输入、schema 损坏、权限失败、删除失败均返回结构化错误；清除失败回滚并保持用户文件不变。
+- 测试与验证覆盖：通过。contract、implementation、failure recovery、validation 覆盖成功路径、过滤分页、脱敏、清除范围、失败回滚、错误码和用户文件安全。
+- 占位、硬编码、mock-only、一次性实现检查：通过。C3-05 连接真实 SQLite `ai_call_log` 读写路径；没有用 mock-only 或静态通过态替代业务闭环。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-2/task-25`
+- 通过：`python3 tasks/prompts/_shared/prompt_pipeline.py doctor`，`git diff --check`，`cargo fmt --all -- --check`，`cargo clippy --all-targets --all-features -- -D warnings`
+- 通过：`cargo test --test ai_call_log_contract_api -- --nocapture`，4 passed
+- 通过：`cargo test --test ai_call_log_failure_recovery -- --nocapture`，6 passed
+- 通过：`cargo test --test ai_call_log_implementation -- --nocapture`，3 passed
+- 通过：`cargo test --test ai_call_log_validation -- --nocapture`，4 passed
+- 失败：无
+- 缺失：无
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。C3-05 可以作为后续 S3-05 page-feature task 的真实 Core 依赖。
+- 当前工作区存在既有脏文件：`.codex/task-loop-runs/20260527_221647/summary.json`、`tasks/prompts/_shared/progress.json`；它们不是本次验收引入，且未触碰 `apps/**` 或 C3-05 实现边界。
+
+VERIFY_RESULT: PASS
