@@ -214,6 +214,7 @@ extension MainRepositoryContentView {
             onBeginRenameFile: fileListModel.beginRename,
             onBeginChangeCategoryFile: fileListModel.beginChangeCategory,
             onBeginClassifierCorrectionFile: fileListModel.beginClassifierCorrection,
+            onBeginAIClassificationSuggestionFile: fileListModel.beginAIClassificationSuggestion,
             onBeginDeleteFile: fileListModel.beginDelete,
             onBeginICloudConflictResolution: fileListModel.beginICloudConflictResolution,
             writeActionDisabledReason: fileListModel.writeActionDisabledReason,

@@ -52,6 +52,21 @@ final class MainListIntegrationClosureTests: XCTestCase {
         XCTAssertEqual(model.pendingActionDestination?.pageID, "S2-16")
         XCTAssertEqual(model.pendingActionDestination?.pageTitle, "Correct Classification")
 
+        model.beginAIClassificationSuggestion()
+        XCTAssertEqual(model.pendingActionDestination, .aiClassificationSuggestion(fileID: docsFile.id))
+        XCTAssertEqual(model.pendingActionDestination?.pageID, "S3-04")
+        XCTAssertEqual(model.pendingActionDestination?.pageTitle, "AI Category Suggestion")
+
+        model.beginAIClassificationChange(fileID: docsFile.id, targetCategory: "finance/invoices")
+        XCTAssertEqual(
+            model.pendingActionDestination,
+            .changeCategory(
+                fileID: docsFile.id,
+                initialTargetCategory: "finance/invoices",
+                mode: .classifierCorrection
+            )
+        )
+
         model.beginDelete()
         XCTAssertEqual(model.pendingActionDestination, .delete(fileID: docsFile.id))
         XCTAssertEqual(model.pendingActionDestination?.pageID, "S1-34")
@@ -104,6 +119,8 @@ final class MainListIntegrationClosureTests: XCTestCase {
         await model.selectFiles([file.id])
         model.beginRename()
         model.beginChangeCategory()
+        model.beginAIClassificationSuggestion()
+        model.beginAIClassificationChange(fileID: file.id, targetCategory: "docs")
         model.beginDelete()
 
         XCTAssertEqual(model.writeActionDisabledReason(fileID: file.id), .repoReadOnly)
@@ -147,6 +164,7 @@ final class MainListIntegrationClosureTests: XCTestCase {
         )
 
         await model.selectFiles([file.id])
+        model.beginAIClassificationSuggestion()
         model.beginDelete()
 
         XCTAssertEqual(model.writeActionDisabledReason(fileID: file.id), .importLocked)

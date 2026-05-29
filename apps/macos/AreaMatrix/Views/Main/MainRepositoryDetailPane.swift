@@ -40,6 +40,7 @@ struct MainRepositoryDetailPane: View {
     let onBeginRenameFile: (Int64) -> Void
     let onBeginChangeCategoryFile: (Int64) -> Void
     let onBeginClassifierCorrectionFile: (Int64) -> Void
+    let onBeginAIClassificationSuggestionFile: (Int64) -> Void
     let onBeginDeleteFile: (Int64) -> Void
     let onBeginICloudConflictResolution: (Int64) -> Void
     let writeActionDisabledReason: (Int64) -> MainFileWriteActionDisabledReason?
@@ -322,6 +323,11 @@ extension MainRepositoryDetailPane {
                 }
                 .disabled(disabledReason != nil)
                 .accessibilityIdentifier("S2-16-correct-classification")
+                Button("Review AI Suggestion...") {
+                    onBeginAIClassificationSuggestionFile(detail.id)
+                }
+                .disabled(disabledReason != nil)
+                .accessibilityIdentifier("S3-04-review-ai-suggestion")
                 if detail.hasICloudConflictCopySignal {
                     Button("Resolve iCloud Conflict...") {
                         onBeginICloudConflictResolution(detail.id)

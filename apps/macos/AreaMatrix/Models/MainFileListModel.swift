@@ -245,6 +245,30 @@ extension MainFileListModel {
         return nil
     }
 
+    func beginAIClassificationSuggestion(fileID: Int64? = nil) {
+        guard let fileID = fileID ?? selection.singleFileID,
+              writeActionDisabledReason(fileID: fileID) == nil else { return }
+        pendingActionDestination = .aiClassificationSuggestion(fileID: fileID)
+    }
+
+    func beginAIClassificationChange(fileID: Int64, targetCategory: String?) {
+        guard writeActionDisabledReason(fileID: fileID) == nil else { return }
+        changeCategoryState = .idle
+        classifierCorrectionContextState = .idle
+        classifierCorrectionResult = nil
+        pendingActionDestination = .changeCategory(
+            fileID: fileID,
+            initialTargetCategory: targetCategory,
+            mode: .classifierCorrection
+        )
+    }
+
+    func viewAIClassificationCall(fileID: Int64) async {
+        await loadChangeLog(fileID: fileID)
+        detailTabRequest = .automatic(.log)
+        clearPendingActionDestination()
+    }
+
     func reloadCurrentCategory(focusingOn fileID: Int64? = nil) async {
         loadGeneration += 1
         let generation = loadGeneration

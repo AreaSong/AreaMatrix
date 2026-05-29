@@ -112,6 +112,7 @@ final class ChangeCategoryPageIntegrationVerifyTests: XCTestCase {
             onBeginRenameFile: model.beginRename,
             onBeginChangeCategoryFile: model.beginChangeCategory,
             onBeginClassifierCorrectionFile: model.beginClassifierCorrection,
+            onBeginAIClassificationSuggestionFile: model.beginAIClassificationSuggestion,
             onBeginDeleteFile: model.beginDelete, onBeginICloudConflictResolution: model.beginICloudConflictResolution,
             writeActionDisabledReason: model.writeActionDisabledReason,
             noteModel: DetailNoteModel(
@@ -124,6 +125,7 @@ final class ChangeCategoryPageIntegrationVerifyTests: XCTestCase {
 
         XCTAssertTrue(body.contains("Change Category..."))
         XCTAssertTrue(body.contains("Correct Classification..."))
+        XCTAssertTrue(body.contains("Review AI Suggestion..."))
         pane.onBeginChangeCategoryFile(file.id)
         XCTAssertEqual(model.pendingActionDestination, .changeCategory(fileID: file.id))
         XCTAssertEqual(model.pendingActionDestination?.pageID, "S1-35")
@@ -132,6 +134,10 @@ final class ChangeCategoryPageIntegrationVerifyTests: XCTestCase {
         XCTAssertEqual(model.pendingActionDestination, .changeCategory(fileID: file.id, mode: .classifierCorrection))
         XCTAssertEqual(model.pendingActionDestination?.pageID, "S2-16")
         XCTAssertEqual(model.pendingActionDestination?.pageTitle, "Correct Classification")
+        pane.onBeginAIClassificationSuggestionFile(file.id)
+        XCTAssertEqual(model.pendingActionDestination, .aiClassificationSuggestion(fileID: file.id))
+        XCTAssertEqual(model.pendingActionDestination?.pageID, "S3-04")
+        XCTAssertEqual(model.pendingActionDestination?.pageTitle, "AI Category Suggestion")
     }
 
     @MainActor

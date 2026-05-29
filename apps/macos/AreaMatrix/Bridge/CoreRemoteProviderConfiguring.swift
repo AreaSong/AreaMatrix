@@ -24,6 +24,84 @@ protocol CoreAIPrivacyRulesManaging: Sendable {
     ) async throws -> AiPrivacyRulesSnapshot
 }
 
+protocol CoreAIClassificationSuggesting: Sendable {
+    func suggestCategoryWithAI(
+        repoPath: String,
+        request: AIClassificationSuggestionRequestState
+    ) async throws -> AIClassificationSuggestionState
+}
+
+enum AIClassificationContextPolicyState: Equatable {
+    case fileNameOnly
+    case fileNameAndPath
+    case limitedTextSummary
+}
+
+enum AIClassificationSuggestionStatusState: Equatable {
+    case suggested
+    case noSuggestion
+    case skipped
+    case unavailable
+}
+
+enum AIClassificationSuggestionRouteState: Equatable {
+    case local
+    case remote
+
+    var label: String {
+        switch self {
+        case .local: "Local"
+        case .remote: "Remote"
+        }
+    }
+}
+
+enum AIClassificationSuggestionContextFieldState: Equatable {
+    case fileName
+    case `extension`
+    case repoRelativePath
+    case limitedTextSummary
+
+    var label: String {
+        switch self {
+        case .fileName: "filename"
+        case .extension: "extension"
+        case .repoRelativePath: "repo-relative path"
+        case .limitedTextSummary: "limited text summary"
+        }
+    }
+}
+
+enum AIClassificationSuggestionSkipReasonState: Equatable {
+    case aiDisabled
+    case featureDisabled
+    case ruleResultConfident
+    case noEligibleContext
+    case privacyRule
+    case providerUnavailable
+}
+
+struct AIClassificationSuggestionRequestState: Equatable {
+    var fileID: Int64
+    var contextPolicy: AIClassificationContextPolicyState
+    var privacyPolicyRef: String? = nil
+}
+
+struct AIClassificationSuggestionState: Equatable {
+    var fileID: Int64
+    var status: AIClassificationSuggestionStatusState
+    var currentCategory: String?
+    var suggestedCategory: String?
+    var confidence: Float
+    var reason: String?
+    var route: AIClassificationSuggestionRouteState?
+    var usedContext: [AIClassificationSuggestionContextFieldState]
+    var skippedReason: AIClassificationSuggestionSkipReasonState?
+    var privacyRuleID: String?
+    var callLogID: Int64?
+    var requiresUserConfirmation: Bool
+}
+
 extension CoreBridge: CoreRemoteProviderConfiguring {
     func loadRemoteProviderConfig(repoPath: String) async throws -> RemoteProviderConfigState {
         try await Task.detached(priority: .userInitiated) {
@@ -90,6 +168,20 @@ extension CoreBridge: CoreAIPrivacyRulesManaging {
     }
 }
 
+extension CoreBridge: CoreAIClassificationSuggesting {
+    func suggestCategoryWithAI(
+        repoPath: String,
+        request: AIClassificationSuggestionRequestState
+    ) async throws -> AIClassificationSuggestionState {
+        try await Task.detached(priority: .userInitiated) {
+            try AIClassificationSuggestionState(coreSuggestion: suggestCategoryWithAi(
+                repoPath: repoPath,
+                request: AiCategorySuggestionRequest(snapshot: request)
+            ))
+        }.value
+    }
+}
+
 extension RemoteProviderConfigState {
     init(coreSnapshot: RemoteProviderConfigSnapshot) {
         providerConfigured = coreSnapshot.providerConfigured
@@ -105,6 +197,23 @@ extension RemoteProviderConfigState {
     }
 }
 
+extension AIClassificationSuggestionState {
+    init(coreSuggestion: AiCategorySuggestion) {
+        fileID = coreSuggestion.fileId
+        status = AIClassificationSuggestionStatusState(coreStatus: coreSuggestion.status)
+        currentCategory = coreSuggestion.currentCategory
+        suggestedCategory = coreSuggestion.suggestedCategory
+        confidence = coreSuggestion.confidence
+        reason = coreSuggestion.reason
+        route = coreSuggestion.route.map(AIClassificationSuggestionRouteState.init(coreRoute:))
+        usedContext = coreSuggestion.usedContext.map(AIClassificationSuggestionContextFieldState.init(coreField:))
+        skippedReason = coreSuggestion.skippedReason.map(AIClassificationSuggestionSkipReasonState.init(coreReason:))
+        privacyRuleID = coreSuggestion.privacyRuleId
+        callLogID = coreSuggestion.callLogId
+        requiresUserConfirmation = coreSuggestion.requiresUserConfirmation
+    }
+}
+
 extension RemoteProviderTestResultState {
     init(coreResult: RemoteProviderTestResult) {
         provider = RemoteProviderKindState(coreProvider: coreResult.provider)
@@ -114,6 +223,16 @@ extension RemoteProviderTestResultState {
         providerVerified = coreResult.providerVerified
         verificationToken = coreResult.verificationToken
         sanitizedMessage = coreResult.sanitizedMessage
+    }
+}
+
+extension AiCategorySuggestionRequest {
+    init(snapshot: AIClassificationSuggestionRequestState) {
+        self.init(
+            fileId: snapshot.fileID,
+            contextPolicy: AiCategorySuggestionContextPolicy(snapshotPolicy: snapshot.contextPolicy),
+            privacyPolicyRef: snapshot.privacyPolicyRef
+        )
     }
 }
 
@@ -145,6 +264,60 @@ extension RemoteProviderEnableRequest {
 extension RemoteProviderDisableRequest {
     init(snapshot: RemoteProviderDisableRequestState) {
         self.init(removeStoredCredential: snapshot.removeStoredCredential)
+    }
+}
+
+private extension AiCategorySuggestionContextPolicy {
+    init(snapshotPolicy: AIClassificationContextPolicyState) {
+        switch snapshotPolicy {
+        case .fileNameOnly: self = .fileNameOnly
+        case .fileNameAndPath: self = .fileNameAndPath
+        case .limitedTextSummary: self = .limitedTextSummary
+        }
+    }
+}
+
+private extension AIClassificationSuggestionStatusState {
+    init(coreStatus: AiCategorySuggestionStatus) {
+        switch coreStatus {
+        case .suggested: self = .suggested
+        case .noSuggestion: self = .noSuggestion
+        case .skipped: self = .skipped
+        case .unavailable: self = .unavailable
+        }
+    }
+}
+
+private extension AIClassificationSuggestionRouteState {
+    init(coreRoute: AiCategorySuggestionRoute) {
+        switch coreRoute {
+        case .local: self = .local
+        case .remote: self = .remote
+        }
+    }
+}
+
+private extension AIClassificationSuggestionContextFieldState {
+    init(coreField: AiCategorySuggestionContextField) {
+        switch coreField {
+        case .fileName: self = .fileName
+        case .extension: self = .extension
+        case .repoRelativePath: self = .repoRelativePath
+        case .limitedTextSummary: self = .limitedTextSummary
+        }
+    }
+}
+
+private extension AIClassificationSuggestionSkipReasonState {
+    init(coreReason: AiCategorySuggestionSkipReason) {
+        switch coreReason {
+        case .aiDisabled: self = .aiDisabled
+        case .featureDisabled: self = .featureDisabled
+        case .ruleResultConfident: self = .ruleResultConfident
+        case .noEligibleContext: self = .noEligibleContext
+        case .privacyRule: self = .privacyRule
+        case .providerUnavailable: self = .providerUnavailable
+        }
     }
 }
 

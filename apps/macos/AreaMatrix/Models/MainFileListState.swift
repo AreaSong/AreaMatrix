@@ -44,6 +44,7 @@ enum MainFileSelectionState: Equatable {
 
 enum MainFileActionDestination: Equatable {
     case rename(fileID: Int64)
+    case aiClassificationSuggestion(fileID: Int64)
     case changeCategory(
         fileID: Int64,
         initialTargetCategory: String? = nil,
@@ -57,6 +58,8 @@ enum MainFileActionDestination: Equatable {
         switch self {
         case .rename:
             "S1-33"
+        case .aiClassificationSuggestion:
+            "S3-04"
         case let .changeCategory(_, _, mode, ruleRoute):
             ruleRoute?.pageID ?? (mode == .classifierCorrection ? "S2-16" : "S1-35")
         case .delete:
@@ -70,6 +73,8 @@ enum MainFileActionDestination: Equatable {
         switch self {
         case .rename:
             "Rename File"
+        case .aiClassificationSuggestion:
+            "AI Category Suggestion"
         case let .changeCategory(_, _, mode, ruleRoute):
             switch ruleRoute {
             case .saveRule:
@@ -88,8 +93,8 @@ enum MainFileActionDestination: Equatable {
 
     var fileID: Int64 {
         switch self {
-        case let .rename(fileID), let .changeCategory(fileID, _, _, _), let .delete(fileID),
-             let .iCloudConflict(fileID):
+        case let .rename(fileID), let .aiClassificationSuggestion(fileID),
+             let .changeCategory(fileID, _, _, _), let .delete(fileID), let .iCloudConflict(fileID):
             fileID
         }
     }

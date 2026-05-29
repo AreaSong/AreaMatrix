@@ -1,0 +1,37 @@
+**一、执行结论**
+已完成 `4-2/task-56`。
+
+**二、执行范围**
+单任务：S3-04 页面中的 C3-04 AI 分类建议功能。
+
+修改集中在 `apps/macos/AreaMatrix/**` 与 `apps/macos/AreaMatrixTests/**`：新增 C3-04 CoreBridge 映射、S3-04 面板模型/视图、文件详情入口与 action routing，并补充 targeted tests。工作树另有 task-loop/progress 运行状态文件变更，不属于产品实现代码。
+
+**三、完成情况**
+核对清单已完成：只处理 S3-04 + C3-04；已按 UX spec、control map、Core API、C3-04 spec 接入；只调用 `suggest_category_with_ai`，未实现 C3-09/C3-10 或相邻页面能力。
+
+完成标准已满足：用户可从文件详情菜单进入 `Review AI Suggestion...`，打开 S3-04 面板并触发真实 `CoreBridge.suggestCategoryWithAI`；生产代码没有 mock/fixture/静态伪造；采纳/修改只转入已有分类纠错确认流，用户确认前不改分类、不移动文件。
+
+Forbidden Touches：未触碰 `core/src/**`。
+
+**四、工程质量**
+代码按现有 SwiftUI/CoreBridge 模式落在已编译文件中，避免修改 `.xcodeproj`。状态、错误映射、隐私跳过、无建议、不可用、失败态均显式建模；测试 fake 只在 test target 中使用。未新增依赖；未改 Rust public API，因此无 rustdoc/doc sync 需求。
+
+**五、验证情况**
+已通过：
+
+```bash
+./dev check task 4-2/task-56
+```
+
+结果：PASS。包含 prompt doctor OK、`git diff --check`、macOS app `xcodebuild build` 成功。
+
+补充 targeted tests 也通过：
+
+```bash
+./dev test macos --only-testing ...
+```
+
+本地 `xcodebuild test` 被 `testmanagerd` sandbox 阻断后，仓库脚本回退到 `xcrun xctest`，4 个相关用例通过。
+
+**六、风险与后续**
+未做真实窗口手工烟测；当前证据来自构建与 targeted tests。C3-09 隐私规则详情、C3-10 fallback 完整页面语义、以及最终 apply/write 细节按 control map 留给后续 task/page integration。建议下一步跑 verify-ready 或继续 `4-2/task-57`。

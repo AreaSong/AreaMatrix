@@ -253,6 +253,7 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
             onBeginRenameFile: model.beginRename,
             onBeginChangeCategoryFile: model.beginChangeCategory,
             onBeginClassifierCorrectionFile: model.beginClassifierCorrection,
+            onBeginAIClassificationSuggestionFile: model.beginAIClassificationSuggestion,
             onBeginDeleteFile: model.beginDelete,
             onBeginICloudConflictResolution: model.beginICloudConflictResolution,
             writeActionDisabledReason: model.writeActionDisabledReason,

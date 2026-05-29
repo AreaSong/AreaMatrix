@@ -21,6 +21,18 @@ enum RemoteProviderTestStatusState: String, Equatable {
     case succeeded, providerRejected, connectionFailed, unsupportedProvider
 }
 
+enum AIClassificationSuggestionPanelState: Equatable {
+    case idle
+    case loading
+    case loaded(AIClassificationSuggestionState)
+    case failed(AISettingsError)
+
+    var isLoading: Bool {
+        if case .loading = self { return true }
+        return false
+    }
+}
+
 struct RemoteProviderTestRequestState: Equatable {
     var provider: RemoteProviderKindState
     var modelID: String
@@ -63,6 +75,132 @@ struct RemoteProviderTestResultState: Equatable {
     var providerVerified: Bool
     var verificationToken: String?
     var sanitizedMessage: String
+}
+
+@MainActor
+final class AIClassificationSuggestionPanelModel: ObservableObject {
+    @Published private(set) var state: AIClassificationSuggestionPanelState = .idle
+
+    let repoPath: String
+    let request: AIClassificationSuggestionRequestState
+    private let suggester: any CoreAIClassificationSuggesting
+    private let errorMapper: any CoreErrorMapping
+
+    init(
+        repoPath: String,
+        request: AIClassificationSuggestionRequestState,
+        suggester: any CoreAIClassificationSuggesting = CoreBridge(),
+        errorMapper: any CoreErrorMapping = CoreBridge()
+    ) {
+        self.repoPath = repoPath
+        self.request = request
+        self.suggester = suggester
+        self.errorMapper = errorMapper
+    }
+
+    var suggestion: AIClassificationSuggestionState? {
+        guard case let .loaded(suggestion) = state else { return nil }
+        return suggestion
+    }
+
+    var failure: AISettingsError? {
+        guard case let .failed(error) = state else { return nil }
+        return error
+    }
+
+    var canAskForSuggestion: Bool {
+        !state.isLoading
+    }
+
+    var statusText: String {
+        switch state {
+        case .idle:
+            "No AI category suggestion is available."
+        case .loading:
+            "Loading AI suggestion..."
+        case let .loaded(suggestion):
+            Self.statusText(for: suggestion)
+        case .failed:
+            "AI suggestion failed."
+        }
+    }
+
+    var acceptDisabledReason: String? {
+        guard let suggestion else { return "No suggestion to accept." }
+        switch suggestion.status {
+        case .suggested:
+            if suggestion.suggestedCategory?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty != false {
+                return "Target category is missing."
+            }
+            return suggestion.requiresUserConfirmation ? nil : "AI suggestion must require user confirmation."
+        case .noSuggestion:
+            return "No suggestion to accept."
+        case .skipped:
+            return Self.skippedText(for: suggestion.skippedReason)
+        case .unavailable:
+            return "AI suggestion is unavailable."
+        }
+    }
+
+    func askForSuggestion() async {
+        guard canAskForSuggestion else { return }
+        state = .loading
+        do {
+            let suggestion = try await suggester.suggestCategoryWithAI(repoPath: repoPath, request: request)
+            state = .loaded(suggestion)
+        } catch {
+            let mappedError = await suggestionError(for: error)
+            state = .failed(mappedError)
+        }
+    }
+
+    private func suggestionError(for error: Error) async -> AISettingsError {
+        if let coreError = error as? CoreError {
+            let mapping = await errorMapper.mapCoreError(coreError)
+            return AISettingsError(
+                message: "AI category suggestion could not be loaded.",
+                recovery: mapping.suggestedAction.isEmpty ? "Retry or classify manually." : mapping.suggestedAction,
+                detail: mapping.userMessage
+            )
+        }
+        return AISettingsError(
+            message: "AI category suggestion could not be loaded.",
+            recovery: "Retry or classify manually.",
+            detail: error.localizedDescription
+        )
+    }
+
+    private static func statusText(for suggestion: AIClassificationSuggestionState) -> String {
+        switch suggestion.status {
+        case .suggested:
+            "AI suggested a category."
+        case .noSuggestion:
+            "No AI category suggestion is available."
+        case .skipped:
+            skippedText(for: suggestion.skippedReason)
+        case .unavailable:
+            "AI suggestion is unavailable."
+        }
+    }
+
+    private static func skippedText(for reason: AIClassificationSuggestionSkipReasonState?) -> String {
+        switch reason {
+        case .aiDisabled:
+            "AI classification suggestions are off."
+        case .featureDisabled:
+            "AI classification feature is off."
+        case .ruleResultConfident:
+            "Rule classification is already confident."
+        case .noEligibleContext:
+            "No eligible context is available for AI."
+        case .privacyRule:
+            "Skipped by privacy rule."
+        case .providerUnavailable:
+            "AI provider is unavailable."
+        case nil:
+            "AI suggestion was skipped."
+        }
+    }
 }
 
 enum RemotePrivacyGateAction: Equatable {

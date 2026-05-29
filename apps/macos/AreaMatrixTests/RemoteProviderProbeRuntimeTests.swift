@@ -77,6 +77,70 @@ final class RemoteProviderProbeRuntimeTests: XCTestCase {
         XCTAssertFalse(script.contains("Authorization: Bearer %s\"\\n' \"$key_reference\""))
         XCTAssertFalse(script.contains("x-api-key: %s\"\\n' \"$key_reference\""))
     }
+
+    @MainActor
+    func testS304AskSuggestionUsesC304BridgeAndKeepsDraftPending() async {
+        let request = AIClassificationSuggestionRequestState(
+            fileID: 404,
+            contextPolicy: .limitedTextSummary,
+            privacyPolicyRef: "privacy-v1"
+        )
+        let bridge = S304SuggestionBridge(result: .success(.s304Suggested(fileID: request.fileID)))
+        let model = AIClassificationSuggestionPanelModel(
+            repoPath: "/tmp/repo",
+            request: request,
+            suggester: bridge,
+            errorMapper: S304ErrorMapper()
+        )
+
+        await model.askForSuggestion()
+        let recordedRequests = await bridge.recordedRequests()
+
+        XCTAssertEqual(recordedRequests, [request])
+        XCTAssertEqual(model.statusText, "AI suggested a category.")
+        XCTAssertEqual(model.suggestion?.suggestedCategory, "finance/invoices")
+        XCTAssertEqual(model.suggestion?.usedContext, [.fileName, .extension, .repoRelativePath])
+        XCTAssertEqual(model.suggestion?.callLogID, 304)
+        XCTAssertNil(model.acceptDisabledReason)
+    }
+
+    @MainActor
+    func testS304PrivacySkipMapsToDisabledAcceptState() async {
+        let request = AIClassificationSuggestionRequestState(fileID: 405, contextPolicy: .fileNameAndPath)
+        let bridge = S304SuggestionBridge(result: .success(.s304PrivacySkipped(fileID: request.fileID)))
+        let model = AIClassificationSuggestionPanelModel(
+            repoPath: "/tmp/repo",
+            request: request,
+            suggester: bridge,
+            errorMapper: S304ErrorMapper()
+        )
+
+        await model.askForSuggestion()
+
+        XCTAssertEqual(model.statusText, "Skipped by privacy rule.")
+        XCTAssertEqual(model.acceptDisabledReason, "Skipped by privacy rule.")
+        XCTAssertEqual(model.suggestion?.privacyRuleID, "rule-confidential")
+        XCTAssertEqual(model.suggestion?.usedContext, [])
+    }
+
+    @MainActor
+    func testS304CoreErrorUsesSharedErrorMapper() async {
+        let request = AIClassificationSuggestionRequestState(fileID: 406, contextPolicy: .fileNameOnly)
+        let model = AIClassificationSuggestionPanelModel(
+            repoPath: "/tmp/repo",
+            request: request,
+            suggester: S304SuggestionBridge(result: .failure(CoreError.Config(reason: "AI settings disabled"))),
+            errorMapper: S304ErrorMapper()
+        )
+
+        await model.askForSuggestion()
+
+        XCTAssertEqual(model.statusText, "AI suggestion failed.")
+        XCTAssertEqual(model.failure?.message, "AI category suggestion could not be loaded.")
+        XCTAssertEqual(model.failure?.recovery, "Open AI settings")
+        XCTAssertEqual(model.failure?.detail, "Mapped C3-04 core error")
+        XCTAssertEqual(model.acceptDisabledReason, "No suggestion to accept.")
+    }
 }
 
 private func makeTemporaryRepoURL() throws -> URL {
@@ -172,4 +236,84 @@ private final class ProbeRuntimeEnvironment {
 private func environmentString(_ key: String) -> String? {
     guard let pointer = getenv(key) else { return nil }
     return String(cString: pointer)
+}
+
+private actor S304SuggestionBridge: CoreAIClassificationSuggesting {
+    enum Result {
+        case success(AIClassificationSuggestionState)
+        case failure(CoreError)
+    }
+
+    private let result: Result
+    private var requests: [AIClassificationSuggestionRequestState] = []
+
+    init(result: Result) {
+        self.result = result
+    }
+
+    func suggestCategoryWithAI(
+        repoPath _: String,
+        request: AIClassificationSuggestionRequestState
+    ) async throws -> AIClassificationSuggestionState {
+        requests.append(request)
+        switch result {
+        case let .success(suggestion):
+            return suggestion
+        case let .failure(error):
+            throw error
+        }
+    }
+
+    func recordedRequests() -> [AIClassificationSuggestionRequestState] {
+        requests
+    }
+}
+
+private struct S304ErrorMapper: CoreErrorMapping {
+    func mapCoreError(_: CoreError) async -> CoreErrorMappingSnapshot {
+        CoreErrorMappingSnapshot(
+            kind: .config,
+            userMessage: "Mapped C3-04 core error",
+            severity: .medium,
+            suggestedAction: "Open AI settings",
+            recoverability: .userActionRequired,
+            rawContext: "S3-04 C3-04"
+        )
+    }
+}
+
+private extension AIClassificationSuggestionState {
+    static func s304Suggested(fileID: Int64) -> AIClassificationSuggestionState {
+        AIClassificationSuggestionState(
+            fileID: fileID,
+            status: .suggested,
+            currentCategory: "inbox",
+            suggestedCategory: "finance/invoices",
+            confidence: 0.86,
+            reason: "filename and extracted text mention invoice and payment",
+            route: .local,
+            usedContext: [.fileName, .extension, .repoRelativePath],
+            skippedReason: nil,
+            privacyRuleID: nil,
+            callLogID: 304,
+            requiresUserConfirmation: true
+        )
+    }
+
+    static func s304PrivacySkipped(fileID: Int64) -> AIClassificationSuggestionState {
+        AIClassificationSuggestionState(
+            fileID: fileID,
+            status: .skipped,
+            currentCategory: "inbox",
+            suggestedCategory: nil,
+            confidence: 0,
+            reason: nil,
+            route: nil,
+            usedContext: [],
+            skippedReason: .privacyRule,
+            privacyRuleID: "rule-confidential",
+            callLogID: 305,
+            requiresUserConfirmation: true
+        )
+    }
 }
