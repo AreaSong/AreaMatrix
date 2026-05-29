@@ -209,6 +209,7 @@ private struct AISettingsFeatureRow: View {
 struct AISettingsPane: View {
     @StateObject private var model: AISettingsModel
     @State private var isLocalModelStatusPresented = false
+    @State private var isRemoteConfigPresented = false
 
     init(repoPath: String) {
         _model = StateObject(wrappedValue: AISettingsModel(repoPath: repoPath))
@@ -218,22 +219,23 @@ struct AISettingsPane: View {
         VStack(alignment: .leading, spacing: 0) {
             header
             ScrollView {
-                VStack(alignment: .leading, spacing: 22) {
-                    bodyContent
-                }
-                .frame(maxWidth: 720, alignment: .leading)
-                .padding(.horizontal, 34)
-                .padding(.vertical, 28)
+                VStack(alignment: .leading, spacing: 22) { bodyContent }
+                    .frame(maxWidth: 720, alignment: .leading)
+                    .padding(.horizontal, 34)
+                    .padding(.vertical, 28)
             }
         }
-        .task {
-            await model.load()
-        }
+        .task { await model.load() }
         .sheet(isPresented: $isLocalModelStatusPresented) {
-            LocalModelStatusView(
-                model: LocalModelStatusModel(repoPath: model.repoPath),
-                onClose: { isLocalModelStatusPresented = false }
-            )
+            LocalModelStatusView(model: LocalModelStatusModel(repoPath: model.repoPath)) {
+                isLocalModelStatusPresented = false
+            }
+        }
+        .sheet(isPresented: $isRemoteConfigPresented) {
+            RemoteModelConfigSheet(model: RemoteProviderConfigModel(repoPath: model.repoPath)) {
+                isRemoteConfigPresented = false
+                Task { await model.load() }
+            }
         }
     }
 
@@ -259,9 +261,7 @@ struct AISettingsPane: View {
         }
         .padding(.horizontal, 34)
         .padding(.vertical, 18)
-        .overlay(alignment: .bottom) {
-            Divider()
-        }
+        .overlay(alignment: .bottom) { Divider() }
     }
 
     @ViewBuilder
@@ -308,7 +308,7 @@ struct AISettingsPane: View {
                     .foregroundStyle(.secondary)
             case let .failed(error):
                 AISettingsInlineBanner(error: error, tint: .orange) {
-                    Button("Configure remote AI", action: model.openRemoteConfigurationEntry)
+                    Button("Configure remote AI", action: openRemoteConfig)
                 }
             }
         }
@@ -340,7 +340,8 @@ struct AISettingsPane: View {
             HStack {
                 Button("Local model status", action: openLocalModelStatus)
                     .accessibilityIdentifier("S3-02-C3-02-open-local-model-status")
-                Button("Configure remote AI", action: model.openRemoteConfigurationEntry)
+                Button("Configure remote AI", action: openRemoteConfig)
+                    .accessibilityIdentifier("S3-03-C3-03-configure-remote-ai")
             }
         }
     }
@@ -438,18 +439,14 @@ struct AISettingsPane: View {
     private var aiEnabledBinding: Binding<Bool> {
         Binding(
             get: { model.snapshot?.config.aiEnabled ?? false },
-            set: { enabled in
-                Task { await model.setAIEnabled(enabled) }
-            }
+            set: { enabled in Task { await model.setAIEnabled(enabled) } }
         )
     }
 
     private var providerPreferenceBinding: Binding<AISettingsProviderPreference> {
         Binding(
             get: { model.snapshot?.config.providerPreference ?? .localFirst },
-            set: { preference in
-                Task { await model.setProviderPreference(preference) }
-            }
+            set: { preference in Task { await model.setProviderPreference(preference) } }
         )
     }
 
@@ -458,9 +455,7 @@ struct AISettingsPane: View {
             get: {
                 model.snapshot?.config.featureToggles.first { $0.feature == feature }?.enabled ?? false
             },
-            set: { enabled in
-                Task { await model.setFeature(feature, enabled: enabled) }
-            }
+            set: { enabled in Task { await model.setFeature(feature, enabled: enabled) } }
         )
     }
 
@@ -492,5 +487,10 @@ struct AISettingsPane: View {
     private func openLocalModelStatus() {
         model.openLocalModelStatusEntry()
         isLocalModelStatusPresented = true
+    }
+
+    private func openRemoteConfig() {
+        model.openRemoteConfigurationEntry()
+        isRemoteConfigPresented = true
     }
 }
