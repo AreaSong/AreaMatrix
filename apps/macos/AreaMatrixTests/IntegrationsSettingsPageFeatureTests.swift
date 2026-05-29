@@ -172,6 +172,136 @@ final class IntegrationsSettingsPageFeatureTests: XCTestCase {
     }
 }
 
+extension AiFallbackStatus {
+    static func s304AiDisabled() -> AiFallbackStatus {
+        s304RecoveryStatus(
+            kind: .aiDisabled,
+            category: .disabled,
+            title: "AI classification suggestions are off",
+            message: "AI category suggestions are disabled for this repository.",
+            retryDisabledReason: "Open AI settings before asking for another suggestion.",
+            primaryAction: .openAiSettings
+        )
+    }
+
+    static func s304LocalModelNotReady() -> AiFallbackStatus {
+        s304RecoveryStatus(
+            kind: .localModelNotReady,
+            category: .unavailable,
+            title: "Local model is not ready",
+            message: "The local model cannot create a category suggestion yet.",
+            retryDisabledReason: "View local model status before retrying.",
+            primaryAction: .openLocalModelStatus
+        )
+    }
+
+    static func s304RemoteNotConfigured() -> AiFallbackStatus {
+        s304RecoveryStatus(
+            kind: .remoteNotConfigured,
+            category: .disabled,
+            title: "Remote AI is not configured",
+            message: "Remote AI must be configured before it can suggest a category.",
+            retryDisabledReason: "Configure remote AI before retrying.",
+            primaryAction: .configureRemoteAi
+        )
+    }
+
+    static func s304RecoveryStatus(
+        kind: AiFallbackKind,
+        category: AiFallbackCategory,
+        title: String,
+        message: String,
+        retryDisabledReason: String,
+        primaryAction: AiFallbackAction
+    ) -> AiFallbackStatus {
+        AiFallbackStatus(
+            operation: .classificationSuggestion,
+            kind: kind,
+            category: category,
+            title: title,
+            message: message,
+            retryable: false,
+            retryDisabledReason: retryDisabledReason,
+            primaryAction: primaryAction,
+            secondaryAction: nil,
+            nonAiFallbackAction: .classifyManually,
+            route: nil,
+            callLogId: nil,
+            privacyRuleId: nil,
+            retryAfter: nil
+        )
+    }
+}
+
+actor S304SuggestionBridge: CoreAIClassificationSuggesting {
+    enum Result {
+        case success(AIClassificationSuggestionState)
+        case failure(CoreError)
+    }
+
+    private let result: Result
+    private var requests: [AIClassificationSuggestionRequestState] = []
+
+    init(result: Result) {
+        self.result = result
+    }
+
+    func suggestCategoryWithAI(
+        repoPath _: String,
+        request: AIClassificationSuggestionRequestState
+    ) async throws -> AIClassificationSuggestionState {
+        requests.append(request)
+        switch result {
+        case let .success(suggestion):
+            return suggestion
+        case let .failure(error):
+            throw error
+        }
+    }
+
+    func recordedRequests() -> [AIClassificationSuggestionRequestState] {
+        requests
+    }
+}
+
+actor S304FallbackBridge: CoreAIClassificationFallbackStatusReading {
+    enum Result {
+        case success(AiFallbackStatus)
+        case failure(CoreError)
+        case unexpected
+    }
+
+    private let result: Result
+    private var requests: [AiFallbackStatusRequest] = []
+
+    init(status: AiFallbackStatus? = nil) {
+        result = status.map(Result.success) ?? .unexpected
+    }
+
+    init(error: CoreError) {
+        result = .failure(error)
+    }
+
+    func classificationFallbackStatus(
+        repoPath _: String,
+        request: AiFallbackStatusRequest
+    ) async throws -> AiFallbackStatus {
+        requests.append(request)
+        switch result {
+        case let .success(status):
+            return status
+        case let .failure(error):
+            throw error
+        case .unexpected:
+            throw CoreError.Internal(message: "unexpected fallback status request")
+        }
+    }
+
+    func recordedRequests() -> [AiFallbackStatusRequest] {
+        requests
+    }
+}
+
 private enum IntegrationsSettingsLoaderResult {
     case success(RepoConfigSnapshot)
     case failure(Error)

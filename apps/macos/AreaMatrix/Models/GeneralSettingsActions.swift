@@ -2,8 +2,8 @@ import Foundation
 
 extension OnboardingModel {
     @MainActor
-    func showGeneralSettings(opening: RepositoryOpeningResult) {
-        settingsGeneralSelectedTab = "general"
+    func showGeneralSettings(opening: RepositoryOpeningResult, selectedTab: String? = "general") {
+        settingsGeneralSelectedTab = selectedTab
         route = .settingsGeneral(opening)
         toastMessage = nil
     }

@@ -263,9 +263,8 @@ extension MainFileListModel {
         )
     }
 
-    func viewAIClassificationCall(fileID: Int64) async {
-        await loadChangeLog(fileID: fileID)
-        detailTabRequest = .automatic(.log)
+    func viewAIClassificationCall(callLogID: Int64) {
+        statusBanner = .aiCallLogRequested(callLogID: callLogID)
         clearPendingActionDestination()
     }
 

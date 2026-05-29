@@ -86,12 +86,7 @@ final class RemoteProviderProbeRuntimeTests: XCTestCase {
             privacyPolicyRef: "privacy-v1"
         )
         let bridge = S304SuggestionBridge(result: .success(.s304Suggested(fileID: request.fileID)))
-        let model = AIClassificationSuggestionPanelModel(
-            repoPath: "/tmp/repo",
-            request: request,
-            suggester: bridge,
-            errorMapper: S304ErrorMapper()
-        )
+        let model = s304SuggestionModel(request: request, bridge: bridge)
 
         await model.askForSuggestion()
         let recordedRequests = await bridge.recordedRequests()
@@ -108,31 +103,30 @@ final class RemoteProviderProbeRuntimeTests: XCTestCase {
     func testS304PrivacySkipMapsToDisabledAcceptState() async {
         let request = AIClassificationSuggestionRequestState(fileID: 405, contextPolicy: .fileNameAndPath)
         let bridge = S304SuggestionBridge(result: .success(.s304PrivacySkipped(fileID: request.fileID)))
-        let model = AIClassificationSuggestionPanelModel(
-            repoPath: "/tmp/repo",
-            request: request,
-            suggester: bridge,
-            errorMapper: S304ErrorMapper()
-        )
+        let fallbackBridge = S304FallbackBridge(status: .s304PrivacySkipped(callLogID: 305))
+        let model = s304SuggestionModel(request: request, bridge: bridge, fallbackBridge: fallbackBridge)
 
         await model.askForSuggestion()
+        let fallbackRequests = await fallbackBridge.recordedRequests()
 
-        XCTAssertEqual(model.statusText, "Skipped by privacy rule.")
+        XCTAssertEqual(fallbackRequests.first?.operation, .classificationSuggestion)
+        XCTAssertEqual(fallbackRequests.first?.privacyDecision, .skipped)
+        XCTAssertEqual(fallbackRequests.first?.privacySkippedReason, .privacyRule)
+        XCTAssertEqual(fallbackRequests.first?.categorySkippedReason, .privacyRule)
+        XCTAssertEqual(fallbackRequests.first?.callLogStatus, .skipped)
+        XCTAssertEqual(model.statusText, "Skipped by privacy rule")
         XCTAssertEqual(model.acceptDisabledReason, "Skipped by privacy rule.")
         XCTAssertEqual(model.suggestion?.privacyRuleID, "rule-confidential")
         XCTAssertEqual(model.suggestion?.usedContext, [])
+        XCTAssertEqual(model.fallbackStatus?.nonAiFallbackAction, .classifyManually)
     }
 
     @MainActor
     func testS304PrivacySkippedPanelOffersC309PrivacyRuleReferenceAction() async {
         let request = AIClassificationSuggestionRequestState(fileID: 407, contextPolicy: .fileNameAndPath)
         let bridge = S304SuggestionBridge(result: .success(.s304PrivacySkipped(fileID: request.fileID)))
-        let model = AIClassificationSuggestionPanelModel(
-            repoPath: "/tmp/repo",
-            request: request,
-            suggester: bridge,
-            errorMapper: S304ErrorMapper()
-        )
+        let fallbackBridge = S304FallbackBridge(status: .s304PrivacySkipped(callLogID: 305))
+        let model = s304SuggestionModel(request: request, bridge: bridge, fallbackBridge: fallbackBridge)
 
         await model.askForSuggestion()
         let panel = AIClassificationSuggestionPanel(
@@ -143,17 +137,107 @@ final class RemoteProviderProbeRuntimeTests: XCTestCase {
         let body = s135MirrorDescription(of: panel.body)
 
         XCTAssertTrue(body.contains("View privacy rule"))
+        XCTAssertTrue(body.contains("Classify manually"))
+        XCTAssertTrue(body.contains("S3-04-C3-10-fallback-status"))
+    }
+
+    @MainActor
+    func testS304ProviderUnavailableUsesC310RetryableFallbackStatus() async {
+        let request = AIClassificationSuggestionRequestState(fileID: 408, contextPolicy: .fileNameOnly)
+        let fallbackBridge = S304FallbackBridge(status: .s304ProviderUnavailable(callLogID: 306))
+        let model = s304SuggestionModel(
+            request: request,
+            bridge: S304SuggestionBridge(result: .success(.s304ProviderUnavailable(fileID: request.fileID))),
+            fallbackBridge: fallbackBridge
+        )
+
+        await model.askForSuggestion()
+        let fallbackRequests = await fallbackBridge.recordedRequests()
+
+        XCTAssertEqual(fallbackRequests.first?.providerError, .providerUnavailable)
+        XCTAssertEqual(fallbackRequests.first?.providerErrorCode, "ProviderUnavailable")
+        XCTAssertEqual(fallbackRequests.first?.callLogStatus, .unavailable)
+        XCTAssertEqual(model.statusText, "AI provider is unavailable")
+        XCTAssertEqual(model.acceptDisabledReason, "Retry before accepting this suggestion.")
+        XCTAssertEqual(model.fallbackStatus?.retryable, true)
+    }
+
+    @MainActor
+    func testS304StandardC310RecoveryActionsAreVisibleAndTriggerable() {
+        let model = s304SuggestionModel(
+            request: AIClassificationSuggestionRequestState(fileID: 409, contextPolicy: .fileNameOnly),
+            bridge: S304SuggestionBridge(result: .success(.s304ProviderUnavailable(fileID: 409)))
+        )
+        var openedAISettings = false
+        var openedLocalModelStatus = false
+        var configuredRemoteAI = false
+        let panel = AIClassificationSuggestionPanel(
+            model: model,
+            fileName: "invoice.pdf",
+            currentPath: "inbox/invoice.pdf",
+            onOpenAISettings: { openedAISettings = true },
+            onOpenLocalModelStatus: { openedLocalModelStatus = true },
+            onConfigureRemoteAI: { configuredRemoteAI = true }
+        )
+
+        XCTAssertFalse(panel.isFallbackActionDisabled(.openAiSettings))
+        XCTAssertFalse(panel.isFallbackActionDisabled(.openLocalModelStatus))
+        XCTAssertFalse(panel.isFallbackActionDisabled(.configureRemoteAi))
+
+        panel.performFallbackAction(.openAiSettings)
+        panel.performFallbackAction(.openLocalModelStatus)
+        panel.performFallbackAction(.configureRemoteAi)
+
+        XCTAssertTrue(openedAISettings)
+        XCTAssertTrue(openedLocalModelStatus)
+        XCTAssertTrue(configuredRemoteAI)
+    }
+
+    @MainActor
+    func testS304C310ViewCallLogActionUsesFallbackCallLogID() {
+        let model = s304SuggestionModel(
+            request: AIClassificationSuggestionRequestState(fileID: 409, contextPolicy: .fileNameOnly),
+            bridge: S304SuggestionBridge(result: .success(.s304ProviderUnavailable(fileID: 409)))
+        )
+        model.setFallbackStatusForTest(.s304ProviderUnavailable(callLogID: 730))
+        var viewedCallLogID: Int64?
+        let panel = AIClassificationSuggestionPanel(
+            model: model,
+            fileName: "invoice.pdf",
+            currentPath: "inbox/invoice.pdf",
+            onViewCall: { viewedCallLogID = $0 }
+        )
+
+        XCTAssertFalse(panel.isFallbackActionDisabled(.viewCallLog))
+        panel.performFallbackAction(.viewCallLog)
+
+        XCTAssertEqual(viewedCallLogID, 730)
+    }
+
+    @MainActor
+    func testS304MainRouteKeepsC310CallLogIDSeparateFromFileChangeLog() async {
+        let changeLogLister = S304FailingChangeLogLister()
+        let model = MainFileListModel(
+            opening: .mainLoadingFixture(repoPath: "/tmp/repo", fileCount: 0),
+            fileLister: MainListRecordingFileLister(results: []),
+            fileDetailer: MainListRecordingFileDetailer(results: []),
+            changeLogLister: changeLogLister,
+            errorMapper: MainListRecordingErrorMapper(mapping: .mainListDbFixture(rawContext: "unused"))
+        )
+        model.pendingActionDestination = .aiClassificationSuggestion(fileID: 409)
+
+        model.viewAIClassificationCall(callLogID: 730)
+        let changeLogRequests = await changeLogLister.requests()
+
+        XCTAssertEqual(changeLogRequests, [])
+        XCTAssertEqual(model.statusBanner, .aiCallLogRequested(callLogID: 730))
+        XCTAssertNil(model.pendingActionDestination)
     }
 
     @MainActor
     func testS304PrivacyRuleReferenceLoadsMatchedC309Rule() async throws {
-        let bridge = RemotePrivacyRulesBridge(snapshot: .s303PrivacyRules())
-        let model = AIClassificationPrivacyRuleReferenceModel(
-            repoPath: "/tmp/repo",
-            ruleID: "rule-confidential",
-            bridge: bridge,
-            errorMapper: S304PrivacyRuleErrorMapper()
-        )
+        let bridge = RemotePrivacyRulesBridge()
+        let model = s304PrivacyRuleReferenceModel(ruleID: "rule-confidential", bridge: bridge)
 
         await model.load()
         let reference = try XCTUnwrap(model.reference)
@@ -170,13 +254,7 @@ final class RemoteProviderProbeRuntimeTests: XCTestCase {
 
     @MainActor
     func testS304PrivacyRuleReferenceReportsMissingC309Rule() async {
-        let bridge = RemotePrivacyRulesBridge(snapshot: .s303PrivacyRules())
-        let model = AIClassificationPrivacyRuleReferenceModel(
-            repoPath: "/tmp/repo",
-            ruleID: "missing-rule",
-            bridge: bridge,
-            errorMapper: S304PrivacyRuleErrorMapper()
-        )
+        let model = s304PrivacyRuleReferenceModel(ruleID: "missing-rule", bridge: RemotePrivacyRulesBridge())
 
         await model.load()
 
@@ -185,12 +263,7 @@ final class RemoteProviderProbeRuntimeTests: XCTestCase {
 
     @MainActor
     func testS304PrivacyRuleReferenceMapsC309LoadError() async {
-        let model = AIClassificationPrivacyRuleReferenceModel(
-            repoPath: "/tmp/repo",
-            ruleID: "rule-confidential",
-            bridge: S304PrivacyRulesFailingBridge(),
-            errorMapper: S304PrivacyRuleErrorMapper()
-        )
+        let model = s304PrivacyRuleReferenceModel(ruleID: "rule-confidential", bridge: S304PrivacyRulesFailingBridge())
 
         await model.load()
 
@@ -206,11 +279,10 @@ final class RemoteProviderProbeRuntimeTests: XCTestCase {
     @MainActor
     func testS304CoreErrorUsesSharedErrorMapper() async {
         let request = AIClassificationSuggestionRequestState(fileID: 406, contextPolicy: .fileNameOnly)
-        let model = AIClassificationSuggestionPanelModel(
-            repoPath: "/tmp/repo",
+        let model = s304SuggestionModel(
             request: request,
-            suggester: S304SuggestionBridge(result: .failure(CoreError.Config(reason: "AI settings disabled"))),
-            errorMapper: S304ErrorMapper()
+            bridge: S304SuggestionBridge(result: .failure(CoreError.Config(reason: "AI settings disabled"))),
+            fallbackBridge: S304FallbackBridge(status: .s304InternalFailure())
         )
 
         await model.askForSuggestion()
@@ -220,6 +292,7 @@ final class RemoteProviderProbeRuntimeTests: XCTestCase {
         XCTAssertEqual(model.failure?.recovery, "Open AI settings")
         XCTAssertEqual(model.failure?.detail, "Mapped C3-04 core error")
         XCTAssertEqual(model.acceptDisabledReason, "No suggestion to accept.")
+        XCTAssertEqual(model.fallbackStatus?.nonAiFallbackAction, .classifyManually)
     }
 }
 
@@ -228,6 +301,19 @@ private func makeTemporaryRepoURL() throws -> URL {
         .appendingPathComponent("AreaMatrixRemoteProviderProbeRuntimeTests-\(UUID().uuidString)", isDirectory: true)
     try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
     return url
+}
+
+@MainActor
+private func s304PrivacyRuleReferenceModel(
+    ruleID: String,
+    bridge: any CoreAIPrivacyRulesManaging
+) -> AIClassificationPrivacyRuleReferenceModel {
+    AIClassificationPrivacyRuleReferenceModel(
+        repoPath: "/tmp/repo",
+        ruleID: ruleID,
+        bridge: bridge,
+        errorMapper: S304PrivacyRuleErrorMapper()
+    )
 }
 
 private final class ProbeRuntimeRecorder {
@@ -318,37 +404,6 @@ private func environmentString(_ key: String) -> String? {
     return String(cString: pointer)
 }
 
-private actor S304SuggestionBridge: CoreAIClassificationSuggesting {
-    enum Result {
-        case success(AIClassificationSuggestionState)
-        case failure(CoreError)
-    }
-
-    private let result: Result
-    private var requests: [AIClassificationSuggestionRequestState] = []
-
-    init(result: Result) {
-        self.result = result
-    }
-
-    func suggestCategoryWithAI(
-        repoPath _: String,
-        request: AIClassificationSuggestionRequestState
-    ) async throws -> AIClassificationSuggestionState {
-        requests.append(request)
-        switch result {
-        case let .success(suggestion):
-            return suggestion
-        case let .failure(error):
-            throw error
-        }
-    }
-
-    func recordedRequests() -> [AIClassificationSuggestionRequestState] {
-        requests
-    }
-}
-
 private actor S304PrivacyRulesFailingBridge: CoreAIPrivacyRulesManaging {
     func loadAIPrivacyRules(repoPath _: String) async throws -> AiPrivacyRulesSnapshot {
         throw CoreError.Db(message: "privacy rules read failed")
@@ -362,16 +417,16 @@ private actor S304PrivacyRulesFailingBridge: CoreAIPrivacyRulesManaging {
     }
 }
 
-private struct S304ErrorMapper: CoreErrorMapping {
-    func mapCoreError(_: CoreError) async -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
-            kind: .config,
-            userMessage: "Mapped C3-04 core error",
-            severity: .medium,
-            suggestedAction: "Open AI settings",
-            recoverability: .userActionRequired,
-            rawContext: "S3-04 C3-04"
-        )
+private actor S304FailingChangeLogLister: CoreChangeLogListing {
+    private var recordedRequests: [ChangeFilterSnapshot] = []
+
+    func listChanges(repoPath _: String, filter: ChangeFilterSnapshot) async throws -> [ChangeLogEntrySnapshot] {
+        recordedRequests.append(filter)
+        throw CoreError.Internal(message: "C3-10 call log route must not load file change log")
+    }
+
+    func requests() -> [ChangeFilterSnapshot] {
+        recordedRequests
     }
 }
 
@@ -389,23 +444,6 @@ private struct S304PrivacyRuleErrorMapper: CoreErrorMapping {
 }
 
 private extension AIClassificationSuggestionState {
-    static func s304Suggested(fileID: Int64) -> AIClassificationSuggestionState {
-        AIClassificationSuggestionState(
-            fileID: fileID,
-            status: .suggested,
-            currentCategory: "inbox",
-            suggestedCategory: "finance/invoices",
-            confidence: 0.86,
-            reason: "filename and extracted text mention invoice and payment",
-            route: .local,
-            usedContext: [.fileName, .extension, .repoRelativePath],
-            skippedReason: nil,
-            privacyRuleID: nil,
-            callLogID: 304,
-            requiresUserConfirmation: true
-        )
-    }
-
     static func s304PrivacySkipped(fileID: Int64) -> AIClassificationSuggestionState {
         AIClassificationSuggestionState(
             fileID: fileID,

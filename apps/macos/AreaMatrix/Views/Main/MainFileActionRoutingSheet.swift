@@ -30,6 +30,7 @@ struct MainFileActionRoutingSheet: View {
     let onOpenChangeCategoryPermissionRecovery: () -> Void
     let onBeginAIClassificationChange: (Int64, String?) -> Void
     let onViewAIClassificationCall: (Int64) -> Void
+    let onOpenAIRecoverySettings: () -> Void
     let onDelete: (Int64, MainFileDeleteOperation) -> Void
     let onApplyICloudConflict: (ICloudConflictApplyContext) -> Void
     let onCollectDiagnostics: () -> Void
@@ -53,7 +54,8 @@ struct MainFileActionRoutingSheet: View {
                 file: file,
                 onCancel: onDismiss,
                 onBeginChange: onBeginAIClassificationChange,
-                onViewCall: onViewAIClassificationCall
+                onViewCall: onViewAIClassificationCall,
+                onOpenAIRecoverySettings: onOpenAIRecoverySettings
             )
         case .delete:
             DeleteFileConfirmSheet(
@@ -135,75 +137,6 @@ struct MainFileActionRoutingSheet: View {
             onPreviewImpact: onPreviewClassifierRuleImpact,
             onSaved: onClassifierRuleSaved
         )
-    }
-}
-
-private struct AIClassificationSuggestionRouteView: View {
-    let repoPath: String
-    let file: FileEntrySnapshot?
-    let onCancel: () -> Void
-    let onBeginChange: (Int64, String?) -> Void
-    let onViewCall: (Int64) -> Void
-    @StateObject private var model: AIClassificationSuggestionPanelModel
-
-    init(
-        repoPath: String,
-        file: FileEntrySnapshot?,
-        onCancel: @escaping () -> Void,
-        onBeginChange: @escaping (Int64, String?) -> Void,
-        onViewCall: @escaping (Int64) -> Void
-    ) {
-        self.repoPath = repoPath
-        self.file = file
-        self.onCancel = onCancel
-        self.onBeginChange = onBeginChange
-        self.onViewCall = onViewCall
-        _model = StateObject(wrappedValue: AIClassificationSuggestionPanelModel(
-            repoPath: repoPath,
-            request: AIClassificationSuggestionRequestState(
-                fileID: file?.id ?? 0,
-                contextPolicy: .limitedTextSummary
-            )
-        ))
-    }
-
-    var body: some View {
-        MainFileActionSheetContainer(title: "AI Category Suggestion", pageID: "S3-04") {
-            if let file {
-                AIClassificationSuggestionPanel(
-                    model: model,
-                    fileName: file.currentName,
-                    currentPath: file.path,
-                    onAccept: acceptSuggestion,
-                    onChange: changeSuggestion,
-                    onReject: onCancel,
-                    onClassifyManually: classifyManually,
-                    onViewCall: { onViewCall(file.id) }
-                )
-            } else {
-                MissingFileActionContext(onCancel: onCancel)
-            }
-        }
-    }
-
-    private func acceptSuggestion() {
-        guard let file, let category = suggestedCategory else { return }
-        onBeginChange(file.id, category)
-    }
-
-    private func changeSuggestion() {
-        guard let file else { return }
-        onBeginChange(file.id, suggestedCategory)
-    }
-
-    private func classifyManually() {
-        guard let file else { return }
-        onBeginChange(file.id, nil)
-    }
-
-    private var suggestedCategory: String? {
-        let category = model.suggestion?.suggestedCategory?.trimmingCharacters(in: .whitespacesAndNewlines)
-        return category?.isEmpty == false ? category : nil
     }
 }
 

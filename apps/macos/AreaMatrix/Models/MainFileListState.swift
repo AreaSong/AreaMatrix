@@ -245,6 +245,7 @@ enum MainListStatusBanner: Equatable {
     case changedBatchCategory(count: Int64, category: String)
     case changedCategoryTreeRefreshFailed(fileID: Int64, category: String)
     case resolvedICloudConflict(fileID: Int64, strategy: ICloudConflictResolutionStrategy)
+    case aiCallLogRequested(callLogID: Int64)
 
     var message: String {
         switch self {
@@ -282,6 +283,8 @@ enum MainListStatusBanner: Equatable {
             """
         case let .resolvedICloudConflict(_, strategy):
             return strategy.successMessage
+        case let .aiCallLogRequested(callLogID):
+            return "AI call log entry \(callLogID) is ready for S3-05."
         }
     }
 
@@ -292,7 +295,7 @@ enum MainListStatusBanner: Equatable {
         case .removedSelectedFile, .unsavedNoteDraftPreserved, .changedCategoryTreeRefreshFailed:
             "exclamationmark.triangle"
         case .movedFileToTrash, .removedFileFromIndex, .batchDeleted, .changedCategory, .correctedClassification,
-             .savedClassifierRule, .changedBatchCategory, .resolvedICloudConflict:
+             .savedClassifierRule, .changedBatchCategory, .resolvedICloudConflict, .aiCallLogRequested:
             "checkmark.circle"
         }
     }

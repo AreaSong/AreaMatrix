@@ -435,6 +435,7 @@ extension MainWindow {
                 model.startImportEntry(opening: opening, source: .dropZone, urls: urls, destination: destination)
             },
             onOpenSettings: { model.showGeneralSettings(opening: opening) },
+            onOpenAISettings: { model.showGeneralSettings(opening: opening, selectedTab: "ai") },
             onOpenRepository: model.showChoosePath,
             onOpenHelp: model.openLearnMore,
             onOpenImportConflictBatch: { model.startImportConflictBatchReview(opening: opening, route: $0) },

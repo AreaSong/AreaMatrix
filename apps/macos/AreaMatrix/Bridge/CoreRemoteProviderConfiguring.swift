@@ -31,6 +31,13 @@ protocol CoreAIClassificationSuggesting: Sendable {
     ) async throws -> AIClassificationSuggestionState
 }
 
+protocol CoreAIClassificationFallbackStatusReading: Sendable {
+    func classificationFallbackStatus(
+        repoPath: String,
+        request: AiFallbackStatusRequest
+    ) async throws -> AiFallbackStatus
+}
+
 enum AIClassificationContextPolicyState: Equatable {
     case fileNameOnly
     case fileNameAndPath
@@ -182,6 +189,17 @@ extension CoreBridge: CoreAIClassificationSuggesting {
     }
 }
 
+extension CoreBridge: CoreAIClassificationFallbackStatusReading {
+    func classificationFallbackStatus(
+        repoPath: String,
+        request: AiFallbackStatusRequest
+    ) async throws -> AiFallbackStatus {
+        try await Task.detached(priority: .userInitiated) {
+            try getAiFallbackStatus(repoPath: repoPath, request: request)
+        }.value
+    }
+}
+
 extension RemoteProviderConfigState {
     init(coreSnapshot: RemoteProviderConfigSnapshot) {
         providerConfigured = coreSnapshot.providerConfigured
@@ -317,6 +335,83 @@ private extension AIClassificationSuggestionSkipReasonState {
         case .noEligibleContext: self = .noEligibleContext
         case .privacyRule: self = .privacyRule
         case .providerUnavailable: self = .providerUnavailable
+        }
+    }
+}
+
+extension AiCallLogRoute {
+    init(snapshotRoute: AIClassificationSuggestionRouteState) {
+        switch snapshotRoute {
+        case .local: self = .local
+        case .remote: self = .remote
+        }
+    }
+}
+
+extension AiCategorySuggestionSkipReason {
+    init(snapshotReason: AIClassificationSuggestionSkipReasonState) {
+        switch snapshotReason {
+        case .aiDisabled: self = .aiDisabled
+        case .featureDisabled: self = .featureDisabled
+        case .ruleResultConfident: self = .ruleResultConfident
+        case .noEligibleContext: self = .noEligibleContext
+        case .privacyRule: self = .privacyRule
+        case .providerUnavailable: self = .providerUnavailable
+        }
+    }
+}
+
+extension AIClassificationSuggestionSkipReasonState {
+    var fallbackProviderErrorCode: String? {
+        switch self {
+        case .providerUnavailable:
+            "ProviderUnavailable"
+        case .aiDisabled, .featureDisabled, .ruleResultConfident, .noEligibleContext, .privacyRule:
+            nil
+        }
+    }
+}
+
+extension AIClassificationSuggestionState {
+    var fallbackStatusRequest: AiFallbackStatusRequest? {
+        switch status {
+        case .suggested:
+            nil
+        case .noSuggestion, .skipped, .unavailable:
+            AiFallbackStatusRequest(
+                operation: .classificationSuggestion,
+                route: route.map(AiCallLogRoute.init(snapshotRoute:)),
+                providerError: fallbackProviderError,
+                providerErrorCode: skippedReason?.fallbackProviderErrorCode,
+                privacyDecision: skippedReason == .privacyRule ? .skipped : nil,
+                privacySkippedReason: skippedReason == .privacyRule ? .privacyRule : nil,
+                categorySkippedReason: skippedReason.map(AiCategorySuggestionSkipReason.init(snapshotReason:)),
+                semanticFallbackReason: nil,
+                callLogStatus: fallbackCallLogStatus,
+                callLogId: callLogID,
+                privacyRuleId: privacyRuleID,
+                retryAfter: nil
+            )
+        }
+    }
+
+    private var fallbackProviderError: AiFallbackProviderErrorKind? {
+        switch skippedReason {
+        case .providerUnavailable:
+            .providerUnavailable
+        case .aiDisabled, .featureDisabled, .ruleResultConfident, .noEligibleContext, .privacyRule, nil:
+            nil
+        }
+    }
+
+    private var fallbackCallLogStatus: AiCallLogStatus? {
+        switch status {
+        case .suggested:
+            nil
+        case .noSuggestion, .skipped:
+            .skipped
+        case .unavailable:
+            .unavailable
         }
     }
 }

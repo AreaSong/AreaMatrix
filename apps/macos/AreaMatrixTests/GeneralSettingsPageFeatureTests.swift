@@ -267,6 +267,59 @@ final class GeneralSettingsPageFeatureTests: XCTestCase {
     }
 }
 
+extension AIClassificationSuggestionState {
+    static func s304Suggested(fileID: Int64) -> AIClassificationSuggestionState {
+        AIClassificationSuggestionState(
+            fileID: fileID,
+            status: .suggested,
+            currentCategory: "inbox",
+            suggestedCategory: "finance/invoices",
+            confidence: 0.86,
+            reason: "filename and extracted text mention invoice and payment",
+            route: .local,
+            usedContext: [.fileName, .extension, .repoRelativePath],
+            skippedReason: nil,
+            privacyRuleID: nil,
+            callLogID: 304,
+            requiresUserConfirmation: true
+        )
+    }
+
+    static func s304AiDisabled(fileID: Int64) -> AIClassificationSuggestionState {
+        AIClassificationSuggestionState(
+            fileID: fileID,
+            status: .skipped,
+            currentCategory: "inbox",
+            suggestedCategory: nil,
+            confidence: 0,
+            reason: nil,
+            route: nil,
+            usedContext: [],
+            skippedReason: .aiDisabled,
+            privacyRuleID: nil,
+            callLogID: nil,
+            requiresUserConfirmation: true
+        )
+    }
+
+    static func s304ProviderUnavailable(fileID: Int64) -> AIClassificationSuggestionState {
+        AIClassificationSuggestionState(
+            fileID: fileID,
+            status: .unavailable,
+            currentCategory: "inbox",
+            suggestedCategory: nil,
+            confidence: 0,
+            reason: nil,
+            route: .remote,
+            usedContext: [],
+            skippedReason: .providerUnavailable,
+            privacyRuleID: nil,
+            callLogID: 306,
+            requiresUserConfirmation: true
+        )
+    }
+}
+
 private enum GeneralSettingsLoaderResult {
     case success(RepoConfigSnapshot)
     case failure(Error)

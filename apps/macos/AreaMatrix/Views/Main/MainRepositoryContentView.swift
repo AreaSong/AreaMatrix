@@ -9,6 +9,7 @@ struct MainRepositoryContentView: View {
     let onImport: () -> Void
     let onDropImport: ([URL], ImportEntryDestination) -> Void
     let onOpenSettings: () -> Void
+    let onOpenAISettings: () -> Void
     let onOpenRepository: () -> Void
     let onOpenHelp: () -> Void
     let onOpenImportConflictBatch: (ImportConflictBatchRoute) -> Void
@@ -65,6 +66,7 @@ struct MainRepositoryContentView: View {
         onImport: @escaping () -> Void,
         onDropImport: @escaping ([URL], ImportEntryDestination) -> Void,
         onOpenSettings: @escaping () -> Void = {},
+        onOpenAISettings: @escaping () -> Void = {},
         onOpenRepository: @escaping () -> Void = {},
         onOpenHelp: @escaping () -> Void = {},
         onOpenImportConflictBatch: @escaping (ImportConflictBatchRoute) -> Void = { _ in },
@@ -104,7 +106,8 @@ struct MainRepositoryContentView: View {
     ) {
         self.opening = opening; self.state = state
         self.onImport = onImport; self.onDropImport = onDropImport
-        self.onOpenSettings = onOpenSettings; self.onOpenRepository = onOpenRepository; self.onOpenHelp = onOpenHelp
+        self.onOpenSettings = onOpenSettings; self.onOpenAISettings = onOpenAISettings
+        self.onOpenRepository = onOpenRepository; self.onOpenHelp = onOpenHelp
         self.onOpenImportConflictBatch = onOpenImportConflictBatch
         self.onRetryCurrentList = onRetryCurrentList; self.onCollectDiagnostics = onCollectDiagnostics
         self.onShowInFinder = onShowInFinder; self.onCopyPath = onCopyPath; self.onCopyPaths = onCopyPaths

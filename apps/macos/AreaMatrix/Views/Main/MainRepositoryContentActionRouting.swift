@@ -44,9 +44,8 @@ extension MainRepositoryContentView {
             onClassifierRuleSaved: fileListModel.completeClassifierRuleSave,
             onOpenChangeCategoryPermissionRecovery: onOpenChangeCategoryPermissionRecovery,
             onBeginAIClassificationChange: fileListModel.beginAIClassificationChange,
-            onViewAIClassificationCall: { fileID in
-                Task { await fileListModel.viewAIClassificationCall(fileID: fileID) }
-            },
+            onViewAIClassificationCall: fileListModel.viewAIClassificationCall,
+            onOpenAIRecoverySettings: onOpenAISettings,
             onDelete: submitDelete,
             onApplyICloudConflict: applyICloudConflict,
             onCollectDiagnostics: { Task { await fileListModel.collectCurrentListDiagnostics() } }
