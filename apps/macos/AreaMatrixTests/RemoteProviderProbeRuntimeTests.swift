@@ -124,6 +124,86 @@ final class RemoteProviderProbeRuntimeTests: XCTestCase {
     }
 
     @MainActor
+    func testS304PrivacySkippedPanelOffersC309PrivacyRuleReferenceAction() async {
+        let request = AIClassificationSuggestionRequestState(fileID: 407, contextPolicy: .fileNameAndPath)
+        let bridge = S304SuggestionBridge(result: .success(.s304PrivacySkipped(fileID: request.fileID)))
+        let model = AIClassificationSuggestionPanelModel(
+            repoPath: "/tmp/repo",
+            request: request,
+            suggester: bridge,
+            errorMapper: S304ErrorMapper()
+        )
+
+        await model.askForSuggestion()
+        let panel = AIClassificationSuggestionPanel(
+            model: model,
+            fileName: "confidential.pdf",
+            currentPath: "inbox/confidential.pdf"
+        )
+        let body = s135MirrorDescription(of: panel.body)
+
+        XCTAssertTrue(body.contains("View privacy rule"))
+    }
+
+    @MainActor
+    func testS304PrivacyRuleReferenceLoadsMatchedC309Rule() async throws {
+        let bridge = RemotePrivacyRulesBridge(snapshot: .s303PrivacyRules())
+        let model = AIClassificationPrivacyRuleReferenceModel(
+            repoPath: "/tmp/repo",
+            ruleID: "rule-confidential",
+            bridge: bridge,
+            errorMapper: S304PrivacyRuleErrorMapper()
+        )
+
+        await model.load()
+        let reference = try XCTUnwrap(model.reference)
+        let requests = await bridge.requests()
+
+        XCTAssertEqual(requests.loadCount, 1)
+        XCTAssertEqual(reference.ruleID, "rule-confidential")
+        XCTAssertEqual(reference.name, "Block confidential")
+        XCTAssertEqual(reference.kind, .keyword)
+        XCTAssertEqual(reference.pattern, "confidential")
+        XCTAssertEqual(reference.appliesTo, .remoteAi)
+        XCTAssertEqual(reference.matchCount, 4)
+    }
+
+    @MainActor
+    func testS304PrivacyRuleReferenceReportsMissingC309Rule() async {
+        let bridge = RemotePrivacyRulesBridge(snapshot: .s303PrivacyRules())
+        let model = AIClassificationPrivacyRuleReferenceModel(
+            repoPath: "/tmp/repo",
+            ruleID: "missing-rule",
+            bridge: bridge,
+            errorMapper: S304PrivacyRuleErrorMapper()
+        )
+
+        await model.load()
+
+        XCTAssertEqual(model.state, .notFound("missing-rule"))
+    }
+
+    @MainActor
+    func testS304PrivacyRuleReferenceMapsC309LoadError() async {
+        let model = AIClassificationPrivacyRuleReferenceModel(
+            repoPath: "/tmp/repo",
+            ruleID: "rule-confidential",
+            bridge: S304PrivacyRulesFailingBridge(),
+            errorMapper: S304PrivacyRuleErrorMapper()
+        )
+
+        await model.load()
+
+        guard case let .failed(error) = model.state else {
+            XCTFail("Expected privacy rule load failure.")
+            return
+        }
+        XCTAssertEqual(error.message, "AI privacy rule could not be loaded.")
+        XCTAssertEqual(error.recovery, "Open privacy rules")
+        XCTAssertEqual(error.detail, "Mapped C3-09 core error")
+    }
+
+    @MainActor
     func testS304CoreErrorUsesSharedErrorMapper() async {
         let request = AIClassificationSuggestionRequestState(fileID: 406, contextPolicy: .fileNameOnly)
         let model = AIClassificationSuggestionPanelModel(
@@ -269,6 +349,19 @@ private actor S304SuggestionBridge: CoreAIClassificationSuggesting {
     }
 }
 
+private actor S304PrivacyRulesFailingBridge: CoreAIPrivacyRulesManaging {
+    func loadAIPrivacyRules(repoPath _: String) async throws -> AiPrivacyRulesSnapshot {
+        throw CoreError.Db(message: "privacy rules read failed")
+    }
+
+    func updateAIPrivacyRules(
+        repoPath _: String,
+        request _: AiPrivacyRulesUpdateRequest
+    ) async throws -> AiPrivacyRulesSnapshot {
+        throw CoreError.Db(message: "privacy rules write failed")
+    }
+}
+
 private struct S304ErrorMapper: CoreErrorMapping {
     func mapCoreError(_: CoreError) async -> CoreErrorMappingSnapshot {
         CoreErrorMappingSnapshot(
@@ -278,6 +371,19 @@ private struct S304ErrorMapper: CoreErrorMapping {
             suggestedAction: "Open AI settings",
             recoverability: .userActionRequired,
             rawContext: "S3-04 C3-04"
+        )
+    }
+}
+
+private struct S304PrivacyRuleErrorMapper: CoreErrorMapping {
+    func mapCoreError(_: CoreError) async -> CoreErrorMappingSnapshot {
+        CoreErrorMappingSnapshot(
+            kind: .db,
+            userMessage: "Mapped C3-09 core error",
+            severity: .medium,
+            suggestedAction: "Open privacy rules",
+            recoverability: .userActionRequired,
+            rawContext: "S3-04 C3-09"
         )
     }
 }

@@ -204,6 +204,8 @@
 		0A0000000000000000000714 /* RemoteProviderCredentialStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000715 /* RemoteProviderCredentialStore.swift */; };
 		0A0000000000000000000716 /* RemoteProviderConfigModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000717 /* RemoteProviderConfigModel.swift */; };
 		0A0000000000000000000718 /* RemoteModelConfigSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000719 /* RemoteModelConfigSheet.swift */; };
+		0A0000000000000000000728 /* AIClassificationSuggestionPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000729 /* AIClassificationSuggestionPanel.swift */; };
+		0A000000000000000000072A /* AIClassificationPrivacyRuleReference.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000072B /* AIClassificationPrivacyRuleReference.swift */; };
 		0A0000000000000000000724 /* RemoteProviderProbeRuntime.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000725 /* RemoteProviderProbeRuntime.swift */; };
 		0A0000000000000000000726 /* RemoteProviderProbeRuntimeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000727 /* RemoteProviderProbeRuntimeTests.swift */; };
 		0A00000000000000000001A0 /* ImportBatchNamingOptionsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001A1 /* ImportBatchNamingOptionsSection.swift */; };
@@ -384,6 +386,8 @@
 		0A0000000000000000000715 /* RemoteProviderCredentialStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/RemoteProviderCredentialStore.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000717 /* RemoteProviderConfigModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/RemoteProviderConfigModel.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000719 /* RemoteModelConfigSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/RemoteModelConfigSheet.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000729 /* AIClassificationSuggestionPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/AIClassificationSuggestionPanel.swift; sourceTree = SOURCE_ROOT; };
+		0A000000000000000000072B /* AIClassificationPrivacyRuleReference.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/AIClassificationPrivacyRuleReference.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000725 /* RemoteProviderProbeRuntime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/RemoteProviderProbeRuntime.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000727 /* RemoteProviderProbeRuntimeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/RemoteProviderProbeRuntimeTests.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002DD /* ICloudConflictMinimalValidationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ICloudConflictMinimalValidationTests.swift; sourceTree = SOURCE_ROOT; };
@@ -742,6 +746,8 @@
 				0A0000000000000000000717 /* RemoteProviderConfigModel.swift */,
 				0A0000000000000000000725 /* RemoteProviderProbeRuntime.swift */,
 				0A0000000000000000000719 /* RemoteModelConfigSheet.swift */,
+				0A0000000000000000000729 /* AIClassificationSuggestionPanel.swift */,
+				0A000000000000000000072B /* AIClassificationPrivacyRuleReference.swift */,
 			);
 			name = AI;
 			sourceTree = "<group>";
@@ -1200,6 +1206,8 @@
 				0A00000000000000000002AA /* AdvancedSettingsSupportViews.swift in Sources */,
 				0A00000000000000000002AE /* AboutSettingsPane.swift in Sources */,
 				0A0000000000000000000718 /* RemoteModelConfigSheet.swift in Sources */,
+				0A0000000000000000000728 /* AIClassificationSuggestionPanel.swift in Sources */,
+				0A000000000000000000072A /* AIClassificationPrivacyRuleReference.swift in Sources */,
 				0A000000000000000000013C /* MainRepositoryDetailPane.swift in Sources */,
 				0A0000000000000000000210 /* DetailLogTabView.swift in Sources */,
 				0A0000000000000000000224 /* DetailExternalCreateSyncStatusView.swift in Sources */,
