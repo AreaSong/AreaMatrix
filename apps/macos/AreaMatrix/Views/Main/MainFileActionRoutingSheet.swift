@@ -22,6 +22,7 @@ struct MainFileActionRoutingSheet: View {
     let onPreviewChangeCategory: (Int64, String) -> Void
     let onLoadClassifierCorrectionContext: (Int64, String) -> Void
     let onChangeCategory: (Int64, String, MainFileCategoryMoveMode, MainFileCategoryMoveOptions) -> Void
+    let onApplyAIClassificationSuggestion: (AIClassificationSuggestionApplyRequest) -> Void
     let onBeginClassifierRuleHandoff: (Int64, String, Bool, ClassifierRuleHandoffDestination) -> Void
     let onRenameFirstFromChangeCategory: (Int64, String) -> Void
     let onEditClassifierRule: (ClassifierRuleHandoff) -> Void
@@ -29,7 +30,7 @@ struct MainFileActionRoutingSheet: View {
     let onClassifierRuleSaved: (ClassifierRuleSnapshot) -> Void
     let onOpenChangeCategoryPermissionRecovery: () -> Void
     let onBeginAIClassificationChange: (Int64, String?) -> Void
-    let onViewAIClassificationCall: (Int64) -> Void
+    let onCancelClassifierRuleRoute: () -> Void
     let onOpenAIRecoverySettings: () -> Void
     let onDelete: (Int64, MainFileDeleteOperation) -> Void
     let onApplyICloudConflict: (ICloudConflictApplyContext) -> Void
@@ -52,9 +53,12 @@ struct MainFileActionRoutingSheet: View {
             AIClassificationSuggestionRouteView(
                 repoPath: repoPath,
                 file: file,
+                moveState: changeCategoryState,
+                returnContext: destination.aiClassificationReturnContext,
                 onCancel: onDismiss,
                 onBeginChange: onBeginAIClassificationChange,
-                onViewCall: onViewAIClassificationCall,
+                onPreview: onPreviewChangeCategory,
+                onApply: onApplyAIClassificationSuggestion,
                 onOpenAIRecoverySettings: onOpenAIRecoverySettings
             )
         case .delete:
@@ -132,7 +136,7 @@ struct MainFileActionRoutingSheet: View {
             mode: route.handoffMode,
             repoPath: repoPath,
             handoff: route.handoff,
-            onCancel: onDismiss,
+            onCancel: route.handoff.sourcePageID == "S3-04" ? onCancelClassifierRuleRoute : onDismiss,
             onBack: onEditClassifierRule,
             onPreviewImpact: onPreviewClassifierRuleImpact,
             onSaved: onClassifierRuleSaved

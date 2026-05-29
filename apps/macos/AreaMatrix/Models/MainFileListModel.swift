@@ -263,11 +263,6 @@ extension MainFileListModel {
         )
     }
 
-    func viewAIClassificationCall(callLogID: Int64) {
-        statusBanner = .aiCallLogRequested(callLogID: callLogID)
-        clearPendingActionDestination()
-    }
-
     func reloadCurrentCategory(focusingOn fileID: Int64? = nil) async {
         loadGeneration += 1
         let generation = loadGeneration

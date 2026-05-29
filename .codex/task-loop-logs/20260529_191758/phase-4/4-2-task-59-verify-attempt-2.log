@@ -1,0 +1,69 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-2/task-59`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-2-stage3-ai/task-59-s3-04-page-integration-verify.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：本页所有 page-feature task 覆盖
+- 结果：通过
+- 证据：manifest 中 S3-04 覆盖 `4-2/task-56`、`4-2/task-57`、`4-2/task-58`、`4-2/task-59`，control map 声明能力为 `C3-04, C3-09, C3-10`，无额外能力。
+- 涉及文件：`tasks/prompts/_shared/manifests/phase-4.md`
+
+- 项目：页面状态、入口、退出、错误态和 CoreBridge 调用闭环
+- 结果：通过
+- 证据：S3-04 route 进入 `AIClassificationSuggestionRouteView`；`CoreBridge` 接入 `suggestCategoryWithAi`、`listAiPrivacyRules`、`getAiFallbackStatus`、`listAiCalls`；Accept 先 preview，再确认，最后调用 `correctFileCategory`。
+- 涉及文件：`AIClassificationSuggestionPanel.swift`、`CoreRemoteProviderConfiguring.swift`、`MainFileCategoryMoveActions.swift`
+
+- 项目：mock、fixture、硬编码状态检查
+- 结果：通过
+- 证据：生产代码未发现 mock-only / fixture-only / hardcoded success；Core 侧存在真实 `ai_classification_suggestion`、`ai_privacy_rules`、`ai_fallback` 实现和测试。测试 fixture 仅在 XCTest 中使用。
+- 涉及文件：`core/src/ai_classification_suggestion/implementation.rs`、`core/src/ai_privacy_rules/evaluation.rs`、`core/src/ai_fallback.rs`
+
+- 项目：不新增 control map 外功能
+- 结果：通过
+- 证据：S3-04 页面只消费 `C3-04, C3-09, C3-10`；调用日志和 S2-17/S2-18 仅作为页面规格声明的跳转/追溯路径，没有把相邻能力变成本页新增 Core 功能。
+- 涉及文件：`docs/architecture/stage-3-control-map.md`、`AIClassificationSuggestionPanel+Apply.swift`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，Swift 页面、状态、CoreBridge adapter、apply state 已拆分；未发现单文件超 500 行。
+- 注释 / rustdoc / 文档同步：通过，Core API、UDL、UX spec、control map 与 Swift/Core 调用合同一致。
+- 错误处理与边界处理：通过，隐私跳过、provider 不可用、fallback、preview/apply 失败都有状态和恢复动作。
+- 测试与验证覆盖：通过，task gate 和 macOS XCTest 均通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过，未发现生产路径 mock-only 或静态通过态。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-2/task-59`
+- 结果：通过；`doctor: OK`，`git diff --check` 无失败，macOS build `** BUILD SUCCEEDED **`。
+- 已运行：`./dev test macos`
+- 结果：通过；标准 `xcodebuild test` 因本地 `testmanagerd` sandbox 通信失败被脚本归因为环境阻断，随后复用已构建 XCTest bundle 执行 `xcrun xctest` 通过；日志显示 `Executed 691 tests, with 0 failures`。
+- 缺失：未做真实窗口 UI smoke；本 task manifest 未要求，且当前代码级闭环和 XCTest 证据充分。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+
+VERIFY_RESULT: PASS

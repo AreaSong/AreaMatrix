@@ -38,6 +38,14 @@ protocol CoreAIClassificationFallbackStatusReading: Sendable {
     ) async throws -> AiFallbackStatus
 }
 
+protocol CoreAICallLogListing: Sendable {
+    func listAICalls(
+        repoPath: String,
+        filter: AiCallLogFilter,
+        pagination: AiCallLogPagination
+    ) async throws -> AiCallLogPage
+}
+
 enum AIClassificationContextPolicyState: Equatable {
     case fileNameOnly
     case fileNameAndPath
@@ -196,6 +204,18 @@ extension CoreBridge: CoreAIClassificationFallbackStatusReading {
     ) async throws -> AiFallbackStatus {
         try await Task.detached(priority: .userInitiated) {
             try getAiFallbackStatus(repoPath: repoPath, request: request)
+        }.value
+    }
+}
+
+extension CoreBridge: CoreAICallLogListing {
+    func listAICalls(
+        repoPath: String,
+        filter: AiCallLogFilter,
+        pagination: AiCallLogPagination
+    ) async throws -> AiCallLogPage {
+        try await Task.detached(priority: .userInitiated) {
+            try listAiCalls(repoPath: repoPath, filter: filter, pagination: pagination)
         }.value
     }
 }

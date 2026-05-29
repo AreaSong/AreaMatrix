@@ -26,7 +26,7 @@ extension MainFileListModel {
     }
 
     func loadMoveToCategoryPreview(fileID: Int64, targetCategory: String) async {
-        guard pendingActionDestination?.isChangeCategory(fileID: fileID) == true,
+        guard pendingActionDestination?.supportsCategoryPreview(fileID: fileID) == true,
               writeActionDisabledReason(fileID: fileID) == nil else { return }
 
         let request = MainFileCategoryMovePreviewRequest(fileID: fileID, targetCategory: targetCategory)
@@ -37,12 +37,12 @@ extension MainFileListModel {
                 fileID: fileID,
                 newCategory: targetCategory
             )
-            guard pendingActionDestination?.isChangeCategory(fileID: fileID) == true,
+            guard pendingActionDestination?.supportsCategoryPreview(fileID: fileID) == true,
                   changeCategoryState.isChecking(request) else { return }
             changeCategoryState = .ready(request, preview)
         } catch {
             let mapping = await mapCoreError(error)
-            guard pendingActionDestination?.isChangeCategory(fileID: fileID) == true,
+            guard pendingActionDestination?.supportsCategoryPreview(fileID: fileID) == true,
                   changeCategoryState.isChecking(request) else { return }
             changeCategoryState = .failed(request, operation: .preview, mapping)
         }
@@ -77,6 +77,43 @@ extension MainFileListModel {
             let mapping = await mapCoreError(error)
             guard pendingActionDestination?.isChangeCategory(fileID: fileID) == true else { return false }
             changeCategoryState = .failed(request, operation: failureOperation(for: mode), mapping)
+            return false
+        }
+    }
+
+    @discardableResult
+    func submitAIClassificationSuggestion(_ request: AIClassificationSuggestionApplyRequest) async -> Bool {
+        guard pendingActionDestination?.isAIClassificationSuggestion(fileID: request.fileID) == true,
+              !changeCategoryState.isMoving(fileID: request.fileID),
+              writeActionDisabledReason(fileID: request.fileID) == nil else { return false }
+
+        let previewRequest = MainFileCategoryMovePreviewRequest(
+            fileID: request.fileID,
+            targetCategory: request.targetCategory
+        )
+        changeCategoryState = .moving(previewRequest, preview: request.preview)
+        do {
+            let result = try await fileCategoryMover.correctFileCategory(
+                repoPath: repoPath,
+                fileID: request.fileID,
+                targetCategory: request.targetCategory,
+                moveFile: request.moveFile,
+                remember: request.rememberRule
+            )
+            classifierCorrectionResult = result
+            await applyAIClassificationSuggestionResult(
+                result.updatedFile,
+                suggestion: request.suggestion,
+                rememberRule: request.rememberRule,
+                moveFile: request.moveFile
+            )
+            return true
+        } catch {
+            let mapping = await mapCoreError(error)
+            guard pendingActionDestination?.isAIClassificationSuggestion(fileID: request.fileID) == true else {
+                return false
+            }
+            changeCategoryState = .failed(previewRequest, operation: .correction, mapping)
             return false
         }
     }
@@ -140,6 +177,48 @@ extension MainFileListModel {
         if case let .loaded(loadedFileID, _) = detailLogState, loadedFileID == movedFile.id {
             detailTabRequest = .automatic(.log)
         }
+    }
+
+    private func applyAIClassificationSuggestionResult(
+        _ movedFile: FileEntrySnapshot,
+        suggestion: AIClassificationSuggestionState,
+        rememberRule: Bool,
+        moveFile: Bool
+    ) async {
+        files = files.map { file in
+            file.id == movedFile.id ? movedFile : file
+        }
+        if !isMovedFileVisibleInCurrentList(movedFile) {
+            files.removeAll { $0.id == movedFile.id }
+        }
+
+        selection = .single(movedFile.id)
+        selectedFileDetail = movedFile
+        selectedFileNoteWriteBlock = noteWriteBlock(for: movedFile)
+        detailErrorMapping = nil
+        isDetailLoading = false
+        changeCategoryState = .idle
+        statusBanner = classifierCorrectionStatusBanner(for: movedFile)
+        detailTabRequest = .automatic(.log)
+        await loadChangeLog(fileID: movedFile.id)
+        if rememberRule, let handoff = makeClassifierRuleHandoff(
+            file: movedFile,
+            targetCategory: movedFile.category,
+            moveFile: moveFile,
+            sourcePageID: "S3-04",
+            aiProvenance: ClassifierRuleAIProvenance(suggestion: suggestion, finalCategory: movedFile.category)
+        ) {
+            beginClassifierRuleRoute(.saveRule(handoff), handoff: handoff)
+            return
+        }
+        pendingActionDestination = .aiClassificationSuggestion(
+            fileID: movedFile.id,
+            returnContext: AIClassificationSuggestionReturnContext(
+                appliedCategory: movedFile.category,
+                callLogID: suggestion.callLogID,
+                ruleStatus: nil
+            )
+        )
     }
 
     private func classifierCorrectionStatusBanner(for file: FileEntrySnapshot) -> MainListStatusBanner {

@@ -186,12 +186,6 @@ func s304SuggestionModel(
     )
 }
 
-extension AIClassificationSuggestionPanelModel {
-    func setFallbackStatusForTest(_ status: AiFallbackStatus) {
-        fallbackStatus = status
-    }
-}
-
 struct S304ErrorMapper: CoreErrorMapping {
     func mapCoreError(_: CoreError) async -> CoreErrorMappingSnapshot {
         CoreErrorMappingSnapshot(

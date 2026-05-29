@@ -138,7 +138,7 @@ final class RemoteProviderProbeRuntimeTests: XCTestCase {
 
         XCTAssertTrue(body.contains("View privacy rule"))
         XCTAssertTrue(body.contains("Classify manually"))
-        XCTAssertTrue(body.contains("S3-04-C3-10-fallback-status"))
+        XCTAssertFalse(panel.isFallbackActionDisabled(.viewPrivacyRule))
     }
 
     @MainActor
@@ -194,12 +194,13 @@ final class RemoteProviderProbeRuntimeTests: XCTestCase {
     }
 
     @MainActor
-    func testS304C310ViewCallLogActionUsesFallbackCallLogID() {
+    func testS304C310ViewCallLogActionUsesFallbackCallLogID() async {
+        let fallbackBridge = S304FallbackBridge(status: .s304ProviderUnavailable(callLogID: 730))
         let model = s304SuggestionModel(
             request: AIClassificationSuggestionRequestState(fileID: 409, contextPolicy: .fileNameOnly),
-            bridge: S304SuggestionBridge(result: .success(.s304ProviderUnavailable(fileID: 409)))
+            bridge: S304SuggestionBridge(result: .success(.s304ProviderUnavailable(fileID: 409))),
+            fallbackBridge: fallbackBridge
         )
-        model.setFallbackStatusForTest(.s304ProviderUnavailable(callLogID: 730))
         var viewedCallLogID: Int64?
         let panel = AIClassificationSuggestionPanel(
             model: model,
@@ -208,6 +209,7 @@ final class RemoteProviderProbeRuntimeTests: XCTestCase {
             onViewCall: { viewedCallLogID = $0 }
         )
 
+        await model.askForSuggestion()
         XCTAssertFalse(panel.isFallbackActionDisabled(.viewCallLog))
         panel.performFallbackAction(.viewCallLog)
 
@@ -215,23 +217,36 @@ final class RemoteProviderProbeRuntimeTests: XCTestCase {
     }
 
     @MainActor
-    func testS304MainRouteKeepsC310CallLogIDSeparateFromFileChangeLog() async {
-        let changeLogLister = S304FailingChangeLogLister()
+    func testS304PageIntegrationKeepsSuggestionDraftUntilClassifierExit() async {
+        let file = FileEntrySnapshot.detailMetaFixture(id: 304, currentName: "invoice.pdf")
         let model = MainFileListModel(
-            opening: .mainLoadingFixture(repoPath: "/tmp/repo", fileCount: 0),
-            fileLister: MainListRecordingFileLister(results: []),
-            fileDetailer: MainListRecordingFileDetailer(results: []),
-            changeLogLister: changeLogLister,
-            errorMapper: MainListRecordingErrorMapper(mapping: .mainListDbFixture(rawContext: "unused"))
+            opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [file]),
+            fileLister: DetailMetaNoopLister(),
+            fileDetailer: DetailMetaImmediateDetailer(result: .success(file)),
+            errorMapper: DetailMetaErrorMapper(mapping: .detailMetaFileNotFound())
         )
-        model.pendingActionDestination = .aiClassificationSuggestion(fileID: 409)
+        let request = AIClassificationSuggestionRequestState(
+            fileID: file.id,
+            contextPolicy: .limitedTextSummary,
+            privacyPolicyRef: "privacy-v1"
+        )
+        let bridge = S304SuggestionBridge(result: .success(.s304Suggested(fileID: file.id)))
+        let suggestionModel = s304SuggestionModel(request: request, bridge: bridge)
 
-        model.viewAIClassificationCall(callLogID: 730)
-        let changeLogRequests = await changeLogLister.requests()
+        await model.selectFiles([file.id])
+        model.beginAIClassificationSuggestion(fileID: file.id)
+        await suggestionModel.askForSuggestion()
+        model.beginAIClassificationChange(fileID: file.id, targetCategory: suggestionModel.suggestion?.suggestedCategory)
+        let recordedRequests = await bridge.recordedRequests()
 
-        XCTAssertEqual(changeLogRequests, [])
-        XCTAssertEqual(model.statusBanner, .aiCallLogRequested(callLogID: 730))
-        XCTAssertNil(model.pendingActionDestination)
+        XCTAssertEqual(recordedRequests, [request])
+        XCTAssertNil(suggestionModel.acceptDisabledReason)
+        XCTAssertEqual(
+            model.pendingActionDestination,
+            .changeCategory(fileID: file.id, initialTargetCategory: "finance/invoices", mode: .classifierCorrection)
+        )
+        XCTAssertEqual(model.files, [file])
+        XCTAssertEqual(model.changeCategoryState, .idle)
     }
 
     @MainActor
@@ -414,19 +429,6 @@ private actor S304PrivacyRulesFailingBridge: CoreAIPrivacyRulesManaging {
         request _: AiPrivacyRulesUpdateRequest
     ) async throws -> AiPrivacyRulesSnapshot {
         throw CoreError.Db(message: "privacy rules write failed")
-    }
-}
-
-private actor S304FailingChangeLogLister: CoreChangeLogListing {
-    private var recordedRequests: [ChangeFilterSnapshot] = []
-
-    func listChanges(repoPath _: String, filter: ChangeFilterSnapshot) async throws -> [ChangeLogEntrySnapshot] {
-        recordedRequests.append(filter)
-        throw CoreError.Internal(message: "C3-10 call log route must not load file change log")
-    }
-
-    func requests() -> [ChangeFilterSnapshot] {
-        recordedRequests
     }
 }
 

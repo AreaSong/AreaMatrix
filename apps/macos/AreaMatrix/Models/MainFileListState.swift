@@ -44,7 +44,7 @@ enum MainFileSelectionState: Equatable {
 
 enum MainFileActionDestination: Equatable {
     case rename(fileID: Int64)
-    case aiClassificationSuggestion(fileID: Int64)
+    case aiClassificationSuggestion(fileID: Int64, returnContext: AIClassificationSuggestionReturnContext? = nil)
     case changeCategory(
         fileID: Int64,
         initialTargetCategory: String? = nil,
@@ -93,7 +93,7 @@ enum MainFileActionDestination: Equatable {
 
     var fileID: Int64 {
         switch self {
-        case let .rename(fileID), let .aiClassificationSuggestion(fileID),
+        case let .rename(fileID), let .aiClassificationSuggestion(fileID, _),
              let .changeCategory(fileID, _, _, _), let .delete(fileID), let .iCloudConflict(fileID):
             fileID
         }
@@ -114,9 +114,23 @@ enum MainFileActionDestination: Equatable {
         return ruleRoute
     }
 
+    var aiClassificationReturnContext: AIClassificationSuggestionReturnContext? {
+        guard case let .aiClassificationSuggestion(_, context) = self else { return nil }
+        return context
+    }
+
     func isChangeCategory(fileID expectedFileID: Int64) -> Bool {
         guard case let .changeCategory(fileID, _, _, _) = self else { return false }
         return fileID == expectedFileID
+    }
+
+    func isAIClassificationSuggestion(fileID expectedFileID: Int64) -> Bool {
+        guard case let .aiClassificationSuggestion(fileID, _) = self else { return false }
+        return fileID == expectedFileID
+    }
+
+    func supportsCategoryPreview(fileID expectedFileID: Int64) -> Bool {
+        isChangeCategory(fileID: expectedFileID) || isAIClassificationSuggestion(fileID: expectedFileID)
     }
 }
 
@@ -245,7 +259,6 @@ enum MainListStatusBanner: Equatable {
     case changedBatchCategory(count: Int64, category: String)
     case changedCategoryTreeRefreshFailed(fileID: Int64, category: String)
     case resolvedICloudConflict(fileID: Int64, strategy: ICloudConflictResolutionStrategy)
-    case aiCallLogRequested(callLogID: Int64)
 
     var message: String {
         switch self {
@@ -283,8 +296,6 @@ enum MainListStatusBanner: Equatable {
             """
         case let .resolvedICloudConflict(_, strategy):
             return strategy.successMessage
-        case let .aiCallLogRequested(callLogID):
-            return "AI call log entry \(callLogID) is ready for S3-05."
         }
     }
 
@@ -295,7 +306,7 @@ enum MainListStatusBanner: Equatable {
         case .removedSelectedFile, .unsavedNoteDraftPreserved, .changedCategoryTreeRefreshFailed:
             "exclamationmark.triangle"
         case .movedFileToTrash, .removedFileFromIndex, .batchDeleted, .changedCategory, .correctedClassification,
-             .savedClassifierRule, .changedBatchCategory, .resolvedICloudConflict, .aiCallLogRequested:
+             .savedClassifierRule, .changedBatchCategory, .resolvedICloudConflict:
             "checkmark.circle"
         }
     }

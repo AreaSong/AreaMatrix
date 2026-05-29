@@ -3,26 +3,36 @@ import SwiftUI
 struct AIClassificationSuggestionRouteView: View {
     let repoPath: String
     let file: FileEntrySnapshot?
+    let moveState: MainFileCategoryMoveState
+    let returnContext: AIClassificationSuggestionReturnContext?
     let onCancel: () -> Void
     let onBeginChange: (Int64, String?) -> Void
-    let onViewCall: (Int64) -> Void
+    let onPreview: (Int64, String) -> Void
+    let onApply: (AIClassificationSuggestionApplyRequest) -> Void
     let onOpenAIRecoverySettings: () -> Void
     @State private var presentedRecoverySheet: AIClassificationRecoverySheet?
+    @State private var callLogRoute: AIClassificationCallLogRoute?
     @StateObject private var model: AIClassificationSuggestionPanelModel
 
     init(
         repoPath: String,
         file: FileEntrySnapshot?,
+        moveState: MainFileCategoryMoveState = .idle,
+        returnContext: AIClassificationSuggestionReturnContext? = nil,
         onCancel: @escaping () -> Void,
         onBeginChange: @escaping (Int64, String?) -> Void,
-        onViewCall: @escaping (Int64) -> Void,
+        onPreview: @escaping (Int64, String) -> Void = { _, _ in },
+        onApply: @escaping (AIClassificationSuggestionApplyRequest) -> Void = { _ in },
         onOpenAIRecoverySettings: @escaping () -> Void
     ) {
         self.repoPath = repoPath
         self.file = file
+        self.moveState = moveState
+        self.returnContext = returnContext
         self.onCancel = onCancel
         self.onBeginChange = onBeginChange
-        self.onViewCall = onViewCall
+        self.onPreview = onPreview
+        self.onApply = onApply
         self.onOpenAIRecoverySettings = onOpenAIRecoverySettings
         _model = StateObject(wrappedValue: AIClassificationSuggestionPanelModel(
             repoPath: repoPath,
@@ -40,11 +50,13 @@ struct AIClassificationSuggestionRouteView: View {
                     model: model,
                     fileName: file.currentName,
                     currentPath: file.path,
-                    onAccept: acceptSuggestion,
+                    moveState: moveState,
+                    returnContext: returnContext,
+                    onPreview: previewSuggestion,
+                    onApply: applySuggestion,
                     onChange: changeSuggestion,
-                    onReject: onCancel,
                     onClassifyManually: classifyManually,
-                    onViewCall: onViewCall,
+                    onViewCall: { callLogRoute = AIClassificationCallLogRoute(callLogID: $0) },
                     onOpenAISettings: onOpenAIRecoverySettings,
                     onOpenLocalModelStatus: { presentedRecoverySheet = .localModelStatus },
                     onConfigureRemoteAI: { presentedRecoverySheet = .remoteConfig }
@@ -54,6 +66,14 @@ struct AIClassificationSuggestionRouteView: View {
             }
         }
         .sheet(item: $presentedRecoverySheet, content: recoverySheet)
+        .sheet(item: $callLogRoute) { route in
+            AIClassificationCallLogDetailSheet(
+                repoPath: repoPath,
+                callLogID: route.callLogID
+            ) {
+                callLogRoute = nil
+            }
+        }
     }
 
     @ViewBuilder
@@ -66,11 +86,6 @@ struct AIClassificationSuggestionRouteView: View {
                 presentedRecoverySheet = nil
             })
         }
-    }
-
-    private func acceptSuggestion() {
-        guard let file, let category = suggestedCategory else { return }
-        onBeginChange(file.id, category)
     }
 
     private func changeSuggestion() {
@@ -87,6 +102,23 @@ struct AIClassificationSuggestionRouteView: View {
         let category = model.suggestion?.suggestedCategory?.trimmingCharacters(in: .whitespacesAndNewlines)
         return category?.isEmpty == false ? category : nil
     }
+
+    private func previewSuggestion(_ category: String) {
+        guard let file else { return }
+        onPreview(file.id, category)
+    }
+
+    private func applySuggestion(_ request: AIClassificationSuggestionPanelApplyRequest) {
+        guard let file else { return }
+        onApply(AIClassificationSuggestionApplyRequest(
+            fileID: file.id,
+            targetCategory: request.targetCategory,
+            moveFile: request.moveFile,
+            rememberRule: request.rememberRule,
+            suggestion: request.suggestion,
+            preview: request.preview
+        ))
+    }
 }
 
 private enum AIClassificationRecoverySheet: String, Identifiable {
@@ -94,19 +126,29 @@ private enum AIClassificationRecoverySheet: String, Identifiable {
     var id: String { rawValue }
 }
 
+private struct AIClassificationCallLogRoute: Identifiable, Equatable {
+    var callLogID: Int64
+    var id: Int64 { callLogID }
+}
+
 struct AIClassificationSuggestionPanel: View {
     @ObservedObject var model: AIClassificationSuggestionPanelModel
     var fileName: String
     var currentPath: String
-    var onAccept: () -> Void = {}
+    var moveState: MainFileCategoryMoveState = .idle
+    var returnContext: AIClassificationSuggestionReturnContext?
+    var onPreview: (String) -> Void = { _ in }
+    var onApply: (AIClassificationSuggestionPanelApplyRequest) -> Void = { _ in }
     var onChange: () -> Void = {}
-    var onReject: () -> Void = {}
     var onClassifyManually: () -> Void = {}
     var onViewCall: (Int64) -> Void = { _ in }
     var onOpenAISettings: () -> Void = {}
     var onOpenLocalModelStatus: () -> Void = {}
     var onConfigureRemoteAI: () -> Void = {}
-    @State private var privacyRuleRoute: AIClassificationPrivacyRuleRoute?
+    @State var privacyRuleRoute: AIClassificationPrivacyRuleRoute?
+    @State var rememberRule = false
+    @State var rejectedFeedback: AIClassificationSuggestionRejectedFeedback?
+    @State var showApplyConfirmation = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -117,6 +159,11 @@ struct AIClassificationSuggestionPanel: View {
             Text(model.statusText)
                 .foregroundStyle(statusTint)
                 .accessibilityIdentifier("S3-04-C3-04-status")
+            if let returnContext {
+                Label(returnContext.message, systemImage: "checkmark.circle")
+                    .foregroundStyle(.green)
+                    .accessibilityIdentifier("S3-04-C3-04-return-status")
+            }
             if let suggestion = model.suggestion {
                 suggestionContent(suggestion)
             }
@@ -169,81 +216,6 @@ struct AIClassificationSuggestionPanel: View {
         return .primary
     }
 
-    @ViewBuilder
-    private func suggestionContent(_ suggestion: AIClassificationSuggestionState) -> some View {
-        switch suggestion.status {
-        case .suggested:
-            suggestedCard(suggestion)
-        case .noSuggestion, .skipped, .unavailable:
-            skippedOrUnavailableCard(suggestion)
-        }
-    }
-
-    private func suggestedCard(_ suggestion: AIClassificationSuggestionState) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Text("Suggested category: \(suggestion.suggestedCategory ?? "Unknown")")
-                    .font(.subheadline.weight(.semibold))
-                AISuggestionConfidenceBadge(confidence: suggestion.confidence)
-                if let route = suggestion.route {
-                    Text(route.label)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
-            Text("Current category: \(suggestion.currentCategory ?? "None")")
-            Text("Reason: \(suggestion.reason ?? "No reason provided.")")
-            Text("Used: \(usedContextText(for: suggestion))")
-                .foregroundStyle(.secondary)
-            Text("Target category: \(suggestion.suggestedCategory ?? "Unknown")")
-            HStack {
-                Button("Accept", action: onAccept)
-                    .disabled(model.acceptDisabledReason != nil || model.state.isLoading)
-                Button("Change...", action: onChange)
-                    .disabled(model.state.isLoading)
-                Button("Reject", action: onReject)
-                    .disabled(model.state.isLoading)
-            }
-            if let acceptDisabledReason = model.acceptDisabledReason {
-                Text(acceptDisabledReason)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-            if let callLogID = suggestion.callLogID {
-                Button("View AI call") {
-                    onViewCall(callLogID)
-                }
-                .buttonStyle(.link)
-            }
-        }
-        .accessibilityElement(children: .contain)
-        .accessibilityIdentifier("S3-04-C3-04-suggestion-card")
-    }
-
-    private func skippedOrUnavailableCard(_ suggestion: AIClassificationSuggestionState) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            if let reason = suggestion.skippedReason {
-                Text("Reason: \(skipReasonText(reason))")
-            }
-            if let ruleID = privacyRuleID(for: suggestion) {
-                Text("Privacy rule: \(ruleID)")
-                    .foregroundStyle(.secondary)
-                Button("View privacy rule") {
-                    privacyRuleRoute = AIClassificationPrivacyRuleRoute(ruleID: ruleID)
-                }
-                .buttonStyle(.link)
-                .accessibilityIdentifier("S3-04-C3-09-view-privacy-rule")
-            }
-            if let callLogID = suggestion.callLogID {
-                Button("View AI call") {
-                    onViewCall(callLogID)
-                }
-                .buttonStyle(.link)
-            }
-        }
-        .accessibilityIdentifier("S3-04-C3-04-skipped-card")
-    }
-
     private func fallbackContent(_ status: AiFallbackStatus) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(status.message)
@@ -276,27 +248,6 @@ struct AIClassificationSuggestionPanel: View {
                 .font(.caption)
         }
         .accessibilityIdentifier("S3-04-C3-04-error")
-    }
-
-    private func privacyRuleID(for suggestion: AIClassificationSuggestionState) -> String? {
-        guard suggestion.skippedReason == .privacyRule else { return nil }
-        let ruleID = suggestion.privacyRuleID?.trimmingCharacters(in: .whitespacesAndNewlines)
-        return ruleID?.isEmpty == false ? ruleID : nil
-    }
-
-    private func usedContextText(for suggestion: AIClassificationSuggestionState) -> String {
-        suggestion.usedContext.isEmpty ? "none" : suggestion.usedContext.map(\.label).joined(separator: ", ")
-    }
-
-    private func skipReasonText(_ reason: AIClassificationSuggestionSkipReasonState) -> String {
-        switch reason {
-        case .aiDisabled: "AI classification suggestions are off"
-        case .featureDisabled: "AI classification feature is off"
-        case .ruleResultConfident: "rule classification is already confident"
-        case .noEligibleContext: "no eligible context"
-        case .privacyRule: "skipped by privacy rule"
-        case .providerUnavailable: "provider unavailable"
-        }
     }
 
     @ViewBuilder
@@ -404,7 +355,7 @@ struct AIClassificationSuggestionPanel: View {
     }
 }
 
-private struct AIClassificationPrivacyRuleRoute: Identifiable, Equatable {
+struct AIClassificationPrivacyRuleRoute: Identifiable, Equatable {
     var ruleID: String
     var id: String { ruleID }
 }

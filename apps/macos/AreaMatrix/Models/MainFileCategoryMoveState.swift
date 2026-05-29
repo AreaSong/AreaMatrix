@@ -66,6 +66,7 @@ struct ClassifierRuleHandoff: Equatable {
     var selectedKeywords: [String] = []
     var selectedExtensions: [String] = []
     var previewConfirmed = false
+    var aiProvenance: ClassifierRuleAIProvenance?
 }
 
 struct ClassifierRuleHandoffSummaryRow: Equatable {
@@ -82,10 +83,28 @@ extension ClassifierRuleHandoff {
             ClassifierRuleHandoffSummaryRow(label: "Target category", value: targetCategory),
             ClassifierRuleHandoffSummaryRow(label: "Path", value: sourcePath ?? fileName),
             ClassifierRuleHandoffSummaryRow(label: "Move preference", value: moveFile ? "Move file" : "Metadata only"),
+            aiProvenance.map {
+                ClassifierRuleHandoffSummaryRow(label: "AI suggested category", value: $0.suggestedCategory)
+            },
+            aiProvenance.map {
+                ClassifierRuleHandoffSummaryRow(label: "AI final category", value: $0.finalCategory)
+            },
+            aiProvenance.map {
+                ClassifierRuleHandoffSummaryRow(label: "AI confidence", value: "\($0.confidencePercent)%")
+            },
+            aiProvenance.flatMap { provenance in
+                provenance.reason.map { ClassifierRuleHandoffSummaryRow(label: "AI reason", value: $0) }
+            },
+            aiProvenance.map {
+                ClassifierRuleHandoffSummaryRow(label: "AI used context", value: $0.usedContextSummary)
+            },
+            aiProvenance.flatMap { provenance in
+                provenance.callLogID.map { ClassifierRuleHandoffSummaryRow(label: "AI call log", value: "\($0)") }
+            },
             ClassifierRuleHandoffSummaryRow(label: "Keyword candidates", value: keywordCandidateSummary),
             ClassifierRuleHandoffSummaryRow(label: "Extension candidates", value: extensionCandidateSummary),
             ClassifierRuleHandoffSummaryRow(label: "Priority", value: "\(draft.priority)")
-        ]
+        ].compactMap { $0 }
     }
 
     private var keywordCandidateSummary: String {

@@ -63,6 +63,7 @@
 		0A0000000000000000000410 /* CoreBatchDelete.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000411 /* CoreBatchDelete.swift */; };
 		0A00000000000000000002C8 /* MainFileCategoryMoveActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002C9 /* MainFileCategoryMoveActions.swift */; };
 		0A00000000000000000002CA /* MainFileCategoryMoveState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002CB /* MainFileCategoryMoveState.swift */; };
+		0A0000000000000000000732 /* AIClassificationSuggestionApplyState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000733 /* AIClassificationSuggestionApplyState.swift */; };
 		0A0000000000000000000332 /* BatchChangeCategoryState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000333 /* BatchChangeCategoryState.swift */; };
 		0A0000000000000000000412 /* BatchDeleteState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000413 /* BatchDeleteState.swift */; };
 		0A00000000000000000002CC /* MainFileActionRoutingActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002CD /* MainFileActionRoutingActions.swift */; };
@@ -206,8 +207,11 @@
 		0A0000000000000000000718 /* RemoteModelConfigSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000719 /* RemoteModelConfigSheet.swift */; };
 		0A0000000000000000000728 /* AIClassificationSuggestionPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000729 /* AIClassificationSuggestionPanel.swift */; };
 		0A000000000000000000072A /* AIClassificationPrivacyRuleReference.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000072B /* AIClassificationPrivacyRuleReference.swift */; };
+		0A0000000000000000000730 /* AIClassificationCallLogDetail.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000731 /* AIClassificationCallLogDetail.swift */; };
+		0A0000000000000000000734 /* AIClassificationSuggestionPanel+Apply.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000735 /* AIClassificationSuggestionPanel+Apply.swift */; };
 		0A0000000000000000000724 /* RemoteProviderProbeRuntime.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000725 /* RemoteProviderProbeRuntime.swift */; };
 		0A0000000000000000000726 /* RemoteProviderProbeRuntimeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000727 /* RemoteProviderProbeRuntimeTests.swift */; };
+		0A0000000000000000000736 /* S304PageIntegrationVerifyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000737 /* S304PageIntegrationVerifyTests.swift */; };
 		0A00000000000000000001A0 /* ImportBatchNamingOptionsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001A1 /* ImportBatchNamingOptionsSection.swift */; };
 		0A00000000000000000001B2 /* ImportFolderPreviewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001B3 /* ImportFolderPreviewModel.swift */; };
 		0A00000000000000000001B4 /* ImportFolderScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001B5 /* ImportFolderScanner.swift */; };
@@ -361,6 +365,7 @@
 		0A0000000000000000000411 /* CoreBatchDelete.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/CoreBatchDelete.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002C9 /* MainFileCategoryMoveActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/MainFileCategoryMoveActions.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002CB /* MainFileCategoryMoveState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/MainFileCategoryMoveState.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000733 /* AIClassificationSuggestionApplyState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/AIClassificationSuggestionApplyState.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000333 /* BatchChangeCategoryState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/BatchChangeCategoryState.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000413 /* BatchDeleteState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/BatchDeleteState.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002CD /* MainFileActionRoutingActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/MainFileActionRoutingActions.swift; sourceTree = SOURCE_ROOT; };
@@ -388,8 +393,11 @@
 		0A0000000000000000000719 /* RemoteModelConfigSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/RemoteModelConfigSheet.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000729 /* AIClassificationSuggestionPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/AIClassificationSuggestionPanel.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000072B /* AIClassificationPrivacyRuleReference.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/AIClassificationPrivacyRuleReference.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000731 /* AIClassificationCallLogDetail.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/AIClassificationCallLogDetail.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000735 /* AIClassificationSuggestionPanel+Apply.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AreaMatrix/Features/AI/AIClassificationSuggestionPanel+Apply.swift"; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000725 /* RemoteProviderProbeRuntime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/RemoteProviderProbeRuntime.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000727 /* RemoteProviderProbeRuntimeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/RemoteProviderProbeRuntimeTests.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000737 /* S304PageIntegrationVerifyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/S304PageIntegrationVerifyTests.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002DD /* ICloudConflictMinimalValidationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ICloudConflictMinimalValidationTests.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002DF /* ICloudConflictMinimalPageIntegrationVerifyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ICloudConflictMinimalPageIntegrationVerifyTests.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002E1 /* ICloudConflictMinimalResolution.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ICloudConflictMinimalResolution.swift; sourceTree = SOURCE_ROOT; };
@@ -747,7 +755,9 @@
 				0A0000000000000000000725 /* RemoteProviderProbeRuntime.swift */,
 				0A0000000000000000000719 /* RemoteModelConfigSheet.swift */,
 				0A0000000000000000000729 /* AIClassificationSuggestionPanel.swift */,
+				0A0000000000000000000735 /* AIClassificationSuggestionPanel+Apply.swift */,
 				0A000000000000000000072B /* AIClassificationPrivacyRuleReference.swift */,
+				0A0000000000000000000731 /* AIClassificationCallLogDetail.swift */,
 			);
 			name = AI;
 			sourceTree = "<group>";
@@ -844,6 +854,7 @@
 				0A00000000000000000002C3 /* MainFileDeleteActions.swift */,
 				0A00000000000000000002C9 /* MainFileCategoryMoveActions.swift */,
 				0A00000000000000000002CB /* MainFileCategoryMoveState.swift */,
+				0A0000000000000000000733 /* AIClassificationSuggestionApplyState.swift */,
 				0A0000000000000000000333 /* BatchChangeCategoryState.swift */,
 				0A0000000000000000000413 /* BatchDeleteState.swift */,
 				0A00000000000000000002CD /* MainFileActionRoutingActions.swift */,
@@ -951,6 +962,7 @@
 				0A0000000000000000000721 /* RemoteProviderConfigModelTests.swift */,
 				0A0000000000000000000723 /* RemoteProviderConfigTestSupport.swift */,
 				0A0000000000000000000727 /* RemoteProviderProbeRuntimeTests.swift */,
+				0A0000000000000000000737 /* S304PageIntegrationVerifyTests.swift */,
 				0A0000000000000000000295 /* ClassifierSettingsPageFeatureTests.swift */,
 				0A0000000000000000000299 /* ClassifierSettingsRecoveryTests.swift */,
 				0A0000000000000000000525 /* ClassifierRuleEditorCoreBridgeTests.swift */,
@@ -1208,6 +1220,9 @@
 				0A0000000000000000000718 /* RemoteModelConfigSheet.swift in Sources */,
 				0A0000000000000000000728 /* AIClassificationSuggestionPanel.swift in Sources */,
 				0A000000000000000000072A /* AIClassificationPrivacyRuleReference.swift in Sources */,
+				0A0000000000000000000730 /* AIClassificationCallLogDetail.swift in Sources */,
+				0A0000000000000000000734 /* AIClassificationSuggestionPanel+Apply.swift in Sources */,
+				0A0000000000000000000732 /* AIClassificationSuggestionApplyState.swift in Sources */,
 				0A000000000000000000013C /* MainRepositoryDetailPane.swift in Sources */,
 				0A0000000000000000000210 /* DetailLogTabView.swift in Sources */,
 				0A0000000000000000000224 /* DetailExternalCreateSyncStatusView.swift in Sources */,
@@ -1366,6 +1381,7 @@
 					0A0000000000000000000720 /* RemoteProviderConfigModelTests.swift in Sources */,
 					0A0000000000000000000722 /* RemoteProviderConfigTestSupport.swift in Sources */,
 					0A0000000000000000000726 /* RemoteProviderProbeRuntimeTests.swift in Sources */,
+					0A0000000000000000000736 /* S304PageIntegrationVerifyTests.swift in Sources */,
 					0A0000000000000000000294 /* ClassifierSettingsPageFeatureTests.swift in Sources */,
 					0A0000000000000000000298 /* ClassifierSettingsRecoveryTests.swift in Sources */,
 					0A0000000000000000000524 /* ClassifierRuleEditorCoreBridgeTests.swift in Sources */,
