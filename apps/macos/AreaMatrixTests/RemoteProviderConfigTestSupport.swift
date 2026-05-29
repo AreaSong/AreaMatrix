@@ -10,6 +10,61 @@ extension RemoteProviderOutcome {
     }
 }
 
+@MainActor
+func assertS303EnabledPageIntegration(
+    remoteModel: RemoteProviderConfigModel,
+    privacyModel: RemotePrivacyGateModel,
+    providerRequests: RemoteProviderConfigBridge.Requests,
+    privacyRequests: RemotePrivacyRulesBridge.Requests,
+    store: RemoteProviderTestCredentialStore,
+    file: StaticString = #filePath,
+    line: UInt = #line
+) {
+    let expectedScopes: [AISettingsFeatureKind] = [.classificationSuggestions, .autoSummaries]
+    let expectedCoreScopes = expectedScopes.map(AiFeatureKind.init(snapshotFeature:))
+    XCTAssertEqual(providerRequests.loadCount, 1, file: file, line: line)
+    XCTAssertEqual(providerRequests.test?.keyReference, "keychain:openAi-managed", file: file, line: line)
+    XCTAssertEqual(providerRequests.enable?.featureScope, expectedScopes, file: file, line: line)
+    XCTAssertEqual(providerRequests.enable?.dataFlowConfirmed, true, file: file, line: line)
+    XCTAssertEqual(remoteModel.snapshot?.providerConfigured, true, file: file, line: line)
+    XCTAssertEqual(remoteModel.snapshot?.providerVerified, true, file: file, line: line)
+    XCTAssertEqual(remoteModel.snapshot?.remoteProviderEnabled, true, file: file, line: line)
+    XCTAssertEqual(remoteModel.snapshot?.credentialConfigured, true, file: file, line: line)
+    XCTAssertEqual(remoteModel.snapshot?.featureScope, expectedScopes, file: file, line: line)
+    XCTAssertEqual(privacyModel.snapshot?.privacyGateEnabled, true, file: file, line: line)
+    XCTAssertEqual(privacyRequests.updates.first?.privacyGateEnabled, true, file: file, line: line)
+    XCTAssertEqual(privacyRequests.updates.first?.providerScope.remoteProviderEnabled, true, file: file, line: line)
+    XCTAssertEqual(
+        privacyRequests.updates.first?.providerScope.featureScope,
+        expectedCoreScopes,
+        file: file,
+        line: line
+    )
+    XCTAssertEqual(store.storedKeys(), ["keychain:openAi-managed": "integration-api-key"], file: file, line: line)
+}
+
+@MainActor
+func assertS303DisabledPageIntegration(
+    remoteModel: RemoteProviderConfigModel,
+    privacyModel: RemotePrivacyGateModel,
+    providerRequests: RemoteProviderConfigBridge.Requests,
+    privacyRequests: RemotePrivacyRulesBridge.Requests,
+    store: RemoteProviderTestCredentialStore,
+    file: StaticString = #filePath,
+    line: UInt = #line
+) {
+    let expectedScopes: [AISettingsFeatureKind] = [.classificationSuggestions, .autoSummaries]
+    XCTAssertEqual(providerRequests.disable?.removeStoredCredential, false, file: file, line: line)
+    XCTAssertEqual(remoteModel.snapshot?.remoteProviderEnabled, false, file: file, line: line)
+    XCTAssertEqual(remoteModel.snapshot?.credentialConfigured, true, file: file, line: line)
+    XCTAssertEqual(remoteModel.snapshot?.featureScope, expectedScopes, file: file, line: line)
+    XCTAssertEqual(privacyModel.snapshot?.privacyGateEnabled, false, file: file, line: line)
+    XCTAssertEqual(privacyRequests.updates.last?.privacyGateEnabled, false, file: file, line: line)
+    XCTAssertEqual(privacyRequests.updates.last?.providerScope.remoteProviderEnabled, false, file: file, line: line)
+    XCTAssertEqual(store.storedKeys(), ["keychain:openAi-managed": "integration-api-key"], file: file, line: line)
+    XCTAssertEqual(store.removedReferences(), [], file: file, line: line)
+}
+
 actor RemoteProviderConfigBridge: CoreRemoteProviderConfiguring {
     enum TestMode {
         case success, rejected, coreFailure
@@ -79,7 +134,7 @@ actor RemoteProviderConfigBridge: CoreRemoteProviderConfiguring {
         if enableFails {
             throw CoreError.Internal(message: "remote provider save failed")
         }
-        return RemoteProviderConfigState(
+        let snapshot = RemoteProviderConfigState(
             providerConfigured: true,
             providerVerified: true,
             remoteProviderEnabled: true,
@@ -91,12 +146,14 @@ actor RemoteProviderConfigBridge: CoreRemoteProviderConfiguring {
             updatedAt: 303,
             disabledReason: nil
         )
+        initial = snapshot
+        return snapshot
     }
 
     func disableRemoteProvider(repoPath _: String,
                                request: RemoteProviderDisableRequestState) async throws -> RemoteProviderConfigState {
         recorded.disable = request
-        return RemoteProviderConfigState(
+        let snapshot = RemoteProviderConfigState(
             providerConfigured: !request.removeStoredCredential,
             providerVerified: !request.removeStoredCredential,
             remoteProviderEnabled: false,
@@ -104,10 +161,12 @@ actor RemoteProviderConfigBridge: CoreRemoteProviderConfiguring {
             modelID: request.removeStoredCredential ? nil : initial.modelID,
             endpointURL: request.removeStoredCredential ? nil : initial.endpointURL,
             credentialConfigured: !request.removeStoredCredential,
-            featureScope: [],
+            featureScope: request.removeStoredCredential ? [] : initial.featureScope,
             updatedAt: 304,
             disabledReason: "Remote AI disabled"
         )
+        initial = snapshot
+        return snapshot
     }
 
     func requests() -> Requests {

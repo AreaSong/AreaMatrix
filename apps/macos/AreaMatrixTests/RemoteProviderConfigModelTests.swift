@@ -324,6 +324,85 @@ final class RemoteProviderConfigModelTests: XCTestCase {
     }
 
     @MainActor
+    func testS303PageIntegrationWiresEntryEnablePrivacyGateDisableAndExitRefresh() async {
+        let providerBridge = RemoteProviderConfigBridge()
+        let privacyBridge = RemotePrivacyRulesBridge(snapshot: .s303PrivacyRules(privacyGateEnabled: false))
+        let store = RemoteProviderTestCredentialStore()
+        let remoteModel = makeModel(bridge: providerBridge, store: store)
+        let privacyModel = RemotePrivacyGateModel(
+            repoPath: "/tmp/s303",
+            bridge: privacyBridge,
+            errorMapper: RemoteProviderConfigErrorMapper()
+        )
+
+        await remoteModel.load()
+        await privacyModel.load()
+        remoteModel.apiKey = "integration-api-key"
+        remoteModel.selectedScopes = [.classificationSuggestions, .autoSummaries]
+        remoteModel.dataFlowConfirmed = true
+        await remoteModel.testConnection()
+        let didEnable = await remoteModel.enableRemoteAI()
+        let didEnableGate = await privacyModel.enablePrivacyGate(providerConfig: remoteModel.snapshot)
+        let providerRequestsAfterEnable = await providerBridge.requests()
+        let privacyRequestsAfterEnable = await privacyBridge.requests()
+
+        XCTAssertTrue(didEnable)
+        XCTAssertTrue(didEnableGate)
+        assertS303EnabledPageIntegration(
+            remoteModel: remoteModel,
+            privacyModel: privacyModel,
+            providerRequests: providerRequestsAfterEnable,
+            privacyRequests: privacyRequestsAfterEnable,
+            store: store
+        )
+
+        let didDisable = await remoteModel.disableRemoteAI(removeStoredCredential: false)
+        let didDisableGate = await privacyModel.disablePrivacyGate(providerConfig: remoteModel.snapshot)
+        let providerRequestsAfterDisable = await providerBridge.requests()
+        let privacyRequestsAfterDisable = await privacyBridge.requests()
+
+        XCTAssertTrue(didDisable)
+        XCTAssertTrue(didDisableGate)
+        assertS303DisabledPageIntegration(
+            remoteModel: remoteModel,
+            privacyModel: privacyModel,
+            providerRequests: providerRequestsAfterDisable,
+            privacyRequests: privacyRequestsAfterDisable,
+            store: store
+        )
+    }
+
+    @MainActor
+    func testS303PageIntegrationKeepsProviderEnabledAndOffersRecoveryWhenPrivacyGateEnableFails() async {
+        let providerBridge = RemoteProviderConfigBridge()
+        let privacyBridge = RemotePrivacyRulesBridge(updateFails: true)
+        let remoteModel = makeModel(bridge: providerBridge, store: RemoteProviderTestCredentialStore())
+        let privacyModel = RemotePrivacyGateModel(
+            repoPath: "/tmp/s303",
+            bridge: privacyBridge,
+            errorMapper: RemoteProviderConfigErrorMapper()
+        )
+
+        await remoteModel.load()
+        remoteModel.apiKey = "integration-api-key"
+        remoteModel.selectedScopes = [.autoSummaries]
+        remoteModel.dataFlowConfirmed = true
+        await remoteModel.testConnection()
+        let didEnable = await remoteModel.enableRemoteAI()
+        let didEnableGate = await privacyModel.enablePrivacyGate(providerConfig: remoteModel.snapshot)
+
+        XCTAssertTrue(didEnable)
+        XCTAssertFalse(didEnableGate)
+        XCTAssertEqual(remoteModel.snapshot?.remoteProviderEnabled, true)
+        XCTAssertEqual(remoteModel.snapshot?.credentialConfigured, true)
+        XCTAssertEqual(privacyModel.pendingAction, .enable)
+        XCTAssertEqual(
+            privacyModel.failure?.message,
+            "Remote provider was configured, but privacy gate could not be enabled."
+        )
+    }
+
+    @MainActor
     private func makeModel(
         bridge: RemoteProviderConfigBridge,
         store: RemoteProviderTestCredentialStore

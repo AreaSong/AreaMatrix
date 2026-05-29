@@ -1,0 +1,16 @@
+一、执行结论：已完成。
+
+二、执行范围：单任务 `4-2/task-55`。仅修改：
+- [RemoteProviderConfigModelTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/RemoteProviderConfigModelTests.swift)
+- [RemoteProviderConfigTestSupport.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/RemoteProviderConfigTestSupport.swift)
+
+三、完成情况：补齐了 S3-03 整页集成测试证据，覆盖入口加载、C3-03 远程 provider 启用/禁用、C3-09 privacy gate 启用/禁用、退出刷新，以及 privacy gate 启用失败后的可恢复错误态。未新增 control map 之外功能，未改生产代码，未触碰 `core/src/**`。`.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json` 是既有脏改，未处理。
+
+四、工程质量：测试辅助 fake 改为启用/禁用后保持状态，避免一次性断言假数据；新增断言区分页面层 `AISettingsFeatureKind` 和 Core 请求层 `AiFeatureKind`。无新依赖、无 mock-only 生产链路、无硬编码通过态。两个修改文件分别为 468 / 440 行，未发现超过 120 字符的行。
+
+五、验证情况：
+- `./dev check task 4-2/task-55`：通过。包含 prompt doctor OK、`git diff --check` 通过、macOS `xcodebuild build` 成功。
+- `./dev test macos --only-testing AreaMatrixTests/RemoteProviderConfigModelTests`：通过。`xcodebuild test` 被本地 `testmanagerd` 沙箱限制拦截，dev 工具按既有策略复用已构建 XCTest bundle，`xcrun xctest` 通过。
+- 额外静态检查：`git diff --check` 通过；行宽检查通过。
+
+六、风险与后续：本任务风险来自远程 AI 与隐私 gate 闭环，当前用模型层集成测试证明 provider 和 privacy rules 的状态、错误与恢复路径能串起来；未做真实 UI 点击冒烟，残余风险是窗口级交互仍依赖后续 UI/人工验收。回滚方式是撤销上述两个 `AreaMatrixTests` 文件的改动。建议下一个任务继续执行 `4-2/task-56`。
