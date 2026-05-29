@@ -259,6 +259,71 @@ final class RemoteProviderConfigModelTests: XCTestCase {
     }
 
     @MainActor
+    func testS303C309EnableTurnsOnPrivacyGateWithProviderScope() async {
+        let bridge = RemotePrivacyRulesBridge(snapshot: .s303PrivacyRules(privacyGateEnabled: false))
+        let model = RemotePrivacyGateModel(
+            repoPath: "/tmp/s303",
+            bridge: bridge,
+            errorMapper: RemoteProviderConfigErrorMapper()
+        )
+
+        let didEnable = await model.enablePrivacyGate(providerConfig: .remoteProviderConfigEnabled())
+        let requests = await bridge.requests()
+
+        XCTAssertTrue(didEnable)
+        XCTAssertEqual(model.snapshot?.privacyGateEnabled, true)
+        XCTAssertEqual(requests.loadCount, 1)
+        XCTAssertEqual(requests.updates.count, 1)
+        XCTAssertEqual(requests.updates.first?.privacyGateEnabled, true)
+        XCTAssertEqual(requests.updates.first?.providerScope.remoteProviderEnabled, true)
+        XCTAssertEqual(requests.updates.first?.providerScope.featureScope, [.autoSummaries])
+        XCTAssertEqual(requests.updates.first?.rules.first?.name, "Block confidential")
+        XCTAssertEqual(requests.updates.first?.remoteAllowedFields[1].field, .extractedTextExcerpt)
+        XCTAssertEqual(requests.updates.first?.remoteAllowedFields[1].allowRemote, false)
+    }
+
+    @MainActor
+    func testS303C309DisableTurnsOffPrivacyGateWithoutClearingProviderConfig() async {
+        let bridge = RemotePrivacyRulesBridge(snapshot: .s303PrivacyRules(privacyGateEnabled: true))
+        let model = RemotePrivacyGateModel(
+            repoPath: "/tmp/s303",
+            bridge: bridge,
+            errorMapper: RemoteProviderConfigErrorMapper()
+        )
+        var disabledProvider = RemoteProviderConfigState.remoteProviderConfigEnabled()
+        disabledProvider.remoteProviderEnabled = false
+
+        let didDisableGate = await model.disablePrivacyGate(providerConfig: disabledProvider)
+        let requests = await bridge.requests()
+
+        XCTAssertTrue(didDisableGate)
+        XCTAssertEqual(model.snapshot?.privacyGateEnabled, false)
+        XCTAssertEqual(requests.updates.first?.privacyGateEnabled, false)
+        XCTAssertEqual(requests.updates.first?.providerScope.providerConfigured, true)
+        XCTAssertEqual(requests.updates.first?.providerScope.remoteProviderEnabled, false)
+    }
+
+    @MainActor
+    func testS303C309PrivacyGateFailureKeepsRetryableAction() async {
+        let bridge = RemotePrivacyRulesBridge(updateFails: true)
+        let model = RemotePrivacyGateModel(
+            repoPath: "/tmp/s303",
+            bridge: bridge,
+            errorMapper: RemoteProviderConfigErrorMapper()
+        )
+
+        let didEnable = await model.enablePrivacyGate(providerConfig: .remoteProviderConfigEnabled())
+
+        XCTAssertFalse(didEnable)
+        XCTAssertEqual(model.pendingAction, .enable)
+        XCTAssertEqual(
+            model.failure?.message,
+            "Remote provider was configured, but privacy gate could not be enabled."
+        )
+        XCTAssertEqual(model.failure?.detail, "Remote provider save failed")
+    }
+
+    @MainActor
     private func makeModel(
         bridge: RemoteProviderConfigBridge,
         store: RemoteProviderTestCredentialStore

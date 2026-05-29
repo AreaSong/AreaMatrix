@@ -115,6 +115,43 @@ actor RemoteProviderConfigBridge: CoreRemoteProviderConfiguring {
     }
 }
 
+actor RemotePrivacyRulesBridge: CoreAIPrivacyRulesManaging {
+    struct Requests: Equatable {
+        var loadCount = 0
+        var updates: [AiPrivacyRulesUpdateRequest] = []
+    }
+
+    private var snapshot: AiPrivacyRulesSnapshot
+    private let updateFails: Bool
+    private var recorded = Requests()
+
+    init(snapshot: AiPrivacyRulesSnapshot = .s303PrivacyRules(), updateFails: Bool = false) {
+        self.snapshot = snapshot
+        self.updateFails = updateFails
+    }
+
+    func loadAIPrivacyRules(repoPath _: String) async throws -> AiPrivacyRulesSnapshot {
+        recorded.loadCount += 1
+        return snapshot
+    }
+
+    func updateAIPrivacyRules(
+        repoPath _: String,
+        request: AiPrivacyRulesUpdateRequest
+    ) async throws -> AiPrivacyRulesSnapshot {
+        recorded.updates.append(request)
+        if updateFails {
+            throw CoreError.Db(message: "privacy gate write failed")
+        }
+        snapshot = snapshot.applyingPrivacyGateRequest(request)
+        return snapshot
+    }
+
+    func requests() -> Requests {
+        recorded
+    }
+}
+
 extension RemoteProviderConfigState {
     static func remoteProviderConfigDisabled() -> RemoteProviderConfigState {
         RemoteProviderConfigState(
@@ -144,6 +181,75 @@ extension RemoteProviderConfigState {
             updatedAt: 302,
             disabledReason: nil
         )
+    }
+}
+
+extension AiPrivacyRulesSnapshot {
+    static func s303PrivacyRules(privacyGateEnabled: Bool = false) -> AiPrivacyRulesSnapshot {
+        AiPrivacyRulesSnapshot(
+            privacyGateEnabled: privacyGateEnabled,
+            rules: [.s303RuleRecord()],
+            remoteAllowedFields: [
+                AiPrivacyFieldState(field: .fileName, allowRemote: true, lastMatchedCount: 0),
+                AiPrivacyFieldState(field: .extractedTextExcerpt, allowRemote: false, lastMatchedCount: 2),
+                AiPrivacyFieldState(field: .noteSummary, allowRemote: true, lastMatchedCount: 0)
+            ],
+            providerScope: AiPrivacyProviderScopeSnapshot(
+                providerConfigured: true,
+                providerVerified: true,
+                remoteProviderEnabled: false,
+                featureScope: [.autoSummaries]
+            ),
+            updatedAt: 901,
+            remoteBlockedByDefault: true
+        )
+    }
+
+    fileprivate func applyingPrivacyGateRequest(_ request: AiPrivacyRulesUpdateRequest) -> AiPrivacyRulesSnapshot {
+        AiPrivacyRulesSnapshot(
+            privacyGateEnabled: request.privacyGateEnabled,
+            rules: request.rules.map(AiPrivacyRuleRecord.init(input:)),
+            remoteAllowedFields: request.remoteAllowedFields.map(AiPrivacyFieldState.init(rule:)),
+            providerScope: request.providerScope,
+            updatedAt: 902,
+            remoteBlockedByDefault: remoteBlockedByDefault
+        )
+    }
+}
+
+private extension AiPrivacyRuleRecord {
+    static func s303RuleRecord() -> AiPrivacyRuleRecord {
+        AiPrivacyRuleRecord(
+            ruleId: "rule-confidential",
+            name: "Block confidential",
+            kind: .keyword,
+            pattern: "confidential",
+            appliesTo: .remoteAi,
+            enabled: true,
+            description: "Fixture privacy rule",
+            matchCount: 4,
+            lastMatchedAt: 900
+        )
+    }
+
+    init(input: AiPrivacyRuleInput) {
+        self.init(
+            ruleId: input.ruleId ?? "generated-rule",
+            name: input.name,
+            kind: input.kind,
+            pattern: input.pattern,
+            appliesTo: input.appliesTo,
+            enabled: input.enabled,
+            description: input.description,
+            matchCount: 0,
+            lastMatchedAt: nil
+        )
+    }
+}
+
+private extension AiPrivacyFieldState {
+    init(rule: AiPrivacyFieldRule) {
+        self.init(field: rule.field, allowRemote: rule.allowRemote, lastMatchedCount: 0)
     }
 }
 

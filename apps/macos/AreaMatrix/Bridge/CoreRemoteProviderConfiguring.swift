@@ -16,6 +16,14 @@ protocol CoreRemoteProviderConfiguring: Sendable {
     ) async throws -> RemoteProviderConfigState
 }
 
+protocol CoreAIPrivacyRulesManaging: Sendable {
+    func loadAIPrivacyRules(repoPath: String) async throws -> AiPrivacyRulesSnapshot
+    func updateAIPrivacyRules(
+        repoPath: String,
+        request: AiPrivacyRulesUpdateRequest
+    ) async throws -> AiPrivacyRulesSnapshot
+}
+
 extension CoreBridge: CoreRemoteProviderConfiguring {
     func loadRemoteProviderConfig(repoPath: String) async throws -> RemoteProviderConfigState {
         try await Task.detached(priority: .userInitiated) {
@@ -62,6 +70,23 @@ extension CoreBridge: CoreRemoteProviderConfiguring {
 
     private func ensureRemoteProviderProbeRuntime() throws {
         _ = try RemoteProviderProbeRuntimeInstaller().ensureInstalled()
+    }
+}
+
+extension CoreBridge: CoreAIPrivacyRulesManaging {
+    func loadAIPrivacyRules(repoPath: String) async throws -> AiPrivacyRulesSnapshot {
+        try await Task.detached(priority: .userInitiated) {
+            try listAiPrivacyRules(repoPath: repoPath)
+        }.value
+    }
+
+    func updateAIPrivacyRules(
+        repoPath: String,
+        request: AiPrivacyRulesUpdateRequest
+    ) async throws -> AiPrivacyRulesSnapshot {
+        try await Task.detached(priority: .userInitiated) {
+            try updateAiPrivacyRules(repoPath: repoPath, request: request)
+        }.value
     }
 }
 

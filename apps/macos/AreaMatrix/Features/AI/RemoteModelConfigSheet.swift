@@ -2,12 +2,21 @@ import SwiftUI
 
 struct RemoteModelConfigSheet: View {
     @StateObject private var model: RemoteProviderConfigModel
+    @StateObject private var privacyModel: RemotePrivacyGateModel
     @State private var isDisableConfirmationPresented = false
     @State private var removeCredentialOnDisable = false
+    let onOpenPrivacyRules: () -> Void
     let onClose: () -> Void
 
-    init(model: RemoteProviderConfigModel, onClose: @escaping () -> Void = {}) {
+    init(
+        model: RemoteProviderConfigModel,
+        privacyModel: RemotePrivacyGateModel? = nil,
+        onOpenPrivacyRules: @escaping () -> Void = {},
+        onClose: @escaping () -> Void = {}
+    ) {
         _model = StateObject(wrappedValue: model)
+        _privacyModel = StateObject(wrappedValue: privacyModel ?? RemotePrivacyGateModel(repoPath: model.repoPath))
+        self.onOpenPrivacyRules = onOpenPrivacyRules
         self.onClose = onClose
     }
 
@@ -29,7 +38,10 @@ struct RemoteModelConfigSheet: View {
             }
         }
         .frame(minWidth: 680, minHeight: 620, alignment: .topLeading)
-        .task { await model.load() }
+        .task {
+            await model.load()
+            await privacyModel.load()
+        }
         .sheet(isPresented: $isDisableConfirmationPresented) {
             DisableRemoteAIConfirmationSheet(
                 removeStoredCredential: $removeCredentialOnDisable,
@@ -40,7 +52,12 @@ struct RemoteModelConfigSheet: View {
                         let didDisable = await model.disableRemoteAI(
                             removeStoredCredential: removeCredentialOnDisable
                         )
-                        if didDisable { onClose() }
+                        if model.snapshot?.remoteProviderEnabled == false {
+                            _ = await privacyModel.disablePrivacyGate(providerConfig: model.snapshot)
+                        }
+                        if didDisable, privacyModel.pendingAction == nil {
+                            onClose()
+                        }
                     }
                 }
             )
@@ -149,6 +166,8 @@ struct RemoteModelConfigSheet: View {
 
     private var privacySection: some View {
         AdvancedSettingsSection(title: "Privacy") {
+            privacyGateStatus
+            privacyGateFailureBanner
             Text(
                 "Remote AI may send selected file metadata or extracted text to the provider you choose. " +
                     "Privacy rules are checked before every remote call."
@@ -177,13 +196,49 @@ struct RemoteModelConfigSheet: View {
             Button("Enable remote AI") {
                 Task {
                     let didEnable = await model.enableRemoteAI()
-                    if didEnable { onClose() }
+                    guard didEnable else { return }
+                    let didEnableGate = await privacyModel.enablePrivacyGate(providerConfig: model.snapshot)
+                    if didEnableGate { onClose() }
                 }
             }
             .buttonStyle(.borderedProminent)
-            .disabled(!model.canEnable)
+            .disabled(!model.canEnable || privacyModel.isSaving)
             .accessibilityIdentifier("S3-03-C3-03-enable-remote-ai")
             .accessibilityHint(model.enableDisabledReason)
+        }
+    }
+
+    private var privacyGateStatus: some View {
+        HStack(spacing: 8) {
+            Label(privacyModel.statusText, systemImage: privacyGateIconName)
+                .foregroundStyle(privacyGateTint)
+            if privacyModel.isSaving {
+                ProgressView()
+                    .controlSize(.small)
+            }
+        }
+        .font(.callout)
+        .accessibilityIdentifier("S3-03-C3-09-privacy-gate-status")
+    }
+
+    @ViewBuilder
+    private var privacyGateFailureBanner: some View {
+        if let failure = privacyModel.failure {
+            AISettingsInlineBanner(error: failure, tint: .red) {
+                if privacyModel.pendingAction != nil {
+                    Button(retryPrivacyGateTitle, action: retryPrivacyGate)
+                        .accessibilityIdentifier("S3-03-C3-09-retry-privacy-gate")
+                }
+                Button("Open privacy rules", action: onOpenPrivacyRules)
+                    .accessibilityIdentifier("S3-03-C3-09-open-privacy-rules")
+                if privacyModel.pendingAction == .enable {
+                    Button("Disable remote AI", role: .destructive) {
+                        removeCredentialOnDisable = false
+                        isDisableConfirmationPresented = true
+                    }
+                    .accessibilityIdentifier("S3-03-C3-09-disable-after-gate-failure")
+                }
+            }
         }
     }
 
@@ -191,9 +246,33 @@ struct RemoteModelConfigSheet: View {
         model.loadState == .testing ? "Testing..." : "Test connection"
     }
 
+    private var retryPrivacyGateTitle: String {
+        switch privacyModel.pendingAction {
+        case .enable: "Retry enable privacy gate"
+        case .disable: "Retry disable privacy gate"
+        case nil: "Retry privacy gate"
+        }
+    }
+
+    private var privacyGateIconName: String {
+        privacyModel.snapshot?.privacyGateEnabled == true ? "lock.shield" : "lock.slash"
+    }
+
+    private var privacyGateTint: Color {
+        if privacyModel.failure != nil { return .red }
+        return privacyModel.snapshot?.privacyGateEnabled == true ? .green : .secondary
+    }
+
     private func closeWithoutSaving() {
         if model.cancelEditing() {
             onClose()
+        }
+    }
+
+    private func retryPrivacyGate() {
+        Task {
+            let succeeded = await privacyModel.retryPending(providerConfig: model.snapshot)
+            if succeeded { onClose() }
         }
     }
 

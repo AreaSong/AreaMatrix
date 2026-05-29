@@ -232,7 +232,10 @@ struct AISettingsPane: View {
             }
         }
         .sheet(isPresented: $isRemoteConfigPresented) {
-            RemoteModelConfigSheet(model: RemoteProviderConfigModel(repoPath: model.repoPath)) {
+            RemoteModelConfigSheet(
+                model: RemoteProviderConfigModel(repoPath: model.repoPath),
+                onOpenPrivacyRules: model.openPrivacyRulesEntry
+            ) {
                 isRemoteConfigPresented = false
                 Task { await model.load() }
             }
