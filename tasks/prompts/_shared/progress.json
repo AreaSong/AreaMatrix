@@ -12555,14 +12555,32 @@
     "4-2/task-61": {
       "attempts": 1,
       "copy_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260530_182158/phase-4/4-2-task-61-copy-attempt-1.log",
+      "git_branch": "codex/areamatrix-task-loop-20260501_132850",
+      "git_changed_files": [
+        ".codex/task-loop-logs/20260530_182158/phase-4/4-2-task-61-copy-attempt-1.log",
+        ".codex/task-loop-logs/20260530_182158/phase-4/4-2-task-61-verify-attempt-1.log",
+        ".codex/task-loop-runs/20260530_182158/",
+        ".codex/task-loop-runs/index.json",
+        "apps/macos/AreaMatrix/Bridge/CoreNoteReadingWriting.swift",
+        "apps/macos/AreaMatrix/Models/MainFileListState.swift",
+        "apps/macos/AreaMatrix/Views/Main/MainRepositoryDetailPane.swift",
+        "apps/macos/AreaMatrix/Views/Main/SearchRouteViews.swift",
+        "apps/macos/AreaMatrixTests/S304PageIntegrationVerifyTests.swift",
+        "apps/macos/AreaMatrixTests/ValidatePathErrorMappingSmokeTests.swift",
+        "tasks/prompts/_shared/progress.json"
+      ],
+      "git_checkpoint_status": "committed",
+      "git_commit": "f46b1e6f493be163ced1aa611972cb7d3e9f140b",
+      "git_push_status": "not_requested",
+      "git_remote": "",
       "note": "自动执行验收通过：attempt=1",
       "risk": "High",
       "run_id": "20260530_182158",
       "status": "completed",
-      "updated_at": "2026-05-30T10:55:33.571640+00:00",
+      "updated_at": "2026-05-30T10:55:33.772397+00:00",
       "verify_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260530_182158/phase-4/4-2-task-61-verify-attempt-1.log"
     }
   },
-  "updated_at": "2026-05-29T17:52:51.887444+00:00",
+  "updated_at": "2026-05-30T10:55:33.772400+00:00",
   "version": 1
 }
