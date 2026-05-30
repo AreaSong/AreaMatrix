@@ -3,6 +3,8 @@
   "codex_exec_sandbox": "danger-full-access",
   "copy_root": "/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/copy-ready",
   "dry_run": false,
+  "exit_code": 1,
+  "finished_at": "2026-05-29T18:39:58.417585+00:00",
   "git": {
     "active_branch": "codex/areamatrix-task-loop-20260501_132850",
     "branch_policy": "auto",
@@ -29,7 +31,7 @@
   "run_id": "20260529_191758",
   "start_from": "",
   "started_at": "2026-05-29T11:17:59.114405+00:00",
-  "status": "running",
+  "status": "failed",
   "stop_after": "",
   "tasks": {
     "4-2/task-54": {
@@ -681,14 +683,25 @@
       "task_name": "4-2-task-59",
       "updated_at": "2026-05-29T17:52:51.693426+00:00",
       "verify_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260529_191758/phase-4/4-2-task-59-verify-attempt-2.log"
+    },
+    "4-2/task-60": {
+      "attempts": 2,
+      "copy_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260529_191758/phase-4/4-2-task-60-copy-attempt-2.log",
+      "note": "修复重试中：attempt=2 risk=High",
+      "phase": "phase-4",
+      "risk": "High",
+      "status": "in_progress",
+      "task_name": "4-2-task-60",
+      "updated_at": "2026-05-29T18:22:56.171858+00:00",
+      "verify_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260529_191758/phase-4/4-2-task-60-verify-attempt-2.log"
     }
   },
   "totals": {
     "completed_in_run": 6,
-    "retries": 4,
+    "retries": 5,
     "task_count": 637
   },
-  "updated_at": "2026-05-29T17:52:51.892543+00:00",
+  "updated_at": "2026-05-29T18:39:58.417607+00:00",
   "verify_root": "/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/verify-ready",
   "version": 1
 }

@@ -46,6 +46,13 @@ protocol CoreAICallLogListing: Sendable {
     ) async throws -> AiCallLogPage
 }
 
+protocol CoreAICallLogClearing: Sendable {
+    func clearAICallLog(
+        repoPath: String,
+        request: AiCallLogClearRequest
+    ) async throws -> AiCallLogClearReport
+}
+
 enum AIClassificationContextPolicyState: Equatable {
     case fileNameOnly
     case fileNameAndPath
@@ -216,6 +223,17 @@ extension CoreBridge: CoreAICallLogListing {
     ) async throws -> AiCallLogPage {
         try await Task.detached(priority: .userInitiated) {
             try listAiCalls(repoPath: repoPath, filter: filter, pagination: pagination)
+        }.value
+    }
+}
+
+extension CoreBridge: CoreAICallLogClearing {
+    func clearAICallLog(
+        repoPath: String,
+        request: AiCallLogClearRequest
+    ) async throws -> AiCallLogClearReport {
+        try await Task.detached(priority: .userInitiated) {
+            try clearAiCallLog(repoPath: repoPath, request: request)
         }.value
     }
 }

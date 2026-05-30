@@ -210,7 +210,7 @@ struct AISettingsPane: View {
     @StateObject private var model: AISettingsModel
     @State private var isLocalModelStatusPresented = false
     @State private var isRemoteConfigPresented = false
-
+    @State private var isCallLogPresented = false
     init(repoPath: String) {
         _model = StateObject(wrappedValue: AISettingsModel(repoPath: repoPath))
     }
@@ -240,6 +240,7 @@ struct AISettingsPane: View {
                 Task { await model.load() }
             }
         }
+        .sheet(isPresented: $isCallLogPresented) { AICallLogView(repoPath: model.repoPath) { isCallLogPresented = false } }
     }
 
     private var header: some View {
@@ -368,7 +369,8 @@ struct AISettingsPane: View {
 
     private var logSection: some View {
         AdvancedSettingsSection(title: "Log") {
-            Button("View AI call log", action: model.openCallLogEntry)
+            Button("View AI call log") { model.openCallLogEntry(); isCallLogPresented = true }
+                .accessibilityIdentifier("S3-05-C3-05-open-ai-call-log")
             Text("See when AI was used and whether it was local or remote.")
                 .font(.callout)
                 .foregroundStyle(.secondary)
@@ -493,7 +495,6 @@ struct AISettingsPane: View {
     }
 
     private func openRemoteConfig() {
-        model.openRemoteConfigurationEntry()
-        isRemoteConfigPresented = true
+        model.openRemoteConfigurationEntry(); isRemoteConfigPresented = true
     }
 }
