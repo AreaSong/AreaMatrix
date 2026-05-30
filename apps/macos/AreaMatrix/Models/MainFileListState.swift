@@ -2,6 +2,7 @@ import Foundation
 
 enum DetailPaneTab: String, CaseIterable, Identifiable {
     case meta
+    case summary
     case log
     case note
 
@@ -13,6 +14,8 @@ enum DetailPaneTab: String, CaseIterable, Identifiable {
         switch self {
         case .meta:
             "Meta"
+        case .summary:
+            "Summary"
         case .log:
             "Log"
         case .note:

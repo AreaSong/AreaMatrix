@@ -110,6 +110,12 @@ protocol CoreNoteReadingWriting: Sendable {
     func writeNote(repoPath: String, fileID: Int64, contentMarkdown: String) async throws
 }
 
+protocol CoreAISummaryManaging: Sendable {
+    func generateAISummary(repoPath: String, request: AiSummaryGenerationRequest) async throws -> AiSummaryDraft
+    func saveAISummary(repoPath: String, request: AiSummarySaveRequest) async throws -> AiSummarySaveReport
+    func clearAISummary(repoPath: String, request: AiSummaryClearRequest) async throws -> AiSummaryClearReport
+}
+
 extension CoreBridge: CoreNoteReadingWriting {
     func readNote(repoPath: String, fileID: Int64) async throws -> String? {
         try await Task.detached(priority: .userInitiated) {
@@ -120,6 +126,26 @@ extension CoreBridge: CoreNoteReadingWriting {
     func writeNote(repoPath: String, fileID: Int64, contentMarkdown: String) async throws {
         try await Task.detached(priority: .userInitiated) {
             try writeCoreNote(repoPath: repoPath, fileID: fileID, contentMarkdown: contentMarkdown)
+        }.value
+    }
+}
+
+extension CoreBridge: CoreAISummaryManaging {
+    func generateAISummary(repoPath: String, request: AiSummaryGenerationRequest) async throws -> AiSummaryDraft {
+        try await Task.detached(priority: .userInitiated) {
+            try generateAiSummary(repoPath: repoPath, request: request)
+        }.value
+    }
+
+    func saveAISummary(repoPath: String, request: AiSummarySaveRequest) async throws -> AiSummarySaveReport {
+        try await Task.detached(priority: .userInitiated) {
+            try saveAiSummary(repoPath: repoPath, request: request)
+        }.value
+    }
+
+    func clearAISummary(repoPath: String, request: AiSummaryClearRequest) async throws -> AiSummaryClearReport {
+        try await Task.detached(priority: .userInitiated) {
+            try clearAiSummary(repoPath: repoPath, request: request)
         }.value
     }
 }

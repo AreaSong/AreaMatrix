@@ -248,6 +248,8 @@ extension MainRepositoryDetailPane {
         switch selectedTab {
         case .meta:
             detailMetaTabContent(for: detail)
+        case .summary:
+            AISummaryEditor(repoPath: repoPath, fileID: detail.id)
         case .log:
             DetailLogTabView(
                 selection: selection,

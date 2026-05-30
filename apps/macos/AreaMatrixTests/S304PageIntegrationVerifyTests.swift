@@ -147,6 +147,7 @@ final class S304PageIntegrationVerifyTests: XCTestCase {
         XCTAssertEqual(requests.first?.filter.feature, .classification)
         XCTAssertEqual(requests.first?.pagination.limit, 100)
     }
+
 }
 
 private enum S304CategoryMoveRequest: Equatable {
