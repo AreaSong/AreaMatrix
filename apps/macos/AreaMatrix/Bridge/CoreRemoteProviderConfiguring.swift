@@ -190,6 +190,17 @@ extension CoreBridge: CoreAIPrivacyRulesManaging {
     }
 }
 
+extension CoreBridge: CoreAIPrivacyEvaluating {
+    func evaluateAIPrivacy(
+        repoPath: String,
+        request: AiPrivacyEvaluationRequest
+    ) async throws -> AiPrivacyEvaluationReport {
+        try await Task.detached(priority: .userInitiated) {
+            try evaluateAiPrivacy(repoPath: repoPath, request: request)
+        }.value
+    }
+}
+
 extension CoreBridge: CoreAIClassificationSuggesting {
     func suggestCategoryWithAI(
         repoPath: String,

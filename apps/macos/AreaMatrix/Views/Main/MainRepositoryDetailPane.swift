@@ -249,7 +249,11 @@ extension MainRepositoryDetailPane {
         case .meta:
             detailMetaTabContent(for: detail)
         case .summary:
-            AISummaryEditor(repoPath: repoPath, fileID: detail.id)
+            AISummaryEditor(
+                repoPath: repoPath,
+                fileID: detail.id,
+                privacyContext: summaryPrivacyContext(for: detail)
+            )
         case .log:
             DetailLogTabView(
                 selection: selection,
@@ -268,6 +272,23 @@ extension MainRepositoryDetailPane {
                 writeBlock: noteWriteBlock,
                 onOpenNoteFile: onOpenNoteFile
             )
+        }
+    }
+
+    private func summaryPrivacyContext(for detail: FileEntrySnapshot) -> AISummaryPrivacyContext {
+        AISummaryPrivacyContext(file: detail, tags: summaryPrivacyTags(for: detail))
+    }
+
+    private func summaryPrivacyTags(for detail: FileEntrySnapshot) -> [String] {
+        switch detailTagEditorState {
+        case let .loaded(fileID, tagSet) where fileID == detail.id:
+            tagSet.fileTags.map(\.value)
+        case let .loading(fileID, tagSet?) where fileID == detail.id:
+            tagSet.fileTags.map(\.value)
+        case let .failed(fileID, _, _, tagSet?) where fileID == detail.id:
+            tagSet.fileTags.map(\.value)
+        case .notLoaded, .loading(_, _), .loaded(_, _), .failed(_, _, _, _):
+            []
         }
     }
 

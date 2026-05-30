@@ -1,60 +1,5 @@
 import SwiftUI
 
-enum AISummaryEditorStatus: Equatable {
-    case empty, draft, saved, dirty
-    case skipped(AiSummarySkipReason?)
-    case unavailable(AiSummarySkipReason?)
-
-    var label: String {
-        switch self {
-        case .empty: "No AI summary yet."
-        case .draft: "Draft"
-        case .saved: "Saved"
-        case .dirty: "Unsaved changes"
-        case let .skipped(reason): reason.map(aiSummarySkipReasonLabel) ?? "Skipped"
-        case .unavailable: "Summary unavailable"
-        }
-    }
-}
-
-enum AISummaryEditorOperation: Equatable {
-    case idle, generating, saving, clearing, failed(AISettingsError)
-    var isBusy: Bool { self == .generating || self == .saving || self == .clearing }
-}
-
-struct AISummaryProvenance: Equatable {
-    var draftID: String?
-    var route: AiSummaryRoute?
-    var modelName: String?
-    var generatedAt: Int64?
-    var usedContext: [AiSummaryInputField]
-    var privacyRuleID: String?
-    var callLogID: Int64?
-    var characterCount: Int64
-
-    init(draft: AiSummaryDraft) {
-        draftID = draft.draftId; route = draft.route; modelName = draft.modelName
-        generatedAt = draft.generatedAt; usedContext = draft.usedContext
-        privacyRuleID = draft.privacyRuleId; callLogID = draft.callLogId
-        characterCount = draft.characterCount
-    }
-
-    init(report: AiSummarySaveReport) {
-        draftID = nil; route = report.route; modelName = report.modelName
-        generatedAt = report.generatedAt; usedContext = report.usedContext
-        privacyRuleID = report.privacyRuleId; callLogID = report.callLogId
-        characterCount = report.characterCount
-    }
-}
-
-private struct AISummaryEditorSnapshot {
-    var draftText: String
-    var savedText: String?
-    var baselineText: String?
-    var provenance: AISummaryProvenance?
-    var status: AISummaryEditorStatus
-}
-
 @MainActor
 final class AISummaryEditorModel: ObservableObject {
     @Published private(set) var status: AISummaryEditorStatus = .empty
@@ -65,20 +10,29 @@ final class AISummaryEditorModel: ObservableObject {
     let repoPath: String
     private(set) var fileID: Int64
     private let summaryStore: any CoreAISummaryManaging
+    private let privacyRules: any CoreAIPrivacyEvaluating
     private let errorMapper: any CoreErrorMapping
+    private let summaryProviderScope: AiSummaryProviderScope
+    private var privacyContext: AISummaryPrivacyContext
     private var savedText: String?
     private var baselineText: String?
     private var generationToken = UUID()
     private var generationSnapshot: AISummaryEditorSnapshot?
+    private(set) var privacySkip: AISummaryPrivacySkip?
 
     init(
         repoPath: String,
         fileID: Int64,
         summaryStore: any CoreAISummaryManaging = CoreBridge(),
-        errorMapper: any CoreErrorMapping = CoreBridge()
+        privacyRules: any CoreAIPrivacyEvaluating = CoreBridge(),
+        errorMapper: any CoreErrorMapping = CoreBridge(),
+        summaryProviderScope: AiSummaryProviderScope = .localPreferred,
+        privacyContext: AISummaryPrivacyContext = AISummaryPrivacyContext()
     ) {
         self.repoPath = repoPath; self.fileID = fileID
-        self.summaryStore = summaryStore; self.errorMapper = errorMapper
+        self.summaryStore = summaryStore; self.privacyRules = privacyRules; self.errorMapper = errorMapper
+        self.summaryProviderScope = summaryProviderScope
+        self.privacyContext = privacyContext
     }
 
     var characterCountText: String { "\(draftText.count) characters" }
@@ -86,7 +40,9 @@ final class AISummaryEditorModel: ObservableObject {
     var canCancelGeneration: Bool { operation == .generating }
     var canRegenerate: Bool { canGenerate && (!draftText.isEmpty || savedText != nil || provenance != nil) }
     var canDiscard: Bool { canGenerate && (status == .dirty || status == .draft) }
-    var canClear: Bool { canGenerate && (!draftText.isEmpty || savedText != nil || provenance != nil) }
+    var canClear: Bool {
+        canGenerate && privacySkip == nil && (!draftText.isEmpty || savedText != nil || provenance != nil)
+    }
     var canSave: Bool {
         canGenerate && !draftText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
             (status == .dirty || status == .draft)
@@ -95,8 +51,10 @@ final class AISummaryEditorModel: ObservableObject {
     func reset(fileID: Int64) {
         guard self.fileID != fileID else { return }
         self.fileID = fileID; draftText = ""; savedText = nil; baselineText = nil; provenance = nil
-        status = .empty; operation = .idle; generationToken = UUID()
+        privacySkip = nil; status = .empty; operation = .idle; generationToken = UUID()
     }
+
+    func updatePrivacyContext(_ context: AISummaryPrivacyContext) { privacyContext = context }
 
     func updateDraft(_ text: String) {
         guard draftText != text else { return }
@@ -111,7 +69,16 @@ final class AISummaryEditorModel: ObservableObject {
         guard canGenerate else { return }
         let token = UUID(); generationToken = token; generationSnapshot = snapshot(); operation = .generating
         do {
-            let draft = try await summaryStore.generateAISummary(repoPath: repoPath, request: generationRequest(regenerate))
+            if let privacySkip = try await skippedByPrivacyRules() {
+                guard token == generationToken else { return }
+                let draft = try await loggedPrivacySkipDraft(privacySkip, regenerate: regenerate)
+                guard token == generationToken else { return }
+                apply(privacySkip, draft: draft); operation = .idle; return
+            }
+            let draft = try await summaryStore.generateAISummary(
+                repoPath: repoPath,
+                request: generationRequest(regenerate)
+            )
             guard token == generationToken else { return }
             operation = .idle; apply(draft)
         } catch {
@@ -152,23 +119,69 @@ final class AISummaryEditorModel: ObservableObject {
                 repoPath: repoPath,
                 request: AiSummaryClearRequest(fileId: fileID, confirmed: true)
             )
-            draftText = ""; savedText = nil; baselineText = nil; provenance = nil; status = .empty; operation = .idle
+            draftText = ""; savedText = nil; baselineText = nil; provenance = nil; privacySkip = nil
+            status = .empty; operation = .idle
         } catch {
             operation = .failed(await summaryError(for: error, message: "Summary could not be cleared."))
         }
     }
 
-    private func generationRequest(_ regenerate: Bool) -> AiSummaryGenerationRequest {
+    private func generationRequest(
+        _ regenerate: Bool,
+        privacyPolicyRef: String? = nil
+    ) -> AiSummaryGenerationRequest {
         AiSummaryGenerationRequest(
             fileId: fileID,
-            providerScope: .localPreferred,
+            providerScope: summaryProviderScope,
             contextPolicy: .metadataAndExtractedText,
-            privacyPolicyRef: nil,
+            privacyPolicyRef: privacyPolicyRef,
             regenerateExisting: regenerate
         )
     }
 
+    private func skippedByPrivacyRules() async throws -> AISummaryPrivacySkip? {
+        let snapshot = try await privacyRules.loadAIPrivacyRules(repoPath: repoPath)
+        let report = try await privacyRules.evaluateAIPrivacy(
+            repoPath: repoPath,
+            request: privacyEvaluationRequest(snapshot: snapshot)
+        )
+        guard report.decision != .allowed else { return nil }
+        return AISummaryPrivacySkip(report: report)
+    }
+
+    private func privacyEvaluationRequest(snapshot: AiPrivacyRulesSnapshot) -> AiPrivacyEvaluationRequest {
+        AiPrivacyEvaluationRequest(
+            feature: .autoSummaries,
+            route: AiPrivacyEvaluationRoute(summaryProviderScope: summaryProviderScope),
+            requestedFields: [.fileName, .repoRelativePath, .extractedTextExcerpt],
+            privacyGateEnabled: snapshot.privacyGateEnabled,
+            providerScope: snapshot.providerScope,
+            rules: snapshot.rules.map(AiPrivacyRuleInput.init(summaryRule:)),
+            remoteAllowedFields: snapshot.remoteAllowedFields.map(AiPrivacyFieldRule.init(state:)),
+            context: privacyEvaluationContext()
+        )
+    }
+
+    private func privacyEvaluationContext() -> AiPrivacyEvaluationContext {
+        var context = privacyContext.coreContext
+        context.fileId = fileID; return context
+    }
+
+    private func loggedPrivacySkipDraft(
+        _ skip: AISummaryPrivacySkip,
+        regenerate: Bool
+    ) async throws -> AiSummaryDraft {
+        guard let policyRef = skip.privacyPolicyRefForSummaryLog else {
+            return skip.unloggedDraft(fileID: fileID)
+        }
+        return try await summaryStore.generateAISummary(
+            repoPath: repoPath,
+            request: generationRequest(regenerate, privacyPolicyRef: policyRef)
+        )
+    }
+
     private func apply(_ draft: AiSummaryDraft) {
+        privacySkip = nil
         provenance = AISummaryProvenance(draft: draft)
         switch draft.status {
         case .draft:
@@ -178,6 +191,12 @@ final class AISummaryEditorModel: ObservableObject {
         case .unavailable:
             status = .unavailable(draft.skippedReason)
         }
+    }
+
+    private func apply(_ skip: AISummaryPrivacySkip, draft: AiSummaryDraft) {
+        privacySkip = skip
+        provenance = AISummaryProvenance(draft: draft)
+        status = skip.editorStatus
     }
 
     private func saveRequest() -> AiSummarySaveRequest {
@@ -212,7 +231,11 @@ final class AISummaryEditorModel: ObservableObject {
 
     private func summaryError(for error: Error, message: String) async -> AISettingsError {
         guard let coreError = error as? CoreError else {
-            return AISettingsError(message: message, recovery: "Retry or return to detail.", detail: error.localizedDescription)
+            return AISettingsError(
+                message: message,
+                recovery: "Retry or return to detail.",
+                detail: error.localizedDescription
+            )
         }
         let mapping = await errorMapper.mapCoreError(coreError)
         return AISettingsError(
@@ -264,12 +287,26 @@ func searchContextText(_ request: SearchQueryRequestSnapshot) -> String {
 }
 
 struct AISummaryEditor: View {
+    private let repoPath: String
+    private let fileID: Int64
+    private let privacyContext: AISummaryPrivacyContext
     @StateObject private var model: AISummaryEditorModel
     @State private var confirmation: AISummaryConfirmation?
+    @State private var privacyRuleRoute: AIClassificationPrivacyRuleRoute?
+    @State private var callLogRoute: AISummaryCallLogRoute?
     @FocusState private var isEditorFocused: Bool
 
-    init(repoPath: String, fileID: Int64) {
-        _model = StateObject(wrappedValue: AISummaryEditorModel(repoPath: repoPath, fileID: fileID))
+    init(
+        repoPath: String,
+        fileID: Int64,
+        privacyContext: AISummaryPrivacyContext = AISummaryPrivacyContext()
+    ) {
+        self.repoPath = repoPath; self.fileID = fileID; self.privacyContext = privacyContext
+        _model = StateObject(wrappedValue: AISummaryEditorModel(
+            repoPath: repoPath,
+            fileID: fileID,
+            privacyContext: privacyContext
+        ))
     }
 
     var body: some View {
@@ -288,9 +325,29 @@ struct AISummaryEditor: View {
             titleVisibility: .visible
         ) {
             Button("Cancel", role: .cancel) { confirmation = nil }
-            Button(confirmation?.actionTitle ?? "", role: confirmation?.role) { performConfirmedAction() }
+            Button(confirmation?.actionTitle ?? "", role: confirmation?.isDestructive == true ? .destructive : nil) {
+                performConfirmedAction()
+            }
         } message: {
             Text(confirmation?.message ?? "")
+        }
+        .sheet(item: $privacyRuleRoute) { route in
+            AIClassificationPrivacyRuleReferenceSheet(repoPath: repoPath, ruleID: route.ruleID) {
+                privacyRuleRoute = nil
+            }
+        }
+        .sheet(item: $callLogRoute) { route in
+            AIClassificationCallLogDetailSheet(
+                repoPath: repoPath,
+                callLogID: route.callLogID,
+                feature: .summary
+            ) {
+                callLogRoute = nil
+            }
+        }
+        .onChange(of: AISummaryEditorIdentity(fileID: fileID, privacyContext: privacyContext)) { _, identity in
+            model.reset(fileID: identity.fileID)
+            model.updatePrivacyContext(identity.privacyContext)
         }
         .accessibilityIdentifier("S3-06-C3-06-ai-summary-editor")
     }
@@ -308,17 +365,42 @@ struct AISummaryEditor: View {
     private var provenanceRows: some View {
         if let provenance = model.provenance {
             VStack(alignment: .leading, spacing: 4) {
-                Text(provenance.route.map(aiSummaryRouteLabel) ?? "Draft")
+                Text(provenanceTitle(provenance))
                 Text("Model: \(provenance.modelName ?? "Not recorded")")
                 Text("Used fields: \(summaryUsedFields(provenance.usedContext))")
                 if let generatedAt = provenance.generatedAt {
                     Text("Generated: \(generatedAt)")
                 }
+                if let privacySkip = model.privacySkip {
+                    Text(privacySkip.reasonLabel)
+                    Text(privacySkip.message)
+                    Text("Sent fields: \(privacySentFields(privacySkip.sentFields))")
+                    if let ruleID = privacySkip.ruleID {
+                        Button("View privacy rule") {
+                            privacyRuleRoute = AIClassificationPrivacyRuleRoute(ruleID: ruleID)
+                        }
+                            .accessibilityIdentifier("S3-06-C3-09-view-privacy-rule-\(ruleID)")
+                    }
+                    if let callLogID = provenance.callLogID {
+                        Button("View AI call") {
+                            callLogRoute = AISummaryCallLogRoute(callLogID: callLogID)
+                        }
+                        .buttonStyle(.link)
+                        .accessibilityIdentifier("S3-06-C3-09-view-ai-call-\(callLogID)")
+                    }
+                }
             }
             .font(.caption)
             .foregroundStyle(.secondary)
-            .accessibilityIdentifier("S3-06-C3-06-provenance")
+            .accessibilityIdentifier(model.privacySkip == nil ? "S3-06-C3-06-provenance" : "S3-06-C3-09-privacy-skip")
         }
+    }
+
+    private func provenanceTitle(_ provenance: AISummaryProvenance) -> String {
+        if model.privacySkip == nil {
+            return provenance.route.map(aiSummaryRouteLabel) ?? "Draft"
+        }
+        return model.status.label
     }
 
     private var editor: some View {
@@ -363,9 +445,7 @@ struct AISummaryEditor: View {
         }
     }
 
-    private var saveTitle: String {
-        model.operation == .saving ? "Saving summary..." : "Save"
-    }
+    private var saveTitle: String { model.operation == .saving ? "Saving summary..." : "Save" }
 
     private func performConfirmedAction() {
         let action = confirmation
@@ -378,70 +458,6 @@ struct AISummaryEditor: View {
         case nil:
             break
         }
-    }
-}
-
-private enum AISummaryConfirmation {
-    case regenerate, clear
-
-    var title: String {
-        switch self {
-        case .regenerate: "Regenerate AI summary?"
-        case .clear: "Clear AI summary?"
-        }
-    }
-
-    var message: String {
-        switch self {
-        case .regenerate:
-            "This replaces the current draft or unsaved edits with a new AI-generated draft. Saved notes and the original file will not be changed."
-        case .clear:
-            "This clears the AI-derived summary for this file. It will not delete your note, original file, extracted text, tags, or AI call log."
-        }
-    }
-
-    var actionTitle: String {
-        switch self {
-        case .regenerate: "Regenerate"
-        case .clear: "Clear summary"
-        }
-    }
-
-    var role: ButtonRole? {
-        self == .clear ? .destructive : nil
-    }
-}
-
-private func summaryUsedFields(_ fields: [AiSummaryInputField]) -> String {
-    fields.isEmpty ? "none" : fields.map(aiSummaryInputFieldLabel).joined(separator: ", ")
-}
-
-func aiSummaryRouteLabel(_ route: AiSummaryRoute) -> String {
-    switch route {
-    case .local: "Generated locally"
-    case .remote: "Generated remotely"
-    }
-}
-
-func aiSummaryInputFieldLabel(_ field: AiSummaryInputField) -> String {
-    switch field {
-    case .fileName: "filename"
-    case .repoRelativePath: "repo-relative path"
-    case .extractedTextExcerpt: "extracted text"
-    case .existingAiSummary: "existing AI summary"
-    case .noteSummary: "note summary"
-    case .tagCategoryContext: "tag/category context"
-    }
-}
-
-func aiSummarySkipReasonLabel(_ reason: AiSummarySkipReason) -> String {
-    switch reason {
-    case .aiDisabled: "AI summaries are off"
-    case .featureDisabled: "Auto summaries are off"
-    case .providerUnavailable: "AI provider is unavailable"
-    case .privacyRule: "Skipped by privacy rule"
-    case .noEligibleInput: "No eligible summary input"
-    case .callLogUnavailable: "AI call log is unavailable"
     }
 }
 

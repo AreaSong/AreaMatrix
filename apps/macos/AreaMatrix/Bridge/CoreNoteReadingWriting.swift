@@ -105,6 +105,127 @@ struct TagSuggestionApplyReportSnapshot: Equatable {
     var refreshTargets: [String]
 }
 
+enum AISummaryEditorOperation: Equatable {
+    case idle, generating, saving, clearing, failed(AISettingsError)
+
+    var isBusy: Bool {
+        self == .generating || self == .saving || self == .clearing
+    }
+}
+
+enum AISummaryEditorStatus: Equatable {
+    case empty, draft, saved, dirty
+    case skipped(AiSummarySkipReason?)
+    case unavailable(AiSummarySkipReason?)
+
+    var label: String {
+        switch self {
+        case .empty: "No AI summary yet."
+        case .draft: "Draft"
+        case .saved: "Saved"
+        case .dirty: "Unsaved changes"
+        case let .skipped(reason): reason.map(aiSummarySkipReasonLabel) ?? "Skipped"
+        case .unavailable: "Summary unavailable"
+        }
+    }
+}
+
+struct AISummaryProvenance: Equatable {
+    var draftID: String?
+    var route: AiSummaryRoute?
+    var modelName: String?
+    var generatedAt: Int64?
+    var usedContext: [AiSummaryInputField]
+    var privacyRuleID: String?
+    var callLogID: Int64?
+    var characterCount: Int64
+
+    init(draft: AiSummaryDraft) {
+        draftID = draft.draftId
+        route = draft.route
+        modelName = draft.modelName
+        generatedAt = draft.generatedAt
+        usedContext = draft.usedContext
+        privacyRuleID = draft.privacyRuleId
+        callLogID = draft.callLogId
+        characterCount = draft.characterCount
+    }
+
+    init(report: AiSummarySaveReport) {
+        draftID = nil
+        route = report.route
+        modelName = report.modelName
+        generatedAt = report.generatedAt
+        usedContext = report.usedContext
+        privacyRuleID = report.privacyRuleId
+        callLogID = report.callLogId
+        characterCount = report.characterCount
+    }
+}
+
+struct AISummaryEditorSnapshot {
+    var draftText: String
+    var savedText: String?
+    var baselineText: String?
+    var provenance: AISummaryProvenance?
+    var status: AISummaryEditorStatus
+}
+
+struct AISummaryEditorIdentity: Equatable {
+    var fileID: Int64
+    var privacyContext: AISummaryPrivacyContext
+}
+
+enum AISummaryConfirmation {
+    case regenerate, clear
+
+    var title: String {
+        switch self {
+        case .regenerate: "Regenerate AI summary?"
+        case .clear: "Clear AI summary?"
+        }
+    }
+
+    var message: String {
+        switch self {
+        case .regenerate:
+            """
+            This replaces the current draft or unsaved edits with a new AI-generated draft. \
+            Saved notes and the original file will not be changed.
+            """
+        case .clear:
+            """
+            This clears the AI-derived summary for this file. It will not delete your note, \
+            original file, extracted text, tags, or AI call log.
+            """
+        }
+    }
+
+    var actionTitle: String {
+        switch self {
+        case .regenerate: "Regenerate"
+        case .clear: "Clear summary"
+        }
+    }
+
+    var isDestructive: Bool {
+        self == .clear
+    }
+}
+
+struct AISummaryCallLogRoute: Identifiable, Equatable {
+    var callLogID: Int64
+    var id: Int64 { callLogID }
+}
+
+protocol CoreAIPrivacyEvaluating: Sendable {
+    func loadAIPrivacyRules(repoPath: String) async throws -> AiPrivacyRulesSnapshot
+    func evaluateAIPrivacy(
+        repoPath: String,
+        request: AiPrivacyEvaluationRequest
+    ) async throws -> AiPrivacyEvaluationReport
+}
+
 protocol CoreNoteReadingWriting: Sendable {
     func readNote(repoPath: String, fileID: Int64) async throws -> String?
     func writeNote(repoPath: String, fileID: Int64, contentMarkdown: String) async throws

@@ -218,9 +218,15 @@ struct AICallLogView: View {
 
     private var confirmationMessage: String {
         if confirmation == .clearAll {
-            return "This deletes all AI call log entries on this Mac. It will not delete files, AI results, tags, summaries, notes, AI settings, or API keys."
+            return """
+            This deletes all AI call log entries on this Mac. It will not delete files, \
+            AI results, tags, summaries, notes, AI settings, or API keys.
+            """
         }
-        return "This only deletes log entries. It will not delete files, AI results, tags, summaries, notes, or AI settings."
+        return """
+        This only deletes log entries. It will not delete files, AI results, tags, \
+        summaries, notes, or AI settings.
+        """
     }
 
     private func confirmDestructiveAction() async {
@@ -297,17 +303,20 @@ final class AIClassificationCallLogDetailModel: ObservableObject {
 
     let repoPath: String
     let callLogID: Int64
+    let feature: AiCallLogFeature
     private let lister: any CoreAICallLogListing
     private let errorMapper: any CoreErrorMapping
 
     init(
         repoPath: String,
         callLogID: Int64,
+        feature: AiCallLogFeature = .classification,
         lister: any CoreAICallLogListing = CoreBridge(),
         errorMapper: any CoreErrorMapping = CoreBridge()
     ) {
         self.repoPath = repoPath
         self.callLogID = callLogID
+        self.feature = feature
         self.lister = lister
         self.errorMapper = errorMapper
     }
@@ -324,7 +333,7 @@ final class AIClassificationCallLogDetailModel: ObservableObject {
             let page = try await lister.listAICalls(
                 repoPath: repoPath,
                 filter: AiCallLogFilter(
-                    feature: .classification,
+                    feature: feature,
                     route: nil,
                     status: nil,
                     occurredAfter: nil,
@@ -367,6 +376,7 @@ struct AIClassificationCallLogDetailSheet: View {
     init(
         repoPath: String,
         callLogID: Int64,
+        feature: AiCallLogFeature = .classification,
         lister: any CoreAICallLogListing = CoreBridge(),
         errorMapper: any CoreErrorMapping = CoreBridge(),
         onClose: @escaping () -> Void = {}
@@ -374,6 +384,7 @@ struct AIClassificationCallLogDetailSheet: View {
         _model = StateObject(wrappedValue: AIClassificationCallLogDetailModel(
             repoPath: repoPath,
             callLogID: callLogID,
+            feature: feature,
             lister: lister,
             errorMapper: errorMapper
         ))
