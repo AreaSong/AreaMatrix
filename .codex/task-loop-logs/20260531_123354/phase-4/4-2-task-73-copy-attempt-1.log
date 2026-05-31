@@ -1,0 +1,50 @@
+一、执行结论
+
+已完成。
+
+二、执行范围
+
+单任务：`4-2/task-73`，只处理 `S3-09 + C3-09 ai-privacy-rules`。
+
+交付相关修改文件：
+- [AIPrivacyRulesView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Features/AI/AIPrivacyRulesView.swift)
+- [AISummaryMetadataReader.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Features/AI/AISummaryMetadataReader.swift)
+- [S309RemoteProviderConfigPageFeatureTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/S309RemoteProviderConfigPageFeatureTests.swift)
+
+当前工作树另有 task-loop/progress 运行状态文件变更，不属于本次业务实现范围，我未回滚。
+
+三、完成情况
+
+核对清单：已按 S3-09 页面中的 C3-09 功能点接入隐私规则加载、隐私 gate 更新、远程允许字段更新、规则增删改启用状态、测试规则评估；未实现同页 C3-01/C3-03 的 provider 配置能力，只保留已有 provider 状态/跳转上下文。
+
+完成标准：用户可见 C3-09 功能已接入真实 CoreBridge 协议路径，未用静态状态或 mock-only 闭环冒充产品路径。测试里的 test double 仅用于验证调用合同。
+
+Forbidden Touches：未触碰 `core/src/**`，`git diff --name-only -- core/src` 无输出。
+
+四、工程质量
+
+结构上新增 `AIPrivacyRulesModel` 承担 C3-09 状态、保存、错误映射和评估逻辑，View 只负责交互与展示；三个改动文件均低于 500 行。错误处理通过 `CoreErrorMapping` 映射到用户可见错误，没有静默吞错。没有新增依赖，没有新增 public Rust API，因此无 rustdoc 同步项。
+
+High 风险记录：影响面是远程 AI 隐私规则与数据外发 gate 的 UI 接入；主要风险是保存/评估路径错误导致隐私判断不可见或不可控。验证通过 task-scoped gate 和 macOS build。回滚方式是撤回上述三个 Swift 文件改动；本任务未做数据迁移、未改 Core、未删除/移动/覆盖用户文件。
+
+五、验证情况
+
+已运行并通过：
+
+```bash
+./dev check task 4-2/task-73
+```
+
+结果：
+- `prompt_pipeline.py doctor`：OK
+- `git diff --check`：OK
+- `xcodebuild ... build CODE_SIGNING_ALLOWED=NO`：`** BUILD SUCCEEDED **`
+
+Xcode 输出了 CoreSimulator/FSEvents 相关警告，但最终退出码为 0，构建成功。未运行更宽的 `cargo test --workspace`、`./dev check core` 或 `./dev check all`，因为本 task 明确要求 validation 上限为 `./dev check task 4-2/task-73`。
+
+六、风险与后续
+
+剩余风险：本次 manifest validation 触发的是 build gate，没有单独执行 XCTest；已补充 focused tests，但未额外扩大验证边界运行测试套件。
+
+建议下一个任务：进入 S3-09 的 page integration verify 或对应剩余能力 task，检查 C3-01、C3-03、C3-09 在整页 control map 下的组合闭环。
+

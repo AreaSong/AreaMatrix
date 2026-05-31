@@ -104,6 +104,72 @@ final class S309RemoteProviderConfigPageFeatureTests: XCTestCase {
     }
 
     @MainActor
+    func testS309C309LoadsPrivacyRulesSnapshotFromCoreBridge() async {
+        let bridge = RemotePrivacyRulesBridge(snapshot: .s309PrivacyRules(privacyGateEnabled: true))
+        let model = AIPrivacyRulesModel(
+            repoPath: "/tmp/s309",
+            rulesManager: bridge,
+            evaluator: bridge,
+            errorMapper: S309RemoteProviderErrorMapper()
+        )
+
+        await model.load()
+        let requests = await bridge.requests()
+
+        XCTAssertEqual(requests.loadCount, 1)
+        XCTAssertEqual(model.loadState, .loaded)
+        XCTAssertEqual(model.rules.first?.pattern, "finance/private/")
+        XCTAssertTrue(model.canEditRemoteFields)
+    }
+
+    @MainActor
+    func testS309C309UpdatesPrivacyGateAndFieldFiltersWithoutProviderDisable() async {
+        let bridge = RemotePrivacyRulesBridge(snapshot: .s309PrivacyRules(privacyGateEnabled: true))
+        let model = AIPrivacyRulesModel(
+            repoPath: "/tmp/s309",
+            rulesManager: bridge,
+            evaluator: bridge,
+            errorMapper: S309RemoteProviderErrorMapper()
+        )
+
+        await model.load()
+        await model.setPrivacyGate(false)
+        await model.setField(.fileName, allowRemote: false)
+        let requests = await bridge.requests()
+
+        XCTAssertEqual(requests.updates.count, 2)
+        XCTAssertFalse(requests.updates[0].privacyGateEnabled)
+        XCTAssertTrue(requests.updates[0].confirmed)
+        XCTAssertEqual(requests.updates[0].providerScope.providerConfigured, true)
+        XCTAssertFalse(requests.updates[1].remoteAllowedFields.first { $0.field == .fileName }?.allowRemote ?? true)
+    }
+
+    @MainActor
+    func testS309C309EvaluatesTestRulesWithCurrentSnapshot() async {
+        let bridge = RemotePrivacyRulesBridge(
+            snapshot: .s309PrivacyRules(privacyGateEnabled: true),
+            evaluationReport: .s309FinanceFolderBlocked()
+        )
+        let model = AIPrivacyRulesModel(
+            repoPath: "/tmp/s309",
+            rulesManager: bridge,
+            evaluator: bridge,
+            errorMapper: S309RemoteProviderErrorMapper()
+        )
+
+        await model.load()
+        await model.evaluate(repoRelativePath: "finance/private/q1.pdf")
+        let requests = await bridge.requests()
+
+        XCTAssertEqual(requests.evaluations.count, 1)
+        XCTAssertEqual(requests.evaluations[0].route, .remote)
+        XCTAssertEqual(requests.evaluations[0].context.repoRelativePath, "finance/private/q1.pdf")
+        XCTAssertEqual(requests.evaluations[0].requestedFields, [.fileName, .repoRelativePath, .extension])
+        XCTAssertEqual(model.evaluation?.decision, .skipped)
+        XCTAssertEqual(model.evaluation?.matchedRules.first?.ruleId, "rule-finance-folder")
+    }
+
+    @MainActor
     private func assertProviderStatus(
         _ snapshot: RemoteProviderConfigState,
         status: String,
@@ -245,6 +311,65 @@ private extension AISettingsSnapshot {
             config: normalized,
             capabilities: AISettingsCapabilitySnapshot.derived(from: normalized),
             updatedAt: 309
+        )
+    }
+}
+
+private extension AiPrivacyRulesSnapshot {
+    static func s309PrivacyRules(privacyGateEnabled: Bool) -> AiPrivacyRulesSnapshot {
+        AiPrivacyRulesSnapshot(
+            privacyGateEnabled: privacyGateEnabled,
+            rules: [
+                AiPrivacyRuleRecord(
+                    ruleId: "rule-finance-folder",
+                    name: "Private finance folders",
+                    kind: .folder,
+                    pattern: "finance/private/",
+                    appliesTo: .remoteAi,
+                    enabled: true,
+                    description: "Blocks finance folders from remote AI.",
+                    matchCount: 42,
+                    lastMatchedAt: 309
+                )
+            ],
+            remoteAllowedFields: [
+                AiPrivacyFieldState(field: .fileName, allowRemote: true, lastMatchedCount: 0),
+                AiPrivacyFieldState(field: .repoRelativePath, allowRemote: true, lastMatchedCount: 1),
+                AiPrivacyFieldState(field: .extension, allowRemote: true, lastMatchedCount: 0)
+            ],
+            providerScope: AiPrivacyProviderScopeSnapshot(
+                providerConfigured: true,
+                providerVerified: true,
+                remoteProviderEnabled: true,
+                featureScope: [.autoSummaries]
+            ),
+            updatedAt: 309,
+            remoteBlockedByDefault: true
+        )
+    }
+}
+
+private extension AiPrivacyEvaluationReport {
+    static func s309FinanceFolderBlocked() -> AiPrivacyEvaluationReport {
+        AiPrivacyEvaluationReport(
+            decision: .skipped,
+            skippedReason: .privacyRule,
+            providerGateReason: nil,
+            matchedRules: [
+                AiPrivacyRuleMatch(
+                    ruleId: "rule-finance-folder",
+                    name: "Private finance folders",
+                    kind: .folder,
+                    pattern: "finance/private/",
+                    appliesTo: .remoteAi,
+                    matchedField: .repoRelativePath
+                )
+            ],
+            matchedFieldType: .repoRelativePath,
+            allowedFields: [],
+            blockedFields: [.fileName, .repoRelativePath, .extension],
+            sentFields: [],
+            message: "Matched by Folder: finance/private/"
         )
     }
 }
