@@ -256,7 +256,9 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
             onBeginAIClassificationSuggestionFile: model.beginAIClassificationSuggestion,
             onBeginDeleteFile: model.beginDelete,
             onBeginICloudConflictResolution: model.beginICloudConflictResolution,
+            onOpenAISettings: {},
             writeActionDisabledReason: model.writeActionDisabledReason,
+            summaryExitController: AISummaryEditorExitController(),
             noteModel: DetailNoteModel(
                 repoPath: "/tmp/s125-repo",
                 noteStore: S125NoopNoteStore(),

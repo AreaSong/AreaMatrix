@@ -56,9 +56,11 @@ struct MainRepositoryContentView: View {
     @FocusState var isSearchFieldFocused: Bool
     @StateObject var dropPreviewModel: ImportDropPreviewModel
     @StateObject var detailNoteModel: DetailNoteModel
+    @StateObject var summaryExitController: AISummaryEditorExitController
     @State var tableSortOrder: [KeyPathComparator<FileEntrySnapshot>] = [
         .init(\FileEntrySnapshot.importedAt, order: .reverse)
     ]
+    @State var summarySelectionExitState = AISummarySelectionExitState()
 
     init(
         opening: RepositoryOpeningResult,
@@ -128,6 +130,7 @@ struct MainRepositoryContentView: View {
             noteStore: noteStore,
             errorMapper: errorMapper
         ))
+        _summaryExitController = StateObject(wrappedValue: AISummaryEditorExitController())
         _fileListModel = StateObject(wrappedValue: MainFileListModel(
             opening: opening,
             fileLister: fileLister,
@@ -233,17 +236,30 @@ extension MainRepositoryContentView {
             )
         }
         .onChange(of: selectedFileIDs) { previousIDs, ids in
-            showFailedNoteDraftBannerIfNeeded(leaving: previousIDs)
-            if !ids.isEmpty {
-                selectedImportProgressIDs = []
-            }
-            Task {
-                await fileListModel.selectFiles(ids)
-            }
+            handleSelectedFileIDsChange(previousIDs: previousIDs, ids: ids)
         }
         .onChange(of: selectedImportProgressIDs) { _, ids in
             guard !ids.isEmpty else { return }
             selectedFileIDs = []
+        }
+        .confirmationDialog(
+            "Save AI summary changes?",
+            isPresented: Binding(
+                get: { summarySelectionExitState.pendingRequest != nil },
+                set: { if !$0 { cancelPendingSummarySelectionExit() } }
+            ),
+            titleVisibility: .visible
+        ) {
+            Button("Cancel", role: .cancel, action: cancelPendingSummarySelectionExit)
+            Button("Discard changes", role: .destructive) {
+                summaryExitController.discardChanges()
+                finishPendingSummarySelectionExit()
+            }
+            Button("Save changes") {
+                Task { await saveAndFinishPendingSummarySelectionExit() }
+            }
+        } message: {
+            Text("Save or discard the AI summary draft before switching files.")
         }
         .sheet(item: actionDestinationBinding, content: actionRoutingSheet)
         .sheet(item: searchDestinationBinding, content: searchRoutingSheet)

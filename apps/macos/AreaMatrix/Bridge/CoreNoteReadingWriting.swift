@@ -1,3 +1,4 @@
+import Combine
 import Foundation
 
 struct TagSuggestionContextSnapshot: Equatable {
@@ -106,11 +107,30 @@ struct TagSuggestionApplyReportSnapshot: Equatable {
 }
 
 enum AISummaryEditorOperation: Equatable {
-    case idle, generating, saving, clearing, failed(AISettingsError)
+    case idle, loading, generating, saving, clearing, failed(AISettingsError)
 
     var isBusy: Bool {
-        self == .generating || self == .saving || self == .clearing
+        self == .loading || self == .generating || self == .saving || self == .clearing
     }
+
+    var progressText: String? {
+        switch self {
+        case .loading:
+            "Loading summary..."
+        case .generating:
+            "Generating..."
+        case .saving:
+            "Saving summary..."
+        case .clearing:
+            "Clearing summary..."
+        case .idle, .failed:
+            nil
+        }
+    }
+}
+
+enum AISummaryEditorFailedAction: Equatable {
+    case load, generate, save, clear
 }
 
 enum AISummaryEditorStatus: Equatable {
@@ -161,11 +181,23 @@ struct AISummaryProvenance: Equatable {
         callLogID = report.callLogId
         characterCount = report.characterCount
     }
+
+    init(saved: AISummarySavedSnapshot) {
+        draftID = saved.draftID
+        route = saved.route
+        modelName = saved.modelName
+        generatedAt = saved.generatedAt
+        usedContext = saved.usedContext
+        privacyRuleID = saved.privacyRuleID
+        callLogID = saved.callLogID
+        characterCount = saved.characterCount
+    }
 }
 
 struct AISummaryEditorSnapshot {
     var draftText: String
     var savedText: String?
+    var savedProvenance: AISummaryProvenance?
     var baselineText: String?
     var provenance: AISummaryProvenance?
     var status: AISummaryEditorStatus
@@ -174,6 +206,36 @@ struct AISummaryEditorSnapshot {
 struct AISummaryEditorIdentity: Equatable {
     var fileID: Int64
     var privacyContext: AISummaryPrivacyContext
+}
+
+@MainActor
+final class AISummaryEditorExitController: ObservableObject {
+    @Published private(set) var needsConfirmation = false
+
+    private var saveHandler: (@MainActor () async -> Bool)?
+    private var discardHandler: (@MainActor () -> Void)?
+
+    func update(
+        needsConfirmation: Bool,
+        saveHandler: @escaping @MainActor () async -> Bool,
+        discardHandler: @escaping @MainActor () -> Void
+    ) {
+        self.needsConfirmation = needsConfirmation
+        self.saveHandler = saveHandler
+        self.discardHandler = discardHandler
+    }
+
+    func saveChanges() async -> Bool {
+        guard let saveHandler else { return true }
+        let saved = await saveHandler()
+        needsConfirmation = !saved
+        return saved
+    }
+
+    func discardChanges() {
+        discardHandler?()
+        needsConfirmation = false
+    }
 }
 
 enum AISummaryConfirmation {
@@ -232,6 +294,7 @@ protocol CoreNoteReadingWriting: Sendable {
 }
 
 protocol CoreAISummaryManaging: Sendable {
+    func loadSavedAISummary(repoPath: String, fileID: Int64) async throws -> AISummarySavedSnapshot?
     func generateAISummary(repoPath: String, request: AiSummaryGenerationRequest) async throws -> AiSummaryDraft
     func saveAISummary(repoPath: String, request: AiSummarySaveRequest) async throws -> AiSummarySaveReport
     func clearAISummary(repoPath: String, request: AiSummaryClearRequest) async throws -> AiSummaryClearReport
@@ -252,6 +315,10 @@ extension CoreBridge: CoreNoteReadingWriting {
 }
 
 extension CoreBridge: CoreAISummaryManaging {
+    func loadSavedAISummary(repoPath: String, fileID: Int64) async throws -> AISummarySavedSnapshot? {
+        try await SQLiteAISummaryMetadataReader().savedSummary(repoPath: repoPath, fileID: fileID)
+    }
+
     func generateAISummary(repoPath: String, request: AiSummaryGenerationRequest) async throws -> AiSummaryDraft {
         try await Task.detached(priority: .userInitiated) {
             try generateAiSummary(repoPath: repoPath, request: request)

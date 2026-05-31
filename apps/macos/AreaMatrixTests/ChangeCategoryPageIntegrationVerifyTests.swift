@@ -114,7 +114,9 @@ final class ChangeCategoryPageIntegrationVerifyTests: XCTestCase {
             onBeginClassifierCorrectionFile: model.beginClassifierCorrection,
             onBeginAIClassificationSuggestionFile: model.beginAIClassificationSuggestion,
             onBeginDeleteFile: model.beginDelete, onBeginICloudConflictResolution: model.beginICloudConflictResolution,
+            onOpenAISettings: {},
             writeActionDisabledReason: model.writeActionDisabledReason,
+            summaryExitController: AISummaryEditorExitController(),
             noteModel: DetailNoteModel(
                 repoPath: "/tmp/repo",
                 noteStore: S135NoopNoteStore(),

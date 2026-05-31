@@ -157,6 +157,24 @@ struct AISummaryPrivacySkip: Equatable {
         sentFields = report.sentFields
     }
 
+    init(summaryReason: AiSummarySkipReason) {
+        decision = .skipped
+        message = aiSummarySkipReasonLabel(summaryReason)
+        providerGateReason = summaryReason == .providerUnavailable ? .providerNotConfigured : nil
+        ruleID = nil
+        sentFields = []
+        switch summaryReason {
+        case .privacyRule:
+            skippedReason = .privacyRule
+        case .noEligibleInput:
+            skippedReason = .noEligibleInput
+        case .providerUnavailable:
+            skippedReason = .providerNotConfigured
+        case .aiDisabled, .featureDisabled, .callLogUnavailable:
+            skippedReason = nil
+        }
+    }
+
     var reasonLabel: String {
         if let providerGateReason {
             return providerGateReason.summaryPrivacyReasonLabel
@@ -259,16 +277,11 @@ extension AiPrivacyRuleInput {
 private extension AiPrivacyProviderGateReason {
     var summaryPrivacyReasonLabel: String {
         switch self {
-        case .privacyGateDisabled:
-            "Privacy gate is disabled for remote summaries."
-        case .scopeNotAllowed:
-            "Remote summaries are outside the allowed provider scope."
-        case .providerNotConfigured:
-            "Remote provider is not configured."
-        case .providerNotVerified:
-            "Remote provider has not been verified."
-        case .providerDisabled:
-            "Remote provider is disabled."
+        case .privacyGateDisabled: "Privacy gate is disabled for remote summaries."
+        case .scopeNotAllowed: "Remote summaries are outside the allowed provider scope."
+        case .providerNotConfigured: "Remote provider is not configured."
+        case .providerNotVerified: "Remote provider has not been verified."
+        case .providerDisabled: "Remote provider is disabled."
         }
     }
 }
@@ -276,22 +289,14 @@ private extension AiPrivacyProviderGateReason {
 private extension AiPrivacySkippedReason {
     var summaryPrivacyReasonLabel: String {
         switch self {
-        case .privacyGateDisabled:
-            "Privacy gate is disabled for remote summaries."
-        case .scopeNotAllowed:
-            "Remote summaries are outside the allowed provider scope."
-        case .providerNotConfigured:
-            "Remote provider is not configured."
-        case .providerNotVerified:
-            "Remote provider has not been verified."
-        case .providerDisabled:
-            "Remote provider is disabled."
-        case .privacyRule:
-            "A privacy rule blocked the summary input."
-        case .fieldRule:
-            "Field-level privacy rules blocked all summary input."
-        case .noEligibleInput:
-            "No eligible summary input remains after privacy checks."
+        case .privacyGateDisabled: "Privacy gate is disabled for remote summaries."
+        case .scopeNotAllowed: "Remote summaries are outside the allowed provider scope."
+        case .providerNotConfigured: "Remote provider is not configured."
+        case .providerNotVerified: "Remote provider has not been verified."
+        case .providerDisabled: "Remote provider is disabled."
+        case .privacyRule: "A privacy rule blocked the summary input."
+        case .fieldRule: "Field-level privacy rules blocked all summary input."
+        case .noEligibleInput: "No eligible summary input remains after privacy checks."
         }
     }
 }

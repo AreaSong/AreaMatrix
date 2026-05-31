@@ -43,9 +43,12 @@ struct MainRepositoryDetailPane: View {
     let onBeginAIClassificationSuggestionFile: (Int64) -> Void
     let onBeginDeleteFile: (Int64) -> Void
     let onBeginICloudConflictResolution: (Int64) -> Void
+    let onOpenAISettings: () -> Void
     let writeActionDisabledReason: (Int64) -> MainFileWriteActionDisabledReason?
 
     @State private var selectedTab: DetailPaneTab = .meta
+    @State private var pendingSummaryExitTab: DetailPaneTab?
+    @ObservedObject var summaryExitController: AISummaryEditorExitController
     @ObservedObject var noteModel: DetailNoteModel
 }
 
@@ -70,6 +73,17 @@ extension MainRepositoryDetailPane {
             guard let request else { return }
             applyDetailTabRequest(request)
         }
+        .confirmationDialog(
+            "Save AI summary changes?",
+            isPresented: Binding(get: { pendingSummaryExitTab != nil }, set: { if !$0 { pendingSummaryExitTab = nil } }),
+            titleVisibility: .visible
+        ) {
+            Button("Cancel", role: .cancel) { pendingSummaryExitTab = nil }
+            Button("Discard changes", role: .destructive) {
+                summaryExitController.discardChanges(); finishPendingSummaryExit()
+            }
+            Button("Save changes") { Task { await saveAndFinishPendingSummaryExit() } }
+        } message: { Text("Save or discard the AI summary draft before leaving this file summary.") }
     }
 
     private var multiSelectionDetailPane: some View {
@@ -228,7 +242,7 @@ extension MainRepositoryDetailPane {
                 Text(detail.currentName)
                     .font(.headline)
                     .textSelection(.enabled)
-                Picker("Detail tab", selection: $selectedTab) {
+                Picker("Detail tab", selection: Binding(get: { selectedTab }, set: requestDetailTabChange)) {
                     ForEach(DetailPaneTab.allCases) { tab in
                         Text(tab.title).tag(tab)
                     }
@@ -252,7 +266,10 @@ extension MainRepositoryDetailPane {
             AISummaryEditor(
                 repoPath: repoPath,
                 fileID: detail.id,
-                privacyContext: summaryPrivacyContext(for: detail)
+                privacyContext: summaryPrivacyContext(for: detail),
+                exitController: summaryExitController,
+                onOpenAISettings: onOpenAISettings,
+                onBackToDetail: { requestDetailTabChange(.meta) }
             )
         case .log:
             DetailLogTabView(
@@ -376,9 +393,28 @@ extension MainRepositoryDetailPane {
     private func applyDetailTabRequest(_ request: MainDetailTabRequest) {
         switch request {
         case let .automatic(tab):
-            selectedTab = tab
+            requestDetailTabChange(tab)
         }
         onDetailTabRequestConsumed(request)
+    }
+
+    private func requestDetailTabChange(_ tab: DetailPaneTab) {
+        guard selectedTab == .summary, tab != .summary, summaryExitController.needsConfirmation else {
+            selectedTab = tab
+            return
+        }
+        pendingSummaryExitTab = tab
+    }
+
+    private func saveAndFinishPendingSummaryExit() async {
+        guard await summaryExitController.saveChanges() else { return }
+        finishPendingSummaryExit()
+    }
+
+    private func finishPendingSummaryExit() {
+        guard let tab = pendingSummaryExitTab else { return }
+        pendingSummaryExitTab = nil
+        selectedTab = tab
     }
 
     @ViewBuilder
@@ -456,15 +492,9 @@ extension MainRepositoryDetailPane {
 }
 
 private enum DetailRemoveFromIndexButtonStyle {
-    case primary
-    case secondary
+    case primary, secondary
 
     var accessibilityIdentifier: String {
-        switch self {
-        case .primary:
-            "S1-12-missing-remove-from-index"
-        case .secondary:
-            "S1-12-inline-remove-from-index"
-        }
+        self == .primary ? "S1-12-missing-remove-from-index" : "S1-12-inline-remove-from-index"
     }
 }

@@ -217,7 +217,9 @@ extension MainRepositoryContentView {
             onBeginAIClassificationSuggestionFile: fileListModel.beginAIClassificationSuggestion,
             onBeginDeleteFile: fileListModel.beginDelete,
             onBeginICloudConflictResolution: fileListModel.beginICloudConflictResolution,
+            onOpenAISettings: onOpenAISettings,
             writeActionDisabledReason: fileListModel.writeActionDisabledReason,
+            summaryExitController: summaryExitController,
             noteModel: detailNoteModel
         )
         .frame(minWidth: 220, idealWidth: 260, maxWidth: 320, maxHeight: .infinity, alignment: .topLeading)
