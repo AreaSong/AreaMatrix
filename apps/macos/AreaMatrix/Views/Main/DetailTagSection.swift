@@ -397,6 +397,7 @@ struct AITagSuggestionsPanel: View {
     let onOpenAISettings: () -> Void
     let onClose: () -> Void
     @State private var callLogRoute: AITagCallLogRoute?
+    @State private var privacyRuleRoute: AIClassificationPrivacyRuleRoute?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -414,6 +415,11 @@ struct AITagSuggestionsPanel: View {
         .frame(width: 520, alignment: .topLeading)
         .sheet(item: $callLogRoute) { route in
             AIClassificationCallLogDetailSheet(repoPath: repoPath, callLogID: route.callLogID) { callLogRoute = nil }
+        }
+        .sheet(item: $privacyRuleRoute) { route in
+            AIClassificationPrivacyRuleReferenceSheet(repoPath: repoPath, ruleID: route.ruleID) {
+                privacyRuleRoute = nil
+            }
         }
         .accessibilityIdentifier("S3-07-C3-07-ai-tag-suggestions")
     }
@@ -452,11 +458,29 @@ struct AITagSuggestionsPanel: View {
             if report.skippedReason == .aiDisabled || report.skippedReason == .featureDisabled {
                 Button("Open AI settings", action: onOpenAISettings)
             }
+            if let ruleID = privacyRuleID(for: report) {
+                Button("View privacy rule") { privacyRuleRoute = AIClassificationPrivacyRuleRoute(ruleID: ruleID) }
+                    .accessibilityIdentifier("S3-07-C3-09-view-privacy-rule")
+            }
             if let callLogID = report.callLogId {
                 Button("View AI call") { callLogRoute = AITagCallLogRoute(callLogID: callLogID) }
             }
         }
     }
+
+    func privacyRuleID(for report: AiTagSuggestionReport) -> String? {
+        guard report.skippedReason == .privacyRule else { return nil }
+        return normalizedAITagPrivacyRuleID(from: report.privacyRuleId)
+    }
+}
+
+func normalizedAITagPrivacyRuleID(from rawRuleID: String?) -> String? {
+    var value = rawRuleID?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+    while let prefix = ["rule:", "block:"].first(where: { value.lowercased().hasPrefix($0) }) {
+        value = String(value.dropFirst(prefix.count)).trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+    guard !value.isEmpty, value != "privacy-rule" else { return nil }
+    return value
 }
 
 private struct AITagCallLogRoute: Identifiable {

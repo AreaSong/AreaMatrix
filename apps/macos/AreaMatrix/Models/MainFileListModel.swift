@@ -60,6 +60,7 @@ final class MainFileListModel: ObservableObject {
     let iCloudConflictResolver: any ICloudConflictResolving
     let tagStore: any CoreTagCRUD
     let aiTagSuggestionStore: any CoreAITagSuggestionManaging
+    let aiPrivacyRules: any CoreAIPrivacyEvaluating
     let undoActionStore: any CoreUndoActionLogging
     let redoActionStore: any CoreRedoActionLogging
     let changeLogLister: any CoreChangeLogListing
@@ -94,6 +95,7 @@ final class MainFileListModel: ObservableObject {
         iCloudConflictResolver: any ICloudConflictResolving = CoreBridge(),
         tagStore: any CoreTagCRUD = CoreBridge(),
         aiTagSuggestionStore: any CoreAITagSuggestionManaging = CoreBridge(),
+        aiPrivacyRules: any CoreAIPrivacyEvaluating = CoreBridge(),
         undoActionStore: any CoreUndoActionLogging = CoreBridge(),
         redoActionStore: any CoreRedoActionLogging = CoreBridge(),
         changeLogLister: any CoreChangeLogListing = CoreBridge(),
@@ -120,6 +122,7 @@ final class MainFileListModel: ObservableObject {
         self.iCloudConflictResolver = iCloudConflictResolver
         self.tagStore = tagStore
         self.aiTagSuggestionStore = aiTagSuggestionStore
+        self.aiPrivacyRules = aiPrivacyRules
         self.undoActionStore = undoActionStore
         self.redoActionStore = redoActionStore
         self.changeLogLister = changeLogLister

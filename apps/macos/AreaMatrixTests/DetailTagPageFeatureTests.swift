@@ -501,6 +501,7 @@ final class DetailTagPageFeatureTests: XCTestCase {
             fileLister: DetailMetaNoopLister(),
             fileDetailer: DetailTagFileDetailer(files: files),
             aiTagSuggestionStore: bridge,
+            aiPrivacyRules: RemotePrivacyRulesBridge(snapshot: .s303PrivacyRules(featureScope: [.autoTags])),
             changeLogLister: DetailLogRecordingChangeLister(entries: [.s223Applied()]),
             errorMapper: DetailMetaErrorMapper(mapping: .s207TagDb())
         )
@@ -551,6 +552,7 @@ final class DetailTagPageFeatureTests: XCTestCase {
             fileLister: DetailMetaNoopLister(),
             fileDetailer: DetailTagFileDetailer(files: [first, second]),
             aiTagSuggestionStore: bridge,
+            aiPrivacyRules: RemotePrivacyRulesBridge(snapshot: .s303PrivacyRules(featureScope: [.autoTags])),
             errorMapper: DetailMetaErrorMapper(mapping: .s207TagDb())
         )
 
@@ -617,9 +619,9 @@ private func s307BatchApplyReport(
     return AiTagSuggestionApplyReport(
         fileId: fileID,
         requestedCount: 1,
-        appliedCount: status == .applied ? 1 : 0,
-        skippedCount: status == .skipped ? 1 : 0,
-        failedCount: status == .failed ? 1 : 0,
+        appliedCount: status == AiTagSuggestionApplyStatus.applied ? 1 : 0,
+        skippedCount: status == AiTagSuggestionApplyStatus.alreadyAdded ? 1 : 0,
+        failedCount: status == AiTagSuggestionApplyStatus.failed ? 1 : 0,
         itemResults: [
             AiTagSuggestionApplyItemResult(
                 suggestionId: suggestionID,
@@ -630,7 +632,7 @@ private func s307BatchApplyReport(
         ],
         tagSet: TagSet(
             fileId: fileID,
-            fileTags: status == .applied ? [tag] : [],
+            fileTags: status == AiTagSuggestionApplyStatus.applied ? [tag] : [],
             availableTags: [tag],
             recentTags: [tag],
             updatedAt: 1_700_000_350

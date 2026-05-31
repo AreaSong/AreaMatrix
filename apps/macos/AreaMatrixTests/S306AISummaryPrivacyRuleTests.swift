@@ -140,6 +140,12 @@ final class S306AISummaryPrivacyRuleTests: XCTestCase {
             XCTAssertNil(model.provenance?.callLogID)
         }
     }
+
+    func testS307PrivacyRuleReferenceNormalizesCorePolicyPrefix() {
+        XCTAssertEqual(normalizedAITagPrivacyRuleID(from: "rule:block:rule-confidential"), "rule-confidential")
+        XCTAssertEqual(normalizedAITagPrivacyRuleID(from: "block:rule-confidential"), "rule-confidential")
+        XCTAssertNil(normalizedAITagPrivacyRuleID(from: "block:privacy-rule"))
+    }
 }
 
 @MainActor

@@ -194,12 +194,14 @@ final class S304PageIntegrationVerifyTests: XCTestCase {
             s307AITagSuggestion(id: "s3-07-finance", slug: "finance", confidence: 0.91),
             s307AITagSuggestion(id: "s3-07-low", slug: "maybe", confidence: 0.42, selectedByDefault: false)
         ]))
+        let privacy = RemotePrivacyRulesBridge(snapshot: .s303PrivacyRules(featureScope: [.autoTags]))
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [file]),
             fileLister: DetailMetaNoopLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(file)),
             tagStore: DetailTagRecordingStore(listResults: [.success(.s207Fixture(fileID: file.id, values: ["client"]))]),
             aiTagSuggestionStore: bridge,
+            aiPrivacyRules: privacy,
             changeLogLister: DetailLogRecordingChangeLister(entries: [.s223Applied()]),
             errorMapper: DetailMetaErrorMapper(mapping: .s207TagDb())
         )
@@ -209,9 +211,11 @@ final class S304PageIntegrationVerifyTests: XCTestCase {
         await model.loadSelectedFileAITagSuggestions()
         let undoState = await model.applySelectedFileAITagSuggestions()
         let requests = await bridge.requests()
+        let privacyRequests = await privacy.requests()
 
         XCTAssertEqual(requests.suggest.first?.fileId, file.id)
         XCTAssertEqual(requests.suggest.first?.candidateTags, ["client"])
+        XCTAssertEqual(privacyRequests.evaluations.first?.feature, .autoTags)
         XCTAssertEqual(requests.apply.first?.fileId, file.id)
         XCTAssertEqual(requests.apply.first?.confirmed, true)
         XCTAssertEqual(requests.apply.first?.callLogId, 7_707)
@@ -234,6 +238,7 @@ final class S304PageIntegrationVerifyTests: XCTestCase {
             fileDetailer: DetailMetaImmediateDetailer(result: .success(file)),
             tagStore: DetailTagRecordingStore(listResults: [.success(.s207Fixture(fileID: file.id, values: []))]),
             aiTagSuggestionStore: bridge,
+            aiPrivacyRules: RemotePrivacyRulesBridge(snapshot: .s303PrivacyRules(featureScope: [.autoTags])),
             changeLogLister: DetailLogRecordingChangeLister(entries: [.s223Applied()]),
             errorMapper: DetailMetaErrorMapper(mapping: .s207TagDb())
         )

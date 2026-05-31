@@ -174,18 +174,25 @@ actor RemoteProviderConfigBridge: CoreRemoteProviderConfiguring {
     }
 }
 
-actor RemotePrivacyRulesBridge: CoreAIPrivacyRulesManaging {
+actor RemotePrivacyRulesBridge: CoreAIPrivacyRulesManaging, CoreAIPrivacyEvaluating {
     struct Requests: Equatable {
         var loadCount = 0
         var updates: [AiPrivacyRulesUpdateRequest] = []
+        var evaluations: [AiPrivacyEvaluationRequest] = []
     }
 
     private var snapshot: AiPrivacyRulesSnapshot
+    private let evaluationReport: AiPrivacyEvaluationReport
     private let updateFails: Bool
     private var recorded = Requests()
 
-    init(snapshot: AiPrivacyRulesSnapshot = .s303PrivacyRules(), updateFails: Bool = false) {
+    init(
+        snapshot: AiPrivacyRulesSnapshot = .s303PrivacyRules(),
+        evaluationReport: AiPrivacyEvaluationReport = .s303AllowedPrivacyEvaluation(),
+        updateFails: Bool = false
+    ) {
         self.snapshot = snapshot
+        self.evaluationReport = evaluationReport
         self.updateFails = updateFails
     }
 
@@ -206,8 +213,55 @@ actor RemotePrivacyRulesBridge: CoreAIPrivacyRulesManaging {
         return snapshot
     }
 
+    func evaluateAIPrivacy(
+        repoPath _: String,
+        request: AiPrivacyEvaluationRequest
+    ) async throws -> AiPrivacyEvaluationReport {
+        recorded.evaluations.append(request)
+        return evaluationReport
+    }
+
     func requests() -> Requests {
         recorded
+    }
+}
+
+extension AiPrivacyEvaluationReport {
+    static func s303AllowedPrivacyEvaluation() -> AiPrivacyEvaluationReport {
+        AiPrivacyEvaluationReport(
+            decision: .allowed,
+            skippedReason: nil,
+            providerGateReason: nil,
+            matchedRules: [],
+            matchedFieldType: nil,
+            allowedFields: [.fileName, .repoRelativePath, .`extension`],
+            blockedFields: [],
+            sentFields: [.fileName, .repoRelativePath],
+            message: "Privacy rules allow this AI request."
+        )
+    }
+
+    static func s307PrivacyRuleBlocked() -> AiPrivacyEvaluationReport {
+        AiPrivacyEvaluationReport(
+            decision: .skipped,
+            skippedReason: .privacyRule,
+            providerGateReason: nil,
+            matchedRules: [
+                AiPrivacyRuleMatch(
+                    ruleId: "rule-confidential",
+                    name: "Block confidential",
+                    kind: .keyword,
+                    pattern: "confidential",
+                    appliesTo: .remoteAi,
+                    matchedField: .fileName
+                )
+            ],
+            matchedFieldType: .fileName,
+            allowedFields: [],
+            blockedFields: [.fileName, .repoRelativePath, .extractedTextExcerpt],
+            sentFields: [],
+            message: "A privacy rule blocked the tag suggestion input."
+        )
     }
 }
 
@@ -244,7 +298,10 @@ extension RemoteProviderConfigState {
 }
 
 extension AiPrivacyRulesSnapshot {
-    static func s303PrivacyRules(privacyGateEnabled: Bool = false) -> AiPrivacyRulesSnapshot {
+    static func s303PrivacyRules(
+        privacyGateEnabled: Bool = false,
+        featureScope: [AiFeatureKind] = [.autoSummaries]
+    ) -> AiPrivacyRulesSnapshot {
         AiPrivacyRulesSnapshot(
             privacyGateEnabled: privacyGateEnabled,
             rules: [.s303RuleRecord()],
@@ -257,7 +314,7 @@ extension AiPrivacyRulesSnapshot {
                 providerConfigured: true,
                 providerVerified: true,
                 remoteProviderEnabled: false,
-                featureScope: [.autoSummaries]
+                featureScope: featureScope
             ),
             updatedAt: 901,
             remoteBlockedByDefault: true
